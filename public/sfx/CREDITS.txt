@@ -1,0 +1,12 @@
+사운드 출처: Kenney (https://kenney.nl) — Impact Sounds / UI Audio 팩
+라이선스: Creative Commons CC0 1.0 (퍼블릭 도메인). 출처 표기 의무 없음, 상업적 사용 가능.
+
+impactWood_*    화살이 나무 과녁에 박히는 소리
+impactGlass_*   공중 과녁이 깨지는 소리 (연쇄)
+impactBell_*    정중앙 명중 (크리티컬)
+impactSoft_*    빗나가 땅에 박히는 소리
+impactPlank_*   관통
+click / rollover / switch   UI (드래프트·해금·버튼)
+
+※ public/ 아래에 두었으므로 JS 번들에 포함되지 않는다.
+   첫 화면은 소리 없이 즉시 뜨고(C1·C6), 사운드는 뒤에서 따로 받는다.

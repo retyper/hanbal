@@ -100,7 +100,10 @@ interface Layout {
   /** 이 판에서 무엇을 배우는가. 한 판에 하나씩. */
   teach: string
   arrows: number
-  /** 기준선이 되는 명중 수. arrows − hits ≥ 2 를 지킨다. */
+  /**
+   * 보상 기준선이 되는 명중 수. **클리어 조건이 아니다** — 클리어는 과녁을 다 없애는 것이다.
+   * 이 점수를 넘긴 만큼 훈련치를 더 받는다 (game/progression.ts).
+   */
   hits: number
   wind?: number
   spots: Spot[]

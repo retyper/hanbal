@@ -92,9 +92,10 @@ const HUD = {
   lowArrows: 2,
   /** 숫자 오른쪽에서 눈금이 시작하는 거리 */
   pipStart: 22,
-  pipW: 4,
-  pipH: 16,
-  pipGap: 5,
+  /** 화살 글리프 하나가 차지하는 가로 간격 */
+  pipStride: 9,
+  /** 화살 글리프 길이 (세로) */
+  pipH: 20,
   pipMax: 10,
   /** 훈련치 아래 줄 간격 */
   subGap: 6,
@@ -115,6 +116,51 @@ const DANGER_BACK = '#2a1b1c'
 const SIGHT_RAMP = ['#7fd6c8', '#a7cfa2', '#cbc37b', '#e5a862', '#f88a4f', '#ff6a45'] as const
 /** 아직 만작이 아닐 때 — 무채색. "아직 믿지 마라" */
 const SIGHT_DRAWING = '#5c6670'
+
+/**
+ * 화살 글리프 하나 — 촉 + 대 + 깃.
+ *
+ * 막대기로 그리면 "이게 뭐지"가 된다. 남은 화살은 이 게임에서 가장 중요한 자원이라
+ * 무엇을 세고 있는지가 형태만으로 읽혀야 한다. 위를 향하게 세워 화살통에 꽂힌 모양으로 둔다.
+ * cx는 화살대의 중심 x, cy는 세로 중심.
+ */
+function drawArrowGlyph(
+  ctx: CanvasRenderingContext2D, cx: number, cy: number, len: number, low: boolean,
+): void {
+  const top = cy - len * 0.5
+  const bot = cy + len * 0.5
+  const headH = len * 0.3
+  const headW = 3.2
+  const fletchH = len * 0.28
+  const fletchW = 2.6
+
+  // 촉 — 채운 삼각형. 여기가 화살로 읽히게 하는 부분이라 제일 또렷하다.
+  ctx.fillStyle = low ? THEME.gaugeWarn : THEME.accent
+  ctx.beginPath()
+  ctx.moveTo(cx, top)
+  ctx.lineTo(cx - headW, top + headH)
+  ctx.lineTo(cx + headW, top + headH)
+  ctx.closePath()
+  ctx.fill()
+
+  // 대
+  ctx.strokeStyle = low ? THEME.gaugeWarn : THEME.arrow
+  ctx.lineWidth = 1.4
+  ctx.beginPath()
+  ctx.moveTo(cx, top + headH * 0.6)
+  ctx.lineTo(cx, bot)
+  ctx.stroke()
+
+  // 깃 — 뒤쪽에 사선 두 개
+  ctx.strokeStyle = low ? THEME.gaugeWarn : THEME.hudDim
+  ctx.lineWidth = 1.2
+  ctx.beginPath()
+  ctx.moveTo(cx, bot - fletchH)
+  ctx.lineTo(cx - fletchW, bot)
+  ctx.moveTo(cx, bot - fletchH)
+  ctx.lineTo(cx + fletchW, bot)
+  ctx.stroke()
+}
 
 /** 램프에서 색 하나 고르기. 문자열을 만들지 않는다 (A5). */
 function ramp(table: readonly string[], v: number): string {
@@ -173,18 +219,30 @@ export function drawHud(
     drawSight(ctx, cam, w, strain)
   }
 
-  // ── 점수 / 목표 ──────────────────────────────────────────────
-  const goal = w.stage.targetScore
-  if (w.score !== cache.score || goal !== cache.goal) {
+  // ── 남은 과녁 / 점수 ─────────────────────────────────────────
+  //
+  // 클리어 조건은 **과녁을 다 없애는 것**이다 (sim/world.ts evaluateEnd).
+  // 그래서 화면 맨 위에 있어야 할 숫자는 점수가 아니라 남은 과녁 수다.
+  // 점수는 보상의 크기일 뿐이라 한 단계 작게, 옆에 둔다.
+  let standing = 0
+  for (let i = 0; i < w.targets.length; i++) {
+    const t = w.targets[i]
+    if (t !== undefined && t.alive) standing++
+  }
+  if (standing !== cache.goal || w.score !== cache.score) {
+    cache.goal = standing
     cache.score = w.score
-    cache.goal = goal
-    cache.scoreText = `${w.score | 0} / ${goal | 0}`
+    cache.scoreText = standing > 0 ? `과녁 ${standing}` : '정리 완료'
   }
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
   ctx.font = '600 16px system-ui, sans-serif'
-  ctx.fillStyle = w.score >= goal ? THEME.accent : THEME.hudText
+  ctx.fillStyle = standing === 0 ? THEME.accent : THEME.hudText
   ctx.fillText(cache.scoreText, HUD.padX, HUD.padY)
+  const goalW = ctx.measureText(cache.scoreText).width
+  ctx.font = '500 12px system-ui, sans-serif'
+  ctx.fillStyle = THEME.hudDim
+  ctx.fillText(`${w.score | 0}점`, HUD.padX + goalW + 10, HUD.padY + 4)
 
   // ── 남은 화살 ────────────────────────────────────────────────
   //
@@ -209,13 +267,13 @@ export function drawHud(
   ctx.fillStyle = THEME.hudDim
   ctx.fillText('발', HUD.padX + numW + 4, pipY + HUD.countPx - 15)
 
-  // 눈금 — 숫자 오른쪽에. 너무 많으면 그리지 않는다(세는 게 아니라 덩어리로 읽는 장치다).
+  // 눈금 — 숫자 오른쪽에. 막대가 아니라 **진짜 화살 모양**으로 그린다.
+  // 짝대기로 두면 "이게 뭐지"가 되고, 이 게임에서 가장 중요한 자원이 무엇인지 안 읽힌다.
   if (left <= HUD.pipMax) {
-    ctx.fillStyle = low ? THEME.gaugeWarn : THEME.hudDim
     const pipX = HUD.padX + numW + HUD.pipStart
-    const pipTop = pipY + (HUD.countPx - HUD.pipH) * 0.5
+    const midY = pipY + HUD.countPx * 0.5
     for (let i = 0; i < left; i++) {
-      ctx.fillRect(pipX + i * (HUD.pipW + HUD.pipGap), pipTop, HUD.pipW, HUD.pipH)
+      drawArrowGlyph(ctx, pipX + i * HUD.pipStride, midY, HUD.pipH, low)
     }
   }
 

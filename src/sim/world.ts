@@ -377,9 +377,25 @@ function endStage(w: World, cleared: boolean): void {
   w.events.push({ t: 'stage_end', cleared, score: w.score })
 }
 
+/** 아직 서 있는 과녁이 있는가. 낙하 중인 공중 과녁은 아직 살아 있는 것으로 친다. */
+function anyTargetStanding(w: World): boolean {
+  for (let i = 0; i < w.targets.length; i++) {
+    const t = w.targets[i]
+    if (t !== undefined && t.alive) return true
+  }
+  return false
+}
+
 function evaluateEnd(w: World): void {
-  // 클리어를 먼저 본다. 마지막 순간에 목표를 넘겼는데 시간 초과로 실패하면 배신감이 남는다.
-  if (w.score >= w.stage.targetScore) {
+  // ★ 클리어 조건은 **과녁을 다 없앴는가**다. 점수가 아니다.
+  //
+  // 예전엔 점수가 목표를 넘으면 즉시 끝났다. 그러면 과녁을 남겨둔 채 판이 넘어가고,
+  // 잘 쏜 보상이 "빨리 끝남"이 되어 거꾸로다. 판은 화면이 정리돼야 끝나는 게 맞다.
+  // 점수는 이제 클리어의 조건이 아니라 **보상의 크기**다 — 훈련치로 환산된다 (game/progression.ts).
+  //
+  // 클리어를 먼저 본다. 마지막 화살이 마지막 과녁을 쓰러뜨렸는데 잔량 0으로 실패 판정이 나면
+  // 배신감이 남는다.
+  if (!anyTargetStanding(w)) {
     endStage(w, true)
     return
   }
