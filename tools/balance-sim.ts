@@ -844,16 +844,48 @@ function playGroup(row: StageRow, kind: BotKind, baseSeed: number, runs: number,
 
 // ───────────────────────── 출력 ─────────────────────────
 
-const TARGET_LO = 0.55
-const TARGET_HI = 0.75
-const GAP_LO = 0.30
-const GAP_HI = 0.50
+/**
+ * 클리어율 목표 — 2026-08-23 전면 개정.
+ *
+ * 사용자 피드백: "과녁이 너무 작아서 어려운데. 수십단계까지는 쉽게 갈 수 있게 해줘야지."
+ *
+ * 옛 목표는 판을 가리지 않고 55~75%였고, 그걸 맞추려다 3판부터 과녁이 화면 반경 4px이 됐다.
+ * 봇은 각오차로만 조준해서 그걸 못 느끼지만 사람은 화면 픽셀로 조준한다 —
+ * **봇 클리어율은 애초에 사람의 체감 난이도를 재는 자가 아니었다.**
+ *
+ * 이 게임은 공부 사이에 30초씩 하는 게임이다. 앞의 수십 판은 실력을 시험하는 구간이 아니라
+ * 손에 익히고 성장을 체감하는 구간이다. 그래서 판 번호에 따라 목표가 다르다.
+ * (src/game/stages.ts 헤더의 난이도 정책과 반드시 같이 읽을 것.)
+ */
+function targetBand(stageNo: number): readonly [number, number] {
+  if (stageNo <= 10) return [0.95, 1.0]
+  if (stageNo <= 25) return [0.90, 1.0]
+  if (stageNo <= 40) return [0.80, 0.95]
+  // 41판 이후(무한 모드·후반 챕터)에서만 실력을 가른다.
+  return [0.55, 0.75]
+}
+
+/**
+ * 실력 격차 목표도 판에 따라 다르다. 앞 40판에서 격차가 0인 건 **정상**이다 —
+ * 초보도 고수도 다 깨야 하는 구간이기 때문이다. 여기서 격차를 만들려 들면 과녁이 다시 작아진다.
+ */
+function gapBand(stageNo: number): readonly [number, number] {
+  return stageNo <= 40 ? [0, 0.25] : [0.30, 0.50]
+}
 
 const pct = (v: number): string => (v * 100).toFixed(1) + '%'
 
-function verdict(rate: number): string {
-  if (rate < TARGET_LO) return `LOW  ${((rate - TARGET_LO) * 100).toFixed(1)}%p`
-  if (rate > TARGET_HI) return `HIGH +${((rate - TARGET_HI) * 100).toFixed(1)}%p`
+/** 스테이지 id('3-4') -> 통산 판 번호(24). 목표 구간이 판 번호에 따라 다르다. */
+function stageNoOf(id: string): number {
+  const m = /^(\d+)-(\d+)$/.exec(id)
+  if (m === null) return 1
+  return (Number(m[1]) - 1) * 10 + Number(m[2])
+}
+
+function verdict(rate: number, stageNo: number): string {
+  const [lo, hi] = targetBand(stageNo)
+  if (rate < lo) return `LOW  ${((rate - lo) * 100).toFixed(1)}%p — 여기서 막히면 안 된다`
+  if (rate > hi) return `HIGH +${((rate - hi) * 100).toFixed(1)}%p`
   return 'OK'
 }
 
@@ -869,7 +901,7 @@ function printTable(rows: readonly Agg[]): void {
   for (const r of rows) {
     if (last !== '' && last !== r.stage) console.log('')
     last = r.stage
-    const note = r.bot === 'average' ? '  ' + verdict(r.clearRate) : ''
+    const note = r.bot === 'average' ? '  ' + verdict(r.clearRate, stageNoOf(r.stage)) : ''
     // 표본이 없으면 비율 대신 '-'. 0.0%로 찍으면 "다 빗나갔다"로 오독된다.
     const sh = r.safeShots > 0 ? pct(safeHitRate(r)) : '-'
     const oh = r.overShots > 0 ? pct(overHitRate(r)) : '-'
@@ -978,28 +1010,29 @@ function summarize(rows: readonly Agg[]): void {
     totalHits += nov.avgHits + avg.avgHits + exp.avgHits
     avgSum += avg.clearRate
     avgCount++
+    const stageNo = avgCount
+    const [gLo, gHi] = gapBand(stageNo)
+    const [tLo, tHi] = targetBand(stageNo)
     const gap = exp.clearRate - nov.clearRate
-    if (gap >= GAP_LO && gap <= GAP_HI) gapOk++
-    const gapNote = gap < GAP_LO ? '좁다(실력 개입 부족)' : gap > GAP_HI ? '넓다(초보 벽)' : 'OK'
-    // 클리어율이 포화하면 난이도 신호가 죽는다. 그때는 한 발당 명중률이 유일한 실력 지표다.
-    const easy = avg.clearRate > 0.95 ? ' — 95% 초과, 배우는 게 없다' : ''
+    if (gap >= gLo && gap <= gHi) gapOk++
+    const gapNote = gap < gLo ? '좁다(실력 개입 부족)' : gap > gHi ? '넓다(초보 벽)' : 'OK'
     const drop =
       prevAvg === null || prevAvg - avg.clearRate <= 0.25 ? '' :
       `  / 직전 판 대비 ${((prevAvg - avg.clearRate) * 100).toFixed(1)}%p 하락 — 학습 곡선 가파름`
     console.log(
       `  ${key.padEnd(10)} average 클리어 ${pct(avg.clearRate).padStart(6)}` +
-      ` (목표 55~75%: ${verdict(avg.clearRate)}${easy})${drop}`,
+      ` (목표 ${(tLo * 100) | 0}~${(tHi * 100) | 0}%: ${verdict(avg.clearRate, stageNo)})${drop}`,
     )
     console.log(
-      `  ${' '.repeat(10)} 한발 명중률 nov ${pct(nov.hitRate)} / avg ${pct(avg.hitRate)} / exp ${pct(exp.hitRate)}` +
-      `   클리어율 격차 ${(gap * 100).toFixed(1)}%p (목표 30~50%p) ${gapNote}`,
+      `  ${' '.repeat(10)} 발당 명중 nov ${pct(nov.hitRate)} / avg ${pct(avg.hitRate)} / exp ${pct(exp.hitRate)}` +
+      `   클리어율 격차 ${(gap * 100).toFixed(1)}%p (목표 ${(gLo * 100) | 0}~${(gHi * 100) | 0}%p) ${gapNote}`,
     )
     prevAvg = avg.clearRate
   }
   if (avgCount > 0) {
     console.log('')
     console.log(
-      `  챕터 평균 average 클리어 ${pct(avgSum / avgCount)} (목표 55~75%)` +
+      `  전체 평균 average 클리어 ${pct(avgSum / avgCount)} (1~10판 95%+ · 11~25판 90%+ · 26~40판 80~95%)` +
       `   격차 목표 달성 ${gapOk}/${avgCount}판`,
     )
   }

@@ -1,244 +1,203 @@
 /**
- * 챕터 1 — 당김과 놓음 (스테이지 저작)
+ * 스테이지 저작 — 챕터 1~4 (40판)
  *
- * 설계 원칙 (GDD 1장 C1, 6장):
- *   - 한 판은 화살 5~8발 = 30초~1분. 판이 길어지면 "공부 사이에 한 판"이 성립하지 않는다.
- *   - 챕터 1은 새 메커닉을 하나도 얹지 않는다. **거리와 과녁 크기만으로** 난이도를 만든다.
- *   - 바람은 전부 0. 바람은 챕터 4에서 처음 등장한다.
- *   - 제한 시간 없음. 시간 압박은 챕터 3의 메커닉이고, C2(아무 때나 끊어도 손해 없음)에도 어긋난다.
+ * ── 난이도 정책 (2026-08-23 전면 개정) ──
  *
- * 좌표: 궁수의 손은 (0, 1.4). 과녁 y 는 지면(y=0) 기준 높이다.
+ * 사용자 피드백: **"과녁이 너무 작아서 어려운데. 수십단계까지는 쉽게 갈 수 있게 해줘야지."**
  *
- * ── 2026-08-23 떨림 재설계 이후: 난이도의 축이 바뀌었다 ──
+ * 이전 정책은 "average 봇 클리어율 55~75%"를 맞추는 것이었고, 그 결과 3판부터 과녁 각크기가
+ * h=0.0034까지 조여졌다. 1200px 화면에서 **반경 4px짜리 점**이다.
+ * 봇은 각오차(mrad)로만 조준해서 이걸 못 느끼지만, 사람은 화면 픽셀로 조준한다.
+ * 즉 봇 클리어율은 **사람의 체감 난이도를 재는 자가 아니었다.**
  *
- * 옛 모델에서 실력은 "떨림 위상을 읽고 최소점에 놓는 것"이었다. 지금은 아니다.
- * 스태미나가 빨간 바(최대치의 55%) 위에 있는 동안 **떨림도 발사 산포도 정확히 0이다**
- * (실측: 안전 구간 발사 각오차 RMS 0.000 mrad). 만작에서 그 안에 놓으면 조준한 자리에 그대로 간다.
+ * 그리고 이 게임은 공부 사이에 30초씩 하는 게임이다 (GDD 1장 C1·C2).
+ * 앞의 수십 판은 "실력을 시험하는 구간"이 아니라 **손에 익히고 성장을 체감하는 구간**이어야 한다.
  *
- * 그래서 난이도는 이제 두 가지로만 만들어진다:
- *   1. **조준 정확도** — 각크기가 작을수록 정확히 겨눠야 한다.
- *   2. **릴리즈 규율** — 망설이다 바를 넘기면 그때부터 떨린다. 넘긴 만큼 벌받는다.
+ * ### 새 정책
  *
- * **산포·떨림 계수(releaseScatter·baseAmp·steadyZone)를 키워 어렵게 만들지 않는다.**
- * 그건 사용자가 방금 고치라고 한 문제("쏘는 대로 안 맞는다")를 되돌리는 짓이다.
- * 난이도는 언제나 과녁을 **작고 멀게** 만들어서 낸다.
+ * 1. **난이도의 척도는 화면 반경(px)이다.** 각크기 h는 카메라가 사거리를 화면 폭에 맞추므로
+ *    화면 반경 ≈ h × 뷰포트 폭이다. 1280px 기준으로 아래 바닥을 지킨다:
+ *      - 1~20판: 화면 반경 **30px 이상** (h ≥ 0.023)
+ *      - 21~40판: 화면 반경 **15px 이상** (h ≥ 0.012)
+ *    이 바닥 아래로 내려가면 "조준 실력"이 아니라 "안 보이는 것 맞히기"가 된다.
  *
- * ── 난이도의 유일한 단위: 각크기 h = r / 거리 ──
+ * 2. **반경을 손으로 적지 않는다.** `hFor(n)` 곡선에서 계산한다.
+ *    손으로 적으면 판마다 제각각이 되고, 예전처럼 2판(h=0.029)에서 3판(h=0.0034)으로
+ *    8.5배 급락하는 절벽이 생겨도 아무도 눈치채지 못한다.
  *
- * 화살의 오차는 전부 **각도** 오차다(조준·떨림·산포). 그래서 판의 난이도는 반경도 거리도
- * 아니고 둘의 비 h = r/d 하나로 정해진다. 20m의 반경 0.20 과녁과 40m의 반경 0.40 과녁은
- * 정확히 같은 난이도다. 아래 반경은 전부 "원하는 h × 궁수 손에서의 실제 거리"로 역산한 값이다.
+ * 3. **앞 40판의 난이도는 크기가 아니라 메커닉으로 만든다.**
+ *    거리·높이 변화 → 연쇄 → 이동 과녁 → 바람 → 조합. 매 판 새로 배울 게 하나씩 있으면
+ *    과녁이 커도 지루하지 않다. 정밀 조준을 요구하는 구간은 40판 이후다.
  *
- * **h에는 화면 쪽 바닥이 있다.** 카메라가 사거리 전체를 화면 폭에 맞추므로 과녁의 화면 반경은
- * 거리와 무관하게 `h × 뷰포트 폭`이다 — h=0.0021이면 1200px 화면에서 반경 2.5px다.
- * 이보다 작게 가면 과녁이 점이 되어 "조준 실력"이 아니라 "안 보이는 것 맞히기"가 된다.
- * 그래서 챕터 1의 바닥은 h≈0.0021이고, 그 아래의 난이도는 반경이 아니라
- * **화살 수·요구 명중 수·과녁 개수**로 만든다.
+ * 4. **산포·떨림 계수를 키워 어렵게 만들지 않는다.** (`releaseScatter`·`baseAmp`·`steadyZone`)
+ *    그건 "쏘는 대로 안 맞는다"는 문제를 되돌리는 짓이다 — GDD 2장 빨간 바 계약 참조.
  *
- * 헤드리스 실측(`npm run balance`, 재설계 봇 기준) 한 발 명중률 ≈ erf(h / s),
- * s = novice 0.0107 · average 0.0068 · expert 0.0049.
- *   h 0.0040 → avg 46% · 0.0030 → 37% · 0.0021 → 27%
- * (봇의 조준 바닥 오차: novice 22.5cm / average 15cm / expert 10.8cm @30m)
+ * ### 봇 클리어율 목표 (docs/BALANCE.md와 동기화)
+ *   1~10판 95~100% · 11~25판 90~100% · 26~40판 80~95%
+ *   숫자가 높은 게 정상이다. 여기서 실력을 가르지 않는다.
  *
- * ── 난이도의 두 번째 축: 여벌 화살 (화살 수 − 요구 명중 수) ──
- *
- * 같은 명중률이라도 "과녁 3개를 6발로 전부"와 "과녁 4개 중 3개를 6발로"는 다르다.
- * 여벌이 적을수록 클리어율이 명중률에 민감해져 **초보와 숙련의 격차가 벌어진다.**
- * 그래서 챕터 후반은 여벌을 유지한 채 과녁만 작게 간다 — 초보가 벽에 막히지 않게.
- *
- * ── 목표 점수는 "몇 발"의 근사치다 ──
- *
- * `need(k)`는 BASE·k 이지만 링 배수(가장자리 1배 ~ 중심 2배)와 연쇄 콤보(×1.15)가 얹혀서
- * **잘 쏘면 k−1발로도 끝난다** (실측: k=3 판의 절반쯤이 2명중에서 클리어). 이건 버그가 아니라
- * "잘 쏘면 화살이 남는다"는 설계다. 그래서 아래 주석의 "k명중"은 상한이 아니라 기준선이고,
- * 실제 클리어율은 언제나 그보다 관대하다.
+ * ── 그 밖의 규칙 ──
+ * - 한 판은 화살 5~8발 = 30초~1분 (제약 C1). 여벌 화살을 항상 2발 이상 남긴다.
+ * - 제한 시간 없음 (제약 C2 — 시간 압박은 "아무 때나 끊어도 손해 없음"과 어긋난다).
+ * - 좌표: 궁수의 손은 (0, 1.4). 과녁 y는 지면(y=0) 기준 높이.
  */
 import { clamp } from '../core/math.ts'
 import { seedFrom } from '../core/rng.ts'
-import type { StageDef } from '../sim/types.ts'
+import type { StageDef, TargetKind, TargetSpec } from '../sim/types.ts'
 
-/**
- * 과녁 기본 점수. 링 명중도 배수가 곱해지므로 실제 획득 점수는 이보다 크거나 작을 수 있다.
- * 전 과녁을 같은 값으로 두어, 클리어 점수를 "몇 발 맞혀야 하는가"로만 읽히게 한다.
- */
+/** 궁수의 손 위치. 거리는 여기서 잰다. */
+const HAND_X = 0
+const HAND_Y = 1.4
+
+/** 과녁 기본 점수. 클리어 점수를 "몇 발 맞혀야 하는가"로만 읽히게 전 과녁 동일. */
 const BASE = 100
-
-/** k발 명중을 기준선으로 하는 클리어 점수. 위 "목표 점수는 근사치다" 참조. */
+/** k발 명중을 기준선으로 하는 클리어 점수. 링 배수·연쇄가 얹히므로 실제로는 더 관대하다. */
 const need = (k: number): number => BASE * k
 
-/**
- * 1판: 눈높이 정면 8m. 시위를 당기고 놓는 것 말고는 아무것도 요구하지 않는다.
- * h=0.056 — 조준을 반쯤 놓쳐도 맞는다. 배우는 판이므로 클리어율 100%가 맞다.
- * (튜토리얼을 90%로 낮추려면 h를 0.0023까지 조여야 하는데, 그건 첫 판이 아니라 벽이다.)
- */
-const S1: StageDef = {
-  id: '1-1',
-  seed: seedFrom('1-1'),
-  arrows: 5,
-  targetScore: need(1),
-  wind: 0,
-  targets: [{ kind: 'static', x: 8, y: 1.4, r: 0.45, score: BASE }],
-}
-
-/** 2판: 과녁을 어깨 위로. 조준점은 손이 아니라 마우스가 정한다는 걸 몸으로 알린다. h=0.029 */
-const S2: StageDef = {
-  id: '1-2',
-  seed: seedFrom('1-2'),
-  arrows: 5,
-  targetScore: need(1),
-  wind: 0,
-  targets: [{ kind: 'static', x: 11, y: 2.6, r: 0.32, score: BASE }],
-}
+const TOTAL = 40
+/** 1판의 각크기. 조준을 반쯤 놓쳐도 맞는다. 1280px 화면에서 반경 약 72px. */
+const H_FIRST = 0.056
+/** 40판의 각크기. 여전히 반경 15px — 이게 "안 보이는 것 맞히기"가 되지 않는 바닥이다. */
+const H_LAST = 0.012
 
 /**
- * 3판: 여기서부터 진짜 게임이다. 과녁 3개를 6발로 **전부** 맞혀야 한다.
- * 여벌이 3발이라 두 번까지는 실수해도 되지만 세 번째부터는 판이 끝난다.
- * 거리마다 반경을 키워 각크기를 h=0.0034로 통일했다 — 어려워진 이유가 거리가 아니라
- * **한 발의 값이 비싸졌기 때문**임이 읽히게 하려는 것이다.
+ * 판 번호(1부터) → 과녁 각크기. 지수 곡선이라 줄어드는 비율이 일정하다.
+ * 선형으로 줄이면 앞부분이 급하고 뒷부분이 밋밋해진다.
  */
-const S3: StageDef = {
-  id: '1-3',
-  seed: seedFrom('1-3'),
-  arrows: 6,
-  targetScore: need(3),
-  wind: 0,
-  targets: [
-    { kind: 'static', x: 10, y: 1.5, r: 0.0340, score: BASE },
-    { kind: 'static', x: 13.5, y: 2.7, r: 0.0461, score: BASE },
-    { kind: 'static', x: 17, y: 1.9, r: 0.0578, score: BASE },
-  ],
+function hFor(n: number): number {
+  const t = TOTAL > 1 ? clamp((n - 1) / (TOTAL - 1), 0, 1) : 0
+  return H_FIRST * Math.pow(H_LAST / H_FIRST, t)
 }
 
-/** 4판: 같은 요구(3개 전부/6발)에서 거리만 밀고 각크기를 h=0.0031로 조인다. */
-const S4: StageDef = {
-  id: '1-4',
-  seed: seedFrom('1-4'),
-  arrows: 6,
-  targetScore: need(3),
-  wind: 0,
-  targets: [
-    { kind: 'static', x: 12, y: 1.6, r: 0.0372, score: BASE },
-    { kind: 'static', x: 16, y: 2.8, r: 0.0498, score: BASE },
-    { kind: 'static', x: 20, y: 2.0, r: 0.0620, score: BASE },
-  ],
+interface Spot {
+  x: number
+  y: number
+  kind?: TargetKind
+  /** 이 판 기준 크기의 배수. 연쇄용 작은 과녁 등에만 쓴다. */
+  size?: number
+  ampX?: number
+  ampY?: number
+  freq?: number
+}
+
+/** 각크기 곡선에서 실제 반경을 계산한다. 반경을 손으로 적는 일은 없다. */
+function mk(n: number, s: Spot): TargetSpec {
+  const d = Math.hypot(s.x - HAND_X, s.y - HAND_Y)
+  const spec: TargetSpec = {
+    kind: s.kind ?? 'static',
+    x: s.x,
+    y: s.y,
+    r: hFor(n) * d * (s.size ?? 1),
+    score: BASE,
+  }
+  if (s.ampX !== undefined) spec.ampX = s.ampX
+  if (s.ampY !== undefined) spec.ampY = s.ampY
+  if (s.freq !== undefined) spec.freq = s.freq
+  return spec
+}
+
+interface Layout {
+  /** 이 판에서 무엇을 배우는가. 한 판에 하나씩. */
+  teach: string
+  arrows: number
+  /** 기준선이 되는 명중 수. arrows − hits ≥ 2 를 지킨다. */
+  hits: number
+  wind?: number
+  spots: Spot[]
 }
 
 /**
- * 5판: 거리를 20~28m로 밀어 챕터 1의 원거리를 처음 보여준다. h=0.0028.
- * 여기서부터 만작 직후에 놓는 습관이 없으면 눈에 띄게 어려워진다 —
- * 빨간 바를 넘긴 발의 명중률이 넘기지 않은 발보다 확실히 낮은 구간이다.
+ * 40판의 설계. 크기는 hFor()가 정하므로 여기엔 **배치와 메커닉만** 적는다.
+ *
+ * 챕터 1 (1~10)  당기고 놓기 · 거리와 낙차
+ * 챕터 2 (11~20) 공중 과녁과 연쇄 — 이 게임의 쾌감 레이어
+ * 챕터 3 (21~30) 이동 과녁 · 첫 바람
+ * 챕터 4 (31~40) 관통 · 조합
  */
-const S5: StageDef = {
-  id: '1-5',
-  seed: seedFrom('1-5'),
-  arrows: 6,
-  targetScore: need(3),
-  wind: 0,
-  targets: [
-    { kind: 'static', x: 20, y: 1.7, r: 0.0560, score: BASE },
-    { kind: 'static', x: 24, y: 2.9, r: 0.0673, score: BASE },
-    { kind: 'static', x: 28, y: 2.1, r: 0.0784, score: BASE },
-  ],
+const LAYOUTS: readonly Layout[] = [
+  // ── 챕터 1 — 당김과 놓음 ─────────────────────────────────────
+  { teach: '당기고 놓는다. 그것뿐이다.', arrows: 5, hits: 1, spots: [{ x: 8, y: 1.4 }] },
+  { teach: '조준점은 손이 아니라 마우스가 정한다', arrows: 5, hits: 1, spots: [{ x: 11, y: 2.6 }] },
+  { teach: '과녁이 둘이면 순서를 고른다', arrows: 6, hits: 2, spots: [{ x: 10, y: 1.5 }, { x: 14, y: 2.7 }] },
+  { teach: '거리가 늘면 화살이 떨어진다 — 위로 겨눈다', arrows: 6, hits: 2, spots: [{ x: 14, y: 1.6 }, { x: 19, y: 2.8 }] },
+  { teach: '셋을 연달아. 빨간 바 안에서 쏘는 리듬', arrows: 7, hits: 3, spots: [{ x: 12, y: 1.7 }, { x: 17, y: 2.9 }, { x: 22, y: 2.1 }] },
+  { teach: '높이 차가 커진다 — 낙차를 몸으로 읽는다', arrows: 7, hits: 3, spots: [{ x: 15, y: 1.5 }, { x: 20, y: 4.2 }, { x: 25, y: 2.0 }] },
+  { teach: '더 멀리. 만작이 왜 필요한지 알게 된다', arrows: 7, hits: 3, spots: [{ x: 22, y: 1.7 }, { x: 27, y: 3.0 }, { x: 32, y: 2.2 }] },
+  { teach: '낮은 과녁 — 아래로도 겨눌 수 있다', arrows: 7, hits: 3, spots: [{ x: 18, y: 0.6 }, { x: 24, y: 2.4 }, { x: 30, y: 1.1 }] },
+  { teach: '넷. 화살을 아껴 쓰기 시작한다', arrows: 8, hits: 4, spots: [{ x: 14, y: 1.6 }, { x: 20, y: 3.2 }, { x: 26, y: 1.8 }, { x: 32, y: 2.9 }] },
+  { teach: '챕터 1 종합', arrows: 8, hits: 4, spots: [{ x: 16, y: 0.9 }, { x: 22, y: 3.6 }, { x: 28, y: 1.7 }, { x: 34, y: 2.8 }] },
+
+  // ── 챕터 2 — 공중 과녁과 연쇄 ────────────────────────────────
+  { teach: '공중 과녁은 맞으면 떨어진다', arrows: 6, hits: 2, spots: [{ x: 16, y: 5.0, kind: 'aerial' }, { x: 16, y: 1.6 }] },
+  { teach: '떨어지는 과녁이 아래를 친다 — 연쇄', arrows: 6, hits: 2, spots: [{ x: 18, y: 5.4, kind: 'aerial' }, { x: 18, y: 3.2 }, { x: 18, y: 1.4 }] },
+  { teach: '한 발로 여럿. 순서를 설계한다', arrows: 6, hits: 3, spots: [{ x: 20, y: 6.0, kind: 'aerial' }, { x: 20, y: 4.2 }, { x: 20, y: 2.6 }, { x: 20, y: 1.2 }] },
+  { teach: '연쇄 기둥이 둘', arrows: 7, hits: 4, spots: [{ x: 15, y: 5.2, kind: 'aerial' }, { x: 15, y: 2.8 }, { x: 24, y: 5.6, kind: 'aerial' }, { x: 24, y: 3.0 }] },
+  { teach: '연쇄 사이를 벌린다 — 조준이 정확해야 이어진다', arrows: 7, hits: 3, spots: [{ x: 22, y: 6.4, kind: 'aerial' }, { x: 22, y: 4.0 }, { x: 22, y: 1.8 }] },
+  { teach: '공중과 지상을 섞는다', arrows: 7, hits: 4, spots: [{ x: 14, y: 1.5 }, { x: 20, y: 5.8, kind: 'aerial' }, { x: 20, y: 3.0 }, { x: 27, y: 1.9 }] },
+  { teach: '높은 연쇄 — 화살이 올라가는 데 시간이 걸린다', arrows: 7, hits: 3, spots: [{ x: 26, y: 7.2, kind: 'aerial' }, { x: 26, y: 4.6 }, { x: 26, y: 2.2 }] },
+  { teach: '작은 연쇄 알갱이', arrows: 7, hits: 4, spots: [{ x: 21, y: 6.0, kind: 'aerial' }, { x: 21, y: 4.4, size: 0.8 }, { x: 21, y: 3.0, size: 0.8 }, { x: 21, y: 1.6, size: 0.8 }] },
+  { teach: '기둥 셋. 어디부터 무너뜨릴까', arrows: 8, hits: 5, spots: [{ x: 13, y: 4.8, kind: 'aerial' }, { x: 13, y: 2.4 }, { x: 21, y: 5.6, kind: 'aerial' }, { x: 21, y: 2.8 }, { x: 29, y: 5.0, kind: 'aerial' }, { x: 29, y: 2.5 }] },
+  { teach: '챕터 2 종합 — 보로로로록', arrows: 8, hits: 5, spots: [{ x: 18, y: 7.0, kind: 'aerial' }, { x: 18, y: 5.0 }, { x: 18, y: 3.2 }, { x: 26, y: 6.0, kind: 'aerial' }, { x: 26, y: 3.8 }, { x: 26, y: 1.8 }] },
+
+  // ── 챕터 3 — 이동 과녁과 바람 ───────────────────────────────
+  { teach: '과녁이 위아래로 움직인다 — 느리게', arrows: 6, hits: 2, spots: [{ x: 16, y: 2.6, kind: 'moving', ampY: 1.0, freq: 0.25 }, { x: 22, y: 2.0 }] },
+  { teach: '움직이는 과녁은 멈추는 순간이 있다', arrows: 6, hits: 2, spots: [{ x: 18, y: 3.0, kind: 'moving', ampY: 1.6, freq: 0.3 }, { x: 25, y: 2.2, kind: 'moving', ampY: 1.2, freq: 0.22 }] },
+  { teach: '좌우로 움직이는 과녁 — 리드 샷', arrows: 7, hits: 3, spots: [{ x: 20, y: 2.4, kind: 'moving', ampX: 2.2, freq: 0.28 }, { x: 27, y: 3.2 }, { x: 14, y: 1.6 }] },
+  { teach: '빨라진다', arrows: 7, hits: 3, spots: [{ x: 17, y: 2.8, kind: 'moving', ampY: 1.8, freq: 0.45 }, { x: 24, y: 2.0, kind: 'moving', ampX: 2.0, freq: 0.4 }, { x: 31, y: 3.0 }] },
+  { teach: '움직이는 공중 과녁 — 연쇄까지', arrows: 7, hits: 3, spots: [{ x: 20, y: 5.6, kind: 'aerial' }, { x: 20, y: 3.0, kind: 'moving', ampX: 1.8, freq: 0.3 }, { x: 20, y: 1.4 }] },
+  { teach: '바람이 분다 — 오른쪽으로 밀린다', arrows: 7, hits: 3, wind: 2.5, spots: [{ x: 20, y: 1.8 }, { x: 26, y: 2.8 }, { x: 32, y: 2.0 }] },
+  { teach: '바람은 주기적으로 변한다 — 읽을 수 있다', arrows: 7, hits: 3, wind: 3.5, spots: [{ x: 22, y: 2.0 }, { x: 29, y: 3.2 }, { x: 35, y: 2.4 }] },
+  { teach: '바람 + 낙차', arrows: 7, hits: 3, wind: 4.0, spots: [{ x: 24, y: 5.0 }, { x: 30, y: 1.6 }, { x: 36, y: 3.4 }] },
+  { teach: '바람 속의 이동 과녁', arrows: 8, hits: 4, wind: 3.0, spots: [{ x: 18, y: 2.4, kind: 'moving', ampY: 1.4, freq: 0.3 }, { x: 25, y: 3.0 }, { x: 31, y: 1.8, kind: 'moving', ampX: 2.0, freq: 0.25 }, { x: 37, y: 2.6 }] },
+  { teach: '챕터 3 종합', arrows: 8, hits: 4, wind: 4.5, spots: [{ x: 19, y: 6.2, kind: 'aerial' }, { x: 19, y: 3.4 }, { x: 27, y: 2.0, kind: 'moving', ampX: 2.4, freq: 0.32 }, { x: 34, y: 3.0 }] },
+
+  // ── 챕터 4 — 관통과 조합 ────────────────────────────────────
+  { teach: '관통 과녁 — 화살이 뚫고 지나간다', arrows: 6, hits: 2, spots: [{ x: 16, y: 2.2, kind: 'pierceable' }, { x: 22, y: 2.2, kind: 'pierceable' }] },
+  { teach: '일직선으로 세우면 한 발에 여럿', arrows: 6, hits: 3, spots: [{ x: 15, y: 2.0, kind: 'pierceable' }, { x: 21, y: 2.0, kind: 'pierceable' }, { x: 27, y: 2.0, kind: 'pierceable' }] },
+  { teach: '비스듬한 일렬 — 각도를 찾는다', arrows: 7, hits: 3, spots: [{ x: 16, y: 1.6, kind: 'pierceable' }, { x: 23, y: 3.0, kind: 'pierceable' }, { x: 30, y: 4.4, kind: 'pierceable' }] },
+  { teach: '관통 + 연쇄', arrows: 7, hits: 4, spots: [{ x: 18, y: 5.4, kind: 'aerial' }, { x: 18, y: 3.0, kind: 'pierceable' }, { x: 24, y: 3.0, kind: 'pierceable' }, { x: 24, y: 1.4 }] },
+  { teach: '바람 속의 관통', arrows: 7, hits: 3, wind: 3.5, spots: [{ x: 17, y: 2.4, kind: 'pierceable' }, { x: 24, y: 2.4, kind: 'pierceable' }, { x: 31, y: 2.4, kind: 'pierceable' }] },
+  { teach: '움직이는 관통줄', arrows: 7, hits: 3, spots: [{ x: 18, y: 2.6, kind: 'pierceable', ampY: 1.2, freq: 0.24 }, { x: 25, y: 2.6, kind: 'pierceable', ampY: 1.2, freq: 0.24 }, { x: 32, y: 2.6, kind: 'pierceable' }] },
+  { teach: '두 층 — 위와 아래를 나눠 푼다', arrows: 8, hits: 4, spots: [{ x: 17, y: 5.8, kind: 'aerial' }, { x: 23, y: 5.8, kind: 'aerial' }, { x: 17, y: 2.2 }, { x: 23, y: 2.2 }] },
+  { teach: '멀리 + 바람 + 이동', arrows: 8, hits: 4, wind: 4.0, spots: [{ x: 26, y: 2.0, kind: 'moving', ampY: 1.6, freq: 0.35 }, { x: 33, y: 3.4 }, { x: 39, y: 2.2 }, { x: 20, y: 1.4 }] },
+  { teach: '큰 연쇄 — 한 발로 화면을 무너뜨린다', arrows: 8, hits: 5, spots: [{ x: 22, y: 7.6, kind: 'aerial' }, { x: 22, y: 5.8 }, { x: 22, y: 4.2 }, { x: 22, y: 2.8 }, { x: 22, y: 1.4 }] },
+  { teach: '챕터 4 종합 — 지금까지 배운 전부', arrows: 8, hits: 5, wind: 3.5, spots: [{ x: 18, y: 6.4, kind: 'aerial' }, { x: 18, y: 3.6, kind: 'pierceable' }, { x: 25, y: 3.6, kind: 'pierceable' }, { x: 31, y: 2.0, kind: 'moving', ampX: 2.2, freq: 0.3 }, { x: 37, y: 3.2 }] },
+]
+
+function build(layout: Layout, i: number): StageDef {
+  const n = i + 1
+  const chapter = Math.floor(i / 10) + 1
+  const id = `${chapter}-${(i % 10) + 1}`
+  const stage: StageDef = {
+    id,
+    seed: seedFrom(id),
+    arrows: layout.arrows,
+    targetScore: need(layout.hits),
+    wind: layout.wind ?? 0,
+    targets: layout.spots.map((s) => mk(n, s)),
+  }
+  return stage
 }
 
-/** 6판: 같은 구조에서 거리만 2m씩 밀고 각크기를 h=0.0027로 조인다. */
-const S6: StageDef = {
-  id: '1-6',
-  seed: seedFrom('1-6'),
-  arrows: 6,
-  targetScore: need(3),
-  wind: 0,
-  targets: [
-    { kind: 'static', x: 22, y: 1.7, r: 0.0594, score: BASE },
-    { kind: 'static', x: 26, y: 3.0, r: 0.0708, score: BASE },
-    { kind: 'static', x: 30, y: 2.1, r: 0.0810, score: BASE },
-  ],
+export const STAGES: readonly StageDef[] = LAYOUTS.map(build)
+
+/** 이 판에서 무엇을 배우는가. 디버그·저작용. */
+export function stageTeach(index: number): string {
+  const l = LAYOUTS[clamp(Math.floor(index), 0, LAYOUTS.length - 1)]
+  return l?.teach ?? ''
 }
 
-/**
- * 7판: 과녁이 4개로 늘고 요구는 3개 그대로다 — **어느 셋을 고를지**가 판단이 된다.
- * 가까운 것이 작고 먼 것이 크다. 각크기는 h=0.00232로 같으니 무엇을 고르든 공평하다.
- */
-const S7: StageDef = {
-  id: '1-7',
-  seed: seedFrom('1-7'),
-  arrows: 6,
-  targetScore: need(3),
-  wind: 0,
-  targets: [
-    { kind: 'static', x: 20, y: 1.6, r: 0.0464, score: BASE },
-    { kind: 'static', x: 24, y: 2.9, r: 0.0558, score: BASE },
-    { kind: 'static', x: 28, y: 1.9, r: 0.0650, score: BASE },
-    { kind: 'static', x: 32, y: 2.6, r: 0.0743, score: BASE },
-  ],
+/** 판 번호(1부터)의 과녁 각크기. 밸런스 도구가 화면 반경 바닥을 검사하는 데 쓴다. */
+export function stageH(n: number): number {
+  return hFor(n)
 }
-
-/**
- * 8판: 7판과 배치가 완전히 같고 반경만 깎았다 (h=0.0023).
- * 어려워진 이유가 오직 "작아서"임이 눈으로 읽히게 하려는 배치다.
- */
-const S8: StageDef = {
-  id: '1-8',
-  seed: seedFrom('1-8'),
-  arrows: 6,
-  targetScore: need(3),
-  wind: 0,
-  targets: [
-    { kind: 'static', x: 20, y: 1.6, r: 0.0460, score: BASE },
-    { kind: 'static', x: 24, y: 2.9, r: 0.0554, score: BASE },
-    { kind: 'static', x: 28, y: 1.9, r: 0.0644, score: BASE },
-    { kind: 'static', x: 32, y: 2.6, r: 0.0737, score: BASE },
-  ],
-}
-
-/**
- * 9판: 챕터 1의 벽. 과녁 4개 중 3개를 22~34m에서, 화살 6발로 (h=0.0021 — 화면 바닥).
- * 여벌은 3발뿐이라 실수 세 번이면 끝난다.
- * 만작 직후에 놓는 습관이 안 잡혔으면 여기서 막힌다.
- */
-const S9: StageDef = {
-  id: '1-9',
-  seed: seedFrom('1-9'),
-  arrows: 6,
-  targetScore: need(3),
-  wind: 0,
-  targets: [
-    { kind: 'static', x: 22, y: 1.7, r: 0.0462, score: BASE },
-    { kind: 'static', x: 26, y: 2.9, r: 0.0548, score: BASE },
-    { kind: 'static', x: 30, y: 2.0, r: 0.0630, score: BASE },
-    { kind: 'static', x: 34, y: 2.7, r: 0.0716, score: BASE },
-  ],
-}
-
-/**
- * 10판: 종합. 공중 과녁을 26m 정지 과녁 **바로 위**에 얹었다 —
- * 맞히면 낙하하며 아래를 연쇄로 친다. 한 발로 두 개가 터지는 걸 한 번 보여주고 챕터를 닫는다.
- * 연쇄를 못 찾아도 정지 과녁 3개로 클리어되므로, 발견이 보상이지 관문이 아니다.
- * 공중 과녁만 조금 크게(h=0.0025, 정지는 0.00215) 두었다 — 처음 보는 것을 못 맞히면
- * 배울 기회 자체가 없다. 화살은 7발로 되돌려 마지막 판을 넉넉하게 만든다.
- */
-const S10: StageDef = {
-  id: '1-10',
-  seed: seedFrom('1-10'),
-  arrows: 7,
-  targetScore: need(3),
-  wind: 0,
-  targets: [
-    { kind: 'static', x: 18, y: 1.6, r: 0.0387, score: BASE },
-    { kind: 'static', x: 26, y: 1.8, r: 0.0559, score: BASE },
-    { kind: 'static', x: 32, y: 2.4, r: 0.0688, score: BASE },
-    { kind: 'aerial', x: 26, y: 6.4, r: 0.0662, score: BASE },
-  ],
-}
-
-export const STAGES: readonly StageDef[] = [S1, S2, S3, S4, S5, S6, S7, S8, S9, S10]
 
 /**
  * 범위를 벗어난 인덱스는 잘라서 준다.
- * 진행도가 챕터 끝을 넘었다고 게임이 죽으면 안 된다 — 다음 챕터가 붙기 전까지의 안전장치.
+ * 진행도가 마지막 챕터를 넘었다고 게임이 죽으면 안 된다 — 무한 모드가 붙기 전까지의 안전장치.
  */
 export function getStage(index: number): StageDef {
   const i = clamp(Math.floor(index), 0, STAGES.length - 1)
   const s = STAGES[i]
-  return s ?? S1
+  return s ?? (STAGES[0] as StageDef)
 }

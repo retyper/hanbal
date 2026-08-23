@@ -81,10 +81,21 @@ const HUD = {
   sightWLock: 2.4,
   /** 잠김 표식(끝점 사각형) 한 변 */
   sightDot: 3,
-  pipW: 3,
-  pipH: 11,
-  pipGap: 6,
-  pipMax: 12,
+  /**
+   * 남은 화살 숫자 크기 (px). 점수(16px)보다 확실히 크다 —
+   * 판 중에 계속 확인하는 값이고, 0이 되면 판이 끝나기 때문이다.
+   */
+  countPx: 30,
+  /** 점수 줄과 화살 숫자 사이 여백 */
+  countGap: 6,
+  /** 이 개수 이하면 숫자와 눈금이 경고색이 된다 */
+  lowArrows: 2,
+  /** 숫자 오른쪽에서 눈금이 시작하는 거리 */
+  pipStart: 22,
+  pipW: 4,
+  pipH: 16,
+  pipGap: 5,
+  pipMax: 10,
   /** 훈련치 아래 줄 간격 */
   subGap: 6,
   /** 경고 깜빡임 (Hz). sim 시계로 도는 값이라 프레임레이트와 무관하다. */
@@ -176,22 +187,36 @@ export function drawHud(
   ctx.fillText(cache.scoreText, HUD.padX, HUD.padY)
 
   // ── 남은 화살 ────────────────────────────────────────────────
+  //
+  // 큰 숫자 + 화살 눈금을 **둘 다** 보여준다. 숫자는 한눈에 읽히고, 눈금은 세지 않아도
+  // 남은 양이 덩어리로 보인다. 전에는 3×11px 회색 막대뿐이라 몇 발인지 알아보기 어려웠다.
   const left = w.arrowsLeft
-  const pipY = HUD.padY + HUD.lineGap + 4
+  const pipY = HUD.padY + HUD.lineGap + HUD.countGap
+  if (left !== cache.arrows) {
+    cache.arrows = left
+    cache.arrowsText = String(left)
+  }
+
+  // 마지막 한 발은 색으로도 말해준다 — 세고 있지 않아도 알아야 한다.
+  const low = left <= HUD.lowArrows
+  ctx.fillStyle = low ? THEME.gaugeWarn : THEME.hudText
+  ctx.font = `700 ${HUD.countPx}px system-ui, sans-serif`
+  ctx.textBaseline = 'top'
+  ctx.fillText(cache.arrowsText, HUD.padX, pipY)
+  const numW = ctx.measureText(cache.arrowsText).width
+
+  ctx.font = '500 12px system-ui, sans-serif'
+  ctx.fillStyle = THEME.hudDim
+  ctx.fillText('발', HUD.padX + numW + 4, pipY + HUD.countPx - 15)
+
+  // 눈금 — 숫자 오른쪽에. 너무 많으면 그리지 않는다(세는 게 아니라 덩어리로 읽는 장치다).
   if (left <= HUD.pipMax) {
-    // 개수가 적을 땐 숫자보다 눈금이 빠르게 읽힌다
-    ctx.fillStyle = THEME.hudDim
+    ctx.fillStyle = low ? THEME.gaugeWarn : THEME.hudDim
+    const pipX = HUD.padX + numW + HUD.pipStart
+    const pipTop = pipY + (HUD.countPx - HUD.pipH) * 0.5
     for (let i = 0; i < left; i++) {
-      ctx.fillRect(HUD.padX + i * (HUD.pipW + HUD.pipGap), pipY, HUD.pipW, HUD.pipH)
+      ctx.fillRect(pipX + i * (HUD.pipW + HUD.pipGap), pipTop, HUD.pipW, HUD.pipH)
     }
-  } else {
-    if (left !== cache.arrows) {
-      cache.arrows = left
-      cache.arrowsText = `화살 ${left}`
-    }
-    ctx.font = '500 13px system-ui, sans-serif'
-    ctx.fillStyle = THEME.hudDim
-    ctx.fillText(cache.arrowsText, HUD.padX, pipY)
   }
 
   // ── 스태미나 — 활 옆 ─────────────────────────────────────────
