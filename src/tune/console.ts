@@ -19,9 +19,11 @@ const GROUP_LABEL: Record<string, string> = {
   arrow: '화살 비행',
   wind: '바람',
   hit: '명중 반응',
+  score: '점수 · 링',
   chain: '연쇄 폭발',
   growth: '성장 스탯',
   offline: '오프라인 축적',
+  input: '입력 · 조준',
   sim: '시뮬 코어',
 }
 
