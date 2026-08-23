@@ -63,6 +63,7 @@ function newArcher(): ArcherState {
     steadyTime: 0,
     steadyBlend: 0,
     warn: 0,
+    strain: 0,
   }
 }
 
@@ -129,6 +130,7 @@ function resetArcher(a: ArcherState, staminaMax: number): void {
   a.steadyTime = 0
   a.steadyBlend = 0
   a.warn = 0
+  a.strain = 0
 }
 
 /**

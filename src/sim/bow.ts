@@ -10,7 +10,7 @@
  */
 import type { DerivedStats, InputFrame, Stats, World } from './types.ts'
 import { P } from '../tune/params.ts'
-import { clamp, clamp01, diminish, lerp, smoothstep, valueNoise } from '../core/math.ts'
+import { clamp, clamp01, diminish, lerp, valueNoise } from '../core/math.ts'
 import { spawnArrow } from './ballistics.ts'
 
 /**
@@ -187,50 +187,35 @@ export function stepArcher(w: World, input: InputFrame): void {
 
   // ── 떨림 ──
   //
-  // **당김의 앞부분은 떨리지 않는다.** 실제 활에서 떨림은 당기는 동작에서 오는 게 아니라
-  // 만작에서 '버티는' 동안, 버티는 힘이 모자랄수록 시간이 갈수록 커진다.
-  // 당기는 내내 흔들리면 조준이 불가능하고 활을 쏘는 감각 자체가 아니다.
+  // 떨림의 유일한 원인은 **빨간 바를 넘었는가**다. 시간도, 당김 진행도도 아니다.
   //
-  // 다만 게이트는 phase가 아니라 **당김 진행도**다. draw는 만작 플래그가 서기 46ms 전에
-  // 이미 한계의 99%에 닿기 때문에, phase로 걸면 "위력은 만작인데 떨림은 0"인 창이 열리고
-  // 그 창에 맞춰 놓는 게 유일한 최적해가 된다 — 만작 이후를 싸움터로 만들려는 설계가 죽는다.
+  // 빨간 바는 스태미나 게이지 위의 경계선이고, 그 위로는 완벽하게 안정하다 —
+  // 떨림 0, 발사 오차 0, 조준한 그대로 맞는다. 아래로 내려간 만큼만 떨린다.
+  //
+  // 왜 이렇게까지 하나: 제대로 쐈는데 빗나가면 플레이어는 자기가 뭘 잘못했는지 알 수 없다.
+  // 오차는 반드시 본인이 한 선택(오래 끌었다 / 덜 당기고 쐈다)의 결과여야 하고,
+  // 그 경계가 화면에 그려져 있어야 한다. 그래야 빗나가도 납득한다.
+  //
+  // strain 0 = 아직 안전, 1 = 완전 소진.
+  const redAt = dStaminaMax * P.stamina.steadyZone
+  a.strain = redAt > 0 ? clamp01((redAt - a.stamina) / redAt) : 1
+
   const holding = a.phase === 'drawing' || a.phase === 'full' || a.phase === 'collapsing'
-  if (holding) {
-    const fatigue = dStaminaMax > 0 ? clamp01(1 - a.stamina / dStaminaMax) : 1
+  if (holding && a.strain > 0) {
     // 호흡정지 목표 배수. FOCUS가 높을수록 더 깊이 눌린다.
     const steadyTarget = dSteadyMul > 0
       ? P.steady.tremorMul / dSteadyMul
       : P.steady.tremorMul
 
-    let amp = P.tremor.baseAmp
-    // 만작에 닿은 순간부터 rampStart에 걸쳐 onsetAmp -> 1 로 자란다.
-    // 고요함을 맡는 건 아래 grip(당김 진행도)이고, 여기는 **버틴 시간**만 본다 —
-    // 만작 순간의 떨림이 안 보일 만큼 작으면 '지금이다'를 읽을 근거가 화면에 없다.
-    // smoothstep이라 만작 진입에서 진폭이 툭 튀지 않는다.
-    const onset = P.tremor.rampStart > 0
-      ? lerp(P.tremor.onsetAmp, 1, smoothstep(a.holdTime / P.tremor.rampStart))
-      : 1
-    amp *= onset
-    // 다 자란 뒤에도 계속 버티면 더 커진다 — 버티는 힘이 바닥나는 중이라는 신호.
-    amp *= 1 + Math.max(0, a.holdTime - P.tremor.rampStart) * P.tremor.rampRate
-    // 지칠수록 (막판에 급격히)
-    amp *= 1 + Math.pow(fatigue, P.tremor.fatigueExp) * (P.tremor.fatigueMul - 1)
+    // 경계선을 갓 넘은 순간은 0에서 시작해 부드럽게 자란다 (growExp > 1).
+    // 툭 튀면 "왜 갑자기 흔들리지"가 되고, 경계선의 의미가 안 읽힌다.
+    let amp = P.tremor.baseAmp * Math.pow(a.strain, P.tremor.growExp)
     // STEADY 스탯
     amp *= dTremorMul
     // 호흡정지
     amp *= lerp(1, steadyTarget, a.steadyBlend)
     // 숨을 너무 오래 참으면 오히려 더 떨린다 — 실제 사격과 같다.
     if (a.steadyTime > P.steady.maxHold) amp *= P.steady.overholdPenalty
-    // 마지막 한 뼘에서 떨림이 스며든다. 만작에 닿는 순간 grip이 정확히 1이 되므로
-    // 당김 → 만작 전환에서 진폭이 튀지 않고, 무떨림 최대위력 창도 남지 않는다.
-    // span이 0이면 0/0으로 NaN이 새어나가 발사각이 통째로 죽는다. 슬라이더 최대값(1)이 그 경우다.
-    const span = 1 - P.tremor.gripFrom
-    const grip = dMaxDraw <= 0
-      ? 0
-      : span > 0
-        ? clamp01((a.draw / dMaxDraw - P.tremor.gripFrom) / span)
-        : a.draw >= dMaxDraw ? 1 : 0
-    amp *= grip
 
     // 2옥타브 합성. 단일 사인파는 예측 가능해 지루하고, 순수 난수는 위상을 못 읽어
     // 실력이 개입할 여지가 없다. 느린 스윙 위에 잔떨림이 얹혀야 "지금이다"가 생긴다.
@@ -268,12 +253,19 @@ function release(w: World, collapsed: boolean): void {
   const a = w.archer
   const power = a.draw
 
-  // 산포. STEADY 스탯이 통째로 줄이고, FOCUS가 릴리즈 관용 창을 따로 넓힌다 (GDD 4장).
-  let scatter = w.rng.gaussian() * P.bow.releaseScatter * dTremorMul * dScatterMul
+  // 오차의 크기를 정하는 두 가지. 둘 다 0이면 **화살은 조준한 그 자리에 정확히 간다.**
+  //
+  // 이게 이 게임의 약속이다. 빨간 바를 넘기지 않고 만작에서 놓았는데 빗나가면,
+  // 플레이어는 자기가 뭘 잘못했는지 알 수 없고 그냥 화가 난다.
+  // 오차는 반드시 플레이어가 한 선택(오래 끌었다 / 덜 당기고 쐈다)의 결과여야 한다.
+  const partial = dMaxDraw > 0 ? clamp01(1 - power / dMaxDraw) : 0
+  const errScale = a.strain + partial * P.bow.partialDrawPenalty
+
+  // gaussian()은 errScale이 0이어도 반드시 뽑는다. 안 뽑으면 발사 횟수에 따라
+  // 난수 스트림이 어긋나 같은 시드가 다른 판을 만든다 (A1).
+  let scatter = w.rng.gaussian() * P.bow.releaseScatter * errScale * dTremorMul * dScatterMul
   // 호흡정지는 떨림만이 아니라 난수 산포도 좁힌다. 안 그러면 참고 쏜 한 발이 순수 운이 된다.
   scatter *= lerp(1, P.bow.steadyScatterMul, a.steadyBlend)
-  // 덜 당기고 쏘면 화살이 흔들리며 날아간다.
-  scatter *= 1 + (1 - power) * P.bow.partialDrawPenalty
   // 붕괴는 큰 페널티. 피로는 여기 섞지 않는다 — 피로는 이미 떨림(읽을 수 있는 채널)을
   // 키우고 있고, 읽을 수 없는 난수까지 같이 키우면 실력이 개입할 여지가 줄어든다.
   if (collapsed) scatter *= P.bow.collapseScatterMul
