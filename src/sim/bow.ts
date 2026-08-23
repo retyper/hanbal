@@ -2,8 +2,19 @@
  * 활 — 당김 · 떨림 · 호흡정지 · 붕괴 · 릴리즈
  *
  * 이 파일이 게임의 심장이다. GDD 2장: "놓는 순간이 전부다."
- * 떨림(tremor)의 위상이 그대로 발사각에 들어간다. UI 장치 없이 물리만으로
+ *
+ * ★ 이 파일이 지키는 계약 — **빨간 바(P.stamina.steadyZone)**
+ *
+ *   스태미나가 최대치의 55% 위(안전 구간)에 있고 만작으로 놓으면
+ *   **떨림 0 · 난수 산포 0 · 조준한 그 자리에 정확히 맞는다.** (실측 발사 각오차 RMS 0.000 mrad)
+ *   그 아래로 내려간 만큼만 ArcherState.strain 이 자라고, 떨림과 오차가 전부 여기 비례한다.
+ *
+ *   오차는 반드시 플레이어가 한 선택(오래 끌었다 / 덜 당기고 쐈다)의 결과여야 한다.
+ *   제대로 쐈는데 빗나가면 자기가 뭘 잘못했는지 알 수 없고 그냥 화가 난다.
+ *
+ * 경계선을 넘은 뒤에는 떨림(tremor)의 위상이 그대로 발사각에 들어간다. UI 장치 없이 물리만으로
  * "흔들림이 중앙을 지날 때 놓기"라는 실력이 자연 발생하게 만드는 게 목적이다.
+ * 즉 안전 구간은 '읽을 게 없는' 구간이고, 그걸 넘긴 순간부터 읽기가 시작된다.
  *
  * 시간축은 오직 w.dt 누적. Date.now / performance.now 금지 (ARCHITECTURE A1).
  * 손맛 숫자는 전부 P (tune/params.ts). 이 파일에 매직넘버는 없다 (A2).
@@ -266,12 +277,14 @@ function release(w: World, collapsed: boolean): void {
   let scatter = w.rng.gaussian() * P.bow.releaseScatter * errScale * dTremorMul * dScatterMul
   // 호흡정지는 떨림만이 아니라 난수 산포도 좁힌다. 안 그러면 참고 쏜 한 발이 순수 운이 된다.
   scatter *= lerp(1, P.bow.steadyScatterMul, a.steadyBlend)
-  // 붕괴는 큰 페널티. 피로는 여기 섞지 않는다 — 피로는 이미 떨림(읽을 수 있는 채널)을
-  // 키우고 있고, 읽을 수 없는 난수까지 같이 키우면 실력이 개입할 여지가 줄어든다.
+  // 붕괴만 별도 배수를 받는다. strain은 여기서 또 곱하지 않는다 — errScale에 이미 한 번 들어갔고,
+  // 무엇보다 strain은 떨림(읽을 수 있는 채널)을 키우는 중이다.
+  // 읽을 수 없는 난수까지 같은 입력으로 키우면 실력이 개입할 여지가 줄어든다.
   if (collapsed) scatter *= P.bow.collapseScatterMul
 
-  // 이 한 줄이 이 게임의 전부다. 떨림 위상이 그대로 발사각이 된다.
-  // 흔들림이 중앙(offset≈0)을 지날 때 놓으면 정확하다. UI 없이 물리로 만들어지는 실력.
+  // 이 한 줄이 이 게임의 전부다.
+  // 안전 구간에서 만작이면 tremorOffset도 scatter도 정확히 0 → err === 0 → 조준각 그대로 나간다.
+  // 경계선을 넘은 뒤에야 떨림 위상이 발사각이 되고, 중앙(offset≈0)을 지날 때 놓으면 덜 빗나간다.
   const err = a.tremorOffset + scatter
   const angle = a.aimAngle + err
 

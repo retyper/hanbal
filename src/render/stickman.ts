@@ -1,12 +1,23 @@
 /**
  * 스틱맨 궁수 (GDD 8장) — 벡터 라인, 관절 5개(어깨/팔꿈치/손목/골반/무릎).
  *
- * 이 파일의 책임은 두 가지다.
+ * 이 파일의 책임은 세 가지다.
  *
  * 1. **떨림을 읽을 수 있게 그린다.** 조준 떨림은 실제로는 0.02 rad 미만이라 화면에서 1px도
- *    안 움직인다. 회전 중심을 어깨에 두고 P.tremor.minVisiblePx로 표시 배율을 역산해
- *    활 끝의 흔들림이 항상 최소 가시 진폭 이상 나오게 한다. 위상은 그대로 보존된다.
- * 2. **만작 한계를 자세로 말한다.** 만작은 1.0이 아니라 이 궁수의 한계(DerivedStats.maxDraw)다.
+ *    안 움직인다. 회전 중심을 앵커(턱)에 두고 P.tremor.minVisiblePx로 표시 배율을 역산해
+ *    화면 진폭이 카메라 배율과 무관하게 일정해지도록 한다. 위상은 그대로 보존된다.
+ *    화면 진폭 = minVisiblePx × strain^growExp × (STEADY·호흡정지 배수).
+ *    **안전 구간(strain=0)에서는 정확히 0이다.** sim이 tremorOffset을 0으로 주므로 곱해도 0 —
+ *    "빨간 바 위에서는 조준한 그 자리에 맞는다"는 약속이 화면에서도 흔들림 0으로 보여야 한다.
+ * 2. **안전 구간과 위험 구간을 자세로 나눈다.** 세 신호가 서로 잡아먹지 않도록 문법을 갈랐다:
+ *      굵기 = 당김·성장(brace/trueFull) · 형태 = 경계선 넘김(strain) · 색 = 붕괴 임박(warn)
+ *    strain은 "잠금이 풀린다"(팔꿈치·고개·활 휨이 조금씩 헐거워진다),
+ *    warn은 "주저앉는다"(척추·골반·무릎이 무너지고 앞팔이 처지고 색이 물든다).
+ *    두 단계가 다른 관절을 쓰기 때문에 "떨리기 시작함"과 "곧 놓쳐버림"이 겹쳐 보이지 않는다.
+ * 3. **사법(射法)대로 그린다** — docs/FORM.md. 척추는 수직, 다리는 곧게, 시위손은 턱에 붙고,
+ *    활손→노크→팔꿈치가 한 직선이며 팔꿈치는 화살선보다 위에 있다.
+ *    sim이 주는 궁수 좌표는 **어깨가 아니라 앵커(턱)** 다 — 화살이 출발하는 점이기도 하다.
+ * 4. **만작 한계를 자세로 말한다.** 만작은 1.0이 아니라 이 궁수의 한계(DerivedStats.maxDraw)다.
  *    STR 0이면 0.72에서 팔이 멈춘다. 그래서 자세의 '조여짐'을 draw에 직접 물려,
  *    시위가 안 당겨지는 초보는 영영 어정쩡한 자세에서 멈추고, 진짜 만작(1.0)에 닿은 궁수만
  *    등이 펴진 완성된 실루엣이 된다. effectiveStats()를 부르지 않는 이유는 그게 객체를
@@ -24,23 +35,31 @@ import type { Camera } from './camera.ts'
 
 /** 체격 (m). 화면 픽셀이 아니라 월드 치수라 카메라 줌을 그대로 따라간다. */
 const BODY = {
-  arm: 0.62,
   armBend: 0.05,
   torso: 0.5,
   neck: 0.1,
   head: 0.135,
-  hip: 0.06,
   stance: 0.26,
   kneeOut: 0.09,
   legMin: 0.35,
   legMax: 1.1,
+  /** 앵커(턱) → 활 그립까지, 화살선을 따른 거리. 만작 화살의 길이이기도 하다. */
+  span: 0.62,
+  /** 앵커에서 어깨까지 내려오는 거리. 턱 밑 앵커와 어깨의 실제 간격. */
+  jawDrop: 0.16,
+  /** 어깨가 앵커보다 뒤에 있는 거리. 턱이 앞어깨 위에 오는 사법 자세. */
+  shoulderBack: 0.05,
+  /** 활 그립이 화살선 아래에 있는 거리. 화살은 그립 위 받침을 지난다. */
+  gripDrop: 0.11,
+  /** 시위팔 팔꿈치가 앵커 뒤로 가는 거리. 활손→앵커→팔꿈치가 한 직선이 된다. */
+  elbowBack: 0.30,
+  /** 팔꿈치가 화살선보다 위에 있는 거리. 처지면 '닭날개'가 된다 (docs/FORM.md 2-5). */
+  elbowRise: 0.035,
   bowHalf: 0.46,
   bowCurve: 0.15,
   bowDrawCurve: 0.5,
-  restDraw: 0.09,
   arrowLen: 0.72,
   arrowHead: 0.13,
-  drawElbow: 0.17,
 } as const
 
 /**
@@ -54,7 +73,13 @@ const BODY = {
  * P.render 로 올라갔다 (lineBody / lineFullGain / lineTrueFullGain).
  */
 const LINE = {
-  minPx: 3,
+  /**
+   * 3 -> 3.6: 실측하니 챕터 1의 뒷판(1-7~1-10)은 720p에서 cam.scale이 26~28이라
+   * 굵기가 전부 이 하한에 걸린다. 즉 **이 값이 그 판들의 실제 굵기**다 —
+   * 0.105m라는 비율은 거기서 아무 일도 하지 않는다. 3px은 키 50px짜리 실루엣에서 너무 얇았다.
+   * 3.6이면 몸통 4.86 / 진짜 만작 5.3px이 되어 배경(#0b0e13)에서 떨어져 나온다.
+   */
+  minPx: 3.6,
   maxPx: 12,
   torsoMul: 1.35,
   limbMul: 1,
@@ -65,6 +90,8 @@ const LINE = {
   arrowMul: 0.4,
   /** 시위·화살이 사라지지 않을 픽셀 하한 */
   thinMinPx: 1.2,
+  /** 머리 반지름의 하한 (선 굵기 배수). 큰 배율에서는 0.135m가 이보다 크므로 아무 일도 안 한다. */
+  headMinMul: 1.2,
 } as const
 
 /**
@@ -72,27 +99,24 @@ const LINE = {
  * **성장이 자세로 드러나는 문턱**(braceFrom / trueFullAt / fullBowCurve / onsetFlash)은 P.render.
  */
 const POSE = {
-  /** 덜 조여진 자세에서 등이 뒤로 굽는 양 (m) */
-  slouchSpine: 0.16,
   /** 붕괴 경고에서 등이 더 굽는 양 (m) */
   warnSpine: 0.2,
   /** 진짜 만작에서 등이 펴지고 가슴이 열리는 양 (m) */
   fullArch: 0.07,
-  /** 덜 조여진 자세에서 골반이 뒤로 빠지는 거리 (m) */
-  slouchHip: 0.13,
+  /** 붕괴 임박에서만 골반이 뒤로 빠진다 (m). 그 외에는 어깨 바로 아래다 (FORM.md 2-2). */
   warnHip: 0.1,
   /** 등이 굽으면 척추의 세로 길이가 줄어든다 → 골반이 올라오고 무릎이 더 굽는다 */
-  slouchCompress: 0.12,
   warnCompress: 0.16,
-  /** 덜 조여진 앞팔(활 든 팔)은 팔꿈치가 안 펴진다 */
-  slouchArm: 2.4,
+  /** 붕괴 임박에서 활팔 팔꿈치가 굽으며 처진다 */
   warnArm: 2,
-  /** 덜 조여진 시위팔은 팔꿈치가 안 올라온다 (배수) */
+  /** 당김이 얕으면 시위팔 팔꿈치가 덜 올라온다 (배수). 초보의 처진 팔꿈치. */
   slouchElbow: 0.18,
-  /** 진짜 만작에서 시위팔 팔꿈치가 어깨선 위로 더 올라간다 (배수) */
+  /**
+   * 진짜 만작에서 시위팔 팔꿈치가 더 깊이 접힌다 (배수).
+   * 실측(scale 28.2): 어깨 뒤 3.6→7.9px · 조준선 아래 2.5→6.5px. 팔이 완전히 접힌 모양이다.
+   */
   fullElbow: 1.35,
-  /** 덜 조여진 자세의 발 간격 배수 */
-  slouchStance: 0.58,
+  /** 무릎이 굽는 양 (배수). 다리는 원래 곧고, 무너질 때만 굽는다 (FORM.md 2-1). */
   slouchKnee: 0.9,
   warnKnee: 1.4,
   /** 고개 기울기 (rad) — 조여질수록 활 쪽으로 붙고, 무너지면 앞으로 떨어진다 */
@@ -100,27 +124,34 @@ const POSE = {
   warnHeadDrop: 0.5,
   /** 앞팔 처짐 각 (rad) — 붕괴 경고 */
   warnDroop: 0.11,
+
+  // ── 경계선을 넘은 뒤(strain): "잠금이 풀린다" ────────────────────────
+  //
+  // 값은 전부 P.render.poseStrain* 로 올라갔다 (A2). 여기 남는 건 왜 그렇게 갈랐는가다.
+  //
+  // warn과 **다른 관절**을 쓴다. warn이 척추·골반·무릎으로 주저앉는 동안,
+  // strain은 조준을 붙들고 있던 잠금(앞팔 팔꿈치·시위팔 팔꿈치·고개 정렬·활 휨)만 헐겁게 한다.
+  // 관절이 겹치면 "떨리기 시작함"과 "곧 놓쳐버림"이 한 덩어리로 보여 두 단계가 사라진다.
+  // 크기도 warn의 1/3 이하로 둔다 — 이건 붕괴가 아니라 흔들리기 시작한 것뿐이다.
+  // (실측 strain 1 → 앞팔굽음 +0.6px·활휨 -3.4px·척추 -1.4px, warn 1 → +3.2/-5.7/골반 +2.8px.
+  //  '풀림'과 '무너짐'이 대략 1:3이라 같은 화면에서 두 단계로 읽힌다.)
 } as const
 
 /** 어깨(회전 중심)에서 활 끝까지의 반지름. 떨림 지렛대의 실제 길이다. */
-const TREMOR_LEVER = Math.hypot(BODY.arm, BODY.bowHalf)
+const TREMOR_LEVER = Math.hypot(BODY.span, BODY.bowHalf)
 
 /**
- * valueNoise 한 옥타브의 RMS (실측 0.497). 손맛 노브가 아니라 core/math.ts 파형의 성질이다.
+ * 표시용 떨림 상한 (rad, 약 26°). 이보다 크게 흔들면 팔이 만화처럼 돌아간다.
  *
- * tremorOffset은 baseAmp가 아니라 baseAmp × wave 이고 wave의 RMS는 1이 아니다.
- * 파고율을 1로 가정하면 화면 진폭이 minVisiblePx의 절반 이하가 되어 노브 이름이 거짓말을 한다 —
- * 만작 직후 활 끝이 1.2px밖에 안 움직여 위상을 읽을 수 없었다 (feel-lens).
+ * 0.26 -> 0.45: minVisiblePx의 뜻이 "최소 가시"에서 "최대"(9px)로 뒤집히면서 필요한 각이 커졌다.
+ * 챕터 1에서 가장 넓게 잡히는 구도(cam.scale≈26)에서 9px을 내려면 0.45 rad이 필요하다.
+ * 0.26으로 두면 그 배율에서 파형의 봉우리가 통째로 눌려 사각파처럼 꺾이고,
+ * 영점을 지나는 순간이 '스르륵'이 아니라 '툭'이 되어 위상 읽기가 무너진다.
+ *
+ * 이 상한이 실제로 일하는 곳은 더 멀리 잡히는 구도(scale 8~15)다 — 거기선 9px에 1.4 rad이
+ * 필요해 팔이 풍차가 된다. 상한이 각(rad)인 이유가 그것이다: 화면 px이 아니라 **관절의 한계**다.
  */
-const NOISE_RMS = 0.497
-
-/**
- * 표시용 떨림 상한 (rad, 약 15°). 이보다 크게 흔들면 팔이 만화처럼 돌아간다.
- * 기본 진폭이 2.5px일 때 최대 진폭이 10~20px가 되도록 잡은 값.
- */
-const VIS_TREMOR_MAX = 0.26
-/** 붕괴 경고에서 떨림이 추가로 커지는 비율 — "예고 없는 붕괴" 방지 (GDD 2장) */
-const WARN_TREMOR_BOOST = 0.85
+const VIS_TREMOR_MAX = 0.45
 
 /** 색을 고르는 이산 문턱. 램프에서 어느 색을 집을지의 판정일 뿐 손맛 노브가 아니다. */
 const ON = { warn: 0.02, flash: 0.5, trueFull: 0.5 } as const
@@ -131,7 +162,15 @@ const BODY_RAMP = ['#c9d2dc', '#ccc9cf', '#d0bfbd', '#d5b3aa', '#dba798', '#e29a
 
 /** 관절 좌표 캐시 (월드 m). 프레임마다 새 객체를 만들지 않기 위한 단일 인스턴스. */
 const rig = {
+  /**
+   * 앵커 = sim이 주는 궁수 좌표. **만작에서 시위 잡은 손이 오는 턱 밑 지점**이고,
+   * 동시에 화살이 출발하는 점이다 (docs/FORM.md 2-5).
+   * 예전엔 이 점을 어깨로 썼는데, 그러면 만작에서 시위손이 어깨 속으로 접혀 들어가
+   * 활을 쏘는 그림이 아니라 웅크린 그림이 된다 — 사용자가 "어정쩡하다"고 한 자세가 이것이었다.
+   */
   ax: 0, ay: 0,
+  /** 어깨 = 두 팔의 회전축. 앵커에서 아래·뒤로 내린 점이다. 척추의 꼭대기이기도 하다. */
+  sx: 0, sy: 0,
   ux: 1, uy: 0,
   vx: 0, vy: 1,
   /** 궁수가 바라보는 쪽 (+1 오른쪽 / -1 왼쪽). 등·골반은 조준각이 아니라 이 방향의 반대다. */
@@ -144,6 +183,8 @@ const rig = {
   /** 자세가 조여진 정도 0..1. 1 = 진짜 만작의 완성된 자세 */
   brace: 0,
   trueFull: 0,
+  /** 잠금이 풀린 정도 0..1. archer.strain을 자세용 곡선에 태운 값 (0 = 안전 구간) */
+  unlock: 0,
   /** 만작 진입 섬광 0..1 */
   flash: 0,
 }
@@ -152,15 +193,26 @@ const rig = {
  * 표시용 떨림 각. 실제 발사각(aimAngle + tremorOffset)은 건드리지 않는다 —
  * 여기서 키우는 건 "보이는 팔"뿐이고, 부호와 위상은 원본 그대로라
  * "흔들림이 중앙을 지날 때 놓기"라는 읽기가 성립한다 (GDD 2장).
+ *
+ * 역산의 기준은 **최대 진폭**이다. sim의 tremorOffset = baseAmp × strain^growExp × (배수) × wave 이고
+ * |wave| ≤ 1 이 파형의 구조로 보장되므로(valueNoise는 [-1,1) 해시 두 개의 lerp),
+ * baseAmp를 minVisiblePx로 환산해두면 화면 진폭이 그대로
+ *   minVisiblePx × strain^growExp × (STEADY·호흡정지 배수)
+ * 가 되고 스태미나 0에서 정확히 minVisiblePx에 닿는다. 노브 이름이 참이 된다.
+ *
+ * 파고율(RMS)로 나누던 예전 식은 쓰지 않는다. minVisiblePx가 "최소 가시 진폭"이던 시절엔
+ * **평균적으로** 그만큼 움직여야 했지만, 지금은 "최대"라서 기준이 봉우리로 바뀌었다.
+ * RMS로 정규화하면 봉우리가 2배로 튀어 노브가 다시 거짓말을 한다.
+ *
+ * warn 부스트도 없앴다. 떨림은 strain만의 채널이어야 두 단계가 구분된다 —
+ * warn은 색과 무너지는 자세로 말한다. (경고 시점엔 strain이 이미 0.67 이상이라 충분히 크다.)
  */
-function visualTremor(cam: Camera, offset: number, warn: number): number {
-  // 2옥타브 합성의 RMS. 두 옥타브가 독립이라 hypot으로 따라간다 — fastRatio를 튜닝해도 안 어긋난다.
-  const waveRms = NOISE_RMS * Math.hypot(1 - P.tremor.fastRatio, P.tremor.fastRatio)
-  const rawPx = P.tremor.baseAmp * TREMOR_LEVER * cam.scale * waveRms
+function visualTremor(cam: Camera, offset: number): number {
+  const rawPx = P.tremor.baseAmp * TREMOR_LEVER * cam.scale
   const gain = rawPx > 1e-6 ? P.tremor.minVisiblePx / rawPx : 1
-  const boosted = offset * gain * (1 + warn * WARN_TREMOR_BOOST)
-  // tanh 소프트 클램프 — 단조증가라 위상이 보존되고, 기본 진폭 부근에서는 거의 선형이다.
-  return VIS_TREMOR_MAX * Math.tanh(boosted / VIS_TREMOR_MAX)
+  // tanh 소프트 클램프 — 단조증가라 위상(영점을 지나는 순간)이 보존된다.
+  // 화면 진폭 구간에서는 거의 선형이고, 카메라가 크게 물러났을 때만 부드럽게 눕는다.
+  return VIS_TREMOR_MAX * Math.tanh(offset * gain / VIS_TREMOR_MAX)
 }
 
 function computeRig(cam: Camera, w: World): void {
@@ -185,13 +237,19 @@ function computeRig(cam: Camera, w: World): void {
   rig.trueFull = trueFullAt < 1
     ? smoothstep((d - trueFullAt) / (1 - trueFullAt))
     : 0
+
+  // 빨간 바 위(strain=0)에서는 정확히 0 — 자세도 완전히 잠겨 있어야 "지금 쏘면 맞는다"가 읽힌다.
+  // 넘어간 뒤에만 자란다. brace(당김)를 깎지 않고 별도 채널로 두는 이유는,
+  // 깎으면 오래 버틴 숙련자가 시위도 못 당기는 초보처럼 보여 만작 한계의 신호가 지워지기 때문이다.
+  const strain = clamp01(a.strain)
+  rig.unlock = strain > 0 ? Math.pow(strain, P.render.poseStrainOnset) : 0
   // 당기는 동안은 떨리지 않는다. 만작에 '닿는 순간'을 이 섬광이 표시한다.
   // collapsing은 제외한다 — 붕괴 직후에도 holdTime이 0이라, 그대로 두면 벌이 보상처럼 번쩍인다.
   rig.flash = atFull && a.holdTime < P.render.poseOnsetFlash
     ? 1 - a.holdTime / P.render.poseOnsetFlash
     : 0
 
-  const dir = a.aimAngle + visualTremor(cam, a.tremorOffset, warn) - warn * POSE.warnDroop
+  const dir = a.aimAngle + visualTremor(cam, a.tremorOffset) - warn * POSE.warnDroop
   const ux = Math.cos(dir)
   const uy = Math.sin(dir)
   rig.ux = ux
@@ -200,12 +258,23 @@ function computeRig(cam: Camera, w: World): void {
   rig.vy = ux
   rig.face = ux >= 0 ? 1 : -1
 
-  rig.hx = a.x + ux * BODY.arm
-  rig.hy = a.y + uy * BODY.arm
+  // 조준 프레임 기준 "위" = v. 활은 화살에 수직으로 서므로 몸의 상하도 이 축을 따른다.
+  const vx = rig.vx
+  const vy = rig.vy
 
-  const pull = BODY.restDraw + (BODY.arm - BODY.restDraw) * d
-  rig.nockX = rig.hx - ux * pull
-  rig.nockY = rig.hy - uy * pull
+  // 어깨는 앵커(턱)에서 아래·뒤로. 이 두 값이 사법의 T자를 만든다 (docs/FORM.md 1).
+  rig.sx = a.x - vx * BODY.jawDrop - ux * BODY.shoulderBack
+  rig.sy = a.y - vy * BODY.jawDrop - uy * BODY.shoulderBack
+
+  // 활 그립은 화살선보다 조금 아래다 — 화살은 그립 위의 받침을 지나간다.
+  // 그래서 활팔은 어깨에서 거의 수평으로 뻗고, 화살만 턱에서 살짝 내려온다. 실제 사법 그대로다.
+  rig.hx = a.x + ux * BODY.span - vx * BODY.gripDrop
+  rig.hy = a.y + uy * BODY.span - vy * BODY.gripDrop
+
+  // 노크는 화살선 위를 오간다. d=만작이면 앵커(턱)에 정확히 닿고,
+  // maxDraw가 0.72에서 멈추는 초보는 턱 앞에서 멈춘다 — "아직 힘이 모자라다"가 자세로 읽힌다.
+  rig.nockX = a.x + ux * (1 - d) * BODY.span
+  rig.nockY = a.y + uy * (1 - d) * BODY.span
 }
 
 /** 활 손 화면 좌표 — HUD가 스태미나 게이지를 활 옆에 붙이는 데 쓴다. */
@@ -270,7 +339,8 @@ export function drawArcher(
   const warn = rig.warn
   const brace = rig.brace
   const trueFull = rig.trueFull
-  const slouch = 1 - brace
+  const unlock = rig.unlock
+
   const face = rig.face
   const ramp = (warn * 5 + 0.5) | 0
 
@@ -292,23 +362,28 @@ export function drawArcher(
   //
   // 등이 굽으면 척추의 세로 길이가 줄고 골반이 올라온다 → 무릎이 더 굽는다.
   // 발은 지면(y=0)에 그대로 붙어 있어야 주저앉는 것처럼 읽힌다.
-  const compress = slouch * POSE.slouchCompress + warn * POSE.warnCompress
-  const hipBack = BODY.hip + slouch * POSE.slouchHip + warn * POSE.warnHip
-  const pelvisX = rig.ax - face * hipBack
-  const pelvisY = rig.ay - BODY.torso * (1 - compress)
+  //
+  // ★ 척추는 수직이다 (docs/FORM.md 2-2). 위를 조준하든 아래를 조준하든 굽지 않는다.
+  //   골반은 어깨 **바로 아래**에 놓인다 — 예전엔 기본으로 뒤에 offset을 줘서
+  //   가만히 서 있어도 몸이 젖혀져 보였고, 그게 "어정쩡하다"의 절반이었다.
+  //   굽는 건 붕괴 임박(warn)뿐이고, 그때만 골반이 뒤로 빠진다.
+  const compress = warn * POSE.warnCompress
+  const hipBack = warn * POSE.warnHip
+  const pelvisX = rig.sx - face * hipBack
+  const pelvisY = rig.sy - BODY.torso * (1 - compress)
   const legSpan = clamp(pelvisY, BODY.legMin, BODY.legMax)
   const footY = pelvisY - legSpan
-  const stance = BODY.stance * lerp(POSE.slouchStance, 1, brace)
-  const kneeOut = BODY.kneeOut * (1 + slouch * POSE.slouchKnee + warn * POSE.warnKnee)
+  // 다리는 곧게, 어깨너비로 벌린다. 당김이나 긴장으로 자세가 흔들리지 않는다 (FORM.md 2-1).
+  const stance = BODY.stance
+  const kneeOut = BODY.kneeOut * (1 + warn * POSE.warnKnee)
 
-  // 척추는 뒤(조준 반대쪽)로 굽는다. 진짜 만작에서만 반대로 젖혀져 가슴이 열린다.
-  const spineBend = -face * (
-    slouch * POSE.slouchSpine + warn * POSE.warnSpine - trueFull * POSE.fullArch
-  )
+  // 척추가 굽는 유일한 경우는 붕괴 임박이다 (FORM.md 3-4). 그 외에는 정확히 직선.
+  // strain(경계선 넘김)은 척추를 건드리지 않는다 — 그건 떨림과 팔꿈치가 말한다.
+  const spineBend = -face * warn * POSE.warnSpine
 
   ctx.strokeStyle = bodyCol
   ctx.lineWidth = torsoW
-  spine(ctx, cam, rig.ax, rig.ay, pelvisX, pelvisY, spineBend)
+  spine(ctx, cam, rig.sx, rig.sy, pelvisX, pelvisY, spineBend)
 
   // 뒷다리 먼저(어둡게) → 원근
   ctx.strokeStyle = THEME.bodyDim
@@ -318,41 +393,59 @@ export function drawArcher(
   ctx.lineWidth = limbW
   limb(ctx, cam, pelvisX, pelvisY, pelvisX + face * stance, footY, face * kneeOut)
 
-  // 머리 — 조여질수록 활 쪽으로 붙고, 무너지면 앞으로 떨어진다.
-  const tilt = brace * POSE.braceHeadTilt + warn * POSE.warnHeadDrop
+  // 머리 — 조여질수록 활 쪽으로 붙고, 경계선을 넘으면 그 정렬이 헐거워지고, 무너지면 앞으로 떨어진다.
+  // strain은 '붙어 있던 게 떨어지는' 것이고 warn은 '고개를 떨구는' 것이라 방향이 서로 반대다.
+  const tilt = brace * POSE.braceHeadTilt * (1 - unlock * P.render.poseStrainHead)
+    + warn * POSE.warnHeadDrop
   const upX = Math.sin(tilt) * rig.ux
   const upY = Math.cos(tilt) + Math.sin(tilt) * rig.uy
-  const neckX = rig.ax + upX * BODY.neck
-  const neckY = rig.ay + upY * BODY.neck
+  const neckX = rig.sx + upX * BODY.neck
+  const neckY = rig.sy + upY * BODY.neck
   const headSpan = BODY.neck + BODY.head
-  const headX = rig.ax + upX * headSpan
-  const headY = rig.ay + upY * headSpan
-  line(ctx, cam, rig.ax, rig.ay, neckX, neckY)
+  const headX = rig.sx + upX * headSpan
+  const headY = rig.sy + upY * headSpan
+  line(ctx, cam, rig.sx, rig.sy, neckX, neckY)
   // 머리는 채운다. 선만으로는 실루엣의 무게중심이 생기지 않는다 (GDD 8장 실루엣 대비).
+  // 하한을 2px 상수가 아니라 선 굵기에 묶는다: 굵기가 하한에 걸리는 작은 배율에서
+  // 머리 반지름(0.135m×scale)이 선보다 얇아져 목선에 먹혀버렸다. 머리가 없으면 실루엣이 아니다.
   ctx.beginPath()
   ctx.arc(
     worldToScreenX(cam, headX), worldToScreenY(cam, headY),
-    Math.max(BODY.head * cam.scale, 2), 0, Math.PI * 2,
+    Math.max(BODY.head * cam.scale, lw * LINE.headMinMul), 0, Math.PI * 2,
   )
   ctx.fillStyle = bodyCol
   ctx.fill()
   ctx.stroke()
 
   // ── 시위 당기는 팔 (뒤쪽) ─────────────────────────────────────
-  // 덜 당겨진 팔은 팔꿈치가 안 올라온다 — 초보가 "어정쩡한 지점에서 멈춘" 그 모양.
-  // 진짜 만작에서만 팔꿈치가 화살선 위로 확실히 올라선다.
+  // 덜 당겨진 팔은 팔꿈치가 안 접힌다 — 초보가 "어정쩡한 지점에서 멈춘" 그 모양.
+  // 진짜 만작에서만 팔꿈치가 어깨 뒤로 깊게 접혀 팔이 완전히 접힌 실루엣이 된다.
   ctx.strokeStyle = THEME.bodyDim
   ctx.lineWidth = backW
-  const drawElbow = BODY.drawElbow
+  //
+  // ★ 사법의 핵심 (docs/FORM.md 2-5): 활손 → 노크 → 아랫팔 → 팔꿈치가 **한 직선**이고,
+  //   팔꿈치는 화살선보다 **위**에 있다. 아래로 처지면 '닭날개'라 불리는 초보 자세가 된다.
+  //   그래서 팔꿈치를 노크에서 화살선 뒤로 곧게 물리고, v축으로 살짝만 들어올린다.
+  //   당김이 얕을수록(초보) 이 들어올림이 줄어 팔꿈치가 처진다.
+  const elbowRise = BODY.elbowRise
     * lerp(POSE.slouchElbow, 1, brace)
     * lerp(1, POSE.fullElbow, trueFull)
-  limb(ctx, cam, rig.ax, rig.ay, rig.nockX, rig.nockY, -drawElbow)
+    * (1 - unlock * P.render.poseStrainElbow)
+  const elbowX = rig.nockX - rig.ux * BODY.elbowBack + rig.vx * elbowRise
+  const elbowY = rig.nockY - rig.uy * BODY.elbowBack + rig.vy * elbowRise
+  ctx.beginPath()
+  ctx.moveTo(worldToScreenX(cam, rig.sx), worldToScreenY(cam, rig.sy))
+  ctx.lineTo(worldToScreenX(cam, elbowX), worldToScreenY(cam, elbowY))
+  ctx.lineTo(worldToScreenX(cam, rig.nockX), worldToScreenY(cam, rig.nockY))
+  ctx.stroke()
 
   // ── 활 ────────────────────────────────────────────────────────
   // 당길수록 활이 더 휜다. 진짜 만작이면 최대로 휘고, 경고가 오르면 경고색으로 물든다.
+  // 경계선을 넘으면 휨이 조금 풀린다 — 활을 온전히 붙들고 있지 못한다는 뜻이다.
   const curve = BODY.bowCurve
     * (1 + rig.draw * BODY.bowDrawCurve)
     * (1 + trueFull * P.render.poseFullBowCurve)
+    * (1 - unlock * P.render.poseStrainBow)
   const tipAx = rig.hx + rig.vx * BODY.bowHalf
   const tipAy = rig.hy + rig.vy * BODY.bowHalf
   const tipBx = rig.hx - rig.vx * BODY.bowHalf
@@ -383,12 +476,16 @@ export function drawArcher(
   ctx.stroke()
 
   // ── 앞팔(활 잡은 팔) ──────────────────────────────────────────
-  // 덜 조여지면 팔꿈치가 안 펴지고, 경고가 오르면 더 굽으며 처진다.
+  // 덜 조여지면 팔꿈치가 안 펴지고, 경계선을 넘으면 펴져 있던 팔꿈치가 살짝 풀리고,
+  // 경고가 오르면 확실히 더 굽으며 처진다(위의 warnDroop). 세 원인이 같은 관절에 다른 크기로 쌓인다.
   ctx.strokeStyle = bodyCol
   ctx.lineWidth = limbW
+  // 활팔은 어깨에서 활 그립까지 **곧게** 뻗는다 (FORM.md 2-4). 굽는 건 잠금이 풀렸을 때(strain)와
+  // 무너질 때(warn)뿐이다. 당김이 얕다고 앞팔을 굽히지 않는다 — 초보의 미숙함은 시위손이
+  // 턱까지 못 오는 것으로 이미 말하고 있고, 여기까지 굽히면 그냥 자세가 틀린 그림이 된다.
   limb(
-    ctx, cam, rig.ax, rig.ay, rig.hx, rig.hy,
-    -BODY.armBend * (1 + slouch * POSE.slouchArm + warn * POSE.warnArm),
+    ctx, cam, rig.sx, rig.sy, rig.hx, rig.hy,
+    -BODY.armBend * (unlock * P.render.poseStrainArm + warn * POSE.warnArm),
   )
 
   // ── 물린 화살 ─────────────────────────────────────────────────

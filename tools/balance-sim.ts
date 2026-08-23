@@ -5,9 +5,18 @@
  * "느낌상 쉬운 것 같다"를 숫자로 대체하는 게 이 파일의 존재 이유다.
  *
  * 실행: npm run balance -- --seed=12345 --runs=200
+ *       npm run balance -- --floor=1     보유 화살이 바닥난 사람이 겪는 판
+ *       npm run balance -- --preview=1   미저작 챕터(바람·이동·공중) 프리뷰
  *
  * 봇은 **World를 읽어 InputFrame을 만드는 함수**일 뿐이다.
  * World를 직접 건드리면 측정값이 게임이 아니라 봇을 재는 게 되므로 절대 쓰지 않는다.
+ *
+ * ── 안전 구간 계측 (2026-08-23 떨림 재설계) ──
+ *
+ * 새 활 모델은 "스태미나가 빨간 바 위에 있으면 오차가 정확히 0"을 약속한다.
+ * 이 도구는 그 약속이 지켜지는지를 매 발마다 잰다 — 발사 시점 `ArcherState.strain`이
+ * 0이면 안전 발, 아니면 넘긴 발로 갈라 명중률과 각오차 RMS를 따로 집계한다.
+ * 안전 발의 각오차 RMS가 0이 아니게 되는 순간 그건 sim의 회귀다.
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
@@ -70,29 +79,38 @@ function mixSeed(a: number, b: number, c: number): number {
 // params.ts(P)에 넣지 않고 여기 둔다. 밸런스 담당이 "봇 실력 자체"를 튜닝하고 싶어지면
 // params.ts에 bot 섹션을 요청할 것.
 //
-// ── 새 활 모델에서의 '실력'이란 무엇인가 ──
+// ── 떨림 재설계(2026-08-23) 이후 '실력'이란 무엇인가 ──
 //
-// 1. 만작은 0.375초 만에 온다. 당김의 앞 2/3은 **떨림이 0**이고(gripFrom 0.85부터 스며든다),
-//    만작에서 onsetAmp(0.60)배로 시작해 계속 자란다 — 만작 순간부터 이미 읽을 수 있는 크기다.
-//    즉 **만작에 닿는 순간이 가장 정확하다.** "떨림이 잦아들기를 기다린다"는 옛 전략은 순손해다.
-// 2. 그런데 조준은 당기는 0.375초 안에 끝나야 한다. 안 끝났는데 만작이 오면 빗나간다.
-//    → 그래서 조준을 **시간에 따라 수렴하는 오차**로 모델링한다 (aimTau).
-//    실력이 낮을수록 늦게 수렴하고 바닥 오차(aimFloor)도 크다.
-// 3. 거리 감각도 실력이다. 초보는 자기 화살이 실제보다 빠르다고 착각해(velBias)
-//    낮게 쏴서 못 미친다. 난수가 아니라 **체계적이고 학습 가능한** 오차다.
-// 4. 위상 읽기는 만작 직후 짧은 창에서만 이득이다. 창이 길어질수록 진폭이 자라
-//    "좋은 위상 × 큰 진폭"이 "아무 위상 × 작은 진폭"보다 나빠진다.
+// 새 활 모델의 핵심: 스태미나가 빨간 바(P.stamina.steadyZone = 최대치의 55%) **위에 있는 동안
+// 떨림도 발사 산포도 정확히 0이다.** 만작에서 그 안에 놓으면 조준한 자리에 그대로 맞는다.
+// 아래로 내려간 만큼만 ArcherState.strain이 자라고 오차가 전부 여기 비례한다.
 //
-// 요약: 실력 = 조준 수렴 속도 × 거리 감각 × 릴리즈 타이밍(만작 직후) × 위상 읽기.
+// 그래서 옛 봇의 전략("떨림 위상의 최소점을 노린다")은 통째로 무의미해졌다 —
+// 안전 구간엔 읽을 위상 자체가 없다. 난이도의 축이 두 개로 갈렸다:
+//
+//   1. **조준 정확도** — 이제 이게 주된 축이다. 안전 구간 안에서는 명중/빗나감을
+//      오직 봇의 조준 오차가 정한다. 그래서 조준 오차를 명시적 σ(rad)로 두고
+//      두 가지 사람 단위로 같이 적는다:
+//        · 30m 과녁에서 몇 cm 벗어나는가  = σ × 30m × 100
+//        · 화면에서 몇 px 어긋나는가      ≈ σ × 뷰포트 폭(px)
+//          (카메라가 사거리 전체를 화면 폭에 맞추므로 scale ≈ W/d, 즉 px 오차 ≈ σ×W.
+//           1200px 기준. 사람은 마우스로 겨누므로 이 단위가 실제 사람 오차의 하한이다 —
+//           마우스 1px ≈ 0.00083 rad. 이보다 정밀한 봇은 사람이 아니다.)
+//   2. **릴리즈 규율** — 안전 구간 안에 놓았는가. 실제 초보는 확신이 안 서서 계속 겨누고,
+//      그러다 바를 넘겨 떨리기 시작하면 더 못 쏜다. 망설임을 hold 계획으로,
+//      "빨간 바를 보고 놓는 반응"을 strainBail로 모델링한다.
+//
+// 실측(assumedStats 기준): 만작 도달 0.36~0.38s, 만작 후 안전 구간 약 1.6s,
+// 붕괴까지 약 4.2s. STAMINA를 올리면 안전 구간이 1.64s → 3.55s(스탯 25)까지 넓어진다.
 
 type BotKind = 'novice' | 'average' | 'expert'
 
 interface BotModel {
   /** 사이클 시작 순간의 조준 오차 σ (rad) */
   aimAcquire: number
-  /** 아무리 오래 겨눠도 남는 조준 오차 σ (rad) */
+  /** 아무리 오래 겨눠도 남는 조준 오차 σ (rad). **새 모델에서 실력의 주된 축.** */
   aimFloor: number
-  /** 조준 수렴 시간상수 (s). 만작까지가 0.375s라 이 값이 실력의 절반이다. */
+  /** 조준 수렴 시간상수 (s). 만작까지가 0.37s라 이 값이 "당기며 조준을 끝내는가"를 정한다. */
   aimTau: number
   /** 화살 초속 오판 비율. +면 빠르다고 착각 → 낮게 쏴서 못 미친다. */
   velBias: number
@@ -100,17 +118,27 @@ interface BotModel {
   windAware: number
   /** 이동 과녁 리드를 얼마나 맞추는가 0..1 */
   leadAware: number
-  /** 만작 후 놓기 시작하는 시각 (s). 위상을 못 읽는 봇은 [holdLo, holdHi]에서 뽑는다. */
+  /** 평소 망설임: 만작 후 [holdLo, holdHi]에서 뽑은 시각에 놓는다 (s) */
   holdLo: number
-  /** 이 시각에 닿으면 위상과 무관하게 놓는다 (s) */
   holdHi: number
-  /** |tremorOffset| <= tol × tremorAmp 이면 놓는다. 1 이상이면 위상을 못 읽는다는 뜻. */
-  phaseTol: number
-  /** 위상 인지 지연 (스텝). 본 것을 즉시 못 놓는다 — 이게 위상 읽기의 실력 상한을 만든다. */
+  /** 이 확률로 "망설임 발작"이 나서 [lapseLo, lapseHi]에서 뽑는다 — 이게 바를 넘기는 경로다 */
+  lapseChance: number
+  lapseLo: number
+  lapseHi: number
+  /**
+   * 규율: 감지한 strain이 이 값을 넘으면 계획과 무관하게 놓는다.
+   * 0에 가까울수록 "빨간 바를 넘기지 않는다"는 규율이 강하다. 1이면 아예 신경 쓰지 않는다.
+   */
+  strainBail: number
+  /** strain 인지 지연 (스텝). 넘긴 걸 즉시 알아채지 못한다. */
   reactSteps: number
   /** 만작 후 이 시간이 지나면 호흡정지를 쓴다. Infinity면 안 쓴다. */
   steadyAfter: number
-  /** 이 비율 이상 스태미나가 찰 때까지 쉰다 */
+  /**
+   * 이 비율 이상 스태미나가 찰 때까지 쉰다.
+   * 빨간 바가 0.55이므로 이 값이 안전 구간의 **폭**을 직접 정한다 —
+   * 0.80에서 잡으면 만작 후 약 0.9초, 0.95에서 잡으면 약 1.5초가 남는다.
+   */
   restFrac: number
   /** 붕괴 경고가 뜨면 즉시 놓는가 */
   bailsOnWarn: boolean
@@ -118,66 +146,91 @@ interface BotModel {
 
 const BOTS: Readonly<Record<BotKind, BotModel>> = {
   /**
-   * 초보. 조준이 느리게 수렴하고 바닥 오차가 크다. 거리 감각이 없어 멀수록 못 미친다.
-   * 확신이 안 서서 만작을 한참 지나 끌다 놓는다 — 그 사이 떨림이 다 자라 있다.
-   * 붕괴 경고를 무시해서 가끔 스스로 무너진다.
+   * 초보. 조준 바닥 오차 σ=0.0075 rad = **30m에서 22.5cm**, 화면에서 약 9px.
+   * 겨누는 데 오래 걸리고(tau 0.45s) 거리 감각이 없어(velBias 2%) 멀수록 못 미친다.
+   *
+   * 릴리즈 규율이 없다 — 확신이 안 서서 만작 후 0.4~3.8초를 끈다. 안전 구간이 약 1.1초라
+   * 다섯 발 중 넷은 바를 넘기고, 가끔은 붕괴까지 간다. 넘긴 걸 알아채지도 못하고
+   * (strainBail 1) 붕괴 경고도 무시한다(bailsOnWarn false).
+   * 오래 끄는 만큼 조준은 더 붙지만 그 사이 떨림이 자라 결국 손해다 — 실제 초보가 그렇다.
    */
   novice: {
-    aimAcquire: 0.045,
-    aimFloor: 0.0105,
-    aimTau: 0.55,
-    velBias: 0.022,
+    aimAcquire: 0.040,
+    aimFloor: 0.0075,
+    aimTau: 0.45,
+    velBias: 0.020,
     windAware: 0,
     leadAware: 0,
-    holdLo: 0.50,
-    holdHi: 1.50,
-    phaseTol: 2,
+    holdLo: 0.40,
+    holdHi: 3.80,
+    lapseChance: 0,
+    lapseLo: 0,
+    lapseHi: 0,
+    strainBail: 1,
     reactSteps: 0,
     steadyAfter: Number.POSITIVE_INFINITY,
-    // 초보는 팔이 회복되기를 기다릴 줄 모른다. 그래서 가끔 만작 도중에 스스로 무너진다.
-    restFrac: 0.38,
+    // 팔이 회복되기를 기다릴 줄 모른다. 안전 구간을 조금 깎아먹고 시작한다.
+    restFrac: 0.85,
     bailsOnWarn: false,
   },
   /**
-   * 보통. 만작 전에 조준이 대체로 붙는다. 만작 후 0.3~0.8초 창에서 놓고,
-   * 위상은 반쯤 읽는다 — 허용치가 느슨하고(0.45) 인지 지연이 50ms라
-   * "좋은 위상을 봤다"와 "좋은 위상에서 놓았다" 사이가 벌어진다.
+   * 보통. 조준 바닥 오차 σ=0.0050 rad = **30m에서 15cm**, 화면에서 약 6px.
+   * 만작 전에 조준이 대체로 붙는다(tau 0.22s).
+   *
+   * 규율이 **계획에는 있고 반응에는 없다.** 평소엔 만작 후 0.15~0.85초에 놓아 안전 구간
+   * 한복판이지만, 18% 확률로 망설임이 터져 1.6~3.2초까지 끈다. 망설이는 동안에는 바를
+   * 보고 있지도 않아서(strainBail 0.9) 깊이 넘긴 채로 놓는다 — 사람이 실제로 그렇다.
+   * 붕괴 경고가 뜨면 그때는 놓으므로 넘김의 깊이가 strain 0.69 근처에서 잘린다.
    */
   average: {
-    aimAcquire: 0.030,
-    aimFloor: 0.0066,
-    aimTau: 0.26,
-    velBias: 0.008,
+    aimAcquire: 0.028,
+    aimFloor: 0.0050,
+    aimTau: 0.22,
+    velBias: 0.007,
     windAware: 0.6,
     leadAware: 0.6,
-    holdLo: 0.30,
-    holdHi: 0.80,
-    phaseTol: 0.45,
-    reactSteps: 6,
+    holdLo: 0.15,
+    holdHi: 0.85,
+    lapseChance: 0.18,
+    lapseLo: 1.60,
+    lapseHi: 3.20,
+    strainBail: 0.90,
+    reactSteps: 8,
     steadyAfter: Number.POSITIVE_INFINITY,
-    restFrac: 0.55,
+    restFrac: 0.88,
     bailsOnWarn: true,
   },
   /**
-   * 숙련. 당기는 0.375초 안에 조준이 끝난다. 만작 직후 0.16초 창에서
-   * |tremorOffset|이 최소인 순간에 놓는다 — 이 창을 넘기면 진폭이 자라 손해다.
+   * 숙련. 조준 바닥 오차 σ=0.0036 rad = **30m에서 10.8cm**, 화면에서 약 4.3px.
+   * 당기는 0.37초 안에 조준이 끝나고(tau 0.08) 거리 감각에 편향이 없다(velBias 0).
+   *
+   * 릴리즈 규율이 전부다 — 만작 직후 0.03~0.14초, 안전 구간(약 1.5초) 한참 안쪽에서 놓는다.
+   * 팔이 거의 다 회복될 때까지(0.95) 기다렸다 잡으므로 여유가 최대다.
+   *
+   * lapseChance 4%: **"거의" 없다지 "절대" 없다가 아니다.** 이 4%가 있어야
+   * "정확히 겨누는 사람이 바를 넘기면 얼마나 손해인가"를 측정할 표본이 생긴다 —
+   * 조준 오차가 작을수록 떨림이 상대적으로 커지므로 숙련의 안전/넘김 격차가 가장 크다.
    *
    * 호흡정지는 세 봇 다 쓰지 않는다. GDD 6장이 호흡정지 활용을 챕터 8의 학습 목표로
    * 잡아 두었으므로, 챕터 1~3을 재는 봇이 그걸 쓰면 측정 대상이 어긋난다.
+   * 새 모델에서는 더 그렇다 — 안전 구간 안에서는 이미 오차가 0이라 누를 이유가 없다.
    */
   expert: {
     aimAcquire: 0.020,
-    aimFloor: 0.0045,
-    aimTau: 0.095,
+    aimFloor: 0.0036,
+    aimTau: 0.08,
     velBias: 0,
     windAware: 1,
     leadAware: 1,
-    holdLo: 0,
-    holdHi: 0.16,
-    phaseTol: 0.25,
+    holdLo: 0.03,
+    holdHi: 0.14,
+    lapseChance: 0.04,
+    lapseLo: 1.60,
+    lapseHi: 2.80,
+    strainBail: 0.90,
     reactSteps: 2,
     steadyAfter: Number.POSITIVE_INFINITY,
-    restFrac: 0.75,
+    restFrac: 0.95,
     bailsOnWarn: true,
   },
 }
@@ -200,8 +253,8 @@ function anyArrowInFlight(w: World): boolean {
 const AIM_UPDATE_STEPS = 8
 /** 릴리즈 후 시위를 다시 잡기까지 (스텝) */
 const RELEASE_COOLDOWN = 10
-/** 위상 인지 지연 버퍼 길이. reactSteps 상한이자 고정 할당 크기 (A5). */
-const RATIO_HIST = 16
+/** strain 인지 지연 버퍼 길이. reactSteps 상한이자 고정 할당 크기 (A5). */
+const STRAIN_HIST = 16
 
 // ───────────────────────── 탄도 해 ─────────────────────────
 //
@@ -269,8 +322,8 @@ class Bot {
   /** 봇이 **믿는** 화살 초속. velBias만큼 진실에서 어긋나 있다. */
   private readonly v: number
   private readonly out: InputFrame = { aimX: 0, aimY: 0, drawing: false, steady: false }
-  /** 위상 인지 지연용 링버퍼. 생성자에서 한 번만 잡는다 (A5). */
-  private readonly hist = new Float64Array(RATIO_HIST)
+  /** strain 인지 지연용 링버퍼. 생성자에서 한 번만 잡는다 (A5). */
+  private readonly hist = new Float64Array(STRAIN_HIST)
   private histIdx = 0
 
   /** 탄도해가 준 기준 발사각 (rad). 조준 오차는 여기 얹는다. */
@@ -281,7 +334,7 @@ class Bot {
   private aimEnd = 0
   /** 이번 사이클에서 겨눈 시간 (s). 조준 수렴의 유일한 입력. */
   private aimAge = 0
-  /** 위상을 못 읽는 봇이 이번 사이클에 참기로 한 시간 (s) */
+  /** 이번 사이클에 만작 후 참기로 한 시간 (s). 안전 구간(약 1.6s)보다 길면 바를 넘긴다. */
   private plannedHold = 0
   private cooldown = 0
   private sinceAim = AIM_UPDATE_STEPS
@@ -350,7 +403,8 @@ class Bot {
     this.applyAim(w)
 
     const full = a.phase === 'full'
-    if (full) this.pushRatio(a.tremorOffset, a.tremorAmp)
+    // strain은 만작 전에도 자란다(지친 팔로 잡으면 즉시). 그래서 phase와 무관하게 기록한다.
+    this.pushStrain(a.strain)
 
     o.steady = full && a.holdTime >= this.m.steadyAfter
     o.drawing = !(full && this.shouldRelease(a.holdTime, a.warn))
@@ -367,11 +421,14 @@ class Bot {
     this.aimStart = this.rng.gaussian() * this.m.aimAcquire
     this.aimEnd = this.rng.gaussian() * this.m.aimFloor
     this.aimAge = 0
-    this.plannedHold =
-      this.m.phaseTol >= 1 ? this.rng.range(this.m.holdLo, this.m.holdHi) : this.m.holdLo
+    // 망설임. lapse가 터진 사이클이 바를 넘기는 경로다 — 규율은 확률적으로 무너진다.
+    const m = this.m
+    this.plannedHold = this.rng.chance(m.lapseChance)
+      ? this.rng.range(m.lapseLo, m.lapseHi)
+      : this.rng.range(m.holdLo, m.holdHi)
     this.sinceAim = AIM_UPDATE_STEPS
-    // 지난 사이클의 위상 기억은 버린다. 안 그러면 만작 첫 스텝에 남의 위상으로 놓는다.
-    this.hist.fill(Number.POSITIVE_INFINITY)
+    // 지난 사이클의 strain 기억은 버린다. 안 그러면 첫 스텝에 남의 값으로 놓는다.
+    this.hist.fill(0)
     this.histIdx = 0
   }
 
@@ -426,28 +483,25 @@ class Bot {
     o.aimY = w.archer.y + Math.sin(angle) * 10
   }
 
-  private pushRatio(offset: number, amp: number): void {
-    this.hist[this.histIdx] = Math.abs(offset) / (amp > 1e-9 ? amp : 1e-9)
-    this.histIdx = (this.histIdx + 1) % RATIO_HIST
+  private pushStrain(strain: number): void {
+    this.hist[this.histIdx] = strain
+    this.histIdx = (this.histIdx + 1) % STRAIN_HIST
   }
 
-  /** reactSteps 전에 **본** 위상. 지금 위상이 아니다 — 사람은 본 것을 즉시 못 놓는다. */
-  private seenRatio(): number {
-    const i = (this.histIdx - 1 - this.m.reactSteps + RATIO_HIST * 2) % RATIO_HIST
+  /** reactSteps 전에 **본** strain. 지금 값이 아니다 — 사람은 본 것을 즉시 못 놓는다. */
+  private seenStrain(): number {
+    const i = (this.histIdx - 1 - this.m.reactSteps + STRAIN_HIST * 2) % STRAIN_HIST
     const v = this.hist[i]
-    return v === undefined ? Number.POSITIVE_INFINITY : v
+    return v === undefined ? 0 : v
   }
 
   private shouldRelease(holdTime: number, warn: number): boolean {
     const m = this.m
-    // 창을 넘기면 진폭이 자라 손해다. 위상이 나빠도 놓는다.
-    if (holdTime >= m.holdHi) return true
     // 붕괴 직전에 버티는 건 실력이 아니라 사고다
     if (m.bailsOnWarn && warn > 0) return true
-    if (holdTime < this.plannedHold) return false
-    // 위상을 못 읽는 봇은 계획한 시각에 그냥 놓는다
-    if (m.phaseTol >= 1) return true
-    return this.seenRatio() <= m.phaseTol
+    // 빨간 바를 넘긴 걸 알아챘다. 규율이 강한 봇일수록 문턱이 낮다.
+    if (this.seenStrain() >= m.strainBail) return true
+    return holdTime >= this.plannedHold
   }
 }
 
@@ -549,6 +603,19 @@ interface RunResult {
   noFullShots: number
   /** 붕괴로 나간 발 */
   collapseShots: number
+
+  // ── 안전 구간 계측 (떨림 재설계의 핵심 지표) ──
+  // 발사 시점 strain == 0 이면 "안전 구간 안에서 쏜 발"이다. 그 발의 각오차는 정의상 정확히 0이고,
+  // 명중/빗나감을 오직 조준이 정한다. 넘겨서 쏜 발과 명중률을 나눠 재는 게 이 계측의 목적이다.
+  safeShots: number
+  safeHits: number
+  /** 안전 발의 릴리즈 각오차 제곱합 (rad²). 새 모델이 맞다면 정확히 0이어야 한다. */
+  safeErrSq: number
+  overShots: number
+  overHits: number
+  overErrSq: number
+  /** 넘긴 발들의 strain 합. 얼마나 깊이 넘겼는가. */
+  overStrainSum: number
 }
 
 function playOne(row: StageRow, kind: BotKind, stageSeed: number, botSeed: number): RunResult {
@@ -566,9 +633,38 @@ function playOne(row: StageRow, kind: BotKind, stageSeed: number, botSeed: numbe
   let holdShots = 0
   let noFullShots = 0
   let collapseShots = 0
+  let safeShots = 0
+  let safeHits = 0
+  let safeErrSq = 0
+  let overShots = 0
+  let overHits = 0
+  let overErrSq = 0
+  let overStrainSum = 0
   // 이번 사이클이 만작에 닿았는가. release가 뜰 때 이걸 보고 '만작 실패'를 가른다.
   let reachedFull = false
   let collapsedThisShot = false
+  // 결과를 기다리는 발. 봇은 화살이 날아가는 동안 다음 발을 잡지 않으므로 발은 항상 한 발씩
+  // 직렬이고, 'hit' 이벤트는 언제나 **가장 최근 release**의 것이다.
+  let pendingSafe = false
+  let pendingErr = 0
+  let pendingStrain = 0
+  let pendingHit = false
+  let pendingOpen = false
+
+  const closeShot = (): void => {
+    if (!pendingOpen) return
+    pendingOpen = false
+    if (pendingSafe) {
+      safeShots++
+      if (pendingHit) safeHits++
+      safeErrSq += pendingErr * pendingErr
+    } else {
+      overShots++
+      if (pendingHit) overHits++
+      overErrSq += pendingErr * pendingErr
+      overStrainSum += pendingStrain
+    }
+  }
 
   while (w.status === 'playing' && steps < maxSteps) {
     // release는 holdTime을 0으로 되돌리고 나간다. 지연을 재려면 스텝 직전 값이 필요하다.
@@ -589,7 +685,9 @@ function playOne(row: StageRow, kind: BotKind, stageSeed: number, botSeed: numbe
         collapsedThisShot = true
       } else if (e.t === 'hit') {
         hits++
+        pendingHit = true
       } else if (e.t === 'release') {
+        closeShot()
         shots++
         if (collapsedThisShot) collapseShots++
         if (reachedFull) {
@@ -598,6 +696,12 @@ function playOne(row: StageRow, kind: BotKind, stageSeed: number, botSeed: numbe
         } else {
           noFullShots++
         }
+        // stepArcher는 strain을 갱신한 **뒤** 발사한다. 스텝이 끝난 지금 값이 곧 발사 시점 값이다.
+        pendingStrain = w.archer.strain
+        pendingSafe = pendingStrain <= 0
+        pendingErr = e.err
+        pendingHit = false
+        pendingOpen = true
         reachedFull = false
         collapsedThisShot = false
       }
@@ -605,6 +709,7 @@ function playOne(row: StageRow, kind: BotKind, stageSeed: number, botSeed: numbe
     // 소비자 계약: 읽었으면 비운다
     events.length = 0
   }
+  closeShot()
 
   return {
     cleared: w.status === 'cleared',
@@ -618,6 +723,13 @@ function playOne(row: StageRow, kind: BotKind, stageSeed: number, botSeed: numbe
     holdShots,
     noFullShots,
     collapseShots,
+    safeShots,
+    safeHits,
+    safeErrSq,
+    overShots,
+    overHits,
+    overErrSq,
+    overStrainSum,
   }
 }
 
@@ -642,7 +754,25 @@ interface Agg {
   collapseShotRate: number
   /** 판 평균 길이 (s). C1: 한 판 30초~1분 */
   avgSeconds: number
+
+  // ── 안전 구간 지표 ──
+  /** 총 발수 (안전 + 넘김) */
+  shots: number
+  safeShots: number
+  safeHits: number
+  safeErrSq: number
+  overShots: number
+  overHits: number
+  overErrSq: number
+  overStrainSum: number
 }
+
+/** 안전 구간 안에서 쏜 비율. 릴리즈 규율의 직접 측정값. */
+const safeRate = (a: Agg): number => (a.shots > 0 ? a.safeShots / a.shots : 0)
+/** 안전 구간 안에서 쏜 발의 명중률 */
+const safeHitRate = (a: Agg): number => (a.safeShots > 0 ? a.safeHits / a.safeShots : 0)
+/** 빨간 바를 넘겨서 쏜 발의 명중률. 위와의 차이가 새 설계가 작동한다는 증거다. */
+const overHitRate = (a: Agg): number => (a.overShots > 0 ? a.overHits / a.overShots : 0)
 
 function playGroup(row: StageRow, kind: BotKind, baseSeed: number, runs: number, stageIdx: number): Agg {
   let cleared = 0
@@ -656,6 +786,13 @@ function playGroup(row: StageRow, kind: BotKind, baseSeed: number, runs: number,
   let noFull = 0
   let collapseShots = 0
   let steps = 0
+  let safeShots = 0
+  let safeHits = 0
+  let safeErrSq = 0
+  let overShots = 0
+  let overHits = 0
+  let overErrSq = 0
+  let overStrainSum = 0
   for (let i = 0; i < runs; i++) {
     // 스테이지 시드는 봇과 무관하게 같다 — 같은 판을 세 봇이 나눠 푼다
     const stageSeed = mixSeed(baseSeed, stageIdx, i)
@@ -672,6 +809,13 @@ function playGroup(row: StageRow, kind: BotKind, baseSeed: number, runs: number,
     noFull += r.noFullShots
     collapseShots += r.collapseShots
     steps += r.steps
+    safeShots += r.safeShots
+    safeHits += r.safeHits
+    safeErrSq += r.safeErrSq
+    overShots += r.overShots
+    overHits += r.overHits
+    overErrSq += r.overErrSq
+    overStrainSum += r.overStrainSum
   }
   return {
     stage: row.key,
@@ -687,6 +831,14 @@ function playGroup(row: StageRow, kind: BotKind, baseSeed: number, runs: number,
     noFullRate: shots > 0 ? noFull / shots : 0,
     collapseShotRate: shots > 0 ? collapseShots / shots : 0,
     avgSeconds: steps / runs / P.sim.hz,
+    shots,
+    safeShots,
+    safeHits,
+    safeErrSq,
+    overShots,
+    overHits,
+    overErrSq,
+    overStrainSum,
   }
 }
 
@@ -707,9 +859,10 @@ function verdict(rate: number): string {
 
 function printTable(rows: readonly Agg[]): void {
   const head =
-    'stage'.padEnd(13) + 'bot'.padEnd(9) + 'clear'.padStart(7) + 'score'.padStart(9) +
-    'arrows'.padStart(8) + 'hit/shot'.padStart(10) + 'hold'.padStart(8) +
-    'noFull'.padStart(8) + 'collapse'.padStart(10) + 'sec'.padStart(7) + '  vs목표'
+    'stage'.padEnd(13) + 'bot'.padEnd(9) + 'clear'.padStart(7) + 'score'.padStart(8) +
+    'arrows'.padStart(7) + 'hit/shot'.padStart(9) +
+    'inSafe'.padStart(8) + 'hitSafe'.padStart(9) + 'hitOver'.padStart(9) +
+    'hold'.padStart(7) + 'collapse'.padStart(9) + 'sec'.padStart(6) + '  vs목표'
   console.log(head)
   console.log('-'.repeat(head.length + 4))
   let last = ''
@@ -717,16 +870,85 @@ function printTable(rows: readonly Agg[]): void {
     if (last !== '' && last !== r.stage) console.log('')
     last = r.stage
     const note = r.bot === 'average' ? '  ' + verdict(r.clearRate) : ''
+    // 표본이 없으면 비율 대신 '-'. 0.0%로 찍으면 "다 빗나갔다"로 오독된다.
+    const sh = r.safeShots > 0 ? pct(safeHitRate(r)) : '-'
+    const oh = r.overShots > 0 ? pct(overHitRate(r)) : '-'
     console.log(
       r.stage.padEnd(13) + r.bot.padEnd(9) +
       pct(r.clearRate).padStart(7) +
-      r.avgScore.toFixed(0).padStart(9) +
-      r.avgArrows.toFixed(1).padStart(8) +
-      pct(r.hitRate).padStart(10) +
-      (r.avgHold.toFixed(2) + 's').padStart(8) +
-      pct(r.noFullRate).padStart(8) +
-      pct(r.collapseShotRate).padStart(10) +
-      r.avgSeconds.toFixed(1).padStart(7) + note,
+      r.avgScore.toFixed(0).padStart(8) +
+      r.avgArrows.toFixed(1).padStart(7) +
+      pct(r.hitRate).padStart(9) +
+      pct(safeRate(r)).padStart(8) +
+      sh.padStart(9) +
+      oh.padStart(9) +
+      (r.avgHold.toFixed(2) + 's').padStart(7) +
+      pct(r.collapseShotRate).padStart(9) +
+      r.avgSeconds.toFixed(1).padStart(6) + note,
+    )
+  }
+}
+
+/**
+ * 봇별 안전 구간 지표 (챕터 전체 합산).
+ *
+ * 이 표가 떨림 재설계의 검증이다. 봐야 할 것 두 가지:
+ *   1. 안전 발의 각오차 RMS가 **정확히 0.000 mrad** — 안전 구간 안에서는 조준한 그대로 간다.
+ *   2. 안전 명중률 − 넘김 명중률이 **크게 벌어진다** — 규율이 실제로 결과를 바꾼다.
+ */
+function printSafeZone(rows: readonly Agg[]): void {
+  const kinds: readonly BotKind[] = ['novice', 'average', 'expert']
+  console.log('')
+  console.log('안전 구간 지표 — 빨간 바(스태미나 55%) 위에서 쏘았는가 (챕터 전체 합산)')
+  console.log('  inSafe=안전 구간 안에서 쏜 비율 · hitSafe/hitOver=그 두 부류의 명중률 · errRMS=릴리즈 각오차')
+  const head =
+    '  bot'.padEnd(11) + 'shots'.padStart(7) + 'inSafe'.padStart(9) +
+    'hitSafe'.padStart(9) + 'hitOver'.padStart(9) + 'gap'.padStart(9) +
+    'errRMS(safe)'.padStart(14) + 'errRMS(over)'.padStart(14) +
+    'overStrain'.padStart(12) + 'hold'.padStart(9) + 'collapse'.padStart(10)
+  console.log(head)
+  console.log('  ' + '-'.repeat(head.length))
+  for (const k of kinds) {
+    let t: Agg | null = null
+    for (const r of rows) {
+      if (r.bot !== k) continue
+      if (t === null) {
+        t = { ...r, stage: 'ALL' }
+        continue
+      }
+      t.shots += r.shots
+      t.safeShots += r.safeShots
+      t.safeHits += r.safeHits
+      t.safeErrSq += r.safeErrSq
+      t.overShots += r.overShots
+      t.overHits += r.overHits
+      t.overErrSq += r.overErrSq
+      t.overStrainSum += r.overStrainSum
+      // hold·collapse는 판별 평균의 평균으로 충분하다 — 판마다 발수가 비슷하다.
+      t.avgHold = (t.avgHold + r.avgHold) / 2
+      t.collapseShotRate = (t.collapseShotRate + r.collapseShotRate) / 2
+    }
+    if (t === null) continue
+    const sHit = safeHitRate(t)
+    const oHit = overHitRate(t)
+    // mrad = rad × 1000. 사람이 읽을 수 있는 자리수로.
+    const sRms = t.safeShots > 0 ? Math.sqrt(t.safeErrSq / t.safeShots) * 1000 : 0
+    const oRms = t.overShots > 0 ? Math.sqrt(t.overErrSq / t.overShots) * 1000 : 0
+    const strain = t.overShots > 0 ? t.overStrainSum / t.overShots : 0
+    const gap = t.safeShots > 0 && t.overShots > 0
+      ? ((sHit - oHit) * 100).toFixed(1) + '%p' : '-'
+    console.log(
+      ('  ' + k).padEnd(11) +
+      String(t.shots).padStart(7) +
+      pct(safeRate(t)).padStart(9) +
+      (t.safeShots > 0 ? pct(sHit) : '-').padStart(9) +
+      (t.overShots > 0 ? pct(oHit) : '-').padStart(9) +
+      gap.padStart(9) +
+      (sRms.toFixed(3) + 'mrad').padStart(14) +
+      (oRms.toFixed(3) + 'mrad').padStart(14) +
+      strain.toFixed(2).padStart(12) +
+      (t.avgHold.toFixed(2) + 's').padStart(9) +
+      pct(t.collapseShotRate).padStart(10),
     )
   }
 }
@@ -794,15 +1016,24 @@ function writeCsv(rows: readonly Agg[], args: Args): string {
   mkdirSync(dirname(out), { recursive: true })
   const lines = [
     'stage,bot,runs,clear_rate,avg_score,avg_arrows,avg_hits,hit_rate,collapse_rate,' +
-    'avg_hold_s,no_full_rate,collapse_shot_rate,avg_seconds,seed',
+    'avg_hold_s,no_full_rate,collapse_shot_rate,avg_seconds,' +
+    'shots,safe_shots,safe_rate,safe_hit_rate,over_shots,over_hit_rate,' +
+    'safe_err_rms_mrad,over_err_rms_mrad,over_strain,seed',
   ]
   for (const r of rows) {
+    const sRms = r.safeShots > 0 ? Math.sqrt(r.safeErrSq / r.safeShots) * 1000 : 0
+    const oRms = r.overShots > 0 ? Math.sqrt(r.overErrSq / r.overShots) * 1000 : 0
     lines.push([
       r.stage, r.bot, String(r.runs),
       r.clearRate.toFixed(4), r.avgScore.toFixed(2), r.avgArrows.toFixed(3),
       r.avgHits.toFixed(3), r.hitRate.toFixed(4), r.collapseRate.toFixed(4),
       r.avgHold.toFixed(4), r.noFullRate.toFixed(4), r.collapseShotRate.toFixed(4),
-      r.avgSeconds.toFixed(2), String(args.seed),
+      r.avgSeconds.toFixed(2),
+      String(r.shots), String(r.safeShots), safeRate(r).toFixed(4), safeHitRate(r).toFixed(4),
+      String(r.overShots), overHitRate(r).toFixed(4),
+      sRms.toFixed(4), oRms.toFixed(4),
+      (r.overShots > 0 ? r.overStrainSum / r.overShots : 0).toFixed(4),
+      String(args.seed),
     ].join(','))
   }
   writeFileSync(out, lines.join('\n') + '\n', 'utf8')
@@ -852,6 +1083,7 @@ function main(): void {
   const elapsed = (Date.now() - start) / 1000
 
   printTable(rows)
+  printSafeZone(rows)
   summarize(rows)
   const csv = writeCsv(rows, args)
   console.log('')

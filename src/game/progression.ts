@@ -175,13 +175,20 @@ export function spendTraining(d: SaveData, key: StatKey, amount: number): boolea
 // ─────────────────────── 물리 → 사람 말 번역 ───────────────────────
 
 /**
- * 만작을 버티는 시간(s). bow.ts의 소모식과 같은 식이다:
- *   drain = drawDrain × draw^drainByDraw,  버틸 시간 = staminaMax / drain
- * 초보(STR0, 당김 0.72)는 4.2초. 이 숫자가 성장 화면에서 늘어나는 걸 보는 게 STAMINA의 전부다.
+ * **빨간 바까지** 버티는 시간(s). 붕괴까지가 아니다.
+ *
+ * 붕괴(staminaMax / drain)로 재면 안 되는 이유: 새 모델에서 붕괴는 아무도 겪지 않는 변두리
+ * 사건이고, 플레이어가 실제로 쓰는 예산은 경계선까지의 시간뿐이다. 그 아래 구간은 이미
+ * 빗나가는 구간이라 "버틴다"고 부를 수 없다. 붕괴 기준으로 말하면 화면이 예산을 2.5배로
+ * 부풀려 말하게 된다 — 훈련치를 어디 쓸지 고를 때 보는 유일한 숫자가 거짓이 된다.
+ *
+ * bow.ts의 소모식과 같은 식이다: drain = drawDrain × draw^drainByDraw (평상호흡 기준).
  */
-function holdSeconds(maxDraw: number, staminaMax: number): number {
+function safeSeconds(maxDraw: number, staminaMax: number): number {
   const drain = P.stamina.drawDrain * Math.pow(maxDraw, P.stamina.drainByDraw)
-  return drain > 0 ? staminaMax / drain : Number.POSITIVE_INFINITY
+  return drain > 0
+    ? staminaMax * (1 - P.stamina.steadyZone) / drain
+    : Number.POSITIVE_INFINITY
 }
 
 /** 만작에서의 화살 초속. ballistics.ts의 spawnArrow와 같은 식. */
@@ -220,12 +227,13 @@ export function effectOf(stats: Stats, key: StatKey): string {
         ? `이제 끝까지 당겨진다 · 화살 ${Math.round(fullDrawSpeed(ds.maxDraw, ds.speedMul))}m/s`
         : `시위를 ${pct(ds.maxDraw)}%까지 당길 수 있다`
     case 'stamina': {
-      const s = holdSeconds(ds.maxDraw, ds.staminaMax)
-      return Number.isFinite(s) ? `만작을 ${s.toFixed(1)}초 버틴다` : '만작이 풀리지 않는다'
+      const s = safeSeconds(ds.maxDraw, ds.staminaMax)
+      return Number.isFinite(s) ? `빨간 바까지 ${s.toFixed(1)}초 버틴다` : '빨간 바를 넘지 않는다'
     }
     case 'steady': {
       const cut = pct(1 - ds.tremorMul)
-      return cut <= 0 ? '만작에 닿으면 손이 그대로 떨린다' : `떨림 ${cut}% 감소`
+      // 떨림은 빨간 바를 넘긴 뒤에만 생긴다. "만작에 닿으면"은 옛 모델의 말이다.
+      return cut <= 0 ? '빨간 바를 넘으면 손이 그대로 떨린다' : `빨간 바 아래에서 떨림 ${cut}% 감소`
     }
     case 'focus': {
       const cut = pct(scatterCut(stats.focus))

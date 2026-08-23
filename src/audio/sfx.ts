@@ -66,7 +66,7 @@ const SFX = {
   fullFreq: 155,
   fullDur: 0.045,
 
-  // ── 만작 긴장음 (지속) ── 거슬리면 안 된다. 확신이 없어 아주 작게 잡았다.
+  // ── 긴장음 (지속) ── 빨간 바를 넘긴 동안만 울린다. 거슬리면 안 된다. 아주 작게 잡았다.
   tremorFreq: 115,
   tremorQ: 0.9,
 
@@ -591,8 +591,10 @@ export function updateSfx(sfx: Sfx, w: World, dtReal: number): void {
     setChan(s, sfx.creak, creakG, creakF, drawing ? 0.02 : 0.05)
   }
 
-  // ── 만작 긴장음 ──
-  // tremorAmp는 만작/붕괴에서만 0이 아니다. 제곱으로 눌러 초반 1초는 거의 안 들리게 한다.
+  // ── 긴장음 ──
+  // tremorAmp는 **빨간 바를 넘어야** 0이 아니다 (안전 구간에서는 sim이 정확히 0을 준다).
+  // 즉 이 소리가 들리기 시작하는 순간이 곧 "경계선을 넘었다"의 청각 채널이다.
+  // 제곱으로 눌러, 갓 넘긴 구간은 거의 안 들리고 붕괴가 가까울수록 차오르게 한다.
   const tr = clamp01(a.tremorAmp / P.audio.strainRef)
   const strainG = P.audio.strainGain * tr * tr
   if (sfx.strain !== null && Math.abs(strainG - sfx.lastStrainG) > CHAN_EPS * 0.5) {

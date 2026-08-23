@@ -31,7 +31,7 @@ export interface Stats {
   str: number
   /** 정확 — 떨림 진폭 감소 */
   steady: number
-  /** 지구력 — 스태미나 최대치·회복 */
+  /** 지구력 — 스태미나 최대치·회복. 최대치가 커지면 빨간 바 위의 안전 구간이 그만큼 길어진다 */
   stamina: number
   /** 집중 — 호흡정지 효율 */
   focus: number
@@ -44,7 +44,7 @@ export type ArcherPhase =
   | 'idle'
   /** 당기는 중 (draw < 1) */
   | 'drawing'
-  /** 만작 — 여기서부터 떨림과 싸운다 */
+  /** 만작 — 위력이 최대. 빨간 바 위라면 오차 0이고, 넘긴 뒤부터 떨림과 싸운다 */
   | 'full'
   /** 붕괴 — 스태미나가 다해 스스로 놓아버림. 발사는 되지만 정확도가 무너진다. */
   | 'collapsing'
@@ -70,7 +70,7 @@ export interface ArcherState {
   draw: number
   /** 당기기 시작한 뒤 경과 (s) */
   drawTime: number
-  /** 만작 도달 후 경과 (s). 떨림 램프의 입력. */
+  /** 만작 도달 후 경과 (s). 연출·계측용이며 떨림에는 쓰이지 않는다 (떨림의 입력은 strain 하나다). */
   holdTime: number
 
   stamina: number
