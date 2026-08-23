@@ -10,7 +10,7 @@
  */
 import type { DerivedStats, InputFrame, Stats, World } from './types.ts'
 import { P } from '../tune/params.ts'
-import { clamp, clamp01, diminish, lerp, valueNoise } from '../core/math.ts'
+import { clamp, clamp01, diminish, lerp, smoothstep, valueNoise } from '../core/math.ts'
 import { spawnArrow } from './ballistics.ts'
 
 /**
@@ -38,6 +38,11 @@ let dSteadyMul = 1
  * 계약을 늘리지 않고 bow 내부에서만 쓰면 되는 값이라 모듈 스칼라로 둔다.
  */
 let dScatterMul = 1
+/**
+ * 이 궁수가 도달할 수 있는 최대 당김 (0..1). STR로 열린다.
+ * 초보는 1.0(진짜 만작)에 못 간다 — GDD 2장 "시위가 안 당겨진다".
+ */
+let dMaxDraw = 1
 
 /** 수확체감을 거친 스탯 레벨. GDD 4장: 초반 급성장, 후반 완만. */
 function eff(level: number): number {
@@ -59,6 +64,7 @@ function computeDerived(stats: Stats): void {
   dSteadyMul = 1 + focus * P.growth.focusToSteady
   // GDD 4장 FOCUS의 두 번째 효과 "릴리즈 관용 창". 떨림이 아니라 난수 산포를 좁힌다.
   dScatterMul = 1 / (1 + focus * P.growth.focusToScatter)
+  dMaxDraw = clamp01(P.bow.maxDrawBase + str * P.growth.strToMaxDraw)
 }
 
 /** 스탯(레벨) → 물리 계수. UI·성장 화면용. 핫 루프에서는 쓰지 말 것(객체를 만든다). */
@@ -70,6 +76,7 @@ export function effectiveStats(stats: Stats): DerivedStats {
     tremorMul: dTremorMul,
     staminaMax: dStaminaMax,
     steadyMul: dSteadyMul,
+    maxDraw: dMaxDraw,
   }
 }
 
@@ -130,11 +137,16 @@ export function stepArcher(w: World, input: InputFrame): void {
   }
 
   // ── 당김 ──
+  //
+  // 만작은 "1.0까지 당김"이 아니라 "이 궁수의 한계(dMaxDraw)까지 당김"이다.
+  // 초보는 0.72에서 팔이 멈추고, 그 상태가 그의 만작이다. STR이 붙어야 1.0이 열린다.
   if (drawing) {
     const fullTime = P.bow.drawTime * dDrawTimeMul
     a.drawTime += dt
-    a.draw = fullTime > 0 ? clamp01(a.drawTime / fullTime) : 1
-    if (a.phase === 'drawing' && a.draw >= 1) {
+    // 초반엔 쭉 당겨지고 마지막 한 뼘이 버겁다 — 실제 활의 장력 곡선.
+    const p = fullTime > 0 ? clamp01(a.drawTime / fullTime) : 1
+    a.draw = dMaxDraw * (1 - Math.pow(1 - p, P.bow.drawEase))
+    if (a.phase === 'drawing' && p >= 1) {
       a.phase = 'full'
       a.holdTime = 0
       w.events.push({ t: 'full_draw' })
@@ -174,7 +186,16 @@ export function stepArcher(w: World, input: InputFrame): void {
   if (prevWarn <= 0 && a.warn > 0) w.events.push({ t: 'warn_start' })
 
   // ── 떨림 ──
-  if (drawing) {
+  //
+  // **당김의 앞부분은 떨리지 않는다.** 실제 활에서 떨림은 당기는 동작에서 오는 게 아니라
+  // 만작에서 '버티는' 동안, 버티는 힘이 모자랄수록 시간이 갈수록 커진다.
+  // 당기는 내내 흔들리면 조준이 불가능하고 활을 쏘는 감각 자체가 아니다.
+  //
+  // 다만 게이트는 phase가 아니라 **당김 진행도**다. draw는 만작 플래그가 서기 46ms 전에
+  // 이미 한계의 99%에 닿기 때문에, phase로 걸면 "위력은 만작인데 떨림은 0"인 창이 열리고
+  // 그 창에 맞춰 놓는 게 유일한 최적해가 된다 — 만작 이후를 싸움터로 만들려는 설계가 죽는다.
+  const holding = a.phase === 'drawing' || a.phase === 'full' || a.phase === 'collapsing'
+  if (holding) {
     const fatigue = dStaminaMax > 0 ? clamp01(1 - a.stamina / dStaminaMax) : 1
     // 호흡정지 목표 배수. FOCUS가 높을수록 더 깊이 눌린다.
     const steadyTarget = dSteadyMul > 0
@@ -182,7 +203,15 @@ export function stepArcher(w: World, input: InputFrame): void {
       : P.steady.tremorMul
 
     let amp = P.tremor.baseAmp
-    // 오래 겨눌수록
+    // 만작에 닿은 순간부터 rampStart에 걸쳐 onsetAmp -> 1 로 자란다.
+    // 고요함을 맡는 건 아래 grip(당김 진행도)이고, 여기는 **버틴 시간**만 본다 —
+    // 만작 순간의 떨림이 안 보일 만큼 작으면 '지금이다'를 읽을 근거가 화면에 없다.
+    // smoothstep이라 만작 진입에서 진폭이 툭 튀지 않는다.
+    const onset = P.tremor.rampStart > 0
+      ? lerp(P.tremor.onsetAmp, 1, smoothstep(a.holdTime / P.tremor.rampStart))
+      : 1
+    amp *= onset
+    // 다 자란 뒤에도 계속 버티면 더 커진다 — 버티는 힘이 바닥나는 중이라는 신호.
     amp *= 1 + Math.max(0, a.holdTime - P.tremor.rampStart) * P.tremor.rampRate
     // 지칠수록 (막판에 급격히)
     amp *= 1 + Math.pow(fatigue, P.tremor.fatigueExp) * (P.tremor.fatigueMul - 1)
@@ -192,6 +221,16 @@ export function stepArcher(w: World, input: InputFrame): void {
     amp *= lerp(1, steadyTarget, a.steadyBlend)
     // 숨을 너무 오래 참으면 오히려 더 떨린다 — 실제 사격과 같다.
     if (a.steadyTime > P.steady.maxHold) amp *= P.steady.overholdPenalty
+    // 마지막 한 뼘에서 떨림이 스며든다. 만작에 닿는 순간 grip이 정확히 1이 되므로
+    // 당김 → 만작 전환에서 진폭이 튀지 않고, 무떨림 최대위력 창도 남지 않는다.
+    // span이 0이면 0/0으로 NaN이 새어나가 발사각이 통째로 죽는다. 슬라이더 최대값(1)이 그 경우다.
+    const span = 1 - P.tremor.gripFrom
+    const grip = dMaxDraw <= 0
+      ? 0
+      : span > 0
+        ? clamp01((a.draw / dMaxDraw - P.tremor.gripFrom) / span)
+        : a.draw >= dMaxDraw ? 1 : 0
+    amp *= grip
 
     // 2옥타브 합성. 단일 사인파는 예측 가능해 지루하고, 순수 난수는 위상을 못 읽어
     // 실력이 개입할 여지가 없다. 느린 스윙 위에 잔떨림이 얹혀야 "지금이다"가 생긴다.

@@ -23,6 +23,9 @@ const GROUP_LABEL: Record<string, string> = {
   chain: '연쇄 폭발',
   growth: '성장 스탯',
   offline: '오프라인 축적',
+  progression: '성장 곡선 · 경제',
+  render: '그림 · 성장 표현',
+  audio: '소리 (믹서)',
   input: '입력 · 조준',
   sim: '시뮬 코어',
 }

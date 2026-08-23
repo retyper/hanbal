@@ -359,6 +359,17 @@ function anyTargetFalling(w: World): boolean {
   return false
 }
 
+/**
+ * 결과가 더 뒤집힐 여지가 없는가. 판 종료 정산은 이게 true가 된 뒤에 한다.
+ *
+ * 왜: evaluateEnd는 클리어를 **즉시** 판정한다(마지막 순간에 목표를 넘겼는데 시간 초과로
+ * 실패하면 배신감이 남기 때문). 그래서 status가 넘어간 뒤에도 화살과 낙하 과녁은 계속 돌고
+ * 점수가 더 오른다 — 그 프레임에 스냅샷을 뜨면 연쇄 점수가 통째로 기록에서 빠진다.
+ */
+export function isSettled(w: World): boolean {
+  return !anyArrowInPlay(w) && !anyTargetFalling(w)
+}
+
 function endStage(w: World, cleared: boolean): void {
   w.status = cleared ? 'cleared' : 'failed'
   w.events.push({ t: 'stage_end', cleared, score: w.score })

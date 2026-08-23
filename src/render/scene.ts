@@ -15,6 +15,7 @@ import { drawArcher } from './stickman.ts'
 import { createFx, pumpEvents, updateFx, drawFx, hitStopMs } from './effects.ts'
 import type { Fx } from './effects.ts'
 import { drawHud } from './hud.ts'
+import type { HudState } from './hud.ts'
 
 /**
  * 능선 높이 테이블. valueNoise는 호출마다 클로저를 만들어서(core/math.ts) 매 프레임 90번 부르면
@@ -59,7 +60,11 @@ const TRAIL_BANDS = 4
 
 export interface Renderer {
   resize(): void
-  draw(w: World, alpha: number, dtReal: number): void
+  /**
+   * hud는 game/ui 레이어의 상태다 (훈련치·음소거). World(=sim)에 넣지 않고 인자로 받는다 (A1).
+   * 같은 객체를 매 프레임 제자리에서 갱신해 넘긴다 — 프레임당 할당 0 (A5).
+   */
+  draw(w: World, alpha: number, dtReal: number, hud: HudState): void
   dispose(): void
 }
 
@@ -215,7 +220,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       r.gradH = -1
     },
 
-    draw(w: World, alpha: number, dtReal: number): void {
+    draw(w: World, alpha: number, dtReal: number, hud: HudState): void {
       if (r.dead) return
       const cam = r.cam
       const c = r.ctx
@@ -256,7 +261,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       drawArrows(c, cam, w, alpha)
       drawArcher(c, cam, w, alpha)
       drawFx(c, cam, r.fx)
-      drawHud(c, cam, w)
+      drawHud(c, cam, w, hud)
     },
 
     dispose(): void {

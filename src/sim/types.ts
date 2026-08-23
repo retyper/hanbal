@@ -275,4 +275,9 @@ export interface DerivedStats {
   staminaMax: number
   /** 호흡정지 효율 배수 */
   steadyMul: number
+  /**
+   * 이 궁수가 도달할 수 있는 최대 당김 (0..1). 1.0 = 진짜 만작.
+   * 초보는 1.0에 못 간다 — STR로 열린다. 성장 화면이 이 값을 보여준다.
+   */
+  maxDraw: number
 }
