@@ -14,6 +14,22 @@
 TypeScript + Vite + Canvas2D. **런타임 의존성 0개.** 게임 엔진 없음.
 `npm run dev` (로컬), `npm run typecheck`, `npm test`, `npm run balance`.
 
+## ★ 브라우저 도구 금지 (시간 낭비 방지)
+
+**`mcp__claude-in-chrome__*` 도구로 이 게임을 확인하려 하지 마라. 절대 안 열린다.**
+
+이 세션에 연결된 크롬은 **다른 기기**(윈도우 노트북 / macOS)의 것이다. 개발 서버는 이 데스크탑의
+`localhost`에 뜨므로, 다른 기기 브라우저에서는 영원히 접속되지 않는다.
+(`list_connected_browsers`가 `isLocal: true`로 보고해도 믿지 마라 — 실제로는 노트북이다.
+ LAN IP로 여는 것도 방화벽에 막힌다. 이미 여러 번 확인했다.)
+
+### 그래서 화면 확인은 이렇게 한다
+1. **헤드리스 프로브**로 검증한다. Canvas/DOM을 스텁으로 세우고 `step()`·렌더 경로를 직접 돌려
+   좌표·픽셀 크기·이벤트 순서를 **숫자로** 확인해라. 이 저장소는 결정론적(A1)이라 이게 잘 통한다.
+2. 눈으로 봐야만 판정되는 것(색감·레이아웃·자세)은 **형에게 확인을 요청**한다.
+   `npm run dev` 는 이미 돌고 있을 수 있으니 새로 띄우기 전에 `curl localhost:5173` 으로 확인해라.
+3. 자세·크기처럼 규격이 있는 것은 `docs/FORM.md`의 자가 점검처럼 **검사 스크립트를 짜서** 판정해라.
+
 ## 절대 규칙 (어기면 반려)
 
 1. `src/sim/` 안에서 `Math.random()`, `Date.now()`, `performance.now()`, DOM 접근 금지 → `src/core/rng.ts` 사용

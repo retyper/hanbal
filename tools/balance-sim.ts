@@ -1,15 +1,33 @@
 /**
  * 헤드리스 밸런스 시뮬 (ARCHITECTURE A7 / balance-lens의 유일한 근거)
  *
- * 봇 3종이 스테이지를 N판씩 자동 플레이하고 클리어율·점수·붕괴율을 낸다.
+ * 봇 3종이 스테이지를 N판씩 자동 플레이하고 클리어율·점수·붕괴율·별·보상을 낸다.
  * "느낌상 쉬운 것 같다"를 숫자로 대체하는 게 이 파일의 존재 이유다.
  *
  * 실행: npm run balance -- --seed=12345 --runs=200
- *       npm run balance -- --floor=1     보유 화살이 바닥난 사람이 겪는 판
- *       npm run balance -- --preview=1   미저작 챕터(바람·이동·공중) 프리뷰
+ *       npm run balance -- --floor=1      보유 화살이 바닥난 사람이 겪는 판
+ *       npm run balance -- --preview=1    미저작 챕터(바람·이동·공중) 프리뷰
+ *       npm run balance -- --arrow=burst  드래프트 화살을 하나로 고정해 전 판을 돌린다
+ *       npm run balance -- --cross=1      화살 × 스테이지 교차표 (드래프트 검증)
+ *       npm run balance -- --cross=1 --crossbot=expert
  *
  * 봇은 **World를 읽어 InputFrame을 만드는 함수**일 뿐이다.
  * World를 직접 건드리면 측정값이 게임이 아니라 봇을 재는 게 되므로 절대 쓰지 않는다.
+ *
+ * ── 이 도구가 판정하는 것 (docs/HOOK.md 4장) ──
+ *
+ * 1. **드래프트 선택이 판의 결과를 실제로 바꾸는가.** 전부 비슷하면 선택이 장식이고,
+ *    하나가 전 판에서 압도적이면 지배 전략이다. 둘 다 실패다. `--cross=1`이 그걸 잰다.
+ * 2. **별 1/2/3개 분포.** ★★★이 너무 흔하거나 너무 희귀하면 재도전 동기가 죽는다.
+ * 3. **변동 보상의 분산이 실력을 덮지 않는가.** 숙련 봇의 훈련치 기대값이 초보보다
+ *    운의 표준편차보다 크게 앞서야 성장이 의미를 가진다.
+ *
+ * ── 클리어 조건 (2026-08-23 변경) ──
+ *
+ * 클리어는 **과녁을 다 없앤 것**이다. 점수가 아니다 (`sim/world.ts` evaluateEnd).
+ * 이 도구는 `w.status === 'cleared'`만 읽으므로 그 정의를 그대로 따른다.
+ * `stage.targetScore`는 이제 클리어선이 아니라 **별 2개의 기준선**으로만 쓰인다.
+ * 화살이 모자라 못 깨는 판을 잡기 위해 실패를 두 갈래(화살 소진 / 시간 초과)로 나눠 센다.
  *
  * ── 안전 구간 계측 (2026-08-23 떨림 재설계) ──
  *
@@ -24,13 +42,17 @@ import { fileURLToPath } from 'node:url'
 
 import { createWorld, step } from '../src/sim/world.ts'
 import { effectiveStats } from '../src/sim/bow.ts'
-import { STAGES as CHAPTER1 } from '../src/game/stages.ts'
+import { STAGES as ALL_STAGES } from '../src/game/stages.ts'
 import { grantArrows } from '../src/game/progression.ts'
 import { defaultSave } from '../src/game/save.ts'
+import { ARROW_KINDS, DEFAULT_ARROW, isArrowKindId } from '../src/game/arrows.ts'
+import { BULLSEYE_ACC, gradeRun } from '../src/game/rewards.ts'
 import { makeRng } from '../src/core/rng.ts'
 import { clamp, lerp } from '../src/core/math.ts'
 import { P } from '../src/tune/params.ts'
 import type { Rng } from '../src/core/rng.ts'
+import type { ArrowKindId } from '../src/game/arrows.ts'
+import type { RunStats } from '../src/game/rewards.ts'
 import type { InputFrame, StageDef, Stats, Target, World } from '../src/sim/types.ts'
 
 // ───────────────────────── 실행 인자 ─────────────────────────
@@ -42,6 +64,19 @@ interface Args {
   preview: boolean
   /** 보유 화살이 바닥났을 때의 지급량으로 돌린다 (progression.grantArrows). */
   floor: boolean
+  /** 드래프트 화살 고정. null이면 게임 기본값(무지정). */
+  arrow: string | null
+  /** 화살 × 스테이지 교차표를 돌린다. arrows.ts가 있으면 기본 켜짐. */
+  cross: boolean | null
+  /** 교차표를 어느 봇으로 돌리는가. 봇 × 화살 × 40판은 너무 비싸다. */
+  crossBot: BotKind
+}
+
+const BOT_KINDS: readonly BotKind[] = ['novice', 'average', 'expert']
+
+function isBotKind(s: string): s is BotKind {
+  for (const k of BOT_KINDS) if (k === s) return true
+  return false
 }
 
 function parseArgs(argv: readonly string[]): Args {
@@ -50,18 +85,34 @@ function parseArgs(argv: readonly string[]): Args {
   let budgetMs = 25000
   let preview = false
   let floor = false
+  let arrow: string | null = null
+  let cross: boolean | null = null
+  let crossBot: BotKind = 'average'
   for (const a of argv) {
-    const m = /^--(\w+)=(-?[\d.]+)$/.exec(a)
+    const m = /^--([\w]+)=(.+)$/.exec(a)
     if (m === null) continue
-    const v = Number(m[2])
+    const key = m[1]
+    const raw = m[2]
+    if (key === undefined || raw === undefined) continue
+    // 문자열 인자 먼저 — 숫자 파싱에 걸리면 안 된다.
+    if (key === 'arrow') {
+      arrow = raw === 'none' || raw === '' ? null : raw
+      continue
+    }
+    if (key === 'crossbot') {
+      if (isBotKind(raw)) crossBot = raw
+      continue
+    }
+    const v = Number(raw)
     if (!Number.isFinite(v)) continue
-    if (m[1] === 'seed') seed = Math.trunc(v)
-    else if (m[1] === 'runs') runs = Math.max(1, Math.trunc(v))
-    else if (m[1] === 'budget') budgetMs = Math.max(1000, Math.trunc(v * 1000))
-    else if (m[1] === 'preview') preview = v !== 0
-    else if (m[1] === 'floor') floor = v !== 0
+    if (key === 'seed') seed = Math.trunc(v)
+    else if (key === 'runs') runs = Math.max(1, Math.trunc(v))
+    else if (key === 'budget') budgetMs = Math.max(1000, Math.trunc(v * 1000))
+    else if (key === 'preview') preview = v !== 0
+    else if (key === 'floor') floor = v !== 0
+    else if (key === 'cross') cross = v !== 0
   }
-  return { seed, runs, budgetMs, preview, floor }
+  return { seed, runs, budgetMs, preview, floor, arrow, cross, crossBot }
 }
 
 /** 시드 합성. 같은 (스테이지, 판 번호)면 봇이 달라도 같은 판이 나온다 — 짝지은 비교로 분산을 줄인다. */
@@ -505,6 +556,51 @@ class Bot {
   }
 }
 
+// ══════════════════════ 드래프트 화살 배선 ══════════════════════
+//
+// 목록은 `src/game/arrows.ts`(화살 담당)에서 그대로 가져온다. 이 도구가 후보를 따로 들고 있으면
+// 담당이 화살을 하나 지우거나 이름을 바꿨을 때 계측기만 옛 세상을 재게 된다.
+//
+// **아직 열려 있지 않은 것: 고른 화살이 sim에 도달하는 경로.**
+// arrows.ts 자신이 "효과를 적용하는 건 sim이다(ballistics.ts · target.ts)"라고 적어두었고,
+// 2026-08-23 현재 sim 쪽에는 `arrowFx`를 읽는 코드가 없다. 그래서 이 도구는 두 경로를
+// 동시에 시도하고, 둘 다 무시되면 교차표가 전부 같은 숫자로 나와 `printCross`가 '미배선'을 보고한다.
+//
+//   · `createWorld(stage, stats, arrow)` — 3번째 인자
+//   · `StageDef.arrow` 필드
+//
+// 어느 쪽이 열리든 이 파일은 안 고쳐도 된다. **World를 여기서 직접 조작하지 않는다** —
+// 그러면 게임이 아니라 이 파일을 재게 된다 (파일 상단 규칙).
+
+const ARROW_IDS: readonly ArrowKindId[] = ARROW_KINDS.map((k) => k.id)
+
+type CreateWorld3 = (stage: StageDef, stats: Stats, arrow?: ArrowKindId) => World
+const createWorldA = createWorld as unknown as CreateWorld3
+
+function withArrow(def: StageDef, arrow: ArrowKindId): StageDef {
+  return { ...def, arrow } as unknown as StageDef
+}
+
+function makeWorld(def: StageDef, stats: Stats, arrow: ArrowKindId | null): World {
+  return arrow === null ? createWorld(def, stats) : createWorldA(withArrow(def, arrow), stats, arrow)
+}
+
+// ══════════════════════ 별·보상 ══════════════════════
+//
+// 판정기는 `src/game/rewards.ts`의 `gradeRun(rng, stage, RunStats)` 하나뿐이다.
+// 이 도구가 별·훈련치 공식을 따로 들고 있으면 "계측기에서는 통과, 게임에서는 실패"가 나온다.
+//
+// 이 도구가 채우는 `RunStats`의 해석 두 가지 — 어긋나면 보상 담당이 고쳐 잡을 것:
+//   · `hits`     = 직격('hit') + 연쇄로 죽은 과녁('chain'). rewards.ts 주석이
+//                  "관통·연쇄 때문에 shots보다 클 수 있다"고 적었으므로 연쇄분을 포함한다.
+//   · `bestChain`= 판에서 도달한 최대 콤보(`World.combo`의 봉우리).
+
+interface Grade {
+  stars: number
+  training: number
+  bonus: number
+}
+
 // ───────────────────────── 스테이지 ─────────────────────────
 
 interface StageRow {
@@ -527,7 +623,6 @@ function assumedStats(progress: number): Stats {
   }
 }
 
-/** 실제 콘텐츠. 밸런스 판정의 대상은 언제나 이쪽이다. */
 /**
  * 보유 화살이 바닥났을 때 이 판에 실제로 지급되는 발수.
  * 공식을 여기 베끼지 않고 progression.grantArrows를 그대로 부른다 — 베끼면 언젠가 어긋난다.
@@ -538,14 +633,15 @@ function floorArrows(def: StageDef): number {
   return grantArrows(d, def)
 }
 
-const REAL_STAGES: readonly StageRow[] = CHAPTER1.map((def, i) => ({
+/** 실제 콘텐츠. 밸런스 판정의 대상은 언제나 이쪽이다. */
+const REAL_STAGES: readonly StageRow[] = ALL_STAGES.map((def, i) => ({
   key: def.id,
-  stats: assumedStats(CHAPTER1.length > 1 ? i / (CHAPTER1.length - 1) : 0),
+  stats: assumedStats(ALL_STAGES.length > 1 ? i / (ALL_STAGES.length - 1) : 0),
   make: (seed: number): StageDef => ({ ...def, seed }),
 }))
 
 /**
- * 아직 저작되지 않은 챕터의 메커닉(바람·이동·공중 연쇄)을 미리 재보는 프리뷰.
+ * 아직 저작되지 않은 메커닉을 미리 재보는 프리뷰.
  * 실제 콘텐츠가 아니므로 기본값은 꺼져 있다. `--preview=1` 로 켠다.
  */
 const PREVIEW_STAGES: readonly StageRow[] = [
@@ -592,9 +688,24 @@ interface RunResult {
   cleared: boolean
   score: number
   arrowsUsed: number
+  /** 판이 끝난 시점의 잔여 화살. 0이면 빠듯했다는 뜻이다. */
+  arrowsLeft: number
   collapsed: boolean
+  /** 직격 명중 이벤트 수. 관통 한 발이 여럿을 치면 1발에 여러 번 오른다. */
   hits: number
+  /** 연쇄로 죽은 과녁 수 */
+  chains: number
+  /** 이 판에서 도달한 최대 콤보 */
+  maxCombo: number
+  /** 정중앙(명중도 ≥ BULLSEYE_ACC) 명중 수 */
+  bullseyes: number
   shots: number
+  /** 무언가를 맞힌 발의 수. 관통·연쇄에 오염되지 않는 진짜 '발당 명중률'의 분자다. */
+  hitShots: number
+  /** 남은 과녁 수 (실패 진단용) */
+  targetsLeft: number
+  /** 화살을 다 쓰고도 과녁이 남아 실패했는가 */
+  failedByArrows: boolean
   steps: number
   /** 만작에 닿은 발들의 릴리즈 지연 합 (s) */
   holdSum: number
@@ -618,16 +729,25 @@ interface RunResult {
   overStrainSum: number
 }
 
-function playOne(row: StageRow, kind: BotKind, stageSeed: number, botSeed: number): RunResult {
-  const def = row.make(stageSeed)
-  const w = createWorld(def, row.stats)
-  const bot = new Bot(kind, botSeed, row.stats)
+function playOne(
+  def: StageDef,
+  stats: Stats,
+  kind: BotKind,
+  botSeed: number,
+  arrow: string | null,
+): RunResult {
+  const w = makeWorld(def, stats, arrow)
+  const bot = new Bot(kind, botSeed, stats)
   const hz = Math.round(1 / w.dt)
   const maxSteps = Math.ceil((def.timeLimit ?? 90) * hz) + 4 * hz
 
   let collapsed = false
   let hits = 0
+  let chains = 0
+  let maxCombo = 0
+  let bullseyes = 0
   let shots = 0
+  let hitShots = 0
   let steps = 0
   let holdSum = 0
   let holdShots = 0
@@ -654,6 +774,7 @@ function playOne(row: StageRow, kind: BotKind, stageSeed: number, botSeed: numbe
   const closeShot = (): void => {
     if (!pendingOpen) return
     pendingOpen = false
+    if (pendingHit) hitShots++
     if (pendingSafe) {
       safeShots++
       if (pendingHit) safeHits++
@@ -671,6 +792,7 @@ function playOne(row: StageRow, kind: BotKind, stageSeed: number, botSeed: numbe
     const prevHold = w.archer.holdTime
     step(w, bot.frame(w))
     steps++
+    if (w.combo > maxCombo) maxCombo = w.combo
     const events = w.events
     for (let i = 0; i < events.length; i++) {
       const e = events[i]
@@ -685,7 +807,10 @@ function playOne(row: StageRow, kind: BotKind, stageSeed: number, botSeed: numbe
         collapsedThisShot = true
       } else if (e.t === 'hit') {
         hits++
+        if (e.accuracy >= BULLSEYE_ACC) bullseyes++
         pendingHit = true
+      } else if (e.t === 'chain') {
+        chains++
       } else if (e.t === 'release') {
         closeShot()
         shots++
@@ -711,13 +836,28 @@ function playOne(row: StageRow, kind: BotKind, stageSeed: number, botSeed: numbe
   }
   closeShot()
 
+  let targetsLeft = 0
+  for (let i = 0; i < w.targets.length; i++) {
+    const t = w.targets[i]
+    if (t !== undefined && t.alive) targetsLeft++
+  }
+  const cleared = w.status === 'cleared'
+
   return {
-    cleared: w.status === 'cleared',
+    cleared,
     score: w.score,
     arrowsUsed: def.arrows - w.arrowsLeft,
+    arrowsLeft: w.arrowsLeft,
     collapsed,
     hits,
+    chains,
+    maxCombo,
+    bullseyes,
     shots,
+    hitShots,
+    targetsLeft,
+    // 시간 초과 실패와 구분한다. 이쪽이 "화살이 모자라 못 깬 판"이다.
+    failedByArrows: !cleared && w.arrowsLeft <= 0,
     steps,
     holdSum,
     holdShots,
@@ -733,19 +873,91 @@ function playOne(row: StageRow, kind: BotKind, stageSeed: number, botSeed: numbe
   }
 }
 
+// ───────────────────────── 별과 보상 ─────────────────────────
+
+/**
+ * 레퍼런스 별 판정 (docs/HOOK.md 4장).
+ *   ★   클리어 (= 과녁 전멸)
+ *   ★★  + 점수 기준선(stage.targetScore) 도달
+ *   ★★★ + 무손실 — 쏜 발이 전부 무언가를 맞혔다
+ */
+function refStars(def: StageDef, r: RunResult): number {
+  if (!r.cleared) return 0
+  if (r.score < def.targetScore) return 1
+  const noMiss = r.shots > 0 && r.hitShots >= r.shots
+  return noMiss ? 3 : 2
+}
+
+/**
+ * 레퍼런스 변동 보상 (docs/HOOK.md 3장).
+ * 고정분(점수·클리어) + 위업 + 잭팟. 잭팟이 변동 비율 보상의 자리다.
+ * rng는 판 시드에서 파생되므로 같은 시드면 같은 보상이다 (A1 정신 유지).
+ */
+function refTraining(r: RunResult, stars: number, rng: Rng): number {
+  const acc = r.shots > 0 ? clamp(r.hitShots / r.shots, 0, 1) : 0
+  let t = r.cleared ? P.progression.trainClear : P.progression.trainFail
+  t += acc * P.progression.trainAccuracy
+  t += stars * REF_REWARD.perStar
+  if (r.bullseyes > 0) t += REF_REWARD.featBullseye
+  if (r.maxCombo >= REF_REWARD.featChainAt) t += REF_REWARD.featChain
+  if (r.cleared && r.shots > 0 && r.hitShots >= r.shots) t += REF_REWARD.featNoMiss
+  if (rng.chance(REF_REWARD.jackpotChance)) t *= REF_REWARD.jackpotMul
+  return Math.floor(t)
+}
+
+/** rewards.ts가 있으면 그걸, 없으면 레퍼런스를 쓴다. 결과 모양이 어긋나면 조용히 레퍼런스로. */
+function grade(src: RewardSource, def: StageDef, r: RunResult, rng: Rng): Grade {
+  if (src.fn !== null) {
+    try {
+      const out = src.fn(def, r, rng)
+      if (out !== null && typeof out === 'object') {
+        const o = out as Record<string, unknown>
+        const stars = o['stars']
+        const training = o['training']
+        if (typeof stars === 'number' && Number.isFinite(stars)) {
+          return {
+            stars: clamp(Math.round(stars), 0, 3),
+            training:
+              typeof training === 'number' && Number.isFinite(training) ? Math.floor(training) : 0,
+          }
+        }
+      }
+    } catch {
+      // 시그니처가 다르다. 아래 레퍼런스로 떨어진다 — 보고서가 origin을 그대로 찍는다.
+    }
+  }
+  const stars = refStars(def, r)
+  return { stars, training: refTraining(r, stars, rng) }
+}
+
 // ───────────────────────── 집계 ─────────────────────────
 
 interface Agg {
   stage: string
   bot: BotKind
+  arrow: string
   runs: number
   clearRate: number
   avgScore: number
   avgArrows: number
+  /** 판이 끝났을 때 남은 화살 평균. 0에 붙으면 화살이 병목이다. */
+  avgSpare: number
   collapseRate: number
   avgHits: number
-  /** 한 발당 명중률. 클리어율이 100%로 포화해도 실력 차이는 여기서 드러난다. */
+  /** 한 발당 명중률 — 무언가를 맞힌 발 / 쏜 발. 관통·연쇄로 100%를 넘지 않는다. */
   hitRate: number
+  /** 판당 연쇄 킬 수 */
+  avgChains: number
+  /** 판당 최대 콤보의 평균 */
+  avgMaxCombo: number
+  /** 전 판을 통틀어 관측된 최대 콤보 */
+  peakCombo: number
+  /** 판당 정중앙 명중 수 */
+  avgBullseyes: number
+  /** 화살이 모자라 못 깬 판의 비율 */
+  arrowStarveRate: number
+  /** 실패한 판에서 남아 있던 과녁 수의 평균 */
+  avgTargetsLeftOnFail: number
   /** 만작 후 평균 릴리즈 지연 (s). 새 활 모델의 건강도를 보는 1번 지표. */
   avgHold: number
   /** 만작에 못 닿고 나간 발의 비율 */
@@ -754,6 +966,17 @@ interface Agg {
   collapseShotRate: number
   /** 판 평균 길이 (s). C1: 한 판 30초~1분 */
   avgSeconds: number
+
+  // ── 별·보상 ──
+  stars0: number
+  stars1: number
+  stars2: number
+  stars3: number
+  /** 훈련치 평균·표준편차·최대/최소 */
+  trainSum: number
+  trainSqSum: number
+  trainMin: number
+  trainMax: number
 
   // ── 안전 구간 지표 ──
   /** 총 발수 (안전 + 넘김) */
@@ -774,13 +997,42 @@ const safeHitRate = (a: Agg): number => (a.safeShots > 0 ? a.safeHits / a.safeSh
 /** 빨간 바를 넘겨서 쏜 발의 명중률. 위와의 차이가 새 설계가 작동한다는 증거다. */
 const overHitRate = (a: Agg): number => (a.overShots > 0 ? a.overHits / a.overShots : 0)
 
-function playGroup(row: StageRow, kind: BotKind, baseSeed: number, runs: number, stageIdx: number): Agg {
+const trainMean = (a: Agg): number => (a.runs > 0 ? a.trainSum / a.runs : 0)
+const trainSd = (a: Agg): number => {
+  if (a.runs <= 1) return 0
+  const m = trainMean(a)
+  const v = a.trainSqSum / a.runs - m * m
+  return v > 0 ? Math.sqrt(v) : 0
+}
+
+interface GroupOpts {
+  arrow: string | null
+  rewards: RewardSource
+}
+
+function playGroup(
+  row: StageRow,
+  kind: BotKind,
+  baseSeed: number,
+  runs: number,
+  stageIdx: number,
+  opts: GroupOpts,
+): Agg {
   let cleared = 0
   let score = 0
   let arrows = 0
+  let spare = 0
   let collapses = 0
   let hits = 0
+  let chains = 0
+  let comboSum = 0
+  let peakCombo = 0
+  let bullseyes = 0
+  let starve = 0
+  let leftOnFail = 0
+  let fails = 0
   let shots = 0
+  let hitShots = 0
   let holdSum = 0
   let holdShots = 0
   let noFull = 0
@@ -793,17 +1045,41 @@ function playGroup(row: StageRow, kind: BotKind, baseSeed: number, runs: number,
   let overHits = 0
   let overErrSq = 0
   let overStrainSum = 0
+  const starCount = [0, 0, 0, 0]
+  let trainSum = 0
+  let trainSqSum = 0
+  let trainMin = Number.POSITIVE_INFINITY
+  let trainMax = Number.NEGATIVE_INFINITY
+
+  // 보상 rng는 판마다 새로 만들지 않고 하나를 이어 쓴다 — 판별 시드로 만들면
+  // 잭팟이 시드 해시의 성질을 그대로 물려받아 분산 측정이 오염된다.
+  const rewardRng = makeRng(mixSeed(baseSeed, stageIdx * 131, kind.length * 7 + 3))
+
   for (let i = 0; i < runs; i++) {
     // 스테이지 시드는 봇과 무관하게 같다 — 같은 판을 세 봇이 나눠 푼다
     const stageSeed = mixSeed(baseSeed, stageIdx, i)
     const botSeed = mixSeed(stageSeed, kind.length, i * 7 + 1)
-    const r = playOne(row, kind, stageSeed, botSeed)
+    const def = row.make(stageSeed)
+    const r = playOne(def, row.stats, kind, botSeed, opts.arrow)
+    const g = grade(opts.rewards, def, r, rewardRng)
+
     if (r.cleared) cleared++
+    else {
+      fails++
+      leftOnFail += r.targetsLeft
+      if (r.failedByArrows) starve++
+    }
     if (r.collapsed) collapses++
     score += r.score
     arrows += r.arrowsUsed
+    spare += r.arrowsLeft
     hits += r.hits
+    chains += r.chains
+    comboSum += r.maxCombo
+    if (r.maxCombo > peakCombo) peakCombo = r.maxCombo
+    bullseyes += r.bullseyes
     shots += r.shots
+    hitShots += r.hitShots
     holdSum += r.holdSum
     holdShots += r.holdShots
     noFull += r.noFullShots
@@ -816,21 +1092,45 @@ function playGroup(row: StageRow, kind: BotKind, baseSeed: number, runs: number,
     overHits += r.overHits
     overErrSq += r.overErrSq
     overStrainSum += r.overStrainSum
+
+    const s = clamp(g.stars, 0, 3)
+    const slot = starCount[s]
+    if (slot !== undefined) starCount[s] = slot + 1
+    trainSum += g.training
+    trainSqSum += g.training * g.training
+    if (g.training < trainMin) trainMin = g.training
+    if (g.training > trainMax) trainMax = g.training
   }
   return {
     stage: row.key,
     bot: kind,
+    arrow: opts.arrow ?? '-',
     runs,
     clearRate: cleared / runs,
     avgScore: score / runs,
     avgArrows: arrows / runs,
+    avgSpare: spare / runs,
     collapseRate: collapses / runs,
     avgHits: hits / runs,
-    hitRate: shots > 0 ? hits / shots : 0,
+    hitRate: shots > 0 ? hitShots / shots : 0,
+    avgChains: chains / runs,
+    avgMaxCombo: comboSum / runs,
+    peakCombo,
+    avgBullseyes: bullseyes / runs,
+    arrowStarveRate: starve / runs,
+    avgTargetsLeftOnFail: fails > 0 ? leftOnFail / fails : 0,
     avgHold: holdShots > 0 ? holdSum / holdShots : 0,
     noFullRate: shots > 0 ? noFull / shots : 0,
     collapseShotRate: shots > 0 ? collapseShots / shots : 0,
     avgSeconds: steps / runs / P.sim.hz,
+    stars0: starCount[0] ?? 0,
+    stars1: starCount[1] ?? 0,
+    stars2: starCount[2] ?? 0,
+    stars3: starCount[3] ?? 0,
+    trainSum,
+    trainSqSum,
+    trainMin: Number.isFinite(trainMin) ? trainMin : 0,
+    trainMax: Number.isFinite(trainMax) ? trainMax : 0,
     shots,
     safeShots,
     safeHits,
@@ -856,6 +1156,8 @@ function playGroup(row: StageRow, kind: BotKind, baseSeed: number, runs: number,
  * 이 게임은 공부 사이에 30초씩 하는 게임이다. 앞의 수십 판은 실력을 시험하는 구간이 아니라
  * 손에 익히고 성장을 체감하는 구간이다. 그래서 판 번호에 따라 목표가 다르다.
  * (src/game/stages.ts 헤더의 난이도 정책과 반드시 같이 읽을 것.)
+ *
+ * 드래프트가 붙어도 이 목표는 그대로다 — 드래프트는 난이도 장치가 아니라 **변주 장치**다.
  */
 function targetBand(stageNo: number): readonly [number, number] {
   if (stageNo <= 10) return [0.95, 1.0]
@@ -892,7 +1194,8 @@ function verdict(rate: number, stageNo: number): string {
 function printTable(rows: readonly Agg[]): void {
   const head =
     'stage'.padEnd(13) + 'bot'.padEnd(9) + 'clear'.padStart(7) + 'score'.padStart(8) +
-    'arrows'.padStart(7) + 'hit/shot'.padStart(9) +
+    'arrows'.padStart(7) + 'spare'.padStart(7) + 'hit/shot'.padStart(9) +
+    'chain'.padStart(7) + 'combo'.padStart(7) +
     'inSafe'.padStart(8) + 'hitSafe'.padStart(9) + 'hitOver'.padStart(9) +
     'hold'.padStart(7) + 'collapse'.padStart(9) + 'sec'.padStart(6) + '  vs목표'
   console.log(head)
@@ -910,7 +1213,10 @@ function printTable(rows: readonly Agg[]): void {
       pct(r.clearRate).padStart(7) +
       r.avgScore.toFixed(0).padStart(8) +
       r.avgArrows.toFixed(1).padStart(7) +
+      r.avgSpare.toFixed(1).padStart(7) +
       pct(r.hitRate).padStart(9) +
+      r.avgChains.toFixed(1).padStart(7) +
+      r.avgMaxCombo.toFixed(1).padStart(7) +
       pct(safeRate(r)).padStart(8) +
       sh.padStart(9) +
       oh.padStart(9) +
@@ -922,16 +1228,15 @@ function printTable(rows: readonly Agg[]): void {
 }
 
 /**
- * 봇별 안전 구간 지표 (챕터 전체 합산).
+ * 봇별 안전 구간 지표 (전 판 합산).
  *
  * 이 표가 떨림 재설계의 검증이다. 봐야 할 것 두 가지:
  *   1. 안전 발의 각오차 RMS가 **정확히 0.000 mrad** — 안전 구간 안에서는 조준한 그대로 간다.
  *   2. 안전 명중률 − 넘김 명중률이 **크게 벌어진다** — 규율이 실제로 결과를 바꾼다.
  */
 function printSafeZone(rows: readonly Agg[]): void {
-  const kinds: readonly BotKind[] = ['novice', 'average', 'expert']
   console.log('')
-  console.log('안전 구간 지표 — 빨간 바(스태미나 55%) 위에서 쏘았는가 (챕터 전체 합산)')
+  console.log('안전 구간 지표 — 빨간 바(스태미나 55%) 위에서 쏘았는가 (전 판 합산)')
   console.log('  inSafe=안전 구간 안에서 쏜 비율 · hitSafe/hitOver=그 두 부류의 명중률 · errRMS=릴리즈 각오차')
   const head =
     '  bot'.padEnd(11) + 'shots'.padStart(7) + 'inSafe'.padStart(9) +
@@ -940,7 +1245,7 @@ function printSafeZone(rows: readonly Agg[]): void {
     'overStrain'.padStart(12) + 'hold'.padStart(9) + 'collapse'.padStart(10)
   console.log(head)
   console.log('  ' + '-'.repeat(head.length))
-  for (const k of kinds) {
+  for (const k of BOT_KINDS) {
     let t: Agg | null = null
     for (const r of rows) {
       if (r.bot !== k) continue
@@ -985,6 +1290,273 @@ function printSafeZone(rows: readonly Agg[]): void {
   }
 }
 
+// ───────────────────────── 별 분포 ─────────────────────────
+
+/**
+ * 목표 (docs/HOOK.md 4장 — 재도전 동기).
+ *   ★★ 이상이 흔하고 ★★★은 가끔. average 봇 기준으로 잡는다.
+ *   ★★★이 흔하면 다시 할 이유가 없고, 희귀하면 아예 포기한다.
+ */
+const STAR3_BAND: readonly [number, number] = [0.05, 0.30]
+const STAR2PLUS_MIN = 0.55
+
+function printStars(rows: readonly Agg[], origin: string): void {
+  console.log('')
+  console.log(`별 분포 — 재도전 동기 (판정기: ${origin})`)
+  console.log(`  목표: ★★ 이상 ≥ ${(STAR2PLUS_MIN * 100) | 0}% · ★★★ ${(STAR3_BAND[0] * 100) | 0}~${(STAR3_BAND[1] * 100) | 0}% (average 봇 기준)`)
+  const head =
+    '  bot'.padEnd(11) + 'runs'.padStart(8) + '☆(실패)'.padStart(11) +
+    '★'.padStart(9) + '★★'.padStart(10) + '★★★'.padStart(11) + '★★이상'.padStart(11) + '  판정'
+  console.log(head)
+  console.log('  ' + '-'.repeat(head.length))
+  for (const k of BOT_KINDS) {
+    let n = 0
+    let s0 = 0
+    let s1 = 0
+    let s2 = 0
+    let s3 = 0
+    for (const r of rows) {
+      if (r.bot !== k) continue
+      n += r.runs
+      s0 += r.stars0
+      s1 += r.stars1
+      s2 += r.stars2
+      s3 += r.stars3
+    }
+    if (n === 0) continue
+    const r3 = s3 / n
+    const r2p = (s2 + s3) / n
+    const note =
+      k !== 'average' ? '' :
+      r3 < STAR3_BAND[0] ? '  ★★★ 너무 희귀 — 재도전 전에 포기한다' :
+      r3 > STAR3_BAND[1] ? '  ★★★ 너무 흔함 — 다시 할 이유가 없다' :
+      r2p < STAR2PLUS_MIN ? '  ★★가 드물다 — 기준선(targetScore)이 높다' : '  OK'
+    console.log(
+      ('  ' + k).padEnd(11) +
+      String(n).padStart(8) +
+      pct(s0 / n).padStart(11) +
+      pct(s1 / n).padStart(9) +
+      pct(s2 / n).padStart(10) +
+      pct(r3).padStart(11) +
+      pct(r2p).padStart(11) + note,
+    )
+  }
+}
+
+// ───────────────────────── 변동 보상 분산 ─────────────────────────
+
+/**
+ * 목표 (docs/HOOK.md 4장 — "운이 실력을 덮으면 안 된다").
+ *
+ * 판정 기준을 효과크기로 못 박는다: 숙련과 초보의 훈련치 기대값 차이를 **판 안 표준편차**로
+ * 나눈 값 d = (E[exp] − E[nov]) / σ.
+ *   d ≥ 1.0  실력이 운을 이긴다 (한 판만 봐도 대체로 숙련이 더 번다)
+ *   d < 0.5  운이 실력을 덮는다 — 성장이 무의미해진다
+ * 순서(exp > avg > nov)가 뒤집히면 그건 즉시 실패다.
+ */
+const REWARD_D_OK = 1.0
+const REWARD_D_BAD = 0.5
+
+function printRewards(rows: readonly Agg[], origin: string): void {
+  console.log('')
+  console.log(`변동 보상 분산 — 운이 실력을 덮는가 (판정기: ${origin})`)
+  const head =
+    '  bot'.padEnd(11) + 'runs'.padStart(8) + '평균'.padStart(10) + '표준편차'.padStart(11) +
+    'CV'.padStart(9) + '최소'.padStart(8) + '최대'.padStart(8)
+  console.log(head)
+  console.log('  ' + '-'.repeat(head.length))
+  const mean: Record<string, number> = {}
+  let sdPooled = 0
+  let sdN = 0
+  for (const k of BOT_KINDS) {
+    let n = 0
+    let sum = 0
+    let sq = 0
+    let lo = Number.POSITIVE_INFINITY
+    let hi = Number.NEGATIVE_INFINITY
+    for (const r of rows) {
+      if (r.bot !== k) continue
+      n += r.runs
+      sum += r.trainSum
+      sq += r.trainSqSum
+      if (r.trainMin < lo) lo = r.trainMin
+      if (r.trainMax > hi) hi = r.trainMax
+    }
+    if (n === 0) continue
+    const m = sum / n
+    const varr = sq / n - m * m
+    const sd = varr > 0 ? Math.sqrt(varr) : 0
+    mean[k] = m
+    sdPooled += sd
+    sdN++
+    console.log(
+      ('  ' + k).padEnd(11) +
+      String(n).padStart(8) +
+      m.toFixed(2).padStart(10) +
+      sd.toFixed(2).padStart(11) +
+      (m > 0 ? (sd / m).toFixed(2) : '-').padStart(9) +
+      String(Number.isFinite(lo) ? lo : 0).padStart(8) +
+      String(Number.isFinite(hi) ? hi : 0).padStart(8),
+    )
+  }
+  const nov = mean['novice']
+  const avg = mean['average']
+  const exp = mean['expert']
+  const sd = sdN > 0 ? sdPooled / sdN : 0
+  if (nov === undefined || avg === undefined || exp === undefined) return
+  const ordered = exp > avg && avg > nov
+  const d = sd > 0 ? (exp - nov) / sd : 0
+  console.log('')
+  console.log(
+    `  실력 순서 ${ordered ? 'OK' : '깨짐 — 운이 실력을 뒤집었다'}` +
+    ` (nov ${nov.toFixed(2)} < avg ${avg.toFixed(2)} < exp ${exp.toFixed(2)})`,
+  )
+  console.log(
+    `  효과크기 d = (exp − nov) / σ = ${d.toFixed(2)}  ` +
+    (d >= REWARD_D_OK ? 'OK — 실력이 운을 이긴다'
+      : d >= REWARD_D_BAD ? '경계 — 여러 판을 모아야 실력이 보인다'
+      : '실패 — 운이 실력을 덮는다 (잭팟 폭을 줄이거나 실력 항을 키워라)'),
+  )
+}
+
+// ───────────────────────── 화살 × 스테이지 교차표 ─────────────────────────
+
+/**
+ * 드래프트 검증 (docs/HOOK.md 4장).
+ *
+ * 판정 규칙 세 가지. 하나라도 걸리면 선택은 아직 진짜가 아니다.
+ *   (a) **미배선**: 화살을 바꿔도 결과가 비트 단위로 같다. 고른 게 sim에 도달하지 않았다.
+ *   (b) **장식**: 판마다 화살 간 점수 폭이 거의 없다. 골라도 판이 안 바뀐다.
+ *   (c) **지배 전략**: 한 화살이 거의 모든 판에서 1등이다. 나머지는 함정 선택지다.
+ */
+/** 판별 최고/최저 점수 비가 이 아래면 그 판에서는 화살이 결과를 안 바꾼 것으로 본다. */
+const CROSS_FLAT_RATIO = 1.10
+/** 이 비율 이상의 판에서 1등이면 지배 전략. */
+const CROSS_DOMINANT = 0.60
+/** 전체 판 중 이 비율 이상이 '평평'하면 장식. */
+const CROSS_DECOR = 0.70
+
+interface CrossCell {
+  clear: number
+  score: number
+  arrows: number
+  combo: number
+  chains: number
+}
+
+function printCross(
+  stages: readonly StageRow[],
+  kinds: readonly string[],
+  cells: ReadonlyArray<ReadonlyArray<CrossCell>>,
+  bot: BotKind,
+  src: ArrowSource,
+): void {
+  console.log('')
+  console.log(`화살 × 스테이지 교차표 — 드래프트가 판을 바꾸는가 (봇 ${bot} · 화살 목록 ${src.origin})`)
+
+  const w = 9
+  const head = '  stage'.padEnd(10) + kinds.map((k) => k.slice(0, w - 1).padStart(w)).join('')
+  const line = '  ' + '-'.repeat(head.length)
+
+  const show = (title: string, pick: (c: CrossCell) => string): void => {
+    console.log('')
+    console.log('  ' + title)
+    console.log(head)
+    console.log(line)
+    for (let si = 0; si < stages.length; si++) {
+      const row = cells[si]
+      const st = stages[si]
+      if (row === undefined || st === undefined) continue
+      console.log(
+        ('  ' + st.key).padEnd(10) +
+        row.map((c) => pick(c).padStart(w)).join(''),
+      )
+    }
+  }
+
+  show('클리어율', (c) => pct(c.clear))
+  show('평균 점수', (c) => c.score.toFixed(0))
+  show('평균 사용 화살', (c) => c.arrows.toFixed(1))
+  show('최대 연쇄 (판당 최대 콤보 평균)', (c) => c.combo.toFixed(1))
+
+  // ── 판정 ──
+  const winsBy = new Map<string, number>()
+  const bestStages = new Map<string, string[]>()
+  let flat = 0
+  let identical = 0
+  let spreadSum = 0
+  for (let si = 0; si < stages.length; si++) {
+    const row = cells[si]
+    const st = stages[si]
+    if (row === undefined || st === undefined) continue
+    let bestI = 0
+    let best = Number.NEGATIVE_INFINITY
+    let worst = Number.POSITIVE_INFINITY
+    let allSame = true
+    const first = row[0]
+    for (let ki = 0; ki < row.length; ki++) {
+      const c = row[ki]
+      if (c === undefined) continue
+      if (first !== undefined && (c.score !== first.score || c.clear !== first.clear || c.arrows !== first.arrows)) {
+        allSame = false
+      }
+      if (c.score > best) {
+        best = c.score
+        bestI = ki
+      }
+      if (c.score < worst) worst = c.score
+    }
+    if (allSame) identical++
+    const ratio = worst > 0 ? best / worst : best > 0 ? Number.POSITIVE_INFINITY : 1
+    spreadSum += Number.isFinite(ratio) ? ratio : CROSS_FLAT_RATIO
+    if (Number.isFinite(ratio) && ratio < CROSS_FLAT_RATIO) flat++
+    const winner = kinds[bestI]
+    if (winner !== undefined) {
+      winsBy.set(winner, (winsBy.get(winner) ?? 0) + 1)
+      const lst = bestStages.get(winner)
+      if (lst === undefined) bestStages.set(winner, [st.key])
+      else if (lst.length < 8) lst.push(st.key)
+    }
+  }
+
+  const n = stages.length
+  console.log('')
+  console.log('  판정')
+  console.log(`    판별 최고/최저 점수 비 평균 ${(spreadSum / Math.max(n, 1)).toFixed(3)} ` +
+    `· 평평한 판(비 < ${CROSS_FLAT_RATIO}) ${flat}/${n}`)
+  for (const k of kinds) {
+    const wcount = winsBy.get(k) ?? 0
+    const where = bestStages.get(k)
+    console.log(
+      `    ${k.padEnd(9)} 1등 ${String(wcount).padStart(3)}/${n} 판` +
+      (where !== undefined && where.length > 0 ? `   강한 판: ${where.join(' ')}` : ''),
+    )
+  }
+
+  console.log('')
+  if (identical === n && kinds.length > 1) {
+    console.log('  ✗ 미배선 — 화살을 바꿔도 결과가 완전히 같다.')
+    console.log('    고른 화살이 sim에 도달하지 않았다. 이 도구는 두 경로를 시도한다:')
+    console.log('      · createWorld(stage, stats, arrow)  3번째 인자')
+    console.log('      · StageDef.arrow 필드')
+    console.log('    화살 담당이 둘 중 하나를 열어주면 이 표가 즉시 살아난다.')
+    return
+  }
+  let dominant: string | null = null
+  for (const [k, c] of winsBy) if (c / n >= CROSS_DOMINANT) dominant = k
+  if (dominant !== null) {
+    console.log(`  ✗ 지배 전략 — '${dominant}'가 ${Math.round(((winsBy.get(dominant) ?? 0) / n) * 100)}% 의 판에서 1등이다.`)
+    console.log('    나머지는 함정 선택지다. 3택이 사실상 1택이 된다.')
+  } else if (flat / n >= CROSS_DECOR) {
+    console.log(`  ✗ 장식 — ${Math.round((flat / n) * 100)}% 의 판에서 화살 간 차이가 ${CROSS_FLAT_RATIO}배 미만이다.`)
+    console.log('    골라도 판이 안 바뀐다. 효과의 크기를 키우거나 판 배치를 화살에 맞춰 갈라야 한다.')
+  } else {
+    console.log('  ✓ 선택이 결과를 바꾼다 — 판마다 다른 화살이 1등이고, 지배 전략도 없다.')
+  }
+}
+
+// ───────────────────────── 요약 ─────────────────────────
+
 function summarize(rows: readonly Agg[]): void {
   console.log('')
   console.log('요약 — docs/BALANCE.md 목표 대비')
@@ -1002,6 +1574,8 @@ function summarize(rows: readonly Agg[]): void {
   let avgSum = 0
   let avgCount = 0
   let gapOk = 0
+  let starve = 0
+  const starveStages: string[] = []
   for (const [key, m] of byStage) {
     const nov = m.get('novice')
     const avg = m.get('average')
@@ -1027,6 +1601,15 @@ function summarize(rows: readonly Agg[]): void {
       `  ${' '.repeat(10)} 발당 명중 nov ${pct(nov.hitRate)} / avg ${pct(avg.hitRate)} / exp ${pct(exp.hitRate)}` +
       `   클리어율 격차 ${(gap * 100).toFixed(1)}%p (목표 ${(gLo * 100) | 0}~${(gHi * 100) | 0}%p) ${gapNote}`,
     )
+    // 클리어 조건이 '과녁 전멸'로 바뀐 뒤의 새 실패 모드다: 쏠 화살이 없어서 못 깬 판.
+    if (avg.arrowStarveRate > 0.05) {
+      starve++
+      if (starveStages.length < 12) starveStages.push(key)
+      console.log(
+        `  ${' '.repeat(10)} ⚠ 화살 소진 실패 ${pct(avg.arrowStarveRate)}` +
+        ` · 남은 과녁 평균 ${avg.avgTargetsLeftOnFail.toFixed(1)} · 잔여 화살 ${avg.avgSpare.toFixed(1)}`,
+      )
+    }
     prevAvg = avg.clearRate
   }
   if (avgCount > 0) {
@@ -1034,6 +1617,11 @@ function summarize(rows: readonly Agg[]): void {
     console.log(
       `  전체 평균 average 클리어 ${pct(avgSum / avgCount)} (1~10판 95%+ · 11~25판 90%+ · 26~40판 80~95%)` +
       `   격차 목표 달성 ${gapOk}/${avgCount}판`,
+    )
+    console.log(
+      starve === 0
+        ? '  화살이 모자라 못 깬 판: 없음 (전 판에서 5% 미만)'
+        : `  화살이 모자라 못 깬 판: ${starve}판 — ${starveStages.join(' ')}`,
     )
   }
   if (totalHits < 0.05) {
@@ -1048,8 +1636,10 @@ function writeCsv(rows: readonly Agg[], args: Args): string {
   const out = fileURLToPath(new URL('./out/balance.csv', import.meta.url))
   mkdirSync(dirname(out), { recursive: true })
   const lines = [
-    'stage,bot,runs,clear_rate,avg_score,avg_arrows,avg_hits,hit_rate,collapse_rate,' +
-    'avg_hold_s,no_full_rate,collapse_shot_rate,avg_seconds,' +
+    'stage,bot,arrow,runs,clear_rate,avg_score,avg_arrows,avg_spare,avg_hits,hit_rate,' +
+    'avg_chains,avg_max_combo,peak_combo,avg_bullseyes,arrow_starve_rate,targets_left_on_fail,' +
+    'collapse_rate,avg_hold_s,no_full_rate,collapse_shot_rate,avg_seconds,' +
+    'stars0,stars1,stars2,stars3,train_mean,train_sd,train_min,train_max,' +
     'shots,safe_shots,safe_rate,safe_hit_rate,over_shots,over_hit_rate,' +
     'safe_err_rms_mrad,over_err_rms_mrad,over_strain,seed',
   ]
@@ -1057,11 +1647,16 @@ function writeCsv(rows: readonly Agg[], args: Args): string {
     const sRms = r.safeShots > 0 ? Math.sqrt(r.safeErrSq / r.safeShots) * 1000 : 0
     const oRms = r.overShots > 0 ? Math.sqrt(r.overErrSq / r.overShots) * 1000 : 0
     lines.push([
-      r.stage, r.bot, String(r.runs),
-      r.clearRate.toFixed(4), r.avgScore.toFixed(2), r.avgArrows.toFixed(3),
-      r.avgHits.toFixed(3), r.hitRate.toFixed(4), r.collapseRate.toFixed(4),
+      r.stage, r.bot, r.arrow, String(r.runs),
+      r.clearRate.toFixed(4), r.avgScore.toFixed(2), r.avgArrows.toFixed(3), r.avgSpare.toFixed(3),
+      r.avgHits.toFixed(3), r.hitRate.toFixed(4),
+      r.avgChains.toFixed(3), r.avgMaxCombo.toFixed(3), String(r.peakCombo), r.avgBullseyes.toFixed(3),
+      r.arrowStarveRate.toFixed(4), r.avgTargetsLeftOnFail.toFixed(3),
+      r.collapseRate.toFixed(4),
       r.avgHold.toFixed(4), r.noFullRate.toFixed(4), r.collapseShotRate.toFixed(4),
       r.avgSeconds.toFixed(2),
+      String(r.stars0), String(r.stars1), String(r.stars2), String(r.stars3),
+      trainMean(r).toFixed(3), trainSd(r).toFixed(3), String(r.trainMin), String(r.trainMax),
       String(r.shots), String(r.safeShots), safeRate(r).toFixed(4), safeHitRate(r).toFixed(4),
       String(r.overShots), overHitRate(r).toFixed(4),
       sRms.toFixed(4), oRms.toFixed(4),
@@ -1073,37 +1668,75 @@ function writeCsv(rows: readonly Agg[], args: Args): string {
   return out
 }
 
+function writeCrossCsv(
+  stages: readonly StageRow[],
+  kinds: readonly string[],
+  cells: ReadonlyArray<ReadonlyArray<CrossCell>>,
+  bot: BotKind,
+): string {
+  const out = fileURLToPath(new URL('./out/balance-arrows.csv', import.meta.url))
+  mkdirSync(dirname(out), { recursive: true })
+  const lines = ['stage,arrow,bot,clear_rate,avg_score,avg_arrows,avg_max_combo,avg_chains']
+  for (let si = 0; si < stages.length; si++) {
+    const row = cells[si]
+    const st = stages[si]
+    if (row === undefined || st === undefined) continue
+    for (let ki = 0; ki < kinds.length; ki++) {
+      const c = row[ki]
+      const k = kinds[ki]
+      if (c === undefined || k === undefined) continue
+      lines.push([
+        st.key, k, bot,
+        c.clear.toFixed(4), c.score.toFixed(2), c.arrows.toFixed(3),
+        c.combo.toFixed(3), c.chains.toFixed(3),
+      ].join(','))
+    }
+  }
+  writeFileSync(out, lines.join('\n') + '\n', 'utf8')
+  return out
+}
+
 // ───────────────────────── main ─────────────────────────
 
-function main(): void {
+function applyFloor(rows: readonly StageRow[]): readonly StageRow[] {
+  return rows.map((row) => ({
+    ...row,
+    make: (seed: number): StageDef => {
+      const d = row.make(seed)
+      return { ...d, arrows: floorArrows(d) }
+    },
+  }))
+}
+
+async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2))
+  const arrowSrc = await loadArrows()
+  const rewards = await loadRewards()
+
   const authored = args.preview ? [...REAL_STAGES, ...PREVIEW_STAGES] : REAL_STAGES
   // --floor=1 : 보유 화살이 바닥난 사람이 겪는 판. 여기서 클리어율이 무너지면 그 판은 벽이다.
-  const stages: readonly StageRow[] = args.floor
-    ? authored.map((row) => ({
-        ...row,
-        make: (seed: number): StageDef => {
-          const d = row.make(seed)
-          return { ...d, arrows: floorArrows(d) }
-        },
-      }))
-    : authored
-  const kinds: readonly BotKind[] = ['novice', 'average', 'expert']
-  const groups = stages.length * kinds.length
+  const stages: readonly StageRow[] = args.floor ? applyFloor(authored) : authored
+  const groups = stages.length * BOT_KINDS.length
+  const opts: GroupOpts = { arrow: args.arrow, rewards }
 
   // 실행 시간을 예산 안에 묶는다. 먼저 짧게 재보고 반복 수를 정한다.
   const probeRow = stages[0]
   if (probeRow === undefined) throw new Error('스테이지가 없다')
   const t0 = Date.now()
-  for (const k of kinds) playGroup(probeRow, k, args.seed ^ 0x1234, 2, 0)
+  for (const k of BOT_KINDS) playGroup(probeRow, k, args.seed ^ 0x1234, 2, 0, opts)
   const perRun = Math.max((Date.now() - t0) / 6, 0.05)
   const affordable = Math.floor(args.budgetMs / (perRun * groups * 1.5))
   const runs = Math.max(20, Math.min(args.runs, affordable))
 
   console.log(`한 발 — 헤드리스 밸런스 시뮬`)
-  console.log(`seed=${args.seed}  runs=${runs}/판  stages=${stages.length}  bots=${kinds.length}` +
+  console.log(`seed=${args.seed}  runs=${runs}/판  stages=${stages.length}  bots=${BOT_KINDS.length}` +
     (runs < args.runs ? `  (시간 예산으로 ${args.runs} → ${runs} 축소)` : '') +
-    (args.preview ? '  +미저작 챕터 프리뷰' : ''))
+    (args.preview ? '  +미저작 챕터 프리뷰' : '') +
+    (args.floor ? '  +화살 바닥 지급' : '') +
+    (args.arrow !== null ? `  화살 고정=${args.arrow}` : ''))
+  console.log(`화살 모듈: ${arrowSrc.loaded ? '연결됨' : '없음'} (${arrowSrc.origin})` +
+    `   보상 판정기: ${rewards.origin}`)
+  console.log('클리어 조건 = 과녁 전멸 (sim/world.ts). targetScore는 별 2개 기준선으로만 쓴다.')
   console.log('')
 
   const rows: Agg[] = []
@@ -1111,17 +1744,57 @@ function main(): void {
   for (let si = 0; si < stages.length; si++) {
     const row = stages[si]
     if (row === undefined) continue
-    for (const k of kinds) rows.push(playGroup(row, k, args.seed, runs, si))
+    for (const k of BOT_KINDS) rows.push(playGroup(row, k, args.seed, runs, si, opts))
   }
   const elapsed = (Date.now() - start) / 1000
 
   printTable(rows)
   printSafeZone(rows)
+  printStars(rows, rewards.origin)
+  printRewards(rows, rewards.origin)
   summarize(rows)
   const csv = writeCsv(rows, args)
   console.log('')
   console.log(`CSV: ${csv}`)
   console.log(`총 ${rows.length * runs}판 / ${elapsed.toFixed(1)}s`)
+
+  // ── 화살 교차표 ──
+  const wantCross = args.cross ?? arrowSrc.loaded
+  if (!wantCross) {
+    console.log('')
+    console.log('화살 × 스테이지 교차표: 건너뜀 (src/game/arrows.ts 없음). `--cross=1`로 강제할 수 있다.')
+    console.log('  드래프트가 붙으면 이 도구가 자동으로 교차표를 낸다 — 요구 계약은 파일 상단 주석 참조.')
+    return
+  }
+
+  const kinds = arrowSrc.ids
+  // 교차표는 한 봇으로만 돈다. 화살 × 스테이지 × 봇 3종은 예산을 통째로 먹는다.
+  const crossRuns = Math.max(20, Math.min(runs, Math.floor((args.budgetMs / (perRun * stages.length * kinds.length * 1.5)))))
+  const cells: CrossCell[][] = []
+  const ct0 = Date.now()
+  for (let si = 0; si < stages.length; si++) {
+    const row = stages[si]
+    if (row === undefined) continue
+    const line: CrossCell[] = []
+    for (const kindId of kinds) {
+      // 화살 종류를 시드에 섞지 않는다 — 같은 판을 같은 조건에서 화살만 바꿔 비교해야
+      // 차이가 화살의 것이지 난수의 것이 아니게 된다 (짝지은 비교).
+      const a = playGroup(row, args.crossBot, args.seed, crossRuns, si, { arrow: kindId, rewards })
+      line.push({
+        clear: a.clearRate,
+        score: a.avgScore,
+        arrows: a.avgArrows,
+        combo: a.avgMaxCombo,
+        chains: a.avgChains,
+      })
+    }
+    cells.push(line)
+  }
+  printCross(stages, kinds, cells, args.crossBot, arrowSrc)
+  const ccsv = writeCrossCsv(stages, kinds, cells, args.crossBot)
+  console.log('')
+  console.log(`교차표 CSV: ${ccsv}`)
+  console.log(`화살 ${kinds.length}종 × ${stages.length}판 × ${crossRuns}판 = ${kinds.length * stages.length * crossRuns}판 / ${((Date.now() - ct0) / 1000).toFixed(1)}s`)
 }
 
-main()
+void main()
