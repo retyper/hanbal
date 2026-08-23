@@ -19,6 +19,20 @@ const PANEL_ID = 'draft'
 const KEYS = ['1', '2', '3'] as const
 
 /**
+ * 화면이 뜬 직후 이만큼(ms)은 바깥 클릭을 건너뛰기로 치지 않는다.
+ *
+ * 드래프트는 "한 번 더 누르면 다음 판"을 누른 그 pointerdown 다음 rAF 틱에 열린다 —
+ * 리스너가 붙는 건 눌림 0~16ms 뒤인데 사람의 두 번째 클릭은 100~300ms 뒤에 온다.
+ * 화면이 직접 연타를 유도하고 커서는 조준하던 쪽(=스크림 위)에 있으므로, 가드가 없으면
+ * 카드 세 장이 한 프레임 번쩍하고 사라진 채 기본 살로 시작한다. 그 눌림은 건너뛰기 의사가
+ * 아니라 판을 넘긴 클릭의 잔향이다 (loop.ts prevDrawing 소진과 같은 성격의 에지 방어).
+ * mouseup(click)으로 옮기는 대신 시간으로 막는 이유: 판을 넘긴 그 눌림의 mouseup 자체가
+ * 이 화면이 열린 뒤에 도착해서, click으로 들으면 되레 첫 손가락에 즉시 닫힌다.
+ */
+// TODO(params): ui.draftOutsideGuardMs — 손맛 노브가 되면 params.ts로 옮긴다
+const OUTSIDE_GUARD_MS = 250
+
+/**
  * 종류별 강조색. 카드를 **글자를 읽기 전에** 구분하게 하는 장치라 손맛 노브가 아니다 —
  * params.ts에 올리지 않는다 (A2는 "손맛에 관여하는 숫자"의 규칙이다).
  */
@@ -110,12 +124,15 @@ export function mountDraft(o: Overlay, offer: DraftOffer, onPick: (id: ArrowKind
   panel.append(head, sub)
 
   let done = false
+  /** 이 화면이 마지막으로 뜬 시각. 바로 뒤에 도착하는 잔향 클릭을 가려낸다. */
+  let bornAt = performance.now()
   /** 어떤 경로로 들어와도 여기 한 곳에서 끝난다 — 리스너를 못 떼면 다음 판의 1키가 두 번 먹는다. */
   const finish = (id: ArrowKindId): void => {
     if (done) return
     done = true
     window.removeEventListener('keydown', onKey, true)
     window.removeEventListener('mousedown', onOutside, true)
+    document.removeEventListener('visibilitychange', onVisibility, true)
     o.hide()
     onPick(id)
   }
@@ -199,14 +216,45 @@ export function mountDraft(o: Overlay, offer: DraftOffer, onPick: (id: ArrowKind
     if (done) return
     const t = e.target
     if (t instanceof Node && panel.contains(t)) return
+    // 방금 뜬 화면을 지우는 눌림은 판을 넘긴 그 클릭의 잔향이다 (OUTSIDE_GUARD_MS 주석).
+    // 여기서 전파까지 끊어야 한다 — overlay의 스크림 리스너가 뒤이어 hide()를 부르면
+    // 아무도 안 고른 채 화면만 사라져 loop가 choosing에 갇힌다.
+    if (performance.now() - bornAt < OUTSIDE_GUARD_MS) {
+      e.preventDefault()
+      e.stopPropagation()
+      return
+    }
     finish(DEFAULT_ARROW)
+  }
+
+  /**
+   * 탭 복귀 방어 — 이 화면은 자기 생명주기를 스스로 지킨다.
+   *
+   * main.ts는 자리를 뜰 때 열린 패널을 일괄로 닫는다(복귀 첫 발까지 2클릭, C1). 그런데
+   * 드래프트만은 닫혀도 finish()가 안 불려 "아직 아무도 안 골랐다"가 남고, loop는
+   * choosing=true에 갇혀 판 넘김도 R도 안 먹는다 — 공부하다 나가는 게 대표 사용법인
+   * 이 게임에서 가장 자주 밟히는 경로다. 그래서 돌아오면 고르던 세 장을 그 자리에 다시 띄운다.
+   * done은 그대로 false이므로 'onPick은 정확히 한 번'(LoopUi 계약)은 유지된다.
+   */
+  const onVisibility = (): void => {
+    if (done || document.hidden) return
+    // 창을 다시 활성화한 그 클릭이 페이지까지 들어와 화면을 지우지 않도록 가드를 다시 연다.
+    bornAt = performance.now()
+    o.show(PANEL_ID)
+    focusFirst()
+  }
+
+  /** 첫 카드에 초점. 키보드로 들어온 사람이 Enter 한 번으로 끝낼 수 있게 (C5의 반대편). */
+  const focusFirst = (): void => {
+    const first = cards.firstElementChild
+    if (first instanceof HTMLElement) first.focus()
   }
 
   window.addEventListener('keydown', onKey, true)
   window.addEventListener('mousedown', onOutside, true)
+  document.addEventListener('visibilitychange', onVisibility, true)
 
   o.show(PANEL_ID)
-  // 첫 카드에 초점을 준다. 키보드로 들어온 사람이 Enter 한 번으로 끝낼 수 있게 (C5의 반대편).
-  const first = cards.firstElementChild
-  if (first instanceof HTMLElement) first.focus()
+  bornAt = performance.now()
+  focusFirst()
 }

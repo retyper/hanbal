@@ -51,6 +51,9 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
   // r이 0인 과녁은 정의상 항상 중심 명중. 0으로 나누면 NaN이 판 전체를 죽인다.
   const accuracy = target.r > 0 ? clamp01(1 - Math.sqrt(dsq) / target.r) : 1
 
+  const fx = w.fx
+  arrow.struck++
+
   // 화살이 직접 맞힌 것이 연쇄의 뿌리다
   target.chainDepth = 0
   const gained = award(w, target, accuracy)
@@ -65,15 +68,31 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
     combo: w.combo,
   })
 
-  if (target.kind === 'pierceable') {
-    arrow.pierced++
+  // 관통 — 두 종류가 한 식을 쓴다. 관통 과녁은 공짜로 뚫리고(free), 화살 종류의 관통은
+  // fx.pierceExtra 만큼의 예산을 쓴다. 손실 계수만 다르고 식은 같다.
+  const free = target.kind === 'pierceable'
+  if (free || arrow.kindPierced < fx.pierceExtra) {
+    if (free) arrow.pierced++
+    else arrow.kindPierced++
     // 중심을 뚫을수록 더 두꺼운 부분을 지나 속도를 잃는다. 가장자리를 스치면 거의 안 잃는다.
-    const keep = 1 - accuracy * P.arrow.pierceSpeedLoss
+    const keep = 1 - accuracy * (free ? P.arrow.pierceSpeedLoss : fx.pierceLoss)
     arrow.vx *= keep
     arrow.vy *= keep
   } else {
     arrow.outcome = 'hit'
     arrow.alive = false
+    // 사슬 살은 여기서 죽은 화살을 ballistics가 되살려 다음 과녁으로 보낸다.
+    // 방향을 바꾸는 일이라 충돌 순회(같은 선분) 안에서는 할 수 없다 — 플래그로 넘긴다.
+    if (arrow.bounces < fx.chainBounces) arrow.chainPending = 1
+  }
+
+  // 분열 — 자식 생성은 ballistics의 몫이다 (풀에서 슬롯을 꺼내는 건 저쪽 책임).
+  // 자식이 또 갈라지면 한 발이 화면을 채운다. 한 세대까지만.
+  if (fx.splitCount > 0 && arrow.splitDepth <= 0) arrow.splitPending = 1
+
+  if (arrow.splitPending > 0 || arrow.chainPending > 0) {
+    arrow.pendX = target.x
+    arrow.pendY = target.y
   }
 
   if (target.kind === 'aerial') {
@@ -81,6 +100,42 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
     target.falling = true
   } else {
     target.alive = false
+  }
+
+  // 폭발은 맨 끝이다 — 직격의 hit 이벤트가 먼저 나가야 소리·이펙트의 인과가 읽힌다.
+  burst(w, target)
+}
+
+/**
+ * 폭발 살 — 명중 지점 둘레의 과녁을 같이 친다 (docs/HOOK.md ★1).
+ *
+ * 이벤트는 `chain`을 재사용한다. 새 이벤트 종류를 만들면 render·audio 양쪽에 분기가 하나씩
+ * 더 생기는데, 플레이어에게 이건 "딸려 죽었다"는 같은 사건이다.
+ *
+ * ★ **재귀하지 않는다.** 폭발로 죽은 과녁은 다시 폭발하지 않는다 — 밀집 배치에서 한 발이
+ * 판 전체를 지우면 조준이 사라진다. 다만 공중 과녁은 낙하로 넘겨 기존 연쇄에 합류시킨다.
+ */
+function burst(w: World, center: Target): void {
+  const R = w.fx.burstRadius
+  if (R <= 0) return
+  const r2 = R * R
+  const targets = w.targets
+
+  for (let j = 0; j < targets.length; j++) {
+    const c = targets[j]
+    if (c === undefined || c === center || !c.alive || c.falling) continue
+    const dx = c.x - center.x
+    const dy = c.y - center.y
+    const d2 = dx * dx + dy * dy
+    if (d2 > r2) continue
+
+    // 중심에서 멀수록 약하게 맞는다. 링 배수와 같은 축이라 점수 규칙이 하나로 유지된다.
+    c.chainDepth = 1
+    award(w, c, clamp01(1 - Math.sqrt(d2) / R))
+    w.events.push({ t: 'chain', targetId: c.id, x: c.x, y: c.y, depth: 1 })
+
+    if (c.kind === 'aerial') c.falling = true
+    else c.alive = false
   }
 }
 
@@ -135,7 +190,11 @@ function sweepChain(w: World, faller: Target): void {
 function award(w: World, target: Target, accuracy: number): number {
   // 가장자리 1배 ~ 중심 ringMulMax 배. ringCurve로 중심에 얼마나 인색할지 정한다.
   const ring = 1 + (P.score.ringMulMax - 1) * Math.pow(accuracy, P.score.ringCurve)
-  const gained = Math.round(target.score * ring * Math.pow(P.chain.comboMul, w.combo))
+  // 화살 종류의 점수 배수는 여기 한 곳에만 곱한다 — 직격이든 폭발·연쇄로 딸려 죽었든
+  // "이 화살이 만든 점수"는 전부 같은 배수를 받아야 설명이 하나로 남는다.
+  const gained = Math.round(
+    target.score * ring * Math.pow(P.chain.comboMul, w.combo) * w.fx.scoreMul,
+  )
   w.score += gained
   w.combo++
   return gained

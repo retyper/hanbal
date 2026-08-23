@@ -8,6 +8,7 @@
 import { TAU } from '../core/math.ts'
 import { makeRng } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
+import { arrowFx, refreshArrowFx } from './arrowfx.ts'
 import { effectiveStats, stepArcher } from './bow.ts'
 import { stepArrows } from './ballistics.ts'
 import { stepTargets } from './target.ts'
@@ -15,6 +16,7 @@ import { TRAIL_POINTS } from './types.ts'
 import type {
   ArcherState,
   Arrow,
+  ArrowKindId,
   InputFrame,
   StageDef,
   Stats,
@@ -26,8 +28,11 @@ import type {
 /**
  * 화살 풀 여유분. 지급 화살 수만큼만 잡으면 뒤 챕터의 관통·연사 기믹에서 판 도중 재할당이 난다.
  * 판 중 할당 0 이 목표다 (ARCHITECTURE A5).
+ *
+ * 4 -> 8: 분열 살이 명중마다 자식 둘을 풀에서 꺼내 쓴다 (arrowsLeft 는 건드리지 않는다).
+ * 여유가 없으면 자식이 조용히 안 나와 그 화살만 효과가 없는 것처럼 보인다.
  */
-const ARROW_POOL_SLACK = 4
+const ARROW_POOL_SLACK = 8
 
 /**
  * 궁수는 화면 왼쪽 지면 위에 선다. 활을 잡은 손은 사람 어깨 높이.
@@ -79,6 +84,14 @@ function newArrow(): Arrow {
     angle: 0,
     age: 0,
     pierced: 0,
+    struck: 0,
+    kindPierced: 0,
+    bounces: 0,
+    splitDepth: 0,
+    splitPending: 0,
+    chainPending: 0,
+    pendX: 0,
+    pendY: 0,
     outcome: 'expired',
     power: 0,
     // 궤적 버퍼는 화살 하나당 평생 한 번만 만든다. 발사할 때마다 만들면 GC가 프레임을 먹는다.
@@ -182,6 +195,14 @@ function resetArrow(a: Arrow): void {
   a.angle = 0
   a.age = 0
   a.pierced = 0
+  a.struck = 0
+  a.kindPierced = 0
+  a.bounces = 0
+  a.splitDepth = 0
+  a.splitPending = 0
+  a.chainPending = 0
+  a.pendX = 0
+  a.pendY = 0
   a.outcome = 'expired'
   a.power = 0
   // trail 버퍼 자체는 재사용한다(할당 0). 다만 내용물까지 지운다 —
@@ -232,7 +253,8 @@ function growTargets(w: World, want: number): void {
 
 // ───────────────────────────── 공개 API ─────────────────────────────
 
-export function createWorld(stage: StageDef, stats: Stats): World {
+export function createWorld(stage: StageDef, stats: Stats, arrow?: ArrowKindId): World {
+  const kind: ArrowKindId = arrow ?? 'basic'
   const w: World = {
     tick: 0,
     dt: 1 / P.sim.hz,
@@ -244,6 +266,8 @@ export function createWorld(stage: StageDef, stats: Stats): World {
     targets: [],
     wind: 0,
     windPhase: 0,
+    arrowKind: kind,
+    fx: arrowFx(kind),
     arrowsLeft: stage.arrows,
     score: 0,
     combo: 0,
@@ -252,7 +276,7 @@ export function createWorld(stage: StageDef, stats: Stats): World {
     events: [],
   }
   // 풀 할당과 초기화는 resetWorld 한 곳에만 둔다. 두 벌로 갈라지면 반드시 어긋난다.
-  resetWorld(w, stage, stats)
+  resetWorld(w, stage, stats, kind)
   return w
 }
 
@@ -260,12 +284,19 @@ export function createWorld(stage: StageDef, stats: Stats): World {
  * 판 재시작. **새 World 를 만들지 않는다.**
  * R 키 연타로 매번 객체를 새로 만들면 GC 가 프레임을 끊어먹는다 (A5).
  */
-export function resetWorld(w: World, stage: StageDef, stats: Stats): void {
+export function resetWorld(w: World, stage: StageDef, stats: Stats, arrow?: ArrowKindId): void {
   const derived = effectiveStats(stats)
 
   w.tick = 0
   // hz 는 튜닝 콘솔에서 바뀔 수 있다. 판 시작마다 다시 읽어야 슬라이더가 먹는다.
   w.dt = 1 / P.sim.hz
+
+  // 화살 종류는 **판 경계에서만** 바뀐다. 판 도중에 바뀌면 같은 시드가 다른 판이 된다 (A1).
+  // 인자를 안 주면 직전 판의 종류를 그대로 이어간다 (R 재시작이 화살을 잃지 않게).
+  if (arrow !== undefined) w.arrowKind = arrow
+  // 효과 수치를 P에서 다시 굽는다. 튜닝 콘솔로 노브를 움직인 게 여기서 먹는다 (A2).
+  refreshArrowFx()
+  w.fx = arrowFx(w.arrowKind)
   // 같은 시드 = 같은 판 (A1). Rng 객체를 새로 만들지 않고 상태만 되감는다.
   w.rng.restore(stage.seed)
   w.status = 'playing'
@@ -364,9 +395,9 @@ function anyTargetFalling(w: World): boolean {
 /**
  * 결과가 더 뒤집힐 여지가 없는가. 판 종료 정산은 이게 true가 된 뒤에 한다.
  *
- * 왜: evaluateEnd는 클리어를 **즉시** 판정한다(마지막 순간에 목표를 넘겼는데 시간 초과로
- * 실패하면 배신감이 남기 때문). 그래서 status가 넘어간 뒤에도 화살과 낙하 과녁은 계속 돌고
- * 점수가 더 오른다 — 그 프레임에 스냅샷을 뜨면 연쇄 점수가 통째로 기록에서 빠진다.
+ * 왜: evaluateEnd는 마지막 과녁이 쓰러진 그 스텝에 클리어를 **즉시** 판정한다(잔량 0으로
+ * 실패 판정이 먼저 나면 배신감이 남기 때문). 그래서 status가 넘어간 뒤에도 화살과 낙하 과녁은
+ * 계속 돌고 점수가 더 오른다 — 그 프레임에 스냅샷을 뜨면 연쇄 점수가 통째로 기록에서 빠진다.
  */
 export function isSettled(w: World): boolean {
   return !anyArrowInPlay(w) && !anyTargetFalling(w)

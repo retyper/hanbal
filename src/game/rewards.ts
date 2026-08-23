@@ -6,8 +6,8 @@
  *
  * ── 별 셋: 재도전의 이유 ──
  *   ★    클리어 (과녁을 다 없앴다)
- *   ★★   점수 기준선(stage.targetScore) 도달
- *   ★★★  무손실 — 빗나간 화살이 없다
+ *   ★★   점수 기준선 × STAR2_MUL 도달 — 링 배수·연쇄가 얹혀야 닿는다
+ *   ★★★  무손실 — 빗나간 화살이 하나도 없다
  * 별은 단조롭게 쌓인다. ★★을 받았는데 ★이 없는 상태는 만들지 않는다 — 그러면 별이
  * "몇 개인가"가 아니라 "어느 것인가"가 되어 한눈에 안 읽힌다.
  *
@@ -38,13 +38,23 @@ export interface RunStats {
   arrowsUsed: number
   /** 이 판에 지급된 화살 */
   arrowsGiven: number
-  /** 명중 수. 관통·연쇄 때문에 shots보다 클 수 있다. */
+  /** 명중 수 (hit 이벤트). 관통·분열·사슬 때문에 shots보다 클 수 있다. */
   hits: number
   /** 쏜 발수 */
   shots: number
+  /**
+   * 아무것도 못 맞히고 사라진 **쏜 화살**의 수 (miss 이벤트).
+   *
+   * 축은 '쏜 발'이다. 분열 자식은 지급된 화살이 아니라 그 한 발의 결과물이라 여기 안 들어간다
+   * (ballistics.ts가 자식의 착지에는 아예 miss를 뱉지 않는다). 넣으면 분모(shots)보다 커진다.
+   *
+   * 무손실을 `hits >= shots`로 재면 **거짓 양성이 난다** — 관통 살로 셋을 꿰뚫고 한 발을
+   * 완전히 흘려도 hits 3 ≥ shots 2 라 무손실이 된다. 빗나간 것을 직접 세는 게 유일하게 옳다.
+   */
+  misses: number
   /** 이 판에서 이어간 최고 연쇄 수 */
   bestChain: number
-  /** 정중앙 명중 수 (명중도 ≥ BULLSEYE_ACC) */
+  /** 정중앙 명중 수 (명중도 ≥ P.hit.bullseyeAcc) */
   bullseyes: number
 }
 
@@ -61,10 +71,14 @@ export interface Reward {
 
 /**
  * 정중앙 판정 문턱 (명중도 0..1, 1이 정중심).
- * **세는 쪽(loop)과 보상 쪽(여기)이 같은 값을 봐야 하므로 여기가 단일 출처다.**
- * HOOK ★6의 "정중앙 크리티컬"(다른 소리 + 슬로모)도 같은 문턱을 쓴다.
+ *
+ * 단일 출처는 `P.hit.bullseyeAcc`다 (A2). 여기서 상수로 복사해 두면 손맛 쪽(render/effects.ts의
+ * 크리티컬)과 보상 쪽이 갈라져, "정중앙!"이 터졌는데 정중앙으로 안 세어지는 판이 생긴다.
+ * 함수인 이유도 그것이다 — 튜닝 콘솔이 P를 런타임에 덮어쓰므로 값을 붙잡아두면 안 된다.
  */
-export const BULLSEYE_ACC = 0.9
+export function bullseyeAcc(): number {
+  return P.hit.bullseyeAcc
+}
 
 export const STAR_MAX = 3
 
@@ -110,10 +124,20 @@ const FEAT_BONUS_BIG = '명궁의 화살통'
 
 // ─────────────────────────── 별 ───────────────────────────
 
-/** 빗나간 화살이 없는가. 관통·연쇄로 hits가 shots를 넘는 판도 있으므로 부등호는 ≥ 다. */
+/** 빗나간 화살이 하나도 없는가. 판정의 근거는 miss 이벤트 수 하나뿐이다 (RunStats.misses 주석). */
 function flawless(r: RunStats): boolean {
-  return r.shots > 0 && r.hits >= r.shots
+  return r.shots > 0 && r.misses === 0
 }
+
+/**
+ * ★★의 점수 문턱. `stage.targetScore × 이 값`.
+ *
+ * 왜 1이 아닌가: targetScore = 100 × 요구 명중수 이고, 클리어 = 과녁 전멸이라
+ * **깨면 점수가 반드시 targetScore 이상**이다. 배수가 1이면 ★★는 클리어의 다른 이름일 뿐이고,
+ * 별이 눈금이 아니라 상수가 된다 (실측 ★★ 획득률 99.4% — docs/BALANCE.md).
+ * 링 배수(최대 2배)와 연쇄가 얹혀야 닿는 자리에 둬야 "다시 해서 별을 채운다"가 성립한다.
+ */
+const STAR2_MUL = 1.6
 
 /**
  * 별 개수. 클리어하지 못한 판은 0이다 — 점수만 채우고 과녁을 남긴 판에 별을 주면
@@ -122,7 +146,7 @@ function flawless(r: RunStats): boolean {
 export function starsOf(stage: StageDef, r: RunStats): number {
   if (!r.cleared) return 0
   let s = 1
-  if (stage.targetScore <= 0 || r.score >= stage.targetScore) s++
+  if (stage.targetScore <= 0 || r.score >= stage.targetScore * STAR2_MUL) s++
   if (flawless(r)) s++
   return s
 }

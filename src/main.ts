@@ -10,8 +10,11 @@
  */
 import { createLoop } from './game/loop.ts'
 import { loadSave } from './game/save.ts'
+import { progressOf } from './game/unlocks.ts'
 import { createOverlay } from './ui/overlay.ts'
 import { mountGrowth, showOfflineGain, showRunGain } from './ui/growth.ts'
+import { mountCollection, showUnlocked, updateCollection } from './ui/collection.ts'
+import { mountDraft } from './ui/draft.ts'
 
 const el = document.getElementById('game')
 if (!(el instanceof HTMLCanvasElement)) {
@@ -43,8 +46,13 @@ const loop = createLoop(el, {
   save,
   ui: {
     paused: () => overlay.visible(),
-    runGain: (training, leveled) => showRunGain(overlay, training, leveled),
+    runGain: (line, leveled) => showRunGain(overlay, line, leveled),
     offlineGain: (gain) => showOfflineGain(overlay, gain),
+    // 3택 화면 (docs/HOOK.md ★1). onPick 한 번으로 끝나고 그 순간 판이 시작된다 (C1).
+    draft: (offer, onPick) => mountDraft(overlay, offer, onPick),
+    // 새로 열린 것은 구석 알림 한 줄. 모달로 막지 않는다 (C1).
+    unlocked: (ids) => showUnlocked(overlay, ids),
+    progressed: () => updateCollection(progressOf(save), save.unlocked, save.stars),
   },
 })
 
@@ -55,6 +63,11 @@ mountGrowth(overlay, save, () => {}, {
   toggle: () => loop.toggleMute(),
 })
 
+// 수집 화면 — **잠긴 칸을 보여주는 것**이 이 화면의 목적이다 (HOOK ★2).
+// 성장 화면 다음에 붙여야 HUD 버튼 순서가 [성장][수집]이 된다.
+mountCollection(overlay, progressOf(save), save.unlocked, save.stars)
+
+// 드래프트가 첫 프레임에 뜰 수 있으므로 화면들이 다 붙은 뒤에 시작한다.
 loop.start()
 
 // 백버퍼 크기·dpr을 실제로 계산하는 곳은 render/camera.ts 하나뿐이다. 여기서는 통지만 한다.

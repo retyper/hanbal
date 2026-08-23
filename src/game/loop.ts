@@ -14,14 +14,20 @@
  * 루프는 이벤트를 **비우는 것**만 책임진다 — scene.ts / effects.ts / audio 가 읽되 비우지 않기로 했다.
  */
 import { cancelDraw, createWorld, isSettled, requireFreshPress, resetWorld, restArcher, step } from '../sim/world.ts'
+import type { ArrowKindId } from '../sim/types.ts'
 import { createInput } from '../input/pointer.ts'
 import { createRenderer, getCamera, getHitStopMs } from '../render/scene.ts'
 import type { HudState } from '../render/hud.ts'
-import { createSfx, pumpSfx, sfxMuted, toggleMute, unlockSfx, updateSfx } from '../audio/sfx.ts'
+import { createSfx, playUi, pumpSfx, sfxMuted, toggleMute, unlockSfx, updateSfx } from '../audio/sfx.ts'
 import { getStage, STAGES } from './stages.ts'
 import { onSaveChanged, writeSave, type SaveData } from './save.ts'
 import { settleOffline, type OfflineGain } from './offline.ts'
 import { awardRun, canGrow, grantArrows, type StatKey } from './progression.ts'
+import { arrowName, DEFAULT_ARROW } from './arrows.ts'
+import { draftNeeded, rollDraft, type DraftOffer } from './draft.ts'
+import { bullseyeAcc, gradeRun, rewardLine, type RunStats } from './rewards.ts'
+import { evaluateUnlocks, progressOf, unlockedArrows } from './unlocks.ts'
+import { makeRng } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { clamp } from '../core/math.ts'
 
@@ -30,12 +36,25 @@ import { clamp } from '../core/math.ts'
  * (레이어 방향: ui → game 이지 game → ui 가 아니다. ARCHITECTURE A1)
  */
 export interface LoopUi {
-  /** 화면을 덮는 패널(성장 화면)이 열려 있는가. 열려 있는 동안 sim을 멈춘다. */
+  /** 화면을 덮는 패널(성장·수집·드래프트)이 열려 있는가. 열려 있는 동안 sim을 멈춘다. */
   paused(): boolean
-  /** 판 보상 한 줄. 결과 화면을 만들지 않는다 (C1). */
-  runGain(training: number, leveled: readonly StatKey[]): void
+  /**
+   * 판 보상 한 줄 (별·훈련치·위업). 결과 화면을 만들지 않는다 (C1).
+   * `line`은 game/rewards.ts의 rewardLine()이 만든 문장 그대로다.
+   */
+  runGain(line: string, leveled: readonly StatKey[]): void
   /** 자리를 비운 사이 쌓인 것. 확인 버튼 없는 자동 수령이다 (C1·C4). */
   offlineGain(gain: OfflineGain): void
+  /**
+   * 판 시작 전 3택 (docs/HOOK.md ★1). **onPick은 반드시 정확히 한 번 불러야 한다** —
+   * 안 부르면 판이 시작되지 않는다. 건너뛰기는 `DEFAULT_ARROW`로 부르면 된다.
+   * 화면을 띄우는 쪽이 패널을 열어 paused()를 true로 만들므로 그동안 sim은 멈춰 있다.
+   */
+  draft(offer: DraftOffer, onPick: (id: ArrowKindId) => void): void
+  /** 새로 열린 해금. **모달로 막지 않는다** — 구석 알림 한 줄이다 (C1). */
+  unlocked(ids: readonly string[]): void
+  /** 세이브의 별·진행도가 바뀌었다. 수집 화면이 다시 그린다. */
+  progressed(): void
 }
 
 export interface LoopDeps {
@@ -63,7 +82,20 @@ const HINT_NEXT = '한 번 더 누르면 다음 판'
 const HINT_RETRY = '한 번 더 누르면 다시'
 
 /** 판 결과 스크래치. 판마다 객체를 새로 만들 이유가 없다 (A5). */
-const RUN = { cleared: false, score: 0, accuracy: 0, arrowsUsed: 0 }
+const RUN = { cleared: false, score: 0, accuracy: 0, arrowsUsed: 0, hits: 0 }
+
+/** 채점용 스크래치. 위와 같은 이유로 하나만 만들어 제자리에서 갱신한다. */
+const GRADE: RunStats = {
+  cleared: false,
+  score: 0,
+  arrowsUsed: 0,
+  arrowsGiven: 0,
+  hits: 0,
+  shots: 0,
+  misses: 0,
+  bestChain: 0,
+  bullseyes: 0,
+}
 
 export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop {
   const { save, ui } = deps
@@ -101,10 +133,18 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   let stageIndex = clamp(Math.floor(save.stageIndex), 0, STAGES.length - 1)
   save.stageIndex = stageIndex
   // World는 하나만 만들고 끝까지 재사용한다. 판마다 새로 만들면 프레임당 할당 0이 깨진다 (A5).
-  const w = createWorld(getStage(stageIndex), save.stats)
+  const w = createWorld(getStage(stageIndex), save.stats, DEFAULT_ARROW)
+
+  /**
+   * 드래프트와 변동 보상이 쓰는 난수. **sim의 w.rng와 완전히 분리돼 있다** —
+   * 여기서 w.rng를 한 칸이라도 밀면 같은 시드의 같은 판이 다른 판이 된다 (A1, draft.ts 주석).
+   * 상태는 세이브에 남아 판마다 앞으로 나아간다: 같은 판을 다시 깨도 보너스가 되풀이되지 않는다.
+   */
+  if (save.runSeed === 0) save.runSeed = (Date.now() ^ 0x9e3779b9) >>> 0
+  const runRng = makeRng(save.runSeed)
 
   // 매 프레임 제자리에서 갱신한다. 새로 만들지 않는다 (A5).
-  const hud: HudState = { training: 0, canLevelUp: false, muted: false, toast: '' }
+  const hud: HudState = { training: 0, canLevelUp: false, muted: false, toast: '', arrow: '' }
 
   let raf = 0
   let wanted = false // start()가 불렸는가 — 사용자 의도. 탭 가시성과는 별개로 기억한다.
@@ -116,10 +156,20 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   // ── 판 단위 집계 ──
   /** 이번 판에 실제로 지급된 화살. stage.arrows 가 아니라 보유분에 따라 줄 수 있다. */
   let granted = 0
-  /** 이번 판의 명중 수. 정확도 보상의 분자다. */
+  /** 이번 판의 명중 수 (hit 이벤트). 정확도 보상의 분자다. */
   let hits = 0
+  /** 아무것도 못 맞히고 사라진 화살 수. ★★★(무손실)의 유일한 근거다. */
+  let misses = 0
+  /** 정중앙 명중 수 (명중도 ≥ P.hit.bullseyeAcc). 해금 조건이 읽는다. */
+  let bullseyes = 0
+  /** 이 판에서 이어간 최고 연쇄 수. w.combo의 봉우리를 스텝마다 집는다. */
+  let bestChain = 0
   /** 이번 판의 보상을 이미 줬는가. 종료는 한 번만 정산한다. */
   let awarded = false
+  /** 이 판의 화살 종류. 드래프트가 정한다. */
+  let arrow: ArrowKindId = DEFAULT_ARROW
+  /** 드래프트 화면이 떠 있어 아직 판이 시작되지 않았다. 이 동안 판 넘김 입력을 무시한다. */
+  let choosing = false
 
   /** 세이브의 스탯을 활에 넣는다. 이게 없으면 성장이 물리에 아무 영향을 못 준다. */
   const applyStats = (): void => {
@@ -140,22 +190,28 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     writeSave(save)
   }
 
-  const loadStage = (): void => {
+  const loadStage = (kind: ArrowKindId): void => {
     // 정산 전에 판을 갈아엎으면 보상이 통째로 사라진다. 아직 안 줬으면 여기서 준다.
     // (isSettled를 기다리는 동안 사용자가 다음 판으로 넘기는 경로가 실제로 존재한다.)
     if (!awarded && w.status !== 'playing') {
       awarded = true
       finishRun()
     }
+    arrow = kind
     const stage = getStage(stageIndex)
-    resetWorld(w, stage, save.stats)
+    resetWorld(w, stage, save.stats, kind)
     // 지급량은 game 레이어의 경제 판단이라 sim 계약(resetWorld)에 넣지 않고 여기서 덮어쓴다.
     // 풀 크기는 stage.arrows 기준으로 이미 잡혀 있으므로 줄이는 쪽은 언제나 안전하다.
     granted = grantArrows(save, stage)
     w.arrowsLeft = granted
     hits = 0
+    misses = 0
+    bullseyes = 0
+    bestChain = 0
     awarded = false
     acc = 0
+    // 기본 살은 이름을 띄우지 않는다 — 효과가 없는 걸 알릴 이유가 없고, HUD는 최소한만이다.
+    hud.arrow = kind === DEFAULT_ARROW ? '' : arrowName(kind)
     save.stageIndex = stageIndex
     // 판을 넘긴 그 눌림이 다음 판의 첫 발까지 이어지지 않게 에지를 소진시킨다.
     // 루프 쪽 에지만 소진하면 InputFrame.drawing 이 아직 true라 다음 스텝에 시위가 잡힌다 —
@@ -166,18 +222,85 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   }
 
   /**
-   * 판이 끝났다. 훈련치를 주고 쏜 만큼 화살을 뺀다.
-   * 진입 과금이 아니라 **실제로 쏜 만큼** 소모다 — 켜놓고 자리를 뜬 사람이 손해를 보면 C2 위반이다.
+   * 판을 시작한다 — 그 앞에 3택이 한 번 낀다 (docs/HOOK.md ★1).
+   *
+   * 고를 게 없으면(해금 0개) 화면을 아예 띄우지 않고 기본 살로 바로 간다. 아무것도 못 고르는
+   * 패널을 한 번 닫게 만드는 건 "탭 복귀 3초 안에 첫 발"(C1)을 갉아먹는 짓이다.
+   * 드래프트 난수는 **판 시작마다 한 번** 앞으로 나아간다 — 같은 판을 다시 해도 같은 손패가
+   * 나오지 않아야 "다시 해도 다른 판"이 성립한다 (HOOK ★1).
+   */
+  const beginStage = (): void => {
+    const offer = rollDraft(runRng, unlockedArrows(save.unlocked), stageIndex)
+    save.runSeed = runRng.state()
+    if (!draftNeeded(offer)) {
+      loadStage(DEFAULT_ARROW)
+      return
+    }
+    choosing = true
+    ui.draft(offer, (id) => {
+      choosing = false
+      // 고른 순간의 소리. ui/ 는 audio/ 를 직접 import하지 않기로 했으므로(레이어 방향)
+      // 화면이 아니라 여기서 낸다 — 어차피 콜백이 정확히 한 번 오는 자리다.
+      playUi(sfx, 'press')
+      loadStage(id)
+    })
+  }
+
+  /**
+   * 판이 끝났다. 채점 → 훈련치·화살 정산 → 별·누적 기록 → 해금 판정, 이 순서다.
+   *
+   * 순서가 결과를 바꾼다: awardRun의 '첫 클리어' 판정이 **아직 갱신되지 않은** 별을 읽어야
+   * 하고, 해금 판정은 **갱신된** 기록을 읽어야 한다. 사이에 별 갱신이 들어가는 이유다.
+   *
+   * 화살 소모는 진입 과금이 아니라 **실제로 쏜 만큼**이다 — 켜놓고 자리를 뜬 사람이 손해를
+   * 보면 C2 위반이다.
    */
   const finishRun = (): void => {
     const used = granted - w.arrowsLeft
     const shot = used > 0 ? used : 0
-    RUN.cleared = w.status === 'cleared'
+    const cleared = w.status === 'cleared'
+
+    GRADE.cleared = cleared
+    GRADE.score = w.score
+    GRADE.arrowsUsed = shot
+    GRADE.arrowsGiven = granted
+    GRADE.hits = hits
+    GRADE.shots = shot
+    GRADE.misses = misses
+    GRADE.bestChain = bestChain
+    GRADE.bullseyes = bullseyes
+    const reward = gradeRun(runRng, w.stage, GRADE)
+    save.runSeed = runRng.state()
+
+    RUN.cleared = cleared
     RUN.score = w.score
-    RUN.accuracy = shot > 0 ? hits / shot : 0
+    RUN.accuracy = shot > 0 ? (shot - misses) / shot : 0
     RUN.arrowsUsed = shot
-    const gain = awardRun(save, w.stage, RUN)
-    ui.runGain(gain.training, gain.leveled)
+    RUN.hits = hits
+    const gain = awardRun(save, w.stage, RUN, reward)
+
+    // 별은 **줄지 않는다.** 다시 해서 못 받아도 가진 별은 남는다 (성장은 되돌아가지 않는다).
+    const id = w.stage.id
+    const had = save.stars[id] ?? 0
+    if (reward.stars > had) save.stars[id] = reward.stars
+    if (bestChain > save.bestChain) save.bestChain = bestChain
+    save.bullseyes += bullseyes
+    if (reward.stars >= 3) save.perfectRuns++
+
+    const fresh = evaluateUnlocks(progressOf(save), save.unlocked)
+    for (let i = 0; i < fresh.length; i++) {
+      const uid = fresh[i]
+      if (uid !== undefined) save.unlocked.push(uid)
+    }
+
+    saveNow()
+    ui.progressed()
+    // 별·위업까지 한 줄로. 결과 화면에 가두지 않는다 (C1).
+    ui.runGain(rewardLine(reward), gain.leveled)
+    if (fresh.length > 0) {
+      ui.unlocked(fresh)
+      playUi(sfx, 'unlock')
+    }
   }
 
   const tick = (now: number): void => {
@@ -222,6 +345,9 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       let steps = 0
       while (acc >= w.dt && steps < P.sim.maxCatchUpSteps) {
         step(w, input.frame)
+        // 콤보의 봉우리는 **스텝마다** 집는다. 프레임 끝에서 한 번 보면 같은 프레임 안에서
+        // 연쇄가 이어졌다 끊긴(miss) 경우의 최댓값을 통째로 놓친다.
+        if (w.combo > bestChain) bestChain = w.combo
         // 스텝 경계를 입력에 알린다. 한 프레임 안에서 눌렀다 뗀 짧은 클릭이
         // 통째로 삼켜지지 않게 하는 래치가 여기서 풀린다 (pointer.ts).
         input.endStep()
@@ -235,14 +361,23 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       if (w.status === 'playing') playedMs += realDt * 1000
     }
 
-    // 이번 프레임에 쌓인 명중을 센다. 정확도 보상의 분자다.
-    // 소리·이펙트와 같은 배열을 읽되 비우지 않는다 — 비우는 건 이 함수의 맨 끝이다.
+    // 이번 프레임에 쌓인 판 기록을 센다. 소리·이펙트와 같은 배열을 읽되 비우지 않는다 —
+    // 비우는 건 이 함수의 맨 끝이다.
     for (let i = 0; i < w.events.length; i++) {
-      if (w.events[i]?.t === 'hit') hits++
+      const ev = w.events[i]
+      if (ev === undefined) continue
+      if (ev.t === 'hit') {
+        hits++
+        if (ev.accuracy >= bullseyeAcc()) bullseyes++
+      } else if (ev.t === 'miss') {
+        // 아무것도 못 맞히고 사라진 화살. ballistics가 이때만 miss를 뱉는다 —
+        // 셋을 꿰뚫고 착지한 화살도, 분열 자식의 낙하도 여기 안 걸린다 (축은 '쏜 발'이다).
+        misses++
+      }
     }
 
     // 종료는 한 번만 정산한다. 그리고 **결과가 더 뒤집힐 여지가 없을 때까지 기다린다** —
-    // 클리어는 목표 점수를 넘긴 그 스텝에 즉시 판정되지만, 그 뒤로도 날아가던 화살과
+    // 클리어는 마지막 과녁이 쓰러진 그 스텝에 즉시 판정되지만, 그 뒤로도 날아가던 화살과
     // 낙하 중인 공중 과녁이 연쇄로 점수를 더 올린다. status 전이 프레임에 스냅샷을 뜨면
     // 1-10의 연쇄 점수가 통째로 기록에서 빠진다 (화면 756점, 저장 452점).
     if (!awarded && w.status !== 'playing' && isSettled(w)) {
@@ -251,15 +386,21 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     }
 
     // 에지는 멈춰 있어도 소진한다. 안 그러면 패널을 닫는 순간 아까 누른 R이 뒤늦게 터진다.
-    if (input.takeRestart() && !paused) loadStage()
+    // R 재시작은 **화살을 바꾸지 않는다** — 3택을 다시 굴리면 마음에 드는 손패가 나올 때까지
+    // R을 연타하는 게 최적해가 되고, 그건 이 시스템을 뽑기로 만드는 짓이다 (GDD 9장).
+    if (input.takeRestart() && !paused && !choosing) loadStage(arrow)
 
     // 결과 화면에 가두지 않는다 (제약 C1). 다시 누르는 순간 바로 다음 판. 확인 버튼 없음.
     const drawingNow = input.frame.drawing
-    if (!paused && w.status !== 'playing' && drawingNow && !prevDrawing) {
+    if (!paused && !choosing && w.status !== 'playing' && drawingNow && !prevDrawing) {
       // 클리어면 다음 판, 실패면 같은 판. 어느 쪽이든 멈춰 세우지 않는다 (C2).
       // 챕터 끝에서는 마지막 판을 반복한다. 다음 챕터가 붙기 전까지의 자리다.
+      //
+      // 실패한 판을 다시 할 때도 3택을 다시 굴린다 — 같은 화살로 또 지라고 할 이유가 없고,
+      // "다시 하면 다른 판"이 이 시스템의 약속이다 (HOOK ★1). 손패만 보고 되감고 싶으면
+      // R(같은 화살로 즉시 재시작)이 따로 있다.
       if (w.status === 'cleared' && stageIndex < STAGES.length - 1) stageIndex++
-      loadStage()
+      beginStage()
     } else if (!paused) {
       prevDrawing = drawingNow
     }
@@ -349,8 +490,13 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   applyStats()
   syncHud()
   // 첫 판의 지급량·집계를 세운다. createWorld는 stage.arrows를 그대로 넣어두기 때문이다.
+  // (start()에서 beginStage가 다시 세우지만, 그 전에 한 프레임이라도 그려질 수 있다.)
   granted = grantArrows(save, w.stage)
   w.arrowsLeft = granted
+  hud.arrow = arrow === DEFAULT_ARROW ? '' : arrowName(arrow)
+
+  /** 이 세션에서 판을 한 번이라도 시작했는가. 첫 start()에서만 드래프트를 연다. */
+  let opened = false
 
   document.addEventListener('visibilitychange', onVisibility)
   window.addEventListener('pagehide', onHidden)
@@ -360,6 +506,12 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   return {
     start(): void {
       wanted = true
+      // 켜자마자 3택. HOOK.md 3장의 루프가 "탭 복귀 → 드래프트 → 한 판"이다.
+      // 해금이 없으면 draftNeeded가 false라 화면이 아예 안 뜬다 — 새 사람은 곧바로 판이다 (C1).
+      if (!opened) {
+        opened = true
+        beginStage()
+      }
       schedule()
     },
     stop(): void {

@@ -8,8 +8,8 @@
  *       npm run balance -- --floor=1      보유 화살이 바닥난 사람이 겪는 판
  *       npm run balance -- --preview=1    미저작 챕터(바람·이동·공중) 프리뷰
  *       npm run balance -- --arrow=burst  드래프트 화살을 하나로 고정해 전 판을 돌린다
- *       npm run balance -- --cross=1      화살 × 스테이지 교차표 (드래프트 검증)
- *       npm run balance -- --cross=1 --crossbot=expert
+ *       npm run balance -- --cross=0      화살 × 스테이지 교차표 끄기 (기본은 켜짐)
+ *       npm run balance -- --crossbot=expert   교차표를 숙련 봇으로
  *
  * 봇은 **World를 읽어 InputFrame을 만드는 함수**일 뿐이다.
  * World를 직접 건드리면 측정값이 게임이 아니라 봇을 재는 게 되므로 절대 쓰지 않는다.
@@ -17,10 +17,13 @@
  * ── 이 도구가 판정하는 것 (docs/HOOK.md 4장) ──
  *
  * 1. **드래프트 선택이 판의 결과를 실제로 바꾸는가.** 전부 비슷하면 선택이 장식이고,
- *    하나가 전 판에서 압도적이면 지배 전략이다. 둘 다 실패다. `--cross=1`이 그걸 잰다.
+ *    하나가 전 판에서 압도적이면 지배 전략이다. 둘 다 실패다. 교차표가 그걸 잰다.
  * 2. **별 1/2/3개 분포.** ★★★이 너무 흔하거나 너무 희귀하면 재도전 동기가 죽는다.
- * 3. **변동 보상의 분산이 실력을 덮지 않는가.** 숙련 봇의 훈련치 기대값이 초보보다
- *    운의 표준편차보다 크게 앞서야 성장이 의미를 가진다.
+ * 3. **변동 보상의 분산이 실력을 덮지 않는가.** 같은 판에서 숙련과 초보의 훈련치 차이가
+ *    **판 안 표준편차**보다 커야 성장이 한 판 단위로 느껴진다.
+ *
+ * 판정 문턱은 전부 이 파일 안에 상수로 있고(`STAR3_BAND`·`REWARD_D_OK`·`CROSS_*`),
+ * 근거는 docs/BALANCE.md 1장에 적혀 있다. 문턱을 옮기려면 그쪽도 같이 고칠 것.
  *
  * ── 클리어 조건 (2026-08-23 변경) ──
  *
@@ -45,8 +48,10 @@ import { effectiveStats } from '../src/sim/bow.ts'
 import { STAGES as ALL_STAGES } from '../src/game/stages.ts'
 import { grantArrows } from '../src/game/progression.ts'
 import { defaultSave } from '../src/game/save.ts'
-import { ARROW_KINDS, DEFAULT_ARROW, isArrowKindId } from '../src/game/arrows.ts'
-import { BULLSEYE_ACC, gradeRun } from '../src/game/rewards.ts'
+import { ARROW_KINDS, arrowFx, DEFAULT_ARROW, isArrowKindId } from '../src/game/arrows.ts'
+import { rollDraft } from '../src/game/draft.ts'
+import { evaluateUnlocks, progressOf, unlockedArrows, UNLOCKS } from '../src/game/unlocks.ts'
+import { bullseyeAcc, gradeRun } from '../src/game/rewards.ts'
 import { makeRng } from '../src/core/rng.ts'
 import { clamp, lerp } from '../src/core/math.ts'
 import { P } from '../src/tune/params.ts'
@@ -64,12 +69,14 @@ interface Args {
   preview: boolean
   /** 보유 화살이 바닥났을 때의 지급량으로 돌린다 (progression.grantArrows). */
   floor: boolean
-  /** 드래프트 화살 고정. null이면 게임 기본값(무지정). */
-  arrow: string | null
-  /** 화살 × 스테이지 교차표를 돌린다. arrows.ts가 있으면 기본 켜짐. */
-  cross: boolean | null
+  /** 드래프트 화살 고정. null이면 아무것도 안 실어 보낸다(= 지금의 게임 기본 경로). */
+  arrow: ArrowKindId | null
+  /** 화살 × 스테이지 교차표를 돌린다. */
+  cross: boolean
   /** 교차표를 어느 봇으로 돌리는가. 봇 × 화살 × 40판은 너무 비싸다. */
   crossBot: BotKind
+  /** 캠페인 모드로 돌릴 사람 수 (봇 종류마다). 0이면 건너뛴다. */
+  campaign: number
 }
 
 const BOT_KINDS: readonly BotKind[] = ['novice', 'average', 'expert']
@@ -85,9 +92,11 @@ function parseArgs(argv: readonly string[]): Args {
   let budgetMs = 25000
   let preview = false
   let floor = false
-  let arrow: string | null = null
-  let cross: boolean | null = null
+  let arrow: ArrowKindId | null = null
+  let cross = true
   let crossBot: BotKind = 'average'
+  // 캠페인(해금 페이싱). 한 사람이 1판부터 순서대로 도는 모드라 따로 시간을 먹는다.
+  let campaign = 12
   for (const a of argv) {
     const m = /^--([\w]+)=(.+)$/.exec(a)
     if (m === null) continue
@@ -96,7 +105,10 @@ function parseArgs(argv: readonly string[]): Args {
     if (key === undefined || raw === undefined) continue
     // 문자열 인자 먼저 — 숫자 파싱에 걸리면 안 된다.
     if (key === 'arrow') {
-      arrow = raw === 'none' || raw === '' ? null : raw
+      if (raw === 'none' || raw === '') arrow = null
+      else if (isArrowKindId(raw)) arrow = raw
+      // 오타는 조용히 무시하지 않는다. 없는 화살로 40판을 돌고 "차이가 없다"고 보고하면 최악이다.
+      else throw new Error(`알 수 없는 화살: ${raw} (가능: ${ARROW_IDS.join(' ')})`)
       continue
     }
     if (key === 'crossbot') {
@@ -111,8 +123,9 @@ function parseArgs(argv: readonly string[]): Args {
     else if (key === 'preview') preview = v !== 0
     else if (key === 'floor') floor = v !== 0
     else if (key === 'cross') cross = v !== 0
+    else if (key === 'campaign') campaign = Math.max(0, Math.trunc(v))
   }
-  return { seed, runs, budgetMs, preview, floor, arrow, cross, crossBot }
+  return { seed, runs, budgetMs, preview, floor, arrow, cross, crossBot, campaign }
 }
 
 /** 시드 합성. 같은 (스테이지, 판 번호)면 봇이 달라도 같은 판이 나온다 — 짝지은 비교로 분산을 줄인다. */
@@ -300,6 +313,24 @@ function anyArrowInFlight(w: World): boolean {
   return false
 }
 
+/**
+ * 낙하 중인 공중 과녁이 있는가 — **연쇄가 아직 진행 중이다.**
+ *
+ * 화살과 같은 이유로 여기서도 기다려야 한다. 낙하물은 아래 과녁을 쓸어버리므로,
+ * 이걸 안 기다리면 봇은 **몇 초 뒤 저절로 죽을 과녁**에 화살을 한 발 버린다.
+ * 그리고 그 손해는 빨리 쏘는 봇일수록 커서, 챕터 2에서 expert의 발당 명중률이
+ * novice보다 20%p 낮게 나왔다(실측). 게임이 아니라 봇의 성급함을 잰 값이다.
+ * 사람은 보로로로록이 끝나는 걸 보고 다음을 정한다 (GDD 7장).
+ */
+function anyTargetFalling(w: World): boolean {
+  const targets = w.targets
+  for (let i = 0; i < targets.length; i++) {
+    const t = targets[i]
+    if (t !== undefined && t.alive && t.falling) return true
+  }
+  return false
+}
+
 /** 조준을 다시 푸는 간격 (스텝). 매 스텝 탄도해를 다시 풀면 시뮬이 느려진다. */
 const AIM_UPDATE_STEPS = 8
 /** 릴리즈 후 시위를 다시 잡기까지 (스텝) */
@@ -316,9 +347,13 @@ const STRAIN_HIST = 16
 const MODEL_MAX_STEPS = 900
 
 /** 주어진 발사각으로 쐈을 때 목표 x에서의 높이 오차. 양수면 너무 높이 쐈다. */
-function flightError(dx: number, dy: number, angle: number, v: number, wind: number, dt: number): number {
+function flightError(
+  dx: number, dy: number, angle: number, v: number, wind: number, dt: number, dragMul: number,
+): number {
   const g = P.arrow.gravity
-  const drag = P.arrow.drag
+  // 화살 종류의 공기저항 배수까지 모델에 넣는다. 안 넣으면 무거운 살에서 세 봇이 똑같이
+  // 빗나가 '화살이 나쁘다'가 아니라 '봇의 모델이 틀렸다'를 재게 된다.
+  const drag = P.arrow.drag * dragMul
   let x = 0
   let y = 0
   let vx = Math.cos(angle) * v
@@ -346,12 +381,14 @@ function flightError(dx: number, dy: number, angle: number, v: number, wind: num
 }
 
 /** 할선법으로 발사각을 푼다. 저탄도 해를 향해 수렴한다. */
-function solveAngle(dx: number, dy: number, v: number, wind: number, dt: number): number {
+function solveAngle(
+  dx: number, dy: number, v: number, wind: number, dt: number, dragMul: number,
+): number {
   if (dx <= 0.05) return Math.atan2(dy, Math.max(dx, 0.05))
   let a0 = Math.atan2(dy, dx)
-  let f0 = flightError(dx, dy, a0, v, wind, dt)
+  let f0 = flightError(dx, dy, a0, v, wind, dt, dragMul)
   let a1 = a0 + 0.06
-  let f1 = flightError(dx, dy, a1, v, wind, dt)
+  let f1 = flightError(dx, dy, a1, v, wind, dt, dragMul)
   for (let i = 0; i < 6; i++) {
     const denom = f1 - f0
     if (Math.abs(denom) < 1e-9) break
@@ -359,7 +396,7 @@ function solveAngle(dx: number, dy: number, v: number, wind: number, dt: number)
     a0 = a1
     f0 = f1
     a1 = a2
-    f1 = flightError(dx, dy, a1, v, wind, dt)
+    f1 = flightError(dx, dy, a1, v, wind, dt, dragMul)
     if (Math.abs(f1) < 0.005) break
   }
   return a1
@@ -391,15 +428,20 @@ class Bot {
   private sinceAim = AIM_UPDATE_STEPS
   private cycleActive = false
 
-  constructor(kind: BotKind, seed: number, stats: Stats) {
+  /** 이 판에서 쓰는 화살의 공기저항 배수. 탄도 모델이 이걸 알아야 한다. */
+  private readonly dragMul: number
+
+  constructor(kind: BotKind, seed: number, stats: Stats, arrow: ArrowKindId) {
     const m = BOTS[kind]
     this.m = m
     this.rng = makeRng(seed)
+    const fx = arrowFx(arrow)
+    this.dragMul = fx.dragMul
     // 봇은 항상 자기 한계(maxDraw)까지 당겨서 놓는다. 초보의 만작은 1.0이 아니라 0.74다 —
     // maxSpeed를 그대로 믿으면 모든 봇이 30% 빠른 화살을 가정해 일제히 못 미친다.
     const d = effectiveStats(stats)
     const trueSpeed =
-      lerp(P.bow.minSpeed, P.bow.maxSpeed, Math.pow(d.maxDraw, P.bow.drawCurve)) * d.speedMul
+      lerp(P.bow.minSpeed, P.bow.maxSpeed, Math.pow(d.maxDraw, P.bow.drawCurve)) * d.speedMul * fx.speedMul
     this.v = trueSpeed * (1 + m.velBias)
     this.out.aimX = 1
     this.out.aimY = 0
@@ -435,8 +477,8 @@ class Bot {
       }
     }
 
-    // 앞선 화살의 결과가 나오기 전에는 새로 잡지 않는다
-    if (!this.cycleActive && anyArrowInFlight(w)) {
+    // 앞선 화살의 결과와 그 화살이 일으킨 연쇄가 끝나기 전에는 새로 잡지 않는다
+    if (!this.cycleActive && (anyArrowInFlight(w) || anyTargetFalling(w))) {
       o.drawing = false
       o.steady = false
       return o
@@ -517,7 +559,7 @@ class Bot {
     dx += t.vx * tof * this.m.leadAware
     dy += t.vy * tof * this.m.leadAware
     // 바람도 봇이 아는 만큼만 모델에 넣는다.
-    this.baseAngle = solveAngle(dx, dy, this.v, w.wind * this.m.windAware, w.dt)
+    this.baseAngle = solveAngle(dx, dy, this.v, w.wind * this.m.windAware, w.dt, this.dragMul)
   }
 
   /**
@@ -561,16 +603,15 @@ class Bot {
 // 목록은 `src/game/arrows.ts`(화살 담당)에서 그대로 가져온다. 이 도구가 후보를 따로 들고 있으면
 // 담당이 화살을 하나 지우거나 이름을 바꿨을 때 계측기만 옛 세상을 재게 된다.
 //
-// **아직 열려 있지 않은 것: 고른 화살이 sim에 도달하는 경로.**
-// arrows.ts 자신이 "효과를 적용하는 건 sim이다(ballistics.ts · target.ts)"라고 적어두었고,
-// 2026-08-23 현재 sim 쪽에는 `arrowFx`를 읽는 코드가 없다. 그래서 이 도구는 두 경로를
-// 동시에 시도하고, 둘 다 무시되면 교차표가 전부 같은 숫자로 나와 `printCross`가 '미배선'을 보고한다.
+// 고른 화살이 sim에 도달하는 경로는 **열려 있다**: `createWorld(stage, stats, arrow)`의
+// 3번째 인자로 들어가고, sim/world.ts가 `World.arrowKind`·`World.fx`에 실어 ballistics·target이
+// 매 스텝 읽는다 (효과 수치는 tune/params.ts의 `arrowkind` 그룹).
+// 예전에 열려 있지 않던 시절의 폴백(`StageDef.arrow` 필드)은 무해하므로 그대로 둔다 —
+// 두 경로가 다 막히면 교차표가 전부 같은 숫자가 되어 `printCross`가 '미배선'을 보고한다.
 //
-//   · `createWorld(stage, stats, arrow)` — 3번째 인자
-//   · `StageDef.arrow` 필드
-//
-// 어느 쪽이 열리든 이 파일은 안 고쳐도 된다. **World를 여기서 직접 조작하지 않는다** —
-// 그러면 게임이 아니라 이 파일을 재게 된다 (파일 상단 규칙).
+// **World를 여기서 직접 조작하지 않는다** — 그러면 게임이 아니라 이 파일을 재게 된다 (파일 상단 규칙).
+// 다만 봇의 탄도 모델은 화살의 speedMul·dragMul을 알아야 한다. 모르면 세 봇이 똑같이 빗나가서
+// '화살이 나쁘다'가 아니라 '봇의 모델이 틀렸다'를 재게 된다 (Bot 생성자 참조).
 
 const ARROW_IDS: readonly ArrowKindId[] = ARROW_KINDS.map((k) => k.id)
 
@@ -697,11 +738,17 @@ interface RunResult {
   chains: number
   /** 이 판에서 도달한 최대 콤보 */
   maxCombo: number
-  /** 정중앙(명중도 ≥ BULLSEYE_ACC) 명중 수 */
+  /** 정중앙(명중도 ≥ P.hit.bullseyeAcc) 명중 수 */
   bullseyes: number
   shots: number
   /** 무언가를 맞힌 발의 수. 관통·연쇄에 오염되지 않는 진짜 '발당 명중률'의 분자다. */
   hitShots: number
+  /**
+   * miss 이벤트 수. **게임(loop.ts)이 misses를 세는 축과 같은 축이다** — 이걸 안 쓰고
+   * shots - hitShots 로 대신 만들면 시뮬이 게임과 다른 정의로 무손실을 채점하게 되어,
+   * 화살 종류가 miss를 뱉는 방식이 틀려도 게이트가 한 번도 안 걸린다.
+   */
+  missEvents: number
   /** 남은 과녁 수 (실패 진단용) */
   targetsLeft: number
   /** 화살을 다 쓰고도 과녁이 남아 실패했는가 */
@@ -734,10 +781,10 @@ function playOne(
   stats: Stats,
   kind: BotKind,
   botSeed: number,
-  arrow: string | null,
+  arrow: ArrowKindId | null,
 ): RunResult {
   const w = makeWorld(def, stats, arrow)
-  const bot = new Bot(kind, botSeed, stats)
+  const bot = new Bot(kind, botSeed, stats, arrow ?? DEFAULT_ARROW)
   const hz = Math.round(1 / w.dt)
   const maxSteps = Math.ceil((def.timeLimit ?? 90) * hz) + 4 * hz
 
@@ -748,6 +795,7 @@ function playOne(
   let bullseyes = 0
   let shots = 0
   let hitShots = 0
+  let missEvents = 0
   let steps = 0
   let holdSum = 0
   let holdShots = 0
@@ -807,10 +855,13 @@ function playOne(
         collapsedThisShot = true
       } else if (e.t === 'hit') {
         hits++
-        if (e.accuracy >= BULLSEYE_ACC) bullseyes++
+        if (e.accuracy >= bullseyeAcc()) bullseyes++
         pendingHit = true
       } else if (e.t === 'chain') {
         chains++
+      } else if (e.t === 'miss') {
+        // 게임의 loop.ts와 같은 축. 여기서만 세야 무손실 판정이 시뮬과 게임에서 같아진다.
+        missEvents++
       } else if (e.t === 'release') {
         closeShot()
         shots++
@@ -855,6 +906,7 @@ function playOne(
     bullseyes,
     shots,
     hitShots,
+    missEvents,
     targetsLeft,
     // 시간 초과 실패와 구분한다. 이쪽이 "화살이 모자라 못 깬 판"이다.
     failedByArrows: !cleared && w.arrowsLeft <= 0,
@@ -876,58 +928,39 @@ function playOne(
 // ───────────────────────── 별과 보상 ─────────────────────────
 
 /**
- * 레퍼런스 별 판정 (docs/HOOK.md 4장).
- *   ★   클리어 (= 과녁 전멸)
- *   ★★  + 점수 기준선(stage.targetScore) 도달
- *   ★★★ + 무손실 — 쏜 발이 전부 무언가를 맞혔다
+ * 판 결과를 rewards.ts의 계약(`RunStats`)으로 옮긴다.
+ * 재사용 객체 하나를 계속 덮어쓴다 — 판마다 새로 만들면 수만 판에서 GC가 측정 시간을 먹는다 (A5 정신).
  */
-function refStars(def: StageDef, r: RunResult): number {
-  if (!r.cleared) return 0
-  if (r.score < def.targetScore) return 1
-  const noMiss = r.shots > 0 && r.hitShots >= r.shots
-  return noMiss ? 3 : 2
+const runStats: RunStats = {
+  cleared: false,
+  score: 0,
+  arrowsUsed: 0,
+  arrowsGiven: 0,
+  hits: 0,
+  shots: 0,
+  misses: 0,
+  bestChain: 0,
+  bullseyes: 0,
 }
 
-/**
- * 레퍼런스 변동 보상 (docs/HOOK.md 3장).
- * 고정분(점수·클리어) + 위업 + 잭팟. 잭팟이 변동 비율 보상의 자리다.
- * rng는 판 시드에서 파생되므로 같은 시드면 같은 보상이다 (A1 정신 유지).
- */
-function refTraining(r: RunResult, stars: number, rng: Rng): number {
-  const acc = r.shots > 0 ? clamp(r.hitShots / r.shots, 0, 1) : 0
-  let t = r.cleared ? P.progression.trainClear : P.progression.trainFail
-  t += acc * P.progression.trainAccuracy
-  t += stars * REF_REWARD.perStar
-  if (r.bullseyes > 0) t += REF_REWARD.featBullseye
-  if (r.maxCombo >= REF_REWARD.featChainAt) t += REF_REWARD.featChain
-  if (r.cleared && r.shots > 0 && r.hitShots >= r.shots) t += REF_REWARD.featNoMiss
-  if (rng.chance(REF_REWARD.jackpotChance)) t *= REF_REWARD.jackpotMul
-  return Math.floor(t)
-}
-
-/** rewards.ts가 있으면 그걸, 없으면 레퍼런스를 쓴다. 결과 모양이 어긋나면 조용히 레퍼런스로. */
-function grade(src: RewardSource, def: StageDef, r: RunResult, rng: Rng): Grade {
-  if (src.fn !== null) {
-    try {
-      const out = src.fn(def, r, rng)
-      if (out !== null && typeof out === 'object') {
-        const o = out as Record<string, unknown>
-        const stars = o['stars']
-        const training = o['training']
-        if (typeof stars === 'number' && Number.isFinite(stars)) {
-          return {
-            stars: clamp(Math.round(stars), 0, 3),
-            training:
-              typeof training === 'number' && Number.isFinite(training) ? Math.floor(training) : 0,
-          }
-        }
-      }
-    } catch {
-      // 시그니처가 다르다. 아래 레퍼런스로 떨어진다 — 보고서가 origin을 그대로 찍는다.
-    }
-  }
-  const stars = refStars(def, r)
-  return { stars, training: refTraining(r, stars, rng) }
+function grade(def: StageDef, r: RunResult, rng: Rng): Grade {
+  runStats.cleared = r.cleared
+  runStats.score = r.score
+  runStats.arrowsUsed = r.arrowsUsed
+  runStats.arrowsGiven = def.arrows
+  // hits는 **화살이 직접 맞힌 수**(hit 이벤트)다. 관통·분열이 한 발로 여럿을 맞히면
+  // shots를 넘고, rewards.ts는 그걸 '한 발에 여럿'으로 읽는다.
+  // 연쇄로 딸려 죽은 과녁(chain)은 명중이 아니라 결과라 여기 넣지 않는다.
+  runStats.hits = r.hits
+  runStats.shots = r.shots
+  // 무손실(★★★)의 근거. "아무것도 못 맞히고 사라진 화살"이 하나도 없는가.
+  // **game/loop.ts와 같은 축(miss 이벤트 수)이어야 한다.** shots - hitShots 로 만들면
+  // 시뮬이 게임과 다른 정의로 채점해, miss를 잘못 뱉는 화살이 게이트에 안 걸린다.
+  runStats.misses = r.missEvents
+  runStats.bestChain = r.maxCombo
+  runStats.bullseyes = r.bullseyes
+  const out = gradeRun(rng, def, runStats)
+  return { stars: clamp(Math.round(out.stars), 0, 3), training: Math.floor(out.training), bonus: out.bonus }
 }
 
 // ───────────────────────── 집계 ─────────────────────────
@@ -977,6 +1010,19 @@ interface Agg {
   trainSqSum: number
   trainMin: number
   trainMax: number
+  /** 변동 보너스로 들어온 몫의 합. 전체 대비 비율이 "운의 지분"이다. */
+  bonusSum: number
+  /** 보너스가 터진 판 수 */
+  bonusRuns: number
+  /** 보너스를 뺀 훈련치(= 실력만의 몫). 운을 껐을 때의 분산을 재려고 따로 쌓는다. */
+  baseSum: number
+  baseSqSum: number
+  /**
+   * ★★★을 받았는데 **실제로는 아무것도 못 맞힌 발이 있었던** 판.
+   * 별은 rewards.flawless() = (miss 이벤트 0)으로 붙고, 여기서는 **발 단위**(hitShots < shots)로
+   * 따로 센다 — 축이 둘이라야 대조가 성립한다. 이 칸이 0이 아니면 '무손실'이 무손실이 아니다.
+   */
+  star3Miss: number
 
   // ── 안전 구간 지표 ──
   /** 총 발수 (안전 + 넘김) */
@@ -1006,8 +1052,7 @@ const trainSd = (a: Agg): number => {
 }
 
 interface GroupOpts {
-  arrow: string | null
-  rewards: RewardSource
+  arrow: ArrowKindId | null
 }
 
 function playGroup(
@@ -1050,6 +1095,11 @@ function playGroup(
   let trainSqSum = 0
   let trainMin = Number.POSITIVE_INFINITY
   let trainMax = Number.NEGATIVE_INFINITY
+  let bonusSum = 0
+  let bonusRuns = 0
+  let baseSum = 0
+  let baseSqSum = 0
+  let star3Miss = 0
 
   // 보상 rng는 판마다 새로 만들지 않고 하나를 이어 쓴다 — 판별 시드로 만들면
   // 잭팟이 시드 해시의 성질을 그대로 물려받아 분산 측정이 오염된다.
@@ -1061,7 +1111,7 @@ function playGroup(
     const botSeed = mixSeed(stageSeed, kind.length, i * 7 + 1)
     const def = row.make(stageSeed)
     const r = playOne(def, row.stats, kind, botSeed, opts.arrow)
-    const g = grade(opts.rewards, def, r, rewardRng)
+    const g = grade(def, r, rewardRng)
 
     if (r.cleared) cleared++
     else {
@@ -1100,6 +1150,14 @@ function playGroup(
     trainSqSum += g.training * g.training
     if (g.training < trainMin) trainMin = g.training
     if (g.training > trainMax) trainMax = g.training
+    bonusSum += g.bonus
+    if (g.bonus > 0) bonusRuns++
+    const base = g.training - g.bonus
+    baseSum += base
+    baseSqSum += base * base
+    // 별 3개인데 빗나간 화살이 있었다 = '무손실'이 무손실을 재지 못했다.
+    // 두 축을 실제로 대조한다 — 별은 rewards.flawless(misses===0)가, 여기서는 발당 명중을 본다.
+    if (s >= 3 && r.hitShots < r.shots) star3Miss++
   }
   return {
     stage: row.key,
@@ -1131,6 +1189,11 @@ function playGroup(
     trainSqSum,
     trainMin: Number.isFinite(trainMin) ? trainMin : 0,
     trainMax: Number.isFinite(trainMax) ? trainMax : 0,
+    bonusSum,
+    bonusRuns,
+    baseSum,
+    baseSqSum,
+    star3Miss,
     shots,
     safeShots,
     safeHits,
@@ -1300,15 +1363,17 @@ function printSafeZone(rows: readonly Agg[]): void {
 const STAR3_BAND: readonly [number, number] = [0.05, 0.30]
 const STAR2PLUS_MIN = 0.55
 
-function printStars(rows: readonly Agg[], origin: string): void {
+function printStars(rows: readonly Agg[]): void {
   console.log('')
-  console.log(`별 분포 — 재도전 동기 (판정기: ${origin})`)
+  console.log('별 분포 — 재도전 동기 (판정기: src/game/rewards.ts starsOf)')
   console.log(`  목표: ★★ 이상 ≥ ${(STAR2PLUS_MIN * 100) | 0}% · ★★★ ${(STAR3_BAND[0] * 100) | 0}~${(STAR3_BAND[1] * 100) | 0}% (average 봇 기준)`)
   const head =
     '  bot'.padEnd(11) + 'runs'.padStart(8) + '☆(실패)'.padStart(11) +
     '★'.padStart(9) + '★★'.padStart(10) + '★★★'.padStart(11) + '★★이상'.padStart(11) + '  판정'
   console.log(head)
   console.log('  ' + '-'.repeat(head.length))
+  let miss3 = 0
+  let all3 = 0
   for (const k of BOT_KINDS) {
     let n = 0
     let s0 = 0
@@ -1322,6 +1387,8 @@ function printStars(rows: readonly Agg[], origin: string): void {
       s1 += r.stars1
       s2 += r.stars2
       s3 += r.stars3
+      miss3 += r.star3Miss
+      all3 += r.stars3
     }
     if (n === 0) continue
     const r3 = s3 / n
@@ -1341,6 +1408,19 @@ function printStars(rows: readonly Agg[], origin: string): void {
       pct(r2p).padStart(11) + note,
     )
   }
+  // '무손실'의 정의 점검. 별은 rewards.flawless() = (misses === 0) = miss 이벤트 0 으로 붙는데,
+  // 여기서는 **발 단위**로 '무언가를 맞히지 못한 발'이 있었는지를 따로 센다. 두 축이 어긋나면
+  // 화살이 맞힌 게 하나도 없는 발을 두고도 무손실이 붙었다는 뜻이다.
+  if (all3 > 0) {
+    const bad = miss3 / all3
+    console.log('')
+    console.log(
+      `  ★★★ 중 실제로 빗나간 발이 있었던 판 ${pct(bad)} (${miss3}/${all3})` +
+      (bad > 0.02
+        ? "  ✗ '무손실'이 무손실을 재지 못한다 — miss 이벤트는 0인데 아무것도 못 맞힌 발이 있었다"
+        : '  OK'),
+    )
+  }
 }
 
 // ───────────────────────── 변동 보상 분산 ─────────────────────────
@@ -1357,12 +1437,13 @@ function printStars(rows: readonly Agg[], origin: string): void {
 const REWARD_D_OK = 1.0
 const REWARD_D_BAD = 0.5
 
-function printRewards(rows: readonly Agg[], origin: string): void {
+function printRewards(rows: readonly Agg[]): void {
   console.log('')
-  console.log(`변동 보상 분산 — 운이 실력을 덮는가 (판정기: ${origin})`)
+  console.log('변동 보상 분산 — 운이 실력을 덮는가 (판정기: src/game/rewards.ts gradeRun)')
   const head =
     '  bot'.padEnd(11) + 'runs'.padStart(8) + '평균'.padStart(10) + '표준편차'.padStart(11) +
-    'CV'.padStart(9) + '최소'.padStart(8) + '최대'.padStart(8)
+    'CV'.padStart(9) + '최소'.padStart(8) + '최대'.padStart(8) +
+    '보너스판'.padStart(12) + '운의지분'.padStart(12)
   console.log(head)
   console.log('  ' + '-'.repeat(head.length))
   const mean: Record<string, number> = {}
@@ -1374,11 +1455,15 @@ function printRewards(rows: readonly Agg[], origin: string): void {
     let sq = 0
     let lo = Number.POSITIVE_INFINITY
     let hi = Number.NEGATIVE_INFINITY
+    let bonus = 0
+    let bonusRuns = 0
     for (const r of rows) {
       if (r.bot !== k) continue
       n += r.runs
       sum += r.trainSum
       sq += r.trainSqSum
+      bonus += r.bonusSum
+      bonusRuns += r.bonusRuns
       if (r.trainMin < lo) lo = r.trainMin
       if (r.trainMax > hi) hi = r.trainMax
     }
@@ -1396,27 +1481,85 @@ function printRewards(rows: readonly Agg[], origin: string): void {
       sd.toFixed(2).padStart(11) +
       (m > 0 ? (sd / m).toFixed(2) : '-').padStart(9) +
       String(Number.isFinite(lo) ? lo : 0).padStart(8) +
-      String(Number.isFinite(hi) ? hi : 0).padStart(8),
+      String(Number.isFinite(hi) ? hi : 0).padStart(8) +
+      pct(bonusRuns / n).padStart(12) +
+      (sum > 0 ? pct(bonus / sum) : '-').padStart(12),
     )
   }
   const nov = mean['novice']
   const avg = mean['average']
   const exp = mean['expert']
-  const sd = sdN > 0 ? sdPooled / sdN : 0
+  void sdPooled
+  void sdN
   if (nov === undefined || avg === undefined || exp === undefined) return
   const ordered = exp > avg && avg > nov
-  const d = sd > 0 ? (exp - nov) / sd : 0
+
+  // ── 효과크기는 반드시 **판 안에서** 재야 한다 ──
+  // 전 판을 한 통에 섞은 표준편차에는 "1-1은 원래 적게 주고 4-10은 원래 많이 준다"는
+  // 스테이지 차이가 통째로 들어 있다. 그걸 운으로 세면 어떤 보상 설계도 d가 0.2로 나온다.
+  // 플레이어가 실제로 겪는 비교는 "같은 판을 초보가 하면 vs 숙련이 하면"이므로 판 안 분산이 맞다.
+  const withinSd = (pick: (a: Agg) => { sum: number; sq: number }): number => {
+    let wn = 0
+    let wv = 0
+    for (const r of rows) {
+      if (r.runs <= 0) continue
+      const { sum, sq } = pick(r)
+      const m = sum / r.runs
+      const v = sq / r.runs - m * m
+      wv += r.runs * (v > 0 ? v : 0)
+      wn += r.runs
+    }
+    return wn > 0 ? Math.sqrt(wv / wn) : 0
+  }
+  const gapPerStage = (pick: (a: Agg) => number): number => {
+    const byStage = new Map<string, Map<BotKind, number>>()
+    for (const r of rows) {
+      let m = byStage.get(r.stage)
+      if (m === undefined) {
+        m = new Map<BotKind, number>()
+        byStage.set(r.stage, m)
+      }
+      m.set(r.bot, pick(r))
+    }
+    let sum = 0
+    let n = 0
+    for (const [, m] of byStage) {
+      const a = m.get('novice')
+      const b = m.get('expert')
+      if (a === undefined || b === undefined) continue
+      sum += b - a
+      n++
+    }
+    return n > 0 ? sum / n : 0
+  }
+
+  const sdAll = withinSd((r) => ({ sum: r.trainSum, sq: r.trainSqSum }))
+  const sdBase = withinSd((r) => ({ sum: r.baseSum, sq: r.baseSqSum }))
+  const gapAll = gapPerStage((r) => (r.runs > 0 ? r.trainSum / r.runs : 0))
+  const d = sdAll > 0 ? gapAll / sdAll : 0
+  const d0 = sdBase > 0 ? gapAll / sdBase : 0
+
   console.log('')
   console.log(
     `  실력 순서 ${ordered ? 'OK' : '깨짐 — 운이 실력을 뒤집었다'}` +
-    ` (nov ${nov.toFixed(2)} < avg ${avg.toFixed(2)} < exp ${exp.toFixed(2)})`,
+    ` (nov ${nov.toFixed(2)} · avg ${avg.toFixed(2)} · exp ${exp.toFixed(2)})`,
   )
   console.log(
-    `  효과크기 d = (exp − nov) / σ = ${d.toFixed(2)}  ` +
-    (d >= REWARD_D_OK ? 'OK — 실력이 운을 이긴다'
-      : d >= REWARD_D_BAD ? '경계 — 여러 판을 모아야 실력이 보인다'
-      : '실패 — 운이 실력을 덮는다 (잭팟 폭을 줄이거나 실력 항을 키워라)'),
+    `  판 안 표준편차 σ=${sdAll.toFixed(2)} (보너스 제외 ${sdBase.toFixed(2)})` +
+    ` · 같은 판에서 exp−nov 평균 ${gapAll.toFixed(2)}`,
   )
+  console.log(
+    `  효과크기 d = ${d.toFixed(2)} (운을 끄면 ${d0.toFixed(2)})  ` +
+    (d >= REWARD_D_OK ? 'OK — 한 판만 봐도 실력이 보인다'
+      : d >= REWARD_D_BAD ? '경계 — 여러 판을 모아야 실력이 보인다'
+      : '실패 — 운이 실력을 덮는다'),
+  )
+  if (d < REWARD_D_OK) {
+    console.log(
+      `    원인 분해: 실력 격차 자체가 ${gapAll.toFixed(2)}로 작다면 보상식이 실력을 안 읽는 것이고,` +
+      ` σ(보너스 제외)=${sdBase.toFixed(2)}가 이미 크다면 판마다 점수가 흔들리는 것이다.`,
+    )
+  }
 }
 
 // ───────────────────────── 화살 × 스테이지 교차표 ─────────────────────────
@@ -1449,10 +1592,9 @@ function printCross(
   kinds: readonly string[],
   cells: ReadonlyArray<ReadonlyArray<CrossCell>>,
   bot: BotKind,
-  src: ArrowSource,
 ): void {
   console.log('')
-  console.log(`화살 × 스테이지 교차표 — 드래프트가 판을 바꾸는가 (봇 ${bot} · 화살 목록 ${src.origin})`)
+  console.log(`화살 × 스테이지 교차표 — 드래프트가 판을 바꾸는가 (봇 ${bot} · 목록 src/game/arrows.ts)`)
 
   const w = 9
   const head = '  stage'.padEnd(10) + kinds.map((k) => k.slice(0, w - 1).padStart(w)).join('')
@@ -1482,6 +1624,12 @@ function printCross(
   // ── 판정 ──
   const winsBy = new Map<string, number>()
   const bestStages = new Map<string, string[]>()
+  /**
+   * 화살을 가장 적게 쓴 화살. **점수만으로 줄을 세우면 폭발·분열이 영원히 0등이다** —
+   * 둘은 점수를 깎는 대신 판을 빨리 정리하는 화살이라(딸려 죽은 과녁은 링 배수가 낮다),
+   * 실제로 얻는 건 여벌 화살과 무손실이다. 그 축을 따로 세지 않으면 "장식"으로 오독한다.
+   */
+  const thriftBy = new Map<string, number>()
   let flat = 0
   let identical = 0
   let spreadSum = 0
@@ -1492,6 +1640,8 @@ function printCross(
     let bestI = 0
     let best = Number.NEGATIVE_INFINITY
     let worst = Number.POSITIVE_INFINITY
+    let thriftI = 0
+    let thrift = Number.POSITIVE_INFINITY
     let allSame = true
     const first = row[0]
     for (let ki = 0; ki < row.length; ki++) {
@@ -1505,7 +1655,14 @@ function printCross(
         bestI = ki
       }
       if (c.score < worst) worst = c.score
+      // 0.05발 차이는 노이즈다. 확실히 적게 쓴 것만 1등으로 친다.
+      if (c.arrows < thrift - 0.05) {
+        thrift = c.arrows
+        thriftI = ki
+      }
     }
+    const thrifty = kinds[thriftI]
+    if (thrifty !== undefined) thriftBy.set(thrifty, (thriftBy.get(thrifty) ?? 0) + 1)
     if (allSame) identical++
     const ratio = worst > 0 ? best / worst : best > 0 ? Number.POSITIVE_INFINITY : 1
     spreadSum += Number.isFinite(ratio) ? ratio : CROSS_FLAT_RATIO
@@ -1526,9 +1683,10 @@ function printCross(
     `· 평평한 판(비 < ${CROSS_FLAT_RATIO}) ${flat}/${n}`)
   for (const k of kinds) {
     const wcount = winsBy.get(k) ?? 0
+    const tcount = thriftBy.get(k) ?? 0
     const where = bestStages.get(k)
     console.log(
-      `    ${k.padEnd(9)} 1등 ${String(wcount).padStart(3)}/${n} 판` +
+      `    ${k.padEnd(9)} 점수1등 ${String(wcount).padStart(3)}/${n}  화살절약1등 ${String(tcount).padStart(3)}/${n}` +
       (where !== undefined && where.length > 0 ? `   강한 판: ${where.join(' ')}` : ''),
     )
   }
@@ -1696,6 +1854,103 @@ function writeCrossCsv(
   return out
 }
 
+// ───────────────────────── 캠페인 (해금 페이싱) ─────────────────────────
+//
+// 판마다 독립으로 재던 지금까지의 계측으로는 **누적 조건**(별 12개 · 누적 명중 60 · 무손실 15판)이
+// 몇 판째에 열리는지 알 수 없었다. 여기서는 한 사람이 1판부터 순서대로 진행하며
+// 드래프트 → 판 → 채점 → 해금 → (다음 판) 을 실제 모듈로 돌린다.
+//
+// 재는 것은 하나다: **조건이 플레이하다 저절로 지나가는가** (docs/HOOK.md ★2 · GDD C3).
+// 갈아넣어야 열리는 칸이 있으면 그건 공부를 잡아먹는 구조다.
+
+/** 한 사람이 최대 몇 판까지 시도하는가. 실패한 판은 다시 하므로 40보다 넉넉해야 한다. */
+const CAMPAIGN_MAX_RUNS = 120
+
+interface CampaignState {
+  stars: Record<string, number>
+  bestChain: number
+  bullseyes: number
+  totalHits: number
+  perfectRuns: number
+}
+
+function playCampaign(seed: number, bot: BotKind): Map<string, number> {
+  const st: CampaignState = { stars: {}, bestChain: 0, bullseyes: 0, totalHits: 0, perfectRuns: 0 }
+  const unlocked: string[] = []
+  const openedAt = new Map<string, number>()
+  // 드래프트·보상용 스트림. 게임의 save.runSeed와 같은 자리다 (sim 스트림과 분리).
+  const rng = makeRng(seed ^ 0x5eed1)
+  let stageIndex = 0
+
+  for (let run = 1; run <= CAMPAIGN_MAX_RUNS && stageIndex < ALL_STAGES.length; run++) {
+    const def = ALL_STAGES[stageIndex]
+    if (def === undefined) break
+
+    // 3택. 어느 카드를 고를지는 모델링하지 않는다 — 사람이 무엇을 좋아하는지는
+    // 이 도구가 답할 수 없는 질문이고, 균등 선택이 편향 없는 기준선이다.
+    // 건너뛰기(기본 살)도 같은 확률로 넣는다.
+    const offer = rollDraft(rng, unlockedArrows(unlocked), stageIndex)
+    const pick = Math.floor(rng.next() * (offer.kinds.length + 1))
+    const arrow: ArrowKindId = offer.kinds[pick] ?? DEFAULT_ARROW
+
+    // 스탯은 판 진행도에 따라 오르는 것으로 가정한다 (REAL_STAGES와 같은 곡선).
+    const stats = assumedStats(ALL_STAGES.length > 1 ? stageIndex / (ALL_STAGES.length - 1) : 0)
+    const r = playOne(def, stats, bot, (seed ^ (run * 0x9e3779b9)) >>> 0, arrow)
+    const g = grade(def, r, rng)
+
+    const had = st.stars[def.id] ?? 0
+    if (g.stars > had) st.stars[def.id] = g.stars
+    if (r.maxCombo > st.bestChain) st.bestChain = r.maxCombo
+    st.bullseyes += r.bullseyes
+    st.totalHits += r.hits
+    if (g.stars >= 3) st.perfectRuns++
+
+    const fresh = evaluateUnlocks(progressOf(st), unlocked)
+    for (const id of fresh) {
+      unlocked.push(id)
+      openedAt.set(id, run)
+    }
+
+    if (r.cleared) stageIndex++
+  }
+  return openedAt
+}
+
+function printCampaign(seed: number, runs: number): void {
+  console.log('')
+  console.log('캠페인 — 해금이 몇 판째에 열리는가 (1판부터 순서대로, 실패하면 같은 판 재시도)')
+  console.log('  조건은 플레이하다 저절로 지나가야 한다 (HOOK ★2 · GDD C3: 갈아넣게 만들지 않는다)')
+
+  const rows = new Map<string, number[]>()
+  for (const d of UNLOCKS) rows.set(d.id, [])
+  for (const bot of BOT_KINDS) {
+    for (let i = 0; i < runs; i++) {
+      const opened = playCampaign((seed ^ (i * 0x1000193)) >>> 0, bot)
+      for (const d of UNLOCKS) {
+        const at = opened.get(d.id)
+        rows.get(d.id)?.push(at ?? Number.POSITIVE_INFINITY)
+      }
+    }
+  }
+
+  const total = runs * BOT_KINDS.length
+  console.log('')
+  console.log('  해금                   조건                          열린 판(중앙값)   40판 안 달성')
+  console.log('  ' + '-'.repeat(92))
+  for (const d of UNLOCKS) {
+    const xs = (rows.get(d.id) ?? []).slice().sort((a, b) => a - b)
+    const mid = xs[Math.floor(xs.length / 2)] ?? Number.POSITIVE_INFINITY
+    let within = 0
+    for (const x of xs) if (x <= 40) within++
+    const midText = Number.isFinite(mid) ? String(mid) : '—'
+    console.log(
+      `  ${d.label.padEnd(14)} ${d.hint.padEnd(28)} ${midText.padStart(10)}` +
+      `      ${pct(within / Math.max(total, 1)).padStart(7)}` +
+      (within / Math.max(total, 1) < 0.5 ? '  ✗ 너무 멀다' : ''),
+    )
+  }
+}
+
 // ───────────────────────── main ─────────────────────────
 
 function applyFloor(rows: readonly StageRow[]): readonly StageRow[] {
@@ -1708,16 +1963,14 @@ function applyFloor(rows: readonly StageRow[]): readonly StageRow[] {
   }))
 }
 
-async function main(): Promise<void> {
+function main(): void {
   const args = parseArgs(process.argv.slice(2))
-  const arrowSrc = await loadArrows()
-  const rewards = await loadRewards()
 
   const authored = args.preview ? [...REAL_STAGES, ...PREVIEW_STAGES] : REAL_STAGES
   // --floor=1 : 보유 화살이 바닥난 사람이 겪는 판. 여기서 클리어율이 무너지면 그 판은 벽이다.
   const stages: readonly StageRow[] = args.floor ? applyFloor(authored) : authored
   const groups = stages.length * BOT_KINDS.length
-  const opts: GroupOpts = { arrow: args.arrow, rewards }
+  const opts: GroupOpts = { arrow: args.arrow }
 
   // 실행 시간을 예산 안에 묶는다. 먼저 짧게 재보고 반복 수를 정한다.
   const probeRow = stages[0]
@@ -1734,8 +1987,8 @@ async function main(): Promise<void> {
     (args.preview ? '  +미저작 챕터 프리뷰' : '') +
     (args.floor ? '  +화살 바닥 지급' : '') +
     (args.arrow !== null ? `  화살 고정=${args.arrow}` : ''))
-  console.log(`화살 모듈: ${arrowSrc.loaded ? '연결됨' : '없음'} (${arrowSrc.origin})` +
-    `   보상 판정기: ${rewards.origin}`)
+  console.log(`화살 목록: src/game/arrows.ts (${ARROW_IDS.join(' ')}) · 기본 ${DEFAULT_ARROW}` +
+    `   보상 판정기: src/game/rewards.ts gradeRun`)
   console.log('클리어 조건 = 과녁 전멸 (sim/world.ts). targetScore는 별 2개 기준선으로만 쓴다.')
   console.log('')
 
@@ -1750,24 +2003,25 @@ async function main(): Promise<void> {
 
   printTable(rows)
   printSafeZone(rows)
-  printStars(rows, rewards.origin)
-  printRewards(rows, rewards.origin)
+  printStars(rows)
+  printRewards(rows)
   summarize(rows)
   const csv = writeCsv(rows, args)
   console.log('')
   console.log(`CSV: ${csv}`)
   console.log(`총 ${rows.length * runs}판 / ${elapsed.toFixed(1)}s`)
 
+  // ── 캠페인 (해금 페이싱) ──
+  if (args.campaign > 0) printCampaign(args.seed, args.campaign)
+
   // ── 화살 교차표 ──
-  const wantCross = args.cross ?? arrowSrc.loaded
-  if (!wantCross) {
+  if (!args.cross) {
     console.log('')
-    console.log('화살 × 스테이지 교차표: 건너뜀 (src/game/arrows.ts 없음). `--cross=1`로 강제할 수 있다.')
-    console.log('  드래프트가 붙으면 이 도구가 자동으로 교차표를 낸다 — 요구 계약은 파일 상단 주석 참조.')
+    console.log('화살 × 스테이지 교차표: 건너뜀 (--cross=0)')
     return
   }
 
-  const kinds = arrowSrc.ids
+  const kinds = ARROW_IDS
   // 교차표는 한 봇으로만 돈다. 화살 × 스테이지 × 봇 3종은 예산을 통째로 먹는다.
   const crossRuns = Math.max(20, Math.min(runs, Math.floor((args.budgetMs / (perRun * stages.length * kinds.length * 1.5)))))
   const cells: CrossCell[][] = []
@@ -1779,7 +2033,7 @@ async function main(): Promise<void> {
     for (const kindId of kinds) {
       // 화살 종류를 시드에 섞지 않는다 — 같은 판을 같은 조건에서 화살만 바꿔 비교해야
       // 차이가 화살의 것이지 난수의 것이 아니게 된다 (짝지은 비교).
-      const a = playGroup(row, args.crossBot, args.seed, crossRuns, si, { arrow: kindId, rewards })
+      const a = playGroup(row, args.crossBot, args.seed, crossRuns, si, { arrow: kindId })
       line.push({
         clear: a.clearRate,
         score: a.avgScore,
@@ -1790,11 +2044,17 @@ async function main(): Promise<void> {
     }
     cells.push(line)
   }
-  printCross(stages, kinds, cells, args.crossBot, arrowSrc)
+  printCross(stages, kinds, cells, args.crossBot)
   const ccsv = writeCrossCsv(stages, kinds, cells, args.crossBot)
   console.log('')
   console.log(`교차표 CSV: ${ccsv}`)
   console.log(`화살 ${kinds.length}종 × ${stages.length}판 × ${crossRuns}판 = ${kinds.length * stages.length * crossRuns}판 / ${((Date.now() - ct0) / 1000).toFixed(1)}s`)
 }
 
-void main()
+// 인자 오타는 스택 트레이스가 아니라 한 줄로 알려준다. 계측기가 겁을 주면 아무도 안 돌린다.
+try {
+  main()
+} catch (e) {
+  console.error(e instanceof Error ? e.message : String(e))
+  process.exitCode = 1
+}

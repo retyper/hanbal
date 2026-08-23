@@ -10,7 +10,7 @@
  * 1. **갈아넣게 만들지 않는다** (C3). 조건은 전부 "판을 계속 깨다 보면 저절로 지나가는 값"이다.
  *    별도의 그라인드 구간을 만들면 공부를 잡아먹는다. 접속·연속 플레이·시간 조건은 없다 (GDD 9장).
  * 2. **항상 2~3개가 손에 닿는 거리에 있다.** 잠긴 칸이 너무 멀면 궁금증이 아니라 체념이 된다.
- *    아래 목록은 예상 달성 판수가 2·6·7·9·12·13·19·19·24·27·28·33·40 으로 촘촘히 깔려 있다.
+ *    실측 달성 판수(캠페인 중앙값)는 2·6·9·12·13·19·20·20·20·26·27·30·38·40 으로 촘촘히 깔려 있다.
  *
  * 그리고 `check` 하나만 두지 않고 `at`/`goal`을 같이 들고 있는 이유:
  * 잠긴 칸에 **"12 / 20"** 이 보이는 것과 조건 문구만 보이는 것은 전혀 다른 물건이다.
@@ -33,7 +33,7 @@ export interface Progress {
   totalStars: number
   /** 한 판에서 이어간 최고 연쇄 수 (연속 명중이 끊기지 않은 최댓값) */
   bestChain: number
-  /** 누적 정중앙 명중 수 (명중도 ≥ BULLSEYE_ACC) */
+  /** 누적 정중앙 명중 수 (명중도 ≥ P.hit.bullseyeAcc) */
   bullseyes: number
   /** 누적 명중 수 */
   totalHits: number
@@ -50,6 +50,43 @@ export function emptyProgress(): Progress {
     bullseyes: 0,
     totalHits: 0,
     perfectRuns: 0,
+  }
+}
+
+/**
+ * 진행도를 만들어내는 데 필요한 것만. `SaveData`가 이걸 만족한다.
+ * 세이브 전체를 받지 않는 이유: 그러면 unlocks가 save를 import하게 되고,
+ * 밸런스 도구처럼 localStorage가 없는 곳에서 이 함수를 못 쓰게 된다.
+ */
+export interface ProgressSource {
+  stars: Record<string, number>
+  bestChain: number
+  bullseyes: number
+  totalHits: number
+  perfectRuns: number
+}
+
+/**
+ * 세이브 → 진행도. **stagesCleared·totalStars는 저장하지 않고 별 지도에서 뽑는다** —
+ * 두 벌로 저장하면 반드시 어긋나고, 어긋난 쪽이 해금을 열거나 막는다.
+ * (별은 판당 최고값만 남고 줄지 않으므로 이 두 값도 단조 증가한다.)
+ */
+export function progressOf(d: ProgressSource): Progress {
+  let cleared = 0
+  let stars = 0
+  for (const id in d.stars) {
+    const n = d.stars[id] ?? 0
+    if (n <= 0) continue
+    cleared++
+    stars += n
+  }
+  return {
+    stagesCleared: cleared,
+    totalStars: stars,
+    bestChain: d.bestChain,
+    bullseyes: d.bullseyes,
+    totalHits: d.totalHits,
+    perfectRuns: d.perfectRuns,
   }
 }
 
@@ -95,29 +132,41 @@ const A_HEAVY: ArrowKindId = 'heavy'
 
 /** 첫 해금. 2판이면 "이 게임에 열 게 있다"는 걸 알기에 충분히 이르다. */
 const G_BURST_STAGES = 2
-/** 무손실 2판 ≈ 5판째 */
+/** 무손실 2판. 실측 중앙값 13판째 — 앞 판은 초보가 한두 발 흘린다. */
 const G_ONESHOT_PERFECT = 2
-/** 별 12개 ≈ 6판 (판당 평균 2.2개 가정) */
+/** 별 12개. 실측 중앙값 6판째. */
 const G_FIRSTSTAR_STARS = 12
 /** 4연쇄는 과녁 4개짜리 판(1-9)에서 처음 가능하다 */
 const G_CHAIN_BEST = 4
 /** 12판 클리어 = 챕터 2 중반 */
 const G_SPLIT_STAGES = 12
-/** 정중앙 5회 ≈ 13판째 (명중의 14%가 정중앙이라 가정 — 가장 불확실한 추정) */
-const G_HAWK_BULLS = 5
+/**
+ * 정중앙 3회. **실측 중앙값 20판째** (`npm run balance` 캠페인 표).
+ *
+ * 5회로 잡았던 원안은 "명중의 14%가 정중앙"이라는 가정에서 나왔다. 실제로는 판당 0.29회다
+ * (P.hit.bullseyeAcc 0.78 = 과녁 넓이의 4.8%). 문턱이 0.90이던 시절엔 0.086회라
+ * 5회가 38판째, 12회는 120판을 돌려도 안 열렸다 — 그래서 문턱과 조건을 같이 고쳤다.
+ */
+const G_HAWK_BULLS = 3
 /** 6연쇄는 과녁 6개짜리 판(2-9·2-10)에서 처음 가능하다 */
 const G_AVALANCHE_BEST = 6
-/** 누적 명중 60 ≈ 19판째 (판당 과녁 수 합계 기준) */
+/** 누적 명중 60. 실측 중앙값 20판째. */
 const G_HOMING_HITS = 60
-/** 20판 클리어. arrows.ts의 관통 살 unlockHint와 같은 조건이다. */
+/** 20판 클리어. 실측 중앙값 20판째(재도전이 거의 없다는 뜻). */
 const G_PIERCE_STAGES = 20
-/** 누적 명중 80 ≈ 24판째 */
+/** 누적 명중 80. 실측 중앙값 26판째. */
 const G_HUNDRED_HITS = 80
-/** 별 60개 ≈ 27판째 */
+/** 별 60개. 실측 중앙값 27판째. */
 const G_WIND_STARS = 60
-/** 정중앙 12회 ≈ 28판째 */
-const G_HEAVY_BULLS = 12
-/** 무손실 15판 ≈ 33판째 */
+/**
+ * 무거운 살은 **30판 클리어**로 옮겼다.
+ *
+ * 원안(정중앙 12회)은 캠페인 실측에서 120판을 돌려도 아무도 못 열었다 (40판 안 달성 0.0%).
+ * 칭호가 늦는 건 괜찮지만 **화살이 안 열리는 건 안 된다** — 열리지 않는 화살은 드래프트에
+ * 영원히 안 나오고, 그러면 그 화살은 존재하지 않는 것과 같다.
+ */
+const G_HEAVY_STAGES = 30
+/** 무손실 15판. 실측 중앙값 38판째 (40판 안 달성 78%). 마지막 칭호 직전 자리다. */
 const G_FLAWLESS_PERFECT = 15
 /** 마지막 칸. 40판 전부. */
 const G_FORTY_STAGES = 40
@@ -157,21 +206,23 @@ function def(
  * 해금 목록. **순서 = 예상 달성 순서**다. 화면이 이 순서를 그대로 쓰므로
  * 목록을 위에서 아래로 훑으면 "지금 어디쯤 왔는지"가 그대로 읽힌다.
  *
- * | # | 열리는 것 | 조건 | 예상 |
+ * 아래 "열린 판"은 추정이 아니라 `npm run balance` 캠페인 표의 **실측 중앙값**이다.
+ *
+ * | # | 열리는 것 | 조건 | 열린 판 |
  * |---|---|---|---|
  * | 1 | 폭발 살 | 2판 클리어 | 2판 |
- * | 2 | 칭호 한 발 | 무손실 2판 | 5판 |
+ * | 2 | 칭호 한 발 | 무손실 2판 | 13판 |
  * | 3 | 칭호 첫 별 | 별 12 | 6판 |
  * | 4 | 사슬 살 | 4연쇄 | 9판 |
  * | 5 | 분열 살 | 12판 클리어 | 12판 |
- * | 6 | 칭호 매의 눈 | 정중앙 5 | 13판 |
+ * | 6 | 칭호 매의 눈 | 정중앙 3 | 20판 |
  * | 7 | 칭호 보로로록 | 6연쇄 | 19판 |
- * | 8 | 유도 살 | 누적 명중 60 | 19판 |
+ * | 8 | 유도 살 | 누적 명중 60 | 20판 |
  * | 9 | 관통 살 | 20판 클리어 | 20판 |
- * | 10 | 칭호 백발 | 누적 명중 80 | 24판 |
+ * | 10 | 칭호 백발 | 누적 명중 80 | 26판 |
  * | 11 | 칭호 바람 읽는 자 | 별 60 | 27판 |
- * | 12 | 무거운 살 | 정중앙 12 | 28판 |
- * | 13 | 칭호 흠 없는 활 | 무손실 15판 | 33판 |
+ * | 12 | 무거운 살 | 30판 클리어 | 30판 |
+ * | 13 | 칭호 흠 없는 활 | 무손실 15판 | 38판 |
  * | 14 | 칭호 마흔 발 | 40판 클리어 | 40판 |
  *
  * 이름은 `game/arrows.ts`의 `ArrowKind.name`을 따른다 ('살'로 통일 · A8).
@@ -188,7 +239,7 @@ export const UNLOCKS: readonly UnlockDef[] = [
   def('arrow.pierce', '관통 살', 'arrow', `${G_PIERCE_STAGES}판 클리어`, P_STAGES, G_PIERCE_STAGES, A_PIERCE),
   def('title.hundred', '백발', 'title', `누적 명중 ${G_HUNDRED_HITS}회`, P_HITS, G_HUNDRED_HITS),
   def('title.wind', '바람 읽는 자', 'title', `별 ${G_WIND_STARS}개 모으기`, P_STARS, G_WIND_STARS),
-  def('arrow.heavy', '무거운 살', 'arrow', `정중앙 ${G_HEAVY_BULLS}회`, P_BULLS, G_HEAVY_BULLS, A_HEAVY),
+  def('arrow.heavy', '무거운 살', 'arrow', `${G_HEAVY_STAGES}판 클리어`, P_STAGES, G_HEAVY_STAGES, A_HEAVY),
   def('title.flawless', '흠 없는 활', 'title', `무손실로 ${G_FLAWLESS_PERFECT}판 클리어`, P_PERFECT, G_FLAWLESS_PERFECT),
   def('title.forty', '마흔 발', 'title', `${G_FORTY_STAGES}판 클리어`, P_STAGES, G_FORTY_STAGES),
 ]

@@ -36,6 +36,14 @@ export interface HudState {
   muted: boolean
   /** 짧은 알림 한 줄. 빈 문자열이면 그리지 않는다. */
   toast: string
+  /**
+   * 이 판에 쓰는 화살 종류의 이름 (docs/HOOK.md ★1).
+   *
+   * 고르고 나면 그 판 내내 바뀌지 않으니 크게 그릴 이유가 없다 — 남은 화살 숫자 아래에
+   * 한 줄로만 붙인다. 다만 **반드시 보여야 한다**: 지금 쥔 게 뭔지 모르면 3택이 선택이 아니다.
+   * 기본 살이면 빈 문자열을 넣어 아무것도 그리지 않는다 (효과가 없는 걸 알릴 이유가 없다).
+   */
+  arrow: string
 }
 
 const HUD = {
@@ -275,6 +283,13 @@ export function drawHud(
     for (let i = 0; i < left; i++) {
       drawArrowGlyph(ctx, pipX + i * HUD.pipStride, midY, HUD.pipH, low)
     }
+  }
+
+  // 이 판의 화살 종류 — 숫자 아래 한 줄. 고른 것이 무엇인지 판 내내 보인다 (HOOK ★1).
+  if (hud.arrow !== '') {
+    ctx.font = '600 12px system-ui, sans-serif'
+    ctx.fillStyle = THEME.accent
+    ctx.fillText(hud.arrow, HUD.padX, pipY + HUD.countPx + HUD.subGap)
   }
 
   // ── 스태미나 — 활 옆 ─────────────────────────────────────────

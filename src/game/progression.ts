@@ -31,6 +31,8 @@ export interface RunResult {
   score: number
   accuracy: number
   arrowsUsed: number
+  /** 이 판의 명중 수. 누적 기록(해금 조건)의 분자다. */
+  hits: number
 }
 
 // ─────────────────────────── 성장 비용 ───────────────────────────
@@ -93,26 +95,38 @@ export function awardRun(
   d: SaveData,
   stage: StageDef,
   r: RunResult,
+  /**
+   * 판 채점 결과 (game/rewards.ts). 주면 훈련치는 **여기서 다시 계산하지 않고** 그 값을 쓴다.
+   * 두 곳이 각자 훈련치를 만들면 한 판에 두 번 지급된다 — 배선의 가장 흔한 사고다.
+   */
+  reward?: { training: number },
 ): { training: number; leveled: StatKey[] } {
   const leveled: StatKey[] = []
 
   const used = r.arrowsUsed > 0 ? Math.floor(r.arrowsUsed) : 0
   const acc = clamp01(r.accuracy)
   const score = r.score > 0 ? Math.floor(r.score) : 0
+  const hits = r.hits > 0 ? Math.floor(r.hits) : 0
 
   d.totalShots += used
-  d.totalHits += Math.round(acc * used)
+  // 실제 명중 수를 센다. 정확도에서 역산하면 관통·분열로 한 발이 여럿을 맞힌 판에서 어긋난다.
+  d.totalHits += hits
   d.arrows = d.arrows > used ? d.arrows - used : 0
 
-  // 클리어는 targetScore 이상에서만 나온다. 즉 best < targetScore == 아직 한 번도 못 깼다.
-  // 첫 클리어 판정을 위한 별도 필드를 두지 않으려고 이 관계를 쓴다.
+  // 첫 클리어인가. **점수로 판정하지 않는다** — 클리어 조건이 "과녁 전멸"로 바뀌면서
+  // 점수와 클리어가 갈라졌다 (sim/world.ts evaluateEnd). 별을 한 번도 못 받았으면 처음이다.
+  const firstClear = r.cleared && (d.stars[stage.id] ?? 0) <= 0
   const best = d.bestScore[stage.id] ?? 0
-  const firstClear = r.cleared && best < stage.targetScore
   if (score > best) d.bestScore[stage.id] = score
 
-  let t = r.cleared ? P.progression.trainClear : P.progression.trainFail
+  let t: number
+  if (reward !== undefined) {
+    t = reward.training
+  } else {
+    t = r.cleared ? P.progression.trainClear : P.progression.trainFail
+    t += acc * P.progression.trainAccuracy
+  }
   if (firstClear) t += P.progression.trainFirstClear
-  t += acc * P.progression.trainAccuracy
   // 오프라인 축적을 끈 사람은 판에서 전부 벌어야 한다 (GDD 5장 등가 보상).
   if (!d.offlineEnabled) t *= P.offline.optOutBonus
 

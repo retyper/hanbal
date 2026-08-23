@@ -12,7 +12,7 @@ import {
 } from './camera.ts'
 import type { Camera } from './camera.ts'
 import { drawArcher } from './stickman.ts'
-import { createFx, pumpEvents, updateFx, drawFx, hitStopMs } from './effects.ts'
+import { createFx, pumpEvents, updateFx, drawFx, hitStopMs, targetSquash } from './effects.ts'
 import type { Fx } from './effects.ts'
 import { drawHud } from './hud.ts'
 import type { HudState } from './hud.ts'
@@ -110,7 +110,9 @@ function drawRidge(
   ctx.fill()
 }
 
-function drawTargets(ctx: CanvasRenderingContext2D, cam: Camera, w: World, alpha: number): void {
+function drawTargets(
+  ctx: CanvasRenderingContext2D, cam: Camera, w: World, alpha: number, fx: Fx,
+): void {
   ctx.lineWidth = DRAW.targetLineW
   for (let i = 0; i < w.targets.length; i++) {
     const t = w.targets[i]
@@ -119,6 +121,14 @@ function drawTargets(ctx: CanvasRenderingContext2D, cam: Camera, w: World, alpha
     const y = worldToScreenY(cam, lerp(t.py, t.y, alpha))
     const r = t.r * cam.scale
     if (r < 0.5) continue
+
+    // 맞은 순간 눌렸다 부푼다 (HOOK ★6-2). 즉사한 과녁은 여기 안 오므로(alive false)
+    // 그쪽 몫은 effects.ts가 파열 링으로 대신 그린다 — 여기서 눌리는 건 살아남는 과녁,
+    // 즉 낙하 중인 공중 과녁과 관통 과녁뿐이다.
+    // ★ 반환값은 공유 스크래치라 **다음 호출 전에** 다 읽는다 (A5).
+    const sq = targetSquash(fx, t.id)
+    const rx = r * sq.sx
+    const ry = r * sq.sy
 
     if (t.kind === 'aerial') {
       // 매달린 등불 — 맞으면 낙하하며 아래를 연쇄로 친다
@@ -133,17 +143,18 @@ function drawTargets(ctx: CanvasRenderingContext2D, cam: Camera, w: World, alpha
 
     ctx.strokeStyle = t.falling ? THEME.accentDim : THEME.accent
     ctx.beginPath()
-    ctx.arc(x, y, r, 0, Math.PI * 2)
+    ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2)
     ctx.stroke()
 
     ctx.strokeStyle = THEME.accentDim
     ctx.beginPath()
-    ctx.arc(x, y, r * DRAW.targetRingInner, 0, Math.PI * 2)
+    ctx.ellipse(x, y, rx * DRAW.targetRingInner, ry * DRAW.targetRingInner, 0, 0, Math.PI * 2)
     ctx.stroke()
 
     ctx.fillStyle = THEME.target2
-    const c = r * DRAW.targetCore
-    ctx.fillRect(x - c, y - c, c * 2, c * 2)
+    const cx = rx * DRAW.targetCore
+    const cy = ry * DRAW.targetCore
+    ctx.fillRect(x - cx, y - cy, cx * 2, cy * 2)
   }
 }
 
@@ -256,7 +267,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       c.lineTo(cam.w, groundY)
       c.stroke()
 
-      drawTargets(c, cam, w, alpha)
+      drawTargets(c, cam, w, alpha, r.fx)
       drawTrails(c, cam, w)
       drawArrows(c, cam, w, alpha)
       drawArcher(c, cam, w, alpha)

@@ -30,42 +30,61 @@ const TRAIL_STRIDE = 4
 export function spawnArrow(w: World, angle: number, power: number): Arrow | null {
   if (w.arrowsLeft <= 0) return null
 
-  const pool = w.arrows
-  let a: Arrow | null = null
-  for (let i = 0; i < pool.length; i++) {
-    const slot = pool[i]
-    if (slot !== undefined && !slot.alive) {
-      a = slot
-      break
-    }
-  }
+  const a = freeSlot(w)
   if (a === null) return null
 
   const d = effectiveStats(w.stats)
   const pw = clamp01(power)
   // drawCurve > 1 이라 만작 근처에서 속도가 급격히 붙는다. 실제 활의 장력 곡선이 이렇다.
-  const speed = lerp(P.bow.minSpeed, P.bow.maxSpeed, Math.pow(pw, P.bow.drawCurve)) * d.speedMul
+  // 화살 종류의 초속 배수(무거운 살 0.72)는 여기서 한 번만 곱한다.
+  const speed =
+    lerp(P.bow.minSpeed, P.bow.maxSpeed, Math.pow(pw, P.bow.drawCurve)) * d.speedMul * w.fx.speedMul
 
+  launch(a, w.archer.x, w.archer.y, angle, speed, pw, 0)
+
+  w.arrowsLeft--
+  return a
+}
+
+/** 풀에서 죽은 슬롯 하나. 없으면 null — 새 객체를 만들지 않는다 (A5). */
+function freeSlot(w: World): Arrow | null {
+  const pool = w.arrows
+  for (let i = 0; i < pool.length; i++) {
+    const slot = pool[i]
+    if (slot !== undefined && !slot.alive) return slot
+  }
+  return null
+}
+
+/** 슬롯 하나를 발사 상태로 세운다. 발사·분열이 같은 초기화를 쓰게 한 곳에 모은다. */
+function launch(
+  a: Arrow, x: number, y: number, angle: number, speed: number, power: number, splitDepth: number,
+): void {
   a.alive = true
-  a.x = w.archer.x
-  a.y = w.archer.y
-  a.px = a.x
-  a.py = a.y
+  a.x = x
+  a.y = y
+  a.px = x
+  a.py = y
   a.vx = Math.cos(angle) * speed
   a.vy = Math.sin(angle) * speed
   a.angle = normAngle(angle)
   a.age = 0
   a.pierced = 0
+  a.struck = 0
+  a.kindPierced = 0
+  a.bounces = 0
+  a.splitDepth = splitDepth
+  a.splitPending = 0
+  a.chainPending = 0
+  a.pendX = 0
+  a.pendY = 0
   a.outcome = 'flying'
-  a.power = pw
+  a.power = power
   a.trailLen = 0
   a.trailHead = 0
   // 첫 표본(발사점)과 머리 칸을 함께 연다. 머리 칸이 없으면 첫 스텝의 덮어쓰기가 발사점을 지운다.
   openTrailSlot(a)
   openTrailSlot(a)
-
-  w.arrowsLeft--
-  return a
 }
 
 export function stepArrows(w: World): void {
@@ -79,6 +98,10 @@ export function stepArrows(w: World): void {
     a.px = a.x
     a.py = a.y
 
+    // 유도는 적분 **전에** 건다. 이번 스텝의 궤적 선분이 이미 휘어 있어야
+    // 명중 판정과 화면에 그려지는 선이 어긋나지 않는다.
+    steerHoming(w, a)
+
     // 바람은 화살을 미는 힘이 아니라 **공기의 속도**다.
     // vx에 바람을 더하면 에너지를 주입하게 되고 "발사 후 운동에너지는 증가하지 않는다"가 깨진다.
     // 상대속도에 대한 항력으로만 작용시키면 화살은 공기 속도에 점근할 뿐 그 이상 빨라지지 않는다.
@@ -88,7 +111,8 @@ export function stepArrows(w: World): void {
     const rSpeed = Math.sqrt(rvx * rvx + rvy * rvy)
     // 항력은 속도 제곱에 비례하고 방향은 상대속도 반대 → 성분별로 k * |v| * v_i.
     // 질량으로 나누지 않는다. P.arrow.drag 자체가 가속도 계수(항력/질량)로 튜닝된 값이다.
-    const k = P.arrow.drag * rSpeed
+    // 무거운 살은 같은 공기에 덜 밀린다 (fx.dragMul).
+    const k = P.arrow.drag * w.fx.dragMul * rSpeed
     a.vx -= k * rvx * dt
     a.vy -= k * rvy * dt
     // y가 위쪽 +이므로 중력은 vy를 깎는다
@@ -114,20 +138,172 @@ export function stepArrows(w: World): void {
       a.y = a.py + (a.y - a.py) * t
     }
 
+    // 충돌이 방향·속도를 바꾸기 전의 값. 분열 자식과 사슬의 도약이 이걸 물려받는다.
+    const preAng = Math.atan2(a.vy, a.vx)
+    const preSpeed = Math.sqrt(a.vx * a.vx + a.vy * a.vy)
+
     resolveCollisions(w, a)
+
+    if (a.splitPending > 0) {
+      a.splitPending = 0
+      spawnSplit(w, a, preAng, preSpeed)
+    }
+    // 사슬로 되살아났으면 이번 스텝의 착지는 없던 일이다 — 화살은 과녁 자리로 옮겨갔다.
+    if (a.chainPending > 0) {
+      a.chainPending = 0
+      if (bounceChain(w, a, preSpeed)) landed = false
+    }
 
     if (a.alive && (landed || a.age > P.arrow.maxFlightTime)) {
       // 관통 화살은 과녁을 꿰뚫고도 계속 날아가 결국 착지한다. 여기서 miss를 뱉으면
       // world.ts가 연쇄를 끊어, 셋을 꿰뚫은 최고의 한 발이 스스로 콤보를 0으로 만든다.
-      // world.ts:295 주석대로 "명중 **없이** 소멸한 화살"만 끊는다.
-      const scored = a.pierced > 0
-      a.outcome = scored ? 'hit' : landed ? 'miss' : 'expired'
+      // "명중 **없이** 소멸한 화살"만 끊는다.
+      //
+      // 분열 자식(splitDepth > 0)도 같은 이유로 끊지 않는다. 자식은 지급된 화살이 아니라
+      // 그 한 발의 **결과물**이다. 자식의 착지를 miss로 뱉으면 (1) 부모가 만든 연쇄를 자식이
+      // 스스로 끊고 (2) loop의 misses 가 분모(쏜 발)보다 커져 분열 살로는 무손실 ★★★이
+      // 구조적으로 불가능해진다. outcome도 'miss'가 아니라 'expired'로 둬야
+      // 회색 유령 궤적·흙소리까지 같이 빠진다.
+      const scored = a.struck > 0
+      const own = a.splitDepth <= 0
+      a.outcome = scored ? 'hit' : own && landed ? 'miss' : 'expired'
       a.alive = false
-      if (!scored) w.events.push({ t: 'miss', x: a.x, y: a.y })
+      if (!scored && own) w.events.push({ t: 'miss', x: a.x, y: a.y })
     }
 
     pushTrail(a, dt)
   }
+}
+
+// ───────────────────────── 화살 종류의 효과 ─────────────────────────
+//
+// 셋 다 난수를 쓰지 않는다. 분열 각도도 유도 판정도 전부 결정론적 계산이다 (A1) —
+// 여기에 w.rng를 한 번이라도 물리면 화살 종류에 따라 릴리즈 산포의 난수 스트림이 밀려
+// "같은 시드 = 같은 판"이 화살마다 다른 뜻이 된다.
+
+/**
+ * 유도 살 — 앞쪽 가장 가까운 과녁으로 **살짝** 휜다.
+ *
+ * ★ 이 함수가 "쏘는 대로 맞는다"는 계약의 반대편에 서 있다. 그래서 빗장이 셋이다:
+ *   1. homingDelay 전에는 아무 일도 없다 — 발사 직후부터 휘면 조준이 아니라 클릭이 된다.
+ *   2. homingCone 밖(이미 지나친 과녁)은 없는 셈 친다 — 되돌아가는 궤적은 읽히지 않는다.
+ *   3. 선회는 초당 homingTurn rad로 제한된다 — 빗나갈 뻔한 걸 살리는 크기지 조준을 대신하지 않는다.
+ *
+ * 속도의 **방향만** 돌린다. 크기를 건드리면 "발사 후 역학적 에너지는 증가하지 않는다"가 깨진다.
+ */
+function steerHoming(w: World, a: Arrow): void {
+  const fx = w.fx
+  if (fx.homingTurn <= 0 || a.age < fx.homingDelay) return
+
+  const speed = Math.sqrt(a.vx * a.vx + a.vy * a.vy)
+  if (speed <= 0) return
+  const dirX = a.vx / speed
+  const dirY = a.vy / speed
+  const cosCone = Math.cos(fx.homingCone)
+
+  const targets = w.targets
+  let bestD2 = fx.homingRange * fx.homingRange
+  let bestX = 0
+  let bestY = 0
+  let found = false
+  for (let j = 0; j < targets.length; j++) {
+    const t = targets[j]
+    // 이미 떨어지는 중인 과녁은 어차피 죽는다. 그쪽으로 끌려가면 화살을 버리게 된다.
+    if (t === undefined || !t.alive || t.falling) continue
+    const dx = t.x - a.x
+    const dy = t.y - a.y
+    const d2 = dx * dx + dy * dy
+    if (d2 > bestD2 || d2 <= 0) continue
+    const d = Math.sqrt(d2)
+    if ((dx * dirX + dy * dirY) / d < cosCone) continue
+    bestD2 = d2
+    bestX = t.x
+    bestY = t.y
+    found = true
+  }
+  if (!found) return
+
+  const cur = Math.atan2(a.vy, a.vx)
+  const want = Math.atan2(bestY - a.y, bestX - a.x)
+  const maxTurn = fx.homingTurn * w.dt
+  let d = angleDelta(cur, want)
+  if (d > maxTurn) d = maxTurn
+  else if (d < -maxTurn) d = -maxTurn
+  const na = cur + d
+  a.vx = Math.cos(na) * speed
+  a.vy = Math.sin(na) * speed
+}
+
+/**
+ * 분열 살 — 명중 자리에서 자식 화살이 좌우로 갈라진다.
+ *
+ * **w.arrowsLeft 를 건드리지도 검사하지도 않는다.** 자식은 지급된 화살이 아니라 그 한 발의
+ * 결과물이다. 여기서 잔량을 보면 마지막 발이 갈라지지 못한다.
+ * 풀이 꽉 차 슬롯이 없으면 그만큼 덜 갈라진다 — 판이 죽는 것보다 낫다 (A5, 할당 0).
+ */
+function spawnSplit(w: World, parent: Arrow, angle: number, speed: number): void {
+  const fx = w.fx
+  const n = Math.floor(fx.splitCount)
+  if (n <= 0 || speed <= 0) return
+  const childSpeed = speed * fx.splitSpeedKeep
+
+  for (let i = 0; i < n; i++) {
+    const child = freeSlot(w)
+    if (child === null) return
+    // ±로 대칭 배분. n=2 면 ±splitAngle, n=3 이면 -a, 0, +a.
+    const t = n > 1 ? (i / (n - 1)) * 2 - 1 : 0
+    launch(
+      child, parent.pendX, parent.pendY, angle + fx.splitAngle * t,
+      childSpeed, parent.power, parent.splitDepth + 1,
+    )
+  }
+}
+
+/**
+ * 사슬 살 — 맞은 과녁에서 다음 과녁으로 튄다.
+ *
+ * 죽은 화살을 되살리는 유일한 경로다. 방향을 바꾸는 일이라 충돌 순회(같은 선분) 안에서는
+ * 할 수 없어 target.ts가 플래그로 넘긴 것을 여기서 소비한다.
+ *
+ * @returns 실제로 튀었는가
+ */
+function bounceChain(w: World, a: Arrow, speed: number): boolean {
+  const fx = w.fx
+  if (fx.chainBounces <= 0 || speed <= 0) return false
+
+  const targets = w.targets
+  let bestD2 = fx.chainRange * fx.chainRange
+  let bestX = 0
+  let bestY = 0
+  let found = false
+  for (let j = 0; j < targets.length; j++) {
+    const t = targets[j]
+    // 방금 맞은 과녁은 이미 죽었거나 낙하 중이라 여기서 자동으로 빠진다.
+    if (t === undefined || !t.alive || t.falling) continue
+    const dx = t.x - a.pendX
+    const dy = t.y - a.pendY
+    const d2 = dx * dx + dy * dy
+    if (d2 > bestD2 || d2 <= 0) continue
+    bestD2 = d2
+    bestX = t.x
+    bestY = t.y
+    found = true
+  }
+  if (!found) return false
+
+  a.bounces++
+  const ang = Math.atan2(bestY - a.pendY, bestX - a.pendX)
+  const next = speed * fx.chainSpeedKeep
+  // 궤적은 이어서 그린다 — 꺾인 선 하나가 "튀었다"를 그대로 보여준다. trail은 손대지 않는다.
+  a.alive = true
+  a.outcome = 'flying'
+  a.x = a.pendX
+  a.y = a.pendY
+  a.px = a.x
+  a.py = a.y
+  a.vx = Math.cos(ang) * next
+  a.vy = Math.sin(ang) * next
+  return true
 }
 
 /**
@@ -139,6 +315,8 @@ function resolveCollisions(w: World, a: Arrow): void {
   const targets = w.targets
   // 이미 지나온 구간. 같은 과녁을 두 번 잡지 않기 위한 진행 커서.
   let fromT = 0
+  // 직전 pass에서 맞힌 과녁. fromT 커서만으로는 t === fromT 인 자기 자신을 다시 뽑는다.
+  let lastJ = -1
 
   for (let pass = 0; pass < targets.length; pass++) {
     let bestJ = -1
@@ -146,6 +324,11 @@ function resolveCollisions(w: World, a: Arrow): void {
     for (let j = 0; j < targets.length; j++) {
       const tg = targets[j]
       if (tg === undefined || !tg.alive) continue
+      // 낙하 중인 공중 과녁은 이미 맞은 과녁이다. alive를 유지한 채 떨어질 뿐이라
+      // 여기서 걸러내지 않으면 관통·무거운·사슬 살이 같은 과녁을 한 스텝에 두세 번 때린다.
+      // 같은 파일의 steerHoming·bounceChain, target.ts의 burst·sweepChain 과 규칙을 맞춘다.
+      if (tg.falling) continue
+      if (j === lastJ) continue
       const reach = tg.r * tg.r
       if (distSqPointSegment(tg.x, tg.y, a.px, a.py, a.x, a.y) > reach) continue
       const t = segParam(tg.x, tg.y, a.px, a.py, a.x, a.y)
@@ -160,6 +343,7 @@ function resolveCollisions(w: World, a: Arrow): void {
     if (tg === undefined) break
 
     fromT = bestT
+    lastJ = bestJ
     resolveHit(w, a, tg)
     // 관통이 아니면 화살은 여기서 멈춘다
     if (!a.alive) break

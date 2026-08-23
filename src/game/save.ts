@@ -11,12 +11,13 @@
 import { clamp } from '../core/math.ts'
 import type { Stats } from '../sim/types.ts'
 import { P } from '../tune/params.ts'
+import { STAGES } from './stages.ts'
 
 /** ARCHITECTURE A4가 지정한 단일 키. */
 const KEY = 'hanbal.save.v1'
 
 /** 현재 스키마 버전. 필드를 바꿀 때마다 +1 하고 MIGRATIONS에 한 줄 추가한다. */
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 
 /**
  * 오프라인 축적의 소수부 (자원 단위). 세 자원의 축적 속도가 달라 하나로 합칠 수 없다.
@@ -49,12 +50,39 @@ export interface SaveData {
   totalShots: number
   totalHits: number
   carry: Carry
+
+  // ── v2: 별·해금·누적 기록 (docs/HOOK.md ★2 ★3 ★4) ────────────────────
+  /**
+   * 판별 최고 별 (stage.id → 0..3). **줄지 않는다** — 다시 해서 못 받아도 가진 별은 남는다.
+   * 해금 조건이 읽는 totalStars의 출처라, 여기가 줄면 열린 칸이 잠긴 것처럼 보인다.
+   */
+  stars: Record<string, number>
+  /** 열린 해금 항목 id (game/unlocks.ts UNLOCKS). */
+  unlocked: string[]
+  /** 한 판에서 이어간 최고 연쇄 수 (누적 최댓값) */
+  bestChain: number
+  /** 누적 정중앙 명중 수 */
+  bullseyes: number
+  /** 누적 무손실 클리어 판수 */
+  perfectRuns: number
+  /**
+   * 판 보상·드래프트가 쓰는 난수 스트림의 상태.
+   *
+   * 스테이지 시드를 쓰면 안 된다 — 같은 판을 다시 깰 때 3택과 보너스가 똑같이 나와
+   * 대박이 나오는 판만 반복하는 구멍이 생긴다. 판마다 앞으로 나아가고 여기 남는다.
+   * sim의 w.rng와는 완전히 별개의 스트림이다 (A1: sim 결과는 시드에만 달려 있어야 한다).
+   */
+  runSeed: number
 }
 
 /** 저장값이 말이 되는 범위인지만 본다. 치트 방지가 아니라 NaN·Infinity 방어다 (A4: 치트 방지 안 함). */
 const HARD_MAX = 1e9
 /** 손상된 세이브가 무한히 키를 늘리는 것만 막는다. 판 수보다 훨씬 넉넉하다. */
 const BEST_SCORE_MAX_KEYS = 1000
+/** 같은 이유의 해금 목록 상한. 실제 항목은 14개다. */
+const UNLOCK_MAX_KEYS = 500
+/** 별의 상한. game/rewards.ts의 STAR_MAX와 같은 값이며, 저장 계층이 game을 import하지 않으려고 여기 둔다. */
+const STAR_MAX = 3
 
 // ─────────────────────────── 값 정화 ───────────────────────────
 
@@ -85,6 +113,13 @@ export function defaultSave(now: number): SaveData {
     totalShots: 0,
     totalHits: 0,
     carry: { arrows: 0, training: 0, requests: 0 },
+    stars: {},
+    unlocked: [],
+    bestChain: 0,
+    bullseyes: 0,
+    perfectRuns: 0,
+    // 0은 "아직 없음"이다. 루프가 첫 정산 전에 실제 시드를 심는다 (game 레이어라 Date.now 허용).
+    runSeed: 0,
   }
 }
 
@@ -98,6 +133,27 @@ const MIGRATIONS: ReadonlyArray<(r: Raw) => void> = [
   // v0 → v1: M1에는 세이브가 없었다. 빈 객체에서 올라오는 경로이며,
   // 빠진 필드는 전부 sanitize가 기본값으로 채운다.
   () => {},
+
+  /**
+   * v1 → v2: 별·해금·누적 기록이 생겼다.
+   *
+   * 빈 값으로 올리면 20판까지 온 사람이 **화살을 하나도 못 가진 채** 시작한다 —
+   * 해금이 전부 "판 클리어 수"에 걸려 있는데 그 기록이 없기 때문이다. 그건 세이브를
+   * 깨뜨리는 것과 같다 (A4). 이미 지나온 판은 깨서 지나온 것이므로(loop는 클리어에서만
+   * stageIndex를 올린다) **판당 별 1개**로 되살린다. 2·3번째 별은 다시 받으면 된다.
+   */
+  (r) => {
+    if (r['stars'] !== undefined) return
+    const upto = typeof r['stageIndex'] === 'number' && Number.isFinite(r['stageIndex'])
+      ? Math.floor(r['stageIndex'])
+      : 0
+    const stars: Record<string, number> = {}
+    for (let i = 0; i < upto && i < STAGES.length; i++) {
+      const s = STAGES[i]
+      if (s !== undefined) stars[s.id] = 1
+    }
+    r['stars'] = stars
+  },
 ]
 
 function migrate(r: Raw): void {
@@ -137,6 +193,38 @@ function sanitizeBest(v: unknown): Record<string, number> {
   return out
 }
 
+/** 별은 0~STAR_MAX. 손상된 값이 totalStars를 부풀려 해금을 통째로 열어버리지 않게 자른다. */
+function sanitizeStars(v: unknown): Record<string, number> {
+  const src = obj(v)
+  const out: Record<string, number> = {}
+  let n = 0
+  for (const key in src) {
+    if (n >= BEST_SCORE_MAX_KEYS) break
+    const raw = src[key]
+    if (typeof raw !== 'number' || !Number.isFinite(raw)) continue
+    out[key] = Math.floor(clamp(raw, 0, STAR_MAX))
+    n++
+  }
+  return out
+}
+
+/**
+ * 해금 id 목록. **모르는 id도 버리지 않는다** — 나중에 추가될 항목이나 되돌린 항목의
+ * 기록을 지우면 그건 세이브를 깨뜨리는 것이다 (A4: 필드를 지우지 않는다).
+ * 문자열이 아닌 것과 중복만 걷어낸다.
+ */
+function sanitizeUnlocked(v: unknown): string[] {
+  if (!Array.isArray(v)) return []
+  const out: string[] = []
+  for (let i = 0; i < v.length && out.length < UNLOCK_MAX_KEYS; i++) {
+    const id = v[i]
+    if (typeof id !== 'string' || id === '' || id.length > 64) continue
+    if (out.indexOf(id) >= 0) continue
+    out.push(id)
+  }
+  return out
+}
+
 /**
  * 자원 상한(P.offline.*Cap)은 여기서 적용하지 않는다.
  * 상한은 **축적**을 멈추는 장치지, 이미 가진 걸 뺏는 장치가 아니다 (GDD 5장: 시드는 자원 금지).
@@ -165,6 +253,13 @@ function sanitize(r: Raw, now: number): SaveData {
       training: num(carry['training'], 0, 0, 1),
       requests: num(carry['requests'], 0, 0, 1),
     },
+    stars: sanitizeStars(r['stars']),
+    unlocked: sanitizeUnlocked(r['unlocked']),
+    bestChain: int(r['bestChain'], 0, 0, HARD_MAX),
+    bullseyes: int(r['bullseyes'], 0, 0, HARD_MAX),
+    perfectRuns: int(r['perfectRuns'], 0, 0, HARD_MAX),
+    // 32비트 무부호. mulberry32의 상태 그대로다.
+    runSeed: int(r['runSeed'], 0, 0, 0xffffffff),
   }
 }
 

@@ -9,6 +9,7 @@
  * 각도:   라디안. 0 = 오른쪽(+x), 반시계 +.
  */
 import type { Rng } from '../core/rng.ts'
+import type { ArrowFx } from './arrowfx.ts'
 
 // ───────────────────────────── 입력 ─────────────────────────────
 
@@ -94,6 +95,15 @@ export interface ArcherState {
 
 // ───────────────────────────── 화살 ─────────────────────────────
 
+/**
+ * 화살 종류 (docs/HOOK.md ★1). 판 시작 전 3택으로 고르고 그 판 내내 쓴다.
+ *
+ * **왜 계약(sim)의 것인가**: 효과를 실제로 적용하는 건 ballistics·target이고 레이어 방향은
+ * core ← sim ← game 이다 (A1). 이름·설명 같은 화면용 메타데이터만 game/arrows.ts에 남는다.
+ * 효과 수치는 sim/arrowfx.ts가 tune/params.ts의 `arrowkind` 그룹에서 굽는다 (A2).
+ */
+export type ArrowKindId = 'basic' | 'pierce' | 'burst' | 'split' | 'homing' | 'chain' | 'heavy'
+
 export type ArrowOutcome = 'flying' | 'hit' | 'miss' | 'expired'
 
 /** 궤적 링버퍼 길이. 고정 크기 — 프레임당 할당 금지 (ARCHITECTURE A5). */
@@ -111,8 +121,32 @@ export interface Arrow {
   /** 화살촉 방향 (rad). 속도 방향으로 서서히 정렬된다. */
   angle: number
   age: number
-  /** 관통한 과녁 수 */
+  /** 관통 과녁(kind 'pierceable')을 뚫고 지나간 수 */
   pierced: number
+  /**
+   * 이 화살이 무언가를 맞힌 횟수 (관통·연쇄·폭발 직격 전부 포함).
+   * 소멸할 때 miss를 뱉을지 가르는 값이다 — 셋을 꿰뚫은 한 발이 착지하며 miss를 뱉으면
+   * 스스로 콤보를 0으로 만든다.
+   */
+  struck: number
+  /**
+   * 화살 종류의 관통(fx.pierceExtra)으로 뚫은 수. `pierced`와 나누는 이유:
+   * 관통 과녁은 공짜로 뚫리고 화살 종류의 관통은 예산이 정해져 있다.
+   */
+  kindPierced: number
+  /** 사슬 살이 튄 횟수 (fx.chainBounces 까지) */
+  bounces: number
+  /** 분열 살의 세대. 0 = 직접 쏜 화살, 1 = 갈라져 나온 자식. 자식은 다시 갈라지지 않는다. */
+  splitDepth: number
+  /**
+   * 이번 스텝에 명중이 요구한 후처리 플래그. target.ts가 세우고 ballistics.ts가 소비한다.
+   * **왜 플래그인가**: target.ts가 ballistics.ts를 import하면 순환이 생긴다 (spawn은 저쪽 것).
+   */
+  splitPending: number
+  chainPending: number
+  /** 위 플래그가 가리키는 자리 (명중한 과녁의 중심). 화살 자신의 좌표는 이미 그 너머다. */
+  pendX: number
+  pendY: number
   outcome: ArrowOutcome
   /** 발사 시점의 당김 0..1. 점수·연출에 쓴다. */
   power: number
@@ -202,7 +236,10 @@ export interface StageDef {
   seed: number
   /** 지급 화살 수 (5~8, GDD 6장) */
   arrows: number
-  /** 클리어 점수 */
+  /**
+   * 별 2개의 점수 기준선. **클리어 조건이 아니다** — 클리어는 과녁 전멸이다(world.ts evaluateEnd).
+   * game/rewards.ts가 이 값에 STAR2_MUL을 곱해 ★★ 문턱으로 쓰고, 훈련치 환산의 분모로도 쓴다.
+   */
   targetScore: number
   /** 평균 풍속 (m/s). 0이면 무풍. */
   wind: number
@@ -233,6 +270,14 @@ export interface World {
   wind: number
   windPhase: number
 
+  /**
+   * 이 판에 쓰는 화살 종류. 판 시작 전 드래프트가 정하고 판 내내 바뀌지 않는다 —
+   * 그래서 화살마다 들고 다니지 않고 여기 하나만 둔다 (분열 자식도 같은 종류다).
+   */
+  arrowKind: ArrowKindId
+  /** 위 종류의 효과판. arrowFx()가 돌려주는 공유 객체라 매 스텝 읽어도 할당이 없다 (A5). */
+  fx: ArrowFx
+
   arrowsLeft: number
   score: number
   /** 현재 연쇄 콤보 수 */
@@ -249,9 +294,9 @@ export interface World {
 // 구현자는 아래 시그니처를 정확히 지킨다. 이름·인자 순서를 바꾸면 통합이 깨진다.
 //
 //   sim/world.ts
-//     export function createWorld(stage: StageDef, stats: Stats): World
+//     export function createWorld(stage: StageDef, stats: Stats, arrow?: ArrowKindId): World
 //     export function step(w: World, input: InputFrame): void   // 정확히 1 고정스텝
-//     export function resetWorld(w: World, stage: StageDef, stats: Stats): void
+//     export function resetWorld(w: World, stage: StageDef, stats: Stats, arrow?: ArrowKindId): void
 //
 //   sim/bow.ts
 //     export function stepArcher(w: World, input: InputFrame): void

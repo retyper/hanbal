@@ -277,9 +277,11 @@ export function showOfflineGain(
  * 판이 끝났다. 훈련치와 저절로 오른 스탯을 한 줄로. 결과 화면에 가두지 않는다 (C1).
  * 성장 화면을 열라고 재촉하지 않는다 — 열 만해지면 HUD 버튼의 점이 알아서 켜진다.
  */
-export function showRunGain(o: Overlay, training: number, leveled: readonly StatKey[]): void {
+export function showRunGain(o: Overlay, line: string, leveled: readonly StatKey[]): void {
+  // `line`은 game/rewards.ts의 rewardLine()이 만든 문장이다 (별·훈련치·위업).
+  // 여기서 다시 조립하지 않는다 — 문장이 두 곳에서 만들어지면 반드시 어긋난다.
   const parts: string[] = []
-  if (training > 0) parts.push(`훈련치 +${training}`)
+  if (line !== '') parts.push(line)
   for (let i = 0; i < leveled.length; i++) {
     const k = leveled[i]
     if (k !== undefined) parts.push(`${statLabel(k)}이 늘었다`)

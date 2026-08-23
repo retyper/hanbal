@@ -185,10 +185,10 @@ const SMP = {
   uiUnlockGain: 0.34,
 
   /**
-   * 이 명중도 위는 "정중앙"이다 — 종소리로 바뀐다 (HOOK.md ★6 크리티컬).
-   * 눈에 보이는 크리티컬 연출과 **같은 문턱**을 써야 소리와 그림이 갈라지지 않는다.
+   * 정중앙 문턱은 여기 없다 — `P.hit.bullseyeAcc` 하나뿐이다 (A2 단일 출처).
+   * 눈에 보이는 크리티컬 연출·점수·해금과 **같은 문턱**을 써야 소리와 그림이 갈라지지 않는다.
+   * 사본을 두면 다음 튜닝에서 또 갈라진다 — 실제로 0.90(소리)/0.78(그림)로 갈라져 있었다.
    */
-  critAcc: 0.9,
   /** 이 위는 "제대로 박혔다" — 같은 나무지만 두꺼운 변주로 간다. 3단 사다리(가장자리/견실/정중앙)를 만든다. */
   solidAcc: 0.55,
   /** 정중앙에서 종을 이만큼까지 밝게 올린다. 1이면 원음. */
@@ -619,9 +619,11 @@ function playHit(sfx: Sfx, s: Synth, w: World, targetId: number, accuracy: numbe
   const acc = clamp01(accuracy)
   const kind = targetKind(w, targetId)
 
-  if (acc >= SMP.critAcc) {
+  // 튜닝 콘솔이 런타임에 P를 덮어쓰므로 상수로 붙잡지 않고 그때그때 읽는다 (A2).
+  const crit = P.hit.bullseyeAcc
+  if (acc >= crit) {
     // 정중앙일수록 조금 더 밝게. 문턱에서 갑자기 튀지 않게 문턱~1.0을 선형으로 편다.
-    const t = (acc - SMP.critAcc) / (1 - SMP.critAcc)
+    const t = crit < 1 ? (acc - crit) / (1 - crit) : 0
     if (sample(sfx, s, 'bell', P.audio.hitGain * SMP.bellGain, lerp(1, SMP.bellBright, t), 0, 0)) return
     // 종은 팩에서 가장 큰 파일이라 로딩 중 마지막에 도착한다. 그동안 정중앙만 합성음으로
     // 튀면 오히려 크리티컬이 약하게 들린다 — 두꺼운 나무로 한 칸 내려간다.

@@ -67,11 +67,7 @@ const FX = {
   seed: 0x5eed,
 
   // ── 크리티컬 (HOOK ★6-3) ──────────────────────────────────────────
-  /**
-   * 이 명중도부터 정중앙으로 친다. accuracy = 1 - 중심거리/반경 이므로
-   * 0.9는 반경의 10% 안쪽 — 과녁 넓이의 1%다. 아주 드물게만 터진다.
-   */
-  critAcc: 0.9,
+  /** 정중앙 문턱은 여기 없다 — 실제 판정은 P.hit.bullseyeAcc 하나를 본다 (A2). */
   /** 정중앙의 히트스톱 배수 */
   critStopMul: 2.1,
   /**
@@ -125,7 +121,7 @@ const FX = {
   /** 이 점수에서 팝이 최대 크기·밝기가 된다. 기본 과녁 100점, 링 배수 최대 2배. */
   scoreRef: 420,
 } as const
-// TODO(params): hit.critAcc · hit.critStopMul · hit.critSlowSec · hit.critSlowScale
+// TODO(params): hit.critStopMul · hit.critSlowSec · hit.critSlowScale
 // TODO(params): hit.squashTtl · hit.ringTtl · chain.glowAlpha · chain.glowCutoff
 
 /** 비네트 색 = 강조색(#ffb347). 알파는 globalAlpha로 준다. */
@@ -370,7 +366,7 @@ export function pumpEvents(fx: Fx, w: World): void {
     if (e === undefined) continue
 
     if (e.t === 'hit') {
-      const crit = e.accuracy >= FX.critAcc
+      const crit = e.accuracy >= P.hit.bullseyeAcc
       fx.lastX = e.x
       fx.lastY = e.y
       fx.comboRun = e.combo + 1
@@ -386,6 +382,10 @@ export function pumpEvents(fx: Fx, w: World): void {
       }
 
       spawnRing(fx, e.x, e.y, radiusOf(w, e.targetId), crit)
+      // 폭발 살은 반경이 화면에 한 번도 안 그려져 "왜 저것들이 같이 죽었는지"도,
+      // 다음 발을 어디 겨눠야 둘이 물리는지도 배울 수 없었다. 기존 파열 링을 그대로 쓴다 —
+      // 0.3초 안에 사라지고 새 상태·새 할당이 없다 (A5).
+      if (w.fx.burstRadius > 0) spawnRing(fx, e.x, e.y, w.fx.burstRadius, false)
       markSquash(fx, e.targetId)
       captureTrail(fx, w, e.x, e.y, false)
 

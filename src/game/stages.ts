@@ -49,9 +49,9 @@ import type { StageDef, TargetKind, TargetSpec } from '../sim/types.ts'
 const HAND_X = 0
 const HAND_Y = 1.4
 
-/** 과녁 기본 점수. 클리어 점수를 "몇 발 맞혀야 하는가"로만 읽히게 전 과녁 동일. */
+/** 과녁 기본 점수. 점수 기준선을 "몇 발 맞혀야 하는가"로만 읽히게 전 과녁 동일. */
 const BASE = 100
-/** k발 명중을 기준선으로 하는 클리어 점수. 링 배수·연쇄가 얹히므로 실제로는 더 관대하다. */
+/** k발 명중을 기준선으로 하는 **별 2개 문턱**. 클리어 조건이 아니다 — 클리어는 과녁 전멸이다. */
 const need = (k: number): number => BASE * k
 
 const TOTAL = 40
