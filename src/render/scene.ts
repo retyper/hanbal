@@ -50,6 +50,13 @@ const DRAW = {
   aerialStem: 0.35,
 } as const
 
+/**
+ * 궤적 알파 밴드 수. 세그먼트마다 stroke를 부르면 화살 하나당 프레임당 47회가 나가고,
+ * globalAlpha<1 에서 round lineCap이 관절마다 겹쳐 이중 블렌딩으로 선이 마디져 보인다.
+ * 밴드로 묶어 폴리라인 하나씩만 그린다 (effects.ts의 유령 궤적이 이미 쓰는 방식).
+ */
+const TRAIL_BANDS = 4
+
 export interface Renderer {
   resize(): void
   draw(w: World, alpha: number, dtReal: number): void
@@ -144,20 +151,20 @@ function drawTrails(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void 
     if (ar === undefined || !ar.alive) continue
     const n = ar.trailLen < TRAIL_POINTS ? ar.trailLen : TRAIL_POINTS
     if (n < 2) continue
-    // 오래된 점일수록 옅게. 링버퍼를 뒤에서부터 되짚는다.
-    for (let j = 1; j < n; j++) {
-      const i0 = ((ar.trailHead - n + j - 1) % TRAIL_POINTS + TRAIL_POINTS) % TRAIL_POINTS
-      const i1 = ((ar.trailHead - n + j) % TRAIL_POINTS + TRAIL_POINTS) % TRAIL_POINTS
-      ctx.globalAlpha = (j / n) * 0.7
+    // 오래된 점일수록 옅게. 링버퍼를 뒤에서부터 되짚되, 알파를 밴드로 묶어 밴드마다 한 번만 stroke.
+    for (let b = 0; b < TRAIL_BANDS; b++) {
+      const j0 = (((n - 1) * b) / TRAIL_BANDS) | 0
+      const j1 = (((n - 1) * (b + 1)) / TRAIL_BANDS) | 0
+      if (j1 <= j0) continue
+      ctx.globalAlpha = ((b + 1) / TRAIL_BANDS) * 0.7
       ctx.beginPath()
-      ctx.moveTo(
-        worldToScreenX(cam, ar.trail[i0 * 2] ?? 0),
-        worldToScreenY(cam, ar.trail[i0 * 2 + 1] ?? 0),
-      )
-      ctx.lineTo(
-        worldToScreenX(cam, ar.trail[i1 * 2] ?? 0),
-        worldToScreenY(cam, ar.trail[i1 * 2 + 1] ?? 0),
-      )
+      for (let j = j0; j <= j1; j++) {
+        const idx = ((ar.trailHead - n + j) % TRAIL_POINTS + TRAIL_POINTS) % TRAIL_POINTS
+        const sx = worldToScreenX(cam, ar.trail[idx * 2] ?? 0)
+        const sy = worldToScreenY(cam, ar.trail[idx * 2 + 1] ?? 0)
+        if (j === j0) ctx.moveTo(sx, sy)
+        else ctx.lineTo(sx, sy)
+      }
       ctx.stroke()
     }
   }

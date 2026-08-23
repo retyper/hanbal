@@ -13,6 +13,14 @@ import { TRAIL_POINTS } from './types.ts'
 import type { Arrow, World } from './types.ts'
 
 /**
+ * 궤적 표본 간격 (스텝). 매 스텝 기록하면 48점이 0.4초밖에 못 담아
+ * 1-1(비행 0.62s)에서도 빗나간 화살의 궤적이 통째로 화면 밖에 그려진다 —
+ * "왜 빗나갔는지 읽힌다"(GDD 8장)가 무효가 된다. 4로 벌리면 1.6초를 담는다.
+ * 버퍼 크기도 stroke 수도 그대로다 (A5).
+ */
+const TRAIL_STRIDE = 4
+
+/**
  * 화살 풀에서 죽은 슬롯 하나를 재사용한다. 빈 슬롯이 없으면 null.
  * 새 객체를 만들지 않는다 — 발사는 드물지만 여기서 new를 허용하면 풀의 의미가 사라진다 (A5).
  *
@@ -52,7 +60,9 @@ export function spawnArrow(w: World, angle: number, power: number): Arrow | null
   a.power = pw
   a.trailLen = 0
   a.trailHead = 0
-  pushTrail(a)
+  // 첫 표본(발사점)과 머리 칸을 함께 연다. 머리 칸이 없으면 첫 스텝의 덮어쓰기가 발사점을 지운다.
+  openTrailSlot(a)
+  openTrailSlot(a)
 
   w.arrowsLeft--
   return a
@@ -106,19 +116,17 @@ export function stepArrows(w: World): void {
 
     resolveCollisions(w, a)
 
-    if (a.alive) {
-      if (landed) {
-        a.outcome = 'miss'
-        a.alive = false
-        w.events.push({ t: 'miss', x: a.x, y: a.y })
-      } else if (a.age > P.arrow.maxFlightTime) {
-        a.outcome = 'expired'
-        a.alive = false
-        w.events.push({ t: 'miss', x: a.x, y: a.y })
-      }
+    if (a.alive && (landed || a.age > P.arrow.maxFlightTime)) {
+      // 관통 화살은 과녁을 꿰뚫고도 계속 날아가 결국 착지한다. 여기서 miss를 뱉으면
+      // world.ts가 연쇄를 끊어, 셋을 꿰뚫은 최고의 한 발이 스스로 콤보를 0으로 만든다.
+      // world.ts:295 주석대로 "명중 **없이** 소멸한 화살"만 끊는다.
+      const scored = a.pierced > 0
+      a.outcome = scored ? 'hit' : landed ? 'miss' : 'expired'
+      a.alive = false
+      if (!scored) w.events.push({ t: 'miss', x: a.x, y: a.y })
     }
 
-    pushTrail(a)
+    pushTrail(a, dt)
   }
 }
 
@@ -170,14 +178,28 @@ function segParam(px: number, py: number, ax: number, ay: number, bx: number, by
   return lenSq > 0 ? clamp01(((px - ax) * dx + (py - ay) * dy) / lenSq) : 0
 }
 
-/** 궤적 링버퍼. trailHead는 "다음에 쓸 칸". 렌더만 읽는다. */
-function pushTrail(a: Arrow): void {
-  const h = a.trailHead
-  const i = h * 2
+// ── 궤적 링버퍼 ──
+// trailHead는 "다음에 쓸 칸". 렌더는 trailHead 직전 칸을 가장 최신 점으로 읽는다.
+// 표본은 TRAIL_STRIDE 스텝마다 하나만 굳히고, 머리 칸은 매 스텝 현재 좌표로 덮어쓴다 —
+// 그래야 표본 간격을 벌려도 꼬리 끝이 화살에서 떨어지지 않는다. 렌더만 읽는다.
+
+function writeTrail(a: Arrow, slot: number): void {
+  const i = slot * 2
   if (i + 1 < a.trail.length) {
     a.trail[i] = a.x
     a.trail[i + 1] = a.y
   }
-  a.trailHead = (h + 1) % TRAIL_POINTS
+}
+
+/** 현재 좌표로 새 칸을 연다(= 직전 머리 칸을 표본으로 확정한다). */
+function openTrailSlot(a: Arrow): void {
+  writeTrail(a, a.trailHead)
+  a.trailHead = (a.trailHead + 1) % TRAIL_POINTS
   if (a.trailLen < TRAIL_POINTS) a.trailLen++
+}
+
+function pushTrail(a: Arrow, dt: number): void {
+  const steps = dt > 0 ? Math.round(a.age / dt) : 0
+  if (steps % TRAIL_STRIDE === 0) openTrailSlot(a)
+  writeTrail(a, (a.trailHead + TRAIL_POINTS - 1) % TRAIL_POINTS)
 }

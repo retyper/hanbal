@@ -38,27 +38,22 @@ export function makeRng(seed: number): Rng {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296
   }
 
-  // Box-Muller의 짝수 번째 값을 캐시한다. 매 호출 두 번 뽑는 낭비를 피함.
-  let spare: number | null = null
-
   return {
     next,
     range: (min, max) => min + next() * (max - min),
     int: (min, max) => min + Math.floor(next() * (max - min + 1)),
     chance: (p) => next() < p,
+    /**
+     * Box-Muller의 짝 값을 캐시하지 않는다. 캐시하면 그 값이 RNG 상태의 일부가 되는데
+     * state()가 정수 s 하나만 내보내므로 restore(seed)로 되감아도 캐시가 남아
+     * 같은 시드의 다음 판이 직전 판의 난수를 쓴다 (A1 위반, 실측 확인).
+     * 발사당 next() 한 번을 더 쓰는 값으로 상태를 s 하나에 완결시킨다 — 세이브·리플레이(A4)도 같이 산다.
+     */
     gaussian(): number {
-      if (spare !== null) {
-        const v = spare
-        spare = null
-        return v
-      }
       // u가 정확히 0이면 log(0) = -Infinity. 뽑힐 확률은 2^-32이지만 NaN 한 번이면 판이 죽는다.
       let u = next()
       if (u === 0) u = Number.EPSILON
-      const mag = Math.sqrt(-2 * Math.log(u))
-      const ang = 2 * Math.PI * next()
-      spare = mag * Math.sin(ang)
-      return mag * Math.cos(ang)
+      return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * next())
     },
     state: () => s,
     restore(v: number) {

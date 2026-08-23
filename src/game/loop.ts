@@ -8,7 +8,7 @@
  * 렌더 쪽 분업: renderer.draw 안에서 pumpEvents·updateCamera·updateFx가 실시간(dtReal)으로 돈다.
  * 루프는 이벤트를 **비우는 것**만 책임진다 — scene.ts / effects.ts 가 읽되 비우지 않기로 했다.
  */
-import { createWorld, resetWorld, step } from '../sim/world.ts'
+import { cancelDraw, createWorld, requireFreshPress, resetWorld, restArcher, step } from '../sim/world.ts'
 import type { Stats } from '../sim/types.ts'
 import { createInput } from '../input/pointer.ts'
 import { createRenderer, getCamera, getHitStopMs } from '../render/scene.ts'
@@ -49,7 +49,10 @@ export function createLoop(canvas: HTMLCanvasElement): GameLoop {
     resetWorld(w, getStage(stageIndex), M1_STATS)
     acc = 0
     // 판을 넘긴 그 눌림이 다음 판의 첫 발까지 이어지지 않게 에지를 소진시킨다.
+    // 루프 쪽 에지만 소진하면 InputFrame.drawing 이 아직 true라 다음 스텝에 시위가 잡힌다 —
+    // 궁수도 "한 번 떼야 잡히는" 상태로 같이 넘겨야 화살을 안 잃는다 (C1).
     prevDrawing = input.frame.drawing
+    if (prevDrawing) requireFreshPress(w)
     saveNow()
   }
 
@@ -100,9 +103,14 @@ export function createLoop(canvas: HTMLCanvasElement): GameLoop {
 
     // draw 안에서 이펙트·카메라가 이번 프레임의 이벤트를 읽는다.
     // 그래서 명중 반응이 한 프레임도 늦지 않는다 (feel-lens 4항).
-    renderer.draw(w, acc / w.dt, realDt)
-    // 읽고 나면 루프가 비운다. 소비자가 비우면 두 번째 소비자가 굶는다.
-    w.events.length = 0
+    try {
+      renderer.draw(w, acc / w.dt, realDt)
+    } finally {
+      // 읽고 나면 루프가 비운다. 소비자가 비우면 두 번째 소비자가 굶는다.
+      // draw가 던져도 반드시 비운다 — 안 비우면 pumpEvents가 매 tick 누적분을 통째로
+      // 재처리해 파티클 스폰이 눈덩이가 되고, 보이는 탭에서 CPU가 폭주한다 (C3).
+      w.events.length = 0
+    }
   }
 
   const schedule = (): void => {
@@ -123,13 +131,20 @@ export function createLoop(canvas: HTMLCanvasElement): GameLoop {
   }
 
   const onHidden = (): void => {
+    // 당기던 중이었으면 발사 없이 되돌린다. 복귀 첫 스텝이 화살을 태우면 C2 위반이다.
+    cancelDraw(w)
     halt()
     saveNow()
   }
 
   const onVisibility = (): void => {
     if (document.hidden) onHidden()
-    else schedule()
+    else {
+      // 자리를 비운 동안 팔은 쉬었다. 복귀 첫 클릭이 스태미나 부족으로 삼켜지면
+      // "복귀 3초 안에 첫 발"(C1)이 깨진다.
+      restArcher(w)
+      schedule()
+    }
   }
 
   document.addEventListener('visibilitychange', onVisibility)

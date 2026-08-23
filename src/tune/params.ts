@@ -32,8 +32,14 @@ export const SPEC = {
     maxSpeed: k(62, 20, 140, 1, '만작에서의 화살 초속', 'm/s'),
     /** 장력-속도 곡선. 1이면 선형, >1이면 만작 근처에서 급격히 강해진다(실제 활에 가까움). */
     drawCurve: k(1.6, 0.5, 3, 0.05, '장력 곡선 지수 (클수록 만작이 극적)'),
-    /** 시위를 놓는 순간 조준각에 더해지는 무작위 오차. STEADY로 줄어든다. */
-    releaseScatter: k(0.011, 0, 0.06, 0.001, '릴리즈 산포 (기본 오차)', 'rad'),
+    /**
+     * 시위를 놓는 순간 조준각에 더해지는 무작위 오차. STEADY로 줄어든다.
+     * 0.011 -> 0.0035: 산포가 떨림(읽을 수 있는 채널)의 6.9배라 완벽한 릴리즈가 각오차를
+     * 1.0%밖에 못 줄였다 — "놓는 순간이 전부다"(GDD 2장)가 통계적으로 존재하지 않았다.
+     * 오차 예산을 tremor.baseAmp로 옮겨, 떨림 RMS(0.0060) >= 1.73 × 산포가 되게 했다.
+     * 이제 위상을 정확히 읽으면 σ가 50% 줄어든다. step도 0.001 -> 0.0005 (새 값이 슬라이더 격자에 없었다).
+     */
+    releaseScatter: k(0.0035, 0, 0.06, 0.0005, '릴리즈 산포 (기본 오차)', 'rad'),
     /** 만작 전에 놓으면 화살이 흔들리며 날아간다 */
     partialDrawPenalty: k(0.55, 0, 2, 0.05, '덜 당기고 쏠 때 정확도 페널티'),
     /** 붕괴는 큰 페널티다. 예전엔 도메인이 다른 tremor.fatigueMul을 빌려 썼다 — 전용 노브로 분리. */
@@ -47,7 +53,12 @@ export const SPEC = {
 
   /** 떨림 — 이 게임의 심장. feel-lens가 가장 먼저 보는 곳 */
   tremor: {
-    baseAmp: k(0.0042, 0, 0.03, 0.0002, '기본 떨림 진폭', 'rad'),
+    /**
+     * 0.0042 -> 0.016: 총 각오차는 그대로 두고 예산을 난수(releaseScatter)에서 여기로 옮겼다.
+     * 떨림 RMS 0.0016 -> 0.0060 rad. 위상을 읽는 실력이 실제로 명중률을 바꾸는 유일한 경로다.
+     * (화면 진폭은 stickman.ts가 minVisiblePx로 역산하므로 이 값으로 커지지 않는다.)
+     */
+    baseAmp: k(0.016, 0, 0.03, 0.0002, '기본 떨림 진폭', 'rad'),
     /** 홀드가 이 시간을 넘으면 떨림이 자라기 시작한다 */
     rampStart: k(1.2, 0, 5, 0.1, '떨림이 커지기 시작하는 홀드 시간', 's'),
     rampRate: k(0.9, 0, 4, 0.05, '홀드 지속 시 떨림 증가 속도', '/s'),
@@ -202,18 +213,39 @@ function materialize<T extends object>(spec: T): Values<T> {
  */
 export const P: Values<Spec> = materialize(SPEC)
 
-/** 콘솔이 쓰는 경로 접근자. 'bow.drawTime' 같은 점 경로. */
+/**
+ * 콘솔이 쓰는 경로 접근자. 'bow.drawTime' 같은 점 경로.
+ *
+ * SPEC의 Knob을 찾아 범위로 클램프한다. 슬라이더는 브라우저가 막아주지만
+ * localStorage에 남은 저장본을 되살리는 경로는 무방비였다 — `sim.hz: 0` 하나로
+ * w.dt가 Infinity가 되어 판이 통째로 죽는다. 노브 이름·범위를 바꾸면 예전 저장본이
+ * 새 범위 밖의 값으로 되살아나므로 이론적인 경로가 아니다.
+ * 알 수 없는 경로(사라진 노브의 유령 키)는 조용히 무시한다.
+ */
 export function setParam(path: string, value: number): void {
+  if (!Number.isFinite(value)) return
   const parts = path.split('.')
   const leaf = parts.pop()
   if (leaf === undefined) return
+
+  let spec: unknown = SPEC
+  for (const part of parts) {
+    if (spec === null || typeof spec !== 'object') return
+    spec = (spec as Record<string, unknown>)[part]
+  }
+  if (spec === null || typeof spec !== 'object') return
+  const knob = (spec as Record<string, unknown>)[leaf]
+  if (knob === null || typeof knob !== 'object' || !('v' in knob)) return
+  const kn = knob as Knob
+  const v = value < kn.min ? kn.min : value > kn.max ? kn.max : value
+
   let node: Record<string, unknown> = P as unknown as Record<string, unknown>
   for (const part of parts) {
     const next = node[part]
-    if (next === undefined || typeof next !== 'object') return
+    if (next === null || typeof next !== 'object') return
     node = next as Record<string, unknown>
   }
-  node[leaf] = value
+  node[leaf] = v
 }
 
 export function getParam(path: string): number | undefined {

@@ -291,6 +291,40 @@ describe('결정론 (A1)', () => {
     assertSame(snapshot(b, false), snapshot(a, false), 'reset 후 재실행')
   })
 
+  /**
+   * 판을 한 번 **돌린 뒤** 되감아야 RNG 내부 캐시 누출이 드러난다.
+   * 위 두 테스트는 reset 전에 난수를 안 쓰거나 홀짝이 맞아떨어져 이걸 놓쳤다 (sim-lens).
+   */
+  it('판을 돌린 뒤 resetWorld 해도 같은 시드는 같은 판을 만든다', () => {
+    // 발사 **홀수 번**에서 끊어야 한다. 짝수로 끊으면 난수 소비가 우연히 짝이 맞아
+    // 상태 누출이 있어도 두 회차가 같아 보인다. 400스텝 = 릴리즈 1회.
+    const ODD_STEPS = 400
+    const inputs = buildInputs(0x5eed, ODD_STEPS)
+
+    const reused = createWorld(makeStage(), STATS)
+    run(reused, inputs, 0, ODD_STEPS, false)
+    assert.equal(reused.stage.arrows - reused.arrowsLeft, 1, '이 구간에서 화살이 1발 나가야 한다')
+    const first = snapshot(reused, false)
+
+    resetWorld(reused, makeStage(), STATS)
+    run(reused, inputs, 0, ODD_STEPS, false)
+
+    assertSame(first, snapshot(reused, false), '1회차 vs 리셋 후 2회차')
+  })
+
+  it('rng.state()/restore()가 난수 스트림을 완전히 되감는다', () => {
+    const r = makeRng(0xc0ffee)
+    const saved = r.state()
+    // 홀수 번 뽑아야 Box-Muller 짝 캐시가 남는 구조였다. 그 잔재가 없어야 한다.
+    r.gaussian()
+    r.restore(saved)
+
+    const fresh = makeRng(0xc0ffee)
+    for (let i = 0; i < 4; i++) {
+      assert.ok(Object.is(r.gaussian(), fresh.gaussian()), `gaussian[${i}] 불일치`)
+    }
+  })
+
   it('테스트가 헛돌지 않는다: 실제로 상태가 변하고 화살이 나간다', () => {
     const inputs = buildInputs(0x5eed, STEPS)
     const w = createWorld(makeStage(), STATS)

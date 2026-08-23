@@ -104,7 +104,9 @@ export function stepArcher(w: World, input: InputFrame): void {
   }
 
   // idle → drawing. 누른 **그 스텝에** draw가 0보다 커져야 한다 (feel-lens 1).
-  if (a.phase === 'idle' && input.drawing && canStartDraw(a.stamina)) {
+  // 잔량 0에서도 잡히면, 마지막 화살이 날아가는 동안 다시 눌러 만작까지 간 한 발이
+  // spawnArrow의 잔량 검사에 걸려 통째로 증발한다. 아예 안 물려야 '못 쏜다'가 즉시 읽힌다.
+  if (a.phase === 'idle' && input.drawing && w.arrowsLeft > 0 && canStartDraw(a.stamina)) {
     a.phase = 'drawing'
     a.drawTime = 0
     a.draw = 0

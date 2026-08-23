@@ -2,7 +2,7 @@
  * 스틱맨 궁수 (GDD 8장) — 벡터 라인, 관절 5개(어깨/팔꿈치/손목/골반/무릎).
  *
  * 이 파일의 핵심 책임은 "떨림을 읽을 수 있게 그리는 것"이다.
- * 조준 떨림은 실제로는 0.004 rad 수준이라 화면에서 0.2px도 안 움직인다.
+ * 조준 떨림은 실제로는 0.02 rad 미만이라 화면에서 1px도 안 움직인다.
  * 그래서 회전 중심을 어깨에 두고, P.tremor.minVisiblePx를 기준으로 표시 배율을 역산해
  * 활 끝의 흔들림이 항상 최소 가시 진폭 이상 나오게 한다. 위상은 그대로 보존된다.
  *
@@ -38,6 +38,15 @@ const BODY = {
 const TREMOR_LEVER = Math.hypot(BODY.arm, BODY.bowHalf)
 
 /**
+ * valueNoise 한 옥타브의 RMS (실측 0.497). 손맛 노브가 아니라 core/math.ts 파형의 성질이다.
+ *
+ * tremorOffset은 baseAmp가 아니라 baseAmp × wave 이고 wave의 RMS는 1이 아니다.
+ * 파고율을 1로 가정하면 화면 진폭이 minVisiblePx의 절반 이하가 되어 노브 이름이 거짓말을 한다 —
+ * 만작 직후 활 끝이 1.2px밖에 안 움직여 위상을 읽을 수 없었다 (feel-lens).
+ */
+const NOISE_RMS = 0.497
+
+/**
  * 표시용 떨림 상한 (rad, 약 15°). 이보다 크게 흔들면 팔이 만화처럼 돌아간다.
  * 기본 진폭이 2.5px일 때 최대 진폭이 10~20px가 되도록 잡은 값.
  */
@@ -70,7 +79,9 @@ const rig = {
  * "흔들림이 중앙을 지날 때 놓기"라는 읽기가 성립한다 (GDD 2장).
  */
 function visualTremor(cam: Camera, offset: number, warn: number): number {
-  const rawPx = P.tremor.baseAmp * TREMOR_LEVER * cam.scale
+  // 2옥타브 합성의 RMS. 두 옥타브가 독립이라 hypot으로 따라간다 — fastRatio를 튜닝해도 안 어긋난다.
+  const waveRms = NOISE_RMS * Math.hypot(1 - P.tremor.fastRatio, P.tremor.fastRatio)
+  const rawPx = P.tremor.baseAmp * TREMOR_LEVER * cam.scale * waveRms
   const gain = rawPx > 1e-6 ? P.tremor.minVisiblePx / rawPx : 1
   const boosted = offset * gain * (1 + warn * WARN_TREMOR_BOOST)
   // tanh 소프트 클램프 — 단조증가라 위상이 보존되고, 기본 진폭 부근에서는 거의 선형이다.

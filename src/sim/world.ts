@@ -131,6 +131,44 @@ function resetArcher(a: ArcherState, staminaMax: number): void {
   a.warn = 0
 }
 
+/**
+ * 탭 이탈로 판이 멈출 때, 당기던 시위를 **발사 없이** 되돌린다.
+ * 제약 C2: 아무 때나 끊어도 손해가 없다 — 공부하러 떠나는 순간에 게임이 화살을 태우면 안 된다.
+ * (스텝 경계 밖에서 상태를 쓰는 함수다. M2에서 리플레이 녹화가 붙으면 입력 이벤트로 기록해야 A1이 유지된다.)
+ */
+export function cancelDraw(w: World): void {
+  const a = w.archer
+  if (a.phase !== 'drawing' && a.phase !== 'full') return
+  // recovering 으로 둔다 — 버튼을 한 번 떼야 다시 잡는다 (bow.ts 의 연사 방지 규칙 재사용).
+  a.phase = 'recovering'
+  a.draw = 0
+  a.drawTime = 0
+  a.holdTime = 0
+  a.steadyTime = 0
+  a.steadyBlend = 0
+  a.tremorAmp = 0
+  a.tremorOffset = 0
+}
+
+/**
+ * 판을 넘긴 그 눌림이 다음 판의 첫 발로 새지 않게, 버튼을 한 번 떼야 잡히는 상태로 둔다.
+ * (bow.ts 의 `recovering && !drawing → idle` 규칙을 그대로 재사용한다 — 새 상태 필드가 필요 없다.)
+ */
+export function requireFreshPress(w: World): void {
+  w.archer.phase = 'recovering'
+}
+
+/**
+ * 자리를 비운 동안 팔은 쉬었다. 복귀 첫 클릭이 스태미나 부족으로 조용히 삼켜지면
+ * "탭 복귀 후 3초 안에 첫 발"(C1)이 깨진다. 실시간을 sim으로 몰아 돌리지 않고(A3),
+ * 스텝 밖에서 상태만 되돌린다.
+ * (cancelDraw 와 같이, M2에서 리플레이 녹화가 붙으면 반드시 입력 이벤트로 기록해야 A1이 유지된다.)
+ */
+export function restArcher(w: World): void {
+  w.archer.stamina = w.archer.staminaMax
+  w.archer.regenLock = 0
+}
+
 function resetArrow(a: Arrow): void {
   a.alive = false
   a.x = 0
