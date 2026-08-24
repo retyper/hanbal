@@ -171,6 +171,7 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
     accuracy,
     chain: target.chainDepth,
     combo: w.combo,
+    head,
     arrow: arrow.id,
   })
 

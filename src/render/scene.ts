@@ -447,16 +447,51 @@ function drawTargets(
       // 체력 바 — 머리 위 (형: "전부 바 형태로").
       drawHpBar(ctx, x, headY - hr - 12, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
     } else if (t.kind === 'boss') {
-      // ★ 보스 (docs/RUN.md 3장). 몸통은 위험색 겹띠 — 크기 자체가 위협이라 조형은 단순하게.
-      band(ctx, x, y, rx, ry, THEME.threat)
-      band(ctx, x, y, rx * 0.86, ry * 0.86, THEME.threatDim)
-      band(ctx, x, y, rx * 0.3, ry * 0.3, THEME.targetBand)
-      // 머리 — 약점. 밝은 테로 "여길 쏘라"가 읽혀야 한다.
+      // ★ 보스 = 눈알귀신 (형: "빨간 원이 둥실둥실 다가오는 건 말이 안 되잖아. 눈알귀신이라도").
+      //   너덜너덜한 귀신 몸뚱이 + 위쪽의 거대한 눈알 하나. 눈알은 **약점 히트박스 그 자리**다 —
+      //   동공이 궁수를 계속 노려보니 "눈을 쏘라"는 말이 필요 없다.
       const hy = y - ry * P.target.bossHeadUp
-      const hr = Math.max(3, rx * P.target.bossHeadR)
-      band(ctx, x, hy, hr, hr, THEME.target2)
-      band(ctx, x, hy, hr * 0.55, hr * 0.55, THEME.threat)
-      // 체력 바 — 머리 위. 보스의 남은 목숨이 멀리서도 한 줄로 읽힌다.
+      const hr = Math.max(4, rx * P.target.bossHeadR)
+
+      // 몸 — 어두운 덩어리. 밑단은 흘러내리는 세 겹 자락 (유령의 문법).
+      ctx.fillStyle = THEME.threatDim
+      ctx.beginPath()
+      ctx.moveTo(x - rx, y)
+      ctx.quadraticCurveTo(x - rx, y - ry * 1.05, x, y - ry * 1.1)
+      ctx.quadraticCurveTo(x + rx, y - ry * 1.05, x + rx, y)
+      // 자락 — 아래로 갈수록 파도친다. 시간은 sim elapsed (A1: 렌더는 읽기만).
+      const wob = Math.sin(w.elapsed * 1.7) * ry * 0.08
+      ctx.quadraticCurveTo(x + rx * 0.72, y + ry * 1.1 + wob, x + rx * 0.5, y + ry * 0.7)
+      ctx.quadraticCurveTo(x + rx * 0.25, y + ry * 1.15 - wob, x, y + ry * 0.75)
+      ctx.quadraticCurveTo(x - rx * 0.25, y + ry * 1.1 + wob, x - rx * 0.5, y + ry * 0.72)
+      ctx.quadraticCurveTo(x - rx * 0.75, y + ry * 1.12 - wob, x - rx, y)
+      ctx.closePath()
+      ctx.fill()
+
+      // 눈알 — 흰자 · 홍채(위험색) · 동공. 동공은 궁수를 따라간다.
+      const blink = (w.elapsed % 3.7) < 0.13
+      if (blink) {
+        // 깜빡임 — 감긴 눈꺼풀 한 줄. 살아 있는 것만이 깜빡인다.
+        ctx.strokeStyle = THEME.target2
+        ctx.lineWidth = Math.max(2, hr * 0.18)
+        ctx.beginPath()
+        ctx.moveTo(x - hr, hy)
+        ctx.lineTo(x + hr, hy)
+        ctx.stroke()
+      } else {
+        band(ctx, x, hy, hr, hr * 0.92, THEME.target2)
+        const ax2 = worldToScreenX(cam, w.archer.x)
+        const ay2 = worldToScreenY(cam, w.archer.y)
+        const dl = Math.hypot(ax2 - x, ay2 - hy) || 1
+        const px2 = x + ((ax2 - x) / dl) * hr * 0.34
+        const py2 = hy + ((ay2 - hy) / dl) * hr * 0.3
+        band(ctx, px2, py2, hr * 0.52, hr * 0.5, THEME.threat)
+        band(ctx, px2, py2, hr * 0.26, hr * 0.25, THEME.targetBand)
+        // 눈빛 점 — 이게 있어야 젖은 눈알로 보인다.
+        band(ctx, px2 - hr * 0.12, py2 - hr * 0.14, hr * 0.09, hr * 0.09, THEME.target2)
+      }
+
+      // 체력 바 — 눈 위. 보스의 남은 목숨이 멀리서도 한 줄로 읽힌다.
       drawHpBar(ctx, x, hy - hr - 14, Math.max(40, rx * 1.2), t.hpMax > 0 ? t.hp / t.hpMax : 0)
     } else if (t.kind === 'charger') {
       // ★ 나를 향해 오는 것. **왼쪽을 가리키는 뾰족한 삼각형** — 다른 어떤 과녁과도

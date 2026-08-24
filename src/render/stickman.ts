@@ -29,6 +29,7 @@
  */
 import { clamp, clamp01, lerp, smoothstep, TAU } from '../core/math.ts'
 import { P } from '../tune/params.ts'
+import { effectiveStats } from '../sim/bow.ts'
 import type { World } from '../sim/types.ts'
 import { THEME, worldToScreenX, worldToScreenY } from './camera.ts'
 import type { Camera } from './camera.ts'
@@ -718,6 +719,41 @@ export function drawArcher(
     line(ctx, cam, rig.nockX, rig.nockY, tipX, tipY)
     ctx.strokeStyle = THEME.accent
     line(ctx, cam, tipX - rig.ux * BODY.arrowHead, tipY - rig.uy * BODY.arrowHead, tipX, tipY)
+  }
+
+  // ── 호흡정지 사선 (P.steady.previewTime) — 숨을 참으면 화살이 갈 길이 보인다 ──
+  // 지금 이 순간 놓으면 나갈 각(조준각 + 떨림)을 그대로 적분한다. 산포가 0이 된 세상이라
+  // 이 점선은 거짓말을 하지 않는다. steadyBlend로 스며들고 스며 나간다 (즉발 금지, sim과 동일).
+  if (a.steadyBlend > 0.02 && (a.phase === 'drawing' || a.phase === 'full')) {
+    const d2 = effectiveStats(w.stats)
+    const pw = a.draw
+    const spd = lerp(P.bow.minSpeed, P.bow.maxSpeed, Math.pow(clamp(pw, 0, 1), P.bow.drawCurve))
+      * d2.speedMul * w.fx.speedMul * w.bow.speedMul
+    const ang = a.aimAngle + a.tremorOffset
+    let vx2 = Math.cos(ang) * spd
+    let vy2 = Math.sin(ang) * spd
+    let px3 = a.x
+    let py3 = a.y
+    const dtp = 1 / 60
+    const steps = Math.floor(P.steady.previewTime / dtp)
+    ctx.fillStyle = THEME.target2
+    ctx.globalAlpha = 0.5 * a.steadyBlend
+    for (let i2 = 1; i2 <= steps; i2++) {
+      const rvx2 = vx2 - w.wind * w.bow.windMul
+      const kdrag = P.arrow.drag * w.fx.dragMul * Math.hypot(rvx2, vy2)
+      vx2 -= kdrag * rvx2 * dtp
+      vy2 -= kdrag * vy2 * dtp
+      vy2 -= P.arrow.gravity * dtp
+      px3 += vx2 * dtp
+      py3 += vy2 * dtp
+      if (py3 <= 0) break
+      if (i2 % 5 === 0) {
+        ctx.beginPath()
+        ctx.arc(worldToScreenX(cam, px3), worldToScreenY(cam, py3), 1.6, 0, TAU)
+        ctx.fill()
+      }
+    }
+    ctx.globalAlpha = 1
   }
 
   // ── 체력 바 — 머리 위 (docs/RUN.md 6장 · 형: "전부 바 형태로") ──

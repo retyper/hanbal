@@ -14,13 +14,30 @@ import { loadSave } from './game/save.ts'
 import { progressOf, unlockedBows } from './game/unlocks.ts'
 import { createOverlay } from './ui/overlay.ts'
 import { mountGrowth, showOfflineGain, showRunGain } from './ui/growth.ts'
-import { mountCollection, showUnlocked, updateCollection } from './ui/collection.ts'
 import { mountLoadout, mountSupply, showRunOver } from './ui/loadout.ts'
 import { mountQuiver } from './ui/quiver.ts'
 
 const el = document.getElementById('game')
 if (!(el instanceof HTMLCanvasElement)) {
   throw new Error('#game 캔버스를 찾을 수 없다')
+}
+
+// 수집 화면은 지연 청크다 (튜닝 콘솔과 같은 이유): 첫 페인트에 필요 없는 화면 코드와
+// 해금 문구 뭉치를 본 번들(C6 예산 150KB)에서 뺀다. 첫 사용 순간 한 번만 불러온다.
+type CollectionMod = typeof import('./ui/collection.ts')
+let collection: CollectionMod | null = null
+const withCollection = (fn: (m: CollectionMod) => void): void => {
+  if (collection !== null) {
+    fn(collection)
+    return
+  }
+  void import('./ui/collection.ts').then((m) => {
+    if (collection === null) {
+      collection = m
+      m.mountCollection(overlay, progressOf(save), save.unlocked, save.stars)
+    }
+    fn(m)
+  })
 }
 
 // 튜닝 콘솔은 개발 빌드에만 들어간다 (제약 C6 — 프로덕션 번들 예산).
@@ -66,8 +83,11 @@ const loop = createLoop(el, {
       showRunOver(overlay, reached, score, best, isNew, reason, onNext),
     toast: (t) => overlay.toast(t),
     // 새로 열린 것은 구석 알림 한 줄. 모달로 막지 않는다 (C1).
-    unlocked: (ids) => showUnlocked(overlay, ids),
-    progressed: () => updateCollection(progressOf(save), save.unlocked, save.stars),
+    unlocked: (ids) => withCollection((m) => m.showUnlocked(overlay, ids)),
+    progressed: () => {
+      // 아직 한 번도 안 열었으면 갱신할 화면도 없다 — 열 때 최신 상태로 마운트된다.
+      if (collection !== null) collection.updateCollection(progressOf(save), save.unlocked, save.stars)
+    },
   },
 })
 
@@ -81,7 +101,12 @@ mountGrowth(overlay, save, () => {}, {
 
 // 수집 화면 — **잠긴 칸을 보여주는 것**이 이 화면의 목적이다 (HOOK ★2).
 // 성장 화면 다음에 붙여야 HUD 버튼 순서가 [성장][수집]이 된다.
-mountCollection(overlay, progressOf(save), save.unlocked, save.stars)
+// 첫 페인트가 끝난 뒤 여유 시간에 마운트한다 — HUD 버튼도 그때 생긴다 (C1: 첫 발이 먼저다).
+const idle: (fn: () => void) => void =
+  'requestIdleCallback' in window
+    ? (fn) => (window as unknown as { requestIdleCallback: (f: () => void) => void }).requestIdleCallback(fn)
+    : (fn) => window.setTimeout(fn, 300)
+idle(() => withCollection(() => {}))
 
 // 드래프트가 첫 프레임에 뜰 수 있으므로 화면들이 다 붙은 뒤에 시작한다.
 loop.start()

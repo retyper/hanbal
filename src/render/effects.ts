@@ -449,6 +449,8 @@ export function pumpEvents(fx: Fx, w: World): void {
 
     if (e.t === 'hit') {
       const crit = e.accuracy >= P.hit.bullseyeAcc
+      // 머리 명중은 정중앙이 아니라 **헤드샷**이다 (형: "치명상이라던가 그런 게 떠야지").
+      if (e.head) pushPopup(fx.pop, e.x, e.y + 0.8, '헤드샷 !', 'crit')
       fx.lastX = e.x
       fx.lastY = e.y
       fx.comboRun = e.combo + 1
@@ -472,7 +474,8 @@ export function pumpEvents(fx: Fx, w: World): void {
         fx.pop, e.x, e.y, `+${e.score}`, crit ? 'crit' : 'score',
         clamp01(e.score / FX.scoreRef),
       )
-      if (crit) pushPopup(fx.pop, e.x, e.y, FX.critFeat, 'feat')
+      // 헤드샷이 이미 떴으면 정중앙은 겹쳐 띄우지 않는다 — 한 사건에 한 마디.
+      if (crit && !e.head) pushPopup(fx.pop, e.x, e.y, FX.critFeat, 'feat')
 
       if (e.combo >= FX.comboMinShow) {
         // 콤보 문자열은 값이 바뀔 때만 만든다 (A5)
