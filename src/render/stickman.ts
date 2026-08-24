@@ -681,10 +681,11 @@ export function drawArcher(
   //   시위 손에 쥔 채 짧은 살의 활주로가 되고, **쏜 뒤에도 손에 남는다** — 날아가는 건
   //   반 길이의 애기살뿐이다. 그래서 통아는 recovering에도 그린다 (형의 힌트 그대로).
   const pierce = w.arrowKind === 'pierce'
-  if (pierce && a.phase !== 'idle') {
-    // 통아 — **시위 손에 붙어 다닌다.** 당길 땐 화살선과 수평인 활주로,
-    // 놓으면 끈에 매달려 **손에서 덜렁거린다** (형: "놓았을 때 손에서 덜렁거리는 모습").
-    // 각도는 시간의 순수 함수다: 조준각에서 출발해 아래(-90°)로 떨어지며 진자처럼 감쇠 진동.
+  if (pierce) {
+    // 통아 — **애기살을 장전한 동안 언제나 시위 손에 있다** (형: "여전히 안 보이는데" —
+    // 예전엔 idle에서 숨겼고, 당길 땐 화살 선과 정확히 겹쳐 안 읽혔다).
+    // 당길 땐 화살선과 수평인 활주로, 놓으면 끈에 매달려 손에서 덜렁거리고,
+    // 가만히 있을 땐 손에서 아래로 늘어져 있다. 각도는 시간의 순수 함수다.
     const tongDrawing = a.phase === 'drawing' || a.phase === 'full' || a.phase === 'collapsing'
     let tx: number
     let ty: number
@@ -702,12 +703,22 @@ export function drawArcher(
       tx = Math.cos(ang)
       ty = Math.sin(ang)
     }
-    ctx.lineWidth = Math.max(lw * LINE.arrowMul * 1.5, LINE.thinMinPx)
+    // 홈통이니까 외줄이 아니라 **두 줄 레일**이다 — 화살 선과 겹쳐도 홈이 읽힌다.
+    const railOff = 0.045
+    const ox = -ty * railOff
+    const oy = tx * railOff
+    ctx.lineWidth = Math.max(lw * LINE.arrowMul * 0.9, LINE.thinMinPx)
     ctx.strokeStyle = THEME.bow
     line(
-      ctx, cam, rig.hdX, rig.hdY,
-      rig.hdX + tx * BODY.arrowLen, rig.hdY + ty * BODY.arrowLen,
+      ctx, cam, rig.hdX + ox, rig.hdY + oy,
+      rig.hdX + tx * BODY.arrowLen + ox, rig.hdY + ty * BODY.arrowLen + oy,
     )
+    line(
+      ctx, cam, rig.hdX - ox, rig.hdY - oy,
+      rig.hdX + tx * BODY.arrowLen - ox, rig.hdY + ty * BODY.arrowLen - oy,
+    )
+    // 손 쪽 끝은 막혀 있다 — 뚜껑 한 획이 "홈통"을 완성한다.
+    line(ctx, cam, rig.hdX + ox, rig.hdY + oy, rig.hdX - ox, rig.hdY - oy)
   }
   if (a.phase !== 'idle' && a.phase !== 'recovering') {
     // 애기살은 반 길이 — 통아 위를 미끄러진다. 보통 살은 제 길이.
