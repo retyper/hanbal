@@ -2008,10 +2008,11 @@ interface CampaignState {
   bullseyes: number
   totalHits: number
   perfectRuns: number
+  bossKills: number
 }
 
 function playCampaign(seed: number, bot: BotKind): Map<string, number> {
-  const st: CampaignState = { stars: {}, bestChain: 0, bullseyes: 0, totalHits: 0, perfectRuns: 0 }
+  const st: CampaignState = { stars: {}, bestChain: 0, bullseyes: 0, totalHits: 0, perfectRuns: 0, bossKills: 0 }
   const unlocked: string[] = []
   const openedAt = new Map<string, number>()
   // 드래프트·보상용 스트림. 게임의 save.runSeed와 같은 자리다 (sim 스트림과 분리).
@@ -2042,6 +2043,8 @@ function playCampaign(seed: number, bot: BotKind): Map<string, number> {
     st.bullseyes += r.bullseyes
     st.totalHits += r.hits
     if (g.stars >= 3) st.perfectRuns++
+    // 활 해금의 재료 — 보스판을 깼는가 (loop.ts finishRun과 같은 판정)
+    if (r.cleared && def.targets.some((t) => t.kind === 'boss')) st.bossKills++
 
     const fresh = evaluateUnlocks(progressOf(st), unlocked)
     for (const id of fresh) {

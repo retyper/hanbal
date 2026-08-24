@@ -40,6 +40,8 @@ export interface Progress {
   totalHits: number
   /** 누적 무손실 클리어 판수 (★★★을 받은 횟수) */
   perfectRuns: number
+  /** 누적 보스 처치 수 (10판마다 하나 — docs/RUN.md 3장) */
+  bossKills: number
 }
 
 /** 아직 아무것도 안 한 사람. 세이브가 없을 때의 기준점. */
@@ -51,6 +53,7 @@ export function emptyProgress(): Progress {
     bullseyes: 0,
     totalHits: 0,
     perfectRuns: 0,
+    bossKills: 0,
   }
 }
 
@@ -65,6 +68,7 @@ export interface ProgressSource {
   bullseyes: number
   totalHits: number
   perfectRuns: number
+  bossKills: number
 }
 
 /**
@@ -88,6 +92,7 @@ export function progressOf(d: ProgressSource): Progress {
     bullseyes: d.bullseyes,
     totalHits: d.totalHits,
     perfectRuns: d.perfectRuns,
+    bossKills: d.bossKills,
   }
 }
 
@@ -140,14 +145,17 @@ const B_COMPOUND: BowKindId = 'compound'
 // TODO(params): src/tune/params.ts → P.unlock.*  (밸런스 시뮬로 달성 판수를 재보고 나서)
 
 /**
- * 활 문턱 (docs/BOWS.md 3장). 화살과 다른 지표에 걸어 두 수집이 따로 전진하게 한다.
- * 각궁을 6판에 이르게 주는 이유: "활도 모으는 것"임을 첫 챕터 안에 알려야
- * 잠긴 활 세 자루가 궁금증이 된다 (VS의 잠긴 칸 원리 — 이 파일 머리말).
+ * 활 문턱 — **보스 처치 수** (docs/RUN.md, 2026-08-24 재잠금).
+ *
+ * 처음엔 판수·명중·별에 걸었는데, 옛 캠페인 기록이 승계되면서 전부 즉시 충족됐다
+ * ("시작할 때부터 모든 활이 해금되어 있으면 안 되지 않냐" — 형). 보스는 이 게임에서
+ * 유일하게 **여정을 넘어 쌓이는 새 도전**이라, 활은 전부 여기에 건다.
+ * 10판마다 보스 하나 — 첫 보스를 잡는 순간 각궁이 온다. 그게 첫 여정의 목표가 된다.
  */
-const G_GAKGUNG_STAGES = 6
-const G_RECURVE_HITS = 45
-const G_LONGBOW_STARS = 45
-const G_COMPOUND_STAGES = 35
+const G_GAKGUNG_BOSSES = 1
+const G_LONGBOW_BOSSES = 3
+const G_RECURVE_BOSSES = 6
+const G_COMPOUND_BOSSES = 10
 
 /** 첫 해금. 2판이면 "이 게임에 열 게 있다"는 걸 알기에 충분히 이르다. */
 const G_BURST_STAGES = 2
@@ -198,6 +206,7 @@ const P_CHAIN: Read = (p) => p.bestChain
 const P_BULLS: Read = (p) => p.bullseyes
 const P_HITS: Read = (p) => p.totalHits
 const P_PERFECT: Read = (p) => p.perfectRuns
+const P_BOSS: Read = (p) => p.bossKills
 
 function def(
   id: string,
@@ -260,19 +269,19 @@ export const UNLOCKS: readonly UnlockDef[] = [
   def('arrow.burst', '화전', 'arrow', `${G_BURST_STAGES}판 클리어`, P_STAGES, G_BURST_STAGES, A_BURST),
   def('title.oneshot', '한 발', 'title', `무손실로 ${G_ONESHOT_PERFECT}판 클리어`, P_PERFECT, G_ONESHOT_PERFECT),
   def('title.firststar', '첫 별', 'title', `별 ${G_FIRSTSTAR_STARS}개 모으기`, P_STARS, G_FIRSTSTAR_STARS),
-  defBow('bow.gakgung', '각궁', `${G_GAKGUNG_STAGES}판 클리어`, P_STAGES, G_GAKGUNG_STAGES, B_GAKGUNG),
+  defBow('bow.gakgung', '각궁', `보스 ${G_GAKGUNG_BOSSES}마리 처치`, P_BOSS, G_GAKGUNG_BOSSES, B_GAKGUNG),
   def('arrow.chain', '명적', 'arrow', `한 판에서 ${G_CHAIN_BEST}연쇄`, P_CHAIN, G_CHAIN_BEST, A_CHAIN),
   def('arrow.split', '세전', 'arrow', `${G_SPLIT_STAGES}판 클리어`, P_STAGES, G_SPLIT_STAGES, A_SPLIT),
-  defBow('bow.recurve', '리커브', `누적 명중 ${G_RECURVE_HITS}회`, P_HITS, G_RECURVE_HITS, B_RECURVE),
+  defBow('bow.longbow', '장궁', `보스 ${G_LONGBOW_BOSSES}마리 처치`, P_BOSS, G_LONGBOW_BOSSES, B_LONGBOW),
   def('title.hawk', '매의 눈', 'title', `정중앙 ${G_HAWK_BULLS}회`, P_BULLS, G_HAWK_BULLS),
   def('title.avalanche', '보로로록', 'title', `한 판에서 ${G_AVALANCHE_BEST}연쇄`, P_CHAIN, G_AVALANCHE_BEST),
   def('arrow.homing', '신전', 'arrow', `누적 명중 ${G_HOMING_HITS}회`, P_HITS, G_HOMING_HITS, A_HOMING),
   def('arrow.pierce', '애기살', 'arrow', `${G_PIERCE_STAGES}판 클리어`, P_STAGES, G_PIERCE_STAGES, A_PIERCE),
-  defBow('bow.longbow', '장궁', `별 ${G_LONGBOW_STARS}개 모으기`, P_STARS, G_LONGBOW_STARS, B_LONGBOW),
+  defBow('bow.recurve', '리커브', `보스 ${G_RECURVE_BOSSES}마리 처치`, P_BOSS, G_RECURVE_BOSSES, B_RECURVE),
   def('title.hundred', '백발', 'title', `누적 명중 ${G_HUNDRED_HITS}회`, P_HITS, G_HUNDRED_HITS),
   def('title.wind', '바람 읽는 자', 'title', `별 ${G_WIND_STARS}개 모으기`, P_STARS, G_WIND_STARS),
   def('arrow.heavy', '육량전', 'arrow', `${G_HEAVY_STAGES}판 클리어`, P_STAGES, G_HEAVY_STAGES, A_HEAVY),
-  defBow('bow.compound', '컴파운드', `${G_COMPOUND_STAGES}판 클리어`, P_STAGES, G_COMPOUND_STAGES, B_COMPOUND),
+  defBow('bow.compound', '컴파운드', `보스 ${G_COMPOUND_BOSSES}마리 처치`, P_BOSS, G_COMPOUND_BOSSES, B_COMPOUND),
   def('title.flawless', '흠 없는 활', 'title', `무손실로 ${G_FLAWLESS_PERFECT}판 클리어`, P_PERFECT, G_FLAWLESS_PERFECT),
   def('title.forty', '마흔 발', 'title', `${G_FORTY_STAGES}판 클리어`, P_STAGES, G_FORTY_STAGES),
 ]

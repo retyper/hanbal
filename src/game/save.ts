@@ -19,7 +19,7 @@ import { STAGES } from './stages.ts'
 const KEY = 'hanbal.save.v1'
 
 /** 현재 스키마 버전. 필드를 바꿀 때마다 +1 하고 MIGRATIONS에 한 줄 추가한다. */
-export const SCHEMA_VERSION = 4
+export const SCHEMA_VERSION = 5
 
 /**
  * 오프라인 축적의 소수부 (자원 단위). 세 자원의 축적 속도가 달라 하나로 합칠 수 없다.
@@ -86,6 +86,8 @@ export interface SaveData {
   runCount: number
   /** 이번 여정의 점수 합 (판별 점수 누적) */
   runScore: number
+  /** 누적 보스 처치 수 — 활 해금의 재료 (docs/RUN.md). **줄지 않는다.** */
+  bossKills: number
 
   /** 누적 정중앙 명중 수 */
   bullseyes: number
@@ -150,6 +152,7 @@ export function defaultSave(now: number): SaveData {
     bestRunScore: 0,
     runCount: 0,
     runScore: 0,
+    bossKills: 0,
     bullseyes: 0,
     perfectRuns: 0,
     // 0은 "아직 없음"이다. 루프가 첫 정산 전에 실제 시드를 심는다 (game 레이어라 Date.now 허용).
@@ -208,6 +211,19 @@ const MIGRATIONS: ReadonlyArray<(r: Raw) => void> = [
     if (r['bestRunStage'] === undefined) r['bestRunStage'] = idx
     r['stageIndex'] = 0
     r['runActive'] = false
+  },
+
+  /**
+   * v4 → v5: 활 해금을 **보스 처치** 기준으로 다시 잠근다 (형의 결정, 2026-08-24).
+   *
+   * 활 4자루의 옛 조건(판수·명중·별)은 이전 캠페인 기록이 통째로 승계되면서 한꺼번에
+   * 충족됐다 — "시작할 때부터 모든 활이 해금되어 있으면 안 되지 않냐". 맞는 말이라
+   * 이미 열린 bow.* 를 목록에서 뺀다. A4의 "필드를 지우지 않는다"의 예외이며,
+   * 지우는 게 아니라 **새 규칙(보스 처치)으로 다시 따는** 것이다. 다른 해금은 안 건드린다.
+   */
+  (r) => {
+    const u = r['unlocked']
+    if (Array.isArray(u)) r['unlocked'] = u.filter((id) => typeof id !== 'string' || !id.startsWith('bow.'))
   },
 ]
 
@@ -319,6 +335,7 @@ function sanitize(r: Raw, now: number): SaveData {
     bestRunScore: int(r['bestRunScore'], 0, 0, HARD_MAX),
     runCount: int(r['runCount'], 0, 0, HARD_MAX),
     runScore: int(r['runScore'], 0, 0, HARD_MAX),
+    bossKills: int(r['bossKills'], 0, 0, HARD_MAX),
     bullseyes: int(r['bullseyes'], 0, 0, HARD_MAX),
     perfectRuns: int(r['perfectRuns'], 0, 0, HARD_MAX),
     // 32비트 무부호. mulberry32의 상태 그대로다.

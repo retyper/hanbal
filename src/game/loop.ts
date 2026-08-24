@@ -337,6 +337,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     if (reward.stars > had) save.stars[id] = reward.stars
     if (bestChain > save.bestChain) save.bestChain = bestChain
     save.bullseyes += bullseyes
+    // 보스 처치 — 활 해금의 유일한 재료 (docs/RUN.md). 해금 판정보다 먼저 세야 그 자리에서 열린다.
+    if (cleared && w.stage.targets.some((t) => t.kind === 'boss')) save.bossKills++
     // 활 숙련의 재료. 판이 끝날 때 한 번에 — 매 명중마다 세이브 객체를 만지지 않는다.
     save.bowHits[save.bow] = (save.bowHits[save.bow] ?? 0) + hits
     if (reward.stars >= 3) save.perfectRuns++
