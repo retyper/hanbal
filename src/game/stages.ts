@@ -56,6 +56,15 @@ function mk(n: number, s: Spot): TargetSpec {
   return specOf(angularSize(n), s)
 }
 
+/**
+ * 챕터의 이름. HUD 머리글과 판 시작 자막이 쓴다.
+ *
+ * 판마다 이름을 따로 짓지 않는 이유: 앞 40판은 **챕터 단위로** 배우는 게 하나씩이고
+ * (teach 는 그 안의 한 걸음이다), 40개의 이름은 지어봐야 서로 구분이 안 된다.
+ * 판 하나하나의 성격은 teach 가 자막 둘째 줄로 말한다.
+ */
+const CHAPTER_NAMES: readonly string[] = ['거리와 낙차', '연쇄', '바람과 이동', '관통과 조합']
+
 interface Layout {
   /** 이 판에서 무엇을 배우는가. 한 판에 하나씩. */
   teach: string
@@ -133,7 +142,8 @@ function build(layout: Layout, i: number): StageDef {
   const id = `${chapter}-${(i % 10) + 1}`
   const stage: StageDef = {
     id,
-    title: layout.teach,
+    title: CHAPTER_NAMES[chapter - 1] ?? '',
+    hint: layout.teach,
     seed: seedFrom(id),
     arrows: layout.arrows,
     targetScore: need(layout.hits),

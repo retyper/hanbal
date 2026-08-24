@@ -15,7 +15,7 @@
  * A5: 매 프레임 문자열·색 문자열을 만들지 않는다. 값이 바뀔 때만 갱신해 캐시하고, 색은 램프에서 집는다.
  * A1: World는 읽기만 한다. 시간축도 w.tick 을 쓴다 — performance.now 를 끌어오지 않는다.
  */
-import { TAU, clamp01, lerp } from '../core/math.ts'
+import { TAU, clamp, clamp01, lerp } from '../core/math.ts'
 import { P } from '../tune/params.ts'
 import type { World } from '../sim/types.ts'
 import { THEME } from './camera.ts'
@@ -46,10 +46,32 @@ export interface HudState {
   arrow: string
 }
 
+/**
+ * 글꼴 — **"AI가 만든 화면" 냄새의 절반은 `system-ui` 하나로 다 쓰는 데서 온다.**
+ *
+ * 런타임 의존성 0(A6)이고 첫 페인트 0.3초(C6)라 웹폰트는 못 쓴다. 대신 **역할을 나눈다**:
+ * 글자는 한글이 예쁜 스택으로, 숫자는 좁고 각진 스택으로. 없는 기기에서는 조용히 다음 것으로
+ * 떨어지므로 어디서도 깨지지 않는다.
+ *
+ * Bahnschrift 는 윈도우 10에 기본으로 들어 있는 DIN 계열이다 — 계기판 숫자의 얼굴이다.
+ */
+const FONT_UI = '"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif'
+const FONT_NUM = '"Bahnschrift","DIN Alternate","Avenir Next Condensed","Malgun Gothic",system-ui,sans-serif'
+
+/**
+ * 치수의 기준 화면. 이 크기에서 아래 px 값이 그대로 쓰이고, 다른 크기에서는 비례로 늘고 준다.
+ * 형의 반려: **"UI 크기도 더 키워."** 예전 값은 1280px 화면에서도 13~16px이라
+ * 노트북에서 눈을 가늘게 뜨고 봐야 했다. 기준을 잡고 전부 한 번에 키운다.
+ */
+const BASE_W = 1280
+const BASE_H = 800
+const S_MIN = 0.82
+const S_MAX = 1.9
+
 const HUD = {
-  padX: 18,
-  padY: 22,
-  lineGap: 19,
+  padX: 26,
+  padY: 24,
+  lineGap: 26,
   /** 게이지를 활 손 기준 어디에 붙일지 (px) */
   gaugeDX: -8,
   gaugeDY: 34,
@@ -90,27 +112,147 @@ const HUD = {
   /** 잠김 표식(끝점 사각형) 한 변 */
   sightDot: 3,
   /**
-   * 남은 화살 숫자 크기 (px). 점수(16px)보다 확실히 크다 —
+   * 남은 화살 숫자 크기 (px). 다른 무엇보다 크다 —
    * 판 중에 계속 확인하는 값이고, 0이 되면 판이 끝나기 때문이다.
    */
-  countPx: 30,
+  countPx: 46,
   /** 점수 줄과 화살 숫자 사이 여백 */
-  countGap: 6,
+  countGap: 8,
   /** 이 개수 이하면 숫자와 눈금이 경고색이 된다 */
   lowArrows: 2,
   /** 숫자 오른쪽에서 눈금이 시작하는 거리 */
-  pipStart: 22,
+  pipStart: 30,
   /** 화살 글리프 하나가 차지하는 가로 간격 */
-  pipStride: 9,
+  pipStride: 13,
   /** 화살 글리프 길이 (세로) */
-  pipH: 20,
+  pipH: 29,
   pipMax: 10,
   /** 훈련치 아래 줄 간격 */
-  subGap: 6,
+  subGap: 8,
   /** 경고 깜빡임 (Hz). sim 시계로 도는 값이라 프레임레이트와 무관하다. */
   pulseHz: 2.4,
-  toastUp: 46,
+  toastUp: 58,
+
+  // ── 판 머리글 (새로 생긴 것) ────────────────────────────────────────
+  //
+  // 지금까지 화면에는 **몇 판인지가 어디에도 없었다.** 40판을 지나 무한 구간에 들어가면
+  // 판마다 성격이 달라지는데(endless.ts) 그게 화면에 안 뜨면 그냥 "또 비슷한 판"이 된다.
+  /** 판 번호 글자 크기 (px) */
+  stagePx: 17,
+  /** 판 이름 글자 크기 (px) */
+  titlePx: 14,
+  /** 번호와 이름 사이 */
+  titleGap: 10,
+  /** 머리글 아래 본문까지 */
+  headGap: 24,
+  /** 과녁 수 / 점수 */
+  goalPx: 23,
+  scorePx: 14,
+  scoreGap: 12,
+  trainPx: 17,
+  subPx: 13,
+  toastPx: 16,
+
+  // ── 판 시작 카드 ────────────────────────────────────────────────────
+  //
+  // 판이 시작될 때 화면 위쪽에 크게 한 번 떴다 사라진다. 모달이 아니라 **자막**이다 —
+  // 아무것도 막지 않고, 그 사이에도 쏠 수 있다 (C1).
+  cardPx: 40,
+  cardSubPx: 16,
+  cardY: 0.17,
+  /** 완전히 보이는 시간 / 사라지는 시간 (s). 합쳐도 2초를 안 넘는다. */
+  cardHold: 0.9,
+  cardFade: 0.7,
+  cardGap: 12,
+
+  // ── 바람 눈금 ───────────────────────────────────────────────────────
+  //
+  // 세기는 깃발이 말한다 (scene.ts). 여기는 **방향과 숫자**만 — 깃발을 안 보고도
+  // "왼쪽으로 3.4" 를 한 번에 읽게 하는 자다.
+  windPx: 15,
+  windArrowW: 26,
+  windArrowH: 7,
+  windGap: 9,
 } as const
+
+/**
+ * 화면 크기에 맞춰 다시 굽는 치수와 글꼴 문자열.
+ *
+ * **매 프레임 문자열을 만들지 않는다** (A5) — 크기가 바뀐 프레임에만 한 번 굽는다.
+ * 캔버스 폰트는 문자열로만 지정할 수 있어서, 스케일을 곱한 값을 그때그때 템플릿으로 만들면
+ * 프레임당 열 몇 개의 문자열이 생긴다.
+ */
+const M = {
+  w: -1,
+  h: -1,
+  s: 1,
+  padX: 0,
+  padY: 0,
+  headGap: 0,
+  countGap: 0,
+  scoreGap: 0,
+  subGap: 0,
+  titleGap: 0,
+  pipStart: 0,
+  pipStride: 0,
+  pipH: 0,
+  countPx: 0,
+  toastUp: 0,
+  cardGap: 0,
+  windArrowW: 0,
+  windArrowH: 0,
+  windGap: 0,
+  fStage: '',
+  fTitle: '',
+  fGoal: '',
+  fScore: '',
+  fCount: '',
+  fSub: '',
+  fTrain: '',
+  fToast: '',
+  fCard: '',
+  fCardSub: '',
+  fWind: '',
+}
+
+const px = (v: number, s: number): number => Math.round(v * s)
+
+function syncMetrics(cam: Camera): void {
+  if (cam.w === M.w && cam.h === M.h) return
+  M.w = cam.w
+  M.h = cam.h
+  // 폭과 높이 중 **작은 쪽**을 따른다. 폭만 보면 낮고 넓은 창에서 글자가 화면을 먹는다.
+  const s = clamp(Math.min(cam.w / BASE_W, cam.h / BASE_H), S_MIN, S_MAX)
+  M.s = s
+  M.padX = px(HUD.padX, s)
+  M.padY = px(HUD.padY, s)
+  M.headGap = px(HUD.headGap, s)
+  M.countGap = px(HUD.countGap, s)
+  M.scoreGap = px(HUD.scoreGap, s)
+  M.subGap = px(HUD.subGap, s)
+  M.titleGap = px(HUD.titleGap, s)
+  M.pipStart = px(HUD.pipStart, s)
+  M.pipStride = px(HUD.pipStride, s)
+  M.pipH = px(HUD.pipH, s)
+  M.countPx = px(HUD.countPx, s)
+  M.toastUp = px(HUD.toastUp, s)
+  M.cardGap = px(HUD.cardGap, s)
+  M.windArrowW = px(HUD.windArrowW, s)
+  M.windArrowH = px(HUD.windArrowH, s)
+  M.windGap = px(HUD.windGap, s)
+
+  M.fStage = `700 ${px(HUD.stagePx, s)}px ${FONT_NUM}`
+  M.fTitle = `500 ${px(HUD.titlePx, s)}px ${FONT_UI}`
+  M.fGoal = `600 ${px(HUD.goalPx, s)}px ${FONT_UI}`
+  M.fScore = `500 ${px(HUD.scorePx, s)}px ${FONT_NUM}`
+  M.fCount = `700 ${M.countPx}px ${FONT_NUM}`
+  M.fSub = `600 ${px(HUD.subPx, s)}px ${FONT_UI}`
+  M.fTrain = `600 ${px(HUD.trainPx, s)}px ${FONT_UI}`
+  M.fToast = `500 ${px(HUD.toastPx, s)}px ${FONT_UI}`
+  M.fCard = `700 ${px(HUD.cardPx, s)}px ${FONT_UI}`
+  M.fCardSub = `500 ${px(HUD.cardSubPx, s)}px ${FONT_NUM}`
+  M.fWind = `600 ${px(HUD.windPx, s)}px ${FONT_NUM}`
+}
 
 /**
  * strain(빨간 바를 얼마나 넘었는가) 램프. 0 = 아직 안 넘음.
@@ -182,10 +324,29 @@ const cache = {
   score: -1,
   goal: -1,
   scoreText: '',
+  scoreNum: '',
   arrows: -1,
   arrowsText: '',
   training: -1,
   trainingText: '',
+  /** 판 머리글 — 판이 바뀔 때만 다시 만든다 */
+  stageId: '',
+  stageNo: '',
+  wind: Number.NaN,
+  windText: '',
+}
+
+/**
+ * 스테이지 id('7-3') → 통산 판 번호('63판').
+ * 챕터-판 표기는 짧지만 "지금까지 몇 판을 왔는가"가 안 읽힌다. 둘 다 보여준다.
+ */
+function stageNoText(id: string): string {
+  const dash = id.indexOf('-')
+  if (dash < 0) return id
+  const ch = Number(id.slice(0, dash))
+  const n = Number(id.slice(dash + 1))
+  if (!Number.isFinite(ch) || !Number.isFinite(n)) return id
+  return `${(ch - 1) * 10 + n}판`
 }
 
 /**
@@ -204,6 +365,7 @@ export function drawHud(
   const a = w.archer
   // 렌더의 시계는 sim tick 이다. 값이 결정론적이라 리플레이에서도 같은 그림이 나온다.
   const t = w.tick * w.dt
+  syncMetrics(cam)
   const strain = clamp01(a.strain)
   const holding = a.phase === 'drawing' || a.phase === 'full' || a.phase === 'collapsing'
 
@@ -237,27 +399,48 @@ export function drawHud(
     const t = w.targets[i]
     if (t !== undefined && t.alive) standing++
   }
-  if (standing !== cache.goal || w.score !== cache.score) {
+  const score = w.score | 0
+  if (standing !== cache.goal || score !== cache.score) {
     cache.goal = standing
-    cache.score = w.score
+    cache.score = score
     cache.scoreText = standing > 0 ? `과녁 ${standing}` : '정리 완료'
+    cache.scoreNum = `${score}점`
   }
+
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
-  ctx.font = '600 16px system-ui, sans-serif'
+
+  // ── 판 머리글 ── 몇 판인지, 무슨 판인지. 지금까지 화면 어디에도 없던 정보다.
+  if (w.stage.id !== cache.stageId) {
+    cache.stageId = w.stage.id
+    cache.stageNo = stageNoText(w.stage.id)
+  }
+  ctx.font = M.fStage
+  ctx.fillStyle = THEME.accent
+  ctx.fillText(cache.stageNo, M.padX, M.padY)
+  const noW = ctx.measureText(cache.stageNo).width
+  const title = w.stage.title ?? ''
+  if (title !== '') {
+    ctx.font = M.fTitle
+    ctx.fillStyle = THEME.hudDim
+    ctx.fillText(title, M.padX + noW + M.titleGap, M.padY + Math.round(M.s * 3))
+  }
+
+  const bodyY = M.padY + M.headGap
+  ctx.font = M.fGoal
   ctx.fillStyle = standing === 0 ? THEME.accent : THEME.hudText
-  ctx.fillText(cache.scoreText, HUD.padX, HUD.padY)
+  ctx.fillText(cache.scoreText, M.padX, bodyY)
   const goalW = ctx.measureText(cache.scoreText).width
-  ctx.font = '500 12px system-ui, sans-serif'
+  ctx.font = M.fScore
   ctx.fillStyle = THEME.hudDim
-  ctx.fillText(`${w.score | 0}점`, HUD.padX + goalW + 10, HUD.padY + 4)
+  ctx.fillText(cache.scoreNum, M.padX + goalW + M.scoreGap, bodyY + Math.round(M.s * 6))
 
   // ── 남은 화살 ────────────────────────────────────────────────
   //
   // 큰 숫자 + 화살 눈금을 **둘 다** 보여준다. 숫자는 한눈에 읽히고, 눈금은 세지 않아도
   // 남은 양이 덩어리로 보인다. 전에는 3×11px 회색 막대뿐이라 몇 발인지 알아보기 어려웠다.
   const left = w.arrowsLeft
-  const pipY = HUD.padY + HUD.lineGap + HUD.countGap
+  const pipY = bodyY + M.countGap + px(HUD.goalPx, M.s)
   if (left !== cache.arrows) {
     cache.arrows = left
     cache.arrowsText = String(left)
@@ -266,30 +449,29 @@ export function drawHud(
   // 마지막 한 발은 색으로도 말해준다 — 세고 있지 않아도 알아야 한다.
   const low = left <= HUD.lowArrows
   ctx.fillStyle = low ? THEME.gaugeWarn : THEME.hudText
-  ctx.font = `700 ${HUD.countPx}px system-ui, sans-serif`
-  ctx.textBaseline = 'top'
-  ctx.fillText(cache.arrowsText, HUD.padX, pipY)
+  ctx.font = M.fCount
+  ctx.fillText(cache.arrowsText, M.padX, pipY)
   const numW = ctx.measureText(cache.arrowsText).width
 
-  ctx.font = '500 12px system-ui, sans-serif'
+  ctx.font = M.fSub
   ctx.fillStyle = THEME.hudDim
-  ctx.fillText('발', HUD.padX + numW + 4, pipY + HUD.countPx - 15)
+  ctx.fillText('발', M.padX + numW + Math.round(M.s * 6), pipY + M.countPx - px(HUD.subPx + 8, M.s))
 
   // 눈금 — 숫자 오른쪽에. 막대가 아니라 **진짜 화살 모양**으로 그린다.
   // 짝대기로 두면 "이게 뭐지"가 되고, 이 게임에서 가장 중요한 자원이 무엇인지 안 읽힌다.
   if (left <= HUD.pipMax) {
-    const pipX = HUD.padX + numW + HUD.pipStart
-    const midY = pipY + HUD.countPx * 0.5
+    const pipX = M.padX + numW + M.pipStart
+    const midY = pipY + M.countPx * 0.5
     for (let i = 0; i < left; i++) {
-      drawArrowGlyph(ctx, pipX + i * HUD.pipStride, midY, HUD.pipH, low)
+      drawArrowGlyph(ctx, pipX + i * M.pipStride, midY, M.pipH, low)
     }
   }
 
   // 이 판의 화살 종류 — 숫자 아래 한 줄. 고른 것이 무엇인지 판 내내 보인다 (HOOK ★1).
   if (hud.arrow !== '') {
-    ctx.font = '600 12px system-ui, sans-serif'
+    ctx.font = M.fSub
     ctx.fillStyle = THEME.accent
-    ctx.fillText(hud.arrow, HUD.padX, pipY + HUD.countPx + HUD.subGap)
+    ctx.fillText(hud.arrow, M.padX, pipY + M.countPx + M.subGap)
   }
 
   // ── 스태미나 — 활 옆 ─────────────────────────────────────────
@@ -406,23 +588,119 @@ export function drawHud(
   }
   ctx.textAlign = 'right'
   ctx.textBaseline = 'top'
-  ctx.font = '600 15px system-ui, sans-serif'
+  ctx.font = M.fTrain
   ctx.fillStyle = hud.canLevelUp ? THEME.accent : THEME.hudText
-  ctx.fillText(cache.trainingText, cam.w - HUD.padX, HUD.padY)
+  ctx.fillText(cache.trainingText, cam.w - M.padX, M.padY)
+
+  let rightY = M.padY + px(HUD.trainPx, M.s) + M.subGap
+
+  // ── 바람 ──
+  // 세기는 깃발이 말한다 (scene.ts drawWindFlag). 여기는 방향과 숫자다 —
+  // 깃발을 못 봤어도 "지금 어느 쪽으로 얼마나"를 한 번에 읽을 수 있어야 한다.
+  if (w.stage.wind !== 0) {
+    const wind = w.wind
+    // 0.1 단위로만 갱신한다. 매 프레임 문자열을 만들면 A5가 깨진다.
+    const rounded = Math.round(wind * 10) / 10
+    if (rounded !== cache.wind) {
+      cache.wind = rounded
+      cache.windText = `${Math.abs(rounded).toFixed(1)}`
+    }
+    ctx.font = M.fWind
+    ctx.fillStyle = THEME.windCloth
+    ctx.fillText(cache.windText, cam.w - M.padX, rightY)
+    const wTextW = ctx.measureText(cache.windText).width
+    drawWindArrow(ctx, cam.w - M.padX - wTextW - M.windGap, rightY + px(HUD.windPx, M.s) * 0.5, wind)
+    rightY += px(HUD.windPx, M.s) + M.subGap
+  }
 
   if (hud.muted) {
-    ctx.font = '500 11px system-ui, sans-serif'
+    ctx.font = M.fSub
     ctx.fillStyle = THEME.hudDim
-    ctx.fillText('무음 · M', cam.w - HUD.padX, HUD.padY + HUD.lineGap + HUD.subGap)
+    ctx.fillText('무음 · M', cam.w - M.padX, rightY)
   }
 
   // ── 알림 한 줄 — 화면을 덮지 않는다 (GDD 7장) ─────────────────
   if (hud.toast !== '') {
     ctx.textAlign = 'center'
-    ctx.font = '500 13px system-ui, sans-serif'
+    ctx.font = M.fToast
     ctx.fillStyle = THEME.hudDim
-    ctx.fillText(hud.toast, cam.w * 0.5, cam.h - HUD.toastUp)
+    ctx.fillText(hud.toast, cam.w * 0.5, cam.h - M.toastUp)
   }
+
+  drawStageCard(ctx, cam, w, t)
+  ctx.textAlign = 'left'
+}
+
+/**
+ * 바람 방향 화살표. 길이가 아니라 **머리 크기**로 세기를 말한다 —
+ * 길이로 하면 숫자 옆에서 폭이 들쭉날쭉해 HUD가 흔들린다.
+ */
+function drawWindArrow(ctx: CanvasRenderingContext2D, rightX: number, cy: number, wind: number): void {
+  const dir = wind >= 0 ? 1 : -1
+  const strength = clamp01(Math.abs(wind) / P.wind.maxSpeed)
+  const w2 = M.windArrowW
+  const h = M.windArrowH * (0.55 + strength * 0.75)
+  // 오른쪽 끝을 기준으로 왼쪽으로 뻗는다. 방향은 촉이 말한다.
+  const tipX = dir > 0 ? rightX : rightX - w2
+  const backX = dir > 0 ? rightX - w2 : rightX
+
+  ctx.strokeStyle = THEME.windCloth
+  ctx.lineWidth = Math.max(1.5, h * 0.35)
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.moveTo(backX, cy)
+  ctx.lineTo(tipX - dir * h, cy)
+  ctx.stroke()
+
+  ctx.fillStyle = THEME.windCloth
+  ctx.beginPath()
+  ctx.moveTo(tipX, cy)
+  ctx.lineTo(tipX - dir * h * 1.4, cy - h)
+  ctx.lineTo(tipX - dir * h * 1.4, cy + h)
+  ctx.closePath()
+  ctx.fill()
+}
+
+/**
+ * 판이 시작될 때 위쪽에 한 번 뜨는 자막.
+ *
+ * 모달이 아니다 — 아무것도 막지 않고, 뜨는 동안에도 쏠 수 있다 (C1).
+ * 시계는 `w.tick * w.dt` 라 판이 시작되는 순간이 곧 0이고, R로 재시작하면 다시 뜬다.
+ * 무한 구간에서 판마다 성격이 바뀌는 걸(endless.ts 테마) 알려주는 유일한 자리다.
+ */
+function drawStageCard(ctx: CanvasRenderingContext2D, cam: Camera, w: World, t: number): void {
+  const title = w.stage.title ?? ''
+  if (title === '') return
+  const life = HUD.cardHold + HUD.cardFade
+  if (t > life) return
+  const alpha = t <= HUD.cardHold ? 1 : clamp01(1 - (t - HUD.cardHold) / HUD.cardFade)
+  if (alpha <= 0) return
+
+  const cx = cam.w * 0.5
+  const cy = cam.h * HUD.cardY
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'alphabetic'
+  ctx.globalAlpha = alpha
+
+  ctx.font = M.fCardSub
+  ctx.fillStyle = THEME.accent
+  ctx.fillText(cache.stageNo, cx, cy)
+
+  const titleY = cy + px(HUD.cardPx, M.s) + M.cardGap
+  ctx.font = M.fCard
+  ctx.fillStyle = THEME.target2
+  ctx.fillText(title, cx, titleY)
+
+  // 이 판에서 무엇을 배우는가. 앞 40판에만 있다 — 무한 구간은 이름 하나로 충분하다.
+  const hint = w.stage.hint ?? ''
+  if (hint !== '') {
+    ctx.font = M.fCardSub
+    ctx.fillStyle = THEME.hudDim
+    ctx.fillText(hint, cx, titleY + px(HUD.cardSubPx, M.s) + M.cardGap)
+  }
+
+  ctx.globalAlpha = 1
+  ctx.textBaseline = 'top'
 }
 
 /**

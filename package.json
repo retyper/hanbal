@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types tests/*.test.ts",
     "balance": "node --experimental-strip-types tools/balance-sim.ts",
-    "probe": "node --experimental-strip-types tools/probe-boot.ts && node --experimental-strip-types tools/probe-arrows.ts && node --experimental-strip-types tools/probe-audio.ts"
+    "probe": "node --experimental-strip-types tools/probe-boot.ts && node --experimental-strip-types tools/probe-arrows.ts && node --experimental-strip-types tools/probe-audio.ts && node --experimental-strip-types tools/probe-render.ts"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
