@@ -34,6 +34,19 @@ const RINGS = 12
 /** 스쿼시 기록 슬롯. scene.ts가 살아남은 과녁(낙하 중 aerial · pierceable)을 눌러 그린다. */
 const SQUASH = 12
 
+/**
+ * 땅에 박혀 남는 화살 슬롯.
+ *
+ * 한 판에 8발이 상한이라(GDD 6장) 12면 다 담고도 남는다. 판이 바뀌면 통째로 비운다.
+ * **빗나간 화살만 남는다** — 이건 장식이 아니라 "왜 빗나갔는지 읽힌다"(GDD 8장)의 채널이다.
+ * 다섯 발이 과녁 아래 나란히 박혀 있으면 조준이 아니라 **낙차를 못 읽고 있다**는 게 보인다.
+ */
+const STUCK = 12
+/** 박힌 화살의 길이 (m)와 굵기 (px). 날아가는 화살보다 짧고 얇다 — 이미 끝난 것이다. */
+const STUCK_LEN = 0.55
+const STUCK_W = 1.6
+const STUCK_ALPHA = 0.4
+
 const KIND_HIT = 0
 const KIND_CHAIN = 1
 const KIND_MISS = 2
@@ -128,6 +141,10 @@ const FX = {
 const GLOW_RGB0 = 'rgba(255,179,71,0)'
 const GLOW_RGB1 = 'rgba(255,179,71,1)'
 
+/** 콤보 배수 글꼴. 숫자가 주인공이라 계기판 계열 (render/hud.ts와 같은 규칙). */
+const COMBO_FONT =
+  '700 17px "Bahnschrift","DIN Alternate","Avenir Next Condensed","Malgun Gothic",system-ui,sans-serif'
+
 /** 연쇄 팝의 짧은 정수 문자열. 매 연쇄마다 문자열을 만들지 않는다 (A5). */
 const NUM: string[] = []
 for (let i = 0; i <= 64; i++) NUM.push(String(i))
@@ -164,6 +181,12 @@ export interface Fx {
   sHead: number
   sId: Int32Array
   sLife: Float32Array
+  /** 땅에 박혀 남는 화살 (판이 끝날 때까지). x, y, 각도. */
+  kHead: number
+  kN: number
+  kX: Float32Array
+  kY: Float32Array
+  kA: Float32Array
   /** 남은 히트스톱 (s) */
   hitStop: number
   /** 남은 슬로모 (실시간 s) */
@@ -222,6 +245,11 @@ export function createFx(): Fx {
     sHead: 0,
     sId: new Int32Array(SQUASH).fill(-1),
     sLife: new Float32Array(SQUASH),
+    kHead: 0,
+    kN: 0,
+    kX: new Float32Array(STUCK),
+    kY: new Float32Array(STUCK),
+    kA: new Float32Array(STUCK),
     hitStop: 0,
     slow: 0,
     glow: 0,
@@ -350,10 +378,45 @@ function chainSize(combo: number): number {
   return 1 + (n > 0 ? n : 0) * FX.chainSizeStep
 }
 
+/**
+ * 빗나가 땅에 박힌 화살 하나를 남긴다.
+ *
+ * 각도는 이벤트에 없다. 방금 죽은 화살에서 읽어와야 하는데, 그 화살을 찾는 규칙은
+ * captureTrail 과 똑같다 — 같은 자리에서 outcome==='miss' 로 죽은 놈이다.
+ */
+function stickArrow(f: Fx, w: World, x: number, y: number): void {
+  let angle = 0
+  let bestD = Infinity
+  for (let i = 0; i < w.arrows.length; i++) {
+    const ar = w.arrows[i]
+    if (ar === undefined || ar.outcome !== 'miss') continue
+    const dx = ar.x - x
+    const dy = ar.y - y
+    const d = dx * dx + dy * dy
+    if (d < bestD) {
+      bestD = d
+      angle = ar.angle
+    }
+  }
+  const slot = f.kHead
+  f.kHead = f.kHead + 1 >= STUCK ? 0 : f.kHead + 1
+  if (f.kN < STUCK) f.kN++
+  f.kX[slot] = x
+  f.kY[slot] = y
+  f.kA[slot] = angle
+}
+
 export function pumpEvents(fx: Fx, w: World): void {
   // 비네트를 끌 조건은 tick과 무관하게 매 프레임 최신이어야 한다.
   const ph = w.archer.phase
   fx.aiming = ph === 'drawing' || ph === 'full'
+
+  // 판이 바뀌었다 (sim 시계가 되감겼다). 지난 판의 화살이 새 판 땅에 박혀 있으면 안 된다.
+  // 히트스톱은 tick을 **멈출** 뿐 되돌리지 않으므로 이 비교는 오작동하지 않는다.
+  if (w.tick < fx.lastTick) {
+    fx.kHead = 0
+    fx.kN = 0
+  }
 
   // 같은 tick을 두 번 그리면 이벤트가 이중 처리된다. events를 비우는 건 게임 루프의 몫이라
   // 여기서는 tick으로만 가드한다.
@@ -437,6 +500,7 @@ export function pumpEvents(fx: Fx, w: World): void {
       fx.comboRun = 0
       spawn(fx, e.x, e.y, FX.missBurst, KIND_MISS, FX.missSpeed, FX.missTtl, 1)
       captureTrail(fx, w, e.x, e.y, true)
+      stickArrow(fx, w, e.x, e.y)
     }
   }
 
@@ -616,6 +680,31 @@ export function drawFx(ctx: CanvasRenderingContext2D, cam: Camera, fx?: Fx): voi
   const f = fx ?? active
   if (f === null) return
 
+  // ── 땅에 박힌 화살 ───────────────────────────────────────────
+  // 맨 아래에 그린다. 이건 배경이지 사건이 아니다 — 지난 발의 흔적일 뿐이라
+  // 지금 날아가는 화살이나 이펙트를 덮으면 안 된다.
+  if (f.kN > 0) {
+    ctx.globalAlpha = STUCK_ALPHA
+    ctx.strokeStyle = THEME.arrow
+    ctx.lineWidth = STUCK_W
+    ctx.lineCap = 'butt'
+    ctx.beginPath()
+    for (let s = 0; s < f.kN; s++) {
+      const x = f.kX[s] ?? 0
+      const y = f.kY[s] ?? 0
+      const a = f.kA[s] ?? 0
+      // 박힌 자리에서 **왔던 방향으로** 뻗는다. 대가 땅 밖으로 나와 있는 모양이다.
+      const sx = worldToScreenX(cam, x)
+      const sy = worldToScreenY(cam, y)
+      const ex = worldToScreenX(cam, x - Math.cos(a) * STUCK_LEN)
+      const ey = worldToScreenY(cam, y - Math.sin(a) * STUCK_LEN)
+      ctx.moveTo(sx, sy)
+      ctx.lineTo(ex, ey)
+    }
+    ctx.stroke()
+    ctx.globalAlpha = 1
+  }
+
   // ── 유령 궤적 ────────────────────────────────────────────────
   ctx.lineWidth = FX.trailWidthPx
   ctx.lineCap = 'round'
@@ -690,7 +779,7 @@ export function drawFx(ctx: CanvasRenderingContext2D, cam: Camera, fx?: Fx): voi
   if (f.comboLife > 0 && f.comboText !== '') {
     ctx.globalAlpha = clamp01(f.comboLife / FX.comboTtl)
     ctx.fillStyle = THEME.accent
-    ctx.font = '600 13px system-ui, sans-serif'
+    ctx.font = COMBO_FONT
     ctx.textAlign = 'center'
     ctx.textBaseline = 'bottom'
     const rise = (1 - clamp01(f.comboLife / FX.comboTtl)) * 14

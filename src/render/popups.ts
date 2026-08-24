@@ -42,11 +42,16 @@ const POP = {
   /** 종류별 수명 (s) — score, crit, chain, feat */
   ttl: [0.75, 0.92, 0.5, 1.25],
   /** 종류별 상승 거리 (px) */
-  rise: [34, 46, 20, 28],
-  /** 종류별 기본 글자 크기 (px) */
-  size: [15, 22, 11, 15],
+  rise: [42, 56, 24, 34],
+  /**
+   * 종류별 기본 글자 크기 (px) — score, crit, chain, feat.
+   *
+   * 전부 한 단계씩 키웠다 (형의 "UI 크기도 더 키워"). 연쇄 팝만 작게 남겨 둔다 —
+   * 그건 읽는 숫자가 아니라 **박자**라서, 커지면 화면이 숫자로 덮인다 (GDD 7장 절제).
+   */
+  size: [20, 30, 14, 19],
   /** weight 1 에서 추가되는 글자 크기 (px). 점수가 클수록 크다. */
-  sizeGain: [9, 10, 0, 0],
+  sizeGain: [12, 13, 0, 0],
   /** 종류별 최대 불투명도 */
   alpha: [0.92, 1, 0.6, 0.95],
   /**
@@ -54,7 +59,7 @@ const POP = {
    * 위업만 **아래에서** 출발한다 — 정중앙이면 점수 팝과 위업이 같은 자리에 겹치는데,
    * 점수 팝은 위로 46px 튀고 위업은 아래에서 올라와 서로를 지나치지 않는다.
    */
-  lift: [14, 14, 10, -12],
+  lift: [18, 18, 12, -15],
   /** 튀어나오는 순간의 확대. 0.16초 안에 1로 가라앉는다. */
   punch: 0.32,
   punchIn: 0.16,
@@ -74,9 +79,11 @@ const COLOR = [THEME.trailHit, CRIT_COLOR, THEME.target2, THEME.accent] as const
 
 /** 미리 구운 폰트 문자열. 인덱스 = 픽셀 크기 - FONT_MIN. */
 const FONT_MIN = 10
-const FONT_MAX = 34
+const FONT_MAX = 46
 const FONTS: string[] = []
-for (let s = FONT_MIN; s <= FONT_MAX; s++) FONTS.push(`700 ${s}px system-ui, -apple-system, sans-serif`)
+// 숫자가 대부분이라 계기판 계열 스택을 쓴다 (render/hud.ts와 같은 규칙).
+const POP_FONT = '"Bahnschrift","DIN Alternate","Avenir Next Condensed","Malgun Gothic",system-ui,sans-serif'
+for (let s = FONT_MIN; s <= FONT_MAX; s++) FONTS.push(`700 ${s}px ${POP_FONT}`)
 
 export interface Popups {
   readonly cap: number

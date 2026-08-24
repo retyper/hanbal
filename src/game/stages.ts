@@ -115,7 +115,12 @@ const LAYOUTS: readonly Layout[] = [
   { teach: '과녁이 위아래로 움직인다 — 느리게', arrows: 6, hits: 2, spots: [{ x: 16, y: 2.6, kind: 'moving', ampY: 1.0, freq: 0.25 }, { x: 22, y: 2.0 }] },
   { teach: '움직이는 과녁은 멈추는 순간이 있다', arrows: 6, hits: 2, spots: [{ x: 18, y: 3.0, kind: 'moving', ampY: 1.6, freq: 0.3 }, { x: 25, y: 2.2, kind: 'moving', ampY: 1.2, freq: 0.22 }] },
   { teach: '좌우로 움직이는 과녁 — 리드 샷', arrows: 7, hits: 3, spots: [{ x: 20, y: 2.4, kind: 'moving', ampX: 2.2, freq: 0.28 }, { x: 27, y: 3.2 }, { x: 14, y: 1.6 }] },
-  { teach: '빨라진다', arrows: 7, hits: 3, spots: [{ x: 17, y: 2.8, kind: 'moving', ampY: 1.8, freq: 0.45 }, { x: 24, y: 2.0, kind: 'moving', ampX: 2.0, freq: 0.4 }, { x: 31, y: 3.0 }] },
+  // 화살 7 -> 8, 빠른 이동 과녁 둘에 크기 +25%: 이 판만 유독 뚫렸다
+  // (봇 클리어 81%, 목표 90~100% · 화살 소진 실패 19% · 발당 명중 56%).
+  // 빠른 이동 과녁 둘을 한꺼번에 요구하는 유일한 판이다. **움직이는 과녁은 같은 각크기라도
+  // 훨씬 어렵다** — 조준점이 멈춰 있지 않기 때문이고, 그 값을 크기로 돌려주는 게
+  // 난이도 정책(크기가 아니라 메커닉으로 어렵게 한다)에 맞는 방향이다. endless.ts 도 같은 규칙이다.
+  { teach: '빨라진다', arrows: 8, hits: 3, spots: [{ x: 17, y: 2.8, kind: 'moving', size: 1.25, ampY: 1.8, freq: 0.45 }, { x: 24, y: 2.0, kind: 'moving', size: 1.25, ampX: 2.0, freq: 0.4 }, { x: 31, y: 3.0 }] },
   { teach: '움직이는 공중 과녁 — 연쇄까지', arrows: 7, hits: 3, spots: [{ x: 20, y: 5.6, kind: 'aerial' }, { x: 20, y: 3.0, kind: 'moving', ampX: 1.8, freq: 0.3 }, { x: 20, y: 1.4 }] },
   { teach: '바람이 분다 — 오른쪽으로 밀린다', arrows: 7, hits: 3, wind: 2.5, spots: [{ x: 20, y: 1.8 }, { x: 26, y: 2.8 }, { x: 32, y: 2.0 }] },
   { teach: '바람은 주기적으로 변한다 — 읽을 수 있다', arrows: 7, hits: 3, wind: 3.5, spots: [{ x: 22, y: 2.0 }, { x: 29, y: 3.2 }, { x: 35, y: 2.4 }] },
