@@ -157,6 +157,21 @@ const VIS_TREMOR_MAX = 0.45
 const ON = { warn: 0.02, flash: 0.5, trueFull: 0.5 } as const
 
 /** 경고색 램프. 매 프레임 색 문자열을 만들면 힙 할당이 생긴다 (A5). 미리 만들어 인덱싱한다. */
+/**
+ * 활 휨의 기하 상수 — 실루엣의 문법이지 손맛 노브가 아니다.
+ * rest = 스트렁 상태의 기본 휨 · back = 당길 때 팁이 사수 쪽으로 젖혀지는 비율 ·
+ * squeeze = 팁 사이가 오므라드는 비율 · apex·ctrl = 호의 정점과 제어점 위치.
+ */
+const BOWPOSE = {
+  rest: 0.3,
+  back: 0.38,
+  squeeze: 0.16,
+  apex0: 0.5,
+  apex1: 1.1,
+  ctrlU: 0.75,
+  ctrlV: 0.6,
+} as const
+
 const BOW_RAMP = ['#d9cba6', '#e0bd8d', '#e8a874', '#ef8f5d', '#f57a4f', '#ff6a45'] as const
 
 /**
@@ -165,23 +180,30 @@ const BOW_RAMP = ['#d9cba6', '#e0bd8d', '#e8a874', '#ef8f5d', '#f57a4f', '#ff6a4
  * stab=리커브 안정기 길이(m) · cam=컴파운드 도르래 표시.
  */
 interface BowSkin {
+  /** 림 길이 배수 */
   half: number
-  curve: number
+  /** 휨의 깊이 배수 — 당길수록 이만큼 휜다 */
+  bend: number
   color: string
+  /** 고자(안 휘는 활끝) 길이 (half 비율). 0이면 없음 */
   siyah: number
+  /** 고자가 과녁 쪽으로 꺾인 정도 (0=림 방향 그대로, 1=완전히 과녁 방향) */
+  siyahFwd: number
+  /** 리커브 안정기 길이 (m) */
   stab: number
+  /** 컴파운드 캠 표시 */
   cam: number
 }
 const BOW_SKIN: Record<string, BowSkin> = {
-  practice: { half: 1, curve: 1, color: '#d9cba6', siyah: 0, stab: 0, cam: 0 },
-  // 물소뿔 복합궁 — 짧고 깊이 휘고, 고자가 앞으로 꺾인다. 뿔·심줄의 붉은기.
-  gakgung: { half: 0.8, curve: 1.55, color: '#c89a5f', siyah: 0.28, stab: 0, cam: 0 },
-  // 잉글리시 롱보우 — 사람 키만 한 한 조각 나무. 길고 완만하다.
-  longbow: { half: 1.22, curve: 0.72, color: '#b9a27a', siyah: 0, stab: 0, cam: 0 },
-  // 현대 양궁 — 금속 라이저 톤 + 안정기.
-  recurve: { half: 1.05, curve: 1.1, color: '#9fb6c8', siyah: 0, stab: 0.5, cam: 0 },
-  // 도르래활 — 짧고 뻣뻣한 림, 끝에 캠.
-  compound: { half: 0.86, curve: 0.5, color: '#8fa3b5', siyah: 0, stab: 0, cam: 1 },
+  practice: { half: 1, bend: 0.9, color: '#d9cba6', siyah: 0, siyahFwd: 0, stab: 0, cam: 0 },
+  // 각궁 — 물소뿔 복합궁. 짧은 림이 깊게 휘고, 고자는 뻣뻣해 과녁 쪽으로 꺾인 채 남는다.
+  gakgung: { half: 0.8, bend: 1.5, color: '#c89a5f', siyah: 0.3, siyahFwd: 0.8, stab: 0, cam: 0 },
+  // 잉글리시 롱보우 — 사람 키만 한 한 조각 나무. 길고 완만하게만 휜다.
+  longbow: { half: 1.22, bend: 0.55, color: '#b9a27a', siyah: 0, siyahFwd: 0, stab: 0, cam: 0 },
+  // 현대 양궁 — 금속 라이저 + 끝만 살짝 뒤집힌 림 + 안정기.
+  recurve: { half: 1.05, bend: 1.0, color: '#9fb6c8', siyah: 0.2, siyahFwd: 0.55, stab: 0.5, cam: 0 },
+  // 도르래활 — 뻣뻣한 짧은 림. 휨 대신 캠이 돈다.
+  compound: { half: 0.86, bend: 0.3, color: '#8fa3b5', siyah: 0, siyahFwd: 0, stab: 0, cam: 1 },
 }
 const BODY_RAMP = ['#c9d2dc', '#ccc9cf', '#d0bfbd', '#d5b3aa', '#dba798', '#e29a86'] as const
 
@@ -465,48 +487,72 @@ export function drawArcher(
   ctx.stroke()
 
   // ── 활 ────────────────────────────────────────────────────────
-  // 당길수록 활이 더 휜다. 진짜 만작이면 최대로 휘고, 경고가 오르면 경고색으로 물든다.
-  // 경계선을 넘으면 휨이 조금 풀린다 — 활을 온전히 붙들고 있지 못한다는 뜻이다.
   //
-  // ★ 겉모습은 든 활을 따른다 (w.bowSkin · docs/BOWS.md). 실루엣 규칙:
-  //   각궁=짧고 깊이 휨 · 장궁=길고 완만 · 리커브=안정기 막대 · 컴파운드=뻣뻣한 림+캠 도르래.
-  //   색·길이·휨만 다르고 물리는 같은 자리(rig)를 쓴다 — 렌더는 읽기만 한다.
-  const skin = BOW_SKIN[w.bowSkin] ?? BOW_SKIN['practice'] as BowSkin
-  const curve = BODY.bowCurve * skin.curve
-    * (1 + rig.draw * BODY.bowDrawCurve)
+  // 실물의 원리대로 그린다 (형의 반려: "각궁이 당길 때 이상하게 구겨져 있어").
+  //   · 시위를 당기면 **휘는 림이 사수 쪽으로 젖혀지고** 팁 사이가 오므라들며,
+  //     활 몸은 과녁 쪽으로 볼록한 호가 된다. 정점은 그립 근처다.
+  //   · 각궁의 고자(활끝)는 뿔·나무 심이라 **휘지 않는다** — 당겨도 과녁 쪽으로 꺾인 채
+  //     남는다. 반곡의 실루엣은 '휘는 림 + 안 휘는 고자'의 대비가 만든다.
+  //   · 스트렁 상태(당김 0)에서도 활은 이미 조금 휘어 있다 (BOWPOSE.rest).
+  // 경고가 오르면 경고색, 경계선을 넘으면 휨이 조금 풀린다 — 붙들고 있지 못한다는 뜻.
+  const skin = BOW_SKIN[w.bowSkin] ?? (BOW_SKIN['practice'] as BowSkin)
+  const bendAmt = skin.bend
+    * (BOWPOSE.rest + (1 - BOWPOSE.rest) * rig.draw)
     * (1 + trueFull * P.render.poseFullBowCurve)
     * (1 - unlock * P.render.poseStrainBow)
   const half = BODY.bowHalf * skin.half
-  const tipAx = rig.hx + rig.vx * half
-  const tipAy = rig.hy + rig.vy * half
-  const tipBx = rig.hx - rig.vx * half
-  const tipBy = rig.hy - rig.vy * half
-  const ctrlX = rig.hx + rig.ux * curve * 2
-  const ctrlY = rig.hy + rig.uy * curve * 2
+  const limbLen = half * (1 - skin.siyah)
+  // 림 끝(고자 뿌리) — 당길수록 시위 쪽(-u)으로 젖혀지고 v로는 살짝 오므라든다.
+  const limbV = limbLen * (1 - BOWPOSE.squeeze * bendAmt)
+  const limbBack = limbLen * BOWPOSE.back * bendAmt
+  // 호의 정점은 그립 앞(+u) — 이게 "과녁 쪽으로 볼록"이다.
+  const apex = BODY.bowCurve * (BOWPOSE.apex0 + BOWPOSE.apex1 * bendAmt)
+
+  const baseAx = rig.hx + rig.vx * limbV - rig.ux * limbBack
+  const baseAy = rig.hy + rig.vy * limbV - rig.uy * limbBack
+  const baseBx = rig.hx - rig.vx * limbV - rig.ux * limbBack
+  const baseBy = rig.hy - rig.vy * limbV - rig.uy * limbBack
+
+  // 고자 — 림 끝에서 과녁 쪽으로 꺾인 짧은 직선. 시위는 이 끝에 걸린다.
+  const syLen = half * skin.siyah
+  let tipAx = baseAx
+  let tipAy = baseAy
+  let tipBx = baseBx
+  let tipBy = baseBy
+  if (syLen > 0) {
+    const f = skin.siyahFwd
+    const nA = Math.hypot(1 - f, f) || 1
+    tipAx = baseAx + ((rig.vx * (1 - f) + rig.ux * f) / nA) * syLen
+    tipAy = baseAy + ((rig.vy * (1 - f) + rig.uy * f) / nA) * syLen
+    tipBx = baseBx + ((-rig.vx * (1 - f) + rig.ux * f) / nA) * syLen
+    tipBy = baseBy + ((-rig.vy * (1 - f) + rig.uy * f) / nA) * syLen
+  }
 
   // 만작에 닿는 순간만 밝게 튄다. 당김(고요) → 만작(떨림) 전환의 신호.
   ctx.strokeStyle = warn > ON.warn
     ? (BOW_RAMP[ramp] ?? THEME.bow)
     : (rig.flash > ON.flash ? THEME.target2 : skin.color)
   ctx.lineWidth = bowW
+  ctx.lineJoin = 'round'
+  const gripFx = rig.hx + rig.ux * apex
+  const gripFy = rig.hy + rig.uy * apex
+  const ctrlU = apex * BOWPOSE.ctrlU
   ctx.beginPath()
   ctx.moveTo(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy))
+  ctx.lineTo(worldToScreenX(cam, baseAx), worldToScreenY(cam, baseAy))
   ctx.quadraticCurveTo(
-    worldToScreenX(cam, ctrlX), worldToScreenY(cam, ctrlY),
-    worldToScreenX(cam, tipBx), worldToScreenY(cam, tipBy),
+    worldToScreenX(cam, rig.hx + rig.vx * limbV * BOWPOSE.ctrlV + rig.ux * ctrlU),
+    worldToScreenY(cam, rig.hy + rig.vy * limbV * BOWPOSE.ctrlV + rig.uy * ctrlU),
+    worldToScreenX(cam, gripFx), worldToScreenY(cam, gripFy),
   )
+  ctx.quadraticCurveTo(
+    worldToScreenX(cam, rig.hx - rig.vx * limbV * BOWPOSE.ctrlV + rig.ux * ctrlU),
+    worldToScreenY(cam, rig.hy - rig.vy * limbV * BOWPOSE.ctrlV + rig.uy * ctrlU),
+    worldToScreenX(cam, baseBx), worldToScreenY(cam, baseBy),
+  )
+  ctx.lineTo(worldToScreenX(cam, tipBx), worldToScreenY(cam, tipBy))
   ctx.stroke()
 
-  if (skin.siyah > 0) {
-    // 각궁의 고자(활끝) — 앞으로 꺾인 짧은 팁. 반곡궁의 실루엣은 이 꺾임이 만든다.
-    const s = half * skin.siyah
-    ctx.beginPath()
-    ctx.moveTo(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy))
-    ctx.lineTo(worldToScreenX(cam, tipAx + rig.ux * s), worldToScreenY(cam, tipAy + rig.uy * s))
-    ctx.moveTo(worldToScreenX(cam, tipBx), worldToScreenY(cam, tipBy))
-    ctx.lineTo(worldToScreenX(cam, tipBx + rig.ux * s), worldToScreenY(cam, tipBy + rig.uy * s))
-    ctx.stroke()
-  }
   if (skin.stab > 0) {
     // 리커브의 안정기 — 그립에서 과녁 쪽으로 뻗는 가는 막대.
     ctx.lineWidth = Math.max(lw * LINE.stringMul * 1.4, LINE.thinMinPx)
@@ -517,7 +563,7 @@ export function drawArcher(
     ctx.lineWidth = bowW
   }
 
-  // 시위 — 몸보다 훨씬 얇다. 굵기 위계가 있어야 활이 활로 보인다.
+  // 시위 — 몸보다 훨씬 얇다. 고자 끝에 걸린다.
   ctx.strokeStyle = rig.flash > ON.flash ? THEME.target2 : THEME.string
   ctx.lineWidth = Math.max(lw * LINE.stringMul, LINE.thinMinPx)
   ctx.beginPath()
@@ -527,7 +573,11 @@ export function drawArcher(
   ctx.stroke()
 
   if (skin.cam > 0) {
-    // 컴파운드의 캠 — 림 끝의 도르래 원판. 이게 보여야 "기계 활"로 읽힌다.
+    // 컴파운드 — 캠(도르래)과 팁 사이를 가로지르는 케이블. 이게 보여야 "기계 활"로 읽힌다.
+    ctx.beginPath()
+    ctx.moveTo(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy))
+    ctx.lineTo(worldToScreenX(cam, tipBx), worldToScreenY(cam, tipBy))
+    ctx.stroke()
     const r = Math.max(bowW * 1.6, 2.5)
     ctx.fillStyle = skin.color
     ctx.beginPath()
@@ -549,11 +599,27 @@ export function drawArcher(
     -BODY.armBend * (unlock * P.render.poseStrainArm + warn * POSE.warnArm),
   )
 
-  // ── 물린 화살 ─────────────────────────────────────────────────
+  // ── 물린 화살 · 통아 ──────────────────────────────────────────
   // 몸보다 얇고 밝게. 촉만 강조색 — 강조색은 과녁과 화살에만 (GDD 8장).
+  //
+  // ★ 애기살(편전)은 **통아에 얹어 쏜다** (docs/BOWS.md). 통아는 화살 길이의 나무 홈통으로,
+  //   시위 손에 쥔 채 짧은 살의 활주로가 되고, **쏜 뒤에도 손에 남는다** — 날아가는 건
+  //   반 길이의 애기살뿐이다. 그래서 통아는 recovering에도 그린다 (형의 힌트 그대로).
+  const pierce = w.arrowKind === 'pierce'
+  if (pierce && a.phase !== 'idle') {
+    // 통아 — 노크(시위 손)에서 화살 길이만큼 앞으로. 손을 따라 움직인다.
+    ctx.lineWidth = Math.max(lw * LINE.arrowMul * 1.5, LINE.thinMinPx)
+    ctx.strokeStyle = THEME.bow
+    line(
+      ctx, cam, rig.nockX, rig.nockY,
+      rig.nockX + rig.ux * BODY.arrowLen, rig.nockY + rig.uy * BODY.arrowLen,
+    )
+  }
   if (a.phase !== 'idle' && a.phase !== 'recovering') {
-    const tipX = rig.nockX + rig.ux * BODY.arrowLen
-    const tipY = rig.nockY + rig.uy * BODY.arrowLen
+    // 애기살은 반 길이 — 통아 위를 미끄러진다. 보통 살은 제 길이.
+    const len = pierce ? BODY.arrowLen * 0.52 : BODY.arrowLen
+    const tipX = rig.nockX + rig.ux * len
+    const tipY = rig.nockY + rig.uy * len
     ctx.lineWidth = Math.max(lw * LINE.arrowMul, LINE.thinMinPx)
     ctx.strokeStyle = THEME.arrow
     line(ctx, cam, rig.nockX, rig.nockY, tipX, tipY)
@@ -561,3 +627,4 @@ export function drawArcher(
     line(ctx, cam, tipX - rig.ux * BODY.arrowHead, tipY - rig.uy * BODY.arrowHead, tipX, tipY)
   }
 }
+

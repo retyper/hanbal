@@ -118,7 +118,13 @@ export function stepArcher(w: World, input: InputFrame): void {
   dMaxDraw = clamp01(dMaxDraw + bow.maxDrawAdd)
 
   // 조준은 스무딩 없이 즉시 반영한다. 한 스텝이라도 늦으면 조준이 미끄러진다 (feel-lens 1).
-  a.aimAngle = Math.atan2(input.aimY - a.y, input.aimX - a.x)
+  // 단 **앞쪽 원뿔 안으로만** — 커서가 궁수 뒤로 가면 각이 ±180°로 뒤집혀 자세가 접힌다.
+  // 결정론에는 영향이 없다: 같은 입력 = 같은 클램프 = 같은 각 (A1).
+  a.aimAngle = clamp(
+    Math.atan2(input.aimY - a.y, input.aimX - a.x),
+    -P.input.aimDownMax,
+    P.input.aimUpMax,
+  )
 
   // 노이즈의 유일한 시간축. 항상 흐른다 — 발사 때마다 같은 위상에서 시작하면 파형이 외워진다.
   a.tremorPhase += dt
