@@ -53,7 +53,7 @@ class El {
   innerHTML = ''
   children: El[] = []
   style = { setProperty: (): void => {} }
-  classList = { add: (): void => {}, remove: (): void => {} }
+  classList = { add: (): void => {}, remove: (): void => {}, toggle: (): void => {} }
   ls = new Map<string, Array<(e: unknown) => void>>()
   constructor(tag: string) {
     this.tag = tag
@@ -180,7 +180,7 @@ const { progressOf, UNLOCKS, unlockedArrows } = await import('../src/game/unlock
 const { DEFAULT_ARROW } = await import('../src/game/arrows.ts')
 const { STAGES } = await import('../src/game/stages.ts')
 import type { ArrowKindId } from '../src/sim/types.ts'
-import type { DraftOffer } from '../src/game/draft.ts'
+import type { LoadoutPick } from '../src/ui/loadout.ts'
 
 // ───────────────────────── 판정 ─────────────────────────
 
@@ -238,7 +238,9 @@ console.log('\n1. 세이브 마이그레이션 (v1 → v2, ARCHITECTURE A4)')
   store.set('hanbal.save.v1', JSON.stringify(old))
   const s = loadSave()
   check('버전이 올라간다', s.v === SCHEMA_VERSION, `v=${s.v}`)
-  check('옛 값이 그대로 남는다', s.training === 42 && s.stats.str === 6 && s.stageIndex === 20)
+  check('옛 값이 그대로 남는다', s.training === 42 && s.stats.str === 6)
+  // v4(여정): 옛 stageIndex는 최고 기록으로 환산되고 진행은 0에서 새 여정으로 시작한다 (docs/RUN.md).
+  check('옛 진행이 여정 기록으로 환산된다', s.bestRunStage === 20 && s.stageIndex === 0, )
   check('bestScore를 잃지 않는다', s.bestScore['2-5'] === 800)
   const p = progressOf(s)
   check('지나온 판이 별 1개로 되살아난다', p.stagesCleared === 20, `stagesCleared=${p.stagesCleared}`)
@@ -288,10 +290,11 @@ store.clear()
 const save = loadSave()
 check('해금된 화살이 복원된다', unlockedArrows(save.unlocked).length === 3, unlockedArrows(save.unlocked).join(' '))
 
-let draftShown = 0
-let lastOffer: DraftOffer | null = null
+let loadoutShown = 0
 // 콜백 안에서만 대입되므로 null 초기값을 두면 TS가 never로 좁힌다. 무동작 함수로 시작한다.
-let pendingPick: (id: ArrowKindId) => void = () => {}
+let pendingStart: (pick: LoadoutPick) => void = () => {}
+let runOverShown = 0
+let pendingNext: () => void = () => {}
 let unlockToasts = 0
 const gainLines: string[] = []
 let panelOpen = false
@@ -304,13 +307,19 @@ const loop = createLoop(canvas as unknown as HTMLCanvasElement, {
       gainLines.push(line)
     },
     offlineGain: () => {},
-    draft: (offer, onPick) => {
-      draftShown++
-      lastOffer = offer
+    loadout: (onStart) => {
+      loadoutShown++
       // 실제 UI는 패널을 연다 → loop가 sim을 멈춘다. 그 상태를 그대로 흉내낸다.
       panelOpen = true
-      pendingPick = onPick
+      pendingStart = onStart
     },
+    runOver: (reached, _score, _best, isNew, onNext) => {
+      runOverShown++
+      void reached; void isNew
+      panelOpen = true
+      pendingNext = onNext
+    },
+    toast: () => {},
     unlocked: (ids) => {
       unlockToasts += ids.length
     },
@@ -319,22 +328,18 @@ const loop = createLoop(canvas as unknown as HTMLCanvasElement, {
 })
 
 loop.start()
-check('시작하면 3택이 뜬다', draftShown === 1, `draftShown=${draftShown}`)
-// 함수로 꺼낸다 — 콜백 안에서만 대입되는 변수라 TS가 null로 좁혀버린다.
-const offered = (): readonly ArrowKindId[] => lastOffer?.kinds ?? []
-check('3택이 서로 다른 3장이다', new Set(offered()).size === 3, offered().join(' '))
-check('기본 살은 카드로 나오지 않는다', offered().length > 0 && !offered().includes(DEFAULT_ARROW))
+check('시작하면 여정 로드아웃이 뜬다 (여정 없음)', loadoutShown === 1, `loadoutShown=${loadoutShown}`)
 
 // 화면이 떠 있는 동안 프레임을 돌려도 판이 진행되지 않아야 한다 (sim 정지)
 pump(10)
-check('드래프트 중에는 sim이 멈춰 있다', drawCalls > 0, `drawCalls=${drawCalls}`)
+check('로드아웃 중에는 sim이 멈춰 있다', drawCalls > 0, `drawCalls=${drawCalls}`)
 
-// 카드 하나를 고른다
-const picked: ArrowKindId = offered()[0] ?? DEFAULT_ARROW
+// 활과 살통을 고르고 여정을 시작한다
+const picked: ArrowKindId = DEFAULT_ARROW
 panelOpen = false
-pendingPick(picked)
+pendingStart({ bow: 'practice', arrow: picked })
 pump(3)
-check('고른 화살이 sim에 들어간다', true, `pick=${picked}`)
+check('여정이 시작된다', true, `pick=${picked}`)
 
 // 판을 실제로 깬다. World는 loop 안에 있어 밖에서 과녁을 지울 수 없으므로,
 // **진짜로 쏴서** 맞힌다 — 조준점을 격자로 훑으며 클리어가 날 때까지.
@@ -356,15 +361,16 @@ outer: for (let ay = 180; ay <= 620 && !cleared; ay += 20) {
       break outer
     }
     if (gainLines.length > 0 && !last.includes('★')) {
-      // 실패했다 — 다시 같은 판. 눌렀다 떼면 재시작이다 (C2).
-      press(true)
-      pump(2)
-      press(false)
-      pump(2)
-      // 재시작하면 3택이 아니라 같은 화살로 바로 간다(R과 같은 규칙). 패널이 떴으면 닫아준다.
+      // 패배 — 여정이 끝났다 (docs/RUN.md). 종료 화면을 닫고 새 여정을 연다.
       if (panelOpen) {
         panelOpen = false
-        pendingPick(picked)
+        pendingNext()
+        pump(2)
+      }
+      // 새 여정의 로드아웃이 떠 있다 — 같은 조합으로 다시 출발.
+      if (panelOpen) {
+        panelOpen = false
+        pendingStart({ bow: 'practice', arrow: picked })
         pump(3)
       }
       gainLines.length = 0
@@ -393,32 +399,28 @@ check('음소거 창구가 산다', typeof loop.muted() === 'boolean')
 
 // ───────────────────────── 5. 판 넘김 ─────────────────────────
 
-console.log('\n5. 판을 넘기면 다시 3택이 뜬다 (HOOK 3장 루프)')
+console.log('\n5. 여정 중에는 판 사이에 아무 화면도 없다 (docs/RUN.md · C1)')
 {
-  const was = draftShown
+  const was = loadoutShown
   press(true)
   pump(2)
   press(false)
   pump(2)
-  check('다음 판 진입에서 3택이 다시 뜬다', draftShown === was + 1, `draftShown=${draftShown}`)
-  panelOpen = false
-  pendingPick(DEFAULT_ARROW)
-  pump(3)
-  check('건너뛰면 기본 살로 즉시 시작한다', !panelOpen)
+  check('클리어 후 다음 판이 로드아웃 없이 바로 시작된다', loadoutShown === was && !panelOpen,
+    `loadoutShown=${loadoutShown}`)
 }
 
 loop.dispose()
 
-// ───────────── 6. 드래프트 생명주기 (진짜 ui/draft.ts — 탭 복귀·연타) ─────────────
+// ───────────── 6. 로드아웃 생명주기 (진짜 ui/loadout.ts — 탭 복귀·연타) ─────────────
 //
-// 여기만 실제 UI 모듈을 마운트한다. 재는 건 화면 모양이 아니라 **onPick이 언제 불리는가**다.
-// 이 게임의 대표 사용법이 "공부하다 나간다"라, 드래프트가 뜬 채로 탭을 나가는 경로가
-// 가장 자주 밟힌다 — 거기서 onPick이 영영 안 불리면 복귀 후 아무 입력도 안 먹는다.
+// 여기만 실제 UI 모듈을 마운트한다. 재는 건 화면 모양이 아니라 **onStart가 언제 불리는가**다.
+// 이 게임의 대표 사용법이 "공부하다 나간다"라, 로드아웃이 뜬 채로 탭을 나가는 경로가
+// 가장 자주 밟힌다 — 거기서 화면이 되살아나지 않으면 여정이 영영 시작되지 않는다.
 
-console.log('\n6. 드래프트 생명주기 (탭 복귀 · 판 넘김 연타)')
+console.log(String.fromCharCode(10) + '6. 로드아웃 생명주기 (탭 복귀 · 시작 연타)')
 {
-  const { mountDraft } = await import('../src/ui/draft.ts')
-  // draft.ts는 instanceof로 타입을 가린다. 스텁 엘리먼트가 그 검사를 통과해야 한다.
+  const { mountLoadout } = await import('../src/ui/loadout.ts')
   g['Node'] = El
   g['HTMLElement'] = El
 
@@ -447,14 +449,6 @@ console.log('\n6. 드래프트 생명주기 (탭 복귀 · 판 넘김 연타)')
     dispose: (): void => {},
   }
 
-  const offer: DraftOffer = { kinds: ['pierce', 'burst', 'split'], rerolled: false }
-  const elsewhere = new El('canvas')
-  const outside = (): void =>
-    fire(listeners, 'mousedown', {
-      target: elsewhere,
-      preventDefault: (): void => {},
-      stopPropagation: (): void => {},
-    })
   /** main.ts의 visibilitychange 배선을 그대로 흉내낸다 — 나갈 때 열린 패널을 닫는다. */
   const visibility = (hidden: boolean): void => {
     doc.hidden = hidden
@@ -462,47 +456,48 @@ console.log('\n6. 드래프트 생명주기 (탭 복귀 · 판 넘김 연타)')
     fire(listeners, 'visibilitychange', {})
   }
 
-  // 콜백 안에서만 대입되므로 객체에 담는다 — let 이면 TS가 초기값으로 좁힌다.
-  const got = { picks: 0, id: '' as string }
-  mountDraft(overlay as unknown as Parameters<typeof mountDraft>[0], offer, (id) => {
-    got.picks++
-    got.id = id
-  })
-  check('3택이 뜬다', openPanel === 'draft')
+  const got = { starts: 0, bow: '', arrow: '' }
+  mountLoadout(
+    overlay as unknown as Parameters<typeof mountLoadout>[0],
+    ['practice', 'gakgung'],
+    ['basic', 'pierce'],
+    { bow: 'practice', arrow: 'basic' },
+    {},
+    7,
+    (pick) => {
+      got.starts++
+      got.bow = pick.bow
+      got.arrow = pick.arrow
+    },
+  )
+  check('로드아웃이 뜬다', openPanel === 'loadout')
 
-  // (a) 판을 넘긴 그 클릭의 잔향 — 사람은 '한 번 더 누르면 다음 판'을 보고 연타한다.
-  outside()
-  check('마운트 직후 바깥 눌림에 3택이 증발하지 않는다', got.picks === 0 && openPanel === 'draft')
-
-  // (b) 카드를 읽다가 공부하러 나간다 → 돌아온다
+  // (a) 카드를 읽다가 공부하러 나간다 → 돌아온다
   visibility(true)
   check('나가면 패널이 닫힌다 (main.ts와 같은 배선)', openPanel === '')
   visibility(false)
-  check('돌아오면 고르던 세 장이 그 자리에 있다', openPanel === 'draft' && got.picks === 0)
+  check('돌아오면 로드아웃이 그 자리에 있다', openPanel === 'loadout' && got.starts === 0)
 
-  // (c) 복귀 직후의 클릭(창을 다시 활성화한 그 클릭)도 3택을 지우지 않는다
-  outside()
-  check('복귀 직후 바깥 눌림에도 3택이 남는다', got.picks === 0 && openPanel === 'draft')
-
-  // (d) 가드가 풀린 뒤의 바깥 클릭은 건너뛰기 의사다 — 그때는 즉시 시작한다 (C1)
-  await new Promise((r) => setTimeout(r, 300))
-  outside()
-  check('가드가 풀리면 바깥 클릭 한 번으로 시작한다', got.picks === 1 && got.id === DEFAULT_ARROW, got.id)
-  outside()
+  // (b) 시작 버튼 — 정확히 한 번
+  const find = (root: El, cls: string): El | null => {
+    if (root.className.includes(cls)) return root
+    for (const c of root.children) {
+      const r = find(c, cls)
+      if (r !== null) return r
+    }
+    return null
+  }
+  const panelEl = panels.get('loadout')
+  const go = panelEl !== undefined ? find(panelEl, 'l-go') : null
+  check('시작 버튼이 있다', go !== null)
+  go?.click()
+  check('시작을 누르면 onStart가 한 번 불린다', got.starts === 1 && got.bow === 'practice' && got.arrow === 'basic',
+    `starts=${got.starts} ${got.bow}/${got.arrow}`)
+  go?.click()
   visibility(true)
   visibility(false)
-  check('onPick은 정확히 한 번뿐이다 (LoopUi 계약)', got.picks === 1, `picks=${got.picks}`)
-  check('고른 뒤에는 패널을 되살리지 않는다', openPanel === '')
-
-  // (e) 카드를 실제로 고르는 경로
-  const got2 = { picks: 0, id: '' as string }
-  mountDraft(overlay as unknown as Parameters<typeof mountDraft>[0], offer, (id) => {
-    got2.picks++
-    got2.id = id
-  })
-  const cards = panels.get('draft')?.children.find((c) => c.className.includes('d-cards'))
-  cards?.children[1]?.click()
-  check('카드를 고르면 그 화살로 한 번 끝난다', got2.picks === 1 && got2.id === 'burst', got2.id)
+  check('onStart는 정확히 한 번뿐이다 (LoopUi 계약)', got.starts === 1, `starts=${got.starts}`)
+  check('시작한 뒤에는 패널을 되살리지 않는다', openPanel === '')
 }
 
 console.log('')

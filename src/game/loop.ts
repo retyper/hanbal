@@ -25,9 +25,9 @@ import { settleOffline, type OfflineGain } from './offline.ts'
 import { awardRun, canGrow, grantArrows, type StatKey } from './progression.ts'
 import { arrowName, DEFAULT_ARROW } from './arrows.ts'
 import { bowMods, masteryLevel } from './bows.ts'
-import { draftNeeded, rollDraft, type DraftOffer } from './draft.ts'
+import type { LoadoutPick } from '../ui/loadout.ts'
 import { bullseyeAcc, gradeRun, rewardLine, type RunStats } from './rewards.ts'
-import { evaluateUnlocks, progressOf, unlockedArrows } from './unlocks.ts'
+import { evaluateUnlocks, progressOf } from './unlocks.ts'
 import { makeRng } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { clamp } from '../core/math.ts'
@@ -47,11 +47,14 @@ export interface LoopUi {
   /** 자리를 비운 사이 쌓인 것. 확인 버튼 없는 자동 수령이다 (C1·C4). */
   offlineGain(gain: OfflineGain): void
   /**
-   * 판 시작 전 3택 (docs/HOOK.md ★1). **onPick은 반드시 정확히 한 번 불러야 한다** —
-   * 안 부르면 판이 시작되지 않는다. 건너뛰기는 `DEFAULT_ARROW`로 부르면 된다.
+   * 여정 시작 로드아웃 — 활+살통 (docs/RUN.md). **onStart는 정확히 한 번** 불러야 한다.
    * 화면을 띄우는 쪽이 패널을 열어 paused()를 true로 만들므로 그동안 sim은 멈춰 있다.
    */
-  draft(offer: DraftOffer, onPick: (id: ArrowKindId) => void): void
+  loadout(onStart: (pick: LoadoutPick) => void): void
+  /** 여정 종료 — 도달 판·점수·기록. onNext 한 번으로 다음 여정 준비로 간다 (C1). */
+  runOver(reached: number, score: number, best: number, isNew: boolean, onNext: () => void): void
+  /** 구석 알림 한 줄 (여정 포기 확인 등). 모달이 아니다. */
+  toast(text: string): void
   /** 새로 열린 해금. **모달로 막지 않는다** — 구석 알림 한 줄이다 (C1). */
   unlocked(ids: readonly string[]): void
   /** 세이브의 별·진행도가 바뀌었다. 수집 화면이 다시 그린다. */
@@ -80,7 +83,8 @@ export interface GameLoop {
 
 /** 판이 끝났을 때 아래 한 줄. 매 프레임 문자열을 만들지 않으려고 모듈 상수로 둔다 (A5). */
 const HINT_NEXT = '한 번 더 누르면 다음 판'
-const HINT_RETRY = '한 번 더 누르면 다시'
+/** R 한 번으로 여정을 접으면 실수 한 번이 기록을 지운다. 두 번째 R까지의 유효 시간 (ms). */
+const ABANDON_MS = 2500
 
 /**
  * 진행도 상한. 무한 구간이라 게임에는 끝이 없지만, 손상된 세이브가 1e9 을 들고 오면
@@ -155,6 +159,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   const hud: HudState = { training: 0, canLevelUp: false, muted: false, toast: '', arrow: '', stars: -1 }
 
   let raf = 0
+  /** 첫 R을 누른 시각 (performance.now). 두 번째 R이 ABANDON_MS 안에 오면 여정을 접는다. */
+  let abandonArm = 0
   let wanted = false // start()가 불렸는가 — 사용자 의도. 탭 가시성과는 별개로 기억한다.
   let last = 0
   let acc = 0
@@ -237,27 +243,55 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   }
 
   /**
-   * 판을 시작한다 — 그 앞에 3택이 한 번 낀다 (docs/HOOK.md ★1).
+   * 판을 시작한다 (docs/RUN.md).
    *
-   * 고를 게 없으면(해금 0개) 화면을 아예 띄우지 않고 기본 살로 바로 간다. 아무것도 못 고르는
-   * 패널을 한 번 닫게 만드는 건 "탭 복귀 3초 안에 첫 발"(C1)을 갉아먹는 짓이다.
-   * 드래프트 난수는 **판 시작마다 한 번** 앞으로 나아간다 — 같은 판을 다시 해도 같은 손패가
-   * 나오지 않아야 "다시 해도 다른 판"이 성립한다 (HOOK ★1).
+   * 여정이 진행 중이면 그 여정의 살통으로 바로 다음 판이다 — 판 사이에 아무 화면도 없다 (C1).
+   * 여정이 없으면(첫 시작·패배 직후) 로드아웃이 한 번 낀다: 활+살통을 골라 새 여정을 연다.
+   * 판마다 3택을 강요하던 옛 드래프트는 여기서 사라졌다 — "과녁이 화살보다 많으면
+   * 사실상 1택"(형의 반려). 선택은 판 단위가 아니라 **여정 단위**다.
    */
   const beginStage = (): void => {
-    const offer = rollDraft(runRng, unlockedArrows(save.unlocked), stageIndex)
-    save.runSeed = runRng.state()
-    if (!draftNeeded(offer)) {
-      loadStage(DEFAULT_ARROW)
+    if (save.runActive) {
+      loadStage(save.runArrow)
       return
     }
     choosing = true
-    ui.draft(offer, (id) => {
+    ui.loadout((pick) => {
       choosing = false
       // 고른 순간의 소리. ui/ 는 audio/ 를 직접 import하지 않기로 했으므로(레이어 방향)
       // 화면이 아니라 여기서 낸다 — 어차피 콜백이 정확히 한 번 오는 자리다.
       playUi(sfx, 'press')
-      loadStage(id)
+      save.bow = pick.bow
+      save.runArrow = pick.arrow
+      save.runActive = true
+      save.runScore = 0
+      stageIndex = 0
+      loadStage(pick.arrow)
+    })
+  }
+
+  /**
+   * 여정이 끝났다 (화살 소진 또는 포기). 기록을 갱신하고 종료 화면을 띄운다.
+   * 기록은 **줄지 않는다** — 최고 도달 판, 그 여정의 점수.
+   */
+  const endRun = (reason: 'defeat' | 'abandon'): void => {
+    const reached = stageIndex + 1
+    const isNew = reached > save.bestRunStage
+    if (isNew) {
+      save.bestRunStage = reached
+      save.bestRunScore = save.runScore
+    }
+    save.runCount++
+    save.runActive = false
+    stageIndex = 0
+    save.stageIndex = 0
+    saveNow()
+    // 포기는 본인이 했으니 화면은 담백하게 같은 것을 쓴다. 쓰라림은 숫자가 만든다.
+    void reason
+    choosing = true
+    ui.runOver(reached, save.runScore, save.bestRunStage, isNew, () => {
+      choosing = false
+      beginStage()
     })
   }
 
@@ -313,6 +347,9 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       if (uid !== undefined) save.unlocked.push(uid)
     }
 
+    // 여정 점수 — 판별 점수의 합. 종료 화면과 최고 기록이 이 값을 쓴다 (docs/RUN.md).
+    save.runScore += w.score
+
     saveNow()
     ui.progressed()
     // 별·위업까지 한 줄로. 결과 화면에 가두지 않는다 (C1).
@@ -321,6 +358,10 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       ui.unlocked(fresh)
       playUi(sfx, 'unlock')
     }
+
+    // ★ 패배 = 여정 종료 (docs/RUN.md). 화살이 바닥나 과녁이 남았다.
+    // 보상 정산(위) 뒤에 와야 마지막 판의 별·훈련치를 잃지 않는다.
+    if (!cleared) endRun('defeat')
   }
 
   const tick = (now: number): void => {
@@ -406,28 +447,38 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     }
 
     // 에지는 멈춰 있어도 소진한다. 안 그러면 패널을 닫는 순간 아까 누른 R이 뒤늦게 터진다.
-    // R 재시작은 **화살을 바꾸지 않는다** — 3택을 다시 굴리면 마음에 드는 손패가 나올 때까지
-    // R을 연타하는 게 최적해가 되고, 그건 이 시스템을 뽑기로 만드는 짓이다 (GDD 9장).
-    if (input.takeRestart() && !paused && !choosing) loadStage(arrow)
+    // R = **여정 포기** (docs/RUN.md). 로그라이크에서 판 재시도는 치트라 재시작 키는 없다.
+    // 실수 한 번이 기록을 지우면 안 되니 두 번째 R까지 ABANDON_MS 안에 눌러야 한다.
+    if (input.takeRestart() && !paused && !choosing && w.status === 'playing') {
+      const now = performance.now()
+      if (now - abandonArm < ABANDON_MS) {
+        abandonArm = 0
+        cancelDraw(w)
+        endRun('abandon')
+      } else {
+        abandonArm = now
+        ui.toast('한 번 더 누르면 이 여정을 접는다')
+      }
+    }
 
     // 결과 화면에 가두지 않는다 (제약 C1). 다시 누르는 순간 바로 다음 판. 확인 버튼 없음.
     const drawingNow = input.frame.drawing
     if (!paused && !choosing && w.status !== 'playing' && drawingNow && !prevDrawing) {
-      // 클리어면 다음 판, 실패면 같은 판. 어느 쪽이든 멈춰 세우지 않는다 (C2).
-      // ★ 캠페인 40판이 끝나도 멈추지 않는다 — 그 뒤는 endless.ts 가 계속 구워 준다.
-      //   예전에는 여기서 stageIndex 를 묶어 둬서 4-10 이 무한히 반복됐다.
-      //
-      // 실패한 판을 다시 할 때도 3택을 다시 굴린다 — 같은 화살로 또 지라고 할 이유가 없고,
-      // "다시 하면 다른 판"이 이 시스템의 약속이다 (HOOK ★1). 손패만 보고 되감고 싶으면
-      // R(같은 화살로 즉시 재시작)이 따로 있다.
-      if (w.status === 'cleared' && stageIndex < MAX_STAGE_INDEX) stageIndex++
-      beginStage()
+      // 클리어면 다음 판. ★ 40판이 끝나도 멈추지 않는다 — endless.ts 가 계속 구워 준다.
+      // 패배면 정산이 끝나기를 기다리지 않고 여기서 정산한다 — endRun까지 finishRun이 한다.
+      if (w.status === 'cleared') {
+        if (stageIndex < MAX_STAGE_INDEX) stageIndex++
+        beginStage()
+      } else if (!awarded) {
+        awarded = true
+        finishRun()
+      }
     } else if (!paused) {
       prevDrawing = drawingNow
     }
 
     hud.muted = sfxMuted(sfx)
-    hud.toast = w.status === 'playing' ? '' : w.status === 'cleared' ? HINT_NEXT : HINT_RETRY
+    hud.toast = w.status === 'cleared' ? HINT_NEXT : ''
 
     // draw 안에서 이펙트·카메라가 이번 프레임의 이벤트를 읽는다.
     // 그래서 명중 반응이 한 프레임도 늦지 않는다 (feel-lens 4항).

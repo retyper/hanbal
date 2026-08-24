@@ -12,13 +12,14 @@ import { clamp } from '../core/math.ts'
 import type { Stats } from '../sim/types.ts'
 import { P } from '../tune/params.ts'
 import { DEFAULT_BOW, isBowKindId, type BowKindId } from './bows.ts'
+import { DEFAULT_ARROW, isArrowKindId, type ArrowKindId } from './arrows.ts'
 import { STAGES } from './stages.ts'
 
 /** ARCHITECTURE A4가 지정한 단일 키. */
 const KEY = 'hanbal.save.v1'
 
 /** 현재 스키마 버전. 필드를 바꿀 때마다 +1 하고 MIGRATIONS에 한 줄 추가한다. */
-export const SCHEMA_VERSION = 3
+export const SCHEMA_VERSION = 4
 
 /**
  * 오프라인 축적의 소수부 (자원 단위). 세 자원의 축적 속도가 달라 하나로 합칠 수 없다.
@@ -71,6 +72,21 @@ export interface SaveData {
    * 활 id 가 키다. 모르는 키도 지우지 않는다 (A4).
    */
   bowHits: Record<string, number>
+
+  // ── v4: 여정 (docs/RUN.md) ────────────────────────────────────
+  /** 이번 여정의 살통. 활(bow)과 함께 런 시작에 고르고 런 내내 고정이다. */
+  runArrow: ArrowKindId
+  /** 여정이 진행 중인가. false면 다음 판 대신 로드아웃 화면이 뜬다. */
+  runActive: boolean
+  /** 최고 도달 판 (1-based). **줄지 않는다.** */
+  bestRunStage: number
+  /** 최고 기록 여정의 점수 합 */
+  bestRunScore: number
+  /** 끝낸 여정 수 */
+  runCount: number
+  /** 이번 여정의 점수 합 (판별 점수 누적) */
+  runScore: number
+
   /** 누적 정중앙 명중 수 */
   bullseyes: number
   /** 누적 무손실 클리어 판수 */
@@ -128,6 +144,12 @@ export function defaultSave(now: number): SaveData {
     bestChain: 0,
     bow: DEFAULT_BOW,
     bowHits: {},
+    runArrow: DEFAULT_ARROW,
+    runActive: false,
+    bestRunStage: 0,
+    bestRunScore: 0,
+    runCount: 0,
+    runScore: 0,
     bullseyes: 0,
     perfectRuns: 0,
     // 0은 "아직 없음"이다. 루프가 첫 정산 전에 실제 시드를 심는다 (game 레이어라 Date.now 허용).
@@ -173,6 +195,20 @@ const MIGRATIONS: ReadonlyArray<(r: Raw) => void> = [
    * 빠진 필드는 sanitize 가 기본값(연습궁 · 빈 숙련)으로 채우므로 옮길 일이 없다.
    */
   () => {},
+
+  /**
+   * v3 → v4: 캠페인 → 여정 (docs/RUN.md).
+   * 기존 stageIndex(영원히 전진하던 진행)는 **최고 기록으로 환산**한다 — 40판까지 온
+   * 사람의 여정 첫 판이 40판이면 로그라이트가 아니고, 기록이 0이면 진행을 뺏는 것이다.
+   */
+  (r) => {
+    const idx = typeof r['stageIndex'] === 'number' && Number.isFinite(r['stageIndex'])
+      ? Math.floor(r['stageIndex'] as number)
+      : 0
+    if (r['bestRunStage'] === undefined) r['bestRunStage'] = idx
+    r['stageIndex'] = 0
+    r['runActive'] = false
+  },
 ]
 
 function migrate(r: Raw): void {
@@ -277,6 +313,12 @@ function sanitize(r: Raw, now: number): SaveData {
     bestChain: int(r['bestChain'], 0, 0, HARD_MAX),
     bow: isBowKindId(r['bow']) ? r['bow'] : DEFAULT_BOW,
     bowHits: sanitizeBest(r['bowHits']),
+    runArrow: isArrowKindId(r['runArrow']) ? r['runArrow'] : DEFAULT_ARROW,
+    runActive: bool(r['runActive'], false),
+    bestRunStage: int(r['bestRunStage'], 0, 0, 9999),
+    bestRunScore: int(r['bestRunScore'], 0, 0, HARD_MAX),
+    runCount: int(r['runCount'], 0, 0, HARD_MAX),
+    runScore: int(r['runScore'], 0, 0, HARD_MAX),
     bullseyes: int(r['bullseyes'], 0, 0, HARD_MAX),
     perfectRuns: int(r['perfectRuns'], 0, 0, HARD_MAX),
     // 32비트 무부호. mulberry32의 상태 그대로다.

@@ -51,7 +51,6 @@ import { grantArrows } from '../src/game/progression.ts'
 import { defaultSave } from '../src/game/save.ts'
 import { ARROW_KINDS, arrowFx, DEFAULT_ARROW, isArrowKindId } from '../src/game/arrows.ts'
 import { BOW_KINDS, bowMods, DEFAULT_BOW, type BowKindId } from '../src/game/bows.ts'
-import { rollDraft } from '../src/game/draft.ts'
 import { evaluateUnlocks, progressOf, unlockedArrows, UNLOCKS } from '../src/game/unlocks.ts'
 import { bullseyeAcc, gradeRun } from '../src/game/rewards.ts'
 import { makeRng } from '../src/core/rng.ts'
@@ -2026,9 +2025,11 @@ function playCampaign(seed: number, bot: BotKind): Map<string, number> {
     // 3택. 어느 카드를 고를지는 모델링하지 않는다 — 사람이 무엇을 좋아하는지는
     // 이 도구가 답할 수 없는 질문이고, 균등 선택이 편향 없는 기준선이다.
     // 건너뛰기(기본 살)도 같은 확률로 넣는다.
-    const offer = rollDraft(rng, unlockedArrows(unlocked), stageIndex)
-    const pick = Math.floor(rng.next() * (offer.kinds.length + 1))
-    const arrow: ArrowKindId = offer.kinds[pick] ?? DEFAULT_ARROW
+    // 여정 구조(docs/RUN.md)에서 살통은 런 시작에 고른다. 캠페인 페이싱 추정에는
+    // "해금된 것 중 아무거나 든다"로 충분하다 — 재는 건 화살이 아니라 해금 도달 판수다.
+    const pool = unlockedArrows(unlocked)
+    const pick = Math.floor(rng.next() * (pool.length + 1))
+    const arrow: ArrowKindId = pool[pick] ?? DEFAULT_ARROW
 
     // 스탯은 판 진행도에 따라 오르는 것으로 가정한다 (REAL_STAGES와 같은 곡선).
     const stats = assumedStats(ALL_STAGES.length > 1 ? stageIndex / (ALL_STAGES.length - 1) : 0)
