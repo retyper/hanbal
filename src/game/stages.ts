@@ -42,7 +42,8 @@
  * - 좌표: 궁수의 손은 (0, 1.4). 과녁 y는 지면(y=0) 기준 높이.
  */
 import { clamp } from '../core/math.ts'
-import { seedFrom } from '../core/rng.ts'
+import { makeRng, seedFrom } from '../core/rng.ts'
+import { P } from '../tune/params.ts'
 import type { StageDef, TargetSpec } from '../sim/types.ts'
 import { endlessStage } from './endless.ts'
 import { BASE_SCORE, CAMPAIGN_STAGES, angularSize, specOf } from './stagekit.ts'
@@ -184,8 +185,57 @@ export function stageH(n: number): number {
 export function getStage(index: number): StageDef {
   const i = Math.floor(index)
   if (i < 0) return STAGES[0] as StageDef
+  // ★ 10판마다 보스가 저작 판을 밀어내고 선다 (docs/RUN.md 3장). 여정의 마디다.
+  if ((i + 1) % BOSS_EVERY === 0) return bossStage(i)
   if (i < STAGES.length) return STAGES[i] as StageDef
   return endlessStage(i)
+}
+
+/** 보스 주기. 10판 = 여정의 한 마디 (RUN.md). */
+export const BOSS_EVERY = 10
+
+/**
+ * 보스판 (docs/RUN.md 3장) — 거대한 것이 나를 향해 걸어온다.
+ *
+ * 수치의 논리:
+ *  - 체력은 마디가 갈수록 오른다 (10판 6 → 20판 7 → …). 화살은 체력 + 3 —
+ *    몸통만 쏘면 세 발의 여유뿐이고, **머리를 맞히는 만큼 여유가 생긴다** (bossCritDmg).
+ *  - 시작 x는 사거리의 0.9. bossSpeed 0.55 m/s로 궁수(2.5m)까지 약 60초 —
+ *    판 하나의 시간(30초~1분, C1)과 같은 자리다. 늑장은 부리되 무한하지는 않다.
+ */
+function bossStage(i: number): StageDef {
+  const cycle = Math.floor((i + 1) / BOSS_EVERY)
+  const hp = Math.min(7, Math.floor(P.target.bossHp) + (cycle - 1))
+  // id는 저작 판의 규칙(챕터-판)을 그대로 쓴다 — 옛 '4-10'의 별 기록이 보스에게 이어진다.
+  const id = `${cycle}-10`
+  const reach = 40
+  // 배치 변주는 판 번호가 시드다 (A1). 같은 마디는 언제나 같은 보스판.
+  const rng = makeRng(seedFrom(`hanbal.boss.${cycle}`))
+  const targets: TargetSpec[] = [
+    {
+      kind: 'boss',
+      x: reach * rng.range(0.84, 0.94),
+      y: rng.range(2.0, 3.2),
+      r: 1.7,
+      hp,
+      score: 150,
+    },
+  ]
+  // 두 번째 마디부터 호위가 붙는다 — 보스만 노리면 호위가 남아 판이 안 끝난다.
+  const escorts = Math.min(2, cycle - 1)
+  for (let e = 0; e < escorts; e++) {
+    targets.push({ kind: 'static', x: reach * rng.range(0.35, 0.6), y: rng.range(1.2, 4.5), r: 0.55, score: 80 })
+  }
+  return {
+    id,
+    title: '보스',
+    hint: '머리가 약점이다 — 정중앙 판정으로 두 발 몫',
+    seed: seedFrom(id),
+    arrows: Math.min(10, hp + 3 + escorts),
+    targetScore: need(Math.min(5, hp)),
+    wind: 0,
+    targets,
+  }
 }
 
 /** 손으로 적은 캠페인의 길이. 이 뒤는 무한 구간이다 (stagekit.CAMPAIGN_STAGES 와 같은 값). */

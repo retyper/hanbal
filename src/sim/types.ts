@@ -191,6 +191,13 @@ export type TargetKind =
    * 벌 수 있으니, 늘 "먼저 저걸 쏠까"라는 판단이 생긴다.
    */
   | 'bonus'
+  /**
+   * 보스 — 10판마다 한 번, **거대한 것이 나를 향해 걸어온다** (docs/RUN.md 3장).
+   *
+   * 몸통은 여러 발을 받고(hp), 머리(위쪽 작은 원)는 치명타다. 궁수에게 닿으면
+   * 그 판을 진다 = 여정 종료. 시간 압박이 아니라 **탄약 압박 + 조준 압박**이다.
+   */
+  | 'boss'
 
 export interface Target {
   id: number
@@ -216,6 +223,8 @@ export interface Target {
   speed: number
   /** 보급 과녁이 돌려주는 화살 수. 다른 종류는 0. */
   give: number
+  /** 남은 맞을 수 (boss). 다른 종류는 0 — 한 발이면 죽는다는 뜻이 아니라 이 축을 안 쓴다는 뜻. */
+  hp: number
   /** 연쇄 깊이. 직격 = 0, 낙하물에 맞은 것 = 1, 그 다음 = 2 ... */
   chainDepth: number
   /** 기본 점수. 링 명중도로 배수가 붙는다. */
@@ -271,6 +280,8 @@ export interface TargetSpec {
   speed?: number
   /** bonus 전용 — 맞히면 돌려주는 화살 수. 없으면 1 */
   give?: number
+  /** boss 전용 — 맞을 수. 없으면 P.target.bossHp */
+  hp?: number
 }
 
 export interface StageDef {

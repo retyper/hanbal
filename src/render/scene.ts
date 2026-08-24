@@ -5,6 +5,7 @@
  * A5: save/restore 남발 금지, shadowBlur·filter 금지, 프레임당 힙 할당 0.
  */
 import { TAU, lerp, valueNoise } from '../core/math.ts'
+import { P } from '../tune/params.ts'
 import { TRAIL_POINTS } from '../sim/types.ts'
 import type { Target, World } from '../sim/types.ts'
 import {
@@ -329,7 +330,7 @@ function drawTargets(
     if (!t.falling) {
       drawRail(ctx, cam, t)
       if (t.kind === 'static' || t.kind === 'pierceable') drawPost(ctx, cam, x, y, wy, r)
-      if (t.kind === 'charger') drawThreatLine(ctx, cam, w, t, x, y)
+      if (t.kind === 'charger' || t.kind === 'boss') drawThreatLine(ctx, cam, w, t, x, y)
     }
 
     // 맞은 순간 눌렸다 부푼다 (HOOK ★6-2). 즉사한 과녁은 여기 안 오므로(alive false)
@@ -364,7 +365,27 @@ function drawTargets(
       }
     }
 
-    if (t.kind === 'charger') {
+    if (t.kind === 'boss') {
+      // ★ 보스 (docs/RUN.md 3장). 몸통은 위험색 겹띠 — 크기 자체가 위협이라 조형은 단순하게.
+      band(ctx, x, y, rx, ry, THEME.threat)
+      band(ctx, x, y, rx * 0.86, ry * 0.86, THEME.threatDim)
+      band(ctx, x, y, rx * 0.3, ry * 0.3, THEME.targetBand)
+      // 머리 — 약점. 밝은 테로 "여길 쏘라"가 읽혀야 한다.
+      const hy = y - ry * P.target.bossHeadUp
+      const hr = Math.max(3, rx * P.target.bossHeadR)
+      band(ctx, x, hy, hr, hr, THEME.target2)
+      band(ctx, x, hy, hr * 0.55, hr * 0.55, THEME.threat)
+      // 남은 체력 — 몸통 위 눈금. 숫자보다 점이 멀리서 읽힌다.
+      ctx.fillStyle = THEME.target2
+      const pipR = Math.max(2, rx * 0.05)
+      const gap = pipR * 3
+      const x0 = x - ((t.hp - 1) * gap) / 2
+      for (let p = 0; p < t.hp; p++) {
+        ctx.beginPath()
+        ctx.arc(x0 + p * gap, hy - hr - pipR * 4, pipR, 0, TAU)
+        ctx.fill()
+      }
+    } else if (t.kind === 'charger') {
       // ★ 나를 향해 오는 것. **왼쪽을 가리키는 뾰족한 삼각형** — 다른 어떤 과녁과도
       // 실루엣이 겹치지 않아야 한다. 색을 못 봐도 "저건 다르다"가 먼저 와야 하기 때문이다.
       // 뒤로 흐르는 꼬리 둘이 진행 방향을 말한다.

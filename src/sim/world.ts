@@ -123,6 +123,7 @@ function newTarget(): Target {
     falling: false,
     speed: 0,
     give: 0,
+    hp: 0,
     chainDepth: 0,
     score: FALLBACK_TARGET_SCORE,
   }
@@ -234,8 +235,13 @@ function loadTarget(t: Target, id: number, spec: TargetSpec): void {
   t.ampY = spec.ampY ?? 0
   t.freq = spec.freq ?? 0
   t.falling = false
-  t.speed = spec.kind === 'charger' ? spec.speed ?? P.target.chargeSpeed : 0
+  t.speed = spec.kind === 'charger'
+    ? spec.speed ?? P.target.chargeSpeed
+    : spec.kind === 'boss'
+      ? spec.speed ?? P.target.bossSpeed
+      : 0
   t.give = spec.kind === 'bonus' ? spec.give ?? 1 : 0
+  t.hp = spec.kind === 'boss' ? Math.floor(spec.hp ?? P.target.bossHp) : 0
   t.chainDepth = 0
   t.score = spec.score ?? FALLBACK_TARGET_SCORE
 }
@@ -245,6 +251,7 @@ function clearTarget(t: Target): void {
   t.falling = false
   t.speed = 0
   t.give = 0
+  t.hp = 0
   t.chainDepth = 0
   t.vx = 0
   t.vy = 0
@@ -464,6 +471,10 @@ function anyTargetStanding(w: World): boolean {
 }
 
 function evaluateEnd(w: World): void {
+  // 이미 끝난 판을 다시 끝내지 않는다. step()의 playing 스냅샷은 스텝 머리의 것이라,
+  // 같은 스텝 안에서 보스 접촉(target.ts)이 판을 끝냈어도 여기까지 흘러들어온다.
+  if (w.status !== 'playing') return
+
   // ★ 클리어 조건은 **과녁을 다 없앴는가**다. 점수가 아니다.
   //
   // 예전엔 점수가 목표를 넘으면 즉시 끝났다. 그러면 과녁을 남겨둔 채 판이 넘어가고,

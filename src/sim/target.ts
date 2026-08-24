@@ -35,6 +35,17 @@ export function stepTargets(w: World): void {
       // x·y 같은 위상을 쓴다. 그래야 t=0에서 스테이지가 적어둔 base 위치와 정확히 일치한다.
       tg.x = tg.baseX + tg.ampX * s
       tg.y = tg.baseY + tg.ampY * s
+    } else if (tg.kind === 'boss') {
+      // 보스 — 느리게, 그러나 멈추지 않고 온다 (docs/RUN.md 3장). 판이 끝나면 멈춘다.
+      if (w.status === 'playing') tg.x -= tg.speed * dt
+      tg.y = tg.baseY + Math.sin(time * P.target.chargeBobFreq * TAU) * P.target.chargeBob
+      if (tg.x <= w.archer.x + P.target.chargeReach && w.status === 'playing') {
+        // 닿았다 — 이 판을 진다. **보스를 죽이지 않는다** — 여기서 alive를 끄면 같은 스텝의
+        // evaluateEnd(스텝 머리의 playing 스냅샷)가 '과녁 전멸 = 클리어'로 뒤집는다.
+        w.events.push({ t: 'escape', x: tg.x, y: tg.y, lost: 0 })
+        w.status = 'failed'
+        w.events.push({ t: 'stage_end', cleared: false, score: w.score })
+      }
     } else if (tg.kind === 'charger') {
       // ★ 이 게임에서 유일하게 **나에게 오는** 것.
       tg.x -= tg.speed * dt
@@ -63,10 +74,23 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
   // 빠른 화살은 한 스텝에 과녁을 통과해 버리므로, 점으로 재면 중심 명중이 가장자리로 읽힌다.
   const dsq = distSqPointSegment(target.x, target.y, arrow.px, arrow.py, arrow.x, arrow.y)
   // r이 0인 과녁은 정의상 항상 중심 명중. 0으로 나누면 NaN이 판 전체를 죽인다.
-  const accuracy = target.r > 0 ? clamp01(1 - Math.sqrt(dsq) / target.r) : 1
+  let accuracy = target.r > 0 ? clamp01(1 - Math.sqrt(dsq) / target.r) : 1
 
   const fx = w.fx
   arrow.struck++
+
+  // ── 보스의 머리 (docs/RUN.md 3장) ──
+  // 머리를 스친 선분이면 치명타다. 명중도를 정중앙(1)으로 올린다 — 링 판정·크리 사운드·
+  // 점수 배수가 전부 기존 정중앙 축을 그대로 탄다. 새 채널을 만들지 않는다.
+  let head = false
+  if (target.kind === 'boss') {
+    const hx = target.x
+    const hy = target.y + target.r * P.target.bossHeadUp
+    const hr = target.r * P.target.bossHeadR
+    head = distSqPointSegment(hx, hy, arrow.px, arrow.py, arrow.x, arrow.y) <= hr * hr
+  }
+
+  if (head) accuracy = 1
 
   // 화살이 직접 맞힌 것이 연쇄의 뿌리다
   target.chainDepth = 0
@@ -96,7 +120,8 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
    */
   // 궁합(활×살)의 관통 가산 — 각궁×애기살=편전 · 장궁×육량전 (docs/BOWS.md).
   // game/bows.ts 가 짝이 맞을 때만 0이 아닌 값을 굽는다. sim은 조합표를 모른다.
-  if (arrow.kindPierced < fx.pierceExtra + w.bow.pierceAdd) {
+  // 보스는 화살을 삼킨다 — 애기살도 못 뚫는다. 뚫리면 hp가 탄약 압박이 아니라 장식이 된다.
+  if (target.kind !== 'boss' && arrow.kindPierced < fx.pierceExtra + w.bow.pierceAdd) {
     arrow.kindPierced++
     if (target.kind === 'pierceable') arrow.pierced++
     // 중심을 뚫을수록 더 두꺼운 부분을 지나 속도를 잃는다. 가장자리를 스치면 거의 안 잃는다.
@@ -125,7 +150,12 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
     w.events.push({ t: 'pickup', x: target.x, y: target.y, gain: target.give })
   }
 
-  if (target.kind === 'aerial') {
+  if (target.kind === 'boss') {
+    // 보스는 체력으로 버틴다. 헤드샷은 여러 발 몫이다 — 절반의 화살로 잡는 길.
+    target.hp -= head ? Math.floor(P.target.bossCritDmg) : 1
+    if (target.hp > 0) return
+    target.alive = false
+  } else if (target.kind === 'aerial') {
     // 공중 과녁은 맞아도 사라지지 않는다. 떨어지면서 아래를 연쇄로 쳐야 한다 (GDD 7장).
     target.falling = true
   } else {
