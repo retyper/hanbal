@@ -7,7 +7,7 @@
  * 끝: 도달한 판과 점수를 보여준다. 결과 화면에 가두지 않는다 — 클릭 한 번이면
  * 다음 여정의 로드아웃이다 (C1).
  */
-import { ARROW_KINDS, DEFAULT_ARROW, type ArrowKindId } from '../game/arrows.ts'
+import { ARROW_KINDS, type ArrowKindId } from '../game/arrows.ts'
 import { bowKind, masteryLevel, type BowKindId } from '../game/bows.ts'
 import type { Overlay } from './overlay.ts'
 
@@ -47,7 +47,6 @@ const CSS = `
 
 export interface LoadoutPick {
   bow: BowKindId
-  arrow: ArrowKindId
 }
 
 /**
@@ -57,7 +56,6 @@ export interface LoadoutPick {
 export function mountLoadout(
   o: Overlay,
   bows: readonly BowKindId[],
-  arrows: readonly ArrowKindId[],
   last: LoadoutPick,
   bowHits: Readonly<Record<string, number>>,
   bestRunStage: number,
@@ -77,25 +75,23 @@ export function mountLoadout(
     (bestRunStage > 0 ? `<div class="l-best">최고 기록<b>${bestRunStage}판</b></div>` : '')
   const sub = document.createElement('p')
   sub.className = 'hb-lead'
-  sub.textContent = '활 하나, 살통 하나. 이 조합으로 갈 수 있는 데까지 간다. 화살이 바닥나면 여정이 끝난다.'
+  sub.textContent = '활 하나를 들고 갈 수 있는 데까지 간다. 특수살은 보스가 보급한다 — 화살이 바닥나면 여정이 끝난다.'
   panel.append(head, sub)
 
-  // 시작 선택은 지난 여정의 것. 없던 게 해금돼도 손이 기억하는 조합이 먼저다.
+  // 시작 선택은 지난 여정의 것. 없던 게 해금돼도 손이 기억하는 활이 먼저다.
   const pick: LoadoutPick = {
     bow: bows.includes(last.bow) ? last.bow : 'practice',
-    arrow: arrows.includes(last.arrow) ? last.arrow : DEFAULT_ARROW,
   }
 
   const bowCards = new Map<BowKindId, HTMLButtonElement>()
-  const arrowCards = new Map<ArrowKindId, HTMLButtonElement>()
   const syn = document.createElement('div')
   syn.className = 'l-syn'
 
   const refresh = (): void => {
     for (const [id, el] of bowCards) el.classList.toggle('l-on', id === pick.bow)
-    for (const [id, el] of arrowCards) el.classList.toggle('l-on', id === pick.arrow)
+    // 궁합은 판에 그 살을 장전했을 때 성립한다 — 여기서는 활이 어떤 살과 궁합인지만 알려준다.
     const s = bowKind(pick.bow).synergy
-    syn.textContent = s !== undefined && s.arrow === pick.arrow ? `궁합 — ${s.label}` : ''
+    syn.textContent = s !== undefined ? `궁합 — ${s.label}` : ''
   }
 
   const section = (title: string): void => {
@@ -126,26 +122,6 @@ export function mountLoadout(
   }
   panel.appendChild(bowGrid)
 
-  section('살통')
-  const arrowGrid = document.createElement('div')
-  arrowGrid.className = 'l-grid'
-  for (const id of arrows) {
-    const k = ARROW_KINDS.find((a) => a.id === id)
-    if (k === undefined) continue
-    const card = document.createElement('button')
-    card.type = 'button'
-    card.className = 'l-card'
-    card.innerHTML = `<span class="l-n"></span><span class="l-d"></span>`
-    ;(card.querySelector('.l-n') as HTMLElement).textContent = k.name
-    ;(card.querySelector('.l-d') as HTMLElement).textContent = k.desc
-    card.addEventListener('click', () => {
-      pick.arrow = id
-      refresh()
-    })
-    arrowCards.set(id, card)
-    arrowGrid.appendChild(card)
-  }
-  panel.appendChild(arrowGrid)
   panel.appendChild(syn)
 
   const foot = document.createElement('div')
@@ -169,7 +145,7 @@ export function mountLoadout(
     done = true
     document.removeEventListener('visibilitychange', onVisibility, true)
     o.hide()
-    onStart({ bow: pick.bow, arrow: pick.arrow })
+    onStart({ bow: pick.bow })
   })
 
   refresh()
@@ -218,4 +194,62 @@ export function showRunOver(
     onNext()
   })
   o.show(OVER_ID)
+}
+
+/**
+ * 보스 보급 3택 (docs/RUN.md · game/supply.ts). onPick은 정확히 한 번.
+ * 건너뛰기가 없다 — 보급은 상이지 숙제가 아니라, 안 받을 이유가 없다.
+ */
+export function mountSupply(
+  o: Overlay,
+  offer: readonly ArrowKindId[],
+  count: number,
+  onPick: (id: ArrowKindId) => void,
+): void {
+  const panel = o.panel('supply')
+  panel.replaceChildren()
+  panel.setAttribute('aria-label', '보스 보급')
+
+  const style = document.createElement('style')
+  style.textContent = CSS
+  panel.appendChild(style)
+
+  const head = document.createElement('div')
+  head.className = 'l-h'
+  head.innerHTML = '<h2>보급</h2>'
+  const sub = document.createElement('p')
+  sub.className = 'hb-lead'
+  sub.textContent = `보스를 잡았다. 하나 골라라 — ${count}발이 살통에 들어온다.`
+  panel.append(head, sub)
+
+  const grid = document.createElement('div')
+  grid.className = 'l-grid'
+  let done = false
+  const onVisibility = (): void => {
+    if (!document.hidden && !done) o.show('supply')
+  }
+  document.addEventListener('visibilitychange', onVisibility, true)
+  const finish = (id: ArrowKindId): void => {
+    if (done) return
+    done = true
+    document.removeEventListener('visibilitychange', onVisibility, true)
+    o.hide()
+    onPick(id)
+  }
+  for (const id of offer) {
+    const k = ARROW_KINDS.find((a) => a.id === id)
+    if (k === undefined) continue
+    const card = document.createElement('button')
+    card.type = 'button'
+    card.className = 'l-card'
+    card.innerHTML = `<span class="l-n"></span><span class="l-d"></span><span class="l-d"></span>`
+    const parts = card.querySelectorAll('.l-d')
+    ;(card.querySelector('.l-n') as HTMLElement).textContent = `${k.name} +${count}발`
+    ;(parts[0] as HTMLElement).textContent = k.origin
+    ;(parts[1] as HTMLElement).textContent = k.desc
+    card.addEventListener('click', () => finish(id))
+    grid.appendChild(card)
+  }
+  panel.appendChild(grid)
+  o.show('supply')
 }

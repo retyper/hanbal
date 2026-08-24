@@ -19,7 +19,7 @@ import { STAGES } from './stages.ts'
 const KEY = 'hanbal.save.v1'
 
 /** 현재 스키마 버전. 필드를 바꿀 때마다 +1 하고 MIGRATIONS에 한 줄 추가한다. */
-export const SCHEMA_VERSION = 5
+export const SCHEMA_VERSION = 6
 
 /**
  * 오프라인 축적의 소수부 (자원 단위). 세 자원의 축적 속도가 달라 하나로 합칠 수 없다.
@@ -88,6 +88,12 @@ export interface SaveData {
   runScore: number
   /** 누적 보스 처치 수 — 활 해금의 재료 (docs/RUN.md). **줄지 않는다.** */
   bossKills: number
+  /**
+   * 특수살 재고 (game/supply.ts). 화살 id → 남은 발 수. 유엽전은 무한이라 여기 없다.
+   * 한 판에 장전할 때 1 소모. 0이어도 키를 지우지 않는다 — "가져본 적 있음"이
+   * 수집 화면의 발견 기록이다.
+   */
+  arrowStock: Record<string, number>
 
   /** 누적 정중앙 명중 수 */
   bullseyes: number
@@ -153,6 +159,7 @@ export function defaultSave(now: number): SaveData {
     runCount: 0,
     runScore: 0,
     bossKills: 0,
+    arrowStock: {},
     bullseyes: 0,
     perfectRuns: 0,
     // 0은 "아직 없음"이다. 루프가 첫 정산 전에 실제 시드를 심는다 (game 레이어라 Date.now 허용).
@@ -224,6 +231,22 @@ const MIGRATIONS: ReadonlyArray<(r: Raw) => void> = [
   (r) => {
     const u = r['unlocked']
     if (Array.isArray(u)) r['unlocked'] = u.filter((id) => typeof id !== 'string' || !id.startsWith('bow.'))
+  },
+
+  /**
+   * v5 → v6: 특수살이 해금에서 **재고**로 바뀌었다 (docs/RUN.md · game/supply.ts).
+   * 이미 열려 있던 살은 뺏는 게 아니라 종류당 2발의 재고로 바꿔 준다 —
+   * "해금을 잃었다"가 아니라 "쓸 수 있는 실물이 생겼다"로 읽혀야 한다.
+   */
+  (r) => {
+    const u = r['unlocked']
+    if (!Array.isArray(u)) return
+    const stock: Record<string, number> = {}
+    for (const id of u) {
+      if (typeof id === 'string' && id.startsWith('arrow.')) stock[id.slice('arrow.'.length)] = 2
+    }
+    if (r['arrowStock'] === undefined) r['arrowStock'] = stock
+    r['unlocked'] = u.filter((id) => typeof id !== 'string' || !id.startsWith('arrow.'))
   },
 ]
 
@@ -336,6 +359,7 @@ function sanitize(r: Raw, now: number): SaveData {
     runCount: int(r['runCount'], 0, 0, HARD_MAX),
     runScore: int(r['runScore'], 0, 0, HARD_MAX),
     bossKills: int(r['bossKills'], 0, 0, HARD_MAX),
+    arrowStock: sanitizeBest(r['arrowStock']),
     bullseyes: int(r['bullseyes'], 0, 0, HARD_MAX),
     perfectRuns: int(r['perfectRuns'], 0, 0, HARD_MAX),
     // 32비트 무부호. mulberry32의 상태 그대로다.

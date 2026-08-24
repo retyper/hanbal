@@ -26,6 +26,8 @@ import { awardRun, canGrow, grantArrows, type StatKey } from './progression.ts'
 import { arrowName, DEFAULT_ARROW } from './arrows.ts'
 import { bowMods, masteryLevel } from './bows.ts'
 import type { LoadoutPick } from '../ui/loadout.ts'
+import { rollSupply, SUPPLY_COUNT } from './supply.ts'
+import { BOSS_EVERY } from './stages.ts'
 import { bullseyeAcc, gradeRun, rewardLine, type RunStats } from './rewards.ts'
 import { evaluateUnlocks, progressOf } from './unlocks.ts'
 import { makeRng } from '../core/rng.ts'
@@ -53,6 +55,8 @@ export interface LoopUi {
   loadout(onStart: (pick: LoadoutPick) => void): void
   /** 여정 종료 — 도달 판·점수·기록. onNext 한 번으로 다음 여정 준비로 간다 (C1). */
   runOver(reached: number, score: number, best: number, isNew: boolean, onNext: () => void): void
+  /** 보스 보급 3택 (docs/RUN.md). onPick은 정확히 한 번 — 고른 살이 count발 들어온다. */
+  supply(offer: readonly ArrowKindId[], count: number, onPick: (id: ArrowKindId) => void): void
   /** 구석 알림 한 줄 (여정 포기 확인 등). 모달이 아니다. */
   toast(text: string): void
   /** 새로 열린 해금. **모달로 막지 않는다** — 구석 알림 한 줄이다 (C1). */
@@ -204,7 +208,17 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     writeSave(save)
   }
 
-  const loadStage = (kind: ArrowKindId): void => {
+  const loadStage = (requested: ArrowKindId): void => {
+    // ── 장전 (docs/RUN.md · game/supply.ts) ──
+    // 특수살은 재고에서 1 소모. 없으면 유엽전으로 — 판이 막히는 일은 없다.
+    let kind = requested
+    if (kind !== DEFAULT_ARROW) {
+      const have = Math.floor(save.arrowStock[kind] ?? 0)
+      if (have > 0) save.arrowStock[kind] = have - 1
+      else kind = DEFAULT_ARROW
+    }
+    // 예약은 한 판짜리다. 다음 판은 다시 유엽전 — 아껴둔 살이 자동으로 새지 않는다.
+    save.runArrow = DEFAULT_ARROW
     // 정산 전에 판을 갈아엎으면 보상이 통째로 사라진다. 아직 안 줬으면 여기서 준다.
     // (isSettled를 기다리는 동안 사용자가 다음 판으로 넘기는 경로가 실제로 존재한다.)
     if (!awarded && w.status !== 'playing') {
@@ -262,11 +276,11 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       // 화면이 아니라 여기서 낸다 — 어차피 콜백이 정확히 한 번 오는 자리다.
       playUi(sfx, 'press')
       save.bow = pick.bow
-      save.runArrow = pick.arrow
+      save.runArrow = DEFAULT_ARROW
       save.runActive = true
       save.runScore = 0
       stageIndex = 0
-      loadStage(pick.arrow)
+      loadStage(DEFAULT_ARROW)
     })
   }
 
@@ -359,6 +373,21 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     if (fresh.length > 0) {
       ui.unlocked(fresh)
       playUi(sfx, 'unlock')
+    }
+
+    // ── 보스 보급 (docs/RUN.md · game/supply.ts) ──
+    // 보스를 잡으면 3택 — 특수살 재고의 유일한 큰 획득처다. 몇 번째 보스인가가 풀을 정한다.
+    if (cleared && w.stage.targets.some((t) => t.kind === 'boss')) {
+      const cycle = Math.max(1, Math.floor((stageIndex + 1) / BOSS_EVERY))
+      const offer = rollSupply(runRng, cycle)
+      save.runSeed = runRng.state()
+      choosing = true
+      ui.supply(offer, SUPPLY_COUNT, (id) => {
+        choosing = false
+        playUi(sfx, 'press')
+        save.arrowStock[id] = Math.floor(save.arrowStock[id] ?? 0) + SUPPLY_COUNT
+        saveNow()
+      })
     }
 
     // ★ 패배 = 여정 종료 (docs/RUN.md). 화살이 바닥나 과녁이 남았다.

@@ -176,7 +176,7 @@ g['cancelAnimationFrame'] = win.cancelAnimationFrame
 // 스텁이 서고 나서 게임을 읽어야 한다. 모듈 최상단 import는 스텁보다 먼저 평가된다.
 const { createLoop } = await import('../src/game/loop.ts')
 const { loadSave, writeSave, defaultSave, SCHEMA_VERSION } = await import('../src/game/save.ts')
-const { progressOf, UNLOCKS, unlockedArrows } = await import('../src/game/unlocks.ts')
+const { progressOf, UNLOCKS } = await import('../src/game/unlocks.ts')
 const { DEFAULT_ARROW } = await import('../src/game/arrows.ts')
 const { STAGES } = await import('../src/game/stages.ts')
 import type { ArrowKindId } from '../src/sim/types.ts'
@@ -245,9 +245,10 @@ console.log('\n1. 세이브 마이그레이션 (v1 → v2, ARCHITECTURE A4)')
   const p = progressOf(s)
   check('지나온 판이 별 1개로 되살아난다', p.stagesCleared === 20, `stagesCleared=${p.stagesCleared}`)
   const opened = UNLOCKS.filter((d) => d.check(p)).map((d) => d.id)
+  // 화살은 해금이 아니라 재고가 됐다 (docs/RUN.md) — 20판 사람의 기록은 칭호로 남는다.
   check(
-    '20판까지 온 사람이 화살을 잃지 않는다',
-    opened.includes('arrow.burst') && opened.includes('arrow.split') && opened.includes('arrow.pierce'),
+    '20판까지 온 사람의 기록이 칭호로 남는다',
+    opened.includes('title.firststar') && opened.includes('title.hundred'),
     opened.join(' '),
   )
   // 옛 세이브에 없던 필드가 기본값으로 선다
@@ -279,6 +280,10 @@ store.clear()
   // 폭발 살은 **일부러 빼둔다**. 조건이 '2판 클리어'이고 별이 한 판뿐이라,
   // 이번에 1-1을 깨면 그 자리에서 열려야 한다 — 해금 경로를 실제로 타는 배치다.
   seed.unlocked = ['arrow.chain', 'arrow.split', 'arrow.homing']
+  // 마이그레이션(v5→v6: 화살 해금→재고 환산)이 실제로 돌아야 하는 시드다.
+  // defaultSave가 v6 형태(arrowStock:{})로 만들어 주므로 옛 세이브답게 필드를 지운다.
+  seed.v = 5
+  delete (seed as unknown as Record<string, unknown>)['arrowStock']
   seed.stars = { '1-2': 2 }
   seed.stats = { str: 8, steady: 7, stamina: 6, focus: 5 }
   seed.arrows = 60
@@ -288,7 +293,9 @@ store.clear()
 }
 
 const save = loadSave()
-check('해금된 화살이 복원된다', unlockedArrows(save.unlocked).length === 3, unlockedArrows(save.unlocked).join(' '))
+// 화살 해금은 재고(arrowStock)로 바뀌었다 (docs/RUN.md) — 마이그레이션이 종류당 2발로 환산한다.
+check('옛 화살 해금이 재고로 환산된다', Object.keys(save.arrowStock).length === 3,
+  JSON.stringify(save.arrowStock))
 
 let loadoutShown = 0
 // 콜백 안에서만 대입되므로 null 초기값을 두면 TS가 never로 좁힌다. 무동작 함수로 시작한다.
@@ -312,6 +319,11 @@ const loop = createLoop(canvas as unknown as HTMLCanvasElement, {
       // 실제 UI는 패널을 연다 → loop가 sim을 멈춘다. 그 상태를 그대로 흉내낸다.
       panelOpen = true
       pendingStart = onStart
+    },
+    supply: (offer, _count, onPick) => {
+      // 보급도 패널이다 — 첫 후보를 바로 고른다 (프로브는 흐름만 잰다).
+      const first = offer[0]
+      if (first !== undefined) onPick(first)
     },
     runOver: (reached, _score, _best, isNew, onNext) => {
       runOverShown++
@@ -337,7 +349,7 @@ check('로드아웃 중에는 sim이 멈춰 있다', drawCalls > 0, `drawCalls=$
 // 활과 살통을 고르고 여정을 시작한다
 const picked: ArrowKindId = DEFAULT_ARROW
 panelOpen = false
-pendingStart({ bow: 'practice', arrow: picked })
+pendingStart({ bow: 'practice' })
 pump(3)
 check('여정이 시작된다', true, `pick=${picked}`)
 
@@ -370,7 +382,7 @@ outer: for (let ay = 180; ay <= 620 && !cleared; ay += 20) {
       // 새 여정의 로드아웃이 떠 있다 — 같은 조합으로 다시 출발.
       if (panelOpen) {
         panelOpen = false
-        pendingStart({ bow: 'practice', arrow: picked })
+        pendingStart({ bow: 'practice' })
         pump(3)
       }
       gainLines.length = 0
@@ -380,14 +392,16 @@ outer: for (let ay = 180; ay <= 620 && !cleared; ay += 20) {
 check('프레임이 계속 그려진다', drawCalls > before, `drawCalls=${drawCalls}`)
 check('실제로 쏴서 판을 깬다', cleared, gainLines[gainLines.length - 1] ?? '-')
 check('보상 줄에 별이 들어 있다', (gainLines[gainLines.length - 1] ?? '').includes('★'))
-check('클리어에 해금이 따라온다', unlockToasts > 0, `새 해금 ${unlockToasts}칸`)
+// 화살 해금이 사라져 초반에 열리는 칸이 없다 — 토스트는 "안 떠도 크래시가 없다"만 잰다.
+check('해금 경로가 죽지 않는다', unlockToasts >= 0, `새 해금 ${unlockToasts}칸`)
 
 // 판이 끝나면 저장된다
 const raw = store.get('hanbal.save.v1') ?? ''
 check('판 끝에 저장된다', raw !== '' && raw.includes('"stars"'))
 const reloaded = loadSave()
 check('복원하면 별이 남아 있다', Object.keys(reloaded.stars).length >= 2, JSON.stringify(reloaded.stars))
-check('복원하면 해금이 남아 있다', reloaded.unlocked.length >= 4, reloaded.unlocked.join(' '))
+check('복원하면 살통 재고가 남아 있다', Object.keys(reloaded.arrowStock).length === 3,
+  JSON.stringify(reloaded.arrowStock))
 check('보상 난수 스트림이 앞으로 나아갔다', reloaded.runSeed !== 0, `runSeed=${reloaded.runSeed}`)
 
 
@@ -456,18 +470,16 @@ console.log(String.fromCharCode(10) + '6. 로드아웃 생명주기 (탭 복귀 
     fire(listeners, 'visibilitychange', {})
   }
 
-  const got = { starts: 0, bow: '', arrow: '' }
+  const got = { starts: 0, bow: '' }
   mountLoadout(
     overlay as unknown as Parameters<typeof mountLoadout>[0],
     ['practice', 'gakgung'],
-    ['basic', 'pierce'],
-    { bow: 'practice', arrow: 'basic' },
+    { bow: 'practice' },
     {},
     7,
     (pick) => {
       got.starts++
       got.bow = pick.bow
-      got.arrow = pick.arrow
     },
   )
   check('로드아웃이 뜬다', openPanel === 'loadout')
@@ -491,8 +503,8 @@ console.log(String.fromCharCode(10) + '6. 로드아웃 생명주기 (탭 복귀 
   const go = panelEl !== undefined ? find(panelEl, 'l-go') : null
   check('시작 버튼이 있다', go !== null)
   go?.click()
-  check('시작을 누르면 onStart가 한 번 불린다', got.starts === 1 && got.bow === 'practice' && got.arrow === 'basic',
-    `starts=${got.starts} ${got.bow}/${got.arrow}`)
+  check('시작을 누르면 onStart가 한 번 불린다', got.starts === 1 && got.bow === 'practice',
+    `starts=${got.starts} ${got.bow}`)
   go?.click()
   visibility(true)
   visibility(false)

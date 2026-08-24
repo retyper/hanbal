@@ -31,7 +31,6 @@ const PANEL_ID = 'collection'
 const MASK = '？？？'
 
 const KIND_TAG: Record<UnlockDef['kind'], string> = {
-  arrow: '화살',
   title: '칭호',
   bow: '활',
 }

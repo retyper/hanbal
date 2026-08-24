@@ -11,11 +11,12 @@
 
 import { createLoop } from './game/loop.ts'
 import { loadSave } from './game/save.ts'
-import { progressOf, unlockedArrows, unlockedBows } from './game/unlocks.ts'
+import { progressOf, unlockedBows } from './game/unlocks.ts'
 import { createOverlay } from './ui/overlay.ts'
 import { mountGrowth, showOfflineGain, showRunGain } from './ui/growth.ts'
 import { mountCollection, showUnlocked, updateCollection } from './ui/collection.ts'
-import { mountLoadout, showRunOver } from './ui/loadout.ts'
+import { mountLoadout, mountSupply, showRunOver } from './ui/loadout.ts'
+import { mountQuiver } from './ui/quiver.ts'
 
 const el = document.getElementById('game')
 if (!(el instanceof HTMLCanvasElement)) {
@@ -54,12 +55,13 @@ const loop = createLoop(el, {
       mountLoadout(
         overlay,
         ['practice', ...unlockedBows(save.unlocked)],
-        ['basic', ...unlockedArrows(save.unlocked)],
-        { bow: save.bow, arrow: save.runArrow },
+        { bow: save.bow },
         save.bowHits,
         save.bestRunStage,
         onStart,
       ),
+    // 보스 보급 3택 (docs/RUN.md) — 특수살 재고의 유일한 큰 획득처.
+    supply: (offer, count, onPick) => mountSupply(overlay, offer, count, onPick),
     runOver: (reached, score, best, isNew, onNext) =>
       showRunOver(overlay, reached, score, best, isNew, onNext),
     toast: (t) => overlay.toast(t),
@@ -71,6 +73,7 @@ const loop = createLoop(el, {
 
 // 성장 화면이 스탯을 바꾸면 writeSave가 통지하고, 루프가 그걸 받아 활에 넣는다.
 // 그래서 여기 onChange는 비워 둔다 — 통지 경로가 둘이면 반드시 어긋난다.
+mountQuiver(overlay, save)
 mountGrowth(overlay, save, () => {}, {
   muted: () => loop.muted(),
   toggle: () => loop.toggleMute(),

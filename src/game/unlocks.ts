@@ -16,7 +16,6 @@
  * 잠긴 칸에 **"12 / 20"** 이 보이는 것과 조건 문구만 보이는 것은 전혀 다른 물건이다.
  * 전자는 다음 판을 켜게 하고 후자는 그냥 벽이다. 화면(ui/collection.ts)이 이 두 값을 쓴다.
  */
-import type { ArrowKindId } from './arrows.ts'
 import type { BowKindId } from './bows.ts'
 
 // ─────────────────────────── 진행도 ───────────────────────────
@@ -99,7 +98,12 @@ export function progressOf(d: ProgressSource): Progress {
 // ─────────────────────────── 해금 정의 ───────────────────────────
 
 /** 잠긴 칸의 분류 꼬리표. 이름은 가려도 **무엇의 자리인지**는 알려준다 — 그게 궁금증의 절반이다. */
-export type UnlockKind = 'arrow' | 'title' | 'bow'
+/**
+ * 'arrow'는 2026-08-24에 빠졌다 — 특수살은 해금이 아니라 **보급받는 재고**가 됐다
+ * (docs/RUN.md · 형: "처음부터 다 해금이면 안 되고, 무제한으로 쓰면 안 될 것 같다").
+ * 어떤 살이 보급 풀에 들어오는가는 보스 마디 깊이가 정한다 (game/supply.ts).
+ */
+export type UnlockKind = 'title' | 'bow'
 
 export interface UnlockDef {
   /** 세이브에 남는 영구 id. 절대 바꾸지 않는다 (바꾸면 남의 세이브에서 해금이 사라진다). */
@@ -115,22 +119,9 @@ export interface UnlockDef {
   goal: number
   /** 달성 여부. at/goal과 항상 같은 답을 낸다. */
   check(p: Progress): boolean
-  /** 이 해금이 여는 화살. 칭호에는 없다. */
-  grants?: ArrowKindId
   /** 이 해금이 여는 활 (docs/BOWS.md). */
   grantsBow?: BowKindId
 }
-
-/**
- * 화살 id의 주인은 `game/arrows.ts`다 — 여기 적힌 여섯 줄은 참조일 뿐이다.
- * 이름이 어긋나면 타입이 먼저 잡아준다(그게 이 상수들이 한 줄씩 따로 있는 이유다).
- */
-const A_PIERCE: ArrowKindId = 'pierce'
-const A_BURST: ArrowKindId = 'burst'
-const A_CHAIN: ArrowKindId = 'chain'
-const A_SPLIT: ArrowKindId = 'split'
-const A_HOMING: ArrowKindId = 'homing'
-const A_HEAVY: ArrowKindId = 'heavy'
 
 /** 활 id의 주인은 `game/bows.ts`다 — 아래 네 줄은 참조일 뿐이다. */
 const B_GAKGUNG: BowKindId = 'gakgung'
@@ -157,16 +148,12 @@ const G_LONGBOW_BOSSES = 3
 const G_RECURVE_BOSSES = 6
 const G_COMPOUND_BOSSES = 10
 
-/** 첫 해금. 2판이면 "이 게임에 열 게 있다"는 걸 알기에 충분히 이르다. */
-const G_BURST_STAGES = 2
 /** 무손실 2판. 실측 중앙값 13판째 — 앞 판은 초보가 한두 발 흘린다. */
 const G_ONESHOT_PERFECT = 2
 /** 별 12개. 실측 중앙값 6판째. */
 const G_FIRSTSTAR_STARS = 12
 /** 4연쇄는 과녁 4개짜리 판(1-9)에서 처음 가능하다 */
-const G_CHAIN_BEST = 4
 /** 12판 클리어 = 챕터 2 중반 */
-const G_SPLIT_STAGES = 12
 /**
  * 정중앙 3회. **실측 중앙값 20판째** (`npm run balance` 캠페인 표).
  *
@@ -178,9 +165,7 @@ const G_HAWK_BULLS = 3
 /** 6연쇄는 과녁 6개짜리 판(2-9·2-10)에서 처음 가능하다 */
 const G_AVALANCHE_BEST = 6
 /** 누적 명중 60. 실측 중앙값 20판째. */
-const G_HOMING_HITS = 60
 /** 20판 클리어. 실측 중앙값 20판째(재도전이 거의 없다는 뜻). */
-const G_PIERCE_STAGES = 20
 /** 누적 명중 80. 실측 중앙값 26판째. */
 const G_HUNDRED_HITS = 80
 /** 별 60개. 실측 중앙값 27판째. */
@@ -192,7 +177,6 @@ const G_WIND_STARS = 60
  * 칭호가 늦는 건 괜찮지만 **화살이 안 열리는 건 안 된다** — 열리지 않는 화살은 드래프트에
  * 영원히 안 나오고, 그러면 그 화살은 존재하지 않는 것과 같다.
  */
-const G_HEAVY_STAGES = 30
 /** 무손실 15판. 실측 중앙값 38판째 (40판 안 달성 78%). 마지막 칭호 직전 자리다. */
 const G_FLAWLESS_PERFECT = 15
 /** 마지막 칸. 40판 전부. */
@@ -215,9 +199,8 @@ function def(
   hint: string,
   at: Read,
   goal: number,
-  grants?: ArrowKindId,
 ): UnlockDef {
-  const base = {
+  return {
     id,
     label,
     kind,
@@ -226,8 +209,6 @@ function def(
     goal,
     check: (p: Progress): boolean => at(p) >= goal,
   }
-  // exactOptionalPropertyTypes — grants는 있을 때만 붙인다.
-  return grants === undefined ? base : { ...base, grants }
 }
 
 /** def()의 활판. 시그니처를 합치면 grants/grantsBow 를 헷갈려 넘기는 실수가 타입을 통과한다. */
@@ -238,49 +219,22 @@ function defBow(
 }
 
 /**
- * 해금 목록. **순서 = 예상 달성 순서**다. 화면이 이 순서를 그대로 쓰므로
- * 목록을 위에서 아래로 훑으면 "지금 어디쯤 왔는지"가 그대로 읽힌다.
+ * 해금 목록. **순서 = 예상 달성 순서**다. 화면이 이 순서를 그대로 쓴다.
  *
- * 아래 "열린 판"은 추정이 아니라 `npm run balance` 캠페인 표의 **실측 중앙값**이다.
- *
- * | # | 열리는 것 | 조건 | 열린 판 |
- * |---|---|---|---|
- * | 1 | 폭발 살 | 2판 클리어 | 2판 |
- * | 2 | 칭호 한 발 | 무손실 2판 | 13판 |
- * | 3 | 칭호 첫 별 | 별 12 | 6판 |
- * | 4 | 사슬 살 | 4연쇄 | 9판 |
- * | 5 | 분열 살 | 12판 클리어 | 12판 |
- * | 6 | 칭호 매의 눈 | 정중앙 3 | 20판 |
- * | 7 | 칭호 보로로록 | 6연쇄 | 19판 |
- * | 8 | 유도 살 | 누적 명중 60 | 20판 |
- * | 9 | 관통 살 | 20판 클리어 | 20판 |
- * | 10 | 칭호 백발 | 누적 명중 80 | 26판 |
- * | 11 | 칭호 바람 읽는 자 | 별 60 | 27판 |
- * | 12 | 무거운 살 | 30판 클리어 | 30판 |
- * | 13 | 칭호 흠 없는 활 | 무손실 15판 | 38판 |
- * | 14 | 칭호 마흔 발 | 40판 클리어 | 40판 |
- *
- * 활 4자루(각궁 6판 · 리커브 ~15판 · 장궁 ~21판 · 컴파운드 35판)가 사이에 끼어 있다.
- * 문턱은 추정이다 — 다음 `npm run balance` 캠페인 실측으로 갱신할 것.
- *
- * 이름은 `game/arrows.ts`의 `ArrowKind.name`을 따른다 ('살'로 통일 · A8).
+ * 화살 6종은 2026-08-24에 이 목록에서 빠졌다 — 특수살은 보스 보급으로 받는 **재고**다
+ * (docs/RUN.md). 남은 것은 칭호(기록의 이름표)와 활(보스 처치로 여는 장비)뿐이다.
+ * 문턱 실측치는 여정 구조 밸런스 시뮬이 생기면 갱신한다.
  */
 export const UNLOCKS: readonly UnlockDef[] = [
-  def('arrow.burst', '화전', 'arrow', `${G_BURST_STAGES}판 클리어`, P_STAGES, G_BURST_STAGES, A_BURST),
   def('title.oneshot', '한 발', 'title', `무손실로 ${G_ONESHOT_PERFECT}판 클리어`, P_PERFECT, G_ONESHOT_PERFECT),
   def('title.firststar', '첫 별', 'title', `별 ${G_FIRSTSTAR_STARS}개 모으기`, P_STARS, G_FIRSTSTAR_STARS),
   defBow('bow.gakgung', '각궁', `보스 ${G_GAKGUNG_BOSSES}마리 처치`, P_BOSS, G_GAKGUNG_BOSSES, B_GAKGUNG),
-  def('arrow.chain', '명적', 'arrow', `한 판에서 ${G_CHAIN_BEST}연쇄`, P_CHAIN, G_CHAIN_BEST, A_CHAIN),
-  def('arrow.split', '세전', 'arrow', `${G_SPLIT_STAGES}판 클리어`, P_STAGES, G_SPLIT_STAGES, A_SPLIT),
   defBow('bow.longbow', '장궁', `보스 ${G_LONGBOW_BOSSES}마리 처치`, P_BOSS, G_LONGBOW_BOSSES, B_LONGBOW),
   def('title.hawk', '매의 눈', 'title', `정중앙 ${G_HAWK_BULLS}회`, P_BULLS, G_HAWK_BULLS),
   def('title.avalanche', '보로로록', 'title', `한 판에서 ${G_AVALANCHE_BEST}연쇄`, P_CHAIN, G_AVALANCHE_BEST),
-  def('arrow.homing', '신전', 'arrow', `누적 명중 ${G_HOMING_HITS}회`, P_HITS, G_HOMING_HITS, A_HOMING),
-  def('arrow.pierce', '애기살', 'arrow', `${G_PIERCE_STAGES}판 클리어`, P_STAGES, G_PIERCE_STAGES, A_PIERCE),
   defBow('bow.recurve', '리커브', `보스 ${G_RECURVE_BOSSES}마리 처치`, P_BOSS, G_RECURVE_BOSSES, B_RECURVE),
   def('title.hundred', '백발', 'title', `누적 명중 ${G_HUNDRED_HITS}회`, P_HITS, G_HUNDRED_HITS),
   def('title.wind', '바람 읽는 자', 'title', `별 ${G_WIND_STARS}개 모으기`, P_STARS, G_WIND_STARS),
-  def('arrow.heavy', '육량전', 'arrow', `${G_HEAVY_STAGES}판 클리어`, P_STAGES, G_HEAVY_STAGES, A_HEAVY),
   defBow('bow.compound', '컴파운드', `보스 ${G_COMPOUND_BOSSES}마리 처치`, P_BOSS, G_COMPOUND_BOSSES, B_COMPOUND),
   def('title.flawless', '흠 없는 활', 'title', `무손실로 ${G_FLAWLESS_PERFECT}판 클리어`, P_PERFECT, G_FLAWLESS_PERFECT),
   def('title.forty', '마흔 발', 'title', `${G_FORTY_STAGES}판 클리어`, P_STAGES, G_FORTY_STAGES),
@@ -314,17 +268,6 @@ export function evaluateUnlocks(p: Progress, already: readonly string[]): string
   return out
 }
 
-/** 열려 있는 화살 종류. 드래프트가 후보를 고를 때 쓴다. */
-export function unlockedArrows(unlocked: readonly string[]): ArrowKindId[] {
-  const out: ArrowKindId[] = []
-  for (let i = 0; i < UNLOCKS.length; i++) {
-    const d = UNLOCKS[i]
-    if (d === undefined || d.grants === undefined) continue
-    if (unlocked.includes(d.id)) out.push(d.grants)
-  }
-  return out
-}
-
 /** 열린 활 목록. 연습궁은 해금이 아니라 시작 장비라 여기 안 나온다. */
 export function unlockedBows(unlocked: readonly string[]): BowKindId[] {
   const out: BowKindId[] = []
@@ -343,24 +286,6 @@ export function unlockOfBow(bow: BowKindId): UnlockDef | undefined {
     if (d !== undefined && d.grantsBow === bow) return d
   }
   return undefined
-}
-
-/** 이 화살을 여는 해금. 없으면 처음부터 쓸 수 있는 화살(basic)이다. */
-export function unlockOfArrow(arrow: ArrowKindId): UnlockDef | undefined {
-  for (let i = 0; i < UNLOCKS.length; i++) {
-    const d = UNLOCKS[i]
-    if (d !== undefined && d.grants === arrow) return d
-  }
-  return undefined
-}
-
-/**
- * 화살 하나의 해금 조건 문구. **조건의 주인은 이 파일이다** —
- * `arrows.ts`의 `unlockHint`는 조건을 판정하지 않으므로, 문턱을 여기서 튜닝하면
- * 그쪽 문구가 조용히 거짓말이 된다. 드래프트·수집 화면은 이 함수를 쓴다.
- */
-export function unlockHintFor(arrow: ArrowKindId): string {
-  return unlockOfArrow(arrow)?.hint ?? ''
 }
 
 /**
