@@ -216,7 +216,9 @@ function withEnemies(base: StageDef, i: number): StageDef {
     const spec: TargetSpec = {
       kind: 'archer',
       x: 22 + rng.range(0, 12) + e * 5,
-      y: rng.range(1.0, 2.2),
+      // 사람은 땅에 선다 (형: "움직이는 적은 귀신이냐, 하늘을 둥실둥실"). y는 몸 중심이라
+      // 반경(0.65)만큼 띄우면 발이 지면에 닿는다. 공중에 떠도 되는 건 과녁뿐이다.
+      y: 0.72,
       r: 0.65,
       hp,
       // 발사 시각을 어긋나게 — 동시에 쏘면 예고가 하나로 뭉개진다.
@@ -224,8 +226,9 @@ function withEnemies(base: StageDef, i: number): StageDef {
       score: 120,
     }
     if (moving) {
-      spec.ampY = 0.8
-      spec.freq = 0.22
+      // 걸어다닌다 — 좌우 순찰. 위아래 부양은 귀신의 것이다.
+      spec.ampX = 2.6
+      spec.freq = 0.16
     }
     if (elite) spec.aimMul = 0.5
     if (armored) spec.armored = true
