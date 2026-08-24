@@ -246,7 +246,10 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
     const dmg = Math.max(1, Math.round(
       P.enemy.playerDamage * (impact / Math.max(1, P.enemy.dmgRefSpeed)) * fx.dmgMul,
     ))
-    if (target.kind === 'archer' && head) {
+    if (target.kind === 'boss' && target.armored && !head) {
+      // 갑주귀신 — 갑주는 눈을 못 덮는다. 몸통은 막힌 소리만 남긴다.
+      w.events.push({ t: 'enemy_block', x: arrow.x, y: arrow.y })
+    } else if (target.kind === 'archer' && head) {
       // 헤드샷 처형 — 체력 무관 즉사. 이 한 줄이 "조준할 이유"다.
       target.hp = 0
     } else if (target.kind === 'archer' && target.armored) {

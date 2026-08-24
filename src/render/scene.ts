@@ -473,6 +473,18 @@ function drawTargets(
       ctx.closePath()
       ctx.fill()
 
+      // 갑주귀신 — 몸 둘레에 갑주 테. 몸통이 안 통하는 이유가 그림으로 읽힌다.
+      if (t.armored) {
+        ctx.strokeStyle = THEME.target2
+        ctx.lineWidth = Math.max(2, rx * 0.06)
+        ctx.beginPath()
+        ctx.ellipse(x, y, rx * 0.98, ry * 0.98, 0, 0.15 * Math.PI, 0.85 * Math.PI)
+        ctx.stroke()
+        ctx.beginPath()
+        ctx.ellipse(x, y - ry * 0.35, rx * 0.8, ry * 0.55, 0, 1.1 * Math.PI, 1.9 * Math.PI)
+        ctx.stroke()
+      }
+
       // 눈알 — 흰자 · 홍채(위험색) · 동공. 동공은 궁수를 따라간다.
       const blink = (w.elapsed % 3.7) < 0.13
       if (blink) {

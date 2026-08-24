@@ -318,7 +318,7 @@ export interface TargetSpec {
   hp?: number
   /** archer 전용 — 첫 발사까지의 지연 (s). 없으면 P.enemy.shootEvery */
   fireDelay?: number
-  /** archer 전용 — 갑옷 (몸통 무효, 헤드샷만). */
+  /** archer·boss — 갑옷 (몸통 무효, 헤드샷/눈만 통한다). */
   armored?: boolean
   /** archer 전용 — 조준 산포 배수 (작을수록 정예). */
   aimMul?: number

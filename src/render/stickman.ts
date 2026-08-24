@@ -708,22 +708,17 @@ export function drawArcher(
       tx = Math.cos(ang)
       ty = Math.sin(ang)
     }
-    // 홈통이니까 외줄이 아니라 **두 줄 레일**이다 — 화살 선과 겹쳐도 홈이 읽힌다.
-    const railOff = 0.045
-    const ox = -ty * railOff
-    const oy = tx * railOff
-    ctx.lineWidth = Math.max(lw * LINE.arrowMul * 0.9, LINE.thinMinPx)
+    // 통아는 **외짝 막대**다 (형의 교정). 당길 때 화살이 그 위에 얹히므로 화살선보다
+    // 반 굵기 아래(-v)로 비껴 그린다 — 하나여도 화살에 안 묻힌다.
+    const under = 0.05
+    const ox = -ty * under
+    const oy = tx * under
+    ctx.lineWidth = Math.max(lw * LINE.arrowMul * 1.6, LINE.thinMinPx + 1)
     ctx.strokeStyle = THEME.bow
-    line(
-      ctx, cam, rig.hdX + ox, rig.hdY + oy,
-      rig.hdX + tx * BODY.arrowLen + ox, rig.hdY + ty * BODY.arrowLen + oy,
-    )
     line(
       ctx, cam, rig.hdX - ox, rig.hdY - oy,
       rig.hdX + tx * BODY.arrowLen - ox, rig.hdY + ty * BODY.arrowLen - oy,
     )
-    // 손 쪽 끝은 막혀 있다 — 뚜껑 한 획이 "홈통"을 완성한다.
-    line(ctx, cam, rig.hdX + ox, rig.hdY + oy, rig.hdX - ox, rig.hdY - oy)
   }
   if (a.phase !== 'idle' && a.phase !== 'recovering') {
     // 애기살은 반 길이 — 통아 위를 미끄러진다. 보통 살은 제 길이.

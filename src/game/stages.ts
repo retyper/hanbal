@@ -251,41 +251,74 @@ export const BOSS_EVERY = 10
  */
 function bossStage(i: number): StageDef {
   const cycle = Math.floor((i + 1) / BOSS_EVERY)
-  // 100 = 내 화살 한 발 몫 (P.enemy.playerDamage). 마디마다 한 발 몫씩 세진다.
-  const hp = Math.min(
-    Math.floor(P.enemy.playerDamage) * 9,
-    Math.floor(P.target.bossHp) + (cycle - 1) * Math.floor(P.enemy.playerDamage),
-  )
-  // id는 저작 판의 규칙(챕터-판)을 그대로 쓴다 — 옛 '4-10'의 별 기록이 보스에게 이어진다.
+  // ── 보스 로스터 — 마디마다 다른 놈이 온다 (형: "한 번 나온 보스는 좀 안 나와야지").
+  //   4종이 순환하고, 한 바퀴 돌 때마다(rank) 체력이 오른다. 같은 놈을 다시 만나는 건
+  //   최소 40판 뒤고, 그때는 더 세다.
+  const variant = (cycle - 1) % 4
+  const rank = Math.floor((cycle - 1) / 4)
+  const dmg = Math.max(1, Math.floor(P.enemy.playerDamage))
+  const crit = Math.max(1, Math.floor(P.target.bossCritDmg))
+  const baseHp = Math.floor(P.target.bossHp) + rank * 2 * dmg
   const id = `${cycle}-10`
-  const reach = 40
-  // 배치 변주는 판 번호가 시드다 (A1). 같은 마디는 언제나 같은 보스판.
   const rng = makeRng(seedFrom(`hanbal.boss.${cycle}`))
-  const targets: TargetSpec[] = [
-    {
-      kind: 'boss',
-      x: reach * rng.range(0.84, 0.94),
-      y: rng.range(2.0, 3.2),
-      r: 1.7,
-      hp,
-      score: 150,
-    },
-  ]
+  const reach = 40
+  const targets: TargetSpec[] = []
+  let title = '눈알귀신'
+  let hint = '깔리면 끝장이다 — 눈을 쏴라'
+  let hitsNeeded: number
+
+  if (variant === 1) {
+    // 갑주귀신 — 몸통 무효. 눈에 정확히 crit × N. 조준의 판이다.
+    title = '갑주귀신'
+    hint = '갑주는 눈을 못 덮는다 — 눈만 통한다'
+    const eyeHits = 2 + rank
+    targets.push({
+      kind: 'boss', x: reach * rng.range(0.84, 0.94), y: rng.range(2.0, 3.0),
+      r: 1.6, hp: crit * eyeHits, armored: true, score: 200,
+    })
+    hitsNeeded = eyeHits
+  } else if (variant === 2) {
+    // 쌍둥이 눈알 — 둘로 갈라진 위협. 어느 쪽을 먼저 잡을지가 판단이다.
+    title = '쌍둥이 눈알'
+    hint = '둘 다 잡아야 한다 — 가까운 쪽부터'
+    const each = Math.max(dmg, Math.floor(baseHp * 0.55))
+    for (let e = 0; e < 2; e++) {
+      targets.push({
+        kind: 'boss', x: reach * (0.8 + e * 0.13), y: 1.6 + e * 1.6,
+        r: 1.15, hp: each, speed: P.target.bossSpeed * (1 + e * 0.25), score: 150,
+      })
+    }
+    hitsNeeded = Math.ceil((each * 2) / Math.floor(dmg * 1.1))
+  } else if (variant === 3) {
+    // 폭주귀신 — 빠르다. 시간이 무기가 아니라 상대의 무기다.
+    title = '폭주귀신'
+    hint = '빨리 끝내라 — 저놈이 더 빠르다'
+    targets.push({
+      kind: 'boss', x: reach * rng.range(0.88, 0.96), y: rng.range(2.0, 3.0),
+      r: 1.45, hp: Math.floor(baseHp * 0.6), speed: P.target.bossSpeed * 2.2, score: 200,
+    })
+    hitsNeeded = Math.ceil((baseHp * 0.6) / Math.floor(dmg * 1.1))
+  } else {
+    // 눈알귀신 — 첫 관문. 느리게, 그러나 확실하게 온다.
+    targets.push({
+      kind: 'boss', x: reach * rng.range(0.84, 0.94), y: rng.range(2.0, 3.2),
+      r: 1.7, hp: baseHp, score: 150,
+    })
+    hitsNeeded = Math.ceil(baseHp / Math.floor(dmg * 1.1))
+  }
+
   // 두 번째 마디부터 호위가 붙는다 — 보스만 노리면 호위가 남아 판이 안 끝난다.
   const escorts = Math.min(2, cycle - 1)
   for (let e = 0; e < escorts; e++) {
     targets.push({ kind: 'static', x: reach * rng.range(0.35, 0.6), y: rng.range(1.2, 4.5), r: 0.55, score: 80 })
   }
-  // 몸통만 쏠 때 필요한 발 수. 피해는 착탄 속도 비례라(≈기준의 1.1배) 그 평균으로 센다.
-  // 화살은 그보다 세 발 여유 — 머리(bossCritDmg)를 맞히는 만큼 더 남는다.
-  const hits = Math.ceil(hp / Math.max(1, Math.floor(P.enemy.playerDamage * 1.1)))
   return {
     id,
-    title: '눈알귀신',
-    hint: '깔리면 끝장이다 — 눈을 쏴라',
+    title,
+    hint,
     seed: seedFrom(id),
-    arrows: Math.min(10, hits + 3 + escorts),
-    targetScore: need(Math.min(5, hits)),
+    arrows: Math.min(10, hitsNeeded + 3 + escorts),
+    targetScore: need(Math.min(5, hitsNeeded)),
     wind: 0,
     targets,
   }
