@@ -253,16 +253,29 @@ const BODY_PINS = 14
 /** pId에 이 값이면 궁수 몸에 박힌 적 화살이다. 과녁 id는 0 이상이라 충돌하지 않는다. */
 export const PLAYER_PIN = -2
 
-/** 몸에 화살 하나를 박는다. 상대좌표는 몸 반경 안으로 자른다 — 관통해 지나간 그림 방지. */
+/**
+ * 몸에 화살 하나를 박는다.
+ *
+ * 착탄점은 히트박스 **가장자리**라 그대로 쓰면 화살이 공중에 떠 보인다 (형의 지적:
+ * "몸에 박혀 있어야지, 히트박스 맞은 곳에 멈춰 있으면 떠 있잖아"). 촉을 진행 방향으로
+ * 몸 속(반경의 절반)까지 밀어 넣고, 중심에서 너무 벗어나지 않게 자른다 —
+ * 그래야 "반은 몸에, 반은 밖에"의 박힌 그림이 된다.
+ */
 function pinArrow(fx: Fx, id: number, dx: number, dy: number, r: number, ang: number): void {
-  const len = Math.hypot(dx, dy)
-  const cap = r * 0.85
-  const k2 = len > cap && len > 0 ? cap / len : 1
+  const depth = r * 0.55
+  let px2 = dx + Math.cos(ang) * depth
+  let py2 = dy + Math.sin(ang) * depth
+  const len = Math.hypot(px2, py2)
+  const cap = r * 0.55
+  if (len > cap && len > 0) {
+    px2 *= cap / len
+    py2 *= cap / len
+  }
   const i = fx.pHead % BODY_PINS
   fx.pHead = (fx.pHead + 1) % BODY_PINS
   fx.pId[i] = id
-  fx.pDx[i] = dx * k2
-  fx.pDy[i] = dy * k2
+  fx.pDx[i] = px2
+  fx.pDy[i] = py2
   fx.pA[i] = ang
 }
 
