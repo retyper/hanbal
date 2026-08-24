@@ -322,6 +322,22 @@ export function loadSave(): SaveData {
   return sanitize(raw, now)
 }
 
+/**
+ * 완전 초기화 — "처음부터" 버튼(ui/growth.ts)의 뒤편.
+ *
+ * 세이브는 이 브라우저의 localStorage에만 있다(A4 — 서버 없음, 계정 없음). 그래서
+ * "모두가 진행을 공유하는" 일은 애초에 없지만, 반대로 **본인이 새로 시작할 길**은
+ * 이 함수뿐이다. 지우고 새로고침하는 쪽이 메모리의 SaveData를 제자리에서 비우는 것보다
+ * 확실하다 — 루프·HUD·수집 화면이 들고 있는 참조까지 전부 새로 서기 때문이다.
+ */
+export function wipeSave(): void {
+  try {
+    localStorage.removeItem(KEY)
+  } catch {
+    // 프라이빗 모드 등으로 막혀 있으면 지울 것도 없다.
+  }
+}
+
 export function writeSave(d: SaveData): void {
   d.v = SCHEMA_VERSION
   // **여기서 lastSeen에 도장을 찍지 않는다.** 저장은 판 보상·성장·탭 이탈 등 아무 때나 일어나고,

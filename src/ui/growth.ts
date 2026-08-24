@@ -22,7 +22,7 @@ import {
   type StatKey,
 } from '../game/progression.ts'
 import { BOW_KINDS, masteryLevel, MASTERY_HITS, type BowKindId } from '../game/bows.ts'
-import { onSaveChanged, writeSave, type SaveData } from '../game/save.ts'
+import { onSaveChanged, wipeSave, writeSave, type SaveData } from '../game/save.ts'
 import { unlockedBows, unlockOfBow } from '../game/unlocks.ts'
 import { P } from '../tune/params.ts'
 import type { Overlay } from './overlay.ts'
@@ -82,6 +82,14 @@ const CSS = `
 .g-foot label { display: flex; align-items: center; gap: 9px; cursor: pointer; color: var(--body); }
 .g-foot input { accent-color: var(--teal); width: 16px; height: 16px; }
 .g-hint { color: var(--mute); font-size: 13px; flex: 1; text-align: right; }
+
+/* ── 처음부터 ── 파괴적인 버튼은 구석에 작게, 대신 문구는 정직하게. */
+.g-danger { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 12px;
+  display: flex; align-items: center; gap: 12px; }
+.g-danger .hb-btn { font-size: 13px; color: var(--mute); }
+/* 1단계를 누르면 버튼이 위험색으로 바뀐다 — "정말인가"를 색이 먼저 묻는다. */
+.g-danger .hb-btn.g-armed { color: #ff6a45; border-color: #ff6a4577; }
+.g-danger span { color: var(--mute); font-size: 12px; flex: 1; }
 `
 
 interface Row {
@@ -283,6 +291,39 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
   snd.addEventListener('change', () => {
     if (snd.checked === audio.muted()) audio.toggle()
     syncSound()
+  })
+
+  // ── 처음부터 (완전 초기화) ──
+  // 세이브는 이 브라우저에만 있다 — 지우는 것도 여기서만 할 수 있어야 한다.
+  // 파괴적이라 두 번 눌러야 한다: 1번째 누름은 무장(문구·색 변경), 4초 안에 2번째 누름이 실행.
+  const danger = document.createElement('div')
+  danger.className = 'g-danger'
+  const wipe = document.createElement('button')
+  wipe.type = 'button'
+  wipe.className = 'hb-btn'
+  wipe.textContent = '처음부터'
+  const dangerNote = document.createElement('span')
+  dangerNote.textContent = '판·스탯·별·해금 전부 지우고 새로 시작한다. 이 브라우저의 기록만이다.'
+  danger.append(wipe, dangerNote)
+  panel.appendChild(danger)
+
+  let armTimer = 0
+  const disarm = (): void => {
+    wipe.classList.remove('g-armed')
+    wipe.textContent = '처음부터'
+  }
+  wipe.addEventListener('click', () => {
+    if (!wipe.classList.contains('g-armed')) {
+      wipe.classList.add('g-armed')
+      wipe.textContent = '정말 전부 지운다?'
+      window.clearTimeout(armTimer)
+      armTimer = window.setTimeout(disarm, 4000)
+      return
+    }
+    window.clearTimeout(armTimer)
+    wipeSave()
+    // 새로고침이 가장 확실한 초기화다 — 루프·화면이 들고 있는 상태까지 전부 새로 선다.
+    location.reload()
   })
 
   // ── HUD 버튼 ──
