@@ -33,6 +33,33 @@ export const ARROW_ICON: Record<ArrowKindId, string> = {
   heavy: '<path d="M4 14h13"/><path d="M12 9l5 5-5 5"/><rect x="19" y="9" width="6" height="10" rx="1.5"/>',
 }
 
+/**
+ * 활의 옆모습 아이콘 (viewBox 0 0 28 28 · stroke). 실루엣 규칙은 게임 속 스틱맨의 활
+ * (render/stickman.ts BOW_SKIN)과 같다 — 걸이·출정 화면에서 본 활을 손에 들었을 때 알아봐야 한다.
+ */
+export const BOW_ICON: Record<string, string> = {
+  practice: '<path d="M10 4 Q20 14 10 24"/><path d="M10 4 L10 24" stroke-width="0.9"/>',
+  gakgung:
+    '<path d="M11 7 Q20 14 11 21"/><path d="M11 7 L15 3.5"/><path d="M11 21 L15 24.5"/>' +
+    '<path d="M15 3.5 L15 24.5" stroke-width="0.9"/>',
+  longbow: '<path d="M11 2 Q17 14 11 26"/><path d="M11 2 L11 26" stroke-width="0.9"/>',
+  recurve:
+    '<path d="M10 4 Q19 14 10 24"/><path d="M10 4 L10 24" stroke-width="0.9"/>' +
+    '<path d="M14.5 14 L25 14" stroke-width="1.1"/>',
+  compound:
+    '<path d="M12 6 Q16 14 12 22"/><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="23" r="2.2"/>' +
+    '<path d="M12 7.2 L12 20.8 M14 5.5 L14 22.5" stroke-width="0.9"/>',
+}
+
+/** 활 아이콘 svg 한 조각. */
+export function bowIconSvg(id: string, size: number): string {
+  return (
+    `<svg width="${size}" height="${size}" viewBox="0 0 28 28" fill="none" ` +
+    `stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">` +
+    `${BOW_ICON[id] ?? ''}</svg>`
+  )
+}
+
 /** 아이콘 svg 마크업 한 조각. size는 px. 색은 CSS의 color(currentColor)를 따른다. */
 export function arrowIconSvg(id: ArrowKindId, size: number): string {
   return (

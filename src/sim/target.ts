@@ -36,6 +36,12 @@ export function stepTargets(w: World): void {
       tg.x = tg.baseX + tg.ampX * s
       tg.y = tg.baseY + tg.ampY * s
     } else if (tg.kind === 'archer') {
+      // 이동 사수 — moving 과녁과 같은 위상 규칙 (t=0에 base와 일치).
+      if (tg.ampX !== 0 || tg.ampY !== 0) {
+        const s2 = Math.sin(time * tg.freq * TAU)
+        tg.x = tg.baseX + tg.ampX * s2
+        tg.y = tg.baseY + tg.ampY * s2
+      }
       // ── 적 궁수 (docs/RUN.md 6장) — 주기적으로 나를 쏜다 ──
       // 시계는 elapsed 뿐이다 (A1). windup 진입 순간 예고 이벤트가 한 번 나간다 —
       // 렌더는 당기는 자세를, 소리는 삐걱임을 이걸로 만든다. 예고 없는 피해는 없다.
@@ -57,7 +63,7 @@ export function stepTargets(w: World): void {
         // 여기서 alive를 끄면 같은 스텝의 evaluateEnd(스텝 머리의 playing 스냅샷)가
         // '과녁 전멸 = 클리어'로 뒤집는다.
         w.hp = 0
-        w.events.push({ t: 'player_hit', hp: 0 })
+        w.events.push({ t: 'player_hit', hp: 0, x: tg.x, y: tg.y, ang: 0, pin: false })
         w.status = 'failed'
         w.events.push({ t: 'stage_end', cleared: false, score: w.score })
       }
@@ -74,7 +80,7 @@ export function stepTargets(w: World): void {
         w.events.push({ t: 'escape', x: tg.x, y: tg.y, lost: 0 })
         if (w.status === 'playing' && P.enemy.chargerDamage > 0) {
           w.hp = Math.max(0, w.hp - Math.floor(P.enemy.chargerDamage))
-          w.events.push({ t: 'player_hit', hp: w.hp })
+          w.events.push({ t: 'player_hit', hp: w.hp, x: tg.x, y: tg.y, ang: 0, pin: false })
           if (w.hp <= 0) {
             w.status = 'failed'
             w.events.push({ t: 'stage_end', cleared: false, score: w.score })
@@ -118,7 +124,7 @@ function fireEnemyShot(w: World, tg: Target): void {
   }
   // 조준 산포 — 적도 사람이다 (형: "무조건 백발백중이야?"). w.rng를 쓰지만 결정론은
   // 그대로다: 발사 시각이 결정론적이라 소비 순서도 판마다 같다 (A1).
-  ang += w.rng.gaussian() * P.enemy.aimScatter
+  ang += w.rng.gaussian() * P.enemy.aimScatter * tg.aimMul
   slot.alive = true
   slot.x = tg.x
   slot.y = tg.y
@@ -143,18 +149,29 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
   // ── 보스의 머리 (docs/RUN.md 3장) ──
   // 머리를 스친 선분이면 치명타다. 명중도를 정중앙(1)으로 올린다 — 링 판정·크리 사운드·
   // 점수 배수가 전부 기존 정중앙 축을 그대로 탄다. 새 채널을 만들지 않는다.
+  // ── 머리 판정 ──
+  // 이번 스텝의 선분이 아니라 **화살 진행 직선**과 머리 중심의 거리로 잰다. 선분으로 재면
+  // 몸 앞면에 닿는 순간 선분이 거기서 끝나 정면 샷은 머리에 영영 못 닿는다 (작은 적일수록).
+  // 화살은 몸을 뚫고 박히는 물건이라, 그 직선이 머리를 지나면 머리에 맞은 것이다.
   let head = false
-  if (target.kind === 'boss') {
-    const hx = target.x
-    const hy = target.y + target.r * P.target.bossHeadUp
-    const hr = target.r * P.target.bossHeadR
-    head = distSqPointSegment(hx, hy, arrow.px, arrow.py, arrow.x, arrow.y) <= hr * hr
-  } else if (target.kind === 'archer') {
-    // 적 궁수의 머리 — 렌더 실루엣과 같은 자리 (scene.ts). 맞히면 즉사다 (형의 결정:
-    // "적은 헤드샷 맞을 때만 한 방, 아니면 두세 방").
-    const hy = target.y + target.r * P.enemy.archerHeadUp
-    const hr = target.r * P.enemy.archerHeadR
-    head = distSqPointSegment(target.x, hy, arrow.px, arrow.py, arrow.x, arrow.y) <= hr * hr
+  if (target.kind === 'boss' || target.kind === 'archer') {
+    const hy = target.kind === 'boss'
+      ? target.y + target.r * P.target.bossHeadUp
+      : target.y + target.r * P.enemy.archerHeadUp
+    const hr = target.kind === 'boss'
+      ? target.r * P.target.bossHeadR
+      : target.r * P.enemy.archerHeadR
+    const sp = Math.hypot(arrow.vx, arrow.vy)
+    if (sp > 0) {
+      const ux2 = arrow.vx / sp
+      const uy2 = arrow.vy / sp
+      const rx2 = target.x - arrow.px
+      const ry2 = hy - arrow.py
+      // 직선까지의 수직 거리 = |외적|. 앞쪽(진행 방향)에 있는 머리만 (뒤로 맞는 머리는 없다).
+      const perp = Math.abs(rx2 * uy2 - ry2 * ux2)
+      const along = rx2 * ux2 + ry2 * uy2
+      head = perp <= hr && along > -target.r
+    }
   }
 
   if (head) accuracy = 1
@@ -229,6 +246,9 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
     if (target.kind === 'archer' && head) {
       // 헤드샷 처형 — 체력 무관 즉사. 이 한 줄이 "조준할 이유"다.
       target.hp = 0
+    } else if (target.kind === 'archer' && target.armored) {
+      // 갑옷 — 몸통은 안 통한다 (형: "헤드샷 안 맞히면 안 죽음"). 막힌 소리·먼지만 남는다.
+      w.events.push({ t: 'enemy_block', x: arrow.x, y: arrow.y })
     } else if (target.kind === 'boss') {
       target.hp -= head ? Math.floor(P.target.bossCritDmg) : dmg
     } else {

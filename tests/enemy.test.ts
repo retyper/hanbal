@@ -6,6 +6,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { createWorld, step } from '../src/sim/world.ts'
+import * as simBallistics from '../src/sim/ballistics.ts'
 import { getStage } from '../src/game/stages.ts'
 import { P } from '../src/tune/params.ts'
 import type { InputFrame, StageDef, Stats } from '../src/sim/types.ts'
@@ -99,6 +100,41 @@ describe('적', () => {
     ;(P.enemy as { aimScatter: number }).aimScatter = scatter
     assert.ok(blocked, '적 화살이 과녁을 통과했다 — 엄폐가 없다')
     assert.ok(!hit, '과녁 뒤에 있는데 맞았다')
+  })
+
+  it('갑옷병 — 몸통은 안 통하고 헤드샷만 눕힌다', () => {
+    const mk = (): StageDef => ({
+      id: 'armor-test', seed: 3, arrows: 8, targetScore: 100, wind: 0,
+      targets: [
+        { kind: 'archer', x: 14, y: 1.8, r: 0.8, hp: 100, armored: true, fireDelay: 99, score: 100 },
+        { kind: 'static', x: 45, y: 8.5, r: 0.3, score: 0 },
+      ],
+    })
+    // 몸통(중심) — 못 죽인다
+    const w1 = createWorld(mk(), STATS)
+    const t1 = w1.targets[0]
+    assert.ok(t1 !== undefined)
+    {
+      const { spawnArrow } = simBallistics
+      const a = spawnArrow(w1, Math.atan2(1.8 - w1.archer.y, 14) + 0.01, 1)
+      assert.notEqual(a, null)
+      for (let i = 0; i < 400; i++) step(w1, IDLE)
+    }
+    assert.equal(t1.alive, true, '갑옷병이 몸통 샷에 죽었다')
+    assert.equal(t1.hp, 100, '갑옷인데 체력이 깎였다')
+    // 머리 — 각을 훑어 즉사를 확인
+    let dead = false
+    for (let mrad = -20; mrad <= 60 && !dead; mrad += 2) {
+      const w2 = createWorld(mk(), STATS)
+      const t2 = w2.targets[0]
+      assert.ok(t2 !== undefined)
+      const hy = t2.y + t2.r * P.enemy.archerHeadUp
+      const { spawnArrow } = simBallistics
+      spawnArrow(w2, Math.atan2(hy - w2.archer.y, 14) + mrad / 1000, 1)
+      for (let i = 0; i < 400; i++) step(w2, IDLE)
+      if (!t2.alive) dead = true
+    }
+    assert.ok(dead, '어떤 각으로도 갑옷병 헤드샷이 안 나온다')
   })
 
   it('돌진 접촉은 체력을 깎는다 (화살 강탈이 아니라)', () => {

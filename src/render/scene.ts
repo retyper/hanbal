@@ -13,7 +13,7 @@ import {
 } from './camera.ts'
 import type { Camera } from './camera.ts'
 import { drawArcher } from './stickman.ts'
-import { createFx, pumpEvents, updateFx, drawFx, hitStopMs, targetSquash } from './effects.ts'
+import { createFx, pumpEvents, updateFx, drawFx, hitStopMs, targetSquash , PLAYER_PIN } from './effects.ts'
 import type { Fx } from './effects.ts'
 import { drawHud } from './hud.ts'
 import type { HudState } from './hud.ts'
@@ -411,6 +411,11 @@ function drawTargets(
       }
 
       // 사람 실루엣 — 머리·몸통·다리. 이쪽(-x)을 보고 선다.
+      // 갑옷병은 몸통에 흉갑(밝은 판)을 두른다 — 몸통이 안 통하는 이유가 그림으로 읽힌다.
+      if (t.armored) {
+        ctx.fillStyle = THEME.target2
+        ctx.fillRect(x - rx * 0.28, y - ry * 0.28, rx * 0.56, ry * 0.62)
+      }
       ctx.strokeStyle = bodyCol
       ctx.lineWidth = Math.max(2, rx * 0.14)
       ctx.lineCap = 'round'
@@ -644,6 +649,52 @@ function drawHpBar(
   ctx.fillRect(x - w / 2, y, w, h)
   ctx.fillStyle = THEME.gaugeWarn
   ctx.fillRect(x - w / 2, y, w * Math.max(0, Math.min(1, ratio)), h)
+}
+
+/**
+ * 몸에 박힌 화살 (형: "맞으면 정확히 박힌 위치에 보여져야"). 과녁 상대좌표라
+ * 보스가 움직여도 몸에 붙어 다닌다. 주인이 죽으면 함께 사라진다 — 시체는 안 그린다.
+ */
+function drawBodyPins(ctx: CanvasRenderingContext2D, cam: Camera, w: World, fx: Fx): void {
+  const n = fx.pId.length
+  for (let i = 0; i < n; i++) {
+    const id = fx.pId[i] ?? -1
+    if (id === -1) continue
+    let cx2 = 0
+    let cy2 = 0
+    if (id === PLAYER_PIN) {
+      cx2 = w.archer.x
+      cy2 = w.archer.y
+    } else {
+      let found = false
+      for (const tg of w.targets) {
+        if (tg.id === id && tg.alive) {
+          cx2 = tg.x
+          cy2 = tg.y
+          found = true
+          break
+        }
+      }
+      if (!found) {
+        fx.pId[i] = -1
+        continue
+      }
+    }
+    const ax2 = cx2 + (fx.pDx[i] ?? 0)
+    const ay2 = cy2 + (fx.pDy[i] ?? 0)
+    const ang = fx.pA[i] ?? 0
+    const ux2 = Math.cos(ang)
+    const uy2 = Math.sin(ang)
+    const L = DRAW.arrowLen * 0.55
+    const isEnemy = id === PLAYER_PIN
+    ctx.strokeStyle = isEnemy ? THEME.threat : THEME.arrow
+    ctx.lineWidth = 2
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    ctx.moveTo(worldToScreenX(cam, ax2 - ux2 * L), worldToScreenY(cam, ay2 - uy2 * L))
+    ctx.lineTo(worldToScreenX(cam, ax2), worldToScreenY(cam, ay2))
+    ctx.stroke()
+  }
 }
 
 /** 적 화살 — 위험색 짧은 대. 내 화살과 색이 달라야 "날아오는 것"이 즉시 구분된다. */
@@ -988,6 +1039,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       drawArrows(c, cam, w, alpha)
       drawEnemyShots(c, cam, w)
       drawArcher(c, cam, w, alpha)
+      drawBodyPins(c, cam, w, r.fx)
       drawFx(c, cam, r.fx)
       drawHud(c, cam, w, hud)
     },

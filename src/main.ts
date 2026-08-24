@@ -75,6 +75,7 @@ const loop = createLoop(el, {
         { bow: save.bow },
         save.bowHits,
         save.bestRunStage,
+        save.runCount,
         onStart,
       ),
     // 보스 보급 3택 (docs/RUN.md) — 특수살 재고의 유일한 큰 획득처.

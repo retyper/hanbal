@@ -8,7 +8,7 @@
  * 다음 여정의 로드아웃이다 (C1).
  */
 import { ARROW_KINDS, type ArrowKindId } from '../game/arrows.ts'
-import { ARROW_TINT, arrowIconSvg } from './arrowicons.ts'
+import { ARROW_TINT, arrowIconSvg, bowIconSvg } from './arrowicons.ts'
 import { bowKind, masteryLevel, type BowKindId } from '../game/bows.ts'
 import { wipeSave } from '../game/save.ts'
 import type { Overlay } from './overlay.ts'
@@ -18,11 +18,15 @@ const OVER_ID = 'runover'
 
 const CSS = `
 .l-h { display: flex; align-items: baseline; gap: 14px; }
-.l-h h2 { flex: 1; }
+.l-h h2 { flex: 1; font-size: 30px; letter-spacing: .02em; }
+.l-run { color: var(--dim); font-size: 13px; letter-spacing: .12em; }
+.l-run b { color: var(--teal); font-size: 20px; margin-left: 6px; }
 .l-best { color: var(--dim); font-size: 13px; letter-spacing: .08em; }
 .l-best b { color: var(--accent); font-size: 20px; margin-left: 6px; }
 .l-sec { color: var(--dim); font-size: 13px; letter-spacing: .12em; margin: 18px 0 8px; }
 .l-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.l-card .l-bic { color: var(--dim); line-height: 0; margin-bottom: 4px; }
+.l-card.l-on .l-bic { color: var(--teal); }
 .l-card {
   display: flex; flex-direction: column; gap: 3px; text-align: left; padding: 12px 14px;
   border: 1px solid #212b36; background: #101720e6; border-radius: 2px; cursor: pointer;
@@ -65,6 +69,7 @@ export function mountLoadout(
   last: LoadoutPick,
   bowHits: Readonly<Record<string, number>>,
   bestRunStage: number,
+  runCount: number,
   onStart: (pick: LoadoutPick) => void,
 ): void {
   const panel = o.panel(PANEL_ID)
@@ -75,13 +80,15 @@ export function mountLoadout(
   style.textContent = CSS
   panel.appendChild(style)
 
+  // ── 출정식 (형: "시작이 여행을 떠나는 것 같아야 시작할 맛이 나지") ──
+  // 제목은 크게, 이번이 몇 번째 여정인지, 기록은 옆에. 문장은 떠나는 사람의 것으로.
   const head = document.createElement('div')
   head.className = 'l-h'
-  head.innerHTML = '<h2>여정 준비</h2>' +
-    (bestRunStage > 0 ? `<div class="l-best">최고 기록<b>${bestRunStage}판</b></div>` : '')
+  head.innerHTML = `<h2>출정</h2><div class="l-run">${runCount + 1}번째 여정<b></b></div>` +
+    (bestRunStage > 0 ? `<div class="l-best">가장 멀리<b>${bestRunStage}판</b></div>` : '')
   const sub = document.createElement('p')
   sub.className = 'hb-lead'
-  sub.textContent = '활 하나를 들고 갈 수 있는 데까지 간다. 특수살은 보스가 보급한다 — 화살이 바닥나면 여정이 끝난다.'
+  sub.textContent = '동이 트기 전, 활 한 자루를 고른다. 10판마다 그것이 기다리고, 화살이 다하면 여정도 끝난다.'
   panel.append(head, sub)
 
   // 시작 선택은 지난 여정의 것. 없던 게 해금돼도 손이 기억하는 활이 먼저다.
@@ -116,9 +123,12 @@ export function mountLoadout(
     card.type = 'button'
     card.className = 'l-card'
     const lv = masteryLevel(Math.floor(bowHits[id] ?? 0))
-    card.innerHTML = `<span class="l-n"></span><span class="l-d"></span>`
+    card.innerHTML = `<span class="l-bic">${bowIconSvg(id, 34)}</span>` +
+      `<span class="l-n"></span><span class="l-d"></span><span class="l-d"></span>`
+    const descs = card.querySelectorAll('.l-d')
     ;(card.querySelector('.l-n') as HTMLElement).textContent = b.name + (lv > 0 ? ` · 숙련 ${lv}` : '')
-    ;(card.querySelector('.l-d') as HTMLElement).textContent = b.perk
+    ;(descs[0] as HTMLElement).textContent = b.perk
+    ;(descs[1] as HTMLElement).textContent = b.cost === '없음' ? '' : `대가 — ${b.cost}`
     card.addEventListener('click', () => {
       pick.bow = id
       refresh()
@@ -135,7 +145,7 @@ export function mountLoadout(
   const go = document.createElement('button')
   go.type = 'button'
   go.className = 'hb-btn l-go'
-  go.textContent = '여정 시작'
+  go.textContent = '활을 들고 나선다 →'
   foot.appendChild(go)
 
   // ── 전체 초기화 (형: "메모리 삭제하고 싹 처음부터 시작할 수 있는 버튼") ──

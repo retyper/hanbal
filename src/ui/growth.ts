@@ -22,6 +22,7 @@ import {
   type StatKey,
 } from '../game/progression.ts'
 import { BOW_KINDS, masteryLevel, MASTERY_HITS, type BowKindId } from '../game/bows.ts'
+import { BOW_ICON } from './arrowicons.ts'
 import { onSaveChanged, wipeSave, writeSave, type SaveData } from '../game/save.ts'
 import { unlockedBows, unlockOfBow } from '../game/unlocks.ts'
 import { P } from '../tune/params.ts'
@@ -178,24 +179,6 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
   rackSub.className = 'hb-lead'
   rackSub.textContent = '바꾼 활은 다음 판부터 든다. 숙련은 그 활로 맞힌 수만큼 쌓여 단점이 줄어든다.'
   rack.appendChild(rackSub)
-
-  /**
-   * 활의 옆모습 아이콘 (viewBox 0 0 28 28 · stroke). 실루엣 규칙은 게임 속 스틱맨의 활
-   * (render/stickman.ts BOW_SKIN)과 같다 — 걸이에서 본 활을 손에 들었을 때 알아봐야 한다.
-   */
-  const BOW_ICON: Record<string, string> = {
-    practice: '<path d="M10 4 Q20 14 10 24"/><path d="M10 4 L10 24" stroke-width="0.9"/>',
-    gakgung:
-      '<path d="M11 7 Q20 14 11 21"/><path d="M11 7 L15 3.5"/><path d="M11 21 L15 24.5"/>' +
-      '<path d="M15 3.5 L15 24.5" stroke-width="0.9"/>',
-    longbow: '<path d="M11 2 Q17 14 11 26"/><path d="M11 2 L11 26" stroke-width="0.9"/>',
-    recurve:
-      '<path d="M10 4 Q19 14 10 24"/><path d="M10 4 L10 24" stroke-width="0.9"/>' +
-      '<path d="M14.5 14 L25 14" stroke-width="1.1"/>',
-    compound:
-      '<path d="M12 6 Q16 14 12 22"/><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="23" r="2.2"/>' +
-      '<path d="M12 7.2 L12 20.8 M14 5.5 L14 22.5" stroke-width="0.9"/>',
-  }
 
   interface BowRow {
     id: BowKindId

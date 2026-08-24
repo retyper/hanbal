@@ -212,6 +212,15 @@ export interface Fx {
   kX: Float32Array
   kY: Float32Array
   kA: Float32Array
+  /**
+   * 몸에 박힌 화살 (형: "맞으면 정확히 박힌 위치에 보여져야"). 과녁 id 기준 상대 좌표라
+   * 보스가 움직여도 화살이 몸에 붙어 다닌다. pId<0 = 빈 칸. pId===PLAYER_PIN = 궁수 몸.
+   */
+  pHead: number
+  pId: Int32Array
+  pDx: Float32Array
+  pDy: Float32Array
+  pA: Float32Array
   /** 남은 히트스톱 (s) */
   hitStop: number
   /** 남은 슬로모 (실시간 s) */
@@ -239,6 +248,24 @@ export interface Fx {
   rng: Rng
 }
 
+/** 몸에 박히는 화살 풀 크기. 넘치면 가장 오래된 것부터 밀려난다 (A5: 고정 크기). */
+const BODY_PINS = 14
+/** pId에 이 값이면 궁수 몸에 박힌 적 화살이다. 과녁 id는 0 이상이라 충돌하지 않는다. */
+export const PLAYER_PIN = -2
+
+/** 몸에 화살 하나를 박는다. 상대좌표는 몸 반경 안으로 자른다 — 관통해 지나간 그림 방지. */
+function pinArrow(fx: Fx, id: number, dx: number, dy: number, r: number, ang: number): void {
+  const len = Math.hypot(dx, dy)
+  const cap = r * 0.85
+  const k2 = len > cap && len > 0 ? cap / len : 1
+  const i = fx.pHead % BODY_PINS
+  fx.pHead = (fx.pHead + 1) % BODY_PINS
+  fx.pId[i] = id
+  fx.pDx[i] = dx * k2
+  fx.pDy[i] = dy * k2
+  fx.pA[i] = ang
+}
+
 /** drawFx(ctx, cam) 2인자 호출을 지원하기 위한 현재 인스턴스. 게임에 Fx는 하나뿐이다. */
 let active: Fx | null = null
 
@@ -246,6 +273,11 @@ export function createFx(): Fx {
   const f: Fx = {
     cap: PARTICLE_CAP,
     head: 0,
+    pHead: 0,
+    pId: new Int32Array(BODY_PINS).fill(-1),
+    pDx: new Float32Array(BODY_PINS),
+    pDy: new Float32Array(BODY_PINS),
+    pA: new Float32Array(BODY_PINS),
     x: new Float32Array(PARTICLE_CAP),
     y: new Float32Array(PARTICLE_CAP),
     vx: new Float32Array(PARTICLE_CAP),
@@ -435,6 +467,9 @@ export function pumpEvents(fx: Fx, w: World): void {
   if (w.tick < fx.lastTick) {
     fx.kHead = 0
     fx.kN = 0
+    // 몸에 박힌 화살도 지난 판의 것이다.
+    fx.pId.fill(-1)
+    fx.pHead = 0
   }
 
   // 같은 tick을 두 번 그리면 이벤트가 이중 처리된다. events를 비우는 건 게임 루프의 몫이라
@@ -468,6 +503,16 @@ export function pumpEvents(fx: Fx, w: World): void {
       spawnRing(fx, e.x, e.y, radiusOf(w, e.targetId), crit)
       markSquash(fx, e.targetId)
       captureTrail(fx, w, e.arrow, false)
+
+      // 몸에 박기 — 맞고도 서 있는 적(보스·궁수)이면 화살이 그 자리에 남는다.
+      for (const tg of w.targets) {
+        if (tg.id !== e.targetId) continue
+        if (tg.alive && (tg.kind === 'boss' || tg.kind === 'archer')) {
+          const ar = w.arrows[e.arrow]
+          if (ar !== undefined) pinArrow(fx, tg.id, ar.x - tg.x, ar.y - tg.y, tg.r, ar.angle)
+        }
+        break
+      }
 
       // 점수 팝 — 문자열은 명중마다 한 번만 만든다. 매 프레임이 아니라 이벤트마다다 (A5).
       pushPopup(
@@ -532,6 +577,8 @@ export function pumpEvents(fx: Fx, w: World): void {
       fx.comboRun = 0
       fx.hitStop += P.hit.stopMs * 0.002
       pushPopup(fx.pop, w.archer.x + 1.2, w.archer.y + 1.2, e.hp <= 0 ? '쓰러졌다' : '피격 !', 'crit')
+      // 적 화살이면 궁수 몸에 박힌다 — 정확히 맞은 그 자리에 (형).
+      if (e.pin) pinArrow(fx, PLAYER_PIN, e.x - w.archer.x, e.y - w.archer.y, 0.7, e.ang)
     } else if (e.t === 'escape') {
       // 빼앗겼다. 콤보도 여기서 끊긴다 (sim이 이미 끊었다 — 렌더 카운터도 맞춘다).
       fx.comboRun = 0

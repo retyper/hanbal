@@ -206,7 +206,14 @@ function withEnemies(base: StageDef, i: number): StageDef {
   const rng = makeRng(seedFrom(`hanbal.enemy.${n}`))
   const targets: TargetSpec[] = [...base.targets]
   for (let e = 0; e < count; e++) {
-    targets.push({
+    // 깊이별 변종 (형: "레벨이 높아지면 움직이는 적·명중률 높은 적·방어구 입은 적") —
+    //  · 26판+: 첫째가 위아래로 순찰한다 (리드 샷을 적에게도)
+    //  · 36판+: 둘째가 정예다 (산포 절반 — 엄폐 없이는 아프다)
+    //  · 41판+: 셋째가 갑옷병이다 (몸통 무효 — 헤드샷만이 답)
+    const moving = n >= 26 && e === 0
+    const elite = n >= 36 && e === 1
+    const armored = n >= 41 && e === 2
+    const spec: TargetSpec = {
       kind: 'archer',
       x: 22 + rng.range(0, 12) + e * 5,
       y: rng.range(1.0, 2.2),
@@ -215,7 +222,14 @@ function withEnemies(base: StageDef, i: number): StageDef {
       // 발사 시각을 어긋나게 — 동시에 쏘면 예고가 하나로 뭉개진다.
       fireDelay: P.enemy.shootEvery * (0.7 + e * 0.45),
       score: 120,
-    })
+    }
+    if (moving) {
+      spec.ampY = 0.8
+      spec.freq = 0.22
+    }
+    if (elite) spec.aimMul = 0.5
+    if (armored) spec.armored = true
+    targets.push(spec)
   }
   return { ...base, arrows: Math.min(10, base.arrows + count * 2), targets }
 }

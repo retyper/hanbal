@@ -241,6 +241,10 @@ export interface Target {
   hp: number
   /** archer 전용 — 다음 발사 시각 (elapsed 기준). 그 windup 전부터 당기는 게 보인다. */
   fireAt: number
+  /** archer 전용 — 갑옷을 입었는가. 몸통은 안 통한다: **헤드샷만이 답이다** (형의 주문). */
+  armored: boolean
+  /** archer 전용 — 조준 산포 배수. 1보다 작으면 정예다. */
+  aimMul: number
   /** 판 시작 시점의 체력 (boss·archer). 체력 바의 분모다. */
   hpMax: number
   /** 연쇄 깊이. 직격 = 0, 낙하물에 맞은 것 = 1, 그 다음 = 2 ... */
@@ -285,8 +289,12 @@ export type SimEvent =
   | { t: 'enemy_shot'; x: number; y: number }
   /** 적 화살이 과녁에 박혔다 — 과녁 뒤는 엄폐다. */
   | { t: 'enemy_block'; x: number; y: number }
-  /** 맞았다. `hp` = 남은 체력. 0이면 이 판이 아니라 **여정이** 끝난다. */
-  | { t: 'player_hit'; hp: number }
+  /**
+   * 맞았다. `hp` = 남은 체력. 0이면 이 판이 아니라 **여정이** 끝난다.
+   * pin이면 화살이 몸에 박힌 것 — x·y(착탄점)·ang으로 렌더가 그 자리에 화살을 남긴다 (형:
+   * "화살이 맞으면 박힌 채로 보여져야").
+   */
+  | { t: 'player_hit'; hp: number; x: number; y: number; ang: number; pin: boolean }
   | { t: 'miss'; x: number; y: number; arrow: number }
   | { t: 'stage_end'; cleared: boolean; score: number }
 
@@ -310,6 +318,10 @@ export interface TargetSpec {
   hp?: number
   /** archer 전용 — 첫 발사까지의 지연 (s). 없으면 P.enemy.shootEvery */
   fireDelay?: number
+  /** archer 전용 — 갑옷 (몸통 무효, 헤드샷만). */
+  armored?: boolean
+  /** archer 전용 — 조준 산포 배수 (작을수록 정예). */
+  aimMul?: number
 }
 
 export interface StageDef {

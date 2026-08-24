@@ -171,7 +171,11 @@ export function stepArcher(w: World, input: InputFrame): void {
     const fullTime = P.bow.drawTime * dDrawTimeMul
     a.drawTime += dt
     // 초반엔 쭉 당겨지고 마지막 한 뼘이 버겁다 — 실제 활의 장력 곡선.
-    const p = fullTime > 0 ? clamp01(a.drawTime / fullTime) : 1
+    const p0 = fullTime > 0 ? clamp01(a.drawTime / fullTime) : 1
+    // 시작 완만화 (스무스스텝) — 실제 활은 첫 한 뼘에서 화살이 거의 안 당겨진다.
+    // 이게 없으면 0.03초 탭에도 당김이 0.14나 나와 화살이 십 미터를 날았다
+    // (형의 재점검 요청: "짧게 클릭했을 때 아직도 너무 멀리 나가"). 파형의 신원이라 노브가 아니다.
+    const p = p0 * p0 * (3 - 2 * p0)
     a.draw = dMaxDraw * (1 - Math.pow(1 - p, P.bow.drawEase))
     if (a.phase === 'drawing' && p >= 1) {
       a.phase = 'full'

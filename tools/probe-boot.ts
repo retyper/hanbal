@@ -477,6 +477,7 @@ console.log(String.fromCharCode(10) + '6. 로드아웃 생명주기 (탭 복귀 
     { bow: 'practice' },
     {},
     7,
+    0,
     (pick) => {
       got.starts++
       got.bow = pick.bow
