@@ -37,6 +37,14 @@ export interface HudState {
   /** 짧은 알림 한 줄. 빈 문자열이면 그리지 않는다. */
   toast: string
   /**
+   * 판 결과의 별 수. **-1 = 아직 채점 전.**
+   *
+   * 판은 마지막 과녁이 쓰러진 그 스텝에 즉시 클리어로 넘어가지만, 그 뒤로도 날아가던 화살과
+   * 낙하 중인 공중 과녁이 점수를 더 올린다 (game/loop.ts isSettled). 그래서 별은 한 박자 늦게
+   * 온다 — 그동안 0개를 보여주면 "무별 클리어"로 읽혀 배신이다. -1로 두고 별 줄만 비운다.
+   */
+  stars: number
+  /**
    * 이 판에 쓰는 화살 종류의 이름 (docs/HOOK.md ★1).
    *
    * 고르고 나면 그 판 내내 바뀌지 않으니 크게 그릴 이유가 없다 — 남은 화살 숫자 아래에
@@ -160,10 +168,30 @@ const HUD = {
   cardPx: 40,
   cardSubPx: 16,
   cardY: 0.17,
-  /** 완전히 보이는 시간 / 사라지는 시간 (s). 합쳐도 2초를 안 넘는다. */
-  cardHold: 0.9,
-  cardFade: 0.7,
+  /**
+   * 완전히 보이는 시간 / 사라지는 시간 (s).
+   *
+   * 0.9 + 0.7 -> 2.4 + 1.1: 형의 반려 — **"너무 빨리 사라져서 읽기도 전에 없어져버린다."**
+   * 맞다. 한글 한 줄을 읽는 데만 1초 가까이 걸리는데 0.9초 뒤부터 사라지기 시작했다.
+   * 아무것도 막지 않는 자막이라 길어도 손해가 없다 (그 위에서 바로 쏠 수 있다, C1).
+   */
+  cardHold: 2.4,
+  cardFade: 1.1,
   cardGap: 12,
+
+  // ── 판 결과 (클리어 / 실패) ─────────────────────────────────────────
+  //
+  // 화면 가운데 약간 위. 예전엔 화면 맨 아래 회색 12px 한 줄이 전부였고,
+  // 거기엔 깼다는 사실도 별도 없었다 (형의 반려).
+  resultY: 0.3,
+  resultPx: 54,
+  resultStarPx: 40,
+  resultSubPx: 18,
+  /** 등장 시간 (s)과 그 사이의 추가 확대. 확 들어와야 "끝났다"가 몸으로 온다. */
+  resultIn: 0.22,
+  resultPunch: 0.35,
+  /** 별 사이 간격 */
+  starGap: 10,
 
   // ── 바람 눈금 ───────────────────────────────────────────────────────
   //
@@ -213,7 +241,14 @@ const M = {
   fCard: '',
   fCardSub: '',
   fWind: '',
+  fResult: '',
+  fResultSub: '',
+  fStar: '',
+  starGap: 0,
 }
+
+/** 별의 최대 개수. game/rewards.ts 의 STAR_MAX 와 같은 값이다 (render는 game을 import하지 않는다). */
+const STAR_MAX = 3
 
 const px = (v: number, s: number): number => Math.round(v * s)
 
@@ -252,6 +287,10 @@ function syncMetrics(cam: Camera): void {
   M.fCard = `700 ${px(HUD.cardPx, s)}px ${FONT_UI}`
   M.fCardSub = `500 ${px(HUD.cardSubPx, s)}px ${FONT_NUM}`
   M.fWind = `600 ${px(HUD.windPx, s)}px ${FONT_NUM}`
+  M.fResult = `700 ${px(HUD.resultPx, s)}px ${FONT_UI}`
+  M.fResultSub = `600 ${px(HUD.resultSubPx, s)}px ${FONT_NUM}`
+  M.fStar = `400 ${px(HUD.resultStarPx, s)}px ${FONT_UI}`
+  M.starGap = px(HUD.starGap, s)
 }
 
 /**
@@ -355,6 +394,8 @@ function stageNoText(id: string): string {
  */
 const mark = {
   prevStrain: 0,
+  /** 판이 끝난 sim 시각 (s). 음수면 아직 안 끝났다. 결과 배너의 등장 연출이 이걸 쓴다. */
+  endT: -1,
   /** 경계선을 넘은 sim 시각 (s). 음수면 아직 없음. */
   crossT: -1,
 }
@@ -619,16 +660,87 @@ export function drawHud(
     ctx.fillText('무음 · M', cam.w - M.padX, rightY)
   }
 
-  // ── 알림 한 줄 — 화면을 덮지 않는다 (GDD 7장) ─────────────────
-  if (hud.toast !== '') {
-    ctx.textAlign = 'center'
-    ctx.font = M.fToast
-    ctx.fillStyle = THEME.hudDim
-    ctx.fillText(hud.toast, cam.w * 0.5, cam.h - M.toastUp)
+  drawStageCard(ctx, cam, w, t)
+  drawResult(ctx, cam, w, hud, t)
+  ctx.textAlign = 'left'
+}
+
+/**
+ * 판 결과 — **화면 가운데 약간 위에, 확실하게.**
+ *
+ * 형의 반려: "클리어했으면 아래 회색 글씨로 나오게 하지 말고 확실하게 띄워줘야지.
+ * 별로 그 클리어 수준 정해놓을 거라면 별도 보여줘야지."
+ *
+ * 예전엔 화면 맨 아래에 회색 12px로 '한 번 더 누르면 다음 판'이 전부였다. 그 한 줄에는
+ * **깼다는 사실도, 얼마나 잘 깼는지도 없었다** — 별은 세이브에만 적히고 화면에는 안 왔다.
+ *
+ * 모달은 아니다. 아무것도 막지 않고, 이 위에서 바로 다음 판을 누를 수 있다 (C1).
+ */
+function drawResult(
+  ctx: CanvasRenderingContext2D, cam: Camera, w: World, hud: HudState, t: number,
+): void {
+  if (w.status === 'playing') {
+    mark.endT = -1
+    return
+  }
+  // 판을 다시 시작하면 sim 시계가 되감긴다. 옛 시각이 남아 있으면 등장 연출이 통째로 건너뛰어진다.
+  if (mark.endT < 0 || t < mark.endT) mark.endT = t
+  const age = t - mark.endT
+  // 튀어나오는 0.22초. 확 들어와야 "끝났다"가 몸으로 온다.
+  const inT = clamp01(age / HUD.resultIn)
+  const pop = 1 + (1 - inT) * (1 - inT) * HUD.resultPunch
+  const cleared = w.status === 'cleared'
+
+  const cx = cam.w * 0.5
+  const cy = cam.h * HUD.resultY
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'alphabetic'
+  ctx.globalAlpha = inT
+
+  // ── 큰 글자 ──
+  ctx.font = pop > 1.01 ? popFont(M.s, pop) : M.fResult
+  ctx.fillStyle = cleared ? THEME.accent : THEME.gaugeWarn
+  ctx.fillText(cleared ? '클리어' : '실패', cx, cy)
+
+  // ── 별 ── 채점이 끝나야 나온다 (stars < 0 이면 아직).
+  let y = cy + px(HUD.resultStarPx, M.s) + M.cardGap
+  if (cleared && hud.stars >= 0) {
+    ctx.font = M.fStar
+    // 받은 별과 못 받은 별을 **한 줄에** 그린다. 못 받은 칸이 보여야 다음 목표가 생긴다.
+    const got = hud.stars
+    const starW = ctx.measureText('★').width
+    const total = starW * STAR_MAX + M.starGap * (STAR_MAX - 1)
+    let sx = cx - total * 0.5 + starW * 0.5
+    for (let i = 0; i < STAR_MAX; i++) {
+      ctx.fillStyle = i < got ? THEME.accent : THEME.gaugeBack
+      ctx.fillText(i < got ? '★' : '☆', sx, y)
+      sx += starW + M.starGap
+    }
+    y += px(HUD.resultSubPx, M.s) + M.cardGap
   }
 
-  drawStageCard(ctx, cam, w, t)
-  ctx.textAlign = 'left'
+  // ── 점수 ──
+  ctx.font = M.fResultSub
+  ctx.fillStyle = THEME.hudText
+  ctx.fillText(cache.scoreNum, cx, y)
+
+  // ── 다음 안내 ── 이제 이건 '결과'가 아니라 '조작 안내'다. 작게, 아래에.
+  if (hud.toast !== '') {
+    ctx.font = M.fToast
+    ctx.fillStyle = THEME.hudDim
+    ctx.fillText(hud.toast, cx, y + px(HUD.toastPx, M.s) + M.cardGap)
+  }
+
+  ctx.globalAlpha = 1
+  ctx.textBaseline = 'top'
+}
+
+/**
+ * 튀어나오는 동안만 쓰는 임시 폰트 문자열.
+ * 0.22초 동안만 만들어지고 그 뒤로는 캐시된 M.fResult 로 돌아간다 — 매 프레임은 아니다 (A5).
+ */
+function popFont(s: number, mul: number): string {
+  return `700 ${Math.round(HUD.resultPx * s * mul)}px ${FONT_UI}`
 }
 
 /**

@@ -42,8 +42,8 @@ const CSS = `
   transition: background .3s;
 }
 .g-row:first-of-type { border-top: none; }
-/* 올린 직후 한 번 번쩍. 왼쪽 잉크 바 — 버튼 hover와 같은 문법이다. */
-.g-row.g-flash { background: #ffb3471a; box-shadow: inset 3px 0 0 var(--accent); }
+/* 올린 직후 한 번 번쩍. 배경만 — 한쪽만 두꺼운 테두리는 쓰지 않는다. */
+.g-row.g-flash { background: #ffb34722; }
 .g-name { color: var(--ink); font-weight: 700; font-size: 17px; letter-spacing: -.01em; }
 .g-lv { color: var(--mute); font-size: 13px; margin-left: 10px; }
 .g-now { grid-column: 1; color: var(--body); }

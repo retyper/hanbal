@@ -10,3 +10,16 @@ click / rollover / switch   UI (드래프트·해금·버튼)
 
 ※ public/ 아래에 두었으므로 JS 번들에 포함되지 않는다.
    첫 화면은 소리 없이 즉시 뜨고(C1·C6), 사운드는 뒤에서 따로 받는다.
+
+── 추가 (2026-08-24) ── Kenney "Music Jingles" 팩 (CC0)
+jingleClear     판 클리어. 원본 jingles_PIZZI11 (0.79s)
+jingleUnlock    해금.      원본 jingles_PIZZI16 (0.46s)
+
+피치카토(뜯는 현) 계열을 골랐다. 이유가 둘이다:
+  1. 활시위를 놓는 소리와 같은 결이다 — 이 게임의 소리 세계에서 겉돌지 않는다.
+  2. 팡파레가 아니다. "제대로되면서도 과하지 않은" 클리어음이어야 한다 (형의 요청).
+
+★ 마음에 안 들면 파일만 바꿔치기하면 된다. 코드는 손댈 필요가 없다:
+    public/sfx/jingleClear_alt1.ogg  (PIZZI13, 0.88s — 조금 더 길고 완결감)
+    public/sfx/jingleClear_alt2.ogg  (PIZZI04, 0.56s — 더 짧고 담백)
+  둘 중 하나를 jingleClear.ogg 로 복사하면 끝. (alt 파일은 게임이 받지 않는다)

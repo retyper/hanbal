@@ -179,7 +179,7 @@ export function stepArrows(w: World): void {
       const own = a.splitDepth <= 0
       a.outcome = scored ? 'hit' : own && landed ? 'miss' : 'expired'
       a.alive = false
-      if (!scored && own) w.events.push({ t: 'miss', x: a.x, y: a.y })
+      if (!scored && own) w.events.push({ t: 'miss', x: a.x, y: a.y, arrow: a.id })
     }
 
     pushTrail(a, dt)

@@ -45,6 +45,16 @@ export type SampleName =
   | 'rollover'
   /** UI — 열림/해금 */
   | 'switch'
+  /**
+   * 판 클리어 — 피치카토(뜯는 현) 한 소절. Kenney Music Jingles (CC0).
+   *
+   * 왜 합성이 아니라 샘플인가: 합성으로 만든 상승음은 아무리 배음을 쌓아도
+   * "신호음"이지 음악이 아니다 (형의 반려: "너무 AI가 만든 소리야").
+   * 연주된 소리는 흉내로는 못 이긴다. 다만 **없어도 게임은 돈다** — 합성 종소리로 떨어진다.
+   */
+  | 'clear'
+  /** 해금 — 같은 계열의 더 짧은 한 소절 */
+  | 'unlock'
 
 /** 확장자와 폴더는 여기 한 곳에만 적는다. */
 const DIR = 'sfx/'
@@ -67,6 +77,10 @@ const FILES: Readonly<Record<SampleName, readonly string[]>> = {
   click: ['click1', 'click2'],
   rollover: ['rollover1', 'rollover2'],
   switch: ['switch2', 'switch3'],
+  // 클리어·해금은 **변주를 두지 않는다.** 이 둘은 매번 같은 소리여야 한다 —
+  // 게임의 서명 같은 소리라, 판마다 다르면 "그 소리"가 기억에 안 남는다.
+  clear: ['jingleClear'],
+  unlock: ['jingleUnlock'],
 }
 
 /** 순회용 키 목록. 매번 Object.keys를 부르면 배열이 새로 생긴다 (A5). */

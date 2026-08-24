@@ -123,9 +123,12 @@ const LAYOUTS: readonly Layout[] = [
   { teach: '빨라진다', arrows: 8, hits: 3, spots: [{ x: 17, y: 2.8, kind: 'moving', size: 1.25, ampY: 1.8, freq: 0.45 }, { x: 24, y: 2.0, kind: 'moving', size: 1.25, ampX: 2.0, freq: 0.4 }, { x: 31, y: 3.0 }] },
   { teach: '움직이는 공중 과녁 — 연쇄까지', arrows: 7, hits: 3, spots: [{ x: 20, y: 5.6, kind: 'aerial' }, { x: 20, y: 3.0, kind: 'moving', ampX: 1.8, freq: 0.3 }, { x: 20, y: 1.4 }] },
   { teach: '바람이 분다 — 오른쪽으로 밀린다', arrows: 7, hits: 3, wind: 2.5, spots: [{ x: 20, y: 1.8 }, { x: 26, y: 2.8 }, { x: 32, y: 2.0 }] },
-  { teach: '바람은 주기적으로 변한다 — 읽을 수 있다', arrows: 7, hits: 3, wind: 3.5, spots: [{ x: 22, y: 2.0 }, { x: 29, y: 3.2 }, { x: 35, y: 2.4 }] },
+  // ★ 여기서 처음으로 **왼쪽 바람**이 온다. 예전엔 모든 판의 풍속이 양수라
+  //   바람이 언제나 오른쪽으로만 불었다 (형의 지적). 방향이 하나뿐이면 배울 게 없다 —
+  //   그건 바람이 아니라 그냥 조준점 보정값이다.
+  { teach: '바람은 반대로도 분다 — 깃발을 봐라', arrows: 7, hits: 3, wind: -3.5, spots: [{ x: 22, y: 2.0 }, { x: 29, y: 3.2 }, { x: 35, y: 2.4 }] },
   { teach: '바람 + 낙차', arrows: 7, hits: 3, wind: 4.0, spots: [{ x: 24, y: 5.0 }, { x: 30, y: 1.6 }, { x: 36, y: 3.4 }] },
-  { teach: '바람 속의 이동 과녁', arrows: 8, hits: 4, wind: 3.0, spots: [{ x: 18, y: 2.4, kind: 'moving', ampY: 1.4, freq: 0.3 }, { x: 25, y: 3.0 }, { x: 31, y: 1.8, kind: 'moving', ampX: 2.0, freq: 0.25 }, { x: 37, y: 2.6 }] },
+  { teach: '바람 속의 이동 과녁', arrows: 8, hits: 4, wind: -3.0, spots: [{ x: 18, y: 2.4, kind: 'moving', ampY: 1.4, freq: 0.3 }, { x: 25, y: 3.0 }, { x: 31, y: 1.8, kind: 'moving', ampX: 2.0, freq: 0.25 }, { x: 37, y: 2.6 }] },
   { teach: '챕터 3 종합', arrows: 8, hits: 4, wind: 4.5, spots: [{ x: 19, y: 6.2, kind: 'aerial' }, { x: 19, y: 3.4 }, { x: 27, y: 2.0, kind: 'moving', ampX: 2.4, freq: 0.32 }, { x: 34, y: 3.0 }] },
 
   // ── 챕터 4 — 관통과 조합 ────────────────────────────────────
@@ -133,12 +136,12 @@ const LAYOUTS: readonly Layout[] = [
   { teach: '일직선으로 세우면 한 발에 여럿', arrows: 6, hits: 3, spots: [{ x: 15, y: 2.0, kind: 'pierceable' }, { x: 21, y: 2.0, kind: 'pierceable' }, { x: 27, y: 2.0, kind: 'pierceable' }] },
   { teach: '비스듬한 일렬 — 각도를 찾는다', arrows: 7, hits: 3, spots: [{ x: 16, y: 1.6, kind: 'pierceable' }, { x: 23, y: 3.0, kind: 'pierceable' }, { x: 30, y: 4.4, kind: 'pierceable' }] },
   { teach: '관통 + 연쇄', arrows: 7, hits: 4, spots: [{ x: 18, y: 5.4, kind: 'aerial' }, { x: 18, y: 3.0, kind: 'pierceable' }, { x: 24, y: 3.0, kind: 'pierceable' }, { x: 24, y: 1.4 }] },
-  { teach: '바람 속의 관통', arrows: 7, hits: 3, wind: 3.5, spots: [{ x: 17, y: 2.4, kind: 'pierceable' }, { x: 24, y: 2.4, kind: 'pierceable' }, { x: 31, y: 2.4, kind: 'pierceable' }] },
+  { teach: '바람 속의 관통', arrows: 7, hits: 3, wind: -3.5, spots: [{ x: 17, y: 2.4, kind: 'pierceable' }, { x: 24, y: 2.4, kind: 'pierceable' }, { x: 31, y: 2.4, kind: 'pierceable' }] },
   { teach: '움직이는 관통줄', arrows: 7, hits: 3, spots: [{ x: 18, y: 2.6, kind: 'pierceable', ampY: 1.2, freq: 0.24 }, { x: 25, y: 2.6, kind: 'pierceable', ampY: 1.2, freq: 0.24 }, { x: 32, y: 2.6, kind: 'pierceable' }] },
   { teach: '두 층 — 위와 아래를 나눠 푼다', arrows: 8, hits: 4, spots: [{ x: 17, y: 5.8, kind: 'aerial' }, { x: 23, y: 5.8, kind: 'aerial' }, { x: 17, y: 2.2 }, { x: 23, y: 2.2 }] },
   { teach: '멀리 + 바람 + 이동', arrows: 8, hits: 4, wind: 4.0, spots: [{ x: 26, y: 2.0, kind: 'moving', ampY: 1.6, freq: 0.35 }, { x: 33, y: 3.4 }, { x: 39, y: 2.2 }, { x: 20, y: 1.4 }] },
   { teach: '큰 연쇄 — 한 발로 화면을 무너뜨린다', arrows: 8, hits: 5, spots: [{ x: 22, y: 7.6, kind: 'aerial' }, { x: 22, y: 5.8 }, { x: 22, y: 4.2 }, { x: 22, y: 2.8 }, { x: 22, y: 1.4 }] },
-  { teach: '챕터 4 종합 — 지금까지 배운 전부', arrows: 8, hits: 5, wind: 3.5, spots: [{ x: 18, y: 6.4, kind: 'aerial' }, { x: 18, y: 3.6, kind: 'pierceable' }, { x: 25, y: 3.6, kind: 'pierceable' }, { x: 31, y: 2.0, kind: 'moving', ampX: 2.2, freq: 0.3 }, { x: 37, y: 3.2 }] },
+  { teach: '챕터 4 종합 — 지금까지 배운 전부', arrows: 8, hits: 5, wind: -3.5, spots: [{ x: 18, y: 6.4, kind: 'aerial' }, { x: 18, y: 3.6, kind: 'pierceable' }, { x: 25, y: 3.6, kind: 'pierceable' }, { x: 31, y: 2.0, kind: 'moving', ampX: 2.2, freq: 0.3 }, { x: 37, y: 3.2 }] },
 ]
 
 function build(layout: Layout, i: number): StageDef {

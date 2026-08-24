@@ -48,8 +48,12 @@ const TOAST_MAX = 3
  * 바꾼 것은 넷이다:
  *   1. **크기.** 본문 13 → 15px, 패널 520 → 680px, 버튼 패딩 7/12 → 11/18px.
  *   2. **모서리를 죽였다.** 6px 라운드 → 2~3px. 둥근 카드가 겹치면 그게 '기본 테마' 얼굴이다.
- *   3. **강조를 한 곳에 몬다.** 패널 위쪽의 3px 강조 띠 하나, 버튼 hover의 왼쪽 잉크 바 하나.
- *      전부에 테두리를 밝히는 대신 한 군데만 확실히 — 인쇄물의 문법이다.
+ *   3. **한쪽만 두꺼운 테두리를 쓰지 않는다.** 처음엔 패널 위에 3px 강조 띠를,
+ *      버튼 hover에 왼쪽 잉크 바를 넣었다가 형에게 반려당했다 —
+ *      "AI 특유의 네모박스 한쪽을 두껍게 만드는 그런 거 좀 제발 없애."
+ *      맞는 말이다. 그건 성격이 아니라 **성격이 있는 척하는 장식**이고, 요즘 생성된 화면이
+ *      다 그러고 있다. 이제 강조는 오직 **글자와 여백**이 만든다: 제목은 크고, 본문은 조용하고,
+ *      구역은 얇은 괘선 하나로 나뉜다. hover는 배경 밝기만 바뀐다.
  *   4. **글꼴에 역할을 준다.** 글자와 숫자의 스택을 나눈다 (render/hud.ts와 같은 규칙).
  *      render를 import하지 않는 이유는 ui와 render가 서로를 모르는 같은 층이기 때문이다.
  */
@@ -81,11 +85,11 @@ const CSS = `
   padding: 11px 18px; font: inherit; font-weight: 600; cursor: pointer;
   transition: background .12s, color .12s, border-color .12s, box-shadow .12s;
 }
-/* hover에서 밝아지는 건 왼쪽 잉크 바 하나뿐이다. 테두리를 다 밝히면 다시 '기본 테마'가 된다. */
-.hb-btn:hover { background: #1a232e; color: var(--ink); border-color: #35424f; box-shadow: inset 3px 0 0 var(--accent); }
+/* hover는 배경 밝기만. 잉크 바도, 테두리 색도 건드리지 않는다. */
+.hb-btn:hover { background: #1e2833; color: var(--ink); }
 .hb-btn:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
-.hb-btn[disabled] { opacity: .4; cursor: default; box-shadow: none; }
-.hb-btn[disabled]:hover { background: #121a23e6; color: var(--body); border-color: #26313d; }
+.hb-btn[disabled] { opacity: .4; cursor: default; }
+.hb-btn[disabled]:hover { background: #121a23e6; color: var(--body); }
 .hb-btn .hb-key {
   color: var(--mute); font-family: var(--num); font-size: 12px; letter-spacing: .06em;
   border: 1px solid #26313d; border-radius: 2px; padding: 1px 5px; line-height: 1.35;
@@ -100,7 +104,7 @@ const CSS = `
 
 .hb-toasts { position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
 .hb-toast {
-  background: #101821f2; border: 1px solid #26313d; border-left: 3px solid var(--accent);
+  background: #101821f2; border: 1px solid #26313d;
   border-radius: 2px; padding: 10px 16px; color: #d7dde6; white-space: nowrap;
   animation: hb-in .26s ease-out both, hb-out .45s ease-in forwards;
 }
@@ -117,8 +121,6 @@ const CSS = `
   display: none; width: min(680px, 100%); max-height: 100%; overflow-y: auto;
   background: linear-gradient(180deg, #0f151d 0%, #0a0f15 100%);
   border: 1px solid #26313d;
-  /* 위쪽의 강조 띠 하나. 이게 이 화면의 '이름표'다 — 나머지는 전부 조용하다. */
-  border-top: 3px solid var(--accent);
   border-radius: 3px; padding: 26px 30px 22px;
   box-shadow: 0 26px 80px #000000cc; scrollbar-width: thin;
 }

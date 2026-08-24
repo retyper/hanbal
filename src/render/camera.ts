@@ -88,6 +88,8 @@ const VIEW = {
   followRate: 5,
   /** 흔들림 노이즈 주파수 (Hz) */
   shakeFreq: 34,
+  /** 폭발이 명중보다 몇 배로 흔드는가. 소리·불덩이와 같은 순간에 온다. */
+  burstShakeMul: 2.4,
   /** 대형 연쇄에서 잠깐 줌아웃하는 비율 (GDD 7장) */
   chainZoomOut: 0.05,
   /** 이 깊이 이상의 연쇄부터 줌아웃 */
@@ -203,6 +205,10 @@ export function updateCamera(cam: Camera, w: World, dtReal: number): void {
       if (e === undefined) continue
       if (e.t === 'hit') {
         cx.shakeAmp = P.hit.shakeAmp
+        cx.shakeAge = 0
+      } else if (e.t === 'burst') {
+        // 폭발은 명중보다 크게 흔든다. 이게 "터졌다"의 몸으로 오는 신호다.
+        cx.shakeAmp = P.hit.shakeAmp * VIEW.burstShakeMul
         cx.shakeAge = 0
       } else if (e.t === 'chain' && e.depth >= VIEW.chainZoomDepth) {
         cx.zoomOut = VIEW.chainZoomOut

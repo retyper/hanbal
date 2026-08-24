@@ -151,7 +151,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   const runRng = makeRng(save.runSeed)
 
   // 매 프레임 제자리에서 갱신한다. 새로 만들지 않는다 (A5).
-  const hud: HudState = { training: 0, canLevelUp: false, muted: false, toast: '', arrow: '' }
+  const hud: HudState = { training: 0, canLevelUp: false, muted: false, toast: '', arrow: '', stars: -1 }
 
   let raf = 0
   let wanted = false // start()가 불렸는가 — 사용자 의도. 탭 가시성과는 별개로 기억한다.
@@ -217,6 +217,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     bestChain = 0
     awarded = false
     acc = 0
+    // 새 판의 결과는 아직 없다. -1 = 채점 전 (HUD가 별 줄을 안 그린다).
+    hud.stars = -1
     // 기본 살은 이름을 띄우지 않는다 — 효과가 없는 걸 알릴 이유가 없고, HUD는 최소한만이다.
     hud.arrow = kind === DEFAULT_ARROW ? '' : arrowName(kind)
     save.stageIndex = stageIndex
@@ -278,6 +280,9 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     GRADE.bullseyes = bullseyes
     const reward = gradeRun(runRng, w.stage, GRADE)
     save.runSeed = runRng.state()
+    // 화면에도 별을 보낸다. 예전엔 세이브에만 적히고 화면에는 안 왔다 —
+    // "별로 클리어 수준을 정해놓을 거면 별도 보여줘야지"(형).
+    hud.stars = reward.stars
 
     RUN.cleared = cleared
     RUN.score = w.score

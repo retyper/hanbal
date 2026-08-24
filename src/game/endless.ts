@@ -233,6 +233,16 @@ const L = {
 
 const yc = (v: number): number => clamp(v, Y_LOW, Y_HIGH)
 
+/**
+ * 바람의 방향. **양쪽 다 나와야 한다.**
+ *
+ * 예전엔 풍속이 언제나 양수라 바람이 오른쪽으로만 불었다 (형의 지적:
+ * "바람은 왜 항상 오른쪽으로만 부는 거 같냐"). 방향이 하나뿐이면 배울 게 없다 —
+ * 그건 바람이 아니라 그냥 조준점에 더하는 상수다. 깃발이 좌우로 눕는 걸 보고
+ * 어느 쪽으로 얼마나 겨눌지 정하는 게 이 메커닉의 전부다 (render/scene.ts drawWindFlag).
+ */
+const windSign = (rng: Rng): number => (rng.chance(0.5) ? 1 : -1)
+
 /** 0..1 을 0에서 시작해 가운데가 최고인 포물선으로. 화살이 그리는 선과 같은 모양이다. */
 const arcOf = (t: number): number => 4 * t * (1 - t)
 
@@ -402,7 +412,7 @@ const THEMES: readonly Theme[] = [
     // 바람은 매 스텝 흔들리는 게 아니라 주기적으로 변한다 (sim/world.ts). 읽고 기다리는 판.
     name: '바람골',
     wind: (rng, e) =>
-      rng.range(L.galeWindMin, L.galeWindMax) + Math.min(L.galeWindAdd, e * L.galeWindStep),
+      windSign(rng) * (rng.range(L.galeWindMin, L.galeWindMax) + Math.min(L.galeWindAdd, e * L.galeWindStep)),
     build(rng, e, reach): Plan {
       const n = 3 + (e >= L.galeFourthAt ? 1 : 0)
       const spots: Spot[] = []
@@ -443,7 +453,7 @@ const THEMES: readonly Theme[] = [
     // 열 판에 한 번 오는 종합. 지금까지 배운 게 한꺼번에 온다.
     name: '폭풍',
     wind: (rng, e) =>
-      rng.range(L.stormWindMin, L.stormWindMax) + Math.min(L.stormWindAdd, e * L.stormWindStep),
+      windSign(rng) * (rng.range(L.stormWindMin, L.stormWindMax) + Math.min(L.stormWindAdd, e * L.stormWindStep)),
     build(rng, e, reach): Plan {
       const spots: Spot[] = []
       // 기둥 하나

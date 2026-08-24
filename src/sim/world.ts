@@ -72,8 +72,9 @@ function newArcher(): ArcherState {
   }
 }
 
-function newArrow(): Arrow {
+function newArrow(id: number): Arrow {
   return {
+    id,
     alive: false,
     x: 0,
     y: 0,
@@ -244,7 +245,8 @@ function clearTarget(t: Target): void {
 
 /** 풀은 늘리기만 한다. 줄이면 다음 판에서 다시 할당이 난다. */
 function growArrows(w: World, want: number): void {
-  while (w.arrows.length < want) w.arrows.push(newArrow())
+  // id 는 자리 번호다. push 하는 순간의 길이가 곧 그 자리이고, 이후 바뀌지 않는다.
+  while (w.arrows.length < want) w.arrows.push(newArrow(w.arrows.length))
 }
 
 function growTargets(w: World, want: number): void {

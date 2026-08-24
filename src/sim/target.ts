@@ -66,18 +66,26 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
     accuracy,
     chain: target.chainDepth,
     combo: w.combo,
+    arrow: arrow.id,
   })
 
-  // 관통 — 두 종류가 한 식을 쓴다. 관통 과녁은 공짜로 뚫리고(free), 화살 종류의 관통은
-  // fx.pierceExtra 만큼의 예산을 쓴다. 손실 계수만 다르고 식은 같다.
-  const free = target.kind === 'pierceable'
-  if (free || arrow.kindPierced < fx.pierceExtra) {
-    if (free) arrow.pierced++
-    else arrow.kindPierced++
+  /**
+   * 관통 — **관통할 수 있는 화살만 뚫는다.**
+   *
+   * 예전에는 `pierceable` 과녁이 화살 종류와 무관하게 **공짜로** 뚫렸다. 그러면
+   * 유엽전으로도 애기살로도 똑같이 꿰뚫려서 "관통"이 화살의 성격이 아니라 과녁의 성격이 되고,
+   * 무엇보다 **어떤 건 뚫리고 어떤 건 안 뚫리는지 플레이어가 규칙을 세울 수가 없다**
+   * (형의 지적: "관통은 관통살만 하게 해줘야 하는 거 아닌가"). 맞는 말이라 공짜 통로를 없앴다.
+   *
+   * 이제 규칙은 하나다: `fx.pierceExtra` 예산이 남았는가. 겹쳐 세운 과녁(pierceable)은
+   * 그걸 **쓰기 좋게 늘어놓은 배치**일 뿐, 스스로 뚫리지는 않는다.
+   */
+  if (arrow.kindPierced < fx.pierceExtra) {
+    arrow.kindPierced++
+    if (target.kind === 'pierceable') arrow.pierced++
     // 중심을 뚫을수록 더 두꺼운 부분을 지나 속도를 잃는다. 가장자리를 스치면 거의 안 잃는다.
-    const keep = 1 - accuracy * (free ? P.arrow.pierceSpeedLoss : fx.pierceLoss)
-    arrow.vx *= keep
-    arrow.vy *= keep
+    arrow.vx *= 1 - accuracy * fx.pierceLoss
+    arrow.vy *= 1 - accuracy * fx.pierceLoss
   } else {
     arrow.outcome = 'hit'
     arrow.alive = false
@@ -120,6 +128,12 @@ function burst(w: World, center: Target): void {
   if (R <= 0) return
   const r2 = R * R
   const targets = w.targets
+
+  // ★ 터졌다는 사건 자체를 알린다. 예전에는 딸려 죽은 과녁의 `chain` 이벤트만 나가서,
+  // **아무것도 안 딸려 죽으면 폭발이 일어난 흔적이 화면에도 소리에도 남지 않았다**
+  // (형의 지적: "폭발살은 폭발 소리도 이펙트도 없는데 뭐가 폭발이라는 건지").
+  // 반경을 실어 보내는 이유: 렌더가 얼마나 크게 터뜨릴지 여기 말고는 알 길이 없다.
+  w.events.push({ t: 'burst', x: center.x, y: center.y, radius: R })
 
   for (let j = 0; j < targets.length; j++) {
     const c = targets[j]

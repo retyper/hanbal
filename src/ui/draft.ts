@@ -74,10 +74,8 @@ const CSS = `
   padding: 20px 18px 18px; text-align: left; min-height: 190px;
   border-color: #212b36; background: #101720e6; border-radius: 2px;
 }
-/* 카드마다 자기 색의 잉크 바. 글자를 읽기 전에 손이 어디로 갈지 정해진다. */
-.d-card:hover, .d-card:focus-visible {
-  background: #1a2430; border-color: #35424f; box-shadow: inset 3px 0 0 var(--tint);
-}
+/* hover는 배경만 밝힌다. 카드의 성격은 아이콘 색(--tint)이 이미 말하고 있다. */
+.d-card:hover, .d-card:focus-visible { background: #1e2934; border-color: #303c49; }
 .d-card .d-ic { color: var(--tint); line-height: 0; }
 .d-card .d-name { color: var(--ink); font-weight: 700; font-size: 18px; letter-spacing: -.01em; }
 .d-card .d-desc { color: var(--body); font-size: 14px; line-height: 1.55; flex: 1; }

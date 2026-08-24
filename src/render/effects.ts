@@ -31,6 +31,8 @@ const PARTICLE_CAP = SPEC.chain.maxParticles.max
 const GHOSTS = 8
 /** 파열 링 슬롯. 한 번의 연쇄가 한꺼번에 8개를 터뜨려도 겹치지 않는다. */
 const RINGS = 12
+/** 불덩이 슬롯. 한 발이 여럿을 연달아 터뜨려도(관통+폭발) 겹치지 않을 만큼. */
+const FIRES = 6
 /** 스쿼시 기록 슬롯. scene.ts가 살아남은 과녁(낙하 중 aerial · pierceable)을 눌러 그린다. */
 const SQUASH = 12
 
@@ -130,6 +132,23 @@ const FX = {
   chainSizeStep: 0.09,
   chainSizeCap: 8,
 
+  // ── 폭발 (화전) ───────────────────────────────────────────────────
+  //
+  // 폭발이 "연쇄 이벤트 몇 개"로만 존재하던 걸 실제 사건으로 만든다.
+  // 넷이 같이 와야 터진 것으로 읽힌다: 불덩이 · 파편 · 충격파 링 · 화면 정지.
+  /** 파편 수·속도·수명. 크리티컬보다 세게 — 이건 내가 만든 사건이 아니라 화살이 만든 사건이다. */
+  burstBurst: 30,
+  burstSpeed: 11,
+  burstTtl: 0.6,
+  burstSize: 1.5,
+  /** 폭발의 히트스톱 배수. 정중앙(2.1)보다 크다 */
+  burstStopMul: 2.6,
+  /** 불덩이 수명 (s)과, 최대로 부푸는 시점(수명 비율) */
+  fireTtl: 0.34,
+  firePeak: 0.28,
+  /** 폭발 반경 대비 불덩이의 최대 크기. 1이면 반경 그대로 */
+  fireGrow: 0.92,
+
   // ── 점수 팝 (HOOK ★6-1) ──────────────────────────────────────────
   /** 이 점수에서 팝이 최대 크기·밝기가 된다. 기본 과녁 100점, 링 배수 최대 2배. */
   scoreRef: 420,
@@ -181,6 +200,12 @@ export interface Fx {
   sHead: number
   sId: Int32Array
   sLife: Float32Array
+  /** 불덩이 — 폭발이 만드는 채운 원. x, y, 반경(m), 남은 수명. */
+  fHead: number
+  fX: Float32Array
+  fY: Float32Array
+  fR: Float32Array
+  fLife: Float32Array
   /** 땅에 박혀 남는 화살 (판이 끝날 때까지). x, y, 각도. */
   kHead: number
   kN: number
@@ -245,6 +270,11 @@ export function createFx(): Fx {
     sHead: 0,
     sId: new Int32Array(SQUASH).fill(-1),
     sLife: new Float32Array(SQUASH),
+    fHead: 0,
+    fX: new Float32Array(FIRES),
+    fY: new Float32Array(FIRES),
+    fR: new Float32Array(FIRES),
+    fLife: new Float32Array(FIRES),
     kHead: 0,
     kN: 0,
     kX: new Float32Array(STUCK),
@@ -313,6 +343,16 @@ function spawnRing(f: Fx, x: number, y: number, r: number, crit: boolean): void 
   f.rCrit[slot] = crit ? 1 : 0
 }
 
+/** 폭발의 불덩이. 링은 테두리라 "터졌다"는 **면**이 없다 — 이게 그 면이다. */
+function spawnFire(f: Fx, x: number, y: number, r: number): void {
+  const slot = f.fHead
+  f.fHead = f.fHead + 1 >= FIRES ? 0 : f.fHead + 1
+  f.fX[slot] = x
+  f.fY[slot] = y
+  f.fR[slot] = r
+  f.fLife[slot] = FX.fireTtl
+}
+
 /** 살아남은 과녁(낙하 중 aerial · pierceable)의 눌림을 기록한다. scene.ts가 읽어간다. */
 function markSquash(f: Fx, id: number): void {
   // 같은 과녁이 연달아 맞으면 새 슬롯을 쓰지 않고 갱신한다 — 관통 과녁에서 슬롯이 마른다.
@@ -337,21 +377,17 @@ function radiusOf(w: World, id: number): number {
   return 0.5
 }
 
-/** 화살이 죽은 뒤에도 궤적을 남기려면 링버퍼를 복사해 둬야 한다. 화살 풀은 곧 재사용된다. */
-function captureTrail(f: Fx, w: World, x: number, y: number, miss: boolean): void {
-  let best = -1
-  let bestD = Infinity
-  const want = miss ? 'miss' : 'hit'
-  for (let i = 0; i < w.arrows.length; i++) {
-    const ar = w.arrows[i]
-    if (ar === undefined || ar.outcome !== want) continue
-    const dx = ar.x - x
-    const dy = ar.y - y
-    const d = dx * dx + dy * dy
-    if (d < bestD) { bestD = d; best = i }
-  }
-  if (best < 0) return
-  const ar = w.arrows[best]
+/**
+ * 화살이 죽은 뒤에도 궤적을 남기려면 링버퍼를 복사해 둬야 한다. 화살 풀은 곧 재사용된다.
+ *
+ * ★ **어느 화살인지는 이벤트가 알려준다** (`SimEvent.arrow` = 풀 자리 번호).
+ * 예전엔 좌표로 가장 가까운 시체를 찾았는데, 관통 살처럼 맞고도 계속 나는 화살은
+ * 명중 순간 아직 'flying'이라 검색에 안 걸리고 **직전 화살의 시체**가 대신 뽑혔다.
+ * 그 시체의 궤적은 궁수의 손에서 시작하므로, 화면에는 먼 과녁을 맞히는 순간
+ * "손에서 화살이 하나 더 나가는" 것으로 보였다 (형이 본 그 버그. 재현 확인함).
+ */
+function captureTrail(f: Fx, w: World, index: number, miss: boolean): void {
+  const ar = w.arrows[index]
   if (ar === undefined) return
 
   const slot = f.gHead
@@ -378,26 +414,9 @@ function chainSize(combo: number): number {
   return 1 + (n > 0 ? n : 0) * FX.chainSizeStep
 }
 
-/**
- * 빗나가 땅에 박힌 화살 하나를 남긴다.
- *
- * 각도는 이벤트에 없다. 방금 죽은 화살에서 읽어와야 하는데, 그 화살을 찾는 규칙은
- * captureTrail 과 똑같다 — 같은 자리에서 outcome==='miss' 로 죽은 놈이다.
- */
-function stickArrow(f: Fx, w: World, x: number, y: number): void {
-  let angle = 0
-  let bestD = Infinity
-  for (let i = 0; i < w.arrows.length; i++) {
-    const ar = w.arrows[i]
-    if (ar === undefined || ar.outcome !== 'miss') continue
-    const dx = ar.x - x
-    const dy = ar.y - y
-    const d = dx * dx + dy * dy
-    if (d < bestD) {
-      bestD = d
-      angle = ar.angle
-    }
-  }
+/** 빗나가 땅에 박힌 화살 하나를 남긴다. 각도는 그 화살에서 읽는다 (이벤트가 자리를 알려준다). */
+function stickArrow(f: Fx, w: World, index: number, x: number, y: number): void {
+  const angle = w.arrows[index]?.angle ?? 0
   const slot = f.kHead
   f.kHead = f.kHead + 1 >= STUCK ? 0 : f.kHead + 1
   if (f.kN < STUCK) f.kN++
@@ -445,12 +464,8 @@ export function pumpEvents(fx: Fx, w: World): void {
       }
 
       spawnRing(fx, e.x, e.y, radiusOf(w, e.targetId), crit)
-      // 폭발 살은 반경이 화면에 한 번도 안 그려져 "왜 저것들이 같이 죽었는지"도,
-      // 다음 발을 어디 겨눠야 둘이 물리는지도 배울 수 없었다. 기존 파열 링을 그대로 쓴다 —
-      // 0.3초 안에 사라지고 새 상태·새 할당이 없다 (A5).
-      if (w.fx.burstRadius > 0) spawnRing(fx, e.x, e.y, w.fx.burstRadius, false)
       markSquash(fx, e.targetId)
-      captureTrail(fx, w, e.x, e.y, false)
+      captureTrail(fx, w, e.arrow, false)
 
       // 점수 팝 — 문자열은 명중마다 한 번만 만든다. 매 프레임이 아니라 이벤트마다다 (A5).
       pushPopup(
@@ -499,8 +514,16 @@ export function pumpEvents(fx: Fx, w: World): void {
       // sim이 여기서 콤보를 끊는다 (world.ts). 렌더 카운터도 같이 끊어야 어긋나지 않는다.
       fx.comboRun = 0
       spawn(fx, e.x, e.y, FX.missBurst, KIND_MISS, FX.missSpeed, FX.missTtl, 1)
-      captureTrail(fx, w, e.x, e.y, true)
-      stickArrow(fx, w, e.x, e.y)
+      captureTrail(fx, w, e.arrow, true)
+      stickArrow(fx, w, e.arrow, e.x, e.y)
+    } else if (e.t === 'burst') {
+      // ★ 폭발. 예전에는 딸려 죽은 과녁의 chain 이벤트만 있어서, 아무것도 안 물리면
+      // 폭발이 일어난 흔적이 화면에 하나도 안 남았다 (형의 지적).
+      // 불덩이 + 파편 + 충격파 링 + 화면 흔들림 — 넷이 같이 와야 "터졌다"가 된다.
+      spawnFire(fx, e.x, e.y, e.radius)
+      spawn(fx, e.x, e.y, FX.burstBurst, KIND_CRIT, FX.burstSpeed, FX.burstTtl, FX.burstSize)
+      spawnRing(fx, e.x, e.y, e.radius, true)
+      fx.hitStop += P.hit.stopMs * 0.001 * FX.burstStopMul
     }
   }
 
@@ -566,6 +589,13 @@ export function updateFx(fx: Fx, dtReal: number): void {
     if (l <= 0) continue
     const nl = l - dt
     fx.rLife[s] = nl > 0 ? nl : 0
+  }
+
+  for (let s = 0; s < FIRES; s++) {
+    const l = fx.fLife[s] ?? 0
+    if (l <= 0) continue
+    const nl = l - dt
+    fx.fLife[s] = nl > 0 ? nl : 0
   }
 
   for (let s = 0; s < SQUASH; s++) {
@@ -726,6 +756,35 @@ export function drawFx(ctx: CanvasRenderingContext2D, cam: Camera, fx?: Fx): voi
     }
     ctx.stroke()
   }
+
+  // ── 불덩이 (폭발) ────────────────────────────────────────────
+  // 링보다 먼저. 불덩이는 면이고 링은 그 위를 지나는 충격파다.
+  for (let s = 0; s < FIRES; s++) {
+    const life = f.fLife[s] ?? 0
+    if (life <= 0) continue
+    const t = 1 - clamp01(life / FX.fireTtl)
+    // 순식간에 부풀었다가 천천히 사그라든다. 커지는 데 오래 걸리면 폭발이 아니라 풍선이다.
+    const grow = t < FX.firePeak
+      ? t / FX.firePeak
+      : 1
+    const fade = t < FX.firePeak ? 1 : 1 - (t - FX.firePeak) / (1 - FX.firePeak)
+    const rp = (f.fR[s] ?? 1) * cam.scale * FX.fireGrow * grow
+    if (rp < 1) continue
+    const sx = worldToScreenX(cam, f.fX[s] ?? 0)
+    const sy = worldToScreenY(cam, f.fY[s] ?? 0)
+    // 겉은 강조색, 속은 흰 심지. 두 겹이면 불덩이로 읽힌다.
+    ctx.globalAlpha = fade * 0.5
+    ctx.fillStyle = THEME.accent
+    ctx.beginPath()
+    ctx.arc(sx, sy, rp, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.globalAlpha = fade * 0.85
+    ctx.fillStyle = THEME.target2
+    ctx.beginPath()
+    ctx.arc(sx, sy, rp * (1 - t) * 0.45, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.globalAlpha = 1
 
   // ── 파열 링 (스쿼시 & 스트레치) ────────────────────────────────
   ctx.lineWidth = FX.ringW

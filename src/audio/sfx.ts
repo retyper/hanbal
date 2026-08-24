@@ -81,6 +81,9 @@ const K_END_BODY = 15
 const K_SPARKLE = 16
 /** 연쇄에 얹히는 종의 배음 — "또로롱" */
 const K_CHAIN_BELL = 17
+/** 폭발 — 저역 몸통 / 고역 파편 */
+const K_BOOM = 18
+const K_DEBRIS = 19
 
 /**
  * 음색 상수 — **파형의 신원**이다. 필터 주파수·Q·부분음 길이를 바꾸면 값이 세지는 게 아니라
@@ -192,6 +195,26 @@ const SFX = {
   unlockRing: 0.45,
   unlockInharm: 0.02,
 
+  // ── 폭발 (화전) ───────────────────────────────────────────────────
+  //
+  // 예전에는 폭발에 **전용 소리가 없었다.** 딸려 죽은 과녁의 유리 깨짐만 났고,
+  // 아무것도 안 물리면 아무 소리도 안 났다 (형의 지적: "뭐가 폭발이라는 건지").
+  //
+  // 폭발은 세 겹이다. 하나라도 빠지면 "퍽" 하고 만다:
+  //   1. 어택  — 아주 짧은 고역 파열. 터진 **순간**이 여기 있다.
+  //   2. 몸통  — 아래로 훅 떨어지는 저역. 가슴에 오는 부분.
+  //   3. 파편  — 그 뒤로 흩어지는 노이즈 꼬리. 이게 없으면 소리가 뭉툭하게 끝난다.
+  boomCrackFreq: 2600,
+  boomCrackGain: 0.5,
+  boomFreq: 150,
+  boomEndFreq: 38,
+  boomDur: 0.36,
+  boomDebrisFreq: 1500,
+  boomDebrisEndFreq: 260,
+  boomDebrisDur: 0.42,
+  boomDebrisGain: 0.45,
+  boomDebrisDelay: 0.035,
+
   // ── 연쇄에 얹히는 종 ── 유리 깨짐 위의 배음. 이게 "또로롱"이다.
   chainBellBase: 880,
   chainBellDur: 0.28,
@@ -228,6 +251,8 @@ const SMP = {
   uiPressGain: 0.3,
   uiHoverGain: 0.14,
   uiUnlockGain: 0.34,
+  /** 해금 소절은 클리어보다 작게. 판을 깬 것보다 큰 사건이 아니다. */
+  unlockJingleGain: 0.7,
 
   /**
    * 정중앙 문턱은 여기 없다 — `P.hit.bullseyeAcc` 하나뿐이다 (A2 단일 출처).
@@ -530,8 +555,9 @@ export function playUi(sfx: Sfx, kind: UiSound): void {
   }
 
   if (kind === 'unlock') {
-    // 스위치 딸깍은 **어택**이고, 그 위에 울리는 두 음이 "열렸다"를 만든다.
-    // 예전엔 샘플이 있으면 거기서 끝냈는데, 딸깍 하나로는 방향이 없어 그냥 버튼 소리였다.
+    // 연주된 한 소절이 있으면 그걸로 끝. 클리어음과 같은 악기(피치카토)라 한 세계로 들린다.
+    if (sample(sfx, s, 'unlock', P.audio.clearGain * SMP.unlockJingleGain, 1, 0, 0)) return
+    // 대체: 스위치 딸깍은 **어택**이고, 그 위에 울리는 두 음이 "열렸다"를 만든다.
     sample(sfx, s, 'switch', SMP.uiUnlockGain, 1, 0, 0)
     for (let n = 0; n < UNLOCK_NOTES.length; n++) {
       BL.freq = UNLOCK_NOTES[n] ?? 0
@@ -733,6 +759,51 @@ function synthHit(s: Synth, accuracy: number): void {
 }
 
 /**
+ * 폭발. 어택(고역 파열) → 몸통(저역 하강) → 파편(노이즈 꼬리) 세 겹.
+ *
+ * 셋을 다른 kind 번호로 나눠 예약한다. 같은 번호면 에코 억제가 뒤의 둘을 눌러버려
+ * "퍽" 하나로 끝난다 — 폭발이 폭발로 안 들리는 가장 흔한 이유다.
+ */
+function playBurst(s: Synth): void {
+  const g = P.audio.burstGain
+
+  // 1. 어택 — 터진 순간. 아주 짧아야 한다.
+  NB.filterType = 'highpass'
+  NB.freq = SFX.boomCrackFreq
+  NB.endFreq = 0
+  NB.q = 0.7
+  NB.dur = 0.04
+  NB.attack = 0.001
+  NB.decay = 0.038
+  NB.gain = g * SFX.boomCrackGain
+  NB.delay = 0
+  noiseBurst(s, K_BOOM, NB)
+
+  // 2. 몸통 — 아래로 훅 떨어진다. 가슴에 오는 건 이 부분이다.
+  TN.type = 'sine'
+  TN.freq = SFX.boomFreq
+  TN.endFreq = SFX.boomEndFreq
+  TN.dur = SFX.boomDur
+  TN.attack = 0.004
+  TN.decay = SFX.boomDur
+  TN.gain = g
+  TN.delay = 0
+  tone(s, K_BOOM, TN)
+
+  // 3. 파편 — 흩어지는 꼬리. 없으면 소리가 뭉툭하게 끊긴다.
+  NB.filterType = 'bandpass'
+  NB.freq = SFX.boomDebrisFreq
+  NB.endFreq = SFX.boomDebrisEndFreq
+  NB.q = 0.5
+  NB.dur = SFX.boomDebrisDur
+  NB.attack = 0.006
+  NB.decay = SFX.boomDebrisDur
+  NB.gain = g * SFX.boomDebrisGain
+  NB.delay = SFX.boomDebrisDelay
+  noiseBurst(s, K_DEBRIS, NB)
+}
+
+/**
  * 판 클리어 — 이 게임에서 유일하게 "잘했다"고 말하는 소리다.
  *
  * 세 겹이다. 하나라도 빠지면 신호음으로 되돌아간다:
@@ -743,8 +814,13 @@ function synthHit(s: Synth, accuracy: number): void {
  * 마지막 음만 다른 kind 번호를 쓴다. 앞 세 음과 같은 번호면 에코 억제(echoScale)가
  * 마지막을 가장 작게 눌러서, 올라가는 소리가 되레 사그라든다.
  */
-function playStageClear(s: Synth): void {
+function playStageClear(sfx: Sfx, s: Synth): void {
   const g = P.audio.endGain
+
+  // ★ 진짜 연주된 한 소절이 있으면 그걸로 끝낸다. 합성 상승음은 아무리 배음을 쌓아도
+  // "신호음"이지 음악이 아니다 (형의 반려). 아래 합성 경로는 샘플이 아직 안 왔거나
+  // ogg를 못 읽는 브라우저를 위한 **대체**다 — 소리가 통째로 사라지는 경로는 없다.
+  if (sample(sfx, s, 'clear', P.audio.clearGain, 1, 0, 0)) return
 
   TN.type = 'sine'
   TN.freq = SFX.endBodyFreq
@@ -859,6 +935,8 @@ export function pumpSfx(sfx: Sfx, w: World): void {
       playRelease(s, e.power)
     } else if (e.t === 'hit') {
       playHit(sfx, s, w, e.targetId, e.accuracy)
+    } else if (e.t === 'burst') {
+      playBurst(s)
     } else if (e.t === 'chain') {
       playChain(s, sfx, e.depth)
     } else if (e.t === 'miss') {
@@ -902,7 +980,7 @@ export function pumpSfx(sfx: Sfx, w: World): void {
     } else if (e.t === 'collapse') {
       playCollapse(s)
     } else if (e.t === 'stage_end') {
-      if (e.cleared) playStageClear(s)
+      if (e.cleared) playStageClear(sfx, s)
       // 실패에는 소리를 얹지 않는다. 실패를 조롱하지 않는다 (GDD 9장의 정신).
     }
   }

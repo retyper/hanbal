@@ -110,6 +110,15 @@ export type ArrowOutcome = 'flying' | 'hit' | 'miss' | 'expired'
 export const TRAIL_POINTS = 48
 
 export interface Arrow {
+  /**
+   * 화살 풀에서의 자리 번호. **평생 바뀌지 않는다** (풀은 고정 크기라 슬롯이 곧 신원이다).
+   *
+   * 왜 필요한가: 명중/빗나감 이벤트를 받은 렌더가 "그래서 **어느** 화살이?"를 알아야 한다.
+   * 예전엔 좌표로 되짚었는데, 관통 살처럼 맞고도 계속 나는 화살은 명중 순간 아직 'flying'이라
+   * 검색에 안 걸리고 **직전 화살의 시체**가 대신 뽑혔다 — 그 시체의 궤적은 궁수의 손에서
+   * 시작하므로 화면에는 "손에서 화살이 하나 더 나가는" 것으로 보였다 (실제 재현 확인).
+   */
+  id: number
   alive: boolean
   x: number
   y: number
@@ -211,9 +220,16 @@ export type SimEvent =
   | { t: 'collapse' }
   /** 붕괴 경고 진입 (렌더/오디오가 예고를 시작) */
   | { t: 'warn_start' }
-  | { t: 'hit'; targetId: number; x: number; y: number; score: number; /** 중심 명중도 0..1 */ accuracy: number; chain: number; combo: number }
+  /** `arrow`는 화살 풀의 자리 번호 (Arrow.id). 소비자가 **어느 화살인지**를 좌표로 추측하지 않게 한다. */
+  | { t: 'hit'; targetId: number; x: number; y: number; score: number; /** 중심 명중도 0..1 */ accuracy: number; chain: number; combo: number; arrow: number }
+  /** 연쇄는 화살이 아니라 낙하물·폭발이 일으킨다. 그래서 arrow 가 없다. */
   | { t: 'chain'; targetId: number; x: number; y: number; depth: number }
-  | { t: 'miss'; x: number; y: number }
+  /**
+   * 폭발이 일어났다. **딸려 죽은 게 하나도 없어도 나간다** — 터진 건 터진 것이다.
+   * radius 는 월드 미터. 렌더가 이걸로 불덩이 크기를 정한다.
+   */
+  | { t: 'burst'; x: number; y: number; radius: number }
+  | { t: 'miss'; x: number; y: number; arrow: number }
   | { t: 'stage_end'; cleared: boolean; score: number }
 
 // ───────────────────────────── 스테이지 ─────────────────────────────
