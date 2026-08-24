@@ -422,7 +422,15 @@ export function loadSave(): SaveData {
  */
 export function wipeSave(): void {
   try {
-    localStorage.removeItem(KEY)
+    // **완전** 초기화다 (형: "기록 완전초기화가 뭔지 몰라?") — 세이브만이 아니라
+    // 이 게임이 만든 모든 키(hanbal.audio.v1 소리 설정 · hanbal.tune.v1 튜닝 저장값)를 지운다.
+    // 다른 사이트 키는 건드리지 않는다: 접두사가 문지방이다.
+    const doomed: string[] = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const k2 = localStorage.key(i)
+      if (k2 !== null && k2.startsWith('hanbal.')) doomed.push(k2)
+    }
+    for (const k2 of doomed) localStorage.removeItem(k2)
   } catch {
     // 프라이빗 모드 등으로 막혀 있으면 지울 것도 없다.
   }
