@@ -172,6 +172,31 @@ const BOWPOSE = {
   ctrlV: 0.6,
 } as const
 
+/**
+ * 릴리즈 팔로스루 — 순수하게 시간의 함수다 (release 시점만 기억한다. 적분 없음 = 프레임률 무관).
+ * kick = 반동으로 손이 뒤로 벌어지는 거리(m) · kickT = 반동 한 사이클(s) ·
+ * settleT = 손이 제자리로 내려오는 시간(s) · vib = 시위 잔떨림 진폭(m)·주파수(Hz)·감쇠(s).
+ */
+const FOLLOW = {
+  kick: 0.07,
+  kickT: 0.16,
+  settleT: 0.5,
+  restFwd: 0.1,
+  restDrop: 0.16,
+  vib: 0.028,
+  vibHz: 16,
+  vibDecay: 0.22,
+} as const
+
+/** 렌더 전용 상태 — sim을 건드리지 않는다. 직전 프레임의 단계와 릴리즈 순간의 손 자리. */
+const relAnim = {
+  prevPhase: 'idle' as string,
+  /** 릴리즈 순간 (w.elapsed 기준). 음수면 아직 없음. */
+  at: -1,
+  hx: 0,
+  hy: 0,
+}
+
 const BOW_RAMP = ['#d9cba6', '#e0bd8d', '#e8a874', '#ef8f5d', '#f57a4f', '#ff6a45'] as const
 
 /**
@@ -220,6 +245,12 @@ const rig = {
   sx: 0, sy: 0,
   ux: 1, uy: 0,
   vx: 0, vy: 1,
+  /**
+   * 시위 잡는 손의 그림 좌표. 당기는 동안은 노크와 같지만, **놓은 뒤에는 다르다** —
+   * 시위만 튕겨 돌아가고 손은 앵커 곁에 남아 반동으로 살짝 벌어졌다 돌아온다 (형의 지적:
+   * "활줄만 튕겨 돌아오고 놓은 팔은 그대로 있어야 하는 거 아냐"). 실제 사법의 팔로스루다.
+   */
+  hdX: 0, hdY: 0,
   /** 궁수가 바라보는 쪽 (+1 오른쪽 / -1 왼쪽). 등·골반은 조준각이 아니라 이 방향의 반대다. */
   face: 1,
   hx: 0, hy: 0,
@@ -322,6 +353,30 @@ function computeRig(cam: Camera, w: World): void {
   // maxDraw가 0.72에서 멈추는 초보는 턱 앞에서 멈춘다 — "아직 힘이 모자라다"가 자세로 읽힌다.
   rig.nockX = a.x + ux * (1 - d) * BODY.span
   rig.nockY = a.y + uy * (1 - d) * BODY.span
+
+  // ── 시위손 (릴리즈 팔로스루) ──
+  // 당기는 동안은 시위(노크)를 잡고 있고, 놓는 순간부터는 시위와 헤어진다.
+  const drawingNow = a.phase === 'drawing' || a.phase === 'full' || a.phase === 'collapsing'
+  if (drawingNow) {
+    relAnim.hx = rig.nockX
+    relAnim.hy = rig.nockY
+    rig.hdX = rig.nockX
+    rig.hdY = rig.nockY
+  } else {
+    if (relAnim.prevPhase === 'drawing' || relAnim.prevPhase === 'full' || relAnim.prevPhase === 'collapsing') {
+      relAnim.at = w.elapsed
+    }
+    const t = relAnim.at >= 0 ? Math.max(0, w.elapsed - relAnim.at) : 1e9
+    // 반동: 놓은 자리에서 **뒤로** 벌어졌다가(어깨가 열린다) —
+    const kick = t < FOLLOW.kickT ? Math.sin((t / FOLLOW.kickT) * Math.PI) * FOLLOW.kick : 0
+    // — settleT에 걸쳐 편한 자리(어깨 앞·아래)로 내려온다.
+    const settle = smoothstep(Math.min(1, t / FOLLOW.settleT))
+    const restX = rig.sx + ux * FOLLOW.restFwd - vx * FOLLOW.restDrop
+    const restY = rig.sy + uy * FOLLOW.restFwd - vy * FOLLOW.restDrop
+    rig.hdX = lerp(relAnim.hx - ux * kick, restX, settle)
+    rig.hdY = lerp(relAnim.hy - uy * kick, restY, settle)
+  }
+  relAnim.prevPhase = a.phase
 }
 
 /** 활 손 화면 좌표 — HUD가 스태미나 게이지를 활 옆에 붙이는 데 쓴다. */
@@ -478,12 +533,13 @@ export function drawArcher(
     * lerp(POSE.slouchElbow, 1, brace)
     * lerp(1, POSE.fullElbow, trueFull)
     * (1 - unlock * P.render.poseStrainElbow)
-  const elbowX = rig.nockX - rig.ux * BODY.elbowBack + rig.vx * elbowRise
-  const elbowY = rig.nockY - rig.uy * BODY.elbowBack + rig.vy * elbowRise
+  // 팔은 시위가 아니라 **손**을 따른다 — 놓은 뒤 시위는 튕겨 돌아가도 팔은 남는다.
+  const elbowX = rig.hdX - rig.ux * BODY.elbowBack + rig.vx * elbowRise
+  const elbowY = rig.hdY - rig.uy * BODY.elbowBack + rig.vy * elbowRise
   ctx.beginPath()
   ctx.moveTo(worldToScreenX(cam, rig.sx), worldToScreenY(cam, rig.sy))
   ctx.lineTo(worldToScreenX(cam, elbowX), worldToScreenY(cam, elbowY))
-  ctx.lineTo(worldToScreenX(cam, rig.nockX), worldToScreenY(cam, rig.nockY))
+  ctx.lineTo(worldToScreenX(cam, rig.hdX), worldToScreenY(cam, rig.hdY))
   ctx.stroke()
 
   // ── 활 ────────────────────────────────────────────────────────
@@ -564,11 +620,25 @@ export function drawArcher(
   }
 
   // 시위 — 몸보다 훨씬 얇다. 고자 끝에 걸린다.
+  // 당기는 동안만 노크로 꺾인다. 놓으면 **시위만** 제자리로 튕겨 돌아가 잠깐 잔떨림이 남는다 —
+  // 손은 위의 팔로스루가 따로 데려간다 (형: "활줄만 튕겨 돌아오고").
   ctx.strokeStyle = rig.flash > ON.flash ? THEME.target2 : THEME.string
   ctx.lineWidth = Math.max(lw * LINE.stringMul, LINE.thinMinPx)
   ctx.beginPath()
   ctx.moveTo(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy))
-  ctx.lineTo(worldToScreenX(cam, rig.nockX), worldToScreenY(cam, rig.nockY))
+  const strDrawing = a.phase === 'drawing' || a.phase === 'full' || a.phase === 'collapsing'
+  if (strDrawing) {
+    ctx.lineTo(worldToScreenX(cam, rig.nockX), worldToScreenY(cam, rig.nockY))
+  } else {
+    const vt = relAnim.at >= 0 ? w.elapsed - relAnim.at : 1e9
+    if (vt < FOLLOW.vibDecay * 3) {
+      // 잔떨림 — 시위 중앙이 u축으로 감쇠 진동한다. 이게 "튕겨 돌아왔다"의 마침표다.
+      const amp = FOLLOW.vib * Math.exp(-vt / FOLLOW.vibDecay) * Math.sin(vt * FOLLOW.vibHz * TAU)
+      const mx = (tipAx + tipBx) * 0.5 + rig.ux * amp
+      const my = (tipAy + tipBy) * 0.5 + rig.uy * amp
+      ctx.lineTo(worldToScreenX(cam, mx), worldToScreenY(cam, my))
+    }
+  }
   ctx.lineTo(worldToScreenX(cam, tipBx), worldToScreenY(cam, tipBy))
   ctx.stroke()
 
@@ -607,12 +677,13 @@ export function drawArcher(
   //   반 길이의 애기살뿐이다. 그래서 통아는 recovering에도 그린다 (형의 힌트 그대로).
   const pierce = w.arrowKind === 'pierce'
   if (pierce && a.phase !== 'idle') {
-    // 통아 — 노크(시위 손)에서 화살 길이만큼 앞으로. 손을 따라 움직인다.
+    // 통아 — **시위 손에 붙어 다닌다.** 당길 땐 살의 활주로가 되고, 놓은 뒤에도
+    // 손에 남는다 (편전의 실물이 그렇다 — 형의 힌트: "쏠 때마다 나무대가 오른손에 남아").
     ctx.lineWidth = Math.max(lw * LINE.arrowMul * 1.5, LINE.thinMinPx)
     ctx.strokeStyle = THEME.bow
     line(
-      ctx, cam, rig.nockX, rig.nockY,
-      rig.nockX + rig.ux * BODY.arrowLen, rig.nockY + rig.uy * BODY.arrowLen,
+      ctx, cam, rig.hdX, rig.hdY,
+      rig.hdX + rig.ux * BODY.arrowLen, rig.hdY + rig.uy * BODY.arrowLen,
     )
   }
   if (a.phase !== 'idle' && a.phase !== 'recovering') {
