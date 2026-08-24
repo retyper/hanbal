@@ -17,6 +17,7 @@ import type {
   ArcherState,
   Arrow,
   ArrowKindId,
+  BowMods,
   InputFrame,
   StageDef,
   Stats,
@@ -259,9 +260,40 @@ function growTargets(w: World, want: number): void {
   while (w.targets.length < want) w.targets.push(newTarget())
 }
 
+/** 연습궁(중립). 활을 안 넘긴 호출자(밸런스 도구·기존 테스트)는 전부 이 값으로 돈다. */
+function neutralBow(): BowMods {
+  return {
+    speedMul: 1,
+    drawTimeMul: 1,
+    tremorMul: 1,
+    scatterMul: 1,
+    holdDrainMul: 1,
+    maxDrawAdd: 0,
+    windMul: 1,
+    pierceAdd: 0,
+  }
+}
+
+/**
+ * 활은 **판 경계에서만** 갈아 끼운다 (A1). 객체를 참조로 잡지 않고 필드를 복사한다 —
+ * game 레이어가 자기 객체를 나중에 고쳐도 진행 중인 판이 흔들리면 안 된다.
+ */
+function copyBow(dst: BowMods, src: BowMods): void {
+  dst.speedMul = src.speedMul
+  dst.drawTimeMul = src.drawTimeMul
+  dst.tremorMul = src.tremorMul
+  dst.scatterMul = src.scatterMul
+  dst.holdDrainMul = src.holdDrainMul
+  dst.maxDrawAdd = src.maxDrawAdd
+  dst.windMul = src.windMul
+  dst.pierceAdd = src.pierceAdd
+}
+
 // ───────────────────────────── 공개 API ─────────────────────────────
 
-export function createWorld(stage: StageDef, stats: Stats, arrow?: ArrowKindId): World {
+export function createWorld(
+  stage: StageDef, stats: Stats, arrow?: ArrowKindId, bow?: BowMods,
+): World {
   const kind: ArrowKindId = arrow ?? 'basic'
   const w: World = {
     tick: 0,
@@ -276,6 +308,7 @@ export function createWorld(stage: StageDef, stats: Stats, arrow?: ArrowKindId):
     windPhase: 0,
     arrowKind: kind,
     fx: arrowFx(kind),
+    bow: neutralBow(),
     arrowsLeft: stage.arrows,
     score: 0,
     combo: 0,
@@ -284,7 +317,7 @@ export function createWorld(stage: StageDef, stats: Stats, arrow?: ArrowKindId):
     events: [],
   }
   // 풀 할당과 초기화는 resetWorld 한 곳에만 둔다. 두 벌로 갈라지면 반드시 어긋난다.
-  resetWorld(w, stage, stats, kind)
+  resetWorld(w, stage, stats, kind, bow)
   return w
 }
 
@@ -292,7 +325,9 @@ export function createWorld(stage: StageDef, stats: Stats, arrow?: ArrowKindId):
  * 판 재시작. **새 World 를 만들지 않는다.**
  * R 키 연타로 매번 객체를 새로 만들면 GC 가 프레임을 끊어먹는다 (A5).
  */
-export function resetWorld(w: World, stage: StageDef, stats: Stats, arrow?: ArrowKindId): void {
+export function resetWorld(
+  w: World, stage: StageDef, stats: Stats, arrow?: ArrowKindId, bow?: BowMods,
+): void {
   const derived = effectiveStats(stats)
 
   w.tick = 0
@@ -305,6 +340,8 @@ export function resetWorld(w: World, stage: StageDef, stats: Stats, arrow?: Arro
   // 효과 수치를 P에서 다시 굽는다. 튜닝 콘솔로 노브를 움직인 게 여기서 먹는다 (A2).
   refreshArrowFx()
   w.fx = arrowFx(w.arrowKind)
+  // 활도 화살과 같은 규칙이다 — 판 경계에서만, 안 주면 직전 판 것을 이어간다.
+  if (bow !== undefined) copyBow(w.bow, bow)
   // 같은 시드 = 같은 판 (A1). Rng 객체를 새로 만들지 않고 상태만 되감는다.
   w.rng.restore(stage.seed)
   w.status = 'playing'

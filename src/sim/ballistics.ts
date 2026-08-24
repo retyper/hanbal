@@ -37,8 +37,10 @@ export function spawnArrow(w: World, angle: number, power: number): Arrow | null
   const pw = clamp01(power)
   // drawCurve > 1 이라 만작 근처에서 속도가 급격히 붙는다. 실제 활의 장력 곡선이 이렇다.
   // 화살 종류의 초속 배수(무거운 살 0.72)는 여기서 한 번만 곱한다.
+  // 활의 초속 배수도 여기서 한 번만 (docs/BOWS.md — 각궁 +8% · 장궁 +15% · 리커브 -8%).
   const speed =
-    lerp(P.bow.minSpeed, P.bow.maxSpeed, Math.pow(pw, P.bow.drawCurve)) * d.speedMul * w.fx.speedMul
+    lerp(P.bow.minSpeed, P.bow.maxSpeed, Math.pow(pw, P.bow.drawCurve))
+      * d.speedMul * w.fx.speedMul * w.bow.speedMul
 
   launch(a, w.archer.x, w.archer.y, angle, speed, pw, 0)
 
@@ -117,7 +119,9 @@ export function stepArrows(w: World): void {
     // vx에 바람을 더하면 에너지를 주입하게 되고 "발사 후 운동에너지는 증가하지 않는다"가 깨진다.
     // 상대속도에 대한 항력으로만 작용시키면 화살은 공기 속도에 점근할 뿐 그 이상 빨라지지 않는다.
     // w.wind 에는 world.ts 가 이미 P.wind.effect 를 곱해 두었다. 여기서 또 곱하면 이중 적용이다.
-    const rvx = a.vx - w.wind
+    // 활의 바람 배수 — 장궁의 무거운 화살은 같은 공기를 덜 탄다. 화살 쪽 감쇠(fx.dragMul)와
+    // 채널이 다르다: 이건 바람(공기 속도)의 체감, 저건 전체 항력의 체감이다.
+    const rvx = a.vx - w.wind * w.bow.windMul
     const rvy = a.vy
     const rSpeed = Math.sqrt(rvx * rvx + rvy * rvy)
     // 항력은 속도 제곱에 비례하고 방향은 상대속도 반대 → 성분별로 k * |v| * v_i.

@@ -21,7 +21,9 @@ import {
   trainingCost,
   type StatKey,
 } from '../game/progression.ts'
+import { BOW_KINDS, masteryLevel, MASTERY_HITS, type BowKindId } from '../game/bows.ts'
 import { onSaveChanged, writeSave, type SaveData } from '../game/save.ts'
+import { unlockedBows, unlockOfBow } from '../game/unlocks.ts'
 import { P } from '../tune/params.ts'
 import type { Overlay } from './overlay.ts'
 
@@ -52,6 +54,26 @@ const CSS = `
 .g-up { grid-column: 2; grid-row: 1 / span 3; min-width: 108px; justify-content: center; }
 .g-cost { color: var(--accent); }
 .g-up[disabled] .g-cost { color: inherit; }
+
+/* ── 활 걸이 ── 스탯과 발자취가 다른 물건임이 한눈에 읽히게 칸으로 나눈다. */
+.g-bows { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 14px; }
+.g-bows h3 { color: var(--dim); font-size: 13px; letter-spacing: .12em; margin: 0 0 4px; }
+.g-bow {
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 20px;
+  padding: 12px 0 11px; border-top: 1px solid var(--line);
+}
+.g-bow:first-of-type { border-top: none; }
+.g-bow .g-bname { color: var(--ink); font-weight: 700; font-size: 16px; }
+.g-bow .g-borigin { color: var(--mute); font-size: 12px; margin-left: 10px; letter-spacing: .04em; }
+.g-bow .g-bperk { grid-column: 1; color: var(--body); font-size: 13px; }
+.g-bow .g-bcost { grid-column: 1; color: var(--mute); font-size: 13px; }
+.g-bow .g-bsyn { grid-column: 1; color: var(--teal); font-size: 13px; }
+.g-bow .g-bpick { grid-column: 2; grid-row: 1 / span 4; min-width: 96px; justify-content: center; }
+/* 장착 중 — 버튼이 아니라 상태다. */
+.g-bow.g-worn .g-bpick { border-color: var(--teal); color: var(--teal); pointer-events: none; }
+/* 잠긴 활 — 수집 화면과 같은 문법: 흐리게, 조건은 보이게 (VS의 잠긴 칸). */
+.g-bow.g-lockd .g-bname { color: var(--mute); letter-spacing: .1em; font-weight: 600; }
+.g-bow.g-lockd .g-bperk, .g-bow.g-lockd .g-bcost, .g-bow.g-lockd .g-bsyn { color: var(--mute); }
 
 .g-foot {
   border-top: 1px solid var(--line); margin-top: 20px; padding-top: 16px;
@@ -135,6 +157,90 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
     })
     panel.appendChild(el)
     rows.push(row)
+  }
+
+  // ── 활 걸이 (docs/BOWS.md) ──
+  // 장착은 다음 판부터다 — 판 도중에 활이 바뀌면 같은 시드가 다른 판이 된다 (A1).
+  const rack = document.createElement('div')
+  rack.className = 'g-bows'
+  rack.innerHTML = '<h3>활 걸이</h3>'
+  const rackSub = document.createElement('p')
+  rackSub.className = 'hb-lead'
+  rackSub.textContent = '바꾼 활은 다음 판부터 든다. 숙련은 그 활로 맞힌 수만큼 쌓여 단점이 줄어든다.'
+  rack.appendChild(rackSub)
+
+  interface BowRow {
+    id: BowKindId
+    el: HTMLElement
+    name: HTMLElement
+    perk: HTMLElement
+    cost: HTMLElement
+    syn: HTMLElement
+    btn: HTMLButtonElement
+  }
+  const bowRows: BowRow[] = []
+  for (const b of BOW_KINDS) {
+    const el = document.createElement('div')
+    el.className = 'g-bow'
+    el.innerHTML = `
+      <div><span class="g-bname"></span><span class="g-borigin"></span></div>
+      <div class="g-bperk"></div>
+      <div class="g-bcost"></div>
+      <div class="g-bsyn"></div>
+      <button class="hb-btn g-bpick" type="button">들기</button>`
+    const btn = el.querySelector('.g-bpick') as HTMLButtonElement
+    btn.addEventListener('click', () => {
+      d.bow = b.id
+      writeSave(d)
+      refresh()
+      onChange()
+    })
+    bowRows.push({
+      id: b.id,
+      el,
+      name: el.querySelector('.g-bname') as HTMLElement,
+      perk: el.querySelector('.g-bperk') as HTMLElement,
+      cost: el.querySelector('.g-bcost') as HTMLElement,
+      syn: el.querySelector('.g-bsyn') as HTMLElement,
+      btn,
+    })
+    ;(el.querySelector('.g-borigin') as HTMLElement).textContent = b.origin
+    rack.appendChild(el)
+  }
+  panel.appendChild(rack)
+
+  /** 활 걸이 갱신. 목록·조건·숙련 전부 여기서만 다시 그린다. */
+  const refreshBows = (): void => {
+    const owned = unlockedBows(d.unlocked)
+    for (const row of bowRows) {
+      const kind = BOW_KINDS.find((b) => b.id === row.id)
+      if (kind === undefined) continue
+      const has = row.id === 'practice' || owned.includes(row.id)
+      const worn = d.bow === row.id
+      row.el.classList.toggle('g-worn', worn)
+      row.el.classList.toggle('g-lockd', !has)
+      if (!has) {
+        // 수집 화면과 같은 문법 — 이름은 가리고 조건은 보인다. 그게 궁금증의 절반이다.
+        row.name.textContent = '？？？'
+        const u = unlockOfBow(row.id)
+        row.perk.textContent = u !== undefined ? u.hint : ''
+        row.cost.textContent = ''
+        row.syn.textContent = ''
+        row.btn.style.display = 'none'
+        continue
+      }
+      const hitsWith = Math.floor(d.bowHits[row.id] ?? 0)
+      const lv = masteryLevel(hitsWith)
+      const next = MASTERY_HITS[lv]
+      const lvText = lv > 0 ? ` · 숙련 ${lv}` : ''
+      const nextText = next !== undefined ? ` (${hitsWith}/${next})` : ''
+      row.name.textContent = kind.name + lvText + nextText
+      row.perk.textContent = kind.perk
+      row.cost.textContent = kind.cost === '없음' ? '' : `대가: ${kind.cost}`
+      row.syn.textContent = kind.synergy !== undefined ? `궁합: ${kind.synergy.label}` : ''
+      row.btn.style.display = ''
+      row.btn.textContent = worn ? '들고 있음' : '들기'
+    }
   }
 
   // ── 오프라인 축적 스위치 (GDD 5장) ──
@@ -222,6 +328,7 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
       r.btn.disabled = d.training < cost
     }
 
+    refreshBows()
     open.classList.toggle('hb-has', canGrow(d))
   }
 

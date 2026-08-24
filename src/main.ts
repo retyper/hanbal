@@ -8,6 +8,7 @@
  * 레이어 방향(A1)을 지키는 자리가 여기다. game/loop.ts 는 ui/ 를 모르고, ui/ 는 game/ 을 읽는다.
  * 둘을 아는 유일한 파일이 이 조립 파일이다.
  */
+import { bowKind } from './game/bows.ts'
 import { createLoop } from './game/loop.ts'
 import { loadSave } from './game/save.ts'
 import { progressOf } from './game/unlocks.ts'
@@ -49,7 +50,11 @@ const loop = createLoop(el, {
     runGain: (line, leveled) => showRunGain(overlay, line, leveled),
     offlineGain: (gain) => showOfflineGain(overlay, gain),
     // 3택 화면 (docs/HOOK.md ★1). onPick 한 번으로 끝나고 그 순간 판이 시작된다 (C1).
-    draft: (offer, onPick) => mountDraft(overlay, offer, onPick),
+    // 든 활과 궁합인 살은 카드에 그 사실이 적힌다 — 조합은 발견돼야 재미다 (docs/BOWS.md).
+    draft: (offer, onPick) => {
+      const syn = bowKind(save.bow).synergy
+      mountDraft(overlay, offer, onPick, syn?.arrow, syn?.label)
+    },
     // 새로 열린 것은 구석 알림 한 줄. 모달로 막지 않는다 (C1).
     unlocked: (ids) => showUnlocked(overlay, ids),
     progressed: () => updateCollection(progressOf(save), save.unlocked, save.stars),

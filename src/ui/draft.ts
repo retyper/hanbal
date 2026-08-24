@@ -79,7 +79,7 @@ const CSS = `
 .d-card .d-ic { color: var(--tint); line-height: 0; }
 .d-card .d-name { color: var(--ink); font-weight: 700; font-size: 19px; letter-spacing: -.01em; }
 .d-card .d-origin { color: var(--mute); font-size: 12px; letter-spacing: .04em; margin-top: -8px; }
-.d-card .d-desc { color: var(--body); font-size: 14px; line-height: 1.55; flex: 1; }
+.d-card .d-desc { color: var(--body); font-size: 14px; line-height: 1.55; flex: 1; white-space: pre-line; }
 .d-card .d-k {
   position: absolute; top: 12px; right: 12px; color: var(--mute); font-size: 12px;
   font-family: var(--num); border: 1px solid var(--line); border-radius: 2px; padding: 1px 6px;
@@ -101,7 +101,13 @@ const CSS = `
  * 패널이 열려 있는 동안 game/loop.ts는 `ui.paused()`(= overlay.visible())로 sim을 세운다.
  * 그래서 이 화면이 떠 있는 동안 스태미나가 새거나 판이 끝나는 일은 없다.
  */
-export function mountDraft(o: Overlay, offer: DraftOffer, onPick: (id: ArrowKindId) => void): void {
+export function mountDraft(
+  o: Overlay,
+  offer: DraftOffer,
+  onPick: (id: ArrowKindId) => void,
+  synergyArrow?: ArrowKindId,
+  synergyLabel?: string,
+): void {
   if (offer.kinds.length === 0) {
     onPick(DEFAULT_ARROW)
     return
@@ -164,8 +170,13 @@ export function mountDraft(o: Overlay, offer: DraftOffer, onPick: (id: ArrowKind
     ;(card.querySelector('.d-name') as HTMLElement).textContent = kind.name
     // 한자·유래 한 줄. '애기살'이 뭔지 모르는 사람에게는 이 줄이 이름의 뜻이다.
     ;(card.querySelector('.d-origin') as HTMLElement).textContent = kind.origin
-    ;(card.querySelector('.d-desc') as HTMLElement).textContent = kind.desc
-    card.setAttribute('aria-label', `${kind.name} — ${kind.desc}`)
+    // 지금 든 활과 궁합인 살은 카드가 직접 말한다 — 조합은 발견돼야 재미다 (docs/BOWS.md 1장).
+    const desc = id === synergyArrow && synergyLabel !== undefined
+      ? `${kind.desc}
+궁합 — ${synergyLabel}`
+      : kind.desc
+    ;(card.querySelector('.d-desc') as HTMLElement).textContent = desc
+    card.setAttribute('aria-label', `${kind.name} — ${desc}`)
     card.addEventListener('click', () => finish(id))
     cards.appendChild(card)
   }

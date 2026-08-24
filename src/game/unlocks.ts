@@ -17,6 +17,7 @@
  * 전자는 다음 판을 켜게 하고 후자는 그냥 벽이다. 화면(ui/collection.ts)이 이 두 값을 쓴다.
  */
 import type { ArrowKindId } from './arrows.ts'
+import type { BowKindId } from './bows.ts'
 
 // ─────────────────────────── 진행도 ───────────────────────────
 
@@ -93,7 +94,7 @@ export function progressOf(d: ProgressSource): Progress {
 // ─────────────────────────── 해금 정의 ───────────────────────────
 
 /** 잠긴 칸의 분류 꼬리표. 이름은 가려도 **무엇의 자리인지**는 알려준다 — 그게 궁금증의 절반이다. */
-export type UnlockKind = 'arrow' | 'title'
+export type UnlockKind = 'arrow' | 'title' | 'bow'
 
 export interface UnlockDef {
   /** 세이브에 남는 영구 id. 절대 바꾸지 않는다 (바꾸면 남의 세이브에서 해금이 사라진다). */
@@ -111,6 +112,8 @@ export interface UnlockDef {
   check(p: Progress): boolean
   /** 이 해금이 여는 화살. 칭호에는 없다. */
   grants?: ArrowKindId
+  /** 이 해금이 여는 활 (docs/BOWS.md). */
+  grantsBow?: BowKindId
 }
 
 /**
@@ -124,11 +127,27 @@ const A_SPLIT: ArrowKindId = 'split'
 const A_HOMING: ArrowKindId = 'homing'
 const A_HEAVY: ArrowKindId = 'heavy'
 
+/** 활 id의 주인은 `game/bows.ts`다 — 아래 네 줄은 참조일 뿐이다. */
+const B_GAKGUNG: BowKindId = 'gakgung'
+const B_RECURVE: BowKindId = 'recurve'
+const B_LONGBOW: BowKindId = 'longbow'
+const B_COMPOUND: BowKindId = 'compound'
+
 // ── 조건 문턱 ────────────────────────────────────────────────────
 //
 // 손맛 상수가 아니라 **진행 곡선**이라 params.ts(m/s/rad만 담는다)에 넣지 않았다.
 // 옮기게 되면 progression 그룹 옆이 자리다.
 // TODO(params): src/tune/params.ts → P.unlock.*  (밸런스 시뮬로 달성 판수를 재보고 나서)
+
+/**
+ * 활 문턱 (docs/BOWS.md 3장). 화살과 다른 지표에 걸어 두 수집이 따로 전진하게 한다.
+ * 각궁을 6판에 이르게 주는 이유: "활도 모으는 것"임을 첫 챕터 안에 알려야
+ * 잠긴 활 세 자루가 궁금증이 된다 (VS의 잠긴 칸 원리 — 이 파일 머리말).
+ */
+const G_GAKGUNG_STAGES = 6
+const G_RECURVE_HITS = 45
+const G_LONGBOW_STARS = 45
+const G_COMPOUND_STAGES = 35
 
 /** 첫 해금. 2판이면 "이 게임에 열 게 있다"는 걸 알기에 충분히 이르다. */
 const G_BURST_STAGES = 2
@@ -202,6 +221,13 @@ function def(
   return grants === undefined ? base : { ...base, grants }
 }
 
+/** def()의 활판. 시그니처를 합치면 grants/grantsBow 를 헷갈려 넘기는 실수가 타입을 통과한다. */
+function defBow(
+  id: string, label: string, hint: string, at: Read, goal: number, grantsBow: BowKindId,
+): UnlockDef {
+  return { ...def(id, label, 'bow', hint, at, goal), grantsBow }
+}
+
 /**
  * 해금 목록. **순서 = 예상 달성 순서**다. 화면이 이 순서를 그대로 쓰므로
  * 목록을 위에서 아래로 훑으면 "지금 어디쯤 왔는지"가 그대로 읽힌다.
@@ -225,21 +251,28 @@ function def(
  * | 13 | 칭호 흠 없는 활 | 무손실 15판 | 38판 |
  * | 14 | 칭호 마흔 발 | 40판 클리어 | 40판 |
  *
+ * 활 4자루(각궁 6판 · 리커브 ~15판 · 장궁 ~21판 · 컴파운드 35판)가 사이에 끼어 있다.
+ * 문턱은 추정이다 — 다음 `npm run balance` 캠페인 실측으로 갱신할 것.
+ *
  * 이름은 `game/arrows.ts`의 `ArrowKind.name`을 따른다 ('살'로 통일 · A8).
  */
 export const UNLOCKS: readonly UnlockDef[] = [
   def('arrow.burst', '화전', 'arrow', `${G_BURST_STAGES}판 클리어`, P_STAGES, G_BURST_STAGES, A_BURST),
   def('title.oneshot', '한 발', 'title', `무손실로 ${G_ONESHOT_PERFECT}판 클리어`, P_PERFECT, G_ONESHOT_PERFECT),
   def('title.firststar', '첫 별', 'title', `별 ${G_FIRSTSTAR_STARS}개 모으기`, P_STARS, G_FIRSTSTAR_STARS),
+  defBow('bow.gakgung', '각궁', `${G_GAKGUNG_STAGES}판 클리어`, P_STAGES, G_GAKGUNG_STAGES, B_GAKGUNG),
   def('arrow.chain', '명적', 'arrow', `한 판에서 ${G_CHAIN_BEST}연쇄`, P_CHAIN, G_CHAIN_BEST, A_CHAIN),
   def('arrow.split', '세전', 'arrow', `${G_SPLIT_STAGES}판 클리어`, P_STAGES, G_SPLIT_STAGES, A_SPLIT),
+  defBow('bow.recurve', '리커브', `누적 명중 ${G_RECURVE_HITS}회`, P_HITS, G_RECURVE_HITS, B_RECURVE),
   def('title.hawk', '매의 눈', 'title', `정중앙 ${G_HAWK_BULLS}회`, P_BULLS, G_HAWK_BULLS),
   def('title.avalanche', '보로로록', 'title', `한 판에서 ${G_AVALANCHE_BEST}연쇄`, P_CHAIN, G_AVALANCHE_BEST),
   def('arrow.homing', '신전', 'arrow', `누적 명중 ${G_HOMING_HITS}회`, P_HITS, G_HOMING_HITS, A_HOMING),
   def('arrow.pierce', '애기살', 'arrow', `${G_PIERCE_STAGES}판 클리어`, P_STAGES, G_PIERCE_STAGES, A_PIERCE),
+  defBow('bow.longbow', '장궁', `별 ${G_LONGBOW_STARS}개 모으기`, P_STARS, G_LONGBOW_STARS, B_LONGBOW),
   def('title.hundred', '백발', 'title', `누적 명중 ${G_HUNDRED_HITS}회`, P_HITS, G_HUNDRED_HITS),
   def('title.wind', '바람 읽는 자', 'title', `별 ${G_WIND_STARS}개 모으기`, P_STARS, G_WIND_STARS),
   def('arrow.heavy', '육량전', 'arrow', `${G_HEAVY_STAGES}판 클리어`, P_STAGES, G_HEAVY_STAGES, A_HEAVY),
+  defBow('bow.compound', '컴파운드', `${G_COMPOUND_STAGES}판 클리어`, P_STAGES, G_COMPOUND_STAGES, B_COMPOUND),
   def('title.flawless', '흠 없는 활', 'title', `무손실로 ${G_FLAWLESS_PERFECT}판 클리어`, P_PERFECT, G_FLAWLESS_PERFECT),
   def('title.forty', '마흔 발', 'title', `${G_FORTY_STAGES}판 클리어`, P_STAGES, G_FORTY_STAGES),
 ]
@@ -281,6 +314,26 @@ export function unlockedArrows(unlocked: readonly string[]): ArrowKindId[] {
     if (unlocked.includes(d.id)) out.push(d.grants)
   }
   return out
+}
+
+/** 열린 활 목록. 연습궁은 해금이 아니라 시작 장비라 여기 안 나온다. */
+export function unlockedBows(unlocked: readonly string[]): BowKindId[] {
+  const out: BowKindId[] = []
+  for (let i = 0; i < UNLOCKS.length; i++) {
+    const d = UNLOCKS[i]
+    if (d === undefined || d.grantsBow === undefined) continue
+    if (unlocked.includes(d.id)) out.push(d.grantsBow)
+  }
+  return out
+}
+
+/** 이 활을 여는 해금. 없으면 처음부터 드는 활(연습궁)이다. */
+export function unlockOfBow(bow: BowKindId): UnlockDef | undefined {
+  for (let i = 0; i < UNLOCKS.length; i++) {
+    const d = UNLOCKS[i]
+    if (d !== undefined && d.grantsBow === bow) return d
+  }
+  return undefined
 }
 
 /** 이 화살을 여는 해금. 없으면 처음부터 쓸 수 있는 화살(basic)이다. */

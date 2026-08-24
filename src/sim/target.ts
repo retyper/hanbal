@@ -94,7 +94,9 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
    * 이제 규칙은 하나다: `fx.pierceExtra` 예산이 남았는가. 겹쳐 세운 과녁(pierceable)은
    * 그걸 **쓰기 좋게 늘어놓은 배치**일 뿐, 스스로 뚫리지는 않는다.
    */
-  if (arrow.kindPierced < fx.pierceExtra) {
+  // 궁합(활×살)의 관통 가산 — 각궁×애기살=편전 · 장궁×육량전 (docs/BOWS.md).
+  // game/bows.ts 가 짝이 맞을 때만 0이 아닌 값을 굽는다. sim은 조합표를 모른다.
+  if (arrow.kindPierced < fx.pierceExtra + w.bow.pierceAdd) {
     arrow.kindPierced++
     if (target.kind === 'pierceable') arrow.pierced++
     // 중심을 뚫을수록 더 두꺼운 부분을 지나 속도를 잃는다. 가장자리를 스치면 거의 안 잃는다.

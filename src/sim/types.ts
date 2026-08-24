@@ -330,6 +330,12 @@ export interface World {
   arrowKind: ArrowKindId
   /** 위 종류의 효과판. arrowFx()가 돌려주는 공유 객체라 매 스텝 읽어도 할당이 없다 (A5). */
   fx: ArrowFx
+  /**
+   * 활의 물리 배수 (docs/BOWS.md). **판 경계에서만 바뀐다** — 판 도중에 바뀌면
+   * 같은 시드가 다른 판이 된다 (A1). sim은 활의 이름·궁합·숙련을 모른다 —
+   * game/bows.ts 가 그걸 전부 이 숫자 묶음으로 구워서 넣는다.
+   */
+  bow: BowMods
 
   arrowsLeft: number
   score: number
@@ -347,9 +353,9 @@ export interface World {
 // 구현자는 아래 시그니처를 정확히 지킨다. 이름·인자 순서를 바꾸면 통합이 깨진다.
 //
 //   sim/world.ts
-//     export function createWorld(stage: StageDef, stats: Stats, arrow?: ArrowKindId): World
+//     export function createWorld(stage: StageDef, stats: Stats, arrow?: ArrowKindId, bow?: BowMods): World
 //     export function step(w: World, input: InputFrame): void   // 정확히 1 고정스텝
-//     export function resetWorld(w: World, stage: StageDef, stats: Stats, arrow?: ArrowKindId): void
+//     export function resetWorld(w: World, stage: StageDef, stats: Stats, arrow?: ArrowKindId, bow?: BowMods): void
 //
 //   sim/bow.ts
 //     export function stepArcher(w: World, input: InputFrame): void
@@ -365,6 +371,31 @@ export interface World {
 //
 //   render/*  — World를 읽기만 한다. 쓰면 결정론이 깨진다 (A1).
 //   input/*   — InputFrame을 만들 뿐, World를 건드리지 않는다.
+
+/**
+ * 활이 물리에 곱하는 값들. 전부 1(가산은 0)이면 연습궁(중립)이다.
+ *
+ * 필드가 배수/가산의 평평한 묶음인 이유: sim이 활의 정체성을 알 필요가 없어야
+ * 결정론 검증이 "같은 BowMods = 같은 판"으로 끝나기 때문이다 (A1).
+ */
+export interface BowMods {
+  /** 화살 초속 배수 */
+  speedMul: number
+  /** 만작 도달 시간 배수 (작을수록 빠름) */
+  drawTimeMul: number
+  /** 빨간 바 아래 떨림 배수. 안전 구간은 이미 0이라 계약을 건드리지 않는다 */
+  tremorMul: number
+  /** 릴리즈 산포 배수 (같은 이유로 안전 구간 밖에서만 의미가 있다) */
+  scatterMul: number
+  /** 만작 유지(phase full) 스태미나 소모 배수 — 컴파운드의 렛오프 */
+  holdDrainMul: number
+  /** 만작 한계 가산 (장궁 음수 — STR로 극복한다) */
+  maxDrawAdd: number
+  /** 바람(공기 속도) 체감 배수 — 무거운 화살은 덜 밀린다 */
+  windMul: number
+  /** 궁합의 관통 예산 가산 (각궁×애기살=편전 · 장궁×육량전) */
+  pierceAdd: number
+}
 
 /** 스탯에서 파생된 물리 계수. bow.ts가 매 스텝 재계산하지 않도록 캐시해서 쓴다. */
 export interface DerivedStats {

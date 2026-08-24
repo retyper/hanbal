@@ -33,6 +33,7 @@ const MASK = '？？？'
 const KIND_TAG: Record<UnlockDef['kind'], string> = {
   arrow: '화살',
   title: '칭호',
+  bow: '활',
 }
 
 const CSS = `

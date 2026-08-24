@@ -24,6 +24,7 @@ import { onSaveChanged, writeSave, type SaveData } from './save.ts'
 import { settleOffline, type OfflineGain } from './offline.ts'
 import { awardRun, canGrow, grantArrows, type StatKey } from './progression.ts'
 import { arrowName, DEFAULT_ARROW } from './arrows.ts'
+import { bowMods, masteryLevel } from './bows.ts'
 import { draftNeeded, rollDraft, type DraftOffer } from './draft.ts'
 import { bullseyeAcc, gradeRun, rewardLine, type RunStats } from './rewards.ts'
 import { evaluateUnlocks, progressOf, unlockedArrows } from './unlocks.ts'
@@ -206,7 +207,10 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     }
     arrow = kind
     const stage = getStage(stageIndex)
-    resetWorld(w, stage, save.stats, kind)
+    // 활도 판 경계에서만 (A1). 숙련은 그 활로 맞힌 누적 수에서 나온다 — docs/BOWS.md 3장.
+    // 궁합(활×살)은 bowMods 안에서 판정되므로 여기서는 조합을 모른다.
+    const mods = bowMods(save.bow, kind, masteryLevel(save.bowHits[save.bow] ?? 0))
+    resetWorld(w, stage, save.stats, kind, mods)
     // 지급량은 game 레이어의 경제 판단이라 sim 계약(resetWorld)에 넣지 않고 여기서 덮어쓴다.
     // 풀 크기는 stage.arrows 기준으로 이미 잡혀 있으므로 줄이는 쪽은 언제나 안전하다.
     granted = grantArrows(save, stage)
@@ -297,6 +301,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     if (reward.stars > had) save.stars[id] = reward.stars
     if (bestChain > save.bestChain) save.bestChain = bestChain
     save.bullseyes += bullseyes
+    // 활 숙련의 재료. 판이 끝날 때 한 번에 — 매 명중마다 세이브 객체를 만지지 않는다.
+    save.bowHits[save.bow] = (save.bowHits[save.bow] ?? 0) + hits
     if (reward.stars >= 3) save.perfectRuns++
 
     const fresh = evaluateUnlocks(progressOf(save), save.unlocked)

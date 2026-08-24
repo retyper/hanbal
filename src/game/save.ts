@@ -11,13 +11,14 @@
 import { clamp } from '../core/math.ts'
 import type { Stats } from '../sim/types.ts'
 import { P } from '../tune/params.ts'
+import { DEFAULT_BOW, isBowKindId, type BowKindId } from './bows.ts'
 import { STAGES } from './stages.ts'
 
 /** ARCHITECTURE A4가 지정한 단일 키. */
 const KEY = 'hanbal.save.v1'
 
 /** 현재 스키마 버전. 필드를 바꿀 때마다 +1 하고 MIGRATIONS에 한 줄 추가한다. */
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 
 /**
  * 오프라인 축적의 소수부 (자원 단위). 세 자원의 축적 속도가 달라 하나로 합칠 수 없다.
@@ -61,6 +62,15 @@ export interface SaveData {
   unlocked: string[]
   /** 한 판에서 이어간 최고 연쇄 수 (누적 최댓값) */
   bestChain: number
+
+  // ── v3: 활 (docs/BOWS.md) ────────────────────────────────────
+  /** 장착한 활. 판 경계에서 game/bows.ts 가 BowMods 로 구워 sim 에 넣는다. */
+  bow: BowKindId
+  /**
+   * 활별 누적 명중 — 숙련의 재료. **줄지 않는다** (GDD 4장 "성장은 되돌아가지 않는다").
+   * 활 id 가 키다. 모르는 키도 지우지 않는다 (A4).
+   */
+  bowHits: Record<string, number>
   /** 누적 정중앙 명중 수 */
   bullseyes: number
   /** 누적 무손실 클리어 판수 */
@@ -116,6 +126,8 @@ export function defaultSave(now: number): SaveData {
     stars: {},
     unlocked: [],
     bestChain: 0,
+    bow: DEFAULT_BOW,
+    bowHits: {},
     bullseyes: 0,
     perfectRuns: 0,
     // 0은 "아직 없음"이다. 루프가 첫 정산 전에 실제 시드를 심는다 (game 레이어라 Date.now 허용).
@@ -154,6 +166,13 @@ const MIGRATIONS: ReadonlyArray<(r: Raw) => void> = [
     }
     r['stars'] = stars
   },
+
+  /**
+   * v2 → v3: 활이 생겼다. 기존 유저는 연습궁을 든 채로 올라온다 —
+   * 활 4자루는 해금(unlocks)이 여는 것이라 여기서 줄 것이 없다.
+   * 빠진 필드는 sanitize 가 기본값(연습궁 · 빈 숙련)으로 채우므로 옮길 일이 없다.
+   */
+  () => {},
 ]
 
 function migrate(r: Raw): void {
@@ -256,6 +275,8 @@ function sanitize(r: Raw, now: number): SaveData {
     stars: sanitizeStars(r['stars']),
     unlocked: sanitizeUnlocked(r['unlocked']),
     bestChain: int(r['bestChain'], 0, 0, HARD_MAX),
+    bow: isBowKindId(r['bow']) ? r['bow'] : DEFAULT_BOW,
+    bowHits: sanitizeBest(r['bowHits']),
     bullseyes: int(r['bullseyes'], 0, 0, HARD_MAX),
     perfectRuns: int(r['perfectRuns'], 0, 0, HARD_MAX),
     // 32비트 무부호. mulberry32의 상태 그대로다.

@@ -106,6 +106,16 @@ export function stepArcher(w: World, input: InputFrame): void {
   const a = w.archer
   const dt = w.dt
   computeDerived(w.stats)
+  // ── 활 (docs/BOWS.md) ──
+  // 스탯 위에 활의 배수를 겹친다. 모듈 스칼라에 곱해 두면 이 스텝의 당김·떨림·릴리즈가
+  // 전부 같은 값을 본다. effectiveStats()(UI용)는 몸의 값만 말한다 — 활 이야기는 활 걸이가 한다.
+  // 안전 구간의 계약은 그대로다: tremor·scatter 는 빨간 바 아래에서만 0이 아니므로
+  // 여기 배수가 얼마든 "안전 구간 만작 = 오차 0"은 변하지 않는다.
+  const bow = w.bow
+  dDrawTimeMul *= bow.drawTimeMul
+  dTremorMul *= bow.tremorMul
+  dScatterMul *= bow.scatterMul
+  dMaxDraw = clamp01(dMaxDraw + bow.maxDrawAdd)
 
   // 조준은 스무딩 없이 즉시 반영한다. 한 스텝이라도 늦으면 조준이 미끄러진다 (feel-lens 1).
   a.aimAngle = Math.atan2(input.aimY - a.y, input.aimX - a.x)
@@ -172,6 +182,9 @@ export function stepArcher(w: World, input: InputFrame): void {
     drain = P.stamina.drawDrain
       * Math.pow(a.draw, P.stamina.drainByDraw)
       * lerp(1, P.steady.staminaDrain, a.steadyBlend)
+    // 렛오프 — 컴파운드는 만작에서 장력이 빠진다. **만작에서만**이다.
+    // 당기는 도중까지 깎아주면 "도르래를 넘기는 무게"라는 대가가 사라진다.
+    if (a.phase === 'full') drain *= bow.holdDrainMul
     a.stamina -= drain * dt
     a.regenLock = P.stamina.regenDelay
   } else {
