@@ -243,7 +243,11 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       finishRun()
     }
     arrow = kind
-    const stage = getStage(stageIndex)
+    let stage = getStage(stageIndex)
+    // 첫 손님 — 아직 한 발도 안 쏜 사람에게는 판 자막이 조작법이어야 한다 (C1: 3초 안에 첫 발).
+    if (save.totalShots === 0) {
+      stage = { ...stage, hint: '꾹 눌러 시위를 당기고 · 놓아서 쏜다' }
+    }
     // 활도 판 경계에서만 (A1). 숙련은 그 활로 맞힌 누적 수에서 나온다 — docs/BOWS.md 3장.
     // 궁합(활×살)은 bowMods 안에서 판정되므로 여기서는 조합을 모른다.
     const mods = bowMods(save.bow, kind, masteryLevel(save.bowHits[save.bow] ?? 0))

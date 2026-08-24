@@ -281,8 +281,8 @@ function bossStage(i: number): StageDef {
   const hits = Math.ceil(hp / Math.max(1, Math.floor(P.enemy.playerDamage * 1.1)))
   return {
     id,
-    title: '보스',
-    hint: '머리가 약점이다 — 정중앙 판정으로 두 발 몫',
+    title: '눈알귀신',
+    hint: '깔리면 끝장이다 — 눈을 쏴라',
     seed: seedFrom(id),
     arrows: Math.min(10, hits + 3 + escorts),
     targetScore: need(Math.min(5, hits)),

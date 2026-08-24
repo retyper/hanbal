@@ -380,12 +380,18 @@ const cache = {
  * 챕터-판 표기는 짧지만 "지금까지 몇 판을 왔는가"가 안 읽힌다. 둘 다 보여준다.
  */
 function stageNoText(id: string): string {
+  const no = stageNoOf(id)
+  return no > 0 ? `${no}판` : id
+}
+
+/** 판 번호 (1부터). id가 규칙 밖이면 0. */
+function stageNoOf(id: string): number {
   const dash = id.indexOf('-')
-  if (dash < 0) return id
+  if (dash < 0) return 0
   const ch = Number(id.slice(0, dash))
   const n = Number(id.slice(dash + 1))
-  if (!Number.isFinite(ch) || !Number.isFinite(n)) return id
-  return `${(ch - 1) * 10 + n}판`
+  if (!Number.isFinite(ch) || !Number.isFinite(n)) return 0
+  return (ch - 1) * 10 + n
 }
 
 /**
@@ -465,6 +471,35 @@ export function drawHud(
     ctx.font = M.fTitle
     ctx.fillStyle = THEME.hudDim
     ctx.fillText(title, M.padX + noW + M.titleGap, M.padY + Math.round(M.s * 3))
+  }
+
+  // ── 여정 진행 — 이 마디(10판)의 어디쯤인가. 마지막 칸은 보스다. ──
+  // 메가히트 게임들의 공통점: **다음 목표까지의 거리가 항상 보인다.** 그 자리다.
+  {
+    const no = stageNoOf(w.stage.id)
+    if (no > 0) {
+      const pos = ((no - 1) % 10)
+      const dotY = M.padY + Math.round(M.s * 14)
+      const dr = Math.max(2, Math.round(M.s * 2.2))
+      const gap2 = dr * 3
+      let dx0 = M.padX + 2
+      for (let d2 = 0; d2 < 10; d2++) {
+        const isBoss = d2 === 9
+        const here = d2 === pos
+        const passed = d2 < pos
+        ctx.beginPath()
+        if (isBoss) {
+          // 보스 칸 — 눈알. 조금 크고, 다가갈수록 다른 색이 눈에 들어온다.
+          ctx.fillStyle = here ? THEME.threat : passed ? THEME.hudDim : THEME.threatDim
+          ctx.arc(dx0, dotY, dr * 1.6, 0, Math.PI * 2)
+        } else {
+          ctx.fillStyle = here ? THEME.accent : passed ? THEME.hudDim : THEME.gaugeBack
+          ctx.arc(dx0, dotY, here ? dr * 1.3 : dr, 0, Math.PI * 2)
+        }
+        ctx.fill()
+        dx0 += gap2
+      }
+    }
   }
 
   const bodyY = M.padY + M.headGap

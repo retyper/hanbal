@@ -591,6 +591,11 @@ export function pumpEvents(fx: Fx, w: World): void {
       fx.comboRun = 0
       fx.hitStop += P.hit.stopMs * 0.002
       pushPopup(fx.pop, w.archer.x + 1.2, w.archer.y + 1.2, e.hp <= 0 ? '쓰러졌다' : '피격 !', 'crit')
+      // 쓰러지는 순간은 세상이 느려져야 한다 — 죽음에 무게가 없으면 여정에도 무게가 없다.
+      if (e.hp <= 0) {
+        fx.slow = 1.1
+        fx.hitStop += P.hit.stopMs * 0.004
+      }
       // 적 화살이면 궁수 몸에 박힌다 — 정확히 맞은 그 자리에 (형).
       if (e.pin) pinArrow(fx, PLAYER_PIN, e.x - w.archer.x, e.y - w.archer.y, 0.7, e.ang)
     } else if (e.t === 'escape') {
