@@ -36,45 +36,49 @@ const KIND_TAG: Record<UnlockDef['kind'], string> = {
 }
 
 const CSS = `
-.c-h { display: flex; align-items: baseline; gap: 10px; margin: 0 0 2px; }
-.c-h h2 { font-size: 15px; margin: 0; flex: 1; color: #eaf0f7; font-weight: 600; letter-spacing: .04em; }
-.c-stars { color: #b9c3cf; font-variant-numeric: tabular-nums; }
-.c-stars b { color: #ffb347; font-weight: 600; }
-.c-title { color: #56657a; font-size: 12px; margin: 0 0 12px; }
-.c-title b { color: #7fd1c0; font-weight: 600; }
-
-.c-sec { color: #56657a; font-size: 11px; letter-spacing: .1em; margin: 14px 0 6px; }
+.c-h { display: flex; align-items: baseline; gap: 14px; }
+.c-h h2 { flex: 1; }
+.c-stars { color: var(--dim); font-size: 13px; letter-spacing: .12em; }
+.c-stars b { color: var(--accent); font-weight: 700; font-size: 22px; margin-left: 8px; }
+.c-title { color: var(--dim); font-size: 14px; margin: 4px 0 4px; }
+.c-title b { color: var(--teal); font-weight: 700; font-family: inherit; }
 
 /* ── 해금 목록 ── */
 .c-row {
-  display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 2px 12px;
-  padding: 9px 0; border-top: 1px solid #1a222c;
+  display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 3px 16px;
+  padding: 13px 0; border-top: 1px solid var(--line);
 }
-.c-name { color: #eaf0f7; font-weight: 600; }
-.c-row.c-locked .c-name { color: #3f4a59; letter-spacing: .08em; }
-.c-tag { color: #56657a; font-size: 11px; margin-left: 7px; }
-.c-hint { grid-column: 1; color: #56657a; font-size: 12px; }
-.c-row.c-open .c-hint { color: #46525f; }
-.c-count { grid-column: 2; grid-row: 1; color: #b9c3cf; font-size: 12px; font-variant-numeric: tabular-nums; }
-.c-row.c-open .c-count { color: #7fd1c0; }
-.c-bar { grid-column: 1 / -1; height: 2px; background: #1a222c; border-radius: 1px; margin-top: 5px; overflow: hidden; }
-.c-bar i { display: block; height: 100%; background: #ffb347; border-radius: 1px; }
+.c-row:first-of-type { border-top: none; }
+.c-name { color: var(--ink); font-weight: 700; font-size: 16px; }
+/* 잠긴 칸은 흐리게 + 자간을 벌린다. 색만 죽이면 그냥 안 보이는 글자가 된다 (HOOK 2번). */
+.c-row.c-locked .c-name { color: var(--mute); letter-spacing: .1em; font-weight: 600; }
+.c-tag {
+  color: var(--mute); font-size: 11px; margin-left: 10px; letter-spacing: .14em;
+  border: 1px solid var(--line); border-radius: 2px; padding: 2px 6px;
+}
+.c-hint { grid-column: 1; color: var(--dim); font-size: 13px; }
+.c-row.c-open .c-hint { color: var(--mute); }
+.c-count { grid-column: 2; grid-row: 1; color: var(--body); font-size: 14px; }
+.c-row.c-open .c-count { color: var(--teal); }
+.c-bar { grid-column: 1 / -1; height: 3px; background: #161e27; margin-top: 8px; overflow: hidden; }
+.c-bar i { display: block; height: 100%; background: var(--accent); }
 .c-row.c-open .c-bar { visibility: hidden; }
 
-/* ── 판별 별 ── */
-.c-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+/* ── 판별 별 ── 격자가 곧 진행도의 그림이다. 칸을 키워 한눈에 덩어리로 읽히게 한다. */
+.c-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; }
 .c-cell {
-  text-align: center; padding: 4px 0 3px; border-radius: 4px; background: #111820;
-  border: 1px solid #1a222c; line-height: 1.25;
+  text-align: center; padding: 7px 0 5px; border-radius: 2px; background: #0e151d;
+  border: 1px solid #18202a; line-height: 1.3;
 }
-.c-cell .c-n { display: block; color: #46525f; font-size: 10px; font-variant-numeric: tabular-nums; }
-.c-cell .c-s { display: block; color: #2f3947; font-size: 10px; letter-spacing: -.5px; }
-.c-cell.c-done { border-color: #2a3441; }
-.c-cell.c-done .c-n { color: #8b97a6; }
-.c-cell.c-done .c-s { color: #ffb347; }
-.c-cell.c-full { background: #1a2028; }
+.c-cell .c-n { display: block; color: var(--mute); font-size: 12px; }
+.c-cell .c-s { display: block; color: #2b3542; font-size: 12px; letter-spacing: -1px; }
+.c-cell.c-done { border-color: #2c3846; background: #121a23; }
+.c-cell.c-done .c-n { color: #93a0b0; }
+.c-cell.c-done .c-s { color: var(--accent); }
+/* 별 셋은 채운 칸으로. 격자를 훑을 때 무손실 판이 덩어리로 보인다. */
+.c-cell.c-full { background: #1d2530; border-color: #3a4655; }
 
-.c-foot { border-top: 1px solid #1a222c; margin-top: 12px; padding-top: 11px; color: #46525f; font-size: 12px; }
+.c-foot { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 16px; color: var(--mute); font-size: 13px; }
 `
 
 interface Row {
@@ -110,6 +114,25 @@ function starText(n: number): string {
 }
 
 /**
+ * 별을 받은 판 중 가장 멀리 간 판 번호. 무한 구간에는 격자 칸이 없어서
+ * (판이 끝없이 늘어나므로) **여기까지 왔다**를 알려줄 자리가 이 한 줄뿐이다.
+ */
+function furthestStage(stars: StarMap): number {
+  let best = 0
+  for (const id of Object.keys(stars)) {
+    if ((stars[id] ?? 0) <= 0) continue
+    const dash = id.indexOf('-')
+    if (dash < 0) continue
+    const ch = Number(id.slice(0, dash))
+    const n = Number(id.slice(dash + 1))
+    if (!Number.isFinite(ch) || !Number.isFinite(n)) continue
+    const no = (ch - 1) * 10 + n
+    if (no > best) best = no
+  }
+  return best
+}
+
+/**
  * 수집 화면을 오버레이에 붙인다.
  *
  * `p`·`unlocked`·`stars`는 **여는 순간 다시 읽는다**. 부르는 쪽이 같은 객체를 계속 갱신하든
@@ -133,7 +156,7 @@ export function mountCollection(
 
   const head = document.createElement('div')
   head.className = 'c-h'
-  head.innerHTML = '<h2>수집</h2><div class="c-stars"><b></b></div>'
+  head.innerHTML = '<h2>수집</h2><div class="c-stars">별<b></b></div>'
   const starOut = head.querySelector('b') as HTMLElement
 
   const title = document.createElement('p')
@@ -142,7 +165,7 @@ export function mountCollection(
   panel.append(head, title)
 
   const secUnlock = document.createElement('div')
-  secUnlock.className = 'c-sec'
+  secUnlock.className = 'hb-sec'
   secUnlock.textContent = '해금'
   panel.appendChild(secUnlock)
 
@@ -170,7 +193,7 @@ export function mountCollection(
   }
 
   const secStage = document.createElement('div')
-  secStage.className = 'c-sec'
+  secStage.className = 'hb-sec'
   secStage.textContent = '판별 별'
   panel.appendChild(secStage)
 
@@ -224,9 +247,17 @@ export function mountCollection(
   o.hud().appendChild(open)
 
   function refresh(): void {
-    starOut.textContent = `★ ${cur.totalStars} / ${STAGES.length * STAR_MAX}`
+    // 캠페인 40판의 만점이 분모다. 무한 구간의 별은 여기 안 들어가므로(칸이 없다)
+    // 만점을 넘긴 사람에게는 분모를 떼고 총합만 보여준다 — 아니면 "120 / 120"에서 멈춰 보인다.
+    const campaignMax = STAGES.length * STAR_MAX
+    starOut.textContent = cur.totalStars > campaignMax
+      ? String(cur.totalStars)
+      : `${cur.totalStars} / ${campaignMax}`
+
     const t = currentTitle(curUnlocked)
-    title.innerHTML = t === '' ? '아직 칭호가 없다' : `칭호 <b>${t}</b>`
+    const far = furthestStage(curStars)
+    const reach = far > STAGES.length ? ` · 최고 ${far}판` : ''
+    title.innerHTML = (t === '' ? '아직 칭호가 없다' : `칭호 <b>${t}</b>`) + reach
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i]

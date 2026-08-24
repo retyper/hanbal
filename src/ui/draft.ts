@@ -64,29 +64,33 @@ const ICON: Record<ArrowKindId, string> = {
 }
 
 const CSS = `
-.d-h { display: flex; align-items: baseline; gap: 10px; margin: 0 0 2px; }
-.d-h h2 { font-size: 15px; margin: 0; color: #eaf0f7; font-weight: 600; letter-spacing: .04em; }
-.d-sub { color: #56657a; font-size: 12px; margin: 0 0 12px; }
+.d-h { display: flex; align-items: baseline; gap: 14px; }
 
 /* 좁은 화면에서는 알아서 아래로 접힌다. 가로 스크롤은 만들지 않는다. */
-.d-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: 8px; }
+.d-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)); gap: 12px; }
 
 .d-card {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
-  padding: 12px 12px 11px; text-align: left; min-height: 132px;
-  border-color: #232d39; background: #111820e0;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+  padding: 20px 18px 18px; text-align: left; min-height: 190px;
+  border-color: #212b36; background: #101720e6; border-radius: 2px;
 }
-.d-card:hover, .d-card:focus-visible { background: #1d2630; border-color: var(--tint); }
+/* 카드마다 자기 색의 잉크 바. 글자를 읽기 전에 손이 어디로 갈지 정해진다. */
+.d-card:hover, .d-card:focus-visible {
+  background: #1a2430; border-color: #35424f; box-shadow: inset 3px 0 0 var(--tint);
+}
 .d-card .d-ic { color: var(--tint); line-height: 0; }
-.d-card .d-name { color: #eaf0f7; font-weight: 600; }
-.d-card .d-desc { color: #b9c3cf; font-size: 12px; line-height: 1.45; flex: 1; }
+.d-card .d-name { color: var(--ink); font-weight: 700; font-size: 18px; letter-spacing: -.01em; }
+.d-card .d-desc { color: var(--body); font-size: 14px; line-height: 1.55; flex: 1; }
 .d-card .d-k {
-  position: absolute; top: 7px; right: 9px; color: #56657a; font-size: 11px;
-  font-variant-numeric: tabular-nums;
+  position: absolute; top: 12px; right: 12px; color: var(--mute); font-size: 12px;
+  font-family: var(--num); border: 1px solid var(--line); border-radius: 2px; padding: 1px 6px;
 }
 
-.d-foot { border-top: 1px solid #1a222c; margin-top: 12px; padding-top: 11px; display: flex; align-items: center; gap: 10px; }
-.d-note { color: #56657a; font-size: 12px; flex: 1; text-align: right; }
+.d-foot {
+  border-top: 1px solid var(--line); margin-top: 20px; padding-top: 16px;
+  display: flex; align-items: center; gap: 14px;
+}
+.d-note { color: var(--mute); font-size: 13px; flex: 1; text-align: right; }
 `
 
 /**
@@ -118,7 +122,7 @@ export function mountDraft(o: Overlay, offer: DraftOffer, onPick: (id: ArrowKind
   head.innerHTML = '<h2>화살 고르기</h2>'
 
   const sub = document.createElement('p')
-  sub.className = 'd-sub'
+  sub.className = 'hb-lead'
   sub.textContent = '이 판에서만 쓴다. 고르는 즉시 시작한다.'
 
   panel.append(head, sub)
@@ -153,7 +157,7 @@ export function mountDraft(o: Overlay, offer: DraftOffer, onPick: (id: ArrowKind
     card.className = 'hb-btn d-card'
     card.style.setProperty('--tint', TINT[id])
     card.innerHTML =
-      `<span class="d-ic"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" ` +
+      `<span class="d-ic"><svg width="34" height="34" viewBox="0 0 28 28" fill="none" ` +
       `stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" ` +
       `aria-hidden="true">${ICON[id]}</svg></span>` +
       `<span class="d-name"></span><span class="d-desc"></span>` +

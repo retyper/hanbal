@@ -30,31 +30,36 @@ const PANEL_ID = 'growth'
 const FLASH_MS = 900
 
 const CSS = `
-.g-h { display: flex; align-items: baseline; gap: 10px; margin: 0 0 2px; }
-.g-h h2 { font-size: 15px; margin: 0; flex: 1; color: #eaf0f7; font-weight: 600; letter-spacing: .04em; }
-.g-train { color: #b9c3cf; }
-.g-train b { color: #ffb347; font-variant-numeric: tabular-nums; font-weight: 600; }
-.g-sub { color: #56657a; font-size: 12px; margin: 0 0 12px; }
+.g-h { display: flex; align-items: baseline; gap: 14px; }
+.g-h h2 { flex: 1; }
+/* 훈련치는 이 화면에서 유일하게 '쓸 수 있는 것'이다. 숫자를 크게 세운다. */
+.g-train { color: var(--dim); font-size: 13px; letter-spacing: .12em; }
+.g-train b { color: var(--accent); font-weight: 700; font-size: 26px; margin-left: 8px; }
 
 .g-row {
-  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 14px;
-  padding: 11px 0; border-top: 1px solid #1a222c; border-radius: 6px;
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 3px 20px;
+  padding: 16px 0 15px; border-top: 1px solid var(--line);
   transition: background .3s;
 }
-.g-row.g-flash { background: #ffb3471f; }
-.g-name { color: #eaf0f7; font-weight: 600; }
-.g-lv { color: #56657a; font-size: 12px; margin-left: 7px; font-variant-numeric: tabular-nums; }
-.g-now { grid-column: 1; color: #b9c3cf; }
-.g-next { grid-column: 1; color: #7fd1c0; font-size: 12px; }
-.g-next.g-flat { color: #56657a; }
-.g-up { grid-column: 2; grid-row: 1 / span 3; }
-.g-cost { color: #ffb347; font-variant-numeric: tabular-nums; }
+.g-row:first-of-type { border-top: none; }
+/* 올린 직후 한 번 번쩍. 왼쪽 잉크 바 — 버튼 hover와 같은 문법이다. */
+.g-row.g-flash { background: #ffb3471a; box-shadow: inset 3px 0 0 var(--accent); }
+.g-name { color: var(--ink); font-weight: 700; font-size: 17px; letter-spacing: -.01em; }
+.g-lv { color: var(--mute); font-size: 13px; margin-left: 10px; }
+.g-now { grid-column: 1; color: var(--body); }
+.g-next { grid-column: 1; color: var(--teal); font-size: 13px; }
+.g-next.g-flat { color: var(--mute); }
+.g-up { grid-column: 2; grid-row: 1 / span 3; min-width: 108px; justify-content: center; }
+.g-cost { color: var(--accent); }
 .g-up[disabled] .g-cost { color: inherit; }
 
-.g-foot { border-top: 1px solid #1a222c; margin-top: 12px; padding-top: 11px; display: flex; align-items: center; gap: 10px; }
-.g-foot label { display: flex; align-items: center; gap: 7px; cursor: pointer; color: #b9c3cf; }
-.g-foot input { accent-color: #7fd1c0; }
-.g-hint { color: #56657a; font-size: 12px; flex: 1; text-align: right; }
+.g-foot {
+  border-top: 1px solid var(--line); margin-top: 20px; padding-top: 16px;
+  display: flex; align-items: center; gap: 14px;
+}
+.g-foot label { display: flex; align-items: center; gap: 9px; cursor: pointer; color: var(--body); }
+.g-foot input { accent-color: var(--teal); width: 16px; height: 16px; }
+.g-hint { color: var(--mute); font-size: 13px; flex: 1; text-align: right; }
 `
 
 interface Row {
@@ -93,7 +98,7 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
   const trainOut = head.querySelector('b') as HTMLElement
 
   const sub = document.createElement('p')
-  sub.className = 'g-sub'
+  sub.className = 'hb-lead'
   sub.textContent = '올리면 몸이 어떻게 달라지는지 아래 줄에 미리 적혀 있다.'
 
   panel.append(head, sub)

@@ -36,61 +36,116 @@ const TOAST_MS = 3600
 /** 화면에 동시에 쌓이는 토스트 수. 넘치면 오래된 것부터 지운다. */
 const TOAST_MAX = 3
 
+/**
+ * 화면의 디자인 언어. **여기가 유일한 출처다** — 각 패널의 CSS는 여기서 정한
+ * 토큰(--ink, --line …)과 클래스(.hb-btn, .hb-sec)를 쓰기만 한다.
+ *
+ * ── 왜 다시 그렸나 ──────────────────────────────────────────────────────
+ * 형의 반려: **"UI도 너무 AI가 만든 티 내지 말고 크기도 더 키워."**
+ * 맞는 말이었다. 예전 화면은 13px 본문 · 모든 모서리 6px 라운드 · 어디나 같은 굵기의 테두리 ·
+ * system-ui 하나 — 어떤 앱에 붙여놔도 티가 안 나는, 그래서 아무 성격도 없는 화면이었다.
+ *
+ * 바꾼 것은 넷이다:
+ *   1. **크기.** 본문 13 → 15px, 패널 520 → 680px, 버튼 패딩 7/12 → 11/18px.
+ *   2. **모서리를 죽였다.** 6px 라운드 → 2~3px. 둥근 카드가 겹치면 그게 '기본 테마' 얼굴이다.
+ *   3. **강조를 한 곳에 몬다.** 패널 위쪽의 3px 강조 띠 하나, 버튼 hover의 왼쪽 잉크 바 하나.
+ *      전부에 테두리를 밝히는 대신 한 군데만 확실히 — 인쇄물의 문법이다.
+ *   4. **글꼴에 역할을 준다.** 글자와 숫자의 스택을 나눈다 (render/hud.ts와 같은 규칙).
+ *      render를 import하지 않는 이유는 ui와 render가 서로를 모르는 같은 층이기 때문이다.
+ */
 const CSS = `
 .hb-ui {
   position: fixed; inset: 0; z-index: 40; pointer-events: none;
-  font: 13px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 15px/1.65 "Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   color: #b9c3cf; -webkit-font-smoothing: antialiased;
+
+  --ink: #eaf0f7;
+  --body: #b3bdc9;
+  --dim: #6b7888;
+  --mute: #3f4a59;
+  --line: #232d39;
+  --accent: #ffb347;
+  --teal: #7fd1c0;
+  --num: "Bahnschrift","DIN Alternate","Avenir Next Condensed","Malgun Gothic",system-ui,sans-serif;
 }
 .hb-ui * { box-sizing: border-box; }
+.hb-ui b, .hb-ui .hb-num { font-family: var(--num); font-variant-numeric: tabular-nums; }
 
 /* 왼쪽 아래 — 지면 밑이라 조준선이 지나가지 않는다. 버튼이 발사 클릭을 먹으면 C1 위반이다. */
-.hb-hud { position: absolute; left: 14px; bottom: 14px; display: flex; gap: 8px; align-items: flex-end; }
+.hb-hud { position: absolute; left: 18px; bottom: 18px; display: flex; gap: 10px; align-items: flex-end; }
 .hb-hud > * { pointer-events: auto; }
 
 .hb-btn {
-  position: relative; display: inline-flex; align-items: center; gap: 6px;
-  background: #131a22e0; color: #b9c3cf; border: 1px solid #2a3441; border-radius: 6px;
-  padding: 7px 12px; font: inherit; cursor: pointer; transition: background .12s, color .12s, border-color .12s;
+  position: relative; display: inline-flex; align-items: center; gap: 9px;
+  background: #121a23e6; color: var(--body); border: 1px solid #26313d; border-radius: 2px;
+  padding: 11px 18px; font: inherit; font-weight: 600; cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s, box-shadow .12s;
 }
-.hb-btn:hover { background: #1d2630; color: #eaf0f7; border-color: #3a4756; }
-.hb-btn:focus-visible { outline: 2px solid #7fd1c0; outline-offset: 2px; }
-.hb-btn[disabled] { opacity: .45; cursor: default; }
-.hb-btn .hb-key { color: #56657a; font-size: 11px; }
+/* hover에서 밝아지는 건 왼쪽 잉크 바 하나뿐이다. 테두리를 다 밝히면 다시 '기본 테마'가 된다. */
+.hb-btn:hover { background: #1a232e; color: var(--ink); border-color: #35424f; box-shadow: inset 3px 0 0 var(--accent); }
+.hb-btn:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+.hb-btn[disabled] { opacity: .4; cursor: default; box-shadow: none; }
+.hb-btn[disabled]:hover { background: #121a23e6; color: var(--body); border-color: #26313d; }
+.hb-btn .hb-key {
+  color: var(--mute); font-family: var(--num); font-size: 12px; letter-spacing: .06em;
+  border: 1px solid #26313d; border-radius: 2px; padding: 1px 5px; line-height: 1.35;
+}
 
 /* 올릴 수 있다는 표시. 점 하나. 모달로 막지 않는다 (C1) */
 .hb-dot {
-  position: absolute; top: -3px; right: -3px; width: 7px; height: 7px; border-radius: 50%;
-  background: #ffb347; box-shadow: 0 0 0 2px #0b0e13; opacity: 0; transition: opacity .2s;
+  position: absolute; top: -4px; right: -4px; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 2px #0b0e13; opacity: 0; transition: opacity .2s;
 }
 .hb-btn.hb-has .hb-dot { opacity: 1; }
 
-.hb-toasts { position: absolute; top: 16px; right: 16px; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+.hb-toasts { position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
 .hb-toast {
-  background: #131a22e6; border: 1px solid #2a3441; border-radius: 6px; padding: 7px 12px;
-  color: #d7dde6; white-space: nowrap; backdrop-filter: blur(4px);
+  background: #101821f2; border: 1px solid #26313d; border-left: 3px solid var(--accent);
+  border-radius: 2px; padding: 10px 16px; color: #d7dde6; white-space: nowrap;
   animation: hb-in .26s ease-out both, hb-out .45s ease-in forwards;
 }
-.hb-toast .hb-plus { color: #ffb347; }
-@keyframes hb-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
-@keyframes hb-out { to { opacity: 0; transform: translateY(-4px); } }
+.hb-toast .hb-plus { color: var(--accent); font-family: var(--num); font-weight: 700; }
+@keyframes hb-in { from { opacity: 0; transform: translateY(-7px); } to { opacity: 1; transform: none; } }
+@keyframes hb-out { to { opacity: 0; transform: translateY(-5px); } }
 
 .hb-scrim {
   position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
-  background: #05080bd9; backdrop-filter: blur(3px); pointer-events: auto; padding: 24px;
+  background: #04070ae0; backdrop-filter: blur(3px); pointer-events: auto; padding: 28px;
 }
 .hb-scrim.hb-open { display: flex; }
 .hb-panel {
-  display: none; width: min(520px, 100%); max-height: 100%; overflow-y: auto;
-  background: #0d1117f7; border: 1px solid #2a3441; border-radius: 10px; padding: 18px 20px 16px;
-  box-shadow: 0 18px 60px #000000a6; scrollbar-width: thin;
+  display: none; width: min(680px, 100%); max-height: 100%; overflow-y: auto;
+  background: linear-gradient(180deg, #0f151d 0%, #0a0f15 100%);
+  border: 1px solid #26313d;
+  /* 위쪽의 강조 띠 하나. 이게 이 화면의 '이름표'다 — 나머지는 전부 조용하다. */
+  border-top: 3px solid var(--accent);
+  border-radius: 3px; padding: 26px 30px 22px;
+  box-shadow: 0 26px 80px #000000cc; scrollbar-width: thin;
 }
 .hb-panel.hb-open { display: block; }
 .hb-panel:focus { outline: none; }
 
+/* 패널 안 공통 — 제목과 구역 이름. 각 패널이 자기 것으로 다시 정의하지 않는다. */
+.hb-panel h2 {
+  font-size: 24px; line-height: 1.25; margin: 0; color: var(--ink);
+  font-weight: 700; letter-spacing: -.01em;
+}
+.hb-lead { color: var(--dim); font-size: 14px; margin: 4px 0 20px; }
+/* 구역 이름 + 그 뒤로 이어지는 괘선. 상자를 하나 더 만드는 대신 선 하나로 나눈다. */
+.hb-sec {
+  display: flex; align-items: center; gap: 12px;
+  color: var(--dim); font-size: 12px; letter-spacing: .2em; margin: 24px 0 10px;
+}
+.hb-sec::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
 @media (prefers-reduced-motion: reduce) {
   .hb-toast { animation: none; }
   .hb-btn { transition: none; }
+}
+@media (max-width: 560px) {
+  .hb-ui { font-size: 14px; }
+  .hb-panel { padding: 20px 18px 18px; }
+  .hb-panel h2 { font-size: 20px; }
 }
 `
 

@@ -7,8 +7,13 @@
     <title>한 발</title>
     <style>
       /* 첫 페인트가 0.3초 안에 되어야 한다 (제약 C6). 초기 스타일은 인라인. */
-      html, body { margin: 0; height: 100%; background: #0b0f14; overscroll-behavior: none; }
-      body { display: block; color: #d7dde6; font-family: system-ui, "Malgun Gothic", sans-serif; }
+      html, body { margin: 0; height: 100%; background: #0b0e13; overscroll-behavior: none; }
+      /* 글꼴 스택은 ui/overlay.ts · render/hud.ts 와 같은 것을 쓴다.
+         여기서만 다르면 첫 페인트에 글꼴이 한 번 바뀌어 보인다. */
+      body {
+        display: block; color: #d7dde6;
+        font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+      }
       #game { display: block; width: 100vw; height: 100vh; touch-action: none; cursor: crosshair; }
       /* 스플래시/로고 없음 — 탭 복귀 즉시 플레이 (제약 C1) */
     </style>
