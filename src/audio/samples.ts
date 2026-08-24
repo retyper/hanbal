@@ -53,6 +53,8 @@ export type SampleName =
    * 연주된 소리는 흉내로는 못 이긴다. 다만 **없어도 게임은 돈다** — 합성 종소리로 떨어진다.
    */
   | 'clear'
+  /** 보스 클리어 — 타이코 다섯 박. 형이 B3(Freesound 621296)에서 35~40초를 골라 잘랐다. */
+  | 'clearBoss'
   /** 해금 — 같은 계열의 더 짧은 한 소절 */
   | 'unlock'
 
@@ -80,6 +82,7 @@ const FILES: Readonly<Record<SampleName, readonly string[]>> = {
   // 클리어·해금은 **변주를 두지 않는다.** 이 둘은 매번 같은 소리여야 한다 —
   // 게임의 서명 같은 소리라, 판마다 다르면 "그 소리"가 기억에 안 남는다.
   clear: ['jingleClear'],
+  clearBoss: ['jingleClearBoss'],
   unlock: ['jingleUnlock'],
 }
 

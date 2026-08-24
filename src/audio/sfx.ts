@@ -831,8 +831,21 @@ function playBurst(s: Synth): void {
  * 마지막 음만 다른 kind 번호를 쓴다. 앞 세 음과 같은 번호면 에코 억제(echoScale)가
  * 마지막을 가장 작게 눌러서, 올라가는 소리가 되레 사그라든다.
  */
-function playStageClear(sfx: Sfx, s: Synth): void {
+/** 이 판이 보스판인가. 스테이지 정의만 읽는다 — sim 상태를 건드리지 않는다. */
+function isBossStage(w: World): boolean {
+  const ts = w.stage.targets
+  for (let i = 0; i < ts.length; i++) {
+    const t = ts[i]
+    if (t !== undefined && t.kind === 'boss') return true
+  }
+  return false
+}
+
+function playStageClear(sfx: Sfx, s: Synth, boss: boolean): void {
   const g = P.audio.endGain
+
+  // 보스는 제 소리가 따로 있다 — 형이 고른 타이코 (CREDITS.txt). 없으면 일반 클리어음으로.
+  if (boss && sample(sfx, s, 'clearBoss', P.audio.clearGain, 1, 0, 0)) return
 
   // ★ 진짜 연주된 한 소절이 있으면 그걸로 끝낸다. 합성 상승음은 아무리 배음을 쌓아도
   // "신호음"이지 음악이 아니다 (형의 반려). 아래 합성 경로는 샘플이 아직 안 왔거나
@@ -1032,7 +1045,7 @@ export function pumpSfx(sfx: Sfx, w: World): void {
     } else if (e.t === 'collapse') {
       playCollapse(s)
     } else if (e.t === 'stage_end') {
-      if (e.cleared) playStageClear(sfx, s)
+      if (e.cleared) playStageClear(sfx, s, isBossStage(w))
       // 실패에는 소리를 얹지 않는다. 실패를 조롱하지 않는다 (GDD 9장의 정신).
     }
   }

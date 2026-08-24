@@ -14,6 +14,8 @@ click / rollover / switch   UI (드래프트·해금·버튼)
 ── 클리어음 (2026-08-24 교체) ──
 jingleClear     판 클리어. Freesound 'Level completed' by Ranner (ID 534797, CC0).
                 손으로 두들기는 북소리 — 형이 19개 후보에서 직접 골랐다.
+jingleClearBoss 보스 클리어. Freesound 'Taiko Drums - Mastered' by Soundholder (ID 621296, CC0)
+                — 형이 35~40초 구간을 골라 잘랐다 (편집: 페이드 인 30ms·아웃 250ms만).
 jingleUnlock    해금. Kenney Music Jingles 팩 jingles_PIZZI16 (CC0).
 jingleClear_alt1/alt2  예전 켄니 후보의 잔재 — 안 쓰면 지워도 된다.
 
