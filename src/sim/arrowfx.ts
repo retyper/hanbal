@@ -30,6 +30,8 @@ export interface ArrowFx {
   splitAngle: number
   /** 자식이 물려받는 속도 비율. */
   splitSpeedKeep: number
+  /** 피해 배수 — 질량의 몫. 피해 = 기준 × 착탄속도비 × 이 값 (target.ts). */
+  dmgMul: number
   /** 초당 최대 선회각 (rad/s). 0이면 유도하지 않는다. */
   homingTurn: number
   /** 이 거리(m) 안의 과녁만 빨아들인다. */
@@ -69,6 +71,7 @@ function neutral(): ArrowFx {
     chainSpeedKeep: 0,
     speedMul: 1,
     dragMul: 1,
+    dmgMul: 1,
     scoreMul: 1,
   }
 }
@@ -103,6 +106,7 @@ function reset(fx: ArrowFx): void {
   fx.chainSpeedKeep = 0
   fx.speedMul = 1
   fx.dragMul = 1
+  fx.dmgMul = 1
   fx.scoreMul = 1
 }
 
@@ -151,6 +155,7 @@ export function refreshArrowFx(): void {
   heavy.speedMul = a.heavySpeedMul
   heavy.dragMul = a.heavyDragMul
   heavy.scoreMul = a.heavyScoreMul
+  heavy.dmgMul = a.heavyDmgMul
 }
 
 refreshArrowFx()

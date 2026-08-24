@@ -202,6 +202,7 @@ function withEnemies(base: StageDef, i: number): StageDef {
   const n = i + 1
   const count = Math.min(3, 1 + Math.floor((n - 11) / 15))
   const hp = Math.floor(P.enemy.archerHp) * (n >= 31 ? 2 : 1)
+  // 몸통 두세 발 크기가 됐으니(속도 비례 피해) 적 하나당 두 발 몫을 얹는다. 헤드샷이 절약이다.
   const rng = makeRng(seedFrom(`hanbal.enemy.${n}`))
   const targets: TargetSpec[] = [...base.targets]
   for (let e = 0; e < count; e++) {
@@ -216,7 +217,7 @@ function withEnemies(base: StageDef, i: number): StageDef {
       score: 120,
     })
   }
-  return { ...base, arrows: Math.min(10, base.arrows + count), targets }
+  return { ...base, arrows: Math.min(10, base.arrows + count * 2), targets }
 }
 
 /** 보스 주기. 10판 = 여정의 한 마디 (RUN.md). */
@@ -258,8 +259,9 @@ function bossStage(i: number): StageDef {
   for (let e = 0; e < escorts; e++) {
     targets.push({ kind: 'static', x: reach * rng.range(0.35, 0.6), y: rng.range(1.2, 4.5), r: 0.55, score: 80 })
   }
-  // 몸통만 쏠 때 필요한 발 수. 화살은 그보다 세 발 여유 — 머리를 맞히는 만큼 더 남는다.
-  const hits = Math.ceil(hp / Math.max(1, Math.floor(P.enemy.playerDamage)))
+  // 몸통만 쏠 때 필요한 발 수. 피해는 착탄 속도 비례라(≈기준의 1.1배) 그 평균으로 센다.
+  // 화살은 그보다 세 발 여유 — 머리(bossCritDmg)를 맞히는 만큼 더 남는다.
+  const hits = Math.ceil(hp / Math.max(1, Math.floor(P.enemy.playerDamage * 1.1)))
   return {
     id,
     title: '보스',

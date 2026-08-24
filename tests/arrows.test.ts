@@ -170,12 +170,33 @@ describe('화살 종류 — sim 배선', () => {
     }
     const basic = window('basic')
     const homing = window('homing')
-    assert.ok(homing > basic, `유도가 창을 못 넓혔다 (basic ${basic} / homing ${homing} mrad)`)
-    // 창을 두 배로 만들면 그건 살리는 게 아니라 과녁을 두 배로 키우는 것이다.
+    // 2026-08-24, 형의 결정으로 계약이 뒤집혔다: "유도탄이 유도탄답지 않게 너무 안 맞아.
+    // 확실하게 맞게 하되 얻기는 어렵게" — 이제 신전은 **진짜 유도**다 (창이 몇 배로 넓어야
+    // 정상). 균형은 창 크기가 아니라 희소성이 잡는다: 보급 풀의 마지막 마디에서만 나온다
+    // (game/supply.ts). 조준을 완전히 대신하지는 못한다는 하한만 남긴다 — 원뿔(homingCone)
+    // 밖은 여전히 그대로 빗나가야 한다.
     assert.ok(
-      homing < basic * 2,
-      `유도가 과하다 — 창이 두 배를 넘었다 (basic ${basic} / homing ${homing} mrad)`,
+      homing > basic * 2,
+      `신전이 유도탄답지 않다 — 창이 두 배도 안 된다 (basic ${basic} / homing ${homing} mrad)`,
     )
+  })
+
+  it('신전도 원뿔 밖(완전히 딴 데)은 그대로 빗나간다', () => {
+    const lone2 = (): StageDef => ({
+      id: 'lone2', seed: 0x1234, arrows: 2, targetScore: 100, wind: 0,
+      targets: [{ kind: 'static', x: 20, y: 2.4, r: 0.35, score: 100 }],
+    })
+    const w = createWorld(lone2(), STATS, 'homing')
+    // 60도 위 — 과녁은 원뿔(0.6rad) 바깥이다. 이건 조준이 아니라 하늘에 쏜 것이다.
+    const a2 = spawnArrow(w, Math.PI / 3, 1)
+    assert.notEqual(a2, null)
+    let hitAny = false
+    for (let i = 0; i < 900; i++) {
+      step(w, IDLE)
+      for (const e of w.events) if (e.t === 'hit') hitAny = true
+      w.events.length = 0
+    }
+    assert.ok(!hitAny, '하늘로 쏜 신전이 과녁으로 돌아왔다 — 원뿔 빗장이 풀렸다')
   })
 
   it('분열 자식은 지급 화살을 먹지 않는다', () => {

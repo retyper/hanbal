@@ -22,9 +22,11 @@ export const SUPPLY_COUNT = 3
  */
 export function supplyPool(cycle: number): readonly ArrowKindId[] {
   const pool: ArrowKindId[] = ['burst', 'chain', 'split']
-  if (cycle >= 2) pool.push('homing')
-  if (cycle >= 3) pool.push('pierce')
-  if (cycle >= 4) pool.push('heavy')
+  if (cycle >= 2) pool.push('pierce')
+  if (cycle >= 3) pool.push('heavy')
+  // 신전은 마지막 보물이다 — 진짜 유도(homingTurn 2.6)가 된 대가로 가장 깊이 숨는다
+  // (형: "확실하게 맞게 하되 얻기는 어렵게"). 넷째 보스 = 40판까지 가야 처음 본다.
+  if (cycle >= 4) pool.push('homing')
   return pool
 }
 

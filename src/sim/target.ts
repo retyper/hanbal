@@ -146,6 +146,12 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
     const hy = target.y + target.r * P.target.bossHeadUp
     const hr = target.r * P.target.bossHeadR
     head = distSqPointSegment(hx, hy, arrow.px, arrow.py, arrow.x, arrow.y) <= hr * hr
+  } else if (target.kind === 'archer') {
+    // 적 궁수의 머리 — 렌더 실루엣과 같은 자리 (scene.ts). 맞히면 즉사다 (형의 결정:
+    // "적은 헤드샷 맞을 때만 한 방, 아니면 두세 방").
+    const hy = target.y + target.r * P.enemy.archerHeadUp
+    const hr = target.r * P.enemy.archerHeadR
+    head = distSqPointSegment(target.x, hy, arrow.px, arrow.py, arrow.x, arrow.y) <= hr * hr
   }
 
   if (head) accuracy = 1
@@ -208,15 +214,24 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
     w.events.push({ t: 'pickup', x: target.x, y: target.y, gain: target.give })
   }
 
-  if (target.kind === 'boss') {
-    // 보스는 체력으로 버틴다. 헤드샷은 몸통의 두 배 — 절반의 화살로 잡는 길.
-    target.hp -= head ? Math.floor(P.target.bossCritDmg) : Math.floor(P.enemy.playerDamage)
+  if (target.kind === 'boss' || target.kind === 'archer') {
+    // ── 피해 = 기준 × (착탄 속도 / 기준 속도) × 살의 질량 배수 ──
+    // 세게 당길수록·가까울수록·무거운 살일수록 아프다. 운동에너지의 게임 번역이다.
+    // 착탄 속도는 관통 감속이 붙기 전(resolveHit 진입 시점)의 값이다.
+    const impact = Math.sqrt(arrow.vx * arrow.vx + arrow.vy * arrow.vy)
+    const dmg = Math.max(1, Math.round(
+      P.enemy.playerDamage * (impact / Math.max(1, P.enemy.dmgRefSpeed)) * fx.dmgMul,
+    ))
+    if (target.kind === 'archer' && head) {
+      // 헤드샷 처형 — 체력 무관 즉사. 이 한 줄이 "조준할 이유"다.
+      target.hp = 0
+    } else if (target.kind === 'boss') {
+      target.hp -= head ? Math.floor(P.target.bossCritDmg) : dmg
+    } else {
+      target.hp -= dmg
+    }
     if (target.hp > 0) return
     target.alive = false
-  } else if (target.kind === 'archer' && target.hp > Math.floor(P.enemy.playerDamage)) {
-    // 깊은 판의 적 궁수는 여러 발을 버틴다. 살아 있으면 계속 쏜다 — 우선순위가 더 급해진다.
-    target.hp -= Math.floor(P.enemy.playerDamage)
-    return
   } else if (target.kind === 'aerial') {
     // 공중 과녁은 맞아도 사라지지 않는다. 떨어지면서 아래를 연쇄로 쳐야 한다 (GDD 7장).
     target.falling = true
