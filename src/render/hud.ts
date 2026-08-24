@@ -476,19 +476,6 @@ export function drawHud(
   ctx.fillStyle = THEME.hudDim
   ctx.fillText(cache.scoreNum, M.padX + goalW + M.scoreGap, bodyY + Math.round(M.s * 6))
 
-  // ── 체력 (docs/RUN.md 6장) — 10판부터 적이 깎는다. 0 = 여정 끝. ──
-  // 가득일 때는 조용히, 깎이면 또렷하게. 심장 세 칸이 이 게임의 목숨 전부다.
-  {
-    const hpMax = Math.floor(P.enemy.hpMax)
-    const hp = clamp01(w.hp / Math.max(1, hpMax)) * hpMax
-    const hy = bodyY - px(26, M.s)
-    ctx.font = M.fSub
-    for (let i = 0; i < hpMax; i++) {
-      ctx.fillStyle = i < hp ? THEME.gaugeWarn : THEME.gaugeBack
-      ctx.fillText('\u2665', M.padX + i * px(22, M.s), hy)
-    }
-  }
-
   // ── 남은 화살 ────────────────────────────────────────────────
   //
   // 큰 숫자 + 화살 눈금을 **둘 다** 보여준다. 숫자는 한눈에 읽히고, 눈금은 세지 않아도

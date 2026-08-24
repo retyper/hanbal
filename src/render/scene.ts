@@ -38,6 +38,25 @@ const BG = {
   nearAmp: 1.3,
   nearFreq: 0.11,
   nearParallax: 0.62,
+  /** 세 번째(가장 먼) 능선 — 하늘과 산 사이의 한 겹 더 */
+  faintBase: 8.6,
+  faintAmp: 2.8,
+  faintFreq: 0.03,
+  faintParallax: 0.16,
+  /** 산안개 밴드 (월드 y) */
+  mistLo: 2.6,
+  mistHi: 5.4,
+  mistAlpha: 0.07,
+  /** 소나무 — 근경 능선을 따라 선다 */
+  pines: 9,
+  pineX0: -8,
+  pineX1: 46,
+  pineHMin: 1.6,
+  pineHMax: 3.2,
+  /** 구름 — 아주 느리게 흐른다 (m/s, 월드 기준) */
+  clouds: 3,
+  cloudDrift: 0.18,
+  cloudAlpha: 0.5,
   groundLineW: 1.5,
 } as const
 
@@ -169,6 +188,9 @@ interface RendererX extends Renderer {
   far: Float32Array
   near: Float32Array
   stars: Float32Array
+  faint: Float32Array
+  pines: Float32Array
+  clouds: Float32Array
   tufts: Float32Array
   grad: CanvasGradient | null
   gradH: number
@@ -422,14 +444,8 @@ function drawTargets(
       ctx.lineTo(bx, y + ry * 0.3)
       ctx.stroke()
 
-      // 두 발을 버티는 놈은 머리 위 점으로 말해준다.
-      if (t.hp > 1) {
-        ctx.fillStyle = THEME.target2
-        ctx.beginPath()
-        ctx.arc(x - 4, headY - hr - 6, 2, 0, TAU)
-        ctx.arc(x + 4, headY - hr - 6, 2, 0, TAU)
-        ctx.fill()
-      }
+      // 체력 바 — 머리 위 (형: "전부 바 형태로").
+      drawHpBar(ctx, x, headY - hr - 12, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
     } else if (t.kind === 'boss') {
       // ★ 보스 (docs/RUN.md 3장). 몸통은 위험색 겹띠 — 크기 자체가 위협이라 조형은 단순하게.
       band(ctx, x, y, rx, ry, THEME.threat)
@@ -440,16 +456,8 @@ function drawTargets(
       const hr = Math.max(3, rx * P.target.bossHeadR)
       band(ctx, x, hy, hr, hr, THEME.target2)
       band(ctx, x, hy, hr * 0.55, hr * 0.55, THEME.threat)
-      // 남은 체력 — 몸통 위 눈금. 숫자보다 점이 멀리서 읽힌다.
-      ctx.fillStyle = THEME.target2
-      const pipR = Math.max(2, rx * 0.05)
-      const gap = pipR * 3
-      const x0 = x - ((t.hp - 1) * gap) / 2
-      for (let p = 0; p < t.hp; p++) {
-        ctx.beginPath()
-        ctx.arc(x0 + p * gap, hy - hr - pipR * 4, pipR, 0, TAU)
-        ctx.fill()
-      }
+      // 체력 바 — 머리 위. 보스의 남은 목숨이 멀리서도 한 줄로 읽힌다.
+      drawHpBar(ctx, x, hy - hr - 14, Math.max(40, rx * 1.2), t.hpMax > 0 ? t.hp / t.hpMax : 0)
     } else if (t.kind === 'charger') {
       // ★ 나를 향해 오는 것. **왼쪽을 가리키는 뾰족한 삼각형** — 다른 어떤 과녁과도
       // 실루엣이 겹치지 않아야 한다. 색을 못 봐도 "저건 다르다"가 먼저 와야 하기 때문이다.
@@ -589,6 +597,20 @@ function drawTrails(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void 
  * 예전엔 선 하나였다. 빠를 땐 궤적이 방향을 말해주지만 정점에서 느려지는 순간
  * **어느 쪽이 앞인지** 알 수가 없었다. 촉이 있으면 멈춰 있어도 방향이 읽힌다.
  */
+/**
+ * 체력 바 — 모든 목숨 있는 것의 문법 (형: "체력은 전부 캐릭터 머리 위나 다리 밑에 바 형태").
+ * 화면 좌표로 그린다. 잃은 만큼이 어두워지는 단순한 두 겹 — 숫자는 안 쓴다.
+ */
+function drawHpBar(
+  ctx: CanvasRenderingContext2D, x: number, y: number, w: number, ratio: number,
+): void {
+  const h = 5
+  ctx.fillStyle = THEME.gaugeBack
+  ctx.fillRect(x - w / 2, y, w, h)
+  ctx.fillStyle = THEME.gaugeWarn
+  ctx.fillRect(x - w / 2, y, w * Math.max(0, Math.min(1, ratio)), h)
+}
+
 /** 적 화살 — 위험색 짧은 대. 내 화살과 색이 달라야 "날아오는 것"이 즉시 구분된다. */
 function drawEnemyShots(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void {
   ctx.strokeStyle = THEME.threat
@@ -680,12 +702,20 @@ function bakeStars(): Float32Array {
   return tab
 }
 
-function drawSky(ctx: CanvasRenderingContext2D, cam: Camera, stars: Float32Array): void {
-  // 달 — 초승달. 밝은 원 하나를 배경색 원으로 베어낸다 (그림자·필터 금지, A5).
+function drawSky(ctx: CanvasRenderingContext2D, cam: Camera, stars: Float32Array, elapsed: number): void {
+  // 달 — 초승달 + 달무리. 무리는 알파 낮은 큰 원 두 겹뿐이다 (그림자·필터 금지, A5).
   const mx = cam.w * DRAW.moonX
   const my = cam.h * DRAW.moonY
   ctx.fillStyle = THEME.moon
-  ctx.globalAlpha = 0.5
+  ctx.globalAlpha = 0.05
+  ctx.beginPath()
+  ctx.arc(mx, my, DRAW.moonR * 2.6, 0, TAU)
+  ctx.fill()
+  ctx.globalAlpha = 0.09
+  ctx.beginPath()
+  ctx.arc(mx, my, DRAW.moonR * 1.7, 0, TAU)
+  ctx.fill()
+  ctx.globalAlpha = 0.55
   ctx.beginPath()
   ctx.arc(mx, my, DRAW.moonR, 0, TAU)
   ctx.fill()
@@ -707,10 +737,113 @@ function drawSky(ctx: CanvasRenderingContext2D, cam: Camera, stars: Float32Array
     // 화면 폭으로 감싼다. 카메라가 멀리 가도 하늘이 비지 않는다.
     sx = ((sx % cam.w) + cam.w) % cam.w
     const size = DRAW.starSizePx * (0.5 + b)
-    ctx.globalAlpha = 0.25 + b * 0.55
+    // 밝은 별 몇은 천천히 숨쉰다 — 시계는 sim elapsed (A1: 렌더는 읽기만).
+    const tw = b > 0.75 ? 0.75 + 0.25 * Math.sin(elapsed * 0.8 + i * 2.1) : 1
+    ctx.globalAlpha = (0.25 + b * 0.55) * tw
     ctx.fillRect(sx, sy, size, size)
   }
   ctx.globalAlpha = 1
+}
+
+/**
+ * 밤구름 — 하늘보다 반 톤 밝은 길쭉한 덩어리가 아주 느리게 흐른다.
+ * 정지화면이던 하늘에 시간이 흐르게 하는 가장 싼 방법이다 (형: "배경이 밋밋해").
+ */
+function bakeClouds(): Float32Array {
+  // u(가로 위상 0..1), v(세로 0..1), 길이 배수, 두께 배수
+  const t = new Float32Array(BG.clouds * 4)
+  for (let i = 0; i < BG.clouds; i++) {
+    // 별과 같은 관례 — valueNoise 시드 분리로 뽑는다 (렌더는 rng 스트림을 만들지 않는다).
+    const n = (k: number, seed: number): number => (valueNoise(i * k, seed) + 1) * 0.5
+    t[i * 4] = n(1.9, 811)
+    t[i * 4 + 1] = 0.08 + n(2.7, 822) * 0.22
+    t[i * 4 + 2] = 0.7 + n(3.3, 833) * 0.8
+    t[i * 4 + 3] = 0.5 + n(4.1, 844)
+  }
+  return t
+}
+
+function drawClouds(ctx: CanvasRenderingContext2D, cam: Camera, clouds: Float32Array, elapsed: number): void {
+  ctx.fillStyle = THEME.cloud
+  for (let i = 0; i < BG.clouds; i++) {
+    const u = clouds[i * 4] ?? 0
+    const v = clouds[i * 4 + 1] ?? 0
+    const len = (clouds[i * 4 + 2] ?? 1) * cam.w * 0.28
+    const th = (clouds[i * 4 + 3] ?? 1) * 10
+    let sx = (u * cam.w + elapsed * BG.cloudDrift * cam.scale * 0.2) % (cam.w + len)
+    sx = sx < 0 ? sx + cam.w + len : sx
+    const y = v * cam.h
+    ctx.globalAlpha = BG.cloudAlpha * 0.5
+    // 둥근 끝 막대 세 개를 겹쳐 뭉게 실루엣을 만든다 — 필터 없이.
+    ctx.beginPath()
+    ctx.ellipse(sx - len / 2, y, len * 0.5, th, 0, 0, TAU)
+    ctx.ellipse(sx - len * 0.15, y - th * 0.6, len * 0.3, th * 0.9, 0, 0, TAU)
+    ctx.ellipse(sx - len * 0.8, y + th * 0.3, len * 0.28, th * 0.7, 0, 0, TAU)
+    ctx.fill()
+  }
+  ctx.globalAlpha = 1
+}
+
+/** 산안개 — 가장 먼 능선의 발치를 가로로 지운다. 겹과 겹 사이에 공기가 생긴다. */
+function drawMist(ctx: CanvasRenderingContext2D, cam: Camera): void {
+  const top = worldToScreenY(cam, BG.mistHi)
+  const bot = worldToScreenY(cam, BG.mistLo)
+  ctx.fillStyle = THEME.mist
+  ctx.globalAlpha = BG.mistAlpha
+  ctx.fillRect(0, top, cam.w, Math.max(1, bot - top))
+  ctx.globalAlpha = BG.mistAlpha * 0.6
+  ctx.fillRect(0, top - (bot - top) * 0.5, cam.w, Math.max(1, (bot - top) * 0.5))
+  ctx.globalAlpha = 1
+}
+
+/**
+ * 소나무 실루엣 — 근경 능선을 따라 선다. 삼각 세 단 + 줄기.
+ * "무슨 그림인지 알아보기 어렵다"(형)의 답: 산 능선만으론 밤하늘 그래프다 —
+ * 나무가 서야 산이 된다. 자리는 월드에 박아 카메라와 같이 흐른다 (근경 시차).
+ */
+function bakePines(): Float32Array {
+  // x(월드), 높이, 폭 배수
+  const t = new Float32Array(BG.pines * 3)
+  for (let i = 0; i < BG.pines; i++) {
+    const n = (k: number, seed: number): number => (valueNoise(i * k, seed) + 1) * 0.5
+    t[i * 3] = BG.pineX0 + ((BG.pineX1 - BG.pineX0) * (i + n(1.3, 911) * 0.8)) / BG.pines
+    t[i * 3 + 1] = BG.pineHMin + n(2.1, 922) * (BG.pineHMax - BG.pineHMin)
+    t[i * 3 + 2] = 0.7 + n(2.9, 933) * 0.6
+  }
+  return t
+}
+
+function drawPines(
+  ctx: CanvasRenderingContext2D, cam: Camera, pines: Float32Array, nearTab: Float32Array,
+): void {
+  ctx.fillStyle = THEME.pine
+  for (let i = 0; i < BG.pines; i++) {
+    const wx = pines[i * 3] ?? 0
+    const h = pines[i * 3 + 1] ?? 2
+    const wmul = pines[i * 3 + 2] ?? 1
+    // 근경 능선과 같은 시차로 선다 — 능선 높이를 그대로 발밑으로 쓴다.
+    const px = (wx - cam.x) * BG.nearParallax * cam.scale + cam.w * 0.5
+    if (px < -60 || px > cam.w + 60) continue
+    const u = (wx * BG.nearParallax - RIDGE_X0) / RIDGE_STEP
+    const j = u < 0 ? 0 : u > RIDGE_N - 2 ? RIDGE_N - 2 : u | 0
+    const footWorld = nearTab[j] ?? BG.nearBase
+    const foot = worldToScreenY(cam, footWorld)
+    const hp = h * cam.scale * 0.55
+    const wp = hp * 0.42 * wmul
+    // 줄기
+    ctx.fillRect(px - 1.5, foot - hp * 0.25, 3, hp * 0.25)
+    // 삼각 세 단
+    for (let tLv = 0; tLv < 3; tLv++) {
+      const ty = foot - hp * (0.2 + tLv * 0.27)
+      const tw = wp * (1 - tLv * 0.24)
+      ctx.beginPath()
+      ctx.moveTo(px, ty - hp * 0.33)
+      ctx.lineTo(px - tw, ty)
+      ctx.lineTo(px + tw, ty)
+      ctx.closePath()
+      ctx.fill()
+    }
+  }
 }
 
 /**
@@ -754,6 +887,9 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     fx: createFx(),
     far: bakeRidge(BG.farBase, BG.farAmp, BG.farFreq, 11),
     near: bakeRidge(BG.nearBase, BG.nearAmp, BG.nearFreq, 23),
+    faint: bakeRidge(BG.faintBase, BG.faintAmp, BG.faintFreq, 37),
+    pines: bakePines(),
+    clouds: bakeClouds(),
     stars: bakeStars(),
     tufts: bakeTufts(),
     grad: null,
@@ -791,9 +927,13 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       c.fillRect(0, 0, cam.w, cam.h)
 
       // 하늘은 능선보다 먼저. 별이 산 위로 뜨면 산이 유리가 된다.
-      drawSky(c, cam, r.stars)
+      drawSky(c, cam, r.stars, w.elapsed)
+      drawClouds(c, cam, r.clouds, w.elapsed)
+      drawRidge(c, cam, r.faint, BG.faintParallax, THEME.ridgeFaint)
+      drawMist(c, cam)
       drawRidge(c, cam, r.far, BG.farParallax, THEME.ridgeFar)
       drawRidge(c, cam, r.near, BG.nearParallax, THEME.ridgeNear)
+      drawPines(c, cam, r.pines, r.near)
 
       const groundY = worldToScreenY(cam, 0)
       c.fillStyle = THEME.ground

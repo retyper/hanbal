@@ -126,6 +126,7 @@ function newTarget(): Target {
     speed: 0,
     give: 0,
     hp: 0,
+    hpMax: 0,
     fireAt: 0,
     chainDepth: 0,
     score: FALLBACK_TARGET_SCORE,
@@ -247,8 +248,9 @@ function loadTarget(t: Target, id: number, spec: TargetSpec): void {
   t.hp = spec.kind === 'boss'
     ? Math.floor(spec.hp ?? P.target.bossHp)
     : spec.kind === 'archer'
-      ? Math.floor(spec.hp ?? 1)
+      ? Math.floor(spec.hp ?? P.enemy.archerHp)
       : 0
+  t.hpMax = t.hp
   // 첫 발사 시각. 판이 시작되자마자 쏘면 예고(windup)가 성립하지 않는다.
   t.fireAt = spec.kind === 'archer' ? spec.fireDelay ?? P.enemy.shootEvery : 0
   t.chainDepth = 0
@@ -261,6 +263,7 @@ function clearTarget(t: Target): void {
   t.speed = 0
   t.give = 0
   t.hp = 0
+  t.hpMax = 0
   t.fireAt = 0
   t.chainDepth = 0
   t.vx = 0
@@ -512,7 +515,7 @@ function stepEnemyShots(w: World): void {
     // 궁수 피격 — 선분 판정 (빠른 화살이 한 스텝에 몸을 건너뛰지 않게).
     if (w.status === 'playing' && distSqPointSegment(a.x, a.y, sh.px, sh.py, sh.x, sh.y) <= r2) {
       sh.alive = false
-      w.hp = w.hp > 0 ? w.hp - 1 : 0
+      w.hp = Math.max(0, w.hp - Math.floor(P.enemy.arrowDamage))
       w.combo = 0
       w.events.push({ t: 'player_hit', hp: w.hp })
       if (w.hp <= 0) endStage(w, false)

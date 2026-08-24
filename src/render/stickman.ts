@@ -355,6 +355,10 @@ function computeRig(cam: Camera, w: World): void {
   rig.nockY = a.y + uy * (1 - d) * BODY.span
 
   // ── 시위손 (릴리즈 팔로스루) ──
+  // ★ 판이 바뀌면 sim 시계(elapsed)가 0으로 되감긴다. 릴리즈 기억을 안 버리면
+  //   경과 시간이 음수가 되어 감쇠 exp가 **증폭**으로 뒤집힌다 — 시위가 화면 밖까지
+  //   출렁이던 버그의 정체다 (형의 보고). 시계가 뒤로 갔으면 기억을 버린다.
+  if (relAnim.at > w.elapsed) relAnim.at = -1
   // 당기는 동안은 시위(노크)를 잡고 있고, 놓는 순간부터는 시위와 헤어진다.
   const drawingNow = a.phase === 'drawing' || a.phase === 'full' || a.phase === 'collapsing'
   if (drawingNow) {
@@ -630,7 +634,7 @@ export function drawArcher(
   if (strDrawing) {
     ctx.lineTo(worldToScreenX(cam, rig.nockX), worldToScreenY(cam, rig.nockY))
   } else {
-    const vt = relAnim.at >= 0 ? w.elapsed - relAnim.at : 1e9
+    const vt = relAnim.at >= 0 ? Math.max(0, w.elapsed - relAnim.at) : 1e9
     if (vt < FOLLOW.vibDecay * 3) {
       // 잔떨림 — 시위 중앙이 u축으로 감쇠 진동한다. 이게 "튕겨 돌아왔다"의 마침표다.
       const amp = FOLLOW.vib * Math.exp(-vt / FOLLOW.vibDecay) * Math.sin(vt * FOLLOW.vibHz * TAU)
@@ -715,5 +719,19 @@ export function drawArcher(
     ctx.strokeStyle = THEME.accent
     line(ctx, cam, tipX - rig.ux * BODY.arrowHead, tipY - rig.uy * BODY.arrowHead, tipX, tipY)
   }
+
+  // ── 체력 바 — 머리 위 (docs/RUN.md 6장 · 형: "전부 바 형태로") ──
+  // 궁수 좌표는 앵커(턱)다. 머리 위로 넉넉히 띄워 조준선과 겹치지 않게 한다.
+  {
+    const hpRatio = w.hp / Math.max(1, Math.floor(P.enemy.hpMax))
+    const bx = worldToScreenX(cam, a.x)
+    const by = worldToScreenY(cam, a.y + 1.05)
+    const bw = Math.max(34, cam.scale * 1.3)
+    ctx.fillStyle = THEME.gaugeBack
+    ctx.fillRect(bx - bw / 2, by, bw, 5)
+    ctx.fillStyle = THEME.gaugeWarn
+    ctx.fillRect(bx - bw / 2, by, bw * Math.max(0, Math.min(1, hpRatio)), 5)
+  }
+
 }
 

@@ -21,7 +21,7 @@ function arena(fireDelay: number): StageDef {
     targetScore: 100,
     wind: 0,
     targets: [
-      { kind: 'archer', x: 18, y: 1.5, r: 0.65, hp: 1, fireDelay, score: 100 },
+      { kind: 'archer', x: 18, y: 1.5, r: 0.65, hp: Math.floor(P.enemy.archerHp), fireDelay, score: 100 },
       // 빈 판 즉시 클리어 방지용 원거리 과녁
       { kind: 'static', x: 45, y: 8.5, r: 0.3, score: 0 },
     ],
@@ -57,7 +57,8 @@ describe('적', () => {
 
   it('적 화살에 맞으면 체력이 깎이고, 0이면 여정이 끝날 판정(failed)이 난다', () => {
     const w = createWorld(arena(0.5), STATS)
-    w.hp = 1
+    // 한 발이면 눕는 체력에서 시작 — 피격 → 0 → failed 경로를 잰다.
+    w.hp = Math.floor(P.enemy.arrowDamage)
     let hit = false
     for (let i = 0; i < 1200 && !hit; i++) {
       step(w, IDLE)

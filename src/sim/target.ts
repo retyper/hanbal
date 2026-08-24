@@ -209,13 +209,13 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
   }
 
   if (target.kind === 'boss') {
-    // 보스는 체력으로 버틴다. 헤드샷은 여러 발 몫이다 — 절반의 화살로 잡는 길.
-    target.hp -= head ? Math.floor(P.target.bossCritDmg) : 1
+    // 보스는 체력으로 버틴다. 헤드샷은 몸통의 두 배 — 절반의 화살로 잡는 길.
+    target.hp -= head ? Math.floor(P.target.bossCritDmg) : Math.floor(P.enemy.playerDamage)
     if (target.hp > 0) return
     target.alive = false
-  } else if (target.kind === 'archer' && target.hp > 1) {
-    // 깊은 판의 적 궁수는 두 발을 버틴다. 살아 있으면 계속 쏜다 — 우선순위가 더 급해진다.
-    target.hp -= 1
+  } else if (target.kind === 'archer' && target.hp > Math.floor(P.enemy.playerDamage)) {
+    // 깊은 판의 적 궁수는 여러 발을 버틴다. 살아 있으면 계속 쏜다 — 우선순위가 더 급해진다.
+    target.hp -= Math.floor(P.enemy.playerDamage)
     return
   } else if (target.kind === 'aerial') {
     // 공중 과녁은 맞아도 사라지지 않는다. 떨어지면서 아래를 연쇄로 쳐야 한다 (GDD 7장).

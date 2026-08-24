@@ -50,12 +50,13 @@ describe('보스', () => {
     assert.equal(getStage(BOSS_EVERY - 2).targets[0]?.kind === 'boss', false, '9판이 보스다')
   })
 
-  it('몸통 한 발 = 1, 남으면 화살만 죽는다 · 관통살도 못 뚫는다', () => {
-    const w = createWorld(bossDef(3), STATS, 'pierce')
+  it('몸통 한 발 = playerDamage, 남으면 화살만 죽는다 · 관통살도 못 뚫는다', () => {
+    const dmg = Math.floor(P.enemy.playerDamage)
+    const w = createWorld(bossDef(dmg * 3), STATS, 'pierce')
     const boss = w.targets[0]
     assert.ok(boss !== undefined)
     shootAt(w, 2.6)
-    assert.equal(boss.hp, 2, `hp=${boss.hp}`)
+    assert.equal(boss.hp, dmg * 2, `hp=${boss.hp}`)
     assert.equal(boss.alive, true)
     const arrow = w.arrows[0]
     assert.ok(arrow !== undefined && !arrow.alive, '보스를 맞힌 화살이 계속 난다')
@@ -66,7 +67,8 @@ describe('보스', () => {
     // 낙차를 정확히 아는 건 sim뿐이다 — 머리를 지나는 각을 탐색으로 찾는다 (bows.test와 같은 방식).
     let critSeen = false
     for (let mrad = -30; mrad <= 60 && !critSeen; mrad += 2) {
-      const w = createWorld(bossDef(5), STATS)
+      const base = Math.floor(P.enemy.playerDamage) * 5
+      const w = createWorld(bossDef(base), STATS)
       const boss = w.targets[0]
       assert.ok(boss !== undefined)
       const headY = boss.y + boss.r * P.target.bossHeadUp
@@ -80,14 +82,14 @@ describe('보스', () => {
       const hit = w.events.find((e) => e.t === 'hit')
       if (hit !== undefined && hit.t === 'hit' && hit.accuracy === 1) {
         critSeen = true
-        assert.equal(boss.hp, 5 - Math.floor(P.target.bossCritDmg), `hp=${boss.hp}`)
+        assert.equal(boss.hp, base - Math.floor(P.target.bossCritDmg), `hp=${boss.hp}`)
       }
     }
     assert.ok(critSeen, '어떤 각으로도 헤드샷 판정(정확도 1)이 나오지 않는다')
   })
 
   it('체력이 0이 되면 죽고 판이 끝난다', () => {
-    const w = createWorld(bossDef(2), STATS)
+    const w = createWorld(bossDef(Math.floor(P.enemy.playerDamage) * 2), STATS)
     shootAt(w, 2.6)
     w.events.length = 0
     shootAt(w, 2.6)
@@ -98,7 +100,7 @@ describe('보스', () => {
   })
 
   it('궁수에게 닿으면 그 판을 진다', () => {
-    const w = createWorld(bossDef(9, 40), STATS)
+    const w = createWorld(bossDef(Math.floor(P.enemy.playerDamage) * 9, 40), STATS)
     for (let i = 0; i < 1200 && w.status === 'playing'; i++) step(w, IDLE)
     assert.equal(w.status, 'failed', '보스가 닿았는데 판이 안 끝났다')
     assert.ok(w.events.some((e) => e.t === 'stage_end' && !e.cleared) ||

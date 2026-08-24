@@ -30,8 +30,16 @@ export interface Camera {
 export const THEME = {
   sky0: '#0b0e13',
   sky1: '#1a222c',
-  ridgeFar: '#141b24',
-  ridgeNear: '#0e141b',
+  /** 능선 3겹 — 멀수록 하늘에 가깝게. 겹이 셋은 되어야 '산속'이 된다 (형: "배경이 밋밋해"). */
+  ridgeFaint: '#161f2b',
+  ridgeFar: '#121a23',
+  ridgeNear: '#0d1319',
+  /** 능선 사이의 밤안개. 알파로만 얹는다. */
+  mist: '#3a4a5e',
+  /** 밤구름 — 하늘보다 아주 조금 밝게, 천천히 흐른다. */
+  cloud: '#242f3d',
+  /** 소나무 실루엣 — 가장 어두운 근경. */
+  pine: '#0a0f15',
   ground: '#080b0f',
   groundLine: '#28313c',
   body: '#d3dce6',

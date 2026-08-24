@@ -365,7 +365,7 @@ function sanitize(r: Raw, now: number): SaveData {
     runCount: int(r['runCount'], 0, 0, HARD_MAX),
     runScore: int(r['runScore'], 0, 0, HARD_MAX),
     bossKills: int(r['bossKills'], 0, 0, HARD_MAX),
-    runHp: int(r['runHp'], Math.floor(P.enemy.hpMax), 0, 99),
+    runHp: int(r['runHp'], Math.floor(P.enemy.hpMax), 0, 999),
     arrowStock: sanitizeBest(r['arrowStock']),
     bullseyes: int(r['bullseyes'], 0, 0, HARD_MAX),
     perfectRuns: int(r['perfectRuns'], 0, 0, HARD_MAX),

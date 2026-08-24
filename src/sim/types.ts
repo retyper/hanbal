@@ -241,6 +241,8 @@ export interface Target {
   hp: number
   /** archer 전용 — 다음 발사 시각 (elapsed 기준). 그 windup 전부터 당기는 게 보인다. */
   fireAt: number
+  /** 판 시작 시점의 체력 (boss·archer). 체력 바의 분모다. */
+  hpMax: number
   /** 연쇄 깊이. 직격 = 0, 낙하물에 맞은 것 = 1, 그 다음 = 2 ... */
   chainDepth: number
   /** 기본 점수. 링 명중도로 배수가 붙는다. */

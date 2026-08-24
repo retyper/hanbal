@@ -201,7 +201,7 @@ export function getStage(index: number): StageDef {
 function withEnemies(base: StageDef, i: number): StageDef {
   const n = i + 1
   const count = Math.min(3, 1 + Math.floor((n - 11) / 15))
-  const hp = n >= 31 ? 2 : 1
+  const hp = Math.floor(P.enemy.archerHp) * (n >= 31 ? 2 : 1)
   const rng = makeRng(seedFrom(`hanbal.enemy.${n}`))
   const targets: TargetSpec[] = [...base.targets]
   for (let e = 0; e < count; e++) {
@@ -233,7 +233,11 @@ export const BOSS_EVERY = 10
  */
 function bossStage(i: number): StageDef {
   const cycle = Math.floor((i + 1) / BOSS_EVERY)
-  const hp = Math.min(7, Math.floor(P.target.bossHp) + (cycle - 1))
+  // 100 = 내 화살 한 발 몫 (P.enemy.playerDamage). 마디마다 한 발 몫씩 세진다.
+  const hp = Math.min(
+    Math.floor(P.enemy.playerDamage) * 9,
+    Math.floor(P.target.bossHp) + (cycle - 1) * Math.floor(P.enemy.playerDamage),
+  )
   // id는 저작 판의 규칙(챕터-판)을 그대로 쓴다 — 옛 '4-10'의 별 기록이 보스에게 이어진다.
   const id = `${cycle}-10`
   const reach = 40
@@ -254,13 +258,15 @@ function bossStage(i: number): StageDef {
   for (let e = 0; e < escorts; e++) {
     targets.push({ kind: 'static', x: reach * rng.range(0.35, 0.6), y: rng.range(1.2, 4.5), r: 0.55, score: 80 })
   }
+  // 몸통만 쏠 때 필요한 발 수. 화살은 그보다 세 발 여유 — 머리를 맞히는 만큼 더 남는다.
+  const hits = Math.ceil(hp / Math.max(1, Math.floor(P.enemy.playerDamage)))
   return {
     id,
     title: '보스',
     hint: '머리가 약점이다 — 정중앙 판정으로 두 발 몫',
     seed: seedFrom(id),
-    arrows: Math.min(10, hp + 3 + escorts),
-    targetScore: need(Math.min(5, hp)),
+    arrows: Math.min(10, hits + 3 + escorts),
+    targetScore: need(Math.min(5, hits)),
     wind: 0,
     targets,
   }
