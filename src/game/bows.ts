@@ -64,7 +64,7 @@ export const BOW_KINDS: readonly BowKind[] = [
     id: 'recurve',
     name: '리커브',
     origin: 'Recurve · 안정기를 단 현대 양궁',
-    perk: '안정기 — 빨간 바 아래의 떨림과 산포가 준다.',
+    perk: '안정기 — 빨간 바 아래에서 덜 떨린다.',
     cost: '표적용 세팅이라 화살이 느리다.',
   },
   {

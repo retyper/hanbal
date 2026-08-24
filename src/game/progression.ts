@@ -212,12 +212,12 @@ function fullDrawSpeed(maxDraw: number, speedMul: number): number {
 }
 
 /**
- * 릴리즈 산포 감소율. bow.ts의 dScatterMul과 같은 식이다.
- * DerivedStats에 없어서 여기서 다시 푼다 — 계약(types.ts)에 scatterMul이 생기면 이 함수는 지운다.
+ * 호흡정지 한계 시간 (s). bow.ts의 dHoldMul과 같은 식이다.
+ * DerivedStats에 없어서 여기서 다시 푼다 — 계약(types.ts)에 holdMul이 생기면 이 함수는 지운다.
  */
-function scatterCut(focus: number): number {
+function holdLimit(focus: number): number {
   const e = diminish(focus > 0 ? focus : 0, P.growth.diminishAt, P.growth.diminishRate)
-  return 1 - 1 / (1 + e * P.growth.focusToScatter)
+  return P.steady.maxHold * (1 + e * P.growth.focusToHold)
 }
 
 const pct = (v: number): number => Math.round(v * 100)
@@ -250,8 +250,9 @@ export function effectOf(stats: Stats, key: StatKey): string {
       return cut <= 0 ? '빨간 바를 넘으면 손이 그대로 떨린다' : `빨간 바 아래에서 떨림 ${cut}% 감소`
     }
     case 'focus': {
-      const cut = pct(scatterCut(stats.focus))
-      return cut <= 0 ? '놓는 손이 아직 거칠다' : `놓는 순간 오차 ${cut}% 감소`
+      // 산포가 0이 된 뒤(P.bow.releaseScatter) FOCUS는 호흡의 스탯이다:
+      // 더 깊이 가라앉고(steadyMul), 더 오래 참는다(holdLimit).
+      return `숨을 ${holdLimit(stats.focus).toFixed(1)}초까지 참을 수 있다`
     }
   }
 }

@@ -45,10 +45,10 @@ let dTremorMul = 1
 let dStaminaMax = 0
 let dSteadyMul = 1
 /**
- * 릴리즈 산포 배수 (FOCUS). DerivedStats에는 넣지 않는다 —
+ * 호흡정지 한계 시간 배수 (FOCUS). DerivedStats에는 넣지 않는다 —
  * 계약을 늘리지 않고 bow 내부에서만 쓰면 되는 값이라 모듈 스칼라로 둔다.
  */
-let dScatterMul = 1
+let dHoldMul = 1
 /**
  * 이 궁수가 도달할 수 있는 최대 당김 (0..1). STR로 열린다.
  * 초보는 1.0(진짜 만작)에 못 간다 — GDD 2장 "시위가 안 당겨진다".
@@ -73,8 +73,9 @@ function computeDerived(stats: Stats): void {
   dTremorMul = 1 / (1 + steady * P.growth.steadyToTremor)
   dStaminaMax = P.stamina.max * (1 + stam * P.growth.staminaToMax)
   dSteadyMul = 1 + focus * P.growth.focusToSteady
-  // GDD 4장 FOCUS의 두 번째 효과 "릴리즈 관용 창". 떨림이 아니라 난수 산포를 좁힌다.
-  dScatterMul = 1 / (1 + focus * P.growth.focusToScatter)
+  // GDD 4장 FOCUS의 두 번째 효과. 산포가 0이 된 뒤로는(P.bow.releaseScatter) 숨을 더 오래
+  // 참게 해 준다 — "결정적인 순간을 잡는다"가 시간의 여유로 번역된다.
+  dHoldMul = 1 + focus * P.growth.focusToHold
   dMaxDraw = clamp01(P.bow.maxDrawBase + str * P.growth.strToMaxDraw)
 }
 
@@ -114,7 +115,6 @@ export function stepArcher(w: World, input: InputFrame): void {
   const bow = w.bow
   dDrawTimeMul *= bow.drawTimeMul
   dTremorMul *= bow.tremorMul
-  dScatterMul *= bow.scatterMul
   dMaxDraw = clamp01(dMaxDraw + bow.maxDrawAdd)
 
   // 조준은 스무딩 없이 즉시 반영한다. 한 스텝이라도 늦으면 조준이 미끄러진다 (feel-lens 1).
@@ -239,7 +239,7 @@ export function stepArcher(w: World, input: InputFrame): void {
     // 호흡정지
     amp *= lerp(1, steadyTarget, a.steadyBlend)
     // 숨을 너무 오래 참으면 오히려 더 떨린다 — 실제 사격과 같다.
-    if (a.steadyTime > P.steady.maxHold) amp *= P.steady.overholdPenalty
+    if (a.steadyTime > P.steady.maxHold * dHoldMul) amp *= P.steady.overholdPenalty
 
     // 2옥타브 합성. 단일 사인파는 예측 가능해 지루하고, 순수 난수는 위상을 못 읽어
     // 실력이 개입할 여지가 없다. 느린 스윙 위에 잔떨림이 얹혀야 "지금이다"가 생긴다.
@@ -287,7 +287,7 @@ function release(w: World, collapsed: boolean): void {
 
   // gaussian()은 errScale이 0이어도 반드시 뽑는다. 안 뽑으면 발사 횟수에 따라
   // 난수 스트림이 어긋나 같은 시드가 다른 판을 만든다 (A1).
-  let scatter = w.rng.gaussian() * P.bow.releaseScatter * errScale * dTremorMul * dScatterMul
+  let scatter = w.rng.gaussian() * P.bow.releaseScatter * errScale * dTremorMul
   // 호흡정지는 떨림만이 아니라 난수 산포도 좁힌다. 안 그러면 참고 쏜 한 발이 순수 운이 된다.
   scatter *= lerp(1, P.bow.steadyScatterMul, a.steadyBlend)
   // 붕괴만 별도 배수를 받는다. strain은 여기서 또 곱하지 않는다 — errScale에 이미 한 번 들어갔고,
