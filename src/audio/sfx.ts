@@ -39,6 +39,7 @@ import {
   type SampleOpts,
 } from './samples.ts'
 import {
+  bellTone,
   click,
   closeSynth,
   createChan,
@@ -52,7 +53,7 @@ import {
   suspendSynth,
   tone,
 } from './synth.ts'
-import type { Chan, ClickOpts, NoiseOpts, Synth, ToneOpts } from './synth.ts'
+import type { BellOpts, Chan, ClickOpts, NoiseOpts, Synth, ToneOpts } from './synth.ts'
 
 /** 음소거 기억. 저장 실패해도 게임은 계속 돈다 (A4와 같은 원칙). */
 const STORE_KEY = 'hanbal.audio.v1'
@@ -74,6 +75,12 @@ const K_BEAT = 11
 const K_END = 12
 const K_AIR = 13
 const K_UI = 14
+/** 클리어 화음의 저음·마지막 음. 앞 세 음의 에코로 잡혀 눌리면 닫는 맛이 사라진다. */
+const K_END_BODY = 15
+/** 클리어 꼬리의 반짝임 (음정 없는 공기) */
+const K_SPARKLE = 16
+/** 연쇄에 얹히는 종의 배음 — "또로롱" */
+const K_CHAIN_BELL = 17
 
 /**
  * 음색 상수 — **파형의 신원**이다. 필터 주파수·Q·부분음 길이를 바꾸면 값이 세지는 게 아니라
@@ -151,9 +158,47 @@ const SFX = {
   missFreq: 260,
   missDur: 0.075,
 
-  // ── 판 클리어 ── 1초 안에 끝난다. 다음 판을 막지 않는다 (C1).
-  endStep: 0.1,
-  endDur: 0.18,
+  // ── 판 클리어 ─────────────────────────────────────────────────────
+  //
+  // 예전엔 삼각파 세 방(C5–E5–G5)이었다. 음정은 맞지만 **울리지 않아서** 신호음처럼 들렸다
+  // ("더 실감나는 소리로" 반려). 이제 넷은 전부 배음을 가진 종이고(bellTone),
+  // 아래에 저음 하나가 깔리고, 꼬리에 음정 없는 반짝임이 얹힌다.
+  //
+  // 닫는 음이 옥타브(C6)인 게 중요하다. 5도(G5)로 끝나면 "계속된다"로 들려서 끝맺음이 안 된다.
+  // 전체 1.3초 안에 끝난다 — 다음 판을 막지 않는다 (C1).
+  endStep: 0.085,
+  /** 앞 세 음의 울림 길이 / 닫는 음의 울림 길이 (s) */
+  endRing: 0.5,
+  endRingLast: 1,
+  /** 앞 세 음은 닫는 음보다 조금 작게. 마지막이 제일 커야 상승으로 들린다. */
+  endStepGain: 0.78,
+  endPartials: 3,
+  /** 살짝만 어긋난 배음. 0이면 하프, 크면 쇳소리. 여기는 그 사이의 '종'이다. */
+  endInharm: 0.012,
+  /** 종 아래 깔리는 저음 (C3). 없으면 소리가 공중에 뜬다. */
+  endBodyFreq: 130.81,
+  endBodyDur: 0.7,
+  endBodyGain: 0.5,
+  /** 반짝임 — 음정이 없어야 화음을 흐리지 않는다 */
+  sparkleFrom: 2600,
+  sparkleTo: 7200,
+  sparkleDur: 0.5,
+  sparkleAttack: 0.16,
+  sparkleGain: 0.35,
+  sparkleDelay: 0.12,
+
+  // ── 해금 ── 클리어보다 짧고 밝게. 두 음이면 "열렸다"는 방향이 생긴다.
+  unlockStep: 0.09,
+  unlockRing: 0.45,
+  unlockInharm: 0.02,
+
+  // ── 연쇄에 얹히는 종 ── 유리 깨짐 위의 배음. 이게 "또로롱"이다.
+  chainBellBase: 880,
+  chainBellDur: 0.28,
+  chainBellGain: 0.45,
+  chainBellInharm: 0.02,
+  /** 이 깊이까지만 얹는다. 더 깊어지면 보이스를 먹고 소리가 뭉갠다. */
+  chainBellDepth: 6,
 } as const
 
 /**
@@ -201,8 +246,13 @@ const SMP = {
   chainPan: 0.35,
 } as const
 
-/** 클리어 상승음 (C5–E5–G5). 모듈 상수라 한 번만 만들어진다. */
-const END_NOTES = [523.25, 659.25, 783.99] as const
+/**
+ * 클리어 상승음 (C5–E5–G5–C6). 모듈 상수라 한 번만 만들어진다.
+ * 마지막이 옥타브라 화음이 닫힌다 — 5도로 끝내면 "아직 안 끝났다"로 들린다.
+ */
+const END_NOTES = [523.25, 659.25, 783.99, 1046.5] as const
+/** 해금 두 음 (C5–G5). 클리어와 같은 세계의 소리여야 한다. */
+const UNLOCK_NOTES = [523.25, 783.99] as const
 
 // 스크래치 파라미터. 소리마다 옵션 객체를 새로 만들면 힙이 튄다 (A5).
 // 호출 즉시 값만 읽히므로 재사용해도 안전하다.
@@ -215,6 +265,9 @@ const TN: ToneOpts = {
   gain: 0, attack: 0.002, decay: 0.05, delay: 0,
 }
 const CK: ClickOpts = { freq: 0, dur: 0, gain: 0, delay: 0 }
+const BL: BellOpts = {
+  freq: 0, dur: 0, gain: 0, partials: 3, inharm: 0, attack: 0.004, delay: 0, type: 'sine',
+}
 const SP: SampleOpts = { gain: 0, rate: 1, pan: 0, delay: 0 }
 
 export interface Sfx {
@@ -477,18 +530,19 @@ export function playUi(sfx: Sfx, kind: UiSound): void {
   }
 
   if (kind === 'unlock') {
-    if (sample(sfx, s, 'switch', SMP.uiUnlockGain, 1, 0, 0)) return
-    // 대체음: 두 음 상승. "열렸다"는 방향이 있는 사건이라 한 방으로는 안 읽힌다.
-    for (let n = 0; n < 2; n++) {
-      TN.type = 'triangle'
-      TN.freq = END_NOTES[n] ?? 0
-      TN.endFreq = 0
-      TN.dur = SFX.endDur
-      TN.attack = 0.005
-      TN.decay = SFX.endDur
-      TN.gain = P.audio.endGain
-      TN.delay = n * SFX.endStep
-      tone(s, K_UI, TN)
+    // 스위치 딸깍은 **어택**이고, 그 위에 울리는 두 음이 "열렸다"를 만든다.
+    // 예전엔 샘플이 있으면 거기서 끝냈는데, 딸깍 하나로는 방향이 없어 그냥 버튼 소리였다.
+    sample(sfx, s, 'switch', SMP.uiUnlockGain, 1, 0, 0)
+    for (let n = 0; n < UNLOCK_NOTES.length; n++) {
+      BL.freq = UNLOCK_NOTES[n] ?? 0
+      BL.dur = SFX.unlockRing
+      BL.gain = P.audio.endGain
+      BL.partials = SFX.endPartials
+      BL.inharm = SFX.unlockInharm
+      BL.attack = 0.003
+      BL.delay = n * SFX.unlockStep
+      BL.type = 'sine'
+      bellTone(s, n === 0 ? K_UI : K_END_BODY, BL)
     }
     return
   }
@@ -679,6 +733,55 @@ function synthHit(s: Synth, accuracy: number): void {
 }
 
 /**
+ * 판 클리어 — 이 게임에서 유일하게 "잘했다"고 말하는 소리다.
+ *
+ * 세 겹이다. 하나라도 빠지면 신호음으로 되돌아간다:
+ *   저음 하나(C3)  — 몸통. 없으면 종소리가 공중에 뜬다.
+ *   종 넷(C5·E5·G5·C6) — 배음을 가진 진짜 울림 (bellTone). 옥타브로 닫는다.
+ *   반짝임 하나  — 음정 없는 공기. 꼬리에 얹혀 "여운"을 만든다.
+ *
+ * 마지막 음만 다른 kind 번호를 쓴다. 앞 세 음과 같은 번호면 에코 억제(echoScale)가
+ * 마지막을 가장 작게 눌러서, 올라가는 소리가 되레 사그라든다.
+ */
+function playStageClear(s: Synth): void {
+  const g = P.audio.endGain
+
+  TN.type = 'sine'
+  TN.freq = SFX.endBodyFreq
+  TN.endFreq = 0
+  TN.dur = SFX.endBodyDur
+  TN.attack = 0.012
+  TN.decay = SFX.endBodyDur
+  TN.gain = g * SFX.endBodyGain
+  TN.delay = 0
+  tone(s, K_END_BODY, TN)
+
+  const last = END_NOTES.length - 1
+  for (let n = 0; n <= last; n++) {
+    BL.freq = END_NOTES[n] ?? 0
+    BL.dur = n === last ? SFX.endRingLast : SFX.endRing
+    BL.gain = g * (n === last ? 1 : SFX.endStepGain)
+    BL.partials = SFX.endPartials
+    BL.inharm = SFX.endInharm
+    BL.attack = 0.004
+    BL.delay = n * SFX.endStep
+    BL.type = 'sine'
+    bellTone(s, n === last ? K_SPARKLE : K_END, BL)
+  }
+
+  NB.filterType = 'highpass'
+  NB.freq = SFX.sparkleFrom
+  NB.endFreq = SFX.sparkleTo
+  NB.q = 0.7
+  NB.dur = SFX.sparkleDur
+  NB.attack = SFX.sparkleAttack
+  NB.decay = SFX.sparkleDur
+  NB.gain = g * SFX.sparkleGain
+  NB.delay = SFX.sparkleDelay
+  noiseBurst(s, K_AIR, NB)
+}
+
+/**
  * 연쇄. depth마다 P.chain.pitchStep 배(반음)씩 올라간다 — 보로로로록의 정체가 이것이다.
  *
  * 노드를 하나만 쓰는 이유: 20연쇄에서 소리마다 3노드를 쓰면 보이스 상한에 즉사한다.
@@ -705,6 +808,23 @@ function playChain(s: Synth, sfx: Sfx, depth: number): void {
   // 좌우로 번갈아 벌린다. 스무 발이 겹칠 때 한 덩어리로 뭉치지 않게 하는 최소한의 폭이다.
   const pan = d % 2 === 0 ? SMP.chainPan : -SMP.chainPan
   const g = (P.audio.chainGain * SMP.glassChainGain) / (1 + d * 0.06)
+
+  // ★ 유리 위에 종의 배음을 얇게 얹는다 — **이게 "또로롱"이다.**
+  // 유리 샘플만으로는 "쨍그랑"이 이어질 뿐 음정이 올라가는 게 안 읽힌다. 배음이 있는 소리를
+  // 같은 비율로 같이 올려야 연쇄가 소리로 **선율**이 된다. 깊어질수록 얇아지고, 어느 선에서 멎는다
+  // (보이스 상한이 14라, 다 얹으면 정작 유리가 밀려난다).
+  if (d <= SFX.chainBellDepth) {
+    BL.freq = SFX.chainBellBase * Math.pow(P.chain.pitchStep, d)
+    BL.dur = SFX.chainBellDur
+    BL.gain = P.audio.chainGain * SFX.chainBellGain
+    BL.partials = 2
+    BL.inharm = SFX.chainBellInharm
+    BL.attack = 0.002
+    BL.delay = delay
+    BL.type = 'sine'
+    bellTone(s, K_CHAIN_BELL, BL)
+  }
+
   if (sample(sfx, s, 'glass', g, rate, pan, delay)) return
 
   let f = SFX.chainBase * Math.pow(P.chain.pitchStep, d)
@@ -782,19 +902,7 @@ export function pumpSfx(sfx: Sfx, w: World): void {
     } else if (e.t === 'collapse') {
       playCollapse(s)
     } else if (e.t === 'stage_end') {
-      if (e.cleared) {
-        for (let n = 0; n < END_NOTES.length; n++) {
-          TN.type = 'triangle'
-          TN.freq = END_NOTES[n] ?? 0
-          TN.endFreq = 0
-          TN.dur = SFX.endDur
-          TN.attack = 0.006
-          TN.decay = SFX.endDur
-          TN.gain = P.audio.endGain
-          TN.delay = n * SFX.endStep
-          tone(s, K_END, TN)
-        }
-      }
+      if (e.cleared) playStageClear(s)
       // 실패에는 소리를 얹지 않는다. 실패를 조롱하지 않는다 (GDD 9장의 정신).
     }
   }

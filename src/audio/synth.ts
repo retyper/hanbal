@@ -28,7 +28,7 @@ const AUDIO = {
   echoAtten: 0.38,
   echoMax: 5,
   /** kind 인덱스 상한. sfx.ts가 쓰는 종류 수보다 커야 한다. */
-  kinds: 16,
+  kinds: 24,
   /** 완만한 컴프레서 하나. 연쇄가 겹쳐도 0dBFS를 넘지 않게만 한다. */
   compThreshold: -16,
   compKnee: 16,
@@ -94,6 +94,36 @@ export interface ClickOpts {
   delay: number
 }
 
+/**
+ * 울리는 한 방 — 종·하프·글로켄슈필 계열. **"또로롱"의 정체가 이것이다.**
+ *
+ * 왜 tone() 으로는 안 되는가: 사인이든 삼각이든 오실레이터 하나는 "삑"이지 "또로롱"이 아니다.
+ * 실제로 울리는 물체의 소리를 만드는 건 세 가지고, 셋 다 여기 있다:
+ *   1. **배음이 여럿이다.** 기본음 하나로는 음정만 있고 재질이 없다.
+ *   2. **높은 배음이 먼저 죽는다.** 이게 제일 중요하다 — 어택은 쨍하고 꼬리는 순한
+ *      그 변화가 "울린다"는 감각의 전부다. 다 같이 죽으면 오르간이 된다.
+ *   3. **배음이 정수배가 아니다.** 정수배는 현(하프), 조금 어긋나면 종이다 (inharm).
+ *
+ * 보이스는 **하나만** 잡고 에코 억제도 한 번만 건다. 배음마다 tone()을 부르면
+ * 서로가 서로의 에코로 잡혀 2번째부터 통째로 버려진다 (echoScale).
+ */
+export interface BellOpts {
+  freq: number
+  /** 기본음이 사실상 사라지기까지 (s). 배음은 이보다 빨리 죽는다. */
+  dur: number
+  gain: number
+  /** 배음 수 (1..BELL_PARTIALS). 4면 종, 2면 순한 하프. */
+  partials: number
+  /**
+   * 비조화도. 0이면 정수배(현·하프), 0.02~0.06이면 금속(종·글로켄).
+   * 크게 올리면 음정이 흐려지고 "쇳소리"가 된다.
+   */
+  inharm: number
+  attack: number
+  delay: number
+  type: OscillatorType
+}
+
 /** 지속음 채널 — 루핑 노이즈 → 필터 → 게인. 만들고 나면 계속 돌고, 게인으로만 제어한다. */
 export interface Chan {
   readonly src: AudioBufferSourceNode
@@ -152,7 +182,10 @@ export function createSynth(): Synth | null {
     muted: false,
     // 슬롯 수는 생성 시 한 번만 읽는다. 판 도중 배열을 다시 잡으면 힙이 튄다 (A5).
     voiceEnd: new Float64Array(Math.max(1, Math.round(P.audio.maxVoices))),
-    lastAt: new Float64Array(AUDIO.kinds),
+    // ★ 0이 아니라 음수로 연다. AudioContext 는 currentTime 0 근처에서 태어나는데,
+    // 0으로 두면 "직전에 같은 소리가 났다"로 읽혀 **각 종류의 첫 소리가 통째로 버려진다**
+    // (echoScale 의 hardGap). 첫 발의 시위 소리가 안 나는 경로가 여기였다.
+    lastAt: new Float64Array(AUDIO.kinds).fill(-AUDIO.echoWindow * 2),
     echo: new Int32Array(AUDIO.kinds),
   }
 }
@@ -341,6 +374,57 @@ export function click(s: Synth, kind: number, o: ClickOpts): void {
   src.start(t0, Math.random() * (AUDIO.noiseSec * 0.5))
   src.stop(stop)
   src.onended = releaseNode
+}
+
+/**
+ * 배음 하나의 세기와 감쇠.
+ *
+ * 세기는 위로 갈수록 빠르게 준다(1/(p+1)^1.5) — 안 그러면 기본음이 안 들리고 쇳소리만 남는다.
+ * 감쇠는 **위로 갈수록 짧다.** 이 한 줄이 "울린다"의 전부다.
+ */
+const BELL_AMP_FALL = 1.5
+const BELL_DECAY_FALL = 1.1
+/** 배음 수 상한. 종 하나에 노드 8개까지. 이 위로는 귀에 안 들리고 보이스만 먹는다. */
+const BELL_PARTIALS = 4
+
+export function bellTone(s: Synth, kind: number, o: BellOpts): void {
+  if (!live(s) || o.gain <= 0 || o.freq <= 0) return
+  const ctx = s.ctx
+  const t0 = ctx.currentTime + (o.delay > 0 ? o.delay : 0)
+  const scale = echoScale(s, kind, t0)
+  if (scale <= 0) return
+
+  const n = o.partials < 1 ? 1 : o.partials > BELL_PARTIALS ? BELL_PARTIALS : Math.round(o.partials)
+  const dur = o.dur > 0.02 ? o.dur : 0.02
+  const atk = o.attack > 0.0005 ? o.attack : 0.0005
+  // 가장 오래 남는 건 기본음이다. 보이스 점유 시간은 그걸로 잡는다.
+  const stop = t0 + atk + dur + AUDIO.tail
+  if (!claim(s, t0, stop)) return
+
+  // 배음이 다 같이 지나는 하나의 출구. 음량 조절이 여기 한 곳에서 끝난다.
+  const out = ctx.createGain()
+  out.gain.value = o.gain * scale
+  out.connect(s.out)
+
+  for (let p = 0; p < n; p++) {
+    // 정수배에서 조금씩 어긋난다. 위 배음일수록 더 어긋나야 종처럼 들린다.
+    const ratio = (p + 1) * (1 + o.inharm * p)
+    const f = o.freq * ratio
+    // 나이퀴스트를 넘는 배음은 앨리어싱으로 되돌아와 쇳소리를 만든다. 그냥 안 낸다.
+    if (f > ctx.sampleRate * 0.45) break
+
+    const pg = ctx.createGain()
+    shape(pg.gain, t0, Math.pow(p + 1, -BELL_AMP_FALL), atk, dur / Math.pow(p + 1, BELL_DECAY_FALL))
+    pg.connect(out)
+
+    const osc = ctx.createOscillator()
+    osc.type = o.type
+    osc.frequency.value = f
+    osc.connect(pg)
+    osc.start(t0)
+    osc.stop(stop)
+    osc.onended = releaseNode
+  }
 }
 
 // ───────────────────────── 지속음 채널 ─────────────────────────
