@@ -9,13 +9,15 @@
  * 한 번도 못 가져본 살은 보이지 않는 것이 맞다. 뭐가 있는지는 보스가 알려준다.
  */
 import { ARROW_KINDS, DEFAULT_ARROW, type ArrowKindId } from '../game/arrows.ts'
+import { ARROW_TINT, arrowIconSvg } from './arrowicons.ts'
 import { onSaveChanged, writeSave, type SaveData } from '../game/save.ts'
 import type { Overlay } from './overlay.ts'
 
 const CSS = `
 .q-row { display: flex; gap: 8px; align-items: flex-end; }
-.q-btn { padding: 8px 12px; font-size: 13px; }
-.q-btn b { font-size: 13px; margin-left: 6px; color: var(--accent); }
+.q-btn { padding: 7px 12px; font-size: 13px; display: inline-flex; align-items: center; gap: 7px; }
+.q-btn .q-ic { color: var(--tint); line-height: 0; }
+.q-btn b { font-size: 13px; color: var(--accent); }
 .q-btn.q-on { border-color: var(--teal); color: var(--teal); }
 .q-btn.q-empty { opacity: .45; }
 .q-hint { color: var(--mute); font-size: 11px; letter-spacing: .08em; margin-bottom: 4px; }
@@ -45,7 +47,9 @@ export function mountQuiver(o: Overlay, d: SaveData): void {
       btn.type = 'button'
       const armed = d.runArrow === k.id
       btn.className = 'hb-btn q-btn' + (armed ? ' q-on' : '') + (stock <= 0 ? ' q-empty' : '')
-      btn.innerHTML = `${k.name}<b>×${stock}</b>`
+      // 아이콘이 먼저, 이름이 다음 — 색과 도형이 글자보다 빨리 읽힌다 (ui/arrowicons.ts).
+      btn.style.setProperty('--tint', ARROW_TINT[k.id])
+      btn.innerHTML = `<span class="q-ic">${arrowIconSvg(k.id, 20)}</span>${k.name}<b>×${stock}</b>`
       btn.setAttribute('aria-label', `${k.name} ${stock}발${armed ? ' · 다음 판 장전됨' : ''}`)
       btn.disabled = stock <= 0 && !armed
       btn.addEventListener('click', () => {

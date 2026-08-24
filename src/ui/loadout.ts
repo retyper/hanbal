@@ -8,6 +8,7 @@
  * 다음 여정의 로드아웃이다 (C1).
  */
 import { ARROW_KINDS, type ArrowKindId } from '../game/arrows.ts'
+import { ARROW_TINT, arrowIconSvg } from './arrowicons.ts'
 import { bowKind, masteryLevel, type BowKindId } from '../game/bows.ts'
 import type { Overlay } from './overlay.ts'
 
@@ -27,6 +28,7 @@ const CSS = `
   font: inherit; color: var(--body);
 }
 .l-card:hover { background: #1e2934; }
+.l-card .l-ic { color: var(--tint); line-height: 0; margin-bottom: 2px; }
 .l-card .l-n { color: var(--ink); font-weight: 700; font-size: 15px; }
 .l-card .l-d { color: var(--dim); font-size: 12px; line-height: 1.45; }
 .l-card.l-on { border-color: var(--teal); background: #14231f; }
@@ -242,7 +244,11 @@ export function mountSupply(
     const card = document.createElement('button')
     card.type = 'button'
     card.className = 'l-card'
-    card.innerHTML = `<span class="l-n"></span><span class="l-d"></span><span class="l-d"></span>`
+    // 아이콘은 효과의 그림풀이다 — 이름을 읽기 전에 무슨 살인지 짐작돼야 한다.
+    card.style.setProperty('--tint', ARROW_TINT[id])
+    card.innerHTML =
+      `<span class="l-ic">${arrowIconSvg(id, 30)}</span>` +
+      `<span class="l-n"></span><span class="l-d"></span><span class="l-d"></span>`
     const parts = card.querySelectorAll('.l-d')
     ;(card.querySelector('.l-n') as HTMLElement).textContent = `${k.name} +${count}발`
     ;(parts[0] as HTMLElement).textContent = k.origin
