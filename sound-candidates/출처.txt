@@ -13,3 +13,11 @@
        — 채택 시 CREDITS.txt에 "Little Robot Sound Factory" 표기 필요.
 
 채택 방법: 번호를 말하면 public/sfx/jingleClear.ogg 로 변환·교체해 배포한다.
+
+── 추가 (보스 클리어 후보) ──
+05_LevelCompleted (Freesound 534797, Ranner, CC0)는 일반 클리어음으로 채택·적용됨.
+같은 작성자에게 더 강한 소리는 없어서(나머지는 UI클릭·목소리류), 같은 결(손 타악)의
+강한 후보를 CC0 다운로드순으로 수집:
+  B1/B2 taiko (486140/486141) · B3 Taiko Drums Mastered (621296) · B4 short fill (773255)
+  B5 DRUM FILL-1 (538775) · B6 taiko tom (802248) · B7 Burmese drum fill (811636)
+  B8 bongo fill (702164)

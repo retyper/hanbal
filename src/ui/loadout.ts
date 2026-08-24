@@ -10,6 +10,7 @@
 import { ARROW_KINDS, type ArrowKindId } from '../game/arrows.ts'
 import { ARROW_TINT, arrowIconSvg } from './arrowicons.ts'
 import { bowKind, masteryLevel, type BowKindId } from '../game/bows.ts'
+import { wipeSave } from '../game/save.ts'
 import type { Overlay } from './overlay.ts'
 
 const PANEL_ID = 'loadout'
@@ -35,6 +36,9 @@ const CSS = `
 .l-card.l-on .l-n { color: var(--teal); }
 .l-syn { color: var(--teal); font-size: 13px; min-height: 22px; margin-top: 12px; }
 .l-foot { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
+/* 전체 초기화 — 개발 단계의 필수품. 시작 버튼과 헷갈리지 않게 구석에 작게, 위험색은 무장 후에만. */
+.l-wipe { margin-left: auto; font-size: 12px; color: var(--mute); }
+.l-wipe.l-armed { color: #ff6a45; border-color: #ff6a4577; }
 .l-go { font-size: 17px; padding: 13px 26px; }
 .l-go:not([disabled]) { border-color: var(--accent); color: var(--accent); }
 
@@ -133,6 +137,32 @@ export function mountLoadout(
   go.className = 'hb-btn l-go'
   go.textContent = '여정 시작'
   foot.appendChild(go)
+
+  // ── 전체 초기화 (형: "메모리 삭제하고 싹 처음부터 시작할 수 있는 버튼") ──
+  // 성장 화면(Tab) 아래에도 같은 게 있지만, 여정 준비가 "처음부터"의 자연스러운 자리다.
+  // 파괴적이라 두 번 눌러야 한다: 1번째 누름은 무장(4초 유효), 2번째가 실행.
+  const wipe = document.createElement('button')
+  wipe.type = 'button'
+  wipe.className = 'hb-btn l-wipe'
+  wipe.textContent = '기록 전부 삭제'
+  let wipeTimer = 0
+  wipe.addEventListener('click', () => {
+    if (!wipe.classList.contains('l-armed')) {
+      wipe.classList.add('l-armed')
+      wipe.textContent = '정말 전부 지운다?'
+      window.clearTimeout(wipeTimer)
+      wipeTimer = window.setTimeout(() => {
+        wipe.classList.remove('l-armed')
+        wipe.textContent = '기록 전부 삭제'
+      }, 4000)
+      return
+    }
+    window.clearTimeout(wipeTimer)
+    wipeSave()
+    // 새로고침이 가장 확실한 초기화다 — 루프·화면이 들고 있는 상태까지 전부 새로 선다.
+    location.reload()
+  })
+  foot.appendChild(wipe)
   panel.appendChild(foot)
 
   let done = false
