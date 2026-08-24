@@ -496,7 +496,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
         }
       } else if (ev.t === 'hit') {
         hits++
-        if (ev.accuracy >= bullseyeAcc()) bullseyes++
+        // 적 몸통 명중은 '정중앙'이 아니다 — 과녁의 정중앙과 적의 헤드샷만 집계한다.
+        if ((!ev.foe && ev.accuracy >= bullseyeAcc()) || ev.head) bullseyes++
       } else if (ev.t === 'miss') {
         // 아무것도 못 맞히고 사라진 화살. ballistics가 이때만 miss를 뱉는다 —
         // 셋을 꿰뚫고 착지한 화살도, 분열 자식의 낙하도 여기 안 걸린다 (축은 '쏜 발'이다).

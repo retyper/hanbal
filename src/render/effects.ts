@@ -496,7 +496,8 @@ export function pumpEvents(fx: Fx, w: World): void {
     if (e === undefined) continue
 
     if (e.t === 'hit') {
-      const crit = e.accuracy >= P.hit.bullseyeAcc
+      // 적의 몸통에는 '정중앙'이 없다 — 그건 과녁의 말이다. 적의 크리티컬은 오직 머리다.
+      const crit = e.foe ? e.head : e.accuracy >= P.hit.bullseyeAcc
       // 머리 명중은 정중앙이 아니라 **헤드샷**이다 (형: "치명상이라던가 그런 게 떠야지").
       if (e.head) pushPopup(fx.pop, e.x, e.y + 0.8, '헤드샷 !', 'crit')
       fx.lastX = e.x

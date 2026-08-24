@@ -271,7 +271,7 @@ export type SimEvent =
   /** 붕괴 경고 진입 (렌더/오디오가 예고를 시작) */
   | { t: 'warn_start' }
   /** `arrow`는 화살 풀의 자리 번호 (Arrow.id). 소비자가 **어느 화살인지**를 좌표로 추측하지 않게 한다. */
-  | { t: 'hit'; targetId: number; x: number; y: number; score: number; /** 중심 명중도 0..1 */ accuracy: number; chain: number; combo: number; /** 머리(약점) 명중 — 연출은 정중앙이 아니라 헤드샷을 띄운다 */ head: boolean; arrow: number }
+  | { t: 'hit'; targetId: number; x: number; y: number; score: number; /** 중심 명중도 0..1 */ accuracy: number; chain: number; combo: number; /** 머리(약점) 명중 — 연출은 정중앙이 아니라 헤드샷을 띄운다 */ head: boolean; /** 적(궁수·보스·돌진)인가 — 사람 몸통에는 '정중앙'을 띄우지 않는다 */ foe: boolean; arrow: number }
   /** 연쇄는 화살이 아니라 낙하물·폭발이 일으킨다. 그래서 arrow 가 없다. */
   | { t: 'chain'; targetId: number; x: number; y: number; depth: number }
   /**

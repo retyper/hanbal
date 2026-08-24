@@ -964,7 +964,8 @@ export function pumpSfx(sfx: Sfx, w: World): void {
     if (e.t === 'release') {
       playRelease(s, e.power)
     } else if (e.t === 'hit') {
-      playHit(sfx, s, w, e.targetId, e.accuracy)
+      // 적 몸통은 종(정중앙 소리)을 치지 않는다 — 사람에겐 헤드샷이 크리티컬이다.
+      playHit(sfx, s, w, e.targetId, e.foe && !e.head ? Math.min(e.accuracy, P.hit.bullseyeAcc - 0.01) : e.accuracy)
     } else if (e.t === 'burst') {
       playBurst(s)
     } else if (e.t === 'pickup') {

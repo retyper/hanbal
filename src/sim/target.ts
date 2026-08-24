@@ -179,6 +179,8 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
   // 화살이 직접 맞힌 것이 연쇄의 뿌리다
   target.chainDepth = 0
   const gained = award(w, target, accuracy)
+  // 적은 과녁이 아니다 — "정중앙"은 과녁의 말이다 (형: "심장이라도 맞았냐").
+  const foe = target.kind === 'archer' || target.kind === 'boss' || target.kind === 'charger'
   w.events.push({
     t: 'hit',
     targetId: target.id,
@@ -189,6 +191,7 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
     chain: target.chainDepth,
     combo: w.combo,
     head,
+    foe,
     arrow: arrow.id,
   })
 
