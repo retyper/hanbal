@@ -1,0 +1,52 @@
+# GitHub Pages 배포 — 푸시하면 빌드해서 올린다.
+#
+# ★ 게이트를 여기서도 돌린다. 로컬에서 초록불이었어도, 깨진 상태가 웹에 올라가는 것보다
+#   Actions가 빨간불로 멈추는 게 낫다 (docs/ARCHITECTURE.md 의 정신).
+#
+# PUBLIC_BASE: Pages는 https://<계정>.github.io/<레포명>/ 처럼 서브경로로 붙는다.
+#   이걸 안 주면 애셋 경로가 전부 루트를 가리켜 404가 난다 — 소리(public/sfx)까지 통째로.
+name: deploy
+
+on:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 연달아 푸시해도 마지막 것만 올라간다.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+        env:
+          PUBLIC_BASE: /${{ github.event.repository.name }}/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
