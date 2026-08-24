@@ -231,7 +231,7 @@ export const UNLOCKS: readonly UnlockDef[] = [
   defBow('bow.gakgung', '각궁', `보스 ${G_GAKGUNG_BOSSES}마리 처치`, P_BOSS, G_GAKGUNG_BOSSES, B_GAKGUNG),
   defBow('bow.longbow', '장궁', `보스 ${G_LONGBOW_BOSSES}마리 처치`, P_BOSS, G_LONGBOW_BOSSES, B_LONGBOW),
   def('title.hawk', '매의 눈', 'title', `정중앙 ${G_HAWK_BULLS}회`, P_BULLS, G_HAWK_BULLS),
-  def('title.avalanche', '보로로록', 'title', `한 판에서 ${G_AVALANCHE_BEST}연쇄`, P_CHAIN, G_AVALANCHE_BEST),
+  def('title.avalanche', '보로로록', 'title', `한 판에서 ${G_AVALANCHE_BEST}콤보`, P_CHAIN, G_AVALANCHE_BEST),
   defBow('bow.recurve', '리커브', `보스 ${G_RECURVE_BOSSES}마리 처치`, P_BOSS, G_RECURVE_BOSSES, B_RECURVE),
   def('title.hundred', '백발', 'title', `누적 명중 ${G_HUNDRED_HITS}회`, P_HITS, G_HUNDRED_HITS),
   def('title.wind', '바람 읽는 자', 'title', `별 ${G_WIND_STARS}개 모으기`, P_STARS, G_WIND_STARS),

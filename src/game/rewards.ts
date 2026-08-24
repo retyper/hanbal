@@ -185,10 +185,10 @@ export function gradeRun(rng: Rng, stage: StageDef, r: RunStats): Reward {
   }
 
   if (r.bestChain >= CHAIN_BIG_AT) {
-    feats.push(`대연쇄 ${r.bestChain}`)
+    feats.push(`대콤보 ${r.bestChain}`)
     extra += FEAT_CHAIN_BIG
   } else if (r.bestChain >= CHAIN_FEAT_AT) {
-    feats.push(`${r.bestChain}연쇄`)
+    feats.push(`${r.bestChain}콤보`)
     extra += FEAT_CHAIN
   }
 

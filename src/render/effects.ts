@@ -540,7 +540,7 @@ export function pumpEvents(fx: Fx, w: World): void {
         // 콤보 문자열은 값이 바뀔 때만 만든다 (A5)
         if (e.combo !== fx.comboVal) {
           fx.comboVal = e.combo
-          fx.comboText = `${e.combo}연쇄 ×${Math.pow(P.chain.comboMul, e.combo).toFixed(1)}`
+          fx.comboText = `${e.combo}콤보 ×${Math.pow(P.chain.comboMul, e.combo).toFixed(1)}`
         }
         fx.comboX = e.x
         fx.comboY = e.y
@@ -566,7 +566,7 @@ export function pumpEvents(fx: Fx, w: World): void {
       if (fx.comboRun >= FX.comboMinShow) {
         if (fx.comboRun !== fx.comboVal) {
           fx.comboVal = fx.comboRun
-          fx.comboText = `${fx.comboRun}연쇄 ×${Math.pow(P.chain.comboMul, fx.comboRun).toFixed(1)}`
+          fx.comboText = `${fx.comboRun}콤보 ×${Math.pow(P.chain.comboMul, fx.comboRun).toFixed(1)}`
         }
         fx.comboX = e.x
         fx.comboY = e.y

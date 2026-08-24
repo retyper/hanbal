@@ -492,13 +492,14 @@ export function drawArcher(
   ctx.lineWidth = torsoW
   spine(ctx, cam, rig.sx, rig.sy, pelvisX, pelvisY, spineBend)
 
-  // 뒷다리 먼저(어둡게) → 원근
+  // 원근 — 궁수는 오른쪽을 보고, 우리는 궁수의 **오른편**을 본다. 사법상 왼발이 과녁 쪽(앞),
+  // 오른발이 뒤이므로 화면에 가까운 건 오른다리(뒤쪽 발)다. 먼 것(왼다리)을 먼저, 어둡게.
   ctx.strokeStyle = THEME.bodyDim
   ctx.lineWidth = backW
-  limb(ctx, cam, pelvisX, pelvisY, pelvisX - face * stance, footY, -face * kneeOut)
+  limb(ctx, cam, pelvisX, pelvisY, pelvisX + face * stance, footY, face * kneeOut)
   ctx.strokeStyle = bodyCol
   ctx.lineWidth = limbW
-  limb(ctx, cam, pelvisX, pelvisY, pelvisX + face * stance, footY, face * kneeOut)
+  limb(ctx, cam, pelvisX, pelvisY, pelvisX - face * stance, footY, -face * kneeOut)
 
   // 머리 — 조여질수록 활 쪽으로 붙고, 경계선을 넘으면 그 정렬이 헐거워지고, 무너지면 앞으로 떨어진다.
   // strain은 '붙어 있던 게 떨어지는' 것이고 warn은 '고개를 떨구는' 것이라 방향이 서로 반대다.
@@ -524,28 +525,20 @@ export function drawArcher(
   ctx.fill()
   ctx.stroke()
 
-  // ── 시위 당기는 팔 (뒤쪽) ─────────────────────────────────────
-  // 덜 당겨진 팔은 팔꿈치가 안 접힌다 — 초보가 "어정쩡한 지점에서 멈춘" 그 모양.
-  // 진짜 만작에서만 팔꿈치가 어깨 뒤로 깊게 접혀 팔이 완전히 접힌 실루엣이 된다.
+  // ── 활팔 (왼팔 — 먼 쪽이라 어둡고, 활보다 먼저) ──────────────────────────────────────────
+  // 덜 조여지면 팔꿈치가 안 펴지고, 경계선을 넘으면 펴져 있던 팔꿈치가 살짝 풀리고,
+  // 경고가 오르면 확실히 더 굽으며 처진다(위의 warnDroop). 세 원인이 같은 관절에 다른 크기로 쌓인다.
+  // 왼팔은 화면에서 먼 팔이다 — 어둡게, 몸·활·시위팔 아래에 깔린다 (형의 지적).
   ctx.strokeStyle = THEME.bodyDim
   ctx.lineWidth = backW
-  //
-  // ★ 사법의 핵심 (docs/FORM.md 2-5): 활손 → 노크 → 아랫팔 → 팔꿈치가 **한 직선**이고,
-  //   팔꿈치는 화살선보다 **위**에 있다. 아래로 처지면 '닭날개'라 불리는 초보 자세가 된다.
-  //   그래서 팔꿈치를 노크에서 화살선 뒤로 곧게 물리고, v축으로 살짝만 들어올린다.
-  //   당김이 얕을수록(초보) 이 들어올림이 줄어 팔꿈치가 처진다.
-  const elbowRise = BODY.elbowRise
-    * lerp(POSE.slouchElbow, 1, brace)
-    * lerp(1, POSE.fullElbow, trueFull)
-    * (1 - unlock * P.render.poseStrainElbow)
-  // 팔은 시위가 아니라 **손**을 따른다 — 놓은 뒤 시위는 튕겨 돌아가도 팔은 남는다.
-  const elbowX = rig.hdX - rig.ux * BODY.elbowBack + rig.vx * elbowRise
-  const elbowY = rig.hdY - rig.uy * BODY.elbowBack + rig.vy * elbowRise
-  ctx.beginPath()
-  ctx.moveTo(worldToScreenX(cam, rig.sx), worldToScreenY(cam, rig.sy))
-  ctx.lineTo(worldToScreenX(cam, elbowX), worldToScreenY(cam, elbowY))
-  ctx.lineTo(worldToScreenX(cam, rig.hdX), worldToScreenY(cam, rig.hdY))
-  ctx.stroke()
+  // 활팔은 어깨에서 활 그립까지 **곧게** 뻗는다 (FORM.md 2-4). 굽는 건 잠금이 풀렸을 때(strain)와
+  // 무너질 때(warn)뿐이다. 당김이 얕다고 앞팔을 굽히지 않는다 — 초보의 미숙함은 시위손이
+  // 턱까지 못 오는 것으로 이미 말하고 있고, 여기까지 굽히면 그냥 자세가 틀린 그림이 된다.
+  limb(
+    ctx, cam, rig.sx, rig.sy, rig.hx, rig.hy,
+    -BODY.armBend * (unlock * P.render.poseStrainArm + warn * POSE.warnArm),
+  )
+
 
   // ── 활 ────────────────────────────────────────────────────────
   //
@@ -661,18 +654,30 @@ export function drawArcher(
     ctx.fill()
   }
 
-  // ── 앞팔(활 잡은 팔) ──────────────────────────────────────────
-  // 덜 조여지면 팔꿈치가 안 펴지고, 경계선을 넘으면 펴져 있던 팔꿈치가 살짝 풀리고,
-  // 경고가 오르면 확실히 더 굽으며 처진다(위의 warnDroop). 세 원인이 같은 관절에 다른 크기로 쌓인다.
+  // ── 시위팔 (오른팔 — 가까운 쪽이라 밝고, 맨 위에) ─────────────────────────────────────
+  // 덜 당겨진 팔은 팔꿈치가 안 접힌다 — 초보가 "어정쩡한 지점에서 멈춘" 그 모양.
+  // 진짜 만작에서만 팔꿈치가 어깨 뒤로 깊게 접혀 팔이 완전히 접힌 실루엣이 된다.
+  // 오른팔은 보는 사람 쪽 팔이다 — 밝게, 활·시위 위에 얹힌다 (형의 지적).
   ctx.strokeStyle = bodyCol
   ctx.lineWidth = limbW
-  // 활팔은 어깨에서 활 그립까지 **곧게** 뻗는다 (FORM.md 2-4). 굽는 건 잠금이 풀렸을 때(strain)와
-  // 무너질 때(warn)뿐이다. 당김이 얕다고 앞팔을 굽히지 않는다 — 초보의 미숙함은 시위손이
-  // 턱까지 못 오는 것으로 이미 말하고 있고, 여기까지 굽히면 그냥 자세가 틀린 그림이 된다.
-  limb(
-    ctx, cam, rig.sx, rig.sy, rig.hx, rig.hy,
-    -BODY.armBend * (unlock * P.render.poseStrainArm + warn * POSE.warnArm),
-  )
+  //
+  // ★ 사법의 핵심 (docs/FORM.md 2-5): 활손 → 노크 → 아랫팔 → 팔꿈치가 **한 직선**이고,
+  //   팔꿈치는 화살선보다 **위**에 있다. 아래로 처지면 '닭날개'라 불리는 초보 자세가 된다.
+  //   그래서 팔꿈치를 노크에서 화살선 뒤로 곧게 물리고, v축으로 살짝만 들어올린다.
+  //   당김이 얕을수록(초보) 이 들어올림이 줄어 팔꿈치가 처진다.
+  const elbowRise = BODY.elbowRise
+    * lerp(POSE.slouchElbow, 1, brace)
+    * lerp(1, POSE.fullElbow, trueFull)
+    * (1 - unlock * P.render.poseStrainElbow)
+  // 팔은 시위가 아니라 **손**을 따른다 — 놓은 뒤 시위는 튕겨 돌아가도 팔은 남는다.
+  const elbowX = rig.hdX - rig.ux * BODY.elbowBack + rig.vx * elbowRise
+  const elbowY = rig.hdY - rig.uy * BODY.elbowBack + rig.vy * elbowRise
+  ctx.beginPath()
+  ctx.moveTo(worldToScreenX(cam, rig.sx), worldToScreenY(cam, rig.sy))
+  ctx.lineTo(worldToScreenX(cam, elbowX), worldToScreenY(cam, elbowY))
+  ctx.lineTo(worldToScreenX(cam, rig.hdX), worldToScreenY(cam, rig.hdY))
+  ctx.stroke()
+
 
   // ── 물린 화살 · 통아 ──────────────────────────────────────────
   // 몸보다 얇고 밝게. 촉만 강조색 — 강조색은 과녁과 화살에만 (GDD 8장).
