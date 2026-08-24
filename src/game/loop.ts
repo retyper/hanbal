@@ -19,7 +19,7 @@ import { createInput } from '../input/pointer.ts'
 import { createRenderer, getCamera, getHitStopMs } from '../render/scene.ts'
 import type { HudState } from '../render/hud.ts'
 import { createSfx, playUi, pumpSfx, sfxMuted, toggleMute, unlockSfx, updateSfx } from '../audio/sfx.ts'
-import { getStage, STAGES } from './stages.ts'
+import { getStage } from './stages.ts'
 import { onSaveChanged, writeSave, type SaveData } from './save.ts'
 import { settleOffline, type OfflineGain } from './offline.ts'
 import { awardRun, canGrow, grantArrows, type StatKey } from './progression.ts'
@@ -81,6 +81,12 @@ export interface GameLoop {
 const HINT_NEXT = '한 번 더 누르면 다음 판'
 const HINT_RETRY = '한 번 더 누르면 다시'
 
+/**
+ * 진행도 상한. 무한 구간이라 게임에는 끝이 없지만, 손상된 세이브가 1e9 을 들고 오면
+ * endless.ts 가 그 판을 구우려다 이상한 좌표를 낸다. 사람이 닿을 수 없는 자리에 빗장만 둔다.
+ */
+const MAX_STAGE_INDEX = 9999
+
 /** 판 결과 스크래치. 판마다 객체를 새로 만들 이유가 없다 (A5). */
 const RUN = { cleared: false, score: 0, accuracy: 0, arrowsUsed: 0, hits: 0 }
 
@@ -129,8 +135,9 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   const input = createInput(canvas, getCamera(renderer))
   const sfx = createSfx()
 
-  // 세이브의 진행도가 챕터 끝을 넘어 있어도(예전 세이브·손상) 게임이 죽지 않게 잘라 들어간다.
-  let stageIndex = clamp(Math.floor(save.stageIndex), 0, STAGES.length - 1)
+  // 손상된 세이브가 말도 안 되는 진행도를 들고 와도 게임이 죽지 않게만 자른다.
+  // ★ 상한을 STAGES.length 로 잡지 않는다 — 41판부터는 endless.ts 가 판을 굽는다.
+  let stageIndex = clamp(Math.floor(save.stageIndex), 0, MAX_STAGE_INDEX)
   save.stageIndex = stageIndex
   // World는 하나만 만들고 끝까지 재사용한다. 판마다 새로 만들면 프레임당 할당 0이 깨진다 (A5).
   const w = createWorld(getStage(stageIndex), save.stats, DEFAULT_ARROW)
@@ -394,21 +401,20 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     const drawingNow = input.frame.drawing
     if (!paused && !choosing && w.status !== 'playing' && drawingNow && !prevDrawing) {
       // 클리어면 다음 판, 실패면 같은 판. 어느 쪽이든 멈춰 세우지 않는다 (C2).
-      // 챕터 끝에서는 마지막 판을 반복한다. 다음 챕터가 붙기 전까지의 자리다.
+      // ★ 캠페인 40판이 끝나도 멈추지 않는다 — 그 뒤는 endless.ts 가 계속 구워 준다.
+      //   예전에는 여기서 stageIndex 를 묶어 둬서 4-10 이 무한히 반복됐다.
       //
       // 실패한 판을 다시 할 때도 3택을 다시 굴린다 — 같은 화살로 또 지라고 할 이유가 없고,
       // "다시 하면 다른 판"이 이 시스템의 약속이다 (HOOK ★1). 손패만 보고 되감고 싶으면
       // R(같은 화살로 즉시 재시작)이 따로 있다.
-      if (w.status === 'cleared' && stageIndex < STAGES.length - 1) stageIndex++
+      if (w.status === 'cleared' && stageIndex < MAX_STAGE_INDEX) stageIndex++
       beginStage()
     } else if (!paused) {
       prevDrawing = drawingNow
     }
 
     hud.muted = sfxMuted(sfx)
-    hud.toast = w.status === 'playing'
-      ? ''
-      : w.status === 'cleared' && stageIndex < STAGES.length - 1 ? HINT_NEXT : HINT_RETRY
+    hud.toast = w.status === 'playing' ? '' : w.status === 'cleared' ? HINT_NEXT : HINT_RETRY
 
     // draw 안에서 이펙트·카메라가 이번 프레임의 이벤트를 읽는다.
     // 그래서 명중 반응이 한 프레임도 늦지 않는다 (feel-lens 4항).

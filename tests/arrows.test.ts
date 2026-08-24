@@ -14,6 +14,7 @@ import assert from 'node:assert/strict'
 import { createWorld, step } from '../src/sim/world.ts'
 import { spawnArrow } from '../src/sim/ballistics.ts'
 import { arrowFx } from '../src/sim/arrowfx.ts'
+import { TRAIL_POINTS } from '../src/sim/types.ts'
 import type { ArrowKindId, InputFrame, StageDef, Stats, World } from '../src/sim/types.ts'
 
 const STATS: Stats = { str: 10, steady: 8, stamina: 8, focus: 6 }
@@ -182,6 +183,58 @@ describe('화살 종류 — sim 배선', () => {
     assert.ok(r.peakArrows > 1, '자식이 하나도 안 나왔다')
     // 지급 4발 중 1발만 쐈다. 자식이 잔량에서 빠졌으면 3보다 작아진다.
     assert.equal(r.arrowsLeft, 3, '분열 자식이 지급 화살을 소모했다')
+  })
+
+  /**
+   * 회귀 — 갈래 화살이 "손에서 나가는" 버그.
+   *
+   * 명중으로 죽은 부모는 그 순간 풀의 빈 슬롯이 된다. 자식 배정이 부모를 배제하지 않으면
+   * 첫 자식이 부모 슬롯에 앉으면서 pendX/pendY(태어날 자리)를 0으로 지우고, 두 번째 자식이
+   * 월드 원점(0,0) = 궁수 발치에서 튀어나온다. 눈으로 보면 "한 자식은 과녁에서, 다른 자식은
+   * 갑자기 손에서" 나간다.
+   *
+   * 궤적 링버퍼의 가장 오래된 표본이 곧 발사점이라, 그걸로 태어난 자리를 되짚는다.
+   */
+  it('분열 자식은 전부 맞은 자리에서 태어난다 (부모 슬롯 재사용 회귀)', () => {
+    const w = createWorld(stage(), STATS, 'split')
+    const a = spawnArrow(w, aim('split'), 1)
+    assert.notEqual(a, null)
+
+    /** 이 화살의 발사점 (궤적의 가장 오래된 표본). */
+    const origin = (ar: (typeof w.arrows)[number]): [number, number] => {
+      const n = ar.trailLen
+      const i = ((ar.trailHead - n) % TRAIL_POINTS + TRAIL_POINTS) % TRAIL_POINTS
+      return [ar.trail[i * 2] ?? 0, ar.trail[i * 2 + 1] ?? 0]
+    }
+
+    let sawChild = false
+    for (let i = 0; i < 900; i++) {
+      step(w, IDLE)
+      w.events.length = 0
+      let live = 0
+      for (const ar of w.arrows) {
+        if (!ar.alive) continue
+        live++
+        const [ox, oy] = origin(ar)
+        if (ar.splitDepth <= 0) {
+          // 직접 쏜 화살은 궁수의 손에서 나간다. 그건 정상이다.
+          assert.ok(
+            Math.abs(ox) < 1e-6 && Math.abs(oy - 1.4) < 1e-6,
+            `쏜 화살의 발사점이 손이 아니다: (${ox}, ${oy})`,
+          )
+          continue
+        }
+        sawChild = true
+        // 자식은 **맞은 과녁 자리**에서 태어난다. 과녁은 전부 x >= 16 이므로
+        // 발사점이 궁수 근처면 그건 원점에서 태어난 것이다.
+        assert.ok(
+          ox > 10,
+          `분열 자식이 궁수 쪽에서 태어났다 — 발사점 (${ox.toFixed(3)}, ${oy.toFixed(3)})`,
+        )
+      }
+      if (live === 0) break
+    }
+    assert.ok(sawChild, '자식이 하나도 안 나왔다 — 이 테스트가 아무것도 검사하지 못했다')
   })
 
   it('사슬 살은 fx.chainBounces 를 넘겨 튀지 않는다', () => {

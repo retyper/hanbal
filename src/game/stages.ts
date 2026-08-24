@@ -43,57 +43,17 @@
  */
 import { clamp } from '../core/math.ts'
 import { seedFrom } from '../core/rng.ts'
-import type { StageDef, TargetKind, TargetSpec } from '../sim/types.ts'
+import type { StageDef, TargetSpec } from '../sim/types.ts'
+import { endlessStage } from './endless.ts'
+import { BASE_SCORE, CAMPAIGN_STAGES, angularSize, specOf } from './stagekit.ts'
+import type { Spot } from './stagekit.ts'
 
-/** 궁수의 손 위치. 거리는 여기서 잰다. */
-const HAND_X = 0
-const HAND_Y = 1.4
-
-/** 과녁 기본 점수. 점수 기준선을 "몇 발 맞혀야 하는가"로만 읽히게 전 과녁 동일. */
-const BASE = 100
 /** k발 명중을 기준선으로 하는 **별 2개 문턱**. 클리어 조건이 아니다 — 클리어는 과녁 전멸이다. */
-const need = (k: number): number => BASE * k
+const need = (k: number): number => BASE_SCORE * k
 
-const TOTAL = 40
-/** 1판의 각크기. 조준을 반쯤 놓쳐도 맞는다. 1280px 화면에서 반경 약 72px. */
-const H_FIRST = 0.056
-/** 40판의 각크기. 여전히 반경 15px — 이게 "안 보이는 것 맞히기"가 되지 않는 바닥이다. */
-const H_LAST = 0.012
-
-/**
- * 판 번호(1부터) → 과녁 각크기. 지수 곡선이라 줄어드는 비율이 일정하다.
- * 선형으로 줄이면 앞부분이 급하고 뒷부분이 밋밋해진다.
- */
-function hFor(n: number): number {
-  const t = TOTAL > 1 ? clamp((n - 1) / (TOTAL - 1), 0, 1) : 0
-  return H_FIRST * Math.pow(H_LAST / H_FIRST, t)
-}
-
-interface Spot {
-  x: number
-  y: number
-  kind?: TargetKind
-  /** 이 판 기준 크기의 배수. 연쇄용 작은 과녁 등에만 쓴다. */
-  size?: number
-  ampX?: number
-  ampY?: number
-  freq?: number
-}
-
-/** 각크기 곡선에서 실제 반경을 계산한다. 반경을 손으로 적는 일은 없다. */
+/** 각크기 곡선에서 실제 반경을 계산한다. 반경을 손으로 적는 일은 없다 (stagekit.ts). */
 function mk(n: number, s: Spot): TargetSpec {
-  const d = Math.hypot(s.x - HAND_X, s.y - HAND_Y)
-  const spec: TargetSpec = {
-    kind: s.kind ?? 'static',
-    x: s.x,
-    y: s.y,
-    r: hFor(n) * d * (s.size ?? 1),
-    score: BASE,
-  }
-  if (s.ampX !== undefined) spec.ampX = s.ampX
-  if (s.ampY !== undefined) spec.ampY = s.ampY
-  if (s.freq !== undefined) spec.freq = s.freq
-  return spec
+  return specOf(angularSize(n), s)
 }
 
 interface Layout {
@@ -173,6 +133,7 @@ function build(layout: Layout, i: number): StageDef {
   const id = `${chapter}-${(i % 10) + 1}`
   const stage: StageDef = {
     id,
+    title: layout.teach,
     seed: seedFrom(id),
     arrows: layout.arrows,
     targetScore: need(layout.hits),
@@ -192,15 +153,22 @@ export function stageTeach(index: number): string {
 
 /** 판 번호(1부터)의 과녁 각크기. 밸런스 도구가 화면 반경 바닥을 검사하는 데 쓴다. */
 export function stageH(n: number): number {
-  return hFor(n)
+  return angularSize(n)
 }
 
 /**
- * 범위를 벗어난 인덱스는 잘라서 준다.
- * 진행도가 마지막 챕터를 넘었다고 게임이 죽으면 안 된다 — 무한 모드가 붙기 전까지의 안전장치.
+ * 판 하나. index 는 0부터 세는 전체 판 번호다.
+ *
+ * ★ **자르지 않는다.** 예전에는 마지막 판으로 clamp 했는데, 그러면 40판을 깬 사람이
+ * 4-10을 무한히 다시 푼다 — 형이 본 "일정 스테이지 이후엔 똑같은 과녁만 나온다"가 이거였다.
+ * 41판부터는 endless.ts 가 결정론적으로 굽는다 (같은 판 번호 = 언제나 같은 판).
  */
 export function getStage(index: number): StageDef {
-  const i = clamp(Math.floor(index), 0, STAGES.length - 1)
-  const s = STAGES[i]
-  return s ?? (STAGES[0] as StageDef)
+  const i = Math.floor(index)
+  if (i < 0) return STAGES[0] as StageDef
+  if (i < STAGES.length) return STAGES[i] as StageDef
+  return endlessStage(i)
 }
+
+/** 손으로 적은 캠페인의 길이. 이 뒤는 무한 구간이다 (stagekit.CAMPAIGN_STAGES 와 같은 값). */
+export const CAMPAIGN = CAMPAIGN_STAGES

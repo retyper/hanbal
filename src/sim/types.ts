@@ -232,6 +232,11 @@ export interface TargetSpec {
 
 export interface StageDef {
   id: string
+  /**
+   * 이 판의 이름 한 줄 ('기둥', '바람골' …). **sim은 한 번도 읽지 않는다** — HUD가
+   * 판 시작에 띄우는 글자다. 스테이지 정의는 저작 데이터 뭉치라 화면용 이름도 여기 같이 산다.
+   */
+  title?: string
   /** 절차 생성·산포 재현을 위한 시드 */
   seed: number
   /** 지급 화살 수 (5~8, GDD 6장) */

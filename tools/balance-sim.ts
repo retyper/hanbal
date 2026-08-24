@@ -45,7 +45,8 @@ import { fileURLToPath } from 'node:url'
 
 import { createWorld, step } from '../src/sim/world.ts'
 import { effectiveStats } from '../src/sim/bow.ts'
-import { STAGES as ALL_STAGES } from '../src/game/stages.ts'
+import { CAMPAIGN, STAGES as ALL_STAGES, getStage } from '../src/game/stages.ts'
+import { ENDLESS_THEMES } from '../src/game/endless.ts'
 import { grantArrows } from '../src/game/progression.ts'
 import { defaultSave } from '../src/game/save.ts'
 import { ARROW_KINDS, arrowFx, DEFAULT_ARROW, isArrowKindId } from '../src/game/arrows.ts'
@@ -77,6 +78,11 @@ interface Args {
   crossBot: BotKind
   /** 캠페인 모드로 돌릴 사람 수 (봇 종류마다). 0이면 건너뛴다. */
   campaign: number
+  /**
+   * 무한 구간(41판~)에서 표본으로 돌릴 판 수. 0이면 건너뛴다.
+   * 기본값이 테마 한 바퀴인 이유: 한 바퀴를 돌면 열 테마가 정확히 한 번씩 나온다 (endless.ts).
+   */
+  endless: number
 }
 
 const BOT_KINDS: readonly BotKind[] = ['novice', 'average', 'expert']
@@ -97,6 +103,7 @@ function parseArgs(argv: readonly string[]): Args {
   let crossBot: BotKind = 'average'
   // 캠페인(해금 페이싱). 한 사람이 1판부터 순서대로 도는 모드라 따로 시간을 먹는다.
   let campaign = 12
+  let endless = ENDLESS_THEMES
   for (const a of argv) {
     const m = /^--([\w]+)=(.+)$/.exec(a)
     if (m === null) continue
@@ -124,8 +131,9 @@ function parseArgs(argv: readonly string[]): Args {
     else if (key === 'floor') floor = v !== 0
     else if (key === 'cross') cross = v !== 0
     else if (key === 'campaign') campaign = Math.max(0, Math.trunc(v))
+    else if (key === 'endless') endless = Math.max(0, Math.trunc(v))
   }
-  return { seed, runs, budgetMs, preview, floor, arrow, cross, crossBot, campaign }
+  return { seed, runs, budgetMs, preview, floor, arrow, cross, crossBot, campaign, endless }
 }
 
 /** 시드 합성. 같은 (스테이지, 판 번호)면 봇이 달라도 같은 판이 나온다 — 짝지은 비교로 분산을 줄인다. */
@@ -680,6 +688,24 @@ const REAL_STAGES: readonly StageRow[] = ALL_STAGES.map((def, i) => ({
   stats: assumedStats(ALL_STAGES.length > 1 ? i / (ALL_STAGES.length - 1) : 0),
   make: (seed: number): StageDef => ({ ...def, seed }),
 }))
+
+/**
+ * 무한 구간 표본 (41판~). 생성기가 굽는 판이라 **여기가 유일한 검사대**다 —
+ * 손으로 적은 판이 아니어서 눈으로 훑을 목록이 없고, 사람이 도달하기까지 오래 걸린다.
+ * 스탯은 다 자란 것으로 본다(assumedStats(1)) — 41판에 오는 사람은 40판을 지나온 사람이다.
+ */
+function endlessRows(n: number): readonly StageRow[] {
+  const rows: StageRow[] = []
+  for (let k = 0; k < n; k++) {
+    const def = getStage(CAMPAIGN + k)
+    rows.push({
+      key: def.id,
+      stats: assumedStats(1),
+      make: (seed: number): StageDef => ({ ...def, seed }),
+    })
+  }
+  return rows
+}
 
 /**
  * 아직 저작되지 않은 메커닉을 미리 재보는 프리뷰.
@@ -1966,7 +1992,11 @@ function applyFloor(rows: readonly StageRow[]): readonly StageRow[] {
 function main(): void {
   const args = parseArgs(process.argv.slice(2))
 
-  const authored = args.preview ? [...REAL_STAGES, ...PREVIEW_STAGES] : REAL_STAGES
+  const authored: readonly StageRow[] = [
+    ...REAL_STAGES,
+    ...(args.endless > 0 ? endlessRows(args.endless) : []),
+    ...(args.preview ? PREVIEW_STAGES : []),
+  ]
   // --floor=1 : 보유 화살이 바닥난 사람이 겪는 판. 여기서 클리어율이 무너지면 그 판은 벽이다.
   const stages: readonly StageRow[] = args.floor ? applyFloor(authored) : authored
   const groups = stages.length * BOT_KINDS.length

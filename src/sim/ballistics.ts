@@ -46,12 +46,23 @@ export function spawnArrow(w: World, angle: number, power: number): Arrow | null
   return a
 }
 
-/** 풀에서 죽은 슬롯 하나. 없으면 null — 새 객체를 만들지 않는다 (A5). */
-function freeSlot(w: World): Arrow | null {
+/**
+ * 풀에서 죽은 슬롯 하나. 없으면 null — 새 객체를 만들지 않는다 (A5).
+ *
+ * `except`는 **방금 죽은 부모**를 배제하기 위한 것이다. 명중으로 죽은 화살은 그 순간
+ * 풀에서 가장 앞선 빈 슬롯이 되곤 해서, 아무 조건 없이 고르면 자식이 부모의 시체를 덮어쓴다.
+ * 그러면 두 가지가 한꺼번에 깨진다:
+ *   (1) 부모의 궤적이 그 프레임에 통째로 사라진다 — render/effects.ts 의 captureTrail 은
+ *       outcome==='hit' 인 시체를 찾아 링버퍼를 복사하는데, 그 시체가 이미 자식이다.
+ *   (2) launch()가 슬롯의 pendX/pendY 를 0으로 지우므로 **두 번째 자식부터 월드 원점(0,0)**
+ *       에서 태어난다. 원점은 궁수 발치라, 화면에는 "갈래 화살이 갑자기 손에서 나가는" 것으로
+ *       보인다. 첫 자식만 제자리에서 갈라지고 나머지는 손에서 나가는 그 버그의 정체다.
+ */
+function freeSlot(w: World, except?: Arrow): Arrow | null {
   const pool = w.arrows
   for (let i = 0; i < pool.length; i++) {
     const slot = pool[i]
-    if (slot !== undefined && !slot.alive) return slot
+    if (slot !== undefined && !slot.alive && slot !== except) return slot
   }
   return null
 }
@@ -247,15 +258,22 @@ function spawnSplit(w: World, parent: Arrow, angle: number, speed: number): void
   if (n <= 0 || speed <= 0) return
   const childSpeed = speed * fx.splitSpeedKeep
 
+  // ★ 부모에게서 읽을 값은 **루프에 들어가기 전에 전부 복사한다.**
+  // launch()는 슬롯의 pendX/pendY·power·splitDepth 를 초기화한다. 루프 안에서 부모를 계속
+  // 참조하면, 자식이 어떤 이유로든 부모와 같은 슬롯에 앉는 순간 두 번째 자식이 태어날 자리는
+  // 이미 0으로 지워진 뒤다. freeSlot 의 except 로도 막지만, 값을 먼저 떠 두면 이 함수가
+  // 슬롯 배정 방식과 무관하게 옳다 — 빗장은 둘이어야 다음 사람이 하나를 풀어도 안 깨진다.
+  const ox = parent.pendX
+  const oy = parent.pendY
+  const power = parent.power
+  const depth = parent.splitDepth + 1
+
   for (let i = 0; i < n; i++) {
-    const child = freeSlot(w)
+    const child = freeSlot(w, parent)
     if (child === null) return
     // ±로 대칭 배분. n=2 면 ±splitAngle, n=3 이면 -a, 0, +a.
     const t = n > 1 ? (i / (n - 1)) * 2 - 1 : 0
-    launch(
-      child, parent.pendX, parent.pendY, angle + fx.splitAngle * t,
-      childSpeed, parent.power, parent.splitDepth + 1,
-    )
+    launch(child, ox, oy, angle + fx.splitAngle * t, childSpeed, power, depth)
   }
 }
 
