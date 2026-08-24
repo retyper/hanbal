@@ -227,6 +227,28 @@ const L = {
    */
   stormShots: 5,
 
+  /** 돌진 — 출발 자리(사거리 비율)와 높이(m). 뒤 놈일수록 **안쪽**에서 출발한다 */
+  rushFrom: 0.95,
+  rushGapMin: 0.09,
+  rushGapMax: 0.13,
+  rushYMin: 1.4,
+  rushYMax: 3.2,
+  rushSize: 1.15,
+  /** 돌진과 섞어 두는 정지 과녁 — 얘를 먼저 칠지 돌진을 먼저 칠지가 이 판의 판단이다 */
+  rushStaticFrom: 0.42,
+  rushStaticSpan: 0.3,
+  rushStaticYMin: 1.2,
+  rushStaticYMax: 3.4,
+  /** 몇 판마다 돌진이 하나 는가 */
+  rushPerAdd: 12,
+
+  /** 보급 — 뭉치에서 떨어진 자리에 하나. 크기를 조금 키워 "저건 쏘는 게 이득"이 읽히게 */
+  supplySize: 1.2,
+  supplyYMin: 3.4,
+  supplyYMax: 6.2,
+  supplyFromMin: 0.5,
+  supplyFromMax: 0.9,
+
   /** 별 2개 문턱 = 요구 발수의 이만큼을 맞혔을 때 (stages.ts 의 need() 와 같은 성격) */
   star2Ratio: 0.8,
 } as const
@@ -447,6 +469,68 @@ const THEMES: readonly Theme[] = [
       // 가운데 하나 — 고리를 다 지우기 전에는 겨누기 어렵다.
       if (e >= L.ringCoreAt) spots.push({ x: cx, y: yc(cy), size: L.ringCoreSize })
       return { spots, shots: spots.length - 1 }
+    },
+  },
+  {
+    /**
+     * 돌진 — **이 게임에서 유일하게 나를 향해 오는 판.**
+     *
+     * 정지 과녁 몇과 다가오는 것 몇을 섞는다. 다 지울 화살은 충분하지만
+     * **순서를 틀리면 돌진이 먼저 닿는다.** 그 판단 하나가 이 판의 전부다.
+     */
+    name: '돌진',
+    build(rng, e, reach): Plan {
+      const spots: Spot[] = []
+      const rushers = 2 + Math.min(2, Math.floor(e / L.rushPerAdd))
+      for (let i = 0; i < rushers; i++) {
+        spots.push({
+          // 뒤 놈일수록 안쪽에서 출발한다 — 가까운 놈이 먼저 닿으니 도착 시각이 자연히 벌어진다.
+          // 사거리 밖에서 출발시키면 맞힐 수 없는 과녁이 생긴다 (경계 테스트가 지키는 불변식).
+          x: reach * (L.rushFrom - i * rng.range(L.rushGapMin, L.rushGapMax)),
+          y: yc(rng.range(L.rushYMin, L.rushYMax)),
+          kind: 'charger',
+          size: L.rushSize,
+        })
+      }
+      // 가만히 있는 것들 — 이걸 먼저 칠지가 유혹이다.
+      for (let i = 0; i < 2; i++) {
+        spots.push({
+          x: reach * (L.rushStaticFrom + i * L.rushStaticSpan),
+          y: yc(rng.range(L.rushStaticYMin, L.rushStaticYMax)),
+        })
+      }
+      return { spots, shots: spots.length }
+    },
+  },
+  {
+    /**
+     * 보급 — 화살을 벌 수 있는 판. 높이 매달린 보급을 맞히면 화살이 돌아온다.
+     * 화살을 빠듯하게 주는 이유: **보급을 안 쏘면 모자라게** 만들어야 선택이 성립한다.
+     */
+    name: '보급',
+    build(rng, e, reach): Plan {
+      const spots: Spot[] = []
+      const supplies = 1 + (e >= L.rushPerAdd ? 1 : 0)
+      for (let i = 0; i < supplies; i++) {
+        spots.push({
+          x: reach * rng.range(L.supplyFromMin, L.supplyFromMax),
+          y: yc(rng.range(L.supplyYMin, L.supplyYMax)),
+          kind: 'bonus',
+          size: L.supplySize,
+          give: 2,
+        })
+      }
+      const n = 4 + Math.min(2, Math.floor(e / L.linePerAdd))
+      const x0 = reach * L.lineFrom
+      for (let i = 0; i < n; i++) {
+        const t = n > 1 ? i / (n - 1) : 0
+        spots.push({
+          x: x0 + (reach - x0) * t,
+          y: yc(i % 2 === 0 ? rng.range(L.lineLowMin, L.lineLowMax) : rng.range(L.lineHighMin, L.lineHighMax)),
+        })
+      }
+      // 보급을 되찾는 걸 계산에 넣는다. 안 쏘면 정확히 모자란다.
+      return { spots, shots: spots.length - supplies }
     },
   },
   {

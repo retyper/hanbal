@@ -75,6 +75,15 @@ const DRAW = {
   /** 지면 기둥. 이보다 높이 뜬 과녁은 세운 게 아니라 매달린 것으로 본다 (m). */
   postMaxY: 4.4,
   postW: 2,
+  /** 보급 과녁 십자의 길이(반경 비율)와 굵기(반경 비율) */
+  bonusCross: 0.55,
+  bonusCrossW: 0.16,
+  /** 돌진 과녁이 궁수까지 남긴 거리를 보여주는 선 */
+  threatLineW: 1.5,
+  threatLineAlpha: 0.3,
+  /** 이 거리(m) 안으로 들어오면 선이 위험색으로 깜빡인다 */
+  threatNear: 8,
+  threatPulseHz: 3,
   /** 이동 과녁의 레일 — 어디까지 가는지 미리 보여준다. 리드 샷은 예측이지 반사신경이 아니다. */
   railW: 1.5,
   railAlpha: 0.5,
@@ -277,6 +286,33 @@ function drawRail(ctx: CanvasRenderingContext2D, cam: Camera, t: Target): void {
   ctx.globalAlpha = 1
 }
 
+/**
+ * 돌진 과녁에서 궁수까지 남은 거리를 잇는 선.
+ *
+ * **얼마나 남았는지가 보여야 판단이 성립한다.** 다른 과녁을 먼저 정리할지, 지금 저걸 쏠지 —
+ * 그 판단이 이 메커닉의 전부인데, 남은 거리를 눈대중으로만 재게 하면 판단이 아니라 도박이 된다.
+ * 가까워지면 위험색으로 깜빡인다.
+ */
+function drawThreatLine(
+  ctx: CanvasRenderingContext2D, cam: Camera, w: World, t: Target, x: number, y: number,
+): void {
+  const dist = t.x - w.archer.x
+  const near = dist < DRAW.threatNear
+  const ax = worldToScreenX(cam, w.archer.x)
+  const ay = worldToScreenY(cam, w.archer.y)
+  // 시계는 sim tick 이다. 실시간을 쓰면 리플레이에서 다른 그림이 나온다 (A1).
+  const pulse = near ? 0.35 + 0.65 * Math.abs(Math.sin(w.tick * w.dt * DRAW.threatPulseHz * TAU)) : 1
+  ctx.globalAlpha = DRAW.threatLineAlpha * pulse
+  ctx.strokeStyle = near ? THEME.threat : THEME.threatDim
+  ctx.lineWidth = DRAW.threatLineW
+  ctx.lineCap = 'butt'
+  ctx.beginPath()
+  ctx.moveTo(ax, ay)
+  ctx.lineTo(x, y)
+  ctx.stroke()
+  ctx.globalAlpha = 1
+}
+
 function drawTargets(
   ctx: CanvasRenderingContext2D, cam: Camera, w: World, alpha: number, fx: Fx,
 ): void {
@@ -293,6 +329,7 @@ function drawTargets(
     if (!t.falling) {
       drawRail(ctx, cam, t)
       if (t.kind === 'static' || t.kind === 'pierceable') drawPost(ctx, cam, x, y, wy, r)
+      if (t.kind === 'charger') drawThreatLine(ctx, cam, w, t, x, y)
     }
 
     // 맞은 순간 눌렸다 부푼다 (HOOK ★6-2). 즉사한 과녁은 여기 안 오므로(alive false)
@@ -327,7 +364,44 @@ function drawTargets(
       }
     }
 
-    if (r < DRAW.ringMinPx) {
+    if (t.kind === 'charger') {
+      // ★ 나를 향해 오는 것. **왼쪽을 가리키는 뾰족한 삼각형** — 다른 어떤 과녁과도
+      // 실루엣이 겹치지 않아야 한다. 색을 못 봐도 "저건 다르다"가 먼저 와야 하기 때문이다.
+      // 뒤로 흐르는 꼬리 둘이 진행 방향을 말한다.
+      ctx.strokeStyle = THEME.threatDim
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(x + rx * 0.6, y - ry * 0.5)
+      ctx.lineTo(x + rx * 1.9, y - ry * 0.5)
+      ctx.moveTo(x + rx * 0.6, y + ry * 0.5)
+      ctx.lineTo(x + rx * 1.9, y + ry * 0.5)
+      ctx.stroke()
+
+      ctx.fillStyle = THEME.threat
+      ctx.beginPath()
+      ctx.moveTo(x - rx, y)
+      ctx.lineTo(x + rx * 0.8, y - ry)
+      ctx.lineTo(x + rx * 0.8, y + ry)
+      ctx.closePath()
+      ctx.fill()
+      // 중심 표시 — 이것도 과녁이라 정중앙이 있다.
+      band(ctx, x, y, rx * DRAW.ringCore, ry * DRAW.ringCore, THEME.target2)
+    } else if (t.kind === 'bonus') {
+      // 보급 — 청록 원에 십자. "지우는 것"이 아니라 "얻는 것"이라고 모양이 말한다.
+      band(ctx, x, y, rx, ry, THEME.bonus)
+      band(ctx, x, y, rx * DRAW.ringBand, ry * DRAW.ringBand, THEME.targetBand)
+      ctx.strokeStyle = THEME.bonus
+      ctx.lineWidth = Math.max(1.5, r * DRAW.bonusCrossW)
+      ctx.lineCap = 'butt'
+      const cw = rx * DRAW.bonusCross
+      const ch = ry * DRAW.bonusCross
+      ctx.beginPath()
+      ctx.moveTo(x - cw, y)
+      ctx.lineTo(x + cw, y)
+      ctx.moveTo(x, y - ch)
+      ctx.lineTo(x, y + ch)
+      ctx.stroke()
+    } else if (r < DRAW.ringMinPx) {
       // 너무 작다. 띠를 다 그리면 뭉개져 오히려 안 보인다 — 밝은 점 하나가 낫다.
       band(ctx, x, y, rx, ry, THEME.targetRim)
       band(ctx, x, y, rx * DRAW.ringAccent, ry * DRAW.ringAccent, THEME.accent)

@@ -20,8 +20,20 @@ export { arrowFx } from '../sim/arrowfx.ts'
 
 export interface ArrowKind {
   id: ArrowKindId
-  /** 한글 이름. 국궁의 '살'을 붙여 통일한다 (A8 — 게임 용어는 GDD 표기를 따른다). */
+  /**
+   * 이름. **실제 국궁에서 쓰는 화살 이름을 쓴다.**
+   *
+   * 예전엔 '폭발 살'·'분열 살'처럼 효과에 '살'을 붙인 조어였다. 형의 지적:
+   * "화살 이름들이 그게 현실적으로 쓰는 말인가?" — 아니었다.
+   * ('살'은 국궁에서 화살을 부르는 진짜 말이 맞다. 문제는 앞에 붙인 효과 이름 쪽이었다.)
+   *
+   * 이제 실제로 있던 살들을 가져다 붙였다. 없는 효과(유도)만 옛 문헌의 표현을 빌린다.
+   * 효과와 이름이 억지로 안 맞으면 이름을 고르는 게 아니라 **효과를 그 이름에 맞춘다** —
+   * 애기살이 관통인 건 실제로 애기살이 관통력으로 유명했기 때문이다.
+   */
   name: string
+  /** 한자·유래 한 줄. 이름만으로는 뭔지 모르는 사람을 위한 자막이다. */
+  origin: string
   /** 한 줄 설명. 카드에서 읽고 바로 고를 수 있어야 한다 — 효과가 즉시 이해돼야 한다. */
   desc: string
 }
@@ -36,39 +48,48 @@ export interface ArrowKind {
 export const ARROW_KINDS: readonly ArrowKind[] = [
   {
     id: 'basic',
-    name: '기본 살',
-    desc: '효과 없는 곧은 살.',
+    name: '유엽전',
+    origin: '柳葉箭 · 버들잎 촉',
+    desc: '가장 흔히 쓰는 살. 별난 것이 없다.',
   },
   {
     id: 'burst',
-    name: '폭발 살',
-    desc: '맞은 자리 둘레의 과녁을 같이 친다.',
+    name: '화전',
+    origin: '火箭 · 불화살',
+    desc: '맞은 자리에서 터져 둘레의 과녁을 같이 친다.',
   },
   {
     id: 'chain',
-    name: '사슬 살',
-    desc: `맞으면 다음 과녁으로 튄다. 최대 ${arrowFx('chain').chainBounces}번.`,
+    name: '명적',
+    origin: '鳴鏑 · 우는살',
+    desc: `울며 날아 다음 과녁으로 옮겨 붙는다. 최대 ${arrowFx('chain').chainBounces}번.`,
   },
   {
     id: 'split',
-    name: '분열 살',
+    name: '세전',
+    origin: '細箭 · 가는 살',
     desc: `맞으면 ${arrowFx('split').splitCount}발로 갈라진다.`,
   },
   {
     id: 'homing',
-    name: '유도 살',
+    name: '신전',
+    origin: '神箭 · 빗나가지 않는 살',
     desc: '앞쪽 가장 가까운 과녁으로 살짝 휜다.',
   },
   {
     id: 'pierce',
-    name: '관통 살',
+    // 애기살(편전)은 통아에 얹어 쏘는 짧은 살이다. 조선의 비기로 불릴 만큼
+    // 사거리와 관통력이 유명했다 — 효과를 이름에 맞춘 게 아니라 이름이 효과였다.
+    name: '애기살',
+    origin: '片箭 · 통아에 얹어 쏘는 짧은 살',
     desc: `과녁을 뚫고 지나간다. 최대 ${arrowFx('pierce').pierceExtra}개 더.`,
   },
   {
     id: 'heavy',
     // 원안(HOOK.md)의 '점수 2배'는 밸런스 시뮬에서 전 판 지배로 판명나 빠졌다.
     // 지금의 정체성은 '가장 깊은 관통 + 바람에 안 밀림 + 느림'이다 (params.ts arrowkind 주석).
-    name: '무거운 살',
+    name: '육량전',
+    origin: '六兩箭 · 여섯 냥짜리 무거운 살',
     desc: `느리다. 대신 깊이 뚫고(최대 ${arrowFx('heavy').pierceExtra}개 더) 바람에 덜 밀린다.`,
   },
 ]

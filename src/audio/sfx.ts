@@ -84,6 +84,9 @@ const K_CHAIN_BELL = 17
 /** 폭발 — 저역 몸통 / 고역 파편 */
 const K_BOOM = 18
 const K_DEBRIS = 19
+/** 보급을 주웠다 / 돌진에게 빼앗겼다 */
+const K_PICKUP = 20
+const K_ESCAPE = 21
 
 /**
  * 음색 상수 — **파형의 신원**이다. 필터 주파수·Q·부분음 길이를 바꾸면 값이 세지는 게 아니라
@@ -214,6 +217,20 @@ const SFX = {
   boomDebrisDur: 0.42,
   boomDebrisGain: 0.45,
   boomDebrisDelay: 0.035,
+
+  // ── 보급 ── 밝게 위로. "벌었다"는 방향이 있는 사건이라 한 방으로는 안 읽힌다.
+  pickupLo: 784,
+  pickupHi: 1174.7,
+  pickupRing: 0.5,
+  pickupStep: 0.06,
+  pickupInharm: 0,
+
+  // ── 빼앗김 ── 아래로. 벌이 아니라 **경고**다. 크지 않게, 대신 확실히 아래로 떨어지게.
+  escapeFreq: 330,
+  escapeEndFreq: 98,
+  escapeDur: 0.3,
+  escapeNoiseFreq: 700,
+  escapeNoiseGain: 0.4,
 
   // ── 연쇄에 얹히는 종 ── 유리 깨짐 위의 배음. 이게 "또로롱"이다.
   chainBellBase: 880,
@@ -937,6 +954,41 @@ export function pumpSfx(sfx: Sfx, w: World): void {
       playHit(sfx, s, w, e.targetId, e.accuracy)
     } else if (e.t === 'burst') {
       playBurst(s)
+    } else if (e.t === 'pickup') {
+      // 두 음 상승 — 완전5도. 짧고 밝게. 이게 이 게임에서 유일하게 '얻었다'는 소리다.
+      for (let n = 0; n < 2; n++) {
+        BL.freq = n === 0 ? SFX.pickupLo : SFX.pickupHi
+        BL.dur = SFX.pickupRing
+        BL.gain = P.audio.pickupGain
+        BL.partials = 2
+        BL.inharm = SFX.pickupInharm
+        BL.attack = 0.002
+        BL.delay = n * SFX.pickupStep
+        BL.type = 'sine'
+        bellTone(s, n === 0 ? K_PICKUP : K_CHAIN_BELL, BL)
+      }
+    } else if (e.t === 'escape') {
+      // 아래로 떨어지는 두 겹. 실패를 조롱하지 않는다 — 놀라게만 하고 끝난다.
+      TN.type = 'triangle'
+      TN.freq = SFX.escapeFreq
+      TN.endFreq = SFX.escapeEndFreq
+      TN.dur = SFX.escapeDur
+      TN.attack = 0.004
+      TN.decay = SFX.escapeDur
+      TN.gain = P.audio.escapeGain
+      TN.delay = 0
+      tone(s, K_ESCAPE, TN)
+
+      NB.filterType = 'lowpass'
+      NB.freq = SFX.escapeNoiseFreq
+      NB.endFreq = 0
+      NB.q = 0.6
+      NB.dur = SFX.escapeDur
+      NB.attack = 0.006
+      NB.decay = SFX.escapeDur
+      NB.gain = P.audio.escapeGain * SFX.escapeNoiseGain
+      NB.delay = 0
+      noiseBurst(s, K_ESCAPE, NB)
     } else if (e.t === 'chain') {
       playChain(s, sfx, e.depth)
     } else if (e.t === 'miss') {

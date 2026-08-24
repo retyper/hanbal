@@ -77,7 +77,8 @@ const CSS = `
 /* hover는 배경만 밝힌다. 카드의 성격은 아이콘 색(--tint)이 이미 말하고 있다. */
 .d-card:hover, .d-card:focus-visible { background: #1e2934; border-color: #303c49; }
 .d-card .d-ic { color: var(--tint); line-height: 0; }
-.d-card .d-name { color: var(--ink); font-weight: 700; font-size: 18px; letter-spacing: -.01em; }
+.d-card .d-name { color: var(--ink); font-weight: 700; font-size: 19px; letter-spacing: -.01em; }
+.d-card .d-origin { color: var(--mute); font-size: 12px; letter-spacing: .04em; margin-top: -8px; }
 .d-card .d-desc { color: var(--body); font-size: 14px; line-height: 1.55; flex: 1; }
 .d-card .d-k {
   position: absolute; top: 12px; right: 12px; color: var(--mute); font-size: 12px;
@@ -158,9 +159,11 @@ export function mountDraft(o: Overlay, offer: DraftOffer, onPick: (id: ArrowKind
       `<span class="d-ic"><svg width="34" height="34" viewBox="0 0 28 28" fill="none" ` +
       `stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" ` +
       `aria-hidden="true">${ICON[id]}</svg></span>` +
-      `<span class="d-name"></span><span class="d-desc"></span>` +
+      `<span class="d-name"></span><span class="d-origin"></span><span class="d-desc"></span>` +
       (key === undefined ? '' : `<span class="d-k">${key}</span>`)
     ;(card.querySelector('.d-name') as HTMLElement).textContent = kind.name
+    // 한자·유래 한 줄. '애기살'이 뭔지 모르는 사람에게는 이 줄이 이름의 뜻이다.
+    ;(card.querySelector('.d-origin') as HTMLElement).textContent = kind.origin
     ;(card.querySelector('.d-desc') as HTMLElement).textContent = kind.desc
     card.setAttribute('aria-label', `${kind.name} — ${kind.desc}`)
     card.addEventListener('click', () => finish(id))

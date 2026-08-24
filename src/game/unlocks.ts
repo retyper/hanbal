@@ -228,18 +228,18 @@ function def(
  * 이름은 `game/arrows.ts`의 `ArrowKind.name`을 따른다 ('살'로 통일 · A8).
  */
 export const UNLOCKS: readonly UnlockDef[] = [
-  def('arrow.burst', '폭발 살', 'arrow', `${G_BURST_STAGES}판 클리어`, P_STAGES, G_BURST_STAGES, A_BURST),
+  def('arrow.burst', '화전', 'arrow', `${G_BURST_STAGES}판 클리어`, P_STAGES, G_BURST_STAGES, A_BURST),
   def('title.oneshot', '한 발', 'title', `무손실로 ${G_ONESHOT_PERFECT}판 클리어`, P_PERFECT, G_ONESHOT_PERFECT),
   def('title.firststar', '첫 별', 'title', `별 ${G_FIRSTSTAR_STARS}개 모으기`, P_STARS, G_FIRSTSTAR_STARS),
-  def('arrow.chain', '사슬 살', 'arrow', `한 판에서 ${G_CHAIN_BEST}연쇄`, P_CHAIN, G_CHAIN_BEST, A_CHAIN),
-  def('arrow.split', '분열 살', 'arrow', `${G_SPLIT_STAGES}판 클리어`, P_STAGES, G_SPLIT_STAGES, A_SPLIT),
+  def('arrow.chain', '명적', 'arrow', `한 판에서 ${G_CHAIN_BEST}연쇄`, P_CHAIN, G_CHAIN_BEST, A_CHAIN),
+  def('arrow.split', '세전', 'arrow', `${G_SPLIT_STAGES}판 클리어`, P_STAGES, G_SPLIT_STAGES, A_SPLIT),
   def('title.hawk', '매의 눈', 'title', `정중앙 ${G_HAWK_BULLS}회`, P_BULLS, G_HAWK_BULLS),
   def('title.avalanche', '보로로록', 'title', `한 판에서 ${G_AVALANCHE_BEST}연쇄`, P_CHAIN, G_AVALANCHE_BEST),
-  def('arrow.homing', '유도 살', 'arrow', `누적 명중 ${G_HOMING_HITS}회`, P_HITS, G_HOMING_HITS, A_HOMING),
-  def('arrow.pierce', '관통 살', 'arrow', `${G_PIERCE_STAGES}판 클리어`, P_STAGES, G_PIERCE_STAGES, A_PIERCE),
+  def('arrow.homing', '신전', 'arrow', `누적 명중 ${G_HOMING_HITS}회`, P_HITS, G_HOMING_HITS, A_HOMING),
+  def('arrow.pierce', '애기살', 'arrow', `${G_PIERCE_STAGES}판 클리어`, P_STAGES, G_PIERCE_STAGES, A_PIERCE),
   def('title.hundred', '백발', 'title', `누적 명중 ${G_HUNDRED_HITS}회`, P_HITS, G_HUNDRED_HITS),
   def('title.wind', '바람 읽는 자', 'title', `별 ${G_WIND_STARS}개 모으기`, P_STARS, G_WIND_STARS),
-  def('arrow.heavy', '무거운 살', 'arrow', `${G_HEAVY_STAGES}판 클리어`, P_STAGES, G_HEAVY_STAGES, A_HEAVY),
+  def('arrow.heavy', '육량전', 'arrow', `${G_HEAVY_STAGES}판 클리어`, P_STAGES, G_HEAVY_STAGES, A_HEAVY),
   def('title.flawless', '흠 없는 활', 'title', `무손실로 ${G_FLAWLESS_PERFECT}판 클리어`, P_PERFECT, G_FLAWLESS_PERFECT),
   def('title.forty', '마흔 발', 'title', `${G_FORTY_STAGES}판 클리어`, P_STAGES, G_FORTY_STAGES),
 ]

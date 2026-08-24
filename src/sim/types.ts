@@ -174,8 +174,23 @@ export type TargetKind =
   | 'moving'
   /** 공중 부유 — 맞으면 낙하하며 아래를 연쇄로 친다 (GDD 7장) */
   | 'aerial'
-  /** 관통 가능. 화살이 뚫고 지나간다. */
+  /** 겹쳐 세운 얇은 과녁. **관통력이 있는 살만** 뚫고 지나간다 (target.ts resolveHit). */
   | 'pierceable'
+  /**
+   * 돌진 — **궁수 쪽으로 다가온다.** 이 게임에서 유일하게 플레이어를 향해 오는 것.
+   *
+   * 닿으면 화살을 하나 빼앗고 사라진다. 그게 전부다 — 체력도, 게임 오버도 없다.
+   * 왜 거기서 멈추나: 제약 C2("아무 때나 끊어도 손해가 없다")를 지켜야 한다.
+   * 시간 압박을 만들되 **자리를 뜬 사람을 벌하지는 않는다** (탭이 숨으면 sim이 통째로 멈춘다, C3).
+   */
+  | 'charger'
+  /**
+   * 보급 — 맞히면 화살을 돌려준다.
+   *
+   * 과녁을 지우는 게 아니라 **자원을 버는** 유일한 과녁이다. 한 발을 써서 한 발 이상을
+   * 벌 수 있으니, 늘 "먼저 저걸 쏠까"라는 판단이 생긴다.
+   */
+  | 'bonus'
 
 export interface Target {
   id: number
@@ -197,6 +212,10 @@ export interface Target {
   freq: number
   /** 맞아서 낙하 중인가 (aerial) */
   falling: boolean
+  /** 돌진 과녁의 속도 (m/s, 궁수 쪽으로). 다른 종류는 0. */
+  speed: number
+  /** 보급 과녁이 돌려주는 화살 수. 다른 종류는 0. */
+  give: number
   /** 연쇄 깊이. 직격 = 0, 낙하물에 맞은 것 = 1, 그 다음 = 2 ... */
   chainDepth: number
   /** 기본 점수. 링 명중도로 배수가 붙는다. */
@@ -229,6 +248,10 @@ export type SimEvent =
    * radius 는 월드 미터. 렌더가 이걸로 불덩이 크기를 정한다.
    */
   | { t: 'burst'; x: number; y: number; radius: number }
+  /** 돌진 과녁이 궁수에게 닿았다. 화살 `lost`발을 빼앗겼다. */
+  | { t: 'escape'; x: number; y: number; lost: number }
+  /** 보급 과녁을 맞혀 화살 `gain`발을 얻었다. */
+  | { t: 'pickup'; x: number; y: number; gain: number }
   | { t: 'miss'; x: number; y: number; arrow: number }
   | { t: 'stage_end'; cleared: boolean; score: number }
 
@@ -244,6 +267,10 @@ export interface TargetSpec {
   ampX?: number
   ampY?: number
   freq?: number
+  /** charger 전용 — 궁수 쪽으로 다가오는 속도 (m/s). 없으면 P.target.chargeSpeed */
+  speed?: number
+  /** bonus 전용 — 맞히면 돌려주는 화살 수. 없으면 1 */
+  give?: number
 }
 
 export interface StageDef {

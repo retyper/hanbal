@@ -35,8 +35,22 @@ export function stepTargets(w: World): void {
       // x·y 같은 위상을 쓴다. 그래야 t=0에서 스테이지가 적어둔 base 위치와 정확히 일치한다.
       tg.x = tg.baseX + tg.ampX * s
       tg.y = tg.baseY + tg.ampY * s
+    } else if (tg.kind === 'charger') {
+      // ★ 이 게임에서 유일하게 **나에게 오는** 것.
+      tg.x -= tg.speed * dt
+      // 다가오면서 살짝 위아래로 흔들린다. 일직선으로만 오면 물체가 아니라 슬라이더로 보인다.
+      tg.y = tg.baseY + Math.sin(time * P.target.chargeBobFreq * TAU) * P.target.chargeBob
+      if (tg.x <= w.archer.x + P.target.chargeReach) {
+        // 닿았다. 화살을 하나 빼앗고 사라진다 — 체력도 게임 오버도 없다 (C2).
+        // 판이 안 깨지게 과녁 자체는 확실히 제거한다. 남겨두면 클리어가 영원히 안 된다.
+        const lost = w.arrowsLeft > 0 ? 1 : 0
+        w.arrowsLeft -= lost
+        tg.alive = false
+        w.combo = 0
+        w.events.push({ t: 'escape', x: tg.x, y: tg.y, lost })
+      }
     }
-    // static / pierceable / 낙하 전 aerial 은 정지. 위치를 건드리지 않는다.
+    // static / pierceable / bonus / 낙하 전 aerial 은 정지. 위치를 건드리지 않는다.
 
     // 속도는 실제 변위에서 역산한다. 리드 샷을 읽는 렌더·HUD가 이 값을 쓴다.
     tg.vx = (tg.x - tg.px) / dt
@@ -101,6 +115,12 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
   if (arrow.splitPending > 0 || arrow.chainPending > 0) {
     arrow.pendX = target.x
     arrow.pendY = target.y
+  }
+
+  // 보급 — 맞히면 화살을 돌려준다. 이 게임에서 자원이 **느는** 유일한 자리다.
+  if (target.kind === 'bonus' && target.give > 0) {
+    w.arrowsLeft += target.give
+    w.events.push({ t: 'pickup', x: target.x, y: target.y, gain: target.give })
   }
 
   if (target.kind === 'aerial') {

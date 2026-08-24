@@ -516,6 +516,17 @@ export function pumpEvents(fx: Fx, w: World): void {
       spawn(fx, e.x, e.y, FX.missBurst, KIND_MISS, FX.missSpeed, FX.missTtl, 1)
       captureTrail(fx, w, e.arrow, true)
       stickArrow(fx, w, e.arrow, e.x, e.y)
+    } else if (e.t === 'pickup') {
+      // 보급 — 얻은 것이 숫자로 튀어야 "벌었다"가 된다. 위업 슬롯을 쓰는 이유는
+      // 점수 팝과 같은 자리에서 겹치지 않게 아래에서 올라오기 때문이다 (popups.ts lift).
+      pushPopup(fx.pop, e.x, e.y, e.gain > 1 ? `화살 +${e.gain}` : '화살 +1', 'feat')
+      spawn(fx, e.x, e.y, FX.hitBurst, KIND_CHAIN, FX.speed, FX.ttl, 1.2)
+    } else if (e.t === 'escape') {
+      // 빼앗겼다. 콤보도 여기서 끊긴다 (sim이 이미 끊었다 — 렌더 카운터도 맞춘다).
+      fx.comboRun = 0
+      if (e.lost > 0) pushPopup(fx.pop, e.x, e.y, `화살 -${e.lost}`, 'crit')
+      spawn(fx, e.x, e.y, FX.missBurst, KIND_MISS, FX.critSpeed, FX.missTtl, 1.4)
+      fx.hitStop += P.hit.stopMs * 0.001
     } else if (e.t === 'burst') {
       // ★ 폭발. 예전에는 딸려 죽은 과녁의 chain 이벤트만 있어서, 아무것도 안 물리면
       // 폭발이 일어난 흔적이 화면에 하나도 안 남았다 (형의 지적).

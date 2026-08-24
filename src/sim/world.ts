@@ -120,6 +120,8 @@ function newTarget(): Target {
     ampY: 0,
     freq: 0,
     falling: false,
+    speed: 0,
+    give: 0,
     chainDepth: 0,
     score: FALLBACK_TARGET_SCORE,
   }
@@ -231,6 +233,8 @@ function loadTarget(t: Target, id: number, spec: TargetSpec): void {
   t.ampY = spec.ampY ?? 0
   t.freq = spec.freq ?? 0
   t.falling = false
+  t.speed = spec.kind === 'charger' ? spec.speed ?? P.target.chargeSpeed : 0
+  t.give = spec.kind === 'bonus' ? spec.give ?? 1 : 0
   t.chainDepth = 0
   t.score = spec.score ?? FALLBACK_TARGET_SCORE
 }
@@ -238,6 +242,8 @@ function loadTarget(t: Target, id: number, spec: TargetSpec): void {
 function clearTarget(t: Target): void {
   t.alive = false
   t.falling = false
+  t.speed = 0
+  t.give = 0
   t.chainDepth = 0
   t.vx = 0
   t.vy = 0

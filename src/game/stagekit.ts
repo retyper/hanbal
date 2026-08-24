@@ -61,6 +61,10 @@ export interface Spot {
   ampX?: number
   ampY?: number
   freq?: number
+  /** charger 전용 — 다가오는 속도 (m/s). 없으면 P.target.chargeSpeed */
+  speed?: number
+  /** bonus 전용 — 맞히면 돌려주는 화살 수. 없으면 1 */
+  give?: number
 }
 
 /** 각크기 h에서 이 자리의 실제 반경을 계산해 sim이 먹는 형태로 굽는다. */
@@ -76,5 +80,7 @@ export function specOf(h: number, s: Spot): TargetSpec {
   if (s.ampX !== undefined) spec.ampX = s.ampX
   if (s.ampY !== undefined) spec.ampY = s.ampY
   if (s.freq !== undefined) spec.freq = s.freq
+  if (s.speed !== undefined) spec.speed = s.speed
+  if (s.give !== undefined) spec.give = s.give
   return spec
 }
