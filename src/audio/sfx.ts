@@ -980,6 +980,20 @@ export function pumpSfx(sfx: Sfx, w: World): void {
         BL.type = 'sine'
         bellTone(s, n === 0 ? K_PICKUP : K_CHAIN_BELL, BL)
       }
+    } else if (e.t === 'enemy_block') {
+      // 과녁이 대신 맞아줬다 — 낮은 나무 소리 하나. 위협이 끝났다는 안도의 마침표다.
+      if (!sample(sfx, s, 'wood', P.audio.escapeGain, 0.85, 0, 0)) {
+        NB.filterType = 'lowpass'
+        NB.freq = 900
+        NB.endFreq = 0
+        NB.q = 0.8
+        NB.dur = 0.09
+        NB.attack = 0.002
+        NB.decay = 0.09
+        NB.gain = P.audio.escapeGain * 0.7
+        NB.delay = 0
+        noiseBurst(s, K_ESCAPE, NB)
+      }
     } else if (e.t === 'enemy_draw') {
       // 적의 당김 — 낮게 조여 올라가는 경고. 크지 않게, 대신 반드시 들리게 (예고의 계약).
       TN.type = 'triangle'

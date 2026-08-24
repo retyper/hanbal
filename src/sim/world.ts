@@ -512,6 +512,21 @@ function stepEnemyShots(w: World): void {
     sh.vy -= P.arrow.gravity * dt
     sh.x += sh.vx * dt
     sh.y += sh.vy * dt
+    // 과녁에 박힌다 — 판자는 화살을 막는다. **과녁 뒤는 엄폐다** (형: "적 화살은 과녁도
+    // 안 맞아?"). 과녁은 상하지 않는다: 적이 과녁을 지워 판을 대신 깨 주면 안 된다.
+    let blocked = false
+    for (let j = 0; j < w.targets.length && !blocked; j++) {
+      const tg = w.targets[j]
+      if (tg === undefined || !tg.alive || tg.falling) continue
+      if (tg.kind === 'archer' || tg.kind === 'boss' || tg.kind === 'charger') continue
+      if (distSqPointSegment(tg.x, tg.y, sh.px, sh.py, sh.x, sh.y) <= tg.r * tg.r) {
+        blocked = true
+        sh.alive = false
+        w.events.push({ t: 'enemy_block', x: sh.x, y: sh.y })
+      }
+    }
+    if (blocked) continue
+
     // 궁수 피격 — 선분 판정 (빠른 화살이 한 스텝에 몸을 건너뛰지 않게).
     if (w.status === 'playing' && distSqPointSegment(a.x, a.y, sh.px, sh.py, sh.x, sh.y) <= r2) {
       sh.alive = false

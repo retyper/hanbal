@@ -56,6 +56,9 @@ describe('적', () => {
   })
 
   it('적 화살에 맞으면 체력이 깎이고, 0이면 여정이 끝날 판정(failed)이 난다', () => {
+    // 조준 산포를 끄고 잰다 — 여기서 재는 건 명중률이 아니라 피격→사망 배선이다.
+    const scatter = P.enemy.aimScatter
+    ;(P.enemy as { aimScatter: number }).aimScatter = 0
     const w = createWorld(arena(0.5), STATS)
     // 한 발이면 눕는 체력에서 시작 — 피격 → 0 → failed 경로를 잰다.
     w.hp = Math.floor(P.enemy.arrowDamage)
@@ -65,9 +68,37 @@ describe('적', () => {
       if (w.events.some((e) => e.t === 'player_hit')) hit = true
       w.events.length = 0
     }
+    ;(P.enemy as { aimScatter: number }).aimScatter = scatter
     assert.ok(hit, '적 화살이 궁수를 맞히지 못했다')
     assert.equal(w.hp, 0)
     assert.equal(w.status, 'failed', '체력 0인데 판이 계속된다')
+  })
+
+  it('과녁 뒤는 엄폐다 — 적 화살이 과녁에 박히고 나는 안 맞는다', () => {
+    const scatter = P.enemy.aimScatter
+    ;(P.enemy as { aimScatter: number }).aimScatter = 0
+    // 적(18m)과 나 사이, 9m 지점에 큰 과녁 벽. 적의 사선이 반드시 걸린다.
+    const def: StageDef = {
+      id: 'cover-test', seed: 3, arrows: 8, targetScore: 100, wind: 0,
+      targets: [
+        { kind: 'archer', x: 18, y: 1.5, r: 0.65, hp: 100, fireDelay: 0.5, score: 100 },
+        { kind: 'static', x: 9, y: 1.6, r: 2.2, score: 0 },
+      ],
+    }
+    const w = createWorld(def, STATS)
+    let blocked = false
+    let hit = false
+    for (let i = 0; i < 1500; i++) {
+      step(w, IDLE)
+      for (const e of w.events) {
+        if (e.t === 'enemy_block') blocked = true
+        if (e.t === 'player_hit') hit = true
+      }
+      w.events.length = 0
+    }
+    ;(P.enemy as { aimScatter: number }).aimScatter = scatter
+    assert.ok(blocked, '적 화살이 과녁을 통과했다 — 엄폐가 없다')
+    assert.ok(!hit, '과녁 뒤에 있는데 맞았다')
   })
 
   it('돌진 접촉은 체력을 깎는다 (화살 강탈이 아니라)', () => {

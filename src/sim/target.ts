@@ -116,6 +116,9 @@ function fireEnemyShot(w: World, tg: Target): void {
   } else {
     ang = Math.atan2(dy, dx)
   }
+  // 조준 산포 — 적도 사람이다 (형: "무조건 백발백중이야?"). w.rng를 쓰지만 결정론은
+  // 그대로다: 발사 시각이 결정론적이라 소비 순서도 판마다 같다 (A1).
+  ang += w.rng.gaussian() * P.enemy.aimScatter
   slot.alive = true
   slot.x = tg.x
   slot.y = tg.y
