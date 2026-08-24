@@ -536,7 +536,7 @@ function drawArrows(ctx: CanvasRenderingContext2D, cam: Camera, w: World, alpha:
     const tipX = worldToScreenX(cam, wx)
     const tipY = worldToScreenY(cam, wy)
     // 애기살(편전)은 반 길이 — 통아를 떠난 짧은 살이 그대로 난다 (stickman.ts와 같은 비율).
-    const shaft = w.arrowKind === 'pierce' ? DRAW.arrowLen * 0.52 : DRAW.arrowLen
+    const shaft = ar.kind === 'pierce' ? DRAW.arrowLen * 0.52 : DRAW.arrowLen
     const backX = worldToScreenX(cam, wx - ux * shaft)
     const backY = worldToScreenY(cam, wy - uy * shaft)
     // 화면 방향의 단위 벡터. 월드는 y가 위로 +, 화면은 아래로 + 라 여기서 한 번 뒤집힌다.

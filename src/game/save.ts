@@ -421,6 +421,14 @@ export function wipeSave(): void {
   }
 }
 
+/**
+ * 저장 **없이** 구독자만 깨운다. 판 도중 매 발 바뀌는 값(살통 재고)을 화면이 따라가야
+ * 하는데, 그때마다 localStorage에 쓰면 A3(저장은 판 종료·탭 이탈뿐)가 깨진다.
+ */
+export function pokeSave(d: SaveData): void {
+  for (const fn of listeners) fn(d)
+}
+
 export function writeSave(d: SaveData): void {
   d.v = SCHEMA_VERSION
   // **여기서 lastSeen에 도장을 찍지 않는다.** 저장은 판 보상·성장·탭 이탈 등 아무 때나 일어나고,

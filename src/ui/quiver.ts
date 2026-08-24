@@ -1,9 +1,9 @@
 /**
  * 살통 — 특수살 재고와 다음 판 장전 (docs/RUN.md · game/supply.ts)
  *
- * HUD 구석의 버튼 줄이다. 누르면 **다음 판**에 그 살을 장전한다(재고 1 소모는 판이
- * 시작될 때 loop가 한다). 다시 누르면 취소. 판 도중에는 아무것도 바꾸지 않는다 —
- * 화살 종류는 판 경계에서만 바뀐다 (A1).
+ * HUD 구석의 버튼 줄이다. 누르면 **그 자리에서 바꿔 든다** (형: "클릭한 걸 지금 당장
+ * 들고 있어야지") — loop가 세이브 통지를 받아 즉시 장전한다. 다시 누르면 유엽전으로.
+ * 소모는 쏠 때 발당 1이고, 이미 날아간 화살은 제 성질대로 난다 (Arrow.kind).
  *
  * 유엽전은 무한이라 버튼이 없다. 재고가 있(었)는 살만 줄에 선다 —
  * 한 번도 못 가져본 살은 보이지 않는 것이 맞다. 뭐가 있는지는 보스가 알려준다.
@@ -50,7 +50,7 @@ export function mountQuiver(o: Overlay, d: SaveData): void {
       // 아이콘이 먼저, 이름이 다음 — 색과 도형이 글자보다 빨리 읽힌다 (ui/arrowicons.ts).
       btn.style.setProperty('--tint', ARROW_TINT[k.id])
       btn.innerHTML = `<span class="q-ic">${arrowIconSvg(k.id, 20)}</span>${k.name}<b>×${stock}</b>`
-      btn.setAttribute('aria-label', `${k.name} ${stock}발${armed ? ' · 다음 판 장전됨' : ''}`)
+      btn.setAttribute('aria-label', `${k.name} ${stock}발${armed ? ' · 들고 있음' : ''}`)
       btn.disabled = stock <= 0 && !armed
       btn.addEventListener('click', () => {
         // 토글 — 장전을 물리면 유엽전으로 돌아간다. 재고는 판이 시작될 때에만 줄어든다.
@@ -63,8 +63,8 @@ export function mountQuiver(o: Overlay, d: SaveData): void {
     hint.textContent = !any
       ? ''
       : d.runArrow === DEFAULT_ARROW
-        ? '살통 — 누르면 다음 판에 장전 (판당 1발)'
-        : `다음 판: ${ARROW_KINDS.find((a) => a.id === d.runArrow)?.name ?? ''}`
+        ? '살통 — 누르면 바로 바꿔 든다 (쏠 때 1발)'
+        : `들고 있음: ${ARROW_KINDS.find((a) => a.id === d.runArrow)?.name ?? ''}`
     wrap.style.display = any ? '' : 'none'
   }
 

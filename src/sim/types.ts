@@ -120,6 +120,14 @@ export interface Arrow {
    */
   id: number
   alive: boolean
+  /**
+   * 이 화살의 종류와 효과판 — **발사 순간에 굳는다.** 판 도중 장전을 바꿔도(armArrow)
+   * 이미 날아가는 화살은 제 성질대로 난다. world 수준 fx만 있던 시절에는 장전을 바꾸면
+   * 공중의 화살까지 성질이 변했다.
+   */
+  kind: ArrowKindId
+  /** arrowFx(kind)가 주는 공유 객체 참조라 발사마다 할당이 없다 (A5). */
+  fx: ArrowFx
   x: number
   y: number
   /** 직전 스텝 위치. 렌더 보간 + 터널링 방지 판정에 쓴다. */

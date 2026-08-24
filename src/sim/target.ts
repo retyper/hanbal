@@ -76,7 +76,8 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
   // r이 0인 과녁은 정의상 항상 중심 명중. 0으로 나누면 NaN이 판 전체를 죽인다.
   let accuracy = target.r > 0 ? clamp01(1 - Math.sqrt(dsq) / target.r) : 1
 
-  const fx = w.fx
+  // 효과판은 화살 자신의 것 — 판 도중 장전이 바뀌어도 이 발은 제 성질대로 맞는다.
+  const fx = arrow.fx
   arrow.struck++
 
   // ── 보스의 머리 (docs/RUN.md 3장) ──

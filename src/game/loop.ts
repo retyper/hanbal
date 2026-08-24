@@ -13,14 +13,14 @@
  * 렌더 쪽 분업: renderer.draw 안에서 pumpEvents·updateCamera·updateFx가 실시간(dtReal)으로 돈다.
  * 루프는 이벤트를 **비우는 것**만 책임진다 — scene.ts / effects.ts / audio 가 읽되 비우지 않기로 했다.
  */
-import { cancelDraw, createWorld, isSettled, requireFreshPress, resetWorld, restArcher, step } from '../sim/world.ts'
+import { armArrow, armBow, cancelDraw, createWorld, isSettled, requireFreshPress, resetWorld, restArcher, step } from '../sim/world.ts'
 import type { ArrowKindId } from '../sim/types.ts'
 import { createInput } from '../input/pointer.ts'
 import { createRenderer, getCamera, getHitStopMs } from '../render/scene.ts'
 import type { HudState } from '../render/hud.ts'
 import { createSfx, playUi, pumpSfx, sfxMuted, toggleMute, unlockSfx, updateSfx } from '../audio/sfx.ts'
 import { getStage } from './stages.ts'
-import { onSaveChanged, writeSave, type SaveData } from './save.ts'
+import { onSaveChanged, pokeSave, writeSave, type SaveData } from './save.ts'
 import { settleOffline, type OfflineGain } from './offline.ts'
 import { awardRun, canGrow, grantArrows, type StatKey } from './progression.ts'
 import { arrowName, DEFAULT_ARROW } from './arrows.ts'
@@ -159,6 +159,24 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   if (save.runSeed === 0) save.runSeed = (Date.now() ^ 0x9e3779b9) >>> 0
   const runRng = makeRng(save.runSeed)
 
+  /**
+   * 장전·활의 즉시 반영 (형: "클릭한 걸 지금 당장 들고 있어야지").
+   *
+   * 살통 버튼·활 걸이는 세이브만 고치고 통지한다 — 여기가 그 통지를 받아 sim에 옮긴다.
+   * 이미 날아간 화살은 발사 때 굳힌 자기 fx로 날므로(A1, Arrow.kind) 공중에서 변하지 않는다.
+   */
+  const rearm = (): void => {
+    let kind = save.runArrow
+    if (kind !== DEFAULT_ARROW && Math.floor(save.arrowStock[kind] ?? 0) <= 0) kind = DEFAULT_ARROW
+    if (w.arrowKind !== kind) {
+      armArrow(w, kind)
+      hud.arrow = kind === DEFAULT_ARROW ? '' : arrowName(kind)
+    }
+    armBow(w, bowMods(save.bow, kind, masteryLevel(save.bowHits[save.bow] ?? 0)))
+    w.bowSkin = save.bow
+  }
+  const unRearm = onSaveChanged(rearm)
+
   // 매 프레임 제자리에서 갱신한다. 새로 만들지 않는다 (A5).
   const hud: HudState = { training: 0, canLevelUp: false, muted: false, toast: '', arrow: '', stars: -1 }
 
@@ -209,16 +227,12 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   }
 
   const loadStage = (requested: ArrowKindId): void => {
-    // ── 장전 (docs/RUN.md · game/supply.ts) ──
-    // 특수살은 재고에서 1 소모. 없으면 유엽전으로 — 판이 막히는 일은 없다.
+    // ── 장전 (docs/RUN.md 4장) ──
+    // 든 살은 판을 넘어도 그대로다 (형: "변경한 걸 그대로 들고 있어야지").
+    // 소모는 여기가 아니라 **쏠 때 발당 1**이다 (tick의 release 처리). 재고가 없으면 유엽전.
     let kind = requested
-    if (kind !== DEFAULT_ARROW) {
-      const have = Math.floor(save.arrowStock[kind] ?? 0)
-      if (have > 0) save.arrowStock[kind] = have - 1
-      else kind = DEFAULT_ARROW
-    }
-    // 예약은 한 판짜리다. 다음 판은 다시 유엽전 — 아껴둔 살이 자동으로 새지 않는다.
-    save.runArrow = DEFAULT_ARROW
+    if (kind !== DEFAULT_ARROW && Math.floor(save.arrowStock[kind] ?? 0) <= 0) kind = DEFAULT_ARROW
+    save.runArrow = kind
     // 정산 전에 판을 갈아엎으면 보상이 통째로 사라진다. 아직 안 줬으면 여기서 준다.
     // (isSettled를 기다리는 동안 사용자가 다음 판으로 넘기는 경로가 실제로 존재한다.)
     if (!awarded && w.status !== 'playing') {
@@ -276,11 +290,10 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       // 화면이 아니라 여기서 낸다 — 어차피 콜백이 정확히 한 번 오는 자리다.
       playUi(sfx, 'press')
       save.bow = pick.bow
-      save.runArrow = DEFAULT_ARROW
       save.runActive = true
       save.runScore = 0
       stageIndex = 0
-      loadStage(DEFAULT_ARROW)
+      loadStage(save.runArrow)
     })
   }
 
@@ -458,7 +471,22 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     for (let i = 0; i < w.events.length; i++) {
       const ev = w.events[i]
       if (ev === undefined) continue
-      if (ev.t === 'hit') {
+      if (ev.t === 'release') {
+        // ── 특수살 소모 — 쏜 발만큼 (docs/RUN.md 4장) ──
+        // 분열 자식·사슬 도약은 release가 아니라 여기 안 걸린다. 이 발의 결과물이니까.
+        const kind = w.arrowKind
+        if (kind !== DEFAULT_ARROW) {
+          const left = Math.floor(save.arrowStock[kind] ?? 0) - 1
+          save.arrowStock[kind] = left > 0 ? left : 0
+          if (left <= 0) {
+            // 살통이 비었다 — 유엽전으로 바꿔 든다. 다음 발이 조용히 증발하면 배신이다.
+            save.runArrow = DEFAULT_ARROW
+            armArrow(w, DEFAULT_ARROW)
+          }
+          // 저장은 하지 않는다 (A3: 판 종료·탭 이탈뿐). 화면(살통 버튼)만 깨운다.
+          pokeSave(save)
+        }
+      } else if (ev.t === 'hit') {
         hits++
         if (ev.accuracy >= bullseyeAcc()) bullseyes++
       } else if (ev.t === 'miss') {
@@ -631,6 +659,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       renderer.resize()
     },
     dispose(): void {
+      unRearm()
       wanted = false
       halt()
       unsubscribe()

@@ -10,7 +10,8 @@ import { P } from '../tune/params.ts'
 import { effectiveStats } from './bow.ts'
 import { resolveHit } from './target.ts'
 import { TRAIL_POINTS } from './types.ts'
-import type { Arrow, World } from './types.ts'
+import type { ArrowFx } from './arrowfx.ts'
+import type { Arrow, ArrowKindId, World } from './types.ts'
 
 /**
  * 궤적 표본 간격 (스텝). 매 스텝 기록하면 48점이 0.4초밖에 못 담아
@@ -35,14 +36,18 @@ export function spawnArrow(w: World, angle: number, power: number): Arrow | null
 
   const d = effectiveStats(w.stats)
   const pw = clamp01(power)
+  // 이 발의 종류는 **지금 장전된 것**이다. 여기서 굳혀야 판 도중의 교체(armArrow)가
+  // 공중의 화살을 건드리지 않는다.
+  const kind = w.arrowKind
+  const fx = w.fx
   // drawCurve > 1 이라 만작 근처에서 속도가 급격히 붙는다. 실제 활의 장력 곡선이 이렇다.
   // 화살 종류의 초속 배수(무거운 살 0.72)는 여기서 한 번만 곱한다.
   // 활의 초속 배수도 여기서 한 번만 (docs/BOWS.md — 각궁 +8% · 장궁 +15% · 리커브 -8%).
   const speed =
     lerp(P.bow.minSpeed, P.bow.maxSpeed, Math.pow(pw, P.bow.drawCurve))
-      * d.speedMul * w.fx.speedMul * w.bow.speedMul
+      * d.speedMul * fx.speedMul * w.bow.speedMul
 
-  launch(a, w.archer.x, w.archer.y, angle, speed, pw, 0)
+  launch(a, w.archer.x, w.archer.y, angle, speed, pw, 0, kind, fx)
 
   w.arrowsLeft--
   return a
@@ -72,8 +77,11 @@ function freeSlot(w: World, except?: Arrow): Arrow | null {
 /** 슬롯 하나를 발사 상태로 세운다. 발사·분열이 같은 초기화를 쓰게 한 곳에 모은다. */
 function launch(
   a: Arrow, x: number, y: number, angle: number, speed: number, power: number, splitDepth: number,
+  kind: ArrowKindId, fx: ArrowFx,
 ): void {
   a.alive = true
+  a.kind = kind
+  a.fx = fx
   a.x = x
   a.y = y
   a.px = x
@@ -127,7 +135,7 @@ export function stepArrows(w: World): void {
     // 항력은 속도 제곱에 비례하고 방향은 상대속도 반대 → 성분별로 k * |v| * v_i.
     // 질량으로 나누지 않는다. P.arrow.drag 자체가 가속도 계수(항력/질량)로 튜닝된 값이다.
     // 무거운 살은 같은 공기에 덜 밀린다 (fx.dragMul).
-    const k = P.arrow.drag * w.fx.dragMul * rSpeed
+    const k = P.arrow.drag * a.fx.dragMul * rSpeed
     a.vx -= k * rvx * dt
     a.vy -= k * rvy * dt
     // y가 위쪽 +이므로 중력은 vy를 깎는다
@@ -207,7 +215,7 @@ export function stepArrows(w: World): void {
  * 속도의 **방향만** 돌린다. 크기를 건드리면 "발사 후 역학적 에너지는 증가하지 않는다"가 깨진다.
  */
 function steerHoming(w: World, a: Arrow): void {
-  const fx = w.fx
+  const fx = a.fx
   if (fx.homingTurn <= 0 || a.age < fx.homingDelay) return
 
   const speed = Math.sqrt(a.vx * a.vx + a.vy * a.vy)
@@ -257,7 +265,9 @@ function steerHoming(w: World, a: Arrow): void {
  * 풀이 꽉 차 슬롯이 없으면 그만큼 덜 갈라진다 — 판이 죽는 것보다 낫다 (A5, 할당 0).
  */
 function spawnSplit(w: World, parent: Arrow, angle: number, speed: number): void {
-  const fx = w.fx
+  // 자식은 부모의 성질을 물려받는다 — 장전이 바뀌어도 갈라진 살은 부모의 종류다.
+  const fx = parent.fx
+  const pkind = parent.kind
   const n = Math.floor(fx.splitCount)
   if (n <= 0 || speed <= 0) return
   const childSpeed = speed * fx.splitSpeedKeep
@@ -277,7 +287,7 @@ function spawnSplit(w: World, parent: Arrow, angle: number, speed: number): void
     if (child === null) return
     // ±로 대칭 배분. n=2 면 ±splitAngle, n=3 이면 -a, 0, +a.
     const t = n > 1 ? (i / (n - 1)) * 2 - 1 : 0
-    launch(child, ox, oy, angle + fx.splitAngle * t, childSpeed, power, depth)
+    launch(child, ox, oy, angle + fx.splitAngle * t, childSpeed, power, depth, pkind, fx)
   }
 }
 
@@ -290,7 +300,7 @@ function spawnSplit(w: World, parent: Arrow, angle: number, speed: number): void
  * @returns 실제로 튀었는가
  */
 function bounceChain(w: World, a: Arrow, speed: number): boolean {
-  const fx = w.fx
+  const fx = a.fx
   if (fx.chainBounces <= 0 || speed <= 0) return false
 
   const targets = w.targets

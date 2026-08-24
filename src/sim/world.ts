@@ -77,6 +77,8 @@ function newArrow(id: number): Arrow {
   return {
     id,
     alive: false,
+    kind: 'basic',
+    fx: arrowFx('basic'),
     x: 0,
     y: 0,
     px: 0,
@@ -330,6 +332,21 @@ export function createWorld(
 }
 
 /**
+ * 장전 교체 — **다음 발부터** 이 종류다 (형: "클릭한 걸 지금 당장 들고 있어야지").
+ * 이미 날아가는 화살은 발사 때 굳힌 자기 fx로 난다 (Arrow.kind 주석).
+ * 입력이 이끄는 상태 변화라 결정론은 그대로다 — 같은 입력 열 = 같은 판 (A1).
+ */
+export function armArrow(w: World, kind: ArrowKindId): void {
+  w.arrowKind = kind
+  w.fx = arrowFx(kind)
+}
+
+/** 활 교체 — 다음 스텝부터 이 배수다. 근거는 armArrow와 같다. */
+export function armBow(w: World, bow: BowMods): void {
+  copyBow(w.bow, bow)
+}
+
+/**
  * 판 재시작. **새 World 를 만들지 않는다.**
  * R 키 연타로 매번 객체를 새로 만들면 GC 가 프레임을 끊어먹는다 (A5).
  */
@@ -342,8 +359,8 @@ export function resetWorld(
   // hz 는 튜닝 콘솔에서 바뀔 수 있다. 판 시작마다 다시 읽어야 슬라이더가 먹는다.
   w.dt = 1 / P.sim.hz
 
-  // 화살 종류는 **판 경계에서만** 바뀐다. 판 도중에 바뀌면 같은 시드가 다른 판이 된다 (A1).
-  // 인자를 안 주면 직전 판의 종류를 그대로 이어간다 (R 재시작이 화살을 잃지 않게).
+  // 화살 종류의 초기값. 판 도중의 교체는 armArrow가 한다 — 즉시 장전 (docs/RUN.md 4장).
+  // 인자를 안 주면 직전 판의 종류를 그대로 이어간다.
   if (arrow !== undefined) w.arrowKind = arrow
   // 효과 수치를 P에서 다시 굽는다. 튜닝 콘솔로 노브를 움직인 게 여기서 먹는다 (A2).
   refreshArrowFx()
