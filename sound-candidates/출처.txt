@@ -1,0 +1,15 @@
+클리어음 후보 2차 (2026-08-24) — 전부 다운로드한 실물 음원. 합성 아님.
+
+01~12  Freesound.org 검색 "level complete" / "victory jingle"
+       라이선스 CC0 필터 + 다운로드순 정렬 상위 결과의 고음질 프리뷰.
+       01 levelComplete (ID 376009) · 02 Level win (258142) · 03 Level Up/Mission Complete (528958)
+       04 Complete (538145) · 05 Level completed (534797) · 06 piglevelwin2 (275104)
+       07 Video game level complete (787559) · 08 Victory Jingle (844831)
+       09 You've succeeded (626259) · 10 Victory short sting (706753)
+       11 Goal cleared (545697) · 12 Tadaa (415504)
+13~15  Juhani Junkala "The Essential Retro Video Game Sound Effects Collection [512]"
+       (OpenGameArt, CC0) — 게임잼에서 가장 널리 쓰이는 무료 팩의 Fanfares.
+16~19  Little Robot Sound Factory "8-Bit Sound Effects Library" (OpenGameArt, CC-BY 3.0)
+       — 채택 시 CREDITS.txt에 "Little Robot Sound Factory" 표기 필요.
+
+채택 방법: 번호를 말하면 public/sfx/jingleClear.ogg 로 변환·교체해 배포한다.
