@@ -62,8 +62,8 @@ const loop = createLoop(el, {
       ),
     // 보스 보급 3택 (docs/RUN.md) — 특수살 재고의 유일한 큰 획득처.
     supply: (offer, count, onPick) => mountSupply(overlay, offer, count, onPick),
-    runOver: (reached, score, best, isNew, onNext) =>
-      showRunOver(overlay, reached, score, best, isNew, onNext),
+    runOver: (reached, score, best, isNew, reason, onNext) =>
+      showRunOver(overlay, reached, score, best, isNew, reason, onNext),
     toast: (t) => overlay.toast(t),
     // 새로 열린 것은 구석 알림 한 줄. 모달로 막지 않는다 (C1).
     unlocked: (ids) => showUnlocked(overlay, ids),

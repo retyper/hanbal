@@ -980,6 +980,50 @@ export function pumpSfx(sfx: Sfx, w: World): void {
         BL.type = 'sine'
         bellTone(s, n === 0 ? K_PICKUP : K_CHAIN_BELL, BL)
       }
+    } else if (e.t === 'enemy_draw') {
+      // 적의 당김 — 낮게 조여 올라가는 경고. 크지 않게, 대신 반드시 들리게 (예고의 계약).
+      TN.type = 'triangle'
+      TN.freq = SFX.escapeEndFreq
+      TN.endFreq = SFX.escapeFreq
+      TN.dur = 0.5
+      TN.attack = 0.05
+      TN.decay = 0.5
+      TN.gain = P.audio.escapeGain * 0.7
+      TN.delay = 0
+      tone(s, K_ESCAPE, TN)
+    } else if (e.t === 'enemy_shot') {
+      // 적 화살의 출발 — 짧은 바람소리.
+      NB.filterType = 'bandpass'
+      NB.freq = 1400
+      NB.endFreq = 500
+      NB.q = 1.2
+      NB.dur = 0.16
+      NB.attack = 0.004
+      NB.decay = 0.16
+      NB.gain = P.audio.escapeGain * 0.8
+      NB.delay = 0
+      noiseBurst(s, K_ESCAPE, NB)
+    } else if (e.t === 'player_hit') {
+      // 맞았다 — 이 게임에서 가장 무거운 저역. 놀라야 하지만 벌주듯 크면 안 된다.
+      TN.type = 'triangle'
+      TN.freq = SFX.escapeFreq
+      TN.endFreq = 55
+      TN.dur = 0.42
+      TN.attack = 0.002
+      TN.decay = 0.42
+      TN.gain = P.audio.escapeGain * 1.6
+      TN.delay = 0
+      tone(s, K_ESCAPE, TN)
+      NB.filterType = 'lowpass'
+      NB.freq = 500
+      NB.endFreq = 0
+      NB.q = 0.7
+      NB.dur = 0.3
+      NB.attack = 0.002
+      NB.decay = 0.3
+      NB.gain = P.audio.escapeGain
+      NB.delay = 0
+      noiseBurst(s, K_DEBRIS, NB)
     } else if (e.t === 'escape') {
       // 아래로 떨어지는 두 겹. 실패를 조롱하지 않는다 — 놀라게만 하고 끝난다.
       TN.type = 'triangle'

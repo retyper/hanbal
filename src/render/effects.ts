@@ -521,6 +521,11 @@ export function pumpEvents(fx: Fx, w: World): void {
       // 점수 팝과 같은 자리에서 겹치지 않게 아래에서 올라오기 때문이다 (popups.ts lift).
       pushPopup(fx.pop, e.x, e.y, e.gain > 1 ? `화살 +${e.gain}` : '화살 +1', 'feat')
       spawn(fx, e.x, e.y, FX.hitBurst, KIND_CHAIN, FX.speed, FX.ttl, 1.2)
+    } else if (e.t === 'player_hit') {
+      // 맞았다 — 콤보가 끊기고 시간이 잠깐 멈춘다. 남은 체력이 아니라 잃었다는 사실을 띄운다.
+      fx.comboRun = 0
+      fx.hitStop += P.hit.stopMs * 0.002
+      pushPopup(fx.pop, w.archer.x + 1.2, w.archer.y + 1.2, e.hp <= 0 ? '쓰러졌다' : '피격 !', 'crit')
     } else if (e.t === 'escape') {
       // 빼앗겼다. 콤보도 여기서 끊긴다 (sim이 이미 끊었다 — 렌더 카운터도 맞춘다).
       fx.comboRun = 0

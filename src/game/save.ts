@@ -19,7 +19,7 @@ import { STAGES } from './stages.ts'
 const KEY = 'hanbal.save.v1'
 
 /** 현재 스키마 버전. 필드를 바꿀 때마다 +1 하고 MIGRATIONS에 한 줄 추가한다. */
-export const SCHEMA_VERSION = 6
+export const SCHEMA_VERSION = 7
 
 /**
  * 오프라인 축적의 소수부 (자원 단위). 세 자원의 축적 속도가 달라 하나로 합칠 수 없다.
@@ -88,6 +88,8 @@ export interface SaveData {
   runScore: number
   /** 누적 보스 처치 수 — 활 해금의 재료 (docs/RUN.md). **줄지 않는다.** */
   bossKills: number
+  /** 이번 여정의 남은 체력 (docs/RUN.md 6장). 판을 넘어 이어지고, 새 여정에 가득 찬다. */
+  runHp: number
   /**
    * 특수살 재고 (game/supply.ts). 화살 id → 남은 발 수. 유엽전은 무한이라 여기 없다.
    * 한 판에 장전할 때 1 소모. 0이어도 키를 지우지 않는다 — "가져본 적 있음"이
@@ -159,6 +161,7 @@ export function defaultSave(now: number): SaveData {
     runCount: 0,
     runScore: 0,
     bossKills: 0,
+    runHp: Math.floor(P.enemy.hpMax),
     arrowStock: {},
     bullseyes: 0,
     perfectRuns: 0,
@@ -248,6 +251,9 @@ const MIGRATIONS: ReadonlyArray<(r: Raw) => void> = [
     if (r['arrowStock'] === undefined) r['arrowStock'] = stock
     r['unlocked'] = u.filter((id) => typeof id !== 'string' || !id.startsWith('arrow.'))
   },
+
+  /** v6 → v7: 체력이 생겼다 (docs/RUN.md 6장). 빠진 필드는 sanitize가 가득으로 채운다. */
+  () => {},
 ]
 
 function migrate(r: Raw): void {
@@ -359,6 +365,7 @@ function sanitize(r: Raw, now: number): SaveData {
     runCount: int(r['runCount'], 0, 0, HARD_MAX),
     runScore: int(r['runScore'], 0, 0, HARD_MAX),
     bossKills: int(r['bossKills'], 0, 0, HARD_MAX),
+    runHp: int(r['runHp'], Math.floor(P.enemy.hpMax), 0, 99),
     arrowStock: sanitizeBest(r['arrowStock']),
     bullseyes: int(r['bullseyes'], 0, 0, HARD_MAX),
     perfectRuns: int(r['perfectRuns'], 0, 0, HARD_MAX),

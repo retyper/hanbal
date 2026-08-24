@@ -35,14 +35,29 @@ export function stepTargets(w: World): void {
       // x·y 같은 위상을 쓴다. 그래야 t=0에서 스테이지가 적어둔 base 위치와 정확히 일치한다.
       tg.x = tg.baseX + tg.ampX * s
       tg.y = tg.baseY + tg.ampY * s
+    } else if (tg.kind === 'archer') {
+      // ── 적 궁수 (docs/RUN.md 6장) — 주기적으로 나를 쏜다 ──
+      // 시계는 elapsed 뿐이다 (A1). windup 진입 순간 예고 이벤트가 한 번 나간다 —
+      // 렌더는 당기는 자세를, 소리는 삐걱임을 이걸로 만든다. 예고 없는 피해는 없다.
+      // 첫 발사가 windup보다 이르면 예고 시각이 판 시작 전(음수)이다 — 첫 스텝에 예고한다.
+      const windStart = tg.fireAt - P.enemy.windup
+      if (time >= windStart && (time - dt < windStart || time - dt <= 0)) {
+        w.events.push({ t: 'enemy_draw', x: tg.x, y: tg.y })
+      }
+      if (time >= tg.fireAt) {
+        tg.fireAt += P.enemy.shootEvery
+        fireEnemyShot(w, tg)
+      }
     } else if (tg.kind === 'boss') {
       // 보스 — 느리게, 그러나 멈추지 않고 온다 (docs/RUN.md 3장). 판이 끝나면 멈춘다.
       if (w.status === 'playing') tg.x -= tg.speed * dt
       tg.y = tg.baseY + Math.sin(time * P.target.chargeBobFreq * TAU) * P.target.chargeBob
       if (tg.x <= w.archer.x + P.target.chargeReach && w.status === 'playing') {
-        // 닿았다 — 이 판을 진다. **보스를 죽이지 않는다** — 여기서 alive를 끄면 같은 스텝의
-        // evaluateEnd(스텝 머리의 playing 스냅샷)가 '과녁 전멸 = 클리어'로 뒤집는다.
-        w.events.push({ t: 'escape', x: tg.x, y: tg.y, lost: 0 })
+        // 닿았다 — 즉사다. 보스에게 깔리고 사는 궁수는 없다. **보스를 죽이지 않는다** —
+        // 여기서 alive를 끄면 같은 스텝의 evaluateEnd(스텝 머리의 playing 스냅샷)가
+        // '과녁 전멸 = 클리어'로 뒤집는다.
+        w.hp = 0
+        w.events.push({ t: 'player_hit', hp: 0 })
         w.status = 'failed'
         w.events.push({ t: 'stage_end', cleared: false, score: w.score })
       }
@@ -52,13 +67,19 @@ export function stepTargets(w: World): void {
       // 다가오면서 살짝 위아래로 흔들린다. 일직선으로만 오면 물체가 아니라 슬라이더로 보인다.
       tg.y = tg.baseY + Math.sin(time * P.target.chargeBobFreq * TAU) * P.target.chargeBob
       if (tg.x <= w.archer.x + P.target.chargeReach) {
-        // 닿았다. 화살을 하나 빼앗고 사라진다 — 체력도 게임 오버도 없다 (C2).
+        // 닿았다 — 몬스터다. 체력을 깎고 사라진다 (docs/RUN.md 6장 — "몬스터가 나를 공격").
         // 판이 안 깨지게 과녁 자체는 확실히 제거한다. 남겨두면 클리어가 영원히 안 된다.
-        const lost = w.arrowsLeft > 0 ? 1 : 0
-        w.arrowsLeft -= lost
         tg.alive = false
         w.combo = 0
-        w.events.push({ t: 'escape', x: tg.x, y: tg.y, lost })
+        w.events.push({ t: 'escape', x: tg.x, y: tg.y, lost: 0 })
+        if (w.status === 'playing' && P.enemy.chargerDamage > 0) {
+          w.hp = Math.max(0, w.hp - Math.floor(P.enemy.chargerDamage))
+          w.events.push({ t: 'player_hit', hp: w.hp })
+          if (w.hp <= 0) {
+            w.status = 'failed'
+            w.events.push({ t: 'stage_end', cleared: false, score: w.score })
+          }
+        }
       }
     }
     // static / pierceable / bonus / 낙하 전 aerial 은 정지. 위치를 건드리지 않는다.
@@ -67,6 +88,42 @@ export function stepTargets(w: World): void {
     tg.vx = (tg.x - tg.px) / dt
     tg.vy = (tg.y - tg.py) / dt
   }
+}
+
+/**
+ * 적 궁수의 발사. 궁수(플레이어)의 현재 위치를 겨눈 탄도해 — 낮은 호를 고른다.
+ * 난수를 쓰지 않는다 (A1). 못 푸는 거리면(속도 부족) 직사로 던진다 — 어차피 못 미친다.
+ */
+function fireEnemyShot(w: World, tg: Target): void {
+  let slot: import('./types.ts').EnemyShot | null = null
+  for (let i = 0; i < w.shots.length; i++) {
+    const sh = w.shots[i]
+    if (sh !== undefined && !sh.alive) { slot = sh; break }
+  }
+  if (slot === null) return
+
+  const v = P.enemy.arrowSpeed
+  const g = P.arrow.gravity
+  const dx = w.archer.x - tg.x
+  const dy = w.archer.y - tg.y
+  // 포물선 조준각: tanθ = (v² - √(v⁴ - g(g·dx² + 2·dy·v²))) / (g·dx)  (낮은 호)
+  const disc = v * v * v * v - g * (g * dx * dx + 2 * dy * v * v)
+  let ang: number
+  if (disc >= 0 && dx !== 0) {
+    ang = Math.atan((v * v - Math.sqrt(disc)) / (g * dx))
+    // dx가 음수(적은 항상 오른쪽에 있으니 왼쪽으로 쏜다)면 각을 반대쪽으로 편다.
+    if (dx < 0) ang += Math.PI
+  } else {
+    ang = Math.atan2(dy, dx)
+  }
+  slot.alive = true
+  slot.x = tg.x
+  slot.y = tg.y
+  slot.px = tg.x
+  slot.py = tg.y
+  slot.vx = Math.cos(ang) * v
+  slot.vy = Math.sin(ang) * v
+  w.events.push({ t: 'enemy_shot', x: tg.x, y: tg.y })
 }
 
 export function resolveHit(w: World, arrow: Arrow, target: Target): void {
@@ -156,6 +213,10 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
     target.hp -= head ? Math.floor(P.target.bossCritDmg) : 1
     if (target.hp > 0) return
     target.alive = false
+  } else if (target.kind === 'archer' && target.hp > 1) {
+    // 깊은 판의 적 궁수는 두 발을 버틴다. 살아 있으면 계속 쏜다 — 우선순위가 더 급해진다.
+    target.hp -= 1
+    return
   } else if (target.kind === 'aerial') {
     // 공중 과녁은 맞아도 사라지지 않는다. 떨어지면서 아래를 연쇄로 쳐야 한다 (GDD 7장).
     target.falling = true

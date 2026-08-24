@@ -133,7 +133,8 @@ export function mountTuneConsole(): () => void {
     const t = row.querySelector('.t') as HTMLElement
     const out = row.querySelector('.v') as HTMLElement
     const u = row.querySelector('.u') as HTMLElement
-    t.textContent = knob.label
+    // 배포판은 라벨이 벗겨져 있다 (vite.config.ts stripTuneLabels) — 경로가 이름이 된다.
+    t.textContent = knob.label !== '' ? knob.label : path
     t.title = path
     out.textContent = fmt(current, knob.step)
     u.textContent = knob.unit ?? ''

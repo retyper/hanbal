@@ -221,6 +221,10 @@ export function updateCamera(cam: Camera, w: World, dtReal: number): void {
         // 폭발은 명중보다 크게 흔든다. 이게 "터졌다"의 몸으로 오는 신호다.
         cx.shakeAmp = P.hit.shakeAmp * VIEW.burstShakeMul
         cx.shakeAge = 0
+      } else if (e.t === 'player_hit') {
+        // 맞은 건 폭발보다 무겁다 — 화면이 제일 크게 흔들리는 사건이어야 한다.
+        cx.shakeAmp = P.hit.shakeAmp * VIEW.burstShakeMul * 1.4
+        cx.shakeAge = 0
       } else if (e.t === 'chain' && e.depth >= VIEW.chainZoomDepth) {
         cx.zoomOut = VIEW.chainZoomOut
       }

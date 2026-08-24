@@ -4,7 +4,7 @@
  * ARCHITECTURE A1: World는 읽기만 한다. events도 읽되 비우지 않는다 (게임 루프가 소비).
  * A5: save/restore 남발 금지, shadowBlur·filter 금지, 프레임당 힙 할당 0.
  */
-import { TAU, lerp, valueNoise } from '../core/math.ts'
+import { TAU, clamp01, lerp, valueNoise } from '../core/math.ts'
 import { P } from '../tune/params.ts'
 import { TRAIL_POINTS } from '../sim/types.ts'
 import type { Target, World } from '../sim/types.ts'
@@ -365,7 +365,72 @@ function drawTargets(
       }
     }
 
-    if (t.kind === 'boss') {
+    if (t.kind === 'archer') {
+      // ── 적 궁수 (docs/RUN.md 6장) — 과녁이 아니라 **사람 실루엣**이어야 한다 ──
+      // windup(당김 예고) 동안 활이 당겨지고 색이 달아오른다. 예고 없는 피해는 없다.
+      const wind = P.enemy.windup
+      const f = t.fireAt > 0
+        ? clamp01(1 - (t.fireAt - w.elapsed) / wind)
+        : 0
+      const drawF = w.elapsed >= t.fireAt - wind ? f : 0
+      const hot = drawF > 0
+      const bodyCol = hot ? THEME.threat : THEME.threatDim
+
+      // 조준선 예고 — 당김이 깊어질수록 또렷해진다. "곧 저기서 날아온다"를 먼저 보여준다.
+      if (hot) {
+        ctx.globalAlpha = 0.22 * drawF
+        ctx.strokeStyle = THEME.threat
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.moveTo(x, y)
+        ctx.lineTo(worldToScreenX(cam, w.archer.x), worldToScreenY(cam, w.archer.y))
+        ctx.stroke()
+        ctx.globalAlpha = 1
+      }
+
+      // 사람 실루엣 — 머리·몸통·다리. 이쪽(-x)을 보고 선다.
+      ctx.strokeStyle = bodyCol
+      ctx.lineWidth = Math.max(2, rx * 0.14)
+      ctx.lineCap = 'round'
+      const hr = rx * 0.3
+      const headY = y - ry * 0.62
+      ctx.beginPath()
+      ctx.moveTo(x, headY + hr)
+      ctx.lineTo(x, y + ry * 0.3)
+      ctx.moveTo(x, y + ry * 0.3)
+      ctx.lineTo(x - rx * 0.34, y + ry)
+      ctx.moveTo(x, y + ry * 0.3)
+      ctx.lineTo(x + rx * 0.34, y + ry)
+      ctx.stroke()
+      ctx.fillStyle = bodyCol
+      ctx.beginPath()
+      ctx.arc(x, headY, hr, 0, TAU)
+      ctx.fill()
+
+      // 활 — 몸 앞(-x)의 호. 당길수록 시위가 몸쪽으로 당겨진다.
+      const bx = x - rx * 0.55
+      ctx.strokeStyle = bodyCol
+      ctx.lineWidth = Math.max(1.5, rx * 0.1)
+      ctx.beginPath()
+      ctx.moveTo(bx, y - ry * 0.5)
+      ctx.quadraticCurveTo(bx - rx * 0.35, y - ry * 0.1, bx, y + ry * 0.3)
+      ctx.stroke()
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(bx, y - ry * 0.5)
+      ctx.lineTo(bx + drawF * rx * 0.5, y - ry * 0.1)
+      ctx.lineTo(bx, y + ry * 0.3)
+      ctx.stroke()
+
+      // 두 발을 버티는 놈은 머리 위 점으로 말해준다.
+      if (t.hp > 1) {
+        ctx.fillStyle = THEME.target2
+        ctx.beginPath()
+        ctx.arc(x - 4, headY - hr - 6, 2, 0, TAU)
+        ctx.arc(x + 4, headY - hr - 6, 2, 0, TAU)
+        ctx.fill()
+      }
+    } else if (t.kind === 'boss') {
       // ★ 보스 (docs/RUN.md 3장). 몸통은 위험색 겹띠 — 크기 자체가 위협이라 조형은 단순하게.
       band(ctx, x, y, rx, ry, THEME.threat)
       band(ctx, x, y, rx * 0.86, ry * 0.86, THEME.threatDim)
@@ -524,6 +589,24 @@ function drawTrails(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void 
  * 예전엔 선 하나였다. 빠를 땐 궤적이 방향을 말해주지만 정점에서 느려지는 순간
  * **어느 쪽이 앞인지** 알 수가 없었다. 촉이 있으면 멈춰 있어도 방향이 읽힌다.
  */
+/** 적 화살 — 위험색 짧은 대. 내 화살과 색이 달라야 "날아오는 것"이 즉시 구분된다. */
+function drawEnemyShots(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void {
+  ctx.strokeStyle = THEME.threat
+  ctx.lineWidth = 2
+  ctx.lineCap = 'round'
+  for (let i = 0; i < w.shots.length; i++) {
+    const sh = w.shots[i]
+    if (sh === undefined || !sh.alive) continue
+    const sp = Math.hypot(sh.vx, sh.vy) || 1
+    const ux = sh.vx / sp
+    const uy = sh.vy / sp
+    ctx.beginPath()
+    ctx.moveTo(worldToScreenX(cam, sh.x - ux * 0.5), worldToScreenY(cam, sh.y - uy * 0.5))
+    ctx.lineTo(worldToScreenX(cam, sh.x), worldToScreenY(cam, sh.y))
+    ctx.stroke()
+  }
+}
+
 function drawArrows(ctx: CanvasRenderingContext2D, cam: Camera, w: World, alpha: number): void {
   ctx.lineCap = 'round'
   for (let i = 0; i < w.arrows.length; i++) {
@@ -728,6 +811,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       drawTargets(c, cam, w, alpha, r.fx)
       drawTrails(c, cam, w)
       drawArrows(c, cam, w, alpha)
+      drawEnemyShots(c, cam, w)
       drawArcher(c, cam, w, alpha)
       drawFx(c, cam, r.fx)
       drawHud(c, cam, w, hud)

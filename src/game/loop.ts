@@ -53,8 +53,11 @@ export interface LoopUi {
    * 화면을 띄우는 쪽이 패널을 열어 paused()를 true로 만들므로 그동안 sim은 멈춰 있다.
    */
   loadout(onStart: (pick: LoadoutPick) => void): void
-  /** 여정 종료 — 도달 판·점수·기록. onNext 한 번으로 다음 여정 준비로 간다 (C1). */
-  runOver(reached: number, score: number, best: number, isNew: boolean, onNext: () => void): void
+  /** 여정 종료 — 도달 판·점수·기록·사유. onNext 한 번으로 다음 여정 준비로 간다 (C1). */
+  runOver(
+    reached: number, score: number, best: number, isNew: boolean,
+    reason: 'defeat' | 'abandon' | 'death', onNext: () => void,
+  ): void
   /** 보스 보급 3택 (docs/RUN.md). onPick은 정확히 한 번 — 고른 살이 count발 들어온다. */
   supply(offer: readonly ArrowKindId[], count: number, onPick: (id: ArrowKindId) => void): void
   /** 구석 알림 한 줄 (여정 포기 확인 등). 모달이 아니다. */
@@ -247,6 +250,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     resetWorld(w, stage, save.stats, kind, mods)
     // 겉모습은 렌더 전용이다. 스틱맨의 손에 들린 활이 실제로 바뀐 활로 보여야 한다.
     w.bowSkin = save.bow
+    // 체력은 여정 동안 이어진다 (docs/RUN.md 6장). 판마다 회복되면 피해가 숫자 놀음이 된다.
+    w.hp = Math.max(1, Math.min(Math.floor(P.enemy.hpMax), save.runHp))
     // 지급량은 game 레이어의 경제 판단이라 sim 계약(resetWorld)에 넣지 않고 여기서 덮어쓴다.
     // 풀 크기는 stage.arrows 기준으로 이미 잡혀 있으므로 줄이는 쪽은 언제나 안전하다.
     granted = grantArrows(save, stage)
@@ -301,7 +306,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
    * 여정이 끝났다 (화살 소진 또는 포기). 기록을 갱신하고 종료 화면을 띄운다.
    * 기록은 **줄지 않는다** — 최고 도달 판, 그 여정의 점수.
    */
-  const endRun = (reason: 'defeat' | 'abandon'): void => {
+  const endRun = (reason: 'defeat' | 'abandon' | 'death'): void => {
     const reached = stageIndex + 1
     const isNew = reached > save.bestRunStage
     if (isNew) {
@@ -312,11 +317,11 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     save.runActive = false
     stageIndex = 0
     save.stageIndex = 0
+    // 다음 여정은 가득 찬 채로 시작한다.
+    save.runHp = Math.floor(P.enemy.hpMax)
     saveNow()
-    // 포기는 본인이 했으니 화면은 담백하게 같은 것을 쓴다. 쓰라림은 숫자가 만든다.
-    void reason
     choosing = true
-    ui.runOver(reached, save.runScore, save.bestRunStage, isNew, () => {
+    ui.runOver(reached, save.runScore, save.bestRunStage, isNew, reason, () => {
       choosing = false
       beginStage()
     })
@@ -403,9 +408,12 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       })
     }
 
-    // ★ 패배 = 여정 종료 (docs/RUN.md). 화살이 바닥나 과녁이 남았다.
+    // 체력은 다음 판으로 이어진다. 죽었으면(0) endRun이 처리한다.
+    save.runHp = Math.max(0, w.hp)
+
+    // ★ 패배 = 여정 종료 (docs/RUN.md). 화살이 바닥났거나(defeat) 쓰러졌다(death).
     // 보상 정산(위) 뒤에 와야 마지막 판의 별·훈련치를 잃지 않는다.
-    if (!cleared) endRun('defeat')
+    if (!cleared) endRun(w.hp <= 0 ? 'death' : 'defeat')
   }
 
   const tick = (now: number): void => {

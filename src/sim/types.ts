@@ -206,6 +206,12 @@ export type TargetKind =
    * 그 판을 진다 = 여정 종료. 시간 압박이 아니라 **탄약 압박 + 조준 압박**이다.
    */
   | 'boss'
+  /**
+   * 적 궁수 — **나에게 활을 쏜다** (docs/RUN.md 6장). shootEvery 주기로, windup 동안
+   * 당기는 게 보인 뒤에 쏜다. 예고 없는 피해는 없다 — 빨간 바와 같은 계약이다.
+   * 먼저 잡으면 안 맞는다. 그게 이 적이 만드는 우선순위 판단이다.
+   */
+  | 'archer'
 
 export interface Target {
   id: number
@@ -231,8 +237,10 @@ export interface Target {
   speed: number
   /** 보급 과녁이 돌려주는 화살 수. 다른 종류는 0. */
   give: number
-  /** 남은 맞을 수 (boss). 다른 종류는 0 — 한 발이면 죽는다는 뜻이 아니라 이 축을 안 쓴다는 뜻. */
+  /** 남은 맞을 수 (boss·archer). 다른 종류는 0 — 이 축을 안 쓴다는 뜻이다. */
   hp: number
+  /** archer 전용 — 다음 발사 시각 (elapsed 기준). 그 windup 전부터 당기는 게 보인다. */
+  fireAt: number
   /** 연쇄 깊이. 직격 = 0, 낙하물에 맞은 것 = 1, 그 다음 = 2 ... */
   chainDepth: number
   /** 기본 점수. 링 명중도로 배수가 붙는다. */
@@ -269,6 +277,12 @@ export type SimEvent =
   | { t: 'escape'; x: number; y: number; lost: number }
   /** 보급 과녁을 맞혀 화살 `gain`발을 얻었다. */
   | { t: 'pickup'; x: number; y: number; gain: number }
+  /** 적 궁수가 시위를 당기기 시작했다 — 예고. 렌더·소리가 이걸로 긴장을 만든다. */
+  | { t: 'enemy_draw'; x: number; y: number }
+  /** 적 화살이 날았다. */
+  | { t: 'enemy_shot'; x: number; y: number }
+  /** 맞았다. `hp` = 남은 체력. 0이면 이 판이 아니라 **여정이** 끝난다. */
+  | { t: 'player_hit'; hp: number }
   | { t: 'miss'; x: number; y: number; arrow: number }
   | { t: 'stage_end'; cleared: boolean; score: number }
 
@@ -288,8 +302,10 @@ export interface TargetSpec {
   speed?: number
   /** bonus 전용 — 맞히면 돌려주는 화살 수. 없으면 1 */
   give?: number
-  /** boss 전용 — 맞을 수. 없으면 P.target.bossHp */
+  /** boss·archer 전용 — 맞을 수. 없으면 boss는 P.target.bossHp, archer는 1 */
   hp?: number
+  /** archer 전용 — 첫 발사까지의 지연 (s). 없으면 P.enemy.shootEvery */
+  fireDelay?: number
 }
 
 export interface StageDef {
@@ -361,6 +377,14 @@ export interface World {
    */
   bowSkin: string
 
+  /**
+   * 플레이어 체력 (docs/RUN.md 6장). 판 경계에서 game 레이어가 넣고(여정 동안 이어진다),
+   * 적의 화살·돌진이 깎는다. 0이 되면 판이 아니라 여정이 끝난다.
+   */
+  hp: number
+  /** 적 화살 풀 (고정 크기, A5). 과녁과도 내 화살과도 부딪히지 않는다 — 오직 나만 노린다. */
+  shots: EnemyShot[]
+
   arrowsLeft: number
   score: number
   /** 현재 연쇄 콤보 수 */
@@ -370,6 +394,17 @@ export interface World {
 
   /** 이번 스텝에 발생한 이벤트. 소비자가 읽고 length=0 으로 비운다. */
   events: SimEvent[]
+}
+
+/** 적 궁수가 쏜 화살 하나. 내 화살(Arrow)보다 훨씬 단순하다 — 효과도 관통도 없다. */
+export interface EnemyShot {
+  alive: boolean
+  x: number
+  y: number
+  px: number
+  py: number
+  vx: number
+  vy: number
 }
 
 // ───────────────────────────── 모듈 시그니처 ─────────────────────────────

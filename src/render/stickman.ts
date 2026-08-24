@@ -677,13 +677,31 @@ export function drawArcher(
   //   반 길이의 애기살뿐이다. 그래서 통아는 recovering에도 그린다 (형의 힌트 그대로).
   const pierce = w.arrowKind === 'pierce'
   if (pierce && a.phase !== 'idle') {
-    // 통아 — **시위 손에 붙어 다닌다.** 당길 땐 살의 활주로가 되고, 놓은 뒤에도
-    // 손에 남는다 (편전의 실물이 그렇다 — 형의 힌트: "쏠 때마다 나무대가 오른손에 남아").
+    // 통아 — **시위 손에 붙어 다닌다.** 당길 땐 화살선과 수평인 활주로,
+    // 놓으면 끈에 매달려 **손에서 덜렁거린다** (형: "놓았을 때 손에서 덜렁거리는 모습").
+    // 각도는 시간의 순수 함수다: 조준각에서 출발해 아래(-90°)로 떨어지며 진자처럼 감쇠 진동.
+    const tongDrawing = a.phase === 'drawing' || a.phase === 'full' || a.phase === 'collapsing'
+    let tx: number
+    let ty: number
+    if (tongDrawing) {
+      tx = rig.ux
+      ty = rig.uy
+    } else {
+      const t = relAnim.at >= 0 ? Math.max(0, w.elapsed - relAnim.at) : 1e9
+      const hang = -Math.PI / 2
+      const aim = Math.atan2(rig.uy, rig.ux)
+      // 낙하: 조준각 → 매달림. 0.35s에 걸쳐 떨어지고, 그 위에 감쇠 흔들림이 얹힌다.
+      const drop = smoothstep(Math.min(1, t / 0.35))
+      const swing = Math.exp(-t / 0.6) * Math.sin(t * 7) * 0.5
+      const ang = aim + (hang - aim) * drop + swing * drop
+      tx = Math.cos(ang)
+      ty = Math.sin(ang)
+    }
     ctx.lineWidth = Math.max(lw * LINE.arrowMul * 1.5, LINE.thinMinPx)
     ctx.strokeStyle = THEME.bow
     line(
       ctx, cam, rig.hdX, rig.hdY,
-      rig.hdX + rig.ux * BODY.arrowLen, rig.hdY + rig.uy * BODY.arrowLen,
+      rig.hdX + tx * BODY.arrowLen, rig.hdY + ty * BODY.arrowLen,
     )
   }
   if (a.phase !== 'idle' && a.phase !== 'recovering') {

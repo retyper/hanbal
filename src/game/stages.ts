@@ -187,8 +187,36 @@ export function getStage(index: number): StageDef {
   if (i < 0) return STAGES[0] as StageDef
   // ★ 10판마다 보스가 저작 판을 밀어내고 선다 (docs/RUN.md 3장). 여정의 마디다.
   if ((i + 1) % BOSS_EVERY === 0) return bossStage(i)
-  if (i < STAGES.length) return STAGES[i] as StageDef
-  return endlessStage(i)
+  const base = i < STAGES.length ? (STAGES[i] as StageDef) : endlessStage(i)
+  // ★ 10판을 넘으면 과녁만 있는 세상이 끝난다 — 적 궁수가 판에 선다 (docs/RUN.md 6장).
+  //   "1~9까지는 과녁이어도, 10 이후부터는 나를 공격하게 해줘"(형).
+  return i + 1 > BOSS_EVERY ? withEnemies(base, i) : base
+}
+
+/**
+ * 저작 판 위에 적 궁수를 얹는다. 원본을 절대 고치지 않는다 — STAGES는 공유 객체다.
+ * 수는 깊이로 정한다: 11판 1명 → 26판 2명 → 41판 3명 (상한). 31판부터 두 발을 버틴다.
+ * 지급 화살도 그만큼 는다 — 적도 잡아야 판이 끝나는데 화살이 안 늘면 벽이 된다.
+ */
+function withEnemies(base: StageDef, i: number): StageDef {
+  const n = i + 1
+  const count = Math.min(3, 1 + Math.floor((n - 11) / 15))
+  const hp = n >= 31 ? 2 : 1
+  const rng = makeRng(seedFrom(`hanbal.enemy.${n}`))
+  const targets: TargetSpec[] = [...base.targets]
+  for (let e = 0; e < count; e++) {
+    targets.push({
+      kind: 'archer',
+      x: 22 + rng.range(0, 12) + e * 5,
+      y: rng.range(1.0, 2.2),
+      r: 0.65,
+      hp,
+      // 발사 시각을 어긋나게 — 동시에 쏘면 예고가 하나로 뭉개진다.
+      fireDelay: P.enemy.shootEvery * (0.7 + e * 0.45),
+      score: 120,
+    })
+  }
+  return { ...base, arrows: Math.min(10, base.arrows + count), targets }
 }
 
 /** 보스 주기. 10판 = 여정의 한 마디 (RUN.md). */

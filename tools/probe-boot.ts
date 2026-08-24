@@ -325,7 +325,7 @@ const loop = createLoop(canvas as unknown as HTMLCanvasElement, {
       const first = offer[0]
       if (first !== undefined) onPick(first)
     },
-    runOver: (reached, _score, _best, isNew, onNext) => {
+    runOver: (reached, _score, _best, isNew, _reason, onNext) => {
       runOverShown++
       void reached; void isNew
       panelOpen = true

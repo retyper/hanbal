@@ -5,7 +5,7 @@
  * bow → ballistics → target 을 부르고, 판의 시작과 끝을 판정할 뿐이다.
  * 물리가 여기 섞이면 각 시스템을 따로 테스트할 수 없게 된다 (ARCHITECTURE A7).
  */
-import { TAU } from '../core/math.ts'
+import { distSqPointSegment, TAU } from '../core/math.ts'
 import { makeRng } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { arrowFx, refreshArrowFx } from './arrowfx.ts'
@@ -126,6 +126,7 @@ function newTarget(): Target {
     speed: 0,
     give: 0,
     hp: 0,
+    fireAt: 0,
     chainDepth: 0,
     score: FALLBACK_TARGET_SCORE,
   }
@@ -243,7 +244,13 @@ function loadTarget(t: Target, id: number, spec: TargetSpec): void {
       ? spec.speed ?? P.target.bossSpeed
       : 0
   t.give = spec.kind === 'bonus' ? spec.give ?? 1 : 0
-  t.hp = spec.kind === 'boss' ? Math.floor(spec.hp ?? P.target.bossHp) : 0
+  t.hp = spec.kind === 'boss'
+    ? Math.floor(spec.hp ?? P.target.bossHp)
+    : spec.kind === 'archer'
+      ? Math.floor(spec.hp ?? 1)
+      : 0
+  // 첫 발사 시각. 판이 시작되자마자 쏘면 예고(windup)가 성립하지 않는다.
+  t.fireAt = spec.kind === 'archer' ? spec.fireDelay ?? P.enemy.shootEvery : 0
   t.chainDepth = 0
   t.score = spec.score ?? FALLBACK_TARGET_SCORE
 }
@@ -254,6 +261,7 @@ function clearTarget(t: Target): void {
   t.speed = 0
   t.give = 0
   t.hp = 0
+  t.fireAt = 0
   t.chainDepth = 0
   t.vx = 0
   t.vy = 0
@@ -319,6 +327,11 @@ export function createWorld(
     fx: arrowFx(kind),
     bow: neutralBow(),
     bowSkin: 'practice',
+    hp: Math.floor(P.enemy.hpMax),
+    // 적 화살 풀 — 한 판에 적 궁수 셋이 동시에 쏴도 8이면 넉넉하다 (A5: 고정 크기).
+    shots: Array.from({ length: 8 }, () => ({
+      alive: false, x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0,
+    })),
     arrowsLeft: stage.arrows,
     score: 0,
     combo: 0,
@@ -396,6 +409,12 @@ export function resetWorld(
 
   w.wind = 0
   w.windPhase = 0
+  // 체력은 판 기본값으로 되돌린다. 여정 동안 이어지는 값은 game 레이어(loop)가 이 위에 덮어쓴다.
+  w.hp = Math.floor(P.enemy.hpMax)
+  for (let i = 0; i < w.shots.length; i++) {
+    const sh = w.shots[i]
+    if (sh !== undefined) sh.alive = false
+  }
   w.arrowsLeft = stage.arrows
   w.score = 0
   w.combo = 0
@@ -432,6 +451,7 @@ export function step(w: World, input: InputFrame): void {
   if (playing) stepArcher(w, input)
   stepArrows(w)
   stepTargets(w)
+  stepEnemyShots(w)
 
   // 명중 없이 소멸한 화살은 연쇄를 끊는다.
   for (let i = evStart; i < w.events.length; i++) {
@@ -471,6 +491,35 @@ function anyTargetFalling(w: World): boolean {
  */
 export function isSettled(w: World): boolean {
   return !anyArrowInPlay(w) && !anyTargetFalling(w)
+}
+
+/**
+ * 적 화살 (docs/RUN.md 6장). 과녁·내 화살과는 부딪히지 않는다 — 오직 궁수만 노린다.
+ * 판이 끝나도(cleared/failed) 이미 날아온 화살은 마저 난다. 다만 피해는 playing에서만.
+ */
+function stepEnemyShots(w: World): void {
+  const dt = w.dt
+  const a = w.archer
+  const r2 = P.enemy.hitRadius * P.enemy.hitRadius
+  for (let i = 0; i < w.shots.length; i++) {
+    const sh = w.shots[i]
+    if (sh === undefined || !sh.alive) continue
+    sh.px = sh.x
+    sh.py = sh.y
+    sh.vy -= P.arrow.gravity * dt
+    sh.x += sh.vx * dt
+    sh.y += sh.vy * dt
+    // 궁수 피격 — 선분 판정 (빠른 화살이 한 스텝에 몸을 건너뛰지 않게).
+    if (w.status === 'playing' && distSqPointSegment(a.x, a.y, sh.px, sh.py, sh.x, sh.y) <= r2) {
+      sh.alive = false
+      w.hp = w.hp > 0 ? w.hp - 1 : 0
+      w.combo = 0
+      w.events.push({ t: 'player_hit', hp: w.hp })
+      if (w.hp <= 0) endStage(w, false)
+      continue
+    }
+    if (sh.y <= 0 || sh.x < a.x - 6) sh.alive = false
+  }
 }
 
 function endStage(w: World, cleared: boolean): void {

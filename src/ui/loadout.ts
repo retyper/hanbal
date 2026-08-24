@@ -191,6 +191,7 @@ export function showRunOver(
   score: number,
   best: number,
   isNew: boolean,
+  reason: 'defeat' | 'abandon' | 'death',
   onNext: () => void,
 ): void {
   const panel = o.panel(OVER_ID)
@@ -203,8 +204,13 @@ export function showRunOver(
 
   const wrap = document.createElement('div')
   wrap.className = 'o-wrap'
+  const lead = reason === 'death'
+    ? '쓰러졌다 — 이번 여정은'
+    : reason === 'abandon'
+      ? '여정을 접었다 — 이번은'
+      : '화살이 다했다 — 이번 여정은'
   wrap.innerHTML =
-    `<div class="o-reach">화살이 다했다 — 이번 여정은</div>` +
+    `<div class="o-reach">${lead}</div>` +
     `<div class="o-stage">${reached}판</div>` +
     `<div class="o-score">점수 <b>${score}</b></div>` +
     (isNew
