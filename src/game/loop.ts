@@ -211,6 +211,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     // 궁합(활×살)은 bowMods 안에서 판정되므로 여기서는 조합을 모른다.
     const mods = bowMods(save.bow, kind, masteryLevel(save.bowHits[save.bow] ?? 0))
     resetWorld(w, stage, save.stats, kind, mods)
+    // 겉모습은 렌더 전용이다. 스틱맨의 손에 들린 활이 실제로 바뀐 활로 보여야 한다.
+    w.bowSkin = save.bow
     // 지급량은 game 레이어의 경제 판단이라 sim 계약(resetWorld)에 넣지 않고 여기서 덮어쓴다.
     // 풀 크기는 stage.arrows 기준으로 이미 잡혀 있으므로 줄이는 쪽은 언제나 안전하다.
     granted = grantArrows(save, stage)

@@ -50,16 +50,17 @@ import { ENDLESS_THEMES } from '../src/game/endless.ts'
 import { grantArrows } from '../src/game/progression.ts'
 import { defaultSave } from '../src/game/save.ts'
 import { ARROW_KINDS, arrowFx, DEFAULT_ARROW, isArrowKindId } from '../src/game/arrows.ts'
+import { BOW_KINDS, bowMods, DEFAULT_BOW, type BowKindId } from '../src/game/bows.ts'
 import { rollDraft } from '../src/game/draft.ts'
 import { evaluateUnlocks, progressOf, unlockedArrows, UNLOCKS } from '../src/game/unlocks.ts'
 import { bullseyeAcc, gradeRun } from '../src/game/rewards.ts'
 import { makeRng } from '../src/core/rng.ts'
-import { clamp, lerp } from '../src/core/math.ts'
+import { clamp, clamp01, lerp } from '../src/core/math.ts'
 import { P } from '../src/tune/params.ts'
 import type { Rng } from '../src/core/rng.ts'
 import type { ArrowKindId } from '../src/game/arrows.ts'
 import type { RunStats } from '../src/game/rewards.ts'
-import type { InputFrame, StageDef, Stats, Target, World } from '../src/sim/types.ts'
+import type { BowMods, InputFrame, StageDef, Stats, Target, World } from '../src/sim/types.ts'
 
 // ───────────────────────── 실행 인자 ─────────────────────────
 
@@ -74,6 +75,8 @@ interface Args {
   arrow: ArrowKindId | null
   /** 화살 × 스테이지 교차표를 돌린다. */
   cross: boolean
+  /** 활 × 스테이지 교차표를 돌린다. */
+  bows: boolean
   /** 교차표를 어느 봇으로 돌리는가. 봇 × 화살 × 40판은 너무 비싸다. */
   crossBot: BotKind
   /** 캠페인 모드로 돌릴 사람 수 (봇 종류마다). 0이면 건너뛴다. */
@@ -100,6 +103,7 @@ function parseArgs(argv: readonly string[]): Args {
   let floor = false
   let arrow: ArrowKindId | null = null
   let cross = true
+  let bows = true
   let crossBot: BotKind = 'average'
   // 캠페인(해금 페이싱). 한 사람이 1판부터 순서대로 도는 모드라 따로 시간을 먹는다.
   let campaign = 12
@@ -130,10 +134,11 @@ function parseArgs(argv: readonly string[]): Args {
     else if (key === 'preview') preview = v !== 0
     else if (key === 'floor') floor = v !== 0
     else if (key === 'cross') cross = v !== 0
+    else if (key === 'bows') bows = v !== 0
     else if (key === 'campaign') campaign = Math.max(0, Math.trunc(v))
     else if (key === 'endless') endless = Math.max(0, Math.trunc(v))
   }
-  return { seed, runs, budgetMs, preview, floor, arrow, cross, crossBot, campaign, endless }
+  return { seed, runs, budgetMs, preview, floor, arrow, cross, bows, crossBot, campaign, endless }
 }
 
 /** 시드 합성. 같은 (스테이지, 판 번호)면 봇이 달라도 같은 판이 나온다 — 짝지은 비교로 분산을 줄인다. */
@@ -438,18 +443,25 @@ class Bot {
 
   /** 이 판에서 쓰는 화살의 공기저항 배수. 탄도 모델이 이걸 알아야 한다. */
   private readonly dragMul: number
+  /** 활의 바람 배수 — 탄도 모델의 바람 항에 곱한다 (장궁 0.7). */
+  private readonly bowWindMul: number
 
-  constructor(kind: BotKind, seed: number, stats: Stats, arrow: ArrowKindId) {
+  constructor(kind: BotKind, seed: number, stats: Stats, arrow: ArrowKindId, bow?: BowMods) {
     const m = BOTS[kind]
     this.m = m
     this.rng = makeRng(seed)
     const fx = arrowFx(arrow)
     this.dragMul = fx.dragMul
+    this.bowWindMul = bow?.windMul ?? 1
     // 봇은 항상 자기 한계(maxDraw)까지 당겨서 놓는다. 초보의 만작은 1.0이 아니라 0.74다 —
     // maxSpeed를 그대로 믿으면 모든 봇이 30% 빠른 화살을 가정해 일제히 못 미친다.
+    // 활도 같은 이유로 모델에 넣는다: 장궁의 만작 페널티와 초속 배수를 모르면
+    // 다섯 활이 똑같이 빗나가서 '활이 나쁘다'가 아니라 '봇이 틀렸다'를 재게 된다.
     const d = effectiveStats(stats)
+    const maxDraw = clamp01(d.maxDraw + (bow?.maxDrawAdd ?? 0))
     const trueSpeed =
-      lerp(P.bow.minSpeed, P.bow.maxSpeed, Math.pow(d.maxDraw, P.bow.drawCurve)) * d.speedMul * fx.speedMul
+      lerp(P.bow.minSpeed, P.bow.maxSpeed, Math.pow(maxDraw, P.bow.drawCurve))
+        * d.speedMul * fx.speedMul * (bow?.speedMul ?? 1)
     this.v = trueSpeed * (1 + m.velBias)
     this.out.aimX = 1
     this.out.aimY = 0
@@ -567,7 +579,7 @@ class Bot {
     dx += t.vx * tof * this.m.leadAware
     dy += t.vy * tof * this.m.leadAware
     // 바람도 봇이 아는 만큼만 모델에 넣는다.
-    this.baseAngle = solveAngle(dx, dy, this.v, w.wind * this.m.windAware, w.dt, this.dragMul)
+    this.baseAngle = solveAngle(dx, dy, this.v, w.wind * this.m.windAware * this.bowWindMul, w.dt, this.dragMul)
   }
 
   /**
@@ -606,6 +618,100 @@ class Bot {
   }
 }
 
+// ───────────────────────── 활 × 스테이지 교차표 ─────────────────────────
+//
+// 활 검증 (docs/BOWS.md 2장). 화살과 판정이 다르다 — 화살은 판마다 갈아 끼우는 카드라
+// "판을 바꾸는가"를 재지만, 활은 오래 드는 플레이스타일이라 잣대가 둘이다:
+//   (a) **지배/함정 없음**: 어떤 활도 전 구간에서 최선·최악이면 안 된다. 특히 연습궁이
+//       1등이면 업그레이드가 함정이고, 꼴찌 고정이면 시작 활이 벌이다.
+//   (b) **클리어율 보존**: 어느 활을 들어도 클리어율이 연습궁 대비 크게 무너지면 안 된다.
+//       활은 손맛의 변주지 난이도 스위치가 아니다 (빨간 바 계약은 활보다 세다).
+
+/** 연습궁 대비 클리어율이 이만큼 내려가는 활은 벌이다. */
+const BOW_CLEAR_DROP = 0.12
+
+function printBows(
+  stages: readonly StageRow[],
+  bowIds: readonly BowKindId[],
+  cells: ReadonlyArray<ReadonlyArray<CrossCell>>,
+  bot: BotKind,
+): void {
+  console.log('')
+  console.log(`활 × 스테이지 교차표 — 지배도 함정도 없는가 (봇 ${bot} · 숙련 0 · 목록 src/game/bows.ts)`)
+
+  const n = stages.length
+  const winsBy = new Map<string, number>()
+  let identical = 0
+  // 활별 평균 (전 판)
+  const avgClear = bowIds.map(() => 0)
+  const avgScore = bowIds.map(() => 0)
+  const avgArrows = bowIds.map(() => 0)
+  for (let si = 0; si < n; si++) {
+    const row = cells[si]
+    if (row === undefined) continue
+    let bestI = 0
+    let best = Number.NEGATIVE_INFINITY
+    let allSame = true
+    const first = row[0]
+    for (let bi = 0; bi < row.length; bi++) {
+      const c = row[bi]
+      if (c === undefined) continue
+      avgClear[bi] = (avgClear[bi] ?? 0) + c.clear
+      avgScore[bi] = (avgScore[bi] ?? 0) + c.score
+      avgArrows[bi] = (avgArrows[bi] ?? 0) + c.arrows
+      if (first !== undefined && (c.score !== first.score || c.clear !== first.clear)) allSame = false
+      if (c.score > best) {
+        best = c.score
+        bestI = bi
+      }
+    }
+    if (allSame) identical++
+    const w = bowIds[bestI]
+    if (w !== undefined) winsBy.set(w, (winsBy.get(w) ?? 0) + 1)
+  }
+
+  const base = bowIds.indexOf(DEFAULT_BOW)
+  const baseClear = (avgClear[base] ?? 0) / Math.max(n, 1)
+  console.log('')
+  console.log('  활'.padEnd(11) + '점수1등'.padStart(8) + '평균클리어'.padStart(11) + '평균점수'.padStart(9) + '화살소모'.padStart(9))
+  for (let bi = 0; bi < bowIds.length; bi++) {
+    const id = bowIds[bi]
+    if (id === undefined) continue
+    console.log(
+      `  ${id.padEnd(9)}` +
+      `${String(winsBy.get(id) ?? 0).padStart(5)}/${n}` +
+      `${(((avgClear[bi] ?? 0) / n) * 100).toFixed(1).padStart(9)}%` +
+      `${((avgScore[bi] ?? 0) / n).toFixed(0).padStart(9)}` +
+      `${((avgArrows[bi] ?? 0) / n).toFixed(2).padStart(9)}`,
+    )
+  }
+
+  console.log('')
+  if (identical === n && bowIds.length > 1) {
+    console.log('  ✗ 미배선 — 활을 바꿔도 결과가 완전히 같다. BowMods가 sim에 도달하지 않았다.')
+    return
+  }
+  let bad = 0
+  for (const [k, c] of winsBy) {
+    if (c / n >= CROSS_DOMINANT) {
+      bad++
+      console.log(`  ✗ 지배 — '${k}'가 ${Math.round((c / n) * 100)}% 의 판에서 점수 1등이다.` +
+        (k === DEFAULT_BOW ? ' 연습궁이 최선이면 활 수집이 통째로 함정이다.' : ' 나머지 활이 함정이 된다.'))
+    }
+  }
+  for (let bi = 0; bi < bowIds.length; bi++) {
+    const id = bowIds[bi]
+    if (id === undefined) continue
+    const clear = (avgClear[bi] ?? 0) / Math.max(n, 1)
+    if (baseClear - clear > BOW_CLEAR_DROP) {
+      bad++
+      console.log(`  ✗ 벌 — '${id}' 평균 클리어율이 연습궁보다 ${((baseClear - clear) * 100).toFixed(0)}%p 낮다.` +
+        ' 활은 손맛의 변주지 난이도 스위치가 아니다.')
+    }
+  }
+  if (bad === 0) console.log('  ✓ 지배도 함정도 없다 — 활 선택이 취향으로 성립한다.')
+}
+
 // ══════════════════════ 드래프트 화살 배선 ══════════════════════
 //
 // 목록은 `src/game/arrows.ts`(화살 담당)에서 그대로 가져온다. 이 도구가 후보를 따로 들고 있으면
@@ -623,15 +729,15 @@ class Bot {
 
 const ARROW_IDS: readonly ArrowKindId[] = ARROW_KINDS.map((k) => k.id)
 
-type CreateWorld3 = (stage: StageDef, stats: Stats, arrow?: ArrowKindId) => World
-const createWorldA = createWorld as unknown as CreateWorld3
-
 function withArrow(def: StageDef, arrow: ArrowKindId): StageDef {
   return { ...def, arrow } as unknown as StageDef
 }
 
-function makeWorld(def: StageDef, stats: Stats, arrow: ArrowKindId | null): World {
-  return arrow === null ? createWorld(def, stats) : createWorldA(withArrow(def, arrow), stats, arrow)
+function makeWorld(
+  def: StageDef, stats: Stats, arrow: ArrowKindId | null, bow?: BowMods,
+): World {
+  if (arrow === null) return createWorld(def, stats, undefined, bow)
+  return createWorld(withArrow(def, arrow), stats, arrow, bow)
 }
 
 // ══════════════════════ 별·보상 ══════════════════════
@@ -808,9 +914,12 @@ function playOne(
   kind: BotKind,
   botSeed: number,
   arrow: ArrowKindId | null,
+  bow?: BowKindId,
 ): RunResult {
-  const w = makeWorld(def, stats, arrow)
-  const bot = new Bot(kind, botSeed, stats, arrow ?? DEFAULT_ARROW)
+  // 숙련 0 기준으로 잰다 — 활의 소재 값이 문제인지 숙련 완화가 문제인지 섞이면 안 된다.
+  const mods = bow === undefined ? undefined : bowMods(bow, arrow ?? DEFAULT_ARROW, 0)
+  const w = makeWorld(def, stats, arrow, mods)
+  const bot = new Bot(kind, botSeed, stats, arrow ?? DEFAULT_ARROW, mods)
   const hz = Math.round(1 / w.dt)
   const maxSteps = Math.ceil((def.timeLimit ?? 90) * hz) + 4 * hz
 
@@ -1079,6 +1188,8 @@ const trainSd = (a: Agg): number => {
 
 interface GroupOpts {
   arrow: ArrowKindId | null
+  /** 활. 없으면 연습궁(중립). 궁합은 game/bows.ts의 bowMods가 (활, 살) 쌍으로 판정한다. */
+  bow?: BowKindId
 }
 
 function playGroup(
@@ -1136,7 +1247,7 @@ function playGroup(
     const stageSeed = mixSeed(baseSeed, stageIdx, i)
     const botSeed = mixSeed(stageSeed, kind.length, i * 7 + 1)
     const def = row.make(stageSeed)
-    const r = playOne(def, row.stats, kind, botSeed, opts.arrow)
+    const r = playOne(def, row.stats, kind, botSeed, opts.arrow, opts.bow)
     const g = grade(def, r, rewardRng)
 
     if (r.cleared) cleared++
@@ -2043,6 +2154,35 @@ function main(): void {
 
   // ── 캠페인 (해금 페이싱) ──
   if (args.campaign > 0) printCampaign(args.seed, args.campaign)
+
+  // ── 활 × 스테이지 교차표 (docs/BOWS.md) ──
+  // 화살은 유엽전 고정(궁합 없음) — 활 소재의 값만 잰다. 궁합 검증은 화살 교차표를
+  // --arrow=pierce --bows 로 다시 돌려서 본다.
+  if (args.bows) {
+    const bowIds: readonly BowKindId[] = BOW_KINDS.map((b) => b.id)
+    const bowRuns = Math.max(20, Math.min(runs,
+      Math.floor(args.budgetMs / (perRun * stages.length * bowIds.length * 1.5))))
+    const bcells: CrossCell[][] = []
+    const bt0 = Date.now()
+    for (let si = 0; si < stages.length; si++) {
+      const row = stages[si]
+      if (row === undefined) continue
+      const line: CrossCell[] = []
+      for (const bowId of bowIds) {
+        const a = playGroup(row, args.crossBot, args.seed, bowRuns, si, { arrow: args.arrow, bow: bowId })
+        line.push({
+          clear: a.clearRate,
+          score: a.avgScore,
+          arrows: a.avgArrows,
+          combo: a.avgMaxCombo,
+          chains: a.avgChains,
+        })
+      }
+      bcells.push(line)
+    }
+    printBows(stages, bowIds, bcells, args.crossBot)
+    console.log(`활 교차표 ${bowIds.length}종 × ${stages.length}판 × ${bowRuns}판 / ${((Date.now() - bt0) / 1000).toFixed(1)}s`)
+  }
 
   // ── 화살 교차표 ──
   if (!args.cross) {

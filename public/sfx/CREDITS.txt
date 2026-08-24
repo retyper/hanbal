@@ -12,14 +12,15 @@ click / rollover / switch   UI (드래프트·해금·버튼)
    첫 화면은 소리 없이 즉시 뜨고(C1·C6), 사운드는 뒤에서 따로 받는다.
 
 ── 추가 (2026-08-24) ── Kenney "Music Jingles" 팩 (CC0)
-jingleClear     판 클리어. 원본 jingles_PIZZI11 (0.79s)
+jingleClear     판 클리어. 원본 jingles_PIZZI02 (0.96s, +8.3반음 상승·최고음으로 닫힘)
 jingleUnlock    해금.      원본 jingles_PIZZI16 (0.46s)
 
-피치카토(뜯는 현) 계열을 골랐다. 이유가 둘이다:
-  1. 활시위를 놓는 소리와 같은 결이다 — 이 게임의 소리 세계에서 겉돌지 않는다.
-  2. 팡파레가 아니다. "제대로되면서도 과하지 않은" 클리어음이어야 한다 (형의 요청).
+처음 골랐던 PIZZI11은 피치 궤적을 재보니 **-4.4반음 하강**이었다 — "클리어인데 깬 느낌이
+안 든다"(형)의 정체. 팩 85개 전부를 자기상관 피치 추적으로 재서(스크래치 스크립트
+pick-jingle.mjs) 상승 폭이 크고 최고음으로 닫히는 것만 남겼다. 피치카토 계열을 유지한
+이유: 활시위를 뜯는 소리와 같은 결이라 이 게임의 소리 세계에서 겉돌지 않는다.
 
 ★ 마음에 안 들면 파일만 바꿔치기하면 된다. 코드는 손댈 필요가 없다:
-    public/sfx/jingleClear_alt1.ogg  (PIZZI13, 0.88s — 조금 더 길고 완결감)
-    public/sfx/jingleClear_alt2.ogg  (PIZZI04, 0.56s — 더 짧고 담백)
+    public/sfx/jingleClear_alt1.ogg  (PIZZI15, 0.81s, +5.3반음 — 더 짧고 완만)
+    public/sfx/jingleClear_alt2.ogg  (STEEL02, 1.39s, +7.4반음 — 금속 현, 길고 화려)
   둘 중 하나를 jingleClear.ogg 로 복사하면 끝. (alt 파일은 게임이 받지 않는다)

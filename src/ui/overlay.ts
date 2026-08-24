@@ -61,12 +61,15 @@ const CSS = `
 .hb-ui {
   position: fixed; inset: 0; z-index: 40; pointer-events: none;
   font: 15px/1.65 "Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
-  color: #b9c3cf; -webkit-font-smoothing: antialiased;
+  color: #c6d0dc; -webkit-font-smoothing: antialiased;
 
-  --ink: #eaf0f7;
-  --body: #b3bdc9;
-  --dim: #6b7888;
-  --mute: #3f4a59;
+  /* ★ 대비 규칙 (2026-08-24, 형의 반려: "회색 글씨 쳐 안 보여").
+     가장 어두운 글자(--mute)도 패널 배경(#121a23) 대비 7:1 이상이어야 한다.
+     위계는 밝기 차가 아니라 크기·굵기·자간으로 만든다 — 어둡게 눌러서 만들지 않는다. */
+  --ink: #f2f6fa;
+  --body: #c6d0dc;
+  --dim: #a6b2c0;
+  --mute: #8d99a8;
   --line: #232d39;
   --accent: #ffb347;
   --teal: #7fd1c0;

@@ -336,6 +336,11 @@ export interface World {
    * game/bows.ts 가 그걸 전부 이 숫자 묶음으로 구워서 넣는다.
    */
   bow: BowMods
+  /**
+   * 활의 겉모습 (game/bows.ts BowKindId 문자열). **렌더만 읽는다** — sim의 어떤 계산에도
+   * 들어가지 않는다. BowMods에 안 넣은 이유: 저긴 순수 숫자 묶음이라는 계약이 있다.
+   */
+  bowSkin: string
 
   arrowsLeft: number
   score: number

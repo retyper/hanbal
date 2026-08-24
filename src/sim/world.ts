@@ -309,6 +309,7 @@ export function createWorld(
     arrowKind: kind,
     fx: arrowFx(kind),
     bow: neutralBow(),
+    bowSkin: 'practice',
     arrowsLeft: stage.arrows,
     score: 0,
     combo: 0,

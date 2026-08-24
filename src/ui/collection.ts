@@ -72,7 +72,7 @@ const CSS = `
   border: 1px solid #18202a; line-height: 1.3;
 }
 .c-cell .c-n { display: block; color: var(--mute); font-size: 12px; }
-.c-cell .c-s { display: block; color: #2b3542; font-size: 12px; letter-spacing: -1px; }
+.c-cell .c-s { display: block; color: #5d6b7c; font-size: 12px; letter-spacing: -1px; }
 .c-cell.c-done { border-color: #2c3846; background: #121a23; }
 .c-cell.c-done .c-n { color: #93a0b0; }
 .c-cell.c-done .c-s { color: var(--accent); }

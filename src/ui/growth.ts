@@ -63,6 +63,8 @@ const CSS = `
   padding: 12px 0 11px; border-top: 1px solid var(--line);
 }
 .g-bow:first-of-type { border-top: none; }
+.g-bow .g-bic { color: var(--accent); line-height: 0; margin-right: 10px; vertical-align: -6px; }
+.g-bow.g-lockd .g-bic { color: var(--mute); }
 .g-bow .g-bname { color: var(--ink); font-weight: 700; font-size: 16px; }
 .g-bow .g-borigin { color: var(--mute); font-size: 12px; margin-left: 10px; letter-spacing: .04em; }
 .g-bow .g-bperk { grid-column: 1; color: var(--body); font-size: 13px; }
@@ -177,6 +179,24 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
   rackSub.textContent = '바꾼 활은 다음 판부터 든다. 숙련은 그 활로 맞힌 수만큼 쌓여 단점이 줄어든다.'
   rack.appendChild(rackSub)
 
+  /**
+   * 활의 옆모습 아이콘 (viewBox 0 0 28 28 · stroke). 실루엣 규칙은 게임 속 스틱맨의 활
+   * (render/stickman.ts BOW_SKIN)과 같다 — 걸이에서 본 활을 손에 들었을 때 알아봐야 한다.
+   */
+  const BOW_ICON: Record<string, string> = {
+    practice: '<path d="M10 4 Q20 14 10 24"/><path d="M10 4 L10 24" stroke-width="0.9"/>',
+    gakgung:
+      '<path d="M11 7 Q20 14 11 21"/><path d="M11 7 L15 3.5"/><path d="M11 21 L15 24.5"/>' +
+      '<path d="M15 3.5 L15 24.5" stroke-width="0.9"/>',
+    longbow: '<path d="M11 2 Q17 14 11 26"/><path d="M11 2 L11 26" stroke-width="0.9"/>',
+    recurve:
+      '<path d="M10 4 Q19 14 10 24"/><path d="M10 4 L10 24" stroke-width="0.9"/>' +
+      '<path d="M14.5 14 L25 14" stroke-width="1.1"/>',
+    compound:
+      '<path d="M12 6 Q16 14 12 22"/><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="23" r="2.2"/>' +
+      '<path d="M12 7.2 L12 20.8 M14 5.5 L14 22.5" stroke-width="0.9"/>',
+  }
+
   interface BowRow {
     id: BowKindId
     el: HTMLElement
@@ -191,7 +211,9 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
     const el = document.createElement('div')
     el.className = 'g-bow'
     el.innerHTML = `
-      <div><span class="g-bname"></span><span class="g-borigin"></span></div>
+      <div><span class="g-bic"><svg width="26" height="26" viewBox="0 0 28 28" fill="none" ` +
+      `stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">` +
+      `${BOW_ICON[b.id] ?? ''}</svg></span><span class="g-bname"></span><span class="g-borigin"></span></div>
       <div class="g-bperk"></div>
       <div class="g-bcost"></div>
       <div class="g-bsyn"></div>
