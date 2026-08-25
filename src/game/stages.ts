@@ -281,18 +281,20 @@ function bossStage(i: number): StageDef {
     const eyeHits = 2 + rank
     targets.push({
       kind: 'boss', x: reach * rng.range(0.84, 0.94), y: rng.range(2.0, 3.0),
-      r: 1.6, hp: crit * eyeHits, armored: true, score: 200,
+      r: 1.6, hp: crit * eyeHits, armored: true, look: 1, score: 200,
     })
     hitsNeeded = eyeHits
   } else if (variant === 2) {
     // 쌍둥이 눈알 — 둘로 갈라진 위협. 어느 쪽을 먼저 잡을지가 판단이다.
     title = '쌍눈귀신'
     hint = '둘 다 잡아야 한다 — 가까운 쪽부터'
-    const each = Math.max(dmg, Math.floor(baseHp * 0.55))
+    // ★ 보스는 헤드샷 한 방에 눕지 않는다 (형: "아무리 보스여도 즉사는 안 되고").
+    //   어떤 단위든 체력이 헤드샷 피해보다 확실히 크게 바닥을 깐다.
+    const each = Math.max(Math.floor(crit * 1.3), Math.floor(baseHp * 0.55))
     for (let e = 0; e < 2; e++) {
       targets.push({
         kind: 'boss', x: reach * (0.8 + e * 0.13), y: 1.6 + e * 1.6,
-        r: 1.15, hp: each, speed: P.target.bossSpeed * (1 + e * 0.25), score: 150,
+        r: 1.15, hp: each, speed: P.target.bossSpeed * (1 + e * 0.25), look: 2, score: 150,
       })
     }
     hitsNeeded = Math.ceil((each * 2) / Math.floor(dmg * 1.1))
@@ -300,11 +302,12 @@ function bossStage(i: number): StageDef {
     // 폭주귀신 — 빠르다. 시간이 무기가 아니라 상대의 무기다.
     title = '폭주귀신'
     hint = '빨리 끝내라 — 저놈이 더 빠르다'
+    const rushHp = Math.max(Math.floor(crit * 1.3), Math.floor(baseHp * 0.6))
     targets.push({
       kind: 'boss', x: reach * rng.range(0.88, 0.96), y: rng.range(2.0, 3.0),
-      r: 1.45, hp: Math.floor(baseHp * 0.6), speed: P.target.bossSpeed * 2.2, score: 200,
+      r: 1.45, hp: rushHp, speed: P.target.bossSpeed * 2.2, look: 3, score: 200,
     })
-    hitsNeeded = Math.ceil((baseHp * 0.6) / Math.floor(dmg * 1.1))
+    hitsNeeded = Math.ceil(rushHp / Math.floor(dmg * 1.1))
   } else {
     // 눈알귀신 — 첫 관문. 느리게, 그러나 확실하게 온다.
     targets.push({

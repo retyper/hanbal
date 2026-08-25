@@ -247,6 +247,8 @@ export interface Target {
   aimMul: number
   /** 판 시작 시점의 체력 (boss·archer). 체력 바의 분모다. */
   hpMax: number
+  /** 보스의 겉모습 번호 (0 눈알 · 1 갑주 · 2 쌍눈 · 3 폭주). 렌더만 읽는다. */
+  look: number
   /** 연쇄 깊이. 직격 = 0, 낙하물에 맞은 것 = 1, 그 다음 = 2 ... */
   chainDepth: number
   /** 기본 점수. 링 명중도로 배수가 붙는다. */
@@ -316,6 +318,8 @@ export interface TargetSpec {
   give?: number
   /** boss·archer 전용 — 맞을 수. 없으면 boss는 P.target.bossHp, archer는 1 */
   hp?: number
+  /** boss 전용 — 겉모습 번호 */
+  look?: number
   /** archer 전용 — 첫 발사까지의 지연 (s). 없으면 P.enemy.shootEvery */
   fireDelay?: number
   /** archer·boss — 갑옷 (몸통 무효, 헤드샷/눈만 통한다). */

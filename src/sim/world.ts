@@ -127,6 +127,7 @@ function newTarget(): Target {
     give: 0,
     hp: 0,
     hpMax: 0,
+    look: 0,
     fireAt: 0,
     armored: false,
     aimMul: 1,
@@ -253,6 +254,7 @@ function loadTarget(t: Target, id: number, spec: TargetSpec): void {
       ? Math.floor(spec.hp ?? P.enemy.archerHp)
       : 0
   t.hpMax = t.hp
+  t.look = Math.floor(spec.look ?? 0)
   // 첫 발사 시각. 판이 시작되자마자 쏘면 예고(windup)가 성립하지 않는다.
   t.fireAt = spec.kind === 'archer' ? spec.fireDelay ?? P.enemy.shootEvery : 0
   t.armored = spec.armored === true
@@ -268,6 +270,7 @@ function clearTarget(t: Target): void {
   t.give = 0
   t.hp = 0
   t.hpMax = 0
+  t.look = 0
   t.fireAt = 0
   t.armored = false
   t.aimMul = 1
@@ -366,6 +369,22 @@ export function armArrow(w: World, kind: ArrowKindId): void {
 /** 활 교체 — 다음 스텝부터 이 배수다. 근거는 armArrow와 같다. */
 export function armBow(w: World, bow: BowMods): void {
   copyBow(w.bow, bow)
+}
+
+/**
+ * 오마케(실험장) 전용 — 살아 있는 판에 과녁/적을 즉석에서 세운다.
+ * 풀이 모자라면 늘린다 (할당 발생 — 실험장에서만 부르므로 A5의 핫 루프 밖이다).
+ */
+export function omakeAdd(w: World, spec: TargetSpec): void {
+  let slot: Target | null = null
+  for (const t of w.targets) {
+    if (!t.alive) { slot = t; break }
+  }
+  if (slot === null) {
+    slot = newTarget()
+    w.targets.push(slot)
+  }
+  loadTarget(slot, slot.id !== 0 ? slot.id : w.targets.length - 1, spec)
 }
 
 /**

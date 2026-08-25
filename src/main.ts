@@ -15,6 +15,7 @@ import { progressOf, unlockedBows } from './game/unlocks.ts'
 import { createOverlay } from './ui/overlay.ts'
 import { mountGrowth, showOfflineGain, showRunGain } from './ui/growth.ts'
 import { mountLoadout, mountSupply, showRunOver } from './ui/loadout.ts'
+import { mountOmake } from './ui/omake.ts'
 import { mountQuiver } from './ui/quiver.ts'
 
 const el = document.getElementById('game')
@@ -79,7 +80,7 @@ const loop = createLoop(el, {
         onStart,
       ),
     // 보스 보급 3택 (docs/RUN.md) — 특수살 재고의 유일한 큰 획득처.
-    supply: (offer, count, onPick) => mountSupply(overlay, offer, count, save.arrowStock, onPick),
+    supply: (offer, count, heal, onPick) => mountSupply(overlay, offer, count, save.arrowStock, heal, onPick),
     runOver: (reached, score, best, isNew, first, reason, onNext) =>
       showRunOver(overlay, reached, score, best, isNew, first, reason, onNext),
     toast: (t) => overlay.toast(t),
@@ -110,6 +111,14 @@ idle(() => withCollection(() => {
   // 살통은 상시 버튼(성장·수집) **뒤**에 붙는다 — 가변 폭 요소가 앞에 서면
   // 매 판 누르는 버튼들의 자리가 널뛴다 (감사 UI구조).
   mountQuiver(overlay, save)
+  // 오마케(실험장) — 소환·판 점프. 기록에 남지 않는다.
+  mountOmake(overlay, {
+    enter: () => loop.omakeEnter(),
+    exit: () => loop.omakeExit(),
+    spawn: (k) => loop.omakeSpawn(k),
+    refill: () => loop.omakeRefill(),
+    jump: (n) => loop.omakeJump(n),
+  })
 }))
 
 // 드래프트가 첫 프레임에 뜰 수 있으므로 화면들이 다 붙은 뒤에 시작한다.

@@ -49,7 +49,6 @@ const CSS = `
 .l-wipe { margin-left: auto; font-size: 12px; color: var(--mute); }
 .l-wipe.l-armed { color: #ff6a45; border-color: #ff6a4577; }
 .l-go { font-size: 17px; padding: 13px 26px; }
-.l-go:not([disabled]) { border-color: var(--accent); color: var(--accent); }
 
 .o-wrap { text-align: center; padding: 8px 0 4px; }
 .o-reach { font-size: 15px; color: var(--dim); letter-spacing: .1em; }
@@ -250,7 +249,9 @@ export function mountSupply(
   offer: readonly ArrowKindId[],
   count: number,
   stock: Readonly<Record<string, number>>,
-  onPick: (id: ArrowKindId) => void,
+  /** 0보다 크면 회복 카드가 선다 — 잃은 체력이 있을 때만 (감사·형의 주문). */
+  heal: number,
+  onPick: (id: ArrowKindId | 'heal') => void,
 ): void {
   const panel = o.panel('supply')
   panel.replaceChildren()
@@ -271,6 +272,7 @@ export function mountSupply(
   const grid = document.createElement('div')
   grid.className = 'l-grid'
   let done = false
+  let healCard: HTMLButtonElement | null = null
   const onVisibility = (): void => {
     if (!document.hidden && !done) o.show('supply')
   }
@@ -304,6 +306,26 @@ export function mountSupply(
     ;(parts[1] as HTMLElement).textContent = k.desc
     card.addEventListener('click', () => finish(id))
     grid.appendChild(card)
+  }
+  if (heal > 0) {
+    // 회복 — 화살 대신 몸을 고른다. 체력을 되찾는 유일한 길이라 셋과 나란히 설 자격이 있다.
+    healCard = document.createElement('button')
+    healCard.type = 'button'
+    healCard.className = 'l-card'
+    healCard.style.setProperty('--tint', '#7fd6c8')
+    healCard.innerHTML =
+      `<span class="l-ic"><svg width="30" height="30" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M14 6v16M6 14h16" /></svg></span>` +
+      `<span class="l-n">숨을 고른다</span><span class="l-syn2">기력 +${heal}</span>` +
+      `<span class="l-d">화살 대신 몸을 추스른다.</span>`
+    healCard.addEventListener('click', () => finish2())
+    grid.appendChild(healCard)
+  }
+  const finish2 = (): void => {
+    if (done) return
+    done = true
+    document.removeEventListener('visibilitychange', onVisibility, true)
+    o.hide(true)
+    onPick('heal')
   }
   panel.appendChild(grid)
   o.show('supply', { sticky: true })

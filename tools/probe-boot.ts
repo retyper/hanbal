@@ -326,7 +326,7 @@ const loop = createLoop(canvas as unknown as HTMLCanvasElement, {
       panelOpen = true
       pendingStart = onStart
     },
-    supply: (offer, _count, onPick) => {
+    supply: (offer, _count, _heal, onPick) => {
       // 보급도 패널이다 — 첫 후보를 바로 고른다 (프로브는 흐름만 잰다).
       const first = offer[0]
       if (first !== undefined) onPick(first)

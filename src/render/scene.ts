@@ -498,15 +498,44 @@ function drawTargets(
       ctx.closePath()
       ctx.fill()
 
-      // 갑주귀신 — 몸 둘레에 갑주 테. 몸통이 안 통하는 이유가 그림으로 읽힌다.
-      if (t.armored) {
-        ctx.strokeStyle = THEME.target2
-        ctx.lineWidth = Math.max(2, rx * 0.06)
+      // ── 변종별 몸치장 — 실루엣이 달라야 '또 그놈'이 아니다 (형: "소스 재활용이 보인다"). ──
+      if (t.look === 1) {
+        // 갑주귀신 — 몸을 금속 판 세 장이 두른다. 이음매가 '판금'을 만든다.
+        ctx.fillStyle = '#7e93a6'
         ctx.beginPath()
-        ctx.ellipse(x, y, rx * 0.98, ry * 0.98, 0, 0.15 * Math.PI, 0.85 * Math.PI)
+        ctx.moveTo(x - rx * 0.95, y + ry * 0.1)
+        ctx.lineTo(x - rx * 0.6, y - ry * 0.85)
+        ctx.lineTo(x + rx * 0.6, y - ry * 0.85)
+        ctx.lineTo(x + rx * 0.95, y + ry * 0.1)
+        ctx.lineTo(x + rx * 0.55, y + ry * 0.75)
+        ctx.lineTo(x - rx * 0.55, y + ry * 0.75)
+        ctx.closePath()
+        ctx.fill()
+        ctx.strokeStyle = THEME.targetBand
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.moveTo(x - rx * 0.75, y - ry * 0.25)
+        ctx.lineTo(x + rx * 0.75, y - ry * 0.25)
+        ctx.moveTo(x - rx * 0.8, y + ry * 0.25)
+        ctx.lineTo(x + rx * 0.8, y + ry * 0.25)
         ctx.stroke()
+        // 리벳 — 판금의 서명.
+        ctx.fillStyle = THEME.targetBand
+        for (const [px2, py2] of [[-0.6, -0.55], [0.6, -0.55], [-0.7, 0.5], [0.7, 0.5]] as const) {
+          ctx.beginPath()
+          ctx.arc(x + rx * px2, y + ry * py2, 2.2, 0, TAU)
+          ctx.fill()
+        }
+      } else if (t.look === 3) {
+        // 폭주귀신 — 앞으로 기운 몸 + 뒤로 찢어지는 속도선. 형태 자체가 돌진이다.
+        ctx.strokeStyle = THEME.threatDim
+        ctx.lineWidth = 2
         ctx.beginPath()
-        ctx.ellipse(x, y - ry * 0.35, rx * 0.8, ry * 0.55, 0, 1.1 * Math.PI, 1.9 * Math.PI)
+        for (let l2 = 0; l2 < 3; l2++) {
+          const ly = y - ry * 0.4 + l2 * ry * 0.4
+          ctx.moveTo(x + rx * 0.7, ly)
+          ctx.lineTo(x + rx * (1.7 + l2 * 0.3), ly + ry * 0.08)
+        }
         ctx.stroke()
       }
 
@@ -521,16 +550,32 @@ function drawTargets(
         ctx.lineTo(x + hr, hy)
         ctx.stroke()
       } else {
-        band(ctx, x, hy, hr, hr * 0.92, THEME.target2)
+        // 변종별 눈: 갑주(1)는 투구 틈의 가로 슬릿 · 폭주(3)는 성난 사선 · 쌍눈(2)은 작고 말갛다.
+        const eyeH = t.look === 1 ? hr * 0.38 : t.look === 3 ? hr * 0.6 : hr * 0.92
+        if (t.look === 1) {
+          // 투구 돔 — 눈은 그 틈으로만 보인다.
+          band(ctx, x, hy - hr * 0.2, hr * 1.15, hr * 0.95, '#66788a')
+        }
+        band(ctx, x, hy, hr, eyeH, THEME.target2)
         const ax2 = worldToScreenX(cam, w.archer.x)
         const ay2 = worldToScreenY(cam, w.archer.y)
         const dl = Math.hypot(ax2 - x, ay2 - hy) || 1
         const px2 = x + ((ax2 - x) / dl) * hr * 0.34
-        const py2 = hy + ((ay2 - hy) / dl) * hr * 0.3
-        band(ctx, px2, py2, hr * 0.52, hr * 0.5, THEME.threat)
-        band(ctx, px2, py2, hr * 0.26, hr * 0.25, THEME.targetBand)
+        const py2 = hy + ((ay2 - hy) / dl) * Math.min(hr * 0.3, eyeH * 0.3)
+        const iw = t.look === 2 ? hr * 0.4 : hr * 0.52
+        band(ctx, px2, py2, iw, Math.min(eyeH * 0.85, iw), t.look === 2 ? '#ff9a45' : THEME.threat)
+        band(ctx, px2, py2, iw * 0.5, Math.min(eyeH * 0.5, iw * 0.5), THEME.targetBand)
         // 눈빛 점 — 이게 있어야 젖은 눈알로 보인다.
         band(ctx, px2 - hr * 0.12, py2 - hr * 0.14, hr * 0.09, hr * 0.09, THEME.target2)
+        if (t.look === 3) {
+          // 성난 눈두덩 — 사선 한 줄이 표정을 만든다.
+          ctx.strokeStyle = THEME.threatDim
+          ctx.lineWidth = Math.max(2, hr * 0.16)
+          ctx.beginPath()
+          ctx.moveTo(x - hr, hy - eyeH * 1.15)
+          ctx.lineTo(x + hr * 0.7, hy - eyeH * 0.55)
+          ctx.stroke()
+        }
       }
 
       // 체력 바 — 눈 위. 보스의 남은 목숨이 멀리서도 한 줄로 읽힌다.
