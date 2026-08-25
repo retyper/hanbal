@@ -57,7 +57,6 @@ const BODY = {
   /** 팔꿈치가 화살선보다 위에 있는 거리. 처지면 '닭날개'가 된다 (docs/FORM.md 2-5). */
   elbowRise: 0.035,
   bowHalf: 0.46,
-  bowCurve: 0.15,
   bowDrawCurve: 0.5,
   arrowLen: 0.72,
   arrowHead: 0.13,
@@ -172,17 +171,28 @@ const ON = { warn: 0.02, flash: 0.5, trueFull: 0.5 } as const
 /** 경고색 램프. 매 프레임 색 문자열을 만들면 힙 할당이 생긴다 (A5). 미리 만들어 인덱싱한다. */
 /**
  * 활 휨의 기하 상수 — 실루엣의 문법이지 손맛 노브가 아니다.
- * rest = 스트렁 상태의 기본 휨 · back = 당길 때 팁이 사수 쪽으로 젖혀지는 비율 ·
- * squeeze = 팁 사이가 오므라드는 비율 · apex·ctrl = 호의 정점과 제어점 위치.
+ *
+ * ★ 제1원칙 (형의 반려: "손이 활을 안 잡고 붕 떠 있는데다, 당기면 활 잡은 위치가 오히려
+ *   손보다 앞으로 나가버려"): **활의 그립은 활손 그 점이다. 당김이 그 자리를 옮기지 않는다.**
+ *   당김이 바꾸는 것은 오직 **림 끝이 사수 쪽으로 젖혀지는 깊이**뿐이다 — 실물이 그렇다.
+ *   예전엔 호의 정점을 손보다 +u(과녁 쪽)로 밀었고 그 양이 당김에 비례해 커졌다(0.5→1.6배).
+ *   그래서 당길수록 활이 손에서 앞으로 도망갔다. 이제 정점 오프셋은 존재하지 않는다.
+ *
+ * brace    = 시위만 매어도 팁이 그립보다 뒤로 물러 있는 거리 (half 대비). 브레이스 높이.
+ * backGain = 당김에 따라 더 젖혀지는 양 (half 대비)
+ * squeeze  = 젖혀질수록 팁 사이가 오므라드는 비율
+ * ctrlV·ctrlBack = 그립→팁 곡선의 제어점. ctrlBack이 작을수록 그립 근처가 뻣뻣하다(라이저).
+ * riser    = 손잡이. 그립에서 위아래로 뻗는 곧은 구간 (half 대비) — 손이 **쥘 것**이 있어야 한다.
+ * fist     = 주먹 반지름 (선 굵기 배수). 활손이 활대를, 시위손이 줄을 쥐었음을 점으로 못박는다.
  */
 const BOWPOSE = {
-  rest: 0.3,
-  back: 0.38,
+  brace: 0.22,
+  backGain: 0.4,
   squeeze: 0.16,
-  apex0: 0.5,
-  apex1: 1.1,
-  ctrlU: 0.75,
-  ctrlV: 0.6,
+  ctrlV: 0.55,
+  ctrlBack: 0.14,
+  riser: 0.2,
+  fist: 0.85,
 } as const
 
 /**
@@ -266,8 +276,15 @@ const rig = {
   hdX: 0, hdY: 0,
   /** 궁수가 바라보는 쪽 (+1 오른쪽 / -1 왼쪽). 등·골반은 조준각이 아니라 이 방향의 반대다. */
   face: 1,
+  /** 활손(왼손) = 활의 그립. **당김과 무관하게 이 점이 활대다.** */
   hx: 0, hy: 0,
   nockX: 0, nockY: 0,
+  /** 활 반길이 (m) — 스킨 반영. */
+  bowHalf: 0,
+  /** 시위가 걸린 두 팁이 그립보다 뒤로 물러난 거리 (m). 당길수록 깊어진다. */
+  bowBack: 0,
+  /** 활이 휜 정도 0..1 (당김 × 성장·strain 보정). */
+  bowFlex: 0,
   warn: 0,
   full: 0,
   draw: 0,
@@ -362,10 +379,25 @@ function computeRig(cam: Camera, w: World): void {
   rig.hx = a.x + ux * BODY.span - vx * BODY.gripDrop
   rig.hy = a.y + uy * BODY.span - vy * BODY.gripDrop
 
-  // 노크는 화살선 위를 오간다. d=만작이면 앵커(턱)에 정확히 닿고,
-  // maxDraw가 0.72에서 멈추는 초보는 턱 앞에서 멈춘다 — "아직 힘이 모자라다"가 자세로 읽힌다.
-  rig.nockX = a.x + ux * (1 - d) * BODY.span
-  rig.nockY = a.y + uy * (1 - d) * BODY.span
+  // ── 활의 휨 — 그립(활손)은 고정, 림 끝만 사수 쪽으로 젖혀진다 (BOWPOSE 제1원칙) ──
+  // 여기서 재는 이유: 노크가 **시위 위에** 있으려면 시위가 어디 걸렸는지를 먼저 알아야 한다.
+  const skin = BOW_SKIN[w.bowSkin] ?? (BOW_SKIN['practice'] as BowSkin)
+  const flex = d
+    * (1 + rig.trueFull * P.render.poseFullBowCurve)
+    * (1 - rig.unlock * P.render.poseStrainBow)
+  rig.bowFlex = flex
+  rig.bowHalf = BODY.bowHalf * skin.half
+  // 브레이스(시위만 맨 상태)는 활의 뻣뻣함과 무관한 고정 높이고, 당김분만 뻣뻣함을 탄다.
+  rig.bowBack = rig.bowHalf * (BOWPOSE.brace + BOWPOSE.backGain * flex * skin.bend)
+
+  // 노크는 **시위 위**를 오간다. 당김 0이면 시위 그 자리(그립보다 bowBack 뒤)에 있고,
+  // 만작이면 앵커(턱)에 정확히 닿는다. maxDraw가 0.72에서 멈추는 초보는 턱 앞에서 멈춘다 —
+  // "아직 힘이 모자라다"가 자세로 읽힌다.
+  // 예전엔 당김 0의 노크를 그립과 같은 u에 두어 시위가 활보다 앞으로 볼록했다 —
+  // 시위를 매지도 않은 활이었다.
+  const nockU = BODY.span - rig.bowBack
+  rig.nockX = a.x + ux * (1 - d) * nockU
+  rig.nockY = a.y + uy * (1 - d) * nockU
 
   // ── 시위손 (릴리즈 팔로스루) ──
   // ★ 판이 바뀌면 sim 시계(elapsed)가 0으로 되감긴다. 릴리즈 기억을 안 버리면
@@ -561,20 +593,16 @@ export function drawArcher(
   //     활 몸은 과녁 쪽으로 볼록한 호가 된다. 정점은 그립 근처다.
   //   · 각궁의 고자(활끝)는 뿔·나무 심이라 **휘지 않는다** — 당겨도 과녁 쪽으로 꺾인 채
   //     남는다. 반곡의 실루엣은 '휘는 림 + 안 휘는 고자'의 대비가 만든다.
-  //   · 스트렁 상태(당김 0)에서도 활은 이미 조금 휘어 있다 (BOWPOSE.rest).
+  //   · 스트렁 상태(당김 0)에서도 시위가 팁을 뒤로 당겨 놓았다 (BOWPOSE.brace).
+  //   · **그립은 활손 그 점이다.** 당김이 옮기는 건 팁뿐이다 (tools/probe-form.ts가 판정한다).
   // 경고가 오르면 경고색, 경계선을 넘으면 휨이 조금 풀린다 — 붙들고 있지 못한다는 뜻.
   const skin = BOW_SKIN[w.bowSkin] ?? (BOW_SKIN['practice'] as BowSkin)
-  const bendAmt = skin.bend
-    * (BOWPOSE.rest + (1 - BOWPOSE.rest) * rig.draw)
-    * (1 + trueFull * P.render.poseFullBowCurve)
-    * (1 - unlock * P.render.poseStrainBow)
-  const half = BODY.bowHalf * skin.half
+  const half = rig.bowHalf
   const limbLen = half * (1 - skin.siyah)
   // 림 끝(고자 뿌리) — 당길수록 시위 쪽(-u)으로 젖혀지고 v로는 살짝 오므라든다.
-  const limbV = limbLen * (1 - BOWPOSE.squeeze * bendAmt)
-  const limbBack = limbLen * BOWPOSE.back * bendAmt
-  // 호의 정점은 그립 앞(+u) — 이게 "과녁 쪽으로 볼록"이다.
-  const apex = BODY.bowCurve * (BOWPOSE.apex0 + BOWPOSE.apex1 * bendAmt)
+  // **그립은 안 움직인다.** 움직이는 건 이 두 끝뿐이다.
+  const limbV = limbLen * (1 - BOWPOSE.squeeze * rig.bowFlex)
+  const limbBack = rig.bowBack
 
   const baseAx = rig.hx + rig.vx * limbV - rig.ux * limbBack
   const baseAy = rig.hy + rig.vy * limbV - rig.uy * limbBack
@@ -602,20 +630,29 @@ export function drawArcher(
     : (rig.flash > ON.flash ? THEME.target2 : skin.color)
   ctx.lineWidth = bowW
   ctx.lineJoin = 'round'
-  const gripFx = rig.hx + rig.ux * apex
-  const gripFy = rig.hy + rig.uy * apex
-  const ctrlU = apex * BOWPOSE.ctrlU
+  // 손잡이(라이저) — 그립을 중심으로 위아래로 **곧게** 뻗는 짧은 구간.
+  // 손이 쥘 것이 있어야 쥔 그림이 된다. 여기가 활의 원점이고, 당겨도 움직이지 않는다.
+  const riserV = half * BOWPOSE.riser
+  const risAx = rig.hx + rig.vx * riserV
+  const risAy = rig.hy + rig.vy * riserV
+  const risBx = rig.hx - rig.vx * riserV
+  const risBy = rig.hy - rig.vy * riserV
+  // 라이저 끝 → 팁: 밖으로 나가며 사수 쪽으로 젖혀진다. 제어점이 코드보다 앞(+u)이라
+  // 호가 과녁 쪽으로 볼록해진다 — 그립이 활의 가장 앞이다.
+  const cAv = riserV + (limbV - riserV) * BOWPOSE.ctrlV
+  const cU = limbBack * BOWPOSE.ctrlBack
   ctx.beginPath()
   ctx.moveTo(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy))
   ctx.lineTo(worldToScreenX(cam, baseAx), worldToScreenY(cam, baseAy))
   ctx.quadraticCurveTo(
-    worldToScreenX(cam, rig.hx + rig.vx * limbV * BOWPOSE.ctrlV + rig.ux * ctrlU),
-    worldToScreenY(cam, rig.hy + rig.vy * limbV * BOWPOSE.ctrlV + rig.uy * ctrlU),
-    worldToScreenX(cam, gripFx), worldToScreenY(cam, gripFy),
+    worldToScreenX(cam, rig.hx + rig.vx * cAv - rig.ux * cU),
+    worldToScreenY(cam, rig.hy + rig.vy * cAv - rig.uy * cU),
+    worldToScreenX(cam, risAx), worldToScreenY(cam, risAy),
   )
+  ctx.lineTo(worldToScreenX(cam, risBx), worldToScreenY(cam, risBy))
   ctx.quadraticCurveTo(
-    worldToScreenX(cam, rig.hx - rig.vx * limbV * BOWPOSE.ctrlV + rig.ux * ctrlU),
-    worldToScreenY(cam, rig.hy - rig.vy * limbV * BOWPOSE.ctrlV + rig.uy * ctrlU),
+    worldToScreenX(cam, rig.hx - rig.vx * cAv - rig.ux * cU),
+    worldToScreenY(cam, rig.hy - rig.vy * cAv - rig.uy * cU),
     worldToScreenX(cam, baseBx), worldToScreenY(cam, baseBy),
   )
   ctx.lineTo(worldToScreenX(cam, tipBx), worldToScreenY(cam, tipBy))
@@ -630,6 +667,17 @@ export function drawArcher(
     ctx.stroke()
     ctx.lineWidth = bowW
   }
+
+  // ── 활손(왼손)의 주먹 — **활대를 쥐었다**는 못. ─────────────────────────────
+  // 형의 반려: "손이 활을 안 잡고 붕 떠 있다." 선 두 개가 한 점에서 만나는 것만으로는
+  // 쥐었다고 안 읽힌다. 라이저 위에 살점이 있어야 한다. 몸색으로 칠해야 손이다.
+  ctx.fillStyle = bodyCol
+  ctx.beginPath()
+  ctx.arc(
+    worldToScreenX(cam, rig.hx), worldToScreenY(cam, rig.hy),
+    Math.max(limbW * BOWPOSE.fist, thinPx * 1.6), 0, TAU,
+  )
+  ctx.fill()
 
   // 시위 — 몸보다 훨씬 얇다. 고자 끝에 걸린다.
   // 당기는 동안만 노크로 꺾인다. 놓으면 **시위만** 제자리로 튕겨 돌아가 잠깐 잔떨림이 남는다 —
@@ -691,6 +739,16 @@ export function drawArcher(
   ctx.lineTo(worldToScreenX(cam, elbowX), worldToScreenY(cam, elbowY))
   ctx.lineTo(worldToScreenX(cam, rig.hdX), worldToScreenY(cam, rig.hdY))
   ctx.stroke()
+
+  // 시위손(오른손)의 주먹 — **줄을 쥐었다**는 못. 당기는 동안은 노크 그 자리이므로
+  // 주먹이 시위의 꺾이는 꼭짓점에 정확히 얹힌다. 놓은 뒤에는 시위와 헤어져 팔로스루를 따라간다.
+  ctx.fillStyle = bodyCol
+  ctx.beginPath()
+  ctx.arc(
+    worldToScreenX(cam, rig.hdX), worldToScreenY(cam, rig.hdY),
+    Math.max(limbW * BOWPOSE.fist, thinPx * 1.6), 0, TAU,
+  )
+  ctx.fill()
 
 
   // ── 물린 화살 · 통아 ──────────────────────────────────────────
