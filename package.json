@@ -6,12 +6,13 @@
   "description": "한 발 - 스틱맨 궁수 성장 게임",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && npm run budget",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types tests/*.test.ts",
     "balance": "node --experimental-strip-types tools/balance-sim.ts",
-    "probe": "node --experimental-strip-types tools/probe-boot.ts && node --experimental-strip-types tools/probe-arrows.ts && node --experimental-strip-types tools/probe-audio.ts && node --experimental-strip-types tools/probe-render.ts && node --experimental-strip-types tools/probe-ui.ts && node --experimental-strip-types tools/probe-form.ts && node --experimental-strip-types tools/probe-city.ts"
+    "probe": "node --experimental-strip-types tools/probe-boot.ts && node --experimental-strip-types tools/probe-arrows.ts && node --experimental-strip-types tools/probe-audio.ts && node --experimental-strip-types tools/probe-render.ts && node --experimental-strip-types tools/probe-ui.ts && node --experimental-strip-types tools/probe-form.ts && node --experimental-strip-types tools/probe-city.ts",
+    "budget": "node --experimental-strip-types tools/budget.ts"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

@@ -37,6 +37,9 @@ jobs:
       - run: npm run build
         env:
           PUBLIC_BASE: /${{ github.event.repository.name }}/
+      # 번들 예산 (GDD 1장 C6). npm run build 가 이미 부르지만 여기서 이름을 드러내
+      # 둔다 — Actions 로그에서 "왜 빨간불인가"가 한 줄로 읽혀야 한다.
+      - run: npm run budget
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
