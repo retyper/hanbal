@@ -257,6 +257,8 @@ function fakeWorld(ev: unknown[]): unknown {
     tick: ++tick,
     events: ev,
     targets: [{ id: 0, kind: 'aerial' }],
+    // 클리어음 분기(isBossStage)가 스테이지 정의를 읽는다 — 보스 없는 판으로 세운다.
+    stage: { targets: [] },
     archer: { phase: 'idle', draw: 0, warn: 0, tremorAmp: 0 },
   }
 }
