@@ -39,6 +39,16 @@ export interface HudState {
   /** 판이 끝난 사유 — 배너가 판정어('실패')가 아니라 사건을 말하게 한다 (감사 카피 P1). */
   endReason: '' | 'defeat' | 'death'
   /**
+   * 이번 판에 걸린 시간 (초, sim elapsed) · 이 판의 자기 최고 시간 · 이번에 갱신했는가.
+   *
+   * docs/MEGAHIT.md §8-④: 숙련자는 초보보다 3.2배 빨리 끝내는데 별도 점수도 그걸
+   * 한 톨도 세지 않았다. **시간은 천장이 없는 유일한 축이다.** 결과 배너가 이걸 말한다.
+   * bestTime 0 = 아직 기록 없음.
+   */
+  time: number
+  bestTime: number
+  record: boolean
+  /**
    * 판 결과의 별 수. **-1 = 아직 채점 전.**
    *
    * 판은 마지막 과녁이 쓰러진 그 스텝에 즉시 클리어로 넘어가지만, 그 뒤로도 날아가던 화살과
@@ -176,6 +186,8 @@ const HUD = {
   /** 머리글 아래 본문까지. 쌍(26) + 트랙(보스 마름모가 삐져나온다)까지 담는다. */
   headGap: 48,
   /** 과녁 수 / 점수 */
+  /** 결과의 시간 줄 (px). 점수보다 작다 — 기록은 자랑이지 판정이 아니다. */
+  timePx: 14,
   goalPx: 23,
   scorePx: 13,
   scoreGap: 12,
@@ -262,6 +274,7 @@ const M = {
   fStage: '',
   fTitle: '',
   fTotal: '',
+  fTime: '',
   fGoal: '',
   fScore: '',
   fCount: '',
@@ -281,6 +294,15 @@ const M = {
 const STAR_MAX = 3
 
 const px = (v: number, s: number): number => Math.round(v * s)
+
+/**
+ * 초 → '12.4초'. 소수 한 자리다.
+ * 정수로 자르면 기록이 자주 동점이 되어 **갱신의 순간이 사라진다** — 이 기능의 전부가
+ * 그 순간인데. 두 자리는 계기판처럼 보여서 30초 게임의 결과 화면에는 과하다.
+ */
+function fmtSec(t: number): string {
+  return `${(Math.round(t * 10) / 10).toFixed(1)}초`
+}
 
 function syncMetrics(cam: Camera): void {
   if (cam.w === M.w && cam.h === M.h) return
@@ -317,6 +339,7 @@ function syncMetrics(cam: Camera): void {
   M.fStage = `700 ${px(HUD.stagePx, s)}px ${FONT_NUM}`
   M.fTitle = `500 ${px(HUD.titlePx, s)}px ${FONT_UI}`
   M.fTotal = `500 ${px(HUD.totalPx, s)}px ${FONT_NUM}`
+  M.fTime = `600 ${px(HUD.timePx, s)}px ${FONT_NUM}`
   M.fGoal = `600 ${px(HUD.goalPx, s)}px ${FONT_UI}`
   M.fScore = `500 ${px(HUD.scorePx, s)}px ${FONT_NUM}`
   M.fCount = `700 ${M.countPx}px ${FONT_NUM}`
@@ -828,6 +851,30 @@ function drawResult(
   ctx.font = M.fResultSub
   ctx.fillStyle = THEME.hudText
   ctx.fillText(cache.scoreNum, cx, y)
+
+  // ── 시간 · 자기 최고 (docs/MEGAHIT.md §8-④) ──
+  //
+  // 실측으로 숙련자는 초보보다 3.2배 빨리 끝내는데(4.25s vs 13.75s) 별도 점수도
+  // 그걸 한 톨도 세지 않았다. 별은 3개가 천장이라 이틀이면 끝나고, 그 뒤로 같은 판을
+  // 다시 할 이유가 사라진다. **시간은 천장이 없는 유일한 축이다.**
+  //
+  // 순위표가 아니라 **자기 기록**이다 (GDD 9장: 리더보드 금지). 남과 비교하는 순간
+  // 30초 세션이 30분이 된다. 이기는 상대는 어제의 나 하나뿐이다.
+  if (cleared && hud.time > 0) {
+    y += px(HUD.timePx, M.s) + M.cardGap
+    ctx.font = M.fTime
+    if (hud.record) {
+      // 갱신 — 이 순간이 이 기능의 전부다. 색이 바뀌고 글자가 하나 붙는다.
+      ctx.fillStyle = THEME.accent
+      ctx.fillText(`${fmtSec(hud.time)}  최고 기록`, cx, y)
+    } else {
+      ctx.fillStyle = THEME.hudDim
+      ctx.fillText(
+        hud.bestTime > 0 ? `${fmtSec(hud.time)}   최고 ${fmtSec(hud.bestTime)}` : fmtSec(hud.time),
+        cx, y,
+      )
+    }
+  }
 
   // ── 다음 안내 ── 이제 이건 '결과'가 아니라 '조작 안내'다. 작게, 아래에.
   if (hud.toast !== '') {

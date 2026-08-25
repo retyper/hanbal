@@ -194,7 +194,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   const unRearm = onSaveChanged(rearm)
 
   // 매 프레임 제자리에서 갱신한다. 새로 만들지 않는다 (A5).
-  const hud: HudState = { training: 0, canLevelUp: false, muted: false, toast: '', arrow: '', stars: -1, endReason: '' }
+  const hud: HudState = { training: 0, canLevelUp: false, muted: false, toast: '', arrow: '', stars: -1, endReason: '', time: 0, bestTime: 0, record: false }
 
   let raf = 0
   /** 샌드박스(실험장) — 기록의 세계 밖이다. 정산·해금·여정 종료가 전부 멈춘다. */
@@ -436,6 +436,26 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     const id = w.stage.id
     const had = save.stars[id] ?? 0
     if (reward.stars > had) save.stars[id] = reward.stars
+
+    // ── 자기 최고 시간 (docs/MEGAHIT.md §8-④) ──
+    // 별은 3개가 천장이라 이틀이면 끝난다. **시간은 천장이 없는 유일한 축이다.**
+    // 깬 판만 센다 — 실패한 판의 '빠른 시간'은 기록이 아니라 포기다.
+    // 시계는 sim의 elapsed다 (A1): 탭이 숨으면 sim이 멈추므로 자리를 뜬 시간은 안 센다.
+    // 그래서 이 기록은 C2를 어기지 않는다 — 커피 타러 간 사람의 기록이 망가지지 않는다.
+    hud.time = w.elapsed
+    hud.bestTime = save.bestTime[id] ?? 0
+    hud.record = false
+    if (cleared && w.elapsed > 0) {
+      const t = Math.round(w.elapsed * 100) / 100
+      const prev = save.bestTime[id] ?? 0
+      if (prev <= 0 || t < prev) {
+        save.bestTime[id] = t
+        // 첫 기록은 '갱신'이 아니다 — 처음 세운 사람에게 축포를 터뜨리면 그 뒤로 매번
+        // 축포가 나와야 말이 된다. 갱신은 **이겨낸 것**이 있을 때만이다.
+        hud.record = prev > 0
+        hud.bestTime = t
+      }
+    }
     if (bestChain > save.bestChain) save.bestChain = bestChain
     save.bullseyes += bullseyes
     // 보스 처치 — 활 해금의 유일한 재료 (docs/RUN.md). 해금 판정보다 먼저 세야 그 자리에서 열린다.

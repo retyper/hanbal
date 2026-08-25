@@ -19,7 +19,7 @@ import { STAGES } from './stages.ts'
 const KEY = 'hanbal.save.v1'
 
 /** 현재 스키마 버전. 필드를 바꿀 때마다 +1 하고 MIGRATIONS에 한 줄 추가한다. */
-export const SCHEMA_VERSION = 7
+export const SCHEMA_VERSION = 8
 
 /**
  * 오프라인 축적의 소수부 (자원 단위). 세 자원의 축적 속도가 달라 하나로 합칠 수 없다.
@@ -109,6 +109,20 @@ export interface SaveData {
    * sim의 w.rng와는 완전히 별개의 스트림이다 (A1: sim 결과는 시드에만 달려 있어야 한다).
    */
   runSeed: number
+
+  // ── v8: 자기 최고 시간 (docs/MEGAHIT.md §8-④) ──────────────────
+  /**
+   * 판별 최고(=최단) 클리어 시간 (초). **줄지 않는다** — 더 빠른 기록만 덮어쓴다.
+   *
+   * 왜 생겼나: 실측으로 숙련자는 초보보다 3.2배 빨리 끝내는데(4.25s vs 13.75s)
+   * 별도 점수도 훈련치도 그 3.2배를 **한 톨도 세지 않았다.** 별은 3개가 천장이라
+   * 이틀이면 끝나고, 그 뒤로 같은 판을 다시 할 이유가 사라진다.
+   * **시간은 이 게임에서 유일하게 천장이 없는 축이다.** 그걸 안 세고 있었다.
+   *
+   * 소수 둘째 자리까지 남긴다 — 0.1초 차이가 다음 도전의 이유가 되는 값이라
+   * 정수로 자르면 기록이 자주 '동점'이 되어 갱신의 순간이 사라진다.
+   */
+  bestTime: Record<string, number>
 }
 
 /** 저장값이 말이 되는 범위인지만 본다. 치트 방지가 아니라 NaN·Infinity 방어다 (A4: 치트 방지 안 함). */
@@ -144,6 +158,7 @@ export function defaultSave(now: number): SaveData {
     requests: 0,
     stageIndex: 0,
     bestScore: {},
+    bestTime: {},
     lastSeen: now,
     offlineEnabled: true,
     totalShots: 0,
@@ -254,6 +269,12 @@ const MIGRATIONS: ReadonlyArray<(r: Raw) => void> = [
 
   /** v6 → v7: 체력이 생겼다 (docs/RUN.md 6장). 빠진 필드는 sanitize가 가득으로 채운다. */
   () => {},
+  /**
+   * v7 → v8: 판별 최고 시간이 생겼다 (docs/MEGAHIT.md §8-④).
+   * 옛 세이브에는 기록이 없다 — **비워 둔다.** 0으로 채우면 "0초에 깼다"가 되어
+   * 영원히 못 깨는 기록이 박히고, 갱신의 순간이 그 사람에게서 통째로 사라진다.
+   */
+  () => {},
 ]
 
 function migrate(r: Raw): void {
@@ -288,6 +309,24 @@ function sanitizeBest(v: unknown): Record<string, number> {
     const raw = src[key]
     if (typeof raw !== 'number' || !Number.isFinite(raw)) continue
     out[key] = Math.floor(clamp(raw, 0, HARD_MAX))
+    n++
+  }
+  return out
+}
+
+/**
+ * 최고 시간 — 소수를 지키고(0.01초 단위) 0 이하는 버린다.
+ * 0초는 기록이 아니라 손상이고, 한 번 들어가면 영원히 못 깨는 벽이 된다.
+ */
+function sanitizeTimes(v: unknown): Record<string, number> {
+  const src = obj(v)
+  const out: Record<string, number> = {}
+  let n = 0
+  for (const key in src) {
+    if (n >= BEST_SCORE_MAX_KEYS) break
+    const raw = src[key]
+    if (typeof raw !== 'number' || !Number.isFinite(raw) || raw <= 0) continue
+    out[key] = Math.round(clamp(raw, 0.01, HARD_MAX) * 100) / 100
     n++
   }
   return out
@@ -341,6 +380,7 @@ function sanitize(r: Raw, now: number): SaveData {
     requests: int(r['requests'], 0, 0, HARD_MAX),
     stageIndex: int(r['stageIndex'], 0, 0, 9999),
     bestScore: sanitizeBest(r['bestScore']),
+    bestTime: sanitizeTimes(r['bestTime']),
     // 상한은 반드시 `now` 다. HARD_MAX 같은 임의의 큰 수로 자르면 실제 wallclock(1.7e12ms)이
     // 그 아래로 깎여 **재시작할 때마다 수십 년이 흐른 것으로 정산**된다 (자원이 즉시 상한).
     // 미래 시각을 허용하지 않는 것이 오프라인 정산이 성립하는 유일한 조건이다.
