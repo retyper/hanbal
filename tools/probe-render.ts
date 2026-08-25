@@ -214,7 +214,7 @@ console.log('한 발 — 렌더 프로브 (Canvas2D 기록 스텁)')
 
 // ── 1. 창 크기별 글자 크기 ──
 console.log('\n── 1. 창 크기별 HUD 글자 크기 ──')
-console.log('  ' + '창'.padEnd(12) + '판번호'.padStart(8) + '과녁'.padStart(8) +
+console.log('  ' + '창'.padEnd(12) + '장-판'.padStart(8) + '과녁'.padStart(8) +
   '화살수'.padStart(8) + '훈련'.padStart(8) + '자막'.padStart(8))
 const SIZES: ReadonlyArray<readonly [number, number]> = [[1024, 640], [1280, 800], [1920, 1080], [2560, 1440]]
 for (const [cw, ch] of SIZES) {
@@ -226,7 +226,8 @@ for (const [cw, ch] of SIZES) {
   const pick = (s: string): number => rec.texts.find((t) => t.text.includes(s))?.size ?? 0
   console.log(
     '  ' + `${cw}x${ch}`.padEnd(12) +
-    String(pick('판')).padStart(8) +
+    // 장-판 쌍('1-1') — 머리글의 주인공. 통산 번호('1판')가 아니라 이게 커야 한다.
+    String(rec.texts.find((t) => /^\d+-\d+$/.test(t.text))?.size ?? 0).padStart(8) +
     String(pick('과녁')).padStart(8) +
     String(rec.texts.find((t) => /^\d+$/.test(t.text))?.size ?? 0).padStart(8) +
     String(pick('훈련')).padStart(8) +
@@ -302,9 +303,11 @@ for (const [cw, ch] of SIZES) {
   for (let k = 0; k < 5; k++) {
     const w = createWorld(getStage(CAMPAIGN + k), STATS)
     frame(canvas, w, 0)
-    const no = rec.texts.find((t) => t.text.endsWith('판'))?.text ?? '?'
+    const pair = rec.texts.find((t) => /^\d+-\d+$/.test(t.text))?.text ?? '?'
+    const tot = rec.texts.find((t) => /^\d+판$/.test(t.text))?.text ?? '?'
+    const no = `${pair} (${tot})`
     const title = rec.texts.find((t) => t.align === 'center' && t.size >= 30)?.text ?? '?'
-    console.log(`  ${no.padEnd(6)} ${title}`)
+    console.log(`  ${no.padEnd(14)} ${title}`)
   }
 }
 

@@ -143,19 +143,38 @@ const HUD = {
   pulseHz: 2.4,
   toastUp: 58,
 
-  // ── 판 머리글 (새로 생긴 것) ────────────────────────────────────────
+  // ── 판 머리글 ───────────────────────────────────────────────────────
   //
-  // 지금까지 화면에는 **몇 판인지가 어디에도 없었다.** 40판을 지나 무한 구간에 들어가면
-  // 판마다 성격이 달라지는데(endless.ts) 그게 화면에 안 뜨면 그냥 "또 비슷한 판"이 된다.
-  /** 판 번호 글자 크기 (px) */
-  stagePx: 17,
-  /** 판 이름 글자 크기 (px) */
-  titlePx: 13,
-  /** 번호와 이름 사이 */
-  titleGap: 10,
-  /** 머리글 아래 본문까지 */
-  /** 24 -> 40: 머리글과 본문 사이에 여정 진행 점 줄이 들어온다 (UI 전수조사 겹침 1·7번). */
-  headGap: 40,
+  // 형의 반려: "좌상단 스테이지 진행표시 매우 마음에 안 드니까 다른 메가히트 게임들은
+  // 스테이지 어떻게 표시하는지 보고 배워서 여기에 적절하게 적용해."
+  //
+  // 예전엔 통산 번호('63판') + 판 이름 + **흩어진 점 열 개**였다. 크기 셋·색 셋이
+  // 40px 모서리에서 서로 싸웠고, 점 줄은 트랙이 아니라 디버그 출력처럼 읽혔다.
+  //
+  // 메가히트들이 공통으로 쓰는 문법 셋만 가져왔다.
+  //   ① 슈퍼마리오 'WORLD 1-1' — 길잡이는 통산 번호가 아니라 **장-판 쌍**이다.
+  //      "63판"은 자랑이지 좌표가 아니다. "지금 어디냐"에 답하는 건 '5-3'이다.
+  //      그래서 쌍을 머리글의 주인공으로 키우고, 통산 번호는 트랙 끝에 작게 물린다.
+  //   ② 셀레스트·할로우나이트 — **장의 이름**이 정체성을 진다. 쌍 옆에 조용히 붙는다.
+  //   ③ 배틀패스·뱀서 — 흩어진 점이 아니라 **하나의 트랙**. 다음 관문(보스)까지의
+  //      거리가 언제나 보인다. 마지막 칸은 마름모 — 트랙 끝에 관문이 서 있다.
+  /** 장-판 쌍 글자 크기 (px) — 머리글에서 가장 큰 글자 */
+  stagePx: 26,
+  /** 장 이름 글자 크기 (px) */
+  titlePx: 14,
+  /** 쌍과 이름 사이 */
+  titleGap: 9,
+  /** 통산 판 번호 (트랙 끝) */
+  totalPx: 11,
+  /** 진행 트랙 — 칸 하나의 너비·높이, 칸 사이, 쌍 아래로 띄우는 거리 */
+  trackW: 9,
+  trackH: 5,
+  trackGap: 2,
+  trackTop: 7,
+  /** 지금 칸이 위아래로 더 커지는 양 — 눈이 여기로 온다 */
+  trackNow: 2,
+  /** 머리글 아래 본문까지. 쌍(26) + 트랙(보스 마름모가 삐져나온다)까지 담는다. */
+  headGap: 48,
   /** 과녁 수 / 점수 */
   goalPx: 23,
   scorePx: 13,
@@ -224,6 +243,13 @@ const M = {
   scoreGap: 0,
   subGap: 0,
   titleGap: 0,
+  titleDrop: 0,
+  trackW: 0,
+  trackH: 0,
+  trackGap: 0,
+  trackTop: 0,
+  trackNow: 0,
+  stageEm: 0,
   pipStart: 0,
   pipStride: 0,
   pipH: 0,
@@ -235,6 +261,7 @@ const M = {
   windGap: 0,
   fStage: '',
   fTitle: '',
+  fTotal: '',
   fGoal: '',
   fScore: '',
   fCount: '',
@@ -269,6 +296,14 @@ function syncMetrics(cam: Camera): void {
   M.scoreGap = px(HUD.scoreGap, s)
   M.subGap = px(HUD.subGap, s)
   M.titleGap = px(HUD.titleGap, s)
+  M.stageEm = px(HUD.stagePx, s)
+  // 장 이름은 쌍의 **밑선에 맞춘다** — 위쪽 정렬이면 작은 글자가 허공에 뜬다.
+  M.titleDrop = px(HUD.stagePx - HUD.titlePx, s)
+  M.trackW = px(HUD.trackW, s)
+  M.trackH = px(HUD.trackH, s)
+  M.trackGap = px(HUD.trackGap, s)
+  M.trackTop = px(HUD.trackTop, s)
+  M.trackNow = px(HUD.trackNow, s)
   M.pipStart = px(HUD.pipStart, s)
   M.pipStride = px(HUD.pipStride, s)
   M.pipH = px(HUD.pipH, s)
@@ -281,6 +316,7 @@ function syncMetrics(cam: Camera): void {
 
   M.fStage = `700 ${px(HUD.stagePx, s)}px ${FONT_NUM}`
   M.fTitle = `500 ${px(HUD.titlePx, s)}px ${FONT_UI}`
+  M.fTotal = `500 ${px(HUD.totalPx, s)}px ${FONT_NUM}`
   M.fGoal = `600 ${px(HUD.goalPx, s)}px ${FONT_UI}`
   M.fScore = `500 ${px(HUD.scorePx, s)}px ${FONT_NUM}`
   M.fCount = `700 ${M.countPx}px ${FONT_NUM}`
@@ -382,20 +418,15 @@ const cache = {
   /** 판 머리글 — 판이 바뀔 때만 다시 만든다 */
   stageId: '',
   stageNo: '',
+  /** '5-3' — 장-판 쌍. 머리글의 주인공이다. */
+  pair: '',
+  /** 이 마디(10판) 안에서의 자리 0..9. 음수면 규칙 밖 id. */
+  pos: -1,
   wind: Number.NaN,
   windText: '',
 }
 
-/**
- * 스테이지 id('7-3') → 통산 판 번호('63판').
- * 챕터-판 표기는 짧지만 "지금까지 몇 판을 왔는가"가 안 읽힌다. 둘 다 보여준다.
- */
-function stageNoText(id: string): string {
-  const no = stageNoOf(id)
-  return no > 0 ? `${no}판` : id
-}
-
-/** 판 번호 (1부터). id가 규칙 밖이면 0. */
+/** 통산 판 번호 (1부터). id가 규칙 밖이면 0. */
 function stageNoOf(id: string): number {
   const dash = id.indexOf('-')
   if (dash < 0) return 0
@@ -468,50 +499,63 @@ export function drawHud(
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
 
-  // ── 판 머리글 ── 몇 판인지, 무슨 판인지. 지금까지 화면 어디에도 없던 정보다.
+  // ── 판 머리글 — 장-판 쌍 · 장 이름 · 진행 트랙 (HUD.stagePx 위의 주석이 근거다) ──
   if (w.stage.id !== cache.stageId) {
     cache.stageId = w.stage.id
-    cache.stageNo = stageNoText(w.stage.id)
+    const no = stageNoOf(w.stage.id)
+    // 쌍은 id 그 자체다 ('5-3'). 규칙 밖 id면 그것대로 띄운다 — 거짓말은 안 한다.
+    cache.pair = w.stage.id
+    cache.stageNo = no > 0 ? `${no}판` : ''
+    cache.pos = no > 0 ? (no - 1) % 10 : -1
   }
+
+  // ① 주인공 — 장-판 쌍.
   ctx.font = M.fStage
   ctx.fillStyle = THEME.accent
-  ctx.fillText(cache.stageNo, M.padX, M.padY)
-  const noW = ctx.measureText(cache.stageNo).width
+  ctx.fillText(cache.pair, M.padX, M.padY)
+  const pairW = ctx.measureText(cache.pair).width
+
+  // ② 장의 이름 — 쌍의 밑선에 맞춰 조용히.
   const title = w.stage.title ?? ''
   if (title !== '') {
     ctx.font = M.fTitle
     ctx.fillStyle = THEME.hudDim
-    ctx.fillText(title, M.padX + noW + M.titleGap, M.padY + Math.round(M.s * 3))
+    ctx.fillText(title, M.padX + pairW + M.titleGap, M.padY + M.titleDrop)
   }
 
-  // ── 여정 진행 — 이 마디(10판)의 어디쯤인가. 마지막 칸은 보스다. ──
-  // 메가히트 게임들의 공통점: **다음 목표까지의 거리가 항상 보인다.** 그 자리다.
-  {
-    const no = stageNoOf(w.stage.id)
-    if (no > 0) {
-      const pos = ((no - 1) % 10)
-      // 머리글 글자(stagePx)의 em 박스 **아래**에 제 줄을 갖는다 — 14였을 땐 글자를 관통했다
-      // (전수조사 겹침 1번: 점 1~5번이 판 번호를, 7~10번이 판 이름을 뚫고 지나갔다).
-      const dotY = M.padY + px(HUD.stagePx, M.s) + Math.round(M.s * 8)
-      const dr = Math.max(2, Math.round(M.s * 2.2))
-      const gap2 = dr * 3
-      let dx0 = M.padX + 2
-      for (let d2 = 0; d2 < 10; d2++) {
-        const isBoss = d2 === 9
-        const here = d2 === pos
-        const passed = d2 < pos
+  // ③ 진행 트랙 — 한 줄. 지나온 칸 · 지금 칸 · 남은 칸 · 끝의 관문(보스).
+  if (cache.pos >= 0) {
+    const ty = M.padY + M.stageEm + M.trackTop
+    let tx = M.padX
+    for (let i = 0; i < 10; i++) {
+      const here = i === cache.pos
+      const passed = i < cache.pos
+      if (i === 9) {
+        // 보스 칸 — 마름모. 트랙 끝에 관문이 서 있다는 말은 형태로 해야 한다.
+        const cx2 = tx + M.trackW / 2
+        const cy2 = ty + M.trackH / 2
+        const rr = M.trackH * 1.15
+        ctx.fillStyle = here ? THEME.threat : passed ? THEME.hudDim : THEME.threatDim
         ctx.beginPath()
-        if (isBoss) {
-          // 보스 칸 — 눈알. 조금 크고, 다가갈수록 다른 색이 눈에 들어온다.
-          ctx.fillStyle = here ? THEME.threat : passed ? THEME.hudDim : THEME.threatDim
-          ctx.arc(dx0, dotY, dr * 1.6, 0, Math.PI * 2)
-        } else {
-          ctx.fillStyle = here ? THEME.accent : passed ? THEME.hudDim : THEME.gaugeBack
-          ctx.arc(dx0, dotY, here ? dr * 1.3 : dr, 0, Math.PI * 2)
-        }
+        ctx.moveTo(cx2, cy2 - rr)
+        ctx.lineTo(cx2 + rr, cy2)
+        ctx.lineTo(cx2, cy2 + rr)
+        ctx.lineTo(cx2 - rr, cy2)
+        ctx.closePath()
         ctx.fill()
-        dx0 += gap2
+      } else {
+        ctx.fillStyle = here ? THEME.accent : passed ? THEME.hudDim : THEME.gaugeBack
+        // 지금 칸만 위아래로 부푼다 — 트랙 위에서 눈이 갈 곳은 하나여야 한다.
+        const gh = here ? M.trackH + M.trackNow * 2 : M.trackH
+        ctx.fillRect(tx, ty + (M.trackH - gh) / 2, M.trackW, gh)
       }
+      tx += M.trackW + M.trackGap
+    }
+    // ④ 통산 번호 — 트랙 끝에 물린 각주. 좌표가 아니라 이력이라 가장 작다.
+    if (cache.stageNo !== '') {
+      ctx.font = M.fTotal
+      ctx.fillStyle = THEME.hudDim
+      ctx.fillText(cache.stageNo, tx + M.trackH, ty - Math.round(M.s * 3))
     }
   }
 
