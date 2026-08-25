@@ -18,7 +18,7 @@ import type { SkyPalette } from './sky.ts'
 import { drawFoeArcher } from './foe.ts'
 import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { sprite } from './sprites.ts'
-import { createFx, pumpEvents, updateFx, drawFx, hitStopMs, targetSquash , PLAYER_PIN } from './effects.ts'
+import { createFx, pumpEvents, updateFx, drawFx, hitStopMs, oneShotAmount, targetSquash , PLAYER_PIN } from './effects.ts'
 import type { Fx } from './effects.ts'
 import { drawHud } from './hud.ts'
 import type { HudState } from './hud.ts'
@@ -1267,6 +1267,17 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       // 궁수 — 키는 골반+다리라 몸 반경이 아니라 실제 화면 높이를 준다.
       drawShadow(c, sky, worldToScreenX(cam, w.archer.x), groundY, 1.6 * cam.scale)
 
+      // ── '한 발' — 배경이 물러난다 (docs/MEGAHIT.md §2) ──
+      // 채도를 죽이는 필터는 금지다 (A5). 대신 **하늘의 가장 어두운 색을 한 겹 덮는다** —
+      // 배경만 가라앉고 그 위에 그려질 과녁·화살·궁수는 그대로 밝게 남는다. fillRect 하나다.
+      const one = oneShotAmount(r.fx)
+      if (one > 0.002) {
+        c.globalAlpha = one * P.render.oneShotDim
+        c.fillStyle = sky.pine
+        c.fillRect(0, 0, cam.w, cam.h)
+        c.globalAlpha = 1
+      }
+
       // 건물은 과녁보다 먼저 — 사수는 창 **안**에 있다. 그리고 적이 죽어도 여기 남는다.
       drawBuildings(c, cam, w)
       // 깃발은 과녁보다 먼저 — 과녁 위로 천이 지나가면 조준을 가린다 (C1).
@@ -1300,4 +1311,12 @@ export function getCamera(r: Renderer): Camera {
 /** 게임 루프가 히트스톱을 읽는 통로. Fx 인스턴스를 밖으로 노출하지 않기 위함. */
 export function getHitStopMs(r: Renderer): number {
   return hitStopMs((r as RendererX).fx)
+}
+
+/**
+ * '한 발'의 세기 0..1 (docs/MEGAHIT.md §2). 게임 루프가 이걸로 sim의 **벽시계**를 늘린다.
+ * 히트스톱과 같은 급이다 — 스텝 수는 그대로고 실시간 배치만 달라지므로 결정론은 무사하다 (A1).
+ */
+export function getOneShot(r: Renderer): number {
+  return oneShotAmount((r as RendererX).fx)
 }

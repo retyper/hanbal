@@ -16,7 +16,7 @@
 import { armArrow, armBow, cancelDraw, createWorld, isSettled, sandboxAdd, requireFreshPress, resetWorld, restArcher, step } from '../sim/world.ts'
 import type { ArrowKindId } from '../sim/types.ts'
 import { createInput } from '../input/pointer.ts'
-import { createRenderer, getCamera, getHitStopMs } from '../render/scene.ts'
+import { createRenderer, getCamera, getHitStopMs, getOneShot } from '../render/scene.ts'
 import type { HudState } from '../render/hud.ts'
 import { createSfx, playUi, pumpSfx, sfxMuted, toggleMute, unlockSfx, updateSfx } from '../audio/sfx.ts'
 import { getStage } from './stages.ts'
@@ -578,8 +578,14 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       acc = 0
     } else {
       const maxFrame = w.dt * P.sim.maxCatchUpSteps
+      // ── '한 발' — 마지막 하나를 향해 화살이 날 때 시간이 늘어진다 (docs/MEGAHIT.md §2) ──
+      // 히트스톱과 같은 급의 값이다: **스텝 수는 그대로고 벽시계 배치만 달라진다.**
+      // 그래서 결정론(A1)은 무사하다 — 같은 시드는 여전히 같은 판이다.
+      const one = getOneShot(renderer)
+      const scale = one > 0 ? 1 + (P.render.oneShotScale - 1) * one : 1
+      const dtIn = realDt * scale
       // 탭 복귀·긴 GC로 realDt가 튀어도 여기서 잘린다.
-      acc += realDt < maxFrame ? realDt : maxFrame
+      acc += dtIn < maxFrame ? dtIn : maxFrame
 
       let steps = 0
       while (acc >= w.dt && steps < P.sim.maxCatchUpSteps) {

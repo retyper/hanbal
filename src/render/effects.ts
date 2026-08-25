@@ -223,6 +223,19 @@ export interface Fx {
   pA: Float32Array
   /** 남은 히트스톱 (s) */
   hitStop: number
+  /**
+   * '한 발' 순간 0..1 (docs/MEGAHIT.md §2) — **판마다 한 번 보장되는 기대.**
+   *
+   * 마지막 과녁 하나가 남았는데 내 화살이 날고 있다. 그 비행 동안 시간이 늘어지고
+   * 배경이 물러난다. GDD 7장에 "마지막 화살이 결승 과녁으로 향할 때만 슬로모"라는
+   * 씨앗이 이미 적혀 있었는데 이름도 없이 묻혀 있었다 — **제목이 곧 훅인데 안 쓰고 있었다.**
+   *
+   * 실시간 페이싱 값이라 sim 결정론과 무관하다 (히트스톱과 같은 급). 스텝 수는 그대로고
+   * 벽시계 배치만 늘어난다.
+   */
+  oneShot: number
+  /** 이번 프레임에 조건이 참인가. 램프는 updateFx가 한다 — 툭 끊으면 슬로모가 아니라 렉이다. */
+  oneShotWant: boolean
   /** 남은 슬로모 (실시간 s) */
   slow: number
   /** 연쇄 비네트 0..1 과 그 나이 (s) */
@@ -326,6 +339,8 @@ export function createFx(): Fx {
     kY: new Float32Array(STUCK),
     kA: new Float32Array(STUCK),
     hitStop: 0,
+    oneShot: 0,
+    oneShotWant: false,
     slow: 0,
     glow: 0,
     glowAge: 0,
@@ -624,6 +639,26 @@ export function pumpEvents(fx: Fx, w: World): void {
 
   const cap = FX.stopCapMs * 0.001
   if (fx.hitStop > cap) fx.hitStop = cap
+
+  // ── '한 발' — 마지막 하나를 향해 화살이 난다 ──
+  // 조건을 좁게 잡는다. "과녁이 하나 남았다"만으로 걸면 과녁 하나짜리 판(1-1)이
+  // 통째로 슬로모가 된다. **내 화살이 그 하나를 향해 날고 있는 동안**만이다.
+  let alive = 0
+  for (let i = 0; i < w.targets.length; i++) {
+    const t = w.targets[i]
+    if (t !== undefined && t.alive && !t.falling) alive++
+  }
+  let flying = false
+  if (alive === 1) {
+    for (let i = 0; i < w.arrows.length; i++) {
+      const a = w.arrows[i]
+      if (a !== undefined && a.alive && a.outcome === 'flying' && a.splitDepth <= 0) {
+        flying = true
+        break
+      }
+    }
+  }
+  fx.oneShotWant = alive === 1 && flying && w.status === 'playing'
 }
 
 /** 지금 이펙트 시간이 흐르는 속도. 정중앙 직후에만 1보다 작다. */
@@ -634,7 +669,18 @@ export function fxTimeScale(fx: Fx): number {
   return 1 + (FX.critSlowScale - 1) * u * u
 }
 
+/** '한 발'의 세기 0..1. scene이 배경을 물리고, game/loop.ts가 sim의 벽시계를 늘린다. */
+export function oneShotAmount(fx: Fx): number {
+  return fx.oneShot
+}
+
 export function updateFx(fx: Fx, dtReal: number): void {
+  // '한 발' 램프 — 들어갈 땐 빠르게(순간을 놓치면 안 된다), 나올 땐 느리게(여운).
+  const want = fx.oneShotWant ? 1 : 0
+  const rate = want > fx.oneShot ? P.render.oneShotIn : P.render.oneShotOut
+  const step2 = rate > 0 ? dtReal / rate : 1
+  fx.oneShot += (want - fx.oneShot) * (step2 < 1 ? step2 : 1)
+  if (fx.oneShot < 0.001) fx.oneShot = 0
   // 히트스톱은 sim을 세우는 값이라 언제나 실시간으로 깎인다. 슬로모에 끌려가면 안 된다.
   if (fx.hitStop > 0) {
     fx.hitStop -= dtReal
