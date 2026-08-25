@@ -383,10 +383,10 @@ export function armBow(w: World, bow: BowMods): void {
 }
 
 /**
- * 오마케(실험장) 전용 — 살아 있는 판에 과녁/적을 즉석에서 세운다.
+ * 샌드박스(실험장) 전용 — 살아 있는 판에 과녁/적을 즉석에서 세운다.
  * 풀이 모자라면 늘린다 (할당 발생 — 실험장에서만 부르므로 A5의 핫 루프 밖이다).
  */
-export function omakeAdd(w: World, spec: TargetSpec): void {
+export function sandboxAdd(w: World, spec: TargetSpec): void {
   let slot: Target | null = null
   for (const t of w.targets) {
     if (!t.alive) { slot = t; break }

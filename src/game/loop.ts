@@ -13,7 +13,7 @@
  * 렌더 쪽 분업: renderer.draw 안에서 pumpEvents·updateCamera·updateFx가 실시간(dtReal)으로 돈다.
  * 루프는 이벤트를 **비우는 것**만 책임진다 — scene.ts / effects.ts / audio 가 읽되 비우지 않기로 했다.
  */
-import { armArrow, armBow, cancelDraw, createWorld, isSettled, omakeAdd, requireFreshPress, resetWorld, restArcher, step } from '../sim/world.ts'
+import { armArrow, armBow, cancelDraw, createWorld, isSettled, sandboxAdd, requireFreshPress, resetWorld, restArcher, step } from '../sim/world.ts'
 import type { ArrowKindId } from '../sim/types.ts'
 import { createInput } from '../input/pointer.ts'
 import { createRenderer, getCamera, getHitStopMs } from '../render/scene.ts'
@@ -88,13 +88,13 @@ export interface GameLoop {
   toggleMute(): void
   /** 창 크기·dpr이 바뀌었다. main.ts가 부른다. */
   resize(): void
-  // ── 오마케(실험장) — 기록의 세계 밖. ui/omake.ts만 부른다. ──
-  omakeEnter(): void
-  omakeExit(): void
-  omakeSpawn(kind: string): void
-  omakeRefill(): void
+  // ── 샌드박스(실험장) — 기록의 세계 밖. ui/sandbox.ts만 부른다. ──
+  sandboxEnter(): void
+  sandboxExit(): void
+  sandboxSpawn(kind: string): void
+  sandboxRefill(): void
   /** 1부터 세는 판 번호로 실제 여정을 옮긴다 (개발 확인용 지름길). */
-  omakeJump(no: number): void
+  sandboxJump(no: number): void
   dispose(): void
 }
 
@@ -197,8 +197,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   const hud: HudState = { training: 0, canLevelUp: false, muted: false, toast: '', arrow: '', stars: -1, endReason: '' }
 
   let raf = 0
-  /** 오마케(실험장) — 기록의 세계 밖이다. 정산·해금·여정 종료가 전부 멈춘다. */
-  let omake = false
+  /** 샌드박스(실험장) — 기록의 세계 밖이다. 정산·해금·여정 종료가 전부 멈춘다. */
+  let sandbox = false
   /** 첫 R을 누른 시각 (performance.now). 두 번째 R이 ABANDON_MS 안에 오면 여정을 접는다. */
   let abandonArm = 0
   let wanted = false // start()가 불렸는가 — 사용자 의도. 탭 가시성과는 별개로 기억한다.
@@ -337,9 +337,9 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
    */
 
   /** 실험장 판 — 먼 구석의 더미 하나(빈 판 즉시 클리어 방지)와 넉넉한 화살. */
-  const OMAKE_STAGE = {
-    id: 'omake',
-    title: '오마케',
+  const SANDBOX_STAGE = {
+    id: 'sandbox',
+    title: '샌드박스',
     hint: '실험장 — 기록에 남지 않는다',
     seed: 0x0e0e,
     arrows: 12,
@@ -348,9 +348,9 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     targets: [{ kind: 'static' as const, x: 47, y: 8.6, r: 0.25, score: 0 }],
   }
 
-  const loadOmake = (): void => {
+  const loadSandbox = (): void => {
     const mods = bowMods(save.bow, save.runArrow, masteryLevel(save.bowHits[save.bow] ?? 0))
-    resetWorld(w, OMAKE_STAGE, save.stats, save.runArrow, mods)
+    resetWorld(w, SANDBOX_STAGE, save.stats, save.runArrow, mods)
     w.bowSkin = save.bow
     w.hp = Math.floor(P.enemy.hpMax)
     w.arrowsLeft = 12
@@ -580,9 +580,9 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     // 낙하 중인 공중 과녁이 연쇄로 점수를 더 올린다. status 전이 프레임에 스냅샷을 뜨면
     // 1-10의 연쇄 점수가 통째로 기록에서 빠진다 (화면 756점, 저장 452점).
     if (!awarded && w.status !== 'playing' && isSettled(w)) {
-      if (omake) {
+      if (sandbox) {
         // 실험장 — 정산 없이 판만 새로 편다.
-        loadOmake()
+        loadSandbox()
       } else {
         awarded = true
         finishRun()
@@ -745,68 +745,68 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       // 매 프레임 부르면 안 된다 — 렌더러가 배경 그라디언트를 다시 만든다 (A5 할당 0).
       renderer.resize()
     },
-    omakeEnter(): void {
-      if (omake) return
-      omake = true
-      loadOmake()
+    sandboxEnter(): void {
+      if (sandbox) return
+      sandbox = true
+      loadSandbox()
     },
-    omakeExit(): void {
-      if (!omake) return
-      omake = false
+    sandboxExit(): void {
+      if (!sandbox) return
+      sandbox = false
       // 하던 여정의 그 판으로 돌아간다. 여정이 없었으면 출정 화면으로.
       if (save.runActive) loadStage(save.runArrow)
       else beginStage()
     },
-    omakeSpawn(kind: string): void {
-      if (!omake) return
+    sandboxSpawn(kind: string): void {
+      if (!sandbox) return
       // 게임 레이어라 Math.random 허용 — 실험장은 결정론의 세계 밖이다.
       const rx2 = 14 + Math.random() * 22
       const ry2 = 1 + Math.random() * 4
       if (kind === 'boss-0' || kind === 'boss-1' || kind === 'boss-2' || kind === 'boss-3') {
         const look = Number(kind.slice(5))
-        omakeAdd(w, {
+        sandboxAdd(w, {
           kind: 'boss', x: 34, y: 2.6, r: look === 2 ? 1.15 : 1.6,
           hp: look === 1 ? Math.floor(P.target.bossCritDmg) * 2 : Math.floor(P.target.bossHp),
           armored: look === 1, look, speed: look === 3 ? P.target.bossSpeed * 2.2 : P.target.bossSpeed,
           score: 150,
         })
       } else if (kind === 'archer' || kind === 'archer-armored') {
-        omakeAdd(w, {
+        sandboxAdd(w, {
           kind: 'archer', x: rx2 + 6, y: 0.72, r: 0.65,
           hp: Math.floor(P.enemy.archerHp), armored: kind === 'archer-armored',
           fireDelay: 2.5, score: 100,
         })
       } else if (kind === 'charger') {
-        omakeAdd(w, { kind: 'charger', x: 34, y: 1.5, r: 0.6, score: 50 })
+        sandboxAdd(w, { kind: 'charger', x: 34, y: 1.5, r: 0.6, score: 50 })
       } else if (kind === 'moving') {
-        omakeAdd(w, { kind: 'moving', x: rx2, y: 2 + ry2 * 0.4, r: 0.55, ampY: 1.2, freq: 0.3, score: 100 })
+        sandboxAdd(w, { kind: 'moving', x: rx2, y: 2 + ry2 * 0.4, r: 0.55, ampY: 1.2, freq: 0.3, score: 100 })
       } else if (kind === 'aerial') {
-        omakeAdd(w, { kind: 'aerial', x: rx2, y: 4.5 + ry2 * 0.5, r: 0.55, score: 100 })
+        sandboxAdd(w, { kind: 'aerial', x: rx2, y: 4.5 + ry2 * 0.5, r: 0.55, score: 100 })
       } else if (kind === 'window' || kind === 'peek' || kind === 'drone') {
         // 11판+ 전환 변종들 (stages.ts convertToFoes와 같은 문법).
         const look = kind === 'window' ? 1 : kind === 'peek' ? 2 : 3
-        omakeAdd(w, {
+        sandboxAdd(w, {
           kind: 'archer', look, x: rx2 + 4, y: look === 3 ? 5 + ry2 * 0.4 : 2.5 + ry2 * 0.5,
           r: look === 3 ? 0.6 : 0.63, hp: Math.floor(P.enemy.convertHp),
           fireDelay: 3, firePeriod: P.enemy.shootEvery,
           ampX: look === 3 ? 1.4 : 0, freq: look === 3 ? 0.18 : 0, score: 120,
         })
       } else if (kind === 'bonus-heal') {
-        omakeAdd(w, { kind: 'bonus', x: rx2, y: 3 + ry2 * 0.5, r: 0.7, heal: 20, score: 50 })
+        sandboxAdd(w, { kind: 'bonus', x: rx2, y: 3 + ry2 * 0.5, r: 0.7, heal: 20, score: 50 })
       } else if (kind === 'bonus') {
-        omakeAdd(w, { kind: 'bonus', x: rx2, y: 3 + ry2 * 0.5, r: 0.7, give: 2, score: 50 })
+        sandboxAdd(w, { kind: 'bonus', x: rx2, y: 3 + ry2 * 0.5, r: 0.7, give: 2, score: 50 })
       } else {
-        omakeAdd(w, { kind: 'static', x: rx2, y: 1 + ry2 * 0.6, r: 0.55, score: 100 })
+        sandboxAdd(w, { kind: 'static', x: rx2, y: 1 + ry2 * 0.6, r: 0.55, score: 100 })
       }
     },
-    omakeRefill(): void {
-      if (!omake) return
+    sandboxRefill(): void {
+      if (!sandbox) return
       w.arrowsLeft += 10
       w.hp = Math.floor(P.enemy.hpMax)
     },
-    omakeJump(no: number): void {
+    sandboxJump(no: number): void {
       // 실제 여정 이동 — 개발 중 수십 판을 깨러 가지 않기 위한 문 (형의 주문).
-      omake = false
+      sandbox = false
       stageIndex = Math.max(0, Math.floor(no) - 1)
       save.runActive = true
       loadStage(save.runArrow)

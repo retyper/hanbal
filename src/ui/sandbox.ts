@@ -1,5 +1,5 @@
 /**
- * 오마케 — 실험장 (형의 주문: "내가 직접 적들 소환하고 테스트해볼 수 있게").
+ * 샌드박스 — 실험장 (형의 주문: "내가 직접 적들 소환하고 테스트해볼 수 있게").
  *
  * 기록에 아무것도 남기지 않는 모래판이다. 판 점프도 여기 있다 —
  * "맨날 1탄부터 수십 탄까지 깨러 가야 하는" 비효율의 해답 (개발 중 확인용).
@@ -7,7 +7,7 @@
  */
 import type { Overlay } from './overlay.ts'
 
-export interface OmakeHooks {
+export interface SandboxHooks {
   enter(): void
   exit(): void
   spawn(kind: string): void
@@ -47,7 +47,7 @@ const SPAWNS: ReadonlyArray<readonly [string, string]> = [
   ['boss-3', '폭주귀신'],
 ]
 
-export function mountOmake(o: Overlay, hooks: OmakeHooks): void {
+export function mountSandbox(o: Overlay, hooks: SandboxHooks): void {
   const style = document.createElement('style')
   style.textContent = CSS
   const bar = document.createElement('div')
@@ -58,7 +58,7 @@ export function mountOmake(o: Overlay, hooks: OmakeHooks): void {
   let on = false
   const tag = document.createElement('div')
   tag.className = 'o-tag'
-  tag.textContent = '오마케 — 기록에 남지 않는다'
+  tag.textContent = '샌드박스 — 기록에 남지 않는다'
   bar.appendChild(tag)
 
   // 소환 버튼들 — 두 줄로
@@ -123,7 +123,7 @@ export function mountOmake(o: Overlay, hooks: OmakeHooks): void {
   openBtn.className = 'hb-btn'
   openBtn.style.fontSize = '11px'
   openBtn.style.padding = '5px 8px'
-  openBtn.textContent = '오마케'
+  openBtn.textContent = '샌드박스'
   openBtn.addEventListener('click', () => {
     on = !on
     bar.classList.toggle('on', on)
