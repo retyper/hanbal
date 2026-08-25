@@ -420,7 +420,15 @@ export function loadSave(): SaveData {
  * 이 함수뿐이다. 지우고 새로고침하는 쪽이 메모리의 SaveData를 제자리에서 비우는 것보다
  * 확실하다 — 루프·HUD·수집 화면이 들고 있는 참조까지 전부 새로 서기 때문이다.
  */
+/**
+ * 삭제 후 재기록 봉인. location.reload()가 pagehide를 쏘고, 루프의 "탭 이탈 시 저장"(A3)이
+ * **방금 지운 세이브를 도로 써넣었다** — "삭제할 때 기록이 잘 안 지워진다"(형)의 정체.
+ * 지운 순간부터 이 모듈은 죽은 것이다: 새로고침으로 다시 태어날 때까지 어떤 쓰기도 안 받는다.
+ */
+let wiped = false
+
 export function wipeSave(): void {
+  wiped = true
   try {
     // **완전** 초기화다 (형: "기록 완전초기화가 뭔지 몰라?") — 세이브만이 아니라
     // 이 게임이 만든 모든 키(hanbal.audio.v1 소리 설정 · hanbal.tune.v1 튜닝 저장값)를 지운다.
@@ -445,6 +453,8 @@ export function pokeSave(d: SaveData): void {
 }
 
 export function writeSave(d: SaveData): void {
+  // 지운 뒤의 쓰기는 부활이다 — 전부 무시한다 (wipeSave 주석).
+  if (wiped) return
   d.v = SCHEMA_VERSION
   // **여기서 lastSeen에 도장을 찍지 않는다.** 저장은 판 보상·성장·탭 이탈 등 아무 때나 일어나고,
   // 도장을 찍으면 그 사이에 흐른 시간이 정산 없이 통째로 삭제된다 — 게임 탭을 옆에 띄워둔 채
