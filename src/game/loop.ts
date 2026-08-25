@@ -266,7 +266,17 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     // 활도 판 경계에서만 (A1). 숙련은 그 활로 맞힌 누적 수에서 나온다 — docs/BOWS.md 3장.
     // 궁합(활×살)은 bowMods 안에서 판정되므로 여기서는 조합을 모른다.
     const mods = bowMods(save.bow, kind, masteryLevel(save.bowHits[save.bow] ?? 0))
+    // ── 연사는 **여정**을 넘어간다 (sim/flow.ts · docs/MEGAHIT.md §1) ──
+    // 판이 아니라 여정이 momentum의 단위다. 실측 근거: 캠페인 판은 과녁이 1~4개라
+    // 판 안에서는 관중이 3을 못 넘고 **몰기(5)가 구조적으로 도달 불가능**했다.
+    // 판 경계에서 리듬을 끊으면 이 기능은 있으나 마나가 된다.
+    // 끊는 것은 오직 실중과 망설임이다 — 그래야 관중에 값이 매겨진다.
+    // C2와의 화해: 자리를 뜨는 건 실중이 아니므로 리듬을 잃지 않는다. 돌아오면 그대로다.
+    const carryHits = P.flow.carry > 0 ? w.flowHits : 0
+    const carryMolgi = P.flow.carry > 0 && w.molgi
     resetWorld(w, stage, save.stats, kind, mods)
+    w.flowHits = carryHits
+    w.molgi = carryMolgi
     // 겉모습은 렌더 전용이다. 스틱맨의 손에 들린 활이 실제로 바뀐 활로 보여야 한다.
     w.bowSkin = save.bow
     // 체력은 여정 동안 이어진다 (docs/RUN.md 6장). 판마다 회복되면 피해가 숫자 놀음이 된다.

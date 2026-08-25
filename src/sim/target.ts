@@ -9,6 +9,7 @@
 import { clamp01, distSqPointSegment, TAU } from '../core/math.ts'
 import { P } from '../tune/params.ts'
 import type { Arrow, Target, World } from './types.ts'
+import { flowHit } from './flow.ts'
 
 export function stepTargets(w: World): void {
   const dt = w.dt
@@ -155,6 +156,10 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
   const fx = arrow.fx
   arrow.struck++
   arrow.lastHit = target.id
+  // 관중(貫中) — 이 화살의 **첫** 명중만 센다. 관통·분열·사슬로 여럿을 맞혀도 한 발은 한 발이다
+  // (국궁에서도 관중은 화살의 수다). 분열 자식은 지급된 화살이 아니라 그 한 발의 결과물이라
+  // 세지 않는다 — miss를 안 세는 것과 같은 이유다 (sim/ballistics.ts).
+  if (arrow.struck === 1 && arrow.splitDepth <= 0) flowHit(w)
 
   // ── 보스의 머리 (docs/RUN.md 3장) ──
   // 머리를 스친 선분이면 치명타다. 명중도를 정중앙(1)으로 올린다 — 링 판정·크리 사운드·

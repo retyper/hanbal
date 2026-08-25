@@ -80,6 +80,10 @@ interface Args {
   crossBot: BotKind
   /** 캠페인 모드로 돌릴 사람 수 (봇 종류마다). 0이면 건너뛴다. */
   campaign: number
+  /** 연사(sim/flow.ts)를 켜고 도는가. `--flow=0`이면 꺼서 A/B로 기여분을 잰다. */
+  flow: boolean
+  /** 관중 N을 쌓은 상태로 판에 들어간다. 여정 중반의 실제 상태를 재는 축이다. */
+  warm: number
   /**
    * 무한 구간(41판~)에서 표본으로 돌릴 판 수. 0이면 건너뛴다.
    * 기본값이 테마 한 바퀴인 이유: 한 바퀴를 돌면 열 테마가 정확히 한 번씩 나온다 (endless.ts).
@@ -88,6 +92,8 @@ interface Args {
 }
 
 const BOT_KINDS: readonly BotKind[] = ['novice', 'average', 'expert']
+/** --warm=N. 판에 들어갈 때 이미 쌓여 있는 관중 수 (sim/flow.ts). main이 인자에서 채운다. */
+let WARM_FLOW = 0
 
 function isBotKind(s: string): s is BotKind {
   for (const k of BOT_KINDS) if (k === s) return true
@@ -107,6 +113,8 @@ function parseArgs(argv: readonly string[]): Args {
   // 캠페인(해금 페이싱). 한 사람이 1판부터 순서대로 도는 모드라 따로 시간을 먹는다.
   let campaign = 12
   let endless = ENDLESS_THEMES
+  let flow = true
+  let warm = 0
   for (const a of argv) {
     const m = /^--([\w]+)=(.+)$/.exec(a)
     if (m === null) continue
@@ -136,8 +144,14 @@ function parseArgs(argv: readonly string[]): Args {
     else if (key === 'bows') bows = v !== 0
     else if (key === 'campaign') campaign = Math.max(0, Math.trunc(v))
     else if (key === 'endless') endless = Math.max(0, Math.trunc(v))
+    // --flow=0 : 연사(sim/flow.ts)를 꺼서 A/B로 잰다.
+    // 이게 없으면 "시간 격차 70%"가 연사 덕인지 원래 그랬는지 알 수 없다 —
+    // 있는 격차를 새 기능의 공로로 착각하는 건 밸런스 문서가 저지를 수 있는 최악의 거짓말이다.
+    else if (key === 'flow') flow = v !== 0
+    // --warm=N : 관중 N을 이미 쌓은 상태로 판에 들어간다 (여정 중반의 실제 상태).
+    else if (key === 'warm') warm = Math.max(0, Math.trunc(v))
   }
-  return { seed, runs, budgetMs, preview, floor, arrow, cross, bows, crossBot, campaign, endless }
+  return { seed, runs, budgetMs, preview, floor, arrow, cross, bows, crossBot, campaign, endless, flow, warm }
 }
 
 /** 시드 합성. 같은 (스테이지, 판 번호)면 봇이 달라도 같은 판이 나온다 — 짝지은 비교로 분산을 줄인다. */
@@ -918,6 +932,10 @@ function playOne(
   // 숙련 0 기준으로 잰다 — 활의 소재 값이 문제인지 숙련 완화가 문제인지 섞이면 안 된다.
   const mods = bow === undefined ? undefined : bowMods(bow, arrow ?? DEFAULT_ARROW, 0)
   const w = makeWorld(def, stats, arrow, mods)
+  // 연사를 데운 채로 판에 들어간다 (game/loop.ts가 여정 동안 그렇게 한다).
+  // 이걸 안 하면 시뮬은 늘 관중 0에서 시작해, 실제 플레이어가 겪는 판을 안 재게 된다.
+  w.flowHits = WARM_FLOW
+  w.molgi = WARM_FLOW >= P.flow.molgiAt
   const bot = new Bot(kind, botSeed, stats, arrow ?? DEFAULT_ARROW, mods)
   const hz = Math.round(1 / w.dt)
   const maxSteps = Math.ceil((def.timeLimit ?? 90) * hz) + 4 * hz
@@ -1869,6 +1887,11 @@ function summarize(rows: readonly Agg[]): void {
   let avgCount = 0
   let gapOk = 0
   let starve = 0
+  // 숙련이 속도가 되는가 (docs/MEGAHIT.md §7-1). 앞 40판은 클리어율로 실력이 안 드러나므로
+  // **시간**이 그 답을 대신한다.
+  let timeGapSum = 0
+  let timeGapCount = 0
+  let timeGapOk = 0
   const starveStages: string[] = []
   for (const [key, m] of byStage) {
     const nov = m.get('novice')
@@ -1895,6 +1918,19 @@ function summarize(rows: readonly Agg[]): void {
       `  ${' '.repeat(10)} 발당 명중 nov ${pct(nov.hitRate)} / avg ${pct(avg.hitRate)} / exp ${pct(exp.hitRate)}` +
       `   클리어율 격차 ${(gap * 100).toFixed(1)}%p (목표 ${(gLo * 100) | 0}~${(gHi * 100) | 0}%p) ${gapNote}`,
     )
+    // ── 판 소요 시간 (docs/MEGAHIT.md §0·§7-1) ──
+    // 앞 40판에서 클리어율 격차가 0인 건 정상이다 — 초보도 고수도 다 깨야 하는 구간이니까.
+    // 하지만 그렇다면 **실력은 어디에 드러나는가?** 답이 없으면 잘하는 사람에게 줄 것이 없다.
+    // 이 축이 그 답이다: 같은 판을 얼마나 **빨리** 끝내는가. 연사(sim/flow.ts)가 여기서 보인다.
+    const tGap = nov.avgSeconds > 0 ? 1 - exp.avgSeconds / nov.avgSeconds : 0
+    timeGapSum += tGap
+    timeGapCount++
+    if (tGap >= 0.3) timeGapOk++
+    console.log(
+      `  ${' '.repeat(10)} 판 소요 nov ${nov.avgSeconds.toFixed(1)}s / avg ${avg.avgSeconds.toFixed(1)}s` +
+      ` / exp ${exp.avgSeconds.toFixed(1)}s   시간 격차 ${(tGap * 100).toFixed(0)}%` +
+      ` ${tGap >= 0.3 ? '✓' : '— 숙련이 속도가 안 된다'}`,
+    )
     // 클리어 조건이 '과녁 전멸'로 바뀐 뒤의 새 실패 모드다: 쏠 화살이 없어서 못 깬 판.
     if (avg.arrowStarveRate > 0.05) {
       starve++
@@ -1917,6 +1953,14 @@ function summarize(rows: readonly Agg[]): void {
         ? '  화살이 모자라 못 깬 판: 없음 (전 판에서 5% 미만)'
         : `  화살이 모자라 못 깬 판: ${starve}판 — ${starveStages.join(' ')}`,
     )
+    if (timeGapCount > 0) {
+      const mean = timeGapSum / timeGapCount
+      console.log(
+        `  ★ 숙련이 속도가 되는가 — 평균 시간 격차 ${(mean * 100).toFixed(0)}%` +
+        ` · 30% 이상인 판 ${timeGapOk}/${timeGapCount}` +
+        `  ${mean >= 0.3 ? '✓ 잘하면 판이 빨라진다' : '✗ 잘해도 판이 안 빨라진다 (MEGAHIT §0의 진단)'}`,
+      )
+    }
   }
   if (totalHits < 0.05) {
     console.log('')
@@ -2106,6 +2150,16 @@ function applyFloor(rows: readonly StageRow[]): readonly StageRow[] {
 
 function main(): void {
   const args = parseArgs(process.argv.slice(2))
+
+  // --flow=0 : 연사를 중립으로 만든다 (배수 1 = 아무 일도 안 하는 상태).
+  // 노브를 지우는 게 아니라 1로 두는 이유: 코드 경로는 그대로 돌아야 A/B가 공정하다.
+  WARM_FLOW = args.warm
+  if (!args.flow) {
+    P.flow.perHit = 1
+    P.flow.drawFloor = 1
+    P.flow.perHitDrain = 1
+    P.flow.drainFloor = 1
+  }
 
   const authored: readonly StageRow[] = [
     ...REAL_STAGES,

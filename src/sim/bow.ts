@@ -23,6 +23,7 @@ import type { DerivedStats, InputFrame, Stats, World } from './types.ts'
 import { P } from '../tune/params.ts'
 import { clamp, clamp01, diminish, lerp, valueNoise } from '../core/math.ts'
 import { spawnArrow } from './ballistics.ts'
+import { flowDrainMul, flowDrawMul } from './flow.ts'
 
 /**
  * 떨림 노이즈의 두 옥타브 시드.
@@ -117,6 +118,11 @@ export function stepArcher(w: World, input: InputFrame): void {
   dTremorMul *= bow.tremorMul
   dMaxDraw = clamp01(dMaxDraw + bow.maxDrawAdd)
 
+  // ── 연사 (sim/flow.ts) — 능숙함이 활을 가볍게 만든다 ──
+  // 여기 곱하는 것은 **만작까지의 시간**뿐이다. dTremorMul·산포·화살 속도에는 손대지 않는다 —
+  // 그쪽을 건드리면 빨간 바 계약이 깨진다. 연사는 빠르게 만들 뿐 부정확하게 만들지 않는다.
+  dDrawTimeMul *= flowDrawMul(w)
+
   // 조준은 스무딩 없이 즉시 반영한다. 한 스텝이라도 늦으면 조준이 미끄러진다 (feel-lens 1).
   // 단 **앞쪽 원뿔 안으로만** — 커서가 궁수 뒤로 가면 각이 ±180°로 뒤집혀 자세가 접힌다.
   // 결정론에는 영향이 없다: 같은 입력 = 같은 클램프 = 같은 각 (A1).
@@ -192,6 +198,9 @@ export function stepArcher(w: World, input: InputFrame): void {
     drain = P.stamina.drawDrain
       * Math.pow(a.draw, P.stamina.drainByDraw)
       * lerp(1, P.steady.staminaDrain, a.steadyBlend)
+      // 연사 — 빨리 쏘는 사람이 스스로 목을 조르지 않게 한다. 속도를 줬는데 그 속도로
+      // 무너지면 준 게 아니다. 안전 구간의 계약(바 위 = 오차 0)은 그대로다.
+      * flowDrainMul(w)
     // 렛오프 — 컴파운드는 만작에서 장력이 빠진다. **만작에서만**이다.
     // 당기는 도중까지 깎아주면 "도르래를 넘기는 무게"라는 대가가 사라진다.
     if (a.phase === 'full') drain *= bow.holdDrainMul

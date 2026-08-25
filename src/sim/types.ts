@@ -318,6 +318,8 @@ export type SimEvent =
    */
   | { t: 'player_hit'; hp: number; x: number; y: number; ang: number; pin: boolean }
   | { t: 'miss'; x: number; y: number; arrow: number }
+  /** 몰기 진입/이탈. 연출과 소리가 이 **순간**을 받는다 (상태 자체는 World.molgi에 있다). */
+  | { t: 'molgi'; on: boolean }
   | { t: 'stage_end'; cleared: boolean; score: number }
 
 // ───────────────────────────── 스테이지 ─────────────────────────────
@@ -433,6 +435,19 @@ export interface World {
   score: number
   /** 현재 연쇄 콤보 수 */
   combo: number
+
+  /**
+   * 연속 관중(貫中) 수 — 연달아 맞힌 **화살**의 수 (과녁의 수가 아니다).
+   * sim/flow.ts가 이걸로 만작 시간과 스태미나 소모를 깎는다. 실중이면 즉시 0이다.
+   */
+  flowHits: number
+  /** 활도 안 잡고 내 화살도 안 날고 있는 시간 (s). P.flow.coolAfter를 넘으면 관중이 한 칸 식는다. */
+  flowIdle: number
+  /**
+   * 몰기(沒技) — 한 순(5발)을 연달아 관중한 상태. 국궁에서 그 판의 자랑이다.
+   * 배수가 하한에 닿는 지점과 같아서 **몰기 = 속도의 천장**이다. 렌더·오디오가 읽는다.
+   */
+  molgi: boolean
   elapsed: number
   stage: StageDef
 

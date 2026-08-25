@@ -12,6 +12,7 @@ import { arrowFx, refreshArrowFx } from './arrowfx.ts'
 import { effectiveStats, stepArcher } from './bow.ts'
 import { stepArrows } from './ballistics.ts'
 import { stepTargets } from './target.ts'
+import { flowMiss, resetFlow, stepFlow } from './flow.ts'
 import { TRAIL_POINTS } from './types.ts'
 import type {
   ArcherState,
@@ -358,6 +359,9 @@ export function createWorld(
     arrowsLeft: stage.arrows,
     score: 0,
     combo: 0,
+    flowHits: 0,
+    flowIdle: 0,
+    molgi: false,
     elapsed: 0,
     stage,
     events: [],
@@ -457,6 +461,8 @@ export function resetWorld(
   w.arrowsLeft = stage.arrows
   w.score = 0
   w.combo = 0
+  // 연사는 판 안의 리듬이다 — 판 경계를 넘지 않는다 (sim/flow.ts).
+  resetFlow(w)
   w.elapsed = 0
   w.events.length = 0
 }
@@ -492,11 +498,18 @@ export function step(w: World, input: InputFrame): void {
   stepTargets(w)
   stepEnemyShots(w)
 
-  // 명중 없이 소멸한 화살은 연쇄를 끊는다.
+  // 명중 없이 소멸한 화살은 연쇄를 끊는다. 연사도 같은 자리에서 끊긴다 (sim/flow.ts).
   for (let i = evStart; i < w.events.length; i++) {
     const ev = w.events[i]
-    if (ev !== undefined && ev.t === 'miss') w.combo = 0
+    if (ev !== undefined && ev.t === 'miss') {
+      w.combo = 0
+      flowMiss(w)
+    }
   }
+
+  // 연사가 식는 것은 화살이 다 정리된 뒤에 센다 — 순서가 바뀌면 방금 착지한 화살이
+  // 아직 살아 있는 것으로 보여 첫 스텝을 공짜로 얻는다.
+  stepFlow(w)
 
   if (playing) evaluateEnd(w)
 }
