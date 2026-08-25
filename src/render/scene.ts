@@ -13,6 +13,8 @@ import {
 } from './camera.ts'
 import type { Camera } from './camera.ts'
 import { drawArcher } from './stickman.ts'
+import { skyOf, drawShadow } from './sky.ts'
+import type { SkyPalette } from './sky.ts'
 import { drawFoeArcher } from './foe.ts'
 import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { sprite } from './sprites.ts'
@@ -74,6 +76,15 @@ const DRAW = {
   trailWidthPx: 1.7,
   /** 몰기에서 궤적이 굵어지는 배수. 색만 바꾸면 작은 배율에서 안 읽힌다. */
   trailMolgiMul: 1.6,
+  /** 궤적 꼬리의 굵기 비율. 1이면 균일(예전), 작을수록 뾰족한 리본이 된다. */
+  trailTaper: 0.35,
+  /** 촉 앞의 공기 — 이 속도(m/s)를 넘어야 보이고, 이만큼 더 빠르면 최대다. */
+  airMinSpeed: 18,
+  airFullSpeed: 45,
+  /** 화살 길이 대비 공기의 길이 · 납작한 정도 · 진하기 */
+  airLen: 0.5,
+  airFlat: 0.16,
+  airAlpha: 0.16,
 
   /**
    * 과녁의 띠 (반경 비율, 바깥부터).
@@ -199,6 +210,8 @@ interface RendererX extends Renderer {
   tufts: Float32Array
   grad: CanvasGradient | null
   gradH: number
+  /** 그라디언트를 구운 하늘의 이름. 장이 바뀌면 다시 굽는다 (프레임당 할당 0, A5). */
+  gradSky: string
   dead: boolean
 }
 
@@ -781,7 +794,7 @@ function drawTrails(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void 
   // 몰기 — 궤적이 금빛으로 서고 한 겹 굵어진다 (docs/MEGAHIT.md §1).
   // 화면에 배너를 띄우지 않는 이유: 조준 중에 읽어야 하는 신호는 **곁눈**으로 읽혀야 한다.
   // 색을 새로 만들지 않고 이미 있는 강조색을 쓴다 (GDD 8장 — 색 수를 늘리지 않는다).
-  ctx.lineWidth = w.molgi ? DRAW.trailWidthPx * DRAW.trailMolgiMul : DRAW.trailWidthPx
+  const base = w.molgi ? DRAW.trailWidthPx * DRAW.trailMolgiMul : DRAW.trailWidthPx
   ctx.lineCap = 'round'
   ctx.strokeStyle = w.molgi ? THEME.accent : THEME.trailHit
   for (let i = 0; i < w.arrows.length; i++) {
@@ -794,7 +807,11 @@ function drawTrails(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void 
       const j0 = (((n - 1) * b) / TRAIL_BANDS) | 0
       const j1 = (((n - 1) * (b + 1)) / TRAIL_BANDS) | 0
       if (j1 <= j0) continue
-      ctx.globalAlpha = ((b + 1) / TRAIL_BANDS) * 0.7
+      const k = (b + 1) / TRAIL_BANDS
+      ctx.globalAlpha = k * 0.7
+      // 뒤로 갈수록 **가늘어진다** (docs/MEGAHIT.md §4-3, 렌즈 ⑥).
+      // 예전엔 굵기가 균일해서 리본이 아니라 그냥 선이었다. 알파만으로는 꼬리가 안 생긴다.
+      ctx.lineWidth = base * (DRAW.trailTaper + (1 - DRAW.trailTaper) * k)
       ctx.beginPath()
       for (let j = j0; j <= j1; j++) {
         const idx = ((ar.trailHead - n + j) % TRAIL_POINTS + TRAIL_POINTS) % TRAIL_POINTS
@@ -918,6 +935,25 @@ function drawArrows(ctx: CanvasRenderingContext2D, cam: Camera, w: World, alpha:
     const nx = -sy
     const ny = sx
 
+    // ── 공기 — 촉 앞에 눌린 타원 한 겹 (docs/MEGAHIT.md §4-3) ──
+    // 제목이 '한 발'인데 화면에서 가장 수수한 게 화살이었다 (렌즈 ⑥).
+    // 빠를수록 길고 옅게 눌린다. 색은 하늘색을 안 쓰고 화살색을 아주 낮은 알파로 —
+    // 색을 늘리지 않는 규칙(GDD 8장)을 지키면서 '가르고 있다'만 남긴다.
+    const spd = Math.hypot(ar.vx, ar.vy)
+    if (spd > DRAW.airMinSpeed) {
+      const k2 = Math.min(1, (spd - DRAW.airMinSpeed) / DRAW.airFullSpeed)
+      const ar1 = len * DRAW.airLen * k2
+      ctx.globalAlpha = DRAW.airAlpha * k2
+      ctx.fillStyle = THEME.arrow
+      ctx.beginPath()
+      ctx.ellipse(
+        tipX + sx * ar1 * 0.6, tipY + sy * ar1 * 0.6,
+        ar1, Math.max(0.6, ar1 * DRAW.airFlat), Math.atan2(sy, sx), 0, TAU,
+      )
+      ctx.fill()
+      ctx.globalAlpha = 1
+    }
+
     ctx.strokeStyle = THEME.arrow
     ctx.lineWidth = DRAW.arrowWidthPx
     ctx.beginPath()
@@ -966,7 +1002,7 @@ function bakeStars(): Float32Array {
   return tab
 }
 
-function drawSky(ctx: CanvasRenderingContext2D, cam: Camera, stars: Float32Array, elapsed: number): void {
+function drawSky(ctx: CanvasRenderingContext2D, cam: Camera, stars: Float32Array, elapsed: number, sky: SkyPalette): void {
   // 달 — 초승달 + 달무리. 무리는 알파 낮은 큰 원 두 겹뿐이다 (그림자·필터 금지, A5).
   const mx = cam.w * DRAW.moonX
   const my = cam.h * DRAW.moonY
@@ -984,7 +1020,7 @@ function drawSky(ctx: CanvasRenderingContext2D, cam: Camera, stars: Float32Array
   ctx.arc(mx, my, DRAW.moonR, 0, TAU)
   ctx.fill()
   ctx.globalAlpha = 1
-  ctx.fillStyle = THEME.sky0
+  ctx.fillStyle = sky.sky0
   ctx.beginPath()
   ctx.arc(mx - DRAW.moonR * DRAW.moonInset, my - DRAW.moonR * DRAW.moonInset, DRAW.moonR, 0, TAU)
   ctx.fill()
@@ -1027,8 +1063,8 @@ function bakeClouds(): Float32Array {
   return t
 }
 
-function drawClouds(ctx: CanvasRenderingContext2D, cam: Camera, clouds: Float32Array, elapsed: number): void {
-  ctx.fillStyle = THEME.cloud
+function drawClouds(ctx: CanvasRenderingContext2D, cam: Camera, clouds: Float32Array, elapsed: number, sky: SkyPalette): void {
+  ctx.fillStyle = sky.cloud
   for (let i = 0; i < BG.clouds; i++) {
     const u = clouds[i * 4] ?? 0
     const v = clouds[i * 4 + 1] ?? 0
@@ -1049,10 +1085,10 @@ function drawClouds(ctx: CanvasRenderingContext2D, cam: Camera, clouds: Float32A
 }
 
 /** 산안개 — 가장 먼 능선의 발치를 가로로 지운다. 겹과 겹 사이에 공기가 생긴다. */
-function drawMist(ctx: CanvasRenderingContext2D, cam: Camera): void {
+function drawMist(ctx: CanvasRenderingContext2D, cam: Camera, sky: SkyPalette): void {
   const top = worldToScreenY(cam, BG.mistHi)
   const bot = worldToScreenY(cam, BG.mistLo)
-  ctx.fillStyle = THEME.mist
+  ctx.fillStyle = sky.mist
   ctx.globalAlpha = BG.mistAlpha
   ctx.fillRect(0, top, cam.w, Math.max(1, bot - top))
   ctx.globalAlpha = BG.mistAlpha * 0.6
@@ -1078,9 +1114,9 @@ function bakePines(): Float32Array {
 }
 
 function drawPines(
-  ctx: CanvasRenderingContext2D, cam: Camera, pines: Float32Array, nearTab: Float32Array,
+  ctx: CanvasRenderingContext2D, cam: Camera, pines: Float32Array, nearTab: Float32Array, sky: SkyPalette,
 ): void {
-  ctx.fillStyle = THEME.pine
+  ctx.fillStyle = sky.pine
   for (let i = 0; i < BG.pines; i++) {
     const wx = pines[i * 3] ?? 0
     const h = pines[i * 3 + 1] ?? 2
@@ -1158,6 +1194,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     tufts: bakeTufts(),
     grad: null,
     gradH: -1,
+    gradSky: "",
     dead: false,
 
     resize(): void {
@@ -1165,6 +1202,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       // 그라디언트 객체는 크기가 바뀔 때만 다시 만든다 (프레임당 할당 0)
       r.grad = null
       r.gradH = -1
+      r.gradSky = ""
     },
 
     draw(w: World, alpha: number, dtReal: number, hud: HudState): void {
@@ -1180,10 +1218,15 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       pumpEvents(r.fx, w)
       updateCamera(cam, w, dtReal)
 
-      if (r.grad === null || r.gradH !== cam.h) {
+      // ── 이 판의 하늘 (render/sky.ts) ──
+      // 장이 곧 하루의 시각이다. 진행 표시 UI 백 개보다 강한 게 하늘이 달라지는 것이고,
+      // 비용은 색 상수 다섯 벌뿐이다. **몸 색은 안 건드린다** — 실루엣 계약(GDD 8장)은 그대로.
+      const sky = skyOf(w.stage.id)
+      if (r.grad === null || r.gradH !== cam.h || r.gradSky !== sky.name) {
+        r.gradSky = sky.name
         const g = c.createLinearGradient(0, 0, 0, cam.h)
-        g.addColorStop(0, THEME.sky0)
-        g.addColorStop(1, THEME.sky1)
+        g.addColorStop(0, sky.sky0)
+        g.addColorStop(1, sky.sky1)
         r.grad = g
         r.gradH = cam.h
       }
@@ -1191,24 +1234,38 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       c.fillRect(0, 0, cam.w, cam.h)
 
       // 하늘은 능선보다 먼저. 별이 산 위로 뜨면 산이 유리가 된다.
-      drawSky(c, cam, r.stars, w.elapsed)
-      drawClouds(c, cam, r.clouds, w.elapsed)
-      drawRidge(c, cam, r.faint, BG.faintParallax, THEME.ridgeFaint)
-      drawMist(c, cam)
-      drawRidge(c, cam, r.far, BG.farParallax, THEME.ridgeFar)
-      drawRidge(c, cam, r.near, BG.nearParallax, THEME.ridgeNear)
-      drawPines(c, cam, r.pines, r.near)
+      drawSky(c, cam, r.stars, w.elapsed, sky)
+      drawClouds(c, cam, r.clouds, w.elapsed, sky)
+      drawRidge(c, cam, r.faint, BG.faintParallax, sky.ridgeFaint)
+      drawMist(c, cam, sky)
+      drawRidge(c, cam, r.far, BG.farParallax, sky.ridgeFar)
+      drawRidge(c, cam, r.near, BG.nearParallax, sky.ridgeNear)
+      drawPines(c, cam, r.pines, r.near, sky)
 
       const groundY = worldToScreenY(cam, 0)
-      c.fillStyle = THEME.ground
+      c.fillStyle = sky.ground
       c.fillRect(0, groundY, cam.w, cam.h - groundY)
-      c.strokeStyle = THEME.groundLine
+      c.strokeStyle = sky.groundLine
       c.lineWidth = BG.groundLineW
       c.beginPath()
       c.moveTo(0, groundY)
       c.lineTo(cam.w, groundY)
       c.stroke()
       drawTufts(c, cam, r.tufts)
+
+      // ── 그림자 — 가장 싼 입체감 (docs/MEGAHIT.md §4-2, 렌즈 ⑥ "전부 떠 있다") ──
+      // 지면 위·과녁 아래. 색을 새로 만들지 않고 지면색을 알파로 겹칠 뿐이다 (GDD 8장).
+      // 땅을 딛는 것만 그린다 — 공중 과녁·드론은 발이 없으므로 그림자도 없다.
+      for (let i = 0; i < w.targets.length; i++) {
+        const t = w.targets[i]
+        if (t === undefined || !t.alive || t.falling) continue
+        if (t.kind === 'aerial' || (t.kind === 'archer' && t.look === 3)) continue
+        // 창가의 사수는 건물 안이라 땅에 그림자를 못 드리운다.
+        if (t.kind === 'archer' && (t.look === 1 || t.look === 2)) continue
+        drawShadow(c, sky, worldToScreenX(cam, t.x), groundY, t.r * 2 * cam.scale)
+      }
+      // 궁수 — 키는 골반+다리라 몸 반경이 아니라 실제 화면 높이를 준다.
+      drawShadow(c, sky, worldToScreenX(cam, w.archer.x), groundY, 1.6 * cam.scale)
 
       // 건물은 과녁보다 먼저 — 사수는 창 **안**에 있다. 그리고 적이 죽어도 여기 남는다.
       drawBuildings(c, cam, w)
