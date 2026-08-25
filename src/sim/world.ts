@@ -79,6 +79,7 @@ function newArrow(id: number): Arrow {
     alive: false,
     kind: 'basic',
     fx: arrowFx('basic'),
+    lastHit: -1,
     x: 0,
     y: 0,
     px: 0,
@@ -198,6 +199,7 @@ export function restArcher(w: World): void {
 
 function resetArrow(a: Arrow): void {
   a.alive = false
+  a.lastHit = -1
   a.x = 0
   a.y = 0
   a.px = 0

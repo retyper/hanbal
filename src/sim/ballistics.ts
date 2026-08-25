@@ -82,6 +82,7 @@ function launch(
   a.alive = true
   a.kind = kind
   a.fx = fx
+  a.lastHit = -1
   a.x = x
   a.y = y
   a.px = x
@@ -361,6 +362,8 @@ function resolveCollisions(w: World, a: Arrow): void {
       // 같은 파일의 steerHoming·bounceChain, target.ts의 burst·sweepChain 과 규칙을 맞춘다.
       if (tg.falling) continue
       if (j === lastJ) continue
+      // 방금 맞힌 놈은 다시 안 맞는다 — 큰 몸 안에서의 재충돌 방지 (Arrow.lastHit 주석).
+      if (tg.id === a.lastHit) continue
       const reach = tg.r * tg.r
       if (distSqPointSegment(tg.x, tg.y, a.px, a.py, a.x, a.y) > reach) continue
       const t = segParam(tg.x, tg.y, a.px, a.py, a.x, a.y)

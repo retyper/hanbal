@@ -145,6 +145,7 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
   // 효과판은 화살 자신의 것 — 판 도중 장전이 바뀌어도 이 발은 제 성질대로 맞는다.
   const fx = arrow.fx
   arrow.struck++
+  arrow.lastHit = target.id
 
   // ── 보스의 머리 (docs/RUN.md 3장) ──
   // 머리를 스친 선분이면 치명타다. 명중도를 정중앙(1)으로 올린다 — 링 판정·크리 사운드·
