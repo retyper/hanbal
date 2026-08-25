@@ -280,7 +280,7 @@ for (const [cw, ch] of SIZES) {
     // 돌풍 위상이 0 근처인 첫 프레임에서 잰다.
     frame(canvas, w, 1)
     // 깃대는 세로선, 천은 그 위에서 뻗는 선이다. 천의 첫 선분 기울기가 곧 풍속의 눈금이다.
-    const cloth = rec.lines.filter((l) => l.style === '#c96f4a')
+    const cloth = rec.lines.filter((l) => l.style === '#c99a5e')
     if (cloth.length === 0) {
       console.log(`  풍속 ${wind.toFixed(1).padStart(5)} m/s → 깃발 없음 ${wind === 0 ? '✓ (무풍 판)' : '⚠'}`)
       continue

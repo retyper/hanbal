@@ -87,6 +87,10 @@ const K_DEBRIS = 19
 /** 보급을 주웠다 / 돌진에게 빼앗겼다 */
 const K_PICKUP = 20
 const K_ESCAPE = 21
+/** 릴리즈 저역 몸통 (림이 브레이스를 치는 텅) — 겹이 서로를 에코로 눌러선 안 되니 제 채널을 쓴다. */
+const K_THUMP = 22
+/** 릴리즈 시위 크랙 (탁) */
+const K_SNAP = 23
 
 /**
  * 음색 상수 — **파형의 신원**이다. 필터 주파수·Q·부분음 길이를 바꾸면 값이 세지는 게 아니라
@@ -114,22 +118,58 @@ const SFX = {
   beatEndFreq: 46,
   beatGap: 0.16,
 
-  // ── 릴리즈 "팅" ── 이 게임에서 가장 중요한 소리.
-  relFreq: 420,
-  relEndFreq: 160,
-  relDur: 0.08,
+  // ── 릴리즈 ── 이 게임에서 가장 중요한 소리. **세 겹이다.**
+  //
+  // 형의 반려: "활 쏘는 게 병아리 소리도 아니고. 왜 이렇게 히마리 없는 sfx들이야."
+  // 옳은 지적이었고, 원인이 둘이었다.
+  //   ① **몸통이 없었다.** 삼각파 420→160Hz 하나가 전부였다. 진짜 활의 소리를 지배하는 건
+  //      시위가 아니라 **림이 브레이스로 되돌아가며 치는 저역 텅**(80~200Hz)이다.
+  //      그게 없으니 가슴에 오는 게 없고, 남는 건 중역 삑 소리 = 병아리다.
+  //   ② **쉭이 거꾸로 올라갔다.** swoosh 1500 → 3200Hz. 멀어지는 화살은 음이 **내려간다.**
+  //      올라가는 노이즈 스윕은 물리적으로 "다가오는 것"이라 활 소리로는 절대 안 읽힌다.
+  //
+  // 그래서 실제 활 소리의 세 겹을 그대로 세운다.
+  //   A. 텅(thump)  — 림이 브레이스를 치는 저역. 몸통. 사인 + 저역 노이즈.
+  //   B. 탁(snap)   — 시위가 튕기는 광대역 크랙. 아주 짧다(35ms). 이게 "놓았다"의 순간이다.
+  //   C. 쉭(tear)   — 화살이 공기를 찢으며 **멀어진다.** 밴드패스 노이즈가 높은 Q로
+  //                   위에서 아래로 미끄러진다. 이게 활 소리의 서명이다.
+  /** A. 텅 — 림의 저역. 사인 스윕 + 저역 노이즈 몸통. */
+  relFreq: 210,
+  relEndFreq: 78,
+  relDur: 0.13,
+  relBodyFreq: 330,
+  relBodyEndFreq: 140,
+  relBodyDur: 0.1,
+  /** B. 탁 — 시위 크랙. 좁고 짧다. 뒤의 링은 시위의 음정을 귀띔하는 색일 뿐이다. */
+  relSnapFreq: 1750,
+  relSnapEndFreq: 900,
+  relSnapQ: 3.4,
+  relSnapDur: 0.035,
   relRingFreq: 830,
-  relRingGain: 0.09,
-  relAirFreq: 2400,
-  relAirGain: 0.17,
+  relRingGain: 0.06,
   brightFloor: 0.78,
   brightCeil: 1.16,
 
-  // ── 화살 비행 "쉭" ── 길게 끌지 않는다.
-  swooshFreq: 1500,
-  swooshEndFreq: 3200,
-  swooshDur: 0.15,
-  swooshDelay: 0.025,
+  // ── C. 화살 비행 "쉭" ── **내려간다.** 멀어지는 것은 낮아진다.
+  swooshFreq: 5200,
+  swooshEndFreq: 1100,
+  /** Q가 높을수록 '쉬익'하고 찢는 소리가 된다. 낮으면 그냥 '후' 하는 바람이다. */
+  swooshQ: 6,
+  swooshDur: 0.2,
+  swooshDelay: 0.018,
+
+  // ── 편전(애기살)의 쉭 ── 형: "애기살이 이름은 애기살이지만 편전으로서 쉭하고 날카로운 소리."
+  //   편전은 통아에 얹어 쏘는 반 길이 살이라 같은 활에서 **초속이 두 배 가까이** 나온다.
+  //   그러니 서명은 '더 높고 · 더 좁고 · 더 빨리 지나가는 쉭'이다. 사각파 삑 소리가 아니다.
+  pierceTubeFreq: 1400,
+  pierceTubeQ: 4,
+  pierceFreq: 7200,
+  pierceEndFreq: 1800,
+  pierceQ: 9,
+  pierceDur: 0.13,
+  pierceTailFreq: 3000,
+  pierceTailEndFreq: 1150,
+  pierceTailQ: 12,
 
   // ── 붕괴 ── release보다 둔탁하고 낮고 작게. 고역 어택이 없는 게 핵심이다.
   colFreq: 205,
@@ -626,13 +666,17 @@ function heartbeat(s: Synth, warn: number): void {
   tone(s, K_BEAT, TN)
 }
 
-/** 팅 — 하강 스윕 + 고역 노이즈 어택. power가 음량과 밝기를 같이 올린다. */
+/**
+ * 활 한 발 — **텅 · 탁 · 쉭** 세 겹 (SFX.relFreq 위의 주석이 근거다).
+ * power가 세 겹의 음량과 밝기를 함께 올린다.
+ */
 function playRelease(s: Synth, power: number): void {
   const pw = clamp01(power)
   // 제곱으로 눌러야 만작(1.0)과 초보 한계(0.72)의 차이가 귀에 잡힌다.
   const vol = lerp(P.audio.releasePowerFloor, 1, pw * pw)
   const bright = lerp(SFX.brightFloor, SFX.brightCeil, pw)
 
+  // ── A. 텅 — 림이 브레이스를 친다. 이 게임 활 소리의 **몸통**이다. ──
   TN.type = 'triangle'
   TN.freq = SFX.relFreq * bright
   TN.endFreq = SFX.relEndFreq * bright
@@ -643,7 +687,32 @@ function playRelease(s: Synth, power: number): void {
   TN.delay = 0
   tone(s, K_RELEASE, TN)
 
-  // 시위가 튕기며 남는 금속성 잔음. 만작에서만 확실히 들리게 pw를 한 번 더 곱한다.
+  // 같은 저역을 노이즈로 한 겹 더. 순수 사인만 있으면 '삑'이고, 노이즈가 섞여야 '텅'이다.
+  // 나무와 뿔이 부딪히는 소리에는 음정이 없다.
+  NB.filterType = 'lowpass'
+  NB.freq = SFX.relBodyFreq * bright
+  NB.endFreq = SFX.relBodyEndFreq * bright
+  NB.q = 0.9
+  NB.dur = SFX.relBodyDur
+  NB.attack = 0.001
+  NB.decay = SFX.relBodyDur
+  NB.gain = P.audio.releaseBodyGain * vol
+  NB.delay = 0
+  noiseBurst(s, K_THUMP, NB)
+
+  // ── B. 탁 — 시위의 크랙. 35ms. "놓았다"의 순간을 찍는 것은 이 층이다. ──
+  NB.filterType = 'bandpass'
+  NB.freq = SFX.relSnapFreq * bright
+  NB.endFreq = SFX.relSnapEndFreq * bright
+  NB.q = SFX.relSnapQ
+  NB.dur = SFX.relSnapDur
+  NB.attack = 0.0008
+  NB.decay = SFX.relSnapDur
+  NB.gain = P.audio.releaseSnapGain * vol
+  NB.delay = 0
+  noiseBurst(s, K_SNAP, NB)
+
+  // 시위의 음정을 귀띔하는 색. 만작에서만 확실히 들리게 pw를 한 번 더 곱한다.
   TN.type = 'sine'
   TN.freq = SFX.relRingFreq * bright
   TN.endFreq = SFX.relRingFreq * bright * 0.72
@@ -654,25 +723,14 @@ function playRelease(s: Synth, power: number): void {
   TN.delay = 0
   tone(s, K_RING, TN)
 
-  NB.filterType = 'highpass'
-  NB.freq = SFX.relAirFreq * bright
-  NB.endFreq = 0
-  NB.q = 0.7
-  NB.dur = 0.03
-  NB.attack = 0.001
-  NB.decay = 0.028
-  NB.gain = SFX.relAirGain * vol
-  NB.delay = 0
-  noiseBurst(s, K_AIR, NB)
-
-  // 화살이 공기를 가르는 소리. 발사 직후 짧게만.
+  // ── C. 쉭 — 화살이 공기를 찢으며 **멀어진다.** 그래서 음이 내려간다. ──
   NB.filterType = 'bandpass'
-  NB.freq = SFX.swooshFreq
+  NB.freq = SFX.swooshFreq * bright
   NB.endFreq = SFX.swooshEndFreq
-  NB.q = 0.8
+  NB.q = SFX.swooshQ
   NB.dur = SFX.swooshDur
-  NB.attack = 0.03
-  NB.decay = 0.12
+  NB.attack = 0.005
+  NB.decay = SFX.swooshDur
   NB.gain = P.audio.swooshGain * vol
   NB.delay = SFX.swooshDelay
   noiseBurst(s, K_SWOOSH, NB)
@@ -706,7 +764,18 @@ function playShotVoice(s: Synth, kind: ArrowKindId, pw: number): void {
     TN.delay = 0.18
     tone(s, K_ESCAPE, TN)
   } else if (kind === 'burst') {
-    // 불심지 — 파직·파직·파지직. 고역 노이즈 세 톨.
+    // 화전 — 불을 달고 난다. 심지의 파직임만 있으면 성냥이지 화살이 아니다.
+    // 먼저 **불길이 끌려가는 저중역 후욱**을 깔고, 그 위에 파직임 세 톨을 얹는다.
+    NB.filterType = 'bandpass'
+    NB.freq = 760
+    NB.endFreq = 300
+    NB.q = 1.2
+    NB.dur = 0.26
+    NB.attack = 0.02
+    NB.decay = 0.24
+    NB.gain = 0.2 * vol
+    NB.delay = 0.015
+    noiseBurst(s, K_ESCAPE, NB)
     for (let i2 = 0; i2 < 3; i2++) {
       NB.filterType = 'highpass'
       NB.freq = 2600 + i2 * 500
@@ -715,23 +784,49 @@ function playShotVoice(s: Synth, kind: ArrowKindId, pw: number): void {
       NB.dur = 0.025
       NB.attack = 0.001
       NB.decay = 0.022
-      NB.gain = 0.12 * vol
+      NB.gain = 0.14 * vol
       NB.delay = 0.05 + i2 * 0.07
       noiseBurst(s, K_DEBRIS, NB)
     }
   } else if (kind === 'pierce') {
-    // 애기살 — 통아를 훑는 채찍 스냅. 짧고 높고 마르게.
-    TN.type = 'square'
-    TN.freq = 2300
-    TN.endFreq = 3100
-    TN.dur = 0.03
-    TN.attack = 0.001
-    TN.decay = 0.028
-    TN.gain = 0.09 * vol
-    TN.delay = 0.005
-    tone(s, K_ESCAPE, TN)
+    // ── 애기살 = 편전 (형: "이름은 애기살이지만 편전으로서 쉭하고 날카로운 소리 나는 거 몰라?") ──
+    //   예전엔 사각파 2300→3100Hz 30ms짜리 삑이었다. 그게 병아리 소리의 본진이었다.
+    //   편전은 통아에 얹어 쏘는 반 길이 살이라 같은 활에서 초속이 두 배 가까이 나온다.
+    //   그래서 서명은 **더 높고 · 더 좁고 · 더 빨리 지나가는 쉭**이다. 음정이 아니라 바람이다.
+    //
+    //   ① 통아를 훑고 나가는 나무 틱 — 짧게 한 톨. 이게 편전을 편전으로 만든다.
+    NB.filterType = 'bandpass'
+    NB.freq = SFX.pierceTubeFreq
+    NB.endFreq = SFX.pierceTubeFreq * 1.5
+    NB.q = SFX.pierceTubeQ
+    NB.dur = 0.022
+    NB.attack = 0.0008
+    NB.decay = 0.02
+    NB.gain = 0.2 * vol
+    NB.delay = 0.004
+    noiseBurst(s, K_DEBRIS, NB)
+    //   ② 쉭 — 기본 쉭보다 높은 데서 출발해 더 빨리 떨어진다. Q가 높아 '찢는' 소리가 난다.
+    NB.freq = SFX.pierceFreq
+    NB.endFreq = SFX.pierceEndFreq
+    NB.q = SFX.pierceQ
+    NB.dur = SFX.pierceDur
+    NB.attack = 0.003
+    NB.decay = SFX.pierceDur
+    NB.gain = 0.34 * vol
+    NB.delay = 0.012
+    noiseBurst(s, K_ESCAPE, NB)
+    //   ③ 꼬리 — 더 좁게, 조금 늦게. 쉭이 '지나갔다'가 되려면 꼬리가 있어야 한다.
+    NB.freq = SFX.pierceTailFreq
+    NB.endFreq = SFX.pierceTailEndFreq
+    NB.q = SFX.pierceTailQ
+    NB.dur = 0.11
+    NB.attack = 0.004
+    NB.decay = 0.1
+    NB.gain = 0.15 * vol
+    NB.delay = 0.055
+    noiseBurst(s, K_AIR, NB)
   } else if (kind === 'heavy') {
-    // 육량전 — 여섯 냥의 무게. 낮은 텅이 가슴을 친다.
+    // 육량전 — 여섯 냥의 무게. 낮은 텅이 가슴을 치고, 무거운 것은 **느리게** 지나간다.
     TN.type = 'sine'
     TN.freq = 130
     TN.endFreq = 62
@@ -741,34 +836,70 @@ function playShotVoice(s: Synth, kind: ArrowKindId, pw: number): void {
     TN.gain = 0.34 * vol
     TN.delay = 0.01
     tone(s, K_ESCAPE, TN)
+    // 저역 노이즈 몸통 — 사인만 있으면 '붕'이고, 섞여야 '텅'이다.
+    NB.filterType = 'lowpass'
+    NB.freq = 260
+    NB.endFreq = 90
+    NB.q = 0.8
+    NB.dur = 0.16
+    NB.attack = 0.002
+    NB.decay = 0.15
+    NB.gain = 0.24 * vol
+    NB.delay = 0.008
+    noiseBurst(s, K_DEBRIS, NB)
+    // 낮고 느린 쉭 — 편전과 정반대 축이다. 같은 문법으로 무게를 말한다.
+    NB.filterType = 'bandpass'
+    NB.freq = 1700
+    NB.endFreq = 480
+    NB.q = 3.5
+    NB.dur = 0.3
+    NB.attack = 0.014
+    NB.decay = 0.28
+    NB.gain = 0.2 * vol
+    NB.delay = 0.03
+    noiseBurst(s, K_AIR, NB)
   } else if (kind === 'split') {
-    // 세전 — 세 살대의 파닥임. 같은 음이 아니라 살짝 어긋난 3연타.
+    // 세전 — 세 살대가 **각각** 공기를 가른다. 예전엔 삼각파 3연타라 그냥 삑삑삑이었다.
+    // 살대는 음정을 내지 않는다. 조금씩 다른 높이의 쉭 셋이 어긋나 지나가야 셋으로 들린다.
+    const kinds3 = [K_ESCAPE, K_DEBRIS, K_AIR]
     for (let i2 = 0; i2 < 3; i2++) {
-      TN.type = 'triangle'
-      TN.freq = 1500 + i2 * 190
-      TN.endFreq = 1250 + i2 * 190
-      TN.dur = 0.035
-      TN.attack = 0.002
-      TN.decay = 0.032
-      TN.gain = 0.1 * vol
-      TN.delay = 0.03 + i2 * 0.05
-      tone(s, K_ESCAPE, TN)
+      NB.filterType = 'bandpass'
+      NB.freq = 4200 - i2 * 600
+      NB.endFreq = 1300 - i2 * 150
+      NB.q = 7
+      NB.dur = 0.1
+      NB.attack = 0.003
+      NB.decay = 0.095
+      NB.gain = 0.19 * vol
+      NB.delay = 0.016 + i2 * 0.042
+      noiseBurst(s, kinds3[i2] ?? K_ESCAPE, NB)
     }
   } else if (kind === 'homing') {
-    // 신전 — 신령한 웅웅. 근음+5도 배음이 느리게 차오른다.
+    // 신전 — 신령한 웅웅. 근음+5도 배음이 느리게 차오른다. (이건 설정이 그런 소리다.)
     TN.type = 'sine'
     TN.freq = 520
     TN.endFreq = 660
     TN.dur = 0.3
     TN.attack = 0.07
     TN.decay = 0.22
-    TN.gain = 0.11 * vol
+    TN.gain = 0.13 * vol
     TN.delay = 0.02
     tone(s, K_ESCAPE, TN)
     TN.freq = 780
     TN.endFreq = 990
-    TN.gain = 0.05 * vol
+    TN.gain = 0.06 * vol
     tone(s, K_DEBRIS, TN)
+    // 아래를 받치는 저역 — 신령한 것에도 무게는 있어야 한다. 없으면 그냥 신호음이다.
+    NB.filterType = 'lowpass'
+    NB.freq = 300
+    NB.endFreq = 170
+    NB.q = 0.7
+    NB.dur = 0.26
+    NB.attack = 0.05
+    NB.decay = 0.22
+    NB.gain = 0.16 * vol
+    NB.delay = 0.02
+    noiseBurst(s, K_AIR, NB)
   }
 }
 

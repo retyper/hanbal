@@ -29,6 +29,9 @@ interface Ev {
   freq: number
   /** 엔벨로프 최고점 × 상류 게인들의 곱 */
   peak: number
+  /** 스윕의 시작·끝 주파수. 노이즈는 **필터**의 것이다 — 노이즈에 음정은 없고 색만 있다. */
+  f0: number
+  f1: number
 }
 
 const events: Ev[] = []
@@ -41,7 +44,10 @@ class Param {
   touched = false
   /** 마지막으로 예약된 시각. 엔벨로프 길이를 재는 데 쓴다. */
   last = 0
+  /** 처음 세팅된 값. 스윕이 **어느 쪽으로 가는가**를 알려면 끝값만으로는 모자란다. */
+  first = -1
   setValueAtTime(v: number, t: number): Param {
+    if (this.first < 0) this.first = v
     this.value = v
     this.touched = true
     if (v > this.peak) this.peak = v
@@ -112,6 +118,8 @@ class Osc extends ANode {
       stop: t,
       freq: this.frequency.peak > 0 ? this.frequency.peak : this.frequency.value,
       peak: g === null ? 0 : g.chainGain(),
+      f0: this.frequency.first,
+      f1: this.frequency.value,
     })
   }
   startAt = 0
@@ -128,12 +136,24 @@ class Src extends ANode {
   }
   stop(t: number): void {
     const g = this.dest
+    // 노이즈의 '음정'은 제 뒤에 붙은 필터의 스윕이다. 하류로 걸어가 필터를 찾는다.
+    let f: Filter | null = null
+    let p: ANode | null = this.dest
+    while (p !== null) {
+      if (p instanceof Filter) {
+        f = p
+        break
+      }
+      p = p.dest
+    }
     events.push({
       kind: 'noise',
       at: this.startAt,
       stop: t,
       freq: 0,
       peak: g === null ? 0 : g.chainGain(),
+      f0: f === null ? -1 : f.frequency.first,
+      f1: f === null ? -1 : f.frequency.value,
     })
   }
 }
@@ -311,6 +331,111 @@ console.log(`master=${P.audio.master}  maxVoices=${P.audio.maxVoices}  endGain=$
     playUi(sfx, 'unlock')
   })
   table(list)
+}
+
+// ── 4. 발사 소리 (형: "활 쏘는 게 병아리 소리도 아니고") ──
+//
+// 활 소리가 '히마리 있으려면' 세 가지가 있어야 한다. 그걸 숫자로 판정한다.
+//   ① **몸통** — 300Hz 아래 층이 있는가. 없으면 가슴에 오는 게 없고 중역 삑만 남는다.
+//   ② **멀어지는 쉭** — 노이즈 스윕이 **내려가는가**. 올라가는 스윕은 다가오는 것이라
+//      물리적으로 활 소리가 못 된다 (예전 swoosh는 1500→3200으로 거꾸로 갔다).
+//   ③ **삑 없음** — 2kHz 위에서 60ms 안에 끝나는 **음정 있는** 층. 그게 병아리다.
+//      (명적/신전은 설정상 음정이 있는 소리라 면제 — 형이 짚어준 그대로다.)
+{
+  const KINDS = ['basic', 'pierce', 'heavy', 'split', 'burst', 'homing', 'chain'] as const
+  const NAME: Record<string, string> = {
+    basic: '유엽전(기본)', pierce: '애기살=편전', heavy: '육량전', split: '세전',
+    burst: '화전', homing: '신전', chain: '명적(우는살)',
+  }
+  /** 음정이 설정인 살 — 삑 검사 면제. */
+  const TONAL_BY_DESIGN = new Set(['homing', 'chain'])
+  let bad = 0
+  let baseTear = 0
+  console.log('\n── 4. 발사 소리 ──')
+  console.log(
+    '  ' + '살'.padEnd(14) + '층'.padStart(4) + '몸통(Hz)'.padStart(10) +
+    '쉭 스윕(Hz)'.padStart(16) + '길이(ms)'.padStart(10) + '  판정',
+  )
+  for (const kind of KINDS) {
+    const list = capture(`발사 — ${NAME[kind] ?? kind}`, () => {
+      pumpSfx(sfx, fakeWorld([
+        { t: 'release', power: 0.8, angle: 0.2, err: 0, kind },
+      ]) as never)
+    })
+    table(list)
+
+    const t0 = list.length === 0 ? 0 : Math.min(...list.map((e) => e.at))
+    const span = list.length === 0 ? 0 : Math.max(...list.map((e) => e.stop)) - t0
+
+    // ① 몸통 — 저역 층 (톤이든 노이즈든 300Hz 아래에서 울리는 것)
+    let body = 0
+    for (const e of list) {
+      const f = e.kind === 'osc' ? e.f0 : e.f1
+      if (f > 0 && f < 300 && (body === 0 || f < body)) body = f
+    }
+
+    // ② 내려가는 노이즈 스윕 중 가장 높은 데서 출발하는 것 = 이 살의 쉭
+    let tearF0 = 0
+    let tearF1 = 0
+    for (const e of list) {
+      if (e.kind !== 'noise' || e.f0 <= 0 || e.f1 <= 0) continue
+      if (e.f0 > e.f1 * 1.5 && e.f0 > tearF0) {
+        tearF0 = e.f0
+        tearF1 = e.f1
+      }
+    }
+    if (kind === 'basic') baseTear = tearF0
+
+    // ③ 병아리 검사 — 2kHz 위 · 60ms 안에 끝나는 음정 층
+    let chirp = 0
+    if (!TONAL_BY_DESIGN.has(kind)) {
+      for (const e of list) {
+        if (e.kind === 'osc' && e.f0 > 2000 && (e.stop - e.at) < 0.06) chirp++
+      }
+    }
+
+    const okBody = body > 0
+    const okTear = tearF0 > 0
+    const okChirp = chirp === 0
+    if (!okBody || !okTear || !okChirp) bad++
+    console.log(
+      '  ' + (NAME[kind] ?? kind).padEnd(14) + String(list.length).padStart(4) +
+      (okBody ? body.toFixed(0) : '없음').padStart(10) +
+      (okTear ? `${tearF0.toFixed(0)}→${tearF1.toFixed(0)}` : '없음').padStart(16) +
+      (span * 1000).toFixed(0).padStart(10) +
+      `  ${okBody ? '몸통✓' : '몸통✗'} ${okTear ? '쉭✓' : '쉭✗'} ${okChirp ? '삑없음✓' : `삑${chirp}개✗`}`,
+    )
+  }
+
+  // 편전은 기본살보다 **더 높은 데서** 쉭이 시작해야 한다 — 초속이 두 배 가까우니까.
+  const pierceList = capture('편전 대조', () => {
+    pumpSfx(sfx, fakeWorld([{ t: 'release', power: 0.8, angle: 0.2, err: 0, kind: 'pierce' }]) as never)
+  })
+  let pierceTear = 0
+  for (const e of pierceList) {
+    if (e.kind === 'noise' && e.f0 > 0 && e.f1 > 0 && e.f0 > e.f1 * 1.5 && e.f0 > pierceTear) pierceTear = e.f0
+  }
+  const sharper = pierceTear > baseTear
+  console.log(
+    `\n  편전의 쉭 ${pierceTear.toFixed(0)}Hz vs 기본살 ${baseTear.toFixed(0)}Hz — ` +
+    `${sharper ? '편전이 더 날카롭다 ✓' : '⚠ 편전이 더 날카롭지 않다'}`,
+  )
+  if (!sharper) bad++
+  console.log(bad === 0 ? '\n  발사 소리 판정 전부 통과 ✓' : `\n  ⚠ 발사 소리 판정 실패 ${bad}건`)
+
+  // 겹침 — 발사 층이 늘었으니 보이스 상한(P.audio.maxVoices)을 먹는지 본다.
+  // 실전에서 가장 붐비는 순간: 편전을 쏘는데 앞 화살이 명중하고 연쇄까지 튄다.
+  const busy = capture('붐빔 — 편전 발사 + 명중 + 연쇄', () => {
+    pumpSfx(sfx, fakeWorld([
+      { t: 'release', power: 1, angle: 0.2, err: 0, kind: 'pierce' },
+      { t: 'hit', targetId: 0, x: 20, y: 3, score: 10, accuracy: 0.9, chain: 0, combo: 2, head: false, foe: false, arrow: 0 },
+      { t: 'chain', targetId: 0, x: 20, y: 3, depth: 1 },
+    ]) as never)
+  })
+  console.log(
+    `  동시 ${busy.length}개 예약 (상한 ${P.audio.maxVoices}) — ` +
+    (busy.length >= 12 ? '발사·명중·연쇄가 모두 났다 ✓' : '⚠ 상한에 걸려 일부가 잘렸을 수 있다'),
+  )
 }
 
 console.log('')
