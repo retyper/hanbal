@@ -1,0 +1,3 @@
+drone.png — "Pixel Art Drone" (OpenGameArt, CC0)
+  https://opengameart.org/content/pixel-art-drone
+  113x57, 2프레임 (로터 교대). 원본 파일명 drone_4.png.

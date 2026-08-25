@@ -13,6 +13,7 @@ import {
 } from './camera.ts'
 import type { Camera } from './camera.ts'
 import { drawArcher } from './stickman.ts'
+import { sprite } from './sprites.ts'
 import { createFx, pumpEvents, updateFx, drawFx, hitStopMs, targetSquash , PLAYER_PIN } from './effects.ts'
 import type { Fx } from './effects.ts'
 import { drawHud } from './hud.ts'
@@ -410,38 +411,124 @@ function drawTargets(
         ctx.globalAlpha = 1
       }
 
-      // ── 창문의 사수 (look 1·2) — 높이 떠 있던 과녁 자리가 그대로 '건물 창문'이다. ──
+      // ── 창문의 사수 (look 1·2) — 형의 반려 재작: "건물도 없이 창문이 허공에 떠
+      //     있고, 적이 뛰어내릴 듯 전신이 다 보인다." 규칙 세 개로 다시 짓는다.
+      //     ① 창문은 벽에 뚫린 구멍이다 — 벽은 땅에서 자라고, 처마·아래층 창이 층을 만든다.
+      //     ② 창가의 사람은 **창턱 위 상반신만** 보인다 — 하반신은 벽 뒤다 (클리핑).
+      //     ③ 숨은 사수(look 2)의 창은 그냥 **빈 창**이다 — 덧창이 아니라 부재(不在)가 은신이다.
       if (t.look === 1 || t.look === 2) {
-        const fw = rx * 1.5
-        const fh = ry * 1.75
-        // 어두운 실내 + 창틀 + 창턱. 사수는 이 사각형 안의 사람이다.
-        ctx.fillStyle = 'rgba(0,0,0,0.45)'
+        const fw = rx * 1.3
+        const fh = ry * 1.05
+        const gy = worldToScreenY(cam, 0)
+        const bw = fw * 2.0
+        const topY = y - fh * 2.0
+        const hiddenNow = t.look === 2 && t.hidden
+        // 벽 — 땅에서 지붕까지. 이게 있어야 창문이 '어딘가에' 있다.
+        ctx.fillStyle = '#242a35'
+        ctx.fillRect(x - bw, topY, bw * 2, Math.max(0, gy - topY))
+        // 처마 + 왼쪽 모서리의 달빛
+        ctx.fillStyle = '#3a4351'
+        ctx.fillRect(x - bw - 3, topY - 5, bw * 2 + 6, 5)
+        ctx.fillRect(x - bw, topY, 2.5, Math.max(0, gy - topY))
+        // 아래층의 불 꺼진 창들 — 층이 있어야 건물이다.
+        ctx.fillStyle = '#181d26'
+        for (let wy = y + fh * 2.1; wy + fh * 1.1 < gy - 4; wy += fh * 2.3) {
+          ctx.fillRect(x - fw * 0.55, wy, fw * 1.1, fh * 0.9)
+        }
+        // 사수의 창 — 실내 어둠.
+        ctx.fillStyle = '#0f141c'
         ctx.fillRect(x - fw, y - fh, fw * 2, fh * 2)
+        if (!hiddenNow) {
+          // ── 상반신 — 창턱 아래는 클립이 자른다. 세상에 하반신을 내놓는 저격수는 없다. ──
+          ctx.save()
+          ctx.beginPath()
+          ctx.rect(x - fw, y - fh, fw * 2, fh * 2)
+          ctx.clip()
+          const headR = rx * 0.24
+          const hx = x + fw * 0.18
+          const hy2 = y - fh * 0.28
+          ctx.strokeStyle = bodyCol
+          ctx.lineWidth = Math.max(2, rx * 0.13)
+          ctx.lineCap = 'round'
+          // 몸통 — 머리에서 창턱 밑으로 사라진다. 활 쪽으로 살짝 기운다.
+          ctx.beginPath()
+          ctx.moveTo(hx, hy2 + headR * 0.8)
+          ctx.lineTo(hx + fw * 0.1, y + fh + ry * 0.5)
+          // 시위 손 — 뺨까지 당겨져 있다 (예고 중엔 더 뒤로).
+          ctx.moveTo(hx, hy2 + headR * 1.6)
+          ctx.lineTo(hx + fw * (0.32 + drawF * 0.22), hy2 + headR * 1.9)
+          ctx.stroke()
+          // 머리 — 갑옷병이면 투구 (금속색 + 챙).
+          ctx.fillStyle = t.armored ? '#8fa3b5' : bodyCol
+          ctx.beginPath()
+          ctx.arc(hx, hy2, headR, 0, TAU)
+          ctx.fill()
+          if (t.armored) {
+            ctx.strokeStyle = '#242a35'
+            ctx.lineWidth = 1.5
+            ctx.beginPath()
+            ctx.moveTo(hx - headR, hy2 - headR * 0.15)
+            ctx.lineTo(hx + headR * 0.6, hy2 - headR * 0.15)
+            ctx.stroke()
+          }
+          ctx.restore()
+          // ── 활 — 창밖(-x)으로 내밀었다. 클립 밖에서 그려야 벽을 뚫고 나온 활로 보인다. ──
+          const bx = x - fw * 1.12
+          const by = hy2 + headR * 0.9
+          ctx.strokeStyle = bodyCol
+          ctx.lineWidth = Math.max(1.5, rx * 0.1)
+          ctx.beginPath()
+          ctx.moveTo(bx, by - ry * 0.62)
+          ctx.quadraticCurveTo(bx - rx * 0.4, by, bx, by + ry * 0.62)
+          ctx.stroke()
+          ctx.lineWidth = 1
+          ctx.beginPath()
+          ctx.moveTo(bx, by - ry * 0.62)
+          ctx.lineTo(bx + drawF * rx * 0.55, by)
+          ctx.lineTo(bx, by + ry * 0.62)
+          ctx.stroke()
+          // 앞팔 — 창틀 위로 걸쳐 활 손잡이까지.
+          ctx.lineWidth = Math.max(2, rx * 0.13)
+          ctx.beginPath()
+          ctx.moveTo(x - fw * 0.55, hy2 + headR * 1.5)
+          ctx.lineTo(bx + rx * 0.06, by)
+          ctx.stroke()
+        }
+        // 창틀 + 창턱 — 몸 위에 그려서 '벽이 가린다'를 완성한다.
         ctx.strokeStyle = '#5a6472'
-        ctx.lineWidth = Math.max(2, rx * 0.16)
+        ctx.lineWidth = Math.max(2, rx * 0.14)
         ctx.strokeRect(x - fw, y - fh, fw * 2, fh * 2)
         ctx.fillStyle = '#5a6472'
-        ctx.fillRect(x - fw * 1.15, y + fh, fw * 2.3, Math.max(3, ry * 0.16))
-      }
-      // 숨었다 쏘는 사수 (look 2) — 숨은 동안은 닫힌 덧창만 보인다. 판자 두 줄이 '닫힘'이다.
-      if (t.look === 2 && t.hidden) {
-        const fw = rx * 1.5
-        const fh = ry * 1.75
-        ctx.fillStyle = '#3d4450'
-        ctx.fillRect(x - fw, y - fh, fw * 2, fh * 2)
-        ctx.strokeStyle = '#5a6472'
-        ctx.lineWidth = 2
-        ctx.beginPath()
-        ctx.moveTo(x - fw, y - fh * 0.35)
-        ctx.lineTo(x + fw, y - fh * 0.35)
-        ctx.moveTo(x - fw, y + fh * 0.35)
-        ctx.lineTo(x + fw, y + fh * 0.35)
-        ctx.stroke()
+        ctx.fillRect(x - fw * 1.18, y + fh, fw * 2.36, Math.max(3, ry * 0.13))
+        // 체력 바 — 처마 위. 숨어 있으면 바도 없다 (없는 것은 잴 수 없다).
+        if (!hiddenNow) {
+          drawHpBar(ctx, x, topY - 12, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
+        }
         ctx.globalAlpha = 1
         continue
       }
-      // ── 드론 (look 3) — 사람이 아니다. 몸통 타원 + 로터 두 짝 + 나를 보는 렌즈. ──
+      // ── 드론 (look 3) — 기성 스프라이트(CC0, 2프레임 로터) 우선, 없으면 벡터. ──
       if (t.look === 3) {
+        const im = sprite('drone')
+        if (im !== null) {
+          // 113x57 = 56px 프레임 둘. 교대 주기는 sim elapsed로 (A1: 렌더는 읽기만).
+          const frame = Math.floor(w.elapsed * 14) % 2
+          const dw = rx * 2.3
+          const dh = dw * (57 / 56)
+          ctx.imageSmoothingEnabled = false
+          ctx.drawImage(im, frame === 0 ? 0 : 57, 0, 56, 57, x - dw / 2, y - dh / 2, dw, dh)
+          ctx.imageSmoothingEnabled = true
+          // 렌즈 — 발사 예고 때 위험색으로 달아오른다. 스프라이트 위에 얹는 게임 신호다.
+          if (hot) {
+            ctx.fillStyle = THEME.threat
+            ctx.beginPath()
+            ctx.arc(x - rx * 0.45, y + ry * 0.05, Math.max(2.5, rx * 0.15), 0, TAU)
+            ctx.fill()
+          }
+          drawHpBar(ctx, x, y - ry * 0.62 - 14, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
+          ctx.globalAlpha = 1
+          continue
+        }
         const spin = w.elapsed * 40
         ctx.fillStyle = bodyCol
         ctx.beginPath()

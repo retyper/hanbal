@@ -64,7 +64,7 @@ function mk(n: number, s: Spot): TargetSpec {
  * (teach 는 그 안의 한 걸음이다), 40개의 이름은 지어봐야 서로 구분이 안 된다.
  * 판 하나하나의 성격은 teach 가 자막 둘째 줄로 말한다.
  */
-const CHAPTER_NAMES: readonly string[] = ['거리와 낙차', '연쇄', '바람과 이동', '관통과 조합']
+const CHAPTER_NAMES: readonly string[] = ['거리와 낙차', '연쇄', '바람과 이동', '관통과 조합', '곡사']
 
 interface Layout {
   /** 이 판에서 무엇을 배우는가. 한 판에 하나씩. */
@@ -143,6 +143,21 @@ const LAYOUTS: readonly Layout[] = [
   { teach: '멀리 + 바람 + 이동', arrows: 8, hits: 4, wind: 4.0, spots: [{ x: 26, y: 2.0, kind: 'moving', ampY: 1.6, freq: 0.35 }, { x: 33, y: 3.4 }, { x: 39, y: 2.2 }, { x: 20, y: 1.4 }] },
   { teach: '큰 연쇄 — 한 발로 화면을 무너뜨린다', arrows: 8, hits: 5, spots: [{ x: 22, y: 7.6, kind: 'aerial' }, { x: 22, y: 5.8 }, { x: 22, y: 4.2 }, { x: 22, y: 2.8 }, { x: 22, y: 1.4 }] },
   { teach: '챕터 4 종합 — 지금까지 배운 전부', arrows: 8, hits: 5, wind: -3.5, spots: [{ x: 18, y: 6.4, kind: 'aerial' }, { x: 18, y: 3.6, kind: 'pierceable' }, { x: 25, y: 3.6, kind: 'pierceable' }, { x: 31, y: 2.0, kind: 'moving', ampX: 2.2, freq: 0.3 }, { x: 37, y: 3.2 }] },
+  // ── 챕터 5 — 곡사 (형: "더 멀리 쏘는 스테이지 — 멋지게 곡사로") ────────
+  // 정조준 사거리(~20m)를 훌쩍 넘긴다. 만작 초속 ~60m/s의 최대 사거리는 320m이므로
+  // 55~115m는 전부 닿되, **위로 겨눠 포물선을 그려야만** 닿는 거리다. 반경은 각크기
+  // 곡선이 거리에 비례해 키우니 저작은 x만 밀면 된다. 낙하 시간이 1~2초라 화살을
+  // 눈으로 좇는 맛이 이 챕터의 상품이다.
+  { teach: '멀다. 과녁이 아니라 하늘에 쏜다', arrows: 6, hits: 1, spots: [{ x: 58, y: 1.8 }] },
+  { teach: '떨어지는 각을 몸에 새긴다', arrows: 7, hits: 2, spots: [{ x: 55, y: 2.2 }, { x: 74, y: 1.6 }] },
+  { teach: '하늘에서 연쇄를 떨어뜨린다', arrows: 7, hits: 2, spots: [{ x: 64, y: 7.4, kind: 'aerial' }, { x: 64, y: 2.0 }] },
+  { teach: '먼 화살일수록 바람을 오래 맞는다', arrows: 8, hits: 2, wind: 4, spots: [{ x: 62, y: 2.0 }, { x: 80, y: 2.6 }] },
+  { teach: '멀고 작다 — 만작이 아니면 흔들린다', arrows: 8, hits: 2, spots: [{ x: 70, y: 2.0, size: 0.8 }, { x: 88, y: 2.8, size: 0.8 }] },
+  { teach: '가까운 것과 먼 것 — 손맛을 갈아끼운다', arrows: 8, hits: 3, spots: [{ x: 17, y: 2.0 }, { x: 52, y: 1.8 }, { x: 86, y: 2.4 }] },
+  { teach: '역풍의 곡사 — 깃발을 두 번 봐라', arrows: 8, hits: 2, wind: -5, spots: [{ x: 68, y: 2.2 }, { x: 84, y: 1.8 }] },
+  { teach: '먼 곳에서 움직인다 — 낙하 시간만큼 앞을 본다', arrows: 8, hits: 2, spots: [{ x: 72, y: 2.6, kind: 'moving', size: 1.2, ampX: 3.0, freq: 0.18 }, { x: 58, y: 1.8 }] },
+  { teach: '극원거리 — 화살이 뜬 채로 두 번 숨 쉰다', arrows: 9, hits: 2, spots: [{ x: 92, y: 2.2 }, { x: 112, y: 2.8 }] },
+  { teach: '챕터 5 종합 — 온 마당이 사정거리다', arrows: 9, hits: 3, spots: [{ x: 48, y: 2.0 }, { x: 76, y: 6.8, kind: 'aerial' }, { x: 104, y: 2.4 }] },
 ]
 
 function build(layout: Layout, i: number): StageDef {

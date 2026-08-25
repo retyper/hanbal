@@ -19,7 +19,7 @@ export const HAND_Y = 1.4
 export const BASE_SCORE = 100
 
 /** 손으로 적은 캠페인의 길이. 이 뒤부터가 무한 구간이다. */
-export const CAMPAIGN_STAGES = 40
+export const CAMPAIGN_STAGES = 50
 
 /** 1판의 각크기. 조준을 반쯤 놓쳐도 맞는다. 1280px 화면에서 반경 약 72px. */
 const H_FIRST = 0.056

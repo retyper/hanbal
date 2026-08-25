@@ -84,7 +84,8 @@ describe('스테이지 — 무한 구간', () => {
       assert.ok(s.arrows <= 10, `${s.id}: 화살이 ${s.arrows}발이면 한 판이 1분을 넘는다`)
       for (const t of s.targets) {
         assert.ok(Number.isFinite(t.x) && Number.isFinite(t.y), `${s.id}: 좌표가 NaN이다`)
-        assert.ok(t.x > 5 && t.x < 52, `${s.id}: x=${t.x.toFixed(1)} 이 사거리 밖이다`)
+        // 만작 최대 사거리는 ~320m (35도, 실측). 곡사 챕터(5장)가 115m까지 쓴다.
+        assert.ok(t.x > 5 && t.x < 130, `${s.id}: x=${t.x.toFixed(1)} 이 사거리 밖이다`)
         const lo = (t.y ?? 0) - (t.ampY ?? 0)
         const hi = (t.y ?? 0) + (t.ampY ?? 0)
         assert.ok(lo > 0.2, `${s.id}: y=${lo.toFixed(2)} 이 지면 아래로 내려간다`)
