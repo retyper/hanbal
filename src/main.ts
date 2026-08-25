@@ -79,9 +79,9 @@ const loop = createLoop(el, {
         onStart,
       ),
     // 보스 보급 3택 (docs/RUN.md) — 특수살 재고의 유일한 큰 획득처.
-    supply: (offer, count, onPick) => mountSupply(overlay, offer, count, onPick),
-    runOver: (reached, score, best, isNew, reason, onNext) =>
-      showRunOver(overlay, reached, score, best, isNew, reason, onNext),
+    supply: (offer, count, onPick) => mountSupply(overlay, offer, count, save.arrowStock, onPick),
+    runOver: (reached, score, best, isNew, first, reason, onNext) =>
+      showRunOver(overlay, reached, score, best, isNew, first, reason, onNext),
     toast: (t) => overlay.toast(t),
     // 새로 열린 것은 구석 알림 한 줄. 모달로 막지 않는다 (C1).
     unlocked: (ids) => withCollection((m) => m.showUnlocked(overlay, ids)),
@@ -94,7 +94,6 @@ const loop = createLoop(el, {
 
 // 성장 화면이 스탯을 바꾸면 writeSave가 통지하고, 루프가 그걸 받아 활에 넣는다.
 // 그래서 여기 onChange는 비워 둔다 — 통지 경로가 둘이면 반드시 어긋난다.
-mountQuiver(overlay, save)
 mountGrowth(overlay, save, () => {}, {
   muted: () => loop.muted(),
   toggle: () => loop.toggleMute(),
@@ -107,7 +106,11 @@ const idle: (fn: () => void) => void =
   'requestIdleCallback' in window
     ? (fn) => (window as unknown as { requestIdleCallback: (f: () => void) => void }).requestIdleCallback(fn)
     : (fn) => window.setTimeout(fn, 300)
-idle(() => withCollection(() => {}))
+idle(() => withCollection(() => {
+  // 살통은 상시 버튼(성장·수집) **뒤**에 붙는다 — 가변 폭 요소가 앞에 서면
+  // 매 판 누르는 버튼들의 자리가 널뛴다 (감사 UI구조).
+  mountQuiver(overlay, save)
+}))
 
 // 드래프트가 첫 프레임에 뜰 수 있으므로 화면들이 다 붙은 뒤에 시작한다.
 loop.start()

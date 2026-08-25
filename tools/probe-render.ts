@@ -189,7 +189,7 @@ import type { InputFrame, Stats, World } from '../src/sim/types.ts'
 
 const STATS: Stats = { str: 8, steady: 6, stamina: 6, focus: 4 }
 const IDLE: InputFrame = { aimX: 20, aimY: 3, drawing: false, steady: false }
-const HUD_STATE: HudState = { training: 42, canLevelUp: true, muted: false, toast: '', arrow: '분열 살', stars: -1 }
+const HUD_STATE: HudState = { training: 42, canLevelUp: true, muted: false, toast: '', arrow: '분열 살', stars: -1, endReason: '' }
 
 function reset(): void {
   rec.texts.length = 0

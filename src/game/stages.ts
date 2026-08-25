@@ -286,7 +286,7 @@ function bossStage(i: number): StageDef {
     hitsNeeded = eyeHits
   } else if (variant === 2) {
     // 쌍둥이 눈알 — 둘로 갈라진 위협. 어느 쪽을 먼저 잡을지가 판단이다.
-    title = '쌍둥이 눈알'
+    title = '쌍눈귀신'
     hint = '둘 다 잡아야 한다 — 가까운 쪽부터'
     const each = Math.max(dmg, Math.floor(baseHp * 0.55))
     for (let e = 0; e < 2; e++) {

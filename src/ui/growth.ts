@@ -306,7 +306,7 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
   const wipe = document.createElement('button')
   wipe.type = 'button'
   wipe.className = 'hb-btn'
-  wipe.textContent = '처음부터'
+  wipe.textContent = '기록 전부 삭제'
   const dangerNote = document.createElement('span')
   dangerNote.textContent = '판·스탯·별·해금 전부 지우고 새로 시작한다. 이 브라우저의 기록만이다.'
   danger.append(wipe, dangerNote)
@@ -315,7 +315,7 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
   let armTimer = 0
   const disarm = (): void => {
     wipe.classList.remove('g-armed')
-    wipe.textContent = '처음부터'
+    wipe.textContent = '기록 전부 삭제'
   }
   wipe.addEventListener('click', () => {
     if (!wipe.classList.contains('g-armed')) {

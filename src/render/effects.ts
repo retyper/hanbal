@@ -499,7 +499,7 @@ export function pumpEvents(fx: Fx, w: World): void {
       // 적의 몸통에는 '정중앙'이 없다 — 그건 과녁의 말이다. 적의 크리티컬은 오직 머리다.
       const crit = e.foe ? e.head : e.accuracy >= P.hit.bullseyeAcc
       // 머리 명중은 정중앙이 아니라 **헤드샷**이다 (형: "치명상이라던가 그런 게 떠야지").
-      if (e.head) pushPopup(fx.pop, e.x, e.y + 0.8, '헤드샷 !', 'crit')
+      if (e.head) pushPopup(fx.pop, e.x, e.y + 0.8, '헤드샷!', 'crit')
       fx.lastX = e.x
       fx.lastY = e.y
       fx.comboRun = e.combo + 1
@@ -531,7 +531,8 @@ export function pumpEvents(fx: Fx, w: World): void {
       // 점수 팝 — 문자열은 명중마다 한 번만 만든다. 매 프레임이 아니라 이벤트마다다 (A5).
       pushPopup(
         fx.pop, e.x, e.y, `+${e.score}`, crit ? 'crit' : 'score',
-        clamp01(e.score / FX.scoreRef),
+        // 로그 스케일 — 4~5콤보에서 포화되던 팝 크기의 위가 다시 열린다 (감사 재미).
+        clamp01(Math.log1p(e.score / 100) / Math.log1p(20)),
       )
       // 헤드샷이 이미 떴으면 정중앙은 겹쳐 띄우지 않는다 — 한 사건에 한 마디.
       if (crit && !e.head) pushPopup(fx.pop, e.x, e.y, FX.critFeat, 'feat')
@@ -590,7 +591,7 @@ export function pumpEvents(fx: Fx, w: World): void {
       // 맞았다 — 콤보가 끊기고 시간이 잠깐 멈춘다. 남은 체력이 아니라 잃었다는 사실을 띄운다.
       fx.comboRun = 0
       fx.hitStop += P.hit.stopMs * 0.002
-      pushPopup(fx.pop, w.archer.x + 1.2, w.archer.y + 1.2, e.hp <= 0 ? '쓰러졌다' : '피격 !', 'crit')
+      pushPopup(fx.pop, w.archer.x + 1.2, w.archer.y + 1.2, e.hp <= 0 ? '쓰러졌다' : '피격!', 'crit')
       // 쓰러지는 순간은 세상이 느려져야 한다 — 죽음에 무게가 없으면 여정에도 무게가 없다.
       if (e.hp <= 0) {
         fx.slow = 1.1

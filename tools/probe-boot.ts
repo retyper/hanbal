@@ -283,7 +283,9 @@ store.clear()
   const seed = defaultSave(Date.now())
   // 폭발 살은 **일부러 빼둔다**. 조건이 '2판 클리어'이고 별이 한 판뿐이라,
   // 이번에 1-1을 깨면 그 자리에서 열려야 한다 — 해금 경로를 실제로 타는 배치다.
-  seed.unlocked = ['arrow.chain', 'arrow.split', 'arrow.homing']
+  // 활이 하나뿐이면 로드아웃을 건너뛴다(첫 인터랙션=쏘기) — 이 프로브는 로드아웃 흐름을
+  // 재야 하므로 활 하나를 미리 열어 둔다.
+  seed.unlocked = ['arrow.chain', 'arrow.split', 'arrow.homing', 'bow.gakgung']
   // 마이그레이션(v5→v6: 화살 해금→재고 환산)이 실제로 돌아야 하는 시드다.
   // defaultSave가 v6 형태(arrowStock:{})로 만들어 주므로 옛 세이브답게 필드를 지운다.
   seed.v = 5
@@ -329,11 +331,11 @@ const loop = createLoop(canvas as unknown as HTMLCanvasElement, {
       const first = offer[0]
       if (first !== undefined) onPick(first)
     },
-    runOver: (reached, _score, _best, isNew, _reason, onNext) => {
+    runOver: (reached, _score, _best, isNew, _first, _reason, onNext) => {
       runOverShown++
       void reached; void isNew
       panelOpen = true
-      pendingNext = onNext
+      pendingNext = () => onNext('loadout')
     },
     toast: () => {},
     unlocked: (ids) => {

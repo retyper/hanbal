@@ -77,7 +77,7 @@ export function stepTargets(w: World): void {
         // 판이 안 깨지게 과녁 자체는 확실히 제거한다. 남겨두면 클리어가 영원히 안 된다.
         tg.alive = false
         w.combo = 0
-        w.events.push({ t: 'escape', x: tg.x, y: tg.y, lost: 0 })
+        // escape(화살 강탈 시절의 하강음)는 내지 않는다 — 이 사건의 이름은 '부딪힘'이다 (감사).
         if (w.status === 'playing' && P.enemy.chargerDamage > 0) {
           w.hp = Math.max(0, w.hp - Math.floor(P.enemy.chargerDamage))
           w.events.push({ t: 'player_hit', hp: w.hp, x: tg.x, y: tg.y, ang: 0, pin: false })

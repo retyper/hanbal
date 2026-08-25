@@ -26,10 +26,10 @@ import { awardRun, canGrow, grantArrows, type StatKey } from './progression.ts'
 import { arrowName, DEFAULT_ARROW } from './arrows.ts'
 import { bowMods, masteryLevel } from './bows.ts'
 import type { LoadoutPick } from '../ui/loadout.ts'
-import { rollSupply, SUPPLY_COUNT } from './supply.ts'
+import { rollSupply, rollSupplyCount } from './supply.ts'
 import { BOSS_EVERY } from './stages.ts'
 import { bullseyeAcc, gradeRun, rewardLine, type RunStats } from './rewards.ts'
-import { evaluateUnlocks, progressOf } from './unlocks.ts'
+import { evaluateUnlocks, progressOf, unlockedBows } from './unlocks.ts'
 import { makeRng } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { clamp } from '../core/math.ts'
@@ -55,13 +55,13 @@ export interface LoopUi {
   loadout(onStart: (pick: LoadoutPick) => void): void
   /** 여정 종료 — 도달 판·점수·기록·사유. onNext 한 번으로 다음 여정 준비로 간다 (C1). */
   runOver(
-    reached: number, score: number, best: number, isNew: boolean,
-    reason: 'defeat' | 'abandon' | 'death', onNext: () => void,
+    reached: number, score: number, best: number, isNew: boolean, first: boolean,
+    reason: 'defeat' | 'abandon' | 'death', onNext: (mode: 'again' | 'loadout') => void,
   ): void
   /** 보스 보급 3택 (docs/RUN.md). onPick은 정확히 한 번 — 고른 살이 count발 들어온다. */
   supply(offer: readonly ArrowKindId[], count: number, onPick: (id: ArrowKindId) => void): void
-  /** 구석 알림 한 줄 (여정 포기 확인 등). 모달이 아니다. */
-  toast(text: string): void
+  /** 구석 알림 한 줄 (여정 포기 확인 등). 모달이 아니다. ms를 주면 그 시간만 산다. */
+  toast(text: string, ms?: number): void
   /** 새로 열린 해금. **모달로 막지 않는다** — 구석 알림 한 줄이다 (C1). */
   unlocked(ids: readonly string[]): void
   /** 세이브의 별·진행도가 바뀌었다. 수집 화면이 다시 그린다. */
@@ -89,7 +89,9 @@ export interface GameLoop {
 }
 
 /** 판이 끝났을 때 아래 한 줄. 매 프레임 문자열을 만들지 않으려고 모듈 상수로 둔다 (A5). */
-const HINT_NEXT = '한 번 더 누르면 다음 판'
+const HINT_NEXT = '당기면 다음 판'
+/** 다음 판이 귀신(보스)일 때의 예고 — 긴장은 예고에서 시작된다 (감사 재미 P1). */
+const HINT_BOSS = '다음은 귀신이다 — 당기면 맞선다'
 /** R 한 번으로 여정을 접으면 실수 한 번이 기록을 지운다. 두 번째 R까지의 유효 시간 (ms). */
 const ABANDON_MS = 2500
 
@@ -171,17 +173,18 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   const rearm = (): void => {
     let kind = save.runArrow
     if (kind !== DEFAULT_ARROW && Math.floor(save.arrowStock[kind] ?? 0) <= 0) kind = DEFAULT_ARROW
-    if (w.arrowKind !== kind) {
-      armArrow(w, kind)
-      hud.arrow = kind === DEFAULT_ARROW ? '' : arrowName(kind)
-    }
+    if (w.arrowKind !== kind) armArrow(w, kind)
+    // 재고는 조준 시야(좌상단)에서 읽혀야 한다 — 좌하단 버튼까지 시선을 보내게 하지 않는다 (감사).
+    hud.arrow = kind === DEFAULT_ARROW
+      ? ''
+      : `${arrowName(kind)} ×${Math.floor(save.arrowStock[kind] ?? 0)}`
     armBow(w, bowMods(save.bow, kind, masteryLevel(save.bowHits[save.bow] ?? 0)))
     w.bowSkin = save.bow
   }
   const unRearm = onSaveChanged(rearm)
 
   // 매 프레임 제자리에서 갱신한다. 새로 만들지 않는다 (A5).
-  const hud: HudState = { training: 0, canLevelUp: false, muted: false, toast: '', arrow: '', stars: -1 }
+  const hud: HudState = { training: 0, canLevelUp: false, muted: false, toast: '', arrow: '', stars: -1, endReason: '' }
 
   let raf = 0
   /** 첫 R을 누른 시각 (performance.now). 두 번째 R이 ABANDON_MS 안에 오면 여정을 접는다. */
@@ -287,9 +290,23 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
    * 판마다 3택을 강요하던 옛 드래프트는 여기서 사라졌다 — "과녁이 화살보다 많으면
    * 사실상 1택"(형의 반려). 선택은 판 단위가 아니라 **여정 단위**다.
    */
+  const startRun = (bow: typeof save.bow): void => {
+    save.bow = bow
+    save.runActive = true
+    save.runScore = 0
+    stageIndex = 0
+    loadStage(save.runArrow)
+  }
+
   const beginStage = (): void => {
     if (save.runActive) {
       loadStage(save.runArrow)
+      return
+    }
+    // 활이 연습궁뿐이면 고를 것이 없다 — 1택짜리 출정 화면은 이 게임 스스로 반려한
+    // 문법이다 (감사 시작경험 P1). 첫 인터랙션은 화면이 아니라 **쏘기**다.
+    if (unlockedBows(save.unlocked).length === 0) {
+      startRun('practice')
       return
     }
     choosing = true
@@ -298,11 +315,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       // 고른 순간의 소리. ui/ 는 audio/ 를 직접 import하지 않기로 했으므로(레이어 방향)
       // 화면이 아니라 여기서 낸다 — 어차피 콜백이 정확히 한 번 오는 자리다.
       playUi(sfx, 'press')
-      save.bow = pick.bow
-      save.runActive = true
-      save.runScore = 0
-      stageIndex = 0
-      loadStage(save.runArrow)
+      startRun(pick.bow)
     })
   }
 
@@ -312,7 +325,9 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
    */
   const endRun = (reason: 'defeat' | 'abandon' | 'death'): void => {
     const reached = stageIndex + 1
-    const isNew = reached > save.bestRunStage
+    // 생애 첫 여정은 '경신'이 아니라 기준점이다 — 1판 실패를 축하하면 말의 무게가 죽는다 (감사).
+    const first = save.runCount === 0
+    const isNew = !first && reached > save.bestRunStage
     if (isNew) {
       save.bestRunStage = reached
       save.bestRunScore = save.runScore
@@ -325,9 +340,11 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     save.runHp = Math.floor(P.enemy.hpMax)
     saveNow()
     choosing = true
-    ui.runOver(reached, save.runScore, save.bestRunStage, isNew, reason, () => {
+    ui.runOver(reached, save.runScore, save.bestRunStage, isNew, first, reason, (mode) => {
       choosing = false
-      beginStage()
+      // '같은 활로 다시' — 종료 화면에서 바로 출정한다. 재도전의 마찰은 클릭 하나면 족하다 (감사).
+      if (mode === 'again') startRun(save.bow)
+      else beginStage()
     })
   }
 
@@ -359,6 +376,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     // 화면에도 별을 보낸다. 예전엔 세이브에만 적히고 화면에는 안 왔다 —
     // "별로 클리어 수준을 정해놓을 거면 별도 보여줘야지"(형).
     hud.stars = reward.stars
+    hud.endReason = cleared ? '' : w.hp <= 0 ? 'death' : 'defeat'
 
     RUN.cleared = cleared
     RUN.score = w.score
@@ -402,12 +420,13 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     if (cleared && w.stage.targets.some((t) => t.kind === 'boss')) {
       const cycle = Math.max(1, Math.floor((stageIndex + 1) / BOSS_EVERY))
       const offer = rollSupply(runRng, cycle)
+      const bundle = rollSupplyCount(runRng)
       save.runSeed = runRng.state()
       choosing = true
-      ui.supply(offer, SUPPLY_COUNT, (id) => {
+      ui.supply(offer, bundle, (id) => {
         choosing = false
         playUi(sfx, 'press')
-        save.arrowStock[id] = Math.floor(save.arrowStock[id] ?? 0) + SUPPLY_COUNT
+        save.arrowStock[id] = Math.floor(save.arrowStock[id] ?? 0) + bundle
         saveNow()
       })
     }
@@ -494,6 +513,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
             // 살통이 비었다 — 유엽전으로 바꿔 든다. 다음 발이 조용히 증발하면 배신이다.
             save.runArrow = DEFAULT_ARROW
             armArrow(w, DEFAULT_ARROW)
+            ui.toast('살통이 비었다 — 유엽전으로', 2200)
           }
           // 저장은 하지 않는다 (A3: 판 종료·탭 이탈뿐). 화면(살통 버튼)만 깨운다.
           pokeSave(save)
@@ -529,7 +549,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
         endRun('abandon')
       } else {
         abandonArm = now
-        ui.toast('한 번 더 누르면 이 여정을 접는다')
+        // 토스트 수명 = 무장 시간. 안내가 상태보다 오래 살면 거짓말이 된다 (감사 UI P1).
+        ui.toast('R 한 번 더 — 이 여정을 접는다', ABANDON_MS)
       }
     }
 
@@ -550,7 +571,9 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     }
 
     hud.muted = sfxMuted(sfx)
-    hud.toast = w.status === 'cleared' ? HINT_NEXT : ''
+    hud.toast = w.status === 'cleared'
+      ? ((stageIndex + 2) % BOSS_EVERY === 0 ? HINT_BOSS : HINT_NEXT)
+      : ''
 
     // draw 안에서 이펙트·카메라가 이번 프레임의 이벤트를 읽는다.
     // 그래서 명중 반응이 한 프레임도 늦지 않는다 (feel-lens 4항).

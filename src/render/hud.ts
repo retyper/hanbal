@@ -36,6 +36,8 @@ export interface HudState {
   muted: boolean
   /** 짧은 알림 한 줄. 빈 문자열이면 그리지 않는다. */
   toast: string
+  /** 판이 끝난 사유 — 배너가 판정어('실패')가 아니라 사건을 말하게 한다 (감사 카피 P1). */
+  endReason: '' | 'defeat' | 'death'
   /**
    * 판 결과의 별 수. **-1 = 아직 채점 전.**
    *
@@ -148,7 +150,7 @@ const HUD = {
   /** 판 번호 글자 크기 (px) */
   stagePx: 17,
   /** 판 이름 글자 크기 (px) */
-  titlePx: 14,
+  titlePx: 13,
   /** 번호와 이름 사이 */
   titleGap: 10,
   /** 머리글 아래 본문까지 */
@@ -156,18 +158,18 @@ const HUD = {
   headGap: 40,
   /** 과녁 수 / 점수 */
   goalPx: 23,
-  scorePx: 14,
+  scorePx: 13,
   scoreGap: 12,
   trainPx: 17,
   subPx: 13,
-  toastPx: 16,
+  toastPx: 15,
 
   // ── 판 시작 카드 ────────────────────────────────────────────────────
   //
   // 판이 시작될 때 화면 위쪽에 크게 한 번 떴다 사라진다. 모달이 아니라 **자막**이다 —
   // 아무것도 막지 않고, 그 사이에도 쏠 수 있다 (C1).
   cardPx: 40,
-  cardSubPx: 16,
+  cardSubPx: 15,
   cardY: 0.17,
   /**
    * 완전히 보이는 시간 / 사라지는 시간 (s).
@@ -187,7 +189,7 @@ const HUD = {
   resultY: 0.3,
   resultPx: 54,
   resultStarPx: 40,
-  resultSubPx: 18,
+  resultSubPx: 17,
   /** 등장 시간 (s)과 그 사이의 추가 확대. 확 들어와야 "끝났다"가 몸으로 온다. */
   resultIn: 0.22,
   resultPunch: 0.35,
@@ -451,7 +453,7 @@ export function drawHud(
   if (standing !== cache.goal || score !== cache.score) {
     cache.goal = standing
     cache.score = score
-    cache.scoreText = standing > 0 ? `과녁 ${standing}` : '정리 완료'
+    cache.scoreText = standing > 0 ? `과녁 ${standing}` : '다 잡았다'
     cache.scoreNum = `${score}점`
   }
 
@@ -742,7 +744,7 @@ function drawResult(
   // ── 큰 글자 ──
   ctx.font = pop > 1.01 ? popFont(M.s, pop) : M.fResult
   ctx.fillStyle = cleared ? THEME.accent : THEME.gaugeWarn
-  ctx.fillText(cleared ? '클리어' : '실패', cx, cy)
+  ctx.fillText(cleared ? '클리어' : hud.endReason === 'death' ? '쓰러졌다' : '화살이 다했다', cx, cy)
 
   // ── 별 ── 채점이 끝나야 나온다 (stars < 0 이면 아직).
   let y = cy + px(HUD.resultStarPx, M.s) + M.cardGap
@@ -754,7 +756,8 @@ function drawResult(
     const total = starW * STAR_MAX + M.starGap * (STAR_MAX - 1)
     let sx = cx - total * 0.5 + starW * 0.5
     for (let i = 0; i < STAR_MAX; i++) {
-      ctx.fillStyle = i < got ? THEME.accent : THEME.gaugeBack
+      // 못 받은 별이 배경(1.2:1)에 묻혀 '별이 셋'이라는 사다리가 안 보였다 (감사).
+      ctx.fillStyle = i < got ? THEME.accent : THEME.starEmpty
       ctx.fillText(i < got ? '★' : '☆', sx, y)
       sx += starW + M.starGap
     }

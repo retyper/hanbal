@@ -16,8 +16,14 @@
 export interface Overlay {
   root: HTMLElement
   /** 등록된 패널을 연다. 모르는 id면 아무 일도 일어나지 않는다. */
-  show(id: string): void
-  hide(): void
+  /**
+   * sticky 패널은 Esc·바깥 클릭·다른 패널로의 갈아타기로 닫히지 않는다.
+   * 출정·보급·여정 종료는 콜백이 정확히 한 번 와야 게임이 진행되는 흐름 필수 모달이라,
+   * 습관적 Esc 한 번에 닫히면 choosing=true인 채 게임이 굳었다 (감사 P0 — 소프트락).
+   */
+  show(id: string, opts?: { sticky?: boolean }): void
+  /** force=true 는 sticky 패널도 닫는다 — 흐름을 끝낸 패널 자신만 쓴다. */
+  hide(force?: boolean): void
   /** 패널이 열려 있는가. 게임 루프는 이게 true인 동안 sim을 멈춰도 된다. */
   visible(): boolean
   /** 패널을 만들거나 이미 만든 걸 돌려준다. 여기에 내용을 채운다. */
@@ -69,10 +75,10 @@ const CSS = `
   --ink: #f2f6fa;
   --body: #c6d0dc;
   --dim: #a6b2c0;
-  --mute: #8d99a8;
+  --mute: #97a3b2;
   --line: #232d39;
   --accent: #ffb347;
-  --teal: #7fd1c0;
+  --teal: #7fd6c8;
   --num: "Bahnschrift","DIN Alternate","Avenir Next Condensed","Malgun Gothic",system-ui,sans-serif;
 }
 .hb-ui * { box-sizing: border-box; }
@@ -93,6 +99,12 @@ const CSS = `
 .hb-btn:hover { background: #1e2833; color: var(--ink); }
 .hb-btn:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
 .hb-btn[disabled] { opacity: .4; cursor: default; }
+/* 눌림 — 클릭 촉감의 한 프레임 (감사: hover와 결과 사이가 비어 있었다). */
+.hb-btn:active:not([disabled]) { background: #0d141b; transform: translateY(1px); }
+/* 화면당 딱 하나의 채운 주행동 버튼 — 출정·재출정의 그 버튼이다. */
+.hb-btn.hb-pri { background: var(--accent); color: #0b0e13; border-color: var(--accent); font-weight: 700; }
+.hb-btn.hb-pri:hover { background: #ffc46a; border-color: #ffc46a; color: #0b0e13; }
+.hb-btn.hb-pri:active:not([disabled]) { background: #e69d33; }
 .hb-btn[disabled]:hover { background: #121a23e6; color: var(--body); }
 .hb-btn .hb-key {
   color: var(--mute); font-family: var(--num); font-size: 12px; letter-spacing: .06em;
@@ -183,19 +195,26 @@ export function createOverlay(): Overlay {
   const disposers: Array<() => void> = []
   const timers: number[] = []
   let openId = ''
+  let stickyOpen = false
 
-  const hide = (): void => {
+  const hide = (force = false): void => {
     if (openId === '') return
+    // 흐름 필수 모달은 자기 자신(완료 콜백)만 닫을 수 있다 — Tab·C·탭 이탈로는 안 닫힌다.
+    if (stickyOpen && !force) return
+    stickyOpen = false
     const el = panels.get(openId)
     if (el !== undefined) el.classList.remove('hb-open')
     scrim.classList.remove('hb-open')
     openId = ''
   }
 
-  const show = (id: string): void => {
+  const show = (id: string, opts?: { sticky?: boolean }): void => {
     const el = panels.get(id)
     if (el === undefined) return
+    // 흐름 필수 모달 위로는 아무도 못 끼어든다 (성장 Tab·수집 C 포함).
+    if (stickyOpen && openId !== id) return
     if (openId !== '' && openId !== id) hide()
+    stickyOpen = opts?.sticky === true
     el.classList.add('hb-open')
     scrim.classList.add('hb-open')
     openId = id
@@ -205,13 +224,13 @@ export function createOverlay(): Overlay {
 
   // 바깥(어두운 부분)을 누르면 닫힌다. 패널 안 클릭은 통과시키지 않는다.
   const onScrim = (e: MouseEvent): void => {
-    if (e.target === scrim) hide()
+    if (e.target === scrim && !stickyOpen) hide()
   }
   scrim.addEventListener('mousedown', onScrim)
 
   // Esc는 언제나 닫기다. 열려 있지 않으면 아무것도 하지 않는다 (판 일시정지는 loop의 몫).
   const onKey = (e: KeyboardEvent): void => {
-    if (e.key === 'Escape' && openId !== '') {
+    if (e.key === 'Escape' && openId !== '' && !stickyOpen) {
       e.preventDefault()
       hide()
     }

@@ -43,5 +43,17 @@ export function rollSupply(rng: Rng, cycle: number): ArrowKindId[] {
     pool[i] = pool[j] as ArrowKindId
     pool[j] = t
   }
-  return pool.slice(0, Math.min(3, pool.length))
+  const out = pool.slice(0, Math.min(3, pool.length))
+  // 가끔 다음 마디의 살이 한 장 섞인다 — '이번엔 뭐가 나왔나'의 개봉 순간 (감사 재미).
+  // 확률이 아니라 보상 스트림(runRng)의 결정론적 변주다 — 가챠(GDD 9장)와 무관하다.
+  const deeper = supplyPool(cycle + 1).filter((k) => !supplyPool(cycle).includes(k))
+  if (deeper.length > 0 && out.length === 3 && rng.next() < 0.18) {
+    out[2] = deeper[Math.floor(rng.next() * deeper.length)] as ArrowKindId
+  }
+  return out
+}
+
+/** 보급 발 수 — 대개 3발, 가끔 4발. '+4'의 순간이 보상 화면에 맥박을 만든다. */
+export function rollSupplyCount(rng: Rng): number {
+  return rng.next() < 0.25 ? SUPPLY_COUNT + 1 : SUPPLY_COUNT
 }

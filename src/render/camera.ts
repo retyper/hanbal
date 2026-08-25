@@ -56,7 +56,7 @@ export const THEME = {
   /* HUD 글자 대비 — "회색 글씨 쳐 안 보여"(형). 어두운 하늘(#0b0e13~#1a222c) 위 7:1 이상. */
   hudDim: '#95a1ae',
   hudText: '#ccd6e0',
-  gauge: '#5fb0a5',
+  gauge: '#6cc7b8',
   gaugeWarn: '#ff6a45',
   gaugeBack: '#1d232b',
 
@@ -74,16 +74,17 @@ export const THEME = {
 
   // ── 바람 (지금까지 화면에 없던 것) ──
   windPole: '#3a4756',
-  windCloth: '#c96f4a',
+  windCloth: '#c99a5e',
 
   /** 돌진 과녁 — 이 게임에서 유일하게 나를 향해 오는 것. 위험색은 붕괴 경고와 같은 걸 쓴다. */
   threat: '#ff6a45',
   threatDim: '#5e2a20',
   /** 보급 과녁 — 안전 구간 게이지와 같은 청록. "이건 벌이 아니라 상이다"가 색으로 읽힌다. */
-  bonus: '#5fb0a5',
+  bonus: '#6cc7b8',
 
   // ── 하늘과 땅의 결 ──
   star: '#4e5c6e',
+  starEmpty: '#4a5866',
   moon: '#cbd6e4',
   grass: '#131c24',
 } as const

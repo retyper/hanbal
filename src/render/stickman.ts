@@ -778,7 +778,8 @@ export function drawArcher(
     const bw = Math.max(34, cam.scale * 1.3)
     ctx.fillStyle = THEME.gaugeBack
     ctx.fillRect(bx - bw / 2, by, bw, 5)
-    ctx.fillStyle = THEME.gaugeWarn
+    // 붉음은 이 게임에서 일관되게 경고다 — 가득 찬 체력이 붉으면 만피가 위험으로 읽힌다 (감사).
+    ctx.fillStyle = hpRatio > 0.34 ? THEME.gauge : THEME.gaugeWarn
     ctx.fillRect(bx - bw / 2, by, bw * Math.max(0, Math.min(1, hpRatio)), 5)
   }
 

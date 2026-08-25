@@ -965,7 +965,33 @@ export function pumpSfx(sfx: Sfx, w: World): void {
       playRelease(s, e.power)
     } else if (e.t === 'hit') {
       // 적 몸통은 종(정중앙 소리)을 치지 않는다 — 사람에겐 헤드샷이 크리티컬이다.
-      playHit(sfx, s, w, e.targetId, e.foe && !e.head ? Math.min(e.accuracy, P.hit.bullseyeAcc - 0.01) : e.accuracy)
+      if (e.foe && e.head) {
+        // 헤드샷 전용 2박 — 둔탁한 관통 + 높은 확인 핑. 과녁 종과 다른 소리여야
+        // 가장 숙련된 한 발의 청각 정체성이 선다 (감사 재미).
+        if (!sample(sfx, s, 'woodHeavy', P.audio.hitGain, 0.78, 0, 0)) {
+          NB.filterType = 'lowpass'
+          NB.freq = 700
+          NB.endFreq = 0
+          NB.q = 0.8
+          NB.dur = 0.12
+          NB.attack = 0.002
+          NB.decay = 0.12
+          NB.gain = P.audio.hitGain
+          NB.delay = 0
+          noiseBurst(s, K_ESCAPE, NB)
+        }
+        TN.type = 'sine'
+        TN.freq = 1560
+        TN.endFreq = 1200
+        TN.dur = 0.09
+        TN.attack = 0.002
+        TN.decay = 0.09
+        TN.gain = P.audio.hitGain * 0.5
+        TN.delay = 0.03
+        tone(s, K_ESCAPE, TN)
+      } else {
+        playHit(sfx, s, w, e.targetId, e.foe && !e.head ? Math.min(e.accuracy, P.hit.bullseyeAcc - 0.01) : e.accuracy)
+      }
     } else if (e.t === 'burst') {
       playBurst(s)
     } else if (e.t === 'pickup') {
@@ -1114,7 +1140,40 @@ export function pumpSfx(sfx: Sfx, w: World): void {
  * 지속음 갱신. sim 스텝이 아니라 실시간(dtReal)으로 돈다 —
  * 소리는 결정론의 대상이 아니고, 히트스톱 중에도 자연스럽게 이어져야 한다.
  */
+/** 다음 보스 북 시각 (elapsed). 판이 바뀌면(시계 되감김) 자연히 리셋된다. */
+let bossThumpAt = 0
+
 export function updateSfx(sfx: Sfx, w: World, dtReal: number): void {
+  // ── 보스의 발소리 — 가까울수록 잦아진다. 위협의 거리를 소리 밀도로 번역한다 (감사). ──
+  if (w.status === 'playing') {
+    let bossDist = Infinity
+    for (const t of w.targets) {
+      if (t.alive && t.kind === 'boss') {
+        const d2 = t.x - w.archer.x
+        if (d2 < bossDist) bossDist = d2
+      }
+    }
+    if (bossDist < 30) {
+      if (w.elapsed < bossThumpAt - 4) bossThumpAt = 0
+      if (w.elapsed >= bossThumpAt) {
+        const period = Math.min(1.6, Math.max(0.45, bossDist / 12))
+        bossThumpAt = w.elapsed + period
+        const s2 = sfx.synth
+        if (s2 !== null) {
+          TN.type = 'sine'
+          TN.freq = 62
+          TN.endFreq = 40
+          TN.dur = 0.22
+          TN.attack = 0.004
+          TN.decay = 0.22
+          TN.gain = P.audio.escapeGain * (bossDist < 12 ? 1.2 : 0.7)
+          TN.delay = 0
+          tone(s2, K_BEAT, TN)
+        }
+      }
+    }
+  }
+
   const s = sfx.synth
   if (s === null || sfx.muted || s.ctx.state !== 'running') return
 

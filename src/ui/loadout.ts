@@ -9,8 +9,8 @@
  */
 import { ARROW_KINDS, type ArrowKindId } from '../game/arrows.ts'
 import { ARROW_TINT, arrowIconSvg, bowIconSvg } from './arrowicons.ts'
-import { bowKind, masteryLevel, type BowKindId } from '../game/bows.ts'
-import { wipeSave } from '../game/save.ts'
+import { BOW_KINDS, bowKind, masteryLevel, type BowKindId } from '../game/bows.ts'
+import { unlockOfBow } from '../game/unlocks.ts'
 import type { Overlay } from './overlay.ts'
 
 const PANEL_ID = 'loadout'
@@ -38,7 +38,12 @@ const CSS = `
 .l-card .l-d { color: var(--dim); font-size: 12px; line-height: 1.45; }
 .l-card.l-on { border-color: var(--teal); background: #14231f; }
 .l-card.l-on .l-n { color: var(--teal); }
+/* 잠긴 활 — 흐리게, 조건은 보이게 (수집 화면과 같은 문법). 클릭은 안 먹는다. */
+.l-card.l-lock { opacity: .55; cursor: default; }
+.l-card.l-lock:hover { background: #101720e6; }
+.l-card.l-lock .l-n { color: var(--mute); letter-spacing: .08em; }
 .l-syn { color: var(--teal); font-size: 13px; min-height: 22px; margin-top: 12px; }
+.l-card .l-syn2 { color: var(--teal); font-size: 12px; }
 .l-foot { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
 /* 전체 초기화 — 개발 단계의 필수품. 시작 버튼과 헷갈리지 않게 구석에 작게, 위험색은 무장 후에만. */
 .l-wipe { margin-left: auto; font-size: 12px; color: var(--mute); }
@@ -52,7 +57,7 @@ const CSS = `
 .o-score { color: var(--body); margin-top: 4px; }
 .o-new { color: var(--accent); font-weight: 700; margin-top: 10px; }
 .o-old { color: var(--dim); margin-top: 10px; }
-.o-foot { margin-top: 22px; }
+.o-foot { margin-top: 22px; display: flex; gap: 10px; justify-content: center; }
 `
 
 export interface LoadoutPick {
@@ -84,11 +89,11 @@ export function mountLoadout(
   // 제목은 크게, 이번이 몇 번째 여정인지, 기록은 옆에. 문장은 떠나는 사람의 것으로.
   const head = document.createElement('div')
   head.className = 'l-h'
-  head.innerHTML = `<h2>출정</h2><div class="l-run">${runCount + 1}번째 여정<b></b></div>` +
+  head.innerHTML = `<h2>출정</h2><div class="l-run">여정<b>${runCount + 1}</b></div>` +
     (bestRunStage > 0 ? `<div class="l-best">가장 멀리<b>${bestRunStage}판</b></div>` : '')
   const sub = document.createElement('p')
   sub.className = 'hb-lead'
-  sub.textContent = '동이 트기 전, 활 한 자루를 고른다. 10판마다 그것이 기다리고, 화살이 다하면 여정도 끝난다.'
+  sub.textContent = '동이 트기 전, 활 한 자루를 고른다. 10판마다 귀신이 길을 막고, 화살이 다하면 여정도 끝난다.'
   panel.append(head, sub)
 
   // 시작 선택은 지난 여정의 것. 없던 게 해금돼도 손이 기억하는 활이 먼저다.
@@ -117,23 +122,31 @@ export function mountLoadout(
   section('활')
   const bowGrid = document.createElement('div')
   bowGrid.className = 'l-grid'
-  for (const id of bows) {
-    const b = bowKind(id)
+  // 열린 활 먼저, 그 뒤에 잠긴 활 — 잠긴 슬롯이 보여야 '다음 여정의 이유'가 생긴다
+  // (Hades의 무기 벽, 발라트로의 잠긴 덱 — 감사 시작경험).
+  for (const b of BOW_KINDS) {
+    const id = b.id
+    const owned = id === 'practice' || bows.includes(id)
     const card = document.createElement('button')
     card.type = 'button'
-    card.className = 'l-card'
+    card.className = owned ? 'l-card' : 'l-card l-lock'
     const lv = masteryLevel(Math.floor(bowHits[id] ?? 0))
     card.innerHTML = `<span class="l-bic">${bowIconSvg(id, 34)}</span>` +
       `<span class="l-n"></span><span class="l-d"></span><span class="l-d"></span>`
     const descs = card.querySelectorAll('.l-d')
-    ;(card.querySelector('.l-n') as HTMLElement).textContent = b.name + (lv > 0 ? ` · 숙련 ${lv}` : '')
-    ;(descs[0] as HTMLElement).textContent = b.perk
-    ;(descs[1] as HTMLElement).textContent = b.cost === '없음' ? '' : `대가 — ${b.cost}`
-    card.addEventListener('click', () => {
-      pick.bow = id
-      refresh()
-    })
-    bowCards.set(id, card)
+    if (owned) {
+      ;(card.querySelector('.l-n') as HTMLElement).textContent = b.name + (lv > 0 ? ` · 숙련 ${lv}` : '')
+      ;(descs[0] as HTMLElement).textContent = b.perk
+      ;(descs[1] as HTMLElement).textContent = b.cost === '없음' ? '' : `대가 — ${b.cost}`
+      card.addEventListener('click', () => {
+        pick.bow = id
+        refresh()
+      })
+      bowCards.set(id, card)
+    } else {
+      ;(card.querySelector('.l-n') as HTMLElement).textContent = '？？？'
+      ;(descs[0] as HTMLElement).textContent = unlockOfBow(id)?.hint ?? ''
+    }
     bowGrid.appendChild(card)
   }
   panel.appendChild(bowGrid)
@@ -144,35 +157,12 @@ export function mountLoadout(
   foot.className = 'l-foot'
   const go = document.createElement('button')
   go.type = 'button'
-  go.className = 'hb-btn l-go'
+  go.className = 'hb-btn hb-pri l-go'
   go.textContent = '활을 들고 나선다 →'
   foot.appendChild(go)
 
-  // ── 전체 초기화 (형: "메모리 삭제하고 싹 처음부터 시작할 수 있는 버튼") ──
-  // 성장 화면(Tab) 아래에도 같은 게 있지만, 여정 준비가 "처음부터"의 자연스러운 자리다.
-  // 파괴적이라 두 번 눌러야 한다: 1번째 누름은 무장(4초 유효), 2번째가 실행.
-  const wipe = document.createElement('button')
-  wipe.type = 'button'
-  wipe.className = 'hb-btn l-wipe'
-  wipe.textContent = '기록 전부 삭제'
-  let wipeTimer = 0
-  wipe.addEventListener('click', () => {
-    if (!wipe.classList.contains('l-armed')) {
-      wipe.classList.add('l-armed')
-      wipe.textContent = '정말 전부 지운다?'
-      window.clearTimeout(wipeTimer)
-      wipeTimer = window.setTimeout(() => {
-        wipe.classList.remove('l-armed')
-        wipe.textContent = '기록 전부 삭제'
-      }, 4000)
-      return
-    }
-    window.clearTimeout(wipeTimer)
-    wipeSave()
-    // 새로고침이 가장 확실한 초기화다 — 루프·화면이 들고 있는 상태까지 전부 새로 선다.
-    location.reload()
-  })
-  foot.appendChild(wipe)
+  // 전체 초기화 버튼은 성장 화면(g-danger) 한 곳뿐이다 —
+  // 매 출정마다 파괴 버튼을 볼 이유가 없다 (감사 UI구조).
   panel.appendChild(foot)
 
   let done = false
@@ -186,12 +176,12 @@ export function mountLoadout(
     if (done) return
     done = true
     document.removeEventListener('visibilitychange', onVisibility, true)
-    o.hide()
+    o.hide(true)
     onStart({ bow: pick.bow })
   })
 
   refresh()
-  o.show(PANEL_ID)
+  o.show(PANEL_ID, { sticky: true })
 }
 
 /** 여정 종료 화면. 클릭 한 번이면 닫히고 onNext — 결과에 가두지 않는다 (C1). */
@@ -201,8 +191,9 @@ export function showRunOver(
   score: number,
   best: number,
   isNew: boolean,
+  first: boolean,
   reason: 'defeat' | 'abandon' | 'death',
-  onNext: () => void,
+  onNext: (mode: 'again' | 'loadout') => void,
 ): void {
   const panel = o.panel(OVER_ID)
   panel.replaceChildren()
@@ -223,10 +214,14 @@ export function showRunOver(
     `<div class="o-reach">${lead}</div>` +
     `<div class="o-stage">${reached}판</div>` +
     `<div class="o-score">점수 <b>${score}</b></div>` +
-    (isNew
-      ? `<div class="o-new">최고 기록 경신</div>`
-      : `<div class="o-old">최고 기록 ${best}판</div>`) +
-    `<div class="o-foot"><button class="hb-btn l-go" type="button">새 여정</button></div>`
+    (first
+      ? `<div class="o-old">첫 기록 — 여기서부터 시작이다</div>`
+      : isNew
+        ? `<div class="o-new">최고 기록 경신</div>`
+        : `<div class="o-old">최고 기록 ${best}판</div>`) +
+    // 재도전의 마찰은 클릭 하나면 족하다 — 다수 경로(같은 활)가 주 버튼이다 (감사 UI P1).
+    `<div class="o-foot"><button class="hb-btn hb-pri l-go" data-m="again" type="button">같은 활로 다시 나선다 →</button>` +
+    `<button class="hb-btn" data-m="loadout" type="button">채비 바꾸기</button></div>`
   panel.appendChild(wrap)
 
   let done = false
@@ -234,14 +229,16 @@ export function showRunOver(
     if (!document.hidden && !done) o.show(OVER_ID)
   }
   document.addEventListener('visibilitychange', onVisibility, true)
-  ;(wrap.querySelector('button') as HTMLButtonElement).addEventListener('click', () => {
-    if (done) return
-    done = true
-    document.removeEventListener('visibilitychange', onVisibility, true)
-    o.hide()
-    onNext()
-  })
-  o.show(OVER_ID)
+  for (const btn of Array.from(wrap.querySelectorAll('button'))) {
+    btn.addEventListener('click', () => {
+      if (done) return
+      done = true
+      document.removeEventListener('visibilitychange', onVisibility, true)
+      o.hide(true)
+      onNext((btn as HTMLButtonElement).dataset['m'] === 'again' ? 'again' : 'loadout')
+    })
+  }
+  o.show(OVER_ID, { sticky: true })
 }
 
 /**
@@ -252,6 +249,7 @@ export function mountSupply(
   o: Overlay,
   offer: readonly ArrowKindId[],
   count: number,
+  stock: Readonly<Record<string, number>>,
   onPick: (id: ArrowKindId) => void,
 ): void {
   const panel = o.panel('supply')
@@ -267,7 +265,7 @@ export function mountSupply(
   head.innerHTML = '<h2>보급</h2>'
   const sub = document.createElement('p')
   sub.className = 'hb-lead'
-  sub.textContent = `보스를 잡았다. 하나 골라라 — ${count}발이 살통에 들어온다.`
+  sub.textContent = `보스를 잡았다. 하나를 고른다 — ${count}발이 살통에 들어온다.`
   panel.append(head, sub)
 
   const grid = document.createElement('div')
@@ -281,7 +279,7 @@ export function mountSupply(
     if (done) return
     done = true
     document.removeEventListener('visibilitychange', onVisibility, true)
-    o.hide()
+    o.hide(true)
     onPick(id)
   }
   for (const id of offer) {
@@ -294,14 +292,19 @@ export function mountSupply(
     card.style.setProperty('--tint', ARROW_TINT[id])
     card.innerHTML =
       `<span class="l-ic">${arrowIconSvg(id, 30)}</span>` +
-      `<span class="l-n"></span><span class="l-d"></span><span class="l-d"></span>`
+      `<span class="l-n"></span><span class="l-syn2"></span><span class="l-d"></span><span class="l-d"></span>`
     const parts = card.querySelectorAll('.l-d')
     ;(card.querySelector('.l-n') as HTMLElement).textContent = `${k.name} +${count}발`
+    // 선택의 근거는 재고다 — '지금 몇 발인가'가 없으면 3택이 감이 된다 (감사 UI).
+    const have = Math.floor(stock[id] ?? Number.NaN)
+    ;(card.querySelector('.l-syn2') as HTMLElement).textContent = Number.isFinite(have)
+      ? `지금 ${have}발 → ${have + count}발`
+      : '처음 얻는 살'
     ;(parts[0] as HTMLElement).textContent = k.origin
     ;(parts[1] as HTMLElement).textContent = k.desc
     card.addEventListener('click', () => finish(id))
     grid.appendChild(card)
   }
   panel.appendChild(grid)
-  o.show('supply')
+  o.show('supply', { sticky: true })
 }

@@ -37,6 +37,8 @@ interface Plan {
 interface Theme {
   /** HUD 한 줄. 판이 시작될 때 이름만으로 무엇이 올지 짐작되어야 한다. */
   name: string
+  /** 판 시작 자막의 배움 한 줄 — 캠페인 teach와 같은 목소리. 이름만으로는 수수께끼다 (감사). */
+  hint: string
   build(rng: Rng, e: number, reach: number): Plan
   /** 평균 풍속 (m/s). 없으면 무풍. */
   wind?(rng: Rng, e: number): number
@@ -277,6 +279,7 @@ const THEMES: readonly Theme[] = [
   {
     // 가장 기본. 거리와 낙차만으로 판을 만든다. 사이사이의 쉼표 같은 판이다.
     name: '사열',
+    hint: '한 줄로 늘어섰다 — 거리부터 읽는다',
     build(rng, e, reach): Plan {
       const n = 3 + Math.min(3, Math.floor(e / L.linePerAdd))
       const spots: Spot[] = []
@@ -296,6 +299,7 @@ const THEMES: readonly Theme[] = [
   {
     // 이 게임의 쾌감 레이어 — 공중 과녁을 떨어뜨려 아래를 쓸어버린다 (GDD 7장 보로로로록).
     name: '기둥',
+    hint: '꼭대기를 떨어뜨리면 아래가 무너진다',
     build(rng, _e, reach): Plan {
       const cols = L.towerCols
       const spots: Spot[] = []
@@ -321,6 +325,7 @@ const THEMES: readonly Theme[] = [
   {
     // 리드 샷. 멈추는 순간을 기다릴 것인가, 앞을 겨눌 것인가.
     name: '진자',
+    hint: '흔들림은 끝에서 잠깐 멈춘다',
     build(rng, e, reach): Plan {
       const n = L.swingCount
       const spots: Spot[] = []
@@ -354,6 +359,7 @@ const THEMES: readonly Theme[] = [
   {
     // 각도를 찾는 판. 한 줄로 서 있으면 한 발이 전부를 꿴다.
     name: '관통줄',
+    hint: '한 발로 꿰는 각이 숨어 있다',
     build(rng, e, reach): Plan {
       const n = 3 + (e >= L.pierceFourthAt ? 1 : 0)
       const x0 = reach * L.pierceFrom
@@ -372,6 +378,7 @@ const THEMES: readonly Theme[] = [
   {
     // 포물선 위에 놓인 과녁들. 화살이 그리는 선과 같은 모양이라 "한 각도로 쓸어담기"가 성립한다.
     name: '아치',
+    hint: '걸린 것들을 낙차로 따라간다',
     build(rng, e, reach): Plan {
       const n = 4 + Math.min(2, Math.floor(e / L.archPerAdd))
       const peak = rng.range(L.archPeakMin, L.archPeakMax)
@@ -388,6 +395,7 @@ const THEMES: readonly Theme[] = [
   {
     // 뭉친 것과 떨어진 것. 폭발 살이 빛나는 판이고, 아니면 화살을 나눠 써야 한다.
     name: '군집',
+    hint: '뭉쳐 있다 — 한가운데가 자리다',
     build(rng, e, reach): Plan {
       const spots: Spot[] = []
       const cx = reach * rng.range(L.clusterFromMin, L.clusterFromMax)
@@ -416,6 +424,7 @@ const THEMES: readonly Theme[] = [
   {
     // 같은 간격으로 올라간다. 낙차를 몸으로 재는 판.
     name: '계단',
+    hint: '한 칸씩 오른다, 각도도 한 칸씩',
     build(rng, e, reach): Plan {
       const n = 4 + (e >= L.stairFifthAt ? 1 : 0)
       const up = rng.chance(0.5)
@@ -433,6 +442,7 @@ const THEMES: readonly Theme[] = [
   {
     // 바람은 매 스텝 흔들리는 게 아니라 주기적으로 변한다 (sim/world.ts). 읽고 기다리는 판.
     name: '바람골',
+    hint: '바람이 세다 — 깃발부터 본다',
     wind: (rng, e) =>
       windSign(rng) * (rng.range(L.galeWindMin, L.galeWindMax) + Math.min(L.galeWindAdd, e * L.galeWindStep)),
     build(rng, e, reach): Plan {
@@ -451,6 +461,7 @@ const THEMES: readonly Theme[] = [
   {
     // 고리. 어느 쪽을 먼저 뚫어도 되지만, 화살이 모자라면 순서가 답이 된다.
     name: '고리',
+    hint: '가장자리를 돈다 — 가운데는 비었다',
     build(rng, e, reach): Plan {
       const n = L.ringCount
       const cx = reach * rng.range(L.ringFromMin, L.ringFromMax)
@@ -479,6 +490,7 @@ const THEMES: readonly Theme[] = [
      * **순서를 틀리면 돌진이 먼저 닿는다.** 그 판단 하나가 이 판의 전부다.
      */
     name: '돌진',
+    hint: '이쪽으로 온다 — 멀 때가 쉽다',
     build(rng, e, reach): Plan {
       const spots: Spot[] = []
       const rushers = 2 + Math.min(2, Math.floor(e / L.rushPerAdd))
@@ -508,6 +520,7 @@ const THEMES: readonly Theme[] = [
      * 화살을 빠듯하게 주는 이유: **보급을 안 쏘면 모자라게** 만들어야 선택이 성립한다.
      */
     name: '보급',
+    hint: '맞히면 화살이 돌아온다',
     build(rng, e, reach): Plan {
       const spots: Spot[] = []
       const supplies = 1 + (e >= L.rushPerAdd ? 1 : 0)
@@ -536,6 +549,7 @@ const THEMES: readonly Theme[] = [
   {
     // 열 판에 한 번 오는 종합. 지금까지 배운 게 한꺼번에 온다.
     name: '폭풍',
+    hint: '전부 한꺼번에 온다 — 순서를 정하라',
     wind: (rng, e) =>
       windSign(rng) * (rng.range(L.stormWindMin, L.stormWindMax) + Math.min(L.stormWindAdd, e * L.stormWindStep)),
     build(rng, e, reach): Plan {
@@ -642,6 +656,7 @@ function build(index: number): StageDef {
   return {
     id,
     title: theme.name,
+    hint: theme.hint,
     seed: seedFrom(id),
     arrows: clamp(shots + ARROWS_SLACK, ARROWS_MIN, ARROWS_MAX),
     targetScore: BASE_SCORE * Math.max(1, Math.round(shots * L.star2Ratio)),

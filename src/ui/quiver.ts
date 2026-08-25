@@ -63,7 +63,7 @@ export function mountQuiver(o: Overlay, d: SaveData): void {
     hint.textContent = !any
       ? ''
       : d.runArrow === DEFAULT_ARROW
-        ? '살통 — 누르면 바로 바꿔 든다 (쏠 때 1발)'
+        ? '살통 — 누르면 바로 바꿔 든다 · 쏠 때마다 1발씩 준다'
         : `들고 있음: ${ARROW_KINDS.find((a) => a.id === d.runArrow)?.name ?? ''}`
     wrap.style.display = any ? '' : 'none'
   }
