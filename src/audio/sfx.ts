@@ -91,6 +91,9 @@ const K_ESCAPE = 21
 const K_THUMP = 22
 /** 릴리즈 시위 크랙 (탁) */
 const K_SNAP = 23
+/** 활터의 북 (맞았음을 알리는 소리). 겹이 서로를 에코로 눌러선 안 되니 제 채널을 쓴다. */
+const K_DRUM = 24
+const K_DRUM_BODY = 25
 
 /**
  * 음색 상수 — **파형의 신원**이다. 필터 주파수·Q·부분음 길이를 바꾸면 값이 세지는 게 아니라
@@ -170,6 +173,19 @@ const SFX = {
   pierceTailFreq: 3000,
   pierceTailEndFreq: 1150,
   pierceTailQ: 12,
+
+  // ── 활터의 북 ── 가죽 북은 음정이 아니라 **몸통**이다. 낮은 사인의 빠른 하강(가죽의 장력)
+  //    + 저역 노이즈(나무 통). rise = n중이 오를수록 밝아지는 정도 (같은 북을 더 세게 친 것).
+  drumFreq: 132,
+  drumEndFreq: 58,
+  drumDur: 0.24,
+  drumBodyFreq: 420,
+  drumBodyEndFreq: 130,
+  drumBodyDur: 0.17,
+  drumBodyGain: 0.72,
+  drumRise: 0.055,
+  drumMolgiGain: 1.5,
+  drumRollGap: 0.115,
 
   // ── 붕괴 ── release보다 둔탁하고 낮고 작게. 고역 어택이 없는 게 핵심이다.
   colFreq: 205,
@@ -1056,6 +1072,75 @@ function playBurst(s: Synth): void {
  * 마지막 음만 다른 kind 번호를 쓴다. 앞 세 음과 같은 번호면 에코 억제(echoScale)가
  * 마지막을 가장 작게 눌러서, 올라가는 소리가 되레 사그라든다.
  */
+/**
+ * ★ 활터의 북 — 맞히면 북이 울린다 (docs/MEGAHIT.md §8 수렴부)
+ *
+ * 형이 '관중'을 보고 콜로세움을 떠올린 것이 이 소리의 출발점이다. 인정이 없다는 걸
+ * 정확히 짚은 것이었고, 인정의 원형이 구경꾼이기 때문이다. 그런데 밤 실루엣 위에
+ * 군중을 얹으면 과녁이 배경에 묻힌다 (GDD 8장·C1).
+ *
+ * 국궁에는 이미 답이 있다 — **활터에는 맞았음을 알리는 북이 있다.**
+ *   픽셀을 하나도 안 쓴다 · 조준을 하나도 안 가린다 · 문화적으로 정확하다 ·
+ *   소리라서 세션을 안 늘린다 (M 한 키로 그대로 꺼진다, C3).
+ *
+ * 소리의 문법: 가죽 북은 **음정이 아니라 몸통**이다. 낮은 사인의 빠른 하강(가죽의 장력)에
+ * 저역 노이즈(나무 통)를 겹친다. n중이 오를수록 조금씩 높고 밝아진다 — 같은 북을
+ * 더 세게 친 것이지 다른 악기가 아니다. 5중(몰기)은 §9의 규칙대로 **연타**로 답한다.
+ */
+function playDrum(s: Synth, n: number, hard: boolean): void {
+  // 1중에서 5중까지 반음씩 오르는 정도의 밝기. 그 이상은 안 올린다 — 북은 북이다.
+  const up = 1 + Math.min(4, n - 1) * SFX.drumRise
+  const g = P.audio.drumGain * (hard ? SFX.drumMolgiGain : 1)
+
+  TN.type = 'sine'
+  TN.freq = SFX.drumFreq * up
+  TN.endFreq = SFX.drumEndFreq * up
+  TN.dur = SFX.drumDur
+  TN.attack = 0.002
+  TN.decay = SFX.drumDur
+  TN.gain = g
+  TN.delay = 0
+  tone(s, K_DRUM, TN)
+
+  // 나무 통 — 음정 없는 몸. 이게 없으면 '둥'이 아니라 '붕'이다.
+  NB.filterType = 'lowpass'
+  NB.freq = SFX.drumBodyFreq * up
+  NB.endFreq = SFX.drumBodyEndFreq
+  NB.q = 0.8
+  NB.dur = SFX.drumBodyDur
+  NB.attack = 0.001
+  NB.decay = SFX.drumBodyDur
+  NB.gain = g * SFX.drumBodyGain
+  NB.delay = 0
+  noiseBurst(s, K_DRUM_BODY, NB)
+}
+
+/** 몰기 — 한 순을 다 맞혔다. 북이 **세 번** 답한다. 이게 이 게임에서 가장 큰 인정이다. */
+function playMolgi(s: Synth): void {
+  for (let i = 0; i < 3; i++) {
+    TN.type = 'sine'
+    TN.freq = SFX.drumFreq * (1 + i * 0.06)
+    TN.endFreq = SFX.drumEndFreq
+    TN.dur = SFX.drumDur
+    TN.attack = 0.002
+    TN.decay = SFX.drumDur
+    TN.gain = P.audio.drumGain * SFX.drumMolgiGain * (i === 2 ? 1.15 : 0.8)
+    TN.delay = i * SFX.drumRollGap
+    tone(s, i === 2 ? K_DRUM : K_DRUM_BODY, TN)
+  }
+  // 마지막 박 위에 얹는 쇳소리 한 겹 — 북만으로는 '특별한 일'로 안 읽힌다.
+  NB.filterType = 'bandpass'
+  NB.freq = 3200
+  NB.endFreq = 1400
+  NB.q = 5
+  NB.dur = 0.3
+  NB.attack = 0.004
+  NB.decay = 0.28
+  NB.gain = P.audio.drumGain * 0.5
+  NB.delay = SFX.drumRollGap * 2
+  noiseBurst(s, K_SPARKLE, NB)
+}
+
 /** 이 판이 보스판인가. 스테이지 정의만 읽는다 — sim 상태를 건드리지 않는다. */
 function isBossStage(w: World): boolean {
   const ts = w.stage.targets
@@ -1189,6 +1274,13 @@ export function pumpSfx(sfx: Sfx, w: World): void {
     if (e.t === 'release') {
       playRelease(s, e.power)
       if (e.kind !== 'basic') playShotVoice(s, e.kind, clamp01(e.power))
+    } else if (e.t === 'jung') {
+      // 활터의 북 — 맞았음을 알린다. 명중음 **뒤에** 얹히도록 조금 늦춰서 예약한다면
+      // 좋겠지만, 북은 화살이 박히는 그 순간에 울려야 인정으로 읽힌다. 같은 순간이다.
+      playDrum(s, e.n, false)
+    } else if (e.t === 'molgi') {
+      // 이탈은 조용하다. 잃은 것을 소리로 알리면 그건 인정이 아니라 벌이다 (C2의 정신).
+      if (e.on) playMolgi(s)
     } else if (e.t === 'hit') {
       // 적 몸통은 종(정중앙 소리)을 치지 않는다 — 사람에겐 헤드샷이 크리티컬이다.
       if (e.foe && e.head) {

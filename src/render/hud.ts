@@ -188,6 +188,11 @@ const HUD = {
   /** 과녁 수 / 점수 */
   /** 결과의 시간 줄 (px). 점수보다 작다 — 기록은 자랑이지 판정이 아니다. */
   timePx: 14,
+  /** 한 순 눈금 — 칸 하나의 너비·높이, 칸 사이, 몰기에서 자라는 양 */
+  jungW: 11,
+  jungH: 4,
+  jungGap: 3,
+  jungGrow: 3,
   goalPx: 23,
   scorePx: 13,
   scoreGap: 12,
@@ -261,6 +266,10 @@ const M = {
   trackGap: 0,
   trackTop: 0,
   trackNow: 0,
+  jungW: 0,
+  jungH: 0,
+  jungGap: 0,
+  jungGrow: 0,
   stageEm: 0,
   pipStart: 0,
   pipStride: 0,
@@ -340,6 +349,10 @@ function syncMetrics(cam: Camera): void {
   M.fTitle = `500 ${px(HUD.titlePx, s)}px ${FONT_UI}`
   M.fTotal = `500 ${px(HUD.totalPx, s)}px ${FONT_NUM}`
   M.fTime = `600 ${px(HUD.timePx, s)}px ${FONT_NUM}`
+  M.jungW = px(HUD.jungW, s)
+  M.jungH = px(HUD.jungH, s)
+  M.jungGap = px(HUD.jungGap, s)
+  M.jungGrow = px(HUD.jungGrow, s)
   M.fGoal = `600 ${px(HUD.goalPx, s)}px ${FONT_UI}`
   M.fScore = `500 ${px(HUD.scorePx, s)}px ${FONT_NUM}`
   M.fCount = `700 ${M.countPx}px ${FONT_NUM}`
@@ -623,11 +636,43 @@ export function drawHud(
     }
   }
 
+  // ── 한 순(巡) — 연달아 몇 발을 맞혔는가 (docs/MEGAHIT.md §1·§9) ──
+  //
+  // 국궁은 다섯 발을 한 순으로 세고, 다섯을 다 맞히면 **몰기**다. 그 다섯 칸을 그대로 둔다.
+  // 숫자를 쓰지 않는 이유(GDD 7장 "화면을 숫자로 덮지 않는다"): 칸이 차오르는 건
+  // **곁눈으로** 읽히지만 숫자는 눈이 가서 읽어야 한다. 이건 조준 중에 봐야 하는 것이다.
+  //
+  // 0중이면 아예 안 그린다 — 초보가 처음 보는 화면에 빈 눈금 다섯이 있으면
+  // "저건 뭔데 안 차지?"가 되고, 그건 격려가 아니라 질책이다.
+  const jungY = pipY + M.countPx + M.subGap
+  let arrowRowY = jungY
+  if (w.flowHits > 0) {
+    const need = Math.max(1, Math.floor(P.flow.molgiAt))
+    const filled = Math.min(w.flowHits, need)
+    let jx = M.padX
+    for (let i = 0; i < need; i++) {
+      // 몰기에 닿으면 다섯 칸이 전부 강조색으로 선다 — 그게 이 줄의 목적지다.
+      ctx.fillStyle = w.molgi ? THEME.accent : i < filled ? THEME.hudText : THEME.gaugeBack
+      const h = w.molgi ? M.jungH + M.jungGrow : M.jungH
+      ctx.fillRect(jx, jungY - h * 0.5, M.jungW, h)
+      jx += M.jungW + M.jungGap
+    }
+    // 몰기일 때만 이름을 붙인다. 나머지 넷은 이름이 필요 없다 — 칸이 곧 말이다.
+    if (w.molgi) {
+      ctx.font = M.fTotal
+      ctx.fillStyle = THEME.accent
+      ctx.textBaseline = 'middle'
+      ctx.fillText('몰기', jx + M.jungGap * 2, jungY)
+      ctx.textBaseline = 'top'
+    }
+    arrowRowY = jungY + M.jungH + M.subGap
+  }
+
   // 이 판의 화살 종류 — 숫자 아래 한 줄. 고른 것이 무엇인지 판 내내 보인다 (HOOK ★1).
   if (hud.arrow !== '') {
     ctx.font = M.fSub
     ctx.fillStyle = THEME.accent
-    ctx.fillText(hud.arrow, M.padX, pipY + M.countPx + M.subGap)
+    ctx.fillText(hud.arrow, M.padX, arrowRowY)
   }
 
   // ── 스태미나 — 활 옆. **당길 때만** 뜨고, 놓으면 2초 머문 뒤 사라진다 (형) ──

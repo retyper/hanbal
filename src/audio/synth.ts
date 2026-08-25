@@ -28,7 +28,7 @@ const AUDIO = {
   echoAtten: 0.38,
   echoMax: 5,
   /** kind 인덱스 상한. sfx.ts가 쓰는 종류 수보다 커야 한다. */
-  kinds: 24,
+  kinds: 26,
   /** 완만한 컴프레서 하나. 연쇄가 겹쳐도 0dBFS를 넘지 않게만 한다. */
   compThreshold: -16,
   compKnee: 16,

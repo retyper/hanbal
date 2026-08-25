@@ -72,6 +72,8 @@ const DRAW = {
   arrowFletch: 0.2,
   arrowWidthPx: 2,
   trailWidthPx: 1.7,
+  /** 몰기에서 궤적이 굵어지는 배수. 색만 바꾸면 작은 배율에서 안 읽힌다. */
+  trailMolgiMul: 1.6,
 
   /**
    * 과녁의 띠 (반경 비율, 바깥부터).
@@ -776,9 +778,12 @@ function drawWindFlag(ctx: CanvasRenderingContext2D, cam: Camera, w: World): voi
 }
 
 function drawTrails(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void {
-  ctx.lineWidth = DRAW.trailWidthPx
+  // 몰기 — 궤적이 금빛으로 서고 한 겹 굵어진다 (docs/MEGAHIT.md §1).
+  // 화면에 배너를 띄우지 않는 이유: 조준 중에 읽어야 하는 신호는 **곁눈**으로 읽혀야 한다.
+  // 색을 새로 만들지 않고 이미 있는 강조색을 쓴다 (GDD 8장 — 색 수를 늘리지 않는다).
+  ctx.lineWidth = w.molgi ? DRAW.trailWidthPx * DRAW.trailMolgiMul : DRAW.trailWidthPx
   ctx.lineCap = 'round'
-  ctx.strokeStyle = THEME.trailHit
+  ctx.strokeStyle = w.molgi ? THEME.accent : THEME.trailHit
   for (let i = 0; i < w.arrows.length; i++) {
     const ar = w.arrows[i]
     if (ar === undefined || !ar.alive) continue

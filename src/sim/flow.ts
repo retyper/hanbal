@@ -61,6 +61,8 @@ export function flowDrainMul(w: World): number {
 export function flowHit(w: World): void {
   if (w.flowHits < HITS_MAX) w.flowHits++
   w.flowIdle = 0
+  // 활터의 북이 이 이벤트를 받는다 (docs/MEGAHIT.md §8 수렴부).
+  w.events.push({ t: 'jung', n: w.flowHits })
   if (!w.molgi && w.flowHits >= P.flow.molgiAt) {
     w.molgi = true
     w.events.push({ t: 'molgi', on: true })

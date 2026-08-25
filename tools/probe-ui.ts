@@ -329,6 +329,30 @@ for (const [cw, ch] of [[1280, 720], [800, 600]] as const) {
   }
 }
 
+// ── 한 순 눈금 (docs/MEGAHIT.md §1) — 화살 숫자 아래에 줄이 하나 더 끼어든다 ──
+// 3중과 몰기를 따로 본다: 몰기는 칸이 자라고 '몰기' 글자까지 붙어 제일 넓다.
+for (const [hits, molgi, label] of [[3, false, '3중'], [5, true, '몰기']] as const) {
+  const canvas = makeCanvas(1280, 720)
+  const w = createWorld(getStage(10), STATS)
+  const r = createRenderer(canvas as unknown as HTMLCanvasElement)
+  advance(w, 1)
+  w.flowHits = hits
+  w.molgi = molgi
+  recordHud(canvas, r, w)
+  report(`1280x720 · 11판 · ${label}`)
+}
+// 작은 창에서도 — 여기가 제일 빡빡하다.
+{
+  const canvas = makeCanvas(800, 600)
+  const w = createWorld(getStage(10), STATS)
+  const r = createRenderer(canvas as unknown as HTMLCanvasElement)
+  advance(w, 1)
+  w.flowHits = 5
+  w.molgi = true
+  recordHud(canvas, r, w)
+  report('800x600 · 11판 · 몰기')
+}
+
 // ── 바람 판 — 오른쪽 위에 바람 눈금이 훈련치와 같은 기둥에 쌓인다 ──
 {
   const canvas = makeCanvas(1280, 720)

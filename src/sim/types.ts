@@ -318,6 +318,13 @@ export type SimEvent =
    */
   | { t: 'player_hit'; hp: number; x: number; y: number; ang: number; pin: boolean }
   | { t: 'miss'; x: number; y: number; arrow: number }
+  /**
+   * 중(中) — 한 발이 맞아서 연사가 한 칸 올랐다. `n` = 오른 뒤의 연속 수 (1부터).
+   *
+   * 'hit'과 따로 두는 이유: hit은 **과녁마다** 나가고(관통 한 발이 셋이면 셋),
+   * 이건 **화살마다** 한 번이다. 활터의 북은 화살을 세지 과녁을 세지 않는다.
+   */
+  | { t: 'jung'; n: number }
   /** 몰기 진입/이탈. 연출과 소리가 이 **순간**을 받는다 (상태 자체는 World.molgi에 있다). */
   | { t: 'molgi'; on: boolean }
   | { t: 'stage_end'; cleared: boolean; score: number }
