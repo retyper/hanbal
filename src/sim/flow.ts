@@ -28,19 +28,19 @@
  *   벌이 아니라 상이라 계약 위반이 아니다 — 다만 크기는 `npm run balance`가 판정한다.
  *
  * ★ 국궁의 말을 쓴다
- *   콤보가 아니라 **관중(貫中)** — 한 발이 맞은 것. 콤보 최대가 아니라 **몰기(沒技)** —
+ *   콤보가 아니라 **중(中)** — 한 발이 맞은 것. 콤보 최대가 아니라 **몰기(沒技)** —
  *   한 순(5발)을 다 맞힌 것, 국궁에서 그 판의 자랑이다. 이름을 빌리면 시스템이 저작된 것이 된다.
- *   그리고 관중 다섯이면 배수가 마침 하한(floor)에 닿는다 — **몰기 = 속도의 천장**이다.
+ *   그리고 5중이면 배수가 마침 하한(floor)에 닿는다 — **몰기 = 속도의 천장**이다.
  *
  * ARCHITECTURE A1: 난수도 실시간도 쓰지 않는다. 같은 입력 = 같은 연사.
  */
 import type { World } from './types.ts'
 import { P } from '../tune/params.ts'
 
-/** 연속 관중 수의 상한. 배수는 진작에 하한에 닿으므로 이건 숫자가 폭주하지 않게 하는 뚜껑이다. */
+/** 연속 중(中) 수의 상한. 배수는 진작에 하한에 닿으므로 이건 숫자가 폭주하지 않게 하는 뚜껑이다. */
 const HITS_MAX = 20
 
-/** 만작 도달 시간 배수. 관중이 쌓일수록 작아지고, floor에서 멈춘다. */
+/** 만작 도달 시간 배수. 중(中)이 쌓일수록 작아지고, floor에서 멈춘다. */
 export function flowDrawMul(w: World): number {
   const m = Math.pow(P.flow.perHit, w.flowHits)
   return m < P.flow.drawFloor ? P.flow.drawFloor : m
@@ -53,10 +53,10 @@ export function flowDrainMul(w: World): number {
 }
 
 /**
- * 관중 — 화살 하나가 **처음** 무언가를 맞혔다.
+ * 중(中) — 화살 하나가 **처음** 무언가를 맞혔다.
  *
  * 왜 '처음'인가: 관통·분열·사슬은 한 발이 여럿을 맞힌다. 그걸 다 세면 한 발로 몰기에 닿는다.
- * 관중은 과녁의 수가 아니라 **화살의 수**다 (국궁에서도 그렇다).
+ * 세는 것은 과녁의 수가 아니라 **화살의 수**다 (국궁에서도 그렇다).
  */
 export function flowHit(w: World): void {
   if (w.flowHits < HITS_MAX) w.flowHits++
@@ -67,7 +67,7 @@ export function flowHit(w: World): void {
   }
 }
 
-/** 실중 — 맞히지 못했다. 연사는 **즉시** 끊긴다. 이게 관중에 값을 매긴다. */
+/** 실중 — 맞히지 못했다. 연사는 **즉시** 끊긴다. 이게 한 발 한 발에 값을 매긴다. */
 export function flowMiss(w: World): void {
   w.flowIdle = 0
   if (w.flowHits === 0 && !w.molgi) return
@@ -108,7 +108,10 @@ export function stepFlow(w: World): void {
   }
 }
 
-/** 판이 시작될 때. 연사는 판 안의 리듬이라 판 경계를 넘지 않는다. */
+/**
+ * 판이 시작될 때 sim이 부르는 초기화. **여정을 잇는 건 game 레이어의 일이다** —
+ * game/loop.ts가 판 경계에서 값을 도로 넣는다 (P.flow.carry). sim은 런의 존재를 모른다.
+ */
 export function resetFlow(w: World): void {
   w.flowHits = 0
   w.flowIdle = 0

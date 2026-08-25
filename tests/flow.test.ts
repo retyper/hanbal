@@ -2,7 +2,7 @@
  * 연사(連射)와 몰기(沒技) — docs/MEGAHIT.md §1 · src/sim/flow.ts
  *
  * 여기서 지키는 계약은 둘이다.
- *   ① **관중은 화살의 수다.** 한 발이 셋을 뚫어도 관중은 하나다.
+ *   ① **세는 단위는 화살이다.** 한 발이 셋을 뚫어도 1중이다.
  *   ② **연사는 정확도를 건드리지 않는다.** 빠르게 만들 뿐 부정확하게 만들지 않는다 —
  *      이게 GDD 1장 빨간 바 계약과의 화해점이고, 깨지면 기능 전체가 반려다.
  */
@@ -41,15 +41,15 @@ function shoot(w: World, aimX: number, aimY: number): void {
 }
 
 describe('연사와 몰기', () => {
-  it('관중이 쌓이면 만작이 빨라진다 — 그리고 하한에서 멈춘다', () => {
+  it('중(中)이 쌓이면 만작이 빨라진다 — 그리고 하한에서 멈춘다', () => {
     const w = createWorld(arena(1), STATS)
-    assert.equal(flowDrawMul(w), 1, '관중 0에서는 아무것도 안 바뀐다 (초보가 보는 게임은 그대로다)')
+    assert.equal(flowDrawMul(w), 1, '0중에서는 아무것도 안 바뀐다 (초보가 보는 게임은 그대로다)')
     let prev = 1
     for (let n = 1; n <= 12; n++) {
       w.flowHits = n
       const m = flowDrawMul(w)
-      assert.ok(m <= prev + 1e-9, `관중 ${n}에서 배수가 되레 커졌다`)
-      assert.ok(m >= P.flow.drawFloor - 1e-9, `관중 ${n}에서 하한을 뚫었다`)
+      assert.ok(m <= prev + 1e-9, `${n}중에서 배수가 되레 커졌다`)
+      assert.ok(m >= P.flow.drawFloor - 1e-9, `${n}중에서 하한을 뚫었다`)
       prev = m
     }
     assert.equal(flowDrawMul(w), P.flow.drawFloor, '충분히 쌓이면 하한에 앉는다')
@@ -66,7 +66,7 @@ describe('연사와 몰기', () => {
     const t0 = w.targets[0]
     assert.ok(t0 !== undefined)
     shoot(w, t0.x, t0.y)
-    assert.equal(w.flowHits, 1, '맞혔는데 관중이 안 올랐다')
+    assert.equal(w.flowHits, 1, '맞혔는데 중이 안 올랐다')
 
     // 첫 발과 둘째 발의 만작 도달 스텝 수를 잰다.
     function drawSteps(): number {
@@ -86,7 +86,7 @@ describe('연사와 몰기', () => {
     assert.ok(fast < slow * 0.8, `몰기의 만작이 안 빠르다 (${slow} → ${fast} 스텝)`)
   })
 
-  it('한 발이 여럿을 뚫어도 관중은 하나다 (관중은 화살의 수다)', () => {
+  it('한 발이 여럿을 뚫어도 1중이다 (세는 단위는 화살이다)', () => {
     const w = createWorld(arena(4, 'pierceable'), STATS, 'pierce')
     const t0 = w.targets[0]
     assert.ok(t0 !== undefined)
@@ -94,7 +94,7 @@ describe('연사와 몰기', () => {
     let struck = 0
     for (const a of w.arrows) if (a !== undefined && a.struck > struck) struck = a.struck
     assert.ok(struck >= 2, `관통 판이 아니다 — 한 발이 ${struck}개만 맞혔다`)
-    assert.equal(w.flowHits, 1, `한 발로 관중이 ${w.flowHits}이 됐다`)
+    assert.equal(w.flowHits, 1, `한 발로 중이 ${w.flowHits}이 됐다`)
   })
 
   it('실중이면 즉시 끊긴다', () => {
@@ -103,7 +103,7 @@ describe('연사와 몰기', () => {
     w.molgi = true
     // 과녁(x 8~10.7) 앞의 맨땅에 처박는다 — 확실한 실중.
     shoot(w, 5, 0)
-    assert.equal(w.flowHits, 0, '빗나갔는데 관중이 남아 있다')
+    assert.equal(w.flowHits, 0, '빗나갔는데 중이 남아 있다')
     assert.equal(w.molgi, false, '빗나갔는데 몰기가 살아 있다')
   })
 
@@ -122,7 +122,7 @@ describe('연사와 몰기', () => {
         if (e !== undefined && e.t === 'molgi' && e.on) on.push(w.flowHits)
       }
     }
-    assert.equal(w.molgi, true, `관중 ${w.flowHits}인데 몰기가 아니다`)
+    assert.equal(w.molgi, true, `${w.flowHits}중인데 몰기가 아니다`)
     assert.equal(on.length, 1, '몰기 진입 이벤트가 정확히 한 번 나오지 않았다')
   })
 
@@ -152,7 +152,7 @@ describe('연사와 몰기', () => {
   })
 
   it('★ 연사는 정확도를 건드리지 않는다 — 빨간 바 계약 (GDD 1장)', () => {
-    // 같은 조준·같은 만작이면, 관중이 0이든 몰기든 **화살이 같은 각으로 나가야 한다.**
+    // 같은 조준·같은 만작이면, 0중이든 몰기든 **화살이 같은 각으로 나가야 한다.**
     function releaseAngle(hits: number): number {
       const w = createWorld(arena(1), STATS)
       w.flowHits = hits

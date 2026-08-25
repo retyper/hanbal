@@ -268,9 +268,9 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     const mods = bowMods(save.bow, kind, masteryLevel(save.bowHits[save.bow] ?? 0))
     // ── 연사는 **여정**을 넘어간다 (sim/flow.ts · docs/MEGAHIT.md §1) ──
     // 판이 아니라 여정이 momentum의 단위다. 실측 근거: 캠페인 판은 과녁이 1~4개라
-    // 판 안에서는 관중이 3을 못 넘고 **몰기(5)가 구조적으로 도달 불가능**했다.
+    // 판 안에서는 3중을 못 넘고 **몰기(5)가 구조적으로 도달 불가능**했다.
     // 판 경계에서 리듬을 끊으면 이 기능은 있으나 마나가 된다.
-    // 끊는 것은 오직 실중과 망설임이다 — 그래야 관중에 값이 매겨진다.
+    // 끊는 것은 오직 실중과 망설임이다 — 그래야 한 발 한 발에 값이 매겨진다.
     // C2와의 화해: 자리를 뜨는 건 실중이 아니므로 리듬을 잃지 않는다. 돌아오면 그대로다.
     const carryHits = P.flow.carry > 0 ? w.flowHits : 0
     const carryMolgi = P.flow.carry > 0 && w.molgi

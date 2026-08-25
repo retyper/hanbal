@@ -156,8 +156,8 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
   const fx = arrow.fx
   arrow.struck++
   arrow.lastHit = target.id
-  // 관중(貫中) — 이 화살의 **첫** 명중만 센다. 관통·분열·사슬로 여럿을 맞혀도 한 발은 한 발이다
-  // (국궁에서도 관중은 화살의 수다). 분열 자식은 지급된 화살이 아니라 그 한 발의 결과물이라
+  // 중(中) — 이 화살의 **첫** 명중만 센다. 관통·분열·사슬로 여럿을 맞혀도 한 발은 한 발이다
+  // (국궁에서도 세는 단위는 화살이다). 분열 자식은 지급된 화살이 아니라 그 한 발의 결과물이라
   // 세지 않는다 — miss를 안 세는 것과 같은 이유다 (sim/ballistics.ts).
   if (arrow.struck === 1 && arrow.splitDepth <= 0) flowHit(w)
 
