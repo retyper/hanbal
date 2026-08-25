@@ -289,7 +289,7 @@ function advance(w: World, steps: number): void {
  * 기록을 켜고 drawHud 만 다시 호출한다. 기록에 남는 건 HUD 뿐이다.
  */
 function recordHud(canvas: Canvas, r: Renderer, w: World): void {
-  r.draw(w as never, 0, 1 / 60, HUD_STATE)
+  r.draw(w, 0, 1 / 60, HUD_STATE)
   resetRec()
   recOn = true
   drawHud(canvas.getContext() as unknown as CanvasRenderingContext2D, getCamera(r), w, HUD_STATE)
@@ -340,19 +340,23 @@ for (const [cw, ch] of [[1280, 720], [800, 600]] as const) {
 }
 
 // ── 클리어 배너 — toast·별·점수가 실제로 그려지는 유일한 화면 ──
-// 시작 자막이 다 사라진 뒤(4초) 클리어로 넘겨, 배너 등장 연출(0.22s)이 끝난 프레임을 잰다.
+// 초 단위 시간은 w.dt 로 환산한다 — sim 은 60Hz 가 아니라 P.sim.hz(120)로 돈다.
 // status 를 손으로 넘기는 건 sim 을 조작하는 게 아니라 "클리어된 월드"라는 입력을 만드는 것이다.
-{
+function clearedFrame(clearAtSec: number, name: string): void {
   const canvas = makeCanvas(1280, 720)
   const w = createWorld(getStage(0), STATS)
   const r = createRenderer(canvas as unknown as HTMLCanvasElement)
-  advance(w, 240)
+  advance(w, Math.round(clearAtSec / w.dt))
   w.status = 'cleared'
   r.draw(w, 0, 1 / 60, HUD_STATE) // 결과 배너의 등장 시각(endT)이 여기서 박힌다
-  advance(w, 30)
+  advance(w, Math.round(0.5 / w.dt)) // 등장 연출(0.22s)이 끝나 알파 1인 프레임
   recordHud(canvas, r, w)
-  report('1280x720 · 1판 · 클리어 배너 (별 2 · 토스트)')
+  report(name)
 }
+// 자막이 다 사라진 뒤(자막 수명 3.5s)의 평상시 배너.
+clearedFrame(4.2, '1280x720 · 1판 · 클리어 배너 (별 2 · 토스트)')
+// 빠른 클리어 — 1판은 자막이 떠 있는 채로도 깰 수 있다. 그때 자막과 배너가 같은 세로줄에 선다.
+clearedFrame(1.2, '1280x720 · 1판 · 빠른 클리어 (시작 자막이 아직 떠 있음)')
 
 console.log(`\n겹침 ${total}건${total === 0 ? ' ✓' : ' ⚠'}`)
 console.log('※ DOM 오버레이(화살 3택·성장 버튼)는 캔버스 밖이라 여기서 못 잰다 — 그건 형의 눈이 판정한다.')

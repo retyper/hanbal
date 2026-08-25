@@ -18,7 +18,7 @@
 import { TAU, clamp, clamp01, lerp } from '../core/math.ts'
 import { P } from '../tune/params.ts'
 import type { World } from '../sim/types.ts'
-import { THEME } from './camera.ts'
+import { THEME, worldToScreenY } from './camera.ts'
 import type { Camera } from './camera.ts'
 import { bowHandScreenX, bowHandScreenY } from './stickman.ts'
 
@@ -152,7 +152,8 @@ const HUD = {
   /** 번호와 이름 사이 */
   titleGap: 10,
   /** 머리글 아래 본문까지 */
-  headGap: 24,
+  /** 24 -> 40: 머리글과 본문 사이에 여정 진행 점 줄이 들어온다 (UI 전수조사 겹침 1·7번). */
+  headGap: 40,
   /** 과녁 수 / 점수 */
   goalPx: 23,
   scorePx: 14,
@@ -479,7 +480,9 @@ export function drawHud(
     const no = stageNoOf(w.stage.id)
     if (no > 0) {
       const pos = ((no - 1) % 10)
-      const dotY = M.padY + Math.round(M.s * 14)
+      // 머리글 글자(stagePx)의 em 박스 **아래**에 제 줄을 갖는다 — 14였을 땐 글자를 관통했다
+      // (전수조사 겹침 1번: 점 1~5번이 판 번호를, 7~10번이 판 이름을 뚫고 지나갔다).
+      const dotY = M.padY + px(HUD.stagePx, M.s) + Math.round(M.s * 8)
       const dr = Math.max(2, Math.round(M.s * 2.2))
       const gap2 = dr * 3
       let dx0 = M.padX + 2
@@ -555,7 +558,11 @@ export function drawHud(
   const ratio = clamp01(a.stamina / max)
   const warn = clamp01(a.warn)
   const gx = bowHandScreenX(cam, w) + HUD.gaugeDX - HUD.gaugeW * 0.5
-  const gy = bowHandScreenY(cam, w) + HUD.gaugeDY
+  // 저스케일 판에서 손+34px가 지면 밑으로 내려갔다 (전수조사 겹침 6번). 지면 위로 클램프.
+  const gy = Math.min(
+    bowHandScreenY(cam, w) + HUD.gaugeDY,
+    worldToScreenY(cam, 0) - px(14, M.s),
+  )
   const gh = HUD.gaugeH + warn * HUD.gaugeWarnGrow
   const gw = HUD.gaugeW
 
@@ -816,6 +823,9 @@ function drawWindArrow(ctx: CanvasRenderingContext2D, rightX: number, cy: number
  * 무한 구간에서 판마다 성격이 바뀌는 걸(endless.ts 테마) 알려주는 유일한 자리다.
  */
 function drawStageCard(ctx: CanvasRenderingContext2D, cam: Camera, w: World, t: number): void {
+  // 판이 끝났으면 자막은 그 순간 접는다 — 자막 수명(3.5s) 안에 깨면 '클리어' 배너와
+  // 겹쳐 떴다 (프로브 실측 147×14px 교차, UI 전수조사 겹침 5번). 한 화면엔 한 목소리만.
+  if (w.status !== 'playing') return
   const title = w.stage.title ?? ''
   if (title === '') return
   const life = HUD.cardHold + HUD.cardFade

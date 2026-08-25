@@ -213,9 +213,16 @@ function withEnemies(base: StageDef, i: number): StageDef {
     const moving = n >= 26 && e === 0
     const elite = n >= 36 && e === 1
     const armored = n >= 41 && e === 2
+    // 저작 과녁 위에 겹쳐 서지 않는다 (전수조사 겹침 4번) — 가까우면 옆으로 비켜난다.
+    let ex = 22 + rng.range(0, 12) + e * 6.5
+    for (let guard = 0; guard < 6; guard++) {
+      const clash = base.targets.some((t2) => Math.abs(t2.x - ex) < 2.6 && Math.abs(t2.y - 0.72) < 2.4)
+      if (!clash) break
+      ex += 2.8
+    }
     const spec: TargetSpec = {
       kind: 'archer',
-      x: 22 + rng.range(0, 12) + e * 5,
+      x: ex,
       // 사람은 땅에 선다 (형: "움직이는 적은 귀신이냐, 하늘을 둥실둥실"). y는 몸 중심이라
       // 반경(0.65)만큼 띄우면 발이 지면에 닿는다. 공중에 떠도 되는 건 과녁뿐이다.
       y: 0.72,

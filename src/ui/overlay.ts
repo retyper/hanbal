@@ -79,7 +79,8 @@ const CSS = `
 .hb-ui b, .hb-ui .hb-num { font-family: var(--num); font-variant-numeric: tabular-nums; }
 
 /* 왼쪽 아래 — 지면 밑이라 조준선이 지나가지 않는다. 버튼이 발사 클릭을 먹으면 C1 위반이다. */
-.hb-hud { position: absolute; left: 18px; bottom: 18px; display: flex; gap: 10px; align-items: flex-end; }
+/* 좁은 화면에서는 줄바꿈한다 — 안 하면 수집 버튼부터 화면 밖으로 잘린다 (겹침 9번). */
+.hb-hud { position: absolute; left: 18px; bottom: 18px; display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; max-width: calc(100vw - 36px); }
 .hb-hud > * { pointer-events: auto; }
 
 .hb-btn {
@@ -105,7 +106,9 @@ const CSS = `
 }
 .hb-btn.hb-has .hb-dot { opacity: 1; }
 
-.hb-toasts { position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+/* 우상단은 캔버스 HUD(훈련치·바람·무음)의 자리다 — 토스트가 그 위를 통째로 덮었었다
+   (UI 전수조사 겹침 2번). 우하단은 어느 레이어도 안 쓰는 빈 구석이라 여기가 토스트의 집이다. */
+.hb-toasts { position: absolute; bottom: 20px; right: 20px; display: flex; flex-direction: column-reverse; gap: 8px; align-items: flex-end; }
 .hb-toast {
   background: #101821f2; border: 1px solid #26313d;
   border-radius: 2px; padding: 10px 16px; color: #d7dde6; white-space: nowrap;

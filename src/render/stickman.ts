@@ -772,7 +772,9 @@ export function drawArcher(
   {
     const hpRatio = w.hp / Math.max(1, Math.floor(P.enemy.hpMax))
     const bx = worldToScreenX(cam, a.x)
-    const by = worldToScreenY(cam, a.y + 1.05)
+    // 1.05m를 픽셀로 바꾸면 저스케일 판에서 21px까지 줄어 조준 표식(픽셀 고정 59px)이
+    // 바를 관통했다 (전수조사 겹침 3번). 월드 오프셋에 픽셀 하한 72px를 깐다.
+    const by = Math.min(worldToScreenY(cam, a.y + 1.05), worldToScreenY(cam, a.y) - 72)
     const bw = Math.max(34, cam.scale * 1.3)
     ctx.fillStyle = THEME.gaugeBack
     ctx.fillRect(bx - bw / 2, by, bw, 5)

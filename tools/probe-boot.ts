@@ -79,6 +79,10 @@ class El {
   querySelector(): El {
     return new El('span')
   }
+  querySelectorAll(): El[] {
+    // 출정 카드가 .l-d 두 칸을 집는다 — 넉넉히 세 개면 어떤 카드든 안전하다.
+    return [new El('span'), new El('span'), new El('span')]
+  }
   get firstElementChild(): El | null {
     return this.children[0] ?? null
   }

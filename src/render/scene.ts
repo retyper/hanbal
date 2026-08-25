@@ -411,11 +411,6 @@ function drawTargets(
       }
 
       // 사람 실루엣 — 머리·몸통·다리. 이쪽(-x)을 보고 선다.
-      // 갑옷병은 몸통에 흉갑(밝은 판)을 두른다 — 몸통이 안 통하는 이유가 그림으로 읽힌다.
-      if (t.armored) {
-        ctx.fillStyle = THEME.target2
-        ctx.fillRect(x - rx * 0.28, y - ry * 0.28, rx * 0.56, ry * 0.62)
-      }
       ctx.strokeStyle = bodyCol
       ctx.lineWidth = Math.max(2, rx * 0.14)
       ctx.lineCap = 'round'
@@ -448,6 +443,36 @@ function drawTargets(
       ctx.lineTo(bx + drawF * rx * 0.5, y - ry * 0.1)
       ctx.lineTo(bx, y + ry * 0.3)
       ctx.stroke()
+
+      // 갑옷병 — 흉갑 실루엣 (형: "일시정지인 줄 알았다"). 어깨가 넓고 허리로 좁아지는
+      // 사다리꼴 판 + 양어깨 견갑 + 가슴판 골 두 줄. 몸통이 안 통하는 이유가 갑주의
+      // **형태**로 읽힌다. 머리는 맨머리 — 저기가 답이라는 뜻이다.
+      if (t.armored) {
+        const aw = rx * 0.5
+        const top2 = y - ry * 0.3
+        const bot2 = y + ry * 0.42
+        ctx.fillStyle = '#8fa3b5'
+        ctx.beginPath()
+        ctx.moveTo(x - aw, top2)
+        ctx.lineTo(x + aw, top2)
+        ctx.lineTo(x + aw * 0.55, bot2)
+        ctx.lineTo(x - aw * 0.55, bot2)
+        ctx.closePath()
+        ctx.fill()
+        ctx.strokeStyle = THEME.targetBand
+        ctx.lineWidth = 1.5
+        ctx.beginPath()
+        ctx.moveTo(x - aw * 0.5, top2 + ry * 0.12)
+        ctx.lineTo(x + aw * 0.5, top2 + ry * 0.12)
+        ctx.moveTo(x - aw * 0.4, top2 + ry * 0.34)
+        ctx.lineTo(x + aw * 0.4, top2 + ry * 0.34)
+        ctx.stroke()
+        ctx.fillStyle = '#9fb6c8'
+        ctx.beginPath()
+        ctx.arc(x - aw, top2, rx * 0.2, 0, TAU)
+        ctx.arc(x + aw, top2, rx * 0.2, 0, TAU)
+        ctx.fill()
+      }
 
       // 체력 바 — 머리 위 (형: "전부 바 형태로").
       drawHpBar(ctx, x, headY - hr - 12, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
