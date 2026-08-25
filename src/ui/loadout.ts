@@ -56,6 +56,10 @@ const CSS = `
 .o-score { color: var(--body); margin-top: 4px; }
 .o-new { color: var(--accent); font-weight: 700; margin-top: 10px; }
 .o-old { color: var(--dim); margin-top: 10px; }
+/* 남은 것 — 기록 줄보다 밝게. "죽었다"가 아니라 "가져간다"가 이 화면의 마지막 말이어야 한다. */
+.o-keep { color: var(--body); margin-top: 14px; font-size: 14px; }
+.o-keep b { color: var(--accent); font-weight: 700; }
+.o-dot { color: var(--dim); margin: 0 8px; }
 .o-foot { margin-top: 22px; display: flex; gap: 10px; justify-content: center; }
 `
 
@@ -192,6 +196,7 @@ export function showRunOver(
   isNew: boolean,
   first: boolean,
   reason: 'defeat' | 'abandon' | 'death',
+  summary: { training: number; stars: number; jung: number; molgi: boolean },
   onNext: (mode: 'again' | 'loadout') => void,
 ): void {
   const panel = o.panel(OVER_ID)
@@ -204,6 +209,13 @@ export function showRunOver(
 
   const wrap = document.createElement('div')
   wrap.className = 'o-wrap'
+  // 이번 여정이 **영구히** 남긴 것만 센다. 판별 점수처럼 여정과 함께 사라지는 건 안 쓴다 —
+  // "가져간다"고 써놓고 안 가져가면 그 줄은 다음부터 아무도 안 읽는다.
+  const keeps: string[] = []
+  if (summary.training > 0) keeps.push(`훈련치 <b>${summary.training}</b>`)
+  if (summary.stars > 0) keeps.push(`별 <b>${summary.stars}</b>`)
+  if (summary.molgi) keeps.push(`<b>몰기</b>`)
+  else if (summary.jung >= 3) keeps.push(`최고 <b>${summary.jung}중</b>`)
   const lead = reason === 'death'
     ? '쓰러졌다 — 이번 여정은'
     : reason === 'abandon'
@@ -218,6 +230,10 @@ export function showRunOver(
       : isNew
         ? `<div class="o-new">최고 기록 경신</div>`
         : `<div class="o-old">최고 기록 ${best}판</div>`) +
+    // ── 남은 것 ── 로그라이트의 종료 화면은 벌이 아니라 **다음 런의 발사대**다.
+    // 여기 아무것도 없으면 화면이 하는 말은 "너 죽었다" 하나뿐이고, 그건 다시 설 이유가 못 된다.
+    // 0인 항목은 아예 안 쓴다 — '훈련치 0'은 위로가 아니라 조롱이다.
+    (keeps.length > 0 ? `<div class="o-keep">가져간다 &nbsp;${keeps.join('<span class="o-dot">·</span>')}</div>` : '') +
     // 재도전의 마찰은 클릭 하나면 족하다 — 다수 경로(같은 활)가 주 버튼이다 (감사 UI P1).
     `<div class="o-foot"><button class="hb-btn hb-pri l-go" data-m="again" type="button">같은 활로 다시 나선다 →</button>` +
     `<button class="hb-btn" data-m="loadout" type="button">채비 바꾸기</button></div>`

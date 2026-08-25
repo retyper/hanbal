@@ -19,7 +19,7 @@ import { STAGES } from './stages.ts'
 const KEY = 'hanbal.save.v1'
 
 /** 현재 스키마 버전. 필드를 바꿀 때마다 +1 하고 MIGRATIONS에 한 줄 추가한다. */
-export const SCHEMA_VERSION = 8
+export const SCHEMA_VERSION = 9
 
 /**
  * 오프라인 축적의 소수부 (자원 단위). 세 자원의 축적 속도가 달라 하나로 합칠 수 없다.
@@ -123,6 +123,22 @@ export interface SaveData {
    * 정수로 자르면 기록이 자주 '동점'이 되어 갱신의 순간이 사라진다.
    */
   bestTime: Record<string, number>
+
+  // ── v9: 여정 종료 화면이 '무엇이 남았는가'를 말한다 (docs/MEGAHIT.md §8-③) ──
+  //
+  // 하데스 렌즈의 지적: "나는 하데스를 **죽으러** 했다. 죽으면 뭔가 열리고 다음 런이
+  // 달라진다. 여기선 죽으면 그냥 끝이다 — 마찰만 있고 보상이 없다."
+  // 로그라이트에서 런 종료 화면은 벌이 아니라 **다음 런의 발사대**여야 한다.
+  //
+  // 셋 다 **이번 여정 안에서만** 산다. 새 여정에서 0으로 돌아간다.
+  // 세이브에 두는 이유는 여정이 탭 닫기를 넘어 이어지기 때문이다 (C2) —
+  // 지역 변수로 두면 공부하다 돌아온 사람의 여정만 요약이 비어 버린다.
+  /** 이번 여정에서 번 훈련치 합 */
+  runTraining: number
+  /** 이번 여정에서 새로 얻은 별 수 (이미 가진 별을 다시 받은 건 안 센다) */
+  runStars: number
+  /** 이번 여정의 최고 연속 중(中). 몰기(5)에 닿았는지가 이 값으로 읽힌다. */
+  runBestJung: number
 }
 
 /** 저장값이 말이 되는 범위인지만 본다. 치트 방지가 아니라 NaN·Infinity 방어다 (A4: 치트 방지 안 함). */
@@ -159,6 +175,9 @@ export function defaultSave(now: number): SaveData {
     stageIndex: 0,
     bestScore: {},
     bestTime: {},
+    runTraining: 0,
+    runStars: 0,
+    runBestJung: 0,
     lastSeen: now,
     offlineEnabled: true,
     totalShots: 0,
@@ -273,6 +292,11 @@ const MIGRATIONS: ReadonlyArray<(r: Raw) => void> = [
    * v7 → v8: 판별 최고 시간이 생겼다 (docs/MEGAHIT.md §8-④).
    * 옛 세이브에는 기록이 없다 — **비워 둔다.** 0으로 채우면 "0초에 깼다"가 되어
    * 영원히 못 깨는 기록이 박히고, 갱신의 순간이 그 사람에게서 통째로 사라진다.
+   */
+  () => {},
+  /**
+   * v8 → v9: 여정 요약 셋이 생겼다. 진행 중이던 여정은 요약이 0에서 시작한다 —
+   * 지나간 판을 되짚어 채울 방법이 없고, 거짓 숫자보다 0이 낫다.
    */
   () => {},
 ]
@@ -404,6 +428,9 @@ function sanitize(r: Raw, now: number): SaveData {
     bestRunScore: int(r['bestRunScore'], 0, 0, HARD_MAX),
     runCount: int(r['runCount'], 0, 0, HARD_MAX),
     runScore: int(r['runScore'], 0, 0, HARD_MAX),
+    runTraining: int(r['runTraining'], 0, 0, HARD_MAX),
+    runStars: int(r['runStars'], 0, 0, HARD_MAX),
+    runBestJung: int(r['runBestJung'], 0, 0, 9999),
     bossKills: int(r['bossKills'], 0, 0, HARD_MAX),
     runHp: int(r['runHp'], Math.floor(P.enemy.hpMax), 0, 999),
     arrowStock: sanitizeBest(r['arrowStock']),

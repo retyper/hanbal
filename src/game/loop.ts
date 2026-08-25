@@ -56,7 +56,13 @@ export interface LoopUi {
   /** 여정 종료 — 도달 판·점수·기록·사유. onNext 한 번으로 다음 여정 준비로 간다 (C1). */
   runOver(
     reached: number, score: number, best: number, isNew: boolean, first: boolean,
-    reason: 'defeat' | 'abandon' | 'death', onNext: (mode: 'again' | 'loadout') => void,
+    reason: 'defeat' | 'abandon' | 'death',
+    /**
+     * 이번 여정이 **남긴 것** (docs/MEGAHIT.md §8-③). 로그라이트에서 런 종료 화면은
+     * 벌이 아니라 다음 런의 발사대다 — 가져가는 것이 보여야 다시 설 마음이 생긴다.
+     */
+    summary: { training: number; stars: number; jung: number; molgi: boolean },
+    onNext: (mode: 'again' | 'loadout') => void,
   ): void
   /** 보스 보급 (docs/RUN.md). heal>0이면 회복 카드가 추가로 선다. onPick은 정확히 한 번. */
   supply(
@@ -316,6 +322,13 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     save.bow = bow
     save.runActive = true
     save.runScore = 0
+    // 여정 요약은 여정의 것이다 (docs/MEGAHIT.md §8-③). 새 여정은 빈손으로 시작한다.
+    save.runTraining = 0
+    save.runStars = 0
+    save.runBestJung = 0
+    // 리듬도 여정의 것이다 — 새 여정에 지난 여정의 몰기를 들고 들어가면 그건 번 게 아니다.
+    w.flowHits = 0
+    w.molgi = false
     stageIndex = 0
     loadStage(save.runArrow)
   }
@@ -379,6 +392,13 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       save.bestRunStage = reached
       save.bestRunScore = save.runScore
     }
+    // 요약은 화면에 넘긴 **뒤에** 0으로 돌린다 — 새 여정은 startRun이 연다.
+    const summary = {
+      training: save.runTraining,
+      stars: save.runStars,
+      jung: save.runBestJung,
+      molgi: save.runBestJung >= Math.floor(P.flow.molgiAt),
+    }
     save.runCount++
     save.runActive = false
     stageIndex = 0
@@ -387,7 +407,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     save.runHp = Math.floor(P.enemy.hpMax)
     saveNow()
     choosing = true
-    ui.runOver(reached, save.runScore, save.bestRunStage, isNew, first, reason, (mode) => {
+    ui.runOver(reached, save.runScore, save.bestRunStage, isNew, first, reason, summary, (mode) => {
       choosing = false
       // '같은 활로 다시' — 종료 화면에서 바로 출정한다. 재도전의 마찰은 클릭 하나면 족하다 (감사).
       if (mode === 'again') startRun(save.bow)
@@ -432,9 +452,16 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     RUN.hits = hits
     const gain = awardRun(save, w.stage, RUN, reward)
 
+    // ── 여정 요약 (docs/MEGAHIT.md §8-③) ──
+    // 여정 종료 화면이 "무엇이 남았는가"를 말하려면 여정 동안 세어 둔 것이 있어야 한다.
+    save.runTraining += gain.training
+    if (w.flowHits > save.runBestJung) save.runBestJung = w.flowHits
+
     // 별은 **줄지 않는다.** 다시 해서 못 받아도 가진 별은 남는다 (성장은 되돌아가지 않는다).
     const id = w.stage.id
     const had = save.stars[id] ?? 0
+    // 요약이 세는 건 **새로 얻은** 별이다. 이미 가진 별을 다시 받은 건 얻은 게 아니다.
+    if (reward.stars > had) save.runStars += reward.stars - had
     if (reward.stars > had) save.stars[id] = reward.stars
 
     // ── 자기 최고 시간 (docs/MEGAHIT.md §8-④) ──

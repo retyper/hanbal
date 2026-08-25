@@ -63,3 +63,36 @@ describe('자기 최고 시간', () => {
     assert.equal(loadSave().bestTime['3-4'], 7.77)
   })
 })
+
+describe('여정 요약', () => {
+  it('새 세이브는 요약이 0이다', () => {
+    const s = defaultSave(0)
+    assert.equal(s.runTraining, 0)
+    assert.equal(s.runStars, 0)
+    assert.equal(s.runBestJung, 0)
+  })
+
+  it('옛 세이브(v8)는 요약 0으로 올라온다 — 거짓 숫자보다 0이 낫다', () => {
+    const old = { ...defaultSave(0), v: 8 } as Record<string, unknown>
+    delete old['runTraining']
+    delete old['runStars']
+    delete old['runBestJung']
+    const s = roundTrip(old)
+    assert.equal(s.v, SCHEMA_VERSION)
+    assert.equal(s.runTraining, 0)
+    assert.equal(s.runStars, 0)
+    assert.equal(s.runBestJung, 0)
+  })
+
+  it('요약은 저장을 오간다', () => {
+    const d = defaultSave(0)
+    d.runTraining = 37
+    d.runStars = 4
+    d.runBestJung = 6
+    writeSave(d)
+    const s = loadSave()
+    assert.equal(s.runTraining, 37)
+    assert.equal(s.runStars, 4)
+    assert.equal(s.runBestJung, 6)
+  })
+})
