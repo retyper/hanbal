@@ -543,12 +543,23 @@ export function pumpEvents(fx: Fx, w: World): void {
         break
       }
 
-      // 점수 팝 — 문자열은 명중마다 한 번만 만든다. 매 프레임이 아니라 이벤트마다다 (A5).
-      pushPopup(
-        fx.pop, e.x, e.y, `+${e.score}`, crit ? 'crit' : 'score',
-        // 로그 스케일 — 4~5콤보에서 포화되던 팝 크기의 위가 다시 열린다 (감사 재미).
-        clamp01(Math.log1p(e.score / 100) / Math.log1p(20)),
-      )
+      // ── 피해 팝 (형: "화살이 맞으면 점수가 아니라 데미지가 떠야 하는 거 아냐?
+      //    점수는 알아서 계산돼서 클리어 때 나오면 되잖아") ──
+      //
+      // 옳다. 그리고 지금은 더 옳다 — 피해가 질량과 착탄 속도의 **제곱**을 타게 바뀌었는데
+      // (sim/arrowfx.ts), 그 물리가 화면에 한 번도 안 나타나면 배울 수가 없다.
+      // 이 숫자가 그 교사다: 가까이서 쏜 육량전 96과 멀리서 쏜 애기살 22가 눈에 다르게 보인다.
+      //
+      // **체력이 없는 과녁에는 아무 숫자도 안 띄운다.** 과녁은 한 발에 사라지므로
+      // 사라지는 것 자체가 피드백이고, 거기 숫자를 얹으면 화면이 숫자로 덮인다 (GDD 7장).
+      // 점수는 판이 끝나야 뜻이 생기는 누적값이라 결과 배너의 것이다 (hud.ts).
+      if (e.dmg > 0) {
+        pushPopup(
+          fx.pop, e.x, e.y, `${e.dmg}`, crit ? 'crit' : 'score',
+          // 로그 스케일 — 큰 한 방과 작은 한 방의 차이가 팝 크기로도 읽힌다.
+          clamp01(Math.log1p(e.dmg / 40) / Math.log1p(12)),
+        )
+      }
       // 헤드샷이 이미 떴으면 정중앙은 겹쳐 띄우지 않는다 — 한 사건에 한 마디.
       if (crit && !e.head) pushPopup(fx.pop, e.x, e.y, FX.critFeat, 'feat')
 
@@ -608,6 +619,9 @@ export function pumpEvents(fx: Fx, w: World): void {
     } else if (e.t === 'enemy_block') {
       // 과녁이 막아줬다 — 작은 먼지. "가려져서 살았다"가 보여야 엄폐가 전술이 된다.
       spawn(fx, e.x, e.y, FX.missBurst, KIND_MISS, FX.missSpeed, FX.missTtl, 0.8)
+      // 갑옷에 튕겼으면 **말로도** 알려준다. 피해 팝이 안 뜨는 것만으로는
+      // "안 맞았나?"와 "막혔나?"를 구분할 수 없고, 그러면 갑옷이 자물쇠가 아니라 버그로 읽힌다.
+      pushPopup(fx.pop, e.x, e.y + 0.5, '막혔다', 'chain')
     } else if (e.t === 'player_hit') {
       // 맞았다 — 콤보가 끊기고 시간이 잠깐 멈춘다. 남은 체력이 아니라 잃었다는 사실을 띄운다.
       fx.comboRun = 0

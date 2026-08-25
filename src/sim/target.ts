@@ -145,6 +145,54 @@ function fireEnemyShot(w: World, tg: Target): void {
   w.events.push({ t: 'enemy_shot', x: tg.x, y: tg.y })
 }
 
+/**
+ * 이 한 발이 이 적에게 **실제로** 넣을 피해. 체력이라는 축을 안 쓰는 과녁은 0이다.
+ *
+ * ── 피해 = 운동에너지 = 기준 × 질량 × (착탄 속도 / 기준 속도)² ──
+ *
+ * 형의 물음(2026-08-25): "데미지는 화살 속도랑 화살 무게에 따라도 달라지지 않을까."
+ * 그대로다. 예전엔 속도에 **선형**이고 질량은 손으로 박은 배수였다.
+ * 이제 진짜 KE = ½mv² 다 (½은 playerDamage가 흡수한다).
+ * 속도가 제곱으로 들어가므로 **가까이서 쏜 한 발이 확실히 더 아프다.**
+ *
+ * ── 갑옷 (docs/RUN.md · 형의 반려 2026-08-25) ──
+ *
+ * 갑옷의 규칙은 "몸통은 안 통한다"였다. 그런데 **육량전(六兩箭)** 은 여섯 냥짜리
+ * 전쟁용 무거운 살이다. 그게 판금을 못 뚫으면 그 살은 존재할 이유가 없다.
+ * 그래서 갑옷은 이제 **자물쇠**고, 관통력(단면밀도×속도)이 문턱을 넘는 살이 그 열쇠다.
+ * 다만 헤드샷보다 좋으면 안 된다 — 머리는 즉사, 뚫는 몸통샷은 절반의 피해로 여러 발.
+ * **조준이 여전히 이긴다.** 그리고 관통력에 착탄 속도비를 곱하므로 **너무 멀면 못 뚫는다.**
+ *
+ * 왜 함수로 뺐나: 값을 hit 이벤트보다 **먼저** 알아야 화면이 점수 대신 피해를 띄울 수 있다
+ * (형: "화살이 맞으면 점수가 아니라 데미지가 떠야"). 적용은 여전히 원래 자리에서 한다.
+ */
+function damageOf(
+  arrow: Arrow, target: Target, head: boolean,
+): { dealt: number; blocked: boolean } {
+  if (target.kind !== 'boss' && target.kind !== 'archer') return { dealt: 0, blocked: false }
+  const fx = arrow.fx
+  // 착탄 속도는 관통 감속이 붙기 전(resolveHit 진입 시점)의 값이다.
+  const impact = Math.sqrt(arrow.vx * arrow.vx + arrow.vy * arrow.vy)
+  const vr = impact / Math.max(1, P.enemy.dmgRefSpeed)
+  const dmg = Math.max(1, Math.round(P.enemy.playerDamage * fx.mass * vr * vr))
+
+  const penNow = fx.pen * vr
+  if (target.armored && !head && (fx.armorPierce <= 0 || penNow < P.arrowkind.armorPen)) {
+    return { dealt: 0, blocked: true }
+  }
+  // 헤드샷 처형 — 체력 무관 즉사. 이 한 줄이 "조준할 이유"다.
+  // 화면에는 **남은 체력 전부**가 피해로 뜬다. 그게 실제로 일어난 일이다.
+  if (target.kind === 'archer' && head) return { dealt: Math.max(1, target.hp), blocked: false }
+  // 판금을 뚫었다. 갑옷이 삼킨 몫만큼 피해가 깎인다.
+  if (target.armored && !head) {
+    return { dealt: Math.max(1, Math.round(dmg * fx.armorPierce)), blocked: false }
+  }
+  if (target.kind === 'boss') {
+    return { dealt: head ? Math.floor(P.target.bossCritDmg) : dmg, blocked: false }
+  }
+  return { dealt: dmg, blocked: false }
+}
+
 export function resolveHit(w: World, arrow: Arrow, target: Target): void {
   // 명중도는 화살의 현재 점이 아니라 **이번 스텝 궤적 선분**과 중심의 최단거리로 잰다.
   // 빠른 화살은 한 스텝에 과녁을 통과해 버리므로, 점으로 재면 중심 명중이 가장자리로 읽힌다.
@@ -196,6 +244,13 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
   const gained = award(w, target, accuracy)
   // 적은 과녁이 아니다 — "정중앙"은 과녁의 말이다 (형: "심장이라도 맞았냐").
   const foe = target.kind === 'archer' || target.kind === 'boss' || target.kind === 'charger'
+
+  // ── 피해를 **먼저** 센다 ──
+  // 예전엔 hit 이벤트를 먼저 뱉고 피해는 한참 아래에서 깎았다. 그래서 화면이 띄울 수 있는
+  // 숫자가 점수뿐이었다 (형: "화살이 맞으면 점수가 아니라 데미지가 떠야 하는 거 아냐?").
+  // 순서를 뒤집는 게 아니라 **계산만 앞으로 당긴다** — hit 이벤트는 여전히 폭발보다 먼저 나가고,
+  // 실제로 체력을 깎는 건 아래 그 자리 그대로다. 여기서는 값만 정한다.
+  const hurt = damageOf(arrow, target, head)
   w.events.push({
     t: 'hit',
     targetId: target.id,
@@ -207,6 +262,7 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
     combo: w.combo,
     head,
     foe,
+    dmg: hurt.dealt,
     arrow: arrow.id,
   })
 
@@ -259,42 +315,12 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
   }
 
   if (target.kind === 'boss' || target.kind === 'archer') {
-    // ── 피해 = **운동에너지** = 기준 × 질량 × (착탄 속도 / 기준 속도)² ──
-    //
-    // 형의 물음(2026-08-25): "데미지는 화살 속도랑 화살 무게에 따라도 달라지지 않을까."
-    // 그대로다. 예전엔 속도에 **선형**이고 질량은 손으로 박은 배수였다.
-    // 이제 진짜 KE = ½mv² 다 (½은 playerDamage가 흡수한다).
-    //
-    // 이게 바꾸는 것: 속도가 제곱으로 들어가므로 **가까이서 쏜 한 발이 확실히 더 아프다.**
-    // 그리고 질량이 실물 값이라(sim/arrowfx.ts BODY) 육량전이 아픈 이유가 배수가 아니라 무게다.
-    // 착탄 속도는 관통 감속이 붙기 전(resolveHit 진입 시점)의 값이다.
-    const impact = Math.sqrt(arrow.vx * arrow.vx + arrow.vy * arrow.vy)
-    const vr = impact / Math.max(1, P.enemy.dmgRefSpeed)
-    const dmg = Math.max(1, Math.round(P.enemy.playerDamage * fx.mass * vr * vr))
-    // ── 갑옷 (docs/RUN.md · 형의 반려 2026-08-25) ──
-    //
-    // 갑옷의 규칙은 "몸통은 안 통한다"였다. 그런데 **육량전(六兩箭)** 은 여섯 냥짜리
-    // 전쟁용 무거운 살이다. 그게 판금을 못 뚫으면 그 살은 존재할 이유가 없고,
-    // 실제로 교차표에서 죽은 카드였다 (형: "육량전을 써도 갑옷은 왜 못 뚫는지").
-    //
-    // 그래서 갑옷은 이제 **자물쇠**고 육량전이 그 열쇠다. 다만 헤드샷보다 좋으면 안 된다 —
-    // 머리는 즉사, 육량전 몸통은 절반의 피해(armorPierce)로 두 발. **조준이 여전히 이긴다.**
-    // 갑옷 관통은 **거리를 탄다.** 관통력(단면밀도×초속)에 착탄 속도비를 곱한 값이
-    // 문턱을 넘어야 한다 — 멀리서 힘 빠진 살은 판금을 못 뚫는다. 실물이 그렇다.
-    const penNow = fx.pen * vr
-    if (target.armored && !head && (fx.armorPierce <= 0 || penNow < P.arrowkind.armorPen)) {
+    // 값은 위 damageOf가 이미 정했다. 여기서는 **적용만** 한다.
+    if (hurt.blocked) {
       // 갑주는 눈을(보스) · 머리를(궁수) 못 덮는다. 나머지는 막힌 소리와 먼지뿐이다.
       w.events.push({ t: 'enemy_block', x: arrow.x, y: arrow.y })
-    } else if (target.kind === 'archer' && head) {
-      // 헤드샷 처형 — 체력 무관 즉사. 이 한 줄이 "조준할 이유"다.
-      target.hp = 0
-    } else if (target.armored && !head) {
-      // 육량전이 판금을 뚫었다. 갑옷이 삼킨 몫만큼 피해가 깎인다.
-      target.hp -= Math.max(1, Math.round(dmg * fx.armorPierce))
-    } else if (target.kind === 'boss') {
-      target.hp -= head ? Math.floor(P.target.bossCritDmg) : dmg
     } else {
-      target.hp -= dmg
+      target.hp -= hurt.dealt
     }
     if (target.hp > 0) {
       // 살아남아도 살의 효과는 터진다 — 화전이 적 몸에서 안 터지면 화전이 아니다 (형).

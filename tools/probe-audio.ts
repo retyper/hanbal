@@ -428,7 +428,7 @@ console.log(`master=${P.audio.master}  maxVoices=${P.audio.maxVoices}  endGain=$
   const busy = capture('붐빔 — 편전 발사 + 명중 + 연쇄', () => {
     pumpSfx(sfx, fakeWorld([
       { t: 'release', power: 1, angle: 0.2, err: 0, kind: 'pierce' },
-      { t: 'hit', targetId: 0, x: 20, y: 3, score: 10, accuracy: 0.9, chain: 0, combo: 2, head: false, foe: false, arrow: 0 },
+      { t: 'hit', targetId: 0, x: 20, y: 3, score: 10, accuracy: 0.9, chain: 0, combo: 2, head: false, foe: false, dmg: 0, arrow: 0 },
       { t: 'chain', targetId: 0, x: 20, y: 3, depth: 1 },
     ]) as never)
   })
