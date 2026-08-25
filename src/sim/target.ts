@@ -260,7 +260,12 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
     } else {
       target.hp -= dmg
     }
-    if (target.hp > 0) return
+    if (target.hp > 0) {
+      // 살아남아도 살의 효과는 터진다 — 화전이 적 몸에서 안 터지면 화전이 아니다 (형).
+      // burst는 center 자신을 건드리지 않으므로 버틴 적의 체력과는 무관하다.
+      burst(w, target)
+      return
+    }
     target.alive = false
   } else if (target.kind === 'aerial') {
     // 공중 과녁은 맞아도 사라지지 않는다. 떨어지면서 아래를 연쇄로 쳐야 한다 (GDD 7장).
