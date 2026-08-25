@@ -73,6 +73,12 @@ const BODY = {
  * 골격 비율은 캐릭터의 신원이라 여기 남는다. **성장이 화면에 드러나는 폭**만
  * P.render 로 올라갔다 (lineBody / lineFullGain / lineTrueFullGain).
  */
+/** 체력 바 여운 — hud.ts의 게이지와 같은 계약 (형: 당길 때만 + 2초 뒤 fadeout). */
+const HP_LINGER = 2
+const HP_FADE = 0.4
+let hpSeen = -1e9
+let hpLast = -1
+
 const LINE = {
   /**
    * 3 -> 3.6: 실측하니 챕터 1의 뒷판(1-7~1-10)은 720p에서 cam.scale이 26~28이라
@@ -778,6 +784,16 @@ export function drawArcher(
   // ── 체력 바 — 머리 위 (docs/RUN.md 6장 · 형: "전부 바 형태로") ──
   // 궁수 좌표는 앵커(턱)다. 머리 위로 넉넉히 띄워 조준선과 겹치지 않게 한다.
   {
+    // 당길 때, 그리고 체력이 방금 변했을 때만 보인다 — 맞은 건 조준 중이 아니어도 알아야 한다.
+    if (hpSeen > w.elapsed) hpSeen = -1e9
+    const holdingHp = a.phase === 'drawing' || a.phase === 'full' || a.phase === 'collapsing'
+    if (holdingHp || w.hp !== hpLast) {
+      hpSeen = w.elapsed
+      hpLast = w.hp
+    }
+    const hpA = holdingHp ? 1 : clamp(1 - (w.elapsed - hpSeen - HP_LINGER) / HP_FADE, 0, 1)
+    if (hpA > 0) {
+    ctx.globalAlpha = hpA
     const hpRatio = w.hp / Math.max(1, Math.floor(P.enemy.hpMax))
     const bx = worldToScreenX(cam, a.x)
     // 1.05m를 픽셀로 바꾸면 저스케일 판에서 21px까지 줄어 조준 표식(픽셀 고정 59px)이
@@ -789,6 +805,8 @@ export function drawArcher(
     // 붉음은 이 게임에서 일관되게 경고다 — 가득 찬 체력이 붉으면 만피가 위험으로 읽힌다 (감사).
     ctx.fillStyle = hpRatio > 0.34 ? THEME.gauge : THEME.gaugeWarn
     ctx.fillRect(bx - bw / 2, by, bw * Math.max(0, Math.min(1, hpRatio)), 5)
+    ctx.globalAlpha = 1
+    }
   }
 
 }

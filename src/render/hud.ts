@@ -301,6 +301,14 @@ function syncMetrics(cam: Camera): void {
  * 0번이 이미 붉은 계열인 건 의도다 — 게이지의 왼쪽 구간은 **아직 쓰지 않았어도 위험 구간**이고,
  * 그게 보여야 "저기까지 내려가면 떨린다"가 미리 읽힌다. 다만 넘기 전엔 죽은 색이다.
  */
+/**
+ * 게이지 여운 (형: "활시위 당길 때만 떠야 하지 않나. 한번 뜨면 2초 있다가 fadeout").
+ * 시계는 sim elapsed다 — 탭이 숨어 sim이 멈추면 여운도 함께 멈춘다 (C3와 결이 같다).
+ */
+const BAR_LINGER = 2
+const BAR_FADE = 0.4
+let barSeen = -1e9
+
 const DANGER_RAMP = ['#5d3a38', '#8a4239', '#ad4a37', '#cd5439', '#ee5f3d', '#ff6a45'] as const
 /** 위험 구간의 빈 트랙. 안전 구간 트랙(THEME.gaugeBack)보다 붉게 죽여 구역을 나눈다. */
 const DANGER_BACK = '#2a1b1c'
@@ -555,7 +563,12 @@ export function drawHud(
     ctx.fillText(hud.arrow, M.padX, pipY + M.countPx + M.subGap)
   }
 
-  // ── 스태미나 — 활 옆 ─────────────────────────────────────────
+  // ── 스태미나 — 활 옆. **당길 때만** 뜨고, 놓으면 2초 머문 뒤 사라진다 (형) ──
+  if (barSeen > w.elapsed) barSeen = -1e9 // 판이 바뀌어 시계가 되감겼다
+  if (holding) barSeen = w.elapsed
+  const gaugeA = holding ? 1 : clamp01(1 - (w.elapsed - barSeen - BAR_LINGER) / BAR_FADE)
+  if (gaugeA > 0) {
+  ctx.globalAlpha = gaugeA
   const max = a.staminaMax > 0 ? a.staminaMax : 1
   const ratio = clamp01(a.stamina / max)
   const warn = clamp01(a.warn)
@@ -608,7 +621,7 @@ export function drawHud(
     }
     ctx.fillStyle = THEME.gauge
     ctx.fillRect(gx + zoneX, gy, headX - zoneX, gh)
-    ctx.globalAlpha = 1
+    ctx.globalAlpha = gaugeA
   }
 
   // 1초 눈금 — **경계선에서부터** 오른쪽으로 지금의 실소모율(drainNow) 만큼마다 하나.
@@ -629,38 +642,41 @@ export function drawHud(
   const warnAt = clamp01(P.stamina.collapseWarnAt / max)
   if (warnAt > 0 && warnAt < zoneX / gw) {
     ctx.fillStyle = THEME.gaugeWarn
-    ctx.globalAlpha = warn > 0 ? 0.55 + 0.45 * Math.sin(t * HUD.pulseHz * TAU) : 0.3
+    ctx.globalAlpha = gaugeA * (warn > 0 ? 0.55 + 0.45 * Math.sin(t * HUD.pulseHz * TAU) : 0.3)
     ctx.fillRect(gx + gw * warnAt, gy, HUD.collapseW, gh)
-    ctx.globalAlpha = 1
+    ctx.globalAlpha = gaugeA
   }
 
   // ── 빨간 바 본체 ─────────────────────────────────────────────
   // 게이지에서 유일하게 위아래로 튀어나오는 것. 이게 이 화면의 주인공이다.
   ctx.fillStyle = THEME.gaugeWarn
-  ctx.globalAlpha = strain > 0
+  ctx.globalAlpha = gaugeA * (strain > 0
     ? 0.8 + 0.2 * Math.sin(t * HUD.pulseHz * TAU)
-    : 0.85
+    : 0.85)
   ctx.fillRect(gx + zoneX - HUD.zoneW * 0.5, gy - HUD.zoneOut, HUD.zoneW, gh + HUD.zoneOut * 2)
-  ctx.globalAlpha = 1
+  ctx.globalAlpha = gaugeA
 
   // 넘는 순간 — 짧은 흰 섬광. 청록색 구간이 사라지는 색 전환과 같은 프레임에 터진다.
   // 이 한 번을 놓치면 "언제부터 떨리기 시작했는지"를 영영 모른다.
   if (flash > 0) {
     ctx.fillStyle = THEME.target2
-    ctx.globalAlpha = flash
+    ctx.globalAlpha = gaugeA * flash
     const fw = HUD.flashW * flash + HUD.zoneW
     const fo = HUD.zoneOut + HUD.flashOut * flash
     ctx.fillRect(gx + zoneX - fw * 0.5, gy - fo, fw, gh + fo * 2)
-    ctx.globalAlpha = 1
+    ctx.globalAlpha = gaugeA
   }
 
   // 호흡정지 중이면 게이지 아래 짧은 선 — 지금 급소모 중이라는 신호
   if (a.steadyBlend > 0.01) {
     ctx.fillStyle = THEME.target2
-    ctx.globalAlpha = clamp01(a.steadyBlend)
+    ctx.globalAlpha = gaugeA * clamp01(a.steadyBlend)
     ctx.fillRect(gx, gy + gh + HUD.zoneOut + 2, gw, 1)
-    ctx.globalAlpha = 1
+    ctx.globalAlpha = gaugeA
   }
+
+  }
+  ctx.globalAlpha = 1
 
   // ── 훈련치 · 음소거 (오른쪽 위) ──────────────────────────────
   // 성장 화면을 여는 버튼은 DOM 오버레이(ui/growth.ts)가 왼쪽 아래에 그린다.
