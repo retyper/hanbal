@@ -13,6 +13,8 @@ import {
 } from './camera.ts'
 import type { Camera } from './camera.ts'
 import { drawArcher } from './stickman.ts'
+import { drawFoeArcher } from './foe.ts'
+import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { sprite } from './sprites.ts'
 import { createFx, pumpEvents, updateFx, drawFx, hitStopMs, targetSquash , PLAYER_PIN } from './effects.ts'
 import type { Fx } from './effects.ts'
@@ -399,6 +401,15 @@ function drawTargets(
       const hot = drawF > 0
       const bodyCol = hot ? THEME.threat : THEME.threatDim
 
+      // ── 조준선 — **나를 향한다.** 적의 몸도 활도 이 축 위에 선다 (render/foe.ts) ──
+      // 형의 반려("활 똑바로 좀 잡고 쏘게"): 예전 적의 활은 몸 옆(-x)에 못박혀 있어서
+      // 내가 어디 있든 왼쪽을 겨눴다. 이제 방향은 하나뿐이다 — 나.
+      const meX = worldToScreenX(cam, w.archer.x)
+      const meY = worldToScreenY(cam, w.archer.y)
+      const aLen = Math.hypot(meX - x, meY - y) || 1
+      const aimX = (meX - x) / aLen
+      const aimY = (meY - y) / aLen
+
       // 조준선 예고 — 당김이 깊어질수록 또렷해진다. "곧 저기서 날아온다"를 먼저 보여준다.
       if (hot) {
         ctx.globalAlpha = 0.22 * drawF
@@ -406,103 +417,31 @@ function drawTargets(
         ctx.lineWidth = 1
         ctx.beginPath()
         ctx.moveTo(x, y)
-        ctx.lineTo(worldToScreenX(cam, w.archer.x), worldToScreenY(cam, w.archer.y))
+        ctx.lineTo(meX, meY)
         ctx.stroke()
         ctx.globalAlpha = 1
       }
 
-      // ── 창문의 사수 (look 1·2) — 형의 반려 재작: "건물도 없이 창문이 허공에 떠
-      //     있고, 적이 뛰어내릴 듯 전신이 다 보인다." 규칙 세 개로 다시 짓는다.
-      //     ① 창문은 벽에 뚫린 구멍이다 — 벽은 땅에서 자라고, 처마·아래층 창이 층을 만든다.
-      //     ② 창가의 사람은 **창턱 위 상반신만** 보인다 — 하반신은 벽 뒤다 (클리핑).
-      //     ③ 숨은 사수(look 2)의 창은 그냥 **빈 창**이다 — 덧창이 아니라 부재(不在)가 은신이다.
+      // ── 창문의 사수 (look 1·2) ──
+      //   건물은 여기서 짓지 않는다. render/buildings.ts가 판 시작에 한 번 세운다.
+      //   형의 반려 "적군이 죽었는데 건물은 왜 없어져"의 뿌리가 여기였다 — 벽을 적이
+      //   들고 있었으니 적이 죽으면 벽도 같이 사라졌다. 이제 여기는 **사람만** 그린다.
       if (t.look === 1 || t.look === 2) {
-        const fw = rx * 1.3
-        const fh = ry * 1.05
-        const gy = worldToScreenY(cam, 0)
-        const bw = fw * 2.0
-        const topY = y - fh * 2.0
-        const hiddenNow = t.look === 2 && t.hidden
-        // 벽 — 땅에서 지붕까지. 이게 있어야 창문이 '어딘가에' 있다.
-        ctx.fillStyle = '#242a35'
-        ctx.fillRect(x - bw, topY, bw * 2, Math.max(0, gy - topY))
-        // 처마 + 왼쪽 모서리의 달빛
-        ctx.fillStyle = '#3a4351'
-        ctx.fillRect(x - bw - 3, topY - 5, bw * 2 + 6, 5)
-        ctx.fillRect(x - bw, topY, 2.5, Math.max(0, gy - topY))
-        // 아래층의 불 꺼진 창들 — 층이 있어야 건물이다.
-        ctx.fillStyle = '#181d26'
-        for (let wy = y + fh * 2.1; wy + fh * 1.1 < gy - 4; wy += fh * 2.3) {
-          ctx.fillRect(x - fw * 0.55, wy, fw * 1.1, fh * 0.9)
-        }
-        // 사수의 창 — 실내 어둠.
-        ctx.fillStyle = '#0f141c'
-        ctx.fillRect(x - fw, y - fh, fw * 2, fh * 2)
-        if (!hiddenNow) {
-          // ── 상반신 — 창턱 아래는 클립이 자른다. 세상에 하반신을 내놓는 저격수는 없다. ──
-          ctx.save()
-          ctx.beginPath()
-          ctx.rect(x - fw, y - fh, fw * 2, fh * 2)
-          ctx.clip()
-          const headR = rx * 0.24
-          const hx = x + fw * 0.18
-          const hy2 = y - fh * 0.28
-          ctx.strokeStyle = bodyCol
-          ctx.lineWidth = Math.max(2, rx * 0.13)
-          ctx.lineCap = 'round'
-          // 몸통 — 머리에서 창턱 밑으로 사라진다. 활 쪽으로 살짝 기운다.
-          ctx.beginPath()
-          ctx.moveTo(hx, hy2 + headR * 0.8)
-          ctx.lineTo(hx + fw * 0.1, y + fh + ry * 0.5)
-          // 시위 손 — 뺨까지 당겨져 있다 (예고 중엔 더 뒤로).
-          ctx.moveTo(hx, hy2 + headR * 1.6)
-          ctx.lineTo(hx + fw * (0.32 + drawF * 0.22), hy2 + headR * 1.9)
-          ctx.stroke()
-          // 머리 — 갑옷병이면 투구 (금속색 + 챙).
-          ctx.fillStyle = t.armored ? '#8fa3b5' : bodyCol
-          ctx.beginPath()
-          ctx.arc(hx, hy2, headR, 0, TAU)
-          ctx.fill()
-          if (t.armored) {
-            ctx.strokeStyle = '#242a35'
-            ctx.lineWidth = 1.5
-            ctx.beginPath()
-            ctx.moveTo(hx - headR, hy2 - headR * 0.15)
-            ctx.lineTo(hx + headR * 0.6, hy2 - headR * 0.15)
-            ctx.stroke()
-          }
-          ctx.restore()
-          // ── 활 — 창밖(-x)으로 내밀었다. 클립 밖에서 그려야 벽을 뚫고 나온 활로 보인다. ──
-          const bx = x - fw * 1.12
-          const by = hy2 + headR * 0.9
-          ctx.strokeStyle = bodyCol
-          ctx.lineWidth = Math.max(1.5, rx * 0.1)
-          ctx.beginPath()
-          ctx.moveTo(bx, by - ry * 0.62)
-          ctx.quadraticCurveTo(bx - rx * 0.4, by, bx, by + ry * 0.62)
-          ctx.stroke()
-          ctx.lineWidth = 1
-          ctx.beginPath()
-          ctx.moveTo(bx, by - ry * 0.62)
-          ctx.lineTo(bx + drawF * rx * 0.55, by)
-          ctx.lineTo(bx, by + ry * 0.62)
-          ctx.stroke()
-          // 앞팔 — 창틀 위로 걸쳐 활 손잡이까지.
-          ctx.lineWidth = Math.max(2, rx * 0.13)
-          ctx.beginPath()
-          ctx.moveTo(x - fw * 0.55, hy2 + headR * 1.5)
-          ctx.lineTo(bx + rx * 0.06, by)
-          ctx.stroke()
-        }
-        // 창틀 + 창턱 — 몸 위에 그려서 '벽이 가린다'를 완성한다.
-        ctx.strokeStyle = '#5a6472'
-        ctx.lineWidth = Math.max(2, rx * 0.14)
-        ctx.strokeRect(x - fw, y - fh, fw * 2, fh * 2)
-        ctx.fillStyle = '#5a6472'
-        ctx.fillRect(x - fw * 1.18, y + fh, fw * 2.36, Math.max(3, ry * 0.13))
-        // 체력 바 — 처마 위. 숨어 있으면 바도 없다 (없는 것은 잴 수 없다).
-        if (!hiddenNow) {
-          drawHpBar(ctx, x, topY - 12, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
+        const win = windowOf(t)
+        // 숨은 사수(look 2)의 창은 그냥 빈 창이다 — 덧창이 아니라 부재(不在)가 은신이다.
+        if (win !== null && !(t.look === 2 && t.hidden)) {
+          const wx = worldToScreenX(cam, win.cx)
+          const wy2 = worldToScreenY(cam, win.cy)
+          const whw = win.hw * cam.scale
+          const whh = win.hh * cam.scale
+          // 상반신만 — 창턱 아래는 클립이 자른다. 세상에 하반신을 내놓는 저격수는 없다.
+          // 활과 활팔은 클립 밖이라 창밖으로 내민 활이 된다 (foe.ts).
+          drawFoeArcher(
+            ctx, wx, wy2, rx, ry, aimX, aimY, drawF, bodyCol, t.armored, false,
+            { x: wx - whw, y: wy2 - whh, w: whw * 2, h: whh * 2 },
+          )
+          // 체력 바 — 창 위. 숨어 있으면 바도 없다 (없는 것은 잴 수 없다).
+          drawHpBar(ctx, wx, wy2 - whh - 12, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
         }
         ctx.globalAlpha = 1
         continue
@@ -572,72 +511,14 @@ function drawTargets(
         continue
       }
 
-      // 사람 실루엣 — 머리·몸통·다리. 이쪽(-x)을 보고 선다.
-      ctx.strokeStyle = bodyCol
-      ctx.lineWidth = Math.max(2, rx * 0.14)
-      ctx.lineCap = 'round'
-      const hr = rx * 0.3
-      const headY = y - ry * 0.62
-      ctx.beginPath()
-      ctx.moveTo(x, headY + hr)
-      ctx.lineTo(x, y + ry * 0.3)
-      ctx.moveTo(x, y + ry * 0.3)
-      ctx.lineTo(x - rx * 0.34, y + ry)
-      ctx.moveTo(x, y + ry * 0.3)
-      ctx.lineTo(x + rx * 0.34, y + ry)
-      ctx.stroke()
-      ctx.fillStyle = bodyCol
-      ctx.beginPath()
-      ctx.arc(x, headY, hr, 0, TAU)
-      ctx.fill()
-
-      // 활 — 몸 앞(-x)의 호. 당길수록 시위가 몸쪽으로 당겨진다.
-      const bx = x - rx * 0.55
-      ctx.strokeStyle = bodyCol
-      ctx.lineWidth = Math.max(1.5, rx * 0.1)
-      ctx.beginPath()
-      ctx.moveTo(bx, y - ry * 0.5)
-      ctx.quadraticCurveTo(bx - rx * 0.35, y - ry * 0.1, bx, y + ry * 0.3)
-      ctx.stroke()
-      ctx.lineWidth = 1
-      ctx.beginPath()
-      ctx.moveTo(bx, y - ry * 0.5)
-      ctx.lineTo(bx + drawF * rx * 0.5, y - ry * 0.1)
-      ctx.lineTo(bx, y + ry * 0.3)
-      ctx.stroke()
-
-      // 갑옷병 — 흉갑 실루엣 (형: "일시정지인 줄 알았다"). 어깨가 넓고 허리로 좁아지는
-      // 사다리꼴 판 + 양어깨 견갑 + 가슴판 골 두 줄. 몸통이 안 통하는 이유가 갑주의
-      // **형태**로 읽힌다. 머리는 맨머리 — 저기가 답이라는 뜻이다.
-      if (t.armored) {
-        const aw = rx * 0.5
-        const top2 = y - ry * 0.3
-        const bot2 = y + ry * 0.42
-        ctx.fillStyle = '#8fa3b5'
-        ctx.beginPath()
-        ctx.moveTo(x - aw, top2)
-        ctx.lineTo(x + aw, top2)
-        ctx.lineTo(x + aw * 0.55, bot2)
-        ctx.lineTo(x - aw * 0.55, bot2)
-        ctx.closePath()
-        ctx.fill()
-        ctx.strokeStyle = THEME.targetBand
-        ctx.lineWidth = 1.5
-        ctx.beginPath()
-        ctx.moveTo(x - aw * 0.5, top2 + ry * 0.12)
-        ctx.lineTo(x + aw * 0.5, top2 + ry * 0.12)
-        ctx.moveTo(x - aw * 0.4, top2 + ry * 0.34)
-        ctx.lineTo(x + aw * 0.4, top2 + ry * 0.34)
-        ctx.stroke()
-        ctx.fillStyle = '#9fb6c8'
-        ctx.beginPath()
-        ctx.arc(x - aw, top2, rx * 0.2, 0, TAU)
-        ctx.arc(x + aw, top2, rx * 0.2, 0, TAU)
-        ctx.fill()
-      }
+      // ── 들판 궁수 (look 0) — 나를 향해 몸을 돌리고 활을 쥔다 (render/foe.ts) ──
+      drawFoeArcher(ctx, x, y, rx, ry, aimX, aimY, drawF, bodyCol, t.armored, true, null)
 
       // 체력 바 — 머리 위 (형: "전부 바 형태로").
-      drawHpBar(ctx, x, headY - hr - 12, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
+      drawHpBar(
+        ctx, x, y - ry * 0.22 - rx * 0.92 - 12,
+        Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0,
+      )
     } else if (t.kind === 'boss') {
       // ★ 보스 = 눈알귀신 (형: "빨간 원이 둥실둥실 다가오는 건 말이 안 되잖아. 눈알귀신이라도").
       //   너덜너덜한 귀신 몸뚱이 + 위쪽의 거대한 눈알 하나. 눈알은 **약점 히트박스 그 자리**다 —
@@ -1324,9 +1205,13 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       c.stroke()
       drawTufts(c, cam, r.tufts)
 
+      // 건물은 과녁보다 먼저 — 사수는 창 **안**에 있다. 그리고 적이 죽어도 여기 남는다.
+      drawBuildings(c, cam, w)
       // 깃발은 과녁보다 먼저 — 과녁 위로 천이 지나가면 조준을 가린다 (C1).
       drawWindFlag(c, cam, w)
       drawTargets(c, cam, w, alpha, r.fx)
+      // 창틀·창턱은 사람보다 나중 — 벽이 하반신을 가린다는 말의 마침표다.
+      drawBuildingFronts(c, cam)
       drawTrails(c, cam, w)
       drawArrows(c, cam, w, alpha)
       drawEnemyShots(c, cam, w)
