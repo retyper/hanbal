@@ -584,6 +584,12 @@ export function pumpEvents(fx: Fx, w: World): void {
       // 점수 팝과 같은 자리에서 겹치지 않게 아래에서 올라오기 때문이다 (popups.ts lift).
       pushPopup(fx.pop, e.x, e.y, e.gain > 1 ? `화살 +${e.gain}` : '화살 +1', 'feat')
       spawn(fx, e.x, e.y, FX.hitBurst, KIND_CHAIN, FX.speed, FX.ttl, 1.2)
+    } else if (e.t === 'deflect') {
+      // 맞불 — 내 화살이 적 화살을 쳐냈다. 불꽃이 크게 튀고 글자가 남아야
+      // "방금 그거 내가 한 거다"가 된다. 흔치 않은 순간이라 아끼지 않는다.
+      pushPopup(fx.pop, e.x, e.y + 0.6, '쳐냈다!', 'crit')
+      spawn(fx, e.x, e.y, FX.hitBurst, KIND_CHAIN, FX.speed * 1.4, FX.ttl, 1.4)
+      fx.hitStop += P.hit.stopMs * 0.001
     } else if (e.t === 'enemy_block') {
       // 과녁이 막아줬다 — 작은 먼지. "가려져서 살았다"가 보여야 엄폐가 전술이 된다.
       spawn(fx, e.x, e.y, FX.missBurst, KIND_MISS, FX.missSpeed, FX.missTtl, 0.8)

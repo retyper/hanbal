@@ -563,6 +563,23 @@ function stepEnemyShots(w: World): void {
     }
     if (blocked) continue
 
+    // ── 맞불 — 내 화살이 적 화살을 쳐낸다 (형). 양쪽 다 빠른 선분이라
+    // 서로의 촉을 상대 선분에 대는 양방향 점-선분 판정으로 근사한다 (60Hz면 충분하다).
+    const dr2 = P.enemy.deflectR * P.enemy.deflectR
+    for (let j = 0; j < w.arrows.length && sh.alive; j++) {
+      const ar = w.arrows[j]
+      if (ar === undefined || !ar.alive) continue
+      if (
+        distSqPointSegment(sh.x, sh.y, ar.px, ar.py, ar.x, ar.y) <= dr2 ||
+        distSqPointSegment(ar.x, ar.y, sh.px, sh.py, sh.x, sh.y) <= dr2
+      ) {
+        // 적 화살만 죽는다 — 내 화살이 이긴다. 그래야 '쳐냈다'는 손맛이 남는다.
+        sh.alive = false
+        w.events.push({ t: 'deflect', x: sh.x, y: sh.y })
+      }
+    }
+    if (!sh.alive) continue
+
     // 궁수 피격 — 선분 판정 (빠른 화살이 한 스텝에 몸을 건너뛰지 않게).
     if (w.status === 'playing' && distSqPointSegment(a.x, a.y, sh.px, sh.py, sh.x, sh.y) <= r2) {
       sh.alive = false

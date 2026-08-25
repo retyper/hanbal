@@ -309,6 +309,7 @@ export type SimEvent =
   /** 적 화살이 날았다. */
   | { t: 'enemy_shot'; x: number; y: number }
   /** 적 화살이 과녁에 박혔다 — 과녁 뒤는 엄폐다. */
+  | { t: 'deflect'; x: number; y: number }
   | { t: 'enemy_block'; x: number; y: number }
   /**
    * 맞았다. `hp` = 남은 체력. 0이면 이 판이 아니라 **여정이** 끝난다.

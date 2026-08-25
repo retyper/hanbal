@@ -1102,6 +1102,24 @@ export function pumpSfx(sfx: Sfx, w: World): void {
         BL.type = 'sine'
         bellTone(s, n === 0 ? K_PICKUP : K_CHAIN_BELL, BL)
       }
+    } else if (e.t === 'deflect') {
+      // 맞불 — 쇠와 쇠가 스치는 높은 챙. 짧고 밝게, 두 음이 겹치면 '금속'이 된다.
+      TN.type = 'square'
+      TN.freq = 2500
+      TN.endFreq = 1900
+      TN.dur = 0.05
+      TN.attack = 0.001
+      TN.decay = 0.05
+      TN.gain = P.audio.escapeGain * 0.8
+      TN.delay = 0
+      tone(s, K_RING, TN)
+      TN.type = 'sine'
+      TN.freq = 3600
+      TN.endFreq = 2800
+      TN.dur = 0.09
+      TN.gain = P.audio.escapeGain * 0.5
+      TN.delay = 0.012
+      tone(s, K_ESCAPE, TN)
     } else if (e.t === 'enemy_block') {
       // 과녁이 대신 맞아줬다 — 낮은 나무 소리 하나. 위협이 끝났다는 안도의 마침표다.
       if (!sample(sfx, s, 'wood', P.audio.escapeGain, 0.85, 0, 0)) {

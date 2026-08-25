@@ -81,6 +81,12 @@ const LINE = {
    * 3.6이면 몸통 4.86 / 진짜 만작 5.3px이 되어 배경(#0b0e13)에서 떨어져 나온다.
    */
   minPx: 3.6,
+  /**
+   * 하한들이 기준으로 삼는 배율. 챕터 1 뒷판 실측(720p에서 26~28)이다. 이보다
+   * 멀어지면(곡사 챕터: 8~13) 하한도 **배율에 비례해 같이 줄인다** — 안 줄이면
+   * 3.6px 몸통에 4.3px 머리처럼 하한들만 남아 대두 눈사람이 된다 (형의 반려).
+   */
+  refScale: 26,
   maxPx: 12,
   torsoMul: 1.35,
   limbMul: 1,
@@ -452,7 +458,9 @@ export function drawArcher(
   const ramp = (warn * 5 + 0.5) | 0
 
   // 굵기는 cam.scale에 비례한다 — 줌이 바뀌어도 스틱맨의 무게감이 유지된다.
-  const lw = clamp(cam.scale * P.render.lineBody, LINE.minPx, LINE.maxPx)
+  const shrink = clamp(cam.scale / LINE.refScale, 0.35, 1)
+  const lw = clamp(cam.scale * P.render.lineBody, LINE.minPx * shrink, LINE.maxPx)
+  const thinPx = Math.max(LINE.thinMinPx * shrink, 0.75)
   const gain = 1 + rig.full * P.render.lineFullGain + trueFull * P.render.lineTrueFullGain
   const limbW = lw * LINE.limbMul * gain
   const torsoW = lw * LINE.torsoMul * gain
@@ -609,7 +617,7 @@ export function drawArcher(
 
   if (skin.stab > 0) {
     // 리커브의 안정기 — 그립에서 과녁 쪽으로 뻗는 가는 막대.
-    ctx.lineWidth = Math.max(lw * LINE.stringMul * 1.4, LINE.thinMinPx)
+    ctx.lineWidth = Math.max(lw * LINE.stringMul * 1.4, thinPx)
     ctx.beginPath()
     ctx.moveTo(worldToScreenX(cam, rig.hx), worldToScreenY(cam, rig.hy))
     ctx.lineTo(worldToScreenX(cam, rig.hx + rig.ux * skin.stab), worldToScreenY(cam, rig.hy + rig.uy * skin.stab))
@@ -621,7 +629,7 @@ export function drawArcher(
   // 당기는 동안만 노크로 꺾인다. 놓으면 **시위만** 제자리로 튕겨 돌아가 잠깐 잔떨림이 남는다 —
   // 손은 위의 팔로스루가 따로 데려간다 (형: "활줄만 튕겨 돌아오고").
   ctx.strokeStyle = rig.flash > ON.flash ? THEME.target2 : THEME.string
-  ctx.lineWidth = Math.max(lw * LINE.stringMul, LINE.thinMinPx)
+  ctx.lineWidth = Math.max(lw * LINE.stringMul, thinPx)
   ctx.beginPath()
   ctx.moveTo(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy))
   const strDrawing = a.phase === 'drawing' || a.phase === 'full' || a.phase === 'collapsing'
@@ -646,7 +654,7 @@ export function drawArcher(
     ctx.moveTo(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy))
     ctx.lineTo(worldToScreenX(cam, tipBx), worldToScreenY(cam, tipBy))
     ctx.stroke()
-    const r = Math.max(bowW * 1.6, 2.5)
+    const r = Math.max(bowW * 1.6, 2.5 * shrink)
     ctx.fillStyle = skin.color
     ctx.beginPath()
     ctx.arc(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy), r, 0, TAU)
@@ -713,7 +721,7 @@ export function drawArcher(
     const under = 0.05
     const ox = -ty * under
     const oy = tx * under
-    ctx.lineWidth = Math.max(lw * LINE.arrowMul * 1.6, LINE.thinMinPx + 1)
+    ctx.lineWidth = Math.max(lw * LINE.arrowMul * 1.6, thinPx * 1.8)
     ctx.strokeStyle = THEME.bow
     line(
       ctx, cam, rig.hdX - ox, rig.hdY - oy,
@@ -725,7 +733,7 @@ export function drawArcher(
     const len = pierce ? BODY.arrowLen * 0.52 : BODY.arrowLen
     const tipX = rig.nockX + rig.ux * len
     const tipY = rig.nockY + rig.uy * len
-    ctx.lineWidth = Math.max(lw * LINE.arrowMul, LINE.thinMinPx)
+    ctx.lineWidth = Math.max(lw * LINE.arrowMul, thinPx)
     ctx.strokeStyle = THEME.arrow
     line(ctx, cam, rig.nockX, rig.nockY, tipX, tipY)
     ctx.strokeStyle = THEME.accent
