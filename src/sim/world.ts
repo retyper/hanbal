@@ -129,6 +129,9 @@ function newTarget(): Target {
     hp: 0,
     hpMax: 0,
     look: 0,
+    hidden: false,
+    firePeriod: 0,
+    healGive: 0,
     fireAt: 0,
     armored: false,
     aimMul: 1,
@@ -257,6 +260,9 @@ function loadTarget(t: Target, id: number, spec: TargetSpec): void {
       : 0
   t.hpMax = t.hp
   t.look = Math.floor(spec.look ?? 0)
+  t.hidden = false
+  t.firePeriod = spec.kind === 'archer' ? spec.firePeriod ?? 0 : 0
+  t.healGive = spec.kind === 'bonus' ? Math.floor(spec.heal ?? 0) : 0
   // 첫 발사 시각. 판이 시작되자마자 쏘면 예고(windup)가 성립하지 않는다.
   t.fireAt = spec.kind === 'archer' ? spec.fireDelay ?? P.enemy.shootEvery : 0
   t.armored = spec.armored === true
@@ -273,6 +279,9 @@ function clearTarget(t: Target): void {
   t.hp = 0
   t.hpMax = 0
   t.look = 0
+  t.hidden = false
+  t.firePeriod = 0
+  t.healGive = 0
   t.fireAt = 0
   t.armored = false
   t.aimMul = 1

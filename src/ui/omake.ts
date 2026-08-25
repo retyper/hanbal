@@ -37,6 +37,10 @@ const SPAWNS: ReadonlyArray<readonly [string, string]> = [
   ['charger', '돌진'],
   ['archer', '적 궁수'],
   ['archer-armored', '갑옷병'],
+  ['window', '창문 사수'],
+  ['peek', '숨는 사수'],
+  ['drone', '드론'],
+  ['bonus-heal', '기력 보급'],
   ['boss-0', '눈알귀신'],
   ['boss-1', '갑주귀신'],
   ['boss-2', '쌍눈귀신'],
@@ -58,7 +62,7 @@ export function mountOmake(o: Overlay, hooks: OmakeHooks): void {
   bar.appendChild(tag)
 
   // 소환 버튼들 — 두 줄로
-  for (const chunk of [SPAWNS.slice(0, 5), SPAWNS.slice(5)]) {
+  for (const chunk of [SPAWNS.slice(0, 5), SPAWNS.slice(5, 11), SPAWNS.slice(11)]) {
     const row = document.createElement('div')
     row.className = 'o-row'
     for (const [kind, label] of chunk) {

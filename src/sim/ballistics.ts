@@ -233,7 +233,7 @@ function steerHoming(w: World, a: Arrow): void {
   for (let j = 0; j < targets.length; j++) {
     const t = targets[j]
     // 이미 떨어지는 중인 과녁은 어차피 죽는다. 그쪽으로 끌려가면 화살을 버리게 된다.
-    if (t === undefined || !t.alive || t.falling) continue
+    if (t === undefined || !t.alive || t.falling || t.hidden) continue
     const dx = t.x - a.x
     const dy = t.y - a.y
     const d2 = dx * dx + dy * dy
@@ -312,7 +312,7 @@ function bounceChain(w: World, a: Arrow, speed: number): boolean {
   for (let j = 0; j < targets.length; j++) {
     const t = targets[j]
     // 방금 맞은 과녁은 이미 죽었거나 낙하 중이라 여기서 자동으로 빠진다.
-    if (t === undefined || !t.alive || t.falling) continue
+    if (t === undefined || !t.alive || t.falling || t.hidden) continue
     const dx = t.x - a.pendX
     const dy = t.y - a.pendY
     const d2 = dx * dx + dy * dy
@@ -361,6 +361,8 @@ function resolveCollisions(w: World, a: Arrow): void {
       // 여기서 걸러내지 않으면 관통·무거운·사슬 살이 같은 과녁을 한 스텝에 두세 번 때린다.
       // 같은 파일의 steerHoming·bounceChain, target.ts의 burst·sweepChain 과 규칙을 맞춘다.
       if (tg.falling) continue
+      // 숨은 사수는 엄폐 중이다 — 안 맞는다 (Target.hidden 주석).
+      if (tg.hidden) continue
       if (j === lastJ) continue
       // 방금 맞힌 놈은 다시 안 맞는다 — 큰 몸 안에서의 재충돌 방지 (Arrow.lastHit 주석).
       if (tg.id === a.lastHit) continue

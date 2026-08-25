@@ -190,58 +190,57 @@ export function getStage(index: number): StageDef {
   const base = i < STAGES.length ? (STAGES[i] as StageDef) : endlessStage(i)
   // ★ 10판을 넘으면 과녁만 있는 세상이 끝난다 — 적 궁수가 판에 선다 (docs/RUN.md 6장).
   //   "1~9까지는 과녁이어도, 10 이후부터는 나를 공격하게 해줘"(형).
-  return i + 1 > BOSS_EVERY ? withEnemies(base, i) : base
+  return i + 1 > BOSS_EVERY ? convertToFoes(base, i) : base
 }
 
 /**
- * 저작 판 위에 적 궁수를 얹는다. 원본을 절대 고치지 않는다 — STAGES는 공유 객체다.
- * 수는 깊이로 정한다: 11판 1명 → 26판 2명 → 41판 3명 (상한). 31판부터 두 발을 버틴다.
- * 지급 화살도 그만큼 는다 — 적도 잡아야 판이 끝나는데 화살이 안 늘면 벽이 된다.
+ * 11판+ — 과녁의 세계가 끝나고 **전부 적이 된다** (형: "1~10은 과녁이지만 그다음부터는
+ * 전부 적이어야"). 저작 판의 배치를 그대로 쓰되 껍데기를 바꾼다:
+ *   static·pierceable → 창문의 사수 (look 1) — 높이 떠 있던 과녁 자리가 그대로 '창문'이다
+ *   moving            → 숨었다 쏘는 사수 (look 2) — 예고 직전에 나와서 쏘고 도로 숨는다
+ *   aerial            → 드론 (look 3) — 떠서 순찰하며 쏜다
+ *   bonus             → 보급 그대로. 16판+ 일부는 기력 보급이 된다 (종류는 그림으로 구분)
+ * 원본을 절대 고치지 않는다 — STAGES는 공유 객체다.
+ *
+ * 화살비 조절: 사수 수만큼 개별 발사 주기를 벌리고(firePeriod) 발사 시각을 어긋나게 한다.
+ * n명이 있어도 들어오는 화살의 평균 간격은 혼자일 때와 크게 다르지 않게 — 예고를 읽고
+ * 대응할 시간이 늘 있어야 한다 (RUN.md '예고 없는 피해는 없다').
  */
-function withEnemies(base: StageDef, i: number): StageDef {
+function convertToFoes(base: StageDef, i: number): StageDef {
   const n = i + 1
-  const count = Math.min(3, 1 + Math.floor((n - 11) / 15))
-  const hp = Math.floor(P.enemy.archerHp) * (n >= 31 ? 2 : 1)
-  // 몸통 두세 발 크기가 됐으니(속도 비례 피해) 적 하나당 두 발 몫을 얹는다. 헤드샷이 절약이다.
   const rng = makeRng(seedFrom(`hanbal.enemy.${n}`))
-  const targets: TargetSpec[] = [...base.targets]
-  for (let e = 0; e < count; e++) {
-    // 깊이별 변종 (형: "레벨이 높아지면 움직이는 적·명중률 높은 적·방어구 입은 적") —
-    //  · 26판+: 첫째가 위아래로 순찰한다 (리드 샷을 적에게도)
-    //  · 36판+: 둘째가 정예다 (산포 절반 — 엄폐 없이는 아프다)
-    //  · 41판+: 셋째가 갑옷병이다 (몸통 무효 — 헤드샷만이 답)
-    const moving = n >= 26 && e === 0
-    const elite = n >= 36 && e === 1
-    const armored = n >= 41 && e === 2
-    // 저작 과녁 위에 겹쳐 서지 않는다 (전수조사 겹침 4번) — 가까우면 옆으로 비켜난다.
-    let ex = 22 + rng.range(0, 12) + e * 6.5
-    for (let guard = 0; guard < 6; guard++) {
-      const clash = base.targets.some((t2) => Math.abs(t2.x - ex) < 2.6 && Math.abs(t2.y - 0.72) < 2.4)
-      if (!clash) break
-      ex += 2.8
+  const hp = Math.floor(P.enemy.convertHp * (n >= 31 ? 1.5 : 1))
+  const foes = base.targets.filter((t2) => t2.kind !== 'bonus' && t2.kind !== 'charger').length
+  const period = P.enemy.shootEvery * Math.min(2.5, 1 + (foes - 1) * 0.4)
+  const specs: TargetSpec[] = []
+  let f = 0
+  for (const t of base.targets) {
+    if (t.kind === 'bonus') {
+      // 깊은 판의 보급 일부는 기력이다 — 어느 쪽인지는 그림(화살/십자)이 말한다.
+      if (n >= 16 && rng.next() < 0.35) specs.push({ ...t, give: 0, heal: Math.floor(P.enemy.healReward * 0.5) })
+      else specs.push(t)
+      continue
     }
-    const spec: TargetSpec = {
-      kind: 'archer',
-      x: ex,
-      // 사람은 땅에 선다 (형: "움직이는 적은 귀신이냐, 하늘을 둥실둥실"). y는 몸 중심이라
-      // 반경(0.65)만큼 띄우면 발이 지면에 닿는다. 공중에 떠도 되는 건 과녁뿐이다.
-      y: 0.72,
-      r: 0.65,
-      hp,
-      // 발사 시각을 어긋나게 — 동시에 쏘면 예고가 하나로 뭉개진다.
-      fireDelay: P.enemy.shootEvery * (0.7 + e * 0.45),
-      score: 120,
+    if (t.kind === 'charger') { specs.push(t); continue }
+    // 깊이별 정예화 (형: "명중률 높은 적·방어구 입은 적"): 36판+ 셋에 하나 정예,
+    // 41판+ 셋에 하나 갑옷(헤드샷만 통한다).
+    const elite = n >= 36 && f % 3 === 1
+    const armored = n >= 41 && f % 3 === 2
+    const fireDelay = P.enemy.windup + 1.5 + (f * period) / Math.max(1, foes)
+    const common = { hp, fireDelay, firePeriod: period, score: 120 }
+    if (elite) (common as TargetSpec).aimMul = 0.5
+    if (armored) (common as TargetSpec).armored = true
+    if (t.kind === 'aerial') {
+      specs.push({ kind: 'archer', look: 3, x: t.x, y: t.y, r: 0.6, ampX: 1.4, freq: 0.18, ...common })
+    } else if (t.kind === 'moving') {
+      specs.push({ kind: 'archer', look: 2, x: t.x, y: t.y, r: 0.65, ...common })
+    } else {
+      specs.push({ kind: 'archer', look: 1, x: t.x, y: t.y, r: 0.62, ...common })
     }
-    if (moving) {
-      // 걸어다닌다 — 좌우 순찰. 위아래 부양은 귀신의 것이다.
-      spec.ampX = 2.6
-      spec.freq = 0.16
-    }
-    if (elite) spec.aimMul = 0.5
-    if (armored) spec.armored = true
-    targets.push(spec)
+    f++
   }
-  return { ...base, arrows: Math.min(10, base.arrows + count * 2), targets }
+  // 사수는 두세 발을 버틴다 — 그만큼 화살도 얹는다. 헤드샷이 절약이다.
+  return { ...base, arrows: Math.min(10, base.arrows + Math.ceil(foes * 0.6)), targets: specs }
 }
 
 /** 보스 주기. 10판 = 여정의 한 마디 (RUN.md). */

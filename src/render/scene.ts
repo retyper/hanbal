@@ -410,6 +410,81 @@ function drawTargets(
         ctx.globalAlpha = 1
       }
 
+      // ── 창문의 사수 (look 1·2) — 높이 떠 있던 과녁 자리가 그대로 '건물 창문'이다. ──
+      if (t.look === 1 || t.look === 2) {
+        const fw = rx * 1.5
+        const fh = ry * 1.75
+        // 어두운 실내 + 창틀 + 창턱. 사수는 이 사각형 안의 사람이다.
+        ctx.fillStyle = 'rgba(0,0,0,0.45)'
+        ctx.fillRect(x - fw, y - fh, fw * 2, fh * 2)
+        ctx.strokeStyle = '#5a6472'
+        ctx.lineWidth = Math.max(2, rx * 0.16)
+        ctx.strokeRect(x - fw, y - fh, fw * 2, fh * 2)
+        ctx.fillStyle = '#5a6472'
+        ctx.fillRect(x - fw * 1.15, y + fh, fw * 2.3, Math.max(3, ry * 0.16))
+      }
+      // 숨었다 쏘는 사수 (look 2) — 숨은 동안은 닫힌 덧창만 보인다. 판자 두 줄이 '닫힘'이다.
+      if (t.look === 2 && t.hidden) {
+        const fw = rx * 1.5
+        const fh = ry * 1.75
+        ctx.fillStyle = '#3d4450'
+        ctx.fillRect(x - fw, y - fh, fw * 2, fh * 2)
+        ctx.strokeStyle = '#5a6472'
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.moveTo(x - fw, y - fh * 0.35)
+        ctx.lineTo(x + fw, y - fh * 0.35)
+        ctx.moveTo(x - fw, y + fh * 0.35)
+        ctx.lineTo(x + fw, y + fh * 0.35)
+        ctx.stroke()
+        ctx.globalAlpha = 1
+        continue
+      }
+      // ── 드론 (look 3) — 사람이 아니다. 몸통 타원 + 로터 두 짝 + 나를 보는 렌즈. ──
+      if (t.look === 3) {
+        const spin = w.elapsed * 40
+        ctx.fillStyle = bodyCol
+        ctx.beginPath()
+        ctx.ellipse(x, y, rx * 0.72, ry * 0.34, 0, 0, TAU)
+        ctx.fill()
+        // 로터 팔 + 날개 잔상 — 회전은 sim elapsed로 (A1: 렌더는 읽기만).
+        ctx.strokeStyle = bodyCol
+        ctx.lineWidth = Math.max(2, rx * 0.1)
+        ctx.beginPath()
+        ctx.moveTo(x - rx * 0.6, y - ry * 0.2)
+        ctx.lineTo(x - rx, y - ry * 0.55)
+        ctx.moveTo(x + rx * 0.6, y - ry * 0.2)
+        ctx.lineTo(x + rx, y - ry * 0.55)
+        ctx.stroke()
+        ctx.globalAlpha = 0.75
+        ctx.lineWidth = Math.max(1.5, rx * 0.07)
+        const rw = rx * (0.42 + 0.1 * Math.sin(spin))
+        ctx.beginPath()
+        ctx.moveTo(x - rx - rw, y - ry * 0.55)
+        ctx.lineTo(x - rx + rw, y - ry * 0.55)
+        ctx.moveTo(x + rx - rw, y - ry * 0.55)
+        ctx.lineTo(x + rx + rw, y - ry * 0.55)
+        ctx.stroke()
+        ctx.globalAlpha = 1
+        // 렌즈 — 궁수를 향해 붙는다. 달아오르면(발사 예고) 위험색.
+        const lx = x - rx * 0.4
+        const ly = y + ry * 0.06
+        ctx.fillStyle = hot ? THEME.threat : THEME.targetBand
+        ctx.beginPath()
+        ctx.arc(lx, ly, Math.max(2.5, rx * 0.16), 0, TAU)
+        ctx.fill()
+        // 신호등 — 깜빡임. 기계는 이걸로 살아 있다.
+        if ((w.elapsed % 1.1) < 0.5) {
+          ctx.fillStyle = '#ff9a45'
+          ctx.beginPath()
+          ctx.arc(x + rx * 0.5, y - ry * 0.1, 2.2, 0, TAU)
+          ctx.fill()
+        }
+        drawHpBar(ctx, x, y - ry * 0.55 - 14, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
+        ctx.globalAlpha = 1
+        continue
+      }
+
       // 사람 실루엣 — 머리·몸통·다리. 이쪽(-x)을 보고 선다.
       ctx.strokeStyle = bodyCol
       ctx.lineWidth = Math.max(2, rx * 0.14)
@@ -527,16 +602,43 @@ function drawTargets(
           ctx.fill()
         }
       } else if (t.look === 3) {
-        // 폭주귀신 — 앞으로 기운 몸 + 뒤로 찢어지는 속도선. 형태 자체가 돌진이다.
-        ctx.strokeStyle = THEME.threatDim
-        ctx.lineWidth = 2
-        ctx.beginPath()
-        for (let l2 = 0; l2 < 3; l2++) {
-          const ly = y - ry * 0.4 + l2 * ry * 0.4
-          ctx.moveTo(x + rx * 0.7, ly)
-          ctx.lineTo(x + rx * (1.7 + l2 * 0.3), ly + ry * 0.08)
+        // ── 폭주귀신 — 혜성처럼 타오르며 온다. 잔상·화염 갈기·찢어진 아가리. ──
+        // ① 잔상 두 벌 — 몸이 못 따라오는 속도. 뒤(+x)로 갈수록 옅어진다.
+        for (let g2 = 1; g2 <= 2; g2++) {
+          ctx.globalAlpha = g2 === 1 ? 0.28 : 0.13
+          ctx.fillStyle = THEME.threatDim
+          ctx.beginPath()
+          ctx.ellipse(x + rx * (0.55 + g2 * 0.55), y + ry * 0.05, rx * (1 - g2 * 0.18), ry * (0.92 - g2 * 0.14), 0, 0, TAU)
+          ctx.fill()
         }
-        ctx.stroke()
+        ctx.globalAlpha = 1
+        // ② 불꽃 갈기 — 몸 뒤로 찢어지는 세 가닥 화염 자락. 박동은 sim elapsed (A1).
+        const lick = Math.sin(w.elapsed * 9) * ry * 0.1
+        ctx.fillStyle = '#ff9a45'
+        for (let g2 = 0; g2 < 3; g2++) {
+          const fy = y - ry * 0.45 + g2 * ry * 0.42
+          const fl = rx * (1.05 - g2 * 0.15)
+          ctx.globalAlpha = 0.8 - g2 * 0.2
+          ctx.beginPath()
+          ctx.moveTo(x + rx * 0.55, fy - ry * 0.1)
+          ctx.quadraticCurveTo(x + rx * 0.9 + fl * 0.5, fy + lick * (g2 % 2 === 0 ? 1 : -1), x + rx * 0.8 + fl, fy)
+          ctx.quadraticCurveTo(x + rx * 0.9 + fl * 0.5, fy + ry * 0.12, x + rx * 0.55, fy + ry * 0.12)
+          ctx.closePath()
+          ctx.fill()
+        }
+        ctx.globalAlpha = 1
+        // ③ 이빨 — 몸 앞자락(-x)의 찢어진 아가리. 위협은 표정이 절반이다.
+        ctx.fillStyle = THEME.target2
+        const my = y + ry * 0.34
+        ctx.beginPath()
+        ctx.moveTo(x - rx * 0.88, my)
+        for (let g2 = 0; g2 < 4; g2++) {
+          const tx2 = x - rx * (0.88 - g2 * 0.19)
+          ctx.lineTo(tx2 + rx * 0.09, my + ry * 0.16)
+          ctx.lineTo(tx2 + rx * 0.19, my)
+        }
+        ctx.closePath()
+        ctx.fill()
       }
 
       // 눈알 — 흰자 · 홍채(위험색) · 동공. 동공은 궁수를 따라간다.
@@ -603,20 +705,41 @@ function drawTargets(
       // 중심 표시 — 이것도 과녁이라 정중앙이 있다.
       band(ctx, x, y, rx * DRAW.ringCore, ry * DRAW.ringCore, THEME.target2)
     } else if (t.kind === 'bonus') {
-      // 보급 — 청록 원에 십자. "지우는 것"이 아니라 "얻는 것"이라고 모양이 말한다.
-      band(ctx, x, y, rx, ry, THEME.bonus)
+      // 보급 — 무엇을 주는지 그림이 말한다 (형: "화살인지 체력인지 확실히").
+      //  · 기력: 초록 원 + 십자 (치료의 문법)
+      //  · 화살: 청록 원 + 화살 픽토그램 (촉·깃까지)
+      const isHeal = t.healGive > 0
+      const col = isHeal ? '#7fd88a' : THEME.bonus
+      band(ctx, x, y, rx, ry, col)
       band(ctx, x, y, rx * DRAW.ringBand, ry * DRAW.ringBand, THEME.targetBand)
-      ctx.strokeStyle = THEME.bonus
+      ctx.strokeStyle = col
       ctx.lineWidth = Math.max(1.5, r * DRAW.bonusCrossW)
       ctx.lineCap = 'butt'
-      const cw = rx * DRAW.bonusCross
-      const ch = ry * DRAW.bonusCross
-      ctx.beginPath()
-      ctx.moveTo(x - cw, y)
-      ctx.lineTo(x + cw, y)
-      ctx.moveTo(x, y - ch)
-      ctx.lineTo(x, y + ch)
-      ctx.stroke()
+      if (isHeal) {
+        const cw = rx * DRAW.bonusCross
+        const ch = ry * DRAW.bonusCross
+        ctx.beginPath()
+        ctx.moveTo(x - cw, y)
+        ctx.lineTo(x + cw, y)
+        ctx.moveTo(x, y - ch)
+        ctx.lineTo(x, y + ch)
+        ctx.stroke()
+      } else {
+        // 화살 픽토그램 — 살대 + 촉 + 깃. 이 원은 '화살이 나오는 원'이다.
+        const aw = rx * 0.62
+        ctx.beginPath()
+        ctx.moveTo(x - aw, y)
+        ctx.lineTo(x + aw, y)
+        ctx.moveTo(x - aw, y)
+        ctx.lineTo(x - aw + rx * 0.24, y - ry * 0.16)
+        ctx.moveTo(x - aw, y)
+        ctx.lineTo(x - aw + rx * 0.24, y + ry * 0.16)
+        ctx.moveTo(x + aw, y)
+        ctx.lineTo(x + aw - rx * 0.22, y - ry * 0.18)
+        ctx.moveTo(x + aw - rx * 0.2, y)
+        ctx.lineTo(x + aw - rx * 0.42, y - ry * 0.18)
+        ctx.stroke()
+      }
     } else if (r < DRAW.ringMinPx) {
       // 너무 작다. 띠를 다 그리면 뭉개져 오히려 안 보인다 — 밝은 점 하나가 낫다.
       band(ctx, x, y, rx, ry, THEME.targetRim)

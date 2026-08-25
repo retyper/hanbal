@@ -312,7 +312,7 @@ function release(w: World, collapsed: boolean): void {
   const angle = a.aimAngle + err
 
   spawnArrow(w, angle, power)
-  w.events.push({ t: 'release', power, angle, err })
+  w.events.push({ t: 'release', power, angle, err, kind: w.arrowKind })
 
   a.phase = collapsed ? 'collapsing' : 'recovering'
   a.draw = 0

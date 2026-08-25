@@ -253,8 +253,21 @@ export interface Target {
   aimMul: number
   /** 판 시작 시점의 체력 (boss·archer). 체력 바의 분모다. */
   hpMax: number
-  /** 보스의 겉모습 번호 (0 눈알 · 1 갑주 · 2 쌍눈 · 3 폭주). 렌더만 읽는다. */
+  /**
+   * 겉모습/행동 번호. boss: 0 눈알·1 갑주·2 쌍눈·3 폭주.
+   * archer: 0 들판 궁수·1 창문의 사수·2 숨었다 쏘는 사수·3 드론 (11판+ 전환 — 형:
+   * "1~10은 과녁이지만 그다음부터는 전부 적이어야").
+   */
   look: number
+  /**
+   * 숨어 있는가 (archer look 2 — 창문에 숨었다가 나와서 쏜다). 숨은 동안은
+   * 맞지 않고(엄폐) 쏘지도 않는다. 나오는 타이밍은 발사 예고(windup)에 묶인다.
+   */
+  hidden: boolean
+  /** 개별 발사 주기 (s). 0이면 P.enemy.shootEvery. 무리가 클수록 벌려 화살비를 막는다. */
+  firePeriod: number
+  /** 체력 보급(bonus)이 돌려주는 기력. 0이면 화살 보급이다. */
+  healGive: number
   /** 연쇄 깊이. 직격 = 0, 낙하물에 맞은 것 = 1, 그 다음 = 2 ... */
   chainDepth: number
   /** 기본 점수. 링 명중도로 배수가 붙는다. */
@@ -273,7 +286,7 @@ export type SimEvent =
   /** 만작 도달 */
   | { t: 'full_draw' }
   /** 발사. power=당김 0..1, err=릴리즈 총 오차 (rad) */
-  | { t: 'release'; power: number; angle: number; err: number }
+  | { t: 'release'; power: number; angle: number; err: number; kind: ArrowKindId }
   /** 붕괴 — 스스로 놓아버림 */
   | { t: 'collapse' }
   /** 붕괴 경고 진입 (렌더/오디오가 예고를 시작) */
@@ -289,8 +302,8 @@ export type SimEvent =
   | { t: 'burst'; x: number; y: number; radius: number }
   /** 돌진 과녁이 궁수에게 닿았다. 화살 `lost`발을 빼앗겼다. */
   | { t: 'escape'; x: number; y: number; lost: number }
-  /** 보급 과녁을 맞혀 화살 `gain`발을 얻었다. */
-  | { t: 'pickup'; x: number; y: number; gain: number }
+  /** 보급을 맞혔다. hp=true면 기력, 아니면 화살 `gain`발. */
+  | { t: 'pickup'; x: number; y: number; gain: number; hp: boolean }
   /** 적 궁수가 시위를 당기기 시작했다 — 예고. 렌더·소리가 이걸로 긴장을 만든다. */
   | { t: 'enemy_draw'; x: number; y: number }
   /** 적 화살이 날았다. */
@@ -324,8 +337,12 @@ export interface TargetSpec {
   give?: number
   /** boss·archer 전용 — 맞을 수. 없으면 boss는 P.target.bossHp, archer는 1 */
   hp?: number
-  /** boss 전용 — 겉모습 번호 */
+  /** boss·archer — 겉모습/행동 번호 */
   look?: number
+  /** archer 전용 — 개별 발사 주기 (s) */
+  firePeriod?: number
+  /** bonus 전용 — 맞히면 채우는 기력. give와 배타적으로 쓴다. */
+  heal?: number
   /** archer 전용 — 첫 발사까지의 지연 (s). 없으면 P.enemy.shootEvery */
   fireDelay?: number
   /** archer·boss — 갑옷 (몸통 무효, 헤드샷/눈만 통한다). */

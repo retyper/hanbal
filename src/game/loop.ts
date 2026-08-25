@@ -782,6 +782,17 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
         omakeAdd(w, { kind: 'moving', x: rx2, y: 2 + ry2 * 0.4, r: 0.55, ampY: 1.2, freq: 0.3, score: 100 })
       } else if (kind === 'aerial') {
         omakeAdd(w, { kind: 'aerial', x: rx2, y: 4.5 + ry2 * 0.5, r: 0.55, score: 100 })
+      } else if (kind === 'window' || kind === 'peek' || kind === 'drone') {
+        // 11판+ 전환 변종들 (stages.ts convertToFoes와 같은 문법).
+        const look = kind === 'window' ? 1 : kind === 'peek' ? 2 : 3
+        omakeAdd(w, {
+          kind: 'archer', look, x: rx2 + 4, y: look === 3 ? 5 + ry2 * 0.4 : 2.5 + ry2 * 0.5,
+          r: look === 3 ? 0.6 : 0.63, hp: Math.floor(P.enemy.convertHp),
+          fireDelay: 3, firePeriod: P.enemy.shootEvery,
+          ampX: look === 3 ? 1.4 : 0, freq: look === 3 ? 0.18 : 0, score: 120,
+        })
+      } else if (kind === 'bonus-heal') {
+        omakeAdd(w, { kind: 'bonus', x: rx2, y: 3 + ry2 * 0.5, r: 0.7, heal: 20, score: 50 })
       } else if (kind === 'bonus') {
         omakeAdd(w, { kind: 'bonus', x: rx2, y: 3 + ry2 * 0.5, r: 0.7, give: 2, score: 50 })
       } else {

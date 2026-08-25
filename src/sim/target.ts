@@ -36,11 +36,20 @@ export function stepTargets(w: World): void {
       tg.x = tg.baseX + tg.ampX * s
       tg.y = tg.baseY + tg.ampY * s
     } else if (tg.kind === 'archer') {
-      // 이동 사수 — moving 과녁과 같은 위상 규칙 (t=0에 base와 일치).
+      // 이동 사수(드론 포함) — moving 과녁과 같은 위상 규칙 (t=0에 base와 일치).
       if (tg.ampX !== 0 || tg.ampY !== 0) {
         const s2 = Math.sin(time * tg.freq * TAU)
         tg.x = tg.baseX + tg.ampX * s2
         tg.y = tg.baseY + tg.ampY * s2
+      }
+      // 숨었다 쏘는 사수 (look 2) — 발사 예고 조금 전에 나와서, 쏘고 조금 뒤에 숨는다.
+      // 숨은 동안은 못 맞히고(엄폐) 저쪽도 못 쏜다. 예고 없는 피해는 없다는 계약 그대로.
+      if (tg.look === 2) {
+        const period = tg.firePeriod > 0 ? tg.firePeriod : P.enemy.shootEvery
+        // 다음 발사가 임박했거나(예고+선행) 방금 쐈으면(여운) 나와 있다. 그 밖엔 숨는다.
+        const untilNext = tg.fireAt - time
+        const sinceLast = time - (tg.fireAt - period)
+        tg.hidden = !(untilNext <= P.enemy.windup + P.enemy.peekLead || sinceLast <= P.enemy.peekTail)
       }
       // ── 적 궁수 (docs/RUN.md 6장) — 주기적으로 나를 쏜다 ──
       // 시계는 elapsed 뿐이다 (A1). windup 진입 순간 예고 이벤트가 한 번 나간다 —
@@ -51,8 +60,8 @@ export function stepTargets(w: World): void {
         w.events.push({ t: 'enemy_draw', x: tg.x, y: tg.y })
       }
       if (time >= tg.fireAt) {
-        tg.fireAt += P.enemy.shootEvery
-        fireEnemyShot(w, tg)
+        tg.fireAt += tg.firePeriod > 0 ? tg.firePeriod : P.enemy.shootEvery
+        if (!tg.hidden) fireEnemyShot(w, tg)
       }
     } else if (tg.kind === 'boss') {
       // 보스 — 느리게, 그러나 멈추지 않고 온다 (docs/RUN.md 3장). 판이 끝나면 멈춘다.
@@ -233,10 +242,15 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
     arrow.pendY = target.y
   }
 
-  // 보급 — 맞히면 화살을 돌려준다. 이 게임에서 자원이 **느는** 유일한 자리다.
-  if (target.kind === 'bonus' && target.give > 0) {
-    w.arrowsLeft += target.give
-    w.events.push({ t: 'pickup', x: target.x, y: target.y, gain: target.give })
+  // 보급 — 화살 또는 기력. 이 게임에서 자원이 **느는** 유일한 자리다.
+  if (target.kind === 'bonus') {
+    if (target.healGive > 0) {
+      w.hp = Math.min(Math.floor(P.enemy.hpMax), w.hp + target.healGive)
+      w.events.push({ t: 'pickup', x: target.x, y: target.y, gain: target.healGive, hp: true })
+    } else if (target.give > 0) {
+      w.arrowsLeft += target.give
+      w.events.push({ t: 'pickup', x: target.x, y: target.y, gain: target.give, hp: false })
+    }
   }
 
   if (target.kind === 'boss' || target.kind === 'archer') {
@@ -302,7 +316,7 @@ function burst(w: World, center: Target): void {
 
   for (let j = 0; j < targets.length; j++) {
     const c = targets[j]
-    if (c === undefined || c === center || !c.alive || c.falling) continue
+    if (c === undefined || c === center || !c.alive || c.falling || c.hidden) continue
     const dx = c.x - center.x
     const dy = c.y - center.y
     const d2 = dx * dx + dy * dy

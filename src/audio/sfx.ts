@@ -27,7 +27,7 @@
  */
 import { clamp01, lerp } from '../core/math.ts'
 import { P } from '../tune/params.ts'
-import type { TargetKind, World } from '../sim/types.ts'
+import type { ArrowKindId, TargetKind, World } from '../sim/types.ts'
 import {
   createSampleBank,
   hasSample,
@@ -678,6 +678,100 @@ function playRelease(s: Synth, power: number): void {
   noiseBurst(s, K_SWOOSH, NB)
 }
 
+/**
+ * 살별 발사 목소리 — 기본 팅 **위에 얹는** 서명 한 줄 (형: "쏘는 소리가 각각 달라야
+ * 쏘는 재미가 있다"). 낱낱이 다른 악기를 만들지 않고, 실제 화살의 물리에서 딴다:
+ *   명적 = 우는살이다. 진짜로 울며 난다 — 비브라토 걸린 호루라기 활공.
+ *   화전 = 불심지 튀는 소리. 애기살 = 짧고 높은 채찍 스냅. 육량전 = 낮고 무거운 텅.
+ *   세전 = 세 살대의 파닥임 3연타. 신전 = 느리게 차오르는 신령한 웅웅(5도 배음).
+ */
+function playShotVoice(s: Synth, kind: ArrowKindId, pw: number): void {
+  const vol = lerp(P.audio.releasePowerFloor, 1, pw * pw)
+  if (kind === 'chain') {
+    // 우는살 — 상승했다 흘러내리는 호루라기. 활공 내내 우는 건 과하니 첫 0.4초만.
+    TN.type = 'sine'
+    TN.freq = 1350
+    TN.endFreq = 1950
+    TN.dur = 0.16
+    TN.attack = 0.015
+    TN.decay = 0.14
+    TN.gain = 0.16 * vol
+    TN.delay = 0.02
+    tone(s, K_ESCAPE, TN)
+    TN.freq = 1950
+    TN.endFreq = 1150
+    TN.dur = 0.26
+    TN.attack = 0.005
+    TN.decay = 0.24
+    TN.delay = 0.18
+    tone(s, K_ESCAPE, TN)
+  } else if (kind === 'burst') {
+    // 불심지 — 파직·파직·파지직. 고역 노이즈 세 톨.
+    for (let i2 = 0; i2 < 3; i2++) {
+      NB.filterType = 'highpass'
+      NB.freq = 2600 + i2 * 500
+      NB.endFreq = 0
+      NB.q = 1.2
+      NB.dur = 0.025
+      NB.attack = 0.001
+      NB.decay = 0.022
+      NB.gain = 0.12 * vol
+      NB.delay = 0.05 + i2 * 0.07
+      noiseBurst(s, K_DEBRIS, NB)
+    }
+  } else if (kind === 'pierce') {
+    // 애기살 — 통아를 훑는 채찍 스냅. 짧고 높고 마르게.
+    TN.type = 'square'
+    TN.freq = 2300
+    TN.endFreq = 3100
+    TN.dur = 0.03
+    TN.attack = 0.001
+    TN.decay = 0.028
+    TN.gain = 0.09 * vol
+    TN.delay = 0.005
+    tone(s, K_ESCAPE, TN)
+  } else if (kind === 'heavy') {
+    // 육량전 — 여섯 냥의 무게. 낮은 텅이 가슴을 친다.
+    TN.type = 'sine'
+    TN.freq = 130
+    TN.endFreq = 62
+    TN.dur = 0.22
+    TN.attack = 0.004
+    TN.decay = 0.2
+    TN.gain = 0.34 * vol
+    TN.delay = 0.01
+    tone(s, K_ESCAPE, TN)
+  } else if (kind === 'split') {
+    // 세전 — 세 살대의 파닥임. 같은 음이 아니라 살짝 어긋난 3연타.
+    for (let i2 = 0; i2 < 3; i2++) {
+      TN.type = 'triangle'
+      TN.freq = 1500 + i2 * 190
+      TN.endFreq = 1250 + i2 * 190
+      TN.dur = 0.035
+      TN.attack = 0.002
+      TN.decay = 0.032
+      TN.gain = 0.1 * vol
+      TN.delay = 0.03 + i2 * 0.05
+      tone(s, K_ESCAPE, TN)
+    }
+  } else if (kind === 'homing') {
+    // 신전 — 신령한 웅웅. 근음+5도 배음이 느리게 차오른다.
+    TN.type = 'sine'
+    TN.freq = 520
+    TN.endFreq = 660
+    TN.dur = 0.3
+    TN.attack = 0.07
+    TN.decay = 0.22
+    TN.gain = 0.11 * vol
+    TN.delay = 0.02
+    tone(s, K_ESCAPE, TN)
+    TN.freq = 780
+    TN.endFreq = 990
+    TN.gain = 0.05 * vol
+    tone(s, K_DEBRIS, TN)
+  }
+}
+
 function playCollapse(s: Synth): void {
   // 고역이 없어야 "힘없이 풀렸다"가 들린다. 팅이 아니라 툭이다.
   TN.type = 'triangle'
@@ -963,6 +1057,7 @@ export function pumpSfx(sfx: Sfx, w: World): void {
     if (e === undefined) continue
     if (e.t === 'release') {
       playRelease(s, e.power)
+      if (e.kind !== 'basic') playShotVoice(s, e.kind, clamp01(e.power))
     } else if (e.t === 'hit') {
       // 적 몸통은 종(정중앙 소리)을 치지 않는다 — 사람에겐 헤드샷이 크리티컬이다.
       if (e.foe && e.head) {
