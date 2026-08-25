@@ -259,22 +259,38 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
   }
 
   if (target.kind === 'boss' || target.kind === 'archer') {
-    // ── 피해 = 기준 × (착탄 속도 / 기준 속도) × 살의 질량 배수 ──
-    // 세게 당길수록·가까울수록·무거운 살일수록 아프다. 운동에너지의 게임 번역이다.
+    // ── 피해 = **운동에너지** = 기준 × 질량 × (착탄 속도 / 기준 속도)² ──
+    //
+    // 형의 물음(2026-08-25): "데미지는 화살 속도랑 화살 무게에 따라도 달라지지 않을까."
+    // 그대로다. 예전엔 속도에 **선형**이고 질량은 손으로 박은 배수였다.
+    // 이제 진짜 KE = ½mv² 다 (½은 playerDamage가 흡수한다).
+    //
+    // 이게 바꾸는 것: 속도가 제곱으로 들어가므로 **가까이서 쏜 한 발이 확실히 더 아프다.**
+    // 그리고 질량이 실물 값이라(sim/arrowfx.ts BODY) 육량전이 아픈 이유가 배수가 아니라 무게다.
     // 착탄 속도는 관통 감속이 붙기 전(resolveHit 진입 시점)의 값이다.
     const impact = Math.sqrt(arrow.vx * arrow.vx + arrow.vy * arrow.vy)
-    const dmg = Math.max(1, Math.round(
-      P.enemy.playerDamage * (impact / Math.max(1, P.enemy.dmgRefSpeed)) * fx.dmgMul,
-    ))
-    if (target.kind === 'boss' && target.armored && !head) {
-      // 갑주귀신 — 갑주는 눈을 못 덮는다. 몸통은 막힌 소리만 남긴다.
+    const vr = impact / Math.max(1, P.enemy.dmgRefSpeed)
+    const dmg = Math.max(1, Math.round(P.enemy.playerDamage * fx.mass * vr * vr))
+    // ── 갑옷 (docs/RUN.md · 형의 반려 2026-08-25) ──
+    //
+    // 갑옷의 규칙은 "몸통은 안 통한다"였다. 그런데 **육량전(六兩箭)** 은 여섯 냥짜리
+    // 전쟁용 무거운 살이다. 그게 판금을 못 뚫으면 그 살은 존재할 이유가 없고,
+    // 실제로 교차표에서 죽은 카드였다 (형: "육량전을 써도 갑옷은 왜 못 뚫는지").
+    //
+    // 그래서 갑옷은 이제 **자물쇠**고 육량전이 그 열쇠다. 다만 헤드샷보다 좋으면 안 된다 —
+    // 머리는 즉사, 육량전 몸통은 절반의 피해(armorPierce)로 두 발. **조준이 여전히 이긴다.**
+    // 갑옷 관통은 **거리를 탄다.** 관통력(단면밀도×초속)에 착탄 속도비를 곱한 값이
+    // 문턱을 넘어야 한다 — 멀리서 힘 빠진 살은 판금을 못 뚫는다. 실물이 그렇다.
+    const penNow = fx.pen * vr
+    if (target.armored && !head && (fx.armorPierce <= 0 || penNow < P.arrowkind.armorPen)) {
+      // 갑주는 눈을(보스) · 머리를(궁수) 못 덮는다. 나머지는 막힌 소리와 먼지뿐이다.
       w.events.push({ t: 'enemy_block', x: arrow.x, y: arrow.y })
     } else if (target.kind === 'archer' && head) {
       // 헤드샷 처형 — 체력 무관 즉사. 이 한 줄이 "조준할 이유"다.
       target.hp = 0
-    } else if (target.kind === 'archer' && target.armored) {
-      // 갑옷 — 몸통은 안 통한다 (형: "헤드샷 안 맞히면 안 죽음"). 막힌 소리·먼지만 남는다.
-      w.events.push({ t: 'enemy_block', x: arrow.x, y: arrow.y })
+    } else if (target.armored && !head) {
+      // 육량전이 판금을 뚫었다. 갑옷이 삼킨 몫만큼 피해가 깎인다.
+      target.hp -= Math.max(1, Math.round(dmg * fx.armorPierce))
     } else if (target.kind === 'boss') {
       target.hp -= head ? Math.floor(P.target.bossCritDmg) : dmg
     } else {

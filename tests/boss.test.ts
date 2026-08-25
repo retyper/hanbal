@@ -56,14 +56,73 @@ describe('보스', () => {
     assert.ok(boss !== undefined)
     shootAt(w, 2.6)
     const dealt = 1000 - boss.hp
-    // 만작 20m 착탄은 기준 속도(60) 언저리 — 기준 피해의 0.7~1.6배 안이어야 한다.
-    assert.ok(dealt >= P.enemy.playerDamage * 0.7 && dealt <= P.enemy.playerDamage * 1.6,
-      `피해 ${dealt}가 속도 비례 범위 밖이다`)
+    // 피해는 이제 **운동에너지**다: 기준 × 질량 × (착탄속도/기준속도)² (sim/target.ts).
+    // 특정 숫자를 박지 않는다 — 그 값은 탄도가 정하고, 탄도를 손보면 테스트가 거짓말을 한다.
+    // 여기서 지키는 건 "피해가 났고 보스는 살아남는다"까지다. 질량·속도가 실제로 들어가는지는
+    // 아래 두 테스트가 **비교**로 잡는다. 비교는 상수와 달리 튜닝에도 안 무너진다.
+    assert.ok(dealt > 0, '피해가 0이다')
     assert.equal(boss.alive, true)
     assert.equal(boss.alive, true)
     const arrow = w.arrows[0]
     assert.ok(arrow !== undefined && !arrow.alive, '보스를 맞힌 화살이 계속 난다')
     assert.equal(arrow.kindPierced, 0, '애기살이 보스를 뚫었다')
+  })
+
+  it('★ 무거운 살이 더 아프다 — 피해가 질량을 탄다 (형: "데미지는 화살 무게에 따라도")', () => {
+    const hit = (kind: 'basic' | 'heavy' | 'pierce'): number => {
+      const w = createWorld(bossDef(100000), STATS, kind)
+      const boss = w.targets[0]
+      assert.ok(boss !== undefined)
+      shootAt(w, 2.6)
+      return 100000 - boss.hp
+    }
+    const light = hit('pierce')
+    const mid = hit('basic')
+    const heavy = hit('heavy')
+    assert.ok(light > 0 && mid > 0 && heavy > 0, `아무것도 안 박혔다 (${light}/${mid}/${heavy})`)
+    // 육량전(2.40)은 유엽전(1.00)보다, 유엽전은 애기살(0.55)보다 아프다.
+    // 애기살은 빨라서(1.35) 속도로 일부 벌충하지만 질량의 제곱이 아니라 **일차**라 못 이긴다.
+    assert.ok(heavy > mid, `육량전(${heavy})이 유엽전(${mid})보다 안 아프다`)
+    assert.ok(mid > light, `유엽전(${mid})이 애기살(${light})보다 안 아프다`)
+  })
+
+  it('★ 가까이서 쏘면 더 아프다 — 피해가 속도를 탄다 (형: "화살 속도랑")', () => {
+    // 같은 살·같은 활, 거리만 다르다. 멀수록 착탄 속도가 줄고 피해는 그 **제곱**으로 준다.
+    // shootAt은 20m 고정이라 여기서는 각을 직접 훑는다 — 거리마다 맞는 각이 다르다.
+    const at = (x: number): number => {
+      let best = 0
+      for (let mrad = -10; mrad <= 200; mrad += 2) {
+        const w = createWorld({
+          ...bossDef(1e7),
+          targets: [{ kind: 'boss', x, y: 2.6, r: 1.7, hp: 1e7, speed: 0.0001, score: 150 }],
+        }, STATS)
+        const boss = w.targets[0]
+        assert.ok(boss !== undefined)
+        assert.notEqual(spawnArrow(w, mrad / 1000, 1), null)
+        for (let i = 0; i < 900; i++) {
+          step(w, IDLE)
+          const a = w.arrows.find((y) => y.id === 0)
+          if (a !== undefined && !a.alive) break
+        }
+        // 머리(치명)는 **고정값**(bossCritDmg)이라 속도를 안 탄다 — 세면 거리 비교가
+        // 두 거리 모두 200으로 같아진다 (실제로 그렇게 나왔다). 몸통 명중만 센다.
+        let head = false
+        for (const e of w.events) if (e !== undefined && e.t === 'hit' && e.head) head = true
+        if (head) continue
+        const dealt = 1e7 - boss.hp
+        // 가장 세게 박힌 각을 쓴다 = 그 거리에서 낼 수 있는 최대 피해.
+        if (dealt > best) best = dealt
+      }
+      return best
+    }
+    const near = at(12)
+    const far = at(40)
+    assert.ok(near > 0 && far > 0, `안 맞았다 (가까이 ${near} / 멀리 ${far})`)
+    // 실측 12m 67 vs 40m 59 = 1.14배. 크지 않다 — 이 게임의 공기저항이 순한 탓이고,
+    // 그게 "빨간 바 위에서는 조준한 대로 맞는다"를 지키려고 고른 값이라 여기서 안 건드린다.
+    // 문턱을 1.08로 잡는 건 **방향이 맞는가**를 지키려는 것이지 크기를 주장하는 게 아니다.
+    // 거리 감쇠를 더 세게 하고 싶으면 P.arrow.drag를 올려야 하고, 그건 탄도 전체의 결정이다.
+    assert.ok(near > far * 1.08, `가까이(${near})가 멀리(${far})보다 안 아프다`)
   })
 
   it('헤드샷은 치명 — bossCritDmg 만큼 깎고 정중앙 판정을 받는다', () => {

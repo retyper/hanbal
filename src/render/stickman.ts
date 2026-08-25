@@ -499,11 +499,25 @@ export function drawArcher(
   const shrink = clamp(cam.scale / LINE.refScale, 0.35, 1)
   const lw = clamp(cam.scale * P.render.lineBody, LINE.minPx * shrink, LINE.maxPx)
   const thinPx = Math.max(LINE.thinMinPx * shrink, 0.75)
-  const gain = 1 + rig.full * P.render.lineFullGain + trueFull * P.render.lineTrueFullGain
-  const limbW = lw * LINE.limbMul * gain
-  const torsoW = lw * LINE.torsoMul * gain
-  const backW = lw * LINE.backMul * gain
-  const bowW = lw * LINE.bowMul * gain
+  // ── 굵기 ── **당김은 굵기를 거의 건드리지 않는다.**
+  //
+  // 형의 반려: "활 당길 때 대체 왜 캐릭터 몸 전체가 두꺼워지는 거고."
+  // 옳은 지적이다. 예전엔 만작에서 gain이 1.48까지 올라 **다리·팔·활까지 전부** 48% 굵어졌다.
+  // 사람은 시위를 당긴다고 살이 찌지 않는다. GDD 8장이 "굵기 = 당김·성장"이라 적어둔
+  // 문법이었지만, 그 문법을 **모든 선에** 적용한 게 잘못이었다 — 그건 신호가 아니라 팽창이다.
+  //
+  // 당김은 이미 네 곳에서 말하고 있다: 시위의 V, 턱에 닿는 노크, 깊어지는 활의 휨,
+  // 접히는 시위팔. 굵기가 그걸 한 번 더 말할 필요가 없다.
+  //
+  // 남긴 것은 **몸통 하나**다. 만작에서 등과 어깨가 실제로 뭉치는 건 사실이고,
+  // 그 자리만 아주 조금 두꺼워지는 건 팽창이 아니라 긴장이다.
+  // 성장(진짜 만작)의 시각적 보상은 자세와 색이 진다 — 노크가 턱에 닿고, 팔꿈치가
+  // 제 높이로 오고, 활이 더 휘고, 색이 밝아진다 (docs/FORM.md 3-2).
+  const torsoGain = 1 + rig.full * P.render.lineFullGain + trueFull * P.render.lineTrueFullGain
+  const limbW = lw * LINE.limbMul
+  const torsoW = lw * LINE.torsoMul * torsoGain
+  const backW = lw * LINE.backMul
+  const bowW = lw * LINE.bowMul
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
 

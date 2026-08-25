@@ -123,7 +123,11 @@ describe('활 — 물리 배선', () => {
     }
     const plain = killedWith(bowMods('practice', 'pierce', 0))
     const pyeonjeon = killedWith(bowMods('gakgung', 'pierce', 0))
-    assert.ok(plain >= 3, `애기살 홀로 최소 셋은 뚫어야 한다 (실측 ${plain})`)
+    // 2026-08-25: 살의 물리를 질량·단면적에서 파생시키면서 애기살의 정체성이 옮겨갔다
+    // (sim/arrowfx.ts BODY). **다중 관통은 이제 운동량이 큰 육량전의 몫**이고,
+    // 애기살의 몫은 단면밀도가 여는 **갑옷**과 곧은 탄도다 — 편전의 실제 명성이 그쪽이다.
+    // 그래서 '셋 이상'을 요구하지 않는다. 여기서 지키는 건 **궁합이 실제로 +1을 만드는가**다.
+    assert.ok(plain >= 2, `애기살 홀로 둘은 뚫어야 한다 (실측 ${plain})`)
     assert.equal(pyeonjeon, plain + Math.floor(P.bowkind.synergyPierce), '편전의 +1이 실제 관통 수에 없다')
   })
 
