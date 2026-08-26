@@ -672,6 +672,12 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
         // 아무것도 못 맞히고 사라진 화살. ballistics가 이때만 miss를 뱉는다 —
         // 셋을 꿰뚫고 착지한 화살도, 분열 자식의 낙하도 여기 안 걸린다 (축은 '쏜 발'이다).
         misses++
+      } else if (ev.t === 'molgi' && ev.on && !save.seenMolgi) {
+        // 처음 보는 사람에게 '몰기'는 그냥 알 수 없는 글자다 (형: "몰기가 뭔지도
+        // 모르겠다"). 딱 한 번, 그 순간에 뜻을 알려준다 — 모달이 아니라 구석 토스트(C1).
+        save.seenMolgi = true
+        saveNow()
+        ui.toast('몰기(沒技) — 다섯 발 연속 명중. 다음 당김이 빨라진다', 3400)
       }
     }
 

@@ -19,7 +19,7 @@ import { STAGES } from './stages.ts'
 const KEY = 'hanbal.save.v1'
 
 /** 현재 스키마 버전. 필드를 바꿀 때마다 +1 하고 MIGRATIONS에 한 줄 추가한다. */
-export const SCHEMA_VERSION = 10
+export const SCHEMA_VERSION = 11
 
 /**
  * 오프라인 축적의 소수부 (자원 단위). 세 자원의 축적 속도가 달라 하나로 합칠 수 없다.
@@ -148,6 +148,13 @@ export interface SaveData {
    * 잃은 적 없는 칭호를 가리키는 값이라 지워지지 않는다 (A4).
    */
   equippedTitle: string
+
+  // ── v11: 몰기를 처음 봤을 때 설명한다 (2026-08-26, 형: "몰기가 뭔지도 모르겠다") ──
+  /**
+   * '몰기' 뜻을 설명하는 첫 안내를 이미 봤는가. HUD의 다섯 칸 눈금은 처음 보는 사람에게
+   * 아무 뜻도 없는 글자였다 — 국궁 용어라 설명 없이는 못 읽는다. 딱 한 번만 띄운다.
+   */
+  seenMolgi: boolean
 }
 
 /** 저장값이 말이 되는 범위인지만 본다. 치트 방지가 아니라 NaN·Infinity 방어다 (A4: 치트 방지 안 함). */
@@ -211,6 +218,7 @@ export function defaultSave(now: number): SaveData {
     // 0은 "아직 없음"이다. 루프가 첫 정산 전에 실제 시드를 심는다 (game 레이어라 Date.now 허용).
     runSeed: 0,
     equippedTitle: '',
+    seenMolgi: false,
   }
 }
 
@@ -313,6 +321,12 @@ const MIGRATIONS: ReadonlyArray<(r: Raw) => void> = [
    * v9 → v10: 칭호를 고를 수 있게 됐다. 빈 문자열로 올라온다 — sanitize가 기본값으로
    * 채우므로 옮길 값이 없다. 빈 문자열은 "아직 안 골랐다"이고 화면은 옛 규칙(가장 어려운
    * 칭호를 자동으로 보여줌)으로 그대로 동작하니 마이그레이션 직후에도 화면이 비지 않는다.
+   */
+  () => {},
+  /**
+   * v10 → v11: 몰기 설명 — 세이브에 남길 이력이 없다. 옛 세이브도 false로 올라온다 —
+   * **의도적이다.** 오래 플레이한 사람도 설명을 받은 적이 없으니(형 본인이 그랬다),
+   * 다음 몰기에서 누구든 한 번은 설명을 보게 하는 게 맞다.
    */
   () => {},
 ]
@@ -459,6 +473,7 @@ function sanitize(r: Raw, now: number): SaveData {
     equippedTitle: typeof r['equippedTitle'] === 'string' && r['equippedTitle'].length <= 64
       ? r['equippedTitle']
       : '',
+    seenMolgi: bool(r['seenMolgi'], false),
   }
 }
 

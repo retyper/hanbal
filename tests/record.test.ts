@@ -124,3 +124,24 @@ describe('칭호 장착 (2026-08-26, 형: "장착하거나 그런거 전혀없�
     assert.equal(s2.equippedTitle, '')
   })
 })
+
+describe('몰기 설명 (2026-08-26, 형: "몰기가 뭔지도 모르겠다")', () => {
+  it('새 세이브는 아직 설명을 못 봤다', () => {
+    assert.equal(defaultSave(0).seenMolgi, false)
+  })
+
+  it('옛 세이브(v10)도 못 본 것으로 올라온다 — 오래 한 사람도 설명을 받은 적이 없다', () => {
+    const old = { ...defaultSave(0), v: 10 } as Record<string, unknown>
+    delete old['seenMolgi']
+    const s = roundTrip(old)
+    assert.equal(s.v, SCHEMA_VERSION)
+    assert.equal(s.seenMolgi, false)
+  })
+
+  it('한 번 봤다는 기록은 저장을 오간다', () => {
+    const d = defaultSave(0)
+    d.seenMolgi = true
+    writeSave(d)
+    assert.equal(loadSave().seenMolgi, true)
+  })
+})
