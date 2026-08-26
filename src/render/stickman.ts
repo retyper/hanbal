@@ -821,16 +821,22 @@ export function drawArcher(
     const steps = Math.floor(P.steady.previewTime / dtp)
     ctx.fillStyle = THEME.target2
     ctx.globalAlpha = 0.5 * a.steadyBlend
+    // 점은 물리 스텝이 아니라 **거리**로 찍는다 — 스텝으로 찍으면 화살이 빠를수록
+    // 점 사이 실제 거리가 넓어져 가까운 과녁 앞에서는 점이 거의 안 보였다.
+    let distSinceDot = P.steady.previewDotGap
     for (let i2 = 1; i2 <= steps; i2++) {
       const rvx2 = vx2 - w.wind * w.bow.windMul
       const kdrag = P.arrow.drag * w.fx.dragMul * Math.hypot(rvx2, vy2)
       vx2 -= kdrag * rvx2 * dtp
       vy2 -= kdrag * vy2 * dtp
       vy2 -= P.arrow.gravity * dtp
+      const stepDist = Math.hypot(vx2, vy2) * dtp
       px3 += vx2 * dtp
       py3 += vy2 * dtp
       if (py3 <= 0) break
-      if (i2 % 5 === 0) {
+      distSinceDot += stepDist
+      if (distSinceDot >= P.steady.previewDotGap) {
+        distSinceDot -= P.steady.previewDotGap
         ctx.beginPath()
         ctx.arc(worldToScreenX(cam, px3), worldToScreenY(cam, py3), 1.6, 0, TAU)
         ctx.fill()

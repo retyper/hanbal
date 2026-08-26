@@ -64,6 +64,28 @@ describe('갈림길 — 밀집', () => {
     )
   })
 
+  it('복제 과녁이 기존 과녁과 겹치지 않는다 (형의 신고: "적군이 비정상적으로 겹쳐있다")', () => {
+    // 여러 판 번호에 걸쳐 확인한다 — x·y를 독립으로 흔들던 옛 코드는 가끔만(둘 다 0
+    // 근처로 뽑힐 때만) 겹쳤으므로, 한 번만 보면 통과해버릴 수 있다. 겹침의 정의는
+    // "두 원이 실제로 만나는가"(중심 거리 < 반경의 합)다 — 화면에서 보이는 그 겹침이다.
+    for (let n = 1; n <= 60; n++) {
+      const stage = getStage(n - 1)
+      const out = applyFork(stage, DENSE, n)
+      const added = out.targets.slice(stage.targets.length)
+      for (const clone of added) {
+        const cr = clone.r ?? 0.3
+        for (const orig of stage.targets) {
+          const d = Math.hypot(clone.x - orig.x, clone.y - orig.y)
+          const or = orig.r ?? 0.3
+          assert.ok(
+            d >= cr + or,
+            `판 ${n}: 복제 과녁이 기존 과녁과 겹쳤다 (거리 ${d.toFixed(3)} < 반경합 ${(cr + or).toFixed(3)})`,
+          )
+        }
+      }
+    }
+  })
+
   it('복제할 과녁이 없으면(보스만 있는 판) 원본을 그대로 돌려준다', () => {
     const boss = { ...getStage(9), targets: [{ kind: 'boss' as const, x: 30, y: 2, r: 1, hp: 100 }] }
     const out = applyFork(boss, DENSE, 10)

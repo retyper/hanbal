@@ -248,6 +248,12 @@ export interface Fx {
   oneShotActive: boolean
   /** 직전 프레임의 w.elapsed. 되감기면(판이 바뀌면) oneShotUsed를 새로 푼다. */
   oneShotElapsedPrev: number
+  /**
+   * 지금의 '한 발'이 실시간으로 몇 초째 진행 중인가. P.render.oneShotMaxSec을 넘기면
+   * 강제로 끝낸다 — 빗맞아 화면 밖으로 계속 날아가는 화살은 sim 비행시간이 최대 8초라
+   * oneShotScale(0.4)에서 실제로는 20초까지 슬로모가 안 풀렸다(형의 신고, 2026-08-26).
+   */
+  oneShotRealSec: number
   /** 남은 슬로모 (실시간 s) */
   slow: number
   /** 연쇄 비네트 0..1 과 그 나이 (s) */
@@ -356,6 +362,7 @@ export function createFx(): Fx {
     oneShotUsed: false,
     oneShotActive: false,
     oneShotElapsedPrev: -1,
+    oneShotRealSec: 0,
     slow: 0,
     glow: 0,
     glowAge: 0,
@@ -706,6 +713,7 @@ export function pumpEvents(fx: Fx, w: World): void {
   }
   const rawWant = alive === 1 && flying && w.status === 'playing'
   if (rawWant && !fx.oneShotUsed) {
+    if (!fx.oneShotActive) fx.oneShotRealSec = 0
     fx.oneShotActive = true
   } else if (fx.oneShotActive && !rawWant) {
     // 그 발이 끝났다(맞았든 빗나갔든) — 이 판의 한 번을 여기서 소비한다.
@@ -729,6 +737,21 @@ export function oneShotAmount(fx: Fx): number {
 }
 
 export function updateFx(fx: Fx, dtReal: number): void {
+  // '한 발' 상한 — 실시간으로 잰다 (MEGAHIT.md §2 "최대 2초"). 빗맞고 화면 밖까지 계속
+  // 날아가는 화살은 sim 비행시간이 최대 8초라, oneShotScale(0.4)에서 상한이 없으면
+  // 실제로는 20초까지 슬로모가 안 풀렸다 (형: "화살이 멀리 날아가는 도중에도 계속
+  // 슬로우 잡힌다"). 상한을 넘기면 그 발은 아직 날고 있어도 여기서 강제로 끝낸다 —
+  // 화살 자체는 그냥 정상 속도로 마저 난다, 느려지던 시간만 돌아온다.
+  if (fx.oneShotActive) {
+    fx.oneShotRealSec += dtReal
+    if (fx.oneShotRealSec >= P.render.oneShotMaxSec) {
+      fx.oneShotActive = false
+      fx.oneShotUsed = true
+      // pumpEvents가 다음 프레임에야 이 상태를 볼 것이다 — 여운(oneShotOut) 램프가
+      // 한 프레임 안 늦게 지금 바로 시작하도록 want도 같이 내린다.
+      fx.oneShotWant = false
+    }
+  }
   // '한 발' 램프 — 들어갈 땐 빠르게(순간을 놓치면 안 된다), 나올 땐 느리게(여운).
   const want = fx.oneShotWant ? 1 : 0
   const rate = want > fx.oneShot ? P.render.oneShotIn : P.render.oneShotOut

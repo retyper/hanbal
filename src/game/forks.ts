@@ -12,6 +12,7 @@
  * ★ 보스판에는 안 나온다. 보스는 이미 저작된 대결이고 처치 뒤엔 보급 3택이 따로 있다 —
  *   여기서 또 손대면 그 판의 무게가 갈림길 카드 하나로 희석된다.
  */
+import { TAU } from '../core/math.ts'
 import { makeRng, seedFrom } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import type { ArrowKindId } from './arrows.ts'
@@ -76,17 +77,34 @@ function applyDense(stage: StageDef, n: number): StageDef {
 
   const rng = makeRng(seedFrom(`hanbal.fork.dense.${n}`))
   const count = Math.min(Math.floor(P.fork.denseExtra), cloneable.length)
+  // 겹침 검사 기준 — 원본 전부 + 이미 놓은 복제. 이래야 복제 둘이 서로 겹치는 것도 막는다.
+  const placed: TargetSpec[] = [...stage.targets]
   const extra: TargetSpec[] = []
+  const DENSE_ATTEMPTS = 24
   for (let i = 0; i < count; i++) {
     const base = cloneable[rng.int(0, cloneable.length - 1)]
     if (base === undefined) continue
     const r = base.r ?? 0.3
-    // 근처에 붙는다 — "밀집"이지 "흩어짐"이 아니다.
-    extra.push({
-      ...base,
-      x: base.x + (rng.next() - 0.5) * r * P.fork.denseSpreadX,
-      y: base.y + (rng.next() - 0.5) * r * P.fork.denseSpreadY,
-    })
+    // 각도+거리로 뽑는다 — x·y를 따로 흔들면 최소 거리를 못 박을 수 없다(둘 다 0 근처로
+    // 뽑히면 원본과 거의 겹친다, 형의 신고: "적군이 비정상적으로 겹쳐있다"). 그래도 운이
+    // 나쁘면 다른 과녁과 겹칠 수 있어 **직접 검사하고 다시 뽑는다** — 진짜 보증은 이거다.
+    // 다 실패하면(과녁이 빽빽한 판) **억지로 겹쳐 넣지 않고 그냥 포기한다** — 겹친 과녁
+    // 하나보다 밀집 과녁이 하나 적은 쪽이 낫다.
+    let clone: TargetSpec | undefined
+    for (let attempt = 0; attempt < DENSE_ATTEMPTS; attempt++) {
+      const angle = rng.next() * TAU
+      const dist = r * (P.fork.denseMinSep + rng.next() * (P.fork.denseMaxSep - P.fork.denseMinSep))
+      const cx = base.x + Math.cos(angle) * dist
+      const cy = base.y + Math.sin(angle) * dist
+      const overlaps = placed.some((t) => Math.hypot(cx - t.x, cy - t.y) < r + (t.r ?? 0.3))
+      if (!overlaps) {
+        clone = { ...base, x: cx, y: cy }
+        break
+      }
+    }
+    if (clone === undefined) continue
+    placed.push(clone)
+    extra.push(clone)
   }
   if (extra.length === 0) return stage
 
