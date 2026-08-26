@@ -135,7 +135,8 @@ export function mountLoadout(
     card.type = 'button'
     card.className = owned ? 'l-card' : 'l-card l-lock'
     const lv = masteryLevel(Math.floor(bowHits[id] ?? 0))
-    card.innerHTML = `<span class="l-bic">${bowIconSvg(id, 34)}</span>` +
+    // 잠긴 활은 이름만이 아니라 그림도 가린다 — 실루엣까지 보이면 "가려졌다"가 아니다.
+    card.innerHTML = `<span class="l-bic">${bowIconSvg(owned ? id : '', 34)}</span>` +
       `<span class="l-n"></span><span class="l-d"></span><span class="l-d"></span>`
     const descs = card.querySelectorAll('.l-d')
     if (owned) {

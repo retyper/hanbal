@@ -483,6 +483,13 @@ function drawTargets(
             ctx.arc(x - rx * 0.45, y + ry * 0.05, Math.max(2.5, rx * 0.15), 0, TAU)
             ctx.fill()
           }
+          // 헤드샷 자리 — sim/target.ts의 판정과 같은 식이다(archerHeadUp·archerHeadR).
+          // 드론도 kind='archer'라 헤드샷이 실제로 존재하는데, 예전엔 화면에 아무 표시도
+          // 없었다 (형: "드론에 헤드샷이 어디있냐"). 로터 위 작은 코어로 읽힌다.
+          {
+            const hr2 = Math.max(2, rx * P.enemy.archerHeadR)
+            band(ctx, x, y - ry * P.enemy.archerHeadUp, hr2, hr2, bodyCol)
+          }
           drawHpBar(ctx, x, y - ry * 0.62 - 14, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
           ctx.globalAlpha = 1
           continue
@@ -524,6 +531,12 @@ function drawTargets(
           ctx.beginPath()
           ctx.arc(x + rx * 0.5, y - ry * 0.1, 2.2, 0, TAU)
           ctx.fill()
+        }
+        // 헤드샷 자리 — 스프라이트 분기와 같은 식(archerHeadUp·archerHeadR). 벡터
+        // 폴백은 헤드리스 프로브가 항상 보는 경로라 여기도 반드시 맞춰야 한다.
+        {
+          const hr2 = Math.max(2, rx * P.enemy.archerHeadR)
+          band(ctx, x, y - ry * P.enemy.archerHeadUp, hr2, hr2, bodyCol)
         }
         drawHpBar(ctx, x, y - ry * 0.55 - 14, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
         ctx.globalAlpha = 1

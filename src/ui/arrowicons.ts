@@ -51,12 +51,20 @@ export const BOW_ICON: Record<string, string> = {
     '<path d="M12 7.2 L12 20.8 M14 5.5 L14 22.5" stroke-width="0.9"/>',
 }
 
-/** 활 아이콘 svg 한 조각. */
+/**
+ * 잠긴 칸의 아이콘 자리 — 점선 실루엣. ui/titleicons.ts의 미확인 id 폴백과 같은 그림이다
+ * (형: "해금 안된것들도 물음표만 떠야지 이미지도 글도 다 나와놓고 이름만 물음표하면
+ * 그게 가려진거냐?" — 출정 화면의 잠긴 활이 이름은 ？？？로 가리면서 활 실루엣은 그대로
+ * 보여주고 있었다. 아이콘도 같이 가려야 진짜로 가려진 것이다).
+ */
+const LOCK_ICON = '<circle cx="14" cy="14" r="8" stroke-dasharray="2 3"/>'
+
+/** 활 아이콘 svg 한 조각. 잠긴 활은 id 대신 빈 문자열을 넘기면 점선 실루엣이 나온다. */
 export function bowIconSvg(id: string, size: number): string {
   return (
     `<svg width="${size}" height="${size}" viewBox="0 0 28 28" fill="none" ` +
     `stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">` +
-    `${BOW_ICON[id] ?? ''}</svg>`
+    `${BOW_ICON[id] ?? LOCK_ICON}</svg>`
   )
 }
 

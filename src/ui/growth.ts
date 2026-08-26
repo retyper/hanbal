@@ -22,7 +22,7 @@ import {
   type StatKey,
 } from '../game/progression.ts'
 import { BOW_KINDS, masteryLevel, MASTERY_HITS, type BowKindId } from '../game/bows.ts'
-import { BOW_ICON } from './arrowicons.ts'
+import { bowIconSvg } from './arrowicons.ts'
 import { onSaveChanged, wipeSave, writeSave, type SaveData } from '../game/save.ts'
 import { unlockedBows, unlockOfBow } from '../game/unlocks.ts'
 import { P } from '../tune/params.ts'
@@ -177,12 +177,14 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
   rack.innerHTML = '<h3>활 걸이</h3>'
   const rackSub = document.createElement('p')
   rackSub.className = 'hb-lead'
-  rackSub.textContent = '바꾼 활은 다음 판부터 든다. 숙련은 그 활로 맞힌 수만큼 쌓여 단점이 줄어든다.'
+  rackSub.textContent = '바꾼 활은 다음 판부터 든다. 숙련은 그 활로 맞힌 수만큼 쌓여 '
+    + '아래 "대가" 줄의 단점을 그만큼 깎는다 — 몇 % 줄었는지 그 자리에 뜬다.'
   rack.appendChild(rackSub)
 
   interface BowRow {
     id: BowKindId
     el: HTMLElement
+    icon: HTMLElement
     name: HTMLElement
     perk: HTMLElement
     cost: HTMLElement
@@ -194,9 +196,7 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
     const el = document.createElement('div')
     el.className = 'g-bow'
     el.innerHTML = `
-      <div><span class="g-bic"><svg width="26" height="26" viewBox="0 0 28 28" fill="none" ` +
-      `stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">` +
-      `${BOW_ICON[b.id] ?? ''}</svg></span><span class="g-bname"></span><span class="g-borigin"></span></div>
+      <div><span class="g-bic"></span><span class="g-bname"></span><span class="g-borigin"></span></div>
       <div class="g-bperk"></div>
       <div class="g-bcost"></div>
       <div class="g-bsyn"></div>
@@ -211,6 +211,7 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
     bowRows.push({
       id: b.id,
       el,
+      icon: el.querySelector('.g-bic') as HTMLElement,
       name: el.querySelector('.g-bname') as HTMLElement,
       perk: el.querySelector('.g-bperk') as HTMLElement,
       cost: el.querySelector('.g-bcost') as HTMLElement,
@@ -234,6 +235,9 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
       row.el.classList.toggle('g-lockd', !has)
       if (!has) {
         // 수집 화면과 같은 문법 — 이름은 가리고 조건은 보인다. 그게 궁금증의 절반이다.
+        // 그림도 같이 가린다 — 이름만 ？？？고 활 실루엣은 그대로면 가려진 게 아니다
+        // (형: "이미지도 글도 다 나와놓고 이름만 물음표하면 그게 가려진거냐?").
+        row.icon.innerHTML = bowIconSvg('', 26)
         row.name.textContent = '？？？'
         const u = unlockOfBow(row.id)
         row.perk.textContent = u !== undefined ? u.hint : ''
@@ -242,6 +246,7 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
         row.btn.style.display = 'none'
         continue
       }
+      row.icon.innerHTML = bowIconSvg(row.id, 26)
       const hitsWith = Math.floor(d.bowHits[row.id] ?? 0)
       const lv = masteryLevel(hitsWith)
       const next = MASTERY_HITS[lv]
@@ -249,7 +254,12 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
       const nextText = next !== undefined ? ` (${hitsWith}/${next})` : ''
       row.name.textContent = kind.name + lvText + nextText
       row.perk.textContent = kind.perk
-      row.cost.textContent = kind.cost === '없음' ? '' : `대가: ${kind.cost}`
+      // 숙련이 대가를 얼마나 깎았는지 그 자리에서 % 로 보여준다 (형: "숙련도는 대체
+      // 뭐에좋은건지 유저는 알 방법이 없어"). 성장 화면의 원칙과 같다 — 레벨 숫자만
+      // 던지지 않고 **무엇이 달라지는지**를 말한다 (game/bows.ts eased()와 같은 식).
+      const eased = Math.round(Math.min(1, lv * P.bowkind.masteryEase) * 100)
+      const easeText = kind.cost !== '없음' && lv > 0 ? ` (숙련으로 ${eased}% 완화)` : ''
+      row.cost.textContent = kind.cost === '없음' ? '' : `대가: ${kind.cost}${easeText}`
       row.syn.textContent = kind.synergy !== undefined ? `궁합: ${kind.synergy.label}` : ''
       row.btn.style.display = ''
       row.btn.textContent = worn ? '들고 있음' : '들기'
