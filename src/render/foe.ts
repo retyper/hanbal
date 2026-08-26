@@ -19,14 +19,21 @@
  * A5: 프레임당 힙 할당 0. 모든 좌표는 지역 숫자다.
  */
 import { TAU } from '../core/math.ts'
+import { P } from '../tune/params.ts'
 
-/** 체격·활 — 전부 과녁 반경(rx, ry) 대비 비율이다. 줌이 바뀌어도 비례가 유지된다. */
+/**
+ * 체격·활 — 전부 과녁 반경(rx, ry) 대비 비율이다. 줌이 바뀌어도 비례가 유지된다.
+ *
+ * ★ 머리는 여기 없다 — **sim/target.ts의 헤드샷 판정(P.enemy.archerHeadR·archerHeadUp)이
+ *   유일한 출처다.** 예전엔 이 파일에 머리 반경(0.3)·목 길이(0.62)를 따로 박아뒀는데,
+ *   실제 판정 중심은 어깨에서 0.62×rx가 아니라 **몸통 중심에서** 0.62×r였다 — 어깨 오프셋
+ *   (0.22)만큼 시각적으로 더 높이 떠 있었다(형: "머리 위치를 목에 가깝게 내려야 한다").
+ *   drawFoeArcher 안에서 매 호출 P.enemy.*를 직접 읽는다 — 라이브 튜닝 콘솔이 이 값을
+ *   바꾸면 화면도 그 자리에서 같이 움직여야 한다(모듈 상수로 굳히면 안 됨).
+ */
 const F = {
-  head: 0.3,
-  /** 어깨가 중심보다 위에 있는 양 (ry 대비) */
+  /** 어깨가 중심보다 위에 있는 양 (ry 대비) — 순수 실루엣용, 판정과 무관하다. */
   shoulder: 0.22,
-  /** 어깨 → 머리 중심 (rx 대비) */
-  neck: 0.62,
   /** 턱(앵커) — 어깨에서 앞·위로 (rx 대비) */
   jawFwd: 0.26,
   jawUp: 0.3,
@@ -104,9 +111,11 @@ export function drawFoeArcher(
     ctx.rect(clip.x, clip.y, clip.w, clip.h)
     ctx.clip()
   }
-  const hx = shX + vx * rx * F.neck
-  const hy = shY + vy * rx * F.neck
-  const hr = Math.max(2, rx * F.head)
+  // 머리 — 몸통 **중심**에서 곧장 잰다(어깨를 안 거친다). sim/target.ts의 헤드샷 판정이
+  // 정확히 이 식(target.y + target.r * archerHeadUp)이라, 그림과 판정이 같은 자리를 본다.
+  const hx = x + vx * rx * P.enemy.archerHeadUp
+  const hy = y + vy * rx * P.enemy.archerHeadUp
+  const hr = Math.max(2, rx * P.enemy.archerHeadR)
   ctx.strokeStyle = col
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
