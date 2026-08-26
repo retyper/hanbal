@@ -476,19 +476,18 @@ function drawTargets(
           ctx.imageSmoothingEnabled = false
           ctx.drawImage(im, frame === 0 ? 0 : 57, 0, 56, 57, x - dw / 2, y - dh / 2, dw, dh)
           ctx.imageSmoothingEnabled = true
-          // 렌즈 — 발사 예고 때 위험색으로 달아오른다. 스프라이트 위에 얹는 게임 신호다.
-          if (hot) {
-            ctx.fillStyle = THEME.threat
-            ctx.beginPath()
-            ctx.arc(x - rx * 0.45, y + ry * 0.05, Math.max(2.5, rx * 0.15), 0, TAU)
-            ctx.fill()
-          }
-          // 헤드샷 자리 — sim/target.ts의 판정과 같은 식이다(archerHeadUp·archerHeadR).
-          // 드론도 kind='archer'라 헤드샷이 실제로 존재하는데, 예전엔 화면에 아무 표시도
-          // 없었다 (형: "드론에 헤드샷이 어디있냐"). 로터 위 작은 코어로 읽힌다.
+          // 렌즈 — **헤드샷 판정 그 자리에** 그린다(sim/target.ts와 같은 식:
+          // archerHeadUp·archerHeadR). 예전엔 장식으로 고정된 자리(예고 때만 등장)라
+          // 실제 약점이 화면 어디에도 안 보였다(형: "드론에 헤드샷이 어디있냐"). 그리고
+          // 몸색 원으로 표시했다가 "인간 머리가 왜 달려있냐"는 반려를 받았다 — 사람 살색이
+          // 아니라 이 기계의 눈(렌즈) 그 자체가 약점이어야 자연스럽다. 평소엔 중립색,
+          // 예고 중엔 위험색으로 달아오른다 — 벡터 폴백의 렌즈와 같은 문법이다.
           {
-            const hr2 = Math.max(2, rx * P.enemy.archerHeadR)
-            band(ctx, x, y - ry * P.enemy.archerHeadUp, hr2, hr2, bodyCol)
+            const hr2 = Math.max(2.5, rx * P.enemy.archerHeadR)
+            ctx.fillStyle = hot ? THEME.threat : THEME.targetBand
+            ctx.beginPath()
+            ctx.arc(x, y - ry * P.enemy.archerHeadUp, hr2, 0, TAU)
+            ctx.fill()
           }
           drawHpBar(ctx, x, y - ry * 0.62 - 14, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
           ctx.globalAlpha = 1
@@ -518,12 +517,16 @@ function drawTargets(
         ctx.lineTo(x + rx + rw, y - ry * 0.55)
         ctx.stroke()
         ctx.globalAlpha = 1
-        // 렌즈 — 궁수를 향해 붙는다. 달아오르면(발사 예고) 위험색.
-        const lx = x - rx * 0.4
-        const ly = y + ry * 0.06
+        // 렌즈 — **헤드샷 판정 그 자리에** 그린다(sim/target.ts와 같은 식: archerHeadUp·
+        // archerHeadR). 예전엔 고정 장식 위치였다. 스프라이트 분기와 같은 이유로 옮겼다 —
+        // 사람 살색 원이 아니라 이 렌즈 자체가 약점이어야 "인간 머리가 왜 달려있냐"는
+        // 반려가 다시 안 나온다. 벡터 폴백은 헤드리스 프로브가 항상 보는 경로라 스프라이트
+        // 분기와 반드시 같은 자리를 써야 한다.
+        const lx = x
+        const ly = y - ry * P.enemy.archerHeadUp
         ctx.fillStyle = hot ? THEME.threat : THEME.targetBand
         ctx.beginPath()
-        ctx.arc(lx, ly, Math.max(2.5, rx * 0.16), 0, TAU)
+        ctx.arc(lx, ly, Math.max(2.5, rx * P.enemy.archerHeadR), 0, TAU)
         ctx.fill()
         // 신호등 — 깜빡임. 기계는 이걸로 살아 있다.
         if ((w.elapsed % 1.1) < 0.5) {
@@ -531,12 +534,6 @@ function drawTargets(
           ctx.beginPath()
           ctx.arc(x + rx * 0.5, y - ry * 0.1, 2.2, 0, TAU)
           ctx.fill()
-        }
-        // 헤드샷 자리 — 스프라이트 분기와 같은 식(archerHeadUp·archerHeadR). 벡터
-        // 폴백은 헤드리스 프로브가 항상 보는 경로라 여기도 반드시 맞춰야 한다.
-        {
-          const hr2 = Math.max(2, rx * P.enemy.archerHeadR)
-          band(ctx, x, y - ry * P.enemy.archerHeadUp, hr2, hr2, bodyCol)
         }
         drawHpBar(ctx, x, y - ry * 0.55 - 14, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
         ctx.globalAlpha = 1
