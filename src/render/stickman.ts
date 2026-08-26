@@ -195,22 +195,6 @@ const BOWPOSE = {
   fist: 0.85,
 } as const
 
-/**
- * 릴리즈 팔로스루 — 순수하게 시간의 함수다 (release 시점만 기억한다. 적분 없음 = 프레임률 무관).
- * kick = 반동으로 손이 뒤로 벌어지는 거리(m) · kickT = 반동 한 사이클(s) ·
- * settleT = 손이 제자리로 내려오는 시간(s) · vib = 시위 잔떨림 진폭(m)·주파수(Hz)·감쇠(s).
- */
-const FOLLOW = {
-  kick: 0.07,
-  kickT: 0.16,
-  settleT: 0.5,
-  restFwd: 0.1,
-  restDrop: 0.16,
-  vib: 0.028,
-  vibHz: 16,
-  vibDecay: 0.22,
-} as const
-
 /** 렌더 전용 상태 — sim을 건드리지 않는다. 직전 프레임의 단계와 릴리즈 순간의 손 자리. */
 const relAnim = {
   prevPhase: 'idle' as string,
@@ -416,12 +400,14 @@ function computeRig(cam: Camera, w: World): void {
       relAnim.at = w.elapsed
     }
     const t = relAnim.at >= 0 ? Math.max(0, w.elapsed - relAnim.at) : 1e9
-    // 반동: 놓은 자리에서 **뒤로** 벌어졌다가(어깨가 열린다) —
-    const kick = t < FOLLOW.kickT ? Math.sin((t / FOLLOW.kickT) * Math.PI) * FOLLOW.kick : 0
-    // — settleT에 걸쳐 편한 자리(어깨 앞·아래)로 내려온다.
-    const settle = smoothstep(Math.min(1, t / FOLLOW.settleT))
-    const restX = rig.sx + ux * FOLLOW.restFwd - vx * FOLLOW.restDrop
-    const restY = rig.sy + uy * FOLLOW.restFwd - vy * FOLLOW.restDrop
+    // 반동: '팅' — 놓은 자리에서 빠르게 뒤로 벌어졌다(어깨가 열린다) 빠르게 돌아온다.
+    const kick = t < P.release.kickT ? Math.sin((t / P.release.kickT) * Math.PI) * P.release.kick : 0
+    // 하강은 반동이 끝난 뒤부터 잰다 — 두 동작이 겹치면 '팅'이 뭉개져 스르륵으로 읽힌다.
+    // ease-out(처음 빠르고 갈수록 느려짐)이라 반동 직후 가장 빠르게 떨어지다 편한 자리에서 멎는다.
+    const t2 = Math.max(0, t - P.release.kickT)
+    const settle = 1 - Math.pow(1 - clamp01(t2 / P.release.settleT), P.release.settleEase)
+    const restX = rig.sx + ux * P.release.restFwd - vx * P.release.restDrop
+    const restY = rig.sy + uy * P.release.restFwd - vy * P.release.restDrop
     rig.hdX = lerp(relAnim.hx - ux * kick, restX, settle)
     rig.hdY = lerp(relAnim.hy - uy * kick, restY, settle)
   }
@@ -705,9 +691,9 @@ export function drawArcher(
     ctx.lineTo(worldToScreenX(cam, rig.nockX), worldToScreenY(cam, rig.nockY))
   } else {
     const vt = relAnim.at >= 0 ? Math.max(0, w.elapsed - relAnim.at) : 1e9
-    if (vt < FOLLOW.vibDecay * 3) {
+    if (vt < P.release.vibDecay * 3) {
       // 잔떨림 — 시위 중앙이 u축으로 감쇠 진동한다. 이게 "튕겨 돌아왔다"의 마침표다.
-      const amp = FOLLOW.vib * Math.exp(-vt / FOLLOW.vibDecay) * Math.sin(vt * FOLLOW.vibHz * TAU)
+      const amp = P.release.vib * Math.exp(-vt / P.release.vibDecay) * Math.sin(vt * P.release.vibHz * TAU)
       const mx = (tipAx + tipBx) * 0.5 + rig.ux * amp
       const my = (tipAy + tipBy) * 0.5 + rig.uy * amp
       ctx.lineTo(worldToScreenX(cam, mx), worldToScreenY(cam, my))

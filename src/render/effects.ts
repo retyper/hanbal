@@ -232,10 +232,22 @@ export interface Fx {
    *
    * 실시간 페이싱 값이라 sim 결정론과 무관하다 (히트스톱과 같은 급). 스텝 수는 그대로고
    * 벽시계 배치만 늘어난다.
+   *
+   * 2026-08-26 (형의 지적): "빠르게 맞추다보면 다른 화살 쏘고 있는데 화면이 계속 느려진 상태다."
+   * 원인은 조건이 "판마다 한 번"을 코드로 강제하지 않았다는 것 — 과녁이 하나뿐인 판(1-1)이나
+   * 적 1명과 붙는 전투는 **처음부터 끝까지 alive===1**이라 그 판의 모든 발이 슬로모였다.
+   * 재시도(빗맞음 후 다시 조준)도 매번 다시 걸렸다. oneShotUsed/oneShotActive가 그걸 막는다:
+   * 이 판에서 딱 한 번, 처음 걸리는 발에서만 켜지고 그 발이 끝나면 다시는 안 켜진다.
    */
   oneShot: number
   /** 이번 프레임에 조건이 참인가. 램프는 updateFx가 한다 — 툭 끊으면 슬로모가 아니라 렉이다. */
   oneShotWant: boolean
+  /** 이번 판에서 '한 발'을 이미 썼는가. "판마다 한 번"을 실제로 강제하는 값 (아래 pumpEvents 참고). */
+  oneShotUsed: boolean
+  /** 지금 그 한 번이 진행 중인가 (화살이 아직 날고 있다). */
+  oneShotActive: boolean
+  /** 직전 프레임의 w.elapsed. 되감기면(판이 바뀌면) oneShotUsed를 새로 푼다. */
+  oneShotElapsedPrev: number
   /** 남은 슬로모 (실시간 s) */
   slow: number
   /** 연쇄 비네트 0..1 과 그 나이 (s) */
@@ -341,6 +353,9 @@ export function createFx(): Fx {
     hitStop: 0,
     oneShot: 0,
     oneShotWant: false,
+    oneShotUsed: false,
+    oneShotActive: false,
+    oneShotElapsedPrev: -1,
     slow: 0,
     glow: 0,
     glowAge: 0,
@@ -655,8 +670,18 @@ export function pumpEvents(fx: Fx, w: World): void {
   if (fx.hitStop > cap) fx.hitStop = cap
 
   // ── '한 발' — 마지막 하나를 향해 화살이 난다 ──
-  // 조건을 좁게 잡는다. "과녁이 하나 남았다"만으로 걸면 과녁 하나짜리 판(1-1)이
-  // 통째로 슬로모가 된다. **내 화살이 그 하나를 향해 날고 있는 동안**만이다.
+  // 조건을 좁게 잡는다. "과녁이 하나 남았다"만으로 걸면 과녁 하나짜리 판(1-1)이나
+  // 적 1명짜리 전투가 통째로 슬로모가 된다. **내 화살이 그 하나를 향해 날고 있는 동안**만이다.
+  //
+  // 그것만으로는 부족했다 (형: "빠르게 맞추다보면 화면이 계속 느려진 상태"). 그 조건은
+  // 매 발 다시 참이 될 수 있어서, 1-1류 판이나 재시도(빗맞고 다시 쏨)마다 반복해서 걸렸다.
+  // oneShotUsed가 판당 한 번만 켜지게 잠근다 — 판이 바뀌면(시계가 되감기면) 다시 푼다.
+  if (w.elapsed < fx.oneShotElapsedPrev) {
+    fx.oneShotUsed = false
+    fx.oneShotActive = false
+  }
+  fx.oneShotElapsedPrev = w.elapsed
+
   let alive = 0
   for (let i = 0; i < w.targets.length; i++) {
     const t = w.targets[i]
@@ -672,7 +697,15 @@ export function pumpEvents(fx: Fx, w: World): void {
       }
     }
   }
-  fx.oneShotWant = alive === 1 && flying && w.status === 'playing'
+  const rawWant = alive === 1 && flying && w.status === 'playing'
+  if (rawWant && !fx.oneShotUsed) {
+    fx.oneShotActive = true
+  } else if (fx.oneShotActive && !rawWant) {
+    // 그 발이 끝났다(맞았든 빗나갔든) — 이 판의 한 번을 여기서 소비한다.
+    fx.oneShotActive = false
+    fx.oneShotUsed = true
+  }
+  fx.oneShotWant = fx.oneShotActive
 }
 
 /** 지금 이펙트 시간이 흐르는 속도. 정중앙 직후에만 1보다 작다. */
