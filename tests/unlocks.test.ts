@@ -1,44 +1,53 @@
 /**
- * 칭호 장착 (2026-08-26, 형: "칭호는 얻어도 장착하거나 그런거 전혀없고 재미도 없다").
- *
- * currentTitle()이 이제 두 가지를 판정한다: 고른 칭호가 있으면 그걸 보여주고,
- * 없거나 무효하면(안 딴 것·오타) 옛 규칙(가장 어려운 것)으로 떨어진다.
- * **가진 적 없는 칭호를 사칭하게 두지 않는다** — 그건 세이브 조작으로 칭호를 훔치는 길이다.
+ * 칭호(업적) 아이콘 (2026-08-26, 형: "스팀이랑 똑같이 아이콘이랑 업적 달성 같은걸로
+ * 해놓던지"). 장착 개념은 걷어냈다 — 스팀은 뭘 달았는지 보여주는 게 아니라 몇 개
+ * 땄는지, 그리고 각각에 아이콘이 있는지만 보여준다. 여기서 지키는 건 그 전제 하나다:
+ * **칭호마다 반드시 자기 아이콘이 있다.** 하나라도 빠지면 잠긴 것과 구분이 안 된다
+ * (titleIconSvg의 미확인 id 폴백이 잠긴 칸에도 쓰이는 그 실루엣이라서).
  */
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { currentTitle, unlockedTitles } from '../src/game/unlocks.ts'
+import { UNLOCKS } from '../src/game/unlocks.ts'
+import { TITLE_ICON, titleIconSvg, isTitleId } from '../src/ui/titleicons.ts'
 
-describe('칭호 장착', () => {
-  it('고른 칭호가 딴 것이면 그걸 보여준다', () => {
-    const unlocked = ['title.oneshot', 'title.hawk', 'title.forty']
-    assert.equal(currentTitle(unlocked, 'title.hawk'), '매눈의 궁수')
+const titleDefs = UNLOCKS.filter((d) => d.kind === 'title')
+
+describe('칭호 아이콘', () => {
+  it('칭호 8개가 그대로 있다 (숫자가 바뀌면 이 테스트도 같이 갱신할 것)', () => {
+    assert.equal(titleDefs.length, 8)
   })
 
-  it('안 딴 칭호를 가리키면 무시하고 옛 규칙(가장 어려운 것)으로 떨어진다', () => {
-    const unlocked = ['title.oneshot', 'title.hawk']
-    // title.flawless는 아직 못 땄다 — 세이브를 조작해도 안 가진 칭호를 두를 수 없다.
-    assert.equal(currentTitle(unlocked, 'title.flawless'), '매눈의 궁수')
+  it('칭호마다 자기만의 아이콘이 있다 — 빠지면 잠긴 것과 구분이 안 된다', () => {
+    for (const d of titleDefs) {
+      assert.ok(d.id in TITLE_ICON, `${d.id}(${d.label})에 아이콘이 없다`)
+    }
   })
 
-  it('아직 아무것도 안 골랐으면(빈 문자열) 가장 어려운 것으로 떨어진다', () => {
-    const unlocked = ['title.oneshot', 'title.hawk']
-    assert.equal(currentTitle(unlocked, ''), '매눈의 궁수')
-    assert.equal(currentTitle(unlocked), '매눈의 궁수')
+  it('TITLE_ICON에 칭호가 아닌 id·죽은 id가 섞여 있지 않다', () => {
+    const ids = new Set(titleDefs.map((d) => d.id))
+    for (const key of Object.keys(TITLE_ICON)) {
+      assert.ok(ids.has(key), `TITLE_ICON에 있는 ${key}가 실제 칭호 목록에 없다`)
+    }
   })
 
-  it('활 해금 id를 칭호로 가리켜도 거부한다 (kind 불일치)', () => {
-    const unlocked = ['title.oneshot', 'bow.gakgung']
-    assert.equal(currentTitle(unlocked, 'bow.gakgung'), '첫 무결')
+  it('아이콘끼리 그림이 겹치지 않는다 (복붙 실수로 같은 path를 두 번 쓰는 사고 방지)', () => {
+    const seen = new Set<string>()
+    for (const [id, svg] of Object.entries(TITLE_ICON)) {
+      assert.ok(!seen.has(svg), `${id}의 아이콘이 다른 칭호와 그림이 똑같다`)
+      seen.add(svg)
+    }
   })
 
-  it('아무 칭호도 없으면 빈 문자열', () => {
-    assert.equal(currentTitle([]), '')
+  it('활 해금(bow.*)은 칭호가 아니다 — 아이콘 대상에서 빠져야 한다', () => {
+    assert.equal(isTitleId('bow.gakgung'), false)
+    assert.equal(isTitleId('title.oneshot'), true)
+    assert.equal(isTitleId('없는id'), false)
   })
 
-  it('unlockedTitles는 딴 칭호만, 목록 순서대로 돌려준다', () => {
-    const unlocked = ['bow.gakgung', 'title.forty', 'title.oneshot']
-    const got = unlockedTitles(unlocked).map((d) => d.id)
-    assert.deepEqual(got, ['title.oneshot', 'title.forty'], '목록(UNLOCKS) 순서를 지켜야 한다')
+  it('모르는 id는 크래시 없이 잠긴 칸과 같은 실루엣을 돌려준다', () => {
+    const unknown = titleIconSvg('title.없는것', 20)
+    const locked = titleIconSvg('', 20)
+    assert.equal(unknown, locked)
+    assert.ok(unknown.includes('<svg'))
   })
 })

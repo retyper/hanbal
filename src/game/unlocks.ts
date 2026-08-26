@@ -295,37 +295,6 @@ export function unlockOfBow(bow: BowKindId): UnlockDef | undefined {
   return undefined
 }
 
-/**
- * 지금 달고 있는 칭호. 목록 뒤쪽일수록 어려운 조건이라 **가장 나중 것**이 현재 칭호다.
- * 없으면 빈 문자열 — 화면이 "아직 칭호가 없다"를 그린다.
- *
- * `equipped`가 주어지고 실제로 딴 칭호면 그걸 우선한다 (형: "장착하거나 그런거 전혀
- * 없고"). 아직 아무것도 고른 적 없거나(빈 문자열) 고른 것을 잃어버린 경우(예: 세이브를
- * 되돌림)에만 기존 규칙(가장 어려운 것)으로 떨어진다 — 그래서 항상 뭔가는 보인다.
- */
-export function currentTitle(unlocked: readonly string[], equipped?: string): string {
-  if (equipped !== undefined && equipped !== '') {
-    const d = unlockById(equipped)
-    if (d !== undefined && d.kind === 'title' && unlocked.includes(d.id)) return d.label
-  }
-  let title = ''
-  for (let i = 0; i < UNLOCKS.length; i++) {
-    const d = UNLOCKS[i]
-    if (d === undefined || d.kind !== 'title') continue
-    if (unlocked.includes(d.id)) title = d.label
-  }
-  return title
-}
-
-/** 딴 칭호만, 목록 순서대로. 칭호 고르기 UI가 쓴다. */
-export function unlockedTitles(unlocked: readonly string[]): UnlockDef[] {
-  const out: UnlockDef[] = []
-  for (let i = 0; i < UNLOCKS.length; i++) {
-    const d = UNLOCKS[i]
-    if (d !== undefined && d.kind === 'title' && unlocked.includes(d.id)) out.push(d)
-  }
-  return out
-}
 
 /**
  * 아직 잠긴 것 중 **가장 가까운 것부터** n개. 화면 위쪽에 이걸 올려두면

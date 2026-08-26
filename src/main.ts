@@ -10,7 +10,7 @@
  */
 
 import { createLoop } from './game/loop.ts'
-import { loadSave, writeSave } from './game/save.ts'
+import { loadSave } from './game/save.ts'
 import { progressOf, unlockedBows } from './game/unlocks.ts'
 import { createOverlay } from './ui/overlay.ts'
 import { mountGrowth, showOfflineGain, showRunGain } from './ui/growth.ts'
@@ -35,17 +35,10 @@ const withCollection = (fn: (m: CollectionMod) => void): void => {
   void import('./ui/collection.ts').then((m) => {
     if (collection === null) {
       collection = m
-      m.mountCollection(overlay, progressOf(save), save.unlocked, save.stars, save.equippedTitle, onEquipTitle)
+      m.mountCollection(overlay, progressOf(save), save.unlocked, save.stars)
     }
     fn(m)
   })
-}
-
-/** 칭호를 골라 내건다 (형: "칭호는 장착하거나 그런거 전혀없고"). 저장은 즉시, 화면은 그 자리에서 갱신. */
-const onEquipTitle = (id: string): void => {
-  save.equippedTitle = id
-  writeSave(save)
-  collection?.updateCollection(progressOf(save), save.unlocked, save.stars, save.equippedTitle)
 }
 
 // 튜닝 콘솔은 개발 빌드에만 들어간다 (제약 C6 — 프로덕션 번들 예산).
@@ -98,7 +91,7 @@ const loop = createLoop(el, {
     progressed: () => {
       // 아직 한 번도 안 열었으면 갱신할 화면도 없다 — 열 때 최신 상태로 마운트된다.
       if (collection !== null) {
-        collection.updateCollection(progressOf(save), save.unlocked, save.stars, save.equippedTitle)
+        collection.updateCollection(progressOf(save), save.unlocked, save.stars)
       }
     },
   },
