@@ -65,6 +65,8 @@ export interface Spot {
   speed?: number
   /** bonus 전용 — 맞히면 돌려주는 화살 수. 없으면 1 */
   give?: number
+  /** 폭탄 — 죽으면 둘레의 과녁을 같이 친다 (P.target.bombRadius, sim/target.ts). */
+  bomb?: boolean
 }
 
 /** 각크기 h에서 이 자리의 실제 반경을 계산해 sim이 먹는 형태로 굽는다. */
@@ -82,5 +84,6 @@ export function specOf(h: number, s: Spot): TargetSpec {
   if (s.freq !== undefined) spec.freq = s.freq
   if (s.speed !== undefined) spec.speed = s.speed
   if (s.give !== undefined) spec.give = s.give
+  if (s.bomb !== undefined) spec.bomb = s.bomb
   return spec
 }

@@ -14,7 +14,7 @@ import { loadSave, writeSave } from './game/save.ts'
 import { progressOf, unlockedBows } from './game/unlocks.ts'
 import { createOverlay } from './ui/overlay.ts'
 import { mountGrowth, showOfflineGain, showRunGain } from './ui/growth.ts'
-import { mountLoadout, mountSupply, showRunOver } from './ui/loadout.ts'
+import { mountFork, mountLoadout, mountSupply, showRunOver } from './ui/loadout.ts'
 import { mountSandbox } from './ui/sandbox.ts'
 import { mountQuiver } from './ui/quiver.ts'
 
@@ -88,6 +88,8 @@ const loop = createLoop(el, {
       ),
     // 보스 보급 3택 (docs/RUN.md) — 특수살 재고의 유일한 큰 획득처.
     supply: (offer, count, heal, onPick) => mountSupply(overlay, offer, count, save.arrowStock, heal, onPick),
+    // 갈림길 2택 (docs/MEGAHIT.md §3) — 판마다(보스 제외) 뜨는 카드.
+    fork: (options, onPick) => mountFork(overlay, options, onPick),
     runOver: (reached, score, best, isNew, first, reason, summary, onNext) =>
       showRunOver(overlay, reached, score, best, isNew, first, reason, summary, onNext),
     toast: (t) => overlay.toast(t),

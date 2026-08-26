@@ -11,6 +11,7 @@ import { ARROW_KINDS, type ArrowKindId } from '../game/arrows.ts'
 import { ARROW_TINT, arrowIconSvg, bowIconSvg } from './arrowicons.ts'
 import { BOW_KINDS, bowKind, masteryLevel, type BowKindId } from '../game/bows.ts'
 import { unlockOfBow } from '../game/unlocks.ts'
+import type { ForkOption } from '../game/forks.ts'
 import type { Overlay } from './overlay.ts'
 
 const PANEL_ID = 'loadout'
@@ -254,6 +255,72 @@ export function showRunOver(
     })
   }
   o.show(OVER_ID, { sticky: true })
+}
+
+/** 갈림길 카드의 밑색 — 바람골은 하늘, 밀집은 위험. game/forks.ts의 id로 고른다. */
+const FORK_TINT: Record<string, string> = { wind: '#7fd6c8', dense: '#ff8f5d' }
+
+/**
+ * 갈림길 2택 (docs/MEGAHIT.md §3 · game/forks.ts). 판이 끝나면 뜬다. onPick은 정확히 한 번 —
+ * 카드를 고르는 순간 그 모디파이어를 얹은 다음 판으로 바로 들어간다.
+ *
+ * ★ 형의 반려 (2026-08-26): "그따위로 텍스트로 선택하게 하는 게임이 어딨냐?" — 캔버스
+ *   힌트 문자열 + 숫자키였던 첫 구현을 버렸다. 보급 3택과 같은 카드 문법으로 다시 짰다 —
+ *   이 게임에 이미 있던, 형이 반려한 적 없는 문법을 그대로 물려받는 게 제일 안전하다.
+ *   건너뛰기는 없다 — 텍스트 힌트 시절의 "그냥 당기면 기본값" 관용은 사라졌다.
+ */
+export function mountFork(
+  o: Overlay,
+  options: readonly [ForkOption, ForkOption],
+  onPick: (index: 0 | 1) => void,
+): void {
+  const panel = o.panel('fork')
+  panel.replaceChildren()
+  panel.setAttribute('aria-label', '갈림길')
+
+  const style = document.createElement('style')
+  style.textContent = CSS
+  panel.appendChild(style)
+
+  const head = document.createElement('div')
+  head.className = 'l-h'
+  head.innerHTML = '<h2>갈림길</h2>'
+  const sub = document.createElement('p')
+  sub.className = 'hb-lead'
+  sub.textContent = '다음 판에 무엇을 얹을까 — 하나를 고른다.'
+  panel.append(head, sub)
+
+  const grid = document.createElement('div')
+  grid.className = 'l-grid'
+  let done = false
+  const onVisibility = (): void => {
+    if (!document.hidden && !done) o.show('fork')
+  }
+  document.addEventListener('visibilitychange', onVisibility, true)
+  const finish = (i: 0 | 1): void => {
+    if (done) return
+    done = true
+    document.removeEventListener('visibilitychange', onVisibility, true)
+    o.hide(true)
+    onPick(i)
+  }
+  for (let i = 0; i < options.length; i++) {
+    const opt = options[i]
+    if (opt === undefined) continue
+    const idx = i as 0 | 1
+    const card = document.createElement('button')
+    card.type = 'button'
+    card.className = 'l-card'
+    card.style.setProperty('--tint', FORK_TINT[opt.id] ?? '#7fd6c8')
+    card.innerHTML = `<span class="l-n"></span><span class="l-syn2"></span><span class="l-d"></span>`
+    ;(card.querySelector('.l-n') as HTMLElement).textContent = `${idx + 1}) ${opt.title}`
+    ;(card.querySelector('.l-d') as HTMLElement).textContent = opt.desc
+    card.addEventListener('click', () => finish(idx))
+    grid.appendChild(card)
+  }
+  panel.appendChild(grid)
+
+  o.show('fork', { sticky: true })
 }
 
 /**

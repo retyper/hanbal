@@ -263,6 +263,8 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
     head,
     foe,
     dmg: hurt.dealt,
+    // 적 궁수 헤드샷만 즉사(체력 무관)라 dmg가 "남은 체력"이지 "넣은 피해"가 아니다 (damageOf).
+    execute: target.kind === 'archer' && head,
     arrow: arrow.id,
   })
 
@@ -341,7 +343,11 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
 }
 
 /**
- * 폭발 살 — 명중 지점 둘레의 과녁을 같이 친다 (docs/HOOK.md ★1).
+ * 폭발 — 명중 지점 둘레의 과녁을 같이 친다 (docs/HOOK.md ★1 · 폭탄 과녁은 2026-08-26).
+ *
+ * 두 근원이 반경을 낸다: **화살**(fx.burstRadius, 폭발 살 — 맞을 때마다, 죽든 안 죽든)과
+ * **과녁 자신**(center.bomb, 폭탄 — **죽는 순간에만** 한 번). `!center.alive`로 후자를
+ * 가른다: 이 함수가 불릴 때 아직 살아 있으면(보스·궁수가 버틴 경우) 폭탄은 아직 안 터진다.
  *
  * 이벤트는 `chain`을 재사용한다. 새 이벤트 종류를 만들면 render·audio 양쪽에 분기가 하나씩
  * 더 생기는데, 플레이어에게 이건 "딸려 죽었다"는 같은 사건이다.
@@ -350,7 +356,7 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
  * 판 전체를 지우면 조준이 사라진다. 다만 공중 과녁은 낙하로 넘겨 기존 연쇄에 합류시킨다.
  */
 function burst(w: World, center: Target): void {
-  const R = w.fx.burstRadius
+  const R = Math.max(w.fx.burstRadius, !center.alive && center.bomb ? P.target.bombRadius : 0)
   if (R <= 0) return
   const r2 = R * R
   const targets = w.targets

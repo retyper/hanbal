@@ -101,6 +101,10 @@ const DRAW = {
   targetLineW: 2,
   /** 반경이 이보다 작으면 띠를 다 그려봐야 뭉갠다. 점 하나로 떨어진다 (px). */
   ringMinPx: 5,
+  /** 폭탄 과녁(TargetSpec.bomb) 위에 얹는 경고 halo — 반경 배수·점선 패턴·맥박 속도. */
+  bombRingMul: 1.35,
+  bombDash: 5,
+  bombPulseHz: 2.2,
 
   aerialStem: 0.35,
   /** 공중 과녁 후광 — 매달린 등불이라는 걸 말해주는 유일한 신호 */
@@ -738,6 +742,22 @@ function drawTargets(
       band(ctx, x, y, rx * DRAW.ringBand, ry * DRAW.ringBand, THEME.targetBand)
       band(ctx, x, y, rx * DRAW.ringAccent, ry * DRAW.ringAccent, THEME.accent)
       band(ctx, x, y, rx * DRAW.ringCore, ry * DRAW.ringCore, THEME.target2)
+    }
+
+    // 폭탄 halo — 죽으면 둘레를 같이 치는 과녁이라는 경고 (sim/target.ts, 형: "폭발하는
+    // 폭탄 같은 것도 넣어야지"). 점선 + 맥박이라 색을 하나도 늘리지 않고도(GDD 8장 절제)
+    // "이건 다르다"가 먼저 읽힌다. 위(마지막)에 그려 어떤 과녁 모양 위에도 또렷하다.
+    if (t.bomb && !t.falling) {
+      const pulse = 0.55 + 0.45 * Math.sin(w.elapsed * DRAW.bombPulseHz * TAU)
+      ctx.save()
+      ctx.globalAlpha = pulse
+      ctx.strokeStyle = THEME.threat
+      ctx.lineWidth = Math.max(1.5, r * 0.09)
+      ctx.setLineDash([DRAW.bombDash, DRAW.bombDash])
+      ctx.beginPath()
+      ctx.ellipse(x, y, rx * DRAW.bombRingMul, ry * DRAW.bombRingMul, 0, 0, TAU)
+      ctx.stroke()
+      ctx.restore()
     }
 
     ctx.globalAlpha = 1

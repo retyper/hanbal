@@ -41,6 +41,7 @@ const SPAWNS: ReadonlyArray<readonly [string, string]> = [
   ['peek', '숨는 사수'],
   ['drone', '드론'],
   ['bonus-heal', '기력 보급'],
+  ['bomb', '폭탄'],
   ['boss-0', '눈알귀신'],
   ['boss-1', '갑주귀신'],
   ['boss-2', '쌍눈귀신'],

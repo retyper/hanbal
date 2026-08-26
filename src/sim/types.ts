@@ -272,6 +272,8 @@ export interface Target {
   chainDepth: number
   /** 기본 점수. 링 명중도로 배수가 붙는다. */
   score: number
+  /** 폭탄인가 (TargetSpec.bomb). 죽으면 P.target.bombRadius 안의 과녁을 같이 친다. */
+  bomb: boolean
 }
 
 // ───────────────────────────── 이벤트 ─────────────────────────────
@@ -313,6 +315,14 @@ export type SimEvent =
        * 누적값이고, 피해는 **그 한 발이 무엇을 했는가**다. 순간에 띄울 것은 후자다.
        */
       dmg: number
+      /**
+       * 적 궁수 헤드샷 — **체력과 무관한 즉사**라 `dmg`가 "실제로 넣은 피해"가 아니라
+       * "그때 남아 있던 체력"이다(target.ts damageOf). 이미 몸통샷으로 깎여 있던 적이면
+       * 이 값이 작아서, 화면이 "몸통 144 → 헤드샷 70"처럼 **머리가 더 약해 보이는** 거짓
+       * 신호를 낸다(형의 지적, 2026-08-26). 렌더는 이 값이 참이면 그 숫자를 안 띄운다 —
+       * '헤드샷!'이라는 사실이 숫자보다 정직하다.
+       */
+      execute: boolean
       arrow: number
     }
   /** 연쇄는 화살이 아니라 낙하물·폭발이 일으킨다. 그래서 arrow 가 없다. */
@@ -381,6 +391,13 @@ export interface TargetSpec {
   armored?: boolean
   /** archer 전용 — 조준 산포 배수 (작을수록 정예). */
   aimMul?: number
+  /**
+   * 폭탄 — 죽으면(어떤 화살로든) 둘레의 과녁을 같이 친다 (P.target.bombRadius).
+   * '폭발 살'(arrowkind burst)과 같은 함수(target.ts burst())를 쓴다 — 화살이 아니라
+   * **과녁 자신이** 터지는 것이라 어떤 살로 쏴도 터진다. 형: "맞히는 오브젝트중에
+   * 폭발하는 폭탄이라던가 이런것도 넣어야지" (2026-08-26).
+   */
+  bomb?: boolean
 }
 
 export interface StageDef {

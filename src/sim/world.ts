@@ -138,6 +138,7 @@ function newTarget(): Target {
     aimMul: 1,
     chainDepth: 0,
     score: FALLBACK_TARGET_SCORE,
+    bomb: false,
   }
 }
 
@@ -270,6 +271,7 @@ function loadTarget(t: Target, id: number, spec: TargetSpec): void {
   t.aimMul = spec.aimMul ?? 1
   t.chainDepth = 0
   t.score = spec.score ?? FALLBACK_TARGET_SCORE
+  t.bomb = spec.bomb === true
 }
 
 function clearTarget(t: Target): void {

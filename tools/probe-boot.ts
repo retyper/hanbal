@@ -331,6 +331,8 @@ const loop = createLoop(canvas as unknown as HTMLCanvasElement, {
       const first = offer[0]
       if (first !== undefined) onPick(first)
     },
+    // 갈림길도 패널이다 — 왼쪽(바람골)을 바로 고른다 (프로브는 흐름만 잰다).
+    fork: (_options, onPick) => onPick(0),
     runOver: (reached, _score, _best, isNew, _first, _reason, _summary, onNext) => {
       runOverShown++
       void reached; void isNew

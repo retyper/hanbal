@@ -28,7 +28,7 @@ import { bowMods, masteryLevel } from './bows.ts'
 import type { LoadoutPick } from '../ui/loadout.ts'
 import { rollSupply, rollSupplyCount } from './supply.ts'
 import { BOSS_EVERY } from './stages.ts'
-import { applyFork, denseReward, FORK_OPTIONS, hasFork, windTrainMul } from './forks.ts'
+import { applyFork, denseReward, FORK_OPTIONS, hasFork, windTrainMul, type ForkOption } from './forks.ts'
 import { bullseyeAcc, gradeRun, rewardLine, type RunStats } from './rewards.ts'
 import { evaluateUnlocks, progressOf, unlockedBows } from './unlocks.ts'
 import { makeRng } from '../core/rng.ts'
@@ -70,6 +70,8 @@ export interface LoopUi {
     offer: readonly ArrowKindId[], count: number, heal: number,
     onPick: (id: ArrowKindId | 'heal') => void,
   ): void
+  /** 갈림길 2택 (docs/MEGAHIT.md §3). 판이 끝날 때마다(보스판 제외) 뜬다. onPick은 정확히 한 번. */
+  fork(options: readonly [ForkOption, ForkOption], onPick: (index: 0 | 1) => void): void
   /** 구석 알림 한 줄 (여정 포기 확인 등). 모달이 아니다. ms를 주면 그 시간만 산다. */
   toast(text: string, ms?: number): void
   /** 새로 열린 해금. **모달로 막지 않는다** — 구석 알림 한 줄이다 (C1). */
@@ -107,10 +109,9 @@ export interface GameLoop {
 
 /**
  * 판이 끝났을 때 아래 한 줄. 매 프레임 문자열을 만들지 않으려고 모듈 상수로 둔다 (A5).
- * 갈림길(docs/MEGAHIT.md §3)이 생기면서 평범한 "당기면 다음 판"은 보스 직전 말고는
- * 안 쓴다 — 나머지 전부는 카드 둘을 알리는 이 문구가 그 자리를 대신한다.
+ * 갈림길(docs/MEGAHIT.md §3)이 있는 판은 카드 모달(ui.fork)이 그 자리를 대신하므로
+ * 이 힌트는 이제 보스 직전(카드 없음)에서만 쓴다.
  */
-const HINT_FORK = '다음 판: 1)바람골 2)밀집'
 /** 다음 판이 귀신(보스)일 때의 예고 — 긴장은 예고에서 시작된다 (감사 재미 P1). */
 const HINT_BOSS = '다음은 귀신이다 — 당기면 맞선다'
 /** R 한 번으로 여정을 접으면 실수 한 번이 기록을 지운다. 두 번째 R까지의 유효 시간 (ms). */
@@ -704,29 +705,31 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       }
     }
 
-    // 갈림길 2택 (docs/MEGAHIT.md §3) — 클리어 화면이 떠 있는 동안 1/2로 고른다.
-    // **누르지 않아도 된다** — 안 고르면 forkPick은 0(바람골)에 머문다 (건너뛰면 왼쪽이 기본).
-    // 조건과 무관하게 매 틱 소비한다(loop-lens 지적) — 로드아웃·보급 패널이 떠 있는 동안
-    // (choosing) 무심코 누른 1/2가 에지에 남아 있다가 한참 뒤 엉뚱한 '클리어' 화면에서
-    // 조용히 적용되는 사고를 막는다.
-    const forkKey = input.takeFork()
+    // 갈림길 2택 (docs/MEGAHIT.md §3) — 판이 끝나면 카드 둘이 뜬다 (형: "텍스트로 선택하게
+    // 하는 게임이 어딨냐" — 캔버스 힌트+숫자키였던 첫 구현을 버리고 보급 3택과 같은 카드로).
+    // choosing이 열쇠다: 여기서 true로 만드는 순간 아래 '결과 화면' 블록도, 이 블록 자신도
+    // (다음 프레임부터 !choosing이 거짓이라) 다시 안 돈다 — 카드가 정확히 한 번만 뜬다.
     if (!paused && !choosing && w.status === 'cleared' && hasFork(stageIndex + 2)) {
-      if (forkKey === 0 || forkKey === 1) {
-        forkPick = forkKey
-        const opt = FORK_OPTIONS[forkKey]
-        if (opt !== undefined) ui.toast(`${opt.title} 선택 — 당기면 그 판으로`, 1800)
-      }
+      choosing = true
+      ui.fork(FORK_OPTIONS, (i) => {
+        choosing = false
+        playUi(sfx, 'press')
+        forkPick = i
+        if (stageIndex < MAX_STAGE_INDEX) stageIndex++
+        armFork = true
+        beginStage()
+      })
     }
 
     // 결과 화면에 가두지 않는다 (제약 C1). 다시 누르는 순간 바로 다음 판. 확인 버튼 없음.
+    // 갈림길이 있는 판은 위 카드가 그 자리를 대신하므로(choosing=true라 여기 안 들어온다),
+    // 이 블록에 남는 건 보스 직전(카드 없음)과 패배 정산뿐이다.
     const drawingNow = input.frame.drawing
     if (!paused && !choosing && w.status !== 'playing' && drawingNow && !prevDrawing) {
       // 클리어면 다음 판. ★ 40판이 끝나도 멈추지 않는다 — endless.ts 가 계속 구워 준다.
       // 패배면 정산이 끝나기를 기다리지 않고 여기서 정산한다 — endRun까지 finishRun이 한다.
       if (w.status === 'cleared') {
         if (stageIndex < MAX_STAGE_INDEX) stageIndex++
-        // 방금 고른(또는 기본으로 남은) 카드를 다음 판에 얹는다 — loadStage가 소비한다.
-        armFork = true
         beginStage()
       } else if (!awarded) {
         awarded = true
@@ -737,10 +740,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     }
 
     hud.muted = sfxMuted(sfx)
-    // 갈림길이 있는 판이면(hasFork) 힌트가 곧 카드 둘 — 아니면(보스 직전) 옛 예고 그대로.
-    hud.toast = w.status !== 'cleared'
-      ? ''
-      : hasFork(stageIndex + 2) ? HINT_FORK : HINT_BOSS
+    // 갈림길이 있는 판은 카드가 이미 그 자리를 말하므로 캔버스 힌트가 필요 없다.
+    hud.toast = w.status !== 'cleared' || hasFork(stageIndex + 2) ? '' : HINT_BOSS
 
     // draw 안에서 이펙트·카메라가 이번 프레임의 이벤트를 읽는다.
     // 그래서 명중 반응이 한 프레임도 늦지 않는다 (feel-lens 4항).
@@ -912,6 +913,13 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
         sandboxAdd(w, { kind: 'bonus', x: rx2, y: 3 + ry2 * 0.5, r: 0.7, heal: 20, score: 50 })
       } else if (kind === 'bonus') {
         sandboxAdd(w, { kind: 'bonus', x: rx2, y: 3 + ry2 * 0.5, r: 0.7, give: 2, score: 50 })
+      } else if (kind === 'bomb') {
+        // 폭탄 하나 + 반경 안에 딸린 과녁 셋 — 맞히는 순간 셋이 같이 죽어야 "폭탄"이 보인다.
+        const sp = P.sandbox.bombSpread
+        sandboxAdd(w, { kind: 'static', x: rx2, y: 2, r: 0.55, score: 100, bomb: true })
+        sandboxAdd(w, { kind: 'static', x: rx2 + sp, y: 2.2, r: 0.5, score: 100 })
+        sandboxAdd(w, { kind: 'static', x: rx2 - sp, y: 1.8, r: 0.5, score: 100 })
+        sandboxAdd(w, { kind: 'static', x: rx2, y: 0.8, r: 0.5, score: 100 })
       } else {
         sandboxAdd(w, { kind: 'static', x: rx2, y: 1 + ry2 * P.sandbox.spreadHigh, r: 0.55, score: 100 })
       }
