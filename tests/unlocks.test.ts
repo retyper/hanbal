@@ -7,7 +7,7 @@
  */
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { UNLOCKS } from '../src/game/unlocks.ts'
+import { UNLOCKS, emptyProgress, evaluateUnlocks } from '../src/game/unlocks.ts'
 import { TITLE_ICON, titleIconSvg, isTitleId } from '../src/ui/titleicons.ts'
 
 const titleDefs = UNLOCKS.filter((d) => d.kind === 'title')
@@ -49,5 +49,29 @@ describe('칭호 아이콘', () => {
     const locked = titleIconSvg('', 20)
     assert.equal(unknown, locked)
     assert.ok(unknown.includes('<svg'))
+  })
+})
+
+describe('활 해금 — 반복으로는 못 연다 (2026-08-26, 형: "1-10보스 10번잡으면 좋은 무기 생기는게 말이 되냐")', () => {
+  it('보스를 10번 잡아도 10판을 넘은 적이 없으면 각궁이 안 열린다', () => {
+    // 옛 규칙(bossKills)이면 이 상태로 각궁(문턱 1)은 물론 컴파운드(문턱 10)까지 열렸다.
+    const p = { ...emptyProgress(), bossKills: 10, bestRunStage: 9 }
+    const got = evaluateUnlocks(p, [])
+    assert.ok(!got.includes('bow.gakgung'), '10판을 못 넘었는데 각궁이 열렸다')
+    assert.ok(!got.includes('bow.compound'), '10판을 못 넘었는데 컴파운드가 열렸다')
+  })
+
+  it('10판에 도달하면(bossKills 0이어도) 각궁이 연다 — 깊이가 유일한 열쇠다', () => {
+    const p = { ...emptyProgress(), bossKills: 0, bestRunStage: 10 }
+    const got = evaluateUnlocks(p, [])
+    assert.ok(got.includes('bow.gakgung'), '10판에 닿았는데 각궁이 안 열렸다')
+  })
+
+  it('네 활의 문턱이 여전히 10·30·60·100이다 (수치는 그대로, 신호만 바뀌었다)', () => {
+    const p = { ...emptyProgress(), bestRunStage: 100 }
+    const got = evaluateUnlocks(p, [])
+    for (const id of ['bow.gakgung', 'bow.longbow', 'bow.recurve', 'bow.compound']) {
+      assert.ok(got.includes(id), `${id}가 100판 도달에도 안 열렸다`)
+    }
   })
 })

@@ -41,6 +41,16 @@ export interface Progress {
   perfectRuns: number
   /** 누적 보스 처치 수 (10판마다 하나 — docs/RUN.md 3장) */
   bossKills: number
+  /**
+   * 최고 도달 판 (1-based, 여정을 넘어 줄지 않는다 — docs/RUN.md).
+   *
+   * 활 해금이 예전엔 bossKills(누적 처치 수)를 봤는데, 그건 **판을 갈아넣게 만드는**
+   * 신호였다 — 1-10 보스만 계속 잡고 죽어 새 여정으로 돌아가면 실제로는 10판 밖을
+   * 못 나갔는데도 숫자만 쌓였다 (형: "1-10보스 10번잡으면 좋은 무기 생기는게 말이
+   * 되냐"). bestRunStage는 **한 여정 안에서 실제로 얼마나 깊이 갔는가**의 최댓값이라
+   * 반복으로는 절대 안 늘어난다.
+   */
+  bestRunStage: number
 }
 
 /** 아직 아무것도 안 한 사람. 세이브가 없을 때의 기준점. */
@@ -53,6 +63,7 @@ export function emptyProgress(): Progress {
     totalHits: 0,
     perfectRuns: 0,
     bossKills: 0,
+    bestRunStage: 0,
   }
 }
 
@@ -68,6 +79,7 @@ export interface ProgressSource {
   totalHits: number
   perfectRuns: number
   bossKills: number
+  bestRunStage: number
 }
 
 /**
@@ -92,6 +104,7 @@ export function progressOf(d: ProgressSource): Progress {
     totalHits: d.totalHits,
     perfectRuns: d.perfectRuns,
     bossKills: d.bossKills,
+    bestRunStage: d.bestRunStage,
   }
 }
 
@@ -136,17 +149,20 @@ const B_COMPOUND: BowKindId = 'compound'
 // TODO(params): src/tune/params.ts → P.unlock.*  (밸런스 시뮬로 달성 판수를 재보고 나서)
 
 /**
- * 활 문턱 — **보스 처치 수** (docs/RUN.md, 2026-08-24 재잠금).
+ * 활 문턱 — **최고 도달 판** (2026-08-26 재잠금, 이전엔 보스 처치 수였다).
  *
- * 처음엔 판수·명중·별에 걸었는데, 옛 캠페인 기록이 승계되면서 전부 즉시 충족됐다
- * ("시작할 때부터 모든 활이 해금되어 있으면 안 되지 않냐" — 형). 보스는 이 게임에서
- * 유일하게 **여정을 넘어 쌓이는 새 도전**이라, 활은 전부 여기에 건다.
- * 10판마다 보스 하나 — 첫 보스를 잡는 순간 각궁이 온다. 그게 첫 여정의 목표가 된다.
+ * 보스 처치 수(bossKills)는 여정을 넘어 쌓이는 값이라 **여정 사이의 반복으로 늘릴 수
+ * 있었다** — 1-10 보스만 계속 잡고 곧장 죽어 새 여정으로 돌아가면, 실제로는 10판
+ * 밖을 한 번도 못 나갔는데도 숫자만 쌓여 결국 컴파운드가 열렸다
+ * (형: "1-10보스 10번잡으면 좋은 무기 생기는게 말이 되냐 · 스테이지 몇을 깨야
+ * 되게끔 만들어야지"). bestRunStage(한 여정 안에서 실제로 도달한 최댓값, 여정을
+ * 넘어 줄지 않는다)로 바꿨다 — 반복 재도전으로는 절대 못 늘린다, 더 멀리 가야만 는다.
+ * 값 자체(10·30·60·100)는 그대로 뒀다 — "보스 N번째 마디"와 정확히 같은 자리다.
  */
-const G_GAKGUNG_BOSSES = 1
-const G_LONGBOW_BOSSES = 3
-const G_RECURVE_BOSSES = 6
-const G_COMPOUND_BOSSES = 10
+const G_GAKGUNG_STAGE = 10
+const G_LONGBOW_STAGE = 30
+const G_RECURVE_STAGE = 60
+const G_COMPOUND_STAGE = 100
 
 /** 무손실 2판. 실측 중앙값 13판째 — 앞 판은 초보가 한두 발 흘린다. */
 const G_ONESHOT_PERFECT = 2
@@ -190,7 +206,7 @@ const P_CHAIN: Read = (p) => p.bestChain
 const P_BULLS: Read = (p) => p.bullseyes
 const P_HITS: Read = (p) => p.totalHits
 const P_PERFECT: Read = (p) => p.perfectRuns
-const P_BOSS: Read = (p) => p.bossKills
+const P_DEPTH: Read = (p) => p.bestRunStage
 
 function def(
   id: string,
@@ -235,14 +251,14 @@ function defBow(
 export const UNLOCKS: readonly UnlockDef[] = [
   def('title.oneshot', '첫 무결', 'title', `무손실로 ${G_ONESHOT_PERFECT}판 클리어`, P_PERFECT, G_ONESHOT_PERFECT),
   def('title.firststar', '별을 쏘아올린 자', 'title', `별 ${G_FIRSTSTAR_STARS}개 모으기`, P_STARS, G_FIRSTSTAR_STARS),
-  defBow('bow.gakgung', '각궁', `보스 ${G_GAKGUNG_BOSSES}번 잡기`, P_BOSS, G_GAKGUNG_BOSSES, B_GAKGUNG),
-  defBow('bow.longbow', '장궁', `보스 ${G_LONGBOW_BOSSES}번 잡기`, P_BOSS, G_LONGBOW_BOSSES, B_LONGBOW),
+  defBow('bow.gakgung', '각궁', `${G_GAKGUNG_STAGE}판 도달`, P_DEPTH, G_GAKGUNG_STAGE, B_GAKGUNG),
+  defBow('bow.longbow', '장궁', `${G_LONGBOW_STAGE}판 도달`, P_DEPTH, G_LONGBOW_STAGE, B_LONGBOW),
   def('title.hawk', '매눈의 궁수', 'title', `정중앙 ${G_HAWK_BULLS}회`, P_BULLS, G_HAWK_BULLS),
   def('title.avalanche', '우박의 손', 'title', `한 판에서 ${G_AVALANCHE_BEST}콤보`, P_CHAIN, G_AVALANCHE_BEST),
-  defBow('bow.recurve', '리커브', `보스 ${G_RECURVE_BOSSES}번 잡기`, P_BOSS, G_RECURVE_BOSSES, B_RECURVE),
+  defBow('bow.recurve', '리커브', `${G_RECURVE_STAGE}판 도달`, P_DEPTH, G_RECURVE_STAGE, B_RECURVE),
   def('title.hundred', '백중(百中)의 손', 'title', `누적 명중 ${G_HUNDRED_HITS}회`, P_HITS, G_HUNDRED_HITS),
   def('title.wind', '바람을 읽는 궁수', 'title', `별 ${G_WIND_STARS}개 모으기`, P_STARS, G_WIND_STARS),
-  defBow('bow.compound', '컴파운드', `보스 ${G_COMPOUND_BOSSES}번 잡기`, P_BOSS, G_COMPOUND_BOSSES, B_COMPOUND),
+  defBow('bow.compound', '컴파운드', `${G_COMPOUND_STAGE}판 도달`, P_DEPTH, G_COMPOUND_STAGE, B_COMPOUND),
   def('title.flawless', '완궁(完弓)', 'title', `무손실로 ${G_FLAWLESS_PERFECT}판 클리어`, P_PERFECT, G_FLAWLESS_PERFECT),
   def('title.forty', '마흔 고비를 넘은 자', 'title', `${G_FORTY_STAGES}판 클리어`, P_STAGES, G_FORTY_STAGES),
 ]
