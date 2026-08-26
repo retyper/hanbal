@@ -96,3 +96,31 @@ describe('여정 요약', () => {
     assert.equal(s.runBestJung, 6)
   })
 })
+
+describe('칭호 장착 (2026-08-26, 형: "장착하거나 그런거 전혀없고")', () => {
+  it('새 세이브는 아직 아무것도 안 골랐다', () => {
+    assert.equal(defaultSave(0).equippedTitle, '')
+  })
+
+  it('옛 세이브(v9)는 빈 문자열로 올라온다 — 화면은 옛 규칙(가장 어려운 칭호)으로 채운다', () => {
+    const old = { ...defaultSave(0), v: 9 } as Record<string, unknown>
+    delete old['equippedTitle']
+    const s = roundTrip(old)
+    assert.equal(s.v, SCHEMA_VERSION)
+    assert.equal(s.equippedTitle, '')
+  })
+
+  it('고른 칭호는 저장을 오간다', () => {
+    const d = defaultSave(0)
+    d.equippedTitle = 'title.hawk'
+    writeSave(d)
+    assert.equal(loadSave().equippedTitle, 'title.hawk')
+  })
+
+  it('너무 긴 값·문자열이 아닌 값은 버린다 (A4: 손상된 값으로 크래시하지 않는다)', () => {
+    const s1 = roundTrip({ ...defaultSave(0), equippedTitle: 'x'.repeat(65) })
+    assert.equal(s1.equippedTitle, '')
+    const s2 = roundTrip({ ...defaultSave(0), equippedTitle: 42 })
+    assert.equal(s2.equippedTitle, '')
+  })
+})

@@ -19,7 +19,7 @@ import { STAGES } from './stages.ts'
 const KEY = 'hanbal.save.v1'
 
 /** 현재 스키마 버전. 필드를 바꿀 때마다 +1 하고 MIGRATIONS에 한 줄 추가한다. */
-export const SCHEMA_VERSION = 9
+export const SCHEMA_VERSION = 10
 
 /**
  * 오프라인 축적의 소수부 (자원 단위). 세 자원의 축적 속도가 달라 하나로 합칠 수 없다.
@@ -139,6 +139,15 @@ export interface SaveData {
   runStars: number
   /** 이번 여정의 최고 연속 중(中). 몰기(5)에 닿았는지가 이 값으로 읽힌다. */
   runBestJung: number
+
+  // ── v10: 칭호를 고를 수 있다 (2026-08-26, 형: "칭호는 얻어도 장착하거나 그런거
+  // 전혀없고 재미도 없다") ─────────────────────────────────────────
+  /**
+   * 딴 칭호 중 지금 내걸기로 고른 것 (game/unlocks.ts UnlockDef.id). 빈 문자열이면
+   * "아직 안 골랐다" — 그동안은 가장 어려운 칭호가 자동으로 보인다(currentTitle의 옛 규칙).
+   * 잃은 적 없는 칭호를 가리키는 값이라 지워지지 않는다 (A4).
+   */
+  equippedTitle: string
 }
 
 /** 저장값이 말이 되는 범위인지만 본다. 치트 방지가 아니라 NaN·Infinity 방어다 (A4: 치트 방지 안 함). */
@@ -201,6 +210,7 @@ export function defaultSave(now: number): SaveData {
     perfectRuns: 0,
     // 0은 "아직 없음"이다. 루프가 첫 정산 전에 실제 시드를 심는다 (game 레이어라 Date.now 허용).
     runSeed: 0,
+    equippedTitle: '',
   }
 }
 
@@ -297,6 +307,12 @@ const MIGRATIONS: ReadonlyArray<(r: Raw) => void> = [
   /**
    * v8 → v9: 여정 요약 셋이 생겼다. 진행 중이던 여정은 요약이 0에서 시작한다 —
    * 지나간 판을 되짚어 채울 방법이 없고, 거짓 숫자보다 0이 낫다.
+   */
+  () => {},
+  /**
+   * v9 → v10: 칭호를 고를 수 있게 됐다. 빈 문자열로 올라온다 — sanitize가 기본값으로
+   * 채우므로 옮길 값이 없다. 빈 문자열은 "아직 안 골랐다"이고 화면은 옛 규칙(가장 어려운
+   * 칭호를 자동으로 보여줌)으로 그대로 동작하니 마이그레이션 직후에도 화면이 비지 않는다.
    */
   () => {},
 ]
@@ -438,6 +454,11 @@ function sanitize(r: Raw, now: number): SaveData {
     perfectRuns: int(r['perfectRuns'], 0, 0, HARD_MAX),
     // 32비트 무부호. mulberry32의 상태 그대로다.
     runSeed: int(r['runSeed'], 0, 0, 0xffffffff),
+    // 유효성(실제로 그 칭호를 땄는가)은 game/unlocks.ts의 currentTitle이 판정한다 —
+    // 여기서는 문자열 모양(해금 id처럼 생겼는가)만 본다 (A4: 모르는 값도 지우지 않는다).
+    equippedTitle: typeof r['equippedTitle'] === 'string' && r['equippedTitle'].length <= 64
+      ? r['equippedTitle']
+      : '',
   }
 }
 

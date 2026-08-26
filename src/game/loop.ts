@@ -28,6 +28,7 @@ import { bowMods, masteryLevel } from './bows.ts'
 import type { LoadoutPick } from '../ui/loadout.ts'
 import { rollSupply, rollSupplyCount } from './supply.ts'
 import { BOSS_EVERY } from './stages.ts'
+import { applyFork, denseReward, FORK_OPTIONS, hasFork, windTrainMul } from './forks.ts'
 import { bullseyeAcc, gradeRun, rewardLine, type RunStats } from './rewards.ts'
 import { evaluateUnlocks, progressOf, unlockedBows } from './unlocks.ts'
 import { makeRng } from '../core/rng.ts'
@@ -104,8 +105,12 @@ export interface GameLoop {
   dispose(): void
 }
 
-/** 판이 끝났을 때 아래 한 줄. 매 프레임 문자열을 만들지 않으려고 모듈 상수로 둔다 (A5). */
-const HINT_NEXT = '당기면 다음 판'
+/**
+ * 판이 끝났을 때 아래 한 줄. 매 프레임 문자열을 만들지 않으려고 모듈 상수로 둔다 (A5).
+ * 갈림길(docs/MEGAHIT.md §3)이 생기면서 평범한 "당기면 다음 판"은 보스 직전 말고는
+ * 안 쓴다 — 나머지 전부는 카드 둘을 알리는 이 문구가 그 자리를 대신한다.
+ */
+const HINT_FORK = '다음 판: 1)바람골 2)밀집'
 /** 다음 판이 귀신(보스)일 때의 예고 — 긴장은 예고에서 시작된다 (감사 재미 P1). */
 const HINT_BOSS = '다음은 귀신이다 — 당기면 맞선다'
 /** R 한 번으로 여정을 접으면 실수 한 번이 기록을 지운다. 두 번째 R까지의 유효 시간 (ms). */
@@ -231,6 +236,16 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   /** 드래프트 화면이 떠 있어 아직 판이 시작되지 않았다. 이 동안 판 넘김 입력을 무시한다. */
   let choosing = false
 
+  // ── 갈림길 2택 (docs/MEGAHIT.md §3 · game/forks.ts) ──
+  /** 지금 고른 카드. 0=바람골(기본) · 1=밀집. 판을 넘기는 순간 소비되고 다시 0으로 돌아간다. */
+  let forkPick = 0
+  /** 다음 loadStage가 갈림길을 적용해야 하는가 — '클리어 후 진짜로 다음 판으로 가는' 그 한 번만 켠다. */
+  let armFork = false
+  /** 지금 판이 바람골로 열렸는가 — finishRun의 훈련치 배수가 여기를 본다. */
+  let activeForkWind = false
+  /** 지금 판이 밀집으로 열렸는가 — finishRun이 클리어 시 특수살 재고를 준다. */
+  let activeForkDense = false
+
   /** 세이브의 스탯을 활에 넣는다. 이게 없으면 성장이 물리에 아무 영향을 못 준다. */
   const applyStats = (): void => {
     w.stats.str = save.stats.str
@@ -269,6 +284,20 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     if (save.totalShots === 0) {
       stage = { ...stage, hint: '꾹 눌러 시위를 당기고 · 놓아서 쏜다' }
     }
+    // ── 갈림길 2택 (docs/MEGAHIT.md §3) ──
+    // armFork는 '클리어 뒤 정말로 다음 판으로 간' 그 전이 때만 켜진다 — 로드아웃 직후 첫 판·
+    // 실험장 복귀·판 점프(sandboxJump)에는 안 켜진다(선택한 적이 없는 판에 효과를 몰래 얹으면
+    // 안 된다). 소비하는 순간 바로 끈다 — 다음 loadStage가 다시 켜주지 않는 한 재적용 없음.
+    activeForkWind = false
+    activeForkDense = false
+    if (armFork && hasFork(stageIndex + 1)) {
+      const opt = FORK_OPTIONS[forkPick] ?? FORK_OPTIONS[0]
+      stage = applyFork(stage, opt, stageIndex + 1)
+      if (opt.id === 'wind') activeForkWind = true
+      else activeForkDense = true
+    }
+    armFork = false
+    forkPick = 0
     // 활도 판 경계에서만 (A1). 숙련은 그 활로 맞힌 누적 수에서 나온다 — docs/BOWS.md 3장.
     // 궁합(활×살)은 bowMods 안에서 판정되므로 여기서는 조합을 모른다.
     const mods = bowMods(save.bow, kind, masteryLevel(save.bowHits[save.bow] ?? 0))
@@ -438,8 +467,15 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     GRADE.misses = misses
     GRADE.bestChain = bestChain
     GRADE.bullseyes = bullseyes
-    const reward = gradeRun(runRng, w.stage, GRADE)
+    const reward = gradeRun(runRng, w.stage, GRADE, activeForkWind ? windTrainMul() : 1)
     save.runSeed = runRng.state()
+    // 갈림길 '밀집' 보상 — 클리어했을 때만. 화살 재고는 대가 없이 늘지 않는다 (밀집이 준 위험을
+    // 감수해야 값이 나온다). 판 번호로 도니 매번 같은 살만 나오지 않는다 (game/forks.ts).
+    if (cleared && activeForkDense) {
+      const kind = denseReward(stageIndex + 1)
+      save.arrowStock[kind] = Math.floor(save.arrowStock[kind] ?? 0) + 1
+      ui.toast(`밀집을 헤쳐냈다 — ${arrowName(kind)} +1`, 2600)
+    }
     // 화면에도 별을 보낸다. 예전엔 세이브에만 적히고 화면에는 안 왔다 —
     // "별로 클리어 수준을 정해놓을 거면 별도 보여줘야지"(형).
     hud.stars = reward.stars
@@ -668,6 +704,20 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       }
     }
 
+    // 갈림길 2택 (docs/MEGAHIT.md §3) — 클리어 화면이 떠 있는 동안 1/2로 고른다.
+    // **누르지 않아도 된다** — 안 고르면 forkPick은 0(바람골)에 머문다 (건너뛰면 왼쪽이 기본).
+    // 조건과 무관하게 매 틱 소비한다(loop-lens 지적) — 로드아웃·보급 패널이 떠 있는 동안
+    // (choosing) 무심코 누른 1/2가 에지에 남아 있다가 한참 뒤 엉뚱한 '클리어' 화면에서
+    // 조용히 적용되는 사고를 막는다.
+    const forkKey = input.takeFork()
+    if (!paused && !choosing && w.status === 'cleared' && hasFork(stageIndex + 2)) {
+      if (forkKey === 0 || forkKey === 1) {
+        forkPick = forkKey
+        const opt = FORK_OPTIONS[forkKey]
+        if (opt !== undefined) ui.toast(`${opt.title} 선택 — 당기면 그 판으로`, 1800)
+      }
+    }
+
     // 결과 화면에 가두지 않는다 (제약 C1). 다시 누르는 순간 바로 다음 판. 확인 버튼 없음.
     const drawingNow = input.frame.drawing
     if (!paused && !choosing && w.status !== 'playing' && drawingNow && !prevDrawing) {
@@ -675,6 +725,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       // 패배면 정산이 끝나기를 기다리지 않고 여기서 정산한다 — endRun까지 finishRun이 한다.
       if (w.status === 'cleared') {
         if (stageIndex < MAX_STAGE_INDEX) stageIndex++
+        // 방금 고른(또는 기본으로 남은) 카드를 다음 판에 얹는다 — loadStage가 소비한다.
+        armFork = true
         beginStage()
       } else if (!awarded) {
         awarded = true
@@ -685,9 +737,10 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     }
 
     hud.muted = sfxMuted(sfx)
-    hud.toast = w.status === 'cleared'
-      ? ((stageIndex + 2) % BOSS_EVERY === 0 ? HINT_BOSS : HINT_NEXT)
-      : ''
+    // 갈림길이 있는 판이면(hasFork) 힌트가 곧 카드 둘 — 아니면(보스 직전) 옛 예고 그대로.
+    hud.toast = w.status !== 'cleared'
+      ? ''
+      : hasFork(stageIndex + 2) ? HINT_FORK : HINT_BOSS
 
     // draw 안에서 이펙트·카메라가 이번 프레임의 이벤트를 읽는다.
     // 그래서 명중 반응이 한 프레임도 늦지 않는다 (feel-lens 4항).
@@ -830,7 +883,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
         sandboxAdd(w, {
           kind: 'boss', x: 34, y: 2.6, r: look === 2 ? 1.15 : 1.6,
           hp: look === 1 ? Math.floor(P.target.bossCritDmg) * 2 : Math.floor(P.target.bossHp),
-          armored: look === 1, look, speed: look === 3 ? P.target.bossSpeed * 2.2 : P.target.bossSpeed,
+          armored: look === 1, look,
+          speed: look === 3 ? P.target.bossSpeed * P.sandbox.bossLook3SpeedMul : P.target.bossSpeed,
           score: 150,
         })
       } else if (kind === 'archer' || kind === 'archer-armored') {
@@ -842,14 +896,14 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       } else if (kind === 'charger') {
         sandboxAdd(w, { kind: 'charger', x: 34, y: 1.5, r: 0.6, score: 50 })
       } else if (kind === 'moving') {
-        sandboxAdd(w, { kind: 'moving', x: rx2, y: 2 + ry2 * 0.4, r: 0.55, ampY: 1.2, freq: 0.3, score: 100 })
+        sandboxAdd(w, { kind: 'moving', x: rx2, y: 2 + ry2 * P.sandbox.spreadLow, r: 0.55, ampY: 1.2, freq: 0.3, score: 100 })
       } else if (kind === 'aerial') {
         sandboxAdd(w, { kind: 'aerial', x: rx2, y: 4.5 + ry2 * 0.5, r: 0.55, score: 100 })
       } else if (kind === 'window' || kind === 'peek' || kind === 'drone') {
         // 11판+ 전환 변종들 (stages.ts convertToFoes와 같은 문법).
         const look = kind === 'window' ? 1 : kind === 'peek' ? 2 : 3
         sandboxAdd(w, {
-          kind: 'archer', look, x: rx2 + 4, y: look === 3 ? 5 + ry2 * 0.4 : 2.5 + ry2 * 0.5,
+          kind: 'archer', look, x: rx2 + 4, y: look === 3 ? 5 + ry2 * P.sandbox.spreadLow : 2.5 + ry2 * 0.5,
           r: look === 3 ? 0.6 : 0.63, hp: Math.floor(P.enemy.convertHp),
           fireDelay: 3, firePeriod: P.enemy.shootEvery,
           ampX: look === 3 ? 1.4 : 0, freq: look === 3 ? 0.18 : 0, score: 120,
@@ -859,7 +913,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       } else if (kind === 'bonus') {
         sandboxAdd(w, { kind: 'bonus', x: rx2, y: 3 + ry2 * 0.5, r: 0.7, give: 2, score: 50 })
       } else {
-        sandboxAdd(w, { kind: 'static', x: rx2, y: 1 + ry2 * 0.6, r: 0.55, score: 100 })
+        sandboxAdd(w, { kind: 'static', x: rx2, y: 1 + ry2 * P.sandbox.spreadHigh, r: 0.55, score: 100 })
       }
     },
     sandboxRefill(): void {

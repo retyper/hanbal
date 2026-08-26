@@ -42,6 +42,7 @@ const CSS = `
 .c-stars b { color: var(--accent); font-weight: 700; font-size: 22px; margin-left: 8px; }
 .c-title { color: var(--dim); font-size: 14px; margin: 4px 0 4px; }
 .c-title b { color: var(--teal); font-weight: 700; font-family: inherit; }
+.c-pick-hint { color: var(--mute); font-size: 12px; }
 
 /* ── 해금 목록 ── */
 .c-row {
@@ -56,6 +57,11 @@ const CSS = `
   color: var(--mute); font-size: 11px; margin-left: 10px; letter-spacing: .14em;
   border: 1px solid var(--line); border-radius: 2px; padding: 2px 6px;
 }
+/* 딴 칭호는 눌러서 내걸 수 있다 — 목록 전체가 아니라 칭호 행만. */
+.c-row.c-pickable { cursor: pointer; }
+.c-row.c-pickable:hover .c-name { color: var(--teal); }
+.c-row.c-equipped .c-name::after { content: ' ✓'; color: var(--accent); }
+.c-row.c-equipped .c-tag { color: var(--accent); border-color: var(--accent); }
 .c-hint { grid-column: 1; color: var(--dim); font-size: 13px; }
 .c-row.c-open .c-hint { color: var(--mute); }
 .c-count { grid-column: 2; grid-row: 1; color: var(--body); font-size: 14px; }
@@ -104,6 +110,8 @@ const NO_STARS: StarMap = {}
 let cur: Progress = emptyProgress()
 let curUnlocked: readonly string[] = []
 let curStars: StarMap = NO_STARS
+let curEquipped = ''
+let onEquipFn: ((id: string) => void) | null = null
 let refreshFn: (() => void) | null = null
 
 /** 별 문자열. 채운 만큼 ★, 나머지 ☆. */
@@ -143,10 +151,14 @@ export function mountCollection(
   p: Progress,
   unlocked: readonly string[],
   stars?: StarMap,
+  equipped?: string,
+  onEquip?: (id: string) => void,
 ): void {
   cur = p
   curUnlocked = unlocked
   curStars = stars ?? NO_STARS
+  curEquipped = equipped ?? ''
+  onEquipFn = onEquip ?? null
 
   const panel = o.panel(PANEL_ID)
 
@@ -181,6 +193,13 @@ export function mountCollection(
       <div class="c-hint"></div>
       <div class="c-bar"><i></i></div>`
     ;(el.querySelector('.c-tag') as HTMLElement).textContent = KIND_TAG[d.kind]
+    // 칭호만 고를 수 있다 — 활은 장착이 아니라 여정 시작에 고르는 것이라(ui/loadout.ts) 여기서 안 건드린다.
+    if (d.kind === 'title') {
+      el.addEventListener('click', () => {
+        if (!curUnlocked.includes(d.id)) return
+        onEquipFn?.(d.id)
+      })
+    }
     rows.push({
       def: d,
       el,
@@ -254,10 +273,14 @@ export function mountCollection(
       ? String(cur.totalStars)
       : `${cur.totalStars} / ${campaignMax}`
 
-    const t = currentTitle(curUnlocked)
+    const t = currentTitle(curUnlocked, curEquipped)
     const far = furthestStage(curStars)
     const reach = far > STAGES.length ? ` · 최고 ${far}판` : ''
+    // 딴 칭호가 둘 이상이면 "눌러서 바꿔 달 수 있다"를 말해준다 — 그게 이 화면이
+    // 알려주지 않으면 아무도 못 찾을 상호작용이다 (형: "장착하거나 그런거 전혀없고").
+    const canPick = curUnlocked.some((id) => id.startsWith('title.'))
     title.innerHTML = (t === '' ? '아직 칭호가 없다' : `칭호 <b>${t}</b>`) + reach
+      + (canPick ? ' <span class="c-pick-hint">— 칭호를 눌러 바꿔 달기</span>' : '')
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i]
@@ -266,11 +289,16 @@ export function mountCollection(
       const got = curUnlocked.includes(d.id)
       const at = d.at(cur)
       const shown = at < d.goal ? at : d.goal
+      const equippedHere = got && d.kind === 'title' && currentTitle(curUnlocked, curEquipped) === d.label
       row.el.classList.toggle('c-open', got)
       row.el.classList.toggle('c-locked', !got)
+      row.el.classList.toggle('c-pickable', got && d.kind === 'title')
+      row.el.classList.toggle('c-equipped', equippedHere)
       row.name.textContent = got ? d.label : MASK
       row.hint.textContent = d.hint
-      row.count.textContent = got ? '열림' : `${Math.floor(shown)} / ${d.goal}`
+      row.count.textContent = !got
+        ? `${Math.floor(shown)} / ${d.goal}`
+        : d.kind !== 'title' ? '열림' : equippedHere ? '장착 중' : '눌러서 장착'
       row.fill.style.width = `${Math.round(ratio(d, cur) * 100)}%`
     }
 
@@ -310,10 +338,16 @@ export function mountCollection(
  * 판이 끝났다 / 세이브가 바뀌었다. 화면이 열려 있지 않아도 불러도 된다 —
  * HUD 버튼의 점만 켜지고 DOM은 그때 한 번만 갱신된다.
  */
-export function updateCollection(p: Progress, unlocked: readonly string[], stars?: StarMap): void {
+export function updateCollection(
+  p: Progress,
+  unlocked: readonly string[],
+  stars?: StarMap,
+  equipped?: string,
+): void {
   cur = p
   curUnlocked = unlocked
   if (stars !== undefined) curStars = stars
+  if (equipped !== undefined) curEquipped = equipped
   refreshFn?.()
 }
 

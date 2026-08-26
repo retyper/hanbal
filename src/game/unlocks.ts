@@ -225,19 +225,26 @@ function defBow(
  * (docs/RUN.md). 남은 것은 칭호(기록의 이름표)와 활(보스 처치로 여는 장비)뿐이다.
  * 문턱 실측치는 여정 구조 밸런스 시뮬이 생기면 갱신한다.
  */
+/**
+ * 칭호 이름 (2026-08-26, 형의 지적: "칭호는 얻어도 뭐 장착하거나 그런거 전혀없고 재미도
+ * 없는 칭호야. The Return of the Bowmaster나 헬름협곡의 신궁이나 뭐 그런거 많잖아.").
+ *
+ * '한 발'·'첫 별'처럼 조건을 그대로 옮긴 서술어 대신, 국궁의 말(관중·몰기·백발백중)을 빌린
+ * **칭호다운 칭호**로 바꿨다. id는 세이브에 남는 영구 키라 절대 안 건드린다 — label만 간다.
+ */
 export const UNLOCKS: readonly UnlockDef[] = [
-  def('title.oneshot', '한 발', 'title', `무손실로 ${G_ONESHOT_PERFECT}판 클리어`, P_PERFECT, G_ONESHOT_PERFECT),
-  def('title.firststar', '첫 별', 'title', `별 ${G_FIRSTSTAR_STARS}개 모으기`, P_STARS, G_FIRSTSTAR_STARS),
+  def('title.oneshot', '첫 무결', 'title', `무손실로 ${G_ONESHOT_PERFECT}판 클리어`, P_PERFECT, G_ONESHOT_PERFECT),
+  def('title.firststar', '별을 쏘아올린 자', 'title', `별 ${G_FIRSTSTAR_STARS}개 모으기`, P_STARS, G_FIRSTSTAR_STARS),
   defBow('bow.gakgung', '각궁', `보스 ${G_GAKGUNG_BOSSES}번 잡기`, P_BOSS, G_GAKGUNG_BOSSES, B_GAKGUNG),
   defBow('bow.longbow', '장궁', `보스 ${G_LONGBOW_BOSSES}번 잡기`, P_BOSS, G_LONGBOW_BOSSES, B_LONGBOW),
-  def('title.hawk', '매의 눈', 'title', `정중앙 ${G_HAWK_BULLS}회`, P_BULLS, G_HAWK_BULLS),
-  def('title.avalanche', '보로로로록', 'title', `한 판에서 ${G_AVALANCHE_BEST}콤보`, P_CHAIN, G_AVALANCHE_BEST),
+  def('title.hawk', '매눈의 궁수', 'title', `정중앙 ${G_HAWK_BULLS}회`, P_BULLS, G_HAWK_BULLS),
+  def('title.avalanche', '우박의 손', 'title', `한 판에서 ${G_AVALANCHE_BEST}콤보`, P_CHAIN, G_AVALANCHE_BEST),
   defBow('bow.recurve', '리커브', `보스 ${G_RECURVE_BOSSES}번 잡기`, P_BOSS, G_RECURVE_BOSSES, B_RECURVE),
-  def('title.hundred', '백발', 'title', `누적 명중 ${G_HUNDRED_HITS}회`, P_HITS, G_HUNDRED_HITS),
-  def('title.wind', '바람 읽는 자', 'title', `별 ${G_WIND_STARS}개 모으기`, P_STARS, G_WIND_STARS),
+  def('title.hundred', '백중(百中)의 손', 'title', `누적 명중 ${G_HUNDRED_HITS}회`, P_HITS, G_HUNDRED_HITS),
+  def('title.wind', '바람을 읽는 궁수', 'title', `별 ${G_WIND_STARS}개 모으기`, P_STARS, G_WIND_STARS),
   defBow('bow.compound', '컴파운드', `보스 ${G_COMPOUND_BOSSES}번 잡기`, P_BOSS, G_COMPOUND_BOSSES, B_COMPOUND),
-  def('title.flawless', '흠 없는 활', 'title', `무손실로 ${G_FLAWLESS_PERFECT}판 클리어`, P_PERFECT, G_FLAWLESS_PERFECT),
-  def('title.forty', '마흔 발', 'title', `${G_FORTY_STAGES}판 클리어`, P_STAGES, G_FORTY_STAGES),
+  def('title.flawless', '완궁(完弓)', 'title', `무손실로 ${G_FLAWLESS_PERFECT}판 클리어`, P_PERFECT, G_FLAWLESS_PERFECT),
+  def('title.forty', '마흔 고비를 넘은 자', 'title', `${G_FORTY_STAGES}판 클리어`, P_STAGES, G_FORTY_STAGES),
 ]
 
 // ─────────────────────────── 조회 ───────────────────────────
@@ -291,8 +298,16 @@ export function unlockOfBow(bow: BowKindId): UnlockDef | undefined {
 /**
  * 지금 달고 있는 칭호. 목록 뒤쪽일수록 어려운 조건이라 **가장 나중 것**이 현재 칭호다.
  * 없으면 빈 문자열 — 화면이 "아직 칭호가 없다"를 그린다.
+ *
+ * `equipped`가 주어지고 실제로 딴 칭호면 그걸 우선한다 (형: "장착하거나 그런거 전혀
+ * 없고"). 아직 아무것도 고른 적 없거나(빈 문자열) 고른 것을 잃어버린 경우(예: 세이브를
+ * 되돌림)에만 기존 규칙(가장 어려운 것)으로 떨어진다 — 그래서 항상 뭔가는 보인다.
  */
-export function currentTitle(unlocked: readonly string[]): string {
+export function currentTitle(unlocked: readonly string[], equipped?: string): string {
+  if (equipped !== undefined && equipped !== '') {
+    const d = unlockById(equipped)
+    if (d !== undefined && d.kind === 'title' && unlocked.includes(d.id)) return d.label
+  }
   let title = ''
   for (let i = 0; i < UNLOCKS.length; i++) {
     const d = UNLOCKS[i]
@@ -300,6 +315,16 @@ export function currentTitle(unlocked: readonly string[]): string {
     if (unlocked.includes(d.id)) title = d.label
   }
   return title
+}
+
+/** 딴 칭호만, 목록 순서대로. 칭호 고르기 UI가 쓴다. */
+export function unlockedTitles(unlocked: readonly string[]): UnlockDef[] {
+  const out: UnlockDef[] = []
+  for (let i = 0; i < UNLOCKS.length; i++) {
+    const d = UNLOCKS[i]
+    if (d !== undefined && d.kind === 'title' && unlocked.includes(d.id)) out.push(d)
+  }
+  return out
 }
 
 /**

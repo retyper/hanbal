@@ -131,6 +131,14 @@ export function drawFoeArcher(
     ctx.stroke()
   }
 
+  // 목 — 어깨에서 머리로. 이게 없으면 머리가 몸에서 떨어져 둥둥 떠 보인다
+  // (형의 지적: "목이랑 머리가 분리되어있고"). stickman.ts의 플레이어 목과 같은 문법이다.
+  ctx.lineWidth = lw
+  ctx.beginPath()
+  ctx.moveTo(shX, shY)
+  ctx.lineTo(hx, hy)
+  ctx.stroke()
+
   if (armored) {
     // 흉갑 — 어깨가 넓고 허리로 좁아지는 판. 몸통이 안 통하는 이유가 형태로 읽힌다.
     const aw = rx * 0.46

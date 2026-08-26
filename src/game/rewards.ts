@@ -122,6 +122,9 @@ const BONUS_SMALL_MUL = 0.6
 const FEAT_BONUS_SMALL = '좋은 화살촉'
 const FEAT_BONUS_BIG = '명궁의 화살통'
 
+/** 갈림길 '바람골' 표시 (game/forks.ts). 배수 자체는 forks.ts의 WIND_TRAIN_MUL이 정답이다. */
+const FEAT_FORK_WIND = '바람골 보너스'
+
 // ─────────────────────────── 별 ───────────────────────────
 
 /** 빗나간 화살이 하나도 없는가. 판정의 근거는 miss 이벤트 수 하나뿐이다 (RunStats.misses 주석). */
@@ -159,8 +162,12 @@ export function starsOf(stage: StageDef, r: RunStats): number {
  *
  * `rng`는 **판마다 상태가 앞으로 나아가는 스트림**이어야 한다. 스테이지 시드로 매번 새로
  * 만들면 같은 판을 다시 깰 때 보너스가 똑같이 나와, 대박 나오는 판만 반복하는 구멍이 생긴다.
+ *
+ * `trainMul` — 갈림길 '바람골'(game/forks.ts)을 골랐을 때만 1보다 크다. 기준선·위업·변동
+ * 보상을 전부 합친 뒤에 곱한다 — 어려움을 감수한 판이 훈련치 전체에서 값을 봐야 하고,
+ * 일부 항목만 곱하면 "정확히 왜 더 받았는지" 체감이 흐려진다.
  */
-export function gradeRun(rng: Rng, stage: StageDef, r: RunStats): Reward {
+export function gradeRun(rng: Rng, stage: StageDef, r: RunStats, trainMul = 1): Reward {
   const stars = starsOf(stage, r)
   const score = r.score > 0 ? r.score : 0
 
@@ -223,8 +230,10 @@ export function gradeRun(rng: Rng, stage: StageDef, r: RunStats): Reward {
     }
   }
 
+  if (r.cleared && trainMul > 1) feats.push(FEAT_FORK_WIND)
+
   // 바닥은 1이다. 0이 뜨는 판이 있으면 그 판은 "안 한 것보다 못한 판"이 된다 (C2).
-  const total = Math.floor(subtotal + bonus)
+  const total = Math.floor((subtotal + bonus) * (r.cleared ? trainMul : 1))
   return { training: total > 1 ? total : 1, stars, feats, bonus }
 }
 

@@ -15,9 +15,10 @@ import { screenToWorldX, screenToWorldY, type Camera } from '../render/camera.ts
 /**
  * 루프가 쓰는 입력 핸들.
  *
- * endStep/takeRestart는 계약(frame·dispose)에 얹은 추가분이다.
+ * endStep/takeRestart/takeFork는 계약(frame·dispose)에 얹은 추가분이다.
  * - endStep: 눌렀다 뗀 게 한 스텝 안에서 끝났을 때 발사가 통째로 삼켜지는 걸 막는다.
  * - takeRestart: R 키를 두 파일에서 각각 듣지 않기 위해, 키보드 처리를 여기 한 곳에 모은다.
+ * - takeFork: 갈림길 2택(game/forks.ts)의 1/2 키. 같은 이유로 여기 한 곳에 모은다.
  */
 export interface InputSource {
   readonly frame: InputFrame
@@ -25,6 +26,8 @@ export interface InputSource {
   endStep(): void
   /** R 에지를 소비한다. 소비하면 false로 떨어진다. */
   takeRestart(): boolean
+  /** 1/2 에지를 소비한다. 안 눌렸으면 -1, 눌렸으면 0(왼쪽)·1(오른쪽). 소비하면 -1로 떨어진다. */
+  takeFork(): number
   dispose(): void
 }
 
@@ -44,6 +47,7 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
   let rightHeld = false
   let shiftHeld = false
   let restartEdge = false
+  let forkEdge = -1
 
   let keyL = false
   let keyR = false
@@ -162,6 +166,8 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
       case ' ': if (!e.repeat) press(true); break
       case 'Shift': shiftHeld = true; syncSteady(); return
       case 'r': case 'R': if (!e.repeat) restartEdge = true; return
+      case '1': if (!e.repeat) forkEdge = 0; return
+      case '2': if (!e.repeat) forkEdge = 1; return
       default: return
     }
     // 방향키 스크롤·Space 스크롤을 막는다. 위 case에 걸린 키만 여기 온다.
@@ -236,6 +242,12 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
       if (!restartEdge) return false
       restartEdge = false
       return true
+    },
+
+    takeFork(): number {
+      const v = forkEdge
+      forkEdge = -1
+      return v
     },
 
     dispose(): void {
