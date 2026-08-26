@@ -41,6 +41,26 @@ const withCollection = (fn: (m: CollectionMod) => void): void => {
   })
 }
 
+// 지도도 지연 청크다 — 첫 3초에 필요 없는 화면이다 (형: "지도로 여행의 재미를 더해야겠어").
+type MapMod = typeof import('./ui/map.ts')
+let mapMod: MapMod | null = null
+const withMap = (fn: (m: MapMod) => void): void => {
+  if (mapMod !== null) {
+    fn(mapMod)
+    return
+  }
+  void import('./ui/map.ts').then((m) => {
+    if (mapMod === null) {
+      mapMod = m
+      m.mountMap(
+        overlay, save.stars, save.bossKills, save.bestRunStage, save.runActive,
+        (index) => loop.mapJump(index),
+      )
+    }
+    fn(m)
+  })
+}
+
 // 튜닝 콘솔은 개발 빌드에만 들어간다 (제약 C6 — 프로덕션 번들 예산).
 // applyStoredTuning은 World가 만들어지기 전이어야 저장된 손맛이 반영된다.
 // World를 만드는 건 createLoop이므로 순서는 반드시 [적용 → createLoop] 다.
@@ -93,6 +113,9 @@ const loop = createLoop(el, {
       if (collection !== null) {
         collection.updateCollection(progressOf(save), save.unlocked, save.stars)
       }
+      if (mapMod !== null) {
+        mapMod.updateMap(save.stars, save.bossKills, save.bestRunStage, save.runActive)
+      }
     },
   },
 })
@@ -123,6 +146,8 @@ idle(() => withCollection(() => {
     refill: () => loop.sandboxRefill(),
     jump: (n) => loop.sandboxJump(n),
   })
+  // 지도 — 수집 버튼 바로 뒤. 여정의 형태를 보여주는 자리라 같은 무리다.
+  withMap(() => {})
 }))
 
 // 드래프트가 첫 프레임에 뜰 수 있으므로 화면들이 다 붙은 뒤에 시작한다.

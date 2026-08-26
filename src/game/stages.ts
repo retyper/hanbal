@@ -262,6 +262,22 @@ function convertToFoes(base: StageDef, i: number): StageDef {
 export const BOSS_EVERY = 10
 
 /**
+ * 체크포인트 — 보스를 잡은 자리 다음 판 (docs/RUN.md · 지도, 2026-08-26).
+ *
+ * 형: "보스깨면 죽었을때 직전보스 다음스테이지부터 시작하게." 마디는 언제나 순서대로만
+ * 열린다 — 30판(3번째 보스)에 닿으려면 그 여정 안에서 10판·20판을 반드시 먼저 지난다
+ * (지도로 점프해도 그 지점부터는 다시 순서대로 간다). 그래서 **누적 보스 처치 수
+ * (save.bossKills, 줄지 않는다)가 곧 "몇 마디까지 열렸는가"다** — 새 필드가 필요 없다.
+ *
+ * bossKills=0 → 0(=1-1) · 1 → 10(=2-1) · 2 → 20(=3-1) · … 캠페인을 넘어서도 그대로
+ * 이어진다(끝없는 구간도 10판마다 보스라 같은 식이 통한다).
+ */
+export function checkpointStage(bossKills: number): number {
+  const n = Math.floor(bossKills)
+  return n > 0 ? n * BOSS_EVERY : 0
+}
+
+/**
  * 보스판 (docs/RUN.md 3장) — 거대한 것이 나를 향해 걸어온다.
  *
  * 수치의 논리:

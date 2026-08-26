@@ -27,7 +27,7 @@ import { arrowName, DEFAULT_ARROW } from './arrows.ts'
 import { bowMods, masteryLevel } from './bows.ts'
 import type { LoadoutPick } from '../ui/loadout.ts'
 import { rollSupply, rollSupplyCount } from './supply.ts'
-import { BOSS_EVERY } from './stages.ts'
+import { BOSS_EVERY, checkpointStage } from './stages.ts'
 import { applyFork, denseReward, FORK_OPTIONS, hasFork, windTrainMul, type ForkOption } from './forks.ts'
 import { bullseyeAcc, gradeRun, rewardLine, type RunStats } from './rewards.ts'
 import { evaluateUnlocks, progressOf, unlockedBows } from './unlocks.ts'
@@ -104,6 +104,12 @@ export interface GameLoop {
   sandboxRefill(): void
   /** 1부터 세는 판 번호로 실제 여정을 옮긴다 (개발 확인용 지름길). */
   sandboxJump(no: number): void
+  /**
+   * 지도에서 체크포인트를 골랐다 (0-based 판 번호). 여정이 이미 진행 중이면 조용히
+   * 무시한다 — 진행 중인 여정을 지도로 건너뛰면 위험 없이 깊이만 사는 것이 된다.
+   * 로드아웃(활+살통 고르기)은 그대로 거친다 — 체크포인트도 "새 여정의 시작"이다.
+   */
+  mapJump(index: number): void
   dispose(): void
 }
 
@@ -236,6 +242,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   let arrow: ArrowKindId = DEFAULT_ARROW
   /** 드래프트 화면이 떠 있어 아직 판이 시작되지 않았다. 이 동안 판 넘김 입력을 무시한다. */
   let choosing = false
+  /** 지도에서 고른 시작 판 (0-based). 다음 startRun이 소비하고 다시 null로 돌아간다. */
+  let pendingStartIndex: number | null = null
 
   // ── 갈림길 2택 (docs/MEGAHIT.md §3 · game/forks.ts) ──
   /** 지금 고른 카드. 0=바람골(기본) · 1=밀집. 판을 넘기는 순간 소비되고 다시 0으로 돌아간다. */
@@ -347,6 +355,11 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
    * 여정이 없으면(첫 시작·패배 직후) 로드아웃이 한 번 낀다: 활+살통을 골라 새 여정을 연다.
    * 판마다 3택을 강요하던 옛 드래프트는 여기서 사라졌다 — "과녁이 화살보다 많으면
    * 사실상 1택"(형의 반려). 선택은 판 단위가 아니라 **여정 단위**다.
+   *
+   * ── 체크포인트 (지도, 2026-08-26) ──
+   * 새 여정은 더는 무조건 1-1이 아니다 — 잡아본 보스 수만큼 다음 마디부터 시작한다
+   * (형: "보스깨면 죽었을때 직전보스 다음스테이지부터 시작하게"). 지도에서 더 이른
+   * 마디를 직접 골랐으면(`mapJump`) `pendingStartIndex`가 그 값을 대신한다.
    */
   const startRun = (bow: typeof save.bow): void => {
     save.bow = bow
@@ -359,7 +372,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     // 리듬도 여정의 것이다 — 새 여정에 지난 여정의 몰기를 들고 들어가면 그건 번 게 아니다.
     w.flowHits = 0
     w.molgi = false
-    stageIndex = 0
+    stageIndex = pendingStartIndex ?? checkpointStage(save.bossKills)
+    pendingStartIndex = null
     loadStage(save.runArrow)
   }
 
@@ -941,6 +955,11 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       stageIndex = Math.max(0, Math.floor(no) - 1)
       save.runActive = true
       loadStage(save.runArrow)
+    },
+    mapJump(index: number): void {
+      if (save.runActive || sandbox) return
+      pendingStartIndex = Math.max(0, Math.floor(index))
+      beginStage()
     },
     dispose(): void {
       unRearm()

@@ -10,7 +10,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { CAMPAIGN, STAGES, getStage, stageH } from '../src/game/stages.ts'
+import { BOSS_EVERY, CAMPAIGN, STAGES, checkpointStage, getStage, stageH } from '../src/game/stages.ts'
 import { ENDLESS_THEMES, endlessThemeName } from '../src/game/endless.ts'
 
 /** 검사할 무한 구간 길이. 테마 한 바퀴를 여러 번 돌 만큼. */
@@ -101,5 +101,36 @@ describe('스테이지 — 무한 구간', () => {
       assert.ok((s.title ?? '') !== '', `${s.id}: 이름이 없다`)
       assert.match(s.id, /^\d+-\d+$/, `이상한 id: ${s.id}`)
     }
+  })
+})
+
+describe('체크포인트 (지도, 2026-08-26 — 형: "보스깨면 죽었을때 직전보스 다음스테이지부터")', () => {
+  it('보스를 한 번도 안 잡았으면 1-1(0)이다', () => {
+    assert.equal(checkpointStage(0), 0)
+  })
+
+  it('보스 N번 = 다음 마디 시작(0-based, N × BOSS_EVERY)', () => {
+    assert.equal(checkpointStage(1), BOSS_EVERY) // 2-1
+    assert.equal(checkpointStage(2), BOSS_EVERY * 2) // 3-1
+    assert.equal(checkpointStage(4), BOSS_EVERY * 4) // 5-1
+  })
+
+  it('그 자리는 실제로 챕터 첫 판(n-1)이다 — getStage와 어긋나면 지도가 거짓말을 한다', () => {
+    for (let k = 0; k <= 4; k++) {
+      const idx = checkpointStage(k)
+      const s = getStage(idx)
+      assert.equal(s.id, `${k + 1}-1`, `체크포인트 ${idx}가 ${k + 1}-1이 아니라 ${s.id}다`)
+    }
+  })
+
+  it('캠페인을 넘어서도 같은 식이 통한다(끝없는 구간도 10판마다 보스)', () => {
+    const idx = checkpointStage(6) // 캠페인(5마디)을 넘은 6번째 마디
+    assert.equal(idx, BOSS_EVERY * 6)
+    assert.ok(idx >= CAMPAIGN, '캠페인 안에 있으면 이 테스트 전제가 틀렸다')
+  })
+
+  it('음수·소수는 방어적으로 처리한다', () => {
+    assert.equal(checkpointStage(-3), 0)
+    assert.equal(checkpointStage(2.9), BOSS_EVERY * 2)
   })
 })
