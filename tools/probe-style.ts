@@ -149,6 +149,49 @@ check(shell.includes('max-height: 90dvh'), '세로에서 시트가 화면을 넘
 check(/@media \(max-width: 640px\)[\s\S]*?align-items: flex-end/.test(shell), '세로에서 패널이 아래에서 올라온다')
 check(shell.includes('min-height: 0'), '시트 안이 스크롤된다 (flex min-height:0)')
 
+// ── ⑥ 아이콘이 빠짐없이 붙어 있는가 ───────────────────────────
+//
+// 아이콘은 CSS 클래스(.hb-ic.i-*)로 고르고, 코드는 `i-${key}` 로 이름을 만든다.
+// 그래서 스탯이나 갈림길 카드를 하나 더 만들면 **아이콘만 조용히 빠진다** — 빈 네모가 뜬다.
+// 여기서 두 목록(진짜 데이터 ↔ CSS 클래스)을 맞대어 본다.
+console.log('')
+const iconClasses = new Set<string>()
+for (const m of shell.matchAll(/\.hb-ic\.i-([a-z0-9-]+)/g)) iconClasses.add(m[1] as string)
+
+const statSrc = readFileSync('src/game/progression.ts', 'utf8')
+const statKeys = /STAT_KEYS: readonly StatKey\[\] = \[([^\]]*)\]/.exec(statSrc)?.[1] ?? ''
+const stats = [...statKeys.matchAll(/'([a-z]+)'/g)].map((m) => m[1] as string)
+check(stats.length > 0, '스탯 목록을 읽었다', stats.join(' '))
+for (const k of stats) check(iconClasses.has(k), `스탯 '${k}' 에 아이콘이 있다`, `.hb-ic.i-${k}`)
+
+const forkSrc = readFileSync('src/game/forks.ts', 'utf8')
+const forkIds = /export type ForkId = ([^\n]+)/.exec(forkSrc)?.[1] ?? ''
+const forks = [...forkIds.matchAll(/'([a-z]+)'/g)].map((m) => m[1] as string)
+check(forks.length >= 2, '갈림길 카드 목록을 읽었다', forks.join(' '))
+for (const id of forks) check(iconClasses.has(id), `갈림길 '${id}' 에 아이콘이 있다`, `.hb-ic.i-${id}`)
+
+// ── ⑦ 아래 버튼 바가 카메라가 비워 둔 자리 안에 들어가는가 ────
+//
+// 형: "몇 스테이지 가면 버튼이 캐릭터를 가린다고 모바일 세로로 플레이할때."
+// 버튼 줄이 자라면 궁수를 덮는다. 두 값이 **같이 움직여야 하는 짝**이라 여기서 묶어 둔다:
+//   ui/overlay.ts 의 폰 버튼 높이 × 최대 줄 수 + 아래 여백  ≤  camera.ts 의 bandBottomPx
+console.log('')
+const btnH = Number(/\.hb-hud \.hb-btn \{[^}]*height: (\d+)px/.exec(shell)?.[1] ?? 0)
+const camSrc = readFileSync('src/render/camera.ts', 'utf8')
+const bandPx = Number(/bandBottomPx: (\d+)/.exec(camSrc)?.[1] ?? 0)
+/** 길잡이 줄 + 살통 줄. 살통은 옆으로 밀리게 해뒀으므로(ui/quiver.ts) 이보다 더 늘지 않는다. */
+const ROWS = 2
+const GAP = 8
+const BOTTOM = 18
+/** 노치 폰의 홈바(env(safe-area-inset-bottom))가 버튼 줄을 이만큼 더 밀어 올린다. */
+const SAFE = 34
+/** 그러고도 궁수 발밑과 버튼 사이에 이만큼은 비어 있어야 "가린다"가 안 된다. */
+const CLEAR = 16
+const need = btnH * ROWS + GAP * (ROWS - 1) + BOTTOM + SAFE + CLEAR
+check(btnH > 0 && bandPx > 0, '버튼 높이와 카메라 띠를 둘 다 읽었다', `버튼 ${btnH}px · 띠 ${bandPx}px`)
+check(need <= bandPx, '아래 버튼 바가 카메라가 비워 둔 띠 안에 든다', `${ROWS}줄+홈바+여유 ${need}px ≤ ${bandPx}px`)
+check(btnH >= 44, '폰 버튼이 44px 이상이다', `${btnH}px`)
+
 // 캔버스 쪽 세로 규약 — HUD와 카메라가 같은 기준을 쓰는가.
 const cam = readFileSync('src/render/camera.ts', 'utf8')
 const hud = readFileSync('src/render/hud.ts', 'utf8')

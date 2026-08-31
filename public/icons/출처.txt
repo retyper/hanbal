@@ -1,0 +1,25 @@
+아이콘 — game-icons.net · CC BY 3.0
+
+  https://game-icons.net · https://github.com/game-icons/icons
+  라이선스: Creative Commons Attribution 3.0 Unported (CC BY 3.0)
+  https://creativecommons.org/licenses/by/3.0/
+
+받은 그대로의 패스에서 **검은 배경 사각형 한 줄만** 걷어냈다 (tools/strip-icon-bg.mjs).
+그림 자체는 손대지 않았다. 색은 CSS가 입힌다 (ui/overlay.ts .hb-ic).
+
+  파일                원본                       만든 이
+  ─────────────────────────────────────────────────────────
+  stat-str.svg        lorc/muscle-up             Lorc
+  stat-steady.svg     skoll/bullseye             Skoll
+  stat-stamina.svg    delapouite/lungs           Delapouite
+  stat-focus.svg      lorc/meditation            Lorc
+  nav-growth.svg      delapouite/upgrade         Delapouite
+  nav-collection.svg  lorc/laurels               Lorc
+  nav-map.svg         lorc/treasure-map          Lorc
+  nav-sandbox.svg     lorc/bubbling-flask        Lorc
+  nav-quiver.svg      delapouite/quiver          Delapouite
+  fork-fire.svg       lorc/flaming-arrow         Lorc
+  fork-bomb.svg       lorc/unlit-bomb            Lorc
+  fork-wind.svg       lorc/windy-stripes         Lorc
+  fork-scout.svg      lorc/run                   Lorc
+  fork-single.svg     lorc/arrowhead             Lorc

@@ -32,7 +32,10 @@ const CSS = `
 .l-card .l-bic { color: var(--dim); line-height: 0; margin-bottom: 4px; }
 .l-card.hb-on .l-bic { color: var(--teal); }
 .l-card { display: flex; flex-direction: column; gap: 3px; }
-.l-card .l-ic { color: var(--tint); line-height: 0; margin-bottom: 2px; }
+.l-card .l-ic { color: var(--tint); line-height: 0; margin-bottom: 4px; }
+/* 갈림길 카드의 아이콘은 크게 — 글을 읽기 전에 무슨 카드인지 알아야 한다. */
+.l-card .l-ic .hb-ic { width: 30px; height: 30px; }
+.l-card .l-syn2 { letter-spacing: .08em; }
 .l-card .l-n { color: var(--ink); font-weight: 700; font-size: 15px; }
 .l-card .l-d { color: var(--dim); font-size: 12px; line-height: 1.45; }
 .l-card.hb-on .l-n { color: var(--teal); }
@@ -256,8 +259,14 @@ export function showRunOver(
   o.show(OVER_ID, { sticky: true })
 }
 
-/** 갈림길 카드의 밑색 — 바람골은 하늘, 밀집은 위험. game/forks.ts의 id로 고른다. */
-const FORK_TINT: Record<string, string> = { wind: '#7fd6c8', dense: '#ff8f5d' }
+/**
+ * 갈림길 카드의 밑색 — game/forks.ts 의 id로 고른다. 색이 곧 그 카드가 무엇을 건드리는지다:
+ * 불(화공)·폭발(화약고)은 강조색 계열, 바람·보급은 청록(안전), 척후·단발은 위험색.
+ */
+const FORK_TINT: Record<string, string> = {
+  fire: '#ff8f5d', bomb: '#ffb347', wind: '#7fd6c8',
+  supply: '#9be08f', scout: '#ff6a45', single: '#c9a0ff',
+}
 
 /**
  * 갈림길 2택 (docs/MEGAHIT.md §3 · game/forks.ts). 판이 끝나면 뜬다. onPick은 정확히 한 번 —
@@ -311,8 +320,12 @@ export function mountFork(
     card.type = 'button'
     card.className = 'hb-card l-card'
     card.style.setProperty('--tint', FORK_TINT[opt.id] ?? '#7fd6c8')
-    card.innerHTML = `<span class="l-n"></span><span class="l-syn2"></span><span class="l-d"></span>`
-    ;(card.querySelector('.l-n') as HTMLElement).textContent = `${idx + 1}) ${opt.title}`
+    // 아이콘 → 이름 → 한자 뿌리 → 설명. 활·살 카드와 같은 뼈대라 한 화면으로 읽힌다.
+    card.innerHTML = `<span class="l-ic"><i class="hb-ic"></i></span>`
+      + `<span class="l-n"></span><span class="l-syn2"></span><span class="l-d"></span>`
+    ;(card.querySelector('.hb-ic') as HTMLElement).classList.add(`i-${opt.id}`)
+    ;(card.querySelector('.l-n') as HTMLElement).textContent = opt.title
+    ;(card.querySelector('.l-syn2') as HTMLElement).textContent = opt.origin
     ;(card.querySelector('.l-d') as HTMLElement).textContent = opt.desc
     card.addEventListener('click', () => finish(idx))
     grid.appendChild(card)

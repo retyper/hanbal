@@ -126,9 +126,8 @@ export function mountSandbox(o: Overlay, hooks: SandboxHooks): void {
   const openBtn = document.createElement('button')
   openBtn.type = 'button'
   openBtn.className = 'hb-btn'
-  openBtn.style.fontSize = '11px'
-  openBtn.style.padding = '5px 8px'
-  openBtn.textContent = '샌드박스'
+  openBtn.setAttribute('aria-label', '실험장 열기')
+  openBtn.innerHTML = '<i class="hb-ic i-sandbox"></i><span class="hb-lbl">실험장</span>'
   openBtn.addEventListener('click', () => {
     on = !on
     bar.classList.toggle('on', on)

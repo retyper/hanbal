@@ -56,7 +56,7 @@ export const ARROW_KINDS: readonly ArrowKind[] = [
     id: 'burst',
     name: '화전',
     origin: '火箭 · 불화살',
-    desc: '맞은 자리에서 터져 둘레의 과녁을 같이 친다.',
+    desc: '떨어진 자리에서 터진다 — 빗나가 땅에 꽂혀도. 발치에 떨어뜨리면 나도 다친다.',
   },
   {
     id: 'chain',

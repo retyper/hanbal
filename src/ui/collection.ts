@@ -236,7 +236,8 @@ export function mountCollection(
   const open = document.createElement('button')
   open.type = 'button'
   open.className = 'hb-btn'
-  open.innerHTML = '수집 <span class="hb-key">C</span><span class="hb-dot"></span>'
+  open.innerHTML = '<i class="hb-ic i-collection"></i><span class="hb-lbl">수집</span>'
+    + '<span class="hb-key">C</span><span class="hb-dot"></span>'
   open.setAttribute('aria-label', '수집 화면 열기')
 
   // 다른 패널(성장)이 열려 있는 상태에서 눌렀으면 **닫는 게 아니라 갈아타는 것**이다.

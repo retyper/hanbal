@@ -6,7 +6,7 @@
  *
  * 클리어/실패 판정은 여기서 하지 않는다. w.status는 world.ts만 건드린다.
  */
-import { clamp01, distSqPointSegment, TAU } from '../core/math.ts'
+import { clamp, clamp01, distSqPointSegment, TAU } from '../core/math.ts'
 import { P } from '../tune/params.ts'
 import type { Arrow, Target, World } from './types.ts'
 import { flowHit } from './flow.ts'
@@ -357,9 +357,20 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
  */
 function burst(w: World, center: Target): void {
   const R = Math.max(w.fx.burstRadius, !center.alive && center.bomb ? P.target.bombRadius : 0)
+  burstAt(w, center.x, center.y, R, center)
+}
+
+/**
+ * 좌표에서 터진다. 위 burst()가 과녁을 중심으로 부르는 것과, ballistics가 **땅에 꽂힌 자리**를
+ * 중심으로 부르는 것이 같은 함수를 쓴다 (형: "어딜 맞춰도 폭발해야해. 심지어 땅에맞아도").
+ *
+ * exclude 는 이미 직격으로 처리한 과녁 — 두 번 세지 않기 위해서다. 땅 폭발은 null.
+ */
+export function burstAt(w: World, x: number, y: number, R: number, exclude: Target | null): void {
   if (R <= 0) return
   const r2 = R * R
   const targets = w.targets
+  const center = { x, y }
 
   // ★ 터졌다는 사건 자체를 알린다. 예전에는 딸려 죽은 과녁의 `chain` 이벤트만 나가서,
   // **아무것도 안 딸려 죽으면 폭발이 일어난 흔적이 화면에도 소리에도 남지 않았다**
@@ -369,7 +380,7 @@ function burst(w: World, center: Target): void {
 
   for (let j = 0; j < targets.length; j++) {
     const c = targets[j]
-    if (c === undefined || c === center || !c.alive || c.falling || c.hidden) continue
+    if (c === undefined || c === exclude || !c.alive || c.falling || c.hidden) continue
     const dx = c.x - center.x
     const dy = c.y - center.y
     const d2 = dx * dx + dy * dy
@@ -382,6 +393,27 @@ function burst(w: World, center: Target): void {
 
     if (c.kind === 'aerial') c.falling = true
     else c.alive = false
+  }
+
+  // ── 자해 ──────────────────────────────────────────────────────────
+  //
+  // 형: "내발앞에 떨어지면 나도 데미지 맞아야지." 폭발에 편이 없어야 폭발이다.
+  // 판이 끝난 뒤(status !== 'playing')에는 안 친다 — 결과 배너가 뜬 뒤 날아오던 살이
+  // 여정을 끝내면 그건 사고가 아니라 배신이다 (적 화살도 같은 규칙이다, world.ts).
+  const dmg = Math.floor(P.arrowkind.burstSelfDamage)
+  if (dmg <= 0 || w.status !== 'playing') return
+  const self = R * P.arrowkind.burstSelfRange
+  // 궁수를 점이 아니라 **서 있는 몸**(발 y=0 ~ 활 손 y=archer.y)으로 본다.
+  // 활 손 한 점으로만 재면 바로 발밑에서 터져도 1.4m 떨어진 것으로 나온다 — 안 아프다.
+  const ax = center.x - w.archer.x
+  const ay = center.y - clamp(center.y, 0, w.archer.y)
+  if (ax * ax + ay * ay > self * self) return
+  w.hp = Math.max(0, w.hp - dmg)
+  w.combo = 0
+  w.events.push({ t: 'player_hit', hp: w.hp, x: center.x, y: center.y, ang: 0, pin: false })
+  if (w.hp <= 0) {
+    w.status = 'failed'
+    w.events.push({ t: 'stage_end', cleared: false, score: w.score })
   }
 }
 

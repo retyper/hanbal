@@ -117,6 +117,14 @@ const VIEW = {
   bandTop: 0.2,
   /** 세로일 때 아래 띠 (DOM HUD 버튼·토스트의 자리) */
   bandBottom: 0.2,
+  /**
+   * 아래 띠의 **최소 픽셀 높이**. 비율만 쓰면 짧은 화면(640px)에서 띠가 128px로 줄어드는데,
+   * 아이콘 버튼 두 줄(46+46+간격)과 아래 여백을 합치면 그보다 크다 — 그러면 버튼이
+   * 궁수를 덮는다 (형: "몇 스테이지 가면 버튼이 캐릭터를 가린다고").
+   * ui/overlay.ts 의 `@media (max-width: 640px)` 버튼 크기와 **같이 움직여야 하는 값**이다.
+   * (tools/probe-style.ts 가 둘이 어긋나면 잡는다.)
+   */
+  bandBottomPx: 190,
 
   minScale: 8,
   maxScale: 110,
@@ -217,7 +225,9 @@ function frame(cam: CameraX, w: World): void {
   const portrait = cam.h > cam.w * VIEW.portraitAspect
   const mx = portrait ? VIEW.marginXPortrait : VIEW.margin
   const mTop = portrait ? VIEW.bandTop : VIEW.margin
-  const mBot = portrait ? VIEW.bandBottom : VIEW.margin
+  const mBot = portrait
+    ? Math.max(VIEW.bandBottom, VIEW.bandBottomPx / Math.max(1, cam.h))
+    : VIEW.margin
   const availW = cam.w * (1 - mx * 2)
   const availH = cam.h * (1 - mTop - mBot)
   const fit = Math.min(availW / spanX, availH / spanY)

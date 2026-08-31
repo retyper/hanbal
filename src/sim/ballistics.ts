@@ -8,7 +8,7 @@
 import { angleDelta, clamp01, damp, distSqPointSegment, lerp, normAngle } from '../core/math.ts'
 import { P } from '../tune/params.ts'
 import { effectiveStats } from './bow.ts'
-import { resolveHit } from './target.ts'
+import { burstAt, resolveHit } from './target.ts'
 import { TRAIL_POINTS } from './types.ts'
 import type { ArrowFx } from './arrowfx.ts'
 import type { Arrow, ArrowKindId, World } from './types.ts'
@@ -193,6 +193,11 @@ export function stepArrows(w: World): void {
       a.outcome = scored ? 'hit' : own && landed ? 'miss' : 'expired'
       a.alive = false
       if (!scored && own) w.events.push({ t: 'miss', x: a.x, y: a.y, arrow: a.id })
+      // ★ 화전은 **어디서 끝나든** 터진다 — 땅에 꽂혀도, 시간이 다해도 (형: "어딜 맞춰도
+      // 폭발해야해. 심지어 땅에맞아도 터져야한다고"). 과녁을 맞힌 살은 그 자리에서 이미
+      // 터졌으므로(target.ts resolveHit) 여기서 두 번 터뜨리지 않는다.
+      // 내 발치에 떨어지면 나도 맞는다 — 그 판정은 burstAt 안에 있다.
+      if (!scored && a.fx.burstRadius > 0) burstAt(w, a.x, a.y, a.fx.burstRadius, null)
     }
 
     pushTrail(a, dt)

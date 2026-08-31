@@ -155,6 +155,35 @@ const CSS = `
   border: 1px solid var(--line); border-radius: 2px; padding: 1px 5px; line-height: 1.35;
 }
 
+/* ── 아이콘 ────────────────────────────────────────────────────────────
+   game-icons.net(CC BY 3.0)에서 받은 SVG를 **마스크로** 쓴다 — 색은 글자색을 따라간다
+   (background: currentColor). 그래서 잠긴 줄은 아이콘까지 같이 흐려지고, 강조된 줄은
+   아이콘까지 같이 강조된다. 파일은 색을 모른다. 출처는 public/icons/출처.txt.
+
+   왜 <img>가 아닌가: img는 색을 못 바꾼다. 왜 인라인 SVG가 아닌가: 패스가 길어서
+   14개를 번들에 넣으면 20KB가 넘는다 (C6). 파일로 두면 쓰는 화면을 열 때만 받는다. */
+.hb-ic {
+  display: inline-block; flex: none; width: 1.15em; height: 1.15em;
+  background: currentColor; vertical-align: -.18em;
+  -webkit-mask: var(--ic) center / contain no-repeat;
+  mask: var(--ic) center / contain no-repeat;
+}
+.hb-ic.i-str { --ic: url(${BASE}icons/stat-str.svg); }
+.hb-ic.i-steady { --ic: url(${BASE}icons/stat-steady.svg); }
+.hb-ic.i-stamina { --ic: url(${BASE}icons/stat-stamina.svg); }
+.hb-ic.i-focus { --ic: url(${BASE}icons/stat-focus.svg); }
+.hb-ic.i-growth { --ic: url(${BASE}icons/nav-growth.svg); }
+.hb-ic.i-collection { --ic: url(${BASE}icons/nav-collection.svg); }
+.hb-ic.i-map { --ic: url(${BASE}icons/nav-map.svg); }
+.hb-ic.i-sandbox { --ic: url(${BASE}icons/nav-sandbox.svg); }
+.hb-ic.i-quiver { --ic: url(${BASE}icons/nav-quiver.svg); }
+.hb-ic.i-fire { --ic: url(${BASE}icons/fork-fire.svg); }
+.hb-ic.i-bomb { --ic: url(${BASE}icons/fork-bomb.svg); }
+.hb-ic.i-wind { --ic: url(${BASE}icons/fork-wind.svg); }
+.hb-ic.i-supply { --ic: url(${BASE}icons/nav-quiver.svg); }
+.hb-ic.i-scout { --ic: url(${BASE}icons/fork-scout.svg); }
+.hb-ic.i-single { --ic: url(${BASE}icons/fork-single.svg); }
+
 /* 올릴 수 있다는 표시. 점 하나. 모달로 막지 않는다 (C1) */
 .hb-dot {
   position: absolute; top: -4px; right: -4px; width: 8px; height: 8px; border-radius: 50%;
@@ -287,6 +316,22 @@ const CSS = `
     display: flex; align-items: center; justify-content: center;
   }
   .hb-grab::before { content: ""; width: 42px; height: 4px; border-radius: 2px; background: var(--line); }
+  /* ── 아래 버튼 줄 = 손가락으로 누르는 **바** ─────────────────────────
+     형: "몇 스테이지 가면 버튼이 캐릭터를 가린다고 모바일 세로로 플레이할때.
+          컴퓨터에서는 버튼 적당히 크더라도 모바일에선 배치가 정말 적절해야해."
+     맞다. 그리고 원인은 크기가 아니라 **줄 수**였다: 글자가 붙은 버튼이 넉 줄까지
+     접히면서 위로 자라 궁수를 덮었다. 살통에 살 종류가 늘수록 더 자란다 —
+     즉 "몇 스테이지 가면" 나빠진다.
+
+     그래서 폰에서는 글자를 지우고 **아이콘만 남긴다**. 모바일 게임들이 하는 그대로다:
+     한 손으로 닿는 아래쪽에, 크기가 변하지 않는 칸들이 줄지어 선다.
+     최대 두 줄(길잡이 넷 + 살통)로 고정되고, 그 높이만큼 카메라가 자리를 비워 둔다
+     (render/camera.ts VIEW.bandBottomPx — 이 둘은 같이 움직여야 한다). */
+  .hb-hud { gap: 8px; }
+  .hb-hud .hb-btn { padding: 0 10px; min-width: 46px; height: 46px; justify-content: center; }
+  .hb-hud .hb-lbl { display: none; }
+  .hb-hud .hb-ic { width: 24px; height: 24px; vertical-align: 0; }
+
   .hb-body { padding: 6px 18px calc(20px + var(--safe-b)); }
   .hb-panel h2 { font-size: 22px; }
   /* ✕는 시트가 아니라 **화면**의 오른쪽 위에 둔다. 시트에 붙이면 시트 높이(내용에 따라

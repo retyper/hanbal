@@ -48,6 +48,9 @@ const CSS = `
 /* 올린 직후 한 번 번쩍. 배경만 — 한쪽만 두꺼운 테두리는 쓰지 않는다. */
 .g-row.g-flash { background: #ffb34722; }
 .g-name { color: var(--ink); font-weight: 700; font-size: 17px; letter-spacing: -.01em; }
+/* 스탯 아이콘 — game-icons.net (public/icons/출처.txt). 글자보다 먼저 읽히라고 크게 둔다. */
+.g-ic { width: 26px; height: 26px; margin-right: 11px; color: var(--gold); vertical-align: -6px; }
+.g-row.g-flash .g-ic { color: var(--accent); }
 .g-lv { color: var(--mute); font-size: 13px; margin-left: 10px; }
 .g-now { grid-column: 1; color: var(--body); }
 .g-next { grid-column: 1; color: var(--teal); font-size: 13px; }
@@ -149,7 +152,7 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
     const el = document.createElement('div')
     el.className = 'g-row'
     el.innerHTML = `
-      <div><span class="g-name"></span><span class="g-lv"></span></div>
+      <div><i class="hb-ic g-ic"></i><span class="g-name"></span><span class="g-lv"></span></div>
       <div class="g-now"></div>
       <div class="g-next"></div>
       <button class="hb-btn g-up" type="button">올리기 <span class="g-cost"></span></button>`
@@ -164,6 +167,8 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
       cost: el.querySelector('.g-cost') as HTMLElement,
     }
     ;(el.querySelector('.g-name') as HTMLElement).textContent = statLabel(key)
+    // 아이콘은 스탯 키로 고른다 (ui/overlay.ts .hb-ic.i-*). 스탯을 더 만들면 아이콘도 같이.
+    ;(el.querySelector('.g-ic') as HTMLElement).classList.add(`i-${key}`)
     btn.addEventListener('click', () => {
       if (!spendTraining(d, key, 1)) return
       // 무엇이 바뀌었는지 그 자리에서. 화면을 닫았다 열게 하지 않는다.
@@ -351,7 +356,8 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
   const open = document.createElement('button')
   open.type = 'button'
   open.className = 'hb-btn'
-  open.innerHTML = '성장 <span class="hb-key">Tab</span><span class="hb-dot"></span>'
+  open.innerHTML = '<i class="hb-ic i-growth"></i><span class="hb-lbl">성장</span>'
+    + '<span class="hb-key">Tab</span><span class="hb-dot"></span>'
   open.setAttribute('aria-label', '성장 화면 열기')
   open.addEventListener('click', () => {
     if (o.visible()) o.hide()

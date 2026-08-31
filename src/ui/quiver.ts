@@ -18,6 +18,15 @@ const CSS = `
 .q-btn { padding: 7px 12px; font-size: 13px; display: inline-flex; align-items: center; gap: 7px; }
 /* 손가락으로 누르는 화면에서는 살통 버튼도 44px를 지킨다 (ui/overlay.ts 와 같은 규칙). */
 @media (pointer: coarse) { .q-btn { min-height: 44px; padding: 7px 14px; } }
+/* 폰 — 살통도 아이콘만 남긴다. 살 종류가 늘어도 **줄 수가 늘지 않아야** 궁수를 안 덮는다
+   (형: "몇 스테이지 가면 버튼이 캐릭터를 가린다"). 넘치면 옆으로 밀어 본다. */
+@media (max-width: 640px) {
+  .q-hint { display: none; }
+  .q-row { flex-wrap: nowrap; overflow-x: auto; max-width: calc(100vw - 36px); gap: 6px; padding-bottom: 2px; }
+  .q-btn { min-width: 50px; height: 46px; padding: 0 8px; gap: 4px; }
+  .q-btn .q-name { display: none; }
+  .q-btn b { font-size: 12px; }
+}
 .q-btn .q-ic { color: var(--tint); line-height: 0; }
 .q-btn b { font-size: 13px; color: var(--accent); }
 .q-btn.q-on { border-color: var(--teal); color: var(--teal); }
@@ -51,7 +60,8 @@ export function mountQuiver(o: Overlay, d: SaveData): void {
       btn.className = 'hb-btn q-btn' + (armed ? ' q-on' : '') + (stock <= 0 ? ' q-empty' : '')
       // 아이콘이 먼저, 이름이 다음 — 색과 도형이 글자보다 빨리 읽힌다 (ui/arrowicons.ts).
       btn.style.setProperty('--tint', ARROW_TINT[k.id])
-      btn.innerHTML = `<span class="q-ic">${arrowIconSvg(k.id, 20)}</span>${k.name}<b>×${stock}</b>`
+      btn.innerHTML = `<span class="q-ic">${arrowIconSvg(k.id, 20)}</span>`
+        + `<span class="q-name">${k.name}</span><b>×${stock}</b>`
       btn.setAttribute('aria-label', `${k.name} ${stock}발${armed ? ' · 들고 있음' : ''}`)
       btn.disabled = stock <= 0 && !armed
       btn.addEventListener('click', () => {

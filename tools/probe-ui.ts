@@ -395,23 +395,41 @@ for (const [cw, ch] of [[1280, 720], [800, 600], [390, 844], [360, 640]] as cons
     return { s: cam.scale, ground: worldToScreenY(cam, 0), top, bot, l, r: rr }
   }
 
+  /**
+   * DOM 버튼 바가 화면 아래에서 차지하는 높이 (px). tools/probe-style.ts 의 ⑦번과 같은 값이다 —
+   * 아이콘 버튼 두 줄(46×2 + 간격 8) + 아래 여백 18 + 노치 홈바 34 + 여유 16.
+   * 궁수의 **발(지면)** 이 이 선보다 위에 있어야 "버튼이 캐릭터를 가린다"가 안 된다.
+   */
+  const BAR = 168
+
+  for (const [cw, ch] of [[390, 844], [360, 640]] as const) {
+    for (const idx of [0, 10]) {
+      const p = shot(cw, ch, idx)
+      const name = `${idx === 0 ? '1판' : '11판'} ${cw}x${ch}`
+      console.log(
+        `  ${name}  scale ${p.s.toFixed(1)}px/m · 지면 y=${p.ground.toFixed(0)}/${ch} ` +
+        `· 과녁 y ${p.top.toFixed(0)}~${p.bot.toFixed(0)} · x ${p.l.toFixed(0)}~${p.r.toFixed(0)}`,
+      )
+      // 위 띠(0.2)는 캔버스 HUD의 자리다 — 과녁이 그 밑으로 들어가면 머리글과 겹쳐 보인다.
+      check(p.top >= ch * 0.2 - 2, `${name} — 과녁이 위 HUD 띠 아래`, `${p.top.toFixed(0)} ≥ ${Math.round(ch * 0.2)}`)
+      // 지면은 화면의 아래쪽에 앉아야 한다. 가운데면 세로 공간을 절반 버린 것이다.
+      check(p.ground > ch * 0.55, `${name} — 지면이 화면 아래쪽에 앉는다`, `y=${p.ground.toFixed(0)}`)
+      // ★ 형의 신고 — 버튼이 궁수를 덮으면 안 된다. 궁수는 지면 위에 서 있으므로
+      //   지면이 바 위에 있으면 몸 전체가 바 위에 있다.
+      check(
+        p.ground < ch - BAR,
+        `${name} — 아래 버튼 바가 궁수를 안 덮는다`,
+        `지면 ${p.ground.toFixed(0)} < 바 윗선 ${ch - BAR}`,
+      )
+      // 좌우로 잘리지 않는다.
+      check(p.l >= -2 && p.r <= cw + 2, `${name} — 과녁이 좌우로 안 잘린다`, `${p.l.toFixed(0)}~${p.r.toFixed(0)}`)
+    }
+  }
+  // 같은 판을 가로로 보면 구도는 예전 그대로(가운데)여야 한다 — 세로 규칙이 가로를 건드리면 안 된다.
   for (const idx of [0, 10]) {
-    const p = shot(390, 844, idx)
-    const name = idx === 0 ? '1판' : '11판'
-    console.log(
-      `  ${name} 세로  scale ${p.s.toFixed(1)}px/m · 지면 y=${p.ground.toFixed(0)}/844 ` +
-      `· 과녁 y ${p.top.toFixed(0)}~${p.bot.toFixed(0)} · x ${p.l.toFixed(0)}~${p.r.toFixed(0)}`,
-    )
-    // 위 띠(0.2)는 캔버스 HUD의 자리다 — 과녁이 그 밑으로 들어가면 머리글과 겹쳐 보인다.
-    check(p.top >= 844 * 0.2 - 2, `${name} — 과녁이 위 HUD 띠 아래에 있다`, `${p.top.toFixed(0)} ≥ 169`)
-    // 지면은 화면의 아래쪽에 앉아야 한다. 가운데면 세로 공간을 절반 버린 것이다.
-    check(p.ground > 844 * 0.6, `${name} — 지면이 화면 아래쪽에 앉는다`, `y=${p.ground.toFixed(0)} > 506`)
-    // 좌우로 잘리지 않는다.
-    check(p.l >= -2 && p.r <= 392, `${name} — 과녁이 좌우로 안 잘린다`, `${p.l.toFixed(0)}~${p.r.toFixed(0)}`)
-    // 같은 판을 가로로 보면 구도는 예전 그대로(가운데)여야 한다 — 세로 규칙이 가로를 건드리면 안 된다.
     const land = shot(844, 390, idx)
     const mid = Math.abs((land.top + land.bot) / 2 - 390 * 0.5)
-    check(mid < 390 * 0.25, `${name} — 가로에서는 여전히 가운데다`, `중심 어긋남 ${mid.toFixed(0)}px`)
+    check(mid < 390 * 0.25, `${idx === 0 ? '1판' : '11판'} — 가로는 여전히 가운데다`, `중심 어긋남 ${mid.toFixed(0)}px`)
   }
 }
 

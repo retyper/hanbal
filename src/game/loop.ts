@@ -28,7 +28,7 @@ import { bowMods, masteryLevel } from './bows.ts'
 import type { LoadoutPick } from '../ui/loadout.ts'
 import { rollSupply, rollSupplyCount } from './supply.ts'
 import { BOSS_EVERY, checkpointStage } from './stages.ts'
-import { applyFork, denseReward, FORK_OPTIONS, hasFork, windTrainMul, type ForkOption } from './forks.ts'
+import { applyFork, forkOptions, forkPairKey, forkTrainMul, hasFork, type ForkOption } from './forks.ts'
 import { bullseyeAcc, gradeRun, rewardLine, type RunStats } from './rewards.ts'
 import { evaluateUnlocks, progressOf, unlockedBows } from './unlocks.ts'
 import { makeRng } from '../core/rng.ts'
@@ -200,12 +200,16 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
    */
   const rearm = (): void => {
     let kind = save.runArrow
-    if (kind !== DEFAULT_ARROW && Math.floor(save.arrowStock[kind] ?? 0) <= 0) kind = DEFAULT_ARROW
+    // '화공'으로 받은 살은 재고가 0이어도 들 수 있다 — 그게 이 카드의 전부다.
+    if (kind !== DEFAULT_ARROW && kind !== freeArrow
+      && Math.floor(save.arrowStock[kind] ?? 0) <= 0) kind = DEFAULT_ARROW
     if (w.arrowKind !== kind) armArrow(w, kind)
     // 재고는 조준 시야(좌상단)에서 읽혀야 한다 — 좌하단 버튼까지 시선을 보내게 하지 않는다 (감사).
     hud.arrow = kind === DEFAULT_ARROW
       ? ''
-      : `${arrowName(kind)} ×${Math.floor(save.arrowStock[kind] ?? 0)}`
+      : kind === freeArrow
+        ? `${arrowName(kind)} · 화공`
+        : `${arrowName(kind)} ×${Math.floor(save.arrowStock[kind] ?? 0)}`
     armBow(w, bowMods(save.bow, kind, masteryLevel(save.bowHits[save.bow] ?? 0)))
     w.bowSkin = save.bow
   }
@@ -246,14 +250,22 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   let pendingStartIndex: number | null = null
 
   // ── 갈림길 2택 (docs/MEGAHIT.md §3 · game/forks.ts) ──
-  /** 지금 고른 카드. 0=바람골(기본) · 1=밀집. 판을 넘기는 순간 소비되고 다시 0으로 돌아간다. */
-  let forkPick = 0
+  /** 방금 고른 카드. 판을 넘기는 순간 소비되고 다시 null로 돌아간다. */
+  let forkPick: ForkOption | null = null
+  /**
+   * 직전 판에 **실제로 보여준** 두 장의 열쇠. 같은 짝이 이어지면 그게 "개노잼"이다 —
+   * 다음 뽑기에 넘겨서 피한다. 여정이 끝나면 지운다(startRun).
+   */
+  let lastForkKey = ''
   /** 다음 loadStage가 갈림길을 적용해야 하는가 — '클리어 후 진짜로 다음 판으로 가는' 그 한 번만 켠다. */
   let armFork = false
-  /** 지금 판이 바람골로 열렸는가 — finishRun의 훈련치 배수가 여기를 본다. */
-  let activeForkWind = false
-  /** 지금 판이 밀집으로 열렸는가 — finishRun이 클리어 시 특수살 재고를 준다. */
-  let activeForkDense = false
+  /** 지금 판이 어떤 갈림길로 열렸는가 — finishRun의 훈련치 배수가 여기를 본다. */
+  let activeFork: ForkOption | null = null
+  /**
+   * 이 판 동안 **공짜로** 물리는 살 ('화공'). 재고를 쓰지 않는다.
+   * null이면 평소대로 살통에서 든 것을 쓴다. 판이 바뀌면 반드시 지워진다 (loadStage).
+   */
+  let freeArrow: ArrowKindId | null = null
 
   /** 세이브의 스탯을 활에 넣는다. 이게 없으면 성장이 물리에 아무 영향을 못 준다. */
   const applyStats = (): void => {
@@ -297,16 +309,21 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     // armFork는 '클리어 뒤 정말로 다음 판으로 간' 그 전이 때만 켜진다 — 로드아웃 직후 첫 판·
     // 실험장 복귀·판 점프(sandboxJump)에는 안 켜진다(선택한 적이 없는 판에 효과를 몰래 얹으면
     // 안 된다). 소비하는 순간 바로 끈다 — 다음 loadStage가 다시 켜주지 않는 한 재적용 없음.
-    activeForkWind = false
-    activeForkDense = false
-    if (armFork && hasFork(stageIndex + 1)) {
-      const opt = FORK_OPTIONS[forkPick] ?? FORK_OPTIONS[0]
-      stage = applyFork(stage, opt, stageIndex + 1)
-      if (opt.id === 'wind') activeForkWind = true
-      else activeForkDense = true
+    activeFork = null
+    freeArrow = null
+    if (armFork && forkPick !== null && hasFork(stageIndex + 1)) {
+      activeFork = forkPick
+      stage = applyFork(stage, activeFork, stageIndex + 1)
+      // '화공' 처럼 살을 물리는 카드 — 재고 없이 그 살을 든다. 소모도 안 한다 (release 처리).
+      if (activeFork.arrow !== undefined) {
+        freeArrow = activeFork.arrow
+        kind = activeFork.arrow
+        save.runArrow = kind
+        arrow = kind
+      }
     }
     armFork = false
-    forkPick = 0
+    forkPick = null
     // 활도 판 경계에서만 (A1). 숙련은 그 활로 맞힌 누적 수에서 나온다 — docs/BOWS.md 3장.
     // 궁합(활×살)은 bowMods 안에서 판정되므로 여기서는 조합을 모른다.
     const mods = bowMods(save.bow, kind, masteryLevel(save.bowHits[save.bow] ?? 0))
@@ -482,15 +499,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     GRADE.misses = misses
     GRADE.bestChain = bestChain
     GRADE.bullseyes = bullseyes
-    const reward = gradeRun(runRng, w.stage, GRADE, activeForkWind ? windTrainMul() : 1)
+    const reward = gradeRun(runRng, w.stage, GRADE, forkTrainMul(activeFork))
     save.runSeed = runRng.state()
-    // 갈림길 '밀집' 보상 — 클리어했을 때만. 화살 재고는 대가 없이 늘지 않는다 (밀집이 준 위험을
-    // 감수해야 값이 나온다). 판 번호로 도니 매번 같은 살만 나오지 않는다 (game/forks.ts).
-    if (cleared && activeForkDense) {
-      const kind = denseReward(stageIndex + 1)
-      save.arrowStock[kind] = Math.floor(save.arrowStock[kind] ?? 0) + 1
-      ui.toast(`밀집을 헤쳐냈다 — ${arrowName(kind)} +1`, 2600)
-    }
     // 화면에도 별을 보낸다. 예전엔 세이브에만 적히고 화면에는 안 왔다 —
     // "별로 클리어 수준을 정해놓을 거면 별도 보여줘야지"(형).
     hud.stars = reward.stars
@@ -666,7 +676,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
         // ── 특수살 소모 — 쏜 발만큼 (docs/RUN.md 4장) ──
         // 분열 자식·사슬 도약은 release가 아니라 여기 안 걸린다. 이 발의 결과물이니까.
         const kind = w.arrowKind
-        if (kind !== DEFAULT_ARROW) {
+        // '화공'으로 받은 살은 공짜다 — 재고를 깎지 않고, 떨어질 일도 없다.
+        if (kind !== DEFAULT_ARROW && kind !== freeArrow) {
           const left = Math.floor(save.arrowStock[kind] ?? 0) - 1
           save.arrowStock[kind] = left > 0 ? left : 0
           if (left <= 0) {
@@ -731,10 +742,15 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     // (다음 프레임부터 !choosing이 거짓이라) 다시 안 돈다 — 카드가 정확히 한 번만 뜬다.
     if (!paused && !choosing && w.status === 'cleared' && hasFork(stageIndex + 2)) {
       choosing = true
-      ui.fork(FORK_OPTIONS, (i) => {
+      // 다음 판의 실제 배치를 보고 카드를 고른다 — 못 얹는 카드(과녁이 하나뿐인 판의
+      // 화약고 등)는 애초에 안 뜬다. 판 번호가 같으면 언제나 같은 두 장이다 (game/forks.ts).
+      const next = Math.min(stageIndex + 1, MAX_STAGE_INDEX)
+      const opts = forkOptions(stageIndex + 2, getStage(next), lastForkKey)
+      lastForkKey = forkPairKey(opts)
+      ui.fork(opts, (i) => {
         choosing = false
         playUi(sfx, 'press')
-        forkPick = i
+        forkPick = opts[i] ?? null
         if (stageIndex < MAX_STAGE_INDEX) stageIndex++
         armFork = true
         beginStage()

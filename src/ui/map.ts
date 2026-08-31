@@ -235,7 +235,7 @@ export function mountMap(
   const open = document.createElement('button')
   open.type = 'button'
   open.className = 'hb-btn'
-  open.innerHTML = '지도'
+  open.innerHTML = '<i class="hb-ic i-map"></i><span class="hb-lbl">지도</span>'
   open.setAttribute('aria-label', '지도 열기')
   const isOpen = (): boolean => o.showing(PANEL_ID)
   open.addEventListener('click', () => {
