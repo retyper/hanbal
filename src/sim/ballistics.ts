@@ -7,6 +7,7 @@
  */
 import { angleDelta, clamp01, damp, distSqPointSegment, lerp, normAngle } from '../core/math.ts'
 import { P } from '../tune/params.ts'
+import { arrowFx } from './arrowfx.ts'
 import { effectiveStats } from './bow.ts'
 import { burstAt, resolveHit } from './target.ts'
 import { TRAIL_POINTS } from './types.ts'
@@ -31,19 +32,57 @@ const TRAIL_STRIDE = 4
 export function spawnArrow(w: World, angle: number, power: number): Arrow | null {
   if (w.arrowsLeft <= 0) return null
 
-  const a = freeSlot(w)
-  if (a === null) return null
-
   const pw = clamp01(power)
   // 이 발의 종류는 **지금 장전된 것**이다. 여기서 굳혀야 판 도중의 교체(armArrow)가
   // 공중의 화살을 건드리지 않는다.
   const kind = w.arrowKind
   const fx = w.fx
-  const speed = arrowSpeed(w, pw, fx.speedMul)
 
-  launch(a, w.archer.x, w.archer.y, angle, speed, pw, 0, kind, fx)
+  // ── 산전(散箭) — 동시에 부채꼴로 (형: "샷건같은 3개 동시쏘는 화살") ──
+  //
+  // 가운데 살이 **이 당김의 살**이다(splitDepth 0). 곁가지는 1 —
+  // 그래야 셋을 다 맞혀도 중(中)은 하나다. 국궁에서 세는 단위는 화살이 아니라 **당김**이고,
+  // 분열 자식을 안 세는 것과 같은 규칙이다 (sim/target.ts resolveHit).
+  const n = fx.volleyCount > 1 ? Math.floor(fx.volleyCount) : 1
+  const mid = (n - 1) / 2
+  let primary: Arrow | null = null
+  for (let i = 0; i < n; i++) {
+    // n=1이면 0으로 나눠 NaN이 된다 — 각도가 NaN이면 그 화살은 영영 어디에도 안 맞는다.
+    const off = n > 1 ? ((i - mid) / mid) * fx.volleySpread : 0
+    const shot = fire(w, angle + off, pw, kind, fx, i === Math.round(mid) ? 0 : 1)
+    // 풀이 모자라면 곁가지는 조용히 빠진다. 가운데 한 발만은 반드시 나가야 한다.
+    if (shot === null) { if (i === Math.round(mid)) return null; continue }
+    if (i === Math.round(mid)) primary = shot
+  }
+  if (primary === null) return null
 
+  // ── 연주전(連珠箭) — 이어서 (형: "한번만 쏴도 빠르게 조준방향대로 3발 연사") ──
+  // 예약만 걸어 둔다. 실제 발사는 stepArrows 가 elapsed 로 재서 한다 (A1: 타이머 금지).
+  if (fx.rapidCount > 0) {
+    w.rapidLeft = Math.floor(fx.rapidCount)
+    w.rapidAt = w.elapsed + fx.rapidDelay
+    w.rapidAngle = angle
+    w.rapidPower = pw
+    w.rapidKind = kind
+  }
+
+  // ★ 재고는 **한 번만** 깎인다. 세 발이 나가도 당김은 한 번이다 — 그게 이 두 살의 값이
+  //   사거리(산전)와 표적 이탈(연주전)로 치러지는 이유다. 여기서 셋을 깎으면 두 살은
+  //   그냥 '연출이 화려한 보통 살'이 되고, 고를 이유가 사라진다.
   w.arrowsLeft--
+  return primary
+}
+
+/**
+ * 슬롯 하나를 꺼내 실제로 쏜다. **재고를 안 깎는다** — 회계는 spawnArrow 한 곳의 몫이다.
+ * 동시 발사(산전)의 곁가지와 이어쏘기(연주전)의 뒷발이 같은 길을 쓰게 여기 모은다.
+ */
+function fire(
+  w: World, angle: number, power: number, kind: ArrowKindId, fx: ArrowFx, depth: number,
+): Arrow | null {
+  const a = freeSlot(w)
+  if (a === null) return null
+  launch(a, w.archer.x, w.archer.y, angle, arrowSpeed(w, power, fx.speedMul), power, depth, kind, fx)
   return a
 }
 
@@ -121,6 +160,26 @@ export function arrowSpeed(w: World, power: number, kindSpeedMul: number): numbe
 export function stepArrows(w: World): void {
   const dt = w.dt
   const pool = w.arrows
+
+  // ── 연주전(連珠箭)의 뒷발 ────────────────────────────────────────────
+  //
+  // 당김이 끝난 뒤에 나가는 살이라 활(bow)이 아니라 여기서 쏜다. 활은 이미 다음 당김을
+  // 시작했을 수 있고, 그러면 예약이 통째로 지워진다.
+  //
+  // while 인 이유: rapidDelay 가 한 스텝(1/60초)보다 짧게 튜닝되면 한 프레임에 둘이
+  // 나가야 한다. if 로 짜면 그 경우 뒷발이 조용히 늦어져, 노브를 내려도 빨라지지 않는다.
+  // 판이 끝났으면 안 쏜다 — 결과 배너 뒤에 튀어나오는 살은 손맛이 아니라 유령이다.
+  while (w.rapidLeft > 0 && w.status === 'playing' && w.elapsed >= w.rapidAt) {
+    const fx = arrowFx(w.rapidKind)
+    w.rapidLeft--
+    w.rapidAt += fx.rapidDelay > 0 ? fx.rapidDelay : dt
+    // 재고는 안 깎는다 (spawnArrow 주석). 풀이 꽉 찼으면 이 발은 그냥 빠진다.
+    const shot = fire(w, w.rapidAngle, w.rapidPower, w.rapidKind, fx, 1)
+    if (shot === null) continue
+    w.events.push({
+      t: 'rapid', x: w.archer.x, y: w.archer.y, angle: w.rapidAngle, left: w.rapidLeft,
+    })
+  }
 
   for (let i = 0; i < pool.length; i++) {
     const a = pool[i]

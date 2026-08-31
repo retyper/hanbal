@@ -22,8 +22,12 @@ export const SUPPLY_COUNT = 3
  */
 export function supplyPool(cycle: number): readonly ArrowKindId[] {
   const pool: ArrowKindId[] = ['burst', 'chain', 'split']
-  if (cycle >= 2) pool.push('pierce')
-  if (cycle >= 3) pool.push('heavy')
+  // 산전은 둘째 마디에 나온다 — 겨누기가 아직 서툰 때 "가까이 붙으면 된다"는
+  // 두 번째 답을 쥐여 준다. 애기살(정확·관통)과 같은 마디에 두어 성격이 대비되게 한다.
+  if (cycle >= 2) pool.push('pierce', 'scatter')
+  // 연주전은 셋째 마디 — 이때부터 체력 큰 적(갑옷병·보스)이 늘어서 '한 곳을 계속 때리는'
+  // 카드가 뜻을 갖는다. 육량전(한 방이 크다)과 같은 마디에서 갈린다: 셋을 나눠 때리기.
+  if (cycle >= 3) pool.push('heavy', 'rapid')
   // 신전은 마지막 보물이다 — 진짜 유도(homingTurn 2.6)가 된 대가로 가장 깊이 숨는다
   // (형: "확실하게 맞게 하되 얻기는 어렵게"). 넷째 보스 = 40판까지 가야 처음 본다.
   if (cycle >= 4) pool.push('homing')

@@ -71,6 +71,22 @@ export const ARROW_KINDS: readonly ArrowKind[] = [
     desc: `맞으면 ${arrowFx('split').splitCount}발로 갈라진다.`,
   },
   {
+    id: 'scatter',
+    // 散箭 — '흩어 쏘는 살'. 실제로 여러 대를 한꺼번에 얹어 쏘는 법이 있었다.
+    // 이름을 '난전(亂箭)'으로 하려다 뒀다: 난전(亂戰)과 소리가 같아 화면에서 뜻이 갈린다.
+    // 散은 산탄(散彈)의 그 산이라, 한자를 몰라도 '흩어진다'가 바로 읽힌다.
+    name: '산전',
+    origin: '散箭 · 흩어 쏘는 살',
+    desc: `한 번에 ${arrowFx('scatter').volleyCount}대가 부채꼴로 나간다. 가까우면 다 꽂히고, 멀면 다 못 간다.`,
+  },
+  {
+    id: 'rapid',
+    // 連珠箭 — 구슬을 꿴 듯 잇달아 나가는 살. 연주노(連珠弩, 연발 쇠뇌)의 그 연주다.
+    name: '연주전',
+    origin: '連珠箭 · 구슬 꿰듯 잇달아',
+    desc: `한 번 당기면 겨눈 방향으로 ${arrowFx('rapid').rapidCount + 1}대가 이어 나간다. 가만한 것에 강하다.`,
+  },
+  {
     id: 'homing',
     name: '신전',
     origin: '神箭 · 빗나가지 않는 살',

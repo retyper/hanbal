@@ -74,6 +74,17 @@ export interface ArrowFx {
    *   헤드샷은 여전히 더 좋다(즉사) — 육량전은 '머리를 못 맞혀도 답이 있다'는 두 번째 길이다.
    */
   armorPierce: number
+  /**
+   * 한 번의 당김에 **동시에** 나가는 살 수 (1 = 보통). 부채꼴로 벌어진다.
+   * 분열(splitCount)과 다르다: 분열은 맞은 뒤에 갈라지고, 이건 손에서부터 갈라진다.
+   */
+  volleyCount: number
+  /** 동시 발사의 부채 반각 (rad). 바깥 살이 ±이만큼 벌어진다. */
+  volleySpread: number
+  /** 첫 발 뒤에 **이어서** 더 나가는 살 수 (0 = 없음). 방향은 첫 발과 같다. */
+  rapidCount: number
+  /** 이어 쏘는 간격 (s). */
+  rapidDelay: number
 }
 
 /**
@@ -145,6 +156,17 @@ const BODY: Readonly<Record<ArrowKindId, Body>> = {
   chain: { mass: 1.1, caliber: 1.35 },
   /** 육량전 — 여섯 냥. 이 게임에서 가장 무겁고 가장 굵다. */
   heavy: { mass: 2.4, caliber: 1.35 },
+  /**
+   * 산전 — 셋을 한꺼번에 얹어 쏜다. 하나하나는 짧고 가볍고 굵다(깃이 서로 걸린다).
+   * 그래서 물리가 저절로 산탄이 된다: 가벼워 빠르지만 A/m 이 커서 **금방 죽는다.**
+   * 가까이서는 셋 다 꽂히고, 멀면 셋 다 못 간다. 사거리로 값을 치르는 살이다.
+   */
+  scatter: { mass: 0.5, caliber: 1.7 },
+  /**
+   * 연주전 — 잇달아 나가는 만큼 하나하나는 가볍다. 산전만큼 굵지는 않아서
+   * (한 발씩 제대로 나간다) 사거리는 멀쩡하다. 대신 발당 에너지가 작다.
+   */
+  rapid: { mass: 0.7, caliber: 0.95 },
 }
 
 function neutral(): ArrowFx {
@@ -168,6 +190,10 @@ function neutral(): ArrowFx {
     mass: 1,
     pen: 1,
     scoreMul: 1,
+    volleyCount: 1,
+    volleySpread: 0,
+    rapidCount: 0,
+    rapidDelay: 0,
   }
 }
 
@@ -176,6 +202,8 @@ function neutral(): ArrowFx {
  * 핫 루프가 매 스텝 읽는 객체라 새로 만들면 프레임당 할당 0이 깨진다 (A5).
  */
 const TABLE: Record<ArrowKindId, ArrowFx> = {
+  scatter: neutral(),
+  rapid: neutral(),
   basic: neutral(),
   pierce: neutral(),
   burst: neutral(),
@@ -205,6 +233,10 @@ function reset(fx: ArrowFx): void {
   fx.mass = 1
   fx.pen = 1
   fx.scoreMul = 1
+  fx.volleyCount = 1
+  fx.volleySpread = 0
+  fx.rapidCount = 0
+  fx.rapidDelay = 0
 }
 
 /**
@@ -278,6 +310,16 @@ export function refreshArrowFx(): void {
   const heavy = TABLE.heavy
   reset(heavy)
   heavy.scoreMul = a.heavyScoreMul
+
+  const scatter = TABLE.scatter
+  reset(scatter)
+  scatter.volleyCount = a.volleyCount
+  scatter.volleySpread = a.volleySpread
+
+  const rapid = TABLE.rapid
+  reset(rapid)
+  rapid.rapidCount = a.rapidCount
+  rapid.rapidDelay = a.rapidDelay
 
   // ★ 물리는 **맨 마지막에, 전 종류에** 똑같이 건다 (bakeBody 위의 주석).
   //   위에서 굽는 건 이제 '효과'뿐이다 — 폭발 반경, 갈라짐, 유도, 사슬.

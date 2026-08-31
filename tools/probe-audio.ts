@@ -342,10 +342,11 @@ console.log(`master=${P.audio.master}  maxVoices=${P.audio.maxVoices}  endGain=$
 //   ③ **삑 없음** — 2kHz 위에서 60ms 안에 끝나는 **음정 있는** 층. 그게 병아리다.
 //      (명적/신전은 설정상 음정이 있는 소리라 면제 — 형이 짚어준 그대로다.)
 {
-  const KINDS = ['basic', 'pierce', 'heavy', 'split', 'burst', 'homing', 'chain'] as const
+  const KINDS = ['basic', 'pierce', 'heavy', 'split', 'burst', 'homing', 'chain', 'scatter', 'rapid'] as const
   const NAME: Record<string, string> = {
     basic: '유엽전(기본)', pierce: '애기살=편전', heavy: '육량전', split: '세전',
     burst: '화전', homing: '신전', chain: '명적(우는살)',
+    scatter: '산전', rapid: '연주전',
   }
   /** 음정이 설정인 살 — 삑 검사 면제. */
   const TONAL_BY_DESIGN = new Set(['homing', 'chain'])

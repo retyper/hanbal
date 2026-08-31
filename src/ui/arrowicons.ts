@@ -19,6 +19,10 @@ export const ARROW_TINT: Record<ArrowKindId, string> = {
   homing: '#7fd1c0',
   chain: '#9be08f',
   heavy: '#e0876a',
+  // 산전은 흩어짐(찬 회색빛 청록), 연주전은 잇달음(따뜻한 금빛). 두 살 다 '셋'을 주지만
+  // 하나는 공간으로 하나는 시간으로 벌어져서, 색도 차갑고/따뜻하게 갈라 둔다.
+  scatter: '#7fb8d8',
+  rapid: '#f0c86a',
 }
 
 export const ARROW_ICON: Record<ArrowKindId, string> = {
@@ -31,6 +35,13 @@ export const ARROW_ICON: Record<ArrowKindId, string> = {
   chain:
     '<path d="M3 19l6-5 6 6 6-8"/><circle cx="9" cy="14" r="2"/><circle cx="15" cy="20" r="2"/><circle cx="21" cy="12" r="2"/>',
   heavy: '<path d="M4 14h13"/><path d="M12 9l5 5-5 5"/><rect x="19" y="9" width="6" height="10" rx="1.5"/>',
+  // 산전 — 한 점에서 부채꼴로 갈라지는 살 셋. 세전(split)과 헷갈리면 안 되므로
+  // 갈라지는 자리를 **왼쪽 끝(손)** 에 둔다. 세전은 오른쪽 끝(과녁)에서 갈라진다.
+  scatter:
+    '<path d="M4 14l18-6"/><path d="M4 14h19"/><path d="M4 14l18 6"/><circle cx="4" cy="14" r="1.8"/>',
+  // 연주전 — 같은 선 위에 잇달아 나가는 살 셋. 구슬을 꿴 모양 그대로다.
+  rapid:
+    '<path d="M3 14h20"/><path d="M8 11l3 3-3 3"/><path d="M14 11l3 3-3 3"/><path d="M20 11l3 3-3 3"/>',
 }
 
 /**

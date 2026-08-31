@@ -375,6 +375,11 @@ export function createWorld(
     flowIdle: 0,
     molgi: false,
     elapsed: 0,
+    rapidLeft: 0,
+    rapidAt: 0,
+    rapidAngle: 0,
+    rapidPower: 0,
+    rapidKind: kind,
     stage,
     events: [],
   }
@@ -476,6 +481,13 @@ export function resetWorld(
   // 연사는 판 안의 리듬이다 — 판 경계를 넘지 않는다 (sim/flow.ts).
   resetFlow(w)
   w.elapsed = 0
+  // 이어쏘기 예약도 판 경계를 넘지 않는다 — 전 판의 마지막 발이 다음 판 시작에 튀어나오면
+  // 그건 손맛이 아니라 유령이다.
+  w.rapidLeft = 0
+  w.rapidAt = 0
+  w.rapidAngle = 0
+  w.rapidPower = 0
+  w.rapidKind = arrow ?? 'basic'
   w.events.length = 0
 }
 
@@ -675,7 +687,11 @@ function evaluateEnd(w: World): void {
   }
 
   // 화살이 다 떨어져도 날아가는 중이거나 연쇄가 진행 중이면 아직 실패가 아니다.
-  if (w.arrowsLeft <= 0 && !anyArrowInPlay(w) && !anyTargetFalling(w)) {
+  //
+  // 연주전의 **예약된 뒷발**(rapidLeft)도 여기 센다. 안 세면 마지막 한 발을 발치에 꽂았을 때
+  // 그 프레임에 실패가 확정되고, 뒷발은 status 빗장에 걸려 영영 안 나간다 — 한 번 당겨 셋을
+  // 산 값을 못 받는다. 아직 나갈 살이 있으면 판은 안 끝난 것이다.
+  if (w.arrowsLeft <= 0 && w.rapidLeft <= 0 && !anyArrowInPlay(w) && !anyTargetFalling(w)) {
     endStage(w, false)
   }
 }

@@ -773,6 +773,7 @@ function playRelease(s: Synth, power: number): void {
  *   명적 = 우는살이다. 진짜로 울며 난다 — 비브라토 걸린 호루라기 활공.
  *   화전 = 불심지 튀는 소리. 애기살 = 짧고 높은 채찍 스냅. 육량전 = 낮고 무거운 텅.
  *   세전 = 세 살대의 파닥임 3연타. 신전 = 느리게 차오르는 신령한 웅웅(5도 배음).
+ *   산전 = 겹쳐 지나가는 넓은 쉭 셋 + 살대끼리의 덜그럭. 연주전 = 얇은 쉭 한 톨(첫 발만).
  */
 function playShotVoice(s: Synth, kind: ArrowKindId, pw: number): void {
   const vol = lerp(P.audio.releasePowerFloor, 1, pw * pw)
@@ -930,6 +931,59 @@ function playShotVoice(s: Synth, kind: ArrowKindId, pw: number): void {
     NB.decay = 0.22
     NB.gain = 0.16 * vol
     NB.delay = 0.02
+    noiseBurst(s, K_AIR, NB)
+  } else if (kind === 'scatter') {
+    // 산전 — 셋이 **동시에** 나간다. 세전처럼 시간차로 놓으면 '따로 셋'으로 들리고,
+    // 그건 이 살의 성격(한 번에 훑는다)과 반대다. 8ms 간격으로 거의 겹쳐서 하나의
+    // **넓은** 쉭이 되게 한다. 띠를 좁게(Q 높게) 잡으면 한 대, 넓게 잡으면 여러 대다.
+    const wide3 = [K_ESCAPE, K_DEBRIS, K_AIR]
+    for (let i2 = 0; i2 < 3; i2++) {
+      NB.filterType = 'bandpass'
+      NB.freq = 2600 - i2 * 350
+      NB.endFreq = 900 - i2 * 120
+      NB.q = 1.4
+      NB.dur = 0.13
+      NB.attack = 0.004
+      NB.decay = 0.12
+      NB.gain = 0.17 * vol
+      NB.delay = 0.008 + i2 * 0.008
+      noiseBurst(s, wide3[i2] ?? K_ESCAPE, NB)
+    }
+    // 시위에 얹힌 살대끼리 부딪는 나무 덜그럭 — 셋을 한꺼번에 얹었다는 증거다.
+    NB.filterType = 'bandpass'
+    NB.freq = 620
+    NB.endFreq = 320
+    NB.q = 1.6
+    NB.dur = 0.05
+    NB.attack = 0.001
+    NB.decay = 0.045
+    NB.gain = 0.2 * vol
+    NB.delay = 0
+    noiseBurst(s, K_DEBRIS, NB)
+  } else if (kind === 'rapid') {
+    // 연주전 — 이 목소리는 **첫 발**의 것이다. 뒷발은 'rapid' 사건이 따로 낸다(pumpSfx 아래).
+    // 그래서 여기서 셋을 흉내내면 안 된다. 셋으로 들려야 하는 건 실제로 셋이 나갈 때다.
+    // 첫 발이 할 말은 하나다 — **가볍다.** 얇고 빨리 지나가는 쉭 하나로 그걸 말한다.
+    NB.filterType = 'bandpass'
+    NB.freq = 3000
+    NB.endFreq = 1200
+    NB.q = 4
+    NB.dur = 0.07
+    NB.attack = 0.002
+    NB.decay = 0.065
+    NB.gain = 0.22 * vol
+    NB.delay = 0.006
+    noiseBurst(s, K_ESCAPE, NB)
+    // 다음 살이 올라오는 덜컥 — 아직 끝나지 않았다는 예고다. 뒷발 소리와 이어져 들린다.
+    NB.filterType = 'bandpass'
+    NB.freq = 480
+    NB.endFreq = 240
+    NB.q = 2
+    NB.dur = 0.04
+    NB.attack = 0.001
+    NB.decay = 0.038
+    NB.gain = 0.14 * vol
+    NB.delay = 0.05
     noiseBurst(s, K_AIR, NB)
   }
 }
@@ -1358,6 +1412,29 @@ export function pumpSfx(sfx: Sfx, w: World): void {
       TN.gain = P.audio.escapeGain * 0.5
       TN.delay = 0.012
       tone(s, K_ESCAPE, TN)
+    } else if (e.t === 'rapid') {
+      // 연주전의 뒷발 — 첫 발(release)보다 **가볍고 짧은** 시위 소리다.
+      // 같은 크기로 세 번 울리면 그건 연사가 아니라 세 번의 발사로 들린다.
+      // 뒤로 갈수록 조금 더 여려서(left) 셋이 하나의 리듬으로 묶인다.
+      TN.type = 'triangle'
+      TN.freq = 320
+      TN.endFreq = 130
+      TN.dur = 0.07
+      TN.attack = 0.001
+      TN.decay = 0.07
+      TN.gain = P.audio.releaseSnapGain * (0.55 - e.left * 0.1)
+      TN.delay = 0
+      tone(s, K_SNAP, TN)
+      NB.filterType = 'bandpass'
+      NB.freq = 2400
+      NB.endFreq = 1100
+      NB.q = 1.1
+      NB.dur = 0.05
+      NB.attack = 0.001
+      NB.decay = 0.05
+      NB.gain = P.audio.releaseSnapGain * 0.3
+      NB.delay = 0
+      noiseBurst(s, K_SWOOSH, NB)
     } else if (e.t === 'armor_break') {
       // ★ 판금이 뜯긴다 — 막힘(둔탁한 나무)과 **정반대의 소리**여야 한다.
       //   막힘은 "아무 일도 안 일어났다"고 말하고, 이건 "규칙이 바뀌었다"고 말한다.

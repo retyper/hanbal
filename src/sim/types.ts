@@ -125,7 +125,12 @@ export interface ArcherState {
  * core ← sim ← game 이다 (A1). 이름·설명 같은 화면용 메타데이터만 game/arrows.ts에 남는다.
  * 효과 수치는 sim/arrowfx.ts가 tune/params.ts의 `arrowkind` 그룹에서 굽는다 (A2).
  */
-export type ArrowKindId = 'basic' | 'pierce' | 'burst' | 'split' | 'homing' | 'chain' | 'heavy'
+export type ArrowKindId =
+  | 'basic' | 'pierce' | 'burst' | 'split' | 'homing' | 'chain' | 'heavy'
+  // 2026-08-31, 형: "샷건같은 3개 동시쏘는 화살도 필요할거고 한번만 쏴도 빠르게
+  // 조준방향대로 3발 연사하는것도 있어야하고." 둘 다 **한 번의 당김에 세 발**인데
+  // 벌어지는 축이 다르다 — 산전은 공간(부채꼴)으로, 연주전은 시간(연속)으로 벌어진다.
+  | 'scatter' | 'rapid'
 
 export type ArrowOutcome = 'flying' | 'hit' | 'miss' | 'expired'
 
@@ -344,6 +349,14 @@ export type SimEvent =
   | { t: 'full_focus' }
   /** 발사. power=당김 0..1, err=릴리즈 총 오차 (rad) */
   | { t: 'release'; power: number; angle: number; err: number; kind: ArrowKindId }
+  /**
+   * 연속 발사의 **두 번째 이후** 살이 나갔다 (연주전).
+   *
+   * 왜 release 를 재사용하지 않는가: release 는 "한 번 당겨서 한 발 썼다"는 뜻이고
+   * game/loop.ts 가 그걸로 **살통 재고를 깎는다.** 재사용하면 한 번 당길 때 재고가
+   * 셋씩 줄어든다. 소리는 필요하고 회계는 아니어야 해서 별도의 사건이다.
+   */
+  | { t: 'rapid'; x: number; y: number; angle: number; left: number }
   /** 붕괴 — 스스로 놓아버림 */
   | { t: 'collapse' }
   /** 붕괴 경고 진입 (렌더/오디오가 예고를 시작) */
@@ -575,6 +588,20 @@ export interface World {
    */
   molgi: boolean
   elapsed: number
+  /**
+   * 연주전(連珠箭)의 **아직 안 나간 살 수.** 0이면 이어 쏠 것이 없다.
+   *
+   * 왜 월드가 들고 있나: 이어 쏘는 살은 당김이 이미 끝난 뒤에 나간다. 활(bow)은 그때
+   * 벌써 다음 당김을 시작할 수 있어서, 예약을 활에 걸어 두면 다음 당김이 그걸 지운다.
+   * 그리고 A1(결정론) — 타이머가 아니라 elapsed 로 재야 리플레이가 같은 자리에서 갈라진다.
+   */
+  rapidLeft: number
+  /** 다음 이어쏘기 시각 (elapsed 기준). */
+  rapidAt: number
+  /** 이어 쏠 방향·세기·종류 — **첫 발의 것**을 그대로 쓴다 ("조준방향대로"). */
+  rapidAngle: number
+  rapidPower: number
+  rapidKind: ArrowKindId
   stage: StageDef
 
   /** 이번 스텝에 발생한 이벤트. 소비자가 읽고 length=0 으로 비운다. */
