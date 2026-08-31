@@ -6,13 +6,19 @@
  *   ② **육량전은 뚫는다.** 여섯 냥짜리 전쟁용 살이 판금을 못 뚫으면 존재할 이유가 없다.
  *   ③ 그래도 **헤드샷이 더 좋다.** 머리는 즉사, 육량전 몸통은 두 발.
  *      뚫는 살이 조준을 이기면 갑옷은 자물쇠가 아니라 그냥 성가신 것이 된다.
+ *
+ * ── 2026-08-31, 형의 반려: "적 갑옷병은 갑옷도 무적이 아니게" ──
+ *   ④ 보통 살로 두들기면 **갑옷이 벗겨진다.** 막힘은 헛발이 아니라 진행이다.
+ *   ⑤ 벗겨진 뒤에는 아무 살이나 통한다.
+ *   ⑥ **폭발은 갑옷을 무시한다** — 다만 즉사가 아니라 피해다 (보스가 한 방에 안 죽는다).
+ *   ①과 ④는 모순이 아니다: 한 발은 여전히 체력에 안 닿는다. 달라진 건 '영원히'가 빠진 것이다.
  */
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { createWorld, step } from '../src/sim/world.ts'
 import { P } from '../src/tune/params.ts'
-import type { ArrowKindId, InputFrame, StageDef, Stats, World } from '../src/sim/types.ts'
+import type { ArrowKindId, InputFrame, StageDef, Stats, Target, World } from '../src/sim/types.ts'
 
 const STATS: Stats = { str: 12, steady: 8, stamina: 12, focus: 6 }
 
@@ -52,7 +58,7 @@ function shoot(w: World, aimX: number, aimY: number): string[] {
   return seen
 }
 
-function foe(w: World): { hp: number; alive: boolean; x: number; y: number; r: number } {
+function foe(w: World): Target {
   const t = w.targets.find((x) => x !== undefined && x.kind === 'archer')
   assert.ok(t !== undefined, '갑옷 궁수가 없다')
   return t
@@ -142,5 +148,104 @@ describe('갑옷', () => {
     const evs = shoot(w, t.x, t.y - t.r * 0.3)
     assert.ok(!evs.includes('enemy_block'), '갑옷도 없는데 막혔다')
     assert.ok(foe(w).hp < before || !foe(w).alive, '보통 적에게 피해가 안 들어갔다')
+  })
+})
+
+describe('갑옷은 무적이 아니다 (형의 반려 2026-08-31)', () => {
+  it('★ 보통 살로 두들기면 벗겨진다 — 막힘은 헛발이 아니라 진행이다', () => {
+    const w = createWorld(arena(), STATS)
+    const t = foe(w)
+    assert.ok(t.armorHp > 0, '갑옷 내구도가 안 잡혔다')
+
+    // 벗겨질 때까지 몸통만 친다. 무한루프를 막기 위해 발수에 상한을 둔다.
+    let shots = 0
+    let broke = false
+    while (shots < 12 && foe(w).alive) {
+      const cur = foe(w)
+      if (!cur.armored) break
+      const before = cur.armorHp
+      const evs = shoot(w, cur.x, cur.y - cur.r * 0.3)
+      shots++
+      if (evs.includes('armor_break')) { broke = true; break }
+      assert.ok(
+        foe(w).armorHp < before,
+        `${shots}발째: 막혔는데 갑옷이 안 깎였다 (${before} → ${foe(w).armorHp})`,
+      )
+    }
+    assert.ok(broke, `유엽전 ${shots}발로도 갑옷이 안 벗겨졌다 — 무적이 그대로다`)
+    assert.equal(foe(w).armored, false, '파손 이벤트는 났는데 갑옷이 남아 있다')
+    // 헤드샷(한 발)보다는 확실히 비싸야 조준이 이긴다.
+    assert.ok(shots >= 2, `한 발에 벗겨졌다 (${shots}발) — 헤드샷을 이긴다`)
+  })
+
+  it('★ 벗겨진 뒤에는 보통 살이 체력에 닿는다', () => {
+    const w = createWorld(arena(), STATS)
+    for (let i = 0; i < 12 && foe(w).armored && foe(w).alive; i++) {
+      const c = foe(w)
+      shoot(w, c.x, c.y - c.r * 0.3)
+    }
+    const t = foe(w)
+    assert.equal(t.armored, false, '갑옷이 안 벗겨져 시험을 못 한다')
+    if (!t.alive) return // 벗겨지는 발에 이미 누웠다면 계약은 이미 만족이다
+    const before = t.hp
+    const evs = shoot(w, t.x, t.y - t.r * 0.3)
+    assert.ok(!evs.includes('enemy_block'), '갑옷이 없는데 아직 막힌다')
+    assert.ok(foe(w).hp < before || !foe(w).alive, '벗겨졌는데 피해가 안 들어간다')
+  })
+
+  it('★ 관통살은 갑옷을 깎지 않고 지나간다 — 벗기기와 뚫기는 다른 길이다', () => {
+    const w = createWorld(arena(), STATS, 'heavy' as ArrowKindId)
+    const t = foe(w)
+    const armorBefore = t.armorHp
+    const hpBefore = t.hp
+    shoot(w, t.x, t.y - t.r * 0.3)
+    assert.ok(foe(w).hp < hpBefore, '육량전이 갑옷을 못 뚫었다')
+    assert.equal(foe(w).armorHp, armorBefore, '관통살이 판금을 부쉈다 — 지나가야 한다')
+    assert.equal(foe(w).armored, true, '관통살에 갑옷이 벗겨졌다')
+  })
+})
+
+describe('폭발과 갑옷 (형: "폭발터지면 갑곳 상관 없이 데미지")', () => {
+  /** 화약통 하나와 갑옷 궁수 하나를 나란히 세운다. */
+  function blastArena(bossHp = 0): StageDef {
+    return {
+      id: 'armor-blast',
+      seed: 9,
+      arrows: 30,
+      targetScore: 100,
+      wind: 0,
+      targets: [
+        { kind: 'barrel', x: 20, y: 1.2, r: 0.7, bomb: true, score: 0 },
+        bossHp > 0
+          ? { kind: 'boss', x: 21, y: 1.4, r: 1.6, hp: bossHp, armored: true, look: 0, score: 10 }
+          : {
+            kind: 'archer', x: 21, y: 1.4, r: 0.7,
+            hp: Math.floor(P.enemy.archerHp), armored: true, fireDelay: 900,
+          },
+      ],
+    }
+  }
+
+  it('★ 폭발은 갑옷을 무시하고 적을 눕힌다', () => {
+    const w = createWorld(blastArena(), STATS)
+    const b = w.targets.find((x) => x !== undefined && x.kind === 'barrel')
+    assert.ok(b !== undefined, '화약통이 없다')
+    shoot(w, b.x, b.y)
+    const t = w.targets.find((x) => x !== undefined && x.kind === 'archer')
+    assert.ok(t !== undefined && !t.alive, '폭발이 갑옷 궁수를 못 눕혔다')
+  })
+
+  it('★ 그래도 즉사가 아니라 피해다 — 보스는 한 방에 안 죽는다', () => {
+    // 체력이 폭발 피해보다 확실히 큰 보스. 예전 규칙(alive=false)이면 여기서 즉사한다.
+    const hp = Math.floor(P.target.blastDamage) * 3
+    const w = createWorld(blastArena(hp), STATS)
+    const b = w.targets.find((x) => x !== undefined && x.kind === 'barrel')
+    assert.ok(b !== undefined, '화약통이 없다')
+    shoot(w, b.x, b.y)
+    const boss = w.targets.find((x) => x !== undefined && x.kind === 'boss')
+    assert.ok(boss !== undefined, '보스가 사라졌다')
+    assert.equal(boss.alive, true, '보스가 폭발 한 방에 즉사했다 (호위 옆 화전 = 보스 처치)')
+    assert.ok(boss.hp < hp, '보스가 폭발에 아무 피해도 안 받았다')
+    assert.equal(boss.armored, false, '폭발이 갑주를 못 뜯었다')
   })
 })

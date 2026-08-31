@@ -168,8 +168,10 @@ function fireEnemyShot(w: World, tg: Target): void {
  */
 function damageOf(
   arrow: Arrow, target: Target, head: boolean,
-): { dealt: number; blocked: boolean } {
-  if (target.kind !== 'boss' && target.kind !== 'archer') return { dealt: 0, blocked: false }
+): { dealt: number; blocked: boolean; chip: number } {
+  if (target.kind !== 'boss' && target.kind !== 'archer') {
+    return { dealt: 0, blocked: false, chip: 0 }
+  }
   const fx = arrow.fx
   // 착탄 속도는 관통 감속이 붙기 전(resolveHit 진입 시점)의 값이다.
   const impact = Math.sqrt(arrow.vx * arrow.vx + arrow.vy * arrow.vy)
@@ -177,20 +179,47 @@ function damageOf(
   const dmg = Math.max(1, Math.round(P.enemy.playerDamage * fx.mass * vr * vr))
 
   const penNow = fx.pen * vr
+  // ★ 갑옷에 막혔다 — 그런데 **헛발이 아니다** (형: "일반화살로도 어느정도 데미지 입으면
+  //   없어지게"). 체력에는 안 닿지만 판금을 그만큼 두들긴다. 깎는 양이 운동에너지와 같은
+  //   값이라, 가까이서 무거운 살로 치면 더 빨리 벗겨진다 — 피해와 같은 규칙을 탄다.
   if (target.armored && !head && (fx.armorPierce <= 0 || penNow < P.arrowkind.armorPen)) {
-    return { dealt: 0, blocked: true }
+    return { dealt: 0, blocked: true, chip: dmg }
   }
   // 헤드샷 처형 — 체력 무관 즉사. 이 한 줄이 "조준할 이유"다.
   // 화면에는 **남은 체력 전부**가 피해로 뜬다. 그게 실제로 일어난 일이다.
-  if (target.kind === 'archer' && head) return { dealt: Math.max(1, target.hp), blocked: false }
+  if (target.kind === 'archer' && head) {
+    return { dealt: Math.max(1, target.hp), blocked: false, chip: 0 }
+  }
   // 판금을 뚫었다. 갑옷이 삼킨 몫만큼 피해가 깎인다.
+  // 갑옷은 **안 깎는다**: 관통살은 판금을 부수는 게 아니라 지나간다. 그래서 관통은
+  // 언제나 같은 값이고, 벗기기(보통 살)와 뚫기(관통살)가 서로 다른 길로 남는다.
   if (target.armored && !head) {
-    return { dealt: Math.max(1, Math.round(dmg * fx.armorPierce)), blocked: false }
+    return { dealt: Math.max(1, Math.round(dmg * fx.armorPierce)), blocked: false, chip: 0 }
   }
   if (target.kind === 'boss') {
-    return { dealt: head ? Math.floor(P.target.bossCritDmg) : dmg, blocked: false }
+    return { dealt: head ? Math.floor(P.target.bossCritDmg) : dmg, blocked: false, chip: 0 }
   }
-  return { dealt: dmg, blocked: false }
+  return { dealt: dmg, blocked: false, chip: 0 }
+}
+
+/**
+ * 갑옷을 `chip` 만큼 깎는다. 다 깎이면 벗긴다 — **이 함수 말고 갑옷을 벗기는 곳은 없다.**
+ *
+ * 두 곳이 부른다: 보통 살의 몸통샷(조금씩)과 폭발(통째로). 폭발이 통째로 뜯는 이유는
+ * 형의 규칙 그대로다 — *"폭발터지면 갑곳 상관 없이 데미지."* 판금은 충격파를 못 막는다.
+ */
+function breakArmor(w: World, t: Target, chip: number, x: number, y: number): void {
+  if (!t.armored) return
+  t.armorHp -= chip
+  if (t.armorHp > 0) {
+    w.events.push({ t: 'enemy_block', x, y, left: t.armorMax > 0 ? t.armorHp / t.armorMax : 0 })
+    return
+  }
+  t.armorHp = 0
+  t.armored = false
+  // 벗겨진 순간은 막힌 것과 **다른 사건**이다. 같은 소리·같은 그림이면 플레이어는
+  // 규칙이 바뀐 걸 모르고 계속 관통살을 아낀다.
+  w.events.push({ t: 'armor_break', x: t.x, y: t.y })
 }
 
 export function resolveHit(w: World, arrow: Arrow, target: Target): void {
@@ -319,8 +348,9 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
   if (target.kind === 'boss' || target.kind === 'archer') {
     // 값은 위 damageOf가 이미 정했다. 여기서는 **적용만** 한다.
     if (hurt.blocked) {
-      // 갑주는 눈을(보스) · 머리를(궁수) 못 덮는다. 나머지는 막힌 소리와 먼지뿐이다.
-      w.events.push({ t: 'enemy_block', x: arrow.x, y: arrow.y })
+      // 갑주는 눈을(보스) · 머리를(궁수) 못 덮는다. 몸통은 판금이 삼킨다 —
+      // 다만 **삼킬 때마다 상한다.** 남은 비율을 실어 보내야 화면이 진행을 그린다.
+      breakArmor(w, target, hurt.chip, arrow.x, arrow.y)
     } else {
       target.hp -= hurt.dealt
     }
@@ -395,15 +425,33 @@ export function burstAt(w: World, x: number, y: number, R: number, exclude: Targ
     award(w, c, clamp01(1 - Math.sqrt(d2) / R))
     w.events.push({ t: 'chain', targetId: c.id, x: c.x, y: c.y, depth: 1 })
 
+    const d = Math.sqrt(d2)
+
     if (c.kind === 'aerial') {
       c.falling = true
-    } else {
-      c.alive = false
-      // 폭발로 죽은 적은 **바깥으로** 날아간다. 세기는 중심에서 멀수록 약하다.
-      const d = Math.sqrt(d2)
-      const k = (1 - clamp01(d / R)) * P.render.blastPush
-      downEvent(w, c, d > 0 ? (dx / d) * k : 0, d > 0 ? (dy / d) * k : k, 1)
+      continue
     }
+
+    // ── 체력을 가진 적은 **즉사가 아니라 피해**를 받는다 ──
+    //
+    // 형: "폭발터지면 갑곳 상관 없이 데미지." 데미지지 즉사가 아니다.
+    // 예전엔 alive=false 라 반경 안의 보스도 한 방에 죽었다(호위 옆 화전 한 발).
+    // 갑옷은 여기서 **통째로 뜯긴다** — 판금은 충격파를 못 막는다.
+    if (c.kind === 'boss' || c.kind === 'archer') {
+      const fall = P.target.blastFloor
+      const dmg = Math.max(
+        1,
+        Math.round(P.target.blastDamage * (fall + (1 - fall) * clamp01(1 - d / R))),
+      )
+      if (c.armored) breakArmor(w, c, c.armorHp, c.x, c.y)
+      c.hp -= dmg
+      if (c.hp > 0) continue
+    }
+
+    c.alive = false
+    // 폭발로 죽은 적은 **바깥으로** 날아간다. 세기는 중심에서 멀수록 약하다.
+    const k = (1 - clamp01(d / R)) * P.render.blastPush
+    downEvent(w, c, d > 0 ? (dx / d) * k : 0, d > 0 ? (dy / d) * k : k, 1)
   }
 
   // ── 자해 ──────────────────────────────────────────────────────────

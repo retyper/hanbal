@@ -137,6 +137,8 @@ function newTarget(): Target {
     healGive: 0,
     fireAt: 0,
     armored: false,
+    armorHp: 0,
+    armorMax: 0,
     aimMul: 1,
     chainDepth: 0,
     score: FALLBACK_TARGET_SCORE,
@@ -270,6 +272,10 @@ function loadTarget(t: Target, id: number, spec: TargetSpec): void {
   // 첫 발사 시각. 판이 시작되자마자 쏘면 예고(windup)가 성립하지 않는다.
   t.fireAt = spec.kind === 'archer' ? spec.fireDelay ?? P.enemy.shootEvery : 0
   t.armored = spec.armored === true
+  // 갑옷은 이제 깎이는 물건이다 (types.ts Target.armored 주석). 저작에서 따로 안 정하면
+  // 전부 같은 내구도를 쓴다 — 어떤 갑옷병이 몇 발인지 플레이어가 규칙을 세울 수 있어야 한다.
+  t.armorMax = t.armored ? Math.floor(P.enemy.armorHp) : 0
+  t.armorHp = t.armorMax
   t.aimMul = spec.aimMul ?? 1
   t.chainDepth = 0
   t.score = spec.score ?? FALLBACK_TARGET_SCORE
@@ -289,6 +295,8 @@ function clearTarget(t: Target): void {
   t.healGive = 0
   t.fireAt = 0
   t.armored = false
+  t.armorHp = 0
+  t.armorMax = 0
   t.aimMul = 1
   t.chainDepth = 0
   t.vx = 0
@@ -575,7 +583,8 @@ function stepEnemyShots(w: World): void {
       if (distSqPointSegment(tg.x, tg.y, sh.px, sh.py, sh.x, sh.y) <= tg.r * tg.r) {
         blocked = true
         sh.alive = false
-        w.events.push({ t: 'enemy_block', x: sh.x, y: sh.y })
+        // 과녁이 적 화살을 삼켰다 — 갑옷이 아니므로 남은 비율은 없다 (-1).
+        w.events.push({ t: 'enemy_block', x: sh.x, y: sh.y, left: -1 })
       }
     }
     if (blocked) continue

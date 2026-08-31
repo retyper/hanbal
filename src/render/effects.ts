@@ -689,9 +689,22 @@ export function pumpEvents(fx: Fx, w: World): void {
     } else if (e.t === 'enemy_block') {
       // 과녁이 막아줬다 — 작은 먼지. "가려져서 살았다"가 보여야 엄폐가 전술이 된다.
       spawn(fx, e.x, e.y, FX.missBurst, KIND_MISS, FX.missSpeed, FX.missTtl, 0.8)
-      // 갑옷에 튕겼으면 **말로도** 알려준다. 피해 팝이 안 뜨는 것만으로는
-      // "안 맞았나?"와 "막혔나?"를 구분할 수 없고, 그러면 갑옷이 자물쇠가 아니라 버그로 읽힌다.
-      pushPopup(fx.pop, e.x, e.y + 0.5, '막혔다', 'chain')
+      // ★ 갑옷은 이제 **깎인다** (2026-08-31, 형: "적 갑옷병은 갑옷도 무적이 아니게").
+      //   그래서 말도 달라져야 한다. 예전의 '막혔다'는 끝난 사건이라 "그만 쏴라"로 읽혔다 —
+      //   실제로는 진행 중인데도. 남은 비율을 그대로 띄운다: 두들길수록 숫자가 줄고,
+      //   그 줄어드는 숫자가 "계속 때리면 벗겨진다"는 규칙을 말없이 가르친다.
+      //   left < 0 은 갑옷이 아니라 과녁이 막은 것이다 (world.ts, 적 화살이 판자에 박힘).
+      if (e.left < 0) {
+        pushPopup(fx.pop, e.x, e.y + 0.5, '막혔다', 'chain')
+      } else {
+        pushPopup(fx.pop, e.x, e.y + 0.5, `갑옷 ${Math.max(1, Math.round(e.left * 100))}%`, 'chain')
+        spawn(fx, e.x, e.y, FX.hitBurst, KIND_CHAIN, FX.speed * 0.7, FX.ttl * 0.7, 0.7)
+      }
+    } else if (e.t === 'armor_break') {
+      // 벗겨졌다 — 여기부터 아무 살이나 통한다. 규칙이 바뀌는 순간이라 크게 알린다.
+      pushPopup(fx.pop, e.x, e.y + 0.9, '갑옷 파손!', 'crit')
+      spawn(fx, e.x, e.y, FX.hitBurst, KIND_CHAIN, FX.speed * 1.5, FX.ttl * 1.2, 1.5)
+      fx.hitStop += P.hit.stopMs * 0.001
     } else if (e.t === 'player_hit') {
       // 맞았다 — 콤보가 끊기고 시간이 잠깐 멈춘다. 남은 체력이 아니라 잃었다는 사실을 띄운다.
       fx.comboRun = 0

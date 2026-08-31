@@ -1358,6 +1358,30 @@ export function pumpSfx(sfx: Sfx, w: World): void {
       TN.gain = P.audio.escapeGain * 0.5
       TN.delay = 0.012
       tone(s, K_ESCAPE, TN)
+    } else if (e.t === 'armor_break') {
+      // ★ 판금이 뜯긴다 — 막힘(둔탁한 나무)과 **정반대의 소리**여야 한다.
+      //   막힘은 "아무 일도 안 일어났다"고 말하고, 이건 "규칙이 바뀌었다"고 말한다.
+      //   금속이 찢기는 밝은 하강음 + 조각이 떨어지는 파편 소리, 둘을 겹쳐 만든다.
+      //   샘플을 안 쓴다: 이 소리는 판금이라 나무(wood)로 대체하면 뜻이 정반대가 된다.
+      TN.type = 'square'
+      TN.freq = 1500
+      TN.endFreq = 380
+      TN.dur = 0.13
+      TN.attack = 0.001
+      TN.decay = 0.13
+      TN.gain = P.audio.hitGain * 0.5
+      TN.delay = 0
+      tone(s, K_SNAP, TN)
+      NB.filterType = 'highpass'
+      NB.freq = 2600
+      NB.endFreq = 700
+      NB.q = 0.7
+      NB.dur = 0.22
+      NB.attack = 0.001
+      NB.decay = 0.22
+      NB.gain = P.audio.hitGain * 0.45
+      NB.delay = 0.03
+      noiseBurst(s, K_DEBRIS, NB)
     } else if (e.t === 'enemy_block') {
       // 과녁이 대신 맞아줬다 — 낮은 나무 소리 하나. 위협이 끝났다는 안도의 마침표다.
       if (!sample(sfx, s, 'wood', P.audio.escapeGain, 0.85, 0, 0)) {
