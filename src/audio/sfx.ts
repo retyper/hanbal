@@ -1460,6 +1460,14 @@ export function pumpSfx(sfx: Sfx, w: World): void {
       CK.gain = P.audio.fullGain
       CK.delay = 0
       click(s, K_FULL, CK)
+    } else if (e.t === 'full_focus') {
+      // 집중이 찼다 — 만작 소리보다 **한 옥타브 위, 더 작게.** 만작이 "걸렸다"라면
+      // 이건 "됐다"다. 크면 이 소리를 들으려고 매번 끝까지 참게 되고, 그러면 선택이 사라진다.
+      CK.freq = SFX.fullFreq * 2
+      CK.dur = SFX.fullDur * 1.4
+      CK.gain = P.audio.fullGain * 0.7
+      CK.delay = 0
+      click(s, K_FULL, CK)
     } else if (e.t === 'draw_start') {
       // 시위를 잡는 소리. 지속 삐걱은 updateSfx가 이어받는다.
       NB.filterType = 'bandpass'

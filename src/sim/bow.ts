@@ -20,6 +20,7 @@
  * 손맛 숫자는 전부 P (tune/params.ts). 이 파일에 매직넘버는 없다 (A2).
  */
 import type { DerivedStats, InputFrame, Stats, World } from './types.ts'
+import { arrowSpeed } from './ballistics.ts'
 import { P } from '../tune/params.ts'
 import { clamp, clamp01, diminish, lerp, valueNoise } from '../core/math.ts'
 import { spawnArrow } from './ballistics.ts'
@@ -126,6 +127,7 @@ export function stepArcher(w: World, input: InputFrame): void {
   // 조준은 스무딩 없이 즉시 반영한다. 한 스텝이라도 늦으면 조준이 미끄러진다 (feel-lens 1).
   // 단 **앞쪽 원뿔 안으로만** — 커서가 궁수 뒤로 가면 각이 ±180°로 뒤집혀 자세가 접힌다.
   // 결정론에는 영향이 없다: 같은 입력 = 같은 클램프 = 같은 각 (A1).
+  a.aimDist = Math.hypot(input.aimX - a.x, input.aimY - a.y)
   a.aimAngle = clamp(
     Math.atan2(input.aimY - a.y, input.aimX - a.x),
     -P.input.aimDownMax,
@@ -189,6 +191,16 @@ export function stepArcher(w: World, input: InputFrame): void {
       w.events.push({ t: 'full_draw' })
     } else if (a.phase === 'full') {
       a.holdTime += dt
+      // ── 집중 — 만작 뒤에야 차기 시작한다 (sim/types.ts ArcherState.focus) ──
+      // 여기가 "지금 놓을까, 한 뼘 더 참을까"가 사는 자리다. 채우는 동안 스태미나는 계속
+      // 줄어(아래) 빨간 바 아래로 내려가므로, 채운다는 것은 곧 떨림을 감수한다는 뜻이다.
+      const fill = P.focus.fillTime
+      if (a.focus < 1) {
+        const next = fill > 0 ? a.focus + dt / fill : 1
+        a.focus = next > 1 ? 1 : next
+        // 가득 찬 **그 스텝에** 한 번만 알린다. 화면·소리가 이 순간을 표시한다.
+        if (a.focus >= 1) w.events.push({ t: 'full_focus' })
+      }
     }
   }
 
@@ -289,6 +301,46 @@ export function stepArcher(w: World, input: InputFrame): void {
 }
 
 /**
+ * 이 발이 실제로 나갈 각 — **집중이 찬 만큼 조준선과 탄도해 사이에 선다.**
+ *
+ * 지금까지 이 게임은 겨눈 **방향**으로 쐈다. 그래서 먼 과녁은 중력만큼 위로 들어 쏴야 했고,
+ * 그 '얼마나 위로'는 사람이 거리마다 외우는 수밖에 없었다 — 배울 것이 있는 게 아니라
+ * 외울 것이 있었다. 집중은 그 외우기를 기계에 넘긴다: 다 차면 겨눈 **자리**로 간다.
+ *
+ * 탄도해는 적 궁수가 이미 쓰는 식과 같다 (sim/target.ts fireEnemyShot) —
+ * 낮은 호를 고르는 포물선 해. 다만 **공기 저항은 모른다**(닫힌 해가 없다). 그래서 먼 거리에서
+ * 짧게 떨어지고, 그 몫을 P.focus.dragComp 가 실측값으로 메운다 (tools/probe-focus.ts).
+ *
+ * **바람은 보정하지 않는다** (P.focus.windCorrect = 0). 중력은 거리만 알면 정해지는 계산이고
+ * 바람은 깃발을 보고 판단하는 관찰이다. 둘 다 넘기면 조준할 것이 남지 않는다.
+ *
+ * 결정론(A1): 난수를 안 쓴다. 같은 상태 → 같은 각.
+ */
+function aimedAngle(w: World, power: number): number {
+  const a = w.archer
+  const f = a.focus * P.focus.correct
+  if (f <= 0) return a.aimAngle
+
+  const v = arrowSpeed(w, power, w.fx.speedMul)
+  const g = P.arrow.gravity
+  const dx = Math.cos(a.aimAngle) * a.aimDist
+  const dy = Math.sin(a.aimAngle) * a.aimDist
+  if (dx === 0 || v <= 0 || g <= 0) return a.aimAngle
+
+  // tanθ = (v² − √(v⁴ − g(g·dx² + 2·dy·v²))) / (g·dx)  — 낮은 호
+  const v2 = v * v
+  const disc = v2 * v2 - g * (g * dx * dx + 2 * dy * v2)
+  // 사거리 밖이면 보정할 것이 없다. 최대 사거리로 들어 쏘는 것보다 조준선이 정직하다.
+  if (disc < 0) return a.aimAngle
+
+  let solved = Math.atan((v2 - Math.sqrt(disc)) / (g * dx))
+  if (dx < 0) solved += Math.PI
+  // 항력 몫 — 조준선 위로 들리는 각을 그만큼 더 든다.
+  solved = a.aimAngle + (solved - a.aimAngle) * P.focus.dragComp
+  return a.aimAngle + (solved - a.aimAngle) * f
+}
+
+/**
  * 발사. P.bow.releaseDelay는 0이 정답이며, 0일 때 **같은 스텝에** 화살이 나가야 한다.
  * (delay > 0을 구현하려면 ArcherState에 타이머 필드가 필요하다 — 계약 변경 사항이라 보류.)
  */
@@ -318,12 +370,15 @@ function release(w: World, collapsed: boolean): void {
   // 안전 구간에서 만작이면 tremorOffset도 scatter도 정확히 0 → err === 0 → 조준각 그대로 나간다.
   // 경계선을 넘은 뒤에야 떨림 위상이 발사각이 되고, 중앙(offset≈0)을 지날 때 놓으면 덜 빗나간다.
   const err = a.tremorOffset + scatter
-  const angle = a.aimAngle + err
+  // 집중이 찬 만큼 **조준선에서 탄도해로** 옮겨간다 (aimedAngle 주석).
+  // focus 0 = 겨눈 방향 그대로(중력에 떨어진다) · 1 = 겨눈 **자리**로.
+  const angle = aimedAngle(w, power) + err
 
   spawnArrow(w, angle, power)
   w.events.push({ t: 'release', power, angle, err, kind: w.arrowKind })
 
   a.phase = collapsed ? 'collapsing' : 'recovering'
+  a.focus = 0
   a.draw = 0
   a.drawTime = 0
   a.holdTime = 0

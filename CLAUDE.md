@@ -59,6 +59,7 @@ TypeScript + Vite + Canvas2D. **런타임 의존성 0개.** 게임 엔진 없음
 | `balance-lens` | 성장 곡선·경제·난이도 페이싱 |
 | `perf-lens` | 프레임 예산·번들·메모리 |
 | `craft-lens` | 코드 단순화·중복 제거 |
+| `pitch-lens` | 팔리는 말 — 이름·훅·남에게 말할 수 있는 순간 |
 
 ## 스킬
 

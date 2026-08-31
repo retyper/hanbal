@@ -252,7 +252,10 @@ export function effectOf(stats: Stats, key: StatKey): string {
     case 'focus': {
       // 산포가 0이 된 뒤(P.bow.releaseScatter) FOCUS는 호흡의 스탯이다:
       // 더 깊이 가라앉고(steadyMul), 더 오래 참는다(holdLimit).
-      return `숨을 ${holdLimit(stats.focus).toFixed(1)}초까지 참을 수 있다`
+      // 2026-08-31: 이 스탯이 드디어 **자기 이름의 것**을 한다.
+      // 집중(만작 뒤 게이지, sim/types.ts)은 숨을 참는 동안 찬다 — 그래서 이 스탯이
+      // 늘리는 '참는 시간'이 곧 '집중을 채울 수 있는 시간'이다. 이름이 같은 게 맞다.
+      return `숨을 ${holdLimit(stats.focus).toFixed(1)}초까지 참는다 — 그동안 집중이 찬다`
     }
   }
 }

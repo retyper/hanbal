@@ -34,18 +34,12 @@ export function spawnArrow(w: World, angle: number, power: number): Arrow | null
   const a = freeSlot(w)
   if (a === null) return null
 
-  const d = effectiveStats(w.stats)
   const pw = clamp01(power)
   // 이 발의 종류는 **지금 장전된 것**이다. 여기서 굳혀야 판 도중의 교체(armArrow)가
   // 공중의 화살을 건드리지 않는다.
   const kind = w.arrowKind
   const fx = w.fx
-  // drawCurve > 1 이라 만작 근처에서 속도가 급격히 붙는다. 실제 활의 장력 곡선이 이렇다.
-  // 화살 종류의 초속 배수(무거운 살 0.72)는 여기서 한 번만 곱한다.
-  // 활의 초속 배수도 여기서 한 번만 (docs/BOWS.md — 각궁 +8% · 장궁 +15% · 리커브 -8%).
-  const speed =
-    lerp(P.bow.minSpeed, P.bow.maxSpeed, Math.pow(pw, P.bow.drawCurve))
-      * d.speedMul * fx.speedMul * w.bow.speedMul
+  const speed = arrowSpeed(w, pw, fx.speedMul)
 
   launch(a, w.archer.x, w.archer.y, angle, speed, pw, 0, kind, fx)
 
@@ -107,6 +101,21 @@ function launch(
   // 첫 표본(발사점)과 머리 칸을 함께 연다. 머리 칸이 없으면 첫 스텝의 덮어쓰기가 발사점을 지운다.
   openTrailSlot(a)
   openTrailSlot(a)
+}
+
+/**
+ * 이 당김으로 나갈 화살의 초속 (m/s).
+ *
+ * **한 곳에서만 계산한다** — 발사(spawnArrow)와 집중의 탄도해(sim/bow.ts)가 같은 값을
+ * 써야 "집중이 다 차면 겨눈 자리에 꽂힌다"가 참이 된다. 둘이 갈라지면 조준이 조용히 어긋난다.
+ *
+ * drawCurve > 1 이라 만작 근처에서 속도가 급격히 붙는다. 실제 활의 장력 곡선이 이렇다.
+ * 화살 종류의 초속 배수(무거운 살 0.72)와 활의 초속 배수(각궁 +8% …)는 여기서 한 번만 곱한다.
+ */
+export function arrowSpeed(w: World, power: number, kindSpeedMul: number): number {
+  const d = effectiveStats(w.stats)
+  return lerp(P.bow.minSpeed, P.bow.maxSpeed, Math.pow(clamp01(power), P.bow.drawCurve))
+    * d.speedMul * kindSpeedMul * w.bow.speedMul
 }
 
 export function stepArrows(w: World): void {
