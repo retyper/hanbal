@@ -14,6 +14,7 @@ import type { StageDef, Stats } from '../sim/types.ts'
 import { P } from '../tune/params.ts'
 import type { SaveData } from './save.ts'
 import { writeSave } from './save.ts'
+import { arrowFloor } from './stagekit.ts'
 
 export type StatKey = keyof Stats
 
@@ -164,7 +165,11 @@ export function grantArrows(d: SaveData, stage: StageDef): number {
   )
   const have = d.arrows > 0 ? Math.floor(d.arrows) : 0
   const want = have > min ? have : min
-  return want < stage.arrows ? want : stage.arrows
+  const give = want < stage.arrows ? want : stage.arrows
+  // ★ 바닥은 **맨 마지막에** 건다 (arrowFloor). 위의 min 은 경제(보유분)의 말이고 이건
+  //   규칙의 말이다 — 규칙이 경제를 이겨야 "이길 수 없는 판"이 안 생긴다.
+  const floor = arrowFloor(stage)
+  return give > floor ? give : floor
 }
 
 /**

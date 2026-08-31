@@ -183,6 +183,8 @@ const CSS = `
 .hb-ic.i-supply { --ic: url(${BASE}icons/nav-quiver.svg); }
 .hb-ic.i-scout { --ic: url(${BASE}icons/fork-scout.svg); }
 .hb-ic.i-single { --ic: url(${BASE}icons/fork-single.svg); }
+.hb-ic.i-shield { --ic: url(${BASE}icons/def-shield.svg); }
+.hb-ic.i-armor { --ic: url(${BASE}icons/def-armor.svg); }
 
 /* 올릴 수 있다는 표시. 점 하나. 모달로 막지 않는다 (C1) */
 .hb-dot {

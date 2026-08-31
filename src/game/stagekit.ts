@@ -9,7 +9,45 @@
  * 레이어: game 의 leaf 다. sim 의 타입만 읽고 아무것도 import 하지 않는다.
  */
 import { clamp } from '../core/math.ts'
-import type { TargetKind, TargetSpec } from '../sim/types.ts'
+import type { StageDef, TargetKind, TargetSpec } from '../sim/types.ts'
+
+/**
+ * 이 판에서 **없애야 판이 끝나는 것**의 수 = 적의 수.
+ *
+ * 기준은 sim/world.ts 의 `anyTargetStanding` 과 **정확히 같다** — 보급(상)과 화약 상자(도구)는
+ * 클리어 조건이 아니므로 적이 아니다. 두 곳이 다른 기준을 쓰면 "화살이 적보다 많은데 못 깬다"가
+ * 나오고, 그건 규칙이 아니라 배신이다.
+ */
+export function foeCount(stage: StageDef): number {
+  let n = 0
+  for (const t of stage.targets) {
+    if (t.kind === 'bonus' || t.kind === 'barrel') continue
+    n++
+  }
+  return n
+}
+
+/**
+ * 화살의 **절대 바닥** — 형의 규칙 (2026-09-01):
+ * "어떤 상황에서도 게임 시작했을 때 화살 수는 아무리 적어도 적 수보다 1개 더 많아야 해."
+ *
+ * 그동안 화살이 적보다 적어지는 길이 셋 있었다. 셋 다 **의도된** 길이라 더 위험했다 —
+ * 저작 실수가 아니라 설계였기 때문에 아무도 버그로 신고하지 않았다:
+ *   1. 화약 상자 퍼즐판 (1-9·2-6·2-9…) — 정답 발수만 주고 "하나씩 쏘기"의 길을 막았다.
+ *   2. 갈림길 '단발' 카드 — 화살을 절반으로 조인다.
+ *   3. 화살 보유가 바닥난 사람 — game/progression.ts grantArrows 의 min 지급.
+ * 셋이 겹치면 다섯이 서 있는 판에 두 발을 들고 들어가는 일이 실제로 가능했다.
+ *
+ * 이 바닥은 그 **아래로 못 내려가는 선**이다. 퍼즐은 여전히 퍼즐이다 (적+1 은 한 발밖에 못
+ * 빗나가는 수다). 다만 "수학적으로 이길 수 없는 판"은 이제 이 게임에 없다 — GDD 9장이 금지한
+ * 에너지 게이트가 화살 저작의 얼굴을 하고 들어오던 마지막 문이 여기였다.
+ *
+ * ★ 여기가 이 규칙의 **단일 출처**다. 판을 굽는 쪽(game/stages.ts getStage)과 지급하는 쪽
+ *   (game/progression.ts grantArrows)이 둘 다 이 함수를 부른다.
+ */
+export function arrowFloor(stage: StageDef): number {
+  return foeCount(stage) + 1
+}
 
 /** 궁수의 손. 모든 거리는 여기서 잰다. */
 export const HAND_X = 0

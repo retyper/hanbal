@@ -1485,6 +1485,45 @@ export function pumpSfx(sfx: Sfx, w: World): void {
         NB.delay = 0
         noiseBurst(s, K_ESCAPE, NB)
       }
+    } else if (e.t === 'guard_block') {
+      // ── 산 방어가 받아냈다 (game/defense.ts) ──
+      // 둘의 재질이 다르니 소리도 다르다: 방패는 나무판(둔탁한 '텅'), 두정갑은 쇠못(맑은 '탱').
+      // 재질을 소리로 구분하는 게 중요한 이유: 화면을 안 봐도 **뭐가 닳고 있는지** 알아야 한다.
+      if (e.armor) {
+        TN.type = 'triangle'
+        TN.freq = 1750
+        TN.endFreq = 900
+        TN.dur = 0.07
+        TN.attack = 0.001
+        TN.decay = 0.07
+        TN.gain = P.audio.hitGain * 0.32
+        TN.delay = 0
+        tone(s, K_SNAP, TN)
+      } else if (!sample(sfx, s, 'wood', P.audio.escapeGain, 0.7, 0, 0)) {
+        NB.filterType = 'lowpass'
+        NB.freq = 700
+        NB.endFreq = 0
+        NB.q = 0.9
+        NB.dur = 0.11
+        NB.attack = 0.002
+        NB.decay = 0.11
+        NB.gain = P.audio.escapeGain * 0.8
+        NB.delay = 0
+        noiseBurst(s, K_ESCAPE, NB)
+      }
+      // 부서지는 발은 파편을 얹는다 — "이제 없다"가 소리로도 남아야 다음을 살 생각을 한다.
+      if (e.left <= 0) {
+        NB.filterType = 'highpass'
+        NB.freq = 2400
+        NB.endFreq = 600
+        NB.q = 0.7
+        NB.dur = 0.2
+        NB.attack = 0.001
+        NB.decay = 0.2
+        NB.gain = P.audio.hitGain * 0.4
+        NB.delay = 0.03
+        noiseBurst(s, K_DEBRIS, NB)
+      }
     } else if (e.t === 'enemy_draw') {
       // 적의 당김 — 낮게 조여 올라가는 경고. 크지 않게, 대신 반드시 들리게 (예고의 계약).
       TN.type = 'triangle'

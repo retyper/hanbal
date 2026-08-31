@@ -46,7 +46,7 @@ import { makeRng, seedFrom } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import type { StageDef, TargetSpec } from '../sim/types.ts'
 import { endlessStage } from './endless.ts'
-import { BASE_SCORE, CAMPAIGN_STAGES, angularSize, specOf } from './stagekit.ts'
+import { BASE_SCORE, CAMPAIGN_STAGES, angularSize, arrowFloor, specOf } from './stagekit.ts'
 import type { Spot } from './stagekit.ts'
 
 /** k발 명중을 기준선으로 하는 **별 2개 문턱**. 클리어 조건이 아니다 — 클리어는 과녁 전멸이다. */
@@ -208,13 +208,34 @@ export function stageH(n: number): number {
  */
 export function getStage(index: number): StageDef {
   const i = Math.floor(index)
-  if (i < 0) return STAGES[0] as StageDef
+  if (i < 0) return withArrowFloor(STAGES[0] as StageDef)
   // ★ 10판마다 보스가 저작 판을 밀어내고 선다 (docs/RUN.md 3장). 여정의 마디다.
-  if ((i + 1) % BOSS_EVERY === 0) return bossStage(i)
+  if ((i + 1) % BOSS_EVERY === 0) return withArrowFloor(bossStage(i))
   const base = i < STAGES.length ? (STAGES[i] as StageDef) : endlessStage(i)
   // ★ 10판을 넘으면 과녁만 있는 세상이 끝난다 — 적 궁수가 판에 선다 (docs/RUN.md 6장).
   //   "1~9까지는 과녁이어도, 10 이후부터는 나를 공격하게 해줘"(형).
-  return i + 1 > BOSS_EVERY ? convertToFoes(base, i) : base
+  return withArrowFloor(i + 1 > BOSS_EVERY ? convertToFoes(base, i) : base)
+}
+
+/**
+ * ★ **화살은 적보다 반드시 한 발 많다** (형, 2026-09-01: "어떤 상황에서도 게임 시작했을 때
+ * 화살 수는 아무리 적어도 적 수보다 1개 더 많아야 해").
+ *
+ * 이 규칙은 저작보다 위에 선다. 그래서 판을 내보내는 **마지막 문**인 여기에 건다 —
+ * 저작 40판·무한 생성·보스·전환(convertToFoes) 중 어느 길로 만들어졌든 전부 이 문을 지난다.
+ * 각자의 자리에 따로 걸면 반드시 하나를 빠뜨리고, 빠뜨린 그 하나가 "이길 수 없는 판"이 된다.
+ *
+ * 이게 무엇을 이기는가:
+ *   · 저작의 퍽퍽한 발수 (화약 상자 퍼즐판은 정답 발수만 줬다 — docs/GAP.md 1절)
+ *   · 무한 구간의 상한 ARROWS_MAX(10) 과 보스판·전환의 Math.min(10, …)
+ * 상한을 넘겨서라도 이 바닥을 지킨다. 판이 좀 길어지는 것(C1)과 수학적으로 못 깨는 것 중
+ * 무엇이 더 나쁜지는 물어볼 필요가 없다.
+ *
+ * 기준은 game/progression.ts 의 `arrowFloor` 하나다 — 세는 법이 두 벌이면 언젠가 갈라진다.
+ */
+function withArrowFloor(stage: StageDef): StageDef {
+  const floor = arrowFloor(stage)
+  return stage.arrows >= floor ? stage : { ...stage, arrows: floor }
 }
 
 /**

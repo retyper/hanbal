@@ -23,6 +23,7 @@ import { getStage } from './stages.ts'
 import { onSaveChanged, pokeSave, writeSave, type SaveData } from './save.ts'
 import { settleOffline, type OfflineGain } from './offline.ts'
 import { awardRun, canGrow, grantArrows, type StatKey } from './progression.ts'
+import { buyDefense as spendForDefense, shieldHp, syncDefense, defenseState, type DefenseId } from './defense.ts'
 import { arrowName, DEFAULT_ARROW } from './arrows.ts'
 import { bowMods, masteryLevel } from './bows.ts'
 import type { LoadoutPick } from '../ui/loadout.ts'
@@ -112,6 +113,11 @@ export interface GameLoop {
   mapJump(index: number): void
   /** 화면의 숨참기 버튼 (ui/steady.ts) — 폰에는 Shift도 우클릭도 없다. */
   steady(on: boolean): void
+  /**
+   * 판 도중 방어 구매 (ui/defense.ts → game/defense.ts). 샀으면 true.
+   * 못 사는 이유는 화면이 defenseBlocked()로 미리 읽어 버튼에 적는다.
+   */
+  buyDefense(id: DefenseId): boolean
   /** 화면이 내는 소리 하나 (성장 화면의 올리기 등). ui/ 는 audio/ 를 직접 안 부른다 (A1). */
   ui(kind: UiSound): void
   dispose(): void
@@ -360,8 +366,14 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     w.bowSkin = save.bow
     // 체력은 여정 동안 이어진다 (docs/RUN.md 6장). 판마다 회복되면 피해가 숫자 놀음이 된다.
     w.hp = Math.max(1, Math.min(Math.floor(P.enemy.hpMax), save.runHp))
+    // 두정갑도 여정의 것이다 (game/defense.ts). 방패는 아니다 — resetWorld가 이미 치웠고,
+    // 새 판에는 새로 세워야 한다. "이 판만"이 방패가 싼 이유다.
+    w.armor = save.runArmor
+    w.armorMax = save.runArmorMax
     // 지급량은 game 레이어의 경제 판단이라 sim 계약(resetWorld)에 넣지 않고 여기서 덮어쓴다.
-    // 풀 크기는 stage.arrows 기준으로 이미 잡혀 있으므로 줄이는 쪽은 언제나 안전하다.
+    // 위로도 덮어쓴다 — "화살은 적보다 한 발 많다"(game/stagekit.ts arrowFloor)가 저작보다
+    // 위에 서기 때문이다. 그래서 풀은 stage.arrows 가 아니라 판에 선 것의 수까지 보고 잡는다
+    // (sim/world.ts poolWant) — 그게 없으면 지급받은 화살이 조용히 안 나간다.
     granted = grantArrows(save, stage)
     w.arrowsLeft = granted
     hits = 0
@@ -488,6 +500,10 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     save.stageIndex = 0
     // 다음 여정은 가득 찬 채로 시작한다.
     save.runHp = Math.floor(P.enemy.hpMax)
+    // 갑옷은 **맨몸으로** 시작한다 (game/defense.ts). 체력과 반대인 이유: 체력은 이 게임이
+    // 주는 것이고 갑옷은 산 것이다. 산 것을 공짜로 다시 채워 주면 사는 일에 뜻이 없어진다.
+    save.runArmor = 0
+    save.runArmorMax = 0
     saveNow()
     choosing = true
     // ★ 여기가 형이 짚은 자리다 — 이 화면이 닫히면 **다시 시작할 방법이 하나도 없었다.**
@@ -628,6 +644,9 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
 
     // 체력은 다음 판으로 이어진다. 죽었으면(0) endRun이 처리한다.
     save.runHp = Math.max(0, w.hp)
+    // 갑옷도 같다 — 이 판에서 깎인 만큼 줄어든 채로 다음 판에 따라간다 (game/defense.ts).
+    save.runArmor = Math.max(0, w.armor)
+    save.runArmorMax = Math.max(0, w.armorMax)
 
     // ★ 패배 = 여정 종료 (docs/RUN.md). 화살이 바닥났거나(defeat) 쓰러졌다(death).
     // 보상 정산(위) 뒤에 와야 마지막 판의 별·훈련치를 잃지 않는다.
@@ -816,6 +835,13 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     } else if (!paused) {
       prevDrawing = drawingNow
     }
+
+    // 방어 버튼줄에 지금 상태를 알린다 (game/defense.ts). **바뀌었을 때만** 화면이 깨어난다 —
+    // 방패 내구는 sim 안에서 줄어드는 값이라 세이브 통지(onSaveChanged)로는 못 잡는다.
+    syncDefense(
+      !paused && !choosing && w.status === 'playing' && !sandbox,
+      w.shield, w.shieldMax, w.armor, w.armorMax,
+    )
 
     hud.muted = sfxMuted(sfx)
     // 갈림길이 있는 판은 카드가 이미 그 자리를 말하므로 캔버스 힌트가 필요 없다.
@@ -1027,6 +1053,28 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     },
     steady(on: boolean): void {
       input.setSteady(on)
+    },
+    /**
+     * 판 도중에 방어를 산다 (game/defense.ts · 형: "게임플레이 도중에 방어벽이나 방어구 구매").
+     *
+     * 훈련치를 깎는 것은 defense.ts 가, **월드에 세우는 것은 여기가** 한다 (레이어 방향 A1 —
+     * ui 는 sim 을 모르고, defense.ts 는 판이 도는 줄 모른다). 살 수 없으면 false 를 돌려
+     * 화면이 이유를 말하게 한다.
+     *
+     * 결정론(A1): 여기서 건드리는 것은 w.shield / w.armor 뿐이고 둘 다 난수를 안 쓴다.
+     * 스탯 변경(applyStats)이 이미 같은 자리에서 같은 방식으로 판 도중에 들어간다.
+     */
+    buyDefense(id: DefenseId): boolean {
+      if (!spendForDefense(save, id, defenseState())) return false
+      if (id === 'shield') {
+        w.shieldMax = shieldHp()
+        w.shield = w.shieldMax
+      } else {
+        w.armor = save.runArmor
+        w.armorMax = save.runArmorMax
+      }
+      playUi(sfx, 'press')
+      return true
     },
     ui(kind: UiSound): void {
       playUi(sfx, kind)

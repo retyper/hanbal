@@ -18,6 +18,7 @@ import { mountGrowth, showOfflineGain, showRunGain } from './ui/growth.ts'
 import { mountFork, mountLoadout, mountSupply, showRunOver } from './ui/loadout.ts'
 import { mountSandbox } from './ui/sandbox.ts'
 import { mountQuiver } from './ui/quiver.ts'
+import { mountDefense } from './ui/defense.ts'
 import { mountSteady } from './ui/steady.ts'
 
 const el = document.getElementById('game')
@@ -153,6 +154,8 @@ idle(() => withCollection(() => {
   // 살통은 상시 버튼(성장·수집) **뒤**에 붙는다 — 가변 폭 요소가 앞에 서면
   // 매 판 누르는 버튼들의 자리가 널뛴다 (감사 UI구조).
   mountQuiver(overlay, save)
+  // 방어 — 살통 바로 뒤. 둘 다 "판 도중에 지금 쓸 것을 고르는" 같은 무리다 (ui/defense.ts).
+  mountDefense(overlay, save, (id) => loop.buyDefense(id))
   // 샌드박스(실험장) — 소환·판 점프. 기록에 남지 않는다.
   mountSandbox(overlay, {
     enter: () => loop.sandboxEnter(),

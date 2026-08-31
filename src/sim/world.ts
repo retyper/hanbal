@@ -11,7 +11,7 @@ import { P } from '../tune/params.ts'
 import { arrowFx, refreshArrowFx } from './arrowfx.ts'
 import { effectiveStats, stepArcher } from './bow.ts'
 import { stepArrows } from './ballistics.ts'
-import { stepTargets } from './target.ts'
+import { hurtPlayer, stepTargets } from './target.ts'
 import { flowMiss, resetFlow, stepFlow } from './flow.ts'
 import { TRAIL_POINTS } from './types.ts'
 import type {
@@ -319,6 +319,19 @@ function clearTarget(t: Target): void {
   t.vy = 0
 }
 
+/**
+ * 이 판에 잡아둘 화살 풀 크기.
+ *
+ * `stage.arrows` 만으로는 모자랄 수 있다: game 레이어가 지급량을 **위로** 덮어쓰기 때문이다
+ * (game/stagekit.ts arrowFloor — "화살은 적보다 한 발 많다"). 풀이 지급량보다 작으면
+ * spawnArrow 가 빈 자리를 못 찾아 **조용히 안 나간다** — 화면에는 "가끔 안 쏴지는 게임"으로만
+ * 보인다. 판에 선 것의 수 + 1 을 같이 재서 그 구멍을 막는다 (sim은 경제를 모르지만 상한은 안다).
+ */
+function poolWant(stage: StageDef): number {
+  const need = stage.targets.length + 1
+  return (stage.arrows > need ? stage.arrows : need) + ARROW_POOL_SLACK
+}
+
 /** 풀은 늘리기만 한다. 줄이면 다음 판에서 다시 할당이 난다. */
 function growArrows(w: World, want: number): void {
   // id 는 자리 번호다. push 하는 순간의 길이가 곧 그 자리이고, 이후 바뀌지 않는다.
@@ -380,6 +393,11 @@ export function createWorld(
     bow: neutralBow(),
     bowSkin: 'practice',
     hp: Math.floor(P.enemy.hpMax),
+    // 방어는 산 것이다 — 아무것도 안 산 세계는 맨몸이다 (game/defense.ts가 채운다).
+    armor: 0,
+    armorMax: 0,
+    shield: 0,
+    shieldMax: 0,
     // 적 화살 풀 — 한 판에 적 궁수 셋이 동시에 쏴도 8이면 넉넉하다 (A5: 고정 크기).
     shots: Array.from({ length: 8 }, () => ({
       alive: false, x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0,
@@ -467,7 +485,7 @@ export function resetWorld(
   w.stats.focus = stats.focus
   resetArcher(w.archer, derived.staminaMax)
 
-  growArrows(w, stage.arrows + ARROW_POOL_SLACK)
+  growArrows(w, poolWant(stage))
   for (let i = 0; i < w.arrows.length; i++) {
     const a = w.arrows[i]
     if (a !== undefined) resetArrow(a)
@@ -487,6 +505,12 @@ export function resetWorld(
   w.windPhase = 0
   // 체력은 판 기본값으로 되돌린다. 여정 동안 이어지는 값은 game 레이어(loop)가 이 위에 덮어쓴다.
   w.hp = Math.floor(P.enemy.hpMax)
+  // 갑옷도 여정의 것이라 loop 가 덮어쓴다. 방패는 **판의 것**이라 여기서 사라지는 게 끝이다 —
+  // 땅에 박아 둔 판때기를 다음 판까지 들고 가지 않는다.
+  w.armor = 0
+  w.armorMax = 0
+  w.shield = 0
+  w.shieldMax = 0
   for (let i = 0; i < w.shots.length; i++) {
     const sh = w.shots[i]
     if (sh !== undefined) sh.alive = false
@@ -634,15 +658,40 @@ function stepEnemyShots(w: World): void {
     }
     if (!sh.alive) continue
 
+    // ── 방패 (P.defense) — 앞에 세운 판때기가 화살을 삼킨다 ──
+    //
+    // 판정은 궁수 앞 shieldX 자리의 **세로 평면**이다. 이번 스텝의 선분이 그 평면을
+    // 가로지르는 지점의 높이를 구해, 땅과 윗변 사이면 막는다. 반폭(shieldHalf)은 그림의
+    // 치수일 뿐 판정에 안 들어간다 — 이 게임은 2D 옆면이라 깊이가 없다.
+    //
+    // 내 화살은 여기를 안 지난다 (w.arrows 는 이 검사에 안 걸린다). 파비스가 그런 물건이다:
+    // 사수가 그 뒤에 서서 **널판의 사격구로** 쏜다 (render/scene.ts drawShield).
+    // 윗변은 궁수의 피격 판정(손 1.4m ± hitRadius) 위까지 올라가야 한다 — 그보다 낮으면
+    // 화살이 어깨 위로 들어와 "세웠는데 그냥 맞는" 물건이 된다 (tests/defense.test.ts).
+    if (w.shield > 0) {
+      const sx = a.x + P.defense.shieldX
+      const dx = sh.x - sh.px
+      if (dx !== 0 && (sh.px - sx) * (sh.x - sx) <= 0) {
+        const yAt = sh.py + ((sh.y - sh.py) * (sx - sh.px)) / dx
+        if (yAt >= 0 && yAt <= P.defense.shieldTop) {
+          sh.alive = false
+          w.shield -= 1
+          const left = w.shieldMax > 0 ? Math.max(0, w.shield) / w.shieldMax : 0
+          w.events.push({ t: 'guard_block', x: sx, y: yAt, left, armor: false })
+          if (w.shield <= 0) {
+            w.shield = 0
+            w.shieldMax = 0
+          }
+          continue
+        }
+      }
+    }
+
     // 궁수 피격 — 선분 판정 (빠른 화살이 한 스텝에 몸을 건너뛰지 않게).
     if (w.status === 'playing' && distSqPointSegment(a.x, a.y, sh.px, sh.py, sh.x, sh.y) <= r2) {
       sh.alive = false
-      w.hp = Math.max(0, w.hp - Math.floor(P.enemy.arrowDamage))
-      w.combo = 0
-      w.events.push({
-        t: 'player_hit', hp: w.hp, x: sh.x, y: sh.y, ang: Math.atan2(sh.vy, sh.vx), pin: true,
-      })
-      if (w.hp <= 0) endStage(w, false)
+      // 두정갑이 있으면 그것이 먼저 받는다 (sim/target.ts hurtPlayer). 죽으면 저기서 판을 끝낸다.
+      hurtPlayer(w, P.enemy.arrowDamage, sh.x, sh.y, Math.atan2(sh.vy, sh.vx), true)
       continue
     }
     if (sh.y <= 0 || sh.x < a.x - 6) sh.alive = false

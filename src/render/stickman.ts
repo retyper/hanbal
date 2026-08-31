@@ -77,6 +77,8 @@ const HP_LINGER = 2
 const HP_FADE = 0.4
 let hpSeen = -1e9
 let hpLast = -1
+/** 두정갑도 같은 여운을 탄다 — 갑옷이 깎이면 바가 떠야 그게 값을 했다는 걸 안다. */
+let armorLast = -1
 
 const LINE = {
   /**
@@ -851,9 +853,11 @@ export function drawArcher(
     // 당길 때, 그리고 체력이 방금 변했을 때만 보인다 — 맞은 건 조준 중이 아니어도 알아야 한다.
     if (hpSeen > w.elapsed) hpSeen = -1e9
     const holdingHp = a.phase === 'drawing' || a.phase === 'full' || a.phase === 'collapsing'
-    if (holdingHp || w.hp !== hpLast) {
+    // 갑옷이 깎인 것도 '방금 무슨 일이 있었다'다 — 체력이 그대로여도 바를 띄워야 한다.
+    if (holdingHp || w.hp !== hpLast || w.armor !== armorLast) {
       hpSeen = w.elapsed
       hpLast = w.hp
+      armorLast = w.armor
     }
     const hpA = holdingHp ? 1 : clamp(1 - (w.elapsed - hpSeen - HP_LINGER) / HP_FADE, 0, 1)
     if (hpA > 0) {
@@ -869,6 +873,18 @@ export function drawArcher(
     // 붉음은 이 게임에서 일관되게 경고다 — 가득 찬 체력이 붉으면 만피가 위험으로 읽힌다 (감사).
     ctx.fillStyle = hpRatio > 0.34 ? THEME.gauge : THEME.gaugeWarn
     ctx.fillRect(bx - bw / 2, by, bw * Math.max(0, Math.min(1, hpRatio)), 5)
+    // ── 두정갑 (game/defense.ts) — 체력 바 **위에** 얇은 한 줄 ──
+    // 체력 바를 나눠 쓰지 않고 따로 얹는 이유: 갑옷은 체력의 일부가 아니라 **체력 앞에 선
+    // 다른 것**이다. 같은 바를 색만 바꿔 쓰면 "체력이 늘었다"로 읽히고, 벗겨지는 순간
+    // 체력이 줄어든 것처럼 보인다. 위에 따로 있으면 없어질 때 그냥 사라진다.
+    if (w.armorMax > 0) {
+      const ar = w.armor / w.armorMax
+      const ay = by - 7
+      ctx.fillStyle = THEME.gaugeBack
+      ctx.fillRect(bx - bw / 2, ay, bw, 4)
+      ctx.fillStyle = THEME.hudText
+      ctx.fillRect(bx - bw / 2, ay, bw * Math.max(0, Math.min(1, ar)), 4)
+    }
     ctx.globalAlpha = 1
     }
   }

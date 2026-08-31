@@ -11,6 +11,46 @@ import { P } from '../tune/params.ts'
 import type { Arrow, Target, World } from './types.ts'
 import { flowHit } from './flow.ts'
 
+/**
+ * 플레이어가 맞았다 — **피해가 체력에 닿기 전에 산 방어를 먼저 지난다** (P.defense).
+ *
+ * 여기 하나로 모은 이유: 나를 깎는 길이 둘(적 화살 · 돌진 접촉)인데 예전엔 각자 `w.hp`를
+ * 직접 깎고 있었다. 그 상태로 갑옷을 붙이면 **한쪽에만 붙는다** — 실제로 이런 종류의
+ * 누락은 "어떤 적한테는 갑옷이 안 먹네"로 나타나고 원인을 못 찾는다.
+ *
+ * 순서: 두정갑 → 체력. 방패(앞에 세운 판때기)는 여기까지 오기 전에 화살을 삼키므로
+ * 이 함수를 안 거친다 (world.ts stepEnemyShots).
+ */
+export function hurtPlayer(
+  w: World, dmg: number, x: number, y: number, ang: number, pin: boolean,
+): void {
+  if (w.status !== 'playing') return
+  let rest = Math.floor(dmg)
+  if (rest <= 0) return
+  // 맞았으면 연쇄는 끊긴다 — 갑옷이 받아줬어도 그렇다. 몸이 흔들린 건 사실이니까.
+  w.combo = 0
+  if (w.armor > 0) {
+    const eaten = Math.min(w.armor, rest)
+    w.armor -= eaten
+    rest -= eaten
+    const left = w.armorMax > 0 ? w.armor / w.armorMax : 0
+    w.events.push({ t: 'guard_block', x, y, left, armor: true })
+    // 다 깎이면 벗겨진다. armorMax도 같이 0으로 — 안 그러면 빈 바가 화면에 남는다.
+    if (w.armor <= 0) {
+      w.armor = 0
+      w.armorMax = 0
+    }
+  }
+  // 갑옷이 전부 받아냈다. 체력은 한 톨도 안 깎인다 — 그게 산 값이다.
+  if (rest <= 0) return
+  w.hp = Math.max(0, w.hp - rest)
+  w.events.push({ t: 'player_hit', hp: w.hp, x, y, ang, pin })
+  if (w.hp <= 0) {
+    w.status = 'failed'
+    w.events.push({ t: 'stage_end', cleared: false, score: w.score })
+  }
+}
+
 export function stepTargets(w: World): void {
   const dt = w.dt
   // 시뮬 내부 시계. Date.now / performance.now 금지 (A1)
@@ -88,14 +128,9 @@ export function stepTargets(w: World): void {
         tg.alive = false
         w.combo = 0
         // escape(화살 강탈 시절의 하강음)는 내지 않는다 — 이 사건의 이름은 '부딪힘'이다 (감사).
-        if (w.status === 'playing' && P.enemy.chargerDamage > 0) {
-          w.hp = Math.max(0, w.hp - Math.floor(P.enemy.chargerDamage))
-          w.events.push({ t: 'player_hit', hp: w.hp, x: tg.x, y: tg.y, ang: 0, pin: false })
-          if (w.hp <= 0) {
-            w.status = 'failed'
-            w.events.push({ t: 'stage_end', cleared: false, score: w.score })
-          }
-        }
+        // 산 방어를 먼저 통과한다 — 칼에 베이는 것도 갑옷이 대신 받는다 (hurtPlayer).
+        // 방패는 못 막는다: 저건 날아오는 것을 막는 판때기지 달려드는 사람을 막는 담장이 아니다.
+        hurtPlayer(w, P.enemy.chargerDamage, tg.x, tg.y, 0, false)
       }
     }
     // static / pierceable / bonus / 낙하 전 aerial 은 정지. 위치를 건드리지 않는다.

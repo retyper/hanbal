@@ -91,6 +91,13 @@ export interface SaveData {
   /** 이번 여정의 남은 체력 (docs/RUN.md 6장). 판을 넘어 이어지고, 새 여정에 가득 찬다. */
   runHp: number
   /**
+   * 이번 여정의 남은 두정갑 (game/defense.ts). 체력과 같은 규칙이다 — 판을 넘어 이어지고
+   * 새 여정에는 0(맨몸)으로 시작한다. 갑옷은 **사는 것**이지 주어지는 것이 아니다.
+   */
+  runArmor: number
+  /** 위 갑옷의 최대치. 겹쳐 입은 만큼 커진다 (P.defense.armorMax 까지). 0 = 안 입음. */
+  runArmorMax: number
+  /**
    * 특수살 재고 (game/supply.ts). 화살 id → 남은 발 수. 유엽전은 무한이라 여기 없다.
    * 한 판에 장전할 때 1 소모. 0이어도 키를 지우지 않는다 — "가져본 적 있음"이
    * 수집 화면의 발견 기록이다.
@@ -212,6 +219,8 @@ export function defaultSave(now: number): SaveData {
     runScore: 0,
     bossKills: 0,
     runHp: Math.floor(P.enemy.hpMax),
+    runArmor: 0,
+    runArmorMax: 0,
     arrowStock: {},
     bullseyes: 0,
     perfectRuns: 0,
@@ -463,6 +472,8 @@ function sanitize(r: Raw, now: number): SaveData {
     runBestJung: int(r['runBestJung'], 0, 0, 9999),
     bossKills: int(r['bossKills'], 0, 0, HARD_MAX),
     runHp: int(r['runHp'], Math.floor(P.enemy.hpMax), 0, 999),
+    runArmor: int(r['runArmor'], 0, 0, 999),
+    runArmorMax: int(r['runArmorMax'], 0, 0, 999),
     arrowStock: sanitizeBest(r['arrowStock']),
     bullseyes: int(r['bullseyes'], 0, 0, HARD_MAX),
     perfectRuns: int(r['perfectRuns'], 0, 0, HARD_MAX),

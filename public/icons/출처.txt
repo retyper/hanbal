@@ -23,3 +23,5 @@
   fork-wind.svg       lorc/windy-stripes         Lorc
   fork-scout.svg      lorc/run                   Lorc
   fork-single.svg     lorc/arrowhead             Lorc
+  def-shield.svg      lorc/arrows-shield         Lorc
+  def-armor.svg       lorc/layered-armor         Lorc

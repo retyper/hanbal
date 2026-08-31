@@ -705,6 +705,20 @@ export function pumpEvents(fx: Fx, w: World): void {
       pushPopup(fx.pop, e.x, e.y + 0.9, '갑옷 파손!', 'crit')
       spawn(fx, e.x, e.y, FX.hitBurst, KIND_CHAIN, FX.speed * 1.5, FX.ttl * 1.2, 1.5)
       fx.hitStop += P.hit.stopMs * 0.001
+    } else if (e.t === 'guard_block') {
+      // ── 산 방어가 대신 받았다 (game/defense.ts) ──
+      // 이 순간의 뜻은 하나다: **훈련치를 쓴 것이 지금 값을 했다.** 그러니 조용히 지나가면
+      // 안 된다. 남은 양을 숫자로 띄운다 — 그게 "언제 또 사야 하는가"를 가르치는 유일한 화면이다.
+      const name = e.armor ? '두정갑' : '방패'
+      if (e.left <= 0) {
+        // 부서졌다. 다음 발부터는 맨몸이다 — 규칙이 바뀌는 순간이라 크게 알린다.
+        pushPopup(fx.pop, e.x, e.y + 0.9, `${name} 파손!`, 'crit')
+        spawn(fx, e.x, e.y, FX.hitBurst, KIND_CHAIN, FX.speed * 1.5, FX.ttl * 1.2, 1.5)
+        fx.hitStop += P.hit.stopMs * 0.001
+      } else {
+        pushPopup(fx.pop, e.x, e.y + 0.5, `${name} ${Math.max(1, Math.round(e.left * 100))}%`, 'chain')
+        spawn(fx, e.x, e.y, FX.missBurst, KIND_MISS, FX.missSpeed, FX.missTtl, 0.9)
+      }
     } else if (e.t === 'player_hit') {
       // 맞았다 — 콤보가 끊기고 시간이 잠깐 멈춘다. 남은 체력이 아니라 잃었다는 사실을 띄운다.
       fx.comboRun = 0

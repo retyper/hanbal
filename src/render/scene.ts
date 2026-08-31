@@ -988,6 +988,57 @@ function drawBodyPins(ctx: CanvasRenderingContext2D, cam: Camera, w: World, fx: 
 }
 
 /** 적 화살 — 위험색 짧은 대. 내 화살과 색이 달라야 "날아오는 것"이 즉시 구분된다. */
+/**
+ * 산 방패 (game/defense.ts · P.defense) — 궁수 앞에 박아 세운 널판.
+ *
+ * 그리는 규칙 셋:
+ *  1. **몸을 통째로 덮는다.** 화면의 높이가 판정의 높이(P.defense.shieldTop)와 같아야 한다 —
+ *     넘어가 보이는데 막히거나, 막히는데 넘어가 보이면 그게 배신이다.
+ *  2. **사격구가 보인다.** 널판 한가운데의 가로 틈 하나. 내 화살이 나가는 길이 저기라는 걸
+ *     말하지 않으면, 몸보다 높은 판때기 뒤에서 어떻게 쏘는지가 설명이 안 된다.
+ *  3. **남은 내구가 보인다.** 널판이 닳는 게 아니라 **화살이 꽂힌다** — 삼킨 발수만큼
+ *     판에 화살대가 박혀 있다. 숫자를 안 읽어도 "이제 한 발 남았다"가 보인다.
+ */
+function drawShield(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void {
+  if (w.shield <= 0 || w.shieldMax <= 0) return
+  const cx = worldToScreenX(cam, w.archer.x + P.defense.shieldX)
+  const gy = worldToScreenY(cam, 0)
+  const ty = worldToScreenY(cam, P.defense.shieldTop)
+  const half = Math.max(2, P.defense.shieldHalf * cam.scale)
+  ctx.fillStyle = THEME.bow
+  ctx.fillRect(cx - half, ty, half * 2, gy - ty)
+  ctx.strokeStyle = THEME.groundLine
+  ctx.lineWidth = Math.max(1, half * 0.14)
+  ctx.strokeRect(cx - half, ty, half * 2, gy - ty)
+  // 널판의 결 — 세로 두 줄. 이게 없으면 그냥 밝은 사각형이라 UI로 읽힌다.
+  ctx.strokeStyle = THEME.prop
+  ctx.lineWidth = Math.max(1, half * 0.1)
+  ctx.beginPath()
+  ctx.moveTo(cx - half * 0.34, ty)
+  ctx.lineTo(cx - half * 0.34, gy)
+  ctx.moveTo(cx + half * 0.34, ty)
+  ctx.lineTo(cx + half * 0.34, gy)
+  ctx.stroke()
+  // 사격구 — 궁수의 손 높이에 뚫린 가로 틈. 내 화살이 나가는 길이다.
+  const slot = worldToScreenY(cam, w.archer.y)
+  ctx.fillStyle = THEME.sky0
+  ctx.fillRect(cx - half * 0.86, slot - Math.max(1.5, half * 0.16), half * 1.72, Math.max(3, half * 0.32))
+  // 삼킨 화살 — 오른쪽(적 쪽)에서 비스듬히 꽂혀 있다. 쓴 발수만큼.
+  const used = w.shieldMax - w.shield
+  if (used > 0) {
+    const h = gy - ty
+    ctx.strokeStyle = THEME.arrow
+    ctx.lineWidth = Math.max(1, half * 0.12)
+    ctx.beginPath()
+    for (let i = 0; i < used; i++) {
+      const py = ty + (h * (i + 0.5)) / w.shieldMax
+      ctx.moveTo(cx + half * 0.2, py)
+      ctx.lineTo(cx + half * 2.1, py - half * 0.5)
+    }
+    ctx.stroke()
+  }
+}
+
 function drawEnemyShots(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void {
   ctx.strokeStyle = THEME.threat
   ctx.lineWidth = 2
@@ -1386,6 +1437,8 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       drawArrows(c, cam, w, alpha)
       drawEnemyShots(c, cam, w)
       drawArcher(c, cam, w, alpha)
+      // 방패는 궁수보다 나중 — 앞에 세운 물건이니 앞에 그린다 (game/defense.ts).
+      drawShield(c, cam, w)
       drawBodyPins(c, cam, w, r.fx)
       drawFx(c, cam, r.fx)
       drawHud(c, cam, w, hud)

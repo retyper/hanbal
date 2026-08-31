@@ -403,6 +403,14 @@ export type SimEvent =
    * "화살이 맞으면 박힌 채로 보여져야").
    */
   | { t: 'player_hit'; hp: number; x: number; y: number; ang: number; pin: boolean }
+  /**
+   * 산 방어가 대신 받았다 (P.defense). `armor` 가 참이면 두정갑, 거짓이면 앞에 세운 방패다.
+   * `left` 는 **남은 비율**(0..1) — 0이면 이번 발에 부서졌다.
+   *
+   * player_hit 과 따로 두는 이유: 저건 "내가 깎였다"이고 이건 "내가 안 깎였다"다.
+   * 같은 이벤트로 묶으면 화면이 둘을 같은 소리·같은 색으로 말하게 된다.
+   */
+  | { t: 'guard_block'; x: number; y: number; left: number; armor: boolean }
   | { t: 'miss'; x: number; y: number; arrow: number }
   /**
    * 중(中) — 한 발이 맞아서 연사가 한 칸 올랐다. `n` = 오른 뒤의 연속 수 (1부터).
@@ -545,6 +553,21 @@ export interface World {
    * 적의 화살·돌진이 깎는다. 0이 되면 판이 아니라 여정이 끝난다.
    */
   hp: number
+  /**
+   * 두정갑 — 체력보다 **먼저** 깎이는 방어량 (P.defense). 판 경계에서 game 레이어가 넣고
+   * (여정 내내 이어진다), 판 도중에 사면 그 자리에서 늘어난다.
+   * 0이 되는 순간 갑옷이 벗겨진다 — 그 뒤의 피해는 곧장 체력으로 간다.
+   */
+  armor: number
+  /** 지금 입은 갑옷의 최대치. 0이면 갑옷을 안 입었다 (바를 그리지 않는다). */
+  armorMax: number
+  /**
+   * 방패 — 궁수 앞에 세운 판때기의 남은 내구. **적 화살만** 막는다 (내 화살은 그 위로 나간다).
+   * 판마다 사라진다: resetWorld 가 0으로 되돌린다. 값은 P.defense.shield*.
+   */
+  shield: number
+  /** 세운 방패의 내구 최대치. 0이면 방패가 없다 (그리지 않는다). */
+  shieldMax: number
   /** 적 화살 풀 (고정 크기, A5). 과녁과도 내 화살과도 부딪히지 않는다 — 오직 나만 노린다. */
   shots: EnemyShot[]
 
