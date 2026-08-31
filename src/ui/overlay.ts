@@ -193,8 +193,12 @@ const CSS = `
 
 /* 우상단은 캔버스 HUD(훈련치·바람·무음)의 자리다 — 토스트가 그 위를 통째로 덮었었다
    (UI 전수조사 겹침 2번). 우하단은 어느 레이어도 안 쓰는 빈 구석이라 여기가 토스트의 집이다. */
+/* ★ 패널(스크림)보다 위다. 아래에 있으면 패널이 열린 동안 뜬 알림이 **어두운 막에 가려**
+   아무것도 안 보인다 — 지도에서 "한 번 더 누르면 간다"는 확인이 안 보여서 형이
+   "아직도 스테이지 이동이 안돼"라고 한 것이 이거였다. 알림은 언제나 맨 위다. */
 .hb-toasts {
-  position: absolute; right: calc(20px + var(--safe-r)); bottom: calc(20px + var(--safe-b));
+  position: absolute; z-index: 2;
+  right: calc(20px + var(--safe-r)); bottom: calc(20px + var(--safe-b));
   display: flex; flex-direction: column-reverse; gap: 8px; align-items: flex-end;
 }
 .hb-toast {
@@ -208,7 +212,7 @@ const CSS = `
 @keyframes hb-out { to { opacity: 0; transform: translateY(-5px); } }
 
 .hb-scrim {
-  position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+  position: absolute; inset: 0; z-index: 1; display: none; align-items: center; justify-content: center;
   background: #0e1116e6; pointer-events: auto; padding: 28px;
   -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
 }

@@ -18,7 +18,7 @@
 import { TAU, clamp, clamp01, lerp } from '../core/math.ts'
 import { P } from '../tune/params.ts'
 import type { World } from '../sim/types.ts'
-import { THEME, worldToScreenY } from './camera.ts'
+import { THEME, worldToScreenX, worldToScreenY } from './camera.ts'
 import type { Camera } from './camera.ts'
 import { bowHandScreenX, bowHandScreenY } from './stickman.ts'
 
@@ -107,9 +107,20 @@ const HUD = {
   padX: 26,
   padY: 24,
   lineGap: 26,
-  /** 게이지를 활 손 기준 어디에 붙일지 (px) */
-  gaugeDX: -8,
-  gaugeDY: 34,
+  /**
+   * 활시위 바를 **캐릭터 발(지면) 아래** 이만큼 띄운다 (px).
+   *
+   * 형: "화면 멀어졌을때 체력이랑 활당기는 바가 캐릭터를 자꾸 가리는데 (…) 활위치가 아니라
+   *      캐릭터 머리기준(체력바) 캐릭터 발기준(활시위바)로 캐릭터랑 안겹치게좀 만들어."
+   *
+   * 맞는 말이었고 원인도 정확히 거기였다. 예전엔 **활 손**을 따라다녔다:
+   *   gy = min(활손 + 34px, 지면 - 14px)
+   * 화면이 멀어지면 몸이 통째로 작아져 '활손 + 34px'가 지면보다 아래로 내려가고,
+   * 그러면 min 이 '지면 - 14px'를 골라 **다리 위에 바가 얹힌다.** 클램프가 방어가 아니라
+   * 원인이었던 셈이다. 이제 손을 안 따라간다 — 지면 아래 고정이라 어떤 배율에서도 안 겹친다.
+   * (지면 아래는 카메라가 이미 비워 둔 띠다 — render/camera.ts VIEW.bandBottomPx.)
+   */
+  gaugeBelow: 14,
   gaugeW: 84,
   gaugeH: 8,
   /** 경고 시 게이지가 커지는 정도 */
@@ -572,7 +583,9 @@ export function drawHud(
   for (let i = 0; i < w.targets.length; i++) {
     const t = w.targets[i]
     if (t === undefined || !t.alive) continue
-    if (t.kind === 'barrel') continue
+    // 상(보급)과 도구(화약 상자)는 깨야 할 것이 아니다 — 세면 남은 수가 거짓말이 된다
+    // (sim/world.ts anyTargetStanding 과 같은 규칙).
+    if (t.kind === 'barrel' || t.kind === 'bonus') continue
     if (t.kind === 'archer' || t.kind === 'boss' || t.kind === 'charger') foes++
     else marks++
   }
@@ -716,14 +729,17 @@ export function drawHud(
       ctx.fillRect(jx, jungY - h * 0.5, M.jungW, h)
       jx += M.jungW + M.jungGap
     }
-    // 몰기일 때만 이름을 붙인다. 나머지 넷은 이름이 필요 없다 — 칸이 곧 말이다.
-    if (w.molgi) {
-      ctx.font = M.fTotal
-      ctx.fillStyle = THEME.accent
-      ctx.textBaseline = 'middle'
-      ctx.fillText('몰기', jx + M.jungGap * 2, jungY)
-      ctx.textBaseline = 'top'
-    }
+    // ★ 이름을 **언제나** 붙인다 (2026-08-31, 형: "몰기는 대체 뭐야? 그 바는 왜 필요있는건데?").
+    //
+    // 예전 규칙은 "몰기일 때만 이름을 붙인다 — 칸이 곧 말이다"였다. 그건 틀렸다:
+    // 칸은 **세는 법**을 말할 뿐 **무엇을 세는지**를 말하지 않는다. 다섯을 다 채우기 전까지는
+    // 이 줄이 화면에서 뜻 없는 네모 다섯이었고, 다 채워도 '몰기'라는 모르는 말이 떴다.
+    // 이제 쌓이는 동안은 그게 주는 것('연사')을, 다 채우면 그 이름('몰기')을 말한다.
+    ctx.font = M.fTotal
+    ctx.fillStyle = w.molgi ? THEME.accent : THEME.hudDim
+    ctx.textBaseline = 'middle'
+    ctx.fillText(w.molgi ? '몰기' : '연사', jx + M.jungGap * 2, jungY)
+    ctx.textBaseline = 'top'
     arrowRowY = jungY + M.jungH + M.subGap
   }
 
@@ -743,12 +759,9 @@ export function drawHud(
   const max = a.staminaMax > 0 ? a.staminaMax : 1
   const ratio = clamp01(a.stamina / max)
   const warn = clamp01(a.warn)
-  const gx = bowHandScreenX(cam, w) + HUD.gaugeDX - HUD.gaugeW * 0.5
-  // 저스케일 판에서 손+34px가 지면 밑으로 내려갔다 (전수조사 겹침 6번). 지면 위로 클램프.
-  const gy = Math.min(
-    bowHandScreenY(cam, w) + HUD.gaugeDY,
-    worldToScreenY(cam, 0) - px(14, M.s),
-  )
+  // ★ 활 손이 아니라 **궁수의 발(지면)** 기준이다 (HUD.gaugeBelow 주석).
+  const gx = worldToScreenX(cam, a.x) - HUD.gaugeW * 0.5
+  const gy = worldToScreenY(cam, 0) + px(HUD.gaugeBelow, M.s)
   const gh = HUD.gaugeH + warn * HUD.gaugeWarnGrow
   const gw = HUD.gaugeW
 

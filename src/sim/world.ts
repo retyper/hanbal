@@ -618,11 +618,25 @@ function endStage(w: World, cleared: boolean): void {
 }
 
 /** 아직 서 있는 과녁이 있는가. 낙하 중인 공중 과녁은 아직 살아 있는 것으로 친다. */
+/**
+ * 아직 **깨야 할 것**이 서 있는가.
+ *
+ * ★ 판에 서 있는 것이 전부 '깨야 할 것'은 아니다 (2026-08-31).
+ *   형: "보너스 화살 주는 과녁이 스테이지 넘어가기 위한 필수 조건이 되면 절대 안 되지.
+ *        다이너마이트나 보너스 못 맞춰서 스테이지 실패하는 게 말이 되냐?"
+ *   맞는 말이다. 둘은 성격이 정반대다:
+ *     · 과녁·적    — **없애야** 판이 끝난다 (이 판의 과제)
+ *     · 보급(bonus) — 맞히면 **상**을 준다 (선택)
+ *     · 화약 상자(barrel) — 맞히면 **도구**가 된다 (선택)
+ *   상과 도구를 조건에 넣으면, 상을 못 받은 벌로 판을 잃는다. 그건 배신이다.
+ *   (놓친 보급은 다음 판으로 안 따라간다 — 그 판에서 안 쓴 상은 그냥 사라진다.)
+ */
 function anyTargetStanding(w: World): boolean {
   for (let i = 0; i < w.targets.length; i++) {
     const t = w.targets[i]
-    // 화약 상자는 과녁이 아니다 — 안 터뜨려도 판은 끝난다 (types.ts 'barrel').
-    if (t !== undefined && t.alive && t.kind !== 'barrel') return true
+    if (t === undefined || !t.alive) continue
+    if (t.kind === 'barrel' || t.kind === 'bonus') continue
+    return true
   }
   return false
 }

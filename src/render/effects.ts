@@ -553,6 +553,10 @@ export function pumpEvents(fx: Fx, w: World): void {
     // 몸에 박힌 화살도 지난 판의 것이다.
     fx.pId.fill(-1)
     fx.pHead = 0
+    // ★ 시체도 지난 판의 것이다 (형: "왜 다음스테이지 넘어가도 전판 시체가 남아있냐").
+    //   여기 있던 다른 것들은 지우면서 시체만 빠져 있었다.
+    fx.cAge.fill(-1)
+    fx.cHead = 0
   }
 
   // 같은 tick을 두 번 그리면 이벤트가 이중 처리된다. events를 비우는 건 게임 루프의 몫이라
@@ -609,13 +613,17 @@ export function pumpEvents(fx: Fx, w: World): void {
       // 사라지는 것 자체가 피드백이고, 거기 숫자를 얹으면 화면이 숫자로 덮인다 (GDD 7장).
       // 점수는 판이 끝나야 뜻이 생기는 누적값이라 결과 배너의 것이다 (hud.ts).
       //
-      // ★ 즉사(execute)는 숫자를 안 띄운다 (형: "몸에 맞았는데 144뜨고 머리맞았는데
-      // 70뜨는건뭐냐"). dmg가 그 순간 남아 있던 체력이라 이미 깎여 있던 적이면 작게
-      // 나와서, 머리가 몸통보다 약해 보이는 거짓 신호를 낸다. 숫자 대신 '즉사!'를 띄운다 —
-      // 그게 실제로 일어난 일이고, 어떤 숫자보다 세다.
-      if (e.execute) {
-        pushPopup(fx.pop, e.x, e.y, '즉사!', 'crit', 1)
-      } else if (e.dmg > 0) {
+      // ★ 즉사(execute)는 **아무것도 안 띄운다.**
+      //
+      // 숫자를 안 띄우는 이유 (형: "몸에 맞았는데 144뜨고 머리맞았는데 70뜨는건뭐냐"):
+      // dmg 가 그 순간 남아 있던 체력이라, 이미 몸통샷으로 깎여 있던 적이면 작게 나온다 —
+      // 머리가 몸통보다 약해 보이는 거짓 신호가 된다.
+      //
+      // '즉사!'라는 말도 지웠다 (2026-08-31, 형: "즉사라는 말은 지워. 필요없고 헤드샷이랑 겹쳐").
+      // 맞는 말이다 — 같은 사건에 이미 위에서 '헤드샷!'이 떴다. 한 발에 두 마디가 뜨면 둘 다
+      // 안 읽힌다. **한 사건에 한 마디**가 이 화면의 규칙이고(바로 아래 정중앙 처리와 같은 규칙),
+      // 즉사는 헤드샷이 이미 뜻하는 것이다.
+      if (!e.execute && e.dmg > 0) {
         pushPopup(
           fx.pop, e.x, e.y, `${e.dmg}`, crit ? 'crit' : 'score',
           // 로그 스케일 — 큰 한 방과 작은 한 방의 차이가 팝 크기로도 읽힌다.
@@ -844,55 +852,139 @@ function stepCorpses(f: Fx, dt: number): void {
   }
 }
 
+/** 두 각 사이를 최단 경로로. 팔다리가 가라앉을 때 한 바퀴 돌지 않게. */
+function lerpAng(a: number, b: number, t: number): number {
+  let d = b - a
+  while (d > Math.PI) d -= Math.PI * 2
+  while (d < -Math.PI) d += Math.PI * 2
+  return a + d * t
+}
+
+/** 선분 하나. 시체는 전부 이걸로 그린다 — 부위마다 각이 따로 놀아야 뻣뻣하지 않다. */
+function limb(
+  ctx: CanvasRenderingContext2D, x: number, y: number, ang: number, len: number,
+): void {
+  ctx.moveTo(x, y)
+  ctx.lineTo(x + Math.cos(ang) * len, y + Math.sin(ang) * len)
+}
+
 /**
- * 시체를 그린다. **사람과 드론이 다르게 남는다** (형: "시체로 남거나 드론은 망가져 떨어지거나").
- *   사람 — 머리 + 접힌 몸. 실루엣이 서 있는 적과 달라야 "쓰러졌다"가 읽힌다.
- *   드론(look 3) — 부러진 십자와 멈춘 로터. 사람처럼 눕지 않는다.
- * 색은 새로 만들지 않는다 (GDD 8장): 몸은 bodyDim, 드론은 prop.
+ * 쓰러진 것을 그린다. **셋이 서로 다르게 죽는다.**
+ *
+ * 형: "시체가 무슨 빳빳하게 굳어가지고. 사람이 바리케이트냐? 진짜 사람이 죽는 것처럼 만들라고."
+ * 맞는 말이었다. 앞 판은 몸 전체를 **한 덩어리로 회전**시켰다 — 그러니 널빤지가 날아갔다.
+ *
+ * 사람이 죽는 것처럼 보이는 이유는 딱 하나다: **팔다리가 몸통을 안 따라간다.**
+ *   · 나는 동안 — 팔다리가 저마다 다른 주기로 휘젓고 몸통보다 늦게 따라온다.
+ *   · 땅에 닿은 뒤 — 팔다리가 몸통의 회전과 **무관하게 중력 쪽으로 늘어진다**(settle).
+ *     이 한 줄이 "굳은 것"과 "늘어진 것"을 가른다.
+ * 좌우 팔·다리의 위상과 목표 각을 일부러 어긋나게 둔다 — 대칭이면 인형이 된다.
  */
 function drawCorpses(ctx: CanvasRenderingContext2D, cam: Camera, f: Fx): void {
+  const DOWN = Math.PI / 2
   for (let i = 0; i < CORPSES; i++) {
-    if ((f.cAge[i] ?? -1) < 0) continue
+    const age = f.cAge[i] ?? -1
+    if (age < 0) continue
     const rest = f.cRest[i] ?? -1
     const fade = rest > P.render.corpseLinger
       ? 1 - (rest - P.render.corpseLinger) / P.render.corpseFade
       : 1
     if (fade <= 0) continue
+
     const x = worldToScreenX(cam, f.cX[i] ?? 0)
     const y = worldToScreenY(cam, f.cY[i] ?? 0)
     const r = Math.max(3, (f.cR[i] ?? 0.3) * cam.scale)
+    const look = f.cLook[i] ?? 0
+    // 늘어짐 0..1 — 땅에 닿은 뒤 이 시간에 걸쳐 팔다리가 중력에 진다.
+    const settle = rest >= 0 ? clamp01(rest / P.render.corpseLimp) : 0
+    // 개체마다 다른 위상. 같은 판에서 둘이 똑같이 죽으면 그건 복사다.
+    const ph = i * 1.7
+    const spd = Math.hypot(f.cVx[i] ?? 0, f.cVy[i] ?? 0)
+    // 휘젓는 폭 — 빠를수록 크고, 가라앉을수록 준다.
+    const sw = (1 - settle) * Math.min(0.9, 0.25 + spd * 0.06)
+    const ang = f.cAng[i] ?? 0
+
     ctx.save()
     ctx.globalAlpha = fade
-    ctx.translate(x, y)
-    ctx.rotate(f.cAng[i] ?? 0)
-    if (f.cLook[i] === 3) {
-      // 드론 — 부러진 십자. 로터가 한쪽으로 꺾여 있다.
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+
+    if (look === 3) {
+      // ── 드론 — 부러진 틀이 돈다. 사람처럼 눕지 않는다. ──
+      ctx.translate(x, y)
+      ctx.rotate(ang)
       ctx.strokeStyle = THEME.prop
-      ctx.lineWidth = Math.max(1.5, r * 0.28)
+      ctx.lineWidth = Math.max(1.5, r * 0.26)
       ctx.beginPath()
       ctx.moveTo(-r, 0)
-      ctx.lineTo(r, 0)
-      ctx.moveTo(r * 0.55, 0)
+      ctx.lineTo(r * 0.9, r * 0.12)
+      // 부러진 로터 한쪽이 꺾여 있다.
+      ctx.moveTo(r * 0.5, r * 0.06)
       ctx.lineTo(r * 0.95, -r * 0.5)
       ctx.stroke()
       ctx.fillStyle = THEME.bodyDim
-      ctx.fillRect(-r * 0.32, -r * 0.24, r * 0.64, r * 0.48)
-    } else {
-      // 사람 — 접힌 몸통 + 늘어진 팔 + 머리. 서 있는 실루엣과 확실히 다르다.
+      ctx.fillRect(-r * 0.3, -r * 0.22, r * 0.6, r * 0.44)
+      // 죽은 로터 — 멈춘 원 둘.
       ctx.strokeStyle = THEME.bodyDim
-      ctx.lineWidth = Math.max(1.5, r * 0.3)
-      ctx.lineCap = 'round'
+      ctx.lineWidth = Math.max(1, r * 0.12)
       ctx.beginPath()
-      ctx.moveTo(-r * 0.75, 0)
-      ctx.lineTo(r * 0.5, r * 0.18)
-      ctx.moveTo(-r * 0.1, r * 0.05)
-      ctx.lineTo(r * 0.35, -r * 0.45)
+      ctx.arc(-r * 0.8, 0, r * 0.22, 0, Math.PI * 2)
+      ctx.arc(r * 0.75, r * 0.1, r * 0.18, 0, Math.PI * 2)
       ctx.stroke()
+    } else if (look < 0) {
+      // ── 보스(눈알귀신) — 시체가 아니라 **무너진다.** ──
+      // 형: "보스 시체도 Y에 점찍어놓은게 말이되냐" — 맞다. 보스는 사람이 아니라
+      // 자락을 늘어뜨린 덩어리(scene.ts 'boss')다. 그러니 남는 것도 사람 모양일 수 없다.
+      // 가라앉을수록 납작해지고, 노려보던 눈이 감긴다.
+      const w = r * (1 + settle * 0.5)
+      const h = r * (1 - settle * 0.62)
+      ctx.fillStyle = THEME.threatDim
+      ctx.beginPath()
+      ctx.moveTo(x - w, y + h * 0.2)
+      ctx.quadraticCurveTo(x - w * 0.9, y - h, x, y - h * 1.05)
+      ctx.quadraticCurveTo(x + w * 0.9, y - h, x + w, y + h * 0.2)
+      // 밑단 — 흘러내린 자락. 살아 있을 때의 파도가 멎어 땅에 퍼진 모양이다.
+      ctx.quadraticCurveTo(x + w * 0.5, y + h * 0.55, x, y + h * 0.35)
+      ctx.quadraticCurveTo(x - w * 0.5, y + h * 0.55, x - w, y + h * 0.2)
+      ctx.closePath()
+      ctx.fill()
+      // 눈 — 감긴다. 다 감기면 선 하나만 남는다.
+      const eye = (1 - settle) * r * 0.34
+      ctx.strokeStyle = THEME.threat
+      ctx.lineWidth = Math.max(1.2, r * 0.09)
+      ctx.beginPath()
+      if (eye > 1) ctx.ellipse(x, y - h * 0.35, r * 0.34, eye, 0, 0, Math.PI * 2)
+      else limb(ctx, x - r * 0.3, y - h * 0.35, 0, r * 0.6)
+      ctx.stroke()
+    } else {
+      // ── 사람 — 머리·몸통·팔 둘·다리 둘. 부위마다 각이 따로 논다. ──
+      const up = -Math.PI / 2 + ang            // 엉덩이 → 어깨 방향
+      const torso = r * 1.15
+      const arm = r * 0.78
+      const leg = r * 0.86
+      const sx = x + Math.cos(up) * torso      // 어깨
+      const sy = y + Math.sin(up) * torso
+
+      ctx.strokeStyle = THEME.bodyDim
+      ctx.lineWidth = Math.max(1.4, r * 0.26)
+      ctx.beginPath()
+      // 몸통
+      limb(ctx, x, y, up, torso)
+      // 팔 — 나는 동안은 어깨에 매달려 휘젓고, 가라앉으면 땅으로 떨어진다.
+      limb(ctx, sx, sy, lerpAng(up + 1.0 + Math.sin(age * 11 + ph) * sw, DOWN - 0.4, settle), arm)
+      limb(ctx, sx, sy, lerpAng(up - 1.35 + Math.sin(age * 9 + ph + 2.1) * sw, DOWN + 0.7, settle), arm * 0.92)
+      // 다리 — 팔보다 무겁다: 느리게 흔들리고 덜 벌어진다.
+      limb(ctx, x, y, lerpAng(up + Math.PI - 0.3 + Math.sin(age * 7 + ph) * sw * 0.7, DOWN + 0.28, settle), leg)
+      limb(ctx, x, y, lerpAng(up + Math.PI + 0.22 + Math.sin(age * 6 + ph + 1.3) * sw * 0.7, DOWN - 0.12, settle), leg * 0.94)
+      ctx.stroke()
+      // 머리 — 어깨 위. 가라앉으면 목이 꺾여 한쪽으로 떨어진다.
+      const neck = lerpAng(up, DOWN - 1.1, settle * 0.75)
       ctx.fillStyle = THEME.bodyDim
       ctx.beginPath()
-      ctx.arc(-r * 0.85, -r * 0.2, r * 0.34, 0, Math.PI * 2)
+      ctx.arc(sx + Math.cos(neck) * r * 0.38, sy + Math.sin(neck) * r * 0.38, r * 0.3, 0, Math.PI * 2)
       ctx.fill()
     }
+
     ctx.restore()
   }
   ctx.globalAlpha = 1

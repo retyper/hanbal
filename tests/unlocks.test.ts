@@ -57,14 +57,29 @@ describe('활 해금 — 반복으로는 못 연다 (2026-08-26, 형: "1-10보�
     // 옛 규칙(bossKills)이면 이 상태로 각궁(문턱 1)은 물론 컴파운드(문턱 10)까지 열렸다.
     const p = { ...emptyProgress(), bossKills: 10, bestRunStage: 9 }
     const got = evaluateUnlocks(p, [])
+    assert.ok(!got.includes('bow.recurve'), '10판을 못 넘었는데 리커브가 열렸다')
     assert.ok(!got.includes('bow.gakgung'), '10판을 못 넘었는데 각궁이 열렸다')
-    assert.ok(!got.includes('bow.compound'), '10판을 못 넘었는데 컴파운드가 열렸다')
   })
 
-  it('10판에 도달하면(bossKills 0이어도) 각궁이 연다 — 깊이가 유일한 열쇠다', () => {
+  it('10판에 도달하면(bossKills 0이어도) 첫 활이 연다 — 깊이가 유일한 열쇠다', () => {
     const p = { ...emptyProgress(), bossKills: 0, bestRunStage: 10 }
     const got = evaluateUnlocks(p, [])
-    assert.ok(got.includes('bow.gakgung'), '10판에 닿았는데 각궁이 안 열렸다')
+    // ★ 첫 활은 **리커브**다 (2026-08-31, 형: "각궁이 너무 강하니까 밸런스에 맞는 활들을
+    //   순서대로 개방되게 해라"). 밸런스 시뮬에서 각궁이 62판 중 38판 1등인 지배 활이라
+    //   가장 센 활이 가장 먼저 열리고 있었다 — 해금이 상이 아니라 형벌이었다.
+    assert.ok(got.includes('bow.recurve'), '10판에 닿았는데 첫 활이 안 열렸다')
+    assert.ok(!got.includes('bow.gakgung'), '각궁이 10판에 열렸다 — 가장 센 활이 가장 먼저다')
+  })
+
+  it('활은 요구하는 것의 순서로 열린다 — 리커브 → 컴파운드 → 장궁 → 각궁', () => {
+    const at = (n: number): string[] => evaluateUnlocks({ ...emptyProgress(), bestRunStage: n }, [])
+    assert.ok(at(10).includes('bow.recurve'), '10판: 리커브')
+    assert.ok(!at(10).includes('bow.compound'), '10판에 컴파운드가 열렸다')
+    assert.ok(at(30).includes('bow.compound'), '30판: 컴파운드')
+    assert.ok(!at(30).includes('bow.longbow'), '30판에 장궁이 열렸다')
+    assert.ok(at(60).includes('bow.longbow'), '60판: 장궁')
+    assert.ok(!at(60).includes('bow.gakgung'), '60판에 각궁이 열렸다')
+    assert.ok(at(100).includes('bow.gakgung'), '100판: 각궁')
   })
 
   it('네 활의 문턱이 여전히 10·30·60·100이다 (수치는 그대로, 신호만 바뀌었다)', () => {

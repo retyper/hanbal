@@ -35,8 +35,13 @@ describe('적', () => {
       assert.ok(!getStage(i).targets.some((t) => t.kind === 'archer'), `${i + 1}판에 적이 있다`)
     }
     assert.ok(getStage(10).targets.some((t) => t.kind === 'archer'), '11판에 적이 없다')
-    // 보스판은 보스의 것 — 적 궁수를 얹지 않는다.
-    assert.ok(!getStage(19).targets.some((t) => t.kind === 'archer'), '20판(보스)에 적 궁수가 있다')
+    // ★ 보스판의 호위도 **사람**이다 (2026-08-31, 형: "보스판에 제발 과녁 좀 없애").
+    //   예전엔 호위가 static 과녁이었다 — 귀신 옆에 과녁판이 서 있었다.
+    //   보스는 그대로 boss 이고, 호위만 사수다.
+    const boss20 = getStage(19).targets
+    assert.ok(boss20.some((t) => t.kind === 'boss'), '20판에 보스가 없다')
+    assert.ok(!boss20.some((t) => t.kind === 'static'), '20판(보스)에 과녁이 서 있다')
+    assert.ok(boss20.some((t) => t.kind === 'archer'), '20판의 호위가 사람이 아니다')
   })
 
   it('적 궁수는 예고(enemy_draw) 후에 쏜다 (enemy_shot)', () => {

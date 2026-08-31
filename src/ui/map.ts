@@ -100,7 +100,6 @@ interface NodeEl {
 let curStars: Readonly<Record<string, number>> = {}
 let curBossKills = 0
 let curBestRunStage = 0
-let curRunActive = false
 let onJumpFn: ((index0: number) => void) | null = null
 let refreshFn: (() => void) | null = null
 
@@ -130,7 +129,7 @@ export function mountMap(
   curStars = stars
   curBossKills = bossKills
   curBestRunStage = bestRunStage
-  curRunActive = runActive
+  void runActive
   onJumpFn = onJump
 
   const panel = o.panel(PANEL_ID)
@@ -207,21 +206,37 @@ export function mountMap(
     const isBoss = n % ROW_LEN === 0
     const isCkpt = n % ROW_LEN === 1
     if (isBoss) el.classList.add('boss')
+    if (!isCkpt) {
+      // 체크포인트가 아닌 칸 — 여기서는 출발할 수 없다. 그것도 말해 준다.
+      el.addEventListener('click', () => {
+        o.toast('노란 칸(각 장의 첫 판)에서만 출발할 수 있다', 2600)
+      })
+    }
     if (isCkpt) {
       el.classList.add('ckpt')
       el.addEventListener('click', () => {
-        if (n - 1 > checkpointStage(curBossKills)) return
+        // ★ 못 가는 칸도 **이유를 말한다** (2026-08-31, 형: "아직도 스테이지 이동이 안돼").
+        //   예전엔 조건이 안 맞으면 조용히 return 했다 — 눌러도 아무 일이 없으니
+        //   고장 난 것과 구별이 안 됐다. 화면은 거절할 때 반드시 말해야 한다.
+        if (n - 1 > checkpointStage(curBossKills)) {
+          const need = Math.max(1, Math.floor((n - 1) / ROW_LEN)) * ROW_LEN
+          o.toast(`${need}판 귀신을 잡아야 여기서 출발할 수 있다`, 3000)
+          return
+        }
         // ── 여정 중이라면 두 번 눌러야 간다 ──
         // 형: "지도에서 해당 스테이지로 가는게 나는 안된다." 안 됐던 게 맞다 — 예전엔
         // 여정 중이면 그냥 무시했는데, 여정은 출정하는 순간 켜져서 죽거나 접기 전엔 안 꺼진다.
         // 즉 **지도를 볼 만한 상황에서는 언제나 막혀 있었다.** 이제 간다. 다만 지금 여정을
         // 접는 일이라 실수로 잃지 않게 확인을 한 번 받는다 (성장 화면의 '기록 삭제'와 같은 문법).
-        if (curRunActive && armed !== n) {
+        // 확인은 **언제나** 받는다. curRunActive 는 판이 시작될 때 갱신된다는 보장이
+        // 없어서(updateMap 은 해금·진행 때만 불린다), 그 값으로 흐름을 가르면 조용히 어긋난다.
+        // 어차피 지도 점프는 새 여정을 여는 일이라 한 번 묻는 게 맞다.
+        if (armed !== n) {
           disarm()
           armed = n
           el.classList.add('arm')
           armTimer = window.setTimeout(disarm, ARM_MS)
-          o.toast(`${n}판부터 새로 시작한다 — 한 번 더 누르면 지금 여정은 접는다`, ARM_MS)
+          o.toast(`한 번 더 누르면 ${n}판부터 새 여정 — 지금 여정은 여기서 접힌다`, ARM_MS)
           return
         }
         disarm()
@@ -322,6 +337,7 @@ export function updateMap(
   curStars = stars
   curBossKills = bossKills
   curBestRunStage = bestRunStage
-  curRunActive = runActive
+  // 여정 진행 여부는 화면이 안 쓴다 — 점프는 언제나 두 번 눌러 확인한다 (클릭 핸들러 주석).
+  void runActive
   refreshFn?.()
 }

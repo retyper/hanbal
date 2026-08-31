@@ -263,12 +263,18 @@ function convertToFoes(base: StageDef, i: number): StageDef {
     const common = { hp, fireDelay, firePeriod: period, score: 120 }
     if (elite) (common as TargetSpec).aimMul = 0.5
     if (armored) (common as TargetSpec).armored = true
+    // ★ 반경은 **저작된 것을 물려받는다** (2026-08-31, 형: "5-9에서는 너무 멀어서 화면
+    //   벗어나니까"). 예전엔 0.60·0.62·0.65 로 못박았는데, 그러면 stagekit 의 각크기 규칙
+    //   (반경 = 각크기 × 거리)이 통째로 죽는다 — 112m 짜리 적이 0.62m면 화면에서 5px다.
+    //   그게 5장(곡사, 55~115m)이 "안 보이고 화면 밖"이던 진짜 이유다.
+    //   사람은 과녁보다 조금 크게 잡는다(foeR) — 몸통은 판때기보다 넓다.
+    const fr = (t.r ?? 0.6) * P.enemy.foeR
     if (t.kind === 'aerial') {
-      specs.push({ kind: 'archer', look: 3, x: t.x, y: t.y, r: 0.6, ampX: 1.4, freq: 0.18, ...common })
+      specs.push({ kind: 'archer', look: 3, x: t.x, y: t.y, r: fr, ampX: 1.4, freq: 0.18, ...common })
     } else if (t.kind === 'moving') {
-      specs.push({ kind: 'archer', look: 2, x: t.x, y: t.y, r: 0.65, ...common })
+      specs.push({ kind: 'archer', look: 2, x: t.x, y: t.y, r: fr * 1.08, ...common })
     } else {
-      specs.push({ kind: 'archer', look: 1, x: t.x, y: t.y, r: 0.62, ...common })
+      specs.push({ kind: 'archer', look: 1, x: t.x, y: t.y, r: fr, ...common })
     }
     f++
   }
@@ -366,9 +372,21 @@ function bossStage(i: number): StageDef {
   }
 
   // 두 번째 마디부터 호위가 붙는다 — 보스만 노리면 호위가 남아 판이 안 끝난다.
+  //
+  // ★ 2026-08-31 — 호위는 **사람이다.** 형: "보스판에 제발 과녁 좀 없애. 과녁이 대체 왜 있어."
+  //   맞는 말이다. 귀신이 걸어오는 판에 과녁판이 세 개 서 있는 건 세계가 깨지는 것이고,
+  //   무엇보다 11판부터 이 게임에는 과녁이 없다(convertToFoes) — 보스판만 예외였다.
+  //   사수로 바꾸면 "보스만 보지 마라"는 원래 의도가 오히려 살아난다: 저쪽도 쏘기 때문이다.
+  //   대신 발사 주기를 넉넉히 벌린다 — 보스를 상대하는 중에 화살비가 오면 그건 예고가 아니라 벌이다.
   const escorts = Math.min(2, cycle - 1)
   for (let e = 0; e < escorts; e++) {
-    targets.push({ kind: 'static', x: reach * rng.range(0.35, 0.6), y: rng.range(1.2, 4.5), r: 0.55, score: 80 })
+    targets.push({
+      kind: 'archer', look: 1, score: 120,
+      x: reach * rng.range(0.35, 0.6), y: rng.range(1.2, 4.5), r: 0.6,
+      hp: Math.floor(P.enemy.convertHp),
+      fireDelay: P.enemy.windup + 3 + e * 2,
+      firePeriod: P.enemy.shootEvery * 2.2,
+    })
   }
   return {
     id,

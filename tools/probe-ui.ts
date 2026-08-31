@@ -446,6 +446,65 @@ for (const [cw, ch] of [[1280, 720], [800, 600], [390, 844], [360, 640]] as cons
   }
 }
 
+// ── HUD가 궁수를 덮는가 (형이 두 번 말한 문제) ────────────────────────
+//
+// 형: "화면 멀어졌을때 체력이랑 활당기는 바가 캐릭터를 자꾸 가리는데 이거 전에도 말했던거
+//      아니냐? (…) 활위치가 아니라 캐릭터 머리기준(체력바) 캐릭터 발기준(활시위바)로."
+//
+// 두 번 말했다는 건 한 번은 눈으로 고쳤고 재발했다는 뜻이다. 눈으로 고친 것은 재발한다.
+// 여기서 숫자로 못 박는다: **당기고 있는 프레임의 HUD 사각형 중 어느 것도 궁수의 몸을
+// 침범하지 않는다.** 활시위 바는 발 아래, 체력 바는 머리 위에 있어야 통과한다.
+{
+  console.log('\n── HUD가 궁수를 덮는가 (당기는 중) ──')
+  const { worldToScreenX: wsx, worldToScreenY: wsy } = await import('../src/render/camera.ts')
+  const { bowHandScreenX, bowHandScreenY } = await import('../src/render/stickman.ts')
+  const DRAW: InputFrame = { aimX: 20, aimY: 3, drawing: true, steady: false }
+
+  for (const [cw, ch] of [[390, 844], [360, 640], [844, 390], [1280, 720]] as const) {
+    for (const idx of [0, 48]) {
+      const canvas = makeCanvas(cw, ch)
+      const w = createWorld(getStage(idx), STATS)
+      const r = createRenderer(canvas as unknown as HTMLCanvasElement)
+      // 만작 근처까지 당긴 상태를 만든다 — 게이지는 당길 때만 그려진다.
+      for (let i = 0; i < 90; i++) {
+        step(w, DRAW)
+        w.events.length = 0
+      }
+      recordHud(canvas, r, w)
+      const cam = getCamera(r)
+
+      // 궁수의 몸 — 발(지면)에서 머리 위까지, 좌우로 활을 든 폭만큼.
+      const a = w.archer
+      const bx = wsx(cam, a.x)
+      const half = Math.max(10, cam.scale * 0.9)
+      const foot = wsy(cam, 0)
+      const head = wsy(cam, a.y + 0.5)
+      const name = `${idx + 1}판 ${cw}x${ch}`
+
+      // 조준 표식(hud.ts drawSight)은 **일부러** 활 손에 붙어 앞으로 뻗는다 — 그건 바가 아니라
+      // 손끝의 연장이라 몸에 닿는 게 정상이다. 손 근처의 얇은 선만 예외로 둔다.
+      const hx = bowHandScreenX(cam, w)
+      const hy = bowHandScreenY(cam, w)
+      let worst = ''
+      let worstArea = 0
+      for (const b of boxes) {
+        if (b.alpha < MIN_ALPHA) continue
+        const thin = b.y1 - b.y0 <= 10
+        const nearHand = Math.hypot((b.x0 + b.x1) / 2 - hx, (b.y0 + b.y1) / 2 - hy) < 70
+        if (thin && nearHand) continue
+        const ow = Math.min(b.x1, bx + half) - Math.max(b.x0, bx - half)
+        const oh = Math.min(b.y1, foot) - Math.max(b.y0, head)
+        if (ow < MIN_OVERLAP || oh < MIN_OVERLAP) continue
+        if (ow * oh > worstArea) {
+          worstArea = ow * oh
+          worst = `${b.label} (${fmt(ow)}x${fmt(oh)}px)`
+        }
+      }
+      check(worst === '', `${name} — HUD가 궁수를 안 덮는다`, worst === '' ? `몸 y ${fmt(head)}~${fmt(foot)}` : worst)
+    }
+  }
+}
+
 // ── 한 순 눈금 (docs/MEGAHIT.md §1) — 화살 숫자 아래에 줄이 하나 더 끼어든다 ──
 // 3중과 몰기를 따로 본다: 몰기는 칸이 자라고 '몰기' 글자까지 붙어 제일 넓다.
 for (const [hits, molgi, label] of [[3, false, '3중'], [5, true, '몰기']] as const) {
