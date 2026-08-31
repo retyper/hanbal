@@ -48,7 +48,7 @@ for (const f of files) {
   if (css !== '') sheets.set(f, css)
 }
 
-console.log('한 발 — 화면 스타일 프로브 (DOM 오버레이)\n')
+console.log('신궁 — 화면 스타일 프로브 (DOM 오버레이)\n')
 console.log(`  스타일시트 ${sheets.size}개: ${[...sheets.keys()].join(' · ')}\n`)
 
 // ── ① 문법 ────────────────────────────────────────────────────

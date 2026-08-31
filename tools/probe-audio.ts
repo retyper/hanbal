@@ -284,7 +284,7 @@ function fakeWorld(ev: unknown[]): unknown {
 }
 let tick = 0
 
-console.log('한 발 — 오디오 프로브 (합성 경로만. 실사운드는 받지 않는다)')
+console.log('신궁 — 오디오 프로브 (합성 경로만. 실사운드는 받지 않는다)')
 console.log(`master=${P.audio.master}  maxVoices=${P.audio.maxVoices}  endGain=${P.audio.endGain}`)
 
 // ── 1. 판 클리어 ──

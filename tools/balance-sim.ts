@@ -2186,7 +2186,7 @@ function main(): void {
   const affordable = Math.floor(args.budgetMs / (perRun * groups * 1.5))
   const runs = Math.max(20, Math.min(args.runs, affordable))
 
-  console.log(`한 발 — 헤드리스 밸런스 시뮬`)
+  console.log(`신궁 — 헤드리스 밸런스 시뮬`)
   console.log(`seed=${args.seed}  runs=${runs}/판  stages=${stages.length}  bots=${BOT_KINDS.length}` +
     (runs < args.runs ? `  (시간 예산으로 ${args.runs} → ${runs} 축소)` : '') +
     (args.preview ? '  +미저작 챕터 프리뷰' : '') +

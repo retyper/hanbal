@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "한 발 - 스틱맨 궁수 성장 게임",
+  "description": "신궁 - 스틱맨 궁수 성장 게임",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build && npm run budget",

@@ -344,7 +344,7 @@ function report(name: string, cw = 0, ch = 0): void {
   for (const h of outs) console.log(`  ⚠ ${h}`)
 }
 
-console.log('한 발 — UI 겹침 프로브 (HUD 사각형 전수 교차 검사)')
+console.log('신궁 — UI 겹침 프로브 (HUD 사각형 전수 교차 검사)')
 
 // ── 판 × 해상도: 판 시작 직후(자막 떠 있음)의 HUD ──
 // getStage(0) 첫 판 · getStage(10) 적 궁수가 서는 판 · getStage(9) 보스판.

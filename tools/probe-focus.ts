@@ -77,7 +77,7 @@ function shootAt(tx: number, ty: number, f: number, wind = 0): number {
 const DISTS = [10, 20, 35, 55, 80, 110]
 const AIM_Y = 2.0
 
-console.log('한 발 — 집중 프로브 (겨눈 자리에 꽂히는가)\n')
+console.log('신궁 — 집중 프로브 (겨눈 자리에 꽂히는가)\n')
 console.log(`  dragComp = ${P.focus.dragComp} · fillTime = ${P.focus.fillTime}s\n`)
 console.log(
   '  ' + '거리'.padStart(6) + '과녁반경'.padStart(10) +

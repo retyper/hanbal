@@ -210,7 +210,7 @@ function frame(canvas: Canvas, w: World, steps: number): void {
   r.draw(w, 0, 1 / 60, HUD_STATE)
 }
 
-console.log('한 발 — 렌더 프로브 (Canvas2D 기록 스텁)')
+console.log('신궁 — 렌더 프로브 (Canvas2D 기록 스텁)')
 
 // ── 1. 창 크기별 글자 크기 ──
 console.log('\n── 1. 창 크기별 HUD 글자 크기 ──')
