@@ -97,45 +97,76 @@ describe('갈림길 — 바람골', () => {
   })
 })
 
-describe('갈림길 — 화약고', () => {
+describe('갈림길 — 화약고 (형: "이걸 활용한 맵을 만들어야 퍼즐을 풀만할거아냐")', () => {
   const BOMB = card('bomb')
+  const R = P.target.bombRadius
 
-  it('과녁을 옮기거나 늘리지 않는다 — 표시만 한다', () => {
+  it('있는 과녁은 하나도 안 건드린다 — 놓는 것은 화약 상자뿐이다', () => {
     for (let n = 1; n <= 40; n++) {
       const stage = getStage(n - 1)
       const out = applyFork(stage, BOMB, n)
-      assert.equal(out.targets.length, stage.targets.length, `${n}판 과녁 수가 변했다`)
       for (let i = 0; i < stage.targets.length; i++) {
-        const a = stage.targets[i] as TargetSpec
-        const b = out.targets[i] as TargetSpec
-        assert.equal(b.x, a.x, `${n}판 ${i}번 과녁이 옮겨졌다`)
-        assert.equal(b.y, a.y)
-        assert.equal(b.kind, a.kind)
+        assert.deepEqual(out.targets[i], stage.targets[i], `${n}판 ${i}번 과녁이 바뀌었다`)
+      }
+      assert.ok(out.targets.length - stage.targets.length <= 1, `${n}판에 상자가 둘 이상`)
+    }
+  })
+
+  it('놓인 것은 상자(barrel)다 — 과녁이 아니다', () => {
+    for (let n = 1; n <= 40; n++) {
+      const stage = getStage(n - 1)
+      const added = applyFork(stage, BOMB, n).targets.slice(stage.targets.length)
+      for (const t of added) {
+        assert.equal(t.kind, 'barrel', `${n}판: 상자가 아니라 ${t.kind}`)
+        assert.equal(t.score, 0, '상자는 점수를 주지 않는다')
+        assert.equal(t.bomb, true)
       }
     }
   })
 
-  it('전부 폭탄이 되지는 않는다 — 한 발에 판이 지워지면 조준이 사라진다', () => {
+  it('★ 상자는 한 발로 둘 이상을 끊는 자리에만 놓인다 — 정답이 있어야 퍼즐이다', () => {
+    let placed = 0
     for (let n = 1; n <= 40; n++) {
       const stage = getStage(n - 1)
-      const out = applyFork(stage, BOMB, n)
-      const bombs = out.targets.filter((t) => t.bomb === true).length
-      const pool = stage.targets.filter((t) => t.kind !== 'boss' && t.kind !== 'bonus').length
-      if (pool < 2) continue
-      assert.ok(bombs >= 1, `${n}판에 폭탄이 하나도 없다`)
-      assert.ok(bombs < pool, `${n}판이 전부 폭탄이다 (${bombs}/${pool})`)
+      const added = applyFork(stage, BOMB, n).targets.slice(stage.targets.length)
+      for (const b of added) {
+        placed++
+        const cover = stage.targets.filter((t) => Math.hypot(t.x - b.x, t.y - b.y) <= R).length
+        assert.ok(cover >= 2, `${n}판: 상자가 ${cover}개만 문다`)
+      }
     }
+    assert.ok(placed >= 12, `상자가 놓인 판이 ${placed}개뿐 — 카드가 거의 안 뜬다`)
   })
 
-  it('보스·보급에는 화약을 안 싣는다', () => {
-    for (let n = 1; n <= 40; n++) {
-      for (const t of applyFork(getStage(n - 1), BOMB, n).targets) {
-        if (t.bomb === true) {
-          assert.notEqual(t.kind, 'boss')
-          assert.notEqual(t.kind, 'bonus')
+  it('상자가 과녁과 겹치거나 땅에 박히지 않는다', () => {
+    for (let n = 1; n <= 60; n++) {
+      const stage = getStage(n - 1)
+      const added = applyFork(stage, BOMB, n).targets.slice(stage.targets.length)
+      for (const b of added) {
+        const br = b.r ?? 0.3
+        assert.ok(b.y - br >= 0, `${n}판: 상자가 땅에 박혔다 (y=${b.y})`)
+        for (const t of stage.targets) {
+          const d = Math.hypot(t.x - b.x, t.y - b.y)
+          assert.ok(d >= br + (t.r ?? 0.3), `${n}판: 상자가 과녁과 겹쳤다 (${d.toFixed(2)})`)
         }
       }
     }
+  })
+
+  it('★ 사람이 없는 판에서는 화살이 정답 발수로 조여진다', () => {
+    let squeezed = 0
+    for (let n = 1; n <= 9; n++) {
+      const stage = getStage(n - 1)
+      const out = applyFork(stage, BOMB, n)
+      if (out.targets.length === stage.targets.length) continue
+      const b = out.targets[out.targets.length - 1] as TargetSpec
+      const covered = stage.targets.filter((t) => Math.hypot(t.x - b.x, t.y - b.y) <= R).length
+      // 정답: 상자 한 발 + 안 딸려 죽는 과녁 수. 그보다 적게 주면 못 깨는 판이 된다.
+      const need = out.targets.length - covered
+      assert.ok(out.arrows >= need, `${n}판: 화살 ${out.arrows} < 정답 ${need}`)
+      if (out.arrows < stage.arrows) squeezed++
+    }
+    assert.ok(squeezed >= 1, '화살이 조여진 판이 하나도 없다 — 그러면 그냥 쉬워지는 카드다')
   })
 })
 
@@ -209,7 +240,8 @@ describe('갈림길 — 단발', () => {
       const stage = getStage(n - 1)
       if (stage.arrows < stage.targets.length) continue // 원래부터 그런 판은 이 검사의 몫이 아니다
       const out = applyFork(stage, SINGLE, n)
-      const killable = out.targets.filter((t) => t.kind !== 'bonus').length
+      // 화약 상자는 과녁이 아니다 — 안 터뜨려도 판은 끝난다 (sim/types.ts 'barrel').
+      const killable = out.targets.filter((t) => t.kind !== 'bonus' && t.kind !== 'barrel').length
       assert.ok(out.arrows >= killable, `${n}판: 화살 ${out.arrows} < 과녁 ${killable}`)
     }
   })
@@ -250,12 +282,13 @@ describe('갈림길 — 결정론 (A1)', () => {
     }
   })
 
-  it('화약고는 판 번호가 다르면 실리는 자리도 달라진다', () => {
+  it('화약고는 같은 판이면 언제나 같은 자리다 — 정답은 흔들리지 않는다', () => {
+    // 2026-08-31 이전에는 무작위였다. 이제는 **가장 많이 무는 자리**를 고르므로
+    // 판 번호를 바꿔도 답이 같은 게 정상이다 — 퍼즐의 정답이 판 번호로 바뀌면 그건 뽑기다.
     const BOMB = card('bomb')
-    const seen = new Set<string>()
-    for (const n of [3, 13, 23, 33]) {
-      seen.add(applyFork(getStage(2), BOMB, n).targets.map((t) => (t.bomb === true ? '1' : '0')).join(''))
-    }
-    assert.ok(seen.size > 1, '판 번호를 시드에 안 섞으면 모든 화약고 판이 같은 모양이 된다')
+    const shape = (n: number): string =>
+      applyFork(getStage(12), BOMB, n).targets.map((t) => (t.bomb === true ? '1' : '0')).join('')
+    assert.equal(shape(13), shape(13))
+    assert.equal(shape(13).includes('1'), true, '13판에 폭탄이 안 실렸다 — 검사가 성립하지 않는다')
   })
 })

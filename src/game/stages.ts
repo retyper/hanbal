@@ -97,7 +97,10 @@ const LAYOUTS: readonly Layout[] = [
   { teach: '높이 차가 커진다 — 낙차를 몸으로 읽는다', arrows: 7, hits: 3, spots: [{ x: 15, y: 1.5 }, { x: 20, y: 4.2 }, { x: 25, y: 2.0 }] },
   { teach: '더 멀리. 만작이 왜 필요한지 알게 된다', arrows: 7, hits: 3, spots: [{ x: 22, y: 1.7 }, { x: 27, y: 3.0 }, { x: 32, y: 2.2 }] },
   { teach: '낮은 과녁 — 아래로도 겨눌 수 있다', arrows: 7, hits: 3, spots: [{ x: 18, y: 0.6 }, { x: 24, y: 2.4 }, { x: 30, y: 1.1 }] },
-  { teach: '넷. 화살을 아껴 쓰기 시작한다', arrows: 8, hits: 4, spots: [{ x: 14, y: 1.6 }, { x: 20, y: 3.2 }, { x: 26, y: 1.8 }, { x: 32, y: 2.9 }] },
+  // ★ 화약통 소개 (docs/GAP.md — 앵그리버드: "한 발이 구조를 무너뜨린다").
+  // 화살 4 · 과녁 4 — 하나씩 쏘면 **한 발도 못 빗나가야** 겨우 깬다. 통을 터뜨리면 한 발이다.
+  // 여기서는 벌하지 않고 가르친다. 조이는 건 16판부터.
+  { teach: '화약통 — 터뜨리면 둘레가 같이 간다', arrows: 4, hits: 3, spots: [{ x: 20, y: 1.8, kind: 'barrel' }, { x: 22.15, y: 1.8 }, { x: 21.07, y: 3.66 }, { x: 18.93, y: 3.66 }] },
   { teach: '챕터 1 종합', arrows: 8, hits: 4, spots: [{ x: 16, y: 0.9 }, { x: 22, y: 3.6 }, { x: 28, y: 1.7 }, { x: 34, y: 2.8 }] },
 
   // ── 챕터 2 — 공중 과녁과 연쇄 ────────────────────────────────
@@ -106,10 +109,13 @@ const LAYOUTS: readonly Layout[] = [
   { teach: '한 발로 여럿. 순서를 설계한다', arrows: 6, hits: 3, spots: [{ x: 20, y: 6.0, kind: 'aerial' }, { x: 20, y: 4.2 }, { x: 20, y: 2.6 }, { x: 20, y: 1.2 }] },
   { teach: '연쇄 기둥이 둘', arrows: 7, hits: 4, spots: [{ x: 15, y: 5.2, kind: 'aerial' }, { x: 15, y: 2.8 }, { x: 24, y: 5.6, kind: 'aerial' }, { x: 24, y: 3.0 }] },
   { teach: '연쇄 사이를 벌린다 — 조준이 정확해야 이어진다', arrows: 7, hits: 3, spots: [{ x: 22, y: 6.4, kind: 'aerial' }, { x: 22, y: 4.0 }, { x: 22, y: 1.8 }] },
-  { teach: '공중과 지상을 섞는다', arrows: 7, hits: 4, spots: [{ x: 14, y: 1.5 }, { x: 20, y: 5.8, kind: 'aerial' }, { x: 20, y: 3.0 }, { x: 27, y: 1.9 }] },
+  // ★ 통은 적으로 변환되지 않는다 (convertToFoes). 그래서 이 판은 **사수 셋 + 화약통**이다 —
+  // 사수는 두세 발을 버티지만 폭발에는 한 번에 죽는다. 스나이퍼 게임의 '환경 처치'다.
+  { teach: '사수 곁의 화약통 — 사람보다 통을 노려라', arrows: 3, hits: 3, spots: [{ x: 22, y: 1.9, kind: 'barrel' }, { x: 24.15, y: 1.9 }, { x: 23.07, y: 3.76 }, { x: 20.93, y: 3.76 }] },
   { teach: '높은 연쇄 — 화살이 올라가는 데 시간이 걸린다', arrows: 7, hits: 3, spots: [{ x: 26, y: 7.2, kind: 'aerial' }, { x: 26, y: 4.6 }, { x: 26, y: 2.2 }] },
   { teach: '작은 연쇄 알갱이', arrows: 7, hits: 4, spots: [{ x: 21, y: 6.0, kind: 'aerial' }, { x: 21, y: 4.4, size: 0.8 }, { x: 21, y: 3.0, size: 0.8 }, { x: 21, y: 1.6, size: 0.8 }] },
-  { teach: '기둥 셋. 어디부터 무너뜨릴까', arrows: 8, hits: 5, spots: [{ x: 13, y: 4.8, kind: 'aerial' }, { x: 13, y: 2.4 }, { x: 21, y: 5.6, kind: 'aerial' }, { x: 21, y: 2.8 }, { x: 29, y: 5.0, kind: 'aerial' }, { x: 29, y: 2.5 }] },
+  // ★ 통이 둘 — 화살은 정답 두 발 + 여유. 하나씩 쏘면 절대 모자란다.
+  { teach: '통이 둘이다. 한 발씩 나눠 쓴다', arrows: 3, hits: 4, spots: [{ x: 17, y: 1.9, kind: 'barrel' }, { x: 18.07, y: 3.76 }, { x: 15.93, y: 3.76 }, { x: 27, y: 1.9, kind: 'barrel' }, { x: 28.07, y: 3.76 }, { x: 25.93, y: 3.76 }] },
   { teach: '챕터 2 종합 — 보로로로록', arrows: 8, hits: 5, spots: [{ x: 18, y: 7.0, kind: 'aerial' }, { x: 18, y: 5.0 }, { x: 18, y: 3.2 }, { x: 26, y: 6.0, kind: 'aerial' }, { x: 26, y: 3.8 }, { x: 26, y: 1.8 }] },
 
   // ── 챕터 3 — 이동 과녁과 바람 ───────────────────────────────
@@ -139,7 +145,9 @@ const LAYOUTS: readonly Layout[] = [
   { teach: '관통 + 연쇄', arrows: 7, hits: 4, spots: [{ x: 18, y: 5.4, kind: 'aerial' }, { x: 18, y: 3.0, kind: 'pierceable' }, { x: 24, y: 3.0, kind: 'pierceable' }, { x: 24, y: 1.4 }] },
   { teach: '바람 속의 관통', arrows: 7, hits: 3, wind: -3.5, spots: [{ x: 17, y: 2.4, kind: 'pierceable' }, { x: 24, y: 2.4, kind: 'pierceable' }, { x: 31, y: 2.4, kind: 'pierceable' }] },
   { teach: '움직이는 관통줄', arrows: 7, hits: 3, spots: [{ x: 18, y: 2.6, kind: 'pierceable', ampY: 1.2, freq: 0.24 }, { x: 25, y: 2.6, kind: 'pierceable', ampY: 1.2, freq: 0.24 }, { x: 32, y: 2.6, kind: 'pierceable' }] },
-  { teach: '두 층 — 위와 아래를 나눠 푼다', arrows: 8, hits: 4, spots: [{ x: 17, y: 5.8, kind: 'aerial' }, { x: 23, y: 5.8, kind: 'aerial' }, { x: 17, y: 2.2 }, { x: 23, y: 2.2 }] },
+  // ★ 36판+ 셋에 하나는 정예(명중률 2배)다. 그래도 통 한 발이면 셋이 같이 간다 —
+  // **깊어질수록 통의 값이 커진다.** 이게 이 메커닉의 성장 곡선이다.
+  { teach: '깊은 곳에서도 답은 하나 — 통', arrows: 3, hits: 3, spots: [{ x: 24, y: 2.0, kind: 'barrel' }, { x: 26.15, y: 2.0 }, { x: 25.07, y: 3.86 }, { x: 22.93, y: 3.86 }] },
   { teach: '멀리 + 바람 + 이동', arrows: 8, hits: 4, wind: 4.0, spots: [{ x: 26, y: 2.0, kind: 'moving', ampY: 1.6, freq: 0.35 }, { x: 33, y: 3.4 }, { x: 39, y: 2.2 }, { x: 20, y: 1.4 }] },
   { teach: '큰 연쇄 — 한 발로 화면을 무너뜨린다', arrows: 8, hits: 5, spots: [{ x: 22, y: 7.6, kind: 'aerial' }, { x: 22, y: 5.8 }, { x: 22, y: 4.2 }, { x: 22, y: 2.8 }, { x: 22, y: 1.4 }] },
   { teach: '챕터 4 종합 — 지금까지 배운 전부', arrows: 8, hits: 5, wind: -3.5, spots: [{ x: 18, y: 6.4, kind: 'aerial' }, { x: 18, y: 3.6, kind: 'pierceable' }, { x: 25, y: 3.6, kind: 'pierceable' }, { x: 31, y: 2.0, kind: 'moving', ampX: 2.2, freq: 0.3 }, { x: 37, y: 3.2 }] },
@@ -153,7 +161,8 @@ const LAYOUTS: readonly Layout[] = [
   { teach: '하늘에서 연쇄를 떨어뜨린다', arrows: 7, hits: 2, spots: [{ x: 64, y: 7.4, kind: 'aerial' }, { x: 64, y: 2.0 }] },
   { teach: '먼 화살일수록 바람을 오래 맞는다', arrows: 8, hits: 2, wind: 4, spots: [{ x: 62, y: 2.0 }, { x: 80, y: 2.6 }] },
   { teach: '멀고 작다 — 만작이 아니면 흔들린다', arrows: 8, hits: 2, spots: [{ x: 70, y: 2.0, size: 0.8 }, { x: 88, y: 2.8, size: 0.8 }] },
-  { teach: '가까운 것과 먼 것 — 손맛을 갈아끼운다', arrows: 8, hits: 3, spots: [{ x: 17, y: 2.0 }, { x: 52, y: 1.8 }, { x: 86, y: 2.4 }] },
+  // ★ 곡사 + 통. 62m 밖의 통을 포물선으로 맞혀야 한다 — 이 챕터가 가르친 것과 화약이 만난다.
+  { teach: '먼 통 하나가 셋을 끊는다 — 하늘로 겨눠라', arrows: 4, hits: 3, spots: [{ x: 62, y: 2.3, kind: 'barrel' }, { x: 64.15, y: 2.3 }, { x: 63.08, y: 4.16 }, { x: 60.92, y: 4.16 }] },
   { teach: '역풍의 곡사 — 깃발을 두 번 봐라', arrows: 8, hits: 2, wind: -5, spots: [{ x: 68, y: 2.2 }, { x: 84, y: 1.8 }] },
   { teach: '먼 곳에서 움직인다 — 낙하 시간만큼 앞을 본다', arrows: 8, hits: 2, spots: [{ x: 72, y: 2.6, kind: 'moving', size: 1.2, ampX: 3.0, freq: 0.18 }, { x: 58, y: 1.8 }] },
   { teach: '극원거리 — 화살이 뜬 채로 두 번 숨 쉰다', arrows: 9, hits: 2, spots: [{ x: 92, y: 2.2 }, { x: 112, y: 2.8 }] },
@@ -225,7 +234,10 @@ function convertToFoes(base: StageDef, i: number): StageDef {
   const n = i + 1
   const rng = makeRng(seedFrom(`hanbal.enemy.${n}`))
   const hp = Math.floor(P.enemy.convertHp * (n >= 31 ? 1.5 : 1))
-  const foes = base.targets.filter((t2) => t2.kind !== 'bonus' && t2.kind !== 'charger').length
+  // 통(bomb)은 사람이 아니라 **환경**이다 — 사수 수에도 안 들어가고 적으로도 안 바뀐다.
+  const foes = base.targets.filter(
+    (t2) => t2.kind !== 'bonus' && t2.kind !== 'charger' && t2.kind !== 'barrel',
+  ).length
   const period = P.enemy.shootEvery * Math.min(2.5, 1 + (foes - 1) * 0.4)
   const specs: TargetSpec[] = []
   let f = 0
@@ -237,6 +249,12 @@ function convertToFoes(base: StageDef, i: number): StageDef {
       continue
     }
     if (t.kind === 'charger') { specs.push(t); continue }
+    // ★ 화약 상자는 그대로 둔다 (2026-08-31, docs/GAP.md).
+    // 형: "화공 화약고 이런거 (…) 이걸 활용한 맵을 만들어야 퍼즐을 풀만할거아냐."
+    // 저작된 통까지 사수로 바꿔버리면 11판부터는 폭발이 놓일 자리가 **판 어디에도 없다** —
+    // 실제로 그랬고, 그래서 화약 메커닉이 실험장 밖으로 나오지 못했다.
+    // 사수는 두세 발을 버티지만 폭발에는 한 번에 죽는다. 통이 곧 이 판의 정답이다.
+    if (t.kind === 'barrel') { specs.push(t); continue }
     // 깊이별 정예화 (형: "명중률 높은 적·방어구 입은 적"): 36판+ 셋에 하나 정예,
     // 41판+ 셋에 하나 갑옷(헤드샷만 통한다).
     const elite = n >= 36 && f % 3 === 1

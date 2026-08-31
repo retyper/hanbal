@@ -27,6 +27,7 @@ import { makeRng, seedFrom } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import type { ArrowKindId } from './arrows.ts'
 import { BOSS_EVERY } from './stages.ts'
+import { angularSize, HAND_X, HAND_Y } from './stagekit.ts'
 import type { StageDef, TargetSpec } from '../sim/types.ts'
 
 export type ForkId = 'fire' | 'bomb' | 'wind' | 'supply' | 'scout' | 'single'
@@ -59,7 +60,7 @@ const FIRE: ForkOption = {
 }
 const BOMB: ForkOption = {
   id: 'bomb', title: '화약고', origin: '火藥庫',
-  desc: '과녁 몇에 화약이 실린다 — 하나를 터뜨리면 둘레가 같이 간다.',
+  desc: '화약 상자가 놓인다 — 상자를 맞히면 둘레가 같이 간다. 화살은 그만큼 적게 준다.',
 }
 const WIND: ForkOption = {
   id: 'wind', title: '바람골', origin: '風谷',
@@ -90,14 +91,25 @@ const POOL: readonly ForkOption[] = [FIRE, BOMB, WIND, SUPPLY, SCOUT, SINGLE]
 
 /** 이 판에 이 카드를 낼 수 있는가. 낼 수 없는 카드는 뽑기에서 아예 빠진다. */
 function fits(opt: ForkOption, stage: StageDef): boolean {
-  if (opt.id === 'bomb') return killable(stage).length >= 2
+  // 화약고는 **한 발로 둘 이상을 끊을 수 있어야** 문제가 된다.
+  // 과녁이 서로 반경 밖으로 흩어진 판에서는 폭탄이 그냥 평범한 과녁이라, 카드를 아예 안 낸다
+  // (골랐는데 아무 일도 안 일어나는 카드가 밀집의 죽은 이유였다).
+  if (opt.id === 'bomb') return bestBarrel(stage, 1) !== null
   if (opt.id === 'single') return stage.arrows >= 5
   return true
 }
 
-/** 화약고를 실을 수 있는 과녁 — 보스·보급은 뺀다 (하나는 대결이고 하나는 상이다). */
-function killable(stage: StageDef): readonly TargetSpec[] {
-  return stage.targets.filter((t) => t.kind !== 'boss' && t.kind !== 'bonus')
+/**
+ * 한 발에 확실히 **죽는** 과녁인가.
+ *
+ * 이게 왜 중요한가: 폭탄은 **죽는 순간에만** 터진다 (sim/target.ts burst).
+ *   - 공중 과녁(aerial)은 맞아도 안 죽고 떨어지기만 한다 → 화약을 실어도 안 터진다.
+ *   - 보스·궁수는 체력이 있어 한 발에 안 죽는다 → 터질 수도, 안 터질 수도 있다.
+ * 둘 중 하나에 화약을 실으면 "폭탄인데 안 터지는" 판이 되고, 그건 퍼즐이 아니라 버그로 읽힌다.
+ */
+function dies(t: TargetSpec): boolean {
+  return t.kind === 'static' || t.kind === 'pierceable' || t.kind === 'moving'
+    || t.kind === 'charger' || t.kind === 'bonus' || t.kind === 'barrel'
 }
 
 /** 이 판 번호(1-based)에 갈림길을 보여줄 것인가. 보스판은 이미 저작된 대결이라 뺀다. */
@@ -185,24 +197,83 @@ export function applyFork(stage: StageDef, opt: ForkOption, n: number): StageDef
  * 화약고 — 있는 과녁 **몇 개에 표시만 한다.** 자리를 옮기지도, 새로 놓지도 않는다.
  * 밀집이 죽은 이유가 여기 있다: 판의 배치는 이미 저작(또는 절차 생성)으로 균형이 잡혀 있고,
  * 거기에 손을 대는 순간 지면·건물·다른 과녁과의 관계가 전부 깨진다. 표시는 아무것도 안 깬다.
+ *
+ * ── 2026-08-31: 무작위 → **퍼즐** ────────────────────────────────────────
+ * 형: "화공 화약고 이런거 나쁘진 않는데 이걸 활용한 맵을 만들어야 퍼즐을 풀만할거아냐.
+ *      슈팅이면서도 퍼즐인게임이야이거."
+ *
+ * 맞다. 그리고 첫 구현이 심심했던 이유가 정확히 그거였다 — 폭탄을 **아무 데나** 얹고
+ * 화살은 그대로 줬으니, 골라도 판은 그냥 **쉬워지기만** 했다. 대가 없는 이득은 결정이 아니다.
+ * 이제 둘을 바꾼다 (docs/GAP.md 앵그리버드 항):
+ *   ① 폭탄은 **가장 많이 무는 자리**에 실린다 — 그래야 "정답"이 존재한다.
+ *   ② 화살은 **그 정답에 맞춰 줄어든다** — 하나씩 쏘면 못 깬다. 그래야 문제가 된다.
  */
 function applyBomb(stage: StageDef, n: number): StageDef {
-  const pool = killable(stage)
-  if (pool.length < 2) return stage
+  const spot = bestBarrel(stage, n)
+  if (spot === null) return stage
+  const R = P.target.bombRadius
+  const covered = stage.targets.filter(
+    (t) => dies(t) && Math.hypot(t.x - spot.x, t.y - spot.y) <= R,
+  ).length
+  const out: StageDef = { ...stage, targets: [...stage.targets, spot] }
+
+  // ── 화살 예산 = 정답 발수 + 여유 ──
+  // 딸려 죽는 것은 화살이 안 든다. 그러니 최소 발수는 (전체 − 딸려 죽는 것)이다.
+  // 통 자신은 한 발이 드는데, 그 한 발이 covered 개를 같이 데려간다.
+  // 버티는 적(보스·궁수)이 있는 판은 한 발로 안 죽으므로 이 셈이 성립하지 않는다 — 안 조인다.
+  if (stage.targets.some((t) => !dies(t))) return out
+  const need = out.targets.length - covered
+  const arrows = Math.max(2, Math.min(stage.arrows, need + Math.floor(P.fork.bombSlack)))
+  return arrows >= stage.arrows ? out : { ...out, arrows }
+}
+
+/**
+ * 화약통을 놓을 **가장 좋은 자리**를 격자로 찾는다.
+ *
+ * 밀집(폐기)의 교훈: 자리를 무작위로 뽑고 나중에 검사하면 못 놓는 판이 생긴다.
+ * 여기서는 반대로 **놓을 수 있는 자리만 후보로 만들고** 그중 가장 많이 무는 곳을 고른다:
+ *   · 어떤 과녁과도 안 겹친다 (반경 합 + 여유)
+ *   · 지면 위에 뜬다
+ *   · 반경(P.target.bombRadius) 안에 한 발로 죽는 과녁이 둘 이상 있다
+ * 하나도 없으면 null — 그러면 이 카드는 애초에 안 뜬다 (fits).
+ *
+ * 결정론(A1): 격자 순회는 순수 계산이다. 난수는 동점을 가르는 데만 쓴다.
+ */
+function bestBarrel(stage: StageDef, n: number): TargetSpec | null {
+  const R = P.target.bombRadius
+  const h = angularSize(n)
+  const rAt = (x: number, y: number): number => h * Math.hypot(x - HAND_X, y - HAND_Y)
+  const xs = stage.targets.map((t) => t.x)
+  if (xs.length === 0) return null
   const rng = makeRng(seedFrom(`hanbal.fork.bomb.${n}`))
-  const want = Math.max(1, Math.min(pool.length - 1, Math.round(pool.length * P.fork.bombShare)))
-  // 어느 것에 실을지 고른다. 인덱스 집합으로 골라야 같은 과녁을 두 번 안 고른다.
-  const idx = new Set<number>()
-  for (let guard = 0; idx.size < want && guard < pool.length * 8; guard++) {
-    idx.add(rng.int(0, pool.length - 1))
+  const step = P.fork.bombStep
+  const x0 = Math.min(...xs) - R
+  const x1 = Math.max(...xs) + R
+
+  let best: TargetSpec | null = null
+  // **둘 이상**을 물지 못하면 그건 그냥 또 하나의 표적이다 — 퍼즐이 아니다.
+  // 그래서 시작값이 2다 (1을 무는 자리는 후보에도 못 든다).
+  let bestCover = 2
+  for (let x = x0; x <= x1; x += step) {
+    for (let y = P.fork.bombYMin; y <= P.fork.bombYMax; y += step) {
+      const r = rAt(x, y)
+      if (y - r < P.fork.groundClear) continue
+      let cover = 0
+      let clear = true
+      for (const t of stage.targets) {
+        const d = Math.hypot(t.x - x, t.y - y)
+        if (d < r + (t.r ?? 0.3) + P.fork.bombGap) { clear = false; break }
+        // 폭발은 **버티는 적도 한 번에** 죽인다 (sim/target.ts burstAt) — 그게 통의 값이다.
+        // 공중 과녁만 떨어질 뿐인데, 떨어지면 결국 죽으므로 그것도 센다.
+        if (d <= R) cover++
+      }
+      if (!clear || cover < bestCover) continue
+      if (cover === bestCover && best !== null && rng.next() < 0.5) continue
+      bestCover = cover
+      best = { kind: 'barrel', x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100, r, score: 0, bomb: true }
+    }
   }
-  const chosen = new Set<TargetSpec>()
-  let i = 0
-  for (const t of pool) {
-    if (idx.has(i)) chosen.add(t)
-    i++
-  }
-  return { ...stage, targets: stage.targets.map((t) => (chosen.has(t) ? { ...t, bomb: true } : t)) }
+  return best
 }
 
 /**

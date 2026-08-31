@@ -18,6 +18,7 @@ import { mountGrowth, showOfflineGain, showRunGain } from './ui/growth.ts'
 import { mountFork, mountLoadout, mountSupply, showRunOver } from './ui/loadout.ts'
 import { mountSandbox } from './ui/sandbox.ts'
 import { mountQuiver } from './ui/quiver.ts'
+import { mountSteady } from './ui/steady.ts'
 
 const el = document.getElementById('game')
 if (!(el instanceof HTMLCanvasElement)) {
@@ -123,9 +124,14 @@ const loop = createLoop(el, {
 
 // 성장 화면이 스탯을 바꾸면 writeSave가 통지하고, 루프가 그걸 받아 활에 넣는다.
 // 그래서 여기 onChange는 비워 둔다 — 통지 경로가 둘이면 반드시 어긋난다.
+// 호흡정지 버튼 — HUD 줄의 맨 왼쪽에 선다. 성장 버튼보다 **먼저** 붙일 이유는 없다
+// (steady.ts 가 prepend 한다). 손가락 화면에서만 보인다.
+mountSteady(overlay, (on) => loop.steady(on))
+
 mountGrowth(overlay, save, () => {}, {
   muted: () => loop.muted(),
   toggle: () => loop.toggleMute(),
+  levelup: () => loop.ui('levelup'),
 })
 
 // 수집 화면 — **잠긴 칸을 보여주는 것**이 이 화면의 목적이다 (HOOK ★2).

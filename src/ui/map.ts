@@ -85,6 +85,8 @@ const CSS = `
 .map-node.ckpt.unlocked:hover { background: #ffc46a; border-color: #ffc46a; }
 .map-node.ckpt.unlocked:active { background: #e69d33; }
 .map-node.ckpt.locked { opacity: .45; }
+/* 무장 — 한 번 더 누르면 간다. 위험색인 이유: 지금 여정을 접는 일이기 때문이다. */
+.map-node.ckpt.arm { background: #ff6a45; border-color: #ff6a45; color: #241a06; }
 .map-node.busy { cursor: default; }
 .map-foot { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 16px; color: var(--mute); font-size: 13px; }
 `
@@ -181,6 +183,16 @@ export function mountMap(
     wrap.appendChild(lab)
   }
 
+  /** 여정 중 점프는 두 번 눌러야 간다. 무장한 판 번호(0=없음)와 해제 타이머. */
+  const ARM_MS = 4000
+  let armed = 0
+  let armTimer = 0
+  const disarm = (): void => {
+    window.clearTimeout(armTimer)
+    if (armed !== 0) nodes.find((q) => q.n === armed)?.el.classList.remove('arm')
+    armed = 0
+  }
+
   const nodes: NodeEl[] = []
   for (let n = 1; n <= CAMPAIGN; n++) {
     const { x, y } = centerOf(n)
@@ -198,8 +210,21 @@ export function mountMap(
     if (isCkpt) {
       el.classList.add('ckpt')
       el.addEventListener('click', () => {
-        if (curRunActive) return
         if (n - 1 > checkpointStage(curBossKills)) return
+        // ── 여정 중이라면 두 번 눌러야 간다 ──
+        // 형: "지도에서 해당 스테이지로 가는게 나는 안된다." 안 됐던 게 맞다 — 예전엔
+        // 여정 중이면 그냥 무시했는데, 여정은 출정하는 순간 켜져서 죽거나 접기 전엔 안 꺼진다.
+        // 즉 **지도를 볼 만한 상황에서는 언제나 막혀 있었다.** 이제 간다. 다만 지금 여정을
+        // 접는 일이라 실수로 잃지 않게 확인을 한 번 받는다 (성장 화면의 '기록 삭제'와 같은 문법).
+        if (curRunActive && armed !== n) {
+          disarm()
+          armed = n
+          el.classList.add('arm')
+          armTimer = window.setTimeout(disarm, ARM_MS)
+          o.toast(`${n}판부터 새로 시작한다 — 한 번 더 누르면 지금 여정은 접는다`, ARM_MS)
+          return
+        }
+        disarm()
         onJumpFn?.(n - 1)
         o.hide(true)
       })
@@ -229,7 +254,7 @@ export function mountMap(
   const foot = document.createElement('div')
   foot.className = 'map-foot'
   foot.textContent = '노란 칸이 지금 열린 체크포인트다 — 눌러서 그 판부터 새 여정을 연다. '
-    + '여정이 진행 중일 때는 옮길 수 없다.'
+    + '여정 중에 옮기면 지금 여정은 거기서 접힌다 — 두 번 눌러 확인한다.'
   panel.appendChild(foot)
 
   const open = document.createElement('button')
@@ -274,9 +299,9 @@ export function mountMap(
       el.classList.toggle('full', s >= STAR_MAX)
       if (isCkpt) {
         const unlocked = n - 1 <= checkpointStage(curBossKills)
-        el.classList.toggle('unlocked', unlocked && !curRunActive)
+        el.classList.toggle('unlocked', unlocked)
         el.classList.toggle('locked', !unlocked)
-        el.classList.toggle('busy', unlocked && curRunActive)
+        el.classList.toggle('busy', false)
       }
       span.textContent = String(n)
     }

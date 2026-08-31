@@ -28,6 +28,9 @@ import type { Popups } from './popups.ts'
 /** 링버퍼 용량은 런타임에 못 늘린다. 노브의 상한만큼 미리 잡고, 실사용 상한은 P를 따른다. */
 const PARTICLE_CAP = SPEC.chain.maxParticles.max
 /** 궤적 유령 슬롯 — 한 판 화살이 5~8발이라 8이면 겹치지 않는다 (GDD 6장) */
+/** 동시에 남아 있는 시체 수. 넘치면 가장 오래된 것부터 밀어낸다. */
+const CORPSES = 12
+
 const GHOSTS = 8
 /** 파열 링 슬롯. 한 번의 연쇄가 한꺼번에 8개를 터뜨려도 겹치지 않는다. */
 const RINGS = 12
@@ -170,6 +173,24 @@ for (let i = 0; i <= 64; i++) NUM.push(String(i))
 
 export interface Fx {
   readonly cap: number
+  /** ── 쓰러진 적 (형: "퍽하고 뜨거나 날아가거나") ──────────────────────
+   * 링버퍼. sim이 넘긴 충격(SimEvent 'foe_down')을 여기서 **월드 좌표 물리**로 굴린다:
+   * 중력으로 떨어지고, 지면에서 한 번 튀고, 마찰로 멎고, 누운 채 잠시 남았다 사라진다.
+   * 판정에 아무 영향이 없으므로 결정론과 무관하다 (A1) — 실시간 dt로 돈다. */
+  cHead: number
+  cX: Float32Array
+  cY: Float32Array
+  cVx: Float32Array
+  cVy: Float32Array
+  cAng: Float32Array
+  cSpin: Float32Array
+  cR: Float32Array
+  /** 쓰러진 뒤 흐른 시간 (s). 음수면 빈 칸이다. */
+  cAge: Float32Array
+  /** 멎은 뒤 흐른 시간 (s). 0 미만이면 아직 구르는 중. */
+  cRest: Float32Array
+  cLook: Int8Array
+
   head: number
   /** 파티클 SoA — 월드 좌표(m)라 카메라가 움직여도 붙어 있는다 */
   x: Float32Array
@@ -316,6 +337,18 @@ let active: Fx | null = null
 export function createFx(): Fx {
   const f: Fx = {
     cap: PARTICLE_CAP,
+    cHead: 0,
+    cX: new Float32Array(CORPSES),
+    cY: new Float32Array(CORPSES),
+    cVx: new Float32Array(CORPSES),
+    cVy: new Float32Array(CORPSES),
+    cAng: new Float32Array(CORPSES),
+    cSpin: new Float32Array(CORPSES),
+    cR: new Float32Array(CORPSES),
+    cAge: new Float32Array(CORPSES).fill(-1),
+    cRest: new Float32Array(CORPSES).fill(-1),
+    cLook: new Int8Array(CORPSES),
+
     head: 0,
     pHead: 0,
     pId: new Int32Array(BODY_PINS).fill(-1),
@@ -669,6 +702,9 @@ export function pumpEvents(fx: Fx, w: World): void {
       if (e.lost > 0) pushPopup(fx.pop, e.x, e.y, `화살 -${e.lost}`, 'crit')
       spawn(fx, e.x, e.y, FX.missBurst, KIND_MISS, FX.critSpeed, FX.missTtl, 1.4)
       fx.hitStop += P.hit.stopMs * 0.001
+    } else if (e.t === 'foe_down') {
+      // 적이 쓰러졌다 — 시체를 하나 세운다 (형: "죽었을때 없어져버리지 말고").
+      spawnCorpse(fx, e.x, e.y, e.vx, e.vy, e.mass, e.look, e.r)
     } else if (e.t === 'burst') {
       // ★ 폭발. 예전에는 딸려 죽은 과녁의 chain 이벤트만 있어서, 아무것도 안 물리면
       // 폭발이 일어난 흔적이 화면에 하나도 안 남았다 (형의 지적).
@@ -724,6 +760,144 @@ export function pumpEvents(fx: Fx, w: World): void {
 }
 
 /** 지금 이펙트 시간이 흐르는 속도. 정중앙 직후에만 1보다 작다. */
+
+/**
+ * 적이 쓰러졌다 — 시체를 하나 세운다.
+ *
+ * 초속은 **운동량 보존의 흉내**다: 화살의 속도 × 질량비 × 전달률. 무거운 살(육량전 mass 2.2)이
+ * 가벼운 살보다 몸을 더 밀어낸다 — 형이 말한 "화살맞은 에너지와 물체의 질량에 따라"가 이 줄이다.
+ * 위로는 살짝 띄운다(퍽 하고 뜨는 그 한 순간). 가로 속도는 회전으로도 바뀐다.
+ */
+function spawnCorpse(
+  f: Fx, x: number, y: number, vx: number, vy: number, mass: number, look: number, r: number,
+): void {
+  const i = f.cHead
+  f.cHead = (f.cHead + 1) % CORPSES
+  const k = P.render.corpsePush * mass
+  let cvx = vx * k
+  let cvy = vy * k + P.render.corpseLift
+  const sp = Math.hypot(cvx, cvy)
+  const max = P.render.corpseMaxV
+  if (sp > max) {
+    cvx = (cvx / sp) * max
+    cvy = (cvy / sp) * max
+  }
+  f.cX[i] = x
+  f.cY[i] = y
+  f.cVx[i] = cvx
+  f.cVy[i] = cvy
+  f.cAng[i] = 0
+  f.cSpin[i] = cvx * P.render.corpseSpin
+  f.cR[i] = r
+  f.cAge[i] = 0
+  f.cRest[i] = -1
+  f.cLook[i] = look
+}
+
+/**
+ * 시체를 한 프레임 굴린다. 중력 → 지면 충돌(한 번 튀고) → 마찰 → 멎음 → 여운 → 사라짐.
+ * 실시간 dt로 돈다: 시체는 판정과 무관하고, sim 시계에 묶으면 히트스톱 동안 공중에 얼어붙는다.
+ */
+function stepCorpses(f: Fx, dt: number): void {
+  const g = P.arrow.gravity
+  for (let i = 0; i < CORPSES; i++) {
+    const age = f.cAge[i] ?? -1
+    if (age < 0) continue
+    f.cAge[i] = age + dt
+    const rest = f.cRest[i] ?? -1
+    if (rest >= 0) {
+      // 멎었다 — 누운 채 여운을 센다.
+      const nr = rest + dt
+      f.cRest[i] = nr
+      if (nr > P.render.corpseLinger + P.render.corpseFade) f.cAge[i] = -1
+      continue
+    }
+    let vx = f.cVx[i] ?? 0
+    let vy = (f.cVy[i] ?? 0) - g * dt
+    let spin = f.cSpin[i] ?? 0
+    let x = (f.cX[i] ?? 0) + vx * dt
+    let y = (f.cY[i] ?? 0) + vy * dt
+    let ang = (f.cAng[i] ?? 0) + spin * dt
+    const floor = (f.cR[i] ?? 0.3) * 0.5
+    if (y <= floor) {
+      y = floor
+      if (vy < 0) vy = -vy * P.render.corpseBounce
+      // 땅에 끌린다. 가로 속도가 죽으면 회전도 같이 죽는다.
+      const drag = Math.exp(-P.render.corpseDrag * dt)
+      vx *= drag
+      spin *= drag
+      if (Math.abs(vx) < 0.25 && vy < 0.4) {
+        vx = 0
+        vy = 0
+        spin = 0
+        f.cRest[i] = 0
+        // 누웠다. 어느 쪽으로 누울지는 마지막으로 밀린 방향이 정한다.
+        ang = ang >= 0 ? Math.PI * 0.5 : -Math.PI * 0.5
+      }
+    }
+    f.cVx[i] = vx
+    f.cVy[i] = vy
+    f.cSpin[i] = spin
+    f.cX[i] = x
+    f.cY[i] = y
+    f.cAng[i] = ang
+  }
+}
+
+/**
+ * 시체를 그린다. **사람과 드론이 다르게 남는다** (형: "시체로 남거나 드론은 망가져 떨어지거나").
+ *   사람 — 머리 + 접힌 몸. 실루엣이 서 있는 적과 달라야 "쓰러졌다"가 읽힌다.
+ *   드론(look 3) — 부러진 십자와 멈춘 로터. 사람처럼 눕지 않는다.
+ * 색은 새로 만들지 않는다 (GDD 8장): 몸은 bodyDim, 드론은 prop.
+ */
+function drawCorpses(ctx: CanvasRenderingContext2D, cam: Camera, f: Fx): void {
+  for (let i = 0; i < CORPSES; i++) {
+    if ((f.cAge[i] ?? -1) < 0) continue
+    const rest = f.cRest[i] ?? -1
+    const fade = rest > P.render.corpseLinger
+      ? 1 - (rest - P.render.corpseLinger) / P.render.corpseFade
+      : 1
+    if (fade <= 0) continue
+    const x = worldToScreenX(cam, f.cX[i] ?? 0)
+    const y = worldToScreenY(cam, f.cY[i] ?? 0)
+    const r = Math.max(3, (f.cR[i] ?? 0.3) * cam.scale)
+    ctx.save()
+    ctx.globalAlpha = fade
+    ctx.translate(x, y)
+    ctx.rotate(f.cAng[i] ?? 0)
+    if (f.cLook[i] === 3) {
+      // 드론 — 부러진 십자. 로터가 한쪽으로 꺾여 있다.
+      ctx.strokeStyle = THEME.prop
+      ctx.lineWidth = Math.max(1.5, r * 0.28)
+      ctx.beginPath()
+      ctx.moveTo(-r, 0)
+      ctx.lineTo(r, 0)
+      ctx.moveTo(r * 0.55, 0)
+      ctx.lineTo(r * 0.95, -r * 0.5)
+      ctx.stroke()
+      ctx.fillStyle = THEME.bodyDim
+      ctx.fillRect(-r * 0.32, -r * 0.24, r * 0.64, r * 0.48)
+    } else {
+      // 사람 — 접힌 몸통 + 늘어진 팔 + 머리. 서 있는 실루엣과 확실히 다르다.
+      ctx.strokeStyle = THEME.bodyDim
+      ctx.lineWidth = Math.max(1.5, r * 0.3)
+      ctx.lineCap = 'round'
+      ctx.beginPath()
+      ctx.moveTo(-r * 0.75, 0)
+      ctx.lineTo(r * 0.5, r * 0.18)
+      ctx.moveTo(-r * 0.1, r * 0.05)
+      ctx.lineTo(r * 0.35, -r * 0.45)
+      ctx.stroke()
+      ctx.fillStyle = THEME.bodyDim
+      ctx.beginPath()
+      ctx.arc(-r * 0.85, -r * 0.2, r * 0.34, 0, Math.PI * 2)
+      ctx.fill()
+    }
+    ctx.restore()
+  }
+  ctx.globalAlpha = 1
+}
+
 export function fxTimeScale(fx: Fx): number {
   if (fx.slow <= 0) return 1
   // 끝에서 1로 부드럽게 돌아온다. 툭 끊으면 슬로모가 아니라 렉으로 읽힌다.
@@ -784,6 +958,8 @@ export function updateFx(fx: Fx, dtReal: number): void {
   }
 
   updatePopups(fx.pop, dt)
+  // 시체는 **실시간**으로 떨어진다. 히트스톱 시간축에 묶으면 공중에 얼어붙는다.
+  stepCorpses(fx, dtReal)
 
   const g = P.arrow.gravity
   const drag = 1 - FX.dragRate * dt
@@ -922,6 +1098,12 @@ function drawVignette(ctx: CanvasRenderingContext2D, f: Fx, w: number, h: number
   ctx.fillStyle = f.vig
   ctx.fillRect(0, 0, w, h)
   ctx.globalAlpha = 1
+}
+
+/** 쓰러진 적. 과녁·화살보다 **먼저** 그린다 — 시체가 살아 있는 것들을 가리면 안 된다. */
+export function drawCorpseLayer(ctx: CanvasRenderingContext2D, cam: Camera, fx?: Fx): void {
+  const f = fx ?? active
+  if (f !== null) drawCorpses(ctx, cam, f)
 }
 
 export function drawFx(ctx: CanvasRenderingContext2D, cam: Camera, fx?: Fx): void {

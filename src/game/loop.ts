@@ -18,7 +18,7 @@ import type { ArrowKindId } from '../sim/types.ts'
 import { createInput } from '../input/pointer.ts'
 import { createRenderer, getCamera, getHitStopMs, getOneShot } from '../render/scene.ts'
 import type { HudState } from '../render/hud.ts'
-import { createSfx, playUi, pumpSfx, sfxMuted, toggleMute, unlockSfx, updateSfx } from '../audio/sfx.ts'
+import { createSfx, playUi, pumpSfx, sfxMuted, toggleMute, unlockSfx, updateSfx, type UiSound } from '../audio/sfx.ts'
 import { getStage } from './stages.ts'
 import { onSaveChanged, pokeSave, writeSave, type SaveData } from './save.ts'
 import { settleOffline, type OfflineGain } from './offline.ts'
@@ -110,6 +110,10 @@ export interface GameLoop {
    * 로드아웃(활+살통 고르기)은 그대로 거친다 — 체크포인트도 "새 여정의 시작"이다.
    */
   mapJump(index: number): void
+  /** 화면의 숨참기 버튼 (ui/steady.ts) — 폰에는 Shift도 우클릭도 없다. */
+  steady(on: boolean): void
+  /** 화면이 내는 소리 하나 (성장 화면의 올리기 등). ui/ 는 audio/ 를 직접 안 부른다 (A1). */
+  ui(kind: UiSound): void
   dispose(): void
 }
 
@@ -972,9 +976,32 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       save.runActive = true
       loadStage(save.runArrow)
     },
+    steady(on: boolean): void {
+      input.setSteady(on)
+    },
+    ui(kind: UiSound): void {
+      playUi(sfx, kind)
+    },
+    /**
+     * 지도에서 고른 마디부터 새 여정을 연다.
+     *
+     * 2026-08-31 (형: "지도에서 해당 스테이지로 가는게 나는 안된다. 제대로 만든거 맞는지 확인해"):
+     * **안 됐던 게 맞다.** 여기가 `save.runActive` 면 그냥 돌아섰는데, 여정은 출정하는 순간
+     * 켜져서 죽거나 접기 전엔 안 꺼진다 — 즉 **지도를 볼 만한 상황에서는 언제나 막혀 있었다.**
+     * 기능이 있는 척만 하고 있었던 것이다.
+     * 이제 진행 중이면 그 여정을 접고(endRun) 고른 자리에서 새로 연다. 지도 쪽에서 두 번
+     * 눌러 확인을 받으므로(ui/map.ts) 실수로 여정을 잃지 않는다.
+     */
     mapJump(index: number): void {
-      if (save.runActive || sandbox) return
-      pendingStartIndex = Math.max(0, Math.floor(index))
+      if (sandbox) return
+      const to = Math.max(0, Math.floor(index))
+      if (save.runActive) {
+        // endRun 이 결과 화면을 띄우고, 거기서 '출정'이 아래 pendingStartIndex 를 집어간다.
+        endRun('abandon')
+        pendingStartIndex = to
+        return
+      }
+      pendingStartIndex = to
       beginStage()
     },
     dispose(): void {

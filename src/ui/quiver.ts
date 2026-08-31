@@ -20,7 +20,7 @@ const CSS = `
 @media (pointer: coarse) { .q-btn { min-height: 44px; padding: 7px 14px; } }
 /* 폰 — 살통도 아이콘만 남긴다. 살 종류가 늘어도 **줄 수가 늘지 않아야** 궁수를 안 덮는다
    (형: "몇 스테이지 가면 버튼이 캐릭터를 가린다"). 넘치면 옆으로 밀어 본다. */
-@media (max-width: 640px) {
+@media (max-width: 640px), (max-height: 560px) {
   .q-hint { display: none; }
   .q-row { flex-wrap: nowrap; overflow-x: auto; max-width: calc(100vw - 36px); gap: 6px; padding-bottom: 2px; }
   .q-btn { min-width: 50px; height: 46px; padding: 0 8px; gap: 4px; }

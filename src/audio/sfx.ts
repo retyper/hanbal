@@ -326,6 +326,10 @@ const SMP = {
   uiUnlockGain: 0.34,
   /** 해금 소절은 클리어보다 작게. 판을 깬 것보다 큰 사건이 아니다. */
   unlockJingleGain: 0.7,
+  /** 패배음 — 클리어음 대비. 알리되 비웃지 않는 크기다 (형: "패배할때 소리도 필요하고"). */
+  failGain: 0.45,
+  /** 쓰러지는 소리 — 명중음에 묻히지 않되 앞서지도 않게. */
+  downGain: 0.34,
 
   /**
    * 정중앙 문턱은 여기 없다 — `P.hit.bullseyeAcc` 하나뿐이다 (A2 단일 출처).
@@ -613,6 +617,8 @@ export type UiSound =
   | 'hover'
   /** 열렸다 — 해금·패널 */
   | 'unlock'
+  /** 스탯을 올렸다 — 성장 화면의 '올리기' (형: "능력치 올릴때 소리도 필요해") */
+  | 'levelup'
 
 export function playUi(sfx: Sfx, kind: UiSound): void {
   // UI를 누른 것 자체가 사용자 제스처다. 첫 클릭이 드래프트 카드일 수도 있으므로 여기서도 연다.
@@ -624,6 +630,15 @@ export function playUi(sfx: Sfx, kind: UiSound): void {
   if (kind === 'hover') {
     // 없으면 그냥 안 낸다. 합성으로 만든 "삑"은 소리가 없는 것보다 나쁘다.
     sample(sfx, s, 'rollover', SMP.uiHoverGain, 1, 0, 0)
+    return
+  }
+
+  if (kind === 'levelup') {
+    // 올렸다 — 짧은 확인음 하나. 해금(한 소절)보다 작아야 한다: 해금은 사건이고 이건 조작이다.
+    if (!sample(sfx, s, 'levelup', SMP.uiUnlockGain, 1, 0, 0)) {
+      // 파일이 없으면 누름 소리로 떨어진다 — 아무 소리도 안 나는 것보다 낫다.
+      sample(sfx, s, 'click', SMP.uiPressGain, 1.12, 0, 0)
+    }
     return
   }
 
@@ -1467,7 +1482,14 @@ export function pumpSfx(sfx: Sfx, w: World): void {
       playCollapse(s)
     } else if (e.t === 'stage_end') {
       if (e.cleared) playStageClear(sfx, s, isBossStage(w))
-      // 실패에는 소리를 얹지 않는다. 실패를 조롱하지 않는다 (GDD 9장의 정신).
+      // 실패에도 소리를 얹는다 (2026-08-31, 형: "패배할때 소리도 필요하고").
+      // 예전 규칙은 "실패를 조롱하지 않는다"였고 그건 지금도 맞다 — 그래서 **낮고 작게**,
+      // 클리어음의 절반도 안 되는 크기로 한 번만 낸다. 알리는 것과 비웃는 것은 다르다.
+      else sample(sfx, s, 'fail', P.audio.clearGain * SMP.failGain, 1, 0, 0)
+    } else if (e.t === 'foe_down') {
+      // 쓰러졌다 — 사람은 퍽, 드론은 금속. 무엇이 죽었는지 귀로도 안다.
+      const drone = e.look === 3
+      sample(sfx, s, drone ? 'wreck' : 'thud', SMP.downGain, drone ? 1.05 : 0.92, e.x, e.y)
     }
   }
 }

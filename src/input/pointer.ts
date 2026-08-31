@@ -25,6 +25,11 @@ export interface InputSource {
   endStep(): void
   /** R 에지를 소비한다. 소비하면 false로 떨어진다. */
   takeRestart(): boolean
+  /**
+   * 화면 버튼이 누르는 호흡정지 (ui/steady.ts). 폰에는 Shift도 우클릭도 없다.
+   * Shift·우클릭과 **OR** 로 합쳐진다 — 어느 하나만 눌려 있어도 숨은 멎는다.
+   */
+  setSteady(on: boolean): void
   dispose(): void
 }
 
@@ -43,6 +48,8 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
 
   let rightHeld = false
   let shiftHeld = false
+  /** 화면의 숨참기 버튼 (폰). 위 둘과 같은 축이라 OR 로 합친다. */
+  let uiHeld = false
   let restartEdge = false
 
   let keyL = false
@@ -69,7 +76,7 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
   syncAim()
 
   const syncSteady = (): void => {
-    frame.steady = rightHeld || shiftHeld
+    frame.steady = rightHeld || shiftHeld || uiHeld
   }
 
   const press = (fromKey: boolean): void => {
@@ -186,6 +193,7 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
     keyL = keyR = keyU = keyD = false
     rightHeld = false
     shiftHeld = false
+    uiHeld = false
     syncSteady()
     release()
   }
@@ -230,6 +238,11 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
         else if (sy > h) sy = h
         syncAim()
       }
+    },
+
+    setSteady(on: boolean): void {
+      uiHeld = on
+      syncSteady()
     },
 
     takeRestart(): boolean {

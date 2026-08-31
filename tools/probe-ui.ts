@@ -396,40 +396,53 @@ for (const [cw, ch] of [[1280, 720], [800, 600], [390, 844], [360, 640]] as cons
   }
 
   /**
-   * DOM 버튼 바가 화면 아래에서 차지하는 높이 (px). tools/probe-style.ts 의 ⑦번과 같은 값이다 —
-   * 아이콘 버튼 두 줄(46×2 + 간격 8) + 아래 여백 18 + 노치 홈바 34 + 여유 16.
-   * 궁수의 **발(지면)** 이 이 선보다 위에 있어야 "버튼이 캐릭터를 가린다"가 안 된다.
+   * DOM 버튼 바가 화면 아래에서 차지하는 높이 (px) — 화면형마다 다르다.
+   * tools/probe-style.ts 의 ⑦번이 CSS와 맞대어 보는 그 값이고, 여기서는 **실제 투영**을 잰다:
+   * 궁수의 발(지면)이 이 선보다 위에 있어야 "버튼이 캐릭터를 가린다"가 안 된다.
+   *   세로 폰   아이콘 두 줄 46×2+8 + 아래 18 + 홈바 34 + 여유 16 = 168
+   *   낮은 화면 아이콘 한 줄 46      + 18 + 21 + 16              = 101
+   *   데스크탑  50 + 67 + 8          + 18 +  0 + 16              = 159
    */
-  const BAR = 168
+  const barOf = (cw: number, ch: number): number =>
+    ch > cw * 1.15 ? 168 : ch <= 560 ? 101 : 159
 
-  for (const [cw, ch] of [[390, 844], [360, 640]] as const) {
+  // 세로 폰 둘 · 눕힌 폰 · 데스크탑 둘. 형이 실제로 노는 화면형을 전부 건다.
+  for (const [cw, ch] of [[390, 844], [360, 640], [844, 390], [1280, 720], [1920, 1080]] as const) {
     for (const idx of [0, 10]) {
       const p = shot(cw, ch, idx)
+      const BAR = barOf(cw, ch)
       const name = `${idx === 0 ? '1판' : '11판'} ${cw}x${ch}`
       console.log(
         `  ${name}  scale ${p.s.toFixed(1)}px/m · 지면 y=${p.ground.toFixed(0)}/${ch} ` +
         `· 과녁 y ${p.top.toFixed(0)}~${p.bot.toFixed(0)} · x ${p.l.toFixed(0)}~${p.r.toFixed(0)}`,
       )
-      // 위 띠(0.2)는 캔버스 HUD의 자리다 — 과녁이 그 밑으로 들어가면 머리글과 겹쳐 보인다.
-      check(p.top >= ch * 0.2 - 2, `${name} — 과녁이 위 HUD 띠 아래`, `${p.top.toFixed(0)} ≥ ${Math.round(ch * 0.2)}`)
-      // 지면은 화면의 아래쪽에 앉아야 한다. 가운데면 세로 공간을 절반 버린 것이다.
-      check(p.ground > ch * 0.55, `${name} — 지면이 화면 아래쪽에 앉는다`, `y=${p.ground.toFixed(0)}`)
-      // ★ 형의 신고 — 버튼이 궁수를 덮으면 안 된다. 궁수는 지면 위에 서 있으므로
-      //   지면이 바 위에 있으면 몸 전체가 바 위에 있다.
+      // ★★ 형의 신고 — **버튼이 궁수를 덮으면 안 된다.** 화면형과 무관하게 지켜야 한다
+      //    (세로를 고쳤더니 "아직도 가로화면에서 버튼이랑 화면이 겹친다"가 왔다).
+      //    궁수는 지면 위에 서 있으므로, 지면이 바 위에 있으면 몸 전체가 바 위에 있다.
       check(
         p.ground < ch - BAR,
         `${name} — 아래 버튼 바가 궁수를 안 덮는다`,
         `지면 ${p.ground.toFixed(0)} < 바 윗선 ${ch - BAR}`,
       )
+      // 과녁도 마찬가지다 — 버튼 뒤에 숨은 과녁은 못 맞힌다.
+      check(
+        p.bot < ch - BAR,
+        `${name} — 과녁이 버튼 바 위에 있다`,
+        `과녁 밑 ${p.bot.toFixed(0)} < ${ch - BAR}`,
+      )
       // 좌우로 잘리지 않는다.
       check(p.l >= -2 && p.r <= cw + 2, `${name} — 과녁이 좌우로 안 잘린다`, `${p.l.toFixed(0)}~${p.r.toFixed(0)}`)
+
+      if (ch > cw * 1.15) {
+        // 세로에서만: 위 띠는 캔버스 HUD의 자리이고, 지면은 아래쪽에 앉아야 한다.
+        check(p.top >= ch * 0.2 - 2, `${name} — 과녁이 위 HUD 띠 아래`, `${p.top.toFixed(0)} ≥ ${Math.round(ch * 0.2)}`)
+        check(p.ground > ch * 0.55, `${name} — 지면이 화면 아래쪽에 앉는다`, `y=${p.ground.toFixed(0)}`)
+      } else {
+        // 가로에서는 예전처럼 가운데 정렬이다 — 다만 가운데의 기준이 '빈 자리'로 바뀌었다.
+        const mid = Math.abs((p.top + p.bot) / 2 - ch * 0.5)
+        check(mid < ch * 0.3, `${name} — 가로는 여전히 가운데 근처다`, `중심 어긋남 ${mid.toFixed(0)}px`)
+      }
     }
-  }
-  // 같은 판을 가로로 보면 구도는 예전 그대로(가운데)여야 한다 — 세로 규칙이 가로를 건드리면 안 된다.
-  for (const idx of [0, 10]) {
-    const land = shot(844, 390, idx)
-    const mid = Math.abs((land.top + land.bot) / 2 - 390 * 0.5)
-    check(mid < 390 * 0.25, `${idx === 0 ? '1판' : '11판'} — 가로는 여전히 가운데다`, `중심 어긋남 ${mid.toFixed(0)}px`)
   }
 }
 

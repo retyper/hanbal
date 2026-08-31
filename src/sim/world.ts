@@ -619,7 +619,8 @@ function endStage(w: World, cleared: boolean): void {
 function anyTargetStanding(w: World): boolean {
   for (let i = 0; i < w.targets.length; i++) {
     const t = w.targets[i]
-    if (t !== undefined && t.alive) return true
+    // 화약 상자는 과녁이 아니다 — 안 터뜨려도 판은 끝난다 (types.ts 'barrel').
+    if (t !== undefined && t.alive && t.kind !== 'barrel') return true
   }
   return false
 }

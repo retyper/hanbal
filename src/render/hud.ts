@@ -476,6 +476,8 @@ function ramp(table: readonly string[], v: number): string {
 const cache = {
   score: -1,
   goal: -1,
+  /** 그중 사람(적)의 수. 과녁과 따로 센다 — 화면이 둘을 한 숫자로 말하면 안 된다. */
+  foes: -1,
   scoreText: '',
   scoreNum: '',
   arrows: -1,
@@ -550,16 +552,33 @@ export function drawHud(
   // 클리어 조건은 **과녁을 다 없애는 것**이다 (sim/world.ts evaluateEnd).
   // 그래서 화면 맨 위에 있어야 할 숫자는 점수가 아니라 남은 과녁 수다.
   // 점수는 보상의 크기일 뿐이라 한 단계 작게, 옆에 둔다.
-  let standing = 0
+  //
+  // ★ **과녁과 사람을 한 숫자로 세지 않는다** (2026-08-31).
+  //   형: "과녁이면 과녁이고 적이면 적이지 적도 과녁이라고 좌상단에 치면 안된다.
+  //        너라면 과녁이 사람이랑 같겠냐?" 맞는 말이다. 11판부터는 판에 선 게 사람인데
+  //        화면은 계속 '과녁 4'라고 말하고 있었다 — 화면이 세계를 부정하고 있었던 것이다.
+  //   화약 상자(barrel)는 어느 쪽에도 안 센다 — 과녁도 사람도 아니고, 클리어 조건도 아니다.
+  let foes = 0
+  let marks = 0
   for (let i = 0; i < w.targets.length; i++) {
     const t = w.targets[i]
-    if (t !== undefined && t.alive) standing++
+    if (t === undefined || !t.alive) continue
+    if (t.kind === 'barrel') continue
+    if (t.kind === 'archer' || t.kind === 'boss' || t.kind === 'charger') foes++
+    else marks++
   }
+  const standing = foes + marks
   const score = w.score | 0
-  if (standing !== cache.goal || score !== cache.score) {
+  if (standing !== cache.goal || foes !== cache.foes || score !== cache.score) {
     cache.goal = standing
+    cache.foes = foes
     cache.score = score
-    cache.scoreText = standing > 0 ? `과녁 ${standing}` : '다 잡았다'
+    cache.scoreText = standing === 0
+      ? '다 잡았다'
+      // 둘 다 있으면 둘 다 말한다. 하나뿐이면 그것만 — 없는 걸 0으로 적어두지 않는다.
+      : foes > 0 && marks > 0 ? `적 ${foes} · 과녁 ${marks}`
+        : foes > 0 ? `적 ${foes}`
+          : `과녁 ${marks}`
     cache.scoreNum = `${score}점`
   }
 

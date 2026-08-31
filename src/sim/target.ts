@@ -331,11 +331,15 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
       return
     }
     target.alive = false
+    // 쓰러졌다 — 시체는 렌더의 것이다. 여기서는 **무엇이 얼마로 때렸는지**만 넘긴다.
+    downEvent(w, target, arrow.vx, arrow.vy, arrow.fx.mass)
   } else if (target.kind === 'aerial') {
     // 공중 과녁은 맞아도 사라지지 않는다. 떨어지면서 아래를 연쇄로 쳐야 한다 (GDD 7장).
     target.falling = true
   } else {
     target.alive = false
+    // 돌진(charger)도 사람 취급이다 — 쓰러지면 남는다. 과녁은 downEvent 가 걸러낸다.
+    downEvent(w, target, arrow.vx, arrow.vy, arrow.fx.mass)
   }
 
   // 폭발은 맨 끝이다 — 직격의 hit 이벤트가 먼저 나가야 소리·이펙트의 인과가 읽힌다.
@@ -391,8 +395,15 @@ export function burstAt(w: World, x: number, y: number, R: number, exclude: Targ
     award(w, c, clamp01(1 - Math.sqrt(d2) / R))
     w.events.push({ t: 'chain', targetId: c.id, x: c.x, y: c.y, depth: 1 })
 
-    if (c.kind === 'aerial') c.falling = true
-    else c.alive = false
+    if (c.kind === 'aerial') {
+      c.falling = true
+    } else {
+      c.alive = false
+      // 폭발로 죽은 적은 **바깥으로** 날아간다. 세기는 중심에서 멀수록 약하다.
+      const d = Math.sqrt(d2)
+      const k = (1 - clamp01(d / R)) * P.render.blastPush
+      downEvent(w, c, d > 0 ? (dx / d) * k : 0, d > 0 ? (dy / d) * k : k, 1)
+    }
   }
 
   // ── 자해 ──────────────────────────────────────────────────────────
@@ -415,6 +426,20 @@ export function burstAt(w: World, x: number, y: number, R: number, exclude: Targ
     w.status = 'failed'
     w.events.push({ t: 'stage_end', cleared: false, score: w.score })
   }
+}
+
+/**
+ * 쓰러진 적을 알린다 (SimEvent 'foe_down'). **사람과 드론만** — 과녁은 그냥 사라진다.
+ * 형: "과녁이면 과녁이고 적이면 적이지." 남는 것도 그래서 다르다.
+ */
+function downEvent(w: World, t: Target, vx: number, vy: number, mass: number): void {
+  if (t.kind !== 'archer' && t.kind !== 'boss' && t.kind !== 'charger') return
+  w.events.push({
+    t: 'foe_down',
+    x: t.x, y: t.y, vx, vy, mass,
+    look: t.kind === 'boss' ? -1 : t.kind === 'charger' ? 0 : t.look,
+    r: t.r,
+  })
 }
 
 /**

@@ -121,6 +121,8 @@ interface Row {
 export interface AudioSwitch {
   muted(): boolean
   toggle(): void
+  /** 스탯을 올렸다 — 소리 하나 (형: "능력치 올릴때 소리도 필요해"). */
+  levelup(): void
 }
 
 /**
@@ -171,6 +173,7 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
     ;(el.querySelector('.g-ic') as HTMLElement).classList.add(`i-${key}`)
     btn.addEventListener('click', () => {
       if (!spendTraining(d, key, 1)) return
+      audio.levelup()
       // 무엇이 바뀌었는지 그 자리에서. 화면을 닫았다 열게 하지 않는다.
       row.el.classList.add('g-flash')
       window.setTimeout(() => row.el.classList.remove('g-flash'), FLASH_MS)

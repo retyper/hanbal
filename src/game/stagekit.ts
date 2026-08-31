@@ -72,13 +72,17 @@ export interface Spot {
 /** 각크기 h에서 이 자리의 실제 반경을 계산해 sim이 먹는 형태로 굽는다. */
 export function specOf(h: number, s: Spot): TargetSpec {
   const d = Math.hypot(s.x - HAND_X, s.y - HAND_Y)
+  const kind = s.kind ?? 'static'
   const spec: TargetSpec = {
-    kind: s.kind ?? 'static',
+    kind,
     x: s.x,
     y: s.y,
     r: h * d * (s.size ?? 1),
-    score: BASE_SCORE,
+    // 화약 상자는 점수를 안 준다 — 값은 그 폭발이 끊는 것들이 낸다 (sim/types.ts 'barrel').
+    score: kind === 'barrel' ? 0 : BASE_SCORE,
   }
+  // 상자는 맞으면 반드시 터진다. 저작할 때 bomb 을 따로 안 적어도 되게 여기서 채운다.
+  if (kind === 'barrel') spec.bomb = true
   if (s.ampX !== undefined) spec.ampX = s.ampX
   if (s.ampY !== undefined) spec.ampY = s.ampY
   if (s.freq !== undefined) spec.freq = s.freq

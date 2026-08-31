@@ -220,6 +220,12 @@ const CSS = `
   background: linear-gradient(180deg, var(--paper) 0%, var(--paper2) 100%);
   border-radius: 3px;
   box-shadow: 0 26px 80px #000000cc;
+  /* ★ 문양 테두리의 두께만큼 **안쪽으로 물린다.**
+     이게 없으면 스크롤한 글자가 테두리 위를 지나간다 — 형: "슬라이드 할때 글자가 그걸
+     넘어가는데. 종이위에서 글자가 왔다갔다 하는거같잖아." 맞는 말이다. 테두리는 종이의
+     가장자리지 글자가 지나다니는 길이 아니다. 안쪽 칸(.hb-body)이 자기 상자에서 잘리므로,
+     이제 글자는 테두리에 **닿기 전에** 사라진다. */
+  padding: 15px;
 }
 .hb-panel.hb-open { display: flex; flex-direction: column; }
 /* 종이결 — 아주 얕은 잡티 한 겹. 파일을 받지 않고 SVG 잡음으로 만든다(스케일 자유·수백 바이트).
@@ -239,7 +245,7 @@ const CSS = `
   position: relative; z-index: 1; overflow-y: auto; overscroll-behavior: contain;
   /* flex 세로 칸에서 min-height:auto 는 내용보다 작아지지 않는다 — 0으로 풀어야 스크롤이 산다. */
   min-height: 0;
-  padding: 26px 30px 22px; scrollbar-width: thin;
+  padding: 12px 16px 10px; scrollbar-width: thin;
 }
 .hb-body:focus { outline: none; }
 
@@ -332,7 +338,8 @@ const CSS = `
   .hb-hud .hb-lbl { display: none; }
   .hb-hud .hb-ic { width: 24px; height: 24px; vertical-align: 0; }
 
-  .hb-body { padding: 6px 18px calc(20px + var(--safe-b)); }
+  .hb-panel { padding: 12px; }
+  .hb-body { padding: 4px 8px calc(10px + var(--safe-b)); }
   .hb-panel h2 { font-size: 22px; }
   /* ✕는 시트가 아니라 **화면**의 오른쪽 위에 둔다. 시트에 붙이면 시트 높이(내용에 따라
      변한다)에 자리가 묶여, 짧은 시트에서는 허공에 뜬다. 폰에서는 시트 위쪽 스크림을
@@ -343,6 +350,27 @@ const CSS = `
   .hb-toasts { left: 12px; right: 12px; align-items: center; }
   .hb-toast { white-space: normal; text-align: center; }
 }
+/* ── 낮은 화면 (가로로 눕힌 폰) ────────────────────────────────────────
+   형: "아직도 가로화면에서 버튼이랑 화면이 겹치는게 난 이해가 안된다."
+   가로 폰은 폭이 844라 위의 (max-width: 640px) 규칙에 안 걸려서, 글자 붙은 큰 버튼이
+   그대로 두세 줄로 접혔다 — 높이가 390px뿐인 화면에서 그건 화면의 3분의 1이다.
+   여기서는 아이콘만 남기고 **한 줄로 고정**한다 (넘치면 옆으로 민다).
+   render/camera.ts 의 VIEW.bandBottomShortPx 가 이 한 줄만큼만 비운다. */
+@media (max-height: 560px) {
+  .hb-hud {
+    gap: 8px; flex-wrap: nowrap; overflow-x: auto;
+    max-width: calc(100vw - 36px - var(--safe-l) - var(--safe-r));
+  }
+  .hb-hud .hb-btn { padding: 0 10px; min-width: 46px; height: 46px; justify-content: center; }
+  .hb-hud .hb-lbl { display: none; }
+  .hb-hud .hb-ic { width: 24px; height: 24px; vertical-align: 0; }
+  /* 낮은 화면에서는 패널도 화면을 꽉 채운다 — 시트로 올릴 세로가 없다. */
+  .hb-scrim { padding: 10px; }
+  .hb-panel { max-height: 100%; }
+  .hb-panel { padding: 12px; }
+  .hb-body { padding: 6px 10px 8px; }
+}
+
 /* 손잡이는 세로 시트에서만 보인다 (가로에서는 자리만 먹는 줄이다). */
 .hb-grab { display: none; }
 `

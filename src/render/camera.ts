@@ -118,13 +118,27 @@ const VIEW = {
   /** 세로일 때 아래 띠 (DOM HUD 버튼·토스트의 자리) */
   bandBottom: 0.2,
   /**
-   * 아래 띠의 **최소 픽셀 높이**. 비율만 쓰면 짧은 화면(640px)에서 띠가 128px로 줄어드는데,
-   * 아이콘 버튼 두 줄(46+46+간격)과 아래 여백을 합치면 그보다 크다 — 그러면 버튼이
-   * 궁수를 덮는다 (형: "몇 스테이지 가면 버튼이 캐릭터를 가린다고").
-   * ui/overlay.ts 의 `@media (max-width: 640px)` 버튼 크기와 **같이 움직여야 하는 값**이다.
-   * (tools/probe-style.ts 가 둘이 어긋나면 잡는다.)
+   * ── 아래 띠의 **최소 픽셀 높이** — 화면형마다 다르다 ────────────────────
+   *
+   * 형: "아직도 가로화면에서 버튼이랑 화면이 겹치는게 난 이해가 안된다."
+   * 맞다. 앞선 수정은 세로만 고쳤고, 가로는 여전히 위아래 여백 0.12로 **가운데 정렬**이었다 —
+   * 그런데 DOM 버튼 줄은 언제나 화면 **왼쪽 아래**에 있다. 궁수도 왼쪽 아래에 선다.
+   * 같은 자리를 둘이 쓰고 있었으니 화면 비율과 무관하게 겹치는 게 당연했다.
+   *
+   * 이제 **모든 화면형이** 아래 띠를 비운다. 띠의 크기는 그 화면에서 버튼 줄이 실제로
+   * 차지하는 높이에서 나온다 — 세 값은 ui/overlay.ts 의 세 가지 버튼 배치와 짝이다:
+   *   세로 폰   : 아이콘만 · 두 줄(길잡이 + 살통)          → portrait
+   *   낮은 화면 : 아이콘만 · **한 줄**(nowrap)             → short  (가로로 눕힌 폰)
+   *   그 밖     : 글자 있는 버튼 · 최대 두 줄               → wide   (데스크탑)
+   * tools/probe-style.ts 가 CSS와 이 값을 맞대어 보고, tools/probe-ui.ts 가
+   * 실제 투영(지면이 띠 위인지)을 잰다.
    */
   bandBottomPx: 190,
+  /** 낮은 화면(가로로 눕힌 폰) — CSS의 `(max-height: …)` 와 같은 문턱이어야 한다. */
+  shortH: 560,
+  bandBottomShortPx: 120,
+  /** 데스크탑 — 글자 붙은 버튼이 두 줄로 접힌 최악을 담는다. */
+  bandBottomWidePx: 170,
 
   minScale: 8,
   maxScale: 110,
@@ -223,13 +237,16 @@ function frame(cam: CameraX, w: World): void {
   const spanY = Math.max(maxY - minY, 1)
   // 세로 화면에서는 여백 규칙 자체가 다르다 (VIEW.bandTop 주석).
   const portrait = cam.h > cam.w * VIEW.portraitAspect
+  const h = Math.max(1, cam.h)
   const mx = portrait ? VIEW.marginXPortrait : VIEW.margin
   const mTop = portrait ? VIEW.bandTop : VIEW.margin
-  const mBot = portrait
-    ? Math.max(VIEW.bandBottom, VIEW.bandBottomPx / Math.max(1, cam.h))
-    : VIEW.margin
+  // 아래 띠 — 어느 화면형이든 버튼 줄만큼은 비운다 (VIEW.bandBottomPx 주석).
+  const botPx = portrait
+    ? Math.max(VIEW.bandBottom * h, VIEW.bandBottomPx)
+    : Math.max(VIEW.margin * h, h <= VIEW.shortH ? VIEW.bandBottomShortPx : VIEW.bandBottomWidePx)
+  const mBot = botPx / h
   const availW = cam.w * (1 - mx * 2)
-  const availH = cam.h * (1 - mTop - mBot)
+  const availH = Math.max(1, cam.h * (1 - mTop - mBot))
   const fit = Math.min(availW / spanX, availH / spanY)
   cam.ts = clamp(fit, VIEW.minScale, VIEW.maxScale)
   cam.tx = (minX + maxX) * 0.5
@@ -239,7 +256,10 @@ function frame(cam: CameraX, w: World): void {
     const anchor = cam.h * (1 - mBot)
     cam.ty = minY + (anchor - cam.h * 0.5) / cam.ts
   } else {
-    cam.ty = (minY + maxY) * 0.5
+    // 가로는 예전처럼 **가운데 정렬**이되, 가운데의 기준이 화면이 아니라 **빈 자리**다.
+    // (띠가 위아래 같으면 결과도 예전과 정확히 같다 — 그래서 안 쓰던 화면은 안 변한다.)
+    const usableMid = cam.h * (mTop + 1 - mBot) * 0.5
+    cam.ty = (minY + maxY) * 0.5 + (usableMid - cam.h * 0.5) / cam.ts
   }
 }
 

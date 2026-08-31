@@ -18,7 +18,7 @@ import type { SkyPalette } from './sky.ts'
 import { drawFoeArcher } from './foe.ts'
 import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { sprite } from './sprites.ts'
-import { createFx, pumpEvents, updateFx, drawFx, hitStopMs, oneShotAmount, targetSquash , PLAYER_PIN } from './effects.ts'
+import { createFx, pumpEvents, updateFx, drawFx, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash , PLAYER_PIN } from './effects.ts'
 import type { Fx } from './effects.ts'
 import { drawHud } from './hud.ts'
 import type { HudState } from './hud.ts'
@@ -63,6 +63,22 @@ const BG = {
   cloudDrift: 0.18,
   cloudAlpha: 0.5,
   groundLineW: 1.5,
+} as const
+
+/**
+ * 화약 상자의 치수 (과녁 반경 대비 배수). 손맛 노브가 아니라 그림의 비율이라 params.ts가 아니다
+ * (A2는 "손맛에 관여하는 숫자"의 규칙이다 — DRAW 와 같은 자리).
+ */
+const BARREL = {
+  /** 궤짝의 반너비/반높이 (반경 대비). 1이면 원에 외접한다 — 조금 작게 잡아 과녁보다 야무지게. */
+  box: 0.78,
+  plank: 0.1,
+  edge: 0.07,
+  fuse: 0.08,
+  /** 도화선이 휘는 높이 / 끝 높이 (궤짝 반높이 대비) */
+  fuseUp: 1.9,
+  fuseTop: 1.5,
+  spark: 0.16,
 } as const
 
 const DRAW = {
@@ -270,6 +286,50 @@ function diamond(
   ctx.lineTo(x, y + ry)
   ctx.lineTo(x - rx, y)
   ctx.closePath()
+  ctx.fill()
+}
+
+/**
+ * 화약 상자 (TargetKind 'barrel') — **과녁이 아니라 판에 놓인 물건이다.**
+ *
+ * 형: "터지는 과녁을 따로 만들지 말고 다이너마이트상자나 딱봐도 폭발물인 상자들 만들어서
+ *      그거 맞히면 터지게 만들어야 하지 않냐? 그건 과녁으로 안치고 말이야."
+ *
+ * 그래서 링(과녁의 문법)을 **한 겹도 안 그린다.** 대신 셋으로 "터지는 궤짝"을 만든다:
+ *   ① 네모난 나무 궤짝 — 원과 실루엣이 달라서 멀리서도 과녁이 아님이 읽힌다
+ *   ② 대각선 두 줄(널판) + 테두리 — 나무라는 재질
+ *   ③ 위로 뻗은 짧은 도화선과 불씨 — 위험색(threat)은 여기 한 점에만
+ * 색을 새로 만들지 않는다 (GDD 8장): 나무는 활 색(bow), 불씨는 경고색(threat)이다.
+ */
+function drawBarrel(
+  ctx: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number,
+): void {
+  const w = rx * BARREL.box
+  const h = ry * BARREL.box
+  ctx.fillStyle = THEME.bow
+  ctx.fillRect(x - w, y - h, w * 2, h * 2)
+  // 널판 — 어두운 사선 둘. 궤짝의 결이자 "묶여 있다"는 표시다.
+  ctx.strokeStyle = THEME.prop
+  ctx.lineWidth = Math.max(1, rx * BARREL.plank)
+  ctx.beginPath()
+  ctx.moveTo(x - w, y - h)
+  ctx.lineTo(x + w, y + h)
+  ctx.moveTo(x + w, y - h)
+  ctx.lineTo(x - w, y + h)
+  ctx.stroke()
+  ctx.strokeStyle = THEME.groundLine
+  ctx.lineWidth = Math.max(1, rx * BARREL.edge)
+  ctx.strokeRect(x - w, y - h, w * 2, h * 2)
+  // 도화선 + 불씨 — 이 물건이 무엇인지 말하는 한 점.
+  ctx.strokeStyle = THEME.threat
+  ctx.lineWidth = Math.max(1, rx * BARREL.fuse)
+  ctx.beginPath()
+  ctx.moveTo(x, y - h)
+  ctx.quadraticCurveTo(x + w * 0.5, y - h * BARREL.fuseUp, x + w * 0.15, y - h * BARREL.fuseTop)
+  ctx.stroke()
+  ctx.fillStyle = THEME.threat
+  ctx.beginPath()
+  ctx.arc(x + w * 0.15, y - h * BARREL.fuseTop, Math.max(1.2, rx * BARREL.spark), 0, Math.PI * 2)
   ctx.fill()
 }
 
@@ -741,6 +801,11 @@ function drawTargets(
       // 너무 작다. 띠를 다 그리면 뭉개져 오히려 안 보인다 — 밝은 점 하나가 낫다.
       band(ctx, x, y, rx, ry, THEME.targetRim)
       band(ctx, x, y, rx * DRAW.ringAccent, ry * DRAW.ringAccent, THEME.accent)
+    } else if (t.kind === 'barrel') {
+      // ★ 화약 상자 — **과녁이 아니다.** 형: "다이너마이트상자나 딱봐도 폭발물인 상자."
+      //   그래서 링을 그리지 않는다. 링은 '맞히면 점수'라는 약속인데 이건 점수가 없다.
+      //   나무 궤짝 + 대각 띠 + 도화선. 실루엣만으로 '터지는 물건'이 읽혀야 한다.
+      drawBarrel(ctx, x, y, rx, ry)
     } else if (t.kind === 'pierceable') {
       // 마름모 세 겹. 원과 실루엣이 달라야 "뚫린다"가 모양으로 읽힌다.
       diamond(ctx, x, y, rx, ry, THEME.targetRim)
@@ -757,7 +822,8 @@ function drawTargets(
     // 폭탄 halo — 죽으면 둘레를 같이 치는 과녁이라는 경고 (sim/target.ts, 형: "폭발하는
     // 폭탄 같은 것도 넣어야지"). 점선 + 맥박이라 색을 하나도 늘리지 않고도(GDD 8장 절제)
     // "이건 다르다"가 먼저 읽힌다. 위(마지막)에 그려 어떤 과녁 모양 위에도 또렷하다.
-    if (t.bomb && !t.falling) {
+    // 상자는 생김새가 이미 '폭발물'이라 halo 를 겹치지 않는다 — 링은 과녁의 문법이다.
+    if (t.bomb && !t.falling && t.kind !== 'barrel') {
       const pulse = 0.55 + 0.45 * Math.sin(w.elapsed * DRAW.bombPulseHz * TAU)
       ctx.save()
       ctx.globalAlpha = pulse
@@ -1312,6 +1378,8 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       drawBuildings(c, cam, w)
       // 깃발은 과녁보다 먼저 — 과녁 위로 천이 지나가면 조준을 가린다 (C1).
       drawWindFlag(c, cam, w)
+      // 쓰러진 적은 과녁·화살보다 **먼저** — 시체가 살아 있는 것들을 가리면 안 된다.
+      drawCorpseLayer(c, cam, r.fx)
       drawTargets(c, cam, w, alpha, r.fx)
       // 창틀·창턱은 사람보다 나중 — 벽이 하반신을 가린다는 말의 마침표다.
       drawBuildingFronts(c, cam)

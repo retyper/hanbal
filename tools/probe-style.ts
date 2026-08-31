@@ -176,21 +176,50 @@ for (const id of forks) check(iconClasses.has(id), `갈림길 '${id}' 에 아이
 // 버튼 줄이 자라면 궁수를 덮는다. 두 값이 **같이 움직여야 하는 짝**이라 여기서 묶어 둔다:
 //   ui/overlay.ts 의 폰 버튼 높이 × 최대 줄 수 + 아래 여백  ≤  camera.ts 의 bandBottomPx
 console.log('')
-const btnH = Number(/\.hb-hud \.hb-btn \{[^}]*height: (\d+)px/.exec(shell)?.[1] ?? 0)
 const camSrc = readFileSync('src/render/camera.ts', 'utf8')
-const bandPx = Number(/bandBottomPx: (\d+)/.exec(camSrc)?.[1] ?? 0)
-/** 길잡이 줄 + 살통 줄. 살통은 옆으로 밀리게 해뒀으므로(ui/quiver.ts) 이보다 더 늘지 않는다. */
-const ROWS = 2
+const num = (re: RegExp, src: string): number => Number(re.exec(src)?.[1] ?? 0)
+
 const GAP = 8
+/** .hb-hud 의 bottom 여백. */
 const BOTTOM = 18
-/** 노치 폰의 홈바(env(safe-area-inset-bottom))가 버튼 줄을 이만큼 더 밀어 올린다. */
-const SAFE = 34
-/** 그러고도 궁수 발밑과 버튼 사이에 이만큼은 비어 있어야 "가린다"가 안 된다. */
+/** 궁수 발밑과 버튼 사이에 이만큼은 비어 있어야 "가린다"가 안 된다. */
 const CLEAR = 16
-const need = btnH * ROWS + GAP * (ROWS - 1) + BOTTOM + SAFE + CLEAR
-check(btnH > 0 && bandPx > 0, '버튼 높이와 카메라 띠를 둘 다 읽었다', `버튼 ${btnH}px · 띠 ${bandPx}px`)
-check(need <= bandPx, '아래 버튼 바가 카메라가 비워 둔 띠 안에 든다', `${ROWS}줄+홈바+여유 ${need}px ≤ ${bandPx}px`)
+/** 글자 붙은 데스크탑 버튼 한 줄 (패딩 11+11 + 줄높이 ~25 + 테두리 2). */
+const WIDE_BTN = 50
+/** 살통 덩어리 — 힌트 한 줄(~17)이 버튼 줄 위에 더 붙는다 (ui/quiver.ts .q-hint). */
+const WIDE_QUIVER = WIDE_BTN + 17
+
+/**
+ * 화면형 셋 — CSS의 버튼 배치와 camera.ts 의 띠가 짝이 맞는가.
+ * 셋 중 하나라도 어긋나면 그 화면형에서 버튼이 궁수를 덮는다
+ * (형: 세로 한 번 고치고 나서 "아직도 가로화면에서 버튼이랑 화면이 겹치는게").
+ *
+ * 각 줄의 뜻: [이름, 버튼 줄들의 높이 합, 홈바(safe-area) 몫, 카메라 상수]
+ * 홈바는 화면형마다 다르다 — 세로 폰 ~34px, 눕힌 폰 ~21px, 데스크탑 0.
+ */
+const btnH = num(/\.hb-hud \.hb-btn \{[^}]*height: (\d+)px/, shell)
 check(btnH >= 44, '폰 버튼이 44px 이상이다', `${btnH}px`)
+for (const [label, rowsPx, safe, bandRe] of [
+  ['세로 폰 (아이콘 두 줄)', btnH * 2 + GAP, 34, /bandBottomPx: (\d+)/],
+  ['낮은 화면 (아이콘 한 줄)', btnH, 21, /bandBottomShortPx: (\d+)/],
+  ['데스크탑 (길잡이 + 살통 두 줄)', WIDE_BTN + WIDE_QUIVER + GAP, 0, /bandBottomWidePx: (\d+)/],
+] as const) {
+  const band = num(bandRe, camSrc)
+  const need = rowsPx + BOTTOM + safe + CLEAR
+  check(band > 0, `${label} — 카메라 띠를 읽었다`, `${band}px`)
+  check(need <= band, `${label} — 버튼 바가 띠 안에 든다`, `${need}px ≤ ${band}px`)
+}
+// 낮은 화면은 **한 줄**이어야 그 띠(104px)에 든다 — nowrap이 빠지면 두 줄이 되어 덮는다.
+check(
+  /@media \(max-height: 560px\)[\s\S]*?flex-wrap: nowrap/.test(shell),
+  '낮은 화면에서 버튼 줄이 안 접힌다 (nowrap)',
+)
+// CSS의 문턱과 카메라의 문턱이 같은 값인가.
+check(
+  num(/@media \(max-height: (\d+)px\)/, shell) === num(/shortH: (\d+)/, camSrc),
+  'CSS와 카메라의 "낮은 화면" 문턱이 같다',
+  `${num(/@media \(max-height: (\d+)px\)/, shell)} / ${num(/shortH: (\d+)/, camSrc)}`,
+)
 
 // 캔버스 쪽 세로 규약 — HUD와 카메라가 같은 기준을 쓰는가.
 const cam = readFileSync('src/render/camera.ts', 'utf8')

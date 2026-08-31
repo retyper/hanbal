@@ -57,6 +57,21 @@ export type SampleName =
   | 'clearBoss'
   /** 해금 — 같은 계열의 더 짧은 한 소절 */
   | 'unlock'
+  /**
+   * 여정이 끝났다 (패배). Kenney Interface Sounds (CC0).
+   *
+   * ★ 예전 규칙은 "실패에는 소리를 얹지 않는다 — 실패를 조롱하지 않는다"였다.
+   *   형이 뒤집었다: "패배할때 소리도 필요하고." 맞는 말이다. 소리가 없으면 그건 배려가
+   *   아니라 **끝났다는 사실을 안 알려주는 것**이다. 다만 조롱은 여전히 안 한다 —
+   *   낮고 짧게, 한 번만 (sfx.ts failGain).
+   */
+  | 'fail'
+  /** 스탯을 올렸다 — 짧은 확인음. 성장 화면의 '올리기'가 낸다. */
+  | 'levelup'
+  /** 사람이 쓰러졌다 — 퍽. 시체가 나가떨어지는 그 한 순간 (SimEvent 'foe_down'). */
+  | 'thud'
+  /** 드론이 부서졌다 — 금속. 사람과 다른 소리여야 무엇이 죽었는지 귀로도 안다. */
+  | 'wreck'
 
 /** 확장자와 폴더는 여기 한 곳에만 적는다. */
 const DIR = 'sfx/'
@@ -84,6 +99,11 @@ const FILES: Readonly<Record<SampleName, readonly string[]>> = {
   clear: ['jingleClear'],
   clearBoss: ['jingleClearBoss'],
   unlock: ['jingleUnlock'],
+  // 아래 넷은 2026-08-31 추가 (형: "sfx가 많아야해").
+  fail: ['error_003', 'error_004'],
+  levelup: ['confirmation_002', 'confirmation_004'],
+  thud: ['impactPunch_heavy_000', 'impactPunch_heavy_001'],
+  wreck: ['impactMetal_medium_000', 'impactMetal_medium_001'],
 }
 
 /** 순회용 키 목록. 매번 Object.keys를 부르면 배열이 새로 생긴다 (A5). */
