@@ -15,7 +15,7 @@ import type { Camera } from './camera.ts'
 import { drawArcher } from './stickman.ts'
 import { skyOf, drawShadow } from './sky.ts'
 import type { SkyPalette } from './sky.ts'
-import { drawFoeArcher } from './foe.ts'
+import { drawFoeArcher, drawFoeRusher } from './foe.ts'
 import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { sprite } from './sprites.ts'
 import { createFx, pumpEvents, updateFx, drawFx, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash , PLAYER_PIN } from './effects.ts'
@@ -740,27 +740,26 @@ function drawTargets(
       // 체력 바 — 눈 위. 보스의 남은 목숨이 멀리서도 한 줄로 읽힌다.
       drawHpBar(ctx, x, hy - hr - 14, Math.max(40, rx * 1.2), t.hpMax > 0 ? t.hp / t.hpMax : 0)
     } else if (t.kind === 'charger') {
-      // ★ 나를 향해 오는 것. **왼쪽을 가리키는 뾰족한 삼각형** — 다른 어떤 과녁과도
-      // 실루엣이 겹치지 않아야 한다. 색을 못 봐도 "저건 다르다"가 먼저 와야 하기 때문이다.
-      // 뒤로 흐르는 꼬리 둘이 진행 방향을 말한다.
+      // ★ 나를 향해 **칼을 들고 달려오는 사람** (2026-08-31, 형: "척후는 비행체가 아니라
+      //   칼을 들고 나에게 달려오는 사람모습이어야해").
+      //
+      //   예전에는 왼쪽을 가리키는 삼각형 + 꼬리 둘이었다 — 날아오는 물건의 그림이다.
+      //   그런데 죽으면 sim 이 **사람 시체**를 세웠다(sim/target.ts downEvent, look 0).
+      //   본 것과 남는 것이 서로 다른 종이었다. 그림 쪽을 사람으로 맞춘다 —
+      //   이 게임에서 나를 향해 오는 것은 기계가 아니라 사람이어야 무섭기 때문이다.
+      const dir = w.archer.x < t.x ? -1 : 1
+      // 달리는 위상 — 발이 땅을 치는 주기. 시계는 sim 의 것이다 (A1: 렌더는 읽기만).
+      const phase = w.elapsed * P.render.rusherCadence * TAU + t.id * 1.3
+      // 속도선 — 뒤로 흐르는 두 줄. 사람이어도 **빨리 온다**는 건 그대로 말해야 한다.
       ctx.strokeStyle = THEME.threatDim
       ctx.lineWidth = 1.5
       ctx.beginPath()
-      ctx.moveTo(x + rx * 0.6, y - ry * 0.5)
-      ctx.lineTo(x + rx * 1.9, y - ry * 0.5)
-      ctx.moveTo(x + rx * 0.6, y + ry * 0.5)
-      ctx.lineTo(x + rx * 1.9, y + ry * 0.5)
+      ctx.moveTo(x - dir * rx * 0.9, y - ry * 0.35)
+      ctx.lineTo(x - dir * rx * 2.1, y - ry * 0.35)
+      ctx.moveTo(x - dir * rx * 0.9, y + ry * 0.45)
+      ctx.lineTo(x - dir * rx * 2.1, y + ry * 0.45)
       ctx.stroke()
-
-      ctx.fillStyle = THEME.threat
-      ctx.beginPath()
-      ctx.moveTo(x - rx, y)
-      ctx.lineTo(x + rx * 0.8, y - ry)
-      ctx.lineTo(x + rx * 0.8, y + ry)
-      ctx.closePath()
-      ctx.fill()
-      // 중심 표시 — 이것도 과녁이라 정중앙이 있다.
-      band(ctx, x, y, rx * DRAW.ringCore, ry * DRAW.ringCore, THEME.target2)
+      drawFoeRusher(ctx, x, y, rx, ry, dir, phase, THEME.threat)
     } else if (t.kind === 'bonus') {
       // 보급 — 무엇을 주는지 그림이 말한다 (형: "화살인지 체력인지 확실히").
       //  · 기력: 초록 원 + 십자 (치료의 문법)

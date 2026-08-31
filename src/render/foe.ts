@@ -67,6 +67,8 @@ const F = {
 const ARMOR = '#8fa3b5'
 const ARMOR_LINE = '#373e4b'
 const ARROW_COL = '#e8dcc0'
+/** 칼날 — 쇳빛. 몸색과 같으면 팔이 하나 더 달린 것으로 보인다 (drawFoeRusher). */
+const BLADE = '#c8d2dc'
 
 /**
  * 사람 하나를 그린다. `legs`가 false면 상반신만 (창가의 사수 — 하반신은 벽 뒤다).
@@ -250,4 +252,127 @@ export function drawFoeArcher(
   ctx.beginPath()
   ctx.arc(dx, dy, fr, 0, TAU)
   ctx.fill()
+}
+
+/**
+ * 돌진하는 적 — **칼을 들고 달려오는 사람** (2026-08-31, 형의 반려).
+ *
+ * 형: "척후는 비행체가 아니라 칼을 들고 나에게 달려오는 사람모습이어야해.
+ *      그리고 비행체라면 비행체라고 해야하고. 비행체는 죽을때 사람시체로 쓰면 안돼."
+ *
+ * 옳은 지적이었다. 예전 돌진은 **왼쪽을 가리키는 삼각형 + 꼬리 둘**이었다 — 누가 봐도
+ * 날아오는 물건이다. 그런데 죽으면 sim이 사람 시체를 세웠다(sim/target.ts downEvent,
+ * look 0). 눈으로 본 것과 죽어 남은 것이 서로 다른 종(種)이었던 셈이다.
+ *
+ * ★ 그래서 이 파일의 규칙은 하나다: **화면에 보이는 것과 죽어 남는 것이 같은 종이어야 한다.**
+ *   사람으로 그리면 사람 시체가 남고(look 0), 기계로 그리면 잔해가 남아야 한다(look 3,
+ *   render/effects.ts drawCorpses). 새 적을 그릴 때 둘 중 하나를 먼저 정하고 시작해라.
+ *
+ * 실루엣은 적 궁수와 **겹치면 안 된다** — 색을 못 봐도 "저건 다르다"가 먼저 와야 한다.
+ *   · 궁수는 **선다.** 몸이 조준축 위에 서고 두 발이 나란하다.
+ *   · 돌진은 **달린다.** 몸이 앞으로 기울고, 다리가 벌어지고, 칼이 위로 올라와 있다.
+ * 달리는 위상(phase)은 sim의 elapsed에서 온다 — 렌더는 시계를 갖지 않는다 (A1).
+ */
+export function drawFoeRusher(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, rx: number, ry: number,
+  dir: number, phase: number, col: string,
+): void {
+  const lw = Math.max(2, rx * 0.14)
+  const sw = Math.sin(phase)      // 다리·팔의 흔들림
+  const bob = Math.abs(Math.cos(phase)) * ry * 0.06  // 달리면 몸이 위아래로 뛴다
+
+  // 발이 닿는 선 — 과녁 원의 밑동. 다른 적과 같은 규칙이라 그림자와도 맞는다.
+  const footY = y + ry
+  // 골반·어깨 — 달리는 사람은 **앞으로 기운다.** 어깨가 골반보다 진행 방향으로 나가 있다.
+  const hipX = x + dir * rx * 0.06
+  const hipY = y + ry * 0.34 - bob
+  const shX = x + dir * rx * 0.34
+  const shY = y - ry * 0.42 - bob
+
+  ctx.save()
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  ctx.strokeStyle = col
+
+  // ── 다리 — 무릎에서 한 번 꺾인다. 곧은 막대 둘이면 걷는 것도 뛰는 것도 아니다 ──
+  ctx.lineWidth = lw
+  for (let i = 0; i < 2; i++) {
+    const s2 = i === 0 ? sw : -sw
+    // 앞으로 나온 다리는 들리고, 뒤로 뻗은 다리는 땅을 민다.
+    const fx = hipX + dir * rx * (0.1 + s2 * 0.62)
+    const fy = footY - Math.max(0, s2) * ry * 0.42
+    const kx = hipX + dir * rx * (0.08 + s2 * 0.3)
+    const ky = (hipY + fy) * 0.5 + ry * (s2 > 0 ? -0.12 : 0.06)
+    ctx.beginPath()
+    ctx.moveTo(hipX, hipY)
+    ctx.lineTo(kx, ky)
+    ctx.lineTo(fx, fy)
+    ctx.stroke()
+  }
+
+  // ── 몸통 ──
+  ctx.lineWidth = lw * 1.3
+  ctx.beginPath()
+  ctx.moveTo(hipX, hipY)
+  ctx.lineTo(shX, shY)
+  ctx.stroke()
+
+  // ── 뒷팔 — 다리와 반대로 흔든다. 같이 흔들면 인형이 된다 ──
+  ctx.lineWidth = lw
+  const bex = shX - dir * rx * (0.3 + sw * 0.2)
+  const bey = shY + ry * 0.3
+  ctx.beginPath()
+  ctx.moveTo(shX, shY)
+  ctx.lineTo(bex, bey)
+  ctx.lineTo(bex - dir * rx * 0.28, bey - ry * (0.18 - sw * 0.12))
+  ctx.stroke()
+
+  // ── 앞팔 + 칼 — 머리 위로 치켜든 자세. 이게 이 실루엣의 서명이다 ──
+  const elx = shX + dir * rx * 0.46
+  const ely = shY - ry * 0.18
+  const handX = shX + dir * rx * 0.72
+  const handY = shY - ry * (0.52 + sw * 0.06)
+  ctx.beginPath()
+  ctx.moveTo(shX, shY)
+  ctx.lineTo(elx, ely)
+  ctx.lineTo(handX, handY)
+  ctx.stroke()
+
+  // 목 + 머리 — 반경·높이는 적 궁수와 같은 비율이다. 같은 종족으로 보여야 한다.
+  const hr = Math.max(2, rx * P.enemy.archerHeadR)
+  const hx = shX + dir * rx * 0.2
+  const hy = y - rx * P.enemy.archerHeadUp - bob
+  ctx.lineWidth = lw
+  ctx.beginPath()
+  ctx.moveTo(shX, shY)
+  ctx.lineTo(hx, hy)
+  ctx.stroke()
+  ctx.fillStyle = col
+  ctx.beginPath()
+  ctx.arc(hx, hy, hr, 0, TAU)
+  ctx.fill()
+
+  // 칼 — **쇳빛**이다. 몸과 같은 색이면 팔이 하나 더 달린 것으로 보인다.
+  // 손에서 앞·위로 뻗고, 손 앞에 짧은 코등이가 붙는다. 그 한 획이 막대와 칼을 가른다.
+  const bladeX = handX + dir * rx * 1.05
+  const bladeY = handY - ry * 0.72
+  ctx.strokeStyle = BLADE
+  ctx.lineWidth = Math.max(1.6, rx * 0.11)
+  ctx.beginPath()
+  ctx.moveTo(handX - dir * rx * 0.12, handY + ry * 0.08)
+  ctx.lineTo(bladeX, bladeY)
+  ctx.stroke()
+  ctx.lineWidth = Math.max(1.2, rx * 0.07)
+  ctx.beginPath()
+  ctx.moveTo(handX - dir * rx * 0.1, handY - ry * 0.16)
+  ctx.lineTo(handX + dir * rx * 0.16, handY + ry * 0.12)
+  ctx.stroke()
+
+  // 주먹 — 칼자루를 쥐었다는 못. 궁수의 두 주먹과 같은 문법이다.
+  ctx.fillStyle = col
+  ctx.beginPath()
+  ctx.arc(handX, handY, Math.max(lw * F.fist, 1.6), 0, TAU)
+  ctx.fill()
+  ctx.restore()
 }

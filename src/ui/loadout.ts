@@ -190,6 +190,9 @@ export function mountLoadout(
   o.show(PANEL_ID, { sticky: true })
 }
 
+/** 여정 종료 화면에 달린 탭 복귀 리스너. 화면이 하나뿐이니 이것도 하나뿐이어야 한다. */
+let overVis: (() => void) | null = null
+
 /** 여정 종료 화면. 클릭 한 번이면 닫히고 onNext — 결과에 가두지 않는다 (C1). */
 export function showRunOver(
   o: Overlay,
@@ -246,12 +249,18 @@ export function showRunOver(
   const onVisibility = (): void => {
     if (!document.hidden && !done) o.show(OVER_ID)
   }
+  // ★ 이 화면은 **다시 열릴 수 있다** (game/loop.ts reopen — 형: "창 x 눌러버리면
+  //   다시시작할수가 없으니"). 그때마다 리스너를 새로 달면 탭 복귀 한 번에 show가 여러 번
+  //   불린다. 앞의 것을 먼저 뗀다 — 화면은 하나뿐이므로 리스너도 하나면 된다.
+  if (overVis !== null) document.removeEventListener('visibilitychange', overVis, true)
+  overVis = onVisibility
   document.addEventListener('visibilitychange', onVisibility, true)
   for (const btn of Array.from(wrap.querySelectorAll('button'))) {
     btn.addEventListener('click', () => {
       if (done) return
       done = true
       document.removeEventListener('visibilitychange', onVisibility, true)
+      overVis = null
       o.hide(true)
       onNext((btn as HTMLButtonElement).dataset['m'] === 'again' ? 'again' : 'loadout')
     })

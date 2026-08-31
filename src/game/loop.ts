@@ -250,6 +250,20 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   let arrow: ArrowKindId = DEFAULT_ARROW
   /** 드래프트 화면이 떠 있어 아직 판이 시작되지 않았다. 이 동안 판 넘김 입력을 무시한다. */
   let choosing = false
+  /**
+   * ★ **다시 여는 손잡이** (2026-08-31, 형: "게임오버됐을 때 창 x 눌러버리면 다시시작할
+   * 수가 없으니 어떻게좀해봐").
+   *
+   * 출정·여정 종료·보급·갈림길은 **콜백이 정확히 한 번 와야** 게임이 앞으로 간다.
+   * 그래서 choosing=true 로 판을 세워 두는데, 그 사이에 화면이 어떤 이유로든 사라지면
+   * (닫기 ✕·탭 복귀·확장 프로그램·모바일 브라우저의 화면 재구성) 게임은 **아무도 안 누른
+   * 채로 영원히 기다린다.** 다시 시작할 방법이 화면에 하나도 없다.
+   *
+   * 그러니 닫히지 않게 막는 대신 **닫혀도 되게** 만든다: 고르기를 기다리는 중인데 화면이
+   * 없으면 다음 프레임에 그 화면을 다시 연다. 콜백이 오면 여기를 null로 비운다 —
+   * 그 뒤로는 다시 열 것이 없다는 뜻이다.
+   */
+  let reopen: (() => void) | null = null
   /** 지도에서 고른 시작 판 (0-based). 다음 startRun이 소비하고 다시 null로 돌아간다. */
   let pendingStartIndex: number | null = null
 
@@ -410,13 +424,17 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       return
     }
     choosing = true
-    ui.loadout((pick) => {
+    // 닫혀도 되게 — 닫히면 다음 프레임에 다시 열린다 (reopen 주석).
+    const open = (): void => ui.loadout((pick) => {
       choosing = false
+      reopen = null
       // 고른 순간의 소리. ui/ 는 audio/ 를 직접 import하지 않기로 했으므로(레이어 방향)
       // 화면이 아니라 여기서 낸다 — 어차피 콜백이 정확히 한 번 오는 자리다.
       playUi(sfx, 'press')
       startRun(pick.bow)
     })
+    reopen = open
+    open()
   }
 
   /**
@@ -472,12 +490,18 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     save.runHp = Math.floor(P.enemy.hpMax)
     saveNow()
     choosing = true
-    ui.runOver(reached, save.runScore, save.bestRunStage, isNew, first, reason, summary, (mode) => {
-      choosing = false
-      // '같은 활로 다시' — 종료 화면에서 바로 출정한다. 재도전의 마찰은 클릭 하나면 족하다 (감사).
-      if (mode === 'again') startRun(save.bow)
-      else beginStage()
-    })
+    // ★ 여기가 형이 짚은 자리다 — 이 화면이 닫히면 **다시 시작할 방법이 하나도 없었다.**
+    //   기록은 이미 저장됐으므로(위 saveNow) 다시 여는 것으로 잃는 것은 없다.
+    const open = (): void =>
+      ui.runOver(reached, save.runScore, save.bestRunStage, isNew, first, reason, summary, (mode) => {
+        choosing = false
+        reopen = null
+        // '같은 활로 다시' — 종료 화면에서 바로 출정한다. 재도전의 마찰은 클릭 하나면 족하다 (감사).
+        if (mode === 'again') startRun(save.bow)
+        else beginStage()
+      })
+    reopen = open
+    open()
   }
 
   /**
@@ -585,8 +609,9 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       const hpMax2 = Math.floor(P.enemy.hpMax)
       const heal = save.runHp < hpMax2 ? Math.floor(P.enemy.healReward) : 0
       choosing = true
-      ui.supply(offer, bundle, heal, (id) => {
+      const open = (): void => ui.supply(offer, bundle, heal, (id) => {
         choosing = false
+        reopen = null
         playUi(sfx, 'press')
         if (id === 'heal') {
           save.runHp = Math.min(hpMax2, save.runHp + heal)
@@ -597,6 +622,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
         }
         saveNow()
       })
+      reopen = open
+      open()
     }
 
     // 체력은 다음 판으로 이어진다. 죽었으면(0) endRun이 처리한다.
@@ -616,6 +643,11 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
 
     const realDt = last === 0 ? 0 : (now - last) / 1000
     last = now
+
+    // 고르기를 기다리는데 화면이 사라졌다 — 다시 연다 (reopen 주석). 이 한 줄이 없으면
+    // 화면 하나가 닫히는 것으로 게임이 통째로 굳는다. 다시 열어도 안 열리는 경우(다른 흐름
+    // 모달이 이미 떠 있는 경우)에는 ui.paused()가 참이라 여기 들어오지 않는다.
+    if (choosing && reopen !== null && !ui.paused()) reopen()
 
     // 성장 화면이 열려 있으면 sim을 세운다. 읽는 동안 스태미나가 빠지거나 판이 끝나면 배신이다.
     const wantPause = ui.paused()
@@ -754,14 +786,17 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       const next = Math.min(stageIndex + 1, MAX_STAGE_INDEX)
       const opts = forkOptions(stageIndex + 2, getStage(next), lastForkKey)
       lastForkKey = forkPairKey(opts)
-      ui.fork(opts, (i) => {
+      const open = (): void => ui.fork(opts, (i) => {
         choosing = false
+        reopen = null
         playUi(sfx, 'press')
         forkPick = opts[i] ?? null
         if (stageIndex < MAX_STAGE_INDEX) stageIndex++
         armFork = true
         beginStage()
       })
+      reopen = open
+      open()
     }
 
     // 결과 화면에 가두지 않는다 (제약 C1). 다시 누르는 순간 바로 다음 판. 확인 버튼 없음.
@@ -847,10 +882,18 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   /**
    * 자동재생 정책상 사용자 제스처 한 번 전에는 어떤 소리도 못 낸다.
    * 첫 눌림에서만 열고 스스로 사라진다. (M 키 토글은 audio/sfx.ts가 직접 듣는다 — 여기 중복 금지)
+   *
+   * ★ **캔버스가 아니라 창 전체에서, 캡처 단계로 듣는다** (2026-08-31, 형: "왜 소리가
+   *   안나는지 모르겠다"). 예전에는 canvas 의 pointerdown 만 들었다. 그런데 이 게임의
+   *   첫 터치는 폰에서 거의 언제나 **DOM 버튼**이다 — 화면 아래 조작 바, 갈림길 카드,
+   *   성장 화면. 그 탭은 캔버스에 닿지 않으므로 AudioContext 가 영영 안 열리고,
+   *   자동재생 정책상 그 뒤의 모든 소리가 조용히 사라진다. 버튼이 이벤트를 멈춰 세워도
+   *   놓치지 않게 **캡처 단계**에서 듣는다.
    */
   const onFirstGesture = (): void => {
     unlockSfx(sfx)
-    canvas.removeEventListener('pointerdown', onFirstGesture)
+    window.removeEventListener('pointerdown', onFirstGesture, true)
+    window.removeEventListener('touchstart', onFirstGesture, true)
     window.removeEventListener('keydown', onFirstGesture)
   }
 
@@ -876,7 +919,10 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
 
   document.addEventListener('visibilitychange', onVisibility)
   window.addEventListener('pagehide', onHidden)
-  canvas.addEventListener('pointerdown', onFirstGesture)
+  // 캡처 단계 — 버튼이 이벤트를 멈춰도 첫 제스처는 반드시 여기 먼저 닿는다.
+  window.addEventListener('pointerdown', onFirstGesture, true)
+  // pointerdown 을 안 내는 옛 사파리를 위한 두 번째 문. 둘 다 한 번만 열고 사라진다.
+  window.addEventListener('touchstart', onFirstGesture, true)
   window.addEventListener('keydown', onFirstGesture)
 
   return {
@@ -1014,7 +1060,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       unsubscribe()
       document.removeEventListener('visibilitychange', onVisibility)
       window.removeEventListener('pagehide', onHidden)
-      canvas.removeEventListener('pointerdown', onFirstGesture)
+      window.removeEventListener('pointerdown', onFirstGesture, true)
+      window.removeEventListener('touchstart', onFirstGesture, true)
       window.removeEventListener('keydown', onFirstGesture)
       sfx.dispose()
       input.dispose()

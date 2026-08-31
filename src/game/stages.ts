@@ -268,7 +268,10 @@ function convertToFoes(base: StageDef, i: number): StageDef {
     //   (반경 = 각크기 × 거리)이 통째로 죽는다 — 112m 짜리 적이 0.62m면 화면에서 5px다.
     //   그게 5장(곡사, 55~115m)이 "안 보이고 화면 밖"이던 진짜 이유다.
     //   사람은 과녁보다 조금 크게 잡는다(foeR) — 몸통은 판때기보다 넓다.
-    const fr = (t.r ?? 0.6) * P.enemy.foeR
+    //   반경에는 **하한이 있다** (2026-08-31, 형: "창문이 너무 작아서 적이 거의 안보이는").
+    //   각크기 규칙은 먼 적을 살리는 규칙이지 가까운 적을 점으로 만드는 규칙이 아니다.
+    //   창은 이 r에서 나오므로(render/buildings.ts) r이 작으면 창도 사람도 같이 작아진다.
+    const fr = Math.max(P.enemy.foeMinR, (t.r ?? 0.6) * P.enemy.foeR)
     if (t.kind === 'aerial') {
       specs.push({ kind: 'archer', look: 3, x: t.x, y: t.y, r: fr, ampX: 1.4, freq: 0.18, ...common })
     } else if (t.kind === 'moving') {

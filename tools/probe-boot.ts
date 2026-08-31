@@ -521,6 +521,47 @@ console.log(String.fromCharCode(10) + '6. 로드아웃 생명주기 (탭 복귀 
   check('시작한 뒤에는 패널을 되살리지 않는다', openPanel === '')
 }
 
+// ── 흐름 모달을 닫아버려도 게임이 안 굳는다 ──────────────────────
+//
+// 2026-08-31, 형: "게임오버됐을 때 창 x 눌러버리면 다시시작할수가 없으니 어떻게좀해봐."
+//
+// 출정·여정 종료·보급·갈림길은 콜백이 정확히 한 번 와야 게임이 앞으로 간다. 그래서 그동안
+// 판을 세워 두는데(choosing), 그 화면이 콜백 없이 사라지면 **아무도 안 누른 채로 영원히
+// 기다린다.** 여기서 재는 것은 하나다: 화면이 사라지면 **스스로 다시 열리는가.**
+{
+  console.log('')
+  console.log('6. 흐름 모달을 닫아버렸다 (형: "창 x 눌러버리면 다시시작할수가 없으니")')
+  // 위 절이 탭 숨김을 흉내내며 프레임 예약을 끊어 놨다 — 브라우저라면 탭이 보이는 동안
+  // 계속 도는 상태다. start()는 멱등이라(이미 opened) 여기서 다시 태우기만 한다.
+  loop.start()
+  pump(2)
+
+  // 여정이 없으면 하나 연다 — mapJump 가 진행 중인 여정을 접어야 종료 화면이 뜬다.
+  if (!save.runActive && panelOpen) {
+    panelOpen = false
+    pendingStart({ bow: 'practice' })
+    pump(3)
+  }
+  const before = runOverShown
+  loop.mapJump(0)
+  pump(2)
+  check('여정 종료 화면이 뜬다', runOverShown === before + 1, `shown=${runOverShown}`)
+
+  // ★ 창을 닫아버린다 — 콜백 없이 화면만 사라진 상태.
+  panelOpen = false
+  pump(3)
+  check('닫아버려도 다시 뜬다 (게임이 안 굳는다)',
+    runOverShown === before + 2 && panelOpen, `shown=${runOverShown} panelOpen=${panelOpen}`)
+
+  // 정상 경로로 빠져나오면 더는 다시 열지 않는다.
+  panelOpen = false
+  pendingNext()
+  pump(3)
+  const after = runOverShown
+  pump(10)
+  check('버튼을 누른 뒤에는 되살리지 않는다', runOverShown === after, `shown=${runOverShown}`)
+}
+
 console.log('')
 console.log(`스테이지 ${STAGES.length}판 · 해금 ${UNLOCKS.length}칸`)
 console.log(fails === 0 ? '전부 통과' : `${fails}건 실패`)

@@ -62,7 +62,6 @@ function newArcher(): ArcherState {
     tremorOffset: 0,
     tremorAmp: 0,
     tremorPhase: 0,
-    focus: 0,
     draw: 0,
     drawTime: 0,
     holdTime: 0,
@@ -237,18 +236,35 @@ function resetArrow(a: Arrow): void {
 }
 
 function loadTarget(t: Target, id: number, spec: TargetSpec): void {
+  // 돌진은 사람이라 **사람보다 작아질 수 없다** (P.enemy.foeMinR — 창가의 사수와 같은 하한).
+  // 무한 구간의 각크기 규칙은 먼 것을 살리는 규칙이지, 가까운 사람을 0.34m 짜리로
+  // 줄이라는 규칙이 아니다. 그 크기로는 칼을 든 사람이 그려지지 않는다.
+  const r = spec.kind === 'charger'
+    ? Math.max(P.enemy.foeMinR, spec.r ?? FALLBACK_TARGET_R)
+    : spec.r ?? FALLBACK_TARGET_R
+  /**
+   * ★ 돌진(charger)은 **사람이다 — 땅을 달려온다** (2026-08-31, 형: "칼을 들고 나에게
+   * 달려오는 사람모습이어야해"). 사람은 공중에 뜨지 않으므로 중심 높이를 저작이 정하지
+   * 않는다: 발이 지면(y=0)에 닿는 자리 = **반경 그 자체**다. 다른 사람 적과 같은 규칙이다
+   * (실험장의 사수도 r 0.65 · y 0.72 로 발이 땅에 있다).
+   *
+   * 그전에는 1.3~3.2m 상공에 떠 있었고, 그래서 그림도 날아오는 삼각형일 수밖에 없었다.
+   * 규칙을 여기 두는 이유: 돌진을 놓는 곳이 둘(game/forks.ts · game/endless.ts)이라
+   * 저작 쪽에 두면 한쪽이 빠진다. 지면은 세계의 사실이지 저작의 취향이 아니다.
+   */
+  const y = spec.kind === 'charger' ? r : spec.y
   t.id = id
   t.alive = true
   t.kind = spec.kind
   t.x = spec.x
-  t.y = spec.y
+  t.y = y
   t.px = spec.x
-  t.py = spec.y
+  t.py = y
   t.vx = 0
   t.vy = 0
-  t.r = spec.r ?? FALLBACK_TARGET_R
+  t.r = r
   t.baseX = spec.x
-  t.baseY = spec.y
+  t.baseY = y
   t.ampX = spec.ampX ?? 0
   t.ampY = spec.ampY ?? 0
   t.freq = spec.freq ?? 0

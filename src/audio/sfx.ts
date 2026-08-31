@@ -111,6 +111,18 @@ const SFX = {
   // ── 만작 "툭" ── 크지 않게. "걸렸다"만 알리면 된다.
   fullFreq: 155,
   fullDur: 0.045,
+  /**
+   * 만작 "삥" — 툭 위에 얹는 맑은 한 톨 (2026-08-31, 형: "최대로 당겨졌을때 (…)
+   * 동시에 소리도 뭔가 작게 '삥' 하는 소리 들렸으면 좋겠다").
+   *
+   * 왜 툭만으로 부족했나: 툭은 155Hz 45ms짜리 저역이라 **폰 스피커에서 거의 안 들린다.**
+   * 만작은 화면에서 이미 반짝이는데(render/stickman.ts rig.flash) 귀에는 아무것도 안 왔다.
+   * 삥은 그 섬광과 **같은 프레임**에 나는 소리다 — 눈과 귀가 같은 순간을 가리켜야 한다.
+   * 살짝 내려가게 둔다: 완전한 정현파 삑은 알림음으로 들리고, 조금 흐르면 종으로 들린다.
+   */
+  fullPingFreq: 2100,
+  fullPingEndFreq: 1980,
+  fullPingDur: 0.085,
 
   // ── 긴장음 (지속) ── 빨간 바를 넘긴 동안만 울린다. 거슬리면 안 된다. 아주 작게 잡았다.
   tremorFreq: 115,
@@ -1561,14 +1573,17 @@ export function pumpSfx(sfx: Sfx, w: World): void {
       CK.gain = P.audio.fullGain
       CK.delay = 0
       click(s, K_FULL, CK)
-    } else if (e.t === 'full_focus') {
-      // 집중이 찼다 — 만작 소리보다 **한 옥타브 위, 더 작게.** 만작이 "걸렸다"라면
-      // 이건 "됐다"다. 크면 이 소리를 들으려고 매번 끝까지 참게 되고, 그러면 선택이 사라진다.
-      CK.freq = SFX.fullFreq * 2
-      CK.dur = SFX.fullDur * 1.4
-      CK.gain = P.audio.fullGain * 0.7
-      CK.delay = 0
-      click(s, K_FULL, CK)
+      // 삥 — 만작 섬광과 같은 순간의 맑은 한 톨. 툭(저역)이 몸이고 이게 신호다.
+      // 작게 잡는다: 크면 만작이 상으로 들려 매번 끝까지 끌게 된다 (위 툭과 같은 이유).
+      TN.type = 'sine'
+      TN.freq = SFX.fullPingFreq
+      TN.endFreq = SFX.fullPingEndFreq
+      TN.dur = SFX.fullPingDur
+      TN.attack = 0.001
+      TN.decay = SFX.fullPingDur
+      TN.gain = P.audio.fullGain * 0.45
+      TN.delay = 0
+      tone(s, K_FULL, TN)
     } else if (e.t === 'draw_start') {
       // 시위를 잡는 소리. 지속 삐걱은 updateSfx가 이어받는다.
       NB.filterType = 'bandpass'

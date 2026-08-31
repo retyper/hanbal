@@ -182,7 +182,9 @@ export function applyFork(stage: StageDef, opt: ForkOption, n: number): StageDef
       }, P.fork.supplyGap)
     case 'scout':
       return addOutside(stage, {
-        kind: 'charger', x: 0, y: P.fork.scoutY, r: P.fork.scoutR, score: 120,
+        // y 는 여기서 안 정한다 — 돌진은 사람이라 **발이 땅에 닿는 높이**가 곧 반경이다
+        // (sim/world.ts). 예전의 P.fork.scoutY(1.3m)는 그래서 없앴다.
+        kind: 'charger', x: 0, y: P.fork.scoutR, r: P.fork.scoutR, score: 120,
       }, P.fork.scoutGap)
     case 'single': {
       const arrows = Math.max(Math.floor(P.fork.singleFloor), Math.round(stage.arrows * P.fork.singleKeep))

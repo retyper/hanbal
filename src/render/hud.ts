@@ -128,15 +128,6 @@ const HUD = {
   /** 1초 눈금이 이보다 촘촘해지면 오히려 안 읽힌다 — 그리지 않는다 */
   tickMinPx: 7,
   tickW: 1,
-  /**
-   * 집중 막대 — 스태미나 게이지 **바로 아래**에 붙는 두 번째 줄 (sim/types.ts ArcherState.focus).
-   *
-   * 왜 게이지 옆이 아니라 아래인가: 눈이 조준점과 게이지를 왕복하면 그 자체가 페널티다
-   * (이 파일 머리말). 스태미나를 이미 보고 있는 그 자리에서 한 줄 아래를 곁눈으로 읽게 한다.
-   * 그리고 **이름표를 여기 안 단다** — 조준 표식이 지나는 44px 안이라 글자를 두면 조준을 가린다.
-   */
-  focusGap: 5,
-  focusH: 4,
   /** 빨간 바가 게이지 위아래로 삐져나오는 길이. 게이지에서 유일하게 튀어나오는 것이다. */
   zoneOut: 5,
   zoneW: 2,
@@ -859,21 +850,10 @@ export function drawHud(
     ctx.globalAlpha = gaugeA
   }
 
-  // ── 집중 — 만작 뒤에 차오르는 두 번째 줄 (docs/GAP.md · sim/bow.ts aimedAngle) ──
-  //
-  // 이 막대가 이 게임의 새 질문이다: **"지금 놓을까, 한 뼘 더 참을까."**
-  // 차오르는 만큼 화살이 겨눈 **방향**이 아니라 겨눈 **자리**로 간다. 그 대가로 스태미나가
-  // 줄어 빨간 바 아래로 내려가므로, 이 막대가 차는 동안 위 게이지는 위험 쪽으로 간다.
-  // 둘이 붙어 있어야 그 맞바꿈이 한눈에 읽힌다.
-  if (a.focus > 0) {
-    const fy = gy + gh + px(HUD.focusGap, M.s)
-    const fh = px(HUD.focusH, M.s)
-    ctx.fillStyle = THEME.gaugeBack
-    ctx.fillRect(gx, fy, gw, fh)
-    // 다 차면 강조색. 그전까지는 안전 구간과 같은 청록이다 — 색 언어를 늘리지 않는다.
-    ctx.fillStyle = a.focus >= 1 ? THEME.accent : THEME.gauge
-    ctx.fillRect(gx, fy, gw * a.focus, fh)
-  }
+  // ★ 게이지는 **하나뿐이다** (2026-08-31, 형: "당기는 힘 떨어지는 바 밑에 뭔가 하나 바가
+  //   더 생겼는데 그거 필요없을듯. 지워버려"). 여기 있던 '집중' 막대는 걷어냈다 —
+  //   조준선이 지나는 44px 안에 줄이 둘이면 그 자체가 읽기 비용이고, 무엇보다 '집중'은
+  //   이미 숨참기 스탯의 이름이었다. 새 줄을 여기 놓기 전에 그 두 가지를 먼저 넘어야 한다.
 
   }
   ctx.globalAlpha = 1

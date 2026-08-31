@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types tests/*.test.ts",
     "balance": "node --experimental-strip-types tools/balance-sim.ts",
-    "probe": "node --experimental-strip-types tools/probe-boot.ts && node --experimental-strip-types tools/probe-arrows.ts && node --experimental-strip-types tools/probe-audio.ts && node --experimental-strip-types tools/probe-render.ts && node --experimental-strip-types tools/probe-ui.ts && node --experimental-strip-types tools/probe-form.ts && node --experimental-strip-types tools/probe-city.ts && node --experimental-strip-types tools/probe-sky.ts && node --experimental-strip-types tools/probe-style.ts && node --experimental-strip-types tools/probe-focus.ts && node --experimental-strip-types tools/probe-armor.ts",
+    "probe": "node --experimental-strip-types tools/probe-boot.ts && node --experimental-strip-types tools/probe-arrows.ts && node --experimental-strip-types tools/probe-audio.ts && node --experimental-strip-types tools/probe-render.ts && node --experimental-strip-types tools/probe-ui.ts && node --experimental-strip-types tools/probe-form.ts && node --experimental-strip-types tools/probe-city.ts && node --experimental-strip-types tools/probe-sky.ts && node --experimental-strip-types tools/probe-style.ts && node --experimental-strip-types tools/probe-armor.ts && node --experimental-strip-types tools/probe-foe.ts",
     "budget": "node --experimental-strip-types tools/budget.ts"
   },
   "devDependencies": {
