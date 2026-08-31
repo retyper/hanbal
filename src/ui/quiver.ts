@@ -16,6 +16,8 @@ import type { Overlay } from './overlay.ts'
 const CSS = `
 .q-row { display: flex; gap: 8px; align-items: flex-end; }
 .q-btn { padding: 7px 12px; font-size: 13px; display: inline-flex; align-items: center; gap: 7px; }
+/* 손가락으로 누르는 화면에서는 살통 버튼도 44px를 지킨다 (ui/overlay.ts 와 같은 규칙). */
+@media (pointer: coarse) { .q-btn { min-height: 44px; padding: 7px 14px; } }
 .q-btn .q-ic { color: var(--tint); line-height: 0; }
 .q-btn b { font-size: 13px; color: var(--accent); }
 .q-btn.q-on { border-color: var(--teal); color: var(--teal); }

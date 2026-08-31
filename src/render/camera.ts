@@ -28,20 +28,20 @@ export interface Camera {
  * 파일 소유가 나뉘어 palette.ts를 새로 만들 수 없어, 렌더 레이어의 유일한 leaf인 여기에 둔다.
  */
 export const THEME = {
-  sky0: '#0b0e13',
-  sky1: '#1a222c',
+  sky0: '#1c2129',
+  sky1: '#343e4b',
   /** 능선 3겹 — 멀수록 하늘에 가깝게. 겹이 셋은 되어야 '산속'이 된다 (형: "배경이 밋밋해"). */
-  ridgeFaint: '#161f2b',
-  ridgeFar: '#121a23',
-  ridgeNear: '#0d1319',
+  ridgeFaint: '#2e3a49',
+  ridgeFar: '#283440',
+  ridgeNear: '#202932',
   /** 능선 사이의 밤안개. 알파로만 얹는다. */
-  mist: '#3a4a5e',
+  mist: '#5a6b7f',
   /** 밤구름 — 하늘보다 아주 조금 밝게, 천천히 흐른다. */
-  cloud: '#242f3d',
+  cloud: '#414e5e',
   /** 소나무 실루엣 — 가장 어두운 근경. */
-  pine: '#0a0f15',
-  ground: '#080b0f',
-  groundLine: '#28313c',
+  pine: '#1a232c',
+  ground: '#171c23',
+  groundLine: '#46505d',
   body: '#d3dce6',
   bodyDim: '#93a0ad',
   bow: '#d9cba6',
@@ -58,7 +58,7 @@ export const THEME = {
   hudText: '#ccd6e0',
   gauge: '#6cc7b8',
   gaugeWarn: '#ff6a45',
-  gaugeBack: '#1d232b',
+  gaugeBack: '#2c333d',
 
   // ── 과녁의 살 (GDD 8장: 색 수는 늘리지 않는다 — 이미 있는 셋을 띠로 나눠 쓴다) ──
   /** 과녁 바깥 테. 어두운 하늘에서 과녁을 **찾을 수 있게** 하는 유일한 밝은 면이다. */
@@ -68,9 +68,9 @@ export const THEME = {
    * 과녁의 어두운 띠. #121820이던 시절 하늘(#0b0e13~#1a222c)과 겹쳐 **뚫린 구멍**으로
    * 보였다 — "과녁이 투명하면 통과되지 맞는 게 아니잖아"(형). 판은 판으로 보여야 한다.
    */
-  targetBand: '#33404f',
+  targetBand: '#42505f',
   /** 지면에 세운 기둥 / 이동 과녁의 레일. 있는 줄도 모를 만큼 어둡게. */
-  prop: '#1b232d',
+  prop: '#2b3542',
 
   // ── 바람 (지금까지 화면에 없던 것) ──
   windPole: '#3a4756',
@@ -78,15 +78,15 @@ export const THEME = {
 
   /** 돌진 과녁 — 이 게임에서 유일하게 나를 향해 오는 것. 위험색은 붕괴 경고와 같은 걸 쓴다. */
   threat: '#ff6a45',
-  threatDim: '#5e2a20',
+  threatDim: '#70362a',
   /** 보급 과녁 — 안전 구간 게이지와 같은 청록. "이건 벌이 아니라 상이다"가 색으로 읽힌다. */
   bonus: '#6cc7b8',
 
   // ── 하늘과 땅의 결 ──
-  star: '#4e5c6e',
-  starEmpty: '#4a5866',
+  star: '#63738a',
+  starEmpty: '#5c6b7c',
   moon: '#cbd6e4',
-  grass: '#131c24',
+  grass: '#202b34',
 } as const
 
 /**
@@ -96,6 +96,28 @@ export const THEME = {
 const VIEW = {
   /** 화면 가장자리 여백 비율 */
   margin: 0.12,
+
+  // ── 세로 화면 (폰) ──────────────────────────────────────────────────
+  //
+  // 형: "모바일에서 세로로 잘 작동하게." 가로 화면 값을 그대로 쓰면 폰에서 장면이
+  // 화면 한가운데 우표만 하게 박힌다 — 가로가 좁아 scale이 폭에 묶이는데(fit),
+  // 남는 세로 공간은 위아래로 똑같이 버려지기 때문이다.
+  //
+  // 그래서 세로에서는 둘을 바꾼다:
+  //   ① 좌우 여백을 확 줄인다 — 폭이 유일하게 아쉬운 축이다.
+  //   ② 가운데 정렬을 그만두고 **지면을 아래 띠에 붙인다.** 남는 세로는 전부 하늘이
+  //      되고, 그 하늘 위에 HUD가 얹힌다. '작게 박힌 그림'이 '올려다보는 화면'이 된다.
+  // 위아래 띠는 캔버스 HUD(머리글·화살 수)와 DOM 버튼이 사는 자리다 — 과녁이 그 밑에
+  // 깔리지 않게 구도에서 미리 뺀다.
+  /** 세로로 볼 때(높이 > 폭 × 이 값) 아래 규칙이 켜진다 */
+  portraitAspect: 1.15,
+  /** 세로일 때 좌우 여백 비율 */
+  marginXPortrait: 0.045,
+  /** 세로일 때 위 띠 (캔버스 HUD 머리글·화살 수의 자리) */
+  bandTop: 0.2,
+  /** 세로일 때 아래 띠 (DOM HUD 버튼·토스트의 자리) */
+  bandBottom: 0.2,
+
   minScale: 8,
   maxScale: 110,
   /** 화살 포물선이 잘리지 않도록 위로 확보하는 높이 (m) */
@@ -191,12 +213,24 @@ function frame(cam: CameraX, w: World): void {
 
   const spanX = Math.max(maxX - minX, 1)
   const spanY = Math.max(maxY - minY, 1)
-  const availW = cam.w * (1 - VIEW.margin * 2)
-  const availH = cam.h * (1 - VIEW.margin * 2)
+  // 세로 화면에서는 여백 규칙 자체가 다르다 (VIEW.bandTop 주석).
+  const portrait = cam.h > cam.w * VIEW.portraitAspect
+  const mx = portrait ? VIEW.marginXPortrait : VIEW.margin
+  const mTop = portrait ? VIEW.bandTop : VIEW.margin
+  const mBot = portrait ? VIEW.bandBottom : VIEW.margin
+  const availW = cam.w * (1 - mx * 2)
+  const availH = cam.h * (1 - mTop - mBot)
   const fit = Math.min(availW / spanX, availH / spanY)
   cam.ts = clamp(fit, VIEW.minScale, VIEW.maxScale)
   cam.tx = (minX + maxX) * 0.5
-  cam.ty = (minY + maxY) * 0.5
+  if (portrait) {
+    // 지면(minY)을 아래 띠의 윗선에 붙인다. 폭에 묶여 남은 세로는 전부 하늘로 간다.
+    // worldToScreenY(minY) = h*0.5 - (minY - y)*s 를 h*(1-mBot) 로 놓고 y를 푼 것이다.
+    const anchor = cam.h * (1 - mBot)
+    cam.ty = minY + (anchor - cam.h * 0.5) / cam.ts
+  } else {
+    cam.ty = (minY + maxY) * 0.5
+  }
 }
 
 export function updateCamera(cam: Camera, w: World, dtReal: number): void {

@@ -53,6 +53,12 @@ const CSS = `
 .g-next { grid-column: 1; color: var(--teal); font-size: 13px; }
 .g-next.g-flat { color: var(--mute); }
 .g-up { grid-column: 2; grid-row: 1 / span 3; min-width: 108px; justify-content: center; }
+/* 폰 세로 — 오른쪽 버튼 칸까지 두면 문장이 한 글자씩 접힌다. 버튼을 아래 줄로 내린다. */
+@media (max-width: 480px) {
+  .g-row, .g-bow { grid-template-columns: 1fr; }
+  .g-up, .g-bow .g-bpick { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 8px; }
+  .g-h { flex-wrap: wrap; gap: 6px 14px; }
+}
 .g-cost { color: var(--accent); }
 .g-up[disabled] .g-cost { color: inherit; }
 
@@ -91,7 +97,7 @@ const CSS = `
   display: flex; align-items: center; gap: 12px; }
 .g-danger .hb-btn { font-size: 13px; color: var(--mute); }
 /* 1단계를 누르면 버튼이 위험색으로 바뀐다 — "정말인가"를 색이 먼저 묻는다. */
-.g-danger .hb-btn.g-armed { color: #ff6a45; border-color: #ff6a4577; }
+.g-danger .hb-btn.g-armed { color: #ff8a6a; border-color: #ff6a4577; }
 .g-danger span { color: var(--mute); font-size: 12px; flex: 1; }
 `
 

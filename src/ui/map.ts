@@ -52,7 +52,14 @@ function centerOf(n: number): Pt {
 const CSS = `
 .map-lead { color: var(--dim); font-size: 14px; margin: 4px 0 16px; }
 .map-lead b { color: var(--teal); font-weight: 700; font-family: inherit; }
-.map-wrap { position: relative; width: ${BOARD_W}px; height: ${BOARD_H}px; margin: 0 auto; }
+/* 판은 ${BOARD_W}px 고정이다 — 폰(360~390px)에는 안 들어간다. 가로 스크롤로 밀어놓으면
+   조준 중인 화면에서 손가락 드래그를 훔치므로, **통째로 줄여서** 다 보이게 한다.
+   배율은 열릴 때 JS가 --map-s 에 넣는다 (calc으로는 길이÷길이를 배수로 못 만든다). */
+.map-fit { width: 100%; overflow: hidden; }
+.map-wrap {
+  position: relative; width: ${BOARD_W}px; height: ${BOARD_H}px; margin: 0 auto;
+  transform: scale(var(--map-s, 1)); transform-origin: top center;
+}
 .map-wrap svg { position: absolute; inset: 0; pointer-events: none; }
 .map-ch {
   position: absolute; width: ${LABEL_W - 8}px; color: var(--dim); font-size: 11px;
@@ -62,17 +69,17 @@ const CSS = `
   position: absolute; width: ${NODE}px; height: ${NODE}px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-family: var(--num); font-size: 10.5px; color: var(--mute);
-  background: #10171f; border: 1px solid #202a35; transition: background .12s, border-color .12s;
+  background: var(--sunk); border: 1px solid var(--line); transition: background .12s, border-color .12s;
 }
-.map-node.done { background: #152029; border-color: #2c3846; color: #93a0b0; }
-.map-node.full { background: #1d2530; border-color: #3a4655; color: var(--accent); }
+.map-node.done { background: var(--card); border-color: #5c584c; color: var(--dim); }
+.map-node.full { background: var(--card-hi); border-color: var(--gold); color: var(--accent); }
 /* 보스 — 마름모. 판별 별 격자·수집 화면과 같은 문법이다. */
 .map-node.boss { border-radius: 5px; transform: rotate(45deg); width: ${NODE - 4}px; height: ${NODE - 4}px; }
 .map-node.boss span { display: block; transform: rotate(-45deg); }
 /* 체크포인트 — 열리면 노랑(강조색), 잠기면 흐리게. 열린 것만 누를 수 있다. */
 .map-node.ckpt { width: ${NODE + 4}px; height: ${NODE + 4}px; margin: -2px; }
 .map-node.ckpt.unlocked {
-  background: var(--accent); border-color: var(--accent); color: #0b0e13; font-weight: 700;
+  background: var(--accent); border-color: var(--accent); color: #241a06; font-weight: 700;
   cursor: pointer;
 }
 .map-node.ckpt.unlocked:hover { background: #ffc46a; border-color: #ffc46a; }
@@ -200,7 +207,24 @@ export function mountMap(
     wrap.appendChild(el)
     nodes.push({ n, el, span })
   }
-  panel.appendChild(wrap)
+  // 판을 담는 칸. 여기 폭에 맞춰 판 전체를 줄인다 (CSS .map-fit 주석).
+  const fit = document.createElement('div')
+  fit.className = 'map-fit'
+  fit.appendChild(wrap)
+  panel.appendChild(fit)
+
+  /**
+   * 판을 칸 폭에 맞춰 줄인다. transform은 레이아웃 높이를 바꾸지 않으므로
+   * 담는 칸의 높이도 같이 줄여 준다 — 안 그러면 판 아래로 빈 공간이 남는다.
+   * 패널이 닫혀 있으면 폭이 0이라 아무것도 하지 않는다 (열릴 때 다시 부른다).
+   */
+  const fitBoard = (): void => {
+    const avail = fit.clientWidth
+    if (avail <= 0) return
+    const k = Math.min(1, avail / BOARD_W)
+    fit.style.setProperty('--map-s', String(k))
+    fit.style.height = `${Math.ceil(BOARD_H * k)}px`
+  }
 
   const foot = document.createElement('div')
   foot.className = 'map-foot'
@@ -213,7 +237,7 @@ export function mountMap(
   open.className = 'hb-btn'
   open.innerHTML = '지도'
   open.setAttribute('aria-label', '지도 열기')
-  const isOpen = (): boolean => o.visible() && panel.classList.contains('hb-open')
+  const isOpen = (): boolean => o.showing(PANEL_ID)
   open.addEventListener('click', () => {
     if (isOpen()) {
       o.hide()
@@ -221,8 +245,17 @@ export function mountMap(
     }
     refresh()
     o.show(PANEL_ID)
+    // 배율은 패널이 실제로 보인 뒤에야 잰다 — 닫혀 있으면 폭이 0이다.
+    fitBoard()
   })
   o.hud().appendChild(open)
+
+  // 화면이 돌아가면(세로↔가로) 폭이 바뀐다. 열려 있을 때만 다시 잰다.
+  const onResize = (): void => {
+    if (o.showing(PANEL_ID)) fitBoard()
+  }
+  window.addEventListener('resize', onResize, { passive: true })
+  o.onDispose(() => window.removeEventListener('resize', onResize))
 
   function refresh(): void {
     const far = curBestRunStage

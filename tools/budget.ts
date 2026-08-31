@@ -47,12 +47,25 @@ try {
   process.exit(1)
 }
 
-// public/ 에서 복사돼 온 것(소리·스프라이트)은 세지 않는다 — 번들이 아니고,
-// 첫 페인트를 막지도 않는다 (첫 제스처 뒤에 받는다, audio/samples.ts).
+// public/ 에서 복사돼 온 것(소리·스프라이트·글꼴)은 세지 않는다 — 번들이 아니고,
+// 첫 페인트를 막지도 않는다 (소리는 첫 제스처 뒤에 받고 audio/samples.ts,
+// 글꼴 CSS는 첫 프레임 뒤에 ui/overlay.ts 가 붙인다 · font-display: swap).
+//
+// 확장자만 보면 public/fonts/fonts.css 같은 것이 '번들 CSS'로 잡힌다 (2026-08-31에
+// 실제로 그렇게 잡혀 예산을 1KB 넘겼다). 그래서 **public/ 의 실제 파일 목록**과 대조한다 —
+// 규칙을 글로만 적어두면 언젠가 또 어긋난다.
+const publicFiles = new Set<string>()
+try {
+  for (const p of walk('public', [])) {
+    publicFiles.add(p.replace(/\\/g, '/').replace(/^public\//, ''))
+  }
+} catch { /* public/ 이 없으면 대조할 것도 없다 */ }
+
 const CODE = /\.(js|css|html)$/
 const rows: Array<{ name: string; raw: number; gz: number }> = []
 for (const f of files) {
   if (!CODE.test(f)) continue
+  if (publicFiles.has(f.replace(/\\/g, '/').replace(/^dist\//, ''))) continue
   const buf = readFileSync(f)
   rows.push({ name: f.replace(/\\/g, '/'), raw: buf.length, gz: gzipSync(buf, { level: 9 }).length })
 }

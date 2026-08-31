@@ -1,0 +1,14 @@
+한 발 — 웹폰트 출처
+
+Gowun Batang (고운바탕) Bold — SIL Open Font License 1.1
+  https://fonts.google.com/specimen/Gowun+Batang  (제작: 야곰닷넷 / Yoon Design)
+  쓰는 곳: 패널 제목·큰 글자 (--serif)
+
+Barlow Condensed 500/600 — SIL Open Font License 1.1
+  https://fonts.google.com/specimen/Barlow+Condensed  (제작: Jeremy Tribby)
+  쓰는 곳: 숫자·계기 글자 (--num). Bahnschrift/DIN이 없는 기기(안드로이드·iOS)의 대역.
+
+woff2 조각과 unicode-range는 Google Fonts가 만든 것 그대로다 — 손대지 않았다.
+브라우저는 화면에 실제로 나온 글자가 든 조각만 받는다 (한글 95조각 중 보통 2~4개).
+다시 받으려면: tools/README 없음 — fonts.googleapis.com/css2 의 CSS를 받아
+url() 만 상대경로로 바꾸면 된다.

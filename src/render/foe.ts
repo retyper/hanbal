@@ -65,7 +65,7 @@ const F = {
 
 /** 갑옷 — 흉갑의 금속색. 머리는 맨머리다: 저기가 답이라는 뜻 (형의 주문). */
 const ARMOR = '#8fa3b5'
-const ARMOR_LINE = '#242a35'
+const ARMOR_LINE = '#373e4b'
 const ARROW_COL = '#e8dcc0'
 
 /**

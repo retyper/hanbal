@@ -26,22 +26,19 @@ const CSS = `
 .l-best b { color: var(--accent); font-size: 20px; margin-left: 6px; }
 .l-sec { color: var(--dim); font-size: 13px; letter-spacing: .12em; margin: 18px 0 8px; }
 .l-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+@media (max-width: 400px) { .l-grid { grid-template-columns: 1fr; } }
+/* 카드의 틀(문양 테두리·바탕·눌림)은 .hb-card 가 진다 (ui/overlay.ts).
+   여기는 그 안에 무엇이 어떤 크기로 들어가는지만 정한다. */
 .l-card .l-bic { color: var(--dim); line-height: 0; margin-bottom: 4px; }
-.l-card.l-on .l-bic { color: var(--teal); }
-.l-card {
-  display: flex; flex-direction: column; gap: 3px; text-align: left; padding: 12px 14px;
-  border: 1px solid #212b36; background: #101720e6; border-radius: 2px; cursor: pointer;
-  font: inherit; color: var(--body);
-}
-.l-card:hover { background: #1e2934; }
+.l-card.hb-on .l-bic { color: var(--teal); }
+.l-card { display: flex; flex-direction: column; gap: 3px; }
 .l-card .l-ic { color: var(--tint); line-height: 0; margin-bottom: 2px; }
 .l-card .l-n { color: var(--ink); font-weight: 700; font-size: 15px; }
 .l-card .l-d { color: var(--dim); font-size: 12px; line-height: 1.45; }
-.l-card.l-on { border-color: var(--teal); background: #14231f; }
-.l-card.l-on .l-n { color: var(--teal); }
+.l-card.hb-on .l-n { color: var(--teal); }
 /* 잠긴 활 — 흐리게, 조건은 보이게 (수집 화면과 같은 문법). 클릭은 안 먹는다. */
 .l-card.l-lock { opacity: .55; cursor: default; }
-.l-card.l-lock:hover { background: #101720e6; }
+.l-card.l-lock:hover { background: var(--card); }
 .l-card.l-lock .l-n { color: var(--mute); letter-spacing: .08em; }
 .l-syn { color: var(--teal); font-size: 13px; min-height: 22px; margin-top: 12px; }
 .l-card .l-syn2 { color: var(--teal); font-size: 12px; }
@@ -54,6 +51,7 @@ const CSS = `
 .o-wrap { text-align: center; padding: 8px 0 4px; }
 .o-reach { font-size: 15px; color: var(--dim); letter-spacing: .1em; }
 .o-stage { font-size: 52px; font-weight: 700; color: var(--ink); font-family: var(--num); line-height: 1.2; }
+@media (max-width: 640px) { .o-stage { font-size: 44px; } .l-h h2 { font-size: 26px; } }
 .o-score { color: var(--body); margin-top: 4px; }
 .o-new { color: var(--accent); font-weight: 700; margin-top: 10px; }
 .o-old { color: var(--dim); margin-top: 10px; }
@@ -110,7 +108,7 @@ export function mountLoadout(
   syn.className = 'l-syn'
 
   const refresh = (): void => {
-    for (const [id, el] of bowCards) el.classList.toggle('l-on', id === pick.bow)
+    for (const [id, el] of bowCards) el.classList.toggle('hb-on', id === pick.bow)
     // 궁합은 판에 그 살을 장전했을 때 성립한다 — 여기서는 활이 어떤 살과 궁합인지만 알려준다.
     const s = bowKind(pick.bow).synergy
     syn.textContent = s !== undefined ? `궁합 — ${s.label}` : ''
@@ -133,7 +131,7 @@ export function mountLoadout(
     const owned = id === 'practice' || bows.includes(id)
     const card = document.createElement('button')
     card.type = 'button'
-    card.className = owned ? 'l-card' : 'l-card l-lock'
+    card.className = owned ? 'hb-card l-card' : 'hb-card l-card l-lock'
     const lv = masteryLevel(Math.floor(bowHits[id] ?? 0))
     // 잠긴 활은 이름만이 아니라 그림도 가린다 — 실루엣까지 보이면 "가려졌다"가 아니다.
     card.innerHTML = `<span class="l-bic">${bowIconSvg(owned ? id : '', 34)}</span>` +
@@ -311,7 +309,7 @@ export function mountFork(
     const idx = i as 0 | 1
     const card = document.createElement('button')
     card.type = 'button'
-    card.className = 'l-card'
+    card.className = 'hb-card l-card'
     card.style.setProperty('--tint', FORK_TINT[opt.id] ?? '#7fd6c8')
     card.innerHTML = `<span class="l-n"></span><span class="l-syn2"></span><span class="l-d"></span>`
     ;(card.querySelector('.l-n') as HTMLElement).textContent = `${idx + 1}) ${opt.title}`
@@ -373,7 +371,7 @@ export function mountSupply(
     if (k === undefined) continue
     const card = document.createElement('button')
     card.type = 'button'
-    card.className = 'l-card'
+    card.className = 'hb-card l-card'
     // 아이콘은 효과의 그림풀이다 — 이름을 읽기 전에 무슨 살인지 짐작돼야 한다.
     card.style.setProperty('--tint', ARROW_TINT[id])
     card.innerHTML =
@@ -395,7 +393,7 @@ export function mountSupply(
     // 회복 — 화살 대신 몸을 고른다. 체력을 되찾는 유일한 길이라 셋과 나란히 설 자격이 있다.
     healCard = document.createElement('button')
     healCard.type = 'button'
-    healCard.className = 'l-card'
+    healCard.className = 'hb-card l-card'
     healCard.style.setProperty('--tint', '#7fd6c8')
     healCard.innerHTML =
       `<span class="l-ic"><svg width="30" height="30" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M14 6v16M6 14h16" /></svg></span>` +

@@ -10,6 +10,7 @@
  */
 
 import { createLoop } from './game/loop.ts'
+import { STAGES } from './game/stages.ts'
 import { loadSave } from './game/save.ts'
 import { progressOf, unlockedBows } from './game/unlocks.ts'
 import { createOverlay } from './ui/overlay.ts'
@@ -134,6 +135,14 @@ const idle: (fn: () => void) => void =
   'requestIdleCallback' in window
     ? (fn) => (window as unknown as { requestIdleCallback: (f: () => void) => void }).requestIdleCallback(fn)
     : (fn) => window.setTimeout(fn, 300)
+idle(() => {
+  // 캔버스에만 나오는 큰 글자(판 이름·결과 한마디)를 명조로 미리 받아둔다.
+  // 브라우저는 DOM에 나온 글자만 받으므로, 이걸 안 하면 그 글자들만 대역 글꼴로 남는다.
+  // 한 번에 모아 부르는 이유: unicode-range 조각 단위로 받으므로 요청 수는 몇 개뿐이다.
+  let big = '판클리어쓰러졌다화살이다했0123456789-'
+  for (const s of STAGES) big += s.title ?? ''
+  overlay.warmFont(big)
+})
 idle(() => withCollection(() => {
   // 살통은 상시 버튼(성장·수집) **뒤**에 붙는다 — 가변 폭 요소가 앞에 서면
   // 매 판 누르는 버튼들의 자리가 널뛴다 (감사 UI구조).

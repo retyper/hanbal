@@ -298,17 +298,50 @@ function recordHud(canvas: Canvas, r: Renderer, w: World): void {
 
 let total = 0
 
-function report(name: string): void {
+/** 겹침 말고 **값**을 묻는 검사 (세로 구도 등). 실패하면 겹침과 같은 무게로 센다. */
+function check(ok: boolean, label: string, detail = ''): void {
+  if (!ok) total++
+  console.log(`  ${ok ? 'ok ' : '⚠  '} ${label.padEnd(34)} ${detail}`)
+}
+
+/**
+ * 화면 밖으로 나간 것 — **세로 화면(폰)의 주된 고장 방식이다.**
+ *
+ * 겹침 검사만으로는 못 잡는다: 오른쪽 정렬 글자가 왼쪽 벽을 뚫거나(폭 부족),
+ * 왼쪽 열이 오른쪽으로 넘쳐 잘려도 남은 것끼리는 안 겹치기 때문이다.
+ * 잘린 글자는 겹친 글자보다 나쁘다 — 아예 없는 정보가 된다.
+ */
+const MIN_OUT = 2
+
+function findOutOfBounds(cw: number, ch: number): string[] {
+  const out: string[] = []
+  for (const b of boxes) {
+    if (b.alpha < MIN_ALPHA) continue
+    const dl = -b.x0
+    const dr = b.x1 - cw
+    const dt = -b.y0
+    const db = b.y1 - ch
+    const worst = Math.max(dl, dr, dt, db)
+    if (worst < MIN_OUT) continue
+    const side = worst === dl ? '왼쪽' : worst === dr ? '오른쪽' : worst === dt ? '위' : '아래'
+    out.push(`${b.label} 이(가) ${side} 밖으로 ${fmt(worst)}px`)
+  }
+  return out
+}
+
+function report(name: string, cw = 0, ch = 0): void {
   const texts = boxes.filter((b) => b.kind === 'text').length
   console.log(`\n── ${name} ──`)
   console.log(`  기록 ${boxes.length}개 (글자 ${texts} · 도형 ${boxes.length - texts})`)
   const hits = findOverlaps()
-  total += hits.length
-  if (hits.length === 0) {
-    console.log('  겹침 없음 ✓')
+  const outs = cw > 0 ? findOutOfBounds(cw, ch) : []
+  total += hits.length + outs.length
+  if (hits.length === 0 && outs.length === 0) {
+    console.log('  겹침 없음 ✓' + (cw > 0 ? ' · 화면 안 ✓' : ''))
     return
   }
   for (const h of hits) console.log(`  ⚠ ${h}`)
+  for (const h of outs) console.log(`  ⚠ ${h}`)
 }
 
 console.log('한 발 — UI 겹침 프로브 (HUD 사각형 전수 교차 검사)')
@@ -318,14 +351,67 @@ console.log('한 발 — UI 겹침 프로브 (HUD 사각형 전수 교차 검사
 const STAGES_UNDER_TEST: ReadonlyArray<readonly [number, string]> = [
   [0, '1판'], [10, '11판(적 궁수)'], [9, '10판(보스)'],
 ]
-for (const [cw, ch] of [[1280, 720], [800, 600]] as const) {
+// 세로 둘은 폰이다: 390x844(아이폰 14 급) · 360x640(작은 안드로이드, 가장 좁은 기준선).
+for (const [cw, ch] of [[1280, 720], [800, 600], [390, 844], [360, 640]] as const) {
   for (const [idx, name] of STAGES_UNDER_TEST) {
     const canvas = makeCanvas(cw, ch)
     const w = createWorld(getStage(idx), STATS)
     const r = createRenderer(canvas as unknown as HTMLCanvasElement)
     advance(w, 1)
     recordHud(canvas, r, w)
-    report(`${cw}x${ch} · ${name} · 시작 직후`)
+    report(`${cw}x${ch} · ${name} · 시작 직후`, cw, ch)
+  }
+}
+
+// ── 세로 화면 구도 (render/camera.ts VIEW.bandTop) ────────────────────
+//
+// 겹침 검사는 HUD끼리만 본다. 세로에서 진짜 물어야 하는 건 다른 것이다:
+// **과녁이 HUD 밑에 깔리지 않고, 지면이 화면 아래쪽에 앉는가.**
+// 가운데 정렬을 쓰면 폰에서 장면이 화면 한복판에 우표만 하게 박히고 위아래가 통째로 빈다.
+{
+  const { worldToScreenX, worldToScreenY } = await import('../src/render/camera.ts')
+  console.log('\n── 세로 구도 (390x844 · 844x390 비교) ──')
+  const shot = (cw: number, ch: number, idx: number): { s: number; ground: number; top: number; bot: number; l: number; r: number } => {
+    const canvas = makeCanvas(cw, ch)
+    const w = createWorld(getStage(idx), STATS)
+    const r = createRenderer(canvas as unknown as HTMLCanvasElement)
+    advance(w, 1)
+    r.draw(w, 0, 1 / 60, HUD_STATE)
+    const cam = getCamera(r)
+    let top = Infinity
+    let bot = -Infinity
+    let l = Infinity
+    let rr = -Infinity
+    for (const t of w.stage.targets) {
+      const rad = t.r ?? 0.5
+      const x = worldToScreenX(cam, t.x)
+      const y = worldToScreenY(cam, t.y)
+      const px = rad * cam.scale
+      if (y - px < top) top = y - px
+      if (y + px > bot) bot = y + px
+      if (x - px < l) l = x - px
+      if (x + px > rr) rr = x + px
+    }
+    return { s: cam.scale, ground: worldToScreenY(cam, 0), top, bot, l, r: rr }
+  }
+
+  for (const idx of [0, 10]) {
+    const p = shot(390, 844, idx)
+    const name = idx === 0 ? '1판' : '11판'
+    console.log(
+      `  ${name} 세로  scale ${p.s.toFixed(1)}px/m · 지면 y=${p.ground.toFixed(0)}/844 ` +
+      `· 과녁 y ${p.top.toFixed(0)}~${p.bot.toFixed(0)} · x ${p.l.toFixed(0)}~${p.r.toFixed(0)}`,
+    )
+    // 위 띠(0.2)는 캔버스 HUD의 자리다 — 과녁이 그 밑으로 들어가면 머리글과 겹쳐 보인다.
+    check(p.top >= 844 * 0.2 - 2, `${name} — 과녁이 위 HUD 띠 아래에 있다`, `${p.top.toFixed(0)} ≥ 169`)
+    // 지면은 화면의 아래쪽에 앉아야 한다. 가운데면 세로 공간을 절반 버린 것이다.
+    check(p.ground > 844 * 0.6, `${name} — 지면이 화면 아래쪽에 앉는다`, `y=${p.ground.toFixed(0)} > 506`)
+    // 좌우로 잘리지 않는다.
+    check(p.l >= -2 && p.r <= 392, `${name} — 과녁이 좌우로 안 잘린다`, `${p.l.toFixed(0)}~${p.r.toFixed(0)}`)
+    // 같은 판을 가로로 보면 구도는 예전 그대로(가운데)여야 한다 — 세로 규칙이 가로를 건드리면 안 된다.
+    const land = shot(844, 390, idx)
+    const mid = Math.abs((land.top + land.bot) / 2 - 390 * 0.5)
+    check(mid < 390 * 0.25, `${name} — 가로에서는 여전히 가운데다`, `중심 어긋남 ${mid.toFixed(0)}px`)
   }
 }
 

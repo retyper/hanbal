@@ -63,23 +63,26 @@ const CSS = `
 .c-row.c-open .c-hint { color: var(--mute); }
 .c-count { grid-column: 2; grid-row: 1; color: var(--body); font-size: 14px; }
 .c-row.c-open .c-count { color: var(--teal); }
-.c-bar { grid-column: 1 / -1; height: 3px; background: #161e27; margin-top: 8px; overflow: hidden; }
+.c-bar { grid-column: 1 / -1; height: 3px; background: var(--sunk); margin-top: 8px; overflow: hidden; }
 .c-bar i { display: block; height: 100%; background: var(--accent); }
 .c-row.c-open .c-bar { visibility: hidden; }
 
 /* ── 판별 별 ── 격자가 곧 진행도의 그림이다. 칸을 키워 한눈에 덩어리로 읽히게 한다. */
 .c-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; }
+/* 폰 세로에서 열 칸은 한 칸이 28px 밑으로 떨어져 별이 뭉갠다. 다섯 칸씩 두 줄로 접는다 —
+   한 마디(10판)가 두 줄이 될 뿐이라 '마디' 단위로 읽히는 건 그대로다. */
+@media (max-width: 560px) { .c-grid { grid-template-columns: repeat(5, 1fr); gap: 6px; } }
 .c-cell {
-  text-align: center; padding: 7px 0 5px; border-radius: 2px; background: #0e151d;
-  border: 1px solid #18202a; line-height: 1.3;
+  text-align: center; padding: 7px 0 5px; border-radius: 2px; background: var(--sunk);
+  border: 1px solid var(--line); line-height: 1.3;
 }
 .c-cell .c-n { display: block; color: var(--mute); font-size: 12px; }
-.c-cell .c-s { display: block; color: #5d6b7c; font-size: 12px; letter-spacing: -1px; }
-.c-cell.c-done { border-color: #2c3846; background: #121a23; }
-.c-cell.c-done .c-n { color: #93a0b0; }
-.c-cell.c-done .c-s { color: var(--accent); }
+.c-cell .c-s { display: block; color: var(--mute); font-size: 12px; letter-spacing: -1px; opacity: .5; }
+.c-cell.c-done { border-color: #5c584c; background: var(--card); }
+.c-cell.c-done .c-n { color: var(--dim); }
+.c-cell.c-done .c-s { color: var(--accent); opacity: 1; }
 /* 별 셋은 채운 칸으로. 격자를 훑을 때 무손실 판이 덩어리로 보인다. */
-.c-cell.c-full { background: #1d2530; border-color: #3a4655; }
+.c-cell.c-full { background: var(--card-hi); border-color: var(--gold); }
 
 .c-foot { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 16px; color: var(--mute); font-size: 13px; }
 `
@@ -238,7 +241,7 @@ export function mountCollection(
 
   // 다른 패널(성장)이 열려 있는 상태에서 눌렀으면 **닫는 게 아니라 갈아타는 것**이다.
   // o.visible() 하나만 보면 성장 화면을 켜둔 채 수집을 누른 사람이 아무 화면도 못 본다.
-  const isOpen = (): boolean => o.visible() && panel.classList.contains('hb-open')
+  const isOpen = (): boolean => o.showing(PANEL_ID)
 
   const toggle = (): void => {
     if (isOpen()) {

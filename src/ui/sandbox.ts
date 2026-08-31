@@ -17,15 +17,19 @@ export interface SandboxHooks {
 }
 
 const CSS = `
+/* 오른쪽 위는 캔버스 HUD(훈련치·바람·무음)의 자리다. 그 아래로 내려 붙이고,
+   폰에서는 HUD 줄이 더 길어져 한 번 더 내린다. */
 .o-bar {
-  position: absolute; top: 64px; right: 18px; display: none; flex-direction: column;
+  position: absolute; top: calc(64px + var(--safe-t)); right: calc(18px + var(--safe-r));
+  display: none; flex-direction: column;
   gap: 6px; align-items: flex-end; pointer-events: auto;
 }
+@media (max-width: 640px) { .o-bar { top: calc(104px + var(--safe-t)); } }
 .o-bar.on { display: flex; }
 .o-bar .hb-btn { font-size: 12px; padding: 6px 10px; }
 .o-row { display: flex; gap: 6px; }
 .o-tag { color: var(--mute); font-size: 11px; letter-spacing: .12em; }
-.o-jump { width: 64px; background: #121a23; border: 1px solid #26313d; color: var(--ink);
+.o-jump { width: 64px; background: var(--card); border: 1px solid var(--line); color: var(--ink);
   font: inherit; font-size: 12px; padding: 6px 8px; border-radius: 2px; }
 `
 

@@ -130,8 +130,9 @@ const ctx = canvas.getContext('2d') as unknown as CanvasRenderingContext2D
 const cam = createCamera()
 resizeCamera(cam, canvas)
 
-const WALL = '#242a35'
-const DARK = '#0f141c'
+/** render/buildings.ts 의 COL.wall · COL.dark 와 같은 값이어야 한다 (색을 바꾸면 여기도). */
+const WALL = '#373e4b'
+const DARK = '#1c232e'
 
 function render(w: World): void {
   boxes.length = 0

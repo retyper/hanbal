@@ -69,14 +69,23 @@ export interface HudState {
 /**
  * 글꼴 — **"AI가 만든 화면" 냄새의 절반은 `system-ui` 하나로 다 쓰는 데서 온다.**
  *
- * 런타임 의존성 0(A6)이고 첫 페인트 0.3초(C6)라 웹폰트는 못 쓴다. 대신 **역할을 나눈다**:
- * 글자는 한글이 예쁜 스택으로, 숫자는 좁고 각진 스택으로. 없는 기기에서는 조용히 다음 것으로
- * 떨어지므로 어디서도 깨지지 않는다.
+ * 역할을 셋으로 나눈다. 본문은 한글이 예쁜 시스템 스택, 숫자는 좁고 각진 계기 글자,
+ * **큰 글자(판 이름·결과 한마디)는 명조**다. 없는 기기에서는 조용히 다음 것으로 떨어진다.
+ *
+ * ★ 웹폰트를 쓴다 (2026-08-31). 예전 주석은 "C6 때문에 웹폰트는 못 쓴다"였는데 그건
+ * 절반만 맞았다 — 막아야 하는 건 **첫 페인트를 붙잡는 것**이지 글꼴 파일 자체가 아니다.
+ * public/fonts 의 것들은 (1) 자체 호스팅이라 외부 요청이 없고, (2) unicode-range로 조각나
+ * 있어 화면에 실제로 나온 글자가 든 조각만 받으며(한글 95조각 중 보통 2~4개),
+ * (3) font-display: swap 이라 받는 동안에도 아래 대역 글꼴로 이미 다 보인다.
+ * 캔버스도 같다 — 도착하면 다음 프레임부터 저절로 바뀐다.
+ * 번들 예산(C6)은 js/css/html만 센다. 출처·라이선스는 public/fonts/CREDITS.txt.
  *
  * Bahnschrift 는 윈도우 10에 기본으로 들어 있는 DIN 계열이다 — 계기판 숫자의 얼굴이다.
  */
 const FONT_UI = '"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif'
-const FONT_NUM = '"Bahnschrift","DIN Alternate","Avenir Next Condensed","Malgun Gothic",system-ui,sans-serif'
+const FONT_NUM = '"Bahnschrift","Barlow Condensed","DIN Alternate","Avenir Next Condensed","Malgun Gothic",system-ui,sans-serif'
+/** 큰 글자 전용 명조. 판 이름·결과 한마디처럼 **한 화면에 하나뿐인 글자**에만 쓴다. */
+const FONT_SERIF = '"Gowun Batang","Apple SD Gothic Neo","Batang",serif'
 
 /**
  * 치수의 기준 화면. 이 크기에서 아래 px 값이 그대로 쓰이고, 다른 크기에서는 비례로 늘고 준다.
@@ -87,6 +96,12 @@ const BASE_W = 1280
 const BASE_H = 800
 const S_MIN = 0.82
 const S_MAX = 1.9
+/**
+ * 세로 화면(폰)으로 보는가. render/camera.ts 의 VIEW.portraitAspect 와 **같은 기준**이다 —
+ * 카메라가 구도에서 위아래 띠를 빼는 그 기준으로 HUD도 자리를 잡아야 둘이 어긋나지 않는다.
+ * (camera.ts 에서 import 하지 않는 이유: VIEW 는 그 파일의 비공개 상수다.)
+ */
+const PORTRAIT_ASPECT = 1.15
 
 const HUD = {
   padX: 26,
@@ -207,6 +222,8 @@ const HUD = {
   cardPx: 40,
   cardSubPx: 15,
   cardY: 0.17,
+  /** 세로 화면일 때 — 왼쪽 열(화살 눈금) 아래로 내린다 */
+  cardYPortrait: 0.3,
   /**
    * 완전히 보이는 시간 / 사라지는 시간 (s).
    *
@@ -223,6 +240,8 @@ const HUD = {
   // 화면 가운데 약간 위. 예전엔 화면 맨 아래 회색 12px 한 줄이 전부였고,
   // 거기엔 깼다는 사실도 별도 없었다 (형의 반려).
   resultY: 0.3,
+  /** 세로 화면일 때 */
+  resultYPortrait: 0.42,
   resultPx: 54,
   resultStarPx: 40,
   resultSubPx: 17,
@@ -297,6 +316,8 @@ const M = {
   fResultSub: '',
   fStar: '',
   starGap: 0,
+  cardY: 0,
+  resultY: 0,
 }
 
 /** 별의 최대 개수. game/rewards.ts 의 STAR_MAX 와 같은 값이다 (render는 game을 import하지 않는다). */
@@ -359,13 +380,23 @@ function syncMetrics(cam: Camera): void {
   M.fSub = `600 ${px(HUD.subPx, s)}px ${FONT_UI}`
   M.fTrain = `600 ${px(HUD.trainPx, s)}px ${FONT_UI}`
   M.fToast = `500 ${px(HUD.toastPx, s)}px ${FONT_UI}`
-  M.fCard = `700 ${px(HUD.cardPx, s)}px ${FONT_UI}`
+  M.fCard = `700 ${px(HUD.cardPx, s)}px ${FONT_SERIF}`
   M.fCardSub = `500 ${px(HUD.cardSubPx, s)}px ${FONT_NUM}`
   M.fWind = `600 ${px(HUD.windPx, s)}px ${FONT_NUM}`
-  M.fResult = `700 ${px(HUD.resultPx, s)}px ${FONT_UI}`
+  M.fResult = `700 ${px(HUD.resultPx, s)}px ${FONT_SERIF}`
   M.fResultSub = `600 ${px(HUD.resultSubPx, s)}px ${FONT_NUM}`
   M.fStar = `400 ${px(HUD.resultStarPx, s)}px ${FONT_UI}`
   M.starGap = px(HUD.starGap, s)
+
+  // ── 자막·결과 배너의 세로 자리 ────────────────────────────────────
+  //
+  // 가로 화면에서는 화면 비율로 잡으면 그만이었다. 세로(폰)에서는 같은 비율이
+  // **왼쪽 열(화살 숫자·눈금) 한복판**에 떨어진다 — 360x640에서 자막이 화살 눈금을
+  // 밟는 걸 프로브가 잡았다 (tools/probe-ui.ts, 화면 밖·겹침 검사).
+  // 세로에서는 둘 다 아래로 내린다: 위 띠는 HUD의 것이고, 그 아래는 전부 하늘이다.
+  const portrait = cam.h > cam.w * PORTRAIT_ASPECT
+  M.cardY = Math.round(cam.h * (portrait ? HUD.cardYPortrait : HUD.cardY))
+  M.resultY = Math.round(cam.h * (portrait ? HUD.resultYPortrait : HUD.resultY))
 }
 
 /**
@@ -864,7 +895,7 @@ function drawResult(
   const cleared = w.status === 'cleared'
 
   const cx = cam.w * 0.5
-  const cy = cam.h * HUD.resultY
+  const cy = M.resultY
   ctx.textAlign = 'center'
   ctx.textBaseline = 'alphabetic'
   ctx.globalAlpha = inT
@@ -989,7 +1020,7 @@ function drawStageCard(ctx: CanvasRenderingContext2D, cam: Camera, w: World, t: 
   if (alpha <= 0) return
 
   const cx = cam.w * 0.5
-  const cy = cam.h * HUD.cardY
+  const cy = M.cardY
   ctx.textAlign = 'center'
   ctx.textBaseline = 'alphabetic'
   ctx.globalAlpha = alpha
