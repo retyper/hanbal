@@ -30,9 +30,10 @@ export interface ForgePartDef {
 }
 
 export const FORGE_PARTS: readonly ForgePartDef[] = [
-  { id: 'string', name: '시위', origin: '弦', hint: '만작에 더 빨리 닿는다' },
-  { id: 'limb', name: '활채', origin: '弓幹', hint: '화살이 빨라진다 — 피해는 속도의 제곱' },
-  { id: 'grip', name: '줌통', origin: '줌피', hint: '빨간 바 아래에서 덜 떨린다' },
+  // 이름은 쉬운 말이 앞, 활 용어는 괄호 (형: "용어 너무 전문적이면 사람들이 뭔지 못 알아먹으니까").
+  { id: 'string', name: '활줄', origin: '시위 · 弦', hint: '끝까지 당기는 데 걸리는 시간이 준다' },
+  { id: 'limb', name: '활몸', origin: '활채 · 弓幹', hint: '화살이 빨라져 더 세게 맞는다' },
+  { id: 'grip', name: '손잡이', origin: '줌통', hint: '빨간 바 아래에서 손이 덜 떨린다' },
 ]
 
 /** bowMods 가 먹는 세 단수. 없으면 전부 0. */
@@ -67,7 +68,7 @@ export function forgeLevels(d: SaveData, bow: BowKindId): ForgeLevels {
 /** `level` → `level+1` 값 (훈련치). 단이 오를수록 비싸다. */
 export function forgeCost(level: number): number {
   const l = level > 0 ? Math.floor(level) : 0
-  return Math.max(1, Math.floor(P.forge.costBase + P.forge.costStep * l))
+  return Math.max(1, Math.floor(P.forge.costBase + P.forge.costStep * l + P.forge.costStep2 * l * l))
 }
 
 /** 이 단이 활에 얹는 배수 — 화면의 문장과 bowMods 가 **같은 식**을 쓴다. */
@@ -86,7 +87,7 @@ export function forgeEffect(part: ForgePart, level: number): string {
   const pct = Math.round(Math.abs(1 - m) * 100)
   if (pct === 0) return '그대로'
   switch (part) {
-    case 'string': return `만작 시간 ${pct}% 단축`
+    case 'string': return `끝까지 당기는 시간 ${pct}% 단축`
     case 'limb': return `초속 +${pct}% · 피해 약 +${Math.round((m * m - 1) * 100)}%`
     case 'grip': return `떨림 ${pct}% 감소`
   }

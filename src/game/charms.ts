@@ -35,9 +35,9 @@ export interface CharmDef {
 
 export const CHARMS: readonly CharmDef[] = [
   { id: 'quiver', name: '살통 부적', origin: '箭筒', hint: '매 판 화살이 한 발 더 온다' },
-  { id: 'iron', name: '철갑 부적', origin: '鐵甲', hint: '두정갑 한 벌을 입고 출발한다' },
+  { id: 'iron', name: '철갑 부적', origin: '鐵甲', hint: '갑옷 한 벌을 입고 출발한다' },
   { id: 'gold', name: '노다지 부적', origin: '金', hint: '훈련치가 더 들어온다 — 대신 체력을 깎고 출발' },
-  { id: 'ghost', name: '파귀 부적', origin: '破鬼', hint: '귀신(보스)의 체력이 준다' },
+  { id: 'ghost', name: '귀신잡이 부적', origin: '破鬼', hint: '귀신(보스)의 체력이 준다' },
 ]
 
 export function isCharmId(v: unknown): v is CharmId {

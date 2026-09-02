@@ -43,13 +43,16 @@ export interface RunResult {
 
 /**
  * `level` → `level+1` 로 올리는 데 드는 훈련치.
- * 기본값에서 0→1은 2, 13→14는 25. 진짜 만작(STR 14)까지 누적 167.
+ * 기본값에서 0→1은 2, 7→8은 34, 13→14는 152. 진짜 만작(STR 14)까지 누적 837 (tools/probe-economy.ts).
  */
 export function trainingCost(level: number): number {
   const l = level > 0 ? Math.floor(level) : 0
   const div = P.progression.costQuadDiv
   const quad = div > 0 ? Math.floor((l * l) / div) : 0
-  return Math.max(1, Math.floor(P.progression.costBase + P.progression.costLin * l + quad))
+  // 3차 항 — 뒤만 가파르게 (2026-09-02, 형: "10분에 1000 모은다"). 앞 여덟 레벨은 거의 안 건드린다.
+  const cdiv = P.progression.costCubeDiv
+  const cube = cdiv > 0 ? Math.floor((l * l * l) / cdiv) : 0
+  return Math.max(1, Math.floor(P.progression.costBase + P.progression.costLin * l + quad + cube))
 }
 
 /** n레벨을 한 번에 올릴 때의 총 비용. */

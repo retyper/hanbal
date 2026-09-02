@@ -18,8 +18,26 @@ import type { ForkOption } from '../game/forks.ts'
 import type { Overlay } from './overlay.ts'
 
 const PANEL_ID = 'loadout'
+/** public/ 자산의 경로 머리. 빌드가 주입하는 BASE_URL만이 진실이다 (ui/overlay.ts 와 같다). */
+// 헤드리스 프로브(node)에는 env 가 없다 — 그때는 '/'. 브라우저에서는 빌드가 준 값만 쓴다.
+const BASE: string = import.meta.env?.BASE_URL ?? '/'
 
 const CSS = `
+/* ── 머리 그림 — 김홍도 「활쏘기」 (public/art/출처.txt) ──
+   형: "게임 분위기에 적절하면서도 수려한 이미지도 확실한 부분에 적절하게." 이 게임은 국궁의 게임이라
+   국궁을 그린 진짜 그림을 가져왔다. 글자 위로 어둡게 깔리고, 아래로 종이색에 녹는다.
+   그림은 이 패널이 열릴 때만 받는다 (숨은 요소의 배경은 브라우저가 안 가져온다 — C1·C6 무관). */
+.l-art {
+  position: relative; margin: -4px -8px 12px; padding: 22px 18px 18px; border-radius: 2px; overflow: hidden;
+  background:
+    linear-gradient(to bottom, rgba(38, 37, 33, .55), rgba(47, 46, 41, .92) 78%, var(--paper) 100%),
+    url(${BASE}art/hwalssogi.jpg) center 28% / cover no-repeat;
+  min-height: 150px; display: flex; flex-direction: column; justify-content: flex-end;
+}
+.l-art .l-h { position: relative; }
+.l-art .hb-lead { position: relative; margin-bottom: 0; }
+.l-cap { position: absolute; right: 12px; top: 10px; color: rgba(255, 244, 220, .62); font-size: 11px; letter-spacing: .06em; }
+@media (max-width: 640px) { .l-art { min-height: 120px; padding: 16px 12px 14px; } }
 .l-h { display: flex; align-items: baseline; gap: 14px; }
 .l-h h2 { flex: 1; font-size: 30px; letter-spacing: .02em; }
 .l-run { color: var(--dim); font-size: 13px; letter-spacing: .12em; }
@@ -111,7 +129,14 @@ export function mountLoadout(
   const sub = document.createElement('p')
   sub.className = 'hb-lead'
   sub.textContent = '동이 트기 전, 활 한 자루를 고른다. 10판마다 귀신이 길을 막고, 화살이 다하면 여정도 끝난다.'
-  panel.append(head, sub)
+  // 머리 그림 상자 — 제목·기록·안내문이 그림 위에 선다. 그림 이름은 구석에 작게 (출처 표시).
+  const art = document.createElement('div')
+  art.className = 'l-art'
+  const cap = document.createElement('div')
+  cap.className = 'l-cap'
+  cap.textContent = '김홍도 「활쏘기」'
+  art.append(cap, head, sub)
+  panel.appendChild(art)
   const wallet = head.querySelector('.l-wallet b') as HTMLElement
 
   // 시작 선택은 지난 여정의 것. 없던 게 해금돼도 손이 기억하는 활이 먼저다.

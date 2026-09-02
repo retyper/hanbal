@@ -82,10 +82,10 @@ export function mountDefense(o: Overlay, d: SaveData, buy: (id: DefenseId) => bo
     // 줄 위 한 줄은 **지금 뭘 걸치고 있는가**를 말한다. 아무것도 없으면 무엇을 파는지 말한다.
     const worn: string[] = []
     if (st.shield > 0) worn.push(`방패 ${st.shield}발`)
-    if (st.armor > 0) worn.push(`두정갑 ${st.armor}`)
+    if (st.armor > 0) worn.push(`갑옷 ${st.armor}`)
     hint.textContent = worn.length > 0
       ? worn.join(' · ')
-      : `장터 — 방패 ${defenseCost('shield')} (화살 ${shieldHp()}발) · 두정갑 ${defenseCost('armor')} (+${armorPer()}) · 화살 한 발 ${defenseCost('arrow', st)}`
+      : `장터 — 방패 ${defenseCost('shield')} (화살 ${shieldHp()}발) · 갑옷 ${defenseCost('armor')} (+${armorPer()}) · 화살 한 발 ${defenseCost('arrow', st)}`
   }
 
   refresh()

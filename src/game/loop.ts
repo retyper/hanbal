@@ -345,7 +345,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     let stage = getStage(stageIndex)
     // 첫 손님 — 아직 한 발도 안 쏜 사람에게는 판 자막이 조작법이어야 한다 (C1: 3초 안에 첫 발).
     if (save.totalShots === 0) {
-      stage = { ...stage, hint: '꾹 눌러 시위를 당기고 · 놓아서 쏜다' }
+      stage = { ...stage, hint: '꾹 눌러 활을 당기고 · 놓아서 쏜다' }
     }
     // ── 갈림길 2택 (docs/MEGAHIT.md §3) ──
     // armFork는 '클리어 뒤 정말로 다음 판으로 간' 그 전이 때만 켜진다 — 로드아웃 직후 첫 판·

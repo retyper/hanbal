@@ -41,6 +41,9 @@ import { P } from '../tune/params.ts'
 import type { Overlay } from './overlay.ts'
 
 const PANEL_ID = 'growth'
+/** public/ 자산의 경로 머리 (ui/overlay.ts 와 같다). */
+// 헤드리스 프로브(node)에는 env 가 없다 — 그때는 '/'. 브라우저에서는 빌드가 준 값만 쓴다.
+const BASE: string = import.meta.env?.BASE_URL ?? '/'
 const REINFORCE_ID = 'reinforce'
 /** 올린 직후 그 줄이 잠깐 밝아진다. 무엇이 바뀌었는지 눈이 따라가게 (ms). */
 const FLASH_MS = 900
@@ -150,7 +153,16 @@ const CSS = `
 }
 
 /* ── 재정비 머리 ── 여정이 남긴 것. "죽었다"가 아니라 "가져간다 · 다음은 여기부터"가 이 머리의 말이다. */
-.r-head { text-align: center; padding: 4px 0 14px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+/* 머리 그림 — 고구려 무용총 「수렵도」 (public/art/출처.txt). 말 위에서 몸을 돌려 쏘는 사람들 —
+   쓰러진 자리에서 다시 활을 드는 화면에 어울리는 그림이다. 패널이 열릴 때만 받는다. */
+.r-head {
+  position: relative; text-align: center; padding: 22px 12px 16px; margin: -4px -8px 4px; overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  background:
+    linear-gradient(to bottom, rgba(38, 37, 33, .5), rgba(47, 46, 41, .9) 70%, var(--paper) 100%),
+    url(${BASE}art/suryeopdo.jpg) center 40% / cover no-repeat;
+}
+.r-cap { position: absolute; right: 12px; top: 8px; color: rgba(255, 244, 220, .6); font-size: 11px; letter-spacing: .06em; }
 .r-lead { font-size: 14px; color: var(--dim); letter-spacing: .1em; }
 .r-stage { font-size: 48px; font-weight: 700; color: var(--ink); font-family: var(--num); line-height: 1.15; }
 @media (max-width: 640px) { .r-stage { font-size: 40px; } }
@@ -666,6 +678,7 @@ export function showReinforce(
   const head = document.createElement('div')
   head.className = 'r-head'
   head.innerHTML =
+    '<div class="r-cap">무용총 「수렵도」</div>' +
     `<div class="r-lead">${lead}</div>` +
     `<div class="r-stage">${info.reached}판</div>` +
     (info.first
