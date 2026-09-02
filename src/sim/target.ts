@@ -331,6 +331,11 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
     execute: target.kind === 'archer' && head,
     arrow: arrow.id,
   })
+  // ── 현상금 (TargetSpec.bounty) — 금관 사수를 **머리로** 눕혔다. 몸통으로 눕히면 사건이 없다:
+  //    현상금은 처치가 아니라 **조준**의 값이다. 사건 하나만 뱉고 값은 game/rewards.ts 가 매긴다.
+  if (target.kind === 'archer' && head && target.bounty && target.alive) {
+    w.events.push({ t: 'bounty', x: target.x, y: target.y })
+  }
 
   /**
    * 관통 — **관통할 수 있는 화살만 뚫는다.**

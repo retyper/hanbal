@@ -56,6 +56,8 @@ export interface RunStats {
   bestChain: number
   /** 정중앙 명중 수 (명중도 ≥ P.hit.bullseyeAcc) */
   bullseyes: number
+  /** 금관 사수를 **머리로** 눕힌 수 (bounty 이벤트). 몸통으로 눕히면 안 센다. */
+  bounties: number
 }
 
 export interface Reward {
@@ -105,6 +107,11 @@ const FEAT_CHAIN_BIG = 4
 const FEAT_MULTI = 2
 const FEAT_FLAWLESS = 3
 const FEAT_SPARE = 1
+/**
+ * 현상금 — 금관 사수 헤드샷 (2026-09-02, 형: "돈을 벌고 싶어지도록"). 위업 중 가장 크다.
+ * 판 평균 훈련치(~16)의 절반 남짓 — 한 발이 판 하나의 값을 반쯤 더 만든다. 이게 "벌었다"의 크기다.
+ */
+const FEAT_BOUNTY = 8
 
 /** 위업 문턱 */
 const CHAIN_FEAT_AT = 4
@@ -213,6 +220,12 @@ export function gradeRun(rng: Rng, stage: StageDef, r: RunStats, trainMul = 1): 
   if (r.cleared && r.arrowsGiven - r.arrowsUsed >= SPARE_AT) {
     feats.push('여벌을 남겼다')
     extra += FEAT_SPARE
+  }
+
+  // 현상금은 클리어와 무관하다 — 머리를 맞힌 그 순간 번 것이다. 죽어도 가져간다.
+  if (r.bounties > 0) {
+    feats.push(r.bounties > 1 ? `현상금 ×${r.bounties}` : '현상금')
+    extra += FEAT_BOUNTY * r.bounties
   }
 
   // ── 변동 보상 ──

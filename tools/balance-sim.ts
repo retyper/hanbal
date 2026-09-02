@@ -1158,6 +1158,7 @@ const runStats: RunStats = {
   misses: 0,
   bestChain: 0,
   bullseyes: 0,
+  bounties: 0,
 }
 
 function grade(def: StageDef, r: RunResult, rng: Rng): Grade {

@@ -12,6 +12,7 @@
  */
 import type { ArrowKindId } from './arrows.ts'
 import type { Rng } from '../core/rng.ts'
+import { P } from '../tune/params.ts'
 
 /** 보스 보급 한 번에 주는 발 수. */
 export const SUPPLY_COUNT = 3
@@ -60,4 +61,24 @@ export function rollSupply(rng: Rng, cycle: number): ArrowKindId[] {
 /** 보급 발 수 — 대개 3발, 가끔 4발. '+4'의 순간이 보상 화면에 맥박을 만든다. */
 export function rollSupplyCount(rng: Rng): number {
   return rng.next() < 0.25 ? SUPPLY_COUNT + 1 : SUPPLY_COUNT
+}
+
+// ─────────────────────────── 살 가게 (2026-09-02) ───────────────────────────
+
+/** 이 살이 처음 나오는 마디 (supplyPool 과 같은 표). 모르는 살은 가장 깊은 마디로 본다. */
+export function supplyCycleOf(id: ArrowKindId): number {
+  for (let c = 1; c <= 4; c++) if (supplyPool(c).includes(id)) return c
+  return 4
+}
+
+/**
+ * 한 발 값 (훈련치) — 처음 나오는 마디가 깊을수록 비싸다. 신전만 따로 값을 둔다.
+ * 유엽전(basic)은 무한이라 팔지 않는다 (0).
+ * 발견한 살(arrowStock 에 키가 있는 살)만 산다 — 가게가 보급을 대신하면 보스를 잡을 이유가 준다.
+ */
+export function shopPrice(id: ArrowKindId): number {
+  if (id === 'basic') return 0
+  if (id === 'homing') return Math.max(1, Math.floor(P.shop.homingPrice))
+  const c = supplyCycleOf(id)
+  return Math.max(1, Math.floor(P.shop.priceBase + P.shop.priceStep * (c - 1)))
 }

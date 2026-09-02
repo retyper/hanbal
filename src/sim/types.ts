@@ -289,6 +289,8 @@ export interface Target {
   armorMax: number
   /** archer 전용 — 조준 산포 배수. 1보다 작으면 정예다. */
   aimMul: number
+  /** 금관 사수인가 (TargetSpec.bounty). 렌더가 관을 그리고, 헤드샷 즉사에 bounty 사건이 난다. */
+  bounty: boolean
   /** 판 시작 시점의 체력 (boss·archer). 체력 바의 분모다. */
   hpMax: number
   /**
@@ -439,6 +441,8 @@ export type SimEvent =
       look: number; r: number
     }
   | { t: 'stage_end'; cleared: boolean; score: number }
+  /** 금관 사수를 머리로 눕혔다 — 현상금 (TargetSpec.bounty). game/loop.ts 가 세어 채점에 넘긴다. */
+  | { t: 'bounty'; x: number; y: number }
 
 // ───────────────────────────── 스테이지 ─────────────────────────────
 
@@ -470,6 +474,11 @@ export interface TargetSpec {
   armored?: boolean
   /** archer 전용 — 조준 산포 배수 (작을수록 정예). */
   aimMul?: number
+  /**
+   * 금관(金冠) 사수 — 현상금 (2026-09-02). 머리를 맞혀 눕히면 'bounty' 사건이 난다.
+   * 몸통으로 눕히면 아무 사건도 없다. 값은 game/rewards.ts 가 매긴다 — sim은 훈련치를 모른다.
+   */
+  bounty?: boolean
   /**
    * 폭탄 — 죽으면(어떤 화살로든) 둘레의 과녁을 같이 친다 (P.target.bombRadius).
    * '폭발 살'(arrowkind burst)과 같은 함수(target.ts burst())를 쓴다 — 화살이 아니라

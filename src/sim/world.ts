@@ -139,6 +139,7 @@ function newTarget(): Target {
     armorHp: 0,
     armorMax: 0,
     aimMul: 1,
+    bounty: false,
     chainDepth: 0,
     score: FALLBACK_TARGET_SCORE,
     bomb: false,
@@ -293,6 +294,7 @@ function loadTarget(t: Target, id: number, spec: TargetSpec): void {
   t.armorMax = t.armored ? Math.floor(P.enemy.armorHp) : 0
   t.armorHp = t.armorMax
   t.aimMul = spec.aimMul ?? 1
+  t.bounty = spec.bounty === true
   t.chainDepth = 0
   t.score = spec.score ?? FALLBACK_TARGET_SCORE
   t.bomb = spec.bomb === true
@@ -314,6 +316,7 @@ function clearTarget(t: Target): void {
   t.armorHp = 0
   t.armorMax = 0
   t.aimMul = 1
+  t.bounty = false
   t.chainDepth = 0
   t.vx = 0
   t.vy = 0

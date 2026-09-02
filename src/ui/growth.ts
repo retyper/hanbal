@@ -32,7 +32,8 @@ import {
   trainingCost,
   type StatKey,
 } from '../game/progression.ts'
-import { BOW_KINDS, masteryLevel, MASTERY_HITS, type BowKindId } from '../game/bows.ts'
+import { BOW_KINDS, bowKind, masteryLevel, MASTERY_HITS, type BowKindId } from '../game/bows.ts'
+import { FORGE_PARTS, buyForge, forgeBlocked, forgeCost, forgeEffect, forgeLevel, forgeMax } from '../game/forge.ts'
 import { bowIconSvg } from './arrowicons.ts'
 import { onSaveChanged, wipeSave, writeSave, type SaveData } from '../game/save.ts'
 import { unlockedBows, unlockOfBow } from '../game/unlocks.ts'
@@ -126,6 +127,27 @@ const CSS = `
 /* 1단계를 누르면 버튼이 위험색으로 바뀐다 — "정말인가"를 색이 먼저 묻는다. */
 .g-danger .hb-btn.g-armed { color: #ff8a6a; border-color: #ff6a4577; }
 .g-danger span { color: var(--mute); font-size: 12px; flex: 1; }
+
+/* ── 대장간 ── 활 개조. 스탯 줄과 같은 뼈대(이름 · 지금 → 다음 · 버튼)라 한 화면으로 읽힌다. */
+.f-h { display: flex; align-items: baseline; gap: 12px; border-top: 1px solid var(--line); margin-top: 20px; padding-top: 14px; }
+.f-h h3 { flex: 1; margin: 0; color: var(--dim); font-size: 13px; letter-spacing: .12em; }
+.f-h .f-bow { color: var(--ink); font-weight: 700; font-size: 15px; }
+.f-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 20px; padding: 11px 0 10px; border-top: 1px solid var(--line); }
+.f-row:first-of-type { border-top: none; }
+.f-row.g-flash { background: #ffb34722; }
+.f-name { color: var(--ink); font-weight: 700; font-size: 15px; }
+.f-name .f-origin { color: var(--mute); font-size: 12px; margin-left: 8px; letter-spacing: .04em; font-weight: 500; }
+.f-lv { color: var(--mute); font-size: 12px; margin-left: 8px; }
+.f-now { grid-column: 1; color: var(--body); font-size: 13px; }
+.f-next { grid-column: 1; color: var(--teal); font-size: 12px; }
+.f-next.g-flat { color: var(--mute); }
+.f-up { grid-column: 2; grid-row: 1 / span 3; min-width: 96px; justify-content: center; }
+.f-up .g-cost { color: var(--accent); }
+.f-up[disabled] .g-cost { color: inherit; }
+@media (max-width: 480px) {
+  .f-row { grid-template-columns: 1fr; }
+  .f-up { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 6px; }
+}
 
 /* ── 재정비 머리 ── 여정이 남긴 것. "죽었다"가 아니라 "가져간다 · 다음은 여기부터"가 이 머리의 말이다. */
 .r-head { text-align: center; padding: 4px 0 14px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
@@ -252,6 +274,77 @@ function buildStatRows(
 }
 
 /**
+ * 대장간 줄 셋 — **지금 든 활**의 시위·활채·줌통 (game/forge.ts). 성장 화면과 재정비 화면이 같이 쓴다.
+ * 활이 바뀌면 줄의 내용이 바뀌므로 refresh 가 활 이름까지 다시 적는다.
+ */
+function buildForgeRows(d: SaveData, audio: AudioSwitch, onChange: () => void): StatRows {
+  const box = document.createElement('div')
+  const head = document.createElement('div')
+  head.className = 'f-h'
+  head.innerHTML = '<h3>대장간</h3><span class="f-bow"></span>'
+  const bowOut = head.querySelector('.f-bow') as HTMLElement
+  const lead = document.createElement('p')
+  lead.className = 'hb-lead'
+  lead.textContent = '든 활을 갈아 만든다 — 개조는 그 활의 것이라 활을 바꾸면 따라오지 않는다. 부위마다 세 단.'
+  box.append(head, lead)
+
+  interface FRow { part: typeof FORGE_PARTS[number]['id']; el: HTMLElement; lv: HTMLElement; now: HTMLElement; next: HTMLElement; btn: HTMLButtonElement; cost: HTMLElement }
+  const rows: FRow[] = []
+  for (const p of FORGE_PARTS) {
+    const el = document.createElement('div')
+    el.className = 'f-row'
+    el.innerHTML = `
+      <div><span class="f-name"></span><span class="f-lv"></span></div>
+      <div class="f-now"></div>
+      <div class="f-next"></div>
+      <button class="hb-btn f-up" type="button"><i class="hb-ic i-forge"></i>개조 <span class="g-cost"></span></button>`
+    const name = el.querySelector('.f-name') as HTMLElement
+    name.textContent = p.name
+    const origin = document.createElement('span')
+    origin.className = 'f-origin'
+    origin.textContent = p.origin
+    name.appendChild(origin)
+    const btn = el.querySelector('.f-up') as HTMLButtonElement
+    const row: FRow = {
+      part: p.id, el,
+      lv: el.querySelector('.f-lv') as HTMLElement,
+      now: el.querySelector('.f-now') as HTMLElement,
+      next: el.querySelector('.f-next') as HTMLElement,
+      btn, cost: el.querySelector('.g-cost') as HTMLElement,
+    }
+    btn.addEventListener('click', () => {
+      if (!buyForge(d, d.bow, p.id)) return
+      audio.levelup()
+      row.el.classList.add('g-flash')
+      window.setTimeout(() => row.el.classList.remove('g-flash'), FLASH_MS)
+      refresh()
+      onChange()
+    })
+    box.appendChild(el)
+    rows.push(row)
+  }
+
+  const refresh = (): void => {
+    bowOut.textContent = bowKind(d.bow).name
+    for (const r of rows) {
+      const lv = forgeLevel(d, d.bow, r.part)
+      const max = forgeMax()
+      const def = FORGE_PARTS.find((p) => p.id === r.part)
+      r.lv.textContent = `${lv} / ${max}단`
+      r.now.textContent = `${def?.hint ?? ''} · 지금 ${forgeEffect(r.part, lv)}`
+      const why = forgeBlocked(d, d.bow, r.part)
+      const top = lv >= max
+      r.next.textContent = top ? '끝까지 갈았다' : `→ ${forgeEffect(r.part, lv + 1)}`
+      r.next.classList.toggle('g-flat', top)
+      r.cost.textContent = top ? '' : String(forgeCost(lv))
+      r.btn.disabled = why !== ''
+      r.btn.title = why === '' ? `${def?.name ?? ''} ${lv + 1}단 — 훈련치 ${forgeCost(lv)}` : why
+    }
+  }
+  return { el: box, refresh }
+}
+
+/**
  * 성장 화면을 오버레이에 붙인다. `onChange`는 스탯·설정이 바뀔 때마다 불린다 —
  * 게임 루프는 여기서 world.stats를 다시 읽으면 된다.
  */
@@ -328,6 +421,10 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
     rack.appendChild(el)
   }
   panel.appendChild(rack)
+
+  // ── 대장간 — 든 활의 개조 (game/forge.ts). 활 걸이 바로 아래: "이 활을 든다 → 이 활을 갈아 만든다".
+  const forge = buildForgeRows(d, audio, onChange)
+  panel.appendChild(forge.el)
 
   /** 활 걸이 갱신. 목록·조건·숙련 전부 여기서만 다시 그린다. */
   const refreshBows = (): void => {
@@ -473,6 +570,7 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
     syncSound()
     rows.refresh()
     refreshBows()
+    forge.refresh()
     open.classList.toggle('hb-has', canGrow(d))
   }
 
@@ -593,6 +691,11 @@ export function showReinforce(
   const rows = buildStatRows(d, trainOut, audio, () => {})
   panel.appendChild(rows.el)
 
+  // 대장간도 여기 선다 — 죽은 직후는 "활을 갈아 만들까"를 물을 가장 좋은 때다 (game/forge.ts).
+  // 스탯 줄과 같은 지갑이라 "근력을 올릴까, 활채를 갈까"가 진짜 저울질이 된다.
+  const forge = buildForgeRows(d, audio, () => {})
+  panel.appendChild(forge.el)
+
   // 올릴 것이 하나도 없으면 왜 없는지 한 줄. 버튼만 잠겨 있으면 고장으로 읽힌다.
   const none = document.createElement('div')
   none.className = 'r-none'
@@ -635,11 +738,15 @@ export function showReinforce(
     document.removeEventListener('visibilitychange', onVisibility, true)
     reinVis = null
     unsub()
+    unsubRows()
     o.hide(true)
     onNext()
   })
 
   rows.refresh()
+  forge.refresh()
+  // 줄 안의 버튼이 훈련치를 바꾸면 다른 줄의 값(살 수 있는가)도 바뀐다 — 둘을 같이 다시 그린다.
+  const unsubRows = onSaveChanged(() => { rows.refresh(); forge.refresh() })
   syncNone()
   o.show(REINFORCE_ID, { sticky: true })
 }

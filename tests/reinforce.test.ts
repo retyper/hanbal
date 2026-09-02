@@ -83,17 +83,17 @@ describe('사수 판의 힌트', () => {
 
 describe('세이브 v12 — 첫 성장 안내', () => {
   it('새 세이브는 안내를 아직 안 봤다', () => {
-    assert.equal(SCHEMA_VERSION, 12)
+    assert.ok(SCHEMA_VERSION >= 12)
     assert.equal(defaultSave(0).seenGrowHint, false)
   })
 
   it('옛 세이브(v11)는 false로 올라오고, 본 사람은 본 채로 남는다', () => {
     store.set(KEY, JSON.stringify({ v: 11, training: 40 }))
     const a = loadSave()
-    assert.equal(a.v, 12)
+    assert.equal(a.v, SCHEMA_VERSION)
     assert.equal(a.seenGrowHint, false)
     assert.equal(a.training, 40)
-    store.set(KEY, JSON.stringify({ v: 12, seenGrowHint: true }))
+    store.set(KEY, JSON.stringify({ v: SCHEMA_VERSION, seenGrowHint: true }))
     assert.equal(loadSave().seenGrowHint, true)
   })
 })

@@ -103,10 +103,7 @@ const loop = createLoop(el, {
       mountLoadout(
         overlay,
         ['practice', ...unlockedBows(save.unlocked)],
-        { bow: save.bow },
-        save.bowHits,
-        save.bestRunStage,
-        save.runCount,
+        save,
         checkpointStage(save.bossKills) + 1,
         onStart,
       ),

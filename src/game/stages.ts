@@ -302,6 +302,25 @@ function convertToFoes(base: StageDef, i: number): StageDef {
     }
     f++
   }
+  // ── 금관 사수 — 현상금 (P.enemy.bounty*, 2026-09-02) ──
+  // 창의 사수(look 1) 중 하나가 금관을 쓴다. 갑옷 사수는 제외 — 갑옷은 몸통을 막는 물건이라
+  // 어차피 머리를 노려야 해서 현상금이 값을 못 한다. 난수는 위 rng 의 **뒤에서** 뽑는다 —
+  // 앞의 보급 결정(rng.next)이 바뀌지 않게. 판 번호가 시드라 언제 켜도 같은 판에 같은 관이다.
+  let bounty = false
+  if (n >= Math.floor(P.enemy.bountyFrom) && rng.next() < P.enemy.bountyChance) {
+    const cands: number[] = []
+    for (let k = 0; k < specs.length; k++) {
+      const sp = specs[k]
+      if (sp !== undefined && sp.kind === 'archer' && sp.look === 1 && sp.armored !== true) cands.push(k)
+    }
+    if (cands.length > 0) {
+      const pick = cands[Math.floor(rng.next() * cands.length)]
+      if (pick !== undefined) {
+        specs[pick] = { ...(specs[pick] as TargetSpec), bounty: true }
+        bounty = true
+      }
+    }
+  }
   // 사수는 두세 발을 버틴다 — **사수 하나에 한 발씩** 얹는다. 헤드샷이 절약이다.
   // (예전 ceil(0.6×n)은 사수 셋에 두 발이었다 — 몸통 두 발이 기준이면 셋에 여섯이 필요한
   //  판에 여덟 발이다. 실측으로 12판은 숙련 봇도 0%였다. 상한 10은 C1의 것이라 그대로.)
@@ -312,7 +331,7 @@ function convertToFoes(base: StageDef, i: number): StageDef {
     // ★ 힌트도 바꾼다. 저작 판의 teach 는 과녁의 말("공중 과녁은 맞으면 떨어진다")인데,
     //   11판부터 그 자리에 서 있는 건 드론과 사수다. 화면이 하는 첫 설명이 눈앞의 것과
     //   다르면 그 뒤의 설명은 아무도 안 읽는다. 사수 판에는 사수의 말을 쓴다.
-    hint: foeHint(n, base, specs),
+    hint: foeHint(n, base, specs) + (bounty ? ' · 금관의 머리엔 현상금' : ''),
   }
 }
 

@@ -26,6 +26,11 @@ import { awardRun, canGrow, grantArrows, type StatKey } from './progression.ts'
 import { buyDefense as spendForDefense, shieldHp, syncDefense, defenseState, type DefenseId } from './defense.ts'
 import { arrowName, DEFAULT_ARROW } from './arrows.ts'
 import { bowMods, masteryLevel } from './bows.ts'
+import { forgeLevels } from './forge.ts'
+import {
+  applyCharmToStage, buyCharm, charmArrowBonus, charmDef, charmStartArmor, charmStartHp, charmTrainMul,
+  runCharmOf,
+} from './charms.ts'
 import type { LoadoutPick } from '../ui/loadout.ts'
 import { rollSupply, rollSupplyCount } from './supply.ts'
 import { BOSS_EVERY, checkpointStage } from './stages.ts'
@@ -161,6 +166,7 @@ const GRADE: RunStats = {
   misses: 0,
   bestChain: 0,
   bullseyes: 0,
+  bounties: 0,
 }
 
 export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop {
@@ -256,6 +262,10 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   let misses = 0
   /** 정중앙 명중 수 (명중도 ≥ P.hit.bullseyeAcc). 해금 조건이 읽는다. */
   let bullseyes = 0
+  /** 금관 사수를 머리로 눕힌 수 — 채점(rewards.ts 현상금)으로 간다. */
+  let bounties = 0
+  /** 이 판에서 훈련치로 산 화살 수 (game/defense.ts). 값이 이만큼 오른다. */
+  let arrowsBought = 0
   /** 이 판에서 이어간 최고 연쇄 수. w.combo의 봉우리를 스텝마다 집는다. */
   let bestChain = 0
   /** 이번 판의 보상을 이미 줬는가. 종료는 한 번만 정산한다. */
@@ -358,7 +368,11 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     forkPick = null
     // 활도 판 경계에서만 (A1). 숙련은 그 활로 맞힌 누적 수에서 나온다 — docs/BOWS.md 3장.
     // 궁합(활×살)은 bowMods 안에서 판정되므로 여기서는 조합을 모른다.
-    const mods = bowMods(save.bow, kind, masteryLevel(save.bowHits[save.bow] ?? 0))
+    // 부적(파귀)은 판 정의를 건드린다 — 보스 체력. 갈림길 다음, 판 경계에서 (A1).
+    const charm = runCharmOf(save)
+    stage = applyCharmToStage(stage, charm)
+    // 대장간(개조)은 활의 것이다 — 그 활을 들 때만 따라온다 (game/forge.ts).
+    const mods = bowMods(save.bow, kind, masteryLevel(save.bowHits[save.bow] ?? 0), forgeLevels(save, save.bow))
     // ── 연사는 **여정**을 넘어간다 (sim/flow.ts · docs/MEGAHIT.md §1) ──
     // 판이 아니라 여정이 momentum의 단위다. 실측 근거: 캠페인 판은 과녁이 1~4개라
     // 판 안에서는 3중을 못 넘고 **몰기(5)가 구조적으로 도달 불가능**했다.
@@ -382,11 +396,14 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     // 위로도 덮어쓴다 — "화살은 적보다 한 발 많다"(game/stagekit.ts arrowFloor)가 저작보다
     // 위에 서기 때문이다. 그래서 풀은 stage.arrows 가 아니라 판에 선 것의 수까지 보고 잡는다
     // (sim/world.ts poolWant) — 그게 없으면 지급받은 화살이 조용히 안 나간다.
-    granted = grantArrows(save, stage)
+    // 살통 부적은 지급 **위에** 얹는다 — 바닥(arrowFloor)은 그대로고, 이건 그 위의 덤이다.
+    granted = grantArrows(save, stage) + charmArrowBonus(charm)
     w.arrowsLeft = granted
+    arrowsBought = 0
     hits = 0
     misses = 0
     bullseyes = 0
+    bounties = 0
     bestChain = 0
     awarded = false
     acc = 0
@@ -416,8 +433,16 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
    * (형: "보스깨면 죽었을때 직전보스 다음스테이지부터 시작하게"). 지도에서 더 이른
    * 마디를 직접 골랐으면(`mapJump`) `pendingStartIndex`가 그 값을 대신한다.
    */
-  const startRun = (bow: typeof save.bow): void => {
+  const startRun = (bow: typeof save.bow, charm: LoadoutPick['charm'] = ''): void => {
     save.bow = bow
+    // ── 부적 (game/charms.ts) — 출정하며 산다. 못 사면(훈련치 부족) 부적 없이 떠난다. ──
+    // endRun 이 runHp·runArmor 를 맨몸으로 되돌린 **뒤**라 여기서 부적이 그 위에 얹힌다.
+    const bought = buyCharm(save, charm)
+    const held = runCharmOf(save)
+    save.runHp = charmStartHp(held)
+    save.runArmor = charmStartArmor(held)
+    save.runArmorMax = save.runArmor
+    if (bought && held !== '') ui.toast(`${charmDef(held).name}을 지녔다 — ${charmDef(held).hint}`, GROW_HINT_MS)
     save.runActive = true
     save.runScore = 0
     // 여정 요약은 여정의 것이다 (docs/MEGAHIT.md §8-③). 새 여정은 빈손으로 시작한다.
@@ -451,7 +476,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       // 고른 순간의 소리. ui/ 는 audio/ 를 직접 import하지 않기로 했으므로(레이어 방향)
       // 화면이 아니라 여기서 낸다 — 어차피 콜백이 정확히 한 번 오는 자리다.
       playUi(sfx, 'press')
-      startRun(pick.bow)
+      startRun(pick.bow, pick.charm)
     })
     reopen = open
     open()
@@ -475,7 +500,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   }
 
   const loadSandbox = (): void => {
-    const mods = bowMods(save.bow, save.runArrow, masteryLevel(save.bowHits[save.bow] ?? 0))
+    const mods = bowMods(save.bow, save.runArrow, masteryLevel(save.bowHits[save.bow] ?? 0), forgeLevels(save, save.bow))
     resetWorld(w, SANDBOX_STAGE, save.stats, save.runArrow, mods)
     w.bowSkin = save.bow
     w.hp = Math.floor(P.enemy.hpMax)
@@ -513,6 +538,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     // 주는 것이고 갑옷은 산 것이다. 산 것을 공짜로 다시 채워 주면 사는 일에 뜻이 없어진다.
     save.runArmor = 0
     save.runArmorMax = 0
+    // 부적은 이 여정의 것이었다. 다음 여정은 빈손 — 다시 살지가 다음 출정의 결정이다.
+    save.runCharm = ''
     saveNow()
     choosing = true
     // ★ 여기가 형이 짚은 자리다 — 이 화면이 닫히면 **다시 시작할 방법이 하나도 없었다.**
@@ -551,7 +578,9 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     GRADE.misses = misses
     GRADE.bestChain = bestChain
     GRADE.bullseyes = bullseyes
-    const reward = gradeRun(runRng, w.stage, GRADE, forkTrainMul(activeFork))
+    GRADE.bounties = bounties
+    // 훈련치 배수는 갈림길 × 부적(노다지). 둘 다 "더 벌러 가는" 선택이라 곱이 맞다.
+    const reward = gradeRun(runRng, w.stage, GRADE, forkTrainMul(activeFork) * charmTrainMul(runCharmOf(save)))
     save.runSeed = runRng.state()
     // 화면에도 별을 보낸다. 예전엔 세이브에만 적히고 화면에는 안 왔다 —
     // "별로 클리어 수준을 정해놓을 거면 별도 보여줘야지"(형).
@@ -764,6 +793,10 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
         hits++
         // 적 몸통 명중은 '정중앙'이 아니다 — 과녁의 정중앙과 적의 헤드샷만 집계한다.
         if ((!ev.foe && ev.accuracy >= bullseyeAcc()) || ev.head) bullseyes++
+      } else if (ev.t === 'bounty') {
+        // 금관 사수를 머리로 눕혔다 — 채점(rewards.ts 현상금)으로 간다.
+        bounties++
+        playUi(sfx, 'unlock')
       } else if (ev.t === 'miss') {
         // 아무것도 못 맞히고 사라진 화살. ballistics가 이때만 miss를 뱉는다 —
         // 셋을 꿰뚫고 착지한 화살도, 분열 자식의 낙하도 여기 안 걸린다 (축은 '쏜 발'이다).
@@ -856,7 +889,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     // 방패 내구는 sim 안에서 줄어드는 값이라 세이브 통지(onSaveChanged)로는 못 잡는다.
     syncDefense(
       !paused && !choosing && w.status === 'playing' && !sandbox,
-      w.shield, w.shieldMax, w.armor, w.armorMax,
+      w.shield, w.shieldMax, w.armor, w.armorMax, arrowsBought,
     )
 
     hud.muted = sfxMuted(sfx)
@@ -1085,6 +1118,12 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       if (id === 'shield') {
         w.shieldMax = shieldHp()
         w.shield = w.shieldMax
+      } else if (id === 'arrow') {
+        // 살통에 한 발. granted 도 같이 올린다 — 소모(granted - arrowsLeft)가 산 발을 쏜 것으로
+        // 잘못 세지 않게. 산 발은 보유분(save.arrows)에서 빠지지 않는다 — 그건 이미 훈련치로 낸 값이다.
+        w.arrowsLeft += 1
+        granted += 1
+        arrowsBought += 1
       } else {
         w.armor = save.runArmor
         w.armorMax = save.runArmorMax

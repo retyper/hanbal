@@ -185,6 +185,11 @@ const CSS = `
 .hb-ic.i-single { --ic: url(${BASE}icons/fork-single.svg); }
 .hb-ic.i-shield { --ic: url(${BASE}icons/def-shield.svg); }
 .hb-ic.i-armor { --ic: url(${BASE}icons/def-armor.svg); }
+.hb-ic.i-arrow { --ic: url(${BASE}icons/nav-quiver.svg); }
+.hb-ic.i-forge { --ic: url(${BASE}icons/forge-anvil.svg); }
+.hb-ic.i-charm { --ic: url(${BASE}icons/charm-rune.svg); }
+.hb-ic.i-shop { --ic: url(${BASE}icons/shop-coins.svg); }
+.hb-ic.i-bounty { --ic: url(${BASE}icons/bounty-crown.svg); }
 
 /* 올릴 수 있다는 표시. 점 하나. 모달로 막지 않는다 (C1) */
 .hb-dot {

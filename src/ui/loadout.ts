@@ -8,6 +8,9 @@
  * 곧 성장 줄이고, 그 '다음'이 이 화면이다 (2026-09-02, 형의 요구).
  */
 import { ARROW_KINDS, type ArrowKindId } from '../game/arrows.ts'
+import { CHARMS, charmBlocked, charmCost, type CharmId } from '../game/charms.ts'
+import { shopPrice } from '../game/supply.ts'
+import { onSaveChanged, writeSave, type SaveData } from '../game/save.ts'
 import { ARROW_TINT, arrowIconSvg, bowIconSvg } from './arrowicons.ts'
 import { BOW_KINDS, bowKind, masteryLevel, type BowKindId } from '../game/bows.ts'
 import { unlockOfBow } from '../game/unlocks.ts'
@@ -49,11 +52,26 @@ const CSS = `
 .l-wipe { margin-left: auto; font-size: 12px; color: var(--mute); }
 .l-wipe.l-armed { color: #ff6a45; border-color: #ff6a4577; }
 .l-go { font-size: 17px; padding: 13px 26px; }
+.l-wallet b { color: var(--gold); }
+/* 살 가게 — 한 줄에 살 하나. 이름·재고·값. 카드가 아니라 목록이다 — 고르는 게 아니라 채우는 자리다. */
+.l-shop { display: flex; flex-direction: column; gap: 6px; }
+.l-srow { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); }
+.l-srow:first-child { border-top: none; }
+.l-sic { line-height: 0; }
+.l-sname { color: var(--ink); font-weight: 600; flex: 1; }
+.l-shave { color: var(--dim); font-size: 13px; }
+.l-sbuy { padding: 6px 12px; font-size: 13px; }
+.l-sbuy b { color: var(--gold); margin-left: 2px; }
+.l-snone { color: var(--mute); font-size: 13px; }
+.l-card .l-price { color: var(--gold); margin-top: 2px; }
+.l-card.hb-on .l-price { color: var(--teal); }
 
 `
 
 export interface LoadoutPick {
   bow: BowKindId
+  /** 이번 여정에 지닐 부적 (game/charms.ts). 빈 문자열 = 없음. 값은 startRun 이 그때 치른다. */
+  charm: CharmId | ''
 }
 
 /**
@@ -63,14 +81,15 @@ export interface LoadoutPick {
 export function mountLoadout(
   o: Overlay,
   bows: readonly BowKindId[],
-  last: LoadoutPick,
-  bowHits: Readonly<Record<string, number>>,
-  bestRunStage: number,
-  runCount: number,
+  /** 세이브 — 활·숙련·기록을 읽고, 부적·살 가게가 훈련치를 **쓴다**. 같은 객체다 (main.ts). */
+  d: SaveData,
   /** 이번 여정이 시작되는 판 (1부터). 체크포인트가 있으면 1이 아니다 — 화면이 먼저 말한다. */
   startStage: number,
   onStart: (pick: LoadoutPick) => void,
 ): void {
+  const bowHits = d.bowHits
+  const bestRunStage = d.bestRunStage
+  const runCount = d.runCount
   const panel = o.panel(PANEL_ID)
   panel.replaceChildren()
   panel.setAttribute('aria-label', '여정 준비')
@@ -84,6 +103,8 @@ export function mountLoadout(
   const head = document.createElement('div')
   head.className = 'l-h'
   head.innerHTML = `<h2>출정</h2><div class="l-run">여정<b>${runCount + 1}</b></div>` +
+    // 지갑 — 이 화면에서 쓰는 돈. 부적·살 가게가 여기서 빠진다.
+    `<div class="l-best l-wallet">훈련치<b></b></div>` +
     // 어디서 출발하는가 — 체크포인트(보스 다음 판)가 있으면 "또 1판부터"가 아니다.
     (startStage > 1 ? `<div class="l-run">출발<b>${startStage}판</b></div>` : '') +
     (bestRunStage > 0 ? `<div class="l-best">가장 멀리<b>${bestRunStage}판</b></div>` : '')
@@ -91,21 +112,36 @@ export function mountLoadout(
   sub.className = 'hb-lead'
   sub.textContent = '동이 트기 전, 활 한 자루를 고른다. 10판마다 귀신이 길을 막고, 화살이 다하면 여정도 끝난다.'
   panel.append(head, sub)
+  const wallet = head.querySelector('.l-wallet b') as HTMLElement
 
   // 시작 선택은 지난 여정의 것. 없던 게 해금돼도 손이 기억하는 활이 먼저다.
   const pick: LoadoutPick = {
-    bow: bows.includes(last.bow) ? last.bow : 'practice',
+    bow: bows.includes(d.bow) ? d.bow : 'practice',
+    charm: '',
   }
 
   const bowCards = new Map<BowKindId, HTMLButtonElement>()
   const syn = document.createElement('div')
   syn.className = 'l-syn'
 
+  /** 부적을 미리 고른 뒤 살 가게에서 훈련치를 써 버리면 그 부적은 못 산다 — 그러면 내려놓는다. */
   const refresh = (): void => {
     for (const [id, el] of bowCards) el.classList.toggle('hb-on', id === pick.bow)
     // 궁합은 판에 그 살을 장전했을 때 성립한다 — 여기서는 활이 어떤 살과 궁합인지만 알려준다.
     const s = bowKind(pick.bow).synergy
     syn.textContent = s !== undefined ? `궁합 — ${s.label}` : ''
+    wallet.textContent = String(d.training)
+    if (pick.charm !== '' && charmBlocked(d, pick.charm) !== '') pick.charm = ''
+    for (const [id, el] of charmCards) {
+      const why = charmBlocked(d, id)
+      el.classList.toggle('hb-on', id === pick.charm)
+      el.classList.toggle('l-lock', why !== '')
+      const price = el.querySelector('.l-price') as HTMLElement
+      price.textContent = why === ''
+        ? (id === pick.charm ? `지닌다 · 훈련치 ${charmCost(id)}` : `훈련치 ${charmCost(id)}`)
+        : why
+    }
+    refreshShop()
   }
 
   const section = (title: string): void => {
@@ -150,6 +186,79 @@ export function mountLoadout(
 
   panel.appendChild(syn)
 
+  // ── 부적 — 이번 여정만 (game/charms.ts) ──
+  // 하나만 지닌다. 값은 '나선다'를 누르는 순간 치른다 — 여기서 미리 깎으면 활을 고르다
+  // 마음이 바뀐 사람의 훈련치가 샌다. 못 사는 카드는 왜 못 사는지 적힌 채 흐려진다.
+  section('부적 — 이번 여정만, 하나')
+  const charmGrid = document.createElement('div')
+  charmGrid.className = 'l-grid'
+  const charmCards = new Map<CharmId, HTMLButtonElement>()
+  for (const c of CHARMS) {
+    const card = document.createElement('button')
+    card.type = 'button'
+    card.className = 'hb-card l-card'
+    card.style.setProperty('--tint', '#ffd35c')
+    card.innerHTML = `<span class="l-ic"><i class="hb-ic i-charm"></i></span>`
+      + `<span class="l-n"></span><span class="l-syn2"></span><span class="l-d"></span><span class="l-d l-price"></span>`
+    ;(card.querySelector('.l-n') as HTMLElement).textContent = c.name
+    ;(card.querySelector('.l-syn2') as HTMLElement).textContent = c.origin
+    ;(card.querySelectorAll('.l-d')[0] as HTMLElement).textContent = c.hint
+    card.addEventListener('click', () => {
+      if (charmBlocked(d, c.id) !== '') return
+      // 같은 카드를 다시 누르면 내려놓는다 — 안 지니고 가는 것도 선택이다.
+      pick.charm = pick.charm === c.id ? '' : c.id
+      refresh()
+    })
+    charmCards.set(c.id, card)
+    charmGrid.appendChild(card)
+  }
+  panel.appendChild(charmGrid)
+
+  // ── 살 가게 — 발견한 특수살을 훈련치로 채운다 (game/supply.ts shopPrice) ──
+  // 발견한 살(arrowStock 에 키가 있는 살)만 판다 — 가게가 보급을 대신하면 보스를 잡을 이유가 준다.
+  // 사는 순간 재고가 오른다 (여기서 바로 저장). 아직 하나도 못 봤으면 그 사실을 한 줄로 말한다.
+  section('살 가게 — 발견한 살을 채운다')
+  const shop = document.createElement('div')
+  shop.className = 'l-shop'
+  panel.appendChild(shop)
+  const refreshShop = (): void => {
+    shop.replaceChildren()
+    let any = 0
+    for (const k of ARROW_KINDS) {
+      if (k.id === 'basic') continue
+      if (d.arrowStock[k.id] === undefined) continue
+      any++
+      const price = shopPrice(k.id)
+      const have = Math.floor(d.arrowStock[k.id] ?? 0)
+      const row = document.createElement('div')
+      row.className = 'l-srow'
+      row.innerHTML = `<span class="l-sic">${arrowIconSvg(k.id, 22)}</span>`
+        + `<span class="l-sname"></span><span class="l-shave"></span>`
+        + `<button class="hb-btn l-sbuy" type="button">+1 <b></b></button>`
+      ;(row.querySelector('.l-sic') as HTMLElement).style.color = ARROW_TINT[k.id] ?? '#ffb347'
+      ;(row.querySelector('.l-sname') as HTMLElement).textContent = k.name
+      ;(row.querySelector('.l-shave') as HTMLElement).textContent = `재고 ${have}`
+      const btn = row.querySelector('.l-sbuy') as HTMLButtonElement
+      ;(btn.querySelector('b') as HTMLElement).textContent = String(price)
+      btn.disabled = d.training < price
+      btn.title = btn.disabled ? `훈련치 ${price} 필요` : `${k.name} 한 발 — 훈련치 ${price}`
+      btn.addEventListener('click', () => {
+        if (d.training < price) return
+        d.training -= price
+        d.arrowStock[k.id] = have + 1
+        writeSave(d)
+        refresh()
+      })
+      shop.appendChild(row)
+    }
+    if (any === 0) {
+      const none = document.createElement('div')
+      none.className = 'l-snone'
+      none.textContent = '아직 본 살이 없다 — 귀신(보스)을 잡으면 보급에서 처음 만난다. 만난 살은 여기서 살 수 있다'
+      shop.appendChild(none)
+    }
+  }
+
   const foot = document.createElement('div')
   foot.className = 'l-foot'
   const go = document.createElement('button')
@@ -173,10 +282,13 @@ export function mountLoadout(
     if (done) return
     done = true
     document.removeEventListener('visibilitychange', onVisibility, true)
+    unsub()
     o.hide(true)
-    onStart({ bow: pick.bow })
+    onStart({ bow: pick.bow, charm: pick.charm })
   })
 
+  // 훈련치가 바뀌면(살 가게·부적) 지갑과 카드가 따라간다.
+  const unsub = onSaveChanged(refresh)
   refresh()
   o.show(PANEL_ID, { sticky: true })
 }

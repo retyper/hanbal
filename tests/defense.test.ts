@@ -61,7 +61,7 @@ function untilStruck(w: World, steps = 1800): string[] {
 }
 
 const STATE = (over: Partial<DefenseState> = {}): DefenseState => ({
-  playing: true, shield: 0, shieldMax: 0, armor: 0, armorMax: 0, ...over,
+  playing: true, shield: 0, shieldMax: 0, armor: 0, armorMax: 0, arrowsBought: 0, ...over,
 })
 
 describe('방어 — 방패', () => {

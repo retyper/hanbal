@@ -13,7 +13,7 @@
  */
 import {
   DEFENSE_ITEMS, armorPer, defenseBlocked, defenseCost, defenseState, onDefenseChanged,
-  shieldHp, type DefenseId,
+  shieldHp, type DefenseId, type DefenseState,
 } from '../game/defense.ts'
 import { onSaveChanged, type SaveData } from '../game/save.ts'
 import type { Overlay } from './overlay.ts'
@@ -39,9 +39,9 @@ const CSS = `
 `
 
 /** 버튼 하나에 적히는 숫자 — 가진 것이 있으면 남은 양, 없으면 값(훈련치)이다. */
-function badge(id: DefenseId, held: number): string {
+function badge(id: DefenseId, held: number, st: DefenseState): string {
   if (held > 0) return id === 'shield' ? `${held}발` : `${held}`
-  return `${defenseCost(id)}`
+  return `${defenseCost(id, st)}`
 }
 
 export function mountDefense(o: Overlay, d: SaveData, buy: (id: DefenseId) => boolean): void {
@@ -59,16 +59,17 @@ export function mountDefense(o: Overlay, d: SaveData, buy: (id: DefenseId) => bo
     const st = defenseState()
     row.replaceChildren()
     for (const item of DEFENSE_ITEMS) {
-      const held = item.id === 'shield' ? st.shield : st.armor
+      // 화살은 '가진 것'이 없다 — 늘 값이 적힌다 (산 발은 살통 숫자에 바로 더해진다).
+      const held = item.id === 'shield' ? st.shield : item.id === 'armor' ? st.armor : 0
       const why = defenseBlocked(d, item.id, st)
       const btn = document.createElement('button')
       btn.type = 'button'
       btn.className = 'hb-btn d-btn' + (held > 0 ? ' d-on' : '')
       btn.innerHTML = `<i class="hb-ic i-${item.id}"></i>`
-        + `<span class="d-name">${item.name}</span><b>${badge(item.id, held)}</b>`
+        + `<span class="d-name">${item.name}</span><b>${badge(item.id, held, st)}</b>`
       // 값과 이유를 둘 다 말한다 — 하나만 말하면 "왜 안 눌리지"가 남는다.
       btn.title = why === ''
-        ? `${item.name}(${item.origin}) — ${item.hint} · 훈련치 ${defenseCost(item.id)}`
+        ? `${item.name}(${item.origin}) — ${item.hint} · 훈련치 ${defenseCost(item.id, st)}`
         : `${item.name}(${item.origin}) — ${why}`
       btn.setAttribute('aria-label', btn.title)
       btn.disabled = why !== ''
@@ -84,7 +85,7 @@ export function mountDefense(o: Overlay, d: SaveData, buy: (id: DefenseId) => bo
     if (st.armor > 0) worn.push(`두정갑 ${st.armor}`)
     hint.textContent = worn.length > 0
       ? worn.join(' · ')
-      : `방어 — 방패 ${defenseCost('shield')} (화살 ${shieldHp()}발) · 두정갑 ${defenseCost('armor')} (+${armorPer()})`
+      : `장터 — 방패 ${defenseCost('shield')} (화살 ${shieldHp()}발) · 두정갑 ${defenseCost('armor')} (+${armorPer()}) · 화살 한 발 ${defenseCost('arrow', st)}`
   }
 
   refresh()

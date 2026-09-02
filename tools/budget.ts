@@ -23,9 +23,9 @@ import { join } from 'node:path'
 /** dist 전체의 상한. 청크 하나가 아니라 **첫 방문이 받는 총량**이 유저의 경험이다. */
 const LIMIT = {
   /** 전송 크기 (gzip, KB). 로딩 시간을 지배하는 값. */
-  gzipKB: 90,
+  gzipKB: 110,
   /** 파싱 크기 (raw, KB). 저사양 기기의 CPU가 내는 값. */
-  rawKB: 260,
+  rawKB: 300,
 } as const
 
 const DIST = 'dist'

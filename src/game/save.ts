@@ -19,7 +19,7 @@ import { STAGES } from './stages.ts'
 const KEY = 'hanbal.save.v1'
 
 /** 현재 스키마 버전. 필드를 바꿀 때마다 +1 하고 MIGRATIONS에 한 줄 추가한다. */
-export const SCHEMA_VERSION = 12
+export const SCHEMA_VERSION = 13
 
 /**
  * 오프라인 축적의 소수부 (자원 단위). 세 자원의 축적 속도가 달라 하나로 합칠 수 없다.
@@ -168,6 +168,15 @@ export interface SaveData {
    * 처음 보는 사람에게 아무 말도 아니었다. 처음 올릴 수 있게 되는 그 순간에 한 줄, 딱 한 번.
    */
   seenGrowHint: boolean
+
+  // ── v13: 훈련치를 쓰는 곳이 늘었다 (2026-09-02, 형: "돈 쓸 곳을 좀 더 많이") ──
+  /**
+   * 대장간 — 활 개조 단수 (game/forge.ts). 키는 `${활 id}.${부위}` (예: 'gakgung.string'),
+   * 값은 0..maxLevel. **줄지 않는다** (성장은 되돌아가지 않는다). 모르는 키도 지우지 않는다 (A4).
+   */
+  forge: Record<string, number>
+  /** 이번 여정에 지닌 부적 (game/charms.ts CharmId). 빈 문자열 = 없음. 여정이 끝나면 비운다. */
+  runCharm: string
 }
 
 /** 저장값이 말이 되는 범위인지만 본다. 치트 방지가 아니라 NaN·Infinity 방어다 (A4: 치트 방지 안 함). */
@@ -235,6 +244,8 @@ export function defaultSave(now: number): SaveData {
     equippedTitle: '',
     seenMolgi: false,
     seenGrowHint: false,
+    forge: {},
+    runCharm: '',
   }
 }
 
@@ -350,6 +361,9 @@ const MIGRATIONS: ReadonlyArray<(r: Raw) => void> = [
    * v11 → v12: 첫 성장 안내(seenGrowHint). 옛 세이브도 false — 오래 한 사람도 이 안내를
    * 받은 적이 없다. 이미 성장을 아는 사람에게는 한 줄이 한 번 뜨고 끝이다.
    */
+  () => {},
+
+  /** v12 → v13: 대장간(forge)·부적(runCharm). 빈 값으로 올라온다 — 산 것이 없으니 빈 게 맞다. */
   () => {},
 ]
 
@@ -499,6 +513,9 @@ function sanitize(r: Raw, now: number): SaveData {
       : '',
     seenMolgi: bool(r['seenMolgi'], false),
     seenGrowHint: bool(r['seenGrowHint'], false),
+    forge: sanitizeBest(r['forge']),
+    // 유효성(진짜 부적 id인가)은 game/charms.ts isCharmId 가 판정한다 — 여기서는 모양만 본다.
+    runCharm: typeof r['runCharm'] === 'string' && r['runCharm'].length <= 32 ? r['runCharm'] : '',
   }
 }
 

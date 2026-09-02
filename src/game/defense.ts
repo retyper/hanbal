@@ -20,7 +20,7 @@
 import { P } from '../tune/params.ts'
 import { writeSave, type SaveData } from './save.ts'
 
-export type DefenseId = 'shield' | 'armor'
+export type DefenseId = 'shield' | 'armor' | 'arrow'
 
 export interface DefenseItem {
   id: DefenseId
@@ -44,11 +44,31 @@ export const DEFENSE_ITEMS: readonly DefenseItem[] = [
     origin: '頭釘甲',
     hint: '입는다 — 피해를 대신 받는다 · 여정 내내',
   },
+  // 화살 한 발 (2026-09-02, 형: "돈 쓸 곳을 좀 더 많이"). 방어는 아니지만 **같은 무리**다 —
+  // "지금 이 판에서 훈련치로 사는 것". 살수록 비싸지고 판당 상한이 있다 (P.defense.arrow*).
+  {
+    id: 'arrow',
+    name: '화살 한 발',
+    origin: '箭',
+    hint: '살통에 한 발 더 — 이 판만 · 살수록 비싸진다',
+  },
 ]
 
-/** 값 (훈련치). 노브에서 바로 읽는다 — 코드 속 매직넘버 금지 (CLAUDE.md 3). */
-export function defenseCost(id: DefenseId): number {
+/**
+ * 값 (훈련치). 노브에서 바로 읽는다 — 코드 속 매직넘버 금지 (CLAUDE.md 3).
+ * 화살은 **이 판에서 산 발수**만큼 오른다 — 그래서 상태가 필요하다. 없으면 첫 발 값.
+ */
+export function defenseCost(id: DefenseId, state?: DefenseState): number {
+  if (id === 'arrow') {
+    const bought = state !== undefined ? state.arrowsBought : 0
+    return Math.max(0, Math.floor(P.defense.arrowCost + P.defense.arrowCostStep * bought))
+  }
   return Math.max(0, Math.floor(id === 'shield' ? P.defense.shieldCost : P.defense.armorCost))
+}
+
+/** 한 판에 살 수 있는 화살 수. */
+export function arrowBuyMax(): number {
+  return Math.max(1, Math.floor(P.defense.arrowMaxPerStage))
 }
 
 /** 방패 하나의 내구 (적 화살 발수). */
@@ -73,7 +93,8 @@ export function defenseBlocked(d: SaveData, id: DefenseId, state: DefenseState):
   if (!state.playing) return '판이 도는 중에만 산다'
   if (id === 'shield' && state.shieldMax > 0) return '이미 세워 뒀다'
   if (id === 'armor' && d.runArmor >= armorCap()) return '더 겹쳐 입지 못한다'
-  if (d.training < defenseCost(id)) return `훈련치 ${defenseCost(id)} 필요`
+  if (id === 'arrow' && state.arrowsBought >= arrowBuyMax()) return '이 판에서는 더 못 산다'
+  if (d.training < defenseCost(id, state)) return `훈련치 ${defenseCost(id, state)} 필요`
   return ''
 }
 
@@ -84,7 +105,7 @@ export function defenseBlocked(d: SaveData, id: DefenseId, state: DefenseState):
  */
 export function buyDefense(d: SaveData, id: DefenseId, state: DefenseState): boolean {
   if (defenseBlocked(d, id, state) !== '') return false
-  d.training -= defenseCost(id)
+  d.training -= defenseCost(id, state)
   if (id === 'armor') {
     const cap = armorCap()
     d.runArmor = Math.min(cap, d.runArmor + armorPer())
@@ -109,10 +130,12 @@ export interface DefenseState {
   shieldMax: number
   armor: number
   armorMax: number
+  /** 이 판에서 훈련치로 산 화살 수. 값이 여기서 오른다 (defenseCost). */
+  arrowsBought: number
 }
 
 /** 현재 상태. 제자리에서 갱신되는 객체 하나다 — 프레임당 할당 0 (A5). */
-const STATE: DefenseState = { playing: false, shield: 0, shieldMax: 0, armor: 0, armorMax: 0 }
+const STATE: DefenseState = { playing: false, shield: 0, shieldMax: 0, armor: 0, armorMax: 0, arrowsBought: 0 }
 
 const listeners = new Set<() => void>()
 
@@ -129,15 +152,18 @@ export function onDefenseChanged(fn: () => void): () => void {
  * 루프가 프레임마다 부른다. 값이 하나도 안 바뀌었으면 아무 일도 일어나지 않는다 —
  * 그 조건이 이 함수의 존재 이유다 (매 프레임 화면을 다시 그리면 A5가 깨진다).
  */
-export function syncDefense(playing: boolean, shield: number, shieldMax: number, armor: number, armorMax: number): void {
+export function syncDefense(
+  playing: boolean, shield: number, shieldMax: number, armor: number, armorMax: number, arrowsBought: number,
+): void {
   if (
     STATE.playing === playing && STATE.shield === shield && STATE.shieldMax === shieldMax &&
-    STATE.armor === armor && STATE.armorMax === armorMax
+    STATE.armor === armor && STATE.armorMax === armorMax && STATE.arrowsBought === arrowsBought
   ) return
   STATE.playing = playing
   STATE.shield = shield
   STATE.shieldMax = shieldMax
   STATE.armor = armor
   STATE.armorMax = armorMax
+  STATE.arrowsBought = arrowsBought
   for (const fn of listeners) fn()
 }

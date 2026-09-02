@@ -518,6 +518,7 @@ function drawTargets(
           drawFoeArcher(
             ctx, wx, wy2, rx, ry, aimX, aimY, drawF, bodyCol, t.armored, false,
             { x: wx - whw, y: wy2 - whh, w: whw * 2, h: whh * 2 },
+            t.bounty,
           )
           // 체력 바 — 창 위. 숨어 있으면 바도 없다 (없는 것은 잴 수 없다).
           drawHpBar(ctx, wx, wy2 - whh - 12, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
@@ -601,7 +602,7 @@ function drawTargets(
       }
 
       // ── 들판 궁수 (look 0) — 나를 향해 몸을 돌리고 활을 쥔다 (render/foe.ts) ──
-      drawFoeArcher(ctx, x, y, rx, ry, aimX, aimY, drawF, bodyCol, t.armored, true, null)
+      drawFoeArcher(ctx, x, y, rx, ry, aimX, aimY, drawF, bodyCol, t.armored, true, null, t.bounty)
 
       // 체력 바 — 머리 위 (형: "전부 바 형태로").
       drawHpBar(

@@ -357,7 +357,7 @@ check('로드아웃 중에는 sim이 멈춰 있다', drawCalls > 0, `drawCalls=$
 // 활과 살통을 고르고 여정을 시작한다
 const picked: ArrowKindId = DEFAULT_ARROW
 panelOpen = false
-pendingStart({ bow: 'practice' })
+pendingStart({ bow: 'practice', charm: '' })
 pump(3)
 check('여정이 시작된다', true, `pick=${picked}`)
 
@@ -390,7 +390,7 @@ outer: for (let ay = 180; ay <= 620 && !cleared; ay += 20) {
       // 새 여정의 로드아웃이 떠 있다 — 같은 조합으로 다시 출발.
       if (panelOpen) {
         panelOpen = false
-        pendingStart({ bow: 'practice' })
+        pendingStart({ bow: 'practice', charm: '' })
         pump(3)
       }
       gainLines.length = 0
@@ -482,10 +482,7 @@ console.log(String.fromCharCode(10) + '6. 로드아웃 생명주기 (탭 복귀 
   mountLoadout(
     overlay as unknown as Parameters<typeof mountLoadout>[0],
     ['practice', 'gakgung'],
-    { bow: 'practice' },
-    {},
-    7,
-    0,
+    save,
     1,
     (pick) => {
       got.starts++
@@ -540,7 +537,7 @@ console.log(String.fromCharCode(10) + '6. 로드아웃 생명주기 (탭 복귀 
   // 여정이 없으면 하나 연다 — mapJump 가 진행 중인 여정을 접어야 종료 화면이 뜬다.
   if (!save.runActive && panelOpen) {
     panelOpen = false
-    pendingStart({ bow: 'practice' })
+    pendingStart({ bow: 'practice', charm: '' })
     pump(3)
   }
   const before = runOverShown

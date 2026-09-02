@@ -65,6 +65,8 @@ const F = {
 
 /** 갑옷 — 흉갑의 금속색. 머리는 맨머리다: 저기가 답이라는 뜻 (형의 주문). */
 const ARMOR = '#8fa3b5'
+/** 금관의 색 — 훈련치의 금색과 같은 계열. 강조색(주황)과 구분되게 조금 더 노랗다. */
+const CROWN = '#ffd35c'
 const ARMOR_LINE = '#373e4b'
 const ARROW_COL = '#e8dcc0'
 /** 칼날 — 쇳빛. 몸색과 같으면 팔이 하나 더 달린 것으로 보인다 (drawFoeRusher). */
@@ -84,6 +86,8 @@ export function drawFoeArcher(
   drawF: number,
   col: string, armored: boolean, legs: boolean,
   clip: { x: number; y: number; w: number; h: number } | null,
+  /** 금관 사수 — 머리 위에 금관을 그린다 (TargetSpec.bounty). 현상금의 표식이다. */
+  bounty = false,
 ): void {
   // 조준축에 수직인 '위' 벡터. 화면 y는 아래로 +라 위를 향하는 쪽을 고른다.
   let vx = uy
@@ -149,6 +153,28 @@ export function drawFoeArcher(
   ctx.moveTo(shX, shY)
   ctx.lineTo(hx, hy)
   ctx.stroke()
+
+  if (bounty) {
+    // ── 금관 (金冠) — 현상금의 표식. 머리 위에 세 이빨의 관. 크기는 머리 반경에서 나오고,
+    //    방향은 조준축의 '위'(vx, vy)를 따른다 — 사수가 기울어도 관은 머리 위에 있다.
+    //    색은 화면의 강조색이 아니라 **금**이다: 훈련치(돈)의 색이라 한 번 보면 뜻이 읽힌다.
+    const cw = hr * 1.25
+    const ch = hr * 0.9
+    const bx = hx + vx * hr * 1.05
+    const by = hy + vy * hr * 1.05
+    // 관의 가로축 = 조준축(ux, uy). 아래변 두 끝과 이빨 셋.
+    ctx.fillStyle = CROWN
+    ctx.beginPath()
+    ctx.moveTo(bx - ux * cw, by - uy * cw)
+    ctx.lineTo(bx + ux * cw, by + uy * cw)
+    ctx.lineTo(bx + ux * cw + vx * ch, by + uy * cw + vy * ch)
+    ctx.lineTo(bx + ux * cw * 0.5 + vx * ch * 0.45, by + uy * cw * 0.5 + vy * ch * 0.45)
+    ctx.lineTo(bx + vx * ch * 1.15, by + vy * ch * 1.15)
+    ctx.lineTo(bx - ux * cw * 0.5 + vx * ch * 0.45, by - uy * cw * 0.5 + vy * ch * 0.45)
+    ctx.lineTo(bx - ux * cw + vx * ch, by - uy * cw + vy * ch)
+    ctx.closePath()
+    ctx.fill()
+  }
 
   if (armored) {
     // 흉갑 — 어깨가 넓고 허리로 좁아지는 판. 몸통이 안 통하는 이유가 형태로 읽힌다.

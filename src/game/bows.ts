@@ -15,6 +15,7 @@ import type { ArrowKindId } from './arrows.ts'
 import type { BowMods } from '../sim/types.ts'
 import { P } from '../tune/params.ts'
 import { clamp01, lerp } from '../core/math.ts'
+import { forgeMul, NO_FORGE, type ForgeLevels } from './forge.ts'
 
 export type BowKindId = 'practice' | 'gakgung' | 'longbow' | 'recurve' | 'compound'
 
@@ -113,7 +114,7 @@ function eased(cost: number, lv: number): number {
  * 궁합도 여기서 판정한다 — sim에 조합표를 두지 않기 위해서다 (docs/BOWS.md 4장).
  * 매 판 경계에서 새로 굽는다: 튜닝 콘솔이 P.bowkind 를 움직인 게 다음 판에 먹는다 (A2).
  */
-export function bowMods(bow: BowKindId, arrow: ArrowKindId, lv: number): BowMods {
+export function bowMods(bow: BowKindId, arrow: ArrowKindId, lv: number, forge: Readonly<ForgeLevels> = NO_FORGE): BowMods {
   const K = P.bowkind
   const m: BowMods = {
     speedMul: 1,
@@ -145,5 +146,10 @@ export function bowMods(bow: BowKindId, arrow: ArrowKindId, lv: number): BowMods
   }
   const syn = bowKind(bow).synergy
   if (syn !== undefined && syn.arrow === arrow) m.pierceAdd = Math.floor(K.synergyPierce)
+  // ── 대장간 (game/forge.ts) — 마지막에 곱한다. 활의 성격(위)을 바꾸지 않고 그 위에 얹는 개조다.
+  //    화면의 문장(forgeEffect)과 같은 식(forgeMul)을 쓴다 — 두 벌이면 어긋난다.
+  m.drawTimeMul *= forgeMul('string', forge.string)
+  m.speedMul *= forgeMul('limb', forge.limb)
+  m.tremorMul *= forgeMul('grip', forge.grip)
   return m
 }

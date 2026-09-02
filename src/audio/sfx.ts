@@ -1649,6 +1649,20 @@ export function pumpSfx(sfx: Sfx, w: World): void {
       // 예전 규칙은 "실패를 조롱하지 않는다"였고 그건 지금도 맞다 — 그래서 **낮고 작게**,
       // 클리어음의 절반도 안 되는 크기로 한 번만 낸다. 알리는 것과 비웃는 것은 다르다.
       else sample(sfx, s, 'fail', P.audio.clearGain * SMP.failGain, 1, 0, 0)
+    } else if (e.t === 'bounty') {
+      // 현상금 — 금관이 떨어지는 소리. 해금 한 소절(unlock)은 UI의 사건이라 여기 안 쓴다;
+      // 판 안의 소리는 판의 악기(bellTone)로. 두 음이 오르며 "벌었다"를 만든다.
+      for (let n = 0; n < 2; n++) {
+        BL.freq = n === 0 ? 1320 : 1980
+        BL.dur = 0.34
+        BL.gain = P.audio.hitGain * 0.7
+        BL.partials = SFX.endPartials
+        BL.inharm = SFX.unlockInharm
+        BL.attack = 0.002
+        BL.delay = n * 0.09
+        BL.type = 'sine'
+        bellTone(s, K_UI, BL)
+      }
     } else if (e.t === 'foe_down') {
       // 쓰러졌다 — 사람은 퍽, 드론은 금속. 무엇이 죽었는지 귀로도 안다.
       const drone = e.look === 3

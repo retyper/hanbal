@@ -25,3 +25,7 @@
   fork-single.svg     lorc/arrowhead             Lorc
   def-shield.svg      lorc/arrows-shield         Lorc
   def-armor.svg       lorc/layered-armor         Lorc
+  forge-anvil.svg     lorc/anvil                 Lorc        (대장간 — 활 개조, 2026-09-02)
+  charm-rune.svg      lorc/rune-stone            Lorc        (부적)
+  shop-coins.svg      delapouite/coins           Delapouite  (살 가게)
+  bounty-crown.svg    lorc/crown                 Lorc        (금관 사수 — 현상금)
