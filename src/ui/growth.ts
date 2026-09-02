@@ -132,9 +132,18 @@ const CSS = `
 .g-danger span { color: var(--mute); font-size: 12px; flex: 1; }
 
 /* ── 대장간 ── 활 개조. 스탯 줄과 같은 뼈대(이름 · 지금 → 다음 · 버튼)라 한 화면으로 읽힌다. */
-.f-h { display: flex; align-items: baseline; gap: 12px; border-top: 1px solid var(--line); margin-top: 20px; padding-top: 14px; }
-.f-h h3 { flex: 1; margin: 0; color: var(--dim); font-size: 13px; letter-spacing: .12em; }
-.f-h .f-bow { color: var(--ink); font-weight: 700; font-size: 15px; }
+/* 대장간 머리 — 김홍도 「대장간」 (public/art/출처.txt). 형: "대장간도 대장간스러운 이미지". */
+.f-h {
+  position: relative; display: flex; align-items: flex-end; gap: 12px; margin: 20px -8px 0; padding: 40px 14px 10px;
+  overflow: hidden; border-radius: 2px;
+  background:
+    linear-gradient(to bottom, rgba(38, 37, 33, .35), rgba(47, 46, 41, .9) 75%, var(--paper) 100%),
+    url(${BASE}art/daejanggan.jpg) center 30% / cover no-repeat;
+  min-height: 96px;
+}
+.f-h h3 { flex: 1; margin: 0; color: var(--ink); font-size: 17px; letter-spacing: .08em; }
+.f-h .f-bow { color: var(--accent); font-weight: 700; font-size: 15px; }
+.f-h .f-cap { position: absolute; right: 10px; top: 8px; color: rgba(255, 244, 220, .6); font-size: 11px; letter-spacing: .06em; }
 .f-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 20px; padding: 11px 0 10px; border-top: 1px solid var(--line); }
 .f-row:first-of-type { border-top: none; }
 .f-row.g-flash { background: #ffb34722; }
@@ -153,14 +162,15 @@ const CSS = `
 }
 
 /* ── 재정비 머리 ── 여정이 남긴 것. "죽었다"가 아니라 "가져간다 · 다음은 여기부터"가 이 머리의 말이다. */
-/* 머리 그림 — 고구려 무용총 「수렵도」 (public/art/출처.txt). 말 위에서 몸을 돌려 쏘는 사람들 —
-   쓰러진 자리에서 다시 활을 드는 화면에 어울리는 그림이다. 패널이 열릴 때만 받는다. */
+/* 머리 그림 — 고구려 수렵총 벽화 (public/art/출처.txt). 호랑이를 쫓는 기마 궁수 —
+   쓰러진 자리에서 다시 활을 드는 화면에 어울리는 그림이다. 패널이 열릴 때만 받는다.
+   (무용총 「수렵도」는 오프닝이 쓴다 — 화면마다 다른 그림이어야 그림이 기억된다.) */
 .r-head {
   position: relative; text-align: center; padding: 22px 12px 16px; margin: -4px -8px 4px; overflow: hidden;
   border-bottom: 1px solid var(--line);
   background:
     linear-gradient(to bottom, rgba(38, 37, 33, .5), rgba(47, 46, 41, .9) 70%, var(--paper) 100%),
-    url(${BASE}art/suryeopdo.jpg) center 40% / cover no-repeat;
+    url(${BASE}art/suryeopchong.jpg) center 45% / cover no-repeat;
 }
 .r-cap { position: absolute; right: 12px; top: 8px; color: rgba(255, 244, 220, .6); font-size: 11px; letter-spacing: .06em; }
 .r-lead { font-size: 14px; color: var(--dim); letter-spacing: .1em; }
@@ -197,6 +207,8 @@ export interface AudioSwitch {
   toggle(): void
   /** 스탯을 올렸다 — 소리 하나 (형: "능력치 올릴때 소리도 필요해"). */
   levelup(): void
+  /** 활을 갈았다 — 망치질 (형: "강화 시 망치질 소리"). */
+  forge(): void
 }
 
 interface StatRows {
@@ -293,7 +305,7 @@ function buildForgeRows(d: SaveData, audio: AudioSwitch, onChange: () => void): 
   const box = document.createElement('div')
   const head = document.createElement('div')
   head.className = 'f-h'
-  head.innerHTML = '<h3>대장간</h3><span class="f-bow"></span>'
+  head.innerHTML = '<div class="f-cap">김홍도 「대장간」</div><h3><i class="hb-ic i-forge"></i> 대장간</h3><span class="f-bow"></span>'
   const bowOut = head.querySelector('.f-bow') as HTMLElement
   const lead = document.createElement('p')
   lead.className = 'hb-lead'
@@ -326,7 +338,7 @@ function buildForgeRows(d: SaveData, audio: AudioSwitch, onChange: () => void): 
     }
     btn.addEventListener('click', () => {
       if (!buyForge(d, d.bow, p.id)) return
-      audio.levelup()
+      audio.forge()
       row.el.classList.add('g-flash')
       window.setTimeout(() => row.el.classList.remove('g-flash'), FLASH_MS)
       refresh()
@@ -678,7 +690,7 @@ export function showReinforce(
   const head = document.createElement('div')
   head.className = 'r-head'
   head.innerHTML =
-    '<div class="r-cap">무용총 「수렵도」</div>' +
+    '<div class="r-cap">수렵총 벽화 (고구려)</div>' +
     `<div class="r-lead">${lead}</div>` +
     `<div class="r-stage">${info.reached}판</div>` +
     (info.first

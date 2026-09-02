@@ -21,6 +21,7 @@ import { mountSandbox } from './ui/sandbox.ts'
 import { mountQuiver } from './ui/quiver.ts'
 import { mountDefense } from './ui/defense.ts'
 import { mountSteady } from './ui/steady.ts'
+import { mountOpening } from './ui/opening.ts'
 
 const el = document.getElementById('game')
 if (!(el instanceof HTMLCanvasElement)) {
@@ -89,6 +90,7 @@ const audio: AudioSwitch = {
   muted: () => loop.muted(),
   toggle: () => loop.toggleMute(),
   levelup: () => loop.ui('levelup'),
+  forge: () => loop.ui('forge'),
 }
 // 루프를 먼저 만든다 — 성장 화면의 소리 스위치가 루프의 오디오 창구를 필요로 한다.
 // (루프는 overlay만 알면 되고 성장 패널이 아직 없어도 돈다. 반대 순서는 성립하지 않는다.)
@@ -171,8 +173,10 @@ idle(() => withCollection(() => {
   withMap(() => {})
 }))
 
-// 드래프트가 첫 프레임에 뜰 수 있으므로 화면들이 다 붙은 뒤에 시작한다.
-loop.start()
+// ── 오프닝 (형: "바로 게임 페이지 가지 말고 오프닝 화면을 띄워줘") ──
+// 켤 때 딱 한 번. 아무 데나 누르면 그 제스처로 루프가 선다 — 그 클릭이 소리의 열쇠이기도 하다.
+// 화면들이 다 붙은 뒤에 시작하는 규칙은 그대로다 (드래프트가 첫 프레임에 뜰 수 있다).
+mountOpening(overlay, save, () => loop.start())
 
 // 백버퍼 크기·dpr을 실제로 계산하는 곳은 render/camera.ts 하나뿐이다. 여기서는 통지만 한다.
 // 매 프레임이 아니라 이벤트로 부르는 이유: 렌더러가 리사이즈마다 배경 그라디언트를 다시 만든다.

@@ -11,7 +11,7 @@ import { ARROW_KINDS, type ArrowKindId } from '../game/arrows.ts'
 import { CHARMS, charmBlocked, charmCost, type CharmId } from '../game/charms.ts'
 import { shopPrice } from '../game/supply.ts'
 import { onSaveChanged, writeSave, type SaveData } from '../game/save.ts'
-import { ARROW_TINT, arrowIconSvg, bowIconSvg } from './arrowicons.ts'
+import { ARROW_TINT, arrowIconSvg, bowIconSvg, charmIconSvg } from './arrowicons.ts'
 import { BOW_KINDS, bowKind, masteryLevel, type BowKindId } from '../game/bows.ts'
 import { unlockOfBow } from '../game/unlocks.ts'
 import type { ForkOption } from '../game/forks.ts'
@@ -55,6 +55,9 @@ const CSS = `
 .l-card .l-ic { color: var(--tint); line-height: 0; margin-bottom: 4px; }
 /* 갈림길 카드의 아이콘은 크게 — 글을 읽기 전에 무슨 카드인지 알아야 한다. */
 .l-card .l-ic .hb-ic { width: 30px; height: 30px; }
+/* 부적 — 종이 한 장. 고르면 살짝 든다. */
+.l-card .l-charm svg { transition: transform .15s; }
+.l-card.hb-on .l-charm svg { transform: translateY(-2px) rotate(-3deg); }
 .l-card .l-syn2 { letter-spacing: .08em; }
 .l-card .l-n { color: var(--ink); font-weight: 700; font-size: 15px; }
 .l-card .l-d { color: var(--dim); font-size: 12px; line-height: 1.45; }
@@ -223,7 +226,7 @@ export function mountLoadout(
     card.type = 'button'
     card.className = 'hb-card l-card'
     card.style.setProperty('--tint', '#ffd35c')
-    card.innerHTML = `<span class="l-ic"><i class="hb-ic i-charm"></i></span>`
+    card.innerHTML = `<span class="l-ic l-charm">${charmIconSvg(c.id, 44)}</span>`
       + `<span class="l-n"></span><span class="l-syn2"></span><span class="l-d"></span><span class="l-d l-price"></span>`
     ;(card.querySelector('.l-n') as HTMLElement).textContent = c.name
     ;(card.querySelector('.l-syn2') as HTMLElement).textContent = c.origin

@@ -87,3 +87,31 @@ export function arrowIconSvg(id: ArrowKindId, size: number): string {
     `aria-hidden="true">${ARROW_ICON[id]}</svg>`
   )
 }
+
+// ─────────────────────────── 부적 ───────────────────────────
+//
+// 부적(符籍)은 노란 종이에 붉은 글씨다. 형: "부적도 부적마다 이미지 다르게 만들어줘."
+// 넷은 같은 종이에 **다른 글자**를 쓴다 — 箭(살) · 甲(갑옷) · 金(돈) · 鬼(귀신). 글자가 곧 그림이다.
+// 인라인 SVG라 파일을 받지 않고, 색은 부적의 것이라 currentColor 를 안 쓴다.
+
+/** 부적 id → 붉은 글자. 모르는 id는 符. */
+const CHARM_GLYPH: Record<string, string> = { quiver: '箭', iron: '甲', gold: '金', ghost: '鬼' }
+
+/** 부적 한 장. size는 세로 px (가로는 0.62배). */
+export function charmIconSvg(id: string, size: number): string {
+  const g = CHARM_GLYPH[id] ?? '符'
+  const w = Math.round(size * 0.62)
+  return (
+    `<svg width="${w}" height="${size}" viewBox="0 0 26 42" aria-hidden="true">` +
+    // 종이 — 살짝 기운 노란 장. 아래가 조금 넓다.
+    '<path d="M3 2 L23 1.4 L24 40 L2.4 40.6 Z" fill="#f0cf6a" stroke="#8a5a1a" stroke-width="1"/>' +
+    // 붉은 테 — 부적의 문법. 안쪽 테 하나.
+    '<path d="M5.6 4.6 L20.6 4.2 L21.4 37.6 L5 38 Z" fill="none" stroke="#b83a2a" stroke-width="1.1"/>' +
+    // 위의 붉은 무늬(삼각 셋)와 아래의 점 셋.
+    '<path d="M8 7.5 L10.3 11.5 L5.7 11.5 Z M13 7.5 L15.3 11.5 L10.7 11.5 Z M18 7.5 L20.3 11.5 L15.7 11.5 Z" fill="#b83a2a"/>' +
+    '<circle cx="9" cy="34.5" r="1.1" fill="#b83a2a"/><circle cx="13" cy="34.5" r="1.1" fill="#b83a2a"/><circle cx="17" cy="34.5" r="1.1" fill="#b83a2a"/>' +
+    // 글자 — 붉은 명조.
+    `<text x="13" y="27.5" text-anchor="middle" font-family="Gowun Batang, Batang, serif" font-weight="700" font-size="15" fill="#a8261a">${g}</text>` +
+    '</svg>'
+  )
+}

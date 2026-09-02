@@ -12,3 +12,12 @@
 
   쓰는 자리: 출정 화면 머리(활쏘기) · 재정비 화면 머리(수렵도). ui/loadout.ts · ui/growth.ts.
   화면에 그림 이름과 작가를 작게 적는다 — 출처 표시가 공공누리의 조건이고, 좋은 그림은 이름을 부를 만하다.
+
+  (2026-09-03 추가)
+  daejanggan.jpg   「대장간」 (단원풍속도첩)             김홍도 · 조선 18세기       퍼블릭 도메인
+                   File:Danwon-Daejanggan.jpg (598×699, 원본 그대로)
+  suryeopchong.jpg 수렵총 벽화 「수렵도」                작자 미상 · 고구려         퍼블릭 도메인
+                   File:Goguryeo tomb mural.jpg (740×611, 원본 그대로)
+
+  쓰는 자리 (바뀜): 오프닝(ui/opening.ts) — 무용총 「수렵도」 · 출정 — 「활쏘기」 ·
+  재정비 — 수렵총 벽화 · 대장간 머리(ui/growth.ts) — 「대장간」.

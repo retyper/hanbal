@@ -456,6 +456,22 @@ function limb(
 }
 
 /** 척추 — 곧은 선이 아니라 굽는 곡선이어야 "등이 굽었다"가 읽힌다. */
+/**
+ * 두정갑(頭釘甲)의 생김새 — 어깨에서 골반까지의 천 판과 그 위의 쇠징.
+ * 치수는 m(몸 좌표). 어깨 폭은 몸통보다 조금 넓어야 '입은 것'으로 읽힌다.
+ */
+const ARMOR_PLATE = {
+  shoulder: 0.19,
+  hip: 0.15,
+  collar: 0.02,
+  skirt: 0.03,
+  rows: 3,
+  cols: 3,
+  cloth: '#5a4634',
+  edge: '#2c2219',
+  rivet: '#d9b25a',
+} as const
+
 function spine(
   ctx: CanvasRenderingContext2D, cam: Camera,
   x0: number, y0: number, x1: number, y1: number, bendX: number,
@@ -539,6 +555,49 @@ export function drawArcher(
   ctx.strokeStyle = bodyCol
   ctx.lineWidth = torsoW
   spine(ctx, cam, rig.sx, rig.sy, pelvisX, pelvisY, spineBend)
+
+  // ── 두정갑 — 입었으면 입은 대로 보인다 (형: "갑주 입으면 입은 모습으로 보여야지") ──
+  // 어깨에서 골반까지의 판. 두정갑은 천 위에 쇠징을 박은 갑옷이라 판 위에 징(점) 두 줄을 찍는다.
+  // 남은 방어량이 줄면 판이 흐려진다 — 벗겨지는 중임이 보여야 산 값을 안다. 0이면 안 그린다.
+  if (w.armor > 0 && w.armorMax > 0) {
+    const worn = clamp(w.armor / w.armorMax, 0.25, 1)
+    const halfTop = ARMOR_PLATE.shoulder
+    const halfBot = ARMOR_PLATE.hip
+    const sx0 = worldToScreenX(cam, rig.sx - halfTop)
+    const sx1 = worldToScreenX(cam, rig.sx + halfTop)
+    const sy0 = worldToScreenY(cam, rig.sy - ARMOR_PLATE.collar)
+    const px0 = worldToScreenX(cam, pelvisX - halfBot)
+    const px1 = worldToScreenX(cam, pelvisX + halfBot)
+    const py = worldToScreenY(cam, pelvisY + ARMOR_PLATE.skirt)
+    ctx.globalAlpha = 0.55 + 0.45 * worn
+    ctx.fillStyle = ARMOR_PLATE.cloth
+    ctx.beginPath()
+    ctx.moveTo(sx0, sy0)
+    ctx.lineTo(sx1, sy0)
+    ctx.lineTo(px1, py)
+    ctx.lineTo(px0, py)
+    ctx.closePath()
+    ctx.fill()
+    ctx.strokeStyle = ARMOR_PLATE.edge
+    ctx.lineWidth = Math.max(1, cam.scale * 0.03)
+    ctx.stroke()
+    // 징 — 두 줄. 크기는 줌에 따라간다.
+    ctx.fillStyle = ARMOR_PLATE.rivet
+    const rr = Math.max(1, cam.scale * 0.035)
+    for (let row = 0; row < ARMOR_PLATE.rows; row++) {
+      const t = (row + 0.5) / ARMOR_PLATE.rows
+      const wy = rig.sy - ARMOR_PLATE.collar - (rig.sy - ARMOR_PLATE.collar - (pelvisY + ARMOR_PLATE.skirt)) * t
+      const half = halfTop + (halfBot - halfTop) * t
+      for (let col = 0; col < ARMOR_PLATE.cols; col++) {
+        const u = (col + 0.5) / ARMOR_PLATE.cols
+        const wx = rig.sx + (pelvisX - rig.sx) * t - half + half * 2 * u
+        ctx.beginPath()
+        ctx.arc(worldToScreenX(cam, wx), worldToScreenY(cam, wy), rr, 0, TAU)
+        ctx.fill()
+      }
+    }
+    ctx.globalAlpha = 1
+  }
 
   // 원근 — 궁수는 오른쪽을 보고, 우리는 궁수의 **오른편**을 본다. 사법상 왼발이 과녁 쪽(앞),
   // 오른발이 뒤이므로 화면에 가까운 건 오른다리(뒤쪽 발)다. 먼 것(왼다리)을 먼저, 어둡게.

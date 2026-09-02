@@ -631,6 +631,8 @@ export type UiSound =
   | 'unlock'
   /** 스탯을 올렸다 — 성장 화면의 '올리기' (형: "능력치 올릴때 소리도 필요해") */
   | 'levelup'
+  /** 활을 갈았다 — 대장간의 망치질 (형: "강화 시 망치질 소리 입혀줘") */
+  | 'forge'
 
 export function playUi(sfx: Sfx, kind: UiSound): void {
   // UI를 누른 것 자체가 사용자 제스처다. 첫 클릭이 드래프트 카드일 수도 있으므로 여기서도 연다.
@@ -642,6 +644,43 @@ export function playUi(sfx: Sfx, kind: UiSound): void {
   if (kind === 'hover') {
     // 없으면 그냥 안 낸다. 합성으로 만든 "삑"은 소리가 없는 것보다 나쁘다.
     sample(sfx, s, 'rollover', SMP.uiHoverGain, 1, 0, 0)
+    return
+  }
+
+  if (kind === 'forge') {
+    // 망치질 — 모루에 쇠가 닿는 소리. 짧은 금속 어택(사각파 하강) + 쇳가루 노이즈 + 모루의 낮은 울림.
+    // 두 번 친다: 대장간은 한 번 치고 마는 곳이 아니다. 둘째는 조금 작고 낮게.
+    for (let n = 0; n < 2; n++) {
+      const d0 = n * 0.17
+      TN.type = 'square'
+      TN.freq = n === 0 ? 2400 : 2100
+      TN.endFreq = 900
+      TN.dur = 0.07
+      TN.attack = 0.001
+      TN.decay = 0.07
+      TN.gain = SMP.uiUnlockGain * (n === 0 ? 0.9 : 0.7)
+      TN.delay = d0
+      tone(s, K_UI, TN)
+      NB.filterType = 'highpass'
+      NB.freq = 3200
+      NB.endFreq = 1400
+      NB.q = 0.8
+      NB.dur = 0.12
+      NB.attack = 0.001
+      NB.decay = 0.12
+      NB.gain = SMP.uiUnlockGain * 0.55
+      NB.delay = d0
+      noiseBurst(s, K_DEBRIS, NB)
+      BL.freq = n === 0 ? 660 : 590
+      BL.dur = 0.42
+      BL.gain = SMP.uiUnlockGain * 0.5
+      BL.partials = SFX.endPartials
+      BL.inharm = SFX.unlockInharm
+      BL.attack = 0.002
+      BL.delay = d0 + 0.005
+      BL.type = 'sine'
+      bellTone(s, K_END_BODY, BL)
+    }
     return
   }
 
