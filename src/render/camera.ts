@@ -6,6 +6,7 @@
  */
 import { TAU, clamp, damp } from '../core/math.ts'
 import { P } from '../tune/params.ts'
+import { groundAt, groundPeak } from '../sim/terrain.ts'
 import type { World } from '../sim/types.ts'
 
 export interface Camera {
@@ -236,11 +237,16 @@ function frame(cam: CameraX, w: World): void {
     const r = s.r ?? 0.5
     const ax = s.ampX ?? 0
     const ay = s.ampY ?? 0
+    // 저작 y는 땅에서 잰 높이다 — 실제 자리는 땅을 더한 곳이다 (sim/terrain.ts).
+    const sy = s.y + groundAt(w.stage, s.x)
     if (s.x - r - ax < minX) minX = s.x - r - ax
     if (s.x + r + ax > maxX) maxX = s.x + r + ax
-    if (s.y - r - ay < minY) minY = s.y - r - ay
-    if (s.y + r + ay + VIEW.arcHeadroom > maxY) maxY = s.y + r + ay + VIEW.arcHeadroom
+    if (sy - r - ay < minY) minY = sy - r - ay
+    if (sy + r + ay + VIEW.arcHeadroom > maxY) maxY = sy + r + ay + VIEW.arcHeadroom
   }
+  // 언덕 꼭대기도 화면 안에 — 과녁이 없는 봉우리가 화면 위로 잘리면 땅이 하늘을 먹는다.
+  const peak = groundPeak(w.stage)
+  if (peak + VIEW.arcHeadroom * 0.5 > maxY) maxY = peak + VIEW.arcHeadroom * 0.5
 
   const spanX = Math.max(maxX - minX, 1)
   const spanY = Math.max(maxY - minY, 1)

@@ -27,6 +27,7 @@
  */
 import type { Target, World } from '../sim/types.ts'
 import { worldToScreenX, worldToScreenY } from './camera.ts'
+import { groundAt } from '../sim/terrain.ts'
 import type { Camera } from './camera.ts'
 
 /** 창 하나가 뚫린 자리 (월드 m). 사수의 상반신은 이 사각형 안으로 클립된다. */
@@ -251,9 +252,10 @@ export function windowOf(t: Target): WinRect | null {
 export function drawBuildings(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void {
   bake(w)
   if (bldgs.length === 0) return
-  const gy = worldToScreenY(cam, 0)
 
   for (const b of bldgs) {
+    // 건물의 바닥은 그 자리의 땅이다 — 언덕 위의 집은 언덕 위에 선다 (sim/terrain.ts).
+    const gy = worldToScreenY(cam, groundAt(w.stage, (b.x0 + b.x1) * 0.5))
     const sx0 = worldToScreenX(cam, b.x0)
     const sx1 = worldToScreenX(cam, b.x1)
     const top = worldToScreenY(cam, b.top)

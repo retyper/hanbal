@@ -32,6 +32,8 @@ import type { Spot } from './stagekit.ts'
 interface Plan {
   spots: Spot[]
   shots: number
+  /** 땅의 꺾은선 (sim/terrain.ts). 없으면 평지. 과녁 y는 그 자리 땅에서 잰 높이다. */
+  ground?: { x: number; y: number }[]
 }
 
 interface Theme {
@@ -74,6 +76,15 @@ const L = {
   lineJitter: 1,
   /** 몇 판마다 과녁이 하나씩 는가 */
   linePerAdd: 9,
+
+  /** 언덕·골짜기 — 땅이 움직이기 시작하는 x(m), 봉우리 높이대(m), 골 깊이대(m), 봉우리 폭 비율, 자리 흔들림(m) */
+  hillFrom: 6,
+  hillMin: 2.2,
+  hillMax: 3.4,
+  hillWidth: 0.85,
+  hillJitter: 2,
+  valleyMin: 1.2,
+  valleyMax: 2.2,
 
   /** 기둥 — 열이 서는 구간, 꼭대기 높이대, 맨 아래 알갱이 높이 */
   towerFrom: 0.4,
@@ -276,6 +287,62 @@ const arcOf = (t: number): number => 4 * t * (1 - t)
 // 하나가 "이번엔 뭘 해야 하지"를 못 만들면 그건 테마가 아니라 장식이다.
 
 const THEMES: readonly Theme[] = [
+  {
+    // ★ 언덕 (2026-09-03, 형: "언덕이랑 높낮이차 이런 것 있는 스테이지들"). 땅이 오르내리고
+    // 과녁은 **땅 위에** 선다 — 같은 각도가 판마다 다른 자리에 떨어지는 것을 몸으로 읽는 판.
+    name: '언덕',
+    hint: '땅이 오르내린다 — 언덕 위는 가까워도 높다',
+    build(rng, e, reach): Plan {
+      const n = 3 + Math.min(2, Math.floor(e / L.linePerAdd))
+      // 봉우리 하나 또는 둘. 높이는 판이 깊어질수록 조금 더 — 2.2 ~ 3.4m.
+      const peaks = e % 2 === 0 ? 1 : 2
+      const ground: { x: number; y: number }[] = [{ x: L.hillFrom, y: 0 }]
+      const span = reach - L.hillFrom
+      for (let p = 0; p < peaks; p++) {
+        const cx = L.hillFrom + span * ((p + 0.5) / peaks) + rng.range(-L.hillJitter, L.hillJitter)
+        const h = rng.range(L.hillMin, L.hillMax)
+        const half = span / (peaks * 2) * L.hillWidth
+        ground.push({ x: cx - half, y: rng.range(0, 0.3) })
+        ground.push({ x: cx, y: h })
+        ground.push({ x: cx + half, y: rng.range(0, 0.3) })
+      }
+      ground.push({ x: reach + 4, y: 0 })
+      const spots: Spot[] = []
+      for (let i = 0; i < n; i++) {
+        const t = n > 1 ? i / (n - 1) : 0.5
+        // 과녁은 비탈과 봉우리에 고루 — 땅에서 1~2m. 높이는 땅이 만든다.
+        spots.push({ x: L.hillFrom + span * (0.15 + 0.85 * t) + rng.range(-1, 1), y: rng.range(1.0, 2.0) })
+      }
+      return { spots, shots: n, ground }
+    },
+  },
+  {
+    // 골짜기 — 땅이 내려앉는다. 골 건너의 과녁은 실제보다 낮게 보여 낙차를 두 번 읽어야 한다.
+    name: '골짜기',
+    hint: '땅이 꺼진다 — 건너편은 보기보다 낮다',
+    build(rng, e, reach): Plan {
+      const n = 3 + Math.min(2, Math.floor(e / L.linePerAdd))
+      const span = reach - L.hillFrom
+      const cx = L.hillFrom + span * rng.range(0.4, 0.6)
+      const depth = -rng.range(L.valleyMin, L.valleyMax)
+      const half = span * 0.28
+      const ground = [
+        { x: L.hillFrom, y: 0 },
+        { x: cx - half, y: 0 },
+        { x: cx, y: depth },
+        { x: cx + half, y: rng.range(0.4, 1.4) },
+        { x: reach + 4, y: rng.range(0.2, 1.0) },
+      ]
+      const spots: Spot[] = []
+      for (let i = 0; i < n; i++) {
+        const t = n > 1 ? i / (n - 1) : 0.5
+        // 하나는 골 바닥, 나머지는 건너편 비탈 위.
+        const x = i === 0 ? cx + rng.range(-1.5, 1.5) : cx + half * (0.4 + 0.9 * t) + rng.range(-1, 1)
+        spots.push({ x, y: rng.range(1.0, 2.2) })
+      }
+      return { spots, shots: n, ground }
+    },
+  },
   {
     // 가장 기본. 거리와 낙차만으로 판을 만든다. 사이사이의 쉼표 같은 판이다.
     name: '사열',
@@ -662,6 +729,7 @@ function build(index: number): StageDef {
     targetScore: BASE_SCORE * Math.max(1, Math.round(shots * L.star2Ratio)),
     wind: theme.wind === undefined ? 0 : theme.wind(rng, e),
     targets: plan.spots.map((s) => specOf(h, s)),
+    ...(plan.ground !== undefined ? { ground: plan.ground } : {}),
   }
 }
 

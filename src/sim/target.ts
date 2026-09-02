@@ -8,6 +8,7 @@
  */
 import { clamp, clamp01, distSqPointSegment, TAU } from '../core/math.ts'
 import { P } from '../tune/params.ts'
+import { groundAt } from './terrain.ts'
 import type { Arrow, Target, World } from './types.ts'
 import { flowHit } from './flow.ts'
 
@@ -69,7 +70,7 @@ export function stepTargets(w: World): void {
       // 맞아서 떨어지는 중. 가속 없이 일정 속도로 내려간다 — 연쇄 타이밍을 눈으로 읽을 수 있어야 한다.
       tg.y -= P.chain.fallSpeed * dt
       sweepChain(w, tg)
-      if (tg.y <= 0) tg.alive = false
+      if (tg.y <= groundAt(w.stage, tg.x)) tg.alive = false
     } else if (tg.kind === 'moving') {
       const phase = time * tg.freq * TAU
       const s = Math.sin(phase)
@@ -107,6 +108,7 @@ export function stepTargets(w: World): void {
     } else if (tg.kind === 'boss') {
       // 보스 — 느리게, 그러나 멈추지 않고 온다 (docs/RUN.md 3장). 판이 끝나면 멈춘다.
       if (w.status === 'playing') tg.x -= tg.speed * dt
+      // 보스판은 평지다 — baseY(저작 y + 그 자리 땅)를 그대로 쓴다. 언덕 위의 보스는 아직 없다.
       tg.y = tg.baseY + Math.sin(time * P.target.chargeBobFreq * TAU) * P.target.chargeBob
       if (tg.x <= w.archer.x + P.target.chargeReach && w.status === 'playing') {
         // 닿았다 — 즉사다. 보스에게 깔리고 사는 궁수는 없다. **보스를 죽이지 않는다** —
@@ -121,7 +123,8 @@ export function stepTargets(w: World): void {
       // ★ 이 게임에서 유일하게 **나에게 오는** 것.
       tg.x -= tg.speed * dt
       // 다가오면서 살짝 위아래로 흔들린다. 일직선으로만 오면 물체가 아니라 슬라이더로 보인다.
-      tg.y = tg.baseY + Math.sin(time * P.target.chargeBobFreq * TAU) * P.target.chargeBob
+      // 사람은 땅을 달린다 — 언덕이면 언덕을 오른다 (sim/terrain.ts). 발이 땅에 닿는 자리 = 반경.
+      tg.y = groundAt(w.stage, tg.x) + tg.r + Math.sin(time * P.target.chargeBobFreq * TAU) * P.target.chargeBob
       if (tg.x <= w.archer.x + P.target.chargeReach) {
         // 닿았다 — 몬스터다. 체력을 깎고 사라진다 (docs/RUN.md 6장 — "몬스터가 나를 공격").
         // 판이 안 깨지게 과녁 자체는 확실히 제거한다. 남겨두면 클리어가 영원히 안 된다.
@@ -527,6 +530,7 @@ function downEvent(w: World, t: Target, vx: number, vy: number, mass: number): v
     x: t.x, y: t.y, vx, vy, mass,
     look: t.kind === 'boss' ? -1 : t.kind === 'charger' ? 0 : t.look,
     r: t.r,
+    g: groundAt(w.stage, t.x),
   })
 }
 

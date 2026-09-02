@@ -8,6 +8,7 @@
 import { distSqPointSegment, TAU } from '../core/math.ts'
 import { makeRng } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
+import { groundAt } from './terrain.ts'
 import { arrowFx, refreshArrowFx } from './arrowfx.ts'
 import { effectiveStats, stepArcher } from './bow.ts'
 import { stepArrows } from './ballistics.ts'
@@ -236,7 +237,7 @@ function resetArrow(a: Arrow): void {
   a.trailHead = 0
 }
 
-function loadTarget(t: Target, id: number, spec: TargetSpec): void {
+function loadTarget(t: Target, id: number, spec: TargetSpec, stage: StageDef): void {
   // 돌진은 사람이라 **사람보다 작아질 수 없다** (P.enemy.foeMinR — 창가의 사수와 같은 하한).
   // 무한 구간의 각크기 규칙은 먼 것을 살리는 규칙이지, 가까운 사람을 0.34m 짜리로
   // 줄이라는 규칙이 아니다. 그 크기로는 칼을 든 사람이 그려지지 않는다.
@@ -253,7 +254,8 @@ function loadTarget(t: Target, id: number, spec: TargetSpec): void {
    * 규칙을 여기 두는 이유: 돌진을 놓는 곳이 둘(game/forks.ts · game/endless.ts)이라
    * 저작 쪽에 두면 한쪽이 빠진다. 지면은 세계의 사실이지 저작의 취향이 아니다.
    */
-  const y = spec.kind === 'charger' ? r : spec.y
+  // 저작된 y는 그 자리 **땅에서 잰 높이**다 — 언덕 위의 과녁은 언덕만큼 높다 (sim/terrain.ts).
+  const y = (spec.kind === 'charger' ? r : spec.y) + groundAt(stage, spec.x)
   t.id = id
   t.alive = true
   t.kind = spec.kind
@@ -453,7 +455,7 @@ export function sandboxAdd(w: World, spec: TargetSpec): void {
     slot = newTarget()
     w.targets.push(slot)
   }
-  loadTarget(slot, slot.id !== 0 ? slot.id : w.targets.length - 1, spec)
+  loadTarget(slot, slot.id !== 0 ? slot.id : w.targets.length - 1, spec, w.stage)
 }
 
 /**
@@ -501,7 +503,7 @@ export function resetWorld(
     if (t === undefined) continue
     const spec = specs[i]
     if (spec === undefined) clearTarget(t)
-    else loadTarget(t, i, spec)
+    else loadTarget(t, i, spec, stage)
   }
 
   w.wind = 0
@@ -697,7 +699,8 @@ function stepEnemyShots(w: World): void {
       hurtPlayer(w, P.enemy.arrowDamage, sh.x, sh.y, Math.atan2(sh.vy, sh.vx), true)
       continue
     }
-    if (sh.y <= 0 || sh.x < a.x - 6) sh.alive = false
+    // 땅에 박힌다 — 언덕이면 언덕에 (sim/terrain.ts).
+    if (sh.y <= groundAt(w.stage, sh.x) || sh.x < a.x - 6) sh.alive = false
   }
 }
 

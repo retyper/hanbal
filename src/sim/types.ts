@@ -439,6 +439,8 @@ export type SimEvent =
       t: 'foe_down'; x: number; y: number
       vx: number; vy: number; mass: number
       look: number; r: number
+      /** 쓰러진 자리의 땅 높이 (sim/terrain.ts). 시체는 여기까지 떨어져 눕는다 — 언덕이면 언덕 위에. */
+      g: number
     }
   | { t: 'stage_end'; cleared: boolean; score: number }
   /** 금관 사수를 머리로 눕혔다 — 현상금 (TargetSpec.bounty). game/loop.ts 가 세어 채점에 넘긴다. */
@@ -514,6 +516,12 @@ export interface StageDef {
   targets: readonly TargetSpec[]
   /** 제한 시간 (s). 없으면 무제한. */
   timeLimit?: number
+  /**
+   * 땅의 높이 — 꺾은선 (sim/terrain.ts groundAt). x 오름차순, 없으면 평지 0.
+   * 과녁의 y는 **그 자리 땅에서 잰 높이**다 (world.ts loadTarget). 첫 점은 궁수 오른쪽에서 0으로.
+   * 형: "언덕이랑 높낮이차 이런 것 있는 스테이지들 구현해야지" (2026-09-03).
+   */
+  ground?: readonly { x: number; y: number }[]
 }
 
 // ───────────────────────────── 월드 ─────────────────────────────

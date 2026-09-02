@@ -6,6 +6,7 @@
  */
 import { TAU, clamp01, lerp, valueNoise } from '../core/math.ts'
 import { P } from '../tune/params.ts'
+import { groundAt, hasHills } from '../sim/terrain.ts'
 import { TRAIL_POINTS } from '../sim/types.ts'
 import type { Target, World } from '../sim/types.ts'
 import {
@@ -338,10 +339,12 @@ function drawBarrel(
  * 아주 어둡게 긋는다. **있는 줄 모를 만큼**이어야 조준을 방해하지 않는다 (GDD 7장 절제).
  */
 function drawPost(
-  ctx: CanvasRenderingContext2D, cam: Camera, x: number, y: number, wy: number, r: number,
+  ctx: CanvasRenderingContext2D, cam: Camera, w: World, x: number, y: number, wx: number, wy: number, r: number,
 ): void {
-  if (wy > DRAW.postMaxY) return
-  const gy = worldToScreenY(cam, 0)
+  // 기둥의 높이는 **땅에서** 잰다 — 언덕 위의 과녁은 언덕 위에 세운 것이다 (sim/terrain.ts).
+  const g = groundAt(w.stage, wx)
+  if (wy - g > DRAW.postMaxY) return
+  const gy = worldToScreenY(cam, g)
   if (gy <= y + r) return
   ctx.strokeStyle = THEME.prop
   ctx.lineWidth = DRAW.postW
@@ -433,7 +436,7 @@ function drawTargets(
     // 받침은 과녁보다 먼저. 나중에 그리면 링 위로 선이 지나간다.
     if (!t.falling) {
       drawRail(ctx, cam, t)
-      if (t.kind === 'static' || t.kind === 'pierceable') drawPost(ctx, cam, x, y, wy, r)
+      if (t.kind === 'static' || t.kind === 'pierceable') drawPost(ctx, cam, w, x, y, t.x, wy, r)
       if (t.kind === 'charger' || t.kind === 'boss') drawThreatLine(ctx, cam, w, t, x, y)
     }
 
@@ -851,7 +854,7 @@ function drawWindFlag(ctx: CanvasRenderingContext2D, cam: Camera, w: World): voi
 
   const baseX = w.archer.x + FLAG.atX
   const px = worldToScreenX(cam, baseX)
-  const gy = worldToScreenY(cam, 0)
+  const gy = worldToScreenY(cam, groundAt(w.stage, baseX))
 
   ctx.strokeStyle = THEME.windPole
   ctx.lineWidth = FLAG.poleW
@@ -1306,7 +1309,7 @@ function bakeTufts(): Float32Array {
   return tab
 }
 
-function drawTufts(ctx: CanvasRenderingContext2D, cam: Camera, tufts: Float32Array): void {
+function drawTufts(ctx: CanvasRenderingContext2D, cam: Camera, w: World, tufts: Float32Array): void {
   ctx.strokeStyle = THEME.grass
   ctx.lineWidth = DRAW.tuftW
   ctx.lineCap = 'round'
@@ -1316,9 +1319,52 @@ function drawTufts(ctx: CanvasRenderingContext2D, cam: Camera, tufts: Float32Arr
     const h = (tufts[i * 2 + 1] ?? 1) * DRAW.tuftH
     const sx = worldToScreenX(cam, wx)
     if (sx < -8 || sx > cam.w + 8) continue
-    const gy = worldToScreenY(cam, 0)
-    ctx.moveTo(sx, gy)
-    ctx.lineTo(sx + h * cam.scale * 0.35, worldToScreenY(cam, h))
+    // 풀은 그 자리 땅에서 난다 (sim/terrain.ts).
+    const g = groundAt(w.stage, wx)
+    ctx.moveTo(sx, worldToScreenY(cam, g))
+    ctx.lineTo(sx + h * cam.scale * 0.35, worldToScreenY(cam, g + h))
+  }
+  ctx.stroke()
+}
+
+/** 화면을 가로지르며 땅을 표본할 간격 (px). 언덕은 완만해서 이만큼이면 곡선으로 읽힌다. */
+const GROUND_STEP_PX = 6
+
+/**
+ * 땅. 평지(대부분의 판)는 예전처럼 사각형 한 장 + 지면선 한 줄이다.
+ * 언덕이 있으면 화면 왼쪽부터 오른쪽까지 6px마다 땅 높이를 재어 꺾은선을 긋고 그 아래를 채운다.
+ * 표본은 화면 좌표라 줌에 따라 자동으로 촘촘해진다. 색은 평지와 똑같다 — 땅은 땅이다.
+ */
+function drawGround(ctx: CanvasRenderingContext2D, cam: Camera, w: World, sky: SkyPalette): void {
+  if (!hasHills(w.stage)) {
+    const groundY = worldToScreenY(cam, 0)
+    ctx.fillStyle = sky.ground
+    ctx.fillRect(0, groundY, cam.w, cam.h - groundY)
+    ctx.strokeStyle = sky.groundLine
+    ctx.lineWidth = BG.groundLineW
+    ctx.beginPath()
+    ctx.moveTo(0, groundY)
+    ctx.lineTo(cam.w, groundY)
+    ctx.stroke()
+    return
+  }
+  ctx.beginPath()
+  ctx.moveTo(-2, worldToScreenY(cam, groundAt(w.stage, screenToWorldX(cam, -2))))
+  for (let sx = 0; sx <= cam.w + GROUND_STEP_PX; sx += GROUND_STEP_PX) {
+    ctx.lineTo(sx, worldToScreenY(cam, groundAt(w.stage, screenToWorldX(cam, sx))))
+  }
+  ctx.lineTo(cam.w + 2, cam.h + 2)
+  ctx.lineTo(-2, cam.h + 2)
+  ctx.closePath()
+  ctx.fillStyle = sky.ground
+  ctx.fill()
+  // 능선 — 채운 뒤에 윗선만 다시 긋는다 (닫힌 경로를 stroke 하면 화면 아래 테두리까지 그려진다).
+  ctx.strokeStyle = sky.groundLine
+  ctx.lineWidth = BG.groundLineW
+  ctx.beginPath()
+  ctx.moveTo(-2, worldToScreenY(cam, groundAt(w.stage, screenToWorldX(cam, -2))))
+  for (let sx = 0; sx <= cam.w + GROUND_STEP_PX; sx += GROUND_STEP_PX) {
+    ctx.lineTo(sx, worldToScreenY(cam, groundAt(w.stage, screenToWorldX(cam, sx))))
   }
   ctx.stroke()
 }
@@ -1389,16 +1435,9 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       drawRidge(c, cam, r.near, BG.nearParallax, sky.ridgeNear)
       drawPines(c, cam, r.pines, r.near, sky)
 
-      const groundY = worldToScreenY(cam, 0)
-      c.fillStyle = sky.ground
-      c.fillRect(0, groundY, cam.w, cam.h - groundY)
-      c.strokeStyle = sky.groundLine
-      c.lineWidth = BG.groundLineW
-      c.beginPath()
-      c.moveTo(0, groundY)
-      c.lineTo(cam.w, groundY)
-      c.stroke()
-      drawTufts(c, cam, r.tufts)
+      // ── 땅 — 평지면 한 줄, 언덕이 있으면 꺾은선을 따라 (sim/terrain.ts) ──
+      drawGround(c, cam, w, sky)
+      drawTufts(c, cam, w, r.tufts)
 
       // ── 그림자 — 가장 싼 입체감 (docs/MEGAHIT.md §4-2, 렌즈 ⑥ "전부 떠 있다") ──
       // 지면 위·과녁 아래. 색을 새로 만들지 않고 지면색을 알파로 겹칠 뿐이다 (GDD 8장).
@@ -1409,10 +1448,10 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
         if (t.kind === 'aerial' || (t.kind === 'archer' && t.look === 3)) continue
         // 창가의 사수는 건물 안이라 땅에 그림자를 못 드리운다.
         if (t.kind === 'archer' && (t.look === 1 || t.look === 2)) continue
-        drawShadow(c, sky, worldToScreenX(cam, t.x), groundY, t.r * 2 * cam.scale)
+        drawShadow(c, sky, worldToScreenX(cam, t.x), worldToScreenY(cam, groundAt(w.stage, t.x)), t.r * 2 * cam.scale)
       }
-      // 궁수 — 키는 골반+다리라 몸 반경이 아니라 실제 화면 높이를 준다.
-      drawShadow(c, sky, worldToScreenX(cam, w.archer.x), groundY, 1.6 * cam.scale)
+      // 궁수 — 키는 골반+다리라 몸 반경이 아니라 실제 화면 높이를 준다. 궁수의 발밑은 언제나 0이다.
+      drawShadow(c, sky, worldToScreenX(cam, w.archer.x), worldToScreenY(cam, 0), 1.6 * cam.scale)
 
       // ── '한 발' — 배경이 물러난다 (docs/MEGAHIT.md §2) ──
       // 채도를 죽이는 필터는 금지다 (A5). 대신 **하늘의 가장 어두운 색을 한 겹 덮는다** —

@@ -70,6 +70,8 @@ interface Layout {
   /** 이 판에서 무엇을 배우는가. 한 판에 하나씩. */
   teach: string
   arrows: number
+  /** 땅의 꺾은선 (sim/terrain.ts). 없으면 평지. 과녁 y는 그 자리 땅에서 잰 높이다. */
+  ground?: { x: number; y: number }[]
   /**
    * 보상 기준선이 되는 명중 수. **클리어 조건이 아니다** — 클리어는 과녁을 다 없애는 것이다.
    * 이 점수를 넘긴 만큼 훈련치를 더 받는다 (game/progression.ts).
@@ -94,7 +96,8 @@ const LAYOUTS: readonly Layout[] = [
   { teach: '과녁이 둘이면 순서를 고른다', arrows: 6, hits: 2, spots: [{ x: 10, y: 1.5 }, { x: 14, y: 2.7 }] },
   { teach: '거리가 늘면 화살이 떨어진다 — 위로 겨눈다', arrows: 6, hits: 2, spots: [{ x: 14, y: 1.6 }, { x: 19, y: 2.8 }] },
   { teach: '셋을 연달아. 빨간 바 안에서 쏘는 리듬', arrows: 7, hits: 3, spots: [{ x: 12, y: 1.7 }, { x: 17, y: 2.9 }, { x: 22, y: 2.1 }] },
-  { teach: '높이 차가 커진다 — 낙차를 몸으로 읽는다', arrows: 7, hits: 3, spots: [{ x: 15, y: 1.5 }, { x: 20, y: 4.2 }, { x: 25, y: 2.0 }] },
+  // ★ 언덕 (2026-09-03, 형: "언덕이랑 높낮이차"). 가운데 과녁이 4.2m 허공에 뜬 대신 **언덕 위**에 선다.
+  { teach: '높이 차가 커진다 — 언덕 위를 겨눈다', arrows: 7, hits: 3, ground: [{ x: 4, y: 0 }, { x: 12, y: 0.3 }, { x: 20, y: 1.9 }, { x: 24, y: 1.0 }, { x: 30, y: 0 }], spots: [{ x: 15, y: 1.5 }, { x: 20, y: 1.6 }, { x: 25, y: 2.0 }] },
   { teach: '더 멀리. 만작이 왜 필요한지 알게 된다', arrows: 7, hits: 3, spots: [{ x: 22, y: 1.7 }, { x: 27, y: 3.0 }, { x: 32, y: 2.2 }] },
   { teach: '낮은 과녁 — 아래로도 겨눌 수 있다', arrows: 7, hits: 3, spots: [{ x: 18, y: 0.6 }, { x: 24, y: 2.4 }, { x: 30, y: 1.1 }] },
   // ★ 화약통 소개 (docs/GAP.md — 앵그리버드: "한 발이 구조를 무너뜨린다").
@@ -112,7 +115,7 @@ const LAYOUTS: readonly Layout[] = [
   // ★ 통은 적으로 변환되지 않는다 (convertToFoes). 그래서 이 판은 **사수 셋 + 화약통**이다 —
   // 사수는 두세 발을 버티지만 폭발에는 한 번에 죽는다. 스나이퍼 게임의 '환경 처치'다.
   { teach: '사수 곁의 화약통 — 사람보다 통을 노려라', arrows: 3, hits: 3, spots: [{ x: 22, y: 1.9, kind: 'barrel' }, { x: 24.15, y: 1.9 }, { x: 23.07, y: 3.76 }, { x: 20.93, y: 3.76 }] },
-  { teach: '높은 연쇄 — 화살이 올라가는 데 시간이 걸린다', arrows: 7, hits: 3, spots: [{ x: 26, y: 7.2, kind: 'aerial' }, { x: 26, y: 4.6 }, { x: 26, y: 2.2 }] },
+  { teach: '언덕 위의 높은 연쇄 — 화살이 올라가는 데 시간이 걸린다', arrows: 7, hits: 3, ground: [{ x: 6, y: 0 }, { x: 18, y: 0.6 }, { x: 26, y: 2.4 }, { x: 34, y: 0.8 }, { x: 40, y: 0 }], spots: [{ x: 26, y: 5.4, kind: 'aerial' }, { x: 26, y: 3.2 }, { x: 26, y: 1.4 }] },
   { teach: '작은 연쇄 알갱이', arrows: 7, hits: 4, spots: [{ x: 21, y: 6.0, kind: 'aerial' }, { x: 21, y: 4.4, size: 0.8 }, { x: 21, y: 3.0, size: 0.8 }, { x: 21, y: 1.6, size: 0.8 }] },
   // ★ 통이 둘 — 화살은 정답 두 발 + 여유. 하나씩 쏘면 절대 모자란다.
   { teach: '통이 둘이다. 한 발씩 나눠 쓴다', arrows: 3, hits: 4, spots: [{ x: 17, y: 1.9, kind: 'barrel' }, { x: 18.07, y: 3.76 }, { x: 15.93, y: 3.76 }, { x: 27, y: 1.9, kind: 'barrel' }, { x: 28.07, y: 3.76 }, { x: 25.93, y: 3.76 }] },
@@ -129,7 +132,8 @@ const LAYOUTS: readonly Layout[] = [
   // 난이도 정책(크기가 아니라 메커닉으로 어렵게 한다)에 맞는 방향이다. endless.ts 도 같은 규칙이다.
   { teach: '빨라진다', arrows: 8, hits: 3, spots: [{ x: 17, y: 2.8, kind: 'moving', size: 1.25, ampY: 1.8, freq: 0.45 }, { x: 24, y: 2.0, kind: 'moving', size: 1.25, ampX: 2.0, freq: 0.4 }, { x: 31, y: 3.0 }] },
   { teach: '움직이는 공중 과녁 — 연쇄까지', arrows: 7, hits: 3, spots: [{ x: 20, y: 5.6, kind: 'aerial' }, { x: 20, y: 3.0, kind: 'moving', ampX: 1.8, freq: 0.3 }, { x: 20, y: 1.4 }] },
-  { teach: '바람이 분다 — 오른쪽으로 밀린다', arrows: 7, hits: 3, wind: 2.5, spots: [{ x: 20, y: 1.8 }, { x: 26, y: 2.8 }, { x: 32, y: 2.0 }] },
+  // 골짜기 — 바람이 부는 판에 땅이 내려앉는다. 골 건너의 과녁은 낙차를 두 번 읽어야 한다.
+  { teach: '바람이 분다 — 골짜기 건너로 밀린다', arrows: 7, hits: 3, wind: 2.5, ground: [{ x: 5, y: 0 }, { x: 14, y: -0.2 }, { x: 22, y: -1.6 }, { x: 30, y: 0.4 }, { x: 36, y: 1.4 }, { x: 42, y: 0.6 }], spots: [{ x: 20, y: 1.8 }, { x: 26, y: 2.8 }, { x: 32, y: 2.0 }] },
   // ★ 여기서 처음으로 **왼쪽 바람**이 온다. 예전엔 모든 판의 풍속이 양수라
   //   바람이 언제나 오른쪽으로만 불었다 (형의 지적). 방향이 하나뿐이면 배울 게 없다 —
   //   그건 바람이 아니라 그냥 조준점 보정값이다.
@@ -183,6 +187,7 @@ function build(layout: Layout, i: number): StageDef {
     wind: layout.wind ?? 0,
     targets: layout.spots.map((s) => mk(n, s)),
   }
+  if (layout.ground !== undefined) stage.ground = layout.ground
   return stage
 }
 

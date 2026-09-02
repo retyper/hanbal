@@ -185,6 +185,8 @@ export interface Fx {
   cAng: Float32Array
   cSpin: Float32Array
   cR: Float32Array
+  /** 쓰러진 자리의 땅 높이 (m). 시체는 여기 눕는다 — 언덕 위에서 죽으면 언덕 위에 (sim/terrain.ts). */
+  cG: Float32Array
   /** 쓰러진 뒤 흐른 시간 (s). 음수면 빈 칸이다. */
   cAge: Float32Array
   /** 멎은 뒤 흐른 시간 (s). 0 미만이면 아직 구르는 중. */
@@ -345,6 +347,7 @@ export function createFx(): Fx {
     cAng: new Float32Array(CORPSES),
     cSpin: new Float32Array(CORPSES),
     cR: new Float32Array(CORPSES),
+    cG: new Float32Array(CORPSES),
     cAge: new Float32Array(CORPSES).fill(-1),
     cRest: new Float32Array(CORPSES).fill(-1),
     cLook: new Int8Array(CORPSES),
@@ -739,7 +742,7 @@ export function pumpEvents(fx: Fx, w: World): void {
       fx.hitStop += P.hit.stopMs * 0.001
     } else if (e.t === 'foe_down') {
       // 적이 쓰러졌다 — 시체를 하나 세운다 (형: "죽었을때 없어져버리지 말고").
-      spawnCorpse(fx, e.x, e.y, e.vx, e.vy, e.mass, e.look, e.r)
+      spawnCorpse(fx, e.x, e.y, e.vx, e.vy, e.mass, e.look, e.r, e.g)
     } else if (e.t === 'burst') {
       // ★ 폭발. 예전에는 딸려 죽은 과녁의 chain 이벤트만 있어서, 아무것도 안 물리면
       // 폭발이 일어난 흔적이 화면에 하나도 안 남았다 (형의 지적).
@@ -804,7 +807,7 @@ export function pumpEvents(fx: Fx, w: World): void {
  * 위로는 살짝 띄운다(퍽 하고 뜨는 그 한 순간). 가로 속도는 회전으로도 바뀐다.
  */
 function spawnCorpse(
-  f: Fx, x: number, y: number, vx: number, vy: number, mass: number, look: number, r: number,
+  f: Fx, x: number, y: number, vx: number, vy: number, mass: number, look: number, r: number, g: number,
 ): void {
   const i = f.cHead
   f.cHead = (f.cHead + 1) % CORPSES
@@ -824,6 +827,7 @@ function spawnCorpse(
   f.cAng[i] = 0
   f.cSpin[i] = cvx * P.render.corpseSpin
   f.cR[i] = r
+  f.cG[i] = g
   f.cAge[i] = 0
   f.cRest[i] = -1
   f.cLook[i] = look
@@ -853,7 +857,7 @@ function stepCorpses(f: Fx, dt: number): void {
     let x = (f.cX[i] ?? 0) + vx * dt
     let y = (f.cY[i] ?? 0) + vy * dt
     let ang = (f.cAng[i] ?? 0) + spin * dt
-    const floor = (f.cR[i] ?? 0.3) * 0.5
+    const floor = (f.cG[i] ?? 0) + (f.cR[i] ?? 0.3) * 0.5
     if (y <= floor) {
       y = floor
       if (vy < 0) vy = -vy * P.render.corpseBounce

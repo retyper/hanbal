@@ -7,6 +7,7 @@
  */
 import { angleDelta, clamp01, damp, distSqPointSegment, lerp, normAngle } from '../core/math.ts'
 import { P } from '../tune/params.ts'
+import { groundAt } from './terrain.ts'
 import { arrowFx } from './arrowfx.ts'
 import { effectiveStats } from './bow.ts'
 import { burstAt, resolveHit } from './target.ts'
@@ -221,11 +222,14 @@ export function stepArrows(w: World): void {
 
     // 지면(y=0)을 뚫었으면 판정 선분을 착지점까지로 잘라둔다.
     // 잘라야 지면 아래에 있는 과녁을 "맞혔다"고 오판하지 않는다.
+    // 땅은 평지가 아닐 수 있다 (sim/terrain.ts) — 착지점의 땅 높이로 잰다. 한 스텝 안에서
+    // 땅의 기울기는 무시한다: 스텝 변위(수십 cm)에 견줘 언덕의 경사는 완만하다.
     let landed = false
-    if (a.y <= 0) {
+    const gy = groundAt(w.stage, a.x)
+    if (a.y <= gy) {
       landed = true
       const drop = a.py - a.y
-      const t = drop > 0 ? clamp01(a.py / drop) : 0
+      const t = drop > 0 ? clamp01((a.py - gy) / drop) : 0
       a.x = a.px + (a.x - a.px) * t
       a.y = a.py + (a.y - a.py) * t
     }
