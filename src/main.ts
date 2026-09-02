@@ -14,8 +14,9 @@ import { STAGES } from './game/stages.ts'
 import { loadSave } from './game/save.ts'
 import { progressOf, unlockedBows } from './game/unlocks.ts'
 import { createOverlay } from './ui/overlay.ts'
-import { mountGrowth, showOfflineGain, showRunGain } from './ui/growth.ts'
-import { mountFork, mountLoadout, mountSupply, showRunOver } from './ui/loadout.ts'
+import { mountGrowth, showOfflineGain, showReinforce, showRunGain, type AudioSwitch } from './ui/growth.ts'
+import { mountFork, mountLoadout, mountSupply } from './ui/loadout.ts'
+import { checkpointStage } from './game/stages.ts'
 import { mountSandbox } from './ui/sandbox.ts'
 import { mountQuiver } from './ui/quiver.ts'
 import { mountDefense } from './ui/defense.ts'
@@ -83,6 +84,12 @@ const overlay = createOverlay()
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) overlay.hide()
 }, { passive: true })
+// 소리 창구 — 성장·재정비 화면이 쓴다. 루프가 만들어진 뒤에야 실제로 불리므로 먼저 선언해도 된다.
+const audio: AudioSwitch = {
+  muted: () => loop.muted(),
+  toggle: () => loop.toggleMute(),
+  levelup: () => loop.ui('levelup'),
+}
 // 루프를 먼저 만든다 — 성장 화면의 소리 스위치가 루프의 오디오 창구를 필요로 한다.
 // (루프는 overlay만 알면 되고 성장 패널이 아직 없어도 돈다. 반대 순서는 성립하지 않는다.)
 const loop = createLoop(el, {
@@ -100,15 +107,18 @@ const loop = createLoop(el, {
         save.bowHits,
         save.bestRunStage,
         save.runCount,
+        checkpointStage(save.bossKills) + 1,
         onStart,
       ),
     // 보스 보급 3택 (docs/RUN.md) — 특수살 재고의 유일한 큰 획득처.
     supply: (offer, count, heal, onPick) => mountSupply(overlay, offer, count, save.arrowStock, heal, onPick),
     // 갈림길 2택 (docs/MEGAHIT.md §3) — 판마다(보스 제외) 뜨는 카드.
     fork: (options, onPick) => mountFork(overlay, options, onPick),
+    // 여정 종료 = 재정비 (2026-09-02, 형: "죽고나서 강화하는거 바로화면에 띄워줘야").
+    // 결과 머리 + 성장 줄 + '다음' → 출정. 성장 화면과 같은 줄을 쓴다 (ui/growth.ts).
     runOver: (reached, score, best, isNew, first, reason, summary, onNext) =>
-      showRunOver(overlay, reached, score, best, isNew, first, reason, summary, onNext),
-    toast: (t) => overlay.toast(t),
+      showReinforce(overlay, save, { reached, score, best, isNew, first, reason, ...summary }, audio, onNext),
+    toast: (t, ms) => overlay.toast(t, ms),
     // 새로 열린 것은 구석 알림 한 줄. 모달로 막지 않는다 (C1).
     unlocked: (ids) => withCollection((m) => m.showUnlocked(overlay, ids)),
     progressed: () => {
@@ -129,11 +139,7 @@ const loop = createLoop(el, {
 // (steady.ts 가 prepend 한다). 손가락 화면에서만 보인다.
 mountSteady(overlay, (on) => loop.steady(on))
 
-mountGrowth(overlay, save, () => {}, {
-  muted: () => loop.muted(),
-  toggle: () => loop.toggleMute(),
-  levelup: () => loop.ui('levelup'),
-})
+mountGrowth(overlay, save, () => {}, audio)
 
 // 수집 화면 — **잠긴 칸을 보여주는 것**이 이 화면의 목적이다 (HOOK ★2).
 // 성장 화면 다음에 붙여야 HUD 버튼 순서가 [성장][수집]이 된다.

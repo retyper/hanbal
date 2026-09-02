@@ -19,7 +19,7 @@ import { STAGES } from './stages.ts'
 const KEY = 'hanbal.save.v1'
 
 /** 현재 스키마 버전. 필드를 바꿀 때마다 +1 하고 MIGRATIONS에 한 줄 추가한다. */
-export const SCHEMA_VERSION = 11
+export const SCHEMA_VERSION = 12
 
 /**
  * 오프라인 축적의 소수부 (자원 단위). 세 자원의 축적 속도가 달라 하나로 합칠 수 없다.
@@ -162,6 +162,12 @@ export interface SaveData {
    * 아무 뜻도 없는 글자였다 — 국궁 용어라 설명 없이는 못 읽는다. 딱 한 번만 띄운다.
    */
   seenMolgi: boolean
+  /**
+   * "훈련치가 쌓였다 — 성장에서 올릴 수 있다" 안내를 이미 봤는가 (v12).
+   * 형의 여자친구가 11판까지 가면서 성장 화면을 한 번도 안 열었다. HUD 버튼의 점 하나는
+   * 처음 보는 사람에게 아무 말도 아니었다. 처음 올릴 수 있게 되는 그 순간에 한 줄, 딱 한 번.
+   */
+  seenGrowHint: boolean
 }
 
 /** 저장값이 말이 되는 범위인지만 본다. 치트 방지가 아니라 NaN·Infinity 방어다 (A4: 치트 방지 안 함). */
@@ -228,6 +234,7 @@ export function defaultSave(now: number): SaveData {
     runSeed: 0,
     equippedTitle: '',
     seenMolgi: false,
+    seenGrowHint: false,
   }
 }
 
@@ -336,6 +343,12 @@ const MIGRATIONS: ReadonlyArray<(r: Raw) => void> = [
    * v10 → v11: 몰기 설명 — 세이브에 남길 이력이 없다. 옛 세이브도 false로 올라온다 —
    * **의도적이다.** 오래 플레이한 사람도 설명을 받은 적이 없으니(형 본인이 그랬다),
    * 다음 몰기에서 누구든 한 번은 설명을 보게 하는 게 맞다.
+   */
+  () => {},
+
+  /**
+   * v11 → v12: 첫 성장 안내(seenGrowHint). 옛 세이브도 false — 오래 한 사람도 이 안내를
+   * 받은 적이 없다. 이미 성장을 아는 사람에게는 한 줄이 한 번 뜨고 끝이다.
    */
   () => {},
 ]
@@ -485,6 +498,7 @@ function sanitize(r: Raw, now: number): SaveData {
       ? r['equippedTitle']
       : '',
     seenMolgi: bool(r['seenMolgi'], false),
+    seenGrowHint: bool(r['seenGrowHint'], false),
   }
 }
 

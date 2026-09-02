@@ -1,5 +1,5 @@
 /**
- * 성장 화면
+ * 성장 화면 — 그리고 **재정비**(여정 종료) 화면
  *
  * 사용자의 말: **"성장을 알 수도 없잖아"**. 그래서 이 화면의 규칙은 하나다.
  * **레벨 숫자를 보여주는 게 아니라, 올리면 몸이 어떻게 달라지는지를 문장으로 나란히 보여준다.**
@@ -10,11 +10,22 @@
  *
  * 여는 데 클릭 1회(HUD 버튼 또는 Tab), 닫는 데 1회 (C1).
  * 판이 끝나 훈련치가 들어오면 버튼에 점 하나가 켜질 뿐, 모달로 막지 않는다.
+ *
+ * ── 재정비 (2026-09-02) ──
+ * 형: "여자친구가 해봤는데 11까지 가고 어려워서 안하겠대. 아마 강화하는걸 안해봤나봐.
+ *      죽고나서 강화하는거 바로화면에 띄워줘야 하지 않을까? 하단에 '다음'버튼도 만들어서
+ *      활 고르기로 가서 고른다음 시작하게 하고."
+ * 맞았다 — 실측으로 성장 없는 11판은 숙련 봇도 못 깬다 (params.ts convertHpEase).
+ * 그래서 여정이 끝나면 **결과 머리 + 이 성장 줄 + '다음'** 이 한 화면이다. 죽음이 곧 상점이다
+ * (아처로·뱀서의 문법 — docs/GAP.md 6절). 스탯 줄은 두 화면이 **같은 코드**를 쓴다 —
+ * 문장·비용·추천이 두 벌이면 언젠가 어긋난다.
  */
 import {
   canGrow,
   effectAfterLevel,
   effectOf,
+  recommendReason,
+  recommendStat,
   spendTraining,
   statLabel,
   STAT_KEYS,
@@ -29,12 +40,14 @@ import { P } from '../tune/params.ts'
 import type { Overlay } from './overlay.ts'
 
 const PANEL_ID = 'growth'
+const REINFORCE_ID = 'reinforce'
 /** 올린 직후 그 줄이 잠깐 밝아진다. 무엇이 바뀌었는지 눈이 따라가게 (ms). */
 const FLASH_MS = 900
 
 const CSS = `
 .g-h { display: flex; align-items: baseline; gap: 14px; }
 .g-h h2 { flex: 1; }
+.g-h h3 { flex: 1; margin: 0; color: var(--ink); font-size: 19px; }
 /* 훈련치는 이 화면에서 유일하게 '쓸 수 있는 것'이다. 숫자를 크게 세운다. */
 .g-train { color: var(--dim); font-size: 13px; letter-spacing: .12em; }
 .g-train b { color: var(--accent); font-weight: 700; font-size: 26px; margin-left: 8px; }
@@ -55,7 +68,18 @@ const CSS = `
 .g-now { grid-column: 1; color: var(--body); }
 .g-next { grid-column: 1; color: var(--teal); font-size: 13px; }
 .g-next.g-flat { color: var(--mute); }
-.g-up { grid-column: 2; grid-row: 1 / span 3; min-width: 108px; justify-content: center; }
+.g-why { grid-column: 1; color: var(--accent); font-size: 12px; display: none; }
+.g-up { grid-column: 2; grid-row: 1 / span 4; min-width: 108px; justify-content: center; }
+/* ── 추천 줄 ── 처음 보는 사람이 어디를 눌러야 하는지 한 줄이 먼저 말한다 (progression.recommendStat).
+   배경 한 겹과 작은 꼬리표 — 화면을 가리는 화살표·튜토리얼 손가락은 쓰지 않는다 (GDD 9장). */
+.g-row.g-rec { background: #ffb3470f; }
+.g-row.g-rec .g-why { display: block; }
+.g-row.g-rec .g-up:not([disabled]) { border-color: var(--accent); color: var(--accent); }
+.g-tag {
+  display: none; margin-left: 10px; padding: 1px 7px; border: 1px solid var(--accent); border-radius: 2px;
+  color: var(--accent); font-size: 11px; letter-spacing: .1em; vertical-align: 2px; font-weight: 600;
+}
+.g-row.g-rec .g-tag { display: inline-block; }
 /* 폰 세로 — 오른쪽 버튼 칸까지 두면 문장이 한 글자씩 접힌다. 버튼을 아래 줄로 내린다. */
 @media (max-width: 480px) {
   .g-row, .g-bow { grid-template-columns: 1fr; }
@@ -102,6 +126,21 @@ const CSS = `
 /* 1단계를 누르면 버튼이 위험색으로 바뀐다 — "정말인가"를 색이 먼저 묻는다. */
 .g-danger .hb-btn.g-armed { color: #ff8a6a; border-color: #ff6a4577; }
 .g-danger span { color: var(--mute); font-size: 12px; flex: 1; }
+
+/* ── 재정비 머리 ── 여정이 남긴 것. "죽었다"가 아니라 "가져간다 · 다음은 여기부터"가 이 머리의 말이다. */
+.r-head { text-align: center; padding: 4px 0 14px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.r-lead { font-size: 14px; color: var(--dim); letter-spacing: .1em; }
+.r-stage { font-size: 48px; font-weight: 700; color: var(--ink); font-family: var(--num); line-height: 1.15; }
+@media (max-width: 640px) { .r-stage { font-size: 40px; } }
+.r-new { color: var(--accent); font-weight: 700; margin-top: 6px; }
+.r-old { color: var(--dim); margin-top: 6px; }
+.r-keep { color: var(--body); margin-top: 10px; font-size: 14px; }
+.r-keep b { color: var(--accent); font-weight: 700; }
+.r-dot { color: var(--dim); margin: 0 8px; }
+.r-next { color: var(--teal); margin-top: 8px; font-size: 13px; }
+.r-none { color: var(--mute); font-size: 13px; padding: 10px 0 0; border-top: 1px solid var(--line); }
+.r-foot { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 16px; display: flex; justify-content: center; }
+.r-go { font-size: 17px; padding: 13px 34px; }
 `
 
 interface Row {
@@ -110,6 +149,7 @@ interface Row {
   lv: HTMLElement
   now: HTMLElement
   next: HTMLElement
+  why: HTMLElement
   btn: HTMLButtonElement
   cost: HTMLElement
 }
@@ -123,6 +163,92 @@ export interface AudioSwitch {
   toggle(): void
   /** 스탯을 올렸다 — 소리 하나 (형: "능력치 올릴때 소리도 필요해"). */
   levelup(): void
+}
+
+interface StatRows {
+  /** 줄들을 담은 상자. 부르는 쪽이 원하는 자리에 붙인다. */
+  el: HTMLElement
+  /** 훈련치·문장·비용·추천을 세이브에서 다시 읽어 그린다. */
+  refresh(): void
+}
+
+/**
+ * 스탯 줄 넷 — 성장 화면과 재정비 화면이 **같은 줄**을 쓴다.
+ * `trainOut`은 머리의 훈련치 숫자다 (두 화면의 머리가 달라서 밖에서 받는다).
+ */
+function buildStatRows(
+  d: SaveData,
+  trainOut: HTMLElement,
+  audio: AudioSwitch,
+  onChange: () => void,
+): StatRows {
+  const box = document.createElement('div')
+  const rows: Row[] = []
+  for (let i = 0; i < STAT_KEYS.length; i++) {
+    const key = STAT_KEYS[i]
+    if (key === undefined) continue
+    const el = document.createElement('div')
+    el.className = 'g-row'
+    el.innerHTML = `
+      <div><i class="hb-ic g-ic"></i><span class="g-name"></span><span class="g-lv"></span><span class="g-tag">추천</span></div>
+      <div class="g-now"></div>
+      <div class="g-next"></div>
+      <div class="g-why"></div>
+      <button class="hb-btn g-up" type="button">올리기 <span class="g-cost"></span></button>`
+    const btn = el.querySelector('.g-up') as HTMLButtonElement
+    const row: Row = {
+      key,
+      el,
+      lv: el.querySelector('.g-lv') as HTMLElement,
+      now: el.querySelector('.g-now') as HTMLElement,
+      next: el.querySelector('.g-next') as HTMLElement,
+      why: el.querySelector('.g-why') as HTMLElement,
+      btn,
+      cost: el.querySelector('.g-cost') as HTMLElement,
+    }
+    ;(el.querySelector('.g-name') as HTMLElement).textContent = statLabel(key)
+    // 아이콘은 스탯 키로 고른다 (ui/overlay.ts .hb-ic.i-*). 스탯을 더 만들면 아이콘도 같이.
+    ;(el.querySelector('.g-ic') as HTMLElement).classList.add(`i-${key}`)
+    btn.addEventListener('click', () => {
+      if (!spendTraining(d, key, 1)) return
+      audio.levelup()
+      // 무엇이 바뀌었는지 그 자리에서. 화면을 닫았다 열게 하지 않는다.
+      row.el.classList.add('g-flash')
+      window.setTimeout(() => row.el.classList.remove('g-flash'), FLASH_MS)
+      refresh()
+      onChange()
+    })
+    box.appendChild(el)
+    rows.push(row)
+  }
+
+  const refresh = (): void => {
+    trainOut.textContent = String(d.training)
+    const rec = recommendStat(d.stats)
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i]
+      if (r === undefined) continue
+      const lv = d.stats[r.key]
+      const cost = trainingCost(lv)
+      const now = effectOf(d.stats, r.key)
+      const after = effectAfterLevel(d.stats, r.key)
+      r.lv.textContent = `Lv ${lv}`
+      r.now.textContent = now
+      // 후반에는 한 레벨로 문장이 안 바뀐다. 안 바뀌면 안 바뀐다고 말한다 —
+      // 없는 변화를 있는 척하면 다음부터 이 화면을 안 믿는다.
+      const flat = after === now
+      r.next.textContent = flat ? '→ 여기서는 한 레벨로 크게 달라지지 않는다' : `→ ${after}`
+      r.next.classList.toggle('g-flat', flat)
+      r.cost.textContent = String(cost)
+      r.btn.disabled = d.training < cost
+      // 추천은 하나다. 둘이면 추천이 아니다.
+      const isRec = r.key === rec
+      r.el.classList.toggle('g-rec', isRec)
+      r.why.textContent = isRec ? recommendReason(rec) : ''
+    }
+  }
+
+  return { el: box, refresh }
 }
 
 /**
@@ -147,42 +273,8 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
 
   panel.append(head, sub)
 
-  const rows: Row[] = []
-  for (let i = 0; i < STAT_KEYS.length; i++) {
-    const key = STAT_KEYS[i]
-    if (key === undefined) continue
-    const el = document.createElement('div')
-    el.className = 'g-row'
-    el.innerHTML = `
-      <div><i class="hb-ic g-ic"></i><span class="g-name"></span><span class="g-lv"></span></div>
-      <div class="g-now"></div>
-      <div class="g-next"></div>
-      <button class="hb-btn g-up" type="button">올리기 <span class="g-cost"></span></button>`
-    const btn = el.querySelector('.g-up') as HTMLButtonElement
-    const row: Row = {
-      key,
-      el,
-      lv: el.querySelector('.g-lv') as HTMLElement,
-      now: el.querySelector('.g-now') as HTMLElement,
-      next: el.querySelector('.g-next') as HTMLElement,
-      btn,
-      cost: el.querySelector('.g-cost') as HTMLElement,
-    }
-    ;(el.querySelector('.g-name') as HTMLElement).textContent = statLabel(key)
-    // 아이콘은 스탯 키로 고른다 (ui/overlay.ts .hb-ic.i-*). 스탯을 더 만들면 아이콘도 같이.
-    ;(el.querySelector('.g-ic') as HTMLElement).classList.add(`i-${key}`)
-    btn.addEventListener('click', () => {
-      if (!spendTraining(d, key, 1)) return
-      audio.levelup()
-      // 무엇이 바뀌었는지 그 자리에서. 화면을 닫았다 열게 하지 않는다.
-      row.el.classList.add('g-flash')
-      window.setTimeout(() => row.el.classList.remove('g-flash'), FLASH_MS)
-      refresh()
-      onChange()
-    })
-    panel.appendChild(el)
-    rows.push(row)
-  }
+  const rows = buildStatRows(d, trainOut, audio, onChange)
+  panel.appendChild(rows.el)
 
   // ── 활 걸이 (docs/BOWS.md) ──
   // 장착은 다음 판부터다 — 판 도중에 활이 바뀌면 같은 시드가 다른 판이 된다 (A1).
@@ -372,7 +464,6 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
   o.hud().appendChild(open)
 
   function refresh(): void {
-    trainOut.textContent = String(d.training)
     // 상한 도달을 알리지 않는다 (GDD 5장). 여기 있는 건 "어디서 오는가"뿐이다.
     const perMin = P.offline.trainingPerSec * 60
     hint.textContent = d.offlineEnabled
@@ -380,25 +471,7 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
       : `쌓지 않는 대신 판 보상 ×${P.offline.optOutBonus.toFixed(2)}`
     chk.checked = d.offlineEnabled
     syncSound()
-
-    for (let i = 0; i < rows.length; i++) {
-      const r = rows[i]
-      if (r === undefined) continue
-      const lv = d.stats[r.key]
-      const cost = trainingCost(lv)
-      const now = effectOf(d.stats, r.key)
-      const after = effectAfterLevel(d.stats, r.key)
-      r.lv.textContent = `Lv ${lv}`
-      r.now.textContent = now
-      // 후반에는 한 레벨로 문장이 안 바뀐다. 안 바뀌면 안 바뀐다고 말한다 —
-      // 없는 변화를 있는 척하면 다음부터 이 화면을 안 믿는다.
-      const flat = after === now
-      r.next.textContent = flat ? '→ 여기서는 한 레벨로 크게 달라지지 않는다' : `→ ${after}`
-      r.next.classList.toggle('g-flat', flat)
-      r.cost.textContent = String(cost)
-      r.btn.disabled = d.training < cost
-    }
-
+    rows.refresh()
     refreshBows()
     open.classList.toggle('hb-has', canGrow(d))
   }
@@ -429,6 +502,146 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
   o.onDispose(() => window.removeEventListener('keydown', onKey))
 
   refresh()
+}
+
+// ─────────────────────────── 재정비 (여정 종료) ───────────────────────────
+
+/** 여정이 끝나며 남긴 것 — game/loop.ts endRun 이 채운다. */
+export interface ReinforceInfo {
+  reached: number
+  score: number
+  best: number
+  isNew: boolean
+  first: boolean
+  reason: 'defeat' | 'abandon' | 'death'
+  training: number
+  stars: number
+  jung: number
+  molgi: boolean
+  /** 다음 여정이 시작되는 판 (1부터). 체크포인트가 있으면 1이 아니다. */
+  nextStage: number
+}
+
+/** 재정비 화면에 달린 탭 복귀 리스너. 화면이 하나뿐이니 이것도 하나뿐이어야 한다. */
+let reinVis: (() => void) | null = null
+
+/**
+ * 재정비 — 여정 종료 화면. 위는 결과, 가운데는 성장 줄, 아래는 '다음' 하나.
+ *
+ * 왜 결과 화면과 성장 화면을 한 장으로 붙였나: 죽은 직후가 **훈련치가 가장 많고, 왜 죽었는지
+ * 가장 생생한** 순간이다. 그 순간에 "근력을 올리면 적을 눕히는 발수가 준다"가 눈앞에 있어야
+ * 다음 여정이 달라진다. 화면을 나눠 놓으면(결과 → 닫기 → 성장 버튼 찾기) 그 사이에 접는다 —
+ * 실제로 접었다.
+ *
+ * onNext는 정확히 한 번. 이 화면도 **다시 열릴 수 있다** (game/loop.ts reopen) — 닫혀도
+ * 게임이 굳지 않게. 그때마다 리스너가 쌓이지 않게 앞의 것을 뗀다.
+ */
+export function showReinforce(
+  o: Overlay,
+  d: SaveData,
+  info: ReinforceInfo,
+  audio: AudioSwitch,
+  onNext: () => void,
+): void {
+  const panel = o.panel(REINFORCE_ID)
+  panel.replaceChildren()
+  panel.setAttribute('aria-label', '재정비')
+
+  const style = document.createElement('style')
+  style.textContent = CSS
+  panel.appendChild(style)
+
+  // ── 머리: 여정이 남긴 것 ──
+  // 이번 여정이 **영구히** 남긴 것만 센다. 판별 점수처럼 여정과 함께 사라지는 건 안 쓴다 —
+  // "가져간다"고 써놓고 안 가져가면 그 줄은 다음부터 아무도 안 읽는다.
+  // 0인 항목은 아예 안 쓴다 — '훈련치 0'은 위로가 아니라 조롱이다.
+  const keeps: string[] = []
+  if (info.training > 0) keeps.push(`훈련치 <b>${info.training}</b>`)
+  if (info.stars > 0) keeps.push(`별 <b>${info.stars}</b>`)
+  if (info.molgi) keeps.push('<b>몰기</b>')
+  else if (info.jung >= 3) keeps.push(`최고 <b>${info.jung}중</b>`)
+  const lead = info.reason === 'death'
+    ? '쓰러졌다 — 이번 여정은'
+    : info.reason === 'abandon'
+      ? '여정을 접었다 — 이번은'
+      : '화살이 다했다 — 이번 여정은'
+  const head = document.createElement('div')
+  head.className = 'r-head'
+  head.innerHTML =
+    `<div class="r-lead">${lead}</div>` +
+    `<div class="r-stage">${info.reached}판</div>` +
+    (info.first
+      ? '<div class="r-old">첫 기록 — 여기서부터 시작이다</div>'
+      : info.isNew
+        ? '<div class="r-new">최고 기록 경신</div>'
+        : `<div class="r-old">최고 기록 ${info.best}판 · 점수 ${info.score}</div>`) +
+    (keeps.length > 0 ? `<div class="r-keep">가져간다 &nbsp;${keeps.join('<span class="r-dot">·</span>')}</div>` : '') +
+    // 어디서 다시 서는가 — "또 1판부터냐"가 접는 이유가 되지 않게 화면이 먼저 말한다.
+    (info.nextStage > 1 ? `<div class="r-next">다음 여정은 ${info.nextStage}판부터 — 잡은 귀신은 다시 안 나온다</div>` : '')
+  panel.appendChild(head)
+
+  // ── 가운데: 성장 줄 ──
+  const gh = document.createElement('div')
+  gh.className = 'g-h'
+  gh.innerHTML = '<h3>강화</h3><div class="g-train">훈련치 <b></b></div>'
+  const trainOut = gh.querySelector('b') as HTMLElement
+  const sub = document.createElement('p')
+  sub.className = 'hb-lead'
+  sub.textContent = '이번 여정에서 번 훈련치로 몸을 키운다. 올리면 어떻게 달라지는지 각 줄에 적혀 있다.'
+  panel.append(gh, sub)
+
+  const rows = buildStatRows(d, trainOut, audio, () => {})
+  panel.appendChild(rows.el)
+
+  // 올릴 것이 하나도 없으면 왜 없는지 한 줄. 버튼만 잠겨 있으면 고장으로 읽힌다.
+  const none = document.createElement('div')
+  none.className = 'r-none'
+  const syncNone = (): void => {
+    if (canGrow(d)) {
+      none.textContent = ''
+      none.style.display = 'none'
+      return
+    }
+    let min = Number.POSITIVE_INFINITY
+    for (const k of STAT_KEYS) min = Math.min(min, trainingCost(d.stats[k]))
+    none.style.display = ''
+    none.textContent = `훈련치가 ${Math.max(0, min - d.training)} 모자라다 — 판을 깰 때마다 쌓인다. 다음 여정에서 더 벌어 온다`
+  }
+  panel.appendChild(none)
+  // 줄 안의 '올리기'가 세이브를 바꾸면 여기도 따라간다.
+  const unsub = onSaveChanged(syncNone)
+
+  // ── 아래: 다음 ──
+  const foot = document.createElement('div')
+  foot.className = 'r-foot'
+  const go = document.createElement('button')
+  go.type = 'button'
+  go.className = 'hb-btn hb-pri r-go'
+  go.textContent = '다음 →'
+  go.setAttribute('aria-label', '출정 준비로')
+  foot.appendChild(go)
+  panel.appendChild(foot)
+
+  let done = false
+  const onVisibility = (): void => {
+    if (!document.hidden && !done) o.show(REINFORCE_ID)
+  }
+  if (reinVis !== null) document.removeEventListener('visibilitychange', reinVis, true)
+  reinVis = onVisibility
+  document.addEventListener('visibilitychange', onVisibility, true)
+  go.addEventListener('click', () => {
+    if (done) return
+    done = true
+    document.removeEventListener('visibilitychange', onVisibility, true)
+    reinVis = null
+    unsub()
+    o.hide(true)
+    onNext()
+  })
+
+  rows.refresh()
+  syncNone()
+  o.show(REINFORCE_ID, { sticky: true })
 }
 
 // ─────────────────────────── 복귀 알림 ───────────────────────────

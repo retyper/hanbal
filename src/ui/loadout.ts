@@ -4,8 +4,8 @@
  * 시작: 활 한 자루 + 살통 하나를 고른다. **이 조합이 런의 빌드다** — 판마다 3택을
  * 강요하던 옛 드래프트를 대체한다 (형의 반려: "과녁이 화살보다 많으면 사실상 1택").
  *
- * 끝: 도달한 판과 점수를 보여준다. 결과 화면에 가두지 않는다 — 클릭 한 번이면
- * 다음 여정의 로드아웃이다 (C1).
+ * 끝은 여기 없다 — 여정 종료는 **재정비**(ui/growth.ts showReinforce)다. 결과 머리 아래가
+ * 곧 성장 줄이고, 그 '다음'이 이 화면이다 (2026-09-02, 형의 요구).
  */
 import { ARROW_KINDS, type ArrowKindId } from '../game/arrows.ts'
 import { ARROW_TINT, arrowIconSvg, bowIconSvg } from './arrowicons.ts'
@@ -15,7 +15,6 @@ import type { ForkOption } from '../game/forks.ts'
 import type { Overlay } from './overlay.ts'
 
 const PANEL_ID = 'loadout'
-const OVER_ID = 'runover'
 
 const CSS = `
 .l-h { display: flex; align-items: baseline; gap: 14px; }
@@ -51,18 +50,6 @@ const CSS = `
 .l-wipe.l-armed { color: #ff6a45; border-color: #ff6a4577; }
 .l-go { font-size: 17px; padding: 13px 26px; }
 
-.o-wrap { text-align: center; padding: 8px 0 4px; }
-.o-reach { font-size: 15px; color: var(--dim); letter-spacing: .1em; }
-.o-stage { font-size: 52px; font-weight: 700; color: var(--ink); font-family: var(--num); line-height: 1.2; }
-@media (max-width: 640px) { .o-stage { font-size: 44px; } .l-h h2 { font-size: 26px; } }
-.o-score { color: var(--body); margin-top: 4px; }
-.o-new { color: var(--accent); font-weight: 700; margin-top: 10px; }
-.o-old { color: var(--dim); margin-top: 10px; }
-/* 남은 것 — 기록 줄보다 밝게. "죽었다"가 아니라 "가져간다"가 이 화면의 마지막 말이어야 한다. */
-.o-keep { color: var(--body); margin-top: 14px; font-size: 14px; }
-.o-keep b { color: var(--accent); font-weight: 700; }
-.o-dot { color: var(--dim); margin: 0 8px; }
-.o-foot { margin-top: 22px; display: flex; gap: 10px; justify-content: center; }
 `
 
 export interface LoadoutPick {
@@ -80,6 +67,8 @@ export function mountLoadout(
   bowHits: Readonly<Record<string, number>>,
   bestRunStage: number,
   runCount: number,
+  /** 이번 여정이 시작되는 판 (1부터). 체크포인트가 있으면 1이 아니다 — 화면이 먼저 말한다. */
+  startStage: number,
   onStart: (pick: LoadoutPick) => void,
 ): void {
   const panel = o.panel(PANEL_ID)
@@ -95,6 +84,8 @@ export function mountLoadout(
   const head = document.createElement('div')
   head.className = 'l-h'
   head.innerHTML = `<h2>출정</h2><div class="l-run">여정<b>${runCount + 1}</b></div>` +
+    // 어디서 출발하는가 — 체크포인트(보스 다음 판)가 있으면 "또 1판부터"가 아니다.
+    (startStage > 1 ? `<div class="l-run">출발<b>${startStage}판</b></div>` : '') +
     (bestRunStage > 0 ? `<div class="l-best">가장 멀리<b>${bestRunStage}판</b></div>` : '')
   const sub = document.createElement('p')
   sub.className = 'hb-lead'
@@ -188,84 +179,6 @@ export function mountLoadout(
 
   refresh()
   o.show(PANEL_ID, { sticky: true })
-}
-
-/** 여정 종료 화면에 달린 탭 복귀 리스너. 화면이 하나뿐이니 이것도 하나뿐이어야 한다. */
-let overVis: (() => void) | null = null
-
-/** 여정 종료 화면. 클릭 한 번이면 닫히고 onNext — 결과에 가두지 않는다 (C1). */
-export function showRunOver(
-  o: Overlay,
-  reached: number,
-  score: number,
-  best: number,
-  isNew: boolean,
-  first: boolean,
-  reason: 'defeat' | 'abandon' | 'death',
-  summary: { training: number; stars: number; jung: number; molgi: boolean },
-  onNext: (mode: 'again' | 'loadout') => void,
-): void {
-  const panel = o.panel(OVER_ID)
-  panel.replaceChildren()
-  panel.setAttribute('aria-label', '여정 종료')
-
-  const style = document.createElement('style')
-  style.textContent = CSS
-  panel.appendChild(style)
-
-  const wrap = document.createElement('div')
-  wrap.className = 'o-wrap'
-  // 이번 여정이 **영구히** 남긴 것만 센다. 판별 점수처럼 여정과 함께 사라지는 건 안 쓴다 —
-  // "가져간다"고 써놓고 안 가져가면 그 줄은 다음부터 아무도 안 읽는다.
-  const keeps: string[] = []
-  if (summary.training > 0) keeps.push(`훈련치 <b>${summary.training}</b>`)
-  if (summary.stars > 0) keeps.push(`별 <b>${summary.stars}</b>`)
-  if (summary.molgi) keeps.push(`<b>몰기</b>`)
-  else if (summary.jung >= 3) keeps.push(`최고 <b>${summary.jung}중</b>`)
-  const lead = reason === 'death'
-    ? '쓰러졌다 — 이번 여정은'
-    : reason === 'abandon'
-      ? '여정을 접었다 — 이번은'
-      : '화살이 다했다 — 이번 여정은'
-  wrap.innerHTML =
-    `<div class="o-reach">${lead}</div>` +
-    `<div class="o-stage">${reached}판</div>` +
-    `<div class="o-score">점수 <b>${score}</b></div>` +
-    (first
-      ? `<div class="o-old">첫 기록 — 여기서부터 시작이다</div>`
-      : isNew
-        ? `<div class="o-new">최고 기록 경신</div>`
-        : `<div class="o-old">최고 기록 ${best}판</div>`) +
-    // ── 남은 것 ── 로그라이트의 종료 화면은 벌이 아니라 **다음 런의 발사대**다.
-    // 여기 아무것도 없으면 화면이 하는 말은 "너 죽었다" 하나뿐이고, 그건 다시 설 이유가 못 된다.
-    // 0인 항목은 아예 안 쓴다 — '훈련치 0'은 위로가 아니라 조롱이다.
-    (keeps.length > 0 ? `<div class="o-keep">가져간다 &nbsp;${keeps.join('<span class="o-dot">·</span>')}</div>` : '') +
-    // 재도전의 마찰은 클릭 하나면 족하다 — 다수 경로(같은 활)가 주 버튼이다 (감사 UI P1).
-    `<div class="o-foot"><button class="hb-btn hb-pri l-go" data-m="again" type="button">같은 활로 다시 나선다 →</button>` +
-    `<button class="hb-btn" data-m="loadout" type="button">채비 바꾸기</button></div>`
-  panel.appendChild(wrap)
-
-  let done = false
-  const onVisibility = (): void => {
-    if (!document.hidden && !done) o.show(OVER_ID)
-  }
-  // ★ 이 화면은 **다시 열릴 수 있다** (game/loop.ts reopen — 형: "창 x 눌러버리면
-  //   다시시작할수가 없으니"). 그때마다 리스너를 새로 달면 탭 복귀 한 번에 show가 여러 번
-  //   불린다. 앞의 것을 먼저 뗀다 — 화면은 하나뿐이므로 리스너도 하나면 된다.
-  if (overVis !== null) document.removeEventListener('visibilitychange', overVis, true)
-  overVis = onVisibility
-  document.addEventListener('visibilitychange', onVisibility, true)
-  for (const btn of Array.from(wrap.querySelectorAll('button'))) {
-    btn.addEventListener('click', () => {
-      if (done) return
-      done = true
-      document.removeEventListener('visibilitychange', onVisibility, true)
-      overVis = null
-      o.hide(true)
-      onNext((btn as HTMLButtonElement).dataset['m'] === 'again' ? 'again' : 'loadout')
-    })
-  }
-  o.show(OVER_ID, { sticky: true })
 }
 
 /**

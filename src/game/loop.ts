@@ -55,16 +55,22 @@ export interface LoopUi {
    * 화면을 띄우는 쪽이 패널을 열어 paused()를 true로 만들므로 그동안 sim은 멈춰 있다.
    */
   loadout(onStart: (pick: LoadoutPick) => void): void
-  /** 여정 종료 — 도달 판·점수·기록·사유. onNext 한 번으로 다음 여정 준비로 간다 (C1). */
+  /**
+   * 여정 종료 = **재정비** (2026-09-02, 형: "죽고나서 강화하는거 바로화면에 띄워줘야").
+   * 도달 판·기록·남긴 것을 머리에 얹고, 그 아래가 곧 성장(강화) 화면이다. 하단의 '다음'
+   * 한 번으로 출정(활 고르기)으로 간다. onNext는 정확히 한 번.
+   */
   runOver(
     reached: number, score: number, best: number, isNew: boolean, first: boolean,
     reason: 'defeat' | 'abandon' | 'death',
     /**
      * 이번 여정이 **남긴 것** (docs/MEGAHIT.md §8-③). 로그라이트에서 런 종료 화면은
      * 벌이 아니라 다음 런의 발사대다 — 가져가는 것이 보여야 다시 설 마음이 생긴다.
+     * nextStage = 다음 여정이 시작되는 판(1부터). 체크포인트가 있으면 1이 아니다 —
+     * "또 1판부터냐"는 오해가 접는 이유가 되지 않게 화면이 먼저 말한다.
      */
-    summary: { training: number; stars: number; jung: number; molgi: boolean },
-    onNext: (mode: 'again' | 'loadout') => void,
+    summary: { training: number; stars: number; jung: number; molgi: boolean; nextStage: number },
+    onNext: () => void,
   ): void
   /** 보스 보급 (docs/RUN.md). heal>0이면 회복 카드가 추가로 선다. onPick은 정확히 한 번. */
   supply(
@@ -132,6 +138,8 @@ export interface GameLoop {
 const HINT_BOSS = '다음은 귀신이다 — 당기면 맞선다'
 /** R 한 번으로 여정을 접으면 실수 한 번이 기록을 지운다. 두 번째 R까지의 유효 시간 (ms). */
 const ABANDON_MS = 2500
+/** 첫 성장 안내 토스트의 수명 (ms). 기본 토스트보다 길다 — 읽고 버튼을 찾을 시간이다. */
+const GROW_HINT_MS = 4200
 
 /**
  * 진행도 상한. 무한 구간이라 게임에는 끝이 없지만, 손상된 세이브가 1e9 을 들고 오면
@@ -493,6 +501,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       stars: save.runStars,
       jung: save.runBestJung,
       molgi: save.runBestJung >= Math.floor(P.flow.molgiAt),
+      nextStage: checkpointStage(save.bossKills) + 1,
     }
     save.runCount++
     save.runActive = false
@@ -509,12 +518,11 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     // ★ 여기가 형이 짚은 자리다 — 이 화면이 닫히면 **다시 시작할 방법이 하나도 없었다.**
     //   기록은 이미 저장됐으므로(위 saveNow) 다시 여는 것으로 잃는 것은 없다.
     const open = (): void =>
-      ui.runOver(reached, save.runScore, save.bestRunStage, isNew, first, reason, summary, (mode) => {
+      ui.runOver(reached, save.runScore, save.bestRunStage, isNew, first, reason, summary, () => {
         choosing = false
         reopen = null
-        // '같은 활로 다시' — 종료 화면에서 바로 출정한다. 재도전의 마찰은 클릭 하나면 족하다 (감사).
-        if (mode === 'again') startRun(save.bow)
-        else beginStage()
+        // 재정비 → 출정(활 고르기) → 시작. 활이 하나뿐이면 beginStage가 고르기를 건너뛴다.
+        beginStage()
       })
     reopen = open
     open()
@@ -605,7 +613,15 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     // 여정 점수 — 판별 점수의 합. 종료 화면과 최고 기록이 이 값을 쓴다 (docs/RUN.md).
     save.runScore += w.score
 
+    // ── 첫 성장 안내 (2026-09-02) ──
+    // 형의 여자친구는 11판까지 성장 화면을 한 번도 안 열었다. 버튼 위의 점 하나는 처음 보는
+    // 사람에게 아무 말도 아니다. **처음 올릴 수 있게 되는 그 판**에 한 줄, 딱 한 번 (C1 —
+    // 모달이 아니다). 그 뒤로는 점과 재정비 화면이 맡는다.
+    const growHint = !save.seenGrowHint && canGrow(save)
+    if (growHint) save.seenGrowHint = true
+
     saveNow()
+    if (growHint) ui.toast('훈련치가 쌓였다 — 아래 성장(Tab)에서 근력을 올릴 수 있다', GROW_HINT_MS)
     ui.progressed()
     // 별·위업까지 한 줄로. 결과 화면에 가두지 않는다 (C1).
     ui.runGain(rewardLine(reward), gain.leveled)

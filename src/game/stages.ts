@@ -254,7 +254,7 @@ function withArrowFloor(stage: StageDef): StageDef {
 function convertToFoes(base: StageDef, i: number): StageDef {
   const n = i + 1
   const rng = makeRng(seedFrom(`hanbal.enemy.${n}`))
-  const hp = Math.floor(P.enemy.convertHp * (n >= 31 ? 1.5 : 1))
+  const hp = Math.floor(foeHp(n))
   // 통(bomb)은 사람이 아니라 **환경**이다 — 사수 수에도 안 들어가고 적으로도 안 바뀐다.
   const foes = base.targets.filter(
     (t2) => t2.kind !== 'bonus' && t2.kind !== 'charger' && t2.kind !== 'barrel',
@@ -302,8 +302,56 @@ function convertToFoes(base: StageDef, i: number): StageDef {
     }
     f++
   }
-  // 사수는 두세 발을 버틴다 — 그만큼 화살도 얹는다. 헤드샷이 절약이다.
-  return { ...base, arrows: Math.min(10, base.arrows + Math.ceil(foes * 0.6)), targets: specs }
+  // 사수는 두세 발을 버틴다 — **사수 하나에 한 발씩** 얹는다. 헤드샷이 절약이다.
+  // (예전 ceil(0.6×n)은 사수 셋에 두 발이었다 — 몸통 두 발이 기준이면 셋에 여섯이 필요한
+  //  판에 여덟 발이다. 실측으로 12판은 숙련 봇도 0%였다. 상한 10은 C1의 것이라 그대로.)
+  return {
+    ...base,
+    arrows: Math.min(10, base.arrows + foes),
+    targets: specs,
+    // ★ 힌트도 바꾼다. 저작 판의 teach 는 과녁의 말("공중 과녁은 맞으면 떨어진다")인데,
+    //   11판부터 그 자리에 서 있는 건 드론과 사수다. 화면이 하는 첫 설명이 눈앞의 것과
+    //   다르면 그 뒤의 설명은 아무도 안 읽는다. 사수 판에는 사수의 말을 쓴다.
+    hint: foeHint(n, base, specs),
+  }
+}
+
+/**
+ * 전환 사수의 체력 — 도입 경사 (P.enemy.convertHpEase*). 11판에서 낮게 시작해
+ * convertHpEaseStages 판 동안 convertHp 로 올라오고, 31판부터 ×1.5.
+ * 왜 경사인가는 params.ts 의 convertHpEase 주석에 실측과 함께 적었다.
+ */
+export function foeHp(n: number): number {
+  const base = P.enemy.convertHp * (n >= 31 ? 1.5 : 1)
+  const span = Math.max(1, Math.floor(P.enemy.convertHpEaseStages))
+  const t = Math.min(1, Math.max(0, (n - (BOSS_EVERY + 1)) / span))
+  const ease = P.enemy.convertHpEase + (1 - P.enemy.convertHpEase) * t
+  return base * ease
+}
+
+/**
+ * 사수 판의 한 줄 — 무엇이 서 있고 무엇을 먼저 해야 하는가.
+ * 첫 사수 판(11)은 규칙을 가르치고, 그 뒤는 그 판의 구성이 말한다. 화약통이 있는 판은
+ * 저작된 teach 가 이미 통의 말이라 그대로 둔다 (GAP.md 1절의 퍼즐판).
+ */
+function foeHint(n: number, base: StageDef, specs: readonly TargetSpec[]): string {
+  if (n === BOSS_EVERY + 1) return '적이 활을 든다 — 당기는 쪽을 먼저 쏜다. 머리는 한 발이다'
+  if (specs.some((s) => s.kind === 'barrel')) return base.hint ?? ''
+  let win = 0
+  let hide = 0
+  let drone = 0
+  for (const s of specs) {
+    if (s.kind !== 'archer') continue
+    if (s.look === 3) drone++
+    else if (s.look === 2) hide++
+    else win++
+  }
+  if (n === BOSS_EVERY + 2) return '체력은 판을 넘어 이어진다 — 맞기 전에 눕힌다'
+  if (hide > 0 && drone === 0) return '숨은 사수는 당길 때만 나온다 — 그 틈이 유일하다'
+  if (drone > 0 && hide === 0) return '드론은 떠서 돈다 — 멈칫하는 자리를 노린다'
+  if (hide > 0 && drone > 0) return '숨는 놈과 나는 놈 — 먼저 당기는 쪽부터'
+  if (win >= 3) return `창의 사수 ${win} — 가까운 창부터, 머리를 노린다`
+  return '창의 사수 — 당기는 쪽을 먼저, 머리는 한 발이다'
 }
 
 /** 보스 주기. 10판 = 여정의 한 마디 (RUN.md). */

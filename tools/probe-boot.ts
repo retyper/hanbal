@@ -337,7 +337,7 @@ const loop = createLoop(canvas as unknown as HTMLCanvasElement, {
       runOverShown++
       void reached; void isNew
       panelOpen = true
-      pendingNext = () => onNext('loadout')
+      pendingNext = () => onNext()
     },
     toast: () => {},
     unlocked: (ids) => {
@@ -486,6 +486,7 @@ console.log(String.fromCharCode(10) + '6. 로드아웃 생명주기 (탭 복귀 
     {},
     7,
     0,
+    1,
     (pick) => {
       got.starts++
       got.bow = pick.bow

@@ -89,6 +89,23 @@ interface Args {
    * 기본값이 테마 한 바퀴인 이유: 한 바퀴를 돌면 열 테마가 정확히 한 번씩 나온다 (endless.ts).
    */
   endless: number
+  /**
+   * 캠페인 판을 **플레이어가 실제로 받는 모양**(getStage — 보스·11판+ 적 전환·화살 바닥)으로
+   * 돌린다. `--real=0`이면 옛 방식: 저작 원본(과녁만)을 돈다.
+   *
+   * 2026-09-02까지 이 시뮬은 원본만 돌았다. 그래서 11판 이후의 모든 줄이 **게임에 존재하지
+   * 않는 판**을 재고 있었다 — 실제 11판은 체력 70의 사수 둘이 6초마다 나를 쏘는 판인데,
+   * 표에는 "과녁 둘, 100% 클리어, 2발"로 적혀 있었다. 형의 여자친구가 11판에서 접은 이유를
+   * 이 표는 원리적으로 볼 수 없었다.
+   */
+  real: boolean
+  /** 스탯을 전부 0으로 — 성장 화면을 한 번도 안 연 사람이 겪는 판. */
+  zero: boolean
+  /** `--stats=str:8,stamina:3` — 지정한 스탯으로 전 판을 돈다 (나머지는 0). zero 보다 우선. */
+  stats: Stats | null
+  /** `--from=11 --to=20` — 캠페인에서 이 판 번호(1부터) 구간만 돈다. 0이면 전체. */
+  from: number
+  to: number
 }
 
 const BOT_KINDS: readonly BotKind[] = ['novice', 'average', 'expert']
@@ -115,12 +132,28 @@ function parseArgs(argv: readonly string[]): Args {
   let endless = ENDLESS_THEMES
   let flow = true
   let warm = 0
+  let real = true
+  let zero = false
+  let stats: Stats | null = null
+  let from = 0
+  let to = 0
   for (const a of argv) {
     const m = /^--([\w]+)=(.+)$/.exec(a)
     if (m === null) continue
     const key = m[1]
     const raw = m[2]
     if (key === undefined || raw === undefined) continue
+    if (key === 'stats') {
+      const s: Stats = { str: 0, steady: 0, stamina: 0, focus: 0 }
+      for (const part of raw.split(',')) {
+        const [k, v] = part.split(':')
+        const n = Number(v)
+        if (k === 'str' || k === 'steady' || k === 'stamina' || k === 'focus') s[k] = Number.isFinite(n) ? Math.max(0, Math.trunc(n)) : 0
+        else throw new Error(`알 수 없는 스탯: ${part} (가능: str steady stamina focus)`)
+      }
+      stats = s
+      continue
+    }
     // 문자열 인자 먼저 — 숫자 파싱에 걸리면 안 된다.
     if (key === 'arrow') {
       if (raw === 'none' || raw === '') arrow = null
@@ -150,8 +183,14 @@ function parseArgs(argv: readonly string[]): Args {
     else if (key === 'flow') flow = v !== 0
     // --warm=N : 관중 N을 이미 쌓은 상태로 판에 들어간다 (여정 중반의 실제 상태).
     else if (key === 'warm') warm = Math.max(0, Math.trunc(v))
+    // --real=0 : 저작 원본(과녁만). 기본은 플레이어가 실제로 받는 판이다.
+    else if (key === 'real') real = v !== 0
+    // --zero=1 : 스탯 전부 0 — 성장 화면을 한 번도 안 연 사람.
+    else if (key === 'zero') zero = v !== 0
+    else if (key === 'from') from = Math.max(0, Math.trunc(v))
+    else if (key === 'to') to = Math.max(0, Math.trunc(v))
   }
-  return { seed, runs, budgetMs, preview, floor, arrow, cross, bows, crossBot, campaign, endless, flow, warm }
+  return { seed, runs, budgetMs, preview, floor, arrow, cross, bows, crossBot, campaign, endless, flow, warm, real, zero, stats, from, to }
 }
 
 /** 시드 합성. 같은 (스테이지, 판 번호)면 봇이 달라도 같은 판이 나온다 — 짝지은 비교로 분산을 줄인다. */
@@ -801,12 +840,35 @@ function floorArrows(def: StageDef): number {
   return grantArrows(d, def)
 }
 
-/** 실제 콘텐츠. 밸런스 판정의 대상은 언제나 이쪽이다. */
-const REAL_STAGES: readonly StageRow[] = ALL_STAGES.map((def, i) => ({
-  key: def.id,
-  stats: assumedStats(ALL_STAGES.length > 1 ? i / (ALL_STAGES.length - 1) : 0),
-  make: (seed: number): StageDef => ({ ...def, seed }),
-}))
+const ZERO_STATS: Stats = { str: 0, steady: 0, stamina: 0, focus: 0 }
+
+/**
+ * 실제 콘텐츠. 밸런스 판정의 대상은 언제나 이쪽이다.
+ *
+ * `real`이면 판은 **getStage()** 가 내보내는 그대로다 — 10판마다 보스, 11판부터 적 전환,
+ * 화살 바닥. 플레이어가 받는 판과 한 글자도 다르지 않다. `real=0`은 저작 원본(과녁만)이다 —
+ * 저작 좌표·각크기 회귀를 볼 때만 쓴다. 판 이름은 원본의 것을 쓴다(보스판도 '2-10' 자리).
+ */
+function realRows(a: Args): readonly StageRow[] {
+  const rows: StageRow[] = []
+  for (let i = 0; i < ALL_STAGES.length; i++) {
+    const authored = ALL_STAGES[i]
+    if (authored === undefined) continue
+    const n = i + 1
+    if (a.from > 0 && n < a.from) continue
+    if (a.to > 0 && n > a.to) continue
+    const def = a.real ? getStage(i) : authored
+    const stats = a.stats !== null
+      ? a.stats
+      : a.zero ? ZERO_STATS : assumedStats(ALL_STAGES.length > 1 ? i / (ALL_STAGES.length - 1) : 0)
+    rows.push({
+      key: authored.id,
+      stats,
+      make: (seed: number): StageDef => ({ ...def, seed }),
+    })
+  }
+  return rows
+}
 
 /**
  * 무한 구간 표본 (41판~). 생성기가 굽는 판이라 **여기가 유일한 검사대**다 —
@@ -898,6 +960,8 @@ interface RunResult {
   targetsLeft: number
   /** 화살을 다 쓰고도 과녁이 남아 실패했는가 */
   failedByArrows: boolean
+  /** 적에게 맞아 쓰러졌는가 (11판+ · 보스). 여정에서는 이게 곧 종료다 (docs/RUN.md 6장). */
+  died: boolean
   steps: number
   /** 만작에 닿은 발들의 릴리즈 지연 합 (s) */
   holdSum: number
@@ -1062,6 +1126,7 @@ function playOne(
     targetsLeft,
     // 시간 초과 실패와 구분한다. 이쪽이 "화살이 모자라 못 깬 판"이다.
     failedByArrows: !cleared && w.arrowsLeft <= 0,
+    died: !cleared && w.hp <= 0,
     steps,
     holdSum,
     holdShots,
@@ -1141,6 +1206,8 @@ interface Agg {
   avgBullseyes: number
   /** 화살이 모자라 못 깬 판의 비율 */
   arrowStarveRate: number
+  /** 적에게 맞아 쓰러진 비율. 11판+ 에서만 0이 아니다. 여정에서는 이게 곧 여정의 끝이다. */
+  deathRate: number
   /** 실패한 판에서 남아 있던 과녁 수의 평균 */
   avgTargetsLeftOnFail: number
   /** 만작 후 평균 릴리즈 지연 (s). 새 활 모델의 건강도를 보는 1번 지표. */
@@ -1228,6 +1295,7 @@ function playGroup(
   let peakCombo = 0
   let bullseyes = 0
   let starve = 0
+  let deaths = 0
   let leftOnFail = 0
   let fails = 0
   let shots = 0
@@ -1272,6 +1340,7 @@ function playGroup(
       fails++
       leftOnFail += r.targetsLeft
       if (r.failedByArrows) starve++
+      if (r.died) deaths++
     }
     if (r.collapsed) collapses++
     score += r.score
@@ -1330,6 +1399,7 @@ function playGroup(
     peakCombo,
     avgBullseyes: bullseyes / runs,
     arrowStarveRate: starve / runs,
+    deathRate: deaths / runs,
     avgTargetsLeftOnFail: fails > 0 ? leftOnFail / fails : 0,
     avgHold: holdShots > 0 ? holdSum / holdShots : 0,
     noFullRate: shots > 0 ? noFull / shots : 0,
@@ -1410,7 +1480,7 @@ function verdict(rate: number, stageNo: number): string {
 
 function printTable(rows: readonly Agg[]): void {
   const head =
-    'stage'.padEnd(13) + 'bot'.padEnd(9) + 'clear'.padStart(7) + 'score'.padStart(8) +
+    'stage'.padEnd(13) + 'bot'.padEnd(9) + 'clear'.padStart(7) + 'death'.padStart(7) + 'score'.padStart(8) +
     'arrows'.padStart(7) + 'spare'.padStart(7) + 'hit/shot'.padStart(9) +
     'chain'.padStart(7) + 'combo'.padStart(7) +
     'inSafe'.padStart(8) + 'hitSafe'.padStart(9) + 'hitOver'.padStart(9) +
@@ -1428,6 +1498,7 @@ function printTable(rows: readonly Agg[]): void {
     console.log(
       r.stage.padEnd(13) + r.bot.padEnd(9) +
       pct(r.clearRate).padStart(7) +
+      (r.deathRate > 0 ? pct(r.deathRate) : '-').padStart(7) +
       r.avgScore.toFixed(0).padStart(8) +
       r.avgArrows.toFixed(1).padStart(7) +
       r.avgSpare.toFixed(1).padStart(7) +
@@ -2168,7 +2239,7 @@ function main(): void {
   }
 
   const authored: readonly StageRow[] = [
-    ...REAL_STAGES,
+    ...realRows(args),
     ...(args.endless > 0 ? endlessRows(args.endless) : []),
     ...(args.preview ? PREVIEW_STAGES : []),
   ]
@@ -2191,6 +2262,8 @@ function main(): void {
     (runs < args.runs ? `  (시간 예산으로 ${args.runs} → ${runs} 축소)` : '') +
     (args.preview ? '  +미저작 챕터 프리뷰' : '') +
     (args.floor ? '  +화살 바닥 지급' : '') +
+    (args.real ? '  판=실제(getStage: 보스·적 전환)' : '  판=저작 원본(과녁만)') +
+    (args.stats !== null ? `  스탯=${JSON.stringify(args.stats)}` : args.zero ? '  스탯=전부 0' : '') +
     (args.arrow !== null ? `  화살 고정=${args.arrow}` : ''))
   console.log(`화살 목록: src/game/arrows.ts (${ARROW_IDS.join(' ')}) · 기본 ${DEFAULT_ARROW}` +
     `   보상 판정기: src/game/rewards.ts gradeRun`)

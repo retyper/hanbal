@@ -191,7 +191,14 @@ const CSS = `
   position: absolute; top: -4px; right: -4px; width: 8px; height: 8px; border-radius: 50%;
   background: var(--accent); box-shadow: 0 0 0 2px #14171d; opacity: 0; transition: opacity .2s;
 }
-.hb-btn.hb-has .hb-dot { opacity: 1; }
+.hb-btn.hb-has .hb-dot { opacity: 1; animation: hb-pulse 1.6s ease-in-out infinite; }
+/* 점은 **숨 쉰다** (2026-09-02). 형의 여자친구는 11판까지 이 버튼을 한 번도 안 눌렀다 —
+   가만한 점은 처음 보는 사람에게 장식이다. 크기가 아니라 움직임이 눈을 부른다.
+   화면을 가리지도, 소리를 내지도 않는다 (C1·C3). */
+@keyframes hb-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 2px #14171d; }
+  50% { transform: scale(1.35); box-shadow: 0 0 0 2px #14171d, 0 0 8px 2px #ffb34766; }
+}
 
 /* 우상단은 캔버스 HUD(훈련치·바람·무음)의 자리다 — 토스트가 그 위를 통째로 덮었었다
    (UI 전수조사 겹침 2번). 우하단은 어느 레이어도 안 쓰는 빈 구석이라 여기가 토스트의 집이다. */

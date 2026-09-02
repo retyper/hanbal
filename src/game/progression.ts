@@ -289,6 +289,26 @@ export function effectAfterLevel(stats: Stats, key: StatKey): string {
   return effectOf(next, key)
 }
 
+/**
+ * 추천 스탯 — 성장 화면을 처음 보는 사람이 **무엇부터** 올려야 하는가.
+ *
+ * 2026-09-02, 형의 여자친구가 11판에서 접었다. 강화를 한 번도 안 했을 거라는 형의 짐작이
+ * 맞았다 — 실측(`npm run balance`, 실제 판): 내 화살의 피해는 착탄 속도의 **제곱**이라
+ * 근력 0의 몸통샷은 12, 근력 8은 25, 만작(14)은 36이다. 11판+ 사수를 눕히는 발수가
+ * 6 → 3 → 2로 준다. 다른 세 스탯은 이 수를 한 톨도 안 바꾼다. 그래서 진짜 만작이 열리기
+ * 전까지의 답은 언제나 근력이고, 그 뒤부터는 가장 낮은 것이다.
+ */
+export function recommendStat(stats: Stats): StatKey {
+  return effectiveStats(stats).maxDraw < FULL_DRAW_EPS ? 'str' : weakest(stats)
+}
+
+/** 추천의 이유 한 줄. 화면은 이 문장을 추천 줄 곁에 붙인다. */
+export function recommendReason(key: StatKey): string {
+  return key === 'str'
+    ? '추천 — 화살 피해는 속도의 제곱이다. 적을 눕히는 발수가 준다'
+    : '추천 — 지금 가장 낮은 곳이다'
+}
+
 /** 지금 훈련치로 올릴 수 있는 스탯이 하나라도 있는가. HUD의 작은 점이 이걸 본다. */
 export function canGrow(d: SaveData): boolean {
   for (let i = 0; i < STAT_KEYS.length; i++) {
