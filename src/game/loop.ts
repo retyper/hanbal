@@ -18,7 +18,7 @@ import type { ArrowKindId } from '../sim/types.ts'
 import { createInput } from '../input/pointer.ts'
 import { createRenderer, getCamera, getHitStopMs, getOneShot } from '../render/scene.ts'
 import type { HudState } from '../render/hud.ts'
-import { createSfx, playUi, pumpSfx, sfxMuted, toggleMute, unlockSfx, updateSfx, type UiSound } from '../audio/sfx.ts'
+import { createSfx, playUi, pumpSfx, sfxLive, sfxMuted, toggleMute, unlockSfx, updateSfx, type UiSound } from '../audio/sfx.ts'
 import { getStage } from './stages.ts'
 import { onSaveChanged, pokeSave, writeSave, type SaveData } from './save.ts'
 import { settleOffline, type OfflineGain } from './offline.ts'
@@ -240,7 +240,10 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   const unRearm = onSaveChanged(rearm)
 
   // 매 프레임 제자리에서 갱신한다. 새로 만들지 않는다 (A5).
-  const hud: HudState = { training: 0, canLevelUp: false, muted: false, toast: '', arrow: '', stars: -1, endReason: '', time: 0, bestTime: 0, record: false }
+  /** 소리가 잠긴 채로 흐른 프레임 수. 여기를 넘으면 화면이 알린다 (한 번 열리면 0으로 돌아간다). */
+  const SILENT_FRAMES = 60
+  let silentFrames = 0
+  const hud: HudState = { training: 0, canLevelUp: false, muted: false, silent: false, toast: '', arrow: '', stars: -1, endReason: '', time: 0, bestTime: 0, record: false }
 
   let raf = 0
   /** 샌드박스(실험장) — 기록의 세계 밖이다. 정산·해금·여정 종료가 전부 멈춘다. */
@@ -893,6 +896,11 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     )
 
     hud.muted = sfxMuted(sfx)
+    // 소리가 열리지 않은 채로 판이 돌고 있으면 화면이 그 사실을 말한다 (형: "또 소리가 안난다").
+    // 자동재생 정책은 **조용히** 실패한다 — 아무 말도 없으면 게임이 고장 난 걸로 보인다.
+    // 한 프레임 늦게 열리는 건 정상이므로(resume은 비동기) 1초 넘게 잠겨 있을 때만 말한다.
+    silentFrames = hud.muted || sfxLive(sfx) ? 0 : silentFrames + 1
+    hud.silent = silentFrames > SILENT_FRAMES
     // 갈림길이 있는 판은 카드가 이미 그 자리를 말하므로 캔버스 힌트가 필요 없다.
     hud.toast = w.status !== 'cleared' || hasFork(stageIndex + 2) ? '' : HINT_BOSS
 
@@ -956,20 +964,27 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
 
   /**
    * 자동재생 정책상 사용자 제스처 한 번 전에는 어떤 소리도 못 낸다.
-   * 첫 눌림에서만 열고 스스로 사라진다. (M 키 토글은 audio/sfx.ts가 직접 듣는다 — 여기 중복 금지)
+   * (M 키 토글은 audio/sfx.ts가 직접 듣는다 — 여기 중복 금지)
    *
    * ★ **캔버스가 아니라 창 전체에서, 캡처 단계로 듣는다** (2026-08-31, 형: "왜 소리가
    *   안나는지 모르겠다"). 예전에는 canvas 의 pointerdown 만 들었다. 그런데 이 게임의
    *   첫 터치는 폰에서 거의 언제나 **DOM 버튼**이다 — 화면 아래 조작 바, 갈림길 카드,
-   *   성장 화면. 그 탭은 캔버스에 닿지 않으므로 AudioContext 가 영영 안 열리고,
-   *   자동재생 정책상 그 뒤의 모든 소리가 조용히 사라진다. 버튼이 이벤트를 멈춰 세워도
-   *   놓치지 않게 **캡처 단계**에서 듣는다.
+   *   성장 화면, 그리고 이제 오프닝 화면. 그 탭은 캔버스에 닿지 않으므로 AudioContext 가
+   *   영영 안 열린다. 버튼이 이벤트를 멈춰 세워도 놓치지 않게 **캡처 단계**에서 듣는다.
+   *
+   * ★★ **한 번 열어보고 문을 닫지 않는다** (2026-09-03, 형: "또 소리가 안난다").
+   *   `ctx.resume()` 은 **비동기**다. 제스처 안에서 불러도 브라우저가 거절하거나
+   *   (정책 · 기기 · bfcache 복귀) 늦게 풀리는 일이 있는데, 예전 코드는 첫 눌림에서
+   *   리스너를 떼어버렸다. 그러면 synth 는 만들어졌는데 `ctx.state` 가 영원히
+   *   'suspended' 로 남고, synthLive() 가 false라 **그 세션의 모든 소리가 조용히 사라진다.**
+   *   이제 문지기는 **소리가 진짜로 살아날 때까지** 남는다 — 살아 있으면 즉시 되돌아가므로
+   *   (필드 두 개 읽기) 매 눌림의 비용은 사실상 0이다. 음소거 중이면 ensure가 알아서
+   *   되돌아간다 — 형이 끈 것을 여기서 켜지 않는다 (C3).
+   *   프로브: tools/probe-sound.ts
    */
   const onFirstGesture = (): void => {
+    if (sfxLive(sfx)) return
     unlockSfx(sfx)
-    window.removeEventListener('pointerdown', onFirstGesture, true)
-    window.removeEventListener('touchstart', onFirstGesture, true)
-    window.removeEventListener('keydown', onFirstGesture)
   }
 
   // 세이브가 바뀌면(판 보상·오프라인 정산·성장 화면) 스탯과 HUD를 맞춘다.

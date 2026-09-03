@@ -265,7 +265,7 @@ const STATS: Stats = { str: 8, steady: 6, stamina: 6, focus: 4 }
 const IDLE: InputFrame = { aimX: 20, aimY: 3, drawing: false, steady: false }
 /** HUD 상태는 실전값으로. toast·stars 는 결과 배너에서만 그려진다 (아래 '클리어 배너' 프레임). */
 const HUD_STATE: HudState = {
-  training: 12, canLevelUp: true, muted: false,
+  training: 12, canLevelUp: true, muted: false, silent: false,
   toast: '한 번 더 누르면 다음 판', arrow: '화전', stars: 2, endReason: '', time: 11.2, bestTime: 14.0, record: true,
 }
 

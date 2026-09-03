@@ -51,6 +51,7 @@ import {
   setMuted,
   silenceChan,
   suspendSynth,
+  synthLive,
   tone,
 } from './synth.ts'
 import type { BellOpts, Chan, ClickOpts, NoiseOpts, Synth, ToneOpts } from './synth.ts'
@@ -587,6 +588,15 @@ export function createSfx(): Sfx {
     sfx.bank = null
   }
   return sfx
+}
+
+/**
+ * **지금 실제로 소리가 나는 상태인가.** unlocked 플래그와 다르다 —
+ * 플래그는 '열려고 했다'이고, 이건 '열렸다'다. resume() 이 비동기라 그 둘이 갈린다.
+ * game/loop.ts 의 첫 제스처 문지기가 언제 문을 닫을지 이걸로 정한다 (tools/probe-sound.ts).
+ */
+export function sfxLive(sfx: Sfx): boolean {
+  return sfx.synth !== null && !sfx.muted && synthLive(sfx.synth)
 }
 
 /** 첫 클릭에서 부른다. 자동재생 정책상 제스처 없이는 어떤 소리도 못 낸다. */

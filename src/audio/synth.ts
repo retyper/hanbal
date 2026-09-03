@@ -221,8 +221,14 @@ export function setMuted(s: Synth, m: boolean): void {
   else resumeSynth(s)
 }
 
-/** 소리를 낼 수 있는 상태인가. 정지·음소거 중이면 스케줄 자체를 하지 않는다. */
-function live(s: Synth): boolean {
+/**
+ * 소리를 낼 수 있는 상태인가. 정지·음소거 중이면 스케줄 자체를 하지 않는다.
+ *
+ * ★ `ctx.state === 'running'` 이 조건에 있다는 것이 중요하다 — resume() 은 비동기라,
+ *   제스처 안에서 불렀다고 해서 그 다음 순간에 running 이라는 보장이 없다. 거절당하면
+ *   여기가 조용히 false 로 남고 그 세션의 모든 소리가 사라진다 (tools/probe-sound.ts).
+ */
+export function synthLive(s: Synth): boolean {
   return !s.muted && s.ctx.state === 'running'
 }
 
@@ -284,7 +290,7 @@ function sweep(p: AudioParam, t0: number, from: number, to: number, dur: number)
 }
 
 export function noiseBurst(s: Synth, kind: number, o: NoiseOpts): void {
-  if (!live(s) || o.gain <= 0) return
+  if (!synthLive(s) || o.gain <= 0) return
   const ctx = s.ctx
   const now = ctx.currentTime
   const t0 = now + (o.delay > 0 ? o.delay : 0)
@@ -316,7 +322,7 @@ export function noiseBurst(s: Synth, kind: number, o: NoiseOpts): void {
 }
 
 export function tone(s: Synth, kind: number, o: ToneOpts): void {
-  if (!live(s) || o.gain <= 0 || o.freq <= 0) return
+  if (!synthLive(s) || o.gain <= 0 || o.freq <= 0) return
   const ctx = s.ctx
   const now = ctx.currentTime
   const t0 = now + (o.delay > 0 ? o.delay : 0)
@@ -345,7 +351,7 @@ export function tone(s: Synth, kind: number, o: ToneOpts): void {
  * 사인파 클릭은 삑 소리가 나서 못 쓴다 — 임펄스의 정체는 노이즈다.
  */
 export function click(s: Synth, kind: number, o: ClickOpts): void {
-  if (!live(s) || o.gain <= 0) return
+  if (!synthLive(s) || o.gain <= 0) return
   const ctx = s.ctx
   const now = ctx.currentTime
   const t0 = now + (o.delay > 0 ? o.delay : 0)
@@ -388,7 +394,7 @@ const BELL_DECAY_FALL = 1.1
 const BELL_PARTIALS = 4
 
 export function bellTone(s: Synth, kind: number, o: BellOpts): void {
-  if (!live(s) || o.gain <= 0 || o.freq <= 0) return
+  if (!synthLive(s) || o.gain <= 0 || o.freq <= 0) return
   const ctx = s.ctx
   const t0 = ctx.currentTime + (o.delay > 0 ? o.delay : 0)
   const scale = echoScale(s, kind, t0)

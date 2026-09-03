@@ -34,6 +34,12 @@ export interface HudState {
   canLevelUp: boolean
   /** 음소거 (M 키) */
   muted: boolean
+  /**
+   * 소리가 **열리지 않았다** — 음소거가 아닌데도 AudioContext 가 running 이 아니다.
+   * 자동재생 정책은 조용히 실패하므로, 아무 말도 안 하면 게임이 고장 난 것처럼 보인다
+   * (형: "또 소리가 안난다"). 한 줄로 사실과 해법을 같이 말한다.
+   */
+  silent: boolean
   /** 짧은 알림 한 줄. 빈 문자열이면 그리지 않는다. */
   toast: string
   /** 판이 끝난 사유 — 배너가 판정어('실패')가 아니라 사건을 말하게 한다 (감사 카피 P1). */
@@ -898,6 +904,11 @@ export function drawHud(
     ctx.font = M.fSub
     ctx.fillStyle = THEME.hudDim
     ctx.fillText('무음 · M', cam.w - M.padX, rightY)
+  } else if (hud.silent) {
+    // 브라우저가 소리를 막아둔 상태. 아무 데나 한 번 누르면 열린다 — 그 말을 여기서 한다.
+    ctx.font = M.fSub
+    ctx.fillStyle = THEME.hudDim
+    ctx.fillText('소리 잠김 · 화면을 한 번 누르면 켜짐', cam.w - M.padX, rightY)
   }
 
   drawStageCard(ctx, cam, w, t)
