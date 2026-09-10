@@ -113,8 +113,11 @@ const FILES: Readonly<Record<SampleName, readonly string[]>> = {
   clearBoss: ['jingleClearBoss'],
   unlock: ['jingleUnlock'],
   // 아래 넷은 2026-08-31 추가 (형: "sfx가 많아야해").
-  // 패배 — 짧은 부저(error_00x)에서 한 소절짜리로 (2026-09-10, CREDITS.txt 의 "임시" 를 푼다).
-  fail: ['fail_jingle'],
+  // ★ 패배음 세 번째 (2026-09-10, 형: "실패 소리 개 엉망이야. 다운받은 거 맞아?").
+  //   받은 건 맞다 — 다만 **내가 소리를 못 듣는다.** 다운로드 수만 보고 8비트 부저를 골랐던 게 잘못이다.
+  //   이제 **징**이다. 이 게임의 다른 소리가 전부 타악기라(클리어=손북·보스=타이코) 부저는 세계 밖이었다.
+  //   나머지 후보는 public/sound-picker.html 에서 형이 직접 듣고 번호로 고른다.
+  fail: ['fail_gong'],
   levelup: ['confirmation_002', 'confirmation_004'],
   thud: ['impactPunch_heavy_000', 'impactPunch_heavy_001'],
   wreck: ['impactMetal_medium_000', 'impactMetal_medium_001'],

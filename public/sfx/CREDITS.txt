@@ -53,3 +53,15 @@ fail_jingle   패배 한 소절. 'game fail' by Leszek_Szary (ID 146731) — 위
 grunt_01/02/03  맞은 사람의 신음 (살아남은 적의 몸통 명중 · 귀신은 낮게). Freesound CC0:
               'Voice_AdultMale_PainGrunts_09' by MrFossy (ID 547209) · 'male_hurt9' by micahlg (ID 413186) ·
               'Man getting hit' by Under7dude (ID 163441)
+
+── 2026-09-10 실패음 교체 (형: "실패 소리 개 엉망이야") ──
+fail_gong     징 한 번. 'gong.WAV' by BOSS MUSIC (Freesound ID 121800, CC0, 6.0초, 20,552회 내려받음).
+              왜 징인가: 이 게임의 소리는 전부 타악기다 — 클리어는 손북, 보스 클리어는 타이코.
+              8비트 부저(fail_jingle)는 그 세계 밖의 소리였다. 내가 소리를 못 듣는 탓에
+              다운로드 수만 보고 골랐던 것이 잘못이다. **후보는 형이 직접 고른다** →
+              배포 주소 뒤에 /sound-picker.html (예: https://retyper.github.io/hanbal/sound-picker.html).
+              그 페이지는 Freesound CDN 에서 바로 스트리밍하므로 게임 용량에 안 얹힌다.
+fail_jingle   (안 씀) 'game fail' by Leszek_Szary (146731). 후보로 남겨둔다.
+swing_01      환도 휘두름. 'swoosh' by PorkMuncher (263595, CC0).
+parry_01/02   패링 성공 — 쇠와 쇠. 'Sword Clash' by loudernoises (334169) ·
+              'Sword_Clash (7)' by JohnBuhr (326868). 둘을 번갈아 낸다.
