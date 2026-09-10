@@ -91,7 +91,7 @@ interface Layout {
  */
 const LAYOUTS: readonly Layout[] = [
   // ── 챕터 1 — 당김과 놓음 ─────────────────────────────────────
-  { teach: '당기고 놓는다. 그것뿐이다.', arrows: 5, hits: 1, spots: [{ x: 8, y: 1.4 }] },
+  { teach: '당기고 놓는다 — 화살이 다 떨어지면 실패다', arrows: 5, hits: 1, spots: [{ x: 8, y: 1.4 }] },
   { teach: '조준점은 손이 아니라 마우스가 정한다', arrows: 5, hits: 1, spots: [{ x: 11, y: 2.6 }] },
   { teach: '과녁이 둘이면 순서를 고른다', arrows: 6, hits: 2, spots: [{ x: 10, y: 1.5 }, { x: 14, y: 2.7 }] },
   { teach: '거리가 늘면 화살이 떨어진다 — 위로 겨눈다', arrows: 6, hits: 2, spots: [{ x: 14, y: 1.6 }, { x: 19, y: 2.8 }] },

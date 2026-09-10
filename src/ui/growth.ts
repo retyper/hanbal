@@ -178,6 +178,7 @@ const CSS = `
 @media (max-width: 640px) { .r-stage { font-size: 40px; } }
 .r-new { color: var(--accent); font-weight: 700; margin-top: 6px; }
 .r-old { color: var(--dim); margin-top: 6px; }
+.r-rule { color: var(--ink); margin-top: 8px; font-size: 13px; line-height: 1.5; }
 .r-keep { color: var(--body); margin-top: 10px; font-size: 14px; }
 .r-keep b { color: var(--accent); font-weight: 700; }
 .r-dot { color: var(--dim); margin: 0 8px; }
@@ -682,17 +683,25 @@ export function showReinforce(
   if (info.stars > 0) keeps.push(`별 <b>${info.stars}</b>`)
   if (info.molgi) keeps.push('<b>몰기</b>')
   else if (info.jung >= 3) keeps.push(`최고 <b>${info.jung}중</b>`)
+  // 실패는 '실패'라고 적는다 (형의 동생: 화살이 떨어져 실패한 줄 모르고 계속 돌았다).
   const lead = info.reason === 'death'
-    ? '쓰러졌다 — 이번 여정은'
+    ? '실패 — 쓰러졌다. 이번 여정은'
     : info.reason === 'abandon'
       ? '여정을 접었다 — 이번은'
-      : '화살이 다했다 — 이번 여정은'
+      : '실패 — 화살이 다 떨어졌다. 이번 여정은'
+  // 왜 끝났는지 규칙 한 줄. 규칙을 모르면 재정비도 "또 1판이냐"로만 읽힌다.
+  const rule = info.reason === 'defeat'
+    ? '화살이 다 떨어지기 전에 과녁을 전부 맞혀야 다음 판이다 · 남은 화살 수는 왼쪽 위에 있다'
+    : info.reason === 'death'
+      ? '기력이 0이 되면 쓰러진다 · 적의 화살은 방패로 막고, 갑옷으로 받는다'
+      : ''
   const head = document.createElement('div')
   head.className = 'r-head'
   head.innerHTML =
     '<div class="r-cap">수렵총 벽화 (고구려)</div>' +
     `<div class="r-lead">${lead}</div>` +
     `<div class="r-stage">${info.reached}판</div>` +
+    (rule !== '' ? `<div class="r-rule">${rule}</div>` : '') +
     (info.first
       ? '<div class="r-old">첫 기록 — 여기서부터 시작이다</div>'
       : info.isNew

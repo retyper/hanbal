@@ -39,6 +39,8 @@ interface Box {
   x1: number
   y1: number
   alpha: number
+  /** 화면 폭을 가로지르는 반투명 네모 — 글자 뒤에 까는 띠. 위에 얹힌 글자와의 겹침은 의도다. */
+  backdrop: boolean
 }
 
 /** 이 안에 있을 때만 기록한다 — 전체 프레임(월드 포함)을 그릴 땐 끈다. */
@@ -88,6 +90,8 @@ class Ctx2D {
       x0: Math.min(x0, x1), y0: Math.min(y0, y1),
       x1: Math.max(x0, x1), y1: Math.max(y0, y1),
       alpha: this.globalAlpha,
+      // 화면 폭 전체(±2px)에 걸친 네모는 배경 띠다 (hud.ts drawResult 의 결과 띠).
+      backdrop: kind === 'shape' && label.startsWith('네모#') && Math.abs(x1 - x0) >= CANVAS_W - 2,
     })
   }
 
@@ -198,10 +202,14 @@ class Ctx2D {
   }
 }
 
+/** 지금 프레임의 캔버스 폭 — 배경 띠 판정에 쓴다. Canvas 스텁이 크기를 바꿀 때 같이 적는다. */
+let CANVAS_W = 1280
 class Canvas {
   width = 0
   height = 0
-  clientWidth = 1280
+  _cw = 1280
+  get clientWidth(): number { return this._cw }
+  set clientWidth(v: number) { this._cw = v; CANVAS_W = v }
   clientHeight = 720
   private c2d = new Ctx2D()
   getContext(): Ctx2D {
@@ -241,6 +249,8 @@ function findOverlaps(): string[] {
       const b = boxes[j]
       if (b === undefined || b.alpha < MIN_ALPHA) continue
       if (a.kind === 'shape' && b.kind === 'shape' && b.ord - a.ord <= WIDGET_WINDOW) continue
+      // 띠 위에 나중에 그린 것은 띠가 받쳐 주는 것이지 밟는 것이 아니다.
+      if (a.backdrop && b.ord > a.ord) continue
       const ow = Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)
       const oh = Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0)
       if (ow >= MIN_OVERLAP && oh >= MIN_OVERLAP) {
@@ -266,7 +276,7 @@ const IDLE: InputFrame = { aimX: 20, aimY: 3, drawing: false, steady: false }
 /** HUD 상태는 실전값으로. toast·stars 는 결과 배너에서만 그려진다 (아래 '클리어 배너' 프레임). */
 const HUD_STATE: HudState = {
   training: 12, canLevelUp: true, muted: false, silent: false,
-  toast: '한 번 더 누르면 다음 판', arrow: '화전', stars: 2, endReason: '', time: 11.2, bestTime: 14.0, record: true,
+  toast: '한 번 더 누르면 다음 판', arrow: '화전', stars: 2, endReason: '', arrowRule: false, time: 11.2, bestTime: 14.0, record: true,
 }
 
 function makeCanvas(cw: number, ch: number): Canvas {

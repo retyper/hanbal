@@ -19,7 +19,7 @@ import { STAGES } from './stages.ts'
 const KEY = 'hanbal.save.v1'
 
 /** 현재 스키마 버전. 필드를 바꿀 때마다 +1 하고 MIGRATIONS에 한 줄 추가한다. */
-export const SCHEMA_VERSION = 13
+export const SCHEMA_VERSION = 14
 
 /**
  * 오프라인 축적의 소수부 (자원 단위). 세 자원의 축적 속도가 달라 하나로 합칠 수 없다.
@@ -177,6 +177,13 @@ export interface SaveData {
   forge: Record<string, number>
   /** 이번 여정에 지닌 부적 (game/charms.ts CharmId). 빈 문자열 = 없음. 여정이 끝나면 비운다. */
   runCharm: string
+
+  // ── v14: 새 살 안내 (2026-09-10, 형의 동생: "애기살 처음 얻을 때 활성화시킨 다음 쓰라고 나오면") ──
+  /**
+   * 한 번이라도 **들어 본** 특수살의 id (game/arrows.ts ArrowKindId). 보급으로 받았는데 여기 없는
+   * 살은 살통 버튼이 숨 쉬며 "눌러서 든다"를 말한다. 누르는 순간 들어온다. 줄지 않는다.
+   */
+  armedArrows: string[]
 }
 
 /** 저장값이 말이 되는 범위인지만 본다. 치트 방지가 아니라 NaN·Infinity 방어다 (A4: 치트 방지 안 함). */
@@ -246,6 +253,7 @@ export function defaultSave(now: number): SaveData {
     seenGrowHint: false,
     forge: {},
     runCharm: '',
+    armedArrows: [],
   }
 }
 
@@ -365,6 +373,15 @@ const MIGRATIONS: ReadonlyArray<(r: Raw) => void> = [
 
   /** v12 → v13: 대장간(forge)·부적(runCharm). 빈 값으로 올라온다 — 산 것이 없으니 빈 게 맞다. */
   () => {},
+
+  /**
+   * v13 → v14: 들어 본 살(armedArrows). 옛 세이브는 **가진 살을 전부 들어 본 것으로** 올린다 —
+   * 이미 쓰던 사람의 살통이 갑자기 전부 숨 쉬면 그건 안내가 아니라 소음이다.
+   */
+  (r) => {
+    const stock = obj(r['arrowStock'])
+    r['armedArrows'] = Object.keys(stock)
+  },
 ]
 
 function migrate(r: Raw): void {
@@ -516,6 +533,7 @@ function sanitize(r: Raw, now: number): SaveData {
     forge: sanitizeBest(r['forge']),
     // 유효성(진짜 부적 id인가)은 game/charms.ts isCharmId 가 판정한다 — 여기서는 모양만 본다.
     runCharm: typeof r['runCharm'] === 'string' && r['runCharm'].length <= 32 ? r['runCharm'] : '',
+    armedArrows: sanitizeUnlocked(r['armedArrows']),
   }
 }
 

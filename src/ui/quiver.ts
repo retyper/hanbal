@@ -32,6 +32,14 @@ const CSS = `
 .q-btn.q-on { border-color: var(--teal); color: var(--teal); }
 .q-btn.q-empty { opacity: .45; }
 .q-hint { color: var(--mute); font-size: 11px; letter-spacing: .08em; margin-bottom: 4px; }
+/* 아직 한 번도 안 들어 본 살 — 버튼이 숨 쉰다. 누르는 순간 멎는다 (save.armedArrows). */
+.q-btn.q-new { border-color: var(--accent); animation: q-breathe 1.4s ease-in-out infinite; }
+.q-hint.q-hint-new { color: var(--accent); }
+@keyframes q-breathe {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(226, 176, 80, .0); }
+  50% { box-shadow: 0 0 0 5px rgba(226, 176, 80, .35); }
+}
+@media (prefers-reduced-motion: reduce) { .q-btn.q-new { animation: none; box-shadow: 0 0 0 3px rgba(226, 176, 80, .35); } }
 `
 
 export function mountQuiver(o: Overlay, d: SaveData): void {
@@ -48,6 +56,7 @@ export function mountQuiver(o: Overlay, d: SaveData): void {
   const refresh = (): void => {
     row.replaceChildren()
     let any = false
+    let fresh = 0
     for (const k of ARROW_KINDS) {
       if (k.id === DEFAULT_ARROW) continue
       // 키가 있으면 가져본 적 있는 살이다. 0발이어도 자리는 남는다 — "다 썼다"가 보여야 아쉽다.
@@ -57,7 +66,10 @@ export function mountQuiver(o: Overlay, d: SaveData): void {
       const btn = document.createElement('button')
       btn.type = 'button'
       const armed = d.runArrow === k.id
-      btn.className = 'hb-btn q-btn' + (armed ? ' q-on' : '') + (stock <= 0 ? ' q-empty' : '')
+      // 한 번도 안 들어 본 살은 숨 쉰다 — 받은 걸 모르고 지나치지 않게 (형의 동생의 피드백).
+      const isNew = stock > 0 && d.armedArrows.indexOf(k.id) < 0
+      if (isNew) fresh++
+      btn.className = 'hb-btn q-btn' + (armed ? ' q-on' : '') + (stock <= 0 ? ' q-empty' : '') + (isNew ? ' q-new' : '')
       // 아이콘이 먼저, 이름이 다음 — 색과 도형이 글자보다 빨리 읽힌다 (ui/arrowicons.ts).
       btn.style.setProperty('--tint', ARROW_TINT[k.id])
       btn.innerHTML = `<span class="q-ic">${arrowIconSvg(k.id, 20)}</span>`
@@ -67,6 +79,7 @@ export function mountQuiver(o: Overlay, d: SaveData): void {
       btn.addEventListener('click', () => {
         // 토글 — 장전을 물리면 유엽전으로 돌아간다. 재고는 판이 시작될 때에만 줄어든다.
         d.runArrow = d.runArrow === k.id ? DEFAULT_ARROW : (k.id as ArrowKindId)
+        if (d.armedArrows.indexOf(k.id) < 0) d.armedArrows.push(k.id)
         writeSave(d)
         refresh()
       })
@@ -74,9 +87,12 @@ export function mountQuiver(o: Overlay, d: SaveData): void {
     }
     hint.textContent = !any
       ? ''
-      : d.runArrow === DEFAULT_ARROW
-        ? '살통 — 누르면 바로 바꿔 든다 · 쏠 때마다 1발씩 준다'
-        : `들고 있음: ${ARROW_KINDS.find((a) => a.id === d.runArrow)?.name ?? ''}`
+      : fresh > 0 && d.runArrow === DEFAULT_ARROW
+        ? '새 살이 들어왔다 — 눌러서 든다 · 들고 쏘면 1발씩 준다'
+        : d.runArrow === DEFAULT_ARROW
+          ? '살통 — 누르면 바로 바꿔 든다 · 쏠 때마다 1발씩 준다'
+          : `들고 있음: ${ARROW_KINDS.find((a) => a.id === d.runArrow)?.name ?? ''}`
+    hint.className = 'q-hint' + (fresh > 0 && d.runArrow === DEFAULT_ARROW ? ' q-hint-new' : '')
     wrap.style.display = any ? '' : 'none'
   }
 

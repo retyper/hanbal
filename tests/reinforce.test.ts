@@ -97,3 +97,20 @@ describe('세이브 v12 — 첫 성장 안내', () => {
     assert.equal(loadSave().seenGrowHint, true)
   })
 })
+
+describe('세이브 v14 — 들어 본 살 (새 살 안내)', () => {
+  it('새 세이브는 들어 본 살이 없다', () => {
+    assert.ok(SCHEMA_VERSION >= 14)
+    assert.deepEqual(defaultSave(0).armedArrows, [])
+  })
+
+  it('옛 세이브(v13)는 가진 살을 전부 들어 본 것으로 올린다 — 쓰던 사람의 살통이 갑자기 숨 쉬면 소음이다', () => {
+    store.set(KEY, JSON.stringify({ v: 13, arrowStock: { pierce: 3, rapid: 0 } }))
+    const a = loadSave()
+    assert.equal(a.v, SCHEMA_VERSION)
+    assert.deepEqual([...a.armedArrows].sort(), ['pierce', 'rapid'])
+    // 최신 세이브는 적힌 대로. 중복·빈 문자열은 정화된다.
+    store.set(KEY, JSON.stringify({ v: SCHEMA_VERSION, armedArrows: ['rapid', 'rapid', ''] }))
+    assert.deepEqual(loadSave().armedArrows, ['rapid'])
+  })
+})

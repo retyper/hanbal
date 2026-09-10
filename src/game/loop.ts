@@ -145,6 +145,8 @@ const HINT_BOSS = '다음은 귀신이다 — 당기면 맞선다'
 const ABANDON_MS = 2500
 /** 첫 성장 안내 토스트의 수명 (ms). 기본 토스트보다 길다 — 읽고 버튼을 찾을 시간이다. */
 const GROW_HINT_MS = 4200
+/** 처음 받은 살의 안내 한 줄이 머무는 시간. 두 문장이라 성장 안내보다 길다. */
+const NEW_ARROW_HINT_MS = 6000
 
 /**
  * 진행도 상한. 무한 구간이라 게임에는 끝이 없지만, 손상된 세이브가 1e9 을 들고 오면
@@ -243,7 +245,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   /** 소리가 잠긴 채로 흐른 프레임 수. 여기를 넘으면 화면이 알린다 (한 번 열리면 0으로 돌아간다). */
   const SILENT_FRAMES = 60
   let silentFrames = 0
-  const hud: HudState = { training: 0, canLevelUp: false, muted: false, silent: false, toast: '', arrow: '', stars: -1, endReason: '', time: 0, bestTime: 0, record: false }
+  const hud: HudState = { training: 0, canLevelUp: false, muted: false, silent: false, toast: '', arrow: '', stars: -1, endReason: '', arrowRule: false, time: 0, bestTime: 0, record: false }
 
   let raf = 0
   /** 샌드박스(실험장) — 기록의 세계 밖이다. 정산·해금·여정 종료가 전부 멈춘다. */
@@ -414,6 +416,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     hud.stars = -1
     // 기본 살은 이름을 띄우지 않는다 — 효과가 없는 걸 알릴 이유가 없고, HUD는 최소한만이다.
     hud.arrow = kind === DEFAULT_ARROW ? '' : arrowName(kind)
+    // "다 쓰면 실패"를 첫 챕터 동안 화살 수 아래 적는다 (형의 동생이 규칙을 몰라 무한 반복했다).
+    hud.arrowRule = stageIndex < BOSS_EVERY
     save.stageIndex = stageIndex
     // 판을 넘긴 그 눌림이 다음 판의 첫 발까지 이어지지 않게 에지를 소진시킨다.
     // 루프 쪽 에지만 소진하면 InputFrame.drawing 이 아직 true라 다음 스텝에 시위가 잡힌다 —
@@ -682,7 +686,11 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
           w.hp = save.runHp
           ui.toast(`숨을 골랐다 — 기력 +${heal}`, 2200)
         } else {
+          // 처음 받는 살이면 어디서 드는지 말한다 (형의 동생: "활성화시킨 다음에 쓰라고 나오면").
+          // 살통 버튼은 armedArrows 에 들어올 때까지 숨 쉰다 (ui/quiver.ts).
+          const first = !Number.isFinite(Math.floor(save.arrowStock[id] ?? Number.NaN))
           save.arrowStock[id] = Math.floor(save.arrowStock[id] ?? 0) + bundle
+          if (first) ui.toast(`${arrowName(id)} ${bundle}발 — 왼쪽 아래 살통에서 누르면 든다. 들고 쏘면 1발씩 준다`, NEW_ARROW_HINT_MS)
         }
         saveNow()
       })

@@ -42,8 +42,10 @@ export interface HudState {
   silent: boolean
   /** 짧은 알림 한 줄. 빈 문자열이면 그리지 않는다. */
   toast: string
-  /** 판이 끝난 사유 — 배너가 판정어('실패')가 아니라 사건을 말하게 한다 (감사 카피 P1). */
+  /** 판이 끝난 사유 — 배너는 '실패'를 크게, 이 사건을 그 아래 한 줄로 적는다. */
   endReason: '' | 'defeat' | 'death'
+  /** "다 쓰면 실패" 규칙 줄을 화살 수 아래에 적는가 — 첫 챕터 동안만 (loop가 정한다). */
+  arrowRule: boolean
   /**
    * 이번 판에 걸린 시간 (초, sim elapsed) · 이 판의 자기 최고 시간 · 이번에 갱신했는가.
    *
@@ -260,6 +262,10 @@ const HUD = {
   /** 세로 화면일 때 */
   resultYPortrait: 0.42,
   resultPx: 54,
+  /** 결과 글자 뒤 어두운 띠의 높이 — 큰 글자 높이의 배수. */
+  resultBandH: 1.9,
+  /** 띠가 글자 기준선 위로 올라가는 비율 (글자는 alphabetic 기준선에 앉는다). */
+  resultBandUp: 0.6,
   resultStarPx: 40,
   resultSubPx: 17,
   /** 등장 시간 (s)과 그 사이의 추가 확대. 확 들어와야 "끝났다"가 몸으로 온다. */
@@ -693,7 +699,14 @@ export function drawHud(
 
   ctx.font = M.fSub
   ctx.fillStyle = THEME.hudDim
-  ctx.fillText('발', M.padX + numW + Math.round(M.s * 6), pipY + M.countPx - px(HUD.subPx + 8, M.s))
+  const unitY = pipY + M.countPx - px(HUD.subPx + 8, M.s)
+  ctx.fillText('발', M.padX + numW + Math.round(M.s * 6), unitY)
+  // 규칙을 화면이 말한다 (2026-09-10, 형의 동생: "화살 다쓰면 실패인거 같은데 그건줄 모르고").
+  // 첫 챕터 동안만, 눈금 아래 한 줄. 규칙을 아는 사람에게는 곧 사라진다.
+  if (hud.arrowRule) {
+    ctx.fillStyle = low ? THEME.gaugeWarn : THEME.hudDim
+    ctx.fillText('다 쓰면 실패', M.padX, pipY + M.countPx + M.subGap)
+  }
 
   // 눈금 — 숫자 오른쪽에. 막대가 아니라 **진짜 화살 모양**으로 그린다.
   // 짝대기로 두면 "이게 뭐지"가 되고, 이 게임에서 가장 중요한 자원이 무엇인지 안 읽힌다.
@@ -713,7 +726,7 @@ export function drawHud(
   //
   // 0중이면 아예 안 그린다 — 초보가 처음 보는 화면에 빈 눈금 다섯이 있으면
   // "저건 뭔데 안 차지?"가 되고, 그건 격려가 아니라 질책이다.
-  const jungY = pipY + M.countPx + M.subGap
+  const jungY = pipY + M.countPx + M.subGap + (hud.arrowRule ? px(HUD.subPx, M.s) + M.subGap : 0)
   let arrowRowY = jungY
   if (w.flowHits > 0) {
     const need = Math.max(1, Math.floor(P.flow.molgiAt))
@@ -948,13 +961,32 @@ function drawResult(
   ctx.textBaseline = 'alphabetic'
   ctx.globalAlpha = inT
 
+  // ── 띠 ── 글자 뒤에 어두운 띠 하나. 밝은 하늘·언덕 위에서도 결과가 먼저 읽힌다.
+  const bandH = px(HUD.resultPx, M.s) * HUD.resultBandH
+  ctx.fillStyle = THEME.resultBand
+  ctx.fillRect(0, cy - bandH * HUD.resultBandUp, cam.w, bandH)
+
   // ── 큰 글자 ──
+  //
+  // ★ 실패는 **'실패'** 라고 크게 적는다 (2026-09-10, 형의 동생: "화살 다써서 실패하면 실패라고
+  // 큼지막하게 나오면 좋을듯" — 실패인 줄 모르고 보스가 나올 때까지 무한 반복했다).
+  // 예전 규칙("판정어가 아니라 사건을 말한다")은 사건이 곧 실패라는 걸 아는 사람에게만 통했다.
+  // 사건은 아래 줄에 적는다 — 왜 실패했는지도 같이 알아야 다음에 고친다.
   ctx.font = pop > 1.01 ? popFont(M.s, pop) : M.fResult
   ctx.fillStyle = cleared ? THEME.accent : THEME.gaugeWarn
-  ctx.fillText(cleared ? '클리어' : hud.endReason === 'death' ? '쓰러졌다' : '화살이 다했다', cx, cy)
+  ctx.fillText(cleared ? '클리어' : '실패', cx, cy)
 
   // ── 별 ── 채점이 끝나야 나온다 (stars < 0 이면 아직).
   let y = cy + px(HUD.resultStarPx, M.s) + M.cardGap
+  if (!cleared) {
+    ctx.font = M.fResultSub
+    ctx.fillStyle = THEME.hudText
+    ctx.fillText(
+      hud.endReason === 'death' ? '쓰러졌다 — 여정이 여기서 끝난다' : '화살이 다 떨어졌다 — 여정이 여기서 끝난다',
+      cx, y,
+    )
+    y += px(HUD.resultSubPx, M.s) + M.cardGap
+  }
   if (cleared && hud.stars >= 0) {
     ctx.font = M.fStar
     // 받은 별과 못 받은 별을 **한 줄에** 그린다. 못 받은 칸이 보여야 다음 목표가 생긴다.

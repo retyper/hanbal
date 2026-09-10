@@ -458,7 +458,7 @@ export function mountSupply(
     const have = Math.floor(stock[id] ?? Number.NaN)
     ;(card.querySelector('.l-syn2') as HTMLElement).textContent = Number.isFinite(have)
       ? `지금 ${have}발 → ${have + count}발`
-      : '처음 얻는 살'
+      : '처음 얻는 살 — 받은 뒤 왼쪽 아래 살통에서 눌러 든다'
     ;(parts[0] as HTMLElement).textContent = k.origin
     ;(parts[1] as HTMLElement).textContent = k.desc
     card.addEventListener('click', () => finish(id))

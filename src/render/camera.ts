@@ -59,6 +59,8 @@ export const THEME = {
   hudText: '#ccd6e0',
   gauge: '#6cc7b8',
   gaugeWarn: '#ff6a45',
+  /** 결과 글자('클리어'/'실패') 뒤에 까는 띠 — 하늘이 밝아도 글자가 먼저 읽히게 */
+  resultBand: 'rgba(12, 10, 8, 0.55)',
   gaugeBack: '#2c333d',
 
   // ── 과녁의 살 (GDD 8장: 색 수는 늘리지 않는다 — 이미 있는 셋을 띠로 나눠 쓴다) ──
