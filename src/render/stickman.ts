@@ -501,20 +501,34 @@ const SWORD = {
   sheath: '#4a3a28',
   fitting: '#c99a5e',
   fittingW: 0.035,
-  // ── 세 자세 — 손의 자리(어깨 기준 m)와 칼의 각(rad, 반시계 +) ──
-  // 허리(칼집) → 준비(뒤·위로 감긴다) → 돌진(앞·아래로 실린다). 손이 움직여야 몸무게가 실린다.
-  hipX: -0.10,
-  hipY: -0.34,
-  cockX: -0.26,
-  cockY: 0.30,
-  lungeX: 0.30,
-  lungeY: 0.02,
-  /** 준비 자세의 각 — 머리 뒤 위쪽. */
-  cockAng: 2.45,
-  /** 다 벤 뒤 — 앞·아래. 여기까지 186° 를 지난다. */
-  endAng: -0.85,
-  /** 칼집에 든 각 — 뒤·아래. 납도가 여기로 돌아간다. */
-  restAng: -2.5,
+  // ── 두 가지 베기 (2026-09-10, 형: "다음 타격은 내려치기가 되고 다음은 다시 올려치기가 되고") ──
+  //
+  // 손의 자리는 **어깨 기준 m**, 각은 rad (반시계 +, 0 = 앞). 세 점을 지난다:
+  //   hip(칼집) → mid(발도가 끝난 자리) → end(다 벤 자리)
+  //
+  // a0 → a1 은 발도의 각, a1s → a2 는 슬래시의 각이다. a1 과 a1s 는 **같은 방향**인데 표현이
+  // 다르다 — 내려베기의 발도는 칼을 **뒤로 넘겨** 올리므로(-2.5 → -3.80) 각이 음수로 계속
+  // 내려가야 하고, 이어지는 슬래시는 앞으로 떨어지므로(2.48 → -0.88) 양수에서 시작해야 한다.
+  // 둘을 한 숫자로 쓰면 lerp 가 **먼 쪽으로 돌아** 칼이 몸을 한 바퀴 감는다.
+  up: {
+    // 올려베기 — 발도술 그대로. 허리에서 뽑으면서 그대로 앞·위로 쳐올린다 (야구 스윙).
+    hipX: -0.10, hipY: -0.34,
+    midX: 0.20, midY: -0.34,
+    endX: 0.30, endY: 0.26,
+    a0: -2.5, a1: -1.75, a1s: -1.75, a2: 1.45,
+    /** 몸이 감기는 각(rad) — 뒤로 기울었다가 앞으로 풀린다. */
+    coil: -0.10, follow: 0.10,
+  },
+  down: {
+    // 내려베기 — 칼을 뒤로 넘겨 머리 위로 올렸다가 앞으로 떨어뜨린다.
+    hipX: -0.10, hipY: -0.34,
+    midX: -0.24, midY: 0.34,
+    endX: 0.32, endY: -0.10,
+    a0: -2.5, a1: -3.80, a1s: 2.48, a2: -0.88,
+    coil: -0.14, follow: 0.16,
+  },
+  /** 칼자루를 함께 쥔 두 팔의 팔꿈치 굽힘 (m). 먼 팔과 가까운 팔이 반대로 굽는다. */
+  armBend: 0.07,
   len: 0.98,
   hilt: 0.2,
   grip: 0.16,
@@ -610,6 +624,45 @@ export function drawArcher(
   const bodyCol = warn > ON.warn
     ? (BODY_RAMP[ramp] ?? THEME.body)
     : (trueFull > ON.trueFull ? THEME.target2 : THEME.body)
+
+  // ── 패링 자세 (P.parry) — **몸 전체가 같이 움직인다** ─────────────────────────
+  //
+  // 형: "환도를 허리춤에 차있잖아. 그걸 야구하듯이 허리에서 뽑아내며 휘둘러 올리고 다시 활 든
+  //      캐릭터가 보여야 한다고. 다음 타격은 내려치기가 되고 다음은 다시 올려치기가 되고."
+  //
+  // 그래서 셋을 한꺼번에 한다:
+  //   ① 활을 감춘다 (아래 `if (!parrying)`) — 같은 몸에 **든 것만** 바뀐다. 갑옷은 그대로 남는다.
+  //   ② 두 팔이 칼자루를 함께 쥔다 — 팔이 칼을 따라가야 "휘두른다"가 된다.
+  //   ③ 몸이 감겼다 풀린다 — 발을 축으로 기운다. 몸이 가만있으면 팔만 도는 인형이다.
+  // 위·아래는 sim 이 번갈아 정한다 (ArcherState.parryUp) — 렌더가 세면 판을 다시 시작할 때 어긋난다.
+  const parrying = a.parryLeft > 0
+  const pSwing = P.parry.swing
+  const pT = parrying ? clamp01(1 - a.parryLeft / pSwing) : -1
+  const pReady = pSwing > 0 ? P.parry.ready / pSwing : 0
+  const pSlash = pSwing > 0 ? (P.parry.ready + P.parry.slash) / pSwing : 0
+  const pose = a.parryUp ? SWORD.up : SWORD.down
+  let lean = 0
+  if (parrying) {
+    if (pT < pReady) lean = pose.coil * (pReady > 0 ? pT / pReady : 1)
+    else if (pT < pSlash) {
+      // 슬래시에서 감긴 것이 **한 번에** 풀린다 — 칼과 같은 감속 곡선을 탄다.
+      const u = pSlash > pReady ? (pT - pReady) / (pSlash - pReady) : 1
+      lean = lerp(pose.coil, pose.follow, 1 - Math.pow(1 - u, 2.5))
+    } else {
+      const u = pSlash < 1 ? (pT - pSlash) / (1 - pSlash) : 1
+      lean = pose.follow * (1 - smoothstep(u))
+    }
+  }
+  // 축은 **발**이다. 허리를 축으로 돌리면 다리가 같이 안 따라와 몸이 접힌다.
+  const leaning = parrying && Math.abs(lean) > 1e-4
+  if (leaning) {
+    ctx.save()
+    const fx2 = worldToScreenX(cam, a.x)
+    const fy2 = worldToScreenY(cam, 0)
+    ctx.translate(fx2, fy2)
+    ctx.rotate(lean)
+    ctx.translate(-fx2, -fy2)
+  }
 
   // ── 몸통·다리·머리 ────────────────────────────────────────────
   //
@@ -783,378 +836,393 @@ export function drawArcher(
   ctx.fill()
   ctx.stroke()
 
-  // ── 활팔 (왼팔 — 먼 쪽이라 어둡고, 활보다 먼저) ──────────────────────────────────────────
-  // 덜 조여지면 팔꿈치가 안 펴지고, 경계선을 넘으면 펴져 있던 팔꿈치가 살짝 풀리고,
-  // 경고가 오르면 확실히 더 굽으며 처진다(위의 warnDroop). 세 원인이 같은 관절에 다른 크기로 쌓인다.
-  // 왼팔은 화면에서 먼 팔이다 — 어둡게, 몸·활·시위팔 아래에 깔린다 (형의 지적).
-  ctx.strokeStyle = THEME.bodyDim
-  ctx.lineWidth = backW
-  // 활팔은 어깨에서 활 그립까지 **곧게** 뻗는다 (FORM.md 2-4). 굽는 건 잠금이 풀렸을 때(strain)와
-  // 무너질 때(warn)뿐이다. 당김이 얕다고 앞팔을 굽히지 않는다 — 초보의 미숙함은 시위손이
-  // 턱까지 못 오는 것으로 이미 말하고 있고, 여기까지 굽히면 그냥 자세가 틀린 그림이 된다.
-  limb(
-    ctx, cam, rig.sx, rig.sy, rig.hx, rig.hy,
-    -BODY.armBend * (unlock * P.render.poseStrainArm + warn * POSE.warnArm),
-  )
-
-
-  // ── 활 ────────────────────────────────────────────────────────
+  // ── 활을 든 자세 — **패링 중에는 통째로 감춘다** (2026-09-10, 형의 반려) ──
   //
-  // 실물의 원리대로 그린다 (형의 반려: "각궁이 당길 때 이상하게 구겨져 있어").
-  //   · 시위를 당기면 **휘는 림이 사수 쪽으로 젖혀지고** 팁 사이가 오므라들며,
-  //     활 몸은 과녁 쪽으로 볼록한 호가 된다. 정점은 그립 근처다.
-  //   · 각궁의 고자(활끝)는 뿔·나무 심이라 **휘지 않는다** — 당겨도 과녁 쪽으로 꺾인 채
-  //     남는다. 반곡의 실루엣은 '휘는 림 + 안 휘는 고자'의 대비가 만든다.
-  //   · 스트렁 상태(당김 0)에서도 시위가 팁을 뒤로 당겨 놓았다 (BOWPOSE.brace).
-  //   · **그립은 활손 그 점이다.** 당김이 옮기는 건 팁뿐이다 (tools/probe-form.ts가 판정한다).
-  // 경고가 오르면 경고색, 경계선을 넘으면 휨이 조금 풀린다 — 붙들고 있지 못한다는 뜻.
-  const skin = BOW_SKIN[w.bowSkin] ?? (BOW_SKIN['practice'] as BowSkin)
-  const half = rig.bowHalf
-  const limbLen = half * (1 - skin.siyah)
-  // 림 끝(고자 뿌리) — 당길수록 시위 쪽(-u)으로 젖혀지고 v로는 살짝 오므라든다.
-  // **그립은 안 움직인다.** 움직이는 건 이 두 끝뿐이다.
-  const limbV = limbLen * (1 - BOWPOSE.squeeze * rig.bowFlex)
-  const limbBack = rig.bowBack
+  // 형: "쳐낼때는 활쏘는 캐릭터 모습은 잠시 안보여야해. 가능하다면 동일한 캐릭터인데 활이
+  //      안보이고 칼을 휘두르는 캐릭터가 보여야 한다고(왜냐면 갑옷입었으면 칼쓸때 갑자기
+  //      갑옷 없어지니 어색할테니)."
+  //
+  // 맞는 말이다. 예전에는 활 든 궁수 **위에 칼이 떠 있었다** — 두 사람이 겹쳐 보였다.
+  // 이제 몸·다리·머리·갑옷은 위에서 이미 그렸고(같은 사람이다), 여기서 갈라지는 것은
+  // **손에 든 것과 두 팔**뿐이다: 활이냐 칼이냐.
+  if (!parrying) {
+    // ── 활팔 (왼팔 — 먼 쪽이라 어둡고, 활보다 먼저) ──────────────────────────────────────────
+    // 덜 조여지면 팔꿈치가 안 펴지고, 경계선을 넘으면 펴져 있던 팔꿈치가 살짝 풀리고,
+    // 경고가 오르면 확실히 더 굽으며 처진다(위의 warnDroop). 세 원인이 같은 관절에 다른 크기로 쌓인다.
+    // 왼팔은 화면에서 먼 팔이다 — 어둡게, 몸·활·시위팔 아래에 깔린다 (형의 지적).
+    ctx.strokeStyle = THEME.bodyDim
+    ctx.lineWidth = backW
+    // 활팔은 어깨에서 활 그립까지 **곧게** 뻗는다 (FORM.md 2-4). 굽는 건 잠금이 풀렸을 때(strain)와
+    // 무너질 때(warn)뿐이다. 당김이 얕다고 앞팔을 굽히지 않는다 — 초보의 미숙함은 시위손이
+    // 턱까지 못 오는 것으로 이미 말하고 있고, 여기까지 굽히면 그냥 자세가 틀린 그림이 된다.
+    limb(
+      ctx, cam, rig.sx, rig.sy, rig.hx, rig.hy,
+      -BODY.armBend * (unlock * P.render.poseStrainArm + warn * POSE.warnArm),
+    )
 
-  const baseAx = rig.hx + rig.vx * limbV - rig.ux * limbBack
-  const baseAy = rig.hy + rig.vy * limbV - rig.uy * limbBack
-  const baseBx = rig.hx - rig.vx * limbV - rig.ux * limbBack
-  const baseBy = rig.hy - rig.vy * limbV - rig.uy * limbBack
 
-  // 고자 — 림 끝에서 과녁 쪽으로 꺾인 짧은 직선. 시위는 이 끝에 걸린다.
-  const syLen = half * skin.siyah
-  let tipAx = baseAx
-  let tipAy = baseAy
-  let tipBx = baseBx
-  let tipBy = baseBy
-  if (syLen > 0) {
-    const f = skin.siyahFwd
-    const nA = Math.hypot(1 - f, f) || 1
-    tipAx = baseAx + ((rig.vx * (1 - f) + rig.ux * f) / nA) * syLen
-    tipAy = baseAy + ((rig.vy * (1 - f) + rig.uy * f) / nA) * syLen
-    tipBx = baseBx + ((-rig.vx * (1 - f) + rig.ux * f) / nA) * syLen
-    tipBy = baseBy + ((-rig.vy * (1 - f) + rig.uy * f) / nA) * syLen
-  }
+    // ── 활 ────────────────────────────────────────────────────────
+    //
+    // 실물의 원리대로 그린다 (형의 반려: "각궁이 당길 때 이상하게 구겨져 있어").
+    //   · 시위를 당기면 **휘는 림이 사수 쪽으로 젖혀지고** 팁 사이가 오므라들며,
+    //     활 몸은 과녁 쪽으로 볼록한 호가 된다. 정점은 그립 근처다.
+    //   · 각궁의 고자(활끝)는 뿔·나무 심이라 **휘지 않는다** — 당겨도 과녁 쪽으로 꺾인 채
+    //     남는다. 반곡의 실루엣은 '휘는 림 + 안 휘는 고자'의 대비가 만든다.
+    //   · 스트렁 상태(당김 0)에서도 시위가 팁을 뒤로 당겨 놓았다 (BOWPOSE.brace).
+    //   · **그립은 활손 그 점이다.** 당김이 옮기는 건 팁뿐이다 (tools/probe-form.ts가 판정한다).
+    // 경고가 오르면 경고색, 경계선을 넘으면 휨이 조금 풀린다 — 붙들고 있지 못한다는 뜻.
+    const skin = BOW_SKIN[w.bowSkin] ?? (BOW_SKIN['practice'] as BowSkin)
+    const half = rig.bowHalf
+    const limbLen = half * (1 - skin.siyah)
+    // 림 끝(고자 뿌리) — 당길수록 시위 쪽(-u)으로 젖혀지고 v로는 살짝 오므라든다.
+    // **그립은 안 움직인다.** 움직이는 건 이 두 끝뿐이다.
+    const limbV = limbLen * (1 - BOWPOSE.squeeze * rig.bowFlex)
+    const limbBack = rig.bowBack
 
-  // 만작에 닿는 순간만 밝게 튄다. 당김(고요) → 만작(떨림) 전환의 신호.
-  ctx.strokeStyle = warn > ON.warn
-    ? (BOW_RAMP[ramp] ?? THEME.bow)
-    : (rig.flash > ON.flash ? THEME.target2 : skin.color)
-  ctx.lineWidth = bowW
-  ctx.lineJoin = 'round'
-  // 손잡이(라이저) — 그립을 중심으로 위아래로 **곧게** 뻗는 짧은 구간.
-  // 손이 쥘 것이 있어야 쥔 그림이 된다. 여기가 활의 원점이고, 당겨도 움직이지 않는다.
-  const riserV = half * BOWPOSE.riser
-  const risAx = rig.hx + rig.vx * riserV
-  const risAy = rig.hy + rig.vy * riserV
-  const risBx = rig.hx - rig.vx * riserV
-  const risBy = rig.hy - rig.vy * riserV
-  // 라이저 끝 → 팁: 밖으로 나가며 사수 쪽으로 젖혀진다. 제어점이 코드보다 앞(+u)이라
-  // 호가 과녁 쪽으로 볼록해진다 — 그립이 활의 가장 앞이다.
-  const cAv = riserV + (limbV - riserV) * BOWPOSE.ctrlV
-  const cU = limbBack * BOWPOSE.ctrlBack
-  ctx.beginPath()
-  ctx.moveTo(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy))
-  ctx.lineTo(worldToScreenX(cam, baseAx), worldToScreenY(cam, baseAy))
-  ctx.quadraticCurveTo(
-    worldToScreenX(cam, rig.hx + rig.vx * cAv - rig.ux * cU),
-    worldToScreenY(cam, rig.hy + rig.vy * cAv - rig.uy * cU),
-    worldToScreenX(cam, risAx), worldToScreenY(cam, risAy),
-  )
-  ctx.lineTo(worldToScreenX(cam, risBx), worldToScreenY(cam, risBy))
-  ctx.quadraticCurveTo(
-    worldToScreenX(cam, rig.hx - rig.vx * cAv - rig.ux * cU),
-    worldToScreenY(cam, rig.hy - rig.vy * cAv - rig.uy * cU),
-    worldToScreenX(cam, baseBx), worldToScreenY(cam, baseBy),
-  )
-  ctx.lineTo(worldToScreenX(cam, tipBx), worldToScreenY(cam, tipBy))
-  ctx.stroke()
+    const baseAx = rig.hx + rig.vx * limbV - rig.ux * limbBack
+    const baseAy = rig.hy + rig.vy * limbV - rig.uy * limbBack
+    const baseBx = rig.hx - rig.vx * limbV - rig.ux * limbBack
+    const baseBy = rig.hy - rig.vy * limbV - rig.uy * limbBack
 
-  if (skin.stab > 0) {
-    // 리커브의 안정기 — 그립에서 과녁 쪽으로 뻗는 가는 막대.
-    ctx.lineWidth = Math.max(lw * LINE.stringMul * 1.4, thinPx)
-    ctx.beginPath()
-    ctx.moveTo(worldToScreenX(cam, rig.hx), worldToScreenY(cam, rig.hy))
-    ctx.lineTo(worldToScreenX(cam, rig.hx + rig.ux * skin.stab), worldToScreenY(cam, rig.hy + rig.uy * skin.stab))
-    ctx.stroke()
-    ctx.lineWidth = bowW
-  }
-
-  // ── 활손(왼손)의 주먹 — **활대를 쥐었다**는 못. ─────────────────────────────
-  // 형의 반려: "손이 활을 안 잡고 붕 떠 있다." 선 두 개가 한 점에서 만나는 것만으로는
-  // 쥐었다고 안 읽힌다. 라이저 위에 살점이 있어야 한다. 몸색으로 칠해야 손이다.
-  ctx.fillStyle = bodyCol
-  ctx.beginPath()
-  ctx.arc(
-    worldToScreenX(cam, rig.hx), worldToScreenY(cam, rig.hy),
-    Math.max(limbW * BOWPOSE.fist, thinPx * 1.6), 0, TAU,
-  )
-  ctx.fill()
-
-  // 시위 — 몸보다 훨씬 얇다. 고자 끝에 걸린다.
-  // 당기는 동안만 노크로 꺾인다. 놓으면 **시위만** 제자리로 튕겨 돌아가 잠깐 잔떨림이 남는다 —
-  // 손은 위의 팔로스루가 따로 데려간다 (형: "활줄만 튕겨 돌아오고").
-  ctx.strokeStyle = rig.flash > ON.flash ? THEME.target2 : THEME.string
-  ctx.lineWidth = Math.max(lw * LINE.stringMul, thinPx)
-  ctx.beginPath()
-  ctx.moveTo(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy))
-  const strDrawing = a.phase === 'drawing' || a.phase === 'full' || a.phase === 'collapsing'
-  if (strDrawing) {
-    ctx.lineTo(worldToScreenX(cam, rig.nockX), worldToScreenY(cam, rig.nockY))
-  } else {
-    const vt = relAnim.at >= 0 ? Math.max(0, w.elapsed - relAnim.at) : 1e9
-    if (vt < P.release.vibDecay * 3) {
-      // 잔떨림 — 시위 중앙이 u축으로 감쇠 진동한다. 이게 "튕겨 돌아왔다"의 마침표다.
-      const amp = P.release.vib * Math.exp(-vt / P.release.vibDecay) * Math.sin(vt * P.release.vibHz * TAU)
-      const mx = (tipAx + tipBx) * 0.5 + rig.ux * amp
-      const my = (tipAy + tipBy) * 0.5 + rig.uy * amp
-      ctx.lineTo(worldToScreenX(cam, mx), worldToScreenY(cam, my))
+    // 고자 — 림 끝에서 과녁 쪽으로 꺾인 짧은 직선. 시위는 이 끝에 걸린다.
+    const syLen = half * skin.siyah
+    let tipAx = baseAx
+    let tipAy = baseAy
+    let tipBx = baseBx
+    let tipBy = baseBy
+    if (syLen > 0) {
+      const f = skin.siyahFwd
+      const nA = Math.hypot(1 - f, f) || 1
+      tipAx = baseAx + ((rig.vx * (1 - f) + rig.ux * f) / nA) * syLen
+      tipAy = baseAy + ((rig.vy * (1 - f) + rig.uy * f) / nA) * syLen
+      tipBx = baseBx + ((-rig.vx * (1 - f) + rig.ux * f) / nA) * syLen
+      tipBy = baseBy + ((-rig.vy * (1 - f) + rig.uy * f) / nA) * syLen
     }
-  }
-  ctx.lineTo(worldToScreenX(cam, tipBx), worldToScreenY(cam, tipBy))
-  ctx.stroke()
 
-  if (skin.cam > 0) {
-    // 컴파운드 — 캠(도르래)과 팁 사이를 가로지르는 케이블. 이게 보여야 "기계 활"로 읽힌다.
+    // 만작에 닿는 순간만 밝게 튄다. 당김(고요) → 만작(떨림) 전환의 신호.
+    ctx.strokeStyle = warn > ON.warn
+      ? (BOW_RAMP[ramp] ?? THEME.bow)
+      : (rig.flash > ON.flash ? THEME.target2 : skin.color)
+    ctx.lineWidth = bowW
+    ctx.lineJoin = 'round'
+    // 손잡이(라이저) — 그립을 중심으로 위아래로 **곧게** 뻗는 짧은 구간.
+    // 손이 쥘 것이 있어야 쥔 그림이 된다. 여기가 활의 원점이고, 당겨도 움직이지 않는다.
+    const riserV = half * BOWPOSE.riser
+    const risAx = rig.hx + rig.vx * riserV
+    const risAy = rig.hy + rig.vy * riserV
+    const risBx = rig.hx - rig.vx * riserV
+    const risBy = rig.hy - rig.vy * riserV
+    // 라이저 끝 → 팁: 밖으로 나가며 사수 쪽으로 젖혀진다. 제어점이 코드보다 앞(+u)이라
+    // 호가 과녁 쪽으로 볼록해진다 — 그립이 활의 가장 앞이다.
+    const cAv = riserV + (limbV - riserV) * BOWPOSE.ctrlV
+    const cU = limbBack * BOWPOSE.ctrlBack
     ctx.beginPath()
     ctx.moveTo(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy))
+    ctx.lineTo(worldToScreenX(cam, baseAx), worldToScreenY(cam, baseAy))
+    ctx.quadraticCurveTo(
+      worldToScreenX(cam, rig.hx + rig.vx * cAv - rig.ux * cU),
+      worldToScreenY(cam, rig.hy + rig.vy * cAv - rig.uy * cU),
+      worldToScreenX(cam, risAx), worldToScreenY(cam, risAy),
+    )
+    ctx.lineTo(worldToScreenX(cam, risBx), worldToScreenY(cam, risBy))
+    ctx.quadraticCurveTo(
+      worldToScreenX(cam, rig.hx - rig.vx * cAv - rig.ux * cU),
+      worldToScreenY(cam, rig.hy - rig.vy * cAv - rig.uy * cU),
+      worldToScreenX(cam, baseBx), worldToScreenY(cam, baseBy),
+    )
     ctx.lineTo(worldToScreenX(cam, tipBx), worldToScreenY(cam, tipBy))
     ctx.stroke()
-    const r = Math.max(bowW * 1.6, 2.5 * shrink)
-    ctx.fillStyle = skin.color
+
+    if (skin.stab > 0) {
+      // 리커브의 안정기 — 그립에서 과녁 쪽으로 뻗는 가는 막대.
+      ctx.lineWidth = Math.max(lw * LINE.stringMul * 1.4, thinPx)
+      ctx.beginPath()
+      ctx.moveTo(worldToScreenX(cam, rig.hx), worldToScreenY(cam, rig.hy))
+      ctx.lineTo(worldToScreenX(cam, rig.hx + rig.ux * skin.stab), worldToScreenY(cam, rig.hy + rig.uy * skin.stab))
+      ctx.stroke()
+      ctx.lineWidth = bowW
+    }
+
+    // ── 활손(왼손)의 주먹 — **활대를 쥐었다**는 못. ─────────────────────────────
+    // 형의 반려: "손이 활을 안 잡고 붕 떠 있다." 선 두 개가 한 점에서 만나는 것만으로는
+    // 쥐었다고 안 읽힌다. 라이저 위에 살점이 있어야 한다. 몸색으로 칠해야 손이다.
+    ctx.fillStyle = bodyCol
     ctx.beginPath()
-    ctx.arc(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy), r, 0, TAU)
-    ctx.arc(worldToScreenX(cam, tipBx), worldToScreenY(cam, tipBy), r, 0, TAU)
-    ctx.fill()
-  }
-
-  // ── 시위팔 (오른팔 — 가까운 쪽이라 밝고, 맨 위에) ─────────────────────────────────────
-  // 덜 당겨진 팔은 팔꿈치가 안 접힌다 — 초보가 "어정쩡한 지점에서 멈춘" 그 모양.
-  // 진짜 만작에서만 팔꿈치가 어깨 뒤로 깊게 접혀 팔이 완전히 접힌 실루엣이 된다.
-  // 오른팔은 보는 사람 쪽 팔이다 — 밝게, 활·시위 위에 얹힌다 (형의 지적).
-  ctx.strokeStyle = bodyCol
-  ctx.lineWidth = limbW
-  //
-  // ★ 사법의 핵심 (docs/FORM.md 2-5): 활손 → 노크 → 아랫팔 → 팔꿈치가 **한 직선**이고,
-  //   팔꿈치는 화살선보다 **위**에 있다. 아래로 처지면 '닭날개'라 불리는 초보 자세가 된다.
-  //   그래서 팔꿈치를 노크에서 화살선 뒤로 곧게 물리고, v축으로 살짝만 들어올린다.
-  //   당김이 얕을수록(초보) 이 들어올림이 줄어 팔꿈치가 처진다.
-  const elbowRise = BODY.elbowRise
-    * lerp(POSE.slouchElbow, 1, brace)
-    * lerp(1, POSE.fullElbow, trueFull)
-    * (1 - unlock * P.render.poseStrainElbow)
-  // 팔은 시위가 아니라 **손**을 따른다 — 놓은 뒤 시위는 튕겨 돌아가도 팔은 남는다.
-  const elbowX = rig.hdX - rig.ux * BODY.elbowBack + rig.vx * elbowRise
-  const elbowY = rig.hdY - rig.uy * BODY.elbowBack + rig.vy * elbowRise
-  ctx.beginPath()
-  ctx.moveTo(worldToScreenX(cam, rig.sx), worldToScreenY(cam, rig.sy))
-  ctx.lineTo(worldToScreenX(cam, elbowX), worldToScreenY(cam, elbowY))
-  ctx.lineTo(worldToScreenX(cam, rig.hdX), worldToScreenY(cam, rig.hdY))
-  ctx.stroke()
-
-  // 시위손(오른손)의 주먹 — **줄을 쥐었다**는 못. 당기는 동안은 노크 그 자리이므로
-  // 주먹이 시위의 꺾이는 꼭짓점에 정확히 얹힌다. 놓은 뒤에는 시위와 헤어져 팔로스루를 따라간다.
-  ctx.fillStyle = bodyCol
-  ctx.beginPath()
-  ctx.arc(
-    worldToScreenX(cam, rig.hdX), worldToScreenY(cam, rig.hdY),
-    Math.max(limbW * BOWPOSE.fist, thinPx * 1.6), 0, TAU,
-  )
-  ctx.fill()
-
-
-  // ── 물린 화살 · 통아 ──────────────────────────────────────────
-  // 몸보다 얇고 밝게. 촉만 강조색 — 강조색은 과녁과 화살에만 (GDD 8장).
-  //
-  // ★ 애기살(편전)은 **통아에 얹어 쏜다** (docs/BOWS.md). 통아는 화살 길이의 나무 홈통으로,
-  //   시위 손에 쥔 채 짧은 살의 활주로가 되고, **쏜 뒤에도 손에 남는다** — 날아가는 건
-  //   반 길이의 애기살뿐이다. 그래서 통아는 recovering에도 그린다 (형의 힌트 그대로).
-  const pierce = w.arrowKind === 'pierce'
-  if (pierce) {
-    // 통아 — **애기살을 장전한 동안 언제나 시위 손에 있다** (형: "여전히 안 보이는데" —
-    // 예전엔 idle에서 숨겼고, 당길 땐 화살 선과 정확히 겹쳐 안 읽혔다).
-    // 당길 땐 화살선과 수평인 활주로, 놓으면 끈에 매달려 손에서 덜렁거리고,
-    // 가만히 있을 땐 손에서 아래로 늘어져 있다. 각도는 시간의 순수 함수다.
-    const tongDrawing = a.phase === 'drawing' || a.phase === 'full' || a.phase === 'collapsing'
-    let tx: number
-    let ty: number
-    if (tongDrawing) {
-      tx = rig.ux
-      ty = rig.uy
-    } else {
-      const t = relAnim.at >= 0 ? Math.max(0, w.elapsed - relAnim.at) : 1e9
-      const hang = -Math.PI / 2
-      const aim = Math.atan2(rig.uy, rig.ux)
-      // 낙하: 조준각 → 매달림. 0.35s에 걸쳐 떨어지고, 그 위에 감쇠 흔들림이 얹힌다.
-      const drop = smoothstep(Math.min(1, t / 0.35))
-      const swing = Math.exp(-t / 0.6) * Math.sin(t * 7) * 0.5
-      const ang = aim + (hang - aim) * drop + swing * drop
-      tx = Math.cos(ang)
-      ty = Math.sin(ang)
-    }
-    // 통아는 **외짝 막대**다 (형의 교정). 당길 때 화살이 그 위에 얹히므로 화살선보다
-    // 반 굵기 아래(-v)로 비껴 그린다 — 하나여도 화살에 안 묻힌다.
-    const under = 0.05
-    const ox = -ty * under
-    const oy = tx * under
-    ctx.lineWidth = Math.max(lw * LINE.arrowMul * 1.6, thinPx * 1.8)
-    ctx.strokeStyle = THEME.bow
-    line(
-      ctx, cam, rig.hdX - ox, rig.hdY - oy,
-      rig.hdX + tx * BODY.arrowLen - ox, rig.hdY + ty * BODY.arrowLen - oy,
+    ctx.arc(
+      worldToScreenX(cam, rig.hx), worldToScreenY(cam, rig.hy),
+      Math.max(limbW * BOWPOSE.fist, thinPx * 1.6), 0, TAU,
     )
-  }
-  if (a.phase !== 'idle' && a.phase !== 'recovering') {
-    // 애기살은 반 길이 — 통아 위를 미끄러진다. 보통 살은 제 길이.
-    const len = pierce ? BODY.arrowLen * 0.52 : BODY.arrowLen
-    const tipX = rig.nockX + rig.ux * len
-    const tipY = rig.nockY + rig.uy * len
-    ctx.lineWidth = Math.max(lw * LINE.arrowMul, thinPx)
-    ctx.strokeStyle = THEME.arrow
-    line(ctx, cam, rig.nockX, rig.nockY, tipX, tipY)
-    ctx.strokeStyle = THEME.accent
-    line(ctx, cam, tipX - rig.ux * BODY.arrowHead, tipY - rig.uy * BODY.arrowHead, tipX, tipY)
-  }
+    ctx.fill()
 
-  // ── 패링 — 발도 · 슬래시 · 납도. 순식간에 지나간다 (P.parry, 2026-09-10) ──
-  //
-  // 형의 반려: **"모션도 박진감있게 준비자세, 발도, 빠르게 휘두르기, 이런게 순식간에 지나가야해.
-  //             원에 막대가 표면타고 흘러가는 수준의 게임을 하고싶겠냐고."**
-  //
-  // 맞는 지적이었다. 예전 것은 어깨를 축으로 막대 하나가 **일정한 속도로** 호를 따라 돌 뿐이었다.
-  // 일정한 속도에는 무게도 의도도 없다. 실제로 칼을 휘두르면 셋이 순서대로 일어난다:
-  //
-  //   ① 발도 (0.11초) — 칼이 칼집에서 **뽑혀 나오며** 뒤·위로 젖혀진다. 손이 뒤로 빠지며 몸이 감긴다.
-  //   ② 슬래시 (0.07초) — 머리 위를 넘어 앞으로 **한 번에** 떨어진다. 각의 대부분을 첫 두 프레임에
-  //      써 버리고(감속 곡선), 지나간 자리에 부채꼴 잔상이 남는다. 이 두 프레임이 이 기능의 전부다.
-  //   ③ 납도 (나머지) — 끝자세에서 손이 허리로 돌아가고 칼날이 칼집으로 빨려 들어간다.
-  //
-  // 길이는 P.parry.ready / slash 가 정하고, 자세(손 위치·각)는 아래 SWORD 가 정한다.
-  // 각과 위치는 **시간의 순수 함수**다 — 렌더는 상태를 만들지 않는다 (A1).
-  {
-    const swing = P.parry.swing
-    const tRe = swing > 0 ? P.parry.ready / swing : 0
-    const tSl = swing > 0 ? (P.parry.ready + P.parry.slash) / swing : 0
-    const t = a.parryLeft > 0 ? clamp01(1 - a.parryLeft / swing) : -1
-    // 손의 자리는 어깨 기준이다 — 어깨가 곧 칼을 휘두르는 축이다.
-    const hx0 = rig.sx
-    const hy0 = rig.sy
-    let ang: number = SWORD.cockAng
-    let gx = hx0 + SWORD.hipX
-    let gy = hy0 + SWORD.hipY
-    let len = 0
-    let smear = -1
-
-    if (t < 0) {
-      // ── 차고 있다 — 칼집과 코등이. 안 휘두를 때도 **보인다** (형: "환도를 들고있는 캐릭터로").
-      ctx.strokeStyle = SWORD.sheath
-      ctx.lineWidth = Math.max(1.6, cam.scale * SWORD.sheathW)
-      line(ctx, cam, pelvisX - 0.02, pelvisY + 0.02, pelvisX - SWORD.sheathLen, pelvisY - SWORD.sheathDrop)
-      ctx.strokeStyle = SWORD.fitting
-      ctx.lineWidth = Math.max(1.2, cam.scale * SWORD.fittingW)
-      line(ctx, cam, pelvisX + 0.03, pelvisY + 0.05, pelvisX - 0.08, pelvisY - 0.02)
-    } else if (t < tRe) {
-      // ── ① 발도 — 세제곱 감속. 확 뽑히고 준비 자세에서 멎는다.
-      const e = 1 - Math.pow(1 - (tRe > 0 ? t / tRe : 1), 3)
-      ang = SWORD.cockAng
-      gx = hx0 + lerp(SWORD.hipX, SWORD.cockX, e)
-      gy = hy0 + lerp(SWORD.hipY, SWORD.cockY, e)
-      // 칼날이 칼집에서 **자라 나온다** — 이게 회전보다 훨씬 또렷하게 "뽑았다"로 읽힌다.
-      len = SWORD.len * e
-    } else if (t < tSl) {
-      // ── ② 슬래시 — 각의 대부분을 첫 두 프레임에 쓴다 (2.5제곱 감속).
-      const u = tSl > tRe ? (t - tRe) / (tSl - tRe) : 1
-      const e = 1 - Math.pow(1 - u, 2.5)
-      ang = lerp(SWORD.cockAng, SWORD.endAng, e)
-      gx = hx0 + lerp(SWORD.cockX, SWORD.lungeX, e)
-      gy = hy0 + lerp(SWORD.cockY, SWORD.lungeY, e)
-      len = SWORD.len
-      smear = SWORD.cockAng
+    // 시위 — 몸보다 훨씬 얇다. 고자 끝에 걸린다.
+    // 당기는 동안만 노크로 꺾인다. 놓으면 **시위만** 제자리로 튕겨 돌아가 잠깐 잔떨림이 남는다 —
+    // 손은 위의 팔로스루가 따로 데려간다 (형: "활줄만 튕겨 돌아오고").
+    ctx.strokeStyle = rig.flash > ON.flash ? THEME.target2 : THEME.string
+    ctx.lineWidth = Math.max(lw * LINE.stringMul, thinPx)
+    ctx.beginPath()
+    ctx.moveTo(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy))
+    const strDrawing = a.phase === 'drawing' || a.phase === 'full' || a.phase === 'collapsing'
+    if (strDrawing) {
+      ctx.lineTo(worldToScreenX(cam, rig.nockX), worldToScreenY(cam, rig.nockY))
     } else {
-      // ── ③ 납도 — 끝자세에서 허리로. 잔상은 첫 절반 동안만 남아 사그라든다.
-      const u = tSl < 1 ? (t - tSl) / (1 - tSl) : 1
-      const e = smoothstep(u)
-      ang = lerp(SWORD.endAng, SWORD.restAng, e)
-      gx = hx0 + lerp(SWORD.lungeX, SWORD.hipX, e)
-      gy = hy0 + lerp(SWORD.lungeY, SWORD.hipY, e)
-      len = SWORD.len * (1 - e)
-      if (u < 0.5) smear = SWORD.cockAng
+      const vt = relAnim.at >= 0 ? Math.max(0, w.elapsed - relAnim.at) : 1e9
+      if (vt < P.release.vibDecay * 3) {
+        // 잔떨림 — 시위 중앙이 u축으로 감쇠 진동한다. 이게 "튕겨 돌아왔다"의 마침표다.
+        const amp = P.release.vib * Math.exp(-vt / P.release.vibDecay) * Math.sin(vt * P.release.vibHz * TAU)
+        const mx = (tipAx + tipBx) * 0.5 + rig.ux * amp
+        const my = (tipAy + tipBy) * 0.5 + rig.uy * amp
+        ctx.lineTo(worldToScreenX(cam, mx), worldToScreenY(cam, my))
+      }
+    }
+    ctx.lineTo(worldToScreenX(cam, tipBx), worldToScreenY(cam, tipBy))
+    ctx.stroke()
+
+    if (skin.cam > 0) {
+      // 컴파운드 — 캠(도르래)과 팁 사이를 가로지르는 케이블. 이게 보여야 "기계 활"로 읽힌다.
+      ctx.beginPath()
+      ctx.moveTo(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy))
+      ctx.lineTo(worldToScreenX(cam, tipBx), worldToScreenY(cam, tipBy))
+      ctx.stroke()
+      const r = Math.max(bowW * 1.6, 2.5 * shrink)
+      ctx.fillStyle = skin.color
+      ctx.beginPath()
+      ctx.arc(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy), r, 0, TAU)
+      ctx.arc(worldToScreenX(cam, tipBx), worldToScreenY(cam, tipBy), r, 0, TAU)
+      ctx.fill()
     }
 
-    if (t >= 0 && len > 0.02) {
-      const dx = Math.cos(ang)
-      const dy = Math.sin(ang)
-      const sx2 = worldToScreenX(cam, gx)
-      const sy2 = worldToScreenY(cam, gy)
+    // ── 시위팔 (오른팔 — 가까운 쪽이라 밝고, 맨 위에) ─────────────────────────────────────
+    // 덜 당겨진 팔은 팔꿈치가 안 접힌다 — 초보가 "어정쩡한 지점에서 멈춘" 그 모양.
+    // 진짜 만작에서만 팔꿈치가 어깨 뒤로 깊게 접혀 팔이 완전히 접힌 실루엣이 된다.
+    // 오른팔은 보는 사람 쪽 팔이다 — 밝게, 활·시위 위에 얹힌다 (형의 지적).
+    ctx.strokeStyle = bodyCol
+    ctx.lineWidth = limbW
+    //
+    // ★ 사법의 핵심 (docs/FORM.md 2-5): 활손 → 노크 → 아랫팔 → 팔꿈치가 **한 직선**이고,
+    //   팔꿈치는 화살선보다 **위**에 있다. 아래로 처지면 '닭날개'라 불리는 초보 자세가 된다.
+    //   그래서 팔꿈치를 노크에서 화살선 뒤로 곧게 물리고, v축으로 살짝만 들어올린다.
+    //   당김이 얕을수록(초보) 이 들어올림이 줄어 팔꿈치가 처진다.
+    const elbowRise = BODY.elbowRise
+      * lerp(POSE.slouchElbow, 1, brace)
+      * lerp(1, POSE.fullElbow, trueFull)
+      * (1 - unlock * P.render.poseStrainElbow)
+    // 팔은 시위가 아니라 **손**을 따른다 — 놓은 뒤 시위는 튕겨 돌아가도 팔은 남는다.
+    const elbowX = rig.hdX - rig.ux * BODY.elbowBack + rig.vx * elbowRise
+    const elbowY = rig.hdY - rig.uy * BODY.elbowBack + rig.vy * elbowRise
+    ctx.beginPath()
+    ctx.moveTo(worldToScreenX(cam, rig.sx), worldToScreenY(cam, rig.sy))
+    ctx.lineTo(worldToScreenX(cam, elbowX), worldToScreenY(cam, elbowY))
+    ctx.lineTo(worldToScreenX(cam, rig.hdX), worldToScreenY(cam, rig.hdY))
+    ctx.stroke()
+
+    // 시위손(오른손)의 주먹 — **줄을 쥐었다**는 못. 당기는 동안은 노크 그 자리이므로
+    // 주먹이 시위의 꺾이는 꼭짓점에 정확히 얹힌다. 놓은 뒤에는 시위와 헤어져 팔로스루를 따라간다.
+    ctx.fillStyle = bodyCol
+    ctx.beginPath()
+    ctx.arc(
+      worldToScreenX(cam, rig.hdX), worldToScreenY(cam, rig.hdY),
+      Math.max(limbW * BOWPOSE.fist, thinPx * 1.6), 0, TAU,
+    )
+    ctx.fill()
+
+
+    // ── 물린 화살 · 통아 ──────────────────────────────────────────
+    // 몸보다 얇고 밝게. 촉만 강조색 — 강조색은 과녁과 화살에만 (GDD 8장).
+    //
+    // ★ 애기살(편전)은 **통아에 얹어 쏜다** (docs/BOWS.md). 통아는 화살 길이의 나무 홈통으로,
+    //   시위 손에 쥔 채 짧은 살의 활주로가 되고, **쏜 뒤에도 손에 남는다** — 날아가는 건
+    //   반 길이의 애기살뿐이다. 그래서 통아는 recovering에도 그린다 (형의 힌트 그대로).
+    const pierce = w.arrowKind === 'pierce'
+    if (pierce) {
+      // 통아 — **애기살을 장전한 동안 언제나 시위 손에 있다** (형: "여전히 안 보이는데" —
+      // 예전엔 idle에서 숨겼고, 당길 땐 화살 선과 정확히 겹쳐 안 읽혔다).
+      // 당길 땐 화살선과 수평인 활주로, 놓으면 끈에 매달려 손에서 덜렁거리고,
+      // 가만히 있을 땐 손에서 아래로 늘어져 있다. 각도는 시간의 순수 함수다.
+      const tongDrawing = a.phase === 'drawing' || a.phase === 'full' || a.phase === 'collapsing'
+      let tx: number
+      let ty: number
+      if (tongDrawing) {
+        tx = rig.ux
+        ty = rig.uy
+      } else {
+        const t = relAnim.at >= 0 ? Math.max(0, w.elapsed - relAnim.at) : 1e9
+        const hang = -Math.PI / 2
+        const aim = Math.atan2(rig.uy, rig.ux)
+        // 낙하: 조준각 → 매달림. 0.35s에 걸쳐 떨어지고, 그 위에 감쇠 흔들림이 얹힌다.
+        const drop = smoothstep(Math.min(1, t / 0.35))
+        const swing = Math.exp(-t / 0.6) * Math.sin(t * 7) * 0.5
+        const ang = aim + (hang - aim) * drop + swing * drop
+        tx = Math.cos(ang)
+        ty = Math.sin(ang)
+      }
+      // 통아는 **외짝 막대**다 (형의 교정). 당길 때 화살이 그 위에 얹히므로 화살선보다
+      // 반 굵기 아래(-v)로 비껴 그린다 — 하나여도 화살에 안 묻힌다.
+      const under = 0.05
+      const ox = -ty * under
+      const oy = tx * under
+      ctx.lineWidth = Math.max(lw * LINE.arrowMul * 1.6, thinPx * 1.8)
+      ctx.strokeStyle = THEME.bow
+      line(
+        ctx, cam, rig.hdX - ox, rig.hdY - oy,
+        rig.hdX + tx * BODY.arrowLen - ox, rig.hdY + ty * BODY.arrowLen - oy,
+      )
+    }
+    if (a.phase !== 'idle' && a.phase !== 'recovering') {
+      // 애기살은 반 길이 — 통아 위를 미끄러진다. 보통 살은 제 길이.
+      const len = pierce ? BODY.arrowLen * 0.52 : BODY.arrowLen
+      const tipX = rig.nockX + rig.ux * len
+      const tipY = rig.nockY + rig.uy * len
+      ctx.lineWidth = Math.max(lw * LINE.arrowMul, thinPx)
+      ctx.strokeStyle = THEME.arrow
+      line(ctx, cam, rig.nockX, rig.nockY, tipX, tipY)
+      ctx.strokeStyle = THEME.accent
+      line(ctx, cam, tipX - rig.ux * BODY.arrowHead, tipY - rig.uy * BODY.arrowHead, tipX, tipY)
+    }
+
+  }
+
+  // ── 칼 — 허리에서 뽑아 한 번에 벤다 (P.parry · SWORD) ────────────────────────
+  //
+  // 세 박자다: ① 발도(칼이 칼집에서 자라 나오며 손이 뒤로/위로 감긴다) → ② 슬래시(각의
+  // 대부분이 첫 두 프레임에 지나가고 채운 부채꼴 잔상이 남는다) → ③ 납도(손이 허리로 돌아간다).
+  // 각과 손자리는 **시간의 순수 함수**다 — 렌더는 상태를 만들지 않는다 (A1).
+  {
+    // 칼집은 **언제나** 허리에 있다. 칼을 뽑았다고 칼집이 사라지지 않는다 —
+    // 이게 있어야 "허리에서 뽑았다"가 읽힌다 (형: "환도를 허리춤에 차있잖아").
+    ctx.strokeStyle = SWORD.sheath
+    ctx.lineWidth = Math.max(1.6, cam.scale * SWORD.sheathW)
+    line(ctx, cam, pelvisX - 0.02, pelvisY + 0.02, pelvisX - SWORD.sheathLen, pelvisY - SWORD.sheathDrop)
+    ctx.strokeStyle = SWORD.fitting
+    ctx.lineWidth = Math.max(1.2, cam.scale * SWORD.fittingW)
+    line(ctx, cam, pelvisX + 0.03, pelvisY + 0.05, pelvisX - 0.08, pelvisY - 0.02)
+
+    if (parrying) {
+      let ang: number = pose.a0
+      let gx = rig.sx + pose.hipX
+      let gy = rig.sy + pose.hipY
+      let len = 0
+      let smear = Number.NaN
+
+      if (pT < pReady) {
+        // ① 발도 — 세제곱 감속. 확 뽑히고 준비 자세에서 멎는다.
+        // 칼날이 칼집에서 **자라 나온다**: 회전보다 이쪽이 훨씬 또렷하게 "뽑았다"로 읽힌다.
+        const e = 1 - Math.pow(1 - (pReady > 0 ? pT / pReady : 1), 3)
+        ang = lerp(pose.a0, pose.a1, e)
+        gx = rig.sx + lerp(pose.hipX, pose.midX, e)
+        gy = rig.sy + lerp(pose.hipY, pose.midY, e)
+        len = SWORD.len * e
+      } else if (pT < pSlash) {
+        // ② 슬래시 — 2.5제곱 감속. 각의 대부분이 첫 두 프레임에 지나간다.
+        const u = pSlash > pReady ? (pT - pReady) / (pSlash - pReady) : 1
+        const e = 1 - Math.pow(1 - u, 2.5)
+        ang = lerp(pose.a1s, pose.a2, e)
+        gx = rig.sx + lerp(pose.midX, pose.endX, e)
+        gy = rig.sy + lerp(pose.midY, pose.endY, e)
+        len = SWORD.len
+        smear = pose.a1s
+      } else {
+        // ③ 납도 — 끝자세에서 허리로. 날이 칼집으로 빨려 든다.
+        const u = pSlash < 1 ? (pT - pSlash) / (1 - pSlash) : 1
+        const e = smoothstep(u)
+        ang = lerp(pose.a2, pose.a0, e)
+        gx = rig.sx + lerp(pose.endX, pose.hipX, e)
+        gy = rig.sy + lerp(pose.endY, pose.hipY, e)
+        len = SWORD.len * (1 - e)
+        if (u < 0.5) smear = pose.a1s
+      }
+
       // ── 잔상 — 지나온 자리를 **채운** 부채꼴. 선으로 그리면 또 "막대가 지나간 자국"이 된다.
-      if (smear >= 0) {
-        const fade = t < tSl ? 1 : clamp01(1 - (t - tSl) / Math.max(0.001, (1 - tSl) * 0.5))
+      //   캔버스 각은 화면 기준(y 아래 +)이라 월드 각의 부호가 뒤집힌다. 월드에서 반시계로
+      //   돈 것(ang > smear)이 캔버스에서는 counterclockwise=true 다 — 이걸 뒤집으면
+      //   부채꼴이 **반대쪽**(칼이 안 지나간 자리)에 그려진다.
+      if (!Number.isNaN(smear) && len > 0.02) {
+        const fade = pT < pSlash ? 1 : clamp01(1 - (pT - pSlash) / Math.max(0.001, (1 - pSlash) * 0.5))
+        const ccw = ang > smear
         ctx.globalAlpha = SWORD.smearAlpha * fade
         ctx.fillStyle = SWORD.smear
         ctx.beginPath()
-        ctx.arc(sx2, sy2, cam.scale * SWORD.len, -smear, -ang, ang < smear)
-        ctx.arc(sx2, sy2, cam.scale * SWORD.hilt, -ang, -smear, ang >= smear)
+        ctx.arc(worldToScreenX(cam, gx), worldToScreenY(cam, gy), cam.scale * SWORD.len, -smear, -ang, ccw)
+        ctx.arc(worldToScreenX(cam, gx), worldToScreenY(cam, gy), cam.scale * SWORD.hilt, -ang, -smear, !ccw)
         ctx.closePath()
         ctx.fill()
         ctx.globalAlpha = 1
       }
-      // ── 날 — 두 겹. 바깥은 강철빛, 안쪽 한 줄은 흰빛. 두 겹이라야 "번쩍"이 된다.
-      ctx.lineCap = "round"
-      ctx.strokeStyle = SWORD.blade
-      ctx.lineWidth = Math.max(2.5, cam.scale * SWORD.bladeW)
-      line(ctx, cam, gx + dx * SWORD.hilt, gy + dy * SWORD.hilt, gx + dx * len, gy + dy * len)
-      if (t < tSl) {
-        ctx.strokeStyle = SWORD.core
-        ctx.lineWidth = Math.max(1, cam.scale * SWORD.bladeW * 0.35)
+
+      if (len > 0.02) {
+        const dx = Math.cos(ang)
+        const dy = Math.sin(ang)
+        // ── 두 팔이 칼자루를 **함께** 쥔다. 먼 팔(어둡게)을 먼저, 가까운 팔(밝게)을 나중에.
+        //   팔이 칼을 안 따라가면 칼만 허공에서 도는 그림이 된다 — 형이 본 그 그림이다.
+        ctx.strokeStyle = THEME.bodyDim
+        ctx.lineWidth = backW
+        limb(ctx, cam, rig.sx, rig.sy, gx, gy, SWORD.armBend)
+        ctx.strokeStyle = bodyCol
+        ctx.lineWidth = limbW
+        limb(ctx, cam, rig.sx, rig.sy, gx, gy, -SWORD.armBend)
+        // ── 날 — 두 겹. 바깥은 강철빛, 안쪽 한 줄은 흰빛. 두 겹이라야 "번쩍"이 된다.
+        ctx.lineCap = "round"
+        ctx.strokeStyle = SWORD.blade
+        ctx.lineWidth = Math.max(2.5, cam.scale * SWORD.bladeW)
         line(ctx, cam, gx + dx * SWORD.hilt, gy + dy * SWORD.hilt, gx + dx * len, gy + dy * len)
+        if (pT < pSlash) {
+          ctx.strokeStyle = SWORD.core
+          ctx.lineWidth = Math.max(1, cam.scale * SWORD.bladeW * 0.35)
+          line(ctx, cam, gx + dx * SWORD.hilt, gy + dy * SWORD.hilt, gx + dx * len, gy + dy * len)
+        }
+        ctx.lineCap = "butt"
+        // ── 자루와 코등이 — 두 손이 어디를 쥐었는지.
+        ctx.strokeStyle = SWORD.fitting
+        ctx.lineWidth = Math.max(1.6, cam.scale * SWORD.fittingW * 1.6)
+        line(ctx, cam, gx - dx * SWORD.grip, gy - dy * SWORD.grip, gx + dx * SWORD.hilt, gy + dy * SWORD.hilt)
       }
-      ctx.lineCap = "butt"
-      // ── 자루와 코등이 — 손이 어디를 쥐었는지.
-      ctx.strokeStyle = SWORD.fitting
-      ctx.lineWidth = Math.max(1.6, cam.scale * SWORD.fittingW * 1.6)
-      line(ctx, cam, gx - dx * SWORD.grip, gy - dy * SWORD.grip, gx + dx * SWORD.hilt, gy + dy * SWORD.hilt)
     }
   }
 
-  // ── 호흡정지 사선 (P.steady.previewTime) — 숨을 참으면 화살이 갈 길이 보인다 ──
-  // 지금 이 순간 놓으면 나갈 각(조준각 + 떨림)을 그대로 적분한다. 산포가 0이 된 세상이라
-  // 이 점선은 거짓말을 하지 않는다. steadyBlend로 스며들고 스며 나간다 (즉발 금지, sim과 동일).
-  if (a.steadyBlend > 0.02 && (a.phase === 'drawing' || a.phase === 'full')) {
-    const d2 = effectiveStats(w.stats)
-    const pw = a.draw
-    const spd = lerp(P.bow.minSpeed, P.bow.maxSpeed, Math.pow(clamp(pw, 0, 1), P.bow.drawCurve))
-      * d2.speedMul * w.fx.speedMul * w.bow.speedMul
-    const ang = a.aimAngle + a.tremorOffset
-    let vx2 = Math.cos(ang) * spd
-    let vy2 = Math.sin(ang) * spd
-    let px3 = a.x
-    let py3 = a.y
-    const dtp = 1 / 60
-    const steps = Math.floor(P.steady.previewTime / dtp)
-    ctx.fillStyle = THEME.target2
-    ctx.globalAlpha = 0.5 * a.steadyBlend
-    // 점은 물리 스텝이 아니라 **거리**로 찍는다 — 스텝으로 찍으면 화살이 빠를수록
-    // 점 사이 실제 거리가 넓어져 가까운 과녁 앞에서는 점이 거의 안 보였다.
-    let distSinceDot = P.steady.previewDotGap
-    for (let i2 = 1; i2 <= steps; i2++) {
-      const rvx2 = vx2 - w.wind * w.bow.windMul
-      const kdrag = P.arrow.drag * w.fx.dragMul * Math.hypot(rvx2, vy2)
-      vx2 -= kdrag * rvx2 * dtp
-      vy2 -= kdrag * vy2 * dtp
-      vy2 -= P.arrow.gravity * dtp
-      const stepDist = Math.hypot(vx2, vy2) * dtp
-      px3 += vx2 * dtp
-      py3 += vy2 * dtp
-      if (py3 <= 0) break
-      distSinceDot += stepDist
-      if (distSinceDot >= P.steady.previewDotGap) {
-        distSinceDot -= P.steady.previewDotGap
-        ctx.beginPath()
-        ctx.arc(worldToScreenX(cam, px3), worldToScreenY(cam, py3), 1.6, 0, TAU)
-        ctx.fill()
+  // 기운 몸을 되돌린다 — 체력 바는 화면의 것이라 같이 기울면 안 된다.
+  if (leaning) ctx.restore()
+
+  if (!parrying) {
+    // ── 호흡정지 사선 (P.steady.previewTime) — 숨을 참으면 화살이 갈 길이 보인다 ──
+    // 지금 이 순간 놓으면 나갈 각(조준각 + 떨림)을 그대로 적분한다. 산포가 0이 된 세상이라
+    // 이 점선은 거짓말을 하지 않는다. steadyBlend로 스며들고 스며 나간다 (즉발 금지, sim과 동일).
+    if (a.steadyBlend > 0.02 && (a.phase === 'drawing' || a.phase === 'full')) {
+      const d2 = effectiveStats(w.stats)
+      const pw = a.draw
+      const spd = lerp(P.bow.minSpeed, P.bow.maxSpeed, Math.pow(clamp(pw, 0, 1), P.bow.drawCurve))
+        * d2.speedMul * w.fx.speedMul * w.bow.speedMul
+      const ang = a.aimAngle + a.tremorOffset
+      let vx2 = Math.cos(ang) * spd
+      let vy2 = Math.sin(ang) * spd
+      let px3 = a.x
+      let py3 = a.y
+      const dtp = 1 / 60
+      const steps = Math.floor(P.steady.previewTime / dtp)
+      ctx.fillStyle = THEME.target2
+      ctx.globalAlpha = 0.5 * a.steadyBlend
+      // 점은 물리 스텝이 아니라 **거리**로 찍는다 — 스텝으로 찍으면 화살이 빠를수록
+      // 점 사이 실제 거리가 넓어져 가까운 과녁 앞에서는 점이 거의 안 보였다.
+      let distSinceDot = P.steady.previewDotGap
+      for (let i2 = 1; i2 <= steps; i2++) {
+        const rvx2 = vx2 - w.wind * w.bow.windMul
+        const kdrag = P.arrow.drag * w.fx.dragMul * Math.hypot(rvx2, vy2)
+        vx2 -= kdrag * rvx2 * dtp
+        vy2 -= kdrag * vy2 * dtp
+        vy2 -= P.arrow.gravity * dtp
+        const stepDist = Math.hypot(vx2, vy2) * dtp
+        px3 += vx2 * dtp
+        py3 += vy2 * dtp
+        if (py3 <= 0) break
+        distSinceDot += stepDist
+        if (distSinceDot >= P.steady.previewDotGap) {
+          distSinceDot -= P.steady.previewDotGap
+          ctx.beginPath()
+          ctx.arc(worldToScreenX(cam, px3), worldToScreenY(cam, py3), 1.6, 0, TAU)
+          ctx.fill()
+        }
       }
+      ctx.globalAlpha = 1
     }
-    ctx.globalAlpha = 1
+
   }
 
   // ── 체력 바 — 머리 위 (docs/RUN.md 6장 · 형: "전부 바 형태로") ──

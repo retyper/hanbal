@@ -156,6 +156,9 @@ export function stepArcher(w: World, input: InputFrame): void {
   if (parryEdge && a.parryCool <= 0) {
     a.parryLeft = P.parry.swing
     a.parryCool = P.parry.swing + P.parry.cool
+    // 위아래를 번갈아 벤다 (형: "다음 타격은 내려치기가 되고 다음은 다시 올려치기가 되고").
+    // 시작에 뒤집는다 — 세이브 초기값이 false 라 **첫 칼이 올려베기**, 둘째가 내려베기다.
+    a.parryUp = !a.parryUp
     // ★ 칼을 뽑으려면 활을 놓아야 한다. **화살은 안 나간다** — 당기던 것이 그냥 풀린다.
     //   이 한 줄이 패링의 값이다: 쏠 순간과 막을 순간 중 하나를 고르게 만든다.
     //   화살을 태우지는 않는다 (C2 — 끊어도 손해가 없다). release() 를 안 거치므로 안전하다:

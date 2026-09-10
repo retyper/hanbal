@@ -76,6 +76,9 @@ function newArcher(): ArcherState {
     parryLeft: 0,
     parryCool: 0,
     parryHeld: false,
+    // 뒤집기가 휘두름 **시작에** 일어나므로(sim/bow.ts) 여기서 false 여야 첫 칼이 올려베기가 된다.
+    // 첫 칼이 올려베기인 이유: 칼집이 허리에 있으니 뽑으면서 올리는 것이 자연스럽다 (발도술).
+    parryUp: false,
   }
 }
 
@@ -176,6 +179,7 @@ function resetArcher(a: ArcherState, staminaMax: number): void {
   a.parryLeft = 0
   a.parryCool = 0
   a.parryHeld = false
+  a.parryUp = false
 }
 
 /**

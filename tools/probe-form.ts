@@ -295,6 +295,50 @@ check(
   `${(tipBack[0] as number).toFixed(1)}px → ${(tipBack[tipBack.length - 1] as number).toFixed(1)}px`,
 )
 
+// ── 패링 자세 — 활이 사라지고 칼이 나온다 (2026-09-10 형의 반려) ──────────
+//
+// 형: "쳐낼때는 활쏘는 캐릭터 모습은 잠시 안보여야해. 동일한 캐릭터인데 활이 안보이고
+//      칼을 휘두르는 캐릭터가 보여야 한다고."
+//
+// 예전에는 활 든 궁수 **위에** 칼이 떠 있어 두 사람이 겹쳐 보였다. 눈으로 고치면 재발하므로
+// 여기서 색으로 못 박는다: 패링 중 프레임에는 활 색 획이 **하나도 없고** 칼 색 획이 있어야 한다.
+{
+  console.log('')
+  console.log('── 패링 자세 (활이 사라지는가) ──')
+  const { THEME: TH } = await import('../src/render/camera.ts')
+  const { P } = await import('../src/tune/params.ts')
+  /** 칼날 색 — render/stickman.ts SWORD.blade 와 같은 값이어야 한다. */
+  const BLADE = '#e8f0fa'
+  const shot = (parryLeft: number, up: boolean): string[] => {
+    const w = createWorld(getStage(0), STATS)
+    const hold: InputFrame = { aimX: 30, aimY: 2, drawing: true, steady: false, parry: false }
+    for (let k = 0; k < 40; k++) step(w, hold)
+    w.archer.parryLeft = parryLeft
+    w.archer.parryUp = up
+    updateCamera(cam, w, 0.016)
+    updateCamera(cam, w, 0.016)
+    paths.length = 0
+    dots.length = 0
+    drawArcher(ctx, cam, w, 1)
+    return paths.map((q) => q.style)
+  }
+  const normal = shot(0, false)
+  // 활 자체의 색은 만작에서 밝은 쪽으로 램프가 걸려 고정이 아니다. 대신 **물린 화살**을 본다 —
+  // 화살대(THEME.arrow)와 촉(강조색)은 "활을 들고 있다"의 흔들리지 않는 증거다.
+  check(normal.includes(TH.arrow), '평소에는 물린 화살이 보인다', `획 ${normal.length}개`)
+  check(!normal.includes(BLADE), '평소에는 칼날이 안 보인다', '')
+  // 슬래시 한복판 — 발도(0.11)와 슬래시(0.07) 사이. parryLeft 는 남은 시간이라 거꾸로 센다.
+  const mid = P.parry.swing - (P.parry.ready + P.parry.slash * 0.5)
+  for (const up of [true, false]) {
+    const name = up ? '올려베기' : '내려베기'
+    const s = shot(P.parry.swing - mid, up)
+    check(!s.includes(TH.arrow) && !s.includes(TH.bow), `${name} — 활과 화살이 사라진다`, `획 ${s.length}개`)
+    check(s.includes(BLADE), `${name} — 칼날이 나온다`, '')
+    // 몸은 남는다 — 같은 사람이다 (갑옷·다리·머리). 획이 확 줄면 몸까지 지운 것이다.
+    check(s.length >= normal.length * 0.5, `${name} — 몸은 그대로 남는다`, `${s.length} vs 평소 ${normal.length}`)
+  }
+}
+
 console.log('')
 if (fails > 0) {
   console.log(`실패 ${fails}건`)

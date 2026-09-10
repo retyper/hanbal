@@ -124,6 +124,25 @@ describe('환도 패링', () => {
     assert.ok(P.parry.active > P.parry.ready + P.parry.slash, '슬래시가 끝난 뒤에야 잡기 시작한다')
   })
 
+  it('위아래를 번갈아 벤다 — 첫 칼이 올려베기 (형: "다음 타격은 내려치기가 되고")', () => {
+    const w = createWorld(def(), STATS)
+    const a2 = w.archer
+    assert.equal(a2.parryUp, false, '판이 서자마자 위아래가 정해져 있으면 안 된다 — 뒤집기는 휘두를 때 일어난다')
+    const cut = (): boolean => {
+      step(w, PARRY)
+      const up = a2.parryUp
+      run(w, P.parry.swing + P.parry.cool + 0.05, IDLE)
+      return up
+    }
+    assert.equal(cut(), true, '첫 칼이 올려베기가 아니다 — 칼집이 허리에 있으니 뽑으며 올리는 것이 맞다')
+    assert.equal(cut(), false, '둘째가 내려베기가 아니다')
+    assert.equal(cut(), true, '셋째가 다시 올려베기가 아니다')
+    // 판을 다시 세워도 규칙은 같다 — 렌더가 세면 여기서 어긋난다 (그래서 sim 이 센다).
+    const w2 = createWorld(def(), STATS)
+    step(w2, PARRY)
+    assert.equal(w2.archer.parryUp, true, '새 판의 첫 칼이 올려베기가 아니다')
+  })
+
   it('당기던 중에 휘두르면 당김이 풀리되 화살은 안 나간다 (C2)', () => {
     const w = createWorld(def(), STATS)
     run(w, 0.5, DRAW)
