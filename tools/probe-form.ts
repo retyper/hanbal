@@ -337,6 +337,56 @@ check(
     // 몸은 남는다 — 같은 사람이다 (갑옷·다리·머리). 획이 확 줄면 몸까지 지운 것이다.
     check(s.length >= normal.length * 0.5, `${name} — 몸은 그대로 남는다`, `${s.length} vs 평소 ${normal.length}`)
   }
+
+  // ── 칼끝이 실제로 어디를 지나는가 ──────────────────────────────────
+  // "올려치기"·"내려치기"는 말이지 그림이 아니다. 칼끝의 화면 y 를 시간순으로 재서,
+  // 올려베기는 **아래에서 위로**, 내려베기는 **위에서 아래로** 지나는지 못 박는다.
+  // (화면 y 는 아래가 + 다 — 올라간다 = y 가 준다.)
+  const tipPath = (parryLeft: number, up: boolean): { x: number; y: number } | null => {
+    const w = createWorld(getStage(0), STATS)
+    const hold: InputFrame = { aimX: 30, aimY: 2, drawing: false, steady: false, parry: false }
+    for (let k = 0; k < 10; k++) step(w, hold)
+    w.archer.parryLeft = parryLeft
+    w.archer.parryUp = up
+    updateCamera(cam, w, 0.016)
+    updateCamera(cam, w, 0.016)
+    paths.length = 0
+    dots.length = 0
+    drawArcher(ctx, cam, w, 1)
+    // 칼날 획 중 **가장 긴** 것의 바깥 끝이 칼끝이다 (자루·코등이는 짧다).
+    let best: { x: number; y: number } | null = null
+    let bestLen = 0
+    for (const q of paths) {
+      if (q.style !== BLADE || q.pts.length < 2) continue
+      const p0 = q.pts[0]
+      const p1 = q.pts[q.pts.length - 1]
+      if (p0 === undefined || p1 === undefined) continue
+      const L = Math.hypot(p1.x - p0.x, p1.y - p0.y)
+      if (L > bestLen) { bestLen = L; best = p1 }
+    }
+    return best
+  }
+  for (const up of [true, false]) {
+    const name = up ? '올려베기' : '내려베기'
+    // 슬래시 구간을 셋으로 나눠 본다. parryLeft 는 **남은** 시간이라 크면 이르다.
+    const at = (frac: number): { x: number; y: number } | null =>
+      tipPath(P.parry.swing - (P.parry.ready + P.parry.slash * frac), up)
+    const a0 = at(0.05)
+    const a1 = at(0.5)
+    const a2 = at(0.98)
+    if (a0 === null || a1 === null || a2 === null) {
+      check(false, `${name} — 칼끝을 못 찾았다`, '')
+      continue
+    }
+    const rise = a0.y - a2.y
+    check(up ? rise > 20 : rise < -20,
+      `${name} — 칼끝이 ${up ? '아래에서 위로' : '위에서 아래로'} 지난다`,
+      `y ${Math.round(a0.y)} → ${Math.round(a1.y)} → ${Math.round(a2.y)}`)
+    // 어느 쪽이든 **앞으로** 나가야 한다. 뒤로 베는 궁수는 없다.
+    // 1px 로도 통과하면 검사가 아니다. 기준은 **칼 길이**다 — 배율이 판마다 다르므로 px 를 못 박으면
+    // 어떤 판에서는 통과하고 어떤 판에서는 안 된다. 칼 길이의 8할은 나가야 '휘둘렀다'가 된다.
+    check(a2.x - a0.x > cam.scale * 0.8, `${name} — 칼끝이 앞으로 나간다`, `x ${Math.round(a0.x)} → ${Math.round(a2.x)}`)
+  }
 }
 
 console.log('')
