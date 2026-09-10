@@ -28,6 +28,9 @@ import type { SaveData } from '../game/save.ts'
 import type { Overlay } from './overlay.ts'
 
 const PANEL_ID = 'opening'
+/** 첫 화면의 불티·화살 수. 폰에서도 가벼운 수 — CSS 애니메이션이라 rAF 를 안 돈다 (C3). */
+const EMBERS = 14
+const STREAKS = 3
 const BASE: string = import.meta.env?.BASE_URL ?? '/'
 
 const CSS = `
@@ -35,15 +38,65 @@ const CSS = `
   position: relative; margin: -12px -8px -10px; min-height: min(78vh, 640px);
   display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
   padding: 24px 18px 30px; overflow: hidden; border-radius: 2px; cursor: pointer;
+  background: var(--paper);
+}
+/* ── 살아 있는 첫 화면 (2026-09-10, 형: "게임 시작할 때 이미지 자체가 흥미진진해야") ──
+   그림이 천천히 다가오고(켄 번즈), 불티가 오르고, 화살이 가로지르고, 제목이 숨 쉰다. 에셋 없이 CSS 뿐. */
+.op-bg {
+  position: absolute; inset: -4%; z-index: 0;
+  background: url(${BASE}art/suryeopdo.jpg) center 42% / cover no-repeat;
+  animation: op-kb 26s ease-in-out infinite alternate;
+  filter: saturate(1.15) contrast(1.06);
+}
+@keyframes op-kb { from { transform: scale(1) translate(0, 0); } to { transform: scale(1.1) translate(-1.5%, 1%); } }
+.op-veil {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
   background:
-    linear-gradient(to bottom, rgba(20, 18, 14, .18), rgba(20, 18, 14, .12) 45%, rgba(38, 37, 33, .86) 78%, var(--paper) 100%),
-    url(${BASE}art/suryeopdo.jpg) center 42% / cover no-repeat;
+    radial-gradient(ellipse at 50% 40%, rgba(0, 0, 0, 0) 40%, rgba(8, 6, 4, .55) 100%),
+    linear-gradient(to bottom, rgba(20, 18, 14, .22), rgba(20, 18, 14, .1) 45%, rgba(38, 37, 33, .88) 78%, var(--paper) 100%);
+}
+.op-wrap > :not(.op-bg):not(.op-veil):not(.op-fx) { position: relative; z-index: 2; }
+/* 불티 — 아래에서 위로 흔들리며 오른다. 위치·박자는 JS가 심는다 (UI 난수는 sim 밖이다). */
+.op-fx { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.op-ember {
+  --sway: 0px; position: absolute; bottom: -6px; width: 4px; height: 4px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 8px 2px rgba(255, 179, 71, .55); opacity: 0;
+  animation: op-ember linear infinite;
+}
+@keyframes op-ember {
+  0% { transform: translate(0, 0) scale(1); opacity: 0; }
+  10% { opacity: .9; }
+  50% { transform: translate(var(--sway), -55vh) scale(.8); opacity: .7; }
+  100% { transform: translate(calc(var(--sway) * -1), -105vh) scale(.3); opacity: 0; }
+}
+/* 화살 — 왼쪽 아래에서 오른쪽 위로 가로지르는 가는 빛줄기 셋. */
+.op-streak {
+  position: absolute; left: -30%; width: 22%; height: 2px; border-radius: 1px;
+  background: linear-gradient(to right, rgba(255, 216, 143, 0), rgba(255, 216, 143, .95) 70%, #fff);
+  transform-origin: 100% 50%; opacity: 0; animation: op-streak 5.5s cubic-bezier(.2, .8, .3, 1) infinite;
+}
+@keyframes op-streak {
+  0%, 62% { transform: translate(0, 0) rotate(-9deg); opacity: 0; }
+  64% { opacity: 1; }
+  82% { transform: translate(600%, -34vh) rotate(-9deg); opacity: .9; }
+  84%, 100% { transform: translate(650%, -37vh) rotate(-9deg); opacity: 0; }
+}
+/* 낙관 — 붉은 도장 하나. 이름 곁에 찍히면 그림이 '작품'이 된다. */
+.op-seal {
+  display: inline-block; margin-left: 10px; vertical-align: 18px; width: 30px; height: 30px; line-height: 30px;
+  background: #b8332a; color: #fff2dc; font-family: var(--serif); font-size: 14px; letter-spacing: 0;
+  border-radius: 3px; box-shadow: 0 1px 4px rgba(0, 0, 0, .5); transform: rotate(-6deg); text-shadow: none;
 }
 .op-cap { position: absolute; right: 12px; top: 10px; color: rgba(255, 244, 220, .6); font-size: 11px; letter-spacing: .06em; }
 .op-hanja { font-family: var(--serif); color: rgba(255, 236, 200, .55); font-size: 22px; letter-spacing: .5em; margin-bottom: 4px; }
 .op-title {
   font-family: var(--serif); font-weight: 700; color: var(--ink); font-size: 76px; line-height: 1.05;
   letter-spacing: .12em; text-shadow: 0 2px 18px rgba(0, 0, 0, .55);
+  animation: op-glow 3.2s ease-in-out infinite;
+}
+@keyframes op-glow {
+  0%, 100% { text-shadow: 0 2px 18px rgba(0, 0, 0, .55), 0 0 0 rgba(255, 179, 71, 0); }
+  50% { text-shadow: 0 2px 18px rgba(0, 0, 0, .55), 0 0 28px rgba(255, 179, 71, .55); }
 }
 .op-sub { font-family: var(--serif); color: var(--ink); font-size: 17px; letter-spacing: .1em; margin-top: 12px; text-align: center; }
 .op-sub2 { color: var(--dim); font-size: 13px; letter-spacing: .06em; margin-top: 6px; text-align: center; }
@@ -82,7 +135,8 @@ const CSS = `
 .op-turn-txt b { color: var(--gold); font-weight: 700; }
 @media (prefers-reduced-motion: reduce) {
   .op-phone { animation: none; transform: rotate(-90deg); }
-  .op-go { animation: none; }
+  .op-go, .op-bg, .op-title, .op-ember, .op-streak { animation: none; }
+  .op-ember, .op-streak { display: none; }
 }
 @media (max-width: 640px) {
   .op-title { font-size: 56px; }
@@ -115,10 +169,24 @@ export function mountOpening(o: Overlay, d: SaveData, onStart: () => void): void
 
   const wrap = document.createElement('div')
   wrap.className = 'op-wrap'
+  // 불티 열넷·화살 셋 — 자리와 박자는 여기서 심는다. UI 난수는 sim 밖이다 (A1과 무관).
+  let fx = ''
+  for (let i = 0; i < EMBERS; i++) {
+    const left = (Math.random() * 100).toFixed(1)
+    const dur = (6 + Math.random() * 7).toFixed(1)
+    const delay = (-Math.random() * 12).toFixed(1)
+    const sway = ((Math.random() - 0.5) * 80).toFixed(0)
+    fx += `<i class="op-ember" style="left:${left}%;animation-duration:${dur}s;animation-delay:${delay}s;--sway:${sway}px"></i>`
+  }
+  for (let i = 0; i < STREAKS; i++) {
+    fx += `<i class="op-streak" style="bottom:${18 + i * 14}%;animation-delay:${(i * 1.9).toFixed(1)}s"></i>`
+  }
   wrap.innerHTML =
+    '<div class="op-bg"></div><div class="op-veil"></div>' +
+    `<div class="op-fx">${fx}</div>` +
     '<div class="op-cap">무용총 「수렵도」</div>' +
     '<div class="op-hanja">神弓</div>' +
-    '<div class="op-title">신궁</div>' +
+    '<div class="op-title">신궁<span class="op-seal">弓</span></div>' +
     '<div class="op-sub">마지막 한 발에, 시간이 멎는다</div>' +
     '<div class="op-sub2">활 한 번 안 잡아본 스틱맨이 신궁이 되기까지 · 한 판 30초</div>' +
     (d.bestRunStage > 0
