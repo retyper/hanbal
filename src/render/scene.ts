@@ -636,7 +636,9 @@ function drawTargets(
       // ── 몸 ── 유령 계열(0~3)은 여기서, 2026-09-10 에 선 넷(거인·구미호·장승·저승사자)은
       //         render/bosses.ts 에서 그린다. 실루엣이 통째로 다르면 한 함수에 못 담는다.
       if (t.look >= 4) {
-        drawNewBossBody(ctx, w, t, x, y, rx, ry)
+        // 발이 닿는 지면의 화면 y — 걷는 놈은 여기에 발을 붙인다 (형: "왜 다 둥실둥실 떠다니냐").
+        // baseY 는 몸 중심의 기준 높이라 거기서 반경을 빼면 그게 곧 발밑이다.
+        drawNewBossBody(ctx, w, t, x, y, rx, ry, worldToScreenY(cam, t.baseY - t.r))
       } else {
         // 몸 — 어두운 덩어리. 밑단은 흘러내리는 세 겹 자락 (유령의 문법).
         ctx.fillStyle = THEME.threatDim
