@@ -138,7 +138,7 @@ const loop = createLoop(el, {
 // 호흡정지 버튼 — HUD 줄의 맨 왼쪽에 선다. 성장 버튼보다 **먼저** 붙일 이유는 없다
 // (steady.ts 가 prepend 한다). 손가락 화면에서만 보인다.
 mountSteady(overlay, (on) => loop.steady(on))
-// 환도 — 숨참기 바로 옆. 둘 다 "왼손 엄지로 누르는 것"이다 (ui/parry.ts).
+// 패링 — 숨참기 바로 옆. 둘 다 "왼손 엄지로 누르는 것"이다 (ui/parry.ts).
 mountParry(overlay, (on) => loop.parry(on))
 
 mountGrowth(overlay, save, () => {}, audio)

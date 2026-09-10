@@ -97,6 +97,11 @@ const FX = {
    * 만들 수 있는 곳은 이 레이어뿐이다. 조준·시위는 계속 실시간으로 돈다 (입력 지연 0).
    */
   critSlowSec: 0.2,
+  /** 패링 성공의 히트스톱 배수 — 크리티컬보다 세다. 막아낸 순간이 더 극적이다. */
+  parryStopMul: 2.6,
+  /** 화면 번쩍임 (실시간 s). 두 프레임쯤 — 넘기면 눈이 아프다. */
+  flashSec: 0.05,
+  flashAlpha: 0.5,
   critSlowScale: 0.45,
   /** 정중앙에서 자동으로 띄우는 위업 문구 */
   critFeat: '정중앙',
@@ -279,6 +284,12 @@ export interface Fx {
   oneShotRealSec: number
   /** 남은 슬로모 (실시간 s) */
   slow: number
+  /**
+   * 화면 번쩍임의 남은 시간 (실시간 s). 패링이 성공한 그 프레임에만 켠다 (2026-09-10).
+   * 형: "WWE라니까? 못알아들어?" — 잘 맞은 순간에는 **화면 전체가 한 번 하얘져야** 한다.
+   * 두 프레임을 넘기면 눈이 아프므로 아주 짧다 (FX.flashSec).
+   */
+  flash: number
   /** 연쇄 비네트 0..1 과 그 나이 (s) */
   glow: number
   glowAge: number
@@ -400,6 +411,7 @@ export function createFx(): Fx {
     oneShotElapsedPrev: -1,
     oneShotRealSec: 0,
     slow: 0,
+    flash: 0,
     glow: 0,
     glowAge: 0,
     aiming: false,
@@ -744,9 +756,12 @@ export function pumpEvents(fx: Fx, w: World): void {
     } else if (e.t === 'parry_hit') {
       // 쳐냈다 — 불꽃이 크게 튀고 글자가 남는다. 잘한 일은 크게 알린다 (형: "바바바박").
       pushPopup(fx.pop, e.x, e.y + 0.6, e.n > 1 ? `${e.n}발 쳐냈다!` : '쳐냈다!', 'crit')
-      spawn(fx, e.x, e.y, FX.hitBurst, KIND_CHAIN, FX.speed * 1.5, FX.ttl, 1.5)
-      fx.hitStop += P.hit.stopMs * 0.001
-      if (fx.slow < FX.critSlowSec) fx.slow = FX.critSlowSec
+      spawn(fx, e.x, e.y, FX.critBurst, KIND_CRIT, FX.critSpeed * 1.4, FX.critTtl, 1.8)
+      spawn(fx, e.x, e.y, FX.hitBurst, KIND_CHAIN, FX.speed * 1.8, FX.ttl, 1.6)
+      // 쳐낸 순간은 이 게임에서 가장 잘한 일이다 — 멈추고, 하얘지고, 느려진다.
+      fx.hitStop += P.hit.stopMs * 0.001 * FX.parryStopMul
+      fx.flash = FX.flashSec
+      if (fx.slow < FX.critSlowSec * 1.5) fx.slow = FX.critSlowSec * 1.5
     } else if (e.t === 'stagger') {
       // 보스가 멈췄다 — 약점이 열리는 순간. 글자·흙먼지·짧은 슬로우. 크게 알려야 "지금 쏴라"가 된다.
       pushPopup(fx.pop, e.x, e.y + 1.6, e.trip ? '넘어졌다!' : '비틀!', 'crit')
@@ -1083,7 +1098,9 @@ export function updateFx(fx: Fx, dtReal: number): void {
     if (fx.hitStop < 0) fx.hitStop = 0
   }
   const scale = fxTimeScale(fx)
-  if (fx.slow > 0) {
+  // 번쩍임은 히트스톱·슬로모와 무관하게 **실시간으로** 꺼진다 — 멈춘 화면이 하얀 채로 굳으면 안 된다.
+  if (fx.flash > 0) fx.flash = fx.flash > dtReal ? fx.flash - dtReal : 0
+  if (fx.slow > 0) {
     fx.slow -= dtReal
     if (fx.slow < 0) fx.slow = 0
   }
@@ -1268,6 +1285,15 @@ export function drawCorpseLayer(ctx: CanvasRenderingContext2D, cam: Camera, fx?:
 export function drawFx(ctx: CanvasRenderingContext2D, cam: Camera, fx?: Fx): void {
   const f = fx ?? active
   if (f === null) return
+
+  // ── 화면 번쩍임 — 패링이 성공한 그 두 프레임 (2026-09-10) ──
+  // 맨 먼저 칠한다: 아래에 깔려야 그 위의 불꽃·글자가 하얀 빛을 뚫고 나온 것처럼 보인다.
+  if (f.flash > 0) {
+    ctx.globalAlpha = Math.min(1, f.flash / FX.flashSec) * FX.flashAlpha
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, cam.w, cam.h)
+    ctx.globalAlpha = 1
+  }
 
   // ── 땅에 박힌 화살 ───────────────────────────────────────────
   // 맨 아래에 그린다. 이건 배경이지 사건이 아니다 — 지난 발의 흔적일 뿐이라

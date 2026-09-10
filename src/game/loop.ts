@@ -125,7 +125,7 @@ export interface GameLoop {
   mapJump(index: number): void
   /** 화면의 숨참기 버튼 (ui/steady.ts) — 폰에는 Shift도 우클릭도 없다. */
   steady(on: boolean): void
-  /** 화면의 환도 버튼 (ui/parry.ts) — 폰에는 F 키가 없다. */
+  /** 화면의 패링 버튼 (ui/parry.ts) — 폰에는 F 키가 없다. */
   parry(on: boolean): void
   /**
    * 판 도중 방어 구매 (ui/defense.ts → game/defense.ts). 샀으면 true.
@@ -1132,7 +1132,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     steady(on: boolean): void {
       input.setSteady(on)
     },
-    /** 환도 — 화면 버튼이 누른다 (ui/parry.ts). F 키와 같은 축이다. */
+    /** 패링 — 화면 버튼이 누른다 (ui/parry.ts). F 키와 같은 축이다. */
     parry(on: boolean): void {
       input.setParry(on)
     },

@@ -384,7 +384,7 @@ function foeHint(n: number, base: StageDef, specs: readonly TargetSpec[]): strin
     else if (s.look === 2) hide++
     else win++
   }
-  if (n === BOSS_EVERY + 2) return '날아오는 화살은 환도로 쳐낸다 — F (폰은 환도 버튼). 쳐낸 화살은 쏜 놈에게 돌아간다'
+  if (n === BOSS_EVERY + 2) return '날아오는 화살은 칼로 쳐낸다 — F, 폰은 패링 버튼. 쳐낸 화살은 쏜 놈에게 돌아간다'
   if (hide > 0 && drone === 0) return '숨은 사수는 당길 때만 나온다 — 그 틈이 유일하다'
   if (drone > 0 && hide === 0) return '드론은 떠서 돈다 — 멈칫하는 자리를 노린다'
   if (hide > 0 && drone > 0) return '숨는 놈과 나는 놈 — 먼저 당기는 쪽부터'

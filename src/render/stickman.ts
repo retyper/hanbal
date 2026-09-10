@@ -501,20 +501,30 @@ const SWORD = {
   sheath: '#4a3a28',
   fitting: '#c99a5e',
   fittingW: 0.035,
-  /** 휘두르는 칼 — 어깨보다 조금 앞·아래를 축으로 돈다. */
-  pivotFwd: 0.16,
-  pivotUp: 0.06,
-  len: 0.95,
+  // ── 세 자세 — 손의 자리(어깨 기준 m)와 칼의 각(rad, 반시계 +) ──
+  // 허리(칼집) → 준비(뒤·위로 감긴다) → 돌진(앞·아래로 실린다). 손이 움직여야 몸무게가 실린다.
+  hipX: -0.10,
+  hipY: -0.34,
+  cockX: -0.26,
+  cockY: 0.30,
+  lungeX: 0.30,
+  lungeY: 0.02,
+  /** 준비 자세의 각 — 머리 뒤 위쪽. */
+  cockAng: 2.45,
+  /** 다 벤 뒤 — 앞·아래. 여기까지 186° 를 지난다. */
+  endAng: -0.85,
+  /** 칼집에 든 각 — 뒤·아래. 납도가 여기로 돌아간다. */
+  restAng: -2.5,
+  len: 0.98,
   hilt: 0.2,
   grip: 0.16,
-  bladeW: 0.06,
-  blade: '#dfe8f2',
-  /** 지나온 호. */
-  trail: '#9fb4c8',
-  trailW: 0.09,
-  /** 위(앞쪽 사선)에서 아래로. 화면 y 는 아래가 +라 부호가 뒤집혀 있다 — line() 이 월드로 받는다. */
-  from: 1.15,
-  to: -0.75,
+  bladeW: 0.075,
+  blade: '#e8f0fa',
+  /** 날 한가운데의 흰 심 — 두 겹이라야 "번쩍"이 된다. */
+  core: '#ffffff',
+  /** 지나온 자리를 채우는 부채꼴. */
+  smear: '#cfe4ff',
+  smearAlpha: 0.42,
 } as const
 
 const ARMOR_PLATE = {
@@ -1006,50 +1016,103 @@ export function drawArcher(
     line(ctx, cam, tipX - rig.ux * BODY.arrowHead, tipY - rig.uy * BODY.arrowHead, tipX, tipY)
   }
 
-  // ── 환도(環刀) — 허리에 차고 있다가, 누르면 뽑아 휘두른다 (P.parry, 2026-09-10) ──
+  // ── 패링 — 발도 · 슬래시 · 납도. 순식간에 지나간다 (P.parry, 2026-09-10) ──
   //
-  // 형: "환도를 들고있는 캐릭터로 보여야 하고 휘두르는 모션이랑 소리, 패링 성공소리."
-  // 그래서 **평소에도 보인다** — 안 휘두를 때는 허리에 칼집이 걸려 있다. 그게 없으면
-  // 칼이 허공에서 튀어나오고, 그 순간 캐릭터는 궁수가 아니라 마술사가 된다.
+  // 형의 반려: **"모션도 박진감있게 준비자세, 발도, 빠르게 휘두르기, 이런게 순식간에 지나가야해.
+  //             원에 막대가 표면타고 흘러가는 수준의 게임을 하고싶겠냐고."**
+  //
+  // 맞는 지적이었다. 예전 것은 어깨를 축으로 막대 하나가 **일정한 속도로** 호를 따라 돌 뿐이었다.
+  // 일정한 속도에는 무게도 의도도 없다. 실제로 칼을 휘두르면 셋이 순서대로 일어난다:
+  //
+  //   ① 발도 (0.11초) — 칼이 칼집에서 **뽑혀 나오며** 뒤·위로 젖혀진다. 손이 뒤로 빠지며 몸이 감긴다.
+  //   ② 슬래시 (0.07초) — 머리 위를 넘어 앞으로 **한 번에** 떨어진다. 각의 대부분을 첫 두 프레임에
+  //      써 버리고(감속 곡선), 지나간 자리에 부채꼴 잔상이 남는다. 이 두 프레임이 이 기능의 전부다.
+  //   ③ 납도 (나머지) — 끝자세에서 손이 허리로 돌아가고 칼날이 칼집으로 빨려 들어간다.
+  //
+  // 길이는 P.parry.ready / slash 가 정하고, 자세(손 위치·각)는 아래 SWORD 가 정한다.
+  // 각과 위치는 **시간의 순수 함수**다 — 렌더는 상태를 만들지 않는다 (A1).
   {
     const swing = P.parry.swing
-    const t = a.parryLeft > 0 ? 1 - a.parryLeft / swing : -1
+    const tRe = swing > 0 ? P.parry.ready / swing : 0
+    const tSl = swing > 0 ? (P.parry.ready + P.parry.slash) / swing : 0
+    const t = a.parryLeft > 0 ? clamp01(1 - a.parryLeft / swing) : -1
+    // 손의 자리는 어깨 기준이다 — 어깨가 곧 칼을 휘두르는 축이다.
+    const hx0 = rig.sx
+    const hy0 = rig.sy
+    let ang: number = SWORD.cockAng
+    let gx = hx0 + SWORD.hipX
+    let gy = hy0 + SWORD.hipY
+    let len = 0
+    let smear = -1
+
     if (t < 0) {
-      // ── 칼집 — 허리 뒤로 비스듬히. 짧은 두 선(칼집 + 코등이)이면 '차고 있다'가 읽힌다.
+      // ── 차고 있다 — 칼집과 코등이. 안 휘두를 때도 **보인다** (형: "환도를 들고있는 캐릭터로").
       ctx.strokeStyle = SWORD.sheath
       ctx.lineWidth = Math.max(1.6, cam.scale * SWORD.sheathW)
       line(ctx, cam, pelvisX - 0.02, pelvisY + 0.02, pelvisX - SWORD.sheathLen, pelvisY - SWORD.sheathDrop)
       ctx.strokeStyle = SWORD.fitting
       ctx.lineWidth = Math.max(1.2, cam.scale * SWORD.fittingW)
       line(ctx, cam, pelvisX + 0.03, pelvisY + 0.05, pelvisX - 0.08, pelvisY - 0.02)
+    } else if (t < tRe) {
+      // ── ① 발도 — 세제곱 감속. 확 뽑히고 준비 자세에서 멎는다.
+      const e = 1 - Math.pow(1 - (tRe > 0 ? t / tRe : 1), 3)
+      ang = SWORD.cockAng
+      gx = hx0 + lerp(SWORD.hipX, SWORD.cockX, e)
+      gy = hy0 + lerp(SWORD.hipY, SWORD.cockY, e)
+      // 칼날이 칼집에서 **자라 나온다** — 이게 회전보다 훨씬 또렷하게 "뽑았다"로 읽힌다.
+      len = SWORD.len * e
+    } else if (t < tSl) {
+      // ── ② 슬래시 — 각의 대부분을 첫 두 프레임에 쓴다 (2.5제곱 감속).
+      const u = tSl > tRe ? (t - tRe) / (tSl - tRe) : 1
+      const e = 1 - Math.pow(1 - u, 2.5)
+      ang = lerp(SWORD.cockAng, SWORD.endAng, e)
+      gx = hx0 + lerp(SWORD.cockX, SWORD.lungeX, e)
+      gy = hy0 + lerp(SWORD.cockY, SWORD.lungeY, e)
+      len = SWORD.len
+      smear = SWORD.cockAng
     } else {
-      // ── 휘두름 — 어깨를 축으로 위에서 아래로 한 번. 앞(오른쪽)을 벤다.
-      // 각은 시간의 순수 함수다 (A1: 렌더는 상태를 안 만든다). 처음이 빠르고 끝이 느리다.
-      const e = 1 - (1 - t) * (1 - t)
-      const ang = SWORD.from + (SWORD.to - SWORD.from) * e
-      const cxp = rig.sx + SWORD.pivotFwd
-      const cyp = rig.sy - SWORD.pivotUp
+      // ── ③ 납도 — 끝자세에서 허리로. 잔상은 첫 절반 동안만 남아 사그라든다.
+      const u = tSl < 1 ? (t - tSl) / (1 - tSl) : 1
+      const e = smoothstep(u)
+      ang = lerp(SWORD.endAng, SWORD.restAng, e)
+      gx = hx0 + lerp(SWORD.lungeX, SWORD.hipX, e)
+      gy = hy0 + lerp(SWORD.lungeY, SWORD.hipY, e)
+      len = SWORD.len * (1 - e)
+      if (u < 0.5) smear = SWORD.cockAng
+    }
+
+    if (t >= 0 && len > 0.02) {
       const dx = Math.cos(ang)
       const dy = Math.sin(ang)
-      // 잔상 — 지나온 호. 칼보다 먼저 그려야 칼이 그 위에 선다.
-      ctx.strokeStyle = SWORD.trail
-      ctx.globalAlpha = 0.5 * (1 - t)
-      ctx.lineWidth = Math.max(2, cam.scale * SWORD.trailW)
-      ctx.beginPath()
-      ctx.arc(
-        worldToScreenX(cam, cxp), worldToScreenY(cam, cyp), cam.scale * SWORD.len * 0.82,
-        -SWORD.from, -ang, SWORD.to < SWORD.from,
-      )
-      ctx.stroke()
-      ctx.globalAlpha = 1
-      // 날 — 자루에서 칼끝까지. 끝이 조금 더 밝다.
+      const sx2 = worldToScreenX(cam, gx)
+      const sy2 = worldToScreenY(cam, gy)
+      // ── 잔상 — 지나온 자리를 **채운** 부채꼴. 선으로 그리면 또 "막대가 지나간 자국"이 된다.
+      if (smear >= 0) {
+        const fade = t < tSl ? 1 : clamp01(1 - (t - tSl) / Math.max(0.001, (1 - tSl) * 0.5))
+        ctx.globalAlpha = SWORD.smearAlpha * fade
+        ctx.fillStyle = SWORD.smear
+        ctx.beginPath()
+        ctx.arc(sx2, sy2, cam.scale * SWORD.len, -smear, -ang, ang < smear)
+        ctx.arc(sx2, sy2, cam.scale * SWORD.hilt, -ang, -smear, ang >= smear)
+        ctx.closePath()
+        ctx.fill()
+        ctx.globalAlpha = 1
+      }
+      // ── 날 — 두 겹. 바깥은 강철빛, 안쪽 한 줄은 흰빛. 두 겹이라야 "번쩍"이 된다.
+      ctx.lineCap = "round"
       ctx.strokeStyle = SWORD.blade
-      ctx.lineWidth = Math.max(2, cam.scale * SWORD.bladeW)
-      line(ctx, cam, cxp + dx * SWORD.hilt, cyp + dy * SWORD.hilt, cxp + dx * SWORD.len, cyp + dy * SWORD.len)
-      // 자루와 코등이 — 짧은 반대 방향 선 하나면 손이 어디를 쥐었는지 읽힌다.
+      ctx.lineWidth = Math.max(2.5, cam.scale * SWORD.bladeW)
+      line(ctx, cam, gx + dx * SWORD.hilt, gy + dy * SWORD.hilt, gx + dx * len, gy + dy * len)
+      if (t < tSl) {
+        ctx.strokeStyle = SWORD.core
+        ctx.lineWidth = Math.max(1, cam.scale * SWORD.bladeW * 0.35)
+        line(ctx, cam, gx + dx * SWORD.hilt, gy + dy * SWORD.hilt, gx + dx * len, gy + dy * len)
+      }
+      ctx.lineCap = "butt"
+      // ── 자루와 코등이 — 손이 어디를 쥐었는지.
       ctx.strokeStyle = SWORD.fitting
-      ctx.lineWidth = Math.max(1.6, cam.scale * SWORD.fittingW)
-      line(ctx, cam, cxp - dx * SWORD.grip, cyp - dy * SWORD.grip, cxp + dx * SWORD.hilt, cyp + dy * SWORD.hilt)
+      ctx.lineWidth = Math.max(1.6, cam.scale * SWORD.fittingW * 1.6)
+      line(ctx, cam, gx - dx * SWORD.grip, gy - dy * SWORD.grip, gx + dx * SWORD.hilt, gy + dy * SWORD.hilt)
     }
   }
 

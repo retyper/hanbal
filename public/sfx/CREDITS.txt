@@ -65,3 +65,11 @@ fail_jingle   (안 씀) 'game fail' by Leszek_Szary (146731). 후보로 남겨�
 swing_01      환도 휘두름. 'swoosh' by PorkMuncher (263595, CC0).
 parry_01/02   패링 성공 — 쇠와 쇠. 'Sword Clash' by loudernoises (334169) ·
               'Sword_Clash (7)' by JohnBuhr (326868). 둘을 번갈아 낸다.
+
+── 2026-09-10 패링 소리 교체 (형: "스윙하는 소리가 아니라 무슨 부메랑이 날라오는 소리잖아") ──
+맞는 말이었다. swing_01(1.83초 스우시)은 칼이 아니라 **날아오는 물건**의 소리다.
+한 동작을 셋으로 갈랐다 — 그림(발도·슬래시·납도)과 같은 시계를 쓴다 (P.parry.ready/slash).
+slash_01      슬래시. 'samurai slash' by nekoninja (Freesound 370204, CC0, 0.65초).
+unsheath_01   발도. 'unsheath_sword' by Qat (107589, CC0, 1.01초).
+sheath_01     납도. 'sheath_sword' by Qat (107590, CC0, 0.63초).
+swing_01      (안 씀) 'swoosh' by PorkMuncher (263595). 후보로 남겨둔다.

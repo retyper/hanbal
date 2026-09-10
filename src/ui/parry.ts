@@ -1,12 +1,12 @@
 /**
- * 환도 버튼 — 폰에는 F 키가 없다 (2026-09-10)
+ * 패링 버튼 — 폰에는 F 키가 없다 (2026-09-10)
  *
- * 형: **"'환도패링' 기능을 넣어. 적의 공격을 반사하는 패링기능이야."**
+ * 형: **"'환도패링' 기능을 넣어"** → 버튼에 적히는 이름은 **패링**이다 (형의 재지시).
  *
  * 숨참기 버튼(ui/steady.ts)과 **같은 문법**이다: HUD 줄 맨 앞의 동그란 버튼, 손가락 화면에서만
  * 보이고, pointerdown 에서 캡처를 잡아 손가락이 미끄러져도 up 을 놓치지 않는다.
  *
- * 다른 점 하나: 숨참기는 **누르고 있는** 것이고 환도는 **누른 순간**이다. sim 이 상승 에지만
+ * 다른 점 하나: 숨참기는 **누르고 있는** 것이고 패링은 **누른 순간**이다. sim 이 상승 에지만
  * 보므로(sim/bow.ts ArcherState.parryHeld) 꾹 눌러도 한 번만 휘두른다. 그래서 버튼은
  * "지금 휘두를 수 있는가"를 색으로만 말하면 된다 — 쿨은 화면(칼이 아직 돌고 있다)이 말한다.
  */
@@ -22,20 +22,22 @@ const CSS = `
 .pr-btn i.pr-lbl { font-size: 10px; font-style: normal; letter-spacing: .1em; line-height: 1; }
 .pr-btn svg { display: block; }
 @media (pointer: coarse) { .pr-btn { display: inline-flex; } }
-/* 좁은 폰 — 환도가 한 자리를 더 먹는다. 둘을 조금 줄여 버튼 줄이 한 줄 더 늘지 않게 한다
+/* 좁은 폰 — 패링이 한 자리를 더 먹는다. 둘을 조금 줄여 버튼 줄이 한 줄 더 늘지 않게 한다
    (줄 수가 곧 아래 띠의 높이이고, 띠가 두꺼워지면 버튼이 궁수를 덮는다 — render/camera.ts). */
 @media (max-width: 420px) { .pr-btn { width: 48px; height: 48px; } }
 `
 
-/** 환도 한 자루 — 곧은 칼등에 살짝 휜 날, 자루에 코등이 하나. */
-const ICON = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-  stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-  <path d="M20 3.5c-3.6 1-7.4 3.6-10 6.7" />
-  <path d="M20 3.5c-1 3.6-3.3 7-6.2 9.3" />
-  <path d="M13.8 12.8 10 9.5" />
-  <path d="M12 14.6 9.4 17.2" />
-  <path d="M7.2 15 11 18.8" />
-  <path d="m9.2 17-4.4 4.4" />
+/**
+ * 칼 한 자루 — 날 · 코등이 · 자루 · 자루끝 (2026-09-10, 형: "칼 아이콘이 있어야지").
+ *
+ * 날은 **채운 삼각형**이다. 22px 로 줄면 가는 선 여러 개는 서로 붙어 먼지가 되지만,
+ * 채운 도형은 실루엣이 남는다 — 아이콘은 그림이 아니라 실루엣이다.
+ */
+const ICON = `<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+  <path d="M21.2 1.6 12.3 13.35 10.7 11.85Z" fill="currentColor" />
+  <path d="M9.14 10.43 13.86 14.77" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" fill="none" />
+  <path d="M11.5 12.6 8.45 15.91" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" />
+  <circle cx="7.7" cy="16.9" r="1.5" fill="currentColor" />
 </svg>`
 
 /**
@@ -49,8 +51,10 @@ export function mountParry(o: Overlay, hit: (on: boolean) => void): void {
   const btn = document.createElement('button')
   btn.type = 'button'
   btn.className = 'hb-btn pr-btn'
-  btn.setAttribute('aria-label', '환도 — 날아오는 화살을 쳐서 되돌린다')
-  btn.innerHTML = `${ICON}<i class="pr-lbl">환도</i>`
+  // 이름은 **패링**이다 (2026-09-10, 형: "환도라고 하지 말고 패링이라고 하고").
+  // 물건 이름(환도)은 세계의 말이지만, 버튼에 적히는 건 **지금 무엇을 하는가**여야 한다.
+  btn.setAttribute('aria-label', '패링 — 날아오는 화살을 칼로 쳐서 되돌린다')
+  btn.innerHTML = `${ICON}<i class="pr-lbl">패링</i>`
 
   const set = (on: boolean): void => {
     btn.classList.toggle('pr-on', on)
@@ -69,8 +73,8 @@ export function mountParry(o: Overlay, hit: (on: boolean) => void): void {
   window.addEventListener('blur', onBlur)
   o.onDispose(() => window.removeEventListener('blur', onBlur))
 
-  // 숨참기 다음 자리 — 숨참기가 prepend 로 맨 앞에 서므로 여기도 prepend 면 환도가 앞에 온다.
-  // 왼손 엄지가 닿는 순서: 환도(급한 것) → 숨(오래 누르는 것).
+  // 숨참기 다음 자리 — 숨참기가 prepend 로 맨 앞에 서므로 여기도 prepend 면 패링이 앞에 온다.
+  // 왼손 엄지가 닿는 순서: 패링(급한 것) → 숨(오래 누르는 것).
   o.hud().prepend(btn)
   o.hud().prepend(style)
 }

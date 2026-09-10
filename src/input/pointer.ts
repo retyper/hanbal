@@ -31,7 +31,7 @@ export interface InputSource {
    */
   setSteady(on: boolean): void
   /**
-   * 화면 버튼이 누르는 환도 (ui/parry.ts). F 키와 **OR**.
+   * 화면 버튼이 누르는 패링 (ui/parry.ts). F 키와 **OR**.
    * sim 은 상승 에지만 보므로(ArcherState.parryHeld) 눌린 채로 있어도 한 번만 휘두른다.
    */
   setParry(on: boolean): void
@@ -55,7 +55,7 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
   let shiftHeld = false
   /** 화면의 숨참기 버튼 (폰). 위 둘과 같은 축이라 OR 로 합친다. */
   let uiHeld = false
-  /** 환도 — F 키와 화면 버튼. 둘을 OR 로 합쳐 frame.parry 로 보낸다. */
+  /** 패링 — F 키와 화면 버튼. 둘을 OR 로 합쳐 frame.parry 로 보낸다. */
   let fHeld = false
   let uiParry = false
   let restartEdge = false
@@ -181,7 +181,7 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
       case ' ': if (!e.repeat) press(true); break
       case 'Shift': shiftHeld = true; syncSteady(); return
       case 'r': case 'R': if (!e.repeat) restartEdge = true; return
-      // 환도 — 누른 순간 한 번 휘두른다 (sim/bow.ts 가 에지를 잡는다). 자동 반복은 무시한다.
+      // 패링 — 누른 순간 한 번 휘두른다 (sim/bow.ts 가 에지를 잡는다). 자동 반복은 무시한다.
       case 'f': case 'F': if (!e.repeat) { fHeld = true; syncParry() } return
       default: return
     }

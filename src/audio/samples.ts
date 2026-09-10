@@ -85,8 +85,16 @@ export type SampleName =
   | 'roar'
   /** 맞은 사람의 신음 — 살아남은 적의 몸통 명중. 귀신은 같은 소리를 낮게 낸다. */
   | 'grunt'
-  /** 환도가 바람을 가른다 — 휘두르는 순간 (P.parry). 맞든 안 맞든 난다. */
+  /**
+   * 칼날이 지나간다 — **슬래시 그 순간** (P.parry).
+   * 2026-09-10 형의 반려: "소리도 스윙하는소리가 아니라 무슨 부메랑이 날라오는소리잖아."
+   * 맞다 — 1.8초짜리 긴 스우시였다. 칼이 지나가는 건 **0.65초의 짧은 베기**여야 한다.
+   */
   | 'swing'
+  /** 발도 — 칼집에서 뽑히는 쇳소리. 슬래시보다 먼저 난다. */
+  | 'unsheath'
+  /** 납도 — 칼집에 꽂히는 소리. 동작을 닫는다. */
+  | 'sheath'
   /** 패링 성공 — 쇠와 쇠. 휘두름 소리 위에 얹혀야 "쳐냈다"가 된다. */
   | 'parry'
 
@@ -132,7 +140,9 @@ const FILES: Readonly<Record<SampleName, readonly string[]>> = {
   heart: ['heart_01'],
   roar: ['roar_01'],
   grunt: ['grunt_01', 'grunt_02', 'grunt_03'],
-  swing: ['swing_01'],
+  swing: ['slash_01'],
+  unsheath: ['unsheath_01'],
+  sheath: ['sheath_01'],
   parry: ['parry_01', 'parry_02'],
 }
 

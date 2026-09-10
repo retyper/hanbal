@@ -110,6 +110,20 @@ describe('환도 패링', () => {
     assert.ok(P.parry.active >= 0.2, `날이 ${P.parry.active}초만 열린다 — 프레임 반응을 요구한다`)
   })
 
+  it('한 동작이 발도 · 슬래시 · 납도로 갈라지고, 슬래시는 순식간이다 (형: "박진감있게")', () => {
+    // 형의 반려: "모션도 박진감있게 준비자세, 발도, 빠르게 휘두르기, 이런게 순식간에 지나가야해."
+    // 그림은 형이 눈으로 보지만, **셋이 실제로 갈라져 있는지**와 **슬래시가 짧은지**는 숫자다.
+    assert.ok(P.parry.ready > 0, '발도 구간이 없다 — 칼이 허공에서 튀어나온다')
+    assert.ok(P.parry.slash > 0, '슬래시 구간이 없다')
+    assert.ok(P.parry.ready + P.parry.slash < P.parry.swing, '납도할 시간이 안 남는다')
+    // 60Hz 에서 다섯 프레임 안. 이보다 길면 "휘두른다"가 아니라 "돌린다"가 된다.
+    assert.ok(P.parry.slash <= 0.1, `슬래시가 ${P.parry.slash}초다 — 순식간이 아니다`)
+    // 베는 데까지 걸리는 시간이 사람의 반응 시간(약 0.25초) 안이어야 "즉발"로 느껴진다.
+    assert.ok(P.parry.ready + P.parry.slash <= 0.25, '칼이 닿기까지 너무 오래 걸린다')
+    // 날은 슬래시가 끝나기 전에 이미 화살을 잡고 있어야 한다 — 그림보다 판정이 늦으면 거짓말이다.
+    assert.ok(P.parry.active > P.parry.ready + P.parry.slash, '슬래시가 끝난 뒤에야 잡기 시작한다')
+  })
+
   it('당기던 중에 휘두르면 당김이 풀리되 화살은 안 나간다 (C2)', () => {
     const w = createWorld(def(), STATS)
     run(w, 0.5, DRAW)
