@@ -741,6 +741,12 @@ export function pumpEvents(fx: Fx, w: World): void {
       if (e.lost > 0) pushPopup(fx.pop, e.x, e.y, `화살 -${e.lost}`, 'crit')
       spawn(fx, e.x, e.y, FX.missBurst, KIND_MISS, FX.critSpeed, FX.missTtl, 1.4)
       fx.hitStop += P.hit.stopMs * 0.001
+    } else if (e.t === 'parry_hit') {
+      // 쳐냈다 — 불꽃이 크게 튀고 글자가 남는다. 잘한 일은 크게 알린다 (형: "바바바박").
+      pushPopup(fx.pop, e.x, e.y + 0.6, e.n > 1 ? `${e.n}발 쳐냈다!` : '쳐냈다!', 'crit')
+      spawn(fx, e.x, e.y, FX.hitBurst, KIND_CHAIN, FX.speed * 1.5, FX.ttl, 1.5)
+      fx.hitStop += P.hit.stopMs * 0.001
+      if (fx.slow < FX.critSlowSec) fx.slow = FX.critSlowSec
     } else if (e.t === 'stagger') {
       // 보스가 멈췄다 — 약점이 열리는 순간. 글자·흙먼지·짧은 슬로우. 크게 알려야 "지금 쏴라"가 된다.
       pushPopup(fx.pop, e.x, e.y + 1.6, e.trip ? '넘어졌다!' : '비틀!', 'crit')

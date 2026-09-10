@@ -23,7 +23,7 @@ import { arrowFx } from '../src/sim/arrowfx.ts'
 import type { InputFrame, StageDef, Stats, World } from '../src/sim/types.ts'
 
 const STATS: Stats = { str: 10, steady: 8, stamina: 8, focus: 6 }
-const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false }
+const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false, parry: false }
 
 /** 멀리 있는 과녁 하나. 화살이 중간에 무엇에도 안 걸려야 발사 자체를 잴 수 있다. */
 function far(): StageDef {

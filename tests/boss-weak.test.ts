@@ -16,7 +16,7 @@ import { P } from '../src/tune/params.ts'
 import type { InputFrame, StageDef, Stats, TargetSpec, World } from '../src/sim/types.ts'
 
 const STATS: Stats = { str: 10, steady: 8, stamina: 8, focus: 6 }
-const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false }
+const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false, parry: false }
 
 function def(targets: TargetSpec[]): StageDef {
   return { id: 'boss-weak', seed: 7, arrows: 20, targetScore: 100, wind: 0, targets }

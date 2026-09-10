@@ -17,7 +17,7 @@ import { P } from '../src/tune/params.ts'
 import type { InputFrame, StageDef, Stats } from '../src/sim/types.ts'
 
 const STATS: Stats = { str: 10, steady: 8, stamina: 8, focus: 6 }
-const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false }
+const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false, parry: false }
 
 /** 한 발 쏘고 죽을 때까지 돌린다. 나온 이벤트를 전부 모은다. */
 function shoot(stage: StageDef, angle: number, power = 1): {

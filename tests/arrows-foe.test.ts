@@ -12,7 +12,7 @@ import { spawnArrow } from '../src/sim/ballistics.ts'
 import type { ArrowKindId, InputFrame, StageDef, Stats, World } from '../src/sim/types.ts'
 
 const STATS: Stats = { str: 10, steady: 8, stamina: 8, focus: 6 }
-const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false }
+const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false, parry: false }
 
 /** 큰 보스(버틴다) + 곁의 잔몹 과녁 + 뒤의 과녁. 효과가 갈 곳을 깔아둔 배치다. */
 function arena(): StageDef {

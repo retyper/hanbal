@@ -474,7 +474,7 @@ class Bot {
   private readonly rng: Rng
   /** 봇이 **믿는** 화살 초속. velBias만큼 진실에서 어긋나 있다. */
   private readonly v: number
-  private readonly out: InputFrame = { aimX: 0, aimY: 0, drawing: false, steady: false }
+  private readonly out: InputFrame = { aimX: 0, aimY: 0, drawing: false, steady: false, parry: false }
   /** strain 인지 지연용 링버퍼. 생성자에서 한 번만 잡는다 (A5). */
   private readonly hist = new Float64Array(STRAIN_HIST)
   private histIdx = 0

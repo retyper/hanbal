@@ -12,7 +12,7 @@ import { P } from '../src/tune/params.ts'
 import type { InputFrame, StageDef, Stats } from '../src/sim/types.ts'
 
 const STATS: Stats = { str: 10, steady: 8, stamina: 8, focus: 6 }
-const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false }
+const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false, parry: false }
 
 function arena(fireDelay: number): StageDef {
   return {

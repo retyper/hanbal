@@ -370,6 +370,9 @@ export function foeDmgMul(n: number): number {
  * 저작된 teach 가 이미 통의 말이라 그대로 둔다 (GAP.md 1절의 퍼즐판).
  */
 function foeHint(n: number, base: StageDef, specs: readonly TargetSpec[]): string {
+  // ★ 처음 화살을 맞는 판에서 **환도**를 가르친다 (2026-09-10, P.parry).
+  //   새 세이브 칸(seen...)을 또 만들지 않는다 — 가르칠 자리가 이미 여기다. 적이 처음 활을
+  //   드는 판과, 화살이 실제로 날아오는 그다음 판에 한 줄씩.
   if (n === BOSS_EVERY + 1) return '적이 활을 든다 — 당기는 쪽을 먼저 쏜다. 머리는 한 발이다'
   if (specs.some((s) => s.kind === 'barrel')) return base.hint ?? ''
   let win = 0
@@ -381,7 +384,7 @@ function foeHint(n: number, base: StageDef, specs: readonly TargetSpec[]): strin
     else if (s.look === 2) hide++
     else win++
   }
-  if (n === BOSS_EVERY + 2) return '체력은 판을 넘어 이어진다 — 맞기 전에 눕힌다'
+  if (n === BOSS_EVERY + 2) return '날아오는 화살은 환도로 쳐낸다 — F (폰은 환도 버튼). 쳐낸 화살은 쏜 놈에게 돌아간다'
   if (hide > 0 && drone === 0) return '숨은 사수는 당길 때만 나온다 — 그 틈이 유일하다'
   if (drone > 0 && hide === 0) return '드론은 떠서 돈다 — 멈칫하는 자리를 노린다'
   if (hide > 0 && drone > 0) return '숨는 놈과 나는 놈 — 먼저 당기는 쪽부터'

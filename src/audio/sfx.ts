@@ -362,6 +362,9 @@ const SMP = {
   roarGain: 0.7,
   /** 보스가 멈추는 쿵 — downGain 배수. */
   staggerGain: 1.5,
+  /** 환도 — 휘두름은 절대값(자주 난다), 패링 성공은 그보다 크다 (드물고 잘한 일이다). */
+  swingGain: 0.34,
+  parryGain: 0.62,
   /** 맞은 사람의 신음 — 절대값. 명중음 뒤에 얹히는 소리라 그보다 작다. 귀신은 낮고(rate) 크게. */
   gruntGain: 0.42,
   gruntJitter: 0.08,
@@ -1754,6 +1757,12 @@ export function pumpSfx(sfx: Sfx, w: World): void {
         BL.type = 'sine'
         bellTone(s, K_UI, BL)
       }
+    } else if (e.t === 'parry') {
+      // 환도를 휘둘렀다 — 바람 가르는 소리. 맞았든 안 맞았든 손이 한 일은 같다.
+      sample(sfx, s, 'swing', SMP.swingGain, jitter(SMP.hitJitter), 0, 0)
+    } else if (e.t === 'parry_hit') {
+      // 쳐냈다 — 쇠와 쇠. 여러 발을 한꺼번에 쳐도 소리는 한 번이다 (sim 이 묶어서 보낸다).
+      sample(sfx, s, 'parry', SMP.parryGain, jitter(SMP.hitJitter), e.x, e.y)
     } else if (e.t === 'stagger') {
       // 보스가 멈췄다 — 낮은 쿵. 사람이 쓰러지는 소리보다 무겁고 느리게.
       sample(sfx, s, 'thud', SMP.downGain * SMP.staggerGain, e.trip ? 0.72 : 0.82, e.x, e.y)

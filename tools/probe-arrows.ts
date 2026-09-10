@@ -12,7 +12,7 @@ import { ARROW_KINDS } from '../src/game/arrows.ts'
 import type { ArrowKindId, InputFrame, StageDef, Stats } from '../src/sim/types.ts'
 
 const STATS: Stats = { str: 10, steady: 8, stamina: 8, focus: 6 }
-const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false }
+const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false, parry: false }
 
 /** 밀집 + 일렬 + 공중. 여섯 종류가 각각 다른 것을 물어야 하는 배치다. */
 function stage(): StageDef {

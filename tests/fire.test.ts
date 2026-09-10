@@ -21,7 +21,7 @@ import { P } from '../src/tune/params.ts'
 import type { ArrowKindId, InputFrame, StageDef, Stats } from '../src/sim/types.ts'
 
 const STATS: Stats = { str: 10, steady: 8, stamina: 8, focus: 6 }
-const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false }
+const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false, parry: false }
 
 /** 과녁 하나가 머리 높이(y=1.7)에 서 있는 판. 그 밑 땅에 떨어뜨려도 반경 안이다. */
 function nearGround(x: number): StageDef {

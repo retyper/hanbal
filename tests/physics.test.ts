@@ -35,7 +35,7 @@ function must<T>(v: T | undefined, what: string): T {
 }
 
 function aimAt(w: World, dx: number, dy: number, drawing: boolean, steady: boolean): InputFrame {
-  return { aimX: w.archer.x + dx, aimY: w.archer.y + dy, drawing, steady }
+  return { aimX: w.archer.x + dx, aimY: w.archer.y + dy, drawing, steady, parry: false }
 }
 
 /** 화살의 역학적 에너지 (운동 + 위치). 중력은 에너지를 옮길 뿐 넣지 않는다. */

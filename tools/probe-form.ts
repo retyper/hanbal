@@ -155,7 +155,7 @@ function frameAt(drawTarget: number): {
   draw: number
 } {
   const w = createWorld(getStage(0), STATS)
-  const hold: InputFrame = { aimX: 30, aimY: 2, drawing: true, steady: true }
+  const hold: InputFrame = { aimX: 30, aimY: 2, drawing: true, steady: true, parry: false }
   // 최소 한 스텝은 당긴다 — idle에서는 시위를 잡고 있지도 않으므로 잴 것이 없다.
   step(w, hold)
   // 붕괴하면 색이 경고 램프로 바뀌고 자세가 무너진다. 거기까지 가기 전에 멈춘다.

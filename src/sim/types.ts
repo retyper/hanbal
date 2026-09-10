@@ -22,6 +22,11 @@ export interface InputFrame {
   drawing: boolean
   /** 우클릭 / Shift = 호흡정지 */
   steady: boolean
+  /**
+   * F / 화면 버튼 = **환도를 휘두른다** (P.parry). 누르고 있는 상태가 아니라 **누른 순간**이
+   * 한 번의 휘두름이다 — sim 이 상승 에지를 잡는다 (ArcherState.parryHeld).
+   */
+  parry: boolean
 }
 
 // ───────────────────────────── 성장 ─────────────────────────────
@@ -97,6 +102,17 @@ export interface ArcherState {
    * 떨림과 발사 오차가 전부 이 값에 비례한다. HUD가 이 값으로 경계선 넘김을 표시한다.
    */
   strain: number
+
+  // ── 환도 패링 (P.parry, 2026-09-10) ──
+  /**
+   * 휘두름의 남은 시간 (s). 0보다 크면 칼을 휘두르는 중이고, **렌더는 이 값으로 칼의 각을 그린다.**
+   * 앞쪽 P.parry.active 구간에서만 화살을 잡는다 (sim/world.ts).
+   */
+  parryLeft: number
+  /** 다시 휘두를 수 있기까지 남은 시간 (s). 휘두름 시간 + cool 에서 내려온다. */
+  parryCool: number
+  /** 지난 스텝에 버튼이 눌려 있었는가 — 상승 에지만 한 번의 휘두름이 되게 한다. */
+  parryHeld: boolean
 }
 
 // ───────────────────────────── 화살 ─────────────────────────────
@@ -401,6 +417,10 @@ export type SimEvent =
   | { t: 'enemy_shot'; x: number; y: number }
   /** 적 화살이 과녁에 박혔다 — 과녁 뒤는 엄폐다. */
   | { t: 'deflect'; x: number; y: number }
+  /** 환도를 휘둘렀다 (맞든 안 맞든). 소리는 바람 가르는 소리, 그림은 칼의 호. */
+  | { t: 'parry'; x: number; y: number }
+  /** 패링 성공 — 화살 n 발을 쳐서 되돌려보냈다. 쇠와 쇠가 부딪히는 소리가 여기 붙는다. */
+  | { t: 'parry_hit'; x: number; y: number; n: number }
   /**
    * 갑옷/과녁이 화살을 삼켰다. `left` 는 **남은 갑옷 비율**(1=멀쩡, 0=파손 직전)이고,
    * 갑옷이 아닌 것이 막았으면(과녁이 적 화살을 막는 경우) -1 이다.

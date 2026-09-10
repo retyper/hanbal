@@ -16,7 +16,7 @@ import { P } from '../src/tune/params.ts'
 import type { InputFrame, StageDef, Stats } from '../src/sim/types.ts'
 
 const STATS: Stats = { str: 10, steady: 8, stamina: 8, focus: 6 }
-const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false }
+const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false, parry: false }
 
 /** 임의의 배치에서 (tx, ty)를 겨누는 각을 찾는다 (tests/arrows.test.ts의 aimAt와 같은 방식). */
 function aimAt(make: () => StageDef, tx: number, ty: number): number {

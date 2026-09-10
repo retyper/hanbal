@@ -34,12 +34,12 @@ describe("'한 발' 순간", () => {
   it('과녁이 하나여도 화살이 안 날면 안 늘어진다 (1-1이 통째로 슬로모가 되면 안 된다)', () => {
     const w = createWorld(arena(1), STATS)
     const fx = createFx()
-    const idle: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false }
+    const idle: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false, parry: false }
     for (let i = 0; i < 240; i++) frame(w, fx, idle)
     assert.equal(oneShotAmount(fx), 0, '가만히 서 있는데 시간이 늘어졌다')
 
     // 당기는 동안에도 아직 아니다 — 화살이 떠나야 그 순간이다.
-    const hold: InputFrame = { aimX: 20, aimY: 2, drawing: true, steady: false }
+    const hold: InputFrame = { aimX: 20, aimY: 2, drawing: true, steady: false, parry: false }
     for (let i = 0; i < 300 && w.archer.phase !== 'full'; i++) frame(w, fx, hold)
     for (let i = 0; i < 30; i++) frame(w, fx, hold)
     assert.equal(oneShotAmount(fx), 0, '당기기만 했는데 시간이 늘어졌다')
@@ -50,8 +50,8 @@ describe("'한 발' 순간", () => {
     const fx = createFx()
     const t = w.targets[0]
     assert.ok(t !== undefined)
-    const hold: InputFrame = { aimX: t.x, aimY: t.y, drawing: true, steady: false }
-    const rest: InputFrame = { aimX: t.x, aimY: t.y, drawing: false, steady: false }
+    const hold: InputFrame = { aimX: t.x, aimY: t.y, drawing: true, steady: false, parry: false }
+    const rest: InputFrame = { aimX: t.x, aimY: t.y, drawing: false, steady: false, parry: false }
     for (let i = 0; i < 300 && w.archer.phase !== 'full'; i++) frame(w, fx, hold)
     frame(w, fx, rest)
     let peak = 0
@@ -70,8 +70,8 @@ describe("'한 발' 순간", () => {
     const fx = createFx()
     const t = w.targets[0]
     assert.ok(t !== undefined)
-    const hold: InputFrame = { aimX: t.x, aimY: t.y, drawing: true, steady: false }
-    const rest: InputFrame = { aimX: t.x, aimY: t.y, drawing: false, steady: false }
+    const hold: InputFrame = { aimX: t.x, aimY: t.y, drawing: true, steady: false, parry: false }
+    const rest: InputFrame = { aimX: t.x, aimY: t.y, drawing: false, steady: false, parry: false }
     for (let i = 0; i < 300 && w.archer.phase !== 'full'; i++) frame(w, fx, hold)
     frame(w, fx, rest)
     let peak = 0
@@ -112,8 +112,8 @@ describe("'한 발' 순간", () => {
     // 날게 만들고, 상한을 넘긴 뒤에도 여전히 슬로모인지를 잰다.
     const w = createWorld(arena(1), STATS)
     const fx = createFx()
-    const hold: InputFrame = { aimX: 9, aimY: 30, drawing: true, steady: false }
-    const rest: InputFrame = { aimX: 9, aimY: 30, drawing: false, steady: false }
+    const hold: InputFrame = { aimX: 9, aimY: 30, drawing: true, steady: false, parry: false }
+    const rest: InputFrame = { aimX: 9, aimY: 30, drawing: false, steady: false, parry: false }
     for (let i = 0; i < 300 && w.archer.phase !== 'full'; i++) frame(w, fx, hold)
     frame(w, fx, rest)
 

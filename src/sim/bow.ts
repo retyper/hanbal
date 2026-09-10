@@ -144,6 +144,33 @@ export function stepArcher(w: World, input: InputFrame): void {
     a.phase = 'idle'
   }
 
+  // ── 환도(環刀) — 누른 **순간** 한 번 휘두른다 (P.parry, 2026-09-10 형의 요구) ──
+  //
+  // 시간은 늘 흐른다. 휘두르는 중에도 쿨이 같이 내려간다 — 둘을 따로 세면 "휘두름이 끝나야
+  // 쿨이 시작된다"를 어딘가에서 또 판정해야 하고, 그 판정이 곧 버그가 된다.
+  if (a.parryLeft > 0) a.parryLeft = a.parryLeft > dt ? a.parryLeft - dt : 0
+  if (a.parryCool > 0) a.parryCool = a.parryCool > dt ? a.parryCool - dt : 0
+  // 누르고 있는 것이 아니라 **누른 순간**이다. 꾹 누르고 있으면 한 번만 휘두른다.
+  const parryEdge = input.parry && !a.parryHeld
+  a.parryHeld = input.parry
+  if (parryEdge && a.parryCool <= 0) {
+    a.parryLeft = P.parry.swing
+    a.parryCool = P.parry.swing + P.parry.cool
+    // ★ 칼을 뽑으려면 활을 놓아야 한다. **화살은 안 나간다** — 당기던 것이 그냥 풀린다.
+    //   이 한 줄이 패링의 값이다: 쏠 순간과 막을 순간 중 하나를 고르게 만든다.
+    //   화살을 태우지는 않는다 (C2 — 끊어도 손해가 없다). release() 를 안 거치므로 안전하다:
+    //   아래에서 drawing 이 false 로 계산되어 릴리즈 분기에 걸리지 않는다.
+    if (a.phase === 'drawing' || a.phase === 'full') {
+      a.phase = 'recovering'
+      a.draw = 0
+      a.drawTime = 0
+      a.holdTime = 0
+      a.steadyTime = 0
+      a.steadyBlend = 0
+    }
+    w.events.push({ t: 'parry', x: a.x, y: a.y })
+  }
+
   // idle → drawing. 누른 **그 스텝에** draw가 0보다 커져야 한다 (feel-lens 1).
   // 잔량 0에서도 잡히면, 마지막 화살이 날아가는 동안 다시 눌러 만작까지 간 한 발이
   // spawnArrow의 잔량 검사에 걸려 통째로 증발한다. 아예 안 물려야 '못 쏜다'가 즉시 읽힌다.

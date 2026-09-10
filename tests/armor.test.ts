@@ -39,8 +39,8 @@ function arena(): StageDef {
 
 /** 한 발 쏘고 결판날 때까지 돌린다. 이번 발이 만든 이벤트만 돌려준다. */
 function shoot(w: World, aimX: number, aimY: number): string[] {
-  const hold: InputFrame = { aimX, aimY, drawing: true, steady: false }
-  const rest: InputFrame = { aimX, aimY, drawing: false, steady: false }
+  const hold: InputFrame = { aimX, aimY, drawing: true, steady: false, parry: false }
+  const rest: InputFrame = { aimX, aimY, drawing: false, steady: false, parry: false }
   const seen: string[] = []
   const drain = (): void => {
     for (const e of w.events) if (e !== undefined) seen.push(e.t)

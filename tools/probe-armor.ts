@@ -32,8 +32,8 @@ function foe(w: World) {
 }
 
 function shoot(w: World, aimX: number, aimY: number): SimEvent[] {
-  const hold: InputFrame = { aimX, aimY, drawing: true, steady: false }
-  const rest: InputFrame = { aimX, aimY, drawing: false, steady: false }
+  const hold: InputFrame = { aimX, aimY, drawing: true, steady: false, parry: false }
+  const rest: InputFrame = { aimX, aimY, drawing: false, steady: false, parry: false }
   const seen: SimEvent[] = []
   const drain = (): void => {
     for (const e of w.events) if (e !== undefined) seen.push(e)

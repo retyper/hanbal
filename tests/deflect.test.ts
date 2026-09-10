@@ -9,7 +9,7 @@ import { spawnArrow } from '../src/sim/ballistics.ts'
 import type { InputFrame, StageDef, Stats } from '../src/sim/types.ts'
 
 const STATS: Stats = { str: 10, steady: 8, stamina: 8, focus: 6 }
-const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false }
+const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false, parry: false }
 
 describe('맞불', () => {
   it('마주 나는 두 화살이 만나면 적 화살이 죽고 deflect가 튄다', () => {

@@ -489,6 +489,34 @@ function limb(
  * 두정갑(頭釘甲)의 생김새 — 어깨에서 골반까지의 천 판과 그 위의 쇠징.
  * 치수는 m(몸 좌표). 어깨 폭은 몸통보다 조금 넓어야 '입은 것'으로 읽힌다.
  */
+/**
+ * 환도의 치수 (m·rad). 손맛 값(시간·판정)은 P.parry 에 있고, 여기 있는 건 **생김새**다 —
+ * render/hud.ts 의 HUD 상수와 같은 성격이라 노브로 올리지 않는다 (A2 의 경계).
+ */
+const SWORD = {
+  /** 칼집 — 허리에서 뒤로 비스듬히. */
+  sheathLen: 0.52,
+  sheathDrop: 0.34,
+  sheathW: 0.055,
+  sheath: '#4a3a28',
+  fitting: '#c99a5e',
+  fittingW: 0.035,
+  /** 휘두르는 칼 — 어깨보다 조금 앞·아래를 축으로 돈다. */
+  pivotFwd: 0.16,
+  pivotUp: 0.06,
+  len: 0.95,
+  hilt: 0.2,
+  grip: 0.16,
+  bladeW: 0.06,
+  blade: '#dfe8f2',
+  /** 지나온 호. */
+  trail: '#9fb4c8',
+  trailW: 0.09,
+  /** 위(앞쪽 사선)에서 아래로. 화면 y 는 아래가 +라 부호가 뒤집혀 있다 — line() 이 월드로 받는다. */
+  from: 1.15,
+  to: -0.75,
+} as const
+
 const ARMOR_PLATE = {
   shoulder: 0.19,
   hip: 0.15,
@@ -976,6 +1004,53 @@ export function drawArcher(
     line(ctx, cam, rig.nockX, rig.nockY, tipX, tipY)
     ctx.strokeStyle = THEME.accent
     line(ctx, cam, tipX - rig.ux * BODY.arrowHead, tipY - rig.uy * BODY.arrowHead, tipX, tipY)
+  }
+
+  // ── 환도(環刀) — 허리에 차고 있다가, 누르면 뽑아 휘두른다 (P.parry, 2026-09-10) ──
+  //
+  // 형: "환도를 들고있는 캐릭터로 보여야 하고 휘두르는 모션이랑 소리, 패링 성공소리."
+  // 그래서 **평소에도 보인다** — 안 휘두를 때는 허리에 칼집이 걸려 있다. 그게 없으면
+  // 칼이 허공에서 튀어나오고, 그 순간 캐릭터는 궁수가 아니라 마술사가 된다.
+  {
+    const swing = P.parry.swing
+    const t = a.parryLeft > 0 ? 1 - a.parryLeft / swing : -1
+    if (t < 0) {
+      // ── 칼집 — 허리 뒤로 비스듬히. 짧은 두 선(칼집 + 코등이)이면 '차고 있다'가 읽힌다.
+      ctx.strokeStyle = SWORD.sheath
+      ctx.lineWidth = Math.max(1.6, cam.scale * SWORD.sheathW)
+      line(ctx, cam, pelvisX - 0.02, pelvisY + 0.02, pelvisX - SWORD.sheathLen, pelvisY - SWORD.sheathDrop)
+      ctx.strokeStyle = SWORD.fitting
+      ctx.lineWidth = Math.max(1.2, cam.scale * SWORD.fittingW)
+      line(ctx, cam, pelvisX + 0.03, pelvisY + 0.05, pelvisX - 0.08, pelvisY - 0.02)
+    } else {
+      // ── 휘두름 — 어깨를 축으로 위에서 아래로 한 번. 앞(오른쪽)을 벤다.
+      // 각은 시간의 순수 함수다 (A1: 렌더는 상태를 안 만든다). 처음이 빠르고 끝이 느리다.
+      const e = 1 - (1 - t) * (1 - t)
+      const ang = SWORD.from + (SWORD.to - SWORD.from) * e
+      const cxp = rig.sx + SWORD.pivotFwd
+      const cyp = rig.sy - SWORD.pivotUp
+      const dx = Math.cos(ang)
+      const dy = Math.sin(ang)
+      // 잔상 — 지나온 호. 칼보다 먼저 그려야 칼이 그 위에 선다.
+      ctx.strokeStyle = SWORD.trail
+      ctx.globalAlpha = 0.5 * (1 - t)
+      ctx.lineWidth = Math.max(2, cam.scale * SWORD.trailW)
+      ctx.beginPath()
+      ctx.arc(
+        worldToScreenX(cam, cxp), worldToScreenY(cam, cyp), cam.scale * SWORD.len * 0.82,
+        -SWORD.from, -ang, SWORD.to < SWORD.from,
+      )
+      ctx.stroke()
+      ctx.globalAlpha = 1
+      // 날 — 자루에서 칼끝까지. 끝이 조금 더 밝다.
+      ctx.strokeStyle = SWORD.blade
+      ctx.lineWidth = Math.max(2, cam.scale * SWORD.bladeW)
+      line(ctx, cam, cxp + dx * SWORD.hilt, cyp + dy * SWORD.hilt, cxp + dx * SWORD.len, cyp + dy * SWORD.len)
+      // 자루와 코등이 — 짧은 반대 방향 선 하나면 손이 어디를 쥐었는지 읽힌다.
+      ctx.strokeStyle = SWORD.fitting
+      ctx.lineWidth = Math.max(1.6, cam.scale * SWORD.fittingW)
+      line(ctx, cam, cxp - dx * SWORD.grip, cyp - dy * SWORD.grip, cxp + dx * SWORD.hilt, cyp + dy * SWORD.hilt)
+    }
   }
 
   // ── 호흡정지 사선 (P.steady.previewTime) — 숨을 참으면 화살이 갈 길이 보인다 ──

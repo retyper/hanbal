@@ -272,7 +272,7 @@ import type { InputFrame, Stats, World } from '../src/sim/types.ts'
 import type { Renderer } from '../src/render/scene.ts'
 
 const STATS: Stats = { str: 8, steady: 6, stamina: 6, focus: 4 }
-const IDLE: InputFrame = { aimX: 20, aimY: 3, drawing: false, steady: false }
+const IDLE: InputFrame = { aimX: 20, aimY: 3, drawing: false, steady: false, parry: false }
 /** HUD 상태는 실전값으로. toast·stars 는 결과 배너에서만 그려진다 (아래 '클리어 배너' 프레임). */
 const HUD_STATE: HudState = {
   training: 12, canLevelUp: true, muted: false, silent: false,
@@ -468,7 +468,7 @@ for (const [cw, ch] of [[1280, 720], [800, 600], [390, 844], [360, 640]] as cons
   console.log('\n── HUD가 궁수를 덮는가 (당기는 중) ──')
   const { worldToScreenX: wsx, worldToScreenY: wsy } = await import('../src/render/camera.ts')
   const { bowHandScreenX, bowHandScreenY } = await import('../src/render/stickman.ts')
-  const DRAW: InputFrame = { aimX: 20, aimY: 3, drawing: true, steady: false }
+  const DRAW: InputFrame = { aimX: 20, aimY: 3, drawing: true, steady: false, parry: false }
 
   for (const [cw, ch] of [[390, 844], [360, 640], [844, 390], [1280, 720]] as const) {
     for (const idx of [0, 48]) {

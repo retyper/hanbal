@@ -11,7 +11,7 @@ import { P } from '../tune/params.ts'
 import { groundAt } from './terrain.ts'
 import { arrowFx, refreshArrowFx } from './arrowfx.ts'
 import { effectiveStats, stepArcher } from './bow.ts'
-import { stepArrows } from './ballistics.ts'
+import { spawnParried, stepArrows } from './ballistics.ts'
 import { hurtPlayer, stepTargets } from './target.ts'
 import { flowMiss, resetFlow, stepFlow } from './flow.ts'
 import { TRAIL_POINTS } from './types.ts'
@@ -73,6 +73,9 @@ function newArcher(): ArcherState {
     steadyBlend: 0,
     warn: 0,
     strain: 0,
+    parryLeft: 0,
+    parryCool: 0,
+    parryHeld: false,
   }
 }
 
@@ -170,6 +173,9 @@ function resetArcher(a: ArcherState, staminaMax: number): void {
   a.steadyBlend = 0
   a.warn = 0
   a.strain = 0
+  a.parryLeft = 0
+  a.parryCool = 0
+  a.parryHeld = false
 }
 
 /**
@@ -631,6 +637,10 @@ function stepEnemyShots(w: World): void {
   const dt = w.dt
   const a = w.archer
   const r2 = P.enemy.hitRadius * P.enemy.hitRadius
+  // 이번 스텝에 쳐낸 화살 수. 한 번에 여럿을 치면 소리도 한 번이어야 한다 — 겹치면 굉음이 된다.
+  let parried = 0
+  let parryX = 0
+  let parryY = 0
   for (let i = 0; i < w.shots.length; i++) {
     const sh = w.shots[i]
     if (sh === undefined || !sh.alive) continue
@@ -672,6 +682,26 @@ function stepEnemyShots(w: World): void {
     }
     if (!sh.alive) continue
 
+    // ── 환도 패링 (P.parry) — 날이 열려 있는 동안 앞으로 오는 화살을 쳐서 되돌린다 ──
+    //
+    // 날이 잡는 건 휘두름의 **앞부분**이다 (swing 0.42 중 active 0.30). 판정은 이번 스텝의
+    // 선분 대 원 — 적 화살이 36m/s 라 점으로 재면 한 스텝에 0.6m 를 건너뛴다.
+    // 형: "패링 판정은 너무 빡빡하게 하진 않게" — 그래서 반경이 2.4m 로 넉넉하다.
+    if (a.parryLeft > P.parry.swing - P.parry.active) {
+      const cx = a.x + P.parry.ahead
+      const rr = P.parry.reach
+      if (distSqPointSegment(cx, a.y, sh.px, sh.py, sh.x, sh.y) <= rr * rr) {
+        sh.alive = false
+        // 왔던 길로 되돌아간다 — 다만 조금 위로 들어서. 그대로 뒤집으면 땅에 처박힌다.
+        const sp = Math.hypot(sh.vx, sh.vy) * P.parry.speedMul
+        spawnParried(w, sh.x, sh.y, Math.atan2(-sh.vy, -sh.vx) + P.parry.liftAngle, sp)
+        parried++
+        parryX = sh.x
+        parryY = sh.y
+        continue
+      }
+    }
+
     // ── 방패 (P.defense) — 앞에 세운 판때기가 화살을 삼킨다 ──
     //
     // 판정은 궁수 앞 shieldX 자리의 **세로 평면**이다. 이번 스텝의 선분이 그 평면을
@@ -712,6 +742,9 @@ function stepEnemyShots(w: World): void {
     // 땅에 박힌다 — 언덕이면 언덕에 (sim/terrain.ts).
     if (sh.y <= groundAt(w.stage, sh.x) || sh.x < a.x - 6) sh.alive = false
   }
+
+  // 쳐낸 것이 있으면 **한 번만** 알린다 (쇠와 쇠가 부딪히는 소리 · 글자).
+  if (parried > 0) w.events.push({ t: 'parry_hit', x: parryX, y: parryY, n: parried })
 }
 
 function endStage(w: World, cleared: boolean): void {

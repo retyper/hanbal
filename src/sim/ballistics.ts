@@ -75,6 +75,21 @@ export function spawnArrow(w: World, angle: number, power: number): Arrow | null
 }
 
 /**
+ * 환도가 쳐서 되돌려보낸 화살 (P.parry · sim/world.ts).
+ *
+ * **재고를 안 깎는다** — 이건 내 살통의 살이 아니라 **적이 쏜 화살**이다. 종류도 기본 살이다:
+ * 튕겨낸 남의 살이 갑자기 화전으로 터지면 그건 반사가 아니라 마술이다.
+ * depth 1 로 태어나므로 중(中)으로 세지 않는다 — 한 번의 당김이 아니기 때문이다
+ * (sim/target.ts resolveHit 의 분열 자식과 같은 규칙).
+ */
+export function spawnParried(w: World, x: number, y: number, angle: number, speed: number): Arrow | null {
+  const a = freeSlot(w)
+  if (a === null) return null
+  launch(a, x, y, angle, speed, 1, 1, 'basic', arrowFx('basic'))
+  return a
+}
+
+/**
  * 슬롯 하나를 꺼내 실제로 쏜다. **재고를 안 깎는다** — 회계는 spawnArrow 한 곳의 몫이다.
  * 동시 발사(산전)의 곁가지와 이어쏘기(연주전)의 뒷발이 같은 길을 쓰게 여기 모은다.
  */

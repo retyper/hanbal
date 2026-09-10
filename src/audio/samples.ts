@@ -85,6 +85,10 @@ export type SampleName =
   | 'roar'
   /** 맞은 사람의 신음 — 살아남은 적의 몸통 명중. 귀신은 같은 소리를 낮게 낸다. */
   | 'grunt'
+  /** 환도가 바람을 가른다 — 휘두르는 순간 (P.parry). 맞든 안 맞든 난다. */
+  | 'swing'
+  /** 패링 성공 — 쇠와 쇠. 휘두름 소리 위에 얹혀야 "쳐냈다"가 된다. */
+  | 'parry'
 
 /** 확장자와 폴더는 여기 한 곳에만 적는다. */
 const DIR = 'sfx/'
@@ -128,6 +132,8 @@ const FILES: Readonly<Record<SampleName, readonly string[]>> = {
   heart: ['heart_01'],
   roar: ['roar_01'],
   grunt: ['grunt_01', 'grunt_02', 'grunt_03'],
+  swing: ['swing_01'],
+  parry: ['parry_01', 'parry_02'],
 }
 
 /** 순회용 키 목록. 매번 Object.keys를 부르면 배열이 새로 생긴다 (A5). */

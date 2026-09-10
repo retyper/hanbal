@@ -311,7 +311,7 @@ export function updateCamera(cam: Camera, w: World, dtReal: number): void {
         // 사람·귀신을 때린 건 과녁보다 무겁다. 머리면 더.
         cx.shakeAmp = P.hit.shakeAmp * (e.foe ? (e.head ? VIEW.headShakeMul : VIEW.foeShakeMul) : 1)
         cx.shakeAge = 0
-      } else if (e.t === 'stagger' || (e.t === 'foe_down' && e.hard)) {
+      } else if (e.t === 'parry_hit' || e.t === 'stagger' || (e.t === 'foe_down' && e.hard)) {
         // 보스가 멈추거나 사람이 날아간다 — 폭발만큼 흔든다. 큰 반응이 곧 손맛이다 (형: "바바바박").
         cx.shakeAmp = P.hit.shakeAmp * VIEW.burstShakeMul
         cx.shakeAge = 0

@@ -30,12 +30,17 @@ export interface InputSource {
    * Shift·우클릭과 **OR** 로 합쳐진다 — 어느 하나만 눌려 있어도 숨은 멎는다.
    */
   setSteady(on: boolean): void
+  /**
+   * 화면 버튼이 누르는 환도 (ui/parry.ts). F 키와 **OR**.
+   * sim 은 상승 에지만 보므로(ArcherState.parryHeld) 눌린 채로 있어도 한 번만 휘두른다.
+   */
+  setParry(on: boolean): void
   dispose(): void
 }
 
 export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource {
   // sim이 읽는 유일한 객체. 이 참조는 끝까지 바뀌지 않는다.
-  const frame: InputFrame = { aimX: 0, aimY: 0, drawing: false, steady: false }
+  const frame: InputFrame = { aimX: 0, aimY: 0, drawing: false, steady: false, parry: false }
 
   // 마우스·터치·방향키가 전부 이 화면 커서 하나를 움직인다. 월드 변환은 갱신 시 한 번만.
   let sx = canvas.clientWidth / 2
@@ -50,6 +55,9 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
   let shiftHeld = false
   /** 화면의 숨참기 버튼 (폰). 위 둘과 같은 축이라 OR 로 합친다. */
   let uiHeld = false
+  /** 환도 — F 키와 화면 버튼. 둘을 OR 로 합쳐 frame.parry 로 보낸다. */
+  let fHeld = false
+  let uiParry = false
   let restartEdge = false
 
   let keyL = false
@@ -77,6 +85,10 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
 
   const syncSteady = (): void => {
     frame.steady = rightHeld || shiftHeld || uiHeld
+  }
+
+  const syncParry = (): void => {
+    frame.parry = fHeld || uiParry
   }
 
   const press = (fromKey: boolean): void => {
@@ -169,6 +181,8 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
       case ' ': if (!e.repeat) press(true); break
       case 'Shift': shiftHeld = true; syncSteady(); return
       case 'r': case 'R': if (!e.repeat) restartEdge = true; return
+      // 환도 — 누른 순간 한 번 휘두른다 (sim/bow.ts 가 에지를 잡는다). 자동 반복은 무시한다.
+      case 'f': case 'F': if (!e.repeat) { fHeld = true; syncParry() } return
       default: return
     }
     // 방향키 스크롤·Space 스크롤을 막는다. 위 case에 걸린 키만 여기 온다.
@@ -184,6 +198,7 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
       case 'ArrowDown': keyD = false; break
       case ' ': if (pressFromKey) release(); break
       case 'Shift': shiftHeld = false; syncSteady(); break
+      case 'f': case 'F': fHeld = false; syncParry(); break
       default: break
     }
   }
@@ -194,7 +209,10 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
     rightHeld = false
     shiftHeld = false
     uiHeld = false
+    fHeld = false
+    uiParry = false
     syncSteady()
+    syncParry()
     release()
   }
 
@@ -243,6 +261,11 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
     setSteady(on: boolean): void {
       uiHeld = on
       syncSteady()
+    },
+
+    setParry(on: boolean): void {
+      uiParry = on
+      syncParry()
     },
 
     takeRestart(): boolean {

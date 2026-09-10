@@ -18,7 +18,7 @@ import { TRAIL_POINTS } from '../src/sim/types.ts'
 import type { ArrowKindId, InputFrame, StageDef, Stats, World } from '../src/sim/types.ts'
 
 const STATS: Stats = { str: 10, steady: 8, stamina: 8, focus: 6 }
-const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false }
+const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false, parry: false }
 
 const KINDS: readonly ArrowKindId[] =
   ['basic', 'pierce', 'burst', 'split', 'homing', 'chain', 'heavy', 'scatter', 'rapid']

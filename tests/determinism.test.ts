@@ -53,6 +53,7 @@ function buildInputs(seed: number, count: number): InputFrame[] {
       drawing: cycle < 250,
       // 호흡정지는 릴리즈 직전 구간에만 (steadyBlend 램프까지 경로에 태운다)
       steady: cycle >= 170 && cycle < 250,
+      parry: false,
     }
   }
   return out

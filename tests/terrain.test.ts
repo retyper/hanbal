@@ -74,7 +74,7 @@ describe('지형 — 세계', () => {
   it('화살은 언덕에 꽂힌다 — 평지(y=0)까지 내려가지 않는다', () => {
     // 언덕 비탈(x≈8, 땅 1.5m)로 낮게 쏜다. 화살이 땅 0까지 내려가면 언덕을 뚫은 것이다.
     const w = createWorld(HILL, STATS, 'basic')
-    const frame: InputFrame = { aimX: 8, aimY: 1.2, drawing: true, steady: false }
+    const frame: InputFrame = { aimX: 8, aimY: 1.2, drawing: true, steady: false, parry: false }
     for (let i = 0; i < 30; i++) step(w, frame)
     frame.drawing = false
     let minY = Infinity
@@ -95,7 +95,7 @@ describe('지형 — 세계', () => {
       targets: [{ kind: 'charger', x: 18, y: 0, r: 0.6, speed: 4, score: 100 }, { kind: 'static', x: 60, y: 10, r: 0.2, score: 0 }],
     }
     const w = createWorld(stage, STATS, 'basic')
-    const idle: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false }
+    const idle: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false, parry: false }
     const c = w.targets[0]
     assert.ok(c !== undefined)
     let peakY = -Infinity

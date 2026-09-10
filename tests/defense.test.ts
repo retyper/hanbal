@@ -20,7 +20,7 @@ import { defaultSave } from '../src/game/save.ts'
 import type { InputFrame, StageDef, Stats, World } from '../src/sim/types.ts'
 
 const STATS: Stats = { str: 12, steady: 8, stamina: 12, focus: 6 }
-const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false }
+const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false, parry: false }
 
 /** 적 궁수 하나가 곧 쏜다. 뒤의 먼 과녁은 빈 판 즉시 클리어 방지용이다. */
 function arena(fireDelay: number): StageDef {
@@ -83,8 +83,8 @@ describe('방어 — 방패', () => {
     const w = createWorld(arena(900), STATS)
     w.shieldMax = shieldHp()
     w.shield = w.shieldMax
-    const hold: InputFrame = { aimX: 18, aimY: 1.5, drawing: true, steady: false }
-    const rest: InputFrame = { aimX: 18, aimY: 1.5, drawing: false, steady: false }
+    const hold: InputFrame = { aimX: 18, aimY: 1.5, drawing: true, steady: false, parry: false }
+    const rest: InputFrame = { aimX: 18, aimY: 1.5, drawing: false, steady: false, parry: false }
     for (let i = 0; i < 900 && w.archer.phase !== 'full'; i++) step(w, hold)
     w.events.length = 0
     step(w, rest)

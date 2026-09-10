@@ -15,7 +15,7 @@ import { P } from '../src/tune/params.ts'
 import type { InputFrame, StageDef, Stats, World } from '../src/sim/types.ts'
 
 const STATS: Stats = { str: 10, steady: 8, stamina: 12, focus: 6 }
-const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false }
+const IDLE: InputFrame = { aimX: 20, aimY: 2, drawing: false, steady: false, parry: false }
 
 /** 아주 큰 과녁 n개를 코앞에 세운다 — 조준 실력이 아니라 배선을 재는 판이다. */
 function arena(n: number, kind: 'static' | 'pierceable' = 'static'): StageDef {
@@ -28,8 +28,8 @@ function arena(n: number, kind: 'static' | 'pierceable' = 'static'): StageDef {
 
 /** 한 발 쏜다: 만작까지 당기고 놓은 뒤, 화살이 결판날 때까지 돌린다. */
 function shoot(w: World, aimX: number, aimY: number): void {
-  const hold: InputFrame = { aimX, aimY, drawing: true, steady: false }
-  const rest: InputFrame = { aimX, aimY, drawing: false, steady: false }
+  const hold: InputFrame = { aimX, aimY, drawing: true, steady: false, parry: false }
+  const rest: InputFrame = { aimX, aimY, drawing: false, steady: false, parry: false }
   for (let i = 0; i < 600 && w.archer.phase !== 'full'; i++) step(w, hold)
   step(w, rest)
   for (let i = 0; i < 600; i++) {
@@ -73,7 +73,7 @@ describe('연사와 몰기', () => {
       const w2 = createWorld(arena(6), STATS)
       w2.flowHits = 0
       let a = 0
-      const hold: InputFrame = { aimX: 20, aimY: 2, drawing: true, steady: false }
+      const hold: InputFrame = { aimX: 20, aimY: 2, drawing: true, steady: false, parry: false }
       for (; a < 600 && w2.archer.phase !== 'full'; a++) step(w2, hold)
       return a
     }
@@ -81,7 +81,7 @@ describe('연사와 몰기', () => {
     const w3 = createWorld(arena(6), STATS)
     w3.flowHits = Math.floor(P.flow.molgiAt)
     let fast = 0
-    const hold: InputFrame = { aimX: 20, aimY: 2, drawing: true, steady: false }
+    const hold: InputFrame = { aimX: 20, aimY: 2, drawing: true, steady: false, parry: false }
     for (; fast < 600 && w3.archer.phase !== 'full'; fast++) step(w3, hold)
     assert.ok(fast < slow * 0.8, `몰기의 만작이 안 빠르다 (${slow} → ${fast} 스텝)`)
   })
@@ -137,8 +137,8 @@ describe('연사와 몰기', () => {
     // 화살이 나는 동안은 시계가 안 간다 — 비행 시간은 벌이 아니다.
     const w2 = createWorld(arena(3), STATS)
     w2.flowHits = 3
-    const hold: InputFrame = { aimX: 60, aimY: 9, drawing: true, steady: false }
-    const rest: InputFrame = { aimX: 60, aimY: 9, drawing: false, steady: false }
+    const hold: InputFrame = { aimX: 60, aimY: 9, drawing: true, steady: false, parry: false }
+    const rest: InputFrame = { aimX: 60, aimY: 9, drawing: false, steady: false, parry: false }
     for (let i = 0; i < 600 && w2.archer.phase !== 'full'; i++) step(w2, hold)
     step(w2, rest)
     // 화살이 아직 나는 동안만 돌린다.
@@ -156,8 +156,8 @@ describe('연사와 몰기', () => {
     function releaseAngle(hits: number): number {
       const w = createWorld(arena(1), STATS)
       w.flowHits = hits
-      const hold: InputFrame = { aimX: 30, aimY: 4, drawing: true, steady: false }
-      const rest: InputFrame = { aimX: 30, aimY: 4, drawing: false, steady: false }
+      const hold: InputFrame = { aimX: 30, aimY: 4, drawing: true, steady: false, parry: false }
+      const rest: InputFrame = { aimX: 30, aimY: 4, drawing: false, steady: false, parry: false }
       for (let i = 0; i < 600 && w.archer.phase !== 'full'; i++) step(w, hold)
       const before = w.events.length
       step(w, rest)

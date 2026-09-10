@@ -25,6 +25,9 @@ const CSS = `
 .st-btn .hb-ic { width: 24px; height: 24px; vertical-align: 0; }
 .st-btn i.st-lbl { font-size: 10px; font-style: normal; letter-spacing: .1em; line-height: 1; }
 @media (pointer: coarse) { .st-btn { display: inline-flex; } }
+/* 좁은 폰 — 환도가 한 자리를 더 먹는다. 둘을 조금 줄여 버튼 줄이 한 줄 더 늘지 않게 한다
+   (줄 수가 곧 아래 띠의 높이이고, 띠가 두꺼워지면 버튼이 궁수를 덮는다 — render/camera.ts). */
+@media (max-width: 420px) { .st-btn { width: 48px; height: 48px; } }
 `
 
 /** 누르고 있는 동안 호흡을 멈춘다. `hold(true/false)`는 게임 루프로 곧장 간다. */

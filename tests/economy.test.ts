@@ -191,7 +191,7 @@ describe('금관 사수 — 현상금', () => {
   function shootAt(stage: StageDef, aimY: number): string[] {
     const w = createWorld(stage, STATS, 'basic')
     const seen: string[] = []
-    const frame: InputFrame = { aimX: 14, aimY, drawing: true, steady: false }
+    const frame: InputFrame = { aimX: 14, aimY, drawing: true, steady: false, parry: false }
     for (let i = 0; i < 40; i++) step(w, frame)
     frame.drawing = false
     for (let i = 0; i < 240; i++) {
