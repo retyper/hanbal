@@ -1074,13 +1074,24 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       // 게임 레이어라 Math.random 허용 — 실험장은 결정론의 세계 밖이다.
       const rx2 = 14 + Math.random() * 22
       const ry2 = 1 + Math.random() * 4
-      if (kind === 'boss-0' || kind === 'boss-1' || kind === 'boss-2' || kind === 'boss-3') {
+      if (kind.startsWith('boss-')) {
+        // 여덟 귀신 전부 (2026-09-10). 치수는 game/stages.ts bossStage 의 그것과 맞춘다 —
+        // 실험장에서 본 놈과 판에서 만난 놈이 다르면 실험장은 거짓말을 하는 것이다.
         const look = Number(kind.slice(5))
+        const crit = Math.floor(P.target.bossCritDmg)
+        const base = Math.floor(P.target.bossHp)
+        const R = [1.7, 1.6, 1.15, 1.45, 2.3, 1.3, 1.9, 1.5]
+        const HP = [base, crit * 2, Math.max(Math.floor(crit * 1.3), Math.floor(base * 0.55)),
+          Math.max(Math.floor(crit * 1.3), Math.floor(base * 0.6)),
+          Math.max(crit * 2, Math.floor(base * 1.3)),
+          Math.max(Math.floor(crit * 1.2), Math.floor(base * 0.55)),
+          crit * 2, Math.max(Math.floor(crit * 1.5), Math.floor(base * 0.85))]
+        const SPD = [1, 1, 1, P.sandbox.bossLook3SpeedMul, 0.7, 1.9, 1, 1]
         sandboxAdd(w, {
-          kind: 'boss', x: 34, y: 2.6, r: look === 2 ? 1.15 : 1.6,
-          hp: look === 1 ? Math.floor(P.target.bossCritDmg) * 2 : Math.floor(P.target.bossHp),
-          armored: look === 1, look,
-          speed: look === 3 ? P.target.bossSpeed * P.sandbox.bossLook3SpeedMul : P.target.bossSpeed,
+          kind: 'boss', x: 34, y: look === 4 ? 3.4 : 2.6,
+          r: R[look] ?? 1.6, hp: HP[look] ?? base,
+          armored: look === 1 || look === 6, look,
+          speed: P.target.bossSpeed * (SPD[look] ?? 1),
           score: 150,
         })
       } else if (kind === 'archer' || kind === 'archer-armored') {

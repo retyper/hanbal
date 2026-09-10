@@ -50,6 +50,13 @@ const SPAWNS: ReadonlyArray<readonly [string, string]> = [
   ['boss-1', '갑주귀신'],
   ['boss-2', '쌍눈귀신'],
   ['boss-3', '폭주귀신'],
+  // ★ 2026-09-10 에 선 넷 (형: "보스들은 신규추가 된 거 맞나? 샌드박스에서 하나도 안 보임").
+  //   실제로 캠페인(50·60·70·80판)에는 서 있었는데 **실험장 목록에만 안 넣었다.**
+  //   형은 실험장으로 확인하므로, 형에게는 없는 것과 같았다. 목록이 곧 존재다.
+  ['boss-4', '도깨비'],
+  ['boss-5', '구미호'],
+  ['boss-6', '장승'],
+  ['boss-7', '저승사자'],
 ]
 
 export function mountSandbox(o: Overlay, hooks: SandboxHooks): void {
