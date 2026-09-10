@@ -314,6 +314,17 @@ export interface Target {
   score: number
   /** 폭탄인가 (TargetSpec.bomb). 죽으면 P.target.bombRadius 안의 과녁을 같이 친다. */
   bomb: boolean
+  // ── 보스의 약점 (2026-09-10, 형: "보스도 형편없고 약점 공략하는 맛도 없고") ──
+  /**
+   * 약점(눈)이 얼마나 열려 있는가 0..1. 눈알·쌍눈은 주기로 여닫고(sim/target.ts bossWeak),
+   * 갑주는 투구가 늘 닫혀 있다(0), 폭주는 늘 보인다(1). P.target.bossEyeOpenAt 위가 뜬 눈이다.
+   * 감은 눈에 맞은 화살은 몸통샷이다 (weak_shut 이벤트). 렌더는 이 값으로 눈꺼풀을 그린다.
+   */
+  weak: number
+  /** 비틀거리는/넘어진 남은 시간 (s). 0보다 크면 멈추고 약점이 활짝 열린다. 보스 전용. */
+  stagger: number
+  /** 갑주귀신 — 판금이 받은 몸통 발수. bossGuardHits 에 닿으면 비틀거리고 0으로. */
+  guardHits: number
 }
 
 // ───────────────────────────── 이벤트 ─────────────────────────────
@@ -399,6 +410,13 @@ export type SimEvent =
   | { t: 'enemy_block'; x: number; y: number; left: number }
   /** 갑옷이 벗겨졌다. 이 순간부터 아무 살이나 통한다. */
   | { t: 'armor_break'; x: number; y: number }
+  /**
+   * 보스가 멈췄다 — 비틀거리거나(stun) 넘어졌다(trip). 약점이 열리는 순간이다.
+   * 렌더는 글자·먼지·히트스톱, 소리는 쿵. 얼마나 멈추는지는 Target.stagger 가 센다.
+   */
+  | { t: 'stagger'; targetId: number; x: number; y: number; trip: boolean }
+  /** 감은 눈(닫힌 약점)에 맞았다 — 몸통샷으로 셌다. "지금은 아니다"를 화면이 말할 자리. */
+  | { t: 'weak_shut'; x: number; y: number }
   /**
    * 맞았다. `hp` = 남은 체력. 0이면 이 판이 아니라 **여정이** 끝난다.
    * pin이면 화살이 몸에 박힌 것 — x·y(착탄점)·ang으로 렌더가 그 자리에 화살을 남긴다 (형:

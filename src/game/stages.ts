@@ -435,23 +435,24 @@ function bossStage(i: number): StageDef {
   const reach = 40
   const targets: TargetSpec[] = []
   let title = '눈알귀신'
-  let hint = '깔리면 끝장이다 — 눈을 쏴라'
+  let hint = '눈을 뜰 때 쏴라 — 맞으면 멈춘다. 그때 한 발 더'
   let hitsNeeded: number
 
   if (variant === 1) {
     // 갑주귀신 — 몸통 무효. 눈에 정확히 crit × N. 조준의 판이다.
     title = '갑주귀신'
-    hint = '갑주는 눈을 못 덮는다 — 눈만 통한다'
+    hint = '몸통 두 발이면 비틀거린다 — 그때 투구가 열린다'
     const eyeHits = 2 + rank
     targets.push({
       kind: 'boss', x: reach * rng.range(0.84, 0.94), y: rng.range(2.0, 3.0),
       r: 1.6, hp: crit * eyeHits, armored: true, look: 1, score: 200,
     })
-    hitsNeeded = eyeHits
+    // 눈 한 발마다 판금이 받는 몸통 발수만큼 먼저 두들겨야 투구가 열린다 (P.target.bossGuardHits).
+    hitsNeeded = eyeHits * (1 + Math.floor(P.target.bossGuardHits))
   } else if (variant === 2) {
     // 쌍둥이 눈알 — 둘로 갈라진 위협. 어느 쪽을 먼저 잡을지가 판단이다.
     title = '쌍눈귀신'
-    hint = '둘 다 잡아야 한다 — 가까운 쪽부터'
+    hint = '둘이 엇갈려 눈을 뜬다 — 한쪽을 맞히면 둘 다 멈춘다'
     // ★ 보스는 헤드샷 한 방에 눕지 않는다 (형: "아무리 보스여도 즉사는 안 되고").
     //   어떤 단위든 체력이 헤드샷 피해보다 확실히 크게 바닥을 깐다.
     const each = Math.max(Math.floor(crit * 1.3), Math.floor(baseHp * 0.55))
@@ -465,7 +466,7 @@ function bossStage(i: number): StageDef {
   } else if (variant === 3) {
     // 폭주귀신 — 빠르다. 시간이 무기가 아니라 상대의 무기다.
     title = '폭주귀신'
-    hint = '빨리 끝내라 — 저놈이 더 빠르다'
+    hint = '다리를 쏴라 — 넘어지면 눈이 드러난다'
     const rushHp = Math.max(Math.floor(crit * 1.3), Math.floor(baseHp * 0.6))
     targets.push({
       kind: 'boss', x: reach * rng.range(0.88, 0.96), y: rng.range(2.0, 3.0),

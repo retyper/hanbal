@@ -576,7 +576,8 @@ export function pumpEvents(fx: Fx, w: World): void {
       // 적의 몸통에는 '정중앙'이 없다 — 그건 과녁의 말이다. 적의 크리티컬은 오직 머리다.
       const crit = e.foe ? e.head : e.accuracy >= P.hit.bullseyeAcc
       // 머리 명중은 정중앙이 아니라 **헤드샷**이다 (형: "치명상이라던가 그런 게 떠야지").
-      if (e.head) pushPopup(fx.pop, e.x, e.y + 0.8, '헤드샷!', 'crit')
+      // 보스의 머리는 '약점'이다 — 열린 약점을 맞힌 것이지 헤드샷이 아니다.
+      if (e.head) pushPopup(fx.pop, e.x, e.y + 0.8, isBoss(w, e.targetId) ? '약점!' : '헤드샷!', 'crit')
       fx.lastX = e.x
       fx.lastY = e.y
       fx.comboRun = e.combo + 1
@@ -740,6 +741,15 @@ export function pumpEvents(fx: Fx, w: World): void {
       if (e.lost > 0) pushPopup(fx.pop, e.x, e.y, `화살 -${e.lost}`, 'crit')
       spawn(fx, e.x, e.y, FX.missBurst, KIND_MISS, FX.critSpeed, FX.missTtl, 1.4)
       fx.hitStop += P.hit.stopMs * 0.001
+    } else if (e.t === 'stagger') {
+      // 보스가 멈췄다 — 약점이 열리는 순간. 글자·흙먼지·짧은 슬로우. 크게 알려야 "지금 쏴라"가 된다.
+      pushPopup(fx.pop, e.x, e.y + 1.6, e.trip ? '넘어졌다!' : '비틀!', 'crit')
+      spawn(fx, e.x, e.y - 0.8, FX.missBurst, KIND_MISS, FX.missSpeed * 1.3, FX.missTtl, 1.6)
+      fx.hitStop += P.hit.stopMs * 0.001
+      if (fx.slow < FX.critSlowSec) fx.slow = FX.critSlowSec
+    } else if (e.t === 'weak_shut') {
+      // 감은 눈에 맞았다 — "지금은 아니다". 작게, 그러나 말은 한다.
+      pushPopup(fx.pop, e.x, e.y + 0.6, '감았다', 'chain')
     } else if (e.t === 'foe_down') {
       // 적이 쓰러졌다 — 시체를 하나 세운다 (형: "죽었을때 없어져버리지 말고").
       spawnCorpse(fx, e.x, e.y, e.vx, e.vy, e.mass, e.look, e.r, e.g)
@@ -1372,4 +1382,10 @@ export function drawFx(ctx: CanvasRenderingContext2D, cam: Camera, fx?: Fx): voi
   drawPopups(ctx, cam, f.pop)
 
   ctx.globalAlpha = 1
+}
+
+/** 이 과녁이 보스인가 — 팝업 글자(약점!/헤드샷!)를 고르는 데만 쓴다. 풀은 열 몇 개라 선형이면 된다. */
+function isBoss(w: World, id: number): boolean {
+  for (const t of w.targets) if (t.id === id) return t.kind === 'boss'
+  return false
 }

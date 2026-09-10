@@ -106,10 +106,19 @@ export function stepTargets(w: World): void {
         if (!tg.hidden) fireEnemyShot(w, tg)
       }
     } else if (tg.kind === 'boss') {
-      // 보스 — 느리게, 그러나 멈추지 않고 온다 (docs/RUN.md 3장). 판이 끝나면 멈춘다.
-      if (w.status === 'playing') tg.x -= tg.speed * dt
-      // 보스판은 평지다 — baseY(저작 y + 그 자리 땅)를 그대로 쓴다. 언덕 위의 보스는 아직 없다.
-      tg.y = tg.baseY + Math.sin(time * P.target.chargeBobFreq * TAU) * P.target.chargeBob
+      if (tg.stagger > 0) {
+        // 비틀거린다/넘어졌다 — **멈춘다.** 이 숨이 약점 공략의 상이다 (P.target.bossStagger*).
+        tg.stagger = Math.max(0, tg.stagger - dt)
+        tg.weak = 1
+        tg.y = tg.baseY - (tg.look === 3 ? tg.r * P.target.bossTripSink : 0)
+        if (tg.stagger <= 0) tg.guardHits = 0
+      } else {
+        // 보스 — 느리게, 그러나 멈추지 않고 온다 (docs/RUN.md 3장). 판이 끝나면 멈춘다.
+        if (w.status === 'playing') tg.x -= tg.speed * dt
+        // 보스판은 평지다 — baseY(저작 y + 그 자리 땅)를 그대로 쓴다. 언덕 위의 보스는 아직 없다.
+        tg.y = tg.baseY + Math.sin(time * P.target.chargeBobFreq * TAU) * P.target.chargeBob
+        tg.weak = bossWeak(tg, time)
+      }
       if (tg.x <= w.archer.x + P.target.chargeReach && w.status === 'playing') {
         // 닿았다 — 즉사다. 보스에게 깔리고 사는 궁수는 없다. **보스를 죽이지 않는다** —
         // 여기서 alive를 끄면 같은 스텝의 evaluateEnd(스텝 머리의 playing 스냅샷)가
@@ -240,7 +249,9 @@ function damageOf(
     return { dealt: Math.max(1, Math.round(dmg * fx.armorPierce)), blocked: false, chip: 0 }
   }
   if (target.kind === 'boss') {
-    return { dealt: head ? Math.floor(P.target.bossCritDmg) : dmg, blocked: false, chip: 0 }
+    // 멈춘 보스의 눈은 더 아프다 — 약점을 연 것에 대한 상 (bossStaggerCritMul).
+    const crit = P.target.bossCritDmg * (target.stagger > 0 ? P.target.bossStaggerCritMul : 1)
+    return { dealt: head ? Math.floor(crit) : dmg, blocked: false, chip: 0 }
   }
   return { dealt: dmg, blocked: false, chip: 0 }
 }
@@ -263,6 +274,32 @@ function breakArmor(w: World, t: Target, chip: number, x: number, y: number): vo
   // 벗겨진 순간은 막힌 것과 **다른 사건**이다. 같은 소리·같은 그림이면 플레이어는
   // 규칙이 바뀐 걸 모르고 계속 관통살을 아낀다.
   w.events.push({ t: 'armor_break', x: t.x, y: t.y })
+}
+
+/**
+ * 보스의 약점이 지금 얼마나 열려 있는가 (Target.weak). 변종마다 문법이 다르다 — params.ts 보스 약점 주석.
+ * 쌍눈은 id 홀짝으로 반 주기 엇갈린다: 한쪽이 감으면 다른 쪽이 뜬다. 시계는 sim 의 time 뿐이다 (A1).
+ */
+function bossWeak(tg: Target, time: number): number {
+  if (tg.look === 1) return 0
+  if (tg.look === 3) return 1
+  const open = P.target.bossEyeOpen
+  const blend = Math.min(P.target.bossEyeBlend, open * 0.5)
+  const cycle = open + P.target.bossEyeShut
+  // 둘째는 첫째가 뜰 때 감는다 (offset = 뜬 시간). 뜬 시간이 감은 시간보다 길어 언제나 한쪽은 떠 있다.
+  const off = tg.look === 2 && tg.id % 2 === 1 ? open : 0
+  const ph = (time + off) % cycle
+  if (ph < open - blend) return 1
+  if (ph < open) return (open - ph) / blend
+  if (ph < cycle - blend) return 0
+  return (ph - (cycle - blend)) / blend
+}
+
+/** 보스를 멈춘다. 이벤트 하나 — 렌더(글자·먼지·히트스톱)와 소리(쿵)가 이걸 듣는다. */
+function startStagger(w: World, tg: Target, secs: number, trip: boolean): void {
+  tg.stagger = secs
+  tg.weak = 1
+  w.events.push({ t: 'stagger', targetId: tg.id, x: tg.x, y: tg.y, trip })
 }
 
 export function resolveHit(w: World, arrow: Arrow, target: Target): void {
@@ -306,6 +343,20 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
       const perp = Math.abs(rx2 * uy2 - ry2 * ux2)
       const along = rx2 * ux2 + ry2 * uy2
       head = perp <= hr && along > -target.r
+    }
+  }
+
+  // ── 보스의 약점은 열렸다 닫힌다 (2026-09-10, 형: "약점 공략하는 맛도 없고") ──
+  if (target.kind === 'boss') {
+    // 폭주귀신 — 다리를 맞히면 넘어진다. 착탄이 낮은 것이 곧 약점이다.
+    if (target.look === 3 && target.stagger <= 0 && arrow.y < target.y - target.r * P.target.bossLegZone) {
+      startStagger(w, target, P.target.bossStaggerTrip, true)
+    }
+    const open = target.stagger > 0 || target.weak > P.target.bossEyeOpenAt
+    if (head && !open) {
+      // 감은 눈이다. 몸통샷으로 센다 — 화면은 "감았다"를 띄운다 (render/effects.ts).
+      head = false
+      w.events.push({ t: 'weak_shut', x: target.x, y: target.y + target.r * P.target.bossHeadUp })
     }
   }
 
@@ -399,8 +450,27 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
       // 갑주는 눈을(보스) · 머리를(궁수) 못 덮는다. 몸통은 판금이 삼킨다 —
       // 다만 **삼킬 때마다 상한다.** 남은 비율을 실어 보내야 화면이 진행을 그린다.
       breakArmor(w, target, hurt.chip, arrow.x, arrow.y)
+      // 갑주귀신 — 판금에 막힌 몸통 발이 쌓이면 비틀거리고, 그동안 투구가 열린다.
+      if (target.kind === 'boss' && target.stagger <= 0) {
+        target.guardHits++
+        if (target.guardHits >= Math.floor(P.target.bossGuardHits)) {
+          target.guardHits = 0
+          startStagger(w, target, P.target.bossStaggerGuard, false)
+        }
+      }
     } else {
       target.hp -= hurt.dealt
+      if (target.kind === 'boss' && head && target.hp > 0) {
+        if (target.look === 0 && target.stagger <= 0) {
+          // 눈알귀신 — 뜬 눈을 맞혔다. 멈춘다. 다음 발이 상이다.
+          startStagger(w, target, P.target.bossStaggerEye, false)
+        } else if (target.look === 2) {
+          // 쌍눈귀신 — 한쪽의 아픔이 다른 쪽을 멈춘다. 둘은 하나다.
+          for (const o of w.targets) {
+            if (o !== target && o.alive && o.kind === 'boss' && o.stagger <= 0) startStagger(w, o, P.target.bossStaggerTwin, false)
+          }
+        }
+      }
     }
     if (target.hp > 0) {
       // 살아남아도 살의 효과는 터진다 — 화전이 적 몸에서 안 터지면 화전이 아니다 (형).

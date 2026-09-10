@@ -360,6 +360,8 @@ const SMP = {
   heartRateHi: 1.12,
   /** 포효 — P.audio.clearGain 배수. 시작을 알리되 클리어보다 크지 않게. */
   roarGain: 0.7,
+  /** 보스가 멈추는 쿵 — downGain 배수. */
+  staggerGain: 1.5,
 
   /**
    * 정중앙 문턱은 여기 없다 — `P.hit.bullseyeAcc` 하나뿐이다 (A2 단일 출처).
@@ -1741,6 +1743,12 @@ export function pumpSfx(sfx: Sfx, w: World): void {
         BL.type = 'sine'
         bellTone(s, K_UI, BL)
       }
+    } else if (e.t === 'stagger') {
+      // 보스가 멈췄다 — 낮은 쿵. 사람이 쓰러지는 소리보다 무겁고 느리게.
+      sample(sfx, s, 'thud', SMP.downGain * SMP.staggerGain, e.trip ? 0.72 : 0.82, e.x, e.y)
+    } else if (e.t === 'weak_shut') {
+      // 감은 눈 — 둔탁하게 미끄러진다. 명중음이 아니어야 "안 통했다"가 귀로 온다.
+      sample(sfx, s, 'soft', P.audio.missGain * SMP.missGain * 0.8, 0.8, e.x, e.y)
     } else if (e.t === 'foe_down') {
       // 쓰러졌다 — 사람은 퍽, 드론은 금속. 무엇이 죽었는지 귀로도 안다.
       const drone = e.look === 3

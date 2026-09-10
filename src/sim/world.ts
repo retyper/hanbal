@@ -144,6 +144,9 @@ function newTarget(): Target {
     chainDepth: 0,
     score: FALLBACK_TARGET_SCORE,
     bomb: false,
+    weak: 1,
+    stagger: 0,
+    guardHits: 0,
   }
 }
 
@@ -297,6 +300,10 @@ function loadTarget(t: Target, id: number, spec: TargetSpec, stage: StageDef): v
   t.armorHp = t.armorMax
   t.aimMul = spec.aimMul ?? 1
   t.bounty = spec.bounty === true
+  // 약점은 뜬 채로 시작한다 — 판이 서자마자 감긴 눈이면 첫 발이 벌이 된다. 주기는 stepTargets 가 돈다.
+  t.weak = 1
+  t.stagger = 0
+  t.guardHits = 0
   t.chainDepth = 0
   t.score = spec.score ?? FALLBACK_TARGET_SCORE
   t.bomb = spec.bomb === true

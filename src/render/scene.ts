@@ -702,10 +702,29 @@ function drawTargets(
         ctx.fill()
       }
 
-      // 눈알 — 흰자 · 홍채(위험색) · 동공. 동공은 궁수를 따라간다.
-      const blink = (w.elapsed % 3.7) < 0.13
-      if (blink) {
-        // 깜빡임 — 감긴 눈꺼풀 한 줄. 살아 있는 것만이 깜빡인다.
+      // ── 눈알 = 약점. 뜨고 감는다 (sim Target.weak) · 멈추면(stagger) 활짝 뜬다 ──
+      //   2026-09-10 (형: "약점 공략하는 맛도 없고"). 예전엔 3.7초마다 장식으로 깜빡였다.
+      //   이제 눈꺼풀은 sim 의 사실이다 — 감긴 눈에 쏜 화살은 몸통샷이다. 렌더는 읽기만 한다.
+      const stag = t.stagger > 0
+      const open = stag ? 1 : t.weak
+      // 비틀거림 — 몸이 좌우로 떨린다. 넘어진 폭주귀신은 기울어 눕는다 (y 는 sim 이 내려앉혔다).
+      const sway = stag ? Math.sin(w.elapsed * 14) * rx * 0.07 : 0
+      if (stag) {
+        ctx.save()
+        ctx.translate(x, y)
+        ctx.rotate(t.look === 3 ? 0.55 : 0)
+        ctx.translate(-x + sway, -y)
+      }
+      // 변종별 눈: 갑주(1)는 투구 틈의 가로 슬릿 · 폭주(3)는 성난 사선 · 쌍눈(2)은 작고 말갛다.
+      const eyeFull = t.look === 1 ? hr * 0.5 : t.look === 3 ? hr * 0.6 : hr * 0.92
+      // 갑주는 투구 틈이 실낱이다 — 비틀거릴 때만 열린다. 멈춘 눈은 놀라서 커진다.
+      const eyeH = eyeFull * (t.look === 1 && !stag ? 0.12 : open) * (stag ? 1.2 : 1)
+      if (t.look === 1) {
+        // 투구 돔 — 눈은 그 틈으로만 보인다.
+        band(ctx, x, hy - hr * 0.2, hr * 1.15, hr * 0.95, '#66788a')
+      }
+      if (eyeH < hr * 0.07) {
+        // 감았다 — 눈꺼풀 한 줄. 지금 쏘면 몸통이다.
         ctx.strokeStyle = THEME.target2
         ctx.lineWidth = Math.max(2, hr * 0.18)
         ctx.beginPath()
@@ -713,12 +732,6 @@ function drawTargets(
         ctx.lineTo(x + hr, hy)
         ctx.stroke()
       } else {
-        // 변종별 눈: 갑주(1)는 투구 틈의 가로 슬릿 · 폭주(3)는 성난 사선 · 쌍눈(2)은 작고 말갛다.
-        const eyeH = t.look === 1 ? hr * 0.38 : t.look === 3 ? hr * 0.6 : hr * 0.92
-        if (t.look === 1) {
-          // 투구 돔 — 눈은 그 틈으로만 보인다.
-          band(ctx, x, hy - hr * 0.2, hr * 1.15, hr * 0.95, '#66788a')
-        }
         band(ctx, x, hy, hr, eyeH, THEME.target2)
         const ax2 = worldToScreenX(cam, w.archer.x)
         const ay2 = worldToScreenY(cam, w.archer.y)
@@ -730,8 +743,8 @@ function drawTargets(
         band(ctx, px2, py2, iw * 0.5, Math.min(eyeH * 0.5, iw * 0.5), THEME.targetBand)
         // 눈빛 점 — 이게 있어야 젖은 눈알로 보인다.
         band(ctx, px2 - hr * 0.12, py2 - hr * 0.14, hr * 0.09, hr * 0.09, THEME.target2)
-        if (t.look === 3) {
-          // 성난 눈두덩 — 사선 한 줄이 표정을 만든다.
+        if (t.look === 3 && !stag) {
+          // 성난 눈두덩 — 사선 한 줄이 표정을 만든다. 넘어지면 표정도 풀린다.
           ctx.strokeStyle = THEME.threatDim
           ctx.lineWidth = Math.max(2, hr * 0.16)
           ctx.beginPath()
@@ -739,6 +752,32 @@ function drawTargets(
           ctx.lineTo(x + hr * 0.7, hy - eyeH * 0.55)
           ctx.stroke()
         }
+      }
+      // 약점이 열렸다 — 금빛 고리가 숨 쉰다. "지금 쏴라"를 글자 없이 말한다.
+      // 멈췄을 때는 굵고 빠르게, 그냥 뜬 눈은 가늘고 느리게. 폭주는 다리가 약점이라 다리에 그린다.
+      if (stag || (open >= 1 && t.look !== 1)) {
+        const fast = stag
+        const pulse = 0.5 + 0.5 * Math.sin(w.elapsed * (fast ? 12 : 5))
+        ctx.strokeStyle = THEME.accent
+        ctx.globalAlpha = fast ? 0.55 + 0.45 * pulse : 0.16 + 0.2 * pulse
+        ctx.lineWidth = Math.max(2, hr * (fast ? 0.22 : 0.13))
+        ctx.beginPath()
+        if (t.look === 3 && !stag) {
+          // 다리 구간 — 몸통 아래를 도는 넓은 호. sim 의 bossLegZone 과 같은 자리다.
+          ctx.ellipse(x, y + ry * P.target.bossLegZone, rx * 0.95, ry * 0.32, 0, 0, TAU)
+        } else {
+          ctx.arc(x, hy, hr * (fast ? 1.45 + 0.1 * pulse : 1.3), 0, TAU)
+        }
+        ctx.stroke()
+        ctx.globalAlpha = 1
+      }
+      if (stag) {
+        // 별 셋이 머리 위를 돈다 — 만화의 문법. 멈춘 것이 한눈에 읽힌다.
+        for (let k = 0; k < 3; k++) {
+          const a2 = w.elapsed * 5 + (k * TAU) / 3
+          band(ctx, x + Math.cos(a2) * hr * 1.7, hy - hr * 1.6 + Math.sin(a2) * hr * 0.35, hr * 0.15, hr * 0.15, THEME.accent)
+        }
+        ctx.restore()
       }
 
       // 체력 바 — 눈 위. 보스의 남은 목숨이 멀리서도 한 줄로 읽힌다.
