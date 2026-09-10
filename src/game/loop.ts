@@ -127,6 +127,8 @@ export interface GameLoop {
   steady(on: boolean): void
   /** 화면의 패링 버튼 (ui/parry.ts) — 폰에는 F 키가 없다. */
   parry(on: boolean): void
+  /** 지금 휘두를 수 있는가. 버튼이 눌린 척하지 않으려고 누를 때 한 번 물어본다. */
+  parryReady(): boolean
   /**
    * 판 도중 방어 구매 (ui/defense.ts → game/defense.ts). 샀으면 true.
    * 못 사는 이유는 화면이 defenseBlocked()로 미리 읽어 버튼에 적는다.
@@ -1135,6 +1137,10 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     /** 패링 — 화면 버튼이 누른다 (ui/parry.ts). F 키와 같은 축이다. */
     parry(on: boolean): void {
       input.setParry(on)
+    },
+    /** 지금 휘두를 수 있는가 — 화면 버튼이 **거짓말하지 않게** 물어본다 (ui/parry.ts). */
+    parryReady(): boolean {
+      return w.archer.parryCool <= 0
     },
     /**
      * 판 도중에 방어를 산다 (game/defense.ts · 형: "게임플레이 도중에 방어벽이나 방어구 구매").

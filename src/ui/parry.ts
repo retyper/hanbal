@@ -19,6 +19,9 @@ const CSS = `
   color: var(--gold); border-color: #6a5a3a; touch-action: none;
 }
 .pr-btn.pr-on { background: #3a3222; color: var(--ink); border-color: var(--gold); }
+/* 아직 쉬는 중 — 눌러도 칼이 안 나간다. **버튼이 거짓말하면 안 된다** (2026-09-10 feel-lens ④):
+   예전엔 쿨다운과 무관하게 눌리기만 하면 켜진 색이 됐다. 이제 눌린 척 대신 "아직"이라고 말한다. */
+.pr-btn.pr-cool { opacity: .5; border-color: #4a4a4a; color: var(--mute); }
 .pr-btn i.pr-lbl { font-size: 10px; font-style: normal; letter-spacing: .1em; line-height: 1; }
 .pr-btn svg { display: block; }
 @media (pointer: coarse) { .pr-btn { display: inline-flex; } }
@@ -44,7 +47,7 @@ const ICON = `<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"
  * 누르면 한 번 휘두른다. `hit(true)` 는 곧장 게임 루프로 간다 — 에지는 sim 이 잡으므로
  * 여기서는 눌림/뗌을 그대로 넘기기만 한다.
  */
-export function mountParry(o: Overlay, hit: (on: boolean) => void): void {
+export function mountParry(o: Overlay, hit: (on: boolean) => void, ready: () => boolean): void {
   const style = document.createElement('style')
   style.textContent = CSS
 
@@ -56,14 +59,24 @@ export function mountParry(o: Overlay, hit: (on: boolean) => void): void {
   btn.setAttribute('aria-label', '패링 — 날아오는 화살을 칼로 쳐서 되돌린다')
   btn.innerHTML = `${ICON}<i class="pr-lbl">패링</i>`
 
-  const set = (on: boolean): void => {
-    btn.classList.toggle('pr-on', on)
+  /** 쉬는 중에 눌렀을 때 흐려지는 시간 (ms). 다음 누름까지 남은 시간과 무관한 짧은 신호다. */
+  const COOL_FLASH_MS = 260
+  let coolTimer = 0
+  const set = (on: boolean, cool = false): void => {
+    btn.classList.toggle('pr-on', on && !cool)
     hit(on)
   }
   btn.addEventListener('pointerdown', (e) => {
     e.preventDefault()
     try { btn.setPointerCapture(e.pointerId) } catch { /* 캡처 실패해도 아래 up 들이 받는다 */ }
-    set(true)
+    // 누름은 그대로 보낸다 (sim 이 판정한다). 다만 **켜진 색은 진짜 나갈 때만** 준다.
+    const can = ready()
+    set(true, !can)
+    if (!can) {
+      btn.classList.add('pr-cool')
+      window.clearTimeout(coolTimer)
+      coolTimer = window.setTimeout(() => btn.classList.remove('pr-cool'), COOL_FLASH_MS)
+    }
   })
   for (const type of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) {
     btn.addEventListener(type, () => set(false))

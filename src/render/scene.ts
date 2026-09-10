@@ -19,7 +19,7 @@ import type { SkyPalette } from './sky.ts'
 import { drawFoeArcher, drawFoeRusher } from './foe.ts'
 import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { sprite } from './sprites.ts'
-import { createFx, pumpEvents, updateFx, drawFx, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash, targetFlinch, PLAYER_PIN } from './effects.ts'
+import { createFx, pumpEvents, updateFx, drawFx, drawFxFlash, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash, targetFlinch, PLAYER_PIN } from './effects.ts'
 import { drawNewBossBody } from './bosses.ts'
 import { bossGrammar } from '../sim/target.ts'
 import type { Fx } from './effects.ts'
@@ -1565,6 +1565,9 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       drawTrails(c, cam, w)
       drawArrows(c, cam, w, alpha)
       drawEnemyShots(c, cam, w)
+      // 패링 성공의 흰 번쩍임은 **궁수보다 먼저** 칠한다 — 뒤에 칠하면 그 순간의 칼을 덮는다
+      // (2026-09-10 feel-lens). 빛이 뒤에서 터지고 그 앞에 사람과 칼이 서 있어야 맞다.
+      drawFxFlash(c, cam, r.fx)
       drawArcher(c, cam, w, alpha)
       // 방패는 궁수보다 나중 — 앞에 세운 물건이니 앞에 그린다 (game/defense.ts).
       drawShield(c, cam, w)

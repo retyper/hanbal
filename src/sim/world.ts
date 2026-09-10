@@ -691,7 +691,7 @@ function stepEnemyShots(w: World): void {
     // 날이 잡는 건 휘두름의 **앞부분**이다 (swing 0.42 중 active 0.30). 판정은 이번 스텝의
     // 선분 대 원 — 적 화살이 36m/s 라 점으로 재면 한 스텝에 0.6m 를 건너뛴다.
     // 형: "패링 판정은 너무 빡빡하게 하진 않게" — 그래서 반경이 2.4m 로 넉넉하다.
-    if (a.parryLeft > P.parry.swing - P.parry.active) {
+    if (w.status === 'playing' && a.parryLeft > P.parry.swing - P.parry.active) {
       const cx = a.x + P.parry.ahead
       const rr = P.parry.reach
       if (distSqPointSegment(cx, a.y, sh.px, sh.py, sh.x, sh.y) <= rr * rr) {
@@ -753,6 +753,11 @@ function stepEnemyShots(w: World): void {
 
 function endStage(w: World, cleared: boolean): void {
   w.status = cleared ? 'cleared' : 'failed'
+  // ★ 칼을 거둔다 (2026-09-10 feel-lens). 판이 끝나면 stepArcher 가 안 돌아 parryLeft 가 영영
+  //   안 줄어든다 — 결과 화면에 **활 없는 궁수가 칼을 든 채 굳어 있고**, 그 얼어붙은 칼이
+  //   남은 적 화살을 계속 쳐내 흰 번쩍임과 "쳐냈다!"가 결과 화면 위에서 터졌다.
+  w.archer.parryLeft = 0
+  w.archer.parryCool = 0
   w.events.push({ t: 'stage_end', cleared, score: w.score })
 }
 

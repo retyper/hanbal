@@ -153,6 +153,8 @@ export function stepArcher(w: World, input: InputFrame): void {
   // 누르고 있는 것이 아니라 **누른 순간**이다. 꾹 누르고 있으면 한 번만 휘두른다.
   const parryEdge = input.parry && !a.parryHeld
   a.parryHeld = input.parry
+  // 쉬는 중에 눌렀다 — 아무 일도 안 일어나면 "씹혔다"로 읽힌다. 한 마디 해준다.
+  if (parryEdge && a.parryCool > 0) w.events.push({ t: 'parry_fail' })
   if (parryEdge && a.parryCool <= 0) {
     a.parryLeft = P.parry.swing
     a.parryCool = P.parry.swing + P.parry.cool

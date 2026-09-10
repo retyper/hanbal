@@ -542,6 +542,12 @@ const SWORD = {
   /** 지나온 자리를 채우는 부채꼴. */
   smear: '#cfe4ff',
   smearAlpha: 0.42,
+  /**
+   * 납도에서 **각을 되돌리기 시작하는 지점** (0..1, 거두는 진행도).
+   * 이 앞에서는 끝자세를 유지하고 길이만 준다 — 각을 일찍 되돌리면 그게 곧 역슬래시가 된다.
+   * 0.75 면 날이 4분의 1만 남은 토막일 때부터라 회전이 눈에 안 띈다.
+   */
+  snapAt: 0.75,
 } as const
 
 const ARMOR_PLATE = {
@@ -643,6 +649,8 @@ export function drawArcher(
   const pT = parrying ? clamp01(1 - a.parryLeft / pSwing) : -1
   const pReady = pSwing > 0 ? P.parry.ready / pSwing : 0
   const pSlash = pSwing > 0 ? (P.parry.ready + P.parry.slash) / pSwing : 0
+  // 다 벤 뒤 **뻗은 채 멎는** 구간의 끝 (P.parry.hold). 여기까지가 "휘두른다"이고 그 뒤가 납도다.
+  const pHold = pSwing > 0 ? (P.parry.ready + P.parry.slash + P.parry.hold) / pSwing : 0
   const pose = a.parryUp ? SWORD.up : SWORD.down
   let lean = 0
   if (parrying) {
@@ -652,7 +660,8 @@ export function drawArcher(
       const u = pSlash > pReady ? (pT - pReady) / (pSlash - pReady) : 1
       lean = lerp(pose.coil, pose.follow, 1 - Math.pow(1 - u, 2.5))
     } else {
-      const u = pSlash < 1 ? (pT - pSlash) / (1 - pSlash) : 1
+      // 뻗은 채 멎는 동안은 몸도 그대로 — 납도에 들어가서야 푼다.
+      const u = pT < pHold ? 0 : (pHold < 1 ? (pT - pHold) / (1 - pHold) : 1)
       lean = pose.follow * (1 - smoothstep(u))
     }
   }
@@ -1124,14 +1133,31 @@ export function drawArcher(
         len = SWORD.len
         smear = pose.a1s
       } else {
-        // ③ 납도 — 끝자세에서 허리로. 날이 칼집으로 빨려 든다.
-        const u = pSlash < 1 ? (pT - pSlash) / (1 - pSlash) : 1
-        const e = smoothstep(u)
-        ang = lerp(pose.a2, pose.a0, e)
-        gx = rig.sx + lerp(pose.endX, pose.hipX, e)
-        gy = rig.sy + lerp(pose.endY, pose.hipY, e)
-        len = SWORD.len * (1 - e)
-        if (u < 0.5) smear = pose.a1s
+        // ③ 뻗은 채 멎는다 → ④ 납도 (2026-09-10 feel-lens).
+        //
+        // 예전엔 여기서 각을 a2 → a0 로 되돌렸다. 그런데 그 경로가 **몸 앞을 지나며** 226° 를
+        // 훑는다 — 4프레임짜리 슬래시(183°) 뒤에 **더 긴 각을 3.4배 느리게 되감는 역슬래시**가
+        // 14프레임 붙은 것이다. 형이 "원에 막대가 표면타고 흘러가는 수준"이라 한 게 이것이었다.
+        //
+        // 이제 **돌리지 않고 거둔다**: 각은 끝자세에 붙들어 두고 길이만 줄인다. 각을 되돌리는
+        // 것은 날이 거의 다 들어가(snapAt) 막대가 토막이 된 뒤라 회전이 눈에 안 띈다.
+        if (pT < pHold) {
+          // 다 벤 자세 그대로 멎는다. 판정이 열려 있는 동안 칼이 화면에 **있다**.
+          ang = pose.a2
+          gx = rig.sx + pose.endX
+          gy = rig.sy + pose.endY
+          len = SWORD.len
+          smear = pose.a1s
+        } else {
+          const u = pHold < 1 ? (pT - pHold) / (1 - pHold) : 1
+          const e = smoothstep(u)
+          ang = e < SWORD.snapAt
+            ? pose.a2
+            : lerp(pose.a2, pose.a0, (e - SWORD.snapAt) / (1 - SWORD.snapAt))
+          gx = rig.sx + lerp(pose.endX, pose.hipX, e)
+          gy = rig.sy + lerp(pose.endY, pose.hipY, e)
+          len = SWORD.len * (1 - e)
+        }
       }
 
       // ── 잔상 — 지나온 자리를 **채운** 부채꼴. 선으로 그리면 또 "막대가 지나간 자국"이 된다.

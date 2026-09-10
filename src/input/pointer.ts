@@ -49,6 +49,11 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
   // 릴리즈 래치 상태
   let pressSeen = false // 눌림이 최소 한 스텝은 sim에 보였는가
   let pendingRelease = false // 보이기 전에 뗐다 — 스텝 하나를 준 뒤에 놓는다
+  // 패링도 같은 보호가 필요하다 (2026-09-10 feel-lens). sim 두 스텝이 한 rAF 안에서 연달아
+  // 돌므로 실효 granularity 는 8.3ms 가 아니라 **rAF 간격(16.7ms)** 이다 — 짧게 탭하면
+  // frame.parry 가 sim 에 한 번도 안 보인 채 내려가 휘두름이 통째로 사라졌다.
+  let parrySeen = false
+  let pendingParryUp = false
   let pressFromKey = false // Space로 당기는 중인가 (마우스 복구 경로가 이걸 끊으면 안 된다)
 
   let rightHeld = false
@@ -88,7 +93,17 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
   }
 
   const syncParry = (): void => {
-    frame.parry = fHeld || uiParry
+    const want = fHeld || uiParry
+    if (want) {
+      frame.parry = true
+      parrySeen = false
+      pendingParryUp = false
+    } else if (parrySeen) {
+      frame.parry = false
+    } else {
+      // 아직 sim 이 못 봤다 — 스텝 하나를 보여준 뒤에 내린다 (endStep).
+      pendingParryUp = true
+    }
   }
 
   const press = (fromKey: boolean): void => {
@@ -237,6 +252,14 @@ export function createInput(canvas: HTMLCanvasElement, cam: Camera): InputSource
         if (pendingRelease) {
           frame.drawing = false
           pendingRelease = false
+        }
+      }
+      // 패링도 같은 규칙 — 한 스텝은 보여준 뒤에 내린다. 입력을 삼키느니 한 스텝 늦는 게 낫다.
+      if (frame.parry) {
+        parrySeen = true
+        if (pendingParryUp) {
+          frame.parry = false
+          pendingParryUp = false
         }
       }
       const dx = (keyR ? 1 : 0) - (keyL ? 1 : 0)

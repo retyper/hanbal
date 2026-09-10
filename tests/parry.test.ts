@@ -122,6 +122,24 @@ describe('환도 패링', () => {
     assert.ok(P.parry.ready + P.parry.slash <= 0.25, '칼이 닿기까지 너무 오래 걸린다')
     // 날은 슬래시가 끝나기 전에 이미 화살을 잡고 있어야 한다 — 그림보다 판정이 늦으면 거짓말이다.
     assert.ok(P.parry.active > P.parry.ready + P.parry.slash, '슬래시가 끝난 뒤에야 잡기 시작한다')
+    // ★ 판정이 열린 동안 **칼이 화면에 있어야 한다** (2026-09-10 feel-lens ②).
+    //   예전엔 판정 창 17프레임 중 칼이 실제로 지나가는 건 4프레임(23%)뿐이었고, 나머지는
+    //   뽑는 중이거나 거두는 중이었다 — "정지한 막대에 화살이 튕기는" 그림이 나왔다.
+    //   칼이 공중에 있는 구간은 [ready, ready+slash+hold] 다. 이게 판정 창을 덮어야 한다.
+    const airborne = P.parry.ready + P.parry.slash + P.parry.hold
+    assert.ok(airborne >= P.parry.active, `칼이 ${airborne}초 만에 들어가는데 판정은 ${P.parry.active}초까지 열려 있다`)
+    const covered = (Math.min(P.parry.active, airborne) - P.parry.ready) / P.parry.active
+    assert.ok(covered >= 0.75, `판정 창의 ${(covered * 100).toFixed(0)}% 에만 칼이 있다`)
+  })
+
+  it('칼이 닿을 수 있는 데까지만 잡는다 — "안 맞았는데 맞았다"가 없다 (feel-lens ②)', () => {
+    // 형이 "빡빡하지 않게"라고 한 건 **시간**을 달라는 말이지 칼이 안 닿은 데서 튀라는 말이 아니다.
+    // 칼끝이 실제로 닿는 최대 거리 = 손이 앞으로 나간 만큼 + 칼 길이. 원이 그보다 훨씬 크면
+    // 머리 위나 등 뒤로 지나간 화살까지 튕긴다.
+    const bladeTip = 0.58 + 0.98 // SWORD.up.endX + SWORD.len (render/stickman.ts)
+    assert.ok(P.parry.reach <= bladeTip + 0.3, `반경 ${P.parry.reach}m 가 칼끝(${bladeTip.toFixed(2)}m)보다 훨씬 크다`)
+    // 등 뒤로 새지 않는다 — 중심이 앞으로 나가 있으니 뒤쪽 여유가 반경보다 작아야 한다.
+    assert.ok(P.parry.reach - P.parry.ahead <= 1.0, '궁수 등 뒤 1m 밖의 화살까지 쳐진다')
   })
 
   it('위아래를 번갈아 벤다 — 첫 칼이 올려베기 (형: "다음 타격은 내려치기가 되고")', () => {

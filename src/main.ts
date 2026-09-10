@@ -139,7 +139,7 @@ const loop = createLoop(el, {
 // (steady.ts 가 prepend 한다). 손가락 화면에서만 보인다.
 mountSteady(overlay, (on) => loop.steady(on))
 // 패링 — 숨참기 바로 옆. 둘 다 "왼손 엄지로 누르는 것"이다 (ui/parry.ts).
-mountParry(overlay, (on) => loop.parry(on))
+mountParry(overlay, (on) => loop.parry(on), () => loop.parryReady())
 
 mountGrowth(overlay, save, () => {}, audio)
 

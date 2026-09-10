@@ -368,6 +368,9 @@ const SMP = {
   sheathGain: 0.22,
   /** 납도가 나는 시각 — 한 동작 전체의 비율. */
   sheathAt: 0.72,
+  /** 쉬는 중에 눌렀을 때 — 납도 소리를 낮고 작게. 들릴 만큼만, 거슬리지 않을 만큼만. */
+  parryFailGain: 0.55,
+  parryFailRate: 0.7,
   /** 패링 성공은 슬래시보다 크다 (드물고 잘한 일이다). */
   parryGain: 0.7,
   /** 맞은 사람의 신음 — 절대값. 명중음 뒤에 얹히는 소리라 그보다 작다. 귀신은 낮고(rate) 크게. */
@@ -1769,6 +1772,9 @@ export function pumpSfx(sfx: Sfx, w: World): void {
       sample(sfx, s, 'unsheath', SMP.unsheathGain, jitter(SMP.hitJitter), 0, 0)
       sample(sfx, s, 'swing', SMP.swingGain, jitter(SMP.hitJitter), 0, P.parry.ready)
       sample(sfx, s, 'sheath', SMP.sheathGain, jitter(SMP.hitJitter), 0, P.parry.swing * SMP.sheathAt)
+    } else if (e.t === 'parry_fail') {
+      // 아직 쉬는 중 — 칼이 칼집에서 안 빠진다. 낮고 짧은 둔탁함 하나. 벌하는 소리가 아니다.
+      sample(sfx, s, 'sheath', SMP.sheathGain * SMP.parryFailGain, SMP.parryFailRate, 0, 0)
     } else if (e.t === 'parry_hit') {
       // 쳐냈다 — 쇠와 쇠. 여러 발을 한꺼번에 쳐도 소리는 한 번이다 (sim 이 묶어서 보낸다).
       sample(sfx, s, 'parry', SMP.parryGain, jitter(SMP.hitJitter), e.x, e.y)
