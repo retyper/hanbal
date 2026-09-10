@@ -19,7 +19,7 @@ import { STAGES } from './stages.ts'
 const KEY = 'hanbal.save.v1'
 
 /** 현재 스키마 버전. 필드를 바꿀 때마다 +1 하고 MIGRATIONS에 한 줄 추가한다. */
-export const SCHEMA_VERSION = 15
+export const SCHEMA_VERSION = 16
 
 /**
  * 오프라인 축적의 소수부 (자원 단위). 세 자원의 축적 속도가 달라 하나로 합칠 수 없다.
@@ -192,6 +192,18 @@ export interface SaveData {
   armorOwned: string[]
   /** 벌마다의 담금질 단수 (0..armorForgeMax). 줄지 않는다. 모르는 키도 지우지 않는다 (A4). */
   armorForge: Record<string, number>
+
+  // ── v16: 체크포인트가 **가본 데까지만** 열린다 (2026-09-10, 형의 반려) ──
+  /**
+   * 지금까지 잡아본 보스 중 **가장 깊은 마디** (1 = 10판 보스, 2 = 20판 보스, …). 줄지 않는다.
+   *
+   * ★ 왜 bossKills 로는 안 되나 (형: "죽은 다음에 게임 이어서 하니까 **해본 적도 없는 20-1**로
+   *   넘어가네"): bossKills 는 **누적 처치 수**다. 10판에서 죽고 체크포인트(10판)에서 다시
+   *   시작해 10판 보스를 또 잡으면 bossKills 가 2가 되고, 체크포인트가 20판으로 뛴다 —
+   *   한 번도 가본 적 없는 판이다. 마디는 순서대로만 열린다는 옛 주석의 전제가 **같은 보스를
+   *   두 번 잡는 경우**를 안 셌다. 깊이는 깊이로 세야 한다.
+   */
+  bossDepth: number
 }
 
 /** 저장값이 말이 되는 범위인지만 본다. 치트 방지가 아니라 NaN·Infinity 방어다 (A4: 치트 방지 안 함). */
@@ -265,6 +277,7 @@ export function defaultSave(now: number): SaveData {
     armorKind: 'leather',
     armorOwned: [],
     armorForge: {},
+    bossDepth: 0,
   }
 }
 
@@ -402,6 +415,19 @@ const MIGRATIONS: ReadonlyArray<(r: Raw) => void> = [
     r['armorKind'] = 'brigandine'
     r['armorOwned'] = ['brigandine']
     r['armorForge'] = {}
+  },
+
+  /**
+   * v15 → v16: 체크포인트를 **가본 데까지로** 되돌린다 (형: "해본 적도 없는 20-1로 넘어가네").
+   *
+   * 옛 세이브의 bossKills 는 같은 보스를 다시 잡은 것까지 세어 부풀어 있다. 실제로 갈 수 있었던
+   * 깊이의 상한은 **가장 멀리 간 판**이다 — 30판 보스를 잡았다면 최소 30판까지는 갔어야 한다.
+   * 그래서 둘 중 작은 쪽을 취한다. 부풀린 만큼만 깎이고, 진짜로 깊이 간 사람은 안 잃는다.
+   */
+  (r) => {
+    const kills = typeof r['bossKills'] === 'number' ? Math.floor(r['bossKills']) : 0
+    const far = typeof r['bestRunStage'] === 'number' ? Math.floor(r['bestRunStage']) : 0
+    r['bossDepth'] = Math.max(0, Math.min(kills, Math.floor(far / 10)))
   },
 ]
 
@@ -559,6 +585,7 @@ function sanitize(r: Raw, now: number): SaveData {
     armorKind: typeof r['armorKind'] === 'string' && r['armorKind'].length <= 32 ? r['armorKind'] : 'leather',
     armorOwned: sanitizeUnlocked(r['armorOwned']),
     armorForge: sanitizeBest(r['armorForge']),
+    bossDepth: int(r['bossDepth'], 0, 0, HARD_MAX),
   }
 }
 

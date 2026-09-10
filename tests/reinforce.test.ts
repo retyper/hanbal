@@ -118,3 +118,19 @@ describe('세이브 v14 — 들어 본 살 (새 살 안내)', () => {
     assert.deepEqual(loadSave().armedArrows, ['rapid'])
   })
 })
+
+describe('세이브 v16 — 체크포인트가 가본 데까지만 열린다', () => {
+  it('옛 세이브의 부푼 누적 처치 수를 가장 멀리 간 판으로 깎는다', () => {
+    assert.ok(SCHEMA_VERSION >= 16)
+    assert.equal(defaultSave(0).bossDepth, 0)
+    // 10판 보스를 열 번 잡고 최고 12판까지 간 사람 — 깊이는 1이어야 한다 (20판은 가본 적 없다).
+    store.set(KEY, JSON.stringify({ v: 15, bossKills: 10, bestRunStage: 12 }))
+    const a = loadSave()
+    assert.equal(a.v, SCHEMA_VERSION)
+    assert.equal(a.bossDepth, 1, '가본 적 없는 마디가 열렸다')
+    assert.equal(a.bossKills, 10, '누적 처치 수는 그대로여야 한다 (활 해금의 재료다)')
+    // 진짜로 깊이 간 사람은 안 잃는다.
+    store.set(KEY, JSON.stringify({ v: 15, bossKills: 9, bestRunStage: 34 }))
+    assert.equal(loadSave().bossDepth, 3)
+  })
+})

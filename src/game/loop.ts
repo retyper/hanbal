@@ -467,7 +467,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     // 리듬도 여정의 것이다 — 새 여정에 지난 여정의 몰기를 들고 들어가면 그건 번 게 아니다.
     w.flowHits = 0
     w.molgi = false
-    stageIndex = pendingStartIndex ?? checkpointStage(save.bossKills)
+    stageIndex = pendingStartIndex ?? checkpointStage(save.bossDepth)
     pendingStartIndex = null
     loadStage(save.runArrow)
   }
@@ -541,7 +541,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       stars: save.runStars,
       jung: save.runBestJung,
       molgi: save.runBestJung >= Math.floor(P.flow.molgiAt),
-      nextStage: checkpointStage(save.bossKills) + 1,
+      nextStage: checkpointStage(save.bossDepth) + 1,
     }
     save.runCount++
     save.runActive = false
@@ -643,7 +643,12 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     if (bestChain > save.bestChain) save.bestChain = bestChain
     save.bullseyes += bullseyes
     // 보스 처치 — 활 해금의 유일한 재료 (docs/RUN.md). 해금 판정보다 먼저 세야 그 자리에서 열린다.
-    if (cleared && w.stage.targets.some((t) => t.kind === 'boss')) save.bossKills++
+    if (cleared && w.stage.targets.some((t) => t.kind === 'boss')) {
+      save.bossKills++
+      // 깊이는 따로 센다 — 같은 보스를 다시 잡아도 깊어지지 않는다 (stages.ts checkpointStage).
+      const cycleNow = Math.floor((stageIndex + 1) / BOSS_EVERY)
+      if (cycleNow > save.bossDepth) save.bossDepth = cycleNow
+    }
     // 활 숙련의 재료. 판이 끝날 때 한 번에 — 매 명중마다 세이브 객체를 만지지 않는다.
     save.bowHits[save.bow] = (save.bowHits[save.bow] ?? 0) + hits
     if (reward.stars >= 3) save.perfectRuns++

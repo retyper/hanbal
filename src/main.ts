@@ -59,7 +59,7 @@ const withMap = (fn: (m: MapMod) => void): void => {
     if (mapMod === null) {
       mapMod = m
       m.mountMap(
-        overlay, save.stars, save.bossKills, save.bestRunStage, save.runActive,
+        overlay, save.stars, save.bossDepth, save.bestRunStage, save.runActive,
         (index) => loop.mapJump(index),
       )
     }
@@ -107,7 +107,7 @@ const loop = createLoop(el, {
         overlay,
         ['practice', ...unlockedBows(save.unlocked)],
         save,
-        checkpointStage(save.bossKills) + 1,
+        checkpointStage(save.bossDepth) + 1,
         onStart,
       ),
     // 보스 보급 3택 (docs/RUN.md) — 특수살 재고의 유일한 큰 획득처.
@@ -127,7 +127,7 @@ const loop = createLoop(el, {
         collection.updateCollection(progressOf(save), save.unlocked, save.stars)
       }
       if (mapMod !== null) {
-        mapMod.updateMap(save.stars, save.bossKills, save.bestRunStage, save.runActive)
+        mapMod.updateMap(save.stars, save.bossDepth, save.bestRunStage, save.runActive)
       }
     },
   },

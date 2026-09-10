@@ -131,6 +131,30 @@ describe('체크포인트 (지도, 2026-08-26 — 형: "보스깨면 죽었을�
 
   it('음수·소수는 방어적으로 처리한다', () => {
     assert.equal(checkpointStage(-3), 0)
+  })
+
+  it('★ 같은 보스를 다시 잡아도 체크포인트가 안 깊어진다 (형: "해본 적도 없는 20-1로 넘어가네")', () => {
+    // 2026-09-10 버그: 체크포인트를 **누적 처치 수**(bossKills)로 셌다. 10판에서 죽고
+    // 체크포인트(10판)에서 다시 시작해 10판 보스를 또 잡으면 누적이 2가 되어 20판이 열렸다 —
+    // 한 번도 가본 적 없는 판이다. 이제 **가장 깊은 마디**(bossDepth)로 센다.
+    let depth = 0
+    let kills = 0
+    /** 10판 보스를 잡는다 (cycle 1). 몇 번을 잡아도 깊이는 1이다. */
+    const beatFirstBoss = (): void => {
+      kills++
+      const cycle = 1
+      if (cycle > depth) depth = cycle
+    }
+    beatFirstBoss()
+    assert.equal(checkpointStage(depth), BOSS_EVERY, '첫 보스를 잡으면 11판부터')
+    beatFirstBoss()
+    beatFirstBoss()
+    assert.equal(kills, 3)
+    assert.equal(checkpointStage(depth), BOSS_EVERY,
+      '같은 보스를 세 번 잡았는데 체크포인트가 깊어졌다 — 가본 적 없는 판이 열린다')
+    // 진짜로 20판 보스를 잡으면 그때 깊어진다.
+    depth = Math.max(depth, 2)
+    assert.equal(checkpointStage(depth), BOSS_EVERY * 2)
     assert.equal(checkpointStage(2.9), BOSS_EVERY * 2)
   })
 })

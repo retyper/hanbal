@@ -106,17 +106,23 @@ export function stepTargets(w: World): void {
         if (!tg.hidden) fireEnemyShot(w, tg)
       }
     } else if (tg.kind === 'boss') {
+      // 걷는 놈은 발이 땅에 붙는다 — 그 자리 땅 높이 + 반경이 몸 중심이다 (돌진과 같은 규칙).
+      const walks = bossGait(tg.look) === 'walk'
+      const floorY = walks ? groundAt(w.stage, tg.x) + tg.r : tg.baseY
       if (tg.stagger > 0) {
         // 비틀거린다/넘어졌다 — **멈춘다.** 이 숨이 약점 공략의 상이다 (P.target.bossStagger*).
         tg.stagger = Math.max(0, tg.stagger - dt)
         tg.weak = 1
-        tg.y = tg.baseY - (tg.look === 3 ? tg.r * P.target.bossTripSink : 0)
+        tg.y = floorY - (bossGrammar(tg.look) === 'leg' ? tg.r * P.target.bossTripSink : 0)
         if (tg.stagger <= 0) tg.guardHits = 0
       } else {
         // 보스 — 느리게, 그러나 멈추지 않고 온다 (docs/RUN.md 3장). 판이 끝나면 멈춘다.
         if (w.status === 'playing') tg.x -= tg.speed * dt
-        // 보스판은 평지다 — baseY(저작 y + 그 자리 땅)를 그대로 쓴다. 언덕 위의 보스는 아직 없다.
-        tg.y = tg.baseY + Math.sin(time * P.target.chargeBobFreq * TAU) * P.target.chargeBob
+        tg.y = walks
+          // 걸음마다 아주 조금 들린다. 크게 들리면 걷는 게 아니라 뛰는 것이다.
+          ? floorY + Math.abs(Math.sin(time * P.target.bossStepFreq * Math.PI)) * P.target.bossStepRise
+          // 유령은 뜬다 — 그게 유령의 문법이다.
+          : tg.baseY + Math.sin(time * P.target.chargeBobFreq * TAU) * P.target.chargeBob
         tg.weak = bossWeak(tg, time)
       }
       if (tg.x <= w.archer.x + P.target.chargeReach && w.status === 'playing') {
@@ -298,6 +304,17 @@ export function bossGrammar(look: number): 'eye' | 'guard' | 'twin' | 'leg' {
 }
 
 /**
+ * 이 보스는 **걷는가, 뜨는가** (2026-09-10, 형: "모든 보스가 왜 다 둥실둥실 떠다니냐 개빡치게").
+ *
+ * 유령 넷(눈알·갑주·쌍눈·폭주)은 뜬다 — 그게 유령의 문법이다. 2026-09-10 에 선 넷은
+ * **땅을 밟는 것들**이다: 방망이 든 거인, 네발짐승, 나무 기둥, 도포 입은 사람.
+ * 이것들이 공중에 떠 있으면 무서운 게 아니라 그냥 잘못 그린 그림이다.
+ */
+export function bossGait(look: number): 'walk' | 'float' {
+  return look >= 4 ? 'walk' : 'float'
+}
+
+/**
  * 눈을 뜨고 감는 박자의 배수 — 몸마다 숨이 다르다.
  * 거인(도깨비)은 느긋해서 오래 뜨고, 저승사자는 갓 밑이라 좀처럼 안 보인다.
  */
@@ -381,8 +398,8 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
 
   // ── 보스의 약점은 열렸다 닫힌다 (2026-09-10, 형: "약점 공략하는 맛도 없고") ──
   if (target.kind === 'boss') {
-    // 폭주귀신 — 다리를 맞히면 넘어진다. 착탄이 낮은 것이 곧 약점이다.
-    if (target.look === 3 && target.stagger <= 0 && arrow.y < target.y - target.r * P.target.bossLegZone) {
+    // 다리를 맞히면 넘어진다 (폭주귀신·구미호). 착탄이 낮은 것이 곧 약점이다.
+    if (bossGrammar(target.look) === 'leg' && target.stagger <= 0 && arrow.y < target.y - target.r * P.target.bossLegZone) {
       startStagger(w, target, P.target.bossStaggerTrip, true)
     }
     const open = target.stagger > 0 || target.weak > P.target.bossEyeOpenAt
@@ -494,10 +511,11 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
     } else {
       target.hp -= hurt.dealt
       if (target.kind === 'boss' && head && target.hp > 0) {
-        if (target.look === 0 && target.stagger <= 0) {
-          // 눈알귀신 — 뜬 눈을 맞혔다. 멈춘다. 다음 발이 상이다.
+        const gram = bossGrammar(target.look)
+        if (gram === 'eye' && target.stagger <= 0) {
+          // 뜬 눈을 맞혔다 (눈알귀신·도깨비·저승사자). 멈춘다 — 다음 발이 상이다.
           startStagger(w, target, P.target.bossStaggerEye, false)
-        } else if (target.look === 2) {
+        } else if (gram === 'twin') {
           // 쌍눈귀신 — 한쪽의 아픔이 다른 쪽을 멈춘다. 둘은 하나다.
           for (const o of w.targets) {
             if (o !== target && o.alive && o.kind === 'boss' && o.stagger <= 0) startStagger(w, o, P.target.bossStaggerTwin, false)

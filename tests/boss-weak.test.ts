@@ -13,6 +13,7 @@ import assert from 'node:assert/strict'
 import { createWorld, step } from '../src/sim/world.ts'
 import { spawnArrow } from '../src/sim/ballistics.ts'
 import { P } from '../src/tune/params.ts'
+import { bossGait, bossGrammar } from '../src/sim/target.ts'
 import type { InputFrame, StageDef, Stats, TargetSpec, World } from '../src/sim/types.ts'
 
 const STATS: Stats = { str: 10, steady: 8, stamina: 8, focus: 6 }
@@ -105,6 +106,51 @@ describe('보스의 약점', () => {
     shootAt(w, eyeY(a))
     assert.ok(b.stagger > 0, '한쪽 눈을 맞혔는데 다른 쪽이 안 멈춘다')
     assert.equal(a.stagger, 0, '맞은 쪽이 멈췄다 — 쌍눈은 다른 쪽이 멈추는 것이다')
+  })
+
+  it('★ 여덟이 전부 자기 문법대로 움직인다 — look 을 해석하는 자리가 하나뿐인지', () => {
+    // 2026-09-10: bossGrammar 로 모은다고 해놓고 **치환 셋이 실제로는 안 들어갔다.**
+    // 테스트가 look 0~3 만 보고 있어서 통과해 버렸다 — 구미호(5)는 다리를 맞혀도 안 넘어지고,
+    // 도깨비(4)·저승사자(7)는 눈을 맞혀도 안 멈췄다. 이제 여덟을 전부 건다.
+    for (const look of [0, 1, 2, 3, 4, 5, 6, 7]) {
+      const gram = bossGrammar(look)
+      const armored = gram === 'guard'
+      const w = createWorld(def([boss(look, armored ? { armored: true } : {})]), STATS)
+      const b2 = w.targets[0]
+      assert.ok(b2 !== undefined)
+      // 한 스텝은 돌려야 문법이 weak 에 반영된다 — 태어날 때는 셋 다 1(뜬 채)이다.
+      step(w, IDLE)
+      if (gram === 'leg') {
+        shootAt(w, b2.y - b2.r * (P.target.bossLegZone + 0.25))
+        assert.ok(b2.stagger > 0, `look ${look} (${gram}) — 다리를 맞혔는데 안 넘어진다`)
+      } else if (gram === 'eye') {
+        assert.equal(b2.weak, 1, `look ${look} — 판이 서자마자 눈이 감겨 있다`)
+        shootAt(w, eyeY(b2))
+        assert.ok(b2.stagger > 0, `look ${look} (${gram}) — 뜬 눈을 맞혔는데 안 멈춘다`)
+      } else if (gram === 'guard') {
+        assert.equal(b2.weak, 0, `look ${look} — 갑주인데 약점이 열려 있다`)
+        shootAt(w, b2.y)
+        shootAt(w, b2.y)
+        assert.ok(b2.stagger > 0, `look ${look} (${gram}) — 몸통을 두들겼는데 안 비틀거린다`)
+      }
+    }
+  })
+
+  it('걷는 놈은 뜨지 않는다 — 발이 땅에 붙는다 (형: "왜 다 둥실둥실 떠다니냐")', () => {
+    for (const look of [0, 1, 2, 3, 4, 5, 6, 7]) {
+      const w = createWorld(def([boss(look)]), STATS)
+      const b2 = w.targets[0]
+      assert.ok(b2 !== undefined)
+      idle(w, 0.6)
+      const foot = b2.y - b2.r
+      if (bossGait(look) === 'walk') {
+        // 발이 땅(0)에서 걸음 높이 안쪽이어야 한다. 저작된 y(1.6~3.8m)는 안 쓴다.
+        assert.ok(foot >= -1e-6 && foot <= P.target.bossStepRise + 1e-6,
+          `look ${look} 은 걷는 놈인데 발이 ${foot.toFixed(2)}m 에 떠 있다`)
+      } else {
+        assert.ok(foot > 0.4, `look ${look} 은 유령인데 땅에 붙어 있다 (${foot.toFixed(2)}m)`)
+      }
+    }
   })
 
   it('폭주귀신 — 다리를 맞히면 넘어지고(trip), 넘어진 동안 내려앉는다', () => {

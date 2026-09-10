@@ -12,7 +12,7 @@ import { groundAt } from './terrain.ts'
 import { arrowFx, refreshArrowFx } from './arrowfx.ts'
 import { effectiveStats, stepArcher } from './bow.ts'
 import { spawnParried, stepArrows } from './ballistics.ts'
-import { hurtPlayer, stepTargets } from './target.ts'
+import { bossGait, hurtPlayer, stepTargets } from './target.ts'
 import { flowMiss, resetFlow, stepFlow } from './flow.ts'
 import { TRAIL_POINTS } from './types.ts'
 import type {
@@ -268,7 +268,12 @@ function loadTarget(t: Target, id: number, spec: TargetSpec, stage: StageDef): v
    * 저작 쪽에 두면 한쪽이 빠진다. 지면은 세계의 사실이지 저작의 취향이 아니다.
    */
   // 저작된 y는 그 자리 **땅에서 잰 높이**다 — 언덕 위의 과녁은 언덕만큼 높다 (sim/terrain.ts).
-  const y = (spec.kind === 'charger' ? r : spec.y) + groundAt(stage, spec.x)
+  // ★ **걷는 보스**도 돌진과 같다 (2026-09-10, 형: "모든 보스가 왜 다 둥실둥실 떠다니냐").
+  //   도깨비·구미호·장승·저승사자는 땅을 밟는 것들이라 저작 y 가 높이를 정하지 않는다 —
+  //   발이 지면에 닿는 자리 = 반경 그 자체다. 유령 넷은 저작된 높이에 그대로 뜬다.
+  const grounded = spec.kind === 'charger'
+    || (spec.kind === 'boss' && bossGait(Math.floor(spec.look ?? 0)) === 'walk')
+  const y = (grounded ? r : spec.y) + groundAt(stage, spec.x)
   t.id = id
   t.alive = true
   t.kind = spec.kind
