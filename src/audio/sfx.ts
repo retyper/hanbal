@@ -1786,8 +1786,10 @@ export function pumpSfx(sfx: Sfx, w: World): void {
       sample(sfx, s, 'soft', P.audio.missGain * SMP.missGain * 0.8, 0.8, e.x, e.y)
     } else if (e.t === 'foe_down') {
       // 쓰러졌다 — 사람은 퍽, 드론은 금속. 무엇이 죽었는지 귀로도 안다.
-      const drone = e.look === 3
-      sample(sfx, s, drone ? 'wreck' : 'thud', SMP.downGain, drone ? 1.05 : 0.92, e.x, e.y)
+      // 무엇이 죽었는지 귀로도 안다: 매는 푸석한 소리, 화차는 나무가 부서지는 소리, 사람은 퍽.
+      // (드론이 있던 자리다 — 2026-09-10 에 매로 바뀌었다. 쇳소리는 이제 안 난다.)
+      const name = e.look === 3 ? 'soft' : e.look === 4 ? 'woodHeavy' : 'thud'
+      sample(sfx, s, name, SMP.downGain * (e.look === 3 ? 1.4 : 1), e.look === 3 ? 1.15 : 0.92, e.x, e.y)
     }
   }
 }

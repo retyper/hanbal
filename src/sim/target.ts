@@ -164,6 +164,13 @@ export function stepTargets(w: World): void {
  * 난수를 쓰지 않는다 (A1). 못 푸는 거리면(속도 부족) 직사로 던진다 — 어차피 못 미친다.
  */
 function fireEnemyShot(w: World, tg: Target): void {
+  // 한 번에 몇 발인가 (Target.volley) — 화차(火車)의 신기전은 부채꼴로 여러 발이 한꺼번에 온다.
+  const shots = Math.max(1, Math.floor(tg.volley))
+  for (let k = 0; k < shots; k++) fireOne(w, tg, shots > 1 ? (k - (shots - 1) / 2) * P.enemy.volleySpread : 0)
+}
+
+/** 한 발. `spread` 는 조준각에 얹는 부채꼴 오프셋 (rad). */
+function fireOne(w: World, tg: Target, spread: number): void {
   let slot: import('./types.ts').EnemyShot | null = null
   for (let i = 0; i < w.shots.length; i++) {
     const sh = w.shots[i]
@@ -187,8 +194,10 @@ function fireEnemyShot(w: World, tg: Target): void {
   }
   // 조준 산포 — 적도 사람이다 (형: "무조건 백발백중이야?"). w.rng를 쓰지만 결정론은
   // 그대로다: 발사 시각이 결정론적이라 소비 순서도 판마다 같다 (A1).
-  ang += w.rng.gaussian() * P.enemy.aimScatter * tg.aimMul
+  ang += w.rng.gaussian() * P.enemy.aimScatter * tg.aimMul + spread
   slot.alive = true
+  // 날아오는 것의 생김새 — 매(3)는 돌, 화차(4)는 신기전, 나머지는 화살 (sim/types.ts EnemyShot.look).
+  slot.look = tg.look === 3 ? 1 : tg.look === 4 ? 2 : 0
   slot.x = tg.x
   slot.y = tg.y
   slot.px = tg.x

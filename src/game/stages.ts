@@ -265,6 +265,10 @@ function convertToFoes(base: StageDef, i: number): StageDef {
     (t2) => t2.kind !== 'bonus' && t2.kind !== 'charger' && t2.kind !== 'barrel',
   ).length
   const period = P.enemy.shootEvery * Math.min(2.5, 1 + (foes - 1) * 0.4)
+  // 화차가 설 자리 (없으면 -1). 판 번호만으로 정해지므로 언제 켜도 같은 판이다 (A1).
+  const hwachaAt = n >= HWACHA_FROM
+    ? Math.floor(makeRng(seedFrom(`hanbal.hwacha.${n}`)).next() * Math.max(1, foes))
+    : -1
   const specs: TargetSpec[] = []
   let f = 0
   for (const t of base.targets) {
@@ -285,6 +289,11 @@ function convertToFoes(base: StageDef, i: number): StageDef {
     // 41판+ 셋에 하나 갑옷(헤드샷만 통한다).
     const elite = n >= 36 && f % 3 === 1
     const armored = n >= 41 && f % 3 === 2
+    // ★ 화차(火車) — 26판부터 판마다 **하나씩** (2026-09-10, 형: "잡몹들도 좀 다양하게 추가해봐").
+    //   조선의 다연장 로켓이다. 신기전을 부채꼴로 세 발 쏘므로 한 발을 피해도 옆이 온다 —
+    //   방패로 막거나 **패링으로 한 번에 쳐내는** 것이 답이다. 발사 주기는 넉넉하게 벌린다.
+    //   자리는 판 번호에서 나온 별도 시드로 고른다 — 위의 rng 를 건드리면 보급·현상금이 다 밀린다.
+    const isHwacha = n >= HWACHA_FROM && f === hwachaAt
     const fireDelay = P.enemy.windup + 1.5 + (f * period) / Math.max(1, foes)
     const common = { hp, fireDelay, firePeriod: period, score: 120 }
     if (elite) (common as TargetSpec).aimMul = 0.5
@@ -298,7 +307,9 @@ function convertToFoes(base: StageDef, i: number): StageDef {
     //   각크기 규칙은 먼 적을 살리는 규칙이지 가까운 적을 점으로 만드는 규칙이 아니다.
     //   창은 이 r에서 나오므로(render/buildings.ts) r이 작으면 창도 사람도 같이 작아진다.
     const fr = Math.max(P.enemy.foeMinR, (t.r ?? 0.6) * P.enemy.foeR)
-    if (t.kind === 'aerial') {
+    if (isHwacha) {
+      specs.push({ kind: 'archer', look: 4, x: t.x, y: t.y, r: fr * 1.25, volley: Math.floor(P.enemy.volleyShots), ...common, firePeriod: period * P.enemy.hwachaPeriodMul, score: 200 })
+    } else if (t.kind === 'aerial') {
       specs.push({ kind: 'archer', look: 3, x: t.x, y: t.y, r: fr, ampX: 1.4, freq: 0.18, ...common })
     } else if (t.kind === 'moving') {
       specs.push({ kind: 'archer', look: 2, x: t.x, y: t.y, r: fr * 1.08, ...common })
@@ -377,23 +388,28 @@ function foeHint(n: number, base: StageDef, specs: readonly TargetSpec[]): strin
   if (specs.some((s) => s.kind === 'barrel')) return base.hint ?? ''
   let win = 0
   let hide = 0
-  let drone = 0
+  let hawk = 0
+  let hwacha = 0
   for (const s of specs) {
     if (s.kind !== 'archer') continue
-    if (s.look === 3) drone++
+    if (s.look === 4) hwacha++
+    else if (s.look === 3) hawk++
     else if (s.look === 2) hide++
     else win++
   }
   if (n === BOSS_EVERY + 2) return '날아오는 화살은 칼로 쳐낸다 — F, 폰은 패링 버튼. 쳐낸 화살은 쏜 놈에게 돌아간다'
-  if (hide > 0 && drone === 0) return '숨은 사수는 당길 때만 나온다 — 그 틈이 유일하다'
-  if (drone > 0 && hide === 0) return '드론은 떠서 돈다 — 멈칫하는 자리를 노린다'
-  if (hide > 0 && drone > 0) return '숨는 놈과 나는 놈 — 먼저 당기는 쪽부터'
+  if (hwacha > 0) return '화차(火車) — 신기전이 부채꼴로 온다. 방패로 막거나 칼로 쳐낸다'
+  if (hide > 0 && hawk === 0) return '숨은 사수는 당길 때만 나온다 — 그 틈이 유일하다'
+  if (hawk > 0 && hide === 0) return '매가 돈다 — 발톱의 돌을 놓기 전에 떨군다'
+  if (hide > 0 && hawk > 0) return '숨는 놈과 나는 놈 — 먼저 당기는 쪽부터'
   if (win >= 3) return `창의 사수 ${win} — 가까운 창부터, 머리를 노린다`
   return '창의 사수 — 당기는 쪽을 먼저, 머리는 한 발이다'
 }
 
 /** 보스 주기. 10판 = 여정의 한 마디 (RUN.md). */
 export const BOSS_EVERY = 10
+/** 화차가 처음 서는 판 (2026-09-10). 사수·창문·드론을 다 배운 뒤에 온다. */
+const HWACHA_FROM = 26
 /** 보스판 화살 = 필요한 명중 수 + 이 여유. */
 const BOSS_SPARE_ARROWS = 4
 /**

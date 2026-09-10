@@ -146,6 +146,7 @@ function newTarget(): Target {
     armorHp: 0,
     armorMax: 0,
     aimMul: 1,
+    volley: 1,
     bounty: false,
     chainDepth: 0,
     score: FALLBACK_TARGET_SCORE,
@@ -314,6 +315,7 @@ function loadTarget(t: Target, id: number, spec: TargetSpec, stage: StageDef): v
   t.armorMax = t.armored ? Math.floor(P.enemy.armorHp) : 0
   t.armorHp = t.armorMax
   t.aimMul = spec.aimMul ?? 1
+  t.volley = Math.max(1, Math.floor(spec.volley ?? 1))
   t.bounty = spec.bounty === true
   // 약점은 뜬 채로 시작한다 — 판이 서자마자 감긴 눈이면 첫 발이 벌이 된다. 주기는 stepTargets 가 돈다.
   t.weak = 1
@@ -429,7 +431,7 @@ export function createWorld(
     shieldMax: 0,
     // 적 화살 풀 — 한 판에 적 궁수 셋이 동시에 쏴도 8이면 넉넉하다 (A5: 고정 크기).
     shots: Array.from({ length: 8 }, () => ({
-      alive: false, x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0,
+      alive: false, x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, look: 0,
     })),
     arrowsLeft: stage.arrows,
     score: 0,

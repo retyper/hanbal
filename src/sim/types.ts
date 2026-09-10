@@ -313,6 +313,12 @@ export interface Target {
   armorMax: number
   /** archer 전용 — 조준 산포 배수. 1보다 작으면 정예다. */
   aimMul: number
+  /**
+   * 한 번에 쏘는 발수 (archer). 0·1이면 한 발.
+   * **화차(火車)의 신기전**이 이걸 쓴다 — 조선의 다연장 로켓이다 (2026-09-10).
+   * 여러 발이 부채꼴로 한꺼번에 온다: 방패로 막거나 **패링으로 한 번에 쳐내는** 것이 답이다.
+   */
+  volley: number
   /** 금관 사수인가 (TargetSpec.bounty). 렌더가 관을 그리고, 헤드샷 즉사에 bounty 사건이 난다. */
   bounty: boolean
   /** 판 시작 시점의 체력 (boss·archer). 체력 바의 분모다. */
@@ -528,6 +534,8 @@ export interface TargetSpec {
   fireDelay?: number
   /** archer·boss — 갑옷 (몸통 무효, 헤드샷/눈만 통한다). */
   armored?: boolean
+  /** 한 번에 쏘는 발수 (archer). 화차의 신기전. */
+  volley?: number
   /** archer 전용 — 조준 산포 배수 (작을수록 정예). */
   aimMul?: number
   /**
@@ -700,6 +708,13 @@ export interface EnemyShot {
   py: number
   vx: number
   vy: number
+  /**
+   * 날아오는 것의 **생김새** (2026-09-10, 형: "드론말고 아마 새같은게 좋을거 같다.
+   * 고려나 조선 시대쯤으로 생각하고 있는데 그거에 맞게 다좀 고쳐봐봐").
+   *   0 화살 (사람이 쏜 것) · 1 **돌** (매가 발톱에서 놓은 것) · 2 **신기전** (화차가 쏜 불화살)
+   * 판정은 셋이 같다 — 다른 건 그림과 소리뿐이다. 규칙이 하나여야 배우는 것도 하나다.
+   */
+  look: number
 }
 
 // ───────────────────────────── 모듈 시그니처 ─────────────────────────────

@@ -1111,6 +1111,13 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
         sandboxAdd(w, { kind: 'moving', x: rx2, y: 2 + ry2 * P.sandbox.spreadLow, r: 0.55, ampY: 1.2, freq: 0.3, score: 100 })
       } else if (kind === 'aerial') {
         sandboxAdd(w, { kind: 'aerial', x: rx2, y: 4.5 + ry2 * 0.5, r: 0.55, score: 100 })
+      } else if (kind === 'hwacha') {
+        // 화차 — 신기전을 부채꼴로 (2026-09-10). 실험장에서도 판과 같은 치수여야 한다.
+        sandboxAdd(w, {
+          kind: 'archer', look: 4, x: rx2 + 6, y: 0.9, r: 0.8,
+          hp: Math.floor(P.enemy.convertHp), volley: Math.floor(P.enemy.volleyShots),
+          fireDelay: 3, firePeriod: P.enemy.shootEvery * P.enemy.hwachaPeriodMul, score: 200,
+        })
       } else if (kind === 'window' || kind === 'peek' || kind === 'drone') {
         // 11판+ 전환 변종들 (stages.ts convertToFoes와 같은 문법).
         const look = kind === 'window' ? 1 : kind === 'peek' ? 2 : 3

@@ -1,3 +1,7 @@
 drone.png — "Pixel Art Drone" (OpenGameArt, CC0)
   https://opengameart.org/content/pixel-art-drone
   113x57, 2프레임 (로터 교대). 원본 파일명 drone_4.png.
+
+※ 2026-09-10 부터 **안 쓴다.** 형: "드론말고 아마 새같은게 좋을거 같다. 고려나 조선 시대쯤으로
+   생각하고 있는데 그거에 맞게 다좀 고쳐봐봐." 그 자리는 이제 **매(放鷹)** 가 지킨다 —
+   벡터로 그린다 (render/scene.ts drawFalcon). 파일은 되돌릴 일을 대비해 남겨 둔다.

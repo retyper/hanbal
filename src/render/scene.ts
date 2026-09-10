@@ -18,7 +18,6 @@ import { skyOf, drawShadow } from './sky.ts'
 import type { SkyPalette } from './sky.ts'
 import { drawFoeArcher, drawFoeRusher } from './foe.ts'
 import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
-import { sprite } from './sprites.ts'
 import { createFx, pumpEvents, updateFx, drawFx, drawFxFlash, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash, targetFlinch, PLAYER_PIN } from './effects.ts'
 import { drawNewBossBody } from './bosses.ts'
 import { bossGrammar } from '../sim/target.ts'
@@ -533,77 +532,22 @@ function drawTargets(
         ctx.globalAlpha = 1
         continue
       }
-      // ── 드론 (look 3) — 기성 스프라이트(CC0, 2프레임 로터) 우선, 없으면 벡터. ──
+      // ── 매 (look 3) — 드론이 있던 자리 (2026-09-10, 형: "드론말고 아마 새같은게 좋을거 같다.
+      //    고려나 조선 시대쯤으로 생각하고 있는데 그거에 맞게 다좀 고쳐봐봐") ──
+      //
+      //    드론은 이 세계의 것이 아니었다. 매사냥(放鷹)은 고려·조선의 것이고, **매를 부려 위에서
+      //    돌을 떨어뜨리는 것**이면 하늘의 위협이 시대 안으로 들어온다. 판정은 그대로다 —
+      //    바뀐 건 그림과 날아오는 것뿐이다 (sim/types.ts EnemyShot.look).
       if (t.look === 3) {
-        const im = sprite('drone')
-        if (im !== null) {
-          // 113x57 = 56px 프레임 둘. 교대 주기는 sim elapsed로 (A1: 렌더는 읽기만).
-          const frame = Math.floor(w.elapsed * 14) % 2
-          const dw = rx * 2.3
-          const dh = dw * (57 / 56)
-          ctx.imageSmoothingEnabled = false
-          ctx.drawImage(im, frame === 0 ? 0 : 57, 0, 56, 57, x - dw / 2, y - dh / 2, dw, dh)
-          ctx.imageSmoothingEnabled = true
-          // 렌즈 — **헤드샷 판정 그 자리에** 그린다(sim/target.ts와 같은 식:
-          // archerHeadUp·archerHeadR). 예전엔 장식으로 고정된 자리(예고 때만 등장)라
-          // 실제 약점이 화면 어디에도 안 보였다(형: "드론에 헤드샷이 어디있냐"). 그리고
-          // 몸색 원으로 표시했다가 "인간 머리가 왜 달려있냐"는 반려를 받았다 — 사람 살색이
-          // 아니라 이 기계의 눈(렌즈) 그 자체가 약점이어야 자연스럽다. 평소엔 중립색,
-          // 예고 중엔 위험색으로 달아오른다 — 벡터 폴백의 렌즈와 같은 문법이다.
-          {
-            const hr2 = Math.max(2.5, rx * P.enemy.archerHeadR)
-            ctx.fillStyle = hot ? THEME.threat : THEME.targetBand
-            ctx.beginPath()
-            ctx.arc(x, y - ry * P.enemy.archerHeadUp, hr2, 0, TAU)
-            ctx.fill()
-          }
-          drawHpBar(ctx, x, y - ry * 0.62 - 14, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
-          ctx.globalAlpha = 1
-          continue
-        }
-        const spin = w.elapsed * 40
-        ctx.fillStyle = bodyCol
-        ctx.beginPath()
-        ctx.ellipse(x, y, rx * 0.72, ry * 0.34, 0, 0, TAU)
-        ctx.fill()
-        // 로터 팔 + 날개 잔상 — 회전은 sim elapsed로 (A1: 렌더는 읽기만).
-        ctx.strokeStyle = bodyCol
-        ctx.lineWidth = Math.max(2, rx * 0.1)
-        ctx.beginPath()
-        ctx.moveTo(x - rx * 0.6, y - ry * 0.2)
-        ctx.lineTo(x - rx, y - ry * 0.55)
-        ctx.moveTo(x + rx * 0.6, y - ry * 0.2)
-        ctx.lineTo(x + rx, y - ry * 0.55)
-        ctx.stroke()
-        ctx.globalAlpha = 0.75
-        ctx.lineWidth = Math.max(1.5, rx * 0.07)
-        const rw = rx * (0.42 + 0.1 * Math.sin(spin))
-        ctx.beginPath()
-        ctx.moveTo(x - rx - rw, y - ry * 0.55)
-        ctx.lineTo(x - rx + rw, y - ry * 0.55)
-        ctx.moveTo(x + rx - rw, y - ry * 0.55)
-        ctx.lineTo(x + rx + rw, y - ry * 0.55)
-        ctx.stroke()
+        drawFalcon(ctx, w, t, x, y, rx, ry, hot ? THEME.threat : bodyCol, hot)
+        drawHpBar(ctx, x, y - ry * 0.9 - 14, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
         ctx.globalAlpha = 1
-        // 렌즈 — **헤드샷 판정 그 자리에** 그린다(sim/target.ts와 같은 식: archerHeadUp·
-        // archerHeadR). 예전엔 고정 장식 위치였다. 스프라이트 분기와 같은 이유로 옮겼다 —
-        // 사람 살색 원이 아니라 이 렌즈 자체가 약점이어야 "인간 머리가 왜 달려있냐"는
-        // 반려가 다시 안 나온다. 벡터 폴백은 헤드리스 프로브가 항상 보는 경로라 스프라이트
-        // 분기와 반드시 같은 자리를 써야 한다.
-        const lx = x
-        const ly = y - ry * P.enemy.archerHeadUp
-        ctx.fillStyle = hot ? THEME.threat : THEME.targetBand
-        ctx.beginPath()
-        ctx.arc(lx, ly, Math.max(2.5, rx * P.enemy.archerHeadR), 0, TAU)
-        ctx.fill()
-        // 신호등 — 깜빡임. 기계는 이걸로 살아 있다.
-        if ((w.elapsed % 1.1) < 0.5) {
-          ctx.fillStyle = '#ff9a45'
-          ctx.beginPath()
-          ctx.arc(x + rx * 0.5, y - ry * 0.1, 2.2, 0, TAU)
-          ctx.fill()
-        }
-        drawHpBar(ctx, x, y - ry * 0.55 - 14, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
+        continue
+      }
+      // ── 화차(火車) — 신기전을 부채꼴로 쏘는 수레 (look 4, 2026-09-10) ──
+      if (t.look === 4) {
+        drawHwacha(ctx, w, t, x, y, rx, ry, bodyCol, drawF, hot)
+        drawHpBar(ctx, x, y - ry * 1.15 - 14, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
         ctx.globalAlpha = 1
         continue
       }
@@ -1004,7 +948,174 @@ function drawTrails(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void 
 /**
  * 체력 바 — 모든 목숨 있는 것의 문법 (형: "체력은 전부 캐릭터 머리 위나 다리 밑에 바 형태").
  * 화면 좌표로 그린다. 잃은 만큼이 어두워지는 단순한 두 겹 — 숫자는 안 쓴다.
- *//** 움찔의 생김새 — 젖혀지는 각(rad)과 번쩍임의 문턱·세기. */
+ *//**
+ * 매 (放鷹) — 하늘의 위협 (2026-09-10, 드론이 있던 자리).
+ *
+ * 날개는 **사인 하나로** 친다: 위상이 0이면 활짝, π면 접힌다. 두 장을 반대 위상으로 그리면
+ * 옆에서 본 새가 된다. 발톱에 돌 하나를 쥐고 있고, 쏠 때(예고 중)는 그 돌이 붉게 달아오른다 —
+ * 곧 놓는다는 뜻이다. 약점(눈)은 sim 과 **같은 자리**다 (archerHeadUp·archerHeadR).
+ */
+function drawFalcon(
+  ctx: CanvasRenderingContext2D, w: World, t: Target,
+  x: number, y: number, rx: number, ry: number, col: string, hot: boolean,
+): void {
+  const flap = Math.sin(w.elapsed * FALCON.flapHz * TAU)
+  // ── 날개 둘 — 뒤쪽(먼) 날개를 먼저, 어둡게. 위아래로 크게 친다.
+  for (const [side, dim] of [[1, true], [-1, false]] as const) {
+    const lift = flap * ry * FALCON.flap * (dim ? 0.82 : 1)
+    ctx.fillStyle = dim ? THEME.threatDim : col
+    ctx.beginPath()
+    ctx.moveTo(x + rx * 0.1, y - ry * 0.05)
+    ctx.quadraticCurveTo(
+      x + side * rx * 0.7, y - lift - ry * 0.45,
+      x + side * rx * 1.5, y - lift * 1.25 - ry * 0.1,
+    )
+    ctx.quadraticCurveTo(x + side * rx * 0.75, y - lift * 0.5 + ry * 0.2, x + rx * 0.05, y + ry * 0.16)
+    ctx.closePath()
+    ctx.fill()
+  }
+  // ── 몸통 — 앞(-x)이 뾰족한 방추형. 새는 앞으로 길다.
+  ctx.fillStyle = col
+  ctx.beginPath()
+  ctx.ellipse(x, y, rx * 0.66, ry * 0.3, -0.12, 0, TAU)
+  ctx.fill()
+  // ── 꼬리 — 뒤로 벌어진 부채.
+  ctx.beginPath()
+  ctx.moveTo(x + rx * 0.45, y - ry * 0.12)
+  ctx.lineTo(x + rx * 1.15, y - ry * 0.32)
+  ctx.lineTo(x + rx * 1.12, y + ry * 0.2)
+  ctx.closePath()
+  ctx.fill()
+  // ── 머리와 부리 — 갈고리 부리 하나면 맹금이 된다.
+  const hy2 = y - ry * P.enemy.archerHeadUp
+  ctx.beginPath()
+  ctx.ellipse(x - rx * 0.5, hy2 + ry * 0.16, rx * 0.26, ry * 0.22, 0, 0, TAU)
+  ctx.fill()
+  ctx.fillStyle = FALCON.beak
+  ctx.beginPath()
+  ctx.moveTo(x - rx * 0.68, hy2 + ry * 0.1)
+  ctx.lineTo(x - rx * 0.98, hy2 + ry * 0.26)
+  ctx.lineTo(x - rx * 0.66, hy2 + ry * 0.3)
+  ctx.closePath()
+  ctx.fill()
+  // ── 발톱과 돌 — 쥐고 있다가 놓는다. 예고 중엔 돌이 달아오른다.
+  ctx.strokeStyle = FALCON.beak
+  ctx.lineWidth = Math.max(1.2, rx * 0.06)
+  ctx.beginPath()
+  ctx.moveTo(x - rx * 0.08, y + ry * 0.22)
+  ctx.lineTo(x - rx * 0.02, y + ry * 0.5)
+  ctx.stroke()
+  ctx.fillStyle = hot ? THEME.threat : FALCON.stone
+  ctx.beginPath()
+  ctx.arc(x, y + ry * 0.6, Math.max(2, rx * 0.16), 0, TAU)
+  ctx.fill()
+  // ── 눈 = 약점. sim 과 같은 자리·같은 크기여야 "맞았는데 안 맞았다"가 안 생긴다.
+  ctx.fillStyle = hot ? THEME.threat : FALCON.eye
+  ctx.beginPath()
+  ctx.arc(x - rx * 0.5, hy2, Math.max(2.5, rx * P.enemy.archerHeadR), 0, TAU)
+  ctx.fill()
+  void t
+}
+
+/** 매의 치수. */
+const FALCON = {
+  /** 날갯짓 (Hz). 맹금은 느리게 친다 — 참새처럼 빨리 치면 작아 보인다. */
+  flapHz: 2.1,
+  /** 날개 끝이 오르내리는 폭 (ry 배수). */
+  flap: 0.55,
+  beak: "#e8b45c",
+  stone: "#8d939c",
+  eye: "#ffd35c",
+} as const
+
+/**
+ * 화차(火車) — 신기전을 부채꼴로 쏘는 수레 (2026-09-10, 형: "잡몹들도 좀 다양하게").
+ *
+ * 조선의 다연장 로켓이다. 바퀴 둘 위의 수레에 벌집 같은 발사틀이 얹혀 있고, 예고(windup) 동안
+ * 구멍마다 심지가 붉게 달아오른다 — **여러 발이 한꺼번에 온다**는 말을 그림이 먼저 한다.
+ * 답은 방패이거나 **패링**이다 (한 번에 다 쳐낸다).
+ */
+function drawHwacha(
+  ctx: CanvasRenderingContext2D, w: World, t: Target,
+  x: number, y: number, rx: number, ry: number, col: string, drawF: number, hot: boolean,
+): void {
+  const wheelR = ry * 0.34
+  const baseY = y + ry * 0.72
+  // ── 바퀴 둘 — 살 넷. 굴러온다는 말은 바퀴가 한다.
+  ctx.strokeStyle = HWACHA.wood
+  ctx.lineWidth = Math.max(1.5, rx * 0.07)
+  for (const s of [-0.5, 0.55]) {
+    const cx = x + rx * s
+    ctx.beginPath()
+    ctx.arc(cx, baseY, wheelR, 0, TAU)
+    ctx.stroke()
+    for (let k = 0; k < 4; k++) {
+      const a2 = (k * Math.PI) / 4 + w.elapsed * 0.9
+      ctx.beginPath()
+      ctx.moveTo(cx - Math.cos(a2) * wheelR, baseY - Math.sin(a2) * wheelR)
+      ctx.lineTo(cx + Math.cos(a2) * wheelR, baseY + Math.sin(a2) * wheelR)
+      ctx.stroke()
+    }
+  }
+  // ── 수레 — 비스듬히 선 발사틀을 받치는 판.
+  ctx.fillStyle = HWACHA.wood
+  ctx.beginPath()
+  ctx.moveTo(x - rx * 0.95, baseY - wheelR * 0.55)
+  ctx.lineTo(x + rx * 0.95, baseY - wheelR * 0.55)
+  ctx.lineTo(x + rx * 0.8, baseY - wheelR * 1.15)
+  ctx.lineTo(x - rx * 0.8, baseY - wheelR * 1.15)
+  ctx.closePath()
+  ctx.fill()
+  // ── 발사틀 — 앞으로 기운 상자. 벌집 구멍이 앞(-x)을 본다.
+  ctx.save()
+  ctx.translate(x, y - ry * 0.1)
+  ctx.rotate(-HWACHA.tilt)
+  ctx.fillStyle = HWACHA.frame
+  ctx.fillRect(-rx * 0.82, -ry * 0.46, rx * 1.6, ry * 0.86)
+  ctx.strokeStyle = HWACHA.wood
+  ctx.lineWidth = Math.max(1, rx * 0.05)
+  ctx.strokeRect(-rx * 0.82, -ry * 0.46, rx * 1.6, ry * 0.86)
+  // 구멍 — 3×5. 예고 중엔 앞줄부터 붉게 달아오른다.
+  for (let r2 = 0; r2 < 3; r2++) {
+    for (let c2 = 0; c2 < 5; c2++) {
+      const lit = hot && c2 / 5 <= drawF
+      ctx.fillStyle = lit ? THEME.threat : HWACHA.hole
+      ctx.beginPath()
+      ctx.arc(-rx * 0.62 + c2 * rx * 0.31, -ry * 0.26 + r2 * ry * 0.28, Math.max(1.2, rx * 0.075), 0, TAU)
+      ctx.fill()
+    }
+  }
+  ctx.restore()
+  // ── 사수 하나 — 수레 뒤에서 심지를 붙인다. 기계만 있으면 누가 쏘는지 알 수 없다.
+  ctx.strokeStyle = col
+  ctx.lineWidth = Math.max(2, rx * 0.09)
+  ctx.beginPath()
+  ctx.moveTo(x + rx * 0.95, baseY - wheelR * 0.6)
+  ctx.lineTo(x + rx * 1.0, y - ry * 0.5)
+  ctx.stroke()
+  ctx.fillStyle = col
+  ctx.beginPath()
+  ctx.arc(x + rx * 1.02, y - ry * 0.68, Math.max(2, rx * 0.13), 0, TAU)
+  ctx.fill()
+  // ── 약점 — sim 과 같은 자리. 화차의 급소는 **화약을 쟁인 틀**이다.
+  ctx.fillStyle = hot ? THEME.threat : HWACHA.core
+  ctx.beginPath()
+  ctx.arc(x, y - ry * P.enemy.archerHeadUp, Math.max(2.5, rx * P.enemy.archerHeadR), 0, TAU)
+  ctx.fill()
+  void t
+}
+
+/** 화차의 치수·색. */
+const HWACHA = {
+  /** 발사틀이 앞으로 기운 각 (rad). */
+  tilt: 0.28,
+  wood: "#7a5c38",
+  frame: "#463424",
+  hole: "#20180f",
+  core: "#e8a33c",
+} as const
+
+/** 움찔의 생김새 — 젖혀지는 각(rad)과 번쩍임의 문턱·세기. */
 const FLINCH = {
   lean: 0.42,
   /** 이 위(맞은 직후)만 번쩍인다. 0.22초 중 앞 0.1초. */
@@ -1134,22 +1245,58 @@ function drawShield(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void 
   }
 }
 
+/**
+ * 날아오는 것 — 화살 · **돌**(매가 놓은 것) · **신기전**(화차의 불화살) (2026-09-10).
+ * 판정은 셋이 같다 (sim/world.ts). 다른 건 그림뿐이지만, 다르게 보여야 어디서 온 것인지 안다.
+ */
 function drawEnemyShots(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void {
-  ctx.strokeStyle = THEME.threat
-  ctx.lineWidth = 2
   ctx.lineCap = 'round'
   for (let i = 0; i < w.shots.length; i++) {
     const sh = w.shots[i]
     if (sh === undefined || !sh.alive) continue
+    const sx = worldToScreenX(cam, sh.x)
+    const sy = worldToScreenY(cam, sh.y)
+    if (sh.look === 1) {
+      // 돌 — 짧은 꼬리 없이 덩어리 하나. 구르듯 도는 것이 화살과 다른 점이다.
+      ctx.fillStyle = SHOT.stone
+      ctx.beginPath()
+      ctx.arc(sx, sy, SHOT.stoneR, 0, TAU)
+      ctx.fill()
+      ctx.strokeStyle = SHOT.stoneEdge
+      ctx.lineWidth = 1
+      ctx.stroke()
+      continue
+    }
     const sp = Math.hypot(sh.vx, sh.vy) || 1
     const ux = sh.vx / sp
     const uy = sh.vy / sp
+    if (sh.look === 2) {
+      // 신기전 — 불꼬리를 단 화살. 꼬리가 길어야 로켓으로 읽힌다.
+      ctx.strokeStyle = SHOT.fire
+      ctx.lineWidth = 3
+      ctx.beginPath()
+      ctx.moveTo(worldToScreenX(cam, sh.x - ux * SHOT.fireTail), worldToScreenY(cam, sh.y - uy * SHOT.fireTail))
+      ctx.lineTo(sx, sy)
+      ctx.stroke()
+    }
+    ctx.strokeStyle = THEME.threat
+    ctx.lineWidth = 2
     ctx.beginPath()
     ctx.moveTo(worldToScreenX(cam, sh.x - ux * 0.5), worldToScreenY(cam, sh.y - uy * 0.5))
-    ctx.lineTo(worldToScreenX(cam, sh.x), worldToScreenY(cam, sh.y))
+    ctx.lineTo(sx, sy)
     ctx.stroke()
   }
 }
+
+/** 날아오는 것들의 생김새. */
+const SHOT = {
+  stone: '#8d939c',
+  stoneEdge: '#5a606a',
+  stoneR: 3.2,
+  fire: '#ff9a45',
+  /** 불꼬리 길이 (m). */
+  fireTail: 1.4,
+} as const
 
 function drawArrows(ctx: CanvasRenderingContext2D, cam: Camera, w: World, alpha: number): void {
   ctx.lineCap = 'round'
