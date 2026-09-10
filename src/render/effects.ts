@@ -165,6 +165,14 @@ const FX = {
   /** 이 점수에서 팝이 최대 크기·밝기가 된다. 기본 과녁 100점, 링 배수 최대 2배. */
   scoreRef: 420,
 } as const
+
+/** 시체의 색 — 사람이 아닌 것들 (매·화차). 몸색은 THEME 을 쓰고 여기는 부속만. */
+const CORPSE = {
+  beak: '#e8b45c',
+  wood: '#7a5c38',
+  frame: '#463424',
+  ash: '#20180f',
+} as const
 // TODO(params): hit.critStopMul · hit.critSlowSec · hit.critSlowScale
 // TODO(params): hit.squashTtl · hit.ringTtl · chain.glowAlpha · chain.glowCutoff
 
@@ -985,27 +993,95 @@ function drawCorpses(ctx: CanvasRenderingContext2D, cam: Camera, f: Fx): void {
     ctx.lineJoin = 'round'
 
     if (look === 3) {
-      // ── 드론 — 부러진 틀이 돈다. 사람처럼 눕지 않는다. ──
+      // ── 매 — 날개를 편 채 떨어진다 (2026-09-10, 형: "새가 죽으면 새 사체가 되어야지 왜
+      //    아직도 드론시체야"). 드론이 매로 바뀌었는데 **시체만 부러진 로터로 남아 있었다.**
+      //    새는 사람처럼 눕지 않고 팽이처럼 돌지도 않는다 — 날개가 축 처지고 깃이 흩어진다.
       ctx.translate(x, y)
-      ctx.rotate(ang)
-      ctx.strokeStyle = THEME.prop
-      ctx.lineWidth = Math.max(1.5, r * 0.26)
+      // 조금만 돈다. 새는 팽이가 아니다 — 각을 그대로 쓰면 로터처럼 보인다.
+      ctx.rotate(ang * 0.3)
+      // 펼쳐진 날개 둘 — 가라앉을수록 접힌다.
+      const spread = 1 - settle * 0.42
+      ctx.fillStyle = THEME.threatDim
+      for (const s of [-1, 1]) {
+        ctx.beginPath()
+        ctx.moveTo(0, 0)
+        ctx.quadraticCurveTo(s * r * 0.9, -r * 0.55 * spread, s * r * 1.7 * spread, r * 0.16)
+        ctx.quadraticCurveTo(s * r * 0.8, r * 0.34, 0, r * 0.2)
+        ctx.closePath()
+        ctx.fill()
+      }
+      // 꼬리 — 뒤로 벌어진 부채. 죽어도 깃은 펴진 채다.
       ctx.beginPath()
-      ctx.moveTo(-r, 0)
-      ctx.lineTo(r * 0.9, r * 0.12)
-      // 부러진 로터 한쪽이 꺾여 있다.
-      ctx.moveTo(r * 0.5, r * 0.06)
-      ctx.lineTo(r * 0.95, -r * 0.5)
+      ctx.moveTo(r * 0.4, -r * 0.1)
+      ctx.lineTo(r * 1.15, -r * 0.32)
+      ctx.lineTo(r * 1.12, r * 0.2)
+      ctx.closePath()
+      ctx.fill()
+      // 몸통
+      ctx.fillStyle = THEME.bodyDim
+      ctx.beginPath()
+      ctx.ellipse(0, 0, r * 0.6, r * 0.3, 0, 0, Math.PI * 2)
+      ctx.fill()
+      // 목과 머리 — 아래로 꺾인다. 이 한 줄이 "죽었다"의 전부다.
+      const droop = 0.5 + settle * 0.85
+      const hx = -r * 0.62 - Math.cos(droop) * r * 0.18
+      const hy = Math.sin(droop) * r * 0.5
+      ctx.strokeStyle = THEME.bodyDim
+      ctx.lineWidth = Math.max(1.2, r * 0.2)
+      ctx.beginPath()
+      ctx.moveTo(-r * 0.45, 0)
+      ctx.lineTo(hx, hy)
       ctx.stroke()
       ctx.fillStyle = THEME.bodyDim
-      ctx.fillRect(-r * 0.3, -r * 0.22, r * 0.6, r * 0.44)
-      // 죽은 로터 — 멈춘 원 둘.
-      ctx.strokeStyle = THEME.bodyDim
-      ctx.lineWidth = Math.max(1, r * 0.12)
       ctx.beginPath()
-      ctx.arc(-r * 0.8, 0, r * 0.22, 0, Math.PI * 2)
-      ctx.arc(r * 0.75, r * 0.1, r * 0.18, 0, Math.PI * 2)
+      ctx.arc(hx, hy, r * 0.2, 0, Math.PI * 2)
+      ctx.fill()
+      // 부리 — 갈고리. 이게 있어야 새다.
+      ctx.fillStyle = CORPSE.beak
+      ctx.beginPath()
+      ctx.moveTo(hx - r * 0.06, hy - r * 0.06)
+      ctx.lineTo(hx - r * 0.34, hy + r * 0.1)
+      ctx.lineTo(hx - r * 0.04, hy + r * 0.16)
+      ctx.closePath()
+      ctx.fill()
+      // 흩어진 깃 셋 — 떨어진 자리에 남는 것. 위상은 개체마다 다르다.
+      ctx.strokeStyle = THEME.bodyDim
+      ctx.lineWidth = Math.max(1, r * 0.07)
+      for (let k = 0; k < 3; k++) {
+        const fa = ph + k * 2.1
+        const fd = r * (0.9 + k * 0.35) * (0.4 + settle * 0.6)
+        ctx.beginPath()
+        ctx.moveTo(Math.cos(fa) * fd, Math.sin(fa) * fd * 0.4 - r * 0.1)
+        ctx.lineTo(Math.cos(fa) * fd + r * 0.26, Math.sin(fa) * fd * 0.4 - r * 0.24)
+        ctx.stroke()
+      }
+    } else if (look === 4) {
+      // ── 화차 — 수레가 주저앉는다. 바퀴가 빠지고 발사틀이 쪼개진다 (2026-09-10). ──
+      ctx.translate(x, y)
+      ctx.rotate(ang * 0.25 + settle * 0.35)
+      // 쪼개진 발사틀 — 기운 상자와 부러진 판때기 둘.
+      ctx.fillStyle = CORPSE.frame
+      ctx.fillRect(-r * 0.85, -r * 0.42, r * 1.5, r * 0.72)
+      ctx.strokeStyle = CORPSE.wood
+      ctx.lineWidth = Math.max(1.2, r * 0.12)
+      ctx.beginPath()
+      ctx.moveTo(-r * 1.05, r * 0.3)
+      ctx.lineTo(r * 0.5, r * 0.46)
+      ctx.moveTo(-r * 0.2, -r * 0.5)
+      ctx.lineTo(r * 1.0, -r * 0.15)
       ctx.stroke()
+      // 빠진 바퀴 — 옆으로 누워 있다.
+      ctx.lineWidth = Math.max(1, r * 0.09)
+      ctx.beginPath()
+      ctx.ellipse(r * 0.95, r * 0.42, r * 0.4, r * 0.14, 0.2, 0, Math.PI * 2)
+      ctx.stroke()
+      // 타다 만 구멍 셋 — 신기전이 있던 자리.
+      ctx.fillStyle = CORPSE.ash
+      for (let k = 0; k < 3; k++) {
+        ctx.beginPath()
+        ctx.arc(-r * 0.5 + k * r * 0.45, -r * 0.08, Math.max(1, r * 0.1), 0, Math.PI * 2)
+        ctx.fill()
+      }
     } else if (look < 0) {
       // ── 보스(눈알귀신) — 시체가 아니라 **무너진다.** ──
       // 형: "보스 시체도 Y에 점찍어놓은게 말이되냐" — 맞다. 보스는 사람이 아니라
