@@ -19,7 +19,7 @@ import type { SkyPalette } from './sky.ts'
 import { drawFoeArcher, drawFoeRusher } from './foe.ts'
 import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { sprite } from './sprites.ts'
-import { createFx, pumpEvents, updateFx, drawFx, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash , PLAYER_PIN } from './effects.ts'
+import { createFx, pumpEvents, updateFx, drawFx, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash, targetFlinch, PLAYER_PIN } from './effects.ts'
 import type { Fx } from './effects.ts'
 import { drawHud } from './hud.ts'
 import type { HudState } from './hud.ts'
@@ -523,6 +523,8 @@ function drawTargets(
             { x: wx - whw, y: wy2 - whh, w: whw * 2, h: whh * 2 },
             t.bounty,
           )
+          // 창의 사수는 젖히지 않는다(창틀이 자른다) — 번쩍임만.
+          drawFlash(ctx, wx, wy2, rx, targetFlinch(fx, t.id))
           // 체력 바 — 창 위. 숨어 있으면 바도 없다 (없는 것은 잴 수 없다).
           drawHpBar(ctx, wx, wy2 - whh - 12, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
         }
@@ -605,7 +607,17 @@ function drawTargets(
       }
 
       // ── 들판 궁수 (look 0) — 나를 향해 몸을 돌리고 활을 쥔다 (render/foe.ts) ──
+      // 맞으면 **움찔한다** — 발을 축으로 뒤(+x)로 젖혀졌다 돌아온다 (2026-09-10, 형: "때리면 아파하거나").
+      const fl = targetFlinch(fx, t.id)
+      if (fl > 0) {
+        ctx.save()
+        ctx.translate(x, y + ry)
+        ctx.rotate(FLINCH.lean * fl * fl)
+        ctx.translate(-x, -(y + ry))
+      }
       drawFoeArcher(ctx, x, y, rx, ry, aimX, aimY, drawF, bodyCol, t.armored, true, null, t.bounty)
+      if (fl > 0) ctx.restore()
+      drawFlash(ctx, x, y, rx, fl)
 
       // 체력 바 — 머리 위 (형: "전부 바 형태로").
       drawHpBar(
@@ -973,7 +985,28 @@ function drawTrails(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void 
 /**
  * 체력 바 — 모든 목숨 있는 것의 문법 (형: "체력은 전부 캐릭터 머리 위나 다리 밑에 바 형태").
  * 화면 좌표로 그린다. 잃은 만큼이 어두워지는 단순한 두 겹 — 숫자는 안 쓴다.
+ *//** 움찔의 생김새 — 젖혀지는 각(rad)과 번쩍임의 문턱·세기. */
+const FLINCH = {
+  lean: 0.42,
+  /** 이 위(맞은 직후)만 번쩍인다. 0.22초 중 앞 0.1초. */
+  flashFrom: 0.55,
+  flashAlpha: 0.6,
+} as const
+
+/**
+ * 맞은 직후의 하얀 번쩍임 — 몸 위에 흰 원 하나. 격투 게임의 히트 플래시다 (2026-09-10).
+ * fl 은 targetFlinch (1 = 방금). 문턱 아래면 아무것도 안 그린다.
  */
+function drawFlash(ctx: CanvasRenderingContext2D, x: number, y: number, rx: number, fl: number): void {
+  if (fl <= FLINCH.flashFrom) return
+  ctx.globalAlpha = ((fl - FLINCH.flashFrom) / (1 - FLINCH.flashFrom)) * FLINCH.flashAlpha
+  ctx.fillStyle = '#ffffff'
+  ctx.beginPath()
+  ctx.arc(x, y, rx * 0.95, 0, TAU)
+  ctx.fill()
+  ctx.globalAlpha = 1
+}
+
 function drawHpBar(
   ctx: CanvasRenderingContext2D, x: number, y: number, w: number, ratio: number,
 ): void {

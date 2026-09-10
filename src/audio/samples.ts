@@ -83,6 +83,8 @@ export type SampleName =
   | 'heart'
   /** 귀신의 포효 — 보스판이 시작될 때 한 번. */
   | 'roar'
+  /** 맞은 사람의 신음 — 살아남은 적의 몸통 명중. 귀신은 같은 소리를 낮게 낸다. */
+  | 'grunt'
 
 /** 확장자와 폴더는 여기 한 곳에만 적는다. */
 const DIR = 'sfx/'
@@ -122,6 +124,7 @@ const FILES: Readonly<Record<SampleName, readonly string[]>> = {
   anvil: ['anvil_01', 'anvil_02'],
   heart: ['heart_01'],
   roar: ['roar_01'],
+  grunt: ['grunt_01', 'grunt_02', 'grunt_03'],
 }
 
 /** 순회용 키 목록. 매번 Object.keys를 부르면 배열이 새로 생긴다 (A5). */

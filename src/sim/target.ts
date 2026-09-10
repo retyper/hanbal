@@ -480,7 +480,8 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
     }
     target.alive = false
     // 쓰러졌다 — 시체는 렌더의 것이다. 여기서는 **무엇이 얼마로 때렸는지**만 넘긴다.
-    downEvent(w, target, arrow.vx, arrow.vy, arrow.fx.mass)
+    // 머리로 눕혔으면 세게 날아간다 (hard) — 반응이 커야 조준한 값을 몸으로 안다.
+    downEvent(w, target, arrow.vx, arrow.vy, arrow.fx.mass, head)
   } else if (target.kind === 'aerial') {
     // 공중 과녁은 맞아도 사라지지 않는다. 떨어지면서 아래를 연쇄로 쳐야 한다 (GDD 7장).
     target.falling = true
@@ -569,7 +570,7 @@ export function burstAt(w: World, x: number, y: number, R: number, exclude: Targ
     c.alive = false
     // 폭발로 죽은 적은 **바깥으로** 날아간다. 세기는 중심에서 멀수록 약하다.
     const k = (1 - clamp01(d / R)) * P.render.blastPush
-    downEvent(w, c, d > 0 ? (dx / d) * k : 0, d > 0 ? (dy / d) * k : k, 1)
+    downEvent(w, c, d > 0 ? (dx / d) * k : 0, d > 0 ? (dy / d) * k : k, 1, true)
   }
 
   // ── 자해 ──────────────────────────────────────────────────────────
@@ -598,11 +599,11 @@ export function burstAt(w: World, x: number, y: number, R: number, exclude: Targ
  * 쓰러진 적을 알린다 (SimEvent 'foe_down'). **사람과 드론만** — 과녁은 그냥 사라진다.
  * 형: "과녁이면 과녁이고 적이면 적이지." 남는 것도 그래서 다르다.
  */
-function downEvent(w: World, t: Target, vx: number, vy: number, mass: number): void {
+function downEvent(w: World, t: Target, vx: number, vy: number, mass: number, hard = false): void {
   if (t.kind !== 'archer' && t.kind !== 'boss' && t.kind !== 'charger') return
   w.events.push({
     t: 'foe_down',
-    x: t.x, y: t.y, vx, vy, mass,
+    x: t.x, y: t.y, vx, vy, mass, hard,
     look: t.kind === 'boss' ? -1 : t.kind === 'charger' ? 0 : t.look,
     r: t.r,
     g: groundAt(w.stage, t.x),

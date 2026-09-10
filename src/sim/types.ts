@@ -457,6 +457,8 @@ export type SimEvent =
       t: 'foe_down'; x: number; y: number
       vx: number; vy: number; mass: number
       look: number; r: number
+      /** 세게 죽었다 — 머리 명중이나 폭발. 시체가 더 멀리 날아간다 (형: "날라가거나"). */
+      hard: boolean
       /** 쓰러진 자리의 땅 높이 (sim/terrain.ts). 시체는 여기까지 떨어져 눕는다 — 언덕이면 언덕 위에. */
       g: number
     }

@@ -752,7 +752,13 @@ export function pumpEvents(fx: Fx, w: World): void {
       pushPopup(fx.pop, e.x, e.y + 0.6, '감았다', 'chain')
     } else if (e.t === 'foe_down') {
       // 적이 쓰러졌다 — 시체를 하나 세운다 (형: "죽었을때 없어져버리지 말고").
-      spawnCorpse(fx, e.x, e.y, e.vx, e.vy, e.mass, e.look, e.r, e.g)
+      // 세게 죽었으면 더 멀리 난다 + 흙먼지 한 줌 + 히트스톱. 몸이 날아가야 "제대로 맞혔다"가 온다.
+      const hard = e.hard ? P.render.corpseHardMul : 1
+      spawnCorpse(fx, e.x, e.y, e.vx * hard, e.vy * hard, e.mass * hard, e.look, e.r, e.g)
+      if (e.hard) {
+        spawn(fx, e.x, e.y, FX.missBurst, KIND_MISS, FX.missSpeed * 1.5, FX.missTtl, 1.5)
+        fx.hitStop += P.hit.stopMs * 0.001 * 0.6
+      }
     } else if (e.t === 'burst') {
       // ★ 폭발. 예전에는 딸려 죽은 과녁의 chain 이벤트만 있어서, 아무것도 안 물리면
       // 폭발이 일어난 흔적이 화면에 하나도 안 남았다 (형의 지적).
@@ -1180,6 +1186,20 @@ function squashOver(t: number): number {
   if (t < FX.squashT) return 0
   const u = (t - FX.squashT) / (1 - FX.squashT)
   return Math.sin(Math.PI * u)
+}
+
+/**
+ * 맞은 직후의 '움찔' 0..1 — 방금 맞았으면 1, squashTtl 뒤 0. 적 실루엣이 뒤로 젖혀지고
+ * 하얗게 번쩍이는 데 쓴다 (scene.ts 궁수 분기). 눌림(targetSquash)과 같은 슬롯을 읽는다.
+ */
+export function targetFlinch(fx: Fx, id: number): number {
+  for (let i = 0; i < SQUASH; i++) {
+    if (fx.sId[i] !== id) continue
+    const l = fx.sLife[i] ?? 0
+    if (l <= 0) continue
+    return clamp01(l / FX.squashTtl)
+  }
+  return 0
 }
 
 export function targetSquash(fx: Fx, id: number): Squash {

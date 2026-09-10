@@ -166,6 +166,9 @@ const VIEW = {
   shakeFreq: 34,
   /** 폭발이 명중보다 몇 배로 흔드는가. 소리·불덩이와 같은 순간에 온다. */
   burstShakeMul: 2.4,
+  /** 사람·귀신 몸통 명중 · 머리 명중의 흔들림 배수 (2026-09-10 반응 강화). */
+  foeShakeMul: 1.5,
+  headShakeMul: 2,
   /** 대형 연쇄에서 잠깐 줌아웃하는 비율 (GDD 7장) */
   chainZoomOut: 0.05,
   /** 이 깊이 이상의 연쇄부터 줌아웃 */
@@ -305,7 +308,12 @@ export function updateCamera(cam: Camera, w: World, dtReal: number): void {
       const e = ev[i]
       if (e === undefined) continue
       if (e.t === 'hit') {
-        cx.shakeAmp = P.hit.shakeAmp
+        // 사람·귀신을 때린 건 과녁보다 무겁다. 머리면 더.
+        cx.shakeAmp = P.hit.shakeAmp * (e.foe ? (e.head ? VIEW.headShakeMul : VIEW.foeShakeMul) : 1)
+        cx.shakeAge = 0
+      } else if (e.t === 'stagger' || (e.t === 'foe_down' && e.hard)) {
+        // 보스가 멈추거나 사람이 날아간다 — 폭발만큼 흔든다. 큰 반응이 곧 손맛이다 (형: "바바바박").
+        cx.shakeAmp = P.hit.shakeAmp * VIEW.burstShakeMul
         cx.shakeAge = 0
       } else if (e.t === 'burst') {
         // 폭발은 명중보다 크게 흔든다. 이게 "터졌다"의 몸으로 오는 신호다.

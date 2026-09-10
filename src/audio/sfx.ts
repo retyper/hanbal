@@ -362,6 +362,11 @@ const SMP = {
   roarGain: 0.7,
   /** 보스가 멈추는 쿵 — downGain 배수. */
   staggerGain: 1.5,
+  /** 맞은 사람의 신음 — 절대값. 명중음 뒤에 얹히는 소리라 그보다 작다. 귀신은 낮고(rate) 크게. */
+  gruntGain: 0.42,
+  gruntJitter: 0.08,
+  gruntBossGain: 1.4,
+  gruntBossRate: 0.55,
 
   /**
    * 정중앙 문턱은 여기 없다 — `P.hit.bullseyeAcc` 하나뿐이다 (A2 단일 출처).
@@ -1443,6 +1448,12 @@ export function pumpSfx(sfx: Sfx, w: World): void {
       // 이탈은 조용하다. 잃은 것을 소리로 알리면 그건 인정이 아니라 벌이다 (C2의 정신).
       if (e.on) playMolgi(s)
     } else if (e.t === 'hit') {
+      // 맞은 사람은 아파한다 (2026-09-10, 형: "때리면 소리나고 아파하거나"). 즉사(execute)는 쓰러지는
+      // 소리(foe_down)가 맡는다. 귀신은 같은 신음을 낮고 크게 — 다른 목청이다.
+      if (e.foe && !e.execute) {
+        const boss = targetKind(w, e.targetId) === 'boss'
+        sample(sfx, s, 'grunt', SMP.gruntGain * (boss ? SMP.gruntBossGain : 1), boss ? SMP.gruntBossRate : jitter(SMP.gruntJitter), e.x, e.y)
+      }
       // 적 몸통은 종(정중앙 소리)을 치지 않는다 — 사람에겐 헤드샷이 크리티컬이다.
       if (e.foe && e.head) {
         // 헤드샷 전용 2박 — 둔탁한 관통 + 높은 확인 핑. 과녁 종과 다른 소리여야

@@ -50,3 +50,6 @@ fail_jingle   패배 한 소절. 'game fail' by Leszek_Szary (ID 146731) — 위
   당김 삐걱·만작 긴장음   draw·strain 값에 매 프레임 연속으로 반응하는 지속음이라 파일 하나로는 안 된다.
   살별 발사 서명(명적·화전…) 실제 릴리즈 위에 얹는 짧은 색. 살 아홉 종의 실사운드는 팩에 없다.
   연쇄 종·북·현상금 두 음   음정이 연쇄 깊이/중 수에 따라 오르는 음악적 신호라 샘플 피치 변조로는 어색하다.
+grunt_01/02/03  맞은 사람의 신음 (살아남은 적의 몸통 명중 · 귀신은 낮게). Freesound CC0:
+              'Voice_AdultMale_PainGrunts_09' by MrFossy (ID 547209) · 'male_hurt9' by micahlg (ID 413186) ·
+              'Man getting hit' by Under7dude (ID 163441)
