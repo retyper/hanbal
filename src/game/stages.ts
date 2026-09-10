@@ -333,6 +333,7 @@ function convertToFoes(base: StageDef, i: number): StageDef {
     ...base,
     arrows: Math.min(10, base.arrows + foes),
     targets: specs,
+    foeDmgMul: foeDmgMul(n),
     // ★ 힌트도 바꾼다. 저작 판의 teach 는 과녁의 말("공중 과녁은 맞으면 떨어진다")인데,
     //   11판부터 그 자리에 서 있는 건 드론과 사수다. 화면이 하는 첫 설명이 눈앞의 것과
     //   다르면 그 뒤의 설명은 아무도 안 읽는다. 사수 판에는 사수의 말을 쓴다.
@@ -351,6 +352,16 @@ export function foeHp(n: number): number {
   const t = Math.min(1, Math.max(0, (n - (BOSS_EVERY + 1)) / span))
   const ease = P.enemy.convertHpEase + (1 - P.enemy.convertHpEase) * t
   return base * ease
+}
+
+/**
+ * 적 화살 피해의 도입 경사 (P.enemy.foeDmgEase*) — foeHp 와 같은 꼴. 11판에서 낮게 시작해
+ * foeDmgEaseStages 판 동안 1.0 으로. 보스판의 호위도 이 값을 쓴다.
+ */
+export function foeDmgMul(n: number): number {
+  const span = Math.max(1, Math.floor(P.enemy.foeDmgEaseStages))
+  const t = Math.min(1, Math.max(0, (n - (BOSS_EVERY + 1)) / span))
+  return P.enemy.foeDmgEase + (1 - P.enemy.foeDmgEase) * t
 }
 
 /**
@@ -380,6 +391,8 @@ function foeHint(n: number, base: StageDef, specs: readonly TargetSpec[]): strin
 
 /** 보스 주기. 10판 = 여정의 한 마디 (RUN.md). */
 export const BOSS_EVERY = 10
+/** 보스판 화살 = 필요한 명중 수 + 이 여유. */
+const BOSS_SPARE_ARROWS = 4
 
 /**
  * 체크포인트 — 보스를 잡은 자리 다음 판 (docs/RUN.md · 지도, 2026-08-26).
@@ -415,7 +428,8 @@ function bossStage(i: number): StageDef {
   const rank = Math.floor((cycle - 1) / 4)
   const dmg = Math.max(1, Math.floor(P.enemy.playerDamage))
   const crit = Math.max(1, Math.floor(P.target.bossCritDmg))
-  const baseHp = Math.floor(P.target.bossHp) + rank * 2 * dmg
+  // 첫 보스만 가볍다 (P.target.bossFirstHpMul) — 근력 0으로 처음 만나는 귀신이다.
+  const baseHp = Math.floor(P.target.bossHp * (cycle === 1 ? P.target.bossFirstHpMul : 1)) + rank * 2 * dmg
   const id = `${cycle}-10`
   const rng = makeRng(seedFrom(`hanbal.boss.${cycle}`))
   const reach = 40
@@ -489,10 +503,12 @@ function bossStage(i: number): StageDef {
     title,
     hint,
     seed: seedFrom(id),
-    arrows: Math.min(10, hitsNeeded + 3 + escorts),
+    // 여유 넷 (2026-09-10, 셋 → 넷): 첫 보스가 10발을 받는다. 뒤 마디는 호위 때문에 어차피 상한 10.
+    arrows: Math.min(10, hitsNeeded + BOSS_SPARE_ARROWS + escorts),
     targetScore: need(Math.min(5, hitsNeeded)),
     wind: 0,
     targets,
+    foeDmgMul: foeDmgMul(i + 1),
   }
 }
 

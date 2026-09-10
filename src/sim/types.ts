@@ -522,6 +522,11 @@ export interface StageDef {
    * 형: "언덕이랑 높낮이차 이런 것 있는 스테이지들 구현해야지" (2026-09-03).
    */
   ground?: readonly { x: number; y: number }[]
+  /**
+   * 적 화살 피해 배수 — 도입 경사 (game/stages.ts foeDmgMul · P.enemy.foeDmgEase).
+   * 없으면 1. sim은 판 번호를 모르므로 판이 배수를 들고 온다.
+   */
+  foeDmgMul?: number
 }
 
 // ───────────────────────────── 월드 ─────────────────────────────

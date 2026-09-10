@@ -48,8 +48,12 @@ describe('11판 사수 — 도입 경사', () => {
     assert.ok(foeHp(first) < base, `11판 ${foeHp(first)} < ${base}`)
     assert.ok(Math.abs(foeHp(first) - base * P.enemy.convertHpEase) < 1e-9)
     const top = first + Math.floor(P.enemy.convertHpEaseStages)
-    assert.ok(Math.abs(foeHp(top) - base) < 1e-9, `${top}판 = ${base}`)
-    assert.ok(Math.abs(foeHp(31) - base * 1.5) < 1e-9)
+    // 경사가 31판을 넘겨 이어지면(2026-09-10, 30판 경사) 31판부터 ×1.5 가 경사 위에 곱해진다.
+    const at = (n: number): number => base * (n >= 31 ? 1.5 : 1)
+      * (P.enemy.convertHpEase + (1 - P.enemy.convertHpEase) * Math.min(1, (n - first) / Math.floor(P.enemy.convertHpEaseStages)))
+    assert.ok(Math.abs(foeHp(top) - at(top)) < 1e-9, `${top}판 = ${at(top)}`)
+    assert.ok(Math.abs(foeHp(31) - at(31)) < 1e-9)
+    assert.ok(Math.abs(foeHp(top + 20) - base * 1.5) < 1e-9)
     // 오르막이다 — 내려가는 판이 없다.
     for (let n = first; n < top; n++) assert.ok(foeHp(n) <= foeHp(n + 1), `${n}판 → ${n + 1}판`)
   })

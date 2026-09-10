@@ -214,7 +214,12 @@ function damageOf(
   // 착탄 속도는 관통 감속이 붙기 전(resolveHit 진입 시점)의 값이다.
   const impact = Math.sqrt(arrow.vx * arrow.vx + arrow.vy * arrow.vy)
   const vr = impact / Math.max(1, P.enemy.dmgRefSpeed)
-  const dmg = Math.max(1, Math.round(P.enemy.playerDamage * fx.mass * vr * vr))
+  // 바닥이 있다 (P.enemy.playerDamageFloor, 2026-09-10 "초반을 많이 쉽게"): 근력 0의 느린 살도
+  // 박히면 이만큼은 아프다. 속도의 제곱은 그 위에서만 산다 — 성장은 여전히 보인다.
+  const dmg = Math.max(
+    Math.max(1, Math.floor(P.enemy.playerDamageFloor * fx.mass)),
+    Math.round(P.enemy.playerDamage * fx.mass * vr * vr),
+  )
 
   const penNow = fx.pen * vr
   // ★ 갑옷에 막혔다 — 그런데 **헛발이 아니다** (형: "일반화살로도 어느정도 데미지 입으면

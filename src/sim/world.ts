@@ -696,7 +696,8 @@ function stepEnemyShots(w: World): void {
     if (w.status === 'playing' && distSqPointSegment(a.x, a.y, sh.px, sh.py, sh.x, sh.y) <= r2) {
       sh.alive = false
       // 두정갑이 있으면 그것이 먼저 받는다 (sim/target.ts hurtPlayer). 죽으면 저기서 판을 끝낸다.
-      hurtPlayer(w, P.enemy.arrowDamage, sh.x, sh.y, Math.atan2(sh.vy, sh.vx), true)
+      // 피해는 판이 들고 온 배수를 탄다 — 11판의 첫 사수는 절반만 아프다 (StageDef.foeDmgMul).
+      hurtPlayer(w, P.enemy.arrowDamage * (w.stage.foeDmgMul ?? 1), sh.x, sh.y, Math.atan2(sh.vy, sh.vx), true)
       continue
     }
     // 땅에 박힌다 — 언덕이면 언덕에 (sim/terrain.ts).
