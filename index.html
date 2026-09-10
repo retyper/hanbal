@@ -5,9 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#1c2129" />
     <meta name="color-scheme" content="dark" />
-    <!-- 폰 홈화면에서 열었을 때 주소창 없이 뜬다 (설치 안내는 하지 않는다 — GDD 9장). -->
+    <!-- 폰 홈화면에서 열었을 때 주소창 없이 뜬다 (설치 안내는 **하지 않는다** — GDD 9장).
+         2026-09-10, 형: "상단 브라우저 기본UI가 계속 거슬리는데 PWA로 만들면 안되나?"
+         manifest 가 display:fullscreen · orientation:landscape 를 걸고, public/sw.js 가 설치 조건을 채운다. -->
+    <link rel="manifest" href="manifest.webmanifest" />
     <meta name="mobile-web-app-capable" content="yes" />
+    <!-- iOS 는 이 옛 이름만 본다. 없으면 홈화면에서도 사파리 껍데기가 그대로 뜬다. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="신궁" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="icon" href="icon-192.png" type="image/png" />
     <title>신궁</title>
     <style>
       /* 첫 페인트가 0.3초 안에 되어야 한다 (제약 C6). 초기 스타일은 인라인.

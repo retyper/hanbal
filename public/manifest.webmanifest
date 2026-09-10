@@ -1,0 +1,20 @@
+{
+  "name": "신궁",
+  "short_name": "신궁",
+  "description": "이것은 내가 세계 제일의 궁수가 되기까지의 이야기다. 한 판 30초.",
+  "lang": "ko",
+  "id": "hanbal",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#1c2129",
+  "theme_color": "#1c2129",
+  "categories": ["games"],
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

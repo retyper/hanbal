@@ -183,3 +183,19 @@ mountOpening(overlay, save, () => loop.start())
 window.addEventListener('resize', () => loop.resize(), { passive: true })
 // 회전 직후에는 아직 옛 크기가 보고된다. resize가 뒤따라오지만, 안 오는 기기가 있어 같이 건다.
 window.addEventListener('orientationchange', () => loop.resize(), { passive: true })
+
+// ── 홈화면 앱으로 (2026-09-10, 형: "PWA로 만들면 안되나?") ──
+//
+// 서비스 워커가 있어야 브라우저가 "홈 화면에 추가"를 **설치**로 대접하고, 설치돼야 주소창이
+// 사라진다 (public/manifest.webmanifest 의 display:fullscreen). 규칙 셋:
+//   ① 첫 페인트를 막지 않는다 — load 뒤에, 그것도 한가할 때 부른다 (C1·C6).
+//   ② https 에서만 — 로컬 dev(http)에 워커가 남으면 고친 코드가 캐시에 가려 안 보인다.
+//   ③ 실패해도 삼킨다. 워커는 덧칠이지 의존이 아니다 (audio/samples.ts 와 같은 규칙).
+if (location.protocol === 'https:' && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    idle(() => {
+      // 상대 경로 — Pages 는 /<레포>/ 아래에 붙는다. 그 폴더가 곧 워커의 관할이다.
+      navigator.serviceWorker.register('sw.js').catch(() => {})
+    })
+  }, { once: true })
+}
