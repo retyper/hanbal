@@ -343,6 +343,23 @@ const SMP = {
   failGain: 0.45,
   /** 쓰러지는 소리 — 명중음에 묻히지 않되 앞서지도 않게. */
   downGain: 0.34,
+  // ── 2026-09-10 다운로드한 실사운드 (samples.ts 'shot'·'boom'·'anvil'·'heart'·'roar') ──
+  /** 활 릴리즈 — P.audio.releaseGain 배수. 실사운드는 합성보다 존재감이 커서 조금 누른다. */
+  shotGain: 1.6,
+  /** 릴리즈 피치: 약하게 당겼을 때(짧은 활처럼 높게) ~ 만작(낮고 굵게). */
+  shotRateHi: 1.08,
+  shotRateLo: 0.96,
+  /** 폭발 — P.audio.burstGain 배수. */
+  boomGain: 1.4,
+  /** 모루 — uiUnlockGain 배수, 둘째 타의 간격 (s). */
+  anvilGain: 1.3,
+  anvilGap: 0.19,
+  /** 심장 — P.audio.beatGain 배수, warn 0→1 에 따른 피치. */
+  heartGain: 2.2,
+  heartRateLo: 0.92,
+  heartRateHi: 1.12,
+  /** 포효 — P.audio.clearGain 배수. 시작을 알리되 클리어보다 크지 않게. */
+  roarGain: 0.7,
 
   /**
    * 정중앙 문턱은 여기 없다 — `P.hit.bullseyeAcc` 하나뿐이다 (A2 단일 출처).
@@ -658,8 +675,12 @@ export function playUi(sfx: Sfx, kind: UiSound): void {
   }
 
   if (kind === 'forge') {
-    // 망치질 — 모루에 쇠가 닿는 소리. 짧은 금속 어택(사각파 하강) + 쇳가루 노이즈 + 모루의 낮은 울림.
-    // 두 번 친다: 대장간은 한 번 치고 마는 곳이 아니다. 둘째는 조금 작고 낮게.
+    // 진짜 모루 (2026-09-10). 두 번 친다: 대장간은 한 번 치고 마는 곳이 아니다. 둘째는 조금 작고 낮게.
+    if (sample(sfx, s, 'anvil', SMP.uiUnlockGain * SMP.anvilGain, 1, 0, 0)) {
+      sample(sfx, s, 'anvil', SMP.uiUnlockGain * SMP.anvilGain * 0.8, 0.94, 0, SMP.anvilGap)
+      return
+    }
+    // 망치질 합성 — 파일이 없을 때만. 짧은 금속 어택(사각파 하강) + 쇳가루 노이즈 + 모루의 낮은 울림.
     for (let n = 0; n < 2; n++) {
       const d0 = n * 0.17
       TN.type = 'square'
@@ -736,8 +757,10 @@ export function playUi(sfx: Sfx, kind: UiSound): void {
  * 심장박동 두 번(lub–dub). 붕괴 예고의 청각 채널.
  * LFO 대신 이산 펄스인 이유: 맥동은 파형이 아니라 리듬으로 읽힌다.
  */
-function heartbeat(s: Synth, warn: number): void {
+function heartbeat(sfx: Sfx, s: Synth, warn: number): void {
   const v = warn > P.audio.beatMinWarn ? warn : P.audio.beatMinWarn
+  // 진짜 심장 (2026-09-10). 급할수록 조금 높고 크게 — 박 간격은 updateSfx 가 센다.
+  if (sample(sfx, s, 'heart', P.audio.beatGain * SMP.heartGain * v, lerp(SMP.heartRateLo, SMP.heartRateHi, v), 0, 0)) return
 
   TN.type = 'sine'
   TN.freq = SFX.beatFreq
@@ -1402,8 +1425,14 @@ export function pumpSfx(sfx: Sfx, w: World): void {
     const e = ev[i]
     if (e === undefined) continue
     if (e.t === 'release') {
-      playRelease(s, e.power)
-      if (e.kind !== 'basic') playShotVoice(s, e.kind, clamp01(e.power))
+      // 진짜 활 소리가 먼저다 (2026-09-10, 형: "직접 만들지 말고 다운받아라"). power 는 음량과
+      // 피치로 남는다 — 만작이 더 크고 조금 낮다(긴 활). 파일이 없으면 합성 텅·탁·쉭.
+      const pw = clamp01(e.power)
+      const vol = lerp(P.audio.releasePowerFloor, 1, pw * pw)
+      if (!sample(sfx, s, 'shot', P.audio.releaseGain * SMP.shotGain * vol, lerp(SMP.shotRateHi, SMP.shotRateLo, pw) * jitter(SMP.hitJitter), 0, 0)) {
+        playRelease(s, e.power)
+      }
+      if (e.kind !== 'basic') playShotVoice(s, e.kind, pw)
     } else if (e.t === 'jung') {
       // 활터의 북 — 맞았음을 알린다. 명중음 **뒤에** 얹히도록 조금 늦춰서 예약한다면
       // 좋겠지만, 북은 화살이 박히는 그 순간에 울려야 인정으로 읽힌다. 같은 순간이다.
@@ -1441,7 +1470,7 @@ export function pumpSfx(sfx: Sfx, w: World): void {
         playHit(sfx, s, w, e.targetId, e.foe && !e.head ? Math.min(e.accuracy, P.hit.bullseyeAcc - 0.01) : e.accuracy)
       }
     } else if (e.t === 'burst') {
-      playBurst(s)
+      if (!sample(sfx, s, 'boom', P.audio.burstGain * SMP.boomGain, jitter(SMP.hitJitter), 0, 0)) playBurst(s)
     } else if (e.t === 'pickup') {
       // 두 음 상승 — 완전5도. 짧고 밝게. 이게 이 게임에서 유일하게 '얻었다'는 소리다.
       for (let n = 0; n < 2; n++) {
@@ -1688,7 +1717,7 @@ export function pumpSfx(sfx: Sfx, w: World): void {
     } else if (e.t === 'warn_start') {
       // 경고가 뜬 그 순간 첫 박이 와야 예고가 성립한다. 다음 박은 updateSfx가 센다.
       // 진입 시점의 warn은 아직 작지만 heartbeat가 beatMinWarn으로 바닥을 받쳐준다.
-      heartbeat(s, w.archer.warn)
+      heartbeat(sfx, s, w.archer.warn)
       sfx.beatPhase = 0
     } else if (e.t === 'collapse') {
       playCollapse(s)
@@ -1726,6 +1755,10 @@ export function pumpSfx(sfx: Sfx, w: World): void {
  */
 /** 다음 보스 북 시각 (elapsed). 판이 바뀌면(시계 되감김) 자연히 리셋된다. */
 let bossThumpAt = 0
+/** 이 판에서 포효한 sim 시각. -1 = 아직. 판이 되감기면(elapsed 가 줄면) 다시 -1. */
+let roaredAt = -1
+/** 판 시작으로 치는 시간 창 (s). 그 뒤에 소리가 열리면(첫 제스처가 늦으면) 포효는 건너뛴다. */
+const ROAR_WINDOW = 1.5
 
 export function updateSfx(sfx: Sfx, w: World, dtReal: number): void {
   // ── 보스의 발소리 — 가까울수록 잦아진다. 위협의 거리를 소리 밀도로 번역한다 (감사). ──
@@ -1736,6 +1769,14 @@ export function updateSfx(sfx: Sfx, w: World, dtReal: number): void {
         const d2 = t.x - w.archer.x
         if (d2 < bossDist) bossDist = d2
       }
+    }
+    // 귀신이 나타났다 — 판이 서는 순간 한 번 포효한다 (2026-09-10). 같은 판을 다시 시작하면 또 운다:
+    // 시계가 되감기니(elapsed) 그건 새 등장이다. 탭 복귀는 시계가 안 되감겨 다시 안 운다 (C3).
+    if (bossDist < Infinity && w.elapsed < ROAR_WINDOW && roaredAt > w.elapsed) roaredAt = -1
+    if (bossDist < Infinity && w.elapsed < ROAR_WINDOW && roaredAt < 0) {
+      roaredAt = w.elapsed
+      const s3 = sfx.synth
+      if (s3 !== null && !sfx.muted) sample(sfx, s3, 'roar', P.audio.clearGain * SMP.roarGain, 1, 0, 0)
     }
     if (bossDist < 30) {
       if (w.elapsed < bossThumpAt - 4) bossThumpAt = 0
@@ -1800,7 +1841,7 @@ export function updateSfx(sfx: Sfx, w: World, dtReal: number): void {
     if (sfx.beatPhase >= 1) {
       // 밀린 만큼만 빼서 박이 흐르게 한다. 프레임이 튀어도 박이 몰리지 않게 상한을 둔다.
       sfx.beatPhase = sfx.beatPhase - 1 > 1 ? 0 : sfx.beatPhase - 1
-      heartbeat(s, a.warn)
+      heartbeat(sfx, s, a.warn)
     }
   } else {
     sfx.beatPhase = 0

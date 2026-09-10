@@ -72,6 +72,17 @@ export type SampleName =
   | 'thud'
   /** 드론이 부서졌다 — 금속. 사람과 다른 소리여야 무엇이 죽었는지 귀로도 안다. */
   | 'wreck'
+  // ── 2026-09-10 (형: "사운드는 직접 만들지 말고 자주 쓰이거나 적절한 걸 다운받으라고 말했다") ──
+  /** 활 한 발 — 진짜 활의 릴리즈. Freesound CC0 셋. 합성 "텅·탁·쉭"은 파일이 없을 때만. */
+  | 'shot'
+  /** 폭발 — 화전·화약통. */
+  | 'boom'
+  /** 모루에 망치 — 대장간 개조. 두 변주를 두 번 친다. */
+  | 'anvil'
+  /** 심장 한 박 — 붕괴 예고. warn 에 따라 피치만 조금 올린다. */
+  | 'heart'
+  /** 귀신의 포효 — 보스판이 시작될 때 한 번. */
+  | 'roar'
 
 /** 확장자와 폴더는 여기 한 곳에만 적는다. */
 const DIR = 'sfx/'
@@ -100,10 +111,17 @@ const FILES: Readonly<Record<SampleName, readonly string[]>> = {
   clearBoss: ['jingleClearBoss'],
   unlock: ['jingleUnlock'],
   // 아래 넷은 2026-08-31 추가 (형: "sfx가 많아야해").
-  fail: ['error_003', 'error_004'],
+  // 패배 — 짧은 부저(error_00x)에서 한 소절짜리로 (2026-09-10, CREDITS.txt 의 "임시" 를 푼다).
+  fail: ['fail_jingle'],
   levelup: ['confirmation_002', 'confirmation_004'],
   thud: ['impactPunch_heavy_000', 'impactPunch_heavy_001'],
   wreck: ['impactMetal_medium_000', 'impactMetal_medium_001'],
+  // 아래 다섯은 2026-09-10 Freesound CC0 (public/sfx/CREDITS.txt).
+  shot: ['shot_longbow', 'shot_loose', 'shot_flecha'],
+  boom: ['boom_01'],
+  anvil: ['anvil_01', 'anvil_02'],
+  heart: ['heart_01'],
+  roar: ['roar_01'],
 }
 
 /** 순회용 키 목록. 매번 Object.keys를 부르면 배열이 새로 생긴다 (A5). */
