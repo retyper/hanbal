@@ -396,6 +396,11 @@ function foeHint(n: number, base: StageDef, specs: readonly TargetSpec[]): strin
 export const BOSS_EVERY = 10
 /** 보스판 화살 = 필요한 명중 수 + 이 여유. */
 const BOSS_SPARE_ARROWS = 4
+/**
+ * 보스 로스터의 크기 (2026-09-10, 넷 → 여덟). render/scene.ts · render/bosses.ts 의 look 번호와
+ * sim/target.ts bossGrammar 의 case 들이 이 수를 함께 지킨다 — 늘릴 때 셋을 같이 본다.
+ */
+const BOSS_KINDS = 8
 
 /**
  * 체크포인트 — 보스를 잡은 자리 다음 판 (docs/RUN.md · 지도, 2026-08-26).
@@ -427,8 +432,10 @@ function bossStage(i: number): StageDef {
   // ── 보스 로스터 — 마디마다 다른 놈이 온다 (형: "한 번 나온 보스는 좀 안 나와야지").
   //   4종이 순환하고, 한 바퀴 돌 때마다(rank) 체력이 오른다. 같은 놈을 다시 만나는 건
   //   최소 40판 뒤고, 그때는 더 세다.
-  const variant = (cycle - 1) % 4
-  const rank = Math.floor((cycle - 1) / 4)
+  //   2026-09-10 — 넷에서 **여덟**으로 (형: "보스는 왜 둥둥 떠댕기는 귀신밖에 없냐.
+  //   거인형 보스, 한국 전통 귀신 보스들 많잖아"). 같은 놈을 다시 만나려면 80판을 가야 한다.
+  const variant = (cycle - 1) % BOSS_KINDS
+  const rank = Math.floor((cycle - 1) / BOSS_KINDS)
   const dmg = Math.max(1, Math.floor(P.enemy.playerDamage))
   const crit = Math.max(1, Math.floor(P.target.bossCritDmg))
   // 첫 보스만 가볍다 (P.target.bossFirstHpMul) — 근력 0으로 처음 만나는 귀신이다.
@@ -476,6 +483,47 @@ function bossStage(i: number): StageDef {
       r: 1.45, hp: rushHp, speed: P.target.bossSpeed * 2.2, look: 3, score: 200,
     })
     hitsNeeded = Math.ceil(rushHp / Math.floor(dmg * 1.1))
+  } else if (variant === 4) {
+    // ── 도깨비 — **거인이다** (형: "거인형 보스"). 크고 느리고, 몸통으로는 답이 안 나온다. ──
+    // 이마의 눈이 유일한 길이고, 대신 거인은 느긋해서 눈을 오래 뜬다 (P.target.bossEyeGiantMul).
+    title = '도깨비'
+    hint = '거인이다 — 몸통은 소용없다. 이마의 눈이 뜰 때를 기다려라'
+    const hp = Math.max(Math.floor(crit * 2), Math.floor(baseHp * 1.3))
+    targets.push({
+      kind: 'boss', x: reach * rng.range(0.86, 0.95), y: rng.range(3.0, 3.8),
+      r: 2.3, hp, speed: P.target.bossSpeed * 0.7, look: 4, score: 260,
+    })
+    hitsNeeded = Math.ceil(hp / crit)
+  } else if (variant === 5) {
+    // ── 구미호 — 흰 여우. 빠르다. 다리를 쏴 넘어뜨리는 것이 유일한 숨 돌릴 틈이다. ──
+    title = '구미호'
+    hint = '빠르다 — 다리를 쏴 넘어뜨리고, 그때 눈을 노린다'
+    const hp = Math.max(Math.floor(crit * 1.2), Math.floor(baseHp * 0.55))
+    targets.push({
+      kind: 'boss', x: reach * rng.range(0.88, 0.96), y: rng.range(1.6, 2.2),
+      r: 1.3, hp, speed: P.target.bossSpeed * 1.9, look: 5, score: 220,
+    })
+    hitsNeeded = Math.ceil(hp / Math.floor(dmg * 1.1))
+  } else if (variant === 6) {
+    // ── 장승 — 마을 어귀의 나무 기둥이 걸어온다. 나무는 두들겨야 쪼개진다 (guard 문법). ──
+    title = '장승'
+    hint = '나무는 두들겨야 쪼개진다 — 몸통 두 발이면 얼굴이 열린다'
+    const eyeHits = 2 + rank
+    targets.push({
+      kind: 'boss', x: reach * rng.range(0.84, 0.93), y: rng.range(2.4, 3.2),
+      r: 1.9, hp: crit * eyeHits, armored: true, look: 6, score: 240,
+    })
+    hitsNeeded = eyeHits * (1 + Math.floor(P.target.bossGuardHits))
+  } else if (variant === 7) {
+    // ── 저승사자 — 갓이 얼굴을 덮는다. 좀처럼 안 보이니 **기다리는 것이 실력**이다. ──
+    title = '저승사자'
+    hint = '갓이 얼굴을 덮는다 — 고개를 드는 그 한 순간을 기다려라'
+    const hp = Math.max(Math.floor(crit * 1.5), Math.floor(baseHp * 0.85))
+    targets.push({
+      kind: 'boss', x: reach * rng.range(0.86, 0.94), y: rng.range(2.2, 3.0),
+      r: 1.5, hp, look: 7, score: 230,
+    })
+    hitsNeeded = Math.ceil(hp / crit)
   } else {
     // 눈알귀신 — 첫 관문. 느리게, 그러나 확실하게 온다.
     targets.push({

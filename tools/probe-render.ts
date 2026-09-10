@@ -311,5 +311,38 @@ for (const [cw, ch] of SIZES) {
   }
 }
 
+// ── 8. 보스 여덟이 전부 그려지는가 (2026-09-10, 넷 → 여덟) ────────────
+//
+// 형: "보스는 왜 둥둥 떠댕기는 귀신밖에 없냐. 거인형 보스, 한국 전통 귀신 보스들 많잖아."
+// 몸이 여덟 갈래로 갈라졌으니 **한 갈래가 조용히 안 그려지는 일**이 생길 수 있다.
+// 여기서 여덟 판을 실제로 그려 보고, 그린 것의 수와 약점의 자리를 잰다.
+{
+  console.log('')
+  console.log('── 8. 보스 여덟 ──')
+  const { bossGrammar } = await import('../src/sim/target.ts')
+  const { P } = await import('../src/tune/params.ts')
+  const canvas = new Canvas()
+  canvas.clientWidth = 1280
+  canvas.clientHeight = 720
+  for (let c = 1; c <= 8; c++) {
+    const stage = getStage(c * 10 - 1)
+    const w = createWorld(stage, STATS)
+    // 눈을 뜨는 순간을 지나도록 조금 굴린다 — 그래야 눈꺼풀 경로까지 그려진다.
+    frame(canvas, w, 40)
+    const boss = w.targets.find((t) => t.alive && t.kind === 'boss')
+    const name = `${(stage.title ?? '?').padEnd(6)} look ${boss?.look ?? -1}`
+    const drew = rec.ops + rec.texts.length
+    const gram = bossGrammar(boss?.look ?? 0)
+    // 그린 것이 있어야 한다. 몸 하나가 통째로 빠지면 이 수가 눈에 띄게 준다.
+    console.log(`  ${name.padEnd(20)} ${gram.padEnd(6)} 그린 것 ${String(drew).padStart(4)}개`)
+    if (drew < 40) throw new Error(`${stage.title} 이 거의 안 그려졌다 (${drew}개)`)
+    // 약점의 자리는 여덟이 똑같다 — 그림이 달라도 판정은 하나여야 한다 (sim/target.ts).
+    if (boss !== undefined) {
+      const hy = boss.y + boss.r * P.target.bossHeadUp
+      if (!(hy > boss.y)) throw new Error(`${stage.title} 의 약점이 몸 아래에 있다`)
+    }
+  }
+  console.log('  여덟 다 그려졌고 약점 자리가 같다 ✓')
+}
 console.log('')
 console.log('※ 이 프로브는 "어디에 얼마나 크게 그렸는가"만 답한다. 보기 좋은지는 형이 확인해야 한다.')

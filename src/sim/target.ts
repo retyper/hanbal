@@ -277,17 +277,50 @@ function breakArmor(w: World, t: Target, chip: number, x: number, y: number): vo
 }
 
 /**
- * 보스의 약점이 지금 얼마나 열려 있는가 (Target.weak). 변종마다 문법이 다르다 — params.ts 보스 약점 주석.
+ * 보스 여덟의 **약점 문법** — 몸이 달라도 푸는 법은 넷이다 (docs/RUN.md §3-1).
+ *
+ *   eye   눈이 뜨고 감긴다. 뜬 눈을 맞히면 멈추고, 멈춘 눈은 더 아프다.
+ *   guard 판금(갑주)·나무(장승)가 얼굴을 덮는다. 몸통을 두들겨 비틀거리게 해야 열린다.
+ *   twin  둘이 엇갈려 뜬다. 한쪽을 맞히면 **다른 쪽**이 멈춘다.
+ *   leg   다리를 맞히면 넘어진다.
+ *
+ * ★ look 숫자를 해석하는 곳은 **여기 하나뿐이다.** 예전엔 bossWeak · resolveHit · stepTargets ·
+ *   render/scene.ts 네 군데가 각자 폭주귀신을 3번으로 알고 있었다. 그 상태로 보스를 넷 더 세우면
+ *   네 군데가 여덟 갈래로 늘어난다 — 늘어난 그날 셋은 맞고 하나는 틀린다.
+ */
+export function bossGrammar(look: number): 'eye' | 'guard' | 'twin' | 'leg' {
+  switch (look) {
+    case 1: case 6: return 'guard'
+    case 2: return 'twin'
+    case 3: case 5: return 'leg'
+    default: return 'eye'
+  }
+}
+
+/**
+ * 눈을 뜨고 감는 박자의 배수 — 몸마다 숨이 다르다.
+ * 거인(도깨비)은 느긋해서 오래 뜨고, 저승사자는 갓 밑이라 좀처럼 안 보인다.
+ */
+function eyeMul(look: number): number {
+  if (look === 4) return P.target.bossEyeGiantMul
+  if (look === 7) return P.target.bossEyeShyMul
+  return 1
+}
+
+/**
+ * 보스의 약점이 지금 얼마나 열려 있는가 (Target.weak). 문법은 bossGrammar 가 정한다.
  * 쌍눈은 id 홀짝으로 반 주기 엇갈린다: 한쪽이 감으면 다른 쪽이 뜬다. 시계는 sim 의 time 뿐이다 (A1).
  */
 function bossWeak(tg: Target, time: number): number {
-  if (tg.look === 1) return 0
-  if (tg.look === 3) return 1
-  const open = P.target.bossEyeOpen
+  const gram = bossGrammar(tg.look)
+  if (gram === 'guard') return 0
+  if (gram === 'leg') return 1
+  const mul = eyeMul(tg.look)
+  const open = P.target.bossEyeOpen * mul
   const blend = Math.min(P.target.bossEyeBlend, open * 0.5)
-  const cycle = open + P.target.bossEyeShut
+  const cycle = open + P.target.bossEyeShut / mul
   // 둘째는 첫째가 뜰 때 감는다 (offset = 뜬 시간). 뜬 시간이 감은 시간보다 길어 언제나 한쪽은 떠 있다.
-  const off = tg.look === 2 && tg.id % 2 === 1 ? open : 0
+  const off = gram === 'twin' && tg.id % 2 === 1 ? open : 0
   const ph = (time + off) % cycle
   if (ph < open - blend) return 1
   if (ph < open) return (open - ph) / blend

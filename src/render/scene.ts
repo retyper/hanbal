@@ -20,6 +20,8 @@ import { drawFoeArcher, drawFoeRusher } from './foe.ts'
 import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { sprite } from './sprites.ts'
 import { createFx, pumpEvents, updateFx, drawFx, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash, targetFlinch, PLAYER_PIN } from './effects.ts'
+import { drawNewBossBody } from './bosses.ts'
+import { bossGrammar } from '../sim/target.ts'
 import type { Fx } from './effects.ts'
 import { drawHud } from './hud.ts'
 import type { HudState } from './hud.ts'
@@ -631,106 +633,121 @@ function drawTargets(
       const hy = y - ry * P.target.bossHeadUp
       const hr = Math.max(4, rx * P.target.bossHeadR)
 
-      // 몸 — 어두운 덩어리. 밑단은 흘러내리는 세 겹 자락 (유령의 문법).
-      ctx.fillStyle = THEME.threatDim
-      ctx.beginPath()
-      ctx.moveTo(x - rx, y)
-      ctx.quadraticCurveTo(x - rx, y - ry * 1.05, x, y - ry * 1.1)
-      ctx.quadraticCurveTo(x + rx, y - ry * 1.05, x + rx, y)
-      // 자락 — 아래로 갈수록 파도친다. 시간은 sim elapsed (A1: 렌더는 읽기만).
-      const wob = Math.sin(w.elapsed * 1.7) * ry * 0.08
-      ctx.quadraticCurveTo(x + rx * 0.72, y + ry * 1.1 + wob, x + rx * 0.5, y + ry * 0.7)
-      ctx.quadraticCurveTo(x + rx * 0.25, y + ry * 1.15 - wob, x, y + ry * 0.75)
-      ctx.quadraticCurveTo(x - rx * 0.25, y + ry * 1.1 + wob, x - rx * 0.5, y + ry * 0.72)
-      ctx.quadraticCurveTo(x - rx * 0.75, y + ry * 1.12 - wob, x - rx, y)
-      ctx.closePath()
-      ctx.fill()
-
-      // ── 변종별 몸치장 — 실루엣이 달라야 '또 그놈'이 아니다 (형: "소스 재활용이 보인다"). ──
-      if (t.look === 1) {
-        // 갑주귀신 — 몸을 금속 판 세 장이 두른다. 이음매가 '판금'을 만든다.
-        ctx.fillStyle = '#7e93a6'
+      // ── 몸 ── 유령 계열(0~3)은 여기서, 2026-09-10 에 선 넷(거인·구미호·장승·저승사자)은
+      //         render/bosses.ts 에서 그린다. 실루엣이 통째로 다르면 한 함수에 못 담는다.
+      if (t.look >= 4) {
+        drawNewBossBody(ctx, w, t, x, y, rx, ry)
+      } else {
+        // 몸 — 어두운 덩어리. 밑단은 흘러내리는 세 겹 자락 (유령의 문법).
+        ctx.fillStyle = THEME.threatDim
         ctx.beginPath()
-        ctx.moveTo(x - rx * 0.95, y + ry * 0.1)
-        ctx.lineTo(x - rx * 0.6, y - ry * 0.85)
-        ctx.lineTo(x + rx * 0.6, y - ry * 0.85)
-        ctx.lineTo(x + rx * 0.95, y + ry * 0.1)
-        ctx.lineTo(x + rx * 0.55, y + ry * 0.75)
-        ctx.lineTo(x - rx * 0.55, y + ry * 0.75)
+        ctx.moveTo(x - rx, y)
+        ctx.quadraticCurveTo(x - rx, y - ry * 1.05, x, y - ry * 1.1)
+        ctx.quadraticCurveTo(x + rx, y - ry * 1.05, x + rx, y)
+        // 자락 — 아래로 갈수록 파도친다. 시간은 sim elapsed (A1: 렌더는 읽기만).
+        const wob = Math.sin(w.elapsed * 1.7) * ry * 0.08
+        ctx.quadraticCurveTo(x + rx * 0.72, y + ry * 1.1 + wob, x + rx * 0.5, y + ry * 0.7)
+        ctx.quadraticCurveTo(x + rx * 0.25, y + ry * 1.15 - wob, x, y + ry * 0.75)
+        ctx.quadraticCurveTo(x - rx * 0.25, y + ry * 1.1 + wob, x - rx * 0.5, y + ry * 0.72)
+        ctx.quadraticCurveTo(x - rx * 0.75, y + ry * 1.12 - wob, x - rx, y)
         ctx.closePath()
         ctx.fill()
-        ctx.strokeStyle = THEME.targetBand
-        ctx.lineWidth = 2
-        ctx.beginPath()
-        ctx.moveTo(x - rx * 0.75, y - ry * 0.25)
-        ctx.lineTo(x + rx * 0.75, y - ry * 0.25)
-        ctx.moveTo(x - rx * 0.8, y + ry * 0.25)
-        ctx.lineTo(x + rx * 0.8, y + ry * 0.25)
-        ctx.stroke()
-        // 리벳 — 판금의 서명.
-        ctx.fillStyle = THEME.targetBand
-        for (const [px2, py2] of [[-0.6, -0.55], [0.6, -0.55], [-0.7, 0.5], [0.7, 0.5]] as const) {
+
+        // ── 변종별 몸치장 — 실루엣이 달라야 '또 그놈'이 아니다 (형: "소스 재활용이 보인다"). ──
+        if (t.look === 1) {
+          // 갑주귀신 — 몸을 금속 판 세 장이 두른다. 이음매가 '판금'을 만든다.
+          ctx.fillStyle = '#7e93a6'
           ctx.beginPath()
-          ctx.arc(x + rx * px2, y + ry * py2, 2.2, 0, TAU)
+          ctx.moveTo(x - rx * 0.95, y + ry * 0.1)
+          ctx.lineTo(x - rx * 0.6, y - ry * 0.85)
+          ctx.lineTo(x + rx * 0.6, y - ry * 0.85)
+          ctx.lineTo(x + rx * 0.95, y + ry * 0.1)
+          ctx.lineTo(x + rx * 0.55, y + ry * 0.75)
+          ctx.lineTo(x - rx * 0.55, y + ry * 0.75)
+          ctx.closePath()
           ctx.fill()
-        }
-      } else if (t.look === 3) {
-        // ── 폭주귀신 — 혜성처럼 타오르며 온다. 잔상·화염 갈기·찢어진 아가리. ──
-        // ① 잔상 두 벌 — 몸이 못 따라오는 속도. 뒤(+x)로 갈수록 옅어진다.
-        for (let g2 = 1; g2 <= 2; g2++) {
-          ctx.globalAlpha = g2 === 1 ? 0.28 : 0.13
-          ctx.fillStyle = THEME.threatDim
+          ctx.strokeStyle = THEME.targetBand
+          ctx.lineWidth = 2
           ctx.beginPath()
-          ctx.ellipse(x + rx * (0.55 + g2 * 0.55), y + ry * 0.05, rx * (1 - g2 * 0.18), ry * (0.92 - g2 * 0.14), 0, 0, TAU)
-          ctx.fill()
-        }
-        ctx.globalAlpha = 1
-        // ② 불꽃 갈기 — 몸 뒤로 찢어지는 세 가닥 화염 자락. 박동은 sim elapsed (A1).
-        const lick = Math.sin(w.elapsed * 9) * ry * 0.1
-        ctx.fillStyle = '#ff9a45'
-        for (let g2 = 0; g2 < 3; g2++) {
-          const fy = y - ry * 0.45 + g2 * ry * 0.42
-          const fl = rx * (1.05 - g2 * 0.15)
-          ctx.globalAlpha = 0.8 - g2 * 0.2
+          ctx.moveTo(x - rx * 0.75, y - ry * 0.25)
+          ctx.lineTo(x + rx * 0.75, y - ry * 0.25)
+          ctx.moveTo(x - rx * 0.8, y + ry * 0.25)
+          ctx.lineTo(x + rx * 0.8, y + ry * 0.25)
+          ctx.stroke()
+          // 리벳 — 판금의 서명.
+          ctx.fillStyle = THEME.targetBand
+          for (const [px2, py2] of [[-0.6, -0.55], [0.6, -0.55], [-0.7, 0.5], [0.7, 0.5]] as const) {
+            ctx.beginPath()
+            ctx.arc(x + rx * px2, y + ry * py2, 2.2, 0, TAU)
+            ctx.fill()
+          }
+        } else if (t.look === 3) {
+          // ── 폭주귀신 — 혜성처럼 타오르며 온다. 잔상·화염 갈기·찢어진 아가리. ──
+          // ① 잔상 두 벌 — 몸이 못 따라오는 속도. 뒤(+x)로 갈수록 옅어진다.
+          for (let g2 = 1; g2 <= 2; g2++) {
+            ctx.globalAlpha = g2 === 1 ? 0.28 : 0.13
+            ctx.fillStyle = THEME.threatDim
+            ctx.beginPath()
+            ctx.ellipse(x + rx * (0.55 + g2 * 0.55), y + ry * 0.05, rx * (1 - g2 * 0.18), ry * (0.92 - g2 * 0.14), 0, 0, TAU)
+            ctx.fill()
+          }
+          ctx.globalAlpha = 1
+          // ② 불꽃 갈기 — 몸 뒤로 찢어지는 세 가닥 화염 자락. 박동은 sim elapsed (A1).
+          const lick = Math.sin(w.elapsed * 9) * ry * 0.1
+          ctx.fillStyle = '#ff9a45'
+          for (let g2 = 0; g2 < 3; g2++) {
+            const fy = y - ry * 0.45 + g2 * ry * 0.42
+            const fl = rx * (1.05 - g2 * 0.15)
+            ctx.globalAlpha = 0.8 - g2 * 0.2
+            ctx.beginPath()
+            ctx.moveTo(x + rx * 0.55, fy - ry * 0.1)
+            ctx.quadraticCurveTo(x + rx * 0.9 + fl * 0.5, fy + lick * (g2 % 2 === 0 ? 1 : -1), x + rx * 0.8 + fl, fy)
+            ctx.quadraticCurveTo(x + rx * 0.9 + fl * 0.5, fy + ry * 0.12, x + rx * 0.55, fy + ry * 0.12)
+            ctx.closePath()
+            ctx.fill()
+          }
+          ctx.globalAlpha = 1
+          // ③ 이빨 — 몸 앞자락(-x)의 찢어진 아가리. 위협은 표정이 절반이다.
+          ctx.fillStyle = THEME.target2
+          const my = y + ry * 0.34
           ctx.beginPath()
-          ctx.moveTo(x + rx * 0.55, fy - ry * 0.1)
-          ctx.quadraticCurveTo(x + rx * 0.9 + fl * 0.5, fy + lick * (g2 % 2 === 0 ? 1 : -1), x + rx * 0.8 + fl, fy)
-          ctx.quadraticCurveTo(x + rx * 0.9 + fl * 0.5, fy + ry * 0.12, x + rx * 0.55, fy + ry * 0.12)
+          ctx.moveTo(x - rx * 0.88, my)
+          for (let g2 = 0; g2 < 4; g2++) {
+            const tx2 = x - rx * (0.88 - g2 * 0.19)
+            ctx.lineTo(tx2 + rx * 0.09, my + ry * 0.16)
+            ctx.lineTo(tx2 + rx * 0.19, my)
+          }
           ctx.closePath()
           ctx.fill()
         }
-        ctx.globalAlpha = 1
-        // ③ 이빨 — 몸 앞자락(-x)의 찢어진 아가리. 위협은 표정이 절반이다.
-        ctx.fillStyle = THEME.target2
-        const my = y + ry * 0.34
-        ctx.beginPath()
-        ctx.moveTo(x - rx * 0.88, my)
-        for (let g2 = 0; g2 < 4; g2++) {
-          const tx2 = x - rx * (0.88 - g2 * 0.19)
-          ctx.lineTo(tx2 + rx * 0.09, my + ry * 0.16)
-          ctx.lineTo(tx2 + rx * 0.19, my)
-        }
-        ctx.closePath()
-        ctx.fill()
+
       }
 
       // ── 눈알 = 약점. 뜨고 감는다 (sim Target.weak) · 멈추면(stagger) 활짝 뜬다 ──
       //   2026-09-10 (형: "약점 공략하는 맛도 없고"). 예전엔 3.7초마다 장식으로 깜빡였다.
       //   이제 눈꺼풀은 sim 의 사실이다 — 감긴 눈에 쏜 화살은 몸통샷이다. 렌더는 읽기만 한다.
       const stag = t.stagger > 0
+      // 몸이 여덟이어도 **푸는 법은 넷**이다 (sim/target.ts bossGrammar). look 숫자를 여기서
+      // 다시 해석하면 보스를 늘릴 때마다 if 가 세 군데씩 늘어난다.
+      const gram = bossGrammar(t.look)
       const open = stag ? 1 : t.weak
       // 비틀거림 — 몸이 좌우로 떨린다. 넘어진 폭주귀신은 기울어 눕는다 (y 는 sim 이 내려앉혔다).
       const sway = stag ? Math.sin(w.elapsed * 14) * rx * 0.07 : 0
+      const legKind = gram === 'leg'
       if (stag) {
         ctx.save()
         ctx.translate(x, y)
-        ctx.rotate(t.look === 3 ? 0.55 : 0)
+        ctx.rotate(legKind ? 0.55 : 0)
         ctx.translate(-x + sway, -y)
       }
       // 변종별 눈: 갑주(1)는 투구 틈의 가로 슬릿 · 폭주(3)는 성난 사선 · 쌍눈(2)은 작고 말갛다.
-      const eyeFull = t.look === 1 ? hr * 0.5 : t.look === 3 ? hr * 0.6 : hr * 0.92
+      // 눈의 생김새는 몸을 따른다 — 갑주는 투구 틈, 폭주·구미호는 사나운 실눈, 저승사자는 가늘다.
+      const eyeFull = t.look === 1 ? hr * 0.5
+        : t.look === 3 || t.look === 5 ? hr * 0.6
+          : t.look === 7 ? hr * 0.55
+            : hr * 0.92
       // 갑주는 투구 틈이 실낱이다 — 비틀거릴 때만 열린다. 멈춘 눈은 놀라서 커진다.
-      const eyeH = eyeFull * (t.look === 1 && !stag ? 0.12 : open) * (stag ? 1.2 : 1)
+      const eyeH = eyeFull * (gram === 'guard' && !stag ? 0.12 : open) * (stag ? 1.2 : 1)
       if (t.look === 1) {
         // 투구 돔 — 눈은 그 틈으로만 보인다.
         band(ctx, x, hy - hr * 0.2, hr * 1.15, hr * 0.95, '#66788a')
@@ -755,7 +772,7 @@ function drawTargets(
         band(ctx, px2, py2, iw * 0.5, Math.min(eyeH * 0.5, iw * 0.5), THEME.targetBand)
         // 눈빛 점 — 이게 있어야 젖은 눈알로 보인다.
         band(ctx, px2 - hr * 0.12, py2 - hr * 0.14, hr * 0.09, hr * 0.09, THEME.target2)
-        if (t.look === 3 && !stag) {
+        if (legKind && !stag) {
           // 성난 눈두덩 — 사선 한 줄이 표정을 만든다. 넘어지면 표정도 풀린다.
           ctx.strokeStyle = THEME.threatDim
           ctx.lineWidth = Math.max(2, hr * 0.16)
@@ -767,14 +784,14 @@ function drawTargets(
       }
       // 약점이 열렸다 — 금빛 고리가 숨 쉰다. "지금 쏴라"를 글자 없이 말한다.
       // 멈췄을 때는 굵고 빠르게, 그냥 뜬 눈은 가늘고 느리게. 폭주는 다리가 약점이라 다리에 그린다.
-      if (stag || (open >= 1 && t.look !== 1)) {
+      if (stag || (open >= 1 && gram !== 'guard')) {
         const fast = stag
         const pulse = 0.5 + 0.5 * Math.sin(w.elapsed * (fast ? 12 : 5))
         ctx.strokeStyle = THEME.accent
         ctx.globalAlpha = fast ? 0.55 + 0.45 * pulse : 0.16 + 0.2 * pulse
         ctx.lineWidth = Math.max(2, hr * (fast ? 0.22 : 0.13))
         ctx.beginPath()
-        if (t.look === 3 && !stag) {
+        if (legKind && !stag) {
           // 다리 구간 — 몸통 아래를 도는 넓은 호. sim 의 bossLegZone 과 같은 자리다.
           ctx.ellipse(x, y + ry * P.target.bossLegZone, rx * 0.95, ry * 0.32, 0, 0, TAU)
         } else {
