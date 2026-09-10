@@ -84,6 +84,7 @@ const CSS = `
 /* 낙관 — 붉은 도장 하나. 이름 곁에 찍히면 그림이 '작품'이 된다. */
 .op-seal {
   display: inline-block; margin-left: 10px; vertical-align: 18px; width: 30px; height: 30px; line-height: 30px;
+  text-align: center;
   background: #b8332a; color: #fff2dc; font-family: var(--serif); font-size: 14px; letter-spacing: 0;
   border-radius: 3px; box-shadow: 0 1px 4px rgba(0, 0, 0, .5); transform: rotate(-6deg); text-shadow: none;
 }
@@ -187,13 +188,11 @@ export function mountOpening(o: Overlay, d: SaveData, onStart: () => void): void
     '<div class="op-cap">무용총 「수렵도」</div>' +
     '<div class="op-hanja">神弓</div>' +
     '<div class="op-title">신궁<span class="op-seal">弓</span></div>' +
-    '<div class="op-sub">마지막 한 발에, 시간이 멎는다</div>' +
-    '<div class="op-sub2">활 한 번 안 잡아본 스틱맨이 신궁이 되기까지 · 한 판 30초</div>' +
+    '<div class="op-sub">이것은 내가 세계 제일의 궁수가 되기까지의 이야기다</div>' +
     (d.bestRunStage > 0
       ? `<div class="op-rec">가장 멀리 ${d.bestRunStage}판 · 여정 ${d.runCount}번</div>`
       : '<div class="op-rec">아직 한 발도 쏘지 않았다</div>') +
-    '<div class="op-go">활을 든다</div>' +
-    '<div class="op-key">아무 데나 누르면 시작 · 언제 꺼도 손해 없다 · 소리는 M</div>'
+    '<div class="op-go">쏴라</div>'
   panel.appendChild(wrap)
 
   // 세로일 때만 안내를 건다. 형이 폰을 돌리는 순간 사라지는 게 곧 "됐다"는 신호다.

@@ -32,6 +32,7 @@ import { P } from '../tune/params.ts'
 import { effectiveStats } from '../sim/bow.ts'
 import type { World } from '../sim/types.ts'
 import { THEME, worldToScreenX, worldToScreenY } from './camera.ts'
+import { hudLeftBottom } from './hud.ts'
 import type { Camera } from './camera.ts'
 
 /** 체격 (m). 화면 픽셀이 아니라 월드 치수라 카메라 줌을 그대로 따라간다. */
@@ -79,6 +80,34 @@ let hpSeen = -1e9
 let hpLast = -1
 /** 두정갑도 같은 여운을 탄다 — 갑옷이 깎이면 바가 떠야 그게 값을 했다는 걸 안다. */
 let armorLast = -1
+/**
+ * 체력·갑옷 바가 앉는 화면 y (px).
+ *
+ * drawArcher 가 쓰고 **tools/probe-ui.ts 가 검사한다** — "바가 상단 HUD를 밟는가"는
+ * 눈이 아니라 숫자로 판정할 일이다 (형이 이 문제를 두 번 지적했다). 규칙 셋:
+ *   ① 궁수 손 위 1.05m — 다만 픽셀 하한 lift 를 둔다 (조준 표식이 바를 뚫지 않게).
+ *   ② 그 하한은 **화면 높이를 따라간다.** 고정 72px 이면 낮은 화면에서 바가 궁수를 떠난다.
+ *   ③ 그러고도 왼쪽 HUD 기둥과 겹치면 그 아래로 비킨다. 단 궁수 몸은 안 덮는다.
+ */
+export function hpBarScreenY(cam: Camera, w: World): number {
+  const a = w.archer
+  const lift = Math.min(HP_LIFT_PX, cam.h * HP_LIFT_MAX_H)
+  const footY = worldToScreenY(cam, a.y)
+  const by = Math.min(worldToScreenY(cam, a.y + HP_UP_M), footY - lift)
+  const clear = hudLeftBottom(cam) + HP_HUD_GAP
+  return by < clear ? Math.min(clear, footY - HP_MIN_LIFT) : by
+}
+
+/** 바가 앉는 높이 — 궁수 손에서 몇 m 위인가. 배율이 크면 이 값이 이긴다. */
+const HP_UP_M = 1.05
+/** 체력 바를 궁수 손 위로 띄우는 픽셀 하한 (데스크탑 기준). 조준 표식(15+44=59px)을 넘겨야 한다. */
+const HP_LIFT_PX = 72
+/** 그 하한의 화면 높이 대비 상한. 낮은 화면에서 바가 궁수를 떠나 HUD로 날아가지 않게 한다. */
+const HP_LIFT_MAX_H = 0.09
+/** 왼쪽 HUD 기둥 아래로 비킬 때의 여백 (px). */
+const HP_HUD_GAP = 6
+/** 궁수 손에서 바까지의 절대 최소 거리 (px). 이 아래로는 안 내려온다 — 몸을 덮는다. */
+const HP_MIN_LIFT = 24
 
 const LINE = {
   /**
@@ -1007,9 +1036,8 @@ export function drawArcher(
     ctx.globalAlpha = hpA
     const hpRatio = w.hp / Math.max(1, Math.floor(P.enemy.hpMax))
     const bx = worldToScreenX(cam, a.x)
-    // 1.05m를 픽셀로 바꾸면 저스케일 판에서 21px까지 줄어 조준 표식(픽셀 고정 59px)이
-    // 바를 관통했다 (전수조사 겹침 3번). 월드 오프셋에 픽셀 하한 72px를 깐다.
-    const by = Math.min(worldToScreenY(cam, a.y + 1.05), worldToScreenY(cam, a.y) - 72)
+    // 자리는 hpBarScreenY 가 정한다 — 프로브가 같은 함수를 잰다 (형이 두 번 지적한 겹침).
+    const by = hpBarScreenY(cam, w)
     const bw = Math.max(34, cam.scale * 1.3)
     ctx.fillStyle = THEME.gaugeBack
     ctx.fillRect(bx - bw / 2, by, bw, 5)

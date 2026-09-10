@@ -357,6 +357,26 @@ function fmtSec(t: number): string {
   return `${(Math.round(t * 10) / 10).toFixed(1)}초`
 }
 
+/**
+ * 왼쪽 HUD 기둥(점수 · 화살 수 · '다 쓰면 실패' · 연사 · 살 이름)이 차지하는 **가장 아래 y (px)**.
+ *
+ * 왜 최대치로 잡나: 줄이 상태에 따라 들락날락하는데(연사 0중이면 안 그린다) 그때마다 값이
+ * 바뀌면 이걸 읽는 궁수 체력 바가 프레임마다 위아래로 튄다. 늘 최대로 잡으면 자리가 고정된다.
+ *
+ * 왜 필요한가 (2026-09-10, 형: **"폰에서 가로로 할 때 체력바가 상단 화살 UI랑 겹칠 정도로
+ * 캐릭터에서 멀어져 있잖아"**): HUD 배율에는 하한(S_MIN 0.82)이 있어서 낮은 화면에서도
+ * 왼쪽 기둥이 169px 까지 내려온다 — 390px 짜리 가로 폰에서는 화면의 43%다.
+ * 궁수도 화면 왼쪽에 서므로 둘이 같은 자리를 놓고 다툰다. render/stickman.ts 가 이 값을 읽는다.
+ */
+export function hudLeftBottom(cam: Camera): number {
+  syncMetrics(cam)
+  const bodyY = M.padY + M.headGap
+  const pipY = bodyY + M.countGap + px(HUD.goalPx, M.s)
+  const ruleRow = px(HUD.subPx, M.s) + M.subGap
+  const jungY = pipY + M.countPx + M.subGap + ruleRow
+  return jungY + M.jungH + M.subGap + px(HUD.subPx, M.s)
+}
+
 function syncMetrics(cam: Camera): void {
   if (cam.w === M.w && cam.h === M.h) return
   M.w = cam.w

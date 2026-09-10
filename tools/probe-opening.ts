@@ -126,10 +126,11 @@ const wrap = panel.find('op-wrap')
 check(wrap !== null && openId === 'opening', '오프닝이 열렸다', openId)
 const html = wrap?.innerHTML ?? ''
 check(html.includes('신궁') && html.includes('神弓'), '이름이 서 있다')
-check(html.includes('마지막 한 발에, 시간이 멎는다'), '바뀐 첫 문구가 있다')
-check(html.includes('한 판 30초'), '30초짜리 판이라고 말한다')
+check(html.includes('세계 제일의 궁수가 되기까지의 이야기'), '바뀐 첫 문구가 있다 (2026-09-10 형)')
+check(html.includes('>쏴라<'), "부름말이 '쏴라'다")
 check(html.includes('아직 한 발도 쏘지 않았다'), '첫 여정 문구가 있다')
-check(html.includes('언제 꺼도 손해 없다'), 'C2를 첫 화면에서 약속한다')
+// 형: "언제 꺼도 손해 없다랑 소리는 M 이런건 지워라 제발." 첫 화면은 부름말 하나로 끝난다.
+check(!html.includes('소리는 M') && !html.includes('언제 꺼도'), '잔소리 줄이 없다')
 
 console.log('\n2. 가로 안내 (세로일 때만)')
 const hint = (): El | null => (wrap === null ? null : wrap.find('op-turn'))

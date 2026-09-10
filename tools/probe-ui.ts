@@ -568,6 +568,37 @@ clearedFrame(4.2, '1280x720 · 1판 · 클리어 배너 (별 2 · 토스트)')
 // 빠른 클리어 — 1판은 자막이 떠 있는 채로도 깰 수 있다. 그때 자막과 배너가 같은 세로줄에 선다.
 clearedFrame(1.2, '1280x720 · 1판 · 빠른 클리어 (시작 자막이 아직 떠 있음)')
 
+// ── 체력 바가 상단 HUD 기둥을 밟는가 (2026-09-10 형의 반려) ─────────────
+//
+// 형: **"폰에서 가로로 플레이할 때 체력바가 상단 화살 UI랑 겹칠 정도로 캐릭터에서
+//      멀어져 있잖아."** 눈으로 고치면 재발한다 — 숫자로 못 박는다.
+//
+// 두 가지를 동시에 잰다: ① HUD 기둥 아래에 있는가 ② 궁수에게서 너무 멀지 않은가.
+// ②가 없으면 "HUD를 피해 화면 꼭대기로 올려버리기"가 통과해 버린다 — 그건 고친 게 아니다.
+{
+  console.log('')
+  console.log('── 체력 바 자리 (HUD 기둥 아래 · 궁수 곁) ──')
+  const { worldToScreenY: wsy2 } = await import('../src/render/camera.ts')
+  const { hpBarScreenY } = await import('../src/render/stickman.ts')
+  const { hudLeftBottom } = await import('../src/render/hud.ts')
+  /** 궁수 손에서 바까지 이보다 멀면 "캐릭터를 떠났다"로 본다 (화면 높이 대비). */
+  const FAR = 0.24
+  for (const [cw, ch] of [[390, 844], [360, 640], [844, 390], [1280, 720], [1920, 1080]] as const) {
+    const canvas = makeCanvas(cw, ch)
+    const w = createWorld(getStage(0), STATS)
+    const r = createRenderer(canvas as unknown as HTMLCanvasElement)
+    recordHud(canvas, r, w)
+    const cam = getCamera(r)
+    const bar = hpBarScreenY(cam, w)
+    const hud = hudLeftBottom(cam)
+    const hand = wsy2(cam, w.archer.y)
+    const gap = hand - bar
+    const name = `${cw}x${ch}`
+    check(bar >= hud, `${name} — 바가 HUD 기둥 아래에 있다`, `바 ${fmt(bar)} · 기둥 ${fmt(hud)}`)
+    check(gap > 0 && gap <= ch * FAR, `${name} — 바가 궁수 곁에 있다`, `손에서 ${fmt(gap)}px (상한 ${fmt(ch * FAR)})`)
+  }
+}
+
 console.log(`\n겹침 ${total}건${total === 0 ? ' ✓' : ' ⚠'}`)
 console.log('※ DOM 오버레이(화살 3택·성장 버튼)는 캔버스 밖이라 여기서 못 잰다 — 그건 형의 눈이 판정한다.')
 if (total > 0) process.exitCode = 1
