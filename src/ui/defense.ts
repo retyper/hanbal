@@ -12,7 +12,7 @@
  * 회색으로 꺼두기만 하면 사용자는 그게 버그인지 규칙인지 알 수 없다.
  */
 import {
-  DEFENSE_ITEMS, armorPer, defenseBlocked, defenseCost, defenseState, onDefenseChanged,
+  DEFENSE_ITEMS, armorName, armorPer, defenseBlocked, defenseCost, defenseState, onDefenseChanged,
   shieldHp, type DefenseId, type DefenseState,
 } from '../game/defense.ts'
 import { onSaveChanged, type SaveData } from '../game/save.ts'
@@ -39,9 +39,9 @@ const CSS = `
 `
 
 /** 버튼 하나에 적히는 숫자 — 가진 것이 있으면 남은 양, 없으면 값(훈련치)이다. */
-function badge(id: DefenseId, held: number, st: DefenseState): string {
+function badge(id: DefenseId, held: number, st: DefenseState, d: SaveData): string {
   if (held > 0) return id === 'shield' ? `${held}발` : `${held}`
-  return `${defenseCost(id, st)}`
+  return `${defenseCost(id, st, d)}`
 }
 
 export function mountDefense(o: Overlay, d: SaveData, buy: (id: DefenseId) => boolean): void {
@@ -65,12 +65,14 @@ export function mountDefense(o: Overlay, d: SaveData, buy: (id: DefenseId) => bo
       const btn = document.createElement('button')
       btn.type = 'button'
       btn.className = 'hb-btn d-btn' + (held > 0 ? ' d-on' : '')
+      // 갑옷 버튼은 **입은 벌의 이름**을 단다 (game/armor.ts) — 가죽갑을 사는데 '갑옷'이라 적히면 뭘 사는지 모른다.
+      const name = item.id === 'armor' ? armorName(d) : item.name
       btn.innerHTML = `<i class="hb-ic i-${item.id}"></i>`
-        + `<span class="d-name">${item.name}</span><b>${badge(item.id, held, st)}</b>`
+        + `<span class="d-name">${name}</span><b>${badge(item.id, held, st, d)}</b>`
       // 값과 이유를 둘 다 말한다 — 하나만 말하면 "왜 안 눌리지"가 남는다.
       btn.title = why === ''
-        ? `${item.name}(${item.origin}) — ${item.hint} · 훈련치 ${defenseCost(item.id, st)}`
-        : `${item.name}(${item.origin}) — ${why}`
+        ? `${name}(${item.origin}) — ${item.hint} · 훈련치 ${defenseCost(item.id, st, d)}`
+        : `${name}(${item.origin}) — ${why}`
       btn.setAttribute('aria-label', btn.title)
       btn.disabled = why !== ''
       btn.addEventListener('click', () => {
@@ -82,10 +84,10 @@ export function mountDefense(o: Overlay, d: SaveData, buy: (id: DefenseId) => bo
     // 줄 위 한 줄은 **지금 뭘 걸치고 있는가**를 말한다. 아무것도 없으면 무엇을 파는지 말한다.
     const worn: string[] = []
     if (st.shield > 0) worn.push(`방패 ${st.shield}발`)
-    if (st.armor > 0) worn.push(`갑옷 ${st.armor}`)
+    if (st.armor > 0) worn.push(`${armorName(d)} ${st.armor}`)
     hint.textContent = worn.length > 0
       ? worn.join(' · ')
-      : `장터 — 방패 ${defenseCost('shield')} (화살 ${shieldHp()}발) · 갑옷 ${defenseCost('armor')} (+${armorPer()}) · 화살 한 발 ${defenseCost('arrow', st)}`
+      : `장터 — 방패 ${defenseCost('shield')} (화살 ${shieldHp()}발) · ${armorName(d)} ${defenseCost('armor', st, d)} (+${armorPer(d)}) · 화살 한 발 ${defenseCost('arrow', st)}`
   }
 
   refresh()

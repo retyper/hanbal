@@ -18,6 +18,7 @@
  * 갑옷만 세이브(runArmor)에 산다. 여정을 넘어가기 때문이다.
  */
 import { P } from '../tune/params.ts'
+import { armorCapOf, armorCostOf, armorKind, armorKindOf, armorPerOf } from './armor.ts'
 import { writeSave, type SaveData } from './save.ts'
 
 export type DefenseId = 'shield' | 'armor' | 'arrow'
@@ -59,12 +60,19 @@ export const DEFENSE_ITEMS: readonly DefenseItem[] = [
  * 값 (훈련치). 노브에서 바로 읽는다 — 코드 속 매직넘버 금지 (CLAUDE.md 3).
  * 화살은 **이 판에서 산 발수**만큼 오른다 — 그래서 상태가 필요하다. 없으면 첫 발 값.
  */
-export function defenseCost(id: DefenseId, state?: DefenseState): number {
+export function defenseCost(id: DefenseId, state?: DefenseState, d?: SaveData): number {
   if (id === 'arrow') {
     const bought = state !== undefined ? state.arrowsBought : 0
     return Math.max(0, Math.floor(P.defense.arrowCost + P.defense.arrowCostStep * bought))
   }
-  return Math.max(0, Math.floor(id === 'shield' ? P.defense.shieldCost : P.defense.armorCost))
+  // 갑옷 값은 **입은 벌**의 것이다 (game/armor.ts). 세이브가 없으면 두정갑 기준.
+  if (id === 'armor') return d !== undefined ? armorCostOf(d) : Math.max(0, Math.floor(P.defense.armorCost))
+  return Math.max(0, Math.floor(P.defense.shieldCost))
+}
+
+/** 화면에 적히는 갑옷 이름 — 입은 벌의 이름이다. */
+export function armorName(d: SaveData): string {
+  return armorKind(armorKindOf(d)).name
 }
 
 /** 한 판에 살 수 있는 화살 수. */
@@ -77,12 +85,12 @@ export function shieldHp(): number {
   return Math.max(1, Math.floor(P.defense.shieldHp))
 }
 
-/** 두정갑 한 벌의 방어량과 겹쳐 입기 상한. */
-export function armorPer(): number {
-  return Math.max(1, Math.floor(P.defense.armorPer))
+/** 입은 벌 한 벌의 방어량과 겹쳐 입기 상한 (game/armor.ts — 벌 크기 × 담금질). */
+export function armorPer(d: SaveData): number {
+  return armorPerOf(d)
 }
-export function armorCap(): number {
-  return Math.max(1, Math.floor(P.defense.armorMax))
+export function armorCap(d: SaveData): number {
+  return armorCapOf(d)
 }
 
 /**
@@ -93,9 +101,9 @@ export function armorCap(): number {
 export function defenseBlocked(d: SaveData, id: DefenseId, state: DefenseState): string {
   if (!state.playing) return '판이 도는 중에만 산다'
   if (id === 'shield' && state.shieldMax > 0) return '이미 세워 뒀다'
-  if (id === 'armor' && d.runArmor >= armorCap()) return '더 겹쳐 입지 못한다'
+  if (id === 'armor' && d.runArmor >= armorCap(d)) return '더 겹쳐 입지 못한다'
   if (id === 'arrow' && state.arrowsBought >= arrowBuyMax()) return '이 판에서는 더 못 산다'
-  if (d.training < defenseCost(id, state)) return `훈련치 ${defenseCost(id, state)} 필요`
+  if (d.training < defenseCost(id, state, d)) return `훈련치 ${defenseCost(id, state, d)} 필요`
   return ''
 }
 
@@ -106,10 +114,10 @@ export function defenseBlocked(d: SaveData, id: DefenseId, state: DefenseState):
  */
 export function buyDefense(d: SaveData, id: DefenseId, state: DefenseState): boolean {
   if (defenseBlocked(d, id, state) !== '') return false
-  d.training -= defenseCost(id, state)
+  d.training -= defenseCost(id, state, d)
   if (id === 'armor') {
-    const cap = armorCap()
-    d.runArmor = Math.min(cap, d.runArmor + armorPer())
+    const cap = armorCap(d)
+    d.runArmor = Math.min(cap, d.runArmor + armorPer(d))
     // 최대치는 "지금 입은 벌의 총량"이다. 깎이는 건 runArmor 쪽이라 바가 줄어드는 게 보인다.
     d.runArmorMax = Math.max(d.runArmorMax, d.runArmor)
   }

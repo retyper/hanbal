@@ -106,9 +106,9 @@ export function charmStartHp(id: CharmId | ''): number {
   return Math.max(1, max - Math.floor(P.charm.goldHpCut))
 }
 
-/** 여정 시작 두정갑. */
-export function charmStartArmor(id: CharmId | ''): number {
-  return id === 'iron' ? armorPer() : 0
+/** 여정 시작 갑옷 — **입은 벌** 한 벌 (game/armor.ts). */
+export function charmStartArmor(id: CharmId | '', d: SaveData): number {
+  return id === 'iron' ? armorPer(d) : 0
 }
 
 /** 보스 체력 배수. */

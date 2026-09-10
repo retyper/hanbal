@@ -604,6 +604,12 @@ export interface World {
   /** 지금 입은 갑옷의 최대치. 0이면 갑옷을 안 입었다 (바를 그리지 않는다). */
   armorMax: number
   /**
+   * 입은 벌의 생김새 (game/armor.ts ArmorKind.look — 0 가죽 · 1 두정 · 2 찰갑)와 담금질 단.
+   * **렌더 전용이다.** sim 은 읽지 않는다 — bowSkin 과 같은 규칙. game 레이어가 판 경계에 넣는다.
+   */
+  armorLook: number
+  armorGrade: number
+  /**
    * 방패 — 궁수 앞에 세운 판때기의 남은 내구. **적 화살만** 막는다 (내 화살은 그 위로 나간다).
    * 판마다 사라진다: resetWorld 가 0으로 되돌린다. 값은 P.defense.shield*.
    */

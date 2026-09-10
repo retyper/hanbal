@@ -117,8 +117,9 @@ describe('부적 — 여정 한 번', () => {
   it('효과는 서로 다른 축이다 — 화살·갑옷·훈련치/체력·보스', () => {
     assert.equal(charmArrowBonus('quiver'), 1)
     assert.equal(charmArrowBonus('iron'), 0)
-    assert.equal(charmStartArmor('iron'), armorPer())
-    assert.equal(charmStartArmor('gold'), 0)
+    const d0 = defaultSave(0)
+    assert.equal(charmStartArmor('iron', d0), armorPer(d0))
+    assert.equal(charmStartArmor('gold', d0), 0)
     assert.ok(charmTrainMul('gold') > 1)
     assert.ok(charmStartHp('gold') < charmStartHp(''))
     assert.equal(charmStartHp('quiver'), Math.floor(P.enemy.hpMax))

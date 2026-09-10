@@ -25,6 +25,7 @@ import { settleOffline, type OfflineGain } from './offline.ts'
 import { awardRun, canGrow, grantArrows, type StatKey } from './progression.ts'
 import { buyDefense as spendForDefense, shieldHp, syncDefense, defenseState, type DefenseId } from './defense.ts'
 import { arrowName, DEFAULT_ARROW } from './arrows.ts'
+import { armorKind, armorKindOf, armorLevel } from './armor.ts'
 import { bowMods, masteryLevel } from './bows.ts'
 import { forgeLevels } from './forge.ts'
 import {
@@ -397,6 +398,9 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     // 새 판에는 새로 세워야 한다. "이 판만"이 방패가 싼 이유다.
     w.armor = save.runArmor
     w.armorMax = save.runArmorMax
+    // 어느 벌을 입었는지는 그림의 일이다 (game/armor.ts · render/stickman.ts).
+    w.armorLook = armorKind(armorKindOf(save)).look
+    w.armorGrade = armorLevel(save, armorKindOf(save))
     // 지급량은 game 레이어의 경제 판단이라 sim 계약(resetWorld)에 넣지 않고 여기서 덮어쓴다.
     // 위로도 덮어쓴다 — "화살은 적보다 한 발 많다"(game/stagekit.ts arrowFloor)가 저작보다
     // 위에 서기 때문이다. 그래서 풀은 stage.arrows 가 아니라 판에 선 것의 수까지 보고 잡는다
@@ -447,7 +451,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     const bought = buyCharm(save, charm)
     const held = runCharmOf(save)
     save.runHp = charmStartHp(held)
-    save.runArmor = charmStartArmor(held)
+    save.runArmor = charmStartArmor(held, save)
     save.runArmorMax = save.runArmor
     if (bought && held !== '') ui.toast(`${charmDef(held).name}을 지녔다 — ${charmDef(held).hint}`, GROW_HINT_MS)
     save.runActive = true
@@ -1150,6 +1154,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       } else {
         w.armor = save.runArmor
         w.armorMax = save.runArmorMax
+        w.armorLook = armorKind(armorKindOf(save)).look
+        w.armorGrade = armorLevel(save, armorKindOf(save))
       }
       playUi(sfx, 'press')
       return true

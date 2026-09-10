@@ -408,6 +408,8 @@ export function createWorld(
     // 방어는 산 것이다 — 아무것도 안 산 세계는 맨몸이다 (game/defense.ts가 채운다).
     armor: 0,
     armorMax: 0,
+    armorLook: 1,
+    armorGrade: 0,
     shield: 0,
     shieldMax: 0,
     // 적 화살 풀 — 한 판에 적 궁수 셋이 동시에 쏴도 8이면 넉넉하다 (A5: 고정 크기).

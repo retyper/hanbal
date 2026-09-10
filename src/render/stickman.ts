@@ -470,6 +470,21 @@ const ARMOR_PLATE = {
   cloth: '#5a4634',
   edge: '#2c2219',
   rivet: '#d9b25a',
+  // ── 세 벌 (2026-09-10, game/armor.ts — World.armorLook 0 가죽 · 1 두정 · 2 찰갑) ──
+  /** 가죽갑 — 무두질한 갈색 조끼. 징 대신 가장자리 박음질과 가슴을 가로지르는 끈 둘. */
+  leather: '#6f4b2c',
+  leatherEdge: '#3b2614',
+  leatherStrap: '#2e1c0e',
+  /** 찰갑 — 쇠비늘. 비늘은 밝고 이음새는 어둡고, 비늘 줄 사이를 붉은 끈이 엮는다. */
+  scaleBase: '#5d6a78',
+  scale: '#a7b3c0',
+  scaleEdge: '#3b444f',
+  lace: '#a8352b',
+  scaleRows: 5,
+  scaleCols: 4,
+  /** 담금질 단 — 금빛 테. 단마다 진해진다. 대장간에서 낸 값이 몸에 보여야 한다. */
+  trim: '#ffd35c',
+  trimAlphaPer: 0.28,
 } as const
 
 function spine(
@@ -569,8 +584,11 @@ export function drawArcher(
     const px0 = worldToScreenX(cam, pelvisX - halfBot)
     const px1 = worldToScreenX(cam, pelvisX + halfBot)
     const py = worldToScreenY(cam, pelvisY + ARMOR_PLATE.skirt)
+    const look = w.armorLook
+    const topY = rig.sy - ARMOR_PLATE.collar
+    const botY = pelvisY + ARMOR_PLATE.skirt
     ctx.globalAlpha = 0.55 + 0.45 * worn
-    ctx.fillStyle = ARMOR_PLATE.cloth
+    ctx.fillStyle = look === 0 ? ARMOR_PLATE.leather : look === 2 ? ARMOR_PLATE.scaleBase : ARMOR_PLATE.cloth
     ctx.beginPath()
     ctx.moveTo(sx0, sy0)
     ctx.lineTo(sx1, sy0)
@@ -578,23 +596,89 @@ export function drawArcher(
     ctx.lineTo(px0, py)
     ctx.closePath()
     ctx.fill()
-    ctx.strokeStyle = ARMOR_PLATE.edge
+    ctx.strokeStyle = look === 0 ? ARMOR_PLATE.leatherEdge : look === 2 ? ARMOR_PLATE.scaleEdge : ARMOR_PLATE.edge
     ctx.lineWidth = Math.max(1, cam.scale * 0.03)
     ctx.stroke()
-    // 징 — 두 줄. 크기는 줌에 따라간다.
-    ctx.fillStyle = ARMOR_PLATE.rivet
-    const rr = Math.max(1, cam.scale * 0.035)
-    for (let row = 0; row < ARMOR_PLATE.rows; row++) {
-      const t = (row + 0.5) / ARMOR_PLATE.rows
-      const wy = rig.sy - ARMOR_PLATE.collar - (rig.sy - ARMOR_PLATE.collar - (pelvisY + ARMOR_PLATE.skirt)) * t
+    // 판 위의 한 점 — t 는 위(0)에서 아래(1), u 는 왼쪽(0)에서 오른쪽(1). 판이 사다리꼴이라 폭이 t 를 탄다.
+    const at = (t: number, u: number): readonly [number, number] => {
       const half = halfTop + (halfBot - halfTop) * t
-      for (let col = 0; col < ARMOR_PLATE.cols; col++) {
-        const u = (col + 0.5) / ARMOR_PLATE.cols
-        const wx = rig.sx + (pelvisX - rig.sx) * t - half + half * 2 * u
-        ctx.beginPath()
-        ctx.arc(worldToScreenX(cam, wx), worldToScreenY(cam, wy), rr, 0, TAU)
-        ctx.fill()
+      const wx = rig.sx + (pelvisX - rig.sx) * t - half + half * 2 * u
+      const wy = topY - (topY - botY) * t
+      return [worldToScreenX(cam, wx), worldToScreenY(cam, wy)]
+    }
+    if (look === 0) {
+      // 가죽갑 — 가장자리 박음질(점선) + 가슴을 X 자로 가로지르는 끈 둘.
+      ctx.strokeStyle = ARMOR_PLATE.leatherEdge
+      ctx.lineWidth = Math.max(1, cam.scale * 0.02)
+      ctx.setLineDash([Math.max(1, cam.scale * 0.03), Math.max(1, cam.scale * 0.03)])
+      ctx.beginPath()
+      const [ax0, ay0] = at(0.08, 0.08); const [ax1, ay1] = at(0.08, 0.92)
+      const [bx1, by1] = at(0.92, 0.9); const [bx0, by0] = at(0.92, 0.1)
+      ctx.moveTo(ax0, ay0); ctx.lineTo(ax1, ay1); ctx.lineTo(bx1, by1); ctx.lineTo(bx0, by0); ctx.closePath()
+      ctx.stroke()
+      ctx.setLineDash([])
+      ctx.strokeStyle = ARMOR_PLATE.leatherStrap
+      ctx.lineWidth = Math.max(1.5, cam.scale * 0.045)
+      ctx.beginPath()
+      const [s0x, s0y] = at(0.05, 0.15); const [s1x, s1y] = at(0.95, 0.85)
+      const [s2x, s2y] = at(0.05, 0.85); const [s3x, s3y] = at(0.95, 0.15)
+      ctx.moveTo(s0x, s0y); ctx.lineTo(s1x, s1y); ctx.moveTo(s2x, s2y); ctx.lineTo(s3x, s3y)
+      ctx.stroke()
+    } else if (look === 2) {
+      // 찰갑 — 비늘 다섯 줄. 줄마다 반 칸씩 엇갈리고, 줄 사이를 붉은 끈이 엮는다.
+      const rows = ARMOR_PLATE.scaleRows
+      const cols = ARMOR_PLATE.scaleCols
+      const rh = 1 / rows
+      ctx.lineWidth = Math.max(1, cam.scale * 0.015)
+      for (let row = 0; row < rows; row++) {
+        const t0 = row * rh + 0.04
+        const t1 = (row + 1) * rh - 0.02
+        const off = row % 2 === 0 ? 0 : 0.5 / cols
+        for (let col = 0; col < cols; col++) {
+          const u0 = col / cols + off + 0.03
+          const u1 = (col + 1) / cols + off - 0.03
+          if (u1 > 1) continue
+          const [x0, y0] = at(t0, u0); const [x1, y1] = at(t0, u1)
+          const [x2, y2] = at(t1, u1); const [x3, y3] = at(t1, u0)
+          ctx.fillStyle = ARMOR_PLATE.scale
+          ctx.strokeStyle = ARMOR_PLATE.scaleEdge
+          ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.closePath()
+          ctx.fill(); ctx.stroke()
+        }
+        if (row > 0) {
+          const [lx0, ly0] = at(row * rh, 0.04); const [lx1, ly1] = at(row * rh, 0.96)
+          ctx.strokeStyle = ARMOR_PLATE.lace
+          ctx.lineWidth = Math.max(1, cam.scale * 0.02)
+          ctx.beginPath(); ctx.moveTo(lx0, ly0); ctx.lineTo(lx1, ly1); ctx.stroke()
+          ctx.lineWidth = Math.max(1, cam.scale * 0.015)
+        }
       }
+    } else {
+      // 두정갑 — 징 세 줄. 크기는 줌에 따라간다.
+      ctx.fillStyle = ARMOR_PLATE.rivet
+      const rr = Math.max(1, cam.scale * 0.035)
+      for (let row = 0; row < ARMOR_PLATE.rows; row++) {
+        const t = (row + 0.5) / ARMOR_PLATE.rows
+        for (let col = 0; col < ARMOR_PLATE.cols; col++) {
+          const [cx, cy] = at(t, (col + 0.5) / ARMOR_PLATE.cols)
+          ctx.beginPath()
+          ctx.arc(cx, cy, rr, 0, TAU)
+          ctx.fill()
+        }
+      }
+    }
+    // 담금질 — 금빛 테. 단마다 진해진다 (대장간에서 낸 값이 몸에 보인다).
+    if (w.armorGrade > 0) {
+      ctx.globalAlpha = Math.min(1, ARMOR_PLATE.trimAlphaPer * w.armorGrade) * (0.55 + 0.45 * worn)
+      ctx.strokeStyle = ARMOR_PLATE.trim
+      ctx.lineWidth = Math.max(1.5, cam.scale * 0.04)
+      ctx.beginPath()
+      ctx.moveTo(sx0, sy0)
+      ctx.lineTo(sx1, sy0)
+      ctx.lineTo(px1, py)
+      ctx.lineTo(px0, py)
+      ctx.closePath()
+      ctx.stroke()
     }
     ctx.globalAlpha = 1
   }

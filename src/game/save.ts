@@ -19,7 +19,7 @@ import { STAGES } from './stages.ts'
 const KEY = 'hanbal.save.v1'
 
 /** 현재 스키마 버전. 필드를 바꿀 때마다 +1 하고 MIGRATIONS에 한 줄 추가한다. */
-export const SCHEMA_VERSION = 14
+export const SCHEMA_VERSION = 15
 
 /**
  * 오프라인 축적의 소수부 (자원 단위). 세 자원의 축적 속도가 달라 하나로 합칠 수 없다.
@@ -184,6 +184,14 @@ export interface SaveData {
    * 살은 살통 버튼이 숨 쉬며 "눌러서 든다"를 말한다. 누르는 순간 들어온다. 줄지 않는다.
    */
   armedArrows: string[]
+
+  // ── v15: 갑옷 세 벌 (2026-09-10, game/armor.ts) ──
+  /** 입는 벌 (ArmorKindId). 가진 벌이 아니면 armorKindOf 가 가죽갑으로 읽는다. */
+  armorKind: string
+  /** 장만한 벌. 가죽갑은 늘 있는 것으로 치므로 안 적어도 된다. 줄지 않는다. */
+  armorOwned: string[]
+  /** 벌마다의 담금질 단수 (0..armorForgeMax). 줄지 않는다. 모르는 키도 지우지 않는다 (A4). */
+  armorForge: Record<string, number>
 }
 
 /** 저장값이 말이 되는 범위인지만 본다. 치트 방지가 아니라 NaN·Infinity 방어다 (A4: 치트 방지 안 함). */
@@ -254,6 +262,9 @@ export function defaultSave(now: number): SaveData {
     forge: {},
     runCharm: '',
     armedArrows: [],
+    armorKind: 'leather',
+    armorOwned: [],
+    armorForge: {},
   }
 }
 
@@ -381,6 +392,16 @@ const MIGRATIONS: ReadonlyArray<(r: Raw) => void> = [
   (r) => {
     const stock = obj(r['arrowStock'])
     r['armedArrows'] = Object.keys(stock)
+  },
+
+  /**
+   * v14 → v15: 갑옷 세 벌. 옛 세이브는 두정갑을 입고 있던 사람이다 — **두정갑을 가진 채로,
+   * 입은 채로** 올린다. 갑옷이 갑자기 가죽으로 얇아지면 그건 마이그레이션이 아니라 강탈이다.
+   */
+  (r) => {
+    r['armorKind'] = 'brigandine'
+    r['armorOwned'] = ['brigandine']
+    r['armorForge'] = {}
   },
 ]
 
@@ -534,6 +555,10 @@ function sanitize(r: Raw, now: number): SaveData {
     // 유효성(진짜 부적 id인가)은 game/charms.ts isCharmId 가 판정한다 — 여기서는 모양만 본다.
     runCharm: typeof r['runCharm'] === 'string' && r['runCharm'].length <= 32 ? r['runCharm'] : '',
     armedArrows: sanitizeUnlocked(r['armedArrows']),
+    // 유효성(진짜 벌 id인가)은 game/armor.ts isArmorKindId 가 판정한다 — 여기서는 모양만 본다.
+    armorKind: typeof r['armorKind'] === 'string' && r['armorKind'].length <= 32 ? r['armorKind'] : 'leather',
+    armorOwned: sanitizeUnlocked(r['armorOwned']),
+    armorForge: sanitizeBest(r['armorForge']),
   }
 }
 

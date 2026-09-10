@@ -9,6 +9,10 @@
  */
 import { ARROW_KINDS, type ArrowKindId } from '../game/arrows.ts'
 import { CHARMS, charmBlocked, charmCost, type CharmId } from '../game/charms.ts'
+import {
+  ARMOR_KINDS, armorCapOf, armorCostOf, armorKind, armorKindOf, armorLevel, armorOwned, armorPerOf,
+  armorUnlockBlocked, armorUnlockCost, buyArmorKind, equipArmor, type ArmorKindId,
+} from '../game/armor.ts'
 import { shopPrice } from '../game/supply.ts'
 import { onSaveChanged, writeSave, type SaveData } from '../game/save.ts'
 import { ARROW_TINT, arrowIconSvg, bowIconSvg, charmIconSvg } from './arrowicons.ts'
@@ -169,6 +173,7 @@ export function mountLoadout(
         ? (id === pick.charm ? `지닌다 · 훈련치 ${charmCost(id)}` : `훈련치 ${charmCost(id)}`)
         : why
     }
+    refreshArmor()
     refreshShop()
   }
 
@@ -241,6 +246,46 @@ export function mountLoadout(
     charmGrid.appendChild(card)
   }
   panel.appendChild(charmGrid)
+
+  // ── 갑옷 — 셋 중 하나를 입고 나선다 (game/armor.ts, 2026-09-10 형: "방어구는 고를 수도 없잖아") ──
+  // 가진 벌은 누르면 입고, 없는 벌은 누르면 장만한다(훈련치). 판 도중에 사는 '갑옷'은 입은 벌이다.
+  section('갑옷 — 입고 나선다. 판 도중에 겹쳐 입는 것은 이 벌이다')
+  const armorGrid = document.createElement('div')
+  armorGrid.className = 'l-grid'
+  const armorCards = new Map<ArmorKindId, HTMLButtonElement>()
+  for (const a of ARMOR_KINDS) {
+    const card = document.createElement('button')
+    card.type = 'button'
+    card.className = 'hb-card l-card'
+    card.style.setProperty('--tint', a.id === 'leather' ? '#c08a55' : a.id === 'lamellar' ? '#aab6c4' : '#d9b25a')
+    card.innerHTML = `<span class="l-ic"><i class="hb-ic i-armor"></i></span>`
+      + `<span class="l-n"></span><span class="l-syn2"></span><span class="l-d"></span><span class="l-d l-price"></span>`
+    ;(card.querySelector('.l-syn2') as HTMLElement).textContent = a.origin
+    ;(card.querySelectorAll('.l-d')[0] as HTMLElement).textContent = a.hint
+    card.addEventListener('click', () => {
+      if (armorOwned(d, a.id)) equipArmor(d, a.id)
+      else if (!buyArmorKind(d, a.id)) return
+      refresh()
+    })
+    armorCards.set(a.id, card)
+    armorGrid.appendChild(card)
+  }
+  panel.appendChild(armorGrid)
+  const refreshArmor = (): void => {
+    const worn = armorKindOf(d)
+    for (const [id, el] of armorCards) {
+      const owned = armorOwned(d, id)
+      const lv = armorLevel(d, id)
+      el.classList.toggle('hb-on', id === worn)
+      const why = owned ? '' : armorUnlockBlocked(d, id)
+      el.classList.toggle('l-lock', why !== '')
+      ;(el.querySelector('.l-n') as HTMLElement).textContent = armorKind(id).name + (lv > 0 ? ` · 담금질 ${lv}단` : '')
+      const price = el.querySelector('.l-price') as HTMLElement
+      price.textContent = owned
+        ? `한 벌 +${armorPerOf(d, id)} · 상한 ${armorCapOf(d, id)} · 판에서 ${armorCostOf(d, id)}` + (id === worn ? ' · 입는다' : '')
+        : why === '' ? `장만 — 훈련치 ${armorUnlockCost(id)}` : why
+    }
+  }
 
   // ── 살 가게 — 발견한 특수살을 훈련치로 채운다 (game/supply.ts shopPrice) ──
   // 발견한 살(arrowStock 에 키가 있는 살)만 판다 — 가게가 보급을 대신하면 보스를 잡을 이유가 준다.

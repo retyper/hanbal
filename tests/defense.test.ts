@@ -14,7 +14,7 @@ import assert from 'node:assert/strict'
 
 import { createWorld, resetWorld, step } from '../src/sim/world.ts'
 import { P } from '../src/tune/params.ts'
-import { armorPer, buyDefense, defenseBlocked, defenseCost, shieldHp } from '../src/game/defense.ts'
+import { armorCap, armorPer, buyDefense, defenseBlocked, defenseCost, shieldHp } from '../src/game/defense.ts'
 import type { DefenseState } from '../src/game/defense.ts'
 import { defaultSave } from '../src/game/save.ts'
 import type { InputFrame, StageDef, Stats, World } from '../src/sim/types.ts'
@@ -200,11 +200,14 @@ describe('방어 — 사는 규칙', () => {
     let n = 0
     while (buyDefense(d, 'armor', STATE()) && n < 99) n++
     assert.ok(n >= 1, '한 벌도 못 샀다')
-    assert.equal(d.runArmor, Math.floor(P.defense.armorMax), '상한까지 안 찼다')
+    // 상한은 **입은 벌**의 것이다 — 새 세이브는 가죽갑 (game/armor.ts armorCapOf).
+    assert.equal(d.runArmor, armorCap(d), '상한까지 안 찼다')
+    assert.equal(armorCap(d), Math.floor(P.defense.armorMax * P.defense.armorLightMul))
     assert.equal(d.runArmor, d.runArmorMax)
     assert.equal(buyDefense(d, 'armor', STATE()), false, '상한을 넘겨 샀다')
     // 한 벌의 크기가 노브 그대로여야 한다 — 코드에 숫자를 박지 않았다는 증거다.
-    assert.equal(armorPer(), Math.floor(P.defense.armorPer))
+    // 새 세이브는 가죽갑이다 — 두정갑의 armorLightMul 배 (game/armor.ts).
+    assert.equal(armorPer(defaultSave(0)), Math.floor(P.defense.armorPer * P.defense.armorLightMul))
   })
 
   it('판이 안 도는 동안(드래프트·결과 화면)에는 못 산다', () => {

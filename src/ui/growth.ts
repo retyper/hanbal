@@ -34,6 +34,7 @@ import {
 } from '../game/progression.ts'
 import { BOW_KINDS, bowKind, masteryLevel, MASTERY_HITS, type BowKindId } from '../game/bows.ts'
 import { FORGE_PARTS, buyForge, forgeBlocked, forgeCost, forgeEffect, forgeLevel, forgeMax } from '../game/forge.ts'
+import { armorForgeBlocked, armorForgeEffect, armorForgeMax, armorKind, armorKindOf, armorLevel, buyArmorForge } from '../game/armor.ts'
 import { bowIconSvg } from './arrowicons.ts'
 import { onSaveChanged, wipeSave, writeSave, type SaveData } from '../game/save.ts'
 import { unlockedBows, unlockOfBow } from '../game/unlocks.ts'
@@ -349,8 +350,52 @@ function buildForgeRows(d: SaveData, audio: AudioSwitch, onChange: () => void): 
     rows.push(row)
   }
 
+  // ── 갑옷 담금질 — 입은 벌을 담근다 (game/armor.ts, 2026-09-10 형: "더 강화시킬 수도 없잖아") ──
+  // 활 부위 줄과 같은 뼈대. 값도 같은 곡선(forgeCost)이라 "활채를 갈까, 갑옷을 담글까"가 한 지갑에서 갈린다.
+  const ael = document.createElement('div')
+  ael.className = 'f-row'
+  ael.innerHTML = `
+      <div><span class="f-name"></span><span class="f-lv"></span></div>
+      <div class="f-now"></div>
+      <div class="f-next"></div>
+      <button class="hb-btn f-up" type="button"><i class="hb-ic i-armor"></i>담금질 <span class="g-cost"></span></button>`
+  const aName = ael.querySelector('.f-name') as HTMLElement
+  const aOrigin = document.createElement('span')
+  aOrigin.className = 'f-origin'
+  aName.appendChild(aOrigin)
+  const aLv = ael.querySelector('.f-lv') as HTMLElement
+  const aNow = ael.querySelector('.f-now') as HTMLElement
+  const aNext = ael.querySelector('.f-next') as HTMLElement
+  const aBtn = ael.querySelector('.f-up') as HTMLButtonElement
+  const aCost = ael.querySelector('.g-cost') as HTMLElement
+  aBtn.addEventListener('click', () => {
+    if (!buyArmorForge(d)) return
+    audio.forge()
+    ael.classList.add('g-flash')
+    window.setTimeout(() => ael.classList.remove('g-flash'), FLASH_MS)
+    refresh()
+    onChange()
+  })
+  box.appendChild(ael)
+
   const refresh = (): void => {
     bowOut.textContent = bowKind(d.bow).name
+    {
+      const id = armorKindOf(d)
+      const lv = armorLevel(d, id)
+      const max = armorForgeMax()
+      aName.firstChild!.textContent = armorKind(id).name
+      aOrigin.textContent = armorKind(id).origin
+      aLv.textContent = `${lv} / ${max}단`
+      aNow.textContent = `입은 갑옷을 담근다 — 한 벌의 방어량과 상한이 오른다 · 지금 ${armorForgeEffect(id, lv)}`
+      const why = armorForgeBlocked(d, id)
+      const top = lv >= max
+      aNext.textContent = top ? '끝까지 담갔다' : `→ ${armorForgeEffect(id, lv + 1)}`
+      aNext.classList.toggle('g-flat', top)
+      aCost.textContent = top ? '' : String(forgeCost(lv))
+      aBtn.disabled = why !== ''
+      aBtn.title = why === '' ? `${armorKind(id).name} ${lv + 1}단 — 훈련치 ${forgeCost(lv)}` : why
+    }
     for (const r of rows) {
       const lv = forgeLevel(d, d.bow, r.part)
       const max = forgeMax()
