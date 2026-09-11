@@ -218,7 +218,11 @@ const CSS = `
    위의 칸으로 갈아탄다. 한 칸에 들어갈 만큼만 한 칸에 넣는다 — 안 들어가면 칸을 늘리지
    화면을 늘리지 않는다. 아래 줄(출정 버튼)은 **늘 보인다.** */
 .hb-panel.hb-tall { height: min(760px, 100%); }
-.hb-tall .hb-body { display: flex; flex-direction: column; overflow: hidden; }
+.hb-tall .hb-body {
+  /* flex: 1 이 없으면 안쪽이 **내용 높이**로 줄어든다 — 판은 760px 인데 칸은 317px 이고
+     남은 440px 이 빈 종이가 된다 (2026-09-11, 브라우저로 직접 재서 찾았다). */
+  flex: 1; display: flex; flex-direction: column; overflow: hidden;
+}
 .hb-screen { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
 /* 탭 줄 — 글자와 밑줄뿐이다. 한쪽만 두꺼운 네모는 안 쓴다 (형의 오랜 반려). */
@@ -236,8 +240,15 @@ const CSS = `
 
 /* 칸 — 하나만 보인다. 넘치면 그 칸 안에서만 굴린다 (아주 낮은 화면의 마지막 수단이다). */
 .hb-panes { position: relative; flex: 1; min-height: 0; }
-.hb-pane { display: none; height: 100%; overflow-y: auto; overscroll-behavior: contain; padding-top: 10px; }
+.hb-pane {
+  display: none; height: 100%; overscroll-behavior: contain; padding-top: 10px;
+  /* 세로는 마지막 수단으로 굴리고, **가로는 절대 안 굴린다** — 머리 그림이 칸 밖으로
+     8px 번지게 되어 있어(.f-h 의 음수 여백) 그것만으로 가로 막대가 생겼다 (2026-09-11). */
+  overflow-y: auto; overflow-x: hidden;
+}
 .hb-pane.hb-on { display: block; }
+/* 내용이 칸보다 짧으면 **가운데로 모은다** — 위에 붙고 아래가 텅 비면 그게 곧 빈 화면이다. */
+.hb-pane.hb-on.hb-mid { display: flex; flex-direction: column; justify-content: center; }
 .hb-pane > :first-child { margin-top: 0; }
 
 /* 아래 줄 — 늘 보인다. 출정 버튼이 굴려야 나오면 그건 게임이 아니다. */
@@ -258,11 +269,14 @@ const CSS = `
   grid-template-columns: auto 1fr auto; gap: 6px;
 }
 .wh-stage {
-  position: relative; height: 178px; overflow: hidden; touch-action: pan-y;
+  /* 칸이 크면 걸이도 커진다. 고정 178px 로 두니 넓은 화면에서 아래가 텅 비었다 (2026-09-11). */
+  position: relative; height: clamp(168px, 38vh, 280px); overflow: hidden; touch-action: pan-y;
 }
 .wh-card {
   position: absolute; left: 50%; top: 50%;
-  display: flex; flex-direction: column; gap: 3px;
+  /* 무대 높이를 따라간다 — 내용 높이로 두니 큰 화면에서 카드만 작고 위아래가 비었다. */
+  height: 82%;
+  display: flex; flex-direction: column; gap: 4px;
   background: var(--card); border-radius: 2px; padding: 13px 14px 14px;
   text-align: left; cursor: pointer; color: var(--body);
   transition: transform .22s cubic-bezier(.2,.7,.3,1), opacity .18s;
@@ -296,6 +310,7 @@ const CSS = `
 .wh-pips i.wh-on { background: var(--accent); transform: scale(1.4); }
 /* 좁은 화면 — 카드가 작아지니 무대도 낮춘다. */
 @media (max-width: 480px) { .wh-stage { height: 158px; } }
+@media (max-height: 560px) { .wh-stage { height: 158px; } }
 
 /* ── 자세히 말풍선 (2026-09-11, ui/detail.ts) ─────────────────────────────────
    형: "하스스톤은 (…) 화면에 가장중요한 설명, 탭할때 바로뜨는 부가 설명과 (…) 조금더

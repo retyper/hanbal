@@ -111,17 +111,27 @@ function esc(s: string): string {
 function place(anchor: HTMLElement): void {
   if (bubble === null || typeof anchor.getBoundingClientRect !== 'function') return
   const r = anchor.getBoundingClientRect()
-  const b = bubble.getBoundingClientRect()
+  // ★ 크기는 offsetWidth/Height 로 잰다 (2026-09-11). getBoundingClientRect 로 쟀더니
+  //   내용을 막 넣은 참이라 높이가 거의 0으로 나왔고, 그래서 말풍선이 **자기 카드를 덮었다.**
+  //   브라우저로 직접 보고서야 찾았다 — 활 걸이의 가운데 카드가 통째로 가려져 있었다.
+  const bw = bubble.offsetWidth
+  const bh = bubble.offsetHeight
   const M = 10
   const vw = window.innerWidth
   const vh = window.innerHeight
-  // 세로 — 위가 넉넉하면 위, 아니면 아래.
-  const above = r.top - b.height - 8
+  // 세로 — 위가 넉넉하면 위, 아니면 아래. 둘 다 좁으면 **옆**으로 뺀다 (카드를 안 덮는다).
+  const above = r.top - bh - 8
   const below = r.bottom + 8
-  const top = above >= M ? above : Math.min(below, vh - b.height - M)
-  // 가로 — 카드 가운데에 맞추고 화면 안으로 밀어 넣는다.
-  let left = r.left + r.width / 2 - b.width / 2
-  left = Math.max(M, Math.min(left, vw - b.width - M))
+  let top: number
+  let left = r.left + r.width / 2 - bw / 2
+  if (above >= M) top = above
+  else if (below + bh <= vh - M) top = below
+  else {
+    // 위아래가 다 좁다 — 카드 옆에 세운다. 넓은 쪽을 고른다.
+    top = Math.max(M, Math.min(r.top, vh - bh - M))
+    left = r.left > vw - r.right ? r.left - bw - 8 : r.right + 8
+  }
+  left = Math.max(M, Math.min(left, vw - bw - M))
   bubble.style.left = `${Math.round(left)}px`
   bubble.style.top = `${Math.round(Math.max(M, top))}px`
 }

@@ -49,7 +49,7 @@ const CSS = `
 @media (max-width: 640px) { .l-art { min-height: 110px; padding: 14px 12px 12px; } }
 /* 굴리지 않는 판에서는 그림이 화면을 먹는다 — 낮은 화면에서는 띠 하나로 줄인다
    (2026-09-11, 형: "세로롤링 너무 게임 안같고"). 그림을 지우지는 않는다: 출정식의 기분이다. */
-@media (max-height: 620px) {
+@media (max-height: 560px) {
   .l-art { min-height: 84px; padding: 10px 12px 9px; margin-bottom: 6px; }
   .l-art .hb-lead { display: none; }
   .l-art .l-h h2 { font-size: 22px; }

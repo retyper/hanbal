@@ -151,7 +151,9 @@ if (!ours) {
 }
 
 console.log('\n2. 자리와 크기')
-{
+if (!ours) {
+  console.log('  --  받아온 그림의 여백·크기는 그린 사람이 잡는다 (docs/ICON.md 3번)')
+} else {
   const bow = blob(main, BOW)
   const head = blob(main, HEAD)
   const lo = Math.min(bow.minX, head.minX)

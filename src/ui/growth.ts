@@ -61,8 +61,10 @@ const CSS = `
 .g-h .hb-tip { margin-left: 0; }
 .g-h h3 { flex: 1; margin: 0; color: var(--ink); font-size: 19px; }
 /* 훈련치는 이 화면에서 유일하게 '쓸 수 있는 것'이다. 숫자를 크게 세운다. */
-.g-train { color: var(--dim); font-size: 13px; letter-spacing: .12em; }
-.g-train b { color: var(--accent); font-weight: 700; font-size: 26px; margin-left: 8px; }
+.g-train { display: flex; align-items: center; color: var(--dim); font-size: 13px; letter-spacing: .12em; }
+/* 엽전은 **숫자에 맞춰** 키운다. 13px 짜리 글자 기준으로 두니 점처럼 보였다 (2026-09-11). */
+.g-train .hb-coin { width: 22px; height: 22px; margin-right: 7px; vertical-align: 0; }
+.g-train b { color: var(--accent); font-weight: 700; font-size: 24px; letter-spacing: 0; }
 
 .g-row {
   display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 18px;
@@ -470,6 +472,7 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
   const paneStat = document.createElement('div')
   const paneForge = document.createElement('div')
   const paneRack = document.createElement('div')
+  paneRack.className = 'hb-mid'
   const tabs = makeTabs([
     { id: 'stat', label: '능력치', pane: paneStat },
     { id: 'forge', label: '대장간', pane: paneForge },
