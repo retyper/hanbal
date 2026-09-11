@@ -62,8 +62,11 @@ class El {
   appendChild(c: El): El { c.parent = this; this.children.push(c); return c }
   append(...cs: El[]): void { for (const c of cs) this.appendChild(c) }
   replaceChildren(): void { this.children = [] }
-  addEventListener(): void {}
+  /** 어떤 사건을 듣고 있는가. '자세히'(ui/detail.ts)는 contextmenu 를 거는 유일한 곳이다. */
+  listens = new Set<string>()
+  addEventListener(t: string): void { this.listens.add(t) }
   removeEventListener(): void {}
+  insertAdjacentHTML(_where: string, html: string): void { this.innerHTML += html }
   focus(): void {}
   /** innerHTML 로 심은 것까지는 못 만든다 — 이 프로브가 세는 줄은 전부 createElement 로 만든다. */
   get firstChild(): El { return this.children[0] ?? this.appendChild(new El('span')) }
@@ -245,8 +248,55 @@ console.log('\n4. 두 단을 쓰는 판')
   check(users.length >= 3, '긴 판들이 두 단을 쓴다', users.join(' · ') || '(없다)')
 }
 
-// ── 5. 지도 — 넓어진 판을 실제로 채우는가 ─────────────────────────────
-console.log('\n5. 행로도 — 넓어진 판을 채운다')
+// ── 5. 카드 겉면 — 세 층으로 갈렸는가 ─────────────────────────────────
+//   형: "하스스톤은 (…) 화면에 가장중요한 설명, 탭할때 바로뜨는 부가 설명과 (…)
+//        조금더 오래누르고 있으면 뜨는 추가설명, 이런식으로 커버하는데"
+console.log('\n5. 카드 겉면 — 세 층')
+{
+  const panel = panels.get('loadout') as El
+  const cards: El[] = []
+  panel.walk((e) => { if (e.className.split(' ').includes('l-card')) cards.push(e) })
+  check(cards.length > 0, '출정 화면에 카드가 있다', `${cards.length}장`)
+
+  /**
+   * 겉면에서 **글자를 지는 칸**의 수. 아이콘은 안 센다 — 자리를 먹는 건 글줄이다.
+   *
+   * 카드의 겉면은 innerHTML 한 덩이로 심는다 (스텁은 그걸 자식으로 안 쪼갠다).
+   * 그래서 글자 칸은 문자열에서 센다 — 셈의 대상이 곧 소스에 적힌 그 칸들이다.
+   */
+  const faceLines = (card: El): number => {
+    let n = 0
+    for (const cls of ['l-n', 'l-d', 'l-key', 'l-syn2']) {
+      n += (card.innerHTML.match(new RegExp(`class="[^"]*\\b${cls}\\b`, 'g')) ?? []).length
+    }
+    // innerHTML 이 아니라 createElement 로 붙인 칸도 있을 수 있다.
+    card.walk((e) => {
+      if (e === card) return
+      const c = e.className.split(' ')
+      if (c.includes('l-n') || c.includes('l-d') || c.includes('l-key') || c.includes('l-syn2')) n++
+    })
+    return n
+  }
+  const worst = cards.reduce((m, c) => Math.max(m, faceLines(c)), 0)
+  // 예전 카드는 이름·한자·설명·값 넷을 겉면에 지고 있었다 (갑옷·부적은 넷, 활은 셋).
+  check(worst <= 3, '겉면이 세 줄을 안 넘는다', `가장 긴 카드 ${worst}줄 (예전 4줄)`)
+
+  const withDetail = cards.filter((c) => c.listens.has('contextmenu')).length
+  check(withDetail === cards.length, '카드마다 길게 누르면 뜨는 설명이 있다', `${withDetail}/${cards.length}장`)
+
+  // ② 탭하면 바로 뜨는 한 줄 — 활과 갑옷 두 곳에 있다.
+  let syn = 0
+  panel.walk((e) => { if (e.className.split(' ').includes('l-syn')) syn++ })
+  check(syn >= 2, '고른 것의 설명이 바로 뜨는 줄이 있다', `${syn}곳`)
+
+  // 안내 — 설명이 어디로 갔는지 한 번은 말해 줘야 한다.
+  const css = readFileSync('src/ui/overlay.ts', 'utf8')
+  check(css.includes('.hb-detail'), '말풍선 스타일이 있다')
+  check(css.includes('.hb-tip'), "'길게 눌러 자세히' 안내 스타일이 있다")
+}
+
+// ── 6. 지도 — 넓어진 판을 실제로 채우는가 ─────────────────────────────
+console.log('\n6. 행로도 — 넓어진 판을 채운다')
 {
   const src = readFileSync('src/ui/map.ts', 'utf8')
   const m = /const MAP_MAX_SCALE = ([\d.]+)/.exec(src)

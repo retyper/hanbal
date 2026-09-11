@@ -200,6 +200,38 @@ const CSS = `
 .hb-ic.i-shop { --ic: url(${BASE}icons/shop-coins.svg); }
 .hb-ic.i-bounty { --ic: url(${BASE}icons/bounty-crown.svg); }
 
+/* ── 자세히 말풍선 (2026-09-11, ui/detail.ts) ─────────────────────────────────
+   형: "하스스톤은 (…) 화면에 가장중요한 설명, 탭할때 바로뜨는 부가 설명과 (…) 조금더
+        오래누르고 있으면 뜨는 추가설명, 이런식으로 커버하는데 우리도 그런것좀 해야해."
+
+   카드 겉면은 이름과 숫자 하나만 지고, 나머지는 **길게 누르면** 여기로 뜬다.
+   클릭을 안 먹는다(pointer-events:none) — 화면 위에 잠깐 놓이는 종이 한 장이다.
+   스크림(패널)보다 위에 선다: 패널 위의 카드를 눌러 뜨는 물건이라 그 아래면 가려진다. */
+.hb-detail {
+  position: fixed; z-index: 3; display: none; pointer-events: none;
+  max-width: min(320px, calc(100vw - 20px));
+  background: #24231fF7; border: 1px solid var(--line); border-radius: 3px;
+  padding: 11px 13px 10px; box-shadow: 0 10px 30px #000000cc;
+  font-size: 13px; line-height: 1.55; color: var(--body);
+}
+.hb-detail.hb-on { display: block; }
+.hb-dt { color: var(--ink); font-weight: 700; font-size: 15px; letter-spacing: -.01em; }
+.hb-ds { color: var(--mute); font-weight: 400; font-size: 12px; margin-left: 7px; letter-spacing: .06em; }
+.hb-dl { margin-top: 6px; }
+/* 수치 — 이름과 값이 두 칸으로 선다. 문장 속 숫자보다 표가 빠르다. */
+.hb-dg {
+  display: grid; grid-template-columns: auto 1fr; gap: 2px 12px;
+  margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--line);
+  font-size: 12px; color: var(--mute);
+}
+.hb-dg b { color: var(--ink); font-weight: 700; text-align: right; }
+.hb-df { margin-top: 7px; color: var(--accent); font-size: 12px; }
+
+/* 구역 머리에 붙는 작은 안내 — "길게 눌러 자세히". 한 번 알면 안 읽는 글자라 아주 작다. */
+.hb-tip { color: var(--mute); font-size: 11px; letter-spacing: 0; font-weight: 400; margin-left: auto; }
+@media (hover: hover) and (pointer: fine) { .hb-tip.hb-tip-touch { display: none; } }
+@media (pointer: coarse) { .hb-tip.hb-tip-mouse { display: none; } }
+
 /* ── 엽전(葉錢) — 이 게임의 돈 (2026-09-11, game/money.ts) ──────────────────────
    형: "적절한 금화 아이콘으로 만들어. 그리고 어느곳에서든 사용처에서 금화 아이콘이랑 숫자 같이 써."
 

@@ -21,6 +21,7 @@ import { unlockOfBow } from '../game/unlocks.ts'
 import type { ForkOption } from '../game/forks.ts'
 import type { Overlay } from './overlay.ts'
 import { COIN_ICON, coinText } from '../game/money.ts'
+import { attachDetail } from './detail.ts'
 
 const PANEL_ID = 'loadout'
 /** public/ 자산의 경로 머리. 빌드가 주입하는 BASE_URL만이 진실이다 (ui/overlay.ts 와 같다). */
@@ -49,7 +50,10 @@ const CSS = `
 .l-run b { color: var(--teal); font-size: 20px; margin-left: 6px; }
 .l-best { color: var(--dim); font-size: 13px; letter-spacing: .08em; }
 .l-best b { color: var(--accent); font-size: 20px; margin-left: 6px; }
-.l-sec { color: var(--dim); font-size: 13px; letter-spacing: .12em; margin: 13px 0 7px; }
+.l-sec {
+  display: flex; align-items: baseline; gap: 10px;
+  color: var(--dim); font-size: 13px; letter-spacing: .12em; margin: 13px 0 7px;
+}
 .l-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 @media (max-width: 400px) { .l-grid { grid-template-columns: 1fr; } }
 /* 카드의 틀(문양 테두리·바탕·눌림)은 .hb-card 가 진다 (ui/overlay.ts).
@@ -64,14 +68,29 @@ const CSS = `
 .l-card .l-charm svg { transition: transform .15s; }
 .l-card.hb-on .l-charm svg { transform: translateY(-2px) rotate(-3deg); }
 .l-card .l-syn2 { letter-spacing: .08em; }
-.l-card .l-n { color: var(--ink); font-weight: 700; font-size: 15px; }
-.l-card .l-d { color: var(--dim); font-size: 12px; line-height: 1.45; }
+.l-card .l-n { color: var(--ink); font-weight: 700; font-size: 15px; line-height: 1.3; }
+.l-card .l-d { color: var(--dim); font-size: 12px; line-height: 1.4; }
+/* 겉면의 **핵심 숫자 하나**. 이름 다음으로 눈이 가야 하는 것이라 색과 굵기를 준다. */
+.l-card .l-key { color: var(--accent); font-size: 13px; font-weight: 700; letter-spacing: -.01em; }
+.l-card.hb-on .l-key { color: var(--teal); }
+.l-card.l-lock .l-key { color: var(--mute); }
+/* 카드가 얇아졌으니 그리드도 그만큼 촘촘히 — 한 줄에 더 들어간다. */
+.l-grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
+.l-card { padding: 11px 12px; gap: 2px; }
 .l-card.hb-on .l-n { color: var(--teal); }
 /* 잠긴 활 — 흐리게, 조건은 보이게 (수집 화면과 같은 문법). 클릭은 안 먹는다. */
 .l-card.l-lock { opacity: .55; cursor: default; }
 .l-card.l-lock:hover { background: var(--card); }
 .l-card.l-lock .l-n { color: var(--mute); letter-spacing: .08em; }
-.l-syn { color: var(--teal); font-size: 13px; min-height: 22px; margin-top: 9px; }
+/* ── 탭하면 바로 뜨는 부가 설명 (2026-09-11) ────────────────────────────────
+   카드 겉면은 이름과 숫자 하나만 진다. 고른 카드의 **한 줄**이 그 아래 이 자리에 뜬다.
+   자리를 늘 잡아 두는 이유(min-height): 고를 때마다 줄이 생겼다 사라지면 아래가 출렁인다. */
+.l-syn {
+  color: var(--teal); font-size: 13px; min-height: 34px; margin-top: 8px;
+  padding-left: 2px; line-height: 1.45;
+}
+.l-syn b { color: var(--ink); font-weight: 700; font-family: inherit; }
+.l-syn i { color: var(--mute); font-style: normal; }
 .l-card .l-syn2 { color: var(--teal); font-size: 12px; }
 .l-foot { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
 /* 전체 초기화 — 개발 단계의 필수품. 시작 버튼과 헷갈리지 않게 구석에 작게, 위험색은 무장 후에만. */
@@ -161,8 +180,12 @@ export function mountLoadout(
   const refresh = (): void => {
     for (const [id, el] of bowCards) el.classList.toggle('hb-on', id === pick.bow)
     // 궁합은 판에 그 살을 장전했을 때 성립한다 — 여기서는 활이 어떤 살과 궁합인지만 알려준다.
-    const s = bowKind(pick.bow).synergy
-    syn.textContent = s !== undefined ? `궁합 — ${s.label}` : ''
+    // ② 누르면 바로 — 고른 활의 **대가와 궁합**이 이 한 줄에 뜬다.
+    //    겉면에서 뺀 것 중 고르는 데 제일 필요한 것이 이 둘이다.
+    const bk = bowKind(pick.bow)
+    const sy = bk.synergy
+    syn.innerHTML = `<b>${bk.name}</b> — ${bk.cost === '없음' ? '대가가 없다' : bk.cost}`
+      + (sy !== undefined ? ` <i>· 궁합 ${sy.label}</i>` : '')
     wallet.textContent = String(d.training)
     if (pick.charm !== '' && charmBlocked(d, pick.charm) !== '') pick.charm = ''
     for (const [id, el] of charmCards) {
@@ -189,14 +212,26 @@ export function mountLoadout(
   cols.append(colA, colB)
   panel.appendChild(cols)
 
-  const section = (title: string, into: HTMLElement): void => {
+  /**
+   * 구역 머리. `tip` 이 true 면 오른쪽 끝에 '길게 눌러 자세히' 를 아주 작게 붙인다
+   * (2026-09-11) — 카드 겉면에서 뺀 설명이 **어디로 갔는지** 한 번은 말해 줘야 한다.
+   * 손가락 화면과 마우스 화면에서 말이 다르다 (ui/overlay.ts .hb-tip-*).
+   */
+  const section = (title: string, into: HTMLElement, tip = false): void => {
     const h = document.createElement('div')
     h.className = 'l-sec'
-    h.textContent = title
+    const t = document.createElement('span')
+    t.textContent = title
+    h.appendChild(t)
+    if (tip) {
+      h.insertAdjacentHTML('beforeend',
+        '<span class="hb-tip hb-tip-mouse">올려두면 자세히</span>'
+        + '<span class="hb-tip hb-tip-touch">길게 눌러 자세히</span>')
+    }
     into.appendChild(h)
   }
 
-  section('활', colA)
+  section('활', colA, true)
   const bowGrid = document.createElement('div')
   bowGrid.className = 'l-grid'
   // 열린 활 먼저, 그 뒤에 잠긴 활 — 잠긴 슬롯이 보여야 '다음 여정의 이유'가 생긴다
@@ -209,13 +244,16 @@ export function mountLoadout(
     card.className = owned ? 'hb-card l-card' : 'hb-card l-card l-lock'
     const lv = masteryLevel(Math.floor(bowHits[id] ?? 0))
     // 잠긴 활은 이름만이 아니라 그림도 가린다 — 실루엣까지 보이면 "가려졌다"가 아니다.
+    // ── 겉면은 **이름과 한 줄**뿐이다 (2026-09-11, 형: "하스스톤은 (…) 화면에 가장중요한
+    //    설명, 탭할때 바로뜨는 부가 설명과 (…) 오래누르고 있으면 뜨는 추가설명").
+    //    대가·궁합·해금 조건은 길게 누르면 뜬다 (ui/detail.ts). 예전엔 넷을 다 적어서
+    //    활 다섯 장이 화면 한 판을 먹었다.
     card.innerHTML = `<span class="l-bic">${bowIconSvg(owned ? id : '', 34)}</span>` +
-      `<span class="l-n"></span><span class="l-d"></span><span class="l-d"></span>`
+      `<span class="l-n"></span><span class="l-d"></span>`
     const descs = card.querySelectorAll('.l-d')
     if (owned) {
       ;(card.querySelector('.l-n') as HTMLElement).textContent = b.name + (lv > 0 ? ` · 숙련 ${lv}` : '')
       ;(descs[0] as HTMLElement).textContent = b.perk
-      ;(descs[1] as HTMLElement).textContent = b.cost === '없음' ? '' : `대가 — ${b.cost}`
       card.addEventListener('click', () => {
         pick.bow = id
         refresh()
@@ -225,6 +263,23 @@ export function mountLoadout(
       ;(card.querySelector('.l-n') as HTMLElement).textContent = '？？？'
       ;(descs[0] as HTMLElement).textContent = unlockOfBow(id)?.hint ?? ''
     }
+    // ③ 길게 누르면 — 나머지 전부.
+    attachDetail(card, () => {
+      const mastered = masteryLevel(Math.floor(bowHits[id] ?? 0))
+      const syn = bowKind(id).synergy
+      return owned
+        ? {
+          title: b.name,
+          sub: mastered > 0 ? `숙련 ${mastered}` : '',
+          lines: [
+            b.perk,
+            b.cost === '없음' ? '대가가 없다 — 그래서 기준이 된다.' : `대가 — ${b.cost}`,
+            syn !== undefined ? `궁합 — ${syn.label}` : '',
+          ],
+          foot: mastered > 0 ? '숙련이 오를수록 대가가 깎인다 (그 활로 맞힌 수)' : '',
+        }
+        : { title: '아직 잠겨 있다', lines: [unlockOfBow(id)?.hint ?? ''], foot: '조건을 채우면 열린다' }
+    })
     bowGrid.appendChild(card)
   }
   colA.appendChild(bowGrid)
@@ -243,11 +298,16 @@ export function mountLoadout(
     card.type = 'button'
     card.className = 'hb-card l-card'
     card.style.setProperty('--tint', '#ffd35c')
+    // 겉면 — 이름과 값뿐이다. 무엇을 하는지(hint)·유래(origin)는 길게 누르면 뜬다.
     card.innerHTML = `<span class="l-ic l-charm">${charmIconSvg(c.id, 44)}</span>`
-      + `<span class="l-n"></span><span class="l-syn2"></span><span class="l-d"></span><span class="l-d l-price"></span>`
+      + `<span class="l-n"></span><span class="l-price l-key"></span>`
     ;(card.querySelector('.l-n') as HTMLElement).textContent = c.name
-    ;(card.querySelector('.l-syn2') as HTMLElement).textContent = c.origin
-    ;(card.querySelectorAll('.l-d')[0] as HTMLElement).textContent = c.hint
+    attachDetail(card, () => ({
+      title: c.name,
+      sub: c.origin,
+      lines: [c.hint],
+      foot: charmBlocked(d, c.id) === '' ? `값 ${coinText(charmCost(c.id))} — '나선다'를 누를 때 치른다` : charmBlocked(d, c.id),
+    }))
     card.addEventListener('click', () => {
       if (charmBlocked(d, c.id) !== '') return
       // 같은 카드를 다시 누르면 내려놓는다 — 안 지니고 가는 것도 선택이다.
@@ -270,10 +330,30 @@ export function mountLoadout(
     card.type = 'button'
     card.className = 'hb-card l-card'
     card.style.setProperty('--tint', a.id === 'leather' ? '#c08a55' : a.id === 'lamellar' ? '#aab6c4' : '#d9b25a')
+    // 겉면 — 이름 + **막는 힘 하나**. 한자·한 줄 설명·상한·판에서 사는 값은 전부
+    // 길게 누르면 뜬다 (형: "갑옷하나만 고르는거 봐도 화면에 꽉차는데 이거 맞냐고?").
     card.innerHTML = `<span class="l-ic"><i class="hb-ic i-armor"></i></span>`
-      + `<span class="l-n"></span><span class="l-syn2"></span><span class="l-d"></span><span class="l-d l-price"></span>`
-    ;(card.querySelector('.l-syn2') as HTMLElement).textContent = a.origin
-    ;(card.querySelectorAll('.l-d')[0] as HTMLElement).textContent = a.hint
+      + `<span class="l-n"></span><span class="l-key"></span><span class="l-d l-price"></span>`
+    attachDetail(card, () => {
+      const owned2 = armorOwned(d, a.id)
+      const lv2 = armorLevel(d, a.id)
+      return {
+        title: armorKind(a.id).name,
+        sub: a.origin,
+        lines: [a.hint],
+        stats: owned2
+          ? [
+            ['한 벌이 막는 양', `${armorPerOf(d, a.id)}`],
+            ['겹쳐 입는 상한', `${armorCapOf(d, a.id)}`],
+            ['판에서 한 벌 값', coinText(armorCostOf(d, a.id))],
+            ['담금질', lv2 > 0 ? `${lv2}단` : '아직'],
+          ]
+          : [['장만하는 값', coinText(armorUnlockCost(a.id))]],
+        foot: owned2
+          ? (armorKindOf(d) === a.id ? '지금 입고 나선다' : '눌러서 입는다')
+          : armorUnlockBlocked(d, a.id) || '눌러서 장만한다',
+      }
+    })
     card.addEventListener('click', () => {
       if (armorOwned(d, a.id)) equipArmor(d, a.id)
       else if (!buyArmorKind(d, a.id)) return
@@ -283,6 +363,10 @@ export function mountLoadout(
     armorGrid.appendChild(card)
   }
   colA.appendChild(armorGrid)
+  // ② 누르면 바로 — 입은 벌의 수치가 이 한 줄에 뜬다. 카드에서 뺀 것 중 제일 아쉬운 것들이다.
+  const armorLine = document.createElement('div')
+  armorLine.className = 'l-syn'
+  colA.appendChild(armorLine)
   const refreshArmor = (): void => {
     const worn = armorKindOf(d)
     for (const [id, el] of armorCards) {
@@ -291,12 +375,17 @@ export function mountLoadout(
       el.classList.toggle('hb-on', id === worn)
       const why = owned ? '' : armorUnlockBlocked(d, id)
       el.classList.toggle('l-lock', why !== '')
-      ;(el.querySelector('.l-n') as HTMLElement).textContent = armorKind(id).name + (lv > 0 ? ` · 담금질 ${lv}단` : '')
+      ;(el.querySelector('.l-n') as HTMLElement).textContent = armorKind(id).name + (lv > 0 ? ` · ${lv}단` : '')
+      // 겉면의 숫자 하나 = **막는 양**. 이것 하나로 셋을 비교할 수 있다.
+      ;(el.querySelector('.l-key') as HTMLElement).textContent = owned ? `막는 양 ${armorPerOf(d, id)}` : '아직 없다'
       const price = el.querySelector('.l-price') as HTMLElement
       price.textContent = owned
-        ? `한 벌 +${armorPerOf(d, id)} · 상한 ${armorCapOf(d, id)} · 판에서 ${armorCostOf(d, id)}` + (id === worn ? ' · 입는다' : '')
-        : why === '' ? `장만 — ${coinText(armorUnlockCost(id))}` : why
+        ? (id === worn ? '입고 나선다' : '눌러서 입는다')
+        : why === '' ? `장만 ${coinText(armorUnlockCost(id))}` : why
     }
+    const k = armorKind(worn)
+    armorLine.innerHTML = `<b>${k.name}</b> — 한 벌 ${armorPerOf(d, worn)} · 상한 ${armorCapOf(d, worn)}`
+      + ` <i>· 판에서 한 벌 ${coinText(armorCostOf(d, worn))}</i>`
   }
 
   // ── 살 가게 — 발견한 특수살을 훈련치로 채운다 (game/supply.ts shopPrice) ──

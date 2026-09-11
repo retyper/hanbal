@@ -41,6 +41,7 @@ import { unlockedBows, unlockOfBow } from '../game/unlocks.ts'
 import { P } from '../tune/params.ts'
 import type { Overlay } from './overlay.ts'
 import { COIN_ICON, COIN_NAME, coinHtml, coinText } from '../game/money.ts'
+import { attachDetail } from './detail.ts'
 
 const PANEL_ID = 'growth'
 /** public/ 자산의 경로 머리 (ui/overlay.ts 와 같다). */
@@ -53,6 +54,8 @@ const FLASH_MS = 900
 const CSS = `
 .g-h { display: flex; align-items: baseline; gap: 14px; }
 .g-h h2 { flex: 1; }
+/* 안내는 제목과 지갑 사이에 낀다 — margin-left:auto 를 쓰면 지갑을 밀어낸다. */
+.g-h .hb-tip { margin-left: 0; }
 .g-h h3 { flex: 1; margin: 0; color: var(--ink); font-size: 19px; }
 /* 훈련치는 이 화면에서 유일하게 '쓸 수 있는 것'이다. 숫자를 크게 세운다. */
 .g-train { color: var(--dim); font-size: 13px; letter-spacing: .12em; }
@@ -98,7 +101,10 @@ const CSS = `
 
 /* ── 활 걸이 ── 스탯과 발자취가 다른 물건임이 한눈에 읽히게 칸으로 나눈다. */
 .g-bows { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 10px; }
-.g-bows h3 { color: var(--dim); font-size: 13px; letter-spacing: .12em; margin: 0 0 4px; }
+.g-bows h3 {
+  display: flex; align-items: baseline; gap: 10px;
+  color: var(--dim); font-size: 13px; letter-spacing: .12em; margin: 0 0 4px;
+}
 .g-bow {
   display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 18px;
   padding: 9px 0 8px; border-top: 1px solid var(--line);
@@ -109,6 +115,9 @@ const CSS = `
 .g-bow .g-bname { color: var(--ink); font-weight: 700; font-size: 16px; }
 .g-bow .g-borigin { color: var(--mute); font-size: 12px; margin-left: 10px; letter-spacing: .04em; }
 .g-bow .g-bperk { grid-column: 1; color: var(--body); font-size: 13px; }
+/* 대가·궁합은 겉면에서 감춘다 — 길게 누르면 말풍선으로 뜬다 (ui/detail.ts).
+   요소를 지우지 않는 이유: 갱신 코드가 여기 문장을 만들고, 말풍선이 그걸 그대로 읽는다. */
+.g-bow .g-bhide { display: none; }
 .g-bow .g-bcost { grid-column: 1; color: var(--mute); font-size: 13px; }
 .g-bow .g-bsyn { grid-column: 1; color: var(--teal); font-size: 13px; }
 .g-bow .g-bpick { grid-column: 2; grid-row: 1 / span 4; min-width: 96px; justify-content: center; }
@@ -257,6 +266,26 @@ function buildStatRows(
       cost: el.querySelector('.g-cost') as HTMLElement,
     }
     ;(el.querySelector('.g-name') as HTMLElement).textContent = statLabel(key)
+    // ③ 길게 누르면 — 지금 값·다음 값·앞으로의 값 곡선 (2026-09-11).
+    //    겉면은 "지금 → 다음" 한 쌍이면 충분하다. 얼마를 더 쓰면 어디까지 가는지는
+    //    궁금해진 사람만 보면 되는 것이라 이쪽으로 뺀다.
+    attachDetail(el, () => {
+      const lv = d.stats[key]
+      const cost = trainingCost(lv)
+      const after = effectAfterLevel(d.stats, key)
+      const now2 = effectOf(d.stats, key)
+      return {
+        title: statLabel(key),
+        sub: `Lv ${lv}`,
+        lines: [`지금 — ${now2}`, after === now2 ? '한 레벨로는 크게 달라지지 않는다' : `한 레벨 뒤 — ${after}`],
+        stats: [
+          ['한 레벨 값', coinText(cost)],
+          ['세 레벨 값', coinText(trainingCost(lv) + trainingCost(lv + 1) + trainingCost(lv + 2))],
+          ['가진 돈', coinText(d.training)],
+        ],
+        foot: d.training < cost ? `${coinText(cost - d.training)} 모자라다` : recommendStat(d.stats) === key ? recommendReason(key) : '',
+      }
+    })
     // 아이콘은 스탯 키로 고른다 (ui/overlay.ts .hb-ic.i-*). 스탯을 더 만들면 아이콘도 같이.
     ;(el.querySelector('.g-ic') as HTMLElement).classList.add(`i-${key}`)
     btn.addEventListener('click', () => {
@@ -429,7 +458,10 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
 
   const head = document.createElement('div')
   head.className = 'g-h'
-  head.innerHTML = `<h2>성장</h2><div class="g-train">${COIN_ICON}<b></b></div>`
+  head.innerHTML = '<h2>성장</h2>'
+    + '<span class="hb-tip hb-tip-mouse">줄에 올려두면 자세히</span>'
+    + '<span class="hb-tip hb-tip-touch">줄을 길게 눌러 자세히</span>'
+    + `<div class="g-train">${COIN_ICON}<b></b></div>`
   const trainOut = head.querySelector('b') as HTMLElement
 
   const sub = document.createElement('p')
@@ -462,11 +494,13 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
   // 장착은 다음 판부터다 — 판 도중에 활이 바뀌면 같은 시드가 다른 판이 된다 (A1).
   const rack = document.createElement('div')
   rack.className = 'g-bows'
-  rack.innerHTML = '<h3>활 걸이</h3>'
+  rack.innerHTML = '<h3><span>활 걸이</span>'
+    + '<span class="hb-tip hb-tip-mouse">올려두면 자세히</span>'
+    + '<span class="hb-tip hb-tip-touch">길게 눌러 자세히</span></h3>'
   const rackSub = document.createElement('p')
   rackSub.className = 'hb-lead'
-  rackSub.textContent = '바꾼 활은 다음 판부터 든다. 숙련은 그 활로 맞힌 수만큼 쌓여 '
-    + '아래 "대가" 줄의 단점을 그만큼 깎는다 — 몇 % 줄었는지 그 자리에 뜬다.'
+  // 긴 설명은 말풍선으로 갔다 — 여기는 한 줄이면 된다 (2026-09-11).
+  rackSub.textContent = '바꾼 활은 다음 판부터 든다.'
   rack.appendChild(rackSub)
 
   interface BowRow {
@@ -486,8 +520,7 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
     el.innerHTML = `
       <div><span class="g-bic"></span><span class="g-bname"></span><span class="g-borigin"></span></div>
       <div class="g-bperk"></div>
-      <div class="g-bcost"></div>
-      <div class="g-bsyn"></div>
+      <div class="g-bhide"><div class="g-bcost"></div><div class="g-bsyn"></div></div>
       <button class="hb-btn g-bpick" type="button">들기</button>`
     const btn = el.querySelector('.g-bpick') as HTMLButtonElement
     btn.addEventListener('click', () => {
@@ -496,7 +529,7 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
       refresh()
       onChange()
     })
-    bowRows.push({
+    const row: BowRow = {
       id: b.id,
       el,
       icon: el.querySelector('.g-bic') as HTMLElement,
@@ -505,6 +538,28 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
       cost: el.querySelector('.g-bcost') as HTMLElement,
       syn: el.querySelector('.g-bsyn') as HTMLElement,
       btn,
+    }
+    bowRows.push(row)
+    // ③ 길게 누르면 — 겉면에서 뺀 것 전부 (2026-09-11, 형: "하스스톤은 (…) 오래누르고
+    //    있으면 뜨는 추가설명, 이런식으로 커버하는데 우리도 그런것좀 해야해").
+    //    cost·syn 은 감춘 자리에 그대로 있으므로 **이미 만들어진 문장**을 그대로 읽는다 —
+    //    숙련이 대가를 몇 % 깎았는지 같은 계산이 두 벌이 되지 않게.
+    attachDetail(el, () => {
+      if (row.el.classList.contains('g-lockd')) {
+        return { title: '아직 잠겨 있다', lines: [row.perk.textContent ?? ''], foot: '조건을 채우면 열린다' }
+      }
+      const hits = Math.floor(d.bowHits[b.id] ?? 0)
+      const lv = masteryLevel(hits)
+      const nx = MASTERY_HITS[lv]
+      return {
+        title: b.name,
+        sub: b.origin,
+        lines: [b.perk, row.cost.textContent ?? '', row.syn.textContent ?? ''],
+        stats: nx !== undefined
+          ? [['다음 숙련까지', `${hits} / ${nx}`]]
+          : [['숙련', '끝까지 올렸다']],
+        foot: b.cost === '없음' ? '' : '숙련이 오를수록 대가가 깎인다',
+      }
     })
     ;(el.querySelector('.g-borigin') as HTMLElement).textContent = b.origin
     rack.appendChild(el)
