@@ -466,6 +466,30 @@ function line(
   ctx.stroke()
 }
 
+/**
+ * 휜 획 하나 — 환도의 날 (2026-09-11, 형: "환도 모양으로 만들어").
+ * bend 는 진행방향 **왼쪽(+)** 으로 중간이 밀리는 양(m). 곧은 막대와 휜 날의 차이가 여기 하나다.
+ */
+function curve(
+  ctx: CanvasRenderingContext2D, cam: Camera,
+  x0: number, y0: number, x1: number, y1: number, bend: number,
+): void {
+  const dx = x1 - x0
+  const dy = y1 - y0
+  const len = Math.hypot(dx, dy)
+  const inv = len > 1e-5 ? 1 / len : 0
+  // 이차 곡선의 제어점은 중간 오프셋의 **두 배** 자리다 — t=0.5 에서 정확히 bend 만큼 휜다.
+  const cx = (x0 + x1) * 0.5 - dy * inv * bend * 2
+  const cy = (y0 + y1) * 0.5 + dx * inv * bend * 2
+  ctx.beginPath()
+  ctx.moveTo(worldToScreenX(cam, x0), worldToScreenY(cam, y0))
+  ctx.quadraticCurveTo(
+    worldToScreenX(cam, cx), worldToScreenY(cam, cy),
+    worldToScreenX(cam, x1), worldToScreenY(cam, y1),
+  )
+  ctx.stroke()
+}
+
 /** 팔·다리는 관절 하나짜리 꺾인 선. bend는 진행방향 왼쪽(+) 기준 오프셋(m). */
 function limb(
   ctx: CanvasRenderingContext2D, cam: Camera,
@@ -519,6 +543,8 @@ const SWORD = {
     // 뒤·아래에서 시작해 앞·위로 뻗는다: 칼끝이 1.6m 를 가로지른다.
     endX: 0.58, endY: 0.20,
     a0: -2.5, a1: -2.0, a1s: -2.0, a2: 0.5,
+    /** 날이 볼록한 쪽 (진행방향 왼쪽 +). 올려베기는 위로 친다 — 볼록이 위다. */
+    bowDir: 1,
     /** 몸이 감기는 각(rad) — 뒤로 기울었다가 앞으로 풀린다. */
     coil: -0.10, follow: 0.10,
   },
@@ -528,6 +554,7 @@ const SWORD = {
     midX: -0.24, midY: 0.34,
     endX: 0.32, endY: -0.10,
     a0: -2.5, a1: -3.80, a1s: 2.48, a2: -0.88,
+    bowDir: -1,
     coil: -0.14, follow: 0.16,
   },
   /** 칼자루를 함께 쥔 두 팔의 팔꿈치 굽힘 (m). 먼 팔과 가까운 팔이 반대로 굽는다. */
@@ -536,6 +563,10 @@ const SWORD = {
   hilt: 0.2,
   grip: 0.16,
   bladeW: 0.075,
+  /** 날의 휨 (m) — 한가운데가 날 쪽으로 밀리는 양. 곧으면 그건 환도가 아니라 막대다. */
+  bow: 0.075,
+  /** 코등이 원반의 반지름 (m). 십자 가드가 아니라 **둥근 판**이라 환도다. */
+  guard: 0.075,
   blade: '#e8f0fa',
   /** 날 한가운데의 흰 심 — 두 겹이라야 "번쩍"이 된다. */
   core: '#ffffff',
@@ -1192,17 +1223,31 @@ export function drawArcher(
         ctx.lineCap = "round"
         ctx.strokeStyle = SWORD.blade
         ctx.lineWidth = Math.max(2.5, cam.scale * SWORD.bladeW)
-        line(ctx, cam, gx + dx * SWORD.hilt, gy + dy * SWORD.hilt, gx + dx * len, gy + dy * len)
+        // 휨은 **날 쪽으로** 볼록해야 한다. 날의 방향은 자세가 정한다(up/down) —
+        // 올려베기는 위로 쳐올리니 볼록이 위, 내려베기는 반대다.
+        const bow = SWORD.bow * pose.bowDir * (len / SWORD.len)
+        curve(ctx, cam, gx + dx * SWORD.hilt, gy + dy * SWORD.hilt, gx + dx * len, gy + dy * len, bow)
         if (pT < pSlash) {
           ctx.strokeStyle = SWORD.core
           ctx.lineWidth = Math.max(1, cam.scale * SWORD.bladeW * 0.35)
-          line(ctx, cam, gx + dx * SWORD.hilt, gy + dy * SWORD.hilt, gx + dx * len, gy + dy * len)
+          curve(ctx, cam, gx + dx * SWORD.hilt, gy + dy * SWORD.hilt, gx + dx * len, gy + dy * len, bow)
         }
         ctx.lineCap = "butt"
         // ── 자루와 코등이 — 두 손이 어디를 쥐었는지.
         ctx.strokeStyle = SWORD.fitting
         ctx.lineWidth = Math.max(1.6, cam.scale * SWORD.fittingW * 1.6)
         line(ctx, cam, gx - dx * SWORD.grip, gy - dy * SWORD.grip, gx + dx * SWORD.hilt, gy + dy * SWORD.hilt)
+        // 코등이 — **작고 둥근 원반**. 환도의 표식이라 화면에서도 한 번은 보여야 한다
+        // (아이콘과 같은 문법 — ui/parry.ts).
+        ctx.fillStyle = SWORD.fitting
+        ctx.beginPath()
+        ctx.ellipse(
+          worldToScreenX(cam, gx + dx * SWORD.hilt * 0.55),
+          worldToScreenY(cam, gy + dy * SWORD.hilt * 0.55),
+          Math.max(1.4, cam.scale * SWORD.guard), Math.max(0.8, cam.scale * SWORD.guard * 0.42),
+          -ang + Math.PI / 2, 0, TAU,
+        )
+        ctx.fill()
       }
     }
   }

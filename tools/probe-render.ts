@@ -215,7 +215,7 @@ console.log('신궁 — 렌더 프로브 (Canvas2D 기록 스텁)')
 // ── 1. 창 크기별 글자 크기 ──
 console.log('\n── 1. 창 크기별 HUD 글자 크기 ──')
 console.log('  ' + '창'.padEnd(12) + '장-판'.padStart(8) + '과녁'.padStart(8) +
-  '화살수'.padStart(8) + '훈련'.padStart(8) + '자막'.padStart(8))
+  '화살수'.padStart(8) + '냥'.padStart(8) + '자막'.padStart(8))
 const SIZES: ReadonlyArray<readonly [number, number]> = [[1024, 640], [1280, 800], [1920, 1080], [2560, 1440]]
 for (const [cw, ch] of SIZES) {
   const canvas = new Canvas()
@@ -230,7 +230,7 @@ for (const [cw, ch] of SIZES) {
     String(rec.texts.find((t) => /^\d+-\d+$/.test(t.text))?.size ?? 0).padStart(8) +
     String(pick('과녁')).padStart(8) +
     String(rec.texts.find((t) => /^\d+$/.test(t.text))?.size ?? 0).padStart(8) +
-    String(pick('훈련')).padStart(8) +
+    String(pick('냥')).padStart(8) +
     String(rec.texts.filter((t) => t.align === 'center').map((t) => t.size).sort((a, b) => b - a)[0] ?? 0).padStart(8),
   )
 }

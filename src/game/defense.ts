@@ -20,6 +20,7 @@
 import { P } from '../tune/params.ts'
 import { armorCapOf, armorCostOf, armorKind, armorKindOf, armorPerOf } from './armor.ts'
 import { writeSave, type SaveData } from './save.ts'
+import { coinText } from './money.ts'
 
 export type DefenseId = 'shield' | 'armor' | 'arrow'
 
@@ -103,7 +104,7 @@ export function defenseBlocked(d: SaveData, id: DefenseId, state: DefenseState):
   if (id === 'shield' && state.shieldMax > 0) return '이미 세워 뒀다'
   if (id === 'armor' && d.runArmor >= armorCap(d)) return '더 겹쳐 입지 못한다'
   if (id === 'arrow' && state.arrowsBought >= arrowBuyMax()) return '이 판에서는 더 못 산다'
-  if (d.training < defenseCost(id, state, d)) return `훈련치 ${defenseCost(id, state, d)} 필요`
+  if (d.training < defenseCost(id, state, d)) return `${coinText(defenseCost(id, state, d))} 필요`
   return ''
 }
 

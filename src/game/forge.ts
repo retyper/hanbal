@@ -18,6 +18,7 @@
 import type { BowKindId } from './bows.ts'
 import { P } from '../tune/params.ts'
 import { writeSave, type SaveData } from './save.ts'
+import { coinText } from './money.ts'
 
 export type ForgePart = 'string' | 'limb' | 'grip'
 
@@ -98,7 +99,7 @@ export function forgeBlocked(d: SaveData, bow: BowKindId, part: ForgePart): stri
   const lv = forgeLevel(d, bow, part)
   if (lv >= forgeMax()) return '더 갈 데가 없다'
   const cost = forgeCost(lv)
-  if (d.training < cost) return `훈련치 ${cost} 필요`
+  if (d.training < cost) return `${coinText(cost)} 필요`
   return ''
 }
 

@@ -64,7 +64,7 @@ const BOMB: ForkOption = {
 }
 const WIND: ForkOption = {
   id: 'wind', title: '바람골', origin: '風谷',
-  desc: '골바람이 분다 — 겨냥이 밀린다. 깨면 훈련치를 더 준다.',
+  desc: '골바람이 분다 — 겨냥이 밀린다. 깨면 돈을 더 준다.',
   trainMul: P.fork.windTrainMul,
 }
 const SUPPLY: ForkOption = {
@@ -73,12 +73,12 @@ const SUPPLY: ForkOption = {
 }
 const SCOUT: ForkOption = {
   id: 'scout', title: '척후', origin: '斥候',
-  desc: '한 놈이 나를 향해 달려온다. 닿기 전에 끊어라 — 깨면 훈련치를 더 준다.',
+  desc: '한 놈이 나를 향해 달려온다. 닿기 전에 끊어라 — 깨면 돈을 더 준다.',
   trainMul: P.fork.scoutTrainMul,
 }
 const SINGLE: ForkOption = {
   id: 'single', title: '단발', origin: '單發',
-  desc: '화살을 적게 준다. 한 발도 못 버린다 — 깨면 훈련치를 크게 준다.',
+  desc: '화살을 적게 준다. 한 발도 못 버린다 — 깨면 돈을 크게 번다.',
   trainMul: P.fork.singleTrainMul,
 }
 

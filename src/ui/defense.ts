@@ -17,6 +17,7 @@ import {
 } from '../game/defense.ts'
 import { onSaveChanged, type SaveData } from '../game/save.ts'
 import type { Overlay } from './overlay.ts'
+import { coinText } from '../game/money.ts'
 
 const CSS = `
 .d-row { display: flex; gap: 8px; align-items: flex-end; }
@@ -71,7 +72,7 @@ export function mountDefense(o: Overlay, d: SaveData, buy: (id: DefenseId) => bo
         + `<span class="d-name">${name}</span><b>${badge(item.id, held, st, d)}</b>`
       // 값과 이유를 둘 다 말한다 — 하나만 말하면 "왜 안 눌리지"가 남는다.
       btn.title = why === ''
-        ? `${name}(${item.origin}) — ${item.hint} · 훈련치 ${defenseCost(item.id, st, d)}`
+        ? `${name}(${item.origin}) — ${item.hint} · ${coinText(defenseCost(item.id, st, d))}`
         : `${name}(${item.origin}) — ${why}`
       btn.setAttribute('aria-label', btn.title)
       btn.disabled = why !== ''

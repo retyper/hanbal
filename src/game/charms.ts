@@ -22,6 +22,7 @@ import type { StageDef } from '../sim/types.ts'
 import { P } from '../tune/params.ts'
 import { armorPer } from './defense.ts'
 import { writeSave, type SaveData } from './save.ts'
+import { coinText } from './money.ts'
 
 export type CharmId = 'quiver' | 'iron' | 'gold' | 'ghost'
 
@@ -36,7 +37,7 @@ export interface CharmDef {
 export const CHARMS: readonly CharmDef[] = [
   { id: 'quiver', name: '살통 부적', origin: '箭筒', hint: '매 판 화살이 한 발 더 온다' },
   { id: 'iron', name: '철갑 부적', origin: '鐵甲', hint: '갑옷 한 벌을 입고 출발한다' },
-  { id: 'gold', name: '노다지 부적', origin: '金', hint: '훈련치가 더 들어온다 — 대신 체력을 깎고 출발' },
+  { id: 'gold', name: '노다지 부적', origin: '金', hint: '돈이 더 들어온다 — 대신 체력을 깎고 출발' },
   { id: 'ghost', name: '귀신잡이 부적', origin: '破鬼', hint: '귀신(보스)의 체력이 준다' },
 ]
 
@@ -58,7 +59,7 @@ export function charmCost(id: CharmId): number {
 /** 못 사는 이유. 살 수 있으면 빈 문자열. */
 export function charmBlocked(d: SaveData, id: CharmId): string {
   const cost = charmCost(id)
-  if (d.training < cost) return `훈련치 ${cost} 필요`
+  if (d.training < cost) return `${coinText(cost)} 필요`
   return ''
 }
 

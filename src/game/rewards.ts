@@ -27,6 +27,7 @@
 import type { Rng } from '../core/rng.ts'
 import type { StageDef } from '../sim/types.ts'
 import { P } from '../tune/params.ts'
+import { coinText } from './money.ts'
 
 // ─────────────────────────── 계약 ───────────────────────────
 
@@ -257,7 +258,7 @@ export function gradeRun(rng: Rng, stage: StageDef, r: RunStats, trainMul = 1): 
 export function rewardLine(r: Reward): string {
   let s = ''
   for (let i = 0; i < STAR_MAX; i++) s += i < r.stars ? '★' : '☆'
-  let line = `${s} 훈련치 +${r.training}`
+  let line = `${s} +${coinText(r.training)}`
   if (r.feats.length > 0) line += ` · ${r.feats.join(' · ')}`
   return line
 }

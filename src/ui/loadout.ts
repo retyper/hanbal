@@ -20,6 +20,7 @@ import { BOW_KINDS, bowKind, masteryLevel, type BowKindId } from '../game/bows.t
 import { unlockOfBow } from '../game/unlocks.ts'
 import type { ForkOption } from '../game/forks.ts'
 import type { Overlay } from './overlay.ts'
+import { COIN_ICON, coinText } from '../game/money.ts'
 
 const PANEL_ID = 'loadout'
 /** public/ 자산의 경로 머리. 빌드가 주입하는 BASE_URL만이 진실이다 (ui/overlay.ts 와 같다). */
@@ -129,7 +130,7 @@ export function mountLoadout(
   head.className = 'l-h'
   head.innerHTML = `<h2>출정</h2><div class="l-run">여정<b>${runCount + 1}</b></div>` +
     // 지갑 — 이 화면에서 쓰는 돈. 부적·살 가게가 여기서 빠진다.
-    `<div class="l-best l-wallet">훈련치<b></b></div>` +
+    `<div class="l-best l-wallet">${COIN_ICON}<b></b></div>` +
     // 어디서 출발하는가 — 체크포인트(보스 다음 판)가 있으면 "또 1판부터"가 아니다.
     (startStage > 1 ? `<div class="l-run">출발<b>${startStage}판</b></div>` : '') +
     (bestRunStage > 0 ? `<div class="l-best">가장 멀리<b>${bestRunStage}판</b></div>` : '')
@@ -170,7 +171,7 @@ export function mountLoadout(
       el.classList.toggle('l-lock', why !== '')
       const price = el.querySelector('.l-price') as HTMLElement
       price.textContent = why === ''
-        ? (id === pick.charm ? `지닌다 · 훈련치 ${charmCost(id)}` : `훈련치 ${charmCost(id)}`)
+        ? (id === pick.charm ? `지닌다 · ${coinText(charmCost(id))}` : coinText(charmCost(id)))
         : why
     }
     refreshArmor()
@@ -283,7 +284,7 @@ export function mountLoadout(
       const price = el.querySelector('.l-price') as HTMLElement
       price.textContent = owned
         ? `한 벌 +${armorPerOf(d, id)} · 상한 ${armorCapOf(d, id)} · 판에서 ${armorCostOf(d, id)}` + (id === worn ? ' · 입는다' : '')
-        : why === '' ? `장만 — 훈련치 ${armorUnlockCost(id)}` : why
+        : why === '' ? `장만 — ${coinText(armorUnlockCost(id))}` : why
     }
   }
 
@@ -314,7 +315,7 @@ export function mountLoadout(
       const btn = row.querySelector('.l-sbuy') as HTMLButtonElement
       ;(btn.querySelector('b') as HTMLElement).textContent = String(price)
       btn.disabled = d.training < price
-      btn.title = btn.disabled ? `훈련치 ${price} 필요` : `${k.name} 한 발 — 훈련치 ${price}`
+      btn.title = btn.disabled ? `${coinText(price)} 필요` : `${k.name} 한 발 — ${coinText(price)}`
       btn.addEventListener('click', () => {
         if (d.training < price) return
         d.training -= price

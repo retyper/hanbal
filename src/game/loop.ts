@@ -318,6 +318,20 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
    * null이면 평소대로 살통에서 든 것을 쓴다. 판이 바뀌면 반드시 지워진다 (loadStage).
    */
   let freeArrow: ArrowKindId | null = null
+  /**
+   * '화공' 이 살을 바꿔 들리기 **직전에** 들고 있던 살 (2026-09-11, 형: "화공 고르면 일반공격이
+   * 화전이 되어야지 화전 화살을 소비해버리면 어떡하냐. 전엔 안그랬는데").
+   *
+   * ── 무엇이 틀렸었나 ─────────────────────────────────────────────────
+   * 화공은 그 판에서만 공짜로 화전을 물린다. 그런데 물리는 방법이 `save.runArrow = 'burst'` 였다 —
+   * **세이브를 영구히 고쳤다.** 그 판이 끝나면 freeArrow 는 null 로 돌아가는데 save.runArrow 는
+   * 화전인 채로 남는다. 그래서 다음 판부터는 같은 화전이 **재고에서 빠져나갔다.**
+   * 살 가게에서 비싸게 채운 화전이 화공 한 장 때문에 조용히 녹고 있었던 것이다.
+   *
+   * 이제 바꿔 들기 전의 살을 여기 적어 두고, 화공 판이 끝나면 그대로 되돌린다.
+   * 화공이 주는 것은 **이 판의 일반 공격이 화전이 되는 것**이지 살통을 여는 것이 아니다.
+   */
+  let arrowBeforeFork: ArrowKindId | null = null
 
   /** 세이브의 스탯을 활에 넣는다. 이게 없으면 성장이 물리에 아무 영향을 못 준다. */
   const applyStats = (): void => {
@@ -343,6 +357,11 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     // 든 살은 판을 넘어도 그대로다 (형: "변경한 걸 그대로 들고 있어야지").
     // 소모는 여기가 아니라 **쏠 때 발당 1**이다 (tick의 release 처리). 재고가 없으면 유엽전.
     let kind = requested
+    // 지난 판이 화공이었으면 **내 살로 되돌린다.** 화공이 물린 살은 이 판의 것이 아니다.
+    if (freeArrow !== null && arrowBeforeFork !== null && requested === freeArrow) {
+      kind = arrowBeforeFork
+    }
+    arrowBeforeFork = null
     if (kind !== DEFAULT_ARROW && Math.floor(save.arrowStock[kind] ?? 0) <= 0) kind = DEFAULT_ARROW
     save.runArrow = kind
     // 정산 전에 판을 갈아엎으면 보상이 통째로 사라진다. 아직 안 줬으면 여기서 준다.
@@ -368,6 +387,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       stage = applyFork(stage, activeFork, stageIndex + 1)
       // '화공' 처럼 살을 물리는 카드 — 재고 없이 그 살을 든다. 소모도 안 한다 (release 처리).
       if (activeFork.arrow !== undefined) {
+        // 바꿔 들기 전의 살을 적어 둔다 — 판이 끝나면 이 살로 돌아온다 (arrowBeforeFork).
+        arrowBeforeFork = kind
         freeArrow = activeFork.arrow
         kind = activeFork.arrow
         save.runArrow = kind
@@ -670,7 +691,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     if (growHint) save.seenGrowHint = true
 
     saveNow()
-    if (growHint) ui.toast('훈련치가 쌓였다 — 아래 성장(Tab)에서 근력을 올릴 수 있다', GROW_HINT_MS)
+    if (growHint) ui.toast('돈이 쌓였다 — 아래 성장(Tab)에서 근력을 올릴 수 있다', GROW_HINT_MS)
     ui.progressed()
     // 별·위업까지 한 줄로. 결과 화면에 가두지 않는다 (C1).
     ui.runGain(rewardLine(reward), gain.leveled)
@@ -826,15 +847,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
         // 셋을 꿰뚫고 착지한 화살도, 분열 자식의 낙하도 여기 안 걸린다 (축은 '쏜 발'이다).
         misses++
       }
-      // ── 연사 눈금의 뜻을 **처음 쌓일 때** 알려준다 ──
-      // 예전엔 몰기(5중)에 닿아야 설명이 떴다. 그런데 거기까지 가는 사람이 드물어서,
-      // 대부분은 뜻 모를 네모 다섯을 계속 보고 있었다 (형: "몰기는 대체 뭐야?").
-      // 이제 두 발만 이어져도 한 번 말해 준다 — 그게 이 줄이 처음 눈에 들어오는 순간이다.
-      if (!save.seenMolgi && w.flowHits >= 2) {
-        save.seenMolgi = true
-        saveNow()
-        ui.toast('연달아 맞히면 당김이 빨라진다 — 다섯이면 몰기(沒技)', 3600)
-      }
+      // (연사 안내 토스트는 없앴다 — 2026-09-11. 눈금과 함께 화면에서 내렸다.
+      //  render/hud.ts 의 같은 날짜 주석 참고. 효과는 손이 느끼면 되고, 말은 필요 없다.)
     }
 
     // 종료는 한 번만 정산한다. 그리고 **결과가 더 뒤집힐 여지가 없을 때까지 기다린다** —
@@ -1114,9 +1128,23 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       } else if (kind === 'hwacha') {
         // 화차 — 신기전을 부채꼴로 (2026-09-10). 실험장에서도 판과 같은 치수여야 한다.
         sandboxAdd(w, {
-          kind: 'archer', look: 4, x: rx2 + 6, y: 0.9, r: 0.8,
+          kind: 'archer', look: 4, x: rx2 + 6, y: 0.8, r: 0.8,
           hp: Math.floor(P.enemy.convertHp), volley: Math.floor(P.enemy.volleyShots),
           fireDelay: 3, firePeriod: P.enemy.shootEvery * P.enemy.hwachaPeriodMul, score: 200,
+        })
+      } else if (kind === 'gunner') {
+        // 총통수 — 판과 같은 치수여야 실험장이 판을 대신한다.
+        sandboxAdd(w, {
+          kind: 'archer', look: 5, x: rx2 + 6, y: 0.72, r: 0.65,
+          hp: Math.floor(P.enemy.convertHp), aimMul: P.enemy.gunnerAim,
+          fireDelay: 2.5, firePeriod: P.enemy.shootEvery * P.enemy.gunnerPeriodMul, score: 160,
+        })
+      } else if (kind === 'slinger') {
+        // 투석군 — **땅에 선다** (무릿매를 돌릴 자리가 머리 위에 있어야 한다).
+        sandboxAdd(w, {
+          kind: 'archer', look: 6, x: rx2 + 6, y: 0.68, r: 0.68,
+          hp: Math.floor(P.enemy.convertHp),
+          fireDelay: 3, firePeriod: P.enemy.shootEvery * P.enemy.slingerPeriodMul, score: 170,
         })
       } else if (kind === 'window' || kind === 'peek' || kind === 'drone') {
         // 11판+ 전환 변종들 (stages.ts convertToFoes와 같은 문법).

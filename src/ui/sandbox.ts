@@ -45,6 +45,9 @@ const SPAWNS: ReadonlyArray<readonly [string, string]> = [
   ['peek', '숨는 사수'],
   ['drone', '매'],
   ['hwacha', '화차'],
+  // 2026-09-11 에 선 둘. 목록이 곧 존재다 — 판에만 넣고 여기 안 넣으면 형에게는 없는 것이다.
+  ['gunner', '총통수'],
+  ['slinger', '투석군'],
   ['bonus-heal', '기력 보급'],
   ['bomb', '폭탄'],
   ['boss-0', '눈알귀신'],

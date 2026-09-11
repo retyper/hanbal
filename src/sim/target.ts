@@ -115,6 +115,9 @@ export function stepTargets(w: World): void {
         tg.weak = 1
         tg.y = floorY - (bossGrammar(tg.look) === 'leg' ? tg.r * P.target.bossTripSink : 0)
         if (tg.stagger <= 0) tg.guardHits = 0
+        // 비틀거리는 동안은 **못 쏜다.** 그리고 일어서도 예고부터 다시 시작한다 —
+        // 넘어뜨린 사람이 일어나는 순간 얼굴로 한 발 맞으면 그건 상이 아니라 벌이다.
+        if (tg.fireAt < time + P.enemy.windup) tg.fireAt = time + P.enemy.windup
       } else {
         // 보스 — 느리게, 그러나 멈추지 않고 온다 (docs/RUN.md 3장). 판이 끝나면 멈춘다.
         if (w.status === 'playing') tg.x -= tg.speed * dt
@@ -124,6 +127,19 @@ export function stepTargets(w: World): void {
           // 유령은 뜬다 — 그게 유령의 문법이다.
           : tg.baseY + Math.sin(time * P.target.chargeBobFreq * TAU) * P.target.chargeBob
         tg.weak = bossWeak(tg, time)
+        // ── 보스도 쏜다 (bossAttack) ──
+        // 잡몹과 **같은 계약**이다: windup 만큼 미리 예고하고, 그 예고가 끝나야 날아온다.
+        // 예고 없는 피해는 없다 (docs/RUN.md). 판이 끝났으면 멈춘다.
+        if (w.status === 'playing') {
+          const windStart = tg.fireAt - P.enemy.windup
+          if (time >= windStart && (time - dt < windStart || time - dt <= 0)) {
+            w.events.push({ t: 'enemy_draw', x: tg.x, y: tg.y })
+          }
+          if (time >= tg.fireAt) {
+            tg.fireAt += tg.firePeriod > 0 ? tg.firePeriod : P.target.bossShootEvery
+            fireEnemyShot(w, tg)
+          }
+        }
       }
       if (tg.x <= w.archer.x + P.target.chargeReach && w.status === 'playing') {
         // 닿았다 — 즉사다. 보스에게 깔리고 사는 궁수는 없다. **보스를 죽이지 않는다** —
@@ -166,7 +182,9 @@ export function stepTargets(w: World): void {
 function fireEnemyShot(w: World, tg: Target): void {
   // 한 번에 몇 발인가 (Target.volley) — 화차(火車)의 신기전은 부채꼴로 여러 발이 한꺼번에 온다.
   const shots = Math.max(1, Math.floor(tg.volley))
-  for (let k = 0; k < shots; k++) fireOne(w, tg, shots > 1 ? (k - (shots - 1) / 2) * P.enemy.volleySpread : 0)
+  // 보스는 더 넓게 뿌린다 — 한 발을 피해도 옆이 오게. 답은 방패이거나 환도다.
+  const spread = tg.kind === 'boss' ? P.target.bossVolleySpread : P.enemy.volleySpread
+  for (let k = 0; k < shots; k++) fireOne(w, tg, shots > 1 ? (k - (shots - 1) / 2) * spread : 0)
 }
 
 /** 한 발. `spread` 는 조준각에 얹는 부채꼴 오프셋 (rad). */
@@ -185,8 +203,15 @@ function fireOne(w: World, tg: Target, spread: number): void {
   // 포물선 조준각: tanθ = (v² - √(v⁴ - g(g·dx² + 2·dy·v²))) / (g·dx)  (낮은 호)
   const disc = v * v * v * v - g * (g * dx * dx + 2 * dy * v * v)
   let ang: number
+  // ── 투석군(投石軍)은 **넘겨 던진다** (2026-09-11) ──────────────────────────
+  //   같은 포물선 식의 **다른 해**다. 낮은 호는 곧게 오고, 높은 호는 하늘로 떠올랐다가
+  //   가파르게 떨어진다. 이 한 줄이 새 규칙을 만든다: **산 방패를 넘어온다.**
+  //   방패는 궁수 앞 1.6m 에 선 2m 짜리 세로 널판이라(P.defense.shield*), 가파르게
+  //   내려오는 돌은 그 윗변을 넘어 뒤로 떨어진다. 방패를 샀다고 안심하면 그때 맞는다.
+  //   답은 **환도**이거나, 던지기 전에 저 놈을 눕히는 것이다.
+  const lob = tg.kind === 'archer' && tg.look === 6
   if (disc >= 0 && dx !== 0) {
-    ang = Math.atan((v * v - Math.sqrt(disc)) / (g * dx))
+    ang = Math.atan((v * v + (lob ? Math.sqrt(disc) : -Math.sqrt(disc))) / (g * dx))
     // dx가 음수(적은 항상 오른쪽에 있으니 왼쪽으로 쏜다)면 각을 반대쪽으로 편다.
     if (dx < 0) ang += Math.PI
   } else {
@@ -196,12 +221,21 @@ function fireOne(w: World, tg: Target, spread: number): void {
   // 그대로다: 발사 시각이 결정론적이라 소비 순서도 판마다 같다 (A1).
   ang += w.rng.gaussian() * P.enemy.aimScatter * tg.aimMul + spread
   slot.alive = true
-  // 날아오는 것의 생김새 — 매(3)는 돌, 화차(4)는 신기전, 나머지는 화살 (sim/types.ts EnemyShot.look).
-  slot.look = tg.look === 3 ? 1 : tg.look === 4 ? 2 : 0
+  // 날아오는 것의 생김새 — 매(3)는 돌, 화차(4)는 신기전, 나머지는 화살.
+  // 보스는 저마다 다른 것을 던진다 (bossAttack). sim/types.ts EnemyShot.look.
+  slot.look = tg.kind === 'boss'
+    ? bossAttack(tg.look).shot
+    // 매(3)·투석군(6)은 돌 · 화차(4)는 신기전 · 총통수(5)는 **탄환** · 나머지는 화살
+    : tg.look === 3 || tg.look === 6 ? 1
+      : tg.look === 4 ? 2
+        : tg.look === 5 ? 4 : 0
+  // 나오는 자리 — 보스는 몸 한가운데가 아니라 **얼굴 언저리**에서 뱉는다.
+  // 배꼽에서 불이 나오면 그건 공격이 아니라 버그로 보인다.
+  const muzzleY = tg.kind === 'boss' ? tg.y + tg.r * P.target.bossHeadUp * 0.7 : tg.y
   slot.x = tg.x
-  slot.y = tg.y
+  slot.y = muzzleY
   slot.px = tg.x
-  slot.py = tg.y
+  slot.py = muzzleY
   slot.vx = Math.cos(ang) * v
   slot.vy = Math.sin(ang) * v
   w.events.push({ t: 'enemy_shot', x: tg.x, y: tg.y })
@@ -303,6 +337,86 @@ function breakArmor(w: World, t: Target, chip: number, x: number, y: number): vo
  *   render/scene.ts 네 군데가 각자 폭주귀신을 3번으로 알고 있었다. 그 상태로 보스를 넷 더 세우면
  *   네 군데가 여덟 갈래로 늘어난다 — 늘어난 그날 셋은 맞고 하나는 틀린다.
  */
+/**
+ * 잡몹의 **급소 자리** — 몸 중심에서 앞(fwd, -x 가 나를 향한 쪽)·위(up)로 몇 반경, 반경 몇 배인가.
+ *
+ * 2026-09-11, 형: **"노란 동그라미가 왜 자꾸 있는거 매나 화차나 이런거에 있는지 모르겠고."**
+ *
+ * 뿌리는 여기였다. 급소는 사람 기준(머리 = 중심에서 위로 0.62r)으로 **하나뿐**이었는데,
+ * 매와 화차는 사람이 아니다. 그림 쪽이 판정을 못 따라가니 렌더가 그 자리에 **노란 공**을
+ * 하나 얹어 "여기가 급소요" 하고 있었다. 매의 머리는 몸 위가 아니라 **앞**에 있고
+ * (새는 앞으로 길다), 화차의 급소는 사람 머리가 아니라 **화약을 쟁인 발사틀**이다.
+ *
+ * 이제 자리를 종마다 적는다. 그러면 렌더는 표를 얹을 필요 없이 **그 자리에 눈과 화약궤를
+ * 그리면 된다** — 보이는 것이 곧 급소다. bossGrammar 와 같은 규칙: look 을 해석하는 곳은
+ * 여기 하나뿐이다 (sim 도 render 도 이 함수를 부른다).
+ */
+export function foeWeakSpot(look: number): { fwd: number; up: number; r: number } {
+  // 매 — 눈. 갈고리 부리 바로 뒤, 몸 앞쪽이다.
+  if (look === 3) return { fwd: -0.5, up: 0.46, r: P.enemy.archerHeadR }
+  // 화차 — 화약궤. 수레 위 발사틀 한가운데라 몸 중심에서 거의 안 벗어난다.
+  //        사람 머리보다 크다 — 큰 물건이 급소면 맞히기도 그만큼 쉬워야 한다.
+  if (look === 4) return { fwd: 0, up: 0.1, r: P.enemy.archerHeadR * 1.2 }
+  // 사람 — 머리. 총통수(5)·투석군(6)도 사람이라 여기로 온다.
+  return { fwd: 0, up: P.enemy.archerHeadUp, r: P.enemy.archerHeadR }
+}
+
+/**
+ * 보스 여덟의 **자기 공격** (2026-09-11, 형: "보스가 자기들만의 공격이 있어야 하는데 그런것도 없고").
+ *
+ * 판정은 잡몹이 쏘는 것과 **완전히 같다** (fireEnemyShot) — 방패가 막고, 환도가 쳐내고,
+ * 맞으면 아프다. 규칙이 하나여야 배우는 것도 하나다. 여덟을 가르는 건 세 가지뿐이다:
+ *
+ *   shot     날아오는 것의 생김새 (sim/types.ts EnemyShot.look)
+ *              0 화살·철편·말뚝 · 1 돌 · 2 신기전 · 3 **혼불(魂火)** — 귀신이 던지는 파란 불
+ *   volley   한 번에 몇 발. 둘 이상이면 부채꼴이라 **한 발을 피해도 옆이 온다**
+ *   periodMul 주기 배수. 많이 뿌리는 놈은 드물게 쏜다 — 그게 값이다
+ *
+ * ★ 비틀거리는 동안은 **못 쏜다** (stepTargets). 약점을 때리는 것이 곧 방어다 —
+ *   이제 "눈을 노려라"가 시간 벌이가 아니라 **맞지 않는 법**이 된다.
+ */
+/**
+ * 보스의 **급소 자리** — 몸 중심에서 위로 몇 반경, 반경 몇 배인가.
+ *
+ * 2026-09-11, 형: **"좆같은 눈깔은 뭔 모든보스에 들어가있어서 도깨비새끼는 왕눈이
+ * 뇌속에 들어있게 보여지고."**
+ *
+ * 정확한 지적이다. 급소가 "몸 중심에서 위로 0.78r" **하나뿐**이라, 얼굴이 그보다 아래 있는
+ * 몸(도깨비는 어깨 위에 머리가 얹혀 있다)에서는 그 자리가 **이마 위 허공**이었다.
+ * 거기에 공용 왕눈알을 얹으니 머리통 안에 눈 하나가 더 박힌 그림이 나온 것이다.
+ *
+ * 이제 자리를 몸마다 적는다. 그리고 그 자리에 **그 몸의 제 눈**을 그린다 (render/bosses.ts
+ * drawNewBossFace) — 덧붙인 눈알이 아니라 원래 얼굴에 있던 눈이 급소다.
+ */
+export function bossWeakSpot(look: number): { up: number; r: number } {
+  // 도깨비 — 급소는 이마가 아니라 **부릅뜬 두 눈**이다. 둘을 함께 덮으니 판정은 조금 넓다.
+  if (look === 4) return { up: 0.5, r: P.target.bossHeadR * 1.2 }
+  // 구미호 — 여우 머리는 작다. 판정도 그만큼 작아야 "다리를 쏘는" 길이 값을 한다.
+  if (look === 5) return { up: 0.74, r: P.target.bossHeadR * 0.95 }
+  return { up: P.target.bossHeadUp, r: P.target.bossHeadR }
+}
+
+export function bossAttack(look: number): { shot: number; volley: number; periodMul: number } {
+  switch (look) {
+    // 눈알귀신 — 안광(眼光). 눈에서 곧장 혼불 한 덩이.
+    case 0: return { shot: 3, volley: 1, periodMul: 1 }
+    // 갑주귀신 — 철편(鐵片). 부서진 판금 조각을 던진다. 쇳조각이라 화살처럼 곧게 온다.
+    case 1: return { shot: 0, volley: 1, periodMul: 1.15 }
+    // 쌍눈귀신 — 몸이 둘이다. **각자** 한 발씩이라 결국 둘이 온다. 한 몸이 더 뿌리면 과하다.
+    case 2: return { shot: 3, volley: 1, periodMul: 1.5 }
+    // 폭주귀신 — 불티. 셋을 넓게 뿌리며 달려든다. 대신 좀처럼 안 쏜다.
+    case 3: return { shot: 3, volley: 3, periodMul: 1.7 }
+    // 도깨비 — 방망이로 땅을 친다. 튄 **돌덩이** 둘이 날아온다. 거인은 던지지 않고 친다.
+    case 4: return { shot: 1, volley: 2, periodMul: 1.5 }
+    // 구미호 — 여우불(狐火). 꼬리에서 셋이 갈라져 온다.
+    case 5: return { shot: 3, volley: 3, periodMul: 1.35 }
+    // 장승 — 제 몸에서 **말뚝**을 뽑아 뱉는다. 나무라 둘씩 온다.
+    case 6: return { shot: 0, volley: 2, periodMul: 1.3 }
+    // 저승사자 — 적패지(赤牌旨). 한 장씩, 그러나 가장 **자주** 온다. 재촉이 이 놈의 공격이다.
+    default: return { shot: 3, volley: 1, periodMul: 0.85 }
+  }
+}
+
 export function bossGrammar(look: number): 'eye' | 'guard' | 'twin' | 'leg' {
   switch (look) {
     case 1: case 6: return 'guard'
@@ -415,7 +529,7 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
     if (head && !open) {
       // 감은 눈이다. 몸통샷으로 센다 — 화면은 "감았다"를 띄운다 (render/effects.ts).
       head = false
-      w.events.push({ t: 'weak_shut', x: target.x, y: target.y + target.r * P.target.bossHeadUp })
+      w.events.push({ t: 'weak_shut', x: target.x, y: target.y + target.r * bossWeakSpot(target.look).up })
     }
   }
 

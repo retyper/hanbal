@@ -191,6 +191,19 @@ const CSS = `
 .hb-ic.i-shop { --ic: url(${BASE}icons/shop-coins.svg); }
 .hb-ic.i-bounty { --ic: url(${BASE}icons/bounty-crown.svg); }
 
+/* ── 엽전(葉錢) — 이 게임의 돈 (2026-09-11, game/money.ts) ──────────────────────
+   형: "적절한 금화 아이콘으로 만들어. 그리고 어느곳에서든 사용처에서 금화 아이콘이랑 숫자 같이 써."
+
+   파일(.svg)로 두지 않는 이유: .hb-ic 는 currentColor 로 칠하는 마스크라 **색을 못 고른다.**
+   돈은 줄 색을 따라가면 안 된다 — 언제나 놋쇠빛이어야 한 눈에 돈으로 읽힌다.
+   둥근 테 + 네모 구멍, 도형 둘이면 상평통보가 된다. 캔버스 쪽(money.ts drawCoin)과 같은 그림이다. */
+.hb-coin {
+  display: inline-block; flex: none; position: relative;
+  width: 1.05em; height: 1.05em; margin-right: .34em; vertical-align: -.16em;
+  border-radius: 50%; background: #ffd35c; box-shadow: inset 0 0 0 .085em #8a6a1e;
+}
+.hb-coin::after { content: ''; position: absolute; inset: 33%; background: #8a6a1e; }
+
 /* 올릴 수 있다는 표시. 점 하나. 모달로 막지 않는다 (C1) */
 .hb-dot {
   position: absolute; top: -4px; right: -4px; width: 8px; height: 8px; border-radius: 50%;

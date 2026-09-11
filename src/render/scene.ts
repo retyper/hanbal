@@ -16,11 +16,11 @@ import type { Camera } from './camera.ts'
 import { drawArcher } from './stickman.ts'
 import { skyOf, drawShadow } from './sky.ts'
 import type { SkyPalette } from './sky.ts'
-import { drawFoeArcher, drawFoeRusher } from './foe.ts'
+import { drawFoeArcher, drawFoeGunner, drawFoeRusher, drawFoeSlinger } from './foe.ts'
 import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { createFx, pumpEvents, updateFx, drawFx, drawFxFlash, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash, targetFlinch, PLAYER_PIN } from './effects.ts'
-import { drawNewBossBody } from './bosses.ts'
-import { bossGrammar } from '../sim/target.ts'
+import { drawNewBossBody, drawNewBossFace } from './bosses.ts'
+import { bossGrammar, bossWeakSpot, foeWeakSpot } from '../sim/target.ts'
 import type { Fx } from './effects.ts'
 import { drawHud } from './hud.ts'
 import type { HudState } from './hud.ts'
@@ -544,6 +544,44 @@ function drawTargets(
         ctx.globalAlpha = 1
         continue
       }
+      // ── 총통수(銃筒手) — 승자총통을 든 군졸 (look 5, 2026-09-11) ──
+      //    형: "항상 새로움을 줄 수 있도록 다양한 적군들 만들어놓도록해."
+      //    곧고 빠른 탄환을 쏜다 — **산 방패가 잘 듣는** 적이다.
+      if (t.look === 5) {
+        const fl2 = targetFlinch(fx, t.id)
+        if (fl2 > 0) {
+          ctx.save()
+          ctx.translate(x, y + ry)
+          ctx.rotate(FLINCH.lean * fl2 * fl2)
+          ctx.translate(-x, -(y + ry))
+        }
+        drawFoeGunner(ctx, x, y, rx, ry, aimX, aimY, drawF, bodyCol, t.armored, true, null)
+        if (fl2 > 0) ctx.restore()
+        drawFlash(ctx, x, y, rx, fl2)
+        drawHpBar(ctx, x, y - ry * 0.22 - rx * 0.92 - 12, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
+        ctx.globalAlpha = 1
+        continue
+      }
+      // ── 투석군(投石軍) — 무릿매로 **넘겨 던진다** (look 6, 2026-09-11) ──
+      //    돌이 방패 위를 넘어온다 (sim/target.ts fireOne 의 높은 호). 답은 환도이거나
+      //    던지기 전에 눕히는 것이다. 머리 위에서 도는 돌이 이 적의 서명이다.
+      if (t.look === 6) {
+        const fl2 = targetFlinch(fx, t.id)
+        // 도는 위상 — sim 의 시계에서 온다 (A1). 예고가 깊어질수록 빨리 돈다.
+        const spin = w.elapsed * SLING_HZ * TAU * (1 + drawF * 2) + t.id * 1.7
+        if (fl2 > 0) {
+          ctx.save()
+          ctx.translate(x, y + ry)
+          ctx.rotate(FLINCH.lean * fl2 * fl2)
+          ctx.translate(-x, -(y + ry))
+        }
+        drawFoeSlinger(ctx, x, y, rx, ry, aimX, aimY, drawF, spin, bodyCol, t.armored, true, null)
+        if (fl2 > 0) ctx.restore()
+        drawFlash(ctx, x, y, rx, fl2)
+        drawHpBar(ctx, x, y - ry * 0.22 - rx * 1.4 - 12, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
+        ctx.globalAlpha = 1
+        continue
+      }
       // ── 화차(火車) — 신기전을 부채꼴로 쏘는 수레 (look 4, 2026-09-10) ──
       if (t.look === 4) {
         drawHwacha(ctx, w, t, x, y, rx, ry, bodyCol, drawF, hot)
@@ -574,8 +612,11 @@ function drawTargets(
       // ★ 보스 = 눈알귀신 (형: "빨간 원이 둥실둥실 다가오는 건 말이 안 되잖아. 눈알귀신이라도").
       //   너덜너덜한 귀신 몸뚱이 + 위쪽의 거대한 눈알 하나. 눈알은 **약점 히트박스 그 자리**다 —
       //   동공이 궁수를 계속 노려보니 "눈을 쏘라"는 말이 필요 없다.
-      const hy = y - ry * P.target.bossHeadUp
-      const hr = Math.max(4, rx * P.target.bossHeadR)
+      // 급소 자리는 몸마다 다르다 (sim/target.ts bossWeakSpot) — sim 이 보는 그 자리를
+      // 그대로 읽는다. 두 벌로 두면 언젠가 갈라지고, 갈라지는 날 "맞았는데 안 맞았다"가 된다.
+      const ws2 = bossWeakSpot(t.look)
+      const hy = y - ry * ws2.up
+      const hr = Math.max(4, rx * ws2.r)
 
       // ── 몸 ── 유령 계열(0~3)은 여기서, 2026-09-10 에 선 넷(거인·구미호·장승·저승사자)은
       //         render/bosses.ts 에서 그린다. 실루엣이 통째로 다르면 한 함수에 못 담는다.
@@ -686,12 +727,19 @@ function drawTargets(
         ctx.rotate(legKind ? 0.55 : 0)
         ctx.translate(-x + sway, -y)
       }
+      const ax2 = worldToScreenX(cam, w.archer.x)
+      const ay2 = worldToScreenY(cam, w.archer.y)
+      if (t.look >= 4) {
+        // ★ 2026-09-10 에 선 넷은 **제 얼굴이 있는 것들**이다 (render/bosses.ts).
+        //   그 위에 공용 눈알을 얹지 않는다 (형: "왕눈이 뇌속에 들어있게 보여지고").
+        //   눈꺼풀 상태(open·stag)만 넘기면 저마다의 눈이 저마다의 방식으로 감았다 뜬다.
+        drawNewBossFace(ctx, t, x, y, rx, ry, x, hy, hr, open, stag, ax2, ay2)
+      } else {
+      // ── 유령 넷(0~3) — **몸이 곧 눈알이다.** 여기서만 공용 큰 눈을 그린다 ──
       // 변종별 눈: 갑주(1)는 투구 틈의 가로 슬릿 · 폭주(3)는 성난 사선 · 쌍눈(2)은 작고 말갛다.
-      // 눈의 생김새는 몸을 따른다 — 갑주는 투구 틈, 폭주·구미호는 사나운 실눈, 저승사자는 가늘다.
       const eyeFull = t.look === 1 ? hr * 0.5
-        : t.look === 3 || t.look === 5 ? hr * 0.6
-          : t.look === 7 ? hr * 0.55
-            : hr * 0.92
+        : t.look === 3 ? hr * 0.6
+          : hr * 0.92
       // 갑주는 투구 틈이 실낱이다 — 비틀거릴 때만 열린다. 멈춘 눈은 놀라서 커진다.
       const eyeH = eyeFull * (gram === 'guard' && !stag ? 0.12 : open) * (stag ? 1.2 : 1)
       if (t.look === 1) {
@@ -708,8 +756,6 @@ function drawTargets(
         ctx.stroke()
       } else {
         band(ctx, x, hy, hr, eyeH, THEME.target2)
-        const ax2 = worldToScreenX(cam, w.archer.x)
-        const ay2 = worldToScreenY(cam, w.archer.y)
         const dl = Math.hypot(ax2 - x, ay2 - hy) || 1
         const px2 = x + ((ax2 - x) / dl) * hr * 0.34
         const py2 = hy + ((ay2 - hy) / dl) * Math.min(hr * 0.3, eyeH * 0.3)
@@ -727,6 +773,7 @@ function drawTargets(
           ctx.lineTo(x + hr * 0.7, hy - eyeH * 0.55)
           ctx.stroke()
         }
+      }
       }
       // 약점이 열렸다 — 금빛 고리가 숨 쉰다. "지금 쏴라"를 글자 없이 말한다.
       // 멈췄을 때는 굵고 빠르게, 그냥 뜬 눈은 가늘고 느리게. 폭주는 다리가 약점이라 다리에 그린다.
@@ -987,15 +1034,19 @@ function drawFalcon(
   ctx.closePath()
   ctx.fill()
   // ── 머리와 부리 — 갈고리 부리 하나면 맹금이 된다.
-  const hy2 = y - ry * P.enemy.archerHeadUp
+  //    머리는 **급소 그 자리**에 온다 (sim/target.ts foeWeakSpot). 예전엔 판정이 몸 위
+  //    0.62r 에 있는데 머리는 앞아래에 그려서, 그 틈을 노란 공으로 메우고 있었다.
+  const spot = foeWeakSpot(3)
+  const hcx = x + rx * spot.fwd
+  const hy2 = y - ry * spot.up
   ctx.beginPath()
-  ctx.ellipse(x - rx * 0.5, hy2 + ry * 0.16, rx * 0.26, ry * 0.22, 0, 0, TAU)
+  ctx.ellipse(hcx, hy2, rx * 0.28, ry * 0.24, 0, 0, TAU)
   ctx.fill()
   ctx.fillStyle = FALCON.beak
   ctx.beginPath()
-  ctx.moveTo(x - rx * 0.68, hy2 + ry * 0.1)
-  ctx.lineTo(x - rx * 0.98, hy2 + ry * 0.26)
-  ctx.lineTo(x - rx * 0.66, hy2 + ry * 0.3)
+  ctx.moveTo(hcx - rx * 0.18, hy2 - ry * 0.06)
+  ctx.lineTo(hcx - rx * 0.48, hy2 + ry * 0.1)
+  ctx.lineTo(hcx - rx * 0.16, hy2 + ry * 0.14)
   ctx.closePath()
   ctx.fill()
   // ── 발톱과 돌 — 쥐고 있다가 놓는다. 예고 중엔 돌이 달아오른다.
@@ -1009,10 +1060,22 @@ function drawFalcon(
   ctx.beginPath()
   ctx.arc(x, y + ry * 0.6, Math.max(2, rx * 0.16), 0, TAU)
   ctx.fill()
-  // ── 눈 = 약점. sim 과 같은 자리·같은 크기여야 "맞았는데 안 맞았다"가 안 생긴다.
-  ctx.fillStyle = hot ? THEME.threat : FALCON.eye
+  // ── 눈 = 급소. **노란 공을 얹지 않는다** (2026-09-11, 형: "노란 동그라미가 왜 자꾸 있는거").
+  //    맹금의 눈은 밝은 홍채 안의 검은 눈동자다. 그 두 겹이 곧 표식이라 덧칠이 필요 없다.
+  //    판정 반경(0.3r)보다 훨씬 작게 그린다 — 표시는 작고 판정은 너그러운 쪽이 맞다.
+  const er = Math.max(1.6, rx * 0.115)
+  ctx.fillStyle = hot ? THEME.threat : FALCON.iris
   ctx.beginPath()
-  ctx.arc(x - rx * 0.5, hy2, Math.max(2.5, rx * P.enemy.archerHeadR), 0, TAU)
+  ctx.arc(hcx - rx * 0.04, hy2 - ry * 0.03, er, 0, TAU)
+  ctx.fill()
+  ctx.fillStyle = FALCON.pupil
+  ctx.beginPath()
+  ctx.arc(hcx - rx * 0.05, hy2 - ry * 0.03, er * 0.55, 0, TAU)
+  ctx.fill()
+  // 눈빛 점 — 이것 하나가 구슬을 눈으로 만든다.
+  ctx.fillStyle = '#ffffff'
+  ctx.beginPath()
+  ctx.arc(hcx - rx * 0.09, hy2 - ry * 0.08, Math.max(0.8, er * 0.24), 0, TAU)
   ctx.fill()
   void t
 }
@@ -1025,7 +1088,9 @@ const FALCON = {
   flap: 0.55,
   beak: "#e8b45c",
   stone: "#8d939c",
-  eye: "#ffd35c",
+  /** 눈 — 맹금의 홍채는 짙은 호박색, 눈동자는 검다. 노란 공이 아니라 **눈**이어야 한다. */
+  iris: "#c98a2e",
+  pupil: "#150f08",
 } as const
 
 /**
@@ -1086,22 +1151,114 @@ function drawHwacha(
     }
   }
   ctx.restore()
-  // ── 사수 하나 — 수레 뒤에서 심지를 붙인다. 기계만 있으면 누가 쏘는지 알 수 없다.
+  // ── 포수(砲手) 하나 — 수레 뒤에 **서서** 화승으로 심지를 붙인다 ────────────────
+  //
+  // 2026-09-11, 형: **"화차 기수는 사람처럼 안보이고."** 맞다 — 예전 것은 대각선 획 하나에
+  // 동그라미 하나였다. 그건 사람이 아니라 깃대다. 사람으로 읽히려면 최소한 넷이 필요하다:
+  //   ① 두 다리로 **땅을 딛는다** (수레 바퀴가 닿는 그 선)
+  //   ② 몸통이 세로로 있고 어깨가 있다
+  //   ③ 팔이 **하는 일**이 있다 — 화승(火繩) 막대를 발사틀 쪽으로 뻗는다
+  //   ④ 머리에 **전립(氈笠)** 이 있다. 조선 군졸의 표식이고, 이것 하나로 시대가 읽힌다
+  const gx = x + rx * 1.12
+  const soleY = baseY + wheelR          // 수레 바퀴가 닿는 선 = 이 사람이 딛는 땅
+  const hipY = y + ry * 0.34
+  const shY = y - ry * 0.28
+  const headY = y - ry * 0.6
+  const hr = Math.max(2, rx * 0.15)
+  const lw = Math.max(1.8, rx * 0.085)
+  ctx.save()
   ctx.strokeStyle = col
-  ctx.lineWidth = Math.max(2, rx * 0.09)
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  // 다리 둘 — 무릎에서 꺾여 앞뒤로 벌어진다. 곧은 막대 둘은 서 있는 것으로 안 보인다.
+  ctx.lineWidth = lw
+  for (const sgn of [-1, 1] as const) {
+    ctx.beginPath()
+    ctx.moveTo(gx, hipY)
+    ctx.lineTo(gx + sgn * rx * 0.1, (hipY + soleY) * 0.5)
+    ctx.lineTo(gx + sgn * rx * 0.24, soleY)
+    ctx.stroke()
+  }
+  // 몸통
+  ctx.lineWidth = lw * 1.35
   ctx.beginPath()
-  ctx.moveTo(x + rx * 0.95, baseY - wheelR * 0.6)
-  ctx.lineTo(x + rx * 1.0, y - ry * 0.5)
+  ctx.moveTo(gx, hipY)
+  ctx.lineTo(gx, shY)
+  ctx.stroke()
+  // 두 팔 — 앞(-x)으로 뻗어 화승을 발사틀에 댄다. 팔이 하는 일이 있어야 사람이다.
+  const handX = gx - rx * 0.52
+  const handY = y - ry * 0.06
+  ctx.lineWidth = lw
+  ctx.beginPath()
+  ctx.moveTo(gx, shY)
+  ctx.lineTo(gx - rx * 0.26, shY + ry * 0.2)
+  ctx.lineTo(handX, handY)
+  ctx.moveTo(gx, shY)
+  ctx.lineTo(gx - rx * 0.14, shY + ry * 0.3)
+  ctx.lineTo(handX + rx * 0.08, handY + ry * 0.06)
+  ctx.stroke()
+  // 목 · 머리
+  ctx.lineWidth = lw
+  ctx.beginPath()
+  ctx.moveTo(gx, shY)
+  ctx.lineTo(gx, headY + hr * 0.7)
   ctx.stroke()
   ctx.fillStyle = col
   ctx.beginPath()
-  ctx.arc(x + rx * 1.02, y - ry * 0.68, Math.max(2, rx * 0.13), 0, TAU)
+  ctx.arc(gx, headY, hr, 0, TAU)
   ctx.fill()
-  // ── 약점 — sim 과 같은 자리. 화차의 급소는 **화약을 쟁인 틀**이다.
-  ctx.fillStyle = hot ? THEME.threat : HWACHA.core
+  // 전립 — 넓은 챙 + 낮은 모자. 조선 군졸의 머리는 이 실루엣 하나로 읽힌다.
+  ctx.fillStyle = HWACHA.hat
   ctx.beginPath()
-  ctx.arc(x, y - ry * P.enemy.archerHeadUp, Math.max(2.5, rx * P.enemy.archerHeadR), 0, TAU)
+  ctx.ellipse(gx, headY - hr * 0.75, hr * 2.1, hr * 0.4, 0, 0, TAU)
   ctx.fill()
+  ctx.beginPath()
+  ctx.ellipse(gx, headY - hr * 1.15, hr * 0.95, hr * 0.62, 0, 0, TAU)
+  ctx.fill()
+  // 화승(火繩) — 손에서 발사틀로 뻗은 막대. 쏠 때가 되면 끝이 붉게 산다.
+  ctx.strokeStyle = HWACHA.wood
+  ctx.lineWidth = Math.max(1.2, rx * 0.05)
+  ctx.beginPath()
+  ctx.moveTo(handX + rx * 0.14, handY + ry * 0.05)
+  ctx.lineTo(handX - rx * 0.34, handY - ry * 0.12)
+  ctx.stroke()
+  ctx.fillStyle = hot ? THEME.threat : HWACHA.ember
+  ctx.beginPath()
+  ctx.arc(handX - rx * 0.36, handY - ry * 0.13, Math.max(1.2, rx * 0.055), 0, TAU)
+  ctx.fill()
+  ctx.restore()
+
+  // ── 급소 = **화약궤(火藥櫃)**. 노란 공이 아니다 (2026-09-11, 형의 반려) ────────────
+  //    sim 은 이 자리를 급소로 본다 (foeWeakSpot look 4) — 발사틀 한가운데, 신기전이
+  //    물려 있는 그 상자다. 그러니 표를 얹을 게 아니라 **거기 있는 물건을 그리면 된다**:
+  //    쇠테 두른 나무 궤 하나. 예고 중엔 궤의 심지가 붉게 산다 — 터질 것이 거기 있다는 뜻이다.
+  const ws = foeWeakSpot(4)
+  const kx = x + rx * ws.fwd
+  const ky = y - ry * ws.up
+  const kw = rx * 0.32
+  const kh = ry * 0.28
+  ctx.save()
+  ctx.translate(kx, ky)
+  ctx.rotate(-HWACHA.tilt)
+  ctx.fillStyle = HWACHA.keg
+  ctx.fillRect(-kw, -kh, kw * 2, kh * 2)
+  ctx.strokeStyle = HWACHA.band
+  ctx.lineWidth = Math.max(1.1, rx * 0.045)
+  ctx.strokeRect(-kw, -kh, kw * 2, kh * 2)
+  ctx.beginPath()
+  ctx.moveTo(-kw, -kh * 0.3)
+  ctx.lineTo(kw, -kh * 0.3)
+  ctx.moveTo(-kw, kh * 0.45)
+  ctx.lineTo(kw, kh * 0.45)
+  ctx.stroke()
+  // 심지 — 궤 위로 나온 짧은 꼬리. 예고 중엔 달아오른다.
+  ctx.strokeStyle = hot ? THEME.threat : HWACHA.band
+  ctx.lineWidth = Math.max(1, rx * 0.04)
+  ctx.beginPath()
+  ctx.moveTo(0, -kh)
+  ctx.quadraticCurveTo(kw * 0.5, -kh * 1.5, kw * 0.15, -kh * 1.9)
+  ctx.stroke()
+  ctx.restore()
   void t
 }
 
@@ -1112,7 +1269,13 @@ const HWACHA = {
   wood: "#7a5c38",
   frame: "#463424",
   hole: "#20180f",
-  core: "#e8a33c",
+  /** 화약궤 — 쇠테 두른 나무 상자. 여기가 급소다 (sim foeWeakSpot look 4). */
+  keg: "#5c4326",
+  band: "#9a8a70",
+  /** 포수가 든 화승의 불씨. */
+  ember: "#e07a2c",
+  /** 전립(氈笠) — 조선 군졸의 벙거지. 몸색보다 어두워야 머리와 안 붙는다. */
+  hat: "#2b2f38",
 } as const
 
 /** 움찔의 생김새 — 젖혀지는 각(rad)과 번쩍임의 문턱·세기. */
@@ -1246,8 +1409,9 @@ function drawShield(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void 
 }
 
 /**
- * 날아오는 것 — 화살 · **돌**(매가 놓은 것) · **신기전**(화차의 불화살) (2026-09-10).
- * 판정은 셋이 같다 (sim/world.ts). 다른 건 그림뿐이지만, 다르게 보여야 어디서 온 것인지 안다.
+ * 날아오는 것 — 화살 · **돌**(매가 놓은 것) · **신기전**(화차의 불화살) ·
+ * **혼불(魂火)**(귀신이 던지는 것, 2026-09-11).
+ * 판정은 넷이 같다 (sim/world.ts). 다른 건 그림뿐이지만, 다르게 보여야 어디서 온 것인지 안다.
  */
 function drawEnemyShots(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void {
   ctx.lineCap = 'round'
@@ -1265,6 +1429,61 @@ function drawEnemyShots(ctx: CanvasRenderingContext2D, cam: Camera, w: World): v
       ctx.strokeStyle = SHOT.stoneEdge
       ctx.lineWidth = 1
       ctx.stroke()
+      continue
+    }
+    if (sh.look === 4) {
+      // ── 탄환 — 승자총통이 뱉은 납덩이 (2026-09-11) ──
+      //    화살처럼 길지 않고 돌처럼 굵지도 않다. **작고 검고 빠르다.**
+      //    빠름은 길이가 아니라 **흰 예광**이 말한다 — 뒤로 곧게 늘어진 한 줄.
+      const sp3 = Math.hypot(sh.vx, sh.vy) || 1
+      ctx.strokeStyle = SHOT.tracer
+      ctx.globalAlpha = 0.5
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(
+        worldToScreenX(cam, sh.x - (sh.vx / sp3) * SHOT.tracerLen),
+        worldToScreenY(cam, sh.y - (sh.vy / sp3) * SHOT.tracerLen),
+      )
+      ctx.lineTo(sx, sy)
+      ctx.stroke()
+      ctx.globalAlpha = 1
+      ctx.fillStyle = SHOT.ball
+      ctx.beginPath()
+      ctx.arc(sx, sy, SHOT.ballR, 0, TAU)
+      ctx.fill()
+      continue
+    }
+    if (sh.look === 3) {
+      // ── 혼불(魂火) — 귀신이 던지는 것 (2026-09-11) ──
+      //   화살도 돌도 아니어야 한다: 심(파랑)·겉불(연파랑)·꼬리 세 겹의 **불덩이**다.
+      //   박동은 sim 의 시계로 (A1) — 같은 시드면 같은 불꽃이 흔들린다.
+      const wob = 1 + Math.sin(w.elapsed * SHOT.soulHz * TAU + sh.x) * SHOT.soulWob
+      const sp2 = Math.hypot(sh.vx, sh.vy) || 1
+      // 꼬리 — 지나온 쪽으로 옅게 끌린다.
+      ctx.globalAlpha = 0.45
+      ctx.strokeStyle = SHOT.soulGlow
+      ctx.lineWidth = SHOT.soulR * 1.4
+      ctx.beginPath()
+      ctx.moveTo(
+        worldToScreenX(cam, sh.x - (sh.vx / sp2) * SHOT.soulTail),
+        worldToScreenY(cam, sh.y - (sh.vy / sp2) * SHOT.soulTail),
+      )
+      ctx.lineTo(sx, sy)
+      ctx.stroke()
+      ctx.globalAlpha = 0.5
+      ctx.fillStyle = SHOT.soulGlow
+      ctx.beginPath()
+      ctx.arc(sx, sy, SHOT.soulR * 1.9 * wob, 0, TAU)
+      ctx.fill()
+      ctx.globalAlpha = 1
+      ctx.fillStyle = SHOT.soul
+      ctx.beginPath()
+      ctx.arc(sx, sy, SHOT.soulR * wob, 0, TAU)
+      ctx.fill()
+      ctx.fillStyle = SHOT.soulCore
+      ctx.beginPath()
+      ctx.arc(sx, sy, SHOT.soulR * 0.45, 0, TAU)
+      ctx.fill()
       continue
     }
     const sp = Math.hypot(sh.vx, sh.vy) || 1
@@ -1296,7 +1515,24 @@ const SHOT = {
   fire: '#ff9a45',
   /** 불꼬리 길이 (m). */
   fireTail: 1.4,
+  // ── 혼불 — 귀신의 것이라 **차가운 파랑**이다. 신기전(주황)과 한눈에 갈린다.
+  soul: '#79d8ff',
+  soulCore: '#ffffff',
+  soulGlow: '#3a8fd0',
+  soulR: 4.2,
+  soulTail: 1.8,
+  /** 불덩이가 커졌다 작아지는 박자와 폭. 숨 쉬는 불이라야 불로 보인다. */
+  soulHz: 3.2,
+  soulWob: 0.18,
+  // ── 탄환 — 작고 검고 빠르다. 흰 예광 한 줄이 속도를 말한다.
+  ball: '#2a2e36',
+  ballR: 2.4,
+  tracer: '#ffffff',
+  tracerLen: 2.6,
 } as const
+
+/** 무릿매가 도는 박자 (Hz). 예고가 깊어질수록 빨라진다 — 그게 "곧 놓는다"의 눈금이다. */
+const SLING_HZ = 1.6
 
 function drawArrows(ctx: CanvasRenderingContext2D, cam: Camera, w: World, alpha: number): void {
   ctx.lineCap = 'round'

@@ -23,7 +23,10 @@ const CSS = `
 /* 누르고 있는 동안 — 켜졌다는 걸 손이 아니라 눈으로도 확인해야 한다. */
 .st-btn.st-on { background: #2c3a37; color: var(--ink); border-color: var(--teal); }
 .st-btn .hb-ic { width: 24px; height: 24px; vertical-align: 0; }
-.st-btn i.st-lbl { font-size: 10px; font-style: normal; letter-spacing: .1em; line-height: 1; }
+/* '숨' 한 자였던 자리에 '숨참기' 세 자가 들어간다 (2026-09-11, 형: "'숨'은 '숨참기'라고 바꿔").
+   자간을 0 으로 두고 한 급 줄여야 58px 원 안에서 한 줄로 앉는다. */
+.st-btn i.st-lbl { font-size: 9px; font-style: normal; letter-spacing: 0; line-height: 1; white-space: nowrap; }
+@media (max-width: 420px) { .st-btn i.st-lbl { font-size: 8px; } }
 @media (pointer: coarse) { .st-btn { display: inline-flex; } }
 /* 좁은 폰 — 환도가 한 자리를 더 먹는다. 둘을 조금 줄여 버튼 줄이 한 줄 더 늘지 않게 한다
    (줄 수가 곧 아래 띠의 높이이고, 띠가 두꺼워지면 버튼이 궁수를 덮는다 — render/camera.ts). */
@@ -39,7 +42,7 @@ export function mountSteady(o: Overlay, hold: (on: boolean) => void): void {
   btn.type = 'button'
   btn.className = 'hb-btn st-btn'
   btn.setAttribute('aria-label', '호흡정지 — 누르고 있는 동안 떨림이 멎는다')
-  btn.innerHTML = '<i class="hb-ic i-focus"></i><i class="st-lbl">숨</i>'
+  btn.innerHTML = '<i class="hb-ic i-focus"></i><i class="st-lbl">숨참기</i>'
 
   const set = (on: boolean): void => {
     btn.classList.toggle('st-on', on)

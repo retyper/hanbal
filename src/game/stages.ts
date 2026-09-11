@@ -256,6 +256,21 @@ function withArrowFloor(stage: StageDef): StageDef {
  * n명이 있어도 들어오는 화살의 평균 간격은 혼자일 때와 크게 다르지 않게 — 예고를 읽고
  * 대응할 시간이 늘 있어야 한다 (RUN.md '예고 없는 피해는 없다').
  */
+/**
+ * 특수 잡몹 하나가 설 자리를 고른다. `from` 판부터, **땅에 선 자리** 중에서, 이미 찬 자리는 빼고.
+ * 판 번호와 이름만으로 정해지므로 언제 켜도 같은 판이다 (A1) — 그리고 시드가 이름마다
+ * 따로라 하나를 늘려도 나머지 배치가 안 밀린다.
+ */
+function pickSlot(
+  n: number, name: string, from: number,
+  slots: readonly number[], taken: readonly number[],
+): number {
+  if (n < from) return -1
+  const free = slots.filter((k) => taken.indexOf(k) < 0)
+  if (free.length === 0) return -1
+  return free[Math.floor(makeRng(seedFrom(`hanbal.${name}.${n}`)).next() * free.length)] ?? -1
+}
+
 function convertToFoes(base: StageDef, i: number): StageDef {
   const n = i + 1
   const rng = makeRng(seedFrom(`hanbal.enemy.${n}`))
@@ -265,10 +280,34 @@ function convertToFoes(base: StageDef, i: number): StageDef {
     (t2) => t2.kind !== 'bonus' && t2.kind !== 'charger' && t2.kind !== 'barrel',
   ).length
   const period = P.enemy.shootEvery * Math.min(2.5, 1 + (foes - 1) * 0.4)
-  // 화차가 설 자리 (없으면 -1). 판 번호만으로 정해지므로 언제 켜도 같은 판이다 (A1).
-  const hwachaAt = n >= HWACHA_FROM
-    ? Math.floor(makeRng(seedFrom(`hanbal.hwacha.${n}`)).next() * Math.max(1, foes))
+  // ── 화차가 설 자리 ───────────────────────────────────────────────────
+  //
+  // 2026-09-11, 형: **"화차는 대체 왜 공중을 쳐 날라다니고 있는거냐?"**
+  //
+  // 화차는 **바퀴 둘 달린 수레**다. 그런데 자리를 "전환 대상 아무거나"에서 골랐다 —
+  // 공중에 뜬 과녁(aerial) 자리를 뽑으면 그 높이를 그대로 물려받아 **수레가 하늘에 떴다.**
+  // 이제 둘을 다 막는다:
+  //   ① 뽑기에서 공중 자리를 아예 뺀다 (땅에 선 것 중에서만 고른다)
+  //   ② 그래도 y 는 **바닥에 못 박는다** — 반경만큼 뜬 것이 곧 땅을 딛는 높이다
+  //      (저작 y 는 그 자리 땅에서 잰 높이다 — sim/terrain.ts). 달려오는 척후와 같은 규칙.
+  //
+  // 자리 후보는 판 번호만으로 정해지므로 언제 켜도 같은 판이다 (A1).
+  const groundSlots: number[] = []
+  {
+    let g = 0
+    for (const t2 of base.targets) {
+      if (t2.kind === 'bonus' || t2.kind === 'charger' || t2.kind === 'barrel') continue
+      if (t2.kind !== 'aerial') groundSlots.push(g)
+      g++
+    }
+  }
+  const hwachaAt = n >= HWACHA_FROM && groundSlots.length > 0
+    ? (groundSlots[Math.floor(makeRng(seedFrom(`hanbal.hwacha.${n}`)).next() * groundSlots.length)] ?? -1)
     : -1
+  // 총통수·투석군도 같은 문법으로 한 자리씩. 시드를 따로 두므로 서로를 밀지 않는다 (A1).
+  // 화차가 이미 먹은 자리는 피한다 — 한 칸에 둘을 세우면 하나가 조용히 사라진다.
+  const gunnerAt = pickSlot(n, 'gunner', GUNNER_FROM, groundSlots, [hwachaAt])
+  const slingerAt = pickSlot(n, 'slinger', SLINGER_FROM, groundSlots, [hwachaAt, gunnerAt])
   const specs: TargetSpec[] = []
   let f = 0
   for (const t of base.targets) {
@@ -307,8 +346,23 @@ function convertToFoes(base: StageDef, i: number): StageDef {
     //   각크기 규칙은 먼 적을 살리는 규칙이지 가까운 적을 점으로 만드는 규칙이 아니다.
     //   창은 이 r에서 나오므로(render/buildings.ts) r이 작으면 창도 사람도 같이 작아진다.
     const fr = Math.max(P.enemy.foeMinR, (t.r ?? 0.6) * P.enemy.foeR)
+    if (n >= GUNNER_FROM && f === gunnerAt) {
+      // 총통수 — 정확하고(aimMul) 자주 쏜다. 대신 한 발씩이고, 곧게 오므로 막힌다.
+      // **땅에 선다** (y = 반경) — 총통을 어깨에 얹고 쏘는 군졸이지 창가의 저격수가 아니다.
+      specs.push({ kind: 'archer', look: 5, x: t.x, y: fr, r: fr, ...common, aimMul: P.enemy.gunnerAim, firePeriod: period * P.enemy.gunnerPeriodMul, score: 160 })
+      f++
+      continue
+    }
+    if (n >= SLINGER_FROM && f === slingerAt) {
+      // 투석군 — 땅에 서서 넘겨 던진다. 발치(y = 반경)여야 무릿매를 돌릴 자리가 나온다.
+      specs.push({ kind: 'archer', look: 6, x: t.x, y: fr, r: fr, ...common, firePeriod: period * P.enemy.slingerPeriodMul, score: 170 })
+      f++
+      continue
+    }
     if (isHwacha) {
-      specs.push({ kind: 'archer', look: 4, x: t.x, y: t.y, r: fr * 1.25, volley: Math.floor(P.enemy.volleyShots), ...common, firePeriod: period * P.enemy.hwachaPeriodMul, score: 200 })
+      // y = 반경. 수레는 **땅을 딛는다** (형: "화차는 대체 왜 공중을 쳐 날라다니고 있는거냐?").
+      const hwR = fr * 1.25
+      specs.push({ kind: 'archer', look: 4, x: t.x, y: hwR, r: hwR, volley: Math.floor(P.enemy.volleyShots), ...common, firePeriod: period * P.enemy.hwachaPeriodMul, score: 200 })
     } else if (t.kind === 'aerial') {
       specs.push({ kind: 'archer', look: 3, x: t.x, y: t.y, r: fr, ampX: 1.4, freq: 0.18, ...common })
     } else if (t.kind === 'moving') {
@@ -390,14 +444,21 @@ function foeHint(n: number, base: StageDef, specs: readonly TargetSpec[]): strin
   let hide = 0
   let hawk = 0
   let hwacha = 0
+  let gunner = 0
+  let slinger = 0
   for (const s of specs) {
     if (s.kind !== 'archer') continue
-    if (s.look === 4) hwacha++
+    if (s.look === 6) slinger++
+    else if (s.look === 5) gunner++
+    else if (s.look === 4) hwacha++
     else if (s.look === 3) hawk++
     else if (s.look === 2) hide++
     else win++
   }
   if (n === BOSS_EVERY + 2) return '날아오는 화살은 칼로 쳐낸다 — F, 폰은 패링 버튼. 쳐낸 화살은 쏜 놈에게 돌아간다'
+  // 새 적은 **처음 서는 그 판에서** 자기 규칙을 말한다. 늦게 온 것부터 먼저 말한다.
+  if (slinger > 0) return '투석군(投石軍) — 돌을 넘겨 던진다. **방패 위로 넘어온다** — 칼로 쳐내라'
+  if (gunner > 0) return '총통수(銃筒手) — 탄환이 곧고 빠르다. 화승에 불이 붙으면 방패 뒤로'
   if (hwacha > 0) return '화차(火車) — 신기전이 부채꼴로 온다. 방패로 막거나 칼로 쳐낸다'
   if (hide > 0 && hawk === 0) return '숨은 사수는 당길 때만 나온다 — 그 틈이 유일하다'
   if (hawk > 0 && hide === 0) return '매가 돈다 — 발톱의 돌을 놓기 전에 떨군다'
@@ -410,6 +471,23 @@ function foeHint(n: number, base: StageDef, specs: readonly TargetSpec[]): strin
 export const BOSS_EVERY = 10
 /** 화차가 처음 서는 판 (2026-09-10). 사수·창문·드론을 다 배운 뒤에 온다. */
 const HWACHA_FROM = 26
+
+/**
+ * ── 총통수(銃筒手)·투석군(投石軍) 이 서는 판 (2026-09-11) ─────────────────────
+ *
+ * 형: **"항상 새로움을 줄 수 있도록 다양한 적군들 만들어놓도록해."**
+ *
+ * 새 적을 세울 때의 규칙은 **"언제 배우는가"** 다. 한꺼번에 넣으면 그건 다양함이 아니라
+ * 혼잡이다. 이미 선 것들과 한 마디씩 벌려 놓는다:
+ *   11판 창문·숨는 사수 → 16판 매 → 21판 **총통수** → 26판 화차 → 31판 **투석군**
+ *
+ * 그리고 둘은 **서로 반대 질문**이다 (그래서 값이 있다):
+ *   · 총통수는 곧고 빠른 탄환 — **산 방패가 잘 듣는다.**
+ *   · 투석군은 넘겨 던지는 돌 — **방패를 넘어온다.** 답은 환도이거나 먼저 눕히는 것이다.
+ * 방패 하나로 다 되면 방패를 사는 것이 결정이 아니게 된다. 그래서 넘어오는 놈이 필요했다.
+ */
+const GUNNER_FROM = 21
+const SLINGER_FROM = 31
 /** 보스판 화살 = 필요한 명중 수 + 이 여유. */
 const BOSS_SPARE_ARROWS = 4
 /**

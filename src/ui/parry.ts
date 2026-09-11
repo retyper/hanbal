@@ -31,16 +31,22 @@ const CSS = `
 `
 
 /**
- * 칼 한 자루 — 날 · 코등이 · 자루 · 자루끝 (2026-09-10, 형: "칼 아이콘이 있어야지").
+ * 환도(環刀) 한 자루 (2026-09-11, 형: "패링 칼 아이콘이 스틸레토모양인데 그거 말고 환도 모양으로").
  *
- * 날은 **채운 삼각형**이다. 22px 로 줄면 가는 선 여러 개는 서로 붙어 먼지가 되지만,
- * 채운 도형은 실루엣이 남는다 — 아이콘은 그림이 아니라 실루엣이다.
+ * 옛 아이콘은 **곧은 삼각날 + 십자 코등이**였다 — 그건 서양 단검(스틸레토)의 문법이지
+ * 조선 환도가 아니다. 환도를 환도로 만드는 표식은 셋이다:
+ *   ① 날이 **휜다.** 외날이라 등과 날의 호가 달라 초승달처럼 한쪽이 두껍다.
+ *   ② 코등이가 **작고 둥근 원반**이다. 십자 가드가 아니다.
+ *   ③ 자루끝에 **띠돈 고리**가 있다 — 허리에 매다는 고리. 이름의 '環'이 이것이다.
+ *
+ * 22px 로 줄어도 살아남게: 날은 채운 도형(가는 선 여럿은 서로 붙어 먼지가 된다),
+ * 나머지는 굵은 획 하나씩. 아이콘은 그림이 아니라 실루엣이다.
  */
 const ICON = `<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-  <path d="M21.2 1.6 12.3 13.35 10.7 11.85Z" fill="currentColor" />
-  <path d="M9.14 10.43 13.86 14.77" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" fill="none" />
-  <path d="M11.5 12.6 8.45 15.91" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" />
-  <circle cx="7.7" cy="16.9" r="1.5" fill="currentColor" />
+  <path d="M10.2 13.7 Q17.5 9.3 21.6 2.2 Q19 11.05 11.8 15.3 Z" fill="currentColor" />
+  <ellipse cx="9.9" cy="15.6" rx="3" ry="1.15" transform="rotate(45 9.9 15.6)" fill="currentColor" />
+  <path d="M9.2 16.3 L5.9 19.6" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" fill="none" />
+  <circle cx="4.8" cy="20.7" r="1.5" fill="none" stroke="currentColor" stroke-width="1.4" />
 </svg>`
 
 /**

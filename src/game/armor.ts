@@ -18,6 +18,7 @@
  * sim 은 벌을 모른다 — 방어량 숫자만 받는다 (World.armor). 겉모습은 World.armorLook 으로 건넨다.
  */
 import { P } from '../tune/params.ts'
+import { coinText } from './money.ts'
 import { forgeCost } from './forge.ts'
 import { writeSave, type SaveData } from './save.ts'
 
@@ -85,7 +86,7 @@ export function armorCapOf(d: SaveData, id: ArmorKindId = armorKindOf(d)): numbe
   return Math.max(1, Math.floor(P.defense.armorMax * armorSizeMul(id) * armorForgeMul(armorLevel(d, id))))
 }
 
-/** 판 도중에 한 벌 사는 값 (훈련치). 담금질은 값을 안 올린다 — 담금질은 이미 치른 값이다. */
+/** 판 도중에 한 벌 사는 값 (냥). 담금질은 값을 안 올린다 — 담금질은 이미 치른 값이다. */
 export function armorCostOf(d: SaveData, id: ArmorKindId = armorKindOf(d)): number {
   return Math.max(0, Math.floor(P.defense.armorCost * armorSizeMul(id)))
 }
@@ -103,11 +104,11 @@ export function armorUnlockCost(id: ArmorKindId): number {
 export function armorUnlockBlocked(d: SaveData, id: ArmorKindId): string {
   if (armorOwned(d, id)) return '이미 있다'
   const cost = armorUnlockCost(id)
-  if (d.training < cost) return `훈련치 ${cost} 필요`
+  if (d.training < cost) return `${coinText(cost)} 필요`
   return ''
 }
 
-/** 장만한다 — 훈련치를 깎고 곧바로 입는다. 산 사람은 입으려고 산 것이다. */
+/** 장만한다 — 값을 깎고 곧바로 입는다. 산 사람은 입으려고 산 것이다. */
 export function buyArmorKind(d: SaveData, id: ArmorKindId): boolean {
   if (armorUnlockBlocked(d, id) !== '') return false
   d.training -= armorUnlockCost(id)
@@ -130,7 +131,7 @@ export function armorForgeBlocked(d: SaveData, id: ArmorKindId = armorKindOf(d))
   const lv = armorLevel(d, id)
   if (lv >= armorForgeMax()) return '더 담글 데가 없다'
   const cost = forgeCost(lv)
-  if (d.training < cost) return `훈련치 ${cost} 필요`
+  if (d.training < cost) return `${coinText(cost)} 필요`
   return ''
 }
 

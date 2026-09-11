@@ -21,6 +21,7 @@ import type { World } from '../sim/types.ts'
 import { THEME, worldToScreenX, worldToScreenY } from './camera.ts'
 import type { Camera } from './camera.ts'
 import { bowHandScreenX, bowHandScreenY } from './stickman.ts'
+import { coinText, drawCoin } from '../game/money.ts'
 
 /**
  * HUD가 밖에서 받아야 하는 것들. 성장·오디오는 game/ui 레이어의 상태라
@@ -222,11 +223,6 @@ const HUD = {
   /** 과녁 수 / 점수 */
   /** 결과의 시간 줄 (px). 점수보다 작다 — 기록은 자랑이지 판정이 아니다. */
   timePx: 14,
-  /** 한 순 눈금 — 칸 하나의 너비·높이, 칸 사이, 몰기에서 자라는 양 */
-  jungW: 11,
-  jungH: 4,
-  jungGap: 3,
-  jungGrow: 3,
   goalPx: 23,
   scorePx: 13,
   scoreGap: 12,
@@ -308,10 +304,6 @@ const M = {
   trackGap: 0,
   trackTop: 0,
   trackNow: 0,
-  jungW: 0,
-  jungH: 0,
-  jungGap: 0,
-  jungGrow: 0,
   stageEm: 0,
   pipStart: 0,
   pipStride: 0,
@@ -353,14 +345,17 @@ const px = (v: number, s: number): number => Math.round(v * s)
  * 정수로 자르면 기록이 자주 동점이 되어 **갱신의 순간이 사라진다** — 이 기능의 전부가
  * 그 순간인데. 두 자리는 계기판처럼 보여서 30초 게임의 결과 화면에는 과하다.
  */
+/** 엽전의 크기 — 글자 높이 대비. 숫자보다 작아야 숫자가 주인이다. */
+const COIN_R = 0.34
+
 function fmtSec(t: number): string {
   return `${(Math.round(t * 10) / 10).toFixed(1)}초`
 }
 
 /**
- * 왼쪽 HUD 기둥(점수 · 화살 수 · '다 쓰면 실패' · 연사 · 살 이름)이 차지하는 **가장 아래 y (px)**.
+ * 왼쪽 HUD 기둥(점수 · 화살 수 · '다 쓰면 실패' · 살 이름)이 차지하는 **가장 아래 y (px)**.
  *
- * 왜 최대치로 잡나: 줄이 상태에 따라 들락날락하는데(연사 0중이면 안 그린다) 그때마다 값이
+ * 왜 최대치로 잡나: 줄이 상태에 따라 들락날락하는데('다 쓰면 실패'는 첫 장에서만 뜬다) 그때마다 값이
  * 바뀌면 이걸 읽는 궁수 체력 바가 프레임마다 위아래로 튄다. 늘 최대로 잡으면 자리가 고정된다.
  *
  * 왜 필요한가 (2026-09-10, 형: **"폰에서 가로로 할 때 체력바가 상단 화살 UI랑 겹칠 정도로
@@ -373,8 +368,8 @@ export function hudLeftBottom(cam: Camera): number {
   const bodyY = M.padY + M.headGap
   const pipY = bodyY + M.countGap + px(HUD.goalPx, M.s)
   const ruleRow = px(HUD.subPx, M.s) + M.subGap
-  const jungY = pipY + M.countPx + M.subGap + ruleRow
-  return jungY + M.jungH + M.subGap + px(HUD.subPx, M.s)
+  const arrowRowY = pipY + M.countPx + M.subGap + ruleRow
+  return arrowRowY + px(HUD.subPx, M.s)
 }
 
 function syncMetrics(cam: Camera): void {
@@ -413,10 +408,6 @@ function syncMetrics(cam: Camera): void {
   M.fTitle = `500 ${px(HUD.titlePx, s)}px ${FONT_UI}`
   M.fTotal = `500 ${px(HUD.totalPx, s)}px ${FONT_NUM}`
   M.fTime = `600 ${px(HUD.timePx, s)}px ${FONT_NUM}`
-  M.jungW = px(HUD.jungW, s)
-  M.jungH = px(HUD.jungH, s)
-  M.jungGap = px(HUD.jungGap, s)
-  M.jungGrow = px(HUD.jungGrow, s)
   M.fGoal = `600 ${px(HUD.goalPx, s)}px ${FONT_UI}`
   M.fScore = `500 ${px(HUD.scorePx, s)}px ${FONT_NUM}`
   M.fCount = `700 ${M.countPx}px ${FONT_NUM}`
@@ -738,40 +729,13 @@ export function drawHud(
     }
   }
 
-  // ── 한 순(巡) — 연달아 몇 발을 맞혔는가 (docs/MEGAHIT.md §1·§9) ──
+  // ── 연사 눈금은 **없앴다** (2026-09-11, 형: "'연사' '몰기' 이거 뭔소린지도 모르겠는데
+  //    왜있는거냐고 지워버려") ───────────────────────────────────────────
   //
-  // 국궁은 다섯 발을 한 순으로 세고, 다섯을 다 맞히면 **몰기**다. 그 다섯 칸을 그대로 둔다.
-  // 숫자를 쓰지 않는 이유(GDD 7장 "화면을 숫자로 덮지 않는다"): 칸이 차오르는 건
-  // **곁눈으로** 읽히지만 숫자는 눈이 가서 읽어야 한다. 이건 조준 중에 봐야 하는 것이다.
-  //
-  // 0중이면 아예 안 그린다 — 초보가 처음 보는 화면에 빈 눈금 다섯이 있으면
-  // "저건 뭔데 안 차지?"가 되고, 그건 격려가 아니라 질책이다.
-  const jungY = pipY + M.countPx + M.subGap + (hud.arrowRule ? px(HUD.subPx, M.s) + M.subGap : 0)
-  let arrowRowY = jungY
-  if (w.flowHits > 0) {
-    const need = Math.max(1, Math.floor(P.flow.molgiAt))
-    const filled = Math.min(w.flowHits, need)
-    let jx = M.padX
-    for (let i = 0; i < need; i++) {
-      // 몰기에 닿으면 다섯 칸이 전부 강조색으로 선다 — 그게 이 줄의 목적지다.
-      ctx.fillStyle = w.molgi ? THEME.accent : i < filled ? THEME.hudText : THEME.gaugeBack
-      const h = w.molgi ? M.jungH + M.jungGrow : M.jungH
-      ctx.fillRect(jx, jungY - h * 0.5, M.jungW, h)
-      jx += M.jungW + M.jungGap
-    }
-    // ★ 이름을 **언제나** 붙인다 (2026-08-31, 형: "몰기는 대체 뭐야? 그 바는 왜 필요있는건데?").
-    //
-    // 예전 규칙은 "몰기일 때만 이름을 붙인다 — 칸이 곧 말이다"였다. 그건 틀렸다:
-    // 칸은 **세는 법**을 말할 뿐 **무엇을 세는지**를 말하지 않는다. 다섯을 다 채우기 전까지는
-    // 이 줄이 화면에서 뜻 없는 네모 다섯이었고, 다 채워도 '몰기'라는 모르는 말이 떴다.
-    // 이제 쌓이는 동안은 그게 주는 것('연사')을, 다 채우면 그 이름('몰기')을 말한다.
-    ctx.font = M.fTotal
-    ctx.fillStyle = w.molgi ? THEME.accent : THEME.hudDim
-    ctx.textBaseline = 'middle'
-    ctx.fillText(w.molgi ? '몰기' : '연사', jx + M.jungGap * 2, jungY)
-    ctx.textBaseline = 'top'
-    arrowRowY = jungY + M.jungH + M.subGap
-  }
+  //    기능(sim/flow.ts)은 그대로다 — 연달아 맞히면 활이 가벼워지는 건 **손이 느끼는 것**이다.
+  //    화면에 눈금과 모르는 낱말을 얹은 건 그걸 설명하려던 시도였고, 설명이 필요한 순간
+  //    그건 이미 손맛이 아니라 숙제다. 조준 중에 읽을 것은 남은 화살 하나면 된다.
+  const arrowRowY = pipY + M.countPx + M.subGap + (hud.arrowRule ? px(HUD.subPx, M.s) + M.subGap : 0)
 
   // 이 판의 화살 종류 — 숫자 아래 한 줄. 고른 것이 무엇인지 판 내내 보인다 (HOOK ★1).
   if (hud.arrow !== '') {
@@ -897,20 +861,29 @@ export function drawHud(
   }
   ctx.globalAlpha = 1
 
-  // ── 훈련치 · 음소거 (오른쪽 위) ──────────────────────────────
+  // ── 지갑 · 음소거 (오른쪽 위) ──────────────────────────────
   // 성장 화면을 여는 버튼은 DOM 오버레이(ui/growth.ts)가 왼쪽 아래에 그린다.
   // 캔버스에 또 그리면 버튼이 둘이 되고, 조준선이 지나는 자리에서 클릭을 먹는다 (C1).
-  // 여기서는 "올릴 게 있다"는 신호만 훈련치 숫자의 색으로 낸다.
+  // 여기서는 "올릴 게 있다"는 신호만 숫자의 색으로 낸다.
+  //
+  // 2026-09-11, 형: **"재화를 '훈련'으로 하니까 전혀 돈버는 기분이 아니야."**
+  // '훈련 12' 였던 자리가 이제 **엽전 하나 + 12냥**이다 (game/money.ts).
   const training = hud.training | 0
   if (training !== cache.training) {
     cache.training = training
-    cache.trainingText = `훈련 ${training}`
+    cache.trainingText = coinText(training)
   }
   ctx.textAlign = 'right'
   ctx.textBaseline = 'top'
   ctx.font = M.fTrain
   ctx.fillStyle = hud.canLevelUp ? THEME.accent : THEME.hudText
   ctx.fillText(cache.trainingText, cam.w - M.padX, M.padY)
+  // 엽전 — 숫자 왼쪽. 글자보다 조금 작고 가운데를 맞춘다.
+  {
+    const numW = ctx.measureText(cache.trainingText).width
+    const cr = px(HUD.trainPx, M.s) * COIN_R
+    drawCoin(ctx, cam.w - M.padX - numW - cr - M.subGap, M.padY + px(HUD.trainPx, M.s) * 0.54, cr)
+  }
 
   let rightY = M.padY + px(HUD.trainPx, M.s) + M.subGap
 

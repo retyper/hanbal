@@ -20,6 +20,7 @@
  */
 import { TAU } from '../core/math.ts'
 import { P } from '../tune/params.ts'
+import { THEME } from './camera.ts'
 
 /**
  * 체격·활 — 전부 과녁 반경(rx, ry) 대비 비율이다. 줌이 바뀌어도 비례가 유지된다.
@@ -402,3 +403,288 @@ export function drawFoeRusher(
   ctx.fill()
   ctx.restore()
 }
+
+
+/**
+ * ── 총통수(銃筒手) — 승자총통을 든 군졸 (look 5, 2026-09-11) ────────────────────
+ *
+ * 형: **"항상 새로움을 줄 수 있도록 다양한 적군들 만들어놓도록해."**
+ *
+ * 조선의 손총이다. 화약을 재고 화승(火繩)으로 불을 붙여 쏜다. 활과 **무엇이 다른가**가
+ * 손에 잡혀야 새 적이 된다:
+ *   · 활은 **당긴다** — 예고 동안 시위가 뒤로 간다.
+ *   · 총통은 **불을 댄다** — 예고 동안 화승의 불씨가 총구로 기어가고, 총구가 달아오른다.
+ * 날아오는 것도 다르다. 화살이 아니라 **탄환**이고, 곧고 빠르다 (sim EnemyShot.look 4).
+ * 곧게 오는 것이라 **산 방패가 잘 듣는다** — 그게 이 적이 던지는 질문의 답이다.
+ *
+ * 실루엣의 서명: **어깨에 얹은 굵은 통** 하나. 활의 얇은 호와 한눈에 갈린다.
+ */
+export function drawFoeGunner(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, rx: number, ry: number,
+  ux: number, uy: number,
+  drawF: number,
+  col: string, armored: boolean, legs: boolean,
+  clip: { x: number; y: number; w: number; h: number } | null,
+): void {
+  let vx = uy
+  let vy = -ux
+  if (vy > 0) { vx = -vx; vy = -vy }
+
+  const lw = Math.max(2, rx * 0.14)
+  const shX = x + vx * ry * F.shoulder
+  const shY = y + vy * ry * F.shoulder
+
+  ctx.save()
+  if (clip !== null) {
+    ctx.beginPath()
+    ctx.rect(clip.x, clip.y, clip.w, clip.h)
+    ctx.clip()
+  }
+  const hx = x + vx * rx * P.enemy.archerHeadUp
+  const hy = y + vy * rx * P.enemy.archerHeadUp
+  const hr = Math.max(2, rx * P.enemy.archerHeadR)
+  ctx.strokeStyle = col
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  ctx.lineWidth = lw * 1.3
+  const hipX = shX - vx * ry * (legs ? F.hip + F.shoulder : 1.5)
+  const hipY = shY - vy * ry * (legs ? F.hip + F.shoulder : 1.5)
+  ctx.beginPath()
+  ctx.moveTo(shX, shY)
+  ctx.lineTo(hipX, hipY)
+  ctx.stroke()
+  if (legs) {
+    // 다리 — 쏘는 자세라 앞발이 조금 나가 있다. 총은 반동이 있는 물건이다.
+    ctx.lineWidth = lw
+    const footY = y + ry
+    ctx.beginPath()
+    ctx.moveTo(hipX, hipY)
+    ctx.lineTo(x - rx * F.stance * 1.3, footY)
+    ctx.moveTo(hipX, hipY)
+    ctx.lineTo(x + rx * F.stance * 0.8, footY)
+    ctx.stroke()
+  }
+  ctx.lineWidth = lw
+  ctx.beginPath()
+  ctx.moveTo(shX, shY)
+  ctx.lineTo(hx, hy)
+  ctx.stroke()
+  if (armored) {
+    const aw = rx * 0.46
+    const t0x = shX + vx * ry * 0.04
+    const t0y = shY + vy * ry * 0.04
+    const b0x = shX - vx * ry * 0.62
+    const b0y = shY - vy * ry * 0.62
+    ctx.fillStyle = ARMOR
+    ctx.beginPath()
+    ctx.moveTo(t0x - ux * aw, t0y - uy * aw)
+    ctx.lineTo(t0x + ux * aw, t0y + uy * aw)
+    ctx.lineTo(b0x + ux * aw * 0.55, b0y + uy * aw * 0.55)
+    ctx.lineTo(b0x - ux * aw * 0.55, b0y - uy * aw * 0.55)
+    ctx.closePath()
+    ctx.fill()
+  }
+  ctx.fillStyle = col
+  ctx.beginPath()
+  ctx.arc(hx, hy, hr, 0, TAU)
+  ctx.fill()
+  // 전립(氈笠) — 넓은 챙. 군졸의 머리는 이 실루엣 하나로 읽힌다 (화차의 포수와 같은 문법).
+  ctx.fillStyle = GUN.hat
+  ctx.beginPath()
+  ctx.ellipse(hx + vx * hr * 0.85, hy + vy * hr * 0.85, hr * 1.9, hr * 0.38, Math.atan2(uy, ux), 0, TAU)
+  ctx.fill()
+  ctx.restore()
+
+  // ── 총통 — **어깨에 얹은 굵은 통.** 이것이 이 적의 서명이다 ──
+  const bx = shX + vx * rx * 0.18
+  const by = shY + vy * rx * 0.18
+  const muzX = bx + ux * rx * GUN.barrel
+  const muzY = by + uy * rx * GUN.barrel
+  ctx.strokeStyle = GUN.barrelCol
+  ctx.lineWidth = Math.max(2.2, rx * GUN.barrelW)
+  ctx.lineCap = 'butt'
+  ctx.beginPath()
+  ctx.moveTo(bx - ux * rx * 0.5, by - uy * rx * 0.5)
+  ctx.lineTo(muzX, muzY)
+  ctx.stroke()
+  // 마디 둘 — 승자총통은 대나무처럼 마디가 있다. 그 두 줄이 막대를 총통으로 만든다.
+  ctx.strokeStyle = GUN.ring
+  ctx.lineWidth = Math.max(1.4, rx * 0.05)
+  for (const u of [0.3, 0.68]) {
+    const cx = bx + (muzX - bx) * u
+    const cy = by + (muzY - by) * u
+    ctx.beginPath()
+    ctx.moveTo(cx - vx * rx * 0.13, cy - vy * rx * 0.13)
+    ctx.lineTo(cx + vx * rx * 0.13, cy + vy * rx * 0.13)
+    ctx.stroke()
+  }
+  // 두 팔 — 하나는 통을 받치고 하나는 화승을 댄다.
+  ctx.strokeStyle = col
+  ctx.lineWidth = lw * 0.86
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.moveTo(shX, shY)
+  ctx.lineTo(bx + ux * rx * 0.72, by + uy * rx * 0.72)
+  ctx.moveTo(shX, shY)
+  ctx.lineTo(bx - ux * rx * 0.1, by - uy * rx * 0.12)
+  ctx.stroke()
+  // ── 화승의 불씨 — 예고 동안 **총구 쪽으로 기어간다.** 활의 '당김'에 해당하는 것이다.
+  if (drawF > 0.02) {
+    const ex = bx + (muzX - bx) * drawF
+    const ey = by + (muzY - by) * drawF
+    ctx.fillStyle = GUN.ember
+    ctx.beginPath()
+    ctx.arc(ex, ey, Math.max(1.4, rx * (0.07 + 0.05 * drawF)), 0, TAU)
+    ctx.fill()
+    // 총구가 달아오른다 — 만작에 가까울수록 밝다. "곧 나간다"를 색이 말한다.
+    ctx.fillStyle = GUN.flash
+    ctx.globalAlpha = drawF * drawF
+    ctx.beginPath()
+    ctx.arc(muzX, muzY, Math.max(1.6, rx * 0.16 * drawF), 0, TAU)
+    ctx.fill()
+    ctx.globalAlpha = 1
+  }
+  ctx.lineCap = 'butt'
+}
+
+/**
+ * ── 투석군(投石軍) — 끈에 돌을 매달아 돌린다 (look 6, 2026-09-11) ────────────────
+ *
+ * 이 적이 던지는 질문은 **"방패로 다 막을 수 있는가"** 다. 답은 아니다 —
+ * 투석군은 **넘겨 던진다** (sim/target.ts fireOne, 높은 호). 궁수 앞 2m 짜리 널판은
+ * 곧게 오는 것을 막는 물건이라, 하늘로 떠올랐다 가파르게 떨어지는 돌은 그 위를 지난다.
+ * 답은 **환도로 쳐내는 것**, 아니면 던지기 전에 저 놈을 먼저 눕히는 것이다.
+ *
+ * 실루엣의 서명: **머리 위에서 도는 돌.** 예고가 깊어질수록 빨리 돌고 커진다 —
+ * 활의 당김과 같은 계약이다 (예고 없는 피해는 없다).
+ */
+export function drawFoeSlinger(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, rx: number, ry: number,
+  ux: number, uy: number,
+  drawF: number, spin: number,
+  col: string, armored: boolean, legs: boolean,
+  clip: { x: number; y: number; w: number; h: number } | null,
+): void {
+  let vx = uy
+  let vy = -ux
+  if (vy > 0) { vx = -vx; vy = -vy }
+
+  const lw = Math.max(2, rx * 0.14)
+  const shX = x + vx * ry * F.shoulder
+  const shY = y + vy * ry * F.shoulder
+
+  ctx.save()
+  if (clip !== null) {
+    ctx.beginPath()
+    ctx.rect(clip.x, clip.y, clip.w, clip.h)
+    ctx.clip()
+  }
+  const hx = x + vx * rx * P.enemy.archerHeadUp
+  const hy = y + vy * rx * P.enemy.archerHeadUp
+  const hr = Math.max(2, rx * P.enemy.archerHeadR)
+  ctx.strokeStyle = col
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  ctx.lineWidth = lw * 1.3
+  const hipX = shX - vx * ry * (legs ? F.hip + F.shoulder : 1.5)
+  const hipY = shY - vy * ry * (legs ? F.hip + F.shoulder : 1.5)
+  ctx.beginPath()
+  ctx.moveTo(shX, shY)
+  ctx.lineTo(hipX, hipY)
+  ctx.stroke()
+  if (legs) {
+    // 다리 — 돌리는 사람은 몸을 비튼다. 두 발이 넓게 벌어진다.
+    ctx.lineWidth = lw
+    const footY = y + ry
+    ctx.beginPath()
+    ctx.moveTo(hipX, hipY)
+    ctx.lineTo(x - rx * F.stance * 1.5, footY)
+    ctx.moveTo(hipX, hipY)
+    ctx.lineTo(x + rx * F.stance * 1.2, footY)
+    ctx.stroke()
+  }
+  ctx.lineWidth = lw
+  ctx.beginPath()
+  ctx.moveTo(shX, shY)
+  ctx.lineTo(hx, hy)
+  ctx.stroke()
+  if (armored) {
+    const aw = rx * 0.46
+    ctx.fillStyle = ARMOR
+    ctx.beginPath()
+    ctx.moveTo(shX - ux * aw, shY - uy * aw)
+    ctx.lineTo(shX + ux * aw, shY + uy * aw)
+    ctx.lineTo(shX + ux * aw * 0.55 - vx * ry * 0.62, shY + uy * aw * 0.55 - vy * ry * 0.62)
+    ctx.lineTo(shX - ux * aw * 0.55 - vx * ry * 0.62, shY - uy * aw * 0.55 - vy * ry * 0.62)
+    ctx.closePath()
+    ctx.fill()
+  }
+  ctx.fillStyle = col
+  ctx.beginPath()
+  ctx.arc(hx, hy, hr, 0, TAU)
+  ctx.fill()
+  ctx.restore()
+
+  // ── 끈과 돌 — 머리 위에서 돈다. 예고가 깊어질수록 원이 커진다 ──
+  //    회전 위상(spin)은 sim 의 시계에서 온다 — 렌더는 시계를 갖지 않는다 (A1).
+  const orbit = rx * (SLING.orbit + SLING.orbitGain * drawF)
+  const cx = hx + vx * rx * SLING.above
+  const cy = hy + vy * rx * SLING.above
+  const sx2 = cx + Math.cos(spin) * orbit
+  const sy2 = cy + Math.sin(spin) * orbit * SLING.flat
+  // 손 — 어깨에서 위로 뻗어 끈을 쥔다.
+  const handX = shX + vx * rx * 0.5 + ux * rx * 0.16
+  const handY = shY + vy * rx * 0.5 + uy * rx * 0.16
+  ctx.strokeStyle = col
+  ctx.lineWidth = lw * 0.86
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.moveTo(shX, shY)
+  ctx.lineTo(handX, handY)
+  ctx.stroke()
+  // 끈 둘 — 가는 줄 두 가닥이라야 무릿매로 읽힌다.
+  ctx.strokeStyle = SLING.cord
+  ctx.lineWidth = Math.max(1, rx * 0.035)
+  ctx.beginPath()
+  ctx.moveTo(handX, handY)
+  ctx.lineTo(sx2, sy2)
+  ctx.stroke()
+  // 돌 — 예고 끝에서 가장 크고 붉다. "곧 놓는다"를 크기와 색이 같이 말한다.
+  ctx.fillStyle = drawF > SLING.hotAt ? THEME.threat : SLING.stone
+  ctx.beginPath()
+  ctx.arc(sx2, sy2, Math.max(2, rx * (SLING.stoneR + SLING.stoneGain * drawF)), 0, TAU)
+  ctx.fill()
+  ctx.lineCap = 'butt'
+}
+
+/** 총통의 치수·색. */
+const GUN = {
+  /** 총열 길이 (rx 대비) — 활의 반길이보다 짧고 굵다. */
+  barrel: 1.55,
+  barrelW: 0.14,
+  barrelCol: '#4a4f58',
+  ring: '#9aa3ae',
+  ember: '#ff8a3c',
+  flash: '#ffe08a',
+  hat: '#2b2f38',
+} as const
+
+/** 무릿매의 치수·색. */
+const SLING = {
+  /** 도는 원의 반지름 (rx 대비) — 예고가 깊어질수록 커진다. */
+  orbit: 0.5,
+  orbitGain: 0.5,
+  /** 원을 위에서 비스듬히 본다 — 세로를 눌러야 '돌고 있다'로 읽힌다. */
+  flat: 0.45,
+  /** 원의 중심이 머리 위로 (rx 대비). */
+  above: 0.75,
+  cord: '#b7a98c',
+  stone: '#8d939c',
+  stoneR: 0.12,
+  stoneGain: 0.07,
+  /** 이 위에서 돌이 붉어진다 — 놓기 직전. */
+  hotAt: 0.72,
+} as const
+

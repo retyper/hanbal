@@ -12,7 +12,7 @@ import { groundAt } from './terrain.ts'
 import { arrowFx, refreshArrowFx } from './arrowfx.ts'
 import { effectiveStats, stepArcher } from './bow.ts'
 import { spawnParried, stepArrows } from './ballistics.ts'
-import { bossGait, hurtPlayer, stepTargets } from './target.ts'
+import { bossAttack, bossGait, hurtPlayer, stepTargets } from './target.ts'
 import { flowMiss, resetFlow, stepFlow } from './flow.ts'
 import { TRAIL_POINTS } from './types.ts'
 import type {
@@ -305,17 +305,26 @@ function loadTarget(t: Target, id: number, spec: TargetSpec, stage: StageDef): v
   t.hpMax = t.hp
   t.look = Math.floor(spec.look ?? 0)
   t.hidden = false
-  t.firePeriod = spec.kind === 'archer' ? spec.firePeriod ?? 0 : 0
+  // ── 보스도 쏜다 (2026-09-11, sim/target.ts bossAttack) ──
+  // 여덟의 개성은 표에 있고, 저작은 아무것도 안 적어도 된다 — 표가 기본값이다.
+  // 저작이 적으면 그게 이긴다 (실험장·특수 판이 주기를 바꿀 수 있어야 한다).
+  const atk = spec.kind === 'boss' ? bossAttack(Math.floor(spec.look ?? 0)) : null
+  t.firePeriod = spec.kind === 'archer'
+    ? spec.firePeriod ?? 0
+    : atk === null ? 0 : spec.firePeriod ?? P.target.bossShootEvery * atk.periodMul
   t.healGive = spec.kind === 'bonus' ? Math.floor(spec.heal ?? 0) : 0
   // 첫 발사 시각. 판이 시작되자마자 쏘면 예고(windup)가 성립하지 않는다.
-  t.fireAt = spec.kind === 'archer' ? spec.fireDelay ?? P.enemy.shootEvery : 0
+  t.fireAt = spec.kind === 'archer'
+    ? spec.fireDelay ?? P.enemy.shootEvery
+    // 보스의 첫 발은 **한 박자 늦게** 온다. 판이 서자마자 얻어맞으면 예고를 읽을 틈이 없다.
+    : atk === null ? 0 : spec.fireDelay ?? P.target.bossShootEvery * atk.periodMul + P.enemy.windup
   t.armored = spec.armored === true
   // 갑옷은 이제 깎이는 물건이다 (types.ts Target.armored 주석). 저작에서 따로 안 정하면
   // 전부 같은 내구도를 쓴다 — 어떤 갑옷병이 몇 발인지 플레이어가 규칙을 세울 수 있어야 한다.
   t.armorMax = t.armored ? Math.floor(P.enemy.armorHp) : 0
   t.armorHp = t.armorMax
   t.aimMul = spec.aimMul ?? 1
-  t.volley = Math.max(1, Math.floor(spec.volley ?? 1))
+  t.volley = Math.max(1, Math.floor(spec.volley ?? (atk === null ? 1 : atk.volley)))
   t.bounty = spec.bounty === true
   // 약점은 뜬 채로 시작한다 — 판이 서자마자 감긴 눈이면 첫 발이 벌이 된다. 주기는 stepTargets 가 돈다.
   t.weak = 1

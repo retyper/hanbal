@@ -40,6 +40,7 @@ import { onSaveChanged, wipeSave, writeSave, type SaveData } from '../game/save.
 import { unlockedBows, unlockOfBow } from '../game/unlocks.ts'
 import { P } from '../tune/params.ts'
 import type { Overlay } from './overlay.ts'
+import { COIN_ICON, COIN_NAME, coinHtml, coinText } from '../game/money.ts'
 
 const PANEL_ID = 'growth'
 /** public/ 자산의 경로 머리 (ui/overlay.ts 와 같다). */
@@ -394,7 +395,7 @@ function buildForgeRows(d: SaveData, audio: AudioSwitch, onChange: () => void): 
       aNext.classList.toggle('g-flat', top)
       aCost.textContent = top ? '' : String(forgeCost(lv))
       aBtn.disabled = why !== ''
-      aBtn.title = why === '' ? `${armorKind(id).name} ${lv + 1}단 — 훈련치 ${forgeCost(lv)}` : why
+      aBtn.title = why === '' ? `${armorKind(id).name} ${lv + 1}단 — ${coinText(forgeCost(lv))}` : why
     }
     for (const r of rows) {
       const lv = forgeLevel(d, d.bow, r.part)
@@ -408,7 +409,7 @@ function buildForgeRows(d: SaveData, audio: AudioSwitch, onChange: () => void): 
       r.next.classList.toggle('g-flat', top)
       r.cost.textContent = top ? '' : String(forgeCost(lv))
       r.btn.disabled = why !== ''
-      r.btn.title = why === '' ? `${def?.name ?? ''} ${lv + 1}단 — 훈련치 ${forgeCost(lv)}` : why
+      r.btn.title = why === '' ? `${def?.name ?? ''} ${lv + 1}단 — ${coinText(forgeCost(lv))}` : why
     }
   }
   return { el: box, refresh }
@@ -427,7 +428,7 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
 
   const head = document.createElement('div')
   head.className = 'g-h'
-  head.innerHTML = '<h2>성장</h2><div class="g-train">훈련치 <b></b></div>'
+  head.innerHTML = `<h2>성장</h2><div class="g-train">${COIN_ICON}<b></b></div>`
   const trainOut = head.querySelector('b') as HTMLElement
 
   const sub = document.createElement('p')
@@ -634,7 +635,7 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
     // 상한 도달을 알리지 않는다 (GDD 5장). 여기 있는 건 "어디서 오는가"뿐이다.
     const perMin = P.offline.trainingPerSec * 60
     hint.textContent = d.offlineEnabled
-      ? `훈련치는 공부하는 동안 쌓인다 (${(1 / perMin).toFixed(0)}분에 1)`
+      ? `돈은 공부하는 동안에도 쌓인다 (${(1 / perMin).toFixed(0)}분에 1${COIN_NAME})`
       : `쌓지 않는 대신 판 보상 ×${P.offline.optOutBonus.toFixed(2)}`
     chk.checked = d.offlineEnabled
     syncSound()
@@ -724,7 +725,7 @@ export function showReinforce(
   // "가져간다"고 써놓고 안 가져가면 그 줄은 다음부터 아무도 안 읽는다.
   // 0인 항목은 아예 안 쓴다 — '훈련치 0'은 위로가 아니라 조롱이다.
   const keeps: string[] = []
-  if (info.training > 0) keeps.push(`훈련치 <b>${info.training}</b>`)
+  if (info.training > 0) keeps.push(coinHtml(info.training, true))
   if (info.stars > 0) keeps.push(`별 <b>${info.stars}</b>`)
   if (info.molgi) keeps.push('<b>몰기</b>')
   else if (info.jung >= 3) keeps.push(`최고 <b>${info.jung}중</b>`)
@@ -760,11 +761,11 @@ export function showReinforce(
   // ── 가운데: 성장 줄 ──
   const gh = document.createElement('div')
   gh.className = 'g-h'
-  gh.innerHTML = '<h3>강화</h3><div class="g-train">훈련치 <b></b></div>'
+  gh.innerHTML = `<h3>강화</h3><div class="g-train">${COIN_ICON}<b></b></div>`
   const trainOut = gh.querySelector('b') as HTMLElement
   const sub = document.createElement('p')
   sub.className = 'hb-lead'
-  sub.textContent = '이번 여정에서 번 훈련치로 몸을 키운다. 올리면 어떻게 달라지는지 각 줄에 적혀 있다.'
+  sub.textContent = '이번 여정에서 번 돈으로 몸을 키운다. 올리면 어떻게 달라지는지 각 줄에 적혀 있다.'
   panel.append(gh, sub)
 
   const rows = buildStatRows(d, trainOut, audio, () => {})
@@ -787,7 +788,7 @@ export function showReinforce(
     let min = Number.POSITIVE_INFINITY
     for (const k of STAT_KEYS) min = Math.min(min, trainingCost(d.stats[k]))
     none.style.display = ''
-    none.textContent = `훈련치가 ${Math.max(0, min - d.training)} 모자라다 — 판을 깰 때마다 쌓인다. 다음 여정에서 더 벌어 온다`
+    none.textContent = `${coinText(Math.max(0, min - d.training))} 모자라다 — 판을 깰 때마다 쌓인다. 다음 여정에서 더 벌어 온다`
   }
   panel.appendChild(none)
   // 줄 안의 '올리기'가 세이브를 바꾸면 여기도 따라간다.
@@ -845,7 +846,8 @@ export function showOfflineGain(
 ): void {
   const parts: string[] = []
   const a = plus('화살', gain.arrows)
-  const t = plus('훈련치', gain.training)
+  // 돈은 '냥 +12' 가 아니라 '+12냥' 이다 — 단위는 숫자 뒤에 붙는다.
+  const t = gain.training > 0 ? `+${coinText(gain.training)}` : ''
   const r = plus('의뢰', gain.requests)
   if (a !== '') parts.push(a)
   if (t !== '') parts.push(t)
