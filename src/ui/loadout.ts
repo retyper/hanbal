@@ -8,7 +8,7 @@
  * 곧 성장 줄이고, 그 '다음'이 이 화면이다 (2026-09-02, 형의 요구).
  */
 import { ARROW_KINDS, type ArrowKindId } from '../game/arrows.ts'
-import { CHARMS, charmBlocked, charmCost, type CharmId } from '../game/charms.ts'
+import { CHARMS, charmBlocked, charmCost, type CharmId, charmDef } from '../game/charms.ts'
 import {
   ARMOR_KINDS, armorCapOf, armorCostOf, armorKind, armorKindOf, armorLevel, armorOwned, armorPerOf,
   armorUnlockBlocked, armorUnlockCost, buyArmorKind, equipArmor, type ArmorKindId,
@@ -22,6 +22,9 @@ import type { ForkOption } from '../game/forks.ts'
 import type { Overlay } from './overlay.ts'
 import { COIN_ICON, coinText } from '../game/money.ts'
 import { attachDetail } from './detail.ts'
+import { makeWheel } from './wheel.ts'
+import { makeTabs } from './tabs.ts'
+import { mountInstall } from './install.ts'
 
 const PANEL_ID = 'loadout'
 /** public/ 자산의 경로 머리. 빌드가 주입하는 BASE_URL만이 진실이다 (ui/overlay.ts 와 같다). */
@@ -43,7 +46,14 @@ const CSS = `
 .l-art .l-h { position: relative; }
 .l-art .hb-lead { position: relative; margin-bottom: 0; }
 .l-cap { position: absolute; right: 12px; top: 10px; color: rgba(255, 244, 220, .62); font-size: 11px; letter-spacing: .06em; }
-@media (max-width: 640px) { .l-art { min-height: 120px; padding: 16px 12px 14px; } }
+@media (max-width: 640px) { .l-art { min-height: 110px; padding: 14px 12px 12px; } }
+/* 굴리지 않는 판에서는 그림이 화면을 먹는다 — 낮은 화면에서는 띠 하나로 줄인다
+   (2026-09-11, 형: "세로롤링 너무 게임 안같고"). 그림을 지우지는 않는다: 출정식의 기분이다. */
+@media (max-height: 620px) {
+  .l-art { min-height: 84px; padding: 10px 12px 9px; margin-bottom: 6px; }
+  .l-art .hb-lead { display: none; }
+  .l-art .l-h h2 { font-size: 22px; }
+}
 .l-h { display: flex; align-items: baseline; gap: 14px; }
 .l-h h2 { flex: 1; font-size: 30px; letter-spacing: .02em; }
 .l-run { color: var(--dim); font-size: 13px; letter-spacing: .12em; }
@@ -138,6 +148,9 @@ export function mountLoadout(
   const panel = o.panel(PANEL_ID)
   panel.replaceChildren()
   panel.setAttribute('aria-label', '여정 준비')
+  // 굴리지 않는다 — 판의 높이는 화면이 정하고, 내용은 위의 칸으로 갈아탄다 (ui/tabs.ts).
+  // 2026-09-11, 형: "세로롤링 너무 게임 안같고 뭔 웹페이지 같잖아."
+  o.panelBox(PANEL_ID).classList.add('hb-tall')
 
   const style = document.createElement('style')
   style.textContent = CSS
@@ -172,21 +185,29 @@ export function mountLoadout(
     charm: '',
   }
 
-  const bowCards = new Map<BowKindId, HTMLButtonElement>()
   const syn = document.createElement('div')
   syn.className = 'l-syn'
 
   /** 부적을 미리 고른 뒤 살 가게에서 훈련치를 써 버리면 그 부적은 못 산다 — 그러면 내려놓는다. */
   const refresh = (): void => {
-    for (const [id, el] of bowCards) el.classList.toggle('hb-on', id === pick.bow)
     // 궁합은 판에 그 살을 장전했을 때 성립한다 — 여기서는 활이 어떤 살과 궁합인지만 알려준다.
-    // ② 누르면 바로 — 고른 활의 **대가와 궁합**이 이 한 줄에 뜬다.
+    // ② 걸이를 돌리면 바로 — 앞에 나온 활의 **대가와 궁합**이 이 한 줄에 뜬다.
     //    겉면에서 뺀 것 중 고르는 데 제일 필요한 것이 이 둘이다.
-    const bk = bowKind(pick.bow)
-    const sy = bk.synergy
-    syn.innerHTML = `<b>${bk.name}</b> — ${bk.cost === '없음' ? '대가가 없다' : bk.cost}`
-      + (sy !== undefined ? ` <i>· 궁합 ${sy.label}</i>` : '')
+    //    잠긴 활 앞에 멈췄으면 **드는 활이 따로 있다**는 것을 여기서 분명히 말한다 —
+    //    화면에 안 적으면 그건 숨은 상태고, 숨은 상태는 언젠가 형을 속인다.
+    if (!isOwned(browsing)) {
+      syn.innerHTML = `<b>？？？</b> 아직 못 든다 — ${unlockOfBow(browsing)?.hint ?? ''}`
+        + ` <i>· 지금 드는 활은 ${bowKind(pick.bow).name}</i>`
+    } else {
+      const bk = bowKind(browsing)
+      const sy = bk.synergy
+      syn.innerHTML = `<b>${bk.name}</b> — ${bk.cost === '없음' ? '대가가 없다' : bk.cost}`
+        + (sy !== undefined ? ` <i>· 궁합 ${sy.label}</i>` : '')
+    }
     wallet.textContent = String(d.training)
+    // 아래 줄의 한 줄 요약 — 칸을 갈아타도 **지금 들고 나가는 것**은 늘 보인다.
+    going.innerHTML = `<b>${bowKind(pick.bow).name}</b> · ${armorKind(armorKindOf(d)).name}`
+      + (pick.charm !== '' ? ` · ${charmDef(pick.charm).name}` : '')
     if (pick.charm !== '' && charmBlocked(d, pick.charm) !== '') pick.charm = ''
     for (const [id, el] of charmCards) {
       const why = charmBlocked(d, id)
@@ -201,16 +222,26 @@ export function mountLoadout(
     refreshShop()
   }
 
-  // ── 두 단 (2026-09-11, 형: "빈공간이 너무 많아서 한눈에 안들어와") ──
-  //   왼쪽은 **들고 입는 것**(활·갑옷), 오른쪽은 **이번 여정에 사는 것**(부적·살 가게)이다.
-  //   출정 화면은 네 구역이 세로로 쌓여 있어서, 살 가게까지 보려면 늘 끝까지 내려야 했다.
-  //   좁은 화면에서는 .hb-cols 가 한 단으로 접힌다 (ui/overlay.ts) — 폰은 예전 그대로다.
-  const cols = document.createElement('div')
-  cols.className = 'hb-cols'
-  const colA = document.createElement('div')
-  const colB = document.createElement('div')
-  cols.append(colA, colB)
-  panel.appendChild(cols)
+  // ── 네 칸 (2026-09-11, 형: "세로롤링 너무 게임 안같고 뭔 웹페이지 같잖아") ──
+  //   활·갑옷·부적·살 가게를 **세로로 잇지 않는다.** 넷을 나란히 쌓으면 살 가게까지
+  //   보려고 끝까지 굴려야 하고, 굴리는 화면은 게임이 아니라 문서다.
+  //   이제 한 번에 한 칸이고, 아래의 '나선다'는 **어느 칸에서든 늘 보인다.**
+  const paneBow = document.createElement('div')
+  const paneArmor = document.createElement('div')
+  const paneCharm = document.createElement('div')
+  const paneShop = document.createElement('div')
+  const tabs = makeTabs([
+    { id: 'bow', label: '활', pane: paneBow },
+    { id: 'armor', label: '갑옷', pane: paneArmor },
+    { id: 'charm', label: '부적', pane: paneCharm },
+    { id: 'shop', label: '살 가게', pane: paneShop },
+  ], (id) => {
+    // 걸이는 칸이 보이게 된 뒤에야 폭을 잴 수 있다 (숨은 칸의 clientWidth 는 0이다).
+    if (id === 'bow') wheel.to(wheel.index(), true)
+  })
+  panel.appendChild(tabs.el)
+  const colA = paneBow
+  const colB = paneCharm
 
   /**
    * 구역 머리. `tip` 이 true 면 오른쪽 끝에 '길게 눌러 자세히' 를 아주 작게 붙인다
@@ -232,64 +263,82 @@ export function mountLoadout(
   }
 
   section('활', colA, true)
-  const bowGrid = document.createElement('div')
-  bowGrid.className = 'l-grid'
-  // 열린 활 먼저, 그 뒤에 잠긴 활 — 잠긴 슬롯이 보여야 '다음 여정의 이유'가 생긴다
-  // (Hades의 무기 벽, 발라트로의 잠긴 덱 — 감사 시작경험).
-  for (const b of BOW_KINDS) {
-    const id = b.id
-    const owned = id === 'practice' || bows.includes(id)
-    const card = document.createElement('button')
-    card.type = 'button'
-    card.className = owned ? 'hb-card l-card' : 'hb-card l-card l-lock'
+
+  // ── 활 걸이 — **돌려서 고른다** (2026-09-11, ui/wheel.ts) ─────────────────
+  //
+  //   형: **"활선택하는게 버튼이 아니라 롤이었으면 좋겠어. 리볼빙형식이라고 해야하나?"**
+  //
+  //   예전엔 카드 다섯이 격자로 나란히 섰다. 그건 목록이고, 목록은 고르는 재미가 없다.
+  //   활은 **하나만 든다** — 하나만 드는 것을 고르는 화면은 한 자루가 앞에 나오고
+  //   나머지가 옆으로 물러나 있는 쪽이 맞다. 화살표·손가락 밀기·좌우 키로 돈다.
+  //
+  //   잠긴 활도 걸이에 걸어 둔다 (Hades 의 무기 벽, 발라트로의 잠긴 덱 — 감사 시작경험):
+  //   **보여야 갖고 싶어진다.** 다만 거기 멈춰도 드는 활은 안 바뀌고, 아래 한 줄이
+  //   "이건 아직 못 든다 · 지금 드는 활은 ○○" 라고 분명히 적는다.
+  const bowOrder: BowKindId[] = BOW_KINDS.map((b) => b.id)
+  const isOwned = (id: BowKindId): boolean => id === 'practice' || bows.includes(id)
+  /** 걸이에서 지금 보고 있는 활 (못 드는 것일 수도 있다). 드는 활은 pick.bow 다. */
+  let browsing: BowKindId = pick.bow
+
+  const bowFace = (id: BowKindId): string => {
+    const b = bowKind(id)
+    const owned = isOwned(id)
     const lv = masteryLevel(Math.floor(bowHits[id] ?? 0))
-    // 잠긴 활은 이름만이 아니라 그림도 가린다 — 실루엣까지 보이면 "가려졌다"가 아니다.
-    // ── 겉면은 **이름과 한 줄**뿐이다 (2026-09-11, 형: "하스스톤은 (…) 화면에 가장중요한
-    //    설명, 탭할때 바로뜨는 부가 설명과 (…) 오래누르고 있으면 뜨는 추가설명").
-    //    대가·궁합·해금 조건은 길게 누르면 뜬다 (ui/detail.ts). 예전엔 넷을 다 적어서
-    //    활 다섯 장이 화면 한 판을 먹었다.
-    card.innerHTML = `<span class="l-bic">${bowIconSvg(owned ? id : '', 34)}</span>` +
-      `<span class="l-n"></span><span class="l-d"></span>`
-    const descs = card.querySelectorAll('.l-d')
-    if (owned) {
-      ;(card.querySelector('.l-n') as HTMLElement).textContent = b.name + (lv > 0 ? ` · 숙련 ${lv}` : '')
-      ;(descs[0] as HTMLElement).textContent = b.perk
-      card.addEventListener('click', () => {
-        pick.bow = id
-        refresh()
-      })
-      bowCards.set(id, card)
-    } else {
-      ;(card.querySelector('.l-n') as HTMLElement).textContent = '？？？'
-      ;(descs[0] as HTMLElement).textContent = unlockOfBow(id)?.hint ?? ''
-    }
-    // ③ 길게 누르면 — 나머지 전부.
-    attachDetail(card, () => {
-      const mastered = masteryLevel(Math.floor(bowHits[id] ?? 0))
-      const syn = bowKind(id).synergy
-      return owned
-        ? {
-          title: b.name,
-          sub: mastered > 0 ? `숙련 ${mastered}` : '',
-          lines: [
-            b.perk,
-            b.cost === '없음' ? '대가가 없다 — 그래서 기준이 된다.' : `대가 — ${b.cost}`,
-            syn !== undefined ? `궁합 — ${syn.label}` : '',
-          ],
-          foot: mastered > 0 ? '숙련이 오를수록 대가가 깎인다 (그 활로 맞힌 수)' : '',
-        }
-        : { title: '아직 잠겨 있다', lines: [unlockOfBow(id)?.hint ?? ''], foot: '조건을 채우면 열린다' }
-    })
-    bowGrid.appendChild(card)
+    // 잠긴 활은 이름도 그림도 가린다 — 실루엣까지 보이면 가려진 게 아니다
+    // (형: "이미지도 글도 다 나와놓고 이름만 물음표하면 그게 가려진거냐?").
+    const name = owned ? b.name + (lv > 0 ? ` · 숙련 ${lv}` : '') : '？？？'
+    const desc = owned ? b.perk : unlockOfBow(id)?.hint ?? ''
+    return `<span class="wh-ic">${bowIconSvg(owned ? id : '', 44)}</span>`
+      + `<span class="wh-n">${name}</span><span class="wh-d">${desc}</span>`
   }
-  colA.appendChild(bowGrid)
+
+  const wheel = makeWheel({
+    label: '활 고르기',
+    items: bowOrder.map((id) => ({ id, html: bowFace(id), locked: !isOwned(id) })),
+    onPick: (id, _i, locked) => {
+      browsing = id as BowKindId
+      // 못 드는 활에 멈추는 것은 막지 않는다 — 다만 **드는 활은 안 바뀐다.**
+      if (!locked) pick.bow = id as BowKindId
+      refresh()
+    },
+  })
+  colA.appendChild(wheel.el)
+
+  // ③ 길게 누르면 — 겉면에서 뺀 것 전부 (ui/detail.ts). 카드마다 하나씩 건다.
+  const wheelCards = wheel.cards()
+  for (let i = 0; i < bowOrder.length; i++) {
+    const id = bowOrder[i]
+    const card = wheelCards[i]
+    if (id === undefined || card === undefined) continue
+    const b = bowKind(id)
+    attachDetail(card, () => {
+      if (!isOwned(id)) {
+        return { title: '아직 잠겨 있다', lines: [unlockOfBow(id)?.hint ?? ''], foot: '조건을 채우면 열린다' }
+      }
+      const mastered = masteryLevel(Math.floor(bowHits[id] ?? 0))
+      const sy = b.synergy
+      return {
+        title: b.name,
+        sub: mastered > 0 ? `숙련 ${mastered}` : b.origin,
+        lines: [
+          b.perk,
+          b.cost === '없음' ? '대가가 없다 — 그래서 기준이 된다.' : `대가 — ${b.cost}`,
+          sy !== undefined ? `궁합 — ${sy.label}` : '',
+        ],
+        foot: mastered > 0 ? '숙련이 오를수록 대가가 깎인다 (그 활로 맞힌 수)' : '',
+      }
+    })
+  }
+
+  // 시작 자리 — 지난 여정에 들던 활이 앞에 나와 있어야 한다.
+  wheel.to(Math.max(0, bowOrder.indexOf(pick.bow)), true)
 
   colA.appendChild(syn)
 
   // ── 부적 — 이번 여정만 (game/charms.ts) ──
   // 하나만 지닌다. 값은 '나선다'를 누르는 순간 치른다 — 여기서 미리 깎으면 활을 고르다
   // 마음이 바뀐 사람의 훈련치가 샌다. 못 사는 카드는 왜 못 사는지 적힌 채 흐려진다.
-  section('부적 — 이번 여정만, 하나', colB)
+  section('부적 — 이번 여정만, 하나', paneCharm, true)
   const charmGrid = document.createElement('div')
   charmGrid.className = 'l-grid'
   const charmCards = new Map<CharmId, HTMLButtonElement>()
@@ -321,7 +370,7 @@ export function mountLoadout(
 
   // ── 갑옷 — 셋 중 하나를 입고 나선다 (game/armor.ts, 2026-09-10 형: "방어구는 고를 수도 없잖아") ──
   // 가진 벌은 누르면 입고, 없는 벌은 누르면 장만한다(훈련치). 판 도중에 사는 '갑옷'은 입은 벌이다.
-  section('갑옷 — 입고 나선다. 판 도중에 겹쳐 입는 것은 이 벌이다', colA)
+  section('갑옷 — 입고 나선다. 판 도중에 겹쳐 입는 것은 이 벌이다', paneArmor, true)
   const armorGrid = document.createElement('div')
   armorGrid.className = 'l-grid'
   const armorCards = new Map<ArmorKindId, HTMLButtonElement>()
@@ -362,11 +411,11 @@ export function mountLoadout(
     armorCards.set(a.id, card)
     armorGrid.appendChild(card)
   }
-  colA.appendChild(armorGrid)
+  paneArmor.appendChild(armorGrid)
   // ② 누르면 바로 — 입은 벌의 수치가 이 한 줄에 뜬다. 카드에서 뺀 것 중 제일 아쉬운 것들이다.
   const armorLine = document.createElement('div')
   armorLine.className = 'l-syn'
-  colA.appendChild(armorLine)
+  paneArmor.appendChild(armorLine)
   const refreshArmor = (): void => {
     const worn = armorKindOf(d)
     for (const [id, el] of armorCards) {
@@ -391,10 +440,10 @@ export function mountLoadout(
   // ── 살 가게 — 발견한 특수살을 훈련치로 채운다 (game/supply.ts shopPrice) ──
   // 발견한 살(arrowStock 에 키가 있는 살)만 판다 — 가게가 보급을 대신하면 보스를 잡을 이유가 준다.
   // 사는 순간 재고가 오른다 (여기서 바로 저장). 아직 하나도 못 봤으면 그 사실을 한 줄로 말한다.
-  section('살 가게 — 발견한 살을 채운다', colB)
+  section('살 가게 — 발견한 살을 채운다', paneShop)
   const shop = document.createElement('div')
   shop.className = 'l-shop'
-  colB.appendChild(shop)
+  paneShop.appendChild(shop)
   const refreshShop = (): void => {
     shop.replaceChildren()
     let any = 0
@@ -433,17 +482,22 @@ export function mountLoadout(
     }
   }
 
-  const foot = document.createElement('div')
-  foot.className = 'l-foot'
+  // 늘 보이는 아래 줄 — 무슨 칸을 보고 있든 여기서 떠난다.
+  const foot = tabs.foot
+  const going = document.createElement('div')
+  going.className = 'l-carry'
   const go = document.createElement('button')
   go.type = 'button'
   go.className = 'hb-btn hb-pri l-go'
   go.textContent = '활을 들고 나선다 →'
+  foot.append(going)
+  // 앱으로 설치 — 브라우저가 된다고 할 때만 뜬다. 게임 중에는 안 뜬다 (C1).
+  mountInstall(foot, (t, ms) => o.toast(t, ms))
   foot.appendChild(go)
 
   // 전체 초기화 버튼은 성장 화면(g-danger) 한 곳뿐이다 —
   // 매 출정마다 파괴 버튼을 볼 이유가 없다 (감사 UI구조).
-  panel.appendChild(foot)
+
 
   let done = false
   // 공부하러 나가면 main.ts가 패널을 닫는다. 돌아왔을 때 이 화면이 되살아나지 않으면

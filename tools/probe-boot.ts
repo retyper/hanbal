@@ -65,6 +65,10 @@ class El {
   append(...cs: El[]): void {
     for (const c of cs) this.children.push(c)
   }
+  /** 구역 머리의 작은 안내를 심는 자리 (ui/loadout.ts section). 문자열만 이어 붙이면 된다. */
+  insertAdjacentHTML(_where: string, html: string): void {
+    this.innerHTML += html
+  }
   replaceChildren(): void {
     this.children.length = 0
   }
@@ -464,6 +468,14 @@ console.log(String.fromCharCode(10) + '6. 로드아웃 생명주기 (탭 복귀 
         panels.set(id, p)
       }
       return p as unknown as HTMLElement
+    },
+    panelBox: (id: string): HTMLElement => {
+      let p2 = panels.get(id)
+      if (p2 === undefined) {
+        p2 = new El('div')
+        panels.set(id, p2)
+      }
+      return p2 as unknown as HTMLElement
     },
     hud: (): HTMLElement => new El('div') as unknown as HTMLElement,
     toast: (): void => {},

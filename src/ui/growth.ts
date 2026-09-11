@@ -42,6 +42,9 @@ import { P } from '../tune/params.ts'
 import type { Overlay } from './overlay.ts'
 import { COIN_ICON, COIN_NAME, coinHtml, coinText } from '../game/money.ts'
 import { attachDetail } from './detail.ts'
+import { makeTabs } from './tabs.ts'
+import { mountInstall } from './install.ts'
+import { makeWheel } from './wheel.ts'
 
 const PANEL_ID = 'growth'
 /** public/ 자산의 경로 머리 (ui/overlay.ts 와 같다). */
@@ -99,49 +102,33 @@ const CSS = `
 .g-cost { color: var(--accent); }
 .g-up[disabled] .g-cost { color: inherit; }
 
-/* ── 활 걸이 ── 스탯과 발자취가 다른 물건임이 한눈에 읽히게 칸으로 나눈다. */
-.g-bows { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 10px; }
+/* ── 활 걸이 ── 돌아가는 걸이 하나 + 그 아래 '드는' 줄 (2026-09-11, ui/wheel.ts).
+   줄 다섯을 세우던 CSS 는 통째로 없앴다 — 목록이 아니라 걸이가 됐다. */
 .g-bows h3 {
   display: flex; align-items: baseline; gap: 10px;
-  color: var(--dim); font-size: 13px; letter-spacing: .12em; margin: 0 0 4px;
+  color: var(--dim); font-size: 13px; letter-spacing: .12em; margin: 0 0 6px;
 }
-.g-bow {
-  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 18px;
-  padding: 9px 0 8px; border-top: 1px solid var(--line);
-}
-.g-bow:first-of-type { border-top: none; }
-.g-bow .g-bic { color: var(--accent); line-height: 0; margin-right: 10px; vertical-align: -6px; }
-.g-bow.g-lockd .g-bic { color: var(--mute); }
-.g-bow .g-bname { color: var(--ink); font-weight: 700; font-size: 16px; }
-.g-bow .g-borigin { color: var(--mute); font-size: 12px; margin-left: 10px; letter-spacing: .04em; }
-.g-bow .g-bperk { grid-column: 1; color: var(--body); font-size: 13px; }
-/* 대가·궁합은 겉면에서 감춘다 — 길게 누르면 말풍선으로 뜬다 (ui/detail.ts).
-   요소를 지우지 않는 이유: 갱신 코드가 여기 문장을 만들고, 말풍선이 그걸 그대로 읽는다. */
-.g-bow .g-bhide { display: none; }
-.g-bow .g-bcost { grid-column: 1; color: var(--mute); font-size: 13px; }
-.g-bow .g-bsyn { grid-column: 1; color: var(--teal); font-size: 13px; }
-.g-bow .g-bpick { grid-column: 2; grid-row: 1 / span 4; min-width: 96px; justify-content: center; }
-/* 장착 중 — 버튼이 아니라 상태다. */
-.g-bow.g-worn .g-bpick { border-color: var(--teal); color: var(--teal); pointer-events: none; }
-/* 잠긴 활 — 수집 화면과 같은 문법: 흐리게, 조건은 보이게 (VS의 잠긴 칸). */
-.g-bow.g-lockd .g-bname { color: var(--mute); letter-spacing: .1em; font-weight: 600; }
-.g-bow.g-lockd .g-bperk, .g-bow.g-lockd .g-bcost, .g-bow.g-lockd .g-bsyn { color: var(--mute); }
+/* 앞에 나온 활이 무엇이고 지금 무엇을 드는가 — 한 줄. 자리를 늘 잡아 둔다(출렁임 금지). */
+.g-brack { color: var(--teal); font-size: 13px; min-height: 34px; margin-top: 6px; line-height: 1.45; }
+.g-brack b { color: var(--ink); font-weight: 700; font-family: inherit; }
+.g-brack i { color: var(--mute); font-style: normal; }
+.g-btake { min-width: 132px; justify-content: center; }
+.g-btake:not([disabled]) { border-color: var(--accent); color: var(--accent); }
 
-.g-foot {
-  border-top: 1px solid var(--line); margin-top: 14px; padding-top: 12px;
-  display: flex; align-items: center; gap: 14px;
-}
+/* 아래 줄 — 탭 화면의 foot 안에 든다. 여기서는 테두리·여백을 안 준다 (foot 이 이미 준다). */
+.g-foot { display: flex; align-items: center; gap: 14px; flex: 1; }
 .g-foot label { display: flex; align-items: center; gap: 9px; cursor: pointer; color: var(--body); }
 .g-foot input { accent-color: var(--teal); width: 16px; height: 16px; }
 .g-hint { color: var(--mute); font-size: 13px; flex: 1; text-align: right; }
 
 /* ── 처음부터 ── 파괴적인 버튼은 구석에 작게, 대신 문구는 정직하게. */
-.g-danger { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 10px;
-  display: flex; align-items: center; gap: 12px; }
+.g-danger { display: flex; align-items: center; gap: 10px; flex: none; }
 .g-danger .hb-btn { font-size: 13px; color: var(--mute); }
+/* 경고문은 평소엔 감춘다 — 아래 줄은 좁다. 대신 **무장하면 그 자리에 뜬다.** */
+.g-danger span { display: none; color: #ff8a6a; font-size: 12px; }
+.g-danger.g-warn span { display: block; }
 /* 1단계를 누르면 버튼이 위험색으로 바뀐다 — "정말인가"를 색이 먼저 묻는다. */
 .g-danger .hb-btn.g-armed { color: #ff8a6a; border-color: #ff6a4577; }
-.g-danger span { color: var(--mute); font-size: 12px; flex: 1; }
 
 /* ── 대장간 ── 활 개조. 스탯 줄과 같은 뼈대(이름 · 지금 → 다음 · 버튼)라 한 화면으로 읽힌다. */
 /* 대장간 머리 — 김홍도 「대장간」 (public/art/출처.txt). 형: "대장간도 대장간스러운 이미지". */
@@ -455,6 +442,9 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
   const style = document.createElement('style')
   style.textContent = CSS
   panel.appendChild(style)
+  // 굴리지 않는다 — 능력치·대장간·활 걸이를 세로로 잇지 않고 칸으로 나눈다 (ui/tabs.ts).
+  // 2026-09-11, 형: "능력치강화랑 대장간 이런거 이렇게 한 화면에 세로로 몰아넣는게 맞아?"
+  o.panelBox(PANEL_ID).classList.add('hb-tall')
 
   const head = document.createElement('div')
   head.className = 'g-h'
@@ -468,150 +458,147 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
   sub.className = 'hb-lead'
   sub.textContent = '올리면 몸이 어떻게 달라지는지 아래 줄에 미리 적혀 있다.'
 
-  panel.append(head, sub)
+  panel.appendChild(head)
 
-  // ── 두 단 (2026-09-11, 형: "UI 인터페이스가 너무 빈공간이 많아서 한눈에 안들어와") ──
+  // ── 칸 셋 (2026-09-11) ─────────────────────────────────────────────────
+  //   형: **"능력치강화랑 대장간 이런거 이렇게 한 화면에 세로로 몰아넣는게 맞아?
+  //         게임들이 이래서 게임 하겠냐?"**
   //
-  //   가르는 축은 **돈을 쓰는가**다:
-  //     왼쪽  스탯 · 대장간 — 둘 다 같은 지갑을 쓴다. 나란히 있어야 "근력을 올릴까,
-  //           활채를 갈까"가 진짜 저울질이 된다 (예전엔 둘 사이에 활 걸이가 끼어 있었다).
-  //     오른쪽 활 걸이 — 고르는 것. 값이 아니라 해금이 문이다.
-  //
-  //   길이도 이 쪽이 맞다: 스탯 넷 + 개조 넷 = 여덟, 활 다섯. 두 단이 비슷하게 찬다.
-  //   한쪽만 길면 결국 그 단 때문에 스크롤이 살아난다.
-  //   좁은 화면에서는 .hb-cols 가 한 단으로 접히므로 폰에서는 예전 그대로 위에서 아래다.
-  const cols = document.createElement('div')
-  cols.className = 'hb-cols'
-  const colA = document.createElement('div')
-  const colB = document.createElement('div')
-  cols.append(colA, colB)
-  panel.appendChild(cols)
+  //   아니었다. 능력치 넷 아래 활 걸이 다섯, 그 아래 대장간 넷, 그 아래 설정 — 열 몇 줄이
+  //   한 줄로 쌓인 문서였다. 두 단으로 갈라 봤지만(추가 30) 그건 문서를 두 줄로 만든 것뿐이다.
+  //   이제 셋은 **서로 다른 화면**이다. 하나씩 보고, 위에서 갈아탄다.
+  const paneStat = document.createElement('div')
+  const paneForge = document.createElement('div')
+  const paneRack = document.createElement('div')
+  const tabs = makeTabs([
+    { id: 'stat', label: '능력치', pane: paneStat },
+    { id: 'forge', label: '대장간', pane: paneForge },
+    { id: 'rack', label: '활 걸이', pane: paneRack },
+  ], (id) => {
+    if (id === 'rack') wheel.to(wheel.index(), true)
+  })
+  panel.appendChild(tabs.el)
+  const colA = paneStat
 
+  paneStat.appendChild(sub)
   const rows = buildStatRows(d, trainOut, audio, onChange)
   colA.appendChild(rows.el)
 
-  // ── 활 걸이 (docs/BOWS.md) ──
-  // 장착은 다음 판부터다 — 판 도중에 활이 바뀌면 같은 시드가 다른 판이 된다 (A1).
+  // ── 활 걸이 — **돌려서 고른다** (docs/BOWS.md · ui/wheel.ts) ────────────────
+  //   형: "활선택하는게 버튼이 아니라 롤이었으면 좋겠어. 리볼빙형식이라고 해야하나?"
+  //   출정 화면과 **같은 부품**이다. 같은 것을 고르는 두 화면이 서로 다르게 생기면
+  //   그건 두 가지 물건이 된다.
+  //   장착은 다음 판부터다 — 판 도중에 활이 바뀌면 같은 시드가 다른 판이 된다 (A1).
   const rack = document.createElement('div')
   rack.className = 'g-bows'
   rack.innerHTML = '<h3><span>활 걸이</span>'
     + '<span class="hb-tip hb-tip-mouse">올려두면 자세히</span>'
     + '<span class="hb-tip hb-tip-touch">길게 눌러 자세히</span></h3>'
-  const rackSub = document.createElement('p')
-  rackSub.className = 'hb-lead'
-  // 긴 설명은 말풍선으로 갔다 — 여기는 한 줄이면 된다 (2026-09-11).
-  rackSub.textContent = '바꾼 활은 다음 판부터 든다.'
-  rack.appendChild(rackSub)
 
-  interface BowRow {
-    id: BowKindId
-    el: HTMLElement
-    icon: HTMLElement
-    name: HTMLElement
-    perk: HTMLElement
-    cost: HTMLElement
-    syn: HTMLElement
-    btn: HTMLButtonElement
-  }
-  const bowRows: BowRow[] = []
-  for (const b of BOW_KINDS) {
-    const el = document.createElement('div')
-    el.className = 'g-bow'
-    el.innerHTML = `
-      <div><span class="g-bic"></span><span class="g-bname"></span><span class="g-borigin"></span></div>
-      <div class="g-bperk"></div>
-      <div class="g-bhide"><div class="g-bcost"></div><div class="g-bsyn"></div></div>
-      <button class="hb-btn g-bpick" type="button">들기</button>`
-    const btn = el.querySelector('.g-bpick') as HTMLButtonElement
-    btn.addEventListener('click', () => {
-      d.bow = b.id
-      writeSave(d)
-      refresh()
-      onChange()
-    })
-    const row: BowRow = {
-      id: b.id,
-      el,
-      icon: el.querySelector('.g-bic') as HTMLElement,
-      name: el.querySelector('.g-bname') as HTMLElement,
-      perk: el.querySelector('.g-bperk') as HTMLElement,
-      cost: el.querySelector('.g-bcost') as HTMLElement,
-      syn: el.querySelector('.g-bsyn') as HTMLElement,
-      btn,
+  const bowIds: BowKindId[] = BOW_KINDS.map((b) => b.id)
+  const hasBow = (id: BowKindId): boolean =>
+    id === 'practice' || unlockedBows(d.unlocked).includes(id)
+
+  /** 걸이 카드 한 장의 겉면. 이름 + 숙련 + 장점 한 줄 — 나머지는 말풍선이다. */
+  const bowFace = (id: BowKindId): string => {
+    const k = BOW_KINDS.find((b) => b.id === id)
+    if (k === undefined) return ''
+    if (!hasBow(id)) {
+      // 이름도 그림도 가린다 — 실루엣까지 보이면 가려진 게 아니다
+      // (형: "이미지도 글도 다 나와놓고 이름만 물음표하면 그게 가려진거냐?").
+      return `<span class="wh-ic">${bowIconSvg('', 44)}</span>`
+        + `<span class="wh-n">？？？</span><span class="wh-d">${unlockOfBow(id)?.hint ?? ''}</span>`
     }
-    bowRows.push(row)
-    // ③ 길게 누르면 — 겉면에서 뺀 것 전부 (2026-09-11, 형: "하스스톤은 (…) 오래누르고
-    //    있으면 뜨는 추가설명, 이런식으로 커버하는데 우리도 그런것좀 해야해").
-    //    cost·syn 은 감춘 자리에 그대로 있으므로 **이미 만들어진 문장**을 그대로 읽는다 —
-    //    숙련이 대가를 몇 % 깎았는지 같은 계산이 두 벌이 되지 않게.
-    attachDetail(el, () => {
-      if (row.el.classList.contains('g-lockd')) {
-        return { title: '아직 잠겨 있다', lines: [row.perk.textContent ?? ''], foot: '조건을 채우면 열린다' }
+    const hits = Math.floor(d.bowHits[id] ?? 0)
+    const lv = masteryLevel(hits)
+    const nx = MASTERY_HITS[lv]
+    const mast = lv > 0 ? ` · 숙련 ${lv}` : ''
+    const prog = nx !== undefined ? `<span class="wh-d">숙련 ${hits}/${nx}</span>` : ''
+    return `<span class="wh-ic">${bowIconSvg(id, 44)}</span>`
+      + `<span class="wh-n">${k.name}${mast}</span><span class="wh-d">${k.perk}</span>${prog}`
+  }
+
+  const wheel = makeWheel({
+    label: '활 걸이',
+    items: bowIds.map((id) => ({ id, html: bowFace(id), locked: !hasBow(id) })),
+    onPick: () => refreshBows(),
+  })
+  rack.appendChild(wheel.el)
+
+  // 앞에 나온 활을 든다. 못 드는 활이면 왜 못 드는지가 그 자리에 적힌다.
+  const rackLine = document.createElement('div')
+  rackLine.className = 'g-brack'
+  const take = document.createElement('button')
+  take.type = 'button'
+  take.className = 'hb-btn g-btake'
+  take.addEventListener('click', () => {
+    const id = bowIds[wheel.index()]
+    if (id === undefined || !hasBow(id) || d.bow === id) return
+    d.bow = id
+    writeSave(d)
+    refresh()
+    onChange()
+  })
+  rack.append(rackLine, take)
+
+  for (let i = 0; i < bowIds.length; i++) {
+    const id = bowIds[i]
+    const card = wheel.cards()[i]
+    if (id === undefined || card === undefined) continue
+    const k = BOW_KINDS.find((b) => b.id === id)
+    if (k === undefined) continue
+    // ③ 길게 누르면 — 겉면에서 뺀 것 전부 (대가·궁합·숙련 진행).
+    //    숙련이 대가를 몇 % 깎았는지는 **여기 한 곳에서만** 센다 (game/bows.ts eased()와 같은 식).
+    attachDetail(card, () => {
+      if (!hasBow(id)) {
+        return { title: '아직 잠겨 있다', lines: [unlockOfBow(id)?.hint ?? ''], foot: '조건을 채우면 열린다' }
       }
-      const hits = Math.floor(d.bowHits[b.id] ?? 0)
+      const hits = Math.floor(d.bowHits[id] ?? 0)
       const lv = masteryLevel(hits)
       const nx = MASTERY_HITS[lv]
+      const eased = Math.round(Math.min(1, lv * P.bowkind.masteryEase) * 100)
       return {
-        title: b.name,
-        sub: b.origin,
-        lines: [b.perk, row.cost.textContent ?? '', row.syn.textContent ?? ''],
-        stats: nx !== undefined
-          ? [['다음 숙련까지', `${hits} / ${nx}`]]
-          : [['숙련', '끝까지 올렸다']],
-        foot: b.cost === '없음' ? '' : '숙련이 오를수록 대가가 깎인다',
+        title: k.name,
+        sub: k.origin,
+        lines: [
+          k.perk,
+          k.cost === '없음' ? '대가가 없다 — 그래서 기준이 된다.'
+            : `대가 — ${k.cost}${lv > 0 ? ` (숙련으로 ${eased}% 완화)` : ''}`,
+          k.synergy !== undefined ? `궁합 — ${k.synergy.label}` : '',
+        ],
+        stats: nx !== undefined ? [['다음 숙련까지', `${hits} / ${nx}`]] : [['숙련', '끝까지 올렸다']],
+        foot: '바꾼 활은 다음 판부터 든다',
       }
     })
-    ;(el.querySelector('.g-borigin') as HTMLElement).textContent = b.origin
-    rack.appendChild(el)
   }
-  colB.appendChild(rack)
+  paneRack.appendChild(rack)
 
   // ── 대장간 — 든 활의 개조 (game/forge.ts). 스탯 바로 아래(왼쪽 단)다 —
   //   같은 지갑을 쓰는 것끼리 붙여야 고르는 맛이 산다. 활 걸이는 옆 단에서 같이 보인다.
   const forge = buildForgeRows(d, audio, onChange)
-  colA.appendChild(forge.el)
+  paneForge.appendChild(forge.el)
 
-  /** 활 걸이 갱신. 목록·조건·숙련 전부 여기서만 다시 그린다. */
+  /** 활 걸이 갱신 — 겉면 글자와 '들기' 줄. 자리는 걸이가 스스로 지킨다. */
   const refreshBows = (): void => {
-    const owned = unlockedBows(d.unlocked)
-    for (const row of bowRows) {
-      const kind = BOW_KINDS.find((b) => b.id === row.id)
-      if (kind === undefined) continue
-      const has = row.id === 'practice' || owned.includes(row.id)
-      const worn = d.bow === row.id
-      row.el.classList.toggle('g-worn', worn)
-      row.el.classList.toggle('g-lockd', !has)
-      if (!has) {
-        // 수집 화면과 같은 문법 — 이름은 가리고 조건은 보인다. 그게 궁금증의 절반이다.
-        // 그림도 같이 가린다 — 이름만 ？？？고 활 실루엣은 그대로면 가려진 게 아니다
-        // (형: "이미지도 글도 다 나와놓고 이름만 물음표하면 그게 가려진거냐?").
-        row.icon.innerHTML = bowIconSvg('', 26)
-        row.name.textContent = '？？？'
-        const u = unlockOfBow(row.id)
-        row.perk.textContent = u !== undefined ? u.hint : ''
-        row.cost.textContent = ''
-        row.syn.textContent = ''
-        row.btn.style.display = 'none'
-        continue
-      }
-      row.icon.innerHTML = bowIconSvg(row.id, 26)
-      const hitsWith = Math.floor(d.bowHits[row.id] ?? 0)
-      const lv = masteryLevel(hitsWith)
-      const next = MASTERY_HITS[lv]
-      const lvText = lv > 0 ? ` · 숙련 ${lv}` : ''
-      const nextText = next !== undefined ? ` (${hitsWith}/${next})` : ''
-      row.name.textContent = kind.name + lvText + nextText
-      row.perk.textContent = kind.perk
-      // 숙련이 대가를 얼마나 깎았는지 그 자리에서 % 로 보여준다 (형: "숙련도는 대체
-      // 뭐에좋은건지 유저는 알 방법이 없어"). 성장 화면의 원칙과 같다 — 레벨 숫자만
-      // 던지지 않고 **무엇이 달라지는지**를 말한다 (game/bows.ts eased()와 같은 식).
-      const eased = Math.round(Math.min(1, lv * P.bowkind.masteryEase) * 100)
-      const easeText = kind.cost !== '없음' && lv > 0 ? ` (숙련으로 ${eased}% 완화)` : ''
-      row.cost.textContent = kind.cost === '없음' ? '' : `대가: ${kind.cost}${easeText}`
-      row.syn.textContent = kind.synergy !== undefined ? `궁합: ${kind.synergy.label}` : ''
-      row.btn.style.display = ''
-      row.btn.textContent = worn ? '들고 있음' : '들기'
+    // 해금이 바뀌면 겉면 글자도 바뀐다 (？？？ → 이름). 카드를 다시 채운다.
+    wheel.set(bowIds.map((id) => ({ id, html: bowFace(id), locked: !hasBow(id) })))
+    const id = bowIds[wheel.index()]
+    if (id === undefined) return
+    const k = BOW_KINDS.find((b) => b.id === id)
+    const worn = d.bow === id
+    if (!hasBow(id)) {
+      rackLine.innerHTML = `아직 못 든다 — ${unlockOfBow(id)?.hint ?? ''}`
+        + ` <i>· 지금 드는 활은 ${BOW_KINDS.find((b) => b.id === d.bow)?.name ?? ''}</i>`
+      take.disabled = true
+      take.textContent = '못 드는 활'
+      return
     }
+    // 대가·궁합은 말풍선으로 갔다. 여기 한 줄은 **지금 무엇을 드는가**만 말한다.
+    rackLine.innerHTML = worn
+      ? `<b>${k?.name ?? ''}</b> 를 들고 있다`
+      : `<b>${k?.name ?? ''}</b> — 바꾼 활은 다음 판부터 든다`
+    take.disabled = worn
+    take.textContent = worn ? '들고 있음' : '이 활을 든다'
   }
 
   // ── 오프라인 축적 스위치 (GDD 5장) ──
@@ -638,7 +625,7 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
   const hint = document.createElement('div')
   hint.className = 'g-hint'
   foot.append(label, sndLabel, hint)
-  panel.appendChild(foot)
+  tabs.foot.appendChild(foot)
 
   chk.addEventListener('change', () => {
     d.offlineEnabled = chk.checked
@@ -668,16 +655,21 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
   const dangerNote = document.createElement('span')
   dangerNote.textContent = '판·스탯·별·해금 전부 지우고 새로 시작한다. 이 브라우저의 기록만이다.'
   danger.append(wipe, dangerNote)
-  panel.appendChild(danger)
+  // 감춘 경고를 잃지 않는다 — 누르기 전에는 여기, 누른 뒤에는 화면에.
+  wipe.title = dangerNote.textContent
+  mountInstall(tabs.foot, (t, ms) => o.toast(t, ms))
+  tabs.foot.appendChild(danger)
 
   let armTimer = 0
   const disarm = (): void => {
+    danger.classList.remove('g-warn')
     wipe.classList.remove('g-armed')
     wipe.textContent = '기록 전부 삭제'
   }
   wipe.addEventListener('click', () => {
     if (!wipe.classList.contains('g-armed')) {
       wipe.classList.add('g-armed')
+      danger.classList.add('g-warn')
       wipe.textContent = '정말 전부 지운다?'
       window.clearTimeout(armTimer)
       armTimer = window.setTimeout(disarm, 4000)

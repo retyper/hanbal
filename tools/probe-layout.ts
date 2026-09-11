@@ -5,18 +5,19 @@ export {}
  * 형: **"화면이 스크롤 너무 내려야 하는데 이거. 게임화면은 넓게 쓰는데 UI 인터페이스가
  * 너무 빈공간이 많아서 한눈에 안들어와."**
  *
- * 브라우저가 없으니(CLAUDE.md) 진짜 픽셀 높이는 못 잰다. 대신 **세로로 쌓이는 줄 수**를
+ * 브라우저가 없으니(CLAUDE.md) 진짜 픽셀 높이는 못 잰다. 대신 **한 칸에 쌓이는 줄 수**를
  * 센다 — 스크롤의 원인은 결국 "위에서 아래로 몇 줄이 쌓이는가"이기 때문이다.
- * DOM 스텁으로 진짜 `ui/growth.ts` 를 세우고, 줄(.g-row 스탯 · .g-bow 활 · .f-row 개조)이
- * **어느 단에** 들어갔는지 트리에서 직접 읽는다.
+ * DOM 스텁으로 진짜 `ui/growth.ts`·`ui/loadout.ts` 를 세우고, 줄이 **어느 칸에** 들어갔는지
+ * 트리에서 직접 읽는다.
  *
- *   한 단일 때 높이 ≈ 모든 줄의 합
- *   두 단일 때 높이 ≈ 두 단 중 **긴 쪽**
+ *   한 줄로 쌓을 때 높이 ≈ 모든 줄의 합
+ *   칸으로 나눌 때 높이 ≈ 칸 중 **가장 긴 것**
  *
- * 그리고 CSS 쪽 사실 셋을 같이 못 박는다:
+ * 그리고 CSS 쪽 사실을 같이 못 박는다:
  *   ① 판의 폭이 화면 폭을 따라 커진다 (--pw 단계가 있다)
- *   ② 넓은 화면에서 .hb-cols 가 두 단이 된다
- *   ③ 글줄에는 상한이 있다 (넓다고 한 줄이 화면을 가로지르면 안 된다)
+ *   ② 판의 **높이는 화면이 정한다** (.hb-tall) — 내용이 정하면 그게 곧 스크롤이다
+ *   ③ 아래 줄(출정 버튼)은 칸 **밖**에 있다 — 늘 보인다
+ *   ④ 글줄에는 상한이 있다
  *
  * 실행: node --experimental-strip-types tools/probe-layout.ts
  */
@@ -108,6 +109,11 @@ const overlay = {
     panels.set(id, p)
     return p
   },
+  panelBox: (id: string): El => {
+    const box = panels.get(id) ?? new El('div')
+    panels.set(id, box)
+    return box
+  },
   hud: (): El => new El('div'),
   toast: (): void => {},
   show: (): void => {},
@@ -126,10 +132,10 @@ function check(ok: boolean, label: string, detail = ''): void {
   console.log(`  ${ok ? 'ok ' : '✗  '} ${label.padEnd(46)} ${detail}`)
 }
 
-console.log('신궁 — 판 배치 프로브 (형: "빈공간이 너무 많아서 한눈에 안들어와")\n')
+console.log('신궁 — 판 배치 프로브 (형: "세로롤링 너무 게임 안같고 뭔 웹페이지 같잖아")\n')
 
 // ── 1. CSS — 판이 화면을 따라 넓어지는가 ──────────────────────────────
-console.log('1. 판의 폭 · 두 단')
+console.log('1. 판의 폭 · 굴리지 않는 화면')
 {
   const css = readFileSync('src/ui/overlay.ts', 'utf8')
   // --pw 의 단계. 기본 하나 + 넓은 화면용 여럿.
@@ -141,17 +147,17 @@ console.log('1. 판의 폭 · 두 단')
     `최대 ${steps.length > 0 ? Math.max(...steps) : 0}px`,
   )
   check(css.includes('width: min(var(--pw), 100%)'), '판이 그 폭을 실제로 쓴다')
-  // 두 단 — 좁을 때 1단, 넓을 때 2단.
-  const cols = /\.hb-cols\s*{[^}]*grid-template-columns:\s*1fr\s*;/.test(css)
-  const cols2 = /\.hb-cols\s*{\s*grid-template-columns:\s*1fr 1fr/.test(css)
-  check(cols, '좁은 화면에서는 한 단이다 (폰은 그대로)')
-  check(cols2, '넓은 화면에서는 두 단이 된다')
+  // 굴리지 않는다 — 판의 높이를 화면이 정한다.
+  check(/\.hb-panel\.hb-tall\s*{[^}]*height:\s*min\(/.test(css), '판의 높이를 화면이 정한다 (.hb-tall)')
+  check(/\.hb-tall\s+\.hb-body\s*{[^}]*overflow:\s*hidden/.test(css), '판 전체는 굴러가지 않는다')
+  check(css.includes('.hb-tabs'), '칸을 갈아타는 탭 줄이 있다')
+  check(/\.hb-foot\s*{[^}]*flex:\s*none/.test(css), '아래 줄은 칸 밖에 있다 (늘 보인다)')
   // 글줄 상한 — 넓어졌다고 한 줄이 화면을 가로지르면 읽기가 더 나빠진다.
   check(/\.hb-lead\s*{[^}]*max-width:\s*\d+ch/.test(css), '안내 글줄에 상한이 있다')
 }
 
-// ── 2. 성장 화면 — 줄이 두 단으로 갈렸는가 ────────────────────────────
-console.log('\n2. 성장 화면 — 세로로 쌓이는 줄')
+// ── 2. 성장 화면 — 칸으로 갈렸는가 ──────────────────────────────────
+console.log('\n2. 성장 화면 — 한 칸에 쌓이는 줄')
 {
   const { defaultSave } = await import('../src/game/save.ts')
   const { mountGrowth } = await import('../src/ui/growth.ts')
@@ -162,42 +168,35 @@ console.log('\n2. 성장 화면 — 세로로 쌓이는 줄')
   mountGrowth(overlay as never, d, () => {}, { muted: () => false, setMuted: () => {} } as never)
   const panel = panels.get('growth') as El
 
-  /** 이 덩이 안의 '세로로 쌓이는 줄' 수. 스탯·활·개조 줄만 센다 (이게 높이의 전부다). */
+  /** 이 덩이 안의 '세로로 쌓이는 줄' 수. 스탯·개조 줄만 센다 (이게 높이의 전부다). */
   const rowsIn = (root: El): number => {
     let n = 0
     root.walk((e) => {
       const c = ` ${e.className} `
-      if (c.includes(' g-row ') || c.includes(' g-bow ') || c.includes(' f-row ')) n++
+      if (c.includes(' g-row ') || c.includes(' f-row ')) n++
     })
     return n
   }
-
-  const cols = ((): El | null => {
-    let found: El | null = null
-    panel.walk((e) => { if (found === null && e.className.split(' ').includes('hb-cols')) found = e })
-    return found
-  })()
-  check(cols !== null, '성장 화면이 두 단 틀을 쓴다')
-  if (cols !== null) {
-    const [a, b] = (cols as El).children
-    const ra = a === undefined ? 0 : rowsIn(a)
-    const rb = b === undefined ? 0 : rowsIn(b)
-    const stacked = ra + rb
-    const tallest = Math.max(ra, rb)
-    check(ra > 0 && rb > 0, '두 단에 내용이 나뉘어 있다', `왼쪽 ${ra}줄 · 오른쪽 ${rb}줄`)
-    check(
-      tallest < stacked,
-      '세로로 쌓이는 줄이 줄었다',
-      `${stacked}줄 → ${tallest}줄 (${Math.round((1 - tallest / Math.max(1, stacked)) * 100)}% 짧아짐)`,
-    )
-    // 두 단이 너무 기울면 한쪽만 길어 결국 스크롤이 산다.
-    const skew = Math.abs(ra - rb) / Math.max(1, stacked)
-    check(skew <= 0.45, '두 단의 길이가 심하게 안 기운다', `치우침 ${(skew * 100).toFixed(0)}% (상한 45%)`)
-  }
+  const panes: El[] = []
+  panel.walk((e) => { if (e.className.split(' ').includes('hb-pane')) panes.push(e) })
+  check(panes.length >= 3, '성장이 칸 셋으로 갈렸다', `${panes.length}칸`)
+  const each = panes.map(rowsIn)
+  const stacked = each.reduce((a2, b2) => a2 + b2, 0)
+  const tallest = each.reduce((a2, b2) => Math.max(a2, b2), 0)
+  check(stacked > 0, '칸에 줄이 들어 있다', each.join(' · ') + '줄')
+  check(
+    tallest < stacked,
+    '한 칸에 쌓이는 줄이 줄었다',
+    `${stacked}줄 → ${tallest}줄 (${Math.round((1 - tallest / Math.max(1, stacked)) * 100)}% 짧아짐)`,
+  )
+  // 활 걸이는 줄이 아니라 **걸이** 하나다 (ui/wheel.ts) — 다섯 줄이 한 칸으로 접혔다.
+  let wheels = 0
+  panel.walk((e) => { if (e.className.split(' ').includes('wh')) wheels++ })
+  check(wheels === 1, '활 걸이가 돌아가는 걸이 하나다', `${wheels}개`)
 }
 
-// ── 3. 출정 화면 — 네 구역이 두 단으로 갈렸는가 ───────────────────────
-console.log('\n3. 출정 화면 — 구역이 두 단으로')
+// ── 3. 출정 화면 — 네 칸 ─────────────────────────────────────────────
+console.log('\n3. 출정 화면 — 네 칸')
 {
   const { defaultSave } = await import('../src/game/save.ts')
   const { mountLoadout } = await import('../src/ui/loadout.ts')
@@ -217,35 +216,37 @@ console.log('\n3. 출정 화면 — 구역이 두 단으로')
     })
     return n
   }
-  const cols = ((): El | null => {
-    let found: El | null = null
-    panel.walk((e) => { if (found === null && e.className.split(' ').includes('hb-cols')) found = e })
-    return found
-  })()
-  check(cols !== null, '출정 화면이 두 단 틀을 쓴다')
-  if (cols !== null) {
-    const [a, b] = (cols as El).children
-    const ra = a === undefined ? 0 : blocksIn(a)
-    const rb = b === undefined ? 0 : blocksIn(b)
-    check(ra > 0 && rb > 0, '두 단에 내용이 나뉘어 있다', `왼쪽 ${ra}칸 · 오른쪽 ${rb}칸`)
-    check(
-      Math.max(ra, rb) < ra + rb,
-      '세로로 쌓이는 칸이 줄었다',
-      `${ra + rb}칸 → ${Math.max(ra, rb)}칸`,
-    )
-  }
+  const panes: El[] = []
+  panel.walk((e) => { if (e.className.split(' ').includes('hb-pane')) panes.push(e) })
+  check(panes.length === 4, '출정이 칸 넷으로 갈렸다 (활·갑옷·부적·살 가게)', `${panes.length}칸`)
+  const each = panes.map(blocksIn)
+  const stacked = each.reduce((a2, b2) => a2 + b2, 0)
+  const tallest = each.reduce((a2, b2) => Math.max(a2, b2), 0)
+  check(tallest < stacked, '한 칸에 쌓이는 칸이 줄었다', `${stacked}칸 → ${tallest}칸`)
+
+  // 활은 걸이 하나다 (형: "활선택하는게 버튼이 아니라 롤이었으면").
+  let wheels = 0
+  panel.walk((e) => { if (e.className.split(' ').includes('wh')) wheels++ })
+  check(wheels === 1, '활이 돌아가는 걸이 하나다', `${wheels}개`)
+
+  // 출정 버튼은 칸 **밖**에 있다 — 어느 칸을 보고 있든 늘 보여야 한다.
+  let goInPane = false
+  let goFound = false
+  for (const pane of panes) pane.walk((e) => { if (e.className.split(' ').includes('l-go')) goInPane = true })
+  panel.walk((e) => { if (e.className.split(' ').includes('l-go')) goFound = true })
+  check(goFound && !goInPane, "'나선다' 가 칸 밖에 있다 (늘 보인다)")
 }
 
-// ── 4. 두 단을 쓰는 판이 몇이나 되는가 ────────────────────────────────
-console.log('\n4. 두 단을 쓰는 판')
+// ── 4. 칸으로 나눈 판이 몇이나 되는가 ─────────────────────────────────
+console.log('\n4. 칸으로 나눈 판')
 {
   const dir = 'src/ui'
   const users: string[] = []
   for (const f of readdirSync(dir)) {
-    if (!f.endsWith('.ts') || f === 'overlay.ts') continue
-    if (readFileSync(`${dir}/${f}`, 'utf8').includes("'hb-cols'")) users.push(f.replace('.ts', ''))
+    if (!f.endsWith('.ts') || f === 'tabs.ts') continue
+    if (readFileSync(`${dir}/${f}`, 'utf8').includes('makeTabs(')) users.push(f.replace('.ts', ''))
   }
-  check(users.length >= 3, '긴 판들이 두 단을 쓴다', users.join(' · ') || '(없다)')
+  check(users.length >= 2, '긴 판들이 칸으로 나뉘었다', users.join(' · ') || '(없다)')
 }
 
 // ── 5. 카드 겉면 — 세 층으로 갈렸는가 ─────────────────────────────────

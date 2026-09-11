@@ -30,6 +30,12 @@ export interface Overlay {
   showing(id: string): boolean
   /** 패널을 만들거나 이미 만든 걸 돌려준다. 여기에 내용을 채운다. */
   panel(id: string): HTMLElement
+  /**
+   * 그 패널의 **바깥 상자**. 높이를 화면이 정하게 하려고 .hb-tall 을 붙이는 자리다
+   * (2026-09-11, 형: "세로롤링 너무 게임 안같고 뭔 웹페이지 같잖아").
+   * 내용을 채우는 쪽은 panel() 을 쓴다 — 이건 판 전체의 성격을 정할 때만.
+   */
+  panelBox(id: string): HTMLElement
   /** 항상 보이는 층. 작은 버튼만 올린다. */
   hud(): HTMLElement
   /** 구석 알림. 확인 버튼 없음, 클릭 없이 사라진다. */
@@ -199,6 +205,97 @@ const CSS = `
 .hb-ic.i-charm { --ic: url(${BASE}icons/charm-rune.svg); }
 .hb-ic.i-shop { --ic: url(${BASE}icons/shop-coins.svg); }
 .hb-ic.i-bounty { --ic: url(${BASE}icons/bounty-crown.svg); }
+
+/* 앱으로 설치 — 아래 줄 구석의 작은 단추. 브라우저가 된다고 할 때만 뜬다 (ui/install.ts). */
+.hb-install { font-size: 13px; color: var(--teal); border-color: #3f5a55; }
+.hb-install:hover { color: var(--ink); border-color: var(--teal); }
+
+/* ── 게임 화면 — 굴리지 않는다 (2026-09-11, ui/tabs.ts) ────────────────────────
+   형: "능력치강화랑 대장간 이런거 이렇게 한 화면에 세로로 몰아넣는게 맞아?"
+       "세로롤링 너무 게임 안같고 뭔 웹페이지 같잖아."
+
+   맞다. 판이 **긴 문서**였다. 이제 판의 높이는 **화면이 정하고**(.hb-tall), 내용은
+   위의 칸으로 갈아탄다. 한 칸에 들어갈 만큼만 한 칸에 넣는다 — 안 들어가면 칸을 늘리지
+   화면을 늘리지 않는다. 아래 줄(출정 버튼)은 **늘 보인다.** */
+.hb-panel.hb-tall { height: min(760px, 100%); }
+.hb-tall .hb-body { display: flex; flex-direction: column; overflow: hidden; }
+.hb-screen { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+/* 탭 줄 — 글자와 밑줄뿐이다. 한쪽만 두꺼운 네모는 안 쓴다 (형의 오랜 반려). */
+.hb-tabs { display: flex; gap: 2px; flex: none; border-bottom: 1px solid var(--line); }
+.hb-tab {
+  flex: 1; min-height: 42px; padding: 9px 10px 8px; border: 0; background: transparent;
+  color: var(--mute); font: inherit; font-weight: 700; font-size: 14px; letter-spacing: .04em;
+  cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: color .12s, border-color .12s;
+}
+.hb-tab:hover { color: var(--dim); }
+.hb-tab:focus-visible { outline: 2px solid var(--teal); outline-offset: -2px; }
+.hb-tab.hb-tab-on { color: var(--accent); border-bottom-color: var(--accent); }
+@media (pointer: coarse) { .hb-tab { min-height: 46px; } }
+
+/* 칸 — 하나만 보인다. 넘치면 그 칸 안에서만 굴린다 (아주 낮은 화면의 마지막 수단이다). */
+.hb-panes { position: relative; flex: 1; min-height: 0; }
+.hb-pane { display: none; height: 100%; overflow-y: auto; overscroll-behavior: contain; padding-top: 10px; }
+.hb-pane.hb-on { display: block; }
+.hb-pane > :first-child { margin-top: 0; }
+
+/* 아래 줄 — 늘 보인다. 출정 버튼이 굴려야 나오면 그건 게임이 아니다. */
+.hb-foot {
+  flex: none; display: flex; align-items: center; gap: 12px;
+  border-top: 1px solid var(--line); padding-top: 11px; margin-top: 10px;
+}
+.hb-foot:empty { display: none; }
+
+/* ── 걸이 — 돌려서 고른다 (2026-09-11, ui/wheel.ts) ────────────────────────────
+   형: "활선택하는게 버튼이 아니라 롤이었으면 좋겠어. 리볼빙형식이라고 해야하나?"
+
+   가운데 한 장이 앞에 나오고 양옆이 물러난다. 자리와 크기는 JS 가 transform 으로 쓰고,
+   **부드러움은 여기 transition 이 만든다** — 그래야 프레임마다 도는 코드가 없다 (A5).
+   양옆이 반쯤 보이는 것이 이 물건의 전부다: "옆에 더 있다"를 화살표보다 형태가 먼저 말한다. */
+.wh {
+  position: relative; display: grid; align-items: center;
+  grid-template-columns: auto 1fr auto; gap: 6px;
+}
+.wh-stage {
+  position: relative; height: 178px; overflow: hidden; touch-action: pan-y;
+}
+.wh-card {
+  position: absolute; left: 50%; top: 50%;
+  display: flex; flex-direction: column; gap: 3px;
+  background: var(--card); border-radius: 2px; padding: 13px 14px 14px;
+  text-align: left; cursor: pointer; color: var(--body);
+  transition: transform .22s cubic-bezier(.2,.7,.3,1), opacity .18s;
+  will-change: transform;
+}
+/* 카드 테두리는 다른 카드와 같은 문양이다 — 걸이라고 다른 종이를 쓰지 않는다. */
+.wh-card::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  border: 11px solid transparent;
+  border-image: url(${BASE}ui/frame-card.png) 32 / 11px stretch;
+}
+/* 가운데 한 장만 또렷하다. 고른 것이 곧 앞에 나온 것이다. */
+.wh-card.wh-mid { background: var(--card-hi); box-shadow: 0 8px 26px #0009; }
+.wh-card.wh-lock { filter: grayscale(.6); }
+.wh-card .wh-n { color: var(--ink); font-weight: 700; font-size: 16px; line-height: 1.25; }
+.wh-card.wh-mid .wh-n { color: var(--accent); }
+.wh-card.wh-lock .wh-n { color: var(--mute); letter-spacing: .1em; }
+.wh-card .wh-d { color: var(--dim); font-size: 12px; line-height: 1.4; }
+.wh-card .wh-ic { line-height: 0; margin-bottom: 5px; color: var(--dim); }
+.wh-card.wh-mid .wh-ic { color: var(--accent); }
+/* 화살표 — 손가락이 닿는 크기(44px)를 지킨다. 글리프는 크게, 테두리는 없이. */
+.wh-arm {
+  width: 40px; min-width: 40px; height: 64px; padding: 0; justify-content: center;
+  font-size: 26px; line-height: 1; color: var(--dim); background: transparent; border-color: transparent;
+}
+.wh-arm:hover { background: var(--card); color: var(--ink); }
+@media (pointer: coarse) { .wh-arm { width: 44px; min-width: 44px; height: 72px; } }
+/* 몇 번째인가 — 점 다섯. 숫자를 쓰지 않는 이유는 세는 것이 아니라 **어디쯤인지**를 보는 것이라서다. */
+.wh-pips { grid-column: 1 / -1; display: flex; justify-content: center; gap: 6px; margin-top: 2px; }
+.wh-pips i { width: 5px; height: 5px; border-radius: 50%; background: var(--line); transition: background .18s, transform .18s; }
+.wh-pips i.wh-on { background: var(--accent); transform: scale(1.4); }
+/* 좁은 화면 — 카드가 작아지니 무대도 낮춘다. */
+@media (max-width: 480px) { .wh-stage { height: 158px; } }
 
 /* ── 자세히 말풍선 (2026-09-11, ui/detail.ts) ─────────────────────────────────
    형: "하스스톤은 (…) 화면에 가장중요한 설명, 탭할때 바로뜨는 부가 설명과 (…) 조금더
@@ -602,6 +699,12 @@ export function createOverlay(): Overlay {
       scrim.appendChild(outer)
       panels.set(id, { outer, body })
       return body
+    },
+    panelBox(id: string): HTMLElement {
+      const found = panels.get(id)
+      if (found !== undefined) return found.outer
+      this.panel(id)
+      return (panels.get(id) as { outer: HTMLElement }).outer
     },
     toast(text: string, ms?: number): void {
       const life = ms !== undefined && ms > 0 ? ms : TOAST_MS

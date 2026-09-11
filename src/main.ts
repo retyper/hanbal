@@ -14,6 +14,7 @@ import { STAGES } from './game/stages.ts'
 import { loadSave } from './game/save.ts'
 import { progressOf, unlockedBows } from './game/unlocks.ts'
 import { createOverlay } from './ui/overlay.ts'
+import { armInstall } from './ui/install.ts'
 import { mountGrowth, showOfflineGain, showReinforce, showRunGain, type AudioSwitch } from './ui/growth.ts'
 import { mountFork, mountLoadout, mountSupply } from './ui/loadout.ts'
 import { checkpointStage } from './game/stages.ts'
@@ -194,6 +195,11 @@ window.addEventListener('orientationchange', () => loop.resize(), { passive: tru
 //   ① 첫 페인트를 막지 않는다 — load 뒤에, 그것도 한가할 때 부른다 (C1·C6).
 //   ② https 에서만 — 로컬 dev(http)에 워커가 남으면 고친 코드가 캐시에 가려 안 보인다.
 //   ③ 실패해도 삼킨다. 워커는 덧칠이지 의존이 아니다 (audio/samples.ts 와 같은 규칙).
+// ★ 설치 신호(beforeinstallprompt)는 **로드 직후 한 번** 온다. 그때 안 잡으면 영영 못 잡는다.
+// 서버 조건은 처음부터 맞았는데 화면에 누를 것이 없었다 (형: "왜 아직도 앱으로는 다운
+// 안받아지는거야?"). 버튼은 출정·성장 화면의 아래 줄에 뜬다 (ui/install.ts).
+armInstall()
+
 if (location.protocol === 'https:' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     idle(() => {
