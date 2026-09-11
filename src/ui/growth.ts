@@ -132,6 +132,28 @@ const CSS = `
 /* 1단계를 누르면 버튼이 위험색으로 바뀐다 — "정말인가"를 색이 먼저 묻는다. */
 .g-danger .hb-btn.g-armed { color: #ff8a6a; border-color: #ff6a4577; }
 
+/* ── 강화 머리 ── 수렵총 벽화 (고구려, public/art/출처.txt).
+   형: **"대장간은 이미지 잇으니 강화도 이미지 있어야지."**
+   맞다. 한 화면에서 한쪽에만 그림이 있으면, 그림 없는 쪽은 덜 만든 칸으로 읽힌다.
+   호랑이를 쫓는 기마 궁수 — **몸을 키우는** 칸의 그림으로 이만한 게 없다.
+   (끝난 화면에서 내려온 그림이다. 좋은 그림을 버리지는 않는다.)
+   대장간 머리(.f-h)와 **같은 뼈대**로 쓴다 — 둘이 다르게 생기면 그 차이가 먼저 보인다. */
+.s-h {
+  position: relative; display: flex; align-items: flex-end; gap: 12px; margin: 0 -8px 8px; padding: 40px 14px 10px;
+  overflow: hidden; border-radius: 2px;
+  background:
+    linear-gradient(to bottom, rgba(38, 37, 33, .35), rgba(47, 46, 41, .9) 75%, var(--paper) 100%),
+    url(${BASE}art/suryeopchong.jpg) center 38% / cover no-repeat;
+  min-height: 96px;
+}
+.s-h h3 { flex: 1; margin: 0; color: var(--ink); font-size: 17px; letter-spacing: .08em; }
+.s-h .f-cap { position: absolute; right: 10px; top: 8px; color: rgba(255, 244, 220, .6); font-size: 11px; letter-spacing: .06em; }
+/* 낮은 화면에서는 둘 다 납작해진다 — 그림보다 줄이 먼저다. */
+@media (max-height: 560px) {
+  .s-h, .f-h { min-height: 0; padding: 16px 12px 8px; }
+  .s-h .f-cap, .f-h .f-cap { display: none; }
+}
+
 /* ── 대장간 ── 활 개조. 스탯 줄과 같은 뼈대(이름 · 지금 → 다음 · 버튼)라 한 화면으로 읽힌다. */
 /* 대장간 머리 — 김홍도 「대장간」 (public/art/출처.txt). 형: "대장간도 대장간스러운 이미지". */
 .f-h {
@@ -162,28 +184,35 @@ const CSS = `
   .f-up { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 6px; }
 }
 
-/* ── 재정비 머리 ── 여정이 남긴 것. "죽었다"가 아니라 "가져간다 · 다음은 여기부터"가 이 머리의 말이다. */
-/* 머리 그림 — 고구려 수렵총 벽화 (public/art/출처.txt). 호랑이를 쫓는 기마 궁수 —
-   쓰러진 자리에서 다시 활을 드는 화면에 어울리는 그림이다. 패널이 열릴 때만 받는다.
-   (무용총 「수렵도」는 오프닝이 쓴다 — 화면마다 다른 그림이어야 그림이 기억된다.) */
-.r-head {
-  position: relative; text-align: center; padding: 22px 12px 16px; margin: -4px -8px 4px; overflow: hidden;
-  border-bottom: 1px solid var(--line);
-  background:
-    linear-gradient(to bottom, rgba(38, 37, 33, .5), rgba(47, 46, 41, .9) 70%, var(--paper) 100%),
-    url(${BASE}art/suryeopchong.jpg) center 45% / cover no-repeat;
+/* ── 끝난 화면 머리 ── (2026-09-11 다시 짬)
+   형: **"실패화면에는 수렵총 말고 다른걸 써야겠는데. 아예 이미지 안 쓰고 Game Over를 크게
+        쓰던가. 143판보다 게임오버가 더 중요하잖아. 왤케 텍스트가 쓸데없이 많아."**
+
+   맞다. 벽화가 머리의 절반을 먹고 그 위에 줄이 여섯 얹혀 있었다. 죽은 직후에 읽히는 글은
+   한두 줄이다 — 나머지는 있어도 안 읽고, 있어서 첫 줄까지 안 읽힌다.
+   이제 **제일 큰 것은 GAME OVER 하나**고, 판 수는 그 아래 한 줄로 내려갔다.
+   (벽화는 버리지 않았다 — 아래 '강화' 머리(.s-h)로 옮겼다.) */
+.r-head { text-align: center; padding: 14px 10px 16px; margin: -4px -8px 4px; border-bottom: 1px solid var(--line); }
+.r-over {
+  font-weight: 700; letter-spacing: .14em; line-height: 1.05; font-size: 52px;
+  color: #e2543f; text-shadow: 0 2px 20px rgba(226, 84, 63, .3);
 }
-.r-cap { position: absolute; right: 12px; top: 8px; color: rgba(255, 244, 220, .6); font-size: 11px; letter-spacing: .06em; }
-.r-lead { font-size: 14px; color: var(--dim); letter-spacing: .1em; }
-.r-stage { font-size: 48px; font-weight: 700; color: var(--ink); font-family: var(--num); line-height: 1.15; }
-@media (max-width: 640px) { .r-stage { font-size: 40px; } }
-.r-new { color: var(--accent); font-weight: 700; margin-top: 6px; }
-.r-old { color: var(--dim); margin-top: 6px; }
-.r-rule { color: var(--ink); margin-top: 8px; font-size: 13px; line-height: 1.5; }
+/* 접은 것은 실패가 아니다 — 같은 자리에 같은 크기로, 색만 죽인다. */
+.r-over.r-quit { color: var(--dim); text-shadow: none; letter-spacing: .1em; }
+.r-why { color: var(--body); font-size: 13px; margin-top: 8px; line-height: 1.5; }
+/* 판 수는 **둘째**다. 48px 짜리 주인공이던 줄을 기록과 한 줄로 합쳤다. */
+.r-stage { color: var(--dim); font-size: 14px; margin-top: 12px; }
+.r-stage b { font-family: var(--num); font-size: 26px; color: var(--ink); font-weight: 700; margin-right: 2px; }
+.r-stage i { font-style: normal; margin-left: 10px; }
+.r-stage i.r-new { color: var(--accent); font-weight: 700; }
 .r-keep { color: var(--body); margin-top: 10px; font-size: 14px; }
 .r-keep b { color: var(--accent); font-weight: 700; }
 .r-dot { color: var(--dim); margin: 0 8px; }
 .r-next { color: var(--teal); margin-top: 8px; font-size: 13px; }
+@media (max-width: 640px), (max-height: 560px) {
+  .r-over { font-size: 38px; }
+  .r-head { padding: 8px 8px 12px; }
+}
 .r-none { color: var(--mute); font-size: 13px; padding: 10px 0 0; border-top: 1px solid var(--line); }
 .r-foot { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 16px; display: flex; justify-content: center; }
 .r-go { font-size: 17px; padding: 13px 34px; }
@@ -483,7 +512,11 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
   panel.appendChild(tabs.el)
   const colA = paneStat
 
-  paneStat.appendChild(sub)
+  // 대장간처럼 **강화에도 머리 그림**이 선다 (형: "대장간은 이미지 잇으니 강화도 이미지 있어야지").
+  const statHead = document.createElement('div')
+  statHead.className = 's-h'
+  statHead.innerHTML = '<h3>몸을 키운다</h3><div class="f-cap">수렵총 벽화 (고구려)</div>'
+  paneStat.append(statHead, sub)
   const rows = buildStatRows(d, trainOut, audio, onChange)
   colA.appendChild(rows.el)
 
@@ -813,38 +846,45 @@ export function showReinforce(
   const keeps: string[] = []
   if (info.training > 0) keeps.push(coinHtml(info.training, true))
   if (info.stars > 0) keeps.push(`별 <b>${info.stars}</b>`)
-  if (info.molgi) keeps.push('<b>몰기</b>')
-  else if (info.jung >= 3) keeps.push(`최고 <b>${info.jung}중</b>`)
-  // 실패는 '실패'라고 적는다 (형의 동생: 화살이 떨어져 실패한 줄 모르고 계속 돌았다).
-  const lead = info.reason === 'death'
-    ? '실패 — 쓰러졌다. 이번 여정은'
-    : info.reason === 'abandon'
-      ? '여정을 접었다 — 이번은'
-      : '실패 — 화살이 다 떨어졌다. 이번 여정은'
-  // 왜 끝났는지 규칙 한 줄. 규칙을 모르면 재정비도 "또 1판이냐"로만 읽힌다.
-  const rule = info.reason === 'defeat'
-    ? '화살이 다 떨어지기 전에 과녁을 전부 맞혀야 다음 판이다 · 남은 화살 수는 왼쪽 위에 있다'
+  // '몰기'라는 말은 화면에 안 쓴다 (2026-09-11, 형: "몰기는 이 몰기가 뭐야 대체").
+  // 국궁의 말이지만 **아는 사람만 아는 말**이고, 여기서 가르칠 자리도 아니다.
+  // 뜻은 '연달아 다섯을 맞혔다'니까 그냥 그렇게 쓴다 — 낱말 하나를 배우게 하느니 뜻을 준다.
+  if (info.jung >= 3) keeps.push(`연달아 <b>${info.jung}발</b>`)
+
+  // 접은 것과 실패한 것은 다르다 — 같은 자리, 같은 크기, 색만 다르게.
+  const quit = info.reason === 'abandon'
+  // 왜 끝났는지 **한 줄**. 예전엔 여기에 규칙 두 줄이 더 붙어 있었다.
+  const why = quit
+    ? '여기서 접었다'
     : info.reason === 'death'
-      ? '기력이 0이 되면 쓰러진다 · 적의 화살은 방패로 막고, 갑옷으로 받는다'
-      : ''
+      ? '기력이 0이 됐다 — 적의 화살은 방패로 막고 갑옷으로 받는다'
+      : '화살이 떨어졌다 — 남은 수는 화면 왼쪽 위에 있다'
+
   const head = document.createElement('div')
   head.className = 'r-head'
   head.innerHTML =
-    '<div class="r-cap">수렵총 벽화 (고구려)</div>' +
-    `<div class="r-lead">${lead}</div>` +
-    `<div class="r-stage">${info.reached}판</div>` +
-    (rule !== '' ? `<div class="r-rule">${rule}</div>` : '') +
-    (info.first
-      ? '<div class="r-old">첫 기록 — 여기서부터 시작이다</div>'
+    `<div class="r-over${quit ? ' r-quit' : ''}">${quit ? '여정 종료' : 'GAME OVER'}</div>`
+    + `<div class="r-why">${why}</div>`
+    // 판 수와 기록은 **한 줄**이다. 둘 다 같은 걸 재는 숫자라 나란히 있어야 읽힌다.
+    + `<div class="r-stage"><b>${info.reached}</b>판`
+    + (info.first
+      ? ' <i class="r-new">첫 기록</i>'
       : info.isNew
-        ? '<div class="r-new">최고 기록 경신</div>'
-        : `<div class="r-old">최고 기록 ${info.best}판 · 점수 ${info.score}</div>`) +
-    (keeps.length > 0 ? `<div class="r-keep">가져간다 &nbsp;${keeps.join('<span class="r-dot">·</span>')}</div>` : '') +
+        ? ' <i class="r-new">최고 기록</i>'
+        : ` <i>최고 ${info.best}판</i>`)
+    + '</div>'
+    + (keeps.length > 0 ? `<div class="r-keep">가져간다 &nbsp;${keeps.join('<span class="r-dot">·</span>')}</div>` : '')
     // 어디서 다시 서는가 — "또 1판부터냐"가 접는 이유가 되지 않게 화면이 먼저 말한다.
-    (info.nextStage > 1 ? `<div class="r-next">다음 여정은 ${info.nextStage}판부터 — 잡은 귀신은 다시 안 나온다</div>` : '')
+    + (info.nextStage > 1 ? `<div class="r-next">다음 여정은 ${info.nextStage}판부터</div>` : '')
   panel.appendChild(head)
 
   // ── 가운데: 성장 줄 ──
+  // 끝난 화면의 강화 칸에도 같은 머리를 세운다 — 두 화면의 같은 칸은 같게 생겨야 한다.
+  const statHead = document.createElement('div')
+  statHead.className = 's-h'
+  statHead.innerHTML = '<h3>몸을 키운다</h3><div class="f-cap">수렵총 벽화 (고구려)</div>'
+  panel.appendChild(statHead)
+
   const gh = document.createElement('div')
   gh.className = 'g-h'
   gh.innerHTML = `<h3>강화</h3><div class="g-train">${COIN_ICON}<b></b></div>`

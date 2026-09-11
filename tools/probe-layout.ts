@@ -367,6 +367,55 @@ console.log('\n8. 행로도 — 넓어진 판을 채운다')
   )
 }
 
+// ── 9. 끝난 화면 — GAME OVER 가 주인공인가 ────────────────────────────
+//   형: "실패화면에는 수렵총 말고 다른걸 써야겠는데. 143판보다 게임오버가 더 중요하잖아.
+//        왤케 텍스트가 쓸데없이 많아. 몰기는 이 몰기가 뭐야 대체."
+//   눈으로 봐야 아는 것(색·여백)은 못 재지만, **무엇이 제일 큰가**와 **줄이 몇 개인가**는
+//   숫자다. 이 셋은 다시 늘어나기 쉬운 것들이라 여기에 못 박아 둔다.
+console.log('\n9. 끝난 화면 — GAME OVER')
+{
+  const { defaultSave } = await import('../src/game/save.ts')
+  const { showReinforce } = await import('../src/ui/growth.ts')
+  const css = readFileSync('src/ui/growth.ts', 'utf8')
+
+  const headCss = /\.r-head\s*{([^}]*)}/.exec(css)?.[1] ?? ''
+  check(!headCss.includes('url('), '끝난 화면 머리에 그림이 없다')
+  const over = Number(/\.r-over\s*{[^}]*font-size:\s*(\d+)px/.exec(css)?.[1] ?? 0)
+  const stage = Number(/\.r-stage b\s*{[^}]*font-size:\s*(\d+)px/.exec(css)?.[1] ?? 0)
+  check(over > stage && over >= 40, 'GAME OVER 가 판 수보다 크다', `${over}px vs ${stage}px`)
+
+  const d2 = defaultSave(0)
+  d2.training = 40
+  showReinforce(
+    overlay as never, d2,
+    {
+      reached: 143, best: 143, score: 900, isNew: true, first: false, reason: 'death',
+      training: 40, stars: 2, jung: 5, molgi: true, nextStage: 121,
+    } as never,
+    { muted: () => false, setMuted: () => {} } as never,
+    () => {},
+  )
+  const rp = panels.get('reinforce') as El
+  let rhead: El | null = null
+  rp.walk((e) => { if (e.className.split(' ').includes('r-head')) rhead = e })
+  const html = rhead === null ? '' : (rhead as El).innerHTML
+  check(html.includes('GAME OVER'), '가장 먼저 GAME OVER 라고 쓴다')
+  check(!html.includes('몰기'), "'몰기'라는 말을 안 쓴다", html.includes('연달아') ? '연달아 5발 이라고 쓴다' : '')
+  // 줄 수 — 죽은 직후에 읽히는 글은 한두 줄이다. 다섯 줄이면 이미 많은 것이다.
+  const lines = (html.match(/<div class="r-/g) ?? []).length
+  check(lines <= 5, '머리의 줄이 다섯을 안 넘는다', `${lines}줄`)
+
+  // 강화 칸에도 머리 그림 — 대장간만 그림이 있으면 그쪽만 만든 칸으로 읽힌다.
+  check(/\.s-h\s*{[^}]*url\(/.test(css), '강화 머리에 그림이 있다 (.s-h)')
+  const hasStatHead = (root: El): boolean => {
+    let yes = false
+    root.walk((e) => { if (e.className.split(' ').includes('s-h')) yes = true })
+    return yes
+  }
+  check(hasStatHead(rp), '끝난 화면의 강화 칸에 머리 그림이 선다')
+  check(hasStatHead(panels.get('growth') as El), '성장 화면의 능력치 칸에도 같은 머리가 선다')
+}
+
 console.log('')
 if (fails > 0) {
   console.log(`실패 ${fails}건`)
