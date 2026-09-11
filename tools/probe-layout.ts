@@ -367,11 +367,11 @@ console.log('\n8. 행로도 — 넓어진 판을 채운다')
   )
 }
 
-// ── 9. 끝난 화면 — GAME OVER 가 주인공인가 ────────────────────────────
-//   형: "실패화면에는 수렵총 말고 다른걸 써야겠는데. 143판보다 게임오버가 더 중요하잖아.
-//        왤케 텍스트가 쓸데없이 많아. 몰기는 이 몰기가 뭐야 대체."
-//   눈으로 봐야 아는 것(색·여백)은 못 재지만, **무엇이 제일 큰가**와 **줄이 몇 개인가**는
-//   숫자다. 이 셋은 다시 늘어나기 쉬운 것들이라 여기에 못 박아 둔다.
+// ── 9. 끝난 화면 — GAME OVER · 고를 것 둘 · 돌아갈 길 하나 ──────────────
+//   형: "게임오버시에는 게임오버가 중점적으로 나오고 신체강화, 무기강화 버튼,
+//        체크포인트로 돌아가기 이런거로 해야하는거 아닐까?"
+//   눈으로 봐야 아는 것(색·여백)은 못 재지만, **무엇이 제일 큰가**, **줄이 몇 개인가**,
+//   **고를 것이 몇 개인가**는 숫자다. 다시 불어나기 쉬운 것들이라 여기에 못 박아 둔다.
 console.log('\n9. 끝난 화면 — GAME OVER')
 {
   const { defaultSave } = await import('../src/game/save.ts')
@@ -401,9 +401,32 @@ console.log('\n9. 끝난 화면 — GAME OVER')
   const html = rhead === null ? '' : (rhead as El).innerHTML
   check(html.includes('GAME OVER'), '가장 먼저 GAME OVER 라고 쓴다')
   check(!html.includes('몰기'), "'몰기'라는 말을 안 쓴다", html.includes('연달아') ? '연달아 5발 이라고 쓴다' : '')
-  // 줄 수 — 죽은 직후에 읽히는 글은 한두 줄이다. 다섯 줄이면 이미 많은 것이다.
+  // 줄 수 — 죽은 직후에 읽히는 글은 한두 줄이다. 넷이면 이미 충분히 많다.
   const lines = (html.match(/<div class="r-/g) ?? []).length
-  check(lines <= 5, '머리의 줄이 다섯을 안 넘는다', `${lines}줄`)
+  check(lines <= 4, '머리의 줄이 넷을 안 넘는다', `${lines}줄`)
+
+  // 굴리지 않는다 — 성장 화면과 같은 뼈대(.hb-tall + 탭 + foot).
+  check(rp.className.split(' ').includes('hb-tall'), '끝난 화면도 굴러가지 않는다 (.hb-tall)')
+  const tabLabels: string[] = []
+  rp.walk((e) => { if (e.className.split(' ').includes('hb-tab')) tabLabels.push(e.textContent) })
+  // 강화가 왼쪽, 대장간이 오른쪽 (형의 말 그대로). 순서까지 검사한다.
+  check(
+    tabLabels.length === 2 && tabLabels[0] === '신체 강화' && tabLabels[1] === '무기 강화',
+    '고를 것은 둘 — 신체가 왼쪽, 무기가 오른쪽',
+    tabLabels.join(' | '),
+  )
+  // 돌아갈 길은 **늘 보이는 아래 줄**에 있다 — 표를 다 굴려 내려야 나오면 안 된다.
+  let footBtn: El | null = null
+  rp.walk((e) => {
+    if (!e.className.split(' ').includes('hb-foot')) return
+    e.walk((c) => { if (c.className.split(' ').includes('r-go')) footBtn = c })
+  })
+  check(footBtn !== null, '돌아가는 버튼이 늘 보이는 아래 줄에 있다')
+  check(
+    footBtn !== null && (footBtn as El).textContent.includes('121판'),
+    '버튼이 어디로 돌아가는지 말한다',
+    footBtn === null ? '' : (footBtn as El).textContent,
+  )
 
   // 강화 칸에도 머리 그림 — 대장간만 그림이 있으면 그쪽만 만든 칸으로 읽힌다.
   check(/\.s-h\s*{[^}]*url\(/.test(css), '강화 머리에 그림이 있다 (.s-h)')
@@ -412,7 +435,7 @@ console.log('\n9. 끝난 화면 — GAME OVER')
     root.walk((e) => { if (e.className.split(' ').includes('s-h')) yes = true })
     return yes
   }
-  check(hasStatHead(rp), '끝난 화면의 강화 칸에 머리 그림이 선다')
+  check(hasStatHead(rp), '끝난 화면의 신체 강화 칸에 머리 그림이 선다')
   check(hasStatHead(panels.get('growth') as El), '성장 화면의 능력치 칸에도 같은 머리가 선다')
 }
 

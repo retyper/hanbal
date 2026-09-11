@@ -139,12 +139,12 @@ const CSS = `
    (끝난 화면에서 내려온 그림이다. 좋은 그림을 버리지는 않는다.)
    대장간 머리(.f-h)와 **같은 뼈대**로 쓴다 — 둘이 다르게 생기면 그 차이가 먼저 보인다. */
 .s-h {
-  position: relative; display: flex; align-items: flex-end; gap: 12px; margin: 0 -8px 8px; padding: 40px 14px 10px;
+  position: relative; display: flex; align-items: flex-end; gap: 12px; margin: 0 -8px 8px; padding: 70px 14px 10px;
   overflow: hidden; border-radius: 2px;
   background:
     linear-gradient(to bottom, rgba(38, 37, 33, .35), rgba(47, 46, 41, .9) 75%, var(--paper) 100%),
-    url(${BASE}art/suryeopchong.jpg) center 38% / cover no-repeat;
-  min-height: 96px;
+    url(${BASE}art/suryeopchong.jpg) center 9% / cover no-repeat;
+  min-height: 132px;
 }
 .s-h h3 { flex: 1; margin: 0; color: var(--ink); font-size: 17px; letter-spacing: .08em; }
 .s-h .f-cap { position: absolute; right: 10px; top: 8px; color: rgba(255, 244, 220, .6); font-size: 11px; letter-spacing: .06em; }
@@ -157,12 +157,12 @@ const CSS = `
 /* ── 대장간 ── 활 개조. 스탯 줄과 같은 뼈대(이름 · 지금 → 다음 · 버튼)라 한 화면으로 읽힌다. */
 /* 대장간 머리 — 김홍도 「대장간」 (public/art/출처.txt). 형: "대장간도 대장간스러운 이미지". */
 .f-h {
-  position: relative; display: flex; align-items: flex-end; gap: 12px; margin: 20px -8px 0; padding: 40px 14px 10px;
+  position: relative; display: flex; align-items: flex-end; gap: 12px; margin: 20px -8px 0; padding: 70px 14px 10px;
   overflow: hidden; border-radius: 2px;
   background:
     linear-gradient(to bottom, rgba(38, 37, 33, .35), rgba(47, 46, 41, .9) 75%, var(--paper) 100%),
-    url(${BASE}art/daejanggan.jpg) center 30% / cover no-repeat;
-  min-height: 96px;
+    url(${BASE}art/daejanggan.jpg) center 62% / cover no-repeat;
+  min-height: 132px;
 }
 .f-h h3 { flex: 1; margin: 0; color: var(--ink); font-size: 17px; letter-spacing: .08em; }
 .f-h .f-bow { color: var(--accent); font-weight: 700; font-size: 15px; }
@@ -208,14 +208,25 @@ const CSS = `
 .r-keep { color: var(--body); margin-top: 10px; font-size: 14px; }
 .r-keep b { color: var(--accent); font-weight: 700; }
 .r-dot { color: var(--dim); margin: 0 8px; }
-.r-next { color: var(--teal); margin-top: 8px; font-size: 13px; }
+/* 아래 줄 — 지갑과 '돌아간다' 하나. 탭의 foot 안에 들어가 **늘 보인다**.
+   (예전엔 줄 맨 아래에 있어서, 강화 줄을 다 굴려 내려야 '다음'이 나왔다.) */
+.r-foot { display: flex; align-items: center; gap: 14px; flex: 1; justify-content: space-between; }
+.r-go { font-size: 16px; padding: 12px 26px; }
+/* 가로로 눕힌 폰 — 머리가 화면의 3분의 1을 먹으면 강화 줄이 한 줄도 안 보인다.
+   브라우저로 재 보니 머리만 178px 였다. 줄 간격과 글자를 조여 142px 로 내렸다.
+   (형: "가로로 눕혀서 봤을 때 ... 스크롤 가능칸이 엄청 좁아. 좀 제발좀.") */
 @media (max-width: 640px), (max-height: 560px) {
-  .r-over { font-size: 38px; }
-  .r-head { padding: 8px 8px 12px; }
+  .r-over { font-size: 34px; letter-spacing: .1em; }
+  .r-head { padding: 6px 8px 8px; }
+  .r-why { margin-top: 4px; font-size: 12px; }
+  .r-stage { margin-top: 5px; }
+  .r-stage b { font-size: 22px; }
+  .r-keep { margin-top: 5px; font-size: 13px; }
 }
 .r-none { color: var(--mute); font-size: 13px; padding: 10px 0 0; border-top: 1px solid var(--line); }
-.r-foot { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 16px; display: flex; justify-content: center; }
-.r-go { font-size: 17px; padding: 13px 34px; }
+/* 칸의 머리 그림은 칸의 **맨 위**에 딱 붙는다 — 두 칸을 갈아탈 때 머리 높이가 다르면
+   그 차이가 먼저 보인다 (.s-h 는 0, .f-h 는 원래 20px 이었다). */
+.hb-pane .f-h { margin-top: 0; }
 `
 
 interface Row {
@@ -834,12 +845,15 @@ export function showReinforce(
   const panel = o.panel(REINFORCE_ID)
   panel.replaceChildren()
   panel.setAttribute('aria-label', '재정비')
+  // 굴리지 않는다 (ui/tabs.ts). 성장 화면과 **같은 뼈대**다 — 죽은 뒤에 여는 화면이
+  // 평소에 여는 화면과 다르게 생길 이유가 없다.
+  o.panelBox(REINFORCE_ID).classList.add('hb-tall')
 
   const style = document.createElement('style')
   style.textContent = CSS
   panel.appendChild(style)
 
-  // ── 머리: 여정이 남긴 것 ──
+  // ── 머리: 끝났다 ──
   // 이번 여정이 **영구히** 남긴 것만 센다. 판별 점수처럼 여정과 함께 사라지는 건 안 쓴다 —
   // "가져간다"고 써놓고 안 가져가면 그 줄은 다음부터 아무도 안 읽는다.
   // 0인 항목은 아예 안 쓴다 — '훈련치 0'은 위로가 아니라 조롱이다.
@@ -853,7 +867,7 @@ export function showReinforce(
 
   // 접은 것과 실패한 것은 다르다 — 같은 자리, 같은 크기, 색만 다르게.
   const quit = info.reason === 'abandon'
-  // 왜 끝났는지 **한 줄**. 예전엔 여기에 규칙 두 줄이 더 붙어 있었다.
+  // 왜 끝났는지 **한 줄**.
   const why = quit
     ? '여기서 접었다'
     : info.reason === 'death'
@@ -874,41 +888,39 @@ export function showReinforce(
         : ` <i>최고 ${info.best}판</i>`)
     + '</div>'
     + (keeps.length > 0 ? `<div class="r-keep">가져간다 &nbsp;${keeps.join('<span class="r-dot">·</span>')}</div>` : '')
-    // 어디서 다시 서는가 — "또 1판부터냐"가 접는 이유가 되지 않게 화면이 먼저 말한다.
-    + (info.nextStage > 1 ? `<div class="r-next">다음 여정은 ${info.nextStage}판부터</div>` : '')
   panel.appendChild(head)
 
-  // ── 가운데: 성장 줄 ──
-  // 끝난 화면의 강화 칸에도 같은 머리를 세운다 — 두 화면의 같은 칸은 같게 생겨야 한다.
+  // ── 칸 둘 (2026-09-11 추가 39) ─────────────────────────────────────────
+  //   형: **"강화가 왼쪽, 대장간이 오른쪽 이런식으로 되어야 하지않나? 게임오버시에는
+  //         게임오버가 중점적으로 나오고 신체강화, 무기강화 버튼, 체크포인트로 돌아가기
+  //         이런거로 해야하는거 아닐까?"**
+  //
+  //   맞다. 죽은 화면이 **줄 여덟 개짜리 표 두 벌**이었다. 죽자마자 읽을 것이 아니라,
+  //   죽고 나서 **고를 것**이 있어야 한다. 이제 화면은 셋뿐이다:
+  //   위에 GAME OVER · 가운데 갈아타는 칸 둘(신체 · 무기) · 아래 돌아가는 버튼 하나.
+  //   성장 화면과 같은 부품(ui/tabs.ts)이라 두 화면이 한 게임으로 읽힌다.
+  const paneStat = document.createElement('div')
+  const paneForge = document.createElement('div')
+  const tabs = makeTabs([
+    { id: 'stat', label: '신체 강화', pane: paneStat },
+    { id: 'forge', label: '무기 강화', pane: paneForge },
+  ])
+  panel.appendChild(tabs.el)
+
+  // ── 신체 강화 ──
   const statHead = document.createElement('div')
   statHead.className = 's-h'
   statHead.innerHTML = '<h3>몸을 키운다</h3><div class="f-cap">수렵총 벽화 (고구려)</div>'
-  panel.appendChild(statHead)
+  paneStat.appendChild(statHead)
 
-  const gh = document.createElement('div')
-  gh.className = 'g-h'
-  gh.innerHTML = `<h3>강화</h3><div class="g-train">${COIN_ICON}<b></b></div>`
-  const trainOut = gh.querySelector('b') as HTMLElement
-  const sub = document.createElement('p')
-  sub.className = 'hb-lead'
-  sub.textContent = '이번 여정에서 번 돈으로 몸을 키운다. 올리면 어떻게 달라지는지 각 줄에 적혀 있다.'
-  panel.append(gh, sub)
-
-  // 여기도 두 단 — 죽은 직후 화면은 **한눈에** 읽혀야 한다. 스크롤은 곧 이탈이다.
-  const cols = document.createElement('div')
-  cols.className = 'hb-cols'
-  const colA = document.createElement('div')
-  const colB = document.createElement('div')
-  cols.append(colA, colB)
-  panel.appendChild(cols)
+  // 지갑은 **아래 줄**에 둔다 — 칸을 갈아타도 안 사라져야 하는 숫자다 (둘 다 같은 지갑을 쓴다).
+  const purse = document.createElement('div')
+  purse.className = 'g-train'
+  purse.innerHTML = `${COIN_ICON}<b></b>`
+  const trainOut = purse.querySelector('b') as HTMLElement
 
   const rows = buildStatRows(d, trainOut, audio, () => {})
-  colA.appendChild(rows.el)
-
-  // 대장간도 여기 선다 — 죽은 직후는 "활을 갈아 만들까"를 물을 가장 좋은 때다 (game/forge.ts).
-  // 스탯 줄과 같은 지갑이라 "근력을 올릴까, 활채를 갈까"가 진짜 저울질이 된다.
-  const forge = buildForgeRows(d, audio, () => {})
-  colB.appendChild(forge.el)
+  paneStat.appendChild(rows.el)
 
   // 올릴 것이 하나도 없으면 왜 없는지 한 줄. 버튼만 잠겨 있으면 고장으로 읽힌다.
   const none = document.createElement('div')
@@ -924,20 +936,26 @@ export function showReinforce(
     none.style.display = ''
     none.textContent = `${coinText(Math.max(0, min - d.training))} 모자라다 — 판을 깰 때마다 쌓인다. 다음 여정에서 더 벌어 온다`
   }
-  panel.appendChild(none)
-  // 줄 안의 '올리기'가 세이브를 바꾸면 여기도 따라간다.
+  paneStat.appendChild(none)
   const unsub = onSaveChanged(syncNone)
 
-  // ── 아래: 다음 ──
+  // ── 무기 강화 ── 죽은 직후는 "활을 갈아 만들까"를 물을 가장 좋은 때다 (game/forge.ts).
+  // 신체와 **같은 지갑**이라 "근력을 올릴까, 활채를 갈까"가 진짜 저울질이 된다.
+  const forge = buildForgeRows(d, audio, () => {})
+  paneForge.appendChild(forge.el)
+
+  // ── 아래 줄: 지갑 + 돌아간다 ──
   const foot = document.createElement('div')
   foot.className = 'r-foot'
   const go = document.createElement('button')
   go.type = 'button'
   go.className = 'hb-btn hb-pri r-go'
-  go.textContent = '다음 →'
+  // 어디로 돌아가는지 **버튼이 말한다** (형: "체크포인트로 돌아가기"). 예전엔 '다음 →' 이라
+  // 써 두고 그 위 어딘가에 "다음 여정은 121판부터"라고 따로 적었다 — 같은 말을 두 번 한 셈이다.
+  go.textContent = info.nextStage > 1 ? `${info.nextStage}판으로 돌아간다 →` : '다시 나선다 →'
   go.setAttribute('aria-label', '출정 준비로')
-  foot.appendChild(go)
-  panel.appendChild(foot)
+  foot.append(purse, go)
+  tabs.foot.appendChild(foot)
 
   let done = false
   const onVisibility = (): void => {
