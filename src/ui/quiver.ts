@@ -45,6 +45,11 @@ const CSS = `
 @media (prefers-reduced-motion: reduce) {
   .wh-slim .wh-card.q-new { animation: none; box-shadow: 0 0 0 3px rgba(226, 176, 80, .35); }
 }
+/* ── 판이 열려 있으면 살통은 숨는다 (2026-09-11, 형: "살통걸이가 모든 화면에서 보이고") ──
+   살통은 **쏘는 중에 바꿔 드는** 물건이다. 오프닝·출정·성장·지도는 전부 판(.hb-scrim)이고,
+   그 위에 살통이 비쳐 보일 이유가 없다. 판이 닫히면 그 자리에 다시 선다. */
+.hb-ui:has(.hb-scrim.hb-open) .q-wrap { display: none !important; }
+
 /* 폰·낮은 화면 — 이름을 빼고 아이콘과 수만. 걸이라 **줄 수는 그대로**다. */
 @media (max-width: 640px), (max-height: 560px) {
   .q-hint { display: none; }
@@ -77,10 +82,14 @@ export function mountQuiver(o: Overlay, d: SaveData): void {
   const stockOf = (id: ArrowKindId): number =>
     id === DEFAULT_ARROW ? Number.POSITIVE_INFINITY : Math.floor(d.arrowStock[id] ?? 0)
 
-  /** 카드 겉면 — 아이콘 · 이름 · 남은 수. 유엽전은 무한이라 수를 안 쓴다. */
+  /**
+   * 카드 겉면 — 아이콘 · 이름 · 남은 수.
+   * 유엽전은 **×∞** 다 (2026-09-11, 형: "기본화살은 곱하기 무한대 표시 추가해주고").
+   * 빈칸으로 두면 "수를 안 적은 것"인지 "0발"인지 모른다 — 무한이면 무한이라고 쓴다.
+   */
   function face(id: ArrowKindId): string {
     const n = stockOf(id)
-    const count = id === DEFAULT_ARROW ? '' : `<b>×${n}</b>`
+    const count = id === DEFAULT_ARROW ? '<b>×∞</b>' : `<b>×${n}</b>`
     return `<span class="q-card" style="--tint:${ARROW_TINT[id] ?? '#ffb347'}">`
       + `<span class="q-ic">${arrowIconSvg(id, 20)}</span>`
       + `<span class="q-name">${arrowKind(id).name}</span>${count}</span>`
@@ -112,6 +121,8 @@ export function mountQuiver(o: Overlay, d: SaveData): void {
     if (wheel === null) {
       wheel = makeWheel({
         slim: true,
+        // 버튼 줄에서는 **위아래**로 돈다 — 좌우는 이미 다른 버튼들의 축이다.
+        axis: 'y',
         label: '살통',
         items: ids.map((id) => ({ id, html: face(id) })),
         onPick: (id) => {

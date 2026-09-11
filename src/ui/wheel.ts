@@ -79,13 +79,20 @@ export function makeWheel(opts: {
    * 고르는 규칙은 큰 걸이와 **완전히 같다** — 같은 물건이 자리에 따라 작아질 뿐이다.
    */
   slim?: boolean
+  /**
+   * 도는 방향 (2026-09-11, 형: "자연스럽게 위아래로 리볼빙 되어야 하는데 양옆으로 넘겨야 하고").
+   * 'y' 면 **위아래**로 돈다 — 리볼버의 실린더가 도는 그 방향이고, 좁은 버튼 줄에서는
+   * 옆으로 미는 것보다 이쪽이 맞다 (옆은 이미 다른 버튼들이 쓰는 축이다).
+   */
+  axis?: 'x' | 'y'
 }): Wheel {
   const slim = opts.slim === true
+  const vert = opts.axis === 'y'
   let items = opts.items.slice()
   let sel = 0
 
   const el = document.createElement('div')
-  el.className = slim ? 'wh wh-slim' : 'wh'
+  el.className = (slim ? 'wh wh-slim' : 'wh') + (vert ? ' wh-y' : '')
   el.setAttribute('role', 'listbox')
   el.setAttribute('aria-label', opts.label ?? '고르기')
 
@@ -101,8 +108,8 @@ export function makeWheel(opts: {
     b.addEventListener('click', () => step(dir))
     return b
   }
-  const prev = mkArm(-1, '‹', '앞의 것')
-  const next = mkArm(1, '›', '뒤의 것')
+  const prev = mkArm(-1, vert ? '⌃' : '‹', '앞의 것')
+  const next = mkArm(1, vert ? '⌄' : '›', '뒤의 것')
 
   const pips = document.createElement('div')
   pips.className = 'wh-pips'
@@ -124,18 +131,31 @@ export function makeWheel(opts: {
   function layout(): void {
     const n = cards.length
     const w = cardW()
+    // 세로로 돌 때는 **무대 높이**가 한 칸의 보폭이다.
+    const span = vert ? (stage.clientHeight > 0 ? stage.clientHeight : 52) : w
+    const far0 = slim ? 1 : FAR
     for (let i = 0; i < n; i++) {
       const c = cards[i]
       if (c === undefined) continue
       const d = ringDelta(sel, i, n)
       const far = Math.abs(d)
       const scale = far === 0 ? 1 : Math.max(0.55, 1 - SHRINK * far)
-      c.style.width = `${Math.round(w)}px`
-      c.style.transform = `translate(-50%, -50%) translateX(${Math.round(d * w * STEP)}px) scale(${scale})`
-      c.style.opacity = far > FAR ? '0' : far === 0 ? '1' : '0.55'
+      // 폭은 **바뀔 때만** 쓴다. 매번 쓰면 translate(-50%) 의 기준이 흔들려 칸이 떤다
+      // (형: "넘기면 대각선으로 흔들려").
+      const px = `${Math.round(w)}px`
+      if (c.style.width !== px) c.style.width = px
+      // ★ 고리가 넘어가는 칸(안 보이는 칸)은 **순간이동**시킨다.
+      //   안 그러면 +2 에서 −2 로 가느라 화면을 가로질러 미끄러지고, 그게 '통째로 막 움직이는'
+      //   것으로 보인다. 보이는 칸만 부드럽게 움직이면 된다.
+      c.style.transition = far > far0 ? 'none' : ''
+      const off = Math.round(d * span * (vert ? 1 : STEP))
+      c.style.transform = vert
+        ? `translate(-50%, -50%) translateY(${off}px)`
+        : `translate(-50%, -50%) translateX(${off}px) scale(${scale})`
+      c.style.opacity = far > far0 ? '0' : far === 0 ? '1' : '0.42'
       c.style.zIndex = String(20 - far)
       // 안 보이는 칸은 누를 수도 없다 — 고리 뒤편의 카드를 손가락이 집으면 안 된다.
-      c.style.pointerEvents = far > FAR ? 'none' : 'auto'
+      c.style.pointerEvents = far > far0 ? 'none' : 'auto'
       c.classList.toggle('wh-mid', far === 0)
       c.setAttribute('aria-selected', far === 0 ? 'true' : 'false')
       c.tabIndex = far === 0 ? 0 : -1
@@ -193,22 +213,24 @@ export function makeWheel(opts: {
   let dragging = false
   stage.addEventListener('pointerdown', (e) => {
     dragging = true
-    dragX = e.clientX
+    dragX = vert ? e.clientY : e.clientX
   })
   stage.addEventListener('pointerup', (e) => {
     if (!dragging) return
     dragging = false
-    const dx = e.clientX - dragX
-    // 민 방향과 도는 방향은 **반대**다 — 걸이를 왼쪽으로 밀면 오른쪽 것이 앞으로 온다.
-    if (Math.abs(dx) >= SWIPE) step(dx < 0 ? 1 : -1)
+    const dx = (vert ? e.clientY : e.clientX) - dragX
+    // 민 방향과 도는 방향은 **반대**다 — 위로 밀면 아래 것이 앞으로 온다.
+    if (Math.abs(dx) >= (vert ? SWIPE * 0.55 : SWIPE)) step(dx < 0 ? 1 : -1)
   })
   stage.addEventListener('pointercancel', () => { dragging = false })
   stage.addEventListener('pointerleave', () => { dragging = false })
 
   // ── 좌우 키 ──
   el.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1) }
-    else if (e.key === 'ArrowRight') { e.preventDefault(); step(1) }
+    const back = vert ? 'ArrowUp' : 'ArrowLeft'
+    const fwd = vert ? 'ArrowDown' : 'ArrowRight'
+    if (e.key === back) { e.preventDefault(); step(-1) }
+    else if (e.key === fwd) { e.preventDefault(); step(1) }
   })
 
   // 판이 넓어지거나 세로/가로가 바뀌면 카드 폭이 달라진다.

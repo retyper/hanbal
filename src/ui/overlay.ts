@@ -294,7 +294,12 @@ const CSS = `
 .wh-card .wh-n { color: var(--ink); font-weight: 700; font-size: 16px; line-height: 1.25; }
 .wh-card.wh-mid .wh-n { color: var(--accent); }
 .wh-card.wh-lock .wh-n { color: var(--mute); letter-spacing: .1em; }
-.wh-card .wh-d { color: var(--dim); font-size: 12px; line-height: 1.4; }
+/* 설명은 **두 줄까지**. 나머지는 길게 눌러 보면 된다 (ui/detail.ts) — 카드는 미끼지 문서가 아니다. */
+.wh-card .wh-d {
+  color: var(--dim); font-size: 12px; line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.wh-card .wh-n { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
 .wh-card .wh-ic { line-height: 0; margin-bottom: 5px; color: var(--dim); }
 /* ── 활 그림 (2026-09-11) ──────────────────────────────────────────────
    형: "선택할때만큼은 화려해야지." 걸이 카드의 주인공은 **그림**이다.
@@ -303,7 +308,10 @@ const CSS = `
    세우고 키운다 — 대각선이 네모를 가장 크게 쓰는 방향이고, 기울어진 물건이 더 살아 보인다.
    그림의 바탕은 투명이라(tools/slice-bows.mjs) 돌려도 네모 모서리가 안 보인다. */
 .wh-card .wh-art {
-  display: block; width: 100%; height: auto; flex: 1; min-height: 0;
+  /* ★ 그림의 몫을 **고정**한다 (2026-09-11, 형: "컴파운드보우는 이미지가 혼자 너무작아.
+     이거 텍스트 때문 같은데"). 맞다 — flex:1 이라 설명이 긴 활(컴파운드는 27자)에서
+     글자가 두 줄을 더 먹고 그만큼 그림이 눌렸다. 이제 글자가 몇 줄이든 그림은 같다. */
+  display: block; width: 100%; height: 58%; flex: 0 0 58%; min-height: 0;
   object-fit: contain; margin: 0 auto 3px; border-radius: 2px;
   /* 돌리지 않는다 — **그림이 이미 대각선**이다 (2026-09-11 두 번째 판).
      예전엔 세로로 선 활을 받아 바탕을 따내고 여기서 −28° 로 돌렸는데, 활줄과 활대 사이가
@@ -338,6 +346,25 @@ const CSS = `
 .wh-slim .wh-pips { display: none; }
 @media (pointer: coarse) { .wh.wh-slim { width: 188px; } .wh-slim .wh-stage { height: 48px; } }
 @media (max-width: 420px) { .wh.wh-slim { width: 164px; } }
+
+/* ── 위아래로 도는 걸이 (2026-09-11, ui/wheel.ts axis:'y') ─────────────────────
+   형: "자연스럽게 위아래로 리볼빙 되어야 하는데 양옆으로 넘겨야 하고 넘기면 대각선으로 흔들려"
+
+   맞다. 버튼 줄은 이미 **좌우**가 다른 버튼들의 축이라, 거기서 또 좌우로 밀면 서로 싸운다.
+   위아래로 돌면 리볼버의 실린더처럼 읽히고, 한 번에 한 칸만 보이므로 자리도 안 먹는다.
+   흔들림은 두 가지였다 — 매 프레임 폭을 다시 쓰느라 기준점이 떨렸고(wheel.ts),
+   고리가 넘어가는 칸이 화면을 가로질러 미끄러졌다. 둘 다 wheel.ts 에서 고쳤다. */
+.wh.wh-y { grid-template-columns: 1fr auto; grid-template-rows: auto auto; gap: 0 4px; }
+.wh-y .wh-stage { grid-row: 1 / span 2; }
+.wh-y .wh-arm {
+  width: 24px; min-width: 24px; height: 22px; font-size: 13px; line-height: 1;
+  border-radius: 2px;
+}
+.wh-y .wh-prev { grid-column: 2; grid-row: 1; align-self: end; }
+.wh-y .wh-next { grid-column: 2; grid-row: 2; align-self: start; }
+.hb-hud .wh-y .wh-arm { width: 24px; min-width: 24px; height: 22px; padding: 0; }
+/* 한 칸만 보인다 — 위아래로 삐져나온 이웃은 무대가 자른다. */
+.wh-y .wh-card { width: 100% !important; height: 100%; }
 
 /* 몇 번째인가 — 점 다섯. 숫자를 쓰지 않는 이유는 세는 것이 아니라 **어디쯤인지**를 보는 것이라서다. */
 .wh-pips { grid-column: 1 / -1; display: flex; justify-content: center; gap: 6px; margin-top: 2px; }
