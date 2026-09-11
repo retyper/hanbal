@@ -140,6 +140,16 @@ function encodePng(w, h, rgba) {
 const BG = [0x1c, 0x21, 0x29]
 
 /**
+ * 안드로이드의 **maskable** 안전 구역 (2026-09-11).
+ *
+ * 안드로이드는 maskable 아이콘을 원·스퀘어클 등 제멋대로의 모양으로 **깎는다.**
+ * 규격이 보장하는 건 가운데 지름 80% 의 원뿐이다 — 그 밖은 잘려 나간다고 봐야 한다.
+ * 그림이 가장자리까지 찬 그림(사람 초상)이면 활 끝과 머리가 잘린다.
+ * 그래서 maskable 용은 **따로 굽는다**: 그림을 이만큼으로 줄여 테마색 위에 가운데 놓는다.
+ */
+const MASK_FIT = 0.78
+
+/**
  * 상자 평균으로 줄인다. 원본이 목표보다 훨씬 클 때 가장 정직한 방법이다 —
  * 이웃 네 점만 섞는 방식(bilinear)은 512→192 처럼 크게 줄이면 점이 튄다.
  */
@@ -207,8 +217,41 @@ for (const [name, size] of [
   ['public/icon-512.png', 512],
   ['public/icon-192.png', 192],
   ['public/apple-touch-icon.png', 180],
+  // ── 탭의 작은 아이콘 (2026-09-11, 형: "아주작은 신궁 아이콘이 아직도 활과 화살모양이야") ──
+  //    브라우저는 <link rel=icon> 을 16~32px 로 줄여 쓴다. 192px 짜리를 그 자리에 주면
+  //    **브라우저가 알아서 줄이는데**, 그 결과가 뭉갠다. 여기서 미리 상자 평균으로 굽는다.
+  ['public/favicon-64.png', 64],
+  ['public/favicon-32.png', 32],
 ]) {
   writeFileSync(name, encodePng(size, size, resize(src, size)))
   console.log(`${name} ${size}x${size}`)
 }
+
+// ── maskable — 그림을 줄여 테마색 위에 가운데 놓는다 (위 MASK_FIT 주석) ──
+{
+  const size = 512
+  const inner = Math.round(size * MASK_FIT)
+  const small = resize(src, inner)
+  const out = new Uint8Array(size * size * 4)
+  for (let i = 0; i < size * size; i++) {
+    out[i * 4] = BG[0]
+    out[i * 4 + 1] = BG[1]
+    out[i * 4 + 2] = BG[2]
+    out[i * 4 + 3] = 255
+  }
+  const off = Math.round((size - inner) / 2)
+  for (let y = 0; y < inner; y++) {
+    for (let x = 0; x < inner; x++) {
+      const a = (y * inner + x) * 4
+      const b = ((y + off) * size + (x + off)) * 4
+      out[b] = small[a]
+      out[b + 1] = small[a + 1]
+      out[b + 2] = small[a + 2]
+      out[b + 3] = 255
+    }
+  }
+  writeFileSync('public/icon-maskable-512.png', encodePng(size, size, out))
+  console.log(`public/icon-maskable-512.png ${size}x${size} (안쪽 ${Math.round(MASK_FIT * 100)}%)`)
+}
+
 console.log('\n굽었다. 확인: node tools/probe-icon.mjs · 배포: npm run build')

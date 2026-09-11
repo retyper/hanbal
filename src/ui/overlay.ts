@@ -296,6 +296,24 @@ const CSS = `
 .wh-card.wh-lock .wh-n { color: var(--mute); letter-spacing: .1em; }
 .wh-card .wh-d { color: var(--dim); font-size: 12px; line-height: 1.4; }
 .wh-card .wh-ic { line-height: 0; margin-bottom: 5px; color: var(--dim); }
+/* ── 활 그림 (2026-09-11) ──────────────────────────────────────────────
+   형: "선택할때만큼은 화려해야지." 걸이 카드의 주인공은 **그림**이다.
+
+   활은 세로로 8:1 이라 똑바로 세우면 카드 안에서 실오라기가 된다. 그래서 **비스듬히**
+   세우고 키운다 — 대각선이 네모를 가장 크게 쓰는 방향이고, 기울어진 물건이 더 살아 보인다.
+   그림의 바탕은 투명이라(tools/slice-bows.mjs) 돌려도 네모 모서리가 안 보인다. */
+.wh-card .wh-art {
+  display: block; width: 100%; height: auto; flex: 1; min-height: 0;
+  object-fit: contain; margin: 0 auto 2px;
+  transform: rotate(-28deg) scale(1.55);
+  transform-origin: center;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .55));
+}
+/* 앞에 나온 한 자루만 조금 더 선다. 고른 것이 살아 있어 보여야 한다. */
+.wh-card.wh-mid .wh-art { transform: rotate(-24deg) scale(1.68); }
+.wh-card.wh-lock .wh-art { filter: grayscale(1) brightness(.5); }
+/* 그림이 카드 밖으로 안 나가게. 기울인 만큼 모서리가 넘친다. */
+.wh-card { overflow: hidden; }
 .wh-card.wh-mid .wh-ic { color: var(--accent); }
 /* 화살표 — 손가락이 닿는 크기(44px)를 지킨다. 글리프는 크게, 테두리는 없이. */
 .wh-arm {
@@ -304,6 +322,22 @@ const CSS = `
 }
 .wh-arm:hover { background: var(--card); color: var(--ink); }
 @media (pointer: coarse) { .wh-arm { width: 44px; min-width: 44px; height: 72px; } }
+/* ── 슬림 걸이 — HUD 버튼 줄에 들어가는 살통 (2026-09-11, ui/quiver.ts) ──────────
+   형: "화살 아직도 게임화면에서 하나하나 버튼인데 이거 리볼빙되듯 만들어야 한다니까?"
+   맞다. 살 종류가 늘수록 버튼이 늘어 줄이 접히고, 접힌 줄이 궁수를 덮었다.
+   이제 **자리가 하나**다 — 돌리면 다음 살이 앞으로 온다. 늘어도 넓이가 안 변한다. */
+.wh.wh-slim { width: 208px; gap: 0; }
+.wh-slim .wh-stage { height: 52px; }
+.wh-slim .wh-card {
+  height: 100%; padding: 0 9px; gap: 7px;
+  flex-direction: row; align-items: center; justify-content: center; white-space: nowrap;
+}
+.wh-slim .wh-card::before { border-width: 8px; border-image-width: 8px; }
+.wh-slim .wh-arm { width: 26px; min-width: 26px; height: 46px; font-size: 20px; }
+.wh-slim .wh-pips { display: none; }
+@media (pointer: coarse) { .wh.wh-slim { width: 188px; } .wh-slim .wh-stage { height: 48px; } }
+@media (max-width: 420px) { .wh.wh-slim { width: 164px; } }
+
 /* 몇 번째인가 — 점 다섯. 숫자를 쓰지 않는 이유는 세는 것이 아니라 **어디쯤인지**를 보는 것이라서다. */
 .wh-pips { grid-column: 1 / -1; display: flex; justify-content: center; gap: 6px; margin-top: 2px; }
 .wh-pips i { width: 5px; height: 5px; border-radius: 50%; background: var(--line); transition: background .18s, transform .18s; }

@@ -296,8 +296,58 @@ console.log('\n5. 카드 겉면 — 세 층')
   check(css.includes('.hb-tip'), "'길게 눌러 자세히' 안내 스타일이 있다")
 }
 
-// ── 6. 지도 — 넓어진 판을 실제로 채우는가 ─────────────────────────────
-console.log('\n6. 행로도 — 넓어진 판을 채운다')
+// ── 6. 살통 — 버튼 줄이 아니라 걸이인가 ──────────────────────────────
+//   형: "화살 아직도 게임화면에서 하나하나 버튼인데 이거 리볼빙되듯 만들어야 한다니까?"
+console.log('\n6. 살통 — 걸이')
+{
+  const { defaultSave } = await import('../src/game/save.ts')
+  const { mountQuiver } = await import('../src/ui/quiver.ts')
+  const d = defaultSave(0)
+  // 가져본 적 있는 살 넷 — 이게 있어야 살통이 뜬다.
+  for (const k of ['burst', 'chain', 'split', 'rapid']) d.arrowStock[k] = 3
+  const hud = new El('div')
+  const o2 = { ...overlay, hud: (): El => hud }
+  mountQuiver(o2 as never, d)
+
+  let wheels = 0
+  let cards = 0
+  let buttons = 0
+  hud.walk((e) => {
+    const c = e.className.split(' ')
+    if (c.includes('wh')) wheels++
+    if (c.includes('wh-card')) cards++
+    // 예전 모습: 살 하나에 버튼 하나 (.q-btn). 하나라도 남아 있으면 안 고친 것이다.
+    if (c.includes('q-btn')) buttons++
+  })
+  check(wheels === 1, '살통이 걸이 하나다', `걸이 ${wheels}개`)
+  check(buttons === 0, '살 하나에 버튼 하나이던 것이 없어졌다', `남은 버튼 ${buttons}개`)
+  // 유엽전 + 가져본 살 넷 = 다섯 칸. **자리는 하나**이고 칸만 늘어난다.
+  check(cards === 5, '유엽전까지 걸이에 걸린다', `${cards}칸 (유엽전 + 4)`)
+  let slim = 0
+  hud.walk((e) => { if (e.className.split(' ').includes('wh-slim')) slim++ })
+  check(slim === 1, '좁은 자리용(슬림) 걸이를 쓴다')
+}
+
+// ── 7. 활 그림 — 각각 등록됐는가 ─────────────────────────────────────
+//   형: "활도 각각 이미지로 등록되어야해. 개떡같은 svg 말고."
+console.log('\n7. 활 그림')
+{
+  const { BOW_KINDS } = await import('../src/game/bows.ts')
+  const missing: string[] = []
+  for (const b of BOW_KINDS) {
+    const f = `public/sprites/bow-${b.id}.png`
+    try { readFileSync(f) } catch { missing.push(b.id) }
+  }
+  check(missing.length === 0, '활마다 그림이 있다', missing.length === 0 ? `${BOW_KINDS.length}자루` : `없는 것: ${missing.join(' ')}`)
+  // 그림은 **투명 배경**이어야 카드 위에서 비스듬히 세울 수 있다 (색방식 6 = RGBA).
+  const head = readFileSync('public/sprites/bow-gakgung.png')
+  check(head[25] === 6, '그림 배경이 투명하다 (RGBA)', `색방식 ${head[25]}`)
+  const ui = readFileSync('src/ui/overlay.ts', 'utf8')
+  check(/\.wh-card \.wh-art[^}]*transform:\s*rotate/.test(ui), '카드 안에서 비스듬히 세운다')
+}
+
+// ── 8. 지도 — 넓어진 판을 실제로 채우는가 ─────────────────────────────
+console.log('\n8. 행로도 — 넓어진 판을 채운다')
 {
   const src = readFileSync('src/ui/map.ts', 'utf8')
   const m = /const MAP_MAX_SCALE = ([\d.]+)/.exec(src)

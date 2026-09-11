@@ -41,7 +41,7 @@ describe('갑옷 세 벌', () => {
 
   it('장만 — 훈련치가 모자라면 못 사고, 사면 곧바로 입는다. 찰갑은 두정갑보다 크고 비싸다', () => {
     const d = defaultSave(0)
-    assert.match(armorUnlockBlocked(d, 'brigandine'), /냥/)
+    assert.match(armorUnlockBlocked(d, 'brigandine'), /\d+ 필요/)
     assert.equal(buyArmorKind(d, 'brigandine'), false)
     d.training = armorUnlockCost('brigandine') + armorUnlockCost('lamellar')
     assert.equal(buyArmorKind(d, 'brigandine'), true)
@@ -60,7 +60,7 @@ describe('갑옷 세 벌', () => {
 
   it('담금질 — 단마다 방어량·상한이 armorForgePer 만큼 오르고, 값은 활 개조와 같은 곡선이다', () => {
     const d = defaultSave(0)
-    assert.match(armorForgeBlocked(d), /냥/)
+    assert.match(armorForgeBlocked(d), /\d+ 필요/)
     d.training = forgeCost(0) + forgeCost(1)
     const base = armorPerOf(d)
     assert.equal(buyArmorForge(d), true)

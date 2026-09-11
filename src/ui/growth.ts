@@ -40,7 +40,7 @@ import { onSaveChanged, wipeSave, writeSave, type SaveData } from '../game/save.
 import { unlockedBows, unlockOfBow } from '../game/unlocks.ts'
 import { P } from '../tune/params.ts'
 import type { Overlay } from './overlay.ts'
-import { COIN_ICON, COIN_NAME, coinHtml, coinText } from '../game/money.ts'
+import { COIN_ICON, coinHtml, coinText } from '../game/money.ts'
 import { attachDetail } from './detail.ts'
 import { makeTabs } from './tabs.ts'
 import { mountInstall } from './install.ts'
@@ -502,6 +502,22 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
   const hasBow = (id: BowKindId): boolean =>
     id === 'practice' || unlockedBows(d.unlocked).includes(id)
 
+/**
+ * 활 한 자루의 **그림** (2026-09-11, 형: "활도 각각 이미지로 등록되어야해. 개떡같은 svg 말고.
+ * 선택할때만큼은 화려해야지").
+ *
+ * public/sprites/bow-<id>.png — 다섯을 한 장에 받아 잘라낸 것이라 화풍이 한 벌이다
+ * (tools/slice-bows.mjs · 출처는 public/sprites/출처.txt).
+ * 잠긴 활은 그림을 안 준다 — 실루엣까지 보이면 가려진 게 아니다.
+ *
+ * `loading="lazy"` 로 두는 이유: 걸이는 판을 열 때만 보인다. 첫 페인트를 막지 않는다 (C6).
+ */
+function bowArt(id: string, owned: boolean, px: number): string {
+  if (!owned) return `<span class="wh-ic">${bowIconSvg('', px)}</span>`
+  return `<img class="wh-art" src="${BASE}sprites/bow-${id}.png" width="${px}" height="${px}"`
+    + ` alt="" loading="lazy" decoding="async">`
+}
+
   /** 걸이 카드 한 장의 겉면. 이름 + 숙련 + 장점 한 줄 — 나머지는 말풍선이다. */
   const bowFace = (id: BowKindId): string => {
     const k = BOW_KINDS.find((b) => b.id === id)
@@ -509,7 +525,7 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
     if (!hasBow(id)) {
       // 이름도 그림도 가린다 — 실루엣까지 보이면 가려진 게 아니다
       // (형: "이미지도 글도 다 나와놓고 이름만 물음표하면 그게 가려진거냐?").
-      return `<span class="wh-ic">${bowIconSvg('', 44)}</span>`
+      return bowArt(id, false, 92)
         + `<span class="wh-n">？？？</span><span class="wh-d">${unlockOfBow(id)?.hint ?? ''}</span>`
     }
     const hits = Math.floor(d.bowHits[id] ?? 0)
@@ -517,7 +533,7 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
     const nx = MASTERY_HITS[lv]
     const mast = lv > 0 ? ` · 숙련 ${lv}` : ''
     const prog = nx !== undefined ? `<span class="wh-d">숙련 ${hits}/${nx}</span>` : ''
-    return `<span class="wh-ic">${bowIconSvg(id, 44)}</span>`
+    return bowArt(id, true, 92)
       + `<span class="wh-n">${k.name}${mast}</span><span class="wh-d">${k.perk}</span>${prog}`
   }
 
@@ -703,8 +719,9 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
   function refresh(): void {
     // 상한 도달을 알리지 않는다 (GDD 5장). 여기 있는 건 "어디서 오는가"뿐이다.
     const perMin = P.offline.trainingPerSec * 60
-    hint.textContent = d.offlineEnabled
-      ? `돈은 공부하는 동안에도 쌓인다 (${(1 / perMin).toFixed(0)}분에 1${COIN_NAME})`
+    // 엽전 그림이 들어가므로 innerHTML 이다 (글자만이면 숫자가 무엇인지 안 읽힌다).
+    hint.innerHTML = d.offlineEnabled
+      ? `돈은 공부하는 동안에도 쌓인다 (${(1 / perMin).toFixed(0)}분에 ${coinHtml(1)})`
       : `쌓지 않는 대신 판 보상 ×${P.offline.optOutBonus.toFixed(2)}`
     chk.checked = d.offlineEnabled
     syncSound()

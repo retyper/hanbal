@@ -46,6 +46,9 @@ export interface Wheel {
 const CARD_MAX = 250
 /** 담는 칸 폭 대비 카드 폭. 1보다 작아야 **양옆이 보인다** — 그게 '더 있다'는 말이다. */
 const CARD_RATIO = 0.56
+/** 슬림(살통)의 카드 폭 상한과 비율. 좁은 자리라 옆이 조금만 보여도 된다. */
+const CARD_SLIM = 132
+const CARD_SLIM_RATIO = 0.72
 /** 이웃이 옆으로 물러나는 간격 (카드 폭 대비). */
 const STEP = 0.72
 /** 이웃이 작아지는 양 (한 칸마다). */
@@ -70,12 +73,19 @@ export function makeWheel(opts: {
   onPick: (id: string, index: number, locked: boolean) => void
   /** 접근성 이름 (화살표 단추의 aria-label 에 붙는다). */
   label?: string
+  /**
+   * 좁은 자리용 (2026-09-11) — HUD 버튼 줄에 들어가는 살통이 이걸 쓴다.
+   * 카드가 한 줄로 눕고(아이콘·이름·수), 키가 버튼 하나만큼이며, 점은 안 그린다.
+   * 고르는 규칙은 큰 걸이와 **완전히 같다** — 같은 물건이 자리에 따라 작아질 뿐이다.
+   */
+  slim?: boolean
 }): Wheel {
+  const slim = opts.slim === true
   let items = opts.items.slice()
   let sel = 0
 
   const el = document.createElement('div')
-  el.className = 'wh'
+  el.className = slim ? 'wh wh-slim' : 'wh'
   el.setAttribute('role', 'listbox')
   el.setAttribute('aria-label', opts.label ?? '고르기')
 
@@ -103,10 +113,11 @@ export function makeWheel(opts: {
 
   /** 칸 하나의 폭 (px). 담는 칸이 좁으면 같이 좁아진다. */
   function cardW(): number {
+    const max = slim ? CARD_SLIM : CARD_MAX
     const w = stage.clientWidth
     // 헤드리스(프로브)에서는 0이다 — 그때는 최대 폭으로 친다. 자리 계산은 비율이라 무해하다.
-    if (!(w > 0)) return CARD_MAX
-    return Math.min(CARD_MAX, Math.max(96, w * CARD_RATIO))
+    if (!(w > 0)) return max
+    return Math.min(max, Math.max(slim ? 76 : 96, w * (slim ? CARD_SLIM_RATIO : CARD_RATIO)))
   }
 
   /** 지금 sel 기준으로 모든 칸의 자리를 다시 쓴다. */

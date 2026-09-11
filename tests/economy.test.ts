@@ -76,7 +76,7 @@ describe('대장간 — 활 개조', () => {
   it('훈련치가 모자라면 아무것도 안 깎인다', () => {
     const d = defaultSave(0)
     d.training = forgeCost(0) - 1
-    assert.match(forgeBlocked(d, 'practice', 'grip'), /냥/)
+    assert.match(forgeBlocked(d, 'practice', 'grip'), /\d+ 필요/)
     assert.equal(buyForge(d, 'practice', 'grip'), false)
     assert.equal(d.training, forgeCost(0) - 1)
     assert.equal(canForge(d, 'practice'), false)

@@ -1,3 +1,8 @@
+활 다섯 자루 — bow-practice / bow-gakgung / bow-longbow / bow-recurve / bow-compound
+  2026-09-11. 형의 챗지피티 계정에서 한 장(1254x1254)으로 받아 tools/slice-bows.mjs 로 잘랐다.
+  원본은 assets_src/bows-source.png. 프롬프트는 docs/ICON.md 의 '활 다섯' 항목.
+  형이 만들게 한 그림이므로 이 저장소의 것이다 (형: "활도 각각 이미지로 등록되어야해").
+
 drone.png — "Pixel Art Drone" (OpenGameArt, CC0)
   https://opengameart.org/content/pixel-art-drone
   113x57, 2프레임 (로터 교대). 원본 파일명 drone_4.png.

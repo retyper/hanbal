@@ -20,7 +20,7 @@ import { BOW_KINDS, bowKind, masteryLevel, type BowKindId } from '../game/bows.t
 import { unlockOfBow } from '../game/unlocks.ts'
 import type { ForkOption } from '../game/forks.ts'
 import type { Overlay } from './overlay.ts'
-import { COIN_ICON, coinText } from '../game/money.ts'
+import { COIN_ICON, coinHtml, coinText } from '../game/money.ts'
 import { attachDetail } from './detail.ts'
 import { makeWheel } from './wheel.ts'
 import { makeTabs } from './tabs.ts'
@@ -214,8 +214,9 @@ export function mountLoadout(
       el.classList.toggle('hb-on', id === pick.charm)
       el.classList.toggle('l-lock', why !== '')
       const price = el.querySelector('.l-price') as HTMLElement
-      price.textContent = why === ''
-        ? (id === pick.charm ? `지닌다 · ${coinText(charmCost(id))}` : coinText(charmCost(id)))
+      // 값에는 엽전을 같이 건다 — 숫자만 있으면 그게 값인지 개수인지 모른다.
+      price.innerHTML = why === ''
+        ? (id === pick.charm ? `지닌다 · ${coinHtml(charmCost(id))}` : coinHtml(charmCost(id)))
         : why
     }
     refreshArmor()
@@ -280,6 +281,22 @@ export function mountLoadout(
   /** 걸이에서 지금 보고 있는 활 (못 드는 것일 수도 있다). 드는 활은 pick.bow 다. */
   let browsing: BowKindId = pick.bow
 
+/**
+ * 활 한 자루의 **그림** (2026-09-11, 형: "활도 각각 이미지로 등록되어야해. 개떡같은 svg 말고.
+ * 선택할때만큼은 화려해야지").
+ *
+ * public/sprites/bow-<id>.png — 다섯을 한 장에 받아 잘라낸 것이라 화풍이 한 벌이다
+ * (tools/slice-bows.mjs · 출처는 public/sprites/출처.txt).
+ * 잠긴 활은 그림을 안 준다 — 실루엣까지 보이면 가려진 게 아니다.
+ *
+ * `loading="lazy"` 로 두는 이유: 걸이는 판을 열 때만 보인다. 첫 페인트를 막지 않는다 (C6).
+ */
+function bowArt(id: string, owned: boolean, px: number): string {
+  if (!owned) return `<span class="wh-ic">${bowIconSvg('', px)}</span>`
+  return `<img class="wh-art" src="${BASE}sprites/bow-${id}.png" width="${px}" height="${px}"`
+    + ` alt="" loading="lazy" decoding="async">`
+}
+
   const bowFace = (id: BowKindId): string => {
     const b = bowKind(id)
     const owned = isOwned(id)
@@ -288,7 +305,7 @@ export function mountLoadout(
     // (형: "이미지도 글도 다 나와놓고 이름만 물음표하면 그게 가려진거냐?").
     const name = owned ? b.name + (lv > 0 ? ` · 숙련 ${lv}` : '') : '？？？'
     const desc = owned ? b.perk : unlockOfBow(id)?.hint ?? ''
-    return `<span class="wh-ic">${bowIconSvg(owned ? id : '', 44)}</span>`
+    return bowArt(id, owned, 92)
       + `<span class="wh-n">${name}</span><span class="wh-d">${desc}</span>`
   }
 
@@ -428,13 +445,13 @@ export function mountLoadout(
       // 겉면의 숫자 하나 = **막는 양**. 이것 하나로 셋을 비교할 수 있다.
       ;(el.querySelector('.l-key') as HTMLElement).textContent = owned ? `막는 양 ${armorPerOf(d, id)}` : '아직 없다'
       const price = el.querySelector('.l-price') as HTMLElement
-      price.textContent = owned
+      price.innerHTML = owned
         ? (id === worn ? '입고 나선다' : '눌러서 입는다')
-        : why === '' ? `장만 ${coinText(armorUnlockCost(id))}` : why
+        : why === '' ? `장만 ${coinHtml(armorUnlockCost(id))}` : why
     }
     const k = armorKind(worn)
     armorLine.innerHTML = `<b>${k.name}</b> — 한 벌 ${armorPerOf(d, worn)} · 상한 ${armorCapOf(d, worn)}`
-      + ` <i>· 판에서 한 벌 ${coinText(armorCostOf(d, worn))}</i>`
+      + ` <i>· 판에서 한 벌 ${coinHtml(armorCostOf(d, worn))}</i>`
   }
 
   // ── 살 가게 — 발견한 특수살을 훈련치로 채운다 (game/supply.ts shopPrice) ──
@@ -462,7 +479,7 @@ export function mountLoadout(
       ;(row.querySelector('.l-sname') as HTMLElement).textContent = k.name
       ;(row.querySelector('.l-shave') as HTMLElement).textContent = `재고 ${have}`
       const btn = row.querySelector('.l-sbuy') as HTMLButtonElement
-      ;(btn.querySelector('b') as HTMLElement).textContent = String(price)
+      ;(btn.querySelector('b') as HTMLElement).innerHTML = coinHtml(price)
       btn.disabled = d.training < price
       btn.title = btn.disabled ? `${coinText(price)} 필요` : `${k.name} 한 발 — ${coinText(price)}`
       btn.addEventListener('click', () => {
