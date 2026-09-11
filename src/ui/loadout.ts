@@ -47,12 +47,24 @@ const CSS = `
 .l-art .hb-lead { position: relative; margin-bottom: 0; }
 .l-cap { position: absolute; right: 12px; top: 10px; color: rgba(255, 244, 220, .62); font-size: 11px; letter-spacing: .06em; }
 @media (max-width: 640px) { .l-art { min-height: 110px; padding: 14px 12px 12px; } }
-/* 굴리지 않는 판에서는 그림이 화면을 먹는다 — 낮은 화면에서는 띠 하나로 줄인다
-   (2026-09-11, 형: "세로롤링 너무 게임 안같고"). 그림을 지우지는 않는다: 출정식의 기분이다. */
+/* 굴리지 않는 판에서는 그림이 화면을 먹는다 — 낮은 화면에서는 **한 줄로 눕힌다**
+   (2026-09-11, 형: "가로로 눕혀서 봤을때 (…) 스크롤가능칸이 엄청좁아").
+   그림을 지우지는 않는다: 출정식의 기분은 남기되 자리를 안 먹게 한다. */
 @media (max-height: 560px) {
-  .l-art { min-height: 84px; padding: 10px 12px 9px; margin-bottom: 6px; }
-  .l-art .hb-lead { display: none; }
-  .l-art .l-h h2 { font-size: 22px; }
+  .l-art {
+    min-height: 0; padding: 6px 10px 5px; margin: -2px -6px 4px;
+    background-position: center 30%;
+  }
+  .l-art .hb-lead, .l-cap { display: none; }
+  .l-art .l-h { align-items: center; gap: 10px; }
+  .l-art .l-h h2 { font-size: 18px; letter-spacing: 0; }
+  .l-run b, .l-best b { font-size: 15px; }
+  .l-run, .l-best { font-size: 11px; letter-spacing: .04em; }
+  /* 카드도 작게 — 한 줄에 더 들어가면 굴릴 일이 준다. */
+  .l-grid { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 6px; }
+  .l-card { padding: 8px 9px; }
+  .l-syn { min-height: 0; margin-top: 5px; }
+  .l-srow { padding: 3px 0; }
 }
 .l-h { display: flex; align-items: baseline; gap: 14px; }
 .l-h h2 { flex: 1; font-size: 30px; letter-spacing: .02em; }

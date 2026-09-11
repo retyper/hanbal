@@ -14,12 +14,17 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="신궁" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2" />
     <!-- 탭의 작은 아이콘. 크기를 적어 주면 브라우저가 **그 크기에 맞는 것**을 고른다 —
-         192px 한 장만 주면 16px 로 줄이느라 뭉갠다 (2026-09-11, 형의 지적). -->
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
-    <link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png" />
-    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+         192px 한 장만 주면 16px 로 줄이느라 뭉갠다 (2026-09-11, 형의 지적).
+
+         ?v= 를 붙이는 이유: 크롬은 파비콘을 **일반 캐시와 다른 곳**에 따로 저장하고,
+         그 자리는 Ctrl+Shift+R 로도 잘 안 비워진다. 그림을 갈아 끼웠는데 옛것이 계속
+         나오는 게 이것이다 (형: "파비콘 아직도 안된거같은데"). **주소가 바뀌면 새로 받는다.**
+         그림을 다시 구울 때마다 이 숫자를 올린다. -->
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2" />
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png?v=2" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=2" />
     <title>신궁</title>
     <style>
       /* 첫 페인트가 0.3초 안에 되어야 한다 (제약 C6). 초기 스타일은 인라인.

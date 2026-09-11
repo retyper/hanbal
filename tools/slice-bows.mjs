@@ -11,8 +11,17 @@
  *     → public/sprites/bow-practice.png · bow-gakgung.png · bow-longbow.png
  *       · bow-recurve.png · bow-compound.png
  *
- * 자를 자리는 **눈대중이 아니라 그림에서 찾는다**: 세로줄마다 '바탕이 아닌 픽셀'을 세어
- * 골짜기(빈 칸)를 찾고, 그 사이를 한 자루로 본다. 다섯 덩이가 안 나오면 그렇다고 말하고 멈춘다.
+ * ── 2026-09-11 두 번째 판 ───────────────────────────────────────────
+ * 형: **"활 이미지가 이상하게 잘렸는데? 활줄이랑 활대 사이가 공간이 어쩔수없이 차있는데
+ *       그게 어색하게 남아있잖아. 자르지 말고 그냥 활을 올려야 하나?"**
+ *
+ * 맞다. 처음엔 **세로로 선 활**을 받아 잉크를 세어 덩이를 찾고, 바탕을 알파로 따내고,
+ * 카드 안에서 돌려 세웠다. 손이 셋이나 갔고 그만큼 어긋났다 — 특히 **활줄과 활대 사이**는
+ * 바탕도 물건도 아니라서, 따내면 구멍이 되고 남기면 네모가 됐다.
+ *
+ * 이제 **그리는 쪽에서 끝낸다**: 칸마다 한 자루씩 **대각선으로 꽉 차게** 그린 띠를 받는다.
+ * 줄과 활대 사이는 금빛 후광이 채워 준다 — 그게 그림의 일부다.
+ * 그러면 여기서 할 일은 **다섯으로 똑같이 나누는 것뿐**이다. 따낼 것도 돌릴 것도 없다.
  *
  * 라이브러리는 안 쓴다 (A6). PNG 읽기·쓰기는 tools/bake-icon.mjs 와 같은 방식이다.
  */
@@ -131,92 +140,70 @@ function encodePng(w, h, rgba) {
 
 /** 걸이에 걸리는 순서 — game/bows.ts BOW_KINDS 와 같은 순서여야 한다. */
 const IDS = ['practice', 'gakgung', 'longbow', 'recurve', 'compound']
-/** 잘라낸 한 장의 크기 (px). 걸이 카드에서 쓰는 크기의 두 배쯤이면 충분하다. */
-const OUT = 256
-/** 바탕보다 이만큼 밝으면 '물건'으로 친다. */
-const INK = 26
-/**
- * 바탕을 **투명하게 딴다** (2026-09-11).
- *
- * 처음엔 잘라낸 그림을 어두운 네모째로 카드에 얹었다. 그랬더니 (1) 카드 색과 네모 색이 달라
- * 그림이 '붙여 놓은 사진'으로 보이고 (2) 활은 세로로 8:1 이라 네모 안에서 **깨알같이 작았다.**
- *
- * 이제 바탕과의 거리로 알파를 만든다. 활은 남고, 뒤의 금빛 후광은 **반투명하게** 남아
- * 카드 위에서 그대로 빛난다. 그러면 카드 안에서 그림을 비스듬히 세워 키울 수 있다
- * (ui/overlay.ts .wh-art). 회전해도 네모 모서리가 안 보이기 때문이다.
- */
-const KEY_LO = 18
-const KEY_HI = 96
+/** 잘라낸 한 장의 **긴 변** (px). 걸이 카드에서 쓰는 크기의 두 배쯤이면 충분하다. */
+const OUT = 320
+/** 그림 둘레에 남기는 여백 (잉크 상자 대비). 0이면 활 끝이 모서리에 딱 붙어 답답하다. */
+const PAD = 0.04
+/** 바탕보다 이만큼(세 채널 합) 다르면 '그림'으로 친다. */
+const INK = 60
 
 const file = process.argv[2]
 if (file === undefined) throw new Error('쓸 그림을 인자로 줘라: node tools/slice-bows.mjs <png>')
 const src = decodePng(file)
 console.log(`읽었다: ${file} ${src.w}x${src.h}`)
 
-// 바탕색 — 네 귀의 평균. 그림마다 조금씩 다르므로 박아두지 않는다.
-function at(x, y) {
+mkdirSync('public/sprites', { recursive: true })
+
+// 바탕색 — 네 귀의 평균. 칸 사이의 빈 자리를 알아보는 기준이다.
+const at = (x, y) => {
   const i = (y * src.w + x) * 4
   return [src.px[i], src.px[i + 1], src.px[i + 2]]
 }
 const corners = [at(2, 2), at(src.w - 3, 2), at(2, src.h - 3), at(src.w - 3, src.h - 3)]
-const BG = [0, 1, 2].map((k) => Math.round(corners.reduce((s, c) => s + c[k], 0) / corners.length))
+const BG = [0, 1, 2].map((k) => Math.round(corners.reduce((a, c) => a + c[k], 0) / corners.length))
 console.log(`바탕색 ≈ rgb(${BG.join(',')})`)
 
-/** 세로줄마다 '바탕이 아닌' 점 수. */
-const col = new Int32Array(src.w)
-for (let x = 0; x < src.w; x++) {
-  let n = 0
+// 띠를 **똑같이 다섯으로** 나눈다.
+const tile = src.w / IDS.length
+console.log(`칸 ${Math.round(tile)}x${src.h}`)
+
+for (let i = 0; i < IDS.length; i++) {
+  const tx = Math.round(i * tile)
+  const tw = Math.round((i + 1) * tile) - tx
+  // ── 칸 안에서 **그림이 실제로 있는 상자**를 찾는다 ──
+  //    칸 가장자리에는 빈 바탕이 남는다. 그대로 쓰면 활이 작아 보이고,
+  //    억지로 정사각으로 늘리면 활이 눌린다 (형: "활 이미지가 이상하게 잘렸는데?").
+  let x0 = tw
+  let x1 = -1
+  let y0 = src.h
+  let y1 = -1
   for (let y = 0; y < src.h; y++) {
-    const [r, g, b] = at(x, y)
-    if (Math.abs(r - BG[0]) + Math.abs(g - BG[1]) + Math.abs(b - BG[2]) > INK * 3) n++
+    for (let x = 0; x < tw; x++) {
+      const [r, g, b] = at(tx + x, y)
+      if (Math.abs(r - BG[0]) + Math.abs(g - BG[1]) + Math.abs(b - BG[2]) < INK) continue
+      if (x < x0) x0 = x
+      if (x > x1) x1 = x
+      if (y < y0) y0 = y
+      if (y > y1) y1 = y
+    }
   }
-  col[x] = n
-}
-// 문턱 — 가장 진한 줄의 8%. 후광(빛 번짐)은 이 아래로 떨어진다.
-const peak = col.reduce((m, v) => Math.max(m, v), 0)
-const gate = Math.max(3, Math.round(peak * 0.08))
-const bands = []
-let start = -1
-for (let x = 0; x < src.w; x++) {
-  const on = col[x] >= gate
-  if (on && start < 0) start = x
-  if (!on && start >= 0) {
-    if (x - start > src.w * 0.02) bands.push([start, x])
-    start = -1
-  }
-}
-if (start >= 0) bands.push([start, src.w])
-console.log(`덩이 ${bands.length}개: ${bands.map(([a, b]) => `${a}~${b}`).join(' · ')}`)
+  if (x1 < x0 || y1 < y0) { x0 = 0; x1 = tw - 1; y0 = 0; y1 = src.h - 1 }
+  const padX = Math.round((x1 - x0) * PAD)
+  const padY = Math.round((y1 - y0) * PAD)
+  const sx = Math.max(0, tx + x0 - padX)
+  const sy = Math.max(0, y0 - padY)
+  const sw = Math.min(src.w - sx, x1 - x0 + 1 + padX * 2)
+  const sh = Math.min(src.h - sy, y1 - y0 + 1 + padY * 2)
 
-if (bands.length !== IDS.length) {
-  console.log(`\n✗ ${IDS.length}덩이가 나와야 하는데 ${bands.length}덩이다.`)
-  console.log('  활이 서로 붙었거나 후광이 이어졌다 — 그림을 다시 받는 게 빠르다')
-  console.log('  (프롬프트에 "evenly spaced, no overlap" 을 더 세게 적어라)')
-  process.exit(1)
-}
+  // 긴 변을 OUT 에 맞추고 **비율은 그대로** 둔다. 늘리면 바로 티가 난다.
+  const k = OUT / Math.max(sw, sh)
+  const dw = Math.max(1, Math.round(sw * k))
+  const dh = Math.max(1, Math.round(sh * k))
 
-mkdirSync('public/sprites', { recursive: true })
-for (let i = 0; i < bands.length; i++) {
-  const [x0, x1] = bands[i]
-  // ── 활은 **세로로 길다.** 정사각으로 따면 활이 잘리거나 옆 활이 딸려 온다 ──
-  //    그래서 [덩이 폭 + 여백] × [전체 높이] 를 떼어, 정사각 칸 안에 **높이를 맞춰** 앉힌다.
-  //    남는 좌우는 바탕색으로 채운다 — 걸이 카드가 정사각 자리를 주기 때문이다.
-  const pad = Math.round(src.w * 0.012)
-  const sx = Math.max(0, x0 - pad)
-  const sw = Math.min(src.w - sx, x1 - x0 + pad * 2)
-  const sh = src.h
-  // 칸 안에서의 크기 — 높이를 꽉 채우고(여백 조금) 폭은 비율대로.
-  const fit = 1
-  const dh = Math.round(OUT * fit)
-  const dw = Math.max(1, Math.round((dh * sw) / sh))
-  const ox = Math.round((OUT - dw) / 2)
-  const oy = Math.round((OUT - dh) / 2)
-
-  // 바탕은 **투명**이다 (위 KEY_* 주석). 카드 색이 무엇이든 그 위에 얹힌다.
-  const out = new Uint8Array(OUT * OUT * 4)
+  const out = new Uint8Array(dw * dh * 4)
   for (let y = 0; y < dh; y++) {
-    const ay0 = Math.floor((y * sh) / dh)
-    const ay1 = Math.max(ay0 + 1, Math.floor(((y + 1) * sh) / dh))
+    const ay0 = sy + Math.floor((y * sh) / dh)
+    const ay1 = Math.max(ay0 + 1, sy + Math.floor(((y + 1) * sh) / dh))
     for (let x = 0; x < dw; x++) {
       const ax0 = sx + Math.floor((x * sw) / dw)
       const ax1 = Math.max(ax0 + 1, sx + Math.floor(((x + 1) * sw) / dw))
@@ -233,21 +220,16 @@ for (let i = 0; i < bands.length; i++) {
           n++
         }
       }
-      const d = ((y + oy) * OUT + (x + ox)) * 4
-      const rr = r / n
-      const gg = g / n
-      const bb = b / n
-      // 바탕에서 멀수록 진하게 남는다 — 후광은 반투명으로 살아난다.
-      const dist = Math.abs(rr - BG[0]) + Math.abs(gg - BG[1]) + Math.abs(bb - BG[2])
-      const a = Math.max(0, Math.min(1, (dist - KEY_LO) / (KEY_HI - KEY_LO)))
-      out[d] = Math.round(rr)
-      out[d + 1] = Math.round(gg)
-      out[d + 2] = Math.round(bb)
-      out[d + 3] = Math.round(a * 255)
+      const d = (y * dw + x) * 4
+      out[d] = Math.round(r / n)
+      out[d + 1] = Math.round(g / n)
+      out[d + 2] = Math.round(b / n)
+      out[d + 3] = 255
     }
   }
   const name = `public/sprites/bow-${IDS[i]}.png`
-  writeFileSync(name, encodePng(OUT, OUT, out))
-  console.log(`${name} ${OUT}x${OUT}  (원본 x ${sx}..${sx + sw}, 칸 안 ${dw}x${dh})`)
+  writeFileSync(name, encodePng(dw, dh, out))
+  console.log(`${name} ${dw}x${dh}  (칸 ${i + 1} 에서 ${sw}x${sh})`)
 }
+
 console.log('\n잘랐다. 출처를 public/sprites/출처.txt 에 적을 것.')

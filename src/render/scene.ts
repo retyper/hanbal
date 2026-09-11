@@ -71,16 +71,47 @@ const BG = {
  * 화약 상자의 치수 (과녁 반경 대비 배수). 손맛 노브가 아니라 그림의 비율이라 params.ts가 아니다
  * (A2는 "손맛에 관여하는 숫자"의 규칙이다 — DRAW 와 같은 자리).
  */
+/**
+ * ── 화약궤(火藥櫃) 의 치수·색 (2026-09-11 다시 그림) ─────────────────────────
+ *
+ * 형: **"폭탄박스 전혀 화약상자처럼 안보이니까 수정해."**
+ *
+ * 맞다. 예전 것은 **활색 네모에 ×자 두 줄**이었다 — 그건 나무 궤짝이 아니라 포장 상자다.
+ * 화약궤를 화약궤로 만드는 것은 넷이다:
+ *   ① **두께.** 윗면이 보여야 상자다. 납작한 네모는 판때기다.
+ *   ② **쇠테.** 가로로 두른 띠와 징 — 나무를 묶어 놓았다는 표시.
+ *   ③ **붉은 인장.** 火 한 글자. 이게 있으면 "안에 든 것"이 읽힌다.
+ *   ④ **도화선과 불씨.** 지금 위험하다는 말.
+ */
 const BARREL = {
-  /** 궤짝의 반너비/반높이 (반경 대비). 1이면 원에 외접한다 — 조금 작게 잡아 과녁보다 야무지게. */
-  box: 0.78,
-  plank: 0.1,
-  edge: 0.07,
+  /** 궤짝의 반너비/반높이 (반경 대비). */
+  box: 0.8,
+  /** 윗면(뚜껑)의 깊이 — 반높이 대비. 이 한 면이 '상자'를 만든다. */
+  lid: 0.34,
+  /** 윗면이 뒤로 물러나는 양 (반너비 대비). 비스듬히 내려다본 각이다. */
+  skew: 0.16,
+  /** 널 사이의 결 — 세로 줄 셋. */
+  plank: 0.05,
+  /** 쇠테의 굵기와 자리 (반높이 대비, 가운데에서). */
+  bandW: 0.17,
+  bandAt: 0.42,
+  /** 징 반지름 (반너비 대비). */
+  rivet: 0.075,
+  /** 붉은 인장의 반지름 (반너비 대비). */
+  seal: 0.36,
+  edge: 0.055,
   fuse: 0.08,
   /** 도화선이 휘는 높이 / 끝 높이 (궤짝 반높이 대비) */
-  fuseUp: 1.9,
-  fuseTop: 1.5,
-  spark: 0.16,
+  fuseUp: 2.1,
+  fuseTop: 1.7,
+  spark: 0.17,
+  /** 색 — 어두운 나무, 그보다 밝은 뚜껑, 쇠테, 인장. */
+  wood: '#4a3521',
+  woodLid: '#6b4f30',
+  grain: '#2e2013',
+  iron: '#8b929c',
+  ironDark: '#555c66',
+  seal2: '#b4342a',
 } as const
 
 const DRAW = {
@@ -308,30 +339,83 @@ function drawBarrel(
 ): void {
   const w = rx * BARREL.box
   const h = ry * BARREL.box
-  ctx.fillStyle = THEME.bow
-  ctx.fillRect(x - w, y - h, w * 2, h * 2)
-  // 널판 — 어두운 사선 둘. 궤짝의 결이자 "묶여 있다"는 표시다.
-  ctx.strokeStyle = THEME.prop
+  const lid = h * BARREL.lid
+  const sk = w * BARREL.skew
+  const top = y - h + lid
+
+  // ── 앞면 — 어두운 나무. 여기가 궤짝의 몸이다 ──
+  ctx.fillStyle = BARREL.wood
+  ctx.fillRect(x - w, top, w * 2, y + h - top)
+  // 널의 결 — 세로 줄 둘. 나무라는 말은 결이 한다.
+  ctx.strokeStyle = BARREL.grain
   ctx.lineWidth = Math.max(1, rx * BARREL.plank)
   ctx.beginPath()
-  ctx.moveTo(x - w, y - h)
-  ctx.lineTo(x + w, y + h)
-  ctx.moveTo(x + w, y - h)
-  ctx.lineTo(x - w, y + h)
+  for (const u of [-0.34, 0.34]) {
+    ctx.moveTo(x + w * u, top)
+    ctx.lineTo(x + w * u, y + h)
+  }
   ctx.stroke()
-  ctx.strokeStyle = THEME.groundLine
+
+  // ── 윗면(뚜껑) — 뒤로 물러난 사다리꼴. **이 한 면이 상자를 만든다** ──
+  ctx.fillStyle = BARREL.woodLid
+  ctx.beginPath()
+  ctx.moveTo(x - w, top)
+  ctx.lineTo(x - w + sk, y - h)
+  ctx.lineTo(x + w - sk, y - h)
+  ctx.lineTo(x + w, top)
+  ctx.closePath()
+  ctx.fill()
+
+  // ── 쇠테 둘 — 가로로 두른 띠. 묶여 있다는 표시다 ──
+  ctx.fillStyle = BARREL.iron
+  const bw = h * BARREL.bandW
+  for (const u of [-BARREL.bandAt, BARREL.bandAt]) {
+    ctx.fillRect(x - w, y + h * u - bw / 2, w * 2, bw)
+  }
+  // 징 — 띠 양 끝에 넷. 작은 점 넷이 쇠붙이를 만든다.
+  ctx.fillStyle = BARREL.ironDark
+  const rr = Math.max(1, rx * BARREL.rivet)
+  for (const u of [-BARREL.bandAt, BARREL.bandAt]) {
+    for (const s2 of [-0.82, 0.82]) {
+      ctx.beginPath()
+      ctx.arc(x + w * s2, y + h * u, rr, 0, TAU)
+      ctx.fill()
+    }
+  }
+
+  // ── 붉은 인장 — 火. 안에 든 것이 여기서 읽힌다 ──
+  const sr = w * BARREL.seal
+  ctx.fillStyle = BARREL.seal2
+  ctx.beginPath()
+  ctx.arc(x, y + h * 0.02, sr, 0, TAU)
+  ctx.fill()
+  // 글자는 너무 작으면 먼지가 된다 — 그때는 인장만 남긴다.
+  if (sr >= 7) {
+    ctx.fillStyle = '#f6efdd'
+    // 명조 — 캔버스의 큰 글자와 같은 스택이어야 한 화면으로 읽힌다 (render/hud.ts).
+    ctx.font = `700 ${Math.round(sr * 1.5)}px "Gowun Batang","Apple SD Gothic Neo","Batang",serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('火', x, y + h * 0.04)
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'top'
+  }
+
+  // ── 테두리 — 궤짝의 모서리 ──
+  ctx.strokeStyle = BARREL.grain
   ctx.lineWidth = Math.max(1, rx * BARREL.edge)
-  ctx.strokeRect(x - w, y - h, w * 2, h * 2)
-  // 도화선 + 불씨 — 이 물건이 무엇인지 말하는 한 점.
+  ctx.strokeRect(x - w, top, w * 2, y + h - top)
+
+  // ── 도화선 + 불씨 — 지금 위험하다는 말 ──
   ctx.strokeStyle = THEME.threat
   ctx.lineWidth = Math.max(1, rx * BARREL.fuse)
   ctx.beginPath()
-  ctx.moveTo(x, y - h)
-  ctx.quadraticCurveTo(x + w * 0.5, y - h * BARREL.fuseUp, x + w * 0.15, y - h * BARREL.fuseTop)
+  ctx.moveTo(x + w * 0.1, y - h)
+  ctx.quadraticCurveTo(x + w * 0.7, y - h * BARREL.fuseUp, x + w * 0.2, y - h * BARREL.fuseTop)
   ctx.stroke()
   ctx.fillStyle = THEME.threat
   ctx.beginPath()
-  ctx.arc(x + w * 0.15, y - h * BARREL.fuseTop, Math.max(1.2, rx * BARREL.spark), 0, Math.PI * 2)
+  ctx.arc(x + w * 0.2, y - h * BARREL.fuseTop, Math.max(1.2, rx * BARREL.spark), 0, TAU)
   ctx.fill()
 }
 

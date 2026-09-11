@@ -304,14 +304,15 @@ const CSS = `
    그림의 바탕은 투명이라(tools/slice-bows.mjs) 돌려도 네모 모서리가 안 보인다. */
 .wh-card .wh-art {
   display: block; width: 100%; height: auto; flex: 1; min-height: 0;
-  object-fit: contain; margin: 0 auto 2px;
-  transform: rotate(-28deg) scale(1.55);
-  transform-origin: center;
-  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .55));
+  object-fit: contain; margin: 0 auto 3px; border-radius: 2px;
+  /* 돌리지 않는다 — **그림이 이미 대각선**이다 (2026-09-11 두 번째 판).
+     예전엔 세로로 선 활을 받아 바탕을 따내고 여기서 −28° 로 돌렸는데, 활줄과 활대 사이가
+     바탕도 물건도 아니라 따내면 구멍이 되고 남기면 네모가 됐다 (형의 지적).
+     이제 그리는 쪽에서 칸을 꽉 채워 오므로 여기서는 **얹기만** 한다. */
 }
-/* 앞에 나온 한 자루만 조금 더 선다. 고른 것이 살아 있어 보여야 한다. */
-.wh-card.wh-mid .wh-art { transform: rotate(-24deg) scale(1.68); }
-.wh-card.wh-lock .wh-art { filter: grayscale(1) brightness(.5); }
+/* 앞에 나온 한 자루만 조금 크다. 고른 것이 살아 있어 보여야 한다. */
+.wh-card.wh-mid .wh-art { transform: scale(1.06); }
+.wh-card.wh-lock .wh-art { filter: grayscale(1) brightness(.45); }
 /* 그림이 카드 밖으로 안 나가게. 기울인 만큼 모서리가 넘친다. */
 .wh-card { overflow: hidden; }
 .wh-card.wh-mid .wh-ic { color: var(--accent); }
@@ -572,6 +573,10 @@ const CSS = `
      (render/camera.ts VIEW.bandBottomPx — 이 둘은 같이 움직여야 한다). */
   .hb-hud { gap: 8px; }
   .hb-hud .hb-btn { padding: 0 10px; min-width: 46px; height: 46px; justify-content: center; }
+  /* ★ 걸이의 화살표는 **버튼 줄의 버튼이 아니다** (2026-09-11, 형: "앱 켰을때 화면에 무슨
+     화살표 박스 하나가 화면 좌하단에 고정돼있어"). 위 규칙이 .hb-btn 을 다 잡는 바람에
+     살통 걸이의 ‹ › 가 46px 짜리 네모가 되어 혼자 떠 있는 상자로 보였다. 되돌린다. */
+  .hb-hud .wh-arm { min-width: 26px; width: 26px; height: 44px; padding: 0; }
   .hb-hud .hb-lbl { display: none; }
   .hb-hud .hb-ic { width: 24px; height: 24px; vertical-align: 0; }
 
@@ -599,13 +604,35 @@ const CSS = `
     max-width: calc(100vw - 36px - var(--safe-l) - var(--safe-r));
   }
   .hb-hud .hb-btn { padding: 0 10px; min-width: 46px; height: 46px; justify-content: center; }
+  /* ★ 걸이의 화살표는 **버튼 줄의 버튼이 아니다** (2026-09-11, 형: "앱 켰을때 화면에 무슨
+     화살표 박스 하나가 화면 좌하단에 고정돼있어"). 위 규칙이 .hb-btn 을 다 잡는 바람에
+     살통 걸이의 ‹ › 가 46px 짜리 네모가 되어 혼자 떠 있는 상자로 보였다. 되돌린다. */
+  .hb-hud .wh-arm { min-width: 26px; width: 26px; height: 44px; padding: 0; }
   .hb-hud .hb-lbl { display: none; }
   .hb-hud .hb-ic { width: 24px; height: 24px; vertical-align: 0; }
-  /* 낮은 화면에서는 패널도 화면을 꽉 채운다 — 시트로 올릴 세로가 없다. */
-  .hb-scrim { padding: 10px; }
-  .hb-panel { max-height: 100%; }
-  .hb-panel { padding: 12px; }
-  .hb-body { padding: 6px 10px 8px; }
+  /* ── 낮은 화면에서는 **테두리·여백이 곧 내용을 먹는다** ──────────────────────
+     형: "폰 갤럭시인데 가로로 눕혀서 봤을때 상단 주소창때문에 훨씬 좁아져버리거든.
+          근데 이상태에서 활 갑옷 부적 이것들아래 스크롤가능칸이 엄청좁아."
+
+     맞다. 세로 414px 짜리 화면에서 주소창을 빼면 330px 인데, 그 위에
+     스크림 20 + 판 24 + 몸통 14 + 머리 그림 84 + 탭 42 + 아래줄 50 이 먼저 먹으면
+     **내용에 남는 건 100px 남짓**이다. 그래서 여기서는 전부 조인다:
+     여백을 줄이고, 탭·아래 줄의 키를 낮추고, 출정 머리 그림은 **한 줄로 눕힌다.**
+     (그림을 아주 지우지는 않는다 — 출정식의 기분은 남겨 두되 자리를 안 먹게 한다.) */
+  .hb-scrim { padding: 6px; }
+  .hb-panel { max-height: 100%; padding: 8px; }
+  .hb-panel::before { border-width: 10px; border-image-width: 10px; }
+  .hb-body { padding: 2px 10px 4px; }
+  .hb-panel h2 { font-size: 19px; }
+  .hb-lead { margin: 2px 0 7px; font-size: 13px; }
+  .hb-sec { margin: 9px 0 5px; }
+  .hb-tab { min-height: 34px; padding: 6px 8px 5px; font-size: 13px; }
+  .hb-pane { padding-top: 6px; }
+  .hb-foot { padding-top: 7px; margin-top: 6px; gap: 8px; }
+  .hb-foot .hb-btn { min-height: 38px; padding: 7px 12px; }
+  /* 걸이도 같이 낮춘다 — 칸의 절반을 걸이가 먹으면 나머지가 또 좁아진다. */
+  .wh-stage { height: min(148px, 44vh); }
+  .wh-arm { height: 44px; }
 }
 
 /* 손잡이는 세로 시트에서만 보인다 (가로에서는 자리만 먹는 줄이다). */

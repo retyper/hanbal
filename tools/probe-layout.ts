@@ -339,11 +339,19 @@ console.log('\n7. 활 그림')
     try { readFileSync(f) } catch { missing.push(b.id) }
   }
   check(missing.length === 0, '활마다 그림이 있다', missing.length === 0 ? `${BOW_KINDS.length}자루` : `없는 것: ${missing.join(' ')}`)
-  // 그림은 **투명 배경**이어야 카드 위에서 비스듬히 세울 수 있다 (색방식 6 = RGBA).
-  const head = readFileSync('public/sprites/bow-gakgung.png')
-  check(head[25] === 6, '그림 배경이 투명하다 (RGBA)', `색방식 ${head[25]}`)
+  // 비율이 안 눌렸는가 — 정사각으로 억지로 맞추면 활이 눌린다 (형: "이상하게 잘렸는데?").
+  // 다섯이 **같은 비율**이어야 한 벌로 읽힌다.
+  const shape = BOW_KINDS.map((b) => {
+    const f = readFileSync(`public/sprites/bow-${b.id}.png`)
+    return [f.readUInt32BE(16), f.readUInt32BE(20)]
+  })
+  const ratios = shape.map(([w, h]) => (w ?? 1) / (h ?? 1))
+  const spread = Math.max(...ratios) - Math.min(...ratios)
+  check(spread < 0.25, '다섯의 비율이 비슷하다 (한 벌로 읽힌다)',
+    shape.map(([w, h]) => `${w ?? 0}x${h ?? 0}`).join(' · '))
   const ui = readFileSync('src/ui/overlay.ts', 'utf8')
-  check(/\.wh-card \.wh-art[^}]*transform:\s*rotate/.test(ui), '카드 안에서 비스듬히 세운다')
+  check(!/\.wh-card \.wh-art\s*{[^}]*transform:\s*rotate/.test(ui),
+    '카드에서 돌리지 않는다 (그림이 이미 대각선이다)')
 }
 
 // ── 8. 지도 — 넓어진 판을 실제로 채우는가 ─────────────────────────────
