@@ -9,8 +9,12 @@
  * [서명 · IHDR · IDAT(zlib) · IEND] 넷뿐이고 zlib 은 node 에 들어 있다 — 60줄이면 된다.
  *
  * 그림: 어두운 바탕(테마색) 위에 활 하나와 화살 하나. 색은 render/camera.ts 의 THEME 그대로다.
- *   활채 #d9cba6 · 시위 #8d97a3 · 화살대 #e3e9f0 · 촉 #ffb347 (강조색)
+ *   활채 #d9cba6 · 손잡이 #8a7550 · 시위 #8d97a3 · 화살대 #e3e9f0 · 촉 #ffb347 (강조색)
  * 그림은 안쪽 66% 안에만 그린다 — 안드로이드의 maskable 아이콘이 가장자리를 깎기 때문이다.
+ *
+ * ★ 2026-09-11 — 활이 **거꾸로**였다 (형: "병신아 활을 꺼꾸로 쏘냐???"). 아래 shade() 의
+ *   주석에 무엇이 어떻게 틀렸는지 숫자로 적어 뒀고, tools/probe-icon.mjs 가 그 규칙을 잰다.
+ *   이 그림은 **임시**다 — 진짜 아이콘은 형이 받아올 그림으로 갈아 끼운다 (docs/ICON.md).
  *
  * 실행: node tools/make-icons.mjs   (public/icon-192.png · icon-512.png · apple-touch-icon.png)
  */
@@ -73,9 +77,37 @@ function encodePng(w, h, rgba) {
 const hex = (s) => [parseInt(s.slice(1, 3), 16), parseInt(s.slice(3, 5), 16), parseInt(s.slice(5, 7), 16)]
 const BG = hex('#1c2129')
 const BOW = hex('#d9cba6')
+const GRIP = hex('#8a7550')
 const STRING = hex('#8d97a3')
 const SHAFT = hex('#e3e9f0')
 const HEAD = hex('#ffb347')
+
+/**
+ * ── 활의 방향 (2026-09-11, 형: "병신아 활을 꺼꾸로 쏘냐???") ─────────────────
+ *
+ * 거꾸로였던 게 맞다. 예전 값으로 재 보면:
+ *   활채가 가장 부푼 곳 u = −0.220 · 시위 u = −0.035 · 화살은 오른쪽(촉 u = 0.58)
+ * 화살이 오른쪽으로 난다면 **활채는 시위보다 오른쪽**(과녁 쪽)에 있어야 한다.
+ * 활의 배(belly)가 쏘는 사람을 보고 등(back)이 과녁을 보는 게 활이다. 반대로 그려 놨으니
+ * 활을 뒤집어 쥔 그림이었다. 게다가 오늬(−0.245)가 활채보다 뒤라 **화살이 활을 뚫고** 있었다.
+ *
+ * 이제 하나의 규칙에서 전부 나온다: **화살은 +u 로 난다. 시위는 오늬 자리. 활채는 그 앞.**
+ *   시위 x   TIPX          (활 끝 둘을 잇는 직선)
+ *   활채 배  CX + R  >  TIPX   ← 이 부등식이 깨지면 거꾸로다 (tools/probe-icon.mjs 가 이걸 잰다)
+ *   오늬     TIPX          (시위 위다. 시위 뒤가 아니다)
+ */
+const TH = (60 * Math.PI) / 180
+const R = 0.58
+const CX = -0.66
+/** 활 끝 (시위가 걸리는 자리). */
+const TIPX = CX + R * Math.cos(TH)
+const TIPY = R * Math.sin(TH)
+/** 활채가 가장 부푼 자리 — 과녁 쪽이다. */
+const BELLY = CX + R
+/** 촉 끝. */
+const TIP = 0.37
+/** 촉이 시작되는 곳 (여기부터 강조색). */
+const HEADFROM = 0.2
 
 /** 점이 선분에서 얼마나 떨어져 있나 (안티에일리어싱용 거리). */
 function distSeg(px, py, x0, y0, x1, y1) {
@@ -86,48 +118,64 @@ function distSeg(px, py, x0, y0, x1, y1) {
   return Math.hypot(px - (x0 + t * dx), py - (y0 + t * dy))
 }
 
+const mix = (a, b, t) => [
+  a[0] + (b[0] - a[0]) * t,
+  a[1] + (b[1] - a[1]) * t,
+  a[2] + (b[2] - a[2]) * t,
+]
+
 /**
- * 한 점(0..1 좌표)의 색. 안 칠할 자리는 null.
- * 활은 왼쪽으로 부푼 호, 시위는 그 두 끝을 잇는 직선, 화살은 시위를 지나 오른쪽으로 나간다.
+ * 바탕 — 그냥 검정 판이 아니라 **빛이 하나 있는** 어두운 판이다.
+ * 활 뒤로 옅은 금빛이 번지고 네 귀는 가라앉는다. 비장한 그림은 빛이 만든다.
+ */
+function ground(u, v) {
+  const d = Math.hypot(u + 0.05, v)
+  const glow = Math.max(0, 1 - d / 0.72) ** 2
+  const vig = Math.min(1, Math.hypot(u, v) / 0.95) ** 2
+  return mix(mix(BG, HEAD, glow * 0.11), [0, 0, 0], vig * 0.22)
+}
+
+/**
+ * 한 점(0..1 좌표)의 색. 바탕은 언제나 칠하고 그 위에 활과 화살을 얹는다.
+ * 그림은 안쪽 66% 안에만 둔다 — 안드로이드의 maskable 아이콘이 가장자리를 깎기 때문이다.
+ * (빛은 그 밖까지 번진다. 깎여도 아쉬울 게 없는 것만 밖에 둔다.)
  */
 function shade(x, y) {
-  // 그림 전체를 안쪽으로 당긴다 (maskable 안전 구역).
   const S = 0.66
   const u = (x - 0.5) / S
   const v = (y - 0.5) / S
-  if (Math.abs(u) > 0.62 || Math.abs(v) > 0.62) return null
+  const bg = ground(u, v)
+  if (Math.abs(u) > 0.62 || Math.abs(v) > 0.62) return bg
 
-  // ── 활채 — 원의 왼쪽 조각 ──
-  const cx = 0.34
-  const R = 0.56
-  const d = Math.hypot(u - cx, v)
-  const limbHalf = 0.052
-  // 위아래 끝(각 ±48°)까지만 — 그 밖은 활채가 아니다.
-  const ang = Math.atan2(v, u - cx)
-  const open = Math.abs(Math.abs(ang) - Math.PI) < (48 * Math.PI) / 180
-  if (open && Math.abs(d - R) < limbHalf) return BOW
-
-  // ── 시위 — 활채 두 끝을 잇는 직선 ──
-  const ey = R * Math.sin((48 * Math.PI) / 180)
-  const ex = cx + R * Math.cos(Math.PI - (48 * Math.PI) / 180)
-  if (distSeg(u, v, ex, -ey, ex, ey) < 0.018) return STRING
-
-  // ── 화살 — 시위 뒤에서 오른쪽으로. 촉은 강조색. ──
-  const tip = 0.58
-  const nock = ex - 0.21
-  if (Math.abs(v) < 0.028 && u > nock && u < tip) {
-    return u > tip - 0.17 ? HEAD : SHAFT
+  // ── 화살 — 시위(오늬)에서 과녁 쪽으로. 촉은 강조색. ──
+  //    활채보다 **먼저** 칠한다: 화살이 손잡이 앞을 지나는 그림이 활을 쥔 모습이다.
+  if (Math.abs(v) < 0.026 && u >= TIPX && u < TIP) {
+    return u > HEADFROM ? HEAD : SHAFT
   }
-  // 촉의 미늘 두 줄
-  if (u < tip && u > tip - 0.15 && Math.abs(Math.abs(v) - (tip - u) * 0.42) < 0.026) return HEAD
-  // 깃 — 살대 끝의 **채워진 쐐기** 둘. 가는 사선 둘로 그렸더니 작게 줄면 먼지처럼 보였다.
-  const f1 = ex - 0.07
-  if (u > nock && u < f1) {
-    const t = (f1 - u) / (f1 - nock)
-    const hi = 0.03 + 0.075 * t
+  // 촉의 미늘 둘
+  if (u < TIP && u > TIP - 0.16 && Math.abs(Math.abs(v) - (TIP - u) * 0.42) < 0.026) return HEAD
+  // 깃 — 오늬 쪽의 **채워진 쐐기** 둘. 가는 사선 둘로 그렸더니 작게 줄면 먼지처럼 보였다.
+  const f1 = TIPX + 0.15
+  if (u > TIPX && u < f1) {
+    const t = (f1 - u) / (f1 - TIPX)
+    const hi = 0.03 + 0.085 * t
     if (Math.abs(v) < hi && Math.abs(v) > 0.026) return BOW
   }
-  return null
+
+  // ── 활채 — 원의 **오른쪽**(과녁 쪽) 조각. 손잡이 근처가 두껍다. ──
+  const ang = Math.atan2(v, u - CX)
+  const d = Math.hypot(u - CX, v)
+  if (Math.abs(ang) < TH) {
+    // 손잡이 — 가운데가 굵고 색이 짙다. 이 한 덩이가 '쥐는 자리'를 만든다.
+    const grip = Math.abs(v) < 0.11
+    const half = grip ? 0.082 : 0.05
+    if (Math.abs(d - R) < half) return grip ? GRIP : BOW
+  }
+
+  // ── 시위 — 활 끝 둘을 잇는 직선. 오늬가 여기 걸린다. ──
+  if (distSeg(u, v, TIPX, -TIPY, TIPX, TIPY) < 0.017) return STRING
+
+  return bg
 }
 
 /** 4×4 슈퍼샘플링. 곡선이 계단으로 보이면 아이콘은 즉시 싸구려가 된다. */
@@ -141,7 +189,7 @@ function render(size) {
       let b = 0
       for (let sy = 0; sy < SS; sy++) {
         for (let sx = 0; sx < SS; sx++) {
-          const c = shade((x + (sx + 0.5) / SS) / size, (y + (sy + 0.5) / SS) / size) ?? BG
+          const c = shade((x + (sx + 0.5) / SS) / size, (y + (sy + 0.5) / SS) / size)
           r += c[0]
           g += c[1]
           b += c[2]
