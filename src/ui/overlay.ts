@@ -115,6 +115,15 @@ const CSS = `
   /** 큰 글자 전용 명조. render/hud.ts 의 FONT_SERIF 와 같은 스택이어야 한 화면으로 읽힌다. */
   --serif: "Gowun Batang","Apple SD Gothic Neo","Batang",serif;
 
+  /* ── 판의 폭 (2026-09-11, 형: "게임화면은 넓게 쓰는데 UI 인터페이스가 너무 빈공간이
+     많아서 한눈에 안들어와") ──────────────────────────────────────────────
+     680px 한 단에 못 박혀 있었다. 1920 짜리 화면에서도 판은 680px 이고 나머지 1240px 은
+     어두운 막이었다 — 그래서 내용이 **세로로만** 자라고, 성장 화면은 한 화면에 안 들어와
+     끝까지 스크롤해야 했다. 이제 폭은 화면을 따라간다. 넓어진 만큼은 .hb-cols 가
+     **두 단으로** 쓴다 (세로로 쓰면 넓어진 의미가 없다).
+     글줄은 .hb-lead 에서 64자로 끊는다 — 넓다고 한 줄이 길어지면 그건 읽기가 더 나빠진다. */
+  --pw: 680px;
+
   /* 노치·홈바. 지원 안 하는 브라우저에서는 0으로 떨어진다. */
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-l: env(safe-area-inset-left, 0px);
@@ -240,14 +249,14 @@ const CSS = `
 
 .hb-scrim {
   position: absolute; inset: 0; z-index: 1; display: none; align-items: center; justify-content: center;
-  background: #0e1116e6; pointer-events: auto; padding: 28px;
+  background: #0e1116e6; pointer-events: auto; padding: 20px;
   -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
 }
 .hb-scrim.hb-open { display: flex; }
 
 /* 패널 = [바깥(문양 테두리·그림자)] + [안쪽(스크롤)]. 테두리는 스크롤과 함께 흐르면 안 된다. */
 .hb-panel {
-  position: relative; display: none; width: min(680px, 100%); max-height: 100%;
+  position: relative; display: none; width: min(var(--pw), 100%); max-height: 100%;
   background: linear-gradient(180deg, var(--paper) 0%, var(--paper2) 100%);
   border-radius: 3px;
   box-shadow: 0 26px 80px #000000cc;
@@ -276,7 +285,7 @@ const CSS = `
   position: relative; z-index: 1; overflow-y: auto; overscroll-behavior: contain;
   /* flex 세로 칸에서 min-height:auto 는 내용보다 작아지지 않는다 — 0으로 풀어야 스크롤이 산다. */
   min-height: 0;
-  padding: 12px 16px 10px; scrollbar-width: thin;
+  padding: 10px 18px 12px; scrollbar-width: thin;
 }
 .hb-body:focus { outline: none; }
 
@@ -297,11 +306,23 @@ const CSS = `
   font-size: 26px; line-height: 1.25; margin: 0; color: var(--ink);
   font-family: var(--serif); font-weight: 700; letter-spacing: .01em;
 }
-.hb-lead { color: var(--dim); font-size: 14px; margin: 4px 0 20px; }
+/* 안내 글줄. **64자에서 끊는다** — 판이 넓어져도 한 줄이 화면을 가로지르면 읽기가 죽는다. */
+.hb-lead { color: var(--dim); font-size: 14px; margin: 3px 0 13px; max-width: 64ch; }
+
+/* ── 두 단 (2026-09-11) ────────────────────────────────────────────────
+   넓은 화면에서만 두 단이 된다. 좁으면 한 단으로 되돌아가므로 폰에서는 아무것도 안 바뀐다.
+   align-items:start — 두 단의 길이가 다른 게 정상이다. 늘여 맞추면 빈 칸이 다시 생긴다. */
+.hb-cols { display: grid; grid-template-columns: 1fr; gap: 0 38px; }
+@media (min-width: 900px) {
+  .hb-cols { grid-template-columns: 1fr 1fr; align-items: start; }
+  /* 단의 첫 덩어리는 위 괘선을 지운다 — 단이 갈린 자리에 선이 또 있으면 두 번 나눈 것이다. */
+  .hb-cols > div > :first-child.g-bows,
+  .hb-cols > div > :first-child.hb-sec { margin-top: 0; border-top: none; }
+}
 /* 구역 이름 + 그 뒤로 이어지는 괘선. 상자를 하나 더 만드는 대신 선 하나로 나눈다. */
 .hb-sec {
   display: flex; align-items: center; gap: 12px;
-  color: var(--dim); font-size: 12px; letter-spacing: .2em; margin: 24px 0 10px;
+  color: var(--dim); font-size: 12px; letter-spacing: .2em; margin: 16px 0 8px;
 }
 .hb-sec::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 
@@ -333,6 +354,13 @@ const CSS = `
   .hb-btn { min-height: 44px; padding: 11px 16px; }
   .hb-btn .hb-key { display: none; }
 }
+
+/* ── 넓은 화면 — 판이 따라 넓어진다 (2026-09-11) ────────────────────────────
+   게임은 화면을 다 쓰는데 판만 680px 이면, 켜는 순간 화면의 3분의 2가 빈 막이 된다.
+   단계로 올린다: 넓어질수록 .hb-cols 가 두 단을 쓸 자리가 생긴다. */
+@media (min-width: 900px)  { .hb-ui { --pw: 880px; } }
+@media (min-width: 1200px) { .hb-ui { --pw: 1100px; } }
+@media (min-width: 1600px) { .hb-ui { --pw: 1280px; } }
 
 /* ── 세로 화면 (폰) ────────────────────────────────────────────────────
    패널이 가운데 뜬 상자에서 **아래에서 올라오는 시트**가 된다. 엄지가 닿는 곳이 아래고,

@@ -171,10 +171,21 @@ export function mountCollection(
 
   panel.append(head, title)
 
+  // ── 두 단 (2026-09-11, 형: "빈공간이 너무 많아서 한눈에 안들어와") ──
+  //   왼쪽은 **모은 것**(칭호·해금 줄), 오른쪽은 **판의 별**(칸 격자)이다.
+  //   둘은 서로 다른 축이라 나란히 놓아도 헷갈리지 않는다 — 오히려 "얼마나 왔나"가
+  //   한 화면에서 같이 읽힌다. 좁은 화면에서는 한 단으로 접힌다 (ui/overlay.ts .hb-cols).
+  const cols = document.createElement('div')
+  cols.className = 'hb-cols'
+  const colA = document.createElement('div')
+  const colB = document.createElement('div')
+  cols.append(colA, colB)
+  panel.appendChild(cols)
+
   const secUnlock = document.createElement('div')
   secUnlock.className = 'hb-sec'
   secUnlock.textContent = '해금'
-  panel.appendChild(secUnlock)
+  colA.appendChild(secUnlock)
 
   const rows: Row[] = []
   for (let i = 0; i < UNLOCKS.length; i++) {
@@ -199,13 +210,13 @@ export function mountCollection(
       count: el.querySelector('.c-count') as HTMLElement,
       fill: el.querySelector('.c-bar i') as HTMLElement,
     })
-    panel.appendChild(el)
+    colA.appendChild(el)
   }
 
   const secStage = document.createElement('div')
   secStage.className = 'hb-sec'
   secStage.textContent = '판별 별'
-  panel.appendChild(secStage)
+  colB.appendChild(secStage)
 
   const grid = document.createElement('div')
   grid.className = 'c-grid'
@@ -221,7 +232,7 @@ export function mountCollection(
     cells.push({ id: s.id, el, stars: el.querySelector('.c-s') as HTMLElement })
     grid.appendChild(el)
   }
-  panel.appendChild(grid)
+  colB.appendChild(grid)
 
   const foot = document.createElement('div')
   foot.className = 'c-foot'

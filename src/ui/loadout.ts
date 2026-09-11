@@ -49,7 +49,7 @@ const CSS = `
 .l-run b { color: var(--teal); font-size: 20px; margin-left: 6px; }
 .l-best { color: var(--dim); font-size: 13px; letter-spacing: .08em; }
 .l-best b { color: var(--accent); font-size: 20px; margin-left: 6px; }
-.l-sec { color: var(--dim); font-size: 13px; letter-spacing: .12em; margin: 18px 0 8px; }
+.l-sec { color: var(--dim); font-size: 13px; letter-spacing: .12em; margin: 13px 0 7px; }
 .l-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 @media (max-width: 400px) { .l-grid { grid-template-columns: 1fr; } }
 /* 카드의 틀(문양 테두리·바탕·눌림)은 .hb-card 가 진다 (ui/overlay.ts).
@@ -71,7 +71,7 @@ const CSS = `
 .l-card.l-lock { opacity: .55; cursor: default; }
 .l-card.l-lock:hover { background: var(--card); }
 .l-card.l-lock .l-n { color: var(--mute); letter-spacing: .08em; }
-.l-syn { color: var(--teal); font-size: 13px; min-height: 22px; margin-top: 12px; }
+.l-syn { color: var(--teal); font-size: 13px; min-height: 22px; margin-top: 9px; }
 .l-card .l-syn2 { color: var(--teal); font-size: 12px; }
 .l-foot { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
 /* 전체 초기화 — 개발 단계의 필수품. 시작 버튼과 헷갈리지 않게 구석에 작게, 위험색은 무장 후에만. */
@@ -178,14 +178,25 @@ export function mountLoadout(
     refreshShop()
   }
 
-  const section = (title: string): void => {
+  // ── 두 단 (2026-09-11, 형: "빈공간이 너무 많아서 한눈에 안들어와") ──
+  //   왼쪽은 **들고 입는 것**(활·갑옷), 오른쪽은 **이번 여정에 사는 것**(부적·살 가게)이다.
+  //   출정 화면은 네 구역이 세로로 쌓여 있어서, 살 가게까지 보려면 늘 끝까지 내려야 했다.
+  //   좁은 화면에서는 .hb-cols 가 한 단으로 접힌다 (ui/overlay.ts) — 폰은 예전 그대로다.
+  const cols = document.createElement('div')
+  cols.className = 'hb-cols'
+  const colA = document.createElement('div')
+  const colB = document.createElement('div')
+  cols.append(colA, colB)
+  panel.appendChild(cols)
+
+  const section = (title: string, into: HTMLElement): void => {
     const h = document.createElement('div')
     h.className = 'l-sec'
     h.textContent = title
-    panel.appendChild(h)
+    into.appendChild(h)
   }
 
-  section('활')
+  section('활', colA)
   const bowGrid = document.createElement('div')
   bowGrid.className = 'l-grid'
   // 열린 활 먼저, 그 뒤에 잠긴 활 — 잠긴 슬롯이 보여야 '다음 여정의 이유'가 생긴다
@@ -216,14 +227,14 @@ export function mountLoadout(
     }
     bowGrid.appendChild(card)
   }
-  panel.appendChild(bowGrid)
+  colA.appendChild(bowGrid)
 
-  panel.appendChild(syn)
+  colA.appendChild(syn)
 
   // ── 부적 — 이번 여정만 (game/charms.ts) ──
   // 하나만 지닌다. 값은 '나선다'를 누르는 순간 치른다 — 여기서 미리 깎으면 활을 고르다
   // 마음이 바뀐 사람의 훈련치가 샌다. 못 사는 카드는 왜 못 사는지 적힌 채 흐려진다.
-  section('부적 — 이번 여정만, 하나')
+  section('부적 — 이번 여정만, 하나', colB)
   const charmGrid = document.createElement('div')
   charmGrid.className = 'l-grid'
   const charmCards = new Map<CharmId, HTMLButtonElement>()
@@ -246,11 +257,11 @@ export function mountLoadout(
     charmCards.set(c.id, card)
     charmGrid.appendChild(card)
   }
-  panel.appendChild(charmGrid)
+  colB.appendChild(charmGrid)
 
   // ── 갑옷 — 셋 중 하나를 입고 나선다 (game/armor.ts, 2026-09-10 형: "방어구는 고를 수도 없잖아") ──
   // 가진 벌은 누르면 입고, 없는 벌은 누르면 장만한다(훈련치). 판 도중에 사는 '갑옷'은 입은 벌이다.
-  section('갑옷 — 입고 나선다. 판 도중에 겹쳐 입는 것은 이 벌이다')
+  section('갑옷 — 입고 나선다. 판 도중에 겹쳐 입는 것은 이 벌이다', colA)
   const armorGrid = document.createElement('div')
   armorGrid.className = 'l-grid'
   const armorCards = new Map<ArmorKindId, HTMLButtonElement>()
@@ -271,7 +282,7 @@ export function mountLoadout(
     armorCards.set(a.id, card)
     armorGrid.appendChild(card)
   }
-  panel.appendChild(armorGrid)
+  colA.appendChild(armorGrid)
   const refreshArmor = (): void => {
     const worn = armorKindOf(d)
     for (const [id, el] of armorCards) {
@@ -291,10 +302,10 @@ export function mountLoadout(
   // ── 살 가게 — 발견한 특수살을 훈련치로 채운다 (game/supply.ts shopPrice) ──
   // 발견한 살(arrowStock 에 키가 있는 살)만 판다 — 가게가 보급을 대신하면 보스를 잡을 이유가 준다.
   // 사는 순간 재고가 오른다 (여기서 바로 저장). 아직 하나도 못 봤으면 그 사실을 한 줄로 말한다.
-  section('살 가게 — 발견한 살을 채운다')
+  section('살 가게 — 발견한 살을 채운다', colB)
   const shop = document.createElement('div')
   shop.className = 'l-shop'
-  panel.appendChild(shop)
+  colB.appendChild(shop)
   const refreshShop = (): void => {
     shop.replaceChildren()
     let any = 0

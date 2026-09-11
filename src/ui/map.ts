@@ -90,6 +90,9 @@ function roadPath(pts: readonly Pt[]): string {
   return d
 }
 
+/** 지도를 키우는 상한. 이보다 키우면 획이 뭉툭해지고 글자만 큰 지도가 된다. */
+const MAP_MAX_SCALE = 1.7
+
 const CSS = `
 .map-lead { color: var(--dim); font-size: 14px; margin: 4px 0 14px; }
 .map-lead b { color: var(--teal); font-weight: 700; font-family: inherit; }
@@ -343,7 +346,10 @@ export function mountMap(
   const fitBoard = (): void => {
     const avail = fit.clientWidth
     if (avail <= 0) return
-    const k = Math.min(1, avail / BOARD_W)
+    // ★ 줄이기만 하던 것을 **키우기도** 한다 (2026-09-11, 형: "빈공간이 너무 많아서").
+    //   종이는 ${BOARD_W}px 고정이라, 넓어진 판에서는 좌우가 통째로 빈 막이었다.
+    //   상한을 두는 이유: 그 이상 키우면 획이 뭉툭해지고 글자만 커진 지도가 된다.
+    const k = Math.min(MAP_MAX_SCALE, avail / BOARD_W)
     fit.style.setProperty('--map-s', String(k))
     fit.style.height = `${Math.ceil(BOARD_H * k)}px`
   }

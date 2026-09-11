@@ -59,8 +59,9 @@ const CSS = `
 .g-train b { color: var(--accent); font-weight: 700; font-size: 26px; margin-left: 8px; }
 
 .g-row {
-  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 3px 20px;
-  padding: 16px 0 15px; border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 18px;
+  /* 2026-09-11 — 줄 하나가 네 줄짜리라 여백까지 크면 네 스탯이 화면을 다 먹는다. */
+  padding: 11px 0 10px; border-top: 1px solid var(--line);
   transition: background .3s;
 }
 .g-row:first-of-type { border-top: none; }
@@ -96,11 +97,11 @@ const CSS = `
 .g-up[disabled] .g-cost { color: inherit; }
 
 /* ── 활 걸이 ── 스탯과 발자취가 다른 물건임이 한눈에 읽히게 칸으로 나눈다. */
-.g-bows { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 14px; }
+.g-bows { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 10px; }
 .g-bows h3 { color: var(--dim); font-size: 13px; letter-spacing: .12em; margin: 0 0 4px; }
 .g-bow {
-  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 20px;
-  padding: 12px 0 11px; border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 18px;
+  padding: 9px 0 8px; border-top: 1px solid var(--line);
 }
 .g-bow:first-of-type { border-top: none; }
 .g-bow .g-bic { color: var(--accent); line-height: 0; margin-right: 10px; vertical-align: -6px; }
@@ -118,7 +119,7 @@ const CSS = `
 .g-bow.g-lockd .g-bperk, .g-bow.g-lockd .g-bcost, .g-bow.g-lockd .g-bsyn { color: var(--mute); }
 
 .g-foot {
-  border-top: 1px solid var(--line); margin-top: 20px; padding-top: 16px;
+  border-top: 1px solid var(--line); margin-top: 14px; padding-top: 12px;
   display: flex; align-items: center; gap: 14px;
 }
 .g-foot label { display: flex; align-items: center; gap: 9px; cursor: pointer; color: var(--body); }
@@ -126,7 +127,7 @@ const CSS = `
 .g-hint { color: var(--mute); font-size: 13px; flex: 1; text-align: right; }
 
 /* ── 처음부터 ── 파괴적인 버튼은 구석에 작게, 대신 문구는 정직하게. */
-.g-danger { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 12px;
+.g-danger { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 10px;
   display: flex; align-items: center; gap: 12px; }
 .g-danger .hb-btn { font-size: 13px; color: var(--mute); }
 /* 1단계를 누르면 버튼이 위험색으로 바뀐다 — "정말인가"를 색이 먼저 묻는다. */
@@ -437,8 +438,25 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
 
   panel.append(head, sub)
 
+  // ── 두 단 (2026-09-11, 형: "UI 인터페이스가 너무 빈공간이 많아서 한눈에 안들어와") ──
+  //
+  //   가르는 축은 **돈을 쓰는가**다:
+  //     왼쪽  스탯 · 대장간 — 둘 다 같은 지갑을 쓴다. 나란히 있어야 "근력을 올릴까,
+  //           활채를 갈까"가 진짜 저울질이 된다 (예전엔 둘 사이에 활 걸이가 끼어 있었다).
+  //     오른쪽 활 걸이 — 고르는 것. 값이 아니라 해금이 문이다.
+  //
+  //   길이도 이 쪽이 맞다: 스탯 넷 + 개조 넷 = 여덟, 활 다섯. 두 단이 비슷하게 찬다.
+  //   한쪽만 길면 결국 그 단 때문에 스크롤이 살아난다.
+  //   좁은 화면에서는 .hb-cols 가 한 단으로 접히므로 폰에서는 예전 그대로 위에서 아래다.
+  const cols = document.createElement('div')
+  cols.className = 'hb-cols'
+  const colA = document.createElement('div')
+  const colB = document.createElement('div')
+  cols.append(colA, colB)
+  panel.appendChild(cols)
+
   const rows = buildStatRows(d, trainOut, audio, onChange)
-  panel.appendChild(rows.el)
+  colA.appendChild(rows.el)
 
   // ── 활 걸이 (docs/BOWS.md) ──
   // 장착은 다음 판부터다 — 판 도중에 활이 바뀌면 같은 시드가 다른 판이 된다 (A1).
@@ -491,11 +509,12 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
     ;(el.querySelector('.g-borigin') as HTMLElement).textContent = b.origin
     rack.appendChild(el)
   }
-  panel.appendChild(rack)
+  colB.appendChild(rack)
 
-  // ── 대장간 — 든 활의 개조 (game/forge.ts). 활 걸이 바로 아래: "이 활을 든다 → 이 활을 갈아 만든다".
+  // ── 대장간 — 든 활의 개조 (game/forge.ts). 스탯 바로 아래(왼쪽 단)다 —
+  //   같은 지갑을 쓰는 것끼리 붙여야 고르는 맛이 산다. 활 걸이는 옆 단에서 같이 보인다.
   const forge = buildForgeRows(d, audio, onChange)
-  panel.appendChild(forge.el)
+  colA.appendChild(forge.el)
 
   /** 활 걸이 갱신. 목록·조건·숙련 전부 여기서만 다시 그린다. */
   const refreshBows = (): void => {
@@ -768,13 +787,21 @@ export function showReinforce(
   sub.textContent = '이번 여정에서 번 돈으로 몸을 키운다. 올리면 어떻게 달라지는지 각 줄에 적혀 있다.'
   panel.append(gh, sub)
 
+  // 여기도 두 단 — 죽은 직후 화면은 **한눈에** 읽혀야 한다. 스크롤은 곧 이탈이다.
+  const cols = document.createElement('div')
+  cols.className = 'hb-cols'
+  const colA = document.createElement('div')
+  const colB = document.createElement('div')
+  cols.append(colA, colB)
+  panel.appendChild(cols)
+
   const rows = buildStatRows(d, trainOut, audio, () => {})
-  panel.appendChild(rows.el)
+  colA.appendChild(rows.el)
 
   // 대장간도 여기 선다 — 죽은 직후는 "활을 갈아 만들까"를 물을 가장 좋은 때다 (game/forge.ts).
   // 스탯 줄과 같은 지갑이라 "근력을 올릴까, 활채를 갈까"가 진짜 저울질이 된다.
   const forge = buildForgeRows(d, audio, () => {})
-  panel.appendChild(forge.el)
+  colB.appendChild(forge.el)
 
   // 올릴 것이 하나도 없으면 왜 없는지 한 줄. 버튼만 잠겨 있으면 고장으로 읽힌다.
   const none = document.createElement('div')
