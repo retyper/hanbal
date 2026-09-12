@@ -10,6 +10,15 @@
  * 이제 자리는 **하나**다 (ui/wheel.ts 의 슬림 걸이). 돌리면 다음 살이 앞으로 오고,
  * 앞에 나온 살이 곧 드는 살이다. 종류가 아홉이 되어도 넓이가 안 변한다.
  *
+ * ── 실린더 (2026-09-12) ───────────────────────────────────────────────
+ * 형: **"리볼버처럼 리볼빙 하는게 뭔지 몰라? 그리고 그 칸 너무 크잖아. 위아래에 살짝
+ * 뒤에있듯이 다음 화살이 보이고 그걸로 내리거나 올리면 넘어가게 만들어야지"**
+ *
+ * 첫 판은 **창문**이었다 — 한 칸이 자리를 꽉 채우고 이웃은 화면 밖이라, 도는데 도는 게
+ * 안 보였다. 지금은 위아래로 다음 살이 얼굴을 내밀고(작고 어둡게, 가운데 뒤로 겹쳐),
+ * **그걸 잡아 끌면 실린더가 따라 돈다.** 손을 떼면 가까운 칸에 붙는다.
+ * 화살표 단추는 뺐다 — 다음 것이 눈에 보이고 손으로 잡히면 단추는 자리만 먹는다.
+ *
  * ── 규칙 ──────────────────────────────────────────────────────────────
  * 1. **유엽전이 걸이의 첫 칸이다.** 무한이라 버튼이 없던 살인데, 걸이에서는 자리가 있어야
  *    "특수살을 내려놓는다"가 **돌리는 동작 하나**로 된다 (예전엔 같은 버튼을 두 번 누르는
@@ -38,6 +47,8 @@ const CSS = `
 .wh-slim .wh-card.q-empty { opacity: .5; }
 /* 아직 한 번도 안 들어 본 살 — 카드가 숨 쉰다. 앞에 세우는 순간 멎는다 (save.armedArrows). */
 .wh-slim .wh-card.q-new { animation: q-breathe 1.4s ease-in-out infinite; }
+/* 뒤에 선 칸은 어둡지만(overlay.ts), 아직 안 들어 본 살은 뒤에서도 제 색으로 숨 쉰다. */
+.wh-slim.wh-y .wh-card.q-new:not(.wh-mid) { filter: none; }
 @keyframes q-breathe {
   0%, 100% { box-shadow: 0 0 0 0 rgba(226, 176, 80, 0); }
   50% { box-shadow: 0 0 0 5px rgba(226, 176, 80, .35); }
@@ -123,6 +134,8 @@ export function mountQuiver(o: Overlay, d: SaveData): void {
         slim: true,
         // 버튼 줄에서는 **위아래**로 돈다 — 좌우는 이미 다른 버튼들의 축이다.
         axis: 'y',
+        // 위아래 이웃이 직접 보이므로 화살표 단추는 없다 (실린더 항목).
+        arms: false,
         label: '살통',
         items: ids.map((id) => ({ id, html: face(id) })),
         onPick: (id) => {
@@ -158,9 +171,9 @@ export function mountQuiver(o: Overlay, d: SaveData): void {
 
     const held = d.runArrow as ArrowKindId
     hint.textContent = fresh > 0 && held === DEFAULT_ARROW
-      ? '새 살이 들어왔다 — 돌려서 앞에 세우면 든다'
+      ? '새 살이 들어왔다 — 위아래로 밀어 앞에 세우면 든다'
       : held === DEFAULT_ARROW
-        ? '살통 — 돌리면 바로 바꿔 든다 · 쏠 때마다 1발씩 준다'
+        ? '살통 — 위아래로 밀면 바꿔 든다 · 쏠 때마다 1발씩 준다'
         : `들고 있음: ${arrowKind(held).name}`
     hint.className = 'q-hint' + (fresh > 0 && held === DEFAULT_ARROW ? ' q-hint-new' : '')
   }

@@ -335,7 +335,7 @@ const CSS = `
    형: "화살 아직도 게임화면에서 하나하나 버튼인데 이거 리볼빙되듯 만들어야 한다니까?"
    맞다. 살 종류가 늘수록 버튼이 늘어 줄이 접히고, 접힌 줄이 궁수를 덮었다.
    이제 **자리가 하나**다 — 돌리면 다음 살이 앞으로 온다. 늘어도 넓이가 안 변한다. */
-.wh.wh-slim { width: 208px; gap: 0; }
+.wh.wh-slim { width: 150px; gap: 0; }
 .wh-slim .wh-stage { height: 52px; }
 .wh-slim .wh-card {
   height: 100%; padding: 0 9px; gap: 7px;
@@ -344,8 +344,10 @@ const CSS = `
 .wh-slim .wh-card::before { border-width: 8px; border-image-width: 8px; }
 .wh-slim .wh-arm { width: 26px; min-width: 26px; height: 46px; font-size: 20px; }
 .wh-slim .wh-pips { display: none; }
-@media (pointer: coarse) { .wh.wh-slim { width: 188px; } .wh-slim .wh-stage { height: 48px; } }
-@media (max-width: 420px) { .wh.wh-slim { width: 164px; } }
+/* 화살표가 없는 걸이 — 무대가 폭을 다 쓴다. */
+.wh.wh-bare { grid-template-columns: 1fr; }
+@media (pointer: coarse) { .wh.wh-slim { width: 146px; } }
+@media (max-width: 420px) { .wh.wh-slim { width: 132px; } }
 
 /* ── 위아래로 도는 걸이 (2026-09-11, ui/wheel.ts axis:'y') ─────────────────────
    형: "자연스럽게 위아래로 리볼빙 되어야 하는데 양옆으로 넘겨야 하고 넘기면 대각선으로 흔들려"
@@ -363,8 +365,35 @@ const CSS = `
 .wh-y .wh-prev { grid-column: 2; grid-row: 1; align-self: end; }
 .wh-y .wh-next { grid-column: 2; grid-row: 2; align-self: start; }
 .hb-hud .wh-y .wh-arm { width: 24px; min-width: 24px; height: 22px; padding: 0; }
-/* 한 칸만 보인다 — 위아래로 삐져나온 이웃은 무대가 자른다. */
-.wh-y .wh-card { width: 100% !important; height: 100%; }
+
+/* ── 실린더 (2026-09-12) ──────────────────────────────────────────────────────
+   형: "리볼버처럼 리볼빙 하는게 뭔지 몰라? 그리고 그 칸 너무 크잖아. 위아래에 살짝
+        뒤에있듯이 다음 화살이 보이고 그걸로 내리거나 올리면 넘어가게 만들어야지"
+
+   맞다. 어제 것은 **한 칸짜리 창문**이었다: 카드가 무대를 꽉 채우고(height:100%) 보폭이
+   무대 높이라, 이웃은 늘 화면 밖에 있었다. 도는데 도는 게 안 보이면 그냥 값이 바뀌는 거다.
+
+   실린더는 셋을 지켜야 한다.
+     1. **다음 것이 보인다** — 위아래로 얼굴만 내민다. 카드를 무대보다 낮게 두고(32px)
+        보폭을 카드 높이의 66%로 줘서, 이웃이 가운데 뒤로 겹쳐 들어온다.
+     2. **뒤에 있어 보인다** — 작고(scale) 흐리고(opacity) 어둡다. 겹치는 순서는 z-index.
+     3. **끌면 따라온다** — 손가락을 따라 실린더가 돌고, 놓으면 가까운 칸에 붙는다 (wheel.ts).
+   무대 위아래 가장자리는 서서히 사라진다(mask) — 잘린 선이 보이면 그건 실린더가 아니라 상자다. */
+/* ★ 무대 높이는 **카메라의 아래 띠와 짝**이다 (tools/probe-style.ts 가 둘을 묶어 잰다).
+   58 = 가운데 칸 30 + 위아래로 내민 이웃의 얼굴 14씩. 더 키우면 버튼 바가 궁수를 덮는다. */
+.wh-slim.wh-y .wh-stage {
+  height: 58px; touch-action: none; cursor: grab;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 86%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 86%, transparent 100%);
+}
+.wh-slim.wh-y.wh-drag .wh-stage { cursor: grabbing; }
+.wh-y .wh-card { width: 100% !important; }
+/* ★ 카드가 무대보다 **낮아야** 위아래 이웃이 들어갈 틈이 생긴다. */
+.wh-slim.wh-y .wh-card { height: 30px; }
+/* 뒤에 선 살은 어둡다 — 크기와 투명도만으로는 '뒤'가 덜 읽힌다. */
+.wh-slim.wh-y .wh-card:not(.wh-mid) { filter: brightness(.72); }
+/* 끄는 동안은 붙는 맛이 없어야 한다 — 손가락보다 늦게 따라오면 그게 고무줄로 느껴진다. */
+.wh.wh-drag .wh-card { transition: none; }
 
 /* 몇 번째인가 — 점 다섯. 숫자를 쓰지 않는 이유는 세는 것이 아니라 **어디쯤인지**를 보는 것이라서다. */
 .wh-pips { grid-column: 1 / -1; display: flex; justify-content: center; gap: 6px; margin-top: 2px; }

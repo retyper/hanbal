@@ -186,8 +186,14 @@ const BOTTOM = 18
 const CLEAR = 16
 /** 글자 붙은 데스크탑 버튼 한 줄 (패딩 11+11 + 줄높이 ~25 + 테두리 2). */
 const WIDE_BTN = 50
-/** 살통 덩어리 — 힌트 한 줄(~17)이 버튼 줄 위에 더 붙는다 (ui/quiver.ts .q-hint). */
-const WIDE_QUIVER = WIDE_BTN + 17
+/**
+ * 살통 걸이의 실제 높이 — CSS 에서 읽는다 (2026-09-12).
+ * 예전엔 "버튼 한 줄"로 쳤는데, 걸이가 실린더가 되면서 위아래 이웃만큼 키가 자랐다.
+ * 짐작으로 적으면 다음에 또 어긋난다 — 한쪽을 고치면 이 검사가 바로 빨개져야 한다.
+ */
+const QUIVER = num(/\.wh-slim\.wh-y \.wh-stage \{[^}]*height: (\d+)px/, shell)
+/** 살통 덩어리 — 힌트 한 줄(~17)이 걸이 위에 더 붙는다 (ui/quiver.ts .q-hint). */
+const WIDE_QUIVER = QUIVER + 17
 
 /**
  * 화면형 셋 — CSS의 버튼 배치와 camera.ts 의 띠가 짝이 맞는가.
@@ -199,9 +205,12 @@ const WIDE_QUIVER = WIDE_BTN + 17
  */
 const btnH = num(/\.hb-hud \.hb-btn \{[^}]*height: (\d+)px/, shell)
 check(btnH >= 44, '폰 버튼이 44px 이상이다', `${btnH}px`)
+check(QUIVER > 0, '살통 걸이의 높이를 읽었다', QUIVER + 'px')
+// 폰·낮은 화면에서는 살통이 버튼과 **같은 줄**에 선다 — 그 줄의 키는 둘 중 큰 쪽이다.
+const rowH = Math.max(btnH, QUIVER)
 for (const [label, rowsPx, safe, bandRe] of [
-  ['세로 폰 (아이콘 두 줄)', btnH * 2 + GAP, 34, /bandBottomPx: (\d+)/],
-  ['낮은 화면 (아이콘 한 줄)', btnH, 21, /bandBottomShortPx: (\d+)/],
+  ['세로 폰 (아이콘 두 줄)', btnH + rowH + GAP, 34, /bandBottomPx: (\d+)/],
+  ['낮은 화면 (아이콘 한 줄)', rowH, 21, /bandBottomShortPx: (\d+)/],
   ['데스크탑 (길잡이 + 살통 두 줄)', WIDE_BTN + WIDE_QUIVER + GAP, 0, /bandBottomWidePx: (\d+)/],
 ] as const) {
   const band = num(bandRe, camSrc)

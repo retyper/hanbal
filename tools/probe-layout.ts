@@ -326,6 +326,52 @@ console.log('\n6. 살통 — 걸이')
   let slim = 0
   hud.walk((e) => { if (e.className.split(' ').includes('wh-slim')) slim++ })
   check(slim === 1, '좁은 자리용(슬림) 걸이를 쓴다')
+
+  // ── 실린더인가 (2026-09-12) ────────────────────────────────────────
+  //   형: "리볼버처럼 리볼빙 하는게 뭔지 몰라? 위아래에 살짝 뒤에있듯이 다음 화살이 보이고"
+  //   걸이가 도는 것만으로는 부족하다. **다음 것이 보여야** 실린더다.
+  //   창문(한 칸만 보이는 것)으로 되돌아가면 여기가 빨개진다.
+  const deck: El[] = []
+  hud.walk((e) => { if (e.className.split(' ').includes('wh-card')) deck.push(e) })
+  const mid = deck[0]
+  const near = deck[1]
+  const far2 = deck[2]
+  const op = (e: El | undefined): number => Number(e?.style['opacity'] ?? '-1')
+  const shiftY = (e: El | undefined): number =>
+    Number(/translateY\((-?\d+)px\)/.exec(e?.style['transform'] ?? '')?.[1] ?? '0')
+
+  check(op(mid) === 1 || op(mid) > 0.99, '앞에 나온 살이 또렷하다', String(op(mid)))
+  check(op(near) > 0.2 && op(near) < 0.8, '바로 다음 살이 뒤에 비쳐 보인다', String(op(near)))
+  check(op(far2) === 0, '두 칸 너머는 안 보인다 (고리가 넘어가는 곳)', String(op(far2)))
+  // 보폭이 카드 키보다 작아야 이웃이 가운데 **뒤로 겹쳐** 들어온다 (wheel.ts VSTEP).
+  const CARD_H = 30
+  check(shiftY(near) > 0 && shiftY(near) < CARD_H,
+    '이웃이 카드 키보다 짧게 물러난다 (겹친다)', `${shiftY(near)}px < ${CARD_H}px`)
+  check(shiftY(mid) === 0, '앞의 것은 한가운데다', `${shiftY(mid)}px`)
+
+  // 화살표 단추는 없다 — 다음 것이 보이고 손으로 잡히면 단추는 자리만 먹는다.
+  let arms = 0
+  hud.walk((e) => { if (e.className.split(' ').includes('wh-arm')) arms++ })
+  check(arms === 0, '화살표 단추가 없다 (이웃을 직접 잡는다)', `${arms}개`)
+
+  // 끌면 따라온다 — 손을 뗄 때만 튀는 것은 '미는 것'이 아니다.
+  const wsrc = readFileSync('src/ui/wheel.ts', 'utf8')
+  check(wsrc.includes("addEventListener('pointermove'"), '끄는 동안 따라 돈다 (pointermove)')
+  check(wsrc.includes('setPointerCapture'), '손가락이 걸이 밖으로 나가도 놓치지 않는다')
+
+  // 겉면만 갈아 끼운다 — 매번 다시 지으면 CSS transition 이 끊겨 도는 것이 안 보인다.
+  check(/if \(same\) \{[\s\S]{0,600}?innerHTML/.test(wsrc),
+    '칸 수가 같으면 다시 짓지 않는다 (움직임이 안 끊긴다)')
+
+  // 자리(CSS) — 카드가 무대보다 낮고, 가장자리가 서서히 사라진다.
+  const shell = readFileSync('src/ui/overlay.ts', 'utf8')
+  const px = (re: RegExp): number => Number(re.exec(shell)?.[1] ?? 0)
+  const stageH = px(/\.wh-slim\.wh-y \.wh-stage \{[^}]*height: (\d+)px/)
+  const cardH = px(/\.wh-slim\.wh-y \.wh-card \{ height: (\d+)px/)
+  check(cardH > 0 && stageH > cardH + 20,
+    '무대가 카드보다 높다 (위아래에 이웃이 들어갈 틈)', `${stageH}px > ${cardH}px`)
+  check(/\.wh-slim\.wh-y \.wh-stage \{[^}]*mask-image/.test(shell),
+    '무대 가장자리가 서서히 사라진다 (잘린 선이 안 보인다)')
 }
 
 // ── 7. 활 그림 — 각각 등록됐는가 ─────────────────────────────────────
