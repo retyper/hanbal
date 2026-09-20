@@ -39,6 +39,7 @@ export function warmFoeArt(): void {
   sprite('foe-falcon-b')
   for (const name of Object.keys(PROP)) sprite(name)
   for (const c of CORPSE) sprite(c.name)
+  for (const name of Object.keys(HERO)) sprite(`hero-${name}`)
 }
 
 /**
@@ -146,5 +147,50 @@ export function drawCorpseArt(
   ctx.translate(x, y - r * c.lift * settle)
   ctx.rotate(spin * (1 - settle) + c.rest * settle)
   ctx.drawImage(im, -dw / 2, -dh / 2, dw, dh)
+  return true
+}
+
+/**
+ * 궁수(주인공)의 몸 — 적 궁수와 같은 길이다: **몸통·머리·다리만 그림**이고, 활팔·활·시위팔·화살은
+ * render/stickman.ts 가 지금처럼 관절 위에 그린다. 당김·겨냥·떨림은 전부 팔과 활에 있어서 그대로다.
+ * 척추가 "언제나 수직"인 것이 이 게임의 자세 규격(docs/FORM.md 2-2)이라 선 그림 한 장이 그대로 맞는다.
+ *
+ * plain 맨몸 · a0 가죽갑 · a1 두정갑 · a2 찰갑 (World.armorLook). 갑옷이 다 벗겨지면 맨몸으로 돌아간다.
+ * 끄려면 HERO_ART 를 false 로 — 스틱맨으로 돌아간다 (벡터 몸은 폴백으로 그대로 있다).
+ */
+export const HERO_ART = true
+
+const HERO = {
+  plain: { headU: 0.5, headV: 0.1, footV: 0.995 },
+  a0: { headU: 0.5, headV: 0.1, footV: 0.995 },
+  a1: { headU: 0.47, headV: 0.1, footV: 0.995 },
+  a2: { headU: 0.5, headV: 0.1, footV: 0.995 },
+} as const satisfies Record<string, FoeArt>
+
+/** 그 갑옷의 그림이 있는가 — 없는 벌은 부르는 쪽이 벡터 몸을 그린다. */
+export function heroArtName(armorOn: boolean, armorLook: number): keyof typeof HERO | null {
+  if (!HERO_ART) return null
+  if (!armorOn) return 'plain'
+  const name = `a${armorLook}`
+  return name in HERO ? (name as keyof typeof HERO) : null
+}
+
+/** (hx, hy) 머리 중심의 화면 자리 · footY 발밑의 화면 y. 그림은 오른쪽을 본다 — faceLeft 면 뒤집는다. */
+export function drawHeroArt(
+  ctx: CanvasRenderingContext2D, name: keyof typeof HERO, hx: number, hy: number, footY: number, faceLeft: boolean,
+): boolean {
+  const im = sprite(`hero-${name}`)
+  if (im === null) return false
+  const art = HERO[name]
+  const span = (art.footV - art.headV) * im.naturalHeight
+  if (span <= 0 || footY <= hy) return false
+  const s = (footY - hy) / span
+  const dw = im.naturalWidth * s
+  const dh = im.naturalHeight * s
+  ctx.save()
+  ctx.translate(hx, hy)
+  if (faceLeft) ctx.scale(-1, 1)
+  ctx.drawImage(im, -art.headU * dw, -art.headV * dh, dw, dh)
+  ctx.restore()
   return true
 }

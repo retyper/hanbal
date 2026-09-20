@@ -32,6 +32,7 @@ import { P } from '../tune/params.ts'
 import { effectiveStats } from '../sim/bow.ts'
 import type { World } from '../sim/types.ts'
 import { THEME, worldToScreenX, worldToScreenY } from './camera.ts'
+import { drawHeroArt, heroArtName } from './foeart.ts'
 import { hudLeftBottom } from './hud.ts'
 import type { Camera } from './camera.ts'
 
@@ -730,6 +731,24 @@ export function drawArcher(
   // strain(경계선 넘김)은 척추를 건드리지 않는다 — 그건 떨림과 팔꿈치가 말한다.
   const spineBend = -face * warn * POSE.warnSpine
 
+  const tilt = brace * POSE.braceHeadTilt * (1 - unlock * P.render.poseStrainHead)
+    + warn * POSE.warnHeadDrop
+  const upX = Math.sin(tilt) * rig.ux
+  const upY = Math.cos(tilt) + Math.sin(tilt) * rig.uy
+  const neckX = rig.sx + upX * BODY.neck
+  const neckY = rig.sy + upY * BODY.neck
+  const headSpan = BODY.neck + BODY.head
+  const headX = rig.sx + upX * headSpan
+  const headY = rig.sy + upY * headSpan
+
+  // ★ 몸은 **그림**이다 (2026-09-20, render/foeart.ts drawHeroArt) — 몸통·머리·다리만. 활팔·활·시위팔·화살은
+  //   아래에서 지금처럼 관절 위에 그린다. 그림의 머리를 이 머리 자리에 못 박고 발밑까지로 크기를 정한다.
+  //   그림이 안 떴거나(로딩·헤드리스) 그 갑옷의 그림이 없으면 아래 벡터 몸이 선다.
+  const heroName = heroArtName(w.armor > 0 && w.armorMax > 0, w.armorLook)
+  const heroArt = heroName !== null && drawHeroArt(
+    ctx, heroName, worldToScreenX(cam, headX), worldToScreenY(cam, headY), worldToScreenY(cam, footY), face < 0,
+  )
+  if (!heroArt) {
   ctx.strokeStyle = bodyCol
   ctx.lineWidth = torsoW
   spine(ctx, cam, rig.sx, rig.sy, pelvisX, pelvisY, spineBend)
@@ -857,15 +876,6 @@ export function drawArcher(
 
   // 머리 — 조여질수록 활 쪽으로 붙고, 경계선을 넘으면 그 정렬이 헐거워지고, 무너지면 앞으로 떨어진다.
   // strain은 '붙어 있던 게 떨어지는' 것이고 warn은 '고개를 떨구는' 것이라 방향이 서로 반대다.
-  const tilt = brace * POSE.braceHeadTilt * (1 - unlock * P.render.poseStrainHead)
-    + warn * POSE.warnHeadDrop
-  const upX = Math.sin(tilt) * rig.ux
-  const upY = Math.cos(tilt) + Math.sin(tilt) * rig.uy
-  const neckX = rig.sx + upX * BODY.neck
-  const neckY = rig.sy + upY * BODY.neck
-  const headSpan = BODY.neck + BODY.head
-  const headX = rig.sx + upX * headSpan
-  const headY = rig.sy + upY * headSpan
   line(ctx, cam, rig.sx, rig.sy, neckX, neckY)
   // 머리는 채운다. 선만으로는 실루엣의 무게중심이 생기지 않는다 (GDD 8장 실루엣 대비).
   // 하한을 2px 상수가 아니라 선 굵기에 묶는다: 굵기가 하한에 걸리는 작은 배율에서
@@ -878,6 +888,7 @@ export function drawArcher(
   ctx.fillStyle = bodyCol
   ctx.fill()
   ctx.stroke()
+  }
 
   // ── 활을 든 자세 — **패링 중에는 통째로 감춘다** (2026-09-10, 형의 반려) ──
   //

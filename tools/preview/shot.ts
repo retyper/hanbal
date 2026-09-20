@@ -8,6 +8,7 @@
  *   npx vite → http://localhost:5173/tools/preview/index.html?stage=20&ticks=90&zoomTo=boss
  *     stage  판 번호 (1부터)      ticks  그 전에 sim 을 몇 틱 돌릴지 (적이 자세를 잡는다)
  *     corpses=200  시체를 look 마다 하나씩 세워 본다 (숫자 = 몇 프레임 뒤)
+ *     armor=1  궁수에게 갑옷을 입힌다 (0 가죽 · 1 두정 · 2 찰갑)
  *     hit=1  판정 덧그림 (초록 몸 · 노랑 급소)   fork=scout  갈림길 카드를 얹는다
  *   콘솔에서: shot(30, 120) 으로 다시 그린다.
  *
@@ -34,6 +35,9 @@ function shot(stage: number, ticks: number): string {
   const fork = q.get('fork')
   const def = fork !== null ? applyFork(getStage(stage - 1), { id: fork } as ForkOption, stage) : getStage(stage - 1)
   const w = createWorld(def, { str: 3, steady: 3, stamina: 3, focus: 3 })
+  // armor=0|1|2 — 궁수에게 그 갑옷을 입혀 본다 (가죽 · 두정 · 찰갑).
+  const armor = q.get('armor')
+  if (armor !== null) { w.armor = 3; w.armorMax = 3; w.armorLook = Number(armor) }
   for (let i = 0; i < ticks; i++) step(w, idle)
   renderer.resize()
   // corpses=N — 시체를 세워 본다: 가짜 foe_down 을 look 마다 하나씩 뱉고 N 프레임 뒤의 모습을 찍는다.
