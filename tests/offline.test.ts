@@ -75,3 +75,44 @@ describe('오프라인 축적', () => {
     assert.equal(gain.arrows, expected)
   })
 })
+
+// 2026-09-20 — 명상(冥想): 비접속 중의 획득 속도와 상한을 키우는 능력치 (형: "마영전 메디테이션 처럼").
+describe('명상', () => {
+  it('단을 올리면 같은 시간에 더 많이 쌓이고, 상한도 같이 는다', async () => {
+    const { buyMeditate, meditateCost } = await import('../src/game/progression.ts')
+    const t0 = 1_800_000_000_000
+    const plain = freshSave(t0)
+    const sage = freshSave(t0)
+    sage.training = 1000
+    for (let i = 0; i < 5; i++) assert.ok(buyMeditate(sage), `${i + 1}단을 못 샀다`)
+    assert.equal(sage.meditate, 5)
+    sage.training = 0
+
+    const a = settleOffline(plain, t0 + AWAY_MS)
+    const b = settleOffline(sage, t0 + AWAY_MS)
+    assert.ok(b.arrows > a.arrows, `명상 5단인데 화살이 안 늘었다 (${a.arrows} → ${b.arrows})`)
+    assert.ok(b.training > a.training, `명상 5단인데 돈이 안 늘었다 (${a.training} → ${b.training})`)
+
+    // 오래 비우면 상한에서 멎는다 — 그 상한이 명상만큼 높다.
+    const p2 = freshSave(t0)
+    const s2 = freshSave(t0)
+    s2.meditate = 5
+    settleOffline(p2, t0 + 48 * 60 * MIN)
+    settleOffline(s2, t0 + 48 * 60 * MIN)
+    assert.equal(p2.training, Math.floor(P.offline.trainingCap))
+    assert.ok(s2.training > p2.training, '상한이 안 늘었다')
+    assert.ok(meditateCost(sage) > 0)
+  })
+
+  it('끝까지 닦으면 더 못 사고, 자동획득을 끄면 못 산다', async () => {
+    const { buyMeditate, meditateBlocked } = await import('../src/game/progression.ts')
+    const d = freshSave(1_800_000_000_000)
+    d.training = 1e6
+    d.meditate = P.offline.meditateMax
+    assert.equal(buyMeditate(d), false)
+    d.meditate = 0
+    d.offlineEnabled = false
+    assert.notEqual(meditateBlocked(d), '')
+    assert.equal(buyMeditate(d), false)
+  })
+})

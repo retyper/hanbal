@@ -36,15 +36,19 @@ import { sprite } from './sprites.ts'
  * 층·열·창의 **자리는 그대로** 위의 규칙이 정한다 (사수의 자리가 곧 창의 자리라 그림이 그걸 바꾸면 안 된다).
  * 여기서는 그 네모들 위에 조각 그림을 **타일로 깔 뿐**이다. 그림이 안 떴으면 예전의 납작한 벽이 선다.
  *   bld-wall   회벽 + 나무 보 — 한 칸(열 간격)에 한 장씩 깐다
- *   bld-roof   기와 — 가로로 이어 깐다. 처마가 벽보다 조금 나온다
+ *   bld-eave · bld-rooftile   기와 지붕 — **왼쪽 처마 한 장 + 이어지는 중간 기와 + 왼쪽 처마를 뒤집은 오른쪽 처마**
+ *              (2026-09-20, 형: "왼쪽끝 처마에셋 하나 만들어서 그거 반전시킨걸 오른쪽 처마 에셋으로 … 나머지는 자연스럽게
+ *               이어지는 중간지붕 에셋들로 이음새 매끄럽게"). 한 장의 지붕 그림에서 잘랐다: 중간 조각은 기왓골의 **주기 여덟 개**를
+ *              골에서 골까지 끊어서 그대로 이어 붙여도 이음매가 없고, 두 처마의 안쪽 끝도 같은 골이라 중간과 맞물린다.
  *   bld-window 창틀 — 가운데가 뚫려 있다. 창 네모보다 조금 크게 얹는다 (창턱이 아래로 나온다)
  */
 const ART = {
   /** 회벽은 밝다 — 밤 장면에서 혼자 빛나지 않게 어둠을 덮는다. */
   wallDim: 'rgba(10, 13, 22, 0.66)',
-  /** 기와 한 장의 폭 (창 반너비 배수) · 처마가 벽 밖으로 나오는 양 (같은 단위). */
-  roofTile: 3.8,
-  roofOver: 0.7,
+  /** 지붕의 높이 (창 반너비 배수) · 처마 끝이 벽 밖으로 나오는 양 (같은 단위) · 처마 밑단이 벽 위로 걸치는 양 (지붕 높이 대비). */
+  roofH: 2.3,
+  roofOver: 1.1,
+  roofSit: 0.1,
   /** 창틀이 창 네모보다 나가는 양 (창 반너비·반높이 배수): 옆 · 위 · 아래(창턱). */
   frameSide: 0.2,
   frameTop: 0.18,
@@ -320,8 +324,9 @@ export function drawBuildings(ctx: CanvasRenderingContext2D, cam: Camera, w: Wor
     const hhPx = b.hh * cam.scale
     const hwPx = b.hw * cam.scale
     const wallIm = sprite('bld-wall')
-    const roofIm = sprite('bld-roof')
-    const artOn = wallIm !== null && roofIm !== null && hwPx >= 4
+    const eaveIm = sprite('bld-eave')
+    const roofIm = sprite('bld-rooftile')
+    const artOn = wallIm !== null && roofIm !== null && eaveIm !== null && hwPx >= 4
     if (artOn) {
       // ★ 회벽 + 나무 보를 **열 간격으로** 깐다 — 보가 창 사이에 온다. 그 위에 어둠을 덮어 밤에 혼자 빛나지 않게 한다.
       const tw = b.cols.length > 1 ? (worldToScreenX(cam, b.cols[1] as number) - worldToScreenX(cam, b.cols[0] as number)) : hwPx * 2.6
@@ -374,14 +379,29 @@ export function drawBuildings(ctx: CanvasRenderingContext2D, cam: Camera, w: Wor
     }
 
     // 기와 지붕 — 가로로 이어 깐다. 처마가 벽보다 나오고, 기와의 아래 1/4 이 벽 위에 걸친다.
-    if (artOn && roofIm !== null) {
-      const tw = hwPx * ART.roofTile
-      const th = tw * (roofIm.naturalHeight / roofIm.naturalWidth)
+    if (artOn && roofIm !== null && eaveIm !== null) {
+      const th = hwPx * ART.roofH
       const over = hwPx * ART.roofOver
       const x0 = sx0 - over
-      const n = Math.max(1, Math.round((bw + over * 2) / tw))
-      const each = (bw + over * 2) / n
-      for (let i = 0; i < n; i++) ctx.drawImage(roofIm, x0 + i * each, top - th * 0.75, each + 0.5, th)
+      const x1 = sx1 + over
+      const ry = top - th * (1 - ART.roofSit)
+      // 처마 한 장의 폭 — 그림의 비율 그대로. 건물이 아주 좁으면 두 처마가 만날 때까지만 줄인다.
+      const ew = Math.min(th * (eaveIm.naturalWidth / eaveIm.naturalHeight), (x1 - x0) / 2)
+      // 가운데 — 중간 기와를 정수 장으로 나눠 깐다 (한 장의 폭은 비율에서 조금만 늘거나 준다).
+      const mid = x1 - x0 - ew * 2
+      if (mid > 0.5) {
+        const tw = th * (roofIm.naturalWidth / roofIm.naturalHeight)
+        const n = Math.max(1, Math.round(mid / tw))
+        const each = mid / n
+        for (let i = 0; i < n; i++) ctx.drawImage(roofIm, x0 + ew + i * each - 0.25, ry, each + 0.5, th)
+      }
+      ctx.drawImage(eaveIm, x0, ry, ew, th)
+      // 오른쪽 처마 = 왼쪽 처마를 좌우로 뒤집은 것.
+      ctx.save()
+      ctx.translate(x1, 0)
+      ctx.scale(-1, 1)
+      ctx.drawImage(eaveIm, 0, ry, ew, th)
+      ctx.restore()
     }
   }
 }

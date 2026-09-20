@@ -80,6 +80,14 @@ function computeDerived(stats: Stats): void {
   dMaxDraw = clamp01(P.bow.maxDrawBase + str * P.growth.strToMaxDraw)
 }
 
+/**
+ * 이 궁수가 이 활로 닿을 수 있는 최대 당김 (0..1) — stepArcher 가 쓰는 것과 **같은 식**이다. 객체를 안 만든다:
+ * 렌더가 매 프레임 "지금 당김이 한계의 몇 할인가"를 물을 때 쓴다 (render/stickman.ts).
+ */
+export function maxDrawOf(stats: Stats, maxDrawAdd: number): number {
+  return clamp01(clamp01(P.bow.maxDrawBase + eff(stats.str) * P.growth.strToMaxDraw) + maxDrawAdd)
+}
+
 /** 스탯(레벨) → 물리 계수. UI·성장 화면용. 핫 루프에서는 쓰지 말 것(객체를 만든다). */
 export function effectiveStats(stats: Stats): DerivedStats {
   computeDerived(stats)

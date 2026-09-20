@@ -175,6 +175,11 @@ export interface SaveData {
    * 값은 0..maxLevel. **줄지 않는다** (성장은 되돌아가지 않는다). 모르는 키도 지우지 않는다 (A4).
    */
   forge: Record<string, number>
+  /**
+   * 명상 단수 (game/offline.ts meditateMul · 2026-09-20). 몸의 능력치(stats)와 따로 둔다 — stats 는 sim 으로 들어가는 값이고
+   * 명상은 자리를 비운 동안의 산수에만 쓰인다 (A1: sim 이 모르는 것은 sim 의 입력에 안 섞는다). 줄지 않는다.
+   */
+  meditate: number
   /** 이번 여정에 지닌 부적 (game/charms.ts CharmId). 빈 문자열 = 없음. 여정이 끝나면 비운다. */
   runCharm: string
 
@@ -208,6 +213,8 @@ export interface SaveData {
 
 /** 저장값이 말이 되는 범위인지만 본다. 치트 방지가 아니라 NaN·Infinity 방어다 (A4: 치트 방지 안 함). */
 const HARD_MAX = 1e9
+/** 명상 단수의 저장 상한 — 실제 상한은 P.offline.meditateMax 가 정한다 (그 노브의 최댓값과 같다). */
+const MEDITATE_HARD_MAX = 60
 /** 손상된 세이브가 무한히 키를 늘리는 것만 막는다. 판 수보다 훨씬 넉넉하다. */
 const BEST_SCORE_MAX_KEYS = 1000
 /** 같은 이유의 해금 목록 상한. 실제 항목은 14개다. */
@@ -272,6 +279,7 @@ export function defaultSave(now: number): SaveData {
     seenMolgi: false,
     seenGrowHint: false,
     forge: {},
+    meditate: 0,
     runCharm: '',
     armedArrows: [],
     armorKind: 'leather',
@@ -578,6 +586,7 @@ function sanitize(r: Raw, now: number): SaveData {
     seenMolgi: bool(r['seenMolgi'], false),
     seenGrowHint: bool(r['seenGrowHint'], false),
     forge: sanitizeBest(r['forge']),
+    meditate: int(r['meditate'], 0, 0, MEDITATE_HARD_MAX),
     // 유효성(진짜 부적 id인가)은 game/charms.ts isCharmId 가 판정한다 — 여기서는 모양만 본다.
     runCharm: typeof r['runCharm'] === 'string' && r['runCharm'].length <= 32 ? r['runCharm'] : '',
     armedArrows: sanitizeUnlocked(r['armedArrows']),

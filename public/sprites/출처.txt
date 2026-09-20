@@ -122,3 +122,11 @@ drone.png — "Pixel Art Drone" (OpenGameArt, CC0)
     fly-ball (336,618)-(556,722) · fly-soul (636,536)-(956,800) 은 손으로 잘랐다 — 격자로 자르면 옆 칸의 활·신기전이 묻어 온다.
   bg/ground.webp  ←  assets_src/ground-source.jpg (제미나이 · 위 35% 마젠타 + 흙길 단면)
     tools/preview 콘솔: await bakeGround('/bg/_src.jpg')   (수신기 node tools/preview/receiver.mjs 를 켜 두고)
+
+── 2026-09-20 (네 번째 판) — 대장간·명상 아이콘 · 지붕 ─────────────────────
+  forge-string · forge-limb · forge-grip · forge-armor · forge-anvil · stat-meditate  ←  assets_src/forge-icons-source.png (제미나이, 3x3 으로 왔고 앞의 여섯만 쓴다)
+    어두운 칸이라 slice-grid 의 격자 맞춤이 흔들린다 — 줄·열의 평균 밝기로 칸의 테두리를 찾아 잘랐다 (일회용 스크립트).
+  bld-eave · bld-rooftile  ←  assets_src/roof-source.png (제미나이 · 정면에서 본 기와 지붕 한 채, 마젠타 바탕)
+    node tools/key-png.mjs assets_src/roof-source.png assets_src/roof-keyed.png 100 70
+    node tools/cut-roof.mjs      # 왼쪽 처마 x 3..383 · 중간 x 383..627 (기왓골 주기 30.4px × 8) · 어둡혀서 굽는다
+  (bld-roof.png 는 지웠다 — 한 장을 이어 깔던 옛 지붕.)

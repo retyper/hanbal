@@ -448,8 +448,11 @@ console.log('\n9. 끝난 화면 — GAME OVER')
   check(html.includes('GAME OVER'), '가장 먼저 GAME OVER 라고 쓴다')
   check(!html.includes('몰기'), "'몰기'라는 말을 안 쓴다", html.includes('연달아') ? '연달아 5발 이라고 쓴다' : '')
   // 줄 수 — 죽은 직후에 읽히는 글은 한두 줄이다. 넷이면 이미 충분히 많다.
-  const lines = (html.match(/<div class="r-/g) ?? []).length
+  //   버튼 줄(r-acts)은 글이 아니라 **고를 것**이라 세지 않는다 (2026-09-20 — 첫 장은 GAME OVER 와 버튼 둘뿐이다).
+  const lines = (html.match(/<div class="r-(?!acts)/g) ?? []).length
   check(lines <= 4, '머리의 줄이 넷을 안 넘는다', `${lines}줄`)
+  check(html.includes('data-to="stat"') && html.includes('data-to="forge"'), '첫 장에 신체 강화 · 무기 강화 버튼이 있다')
+  check(rp.className.split(' ').includes('r-intro') || html.includes('r-acts'), '첫 장은 GAME OVER 만 선다 (칸은 버튼을 눌러야 열린다)')
 
   // 굴리지 않는다 — 성장 화면과 같은 뼈대(.hb-tall + 탭 + foot).
   check(rp.className.split(' ').includes('hb-tall'), '끝난 화면도 굴러가지 않는다 (.hb-tall)')

@@ -29,7 +29,7 @@
  */
 import { clamp, clamp01, lerp, smoothstep, TAU } from '../core/math.ts'
 import { P } from '../tune/params.ts'
-import { effectiveStats } from '../sim/bow.ts'
+import { effectiveStats, maxDrawOf } from '../sim/bow.ts'
 import type { World } from '../sim/types.ts'
 import { THEME, worldToScreenX, worldToScreenY } from './camera.ts'
 import { BOW_PATH, drawArmArt, drawArrowArt, drawBowArt, drawFistArt, drawHeroArt, HERO_SH, heroArtName } from './foeart.ts'
@@ -342,7 +342,14 @@ function visualTremor(cam: Camera, offset: number): number {
 function computeRig(cam: Camera, w: World): void {
   const a = w.archer
   const warn = clamp01(a.warn)
-  const d = clamp01(a.draw)
+  // ★ 자세는 **이 궁수의 한계에 대한 비율**로 선다 (2026-09-20, 형: "당겼을때의 모션이 지금 어색해 당기다 만 움직임이야.
+  //   최대로 당겼을때는 쭉뻗은 왼팔과 당긴 오른팔이 일직선상에 놓여야한다고").
+  //   예전엔 절대값(a.draw)이었다 — 근력이 낮으면 0.8 에서 멈추고, 시위손이 턱에 못 닿은 채 "끝까지 당긴" 상태가 됐다.
+  //   한계에 닿은 것이 곧 만작이다: 시위손은 턱에 붙고 활손 → 시위손 → 팔꿈치가 한 직선이 된다.
+  //   성장의 차이는 자세가 아니라 **활이 휘는 깊이와 빛**(trueFull — 아래, 절대값 그대로)이 말한다.
+  const cap = maxDrawOf(w.stats, w.bow.maxDrawAdd)
+  const d = clamp01(cap > 0 ? a.draw / cap : a.draw)
+  const dAbs = clamp01(a.draw)
   // 어깨 = sim이 주는 궁수 좌표. 만작 시 노크(화살 꽁무니)가 여기 오므로 화살 생성점과 정확히 맞는다.
   // **어깨는 절대 옮기지 않는다.** 자세의 붕괴는 척추·골반·다리·고개로만 표현한다.
   rig.ax = a.x
@@ -359,7 +366,7 @@ function computeRig(cam: Camera, w: World): void {
     : 0
   const trueFullAt = P.render.poseTrueFullAt
   rig.trueFull = trueFullAt < 1
-    ? smoothstep((d - trueFullAt) / (1 - trueFullAt))
+    ? smoothstep((dAbs - trueFullAt) / (1 - trueFullAt))
     : 0
 
   // 빨간 바 위(strain=0)에서는 정확히 0 — 자세도 완전히 잠겨 있어야 "지금 쏘면 맞는다"가 읽힌다.
@@ -1014,7 +1021,9 @@ export function drawArcher(
     ctx.lineTo(worldToScreenX(cam, tipBx), worldToScreenY(cam, tipBy))
     ctx.stroke()
 
-    if (skin.cam > 0) {
+    // 그림 활에는 도르래와 케이블이 **이미 그려져 있다** — 선으로 덧그리면 그림 위에 동그라미 둘이 뜬다
+    // (2026-09-20, 형: "컴파운드 보우에 도르레 svg 남아있어서 그거 지워야함"). 그림이 없을 때만 그린다.
+    if (skin.cam > 0 && !heroArt) {
       // 컴파운드 — 캠(도르래)과 팁 사이를 가로지르는 케이블. 이게 보여야 "기계 활"로 읽힌다.
       ctx.beginPath()
       ctx.moveTo(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy))
@@ -1085,7 +1094,7 @@ export function drawArcher(
     if (!bowArt || bowSignal) ctx.stroke()
     ctx.globalAlpha = 1
 
-    if (skin.stab > 0) {
+    if (skin.stab > 0 && !bowArt) {
       // 리커브의 안정기 — 그립에서 과녁 쪽으로 뻗는 가는 막대.
       ctx.lineWidth = Math.max(lw * LINE.stringMul * 1.4, thinPx)
       ctx.beginPath()
@@ -1108,7 +1117,7 @@ export function drawArcher(
     ctx.fill()
     }
 
-    if (skin.cam > 0) {
+    if (skin.cam > 0 && !bowArt) {
       // 컴파운드의 캠(도르래) — 케이블은 시위와 함께 활 뒤에 이미 그었다.
       const r = Math.max(bowW * 1.6, 2.5 * shrink)
       ctx.fillStyle = skin.color

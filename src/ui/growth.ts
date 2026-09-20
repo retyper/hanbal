@@ -24,6 +24,10 @@ import {
   canGrow,
   effectAfterLevel,
   effectOf,
+  buyMeditate,
+  meditateBlocked,
+  meditateCost,
+  meditateEffect,
   recommendReason,
   recommendStat,
   spendTraining,
@@ -32,6 +36,7 @@ import {
   trainingCost,
   type StatKey,
 } from '../game/progression.ts'
+import { meditateRateMul } from '../game/offline.ts'
 import { BOW_KINDS, bowKind, masteryLevel, MASTERY_HITS, type BowKindId } from '../game/bows.ts'
 import { FORGE_PARTS, buyForge, forgeBlocked, forgeCost, forgeEffect, forgeLevel, forgeMax } from '../game/forge.ts'
 import { armorForgeBlocked, armorForgeEffect, armorForgeMax, armorKind, armorKindOf, armorLevel, buyArmorForge } from '../game/armor.ts'
@@ -66,24 +71,31 @@ const CSS = `
 .g-train .hb-coin { width: 22px; height: 22px; margin-right: 7px; vertical-align: 0; }
 .g-train b { color: var(--accent); font-weight: 700; font-size: 24px; letter-spacing: 0; }
 
+/* ★ 2026-09-20, 형: "오브젝트들이 너무 크니까 화면 하나에 최대한 보여질수 있는것들이 너무 적어서 계속 내리거나 해야하고 …
+     능력치 고를때 선택이 4개밖에 없으면 솔직히 스크롤도 필요없이 한화면에 다 그릴수있지 않냐."
+   맞다. 머리 그림이 132px, 줄 하나가 90px — 넷 중 셋이 겨우 보였다. 이제 머리는 띠 한 줄이고,
+   줄은 **두 단 격자**다 (.g-grid). 다섯 줄(명상까지)이 굴리지 않고 한 화면에 선다. 좁은 화면은 한 단으로 접힌다. */
+.g-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 30px; }
+@media (max-width: 860px) { .g-grid { grid-template-columns: 1fr; } }
 .g-row {
-  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 18px;
-  /* 2026-09-11 — 줄 하나가 네 줄짜리라 여백까지 크면 네 스탯이 화면을 다 먹는다. */
-  padding: 11px 0 10px; border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 1px 12px;
+  padding: 9px 6px 8px; border-top: 1px solid var(--line);
   transition: background .3s;
 }
-.g-row:first-of-type { border-top: none; }
+.g-grid > .g-row:nth-child(-n+2) { border-top: none; }
+@media (max-width: 860px) { .g-grid > .g-row:nth-child(2) { border-top: 1px solid var(--line); } }
+.g-row > .g-t, .f-row > .g-t { grid-column: 2; }
 /* 올린 직후 한 번 번쩍. 배경만 — 한쪽만 두꺼운 테두리는 쓰지 않는다. */
 .g-row.g-flash { background: #ffb34722; }
 .g-name { color: var(--ink); font-weight: 700; font-size: 17px; letter-spacing: -.01em; }
 /* 스탯 아이콘 — 그림 (public/sprites/stat-*.png, 2026-09-20). 글자보다 먼저 읽히라고 크게 둔다. */
-.g-ic { display: inline-flex; margin-right: 11px; vertical-align: middle; }
+.g-ic { grid-column: 1; grid-row: 1 / span 4; align-self: start; display: inline-flex; margin-top: 2px; }
 .g-lv { color: var(--mute); font-size: 13px; margin-left: 10px; }
-.g-now { grid-column: 1; color: var(--body); }
-.g-next { grid-column: 1; color: var(--teal); font-size: 13px; }
+.g-now { grid-column: 2; color: var(--body); font-size: 14px; }
+.g-next { grid-column: 2; color: var(--teal); font-size: 13px; }
 .g-next.g-flat { color: var(--mute); }
-.g-why { grid-column: 1; color: var(--accent); font-size: 12px; display: none; }
-.g-up { grid-column: 2; grid-row: 1 / span 4; min-width: 108px; justify-content: center; }
+.g-why { grid-column: 2; color: var(--accent); font-size: 12px; display: none; }
+.g-up { grid-column: 3; grid-row: 1 / span 4; min-width: 100px; justify-content: center; }
 /* ── 추천 줄 ── 처음 보는 사람이 어디를 눌러야 하는지 한 줄이 먼저 말한다 (progression.recommendStat).
    배경 한 겹과 작은 꼬리표 — 화면을 가리는 화살표·튜토리얼 손가락은 쓰지 않는다 (GDD 9장). */
 .g-row.g-rec { background: #ffb3470f; }
@@ -96,8 +108,8 @@ const CSS = `
 .g-row.g-rec .g-tag { display: inline-block; }
 /* 폰 세로 — 오른쪽 버튼 칸까지 두면 문장이 한 글자씩 접힌다. 버튼을 아래 줄로 내린다. */
 @media (max-width: 480px) {
-  .g-row, .g-bow { grid-template-columns: 1fr; }
-  .g-up, .g-bow .g-bpick { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 8px; }
+  .g-row, .f-row { grid-template-columns: 40px 1fr; }
+  .g-up, .f-up { grid-column: 2; grid-row: auto; justify-self: start; margin-top: 6px; }
   .g-h { flex-wrap: wrap; gap: 6px 14px; }
 }
 .g-cost { color: var(--accent); }
@@ -138,15 +150,15 @@ const CSS = `
    (끝난 화면에서 내려온 그림이다. 좋은 그림을 버리지는 않는다.)
    대장간 머리(.f-h)와 **같은 뼈대**로 쓴다 — 둘이 다르게 생기면 그 차이가 먼저 보인다. */
 .s-h {
-  position: relative; display: flex; align-items: flex-end; gap: 12px; margin: 0 -8px 8px; padding: 70px 14px 10px;
+  position: relative; display: flex; align-items: center; gap: 12px; margin: 0 -8px 4px; padding: 12px 14px;
   overflow: hidden; border-radius: 2px;
   background:
-    linear-gradient(to bottom, rgba(38, 37, 33, .35), rgba(47, 46, 41, .9) 75%, var(--paper) 100%),
+    linear-gradient(to right, rgba(47, 46, 41, .92) 0%, rgba(47, 46, 41, .55) 45%, rgba(38, 37, 33, .25) 100%),
     url(${BASE}art/suryeopchong.jpg) center 9% / cover no-repeat;
-  min-height: 132px;
+  min-height: 46px;
 }
-.s-h h3 { flex: 1; margin: 0; color: var(--ink); font-size: 17px; letter-spacing: .08em; }
-.s-h .f-cap { position: absolute; right: 10px; top: 8px; color: rgba(255, 244, 220, .6); font-size: 11px; letter-spacing: .06em; }
+.s-h h3 { flex: none; margin: 0; color: var(--ink); font-size: 17px; letter-spacing: .08em; }
+.s-h .f-cap { position: absolute; right: 10px; bottom: 4px; color: rgba(255, 244, 220, .45); font-size: 10px; letter-spacing: .06em; }
 /* 낮은 화면에서는 둘 다 납작해진다 — 그림보다 줄이 먼저다. */
 @media (max-height: 560px) {
   .s-h, .f-h { min-height: 0; padding: 16px 12px 8px; }
@@ -156,32 +168,35 @@ const CSS = `
 /* ── 대장간 ── 활 개조. 스탯 줄과 같은 뼈대(이름 · 지금 → 다음 · 버튼)라 한 화면으로 읽힌다. */
 /* 대장간 머리 — 김홍도 「대장간」 (public/art/출처.txt). 형: "대장간도 대장간스러운 이미지". */
 .f-h {
-  position: relative; display: flex; align-items: flex-end; gap: 12px; margin: 20px -8px 0; padding: 70px 14px 10px;
+  position: relative; display: flex; align-items: center; gap: 12px; margin: 20px -8px 4px; padding: 12px 14px;
   overflow: hidden; border-radius: 2px;
   background:
-    linear-gradient(to bottom, rgba(38, 37, 33, .35), rgba(47, 46, 41, .9) 75%, var(--paper) 100%),
+    linear-gradient(to right, rgba(47, 46, 41, .92) 0%, rgba(47, 46, 41, .55) 45%, rgba(38, 37, 33, .25) 100%),
     url(${BASE}art/daejanggan.jpg) center 62% / cover no-repeat;
-  min-height: 132px;
+  min-height: 46px;
 }
-.f-h h3 { flex: 1; margin: 0; color: var(--ink); font-size: 17px; letter-spacing: .08em; }
+/* 머리의 한 줄 설명 — 예전엔 머리 아래 두 줄짜리 문단이었다. 띠 안으로 올렸다. */
+.f-h .f-note, .s-h .f-note { color: var(--dim); font-size: 12px; flex: 2; }
+@media (max-width: 640px) { .f-h .f-note, .s-h .f-note { display: none; } }
+.f-h h3 { flex: none; margin: 0; color: var(--ink); font-size: 17px; letter-spacing: .08em; }
 .f-h .f-bow { color: var(--accent); font-weight: 700; font-size: 15px; }
-.f-h .f-cap { position: absolute; right: 10px; top: 8px; color: rgba(255, 244, 220, .6); font-size: 11px; letter-spacing: .06em; }
-.f-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 20px; padding: 11px 0 10px; border-top: 1px solid var(--line); }
-.f-row:first-of-type { border-top: none; }
+.f-h .f-cap { position: absolute; right: 10px; bottom: 4px; color: rgba(255, 244, 220, .45); font-size: 10px; letter-spacing: .06em; }
+.f-h .f-bow { margin-right: 4px; }
+.f-row { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 1px 12px; padding: 10px 6px 9px; border-top: 1px solid var(--line); }
+.g-grid > .f-row:nth-child(-n+2) { border-top: none; }
+@media (max-width: 860px) { .g-grid > .f-row:nth-child(2) { border-top: 1px solid var(--line); } }
+/* 부위 그림 (public/sprites/forge-*.png) — 형: "에셋없이 텍스트만 있어서 직관성 떨어지는것들도 있고(특히 대장간)". */
+.f-ic { grid-column: 1; grid-row: 1 / span 3; align-self: center; display: inline-flex; }
 .f-row.g-flash { background: #ffb34722; }
 .f-name { color: var(--ink); font-weight: 700; font-size: 15px; }
 .f-name .f-origin { color: var(--mute); font-size: 12px; margin-left: 8px; letter-spacing: .04em; font-weight: 500; }
 .f-lv { color: var(--mute); font-size: 12px; margin-left: 8px; }
-.f-now { grid-column: 1; color: var(--body); font-size: 13px; }
-.f-next { grid-column: 1; color: var(--teal); font-size: 12px; }
+.f-now { grid-column: 2; color: var(--body); font-size: 13px; }
+.f-next { grid-column: 2; color: var(--teal); font-size: 12px; }
 .f-next.g-flat { color: var(--mute); }
-.f-up { grid-column: 2; grid-row: 1 / span 3; min-width: 96px; justify-content: center; }
+.f-up { grid-column: 3; grid-row: 1 / span 3; min-width: 96px; justify-content: center; }
 .f-up .g-cost { color: var(--accent); }
 .f-up[disabled] .g-cost { color: inherit; }
-@media (max-width: 480px) {
-  .f-row { grid-template-columns: 1fr; }
-  .f-up { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 6px; }
-}
 
 /* ── 끝난 화면 머리 ── (2026-09-11 다시 짬)
    형: **"실패화면에는 수렵총 말고 다른걸 써야겠는데. 아예 이미지 안 쓰고 Game Over를 크게
@@ -223,6 +238,28 @@ const CSS = `
   .r-keep { margin-top: 5px; font-size: 13px; }
 }
 .r-none { color: var(--mute); font-size: 13px; padding: 10px 0 0; border-top: 1px solid var(--line); }
+/* ★ 첫 장 — **GAME OVER 만 크게, 서서히** (2026-09-20, 형: "게임오버화면에서 신체강화랑 무기강화를 다 띄우지 말고
+     일단 게임오버만 크게 페이드인으로 띄워야함. 신체강화나 무기강화는 버튼으로 만들거나").
+   칸(탭)과 줄은 버튼을 눌러야 나온다. 누르고 나면 머리는 한 줄로 접혀 줄에게 자리를 내준다. */
+.r-acts { display: none; justify-content: center; gap: 12px; margin-top: 26px; flex-wrap: wrap; }
+.r-acts .hb-btn { min-width: 150px; justify-content: center; padding: 12px 18px; font-size: 15px; gap: 9px; }
+.r-intro .hb-tabs, .r-intro .hb-panes { display: none; }
+.r-intro .hb-screen { flex: none; }
+.r-intro .r-head {
+  flex: 1; display: flex; flex-direction: column; justify-content: center; border-bottom: none;
+  animation: r-in 1.4s cubic-bezier(.2, .7, .2, 1) both;
+}
+.r-intro .r-over { font-size: clamp(56px, 11vw, 112px); animation: r-over-in 1.6s cubic-bezier(.2, .7, .2, 1) both; }
+.r-intro .r-acts { display: flex; animation: r-in 1s .9s both; }
+@keyframes r-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes r-over-in { from { opacity: 0; letter-spacing: .4em; transform: scale(1.12); } to { opacity: 1; letter-spacing: .14em; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .r-intro .r-head, .r-intro .r-over, .r-intro .r-acts { animation: none; } }
+/* 접힌 머리 — 줄을 볼 때. */
+.r-body .r-head { display: flex; align-items: baseline; justify-content: center; gap: 16px; padding: 4px 8px 8px; flex-wrap: wrap; }
+.r-body .r-over { font-size: 24px; }
+.r-body .r-why, .r-body .r-keep { display: none; }
+.r-body .r-stage { margin-top: 0; }
+.r-body .r-stage b { font-size: 20px; }
 /* 칸의 머리 그림은 칸의 **맨 위**에 딱 붙는다 — 두 칸을 갈아탈 때 머리 높이가 다르면
    그 차이가 먼저 보인다 (.s-h 는 0, .f-h 는 원래 20px 이었다). */
 .hb-pane .f-h { margin-top: 0; }
@@ -270,6 +307,7 @@ function buildStatRows(
   onChange: () => void,
 ): StatRows {
   const box = document.createElement('div')
+  box.className = 'g-grid'
   const rows: Row[] = []
   for (let i = 0; i < STAT_KEYS.length; i++) {
     const key = STAT_KEYS[i]
@@ -277,7 +315,8 @@ function buildStatRows(
     const el = document.createElement('div')
     el.className = 'g-row'
     el.innerHTML = `
-      <div><span class="g-ic"></span><span class="g-name"></span><span class="g-lv"></span><span class="g-tag">추천</span></div>
+      <span class="g-ic"></span>
+      <div class="g-t"><span class="g-name"></span><span class="g-lv"></span><span class="g-tag">추천</span></div>
       <div class="g-now"></div>
       <div class="g-next"></div>
       <div class="g-why"></div>
@@ -315,7 +354,7 @@ function buildStatRows(
       }
     })
     // 아이콘은 스탯 키로 고른다 (public/sprites/stat-<key>.png). 스탯을 더 만들면 그림도 같이.
-    ;(el.querySelector('.g-ic') as HTMLElement).innerHTML = artIcon(`stat-${key}`, 36)
+    ;(el.querySelector('.g-ic') as HTMLElement).innerHTML = artIcon(`stat-${key}`, 44)
     btn.addEventListener('click', () => {
       if (!spendTraining(d, key, 1)) return
       audio.levelup()
@@ -329,8 +368,52 @@ function buildStatRows(
     rows.push(row)
   }
 
+  // ── 명상(冥想) — 다섯째 줄 (2026-09-20, 형: "마영전 메디테이션 처럼 명상 스탯을 넣어서 비접속중에 획득 속도 혹은 획득량 증가").
+  //    몸의 능력치와 같은 뼈대 · 같은 값 곡선 · 같은 지갑. sim 에는 안 들어간다 (game/offline.ts).
+  const med = document.createElement('div')
+  med.className = 'g-row'
+  med.innerHTML = `
+      <span class="g-ic"></span>
+      <div class="g-t"><span class="g-name">명상</span><span class="g-lv"></span></div>
+      <div class="g-now"></div>
+      <div class="g-next"></div>
+      <button class="hb-btn g-up" type="button">올리기 <span class="g-cost"></span></button>`
+  ;(med.querySelector('.g-ic') as HTMLElement).innerHTML = artIcon('stat-meditate', 44)
+  const medLv = med.querySelector('.g-lv') as HTMLElement
+  const medNow = med.querySelector('.g-now') as HTMLElement
+  const medNext = med.querySelector('.g-next') as HTMLElement
+  const medBtn = med.querySelector('.g-up') as HTMLButtonElement
+  const medCost = med.querySelector('.g-cost') as HTMLElement
+  medBtn.addEventListener('click', () => {
+    if (!buyMeditate(d)) return
+    audio.levelup()
+    med.classList.add('g-flash')
+    window.setTimeout(() => med.classList.remove('g-flash'), FLASH_MS)
+    refresh()
+    onChange()
+  })
+  attachDetail(med, () => ({
+    title: '명상',
+    sub: `${d.meditate}단`,
+    lines: [`지금 — ${meditateEffect(d.meditate)}`, '자리를 비운 동안에만 듣는다. 판 안에서는 아무것도 바꾸지 않는다'],
+    stats: [['한 단 값', meditateCost(d) > 0 ? coinText(meditateCost(d)) : '—'], ['가진 돈', coinText(d.training)]],
+    foot: meditateBlocked(d),
+  }))
+  box.appendChild(med)
+
   const refresh = (): void => {
     trainOut.textContent = String(d.training)
+    {
+      const top = meditateCost(d) <= 0
+      medLv.textContent = `${d.meditate}단`
+      medNow.textContent = meditateEffect(d.meditate)
+      medNext.textContent = top ? '끝까지 닦았다' : `→ ${meditateEffect(d.meditate + 1)}`
+      medNext.classList.toggle('g-flat', top)
+      medCost.textContent = top ? '' : String(meditateCost(d))
+      const why = meditateBlocked(d)
+      medBtn.disabled = why !== ''
+      medBtn.title = why
+    }
     const rec = recommendStat(d.stats)
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i]
@@ -367,11 +450,11 @@ function buildForgeRows(d: SaveData, audio: AudioSwitch, onChange: () => void): 
   const head = document.createElement('div')
   head.className = 'f-h'
   head.innerHTML = '<div class="f-cap">김홍도 「대장간」</div><h3><i class="hb-ic i-forge"></i> 대장간</h3><span class="f-bow"></span>'
+    + '<span class="f-note">든 활을 갈아 만든다 — 개조는 그 활의 것이다 · 부위마다 세 단</span>'
   const bowOut = head.querySelector('.f-bow') as HTMLElement
-  const lead = document.createElement('p')
-  lead.className = 'hb-lead'
-  lead.textContent = '든 활을 갈아 만든다 — 개조는 그 활의 것이라 활을 바꾸면 따라오지 않는다. 부위마다 세 단.'
-  box.append(head, lead)
+  const grid = document.createElement('div')
+  grid.className = 'g-grid'
+  box.append(head, grid)
 
   interface FRow { part: typeof FORGE_PARTS[number]['id']; el: HTMLElement; lv: HTMLElement; now: HTMLElement; next: HTMLElement; btn: HTMLButtonElement; cost: HTMLElement }
   const rows: FRow[] = []
@@ -379,7 +462,8 @@ function buildForgeRows(d: SaveData, audio: AudioSwitch, onChange: () => void): 
     const el = document.createElement('div')
     el.className = 'f-row'
     el.innerHTML = `
-      <div><span class="f-name"></span><span class="f-lv"></span></div>
+      <span class="f-ic">${artIcon(`forge-${p.id}`, 52)}</span>
+      <div class="g-t"><span class="f-name"></span><span class="f-lv"></span></div>
       <div class="f-now"></div>
       <div class="f-next"></div>
       <button class="hb-btn f-up" type="button"><i class="hb-ic i-forge"></i>개조 <span class="g-cost"></span></button>`
@@ -405,7 +489,7 @@ function buildForgeRows(d: SaveData, audio: AudioSwitch, onChange: () => void): 
       refresh()
       onChange()
     })
-    box.appendChild(el)
+    grid.appendChild(el)
     rows.push(row)
   }
 
@@ -414,7 +498,8 @@ function buildForgeRows(d: SaveData, audio: AudioSwitch, onChange: () => void): 
   const ael = document.createElement('div')
   ael.className = 'f-row'
   ael.innerHTML = `
-      <div><span class="f-name"></span><span class="f-lv"></span></div>
+      <span class="f-ic">${artIcon('forge-armor', 52)}</span>
+      <div class="g-t"><span class="f-name"></span><span class="f-lv"></span></div>
       <div class="f-now"></div>
       <div class="f-next"></div>
       <button class="hb-btn f-up" type="button"><i class="hb-ic i-armor"></i>담금질 <span class="g-cost"></span></button>`
@@ -435,7 +520,7 @@ function buildForgeRows(d: SaveData, audio: AudioSwitch, onChange: () => void): 
     refresh()
     onChange()
   })
-  box.appendChild(ael)
+  grid.appendChild(ael)
 
   const refresh = (): void => {
     bowOut.textContent = bowKind(d.bow).name
@@ -525,8 +610,9 @@ export function mountGrowth(o: Overlay, d: SaveData, onChange: () => void, audio
   // 대장간처럼 **강화에도 머리 그림**이 선다 (형: "대장간은 이미지 잇으니 강화도 이미지 있어야지").
   const statHead = document.createElement('div')
   statHead.className = 's-h'
-  statHead.innerHTML = '<h3>몸을 키운다</h3><div class="f-cap">수렵총 벽화 (고구려)</div>'
-  paneStat.append(statHead, sub)
+  statHead.innerHTML = '<h3>몸을 키운다</h3><span class="f-note"></span><div class="f-cap">수렵총 벽화 (고구려)</div>'
+  ;(statHead.querySelector('.f-note') as HTMLElement).textContent = sub.textContent
+  paneStat.append(statHead)
   const rows = buildStatRows(d, trainOut, audio, onChange)
   colA.appendChild(rows.el)
 
@@ -671,7 +757,7 @@ function bowArt(id: string, owned: boolean, px: number): string {
   const chk = document.createElement('input')
   chk.type = 'checkbox'
   const chkText = document.createElement('span')
-  chkText.textContent = '공부하는 동안 쌓기'
+  chkText.textContent = '비접속시 자동획득'
   label.append(chk, chkText)
 
   // ── 소리 스위치 (C5: 한 손=마우스로 다 된다) ──
@@ -761,10 +847,11 @@ function bowArt(id: string, owned: boolean, px: number): string {
 
   function refresh(): void {
     // 상한 도달을 알리지 않는다 (GDD 5장). 여기 있는 건 "어디서 오는가"뿐이다.
-    const perMin = P.offline.trainingPerSec * 60
+    // 명상이 속도를 키운다 (game/offline.ts) — 적힌 분수도 그만큼 준다.
+    const perMin = P.offline.trainingPerSec * meditateRateMul(d.meditate) * 60
     // 엽전 그림이 들어가므로 innerHTML 이다 (글자만이면 숫자가 무엇인지 안 읽힌다).
     hint.innerHTML = d.offlineEnabled
-      ? `돈은 공부하는 동안에도 쌓인다 (${(1 / perMin).toFixed(0)}분에 ${coinHtml(1)})`
+      ? `자리를 비운 동안에도 쌓인다 (${(1 / perMin).toFixed(1)}분에 ${coinHtml(1)})`
       : `쌓지 않는 대신 판 보상 ×${P.offline.optOutBonus.toFixed(2)}`
     chk.checked = d.offlineEnabled
     syncSound()
@@ -887,7 +974,14 @@ export function showReinforce(
         : ` <i>최고 ${info.best}판</i>`)
     + '</div>'
     + (keeps.length > 0 ? `<div class="r-keep">가져간다 &nbsp;${keeps.join('<span class="r-dot">·</span>')}</div>` : '')
+    + '<div class="r-acts">'
+    + `<button class="hb-btn" type="button" data-to="stat">${artIcon('stat-str', 26)}신체 강화</button>`
+    + `<button class="hb-btn" type="button" data-to="forge">${artIcon('forge-limb', 26)}무기 강화</button>`
+    + '</div>'
   panel.appendChild(head)
+  // 첫 장은 GAME OVER 뿐이다 — 칸은 버튼을 눌러야 열린다 (CSS .r-intro).
+  panel.classList.remove('r-body')
+  panel.classList.add('r-intro')
 
   // ── 칸 둘 (2026-09-11 추가 39) ─────────────────────────────────────────
   //   형: **"강화가 왼쪽, 대장간이 오른쪽 이런식으로 되어야 하지않나? 게임오버시에는
@@ -905,11 +999,18 @@ export function showReinforce(
     { id: 'forge', label: '무기 강화', pane: paneForge },
   ])
   panel.appendChild(tabs.el)
+  for (const b of Array.from(head.querySelectorAll<HTMLButtonElement>('.r-acts button'))) {
+    b.addEventListener('click', () => {
+      panel.classList.remove('r-intro')
+      panel.classList.add('r-body')
+      tabs.show(b.dataset['to'] ?? 'stat')
+    })
+  }
 
   // ── 신체 강화 ──
   const statHead = document.createElement('div')
   statHead.className = 's-h'
-  statHead.innerHTML = '<h3>몸을 키운다</h3><div class="f-cap">수렵총 벽화 (고구려)</div>'
+  statHead.innerHTML = '<h3>몸을 키운다</h3><span class="f-note">올리면 몸이 어떻게 달라지는지 줄마다 미리 적혀 있다</span><div class="f-cap">수렵총 벽화 (고구려)</div>'
   paneStat.appendChild(statHead)
 
   // 지갑은 **아래 줄**에 둔다 — 칸을 갈아타도 안 사라져야 하는 숫자다 (둘 다 같은 지갑을 쓴다).

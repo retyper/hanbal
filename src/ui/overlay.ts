@@ -261,7 +261,7 @@ const CSS = `
 }
 .wh-stage {
   /* 칸이 크면 걸이도 커진다. 고정 178px 로 두니 넓은 화면에서 아래가 텅 비었다 (2026-09-11). */
-  position: relative; height: clamp(168px, 38vh, 280px); overflow: hidden; touch-action: pan-y;
+  position: relative; height: clamp(196px, 42vh, 300px); overflow: hidden; touch-action: pan-y;
 }
 .wh-card {
   position: absolute; left: 50%; top: 50%;
@@ -291,6 +291,10 @@ const CSS = `
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .wh-card .wh-n { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.wh-card .wh-n, .wh-card .wh-d { flex: none; }
+.wh-card .wh-n + .wh-d { min-height: 2.8em; }
+/* 숙련 같은 셋째 줄 — 설명과 같은 회색이면 한 덩어리로 뭉친다. */
+.wh-card .wh-d + .wh-d { color: var(--teal); -webkit-line-clamp: 1; }
 .wh-card .wh-ic { line-height: 0; margin-bottom: 5px; color: var(--dim); }
 /* ── 활 그림 (2026-09-11) ──────────────────────────────────────────────
    형: "선택할때만큼은 화려해야지." 걸이 카드의 주인공은 **그림**이다.
@@ -302,7 +306,11 @@ const CSS = `
   /* ★ 그림의 몫을 **고정**한다 (2026-09-11, 형: "컴파운드보우는 이미지가 혼자 너무작아.
      이거 텍스트 때문 같은데"). 맞다 — flex:1 이라 설명이 긴 활(컴파운드는 27자)에서
      글자가 두 줄을 더 먹고 그만큼 그림이 눌렸다. 이제 글자가 몇 줄이든 그림은 같다. */
-  display: block; width: 100%; height: 58%; flex: 0 0 58%; min-height: 0;
+  /* ★ 2026-09-20, 형: "활걸이에서 카드 글들이 3줄되면 글자끼리 겹쳐서 가로 절반이 다 잘려버리기도 하고".
+     그림을 58% 로 못 박아 두니 글(이름 · 설명 두 줄 · 숙련)이 남은 자리에 안 들어가면 **맨 아랫줄이 반쯤 잘렸다.**
+     이제 거꾸로다: **글이 제 높이를 먼저 갖고, 그림이 남은 자리를 다 쓴다.** 그림의 크기가 카드마다 달라지지 않게
+     설명은 한 줄짜리여도 두 줄 자리를 잡는다 (아래 .wh-n + .wh-d). */
+  display: block; width: 100%; height: 0; flex: 1 1 0; min-height: 40px;
   object-fit: contain; margin: 0 auto 3px; border-radius: 2px;
   /* 돌리지 않는다 — **그림이 이미 대각선**이다 (2026-09-11 두 번째 판).
      예전엔 세로로 선 활을 받아 바탕을 따내고 여기서 −28° 로 돌렸는데, 활줄과 활대 사이가

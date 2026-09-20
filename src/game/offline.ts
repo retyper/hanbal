@@ -20,6 +20,16 @@ export interface OfflineGain {
   capped: boolean
 }
 
+/** 명상 단수가 축적 **속도**에 곱하는 배수 (P.offline.meditateRate). */
+export function meditateRateMul(level: number): number {
+  return 1 + Math.max(0, Math.floor(level)) * P.offline.meditateRate
+}
+
+/** 명상 단수가 축적 **상한**에 곱하는 배수 (P.offline.meditateCap). */
+export function meditateCapMul(level: number): number {
+  return 1 + Math.max(0, Math.floor(level)) * P.offline.meditateCap
+}
+
 // 반환 값이 둘(지급량·남은 소수부)이라 스칼라로 받는다. 매 호출 객체를 만들 이유가 없다.
 let gGained = 0
 let gCarry = 0
@@ -83,20 +93,23 @@ export function settleOffline(d: SaveData, now: number): OfflineGain {
   }
 
   let capped = false
+  // 명상 — 속도와 상한을 같이 키운다. 의뢰는 드문 것이 값이라 상한은 그대로 둔다.
+  const rate = meditateRateMul(d.meditate)
+  const cap = meditateCapMul(d.meditate)
 
-  accrue(d.arrows, d.carry.arrows, seconds, P.offline.arrowPerSec, P.offline.arrowCap)
+  accrue(d.arrows, d.carry.arrows, seconds, P.offline.arrowPerSec * rate, P.offline.arrowCap * cap)
   const arrows = gGained
   d.arrows += gGained
   d.carry.arrows = gCarry
   capped = capped || gCapped
 
-  accrue(d.training, d.carry.training, seconds, P.offline.trainingPerSec, P.offline.trainingCap)
+  accrue(d.training, d.carry.training, seconds, P.offline.trainingPerSec * rate, P.offline.trainingCap * cap)
   const training = gGained
   d.training += gGained
   d.carry.training = gCarry
   capped = capped || gCapped
 
-  accrue(d.requests, d.carry.requests, seconds, P.offline.requestPerSec, P.offline.requestCap)
+  accrue(d.requests, d.carry.requests, seconds, P.offline.requestPerSec * rate, P.offline.requestCap)
   const requests = gGained
   d.requests += gGained
   d.carry.requests = gCarry

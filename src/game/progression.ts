@@ -15,6 +15,7 @@ import { P } from '../tune/params.ts'
 import type { SaveData } from './save.ts'
 import { writeSave } from './save.ts'
 import { arrowFloor } from './stagekit.ts'
+import { meditateCapMul, meditateRateMul } from './offline.ts'
 
 export type StatKey = keyof Stats
 
@@ -312,6 +313,38 @@ export function recommendReason(key: StatKey): string {
     : '추천 — 지금 가장 낮은 곳이다'
 }
 
+// ─────────────────────── 명상 (冥想) ───────────────────────
+// 비접속 중의 획득을 키우는 다섯째 능력치 (2026-09-20 · game/offline.ts). 몸의 능력치와 **같은 값 곡선**이라
+// "근력을 올릴까, 명상을 올릴까"가 한 지갑에서 갈린다. sim 에는 안 들어간다 — 그래서 Stats 가 아니라 SaveData.meditate 다.
+
+/** 명상을 한 단 올리는 값. 끝까지 올렸으면 0. */
+export function meditateCost(d: SaveData): number {
+  return d.meditate >= P.offline.meditateMax ? 0 : trainingCost(d.meditate)
+}
+
+/** 왜 못 올리는가 — 올릴 수 있으면 빈 문자열. */
+export function meditateBlocked(d: SaveData): string {
+  if (d.meditate >= P.offline.meditateMax) return '끝까지 닦았다'
+  if (!d.offlineEnabled) return '비접속시 자동획득을 켜야 듣는다'
+  const cost = meditateCost(d)
+  return d.training < cost ? `${cost - d.training}냥 모자라다` : ''
+}
+
+export function buyMeditate(d: SaveData): boolean {
+  if (meditateBlocked(d) !== '') return false
+  d.training -= meditateCost(d)
+  d.meditate += 1
+  writeSave(d)
+  return true
+}
+
+/** 그 단에서의 효과 한 줄. */
+export function meditateEffect(level: number): string {
+  const rate = Math.round((meditateRateMul(level) - 1) * 100)
+  const cap = Math.round((meditateCapMul(level) - 1) * 100)
+  return level <= 0 ? '자리를 비운 동안 제 속도로 쌓인다' : `자리를 비운 동안 ${rate}% 빨리, ${cap}% 더 많이 쌓인다`
+}
+
 /** 지금 훈련치로 올릴 수 있는 스탯이 하나라도 있는가. HUD의 작은 점이 이걸 본다. */
 export function canGrow(d: SaveData): boolean {
   for (let i = 0; i < STAT_KEYS.length; i++) {
@@ -319,5 +352,5 @@ export function canGrow(d: SaveData): boolean {
     if (k === undefined) continue
     if (d.training >= trainingCost(d.stats[k])) return true
   }
-  return false
+  return meditateBlocked(d) === ''
 }
