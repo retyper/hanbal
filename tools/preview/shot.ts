@@ -7,6 +7,7 @@
  *
  *   npx vite → http://localhost:5173/tools/preview/index.html?stage=20&ticks=90&zoomTo=boss
  *     stage  판 번호 (1부터)      ticks  그 전에 sim 을 몇 틱 돌릴지 (적이 자세를 잡는다)
+ *     hit=1  판정 덧그림 (초록 몸 · 노랑 급소)   fork=scout  갈림길 카드를 얹는다
  *   콘솔에서: shot(30, 120) 으로 다시 그린다.
  *
  * 빌드에는 안 들어간다 (vite 의 입구는 루트 index.html 하나다). 세이브를 읽지도 쓰지도 않는다.
@@ -14,8 +15,10 @@
 import { createRenderer, getCamera } from '../../src/render/scene.ts'
 import { worldToScreenX, worldToScreenY } from '../../src/render/camera.ts'
 import { bossWeakSpot } from '../../src/sim/target.ts'
+import { P } from '../../src/tune/params.ts'
 import { createWorld, step } from '../../src/sim/world.ts'
 import { getStage } from '../../src/game/stages.ts'
+import { applyFork, type ForkOption } from '../../src/game/forks.ts'
 import type { HudState } from '../../src/render/hud.ts'
 import type { InputFrame } from '../../src/sim/types.ts'
 
@@ -26,7 +29,10 @@ const hud: HudState = { training: 0, canLevelUp: false, muted: false, silent: fa
 const idle: InputFrame = { aimX: 30, aimY: 3, drawing: false, steady: false, parry: false }
 
 function shot(stage: number, ticks: number): string {
-  const w = createWorld(getStage(stage - 1), { str: 3, steady: 3, stamina: 3, focus: 3 })
+  // fork=scout 처럼 갈림길 카드를 얹을 수 있다 — 척후(charger)는 카드로만 나온다.
+  const fork = q.get('fork')
+  const def = fork !== null ? applyFork(getStage(stage - 1), { id: fork } as ForkOption, stage) : getStage(stage - 1)
+  const w = createWorld(def, { str: 3, steady: 3, stamina: 3, focus: 3 })
   for (let i = 0; i < ticks; i++) step(w, idle)
   renderer.resize()
   // 카메라는 프레임마다 조금씩 따라간다 — 자리를 잡도록 몇 번 그린다.
@@ -42,6 +48,10 @@ function shot(stage: number, ticks: number): string {
         const x = worldToScreenX(cam, t.x), y = worldToScreenY(cam, t.y), r = t.r * cam.scale
         ctx.strokeStyle = '#4dff88'
         ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke()
+        if (t.kind === 'archer' || t.kind === 'charger') {
+          ctx.strokeStyle = '#ffe14d'
+          ctx.beginPath(); ctx.arc(x, y - r * P.enemy.archerHeadUp, r * P.enemy.archerHeadR, 0, Math.PI * 2); ctx.stroke()
+        }
         if (t.kind === 'boss') {
           const ws = bossWeakSpot(t.look)
           ctx.strokeStyle = '#ffe14d'

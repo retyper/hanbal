@@ -35,6 +35,16 @@
   **눈은 그림에 없다** (눈구멍만 있다). 눈은 sim 의 상태라 render/bosses.ts·scene.ts 가 그 위에 그린다.
   눈구멍의 좌표는 render/bossart.ts 의 ART 표 — 그림을 바꾸면 그 표도 같이 바꿔야 한다.
 
+적 일곱 장 — foe-archer / armored / gunner / slinger (팔 없는 몸) · foe-scout (통짜) · foe-falcon-a / -b (매 두 컷)
+  2026-09-20. 챗지피티 무료 한도(하루 다섯 장)가 끝나서 **형의 제미나이 계정**에서 한 장(1376x768, 4x2)을 받았다.
+  제미나이는 투명 바탕을 못 준다 — 마젠타 한 색으로 받아 따냈다. 시키지 않은 글자 라벨과 워터마크(✦)는 따내기 전에 지웠고,
+  전부 오른쪽을 보고 와서 좌우를 뒤집었다:
+    node tools/key-png.mjs assets_src/foes-source.png assets_src/foes-keyed.png 100 70       "0,0.445,1,0.52;0,0.94,1,1;0.89,0.815,0.965,0.9" flip
+    node tools/slice-grid.mjs assets_src/foes-keyed.png 4 2 public/sprites/foe-       slinger,gunner,armored,archer,falcon-b,falcon-a,scout,- 192 0.01 trim
+  **팔과 무기는 그림에 없다** — 나를 겨누는 팔·활·총통·끈은 render/foe.ts 가 그 위에 그린다 (예고가 거기 있어서).
+  머리 좌표는 render/foeart.ts 의 ART 표 — 그림을 바꾸면 그 표도 같이 바꿔야 한다.
+  (기성 무료 에셋을 먼저 찾았다 — OpenGameArt·itch.io 의 CC0 는 픽셀·치비뿐이라 그린 보스 옆에 못 세운다. docs/ASSETS.md 7장.)
+
 drone.png — "Pixel Art Drone" (OpenGameArt, CC0)
   https://opengameart.org/content/pixel-art-drone
   113x57, 2프레임 (로터 교대). 원본 파일명 drone_4.png.

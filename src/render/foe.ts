@@ -21,6 +21,7 @@
 import { TAU } from '../core/math.ts'
 import { P } from '../tune/params.ts'
 import { THEME } from './camera.ts'
+import { drawFoeArt } from './foeart.ts'
 
 /**
  * 체격·활 — 전부 과녁 반경(rx, ry) 대비 비율이다. 줌이 바뀌어도 비례가 유지된다.
@@ -59,6 +60,8 @@ const F = {
   arrow: 1.9,
   /** 주먹 반지름 (선 굵기 배수) */
   fist: 0.8,
+  /** 창가의 사수 — 그림의 발밑을 둘 자리 (ry 대비). 클수록 사람이 커지고 상체만 보인다. */
+  windowFoot: 2.5,
   /** 다리 — 골반 높이(ry 대비)와 보폭 */
   hip: 0.3,
   stance: 0.34,
@@ -123,10 +126,16 @@ export function drawFoeArcher(
   const hx = x + vx * rx * P.enemy.archerHeadUp
   const hy = y + vy * rx * P.enemy.archerHeadUp
   const hr = Math.max(2, rx * P.enemy.archerHeadR)
+  // ★ 몸은 **그림**이다 (2026-09-20, render/foeart.ts) — 머리를 헤드샷 자리에 못 박고 발밑까지로 크기를 정한다.
+  //   창가의 사수도 같은 크기로 그리고 창틀이 아래를 자른다. 팔·활은 아래에서 그대로 절차적으로 그린다.
+  //   창가의 사수(legs=false)는 **상체만** 보여야 한다 (형: "최소 적군사람 머리랑 상체 나올만큼은 크게") —
+  //   발밑을 창턱 한참 아래에 두면 그림이 커지고 다리는 창틀이 자른다.
+  const art = drawFoeArt(ctx, armored ? 'armored' : 'archer', hx, hy, y + ry * (legs ? 1 : F.windowFoot), ux > 0)
   ctx.strokeStyle = col
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
   ctx.lineWidth = lw * 1.3
+  if (!art) {
   // 척추 — 어깨에서 골반으로. 창가의 사수는 창턱 아래로 사라진다.
   const hipX = shX - vx * ry * (legs ? F.hip + F.shoulder : 1.5)
   const hipY = shY - vy * ry * (legs ? F.hip + F.shoulder : 1.5)
@@ -154,6 +163,7 @@ export function drawFoeArcher(
   ctx.moveTo(shX, shY)
   ctx.lineTo(hx, hy)
   ctx.stroke()
+  }
 
   if (bounty) {
     // ── 금관 (金冠) — 현상금의 표식. 머리 위에 세 이빨의 관. 크기는 머리 반경에서 나오고,
@@ -177,7 +187,7 @@ export function drawFoeArcher(
     ctx.fill()
   }
 
-  if (armored) {
+  if (armored && !art) {
     // 흉갑 — 어깨가 넓고 허리로 좁아지는 판. 몸통이 안 통하는 이유가 형태로 읽힌다.
     const aw = rx * 0.46
     const t0x = shX + vx * ry * 0.04
@@ -200,11 +210,13 @@ export function drawFoeArcher(
     ctx.stroke()
   }
 
-  // 머리 — 채운다. 선만으로는 실루엣의 무게중심이 안 생긴다 (GDD 8장).
-  ctx.fillStyle = col
-  ctx.beginPath()
-  ctx.arc(hx, hy, hr, 0, TAU)
-  ctx.fill()
+  // 머리 — 채운다. 선만으로는 실루엣의 무게중심이 안 생긴다 (GDD 8장). (그림에는 머리가 있다.)
+  if (!art) {
+    ctx.fillStyle = col
+    ctx.beginPath()
+    ctx.arc(hx, hy, hr, 0, TAU)
+    ctx.fill()
+  }
   ctx.restore()
 
   // ── 활팔 · 활 · 시위 (클립 밖 — 창밖으로 내민다) ──
@@ -317,6 +329,20 @@ export function drawFoeRusher(
   const shX = x + dir * rx * 0.34
   const shY = y - ry * 0.42 - bob
 
+  // ★ 몸은 그림이다 (render/foeart.ts) — 척후는 칼을 치켜든 통짜 한 장이다 (겨누는 팔이 없는 적이라 굳혀도 된다).
+  //   머리를 헤드샷 자리에 못 박는 것은 같고, 달리는 맛은 위아래 흔들림(bob)과 앞뒤 기울임이 낸다.
+  {
+    // 머리는 **sim 의 헤드샷 자리 그대로** (몸 중심 위). 벡터 척후는 머리를 앞으로 빼서 그렸는데 판정은 거기 없었다.
+    const ahx = x
+    const ahy = y - rx * P.enemy.archerHeadUp - bob
+    ctx.save()
+    ctx.translate(x, footY)
+    ctx.rotate(sw * 0.06 * dir)
+    ctx.translate(-x, -footY)
+    const done = drawFoeArt(ctx, 'scout', ahx, ahy, footY, dir > 0)
+    ctx.restore()
+    if (done) return
+  }
   ctx.save()
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
@@ -444,6 +470,9 @@ export function drawFoeGunner(
   const hx = x + vx * rx * P.enemy.archerHeadUp
   const hy = y + vy * rx * P.enemy.archerHeadUp
   const hr = Math.max(2, rx * P.enemy.archerHeadR)
+  // 몸은 그림이다 (render/foeart.ts) — 궁수와 같은 규칙. 무기와 팔은 아래에서 그대로 절차적으로 그린다.
+  const art = drawFoeArt(ctx, 'gunner', hx, hy, y + ry * (legs ? 1 : F.windowFoot), ux > 0)
+  if (!art) {
   ctx.strokeStyle = col
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
@@ -494,6 +523,7 @@ export function drawFoeGunner(
   ctx.beginPath()
   ctx.ellipse(hx + vx * hr * 0.85, hy + vy * hr * 0.85, hr * 1.9, hr * 0.38, Math.atan2(uy, ux), 0, TAU)
   ctx.fill()
+  }
   ctx.restore()
 
   // ── 총통 — **어깨에 얹은 굵은 통.** 이것이 이 적의 서명이다 ──
@@ -584,6 +614,9 @@ export function drawFoeSlinger(
   const hx = x + vx * rx * P.enemy.archerHeadUp
   const hy = y + vy * rx * P.enemy.archerHeadUp
   const hr = Math.max(2, rx * P.enemy.archerHeadR)
+  // 몸은 그림이다 (render/foeart.ts) — 궁수와 같은 규칙. 무기와 팔은 아래에서 그대로 절차적으로 그린다.
+  const art = drawFoeArt(ctx, 'slinger', hx, hy, y + ry * (legs ? 1 : F.windowFoot), ux > 0)
+  if (!art) {
   ctx.strokeStyle = col
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
@@ -625,6 +658,7 @@ export function drawFoeSlinger(
   ctx.beginPath()
   ctx.arc(hx, hy, hr, 0, TAU)
   ctx.fill()
+  }
   ctx.restore()
 
   // ── 끈과 돌 — 머리 위에서 돈다. 예고가 깊어질수록 원이 커진다 ──

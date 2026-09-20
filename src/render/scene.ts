@@ -21,6 +21,7 @@ import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { createFx, pumpEvents, updateFx, drawFx, drawFxFlash, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash, targetFlinch, PLAYER_PIN } from './effects.ts'
 import { drawNewBossBody, drawNewBossFace } from './bosses.ts'
 import { BOSS_EYES, drawBossArt, warmBossArt } from './bossart.ts'
+import { drawFalconArt, warmFoeArt } from './foeart.ts'
 import { bossGrammar, bossWeakSpot, foeWeakSpot } from '../sim/target.ts'
 import type { Fx } from './effects.ts'
 import { drawHud } from './hud.ts'
@@ -1099,6 +1100,24 @@ function drawFalcon(
   x: number, y: number, rx: number, ry: number, col: string, hot: boolean,
 ): void {
   const flap = Math.sin(w.elapsed * FALCON.flapHz * TAU)
+  // ★ 몸은 그림이다 (render/foeart.ts) — 두 컷을 날갯짓 위상으로 번갈아 쓴다. 눈(급소)이 기준점이다.
+  //   발톱의 돌은 그림 위에 그대로 그린다 — 달아오르는 돌이 이 적의 예고라서.
+  {
+    const spot0 = foeWeakSpot(3)
+    if (drawFalconArt(ctx, x + rx * spot0.fwd, y - ry * spot0.up, rx, flap > 0)) {
+      ctx.strokeStyle = FALCON.beak
+      ctx.lineWidth = Math.max(1.2, rx * 0.06)
+      ctx.beginPath()
+      ctx.moveTo(x - rx * 0.08, y + ry * 0.22)
+      ctx.lineTo(x - rx * 0.02, y + ry * 0.5)
+      ctx.stroke()
+      ctx.fillStyle = hot ? THEME.threat : FALCON.stone
+      ctx.beginPath()
+      ctx.arc(x, y + ry * 0.6, Math.max(2, rx * 0.16), 0, TAU)
+      ctx.fill()
+      return
+    }
+  }
   // ── 날개 둘 — 뒤쪽(먼) 날개를 먼저, 어둡게. 위아래로 크게 친다.
   for (const [side, dim] of [[1, true], [-1, false]] as const) {
     const lift = flap * ry * FALCON.flap * (dim ? 0.82 : 1)
@@ -1939,6 +1958,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   const ctx = canvas.getContext('2d', { alpha: false })
   if (ctx === null) throw new Error('Canvas2D 컨텍스트를 얻지 못했다')
   warmBossArt()
+  warmFoeArt()
 
   const r: RendererX = {
     canvas,
