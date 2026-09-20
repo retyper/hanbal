@@ -57,6 +57,7 @@ export function warmFoeArt(): void {
   for (const k of Object.keys(ARM) as (keyof typeof ARM)[]) { sprite(ARM[k].upper); sprite(ARM[k].fore) }
   sprite('limb-fist')
   sprite('prop-pole')
+  for (const id of Object.keys(BOW_STRIP)) sprite(`bowstrip-${id}`)
   for (const name of Object.values(FLY)) sprite(name)
   for (const c of SHOT_ART) if (c !== null) sprite(c.name)
 }
@@ -474,6 +475,60 @@ export function drawPoleArt(ctx: CanvasRenderingContext2D, x: number, y0: number
     const top = Math.max(y, y0)
     const cut = (top - y) / th
     ctx.drawImage(im, 0, im.naturalHeight * cut, im.naturalWidth, im.naturalHeight * (1 - cut), x - wide / 2, top, wide, th * (1 - cut))
+  }
+  return true
+}
+
+/**
+ * 활 — **그림이 실제로 휜다** (2026-09-20, 형: "활 이미지 에셋들도 만들고 리깅까지 해서 활시위 당길때 실제 구부러지듯하게").
+ *
+ * 활의 곡선은 여전히 render/stickman.ts 가 계산한다 (당기면 림이 젖혀지고 고자는 안 휜다 · 줌통은 활손 그 점).
+ * 여기서는 그 곡선 위의 점들(BOW_PATH)을 받아, **곧게 편 활 그림**(tools/unbend-bow.mjs)을 점과 점 사이마다 잘라 돌려 붙인다 —
+ * 메시 변형이다. 곡선이 휘면 그림도 그만큼 휜다. 그림은 위가 윗고자, 가운데가 줌통, 오른쪽이 과녁 쪽(배)이다.
+ * aspect 는 곧게 편 원본 띠의 폭/길이 — 다섯 자루를 같은 40px 폭으로 구워 놨으므로 제 굵기는 여기서 되살린다.
+ */
+const BOW_STRIP: Record<string, number> = {
+  practice: 27 / 707, gakgung: 37 / 692, longbow: 31 / 710, recurve: 51 / 691, compound: 58 / 681,
+}
+/** 활의 경로 — 화면 px 의 (x, y) 쌍. stickman.ts 가 채우고 drawBowArt 가 읽는다. 프레임마다 새로 만들지 않는다 (A5). */
+export const BOW_PATH_N = 16
+export const BOW_PATH = new Float32Array(BOW_PATH_N * 2)
+const BOW_LEN = new Float32Array(BOW_PATH_N)
+/** 그림을 곡선보다 얼마나 굵게 그릴 것인가 — 멀리 당겨 잡은 판에서도 활이 활로 보여야 한다. */
+const BOW_FAT = 1.5
+
+export function drawBowArt(ctx: CanvasRenderingContext2D, skin: string, mirror: boolean): boolean {
+  const aspect = BOW_STRIP[skin]
+  if (aspect === undefined) return false
+  const im = sprite(`bowstrip-${skin}`)
+  if (im === null) return false
+  let total = 0
+  BOW_LEN[0] = 0
+  for (let i = 1; i < BOW_PATH_N; i++) {
+    total += Math.hypot(
+      (BOW_PATH[i * 2] ?? 0) - (BOW_PATH[i * 2 - 2] ?? 0), (BOW_PATH[i * 2 + 1] ?? 0) - (BOW_PATH[i * 2 - 1] ?? 0),
+    )
+    BOW_LEN[i] = total
+  }
+  if (total < 4) return false
+  const wide = Math.max(4, total * aspect * BOW_FAT)
+  const H = im.naturalHeight
+  for (let i = 0; i < BOW_PATH_N - 1; i++) {
+    const x0 = BOW_PATH[i * 2] ?? 0
+    const y0 = BOW_PATH[i * 2 + 1] ?? 0
+    const x1 = BOW_PATH[i * 2 + 2] ?? 0
+    const y1 = BOW_PATH[i * 2 + 3] ?? 0
+    const seg = Math.hypot(x1 - x0, y1 - y0)
+    if (seg < 0.01) continue
+    const sy = ((BOW_LEN[i] ?? 0) / total) * H
+    const sh = (((BOW_LEN[i + 1] ?? 0) - (BOW_LEN[i] ?? 0)) / total) * H
+    ctx.save()
+    ctx.translate(x0, y0)
+    ctx.rotate(Math.atan2(y1 - y0, x1 - x0) - Math.PI / 2)
+    if (mirror) ctx.scale(-1, 1)
+    // 조각 끝을 조금 겹친다 — 휜 자리에서 틈이 안 보이게.
+    ctx.drawImage(im, 0, sy, im.naturalWidth, sh, -wide / 2, -0.6, wide, seg + 1.2)
+    ctx.restore()
   }
   return true
 }

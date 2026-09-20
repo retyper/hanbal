@@ -80,6 +80,21 @@
     node tools/slice-grid.mjs assets_src/shots-source.png 4 4 public/sprites/fly- basic,fire,whistle,heavy,dart,enemy,rocket,-,stone 192 0.01 trim
   같은 장에 환도 · 탄환 · 혼불 · 철편 · 승자총통 · 활 · 장대 · 깃발도 받아 뒀다 (assets_src/shots-source.png) — 아직 배선 전이라 안 실었다.
 
+곧게 편 활 다섯 — bowstrip-practice / gakgung / longbow / recurve / compound  (게임 안에서 **휘는** 활)
+  2026-09-20. 제미나이, 마젠타 바탕 한 장(5칸). "곧은 띠로 그려 달라"는 못 알아듣고 시위 걸린 휜 활을 줬다 — 그래서 도구로 폈다:
+    node tools/key-png.mjs assets_src/bows-strip-source.png assets_src/bows-strip-keyed.png 100 70 "0.9,0.78,0.98,0.9"
+    node tools/unbend-bow.mjs assets_src/bows-strip-keyed.png 5 public/sprites/bowstrip- practice,gakgung,longbow,recurve,compound 40 384
+  (줄마다 가장 넓은 불투명 구간 = 활대, 가는 시위는 진다. 그 가운데를 띠의 가운데로 옮겨 적으면 휜 활이 곧게 선다.)
+  게임은 활의 곡선을 스스로 계산하고(stickman.ts) 그 위에 이 띠를 조각조각 돌려 붙인다 (foeart.ts drawBowArt) — 당기면 그림이 휜다.
+  ※ public/sprites/bow-*.png (걸이에 거는 그림, 2026-09-11 챗지피티)과는 다른 것이다.
+
+주인공의 사법 자세 넷 · 척후의 달리기 넷 — hero-plain / a0 / a1 / a2 (덮어씀) · foe-scout-0 … 3
+  2026-09-20. 챗지피티 (주인공·적 시트를 레퍼런스로 올린 그 대화), 1536x1024 4x2, 진짜 알파.
+    node tools/slice-grid.mjs assets_src/stance-source.png 4 2 public/sprites/hero- plain,a0,a1,a2 256 0.005 trim
+    node tools/slice-grid.mjs assets_src/stance-source.png 4 2 public/sprites/foe-scout- -,-,-,-,0,1,2,3 224 0.005 trim
+  첫 주인공(차렷 자세의 옆모습)은 형이 반려했다 — "활쏘는 자세가 아니라 너무 곧게 서있잖아." 이번 것은 발을 넓게 딛고 가슴을 연 자세다.
+  척후는 오른쪽을 보고 와서 그릴 때 뒤집는다. 네 컷은 트림된 크기가 달라 원본 키(srcH)로 배율을 하나로 맞춘다 (foeart.ts SCOUT).
+
 drone.png — "Pixel Art Drone" (OpenGameArt, CC0)
   https://opengameart.org/content/pixel-art-drone
   113x57, 2프레임 (로터 교대). 원본 파일명 drone_4.png.

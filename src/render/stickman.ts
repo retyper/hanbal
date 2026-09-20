@@ -32,7 +32,7 @@ import { P } from '../tune/params.ts'
 import { effectiveStats } from '../sim/bow.ts'
 import type { World } from '../sim/types.ts'
 import { THEME, worldToScreenX, worldToScreenY } from './camera.ts'
-import { drawArmArt, drawFistArt, drawHeroArt, HERO_SH, heroArtName } from './foeart.ts'
+import { BOW_PATH, drawArmArt, drawArrowArt, drawBowArt, drawFistArt, drawHeroArt, HERO_SH, heroArtName } from './foeart.ts'
 import { hudLeftBottom } from './hud.ts'
 import type { Camera } from './camera.ts'
 
@@ -494,6 +494,12 @@ function curve(
 /** 팔·다리는 관절 하나짜리 꺾인 선. bend는 진행방향 왼쪽(+) 기준 오프셋(m). */
 /** 소매 그림의 굵기 (m). 몸 그림의 어깨 폭에 맞춘 **그림의 치수**다 — 손맛 노브가 아니다. */
 const ARM_WIDE = 0.115
+
+/** 활 경로의 i 번째 점을 화면 좌표로 적는다 (foeart.ts BOW_PATH). 클로저를 안 만들려고 함수로 뺐다 (A5). */
+function bowPut(cam: Camera, i: number, wx: number, wy: number): void {
+  BOW_PATH[i * 2] = worldToScreenX(cam, wx)
+  BOW_PATH[i * 2 + 1] = worldToScreenY(cam, wy)
+}
 
 /** 0 이면 팔을 선으로, 양수면 그 굵기(px)의 소매 그림으로 그린다. drawArcher 가 몸을 그림으로 그렸을 때만 켠다. */
 let armWide = 0
@@ -1000,6 +1006,34 @@ export function drawArcher(
     // 호가 과녁 쪽으로 볼록해진다 — 그립이 활의 가장 앞이다.
     const cAv = riserV + (limbV - riserV) * BOWPOSE.ctrlV
     const cU = limbBack * BOWPOSE.ctrlBack
+    // ★ 활은 **그림**이고 그 그림이 이 곡선을 따라 실제로 휜다 (2026-09-20, render/foeart.ts drawBowArt).
+    //   아래 선과 **똑같은 경로**를 16점으로 뽑아 넘긴다: 윗고자 → 림 끝 → (곡선 6점) → 라이저 위 → 라이저 아래 → (곡선 6점) → 아랫고자.
+    //   그림이 섰으면 선은 안 그린다. 다만 경고·만작의 색은 신호라서, 그때는 그림 위에 그 색의 가는 선을 한 줄 얹는다.
+    let bowArt = false
+    if (heroArt) {
+      const cAx = rig.hx + rig.vx * cAv - rig.ux * cU
+      const cAy = rig.hy + rig.vy * cAv - rig.uy * cU
+      const cBx = rig.hx - rig.vx * cAv - rig.ux * cU
+      const cBy = rig.hy - rig.vy * cAv - rig.uy * cU
+      bowPut(cam, 0, tipAx, tipAy)
+      bowPut(cam, 1, baseAx, baseAy)
+      for (let q = 1; q <= 6; q++) {
+        const t = q / 6
+        const a0 = (1 - t) * (1 - t)
+        const a1 = 2 * (1 - t) * t
+        const a2 = t * t
+        bowPut(cam, 1 + q, a0 * baseAx + a1 * cAx + a2 * risAx, a0 * baseAy + a1 * cAy + a2 * risAy)
+        bowPut(cam, 8 + q, a0 * risBx + a1 * cBx + a2 * baseBx, a0 * risBy + a1 * cBy + a2 * baseBy)
+      }
+      bowPut(cam, 8, risBx, risBy)
+      bowPut(cam, 15, tipBx, tipBy)
+      bowArt = drawBowArt(ctx, w.bowSkin, face < 0)
+    }
+    const bowSignal = warn > ON.warn || rig.flash > ON.flash
+    if (bowArt) {
+      ctx.globalAlpha = bowSignal ? 0.75 : 0
+      ctx.lineWidth = Math.max(1.2, bowW * 0.45)
+    }
     ctx.beginPath()
     ctx.moveTo(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy))
     ctx.lineTo(worldToScreenX(cam, baseAx), worldToScreenY(cam, baseAy))
@@ -1015,7 +1049,8 @@ export function drawArcher(
       worldToScreenX(cam, baseBx), worldToScreenY(cam, baseBy),
     )
     ctx.lineTo(worldToScreenX(cam, tipBx), worldToScreenY(cam, tipBy))
-    ctx.stroke()
+    if (!bowArt || bowSignal) ctx.stroke()
+    ctx.globalAlpha = 1
 
     if (skin.stab > 0) {
       // 리커브의 안정기 — 그립에서 과녁 쪽으로 뻗는 가는 막대.
@@ -1168,11 +1203,17 @@ export function drawArcher(
       const len = pierce ? BODY.arrowLen * 0.52 : BODY.arrowLen
       const tipX = rig.nockX + rig.ux * len
       const tipY = rig.nockY + rig.uy * len
+      // 물린 화살도 날아가는 화살과 **같은 그림**이다 (render/foeart.ts) — 놓는 순간 다른 물건으로 바뀌면 안 된다.
+      if (!(heroArt && drawArrowArt(
+        ctx, w.arrowKind, worldToScreenX(cam, rig.nockX), worldToScreenY(cam, rig.nockY),
+        worldToScreenX(cam, tipX), worldToScreenY(cam, tipY),
+      ))) {
       ctx.lineWidth = Math.max(lw * LINE.arrowMul, thinPx)
       ctx.strokeStyle = THEME.arrow
       line(ctx, cam, rig.nockX, rig.nockY, tipX, tipY)
       ctx.strokeStyle = THEME.accent
       line(ctx, cam, tipX - rig.ux * BODY.arrowHead, tipY - rig.uy * BODY.arrowHead, tipX, tipY)
+      }
     }
 
   }
