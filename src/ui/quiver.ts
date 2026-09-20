@@ -30,7 +30,7 @@
  * 4. 재고가 있(었)는 살만 걸린다 — 한 번도 못 가져본 살은 보이지 않는 것이 맞다.
  */
 import { ARROW_KINDS, DEFAULT_ARROW, arrowKind, type ArrowKindId } from '../game/arrows.ts'
-import { ARROW_TINT, arrowIconSvg } from './arrowicons.ts'
+import { ARROW_TINT, arrowIcon } from './arrowicons.ts'
 import { onSaveChanged, writeSave, type SaveData } from '../game/save.ts'
 import type { Overlay } from './overlay.ts'
 import { makeWheel, type Wheel } from './wheel.ts'
@@ -102,7 +102,7 @@ export function mountQuiver(o: Overlay, d: SaveData): void {
     const n = stockOf(id)
     const count = id === DEFAULT_ARROW ? '<b>×∞</b>' : `<b>×${n}</b>`
     return `<span class="q-card" style="--tint:${ARROW_TINT[id] ?? '#ffb347'}">`
-      + `<span class="q-ic">${arrowIconSvg(id, 20)}</span>`
+      + `<span class="q-ic">${arrowIcon(id, 20)}</span>`
       + `<span class="q-name">${arrowKind(id).name}</span>${count}</span>`
   }
 

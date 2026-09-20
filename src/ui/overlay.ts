@@ -318,6 +318,9 @@ const CSS = `
      바탕도 물건도 아니라 따내면 구멍이 되고 남기면 네모가 됐다 (형의 지적).
      이제 그리는 쪽에서 칸을 꽉 채워 오므로 여기서는 **얹기만** 한다. */
 }
+/* ── 작은 그림 아이콘 (2026-09-20) — 화살·부적·칭호. 네모난 그림 한 장을 아이콘 자리에 얹는다.
+   모서리를 굴려 '딱지'로 읽히게 하고, 줄 안에서 글자와 어긋나지 않게 block 으로 둔다. */
+.hb-art { display: block; border-radius: 22%; object-fit: cover; user-select: none; }
 /* 앞에 나온 한 자루만 조금 크다. 고른 것이 살아 있어 보여야 한다. */
 .wh-card.wh-mid .wh-art { transform: scale(1.06); }
 .wh-card.wh-lock .wh-art { filter: grayscale(1) brightness(.45); }

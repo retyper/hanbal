@@ -95,3 +95,57 @@ else drawFoeGunner(...)   // 벡터 폴백 — 헤드리스 프로브·로딩 �
 | 아이콘 14종 | `public/icons` (출처는 `public/icons/출처.txt`) | 각 파일 표기 |
 | 수렵도(배경) | `public/art/suryeopdo.jpg` | 만료저작물 |
 | 드론 스프라이트 | OpenGameArt (`public/sprites/drone.png`) | CC0 — **지금은 안 쓴다** (매로 바뀜) |
+| 화살 아홉 대 | 생성 (챗지피티, 한 장 → `tools/slice-grid.mjs`) | 우리 것 — 6장 |
+
+---
+
+## 6. 그림을 굽는 주방 (2026-09-20)
+
+> 형: **"요즘 최신 ai 게임개발 관행을 따라 허깅페이스 같은걸로 밋밋한 SVG들 전부 에셋으로
+> 바꿔야 겠어. 파인다이닝 주방처럼 루프 진행해."**
+
+기성품(0~1장)에 없는 것 — **우리 게임에만 있는 물건**(화전·명적·애기살, 부적, 칭호) — 은 굽는다.
+한 코스씩: **주문(프롬프트) → 굽기 → 시식(눈으로, 실제 크기로) → 담기(배선) → 내보내기(커밋)**.
+시식에서 떨어지면 접시에 안 올린다.
+
+### 화구 둘
+
+| 화구 | 어떻게 | 언제 |
+|---|---|---|
+| **챗지피티** (형 크롬, 로그인돼 있다) | 프롬프트 → 그림 → `~/Downloads` → `assets_src/` | **한 벌이어야 하는 것.** 한 장에 격자로 받아 `tools/slice-grid.mjs` 로 자른다 — 따로 받으면 화풍이 제각각이 된다 |
+| **Hugging Face** FLUX.1-schnell 공개 Space | `node tools/gen-art.mjs` (메뉴: `tools/gen-menu.json`) | 낱장. 프롬프트·시드가 남아 **다시 구울 수 있다.** Apache-2.0, 결과물 제약 없음 |
+
+**HF 의 사정 (2026-09-20 확인):** 이 기기의 `HF_TOKEN` 은 vcell 용 **읽기 전용** 토큰이라 추론을
+못 부른다 (403 "insufficient permissions to call Inference Providers"). 익명 Space 는 열려 있지만
+**세 장쯤에서 할당량이 끝난다.** 제대로 쓰려면 형이 huggingface.co/settings/tokens 에서
+*Make calls to Inference Providers* 권한이 있는 토큰을 **따로** 하나 만들어 줘야 한다 — vcell 토큰의
+범위는 넓히지 않는다 (그건 공부용이다).
+
+### 시식 규칙 (첫 판에서 배운 것)
+
+1. **가는 물건은 통째로 그리지 않는다.** 화살 한 대를 대각선으로 그리면 20px 에서 머리카락이 된다.
+   **구별되는 부분(촉)을 크게 당겨 잡는다.**
+2. **실제 크기로 본다.** 512px 에서 예쁜 것과 20px 에서 읽히는 것은 다른 일이다.
+3. **두른 빛의 색 = 코드의 강조색.** 화살은 `ARROW_TINT` 와 같은 색 빛을 둘러 카드와 이어진다.
+4. **세이브를 건드리지 않는다.** 시식은 페이지에 임시 띠를 얹어서 한다 — 지도에서 판을 두 번 누르면
+   형의 여정이 접힌다.
+
+### 주문서 — 화살 아홉 (3×3, 받은 그대로)
+
+```
+Generate one square 1024x1024 image: a sprite sheet of NINE game item icons in a strict, perfectly
+even 3x3 grid (each cell exactly one third of the width and height, no gutters, no grid lines, no
+borders, no text, no numbers, no labels). Every cell has the same plain very dark blue-grey
+background (#1c2129) and shows a CLOSE-UP of the FRONT HALF of a medieval Korean (Joseon) arrow -
+the arrowhead and a short piece of shaft - drawn BIG and CHUNKY, pointing to the upper right,
+filling about 80% of its cell, fully inside the cell with margin. Style: hand-painted stylized game
+icon art, bold thick shapes, strong colored rim glow, high contrast, must stay readable when shrunk
+to 24 pixels. Same brush, same lighting in all nine. Cells, left to right, top to bottom:
+(1) plain willow-leaf iron arrowhead on a bamboo shaft, silver-grey glow. (2) fire arrow: gunpowder
+paper tube tied behind the head, burning fuse, orange glow. (3) whistling arrow: big round carved
+wooden whistle head with holes, green sound-wave rings. (4) head splits into three blades like a
+trident, violet glow. (5) three arrowheads fanning out from one point, steel-blue glow. (6) three
+arrowheads one behind another in a line, gold glow. (7) spirit arrow with a curving teal light
+trail and white feather wisps. (8) very slim needle-sharp steel bodkin dart with an icy light-blue
+streak. (9) massive heavy arrow, very thick shaft, huge broad chisel iron head, rust-red ember glow.
+```

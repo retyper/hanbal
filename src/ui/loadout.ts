@@ -15,7 +15,7 @@ import {
 } from '../game/armor.ts'
 import { shopPrice } from '../game/supply.ts'
 import { onSaveChanged, writeSave, type SaveData } from '../game/save.ts'
-import { ARROW_TINT, arrowIconSvg, bowIconSvg, charmIconSvg } from './arrowicons.ts'
+import { ARROW_TINT, arrowIcon, bowIconSvg, charmIconSvg } from './arrowicons.ts'
 import { BOW_KINDS, bowKind, masteryLevel, type BowKindId } from '../game/bows.ts'
 import { unlockOfBow } from '../game/unlocks.ts'
 import type { ForkOption } from '../game/forks.ts'
@@ -484,7 +484,7 @@ function bowArt(id: string, owned: boolean, px: number): string {
       const have = Math.floor(d.arrowStock[k.id] ?? 0)
       const row = document.createElement('div')
       row.className = 'l-srow'
-      row.innerHTML = `<span class="l-sic">${arrowIconSvg(k.id, 22)}</span>`
+      row.innerHTML = `<span class="l-sic">${arrowIcon(k.id, 22)}</span>`
         + `<span class="l-sname"></span><span class="l-shave"></span>`
         + `<button class="hb-btn l-sbuy" type="button">+1 <b></b></button>`
       ;(row.querySelector('.l-sic') as HTMLElement).style.color = ARROW_TINT[k.id] ?? '#ffb347'
@@ -679,7 +679,7 @@ export function mountSupply(
     // 아이콘은 효과의 그림풀이다 — 이름을 읽기 전에 무슨 살인지 짐작돼야 한다.
     card.style.setProperty('--tint', ARROW_TINT[id])
     card.innerHTML =
-      `<span class="l-ic">${arrowIconSvg(id, 30)}</span>` +
+      `<span class="l-ic">${arrowIcon(id, 30)}</span>` +
       `<span class="l-n"></span><span class="l-syn2"></span><span class="l-d"></span><span class="l-d"></span>`
     const parts = card.querySelectorAll('.l-d')
     ;(card.querySelector('.l-n') as HTMLElement).textContent = `${k.name} +${count}발`
