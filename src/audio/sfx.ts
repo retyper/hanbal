@@ -1812,7 +1812,7 @@ export function pumpSfx(sfx: Sfx, w: World): void {
       sample(sfx, s, name, SMP.downGain * (e.look === 3 ? 1.4 : 1), e.look === 3 ? 1.15 : 0.92, e.x, e.y)
       // ★ 죽는 **목소리** (2026-09-20, 형: "죽는소리같은게 지금 없잖아"). 위의 퍽은 몸이 땅에 닿는 소리고,
       //   이건 그 사람이 내는 소리다 — 둘은 다른 것이라 겹쳐 튼다.
-      if (e.look === -1) sample(sfx, s, 'bossDeath', SMP.bossDeathGain, SMP.bossDeathRate, e.x, e.y)
+      if (e.look < 0) sample(sfx, s, 'bossDeath', SMP.bossDeathGain, SMP.bossDeathRate, e.x, e.y)
       else if (e.look === 3) sample(sfx, s, 'hawk', SMP.hawkGain, jitter(0.08), e.x, e.y)
       else if (e.look === 4) sample(sfx, s, 'crash', SMP.crashGain, jitter(0.08), e.x, e.y)
       else sample(sfx, s, 'death', SMP.deathGain, jitter(SMP.deathJitter), e.x, e.y)

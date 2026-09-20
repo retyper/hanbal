@@ -63,6 +63,8 @@ export const BOSS_EYES: BossEyes = {
  */
 export function warmBossArt(): void {
   for (let look = 0; look < ART.length; look++) sprite(`boss-${look}`)
+  for (const name of EYE_NAMES) sprite(`eye-${name}`)
+  for (const f of FOX) sprite(f.name)
 }
 
 /**
@@ -107,5 +109,61 @@ export function drawBossArt(
     BOSS_EYES.y[i] = ay + (e[1] - av) * dh
     BOSS_EYES.k[i] = e[2]
   }
+  return true
+}
+
+/**
+ * 눈 — **그림이다** (2026-09-20, 형: "보스몬스터 눈깔 … 제대로 정리해").
+ * 첫 판은 그린 얼굴 위에 납작한 만화 눈알(원 셋)을 얹어서 도깨비가 인형 눈을 단 꼴이었다. 이제 눈도 같은 붓으로 그린 그림이다.
+ * **뜨고 감는 것은 여전히 sim 의 것이다** — open(0~1)만큼 세로로 눌러 그린다. 다 감기면 부르는 쪽이 눈꺼풀 선을 긋는다.
+ */
+const EYE_NAMES = ['ghost', 'berserk', 'ogre', 'fox', 'post', 'reaper'] as const
+export type EyeName = (typeof EYE_NAMES)[number]
+
+/** (x, y) 눈의 중심 · halfW 반폭 (px) · open 뜬 정도 (0~1, 1 넘으면 놀라 커진 눈) · mirror 좌우 뒤집기 (반대쪽 눈). */
+export function drawEyeArt(
+  ctx: CanvasRenderingContext2D, name: EyeName, x: number, y: number, halfW: number, open: number, mirror: boolean,
+): boolean {
+  const im = sprite(`eye-${name}`)
+  if (im === null) return false
+  const w = halfW * 2
+  const h = w * (im.naturalHeight / im.naturalWidth) * Math.max(0, open)
+  if (h < 1) return true
+  ctx.save()
+  ctx.translate(x, y)
+  if (mirror) ctx.scale(-1, 1)
+  ctx.drawImage(im, -w / 2, -h / 2, w, h)
+  ctx.restore()
+  return true
+}
+
+/**
+ * 구미호 — **옆으로 달려온다** (2026-09-20, 형: "종잇장이 둥실 떠오는게 아니라 제대로 달려오는 느낌, 공격하는 느낌 살리라고").
+ * 정면으로 앉은 한 장(boss-5)을 까딱거리던 것을 버리고, 네 발로 달리는 두 컷 + 입을 벌리고 덮치는 한 컷을 쓴다.
+ * 옆모습이라 머리가 몸의 **앞**에 있다 — 그래서 sim 의 급소도 앞으로 옮겼다 (sim/target.ts bossWeakSpot 5 의 fwd).
+ * 기준점은 눈이고, 크기는 몸 반경에서 나온다 (srcW 는 원본에서의 폭 — 세 컷의 배율을 하나로 맞춘다).
+ */
+const FOX = [
+  { name: 'fox-run-0', eyeU: 0.078, eyeV: 0.58, srcW: 400 },
+  { name: 'fox-run-1', eyeU: 0.109, eyeV: 0.505, srcW: 339 },
+  { name: 'fox-attack', eyeU: 0.156, eyeV: 0.551, srcW: 390 },
+] as const
+/** 가장 긴 컷(달리기 0)의 폭이 몸 반경의 몇 배인가. */
+const FOX_SPAN = 4.6
+
+/** step 은 걸음의 위상(−1~1) · attack 은 쏘기 직전의 예고(0~1). 그렸으면 true 이고 BOSS_EYES 에 눈 자리가 들어 있다. */
+export function drawFoxArt(
+  ctx: CanvasRenderingContext2D, ax: number, ay: number, rx: number, step: number, attack: number,
+): boolean {
+  const f = attack > 0.35 ? FOX[2] : step > 0 ? FOX[0] : FOX[1]
+  const im = sprite(f.name)
+  if (im === null) return false
+  const dw = (rx * FOX_SPAN * f.srcW) / FOX[0].srcW
+  const dh = dw * (im.naturalHeight / im.naturalWidth)
+  ctx.drawImage(im, ax - f.eyeU * dw, ay - f.eyeV * dh, dw, dh)
+  BOSS_EYES.n = 1
+  BOSS_EYES.x[0] = ax
+  BOSS_EYES.y[0] = ay
+  BOSS_EYES.k[0] = 0.62
   return true
 }

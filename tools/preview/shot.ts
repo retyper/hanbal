@@ -54,9 +54,10 @@ function shot(stage: number, ticks: number): string {
   //   (작으면 나뒹구는 중, 크면 누운 뒤.) sim 은 안 건드린다 — 시체는 렌더의 것이다.
   const frames = Number(q.get('corpses') ?? 0)
   if (frames > 0) {
-    const looks = [0, 3, 4, 5, 6]
+    // corpses=N&boss=1 이면 보스 여덟의 죽은 모습을 본다 (sim 은 보스를 −1 − look 으로 보낸다).
+    const looks = q.get('boss') !== null ? [-1, -2, -4, -5, -6, -7, -8] : [0, 3, 4, 5, 6]
     for (let i = 0; i < looks.length; i++) {
-      w.events.push({ t: 'foe_down', x: 12 + i * 3.2, y: 2.2, vx: 2, vy: 3, mass: 1, look: looks[i] ?? 0, r: 0.55, hard: false, g: 0 })
+      w.events.push({ t: 'foe_down', x: 12 + i * 3.2, y: 2.2, vx: 2, vy: 3, mass: 1, look: looks[i] ?? 0, r: q.get('boss') !== null ? 1.1 : 0.55, hard: false, g: 0 })
     }
     renderer.draw(w, 0, 1 / 60, hud)
     w.events.length = 0
@@ -82,7 +83,7 @@ function shot(stage: number, ticks: number): string {
         if (t.kind === 'boss') {
           const ws = bossWeakSpot(t.look)
           ctx.strokeStyle = '#ffe14d'
-          ctx.beginPath(); ctx.arc(x, y - r * ws.up, r * ws.r, 0, Math.PI * 2); ctx.stroke()
+          ctx.beginPath(); ctx.arc(x + r * ws.fwd, y - r * ws.up, r * ws.r, 0, Math.PI * 2); ctx.stroke()
         }
       }
     }

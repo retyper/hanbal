@@ -52,6 +52,7 @@ export function warmFoeArt(): void {
   sprite('foe-falcon-b')
   for (const name of Object.keys(PROP)) sprite(name)
   for (const c of CORPSE) sprite(c.name)
+  for (const name of BOSS_CORPSE) sprite(name)
   for (const name of Object.keys(HERO)) sprite(`hero-${name}`)
   for (const name of Object.keys(TARGET)) sprite(`target-${name}`)
   for (const k of Object.keys(ARM) as (keyof typeof ARM)[]) { sprite(ARM[k].upper); sprite(ARM[k].fore) }
@@ -207,9 +208,33 @@ const CORPSE = [
   /* 6 투석군 */ { name: 'dead-slinger', rest: -0.6, span: 2.9, lift: 0.42 },
 ] as const
 
+/**
+ * 보스의 죽은 모습 (look 이 음수 — sim 이 −1 − 보스의 look 으로 보낸다). 유령은 **빈 누더기**로 무너지고(몸이 없는 것들이다),
+ * 도깨비·구미호는 눕고, 장승은 쪼개지고, 저승사자는 빈 도포와 갓만 남는다. 쌍눈귀신(2)은 눈알귀신과 같은 누더기를 쓴다.
+ * 보스는 나뒹굴지 않는다 — 그 자리에서 **무너진다**: 가라앉는 만큼 세로로 자라 올라 제 크기가 된다.
+ */
+const BOSS_CORPSE = [
+  /* 0 눈알 */ 'dead-boss-0', /* 1 갑주 */ 'dead-boss-1', /* 2 쌍눈 */ 'dead-boss-0', /* 3 폭주 */ 'dead-boss-3',
+  /* 4 도깨비 */ 'dead-boss-4', /* 5 구미호 */ 'dead-boss-5', /* 6 장승 */ 'dead-boss-6', /* 7 저승사자 */ 'dead-boss-7',
+] as const
+/** 죽은 그림의 폭이 몸 반경의 몇 배인가. */
+const BOSS_CORPSE_SPAN = 2.9
+
 export function drawCorpseArt(
   ctx: CanvasRenderingContext2D, look: number, x: number, y: number, r: number, ang: number, settle: number,
 ): boolean {
+  if (look < 0) {
+    const name = BOSS_CORPSE[-1 - look]
+    if (name === undefined) return false
+    const bim = sprite(name)
+    if (bim === null) return false
+    const bw = r * BOSS_CORPSE_SPAN
+    const full = bw * (bim.naturalHeight / bim.naturalWidth)
+    // 밑단은 땅에 붙인다 — 시체의 y 는 가라앉으면 땅 언저리다 (effects.ts stepCorpses). 무너지는 동안 위에서부터 내려앉는다.
+    const bh = full * (0.35 + 0.65 * settle)
+    ctx.drawImage(bim, x - bw / 2, y + r * 0.18 - bh, bw, bh)
+    return true
+  }
   const c = CORPSE[look]
   if (c === undefined) return false
   const im = sprite(c.name)

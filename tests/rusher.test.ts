@@ -131,3 +131,31 @@ describe('창가의 사수 — 창이 사람보다 작으면 안 된다', () => 
     assert.ok(checked > 40, `검사한 사수가 ${checked}뿐이다 — 판이 안 바뀐 것 아닌가`)
   })
 })
+
+describe('급소 — 그려진 자리와 판정이 같은 함수에서 나온다 (2026-09-20 에 고친 버그)', () => {
+  /**
+   * foeWeakSpot · bossWeakSpot 은 눈을 **그리는 자리**를 정한다 (render). 그런데 명중 판정은 그 함수를 안 부르고
+   * 공통 상수(archerHeadUp · bossHeadUp)를 직접 쓰고 있었다 — 급소가 몸 중심 위가 아닌 것들(매·화차·도깨비·구미호)은
+   * 그려진 눈과 판정이 다른 자리였다. 매로 지킨다: 눈은 몸 **앞쪽**(fwd −0.5)에 있고, 예전 판정은 몸 중심 위였다.
+   */
+  const R = 1
+  const falcon = (): StageDef => ({
+    id: 'eye', seed: 3, arrows: 3, targetScore: 100, wind: 0,
+    targets: [{ kind: 'archer', look: 3, x: 22, y: 6, r: R, hp: 5, score: 100, fireDelay: 99, firePeriod: 99 }],
+  })
+  it('매의 눈(그려진 자리)을 쏘면 헤드샷이다', async () => {
+    const { foeWeakSpot } = await import('../src/sim/target.ts')
+    const ws = foeWeakSpot(3)
+    assert.ok(ws.fwd < 0, '매의 눈은 몸 앞쪽에 있어야 한다')
+    const evs = shoot(falcon(), aimAt(falcon, 22 + R * ws.fwd, 6 + R * ws.up))
+    const hit = evs.find((e) => e['t'] === 'hit')
+    assert.ok(hit !== undefined, '눈을 겨눴는데 아무것도 안 맞았다')
+    assert.equal(hit['head'], true, '그려진 눈을 맞혔는데 헤드샷이 아니다 — 판정이 다른 자리를 보고 있다')
+  })
+  it('몸 아래쪽을 쏘면 헤드샷이 아니다 (화살은 거의 수평으로 나므로 **높이**가 달라야 눈을 비껴간다)', () => {
+    const evs = shoot(falcon(), aimAt(falcon, 22, 6 - R * 0.6))
+    const hit = evs.find((e) => e['t'] === 'hit')
+    assert.ok(hit !== undefined, '몸을 겨눴는데 아무것도 안 맞았다')
+    assert.equal(hit['head'], false, '몸 아래를 맞혔는데 헤드샷이다')
+  })
+})

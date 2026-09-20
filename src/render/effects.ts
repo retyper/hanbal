@@ -993,8 +993,8 @@ function drawCorpses(ctx: CanvasRenderingContext2D, cam: Camera, f: Fx): void {
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
 
-    // ★ 그림 적이 죽으면 그림이 눕는다 (render/foeart.ts). 막대 인간은 폴백이다.
-    if (look >= 0 && drawCorpseArt(ctx, look, x, y, r, ang, settle)) {
+    // ★ 그림 적이 죽으면 그림이 눕는다 (render/foeart.ts). 막대 인간은 폴백이다. 보스(음수)는 제 죽은 모습이 있다.
+    if (drawCorpseArt(ctx, look, x, y, r, ang, settle)) {
       ctx.restore()
       continue
     }

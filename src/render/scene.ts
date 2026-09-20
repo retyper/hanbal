@@ -20,7 +20,7 @@ import { drawFoeArcher, drawFoeGunner, drawFoeRusher, drawFoeSlinger } from './f
 import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { createFx, pumpEvents, updateFx, drawFx, drawFxFlash, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash, targetFlinch, PLAYER_PIN } from './effects.ts'
 import { drawNewBossBody, drawNewBossFace } from './bosses.ts'
-import { BOSS_EYES, drawBossArt, warmBossArt } from './bossart.ts'
+import { BOSS_EYES, drawBossArt, drawEyeArt, drawFoxArt, warmBossArt } from './bossart.ts'
 import { drawArrowArt, drawPoleArt, drawFalconArt, drawFoeArt, drawPropArt, drawShotArt, drawTargetArt, warmFoeArt } from './foeart.ts'
 import { backdrop } from './sprites.ts'
 import { bossGrammar, bossWeakSpot, foeWeakSpot } from '../sim/target.ts'
@@ -715,7 +715,13 @@ function drawTargets(
       //   발밑까지의 거리로 크기를 정한다. 그림이 아직 안 떴거나 헤드리스면 아래 벡터 몸이 선다.
       const footY2 = t.look >= 4 ? worldToScreenY(cam, t.baseY - t.r) : y + ry * 1.1
       const swing = t.look >= 4 ? Math.sin(w.elapsed * P.target.bossStepFreq * TAU) : Math.sin(w.elapsed * 1.7)
-      const art = drawBossArt(ctx, t.look, x, hy, footY2, swing)
+      // 구미호는 **옆으로 달려온다** — 급소(눈)가 몸 앞에 있다 (sim bossWeakSpot 의 fwd). 쏘기 직전에는 덮치는 컷.
+      const eyeX = x + rx * ws2.fwd
+      const foxWind = P.enemy.windup
+      const foxAtk = t.look === 5 && t.fireAt > 0 ? clamp01(1 - (t.fireAt - w.elapsed) / foxWind) : 0
+      const art = t.look === 5
+        ? (drawFoxArt(ctx, eyeX, hy, rx, swing, foxAtk) || drawBossArt(ctx, t.look, x, hy, footY2, swing))
+        : drawBossArt(ctx, t.look, x, hy, footY2, swing)
       if (art) {
         // 그림이 몸이다 — 벡터 몸은 안 그린다.
       } else if (t.look >= 4) {
@@ -831,7 +837,7 @@ function drawTargets(
         // ★ 2026-09-10 에 선 넷은 **제 얼굴이 있는 것들**이다 (render/bosses.ts).
         //   그 위에 공용 눈알을 얹지 않는다 (형: "왕눈이 뇌속에 들어있게 보여지고").
         //   눈꺼풀 상태(open·stag)만 넘기면 저마다의 눈이 저마다의 방식으로 감았다 뜬다.
-        drawNewBossFace(ctx, t, x, y, rx, ry, x, hy, hr, open, stag, ax2, ay2, art ? BOSS_EYES : null)
+        drawNewBossFace(ctx, t, x, y, rx, ry, eyeX, hy, hr, open, stag, ax2, ay2, art ? BOSS_EYES : null)
       } else {
       // ── 유령 넷(0~3) — **몸이 곧 눈알이다.** 여기서만 공용 큰 눈을 그린다 ──
       // 변종별 눈: 갑주(1)는 투구 틈의 가로 슬릿 · 폭주(3)는 성난 사선 · 쌍눈(2)은 작고 말갛다.
@@ -853,6 +859,10 @@ function drawTargets(
         ctx.lineTo(x + hr, hy)
         ctx.stroke()
       } else {
+        // 몸이 그림이면 눈알도 그림이다 (bossart.ts) — 갑주귀신의 투구 틈은 빛나는 실눈이라 예전 그대로 둔다.
+        if (art && t.look !== 1 && drawEyeArt(ctx, t.look === 3 ? 'berserk' : 'ghost', x, hy, hr * 1.02, eyeH / (hr * 0.92), false)) {
+          // 그렸다.
+        } else {
         band(ctx, x, hy, hr, eyeH, THEME.target2)
         const dl = Math.hypot(ax2 - x, ay2 - hy) || 1
         const px2 = x + ((ax2 - x) / dl) * hr * 0.34
@@ -871,6 +881,7 @@ function drawTargets(
           ctx.lineTo(x + hr * 0.7, hy - eyeH * 0.55)
           ctx.stroke()
         }
+        }
       }
       }
       // 약점이 열렸다 — 금빛 고리가 숨 쉰다. "지금 쏴라"를 글자 없이 말한다.
@@ -886,7 +897,8 @@ function drawTargets(
           // 다리 구간 — 몸통 아래를 도는 넓은 호. sim 의 bossLegZone 과 같은 자리다.
           ctx.ellipse(x, y + ry * P.target.bossLegZone, rx * 0.95, ry * 0.32, 0, 0, TAU)
         } else {
-          ctx.arc(x, hy, hr * (fast ? 1.45 + 0.1 * pulse : 1.3), 0, TAU)
+          // 고리는 **급소 그 자리**에 — 구미호는 눈이 몸 앞에 있다 (eyeX).
+          ctx.arc(eyeX, hy, hr * (fast ? 1.45 + 0.1 * pulse : 1.3), 0, TAU)
         }
         ctx.stroke()
         ctx.globalAlpha = 1

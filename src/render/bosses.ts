@@ -27,7 +27,7 @@
 import { TAU } from '../core/math.ts'
 import { P } from '../tune/params.ts'
 import type { Target, World } from '../sim/types.ts'
-import type { BossEyes } from './bossart.ts'
+import { drawEyeArt, type BossEyes } from './bossart.ts'
 
 /** 넷의 색. 실루엣이 달라도 어두운 배경에서 읽히려면 밝기 차가 있어야 한다. */
 const C = {
@@ -537,6 +537,8 @@ function ogreEyes(
       ctx.lineCap = 'butt'
       continue
     }
+    // 몸이 그림이면 눈도 그림이다 (bossart.ts drawEyeArt) — 뜬 만큼 세로로 눌러 그린다.
+    if (ART_EYES !== null && drawEyeArt(ctx, 'ogre', ex, ey, hwE * 0.42, lid, s > 0)) continue
     ctx.fillStyle = C.eyeWhite
     ctx.beginPath()
     ctx.ellipse(ex, ey, hwE * 0.27, eh, 0, 0, TAU)
@@ -581,6 +583,7 @@ function foxEyes(
       ctx.lineCap = 'butt'
       continue
     }
+    if (ART_EYES !== null && drawEyeArt(ctx, 'fox', ex, ey, frE * 0.62, lid, false)) continue
     // 아몬드 — 안쪽 끝이 처지고 바깥 끝이 올라간다. 그 기울기가 여우다.
     ctx.save()
     ctx.translate(ex, ey)
@@ -619,6 +622,7 @@ function postEyes(
     if (!stag && lid < 0.25) continue
     // 열렸다 — 구멍 안에서 흰자가 살아난다. 장승의 눈은 원래 왕방울이라 크게 뜬다.
     const k = Math.min(1, lid)
+    if (ART_EYES !== null && drawEyeArt(ctx, 'post', ex, ey0, er * 0.95, k, false)) continue
     ctx.fillStyle = C.woodTooth
     ctx.beginPath()
     ctx.arc(ex, ey0, er * 0.78 * k, 0, TAU)
@@ -661,6 +665,7 @@ function reaperEyes(
       ctx.lineCap = 'butt'
       continue
     }
+    if (ART_EYES !== null && drawEyeArt(ctx, 'reaper', ex, ey, frE * 0.5, lid, eyeSide(i) > 0)) continue
     // 뜬 눈은 **빛난다.** 죽은 낯빛 위의 두 점이라야 저승의 것으로 보인다.
     ctx.fillStyle = C.reaperGlow
     ctx.beginPath()

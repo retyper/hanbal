@@ -388,12 +388,15 @@ export function foeWeakSpot(look: number): { fwd: number; up: number; r: number 
  * 이제 자리를 몸마다 적는다. 그리고 그 자리에 **그 몸의 제 눈**을 그린다 (render/bosses.ts
  * drawNewBossFace) — 덧붙인 눈알이 아니라 원래 얼굴에 있던 눈이 급소다.
  */
-export function bossWeakSpot(look: number): { up: number; r: number } {
+export function bossWeakSpot(look: number): { fwd: number; up: number; r: number } {
   // 도깨비 — 급소는 이마가 아니라 **부릅뜬 두 눈**이다. 둘을 함께 덮으니 판정은 조금 넓다.
-  if (look === 4) return { up: 0.5, r: P.target.bossHeadR * 1.2 }
-  // 구미호 — 여우 머리는 작다. 판정도 그만큼 작아야 "다리를 쏘는" 길이 값을 한다.
-  if (look === 5) return { up: 0.74, r: P.target.bossHeadR * 0.95 }
-  return { up: P.target.bossHeadUp, r: P.target.bossHeadR }
+  if (look === 4) return { fwd: 0, up: 0.5, r: P.target.bossHeadR * 1.2 }
+  // 구미호 — **옆으로 달려온다** (2026-09-20, 형: "종잇장이 둥실 떠오는게 아니라 제대로 달려오는 느낌").
+  //   네 발로 달리는 짐승의 머리는 몸 위가 아니라 **앞**에 있다. 그래서 급소가 앞(−x, 궁수 쪽)으로 나간다 —
+  //   매의 눈(foeWeakSpot 3)과 같은 이치다. 여우 머리는 작다: 판정도 그만큼 작아야 "다리를 쏘는" 길이 값을 한다.
+  //   (자리는 그림에서 쟀다: 발을 땅에 붙이면 눈은 몸 중심보다 1.15r 앞, 거의 같은 높이에 온다 — render/bossart.ts FOX.)
+  if (look === 5) return { fwd: -1.15, up: -0.05, r: P.target.bossHeadR * 0.95 }
+  return { fwd: 0, up: P.target.bossHeadUp, r: P.target.bossHeadR }
 }
 
 export function bossAttack(look: number): { shot: number; volley: number; periodMul: number } {
@@ -500,17 +503,19 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
   // 화살은 몸을 뚫고 박히는 물건이라, 그 직선이 머리를 지나면 머리에 맞은 것이다.
   let head = false
   if (target.kind === 'boss' || target.kind === 'archer') {
-    const hy = target.kind === 'boss'
-      ? target.y + target.r * P.target.bossHeadUp
-      : target.y + target.r * P.enemy.archerHeadUp
-    const hr = target.kind === 'boss'
-      ? target.r * P.target.bossHeadR
-      : target.r * P.enemy.archerHeadR
+    // ★ 급소의 자리는 **그리는 쪽과 같은 함수**에서 온다 (2026-09-20 에 고친 버그).
+    //   bossWeakSpot · foeWeakSpot 의 주석은 "sim 도 render 도 이 함수를 부른다"고 약속했는데, 정작 여기는 공통 상수
+    //   (bossHeadUp · archerHeadUp)를 직접 쓰고 있었다. 그래서 급소가 몸 중심 위가 아닌 것들 — 매(눈이 앞), 화차(화약궤),
+    //   도깨비(이마가 아니라 눈) — 은 **그려진 급소와 판정이 다른 자리**였다. "맞혔는데 안 맞았다"가 거기서 나온다.
+    const ws = target.kind === 'boss' ? bossWeakSpot(target.look) : foeWeakSpot(target.look)
+    const hx = target.x + target.r * ws.fwd
+    const hy = target.y + target.r * ws.up
+    const hr = target.r * ws.r
     const sp = Math.hypot(arrow.vx, arrow.vy)
     if (sp > 0) {
       const ux2 = arrow.vx / sp
       const uy2 = arrow.vy / sp
-      const rx2 = target.x - arrow.px
+      const rx2 = hx - arrow.px
       const ry2 = hy - arrow.py
       // 직선까지의 수직 거리 = |외적|. 앞쪽(진행 방향)에 있는 머리만 (뒤로 맞는 머리는 없다).
       const perp = Math.abs(rx2 * uy2 - ry2 * ux2)
@@ -529,7 +534,8 @@ export function resolveHit(w: World, arrow: Arrow, target: Target): void {
     if (head && !open) {
       // 감은 눈이다. 몸통샷으로 센다 — 화면은 "감았다"를 띄운다 (render/effects.ts).
       head = false
-      w.events.push({ t: 'weak_shut', x: target.x, y: target.y + target.r * bossWeakSpot(target.look).up })
+      const shut = bossWeakSpot(target.look)
+      w.events.push({ t: 'weak_shut', x: target.x + target.r * shut.fwd, y: target.y + target.r * shut.up })
     }
   }
 
@@ -778,7 +784,9 @@ function downEvent(w: World, t: Target, vx: number, vy: number, mass: number, ha
   w.events.push({
     t: 'foe_down',
     x: t.x, y: t.y, vx, vy, mass, hard,
-    look: t.kind === 'boss' ? -1 : t.kind === 'charger' ? 0 : t.look,
+    // 보스는 **음수**다: −1 − look (눈알 −1 · 갑주 −2 · … · 저승사자 −8). 어떤 보스가 죽었는지 그림과 소리가 알아야 한다
+    // (2026-09-20, 형: "보스몬스터 … 죽었을때 에셋도 제대로 정리해"). 예전엔 전부 −1 이라 여덟이 같은 덩어리로 무너졌다.
+    look: t.kind === 'boss' ? -1 - t.look : t.kind === 'charger' ? 0 : t.look,
     r: t.r,
     g: groundAt(w.stage, t.x),
   })
