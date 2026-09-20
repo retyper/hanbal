@@ -3,12 +3,14 @@
  * 해놓던지"). 장착 개념은 걷어냈다 — 스팀은 뭘 달았는지 보여주는 게 아니라 몇 개
  * 땄는지, 그리고 각각에 아이콘이 있는지만 보여준다. 여기서 지키는 건 그 전제 하나다:
  * **칭호마다 반드시 자기 아이콘이 있다.** 하나라도 빠지면 잠긴 것과 구분이 안 된다
- * (titleIconSvg의 미확인 id 폴백이 잠긴 칸에도 쓰이는 그 실루엣이라서).
+ * (titleIcon의 미확인 id 폴백이 잠긴 칸에도 쓰이는 그 실루엣이라서).
  */
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { UNLOCKS, emptyProgress, evaluateUnlocks } from '../src/game/unlocks.ts'
-import { TITLE_ICON, titleIconSvg, isTitleId } from '../src/ui/titleicons.ts'
+import { readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { TITLE_ART, titleIcon, isTitleId } from '../src/ui/titleicons.ts'
 
 const titleDefs = UNLOCKS.filter((d) => d.kind === 'title')
 
@@ -19,22 +21,25 @@ describe('칭호 아이콘', () => {
 
   it('칭호마다 자기만의 아이콘이 있다 — 빠지면 잠긴 것과 구분이 안 된다', () => {
     for (const d of titleDefs) {
-      assert.ok(d.id in TITLE_ICON, `${d.id}(${d.label})에 아이콘이 없다`)
+      assert.ok(TITLE_ART.has(d.id), `${d.id}(${d.label})에 아이콘이 없다`)
     }
   })
 
-  it('TITLE_ICON에 칭호가 아닌 id·죽은 id가 섞여 있지 않다', () => {
+  it('TITLE_ART에 칭호가 아닌 id·죽은 id가 섞여 있지 않다', () => {
     const ids = new Set(titleDefs.map((d) => d.id))
-    for (const key of Object.keys(TITLE_ICON)) {
-      assert.ok(ids.has(key), `TITLE_ICON에 있는 ${key}가 실제 칭호 목록에 없다`)
+    for (const key of TITLE_ART) {
+      assert.ok(ids.has(key), `TITLE_ART에 있는 ${key}가 실제 칭호 목록에 없다`)
     }
   })
 
-  it('아이콘끼리 그림이 겹치지 않는다 (복붙 실수로 같은 path를 두 번 쓰는 사고 방지)', () => {
-    const seen = new Set<string>()
-    for (const [id, svg] of Object.entries(TITLE_ICON)) {
-      assert.ok(!seen.has(svg), `${id}의 아이콘이 다른 칭호와 그림이 똑같다`)
-      seen.add(svg)
+  it('그림 파일이 실제로 있고 서로 다르다 (이름만 적고 파일을 안 넣는 사고 · 복붙 사고 방지)', () => {
+    const seen = new Map<string, string>()
+    for (const id of TITLE_ART) {
+      const file = `public/sprites/${id.replace('.', '-')}.png`
+      const sum = createHash('sha1').update(readFileSync(file)).digest('hex')
+      assert.ok(!seen.has(sum), `${id}의 그림이 ${seen.get(sum)}와 똑같다`)
+      seen.set(sum, id)
+      assert.ok(titleIcon(id, 20).includes(`sprites/${id.replace('.', '-')}.png`), `${id}가 제 그림을 안 가리킨다`)
     }
   })
 
@@ -45,8 +50,8 @@ describe('칭호 아이콘', () => {
   })
 
   it('모르는 id는 크래시 없이 잠긴 칸과 같은 실루엣을 돌려준다', () => {
-    const unknown = titleIconSvg('title.없는것', 20)
-    const locked = titleIconSvg('', 20)
+    const unknown = titleIcon('title.없는것', 20)
+    const locked = titleIcon('', 20)
     assert.equal(unknown, locked)
     assert.ok(unknown.includes('<svg'))
   })

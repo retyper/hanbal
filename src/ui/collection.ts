@@ -22,7 +22,7 @@ import {
   type UnlockDef,
 } from '../game/unlocks.ts'
 import { STAR_MAX } from '../game/rewards.ts'
-import { titleIconSvg } from './titleicons.ts'
+import { titleIcon } from './titleicons.ts'
 import type { Overlay } from './overlay.ts'
 
 const PANEL_ID = 'collection'
@@ -51,7 +51,10 @@ const CSS = `
 .c-row:first-of-type { border-top: none; }
 .c-name { color: var(--ink); font-weight: 700; font-size: 16px; }
 /* 칭호 행의 아이콘 — 스팀 업적과 같은 문법: 잠기면 흐린 실루엣, 열리면 강조색. */
-.c-ic { display: inline-flex; vertical-align: -7px; margin-right: 9px; color: var(--mute); }
+/* 2026-09-20: 아이콘이 메달 **그림**이 됐다. 20px 에서는 점으로 보여서 34px 로 키웠다 —
+   잠긴 칸의 점선 원도 같은 크기라 '빈 메달 자리'로 읽힌다. */
+.c-ic { display: inline-flex; vertical-align: middle; margin-right: 11px; color: var(--mute); }
+.c-ic .hb-art { border-radius: 50%; }
 .c-row.c-open .c-ic { color: var(--accent); }
 /* 잠긴 칸은 흐리게 + 자간을 벌린다. 색만 죽이면 그냥 안 보이는 글자가 된다 (HOOK 2번). */
 .c-row.c-locked .c-name { color: var(--mute); letter-spacing: .1em; font-weight: 600; }
@@ -300,8 +303,8 @@ export function mountCollection(
         : d.kind === 'title' ? '달성' : '열림'
       row.fill.style.width = `${Math.round(ratio(d, cur) * 100)}%`
       // 아이콘 — 열렸을 때만 그 칭호의 그림을 보여준다. 잠긴 동안은 일부러 뭉뚱그린
-      // 실루엣(titleIconSvg의 미확인 id 폴백)을 쓴다 — 이름을 가리는 것과 같은 이유다.
-      if (row.icon !== null) row.icon.innerHTML = titleIconSvg(got ? d.id : '', 20)
+      // 실루엣(titleIcon의 미확인 id 폴백)을 쓴다 — 이름을 가리는 것과 같은 이유다.
+      if (row.icon !== null) row.icon.innerHTML = titleIcon(got ? d.id : '', 34)
     }
 
     for (let i = 0; i < cells.length; i++) {

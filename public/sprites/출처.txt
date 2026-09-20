@@ -9,6 +9,15 @@
   원본은 assets_src/arrows-source.png. 프롬프트는 docs/ASSETS.md 6장.
   형이 만들게 한 그림이므로 이 저장소의 것이다 (형: "밋밋한 SVG들 전부 에셋으로 바꿔야 겠어").
 
+부적 넷 · 칭호 메달 여덟 — charm-quiver / iron / gold / ghost · title-oneshot / firststar / hawk /
+  avalanche / hundred / wind / flawless / forty
+  2026-09-20. 화살 아홉과 **같은 대화에서 같은 화풍으로** 한 장(1254x1254, 4x4 격자)을 받았다.
+  격자가 정확한 등분이 아니라서 fit 으로 잘랐다 (칸 경계를 다시 찾고 물건을 가운데에 놓는다):
+    node tools/slice-grid.mjs assets_src/icons16-source.png 4 4 public/sprites/charm- quiver,iron,gold,ghost 128 0.06 fit
+    node tools/slice-grid.mjs assets_src/icons16-source.png 4 4 public/sprites/title-       -,-,-,-,oneshot,firststar,hawk,avalanche,hundred,wind,flawless,forty 128 0.04 fit
+  원본은 assets_src/icons16-source.png (넷째 줄의 방패·가죽갑·엽전·모루는 아직 자리가 없어 안 실었다).
+  프롬프트는 docs/ASSETS.md 6장.
+
 drone.png — "Pixel Art Drone" (OpenGameArt, CC0)
   https://opengameart.org/content/pixel-art-drone
   113x57, 2프레임 (로터 교대). 원본 파일명 drone_4.png.

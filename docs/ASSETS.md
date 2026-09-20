@@ -96,6 +96,7 @@ else drawFoeGunner(...)   // 벡터 폴백 — 헤드리스 프로브·로딩 �
 | 수렵도(배경) | `public/art/suryeopdo.jpg` | 만료저작물 |
 | 드론 스프라이트 | OpenGameArt (`public/sprites/drone.png`) | CC0 — **지금은 안 쓴다** (매로 바뀜) |
 | 화살 아홉 대 | 생성 (챗지피티, 한 장 → `tools/slice-grid.mjs`) | 우리 것 — 6장 |
+| 부적 넷 · 칭호 메달 여덟 | 생성 (같은 대화, 4x4 한 장 → `slice-grid.mjs … fit`) | 우리 것 — 6장 |
 
 ---
 
@@ -130,6 +131,18 @@ else drawFoeGunner(...)   // 벡터 폴백 — 헤드리스 프로브·로딩 �
 4. **세이브를 건드리지 않는다.** 시식은 페이지에 임시 띠를 얹어서 한다 — 지도에서 판을 두 번 누르면
    형의 여정이 접힌다.
 
+5. **격자를 믿지 않는다.** 16칸을 시키면 모델은 등분을 1~5% 어긴다. `slice-grid.mjs … fit` 이
+   칸 경계를 잉크가 가장 적은 줄로 다시 찾고 물건을 가운데에 놓는다.
+6. **아이콘 크기는 그림에 맞춘다.** 선 그림은 20px 에서 읽히지만 메달은 점이 된다 — 칭호는 34px 로 키웠다.
+7. **둘째 장부터는 같은 대화에서** "EXACTLY the same painting style" 로 시킨다. 화풍이 이어진다.
+
+### 무엇을 안 바꿨나 (일부러)
+
+- **내비·스탯 글리프 20종** (`public/icons`, game-icons.net): 16px 버튼 안의 단색 마스크다. `currentColor`
+  로 상태(강조·흐림)를 말하고 있어서, 그림으로 바꾸면 죽이 되고 상태 표시도 잃는다.
+- **지도** (`ui/mapart.ts`): 옛 지도 문법의 SVG 고, 배율마다 선명해야 한다. 밋밋하지 않다.
+- **잠긴 칸의 점선 원**: 그림을 보여주면 가린 게 아니다.
+
 ### 주문서 — 화살 아홉 (3×3, 받은 그대로)
 
 ```
@@ -148,4 +161,22 @@ trident, violet glow. (5) three arrowheads fanning out from one point, steel-blu
 arrowheads one behind another in a line, gold glow. (7) spirit arrow with a curving teal light
 trail and white feather wisps. (8) very slim needle-sharp steel bodkin dart with an icy light-blue
 streak. (9) massive heavy arrow, very thick shaft, huge broad chisel iron head, rust-red ember glow.
+```
+
+### 주문서 — 부적·메달·물건 열여섯 (4×4, 같은 대화에서 이어서)
+
+```
+Great. Now a second sheet in EXACTLY the same painting style, brush, lighting and the same plain
+very dark blue-grey background (#1c2129): one square 1024x1024 image, SIXTEEN game icons in a
+strict, perfectly even 4x4 grid (no gutters, no grid lines, no borders, no numbers, no labels).
+Each subject is BIG and CHUNKY, centered, filling about 80% of its cell, readable at 24 pixels.
+ROW 1 - four Korean paper talismans (bujeok): a tall yellow paper strip with red ink border,
+slightly tilted, each with ONE big bold red-ink brush drawing: (1) a quiver full of arrows,
+(2) lamellar armor, (3) a gold ingot with coins, (4) a fierce dokkaebi face, pale blue glow.
+ROWS 2-3 - eight round achievement medals, thick bronze-and-gold rim, one bold emblem each:
+(5) check mark, silver-white glow, (6) four-pointed star, gold, (7) hawk's eye, amber,
+(8) hailstones in streaks, icy blue, (9) straw target riddled with arrows, red, (10) three wind
+swirls, pale teal, (11) horn bow inside a perfect golden ring, (12) mountain pass with a small red
+flag on the peak, dawn orange. ROW 4 - (13) round wooden war shield, (14) leather lamellar vest,
+(15) string of yeopjeon brass coins, (16) anvil with hammer and sparks.
 ```
