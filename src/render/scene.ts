@@ -21,7 +21,7 @@ import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { createFx, pumpEvents, updateFx, drawFx, drawFxFlash, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash, targetFlinch, PLAYER_PIN } from './effects.ts'
 import { drawNewBossBody, drawNewBossFace } from './bosses.ts'
 import { BOSS_EYES, drawBossArt, warmBossArt } from './bossart.ts'
-import { drawFalconArt, drawFoeArt, drawPropArt, drawTargetArt, warmFoeArt } from './foeart.ts'
+import { drawArrowArt, drawFalconArt, drawFoeArt, drawPropArt, drawShotArt, drawTargetArt, warmFoeArt } from './foeart.ts'
 import { backdrop } from './sprites.ts'
 import { bossGrammar, bossWeakSpot, foeWeakSpot } from '../sim/target.ts'
 import type { Fx } from './effects.ts'
@@ -1567,6 +1567,12 @@ function drawEnemyShots(ctx: CanvasRenderingContext2D, cam: Camera, w: World): v
     if (sh === undefined || !sh.alive) continue
     const sx = worldToScreenX(cam, sh.x)
     const sy = worldToScreenY(cam, sh.y)
+    // ★ 화살·돌·신기전은 그림이다 (render/foeart.ts) — 붉은 테를 둘러서 날아오는 것이 보인다.
+    //   혼불과 탄환은 빛과 꼬리가 곧 가독성이라 아래 그대로 그린다.
+    {
+      const spd = Math.hypot(sh.vx, sh.vy) || 1
+      if (drawShotArt(ctx, sh.look, sx, sy, sh.vx / spd, -sh.vy / spd, DRAW.arrowLen * cam.scale, w.elapsed * 9 + i)) continue
+    }
     if (sh.look === 1) {
       // 돌 — 짧은 꼬리 없이 덩어리 하나. 구르듯 도는 것이 화살과 다른 점이다.
       ctx.fillStyle = SHOT.stone
@@ -1724,6 +1730,9 @@ function drawArrows(ctx: CanvasRenderingContext2D, cam: Camera, w: World, alpha:
       ctx.fill()
       ctx.globalAlpha = 1
     }
+
+    // ★ 화살은 **그림**이다 (2026-09-20, render/foeart.ts) — 촉·대·깃이 있는 그 살. 공기 가르는 잔상은 위에서 그대로 그렸다.
+    if (drawArrowArt(ctx, ar.kind, backX, backY, tipX, tipY)) continue
 
     ctx.strokeStyle = THEME.arrow
     ctx.lineWidth = DRAW.arrowWidthPx

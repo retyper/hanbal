@@ -46,6 +46,8 @@ export function warmFoeArt(): void {
   for (const name of Object.keys(TARGET)) sprite(`target-${name}`)
   for (const k of Object.keys(ARM) as (keyof typeof ARM)[]) { sprite(ARM[k].upper); sprite(ARM[k].fore) }
   sprite('limb-fist')
+  for (const name of Object.values(FLY)) sprite(name)
+  for (const c of SHOT_ART) if (c !== null) sprite(c.name)
 }
 
 /**
@@ -290,6 +292,71 @@ export function drawFistArt(ctx: CanvasRenderingContext2D, x: number, y: number,
   ctx.translate(x, y)
   if (faceLeft) ctx.scale(-1, 1)
   ctx.drawImage(im, -dw / 2, -dh / 2, dw, dh)
+  ctx.restore()
+  return true
+}
+
+/**
+ * 날아가는 것 — 그림은 전부 **가로로 누워 촉이 오른쪽**이다. 꽁무니에서 촉으로 가는 방향으로 돌려서 그 길이에 맞춰 얹는다.
+ * 굵기는 그림의 비율을 따르되 minPx 아래로는 안 내려간다 — 화살은 가늘어서 멀리 당겨 잡은 판에서 실오라기가 된다.
+ */
+const FLY = {
+  basic: 'fly-basic', burst: 'fly-fire', chain: 'fly-whistle', heavy: 'fly-heavy', pierce: 'fly-dart',
+} as const
+
+function lying(
+  ctx: CanvasRenderingContext2D, im: HTMLImageElement,
+  backX: number, backY: number, tipX: number, tipY: number, minPx: number,
+): void {
+  const len = Math.hypot(tipX - backX, tipY - backY)
+  const h = Math.max(minPx, len * (im.naturalHeight / im.naturalWidth))
+  ctx.save()
+  ctx.translate(backX, backY)
+  ctx.rotate(Math.atan2(tipY - backY, tipX - backX))
+  ctx.drawImage(im, 0, -h / 2, len, h)
+  ctx.restore()
+}
+
+/** 내 화살 한 대. kind 에 제 그림이 없으면(세전·산전·연주전·신전) 유엽전 그림을 쓴다. */
+export function drawArrowArt(
+  ctx: CanvasRenderingContext2D, kind: string, backX: number, backY: number, tipX: number, tipY: number,
+): boolean {
+  const im = sprite((FLY as Record<string, string>)[kind] ?? FLY.basic)
+  if (im === null) return false
+  lying(ctx, im, backX, backY, tipX, tipY, 5)
+  return true
+}
+
+/**
+ * 적이 쏜 것 (EnemyShot.look): 0 화살 · 1 돌 · 2 신기전 · 3 혼불 · 4 탄환. long 은 길쭉한 것(방향으로 돌린다),
+ * 아니면 둥근 것(size = 지름 px). ★ 날아오는 것은 **보여야 피한다** — 적과 같은 붉은 테를 두른다.
+ * 혼불과 탄환은 예전의 빛·꼬리가 곧 가독성이라 그림으로 안 바꾼다 (null).
+ */
+const SHOT_ART = [
+  /* 0 */ { name: 'fly-enemy', long: true, size: 0 },
+  /* 1 */ { name: 'fly-stone', long: false, size: 15 },
+  /* 2 */ { name: 'fly-rocket', long: true, size: 0 },
+  /* 3 */ null,
+  /* 4 */ null,
+] as const
+
+export function drawShotArt(
+  ctx: CanvasRenderingContext2D, look: number, x: number, y: number, dirX: number, dirY: number, lenPx: number, spin: number,
+): boolean {
+  const c = SHOT_ART[look]
+  if (c === undefined || c === null) return false
+  const im = sprite(c.name)
+  if (im === null) return false
+  ctx.save()
+  ctx.shadowColor = RIM.color
+  ctx.shadowBlur = 6
+  if (c.long) {
+    lying(ctx, im, x - dirX * lenPx, y - dirY * lenPx, x, y, 6)
+  } else {
+    ctx.translate(x, y)
+    ctx.rotate(spin)
+    ctx.drawImage(im, -c.size / 2, -c.size / 2, c.size, c.size * (im.naturalHeight / im.naturalWidth))
+  }
   ctx.restore()
   return true
 }
