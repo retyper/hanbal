@@ -14,7 +14,7 @@ import type { Overlay } from './overlay.ts'
 
 const CSS = `
 .pr-btn {
-  display: none; width: 58px; height: 58px; padding: 0; border-radius: 50%;
+  display: inline-flex; width: 58px; height: 58px; padding: 0; border-radius: 50%;
   justify-content: center; align-items: center; flex-direction: column; gap: 1px;
   color: var(--gold); border-color: #6a5a3a; touch-action: none;
 }
@@ -24,7 +24,9 @@ const CSS = `
 .pr-btn.pr-cool { opacity: .5; border-color: #4a4a4a; color: var(--mute); }
 .pr-btn i.pr-lbl { font-size: 10px; font-style: normal; letter-spacing: .1em; line-height: 1; }
 .pr-btn svg { display: block; }
-@media (pointer: coarse) { .pr-btn { display: inline-flex; } }
+/* 항상 보인다 (2026-09-20, 형: "웹에서 열었을때 버튼이 없어져있어" — ui/steady.ts 의 같은 주석). 마우스 화면에서는 단축키 F 를 적는다. */
+.pr-btn i.pr-key { display: none; font: 600 9px/1 var(--num); font-style: normal; color: var(--mute); letter-spacing: .04em; }
+@media (pointer: fine) { .pr-btn i.pr-key { display: block; } }
 /* 좁은 폰 — 패링이 한 자리를 더 먹는다. 둘을 조금 줄여 버튼 줄이 한 줄 더 늘지 않게 한다
    (줄 수가 곧 아래 띠의 높이이고, 띠가 두꺼워지면 버튼이 궁수를 덮는다 — render/camera.ts). */
 @media (max-width: 420px) { .pr-btn { width: 48px; height: 48px; } }
@@ -63,7 +65,8 @@ export function mountParry(o: Overlay, hit: (on: boolean) => void, ready: () => 
   // 이름은 **패링**이다 (2026-09-10, 형: "환도라고 하지 말고 패링이라고 하고").
   // 물건 이름(환도)은 세계의 말이지만, 버튼에 적히는 건 **지금 무엇을 하는가**여야 한다.
   btn.setAttribute('aria-label', '패링 — 날아오는 화살을 칼로 쳐서 되돌린다')
-  btn.innerHTML = `${ICON}<i class="pr-lbl">패링</i>`
+  btn.innerHTML = `${ICON}<i class="pr-lbl">패링</i><i class="pr-key">F</i>`
+  btn.title = '패링 — F. 날아오는 화살을 칼로 쳐서 되돌린다'
 
   /** 쉬는 중에 눌렀을 때 흐려지는 시간 (ms). 다음 누름까지 남은 시간과 무관한 짧은 신호다. */
   const COOL_FLASH_MS = 260

@@ -10,6 +10,7 @@
  *     corpses=200  시체를 look 마다 하나씩 세워 본다 (숫자 = 몇 프레임 뒤)
  *     armor=1  궁수에게 갑옷을 입힌다 (0 가죽 · 1 두정 · 2 찰갑)
  *     fire=8  한 발 쏘고 8틱 뒤 (날아가는 화살)
+ *     aimy=20 draw=1  위를 겨눈 채 당기고 있는 모습 (겨냥을 바꿔도 몸이 안 변하는지)
  *     hit=1  판정 덧그림 (초록 몸 · 노랑 급소)   fork=scout  갈림길 카드를 얹는다
  *   콘솔에서: shot(30, 120) 으로 다시 그린다.
  *
@@ -29,7 +30,8 @@ const q = new URLSearchParams(location.search)
 const canvas = document.getElementById('c') as HTMLCanvasElement
 const renderer = createRenderer(canvas)
 const hud: HudState = { training: 0, canLevelUp: false, muted: false, silent: false, toast: '', arrow: '', stars: -1, endReason: '', arrowRule: false, time: 0, bestTime: 0, record: false }
-const idle: InputFrame = { aimX: 30, aimY: 3, drawing: false, steady: false, parry: false }
+// aimy=N — 겨냥 높이 (m). 겨냥을 바꿔도 몸이 안 변하는지 볼 때 쓴다. draw=1 이면 당긴 채로 찍는다.
+const idle: InputFrame = { aimX: 30, aimY: Number(q.get('aimy') ?? 3), drawing: q.get('draw') !== null, steady: false, parry: false }
 
 function shot(stage: number, ticks: number): string {
   // fork=scout 처럼 갈림길 카드를 얹을 수 있다 — 척후(charger)는 카드로만 나온다.

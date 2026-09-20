@@ -16,7 +16,7 @@ import type { Overlay } from './overlay.ts'
 
 const CSS = `
 .st-btn {
-  display: none; width: 58px; height: 58px; padding: 0; border-radius: 50%;
+  display: inline-flex; width: 58px; height: 58px; padding: 0; border-radius: 50%;
   justify-content: center; align-items: center; flex-direction: column; gap: 1px;
   color: var(--teal); border-color: #4a5f5a; touch-action: none;
 }
@@ -27,7 +27,12 @@ const CSS = `
    자간을 0 으로 두고 한 급 줄여야 58px 원 안에서 한 줄로 앉는다. */
 .st-btn i.st-lbl { font-size: 9px; font-style: normal; letter-spacing: 0; line-height: 1; white-space: nowrap; }
 @media (max-width: 420px) { .st-btn i.st-lbl { font-size: 8px; } }
-@media (pointer: coarse) { .st-btn { display: inline-flex; } }
+/* ── 2026-09-20, 형: **"패링이랑 숨참기가 웹에서 열었을때 버튼이 없어져있어."** ──
+   처음부터 손가락 화면에서만 보이게 해 뒀었다 ("마우스로는 누른 채 조준을 못 하니 있으나 마나"). 틀린 판단이었다 —
+   버튼이 없으면 웹으로 연 사람은 숨참기가 **있는 줄도 모른다.** 이제 항상 보이고, 마우스 화면에서는 단축키를 적어 둔다.
+   버튼은 기능이기 전에 "이런 조작이 있다"는 안내다. */
+.st-btn i.st-key { display: none; font: 600 9px/1 var(--num); font-style: normal; color: var(--mute); letter-spacing: .04em; }
+@media (pointer: fine) { .st-btn i.st-key { display: block; } }
 /* 좁은 폰 — 환도가 한 자리를 더 먹는다. 둘을 조금 줄여 버튼 줄이 한 줄 더 늘지 않게 한다
    (줄 수가 곧 아래 띠의 높이이고, 띠가 두꺼워지면 버튼이 궁수를 덮는다 — render/camera.ts). */
 @media (max-width: 420px) { .st-btn { width: 48px; height: 48px; } }
@@ -42,7 +47,8 @@ export function mountSteady(o: Overlay, hold: (on: boolean) => void): void {
   btn.type = 'button'
   btn.className = 'hb-btn st-btn'
   btn.setAttribute('aria-label', '호흡정지 — 누르고 있는 동안 떨림이 멎는다')
-  btn.innerHTML = '<i class="hb-ic i-focus"></i><i class="st-lbl">숨참기</i>'
+  btn.innerHTML = '<i class="hb-ic i-focus"></i><i class="st-lbl">숨참기</i><i class="st-key">Shift</i>'
+  btn.title = '숨참기 — Shift 또는 우클릭을 누르고 있는 동안 떨림이 멎는다'
 
   const set = (on: boolean): void => {
     btn.classList.toggle('st-on', on)

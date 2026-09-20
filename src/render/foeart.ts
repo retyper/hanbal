@@ -20,14 +20,23 @@ interface FoeArt {
   readonly headV: number
   /** 발밑의 v. */
   readonly footV: number
+  /** 어깨 — 팔이 나오는 자리. 그림은 왼쪽을 본다. */
+  readonly shU: number
+  readonly shV: number
 }
 
+/**
+ * drawFoeArt 가 채우는 어깨의 화면 자리. ★ 팔은 여기서 나온다 (2026-09-20 두 번째 판).
+ * 첫 판은 그림을 겨냥각에 따라 기우는 머리에 못 박아서 적이 겨눌 때마다 늘었다 줄었고, 팔은 코드의 어깨에서 나와 몸과 따로 놀았다.
+ * sim 의 헤드샷 자리는 **곧게 선** 몸의 머리(target.y + r·archerHeadUp)다 — 기울기는 애초에 그림의 것이었다. 그래서 그림은 곧게 세운다.
+ */
+export const FOE_SH = { x: 0, y: 0 }
+
 const ART = {
-  archer: { headU: 0.5, headV: 0.112, footV: 0.985 },
-  armored: { headU: 0.485, headV: 0.112, footV: 0.985 },
-  gunner: { headU: 0.345, headV: 0.2, footV: 0.985 },
-  slinger: { headU: 0.43, headV: 0.108, footV: 0.985 },
-  scout: { headU: 0.35, headV: 0.245, footV: 0.985 },
+  archer: { headU: 0.5, headV: 0.112, footV: 0.985, shU: 0.47, shV: 0.31 },
+  armored: { headU: 0.485, headV: 0.112, footV: 0.985, shU: 0.5, shV: 0.31 },
+  gunner: { headU: 0.345, headV: 0.2, footV: 0.985, shU: 0.6, shV: 0.35 },
+  slinger: { headU: 0.43, headV: 0.108, footV: 0.985, shU: 0.62, shV: 0.3 },
 } as const satisfies Record<string, FoeArt>
 
 export type FoeArtName = keyof typeof ART
@@ -38,6 +47,7 @@ const RIM = { color: 'rgba(255, 96, 64, 0.95)', perHeight: 0.09, minPx: 4 } as c
 /** 미리 받아 둔다 — 안 그러면 적이 나온 첫 몇 프레임은 벡터였다가 그림으로 툭 바뀐다. */
 export function warmFoeArt(): void {
   for (const name of Object.keys(ART)) sprite(`foe-${name}`)
+  for (let i = 0; i < SCOUT.length; i++) sprite(`foe-scout-${i}`)
   sprite('foe-falcon-a')
   sprite('foe-falcon-b')
   for (const name of Object.keys(PROP)) sprite(name)
@@ -72,13 +82,65 @@ export function drawFoeArt(
   ctx.save()
   ctx.shadowColor = RIM.color
   ctx.shadowBlur = Math.max(RIM.minPx, dh * RIM.perHeight)
-  if (faceRight) {
-    ctx.translate(hx, hy)
-    ctx.scale(-1, 1)
-    ctx.drawImage(im, -art.headU * dw, -art.headV * dh, dw, dh)
-  } else {
-    ctx.drawImage(im, hx - art.headU * dw, hy - art.headV * dh, dw, dh)
-  }
+  const dir = faceRight ? -1 : 1
+  ctx.translate(hx, hy)
+  ctx.scale(dir, 1)
+  ctx.drawImage(im, -art.headU * dw, -art.headV * dh, dw, dh)
+  ctx.restore()
+  FOE_SH.x = hx + dir * (art.shU - art.headU) * dw
+  FOE_SH.y = hy + (art.shV - art.headV) * dh
+  return true
+}
+
+/**
+ * 그리지 않고 **어깨의 자리만** 구한다 — 팔·활의 자리는 몸보다 먼저 정해져야 해서 (foe.ts 는 어깨에서 그립을 뻗는다).
+ * 그림이 아직 안 떴으면 false. 인자는 drawFoeArt 와 같다.
+ */
+export function foeShoulder(name: FoeArtName, hx: number, hy: number, footY: number, faceRight: boolean): boolean {
+  const im = sprite(`foe-${name}`)
+  if (im === null) return false
+  const art = ART[name]
+  const span = (art.footV - art.headV) * im.naturalHeight
+  if (span <= 0 || footY <= hy) return false
+  const s = (footY - hy) / span
+  const dir = faceRight ? -1 : 1
+  FOE_SH.x = hx + dir * (art.shU - art.headU) * im.naturalWidth * s
+  FOE_SH.y = hy + (art.shV - art.headV) * im.naturalHeight * s
+  return true
+}
+
+/**
+ * 척후 — **칼을 내리치며 달려오는 4컷** (2026-09-20 두 번째 판, 형: "판떼기가 흔들려오는거같아. 칼을 휘두르며 달려오는 모션이어야해").
+ * 컷마다 자세가 달라 트림된 크기가 다르다 — srcH 는 원본에서의 키(px)라, 그걸로 **네 컷의 배율을 하나로** 맞춘다 (안 그러면 컷마다 사람이 커졌다 작아진다).
+ * 그림은 오른쪽을 본다. 기준점은 머리 — sim 의 헤드샷 자리에 못 박는다.
+ */
+const SCOUT = [
+  { headU: 0.65, headV: 0.284, srcH: 396 },
+  { headU: 0.586, headV: 0.128, srcH: 342 },
+  { headU: 0.572, headV: 0.126, srcH: 309 },
+  { headU: 0.808, headV: 0.164, srcH: 320 },
+] as const
+/** 원본에서 곧게 선 사람의 키 (px) — 주인공·적 시트와 같은 비례로 받았다. */
+const SCOUT_STAND = 360
+
+/** phase 는 달리기의 위상 (rad). tall 은 곧게 선 사람의 키 (px) — 다른 적과 같은 식으로 구한 값을 넘긴다. */
+export function drawScoutArt(
+  ctx: CanvasRenderingContext2D, phase: number, hx: number, hy: number, tall: number, faceLeft: boolean,
+): boolean {
+  const n = SCOUT.length
+  const i = ((Math.floor((phase / (Math.PI * 2)) * n) % n) + n) % n
+  const im = sprite(`foe-scout-${i}`)
+  if (im === null) return false
+  const f = SCOUT[i]
+  if (f === undefined) return false
+  const dh = tall * (f.srcH / SCOUT_STAND)
+  const dw = dh * (im.naturalWidth / im.naturalHeight)
+  ctx.save()
+  ctx.shadowColor = RIM.color
+  ctx.shadowBlur = Math.max(RIM.minPx, tall * RIM.perHeight)
+  ctx.translate(hx, hy)
+  ctx.scale(faceLeft ? -1 : 1, 1)
+  ctx.drawImage(im, -f.headU * dw, -f.headV * dh, dw, dh)
   ctx.restore()
   return true
 }
@@ -173,12 +235,41 @@ export function drawCorpseArt(
  */
 export const HERO_ART = true
 
-const HERO = {
-  plain: { headU: 0.5, headV: 0.1, footV: 0.995 },
-  a0: { headU: 0.5, headV: 0.1, footV: 0.995 },
-  a1: { headU: 0.47, headV: 0.1, footV: 0.995 },
-  a2: { headU: 0.5, headV: 0.1, footV: 0.995 },
-} as const satisfies Record<string, FoeArt>
+/**
+ * ★ 2026-09-20 두 번째 판 — 형: **"커서를 움직일때마다 캐릭터가 커졌다 작아졌다 하는 버그랑 어깨 위치가 고정되지 못하고
+ *   계속 팔이랑 몸통이 분리되는 문제"**, 그리고 **"활쏘는 자세가 아니라 너무 곧게 서있잖아."**
+ *
+ * 첫 판은 그림을 **머리**에 못 박았다. 그런데 스틱맨의 머리와 어깨는 겨냥각을 따라 턱 둘레를 돈다 (computeRig) —
+ * 그래서 〈머리 → 발〉 거리가 커서를 따라 변했고(= 그림이 늘었다 줄었다 했고), 그림의 어깨와 팔의 시작점이 따로 놀았다.
+ * 이제는 이렇다:
+ *   1. 그림은 **턱(앵커)** 에 못 박는다. 턱은 sim 의 고정점(ArcherState.x·y)이라 겨냥해도 안 움직인다.
+ *      크기는 〈턱 → 땅〉이고 둘 다 상수다 — 그림은 더 이상 숨을 쉬지 않는다.
+ *   2. 팔은 rig 의 어깨가 아니라 **그림의 어깨 두 점**에서 나온다 (HERO_SH). 손의 자리(그립·시위손)는 여전히 rig 의 것이라
+ *      당김과 겨냥은 그대로다. 달라진 것은 윗팔의 시작점 몇 cm 뿐이다.
+ *   3. 몸은 사법 자세로 다시 받았다 — 발을 넓게 딛고 가슴을 열고 머리만 과녁을 본다. 가슴이 보는 사람을 향하므로 어깨가 둘이다:
+ *      활팔은 과녁 쪽(화면 오른쪽) 어깨, 시위팔은 반대쪽 어깨.
+ */
+interface HeroArt {
+  /** 턱(앵커)의 자리 */
+  readonly jawU: number
+  readonly jawV: number
+  /** 활팔 어깨 (과녁 쪽) · 시위팔 어깨 */
+  readonly bowU: number
+  readonly strU: number
+  readonly shV: number
+  readonly footV: number
+}
+const STANCE: HeroArt = { jawU: 0.525, jawV: 0.199, bowU: 0.641, strU: 0.315, shV: 0.276, footV: 0.99 }
+const HERO: Record<'plain' | 'a0' | 'a1' | 'a2', HeroArt> = {
+  plain: STANCE,
+  a0: STANCE,
+  a1: STANCE,
+  /* 찰갑은 어깨 가리개가 있어 어깨가 조금 높고 넓다 */
+  a2: { ...STANCE, bowU: 0.643, strU: 0.306, shV: 0.262 },
+}
+
+/** drawHeroArt 가 채우는 두 어깨의 화면 자리. */
+export const HERO_SH = { bowX: 0, bowY: 0, strX: 0, strY: 0 }
 
 /** 그 갑옷의 그림이 있는가 — 없는 벌은 부르는 쪽이 벡터 몸을 그린다. */
 export function heroArtName(armorOn: boolean, armorLook: number): keyof typeof HERO | null {
@@ -188,23 +279,31 @@ export function heroArtName(armorOn: boolean, armorLook: number): keyof typeof H
   return name in HERO ? (name as keyof typeof HERO) : null
 }
 
-/** (hx, hy) 머리 중심의 화면 자리 · footY 발밑의 화면 y. 그림은 오른쪽을 본다 — faceLeft 면 뒤집는다. */
+/**
+ * (jawX, jawY) 턱의 화면 자리 · footY 발밑의 화면 y. 그림은 오른쪽을 본다 — faceLeft 면 뒤집는다.
+ * 그렸으면 true 이고, HERO_SH 에 두 어깨의 화면 자리가 들어 있다.
+ */
 export function drawHeroArt(
-  ctx: CanvasRenderingContext2D, name: keyof typeof HERO, hx: number, hy: number, footY: number, faceLeft: boolean,
+  ctx: CanvasRenderingContext2D, name: keyof typeof HERO, jawX: number, jawY: number, footY: number, faceLeft: boolean,
 ): boolean {
   const im = sprite(`hero-${name}`)
   if (im === null) return false
   const art = HERO[name]
-  const span = (art.footV - art.headV) * im.naturalHeight
-  if (span <= 0 || footY <= hy) return false
-  const s = (footY - hy) / span
+  const span = (art.footV - art.jawV) * im.naturalHeight
+  if (span <= 0 || footY <= jawY) return false
+  const s = (footY - jawY) / span
   const dw = im.naturalWidth * s
   const dh = im.naturalHeight * s
+  const dir = faceLeft ? -1 : 1
   ctx.save()
-  ctx.translate(hx, hy)
-  if (faceLeft) ctx.scale(-1, 1)
-  ctx.drawImage(im, -art.headU * dw, -art.headV * dh, dw, dh)
+  ctx.translate(jawX, jawY)
+  ctx.scale(dir, 1)
+  ctx.drawImage(im, -art.jawU * dw, -art.jawV * dh, dw, dh)
   ctx.restore()
+  HERO_SH.bowX = jawX + dir * (art.bowU - art.jawU) * dw
+  HERO_SH.strX = jawX + dir * (art.strU - art.jawU) * dw
+  HERO_SH.bowY = jawY + (art.shV - art.jawV) * dh
+  HERO_SH.strY = HERO_SH.bowY
   return true
 }
 
@@ -243,11 +342,14 @@ export function drawTargetArt(
  * 그림은 위가 몸 쪽 끝이다. upperCut 은 윗팔로 쓸 때 그림의 위에서 몇 할만 쓰는가 —
  * 산적은 윗팔 그림을 못 받아서 아랫팔 그림의 소매 부분(손목 감개 위)을 윗팔로 쓴다.
  */
+// ★ 2026-09-20 두 번째 판 — 형: "상박과 하박이 자연스럽게 이어지지 못하고 어긋나있어."
+//   윗팔 그림(헐렁한 비대칭 소매)과 아랫팔 그림(좁은 소매)이 폭도 중심선도 달라서 팔꿈치에서 턱이 졌다.
+//   이제 **같은 소매 그림**으로 위·아래를 잇는다 — 윗팔은 그 그림의 소매 부분(upperCut), 폭은 거의 같게.
 const ARM = {
-  hero: { upper: 'limb-hero-upper', upperCut: 1, upperW: 1.35, fore: 'limb-hero-fore', foreW: 1 },
-  foe: { upper: 'limb-foe-fore', upperCut: 0.66, upperW: 1.15, fore: 'limb-foe-fore', foreW: 1 },
-  gunner: { upper: 'limb-gunner-upper', upperCut: 1, upperW: 1.2, fore: 'limb-gunner-fore', foreW: 1.1 },
-  peasant: { upper: 'limb-hero-upper', upperCut: 1, upperW: 1.2, fore: 'limb-peasant-fore', foreW: 1.05 },
+  hero: { upper: 'limb-hero-fore', upperCut: 0.6, upperW: 1.08, fore: 'limb-hero-fore', foreW: 1 },
+  foe: { upper: 'limb-foe-fore', upperCut: 0.62, upperW: 1.08, fore: 'limb-foe-fore', foreW: 1 },
+  gunner: { upper: 'limb-gunner-fore', upperCut: 0.7, upperW: 1.08, fore: 'limb-gunner-fore', foreW: 1 },
+  peasant: { upper: 'limb-peasant-fore', upperCut: 0.34, upperW: 1.12, fore: 'limb-peasant-fore', foreW: 1 },
 } as const
 export type ArmSkin = keyof typeof ARM
 

@@ -32,7 +32,7 @@ import { P } from '../tune/params.ts'
 import { effectiveStats } from '../sim/bow.ts'
 import type { World } from '../sim/types.ts'
 import { THEME, worldToScreenX, worldToScreenY } from './camera.ts'
-import { drawArmArt, drawFistArt, drawHeroArt, heroArtName } from './foeart.ts'
+import { drawArmArt, drawFistArt, drawHeroArt, HERO_SH, heroArtName } from './foeart.ts'
 import { hudLeftBottom } from './hud.ts'
 import type { Camera } from './camera.ts'
 
@@ -497,6 +497,9 @@ const ARM_WIDE = 0.115
 
 /** 0 이면 팔을 선으로, 양수면 그 굵기(px)의 소매 그림으로 그린다. drawArcher 가 몸을 그림으로 그렸을 때만 켠다. */
 let armWide = 0
+/** 소매 그림일 때 팔이 시작하는 자리 (화면 px) — 그림의 어깨. 팔을 그리기 직전에 drawArcher 가 정한다. */
+let armFromX = 0
+let armFromY = 0
 
 function limb(
   ctx: CanvasRenderingContext2D, cam: Camera,
@@ -509,11 +512,20 @@ function limb(
   const jx = (x0 + x1) * 0.5 - dy * inv * bend
   const jy = (y0 + y1) * 0.5 + dx * inv * bend
   // 몸이 그림이면 팔도 소매 그림이다 (drawArcher 가 armWide 를 켠다). 관절의 자리는 위에서 구한 그대로다.
-  if (armWide > 0 && drawArmArt(
-    ctx, 'hero',
-    worldToScreenX(cam, x0), worldToScreenY(cam, y0), worldToScreenX(cam, jx), worldToScreenY(cam, jy),
-    worldToScreenX(cam, x1), worldToScreenY(cam, y1), armWide,
-  )) return
+  if (armWide > 0) {
+    // 팔은 **그림의 어깨**에서 나온다 (armFromX/Y — 화면 px). 팔꿈치는 그 어깨와 손 사이에서 같은 식으로 다시 구한다 —
+    // rig 의 어깨로 구한 팔꿈치를 그대로 쓰면 윗팔이 꺾여 보인다.
+    const ex = worldToScreenX(cam, x1)
+    const ey = worldToScreenY(cam, y1)
+    const bendPx = bend * cam.scale
+    const ddx = ex - armFromX
+    const ddy = ey - armFromY
+    const dl = Math.hypot(ddx, ddy) || 1
+    // 화면 y 는 아래로 + 라 굽는 쪽의 부호가 월드와 반대다.
+    const ejx = (armFromX + ex) * 0.5 + (ddy / dl) * bendPx
+    const ejy = (armFromY + ey) * 0.5 - (ddx / dl) * bendPx
+    if (drawArmArt(ctx, 'hero', armFromX, armFromY, ejx, ejy, ex, ey, armWide)) return
+  }
   ctx.beginPath()
   ctx.moveTo(worldToScreenX(cam, x0), worldToScreenY(cam, y0))
   ctx.lineTo(worldToScreenX(cam, jx), worldToScreenY(cam, jy))
@@ -757,8 +769,10 @@ export function drawArcher(
   //   아래에서 지금처럼 관절 위에 그린다. 그림의 머리를 이 머리 자리에 못 박고 발밑까지로 크기를 정한다.
   //   그림이 안 떴거나(로딩·헤드리스) 그 갑옷의 그림이 없으면 아래 벡터 몸이 선다.
   const heroName = heroArtName(w.armor > 0 && w.armorMax > 0, w.armorLook)
+  // ★ 못 박는 점은 머리가 아니라 **턱(rig.ax, rig.ay)** 이고 발밑은 땅(y = 0)이다 — 둘 다 겨냥과 무관한 상수라
+  //   커서를 움직여도 그림이 늘었다 줄었다 하지 않는다 (2026-09-20 두 번째 판, foeart.ts 의 주석).
   const heroArt = heroName !== null && drawHeroArt(
-    ctx, heroName, worldToScreenX(cam, headX), worldToScreenY(cam, headY), worldToScreenY(cam, footY), face < 0,
+    ctx, heroName, worldToScreenX(cam, rig.ax), worldToScreenY(cam, rig.ay), worldToScreenY(cam, 0), face < 0,
   )
   // 팔도 그림이다 — 굵기는 몸 그림에 맞춘다 (소매 폭 ≈ 0.115m).
   armWide = heroArt ? cam.scale * ARM_WIDE : 0
@@ -923,6 +937,8 @@ export function drawArcher(
     // 활팔은 어깨에서 활 그립까지 **곧게** 뻗는다 (FORM.md 2-4). 굽는 건 잠금이 풀렸을 때(strain)와
     // 무너질 때(warn)뿐이다. 당김이 얕다고 앞팔을 굽히지 않는다 — 초보의 미숙함은 시위손이
     // 턱까지 못 오는 것으로 이미 말하고 있고, 여기까지 굽히면 그냥 자세가 틀린 그림이 된다.
+    armFromX = HERO_SH.bowX
+    armFromY = HERO_SH.bowY
     limb(
       ctx, cam, rig.sx, rig.sy, rig.hx, rig.hy,
       -BODY.armBend * (unlock * P.render.poseStrainArm + warn * POSE.warnArm),
@@ -1079,9 +1095,11 @@ export function drawArcher(
     // 팔은 시위가 아니라 **손**을 따른다 — 놓은 뒤 시위는 튕겨 돌아가도 팔은 남는다.
     const elbowX = rig.hdX - rig.ux * BODY.elbowBack + rig.vx * elbowRise
     const elbowY = rig.hdY - rig.uy * BODY.elbowBack + rig.vy * elbowRise
+    // 시위팔은 **반대쪽 어깨**에서 나온다 (가슴을 연 자세라 어깨가 둘이다). 팔꿈치는 rig 의 것 그대로 —
+    // 활손 → 노크 → 팔꿈치가 한 직선이라는 사법의 핵심(FORM.md 2-5)이 거기 있다.
     if (!(armWide > 0 && drawArmArt(
       ctx, 'hero',
-      worldToScreenX(cam, rig.sx), worldToScreenY(cam, rig.sy), worldToScreenX(cam, elbowX), worldToScreenY(cam, elbowY),
+      HERO_SH.strX, HERO_SH.strY, worldToScreenX(cam, elbowX), worldToScreenY(cam, elbowY),
       worldToScreenX(cam, rig.hdX), worldToScreenY(cam, rig.hdY), armWide,
     ))) {
     ctx.beginPath()
@@ -1250,9 +1268,13 @@ export function drawArcher(
         //   팔이 칼을 안 따라가면 칼만 허공에서 도는 그림이 된다 — 형이 본 그 그림이다.
         ctx.strokeStyle = THEME.bodyDim
         ctx.lineWidth = backW
+        armFromX = HERO_SH.strX
+        armFromY = HERO_SH.strY
         limb(ctx, cam, rig.sx, rig.sy, gx, gy, SWORD.armBend)
         ctx.strokeStyle = bodyCol
         ctx.lineWidth = limbW
+        armFromX = HERO_SH.bowX
+        armFromY = HERO_SH.bowY
         limb(ctx, cam, rig.sx, rig.sy, gx, gy, -SWORD.armBend)
         // ── 날 — 두 겹. 바깥은 강철빛, 안쪽 한 줄은 흰빛. 두 겹이라야 "번쩍"이 된다.
         ctx.lineCap = "round"

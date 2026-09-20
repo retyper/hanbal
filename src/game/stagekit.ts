@@ -9,6 +9,7 @@
  * 레이어: game 의 leaf 다. sim 의 타입만 읽고 아무것도 import 하지 않는다.
  */
 import { clamp } from '../core/math.ts'
+import { P } from '../tune/params.ts'
 import type { StageDef, TargetKind, TargetSpec } from '../sim/types.ts'
 
 /**
@@ -115,7 +116,10 @@ export function specOf(h: number, s: Spot): TargetSpec {
     kind,
     x: s.x,
     y: s.y,
-    r: h * d * (s.size ?? 1),
+    // 달려오는 놈(charger)은 **사람**이다 — 각크기 규칙이 키 0.45m 짜리 아이를 만들고 있었다 (2026-09-20, params.ts foeMaxR).
+    r: kind === 'charger'
+      ? Math.min(P.enemy.foeMaxR, Math.max(P.enemy.foeMinR, h * d * (s.size ?? 1)))
+      : h * d * (s.size ?? 1),
     // 화약 상자는 점수를 안 준다 — 값은 그 폭발이 끊는 것들이 낸다 (sim/types.ts 'barrel').
     score: kind === 'barrel' ? 0 : BASE_SCORE,
   }

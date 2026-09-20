@@ -21,7 +21,7 @@
 import { TAU } from '../core/math.ts'
 import { P } from '../tune/params.ts'
 import { THEME } from './camera.ts'
-import { drawArmArt, drawFistArt, drawFoeArt } from './foeart.ts'
+import { drawArmArt, drawFistArt, drawFoeArt, drawScoutArt, FOE_SH, foeShoulder } from './foeart.ts'
 
 /**
  * 체격·활 — 전부 과녁 반경(rx, ry) 대비 비율이다. 줌이 바뀌어도 비례가 유지된다.
@@ -62,8 +62,12 @@ const F = {
   fist: 0.8,
   /** 소매 그림의 굵기 (rx 대비) — 몸 그림의 어깨 폭에 맞춘 **그림의 치수**다. */
   armWide: 0.3,
-  /** 창가의 사수 — 그림의 발밑을 둘 자리 (ry 대비). 클수록 사람이 커지고 상체만 보인다. */
-  windowFoot: 2.5,
+  /**
+   * 창가의 사수 — 그림의 발밑을 둘 자리 (ry 대비). 1 이면 땅의 적과 **같은 배율**이다.
+   * 첫 판은 2.5 였다 (반경이 0.5m 까지 내려가던 때라 그래야 상체가 보였다). 반경이 사람 크기로 모인 지금은
+   * 같은 배율로 그려도 머리와 가슴이 창에 들어오고, 그래야 창가의 사수만 거인이 되지 않는다. 다리는 창틀이 자른다.
+   */
+  windowFoot: 1,
   /** 다리 — 골반 높이(ry 대비)와 보폭 */
   hip: 0.3,
   stance: 0.34,
@@ -107,8 +111,14 @@ export function drawFoeArcher(
   const thin = Math.max(1.2, rx * 0.07)
 
   // 어깨 — 두 팔의 회전축.
-  const shX = x + vx * ry * F.shoulder
-  const shY = y + vy * ry * F.shoulder
+  // ★ 몸이 그림이면 **곧게 세우고** 팔은 그림의 어깨에서 낸다 (2026-09-20 두 번째 판, foeart.ts FOE_SH 의 주석).
+  //   sim 의 헤드샷 자리는 곧게 선 머리다 — 겨냥각을 따라 기우는 것은 애초에 그림의 것이었고, 그게 그림을 늘였다 줄였다.
+  const artName = armored ? 'armored' as const : 'archer' as const
+  const artHy = y - rx * P.enemy.archerHeadUp
+  const artFoot = y + ry * (legs ? 1 : F.windowFoot)
+  const upright = foeShoulder(artName, x, artHy, artFoot, ux > 0)
+  const shX = upright ? FOE_SH.x : x + vx * ry * F.shoulder
+  const shY = upright ? FOE_SH.y : y + vy * ry * F.shoulder
   // 턱(앵커) — 만작에서 시위손이 오는 자리.
   const ax = shX + ux * rx * F.jawFwd + vx * rx * F.jawUp
   const ay = shY + uy * rx * F.jawFwd + vy * rx * F.jawUp
@@ -125,14 +135,14 @@ export function drawFoeArcher(
   }
   // 머리 — 몸통 **중심**에서 곧장 잰다(어깨를 안 거친다). sim/target.ts의 헤드샷 판정이
   // 정확히 이 식(target.y + target.r * archerHeadUp)이라, 그림과 판정이 같은 자리를 본다.
-  const hx = x + vx * rx * P.enemy.archerHeadUp
-  const hy = y + vy * rx * P.enemy.archerHeadUp
+  const hx = upright ? x : x + vx * rx * P.enemy.archerHeadUp
+  const hy = upright ? artHy : y + vy * rx * P.enemy.archerHeadUp
   const hr = Math.max(2, rx * P.enemy.archerHeadR)
   // ★ 몸은 **그림**이다 (2026-09-20, render/foeart.ts) — 머리를 헤드샷 자리에 못 박고 발밑까지로 크기를 정한다.
   //   창가의 사수도 같은 크기로 그리고 창틀이 아래를 자른다. 팔·활은 아래에서 그대로 절차적으로 그린다.
   //   창가의 사수(legs=false)는 **상체만** 보여야 한다 (형: "최소 적군사람 머리랑 상체 나올만큼은 크게") —
   //   발밑을 창턱 한참 아래에 두면 그림이 커지고 다리는 창틀이 자른다.
-  const art = drawFoeArt(ctx, armored ? 'armored' : 'archer', hx, hy, y + ry * (legs ? 1 : F.windowFoot), ux > 0)
+  const art = upright && drawFoeArt(ctx, artName, x, artHy, artFoot, ux > 0)
   ctx.strokeStyle = col
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
@@ -340,19 +350,12 @@ export function drawFoeRusher(
   const shX = x + dir * rx * 0.34
   const shY = y - ry * 0.42 - bob
 
-  // ★ 몸은 그림이다 (render/foeart.ts) — 척후는 칼을 치켜든 통짜 한 장이다 (겨누는 팔이 없는 적이라 굳혀도 된다).
-  //   머리를 헤드샷 자리에 못 박는 것은 같고, 달리는 맛은 위아래 흔들림(bob)과 앞뒤 기울임이 낸다.
+  // ★ 몸은 그림이다 (render/foeart.ts drawScoutArt) — **칼을 내리치며 달려오는 4컷**. 달리기의 위상(phase)이 컷을 고른다.
+  //   머리를 sim 의 헤드샷 자리(몸 중심 위)에 못 박고, 키는 다른 적과 같은 식(머리 → 발밑)에서 나온다.
   {
-    // 머리는 **sim 의 헤드샷 자리 그대로** (몸 중심 위). 벡터 척후는 머리를 앞으로 빼서 그렸는데 판정은 거기 없었다.
-    const ahx = x
     const ahy = y - rx * P.enemy.archerHeadUp - bob
-    ctx.save()
-    ctx.translate(x, footY)
-    ctx.rotate(sw * 0.06 * dir)
-    ctx.translate(-x, -footY)
-    const done = drawFoeArt(ctx, 'scout', ahx, ahy, footY, dir > 0)
-    ctx.restore()
-    if (done) return
+    const tall = (footY - (y - rx * P.enemy.archerHeadUp)) / 0.89
+    if (drawScoutArt(ctx, phase, x, ahy, tall, dir < 0)) return
   }
   ctx.save()
   ctx.lineCap = 'round'
@@ -469,8 +472,14 @@ export function drawFoeGunner(
   if (vy > 0) { vx = -vx; vy = -vy }
 
   const lw = Math.max(2, rx * 0.14)
-  const shX = x + vx * ry * F.shoulder
-  const shY = y + vy * ry * F.shoulder
+  // ★ 몸이 그림이면 **곧게 세우고** 팔은 그림의 어깨에서 낸다 (2026-09-20 두 번째 판, foeart.ts FOE_SH 의 주석).
+  //   sim 의 헤드샷 자리는 곧게 선 머리다 — 겨냥각을 따라 기우는 것은 애초에 그림의 것이었고, 그게 그림을 늘였다 줄였다.
+  const artName = 'gunner' as const
+  const artHy = y - rx * P.enemy.archerHeadUp
+  const artFoot = y + ry * (legs ? 1 : F.windowFoot)
+  const upright = foeShoulder(artName, x, artHy, artFoot, ux > 0)
+  const shX = upright ? FOE_SH.x : x + vx * ry * F.shoulder
+  const shY = upright ? FOE_SH.y : y + vy * ry * F.shoulder
 
   ctx.save()
   if (clip !== null) {
@@ -478,11 +487,11 @@ export function drawFoeGunner(
     ctx.rect(clip.x, clip.y, clip.w, clip.h)
     ctx.clip()
   }
-  const hx = x + vx * rx * P.enemy.archerHeadUp
-  const hy = y + vy * rx * P.enemy.archerHeadUp
+  const hx = upright ? x : x + vx * rx * P.enemy.archerHeadUp
+  const hy = upright ? artHy : y + vy * rx * P.enemy.archerHeadUp
   const hr = Math.max(2, rx * P.enemy.archerHeadR)
   // 몸은 그림이다 (render/foeart.ts) — 궁수와 같은 규칙. 무기와 팔은 아래에서 그대로 절차적으로 그린다.
-  const art = drawFoeArt(ctx, 'gunner', hx, hy, y + ry * (legs ? 1 : F.windowFoot), ux > 0)
+  const art = upright && drawFoeArt(ctx, artName, x, artHy, artFoot, ux > 0)
   if (!art) {
   ctx.strokeStyle = col
   ctx.lineCap = 'round'
@@ -623,8 +632,14 @@ export function drawFoeSlinger(
   if (vy > 0) { vx = -vx; vy = -vy }
 
   const lw = Math.max(2, rx * 0.14)
-  const shX = x + vx * ry * F.shoulder
-  const shY = y + vy * ry * F.shoulder
+  // ★ 몸이 그림이면 **곧게 세우고** 팔은 그림의 어깨에서 낸다 (2026-09-20 두 번째 판, foeart.ts FOE_SH 의 주석).
+  //   sim 의 헤드샷 자리는 곧게 선 머리다 — 겨냥각을 따라 기우는 것은 애초에 그림의 것이었고, 그게 그림을 늘였다 줄였다.
+  const artName = 'slinger' as const
+  const artHy = y - rx * P.enemy.archerHeadUp
+  const artFoot = y + ry * (legs ? 1 : F.windowFoot)
+  const upright = foeShoulder(artName, x, artHy, artFoot, ux > 0)
+  const shX = upright ? FOE_SH.x : x + vx * ry * F.shoulder
+  const shY = upright ? FOE_SH.y : y + vy * ry * F.shoulder
 
   ctx.save()
   if (clip !== null) {
@@ -632,11 +647,11 @@ export function drawFoeSlinger(
     ctx.rect(clip.x, clip.y, clip.w, clip.h)
     ctx.clip()
   }
-  const hx = x + vx * rx * P.enemy.archerHeadUp
-  const hy = y + vy * rx * P.enemy.archerHeadUp
+  const hx = upright ? x : x + vx * rx * P.enemy.archerHeadUp
+  const hy = upright ? artHy : y + vy * rx * P.enemy.archerHeadUp
   const hr = Math.max(2, rx * P.enemy.archerHeadR)
   // 몸은 그림이다 (render/foeart.ts) — 궁수와 같은 규칙. 무기와 팔은 아래에서 그대로 절차적으로 그린다.
-  const art = drawFoeArt(ctx, 'slinger', hx, hy, y + ry * (legs ? 1 : F.windowFoot), ux > 0)
+  const art = upright && drawFoeArt(ctx, artName, x, artHy, artFoot, ux > 0)
   if (!art) {
   ctx.strokeStyle = col
   ctx.lineCap = 'round'

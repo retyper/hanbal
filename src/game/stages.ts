@@ -345,7 +345,10 @@ function convertToFoes(base: StageDef, i: number): StageDef {
     //   반경에는 **하한이 있다** (2026-08-31, 형: "창문이 너무 작아서 적이 거의 안보이는").
     //   각크기 규칙은 먼 적을 살리는 규칙이지 가까운 적을 점으로 만드는 규칙이 아니다.
     //   창은 이 r에서 나오므로(render/buildings.ts) r이 작으면 창도 사람도 같이 작아진다.
-    const fr = Math.max(P.enemy.foeMinR, (t.r ?? 0.6) * P.enemy.foeR)
+    //   그리고 **상한도 있다** (2026-09-20) — 사람은 사람 크기다. 각크기 규칙이 3m 짜리 거인을 만들면 안 된다 (params.ts foeMaxR).
+    //   화차는 물건이라 이 상한을 안 받는다 (아래 hwR 은 상한 전의 값에서 나온다).
+    const frRaw = Math.max(P.enemy.foeMinR, (t.r ?? 0.6) * P.enemy.foeR)
+    const fr = Math.min(P.enemy.foeMaxR, frRaw)
     if (n >= GUNNER_FROM && f === gunnerAt) {
       // 총통수 — 정확하고(aimMul) 자주 쏜다. 대신 한 발씩이고, 곧게 오므로 막힌다.
       // **땅에 선다** (y = 반경) — 총통을 어깨에 얹고 쏘는 군졸이지 창가의 저격수가 아니다.
@@ -361,7 +364,7 @@ function convertToFoes(base: StageDef, i: number): StageDef {
     }
     if (isHwacha) {
       // y = 반경. 수레는 **땅을 딛는다** (형: "화차는 대체 왜 공중을 쳐 날라다니고 있는거냐?").
-      const hwR = fr * 1.25
+      const hwR = frRaw * 1.25
       specs.push({ kind: 'archer', look: 4, x: t.x, y: hwR, r: hwR, volley: Math.floor(P.enemy.volleyShots), ...common, firePeriod: period * P.enemy.hwachaPeriodMul, score: 200 })
     } else if (t.kind === 'aerial') {
       specs.push({ kind: 'archer', look: 3, x: t.x, y: t.y, r: fr, ampX: 1.4, freq: 0.18, ...common })
@@ -642,7 +645,8 @@ function bossStage(i: number): StageDef {
   for (let e = 0; e < escorts; e++) {
     targets.push({
       kind: 'archer', look: 1, score: 120,
-      x: reach * rng.range(0.35, 0.6), y: rng.range(1.2, 4.5), r: 0.6,
+      // 호위도 사람 크기다 (2026-09-20, params.ts foeMaxR) — 예전엔 0.6 으로 못박아 다른 사수보다 작았다.
+      x: reach * rng.range(0.35, 0.6), y: rng.range(1.2, 4.5), r: P.enemy.foeMinR,
       hp: Math.floor(P.enemy.convertHp),
       fireDelay: P.enemy.windup + 3 + e * 2,
       firePeriod: P.enemy.shootEvery * 2.2,
