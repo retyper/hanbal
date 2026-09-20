@@ -989,6 +989,39 @@ export function drawArcher(
       tipBy = baseBy + ((-rig.vy * (1 - f) + rig.uy * f) / nA) * syLen
     }
 
+    // ★ **시위는 언제나 활보다 뒤에 그린다** (2026-09-20, 형: "활줄은 활보다 항상 뒤에 렌더링 되게 바꿔").
+    //   그래서 활의 선·그림보다 먼저 온다. 컴파운드의 케이블도 줄이므로 여기서 같이 긋는다.
+    // 시위 — 몸보다 훨씬 얇다. 고자 끝에 걸린다.
+    // 당기는 동안만 노크로 꺾인다. 놓으면 **시위만** 제자리로 튕겨 돌아가 잠깐 잔떨림이 남는다 —
+    // 손은 위의 팔로스루가 따로 데려간다 (형: "활줄만 튕겨 돌아오고").
+    ctx.strokeStyle = rig.flash > ON.flash ? THEME.target2 : THEME.string
+    ctx.lineWidth = Math.max(lw * LINE.stringMul, thinPx)
+    ctx.beginPath()
+    ctx.moveTo(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy))
+    const strDrawing = a.phase === 'drawing' || a.phase === 'full' || a.phase === 'collapsing'
+    if (strDrawing) {
+      ctx.lineTo(worldToScreenX(cam, rig.nockX), worldToScreenY(cam, rig.nockY))
+    } else {
+      const vt = relAnim.at >= 0 ? Math.max(0, w.elapsed - relAnim.at) : 1e9
+      if (vt < P.release.vibDecay * 3) {
+        // 잔떨림 — 시위 중앙이 u축으로 감쇠 진동한다. 이게 "튕겨 돌아왔다"의 마침표다.
+        const amp = P.release.vib * Math.exp(-vt / P.release.vibDecay) * Math.sin(vt * P.release.vibHz * TAU)
+        const mx = (tipAx + tipBx) * 0.5 + rig.ux * amp
+        const my = (tipAy + tipBy) * 0.5 + rig.uy * amp
+        ctx.lineTo(worldToScreenX(cam, mx), worldToScreenY(cam, my))
+      }
+    }
+    ctx.lineTo(worldToScreenX(cam, tipBx), worldToScreenY(cam, tipBy))
+    ctx.stroke()
+
+    if (skin.cam > 0) {
+      // 컴파운드 — 캠(도르래)과 팁 사이를 가로지르는 케이블. 이게 보여야 "기계 활"로 읽힌다.
+      ctx.beginPath()
+      ctx.moveTo(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy))
+      ctx.lineTo(worldToScreenX(cam, tipBx), worldToScreenY(cam, tipBy))
+      ctx.stroke()
+    }
+
     // 만작에 닿는 순간만 밝게 튄다. 당김(고요) → 만작(떨림) 전환의 신호.
     ctx.strokeStyle = warn > ON.warn
       ? (BOW_RAMP[ramp] ?? THEME.bow)
@@ -1075,35 +1108,8 @@ export function drawArcher(
     ctx.fill()
     }
 
-    // 시위 — 몸보다 훨씬 얇다. 고자 끝에 걸린다.
-    // 당기는 동안만 노크로 꺾인다. 놓으면 **시위만** 제자리로 튕겨 돌아가 잠깐 잔떨림이 남는다 —
-    // 손은 위의 팔로스루가 따로 데려간다 (형: "활줄만 튕겨 돌아오고").
-    ctx.strokeStyle = rig.flash > ON.flash ? THEME.target2 : THEME.string
-    ctx.lineWidth = Math.max(lw * LINE.stringMul, thinPx)
-    ctx.beginPath()
-    ctx.moveTo(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy))
-    const strDrawing = a.phase === 'drawing' || a.phase === 'full' || a.phase === 'collapsing'
-    if (strDrawing) {
-      ctx.lineTo(worldToScreenX(cam, rig.nockX), worldToScreenY(cam, rig.nockY))
-    } else {
-      const vt = relAnim.at >= 0 ? Math.max(0, w.elapsed - relAnim.at) : 1e9
-      if (vt < P.release.vibDecay * 3) {
-        // 잔떨림 — 시위 중앙이 u축으로 감쇠 진동한다. 이게 "튕겨 돌아왔다"의 마침표다.
-        const amp = P.release.vib * Math.exp(-vt / P.release.vibDecay) * Math.sin(vt * P.release.vibHz * TAU)
-        const mx = (tipAx + tipBx) * 0.5 + rig.ux * amp
-        const my = (tipAy + tipBy) * 0.5 + rig.uy * amp
-        ctx.lineTo(worldToScreenX(cam, mx), worldToScreenY(cam, my))
-      }
-    }
-    ctx.lineTo(worldToScreenX(cam, tipBx), worldToScreenY(cam, tipBy))
-    ctx.stroke()
-
     if (skin.cam > 0) {
-      // 컴파운드 — 캠(도르래)과 팁 사이를 가로지르는 케이블. 이게 보여야 "기계 활"로 읽힌다.
-      ctx.beginPath()
-      ctx.moveTo(worldToScreenX(cam, tipAx), worldToScreenY(cam, tipAy))
-      ctx.lineTo(worldToScreenX(cam, tipBx), worldToScreenY(cam, tipBy))
-      ctx.stroke()
+      // 컴파운드의 캠(도르래) — 케이블은 시위와 함께 활 뒤에 이미 그었다.
       const r = Math.max(bowW * 1.6, 2.5 * shrink)
       ctx.fillStyle = skin.color
       ctx.beginPath()

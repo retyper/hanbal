@@ -21,7 +21,7 @@
 import { TAU } from '../core/math.ts'
 import { P } from '../tune/params.ts'
 import { THEME } from './camera.ts'
-import { drawArmArt, drawFistArt, drawFoeArt, drawScoutArt, FOE_SH, foeShoulder } from './foeart.ts'
+import { BOW_PATH, drawArmArt, drawArrowArt, drawBowArt, drawFistArt, drawFoeArt, drawGunArt, drawScoutArt, drawStoneArt, FOE_SH, foeShoulder } from './foeart.ts'
 
 /**
  * 체격·활 — 전부 과녁 반경(rx, ry) 대비 비율이다. 줌이 바뀌어도 비례가 유지된다.
@@ -60,8 +60,17 @@ const F = {
   arrow: 1.9,
   /** 주먹 반지름 (선 굵기 배수) */
   fist: 0.8,
+  /**
+   * 몸이 그림일 때의 턱 — **곧게 선 머리**에서 잰다 (rx 대비: 앞으로 · 아래로). 어깨에서 겨냥각을 따라 재면
+   * 시위손이 눈 위로 올라와 소매가 얼굴을 덮는다 (2026-09-20, 줄 세워 보고 찾은 것).
+   */
+  artJawFwd: 0.1,
+  artJawDown: 0.3,
+  /** 그림 활의 시위 굵기 · 물린 화살의 굵기 배율 */
+  artString: 0.03,
+  artArrowFat: 0.5,
   /** 소매 그림의 굵기 (rx 대비) — 몸 그림의 어깨 폭에 맞춘 **그림의 치수**다. */
-  armWide: 0.3,
+  armWide: 0.135,
   /**
    * 창가의 사수 — 그림의 발밑을 둘 자리 (ry 대비). 1 이면 땅의 적과 **같은 배율**이다.
    * 첫 판은 2.5 였다 (반경이 0.5m 까지 내려가던 때라 그래야 상체가 보였다). 반경이 사람 크기로 모인 지금은
@@ -79,6 +88,8 @@ const ARMOR = '#8fa3b5'
 const CROWN = '#ffd35c'
 const ARMOR_LINE = '#373e4b'
 const ARROW_COL = '#e8dcc0'
+/** 그림 활의 시위 — 삼베 줄의 빛. 몸 색(위협색)으로 그으면 그림 위에 빨간 선이 뜬다. */
+const STRING_COL = '#d9cfb6'
 /** 칼날 — 쇳빛. 몸색과 같으면 팔이 하나 더 달린 것으로 보인다 (drawFoeRusher). */
 const BLADE = '#c8d2dc'
 
@@ -120,8 +131,8 @@ export function drawFoeArcher(
   const shX = upright ? FOE_SH.x : x + vx * ry * F.shoulder
   const shY = upright ? FOE_SH.y : y + vy * ry * F.shoulder
   // 턱(앵커) — 만작에서 시위손이 오는 자리.
-  const ax = shX + ux * rx * F.jawFwd + vx * rx * F.jawUp
-  const ay = shY + uy * rx * F.jawFwd + vy * rx * F.jawUp
+  const ax = upright ? x + Math.sign(ux) * rx * F.artJawFwd : shX + ux * rx * F.jawFwd + vx * rx * F.jawUp
+  const ay = upright ? artHy + rx * F.artJawDown : shY + uy * rx * F.jawFwd + vy * rx * F.jawUp
   // 활손(그립) — 어깨에서 조준선으로 곧게 뻗은 팔 끝. **당김이 이 점을 옮기지 않는다.**
   const gx = shX + ux * rx * F.reach + vx * rx * F.gripUp
   const gy = shY + uy * rx * F.reach + vy * rx * F.gripUp
@@ -254,24 +265,16 @@ export function drawFoeArcher(
   const cV = rV + (limbV - rV) * F.ctrlV
   const cU = back * F.ctrlBack
 
-  ctx.lineWidth = Math.max(1.5, rx * 0.1)
-  ctx.beginPath()
-  ctx.moveTo(tAx, tAy)
-  ctx.quadraticCurveTo(gx + vx * cV - ux * cU, gy + vy * cV - uy * cU, gx + vx * rV, gy + vy * rV)
-  ctx.lineTo(gx - vx * rV, gy - vy * rV)
-  ctx.quadraticCurveTo(gx - vx * cV - ux * cU, gy - vy * cV - uy * cU, tBx, tBy)
-  ctx.stroke()
-
   // 시위손 — 당김 0이면 시위 그 자리, 예고가 깊어질수록 턱으로 온다.
   const rx0 = gx - ux * back
   const ry0 = gy - uy * back
   const dx = rx0 + (ax - rx0) * drawF
   const dy = ry0 + (ay - ry0) * drawF
 
-  // 시위 — 두 고자 끝에서 시위손으로 꺾인다.
-  ctx.lineWidth = thin
-  ctx.strokeStyle = col
-  ctx.globalAlpha = 0.75
+  // 시위 — 두 고자 끝에서 시위손으로 꺾인다. ★ **시위는 언제나 활보다 뒤에** 그린다 (2026-09-20, 형의 주문).
+  ctx.lineWidth = art ? Math.max(1, rx * F.artString) : thin
+  ctx.strokeStyle = art ? STRING_COL : col
+  ctx.globalAlpha = art ? 0.9 : 0.75
   ctx.beginPath()
   ctx.moveTo(tAx, tAy)
   ctx.lineTo(dx, dy)
@@ -279,8 +282,49 @@ export function drawFoeArcher(
   ctx.stroke()
   ctx.globalAlpha = 1
 
+  // 활 — 몸이 그림이면 활도 **휘는 그림**이다 (foeart.ts drawBowArt · 주인공과 같은 리깅). 경로는 아래 선과 같다.
+  let bowArt = false
+  if (art) {
+    const cAx = gx + vx * cV - ux * cU
+    const cAy = gy + vy * cV - uy * cU
+    const cBx = gx - vx * cV - ux * cU
+    const cBy = gy - vy * cV - uy * cU
+    const rAx = gx + vx * rV
+    const rAy = gy + vy * rV
+    const rBx = gx - vx * rV
+    const rBy = gy - vy * rV
+    BOW_PATH[0] = tAx
+    BOW_PATH[1] = tAy
+    for (let q = 1; q <= 7; q++) {
+      const t = q / 7
+      const a0 = (1 - t) * (1 - t)
+      const a1 = 2 * (1 - t) * t
+      const a2 = t * t
+      BOW_PATH[q * 2] = a0 * tAx + a1 * cAx + a2 * rAx
+      BOW_PATH[q * 2 + 1] = a0 * tAy + a1 * cAy + a2 * rAy
+      BOW_PATH[(8 + q) * 2] = a0 * rBx + a1 * cBx + a2 * tBx
+      BOW_PATH[(8 + q) * 2 + 1] = a0 * rBy + a1 * cBy + a2 * tBy
+    }
+    BOW_PATH[16] = rBx
+    BOW_PATH[17] = rBy
+    // 활의 배(그림의 오른쪽)가 겨누는 쪽을 봐야 한다 — 적은 왼쪽을 겨누므로 뒤집는다.
+    bowArt = drawBowArt(ctx, 'gakgung', ux < 0)
+  }
+  if (!bowArt) {
+  ctx.strokeStyle = col
+  ctx.lineWidth = Math.max(1.5, rx * 0.1)
+  ctx.beginPath()
+  ctx.moveTo(tAx, tAy)
+  ctx.quadraticCurveTo(gx + vx * cV - ux * cU, gy + vy * cV - uy * cU, gx + vx * rV, gy + vy * rV)
+  ctx.lineTo(gx - vx * rV, gy - vy * rV)
+  ctx.quadraticCurveTo(gx - vx * cV - ux * cU, gy - vy * cV - uy * cU, tBx, tBy)
+  ctx.stroke()
+  }
+
   // 물린 화살 — 예고 동안만. 날아올 것이 **미리 보인다**는 게 이 게임의 계약이다.
-  if (drawF > 0.02) {
+  if (drawF > 0.02 && art && drawArrowArt(ctx, 'enemy', dx, dy, dx + ux * rx * F.arrow, dy + uy * rx * F.arrow, F.artArrowFat)) {
+    // 물린 화살도 그림이다 — 날아올 그것과 같은 살.
+  } else if (drawF > 0.02) {
     ctx.strokeStyle = ARROW_COL
     ctx.lineWidth = Math.max(1.2, rx * 0.075)
     ctx.beginPath()
@@ -337,6 +381,8 @@ export function drawFoeRusher(
   ctx: CanvasRenderingContext2D,
   x: number, y: number, rx: number, ry: number,
   dir: number, phase: number, col: string,
+  /** 그림의 컷을 고르는 위상 (간 거리에서 온다) · 발밑의 땅 (화면 y). 안 주면 예전대로 시계와 몸 중심에서 잰다. */
+  stride = phase, soleY = y + ry,
 ): void {
   const lw = Math.max(2, rx * 0.14)
   const sw = Math.sin(phase)      // 다리·팔의 흔들림
@@ -353,9 +399,10 @@ export function drawFoeRusher(
   // ★ 몸은 그림이다 (render/foeart.ts drawScoutArt) — **칼을 내리치며 달려오는 4컷**. 달리기의 위상(phase)이 컷을 고른다.
   //   머리를 sim 의 헤드샷 자리(몸 중심 위)에 못 박고, 키는 다른 적과 같은 식(머리 → 발밑)에서 나온다.
   {
-    const ahy = y - rx * P.enemy.archerHeadUp - bob
-    const tall = (footY - (y - rx * P.enemy.archerHeadUp)) / 0.89
-    if (drawScoutArt(ctx, phase, x, ahy, tall, dir < 0)) return
+    // ★ 세 번째 판 (2026-09-20, 형: "너무 둥실둥실 떠오잖아"): 머리가 아니라 **발을 땅에** 박는다. 머리에 박으면 컷마다
+    //   웅크린 깊이가 달라 발이 땅 위아래로 떠다녔다. 키는 반경에서만 나온다 (몸의 오르내림이 키를 바꾸면 안 된다).
+    const tall = (ry + rx * P.enemy.archerHeadUp) / 0.89
+    if (drawScoutArt(ctx, stride, x, soleY, tall, dir < 0)) return
   }
   ctx.save()
   ctx.lineCap = 'round'
@@ -551,6 +598,9 @@ export function drawFoeGunner(
   const by = shY + vy * rx * 0.18
   const muzX = bx + ux * rx * GUN.barrel
   const muzY = by + uy * rx * GUN.barrel
+  // 몸이 그림이면 총통도 그림이다 (foeart.ts drawGunArt) — 개머리판에서 총구까지.
+  const gunArt = art && drawGunArt(ctx, bx - ux * rx * 0.62, by - uy * rx * 0.62, muzX, muzY)
+  if (!gunArt) {
   ctx.strokeStyle = GUN.barrelCol
   ctx.lineWidth = Math.max(2.2, rx * GUN.barrelW)
   ctx.lineCap = 'butt'
@@ -558,10 +608,11 @@ export function drawFoeGunner(
   ctx.moveTo(bx - ux * rx * 0.5, by - uy * rx * 0.5)
   ctx.lineTo(muzX, muzY)
   ctx.stroke()
+  }
   // 마디 둘 — 승자총통은 대나무처럼 마디가 있다. 그 두 줄이 막대를 총통으로 만든다.
   ctx.strokeStyle = GUN.ring
   ctx.lineWidth = Math.max(1.4, rx * 0.05)
-  for (const u of [0.3, 0.68]) {
+  for (const u of gunArt ? [] : [0.3, 0.68]) {
     const cx = bx + (muzX - bx) * u
     const cy = by + (muzY - by) * u
     ctx.beginPath()
@@ -593,6 +644,11 @@ export function drawFoeGunner(
   if (drawF > 0.02) {
     const ex = bx + (muzX - bx) * drawF
     const ey = by + (muzY - by) * drawF
+    // 그림 총통 위에서는 납작한 원이 스티커처럼 뜬다 — 불씨답게 **빛이 번지게** 한다 (원은 작게, 번짐은 크게).
+    if (gunArt) {
+      ctx.shadowColor = GUN.ember
+      ctx.shadowBlur = rx * 0.35
+    }
     ctx.fillStyle = GUN.ember
     ctx.beginPath()
     ctx.arc(ex, ey, Math.max(1.4, rx * (0.07 + 0.05 * drawF)), 0, TAU)
@@ -604,6 +660,7 @@ export function drawFoeGunner(
     ctx.arc(muzX, muzY, Math.max(1.6, rx * 0.16 * drawF), 0, TAU)
     ctx.fill()
     ctx.globalAlpha = 1
+    ctx.shadowBlur = 0
   }
   ctx.lineCap = 'butt'
 }
@@ -728,10 +785,22 @@ export function drawFoeSlinger(
   ctx.lineTo(sx2, sy2)
   ctx.stroke()
   // 돌 — 예고 끝에서 가장 크고 붉다. "곧 놓는다"를 크기와 색이 같이 말한다.
+  const stoneR = Math.max(2, rx * (SLING.stoneR + SLING.stoneGain * drawF))
+  if (art && drawStoneArt(ctx, sx2, sy2, stoneR * 1.25, spin)) {
+    // 돌도 그림이다. "곧 놓는다"는 붉은 테가 말한다 — 예고 끝에서만 두른다.
+    if (drawF > SLING.hotAt) {
+      ctx.strokeStyle = THEME.threat
+      ctx.lineWidth = Math.max(1.5, rx * 0.05)
+      ctx.beginPath()
+      ctx.arc(sx2, sy2, stoneR * 1.45, 0, TAU)
+      ctx.stroke()
+    }
+  } else {
   ctx.fillStyle = drawF > SLING.hotAt ? THEME.threat : SLING.stone
   ctx.beginPath()
-  ctx.arc(sx2, sy2, Math.max(2, rx * (SLING.stoneR + SLING.stoneGain * drawF)), 0, TAU)
+  ctx.arc(sx2, sy2, stoneR, 0, TAU)
   ctx.fill()
+  }
   ctx.lineCap = 'butt'
 }
 

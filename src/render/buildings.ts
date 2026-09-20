@@ -88,6 +88,13 @@ export interface WinRect {
 const CELL = {
   hw: 1.3,
   hh: 1.05,
+  /**
+   * 창을 사수의 몸 중심보다 **이만큼 위에** 단다 (창 반높이 대비). 2026-09-20, 형: "적궁수들이 창문에 너무 어색하게 나오고 있으니까
+   * … 거의 상반신만 등장하고 창문위로 머리가 가려질정도로 나와선 절대안돼."
+   * 0 이던 때는 창이 몸 중심에 맞아 **무릎까지 보이고 상투가 윗틀에 닿았다.** 0.5 면 (r 기준) 창은 −0.55r ~ +1.55r 이다:
+   * 머리끝(≈ +1.0r) 위로 0.5r 이 비고, 창턱은 허리 아래를 자른다. sim 의 자리(판정)는 그대로다 — 옮긴 것은 창이다.
+   */
+  lift: 0.5,
   /** 열 간격 (창 반너비 대비) */
   colPitch: 2.6,
   /** 층 간격 (창 반높이 대비) */
@@ -99,7 +106,7 @@ const CELL = {
   /** 벽이 바깥 열보다 더 나가는 여유 (창 반너비 대비) */
   margin: 1.1,
   /** 지붕이 맨 위 창보다 높은 양 (창 반높이 대비) */
-  roof: 2.4,
+  roof: 2.9,
   /** 맨 아래 창이 땅에서 최소한 떨어져야 하는 높이 (창 반높이 대비) */
   ground: 1.6,
   /** 바깥으로 한 열씩 더 — 창 하나짜리 기둥이 아니라 건물로 보이게 한다 */
@@ -251,6 +258,9 @@ function bake(w: World): void {
     const floors = grid(occY, flrP)
     // 맨 아래 층에서 땅까지 같은 간격으로 계속 — 건물은 땅에서 자란다.
     for (let y = (floors[0] as number) - flrP; y - hh * CELL.ground > 0; y -= flrP) floors.unshift(y)
+    // 창을 올려 단다 (CELL.lift) — 이 아래로 floors 는 **창의 중심**이다. 사수를 앉힐 때는 그만큼을 빼고 견준다.
+    const liftM = hh * CELL.lift
+    for (let i = 0; i < floors.length; i++) floors[i] = (floors[i] as number) + liftM
 
     const b: Bldg = {
       x0: (cols[0] as number) - hw * CELL.margin,
@@ -272,7 +282,7 @@ function bake(w: World): void {
         if (Math.abs((cols[i] as number) - t.x) < Math.abs((cols[ci] as number) - t.x)) ci = i
       }
       for (let i = 1; i < floors.length; i++) {
-        if (Math.abs((floors[i] as number) - t.y) < Math.abs((floors[fi] as number) - t.y)) fi = i
+        if (Math.abs((floors[i] as number) - liftM - t.y) < Math.abs((floors[fi] as number) - liftM - t.y)) fi = i
       }
       b.occ.add(ci * 64 + fi)
       wins.set(t.id, { cx: cols[ci] as number, cy: floors[fi] as number, hw, hh })

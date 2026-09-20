@@ -125,7 +125,7 @@ export function stepTargets(w: World): void {
           // 걸음마다 아주 조금 들린다. 크게 들리면 걷는 게 아니라 뛰는 것이다.
           ? floorY + Math.abs(Math.sin(time * P.target.bossStepFreq * Math.PI)) * P.target.bossStepRise
           // 유령은 뜬다 — 그게 유령의 문법이다.
-          : tg.baseY + Math.sin(time * P.target.chargeBobFreq * TAU) * P.target.chargeBob
+          : tg.baseY + Math.sin(time * P.target.chargeBobFreq * TAU) * P.target.ghostBob
         tg.weak = bossWeak(tg, time)
         // ── 보스도 쏜다 (bossAttack) ──
         // 잡몹과 **같은 계약**이다: windup 만큼 미리 예고하고, 그 예고가 끝나야 날아온다.

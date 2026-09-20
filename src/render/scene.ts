@@ -21,7 +21,7 @@ import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { createFx, pumpEvents, updateFx, drawFx, drawFxFlash, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash, targetFlinch, PLAYER_PIN } from './effects.ts'
 import { drawNewBossBody, drawNewBossFace } from './bosses.ts'
 import { BOSS_EYES, drawBossArt, drawEyeArt, drawFoxArt, warmBossArt } from './bossart.ts'
-import { drawArrowArt, drawPoleArt, drawFalconArt, drawFoeArt, drawPropArt, drawShotArt, drawTargetArt, warmFoeArt } from './foeart.ts'
+import { drawArrowArt, drawPoleArt, drawFalconArt, drawFoeArt, drawPropArt, drawShotArt, drawStoneArt, drawTargetArt, warmFoeArt } from './foeart.ts'
 import { backdrop } from './sprites.ts'
 import { bossGrammar, bossWeakSpot, foeWeakSpot } from '../sim/target.ts'
 import type { Fx } from './effects.ts'
@@ -610,13 +610,15 @@ function drawTargets(
           const whh = win.hh * cam.scale
           // 상반신만 — 창턱 아래는 클립이 자른다. 세상에 하반신을 내놓는 저격수는 없다.
           // 활과 활팔은 클립 밖이라 창밖으로 내민 활이 된다 (foe.ts).
+          // ★ 사수는 **제 자리(sim 의 y)** 에 서고 창은 그보다 위에 달려 있다 (buildings.ts CELL.lift) — 창턱이 허리 아래를 자르고
+          //   머리 위로는 창이 넉넉히 빈다. 예전엔 창의 중심에 세워서 무릎까지 보이고 상투가 윗틀에 닿았다.
           drawFoeArcher(
-            ctx, wx, wy2, rx, ry, aimX, aimY, drawF, bodyCol, t.armored, false,
+            ctx, wx, y, rx, ry, aimX, aimY, drawF, bodyCol, t.armored, false,
             { x: wx - whw, y: wy2 - whh, w: whw * 2, h: whh * 2 },
             t.bounty,
           )
           // 창의 사수는 젖히지 않는다(창틀이 자른다) — 번쩍임만.
-          drawFlash(ctx, wx, wy2, rx, targetFlinch(fx, t.id))
+          drawFlash(ctx, wx, y, rx, targetFlinch(fx, t.id))
           // 체력 바 — 창 위. 숨어 있으면 바도 없다 (없는 것은 잴 수 없다).
           drawHpBar(ctx, wx, wy2 - whh - 12, Math.max(26, rx * 1.4), t.hpMax > 0 ? t.hp / t.hpMax : 0)
         }
@@ -924,17 +926,13 @@ function drawTargets(
       //   이 게임에서 나를 향해 오는 것은 기계가 아니라 사람이어야 무섭기 때문이다.
       const dir = w.archer.x < t.x ? -1 : 1
       // 달리는 위상 — 발이 땅을 치는 주기. 시계는 sim 의 것이다 (A1: 렌더는 읽기만).
+      // 그림의 컷은 **간 거리**로 넘긴다 (P.render.rusherCycleM) — 디딘 발이 땅에서 안 미끄러진다. 선 그림은 예전대로 시계다.
       const phase = w.elapsed * P.render.rusherCadence * TAU + t.id * 1.3
-      // 속도선 — 뒤로 흐르는 두 줄. 사람이어도 **빨리 온다**는 건 그대로 말해야 한다.
-      ctx.strokeStyle = THEME.threatDim
-      ctx.lineWidth = 1.5
-      ctx.beginPath()
-      ctx.moveTo(x - dir * rx * 0.9, y - ry * 0.35)
-      ctx.lineTo(x - dir * rx * 2.1, y - ry * 0.35)
-      ctx.moveTo(x - dir * rx * 0.9, y + ry * 0.45)
-      ctx.lineTo(x - dir * rx * 2.1, y + ry * 0.45)
-      ctx.stroke()
-      drawFoeRusher(ctx, x, y, rx, ry, dir, phase, THEME.threat)
+      const stride = (-dir * t.x / P.render.rusherCycleM) * TAU
+      // 발밑은 sim 의 몸 중심이 아니라 **땅**에서 잰다 — 몸이 오르내려도 발은 땅에 있다.
+      const soleY = worldToScreenY(cam, groundAt(w.stage, t.x))
+      // (속도선은 걷었다 — 달리는 그림 뒤에 그은 두 줄은 만화 스티커였다. 빠르다는 건 달리는 컷이 말한다.)
+      drawFoeRusher(ctx, x, y, rx, ry, dir, phase, THEME.threat, stride, soleY)
     } else if (
       // ★ 과녁은 **그림**이다 (2026-09-20, render/foeart.ts) — 짚 과녁 · 마름모 널판 · 보급(화살 묶음) · 회복(약 호리병),
       //   그리고 공중 과녁은 **등(燈)** 이다 (깨지는 소리가 나는 그 물건). 판정 타원에 맞춰 늘려 얹으므로 눌림도 그대로다.
@@ -984,7 +982,7 @@ function drawTargets(
         ctx.lineTo(x + aw - rx * 0.42, y - ry * 0.18)
         ctx.stroke()
       }
-    } else if (r < DRAW.ringMinPx) {
+    } else if (r < DRAW.ringMinPx && t.kind !== 'barrel') {
       // 너무 작다. 띠를 다 그리면 뭉개져 오히려 안 보인다 — 밝은 점 하나가 낫다.
       band(ctx, x, y, rx, ry, THEME.targetRim)
       band(ctx, x, y, rx * DRAW.ringAccent, ry * DRAW.ringAccent, THEME.accent)
@@ -1135,16 +1133,16 @@ function drawFalcon(
   {
     const spot0 = foeWeakSpot(3)
     if (drawFalconArt(ctx, x + rx * spot0.fwd, y - ry * spot0.up, rx, flap > 0)) {
-      ctx.strokeStyle = FALCON.beak
-      ctx.lineWidth = Math.max(1.2, rx * 0.06)
-      ctx.beginPath()
-      ctx.moveTo(x - rx * 0.08, y + ry * 0.22)
-      ctx.lineTo(x - rx * 0.02, y + ry * 0.5)
-      ctx.stroke()
-      ctx.fillStyle = hot ? THEME.threat : FALCON.stone
-      ctx.beginPath()
-      ctx.arc(x, y + ry * 0.6, Math.max(2, rx * 0.16), 0, TAU)
-      ctx.fill()
+      // 발톱의 돌 — 그림 위에 선으로 그린 발톱과 납작한 원이 남아 있었다 (형: "부적절한 SVG가 남아있던데").
+      // 돌도 그림이다. 달아오름(예고)은 붉은 테가 말한다.
+      const sr = Math.max(3, rx * 0.2)
+      if (drawStoneArt(ctx, x, y + ry * 0.5, sr, 0) && hot) {
+        ctx.strokeStyle = THEME.threat
+        ctx.lineWidth = Math.max(1.5, rx * 0.05)
+        ctx.beginPath()
+        ctx.arc(x, y + ry * 0.5, sr * 1.2, 0, TAU)
+        ctx.stroke()
+      }
       return
     }
   }
@@ -1979,7 +1977,69 @@ const GROUND_STEP_PX = 6
  * 언덕이 있으면 화면 왼쪽부터 오른쪽까지 6px마다 땅 높이를 재어 꺾은선을 긋고 그 아래를 채운다.
  * 표본은 화면 좌표라 줌에 따라 자동으로 촘촘해진다. 색은 평지와 똑같다 — 땅은 땅이다.
  */
-function drawGround(ctx: CanvasRenderingContext2D, cam: Camera, w: World, sky: SkyPalette): void {
+/**
+ * ★ 땅은 **그림**이다 (2026-09-20, 형: "땅 랜더링도 적절하게 배경만들어"). public/bg/ground.webp — 풀이 듬성한 다져진 흙길의 단면.
+ *   굽는 법은 tools/preview bakeGround: 좌우로 뒤집은 것을 옆에 붙여 구웠으므로 **그대로 이어 붙이면 이음매가 없다.**
+ *   월드 좌표에 못 박아 카메라와 같이 흐른다. 띠의 아래는 띠가 녹아든 그 색(bottom)으로 채운다.
+ *   언덕이 있는 판은 띠를 **세로 조각**으로 썰어 조각마다 그 자리 땅 높이에 건다.
+ */
+const GROUND_ART = {
+  /** 띠 한 장(2048px)이 덮는 거리 (m) — 풀포기와 자갈이 사람 크기에 맞는 값. 깊이는 여기서 나온다 (≈2.2m). */
+  tileM: 26,
+  /** 띠에서 땅의 겉(발이 닿는 선)이 있는 높이 (0~1) — bakeGround 가 돌려준 값. 그 위는 풀끝이다. */
+  surfV: 0.109,
+  bottom: '#12151e',
+  /** 하늘의 시각에 맞춰 땅색(sky.ground)을 이만큼 덮는다 — 밤의 땅과 노을의 땅이 같은 갈색이면 안 된다. */
+  tint: 0.38,
+  /** 언덕을 써는 조각의 폭 (px) */
+  slicePx: 8,
+} as const
+
+function drawGroundArt(ctx: CanvasRenderingContext2D, cam: Camera, w: World, sky: SkyPalette): boolean {
+  const im = backdrop('ground')
+  if (im === null) return false
+  const tw = GROUND_ART.tileM * cam.scale
+  const th = tw * (im.naturalHeight / im.naturalWidth)
+  const up = th * GROUND_ART.surfV
+  if (!hasHills(w.stage)) {
+    const groundY = worldToScreenY(cam, 0)
+    const top = groundY - up
+    ctx.fillStyle = GROUND_ART.bottom
+    ctx.fillRect(0, top + th - 1, cam.w, Math.max(0, cam.h - top - th + 2))
+    const first = Math.floor(screenToWorldX(cam, 0) / GROUND_ART.tileM) * GROUND_ART.tileM
+    for (let sx = worldToScreenX(cam, first); sx < cam.w; sx += tw) ctx.drawImage(im, sx, top, tw + 1, th)
+    ctx.globalAlpha = GROUND_ART.tint
+    ctx.fillStyle = sky.ground
+    ctx.fillRect(0, groundY, cam.w, Math.max(0, cam.h - groundY))
+    ctx.globalAlpha = 1
+    return true
+  }
+  const step = GROUND_ART.slicePx
+  const sw = (step / tw) * im.naturalWidth
+  for (let sx = 0; sx < cam.w; sx += step) {
+    const wx = screenToWorldX(cam, sx + step / 2)
+    const gy = worldToScreenY(cam, groundAt(w.stage, wx))
+    const f = wx / GROUND_ART.tileM
+    const u = Math.min((f - Math.floor(f)) * im.naturalWidth, im.naturalWidth - sw)
+    ctx.drawImage(im, u, 0, sw, im.naturalHeight, sx, gy - up, step + 0.5, th)
+    ctx.fillStyle = GROUND_ART.bottom
+    ctx.fillRect(sx, gy - up + th - 1, step + 0.5, Math.max(0, cam.h - gy + up - th + 2))
+    ctx.globalAlpha = GROUND_ART.tint
+    ctx.fillStyle = sky.ground
+    ctx.fillRect(sx, gy, step + 0.5, Math.max(0, cam.h - gy))
+    ctx.globalAlpha = 1
+  }
+  return true
+}
+
+function drawGround(ctx: CanvasRenderingContext2D, cam: Camera, w: World, sky: SkyPalette): boolean {
+  if (drawGroundArt(ctx, cam, w, sky)) return true
+  drawGroundFlat(ctx, cam, w, sky)
+  return false
+}
+
+/** 그림이 아직 안 떴을 때(그리고 헤드리스 프로브)의 땅 — 예전 그대로다. */
+function drawGroundFlat(ctx: CanvasRenderingContext2D, cam: Camera, w: World, sky: SkyPalette): void {
   if (!hasHills(w.stage)) {
     const groundY = worldToScreenY(cam, 0)
     ctx.fillStyle = sky.ground
@@ -2174,8 +2234,8 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       }
 
       // ── 땅 — 평지면 한 줄, 언덕이 있으면 꺾은선을 따라 (sim/terrain.ts) ──
-      drawGround(c, cam, w, sky)
-      drawTufts(c, cam, w, r.tufts)
+      // 그림 땅에는 풀이 이미 그려져 있다 — 선으로 그은 풀포기는 그림이 없을 때만.
+      if (!drawGround(c, cam, w, sky)) drawTufts(c, cam, w, r.tufts)
 
       // ── 그림자 — 가장 싼 입체감 (docs/MEGAHIT.md §4-2, 렌즈 ⑥ "전부 떠 있다") ──
       // 지면 위·과녁 아래. 색을 새로 만들지 않고 지면색을 알파로 겹칠 뿐이다 (GDD 8장).

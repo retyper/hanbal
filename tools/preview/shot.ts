@@ -24,6 +24,7 @@ import { createWorld, step } from '../../src/sim/world.ts'
 import { getStage } from '../../src/game/stages.ts'
 import { applyFork, type ForkOption } from '../../src/game/forks.ts'
 import type { HudState } from '../../src/render/hud.ts'
+import { drawFoeArcher, drawFoeGunner, drawFoeRusher, drawFoeSlinger } from '../../src/render/foe.ts'
 import type { InputFrame } from '../../src/sim/types.ts'
 
 const q = new URLSearchParams(location.search)
@@ -148,3 +149,110 @@ async function bakeBackdrop(src: string, name: string, q = 0.84): Promise<string
   return `${name}: sky ${sky.width}x${sky.height} ${a}KB · ridge ${ridge.width}x${ridge.height} ${b}KB`
 }
 ;(window as unknown as { bakeBackdrop: typeof bakeBackdrop }).bakeBackdrop = bakeBackdrop
+
+/**
+ * 땅의 단면 띠를 굽는다 (2026-09-20, 형: "땅 랜더링도 적절하게 배경만들어").
+ *   제미나이에게 "위 35% 는 마젠타, 그 아래는 흙의 단면" 으로 받은 그림(JPEG)을:
+ *   ① 마젠타를 알파로 따내고 (풀끝의 분홍 물도 뺀다) ② 풀끝 ~ 어두워지는 데까지만 자르고 (오른쪽 아래 ✦ 워터마크가 그 밑에 있다)
+ *   ③ 맨 아래를 한 색(BOTTOM)으로 녹이고 — 그 아래는 렌더가 그 색으로 채운다 ④ **좌우로 뒤집은 것을 옆에 붙여** 이음매 없이 이어지게 한다.
+ *   콘솔:  await bakeGround('/bg/_src.jpg')   → public/bg/ground.webp · 돌려주는 surfV 를 render/scene.ts GROUND_ART 에 적는다
+ */
+async function bakeGround(src: string, q = 0.86): Promise<string> {
+  const BOTTOM = [18, 21, 30]
+  const bmp = await createImageBitmap(await (await fetch(`${src}?v=${Date.now()}`)).blob())
+  const W = bmp.width
+  const H = bmp.height
+  const full = document.createElement('canvas')
+  full.width = W
+  full.height = H
+  const fc = full.getContext('2d')
+  if (fc === null) throw new Error('2d 컨텍스트 없음')
+  fc.drawImage(bmp, 0, 0)
+  const d = fc.getImageData(0, 0, W, H)
+  const px = d.data
+  const solid = new Array<number>(H).fill(0)
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4
+      const r = px[i] ?? 0
+      const g = px[i + 1] ?? 0
+      const b = px[i + 2] ?? 0
+      const m = Math.min(r, b) - g
+      if (m > 90) px[i + 3] = 0
+      else if (m > 6) {
+        // 풀끝의 분홍 물 — JPEG 라 마젠타가 풀 속으로 번져 있다. 알파를 줄이고, 색은 **마른 풀빛**으로 바꿔 적는다
+        // (빨강·파랑을 초록에 맞추기만 하면 회색 풀이 된다).
+        const k = Math.min(1, (m - 6) / 84)
+        px[i + 3] = Math.round(255 * (1 - k * k))
+        px[i] = Math.round(g * 1.08)
+        px[i + 2] = Math.round(g * 0.62)
+      }
+      if ((px[i + 3] ?? 0) > 128) solid[y] = (solid[y] ?? 0) + 1
+    }
+  }
+  const top = Math.max(0, solid.findIndex((n) => n > W * 0.004) - 2)
+  const surf = solid.findIndex((n) => n > W * 0.97)
+  const bot = Math.round(H * 0.78)
+  const ch = bot - top
+  // 아래 30% 를 한 색으로 녹인다.
+  for (let y = top; y < bot; y++) {
+    const t = Math.max(0, (y - top) / ch - 0.7) / 0.3
+    if (t <= 0) continue
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4
+      for (let c = 0; c < 3; c++) px[i + c] = Math.round((px[i + c] ?? 0) * (1 - t) + (BOTTOM[c] ?? 0) * t)
+    }
+  }
+  fc.putImageData(d, 0, 0)
+  const out = document.createElement('canvas')
+  out.width = W * 2
+  out.height = ch
+  const oc = out.getContext('2d')
+  if (oc === null) throw new Error('2d 컨텍스트 없음')
+  oc.drawImage(full, 0, top, W, ch, 0, 0, W, ch)
+  oc.translate(W * 2, 0)
+  oc.scale(-1, 1)
+  oc.drawImage(full, 0, top, W, ch, 0, 0, W, ch)
+  const blob = await new Promise<Blob | null>((r) => out.toBlob(r, 'image/webp', q))
+  if (blob === null) throw new Error('webp 로 못 구웠다')
+  const res = await fetch('http://127.0.0.1:5199/save/bg/ground.webp', { method: 'PUT', body: blob })
+  if (!res.ok) throw new Error(`수신기가 거절했다: ${await res.text()}`)
+  return `ground.webp ${out.width}x${out.height} ${Math.round(blob.size / 1024)}KB · surfV=${((surf - top) / ch).toFixed(3)} (top ${top} surf ${surf} bot ${bot})`
+}
+;(window as unknown as { bakeGround: typeof bakeGround }).bakeGround = bakeGround
+
+/**
+ * 크게 늘어놓기 — 적을 **한 명씩 크게** 그려서 그림과 팔·어깨가 맞는지 본다 (게임 안에서는 40px 라 안 보인다).
+ *   콘솔: lineup(0.6)   ← 당김(예고)의 정도 0~1
+ */
+function lineup(drawF = 0.6): string {
+  const ctx = canvas.getContext('2d')
+  if (ctx === null) return '2d 컨텍스트 없음'
+  renderer.resize()
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  ctx.fillStyle = '#20242c'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  const r = Math.min(canvas.height * 0.22, canvas.width / 14)
+  const y = canvas.height * 0.52
+  const ground = y + r
+  ctx.strokeStyle = '#555'
+  ctx.beginPath(); ctx.moveTo(0, ground); ctx.lineTo(canvas.width, ground); ctx.stroke()
+  const col = '#c0553a'
+  // 겨냥은 왼쪽 살짝 위 (궁수가 왼쪽에 있다).
+  const ux = -0.97
+  const uy = -0.24
+  let x = r * 1.8
+  drawFoeArcher(ctx, x, y, r, r, ux, uy, drawF, col, false, true, null)
+  x += r * 3
+  drawFoeArcher(ctx, x, y, r, r, ux, uy, drawF, col, true, true, null)
+  x += r * 3
+  drawFoeGunner(ctx, x, y, r, r, ux, uy, drawF, col, false, true, null)
+  x += r * 3
+  drawFoeSlinger(ctx, x, y, r, r, ux, uy, drawF, 1.2, col, false, true, null)
+  for (let i = 0; i < 4; i++) {
+    x += r * 2.6
+    drawFoeRusher(ctx, x, y, r, r, -1, (i / 4) * Math.PI * 2 + 0.01, col)
+  }
+  return 'lineup'
+}
+;(window as unknown as { lineup: typeof lineup }).lineup = lineup

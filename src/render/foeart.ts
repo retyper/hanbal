@@ -58,6 +58,7 @@ export function warmFoeArt(): void {
   for (const k of Object.keys(ARM) as (keyof typeof ARM)[]) { sprite(ARM[k].upper); sprite(ARM[k].fore) }
   sprite('limb-fist')
   sprite('prop-pole')
+  sprite('prop-gun')
   for (const id of Object.keys(BOW_STRIP)) sprite(`bowstrip-${id}`)
   for (const name of Object.values(FLY)) sprite(name)
   for (const c of SHOT_ART) if (c !== null) sprite(c.name)
@@ -114,20 +115,24 @@ export function foeShoulder(name: FoeArtName, hx: number, hy: number, footY: num
 /**
  * 척후 — **칼을 내리치며 달려오는 4컷** (2026-09-20 두 번째 판, 형: "판떼기가 흔들려오는거같아. 칼을 휘두르며 달려오는 모션이어야해").
  * 컷마다 자세가 달라 트림된 크기가 다르다 — srcH 는 원본에서의 키(px)라, 그걸로 **네 컷의 배율을 하나로** 맞춘다 (안 그러면 컷마다 사람이 커졌다 작아진다).
- * 그림은 오른쪽을 본다. 기준점은 머리 — sim 의 헤드샷 자리에 못 박는다.
+ * 그림은 오른쪽을 본다.
+ *
+ * ★ 기준점은 **발밑의 땅**이다 (세 번째 판). 가로는 머리(headU), 세로는 그림의 바닥 = 땅 + air.
+ *   컷의 순서는 **디딤 → 뜸 → 디딤 → 뜸** 이다: 디딘 컷(0·2)은 앞발이 땅에 닿고, 뜬 컷(1·3)은 두 발이 다 공중이라
+ *   air(곧게 선 키 대비)만큼 띄운다. 머리는 저절로 디딜 때 낮고 뜰 때 높다 — 그게 달리기의 오르내림이다.
  */
 const SCOUT = [
-  { headU: 0.65, headV: 0.284, srcH: 396 },
-  { headU: 0.586, headV: 0.128, srcH: 342 },
-  { headU: 0.572, headV: 0.126, srcH: 309 },
-  { headU: 0.808, headV: 0.164, srcH: 320 },
+  { headU: 0.65, srcH: 396, air: 0 },
+  { headU: 0.586, srcH: 342, air: 0.05 },
+  { headU: 0.572, srcH: 309, air: 0 },
+  { headU: 0.808, srcH: 320, air: 0.08 },
 ] as const
 /** 원본에서 곧게 선 사람의 키 (px) — 주인공·적 시트와 같은 비례로 받았다. */
 const SCOUT_STAND = 360
 
-/** phase 는 달리기의 위상 (rad). tall 은 곧게 선 사람의 키 (px) — 다른 적과 같은 식으로 구한 값을 넘긴다. */
+/** phase 는 달리기의 위상 (rad). hx 는 머리의 가로 자리, soleY 는 발밑의 땅. tall 은 곧게 선 사람의 키 (px). */
 export function drawScoutArt(
-  ctx: CanvasRenderingContext2D, phase: number, hx: number, hy: number, tall: number, faceLeft: boolean,
+  ctx: CanvasRenderingContext2D, phase: number, hx: number, soleY: number, tall: number, faceLeft: boolean,
 ): boolean {
   const n = SCOUT.length
   const i = ((Math.floor((phase / (Math.PI * 2)) * n) % n) + n) % n
@@ -140,9 +145,9 @@ export function drawScoutArt(
   ctx.save()
   ctx.shadowColor = RIM.color
   ctx.shadowBlur = Math.max(RIM.minPx, tall * RIM.perHeight)
-  ctx.translate(hx, hy)
+  ctx.translate(hx, soleY - f.air * tall)
   ctx.scale(faceLeft ? -1 : 1, 1)
-  ctx.drawImage(im, -f.headU * dw, -f.headV * dh, dw, dh)
+  ctx.drawImage(im, -f.headU * dw, -dh, dw, dh)
   ctx.restore()
   return true
 }
@@ -371,16 +376,20 @@ export function drawTargetArt(
 // ★ 2026-09-20 두 번째 판 — 형: "상박과 하박이 자연스럽게 이어지지 못하고 어긋나있어."
 //   윗팔 그림(헐렁한 비대칭 소매)과 아랫팔 그림(좁은 소매)이 폭도 중심선도 달라서 팔꿈치에서 턱이 졌다.
 //   이제 **같은 소매 그림**으로 위·아래를 잇는다 — 윗팔은 그 그림의 소매 부분(upperCut), 폭은 거의 같게.
+// ★ 세 번째 판 (2026-09-20, 형: "어깨가 이미지에서 보이는듯한 이미지가 아니고 팔이 비정상적으로 커").
+//   받은 소매 그림의 **맨 위에는 살색 동그라미**가 있다 (소매의 구멍을 위에서 본 것). 그걸 그대로 쓰니 어깨와 팔꿈치에
+//   살색 혹이 달렸다. skip 은 그림의 위에서 그만큼을 **버리고** 쓴다는 뜻이다 — 구멍 아래의 소매만 남는다.
+//   윗팔은 skip ~ upperCut, 아랫팔은 skip ~ 끝.
 const ARM = {
-  hero: { upper: 'limb-hero-fore', upperCut: 0.6, upperW: 1.08, fore: 'limb-hero-fore', foreW: 1 },
-  foe: { upper: 'limb-foe-fore', upperCut: 0.62, upperW: 1.08, fore: 'limb-foe-fore', foreW: 1 },
-  gunner: { upper: 'limb-gunner-fore', upperCut: 0.7, upperW: 1.08, fore: 'limb-gunner-fore', foreW: 1 },
-  peasant: { upper: 'limb-peasant-fore', upperCut: 0.34, upperW: 1.12, fore: 'limb-peasant-fore', foreW: 1 },
+  hero: { upper: 'limb-hero-fore', skip: 0.2, upperCut: 0.62, upperW: 1.1, fore: 'limb-hero-fore', foreW: 1 },
+  foe: { upper: 'limb-foe-fore', skip: 0.22, upperCut: 0.64, upperW: 1.1, fore: 'limb-foe-fore', foreW: 1 },
+  gunner: { upper: 'limb-gunner-fore', skip: 0.24, upperCut: 0.7, upperW: 1.1, fore: 'limb-gunner-fore', foreW: 1 },
+  peasant: { upper: 'limb-peasant-fore', skip: 0.04, upperCut: 0.34, upperW: 1.12, fore: 'limb-peasant-fore', foreW: 1 },
 } as const
 export type ArmSkin = keyof typeof ARM
 
 function segment(
-  ctx: CanvasRenderingContext2D, im: HTMLImageElement, cut: number,
+  ctx: CanvasRenderingContext2D, im: HTMLImageElement, skip: number, cut: number,
   x0: number, y0: number, x1: number, y1: number, wide: number,
 ): void {
   const len = Math.hypot(x1 - x0, y1 - y0)
@@ -390,7 +399,7 @@ function segment(
   ctx.save()
   ctx.translate(x0, y0)
   ctx.rotate(Math.atan2(y1 - y0, x1 - x0) - Math.PI / 2)
-  ctx.drawImage(im, 0, 0, im.naturalWidth, im.naturalHeight * cut, -wide / 2, -over, wide, len + over * 2)
+  ctx.drawImage(im, 0, im.naturalHeight * skip, im.naturalWidth, im.naturalHeight * (cut - skip), -wide / 2, -over, wide, len + over * 2)
   ctx.restore()
 }
 
@@ -406,8 +415,8 @@ export function drawArmArt(
   const up = sprite(a.upper)
   const fore = sprite(a.fore)
   if (up === null || fore === null) return false
-  segment(ctx, up, a.upperCut, x0, y0, jx, jy, wide * a.upperW)
-  segment(ctx, fore, 1, jx, jy, x1, y1, wide * a.foreW)
+  segment(ctx, up, a.skip, a.upperCut, x0, y0, jx, jy, wide * a.upperW)
+  segment(ctx, fore, a.skip, 1, jx, jy, x1, y1, wide * a.foreW)
   return true
 }
 
@@ -431,14 +440,16 @@ export function drawFistArt(ctx: CanvasRenderingContext2D, x: number, y: number,
  */
 const FLY = {
   basic: 'fly-basic', burst: 'fly-fire', chain: 'fly-whistle', heavy: 'fly-heavy', pierce: 'fly-dart',
+  /** 적이 시위에 물린 화살 — 날아올 그것과 같은 그림이다. */
+  enemy: 'fly-enemy',
 } as const
 
 function lying(
   ctx: CanvasRenderingContext2D, im: HTMLImageElement,
-  backX: number, backY: number, tipX: number, tipY: number, minPx: number,
+  backX: number, backY: number, tipX: number, tipY: number, minPx: number, fat = 1,
 ): void {
   const len = Math.hypot(tipX - backX, tipY - backY)
-  const h = Math.max(minPx, len * (im.naturalHeight / im.naturalWidth))
+  const h = Math.max(minPx, len * (im.naturalHeight / im.naturalWidth) * fat)
   ctx.save()
   ctx.translate(backX, backY)
   ctx.rotate(Math.atan2(tipY - backY, tipX - backX))
@@ -449,10 +460,12 @@ function lying(
 /** 내 화살 한 대. kind 에 제 그림이 없으면(세전·산전·연주전·신전) 유엽전 그림을 쓴다. */
 export function drawArrowArt(
   ctx: CanvasRenderingContext2D, kind: string, backX: number, backY: number, tipX: number, tipY: number,
+  /** 굵기 배율 — 사람 손에 물린 화살은 날아가는 것보다 가늘어야 사람 크기에 맞는다. */
+  fat = 1,
 ): boolean {
   const im = sprite((FLY as Record<string, string>)[kind] ?? FLY.basic)
   if (im === null) return false
-  lying(ctx, im, backX, backY, tipX, tipY, 5)
+  lying(ctx, im, backX, backY, tipX, tipY, 5 * fat, fat)
   return true
 }
 
@@ -555,5 +568,36 @@ export function drawBowArt(ctx: CanvasRenderingContext2D, skin: string, mirror: 
     ctx.drawImage(im, 0, sy, im.naturalWidth, sh, -wide / 2, -0.6, wide, seg + 1.2)
     ctx.restore()
   }
+  return true
+}
+
+/** 받은 총통 그림은 포신처럼 굵다 — 사람이 어깨에 대는 것으로 보이게 눌러 쓴다. */
+const GUN_FAT = 0.55
+
+/** 총통수의 총통 — 개머리판에서 총구로. 그림은 가로로 누워 총구가 오른쪽이다. */
+export function drawGunArt(ctx: CanvasRenderingContext2D, buttX: number, buttY: number, muzX: number, muzY: number): boolean {
+  const im = sprite('prop-gun')
+  if (im === null) return false
+  const len = Math.hypot(muzX - buttX, muzY - buttY)
+  const h = len * (im.naturalHeight / im.naturalWidth) * GUN_FAT
+  ctx.save()
+  ctx.translate(buttX, buttY)
+  ctx.rotate(Math.atan2(muzY - buttY, muzX - buttX))
+  // 총구가 왼쪽(궁수 쪽)을 향하면 돌린 그림의 위아래가 뒤집힌다 — 세로로 한 번 뒤집어 개머리판이 아래로 오게 한다.
+  if (muzX < buttX) ctx.scale(1, -1)
+  ctx.drawImage(im, 0, -h / 2, len, h)
+  ctx.restore()
+  return true
+}
+
+/** 투석군의 돌 — 끈 끝에서 돈다. */
+export function drawStoneArt(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, spin: number): boolean {
+  const im = sprite('fly-stone')
+  if (im === null) return false
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.rotate(spin)
+  ctx.drawImage(im, -r, -r, r * 2, r * 2)
+  ctx.restore()
   return true
 }

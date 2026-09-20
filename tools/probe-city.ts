@@ -200,9 +200,14 @@ for (const t of w.targets) {
     check(false, `사수 #${t.id}의 창`, '없음')
     continue
   }
-  const dy = Math.abs(worldToScreenY(cam, win.cy) - worldToScreenY(cam, t.y))
   const dx = Math.abs(worldToScreenX(cam, win.cx) - worldToScreenX(cam, t.x))
-  check(dx < 1 && dy < 1, `사수 #${t.id}가 제 층·열에 앉았다`, `어긋남 ${dx.toFixed(2)}, ${dy.toFixed(2)}px`)
+  check(dx < 1, `사수 #${t.id}가 제 열에 앉았다`, `어긋남 ${dx.toFixed(2)}px`)
+  // 2026-09-20 — 창은 사수의 몸 중심보다 **위에** 달린다 (buildings.ts CELL.lift, 형: "거의 상반신만 등장하고 창문위로 머리가
+  // 가려질정도로 나와선 절대안돼"). 그래서 계약은 '중심이 같다'가 아니라: 머리끝(≈ +1.0r) 위로 창이 넉넉히 비고, 창턱은 허리 아래 ~ 무릎 위.
+  const headRoom = (win.cy + win.hh - (t.y + t.r)) / t.r
+  const sill = (win.cy - win.hh - t.y) / t.r
+  check(headRoom >= 0.35, `사수 #${t.id}의 머리 위로 창이 빈다`, `머리끝 위 ${headRoom.toFixed(2)}r`)
+  check(sill <= -0.3 && sill >= -0.85, `사수 #${t.id}는 상반신만 보인다`, `창턱 ${sill.toFixed(2)}r`)
 }
 
 // ⑤ ★ 적을 전부 죽인다. 건물은 그대로여야 한다.
