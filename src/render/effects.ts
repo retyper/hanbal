@@ -21,6 +21,7 @@ import { P, SPEC } from '../tune/params.ts'
 import { TRAIL_POINTS } from '../sim/types.ts'
 import type { World } from '../sim/types.ts'
 import { THEME, worldToScreenX, worldToScreenY } from './camera.ts'
+import { drawCorpseArt } from './foeart.ts'
 import type { Camera } from './camera.ts'
 import { createPopups, drawPopups, pushPopup, updatePopups } from './popups.ts'
 import type { Popups } from './popups.ts'
@@ -992,6 +993,12 @@ function drawCorpses(ctx: CanvasRenderingContext2D, cam: Camera, f: Fx): void {
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
 
+    // ★ 그림 적이 죽으면 그림이 눕는다 (render/foeart.ts). 막대 인간은 폴백이다.
+    if (look >= 0 && drawCorpseArt(ctx, look, x, y, r, ang, settle)) {
+      ctx.restore()
+      continue
+    }
+
     if (look === 3) {
       // ── 매 — 날개를 편 채 떨어진다 (2026-09-10, 형: "새가 죽으면 새 사체가 되어야지 왜
       //    아직도 드론시체야"). 드론이 매로 바뀌었는데 **시체만 부러진 로터로 남아 있었다.**
@@ -1183,7 +1190,7 @@ export function updateFx(fx: Fx, dtReal: number): void {
   const scale = fxTimeScale(fx)
   // 번쩍임은 히트스톱·슬로모와 무관하게 **실시간으로** 꺼진다 — 멈춘 화면이 하얀 채로 굳으면 안 된다.
   if (fx.flash > 0) fx.flash = fx.flash > dtReal ? fx.flash - dtReal : 0
-  if (fx.slow > 0) {
+  if (fx.slow > 0) {
     fx.slow -= dtReal
     if (fx.slow < 0) fx.slow = 0
   }

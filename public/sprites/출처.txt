@@ -45,6 +45,13 @@
   머리 좌표는 render/foeart.ts 의 ART 표 — 그림을 바꾸면 그 표도 같이 바꿔야 한다.
   (기성 무료 에셋을 먼저 찾았다 — OpenGameArt·itch.io 의 CC0 는 픽셀·치비뿐이라 그린 보스 옆에 못 세운다. docs/ASSETS.md 7장.)
 
+물건 둘 · 시체 여섯 — hwacha · crate · dead-archer / armored / gunner / slinger / falcon / hwacha
+  2026-09-20. 적과 **같은 제미나이 대화**에서 이어 받은 둘째 장 (1376x768, 4x2). 같은 길로 따냈다:
+    node tools/key-png.mjs assets_src/props-source.png assets_src/props-keyed.png 100 70 "0,0.45,1,0.525;0,0.955,1,1" flip
+    node tools/slice-grid.mjs assets_src/props-keyed.png 4 2 public/sprites/       dead-falcon,dead-hwacha,crate,hwacha,dead-slinger,dead-gunner,dead-armored,dead-archer 192 0.01 trim
+  화차는 그림의 **화약궤**를 sim 의 급소 자리에 못 박는다. 시체는 래그돌의 각도로 돌리다가 가라앉으면 눕힌다.
+  좌표·눕는 각도는 render/foeart.ts 의 PROP · CORPSE 표. (dead-armored 는 받아 뒀지만 시체가 갑옷 여부를 몰라 아직 안 쓴다.)
+
 drone.png — "Pixel Art Drone" (OpenGameArt, CC0)
   https://opengameart.org/content/pixel-art-drone
   113x57, 2프레임 (로터 교대). 원본 파일명 drone_4.png.

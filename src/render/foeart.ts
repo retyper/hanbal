@@ -37,6 +37,8 @@ export function warmFoeArt(): void {
   for (const name of Object.keys(ART)) sprite(`foe-${name}`)
   sprite('foe-falcon-a')
   sprite('foe-falcon-b')
+  for (const name of Object.keys(PROP)) sprite(name)
+  for (const c of CORPSE) sprite(c.name)
 }
 
 /**
@@ -88,5 +90,61 @@ export function drawFalconArt(
   const dw = im.naturalWidth * s
   const dh = im.naturalHeight * s
   ctx.drawImage(im, ex - f.eyeU * dw, ey - f.eyeV * dh, dw, dh)
+  return true
+}
+
+/**
+ * 물건 — 화차 · 화약궤. 기준점(u, v)을 화면의 한 점에 못 박고, 크기는 〈기준점 → 밑단〉으로 정한다.
+ * 화차의 기준점은 **화약궤**다 — sim 의 급소(foeWeakSpot 4)가 거기라서.
+ */
+const PROP = {
+  hwacha: { u: 0.354, v: 0.553, bottomV: 0.99 },
+  crate: { u: 0.5, v: 0.62, bottomV: 0.99 },
+} as const
+
+export function drawPropArt(
+  ctx: CanvasRenderingContext2D, name: keyof typeof PROP, ax: number, ay: number, bottomY: number,
+): boolean {
+  const im = sprite(name)
+  if (im === null) return false
+  const a = PROP[name]
+  const span = (a.bottomV - a.v) * im.naturalHeight
+  if (span <= 0 || bottomY <= ay) return false
+  const s = (bottomY - ay) / span
+  ctx.drawImage(im, ax - a.u * im.naturalWidth * s, ay - a.v * im.naturalHeight * s, im.naturalWidth * s, im.naturalHeight * s)
+  return true
+}
+
+/**
+ * 시체 — 나뒹구는 몸 한 장을 래그돌의 각도(ang)로 돌린다. 가라앉으면(settle → 1) **눕는다**:
+ * rest 는 그 그림을 땅에 눕히는 각도다 (그림마다 몸의 기울기가 달라서 따로 잰다).
+ * span 은 그림의 긴 변이 몸 반경(r)의 몇 배인가 · lift 는 누웠을 때 중심을 땅 위로 올리는 양 (r 배수).
+ */
+const CORPSE = [
+  /* 0 */ { name: 'dead-archer', rest: -1.1, span: 2.9, lift: 0.42 },
+  /* 1 */ { name: 'dead-archer', rest: -1.1, span: 2.9, lift: 0.42 },
+  /* 2 */ { name: 'dead-archer', rest: -1.1, span: 2.9, lift: 0.42 },
+  /* 3 매     */ { name: 'dead-falcon', rest: 0.25, span: 2.6, lift: 0.75 },
+  /* 4 화차   */ { name: 'dead-hwacha', rest: 0, span: 3.2, lift: 0.6 },
+  /* 5 총통수 */ { name: 'dead-gunner', rest: -0.95, span: 3.1, lift: 0.45 },
+  /* 6 투석군 */ { name: 'dead-slinger', rest: -0.6, span: 2.9, lift: 0.42 },
+] as const
+
+export function drawCorpseArt(
+  ctx: CanvasRenderingContext2D, look: number, x: number, y: number, r: number, ang: number, settle: number,
+): boolean {
+  const c = CORPSE[look]
+  if (c === undefined) return false
+  const im = sprite(c.name)
+  if (im === null) return false
+  const s = (r * c.span) / Math.max(im.naturalWidth, im.naturalHeight)
+  const dw = im.naturalWidth * s
+  const dh = im.naturalHeight * s
+  // 화차는 구르지 않는다 — 부서져 주저앉을 뿐이다.
+  const spin = look === 4 ? ang * 0.25 : ang
+  // (x, y) 는 몸의 **중심**이다. 누우면 중심이 땅에 닿아 몸의 절반이 땅 밑으로 들어가므로, 가라앉는 만큼 들어 올린다.
+  ctx.translate(x, y - r * c.lift * settle)
+  ctx.rotate(spin * (1 - settle) + c.rest * settle)
+  ctx.drawImage(im, -dw / 2, -dh / 2, dw, dh)
   return true
 }

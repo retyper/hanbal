@@ -21,7 +21,7 @@ import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { createFx, pumpEvents, updateFx, drawFx, drawFxFlash, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash, targetFlinch, PLAYER_PIN } from './effects.ts'
 import { drawNewBossBody, drawNewBossFace } from './bosses.ts'
 import { BOSS_EYES, drawBossArt, warmBossArt } from './bossart.ts'
-import { drawFalconArt, warmFoeArt } from './foeart.ts'
+import { drawFalconArt, drawFoeArt, drawPropArt, warmFoeArt } from './foeart.ts'
 import { bossGrammar, bossWeakSpot, foeWeakSpot } from '../sim/target.ts'
 import type { Fx } from './effects.ts'
 import { drawHud } from './hud.ts'
@@ -339,6 +339,8 @@ function diamond(
 function drawBarrel(
   ctx: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number,
 ): void {
+  // ★ 그림이 있으면 그림이다 (render/foeart.ts) — 쇠테 두른 궤짝에 불꽃 표식과 타는 심지.
+  if (drawPropArt(ctx, 'crate', x, y, y + ry * BARREL.box)) return
   const w = rx * BARREL.box
   const h = ry * BARREL.box
   const lid = h * BARREL.lid
@@ -1217,6 +1219,26 @@ function drawHwacha(
 ): void {
   const wheelR = ry * 0.34
   const baseY = y + ry * 0.72
+  // ★ 몸은 그림이다 (render/foeart.ts). 그림의 **화약궤를 sim 의 급소 자리**에 못 박고 바퀴 밑을 땅에 붙인다.
+  //   포수도 그림이다 (총통수와 같은 군졸). 예고(hot)는 궤의 심지에서 불씨가 자라는 것으로 말한다.
+  {
+    const ws0 = foeWeakSpot(4)
+    const kx0 = x + rx * ws0.fwd
+    const ky0 = y - ry * ws0.up
+    const sole0 = baseY + wheelR
+    if (drawPropArt(ctx, 'hwacha', kx0, ky0, sole0)) {
+      drawFoeArt(ctx, 'gunner', x + rx * 1.12, y - ry * 0.6, sole0, false)
+      if (hot) {
+        ctx.fillStyle = THEME.threat
+        ctx.globalAlpha = 0.9
+        ctx.beginPath()
+        ctx.arc(kx0 + rx * 0.04, ky0 - ry * 0.36, Math.max(2, rx * (0.07 + 0.13 * drawF)), 0, TAU)
+        ctx.fill()
+        ctx.globalAlpha = 1
+      }
+      return
+    }
+  }
   // ── 바퀴 둘 — 살 넷. 굴러온다는 말은 바퀴가 한다.
   ctx.strokeStyle = HWACHA.wood
   ctx.lineWidth = Math.max(1.5, rx * 0.07)

@@ -7,6 +7,7 @@
  *
  *   npx vite → http://localhost:5173/tools/preview/index.html?stage=20&ticks=90&zoomTo=boss
  *     stage  판 번호 (1부터)      ticks  그 전에 sim 을 몇 틱 돌릴지 (적이 자세를 잡는다)
+ *     corpses=200  시체를 look 마다 하나씩 세워 본다 (숫자 = 몇 프레임 뒤)
  *     hit=1  판정 덧그림 (초록 몸 · 노랑 급소)   fork=scout  갈림길 카드를 얹는다
  *   콘솔에서: shot(30, 120) 으로 다시 그린다.
  *
@@ -35,8 +36,20 @@ function shot(stage: number, ticks: number): string {
   const w = createWorld(def, { str: 3, steady: 3, stamina: 3, focus: 3 })
   for (let i = 0; i < ticks; i++) step(w, idle)
   renderer.resize()
+  // corpses=N — 시체를 세워 본다: 가짜 foe_down 을 look 마다 하나씩 뱉고 N 프레임 뒤의 모습을 찍는다.
+  //   (작으면 나뒹구는 중, 크면 누운 뒤.) sim 은 안 건드린다 — 시체는 렌더의 것이다.
+  const frames = Number(q.get('corpses') ?? 0)
+  if (frames > 0) {
+    const looks = [0, 3, 4, 5, 6]
+    for (let i = 0; i < looks.length; i++) {
+      w.events.push({ t: 'foe_down', x: 12 + i * 3.2, y: 2.2, vx: 2, vy: 3, mass: 1, look: looks[i] ?? 0, r: 0.55, hard: false, g: 0 })
+    }
+    renderer.draw(w, 0, 1 / 60, hud)
+    w.events.length = 0
+    for (let i = 0; i < frames; i++) renderer.draw(w, 0, 1 / 60, hud)
+  }
   // 카메라는 프레임마다 조금씩 따라간다 — 자리를 잡도록 몇 번 그린다.
-  for (let i = 0; i < 90; i++) renderer.draw(w, 0, 1 / 60, hud)
+  for (let i = 0; i < (frames > 0 ? 0 : 90); i++) renderer.draw(w, 0, 1 / 60, hud)
   if (q.get('hit') !== null) {
     // 판정 덧그림 — 몸(초록)과 보스의 급소(노랑). 그림이 판정과 어긋났는지 여기서 본다.
     const cam = getCamera(renderer)
