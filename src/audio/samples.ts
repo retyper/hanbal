@@ -155,7 +155,7 @@ const FILES: Readonly<Record<SampleName, readonly string[]>> = {
   parry: ['parry_01', 'parry_02'],
   // 아래 일곱은 2026-09-20 Freesound CC0 (public/sfx/CREDITS.txt · tools/fetch-freesound.mjs).
   death: ['death_01', 'death_02', 'death_03'],
-  hurt: ['hurt_01', 'hurt_02'],
+  hurt: ['hurt_01', 'hurt_02', 'hurt_03'],
   heroDeath: ['herodeath_01'],
   hawk: ['hawk_01'],
   crash: ['crash_01', 'crash_02'],
@@ -300,12 +300,44 @@ async function loadOne(bank: SampleBank, name: SampleName, file: string): Promis
     }
     const raw = await res.arrayBuffer()
     // 프라미스형 decodeAudioData. 코덱을 모르는 브라우저(구형 Safari의 ogg)는 여기서 거부한다.
-    const buf = await bank.ctx.decodeAudioData(raw)
+    const buf = trimLead(bank.ctx, await bank.ctx.decodeAudioData(raw))
     const list = bank.slots.get(name)
     if (list !== undefined) list.push(buf)
   } catch {
     bank.failed++
   }
+}
+
+/**
+ * **앞머리의 무음을 잘라낸다** (2026-09-20, 형: "죽거나 피격비명 소리등이 맞거나 죽고나서 곧바로 들려야되는데 너무 시간텀이 길어").
+ *
+ * 받은 소리들은 앞에 무음이 붙어 온다. 재 보니(브라우저에서 디코딩해 첫 소리가 나는 자리를 찾았다):
+ *   죽는 소리 74~99ms · 총통 **717ms** · 모루 287~422ms · 활 놓는 소리 105ms · 징 154ms.
+ * 100ms 면 6프레임이다 — 맞은 뒤 6프레임 늦게 나는 비명은 그 화살의 소리로 안 들린다. 활 놓는 소리가 늦는 것은 손맛의 문제다.
+ * 이 기기엔 오디오 편집기가 없고, 파일마다 표를 두면 새 소리를 받을 때마다 잊는다. 그래서 **불러올 때** 자른다 —
+ * 지금 있는 소리에도, 앞으로 받을 소리에도 저절로 적용된다. 판 시작 전(첫 제스처 뒤)에 한 번 도는 일이라 프레임 예산과 무관하다.
+ *
+ * 문턱은 그 소리의 최댓값의 8% (조용한 소리도 제 크기에 맞게). 찾은 자리에서 조금 앞(PRE)부터 남긴다 — 어택의 첫머리를 자르면 딸깍거린다.
+ */
+const TRIM = { rel: 0.08, floor: 0.02, preSec: 0.004, minCutSec: 0.008 } as const
+
+function trimLead(ctx: AudioContext, buf: AudioBuffer): AudioBuffer {
+  const d = buf.getChannelData(0)
+  let peak = 0
+  for (let i = 0; i < d.length; i++) {
+    const v = Math.abs(d[i] ?? 0)
+    if (v > peak) peak = v
+  }
+  const th = Math.max(TRIM.floor, peak * TRIM.rel)
+  let first = 0
+  for (let i = 0; i < d.length; i++) {
+    if (Math.abs(d[i] ?? 0) > th) { first = i; break }
+  }
+  const cut = Math.max(0, first - Math.floor(TRIM.preSec * buf.sampleRate))
+  if (cut < TRIM.minCutSec * buf.sampleRate || cut >= buf.length - 1) return buf
+  const out = ctx.createBuffer(buf.numberOfChannels, buf.length - cut, buf.sampleRate)
+  for (let c = 0; c < buf.numberOfChannels; c++) out.getChannelData(c).set(buf.getChannelData(c).subarray(cut))
+  return out
 }
 
 /**

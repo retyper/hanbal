@@ -79,8 +79,11 @@ swing_01      (안 씀) 'swoosh' by PorkMuncher (263595). 후보로 남겨둔다
 death_01      적이 죽는다. 'Male_Death_04' by Artmasterrich (ID 345456)
 death_02      〃 'Male Death Sound' by Blankened (ID 554443)
 death_03      〃 'Male Death 4' by scorpion67890 (ID 396801)
-hurt_01       내가 맞는다. 'Voice_AdultMale_PainGrunts_09' by MrFossy (ID 547209)
-hurt_02       〃 'male_hurt9' by micahlg (ID 413186)
+hurt_01       내가 맞는다. 'Hurt 2 - (Male)' by Christopherderp (ID 342230)
+hurt_02       〃 'Male_Hurt_03' by Artmasterrich (ID 345439)
+hurt_03       〃 'Fast pain grunt, male' by DeqstersLab (ID 790832)
+              ※ 처음 받은 둘(547209 · 413186)은 **적의 신음(grunt_01·02)과 같은 파일**이었다 — 길이와 앞머리 무음이 소수점까지 같아서 알았다.
+                 내가 맞았는지 적이 맞았는지 귀로 갈라야 해서 바꿨다.
 herodeath_01  내가 죽는다. 'MaleDeathSound13' by Blankened (ID 577032)
 hawk_01       매가 떨어진다. 'Đại Bàng Trên Không' by SieuAmThanh (ID 556575)
 crash_01      화차가 부서진다. 'snd_box_smash' by gristi (ID 562189)
