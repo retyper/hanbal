@@ -5,3 +5,6 @@ dist/
 .vite/
 tools/out/
 assets_src/
+
+# 배경을 굽는 동안만 잠깐 놓이는 원본 (tools/preview bakeBackdrop)
+public/bg/_src.png

@@ -40,6 +40,9 @@ export function warmFoeArt(): void {
   for (const name of Object.keys(PROP)) sprite(name)
   for (const c of CORPSE) sprite(c.name)
   for (const name of Object.keys(HERO)) sprite(`hero-${name}`)
+  for (const name of Object.keys(TARGET)) sprite(`target-${name}`)
+  for (const k of Object.keys(ARM) as (keyof typeof ARM)[]) { sprite(ARM[k].upper); sprite(ARM[k].fore) }
+  sprite('limb-fist')
 }
 
 /**
@@ -191,6 +194,95 @@ export function drawHeroArt(
   ctx.translate(hx, hy)
   if (faceLeft) ctx.scale(-1, 1)
   ctx.drawImage(im, -art.headU * dw, -art.headV * dh, dw, dh)
+  ctx.restore()
+  return true
+}
+
+/**
+ * 과녁 — 정면에서 본 그림을 **판정 타원(rx, ry)에 맞춰 늘려** 얹는다. 맞으면 눌리는 것(rx ≠ ry)이 그대로 산다.
+ * 링의 비율은 점수의 문법이다 (scene.ts DRAW.ringBand 0.76 · ringAccent 0.5 · ringCore 0.2) — 그림도 그 비율로 주문했다.
+ * k 는 그림이 판정 원보다 얼마나 큰가 (짚 테두리·등의 뚜껑처럼 판정 밖으로 나가는 장식). up 은 위로 올리는 양 (ry 배수).
+ */
+const TARGET = {
+  static: { k: 1.08, up: 0 },
+  pierce: { k: 1.12, up: 0 },
+  supply: { k: 1.05, up: 0 },
+  heal: { k: 1.05, up: 0 },
+  lantern: { k: 1.12, up: 0.06 },
+} as const
+
+export function drawTargetArt(
+  ctx: CanvasRenderingContext2D, name: keyof typeof TARGET, x: number, y: number, rx: number, ry: number,
+): boolean {
+  const im = sprite(`target-${name}`)
+  if (im === null) return false
+  const a = TARGET[name]
+  // 그림의 가로세로비는 지킨다 (등은 세로로 길다) — 긴 변을 판정 지름 × k 에 맞춘다.
+  const long = Math.max(im.naturalWidth, im.naturalHeight)
+  const dw = (im.naturalWidth / long) * rx * 2 * a.k
+  const dh = (im.naturalHeight / long) * ry * 2 * a.k
+  ctx.drawImage(im, x - dw / 2, y - dh / 2 - ry * a.up, dw, dh)
+  return true
+}
+
+/**
+ * 팔 — **관절은 그대로고 옷만 입힌다** (2026-09-20, 형: "팔도 … 전부 에셋 바꿔야하는거아냐?").
+ *
+ * 어깨·팔꿈치·손의 자리는 여전히 render/stickman.ts · foe.ts 가 계산한다 (당김·겨냥·떨림이 거기 있다).
+ * 여기서는 그 두 토막 〈어깨→팔꿈치〉〈팔꿈치→손〉 위에 **세로로 선 소매 그림**을 돌려서 늘려 얹을 뿐이다.
+ * 그림은 위가 몸 쪽 끝이다. upperCut 은 윗팔로 쓸 때 그림의 위에서 몇 할만 쓰는가 —
+ * 산적은 윗팔 그림을 못 받아서 아랫팔 그림의 소매 부분(손목 감개 위)을 윗팔로 쓴다.
+ */
+const ARM = {
+  hero: { upper: 'limb-hero-upper', upperCut: 1, upperW: 1.35, fore: 'limb-hero-fore', foreW: 1 },
+  foe: { upper: 'limb-foe-fore', upperCut: 0.66, upperW: 1.15, fore: 'limb-foe-fore', foreW: 1 },
+  gunner: { upper: 'limb-gunner-upper', upperCut: 1, upperW: 1.2, fore: 'limb-gunner-fore', foreW: 1.1 },
+  peasant: { upper: 'limb-hero-upper', upperCut: 1, upperW: 1.2, fore: 'limb-peasant-fore', foreW: 1.05 },
+} as const
+export type ArmSkin = keyof typeof ARM
+
+function segment(
+  ctx: CanvasRenderingContext2D, im: HTMLImageElement, cut: number,
+  x0: number, y0: number, x1: number, y1: number, wide: number,
+): void {
+  const len = Math.hypot(x1 - x0, y1 - y0)
+  if (len < 0.5) return
+  // 토막 끝을 조금씩 겹친다 — 안 그러면 굽은 팔꿈치에 틈이 보인다.
+  const over = wide * 0.3
+  ctx.save()
+  ctx.translate(x0, y0)
+  ctx.rotate(Math.atan2(y1 - y0, x1 - x0) - Math.PI / 2)
+  ctx.drawImage(im, 0, 0, im.naturalWidth, im.naturalHeight * cut, -wide / 2, -over, wide, len + over * 2)
+  ctx.restore()
+}
+
+/**
+ * 팔 하나 (화면 px). (x0,y0) 어깨 → (jx,jy) 팔꿈치 → (x1,y1) 손. wide 는 아랫팔의 굵기 (px).
+ * 그림이 아직 안 떴으면 false — 부르는 쪽이 선으로 그린다.
+ */
+export function drawArmArt(
+  ctx: CanvasRenderingContext2D, skin: ArmSkin,
+  x0: number, y0: number, jx: number, jy: number, x1: number, y1: number, wide: number,
+): boolean {
+  const a = ARM[skin]
+  const up = sprite(a.upper)
+  const fore = sprite(a.fore)
+  if (up === null || fore === null) return false
+  segment(ctx, up, a.upperCut, x0, y0, jx, jy, wide * a.upperW)
+  segment(ctx, fore, 1, jx, jy, x1, y1, wide * a.foreW)
+  return true
+}
+
+/** 주먹 — 활대를 쥐었다 · 줄을 쥐었다는 못. r 은 반지름 (px). 그림은 손가락이 오른쪽을 본다. */
+export function drawFistArt(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, faceLeft: boolean): boolean {
+  const im = sprite('limb-fist')
+  if (im === null) return false
+  const dh = r * 2.3
+  const dw = dh * (im.naturalWidth / im.naturalHeight)
+  ctx.save()
+  ctx.translate(x, y)
+  if (faceLeft) ctx.scale(-1, 1)
+  ctx.drawImage(im, -dw / 2, -dh / 2, dw, dh)
   ctx.restore()
   return true
 }

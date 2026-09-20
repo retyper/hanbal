@@ -32,7 +32,7 @@ import { P } from '../tune/params.ts'
 import { effectiveStats } from '../sim/bow.ts'
 import type { World } from '../sim/types.ts'
 import { THEME, worldToScreenX, worldToScreenY } from './camera.ts'
-import { drawHeroArt, heroArtName } from './foeart.ts'
+import { drawArmArt, drawFistArt, drawHeroArt, heroArtName } from './foeart.ts'
 import { hudLeftBottom } from './hud.ts'
 import type { Camera } from './camera.ts'
 
@@ -492,6 +492,12 @@ function curve(
 }
 
 /** 팔·다리는 관절 하나짜리 꺾인 선. bend는 진행방향 왼쪽(+) 기준 오프셋(m). */
+/** 소매 그림의 굵기 (m). 몸 그림의 어깨 폭에 맞춘 **그림의 치수**다 — 손맛 노브가 아니다. */
+const ARM_WIDE = 0.115
+
+/** 0 이면 팔을 선으로, 양수면 그 굵기(px)의 소매 그림으로 그린다. drawArcher 가 몸을 그림으로 그렸을 때만 켠다. */
+let armWide = 0
+
 function limb(
   ctx: CanvasRenderingContext2D, cam: Camera,
   x0: number, y0: number, x1: number, y1: number, bend: number,
@@ -502,6 +508,12 @@ function limb(
   const inv = len > 1e-5 ? 1 / len : 0
   const jx = (x0 + x1) * 0.5 - dy * inv * bend
   const jy = (y0 + y1) * 0.5 + dx * inv * bend
+  // 몸이 그림이면 팔도 소매 그림이다 (drawArcher 가 armWide 를 켠다). 관절의 자리는 위에서 구한 그대로다.
+  if (armWide > 0 && drawArmArt(
+    ctx, 'hero',
+    worldToScreenX(cam, x0), worldToScreenY(cam, y0), worldToScreenX(cam, jx), worldToScreenY(cam, jy),
+    worldToScreenX(cam, x1), worldToScreenY(cam, y1), armWide,
+  )) return
   ctx.beginPath()
   ctx.moveTo(worldToScreenX(cam, x0), worldToScreenY(cam, y0))
   ctx.lineTo(worldToScreenX(cam, jx), worldToScreenY(cam, jy))
@@ -748,6 +760,8 @@ export function drawArcher(
   const heroArt = heroName !== null && drawHeroArt(
     ctx, heroName, worldToScreenX(cam, headX), worldToScreenY(cam, headY), worldToScreenY(cam, footY), face < 0,
   )
+  // 팔도 그림이다 — 굵기는 몸 그림에 맞춘다 (소매 폭 ≈ 0.115m).
+  armWide = heroArt ? cam.scale * ARM_WIDE : 0
   if (!heroArt) {
   ctx.strokeStyle = bodyCol
   ctx.lineWidth = torsoW
@@ -1000,6 +1014,7 @@ export function drawArcher(
     // ── 활손(왼손)의 주먹 — **활대를 쥐었다**는 못. ─────────────────────────────
     // 형의 반려: "손이 활을 안 잡고 붕 떠 있다." 선 두 개가 한 점에서 만나는 것만으로는
     // 쥐었다고 안 읽힌다. 라이저 위에 살점이 있어야 한다. 몸색으로 칠해야 손이다.
+    if (!(armWide > 0 && drawFistArt(ctx, worldToScreenX(cam, rig.hx), worldToScreenY(cam, rig.hy), armWide * 0.55, face < 0))) {
     ctx.fillStyle = bodyCol
     ctx.beginPath()
     ctx.arc(
@@ -1007,6 +1022,7 @@ export function drawArcher(
       Math.max(limbW * BOWPOSE.fist, thinPx * 1.6), 0, TAU,
     )
     ctx.fill()
+    }
 
     // 시위 — 몸보다 훨씬 얇다. 고자 끝에 걸린다.
     // 당기는 동안만 노크로 꺾인다. 놓으면 **시위만** 제자리로 튕겨 돌아가 잠깐 잔떨림이 남는다 —
@@ -1063,14 +1079,21 @@ export function drawArcher(
     // 팔은 시위가 아니라 **손**을 따른다 — 놓은 뒤 시위는 튕겨 돌아가도 팔은 남는다.
     const elbowX = rig.hdX - rig.ux * BODY.elbowBack + rig.vx * elbowRise
     const elbowY = rig.hdY - rig.uy * BODY.elbowBack + rig.vy * elbowRise
+    if (!(armWide > 0 && drawArmArt(
+      ctx, 'hero',
+      worldToScreenX(cam, rig.sx), worldToScreenY(cam, rig.sy), worldToScreenX(cam, elbowX), worldToScreenY(cam, elbowY),
+      worldToScreenX(cam, rig.hdX), worldToScreenY(cam, rig.hdY), armWide,
+    ))) {
     ctx.beginPath()
     ctx.moveTo(worldToScreenX(cam, rig.sx), worldToScreenY(cam, rig.sy))
     ctx.lineTo(worldToScreenX(cam, elbowX), worldToScreenY(cam, elbowY))
     ctx.lineTo(worldToScreenX(cam, rig.hdX), worldToScreenY(cam, rig.hdY))
     ctx.stroke()
+    }
 
     // 시위손(오른손)의 주먹 — **줄을 쥐었다**는 못. 당기는 동안은 노크 그 자리이므로
     // 주먹이 시위의 꺾이는 꼭짓점에 정확히 얹힌다. 놓은 뒤에는 시위와 헤어져 팔로스루를 따라간다.
+    if (!(armWide > 0 && drawFistArt(ctx, worldToScreenX(cam, rig.hdX), worldToScreenY(cam, rig.hdY), armWide * 0.55, face < 0))) {
     ctx.fillStyle = bodyCol
     ctx.beginPath()
     ctx.arc(
@@ -1078,6 +1101,7 @@ export function drawArcher(
       Math.max(limbW * BOWPOSE.fist, thinPx * 1.6), 0, TAU,
     )
     ctx.fill()
+    }
 
 
     // ── 물린 화살 · 통아 ──────────────────────────────────────────

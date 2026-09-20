@@ -84,3 +84,56 @@ function shot(stage: number, ticks: number): string {
 // 스프라이트는 비동기로 뜬다 — 한 번 그려 요청을 걸고, 조금 뒤에 다시 그린다.
 console.log(shot(Number(q.get('stage') ?? 10), Number(q.get('ticks') ?? 60)))
 setTimeout(() => { document.title = shot(Number(q.get('stage') ?? 10), Number(q.get('ticks') ?? 60)) }, 700)
+
+/**
+ * 배경 굽기 — 받은 16:9 그림 한 장을 **두 겹의 WebP** 로 (2026-09-20). 이 기기엔 그림 변환기가 없어서 브라우저의 캔버스로 굽는다.
+ *
+ * 왜 두 겹인가: 화면은 가로로 길고 땅은 화면 중간에 오기도 한다. 한 장을 폭에 맞춰 덮으면 하늘과 달이 통째로 잘리고
+ * 산이 판 이름을 덮는다. 그래서 **하늘(위 절반)은 화면 위에, 산(가운데 띠)은 땅에** 따로 못 박는다 (render/scene.ts drawBackdrop).
+ * 산 띠의 위쪽은 알파로 녹여서 하늘과 이음매가 안 보인다.
+ *
+ *   1. 받은 PNG 를 public/bg/_src.png 로 둔다
+ *   2. node tools/preview/receiver.mjs 를 띄운다 (구운 파일을 받아 적는 수신기)
+ *   3. 이 페이지의 콘솔에서:  await bakeBackdrop('/bg/_src.png', 'night')
+ *      → public/bg/night-sky.webp · night-ridge.webp.  _src.png 는 지운다
+ */
+const SPLIT = { skyBottom: 0.5, ridgeTop: 0.34, ridgeBottom: 0.93, fade: 0.3 }
+
+async function bakeBackdrop(src: string, name: string, q = 0.84): Promise<string> {
+  const bmp = await createImageBitmap(await (await fetch(`${src}?v=${Date.now()}`)).blob())
+  const W = bmp.width
+  const H = bmp.height
+  // 내려받지 않고 수신기(tools/preview/receiver.mjs)로 보낸다 — 크롬은 연달아 내려받는 것을 막는다.
+  const save = async (c: HTMLCanvasElement, file: string): Promise<number> => {
+    const blob = await new Promise<Blob | null>((r) => c.toBlob(r, 'image/webp', q))
+    if (blob === null) throw new Error('webp 로 못 구웠다')
+    const res = await fetch(`http://127.0.0.1:5199/save/bg/${file}`, { method: 'PUT', body: blob })
+    if (!res.ok) throw new Error(`수신기가 거절했다: ${await res.text()}`)
+    return Math.round(blob.size / 1024)
+  }
+  // 하늘 — 위에서 skyBottom 까지.
+  const sky = document.createElement('canvas')
+  sky.width = W
+  sky.height = Math.round(H * SPLIT.skyBottom)
+  sky.getContext('2d')?.drawImage(bmp, 0, 0)
+  // 산 — ridgeTop ~ ridgeBottom. 위쪽 fade 만큼은 알파 0 → 1 로 녹인다.
+  const ridge = document.createElement('canvas')
+  const y0 = Math.round(H * SPLIT.ridgeTop)
+  ridge.width = W
+  ridge.height = Math.round(H * SPLIT.ridgeBottom) - y0
+  const rc = ridge.getContext('2d')
+  if (rc === null) throw new Error('2d 컨텍스트 없음')
+  rc.drawImage(bmp, 0, -y0)
+  // 제미나이의 워터마크(오른쪽 아래 ✦)를 옆의 안개로 덮는다.
+  rc.drawImage(ridge, W * 0.72, ridge.height * 0.78, W * 0.12, ridge.height * 0.22, W * 0.855, ridge.height * 0.78, W * 0.12, ridge.height * 0.22)
+  const g = rc.createLinearGradient(0, 0, 0, ridge.height * SPLIT.fade)
+  g.addColorStop(0, 'rgba(0,0,0,1)')
+  g.addColorStop(1, 'rgba(0,0,0,0)')
+  rc.globalCompositeOperation = 'destination-out'
+  rc.fillStyle = g
+  rc.fillRect(0, 0, W, ridge.height * SPLIT.fade)
+  const a = await save(sky, `${name}-sky.webp`)
+  const b = await save(ridge, `${name}-ridge.webp`)
+  return `${name}: sky ${sky.width}x${sky.height} ${a}KB · ridge ${ridge.width}x${ridge.height} ${b}KB`
+}
+;(window as unknown as { bakeBackdrop: typeof bakeBackdrop }).bakeBackdrop = bakeBackdrop

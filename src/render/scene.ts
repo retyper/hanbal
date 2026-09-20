@@ -21,7 +21,8 @@ import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { createFx, pumpEvents, updateFx, drawFx, drawFxFlash, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash, targetFlinch, PLAYER_PIN } from './effects.ts'
 import { drawNewBossBody, drawNewBossFace } from './bosses.ts'
 import { BOSS_EYES, drawBossArt, warmBossArt } from './bossart.ts'
-import { drawFalconArt, drawFoeArt, drawPropArt, warmFoeArt } from './foeart.ts'
+import { drawFalconArt, drawFoeArt, drawPropArt, drawTargetArt, warmFoeArt } from './foeart.ts'
+import { backdrop } from './sprites.ts'
 import { bossGrammar, bossWeakSpot, foeWeakSpot } from '../sim/target.ts'
 import type { Fx } from './effects.ts'
 import { drawHud } from './hud.ts'
@@ -920,6 +921,19 @@ function drawTargets(
       ctx.lineTo(x - dir * rx * 2.1, y + ry * 0.45)
       ctx.stroke()
       drawFoeRusher(ctx, x, y, rx, ry, dir, phase, THEME.threat)
+    } else if (
+      // ★ 과녁은 **그림**이다 (2026-09-20, render/foeart.ts) — 짚 과녁 · 마름모 널판 · 보급(화살 묶음) · 회복(약 호리병),
+      //   그리고 공중 과녁은 **등(燈)** 이다 (깨지는 소리가 나는 그 물건). 판정 타원에 맞춰 늘려 얹으므로 눌림도 그대로다.
+      //   너무 작아 링이 뭉개지는 크기(ringMinPx)와 화약궤는 아래 가지가 맡는다. 그림이 안 떴으면 아래 선 그림이 선다.
+      t.kind !== 'barrel' && r >= DRAW.ringMinPx && drawTargetArt(
+        ctx,
+        t.kind === 'bonus' ? (t.healGive > 0 ? 'heal' : 'supply')
+          : t.kind === 'pierceable' ? 'pierce'
+            : t.kind === 'aerial' ? 'lantern' : 'static',
+        x, y, rx, ry,
+      )
+    ) {
+      // 그림이 섰다.
     } else if (t.kind === 'bonus') {
       // 보급 — 무엇을 주는지 그림이 말한다 (형: "화살인지 체력인지 확실히").
       //  · 기력: 초록 원 + 십자 (치료의 문법)
@@ -1976,6 +1990,71 @@ function drawGround(ctx: CanvasRenderingContext2D, cam: Camera, w: World, sky: S
   ctx.stroke()
 }
 
+/**
+ * 배경 그림 — 하늘의 시각(sky.name)마다 한 장. public/bg/*.webp.
+ *
+ * 그림은 "산의 밑동이 그림의 아래 12% 에서 어둠으로 꺼지게" 받았다 — 그 선(BACKDROP.baseV)을 궁수가 딛는
+ * 땅의 화면 높이에 맞추고, 그 위를 화면 폭에 꽉 차게(cover) 덮는다. 땅은 그 위에 지금처럼 그린다.
+ * 카메라가 움직이면 아주 조금만 따라 밀린다 (먼 산의 시차). 그림은 화면보다 조금 크게 깔아 그 여유를 만든다.
+ */
+const BACKDROP = {
+  file: { '여명 전': 'predawn', '새벽': 'dawn', '안개 아침': 'mist', '노을': 'sunset', '밤': 'night' } as Record<string, string>,
+  /** 산 띠에서 산의 밑동이 있는 높이 (0~1) — tools/preview bakeBackdrop 의 SPLIT 에서 나온다: (0.9−0.34)/(0.93−0.34). */
+  baseV: 0.95,
+  /** 화면보다 이만큼 크게 깐다 — 시차로 밀릴 여유. */
+  over: 1.08,
+  /** 카메라가 1m 갈 때 밀리는 양 (px 배수). 하늘은 산보다 덜 움직인다. */
+  parallaxRidge: 0.02,
+  parallaxSky: 0.006,
+  /** 산 띠가 하늘 영역(화면 위 ~ 땅)에서 차지할 수 있는 최대 비율. */
+  ridgeMax: 0.7,
+  /** 하늘과 산 사이가 뜨면 하늘의 맨 아래 띠(이만큼)를 늘려 메운다 — 거기엔 달도 구름도 없다. */
+  skyStretchV: 0.12,
+  /** 그림 위에 얹는 어둠 — 앞에 선 것들이 배경보다 밝아야 한다. */
+  dim: 0.16,
+} as const
+
+/**
+ * 두 겹이다 (tools/preview bakeBackdrop): **하늘은 화면 위에, 산은 땅에** 못 박는다.
+ * 한 장을 폭에 맞춰 덮으면 가로로 긴 화면에서 하늘과 달이 통째로 잘리고 산이 판 이름을 덮는다.
+ */
+function drawBackdrop(ctx: CanvasRenderingContext2D, cam: Camera, sky: SkyPalette): boolean {
+  const file = BACKDROP.file[sky.name]
+  if (file === undefined) return false
+  const top = backdrop(`${file}-sky`)
+  const ridge = backdrop(`${file}-ridge`)
+  if (top === null || ridge === null) return false
+  const groundY = worldToScreenY(cam, 0)
+  const s = (cam.w * BACKDROP.over) / ridge.naturalWidth
+  const dw = ridge.naturalWidth * s
+  const slack = (dw - cam.w) / 2
+  const clampShift = (v: number): number => Math.max(-slack, Math.min(slack, v))
+  const x0 = (cam.w - dw) / 2
+  // 하늘 — 위에 붙인다.
+  const skyH = top.naturalHeight * s
+  const sx = x0 + clampShift(-cam.x * cam.scale * BACKDROP.parallaxSky)
+  ctx.drawImage(top, sx, 0, dw, skyH)
+  // 산 — 밑동을 땅에.
+  // 산 띠는 하늘 영역의 ridgeMax 까지만 차지한다 — 멀리 당겨 잡는 판에서는 땅이 화면 중간까지 올라와서,
+  // 그대로 두면 산이 달을 가리고 판 이름 뒤까지 올라온다. 넘치면 **세로로만** 누른다 (낮은 능선으로 읽힌다).
+  const ridgeH = Math.min(ridge.naturalHeight * s, (groundY * BACKDROP.ridgeMax) / BACKDROP.baseV)
+  const ry = groundY - ridgeH * BACKDROP.baseV
+  // 사이가 뜨면 하늘의 맨 아래 띠를 늘려 메운다.
+  if (ry + ridgeH * 0.2 > skyH) {
+    const v = BACKDROP.skyStretchV
+    ctx.drawImage(
+      top, 0, top.naturalHeight * (1 - v), top.naturalWidth, top.naturalHeight * v,
+      sx, skyH * (1 - v), dw, ry + ridgeH * 0.2 - skyH * (1 - v),
+    )
+  }
+  ctx.drawImage(ridge, x0 + clampShift(-cam.x * cam.scale * BACKDROP.parallaxRidge), ry, dw, ridgeH)
+  ctx.globalAlpha = BACKDROP.dim
+  ctx.fillStyle = sky.ground
+  ctx.fillRect(0, 0, cam.w, cam.h)
+  ctx.globalAlpha = 1
+  return true
+}
+
 export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   const ctx = canvas.getContext('2d', { alpha: false })
   if (ctx === null) throw new Error('Canvas2D 컨텍스트를 얻지 못했다')
@@ -2036,13 +2115,17 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       c.fillRect(0, 0, cam.w, cam.h)
 
       // 하늘은 능선보다 먼저. 별이 산 위로 뜨면 산이 유리가 된다.
-      drawSky(c, cam, r.stars, w.elapsed, sky)
-      drawClouds(c, cam, r.clouds, w.elapsed, sky)
-      drawRidge(c, cam, r.faint, BG.faintParallax, sky.ridgeFaint)
-      drawMist(c, cam, sky)
-      drawRidge(c, cam, r.far, BG.farParallax, sky.ridgeFar)
-      drawRidge(c, cam, r.near, BG.nearParallax, sky.ridgeNear)
-      drawPines(c, cam, r.pines, r.near, sky)
+      // ★ 배경은 **그림**이다 (2026-09-20) — 그 시각의 그림이 있으면 하늘·구름·능선·안개·솔을 통째로 대신한다.
+      //   없거나 아직 안 왔으면 예전 벡터 풍경이 선다.
+      if (!drawBackdrop(c, cam, sky)) {
+        drawSky(c, cam, r.stars, w.elapsed, sky)
+        drawClouds(c, cam, r.clouds, w.elapsed, sky)
+        drawRidge(c, cam, r.faint, BG.faintParallax, sky.ridgeFaint)
+        drawMist(c, cam, sky)
+        drawRidge(c, cam, r.far, BG.farParallax, sky.ridgeFar)
+        drawRidge(c, cam, r.near, BG.nearParallax, sky.ridgeNear)
+        drawPines(c, cam, r.pines, r.near, sky)
+      }
 
       // ── 땅 — 평지면 한 줄, 언덕이 있으면 꺾은선을 따라 (sim/terrain.ts) ──
       drawGround(c, cam, w, sky)

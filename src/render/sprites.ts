@@ -22,3 +22,21 @@ export function sprite(name: string): HTMLImageElement | null {
   }
   return im.complete && im.naturalWidth > 0 ? im : null
 }
+
+/**
+ * 배경 — public/bg/<이름>.webp (2026-09-20). 스프라이트와 같은 계약이다: 없거나 아직 안 왔으면 null.
+ * 큰 그림이라 PNG 가 아니라 WebP 로 둔다 (1.2MB → 100KB 남짓). 굽는 법은 docs/ASSETS.md 8장.
+ */
+export function backdrop(name: string): HTMLImageElement | null {
+  if (typeof Image === 'undefined') return null
+  const key = `bg/${name}`
+  let im = cache.get(key)
+  if (im === undefined) {
+    im = new Image()
+    const base = import.meta.env.BASE_URL || '/'
+    im.src = `${base}bg/${name}.webp`
+    cache.set(key, im)
+  }
+  return im.complete && im.naturalWidth > 0 ? im : null
+}
+
