@@ -64,7 +64,7 @@ function mk(n: number, s: Spot): TargetSpec {
  * (teach 는 그 안의 한 걸음이다), 40개의 이름은 지어봐야 서로 구분이 안 된다.
  * 판 하나하나의 성격은 teach 가 자막 둘째 줄로 말한다.
  */
-const CHAPTER_NAMES: readonly string[] = ['거리와 낙차', '연쇄', '바람과 이동', '관통과 조합', '곡사']
+const CHAPTER_NAMES: readonly string[] = ['거리와 낙차', '사냥', '바람과 이동', '관통과 조합', '곡사']
 
 interface Layout {
   /** 이 판에서 무엇을 배우는가. 한 판에 하나씩. */
@@ -216,10 +216,13 @@ export function getStage(index: number): StageDef {
   if (i < 0) return withArrowFloor(STAGES[0] as StageDef)
   // ★ 10판마다 보스가 저작 판을 밀어내고 선다 (docs/RUN.md 3장). 여정의 마디다.
   if ((i + 1) % BOSS_EVERY === 0) return withArrowFloor(bossStage(i))
+  // ★ 11~19판은 **사냥**이다 (2026-09-20, 형: "공격하는 적이 너무 빨리 등장하는거 같긴 해. 토끼나 물고기 사슴 등의
+  //   동물들도 사냥하는 스테이지 나와야 하지 않나싶다"). 과녁을 뗀 손이 곧바로 화살비를 맞던 것을 한 챕터 늦춘다 —
+  //   그 사이에 **움직이는 산 것**을 쏘며 앞서 쏘기(리드)를 몸에 붙인다. 아무도 나를 쏘지 않는다.
+  if (i + 1 > BOSS_EVERY && i + 1 < FOE_FROM) return withArrowFloor(huntStage(i))
   const base = i < STAGES.length ? (STAGES[i] as StageDef) : endlessStage(i)
-  // ★ 10판을 넘으면 과녁만 있는 세상이 끝난다 — 적 궁수가 판에 선다 (docs/RUN.md 6장).
-  //   "1~9까지는 과녁이어도, 10 이후부터는 나를 공격하게 해줘"(형).
-  return withArrowFloor(i + 1 > BOSS_EVERY ? convertToFoes(base, i) : base)
+  // ★ 사냥 챕터를 넘으면 과녁만 있는 세상이 끝난다 — 적 궁수가 판에 선다 (docs/RUN.md 6장).
+  return withArrowFloor(i + 1 >= FOE_FROM ? convertToFoes(base, i) : base)
 }
 
 /**
@@ -409,6 +412,69 @@ function convertToFoes(base: StageDef, i: number): StageDef {
   }
 }
 
+// ───────────────────────── 사냥 (11~19판) ─────────────────────────
+//
+// 사냥감은 sim 에게 **움직이는 과녁**이다 (sim/target.ts ANIMAL_LOOK) — 쏘지도 달려들지도 않는다.
+// 여기 적는 것은 자리와 움직임뿐이고, 무엇으로 보이는가는 look 이 정한다 (render/foeart.ts drawAnimalArt).
+//   토끼 20 — 땅에서 깡충깡충 오간다 (작다 — 가까이에만 둔다: 화면 반경 30px 바닥, 이 파일 머리말)
+//   고라니 21 — 크고 멀다. 서 있거나 천천히 걷는다
+//   꿩 22 — 하늘을 가로지른다. 앞서 쏘기(리드)의 교재다
+//   잉어 23 — 연못에서 뛰어오른다. **물 밖에 있을 때만** 맞는다 (땅 아래는 화살이 못 간다) — 때를 재는 과녁
+// 반경은 손으로 적는다: 각크기 곡선(hFor)은 '같은 물건을 거리에 맞춰 키우는' 규칙인데, 토끼는 멀다고 커지지 않는다.
+const HARE_R = 0.4
+const DEER_R = 0.66
+const PHEASANT_R = 0.46
+const CARP_R = 0.5
+type Game = { a: 'hare' | 'deer' | 'pheasant' | 'carp'; x: number; y?: number; amp?: number; freq?: number }
+
+const hare = (x: number, amp = 1.6, freq = 0.16): Game => ({ a: 'hare', x, amp, freq })
+const deer = (x: number, amp = 0, freq = 0.07): Game => ({ a: 'deer', x, amp, freq })
+const pheasant = (x: number, y: number, amp = 4, freq = 0.13): Game => ({ a: 'pheasant', x, y, amp, freq })
+const carp = (x: number, freq = 0.22): Game => ({ a: 'carp', x, freq })
+
+const HUNTS: readonly { teach: string; arrows: number; hits: number; wind?: number; game: readonly Game[] }[] = [
+  { teach: '사냥이다 — 아무도 쏘지 않는다. 풀밭의 토끼 둘', arrows: 6, hits: 2, game: [hare(9, 1.2, 0.12), hare(13)] },
+  { teach: '고라니는 멀리 선다 — 멀수록 위를 겨눈다', arrows: 6, hits: 2, game: [deer(19), hare(11)] },
+  { teach: '꿩이 난다 — 있는 곳이 아니라 **갈 곳**을 쏜다', arrows: 7, hits: 2, game: [pheasant(15, 4.4), hare(10)] },
+  { teach: '연못의 잉어 — 물 밖으로 뛰어오를 때만 맞는다', arrows: 7, hits: 2, game: [carp(11), hare(15, 1.8)] },
+  { teach: '걷는 고라니 — 걸음만큼 앞을 본다', arrows: 7, hits: 3, game: [deer(21, 3, 0.08), pheasant(14, 5, 3.4, 0.15), carp(9, 0.25)] },
+  { teach: '꿩 두 마리가 엇갈린다 — 한 마리씩', arrows: 8, hits: 3, game: [pheasant(13, 4, 3.6, 0.11), pheasant(17, 5.6, 4.2, 0.17), deer(25)] },
+  { teach: '토끼 셋 — 빠른 놈일수록 멈추는 끝에서 쏜다', arrows: 8, hits: 3, game: [hare(9, 1.4, 0.22), hare(13, 2, 0.28), hare(16.5, 1.6, 0.2)] },
+  { teach: '바람 부는 연못 — 뛰는 때와 밀리는 만큼을 같이 잰다', arrows: 9, hits: 3, wind: 1.5, game: [carp(10, 0.2), carp(14, 0.26), pheasant(16, 5.2)] },
+  { teach: '큰 사냥 — 고라니 떼와 꿩, 그리고 토끼', arrows: 9, hits: 4, game: [deer(18, 2.4, 0.09), deer(26, 3, 0.06), pheasant(15, 5.4, 4.4, 0.14), hare(11, 1.8, 0.24)] },
+]
+
+function gameSpec(g: Game): TargetSpec {
+  if (g.a === 'hare') return { kind: 'moving', look: 20, x: g.x, y: HARE_R, r: HARE_R, ampX: g.amp ?? 0, ampY: 0, freq: g.freq ?? 0.16, score: BASE_SCORE }
+  if (g.a === 'deer') {
+    return (g.amp ?? 0) > 0
+      ? { kind: 'moving', look: 21, x: g.x, y: DEER_R, r: DEER_R, ampX: g.amp ?? 0, ampY: 0, freq: g.freq ?? 0.07, score: BASE_SCORE }
+      : { kind: 'static', look: 21, x: g.x, y: DEER_R, r: DEER_R, score: BASE_SCORE }
+  }
+  if (g.a === 'pheasant') return { kind: 'moving', look: 22, x: g.x, y: g.y ?? 4.5, r: PHEASANT_R, ampX: g.amp ?? 4, ampY: 0.5, freq: g.freq ?? 0.13, score: BASE_SCORE + 20 }
+  // 잉어 — 가운데가 수면 위라 주기의 **3분의 2** 는 물 밖에 있다. 첫 값(가운데 0.25, 절반 남짓)은 밸런스 시뮬에서
+  // 초보 봇 클리어 40~65% 였다 — 사냥 챕터는 쉬어 가는 곳이지 때를 못 맞춰 막히는 곳이 아니다 (이 파일 머리말의 정책).
+  return { kind: 'moving', look: 23, x: g.x, y: CARP_LEAP * 0.45, r: CARP_R, ampX: 0, ampY: CARP_LEAP, freq: g.freq ?? 0.3, score: BASE_SCORE + 20 }
+}
+/** 잉어가 뛰어오르는 폭 (m) — 수면 위로 CARP_LEAP × 1.25 까지 뜬다. */
+const CARP_LEAP = 1.5
+
+function huntStage(i: number): StageDef {
+  const k = Math.max(0, Math.min(HUNTS.length - 1, i - BOSS_EVERY))
+  const h = HUNTS[k] as (typeof HUNTS)[number]
+  const id = `2-${k + 1}`
+  return {
+    id,
+    title: CHAPTER_NAMES[1] ?? '',
+    hint: h.teach,
+    seed: seedFrom(`hunt.${id}`),
+    arrows: h.arrows,
+    targetScore: need(h.hits),
+    wind: h.wind ?? 0,
+    targets: h.game.map(gameSpec),
+  }
+}
+
 /**
  * 전환 사수의 체력 — 도입 경사 (P.enemy.convertHpEase*). 11판에서 낮게 시작해
  * convertHpEaseStages 판 동안 convertHp 로 올라오고, 31판부터 ×1.5.
@@ -417,7 +483,7 @@ function convertToFoes(base: StageDef, i: number): StageDef {
 export function foeHp(n: number): number {
   const base = P.enemy.convertHp * (n >= 31 ? 1.5 : 1)
   const span = Math.max(1, Math.floor(P.enemy.convertHpEaseStages))
-  const t = Math.min(1, Math.max(0, (n - (BOSS_EVERY + 1)) / span))
+  const t = Math.min(1, Math.max(0, (n - FOE_FROM) / span))
   const ease = P.enemy.convertHpEase + (1 - P.enemy.convertHpEase) * t
   return base * ease
 }
@@ -428,7 +494,7 @@ export function foeHp(n: number): number {
  */
 export function foeDmgMul(n: number): number {
   const span = Math.max(1, Math.floor(P.enemy.foeDmgEaseStages))
-  const t = Math.min(1, Math.max(0, (n - (BOSS_EVERY + 1)) / span))
+  const t = Math.min(1, Math.max(0, (n - FOE_FROM) / span))
   return P.enemy.foeDmgEase + (1 - P.enemy.foeDmgEase) * t
 }
 
@@ -441,7 +507,7 @@ function foeHint(n: number, base: StageDef, specs: readonly TargetSpec[]): strin
   // ★ 처음 화살을 맞는 판에서 **환도**를 가르친다 (2026-09-10, P.parry).
   //   새 세이브 칸(seen...)을 또 만들지 않는다 — 가르칠 자리가 이미 여기다. 적이 처음 활을
   //   드는 판과, 화살이 실제로 날아오는 그다음 판에 한 줄씩.
-  if (n === BOSS_EVERY + 1) return '적이 활을 든다 — 당기는 쪽을 먼저 쏜다. 머리는 한 발이다'
+  if (n === FOE_FROM) return '적이 활을 든다 — 당기는 쪽을 먼저 쏜다. 머리는 한 발이다'
   if (specs.some((s) => s.kind === 'barrel')) return base.hint ?? ''
   let win = 0
   let hide = 0
@@ -458,7 +524,7 @@ function foeHint(n: number, base: StageDef, specs: readonly TargetSpec[]): strin
     else if (s.look === 2) hide++
     else win++
   }
-  if (n === BOSS_EVERY + 2) return '날아오는 화살은 칼로 쳐낸다 — F, 폰은 패링 버튼. 쳐낸 화살은 쏜 놈에게 돌아간다'
+  if (n === FOE_FROM + 1) return '날아오는 화살은 칼로 쳐낸다 — F, 폰은 패링 버튼. 쳐낸 화살은 쏜 놈에게 돌아간다'
   // 새 적은 **처음 서는 그 판에서** 자기 규칙을 말한다. 늦게 온 것부터 먼저 말한다.
   if (slinger > 0) return '투석군(投石軍) — 돌을 넘겨 던진다. **방패 위로 넘어온다** — 칼로 쳐내라'
   if (gunner > 0) return '총통수(銃筒手) — 탄환이 곧고 빠르다. 화승에 불이 붙으면 방패 뒤로'
@@ -472,6 +538,8 @@ function foeHint(n: number, base: StageDef, specs: readonly TargetSpec[]): strin
 
 /** 보스 주기. 10판 = 여정의 한 마디 (RUN.md). */
 export const BOSS_EVERY = 10
+/** 적 사수가 처음 서는 판. 그 앞(11~19)은 사냥이다 — huntStage. */
+export const FOE_FROM = 21
 /** 화차가 처음 서는 판 (2026-09-10). 사수·창문·드론을 다 배운 뒤에 온다. */
 const HWACHA_FROM = 26
 
@@ -489,7 +557,7 @@ const HWACHA_FROM = 26
  *   · 투석군은 넘겨 던지는 돌 — **방패를 넘어온다.** 답은 환도이거나 먼저 눕히는 것이다.
  * 방패 하나로 다 되면 방패를 사는 것이 결정이 아니게 된다. 그래서 넘어오는 놈이 필요했다.
  */
-const GUNNER_FROM = 21
+const GUNNER_FROM = 26
 const SLINGER_FROM = 31
 /** 보스판 화살 = 필요한 명중 수 + 이 여유. */
 const BOSS_SPARE_ARROWS = 4

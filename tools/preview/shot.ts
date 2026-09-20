@@ -64,7 +64,8 @@ function shot(stage: number, ticks: number): string {
   const frames = Number(q.get('corpses') ?? 0)
   if (frames > 0) {
     // corpses=N&boss=1 이면 보스 여덟의 죽은 모습을 본다 (sim 은 보스를 −1 − look 으로 보낸다).
-    const looks = q.get('boss') !== null ? [-1, -2, -4, -5, -6, -7, -8] : [0, 3, 4, 5, 6]
+    // hunt=1 이면 사냥감 넷.
+    const looks = q.get('hunt') !== null ? [20, 21, 22, 23] : q.get('boss') !== null ? [-1, -2, -4, -5, -6, -7, -8] : [0, 3, 4, 5, 6]
     for (let i = 0; i < looks.length; i++) {
       w.events.push({ t: 'foe_down', x: 12 + i * 3.2, y: 2.2, vx: 2, vy: 3, mass: 1, look: looks[i] ?? 0, r: q.get('boss') !== null ? 1.1 : 0.55, hard: false, g: 0 })
     }

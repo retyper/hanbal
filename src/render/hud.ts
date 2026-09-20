@@ -603,6 +603,8 @@ export function drawHud(
   //   화약 상자(barrel)는 어느 쪽에도 안 센다 — 과녁도 사람도 아니고, 클리어 조건도 아니다.
   let foes = 0
   let marks = 0
+  // 사냥감(look ≥ 20)은 과녁도 적도 아니다 — 같은 규칙으로 따로 센다 (2026-09-20).
+  let game = 0
   for (let i = 0; i < w.targets.length; i++) {
     const t = w.targets[i]
     if (t === undefined || !t.alive) continue
@@ -610,9 +612,10 @@ export function drawHud(
     // (sim/world.ts anyTargetStanding 과 같은 규칙).
     if (t.kind === 'barrel' || t.kind === 'bonus') continue
     if (t.kind === 'archer' || t.kind === 'boss' || t.kind === 'charger') foes++
+    else if (t.look >= 20) game++
     else marks++
   }
-  const standing = foes + marks
+  const standing = foes + marks + game
   const score = w.score | 0
   if (standing !== cache.goal || foes !== cache.foes || score !== cache.score) {
     cache.goal = standing
@@ -623,7 +626,9 @@ export function drawHud(
       // 둘 다 있으면 둘 다 말한다. 하나뿐이면 그것만 — 없는 걸 0으로 적어두지 않는다.
       : foes > 0 && marks > 0 ? `적 ${foes} · 과녁 ${marks}`
         : foes > 0 ? `적 ${foes}`
-          : `과녁 ${marks}`
+          : game > 0 && marks === 0 ? `사냥감 ${game}`
+            : game > 0 ? `사냥감 ${game} · 과녁 ${marks}`
+              : `과녁 ${marks}`
     cache.scoreNum = `${score}점`
   }
 

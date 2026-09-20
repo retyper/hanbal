@@ -30,11 +30,21 @@ function arena(fireDelay: number): StageDef {
 }
 
 describe('적', () => {
-  it('1~9판은 과녁뿐, 11판부터 적 궁수가 선다', () => {
+  it('1~9판은 과녁뿐, 11~19판은 사냥, 21판부터 적 궁수가 선다', () => {
     for (let i = 0; i < 9; i++) {
       assert.ok(!getStage(i).targets.some((t) => t.kind === 'archer'), `${i + 1}판에 적이 있다`)
     }
-    assert.ok(getStage(10).targets.some((t) => t.kind === 'archer'), '11판에 적이 없다')
+    // 2026-09-20 — 형: "공격하는 적이 너무 빨리 등장하는거 같긴 해. 토끼나 물고기 사슴 등의 동물들도 사냥하는 스테이지".
+    //   11~19판에는 나를 해치는 것이 하나도 없고, 서 있는 것은 전부 사냥감(look ≥ 20)이다.
+    for (let i = 10; i < 19; i++) {
+      const ts = getStage(i).targets
+      assert.ok(ts.length >= 2, `${i + 1}판에 사냥감이 모자라다`)
+      for (const t of ts) {
+        assert.ok(t.kind === 'moving' || t.kind === 'static', `${i + 1}판에 ${t.kind} 가 있다`)
+        assert.ok((t.look ?? 0) >= 20, `${i + 1}판에 사냥감이 아닌 것이 섰다`)
+      }
+    }
+    assert.ok(getStage(20).targets.some((t) => t.kind === 'archer'), '21판에 적이 없다')
     // ★ 보스판의 호위도 **사람**이다 (2026-08-31, 형: "보스판에 제발 과녁 좀 없애").
     //   예전엔 호위가 static 과녁이었다 — 귀신 옆에 과녁판이 서 있었다.
     //   보스는 그대로 boss 이고, 호위만 사수다.

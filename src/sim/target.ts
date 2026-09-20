@@ -776,11 +776,20 @@ export function burstAt(w: World, x: number, y: number, R: number, exclude: Targ
 }
 
 /**
+ * ★ 사냥감 (2026-09-20, 형: "토끼나 물고기 사슴 등의 동물들도 사냥하는 스테이지 나와야 하지 않나싶다").
+ *   sim 에게 사냥감은 **그냥 과녁**이다 (static · moving) — 쏘지도 달려들지도 않는다. 다른 것은 둘뿐이다:
+ *   look 이 ANIMAL_LOOK 이상이고(그림과 소리가 그걸 본다), 죽으면 foe_down 을 뱉어 몸이 남는다.
+ *   20 토끼 · 21 고라니 · 22 꿩 · 23 잉어. 기존 판의 과녁은 look 0 이라 아무것도 안 바뀐다 (A1).
+ */
+export const ANIMAL_LOOK = 20
+
+/**
  * 쓰러진 적을 알린다 (SimEvent 'foe_down'). **사람과 드론만** — 과녁은 그냥 사라진다.
  * 형: "과녁이면 과녁이고 적이면 적이지." 남는 것도 그래서 다르다.
  */
 function downEvent(w: World, t: Target, vx: number, vy: number, mass: number, hard = false): void {
-  if (t.kind !== 'archer' && t.kind !== 'boss' && t.kind !== 'charger') return
+  // 사냥감(look ≥ ANIMAL_LOOK)도 몸이 남는다 — 토끼가 과녁처럼 깨져 사라지면 그건 사냥이 아니다.
+  if (t.kind !== 'archer' && t.kind !== 'boss' && t.kind !== 'charger' && t.look < ANIMAL_LOOK) return
   w.events.push({
     t: 'foe_down',
     x: t.x, y: t.y, vx, vy, mass, hard,

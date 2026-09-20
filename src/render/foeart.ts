@@ -60,6 +60,7 @@ export function warmFoeArt(): void {
   sprite('prop-pole')
   sprite('prop-gun')
   sprite('prop-pennant')
+  for (const n of ['hare-a', 'hare-b', 'hare-dead', 'deer-a', 'deer-b', 'deer-dead', 'pheasant-a', 'pheasant-b', 'pheasant-dead', 'carp-a', 'carp-dead', 'pond']) sprite(`animal-${n}`)
   for (const n of ['prop-shield', 'prop-shield-broken', 'prop-crown', 'prop-rope', 'prop-sheath', 'prop-rail', 'prop-sword']) sprite(n)
   sprite('fly-soul')
   sprite('fly-ball')
@@ -246,6 +247,21 @@ export function drawCorpseArt(
     // 밑단은 땅에 붙인다 — 시체의 y 는 가라앉으면 땅 언저리다 (effects.ts stepCorpses). 무너지는 동안 위에서부터 내려앉는다.
     const bh = full * (0.35 + 0.65 * settle)
     ctx.drawImage(bim, x - bw / 2, y + r * 0.18 - bh, bw, bh)
+    return true
+  }
+  if (look >= 20) {
+    // 사냥감 — 나뒹굴지 않는다. 그 자리에 **눕는다**: 떨어지는 동안은 기울고, 닿으면 죽은 그림이 땅에 눕는다.
+    const an = ANIMAL[look - 20]
+    if (an === undefined) return false
+    const dim = sprite(`animal-${an.name}-dead`)
+    if (dim === null) return false
+    const s2 = (r * an.span) / an.ref
+    const w2 = dim.naturalWidth * s2
+    const h2 = dim.naturalHeight * s2
+    ctx.translate(x, y)
+    ctx.rotate(ang * 0.35 * (1 - settle))
+    // 시체의 y 는 땅에서 반경의 절반 위에 멎는다 (effects.ts stepCorpses) — 누운 그림의 밑변을 그만큼 내려 땅에 댄다.
+    ctx.drawImage(dim, -w2 / 2, r * 0.5 * settle - h2 * (0.5 + 0.5 * settle), w2, h2)
     return true
   }
   const c = CORPSE[look]
@@ -627,6 +643,53 @@ export function drawBowArt(ctx: CanvasRenderingContext2D, skin: string, mirror: 
 
 /** 받은 총통 그림은 포신처럼 굵다 — 사람이 어깨에 대는 것으로 보이게 눌러 쓴다. */
 const GUN_FAT = 0.55
+
+/**
+ * ── 사냥감 (2026-09-20, sim/target.ts ANIMAL_LOOK) ─────────────────────────────
+ * 토끼 20 · 고라니 21 · 꿩 22 · 잉어 23. 자세 둘(a · b)과 죽은 모습 하나씩 — 한 장에서 **같은 배율로** 잘랐으므로
+ * (tools/cut-animals.mjs) 종마다 배율 하나면 세 컷이 다 맞는다: ref 는 a 컷의 기준 변(px), span 은 그 변이 반경의 몇 배인가.
+ * foot 이 true 면 발이 땅을 딛는 짐승이다 — 그림의 밑변을 몸 중심 + 반경(= 땅)에 댄다. 아니면 몸 중심에 가운데를 댄다.
+ * 그림은 전부 오른쪽을 본다. 위협이 아니므로 붉은 테는 안 두른다.
+ */
+const ANIMAL = [
+  /* 20 토끼   */ { name: 'hare', ref: 108, span: 2.5, foot: true, hop: 0.45 },
+  /* 21 고라니 */ { name: 'deer', ref: 138, span: 2.7, foot: true, hop: 0.12 },
+  /* 22 꿩     */ { name: 'pheasant', ref: 166, span: 3.6, foot: false, hop: 0 },
+  /* 23 잉어   */ { name: 'carp', ref: 110, span: 2.6, foot: false, hop: 0 },
+] as const
+
+/**
+ * (x, y) 몸 중심 · r 반경 (px) · frameB 둘째 자세인가 · faceLeft 왼쪽을 보는가 · tilt 몸을 기울이는 각 (잉어가 떨어질 때).
+ * 둘째 자세의 발 짐승은 **뛰는 중**이라 hop 만큼 띄운다.
+ */
+export function drawAnimalArt(
+  ctx: CanvasRenderingContext2D, look: number, x: number, y: number, r: number, frameB: boolean, faceLeft: boolean, tilt: number,
+): boolean {
+  const a = ANIMAL[look - 20]
+  if (a === undefined) return false
+  const im = sprite(`animal-${a.name}-${frameB && a.name !== 'carp' ? 'b' : 'a'}`)
+  if (im === null) return false
+  const s = (r * a.span) / a.ref
+  const dw = im.naturalWidth * s
+  const dh = im.naturalHeight * s
+  ctx.save()
+  ctx.translate(x, a.foot ? y + r - (frameB ? r * a.hop : 0) : y)
+  ctx.scale(faceLeft ? -1 : 1, 1)
+  if (tilt !== 0) ctx.rotate(tilt)
+  ctx.drawImage(im, -dw / 2, a.foot ? -dh : -dh / 2, dw, dh)
+  ctx.restore()
+  return true
+}
+
+/** 잉어의 연못 — 땅 위에 얹는다. (cx, groundY) 는 수면의 가운데, w 는 폭 (px). */
+export function drawPondArt(ctx: CanvasRenderingContext2D, cx: number, groundY: number, w: number): boolean {
+  const im = sprite('animal-pond')
+  if (im === null) return false
+  const h = w * (im.naturalHeight / im.naturalWidth)
+  // 그림의 아래 1/3 이 물이다 — 수면이 땅의 선에 오게 조금 내려 얹는다.
+  ctx.drawImage(im, cx - w / 2, groundY - h * 0.72, w, h)
+  return true
+}
 
 /**
  * 길쭉한 소품 한 장을 두 점 사이에 눕힌다 — 환도·칼집·레일·줄 (2026-09-20, 남은 선 그림을 걷는 마지막 묶음).

@@ -287,8 +287,9 @@ describe('갈림길 — 결정론 (A1)', () => {
     // 판 번호를 바꿔도 답이 같은 게 정상이다 — 퍼즐의 정답이 판 번호로 바뀌면 그건 뽑기다.
     const BOMB = card('bomb')
     const shape = (n: number): string =>
-      applyFork(getStage(12), BOMB, n).targets.map((t) => (t.bomb === true ? '1' : '0')).join('')
-    assert.equal(shape(13), shape(13))
-    assert.equal(shape(13).includes('1'), true, '13판에 폭탄이 안 실렸다 — 검사가 성립하지 않는다')
+      applyFork(getStage(24), BOMB, n).targets.map((t) => (t.bomb === true ? '1' : '0')).join('')
+    // (13판은 이제 사냥 판이다 — 화약궤가 안 놓인다. 사수 셋이 모여 서는 25판으로 옮겼다.)
+    assert.equal(shape(25), shape(25))
+    assert.equal(shape(25).includes('1'), true, '25판에 폭탄이 안 실렸다 — 검사가 성립하지 않는다')
   })
 })

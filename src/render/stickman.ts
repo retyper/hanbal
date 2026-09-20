@@ -1347,7 +1347,9 @@ export function drawArcher(
           ctx, 'prop-sword',
           worldToScreenX(cam, gx - dx * SWORD.grip), worldToScreenY(cam, gy - dy * SWORD.grip),
           worldToScreenX(cam, gx + dx * len), worldToScreenY(cam, gy + dy * len),
-          (SWORD.grip + len) / swordFull, pose.bowDir * face < 0, 1.25, 5,
+          // ★ 날은 **볼록한 쪽**이다 (그림에서는 아래쪽). 베는 쪽으로 볼록이 가야 한다 — 첫 판은 조건이 거꾸로라
+          //   칼등으로 치고 있었다 (2026-09-20, 형: "칼날이 거꾸로 된 채로 휘두른다. 역날로 때리는 모습임").
+          (SWORD.grip + len) / swordFull, pose.bowDir * face > 0, 1.25, 5,
         )) {
           // 그림이 섰다 — 아래의 선 그림(날·자루·코등이)은 건너뛴다.
         } else {

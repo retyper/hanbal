@@ -94,6 +94,9 @@ function fits(opt: ForkOption, stage: StageDef): boolean {
   // 화약고는 **한 발로 둘 이상을 끊을 수 있어야** 문제가 된다.
   // 과녁이 서로 반경 밖으로 흩어진 판에서는 폭탄이 그냥 평범한 과녁이라, 카드를 아예 안 낸다
   // (골랐는데 아무 일도 안 일어나는 카드가 밀집의 죽은 이유였다).
+  // 사냥 판(11~19)에는 **사람이 안 나온다** — 척후는 칼을 들고 달려드는 사람이고, 화약궤는 짐승 곁에 놓일 물건이 아니다.
+  const hunt = stage.targets.some((t) => (t.look ?? 0) >= 20 && t.kind !== 'archer' && t.kind !== 'boss')
+  if (hunt && (opt.id === 'scout' || opt.id === 'bomb')) return false
   if (opt.id === 'bomb') return bestBarrel(stage, 1) !== null
   if (opt.id === 'single') return stage.arrows >= 5
   return true

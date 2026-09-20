@@ -4,7 +4,7 @@
  * ARCHITECTURE A1: World는 읽기만 한다. events도 읽되 비우지 않는다 (게임 루프가 소비).
  * A5: save/restore 남발 금지, shadowBlur·filter 금지, 프레임당 힙 할당 0.
  */
-import { TAU, clamp01, lerp, valueNoise } from '../core/math.ts'
+import { TAU, clamp, clamp01, lerp, valueNoise } from '../core/math.ts'
 import { P } from '../tune/params.ts'
 import { groundAt, hasHills } from '../sim/terrain.ts'
 import { TRAIL_POINTS } from '../sim/types.ts'
@@ -21,9 +21,9 @@ import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { createFx, pumpEvents, updateFx, drawFx, drawFxFlash, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash, targetFlinch, PLAYER_PIN } from './effects.ts'
 import { drawNewBossBody, drawNewBossFace } from './bosses.ts'
 import { BOSS_EYES, drawBossArt, drawEyeArt, drawFoxArt, warmBossArt } from './bossart.ts'
-import { drawArrowArt, drawArrowTailArt, drawLongArt, drawPennantArt, drawStandArt, drawPoleArt, drawFalconArt, drawFoeArt, drawPropArt, drawShotArt, drawStoneArt, drawTargetArt, warmFoeArt } from './foeart.ts'
+import { drawAnimalArt, drawArrowArt, drawArrowTailArt, drawLongArt, drawPondArt, drawPennantArt, drawStandArt, drawPoleArt, drawFalconArt, drawFoeArt, drawPropArt, drawShotArt, drawStoneArt, drawTargetArt, warmFoeArt } from './foeart.ts'
 import { backdrop } from './sprites.ts'
-import { bossGrammar, bossWeakSpot, foeWeakSpot } from '../sim/target.ts'
+import { ANIMAL_LOOK, bossGrammar, bossWeakSpot, foeWeakSpot } from '../sim/target.ts'
 import type { Fx } from './effects.ts'
 import { drawHud } from './hud.ts'
 import type { HudState } from './hud.ts'
@@ -538,6 +538,33 @@ function drawTargets(
     const y = worldToScreenY(cam, wy)
     const r = t.r * cam.scale
     if (r < 0.5) continue
+
+    // ── 사냥감 (2026-09-20, sim/target.ts ANIMAL_LOOK) — 받침도 레일도 링도 없다. 산 것은 제 발로 다닌다 ──
+    if (t.look >= ANIMAL_LOOK && t.kind !== 'archer' && t.kind !== 'boss') {
+      const gy = worldToScreenY(cam, groundAt(w.stage, t.baseX))
+      if (t.look === 23) {
+        // 잉어 — **물 밖에 있을 때만** 보인다 (땅 아래는 화살도 못 간다). 연못은 잉어 앞에 얹는다: 물에서 솟는다.
+        ctx.save()
+        ctx.beginPath()
+        ctx.rect(0, 0, cam.w, gy)
+        ctx.clip()
+        // 오를 때는 머리가 위, 떨어질 때는 몸이 돌아 머리가 아래로 간다.
+        const fall = clamp(-t.vy / HUNT.carpTiltAt, -1, 1)
+        drawAnimalArt(ctx, 23, x, y, r, false, true, (fall + 1) * 0.5 * HUNT.carpTilt)
+        ctx.restore()
+        drawPondArt(ctx, worldToScreenX(cam, t.baseX), gy, r * HUNT.pondW)
+      } else {
+        // 걷는 짐승은 **간 거리**로 발을 바꾼다 (척후와 같은 규칙 — 디딘 발이 안 미끄러진다). 꿩은 시계로 날개를 친다.
+        const moving = Math.abs(t.vx) > HUNT.walkAt
+        const frameB = t.look === 22
+          ? Math.sin(w.elapsed * HUNT.flapHz * TAU + t.id) > 0
+          : moving && Math.floor(t.x / (t.look === 20 ? HUNT.hareStep : HUNT.deerStep)) % 2 === 0
+        // 서 있는 놈은 나를 본다 (왼쪽). 움직이는 놈은 가는 쪽을 본다.
+        drawAnimalArt(ctx, t.look, x, y, r, frameB, moving ? t.vx < 0 : true, 0)
+      }
+      ctx.globalAlpha = 1
+      continue
+    }
 
     // 받침은 과녁보다 먼저. 나중에 그리면 링 위로 선이 지나간다.
     if (!t.falling) {
@@ -1559,6 +1586,22 @@ function drawBodyPins(ctx: CanvasRenderingContext2D, cam: Camera, w: World, fx: 
  *  3. **남은 내구가 보인다.** 널판이 닳는 게 아니라 **화살이 꽂힌다** — 삼킨 발수만큼
  *     판에 화살대가 박혀 있다. 숫자를 안 읽어도 "이제 한 발 남았다"가 보인다.
  */
+/** 사냥감의 몸짓 — 생김새의 값이다 (손맛이 아니다: 판정은 sim 의 원 그대로). */
+const HUNT = {
+  /** 이 속도(m/s) 아래면 서 있는 것으로 그린다. */
+  walkAt: 0.12,
+  /** 토끼·고라니가 자세를 한 번 바꾸는 거리 (m). */
+  hareStep: 0.55,
+  deerStep: 0.9,
+  /** 꿩의 날갯짓 (Hz). */
+  flapHz: 3.2,
+  /** 잉어가 떨어질 때 도는 각 (rad) · 그 각에 다 닿는 낙하 속도 (m/s). */
+  carpTilt: 1.9,
+  carpTiltAt: 2,
+  /** 연못의 폭 (잉어 반경 배수). */
+  pondW: 6.5,
+} as const
+
 /** 그림 방패의 폭 (높이 대비) — 받은 그림은 0.65 인데 옆에서 비껴 본 널판이라 눌러 쓴다. */
 const SHIELD_ART_W = 0.42
 
@@ -2295,6 +2338,8 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
         const t = w.targets[i]
         if (t === undefined || !t.alive || t.falling) continue
         if (t.kind === 'aerial' || (t.kind === 'archer' && t.look === 3)) continue
+        // 나는 꿩과 물속의 잉어도 땅에 그림자가 없다.
+        if (t.kind !== 'archer' && t.kind !== 'boss' && t.look >= ANIMAL_LOOK + 2) continue
         // 창가의 사수는 건물 안이라 땅에 그림자를 못 드리운다.
         if (t.kind === 'archer' && (t.look === 1 || t.look === 2)) continue
         drawShadow(c, sky, worldToScreenX(cam, t.x), worldToScreenY(cam, groundAt(w.stage, t.x)), t.r * 2 * cam.scale)

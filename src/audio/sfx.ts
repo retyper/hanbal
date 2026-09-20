@@ -1808,11 +1808,14 @@ export function pumpSfx(sfx: Sfx, w: World): void {
       // 쓰러졌다 — 사람은 퍽, 드론은 금속. 무엇이 죽었는지 귀로도 안다.
       // 무엇이 죽었는지 귀로도 안다: 매는 푸석한 소리, 화차는 나무가 부서지는 소리, 사람은 퍽.
       // (드론이 있던 자리다 — 2026-09-10 에 매로 바뀌었다. 쇳소리는 이제 안 난다.)
-      const name = e.look === 3 ? 'soft' : e.look === 4 ? 'woodHeavy' : 'thud'
+      // 사냥감(look ≥ 20)은 작은 몸이다 — 푸석하게 떨어지고, **사람의 비명은 안 낸다.**
+      const game = e.look >= 20
+      const name = e.look === 3 || game ? 'soft' : e.look === 4 ? 'woodHeavy' : 'thud'
       sample(sfx, s, name, SMP.downGain * (e.look === 3 ? 1.4 : 1), e.look === 3 ? 1.15 : 0.92, e.x, e.y)
       // ★ 죽는 **목소리** (2026-09-20, 형: "죽는소리같은게 지금 없잖아"). 위의 퍽은 몸이 땅에 닿는 소리고,
       //   이건 그 사람이 내는 소리다 — 둘은 다른 것이라 겹쳐 튼다.
-      if (e.look < 0) sample(sfx, s, 'bossDeath', SMP.bossDeathGain, SMP.bossDeathRate, e.x, e.y)
+      if (game) { /* 짐승은 말이 없다 */ }
+      else if (e.look < 0) sample(sfx, s, 'bossDeath', SMP.bossDeathGain, SMP.bossDeathRate, e.x, e.y)
       else if (e.look === 3) sample(sfx, s, 'hawk', SMP.hawkGain, jitter(0.08), e.x, e.y)
       else if (e.look === 4) sample(sfx, s, 'crash', SMP.crashGain, jitter(0.08), e.x, e.y)
       else sample(sfx, s, 'death', SMP.deathGain, jitter(SMP.deathJitter), e.x, e.y)

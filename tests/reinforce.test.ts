@@ -22,7 +22,7 @@ const store = new Map<string, string>()
 
 const { defaultSave, loadSave, SCHEMA_VERSION } = await import('../src/game/save.ts')
 const { recommendStat, recommendReason } = await import('../src/game/progression.ts')
-const { BOSS_EVERY, CAMPAIGN, STAGES, foeHp, getStage } = await import('../src/game/stages.ts')
+const { BOSS_EVERY, CAMPAIGN, FOE_FROM, STAGES, foeHp, getStage } = await import('../src/game/stages.ts')
 const { P } = await import('../src/tune/params.ts')
 
 const KEY = 'hanbal.save.v1'
@@ -43,7 +43,7 @@ describe('재정비 — 추천 스탯', () => {
 
 describe('11판 사수 — 도입 경사', () => {
   it('11판은 낮게 시작해 경사 끝에 기본값에 닿고, 31판부터 ×1.5', () => {
-    const first = BOSS_EVERY + 1
+    const first = FOE_FROM
     const base = P.enemy.convertHp
     assert.ok(foeHp(first) < base, `11판 ${foeHp(first)} < ${base}`)
     assert.ok(Math.abs(foeHp(first) - base * P.enemy.convertHpEase) < 1e-9)
@@ -59,7 +59,7 @@ describe('11판 사수 — 도입 경사', () => {
   })
 
   it('11판의 사수 체력이 실제로 경사값이고, 화살은 사수 하나에 한 발씩 얹힌다', () => {
-    const idx = BOSS_EVERY // 0-based → 11판
+    const idx = FOE_FROM - 1 // 0-based → 첫 사수 판 (21판 — 그 앞 11~19 는 사냥이다)
     const s = getStage(idx)
     const base = STAGES[idx]
     assert.ok(base !== undefined)
@@ -72,7 +72,7 @@ describe('11판 사수 — 도입 경사', () => {
 
 describe('사수 판의 힌트', () => {
   it('11판은 규칙을 가르친다 — 적이 활을 든다', () => {
-    assert.match(getStage(BOSS_EVERY).hint ?? '', /적이 활을 든다/)
+    assert.match(getStage(FOE_FROM - 1).hint ?? '', /적이 활을 든다/)
   })
 
   it('전환된 판 어디에도 과녁의 말이 남지 않는다', () => {

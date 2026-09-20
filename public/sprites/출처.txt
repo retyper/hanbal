@@ -137,3 +137,8 @@ drone.png — "Pixel Art Drone" (OpenGameArt, CC0)
     node tools/key-png.mjs assets_src/props2-source.png assets_src/props2-keyed.png 100 70
     node tools/cut-props2.mjs
   (챗지피티 두 계정 다 이미지 한도에 걸려 있었다 — 제미나이로 받았다.)
+
+── 2026-09-20 (여섯 번째 판) — 사냥감 ─────────────────────────────────────
+  animal-{hare,deer,pheasant}-{a,b,dead} · animal-carp-{a,dead} · animal-pond  ←  assets_src/animals-source.png (제미나이 · 4x3 · 마젠타 바탕)
+    node tools/key-png.mjs assets_src/animals-source.png assets_src/animals-keyed.png 100 70
+    node tools/cut-animals.mjs      # 전부 같은 배율(0.8)로 — 자세 A·B 의 크기 관계가 그림 그대로 남는다
