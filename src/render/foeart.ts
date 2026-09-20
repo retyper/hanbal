@@ -32,6 +32,9 @@ const ART = {
 
 export type FoeArtName = keyof typeof ART
 
+/** 적의 테두리 빛 — 위협색(THEME.threat 계열). 몸 높이에 비례해 번진다. */
+const RIM = { color: 'rgba(255, 96, 64, 0.95)', perHeight: 0.09, minPx: 4 } as const
+
 /** 미리 받아 둔다 — 안 그러면 적이 나온 첫 몇 프레임은 벡터였다가 그림으로 툭 바뀐다. */
 export function warmFoeArt(): void {
   for (const name of Object.keys(ART)) sprite(`foe-${name}`)
@@ -61,15 +64,19 @@ export function drawFoeArt(
   const s = (footY - hy) / span
   const dw = im.naturalWidth * s
   const dh = im.naturalHeight * s
+  // ★ 적은 **눈에 띄어야 한다.** 그린 적은 예전의 빨간 막대보다 어두워서 밤·노을 배경에 묻힌다 (남빛 총통수가 특히).
+  //   캔버스의 그림자는 그림의 알파를 따라 번지므로, 위협색 그림자를 오프셋 없이 주면 **실루엣을 두른 붉은 테**가 된다.
+  ctx.save()
+  ctx.shadowColor = RIM.color
+  ctx.shadowBlur = Math.max(RIM.minPx, dh * RIM.perHeight)
   if (faceRight) {
-    ctx.save()
     ctx.translate(hx, hy)
     ctx.scale(-1, 1)
     ctx.drawImage(im, -art.headU * dw, -art.headV * dh, dw, dh)
-    ctx.restore()
   } else {
     ctx.drawImage(im, hx - art.headU * dw, hy - art.headV * dh, dw, dh)
   }
+  ctx.restore()
   return true
 }
 

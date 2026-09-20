@@ -29,6 +29,49 @@ import type { Target, World } from '../sim/types.ts'
 import { worldToScreenX, worldToScreenY } from './camera.ts'
 import { groundAt } from '../sim/terrain.ts'
 import type { Camera } from './camera.ts'
+import { sprite } from './sprites.ts'
+
+/**
+ * 건물의 **그림** (2026-09-20, 형: "건물도 전부 에셋 바꿔야하는거아냐?") — 조선의 집이다: 회벽과 나무 기둥, 기와 지붕, 나무 창틀.
+ * 층·열·창의 **자리는 그대로** 위의 규칙이 정한다 (사수의 자리가 곧 창의 자리라 그림이 그걸 바꾸면 안 된다).
+ * 여기서는 그 네모들 위에 조각 그림을 **타일로 깔 뿐**이다. 그림이 안 떴으면 예전의 납작한 벽이 선다.
+ *   bld-wall   회벽 + 나무 보 — 한 칸(열 간격)에 한 장씩 깐다
+ *   bld-roof   기와 — 가로로 이어 깐다. 처마가 벽보다 조금 나온다
+ *   bld-window 창틀 — 가운데가 뚫려 있다. 창 네모보다 조금 크게 얹는다 (창턱이 아래로 나온다)
+ */
+const ART = {
+  /** 회벽은 밝다 — 밤 장면에서 혼자 빛나지 않게 어둠을 덮는다. */
+  wallDim: 'rgba(10, 13, 22, 0.66)',
+  /** 기와 한 장의 폭 (창 반너비 배수) · 처마가 벽 밖으로 나오는 양 (같은 단위). */
+  roofTile: 3.8,
+  roofOver: 0.7,
+  /** 창틀이 창 네모보다 나가는 양 (창 반너비·반높이 배수): 옆 · 위 · 아래(창턱). */
+  frameSide: 0.2,
+  frameTop: 0.18,
+  frameSill: 0.34,
+} as const
+
+/** 네모를 그림 타일로 채운다 (클립 안에서). */
+function tile(ctx: CanvasRenderingContext2D, im: HTMLImageElement, x: number, y: number, w: number, h: number, tw: number, th: number): void {
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(x, y, w, h)
+  ctx.clip()
+  // 아래에서 위로 깐다 — 건물은 땅에서 자란다. 맨 위 줄이 잘리는 쪽이 자연스럽다 (지붕이 덮는다).
+  for (let ty = y + h - th; ty > y - th; ty -= th) {
+    for (let tx = x; tx < x + w; tx += tw) ctx.drawImage(im, tx, ty, tw + 0.5, th + 0.5)
+  }
+  ctx.restore()
+}
+
+function drawFrameArt(ctx: CanvasRenderingContext2D, cx: number, cy: number, hwPx: number, hhPx: number): boolean {
+  const im = sprite('bld-window')
+  if (im === null) return false
+  const x = cx - hwPx * (1 + ART.frameSide)
+  const y = cy - hhPx * (1 + ART.frameTop)
+  ctx.drawImage(im, x, y, hwPx * 2 * (1 + ART.frameSide), hhPx * (2 + ART.frameTop + ART.frameSill))
+  return true
+}
 
 /** 창 하나가 뚫린 자리 (월드 m). 사수의 상반신은 이 사각형 안으로 클립된다. */
 export interface WinRect {
@@ -264,6 +307,19 @@ export function drawBuildings(ctx: CanvasRenderingContext2D, cam: Camera, w: Wor
     const bh = gy - top
     if (bh <= 0 || bw <= 0) continue
 
+    const hhPx = b.hh * cam.scale
+    const hwPx = b.hw * cam.scale
+    const wallIm = sprite('bld-wall')
+    const roofIm = sprite('bld-roof')
+    const artOn = wallIm !== null && roofIm !== null && hwPx >= 4
+    if (artOn) {
+      // ★ 회벽 + 나무 보를 **열 간격으로** 깐다 — 보가 창 사이에 온다. 그 위에 어둠을 덮어 밤에 혼자 빛나지 않게 한다.
+      const tw = b.cols.length > 1 ? (worldToScreenX(cam, b.cols[1] as number) - worldToScreenX(cam, b.cols[0] as number)) : hwPx * 2.6
+      const th = tw * (wallIm.naturalHeight / wallIm.naturalWidth)
+      tile(ctx, wallIm, sx0, top, bw, bh, tw, th)
+      ctx.fillStyle = ART.wallDim
+      ctx.fillRect(sx0, top, bw, bh)
+    } else {
     // 벽 — 땅에서 지붕까지. 이게 있어야 창문이 '어딘가에' 있다.
     ctx.fillStyle = COL.wall
     ctx.fillRect(sx0, top, bw, bh)
@@ -273,14 +329,13 @@ export function drawBuildings(ctx: CanvasRenderingContext2D, cam: Camera, w: Wor
     // 왼쪽 모서리의 달빛 — 면이 두 개여야 입체다.
     ctx.fillStyle = COL.edge
     ctx.fillRect(sx0, top, Math.max(1.5, bw * 0.012), bh)
+    }
 
-    const hhPx = b.hh * cam.scale
-    const hwPx = b.hw * cam.scale
     if (hwPx < 1.2 || hhPx < 1.2) continue
 
     // 층을 가르는 슬래브 — 창 사이 중간 높이. "1층 2층"이 이 선으로 읽힌다.
     ctx.fillStyle = COL.slab
-    for (let fi = 0; fi < b.floors.length; fi++) {
+    for (let fi = 0; !artOn && fi < b.floors.length; fi++) {
       const y = worldToScreenY(cam, (b.floors[fi] as number) + b.hh * 1.75)
       if (y < top || y > gy) continue
       ctx.fillRect(sx0, y, bw, Math.max(1, hhPx * 0.1))
@@ -295,6 +350,8 @@ export function drawBuildings(ctx: CanvasRenderingContext2D, cam: Camera, w: Wor
         const lit = hash01(ci, fi, b.seed) < 0.18
         ctx.fillStyle = lit ? COL.lit : COL.empty
         ctx.fillRect(cx - hwPx, cy - hhPx, hwPx * 2, hhPx * 2)
+        // 빈 창에도 창틀이 선다 (사수의 창틀은 사람 위에 얹어야 해서 drawBuildingFronts 가 그린다).
+        if (artOn) drawFrameArt(ctx, cx, cy, hwPx, hhPx)
       }
     }
 
@@ -304,6 +361,17 @@ export function drawBuildings(ctx: CanvasRenderingContext2D, cam: Camera, w: Wor
       const cx = worldToScreenX(cam, b.cols[(key / 64) | 0] as number)
       const cy = worldToScreenY(cam, b.floors[key % 64] as number)
       ctx.fillRect(cx - hwPx, cy - hhPx, hwPx * 2, hhPx * 2)
+    }
+
+    // 기와 지붕 — 가로로 이어 깐다. 처마가 벽보다 나오고, 기와의 아래 1/4 이 벽 위에 걸친다.
+    if (artOn && roofIm !== null) {
+      const tw = hwPx * ART.roofTile
+      const th = tw * (roofIm.naturalHeight / roofIm.naturalWidth)
+      const over = hwPx * ART.roofOver
+      const x0 = sx0 - over
+      const n = Math.max(1, Math.round((bw + over * 2) / tw))
+      const each = (bw + over * 2) / n
+      for (let i = 0; i < n; i++) ctx.drawImage(roofIm, x0 + i * each, top - th * 0.75, each + 0.5, th)
     }
   }
 }
@@ -321,6 +389,7 @@ export function drawBuildingFronts(ctx: CanvasRenderingContext2D, cam: Camera): 
       const cx = worldToScreenX(cam, b.cols[(key / 64) | 0] as number)
       const cy = worldToScreenY(cam, b.floors[key % 64] as number)
       if (cx < -60 || cx > cam.w + 60) continue
+      if (hwPx >= 4 && drawFrameArt(ctx, cx, cy, hwPx, hhPx)) continue
       ctx.strokeStyle = COL.frame
       ctx.lineWidth = Math.max(2, hwPx * 0.11)
       ctx.strokeRect(cx - hwPx, cy - hhPx, hwPx * 2, hhPx * 2)

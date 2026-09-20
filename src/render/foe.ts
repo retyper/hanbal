@@ -21,7 +21,7 @@
 import { TAU } from '../core/math.ts'
 import { P } from '../tune/params.ts'
 import { THEME } from './camera.ts'
-import { drawFoeArt } from './foeart.ts'
+import { drawArmArt, drawFistArt, drawFoeArt } from './foeart.ts'
 
 /**
  * 체격·활 — 전부 과녁 반경(rx, ry) 대비 비율이다. 줌이 바뀌어도 비례가 유지된다.
@@ -60,6 +60,8 @@ const F = {
   arrow: 1.9,
   /** 주먹 반지름 (선 굵기 배수) */
   fist: 0.8,
+  /** 소매 그림의 굵기 (rx 대비) — 몸 그림의 어깨 폭에 맞춘 **그림의 치수**다. */
+  armWide: 0.3,
   /** 창가의 사수 — 그림의 발밑을 둘 자리 (ry 대비). 클수록 사람이 커지고 상체만 보인다. */
   windowFoot: 2.5,
   /** 다리 — 골반 높이(ry 대비)와 보폭 */
@@ -220,12 +222,16 @@ export function drawFoeArcher(
   ctx.restore()
 
   // ── 활팔 · 활 · 시위 (클립 밖 — 창밖으로 내민다) ──
+  // 몸이 그림이면 팔도 소매 그림이다 — 관절의 자리는 위에서 구한 그대로다 (render/foeart.ts drawArmArt).
+  const armW = art ? rx * F.armWide : 0
+  if (!(art && drawArmArt(ctx, 'foe', shX, shY, (shX + gx) / 2, (shY + gy) / 2, gx, gy, armW))) {
   ctx.strokeStyle = col
   ctx.lineWidth = lw * 0.86
   ctx.beginPath()
   ctx.moveTo(shX, shY)
   ctx.lineTo(gx, gy)
   ctx.stroke()
+  }
 
   const half = ry * F.bow
   const back = half * (F.brace + F.backGain * drawF)
@@ -274,15 +280,20 @@ export function drawFoeArcher(
   }
 
   // 시위팔 — 어깨 → 팔꿈치 → 시위손. 팔꿈치는 화살선보다 살짝 위 (닭날개 금지).
+  const elX = dx - ux * rx * F.elbow + vx * rx * 0.08
+  const elY = dy - uy * rx * F.elbow + vy * rx * 0.08
+  if (!(art && drawArmArt(ctx, 'foe', shX, shY, elX, elY, dx, dy, armW))) {
   ctx.strokeStyle = col
   ctx.lineWidth = lw
   ctx.beginPath()
   ctx.moveTo(shX, shY)
-  ctx.lineTo(dx - ux * rx * F.elbow + vx * rx * 0.08, dy - uy * rx * F.elbow + vy * rx * 0.08)
+  ctx.lineTo(elX, elY)
   ctx.lineTo(dx, dy)
   ctx.stroke()
+  }
 
   // 두 주먹 — 왼손은 활대를, 오른손은 줄을 쥐었다.
+  if (art && drawFistArt(ctx, gx, gy, armW * 0.55, ux < 0) && drawFistArt(ctx, dx, dy, armW * 0.55, ux < 0)) return
   ctx.fillStyle = col
   const fr = Math.max(lw * F.fist, 1.6)
   ctx.beginPath()
@@ -550,15 +561,25 @@ export function drawFoeGunner(
     ctx.stroke()
   }
   // 두 팔 — 하나는 통을 받치고 하나는 화승을 댄다.
+  // 몸이 그림이면 두 팔도 남빛 소매 그림이다 (곧은 팔이라 팔꿈치는 가운데에 둔다).
+  const g1x = bx + ux * rx * 0.72
+  const g1y = by + uy * rx * 0.72
+  const g2x = bx - ux * rx * 0.1
+  const g2y = by - uy * rx * 0.12
+  const armW = art ? rx * F.armWide : 0
+  if (!(art
+    && drawArmArt(ctx, 'gunner', shX, shY, (shX + g1x) / 2, (shY + g1y) / 2, g1x, g1y, armW)
+    && drawArmArt(ctx, 'gunner', shX, shY, (shX + g2x) / 2, (shY + g2y) / 2, g2x, g2y, armW))) {
   ctx.strokeStyle = col
   ctx.lineWidth = lw * 0.86
   ctx.lineCap = 'round'
   ctx.beginPath()
   ctx.moveTo(shX, shY)
-  ctx.lineTo(bx + ux * rx * 0.72, by + uy * rx * 0.72)
+  ctx.lineTo(g1x, g1y)
   ctx.moveTo(shX, shY)
-  ctx.lineTo(bx - ux * rx * 0.1, by - uy * rx * 0.12)
+  ctx.lineTo(g2x, g2y)
   ctx.stroke()
+  }
   // ── 화승의 불씨 — 예고 동안 **총구 쪽으로 기어간다.** 활의 '당김'에 해당하는 것이다.
   if (drawF > 0.02) {
     const ex = bx + (muzX - bx) * drawF
@@ -671,6 +692,11 @@ export function drawFoeSlinger(
   // 손 — 어깨에서 위로 뻗어 끈을 쥔다.
   const handX = shX + vx * rx * 0.5 + ux * rx * 0.16
   const handY = shY + vy * rx * 0.5 + uy * rx * 0.16
+  // 몸이 그림이면 팔도 그림이다 — 걷어붙인 삼베 소매와 맨 팔뚝, 끈을 쥔 주먹.
+  const armW = art ? rx * F.armWide : 0
+  if (art && drawArmArt(ctx, 'peasant', shX, shY, (shX + handX) / 2, (shY + handY) / 2, handX, handY, armW)) {
+    drawFistArt(ctx, handX, handY, armW * 0.55, ux < 0)
+  } else {
   ctx.strokeStyle = col
   ctx.lineWidth = lw * 0.86
   ctx.lineCap = 'round'
@@ -678,6 +704,7 @@ export function drawFoeSlinger(
   ctx.moveTo(shX, shY)
   ctx.lineTo(handX, handY)
   ctx.stroke()
+  }
   // 끈 둘 — 가는 줄 두 가닥이라야 무릿매로 읽힌다.
   ctx.strokeStyle = SLING.cord
   ctx.lineWidth = Math.max(1, rx * 0.035)
