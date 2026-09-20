@@ -242,3 +242,30 @@ npx vite → http://localhost:5173/tools/preview/index.html?stage=50&ticks=150&h
   (render/foe.ts) 통짜 그림으로 바꾸면 겨냥이 죽는다 — 몸통·머리는 그림, 팔·활은 절차로 가는 길을 먼저 시험할 것.
 - **궁수 (스틱맨)**: 당김·겨냥·떨림·활 다섯 자루·갑옷 세 벌·환도가 전부 관절 위에 서 있다 (render/stickman.ts · docs/FORM.md).
   통짜 그림은 안 된다. 관절 사이에 그림 조각을 얹는 **컷아웃**이 유일한 길이고, 손맛을 건드리는 일이라 형과 먼저 정한다.
+
+### 다음 주문서 — 적 (한도가 풀리면 그대로 붙여넣는다)
+
+설계는 끝나 있다: `render/foe.ts` 는 이미 〈몸통·머리〉와 〈활팔·활·시위〉를 따로 그린다. **몸통·머리·다리만 그림**으로
+바꾸고, 그림의 **머리를 sim 의 헤드샷 자리**(P.enemy.archerHeadUp · archerHeadR)에 못 박는다 — 보스의 눈구멍과 같은 원리다.
+팔과 활은 지금처럼 나를 겨누며 절차적으로 그린다. 달리는 척후와 나는 매는 두 컷을 번갈아 쓴다.
+
+```
+Now the ENEMY SOLDIERS of the same game, EXACTLY the same hand-painted style and brush. One landscape
+1536x1024 PNG, fully TRANSPARENT background (real alpha, no ground, no cast shadow, no outer glow),
+EIGHT sprites in a strict even 4x2 grid, clear empty space between neighbours, no text. All are strict
+SIDE VIEWS FACING LEFT, centered in the cell, filling about 85% of the cell height. Joseon-era Korea.
+Bold, simple, high-contrast shapes: in the game these are only 40 pixels tall.
+IMPORTANT for (1)-(4): paint head, torso and legs ONLY - NO ARMS, NO HANDS, NO WEAPONS. The game draws
+the arms and the weapon itself. End each shoulder as a clean rounded cap.
+ROW 1: (1) BANDIT ARCHER BODY: lean man, dark red-brown tunic, headband, standing upright, feet apart.
+(2) ARMORED ARCHER BODY: the same man wearing a grey iron breastplate, bare head. (3) GUNNER BODY:
+stocky soldier in a wide-brimmed black felt hat (beonggeoji) and dark blue coat, front foot forward,
+braced. (4) SLINGER BODY: barefoot peasant rebel, white headband, rolled-up sleeves, leaning back.
+ROW 2: (5) SCOUT RUNNING, frame A: a swordsman sprinting left, sword raised overhead, left leg
+forward - this one WITH arms and sword. (6) SCOUT RUNNING, frame B: the same swordsman, identical
+size and position, right leg forward. (7) HUNTING FALCON, frame A: a falcon flying left, wings raised
+high. (8) HUNTING FALCON, frame B: the same falcon, identical size and position, wings swept down.
+```
+
+그다음 장: 화차(수레) · 화약궤 · 통 · 과녁 · 보급 과녁 같은 **물건들** — 관절이 없어 제일 쉽다.
+
