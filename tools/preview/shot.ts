@@ -25,6 +25,7 @@ import { getStage } from '../../src/game/stages.ts'
 import { applyFork, type ForkOption } from '../../src/game/forks.ts'
 import type { HudState } from '../../src/render/hud.ts'
 import { drawFoeArcher, drawFoeGunner, drawFoeRusher, drawFoeSlinger } from '../../src/render/foe.ts'
+import { drawArcher } from '../../src/render/stickman.ts'
 import type { InputFrame } from '../../src/sim/types.ts'
 
 const q = new URLSearchParams(location.search)
@@ -229,6 +230,47 @@ async function bakeGround(src: string, q = 0.86): Promise<string> {
   return `ground.webp ${out.width}x${out.height} ${Math.round(blob.size / 1024)}KB · surfV=${((surf - top) / ch).toFixed(3)} (top ${top} surf ${surf} bot ${bot})`
 }
 ;(window as unknown as { bakeGround: typeof bakeGround }).bakeGround = bakeGround
+
+/**
+ * 주인공을 **크게** 본다 — 당김 0 · 절반 · 만작, 겨냥 셋(수평 · 위 · 아래). 게임 화면에서는 60px 라 팔의 선이 안 보인다.
+ *   콘솔: heroSheet()      (str 은 근력 — 낮으면 최대 당김이 1.0 에 못 미친다. 그래도 만작 자세가 서야 한다)
+ * 분홍 선은 **화살선**(활손 → 턱)을 뒤로 늘인 것이다 — 만작에서 시위팔의 팔꿈치가 이 선 위에 있어야 한다 (docs/FORM.md 2-5).
+ */
+function heroSheet(str = 3, big = false): string {
+  const ctx = canvas.getContext('2d')
+  if (ctx === null) return '2d 컨텍스트 없음'
+  renderer.resize()
+  const dpr = window.devicePixelRatio || 1
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  const W = canvas.width / dpr
+  const H = canvas.height / dpr
+  ctx.fillStyle = '#20242c'
+  ctx.fillRect(0, 0, W, H)
+  // big — 만작 하나만 화면 가득. 팔의 선을 눈으로 재려면 이 크기가 필요하다.
+  const aims = big ? [2] : [2, 14, -6]
+  const pulls = big ? [400] : [0, 28, 400]
+  const scale = big ? H / 2.7 : Math.min(W / 9, H / 7.5)
+  for (let r = 0; r < aims.length; r++) for (let c = 0; c < pulls.length; c++) {
+    const w = createWorld(getStage(0), { str, steady: 3, stamina: 9, focus: 3 })
+    const inp: InputFrame = { aimX: 30, aimY: aims[r] ?? 2, drawing: true, steady: false, parry: false }
+    for (let i = 0; i < 5; i++) step(w, { ...inp, drawing: false })
+    for (let i = 0; i < (pulls[c] ?? 0); i++) { step(w, inp); if (w.archer.phase === 'full') break }
+    const cam = big
+      ? { x: w.archer.x, y: w.archer.y - 0.35, scale, shakeX: 0, shakeY: 0, w: W, h: H, dpr }
+      : { x: w.archer.x - (c - 1) * 3, y: w.archer.y - 0.3 + (r - 1) * 2.4, scale, shakeX: 0, shakeY: 0, w: W, h: H, dpr }
+    drawArcher(ctx, cam, w, 1)
+    // 화살선 — 턱에서 겨냥 반대쪽으로 1m.
+    const a = w.archer
+    ctx.strokeStyle = '#ff5fd0'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(worldToScreenX(cam, a.x + Math.cos(a.aimAngle) * 1.2), worldToScreenY(cam, a.y + Math.sin(a.aimAngle) * 1.2))
+    ctx.lineTo(worldToScreenX(cam, a.x - Math.cos(a.aimAngle) * 1.0), worldToScreenY(cam, a.y - Math.sin(a.aimAngle) * 1.0))
+    ctx.stroke()
+  }
+  return 'heroSheet'
+}
+;(window as unknown as { heroSheet: typeof heroSheet }).heroSheet = heroSheet
 
 /**
  * 크게 늘어놓기 — 적을 **한 명씩 크게** 그려서 그림과 팔·어깨가 맞는지 본다 (게임 안에서는 40px 라 안 보인다).

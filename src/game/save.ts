@@ -180,6 +180,11 @@ export interface SaveData {
    * 명상은 자리를 비운 동안의 산수에만 쓰인다 (A1: sim 이 모르는 것은 sim 의 입력에 안 섞는다). 줄지 않는다.
    */
   meditate: number
+  /**
+   * 지도에서 고른 출발 판 (0부터). −1 = 고른 적 없다 → 가장 깊은 체크포인트에서 나선다 (game/loop.ts homeStage).
+   * 더 깊은 보스를 새로 잡으면 −1 로 돌아간다.
+   */
+  mapStart: number
   /** 이번 여정에 지닌 부적 (game/charms.ts CharmId). 빈 문자열 = 없음. 여정이 끝나면 비운다. */
   runCharm: string
 
@@ -280,6 +285,7 @@ export function defaultSave(now: number): SaveData {
     seenGrowHint: false,
     forge: {},
     meditate: 0,
+    mapStart: -1,
     runCharm: '',
     armedArrows: [],
     armorKind: 'leather',
@@ -587,6 +593,7 @@ function sanitize(r: Raw, now: number): SaveData {
     seenGrowHint: bool(r['seenGrowHint'], false),
     forge: sanitizeBest(r['forge']),
     meditate: int(r['meditate'], 0, 0, MEDITATE_HARD_MAX),
+    mapStart: int(r['mapStart'], -1, -1, HARD_MAX),
     // 유효성(진짜 부적 id인가)은 game/charms.ts isCharmId 가 판정한다 — 여기서는 모양만 본다.
     runCharm: typeof r['runCharm'] === 'string' && r['runCharm'].length <= 32 ? r['runCharm'] : '',
     armedArrows: sanitizeUnlocked(r['armedArrows']),

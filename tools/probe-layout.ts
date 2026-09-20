@@ -446,7 +446,7 @@ console.log('\n9. 끝난 화면 — GAME OVER')
   rp.walk((e) => { if (e.className.split(' ').includes('r-head')) rhead = e })
   const html = rhead === null ? '' : (rhead as El).innerHTML
   check(html.includes('GAME OVER'), '가장 먼저 GAME OVER 라고 쓴다')
-  check(!html.includes('몰기'), "'몰기'라는 말을 안 쓴다", html.includes('연달아') ? '연달아 5발 이라고 쓴다' : '')
+  check(!html.includes('몰기'), "'몰기'라는 말을 안 쓴다", html.includes('최대콤보') ? '최대콤보 라고 쓴다' : '')
   // 줄 수 — 죽은 직후에 읽히는 글은 한두 줄이다. 넷이면 이미 충분히 많다.
   //   버튼 줄(r-acts)은 글이 아니라 **고를 것**이라 세지 않는다 (2026-09-20 — 첫 장은 GAME OVER 와 버튼 둘뿐이다).
   const lines = (html.match(/<div class="r-(?!acts)/g) ?? []).length

@@ -180,25 +180,24 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   const { save, ui } = deps
 
   /**
-   * 실제로 판이 돌아간 실시간 (ms). 오프라인 축적에서 빼야 할 시간이다.
-   * 이게 없으면 게임을 하는 동안에도 자원이 쌓여 두 배로 들어온다.
-   */
-  let playedMs = 0
-
-  /**
-   * 자리를 비운 시간을 자원으로 바꾼다. **lastSeen을 옮기는 유일한 경로다** (save.ts 참조).
+   * ★ **비접속 중에만 쌓인다** (2026-09-20, 형: "혹시 이거 자리비운동안이 아니라 접속중에 차는거 아냐? 확인해보고 확실하게 고쳐").
    *
-   * 탭이 보이는 채로 흐른 시간도 자리를 비운 시간이다 — 이 게임의 대표 사용법이
-   * "공부 화면 옆에 띄워둔다"이고, visibilitychange가 아예 안 뜨는 환경이 흔하다.
-   * 그래서 흐른 시간 전체에서 **실제로 논 시간(playedMs)만** 빼고 나머지를 축적으로 돌린다.
+   * 확인해 보니 **접속 중에도 찼다.** 예전 규칙은 "흐른 시간 전체 − 판이 실제로 돈 시간"이었다 — 성장 화면을 열어 둔 시간,
+   * 결과 화면에 서 있던 시간, 지도를 보던 시간이 전부 '자리를 비운 시간'으로 들어왔다. 이름은 '비접속시 자동획득'인데
+   * 하는 일은 '판 밖에 있으면 획득'이었던 것이다.
+   *
+   * 이제 규칙은 하나다: **탭이 가려졌거나 닫혀 있던 시간만** 센다.
+   *   · 자리를 뜰 때(가려짐 · 닫힘)와 저장할 때 `present()` 가 "지금까지는 여기 있었다"고 도장을 찍는다 — 주는 것은 없다.
+   *   · 돌아올 때(켬 · 다시 보임) `settle()` 이 그 도장부터 지금까지를 정산한다.
+   * 저장할 때도 찍는 이유: 브라우저가 죽어서 '가려짐'을 못 받으면 마지막 도장이 오래된 채로 남는다 — 그러면 다음에 켤 때
+   * 접속해 있던 시간까지 정산된다. 판이 끝날 때마다 찍어 두면 그 오차가 한 판을 못 넘는다.
    */
+  const present = (): void => {
+    save.lastSeen = Date.now()
+  }
+
   const settle = (): void => {
-    save.lastSeen += playedMs
-    playedMs = 0
-    const n = Date.now()
-    // 논 시간이 흐른 시간보다 길게 잡혔거나(탭 복귀 보정) 시계가 튀었다. 미래로는 못 간다.
-    if (save.lastSeen > n) save.lastSeen = n
-    ui.offlineGain(settleOffline(save, n))
+    ui.offlineGain(settleOffline(save, Date.now()))
   }
 
   // 켜자마자 정산한다. World가 만들어지기 전이어야 오프라인으로 오른 스탯·화살이 첫 판에 들어간다.
@@ -349,6 +348,8 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
 
   /** M2 저장 훅. 저장 시점은 탭 이탈과 판 종료뿐이다. 주기적 저장 타이머는 금지 (A3). */
   const saveNow = (): void => {
+    // 저장하는 지금 나는 여기 있다 — 접속 중의 시간이 축적으로 새지 않게 도장을 찍는다 (위 present 의 주석).
+    present()
     writeSave(save)
   }
 
@@ -488,10 +489,13 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     // 리듬도 여정의 것이다 — 새 여정에 지난 여정의 몰기를 들고 들어가면 그건 번 게 아니다.
     w.flowHits = 0
     w.molgi = false
-    stageIndex = pendingStartIndex ?? checkpointStage(save.bossDepth)
+    stageIndex = pendingStartIndex ?? homeStage()
     pendingStartIndex = null
     loadStage(save.runArrow)
   }
+
+  /** 새 여정이 나서는 판 (0부터) — 지도에서 고른 자리가 있으면 거기, 없으면 가장 깊은 체크포인트. */
+  const homeStage = (): number => (save.mapStart >= 0 ? save.mapStart : checkpointStage(save.bossDepth))
 
   const beginStage = (): void => {
     if (save.runActive) {
@@ -562,7 +566,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       stars: save.runStars,
       jung: save.runBestJung,
       molgi: save.runBestJung >= Math.floor(P.flow.molgiAt),
-      nextStage: checkpointStage(save.bossDepth) + 1,
+      nextStage: (pendingStartIndex ?? homeStage()) + 1,
     }
     save.runCount++
     save.runActive = false
@@ -668,7 +672,11 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       save.bossKills++
       // 깊이는 따로 센다 — 같은 보스를 다시 잡아도 깊어지지 않는다 (stages.ts checkpointStage).
       const cycleNow = Math.floor((stageIndex + 1) / BOSS_EVERY)
-      if (cycleNow > save.bossDepth) save.bossDepth = cycleNow
+      if (cycleNow > save.bossDepth) {
+        save.bossDepth = cycleNow
+        // 더 깊은 마디를 새로 열었다 — 지도에서 고른 옛 출발점은 이제 뒤에 있다. 새 체크포인트를 따른다.
+        save.mapStart = -1
+      }
     }
     // 활 숙련의 재료. 판이 끝날 때 한 번에 — 매 명중마다 세이브 객체를 만지지 않는다.
     save.bowHits[save.bow] = (save.bowHits[save.bow] ?? 0) + hits
@@ -809,7 +817,6 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       if (steps >= P.sim.maxCatchUpSteps) acc = 0
       // 판이 실제로 돌아간 시간만 센다. 결과 화면에 멈춰 있거나 패널을 열어둔 시간은
       // 자리를 비운 것과 다르지 않으므로 축적으로 넘긴다.
-      if (w.status === 'playing') playedMs += realDt * 1000
     }
 
     // 이번 프레임에 쌓인 판 기록을 센다. 소리·이펙트와 같은 배열을 읽되 비우지 않는다 —
@@ -979,9 +986,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     // 당기던 중이었으면 발사 없이 되돌린다. 복귀 첫 스텝이 화살을 태우면 C2 위반이다.
     cancelDraw(w)
     halt()
-    // 숨기 직전까지 흘러 있던 방치 시간을 먼저 자원으로 바꾼다. 정산 없이 저장만 하면
-    // 그 구간이 어디에도 안 남는다 (settle이 lastSeen을 옮기는 유일한 경로이므로).
-    settle()
+    // 여기서부터가 '비접속'이다 — 주는 것 없이 떠나는 시각만 찍는다 (saveNow 안의 present).
     saveNow()
   }
 
@@ -1239,13 +1244,17 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     mapJump(index: number): void {
       if (sandbox) return
       const to = Math.max(0, Math.floor(index))
+      // ★ 고른 자리는 **남는다** (2026-09-20, 형: "맵에서 내가 특정 스테이지 골랐는데 왜 계속 게임시작할때마다 141판으로
+      //   돌아간다 라고 되어있냐"). 예전엔 고른 판이 그 한 번만 쓰이고, 결과 화면의 문구와 그다음 여정은 늘 체크포인트였다 —
+      //   고른 사람은 죽을 때마다 지도를 다시 열어야 했다. 이제 다른 자리를 고르거나 더 깊은 보스를 잡기 전까지 여기서 다시 나선다.
+      save.mapStart = to
+      // endRun 보다 **먼저** 적는다 — 결과 화면의 '○판으로 돌아간다'가 이 값을 읽는다.
+      pendingStartIndex = to
       if (save.runActive) {
-        // endRun 이 결과 화면을 띄우고, 거기서 '출정'이 아래 pendingStartIndex 를 집어간다.
+        // endRun 이 결과 화면을 띄우고, 거기서 '출정'이 위의 pendingStartIndex 를 집어간다.
         endRun('abandon')
-        pendingStartIndex = to
         return
       }
-      pendingStartIndex = to
       beginStage()
     },
     dispose(): void {

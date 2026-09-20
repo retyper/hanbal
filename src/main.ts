@@ -108,7 +108,8 @@ const loop = createLoop(el, {
         overlay,
         ['practice', ...unlockedBows(save.unlocked)],
         save,
-        checkpointStage(save.bossDepth) + 1,
+        // 지도에서 고른 자리가 있으면 거기서 나선다 (game/loop.ts homeStage 와 같은 규칙).
+        (save.mapStart >= 0 ? save.mapStart : checkpointStage(save.bossDepth)) + 1,
         onStart,
       ),
     // 보스 보급 3택 (docs/RUN.md) — 특수살 재고의 유일한 큰 획득처.

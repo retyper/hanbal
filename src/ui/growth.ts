@@ -36,7 +36,7 @@ import {
   trainingCost,
   type StatKey,
 } from '../game/progression.ts'
-import { meditateRateMul } from '../game/offline.ts'
+import { meditateCapMul, meditateRateMul } from '../game/offline.ts'
 import { BOW_KINDS, bowKind, masteryLevel, MASTERY_HITS, type BowKindId } from '../game/bows.ts'
 import { FORGE_PARTS, buyForge, forgeBlocked, forgeCost, forgeEffect, forgeLevel, forgeMax } from '../game/forge.ts'
 import { armorForgeBlocked, armorForgeEffect, armorForgeMax, armorKind, armorKindOf, armorLevel, buyArmorForge } from '../game/armor.ts'
@@ -850,8 +850,12 @@ function bowArt(id: string, owned: boolean, px: number): string {
     // 명상이 속도를 키운다 (game/offline.ts) — 적힌 분수도 그만큼 준다.
     const perMin = P.offline.trainingPerSec * meditateRateMul(d.meditate) * 60
     // 엽전 그림이 들어가므로 innerHTML 이다 (글자만이면 숫자가 무엇인지 안 읽힌다).
+    // ★ **무엇이 · 언제 · 얼마나** 를 다 적는다 (2026-09-20, 형: "자리비운동안 돈이 차는게 맞는지, 얼마만에 얼마 차는지
+    //   유저가 알아야하는데"). 접속해 있는 동안은 안 쌓인다 — 그 말도 한다 (game/loop.ts present · settle).
+    const capNow = Math.floor(P.offline.trainingCap * meditateCapMul(d.meditate))
+    const arrowMin = 1 / (P.offline.arrowPerSec * meditateRateMul(d.meditate) * 60)
     hint.innerHTML = d.offlineEnabled
-      ? `자리를 비운 동안에도 쌓인다 (${(1 / perMin).toFixed(1)}분에 ${coinHtml(1)})`
+      ? `게임을 닫거나 탭을 가려 둔 동안만 쌓인다 — ${(1 / perMin).toFixed(1)}분에 ${coinHtml(1)} (최대 ${capNow}) · 화살은 ${arrowMin.toFixed(1)}분에 1발`
       : `쌓지 않는 대신 판 보상 ×${P.offline.optOutBonus.toFixed(2)}`
     chk.checked = d.offlineEnabled
     syncSound()
@@ -949,7 +953,8 @@ export function showReinforce(
   // '몰기'라는 말은 화면에 안 쓴다 (2026-09-11, 형: "몰기는 이 몰기가 뭐야 대체").
   // 국궁의 말이지만 **아는 사람만 아는 말**이고, 여기서 가르칠 자리도 아니다.
   // 뜻은 '연달아 다섯을 맞혔다'니까 그냥 그렇게 쓴다 — 낱말 하나를 배우게 하느니 뜻을 준다.
-  if (info.jung >= 3) keeps.push(`연달아 <b>${info.jung}발</b>`)
+  // 2026-09-20, 형: "'연달아' 는 '최대콤보'로 바꿔야함."
+  if (info.jung >= 3) keeps.push(`최대콤보 <b>${info.jung}</b>`)
 
   // 접은 것과 실패한 것은 다르다 — 같은 자리, 같은 크기, 색만 다르게.
   const quit = info.reason === 'abandon'
@@ -958,7 +963,8 @@ export function showReinforce(
     ? '여기서 접었다'
     : info.reason === 'death'
       ? '기력이 0이 됐다 — 적의 화살은 방패로 막고 갑옷으로 받는다'
-      : '화살이 떨어졌다 — 남은 수는 화면 왼쪽 위에 있다'
+      // 2026-09-20, 형: "'화살이 떨어졌다 - 남은수는 화면 왼쪽 위에 있다' 이거 고쳐야함. '화살이 없어서 더 쏠수가 없어...' 이렇게."
+      : '화살이 없어서 더 쏠 수가 없어...'
 
   const head = document.createElement('div')
   head.className = 'r-head'
@@ -973,7 +979,7 @@ export function showReinforce(
         ? ' <i class="r-new">최고 기록</i>'
         : ` <i>최고 ${info.best}판</i>`)
     + '</div>'
-    + (keeps.length > 0 ? `<div class="r-keep">가져간다 &nbsp;${keeps.join('<span class="r-dot">·</span>')}</div>` : '')
+    + (keeps.length > 0 ? `<div class="r-keep">획득한 엽전 &nbsp;${keeps.join('<span class="r-dot">·</span>')}</div>` : '')
     + '<div class="r-acts">'
     + `<button class="hb-btn" type="button" data-to="stat">${artIcon('stat-str', 26)}신체 강화</button>`
     + `<button class="hb-btn" type="button" data-to="forge">${artIcon('forge-limb', 26)}무기 강화</button>`
@@ -1094,7 +1100,7 @@ const plus = (label: string, n: number): string => (n > 0 ? `${label} +${n}` : '
  */
 export function showOfflineGain(
   o: Overlay,
-  gain: { arrows: number; training: number; requests: number },
+  gain: { arrows: number; training: number; requests: number; seconds: number },
 ): void {
   const parts: string[] = []
   const a = plus('화살', gain.arrows)
@@ -1106,7 +1112,10 @@ export function showOfflineGain(
   if (r !== '') parts.push(r)
   // 받은 게 없으면 말하지 않는다. 빈 알림은 소음이다.
   if (parts.length === 0) return
-  o.toast(parts.join(' · '))
+  // **얼마 동안 비웠고 그래서 무엇이 왔는지** 를 같이 말한다 (2026-09-20, 형: "얼마만에 얼마 차는지 유저가 알아야하는데").
+  const min = Math.floor(gain.seconds / 60)
+  const away = min >= 120 ? `${Math.floor(min / 60)}시간` : min >= 1 ? `${min}분` : '잠깐'
+  o.toast(`자리를 비운 ${away} — ${parts.join(' · ')}`, 4200)
 }
 
 /**

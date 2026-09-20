@@ -37,6 +37,9 @@ import { hudLeftBottom } from './hud.ts'
 import type { Camera } from './camera.ts'
 
 /** 체격 (m). 화면 픽셀이 아니라 월드 치수라 카메라 줌을 그대로 따라간다. */
+/** 물린 화살의 굵기 배율 (그림의 제 굵기 대비). */
+const NOCK_FAT = 0.68
+
 const BODY = {
   armBend: 0.05,
   torso: 0.5,
@@ -53,11 +56,16 @@ const BODY = {
   /** 어깨가 앵커보다 뒤에 있는 거리. 턱이 앞어깨 위에 오는 사법 자세. */
   shoulderBack: 0.05,
   /** 활 그립이 화살선 아래에 있는 거리. 화살은 그립 위 받침을 지난다. */
-  gripDrop: 0.11,
+  // ★ 0.11 → 0.045 (2026-09-20, 형: "아직도 만작일때 오른팔이 왼팔과 일직선이 안되고있는 느낌이야").
+  //   크게 그려 보니(tools/preview heroSheet) 활손이 화살선보다 11cm 아래라 **왼팔은 어깨 높이, 오른팔은 턱 높이**에서
+  //   따로 놀았다. 실제로 화살은 줌손 바로 위(엄지 마디)를 지난다 — 주먹 반 개다.
+  gripDrop: 0.045,
   /** 시위팔 팔꿈치가 앵커 뒤로 가는 거리. 활손→앵커→팔꿈치가 한 직선이 된다. */
-  elbowBack: 0.30,
+  // ★ 0.30 → 0.44 (같은 날). 0.30 이면 팔꿈치가 그림의 뒷어깨 **바로 위**에 와서 윗팔이 세로로 접힌 덩어리가 되고
+  //   아랫팔은 머리와 깃에 다 가렸다. 뒤로 더 빼야 활손 → 시위손 → 팔꿈치의 한 줄이 머리 뒤로 **보인다.**
+  elbowBack: 0.44,
   /** 팔꿈치가 화살선보다 위에 있는 거리. 처지면 '닭날개'가 된다 (docs/FORM.md 2-5). */
-  elbowRise: 0.035,
+  elbowRise: 0.015,
   bowHalf: 0.46,
   bowDrawCurve: 0.5,
   arrowLen: 0.72,
@@ -1222,6 +1230,8 @@ export function drawArcher(
       if (!(heroArt && drawArrowArt(
         ctx, w.arrowKind, worldToScreenX(cam, rig.nockX), worldToScreenY(cam, rig.nockY),
         worldToScreenX(cam, tipX), worldToScreenY(cam, tipY),
+        // 손에 물린 살은 날아가는 살보다 가늘게 — 제 굵기로는 깃이 얼굴과 시위손을 다 덮는다 (heroSheet 로 본 것).
+        NOCK_FAT,
       ))) {
       ctx.lineWidth = Math.max(lw * LINE.arrowMul, thinPx)
       ctx.strokeStyle = THEME.arrow
