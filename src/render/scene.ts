@@ -21,7 +21,7 @@ import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { createFx, pumpEvents, updateFx, drawFx, drawFxFlash, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash, targetFlinch, PLAYER_PIN } from './effects.ts'
 import { drawNewBossBody, drawNewBossFace } from './bosses.ts'
 import { BOSS_EYES, drawBossArt, warmBossArt } from './bossart.ts'
-import { drawArrowArt, drawFalconArt, drawFoeArt, drawPropArt, drawShotArt, drawTargetArt, warmFoeArt } from './foeart.ts'
+import { drawArrowArt, drawPoleArt, drawFalconArt, drawFoeArt, drawPropArt, drawShotArt, drawTargetArt, warmFoeArt } from './foeart.ts'
 import { backdrop } from './sprites.ts'
 import { bossGrammar, bossWeakSpot, foeWeakSpot } from '../sim/target.ts'
 import type { Fx } from './effects.ts'
@@ -436,6 +436,8 @@ function drawPost(
   if (wy - g > DRAW.postMaxY) return
   const gy = worldToScreenY(cam, g)
   if (gy <= y + r) return
+  // 받침은 나무 장대다 (render/foeart.ts). 굵기는 과녁 크기를 따르되 너무 가늘어지지 않게.
+  if (drawPoleArt(ctx, x, y + r * 0.6, gy, Math.max(5, r * 0.22))) return
   ctx.strokeStyle = THEME.prop
   ctx.lineWidth = DRAW.postW
   ctx.beginPath()

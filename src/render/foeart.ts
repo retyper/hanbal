@@ -46,6 +46,7 @@ export function warmFoeArt(): void {
   for (const name of Object.keys(TARGET)) sprite(`target-${name}`)
   for (const k of Object.keys(ARM) as (keyof typeof ARM)[]) { sprite(ARM[k].upper); sprite(ARM[k].fore) }
   sprite('limb-fist')
+  sprite('prop-pole')
   for (const name of Object.values(FLY)) sprite(name)
   for (const c of SHOT_ART) if (c !== null) sprite(c.name)
 }
@@ -358,5 +359,19 @@ export function drawShotArt(
     ctx.drawImage(im, -c.size / 2, -c.size / 2, c.size, c.size * (im.naturalHeight / im.naturalWidth))
   }
   ctx.restore()
+  return true
+}
+
+/** 과녁의 받침 — 나무 장대. 위(y0)에서 땅(y1)까지 세로로 이어 깐다. wide 는 굵기 (px). */
+export function drawPoleArt(ctx: CanvasRenderingContext2D, x: number, y0: number, y1: number, wide: number): boolean {
+  const im = sprite('prop-pole')
+  if (im === null) return false
+  const th = wide * (im.naturalHeight / im.naturalWidth)
+  // 땅에서 위로 깐다 — 맨 위 토막은 과녁 뒤에 가려져서 잘려도 안 보인다.
+  for (let y = y1 - th; y > y0 - th; y -= th) {
+    const top = Math.max(y, y0)
+    const cut = (top - y) / th
+    ctx.drawImage(im, 0, im.naturalHeight * cut, im.naturalWidth, im.naturalHeight * (1 - cut), x - wide / 2, top, wide, th * (1 - cut))
+  }
   return true
 }
