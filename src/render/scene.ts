@@ -2010,14 +2010,24 @@ const BACKDROP = {
   ridgeMax: 0.7,
   /** 하늘과 산 사이가 뜨면 하늘의 맨 아래 띠(이만큼)를 늘려 메운다 — 거기엔 달도 구름도 없다. */
   skyStretchV: 0.12,
-  /** 그림 위에 얹는 어둠 — 앞에 선 것들이 배경보다 밝아야 한다. */
-  dim: 0.16,
+  /**
+   * 그림 위에 얹는 어둠 — 앞에 선 것들과 HUD 글자가 배경보다 밝아야 한다. 밝은 시각일수록 많이 덮는다
+   * (안개 아침은 하늘이 거의 흰색이라 그대로 두면 왼쪽 위 숫자와 판 설명이 묻혔다).
+   */
+  dim: { predawn: 0.14, dawn: 0.26, mist: 0.42, sunset: 0.16, night: 0.16 } as Record<string, number>,
+  /** HUD 가 서는 화면 위쪽의 그늘 — 위에서 이만큼(화면 높이 비율)에 걸쳐 옅어진다. */
+  hudShade: 0.34,
+  hudShadeAlpha: 0.42,
 } as const
 
 /**
  * 두 겹이다 (tools/preview bakeBackdrop): **하늘은 화면 위에, 산은 땅에** 못 박는다.
  * 한 장을 폭에 맞춰 덮으면 가로로 긴 화면에서 하늘과 달이 통째로 잘리고 산이 판 이름을 덮는다.
  */
+let hudShade: CanvasGradient | null = null
+let hudShadeH = -1
+let hudShadeSky = ''
+
 function drawBackdrop(ctx: CanvasRenderingContext2D, cam: Camera, sky: SkyPalette): boolean {
   const file = BACKDROP.file[sky.name]
   if (file === undefined) return false
@@ -2028,11 +2038,12 @@ function drawBackdrop(ctx: CanvasRenderingContext2D, cam: Camera, sky: SkyPalett
   const s = (cam.w * BACKDROP.over) / ridge.naturalWidth
   const dw = ridge.naturalWidth * s
   const slack = (dw - cam.w) / 2
-  const clampShift = (v: number): number => Math.max(-slack, Math.min(slack, v))
+  // 시차 — 여유(slack) 안에서만 밀린다. (클로저를 만들지 않는다: 프레임당 할당 0, A5)
+  const pan = -cam.x * cam.scale
   const x0 = (cam.w - dw) / 2
   // 하늘 — 위에 붙인다.
   const skyH = top.naturalHeight * s
-  const sx = x0 + clampShift(-cam.x * cam.scale * BACKDROP.parallaxSky)
+  const sx = x0 + Math.max(-slack, Math.min(slack, pan * BACKDROP.parallaxSky))
   ctx.drawImage(top, sx, 0, dw, skyH)
   // 산 — 밑동을 땅에.
   // 산 띠는 하늘 영역의 ridgeMax 까지만 차지한다 — 멀리 당겨 잡는 판에서는 땅이 화면 중간까지 올라와서,
@@ -2047,10 +2058,22 @@ function drawBackdrop(ctx: CanvasRenderingContext2D, cam: Camera, sky: SkyPalett
       sx, skyH * (1 - v), dw, ry + ridgeH * 0.2 - skyH * (1 - v),
     )
   }
-  ctx.drawImage(ridge, x0 + clampShift(-cam.x * cam.scale * BACKDROP.parallaxRidge), ry, dw, ridgeH)
-  ctx.globalAlpha = BACKDROP.dim
+  ctx.drawImage(ridge, x0 + Math.max(-slack, Math.min(slack, pan * BACKDROP.parallaxRidge)), ry, dw, ridgeH)
+  ctx.globalAlpha = BACKDROP.dim[file] ?? 0.16
   ctx.fillStyle = sky.ground
   ctx.fillRect(0, 0, cam.w, cam.h)
+  // HUD 의 그늘 — 글자가 서는 위쪽만 한 번 더 누른다.
+  // 그라디언트는 화면 높이나 시각이 바뀔 때만 다시 만든다 (프레임당 할당 0, A5).
+  if (hudShade === null || hudShadeH !== cam.h || hudShadeSky !== sky.name) {
+    hudShade = ctx.createLinearGradient(0, 0, 0, cam.h * BACKDROP.hudShade)
+    hudShade.addColorStop(0, sky.ground)
+    hudShade.addColorStop(1, 'rgba(0,0,0,0)')
+    hudShadeH = cam.h
+    hudShadeSky = sky.name
+  }
+  ctx.globalAlpha = BACKDROP.hudShadeAlpha
+  ctx.fillStyle = hudShade
+  ctx.fillRect(0, 0, cam.w, cam.h * BACKDROP.hudShade)
   ctx.globalAlpha = 1
   return true
 }
