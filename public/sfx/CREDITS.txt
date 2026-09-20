@@ -73,3 +73,19 @@ slash_01      슬래시. 'samurai slash' by nekoninja (Freesound 370204, CC0, 0.
 unsheath_01   발도. 'unsheath_sword' by Qat (107589, CC0, 1.01초).
 sheath_01     납도. 'sheath_sword' by Qat (107590, CC0, 0.63초).
 swing_01      (안 씀) 'swoosh' by PorkMuncher (263595). 후보로 남겨둔다.
+
+── 2026-09-20 추가 (형: "효과음들도 마찬가지야. 죽는소리같은게 지금 없잖아.") — 전부 Freesound · CC0 ──
+받는 법: node tools/fetch-freesound.mjs get <ID> public/sfx/<이름>.ogg   (들어 보기: public/sound-picker.html)
+death_01      적이 죽는다. 'Male_Death_04' by Artmasterrich (ID 345456)
+death_02      〃 'Male Death Sound' by Blankened (ID 554443)
+death_03      〃 'Male Death 4' by scorpion67890 (ID 396801)
+hurt_01       내가 맞는다. 'Voice_AdultMale_PainGrunts_09' by MrFossy (ID 547209)
+hurt_02       〃 'male_hurt9' by micahlg (ID 413186)
+herodeath_01  내가 죽는다. 'MaleDeathSound13' by Blankened (ID 577032)
+hawk_01       매가 떨어진다. 'Đại Bàng Trên Không' by SieuAmThanh (ID 556575)
+crash_01      화차가 부서진다. 'snd_box_smash' by gristi (ID 562189)
+crash_02      〃 'Smash' by egomassive (ID 536777)
+bossdeath_01  귀신이 죽는다 (0.8배로 낮춰 튼다). 'Monster Scream' by Mega-X-stream (ID 427412)
+bossdeath_02  〃 'monster_sound_medium_death' by Leadstarson (ID 559621)
+musket_01     총통. 'Musket Shot' by mlsulli (ID 234869)
+musket_02     〃 'musket' by fennelliott (ID 347647)

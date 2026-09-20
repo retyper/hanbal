@@ -428,7 +428,8 @@ export type SimEvent =
   /** 적 궁수가 시위를 당기기 시작했다 — 예고. 렌더·소리가 이걸로 긴장을 만든다. */
   | { t: 'enemy_draw'; x: number; y: number }
   /** 적 화살이 날았다. */
-  | { t: 'enemy_shot'; x: number; y: number }
+  /** look = 날아가는 것의 생김새 (EnemyShot.look) — 화살과 탄환은 소리가 달라야 한다. 판정에는 안 쓰인다. */
+  | { t: 'enemy_shot'; x: number; y: number; look: number }
   /** 적 화살이 과녁에 박혔다 — 과녁 뒤는 엄폐다. */
   | { t: 'deflect'; x: number; y: number }
   /** 환도를 휘둘렀다 (맞든 안 맞든). 소리는 바람 가르는 소리, 그림은 칼의 호. */

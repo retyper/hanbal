@@ -238,7 +238,7 @@ function fireOne(w: World, tg: Target, spread: number): void {
   slot.py = muzzleY
   slot.vx = Math.cos(ang) * v
   slot.vy = Math.sin(ang) * v
-  w.events.push({ t: 'enemy_shot', x: tg.x, y: tg.y })
+  w.events.push({ t: 'enemy_shot', x: tg.x, y: tg.y, look: slot.look })
 }
 
 /**

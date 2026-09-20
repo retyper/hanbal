@@ -37,6 +37,15 @@ export type SampleName =
   | 'bell'
   /** 빗나가 땅에 박힘 */
   | 'soft'
+  /** 2026-09-20 (형: "죽는소리같은게 지금 없잖아") — 사람이 죽는 소리 · 내가 맞는 소리 · 내가 죽는 소리 */
+  | 'death'
+  | 'hurt'
+  | 'heroDeath'
+  /** 매의 울음 · 나무가 부서지는 소리(화차) · 귀신이 죽는 소리 · 총통 */
+  | 'hawk'
+  | 'crash'
+  | 'bossDeath'
+  | 'musket'
   /** 관통 */
   | 'plank'
   /** UI — 누름 */
@@ -144,6 +153,14 @@ const FILES: Readonly<Record<SampleName, readonly string[]>> = {
   unsheath: ['unsheath_01'],
   sheath: ['sheath_01'],
   parry: ['parry_01', 'parry_02'],
+  // 아래 일곱은 2026-09-20 Freesound CC0 (public/sfx/CREDITS.txt · tools/fetch-freesound.mjs).
+  death: ['death_01', 'death_02', 'death_03'],
+  hurt: ['hurt_01', 'hurt_02'],
+  heroDeath: ['herodeath_01'],
+  hawk: ['hawk_01'],
+  crash: ['crash_01', 'crash_02'],
+  bossDeath: ['bossdeath_01', 'bossdeath_02'],
+  musket: ['musket_01', 'musket_02'],
 }
 
 /** 순회용 키 목록. 매번 Object.keys를 부르면 배열이 새로 생긴다 (A5). */

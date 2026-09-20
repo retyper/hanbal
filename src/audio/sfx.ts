@@ -375,6 +375,21 @@ const SMP = {
   parryGain: 0.7,
   /** 맞은 사람의 신음 — 절대값. 명중음 뒤에 얹히는 소리라 그보다 작다. 귀신은 낮고(rate) 크게. */
   gruntGain: 0.42,
+  // ── 2026-09-20 (형: "죽는소리같은게 지금 없잖아") ──
+  /** 사람이 죽는 소리 — 쓰러지는 퍽 위에 얹는다. 신음(grunt)보다 크다: 끝났다는 소리라서. */
+  deathGain: 0.5,
+  deathJitter: 0.1,
+  /** 매의 울음 · 화차가 부서지는 소리 · 귀신이 죽는 소리. */
+  hawkGain: 0.45,
+  crashGain: 0.55,
+  bossDeathGain: 0.7,
+  /** 귀신은 목청이 낮다 — 괴물 소리를 더 낮춰 튼다. */
+  bossDeathRate: 0.8,
+  /** 내가 맞는 소리 — 저역의 쿵 위에 사람 목소리를 얹는다. 내가 죽는 소리는 그보다 크다. */
+  hurtGain: 0.5,
+  heroDeathGain: 0.6,
+  /** 총통 — 화살의 바람소리와 **다른 소리**여야 한다. 멀리서 나는 소리라 너무 크면 안 된다. */
+  musketGain: 0.4,
   gruntJitter: 0.08,
   gruntBossGain: 1.4,
   gruntBossRate: 0.55,
@@ -1638,6 +1653,8 @@ export function pumpSfx(sfx: Sfx, w: World): void {
       TN.delay = 0
       tone(s, K_ESCAPE, TN)
     } else if (e.t === 'enemy_shot') {
+      // 총통수(탄환)는 **총소리**다 — 화살의 바람소리와 같으면 무엇이 날아오는지 귀로 모른다.
+      if (e.look === 4) sample(sfx, s, 'musket', SMP.musketGain, jitter(0.06), e.x, e.y)
       // 적 화살의 출발 — 짧은 바람소리.
       NB.filterType = 'bandpass'
       NB.freq = 1400
@@ -1650,6 +1667,9 @@ export function pumpSfx(sfx: Sfx, w: World): void {
       NB.delay = 0
       noiseBurst(s, K_ESCAPE, NB)
     } else if (e.t === 'player_hit') {
+      // 맞으면 **사람이 소리를 낸다** (2026-09-20). 죽는 한 발이면 죽는 소리다.
+      if (w.hp <= 0) sample(sfx, s, 'heroDeath', SMP.heroDeathGain, 1, 0, 0)
+      else sample(sfx, s, 'hurt', SMP.hurtGain, jitter(0.06), 0, 0)
       // 맞았다 — 이 게임에서 가장 무거운 저역. 놀라야 하지만 벌주듯 크면 안 된다.
       TN.type = 'triangle'
       TN.freq = SFX.escapeFreq
@@ -1790,6 +1810,12 @@ export function pumpSfx(sfx: Sfx, w: World): void {
       // (드론이 있던 자리다 — 2026-09-10 에 매로 바뀌었다. 쇳소리는 이제 안 난다.)
       const name = e.look === 3 ? 'soft' : e.look === 4 ? 'woodHeavy' : 'thud'
       sample(sfx, s, name, SMP.downGain * (e.look === 3 ? 1.4 : 1), e.look === 3 ? 1.15 : 0.92, e.x, e.y)
+      // ★ 죽는 **목소리** (2026-09-20, 형: "죽는소리같은게 지금 없잖아"). 위의 퍽은 몸이 땅에 닿는 소리고,
+      //   이건 그 사람이 내는 소리다 — 둘은 다른 것이라 겹쳐 튼다.
+      if (e.look === -1) sample(sfx, s, 'bossDeath', SMP.bossDeathGain, SMP.bossDeathRate, e.x, e.y)
+      else if (e.look === 3) sample(sfx, s, 'hawk', SMP.hawkGain, jitter(0.08), e.x, e.y)
+      else if (e.look === 4) sample(sfx, s, 'crash', SMP.crashGain, jitter(0.08), e.x, e.y)
+      else sample(sfx, s, 'death', SMP.deathGain, jitter(SMP.deathJitter), e.x, e.y)
     }
   }
 }
