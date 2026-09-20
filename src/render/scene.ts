@@ -21,7 +21,7 @@ import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { createFx, pumpEvents, updateFx, drawFx, drawFxFlash, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash, targetFlinch, PLAYER_PIN } from './effects.ts'
 import { drawNewBossBody, drawNewBossFace } from './bosses.ts'
 import { BOSS_EYES, drawBossArt, drawEyeArt, drawFoxArt, warmBossArt } from './bossart.ts'
-import { drawArrowArt, drawPoleArt, drawFalconArt, drawFoeArt, drawPropArt, drawShotArt, drawStoneArt, drawTargetArt, warmFoeArt } from './foeart.ts'
+import { drawArrowArt, drawArrowTailArt, drawPennantArt, drawPoleArt, drawFalconArt, drawFoeArt, drawPropArt, drawShotArt, drawStoneArt, drawTargetArt, warmFoeArt } from './foeart.ts'
 import { backdrop } from './sprites.ts'
 import { bossGrammar, bossWeakSpot, foeWeakSpot } from '../sim/target.ts'
 import type { Fx } from './effects.ts'
@@ -209,6 +209,10 @@ const FLAG = {
   /** 궁수에서 이만큼 앞 (m) */
   atX: 6.5,
   poleH: 3.2,
+  /** 그림 깃대의 굵기 (m) · 그림 천의 길이 배율 · 펄럭임을 각의 떨림으로 옮기는 배율 (rad/m) */
+  poleArtW: 0.11,
+  artLen: 1.25,
+  artWobble: 0.9,
   poleW: 2,
   /** 천의 길이 (m) 와 폭 */
   clothLen: 1.5,
@@ -513,12 +517,18 @@ function drawThreatLine(
   ctx.globalAlpha = 1
 }
 
+/**
+ * ★ 그리는 순서는 엄격하다 (2026-09-20, 형: "우선순위는 밖에있는 투사체 > 적군 > 건물 > 건물속 궁수 이런식의 순서가 엄격해야해").
+ *   그래서 두 번 돈다: inside = true 는 **창 안의 사수만** (건물의 앞면보다 먼저), false 는 그 밖의 전부 (건물보다 나중).
+ *   예전엔 한 번에 다 그리고 창틀을 맨 나중에 얹어서, 건물 앞을 지나는 매·군졸·화약궤가 창틀에 덮였다.
+ */
 function drawTargets(
-  ctx: CanvasRenderingContext2D, cam: Camera, w: World, alpha: number, fx: Fx,
+  ctx: CanvasRenderingContext2D, cam: Camera, w: World, alpha: number, fx: Fx, inside: boolean,
 ): void {
   for (let i = 0; i < w.targets.length; i++) {
     const t = w.targets[i]
     if (t === undefined || !t.alive) continue
+    if ((t.kind === 'archer' && (t.look === 1 || t.look === 2) && windowOf(t) !== null) !== inside) continue
     const wy = lerp(t.py, t.y, alpha)
     const x = worldToScreenX(cam, lerp(t.px, t.x, alpha))
     const y = worldToScreenY(cam, wy)
@@ -612,11 +622,13 @@ function drawTargets(
           // 활과 활팔은 클립 밖이라 창밖으로 내민 활이 된다 (foe.ts).
           // ★ 사수는 **제 자리(sim 의 y)** 에 서고 창은 그보다 위에 달려 있다 (buildings.ts CELL.lift) — 창턱이 허리 아래를 자르고
           //   머리 위로는 창이 넉넉히 빈다. 예전엔 창의 중심에 세워서 무릎까지 보이고 상투가 윗틀에 닿았다.
-          drawFoeArcher(
-            ctx, wx, y, rx, ry, aimX, aimY, drawF, bodyCol, t.armored, false,
-            { x: wx - whw, y: wy2 - whh, w: whw * 2, h: whh * 2 },
-            t.bounty,
-          )
+          // 건물 속의 사수는 **활과 팔까지** 창 안에 갇힌다 — 예전엔 활이 클립 밖이라 벽 위에 그려졌다 (건물 > 건물 속 궁수).
+          ctx.save()
+          ctx.beginPath()
+          ctx.rect(wx - whw, wy2 - whh, whw * 2, whh * 2)
+          ctx.clip()
+          drawFoeArcher(ctx, wx, y, rx, ry, aimX, aimY, drawF, bodyCol, t.armored, false, null, t.bounty)
+          ctx.restore()
           // 창의 사수는 젖히지 않는다(창틀이 자른다) — 번쩍임만.
           drawFlash(ctx, wx, y, rx, targetFlinch(fx, t.id))
           // 체력 바 — 창 위. 숨어 있으면 바도 없다 (없는 것은 잴 수 없다).
@@ -1038,20 +1050,27 @@ function drawWindFlag(ctx: CanvasRenderingContext2D, cam: Camera, w: World): voi
   const px = worldToScreenX(cam, baseX)
   const gy = worldToScreenY(cam, groundAt(w.stage, baseX))
 
-  ctx.strokeStyle = THEME.windPole
-  ctx.lineWidth = FLAG.poleW
-  ctx.lineCap = 'butt'
-  ctx.beginPath()
-  ctx.moveTo(px, gy)
-  ctx.lineTo(px, worldToScreenY(cam, FLAG.poleH))
-  ctx.stroke()
-
   const mag = Math.abs(w.wind)
   const dir = w.wind >= 0 ? 1 : -1
   // 무풍이면 늘어지고, 셀수록 수평에 가깝게 들린다. 이 각도 하나가 풍속의 눈금이다.
   const lift = FLAG.slack + Math.min(FLAG.liftMax, mag * FLAG.liftPerSpeed)
   const t = w.tick * w.dt
   const flutter = FLAG.flutter * Math.min(1, mag / FLAG.flutterFull)
+
+  // ★ 깃대와 천도 그림이다 (2026-09-20). 눈금은 그대로 **천의 각도**다 — 그림을 그 각으로 돌리고, 펄럭임은 각의 잔떨림으로 옮긴다.
+  const topY = worldToScreenY(cam, FLAG.poleH)
+  if (drawPoleArt(ctx, px, topY, gy, Math.max(3, FLAG.poleArtW * cam.scale))) {
+    const wob = Math.sin(t * FLAG.waveHz * TAU) * flutter * FLAG.artWobble
+    if (drawPennantArt(ctx, px, topY, FLAG.clothLen * FLAG.artLen * cam.scale, dir, -(lift + wob))) return
+  }
+
+  ctx.strokeStyle = THEME.windPole
+  ctx.lineWidth = FLAG.poleW
+  ctx.lineCap = 'butt'
+  ctx.beginPath()
+  ctx.moveTo(px, gy)
+  ctx.lineTo(px, topY)
+  ctx.stroke()
 
   ctx.strokeStyle = THEME.windCloth
   ctx.lineWidth = Math.max(1.5, FLAG.clothH * cam.scale)
@@ -1505,6 +1524,12 @@ function drawBodyPins(ctx: CanvasRenderingContext2D, cam: Camera, w: World, fx: 
     const uy2 = Math.sin(ang)
     const L = DRAW.arrowLen * 0.55
     const isEnemy = id === PLAYER_PIN
+    // 박힌 살도 그림이다 — 깃 쪽만 밖으로 나와 있다 (foeart.ts drawArrowTailArt).
+    if (drawArrowTailArt(
+      ctx, isEnemy ? 'enemy' : 'basic',
+      worldToScreenX(cam, ax2 - ux2 * L), worldToScreenY(cam, ay2 - uy2 * L),
+      worldToScreenX(cam, ax2), worldToScreenY(cam, ay2),
+    )) continue
     ctx.strokeStyle = isEnemy ? THEME.threat : THEME.arrow
     ctx.lineWidth = 2
     ctx.lineCap = 'round'
@@ -1560,6 +1585,8 @@ function drawShield(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void 
     ctx.beginPath()
     for (let i = 0; i < used; i++) {
       const py = ty + (h * (i + 0.5)) / w.shieldMax
+      // 널판에 박힌 적의 살 — 그림이 있으면 그림 (깃이 적 쪽으로 나와 있다).
+      if (drawArrowTailArt(ctx, 'enemy', cx + half * 2.6, py - half * 0.6, cx + half * 0.2, py)) continue
       ctx.moveTo(cx + half * 0.2, py)
       ctx.lineTo(cx + half * 2.1, py - half * 0.5)
     }
@@ -2263,23 +2290,26 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       }
 
       // 건물은 과녁보다 먼저 — 사수는 창 **안**에 있다. 그리고 적이 죽어도 여기 남는다.
+      // ★ 순서: 건물 속 사수 → 건물(창틀) → 밖의 적·과녁 → (궁수) → 날아다니는 것. drawTargets 의 주석.
       drawBuildings(c, cam, w)
+      drawTargets(c, cam, w, alpha, r.fx, true)
+      // 창틀·창턱은 창 안의 사람보다 나중 — 벽이 하반신을 가린다는 말의 마침표다.
+      drawBuildingFronts(c, cam)
       // 깃발은 과녁보다 먼저 — 과녁 위로 천이 지나가면 조준을 가린다 (C1).
       drawWindFlag(c, cam, w)
       // 쓰러진 적은 과녁·화살보다 **먼저** — 시체가 살아 있는 것들을 가리면 안 된다.
       drawCorpseLayer(c, cam, r.fx)
-      drawTargets(c, cam, w, alpha, r.fx)
-      // 창틀·창턱은 사람보다 나중 — 벽이 하반신을 가린다는 말의 마침표다.
-      drawBuildingFronts(c, cam)
-      drawTrails(c, cam, w)
-      drawArrows(c, cam, w, alpha)
-      drawEnemyShots(c, cam, w)
+      drawTargets(c, cam, w, alpha, r.fx, false)
       // 패링 성공의 흰 번쩍임은 **궁수보다 먼저** 칠한다 — 뒤에 칠하면 그 순간의 칼을 덮는다
       // (2026-09-10 feel-lens). 빛이 뒤에서 터지고 그 앞에 사람과 칼이 서 있어야 맞다.
       drawFxFlash(c, cam, r.fx)
       drawArcher(c, cam, w, alpha)
       // 방패는 궁수보다 나중 — 앞에 세운 물건이니 앞에 그린다 (game/defense.ts).
       drawShield(c, cam, w)
+      // 날아다니는 것이 **맨 위**다 — 내 화살도 적의 것도. 무엇에도 안 가려져야 피하고 읽는다.
+      drawTrails(c, cam, w)
+      drawArrows(c, cam, w, alpha)
+      drawEnemyShots(c, cam, w)
       drawBodyPins(c, cam, w, r.fx)
       drawFx(c, cam, r.fx)
       drawHud(c, cam, w, hud)

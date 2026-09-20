@@ -21,6 +21,7 @@ import type { World } from '../sim/types.ts'
 import { THEME, worldToScreenX, worldToScreenY } from './camera.ts'
 import type { Camera } from './camera.ts'
 import { bowHandScreenX, bowHandScreenY } from './stickman.ts'
+import { drawArrowArt } from './foeart.ts'
 import { coinText, drawCoin } from '../game/money.ts'
 
 /**
@@ -466,6 +467,14 @@ function drawArrowGlyph(
 ): void {
   const top = cy - len * 0.5
   const bot = cy + len * 0.5
+  // ★ 눈금도 **그림 화살**이다 (2026-09-20, 형: "화살이미지가 아직도 SVG가 남아있는데 싹 고쳐주고") — 유엽전을 세워 꽂는다.
+  //   작은 크기라 굵기를 키워야 깃과 촉이 읽힌다. 바닥난 경고(low)는 붉은 빛이 말한다.
+  //   그린 살은 나무빛이라 어두운 하늘에 묻힌다 — 밝은 빛을 둘러 실루엣을 띄운다 (바닥나면 그 빛이 붉다).
+  ctx.shadowColor = low ? THEME.gaugeWarn : THEME.arrow
+  ctx.shadowBlur = 4
+  const art = drawArrowArt(ctx, 'basic', cx, bot + len * 0.1, cx, top - len * 0.1, 1.35)
+  ctx.shadowBlur = 0
+  if (art) return
   const headH = len * 0.3
   const headW = 3.2
   const fletchH = len * 0.28

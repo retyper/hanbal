@@ -91,6 +91,9 @@
 주인공의 사법 자세 넷 · 척후의 달리기 넷 — hero-plain / a0 / a1 / a2 (덮어씀) · foe-scout-0 … 3
   2026-09-20. 챗지피티 (주인공·적 시트를 레퍼런스로 올린 그 대화), 1536x1024 4x2, 진짜 알파.
     node tools/slice-grid.mjs assets_src/stance-source.png 4 2 public/sprites/hero- plain,a0,a1,a2 256 0.005 trim
+    ↑ 이 줄은 옛것이다 (다리를 쩍 벌린 기마 자세). 2026-09-20 에 같은 그림의 **다리만 모아** 다시 잘랐다:
+    node tools/narrow-stance.mjs assets_src/stance-source.png assets_src/stance2-source.png 4 2 0,1,2,3 0.55
+    node tools/slice-grid.mjs assets_src/stance2-source.png 4 2 public/sprites/hero- plain,a0,a1,a2 256 0.005 trim
     node tools/slice-grid.mjs assets_src/stance-source.png 4 2 public/sprites/foe-scout- -,-,-,-,0,1,2,3 224 0.005 trim
   첫 주인공(차렷 자세의 옆모습)은 형이 반려했다 — "활쏘는 자세가 아니라 너무 곧게 서있잖아." 이번 것은 발을 넓게 딛고 가슴을 연 자세다.
   척후는 오른쪽을 보고 와서 그릴 때 뒤집는다. 네 컷은 트림된 크기가 달라 원본 키(srcH)로 배율을 하나로 맞춘다 (foeart.ts SCOUT).
@@ -111,3 +114,11 @@ drone.png — "Pixel Art Drone" (OpenGameArt, CC0)
 ※ 2026-09-10 부터 **안 쓴다.** 형: "드론말고 아마 새같은게 좋을거 같다. 고려나 조선 시대쯤으로
    생각하고 있는데 그거에 맞게 다좀 고쳐봐봐." 그 자리는 이제 **매(放鷹)** 가 지킨다 —
    벡터로 그린다 (render/scene.ts drawFalcon). 파일은 되돌릴 일을 대비해 남겨 둔다.
+
+── 2026-09-20 (세 번째 판) — 남은 선 그림 걷기 ─────────────────────────────
+  prop-gun · prop-pennant · fly-ball · fly-soul  ←  assets_src/shots-source.png (챗지피티, 앞서 받아 두고 안 쓰던 칸들)
+    node tools/slice-grid.mjs assets_src/shots-source.png 4 4 public/sprites/prop- -,-,-,-,-,-,-,-,-,-,-,-,gun 224 0.005 trim
+    node tools/slice-grid.mjs assets_src/shots-source.png 4 4 public/sprites/ -,-,-,-,-,-,-,-,-,-,-,-,-,-,-,prop-pennant 224 0.005 trim
+    fly-ball (336,618)-(556,722) · fly-soul (636,536)-(956,800) 은 손으로 잘랐다 — 격자로 자르면 옆 칸의 활·신기전이 묻어 온다.
+  bg/ground.webp  ←  assets_src/ground-source.jpg (제미나이 · 위 35% 마젠타 + 흙길 단면)
+    tools/preview 콘솔: await bakeGround('/bg/_src.jpg')   (수신기 node tools/preview/receiver.mjs 를 켜 두고)

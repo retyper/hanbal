@@ -59,6 +59,9 @@ export function warmFoeArt(): void {
   sprite('limb-fist')
   sprite('prop-pole')
   sprite('prop-gun')
+  sprite('prop-pennant')
+  sprite('fly-soul')
+  sprite('fly-ball')
   for (const id of Object.keys(BOW_STRIP)) sprite(`bowstrip-${id}`)
   for (const name of Object.values(FLY)) sprite(name)
   for (const c of SHOT_ART) if (c !== null) sprite(c.name)
@@ -202,15 +205,19 @@ export function drawPropArt(
  * 시체 — 나뒹구는 몸 한 장을 래그돌의 각도(ang)로 돌린다. 가라앉으면(settle → 1) **눕는다**:
  * rest 는 그 그림을 땅에 눕히는 각도다 (그림마다 몸의 기울기가 달라서 따로 잰다).
  * span 은 그림의 긴 변이 몸 반경(r)의 몇 배인가 · lift 는 누웠을 때 중심을 땅 위로 올리는 양 (r 배수).
+ *
+ * ★ span 은 **산 모습의 키에서** 나온다 (2026-09-20, 형: "죽은 시체가 살아있는 원본이랑 크기 동일하게 유지하게 해줘. 갑자기 확 커지잖아").
+ *   산 사람의 키는 (1 + archerHeadUp) / 0.89 ≈ 1.82r 이다 (foe.ts). 첫 값 2.9r 은 그 1.6배였다 — 죽는 순간 사람이 거인이 됐다.
+ *   널브러진 몸은 팔다리가 벌어진 만큼만 길다: 2.0r. 갓 쓴 총통수는 갓만큼 더 길다.
  */
 const CORPSE = [
-  /* 0 */ { name: 'dead-archer', rest: -1.1, span: 2.9, lift: 0.42 },
-  /* 1 */ { name: 'dead-archer', rest: -1.1, span: 2.9, lift: 0.42 },
-  /* 2 */ { name: 'dead-archer', rest: -1.1, span: 2.9, lift: 0.42 },
-  /* 3 매     */ { name: 'dead-falcon', rest: 0.25, span: 2.6, lift: 0.75 },
-  /* 4 화차   */ { name: 'dead-hwacha', rest: 0, span: 3.2, lift: 0.6 },
-  /* 5 총통수 */ { name: 'dead-gunner', rest: -0.95, span: 3.1, lift: 0.45 },
-  /* 6 투석군 */ { name: 'dead-slinger', rest: -0.6, span: 2.9, lift: 0.42 },
+  /* 0 */ { name: 'dead-archer', rest: -1.1, span: 2.0, lift: 0.29 },
+  /* 1 */ { name: 'dead-archer', rest: -1.1, span: 2.0, lift: 0.29 },
+  /* 2 */ { name: 'dead-archer', rest: -1.1, span: 2.0, lift: 0.29 },
+  /* 3 매     */ { name: 'dead-falcon', rest: 0.25, span: 2.4, lift: 0.7 },
+  /* 4 화차   */ { name: 'dead-hwacha', rest: 0, span: 3.0, lift: 0.56 },
+  /* 5 총통수 */ { name: 'dead-gunner', rest: -0.95, span: 2.15, lift: 0.31 },
+  /* 6 투석군 */ { name: 'dead-slinger', rest: -0.6, span: 2.0, lift: 0.29 },
 ] as const
 
 /**
@@ -223,7 +230,7 @@ const BOSS_CORPSE = [
   /* 4 도깨비 */ 'dead-boss-4', /* 5 구미호 */ 'dead-boss-5', /* 6 장승 */ 'dead-boss-6', /* 7 저승사자 */ 'dead-boss-7',
 ] as const
 /** 죽은 그림의 폭이 몸 반경의 몇 배인가. */
-const BOSS_CORPSE_SPAN = 2.9
+const BOSS_CORPSE_SPAN = 2.4
 
 export function drawCorpseArt(
   ctx: CanvasRenderingContext2D, look: number, x: number, y: number, r: number, ang: number, settle: number,
@@ -290,13 +297,15 @@ interface HeroArt {
   readonly shV: number
   readonly footV: number
 }
-const STANCE: HeroArt = { jawU: 0.525, jawV: 0.199, bowU: 0.641, strU: 0.315, shV: 0.276, footV: 0.99 }
+// ★ 세 번째 판 (2026-09-20, 형: "다리를 너무 쩍벌리고있어. 레골라스 처럼 적당히 벌리고") — 같은 그림의 다리만 모았다 (tools/narrow-stance.mjs).
+//   트림된 폭이 328 → 217px 로 줄어서 (이제 어깨가 가장 넓다) 가로 비율을 다시 적는다: U' = (U·328 − 56) / 217. 세로는 그대로다.
+const STANCE: HeroArt = { jawU: 0.536, jawV: 0.199, bowU: 0.711, strU: 0.218, shV: 0.276, footV: 0.99 }
 const HERO: Record<'plain' | 'a0' | 'a1' | 'a2', HeroArt> = {
   plain: STANCE,
   a0: STANCE,
   a1: STANCE,
   /* 찰갑은 어깨 가리개가 있어 어깨가 조금 높고 넓다 */
-  a2: { ...STANCE, bowU: 0.643, strU: 0.306, shV: 0.262 },
+  a2: { ...STANCE, bowU: 0.714, strU: 0.205, shV: 0.262 },
 }
 
 /** drawHeroArt 가 채우는 두 어깨의 화면 자리. */
@@ -470,30 +479,56 @@ export function drawArrowArt(
 }
 
 /**
+ * 박힌 화살 — 몸·방패에 꽂혀 **깃 쪽만 밖으로 나온** 살. 그림의 뒤쪽 TAIL 만 잘라 쓴다 (촉은 속에 있다).
+ * tail 은 깃 끝, entry 는 박힌 자리.
+ */
+const TAIL = 0.58
+export function drawArrowTailArt(
+  ctx: CanvasRenderingContext2D, kind: string, tailX: number, tailY: number, entryX: number, entryY: number,
+): boolean {
+  const im = sprite((FLY as Record<string, string>)[kind] ?? FLY.basic)
+  if (im === null) return false
+  const len = Math.hypot(entryX - tailX, entryY - tailY)
+  const h = Math.max(4, (len / TAIL) * (im.naturalHeight / im.naturalWidth))
+  ctx.save()
+  ctx.translate(tailX, tailY)
+  ctx.rotate(Math.atan2(entryY - tailY, entryX - tailX))
+  ctx.drawImage(im, 0, 0, im.naturalWidth * TAIL, im.naturalHeight, 0, -h / 2, len, h)
+  ctx.restore()
+  return true
+}
+
+/**
  * 적이 쏜 것 (EnemyShot.look): 0 화살 · 1 돌 · 2 신기전 · 3 혼불 · 4 탄환. long 은 길쭉한 것(방향으로 돌린다),
  * 아니면 둥근 것(size = 지름 px). ★ 날아오는 것은 **보여야 피한다** — 적과 같은 붉은 테를 두른다.
  * 혼불과 탄환은 예전의 빛·꼬리가 곧 가독성이라 그림으로 안 바꾼다 (null).
  */
+// ★ 혼불·탄환도 그림이다 (2026-09-20, 형: "적군 투사체도 제대로 에셋 적용해줘"). len 은 화살 길이 대비 그림의 길이,
+//   headAt 은 그림에서 **맞는 점**(sim 의 좌표)이 있는 자리 (0 꼬리 ~ 1 앞끝) — 혼불은 불덩이의 심이, 탄환은 납덩이가 그 점이다.
+//   rim 은 붉은 테 — 혼불은 제 빛이 있어 안 두른다.
 const SHOT_ART = [
-  /* 0 */ { name: 'fly-enemy', long: true, size: 0 },
-  /* 1 */ { name: 'fly-stone', long: false, size: 15 },
-  /* 2 */ { name: 'fly-rocket', long: true, size: 0 },
-  /* 3 */ null,
-  /* 4 */ null,
+  /* 0 */ { name: 'fly-enemy', long: true, size: 0, len: 1, headAt: 1, rim: true },
+  /* 1 */ { name: 'fly-stone', long: false, size: 15, len: 1, headAt: 1, rim: true },
+  /* 2 */ { name: 'fly-rocket', long: true, size: 0, len: 1, headAt: 1, rim: true },
+  /* 3 혼불 */ { name: 'fly-soul', long: true, size: 0, len: 1.15, headAt: 0.62, rim: false },
+  /* 4 탄환 */ { name: 'fly-ball', long: true, size: 0, len: 0.8, headAt: 0.82, rim: true },
 ] as const
 
 export function drawShotArt(
   ctx: CanvasRenderingContext2D, look: number, x: number, y: number, dirX: number, dirY: number, lenPx: number, spin: number,
 ): boolean {
   const c = SHOT_ART[look]
-  if (c === undefined || c === null) return false
+  if (c === undefined) return false
   const im = sprite(c.name)
   if (im === null) return false
   ctx.save()
-  ctx.shadowColor = RIM.color
-  ctx.shadowBlur = 6
+  if (c.rim) {
+    ctx.shadowColor = RIM.color
+    ctx.shadowBlur = 6
+  }
   if (c.long) {
-    lying(ctx, im, x - dirX * lenPx, y - dirY * lenPx, x, y, 6)
+    const L = lenPx * c.len
+    lying(ctx, im, x - dirX * L * c.headAt, y - dirY * L * c.headAt, x + dirX * L * (1 - c.headAt), y + dirY * L * (1 - c.headAt), 6)
   } else {
     ctx.translate(x, y)
     ctx.rotate(spin)
@@ -504,6 +539,24 @@ export function drawShotArt(
 }
 
 /** 과녁의 받침 — 나무 장대. 위(y0)에서 땅(y1)까지 세로로 이어 깐다. wide 는 굵기 (px). */
+/**
+ * 바람 깃발의 천 — 깃대 끝(x, y)에 매여 ang(화면 각, 0 = 수평) 만큼 늘어진다. dir 은 바람이 부는 쪽 (+1 오른쪽).
+ * 그림은 매인 쪽이 왼쪽이다. len 은 천의 길이 (px).
+ */
+export function drawPennantArt(ctx: CanvasRenderingContext2D, x: number, y: number, len: number, dir: number, ang: number): boolean {
+  const im = sprite('prop-pennant')
+  if (im === null) return false
+  const h = len * (im.naturalHeight / im.naturalWidth)
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.scale(dir, 1)
+  ctx.rotate(ang)
+  // 매인 고리는 그림의 왼쪽 위에 있다.
+  ctx.drawImage(im, -len * 0.04, -h * 0.12, len, h)
+  ctx.restore()
+  return true
+}
+
 export function drawPoleArt(ctx: CanvasRenderingContext2D, x: number, y0: number, y1: number, wide: number): boolean {
   const im = sprite('prop-pole')
   if (im === null) return false
