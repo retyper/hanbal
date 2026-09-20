@@ -32,7 +32,7 @@ import { P } from '../tune/params.ts'
 import { effectiveStats, maxDrawOf } from '../sim/bow.ts'
 import type { World } from '../sim/types.ts'
 import { THEME, worldToScreenX, worldToScreenY } from './camera.ts'
-import { BOW_PATH, drawArmArt, drawArrowArt, drawBowArt, drawFistArt, drawHeroArt, HERO_SH, heroArtName } from './foeart.ts'
+import { BOW_PATH, drawLongArt, drawArmArt, drawArrowArt, drawBowArt, drawFistArt, drawHeroArt, HERO_SH, heroArtName } from './foeart.ts'
 import { hudLeftBottom } from './hud.ts'
 import type { Camera } from './camera.ts'
 
@@ -1241,12 +1241,20 @@ export function drawArcher(
   {
     // 칼집은 **언제나** 허리에 있다. 칼을 뽑았다고 칼집이 사라지지 않는다 —
     // 이게 있어야 "허리에서 뽑았다"가 읽힌다 (형: "환도를 허리춤에 차있잖아").
+    // ★ 칼집도 그림이다 (2026-09-20) — 검은 옻칠에 놋쇠 장식. 자루가 앞(허리 쪽), 칼집 끝이 뒤 아래로.
+    if (!(heroArt && drawLongArt(
+      ctx, 'prop-sheath',
+      worldToScreenX(cam, pelvisX + 0.2), worldToScreenY(cam, pelvisY + 0.12),
+      worldToScreenX(cam, pelvisX - SWORD.sheathLen), worldToScreenY(cam, pelvisY - SWORD.sheathDrop),
+      1, face < 0, 1.15, 4,
+    ))) {
     ctx.strokeStyle = SWORD.sheath
     ctx.lineWidth = Math.max(1.6, cam.scale * SWORD.sheathW)
     line(ctx, cam, pelvisX - 0.02, pelvisY + 0.02, pelvisX - SWORD.sheathLen, pelvisY - SWORD.sheathDrop)
     ctx.strokeStyle = SWORD.fitting
     ctx.lineWidth = Math.max(1.2, cam.scale * SWORD.fittingW)
     line(ctx, cam, pelvisX + 0.03, pelvisY + 0.05, pelvisX - 0.08, pelvisY - 0.02)
+    }
 
     if (parrying) {
       let ang: number = pose.a0
@@ -1332,6 +1340,17 @@ export function drawArcher(
         armFromX = HERO_SH.bowX
         armFromY = HERO_SH.bowY
         limb(ctx, cam, rig.sx, rig.sy, gx, gy, -SWORD.armBend)
+        // ★ 환도도 그림이다 (2026-09-20) — 자루 끝에서 지금 뽑힌 길이까지. 뽑히는 동안은 그림의 앞부분만 보인다.
+        //   휨의 방향(bowDir)이 반대면 위아래를 뒤집는다. 번쩍임은 잔상(부채꼴)이 이미 말한다.
+        const swordFull = SWORD.grip + SWORD.len
+        if (heroArt && drawLongArt(
+          ctx, 'prop-sword',
+          worldToScreenX(cam, gx - dx * SWORD.grip), worldToScreenY(cam, gy - dy * SWORD.grip),
+          worldToScreenX(cam, gx + dx * len), worldToScreenY(cam, gy + dy * len),
+          (SWORD.grip + len) / swordFull, pose.bowDir * face < 0, 1.25, 5,
+        )) {
+          // 그림이 섰다 — 아래의 선 그림(날·자루·코등이)은 건너뛴다.
+        } else {
         // ── 날 — 두 겹. 바깥은 강철빛, 안쪽 한 줄은 흰빛. 두 겹이라야 "번쩍"이 된다.
         ctx.lineCap = "round"
         ctx.strokeStyle = SWORD.blade
@@ -1361,6 +1380,7 @@ export function drawArcher(
           -ang + Math.PI / 2, 0, TAU,
         )
         ctx.fill()
+        }
       }
     }
   }

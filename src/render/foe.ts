@@ -21,7 +21,7 @@
 import { TAU } from '../core/math.ts'
 import { P } from '../tune/params.ts'
 import { THEME } from './camera.ts'
-import { BOW_PATH, drawArmArt, drawArrowArt, drawBowArt, drawFistArt, drawFoeArt, drawGunArt, drawScoutArt, drawStoneArt, FOE_SH, foeShoulder } from './foeart.ts'
+import { BOW_PATH, drawStandArt, drawArmArt, drawArrowArt, drawBowArt, drawFistArt, drawFoeArt, drawGunArt, drawScoutArt, drawStoneArt, FOE_SH, foeShoulder } from './foeart.ts'
 
 /**
  * 체격·활 — 전부 과녁 반경(rx, ry) 대비 비율이다. 줌이 바뀌어도 비례가 유지된다.
@@ -188,7 +188,9 @@ export function drawFoeArcher(
   ctx.stroke()
   }
 
-  if (bounty) {
+  if (bounty && art && drawStandArt(ctx, 'prop-crown', hx, hy - hr * 0.78, hr * 2.5, hr * 2.1)) {
+    // 금관도 그림이다 — 곧게 선 머리 위에 얹는다.
+  } else if (bounty) {
     // ── 금관 (金冠) — 현상금의 표식. 머리 위에 세 이빨의 관. 크기는 머리 반경에서 나오고,
     //    방향은 조준축의 '위'(vx, vy)를 따른다 — 사수가 기울어도 관은 머리 위에 있다.
     //    색은 화면의 강조색이 아니라 **금**이다: 훈련치(돈)의 색이라 한 번 보면 뜻이 읽힌다.

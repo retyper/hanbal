@@ -60,6 +60,7 @@ export function warmFoeArt(): void {
   sprite('prop-pole')
   sprite('prop-gun')
   sprite('prop-pennant')
+  for (const n of ['prop-shield', 'prop-shield-broken', 'prop-crown', 'prop-rope', 'prop-sheath', 'prop-rail', 'prop-sword']) sprite(n)
   sprite('fly-soul')
   sprite('fly-ball')
   for (const id of Object.keys(BOW_STRIP)) sprite(`bowstrip-${id}`)
@@ -626,6 +627,39 @@ export function drawBowArt(ctx: CanvasRenderingContext2D, skin: string, mirror: 
 
 /** 받은 총통 그림은 포신처럼 굵다 — 사람이 어깨에 대는 것으로 보이게 눌러 쓴다. */
 const GUN_FAT = 0.55
+
+/**
+ * 길쭉한 소품 한 장을 두 점 사이에 눕힌다 — 환도·칼집·레일·줄 (2026-09-20, 남은 선 그림을 걷는 마지막 묶음).
+ * 그림은 가로로 누워 (x0, y0) 쪽이 왼쪽이다. part 는 그림의 **앞에서부터 얼마를** 쓰는가 (0~1) —
+ * 칼이 칼집에서 자라 나올 때 자루부터 그만큼만 보인다. flipV 는 위아래를 뒤집는다 (날의 볼록이 반대여야 할 때).
+ * fat 은 굵기 배율, minPx 는 굵기의 하한.
+ */
+export function drawLongArt(
+  ctx: CanvasRenderingContext2D, name: string, x0: number, y0: number, x1: number, y1: number,
+  part: number, flipV: boolean, fat: number, minPx: number,
+): boolean {
+  const im = sprite(name)
+  if (im === null) return false
+  const len = Math.hypot(x1 - x0, y1 - y0)
+  if (len < 0.5 || part <= 0) return true
+  const full = len / part
+  const h = Math.max(minPx, full * (im.naturalHeight / im.naturalWidth) * fat)
+  ctx.save()
+  ctx.translate(x0, y0)
+  ctx.rotate(Math.atan2(y1 - y0, x1 - x0))
+  if (flipV) ctx.scale(1, -1)
+  ctx.drawImage(im, 0, 0, im.naturalWidth * part, im.naturalHeight, 0, -h / 2, len, h)
+  ctx.restore()
+  return true
+}
+
+/** 세로로 선 소품 — 방패 널판, 금관. (cx, bottomY) 는 밑변의 가운데, w·h 는 화면 크기. */
+export function drawStandArt(ctx: CanvasRenderingContext2D, name: string, cx: number, bottomY: number, w: number, h: number): boolean {
+  const im = sprite(name)
+  if (im === null) return false
+  ctx.drawImage(im, cx - w / 2, bottomY - h, w, h)
+  return true
+}
 
 /** 총통수의 총통 — 개머리판에서 총구로. 그림은 가로로 누워 총구가 오른쪽이다. */
 export function drawGunArt(ctx: CanvasRenderingContext2D, buttX: number, buttY: number, muzX: number, muzY: number): boolean {

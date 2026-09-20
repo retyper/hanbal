@@ -130,3 +130,10 @@ drone.png — "Pixel Art Drone" (OpenGameArt, CC0)
     node tools/key-png.mjs assets_src/roof-source.png assets_src/roof-keyed.png 100 70
     node tools/cut-roof.mjs      # 왼쪽 처마 x 3..383 · 중간 x 383..627 (기왓골 주기 30.4px × 8) · 어둡혀서 굽는다
   (bld-roof.png 는 지웠다 — 한 장을 이어 깔던 옛 지붕.)
+
+── 2026-09-20 (다섯 번째 판) — 방패 · 환도 · 칼집 · 금관 · 레일 · 줄 ─────────────
+  prop-shield · prop-shield-broken · prop-crown · prop-rope · prop-sheath · prop-rail  ←  assets_src/props2-source.png (제미나이, 마젠타 바탕)
+  prop-sword  ←  assets_src/shots-source.png 의 환도 칸 (제미나이 것은 옆 칸의 과녁과 겹쳐 못 쓴다)
+    node tools/key-png.mjs assets_src/props2-source.png assets_src/props2-keyed.png 100 70
+    node tools/cut-props2.mjs
+  (챗지피티 두 계정 다 이미지 한도에 걸려 있었다 — 제미나이로 받았다.)

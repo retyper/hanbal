@@ -42,7 +42,15 @@ function shot(stage: number, ticks: number): string {
   // armor=0|1|2 — 궁수에게 그 갑옷을 입혀 본다 (가죽 · 두정 · 찰갑).
   const armor = q.get('armor')
   if (armor !== null) { w.armor = 3; w.armorMax = 3; w.armorLook = Number(armor) }
+  // shield=N — 방패를 세운다 (N 발 남은 채로, 상한 4). parry=N — 환도를 휘두르고 N 틱 뒤의 모습.
+  const shield = q.get('shield')
+  if (shield !== null) { w.shieldMax = 4; w.shield = Number(shield) }
   for (let i = 0; i < ticks; i++) step(w, idle)
+  const parry = Number(q.get('parry') ?? 0)
+  if (parry > 0) {
+    step(w, { ...idle, parry: true })
+    for (let i = 1; i < parry; i++) step(w, idle)
+  }
   // fire=N — 한 발 쏜다: 70틱 당겼다 놓고 N 틱 뒤의 모습. 날아가는 화살을 보려고.
   const fire = Number(q.get('fire') ?? 0)
   if (fire > 0) {

@@ -21,7 +21,7 @@ import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { createFx, pumpEvents, updateFx, drawFx, drawFxFlash, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash, targetFlinch, PLAYER_PIN } from './effects.ts'
 import { drawNewBossBody, drawNewBossFace } from './bosses.ts'
 import { BOSS_EYES, drawBossArt, drawEyeArt, drawFoxArt, warmBossArt } from './bossart.ts'
-import { drawArrowArt, drawArrowTailArt, drawPennantArt, drawPoleArt, drawFalconArt, drawFoeArt, drawPropArt, drawShotArt, drawStoneArt, drawTargetArt, warmFoeArt } from './foeart.ts'
+import { drawArrowArt, drawArrowTailArt, drawLongArt, drawPennantArt, drawStandArt, drawPoleArt, drawFalconArt, drawFoeArt, drawPropArt, drawShotArt, drawStoneArt, drawTargetArt, warmFoeArt } from './foeart.ts'
 import { backdrop } from './sprites.ts'
 import { bossGrammar, bossWeakSpot, foeWeakSpot } from '../sim/target.ts'
 import type { Fx } from './effects.ts'
@@ -178,6 +178,8 @@ const DRAW = {
   threatPulseHz: 3,
   /** 이동 과녁의 레일 — 어디까지 가는지 미리 보여준다. 리드 샷은 예측이지 반사신경이 아니다. */
   railW: 1.5,
+  /** 그림 레일의 굵기 하한 (px) — 그림이 20:1 로 길쭉해서 짧은 레일은 실오라기가 된다. */
+  railArtPx: 7,
   railAlpha: 0.5,
   railCapPx: 3,
 
@@ -464,6 +466,8 @@ function drawRail(ctx: CanvasRenderingContext2D, cam: Camera, t: Target): void {
   const x1 = worldToScreenX(cam, t.baseX + ax)
   const y1 = worldToScreenY(cam, t.baseY + ay)
 
+  // 레일도 그림이다 — 쇠마구리를 씌운 나무 가로대. 그림이 길쭉해서 짧은 레일에서는 굵기를 하한(railArtPx)이 정한다.
+  if (drawLongArt(ctx, 'prop-rail', x0, y0, x1, y1, 1, false, 1, DRAW.railArtPx)) return
   ctx.globalAlpha = DRAW.railAlpha
   ctx.strokeStyle = THEME.prop
   ctx.lineWidth = DRAW.railW
@@ -555,12 +559,15 @@ function drawTargets(
 
     if (t.kind === 'aerial') {
       // 매달린 등불 — 줄과 후광. 후광이 "떨어질 수 있는 것"이라고 말한다.
+      // 줄도 그림이다 — 삼줄과 쇠갈고리 (위에서 아래로).
+      if (!drawLongArt(ctx, 'prop-rope', x, y - ry - DRAW.aerialStem * cam.scale, x, y - ry * 0.86, 1, false, 1, 3)) {
       ctx.strokeStyle = THEME.accentDim
       ctx.lineWidth = 1
       ctx.beginPath()
       ctx.moveTo(x, y - ry)
       ctx.lineTo(x, y - ry - DRAW.aerialStem * cam.scale)
       ctx.stroke()
+      }
       if (!t.falling) {
         ctx.strokeStyle = THEME.accent
         for (let h = 1; h <= DRAW.haloRings; h++) {
@@ -1552,12 +1559,29 @@ function drawBodyPins(ctx: CanvasRenderingContext2D, cam: Camera, w: World, fx: 
  *  3. **남은 내구가 보인다.** 널판이 닳는 게 아니라 **화살이 꽂힌다** — 삼킨 발수만큼
  *     판에 화살대가 박혀 있다. 숫자를 안 읽어도 "이제 한 발 남았다"가 보인다.
  */
+/** 그림 방패의 폭 (높이 대비) — 받은 그림은 0.65 인데 옆에서 비껴 본 널판이라 눌러 쓴다. */
+const SHIELD_ART_W = 0.42
+
 function drawShield(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void {
   if (w.shield <= 0 || w.shieldMax <= 0) return
   const cx = worldToScreenX(cam, w.archer.x + P.defense.shieldX)
   const gy = worldToScreenY(cam, 0)
   const ty = worldToScreenY(cam, P.defense.shieldTop)
   const half = Math.max(2, P.defense.shieldHalf * cam.scale)
+  // ★ 방패도 그림이다 (2026-09-20) — 쇠테 두른 널판. **높이는 판정의 높이 그대로**고(규칙 1), 폭은 그림의 비례를 조금 눌러 쓴다.
+  //   사격구는 그림에 뚫려 있다. 반 넘게 닳으면 갈라진 널판으로 바뀐다 — 박힌 살과 함께 "얼마 안 남았다"를 말한다.
+  {
+    const hh = gy - ty
+    const worn = w.shield * 2 <= w.shieldMax
+    if (drawStandArt(ctx, worn ? 'prop-shield-broken' : 'prop-shield', cx, gy, Math.max(half * 2, hh * SHIELD_ART_W), hh)) {
+      const used0 = w.shieldMax - w.shield
+      for (let i = 0; i < used0; i++) {
+        const py = ty + (hh * (i + 0.5)) / w.shieldMax
+        drawArrowTailArt(ctx, 'enemy', cx + half * 1.9, py - half * 0.42, cx + half * 0.25, py)
+      }
+      return
+    }
+  }
   ctx.fillStyle = THEME.bow
   ctx.fillRect(cx - half, ty, half * 2, gy - ty)
   ctx.strokeStyle = THEME.groundLine
