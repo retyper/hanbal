@@ -18,6 +18,15 @@
   원본은 assets_src/icons16-source.png (넷째 줄의 방패·가죽갑·엽전·모루는 아직 자리가 없어 안 실었다).
   프롬프트는 docs/ASSETS.md 6장.
 
+갑옷 셋 · 갈림길 여섯 · 스탯 넷 — armor-leather / brigandine / lamellar · fork-fire / bomb / wind /
+  supply / scout / single · stat-str / steady / stamina / focus
+  2026-09-20. 같은 대화의 셋째 장(1254x1254, 4x4). 전부 fit 으로 잘랐다 (128 0.05 fit):
+    node tools/slice-grid.mjs assets_src/icons16b-source.png 4 4 public/sprites/armor- leather,brigandine,lamellar 128 0.05 fit
+    node tools/slice-grid.mjs assets_src/icons16b-source.png 4 4 public/sprites/fork- -,-,-,-,fire,bomb,wind,supply,scout,single 128 0.05 fit
+    node tools/slice-grid.mjs assets_src/icons16b-source.png 4 4 public/sprites/stat- -,-,-,-,-,-,-,-,-,-,-,-,str,steady,stamina,focus 128 0.05 fit
+  원본은 assets_src/icons16b-source.png (방패·엽전·모루 칸은 아직 자리가 없어 안 실었다).
+  이 이름들은 코드가 **만들어서** 부른다 — 빠지면 tools/probe-style.ts 가 빨개진다.
+
 drone.png — "Pixel Art Drone" (OpenGameArt, CC0)
   https://opengameart.org/content/pixel-art-drone
   113x57, 2프레임 (로터 교대). 원본 파일명 drone_4.png.

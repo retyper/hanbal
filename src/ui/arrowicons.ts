@@ -71,6 +71,15 @@ export function arrowIcon(id: ArrowKindId, size: number): string {
   return `<img class="hb-art" src="${BASE}sprites/arrow-${id}.png" width="${size}" height="${size}" alt="" draggable="false">`
 }
 
+/**
+ * 카드에 크게 서는 그림 한 장 — 갑옷(armor-) · 갈림길(fork-) · 스탯(stat-). 2026-09-20.
+ * 예전엔 단색 글리프(.hb-ic)를 색만 바꿔 썼다 — 갑옷 세 벌이 같은 그림이었다.
+ * 버튼 속 16px 글리프는 그대로 글리프다 (그림은 그 크기에서 죽이 된다).
+ */
+export function artIcon(name: string, size: number): string {
+  return `<img class="hb-art" src="${BASE}sprites/${name}.png" width="${size}" height="${size}" alt="" draggable="false">`
+}
+
 // ─────────────────────────── 부적 ───────────────────────────
 //
 // 부적(符籍)은 노란 종이에 붉은 먹이다. 형: "부적도 부적마다 이미지 다르게 만들어줘."

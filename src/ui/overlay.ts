@@ -183,21 +183,12 @@ const CSS = `
   -webkit-mask: var(--ic) center / contain no-repeat;
   mask: var(--ic) center / contain no-repeat;
 }
-.hb-ic.i-str { --ic: url(${BASE}icons/stat-str.svg); }
-.hb-ic.i-steady { --ic: url(${BASE}icons/stat-steady.svg); }
-.hb-ic.i-stamina { --ic: url(${BASE}icons/stat-stamina.svg); }
 .hb-ic.i-focus { --ic: url(${BASE}icons/stat-focus.svg); }
 .hb-ic.i-growth { --ic: url(${BASE}icons/nav-growth.svg); }
 .hb-ic.i-collection { --ic: url(${BASE}icons/nav-collection.svg); }
 .hb-ic.i-map { --ic: url(${BASE}icons/nav-map.svg); }
 .hb-ic.i-sandbox { --ic: url(${BASE}icons/nav-sandbox.svg); }
 .hb-ic.i-quiver { --ic: url(${BASE}icons/nav-quiver.svg); }
-.hb-ic.i-fire { --ic: url(${BASE}icons/fork-fire.svg); }
-.hb-ic.i-bomb { --ic: url(${BASE}icons/fork-bomb.svg); }
-.hb-ic.i-wind { --ic: url(${BASE}icons/fork-wind.svg); }
-.hb-ic.i-supply { --ic: url(${BASE}icons/nav-quiver.svg); }
-.hb-ic.i-scout { --ic: url(${BASE}icons/fork-scout.svg); }
-.hb-ic.i-single { --ic: url(${BASE}icons/fork-single.svg); }
 .hb-ic.i-shield { --ic: url(${BASE}icons/def-shield.svg); }
 .hb-ic.i-armor { --ic: url(${BASE}icons/def-armor.svg); }
 .hb-ic.i-arrow { --ic: url(${BASE}icons/nav-quiver.svg); }

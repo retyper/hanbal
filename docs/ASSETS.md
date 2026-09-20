@@ -97,6 +97,7 @@ else drawFoeGunner(...)   // 벡터 폴백 — 헤드리스 프로브·로딩 �
 | 드론 스프라이트 | OpenGameArt (`public/sprites/drone.png`) | CC0 — **지금은 안 쓴다** (매로 바뀜) |
 | 화살 아홉 대 | 생성 (챗지피티, 한 장 → `tools/slice-grid.mjs`) | 우리 것 — 6장 |
 | 부적 넷 · 칭호 메달 여덟 | 생성 (같은 대화, 4x4 한 장 → `slice-grid.mjs … fit`) | 우리 것 — 6장 |
+| 갑옷 셋 · 갈림길 여섯 · 스탯 넷 | 생성 (같은 대화, 셋째 장) — 카드에 크게 서는 자리만 | 우리 것 — 6장 |
 
 ---
 
@@ -179,4 +180,23 @@ ROWS 2-3 - eight round achievement medals, thick bronze-and-gold rim, one bold e
 swirls, pale teal, (11) horn bow inside a perfect golden ring, (12) mountain pass with a small red
 flag on the peak, dawn orange. ROW 4 - (13) round wooden war shield, (14) leather lamellar vest,
 (15) string of yeopjeon brass coins, (16) anvil with hammer and sparks.
+```
+
+### 주문서 — 갑옷·갈림길·스탯 (4×4, 셋째 장)
+
+같은 머리말("A third sheet, EXACTLY the same painting style …")에 칸만 바꿨다. **칸 사이에 빈 자리를
+두라**고 덧붙인 것이 효과가 있었다 ("with clear empty dark space between neighbours").
+
+```
+ROW 1 - Joseon armor: (1) plain brown leather armor vest, (2) brigandine coat (dujeonggap): dark red
+cloth covered with rows of round brass rivets, silver-blue glow, (3) heavy iron lamellar scale armor
+(chalgap) with shoulder guards, gold glow, (4) round wooden war shield. ROWS 2-3 - battle event
+cards: (5) volley of three blazing fire arrows, (6) wooden gunpowder crate with lit fuse and flame
+mark, (7) tattered war banner whipping in a valley gust, teal, (8) tied bundle of arrows in a supply
+basket, green, (9) enemy foot soldier sprinting forward with a spear, red-orange, (10) one lone
+arrow stuck upright in the ground, violet, (11) string of brass coins, (12) anvil with hammer.
+ROW 4 - archer's body: (13) STRENGTH: muscular forearm and fist gripping a bow handle, (14)
+STEADINESS: a calm hand balancing an arrow level on one fingertip, pale blue, (15) STAMINA: a
+glowing heart wrapped by a swirl of breath, green-gold, (16) FOCUS: a sharp eye with a target ring
+reflected in the iris, amber.
 ```

@@ -9,23 +9,19 @@
 
   파일                원본                       만든 이
   ─────────────────────────────────────────────────────────
-  stat-str.svg        lorc/muscle-up             Lorc
-  stat-steady.svg     skoll/bullseye             Skoll
-  stat-stamina.svg    delapouite/lungs           Delapouite
   stat-focus.svg      lorc/meditation            Lorc
   nav-growth.svg      delapouite/upgrade         Delapouite
   nav-collection.svg  lorc/laurels               Lorc
   nav-map.svg         lorc/treasure-map          Lorc
   nav-sandbox.svg     lorc/bubbling-flask        Lorc
   nav-quiver.svg      delapouite/quiver          Delapouite
-  fork-fire.svg       lorc/flaming-arrow         Lorc
-  fork-bomb.svg       lorc/unlit-bomb            Lorc
-  fork-wind.svg       lorc/windy-stripes         Lorc
-  fork-scout.svg      lorc/run                   Lorc
-  fork-single.svg     lorc/arrowhead             Lorc
   def-shield.svg      lorc/arrows-shield         Lorc
   def-armor.svg       lorc/layered-armor         Lorc
   forge-anvil.svg     lorc/anvil                 Lorc        (대장간 — 활 개조, 2026-09-02)
   charm-rune.svg      lorc/rune-stone            Lorc        (부적)
   shop-coins.svg      delapouite/coins           Delapouite  (살 가게)
   bounty-crown.svg    lorc/crown                 Lorc        (금관 사수 — 현상금)
+
+※ 2026-09-20: 스탯 셋(str·steady·stamina)과 갈림길 다섯(fire·bomb·wind·scout·single)은 **그림**이 됐다
+   (public/sprites/stat-*.png · fork-*.png). 카드에 크게 서는 자리라서다. 그 글리프 파일은 지웠다.
+   여기 남은 것은 버튼 속 16px 글리프다 — 그 크기에서는 단색 글리프가 맞다.

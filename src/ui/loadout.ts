@@ -15,7 +15,7 @@ import {
 } from '../game/armor.ts'
 import { shopPrice } from '../game/supply.ts'
 import { onSaveChanged, writeSave, type SaveData } from '../game/save.ts'
-import { ARROW_TINT, arrowIcon, bowIconSvg, charmIcon } from './arrowicons.ts'
+import { ARROW_TINT, arrowIcon, artIcon, bowIconSvg, charmIcon } from './arrowicons.ts'
 import { BOW_KINDS, bowKind, masteryLevel, type BowKindId } from '../game/bows.ts'
 import { unlockOfBow } from '../game/unlocks.ts'
 import type { ForkOption } from '../game/forks.ts'
@@ -410,7 +410,7 @@ function bowArt(id: string, owned: boolean, px: number): string {
     card.style.setProperty('--tint', a.id === 'leather' ? '#c08a55' : a.id === 'lamellar' ? '#aab6c4' : '#d9b25a')
     // 겉면 — 이름 + **막는 힘 하나**. 한자·한 줄 설명·상한·판에서 사는 값은 전부
     // 길게 누르면 뜬다 (형: "갑옷하나만 고르는거 봐도 화면에 꽉차는데 이거 맞냐고?").
-    card.innerHTML = `<span class="l-ic"><i class="hb-ic i-armor"></i></span>`
+    card.innerHTML = `<span class="l-ic">${artIcon(`armor-${a.id}`, 44)}</span>`
       + `<span class="l-n"></span><span class="l-key"></span><span class="l-d l-price"></span>`
     attachDetail(card, () => {
       const owned2 = armorOwned(d, a.id)
@@ -612,9 +612,8 @@ export function mountFork(
     card.className = 'hb-card l-card'
     card.style.setProperty('--tint', FORK_TINT[opt.id] ?? '#7fd6c8')
     // 아이콘 → 이름 → 한자 뿌리 → 설명. 활·살 카드와 같은 뼈대라 한 화면으로 읽힌다.
-    card.innerHTML = `<span class="l-ic"><i class="hb-ic"></i></span>`
+    card.innerHTML = `<span class="l-ic">${artIcon(`fork-${opt.id}`, 56)}</span>`
       + `<span class="l-n"></span><span class="l-syn2"></span><span class="l-d"></span>`
-    ;(card.querySelector('.hb-ic') as HTMLElement).classList.add(`i-${opt.id}`)
     ;(card.querySelector('.l-n') as HTMLElement).textContent = opt.title
     ;(card.querySelector('.l-syn2') as HTMLElement).textContent = opt.origin
     ;(card.querySelector('.l-d') as HTMLElement).textContent = opt.desc

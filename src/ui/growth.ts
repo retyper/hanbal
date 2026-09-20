@@ -35,7 +35,7 @@ import {
 import { BOW_KINDS, bowKind, masteryLevel, MASTERY_HITS, type BowKindId } from '../game/bows.ts'
 import { FORGE_PARTS, buyForge, forgeBlocked, forgeCost, forgeEffect, forgeLevel, forgeMax } from '../game/forge.ts'
 import { armorForgeBlocked, armorForgeEffect, armorForgeMax, armorKind, armorKindOf, armorLevel, buyArmorForge } from '../game/armor.ts'
-import { bowIconSvg } from './arrowicons.ts'
+import { artIcon, bowIconSvg } from './arrowicons.ts'
 import { onSaveChanged, wipeSave, writeSave, type SaveData } from '../game/save.ts'
 import { unlockedBows, unlockOfBow } from '../game/unlocks.ts'
 import { P } from '../tune/params.ts'
@@ -76,9 +76,8 @@ const CSS = `
 /* 올린 직후 한 번 번쩍. 배경만 — 한쪽만 두꺼운 테두리는 쓰지 않는다. */
 .g-row.g-flash { background: #ffb34722; }
 .g-name { color: var(--ink); font-weight: 700; font-size: 17px; letter-spacing: -.01em; }
-/* 스탯 아이콘 — game-icons.net (public/icons/출처.txt). 글자보다 먼저 읽히라고 크게 둔다. */
-.g-ic { width: 26px; height: 26px; margin-right: 11px; color: var(--gold); vertical-align: -6px; }
-.g-row.g-flash .g-ic { color: var(--accent); }
+/* 스탯 아이콘 — 그림 (public/sprites/stat-*.png, 2026-09-20). 글자보다 먼저 읽히라고 크게 둔다. */
+.g-ic { display: inline-flex; margin-right: 11px; vertical-align: middle; }
 .g-lv { color: var(--mute); font-size: 13px; margin-left: 10px; }
 .g-now { grid-column: 1; color: var(--body); }
 .g-next { grid-column: 1; color: var(--teal); font-size: 13px; }
@@ -278,7 +277,7 @@ function buildStatRows(
     const el = document.createElement('div')
     el.className = 'g-row'
     el.innerHTML = `
-      <div><i class="hb-ic g-ic"></i><span class="g-name"></span><span class="g-lv"></span><span class="g-tag">추천</span></div>
+      <div><span class="g-ic"></span><span class="g-name"></span><span class="g-lv"></span><span class="g-tag">추천</span></div>
       <div class="g-now"></div>
       <div class="g-next"></div>
       <div class="g-why"></div>
@@ -315,8 +314,8 @@ function buildStatRows(
         foot: d.training < cost ? `${coinText(cost - d.training)} 모자라다` : recommendStat(d.stats) === key ? recommendReason(key) : '',
       }
     })
-    // 아이콘은 스탯 키로 고른다 (ui/overlay.ts .hb-ic.i-*). 스탯을 더 만들면 아이콘도 같이.
-    ;(el.querySelector('.g-ic') as HTMLElement).classList.add(`i-${key}`)
+    // 아이콘은 스탯 키로 고른다 (public/sprites/stat-<key>.png). 스탯을 더 만들면 그림도 같이.
+    ;(el.querySelector('.g-ic') as HTMLElement).innerHTML = artIcon(`stat-${key}`, 36)
     btn.addEventListener('click', () => {
       if (!spendTraining(d, key, 1)) return
       audio.levelup()

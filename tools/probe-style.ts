@@ -151,24 +151,27 @@ check(shell.includes('min-height: 0'), '시트 안이 스크롤된다 (flex min-
 
 // ── ⑥ 아이콘이 빠짐없이 붙어 있는가 ───────────────────────────
 //
-// 아이콘은 CSS 클래스(.hb-ic.i-*)로 고르고, 코드는 `i-${key}` 로 이름을 만든다.
-// 그래서 스탯이나 갈림길 카드를 하나 더 만들면 **아이콘만 조용히 빠진다** — 빈 네모가 뜬다.
-// 여기서 두 목록(진짜 데이터 ↔ CSS 클래스)을 맞대어 본다.
+// 코드는 이름을 **만들어서** 그림을 고른다 (`stat-${key}` · `fork-${id}` · `armor-${id}`).
+// 그래서 스탯이나 갈림길 카드를 하나 더 만들면 **그림만 조용히 빠진다** — 깨진 그림이 뜬다.
+// 여기서 두 목록(진짜 데이터 ↔ public/sprites 의 파일)을 맞대어 본다.
+// (2026-09-20 까지는 CSS 글리프 .hb-ic.i-* 였다. 카드에 서는 것들이 그림이 되면서 증거가 파일로 바뀌었다.)
 console.log('')
-const iconClasses = new Set<string>()
-for (const m of shell.matchAll(/\.hb-ic\.i-([a-z0-9-]+)/g)) iconClasses.add(m[1] as string)
-
 const statSrc = readFileSync('src/game/progression.ts', 'utf8')
 const statKeys = /STAT_KEYS: readonly StatKey\[\] = \[([^\]]*)\]/.exec(statSrc)?.[1] ?? ''
 const stats = [...statKeys.matchAll(/'([a-z]+)'/g)].map((m) => m[1] as string)
 check(stats.length > 0, '스탯 목록을 읽었다', stats.join(' '))
-for (const k of stats) check(iconClasses.has(k), `스탯 '${k}' 에 아이콘이 있다`, `.hb-ic.i-${k}`)
+for (const k of stats) check(existsSync(`public/sprites/stat-${k}.png`), `스탯 '${k}' 에 그림이 있다`, `sprites/stat-${k}.png`)
 
 const forkSrc = readFileSync('src/game/forks.ts', 'utf8')
 const forkIds = /export type ForkId = ([^\n]+)/.exec(forkSrc)?.[1] ?? ''
 const forks = [...forkIds.matchAll(/'([a-z]+)'/g)].map((m) => m[1] as string)
 check(forks.length >= 2, '갈림길 카드 목록을 읽었다', forks.join(' '))
-for (const id of forks) check(iconClasses.has(id), `갈림길 '${id}' 에 아이콘이 있다`, `.hb-ic.i-${id}`)
+for (const id of forks) check(existsSync(`public/sprites/fork-${id}.png`), `갈림길 '${id}' 에 그림이 있다`, `sprites/fork-${id}.png`)
+
+const armorSrc = readFileSync('src/game/armor.ts', 'utf8')
+const armors = [...armorSrc.matchAll(/{ id: '([a-z]+)', name: /g)].map((m) => m[1] as string)
+check(armors.length >= 3, '갑옷 목록을 읽었다', armors.join(' '))
+for (const id of armors) check(existsSync(`public/sprites/armor-${id}.png`), `갑옷 '${id}' 에 그림이 있다`, `sprites/armor-${id}.png`)
 
 // ── ⑦ 아래 버튼 바가 카메라가 비워 둔 자리 안에 들어가는가 ────
 //
