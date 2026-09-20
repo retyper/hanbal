@@ -14,6 +14,9 @@
  *   1. 칸 경계를 기대 자리 ±20% 안에서 **잉크가 가장 적은 줄**로 다시 찾고,
  *   2. 그 칸 안에서 **물건의 상자**를 찾아 가운데에 놓고 정사각으로 자른다 ('안쪽' 은 이때 물건 둘레의 여백).
  *
+ * **trim** 은 fit 과 같이 찾되 **정사각으로 만들지 않는다** — 물건의 상자 그대로 자르고 긴 변을 '크기'에
+ * 맞춘다. 캐릭터·보스처럼 키와 폭이 제각각인 것에 쓴다. 바탕이 투명한 그림(알파)은 알파로 물건을 찾는다.
+ *
  * '안쪽' 은 칸 가장자리를 그만큼 깎는 비율이다 — 그림 모델은 격자를 1~2% 어긋나게 그리므로
  * 조금 깎아야 옆 칸의 빛이 안 묻어온다.
  */
@@ -35,7 +38,8 @@ mkdirSync(dirname(prefix + 'x'), { recursive: true })
 
 const cw = src.w / cols
 const ch = src.h / rows
-const FIT = mode === 'fit'
+const TRIM = mode === 'trim'
+const FIT = mode === 'fit' || TRIM
 
 // 바탕색 — 네 귀의 평균.
 const px = (x, y) => (y * src.w + x) * 4
@@ -43,8 +47,11 @@ const BG = [0, 1, 2].map((k) =>
   Math.round([px(2, 2), px(src.w - 3, 2), px(2, src.h - 3), px(src.w - 3, src.h - 3)].reduce((t, i) => t + src.px[i + k], 0) / 4))
 /** 바탕과 이만큼(세 채널 합) 다르면 '물건'이다. 두른 빛의 옅은 끝자락은 물건이 아니다. */
 const INK = 110
+/** 네 귀가 투명하면 알파로 받은 그림이다 — 물건은 '불투명한 곳'이다. */
+const ALPHA = src.px[px(2, 2) + 3] < 8 && src.px[px(src.w - 3, src.h - 3) + 3] < 8
 const ink = (x, y) => {
   const i = px(x, y)
+  if (ALPHA) return src.px[i + 3] > 40
   return Math.abs(src.px[i] - BG[0]) + Math.abs(src.px[i + 1] - BG[1]) + Math.abs(src.px[i + 2] - BG[2]) >= INK
 }
 
@@ -71,6 +78,7 @@ for (let i = 0; i < ids.length; i++) {
   const cy = Math.floor(i / cols)
   const name = `${prefix}${ids[i]}.png`
   let sx, sy, side
+  let sw = 0, sh = 0
   if (!FIT) {
     // 칸을 정사각으로 깎는다 (짧은 변 기준, 가운데).
     side = Math.floor(Math.min(cw, ch) * (1 - INSET * 2))
@@ -91,15 +99,28 @@ for (let i = 0; i < ids.length; i++) {
       if (y > by1) by1 = y
     }
     if (bx1 < bx0) throw new Error(`${ids[i]}: 칸이 비었다`)
-    side = Math.round(Math.max(bx1 - bx0, by1 - by0) * (1 + INSET * 2))
-    sx = Math.round((bx0 + bx1) / 2 - side / 2)
-    sy = Math.round((by0 + by1) / 2 - side / 2)
-    // 그림 밖으로 나가면 안으로 민다.
-    sx = Math.max(0, Math.min(src.w - side, sx))
-    sy = Math.max(0, Math.min(src.h - side, sy))
+    if (TRIM) {
+      const pad = Math.round(Math.max(bx1 - bx0, by1 - by0) * INSET)
+      sx = Math.max(0, bx0 - pad)
+      sy = Math.max(0, by0 - pad)
+      sw = Math.min(src.w, bx1 + 1 + pad) - sx
+      sh = Math.min(src.h, by1 + 1 + pad) - sy
+    }
+    if (!TRIM) {
+      side = Math.round(Math.max(bx1 - bx0, by1 - by0) * (1 + INSET * 2))
+      sx = Math.round((bx0 + bx1) / 2 - side / 2)
+      sy = Math.round((by0 + by1) / 2 - side / 2)
+      // 그림 밖으로 나가면 안으로 민다.
+      sx = Math.max(0, Math.min(src.w - side, sx))
+      sy = Math.max(0, Math.min(src.h - side, sy))
+    }
   }
-  const buf = encodePng(OUT, OUT, boxResize(src, sx, sy, side, side, OUT, OUT))
+  if (!TRIM) { sw = side; sh = side }
+  const k = OUT / Math.max(sw, sh)
+  const dw = TRIM ? Math.max(1, Math.round(sw * k)) : OUT
+  const dh = TRIM ? Math.max(1, Math.round(sh * k)) : OUT
+  const buf = encodePng(dw, dh, boxResize(src, sx, sy, sw, sh, dw, dh))
   writeFileSync(name, buf)
-  console.log(`  ${name} ${OUT}x${OUT} ← (${sx},${sy}) ${side}px  ${(buf.length / 1024).toFixed(1)}KB`)
+  console.log(`  ${name} ${dw}x${dh} ← (${sx},${sy}) ${sw}x${sh}  ${(buf.length / 1024).toFixed(1)}KB`)
 }
 console.log('\n잘랐다. 출처를 받은 폴더의 출처.txt 에 적을 것.')

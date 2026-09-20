@@ -20,6 +20,7 @@ import { drawFoeArcher, drawFoeGunner, drawFoeRusher, drawFoeSlinger } from './f
 import { drawBuildings, drawBuildingFronts, windowOf } from './buildings.ts'
 import { createFx, pumpEvents, updateFx, drawFx, drawFxFlash, drawCorpseLayer, hitStopMs, oneShotAmount, targetSquash, targetFlinch, PLAYER_PIN } from './effects.ts'
 import { drawNewBossBody, drawNewBossFace } from './bosses.ts'
+import { BOSS_EYES, drawBossArt, warmBossArt } from './bossart.ts'
 import { bossGrammar, bossWeakSpot, foeWeakSpot } from '../sim/target.ts'
 import type { Fx } from './effects.ts'
 import { drawHud } from './hud.ts'
@@ -704,10 +705,17 @@ function drawTargets(
 
       // ── 몸 ── 유령 계열(0~3)은 여기서, 2026-09-10 에 선 넷(거인·구미호·장승·저승사자)은
       //         render/bosses.ts 에서 그린다. 실루엣이 통째로 다르면 한 함수에 못 담는다.
-      if (t.look >= 4) {
+      // ★ 몸은 **그림**이다 (2026-09-20, render/bossart.ts). 그림의 눈구멍을 급소(x, hy)에 못 박고
+      //   발밑까지의 거리로 크기를 정한다. 그림이 아직 안 떴거나 헤드리스면 아래 벡터 몸이 선다.
+      const footY2 = t.look >= 4 ? worldToScreenY(cam, t.baseY - t.r) : y + ry * 1.1
+      const swing = t.look >= 4 ? Math.sin(w.elapsed * P.target.bossStepFreq * TAU) : Math.sin(w.elapsed * 1.7)
+      const art = drawBossArt(ctx, t.look, x, hy, footY2, swing)
+      if (art) {
+        // 그림이 몸이다 — 벡터 몸은 안 그린다.
+      } else if (t.look >= 4) {
         // 발이 닿는 지면의 화면 y — 걷는 놈은 여기에 발을 붙인다 (형: "왜 다 둥실둥실 떠다니냐").
         // baseY 는 몸 중심의 기준 높이라 거기서 반경을 빼면 그게 곧 발밑이다.
-        drawNewBossBody(ctx, w, t, x, y, rx, ry, worldToScreenY(cam, t.baseY - t.r))
+        drawNewBossBody(ctx, w, t, x, y, rx, ry, footY2)
       } else {
         // 몸 — 어두운 덩어리. 밑단은 흘러내리는 세 겹 자락 (유령의 문법).
         ctx.fillStyle = THEME.threatDim
@@ -817,7 +825,7 @@ function drawTargets(
         // ★ 2026-09-10 에 선 넷은 **제 얼굴이 있는 것들**이다 (render/bosses.ts).
         //   그 위에 공용 눈알을 얹지 않는다 (형: "왕눈이 뇌속에 들어있게 보여지고").
         //   눈꺼풀 상태(open·stag)만 넘기면 저마다의 눈이 저마다의 방식으로 감았다 뜬다.
-        drawNewBossFace(ctx, t, x, y, rx, ry, x, hy, hr, open, stag, ax2, ay2)
+        drawNewBossFace(ctx, t, x, y, rx, ry, x, hy, hr, open, stag, ax2, ay2, art ? BOSS_EYES : null)
       } else {
       // ── 유령 넷(0~3) — **몸이 곧 눈알이다.** 여기서만 공용 큰 눈을 그린다 ──
       // 변종별 눈: 갑주(1)는 투구 틈의 가로 슬릿 · 폭주(3)는 성난 사선 · 쌍눈(2)은 작고 말갛다.
@@ -826,8 +834,8 @@ function drawTargets(
           : hr * 0.92
       // 갑주는 투구 틈이 실낱이다 — 비틀거릴 때만 열린다. 멈춘 눈은 놀라서 커진다.
       const eyeH = eyeFull * (gram === 'guard' && !stag ? 0.12 : open) * (stag ? 1.2 : 1)
-      if (t.look === 1) {
-        // 투구 돔 — 눈은 그 틈으로만 보인다.
+      if (t.look === 1 && !art) {
+        // 투구 돔 — 눈은 그 틈으로만 보인다. (그림에는 투구가 이미 있다.)
         band(ctx, x, hy - hr * 0.2, hr * 1.15, hr * 0.95, '#66788a')
       }
       if (eyeH < hr * 0.07) {
@@ -1930,6 +1938,7 @@ function drawGround(ctx: CanvasRenderingContext2D, cam: Camera, w: World, sky: S
 export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   const ctx = canvas.getContext('2d', { alpha: false })
   if (ctx === null) throw new Error('Canvas2D 컨텍스트를 얻지 못했다')
+  warmBossArt()
 
   const r: RendererX = {
     canvas,

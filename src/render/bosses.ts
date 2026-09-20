@@ -27,6 +27,7 @@
 import { TAU } from '../core/math.ts'
 import { P } from '../tune/params.ts'
 import type { Target, World } from '../sim/types.ts'
+import type { BossEyes } from './bossart.ts'
 
 /** 넷의 색. 실루엣이 달라도 어두운 배경에서 읽히려면 밝기 차가 있어야 한다. */
 const C = {
@@ -468,12 +469,27 @@ function reaper(
  * open 0~1 은 눈꺼풀 (sim Target.weak), stag 은 비틀거리는 중인가.
  * (px, py) 는 궁수의 화면 자리 — 눈동자가 거기를 본다.
  */
+/**
+ * 눈이 서는 자리. 몸을 **그림**으로 그렸으면(render/bossart.ts) 그 그림의 눈구멍이고, 아니면 null —
+ * 벡터 얼굴의 제자리(좌우 대칭 둘)다. 그림은 3/4 옆모습이라 눈이 하나인 놈도 있다.
+ * drawNewBossFace 가 부를 때마다 갈아 끼운다 (렌더 전용 상태 — sim 은 모른다).
+ */
+let ART_EYES: BossEyes | null = null
+const eyeCount = (): number => (ART_EYES !== null ? ART_EYES.n : 2)
+/** i 번째 눈의 좌우 부호 — 벡터 얼굴은 −1(왼쪽)·+1(오른쪽). */
+const eyeSide = (i: number): -1 | 1 => (i === 0 ? -1 : 1)
+const eyeX = (i: number, vector: number): number => (ART_EYES !== null ? (ART_EYES.x[i] ?? vector) : vector)
+const eyeY = (i: number, vector: number): number => (ART_EYES !== null ? (ART_EYES.y[i] ?? vector) : vector)
+const eyeK = (i: number): number => (ART_EYES !== null ? (ART_EYES.k[i] ?? 1) : 1)
+
 export function drawNewBossFace(
   ctx: CanvasRenderingContext2D, t: Target,
   x: number, y: number, rx: number, ry: number,
   fx: number, fy: number, fr: number,
   open: number, stag: boolean, px: number, py: number,
+  artEyes: BossEyes | null,
 ): void {
+  ART_EYES = artEyes
   // 멈춘 눈은 놀라서 커진다 — 만화의 문법. 감긴 눈은 실선 한 줄이 된다.
   const lid = stag ? 1.25 : open
   if (t.look === 4) return ogreEyes(ctx, x, y, rx, ry, lid, px, py)
@@ -502,29 +518,32 @@ function ogreEyes(
   const hcy = y - ry * 0.56
   const hw = rx * 0.62
   const hh = ry * 0.52
-  const eh = hh * 0.21 * lid
-  for (const s of [-1, 1] as const) {
-    const ex = hcx + s * hw * 0.42
-    const ey = hcy + hh * 0.16
-    if (eh < hh * 0.035) {
+  for (let i = 0; i < eyeCount(); i++) {
+    const s = eyeSide(i)
+    const ex = eyeX(i, hcx + s * hw * 0.42)
+    const ey = eyeY(i, hcy + hh * 0.16)
+    const hwE = hw * eyeK(i)
+    const hhE = hh * eyeK(i)
+    const eh = hhE * 0.21 * lid
+    if (eh < hhE * 0.035) {
       // 감았다 — 지금 쏘면 몸통이다. 굵은 선 한 줄이면 "감았다"가 멀리서도 읽힌다.
       ctx.strokeStyle = C.ogreDark
-      ctx.lineWidth = Math.max(2, hh * 0.13)
+      ctx.lineWidth = Math.max(2, hhE * 0.13)
       ctx.lineCap = 'round'
       ctx.beginPath()
-      ctx.moveTo(ex - hw * 0.26, ey)
-      ctx.lineTo(ex + hw * 0.26, ey)
+      ctx.moveTo(ex - hwE * 0.26, ey)
+      ctx.lineTo(ex + hwE * 0.26, ey)
       ctx.stroke()
       ctx.lineCap = 'butt'
       continue
     }
     ctx.fillStyle = C.eyeWhite
     ctx.beginPath()
-    ctx.ellipse(ex, ey, hw * 0.27, eh, 0, 0, TAU)
+    ctx.ellipse(ex, ey, hwE * 0.27, eh, 0, 0, TAU)
     ctx.fill()
-    const pr = Math.min(hw * 0.13, eh * 0.9)
-    const gx = gazeX(ex, ey, px, py, hw * 0.1)
-    const gy = gazeY(ex, ey, px, py, Math.min(hh * 0.06, eh * 0.4))
+    const pr = Math.min(hwE * 0.13, eh * 0.9)
+    const gx = gazeX(ex, ey, px, py, hwE * 0.1)
+    const gy = gazeY(ex, ey, px, py, Math.min(hhE * 0.06, eh * 0.4))
     ctx.fillStyle = C.ogreBlood
     ctx.beginPath()
     ctx.ellipse(gx, gy, pr * 1.55, Math.min(pr * 1.55, eh), 0, 0, TAU)
@@ -545,17 +564,19 @@ function foxEyes(
   ctx: CanvasRenderingContext2D, fx: number, fy: number, fr: number,
   lid: number, px: number, py: number,
 ): void {
-  const eh = fr * 0.4 * lid
-  for (const s of [-1, 1] as const) {
-    const ex = fx + s * fr * 0.46
-    const ey = fy - fr * 0.12
-    if (eh < fr * 0.06) {
+  for (let i = 0; i < eyeCount(); i++) {
+    const s = eyeSide(i)
+    const ex = eyeX(i, fx + s * fr * 0.46)
+    const ey = eyeY(i, fy - fr * 0.12)
+    const frE = fr * eyeK(i)
+    const eh = frE * 0.4 * lid
+    if (eh < frE * 0.06) {
       ctx.strokeStyle = C.foxDark
-      ctx.lineWidth = Math.max(1.6, fr * 0.12)
+      ctx.lineWidth = Math.max(1.6, frE * 0.12)
       ctx.lineCap = 'round'
       ctx.beginPath()
-      ctx.moveTo(ex - fr * 0.34, ey + fr * 0.04)
-      ctx.lineTo(ex + fr * 0.3, ey - fr * 0.06)
+      ctx.moveTo(ex - frE * 0.34, ey + frE * 0.04)
+      ctx.lineTo(ex + frE * 0.3, ey - frE * 0.06)
       ctx.stroke()
       ctx.lineCap = 'butt'
       continue
@@ -566,14 +587,14 @@ function foxEyes(
     ctx.rotate(s * -0.28)
     ctx.fillStyle = C.foxEye
     ctx.beginPath()
-    ctx.ellipse(0, 0, fr * 0.36, eh, 0, 0, TAU)
+    ctx.ellipse(0, 0, frE * 0.36, eh, 0, 0, TAU)
     ctx.fill()
     ctx.restore()
     // 세로 눈동자 — 짐승의 것이다. 사람 눈처럼 동그라면 그건 여우가 아니다.
-    const gx = gazeX(ex, ey, px, py, fr * 0.1)
+    const gx = gazeX(ex, ey, px, py, frE * 0.1)
     ctx.fillStyle = '#14100c'
     ctx.beginPath()
-    ctx.ellipse(gx, ey, Math.max(1, fr * 0.08), eh * 0.85, 0, 0, TAU)
+    ctx.ellipse(gx, ey, Math.max(1, frE * 0.08), eh * 0.85, 0, 0, TAU)
     ctx.fill()
   }
 }
@@ -583,24 +604,28 @@ function postEyes(
   ctx: CanvasRenderingContext2D, fx: number, fy: number, fr: number,
   lid: number, stag: boolean,
 ): void {
-  for (const s of [-1, 1] as const) {
-    const ex = fx + s * fr * 0.56
-    const er = fr * 0.44
+  for (let i = 0; i < eyeCount(); i++) {
+    const ex = eyeX(i, fx + eyeSide(i) * fr * 0.56)
+    const ey0 = eyeY(i, fy)
+    const er = fr * 0.44 * eyeK(i)
     // 파인 자리 — 언제나 보인다. 나무에 뚫린 구멍이지 눈꺼풀이 아니다.
-    ctx.fillStyle = C.woodDark
-    ctx.beginPath()
-    ctx.arc(ex, fy, er, 0, TAU)
-    ctx.fill()
+    // (그림에는 파인 자리가 이미 새겨져 있다 — 그 위에 덧칠하지 않는다.)
+    if (ART_EYES === null) {
+      ctx.fillStyle = C.woodDark
+      ctx.beginPath()
+      ctx.arc(ex, ey0, er, 0, TAU)
+      ctx.fill()
+    }
     if (!stag && lid < 0.25) continue
     // 열렸다 — 구멍 안에서 흰자가 살아난다. 장승의 눈은 원래 왕방울이라 크게 뜬다.
     const k = Math.min(1, lid)
     ctx.fillStyle = C.woodTooth
     ctx.beginPath()
-    ctx.arc(ex, fy, er * 0.78 * k, 0, TAU)
+    ctx.arc(ex, ey0, er * 0.78 * k, 0, TAU)
     ctx.fill()
     ctx.fillStyle = '#1a140c'
     ctx.beginPath()
-    ctx.arc(ex, fy, er * 0.38 * k, 0, TAU)
+    ctx.arc(ex, ey0, er * 0.38 * k, 0, TAU)
     ctx.fill()
   }
   // 갈라진 나뭇결 — 두들겨 열린 자리라는 표시. 얼굴을 가로지르는 금 하나.
@@ -620,17 +645,18 @@ function reaperEyes(
   ctx: CanvasRenderingContext2D, fx: number, fy: number, fr: number,
   lid: number, px: number, py: number,
 ): void {
-  const eh = fr * 0.3 * lid
-  for (const s of [-1, 1] as const) {
-    const ex = fx + s * fr * 0.42
-    const ey = fy - fr * 0.05
-    if (eh < fr * 0.05) {
+  for (let i = 0; i < eyeCount(); i++) {
+    const ex = eyeX(i, fx + eyeSide(i) * fr * 0.42)
+    const ey = eyeY(i, fy - fr * 0.05)
+    const frE = fr * eyeK(i)
+    const eh = frE * 0.3 * lid
+    if (eh < frE * 0.05) {
       ctx.strokeStyle = '#5a5f6a'
-      ctx.lineWidth = Math.max(1.4, fr * 0.1)
+      ctx.lineWidth = Math.max(1.4, frE * 0.1)
       ctx.lineCap = 'round'
       ctx.beginPath()
-      ctx.moveTo(ex - fr * 0.28, ey)
-      ctx.lineTo(ex + fr * 0.28, ey)
+      ctx.moveTo(ex - frE * 0.28, ey)
+      ctx.lineTo(ex + frE * 0.28, ey)
       ctx.stroke()
       ctx.lineCap = 'butt'
       continue
@@ -638,12 +664,12 @@ function reaperEyes(
     // 뜬 눈은 **빛난다.** 죽은 낯빛 위의 두 점이라야 저승의 것으로 보인다.
     ctx.fillStyle = C.reaperGlow
     ctx.beginPath()
-    ctx.ellipse(ex, ey, fr * 0.3, eh, 0, 0, TAU)
+    ctx.ellipse(ex, ey, frE * 0.3, eh, 0, 0, TAU)
     ctx.fill()
-    const gx = gazeX(ex, ey, px, py, fr * 0.08)
+    const gx = gazeX(ex, ey, px, py, frE * 0.08)
     ctx.fillStyle = '#0b0d11'
     ctx.beginPath()
-    ctx.ellipse(gx, ey, Math.max(1, fr * 0.09), Math.min(eh * 0.9, fr * 0.16), 0, 0, TAU)
+    ctx.ellipse(gx, ey, Math.max(1, frE * 0.09), Math.min(eh * 0.9, frE * 0.16), 0, 0, TAU)
     ctx.fill()
   }
 }

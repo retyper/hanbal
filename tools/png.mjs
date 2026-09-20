@@ -130,12 +130,16 @@ export function boxResize(src, sx, sy, sw, sh, dw, dh) {
       for (let yy = ay0; yy < ay1; yy++) {
         for (let xx = ax0; xx < ax1; xx++) {
           const p = (yy * src.w + xx) * 4
-          for (let k = 0; k < 4; k++) acc[k] += src.px[p + k]
+          // 알파를 곱해서 더한다 — 투명한 픽셀의 (보이지 않는) 색이 가장자리에 묻어나면 안 된다.
+          const al = src.px[p + 3]
+          for (let k = 0; k < 3; k++) acc[k] += src.px[p + k] * al
+          acc[3] += al
           n++
         }
       }
       const d = (y * dw + x) * 4
-      for (let k = 0; k < 4; k++) out[d + k] = Math.round(acc[k] / n)
+      for (let k = 0; k < 3; k++) out[d + k] = acc[3] > 0 ? Math.round(acc[k] / acc[3]) : 0
+      out[d + 3] = Math.round(acc[3] / n)
     }
   }
   return out

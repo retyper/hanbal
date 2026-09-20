@@ -98,6 +98,7 @@ else drawFoeGunner(...)   // 벡터 폴백 — 헤드리스 프로브·로딩 �
 | 화살 아홉 대 | 생성 (챗지피티, 한 장 → `tools/slice-grid.mjs`) | 우리 것 — 6장 |
 | 부적 넷 · 칭호 메달 여덟 | 생성 (같은 대화, 4x4 한 장 → `slice-grid.mjs … fit`) | 우리 것 — 6장 |
 | 갑옷 셋 · 갈림길 여섯 · 스탯 넷 | 생성 (같은 대화, 셋째 장) — 카드에 크게 서는 자리만 | 우리 것 — 6장 |
+| 보스 여덟 (몸) | 생성 (같은 대화, **투명 바탕** 두 장 → `slice-grid.mjs … trim`) · 눈은 절차적 | 우리 것 — 7장 |
 
 ---
 
@@ -200,3 +201,44 @@ STEADINESS: a calm hand balancing an arrow level on one fingertip, pale blue, (1
 glowing heart wrapped by a swirl of breath, green-gold, (16) FOCUS: a sharp eye with a target ring
 reflected in the iris, amber.
 ```
+
+---
+
+## 7. 캔버스의 것들 — 보스·적·궁수 (2026-09-20)
+
+> 형: **"캐릭터 적군 보스 등등도 전부 에셋 받아서 적용해야지."**
+
+아이콘과 달리 이것들은 **판정이 있는 그림**이다. 예쁜 것보다 먼저 지킬 것이 있다.
+
+### 보는 법 — `tools/preview`
+
+게임은 백그라운드 탭에서 안 돈다 (규칙 4) — 자동화가 잡은 탭에서는 캔버스가 까맣다. 그래서
+**루프 없이 진짜 렌더러로 한 프레임만** 그리는 쪽을 만들었다. hidden 탭에서도 찍힌다. 세이브는 안 건드린다.
+
+```
+npx vite → http://localhost:5173/tools/preview/index.html?stage=50&ticks=150&hit=1
+  stage 판 번호 · ticks 그 전에 sim 을 돌릴 틱 · hit=1 판정 덧그림 (초록 = 몸, 노랑 = 보스 급소)
+  콘솔: shot(60, 150)   ← 스프라이트는 비동기로 뜨므로 한 번 더 부르면 그림이 선다
+```
+
+보스는 10판마다: 10 눈알 · 20 갑주 · 30 쌍눈 · 40 폭주 · 50 도깨비 · 60 구미호 · 70 장승 · 80 저승사자.
+
+### 보스 — 몸은 그림, 눈은 절차 (`render/bossart.ts`)
+
+1. **눈은 그림에 굳히지 않는다.** 눈은 뜨고 감는 sim 의 상태고 곧 급소다. 그림은 "눈구멍이 그늘진 몸"으로
+   주문하고 ("NO eyeballs — deep black empty sockets, the game draws the eyes"), 눈은 그 위에 그린다.
+2. **그림을 놓는 기준점은 눈구멍이다.** 눈구멍을 sim 의 급소 자리에 못 박고, 크기는 〈눈 → 발밑〉 거리로 정한다.
+3. ★ **정면·좌우대칭으로 받는다.** 첫 장은 3/4 옆모습으로 받았다가 여섯을 버렸다 — 급소가 몸 중심축 위에 있어서,
+   옆으로 흐르는 그림은 눈구멍을 급소에 맞추면 **몸이 판정원의 절반만 덮는다** (맞혔는데 허공). 주문서에
+   "the hit area is a circle centered on the body and the weak spot sits on the vertical center line" 을 그대로 적을 것.
+4. **투명 바탕은 그냥 시키면 온다** ("fully TRANSPARENT background (real alpha), no ground, no cast shadow, no outer glow").
+   `tools/peek-png.mjs` 가 알파가 진짜인지 말해 준다. 줄일 때는 알파를 곱해서 평균낸다 (`png.mjs`) — 안 그러면 테두리에 색이 묻는다.
+5. 벡터 몸은 **폴백으로 남는다** (그림이 안 떴을 때 · 헤드리스 프로브).
+
+### 아직 — 적 · 궁수
+
+챗지피티 무료 한도가 하루 다섯 장쯤에서 끝난다 (2026-09-20 에 다섯 장 받고 막혔다 — 다음 날 같은 시각에 풀린다).
+- **적 (창가·숨는 사수 · 매 · 화차 · 총통수 · 투석군 · 척후)**: 화면에서 35~45px 다. 사람은 **나를 겨누는 팔**이 절차적이라
+  (render/foe.ts) 통짜 그림으로 바꾸면 겨냥이 죽는다 — 몸통·머리는 그림, 팔·활은 절차로 가는 길을 먼저 시험할 것.
+- **궁수 (스틱맨)**: 당김·겨냥·떨림·활 다섯 자루·갑옷 세 벌·환도가 전부 관절 위에 서 있다 (render/stickman.ts · docs/FORM.md).
+  통짜 그림은 안 된다. 관절 사이에 그림 조각을 얹는 **컷아웃**이 유일한 길이고, 손맛을 건드리는 일이라 형과 먼저 정한다.

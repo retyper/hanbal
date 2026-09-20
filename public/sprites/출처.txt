@@ -27,6 +27,14 @@
   원본은 assets_src/icons16b-source.png (방패·엽전·모루 칸은 아직 자리가 없어 안 실었다).
   이 이름들은 코드가 **만들어서** 부른다 — 빠지면 tools/probe-style.ts 가 빨개진다.
 
+보스 여덟 — boss-0 … boss-7 (look 번호 그대로: 눈알·갑주·쌍눈·폭주귀신 · 도깨비 · 구미호 · 장승 · 저승사자)
+  2026-09-20. 같은 대화에서 **투명 바탕(알파)** 으로 두 장을 받았다. trim 으로 잘랐다 (물건 상자 그대로, 긴 변 320):
+    node tools/slice-grid.mjs assets_src/bosses-source.png  4 2 public/sprites/boss- -,-,-,-,4,-,6,- 320 0.01 trim   # 도깨비·장승
+    node tools/slice-grid.mjs assets_src/bosses2-source.png 3 2 public/sprites/boss- 0,1,2,3,5,7     320 0.01 trim   # 정면으로 다시 받은 여섯
+  첫 장의 여섯은 3/4 옆모습이라 버렸다 — 급소가 몸 중심축 위에 있어서 그림도 정면·대칭이어야 판정원을 덮는다.
+  **눈은 그림에 없다** (눈구멍만 있다). 눈은 sim 의 상태라 render/bosses.ts·scene.ts 가 그 위에 그린다.
+  눈구멍의 좌표는 render/bossart.ts 의 ART 표 — 그림을 바꾸면 그 표도 같이 바꿔야 한다.
+
 drone.png — "Pixel Art Drone" (OpenGameArt, CC0)
   https://opengameart.org/content/pixel-art-drone
   113x57, 2프레임 (로터 교대). 원본 파일명 drone_4.png.
