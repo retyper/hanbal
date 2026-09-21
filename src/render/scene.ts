@@ -2185,8 +2185,8 @@ const BACKDROP = {
   parallaxSky: 0.006,
   /** 산 띠가 하늘 영역(화면 위 ~ 땅)에서 차지할 수 있는 최대 비율. */
   ridgeMax: 0.7,
-  /** 하늘과 산 사이가 뜨면 하늘의 맨 아래 띠(이만큼)를 늘려 메운다 — 거기엔 달도 구름도 없다. */
-  skyStretchV: 0.12,
+  /** 산 띠에서 산의 몸통(불투명)이 시작되는 높이 (0~1, sunset-ridge 를 재니 0.238) — 하늘은 적어도 여기까지 내려와야 틈이 안 뜬다. */
+  ridgeBodyV: 0.24,
   /**
    * 그림 위에 얹는 어둠 — 앞에 선 것들과 HUD 글자가 배경보다 밝아야 한다. 밝은 시각일수록 많이 덮는다
    * (안개 아침은 하늘이 거의 흰색이라 그대로 두면 왼쪽 위 숫자와 판 설명이 묻혔다).
@@ -2211,31 +2211,29 @@ function drawBackdrop(ctx: CanvasRenderingContext2D, cam: Camera, sky: SkyPalett
   const top = backdrop(`${file}-sky`)
   const ridge = backdrop(`${file}-ridge`)
   if (top === null || ridge === null) return false
+  // ★ 두 그림 다 **가로세로 같은 배율**로만 키운다 (2026-09-21, 형: "가로나 세로로 플레이하거나 웹에서 할때
+  // 배경이미지 찌그러지는데"). 예전에는 산을 세로로만 누르고 하늘 아래 띠를 세로로 늘려 틈을 메웠다 —
+  // 화면 비율이 그림과 다르면 그게 그대로 찌그러짐이었다. 이제 남는 쪽은 **잘라낸다**.
   const groundY = worldToScreenY(cam, 0)
-  const s = (cam.w * BACKDROP.over) / ridge.naturalWidth
-  const dw = ridge.naturalWidth * s
-  const slack = (dw - cam.w) / 2
   // 시차 — 여유(slack) 안에서만 밀린다. (클로저를 만들지 않는다: 프레임당 할당 0, A5)
   const pan = -cam.x * cam.scale
-  const x0 = (cam.w - dw) / 2
-  // 하늘 — 위에 붙인다.
-  const skyH = top.naturalHeight * s
-  const sx = x0 + Math.max(-slack, Math.min(slack, pan * BACKDROP.parallaxSky))
-  ctx.drawImage(top, sx, 0, dw, skyH)
-  // 산 — 밑동을 땅에.
-  // 산 띠는 하늘 영역의 ridgeMax 까지만 차지한다 — 멀리 당겨 잡는 판에서는 땅이 화면 중간까지 올라와서,
-  // 그대로 두면 산이 달을 가리고 판 이름 뒤까지 올라온다. 넘치면 **세로로만** 누른다 (낮은 능선으로 읽힌다).
-  const ridgeH = Math.min(ridge.naturalHeight * s, (groundY * BACKDROP.ridgeMax) / BACKDROP.baseV)
-  const ry = groundY - ridgeH * BACKDROP.baseV
-  // 사이가 뜨면 하늘의 맨 아래 띠를 늘려 메운다.
-  if (ry + ridgeH * 0.2 > skyH) {
-    const v = BACKDROP.skyStretchV
-    ctx.drawImage(
-      top, 0, top.naturalHeight * (1 - v), top.naturalWidth, top.naturalHeight * v,
-      sx, skyH * (1 - v), dw, ry + ridgeH * 0.2 - skyH * (1 - v),
-    )
-  }
-  ctx.drawImage(ridge, x0 + Math.max(-slack, Math.min(slack, pan * BACKDROP.parallaxRidge)), ry, dw, ridgeH)
+  // 산 — 폭에 꽉 차게, 밑동을 땅에.
+  // 산 띠는 하늘 영역의 ridgeMax 까지만 올라온다 — 멀리 당겨 잡는 판에서는 땅이 화면 중간까지 올라와서,
+  // 그대로 두면 산이 달을 가리고 판 이름 뒤까지 올라온다. 넘치면 누르지 않고 **땅 밑으로 내려 묻는다**
+  // (밑동은 뒤에 그리는 땅이 가린다).
+  const rs = (cam.w * BACKDROP.over) / ridge.naturalWidth
+  const rw = ridge.naturalWidth * rs
+  const ridgeH = ridge.naturalHeight * rs
+  const ry = Math.max(groundY - ridgeH * BACKDROP.baseV, groundY * (1 - BACKDROP.ridgeMax))
+  const rSlack = (rw - cam.w) / 2
+  const rx = (cam.w - rw) / 2 + Math.max(-rSlack, Math.min(rSlack, pan * BACKDROP.parallaxRidge))
+  // 하늘 — 위에 붙이고, 산의 불투명한 몸통까지 닿도록 필요한 만큼 **고르게** 키운다. 넘친 옆은 잘린다.
+  const ss = Math.max((cam.w * BACKDROP.over) / top.naturalWidth, (ry + ridgeH * BACKDROP.ridgeBodyV) / top.naturalHeight)
+  const sw = top.naturalWidth * ss
+  const sSlack = (sw - cam.w) / 2
+  const sx = (cam.w - sw) / 2 + Math.max(-sSlack, Math.min(sSlack, pan * BACKDROP.parallaxSky))
+  ctx.drawImage(top, sx, 0, sw, top.naturalHeight * ss)
+  ctx.drawImage(ridge, rx, ry, rw, ridgeH)
   ctx.globalAlpha = BACKDROP.dim[file] ?? 0.16
   ctx.fillStyle = sky.ground
   ctx.fillRect(0, 0, cam.w, cam.h)
