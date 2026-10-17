@@ -118,12 +118,24 @@ export interface Realm {
   /** intel[세력][고을] */
   intel: Record<string, Record<string, NodeIntel>>
   watch: Record<string, Watch>
+  /** 플레이어가 먼저 치거나 땅을 뺏은 나라 — 초반 유예가 없다 (ai.ts spared). id 순서. 옛 저장에는 없다 */
+  provoked?: string[]
 }
 
 /** 플레이어(또는 AI)가 한 계절에 내리는 명령 */
 export type Order =
   | { readonly kind: 'march'; readonly army: string; readonly edge: string; readonly ambush: boolean }
   | { readonly kind: 'scout'; readonly faction: string; readonly node: string; readonly hero: string | null }
+  /** 나누기 (SYSTEMS §4-5) — `id` 는 새 군대의 이름 (season.newArmyId). `hero` 면 장수가 별동대를 이끈다 */
+  | {
+      readonly kind: 'split'
+      readonly army: string
+      readonly id: string
+      readonly take: Readonly<Partial<Record<UnitKind, number>>>
+      readonly hero: boolean
+    }
+  /** 모으기 — `army` 를 `into` 에 붓는다 */
+  | { readonly kind: 'merge'; readonly army: string; readonly into: string }
 
 /** 직접 쏜 저격의 결과 — 판 열쇠(battleKey)마다. R1 에는 저격이 없어 비어 있다 (SNIPE · SYSTEMS §6) */
 export type SnipeZone = 'head' | 'body' | 'leg' | 'drum' | 'miss'
@@ -133,11 +145,16 @@ export type ReportLine =
   | { readonly kind: 'scout'; readonly faction: string; readonly node: string; readonly detected: boolean }
   | { readonly kind: 'blocked'; readonly army: string; readonly edge: string; readonly why: 'winterPass' | 'summerFord' }
   | { readonly kind: 'arrive'; readonly army: string; readonly node: string }
+  | { readonly kind: 'split'; readonly army: string; readonly id: string }
+  | { readonly kind: 'merge'; readonly army: string; readonly into: string }
   | { readonly kind: 'take'; readonly faction: string; readonly node: string }
   | {
       readonly kind: 'battle'
       readonly node: string
+      /** 앞선 공격 군대 (판의 열쇠) · 함께 친 군대들 (§4-5 협공) */
       readonly attacker: string
+      readonly allies: readonly string[]
+      readonly pincer: boolean
       readonly defender: string
       readonly ambush: 'none' | 'success' | 'caught'
       readonly p: number

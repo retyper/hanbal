@@ -31,6 +31,28 @@ function byId<T extends { id: string }>(xs: Iterable<T>): T[] {
   return [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 }
 
+/** 제 정보로 본 그 고을에 대한 승률 범위 — 모르면 null. 기습·도하는 넣지 않는다 (화면에 따로 보인다) */
+function winVs(r: Realm, faction: string, to: string, myF: number): { win: readonly [number, number] | null; age: number } {
+  const node = r.nodes[to]!
+  const k = (r.intel[faction] ?? {})[to]
+  if (node.owner === faction || node.kind === 'sodo' || !k?.force) return { win: null, age: Infinity }
+  const age = r.season - k.force.season
+  const range = visibleRange({ f0: k.force.f0, src: k.force.src, u: k.force.u }, age)
+  const t = fortMul(node, seasonOf(r.season))
+  return { win: range === null ? null : [winChance(myF, range[1] * t), winChance(myF, range[0] * t)], age }
+}
+
+/**
+ * 협공의 셈 (SYSTEMS §4-5) — 같은 고을로 같은 계절에 닿는 군대들의 합친 승률 범위.
+ * 서로 다른 길이 둘 이상이면 ×pincer. 닿는 계절이 다르면 협공이 아니다 — 부르는 쪽이 고른다.
+ */
+export function jointWin(r: Realm, faction: string, legs: readonly { army: Army; edge: REdge }[], to: string): readonly [number, number] | null {
+  let f = 0
+  for (const x of legs) f += strength(forceOf(r, x.army))
+  if (new Set(legs.map((x) => x.edge.id)).size >= 2) f *= P.realm.pincer
+  return winVs(r, faction, to, f).win
+}
+
 export function movesOf(r: Realm, faction: string, a: Army): Move[] {
   const R = P.realm
   const season = seasonOf(r.season)
@@ -44,14 +66,7 @@ export function movesOf(r: Realm, faction: string, a: Army): Move[] {
     const node = r.nodes[to]!
     const hostile = node.owner !== faction && node.kind !== 'sodo'
     const k = known[to]
-    let win: readonly [number, number] | null = null
-    let age = Infinity
-    if (hostile && k?.force) {
-      age = r.season - k.force.season
-      const range = visibleRange({ f0: k.force.f0, src: k.force.src, u: k.force.u }, age)
-      const t = fortMul(node, season)
-      if (range !== null) win = [winChance(myF, range[1] * t), winChance(myF, range[0] * t)]
-    }
+    const { win, age } = winVs(r, faction, to, myF)
     const al = k?.alert ? alertRange(k.alert.v, r.season - k.alert.season) : null
     const ambushP = ambushChance(conceal(ed, node, season), myRyak, R.aiAssumeRyak, 0, 0, al === null ? R.aiAssumeAlert : al[1])
     out.push({ edge: ed, to, seasons: marchSeasons(ed.kind, season), blocked: blockedWhy(ed, season), hostile, win, age, ambushP })

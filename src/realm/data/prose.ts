@@ -56,7 +56,11 @@ function armyName(r: Realm, id: string): string {
   if (a === undefined) return '흩어진 군대'
   const h = a.hero !== null ? r.heroes[a.hero] : undefined
   const f = r.factions[a.faction]?.name ?? '?'
-  return h !== undefined ? `${f} ${h.name}의 군대` : `${f}의 군대`
+  if (h !== undefined) return `${f} ${h.name}의 군대`
+  // 장수 없는 군대가 여럿일 수 있다 (나누기) — 사람 수로 가른다
+  let n = 0
+  for (const v of Object.values(a.mix)) n += v ?? 0
+  return `${f}의 군대(${n}명)`
 }
 
 function nodeName(r: Realm, id: string): string {
@@ -83,13 +87,24 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (a?.faction !== viewer) return null
       return `${nameArmy(line.army)}이(가) ${nodeName(after, line.node)}에 닿았다.`
     }
+    case 'split': {
+      const a = before.armies[line.army]
+      if (a?.faction !== viewer) return null
+      return `${nameArmy(line.army)}에서 별동대를 떼어 냈다.`
+    }
+    case 'merge': {
+      const a = before.armies[line.army]
+      if (a?.faction !== viewer) return null
+      return `${nameArmy(line.army)}이(가) ${nameArmy(line.into)}에 합쳤다.`
+    }
     case 'take':
       return `${after.factions[line.faction]?.name ?? '?'}이(가) ${nodeName(after, line.node)}을(를) 쥐었다.`
     case 'battle': {
       const atk = before.armies[line.attacker]
       const ours = atk?.faction === viewer || line.defender === viewer
       const amb = line.ambush === 'success' ? ' 기습이 먹혔다.' : line.ambush === 'caught' ? ' 기습이 들켰다.' : ''
-      const head = `${nodeName(after, line.node)}의 싸움 — ${nameArmy(line.attacker)} 대 ${after.factions[line.defender]?.name ?? '?'}: `
+      const side = line.allies.length === 0 ? '' : line.pincer ? ` 외 ${line.allies.length}군 (협공)` : ` 외 ${line.allies.length}군`
+      const head = `${nodeName(after, line.node)}의 싸움 — ${nameArmy(line.attacker)}${side} 대 ${after.factions[line.defender]?.name ?? '?'}: `
         + `공격측 ${OUTCOME_NAME[line.outcome]} (승률 ${pct(line.p)}).${amb}`
       const cap = line.captured !== null ? ` ${after.heroes[line.captured]?.name ?? '?'}을(를) 사로잡았다.` : ''
       const dead = line.killed !== null ? ` ${after.heroes[line.killed]?.name ?? '?'}이(가) 죽었다.` : ''

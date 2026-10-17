@@ -130,5 +130,6 @@ export function byeonhanMini(seed: number): Realm {
     armies: byId(ARMIES),
     intel,
     watch,
+    provoked: [],
   }
 }

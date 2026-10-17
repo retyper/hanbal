@@ -12,7 +12,7 @@ import { aiOrders } from '../../realm/ai.ts'
 import { headcount } from '../../realm/battle.ts'
 import { movesOf } from '../../realm/estimate.ts'
 import { alertRange, visibleRange } from '../../realm/intel.ts'
-import { advance, forceOf, neighbors, seasonOf } from '../../realm/season.ts'
+import { advance, forceOf, militiaOf, neighbors, seasonOf } from '../../realm/season.ts'
 import {
   BLOCKED_LINE, EDGE_NAME, NODE_KIND_NAME, OUTCOME_NAME, SEASON_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel,
 } from '../../realm/data/prose.ts'
@@ -136,7 +136,9 @@ export function mountTextMap(root: HTMLElement, host: TextMapHost): { show(r: Re
       let force = '—'
       let alert = '—'
       if (ours) {
-        force = `${Object.values(r.armies).filter((a) => a.at === n.id && a.faction === ME && a.march === null).reduce((s, a) => s + headcount(forceOf(r, a)), 0)}명`
+        const men = Object.values(r.armies).filter((a) => a.at === n.id && a.faction === ME && a.march === null).reduce((s, a) => s + headcount(forceOf(r, a)), 0)
+        const mil = militiaOf(r, n.id)
+        force = `${men}명${mil !== null ? ` <span class="tag">+ 장정 ${headcount(forceOf(r, mil))}</span>` : ''}`
       } else if (k?.force) {
         const age = r.season - k.force.season
         const v = visibleRange({ f0: k.force.f0, src: k.force.src, u: k.force.u }, age)
