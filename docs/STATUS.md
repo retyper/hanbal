@@ -9,11 +9,12 @@
 형: *"활쏘기는 게임내 서브게임으로 적장 암살을 통한 적군 약화에 쓸거야. 옛날 한반도무대로 지형과 전략을 고려한 전쟁,
 적장사살포획, 국가운영."* 그리고 **"바로 뭔가 만들지 말고 완벽을 기한 설계부터 잡아."**
 
-- **설계 묶음은 `docs/realm/`** — README 부터 읽는다. VISION · WORLD · SYSTEMS · PLAY · CONTENT · BUILD 일곱 문서 다 있다.
+- **설계 묶음은 `docs/realm/`** — README 부터 읽는다. VISION · WORLD · SYSTEMS · SNIPE · PLAY · UI · CONTENT · BUILD 아홉 문서.
 - 고증 원본은 `docs/realm/sources/` (overview · samhan · north · war) — 위키문헌 원문 대조, [확인]/[설]/[미확인] 표식.
-- 렌즈 두 개(pitch · loop)를 설계에 돌렸고 지적은 반영했다 — 용어 정리(README 표) · 세션 규칙(SYSTEMS §15).
+- 돌린 검토 넷, 전부 반영: pitch-lens(용어 — README 표) · loop-lens(세션 규칙 — SYSTEMS §15) ·
+  balance-lens 종이 검산(군량·기습·정보 범위·교착·긴장도 — 스크립트는 `docs/realm/calc/`) · 교차 일관성 점검(72곳).
 - **코드는 아직 한 줄도 안 바꿨다.** 형의 확인(BUILD §8 질문 9개) 전에는 R1 을 시작하지 않는다.
-- 다음에 할 만한 것: balance-lens 로 SYSTEMS 의 초안 수치를 종이 위에서 검산 · 종이 시험(R1) 대본 다듬기.
+- 다음에 할 만한 것: 형의 답을 문서에 넣기 → R1 종이 시험 대본(PLAY §4)을 형과 글자로 10계절 해 보기 → R1.
 
 ---
 
