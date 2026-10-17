@@ -32,7 +32,8 @@
 
 - **용은 고구려 벽화의 청룡**이다: *slender four-legged Korean dragon from Goguryeo tomb murals, feline body, flame-like mane, NO long catfish whiskers, NOT a Chinese dragon.* 이무기는 **뿔·다리 없는 거대한 물뱀**.
 - 매 주문 끝에 **부정어**를 붙인다: *NOT Chinese: no hanfu cross-collar silk robes with huge sleeves, no Chinese crowns or guan hats, no Chinese long whiskered dragons, no pagodas, no Chinese characters. NOT Japanese: no kimono, no samurai.*
-- 군현(낙랑·대방) 사람만 바깥 옷(검은 관 · 비단 도포)을 입는다 — **한 장에 한 명, 바깥 사람으로**(WORLD 규칙 0).
+- ~~군현(낙랑·대방) 사람만 바깥 옷을 입는다~~ → 형 (2026-10-18): *"중국식으로 만들지마. 기본적으로 한반도 풍으로 해야해."*
+  군현 사신·관리 그림도 **그리지 않는다** (장수 16번 낙랑 사신 → 고구려 개마무사 장수로 바꿈). 군현 사건에 그림이 필요하면 형에게 먼저 묻는다.
 - **중국풍은 무조건 뺀다** (형, 2026-10-18: *"중국풍은 무조건 없애야한다니까. 중국이나 선비족 용병이라는 설정이면 괜찮지만"*).
   예외는 설정이 **중국·선비족 용병**(바깥에서 온 사람)인 인물뿐. "전설급·스플래시아트" 로 시키면 그림 모델이 선협(仙俠) 옷을 입히니
   여인 옷은 **고구려 벽화 어휘로 못 박는다**: hip-length jeogori jacket with contrasting bands (seon) at collar, cuffs and hem, belted
