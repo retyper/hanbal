@@ -24,7 +24,7 @@ const opt = (name: string, def: string): string => {
 }
 const GAMES = Number(opt('games', '300'))
 const SEASONS = Number(opt('seasons', '40'))
-const BOTS: Brain[] = opt('bot', 'all') === 'all' ? ['reckless', 'cautious', 'random'] : [opt('bot', 'all') as Brain]
+const BOTS: Brain[] = opt('bot', 'all') === 'all' ? ['reckless', 'cautious', 'planner', 'random'] : [opt('bot', 'all') as Brain]
 const OUT = opt('out', '')
 const EARLY = 8
 

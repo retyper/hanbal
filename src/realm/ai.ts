@@ -14,10 +14,11 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { jointWin, movesOf, type Move } from './estimate.ts'
-import { armiesAt } from './season.ts'
+import { armiesAt, newArmyId, planned } from './season.ts'
+import type { UnitKind } from './battle.ts'
 import type { Army, Order, Realm } from './types.ts'
 
-export type Brain = 'greedy' | 'cautious' | 'reckless' | 'random'
+export type Brain = 'greedy' | 'cautious' | 'reckless' | 'random' | 'planner'
 
 function sorted<T extends { id: string }>(xs: Iterable<T>): T[] {
   return [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
@@ -89,8 +90,77 @@ function joint(r: Realm, faction: string, idle: readonly Army[]): Order[] {
   return out
 }
 
+/**
+ * 봇 계획가 (tools/realm-sim) — 신중처럼 정찰하고 최악의 승률로 고르되, 국읍의 마지막 군대라고 얼어 있지 않는다:
+ * plannerKeep 몫을 국읍에 남기고 장수가 별동대를 이끌어 그 계절에 떠난다 (SYSTEMS §4-5 나누기).
+ * 같은 고을에 쉬는 군대가 둘 이상이면 먼저 모은다 — 상한 다섯을 쓰고 남기지 않으려고.
+ */
+function plan(r: Realm, faction: string): Order[] {
+  const R = P.realm
+  const orders: Order[] = []
+  let p = r
+  const idle = (): Army[] => sorted(Object.values(p.armies)).filter((a) => a.faction === faction && a.march === null)
+  // 모으기 — 장수 없는 쪽을 장수 있는 쪽으로
+  for (const a of idle()) {
+    if (p.armies[a.id] === undefined || a.hero !== null) continue
+    const into = idle().find((b) => b.id !== a.id && b.at === a.at)
+    if (into === undefined) continue
+    const o: Order = { kind: 'merge', army: a.id, into: into.id }
+    const next = planned(p, [o])
+    if (next.armies[a.id] !== undefined) continue
+    orders.push(o)
+    p = next
+  }
+  let scouted = false
+  for (const a of idle()) {
+    const ts = movesOf(p, faction, a).filter((t) => t.hostile && t.blocked === null && !spared(p, faction, t.to))
+    if (ts.length === 0) continue
+    const fresh = ts.filter((t) => t.win !== null && t.age <= R.aiCautiousAge)
+    if (!lastGuard(p, faction, a)) {
+      const ready = fresh.filter((t) => t.win![0] >= R.aiCautiousWin)
+      if (ready.length > 0) {
+        orders.push(march(a, ready.reduce((x, y) => (y.win![0] > x.win![0] ? y : x))))
+        continue
+      }
+    } else {
+      // 국읍의 마지막 군대 — 몫을 남기고 별동대를 보낸다
+      const take: Partial<Record<UnitKind, number>> = {}
+      for (const [k, n] of Object.entries(a.mix) as Array<[UnitKind, number]>) take[k] = Math.floor(n * (1 - R.plannerKeep))
+      const det = { ...a, mix: take }
+      let best: Move | null = null
+      let bestW = -1
+      for (const t of fresh) {
+        const w = jointWin(p, faction, [{ army: det, edge: t.edge }], t.to)
+        if (w !== null && w[0] >= R.aiCautiousWin && w[0] > bestW) {
+          best = t
+          bestW = w[0]
+        }
+      }
+      if (best !== null) {
+        const id = newArmyId(p, faction)
+        const o: Order = { kind: 'split', army: a.id, id, take, hero: true }
+        const next = planned(p, [o])
+        if (next.armies[id] !== undefined) {
+          orders.push(o, march(next.armies[id]!, best))
+          p = next
+          continue
+        }
+      }
+    }
+    if (!scouted) {
+      const stale = ts.reduce((x, y) => (y.age > x.age ? y : x))
+      if (stale.age > R.aiCautiousAge) {
+        orders.push({ kind: 'scout', faction, node: stale.to, hero: null })
+        scouted = true
+      }
+    }
+  }
+  return orders
+}
+
 /** 한 세력의 이번 계절 명령 */
 export function decide(r: Realm, faction: string, brain: Brain): Order[] {
+  if (brain === 'planner') return plan(r, faction)
   const R = P.realm
   const orders: Order[] = []
   const armies = sorted(Object.values(r.armies)).filter((a) => a.faction === faction && a.march === null)

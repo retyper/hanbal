@@ -11,7 +11,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { roll } from '../../src/core/rng.ts'
-import { decide, spared } from '../../src/realm/ai.ts'
+import { aiOrders as aiOrdersOf, decide, spared } from '../../src/realm/ai.ts'
 import { headcount } from '../../src/realm/battle.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { advance, forceOf, newArmyId, otherEnd, planned } from '../../src/realm/season.ts'
@@ -203,6 +203,28 @@ describe('나누기를 섞어 아무렇게나 돌려도', () => {
       }
       assert.deepEqual(r, again)
     }
+  })
+})
+
+describe('봇 계획가 — 나누어 보낸다', () => {
+  it('국읍을 비우지 않고 별동대를 떼어 그 계절에 보낸다 · 낸 나누기는 판이 받아들인다 (50판 × 24계절)', () => {
+    let splits = 0
+    for (let seed = 1; seed <= 50; seed++) {
+      let r = byeonhanMini(seed)
+      for (let s = 0; s < 24; s++) {
+        const mine = decide(r, 'us', 'planner')
+        const { next } = advance(r, [...mine, ...aiOrdersOf(r)])
+        for (const o of mine) {
+          if (o.kind !== 'split') continue
+          splits++
+          assert.ok(planned(r, mine).armies[o.id] !== undefined, `seed ${seed} s${s} 받아들여지지 않은 나누기`)
+          const leaving = mine.some((m) => m.kind === 'march' && m.army === o.id)
+          assert.ok(leaving, '떼어 낸 별동대가 떠나지 않았다')
+        }
+        r = next
+      }
+    }
+    assert.ok(splits > 0, '한 번도 나누지 않았다')
   })
 })
 

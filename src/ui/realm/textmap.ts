@@ -10,13 +10,14 @@
  */
 import { aiOrders } from '../../realm/ai.ts'
 import { headcount } from '../../realm/battle.ts'
-import { movesOf } from '../../realm/estimate.ts'
+import { jointWin, movesOf, type Move } from '../../realm/estimate.ts'
 import { alertRange, visibleRange } from '../../realm/intel.ts'
-import { advance, forceOf, militiaOf, neighbors, seasonOf } from '../../realm/season.ts'
+import { advance, forceOf, militiaOf, neighbors, newArmyId, planned, seasonOf } from '../../realm/season.ts'
+import { P } from '../../tune/params.ts'
 import {
   BLOCKED_LINE, EDGE_NAME, NODE_KIND_NAME, OUTCOME_NAME, SEASON_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel,
 } from '../../realm/data/prose.ts'
-import type { Order, Realm, Report } from '../../realm/types.ts'
+import type { Army, Order, Realm, Report } from '../../realm/types.ts'
 import type { UnitKind } from '../../realm/battle.ts'
 
 export interface TextMapHost {
@@ -44,6 +45,8 @@ const CSS = `
 .rm button { font: inherit; padding: 8px 18px; border-radius: 6px; border: 1px solid #d9b36a; background: #3a3122; color: #f3e3bd; cursor: pointer; }
 .rm button.ghost { border-color: #4a5260; background: transparent; color: #9a9284; padding: 4px 10px; font-size: 13px; }
 .rm .rep p { margin: 2px 0; } .rm .rep .rumor { color: #8d8678; font-size: 13px; }
+.rm .split { margin: 4px 0 6px; font-size: 13px; color: #b9b0a0; } .rm .split input[type=number] { width: 4em; font: inherit; background: #1c2129; color: #e2dbcd; border: 1px solid #4a5260; padding: 1px 3px; }
+.rm .note { border-color: #8a5a3a; color: #e8c3a0; }
 .rm select { font: inherit; background: #1c2129; color: #e2dbcd; border: 1px solid #4a5260; padding: 3px; }
 @media (max-width: 600px) { .rm { padding: 16px 12px; } .rm table { font-size: 13px; } }
 `
@@ -62,19 +65,73 @@ export function mountTextMap(root: HTMLElement, host: TextMapHost): { show(r: Re
   root.classList.add('rm')
 
   let realm: Realm
+  let shownBefore: Realm | null = null
+  let shownReport: Report | null = null
+  /** 이번 계절의 나누기·모으기 (SYSTEMS §4-5) — 화면은 이것을 먼저 해 본 판(planned)을 보여 준다 */
+  let armyOrders: Order[] = []
   /** 군대마다 고른 길 (없으면 머문다) · 기습 여부 */
   const pick: Record<string, { edge: string; ambush: boolean } | undefined> = {}
   let scout = ''
+  /** 안 된 나누기·모으기의 까닭 — 한 번 보이고 사라진다 */
+  let note = ''
 
+  const plan = (): Realm => planned(realm, armyOrders)
+
+  /** 판에 넘길 명령 — 나누기·모으기가 먼저, 그다음 출정, 정찰 */
   function ordersNow(): Order[] {
-    const out: Order[] = []
-    for (const [army, p] of Object.entries(pick)) if (p !== undefined) out.push({ kind: 'march', army, edge: p.edge, ambush: p.ambush })
+    const p = plan()
+    const out: Order[] = [...armyOrders]
+    for (const [army, c] of Object.entries(pick)) {
+      const a = p.armies[army]
+      if (c !== undefined && a !== undefined && a.march === null) out.push({ kind: 'march', army, edge: c.edge, ambush: c.ambush })
+    }
     if (scout !== '') out.push({ kind: 'scout', faction: ME, node: scout, hero: null })
     return out
   }
 
+  function armyLabel(r: Realm, a: Army): string {
+    const hero = a.hero !== null ? r.heroes[a.hero] : undefined
+    return hero?.name ?? `장수 없는 군대(${headcount(forceOf(r, a))}명)`
+  }
+
+  /** 이번 계절 출정 — 고른 길을 고을마다 묶고, 같은 계절에 닿는 둘 이상이면 협공의 합친 승률 */
+  function sortieSummary(r: Realm): string {
+    const byTo = new Map<string, Array<{ army: Army; move: Move }>>()
+    for (const [army, c] of Object.entries(pick)) {
+      const a = r.armies[army]
+      if (c === undefined || a === undefined || a.march !== null) continue
+      const m = movesOf(r, ME, a).find((x) => x.edge.id === c.edge)
+      if (m === undefined || m.blocked !== null) continue
+      const list = byTo.get(m.to) ?? []
+      list.push({ army: a, move: m })
+      byTo.set(m.to, list)
+    }
+    if (byTo.size === 0) return ''
+    let h = `<h2>이번 계절 출정</h2><div class="card">`
+    for (const [to, legs] of [...byTo].sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
+      h += `<div>→ <b>${esc(r.nodes[to]!.name)}</b>: ${legs.map((x) => esc(`${armyLabel(r, x.army)} (${EDGE_NAME[x.move.edge.kind]})`)).join(' · ')}`
+      if (legs.length >= 2 && legs[0]!.move.hostile) {
+        if (new Set(legs.map((x) => x.move.seasons)).size > 1) {
+          h += ` <span class="tag">— 닿는 계절이 달라 따로따로 싸운다</span>`
+        } else {
+          const w = jointWin(r, ME, legs.map((x) => ({ army: x.army, edge: x.move.edge })), to)
+          const roads = new Set(legs.map((x) => x.move.edge.id)).size >= 2 ? ` · 두 길 ×${P.realm.pincer}` : ''
+          h += ` — 협공: 합친 승률 <b>${w === null ? '모름' : range(w[0], w[1], pct)}</b><span class="tag">${roads}</span>`
+        }
+      }
+      h += `</div>`
+    }
+    return h + `</div>`
+  }
+
+  function rerender(): void {
+    render(shownBefore, shownReport)
+  }
+
   function render(before: Realm | null, report: Report | null): void {
-    const r = realm
+    shownBefore = before
+    shownReport = report
+    const r = plan()
     const season = seasonOf(r.season)
     const mine = Object.values(r.nodes).filter((n) => n.owner === ME)
     const known = r.intel[ME] ?? {}
@@ -94,14 +151,29 @@ export function mountTextMap(root: HTMLElement, host: TextMapHost): { show(r: Re
     h += `<h2>우리 군대</h2>`
     const armies = Object.values(r.armies).filter((a) => a.faction === ME).sort((x, y) => (x.id < y.id ? -1 : 1))
     if (armies.length === 0) h += `<div class="card">군대가 없다.</div>`
+    if (note !== '') h += `<div class="card note">${esc(note)}</div>`
+    note = ''
     for (const a of armies) {
-      const hero = a.hero !== null ? r.heroes[a.hero] : undefined
-      h += `<div class="card"><b>${esc(hero?.name ?? '장수 없는 군대')}</b> · ${esc(r.nodes[a.at]?.name ?? '?')} · `
+      h += `<div class="card"><b>${esc(armyLabel(r, a))}</b> · ${esc(r.nodes[a.at]?.name ?? '?')} · `
       h += `${headcount(forceOf(r, a))}명 <span class="tag">(${esc(mixLine(a.mix))})</span>`
+      if (realm.armies[a.id] === undefined) h += ` <span class="tag">— 이번 계절에 떼어 냄</span>`
       if (a.march !== null) {
         h += `<div>→ ${esc(r.nodes[a.march.to]?.name ?? '?')} 가는 길 — ${a.march.left}계절 남음${a.march.ambush ? ' · 기습' : ''}</div></div>`
         continue
       }
+      // 나누기 · 모으기 (SYSTEMS §4-5)
+      h += `<div class="split"><span class="tag">나누기:</span> `
+      for (const [k, n] of Object.entries(a.mix) as Array<[UnitKind, number]>) {
+        if (n <= 0) continue
+        h += `<label>${UNIT_NAME[k]} <input type="number" min="0" max="${n}" value="0" data-split="${a.id}" data-kind="${k}"></label> `
+      }
+      if (a.hero !== null) h += `<label><input type="checkbox" data-split-hero="${a.id}"> 장수가 별동대를 이끈다</label> `
+      h += `<button class="ghost" data-split-go="${a.id}">떼어 낸다</button>`
+      for (const b of armies) {
+        if (b.id === a.id || b.at !== a.at || b.march !== null) continue
+        h += ` <button class="ghost" data-merge="${a.id}" data-into="${b.id}">${esc(armyLabel(r, b))}에 합친다</button>`
+      }
+      h += `</div>`
       const chosen = pick[a.id]
       h += `<label class="mv"><input type="radio" name="mv-${a.id}" value="" ${chosen === undefined ? 'checked' : ''}> 머문다</label>`
       for (const m of movesOf(r, ME, a)) {
@@ -119,6 +191,9 @@ export function mountTextMap(root: HTMLElement, host: TextMapHost): { show(r: Re
       }
       h += `</div>`
     }
+
+    if (armyOrders.length > 0) h += `<p><button class="ghost" id="rm-undo">나누기·합치기 되돌리기</button></p>`
+    h += sortieSummary(r)
 
     // 정찰
     const scoutable = [...new Set(mine.flatMap((n) => neighbors(r, n.id)))].filter((id) => r.nodes[id]?.owner !== ME).sort()
@@ -172,9 +247,46 @@ export function mountTextMap(root: HTMLElement, host: TextMapHost): { show(r: Re
         el.addEventListener('change', () => {
           const amb = root.querySelector<HTMLInputElement>(`input[data-amb="${a.id}:${el.value}"]`)
           pick[a.id] = el.value === '' ? undefined : { edge: el.value, ambush: amb?.checked ?? false }
+          rerender() // 출정 묶음(협공)이 바뀐다
         })
       }
     }
+    for (const el of root.querySelectorAll<HTMLButtonElement>('button[data-split-go]')) {
+      el.addEventListener('click', () => {
+        const army = el.dataset['splitGo']!
+        const take: Partial<Record<UnitKind, number>> = {}
+        for (const inp of root.querySelectorAll<HTMLInputElement>(`input[data-split="${army}"]`)) {
+          const n = Math.floor(Number(inp.value))
+          if (n > 0) take[inp.dataset['kind'] as UnitKind] = n
+        }
+        const hero = root.querySelector<HTMLInputElement>(`input[data-split-hero="${army}"]`)?.checked ?? false
+        const id = newArmyId(r, ME)
+        const o: Order = { kind: 'split', army, id, take, hero }
+        // 규칙의 판정은 판이 한다 — 해 보고 안 되면 되돌린다
+        if (planned(r, [o]).armies[id] === undefined) {
+          note = `나눌 수 없다 — 양쪽 다 ${P.realm.splitMin}명 이상이어야 하고, 군대는 ${P.realm.armyMax}개까지다.`
+        } else armyOrders = [...armyOrders, o]
+        rerender()
+      })
+    }
+    for (const el of root.querySelectorAll<HTMLButtonElement>('button[data-merge]')) {
+      el.addEventListener('click', () => {
+        const army = el.dataset['merge']!
+        const o: Order = { kind: 'merge', army, into: el.dataset['into']! }
+        if (planned(r, [o]).armies[army] !== undefined) {
+          note = '합칠 수 없다 — 장수 둘이 한 군대를 함께 이끌지는 못한다.'
+        } else {
+          armyOrders = [...armyOrders, o]
+          delete pick[army]
+        }
+        rerender()
+      })
+    }
+    root.querySelector('#rm-undo')?.addEventListener('click', () => {
+      armyOrders = []
+      for (const k of Object.keys(pick)) if (realm.armies[k] === undefined) delete pick[k]
+      rerender()
+    })
     for (const el of root.querySelectorAll<HTMLInputElement>('input[data-amb]')) {
       el.addEventListener('change', () => {
         const [army, edge] = el.dataset['amb']!.split(':') as [string, string]
@@ -191,6 +303,7 @@ export function mountTextMap(root: HTMLElement, host: TextMapHost): { show(r: Re
       const prev = realm
       const { next, report: rep } = advance(prev, all)
       for (const k of Object.keys(pick)) delete pick[k]
+      armyOrders = []
       scout = ''
       host.onAdvance(next, rep, all)
       realm = next
