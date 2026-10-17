@@ -65,6 +65,30 @@ export function makeRng(seed: number): Rng {
   }
 }
 
+/**
+ * 이름 붙은 주사위 — 나라(realm) 층의 굴림 (docs/realm/BUILD.md §1-3)
+ *
+ * 활 sim 은 한 스트림을 차례로 뽑지만 나라는 그러면 안 된다: 판정 하나를 더하면 뒤의 모든
+ * 판정이 한 칸씩 밀려 옛 리플레이가 전부 깨진다. 그래서 굴림마다 **이름**을 붙이고
+ * (시드, 계절, 이름) 셋의 해시로 바로 값을 낸다. 상태가 없으니 순서도 없다.
+ * 결정이 이름에 들어가므로(`battle:${길}:${장수}`) 결과를 바꾸려면 결정을 바꿔야 한다 — 다시 불러와도 같다.
+ *
+ * @returns [0, 1)
+ */
+export function roll(seed: number, season: number, key: string): number {
+  // 셋을 한 번에 xor 하면 (시드 a, 계절 b) 와 (시드 a', 계절 b') 가 서로 지워질 수 있다 → 하나씩 섞어 넣는다
+  let h = mix32(seedFrom(key) ^ (seed >>> 0))
+  h = mix32(h ^ Math.imul(season + 1, 0x9e3779b9))
+  return h / 4294967296
+}
+
+/** splitmix32 마무리 — 비슷한 입력(battle:1 · battle:2)이 비슷한 값을 내지 않게 비트를 고루 섞는다. */
+function mix32(x: number): number {
+  let h = Math.imul(x ^ (x >>> 16), 0x85ebca6b)
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35)
+  return (h ^ (h >>> 16)) >>> 0
+}
+
 /** 문자열 → 시드. 스테이지 ID나 날짜로 재현 가능한 판을 만들 때. */
 export function seedFrom(text: string): number {
   let h = 0x811c9dc5

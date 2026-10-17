@@ -46,8 +46,9 @@ const flag = (re, rule, fix) => {
   })
 }
 
-// --- A1 결정론: sim/core 레이어는 비결정적 소스를 만지면 안 된다 ---
-if (/\/src\/(sim|core)\//.test(norm) && !/\/core\/rng\.ts$/.test(norm)) {
+// --- A1 결정론: sim/core/realm 레이어는 비결정적 소스를 만지면 안 된다 ---
+// realm(나라)은 sim(활)과 같은 금지를 받는다 — docs/realm/BUILD.md §1-1
+if (/\/src\/(sim|core|realm)\//.test(norm) && !/\/core\/rng\.ts$/.test(norm)) {
   flag(/\bMath\.random\s*\(/, 'A1 결정론', 'core/rng.ts 의 시드 RNG를 주입받아 사용할 것')
   flag(/\b(Date\.now|performance\.now)\s*\(|\bnew Date\s*\(/, 'A1 결정론', '시뮬레이션 내부 tick 시계를 사용할 것')
   flag(/\b(document|window|localStorage|requestAnimationFrame)\b/, 'A1 레이어 분리', 'sim/core 는 DOM을 모른다. game/ 또는 render/ 로 옮길 것')
