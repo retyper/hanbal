@@ -117,6 +117,14 @@ export function power(me: Force, foe: Force, field: Field, side: 'atk' | 'def'):
   return f
 }
 
+/**
+ * 정보가 다루는 전투력 — 상대·자리를 빼고 군대 자체의 값 (N × E × L × M).
+ * 척후가 "120~180" 처럼 보고하는 것은 이것이다. 실제 판정(power)은 여기에 상성·자리를 더 곱한다.
+ */
+export function strength(f: Force): number {
+  return headcount(f) * equipMul(f.equip) * leadMul(f.mu) * f.morale
+}
+
 /** P(공격측 승) = Fa^k / (Fa^k + Fd^k). 둘 다 0 이면 반반. */
 export function winChance(fa: number, fd: number): number {
   const k = P.realm.battleK

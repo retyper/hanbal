@@ -1,0 +1,134 @@
+/**
+ * 변한 6국 축소판 — R1 의 판 (docs/realm/BUILD.md §6 · WORLD §4)
+ *
+ * 나라 이름은 『삼국지』 위지 변진조 원문 그대로 쓴다 (WORLD §5 규칙 6). 자리는 비정이 설이거나
+ * 없는 것이 많아 대부분 [상상 배치]다 — 구야국(김해)·안야국(함안)만 비교적 확실하다.
+ * 플레이어는 원문에 이름이 남지 않은 **작은 나라**(가호 600)로 시작한다 (WORLD §4-1).
+ * 장수 이름은 지어낸다 — 사료의 칭호만 쓰고 실존 인물은 쓰지 않는다 (BUILD §8 Q6).
+ *
+ * 숫자(병력·능력치)는 R1 종이 시험용 초안이다. 판의 크기 감을 PLAY §4 의 대본에 맞췄다:
+ * 북쪽 읍락 병력 120~180, 큰 나라는 그 두세 배.
+ */
+import type { Army, Faction, Hero, NodeIntel, REdge, Realm, RNode, Watch } from '../../types.ts'
+
+const NODES: RNode[] = [
+  // 플레이어 — 남쪽 바닷가 작은 나라 (국읍 하나 · 읍락 둘, PLAY §4)
+  { id: 'our-cap', name: '갯마을 국읍', kind: 'capital', tags: ['palisade'], owner: 'us' },
+  { id: 'our-north', name: '안개골 읍락', kind: 'village', tags: ['fog'], owner: 'us' },
+  { id: 'our-east', name: '갈대울 읍락', kind: 'village', tags: ['reeds'], owner: 'us' },
+  // 구야국 狗邪 — 김해, 고김해만 · 철 · 변한의 큰 나라
+  { id: 'guya-cap', name: '구야 국읍', kind: 'port', tags: ['palisade', 'high'], owner: 'guya' },
+  { id: 'guya-iron', name: '붉은산 철산', kind: 'ironMine', tags: ['iron'], owner: 'guya' },
+  { id: 'guya-vil', name: '봉황 읍락', kind: 'village', tags: [], owner: 'guya' },
+  // 안야국 安邪 — 함안, 남강 · 구야국과 나란한 큰 나라
+  { id: 'anya-cap', name: '안야 국읍', kind: 'capital', tags: ['palisade', 'high'], owner: 'anya' },
+  { id: 'anya-fort', name: '남강 산성', kind: 'fort', tags: ['high'], owner: 'anya' },
+  { id: 'anya-vil', name: '솔숲 읍락', kind: 'village', tags: ['pines'], owner: 'anya' },
+  // 미리미동국 彌離彌凍 — 밀양설, 낙동강 중류 · 강가 농사
+  { id: 'miri-cap', name: '미리미동 국읍', kind: 'capital', tags: ['palisade', 'moat'], owner: 'miri' },
+  { id: 'miri-vil', name: '여울목 읍락', kind: 'village', tags: ['reeds', 'shallows'], owner: 'miri' },
+  // 고자미동국 古資彌凍 — 고성설, 남해 포구
+  { id: 'goja-cap', name: '고자미동 포구', kind: 'port', tags: ['palisade'], owner: 'goja' },
+  { id: 'goja-vil', name: '갯벌 읍락', kind: 'village', tags: [], owner: 'goja' },
+  // 독로국 瀆盧 — 동래설, 「其瀆盧國與倭接界」 왜와 경계를 맞댄다
+  { id: 'dokro-cap', name: '독로 포구', kind: 'port', tags: ['palisade'], owner: 'dokro' },
+  // 소도 — 누구의 땅도 아니다. 침범 금지 (SYSTEMS §8-4) [사료]
+  { id: 'sodo', name: '큰나무 소도', kind: 'sodo', tags: ['sodo'], owner: null },
+]
+
+const e = (id: string, a: string, b: string, kind: REdge['kind'], tags: REdge['tags'] = []): REdge => ({ id, a, b, kind, tags })
+
+const EDGES: REdge[] = [
+  e('e01', 'our-cap', 'our-north', 'field'),
+  e('e02', 'our-cap', 'our-east', 'field'),
+  e('e03', 'our-cap', 'goja-vil', 'sea'),
+  e('e04', 'our-cap', 'guya-cap', 'sea'),
+  e('e05', 'our-north', 'anya-cap', 'field'),
+  e('e06', 'our-north', 'miri-vil', 'ford', ['reeds']), // 낙동강 갈대 나루 — PLAY §4 의 그 나루
+  e('e07', 'our-north', 'sodo', 'forest'),
+  e('e08', 'our-east', 'miri-vil', 'reeds'),
+  e('e09', 'our-east', 'guya-vil', 'mudflat'),
+  e('e10', 'guya-vil', 'guya-cap', 'field'),
+  e('e11', 'guya-cap', 'guya-iron', 'pass'),
+  e('e12', 'guya-cap', 'dokro-cap', 'sea'),
+  e('e13', 'guya-iron', 'dokro-cap', 'pass'),
+  e('e14', 'guya-iron', 'miri-cap', 'forest'),
+  e('e15', 'miri-vil', 'miri-cap', 'field'),
+  e('e16', 'miri-vil', 'sodo', 'reeds'),
+  e('e17', 'anya-cap', 'anya-fort', 'pass'),
+  e('e18', 'anya-fort', 'miri-cap', 'ford'), // 남강이 낙동강에 드는 나루
+  e('e19', 'anya-cap', 'anya-vil', 'forest'),
+  e('e20', 'anya-vil', 'goja-cap', 'pass'),
+  e('e21', 'goja-cap', 'goja-vil', 'field'),
+]
+
+const FACTIONS: Faction[] = [
+  { id: 'us', name: '우리 나라', mind: 'player', capital: 'our-cap' },
+  { id: 'guya', name: '구야국', mind: 'greedy', capital: 'guya-cap' },
+  { id: 'anya', name: '안야국', mind: 'cautious', capital: 'anya-cap' },
+  { id: 'miri', name: '미리미동국', mind: 'cautious', capital: 'miri-cap' },
+  { id: 'goja', name: '고자미동국', mind: 'greedy', capital: 'goja-cap' },
+  { id: 'dokro', name: '독로국', mind: 'greedy', capital: 'dokro-cap' },
+]
+
+const h = (id: string, name: string, faction: string, mu: number, ryak: number, chi: number, deok: number): Hero =>
+  ({ id, name, faction, mu, ryak, chi, deok, status: 'free', captor: null })
+
+const HEROES: Hero[] = [
+  h('chief', '군장', 'us', 5, 5, 4, 5), // 플레이어 자신 — PLAY §4 "장수는 없다, 군장 혼자"
+  h('guya-1', '진지렴 거타', 'guya', 7, 5, 6, 4), // 「狗邪秦支廉之號」 — 큰 나라 신지의 높임 칭호
+  h('guya-2', '험측 마루', 'guya', 6, 3, 3, 3),
+  h('anya-1', '신지 아라', 'anya', 5, 7, 5, 6),
+  h('anya-2', '번예 솔미', 'anya', 4, 6, 4, 4),
+  h('miri-1', '읍차 갈미', 'miri', 4, 4, 5, 5), // PLAY §4 의 "술꾼" 장수 자리
+  h('goja-1', '살해 바다쇠', 'goja', 5, 5, 3, 3),
+  h('dokro-1', '읍차 너울', 'dokro', 6, 4, 2, 3),
+]
+
+const a = (id: string, faction: string, hero: string | null, at: string, mix: Army['mix'], equip: Army['equip'] = 'ironTip'): Army =>
+  ({ id, faction, hero, mix, equip, morale: 1, at, march: null })
+
+const ARMIES: Army[] = [
+  a('a-us', 'us', 'chief', 'our-cap', { spear: 80, bow: 30, shield: 10 }),
+  a('a-guya-1', 'guya', 'guya-1', 'guya-cap', { spear: 180, bow: 80, shield: 40 }, 'iron'),
+  a('a-guya-2', 'guya', 'guya-2', 'guya-iron', { spear: 90, bow: 30 }, 'iron'),
+  a('a-anya-1', 'anya', 'anya-1', 'anya-cap', { spear: 160, bow: 90, shield: 50 }),
+  a('a-anya-2', 'anya', 'anya-2', 'anya-fort', { spear: 60, bow: 40 }),
+  a('a-miri', 'miri', 'miri-1', 'miri-vil', { spear: 100, bow: 40, shield: 10 }),
+  a('a-goja', 'goja', 'goja-1', 'goja-cap', { spear: 90, bow: 40, boat: 20 }, 'bronze'),
+  a('a-dokro', 'dokro', 'dokro-1', 'dokro-cap', { spear: 70, bow: 30, boat: 30 }, 'bronze'),
+]
+
+const byId = <T extends { id: string }>(xs: readonly T[]): Record<string, T> =>
+  Object.fromEntries(xs.map((x) => [x.id, structuredClone(x)]))
+
+/** 판 하나를 연다 — 같은 시드면 같은 판 (지금은 시드 변수가 없다; 시드는 굴림에만 쓴다) */
+export function byeonhanMini(seed: number): Realm {
+  const nodes = byId(NODES)
+  const edges = byId(EDGES)
+  // 정보: 저마다 제 땅과 그 이웃 길의 땅만 안다. 남의 군세는 모른다 (SYSTEMS §2-1)
+  const intel: Realm['intel'] = {}
+  for (const f of FACTIONS) {
+    const known: Record<string, NodeIntel> = {}
+    for (const n of NODES) if (n.owner === f.id) known[n.id] = { land: true, force: null, alert: null }
+    for (const ed of EDGES) {
+      for (const [x, y] of [[ed.a, ed.b], [ed.b, ed.a]] as const) {
+        if (nodes[x]?.owner === f.id && known[y] === undefined) known[y] = { land: true, force: null, alert: null }
+      }
+    }
+    intel[f.id] = known
+  }
+  const watch: Record<string, Watch> = {}
+  for (const n of NODES) watch[n.id] = { alert: 0, lull: 0 }
+  return {
+    seed: seed >>> 0,
+    season: 0,
+    nodes,
+    edges,
+    factions: byId(FACTIONS),
+    heroes: byId(HEROES),
+    armies: byId(ARMIES),
+    intel,
+    watch,
+  }
+}
