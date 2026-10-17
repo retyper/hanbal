@@ -48,6 +48,31 @@ lighting in all sixteen. Cells, left to right, top to bottom:
 (16) child noble heir, about ten years old, bead necklace too big for him, curious eyes.
 ```
 
+### ①-2 영물 열둘 (4×4 중 12칸 + 하늘의 알 · 투명) — 팰 자리라 첫날에 넣는다
+
+```
+Great. Now a sheet in EXACTLY the same painting style: one square 1024x1024 image, SIXTEEN creatures from
+KOREAN folklore and Korean founding myths in a strict, perfectly even 4x4 grid (no gutters, no lines, no
+text), fully TRANSPARENT background (real alpha), each drawn FROM THE SIDE (2D side-scroller view), whole
+body visible, body centered in the cell, BIG and CHUNKY, readable at 48 pixels, each with a soft colored
+rim glow by rarity. Korean folk style - NOT Chinese, NOT Japanese yokai.
+(1) fat lucky toad, warm brown. (2) magpie, black and white. (3) pure white deer with small antlers, pale
+glow. (4) golden boar with shining bristles, gold. (5) big brown bear standing up, mugwort sprig in its
+mouth. (6) Korean dokkaebi goblin with a spiked wooden club, mischievous grin, blue glow. (7) imugi - a
+huge wingless water serpent rising from a river, teal glow. (8) bulgasari - iron-eating beast, bear-like
+body with an elephant trunk, rhino eyes, iron scales, sparks. (9) nine-tailed fox, white, violet glow.
+(10) sangun - the mountain lord tiger, great striped tiger with a calm sacred stare, red glow.
+(11) gangcheori - a drought dragon of dry cracked earth and heat haze, orange. (12) jangseung - a carved
+wooden village guardian post with a fierce face (standing, no legs). (13) samjogo - the three-legged
+sun crow inside a red sun disc, gold-red. (14) Korean sea dragon (yong) coiling through waves, deep blue.
+(15) Korean grim reaper (jeoseung saja) in a black gat-less hood and robe, pale face (folk version).
+(16) six golden eggs inside an open golden box wrapped in red cloth, descending on a purple rope from the
+sky (King Suro's birth myth), radiant gold.
+```
+
+> (12) 장승 · (6) 도깨비 · (9) 구미호 · (15) 저승사자는 **기존 보스 그림이 있다** — 화풍을 맞추려 다시 받되, 안 맞으면 기존 것을 쓴다.
+> 이 장을 받는 날은 ⑤(저격 거점 소품)를 둘째 날로 미룬다 — 하루 다섯 장.
+
 ### ② 지도 기호 열여섯 (4×4, 투명)
 
 ```
