@@ -15,6 +15,51 @@
 - **그림체**: 기존 신궁 그림과 이어지게 — 손으로 칠한 듯한 굵은 붓 · 묵직한 윤곽 · 높은 대비 · 작게 줄여도 읽힌다.
 - **바탕**: 아이콘·소품은 **fully TRANSPARENT background (real alpha)** · 초상·삽화는 어두운 남색 회색(#1c2129) 판 위.
 
+### 0-1. 한반도 풍 — 중국풍으로 읽히면 반려 (형, 2026-10-17)
+
+> 형: *"이미지들중에 중국풍 너무많으니까 확실히 한반도 풍으로 만들어야해. 부여 고구려 백제 신라 가야 이런거있잖아."*
+> 첫날 받은 판에서 중국풍으로 읽힌 것: 수염 달린 긴 용(이무기·용·강철이), 비단 교령 도포와 관(책사·낙랑 관리), 상투관.
+> 그림 모델은 "ancient Korea" 만 주면 **중국 사극**을 그린다. 그래서 **무엇을 그릴지를 유물 이름으로** 준다.
+
+| 나라 | 그림에 넣을 것 (프롬프트 어휘) |
+|---|---|
+| 고구려 | 고분벽화(무용총·각저총·수산리·안악) 옷: **polka-dot (dotted) jackets**, 깃·소매·도련에 다른 색 **띠 테두리**, 허리띠, **pleated striped skirts**, 발목 묶은 통 넓은 바지 · **jo-ugwan (cap with two upright bird feathers)** · 여인의 얹은머리 · 사신도의 **청룡** |
+| 부여 | **흰 옷** · 털옷·털모자 · 금은 장식 모자 · 말 탄 궁수 |
+| 신라 | **금관 (出-shaped tree-and-antler gold crown hung with comma-shaped jade gogok)** · 굵은 고리 금귀걸이 · 유리 구슬 목걸이 · 천마 |
+| 가야 | **철**: 덩이쇠(덩이 철판), 볏 달린 철 투구, 판갑(영웅·적장급만 — 병사는 여전히 가죽·나무) · 오리 모양 토기 |
+| 백제 | **금동관(gilt-bronze openwork crown)** · 금동대향로의 연꽃·봉황 · 매끈한 옷맵시 |
+| 삼한 바탕 | 초가 · 움집 · 통나무 목책 · 삼베 · 상투(魁頭露紒) · 큰 새 깃털 · 문신 · 납작머리(편두) |
+
+- **용은 고구려 벽화의 청룡**이다: *slender four-legged Korean dragon from Goguryeo tomb murals, feline body, flame-like mane, NO long catfish whiskers, NOT a Chinese dragon.* 이무기는 **뿔·다리 없는 거대한 물뱀**.
+- 매 주문 끝에 **부정어**를 붙인다: *NOT Chinese: no hanfu cross-collar silk robes with huge sleeves, no Chinese crowns or guan hats, no Chinese long whiskered dragons, no pagodas, no Chinese characters. NOT Japanese: no kimono, no samurai.*
+- 군현(낙랑·대방) 사람만 바깥 옷(검은 관 · 비단 도포)을 입는다 — **한 장에 한 명, 바깥 사람으로**(WORLD 규칙 0).
+- 고증의 시대(2~3세기)보다 **한반도로 읽히는 것이 먼저다** (WORLD 규칙 8 · 형: "고증을 철저히 지킬 필요 없고"). 삼국의 유물(금관·금동관·판갑)을 장수·왕족의 장식으로 빌려 와도 된다.
+
+### 0-2. 여인들 — 많이, 눈길을 확실히
+
+> 형: *"과하지 않지만 눈길을 확실히 끌 자극적인 여캐들도 많이넣어."*
+
+- 초상·영물·삽화 **어느 장이든 여인을 넣는다.** 장수 초상 열여섯 중 최소 절반은 여인 (①-3).
+- 눈길은 **디자인으로** 끈다: 또렷한 화장(붉은 입술·눈매), 금관·금귀걸이·구슬의 반짝임, 몸에 맞는 가죽 갑옷, 드러난 어깨·팔의 문신, 흉터, 자신만만한 표정, 강한 색.
+- **선은 넘지 않는다**: 노출·성적 자세 없음, 모두 성인. 프롬프트에 *tasteful, no nudity, adult women* 를 붙인다.
+- **예쁘게, 그리고 다 다르게** (형: *"여캐들이 안이쁜데"* · *"너무 다 한사람 아냐? 다양하게 이쁘면 안되나"*):
+  화풍은 *premium Korean MMORPG character illustration* — 그리고 칸마다 **미인의 유형**을 다르게 적는다
+  (차가운 고양이상 · 동글동글 귀여운 상 · 그을린 말괄량이 · 짧은 머리의 미남형 · 농염한 30대 · 북방 외꺼풀 · 주근깨 옆집 아가씨 · 여우상 …).
+  "다르게"만 시키고 "예쁘게"를 빼면 못생겨진다 — 둘을 같이 쓴다.
+- **체형도 다르게** (형: *"가슴사이즈도 다양해야해 남자 체형도 다양하듯이"*): 가냘픈·마른 · 탄탄한 근육형 · 통통하고 풍만한 · 곡선형 —
+  인물마다 *BODY:* 한 줄. 옷은 입힌 채로 (*fully clothed*).
+
+### 0-3. 장수 그림의 두 쓰임 · 받는 법
+
+> 형: *"남캐도 여캐도 명치정도 까지 나오는 수준으로"* · *"지금까지 만든걸 버릴필욘없는데 장수가 등장하고 획득하려면 어떤부분에선 머리 이상의 이미지가 필요함"*
+
+- **명치판(bust)** — 머리 위부터 명치(가슴 중간)까지, 두 어깨·윗팔. 장수 **등장·획득** 연출에 쓴다. 이것이 본판이다.
+  프롬프트: *upper-body bust portrait framed from just above the head down to the solar plexus (mid-chest), both shoulders and upper arms visible*
+- **머리판(head)** — 목록·아이콘·대화창. 명치판에서 얼굴을 잘라 만든다 (R5). 먼저 받은 머리판들도 버리지 않고 둔다.
+- **한 장에 한 명**: 4×4 격자로 받으면 그림 모델이 얼굴 하나를 열여섯 번 복사한다. 인물 그림은 한 장에 한 명으로 받는다 (아이콘·기호·영물은 격자 그대로).
+- **한 사람은 새 대화에서**: 제미나이 한 대화에서 여러 명을 이어 받으면 앞사람의 관·옷이 뒷사람에게 번진다
+  (2026-10-17: 고구려 여인이 신라 금관을 쓰고, 무녀가 부여 털옷을 입었다). 화풍은 프롬프트 머리말로 맞춘다.
+
 ## 1. 첫날 다섯 장 (우선순위 순)
 
 ### ① 장수 초상 열여섯 (4×4) — 화풍의 기준이 되는 장
@@ -35,8 +80,10 @@ lighting in all sixteen. Cells, left to right, top to bottom:
 (3) young shaman priestess, long black hair, bronze bells and a jade bead necklace, calm piercing eyes.
 (4) sea-faring trader, sun-dark skin, tattoos on cheeks and neck, rope necklace with a cowrie shell.
 (5) burly spearman, flat elongated forehead (head-binding custom), broad face, wooden shield rim behind.
-(6) grizzled old chieftain, long white beard, huge bird-feather headdress, heavy bead necklace.
-(7) scheming advisor, thin mustache, narrow eyes, holding a bamboo writing slip near his chin.
+(6) grizzled old chieftain, long white beard, two or three long single crane and pheasant feathers stuck
+upright into his grey top knot (ancient Korean, NOT a Native American war bonnet), heavy bead necklace.
+(7) scheming advisor, thin mustache, narrow eyes, Goguryeo-mural jo-ugwan cap with two bird feathers and a
+dotted jacket with colored collar bands (NOT a Chinese scholar robe), holding a wooden tally near his chin.
 (8) laughing drunk warrior, red cheeks, a gourd cup, messy top knot.
 (9) cautious veteran, scarred eyebrow, leather cap, wary sideways glance.
 (10) woman warrior, braided hair, leather vest, iron dagger hilt at the shoulder.
@@ -68,6 +115,46 @@ sun crow inside a red sun disc, gold-red. (14) Korean sea dragon (yong) coiling 
 (15) Korean grim reaper (jeoseung saja) in a black gat-less hood and robe, pale face (folk version).
 (16) six golden eggs inside an open golden box wrapped in red cloth, descending on a purple rope from the
 sky (King Suro's birth myth), radiant gold.
+```
+
+### ①-3 여인 열여섯 (4×4, 판 위) — 0-1 · 0-2 를 따르는 첫 장
+
+```
+Generate one square 1024x1024 image: a sheet of SIXTEEN portraits of striking ADULT WOMEN in a strict,
+perfectly even 4x4 grid (no gutters, no grid lines, no borders, no text, no labels). Every cell: the same
+plain very dark blue-grey background (#1c2129), head and shoulders, facing the viewer, slightly turned,
+centered. They are heroines of ancient KOREA - the kingdoms of Buyeo, Goguryeo, Baekje, Silla, Gaya and the
+Samhan tribes. Make them instantly readable as KOREAN, not Chinese, not Japanese. Eye-catching and
+glamorous through design: bold red lips and sharp eye makeup, gleaming gold ornaments, confident fierce
+expressions, fitted leather, tattoos on bare shoulders, scars - tasteful, no nudity. Style: hand-painted
+semi-realistic game portrait art, bold thick brush strokes, strong dark outlines, warm dramatic side light,
+high contrast, readable at 64 pixels, same brush and lighting in all sixteen.
+(1) Silla princess wearing the famous Silla gold crown (upright tree-and-antler shaped gold plates hung
+with comma-shaped green jade gogok), thick gold hoop earrings, cold proud gaze.
+(2) Goguryeo noble lady from the tomb murals: hair coiled high on her head, white jacket covered with
+red polka dots, contrasting colored bands at the collar, small smile.
+(3) Goguryeo horse archer woman, jo-ugwan cap with two upright pheasant feathers, bow over her shoulder,
+wind in her hair.
+(4) Gaya swordswoman in a dark iron crested helmet and iron plate armor collar, iron sword, battle scar
+across her cheek.
+(5) Baekje queen with a gilt-bronze openwork crown and lotus ornaments, elegant, dangerous eyes.
+(6) Buyeo huntress dressed all in white with a white fur collar and fur hat, sharp cheekbones.
+(7) Samhan shaman queen, long loose black hair, bronze mirror on her chest, bronze bells, red face paint
+stripes, trance gaze.
+(8) Mahan tattooed warrior woman, top knot, blue tattoos on bare shoulders and arms, leather strap,
+spear, fierce grin.
+(9) Byeonhan iron smith woman, soot on cheek, leather apron, arms crossed holding tongs, smirk.
+(10) sea pirate captain woman of the southern coast, sun-dark skin, tattoos, rope and cowrie shells,
+salt-wet hair, laughing.
+(11) assassin in dark hemp, half of the face hidden by a cloth, one bright eye, iron dagger.
+(12) Goguryeo dancer from the Muyongchong mural, long flowing sleeves, polka-dot jacket, striped
+pleated skirt, mid-turn.
+(13) young archer girl (adult, about twenty), reed headband, freckles, determined.
+(14) spy hiding among the guests of the chieftain's hall, glass bead necklaces, half-lidded smile, hairpin of bronze.
+(15) captive foreign noble woman with a defiant glare, bound wrists raised into view (adult).
+(16) old matriarch of a clan, white hair in a top knot, jade beads, piercing wise eyes.
+NOT Chinese: no hanfu cross-collar silk robes with huge sleeves, no Chinese crowns, no Chinese characters.
+NOT Japanese: no kimono.
 ```
 
 > (12) 장승 · (6) 도깨비 · (9) 구미호 · (15) 저승사자는 **기존 보스 그림이 있다** — 화풍을 맞추려 다시 받되, 안 맞으면 기존 것을 쓴다.
@@ -148,8 +235,29 @@ granary on stilts. (5) the same granary burning. (6) war drum on a wooden stand.
 | ⑪ | 계절의 지도 넷 (같은 땅의 봄·여름 장마·가을·겨울 결빙) | 제미나이 "the SAME landscape in another season" | |
 | ⑫ | 연출: 포승줄 흔들림 3컷 · 점괘 뼈 갈라짐 · 원정대 깃발 귀환 | 4×2 투명 | SYSTEMS §15-3 |
 
+## 2-1. 받은 것 (2026-10-17) — 자세한 출처는 `assets_src/realm/출처.txt`
+
+| 장 | 화구 | 상태 |
+|---|---|---|
+| ① 초상 | 챗지피티 | 받음 · (7) 책사 · (13) 낙랑 관리가 중국 사극 옷 — 0-1 이후 고친 프롬프트로 **다시** |
+| ①-2 영물 | 챗지피티 | 받음 · 용 셋(이무기·용·강철이)이 중국식 → 제미나이로 **고구려 청룡 · 뿔 없는 이무기 · 강철이(불 말) · 웅녀** 넷을 따로 받음 |
+| ①-3 여인 | 제미나이 | **본판: `heroines/bust/` 열여섯 — 한 장에 한 명, 명치까지, 얼굴·체형 제각각** (0-2·0-3). 머리판 01~07 은 `heroines/head/`. 앞선 격자판 두 벌(v1 만화풍 · 미인형 한 얼굴)도 남겨 둠 |
+| ② 지도 기호 | 챗지피티 | 받음 (두 시안 중 둘째) |
+| ③ 아이콘 | 제미나이 | 받음 (마젠타 → key-png) · 화풍이 만화풍이라 챗지피티로 다시 받을 후보 |
+| ④ 삽화 | 제미나이 | 받음 · 0-1·0-2 반영판(여족장 · 창 든 여전사 · 당산나무 금줄) |
+
+**다음에 할 것:** ① 남자 장수도 0-3 대로 — **한 명씩, 명치까지, 체형 제각각**(마른·근육·거구·배 나온 …), 0-1 어휘로 (책사·낙랑 관리 고침).
+제미나이로 바로 된다. 챗지피티(10-18 21:05 이후, 다섯 장)는 ③ 아이콘 다시 → ⑤ 소품 → 형이 고른 여인 몇을 챗지피티 붓질로 다시.
+"미인형" 여인 프롬프트 원문은 `assets_src/realm/출처.txt` — 형이 "안이쁜데" 한 뒤 바꾼 화풍이고, **형이 아직 결과를 안 봤다.**
+핵심 구절: *high-end Korean MMORPG / gacha game character illustration - gorgeous idealized faces, flawless luminous skin, large
+expressive almond eyes … like K-drama heroines* + 칸마다 **얼굴형·고개 각도·표정을 다르게** (안 그러면 열여섯이 한 얼굴이 된다).
+
 ## 3. 받기와 정리
 
 - 받은 날짜·대화·프롬프트 번호를 `assets_src/realm/출처.txt` 에 적는다 (기존 `public/sprites/출처.txt` 와 같은 방식).
 - 받으면 바로 `tools/peek-png.mjs` 로 **투명 픽셀 %** — 0% 면 체크무늬를 그려 넣은 것이다 → 마젠타 바탕으로 다시 (ASSETS §9 "그림 모델의 거짓말").
 - 한도에 막히면 멈추지 않는다 — 둘째 날 목록의 ⑩·⑪(넓은 그림)은 **제미나이**로 먼저 굽는다.
+- 받기 손버릇 (2026-10-17): 챗지피티는 `fetch(img.src)` → `a.download`. 제미나이는 "원본 크기 이미지 다운로드" 버튼이
+  **실제 클릭**에만 반응하고 한 대화의 둘째 그림부터는 자주 안 받아진다 → 화면의 그림을 캔버스에 그려 `toBlob('image/png')` 로 받는다
+  (정사각은 원본도 1024 라 손해가 없다. 넓은 그림은 원본 1264 > 화면 1024 — 버튼으로).
+- 격자 자르기 뒤에는 `node tools/keep-main.mjs cut/<접두>*.png` — 옆 칸 부스러기를 지운다. 넓은 삽화는 slice-grid 가 정사각으로 잘라 양옆을 잃으니 등분으로 자른다.
