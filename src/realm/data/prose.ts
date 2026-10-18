@@ -339,15 +339,18 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       return line.faction === viewer ? '곡식이 바닥났다. 군사들이 굶는다.' : null
     case 'envoy': {
       const about = line.about !== undefined ? fname(line.about) : ''
-      // 남의 나라끼리 — 판이 움직이는 일(맺기·깨기)만 소문으로, 까닭을 붙여
+      // 남의 나라끼리 — 판이 움직이는 일(맺기·깨기)만 소문으로. 속셈은 그 나라에 첩자가 있거나 동맹일 때만 (형: "속셈은 아무에게나 드러내게 하지 말고")
+      const knows = (f: string): boolean => after.relations?.[f < viewer ? `${f}|${viewer}` : `${viewer}|${f}`]?.state === 'ally'
+        || (after.spies?.[viewer] ?? []).some((s) => s.until >= before.season && after.nodes[s.node]?.owner === f)
+      const mind = (f: string, w: string): string => (knows(f) ? ` 첩자의 말로는 — ${w}` : '')
       if (line.from !== viewer && line.to !== viewer) {
         if (!line.accepted || line.why === undefined) return null
         const a = fname(line.from)
         const b = fname(line.to)
         switch (line.ask) {
-          case 'alliance': return `소문 — ${josa(a, '과', '와')} ${josa(b, '이', '가')} 동맹을 맺었다. ${a} 쪽 속셈: ${whyLine(line.why, about, b)}`
-          case 'truce': return `소문 — ${josa(a, '과', '와')} ${josa(b, '이', '가')} 화친했다. ${a} 쪽 속셈: ${whyLine(line.why, about, b)}`
-          case 'break': return `소문 — ${josa(a, '이', '가')} ${josa(b, '과', '와')}의 약조를 깼다. ${whyLine(line.why, about, b)}`
+          case 'alliance': return `소문 — ${josa(a, '과', '와')} ${josa(b, '이', '가')} 동맹을 맺었다.${mind(line.from, whyLine(line.why, about, b))}`
+          case 'truce': return `소문 — ${josa(a, '과', '와')} ${josa(b, '이', '가')} 화친했다.${mind(line.from, whyLine(line.why, about, b))}`
+          case 'break': return `소문 — ${josa(a, '이', '가')} ${josa(b, '과', '와')}의 약조를 깼다.${mind(line.from, whyLine(line.why, about, b))}`
           default: return null
         }
       }
@@ -358,7 +361,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
           ? `${josa(fname(other), '이', '가')} ${josa(ASK_NAME[line.ask], '을', '를')} 받아들였다.`
           : `${josa(fname(other), '이', '가')} ${josa(ASK_NAME[line.ask], '을', '를')} 거절했다.`
       }
-      if (line.ask === 'break') return `${josa(fname(other), '이', '가')} 우리와의 약조를 깼다. ${whyLine(line.why, about)} 이제 언제든 쳐들어올 수 있다.`
+      if (line.ask === 'break') return `${josa(fname(other), '이', '가')} 우리와의 약조를 깼다.${mind(other, whyLine(line.why, about))} 이제 언제든 쳐들어올 수 있다.`
       return `${fname(other)}에서 ${ASK_NAME[line.ask]} 사신이 왔다.`
     }
     case 'recall': {
@@ -475,4 +478,21 @@ export const GEAR_NAME: Record<UnitKind, Record<Equip, string>> = {
   horse: { stone: '나무 창과 맨 말', bronze: '청동창과 가죽 말갖춤', ironTip: '쇠날 창과 가죽 말갖춤', iron: '쇠창과 쇠 말갖춤', leather: '청동창과 가죽 말갖춤', ringSword: '고리칼과 쇠 말갖춤' },
   crossbow: { stone: '나무 쇠뇌', bronze: '청동 방아쇠 쇠뇌', ironTip: '쇠촉 쇠뇌', iron: '쇠촉 쇠뇌와 쇠비늘 갑옷', leather: '청동 방아쇠 쇠뇌', ringSword: '쇠촉 쇠뇌와 고리칼' },
   boat: { stone: '돌창과 나무배', bronze: '청동창과 나무배', ironTip: '쇠날 창과 나무배', iron: '쇠창과 쇠 박은 배', leather: '청동창과 나무배', ringSword: '고리칼과 쇠 박은 배' },
+}
+
+/**
+ * 고을이 지금의 어디쯤인가 (형: "뭔뭔읍락 진짜 어딘지 감도 안옴. 차라리 현재 지명 비슷하게") — 지도 이름 밑과 고을 판에 작게.
+ * 나라 자리는 사료의 설(구야=김해 · 안야=함안 · 미리미동=밀양 · 고자미동=고성 · 독로=동래), 마을은 길로 이어진 모양에 맞춘 짐작이다.
+ * 판의 데이터(RNode)가 아니라 여기 두어 옛 판에도 보인다.
+ */
+export const NODE_NOW: Readonly<Record<string, string>> = {
+  'our-cap': '창원', 'our-north': '창원 북면', 'our-east': '창원 동읍',
+  'guya-cap': '김해', 'guya-iron': '양산 물금', 'guya-vil': '김해 진영',
+  'anya-cap': '함안', 'anya-fort': '의령', 'anya-vil': '함안 군북',
+  'miri-cap': '밀양', 'miri-vil': '밀양 삼랑진',
+  'goja-cap': '고성', 'goja-vil': '통영',
+  'dokro-cap': '부산 동래',
+  sodo: '창녕',
+  'wild-galmae': '함안 여항산', 'wild-beodeul': '남강 어귀', 'wild-gomgol': '양산 원동', 'wild-neoreun': '김해 대저',
+  'wild-seobu': '마산 진동', 'wild-keunseom': '거제', 'wild-dolseom': '가덕도',
 }

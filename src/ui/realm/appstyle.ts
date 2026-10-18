@@ -93,6 +93,18 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .acard, .ap .ncard, .ap .fcard { display: flex; gap: 10px; padding: 10px; margin: 8px 0; border-radius: 14px; background: var(--card); border: 1px solid var(--line); }
 .ap .ncard, .ap .fcard { flex-direction: column; gap: 6px; }
 .ap .acard .ab { flex: 1; min-width: 0; }
+.ap .seasonfx { position: absolute; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; pointer-events: none;
+  background: radial-gradient(circle, #0009 0, #0000 70%); animation: sfx 1.6s ease-out forwards; }
+.ap .seasonfx > div { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 18px 34px; border-radius: 18px;
+  background: #14181ee8; border: 1px solid #8a7040; box-shadow: 0 8px 40px #000a; animation: sfxin 1.6s cubic-bezier(.2, 1.4, .4, 1) forwards; }
+.ap .seasonfx b { font-family: 'Gowun Batang', serif; font-size: 30px; color: var(--gold); letter-spacing: 2px; }
+.ap .seasonfx span { font-size: 13.5px; color: #d8d0c0; } .ap .seasonfx img.sfx-ic { width: 54px; height: 54px; }
+.ap .seasonfx.spring b { color: #f2b8c6; } .ap .seasonfx.summer b { color: #9fd18b; } .ap .seasonfx.autumn b { color: #f0b060; } .ap .seasonfx.winter b { color: #cfe3f5; }
+@keyframes sfx { 0% { opacity: 0; } 12% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes sfxin { 0% { transform: scale(.7) translateY(16px); } 25% { transform: scale(1) translateY(0); } 100% { transform: scale(1.04); } }
+@media (prefers-reduced-motion: reduce) { .ap .seasonfx, .ap .seasonfx > div { animation-duration: .8s; } }
+.ap .failbox { position: absolute; left: 12px; right: 12px; top: 56px; z-index: 50; padding: 12px; border-radius: 12px; background: #3a1d18; border: 1px solid #c8402a;
+  color: #f3e6c8; display: flex; flex-direction: column; gap: 6px; font-size: 13px; } .ap .failbox span { color: #e8b8a8; word-break: break-all; }
 .ap .pow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 4px 0 2px; } .ap .pow b { color: var(--gold); font-size: 14px; }
 .ap .pbar { flex: 1 1 80px; height: 8px; border-radius: 4px; background: #2a2f38; overflow: hidden; } .ap .pbar i { display: block; height: 100%; background: linear-gradient(90deg, #8a6a3a, #e0a050); }
 .ap .pow .mute { flex-basis: 100%; font-size: 12.5px; }

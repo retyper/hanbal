@@ -11,7 +11,7 @@ import { headcount, type Equip, type UnitKind } from '../../realm/battle.ts'
 import { FACTION_ART, HERO_BUST, SEASON_ICON, UNIT_ICON, nodeIcon } from '../../realm/data/art.ts'
 import { NATIONS } from '../../realm/data/nations.ts'
 import {
-  ASK_KIND_NAME, ASK_NAME, BLOCKED_LINE, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine,
+  ASK_KIND_NAME, ASK_NAME, BLOCKED_LINE, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine, NODE_NOW,
 } from '../../realm/data/prose.ts'
 import { envoyChance, envoyChanceFor, envoyOptions, favorOf, jointTargets, openAsks, relationOf } from '../../realm/diplomacy.ts'
 import { armCost, canGuard, draftCost, draftIronCost, draftLimit, guardCost, hhGrowth, militiaMen, riteAllowed, riteCost, settleCost, settleLimit, settleTargets } from '../../realm/economy.ts'
@@ -50,6 +50,20 @@ const DRAFT_KEY = 'hanbal.realm.draft'
 /** 탭의 빨간 점 — 이 판에서 이미 본 것 (dotKeys) */
 const SEEN_KEY = 'hanbal.realm.seen'
 /** 밤 활 연습장 (SNIPE §0, 형: "궁술연습장도 만들어서 아무때나 해볼수 있게") */
+/** 소리 (public/sfx — 활터와 같은 곳). 끄기는 나라 판에서, 기억은 이 기기에만 */
+const SFX: string = (import.meta.env?.BASE_URL ?? '/') + 'sfx/'
+const MUTE_KEY = 'hanbal.realm.mute'
+function muted(): boolean {
+  try { return localStorage.getItem(MUTE_KEY) === '1' } catch { return false }
+}
+function ding(name: string, vol = 0.6): void {
+  if (muted()) return
+  try {
+    const a = new Audio(`${SFX}${name}.ogg`)
+    a.volume = vol
+    void a.play().catch(() => {})
+  } catch { /* 소리를 못 내는 곳 */ }
+}
 const PRACTICE: string = (import.meta.env?.BASE_URL ?? '/') + 'night.html?practice=1'
 /** night.html 이 올라갔다 (f9e77aa) — 없는 쪽으로 보내지 않으려 둔 스위치 */
 const PRACTICE_READY = true
@@ -182,6 +196,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let note = ''
   /** 방금 나눈 무리 — 그 카드를 밝히고 눈앞으로 가져온다 (다음 누름에 지운다) */
   let freshArmy = ''
+  /** 이번 계절에 직접 쏜 결과 — 적장마다 (한 번만 쏜다) */
+  const hands: Record<string, { result: 'dead' | 'wounded' | 'fled' | 'withdrew'; alarm: boolean }> = {}
   /** 지도에서 고른 우리 군대 — 갈 곳이 밝아진다 */
   let armySel = ''
   /** 탭의 빨간 점 — 본 것 */
@@ -205,6 +221,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     guards = []
     for (const k of Object.keys(envoys)) delete envoys[k]
     plots = []
+    for (const k of Object.keys(hands)) delete hands[k]
     heroOrders = []
     plotOpen = null
     openArmy = ''
@@ -593,7 +610,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const ans = answers[a.id]
       h += `<div class="askc ${a.kind === 'demand' ? 'threat' : ''}"><div class="an">${bust(lead, 'rface')}<div class="fn"><b>${emblem(a.from, 'fem')}${esc(realm!.factions[a.from]?.name ?? '')}</b>`
       h += `<span class="mute">${ASK_KIND_NAME[a.kind]}</span></div></div><p>${esc(askLine(a, realm!.factions[a.from]?.name ?? '', a.node !== undefined ? (realm!.nodes[a.node]?.name ?? '') : ''))}</p>`
-      if (a.why !== undefined) h += `<div class="why">속셈 · ${esc(whyLine(a.why, a.about !== undefined ? (realm!.factions[a.about]?.name ?? '') : ''))}</div>`
+      if (a.why !== undefined && readsMind(realm!, a.from)) h += `<div class="why">속셈 · ${esc(whyLine(a.why, a.about !== undefined ? (realm!.factions[a.about]?.name ?? '') : ''))}</div>`
       h += `<div class="btns"><button class="btn ${ans === true ? 'on' : ''}" data-act="answer" data-id="${a.id}" data-yes="1">받는다</button>`
       h += `<button class="btn ${ans === false ? 'on' : ''}" data-act="answer" data-id="${a.id}" data-yes="0">거절한다</button>`
       if (ans === undefined) h += `<span class="mute">답하지 않으면 거절</span>`
@@ -650,6 +667,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<div class="asks">${ASKS.map((x) => `<div><b>${ASK_NAME[x.ask]}</b><span>${x.does}</span></div>`).join('')}</div>`
     // 앞서가는 나라 — 모두 이기려 하니, 앞선 나라는 다른 나라들이 함께 막으려 한다 (stance.leaderOf)
     const L = leaderOf(r, me())
+    h += `<p class="mute">남의 속셈은 그 나라에 첩자를 심거나 동맹을 맺어야 들린다.</p>`
     if (L === me()) h += `<div class="banner bad">우리가 앞서간다. 다른 나라들이 손을 잡고, 맺은 약조도 깨고 등을 돌릴 수 있다.</div>`
     else if (L !== null) h += `<div class="banner">앞서가는 나라: ${emblem(L, 'fem')}<b>${esc(r.factions[L]?.name ?? '')}</b> · 다른 나라들이 함께 막으려 한다. 손잡을 때다.</div>`
     for (const f of sorted(Object.values(r.factions)).filter((x) => x.id !== me())) {
@@ -658,13 +676,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const lead = r.heroes[f.ruler ?? rulerId(f.id)]
       h += `<div class="fcard"><div class="an">${lead !== undefined ? `<button class="fbtn" data-act="hero" data-id="${lead.id}">${bust(lead, 'rface')}</button>` : ''}<div class="fn"><b>${emblem(f.id, 'fem')}${esc(f.name)}</b><span class="mute">${lead !== undefined ? `군주 ${esc(lead.name)}${lead.status === 'captive' ? ' · 사로잡힘' : lead.status === 'dead' ? ' · 죽음' : ''}` : ''}</span></div><span class="rel ${rel.state}">${REL_NAME[rel.state]}${left}</span></div>`
       h += `<div class="frow"><span class="mute">${REL_NOW[rel.state]}</span>${favorFeel(favorOf(r, me(), f.id))}</div>`
-      // 그쪽 속셈 — 우리와 화친·동맹할 까닭이 있으면 보인다 (형: "근거가 있게 움직여야해"). 깰 속셈은 안 보인다
-      const tw = truceWhy(r, f.id, me())
-      const aw = tw === null ? allianceWhy(r, f.id, me()) : null
+      // 그쪽 속셈 — 첩자를 심었거나 동맹일 때만 보인다 (형: "속셈은 아무에게나 드러내게 하지 말고 … 간접정보로"). 깰 속셈은 안 보인다
+      const tw = readsMind(r, f.id) ? truceWhy(r, f.id, me()) : null
+      const aw = tw === null && readsMind(r, f.id) ? allianceWhy(r, f.id, me()) : null
       const mw = tw ?? aw
       if (mw !== null) {
         h += `<div class="why">속셈 · ${tw !== null ? '화친할 마음이 있다' : '손잡을 마음이 있다'} — ${esc(whyLine(mw.why, mw.about !== undefined ? (r.factions[mw.about]?.name ?? '') : ''))}</div>`
-      } else if (rel.state === 'war' && winningAgainst(r, f.id, me())) h += `<div class="why">속셈 · 이기고 있다고 여긴다 — 화친은 잘 안 받는다</div>`
+      } else if (readsMind(r, f.id) && rel.state === 'war' && winningAgainst(r, f.id, me())) h += `<div class="why">속셈 · 이기고 있다고 여긴다 — 화친은 잘 안 받는다</div>`
       // 맺은 약속 — 두 계절 안에 칠 곳 (동맹의 "함께 치자")
       for (const p of rel.pledges ?? []) {
         const who = p.by === me() ? '우리가' : josa(f.name, '이', '가')
@@ -724,6 +742,19 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   // ───────── 공작 (형: "다양한 외교나 공작이 가능 해야하는거 아님?")
+  /** 그 나라 속을 읽나 — 그 나라 땅에 우리 첩자가 있거나 동맹이다. 아니면 속셈은 안 보인다 */
+  function readsMind(r: Realm, f: string): boolean {
+    if (relationOf(r, me(), f).state === 'ally') return true
+    return (r.spies?.[me()] ?? []).some((s) => s.until >= r.season && r.nodes[s.node]?.owner === f)
+  }
+
+  /** 직접 쏘기 — 한 계절에 한 적장은 한 번만 쏜다 (거뒀다 다시 걸어도 쏜 결과가 남는다) */
+  function shootHtml(i: number, o: Extract<Order, { kind: 'plot' }>): string {
+    const hand = o.hand ?? (o.hero !== undefined ? hands[o.hero] : undefined)
+    if (hand !== undefined) return `<div class="banner ${hand.result === 'dead' || hand.result === 'wounded' ? 'good' : 'bad'}">직접 쐈다 · ${HAND_NAME[hand.result]}${hand.alarm ? ' · 들켰다' : ''} · 이번 계절엔 다시 못 쏜다</div>`
+    return `<button class="btn on wide" data-act="shoot" data-i="${i}">${icon('unit-archer')} 직접 쏜다 · 밤 지붕 위로</button><p class="mute">한 번만 쏜다. 안 쏘면 자객 솜씨로 굴린다.</p>`
+  }
+
   function plotSheet(r: Realm): string {
     const max = P.realm.plotsPerSeason
     let h = `<p class="mute">몰래 하는 일. 한 계절에 ${max}개까지. 들키면 그 나라와 사이가 나빠진다. 지략 높은 장수가 있으면 잘 된다.</p>`
@@ -732,12 +763,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const where = o.node !== undefined ? r.nodes[o.node]?.name : o.other !== undefined ? `${r.factions[o.target]?.name} ↔ ${r.factions[o.other]?.name}` : r.factions[o.target]?.name
       const target = o.hero !== undefined ? r.heroes[o.hero]?.name : where
       h += `<div class="banner good">${PLOT_NAME[o.op]} · ${esc(target ?? '')}<button class="btn ghost sm" data-act="unplot" data-i="${i}">거둔다</button></div>`
-      // 암살은 직접 쏠 수 있다 — 밤 판 (SNIPE §0). 안 쏘면 굴림
-      if (o.op === 'assassin') {
-        h += o.hand !== undefined
-          ? `<div class="banner ${o.hand.result === 'dead' || o.hand.result === 'wounded' ? 'good' : 'bad'}">직접 쐈다 · ${HAND_NAME[o.hand.result]}${o.hand.alarm ? ' · 들켰다' : ''}</div>`
-          : `<button class="btn on wide" data-act="shoot" data-i="${i}">${icon('unit-archer')} 직접 쏜다 · 밤 지붕 위로</button><p class="mute">안 쏘면 자객 솜씨로 굴린다.</p>`
-      }
+      // 암살은 직접 쏠 수 있다 — 밤 판 (SNIPE §0). 안 쏘면 굴림. 암살 칸을 펼쳤으면 고른 적장 바로 밑에 띄운다
+      if (o.op === 'assassin' && plotOpen !== 'assassin') h += shootHtml(i, o)
     }
     const full = plots.length >= max
     const st = r.stock[me()] ?? { grain: 0, iron: 0 }
@@ -768,6 +795,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           const dup = plots.some((p) => p.kind === 'plot' && p.op === op && p.target === t.target && p.node === t.node && p.other === t.other && p.hero === t.hero)
           h += `<button class="row ${dup ? 'on' : ''}" data-act="plot" data-op="${op}" data-target="${t.target}" data-node="${t.node ?? ''}" data-other="${t.other ?? ''}" data-hero="${t.hero ?? ''}" data-agent="${agent ?? ''}" ${(full && !dup) || !afford ? 'disabled' : ''}>`
           h += `${hero !== undefined ? bust(hero, 'rface sm') : emblem(t.target)}<span class="dest">${esc(label)}</span><span class="win">${plotFeel(c[0], c[1])}</span></button>`
+          // 고른 적장 바로 밑에 "직접 쏜다" (형: "직접쏜다버튼이 너무 위에있어서 적군눌러도 반응없는줄 알았음")
+          if (dup && op === 'assassin') {
+            const i = plots.findIndex((p) => p.kind === 'plot' && p.op === 'assassin' && p.hero === t.hero)
+            if (i >= 0) h += shootHtml(i, plots[i] as Extract<Order, { kind: 'plot' }>)
+          }
         }
         h += `</div>${afford ? '' : '<div class="mute">곡식이나 철이 모자라다</div>'}`
       }
@@ -803,6 +835,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const o = plots[i]
     if (o === undefined || o.kind !== 'plot' || o.op !== 'assassin') return
     plots = plots.map((p, j) => (j === i ? { ...o, hand: { result: m.result!, alarm: m.alarm === true } } : p))
+    if (o.hero !== undefined) hands[o.hero] = { result: m.result!, alarm: m.alarm === true }
     host.onTap('night', m.result)
     paint()
   })
@@ -928,7 +961,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       for (const x of caps2) h += `<div class="cap">${bust(x, 'cface')}<b>${esc(x.name)}</b><span class="mute">${STAT_NAME.mu} ${x.mu} · ${STAT_NAME.ryak} ${x.ryak} · ${STAT_NAME.chi} ${x.chi} · ${STAT_NAME.deok} ${x.deok}</span></div>`
       h += `</div>`
     }
-    h += `<div class="btns"><button class="btn" data-act="help">도움말</button><button class="btn ghost" data-act="newgame">새 판</button>`
+    h += `<div class="btns"><button class="btn" data-act="help">도움말</button><button class="btn ghost" data-act="newgame">새 판</button><button class="btn ghost" data-act="mute">${muted() ? "소리 켜기" : "소리 끄기"}</button>`
     h += `<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a>${PRACTICE_READY ? `<a class="btn ghost" href="${PRACTICE}">궁술 연습장</a>` : ''}</div>`
     h += `<div class="btns"><button class="btn ghost" data-act="export">기록 내보내기 <span class="mute">${host.gameCount()}판</span></button></div>`
     return h
@@ -942,7 +975,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + `<p><b>개척</b> 빈땅은 아무도 안 사는 땅이다. 그 땅을 누르거나 징병 탭 아래에서, 맞닿은 우리 고을 사람을 보낸다. 곡식이 들고, 일군 땅은 빨리 큰다. 군대로 먼저 깃발만 꽂아 둘 수도 있다.</p>`
       + `<p><b>집 · 장정 · 군사</b> 집은 농사짓고 곡식을 낸다. 징병하면 집이 군사가 된다. 군사는 움직이고 쳐들어가지만 곡식을 먹는다. 곡식이 떨어지면 사기가 꺾인다. 장정은 뽑지 않은 집의 사내들로, 적이 오면 제 고을만 지킨다. 해산하면 군사가 다시 집이 된다.</p>`
       + `<p><b>지도</b> 땅 색과 깃발이 주인. 왼쪽 위 깃발을 누르면 그 나라 땅만 또렷하다. 초록 수는 우리 군사, 붉은 수는 척후가 본 적 군세, ?는 아직 못 본 곳. ✕는 이번 계절 막힌 길. 보랏빛 화살은 다가오는 적.</p>`
-      + `<p><b>판세</b>는 색으로 보인다. 초록이면 해볼 만하고 붉으면 무모하다. 두 색이 섞이고 ?가 붙으면 아직 잘 모른다. 정찰하면 또렷해진다.</p>`
+      + `<p><b>판세</b>는 색으로 보인다. 초록이면 이길 듯하고 붉으면 질 듯하다. 두 색이 섞이고 ?가 붙으면 아직 잘 모른다. 정찰하면 또렷해진다.</p>`
       + `<p><b>소도</b> 성스러운 땅이라 아무도 못 친다. 소도 곁 고을을 차지하면 봄·가을에 제사를 지낸다. 봄 제사는 수확을, 가을 제사는 사기를 올린다.</p>`
       + `<p><b>협공</b> 같은 계절에 두 길로 들어가면 한 판으로 싸우고 더 세다.</p>`
       + `<p><b>목표</b> 나라마다 도읍이 하나씩 있다. 도읍 셋을 차지하면 이긴다. 우리 도읍을 빼앗기면 진다.</p></div>`
@@ -956,7 +989,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const who = n.owner === null ? '주인 없음' : (r.factions[n.owner]?.name ?? '')
     const isCap = Object.values(r.factions).some((f) => f.capital === id)
     const kind = n.kind === 'wild' && n.hh > 0 ? SETTLED_NAME : isCap ? (n.kind === 'port' ? '도읍 · 항구' : '도읍') : NODE_KIND_NAME[n.kind]
-    let h = `<div class="an big">${icon(nodeIcon(n), 'nic')}<div><h3>${esc(n.name)}</h3><span class="mute">${emblem(n.owner)}${esc(who)} · ${kind}</span></div></div>`
+    let h = `<div class="an big">${icon(nodeIcon(n), 'nic')}<div><h3>${esc(n.name)}${NODE_NOW[id] !== undefined ? ` <small class="mute">지금의 ${esc(NODE_NOW[id]!)}</small>` : ""}</h3><span class="mute">${emblem(n.owner)}${esc(who)} · ${kind}</span></div></div>`
     if (ours || known?.land) {
       const lines = n.tags.map((t) => TAG_LINE[t]).join(' ')
       if (lines !== '') h += `<p class="story">${esc(lines)}</p>`
@@ -1078,7 +1111,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    */
   function saveDraft(): void {
     if (realm === null) return
-    const d = { seed: realm.seed, season: realm.season, player: realm.player, armyOrders, musters, settles, pick, scout, rite, answers, guards, envoys, plots, heroOrders, persuadeBy }
+    const d = { seed: realm.seed, season: realm.season, player: realm.player, armyOrders, musters, settles, pick, scout, rite, answers, guards, envoys, plots, heroOrders, persuadeBy, hands }
     try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)) } catch { /* 저장 못 하는 곳 */ }
   }
 
@@ -1101,6 +1134,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     Object.assign(answers, rec<boolean>('answers'))
     Object.assign(envoys, rec<Envoy>('envoys'))
     Object.assign(persuadeBy, rec<string>('persuadeBy'))
+    Object.assign(hands, rec<{ result: 'dead' | 'wounded' | 'fled' | 'withdrew'; alarm: boolean }>('hands'))
   }
 
   /**
@@ -1137,7 +1171,43 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     } catch { /* 없으면 처음부터 */ }
   }
 
+  /**
+   * 계절이 넘어간다 (형: "턴 넘어갈때 넘어간다는것좀 보여졌음 좋겠네 … 하스스톤은 매번 뭔지 나오고") —
+   * 화면 가운데 새 계절 이름이 크게 떴다 사라지고 종이 한 번 울린다. 애니메이션이 끝나면 지운다(타이머 없음).
+   */
+  function seasonFx(season: number): void {
+    const s = seasonOf(season)
+    const el = document.createElement('div')
+    el.className = `seasonfx ${s}`
+    el.innerHTML = `<div>${icon(SEASON_ICON[s], 'sfx-ic')}<b>${esc(seasonLabel(season))}</b><span>${esc(SEASON_LINE[s])}</span></div>`
+    el.addEventListener('animationend', () => el.remove(), { once: true })
+    root.appendChild(el)
+    ding('impactBell_heavy_000', 0.45)
+  }
+
+  /** 막혔다 — 화면 위에 까닭과 기록 내보내기 단추를 띄우고, 판 기록에도 남긴다 (형이 보내 주면 그 판을 그대로 다시 돌려 본다) */
+  function failNote(e: unknown): void {
+    const msg = e instanceof Error ? `${e.message} @ ${(e.stack ?? '').split('\n').slice(1, 3).join(' ').trim()}` : String(e)
+    host.onTap('error', msg.slice(0, 300))
+    let box = root.querySelector<HTMLElement>('.failbox')
+    if (box === null) {
+      box = document.createElement('div')
+      box.className = 'failbox'
+      root.appendChild(box)
+    }
+    box.innerHTML = `<b>여기서 막혔다.</b><span>${esc(msg.slice(0, 160))}</span>`
+      + `<div class="btns"><button class="btn on" data-act="export">기록 내보내기</button><button class="btn ghost" data-act="failclose">닫기</button></div>`
+  }
+
   function paint(): void {
+    try {
+      paintNow()
+    } catch (e) {
+      failNote(e)
+    }
+  }
+
+  function paintNow(): void {
     saveDraft()
     if (realm === null || choosing) {
       root.classList.add('choosing')
@@ -1256,6 +1326,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'tab': markSeen(d['tab']!); openSheet({ kind: d['tab'] as 'army' }); return
       case 'help': openSheet({ kind: 'help' }); return
       case 'export': host.onExport(); return
+      case 'failclose': root.querySelector('.failbox')?.remove(); return
+      case 'mute': try { localStorage.setItem(MUTE_KEY, muted() ? '0' : '1') } catch { /* 저장 못 하는 곳 */ } break
       case 'focus': focus = focus === d['id'] ? null : d['id']!; break
       case 'rep-close': showReport = false; paint(); return
       case 'next': {
@@ -1264,7 +1336,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const all = [...mine, ...aiOrders(realm)]
         const prev = realm
         fastNext = false
-        const res = advance(prev, all)
+        let res: ReturnType<typeof advance>
+        try {
+          res = advance(prev, all)
+        } catch (e) {
+          // 넘기다 막히면 말없이 멈추지 않는다 (형: "지금 하는게임 다음계절로 안넘어가짐") — 까닭을 띄우고 기록에 남긴다
+          failNote(e)
+          return
+        }
         resetTurn()
         sheet = null
         before = prev
@@ -1272,6 +1351,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         showReport = true
         realm = res.next
         host.onAdvance(res.next, res.report, all, mine)
+        seasonFx(res.next.season)
         paint()
         return
       }
@@ -1449,11 +1529,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const k = o as { node?: string; other?: string; hero?: string }
         const same = (p: Order): boolean => p.kind === 'plot' && p.op === op && p.target === o.target && p.node === k.node && p.other === k.other && p.hero === k.hero
         if (plots.some(same)) plots = plots.filter((p) => !same(p))
-        else if (plots.length < P.realm.plotsPerSeason) plots = [...plots, o]
+        else if (plots.length < P.realm.plotsPerSeason) plots = [...plots, k.hero !== undefined && hands[k.hero] !== undefined ? { ...o, hand: hands[k.hero]! } as Order : o]
         break
       }
       case 'unplot': plots = plots.filter((_, i) => i !== Number(d['i'])); break
-      case 'shoot': openNight(Number(d['i'])); return
+      case 'shoot': {
+        const o = plots[Number(d['i'])]
+        if (o?.kind === 'plot' && o.hero !== undefined && hands[o.hero] !== undefined) break // 한 번만
+        openNight(Number(d['i']))
+        return
+      }
       case 'pagent': plotAgent = d['id'] ? d['id'] : null; break
       case 'hero': openSheet({ kind: 'hero', id: d['id']! }); return
       case 'assign':

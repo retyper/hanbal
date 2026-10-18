@@ -8,7 +8,7 @@
  */
 import { headcount } from '../../realm/battle.ts'
 import { FACTION_ART, NODE_POS, SEASON_MAP, nodeIcon } from '../../realm/data/art.ts'
-import { EDGE_NAME, NODE_KIND_NAME } from '../../realm/data/prose.ts'
+import { EDGE_NAME, NODE_KIND_NAME, NODE_NOW } from '../../realm/data/prose.ts'
 import { visibleRange } from '../../realm/intel.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
 import type { EdgeKind, Realm } from '../../realm/types.ts'
@@ -40,6 +40,7 @@ export const MAP_CSS = `
 .map .nd img.st { width: 100%; filter: drop-shadow(0 2px 2px rgba(0,0,0,.55)); }
 .map .nd .nm { display: block; margin-top: -8%; font-size: max(10px, calc(2.1cqh / var(--z, 1) * var(--zs, 1))); line-height: 1.2; color: #2a1d10; font-weight: 700;
   text-shadow: 0 0 3px #f3e6c8, 0 0 3px #f3e6c8, 0 0 2px #f3e6c8; white-space: nowrap; }
+.map .nd .nm small { display: block; font-size: .78em; font-weight: 500; color: #4a3a28; margin-top: -1px; }
 .map .nd .ring { position: absolute; left: 50%; top: 42%; width: 82%; aspect-ratio: 1; transform: translate(-50%, -50%);
   border-radius: 50%; border: 3px solid var(--c); box-shadow: 0 0 6px var(--c); pointer-events: none; }
 .map .nd .men, .map .nd .foe { position: absolute; right: -10%; top: -6%; background: #1c2129; border-radius: 9px; padding: 0 5px;
@@ -199,7 +200,7 @@ export function mapHtml(
     const go = tg !== undefined && !tg.off ? ` data-act="go" data-edge="${tg.edge}"` : ''
     const tcls = tg === undefined ? '' : tg.off ? ' tgt off' : tg.on ? ' tgt on' : ' tgt'
     nodes += `<div class="nd${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${tcls}"${go} data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color};--s:${sizeOf(n.hh).toFixed(2)}" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}">`
-    nodes += `<span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${flag}${badge}<span class="nm">${n.name}</span>${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : ''}</div>`
+    nodes += `<span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${flag}${badge}<span class="nm">${n.name}${NODE_NOW[n.id] !== undefined ? `<small>${NODE_NOW[n.id]}</small>` : ""}</span>${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : ''}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()

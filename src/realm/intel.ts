@@ -45,10 +45,13 @@ export function sight(trueF: number, src: Source, u: number): Sighting {
 export function visibleRange(s: Sighting, age: number): readonly [number, number] | null {
   const R = P.realm
   if (age >= R.intelBlindAge) return null
-  const blur = sourceBlur(s.src)
+  // 옛 판의 정보는 칸이 비었을 수 있다 (저장의 NaN 은 null 이 된다) — 형: "솔숲 읍락에 nan-nan". 모르면 모른다고 한다
+  if (!Number.isFinite(s.f0) || !Number.isFinite(age)) return null
+  const blur = sourceBlur(s.src) ?? sourceBlur('merchant')
+  const u = Number.isFinite(s.u) ? s.u : 0.5
   const a = Math.max(0, age)
-  const lo = s.f0 * (1 - blur * s.u) * Math.pow(1 - R.intelLossMax, a)
-  const hi = s.f0 * (1 + blur * (1 - s.u)) * Math.pow(1 + R.intelGrowMax, a)
+  const lo = s.f0 * (1 - blur * u) * Math.pow(1 - R.intelLossMax, a)
+  const hi = s.f0 * (1 + blur * (1 - u)) * Math.pow(1 + R.intelGrowMax, a)
   return [lo, hi]
 }
 
