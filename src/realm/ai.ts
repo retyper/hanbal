@@ -13,8 +13,10 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
+import { friendly } from './diplomacy.ts'
+import { draftCost, draftLimit, hhOf, menOf, stockOf, upkeepOf } from './economy.ts'
 import { jointWin, movesOf, type Move } from './estimate.ts'
-import { armiesAt, newArmyId, planned } from './season.ts'
+import { armiesAt, fortMul, newArmyId, planned, seasonOf } from './season.ts'
 import type { UnitKind } from './battle.ts'
 import type { Army, Order, Realm } from './types.ts'
 
@@ -44,8 +46,52 @@ function march(a: Army, t: Move): Order {
 export function spared(r: Realm, faction: string, to: string): boolean {
   const owner = r.nodes[to]?.owner
   if (owner === null || owner === undefined || owner === faction) return false
+  // 화친·동맹을 맺은 나라는 치지 않는다 (FLOW §4)
+  if (friendly(r, faction, owner)) return true
   if (r.factions[owner]?.mind !== 'player' || r.season >= P.realm.aiGrace) return false
   return !(r.provoked ?? []).includes(faction)
+}
+
+const MIX_GOAL: ReadonlyArray<readonly [UnitKind, number]> = [['spear', 0.6], ['bow', 0.3], ['shield', 0.1]]
+
+/**
+ * 징병 (FLOW §2) — 가을·겨울에만 (봄 징병은 농사를 깎는다). 곡식은 aiDraftReserve 계절치 군량을 남긴다.
+ * 국읍과 제 군대가 쉬는 고을에서, 나라 군사의 병종 비가 MIX_GOAL 에서 가장 모자란 쪽을 뽑는다.
+ * 봇도 같은 셈으로 뽑는다 — 봇 대전이 공정하려고.
+ */
+function drafts(r: Realm, faction: string): Order[] {
+  const R = P.realm
+  const s = seasonOf(r.season)
+  if (s !== 'autumn' && s !== 'winter') return []
+  const fac = r.factions[faction]
+  if (fac === undefined) return []
+  const men = menOf(r, faction)
+  let spare = stockOf(r, faction).grain - R.aiDraftReserve * upkeepOf(r, faction, true)
+  const have: Partial<Record<UnitKind, number>> = {}
+  for (const a of Object.values(r.armies)) {
+    if (a.faction !== faction) continue
+    for (const [k, v] of Object.entries(a.mix) as Array<[UnitKind, number]>) have[k] = (have[k] ?? 0) + v
+  }
+  const places = [fac.capital, ...sorted(Object.values(r.armies)).filter((a) => a.faction === faction && a.march === null).map((a) => a.at)]
+  const out: Order[] = []
+  // 나라 상한 — 뽑으면 가호가 줄고 군사가 늘어 (가호+군사)는 그대로라, 이번 계절에 뽑은 몫만 빼면 된다
+  let room = Math.floor(R.draftCap * (hhOf(r, faction) + men)) - men
+  let took = 0
+  for (const node of [...new Set(places)]) {
+    if (r.nodes[node]?.owner !== faction) continue
+    const n = Math.min(draftLimit(r, faction, node), room, Math.floor(spare / Math.max(1e-9, R.draftGrain)))
+    if (n < R.splitMin) continue
+    const total = men + took
+    const unit = MIX_GOAL.reduce((best, [k, w]) =>
+      w * (total + n) - (have[k] ?? 0) > best[1] ? [k, w * (total + n) - (have[k] ?? 0)] as [UnitKind, number] : best,
+    ['spear', -Infinity] as [UnitKind, number])[0]
+    out.push({ kind: 'draft', faction, node, unit, n })
+    have[unit] = (have[unit] ?? 0) + n
+    spare -= draftCost(n).grain
+    room -= n
+    took += n
+  }
+  return out
 }
 
 /**
@@ -158,14 +204,49 @@ function plan(r: Realm, faction: string): Order[] {
   return orders
 }
 
-/** 한 세력의 이번 계절 명령 */
+/** 한 세력의 이번 계절 명령 — 징병(가을·겨울)과 군대의 움직임 */
 export function decide(r: Realm, faction: string, brain: Brain): Order[] {
-  if (brain === 'planner') return plan(r, faction)
+  return [...drafts(r, faction), ...(brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
+}
+
+function moves(r: Realm, faction: string, brain: Brain): Order[] {
   const R = P.realm
   const orders: Order[] = []
   const armies = sorted(Object.values(r.armies)).filter((a) => a.faction === faction && a.march === null)
   const waiting: Army[] = []
   let scouted = false
+  /** 이번 계절에 나눈 것까지 해 본 판 — 새 군대 이름이 겹치지 않게 */
+  let p = r
+
+  /**
+   * 국읍의 마지막 군대 — 얼어 있지 않고 plannerKeep 몫을 남긴 별동대를 보낸다 (SYSTEMS §4-5).
+   * `score` 는 별동대의 승률 범위(모르면 null)를 받아 그 길의 값을 낸다. 문턱을 못 넘으면 안 보낸다.
+   */
+  const detach = (a: Army, ts: readonly Move[], score: (w: readonly [number, number] | null, t: Move) => number, bar: number): boolean => {
+    const n = Object.values(a.mix).reduce((s, v) => s + (v ?? 0), 0)
+    // 남기는 몫이 aiGuardMin 아래면 안 나눈다 — 계절마다 떼어 보내 국읍이 바닥나는 것을 막는다 (봇 대전에서 독로가 첫해에 무너졌다)
+    if (n * R.plannerKeep < R.aiGuardMin || n * (1 - R.plannerKeep) < R.splitMin) return false
+    const take: Partial<Record<UnitKind, number>> = {}
+    for (const [k, n] of Object.entries(a.mix) as Array<[UnitKind, number]>) take[k] = Math.floor(n * (1 - R.plannerKeep))
+    const det = { ...a, mix: take }
+    let best: Move | null = null
+    let bestV = -Infinity
+    for (const t of ts) {
+      const v = score(jointWin(p, faction, [{ army: det, edge: t.edge }], t.to), t)
+      if (v >= bar && v > bestV) {
+        best = t
+        bestV = v
+      }
+    }
+    if (best === null) return false
+    const id = newArmyId(p, faction)
+    const o: Order = { kind: 'split', army: a.id, id, take, hero: true }
+    const next = planned(p, [o])
+    if (next.armies[id] === undefined) return false
+    orders.push(o, march(next.armies[id]!, best))
+    p = next
+    return true
+  }
 
   for (const a of armies) {
     const ts = movesOf(r, faction, a).filter((t) => t.hostile && t.blocked === null && !spared(r, faction, t.to))
@@ -178,11 +259,25 @@ export function decide(r: Realm, faction: string, brain: Brain): Order[] {
     }
 
     if (brain === 'greedy' || brain === 'reckless') {
-      // 가운데로 셈하고, 모르면 얕본다. 무모는 국읍도 비운다
-      if (brain === 'greedy' && lastGuard(r, faction, a)) continue
-      const est = (t: Move): number => (t.win !== null ? (t.win[0] + t.win[1]) / 2 : R.aiUnknownWin)
-      const best = ts.reduce((x, y) => (est(y) > est(x) ? y : x))
-      if (est(best) >= (brain === 'reckless' ? R.aiRecklessWin : R.aiGreedyWin)) orders.push(march(a, best))
+      // 가운데로 셈하고, 모르면 얕본다 — 다만 성벽은 보인다 (모르는 고을의 짐작을 성 배수로 나눈다). 무모는 국읍도 비운다
+      const mid = (w: readonly [number, number] | null, t: Move): number =>
+        w !== null ? (w[0] + w[1]) / 2 : R.aiUnknownWin / fortMul(r.nodes[t.to]!, seasonOf(r.season))
+      const bar = brain === 'reckless' ? R.aiRecklessWin : R.aiGreedyWin
+      let went: boolean
+      if (brain === 'greedy' && lastGuard(r, faction, a)) went = detach(a, ts, mid, bar)
+      else {
+        const best = ts.reduce((x, y) => (mid(y.win, y) > mid(x.win, x) ? y : x))
+        went = mid(best.win, best) >= bar
+        if (went) orders.push(march(a, best))
+      }
+      // 칠 데가 안 보이면 탐욕도 한 곳은 들여다본다 — 성벽 뒤를 모르면 영영 못 친다
+      if (!went && brain === 'greedy' && !scouted) {
+        const stale = ts.reduce((x, y) => (y.age > x.age ? y : x))
+        if (stale.age > R.aiCautiousAge) {
+          orders.push({ kind: 'scout', faction, node: stale.to, hero: null })
+          scouted = true
+        }
+      }
       continue
     }
 
@@ -191,6 +286,10 @@ export function decide(r: Realm, faction: string, brain: Brain): Order[] {
     if (ready.length > 0 && !lastGuard(r, faction, a)) {
       orders.push(march(a, ready.reduce((x, y) => (y.win![0] > x.win![0] ? y : x))))
       continue
+    }
+    if (lastGuard(r, faction, a)) {
+      const fresh = ts.filter((t) => t.age <= R.aiCautiousAge)
+      if (detach(a, fresh, (w) => (w === null ? -1 : w[0]), R.aiCautiousWin)) continue
     }
     waiting.push(a)
     if (!scouted) {

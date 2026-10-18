@@ -7,7 +7,7 @@
 import { P } from '../tune/params.ts'
 import { ambushChance, strength, winChance } from './battle.ts'
 import { alertRange, visibleRange } from './intel.ts'
-import { blockedWhy, conceal, forceOf, fortMul, marchSeasons, otherEnd, seasonOf } from './season.ts'
+import { blockedWhy, conceal, forceOf, fortMul, marchSeasons, otherEnd, seasonOf, seenMarches } from './season.ts'
 import type { Army, Realm, REdge } from './types.ts'
 
 export interface Move {
@@ -39,7 +39,10 @@ function winVs(r: Realm, faction: string, to: string, myF: number): { win: reado
   const age = r.season - k.force.season
   const range = visibleRange({ f0: k.force.f0, src: k.force.src, u: k.force.u }, age)
   const t = fortMul(node, seasonOf(r.season))
-  return { win: range === null ? null : [winChance(myF, range[1] * t), winChance(myF, range[0] * t)], age }
+  // 행군은 보인다 (FLOW §7 #2) — 그 고을 주인이 보내는 보인 증원은 범위 위쪽에 더한다 (언제 닿을지는 모른다)
+  let extra = 0
+  for (const a of seenMarches(r, faction)) if (a.faction === node.owner && a.march!.to === to) extra += strength(forceOf(r, a))
+  return { win: range === null ? null : [winChance(myF, (range[1] + extra) * t), winChance(myF, range[0] * t)], age }
 }
 
 /**

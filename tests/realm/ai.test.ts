@@ -10,7 +10,7 @@ import assert from 'node:assert/strict'
 
 import { aiOrders, decide } from '../../src/realm/ai.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
-import { advance } from '../../src/realm/season.ts'
+import { advance, planned } from '../../src/realm/season.ts'
 import type { Realm } from '../../src/realm/types.ts'
 
 function play(seed: number, seasons: number): Realm {
@@ -45,9 +45,11 @@ describe('세력 AI', () => {
     let r = byeonhanMini(4)
     for (let s = 0; s < 20; s++) {
       const orders = aiOrders(r)
+      // 별동대는 같은 계절에 나누고 떠난다 — 나누기까지 해 본 판에서 찾는다
+      const p = planned(r, orders)
       for (const o of orders) {
         if (o.kind !== 'march') continue
-        const a = r.armies[o.army]!
+        const a = p.armies[o.army]!
         assert.notEqual(r.factions[a.faction]!.mind, 'player')
         const ed = r.edges[o.edge]!
         assert.ok(ed.a === a.at || ed.b === a.at)

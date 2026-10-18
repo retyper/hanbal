@@ -4,7 +4,8 @@
  * **JSON 으로 그대로 직렬화되는 평범한 객체**만 쓴다 — 클래스·함수·Map 금지.
  * 그래야 저장·비교·리플레이가 공짜다 (BUILD §1-2). 모음은 배열이 아니라 id 를 열쇠로 한 기록이다.
  *
- * R1 의 범위: 지도 · 세력 · 장수 · 군대 · 정보 · 경계. 고을의 경제(가호·창고)·사건·회유는 R3~R4 에서 더한다.
+ * R1 의 범위: 지도 · 세력 · 장수 · 군대 · 정보 · 경계.
+ * R1.5 (FLOW, 2026-10-18): 가호·창고(곡식·철) · 징병·해산 · 관계·사신 · 이김·짐. 사건·회유는 R3~R4.
  */
 import type { Equip, Outcome, UnitKind } from './battle.ts'
 import type { Source } from './intel.ts'
@@ -31,6 +32,10 @@ export interface RNode {
   readonly tags: readonly Tag[]
   /** 다스리는 세력 id. 무주지는 null */
   owner: string | null
+  /** 가호 (집 수) — 군사·장정·수확의 원천 (FLOW §2). 징병하면 줄고 해산하면 돌아온다 */
+  hh: number
+  /** 봄에 심은 가호 — 가을 수확은 이것이 정한다 (FLOW §1: 봄 징병은 그해 농사를 깎는다) */
+  sown: number
 }
 
 export interface REdge {
@@ -50,7 +55,25 @@ export interface Faction {
   readonly mind: Mind
   /** 국읍 고을 id */
   readonly capital: string
+  /** 새로 뽑는 군사의 장비 (FLOW §2) */
+  readonly equip: Equip
+  /** 계절마다 바깥과의 교역으로 들어오는 것 — 독로국의 왜 교역 같은 (FLOW §3). 없으면 0 */
+  readonly income?: { readonly grain: number; readonly iron: number }
 }
+
+/** 나라 사이 관계 (FLOW §4) — 판은 중립에서 시작한다. 화친은 `until` 계절에 끝난다 */
+export interface Relation {
+  state: 'war' | 'neutral' | 'truce' | 'ally'
+  until: number | null
+}
+
+/** 한 나라의 창고 — 국읍 창고 (SYSTEMS §7-5 자원 넷 가운데 둘) */
+export interface Stock {
+  grain: number
+  iron: number
+}
+
+export type EnvoyAsk = 'truce' | 'trade' | 'tribute' | 'alliance'
 
 export type HeroStatus = 'free' | 'captive' | 'dead'
 
@@ -120,6 +143,14 @@ export interface Realm {
   watch: Record<string, Watch>
   /** 플레이어가 먼저 치거나 땅을 뺏은 나라 — 초반 유예가 없다 (ai.ts spared). id 순서. 옛 저장에는 없다 */
   provoked?: string[]
+  /** 플레이어의 나라 id (FLOW §3 — 판을 열 때 고른다) */
+  readonly player: string
+  /** 나라마다 국읍 창고 */
+  stock: Record<string, Stock>
+  /** 나라 사이 관계 — 열쇠는 diplomacy.pairKey(a, b). 없으면 중립 */
+  relations: Record<string, Relation>
+  /** 판의 끝 — 플레이어가 이겼나 졌나 (FLOW §7 #1) */
+  outcome: { kind: 'win' | 'lose'; season: number } | null
 }
 
 /** 플레이어(또는 AI)가 한 계절에 내리는 명령 */
@@ -136,6 +167,19 @@ export type Order =
     }
   /** 모으기 — `army` 를 `into` 에 붓는다 */
   | { readonly kind: 'merge'; readonly army: string; readonly into: string }
+  /** 징병 (FLOW §2) — 그 고을의 가호에서 n 명. 그 고을에 쉬는 제 군대가 있으면 거기 들고, 없으면 새 군대 */
+  | { readonly kind: 'draft'; readonly faction: string; readonly node: string; readonly unit: UnitKind; readonly n: number }
+  /** 해산 — 제 고을에 쉬는 군대를 집으로 (사람은 그 고을 가호로 돌아간다) */
+  | { readonly kind: 'disband'; readonly army: string }
+  /** 사신 (FLOW §4) — 한 나라가 한 계절에 하나. give 는 보내는 쪽이, take 는 받는 쪽이 내놓는다 */
+  | {
+      readonly kind: 'envoy'
+      readonly from: string
+      readonly to: string
+      readonly ask: EnvoyAsk
+      readonly give: { readonly grain: number; readonly iron: number }
+      readonly take: { readonly grain: number; readonly iron: number }
+    }
 
 /** 직접 쏜 저격의 결과 — 판 열쇠(battleKey)마다. R1 에는 저격이 없어 비어 있다 (SNIPE · SYSTEMS §6) */
 export type SnipeZone = 'head' | 'body' | 'leg' | 'drum' | 'miss'
@@ -162,6 +206,15 @@ export type ReportLine =
       readonly captured: string | null
       readonly killed: string | null
     }
+  | { readonly kind: 'harvest'; readonly faction: string; readonly grain: number }
+  | { readonly kind: 'draft'; readonly faction: string; readonly node: string; readonly unit: UnitKind; readonly n: number; readonly army: string }
+  | { readonly kind: 'disband'; readonly army: string; readonly node: string; readonly n: number }
+  | { readonly kind: 'hunger'; readonly faction: string }
+  | { readonly kind: 'envoy'; readonly from: string; readonly to: string; readonly ask: EnvoyAsk; readonly accepted: boolean }
+  | { readonly kind: 'relation'; readonly a: string; readonly b: string; readonly state: Relation['state'] }
+  | { readonly kind: 'end'; readonly outcome: 'win' | 'lose'; readonly faction: string }
+  /** 우리 고을에 맞닿은 길 위의 남의 군대 — 행군은 보인다 (FLOW §7 #2) */
+  | { readonly kind: 'sighted'; readonly faction: string; readonly army: string; readonly from: string; readonly to: string }
 
 export interface Report {
   readonly season: number

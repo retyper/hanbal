@@ -265,9 +265,11 @@ describe('초반 유예 — 작은 나라는 아직 눈에 안 띈다', () => {
     const r = byeonhanMini(1)
     const ours = new Set(Object.values(r.nodes).filter((n) => n.owner === 'us').map((n) => n.id))
     for (const f of ['guya', 'goja', 'dokro']) {
-      for (const o of decide(r, f, 'greedy')) {
+      const orders = decide(r, f, 'greedy')
+      const p = planned(r, orders) // 별동대는 같은 명령 안에서 나뉜다
+      for (const o of orders) {
         if (o.kind !== 'march') continue
-        const a = r.armies[o.army]!
+        const a = p.armies[o.army]!
         assert.ok(!ours.has(otherEnd(r.edges[o.edge]!, a.at)!), `${f} 가 첫 계절에 우리 땅을 친다`)
       }
     }
