@@ -69,6 +69,56 @@ export function expireRelations(r: Realm, lines: ReportLine[]): void {
   }
 }
 
+/**
+ * 화친·동맹을 맺으면 무엇을 얻나 (형: "화친이랑 동맹도 되면 뭐가 되는건지 모르겠네" — 2026-10-18)
+ *   화친 — 서로 안 친다 + **장터**: 계절마다 둘 다 곡식 truceTrade 씩 (holdMarkets)
+ *   동맹 — 땅을 지나간다 + **본 것을 나눈다** (shareIntel) + 동맹 AI 는 같은 적을 먼저 친다 (allyFoe)
+ */
+
+/** 9 — 장터: 화친 중인 두 나라가 계절마다 곡식을 조금씩 얻는다. 동맹도 화친의 위라 장터가 선다 */
+export function holdMarkets(r: Realm, lines: ReportLine[]): void {
+  const g = P.realm.truceTrade
+  if (g <= 0) return
+  for (const key of Object.keys(r.relations ?? {}).sort()) {
+    const rel = r.relations[key]!
+    if (rel.state !== 'truce' && rel.state !== 'ally') continue
+    const [a, b] = key.split('|') as [string, string]
+    if (r.factions[a] === undefined || r.factions[b] === undefined) continue
+    stockOf(r, a).grain += g
+    stockOf(r, b).grain += g
+    lines.push({ kind: 'market', a, b, grain: g })
+  }
+}
+
+/** 9 — 동맹끼리 본 것을 나눈다: 고을마다 더 새로 본 군세·경계를 서로 가진다. 땅은 하나라도 알면 둘 다 안다 */
+export function shareIntel(r: Realm): void {
+  for (const key of Object.keys(r.relations ?? {}).sort()) {
+    if (r.relations[key]!.state !== 'ally') continue
+    const [a, b] = key.split('|') as [string, string]
+    const ia = r.intel[a]
+    const ib = r.intel[b]
+    if (ia === undefined || ib === undefined) continue
+    for (const node of [...new Set([...Object.keys(ia), ...Object.keys(ib)])].sort()) {
+      const x = ia[node]
+      const y = ib[node]
+      const force = !x?.force ? (y?.force ?? null) : !y?.force ? x.force : x.force.season >= y.force.season ? x.force : y.force
+      const alert = !x?.alert ? (y?.alert ?? null) : !y?.alert ? x.alert : x.alert.season >= y.alert.season ? x.alert : y.alert
+      ia[node] = { land: true, force: force === null ? null : { ...force }, alert: alert === null ? null : { ...alert } }
+      ib[node] = { land: true, force: force === null ? null : { ...force }, alert: alert === null ? null : { ...alert } }
+    }
+  }
+}
+
+/** `owner` 가 이 나라의 동맹과 전쟁 중인가 — 동맹 AI 는 같은 적을 먼저 친다 (P.realm.aiAllyFocus) */
+export function allyFoe(r: Realm, faction: string, owner: string | null): boolean {
+  if (owner === null || owner === faction) return false
+  for (const x of Object.keys(r.factions).sort()) {
+    if (x === faction || x === owner) continue
+    if (relationOf(r, faction, x).state === 'ally' && relationOf(r, x, owner).state === 'war') return true
+  }
+  return false
+}
+
 /** 한 나라의 힘 — 제 고을마다 머무는 군대와 장정 (정보가 다루는 F 와 같은 잣대) */
 export function nationPower(r: Realm, faction: string): number {
   let f = 0

@@ -13,7 +13,7 @@
  */
 import { P } from '../tune/params.ts'
 import { blockedWhy, seasonOf } from './calendar.ts'
-import type { ReportLine, Realm, Stock } from './types.ts'
+import type { Order, ReportLine, Realm, Stock } from './types.ts'
 
 function menIn(mix: Readonly<Partial<Record<string, number>>>): number {
   let n = 0
@@ -113,6 +113,51 @@ export function settleTargets(r: Realm, faction: string): Array<{ from: string; 
   return out.sort((x, y) => (x.to < y.to ? -1 : x.to > y.to ? 1 : x.from < y.from ? -1 : x.from > y.from ? 1 : 0))
 }
 
+export function riteCost(): { grain: number } {
+  return { grain: P.realm.riteGrain }
+}
+
+/** 소도와 길로 맞닿은 고을 가운데 이 나라가 쥔 것 — id 순서 */
+export function sodoNeighbors(r: Realm, faction: string): string[] {
+  const out = new Set<string>()
+  for (const ed of Object.values(r.edges)) {
+    const a = r.nodes[ed.a]
+    const b = r.nodes[ed.b]
+    if (a?.kind === 'sodo' && b?.owner === faction) out.add(b.id)
+    if (b?.kind === 'sodo' && a?.owner === faction) out.add(a.id)
+  }
+  return [...out].sort()
+}
+
+/**
+ * 소도 제사 (「常以五月下種訖祭鬼神…十月農功畢亦復如之」) — 봄·가을에만, 소도와 길로 맞닿은 고을을 쥐고,
+ * 곡식이 riteCost 이상이면. 봄 제사는 그해에 한 번만 (이미 지냈으면 안 된다).
+ */
+export function riteAllowed(r: Realm, faction: string): boolean {
+  const season = seasonOf(r.season)
+  if (season !== 'spring' && season !== 'autumn') return false
+  if (r.factions[faction] === undefined || sodoNeighbors(r, faction).length === 0) return false
+  if (season === 'spring' && r.blessed?.[faction] === Math.floor(r.season / 4)) return false
+  return stockOf(r, faction).grain >= riteCost().grain
+}
+
+/** 2 — 제사: 나라마다 첫 명령 하나만. 봄은 그해 수확에 축복, 가을은 모든 군대 사기 + */
+export function resolveRites(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
+  const R = P.realm
+  const done = new Set<string>()
+  const season = seasonOf(r.season)
+  for (const o of orders) {
+    if (o.kind !== 'rite' || done.has(o.faction)) continue
+    const f = o.faction
+    if (!riteAllowed(r, f)) continue
+    done.add(f)
+    stockOf(r, f).grain -= riteCost().grain
+    if (season === 'spring') (r.blessed ??= {})[f] = Math.floor(r.season / 4)
+    else for (const a of Object.values(r.armies)) if (a.faction === f) a.morale = Math.min(R.moraleMax, a.morale + R.riteMorale)
+    lines.push({ kind: 'rite', faction: f, season: season === 'spring' ? 'spring' : 'autumn' })
+  }
+}
+
 /** 이 계절에 나라가 군대를 먹이는 데 드는 곡식 */
 export function upkeepOf(r: Realm, faction: string, winter: boolean): number {
   return Math.ceil(menOf(r, faction) * P.realm.rationPerSoldier * (winter ? P.realm.winterRation : 1))
@@ -151,10 +196,13 @@ export function stepEconomy(r: Realm, season: number, fought: ReadonlySet<string
     if (season === 2) {
       let sown = 0
       for (const n of nodes) sown += n.sown
-      const grain = Math.round(sown * R.harvestPerHH)
+      const base = Math.round(sown * R.harvestPerHH)
+      // 봄 제사를 지낸 해면 더 든다
+      const blessed = r.blessed?.[f] === Math.floor(r.season / 4) ? Math.round(base * R.riteHarvest) : 0
+      const grain = base + blessed
       if (grain > 0) {
         s.grain += grain
-        lines.push({ kind: 'harvest', faction: f, grain })
+        lines.push(blessed > 0 ? { kind: 'harvest', faction: f, grain, blessed } : { kind: 'harvest', faction: f, grain })
       }
     }
     // 군량

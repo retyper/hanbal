@@ -153,6 +153,8 @@ export interface Realm {
   relations: Record<string, Relation>
   /** 판의 끝 — 플레이어가 이겼나 졌나 (FLOW §7 #1) */
   outcome: { kind: 'win' | 'lose'; season: number } | null
+  /** 봄 제사를 지낸 해 (Math.floor(season / 4)) — 나라마다. 그해 가을 수확이 는다 (economy.riteAllowed). 옛 저장에는 없다 */
+  blessed?: Record<string, number>
 }
 
 /** 플레이어(또는 AI)가 한 계절에 내리는 명령 */
@@ -175,6 +177,8 @@ export type Order =
   | { readonly kind: 'disband'; readonly army: string }
   /** 개척 — 제 고을 `from` 의 가호 n 을 길로 맞닿은 빈땅 `to` 로 옮긴다. 곡식이 든다 (economy.settleLimit · settleCost) */
   | { readonly kind: 'settle'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number }
+  /** 소도 제사 — 봄·가을에, 소도와 길로 맞닿은 고을을 쥔 나라만. 곡식이 든다 (economy.riteAllowed · riteCost) */
+  | { readonly kind: 'rite'; readonly faction: string }
   /** 사신 (FLOW §4) — 한 나라가 한 계절에 하나. give 는 보내는 쪽이, take 는 받는 쪽이 내놓는다 */
   | {
       readonly kind: 'envoy'
@@ -209,8 +213,15 @@ export type ReportLine =
       readonly outcome: Outcome
       readonly captured: string | null
       readonly killed: string | null
+      /** 판정에 선 장정 수 — 기습이 먹히면 0 (모이지 못했다) */
+      readonly militia: number
     }
-  | { readonly kind: 'harvest'; readonly faction: string; readonly grain: number }
+  /** 가을 수확 — `blessed` 는 그 가운데 봄 제사로 더 든 몫 */
+  | { readonly kind: 'harvest'; readonly faction: string; readonly grain: number; readonly blessed?: number }
+  /** 소도 제사 — 봄은 그해 수확, 가을은 군대 사기 */
+  | { readonly kind: 'rite'; readonly faction: string; readonly season: 'spring' | 'autumn' }
+  /** 장터 — 화친·동맹인 두 나라가 이번 계절 곡식을 얻었다 (둘 다 grain 씩) */
+  | { readonly kind: 'market'; readonly a: string; readonly b: string; readonly grain: number }
   | { readonly kind: 'draft'; readonly faction: string; readonly node: string; readonly unit: UnitKind; readonly n: number; readonly army: string }
   | { readonly kind: 'disband'; readonly army: string; readonly node: string; readonly n: number }
   | { readonly kind: 'settle'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number }

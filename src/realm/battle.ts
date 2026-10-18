@@ -204,6 +204,12 @@ export function fate(o: Outcome, bonus: number): { capture: number; death: numbe
   return { capture, death }
 }
 
+/** 큰 군대는 잘 안 숨는다 — ambushFreeMen 넘는 100명마다 ambushPerHundred. ambushChance 의 trait 에 빼서 넣는다 */
+export function ambushSizePenalty(men: number): number {
+  const R = P.realm
+  return Math.max(0, men - R.ambushFreeMen) / 100 * R.ambushPerHundred
+}
+
 /**
  * 기습 확률 (SYSTEMS §3)
  *   은폐(길·고을·계절) + 략 차이 × 계수 + 특성 보정 + 방심 − 경계 → [ambushMin, ambushMax]

@@ -13,9 +13,9 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
-import { friendly } from './diplomacy.ts'
-import { draftCost, draftLimit, hhOf, menOf, settleLimit, settleTargets, stockOf, upkeepOf } from './economy.ts'
-import { jointWin, movesOf, type Move } from './estimate.ts'
+import { allyFoe, friendly } from './diplomacy.ts'
+import { draftCost, draftLimit, hhOf, menOf, riteAllowed, riteCost, settleLimit, settleTargets, stockOf, upkeepOf } from './economy.ts'
+import { ambushWorth, jointWin, movesOf, type Move } from './estimate.ts'
 import { armiesAt, fortMul, neighbors, newArmyId, planned, seasonOf } from './season.ts'
 import type { UnitKind } from './battle.ts'
 import type { Army, Order, Realm } from './types.ts'
@@ -33,8 +33,38 @@ function lastGuard(r: Realm, faction: string, a: Army): boolean {
   return armiesAt(r, cap).filter((x) => x.faction === faction).length <= 1
 }
 
+/** 동맹이 싸우는 적의 고을이면 더 쳐 볼 만하다 — 동맹은 같은 적을 먼저 친다 (FLOW §4) */
+function focus(r: Realm, faction: string, to: string): number {
+  return allyFoe(r, faction, r.nodes[to]?.owner ?? null) ? P.realm.aiAllyFocus : 0
+}
+
+/** 소도 제사 — 허락되고 군량 aiDraftReserve 계절치를 남기고도 제사 곡식이 남으면 */
+function rites(r: Realm, faction: string): Order[] {
+  if (!riteAllowed(r, faction)) return []
+  const spare = stockOf(r, faction).grain - P.realm.aiDraftReserve * upkeepOf(r, faction, true)
+  return spare >= riteCost().grain ? [{ kind: 'rite', faction }] : []
+}
+
+/** 기습의 최악 승률 — 먹힘·들킴의 최악을 먹힐 확률로 섞는다. 모르면 null */
+function ambushLow(t: Move): number | null {
+  if (t.winAmbush === null || t.winCaught === null) return null
+  return t.ambushP * t.winAmbush[0] + (1 - t.ambushP) * t.winCaught[0]
+}
+
+/** 이 길로 칠 때의 최악 승률 — 정면과 기습 가운데 나은 쪽. 모르면 null (기습이 먹히면 성·장정이 없다 — 성 뒤의 고을은 기습으로 노린다) */
+function low(t: Move): number | null {
+  if (t.win === null) return null
+  return Math.max(t.win[0], ambushLow(t) ?? -1)
+}
+
+/**
+ * 기습할까 — 기습의 최악 승률이 정면보다 나으면 기습한다 (고를 때와 같은 잣대).
+ * 군세를 모르면 기습 확률만 본다 (aiAmbushWorth).
+ */
 function march(a: Army, t: Move): Order {
-  return { kind: 'march', army: a.id, edge: t.edge.id, ambush: t.ambushP >= P.realm.aiAmbushWorth }
+  const amb = ambushLow(t)
+  const ambush = amb !== null && t.win !== null ? amb > t.win[0] : t.ambushP >= P.realm.aiAmbushWorth
+  return { kind: 'march', army: a.id, edge: t.edge.id, ambush }
 }
 
 /**
@@ -163,9 +193,9 @@ function plan(r: Realm, faction: string): Order[] {
     if (ts.length === 0) continue
     const fresh = ts.filter((t) => t.win !== null && t.age <= R.aiCautiousAge)
     if (!lastGuard(p, faction, a)) {
-      const ready = fresh.filter((t) => t.win![0] >= R.aiCautiousWin)
+      const ready = fresh.filter((t) => low(t)! + focus(p, faction, t.to) >= R.aiCautiousWin)
       if (ready.length > 0) {
-        orders.push(march(a, ready.reduce((x, y) => (y.win![0] > x.win![0] ? y : x))))
+        orders.push(march(a, ready.reduce((x, y) => (low(y)! + focus(p, faction, y.to) > low(x)! + focus(p, faction, x.to) ? y : x))))
         continue
       }
     } else {
@@ -177,9 +207,10 @@ function plan(r: Realm, faction: string): Order[] {
       let bestW = -1
       for (const t of fresh) {
         const w = jointWin(p, faction, [{ army: det, edge: t.edge }], t.to)
-        if (w !== null && w[0] >= R.aiCautiousWin && w[0] > bestW) {
+        const v = w === null ? -1 : w[0] + focus(p, faction, t.to)
+        if (w !== null && v >= R.aiCautiousWin && v > bestW) {
           best = t
-          bestW = w[0]
+          bestW = v
         }
       }
       if (best !== null) {
@@ -233,11 +264,15 @@ function settles(r: Realm, faction: string): Order[] {
   return best === null ? [] : [{ kind: 'settle', faction, from: best.from, to: best.to, n: best.n }]
 }
 
-/** 한 세력의 이번 계절 명령 — 징병(가을·겨울) · 개척(봄·가을) · 군대의 움직임. 무모·무작위 봇은 개척하지 않는다 */
+/**
+ * 한 세력의 이번 계절 명령 — 징병(가을·겨울) · 개척(봄·가을) · 소도 제사(봄·가을) · 군대의 움직임.
+ * 무모·무작위 봇은 개척하지 않고, 무작위는 제사도 안 지낸다. 제사는 징병·개척으로 곡식을 쓴 뒤의 창고로 셈한다 (판정도 그 순서다)
+ */
 export function decide(r: Realm, faction: string, brain: Brain): Order[] {
   const ds = drafts(r, faction)
   const ss = brain === 'reckless' || brain === 'random' ? [] : settles(ds.length > 0 ? planned(r, ds) : r, faction)
-  return [...ds, ...ss, ...(brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
+  const rs = brain === 'random' ? [] : rites(ds.length + ss.length > 0 ? planned(r, [...ds, ...ss]) : r, faction)
+  return [...ds, ...ss, ...rs, ...(brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
 }
 
 function moves(r: Realm, faction: string, brain: Brain): Order[] {
@@ -292,7 +327,7 @@ function moves(r: Realm, faction: string, brain: Brain): Order[] {
     if (brain === 'greedy' || brain === 'reckless') {
       // 가운데로 셈하고, 모르면 얕본다 — 다만 성벽은 보인다 (모르는 고을의 짐작을 성 배수로 나눈다). 무모는 국읍도 비운다
       const mid = (w: readonly [number, number] | null, t: Move): number =>
-        w !== null ? (w[0] + w[1]) / 2 : R.aiUnknownWin / fortMul(r.nodes[t.to]!, seasonOf(r.season))
+        (w !== null ? Math.max((w[0] + w[1]) / 2, w === t.win ? (ambushWorth(t) ?? 0) : 0) : R.aiUnknownWin / fortMul(r.nodes[t.to]!, seasonOf(r.season))) + focus(r, faction, t.to)
       const bar = brain === 'reckless' ? R.aiRecklessWin : R.aiGreedyWin
       let went: boolean
       if (brain === 'greedy' && lastGuard(r, faction, a)) went = detach(a, ts, mid, bar)
@@ -313,9 +348,9 @@ function moves(r: Realm, faction: string, brain: Brain): Order[] {
     }
 
     // 신중 — 새 정보 · 최악의 승률
-    const ready = ts.filter((t) => t.win !== null && t.age <= R.aiCautiousAge && t.win[0] >= R.aiCautiousWin)
+    const ready = ts.filter((t) => t.win !== null && t.age <= R.aiCautiousAge && low(t)! + focus(r, faction, t.to) >= R.aiCautiousWin)
     if (ready.length > 0 && !lastGuard(r, faction, a)) {
-      orders.push(march(a, ready.reduce((x, y) => (y.win![0] > x.win![0] ? y : x))))
+      orders.push(march(a, ready.reduce((x, y) => (low(y)! + focus(r, faction, y.to) > low(x)! + focus(r, faction, x.to) ? y : x))))
       continue
     }
     if (lastGuard(r, faction, a)) {

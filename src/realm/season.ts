@@ -5,8 +5,8 @@
  * 굴림은 전부 이름이 있다 (core/rng.ts roll) — 판정 하나를 더해도 다른 판정이 밀리지 않는다.
  *
  * 도는 순서 (SYSTEMS §12 의 번호):
- *   1 명령 확정 (나누기·모으기·징병·해산·개척 — 명령 순서대로 → 출정) → 2 정찰 · 사신 → 3 행군 → 4 기습 → 5 전투·생포
- *   → 7 생산·수확·군량·가호 (economy.ts) → 9 경계 감쇠 · 화친 만료 → 끝 확인 (이김·짐) · 행군 목격 → 11 계절 +1
+ *   1 명령 확정 (나누기·모으기·징병·해산·개척 — 명령 순서대로 → 출정) → 2 정찰 · 사신 · 소도 제사 → 3 행군 → 4 기습 → 5 전투·생포
+ *   → 7 생산·수확·군량·가호 (economy.ts) → 9 경계 감쇠 · 화친 만료 · 장터 · 동맹의 눈 나누기 → 끝 확인 (이김·짐) · 행군 목격 → 11 계절 +1
  * 6 회유 · 8 이주 · 10 사건은 R3~R4 에서 이 자리에 끼운다 — 번호를 지켜야 순서가 안 바뀐다.
  *
  * 정보의 틈 (R1 에 적어 둔 것) — FLOW §7 #2 로 정했다: **행군은 보인다.** 우리 고을에 맞닿은 길 위의 남의 군대는
@@ -16,11 +16,11 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import {
-  ambushChance, bins, fate, headcount, losses, pick, power, strength, winChance,
+  ambushChance, ambushSizePenalty, bins, fate, headcount, losses, pick, power, strength, winChance,
   type Force, type UnitKind,
 } from './battle.ts'
-import { expireRelations, onHostile, relationOf, resolveEnvoys } from './diplomacy.ts'
-import { draftCost, draftLimit, militiaMen, onTake, settleCost, settleLimit, stepEconomy, stockOf } from './economy.ts'
+import { expireRelations, holdMarkets, onHostile, relationOf, resolveEnvoys, shareIntel } from './diplomacy.ts'
+import { draftCost, draftLimit, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepEconomy, stockOf } from './economy.ts'
 import { blockedWhy, seasonOf } from './calendar.ts'
 import type {
   Army, EdgeKind, Order, Realm, REdge, Report, ReportLine, RNode, SeasonOfYear, SnipeZone,
@@ -431,22 +431,25 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const defFaction = node.owner !== null && !allied(r, a.faction, node.owner) ? node.owner : defenders[0]!.faction
   const w = r.watch[node.id]!
   provoke(r, a.faction, defFaction, lines)
-  // 장정은 판정에만 선다 — 지키는 쪽 주인이 고을 주인일 때
-  const militia = militiaOf(r, node.id)
-  const standing = militia !== null && militia.faction === defFaction ? [...defenders, militia] : defenders
 
-  // 4 — 기습: 군대마다 제 길로 따로 굴린다
+  // 4 — 기습: 군대마다 제 길로 따로 굴린다. 큰 군대는 잘 안 숨는다
   const legs = atks.map((x) => {
     const m = x.march!
     const ed = r.edges[m.edge]!
     let amb: 'none' | 'success' | 'caught' = 'none'
     if (m.ambush) {
-      const p = ambushChance(conceal(ed, node, season), heroOf(r, x)?.ryak ?? 1, bestRyak(r, defenders), 0, w.lull, w.alert)
+      const size = -ambushSizePenalty(headcount(forceOf(r, x)))
+      const p = ambushChance(conceal(ed, node, season), heroOf(r, x)?.ryak ?? 1, bestRyak(r, defenders), size, w.lull, w.alert)
       amb = roll(r.seed, r.season, `ambush:${ed.id}:${x.id}`) < p ? 'success' : 'caught'
     }
     return { army: x, edge: ed, ambush: amb }
   })
   const ambush = legs.some((x) => x.ambush === 'success') ? 'success' : legs.some((x) => x.ambush === 'caught') ? 'caught' : 'none'
+  // 기습이 먹히면 성문이 닫히기 전에 들이친다 — 성·지형을 안 받고, 장정은 모이지 못한다.
+  // 장정은 판정에만 선다 — 지키는 쪽 주인이 고을 주인일 때
+  const militia = ambush === 'success' ? null : militiaOf(r, node.id)
+  const standing = militia !== null && militia.faction === defFaction ? [...defenders, militia] : defenders
+  const militiaN = standing.length > defenders.length ? headcount(forceOf(r, militia!)) : 0
   if (ambush === 'success') {
     // 이웃 고을이 기습당했다 — 같은 나라의 이웃이 경계를 올린다 (SYSTEMS §3)
     for (const nb of neighbors(r, node.id)) {
@@ -461,7 +464,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const xMul = zone === 'head' ? R.snipeHead : zone === 'body' ? R.snipeBody : zone === 'drum' ? R.snipeDrum : 1
   const atkF = mergeForces(r, atks)
   const defF = mergeForces(r, standing)
-  const fort = fortMul(node, season)
+  const fort = ambush === 'success' ? 1 : fortMul(node, season)
   // 북은 방어측만 (SYSTEMS §4-2)
   const snipeAtk = playerIsAtk || zone === 'drum' ? 1 : xMul
   const snipeDef = playerIsAtk ? xMul : 1
@@ -472,7 +475,8 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
 
   // 손실
   const loss = losses(outcome)
-  for (const x of atks) scaleMix(x, 1 - loss.atk)
+  // 들킨 군대는 기다리던 적에게 걸렸다 — 더 잃는다
+  for (const l of legs) scaleMix(l.army, 1 - Math.min(1, loss.atk + (l.ambush === 'caught' ? R.ambushCaughtLoss : 0)))
   for (const d of defenders) scaleMix(d, 1 - loss.def)
 
   // 5 — 진 쪽 장수의 운명 (생포를 먼저, 남은 몫에서 전사)
@@ -537,6 +541,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   lines.push({
     kind: 'battle', node: node.id, attacker: a.id, allies: atks.slice(1).map((x) => x.id),
     pincer: new Set(legs.map((x) => x.edge.id)).size >= 2, defender: defFaction, ambush, p, outcome, captured, killed,
+    militia: militiaN,
   })
 }
 
@@ -607,10 +612,13 @@ export function advance(
   applyOrders(r, orders, lines) // 1
   resolveScouts(r, orders, lines) // 2
   resolveEnvoys(r, orders, lines) // 2
+  resolveRites(r, orders, lines) // 2 — 소도 제사
   resolveMarches(r, snipes, lines, fought) // 3 · 4 · 5
   stepEconomy(r, season, fought, lines) // 7
   decayWatch(r) // 9
   expireRelations(r, lines) // 9
+  holdMarkets(r, lines) // 9 — 화친·동맹의 장터
+  shareIntel(r) // 9 — 동맹은 본 것을 나눈다
   if (r.player !== undefined) {
     for (const a of seenMarches(r, r.player)) {
       lines.push({ kind: 'sighted', faction: a.faction, army: a.id, from: a.march!.from, to: a.march!.to })
