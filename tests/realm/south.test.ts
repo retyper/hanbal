@@ -15,6 +15,7 @@ import { SOUTH_NATION_IDS, southGeo, startSouth } from '../../src/realm/data/reg
 import { startYeongnam } from '../../src/realm/data/regions/yeongnam.ts'
 import { advance } from '../../src/realm/season.ts'
 import type { Realm } from '../../src/realm/types.ts'
+import { mapHtml, visibleNodes } from '../../src/ui/realm/mapview.ts'
 
 describe('삼한 남부 판', () => {
   it('나라 서른여섯 · 고을은 틀 안 뭍 위 · 길은 있는 고을끼리', () => {
@@ -65,6 +66,20 @@ describe('삼한 남부 판', () => {
     const sum = (r: Realm): number => Object.values(r.known!).reduce((s, k) => s + k.length, 0)
     const start = sum(startSouth(7, 'baekje'))
     assert.ok(sum(a) > start + 10, `발견이 너무 적다 (${start} → ${sum(a)})`)
+  })
+
+  it('지도는 아는 나라만 그린다 — 모르는 나라의 고을·이름은 안개 밑', () => {
+    const r = startSouth(1, 'baekje')
+    const vis = visibleNodes(r, 'baekje')
+    assert.ok(vis.has('m-baekje-cap') && vis.has('m-mokji-cap'))
+    assert.ok(!vis.has('n-siljik-cap'))
+    const html = mapHtml(r, 'baekje', '/', [], '')
+    assert.ok(html.includes('data-node="m-baekje-cap"'))
+    assert.ok(!html.includes('data-node="n-siljik-cap"'), '모르는 실직이 지도에 보인다')
+    assert.ok(!html.includes(r.nodes['n-siljik-cap']!.name), '모르는 실직의 이름이 보인다')
+    assert.ok(html.includes('mask="url(#rm-fog)"'))
+    // 영남 판은 안개가 없다
+    assert.ok(!mapHtml(startYeongnam(1, 'us'), 'us', '/', [], '').includes('rm-fog'))
   })
 
   it('발견이 없는 판은 모두가 모두를 안다', () => {

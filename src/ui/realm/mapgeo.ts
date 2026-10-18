@@ -9,14 +9,28 @@
  */
 import { ISLES, LAND, RIVERS } from '../../realm/data/regions/yeongnam-geo.ts'
 import { FERRIES, ROUTES } from '../../realm/data/regions/yeongnam-routes.ts'
-import { yeongnamPos } from '../../realm/data/regions/yeongnam.ts'
+import { YEONGNAM_PROJ, yeongnamPos } from '../../realm/data/regions/yeongnam.ts'
+import { SOUTH_ISLES, SOUTH_LANDS, SOUTH_RIVERS, southPos } from '../../realm/data/regions/south-geo.ts'
 import type { REdge, RegionId } from '../../realm/types.ts'
 
 export type Pt = readonly [number, number]
 
+/** 영남 판 그림 좌표(0..1) → 삼한 남부 판 그림 좌표(0..1) — 영남 고을·길은 남부 판에 그대로 들어 있다 */
+function yToSouth([x, y]: Pt): Pt {
+  const P = YEONGNAM_PROJ
+  return southPos(P.lon0 + x * (P.lon1 - P.lon0), P.lat1 - y * (P.lat1 - P.lat0))
+}
+
+/** 판마다 미리 셈한 물길 (그림 좌표 0..1) — 남부 판은 영남 길만 있다. 마한 쪽 길은 아직 한 구비 */
+function viaOf(region: RegionId, id: string): readonly Pt[] | undefined {
+  if (region === 'yeongnam') return ROUTES[id]
+  if (region === 'south') return ROUTES[id]?.map(yToSouth)
+  return undefined
+}
+
 /** 길 위의 점들 (그림 좌표, a → b) — 영남 판은 미리 셈한 물길, 아니면 한 구비 휜 길 */
 export function routePoints(region: RegionId, ed: REdge, a: Pt, b: Pt, W: number, H: number): Pt[] {
-  const via = region === 'yeongnam' ? ROUTES[ed.id] : undefined
+  const via = viaOf(region, ed.id)
   if (via !== undefined) return [a, ...via.map(([x, y]) => [x * W, y * H] as const), b]
   // 변한 판 — 길 id 로 정한 쪽으로 살짝 휜다 (뱃길은 더 크게, 바닷가를 도는 것처럼)
   let h = 0
@@ -30,7 +44,8 @@ export function routePoints(region: RegionId, ed: REdge, a: Pt, b: Pt, W: number
 
 /** 나루의 배 자리 (그림 좌표) — 영남 판의 나루 길만 */
 export function ferryAt(region: RegionId, ed: REdge, W: number, H: number): Pt | null {
-  const f = region === 'yeongnam' ? FERRIES[ed.id] : undefined
+  const f0 = region === 'yeongnam' || region === 'south' ? FERRIES[ed.id] : undefined
+  const f = f0 !== undefined && region === 'south' ? yToSouth(f0) : f0
   return f !== undefined ? [f[0] * W, f[1] * H] : null
 }
 
@@ -85,12 +100,14 @@ export const midOf = (p: readonly Pt[]): Pt => trimPolyline(p, 0.5, 0.5)[0]!
 
 /** 강을 또렷하게 — 굵기는 밑그림의 굵기를 그림 너비에 맞춘다 (낙동강이 가장 굵다) */
 export function riversSvg(region: RegionId, W: number, H: number): string {
-  if (region !== 'yeongnam') return ''
-  const k = W / 1536
+  if (region !== 'yeongnam' && region !== 'south') return ''
+  const south = region === 'south'
+  // 남부 판은 고을 기호가 작다 — 강도 가늘게 (2026-10-19 화면으로 맞춤)
+  const k = south ? (W / 1536) * 0.55 : W / 1536
   let s = '<g class="rivers" fill="none" stroke-linecap="round" stroke-linejoin="round">'
-  for (const r of RIVERS) {
+  for (const r of south ? SOUTH_RIVERS : RIVERS) {
     const pts = r.pts.map(([lon, lat]) => {
-      const [x, y] = yeongnamPos(lon, lat)
+      const [x, y] = south ? southPos(lon, lat) : yeongnamPos(lon, lat)
       return [x * W, y * H] as const
     })
     const d = smoothPath(pts)
@@ -170,11 +187,13 @@ export function provinceCells(key: string, pts: readonly Pt[], size: readonly nu
 
 /** 영남 판의 뭍 (땅빛을 뭍 안에 가둔다) — SVG clipPath 안에 넣을 다각형들 */
 export function landClipSvg(region: RegionId, W: number, H: number): string {
-  if (region !== 'yeongnam') return ''
+  if (region !== 'yeongnam' && region !== 'south') return ''
+  const pos = region === 'south' ? southPos : yeongnamPos
   const poly = (ll: readonly Pt[]): string => `<polygon points="${ll.map(([lon, lat]) => {
-    const [x, y] = yeongnamPos(lon, lat)
+    const [x, y] = pos(lon, lat)
     return `${f1(x * W)},${f1(y * H)}`
   }).join(' ')}"/>`
+  if (region === 'south') return `<clipPath id="rm-land">${SOUTH_LANDS.map(poly).join('')}${SOUTH_ISLES.map(poly).join('')}</clipPath>`
   return `<clipPath id="rm-land">${poly(LAND)}${ISLES.map(poly).join('')}</clipPath>`
 }
 
