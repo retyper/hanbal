@@ -53,6 +53,21 @@ export const MAP_CSS = `
   filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff); }
 .map .nd .flag.me::after { box-shadow: inset 0 0 0 2px #fff8; }
 .map .nd.dim { opacity: .38; }
+.map .nd.tgt .ring { border: 3px dashed #ffd27a; box-shadow: 0 0 10px #ffd27a; animation: tgt 1.4s ease-in-out infinite alternate; }
+.map .nd.tgt.on .ring { border-style: solid; border-color: #c8402a; box-shadow: 0 0 12px #c8402a; animation: none; }
+.map .nd.tgt.off { opacity: .45; } .map .nd.tgt.off .ring { border-color: #777; box-shadow: none; animation: none; }
+@keyframes tgt { from { opacity: .55; } to { opacity: 1; } }
+.map .nd .tchip { position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, -2px); white-space: nowrap; pointer-events: none; z-index: 3; }
+.map .nd .tchip .feel { font-size: max(10px, calc(1.8cqh / var(--z, 1) * var(--zs, 1))); padding: 1px 6px; }
+.map .nd .tchip .tn { background: #1c2129e8; color: #f3e6c8; border-radius: 9px; padding: 1px 7px; font-size: max(10px, calc(1.8cqh / var(--z, 1) * var(--zs, 1))); font-weight: 700; }
+.map .toks { position: absolute; transform: translate(-50%, 85%); display: flex; gap: 3px; z-index: 4; pointer-events: none; }
+.map .tok { pointer-events: auto; display: flex; flex-direction: column; align-items: center; padding: 0; border: 0; background: none; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; width: calc(4.2cqh / var(--z, 1) * var(--zs, 1)); min-width: 30px; }
+.map .tok img { width: 100%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 2px solid #9fd18b; background: #1c2129; box-shadow: 0 2px 4px #0008; }
+.map .tok b { margin-top: -6px; background: #1c2129; color: #9fd18b; border: 1px solid #9fd18b; border-radius: 8px; padding: 0 4px;
+  font-size: max(10px, calc(1.6cqh / var(--z, 1) * var(--zs, 1))); line-height: 1.3; }
+.map .tok.sel img { border-color: #ffd27a; box-shadow: 0 0 0 3px #ffd27a88, 0 0 12px #ffd27a; transform: scale(1.12); }
+.map .tok.going img { border-color: #c8402a; }
 .map .nd.sel .nm { color: #7a1f10; } .map .nd.sel img.st { filter: drop-shadow(0 0 7px #ffd27a) drop-shadow(0 0 3px #ffd27a); }
 `
 
@@ -86,7 +101,12 @@ const TERRITORY_BAND = 90
  * 지도 한 장 — `me` 의 눈으로. `marches` 는 길 위의 우리 군대와 이번 계절 고른 출정.
  * 땅은 주인 색으로 물든다 (형: "어느나라가 어디 먹는지 한방에 국기와 함께"). `focus` 나라를 고르면 그 나라 땅만 또렷하다.
  */
-export function mapHtml(r: Realm, me: string, art: string, marches: readonly MapMarch[], selected: string, focus: string | null = null): string {
+export function mapHtml(
+  r: Realm, me: string, art: string, marches: readonly MapMarch[], selected: string, focus: string | null = null,
+  tokens: readonly MapToken[] = [], targets: readonly MapTarget[] = [],
+): string {
+  const target = new Map(targets.map((t) => [t.node, t]))
+  const hasTok = new Set(tokens.map((t) => t.node))
   const known = r.intel[me] ?? {}
   const season = seasonOf(r.season)
   // 땅과 주인은 누구나 안다 (형: "어느나라가 어디 먹는지 한방에" — 2026-10-18). 모르는 것은 군세뿐이다
@@ -160,7 +180,7 @@ export function mapHtml(r: Realm, me: string, art: string, marches: readonly Map
     const color = owner !== null ? (FACTION_ART[owner]?.color ?? '#ccc') : '#d9d2c0'
     const ours = owner === me
     let badge = ''
-    if (ours) {
+    if (ours && !hasTok.has(n.id)) {
       const men = Object.values(r.armies).filter((a) => a.at === n.id && a.faction === me && a.march === null)
         .reduce((s, a) => s + headcount(forceOf(r, a)), 0)
       if (men > 0) badge = `<span class="men">${men}</span>`
@@ -174,8 +194,48 @@ export function mapHtml(r: Realm, me: string, art: string, marches: readonly Map
     const who = owner === null ? '주인 없음' : (r.factions[owner]?.name ?? '?')
     const fa = owner !== null ? FACTION_ART[owner] : undefined
     const flag = fa !== undefined ? `<span class="flag${ours ? ' me' : ''}"><img src="${art}icon/${fa.emblem}.png" alt=""></span>` : ''
-    nodes += `<div class="nd${selected === n.id ? ' sel' : ''}${dim(owner) ? ' dim' : ''}" data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color};--s:${sizeOf(n.hh).toFixed(2)}" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}">`
-    nodes += `<span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${flag}${badge}<span class="nm">${n.name}</span></div>`
+    // 고른 군대가 갈 수 있는 곳 — 누르면 그리로 간다 (data-act="go")
+    const tg = target.get(n.id)
+    const go = tg !== undefined && !tg.off ? ` data-act="go" data-edge="${tg.edge}"` : ''
+    const tcls = tg === undefined ? '' : tg.off ? ' tgt off' : tg.on ? ' tgt on' : ' tgt'
+    nodes += `<div class="nd${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${tcls}"${go} data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color};--s:${sizeOf(n.hh).toFixed(2)}" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}">`
+    nodes += `<span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${flag}${badge}<span class="nm">${n.name}</span>${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : ''}</div>`
   }
-  return `<div class="map" style="background-image:url('${art}map/${SEASON_MAP[season]}.jpg')">${svg}${nodes}</div>`
+  // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
+  const byNode = new Map<string, MapToken[]>()
+  for (const t of tokens) byNode.set(t.node, [...(byNode.get(t.node) ?? []), t])
+  let toks = ''
+  for (const [node, ts] of [...byNode].sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
+    const p = NODE_POS[node]
+    if (p === undefined) continue
+    toks += `<div class="toks" style="left:${p[0] * 100}%;top:${p[1] * 100}%">`
+    for (const t of ts) {
+      toks += `<button class="tok${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}" data-act="tok" data-army="${t.army}"><img src="${t.img}" alt=""><b>${t.men}</b></button>`
+    }
+    toks += `</div>`
+  }
+  return `<div class="map" style="background-image:url('${art}map/${SEASON_MAP[season]}.jpg')">${svg}${nodes}${toks}</div>`
+}
+
+/** 지도 위 우리 군대의 말 — 머무는 군대 하나에 하나 */
+export interface MapToken {
+  readonly army: string
+  readonly node: string
+  readonly men: number
+  /** 장수 얼굴, 없으면 가장 많은 병종의 기호 */
+  readonly img: string
+  readonly sel: boolean
+  /** 이번 계절 떠나기로 했다 */
+  readonly going: boolean
+}
+
+/** 고른 군대가 갈 수 있는 고을 — 칩은 판세(싸울 곳) 또는 걸리는 계절 */
+export interface MapTarget {
+  readonly node: string
+  readonly edge: string
+  readonly chip: string
+  /** 막힌 길 */
+  readonly off: boolean
+  /** 이미 그리로 가기로 했다 */
+  readonly on: boolean
 }

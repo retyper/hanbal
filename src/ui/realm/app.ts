@@ -23,7 +23,7 @@ import { allianceWhy, leaderOf, truceWhy, winningAgainst } from '../../realm/sta
 import { heroSeen, isRuler, persuadeSeasons, wanderersFor } from '../../realm/heroes.ts'
 import type { Army, EnvoyAsk, Hero, Order, PlotOp, Realm, Report } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
-import { MAP_CSS, mapHtml, type MapMarch } from './mapview.ts'
+import { MAP_CSS, mapHtml, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { GROW_CSS, HERO_CSS, bondChip, growthHtml, heroRadar, roleLine, traitChips, traitLines } from './heroview.ts'
 import { APP_CSS } from './appstyle.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
@@ -181,6 +181,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let note = ''
   /** 방금 나눈 무리 — 그 카드를 밝히고 눈앞으로 가져온다 (다음 누름에 지운다) */
   let freshArmy = ''
+  /** 지도에서 고른 우리 군대 — 갈 곳이 밝아진다 */
+  let armySel = ''
   /** 탭의 빨간 점 — 본 것 */
   let seenKeys = new Set<string>()
   /** 지도에서 또렷하게 볼 나라 — 깃발 줄에서 누른다 */
@@ -260,7 +262,23 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     for (const a of seenMarches(r, me())) if (a.march !== null) marches.push({ from: a.march.from, to: a.march.to, left: a.march.left, foe: true })
     const sel = sheet?.kind === 'node' ? sheet.id : scout
-    return mapHtml(r, me(), ART, marches, sel, focus)
+    // 지도에서 바로 움직인다 (형: "다른게임에서는 지도에서 바로 배치 조절하는거 같은데") — 말을 누르고, 밝아진 고을을 누른다
+    const tokens: MapToken[] = sorted(Object.values(r.armies)).filter((a) => a.faction === me() && a.march === null).map((a) => {
+      const hero = a.hero !== null ? r.heroes[a.hero] : undefined
+      const file = hero !== undefined ? HERO_BUST[hero.id] : undefined
+      const top = (Object.entries(a.mix) as Array<[UnitKind, number]>).sort((x, y) => y[1] - x[1])[0]?.[0] ?? 'spear'
+      return {
+        army: a.id, node: a.at, men: headcount(forceOf(r, a)), sel: armySel === a.id, going: pick[a.id] !== undefined,
+        img: file !== undefined ? `${ART}bust/${file}.jpg` : `${ART}icon/${UNIT_ICON[top]}.png`,
+      }
+    })
+    const a = armySel !== '' ? r.armies[armySel] : undefined
+    const targets: MapTarget[] = a === undefined || a.march !== null ? [] : movesOf(r, me(), a).map((m) => ({
+      node: m.to, edge: m.edge.id, off: m.blocked !== null, on: pick[a.id]?.edge === m.edge.id,
+      chip: m.blocked !== null ? `<span class="tn">${esc(BLOCKED_LINE[m.blocked])}</span>`
+        : m.hostile ? (m.win !== null ? fightFeel(m.win[0], m.win[1]) : unknownFeel()) : `<span class="tn">${m.seasons}계절</span>`,
+    }))
+    return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets)
   }
 
   /** 깃발 줄 — 나라마다 깃발과 땅 수 (땅의 주인은 누구나 안다). 누르면 그 나라 땅만 또렷하다 */
@@ -1175,6 +1193,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       return
     }
     if (t.classList.contains('nd') && !t.dataset['act']) {
+      // 군대를 고른 채 갈 수 없는 곳을 누르면 고르기만 푼다
+      if (armySel !== '') {
+        armySel = ''
+        paint()
+        return
+      }
       host.onTap('node', t.dataset['node']!)
       openSheet({ kind: 'node', id: t.dataset['node']! })
       return
@@ -1213,6 +1237,30 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (openArmy === d['army'] && armyMode === d['mode']) openArmy = ''
         else { openArmy = d['army']!; armyMode = d['mode'] as 'move' | 'split'; split = { take: {}, hero: false, edge: null, ambush: false } }
         break
+      case 'tok': armySel = armySel === d['army'] ? '' : d['army']!; break
+      case 'go': {
+        // 지도에서 고른 곳으로 — 싸울 곳이면 군대 판을 열어 정면·기습을 고르게 한다. 같은 곳을 다시 누르면 머문다
+        const army = armySel
+        const edge = d['edge']!
+        if (army === '' || r === null) break
+        if (pick[army]?.edge === edge) {
+          delete pick[army]
+          break
+        }
+        pick[army] = { edge, ambush: false }
+        const m = movesOf(r, me(), r.armies[army]!).find((x) => x.edge.id === edge)
+        if (m?.hostile === true) {
+          openArmy = army
+          armyMode = 'move'
+          armySel = ''
+          sheet = { kind: 'army' } // openSheet 은 같은 판이면 닫는다 — 여기선 늘 연다
+          paint()
+          requestAnimationFrame(() => $('.sheet').querySelector<HTMLElement>('.row.mv.on')?.scrollIntoView({ block: 'center' }))
+          return
+        }
+        armySel = ''
+        break
+      }
       case 'mv': {
         const army = d['army']!
         if (d['edge'] === '') delete pick[army]
