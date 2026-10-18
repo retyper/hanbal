@@ -51,7 +51,8 @@ export function leaderOf(r: Realm, viewer: string): string | null {
   for (const f of fs) {
     const caps = capitalsHeld(r, f)
     const p = pw.get(f)!
-    if (caps < R.leaderCapitals && (total <= 0 || p / total < R.leaderShare)) continue
+    const big = r.region === 'yeongnam'
+    if (caps < (big ? R.leaderCapitalsYeongnam : R.leaderCapitals) && (total <= 0 || p / total < (big ? R.leaderShareYeongnam : R.leaderShare))) continue
     if (best === null || caps > best.caps || (caps === best.caps && p > best.p)) best = { f, caps, p }
   }
   return best?.f ?? null

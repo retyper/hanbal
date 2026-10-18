@@ -26,8 +26,11 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
   let z = 0 // 0 = 아직 안 정함 — 처음 apply 때 cover 로
   let moved = false
 
-  const cover = (): number => Math.max(1, wrap.clientWidth / (wrap.clientHeight * ASPECT))
-  const clamp = (v: number): number => Math.min(cover() * MAX_OVER_COVER, Math.max(1, v))
+  // 판마다 지도 비율·가장 큰 배율이 다르다 (영남 판은 고을이 빽빽해 더 크게 본다) — mapview 가 data-aspect · data-zmax 로 단다
+  const aspect = (): number => Number(map()?.dataset["aspect"]) || ASPECT
+  const maxOver = (): number => Number(map()?.dataset["zmax"]) || MAX_OVER_COVER
+  const cover = (): number => Math.max(1, wrap.clientWidth / (wrap.clientHeight * aspect()))
+  const clamp = (v: number): number => Math.min(cover() * maxOver(), Math.max(1, v))
   const map = (): HTMLElement | null => wrap.querySelector<HTMLElement>('.map')
 
   function paintZ(): void {

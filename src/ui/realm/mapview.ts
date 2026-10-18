@@ -7,15 +7,15 @@
  * 자리·그림 이름은 realm/data/art.ts.
  */
 import { headcount } from '../../realm/battle.ts'
-import { FACTION_ART, NODE_POS, SEASON_MAP, nodeIcon } from '../../realm/data/art.ts'
+import { FACTION_ART, NODE_POS, REGION_ART, SEASON_MAP, nodeIcon } from '../../realm/data/art.ts'
 import { EDGE_NAME, NODE_KIND_NAME, NODE_NOW } from '../../realm/data/prose.ts'
 import { visibleRange } from '../../realm/intel.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
 import type { EdgeKind, Realm } from '../../realm/types.ts'
 
-/** 지도 바탕의 크기 (map/*.jpg) — SVG 의 좌표계 */
-const W = 1264
-const H = 848
+/** 변한 판 지도 바탕의 크기 (map/*.jpg) — CSS 의 기본 비율. 판마다의 크기는 REGION_ART (영남 판 1024×765) */
+const W = REGION_ART['byeonhan-mini'].w
+const H = REGION_ART['byeonhan-mini'].h
 
 /** 길 종류의 선 — 색 · 굵기 · 점선 */
 const EDGE_STYLE: Readonly<Record<EdgeKind, string>> = {
@@ -36,15 +36,15 @@ export const MAP_CSS = `
 .map { position: relative; height: 100%; aspect-ratio: ${W} / ${H}; margin: 0 auto; background: #2a261f center / cover no-repeat;
   user-select: none; -webkit-user-select: none; container-type: size; }
 .map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.map .nd { position: absolute; transform: translate(-50%, -62%); width: calc(8.5% * var(--s, 1)); text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.map .nd { position: absolute; transform: translate(-50%, -62%); width: calc(8.5% * var(--s, 1) * var(--ns, 1)); text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .map .nd img.st { width: 100%; filter: drop-shadow(0 2px 2px rgba(0,0,0,.55)); }
-.map .nd .nm { display: block; margin-top: -8%; font-size: max(10px, calc(2.1cqh / var(--z, 1) * var(--zs, 1))); line-height: 1.2; color: #2a1d10; font-weight: 700;
+.map .nd .nm { display: block; margin-top: -8%; font-size: max(10px, calc(2.1cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1))); line-height: 1.2; color: #2a1d10; font-weight: 700;
   text-shadow: 0 0 3px #f3e6c8, 0 0 3px #f3e6c8, 0 0 2px #f3e6c8; white-space: nowrap; }
 .map .nd .nm small { display: block; font-size: .78em; font-weight: 500; color: #4a3a28; margin-top: -1px; }
 .map .nd .ring { position: absolute; left: 50%; top: 42%; width: 82%; aspect-ratio: 1; transform: translate(-50%, -50%);
   border-radius: 50%; border: 3px solid var(--c); box-shadow: 0 0 6px var(--c); pointer-events: none; }
 .map .nd .men, .map .nd .foe { position: absolute; right: -10%; top: -6%; background: #1c2129; border-radius: 9px; padding: 0 5px;
-  font-size: max(10px, calc(1.9cqh / var(--z, 1) * var(--zs, 1))); font-weight: 700; }
+  font-size: max(10px, calc(1.9cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1))); font-weight: 700; }
 .map .nd .men { color: #9fd18b; border: 1px solid #9fd18b; } .map .nd .foe { color: #e8a08a; border: 1px solid #8a5a3a; }
 .map .nd .flag { position: absolute; left: -18%; top: -34%; width: 52%; aspect-ratio: 1.15; pointer-events: none; }
 .map .nd .flag::before { content: ''; position: absolute; left: 0; top: 0; width: 7%; height: 150%; background: #3a2a18; border-radius: 2px; }
@@ -64,7 +64,7 @@ export const MAP_CSS = `
 .map .nd .tchip .tn { background: #1c2129e8; color: #f3e6c8; border-radius: 9px; padding: 1px 7px; font-size: max(10px, calc(1.8cqh / var(--z, 1) * var(--zs, 1))); font-weight: 700; }
 .map .toks { position: absolute; transform: translate(-50%, 85%); display: flex; gap: 3px; z-index: 4; pointer-events: none; }
 .map .tok { pointer-events: auto; display: flex; flex-direction: column; align-items: center; padding: 0; border: 0; background: none; cursor: pointer;
-  -webkit-tap-highlight-color: transparent; width: calc(4.2cqh / var(--z, 1) * var(--zs, 1)); min-width: 30px; }
+  -webkit-tap-highlight-color: transparent; width: calc(4.2cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)); min-width: 26px; }
 .map .tok img { width: 100%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 2px solid #9fd18b; background: #1c2129; box-shadow: 0 2px 4px #0008; }
 .map .tok b { margin-top: -6px; background: #1c2129; color: #9fd18b; border: 1px solid #9fd18b; border-radius: 8px; padding: 0 4px;
   font-size: max(10px, calc(1.6cqh / var(--z, 1) * var(--zs, 1))); line-height: 1.3; }
@@ -90,14 +90,6 @@ export interface MapMarch {
  */
 const sizeOf = (hh: number): number => Math.min(1.35, Math.max(0.8, 0.7 + hh / 900))
 
-const px = (id: string): [number, number] => {
-  const p = NODE_POS[id] ?? [0.5, 0.5]
-  return [p[0] * W, p[1] * H]
-}
-
-/** 땅빛 — 고을 하나가 물들이는 둘레 (지도 좌표) · 같은 나라 고을 사이 띠의 굵기 */
-const TERRITORY_R = 150
-const TERRITORY_BAND = 90
 
 /**
  * 지도 한 장 — `me` 의 눈으로. `marches` 는 길 위의 우리 군대와 이번 계절 고른 출정.
@@ -107,6 +99,19 @@ export function mapHtml(
   r: Realm, me: string, art: string, marches: readonly MapMarch[], selected: string, focus: string | null = null,
   tokens: readonly MapToken[] = [], targets: readonly MapTarget[] = [],
 ): string {
+  // 판마다 지도 그림·좌표계·기호 크기 (영남 판은 고을이 빽빽해 작게)
+  const RA = REGION_ART[r.region ?? 'byeonhan-mini']
+  const W = RA.w
+  const H = RA.h
+  const px = (id: string): [number, number] => {
+    const p = NODE_POS[id] ?? [0.5, 0.5]
+    return [p[0] * W, p[1] * H]
+  }
+  /** 땅빛 — 고을 하나가 물들이는 둘레 (지도 좌표) · 같은 나라 고을 사이 띠의 굵기 */
+  const TERRITORY_R = RA.terrR
+  const TERRITORY_BAND = RA.terrBand
+  /** 화살·글씨 굵기 — 작은 기호에 맞춘다 */
+  const lw = RA.nodeScale < 1 ? 0.65 : 1
   const target = new Map(targets.map((t) => [t.node, t]))
   const hasTok = new Set(tokens.map((t) => t.node))
   const known = r.intel[me] ?? {}
@@ -165,10 +170,10 @@ export function mapHtml(
     const dash = amb ? ' stroke-dasharray="2 14" stroke-linecap="round"' : m.left === null ? '' : ' stroke-dasharray="14 8"'
     const col = m.foe === true || amb ? '#3a2a5a' : '#c8402a'
     const head = m.foe === true || amb ? 'rm-ah-foe' : 'rm-ah'
-    svg += `<line x1="${sx}" y1="${sy}" x2="${ex}" y2="${ey}" stroke="${col}" stroke-width="${amb ? 11 : 9}"${dash} marker-end="url(#${head})" opacity=".9"/>`
+    svg += `<line x1="${sx}" y1="${sy}" x2="${ex}" y2="${ey}" stroke="${col}" stroke-width="${(amb ? 11 : 9) * lw}"${dash} marker-end="url(#${head})" opacity=".9"/>`
     const label = `${m.foe === true ? '적 ' : ''}${amb ? '기습' : ''}${m.left !== null ? `${amb ? ' ' : ''}${m.left}계절` : ''}`
     if (label !== '') {
-      svg += `<text x="${(sx + ex) / 2}" y="${(sy + ey) / 2 - 12}" font-size="26" font-weight="700" fill="${m.foe === true || amb ? '#3a2a5a' : '#7a1f10'}" stroke="#f3e6c8" stroke-width="5" paint-order="stroke" text-anchor="middle">${label}</text>`
+      svg += `<text x="${(sx + ex) / 2}" y="${(sy + ey) / 2 - 12}" font-size="${26 * lw}" font-weight="700" fill="${m.foe === true || amb ? '#3a2a5a' : '#7a1f10'}" stroke="#f3e6c8" stroke-width="5" paint-order="stroke" text-anchor="middle">${label}</text>`
     }
   }
   svg += `</svg>`
@@ -216,7 +221,7 @@ export function mapHtml(
     }
     toks += `</div>`
   }
-  return `<div class="map" style="background-image:url('${art}map/${SEASON_MAP[season]}.jpg')">${svg}${nodes}${toks}</div>`
+  return `<div class="map" data-aspect="${W / H}" data-zmax="${RA.zmax}" style="background-image:url('${art}${RA.dir}/${SEASON_MAP[season]}.${RA.ext}');aspect-ratio:${W} / ${H};--ns:${RA.nodeScale};--ls:${RA.labelScale}">${svg}${nodes}${toks}</div>`
 }
 
 /** 지도 위 우리 군대의 말 — 머무는 군대 하나에 하나 */

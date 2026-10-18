@@ -5,7 +5,17 @@
  * 파일은 public/realm/ 아래 이름이다 (굽기 전 원본은 assets_src/realm/, gitignore).
  * 지도 위 자리는 map/spring.jpg (1264×848) 위의 비율 0~1 — 변한 축소판의 [상상 배치]를 낙동강·남강 그림에 얹었다.
  */
-import type { NodeKind, RNode } from '../types.ts'
+import type { NodeKind, RegionId, RNode } from '../types.ts'
+import { GEO as YEONGNAM_GEO, yeongnamPos } from './regions/yeongnam.ts'
+
+/**
+ * 판마다 지도 그림 — 폴더 · 확장자 · 그림 크기(SVG 좌표계) · 고을 기호·글씨 크기 배수 · 가장 큰 배율(cover 의 몇 배, zoom.ts) · 땅빛 둘레 (mapview.ts)
+ * 영남 판은 고을이 빽빽해서 기호를 작게, 땅빛을 좁게 둔다.
+ */
+export const REGION_ART: Readonly<Record<RegionId, { dir: string; ext: string; w: number; h: number; nodeScale: number; labelScale: number; zmax: number; terrR: number; terrBand: number }>> = {
+  'byeonhan-mini': { dir: 'map', ext: 'jpg', w: 1264, h: 848, nodeScale: 1, labelScale: 1, zmax: 2.2, terrR: 150, terrBand: 90 },
+  yeongnam: { dir: 'map-yeongnam', ext: 'webp', w: 1024, h: 765, nodeScale: 0.34, labelScale: 0.72, zmax: 4, terrR: 50, terrBand: 28 },
+}
 
 /** 장수 id → 명치판 (bust/<이름>.jpg). g- 남자 장수 · w- 여인 · l- 전설 */
 export const HERO_BUST: Readonly<Record<string, string>> = {
@@ -37,6 +47,16 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'wander-13': 'w-14-feast-spy', 'wander-14': 'g-10-buyeo-horse-lord', 'wander-15': 'w-09-byeonhan-smith',
   'wander-16': 'w-20-gaya-smith-daughter', 'wander-17': 'g-12-silla-youth', 'wander-18': 'w-01-silla-princess',
   'wander-19': 'g-15-shaman-man', 'wander-20': 'w-08-mahan-warrior',
+  // 영남 판 (data/regions/yeongnam.ts) — 변한 판과 같은 나라는 같은 얼굴. 새 군주 열다섯은 있는 명치판을 나눠 쓴다 (여인이 많다)
+  // 영남 판을 위해 새로 받은 여덟 (2026-10-18): 사로 이사금 · 대가야 왕 · 사벌 노장 · 사물 바다 군장 · 우시산 고래잡이 여군장 · 압독 여왕 · 비화가야 무녀 군주 · 이서 여장수
+  'saro-ruler': 'g-17-saro-isageum', 'daegaya-ruler': 'g-18-daegaya-king', 'dabeol-ruler': 'g-16-goguryeo-gaema-commander',
+  'sabeol-ruler': 'g-19-sabeol-veteran', 'usisan-ruler': 'w-23-usisan-whale-queen', 'bihwa-ruler': 'w-25-bihwa-priestess',
+  'jomun-ruler': 'w-06-buyeo-huntress', 'golbeol-ruler': 'w-22-dongye-tiger-huntress', 'apdok-ruler': 'w-24-apdok-queen',
+  'iseo-ruler': 'w-12-court-dancer', 'byeokjin-ruler': 'w-20-gaya-smith-daughter', 'gammun-ruler': 'g-15-shaman-man',
+  'samul-ruler': 'g-20-samul-sea-lord', 'eumjeup-ruler': 'g-12-silla-youth', 'chopal-ruler': 'g-14-captive-general',
+  'saro-1': 'g-08-veteran', 'saro-2': 'w-03-goguryeo-archer', 'daegaya-1': 'w-09-byeonhan-smith', 'sabeol-1': 'w-19-buyeo-fur-princess',
+  'dabeol-1': 'g-07-drunk-warrior', 'usisan-1': 'g-01-master-smith', 'jomun-1': 'g-13-baekje-general', 'iseo-1': 'w-26-iseo-tomboy-general',
+  'samul-1': 'w-08-mahan-warrior', 'bihwa-1': 'g-10-buyeo-horse-lord', 'eumjeup-1': 'w-01-silla-princess',
 }
 
 /** 나라 id → 깃발 (icon/emblem-*.png) · 지도의 테두리 색 */
@@ -47,6 +67,22 @@ export const FACTION_ART: Readonly<Record<string, { emblem: string; color: strin
   miri: { emblem: 'emblem-grain', color: '#6fa8dc' },
   goja: { emblem: 'emblem-sun', color: '#4fc1b0' },
   dokro: { emblem: 'emblem-boar', color: '#b48ad8' },
+  // 영남 판의 새 나라 열다섯 — 깃발은 나눠 쓰고 색으로 가른다
+  saro: { emblem: 'emblem-samjogo', color: '#f0d050' },
+  daegaya: { emblem: 'emblem-sodo-bird', color: '#e88a3c' },
+  dabeol: { emblem: 'emblem-bear', color: '#8a6a4a' },
+  sabeol: { emblem: 'emblem-deer', color: '#5f9ea0' },
+  usisan: { emblem: 'emblem-crow', color: '#7f8fa6' },
+  bihwa: { emblem: 'emblem-grain', color: '#c7d36f' },
+  jomun: { emblem: 'emblem-tiger', color: '#d9a066' },
+  golbeol: { emblem: 'emblem-axe', color: '#a05050' },
+  apdok: { emblem: 'emblem-pine', color: '#4f8a5f' },
+  iseo: { emblem: 'emblem-moon', color: '#9fb7e0' },
+  byeokjin: { emblem: 'emblem-mountain', color: '#c08bb0' },
+  gammun: { emblem: 'emblem-snake', color: '#6c7f3a' },
+  samul: { emblem: 'emblem-wave', color: '#3f86c6' },
+  eumjeup: { emblem: 'emblem-deer', color: '#e5a3b8' },
+  chopal: { emblem: 'emblem-sun', color: '#b8a0d0' },
 }
 
 const KIND_ICON: Readonly<Record<NodeKind, string>> = {
@@ -107,6 +143,8 @@ export const NODE_POS: Readonly<Record<string, readonly [number, number]>> = {
   'wild-seobu': [0.07, 0.65],
   'wild-keunseom': [0.3, 0.87],
   'wild-dolseom': [0.63, 0.82],
+  // 영남 판 — 실제 경위도를 지도 그림과 같은 투영으로 (data/regions/yeongnam.ts GEO · tools/yeongnam-sketch.js)
+  ...Object.fromEntries(Object.entries(YEONGNAM_GEO).map(([id, [lon, lat]]) => [id, yeongnamPos(lon, lat)])),
 }
 
 /** 계절 → 지도 바탕 (같은 땅의 네 철, ART ⑪) */

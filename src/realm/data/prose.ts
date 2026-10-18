@@ -538,6 +538,25 @@ export const NODE_NOW: Readonly<Record<string, string>> = {
   sodo: '창녕',
   'wild-galmae': '함안 여항산', 'wild-beodeul': '남강 어귀', 'wild-gomgol': '양산 원동', 'wild-neoreun': '김해 대저',
   'wild-seobu': '마산 진동', 'wild-keunseom': '거제', 'wild-dolseom': '가덕도',
+  // 영남 판 (data/regions/yeongnam.ts — 고을 자리는 실제 경위도)
+  'y-saro-cap': '경주', 'y-saro-fort': '경주 토함산', 'y-saro-port': '경주 감포',
+  'y-eumjeup-cap': '경주 안강', 'y-eumjeup-port': '포항',
+  'y-usisan-cap': '울산', 'y-usisan-iron': '울산 달천',
+  'y-dokro-cap': '부산 동래', 'y-dokro-v': '부산 기장',
+  'y-guya-cap': '김해', 'y-guya-iron': '양산 물금', 'y-guya-v': '김해 진영',
+  'y-us-cap': '창원 마산', 'y-us-v': '창원 동읍',
+  'y-anya-cap': '함안', 'y-anya-fort': '의령',
+  'y-goja-cap': '고성', 'y-goja-v': '통영',
+  'y-samul-cap': '사천',
+  'y-miri-cap': '밀양', 'y-miri-v': '밀양 삼랑진',
+  'y-bihwa-cap': '창녕', 'y-chopal-cap': '합천 초계', 'y-iseo-cap': '청도', 'y-apdok-cap': '경산',
+  'y-dabeol-cap': '대구', 'y-dabeol-v': '대구 팔공산', 'y-golbeol-cap': '영천',
+  'y-daegaya-cap': '고령', 'y-daegaya-iron': '합천 야로', 'y-byeokjin-cap': '성주',
+  'y-gammun-cap': '김천', 'y-sabeol-cap': '상주', 'y-sabeol-v': '상주 낙동', 'y-jomun-cap': '의성',
+  'y-sodo-east': '청도 가지산', 'y-sodo-west': '합천 가야산',
+  'y-w-geochang': '거창', 'y-w-jinju': '진주', 'y-w-sancheong': '산청', 'y-w-neoreun': '부산 강서',
+  'y-w-gomgol': '양산 원동', 'y-w-gunwi': '군위', 'y-w-uiseong': '의성 단밀', 'y-w-cheongsong': '청송',
+  'y-w-yeongdeok': '영덕', 'y-w-geoje': '거제', 'y-w-namhae': '남해',
 }
 
 /** 자객의 활 단계 (plots.assassinBow · 밤 판 bow=) — 0 단궁 · 1 맥궁 · 2 각궁 · 3 신궁 */

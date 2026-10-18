@@ -118,6 +118,9 @@ export interface Stock {
 /** 창고의 것 다섯 */
 export type Good = 'grain' | 'iron' | 'salt' | 'wood' | 'horse'
 
+/** 판 — 변한 6국 축소판 · 영남 판 (형: "사료대로 키우고 땅도 넓힘" — 2026-10-18) */
+export type RegionId = 'byeonhan-mini' | 'yeongnam'
+
 /** 주고받는 몫 — 사신·청·선물. 곡식·철은 늘 있고 나머지는 없으면 0 */
 export interface Goods {
   readonly grain: number
@@ -321,6 +324,8 @@ export interface Realm {
    * 이 판의 가호·군사가 옛 판의 몇 배인가 — 옛 저장(없음 = 1)은 migrate.ts 가 키운다
    */
   scale?: number
+  /** 어느 판인가 — 변한 6국 축소판(없으면 이것) · 영남 판 (data/regions/index.ts) */
+  region?: RegionId
   /** 짓는 중 — 이 계절 끝에 그 고을 꼬리표가 된다 (economy.applyBuild · stepBuilds) */
   builds?: Array<{ readonly faction: string; readonly node: string; readonly what: BuildWhat; readonly done: number }>
 }
