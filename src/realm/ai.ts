@@ -18,9 +18,10 @@ import {
   canGuard, draftCost, draftLimit, guardCost, hhOf, menOf, riteAllowed, riteCost, settleLimit, settleTargets, stockOf, upkeepOf,
 } from './economy.ts'
 import { ambushWorth, jointWin, movesOf, type Move } from './estimate.ts'
+import { armyOfHero, isRuler, persuadeSeasons, postHero, wanderersFor } from './heroes.ts'
 import { armiesAt, fortMul, neighbors, newArmyId, planned, seasonOf, seenMarches } from './season.ts'
 import type { UnitKind } from './battle.ts'
-import { plotCost, plotTargets } from './plots.ts'
+import { plotAgents, plotCost, plotTargets } from './plots.ts'
 import type { Army, EnvoyAsk, Order, PlotOp, Realm } from './types.ts'
 
 export type Brain = 'greedy' | 'cautious' | 'reckless' | 'random' | 'planner'
@@ -301,6 +302,16 @@ function plots(r: Realm, faction: string, brain: Brain): Order[] {
   const target = foes[0]?.id
   if (target === undefined) return []
   const pickOp = roll(r.seed, r.season, `ai-plot-op:${faction}`) < 0.5
+  // 암살 — 본 장수가 있으면 가끔 (자객은 지략 높은 혼자 있는 장수, 없으면 고용 자객)
+  const marks = plotTargets(r, faction, 'assassin').filter((t) => t.target === target)
+  if (marks.length > 0 && roll(r.seed, r.season, `ai-assassin:${faction}`) < P.realm.aiAssassinChance) {
+    const agent = plotAgents(r, faction).sort((a, b) => (r.heroes[b]!.ryak - r.heroes[a]!.ryak) || (a < b ? -1 : 1))[0]
+    const c = plotCost('assassin', agent ?? null)
+    if (stockOf(r, faction).grain - P.realm.aiDraftReserve * upkeepOf(r, faction, true) >= c.grain) {
+      const m = marks[0]!
+      return [{ kind: 'plot', faction, op: 'assassin', target, hero: m.hero!, ...(agent !== undefined ? { agent } : {}) }]
+    }
+  }
   const op: PlotOp = brain === 'greedy' || brain === 'reckless' ? (pickOp ? 'burn' : 'bribe') : pickOp ? 'spy' : 'rumor'
   const c = plotCost(op)
   const st = stockOf(r, faction)
@@ -363,6 +374,40 @@ function answers(r: Realm, faction: string): Order[] {
 }
 
 /**
+ * 장수 (HEROES §3·§4) — 혼자 머무는 장수는 같은 고을의 장수 없는 군대를 이끌거나(싸움꾼: 무예+통솔 ≥ 내정+매력) 그 고을을 맡는다.
+ * 포로는 매력이 가장 높은 장수에게 회유를 맡기고, 제 고을에 온 떠돌이는 들인다 — 둘 다 군량 aiHireReserve 계절치를 남기고.
+ */
+function heroCare(r: Realm, faction: string): Order[] {
+  const R = P.realm
+  const out: Order[] = []
+  const mine = sorted(Object.values(r.heroes)).filter((h) => h.faction === faction && h.status === 'free')
+  const taken = new Set<string>()
+  for (const h of mine) {
+    if (h.at === null || isRuler(r, h.id) || armyOfHero(r, h.id) !== null) continue
+    const leaderless = sorted(Object.values(r.armies)).find((a) => a.faction === faction && a.at === h.at && a.march === null && a.hero === null && !taken.has(a.id))
+    if (leaderless !== undefined && h.mu + h.tong >= h.chi + h.deok) {
+      taken.add(leaderless.id)
+      out.push({ kind: 'lead', hero: h.id, army: leaderless.id })
+    } else if (h.post !== h.at && postHero(r, h.at)?.id === undefined) out.push({ kind: 'assign', hero: h.id, node: h.at })
+  }
+  let spare = stockOf(r, faction).grain - R.aiHireReserve * upkeepOf(r, faction, true)
+  const by = [...mine].sort((a, b) => b.deok - a.deok || (a.id < b.id ? -1 : 1))[0]?.id ?? null
+  for (const h of sorted(Object.values(r.heroes))) {
+    if (h.status !== 'captive' || h.captor !== faction || h.persuade !== undefined) continue
+    const cost = R.persuadeGrain * persuadeSeasons(r, h.id, by)
+    if (spare < cost) break
+    spare -= cost
+    out.push({ kind: 'persuade', hero: h.id, by })
+  }
+  for (const w of wanderersFor(r, faction)) {
+    if (spare < w.price) continue
+    spare -= w.price
+    out.push({ kind: 'hire', faction, hero: w.hero.id })
+  }
+  return out
+}
+
+/**
  * 한 세력의 이번 계절 명령 — 징병(가을·겨울) · 개척(봄·가을) · 소도 제사(봄·가을) · 군대의 움직임.
  * 무모·무작위 봇은 개척하지 않고, 무작위는 제사도 안 지낸다. 제사는 징병·개척으로 곡식을 쓴 뒤의 창고로 셈한다 (판정도 그 순서다)
  */
@@ -375,7 +420,8 @@ export function decide(r: Realm, faction: string, brain: Brain): Order[] {
   const talk = brain === 'random' ? [] : [...answers(r, faction), ...envoys(r, faction)]
   // 공작은 징병·개척·제사·경계로 곡식을 쓴 뒤의 창고로 셈한다 (판정도 그 뒤다 — 2단계)
   const ps = brain === 'random' ? [] : plots([...first, ...gs].length > 0 ? planned(r, [...first, ...gs]) : r, faction, brain)
-  return [...talk, ...first, ...gs, ...ps, ...(brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
+  const hs = brain === 'random' ? [] : heroCare(r, faction)
+  return [...talk, ...first, ...gs, ...ps, ...hs, ...(brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
 }
 
 function moves(r: Realm, faction: string, brain: Brain): Order[] {

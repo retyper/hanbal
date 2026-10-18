@@ -61,13 +61,16 @@ interface Run {
   plotsOk: number
   plotsAtUs: number
   worldPlots: number
+  heroes: number
+  persuaded: number
+  hired: number
 }
 
 function play(bot: Brain, as: string, seed: number): Run {
   let r: Realm = startRealm(seed, as)
   const own = (x: Realm): number => Object.values(x.nodes).filter((n) => n.owner === as).length
   const lead = Object.values(r.heroes).filter((h) => h.faction === as).sort((a, b) => (a.id < b.id ? -1 : 1))[0]?.id
-  const run: Run = { bot, as, seed, start: own(r), nodes: 0, nodesEarly: -1, win: false, lose: false, battles: 0, wins: 0, captured: 0, lostHero: false, settled: 0, wildHeld: 0, ambush: 0, ambushOk: 0, rites: 0, worldAmbush: 0, asks: 0, pacts: 0, fieldFights: 0, plots: 0, plotsOk: 0, plotsAtUs: 0, worldPlots: 0 }
+  const run: Run = { bot, as, seed, start: own(r), nodes: 0, nodesEarly: -1, win: false, lose: false, battles: 0, wins: 0, captured: 0, lostHero: false, settled: 0, wildHeld: 0, ambush: 0, ambushOk: 0, rites: 0, worldAmbush: 0, asks: 0, pacts: 0, fieldFights: 0, plots: 0, plotsOk: 0, plotsAtUs: 0, worldPlots: 0, heroes: 0, persuaded: 0, hired: 0 }
   for (let s = 0; s < SEASONS; s++) {
     if (s === EARLY) run.nodesEarly = own(r)
     const orders = [...decide(r, as, bot), ...aiOrders(r)]
@@ -75,6 +78,7 @@ function play(bot: Brain, as: string, seed: number): Run {
     for (const l of report.lines) {
       if (l.kind === 'settle' && l.faction === as) run.settled++
       if (l.kind === 'rite' && l.faction === as) run.rites++
+      if (l.kind === 'recruit' && l.faction === as) l.how === 'persuade' ? run.persuaded++ : run.hired++
       if (l.kind === 'ask' && l.ask.to === as) run.asks++
       if (l.kind === 'relation' && (l.state === 'truce' || l.state === 'ally')) run.pacts++
       if (l.kind === 'battle' && l.field === true) run.fieldFights++
@@ -112,6 +116,7 @@ function play(bot: Brain, as: string, seed: number): Run {
   run.lose = r.outcome?.kind === 'lose'
   run.lostHero = lead !== undefined && r.heroes[lead]?.status !== 'free'
   run.wildHeld = Object.values(r.nodes).filter((n) => n.kind === 'wild' && n.owner !== null).length
+  run.heroes = Object.values(r.heroes).filter((h) => h.faction === as && h.status === 'free').length
   return run
 }
 
@@ -122,7 +127,7 @@ const mean = (xs: number[]): number => (xs.length === 0 ? 0 : xs.reduce((a, b) =
 const pct = (x: number): string => `${(x * 100).toFixed(1)}%`
 
 console.log(`나라 시뮬 — 변한 6국 축소판 · ${GAMES}판 × ${SEASONS}계절 · 봇이 고른 나라를 맡는다\n`)
-console.log(`나라    봇         시작  땅@${EARLY}  끝땅   이김    짐     싸움/판  이긴 비율  생포/판  장수 잃음  개척/판  쥔 빈땅  기습/판  먹힘   제사/판  판 기습  청/판  맺음/판  들판/판  공작/판  먹힘   당함/판  판 공작`)
+console.log(`나라    봇         시작  땅@${EARLY}  끝땅   이김    짐     싸움/판  이긴 비율  생포/판  장수 잃음  개척/판  쥔 빈땅  기습/판  먹힘   제사/판  판 기습  청/판  맺음/판  들판/판  공작/판  먹힘   당함/판  판 공작  장수끝  회유/판  들임/판`)
 for (const as of AS) {
   for (const bot of BOTS) {
     const rs = runs.filter((x) => x.bot === bot && x.as === as)
@@ -141,7 +146,8 @@ for (const as of AS) {
       `${mean(rs.map((x) => x.ambush)).toFixed(2).padStart(7)}  ${pct(amb > 0 ? ambOk / amb : 0).padStart(6)}  ` +
       `${mean(rs.map((x) => x.rites)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.worldAmbush)).toFixed(2).padStart(6)}  ` +
       `${mean(rs.map((x) => x.asks)).toFixed(2).padStart(5)}  ${mean(rs.map((x) => x.pacts)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.fieldFights)).toFixed(2).padStart(7)}  ` +
-      `${mean(rs.map((x) => x.plots)).toFixed(2).padStart(7)}  ${pct(pl > 0 ? plOk / pl : 0).padStart(6)}  ${mean(rs.map((x) => x.plotsAtUs)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.worldPlots)).toFixed(2).padStart(6)}`,
+      `${mean(rs.map((x) => x.plots)).toFixed(2).padStart(7)}  ${pct(pl > 0 ? plOk / pl : 0).padStart(6)}  ${mean(rs.map((x) => x.plotsAtUs)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.worldPlots)).toFixed(2).padStart(6)}  ` +
+      `${mean(rs.map((x) => x.heroes)).toFixed(2).padStart(6)}  ${mean(rs.map((x) => x.persuaded)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.hired)).toFixed(2).padStart(7)}`,
     )
   }
 }

@@ -16,18 +16,19 @@ import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { relationOf, worsen } from './diplomacy.ts'
 import { stockOf } from './economy.ts'
+import { armyOfHero, hasTrait, heroAt, heroSeen, isRuler, plotBonus } from './heroes.ts'
 import { alertRange } from './intel.ts'
 import { nodeStrength } from './season.ts'
 import type { Order, PlotOp, Realm, ReportLine } from './types.ts'
 
 type Plot = Extract<Order, { kind: 'plot' }>
 
-export const PLOT_OPS: readonly PlotOp[] = ['rumor', 'sow', 'bribe', 'burn', 'spy']
+export const PLOT_OPS: readonly PlotOp[] = ['rumor', 'sow', 'bribe', 'burn', 'spy', 'assassin']
 
 /** 고을을 겨누는 공작 — 대상 나라의 그 고을 (`node`) */
-const ON_NODE: ReadonlySet<PlotOp> = new Set(['bribe', 'spy'])
+const ON_NODE: ReadonlySet<PlotOp> = new Set(['bribe', 'spy', 'assassin'])
 
-export function plotCost(op: PlotOp): { grain: number; iron: number } {
+export function plotCost(op: PlotOp, agent: string | null = null): { grain: number; iron: number } {
   const R = P.realm
   switch (op) {
     case 'rumor': return { grain: R.plotRumorGrain, iron: 0 }
@@ -35,6 +36,8 @@ export function plotCost(op: PlotOp): { grain: number; iron: number } {
     case 'bribe': return { grain: R.plotBribeGrain, iron: R.plotBribeIron }
     case 'burn': return { grain: R.plotBurnGrain, iron: 0 }
     case 'spy': return { grain: R.plotSpyGrain, iron: 0 }
+    // 암살 — 우리 장수를 자객으로 보내지 않으면 고용 자객 값이 더 든다
+    case 'assassin': return { grain: R.plotAssassinGrain + (agent === null ? R.plotHiredGrain : 0), iron: 0 }
   }
 }
 
@@ -46,6 +49,7 @@ function base(op: PlotOp): number {
     case 'bribe': return R.plotBaseBribe
     case 'burn': return R.plotBaseBurn
     case 'spy': return R.plotBaseSpy
+    case 'assassin': return R.plotBaseAssassin
   }
 }
 
@@ -58,10 +62,25 @@ function bestRyak(r: Realm, faction: string): number {
 
 const clamp = (p: number): number => Math.min(P.realm.plotMax, Math.max(P.realm.plotMin, p))
 
-/** 참값의 한 점 — 판정에 쓴다 (plotChance 의 범위 안에 든다) */
-export function plotTrueChance(r: Realm, faction: string, op: PlotOp, target: string, node?: string): number {
+/**
+ * 암살의 몫 — 자객의 지략(고용 자객은 plotHiredRyak) · 명궁 − 노린 장수의 무예.
+ * 노릴 수 있는 장수는 우리가 본 장수뿐이라(heroSeen) 무예는 안다 — 범위가 아니라 한 값.
+ */
+function assassinTerm(r: Realm, hero: string | undefined, agent: string | null | undefined): number {
   const R = P.realm
-  let p = base(op) + R.plotPerRyak * (bestRyak(r, faction) - bestRyak(r, target))
+  const a = agent !== null && agent !== undefined ? r.heroes[agent] : undefined
+  const v = hero !== undefined ? r.heroes[hero] : undefined
+  return R.plotPerRyak * (a?.ryak ?? R.plotHiredRyak) + (hasTrait(a, 'archer') ? R.traitArcherAssassin : 0) - R.plotAssassinPerMu * (v?.mu ?? 5)
+}
+
+/** 참값의 한 점 — 판정에 쓴다 (plotChance 의 범위 안에 든다) */
+export function plotTrueChance(
+  r: Realm, faction: string, op: PlotOp, target: string, node?: string, hero?: string, agent?: string | null,
+): number {
+  const R = P.realm
+  let p = base(op) + plotBonus(r, faction)
+  // 암살은 자객 대 그 장수, 나머지는 우리 꾀 대 그 나라 꾀
+  p += op === 'assassin' ? assassinTerm(r, hero, agent) : R.plotPerRyak * (bestRyak(r, faction) - bestRyak(r, target))
   if (ON_NODE.has(op) && node !== undefined) p -= R.plotAlertWeight * (r.watch[node]?.alert ?? 0)
   return clamp(p)
 }
@@ -70,11 +89,20 @@ export function plotTrueChance(r: Realm, faction: string, op: PlotOp, target: st
  * `faction` 의 눈으로 본 먹힐 확률 범위 — 우리 장수는 안다. 그 나라 장수의 략은 모른다(plotGuessRyakLo~Hi).
  * 고을 경계는 정찰·첩자로 본 만큼(alertRange), 본 적 없으면 0~alertMax.
  */
-export function plotChance(r: Realm, faction: string, op: PlotOp, _target: string, node?: string): readonly [number, number] {
+export function plotChance(
+  r: Realm, faction: string, op: PlotOp, _target: string, node?: string, hero?: string, agent?: string | null,
+): readonly [number, number] {
   const R = P.realm
   const ours = bestRyak(r, faction)
-  let lo = base(op) + R.plotPerRyak * (ours - R.plotGuessRyakHi)
-  let hi = base(op) + R.plotPerRyak * (ours - R.plotGuessRyakLo)
+  let lo = base(op) + plotBonus(r, faction)
+  let hi = lo
+  if (op === 'assassin') {
+    lo += assassinTerm(r, hero, agent)
+    hi += assassinTerm(r, hero, agent)
+  } else {
+    lo += R.plotPerRyak * (ours - R.plotGuessRyakHi)
+    hi += R.plotPerRyak * (ours - R.plotGuessRyakLo)
+  }
   if (ON_NODE.has(op) && node !== undefined) {
     const k = (r.intel[faction] ?? {})[node]
     const al = k?.alert ? alertRange(k.alert.v, r.season - k.alert.season) : null
@@ -87,8 +115,18 @@ export function plotChance(r: Realm, faction: string, op: PlotOp, _target: strin
 const alive = (r: Realm, f: string): boolean => Object.values(r.nodes).some((n) => n.owner === f)
 
 /** 지금 벌일 수 있는 대상 — 결정론 순서. 값을 못 내도 목록에는 든다 (화면이 "곡식이 모자라다"를 보인다) */
-export function plotTargets(r: Realm, faction: string, op: PlotOp): Array<{ target: string; node?: string; other?: string }> {
+export function plotTargets(r: Realm, faction: string, op: PlotOp): Array<{ target: string; node?: string; other?: string; hero?: string }> {
   const others = Object.keys(r.factions).sort().filter((f) => f !== faction && alive(r, f))
+  if (op === 'assassin') {
+    // 우리가 본 남의 장수 — 군주는 뺀다 (도읍 깊이 있다), 어디 있는지 알아야 한다
+    const out: Array<{ target: string; node: string; hero: string }> = []
+    for (const h of Object.values(r.heroes).sort((a, b) => (a.id < b.id ? -1 : 1))) {
+      if (h.status !== 'free' || h.faction === faction || !others.includes(h.faction) || isRuler(r, h.id) || !heroSeen(r, faction, h.id)) continue
+      const at = heroAt(r, h.id)
+      if (at !== null) out.push({ target: h.faction, node: at, hero: h.id })
+    }
+    return out
+  }
   if (op === 'rumor' || op === 'burn') return others.map((target) => ({ target }))
   if (op === 'sow') {
     const out: Array<{ target: string; other: string }> = []
@@ -108,9 +146,24 @@ export function plotTargets(r: Realm, faction: string, op: PlotOp): Array<{ targ
   return out
 }
 
+/** 자객으로 보낼 수 있는 우리 장수 — 군대 없이 혼자 머무는 이 (군주는 못 간다). 그 계절엔 아무것도 못 한다 */
+export function plotAgents(r: Realm, faction: string): string[] {
+  return Object.values(r.heroes)
+    .filter((h) => h.faction === faction && h.status === 'free' && h.at !== null && armyOfHero(r, h.id) === null && !isRuler(r, h.id))
+    .map((h) => h.id)
+    .sort()
+}
+
 function valid(r: Realm, o: Plot): boolean {
   if (r.factions[o.faction] === undefined || r.factions[o.target] === undefined || o.target === o.faction) return false
   if (!PLOT_OPS.includes(o.op) || !alive(r, o.target)) return false
+  if (o.op === 'assassin') {
+    const v = o.hero !== undefined ? r.heroes[o.hero] : undefined
+    if (v === undefined || v.status !== 'free' || v.faction !== o.target || isRuler(r, v.id) || !heroSeen(r, o.faction, v.id)) return false
+    if (o.agent !== undefined && !plotAgents(r, o.faction).includes(o.agent)) return false
+    const c = plotCost('assassin', o.agent ?? null)
+    return stockOf(r, o.faction).grain >= c.grain
+  }
   if (o.op === 'sow') {
     if (o.other === undefined || o.other === o.target || o.other === o.faction || r.factions[o.other] === undefined) return false
   }
@@ -141,24 +194,60 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
   const R = P.realm
   const count = new Map<string, number>()
   const done = new Set<string>()
+  const agents = new Set<string>()
   for (const o of orders) {
     if (o.kind !== 'plot') continue
     if ((count.get(o.faction) ?? 0) >= R.plotsPerSeason) continue
-    const aim = ON_NODE.has(o.op) ? (o.node ?? '') : o.op === 'sow' ? (o.other ?? '') : ''
+    const aim = o.op === 'assassin' ? (o.hero ?? '') : ON_NODE.has(o.op) ? (o.node ?? '') : o.op === 'sow' ? (o.other ?? '') : ''
     const dup = `${o.faction}:${o.op}:${o.target}:${aim}`
     if (done.has(dup) || !valid(r, o)) continue
+    // 자객 하나는 한 계절에 한 번만 간다
+    if (o.agent !== undefined && agents.has(o.agent)) continue
+    if (o.agent !== undefined) agents.add(o.agent)
     done.add(dup)
     count.set(o.faction, (count.get(o.faction) ?? 0) + 1)
-    const c = plotCost(o.op)
+    const c = plotCost(o.op, o.agent ?? null)
     const st = stockOf(r, o.faction)
     st.grain -= c.grain
     st.iron -= c.iron
 
     const key = `plot:${dup}`
-    const ok = roll(r.seed, r.season, key) < plotTrueChance(r, o.faction, o.op, o.target, o.node)
+    // 암살은 그 장수가 지금 있는 고을의 경계를 받는다
+    const at = o.op === 'assassin' ? (heroAt(r, o.hero!) ?? undefined) : o.node
+    const ok = roll(r.seed, r.season, key) < plotTrueChance(r, o.faction, o.op, o.target, at, o.hero, o.agent ?? null)
     const caught = roll(r.seed, r.season, `${key}:caught`) < (ok ? R.plotCaughtOnSuccess : R.plotCaughtOnFail)
     let mystery: Extract<ReportLine, { kind: 'mystery' }>['what'] | null = null
-    if (ok) {
+    let result: 'wound' | 'kill' | undefined
+    if (o.op === 'assassin') {
+      const v = r.heroes[o.hero!]!
+      if (ok) {
+        // 먹혔다 — 낮은 확률로 죽고, 아니면 다쳐서 몇 계절 군대를 못 이끈다 (R2 에 활 저격판으로 이어진다)
+        if (roll(r.seed, r.season, `${key}:kill`) < R.plotAssassinKill) {
+          v.status = 'dead'
+          v.at = null
+          v.post = null
+          for (const a of Object.values(r.armies)) if (a.hero === v.id) a.hero = null
+          result = 'kill'
+          mystery = 'death'
+        } else {
+          v.woundedUntil = r.season + R.plotWoundSeasons - 1
+          result = 'wound'
+          mystery = 'wound'
+        }
+      }
+      if (caught) {
+        // 들켰다 — 우리 장수였으면 사로잡히고, 그 나라와 두 칸 나빠진다 (아래 한 칸 + 여기 한 칸)
+        const ag = o.agent !== undefined ? r.heroes[o.agent] : undefined
+        if (ag !== undefined && ag.status === 'free') {
+          ag.status = 'captive'
+          ag.captor = o.target
+          ag.at = null
+          ag.post = null
+        }
+        worsen(r, o.faction, o.target, lines)
+      }
+    }
+    if (ok && o.op !== 'assassin') {
       switch (o.op) {
         case 'rumor':
           for (const a of Object.values(r.armies)) if (a.faction === o.target) a.morale = Math.max(R.moraleFloor, a.morale - R.plotRumorMorale)
@@ -199,13 +288,17 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
     }
     lines.push({
       kind: 'plot', faction: o.faction, op: o.op, target: o.target,
-      ...(o.node !== undefined && ON_NODE.has(o.op) ? { node: o.node } : {}),
+      ...(at !== undefined && ON_NODE.has(o.op) ? { node: at } : {}),
       ...(o.op === 'sow' ? { other: o.other! } : {}),
+      ...(o.op === 'assassin' ? { hero: o.hero! } : {}),
+      ...(o.agent !== undefined ? { agent: o.agent } : {}),
+      ...(result !== undefined ? { result } : {}),
       ok, caught,
     })
     // 당한 쪽은 누가 했는지 모르고 결과만 본다 — 들켰으면 plot 줄이 누가 했는지 말한다
     if (mystery !== null && !caught) {
-      lines.push({ kind: 'mystery', faction: o.target, what: mystery, ...(mystery === 'militia' ? { node: o.node! } : {}) })
+      const extra = mystery === 'militia' ? { node: o.node! } : mystery === 'wound' || mystery === 'death' ? { hero: o.hero! } : {}
+      lines.push({ kind: 'mystery', faction: o.target, what: mystery, ...extra })
     }
   }
 }

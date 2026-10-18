@@ -7,6 +7,7 @@
 import { P } from '../tune/params.ts'
 import { ambushChance, ambushSizePenalty, headcount, strength, winChance } from './battle.ts'
 import { militiaMen } from './economy.ts'
+import { ambushTraitOf } from './heroes.ts'
 import { alertRange, visibleRange } from './intel.ts'
 import { blockedWhy, conceal, forceOf, fortMul, marchSeasons, otherEnd, seasonOf, seenMarches } from './season.ts'
 import type { Army, Realm, REdge } from './types.ts'
@@ -102,7 +103,7 @@ export function movesOf(r: Realm, faction: string, a: Army): Move[] {
     const k = known[to]
     const v = winVs(r, faction, to, myF)
     const al = k?.alert ? alertRange(k.alert.v, r.season - k.alert.season) : null
-    const ambushP = ambushChance(conceal(ed, node, season), myRyak, R.aiAssumeRyak, size, 0, al === null ? R.aiAssumeAlert : al[1])
+    const ambushP = ambushChance(conceal(ed, node, season), myRyak, R.aiAssumeRyak, size + ambushTraitOf(a.hero !== null ? (r.heroes[a.hero] ?? null) : null, ed.kind), 0, al === null ? R.aiAssumeAlert : al[1])
     out.push({
       edge: ed, to, seasons: marchSeasons(ed.kind, season), blocked: blockedWhy(ed, season), hostile,
       win: v.win, winAmbush: v.ambush, winCaught: v.caught, age: v.age, ambushP,

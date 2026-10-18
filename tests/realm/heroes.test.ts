@@ -1,0 +1,164 @@
+/**
+ * 장수 첫판 (docs/realm/HEROES.md — 형: "육각형 능력치 · 팰월드처럼 특성 · 군주는 장군이랑 별개", 2026-10-18)
+ *
+ *  - 나라마다 군주가 따로 있다 — 도읍에 혼자 머물고 군대를 이끌지 않는다 · 능력치 여섯은 1~10 · 특성은 목록에 있는 것
+ *  - 지휘는 무예·통솔 반반 · 궁술·명궁은 궁수를 세게
+ *  - 맡기기: 그 고을에 있는 장수만 · 맡으면 수확(농사꾼)·경계(신중) · 군주는 못 맡는다 · 이끌기 · 해산하면 그 고을에 남는다
+ *  - 고을을 잃으면 혼자 있던 장수는 물러나거나 잡힌다
+ *  - 회유: 계절마다 곡식, 다 되면 우리 장수 · 떠돌이: 고을 주인만 들인다
+ *  - 본 장수: 우리 장수와 포로는 보이고, 남의 장수는 정찰하면 보인다 · 같은 판이면 같은 결과
+ */
+import { describe, it } from 'node:test'
+import assert from 'node:assert/strict'
+
+import { fightHead } from '../../src/realm/battle.ts'
+import { TRAIT } from '../../src/realm/data/traits.ts'
+import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
+import {
+  alertFloor, armyOfHero, harvestMul, heroSeen, persuadeSeasons, rulerOf, sweepHeroes, wanderersFor,
+} from '../../src/realm/heroes.ts'
+import { advance, forceOf, planned } from '../../src/realm/season.ts'
+import { P } from '../../src/tune/params.ts'
+import type { Order, Realm, ReportLine } from '../../src/realm/types.ts'
+
+const pass = (r: Realm, orders: Order[] = []): { next: Realm; lines: readonly ReportLine[] } => {
+  const { next, report } = advance(r, orders)
+  return { next, lines: report.lines }
+}
+
+describe('장수 — 판의 처음', () => {
+  it('나라마다 군주가 따로 — 도읍에 혼자 머문다 · 능력치 여섯 1~10 · 특성은 목록에 있다', () => {
+    const r = byeonhanMini(1)
+    for (const f of Object.values(r.factions)) {
+      const ruler = rulerOf(r, f.id)
+      assert.ok(ruler !== null, f.id)
+      assert.equal(ruler.at, f.capital)
+      assert.equal(armyOfHero(r, ruler.id), null)
+    }
+    for (const h of Object.values(r.heroes)) {
+      for (const v of [h.mu, h.tong, h.ryak, h.chi, h.deok, h.uiri]) assert.ok(v >= 1 && v <= 10, h.id)
+      for (const t of h.traits) assert.ok(TRAIT[t] !== undefined, `${h.id}: ${t}`)
+    }
+    // 여섯 군주 가운데 여인이 둘 이상
+    assert.ok(Object.values(r.factions).filter((f) => rulerOf(r, f.id)?.look === 'w').length >= 2)
+  })
+
+  it('지휘는 무예·통솔 반반 · 명궁이 이끄는 군대의 궁수는 더 세다', () => {
+    const r = byeonhanMini(1)
+    const a = r.armies['a-us']!
+    const chief = r.heroes['chief']!
+    const f = forceOf(r, a)
+    assert.equal(f.mu, (chief.mu + chief.tong) / 2)
+    const bare = forceOf(r, { ...a, hero: null })
+    assert.ok(fightHead(f) > fightHead(bare))
+  })
+})
+
+describe('맡기기 · 이끌기', () => {
+  it('고을에 혼자 있는 장수를 그 고을에 맡긴다 — 농사꾼이면 수확이 는다 · 다른 고을이나 군주는 안 된다', () => {
+    const r = byeonhanMini(1)
+    const before = harvestMul(r, 'our-cap')
+    const p = planned(r, [{ kind: 'assign', hero: 'us-1', node: 'our-cap' }])
+    assert.equal(p.heroes['us-1']!.post, 'our-cap')
+    assert.ok(harvestMul(p, 'our-cap') > before)
+    assert.equal(planned(r, [{ kind: 'assign', hero: 'us-1', node: 'our-north' }]).heroes['us-1']!.post, null)
+    assert.equal(planned(r, [{ kind: 'assign', hero: 'us-ruler', node: 'our-cap' }]).heroes['us-ruler']!.post, null)
+  })
+
+  it('군대를 이끌던 장수를 맡기면 그 군대는 장수가 없어진다 · 혼자 있는 장수가 장수 없는 군대를 이끈다', () => {
+    const r = byeonhanMini(1)
+    const p = planned(r, [{ kind: 'assign', hero: 'chief', node: 'our-cap' }])
+    assert.equal(p.armies['a-us']!.hero, null)
+    assert.equal(p.heroes['chief']!.post, 'our-cap')
+    const q = planned(p, [{ kind: 'lead', hero: 'us-1', army: 'a-us' }])
+    assert.equal(q.armies['a-us']!.hero, 'us-1')
+    assert.equal(q.heroes['us-1']!.at, null)
+  })
+
+  it('맡은 장수의 지략·신중이 그 고을 경계를 받친다', () => {
+    const r = byeonhanMini(1)
+    const p = planned(r, [{ kind: 'assign', hero: 'dokro-2', node: 'dokro-cap' }])
+    assert.ok(alertFloor(p, 'dokro-cap') > alertFloor(r, 'dokro-cap'))
+    const { next } = pass(r, [{ kind: 'assign', hero: 'dokro-2', node: 'dokro-cap' }])
+    assert.ok(next.watch['dokro-cap']!.alert >= alertFloor(next, 'dokro-cap') - 1e-9)
+  })
+
+  it('해산하면 장수는 그 고을에 혼자 남는다', () => {
+    const r = byeonhanMini(1)
+    const p = planned(r, [{ kind: 'disband', army: 'a-us' }])
+    assert.equal(p.heroes['chief']!.at, 'our-cap')
+    assert.equal(armyOfHero(p, 'chief'), null)
+  })
+
+  it('고을을 잃으면 혼자 있던 장수는 이웃 제 고을로 물러나고, 갈 데가 없으면 잡힌다', () => {
+    const r = structuredClone(byeonhanMini(1))
+    r.heroes['us-1']!.at = 'our-north'
+    r.nodes['our-north']!.owner = 'anya'
+    const lines: ReportLine[] = []
+    sweepHeroes(r, lines)
+    assert.equal(r.heroes['us-1']!.at, 'our-cap')
+    // 갈 데가 없다 — 이웃이 다 남의 땅
+    const s = structuredClone(byeonhanMini(1))
+    s.heroes['dokro-2']!.at = 'dokro-cap'
+    s.nodes['dokro-cap']!.owner = 'guya'
+    sweepHeroes(s, [])
+    assert.equal(s.heroes['dokro-2']!.status, 'captive')
+    assert.equal(s.heroes['dokro-2']!.captor, 'guya')
+  })
+})
+
+describe('회유 · 떠돌이', () => {
+  it('포로를 회유하면 계절마다 곡식이 들고, 다 되면 우리 장수가 된다', () => {
+    let r = structuredClone(byeonhanMini(1))
+    const g = r.heroes['guya-2']!
+    g.status = 'captive'
+    g.captor = 'us'
+    r.armies['a-guya-2']!.hero = null
+    r.stock['us']!.grain = 1000
+    const n = persuadeSeasons(r, 'guya-2', 'us-ruler')
+    assert.ok(n >= 1)
+    let recruited = false
+    r = pass(r, [{ kind: 'persuade', hero: 'guya-2', by: 'us-ruler' }]).next
+    for (let i = 1; i < n + 1 && !recruited; i++) {
+      if (r.heroes['guya-2']!.faction === 'us') recruited = true
+      else r = pass(r).next
+    }
+    const h = r.heroes['guya-2']!
+    assert.equal(h.faction, 'us')
+    assert.equal(h.status, 'free')
+    assert.notEqual(h.at, null)
+  })
+
+  it('떠돌이는 봄에 오고, 그 고을 주인만 값을 내고 들인다', () => {
+    let r = byeonhanMini(7)
+    for (let i = 0; i < 24 && (r.wanderers ?? []).length === 0; i++) r = pass(r).next
+    const w = (r.wanderers ?? [])[0]
+    assert.ok(w !== undefined, '떠돌이가 한 번은 와야 한다')
+    const owner = r.nodes[w.node]!.owner!
+    assert.ok(wanderersFor(r, owner).some((x) => x.hero.id === w.hero.id))
+    const other = Object.keys(r.factions).find((f) => f !== owner)!
+    r.stock[owner]!.grain = 10_000
+    r.stock[other]!.grain = 10_000
+    assert.equal(planned(r, [{ kind: 'hire', faction: other, hero: w.hero.id }]).heroes[w.hero.id], undefined)
+    const p = planned(r, [{ kind: 'hire', faction: owner, hero: w.hero.id }])
+    assert.equal(p.heroes[w.hero.id]!.faction, owner)
+    assert.equal(p.stock[owner]!.grain, 10_000 - w.price)
+  })
+})
+
+describe('본 장수 · 결정론', () => {
+  it('우리 장수는 보이고, 남의 장수는 그 고을을 정찰하면 보인다', () => {
+    const r = byeonhanMini(1)
+    assert.equal(heroSeen(r, 'us', 'chief'), true)
+    assert.equal(heroSeen(r, 'us', 'guya-1'), false)
+    const { next } = pass(r, [{ kind: 'scout', faction: 'us', node: 'guya-cap', hero: null }])
+    assert.equal(heroSeen(next, 'us', 'guya-1'), true)
+  })
+
+  it('같은 판 · 같은 명령이면 같은 결과', () => {
+    const r = byeonhanMini(5)
+    const o: Order[] = [{ kind: 'assign', hero: 'us-1', node: 'our-cap' }]
+    assert.deepEqual(advance(r, o), advance(r, o))
+    assert.ok(P.realm.persuadeSeasons >= 1)
+  })
+})

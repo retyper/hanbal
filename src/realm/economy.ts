@@ -13,6 +13,7 @@
  */
 import { P } from '../tune/params.ts'
 import { blockedWhy, seasonOf } from './calendar.ts'
+import { draftCapBonus, gluttonMen, growMul, harvestMul, militiaMul, riteMul } from './heroes.ts'
 import type { Order, ReportLine, Realm, Stock } from './types.ts'
 
 function menIn(mix: Readonly<Partial<Record<string, number>>>): number {
@@ -49,7 +50,7 @@ export function militiaMen(r: Realm, node: string): number {
   if (bribed !== undefined && bribed >= r.season) return 0
   // 그 나라의 국읍이면 다 나와 막는다 (판이 끝나는 자리)
   const capital = r.factions[n.owner]?.capital === n.id
-  return Math.round(n.hh * R.militiaPerHH * (n.kind === 'fort' ? R.militiaFortMul : 1) * (capital ? R.militiaCapitalMul : 1))
+  return Math.round(n.hh * R.militiaPerHH * (n.kind === 'fort' ? R.militiaFortMul : 1) * (capital ? R.militiaCapitalMul : 1) * militiaMul(r, node))
 }
 
 export function draftCost(n: number): { grain: number } {
@@ -66,7 +67,7 @@ export function draftLimit(r: Realm, faction: string, node: string): number {
   if (n === undefined || n.owner !== faction || n.kind === 'sodo') return 0
   const per = Math.floor(n.hh * R.draftPerSeason)
   const men = menOf(r, faction)
-  const cap = Math.floor(R.draftCap * (hhOf(r, faction) + men)) - men
+  const cap = Math.floor((R.draftCap + draftCapBonus(r, faction)) * (hhOf(r, faction) + men)) - men
   const grain = R.draftGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.draftGrain) : Infinity
   return Math.max(0, Math.min(per, cap, grain))
 }
@@ -156,7 +157,7 @@ export function resolveRites(r: Realm, orders: readonly Order[], lines: ReportLi
     done.add(f)
     stockOf(r, f).grain -= riteCost().grain
     if (season === 'spring') (r.blessed ??= {})[f] = Math.floor(r.season / 4)
-    else for (const a of Object.values(r.armies)) if (a.faction === f) a.morale = Math.min(R.moraleMax, a.morale + R.riteMorale)
+    else for (const a of Object.values(r.armies)) if (a.faction === f) a.morale = Math.min(R.moraleMax, a.morale + R.riteMorale * riteMul(r, f))
     lines.push({ kind: 'rite', faction: f, season: season === 'spring' ? 'spring' : 'autumn' })
   }
 }
@@ -187,7 +188,7 @@ export function applyGuard(r: Realm, o: Extract<Order, { kind: 'guard' }>, lines
 
 /** 이 계절에 나라가 군대를 먹이는 데 드는 곡식 */
 export function upkeepOf(r: Realm, faction: string, winter: boolean): number {
-  return Math.ceil(menOf(r, faction) * P.realm.rationPerSoldier * (winter ? P.realm.winterRation : 1))
+  return Math.ceil((menOf(r, faction) + gluttonMen(r, faction)) * P.realm.rationPerSoldier * (winter ? P.realm.winterRation : 1))
 }
 
 /** 고을을 뺏겼다 — 사람이 흩어진다 */
@@ -222,10 +223,10 @@ export function stepEconomy(r: Realm, season: number, fought: ReadonlySet<string
     // 가을 — 봄에 심은 만큼 거둔다
     if (season === 2) {
       let sown = 0
-      for (const n of nodes) sown += n.sown
+      for (const n of nodes) sown += n.sown * harvestMul(r, n.id)
       const base = Math.round(sown * R.harvestPerHH)
       // 봄 제사를 지낸 해면 더 든다
-      const blessed = r.blessed?.[f] === Math.floor(r.season / 4) ? Math.round(base * R.riteHarvest) : 0
+      const blessed = r.blessed?.[f] === Math.floor(r.season / 4) ? Math.round(base * R.riteHarvest * riteMul(r, f)) : 0
       const grain = base + blessed
       if (grain > 0) {
         s.grain += grain
@@ -252,8 +253,8 @@ export function stepEconomy(r: Realm, season: number, fought: ReadonlySet<string
       else if (fought.has(n.id)) continue
       else if (n.kind === 'wild') {
         const room = n.room ?? 0
-        if (n.hh > 0 && n.hh < room) n.hh = Math.min(room, Math.max(n.hh + 1, Math.round(n.hh * (1 + R.settleGrow))))
-      } else n.hh = Math.round(n.hh * (1 + R.hhGrowth))
+        if (n.hh > 0 && n.hh < room) n.hh = Math.min(room, Math.max(n.hh + 1, Math.round(n.hh * (1 + R.settleGrow * growMul(r, n.id)))))
+      } else n.hh = Math.round(n.hh * (1 + R.hhGrowth * growMul(r, n.id)))
     }
   }
   // 봄이 끝날 때 심는다 — 봄 징병(1단계)이 지난 뒤의 가호

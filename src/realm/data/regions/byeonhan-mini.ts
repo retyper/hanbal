@@ -122,19 +122,43 @@ const NATION_STARTS: readonly NationStart[] = [
   },
 ]
 
-const h = (id: string, name: string, faction: string, mu: number, ryak: number, chi: number, deok: number): Hero =>
-  ({ id, name, faction, mu, ryak, chi, deok, status: 'free', captor: null })
+/**
+ * 장수 — 능력치 여섯 (무예·통솔·지략·내정·매력·의리, HEROES §1) · 특성 (data/traits.ts) · 남 g / 여 w.
+ * `at` 은 군대 없이 혼자 머무는 고을 (군대를 이끄는 장수는 null — ARMIES 의 hero 로 정해진다).
+ */
+const h = (
+  id: string, name: string, faction: string, look: 'g' | 'w',
+  [mu, tong, ryak, chi, deok, uiri]: readonly [number, number, number, number, number, number],
+  traits: readonly string[], at: string | null = null,
+): Hero => ({ id, name, faction, mu, tong, ryak, chi, deok, uiri, traits, look, status: 'free', captor: null, at, post: null })
 
 const HEROES: Hero[] = [
-  h('chief', '군장', 'us', 7, 6, 4, 5), // 갯마을의 군장 = 신궁 (FLOW §3: 작은 나라는 군장이 세다)
-  h('guya-1', '진지렴 거타', 'guya', 7, 5, 6, 4), // 「狗邪秦支廉之號」 — 큰 나라 신지의 높임 칭호
-  h('guya-2', '험측 마루', 'guya', 6, 3, 3, 3),
-  h('anya-1', '신지 아라', 'anya', 5, 7, 5, 6),
-  h('anya-2', '번예 솔미', 'anya', 4, 6, 4, 4),
-  h('miri-1', '읍차 갈미', 'miri', 4, 4, 5, 5), // PLAY §4 의 "술꾼" 장수 자리
-  h('goja-1', '살해 바다쇠', 'goja', 5, 5, 3, 3),
-  h('dokro-1', '읍차 너울', 'dokro', 7, 6, 3, 4), // 독로는 장수가 세다 (FLOW §3)
+  // 군주 — 나라마다 따로 (형: "군주는 따로 있어야 하고 장군이랑 별개"). 도읍에 머물고 군대를 이끌지 않는다. 둘은 여인
+  h('us-ruler', '읍차 해솔', 'us', 'w', [3, 5, 6, 6, 8, 9], ['charm'], 'our-cap'),
+  h('guya-ruler', '진지렴 쇠보', 'guya', 'g', [6, 7, 4, 5, 4, 8], ['smith'], 'guya-cap'), // 「狗邪秦支廉之號」 — 큰 나라 신지의 높임 칭호
+  h('anya-ruler', '신지 아단', 'anya', 'g', [4, 6, 8, 5, 5, 9], ['careful'], 'anya-cap'),
+  h('miri-ruler', '신지 달래', 'miri', 'w', [2, 4, 4, 9, 7, 8], ['farmer'], 'miri-cap'),
+  h('goja-ruler', '험측 바우', 'goja', 'g', [5, 5, 5, 5, 5, 7], ['river', 'trader'], 'goja-cap'),
+  h('dokro-ruler', '읍차 가람', 'dokro', 'g', [6, 6, 5, 4, 4, 7], ['trader'], 'dokro-cap'),
+  // 장군 — 군대를 이끌거나 고을을 맡는다
+  h('chief', '신궁', 'us', 'g', [7, 5, 6, 4, 5, 8], ['archer', 'nighteye']), // 갯마을의 활 쏘는 장군 (FLOW §3: 작은 나라는 장수가 세다)
+  h('us-1', '험측 돌개', 'us', 'g', [5, 5, 4, 6, 4, 7], ['farmer'], 'our-cap'),
+  h('guya-1', '견지 거타', 'guya', 'g', [7, 7, 5, 6, 4, 6], ['ironhand']),
+  h('guya-2', '험측 마루', 'guya', 'g', [6, 4, 3, 3, 3, 5], ['glutton']),
+  h('anya-1', '견지 아라', 'anya', 'w', [5, 6, 7, 5, 6, 8], ['mountain']),
+  h('anya-2', '번예 솔미', 'anya', 'w', [4, 4, 6, 4, 4, 6], ['nighteye']),
+  h('miri-1', '읍차 갈미', 'miri', 'g', [4, 4, 4, 5, 5, 4], ['drinker']), // PLAY §4 의 "술꾼" 장수 자리
+  h('miri-2', '번예 고운', 'miri', 'w', [3, 4, 6, 7, 6, 6], ['shaman'], 'miri-cap'),
+  h('goja-1', '살해 바다쇠', 'goja', 'g', [5, 5, 5, 3, 3, 5], ['river']),
+  h('goja-2', '번예 물새', 'goja', 'w', [4, 4, 7, 5, 6, 5], ['charm'], 'goja-cap'),
+  h('dokro-1', '살해 너울', 'dokro', 'w', [7, 6, 6, 3, 4, 4], ['river', 'nighteye']), // 독로는 장수가 세다 (FLOW §3)
+  h('dokro-2', '견지 쇠돌', 'dokro', 'g', [6, 5, 3, 3, 3, 7], ['careful'], 'dokro-cap'),
 ]
+
+/** 나라마다 군주 */
+const RULER: Readonly<Record<string, string>> = {
+  us: 'us-ruler', guya: 'guya-ruler', anya: 'anya-ruler', miri: 'miri-ruler', goja: 'goja-ruler', dokro: 'dokro-ruler',
+}
 
 const a = (id: string, faction: string, hero: string | null, at: string, mix: Army['mix'], equip: Army['equip'] = 'ironTip'): Army =>
   ({ id, faction, hero, mix, equip, morale: 1, at, march: null })
@@ -162,7 +186,7 @@ export const NATION_IDS: readonly string[] = NATION_STARTS.map((n) => n.faction.
  */
 export function startRealm(seed: number, player: string): Realm {
   const me = NATION_IDS.includes(player) ? player : 'us'
-  const factions: Faction[] = NATION_STARTS.map((n) => ({ ...n.faction, mind: n.faction.id === me ? 'player' : n.mind }))
+  const factions: Faction[] = NATION_STARTS.map((n) => ({ ...n.faction, mind: n.faction.id === me ? 'player' : n.mind, ruler: RULER[n.faction.id]! }))
   const nodes = byId(NODES)
   const edges = byId(EDGES)
   // 정보: 저마다 제 땅과 그 이웃 길의 땅만 안다. 남의 군세는 모른다 (SYSTEMS §2-1)

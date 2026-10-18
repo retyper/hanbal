@@ -61,6 +61,11 @@ export interface Faction {
   readonly equip: Equip
   /** 계절마다 바깥과의 교역으로 들어오는 것 — 독로국의 왜 교역 같은 (FLOW §3). 없으면 0 */
   readonly income?: { readonly grain: number; readonly iron: number }
+  /**
+   * 군주 — 장수 id (docs/realm/HEROES.md, 형: "군주는 따로 있어야 하고 장군이랑 별개"). 군대를 이끌지 않고 도읍에 머문다.
+   * 능력치가 나라 전체에 작게 걸린다 (heroes.rulerOf). 옛 판에는 없다.
+   */
+  readonly ruler?: string
 }
 
 /** 나라 사이 관계 (FLOW §4) — 판은 중립에서 시작한다. 화친은 `until` 계절에 끝난다 */
@@ -83,14 +88,42 @@ export interface Hero {
   readonly id: string
   readonly name: string
   faction: string
-  /** 무 · 략 · 치 · 덕 (SYSTEMS §5-1) 1~10 */
+  /**
+   * 능력치 여섯 1~10 (docs/realm/HEROES.md §1 — 화면 이름은 prose.STAT_NAME):
+   * 무예 mu · 통솔 tong · 지략 ryak · 내정 chi · 매력 deok · 의리 uiri (나라·주인에 대한 마음 — 낮으면 회유·매수에 넘어간다)
+   */
   readonly mu: number
+  readonly tong: number
   readonly ryak: number
   readonly chi: number
   readonly deok: number
+  readonly uiri: number
+  /** 특성 id (data/traits.ts) — 0~3개 */
+  readonly traits: readonly string[]
+  /** 남 g · 여 w — 그림 짝짓기와 글에 쓴다 */
+  readonly look: 'g' | 'w'
   status: HeroStatus
   /** 사로잡힌 곳의 세력 id */
   captor: string | null
+  /**
+   * 군대 없이 혼자 머무는 고을 — 군대를 이끄는 동안은 null (자리는 그 군대의 자리).
+   * 맡은 고을(post)이 있으면 그 고을이다 (HEROES §3).
+   */
+  at: string | null
+  /** 맡은 고을 — 내정·지략·매력·특성이 그 고을에 걸린다. 없으면 null */
+  post: string | null
+  /** 회유 중 — 사로잡은 나라가 계절마다 곡식을 내며 설득한다 (HEROES §4-1). by = 맡은 장수 */
+  persuade?: { by: string | null; left: number }
+  /** 다친 장수 — 이 계절까지 군대를 이끌지 못한다 (암살이 먹혔다, plots.ts) */
+  woundedUntil?: number
+}
+
+/** 떠돌이 인재 — 봄에 어느 고을에 나타나 값을 내면 들어온다 (HEROES §4-2). until 계절이 지나면 떠난다 */
+export interface Wanderer {
+  readonly hero: Hero
+  readonly node: string
+  readonly until: number
+  readonly price: number
 }
 
 /** 행군 중인 군대 — 길 위에 있다. `left` 계절 뒤 `to` 에 닿는다 */
@@ -140,7 +173,7 @@ export interface Watch {
  * 공작 — 몰래 하는 일 (형: "다양한 외교나 공작이 가능 해야하는거 아님?" — 2026-10-18, plots.ts)
  *   rumor 소문 · sow 이간 · bribe 매수 · burn 방화 · spy 첩자
  */
-export type PlotOp = 'rumor' | 'sow' | 'bribe' | 'burn' | 'spy'
+export type PlotOp = 'rumor' | 'sow' | 'bribe' | 'burn' | 'spy' | 'assassin'
 
 /** 심어 둔 첩자 — `until` 계절까지 그 고을 군세를 계절마다 새로 안다 */
 export interface Spy {
@@ -195,6 +228,11 @@ export interface Realm {
   asks?: Ask[]
   /** 나라마다 심어 둔 첩자 (plots.ts spy). 옛 저장에는 없다 */
   spies?: Record<string, Spy[]>
+  /** 지금 떠도는 인재 (heroes.ts) · 이미 나온 명단 id */
+  wanderers?: Wanderer[]
+  poolUsed?: string[]
+  /** 나라마다 능력치를 본 남의 장수 — 싸워 봤거나 정찰·첩자로 봤다 (heroes.heroSeen) */
+  met?: Record<string, string[]>
 }
 
 /** 플레이어(또는 AI)가 한 계절에 내리는 명령 */
@@ -224,7 +262,19 @@ export type Order =
   /** 경계 강화 — 곡식을 내고 그 고을 경계를 올린다 (economy.canGuard · guardCost). 한 고을 한 계절 한 번 */
   | { readonly kind: 'guard'; readonly faction: string; readonly node: string }
   /** 공작 (plots.ts) — 한 계절에 plotsPerSeason 까지, 같은 대상에 같은 공작은 하나. sow 는 `other`, bribe·spy 는 `node` */
-  | { readonly kind: 'plot'; readonly faction: string; readonly op: PlotOp; readonly target: string; readonly node?: string; readonly other?: string }
+  | {
+      readonly kind: 'plot'; readonly faction: string; readonly op: PlotOp; readonly target: string; readonly node?: string; readonly other?: string
+      /** 암살(assassin) — 노릴 장수 · 보낼 자객(우리 장수, 혼자 머무는 이). 자객이 없으면 고용 자객 (곡식 더) */
+      readonly hero?: string; readonly agent?: string
+    }
+  /** 장수를 고을에 맡긴다 (HEROES §3) — 장수가 그 고을에 있어야 한다. node null 이면 맡은 자리를 떠난다 (그 고을에 혼자 머문다) */
+  | { readonly kind: 'assign'; readonly hero: string; readonly node: string | null }
+  /** 혼자 머무는 장수가 같은 고을의 장수 없는 군대를 이끈다 */
+  | { readonly kind: 'lead'; readonly hero: string; readonly army: string }
+  /** 포로 회유를 시작한다 — 다 될 때까지 계절마다 곡식이 든다. by = 설득을 맡은 우리 장수 (매력·매혹이 빠르기를 정한다) */
+  | { readonly kind: 'persuade'; readonly hero: string; readonly by: string | null }
+  /** 떠돌이 인재를 들인다 — 그 인재가 머문 고을의 주인만, 곡식 price */
+  | { readonly kind: 'hire'; readonly faction: string; readonly hero: string }
   /** 사신 (FLOW §4) — 한 나라가 한 계절에 하나. give 는 보내는 쪽이, take 는 받는 쪽이 내놓는다 */
   | {
       readonly kind: 'envoy'
@@ -300,9 +350,19 @@ export type ReportLine =
       readonly other?: string
       readonly ok: boolean
       readonly caught: boolean
+      /** 암살 — 노린 장수 · 보낸 자객(없으면 고용 자객) · 먹혔으면 다쳤나 죽었나 */
+      readonly hero?: string
+      readonly agent?: string
+      readonly result?: 'wound' | 'kill'
     }
   /** 누가 했는지 모르는 일 — 당한 나라의 눈 (사기가 꺾였다 · 곡식이 탔다 · 장정이 안 나왔다) */
-  | { readonly kind: 'mystery'; readonly faction: string; readonly what: 'morale' | 'grain' | 'militia'; readonly node?: string }
+  | { readonly kind: 'mystery'; readonly faction: string; readonly what: 'morale' | 'grain' | 'militia' | 'wound' | 'death'; readonly node?: string; readonly hero?: string }
+  /** 장수가 들어왔다 — 회유가 끝났거나 떠돌이를 들였다 */
+  | { readonly kind: 'recruit'; readonly hero: string; readonly faction: string; readonly how: 'persuade' | 'wanderer' }
+  /** 떠돌이 인재가 그 고을에 나타났다 — 고을 주인이 until 계절까지 들일 수 있다 */
+  | { readonly kind: 'wanderer'; readonly hero: string; readonly node: string; readonly until: number; readonly price: number }
+  /** 맡긴 장수가 고을을 잃어 물러났다 · 사로잡혔다 */
+  | { readonly kind: 'heroMoved'; readonly hero: string; readonly faction: string; readonly to: string | null; readonly captor: string | null }
 
 export interface Report {
   readonly season: number

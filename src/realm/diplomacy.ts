@@ -12,6 +12,7 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { stockOf } from './economy.ts'
+import { envoyBonus } from './heroes.ts'
 import { visibleRange } from './intel.ts'
 import { nodeStrength } from './season.ts'
 import type { Ask, AskKind, EnvoyAsk, Order, Realm, Relation, ReportLine } from './types.ts'
@@ -192,6 +193,7 @@ function chanceAt(
         + (mind === 'cautious' ? R.envoyCautious : mind === 'greedy' ? R.envoyGreedy : 0)
       break
   }
+  p += envoyBonus(r, from, ask) // 군주 매력 · 매혹 · 장사꾼 (heroes.ts)
   if (rel === 'war') p += R.envoyWar
   else if (rel === 'truce' || rel === 'ally') p += R.envoyFriend
   return Math.min(R.envoyMax, Math.max(R.envoyMin, p))

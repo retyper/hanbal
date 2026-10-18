@@ -27,6 +27,9 @@ import {
 } from './economy.ts'
 import { blockedWhy, seasonOf } from './calendar.ts'
 import { refreshSpies, resolvePlots } from './plots.ts'
+import {
+  ambushTraitOf, applyHeroOrders, bowMulOf, commandOf, escapeOf, hasTrait, heroesAtNode, ironhandAt, noteMet, stepHeroes, sweepHeroes,
+} from './heroes.ts'
 import type {
   Army, EdgeKind, Order, Realm, REdge, Report, ReportLine, RNode, SeasonOfYear, SnipeZone,
 } from './types.ts'
@@ -93,11 +96,13 @@ export function fortMul(node: RNode, season: SeasonOfYear): number {
 function heroOf(r: Realm, a: Army) {
   if (a.hero === null) return null
   const h = r.heroes[a.hero]
-  return h !== undefined && h.status === 'free' ? h : null
+  // 다친 장수(암살이 먹혔다)는 군대를 이끌지 못한다 — 그 군대는 장수 없는 군대로 싸운다
+  return h !== undefined && h.status === 'free' && (h.woundedUntil ?? -1) < r.season ? h : null
 }
 
 export function forceOf(r: Realm, a: Army): Force {
-  return { mix: a.mix, equip: a.equip, mu: heroOf(r, a)?.mu ?? 1, morale: a.morale }
+  const h = heroOf(r, a)
+  return { mix: a.mix, equip: a.equip, mu: commandOf(h), bowMul: bowMulOf(h), morale: a.morale }
 }
 
 /** 여러 군대를 한 판정 입력으로 — 병력은 더하고, 장비·지휘는 가장 큰 군대·가장 센 장수의 것 */
@@ -105,17 +110,19 @@ function mergeForces(r: Realm, armies: readonly Army[]): Force {
   const mix: Partial<Record<UnitKind, number>> = {}
   let biggest: Army | null = null
   let mu = 1
+  let bowMul = 1
   let moraleSum = 0
   let n = 0
   for (const a of armies) {
     const c = headcount(forceOf(r, a))
     for (const [k, v] of Object.entries(a.mix) as Array<[UnitKind, number]>) mix[k] = (mix[k] ?? 0) + v
     if (biggest === null || c > headcount(forceOf(r, biggest))) biggest = a
-    mu = Math.max(mu, heroOf(r, a)?.mu ?? 1)
+    mu = Math.max(mu, commandOf(heroOf(r, a)))
+    bowMul = Math.max(bowMul, bowMulOf(heroOf(r, a)))
     moraleSum += a.morale * c
     n += c
   }
-  return { mix, equip: biggest?.equip ?? 'stone', mu, morale: n > 0 ? moraleSum / n : 1 }
+  return { mix, equip: biggest?.equip ?? 'stone', mu, bowMul, morale: n > 0 ? moraleSum / n : 1 }
 }
 
 /** 고을에 머무는(행군 중이 아닌) 군대 — id 순서로 (결정론) */
@@ -311,7 +318,7 @@ function draftArmy(r: Realm, o: Extract<Order, { kind: 'draft' }>, lines: Report
   if (army === undefined) {
     if (Object.values(r.armies).filter((x) => x.faction === o.faction).length >= P.realm.armyMax) return
     const id = newArmyId(r, o.faction)
-    army = { id, faction: o.faction, hero: null, mix: {}, equip: r.factions[o.faction]!.equip, morale: 1, at: node.id, march: null }
+    army = { id, faction: o.faction, hero: null, mix: {}, equip: ironhandAt(r, node.id) ? 'iron' : r.factions[o.faction]!.equip, morale: 1, at: node.id, march: null }
     r.armies[id] = army
   }
   const had = headcount(forceOf(r, army))
@@ -330,6 +337,7 @@ function disbandArmy(r: Realm, o: Extract<Order, { kind: 'disband' }>, lines: Re
   if (node === undefined || node.owner !== a.faction) return
   const n = headcount(forceOf(r, a))
   node.hh += n
+  if (a.hero !== null && r.heroes[a.hero] !== undefined) r.heroes[a.hero]!.at = node.id // 장수는 그 고을에 혼자 남는다
   delete r.armies[a.id]
   lines.push({ kind: 'disband', army: a.id, node: node.id, n })
 }
@@ -364,6 +372,7 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
     else if (o.kind === 'settle') settleLand(r, o, lines)
     else if (o.kind === 'guard') applyGuard(r, o, lines)
   }
+  applyHeroOrders(r, orders, lines) // 맡기기·이끌기·회유·들이기 — 나누기·해산 뒤 (떼어 낸 군대를 이끌 수 있게)
 }
 
 /** 1 — 명령 확정: 나누기·모으기를 먼저 하고, 출정 명령을 군대에 싣는다. 막힌 길은 보고에 남기고 떠나지 않는다 */
@@ -407,6 +416,7 @@ function resolveScouts(r: Realm, orders: readonly Order[], lines: ReportLine[]):
       alert: { v: w.alert, season: r.season },
     }
     for (const nb of neighbors(r, node.id)) known[nb] ??= { land: true, force: null, alert: null }
+    noteMet(r, o.faction, heroesAtNode(r, node.id))
     lines.push({ kind: 'scout', faction: o.faction, node: node.id, detected })
   }
 }
@@ -427,6 +437,16 @@ export function groupPower(
   return new Set(atks.map((x) => x.edge.id)).size >= 2 ? f * P.realm.pincer : f
 }
 
+/**
+ * 싸움에 함께 선 장수들 — 싸운 나라들이 서로의 장수를 본다 (heroes.heroSeen). 싸우기 전에 부른다 (지면 군대에서 빠지니까)
+ */
+function meet(r: Realm, sides: ReadonlyArray<{ readonly hero: string | null; readonly faction?: string }>): void {
+  const heroes = sides.map((x) => x.hero).filter((h): h is string => h !== null)
+  const factions = new Set(heroes.map((h) => r.heroes[h]?.faction).filter((f): f is string => f !== undefined))
+  for (const s of sides) if (s.faction !== undefined) factions.add(s.faction)
+  for (const f of [...factions].sort()) noteMet(r, f, heroes)
+}
+
 /** 5 — 진 쪽 장수의 운명: 생포를 먼저, 남은 몫에서 전사. 굴림은 `rollKey` */
 function heroFate(
   r: Realm,
@@ -438,7 +458,15 @@ function heroFate(
 ): { captured: string | null; killed: string | null } {
   const loserHero = loserArmies.map((x) => heroOf(r, x)).find((x) => x !== null) ?? null
   if (loserHero === null) return { captured: null, killed: null }
-  const f = fate(outcome, bonus)
+  // 겁 많음 — 먼저 달아나 안 잡히지만, 그 군대 사기가 더 꺾인다 (HEROES §2)
+  if (hasTrait(loserHero, 'coward') && fate(outcome, bonus).capture + fate(outcome, bonus).death > 0) {
+    for (const x of loserArmies) if (x.hero === loserHero.id) x.morale = Math.max(P.realm.moraleFloor, x.morale - P.realm.traitCowardMorale)
+    return { captured: null, killed: null }
+  }
+  // 무예 — 높으면 빠져나온다 (생포·전사를 함께 줄인다, 낮으면 늘린다)
+  const f0 = fate(outcome, bonus)
+  const k = Math.min(1.5, Math.max(0.3, 1 - escapeOf(loserHero)))
+  const f = { capture: f0.capture * k, death: f0.death * k }
   const r2 = roll(r.seed, r.season, rollKey)
   let captured: string | null = null
   let killed: string | null = null
@@ -494,6 +522,7 @@ function fieldBattles(r: Realm, lines: ReportLine[]): void {
       const lead = atks[0]!
       const target = lead.march!.to
       provoke(r, lead.faction, defs[0]!.faction, lines)
+      meet(r, [...atks, ...defs])
       const atkF = mergeForces(r, atks)
       const defF = mergeForces(r, defs)
       const p = winChance(power(atkF, defF, OPEN_FIELD, 'atk'), power(defF, atkF, OPEN_FIELD, 'def'))
@@ -539,6 +568,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const defFaction = node.owner !== null && !allied(r, a.faction, node.owner) ? node.owner : defenders[0]!.faction
   const w = r.watch[node.id]!
   provoke(r, a.faction, defFaction, lines)
+  meet(r, [...atks, ...defenders, ...heroesAtNode(r, node.id).map((h) => ({ hero: h }))])
 
   // 4 — 기습: 군대마다 제 길로 따로 굴린다. 큰 군대는 잘 안 숨는다
   const legs = atks.map((x) => {
@@ -546,7 +576,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
     const ed = r.edges[m.edge]!
     let amb: 'none' | 'success' | 'caught' = 'none'
     if (m.ambush) {
-      const size = -ambushSizePenalty(headcount(forceOf(r, x)))
+      const size = -ambushSizePenalty(headcount(forceOf(r, x))) + ambushTraitOf(heroOf(r, x), ed.kind)
       const p = ambushChance(conceal(ed, node, season), heroOf(r, x)?.ryak ?? 1, bestRyak(r, defenders), size, w.lull, w.alert)
       amb = roll(r.seed, r.season, `ambush:${ed.id}:${x.id}`) < p ? 'success' : 'caught'
     }
@@ -724,12 +754,15 @@ export function advance(
   resolvePlots(r, orders, lines) // 2 — 공작
   resolveRites(r, orders, lines) // 2 — 소도 제사
   resolveMarches(r, snipes, lines, fought) // 3 · 4 · 5
+  sweepHeroes(r, lines) // 5 끝 — 잃은 고을에 혼자 있던 장수는 물러나거나 잡힌다
   stepEconomy(r, season, fought, lines) // 7
   decayWatch(r) // 9
+  stepHeroes(r, lines) // 9 — 회유 · 맡은 고을의 경계·철 · 떠돌이
   expireRelations(r, lines) // 9
   holdMarkets(r, lines) // 9 — 화친·동맹의 장터
   shareIntel(r) // 9 — 동맹은 본 것을 나눈다
   refreshSpies(r) // 9 — 첩자가 본다
+  for (const [f, spies] of Object.entries(r.spies ?? {})) for (const s of spies) noteMet(r, f, heroesAtNode(r, s.node))
   if (r.player !== undefined) {
     for (const a of seenMarches(r, r.player)) {
       const line = { kind: 'sighted', faction: a.faction, army: a.id, from: a.march!.from, to: a.march!.to } as const

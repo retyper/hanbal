@@ -77,10 +77,10 @@ describe('공작 — 값과 규칙', () => {
     for (const op of PLOT_OPS) {
       const ts = plotTargets(r, 'us', op)
       assert.deepEqual(ts, plotTargets(r, 'us', op))
-      assert.ok(ts.length > 0, op)
+      assert.ok(op === 'assassin' || ts.length > 0, op) // 암살은 본 장수가 있어야 — 판의 처음엔 없다
       for (const t of ts) {
-        const [lo, hi] = plotChance(r, 'us', op, t.target, t.node)
-        const p = plotTrueChance(r, 'us', op, t.target, t.node)
+        const [lo, hi] = plotChance(r, 'us', op, t.target, t.node, t.hero)
+        const p = plotTrueChance(r, 'us', op, t.target, t.node, t.hero)
         assert.ok(lo <= p + 1e-9 && p <= hi + 1e-9, `${op} ${t.target} ${t.node ?? ''}: ${lo} ${p} ${hi}`)
         assert.ok(lo >= P.realm.plotMin && hi <= P.realm.plotMax)
       }
@@ -174,5 +174,47 @@ describe('공작 — AI', () => {
     }
     assert.ok(n > 0, '공작이 한 번도 없다')
     assert.ok(atUs > 0, '플레이어를 노린 공작이 없다')
+  })
+})
+
+describe('공작 — 암살 (형: "암살자를 보내야지 장군 지혼자 왜 가냐")', () => {
+  /** 구야 장군 거타를 본 판 — 싸워 봤거나 정찰했다 */
+  const seen = (r: Realm): void => {
+    r.met = { us: ['guya-1'] }
+  }
+  const kill = (agent?: string): Order => ({ kind: 'plot', faction: 'us', op: 'assassin', target: 'guya', hero: 'guya-1', ...(agent !== undefined ? { agent } : {}) })
+
+  it('본 장수만 노린다 — 군주는 안 된다 · 범위가 참값을 품는다', () => {
+    const r = byeonhanMini(3)
+    assert.equal(plotTargets(r, 'us', 'assassin').length, 0)
+    seen(r)
+    const ts = plotTargets(r, 'us', 'assassin')
+    assert.deepEqual(ts.map((t) => t.hero), ['guya-1'])
+    const t = ts[0]!
+    const [lo, hi] = plotChance(r, 'us', 'assassin', t.target, t.node, t.hero, 'us-1')
+    const p = plotTrueChance(r, 'us', 'assassin', t.target, t.node, t.hero, 'us-1')
+    assert.ok(lo <= p + 1e-9 && p <= hi + 1e-9)
+    // 군주는 봤어도 못 노린다
+    r.met = { us: ['guya-ruler'] }
+    assert.equal(plotTargets(r, 'us', 'assassin').length, 0)
+    // 고용 자객은 곡식이 더 든다
+    assert.ok(plotCost('assassin').grain > plotCost('assassin', 'us-1').grain)
+  })
+
+  it('먹히면 그 장수가 다치거나 죽는다 — 다치면 군대를 못 이끈다', () => {
+    const { next, report } = find(kill('us-1'), { ok: true, caught: false }, seen)
+    const l = plotLines(report.lines)[0]!
+    const h = next.heroes['guya-1']!
+    if (l.result === 'kill') assert.equal(h.status, 'dead')
+    else assert.ok((h.woundedUntil ?? -1) >= next.season - 1)
+    assert.ok(report.lines.some((x) => x.kind === 'mystery' && x.faction === 'guya'))
+  })
+
+  it('들키면 보낸 자객이 사로잡히고 그 나라와 두 칸 나빠진다', () => {
+    const { before, next } = find(kill('us-1'), { ok: false, caught: true }, seen)
+    assert.equal(next.heroes['us-1']!.status, 'captive')
+    assert.equal(next.heroes['us-1']!.captor, 'guya')
+    assert.equal(relationOf(before, 'us', 'guya').state, 'neutral')
+    assert.equal(relationOf(next, 'us', 'guya').state, 'war')
   })
 })

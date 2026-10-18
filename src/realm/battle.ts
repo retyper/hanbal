@@ -17,8 +17,10 @@ export type Equip = 'stone' | 'bronze' | 'ironTip' | 'iron' | 'leather' | 'ringS
 export interface Force {
   readonly mix: Readonly<Partial<Record<UnitKind, number>>>
   readonly equip: Equip
-  /** 이끄는 장수의 무(武) 1~10. 장수가 없으면 1. */
+  /** 이끄는 장수의 지휘 1~10 — 무예와 통솔의 평균 (heroes.commandOf). 장수가 없으면 1. */
   readonly mu: number
+  /** 궁수의 힘 배수 — 장수의 궁술·명궁 (heroes.bowMulOf). 없으면 1 */
+  readonly bowMul?: number
   /** 사기 0.5 ~ 1.2 */
   readonly morale: number
 }
@@ -95,6 +97,11 @@ export function counterMul(me: Force, foe: Force): number {
 }
 
 /** 지휘 L = 바탕 + 무 × 계수 */
+/** 싸우는 머릿수 — 궁수는 이끄는 장수의 궁술·명궁(bowMul)만큼 더 센다 (HEROES §1 · §2) */
+export function fightHead(f: Force): number {
+  return headcount(f) + ((f.bowMul ?? 1) - 1) * (f.mix.bow ?? 0)
+}
+
 export function leadMul(mu: number): number {
   return P.realm.leadBase + P.realm.leadPerMu * mu
 }
@@ -105,7 +112,7 @@ export function leadMul(mu: number): number {
  */
 export function power(me: Force, foe: Force, field: Field, side: 'atk' | 'def'): number {
   const R = P.realm
-  let f = headcount(me) * equipMul(me.equip) * leadMul(me.mu) * me.morale * counterMul(me, foe)
+  let f = fightHead(me) * equipMul(me.equip) * leadMul(me.mu) * me.morale * counterMul(me, foe)
   if (side === 'def') {
     f *= field.fort * field.snipeDef
   } else {
@@ -122,7 +129,7 @@ export function power(me: Force, foe: Force, field: Field, side: 'atk' | 'def'):
  * 척후가 "120~180" 처럼 보고하는 것은 이것이다. 실제 판정(power)은 여기에 상성·자리를 더 곱한다.
  */
 export function strength(f: Force): number {
-  return headcount(f) * equipMul(f.equip) * leadMul(f.mu) * f.morale
+  return fightHead(f) * equipMul(f.equip) * leadMul(f.mu) * f.morale
 }
 
 /** P(공격측 승) = Fa^k / (Fa^k + Fd^k). 둘 다 0 이면 반반. */
