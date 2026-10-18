@@ -7,7 +7,7 @@
  */
 import { P } from '../tune/params.ts'
 
-/** 병종 (SYSTEMS §4-1). 기병은 부여·고구려만, 쇠뇌수는 바깥 세력만 쓴다 — 누가 쓰는지는 데이터가 정한다. */
+/** 병종 (SYSTEMS §4-1). 기병은 부여·고구려만, 쇠뇌병은 바깥 세력만 쓴다 — 누가 쓰는지는 데이터가 정한다. */
 export type UnitKind = 'spear' | 'bow' | 'pike' | 'shield' | 'horse' | 'crossbow' | 'boat'
 
 /** 장비 단계 E (SYSTEMS §4-2) */

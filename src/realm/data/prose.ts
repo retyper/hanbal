@@ -31,7 +31,7 @@ export const TAG_LINE: Record<Tag, string> = {
 }
 
 export const UNIT_NAME: Record<UnitKind, string> = {
-  spear: '창수', bow: '궁수', pike: '긴창수', shield: '방패수', horse: '기병', crossbow: '쇠뇌수', boat: '배꾼',
+  spear: '창병', bow: '궁수', pike: '장창병', shield: '방패병', horse: '기병', crossbow: '쇠뇌병', boat: '수군',
 }
 
 export const OUTCOME_NAME: Record<Outcome, string> = {

@@ -89,7 +89,7 @@ describe('전투 판정', () => {
     }
   })
 
-  it('상성 — 창수는 기병에 유리하다', () => {
+  it('상성 — 창병은 기병에 유리하다', () => {
     const spear = SPEARS(100)
     const horse: Force = { mix: { horse: 100 }, equip: 'ironTip', mu: 5, morale: 1 }
     assert.ok(power(spear, horse, OPEN_FIELD, 'atk') > power(horse, spear, OPEN_FIELD, 'def'))
