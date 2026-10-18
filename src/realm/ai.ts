@@ -14,7 +14,7 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import {
-  allyFoe, canEscort, envoyOptions, friendly, jointTargets, lentStep, nationPower, openAsks, pledgedNodes, relationOf, tradeOffer,
+  allyFoe, canEscort, envoyOptions, favorOf, friendly, jointTargets, lentStep, nationPower, openAsks, pledgedNodes, powerRange, relationOf, tradeOffer,
 } from './diplomacy.ts'
 import {
   armCost, buildCost, canBuild, canGuard, draftCost, draftLimit, goodsWorth, guardCost, hhOf, menOf, nextBuild, riteAllowed, riteCost, settleLimit, settleTargets, stockOf, upkeepOf,
@@ -24,7 +24,7 @@ import { armyOfHero, hasTrait, isRuler, persuadeSeasons, postHero, wanderersFor 
 import { armiesAt, fortMul, neighbors, newArmyId, planned, seasonOf, seenMarches } from './season.ts'
 import type { UnitKind } from './battle.ts'
 import { bowUpCost, plotAgents, plotCost, plotTargets } from './plots.ts'
-import { allianceWhy, breakWhy, truceWhy } from './stance.ts'
+import { allianceWhy, borders, breakWhy, leaderOf, truceWhy } from './stance.ts'
 import type { Army, EnvoyAsk, Hero, Order, PlotOp, Realm, Why } from './types.ts'
 
 export type Brain = 'greedy' | 'cautious' | 'reckless' | 'random' | 'planner'
@@ -40,11 +40,23 @@ function lastGuard(r: Realm, faction: string, a: Army): boolean {
   return armiesAt(r, cap).filter((x) => x.faction === faction).length <= 1
 }
 
+/** 그 나라 눈에 앞서가는 나라 — 판 하나에 나라마다 한 번만 셈한다 (focus 가 길마다 부른다) */
+const LEADER = new WeakMap<Realm, Map<string, string | null>>()
+function leaderFor(r: Realm, faction: string): string | null {
+  let m = LEADER.get(r)
+  if (m === undefined) LEADER.set(r, (m = new Map()))
+  if (!m.has(faction)) m.set(faction, leaderOf(r, faction))
+  return m.get(faction)!
+}
+
 /** 동맹이 싸우는 적의 고을이면 더 쳐 볼 만하다 — 동맹은 같은 적을 먼저 친다 (FLOW §4) */
 function focus(r: Realm, faction: string, to: string): number {
   // 함께 치자고 약속한 고을이면 더 — 약속을 지키려 한다
   const pledged = pledgedNodes(r, faction).includes(to) ? P.realm.aiPledgeFocus : 0
-  return pledged + (allyFoe(r, faction, r.nodes[to]?.owner ?? null) ? P.realm.aiAllyFocus : 0)
+  // 힘의 균형 — 앞서가는 나라(도읍 둘 또는 힘 3할)는 모두가 막으려 한다 (stance.leaderOf, 제 정보로 본다)
+  const owner = r.nodes[to]?.owner ?? null
+  const lead = owner !== null && owner !== faction && leaderFor(r, faction) === owner ? P.realm.aiLeaderFocus : 0
+  return pledged + lead + (allyFoe(r, faction, owner) ? P.realm.aiAllyFocus : 0)
 }
 
 /** 소도 제사 — 허락되고 군량 aiDraftReserve 계절치를 남기고도 제사 곡식이 남으면 */
@@ -367,7 +379,8 @@ function envoys(r: Realm, faction: string): Order[] {
     if (c !== null && !envoyOptions(r, faction, f.id).includes(c.ask)) c = null
     if (c !== null && (best === null || c.w > best.w)) best = { to: f.id, ...c }
   }
-  if (best === null) return trades(r, faction) ?? gifts(r, faction)
+  // 할 말이 없으면 — 신중한 나라는 맞닿은 센 이웃의 마음부터 산다(선물), 그다음 맞바꿈, 그다음 아무 선물
+  if (best === null) return favorGift(r, faction) ?? trades(r, faction) ?? gifts(r, faction)
   const { to, ask, target, why, about } = best
   const hero = escortFor(r, faction, ask)
   return [{
@@ -449,6 +462,26 @@ function gifts(r: Realm, faction: string): Order[] {
     .filter((f) => f.id !== faction && f.mind !== 'player' && relationOf(r, faction, f.id).state !== 'ally' && Object.values(r.nodes).some((n) => n.owner === f.id))
     .sort((a, b) => nationPower(r, b.id) - nationPower(r, a.id))[0]
   return target === undefined ? [] : [{ kind: 'envoy', from: faction, to: target.id, ask: 'gift', give: { grain, iron: 0 }, take: { grain: 0, iron: 0 } }]
+}
+
+/**
+ * 호감을 사는 선물 (형: "외교가 좀 재미없음" · 맞바꿈이 먼저가 되며 AI 선물이 0 이 됐었다) — 신중한 나라가
+ * 길로 맞닿고 제 눈에 더 센 이웃, 그리고 아직 가깝지 않은(호감 < aiGiftFavor) 나라에게. 싸우는 나라에는 안 보낸다.
+ * 힘은 제 정보로 본다 (정보의 계약 — diplomacy.powerRange 가운데). 곡식은 군량 한 계절치를 더 남긴다
+ */
+function favorGift(r: Realm, faction: string): Order[] | null {
+  const R = P.realm
+  if (r.factions[faction]?.mind !== 'cautious') return null
+  const spare = stockOf(r, faction).grain - (R.aiDraftReserve + 1) * upkeepOf(r, faction, true)
+  const grain = Math.floor(Math.min(R.aiGiftMax, spare * 0.15) / 10) * 10
+  if (grain < 20) return null
+  const me = nationPower(r, faction)
+  const seen = (f: string): number => { const [lo, hi] = powerRange(r, faction, f); return (lo + hi) / 2 }
+  const target = sorted(Object.values(r.factions))
+    .filter((f) => f.id !== faction && f.mind !== 'player' && Object.values(r.nodes).some((n) => n.owner === f.id))
+    .filter((f) => relationOf(r, faction, f.id).state !== 'war' && favorOf(r, faction, f.id) < R.aiGiftFavor && borders(r, faction, f.id) && seen(f.id) > me)
+    .sort((a, b) => seen(b.id) - seen(a.id) || (a.id < b.id ? -1 : 1))[0]
+  return target === undefined ? null : [{ kind: 'envoy', from: faction, to: target.id, ask: 'gift', give: { grain, iron: 0 }, take: { grain: 0, iron: 0 } }]
 }
 
 /** 빌려준 군대 — 지킬 고을까지 한 길씩 간다 (diplomacy.lentStep). 닿으면 머문다 */
@@ -609,6 +642,66 @@ function moves(r: Realm, faction: string, brain: Brain): Order[] {
     return true
   }
 
+  /**
+   * 별동대 (형이 고름: 기습은 "길과 때의 싸움") — 큰 군대는 숨지 못한다. 그래서 칠 데를 못 찾은 군대는 작은 무리만 떼어
+   * ① 숨기 좋은(또는 그저 그런) 길로 성 뒤 고을을 기습하거나 ② 지키는 이 없는 마을을 줍는다. 본대(장수)는 집에 남는다.
+   * 한 나라가 한 계절에 하나만. 군대 상한에 한 자리를 남긴다.
+   */
+  let raided = false
+  const raid = (a: Army): boolean => {
+    if (raided || brain === 'random') return false
+    const mine = Object.values(p.armies).filter((x) => x.faction === faction).length
+    if (mine >= R.armyMax - 1) return false
+    const n = Object.values(a.mix).reduce((s, v) => s + (v ?? 0), 0)
+    const keep = lastGuard(p, faction, a) ? Math.max(R.aiGuardMin, R.splitMin) : R.splitMin
+    const size = Math.min(R.ambushFreeMen, Math.floor(n * R.aiRaidShare), n - keep)
+    if (size < R.splitMin) return false
+    const take: Partial<Record<UnitKind, number>> = {}
+    let got = 0
+    for (const [k, v] of (Object.entries(a.mix) as Array<[UnitKind, number]>).sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
+      const t = Math.floor((v * size) / n)
+      if (t > 0) {
+        take[k] = t
+        got += t
+      }
+    }
+    if (got < R.splitMin) return false
+    // 장수 없이 먼저 본다. 기습은 장수의 지략을 크게 타니, 모자라면 장수가 별동대를 이끌고 간다 (본대는 장수 없이 남는다)
+    for (const withHero of a.hero !== null ? [false, true] : [false]) {
+      const go = pickRaid(a, take, withHero)
+      if (go === null) continue
+      const id = newArmyId(p, faction)
+      const o: Order = { kind: 'split', army: a.id, id, take, hero: withHero }
+      const next = planned(p, [o])
+      if (next.armies[id] === undefined) return false
+      orders.push(o, { kind: 'march', army: id, edge: go.t.edge.id, ambush: go.ambush })
+      p = next
+      raided = true
+      return true
+    }
+    return false
+  }
+  const pickRaid = (a: Army, take: Partial<Record<UnitKind, number>>, withHero: boolean): { t: Move; ambush: boolean } | null => {
+    const det: Army = { ...a, mix: take, hero: withHero ? a.hero : null }
+    delete (det as { kit?: unknown }).kit // 떼어 낸 몫의 무장은 본대와 같은 비로 본다 (kit.kitOf)
+    let best: { t: Move; v: number; ambush: boolean } | null = null
+    // 도읍은 별동대로 노리지 않는다 — 본대가 친다 (봇 대전: 겨울 들길로 숨어 든 작은 무리가 도읍 하나뿐인 거칠산을 무너뜨려 짐 9% → 21%)
+    const capitals = new Set(Object.values(p.factions).map((f) => f.capital))
+    for (const t of movesOf(p, faction, det)) {
+      if (!t.hostile || t.blocked !== null || spared(p, faction, t.to) || t.win === null || capitals.has(t.to)) continue
+      let c: { v: number; ambush: boolean } | null = null
+      // 성 뒤 기습은 도박이다 — 먹히면 거의 이기는 판(성·장정을 건너뛴다)이고, 숨어 닿을 가늠이 aiRaidP 는 돼야 건다. 잃어도 작은 무리다
+      if (t.walled && t.conceal !== 'poor' && t.winAmbush !== null && t.winAmbush[0] >= R.aiRaidWin && t.ambushP >= R.aiRaidP) {
+        c = { v: t.ambushP * t.winAmbush[0], ambush: true }
+      }
+      else if (!t.walled && t.win[0] >= R.aiRaidEasy) c = { v: t.win[0], ambush: false }
+      if (c === null) continue
+      const v = c.v + focus(p, faction, t.to)
+      if (best === null || v > best.v) best = { t, v, ambush: c.ambush }
+    }
+    return best === null ? null : { t: best.t, ambush: best.ambush }
+  }
+
   for (const a of armies) {
     const ts = movesOf(r, faction, a).filter((t) => t.hostile && t.blocked === null && !spared(r, faction, t.to))
     if (ts.length === 0) continue
@@ -632,6 +725,7 @@ function moves(r: Realm, faction: string, brain: Brain): Order[] {
         if (went) orders.push(march(a, best))
       }
       // 칠 데가 안 보이면 탐욕도 한 곳은 들여다본다 — 성벽 뒤를 모르면 영영 못 친다
+      if (!went) went = raid(a)
       if (!went && brain === 'greedy' && !scouted) {
         const stale = ts.reduce((x, y) => (y.age > x.age ? y : x))
         if (stale.age > R.aiCautiousAge) {
@@ -652,6 +746,7 @@ function moves(r: Realm, faction: string, brain: Brain): Order[] {
       const fresh = ts.filter((t) => t.age <= R.aiCautiousAge)
       if (detach(a, fresh, (w) => (w === null ? -1 : w[0]), R.aiCautiousWin)) continue
     }
+    if (raid(a)) continue
     waiting.push(a)
     if (!scouted) {
       // 가장 오래 못 본 이웃 적 고을을 본다 — 한 계절에 척후 하나
