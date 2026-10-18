@@ -59,6 +59,7 @@ export const MAP_CSS = `
 .map .nd.tgt.off { opacity: .45; } .map .nd.tgt.off .ring { border-color: #777; box-shadow: none; animation: none; }
 @keyframes tgt { from { opacity: .55; } to { opacity: 1; } }
 .map .nd .tchip { position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, -2px); white-space: nowrap; pointer-events: none; z-index: 3; }
+.map .nd .tchip .tn.hide { margin-left: 3px; background: #2a3a24e8; color: #c8e8a8; }
 .map .nd .tchip .feel { font-size: max(10px, calc(1.8cqh / var(--z, 1) * var(--zs, 1))); padding: 1px 6px; }
 .map .nd .tchip .tn { background: #1c2129e8; color: #f3e6c8; border-radius: 9px; padding: 1px 7px; font-size: max(10px, calc(1.8cqh / var(--z, 1) * var(--zs, 1))); font-weight: 700; }
 .map .toks { position: absolute; transform: translate(-50%, 85%); display: flex; gap: 3px; z-index: 4; pointer-events: none; }

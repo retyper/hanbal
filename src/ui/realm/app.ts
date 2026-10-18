@@ -12,7 +12,7 @@ import { FACTION_ART, HERO_BUST, SEASON_ICON, UNIT_ICON, nodeIcon } from '../../
 import { NATIONS } from '../../realm/data/nations.ts'
 import { TRAIT } from '../../realm/data/traits.ts'
 import {
-  ASK_KIND_NAME, ASK_NAME, BLOCKED_LINE, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine, NODE_NOW, BUILD_NAME, goodsLine,
+  ASK_KIND_NAME, ASK_NAME, BLOCKED_LINE, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine, NODE_NOW, BUILD_NAME, BOW_NAME, CONCEAL_LINE, goodsLine,
 } from '../../realm/data/prose.ts'
 import { canEscort, envoyChanceFor, envoyOptions, favorOf, jointTargets, openAsks, relationOf } from '../../realm/diplomacy.ts'
 import {
@@ -22,8 +22,8 @@ import {
 import { armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
 import { kitLines } from '../../realm/kit.ts'
 import { alertRange, seenMix, visibleRange } from '../../realm/intel.ts'
-import { advance, draftable, forceOf, neighbors, newArmyId, otherEnd, planned, seasonOf, seenMarches } from '../../realm/season.ts'
-import { PLOT_OPS, plotAgents, plotChance, plotCost, plotTargets } from '../../realm/plots.ts'
+import { advance, concealOf, draftable, forceOf, neighbors, newArmyId, otherEnd, planned, seasonOf, seenMarches } from '../../realm/season.ts'
+import { PLOT_OPS, assassinArrows, assassinBow, bowUpCost, escapeChance, plotAgents, plotChance, plotCost, plotTargets } from '../../realm/plots.ts'
 import { allianceWhy, leaderOf, truceWhy, winningAgainst } from '../../realm/stance.ts'
 import { heroSeen, isRuler, persuadeSeasons, wanderersFor } from '../../realm/heroes.ts'
 import type { Army, EnvoyAsk, Good, Hero, Order, PlotOp, Realm, Report } from '../../realm/types.ts'
@@ -305,7 +305,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const targets: MapTarget[] = a === undefined || a.march !== null ? [] : movesOf(r, me(), a).map((m) => ({
       node: m.to, edge: m.edge.id, off: m.blocked !== null, on: pick[a.id]?.edge === m.edge.id,
       chip: m.blocked !== null ? `<span class="tn">${esc(BLOCKED_LINE[m.blocked])}</span>`
-        : m.hostile ? (m.win !== null ? fightFeel(m.win[0], m.win[1]) : unknownFeel()) : `<span class="tn">${m.seasons}계절</span>`,
+        : m.hostile ? `${m.win !== null ? fightFeel(m.win[0], m.win[1]) : unknownFeel()}${m.conceal === "good" ? `<span class="tn hide">숨기 좋은 길</span>` : ""}` : `<span class="tn">${m.seasons}계절</span>`,
     }))
     return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets)
   }
@@ -359,8 +359,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<button class="hw amb ${ambush ? 'on' : ''}" data-act="amb" data-army="${a.id}" data-v="1"><b>기습한다</b>`
     h += `<span class="ln">숨어 닿기 ${ambushFeel(m.ambushP)}</span>`
     h += `<span class="ln">먹히면 ${feel(m.winAmbush)}</span><span class="ln">들키면 ${feel(m.winCaught)}</span>`
-    h += `<span class="mute">먹히면 ${walled ? '성문이 닫히기 전에 들이치고 ' : ''}장정이 못 모인다</span></button></div>`
-    if (headcount(forceOf(r, a)) > P.realm.ambushFreeMen) h += `<p class="mute tip">군사가 많으면 잘 안 숨는다. 작게 나눠 보내면 숨기 쉽다.</p>`
+    h += `<span class="mute">먹히면 ${walled ? '성문이 닫히기 전에 들이쳐 ' : ''}먼저 베고 들어간다. 들키면 되레 매복에 걸려 크게 진다</span></button></div>`
+    // 길과 때 (형이 고름: "길과 때의 싸움") — 이 길이 왜 숨기 좋은지·나쁜지
+    const cv = concealOf(r, m.edge.id, headcount(forceOf(r, a)), m.to)
+    const cw = cv.why.map((w) => CONCEAL_LINE[w]).filter((x) => x !== undefined)
+    h += `<p class="mute tip"><b>${cv.tier === 'good' ? '숨기 좋은 길' : cv.tier === 'fair' ? '그저 그런 길' : '숨기 나쁜 길'}</b>${cw.length > 0 ? ` · ${esc(cw.join(' · '))}` : ''}</p>`
     return h
   }
 
@@ -811,7 +814,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           h += `<div class="mute">누구를 보내나</div><div class="seg"><button class="${agent === null ? 'on' : ''}" data-act="pagent" data-id="">고용 자객</button>`
           for (const id of agents.slice(0, 3)) h += `<button class="${agent === id ? 'on' : ''}" data-act="pagent" data-id="${id}">${esc(r.heroes[id]?.name ?? id)}</button>`
           h += `</div>`
+          // 누가 가느냐가 곧 무엇을 걸었느냐다 (형이 고름: "자객 기본 · 장수는 도박")
+          if (agent === null) h += `<div class="mute">고용 자객 — 들켜 잡혀도 값만 잃는다. 장수는 안 잃는다.</div>`
+          else h += `<div class="mute">${esc(josa(r.heroes[agent]?.name ?? '', '이', '가'))} 가면 화살이 ${assassinArrows(realm!, agent) - P.night.arrows}발 더 있다. 들키면 빠져나올지 굴린다 ${plotFeel(escapeChance(realm!, agent), escapeChance(realm!, agent))} — 못 빠지면 잡힌다.</div>`
           if (agents.length === 0) h += `<div class="mute">보낼 장수가 없다. 군대를 안 이끌고 쉬는 장수만 자객이 된다.</div>`
+          // 자객의 활 — 계단으로 오른다 (형: "완만한 성장이 아니라 계단적 성장")
+          const bt = assassinBow(realm!, me())
+          const bu = bowUpCost(realm!, me())
+          const buying = musters.some((o) => o.kind === 'bowUp')
+          h += `<div class="frow"><span class="mute">자객의 활 · <b>${esc(BOW_NAME[bt] ?? '')}</b></span>`
+          if (bu !== null) h += `<button class="btn sm ${buying ? 'on' : ''}" data-act="bowup" ${buying || (st.grain >= bu.grain && st.iron >= bu.iron) ? '' : 'disabled'}>${buying ? '올리는 중 · 취소' : `${esc(BOW_NAME[bu.to] ?? '')}으로 · 곡식 ${bu.grain} · 철 ${bu.iron}`}</button>`
+          h += `</div><p class="mute">활이 한 단계 오를 때마다 화살이 빨라지고 세지고 덜 떨린다. 직접 쏘지 않을 때도 더 잘 된다.</p>`
         }
         if (targets.length === 0) h += `<div class="mute">지금은 노릴 데가 없다.${op === 'bribe' || op === 'spy' ? ' 아는 마을이어야 한다. 정찰부터.' : op === 'assassin' ? ' 겨뤄 본 적장만 노릴 수 있다.' : ''}</div>`
         h += `<div class="rows">`
@@ -839,14 +852,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function openNight(i: number): void {
     const o = plots[i]
     if (o === undefined || o.kind !== 'plot' || realm === null) return
-    const agent = o.agent !== undefined ? realm.heroes[o.agent] : undefined
-    const arrows = P.night.arrows + (agent?.traits?.includes('archer') === true ? P.night.archerBonus : 0)
+    const arrows = assassinArrows(realm, o.agent)
+    const bow = assassinBow(realm, me())
     // 판의 배치는 판 시드·계절·대상으로 — 같은 계절 같은 대상이면 같은 밤
     let seed = (realm.seed ^ Math.imul(realm.season + 1, 2654435761)) >>> 0
     for (const ch of o.hero ?? o.target) seed = Math.imul(seed ^ ch.charCodeAt(0), 16777619) >>> 0
     const ov = document.createElement('div')
     ov.className = 'nightov'
-    ov.innerHTML = `<iframe src="${NIGHT}?seed=${seed}&arrows=${arrows}&id=plot-${i}&back=about:blank" title="밤의 암살"></iframe><button class="btn" data-close>닫기</button>`
+    ov.innerHTML = `<iframe src="${NIGHT}?seed=${seed}&arrows=${arrows}&bow=${bow}&id=plot-${i}&back=about:blank" title="밤의 암살"></iframe><button class="btn" data-close>닫기</button>`
     root.appendChild(ov)
     const close = (): void => ov.remove()
     ov.querySelector('[data-close]')!.addEventListener('click', close)
@@ -1588,6 +1601,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         return
       }
       case 'pagent': plotAgent = d['id'] ? d['id'] : null; break
+      case 'bowup': musters = musters.some((o) => o.kind === 'bowUp') ? musters.filter((o) => o.kind !== 'bowUp') : [...musters, { kind: 'bowUp', faction: me() }]; break
       case 'hero': openSheet({ kind: 'hero', id: d['id']! }); return
       case 'assign':
         heroOrders = [...heroOrders, { kind: 'assign', hero: d['id']!, node: d['node'] ? d['node'] : null }]
