@@ -142,7 +142,7 @@ for (const as of AS) for (const bot of BOTS) for (let g = 0; g < GAMES; g++) run
 const mean = (xs: number[]): number => (xs.length === 0 ? 0 : xs.reduce((a, b) => a + b, 0) / xs.length)
 const pct = (x: number): string => `${(x * 100).toFixed(1)}%`
 
-console.log(`나라 시뮬 — 변한 6국 축소판 · ${GAMES}판 × ${SEASONS}계절 · 봇이 고른 나라를 맡는다\n`)
+console.log(`나라 시뮬 — ${REGION === "yeongnam" ? "영남 판 스물한 나라" : "변한 6국 축소판"} · ${GAMES}판 × ${SEASONS}계절 · 봇이 고른 나라를 맡는다\n`)
 console.log(`나라    봇         시작  땅@${EARLY}  끝땅   이김    짐     싸움/판  이긴 비율  생포/판  장수 잃음  개척/판  쥔 빈땅  기습/판  먹힘   제사/판  판 기습  청/판  맺음/판  들판/판  공작/판  먹힘   당함/판  판 공작  장수끝  회유/판  들임/판  동맹/판  지킴/판  저버림/판  선물/판  무장/판  빌림/판  끝 가호`)
 for (const as of AS) {
   for (const bot of BOTS) {
