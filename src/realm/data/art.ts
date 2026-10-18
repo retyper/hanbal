@@ -61,28 +61,28 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
 
 /** 나라 id → 깃발 (icon/emblem-*.png) · 지도의 테두리 색 */
 export const FACTION_ART: Readonly<Record<string, { emblem: string; color: string }>> = {
-  us: { emblem: 'emblem-wave', color: '#9fd18b' },
-  guya: { emblem: 'emblem-fish', color: '#e0b64a' }, // 쌍어 — 김해
+  us: { emblem: 'emblem-shell', color: '#9fd18b' },
+  guya: { emblem: 'emblem-twinfish', color: '#e0b64a' }, // 쌍어 — 김해
   anya: { emblem: 'emblem-mountain', color: '#d0674f' },
   miri: { emblem: 'emblem-grain', color: '#6fa8dc' },
   goja: { emblem: 'emblem-sun', color: '#4fc1b0' },
   dokro: { emblem: 'emblem-boar', color: '#b48ad8' },
   // 영남 판의 새 나라 열다섯 — 깃발은 나눠 쓰고 색으로 가른다
-  saro: { emblem: 'emblem-samjogo', color: '#f0d050' },
-  daegaya: { emblem: 'emblem-sodo-bird', color: '#e88a3c' },
-  dabeol: { emblem: 'emblem-bear', color: '#8a6a4a' },
-  sabeol: { emblem: 'emblem-deer', color: '#5f9ea0' },
-  usisan: { emblem: 'emblem-crow', color: '#7f8fa6' },
-  bihwa: { emblem: 'emblem-grain', color: '#c7d36f' },
-  jomun: { emblem: 'emblem-tiger', color: '#d9a066' },
+  saro: { emblem: 'emblem-rooster', color: '#f0d050' },
+  daegaya: { emblem: 'emblem-crown', color: '#e88a3c' },
+  dabeol: { emblem: 'emblem-cauldron', color: '#8a6a4a' },
+  sabeol: { emblem: 'emblem-horse', color: '#5f9ea0' },
+  usisan: { emblem: 'emblem-whale', color: '#7f8fa6' },
+  bihwa: { emblem: 'emblem-mirror', color: '#c7d36f' },
+  jomun: { emblem: 'emblem-ox', color: '#d9a066' },
   golbeol: { emblem: 'emblem-axe', color: '#a05050' },
-  apdok: { emblem: 'emblem-pine', color: '#4f8a5f' },
-  iseo: { emblem: 'emblem-moon', color: '#9fb7e0' },
-  byeokjin: { emblem: 'emblem-mountain', color: '#c08bb0' },
-  gammun: { emblem: 'emblem-snake', color: '#6c7f3a' },
-  samul: { emblem: 'emblem-wave', color: '#3f86c6' },
-  eumjeup: { emblem: 'emblem-deer', color: '#e5a3b8' },
-  chopal: { emblem: 'emblem-sun', color: '#b8a0d0' },
+  apdok: { emblem: 'emblem-toad', color: '#4f8a5f' },
+  iseo: { emblem: 'emblem-bow', color: '#9fb7e0' },
+  byeokjin: { emblem: 'emblem-stars', color: '#c08bb0' },
+  gammun: { emblem: 'emblem-kiln', color: '#6c7f3a' },
+  samul: { emblem: 'emblem-sailboat', color: '#3f86c6' },
+  eumjeup: { emblem: 'emblem-antler', color: '#e5a3b8' },
+  chopal: { emblem: 'emblem-reeds', color: '#b8a0d0' },
 }
 
 const KIND_ICON: Readonly<Record<NodeKind, string>> = {

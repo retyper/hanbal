@@ -38,9 +38,10 @@ export const MAP_CSS = `
 .map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .map .nd { position: absolute; transform: translate(-50%, -62%); width: calc(8.5% * var(--s, 1) * var(--ns, 1)); text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .map .nd img.st { width: 100%; filter: drop-shadow(0 2px 2px rgba(0,0,0,.55)); }
-.map .nd .nm { display: block; margin-top: -8%; font-size: max(10px, calc(2.1cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1))); line-height: 1.2; color: #2a1d10; font-weight: 700;
-  text-shadow: 0 0 3px #f3e6c8, 0 0 3px #f3e6c8, 0 0 2px #f3e6c8; white-space: nowrap; }
-.map .nd .nm small { display: block; font-size: .78em; font-weight: 500; color: #4a3a28; margin-top: -1px; }
+.map .lbs { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+.map .lb { position: absolute; transform: translateX(-50%); text-align: center; white-space: nowrap; display: block; font-size: max(10px, calc(2.1cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1))); line-height: 1.2; color: #2a1d10; font-weight: 700;
+  text-shadow: 0 0 3px #f3e6c8, 0 0 3px #f3e6c8, 0 0 2px #f3e6c8; background: #f3e6c899; border-radius: 4px; padding: 0 3px; }
+.map .lb small { display: block; font-size: .78em; font-weight: 500; color: #4a3a28; margin-top: -1px; }
 .map .nd .ring { position: absolute; left: 50%; top: 42%; width: 82%; aspect-ratio: 1; transform: translate(-50%, -50%);
   border-radius: 50%; border: 3px solid var(--c); box-shadow: 0 0 6px var(--c); pointer-events: none; }
 .map .nd .men, .map .nd .foe { position: absolute; right: -10%; top: -6%; background: #1c2129; border-radius: 9px; padding: 0 5px;
@@ -62,7 +63,7 @@ export const MAP_CSS = `
 .map .nd .tchip .tn.hide { margin-left: 3px; background: #2a3a24e8; color: #c8e8a8; }
 .map .nd .tchip .feel { font-size: max(10px, calc(1.8cqh / var(--z, 1) * var(--zs, 1))); padding: 1px 6px; }
 .map .nd .tchip .tn { background: #1c2129e8; color: #f3e6c8; border-radius: 9px; padding: 1px 7px; font-size: max(10px, calc(1.8cqh / var(--z, 1) * var(--zs, 1))); font-weight: 700; }
-.map .toks { position: absolute; transform: translate(-50%, 85%); display: flex; gap: 3px; z-index: 4; pointer-events: none; }
+.map .toks { position: absolute; transform: translate(2px, -50%); display: flex; gap: 3px; z-index: 4; pointer-events: none; }
 .map .tok { pointer-events: auto; display: flex; flex-direction: column; align-items: center; padding: 0; border: 0; background: none; cursor: pointer;
   -webkit-tap-highlight-color: transparent; width: calc(4.2cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)); min-width: 26px; }
 .map .tok img { width: 100%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 2px solid #9fd18b; background: #1c2129; box-shadow: 0 2px 4px #0008; }
@@ -70,7 +71,7 @@ export const MAP_CSS = `
   font-size: max(10px, calc(1.6cqh / var(--z, 1) * var(--zs, 1))); line-height: 1.3; }
 .map .tok.sel img { border-color: #ffd27a; box-shadow: 0 0 0 3px #ffd27a88, 0 0 12px #ffd27a; transform: scale(1.12); }
 .map .tok.going img { border-color: #c8402a; }
-.map .nd.sel .nm { color: #7a1f10; } .map .nd.sel img.st { filter: drop-shadow(0 0 7px #ffd27a) drop-shadow(0 0 3px #ffd27a); }
+.map .lb.sel { color: #7a1f10; } .map .lb.dim { opacity: .38; } .map .nd.sel img.st { filter: drop-shadow(0 0 7px #ffd27a) drop-shadow(0 0 3px #ffd27a); }
 `
 
 export interface MapMarch {
@@ -179,6 +180,7 @@ export function mapHtml(
   svg += `</svg>`
 
   let nodes = ''
+  const labels: LabelIn[] = []
   for (const n of Object.values(r.nodes).sort((x, y) => (x.id < y.id ? -1 : 1))) {
     if (!seen(n.id)) continue
     const p = NODE_POS[n.id]
@@ -205,8 +207,9 @@ export function mapHtml(
     const tg = target.get(n.id)
     const go = tg !== undefined && !tg.off ? ` data-act="go" data-edge="${tg.edge}"` : ''
     const tcls = tg === undefined ? '' : tg.off ? ' tgt off' : tg.on ? ' tgt on' : ' tgt'
+    labels.push({ id: n.id, name: n.name, now: NODE_NOW[n.id], x: p[0], y: p[1], s: sizeOf(n.hh), cap: n.kind === 'capital' || Object.values(r.factions).some((f) => f.capital === n.id), hh: n.hh, cls: `${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}` })
     nodes += `<div class="nd${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${tcls}"${go} data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color};--s:${sizeOf(n.hh).toFixed(2)}" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}">`
-    nodes += `<span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${flag}${badge}<span class="nm">${n.name}${NODE_NOW[n.id] !== undefined ? `<small>${NODE_NOW[n.id]}</small>` : ""}</span>${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : ''}</div>`
+    nodes += `<span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${flag}${badge}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : ''}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()
@@ -215,13 +218,13 @@ export function mapHtml(
   for (const [node, ts] of [...byNode].sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
     const p = NODE_POS[node]
     if (p === undefined) continue
-    toks += `<div class="toks" style="left:${p[0] * 100}%;top:${p[1] * 100}%">`
+    toks += `<div class="toks" style="left:${(p[0] + ICON_W * RA.nodeScale * 0.5) * 100}%;top:${p[1] * 100}%">`
     for (const t of ts) {
       toks += `<button class="tok${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}" data-act="tok" data-army="${t.army}"><img src="${t.img}" alt=""><b>${t.men}</b></button>`
     }
     toks += `</div>`
   }
-  return `<div class="map" data-aspect="${W / H}" data-zmax="${RA.zmax}" style="background-image:url('${art}${RA.dir}/${SEASON_MAP[season]}.${RA.ext}');aspect-ratio:${W} / ${H};--ns:${RA.nodeScale};--ls:${RA.labelScale}">${svg}${nodes}${toks}</div>`
+  return `<div class="map" data-aspect="${W / H}" data-zmax="${RA.zmax}" style="background-image:url('${art}${RA.dir}/${SEASON_MAP[season]}.${RA.ext}');aspect-ratio:${W} / ${H};--ns:${RA.nodeScale};--ls:${RA.labelScale}">${svg}${nodes}${toks}${placeLabels(labels, byNode, W, H, RA.nodeScale, RA.labelScale)}</div>`
 }
 
 /** 지도 위 우리 군대의 말 — 머무는 군대 하나에 하나 */
@@ -245,4 +248,75 @@ export interface MapTarget {
   readonly off: boolean
   /** 이미 그리로 가기로 했다 */
   readonly on: boolean
+}
+
+// ───────── 이름 겹 (형: "글자가 이미지에 가려 안보이는 부분 생기는거 주의해" — 2026-10-19)
+// 고을 이름은 고을 그림·깃발·말보다 위의 한 겹에 그린다. 큰 판처럼 빽빽하면 이름끼리·그림과 안 겹치는 자리
+// (밑 → 위 → 오른쪽 → 왼쪽)를 도읍·큰 고을부터 차례로 고른다. 지도 좌표는 0..1 (가로는 W, 세로는 H 의 몫).
+
+/** 고을 그림의 너비 — 지도 너비의 몫 (CSS .nd width 8.5% 와 같은 값) */
+const ICON_W = 0.085
+/** 이름 글자 크기 — 지도 높이의 몫 (CSS 2.1cqh 와 같은 값) */
+const LABEL_EM = 0.021
+
+interface LabelIn {
+  readonly id: string
+  readonly name: string
+  readonly now: string | undefined
+  readonly x: number
+  readonly y: number
+  readonly s: number
+  readonly cap: boolean
+  readonly hh: number
+  readonly cls: string
+}
+
+interface Box { x0: number; y0: number; x1: number; y1: number }
+
+const hit = (a: Box, b: Box): number => Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)) * Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0))
+
+function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly unknown[]>, W: number, H: number, ns: number, lsc: number): string {
+  const em = LABEL_EM * lsc
+  // 그림이 차지하는 자리 — 고을 그림과 말
+  const icons: Box[] = ls.map((l) => {
+    const w = ICON_W * ns * l.s
+    const h = (w * W) / H
+    return { x0: l.x - w / 2, y0: l.y - h * 0.62, x1: l.x + w / 2, y1: l.y + h * 0.38 }
+  })
+  for (const [id, ts] of toks) {
+    const l = ls.find((x) => x.id === id)
+    if (l === undefined) continue
+    const x0 = l.x + ICON_W * ns * 0.5
+    const tw = (Math.max(30 / H, 0.042) * H * ts.length) / W
+    icons.push({ x0, y0: l.y - 0.03, x1: x0 + tw, y1: l.y + 0.03 })
+  }
+  const placed: Box[] = []
+  let out = '<div class="lbs">'
+  const order = ls.slice().sort((a, b) => (a.cap !== b.cap ? (a.cap ? -1 : 1) : b.hh - a.hh || (a.id < b.id ? -1 : 1)))
+  for (const l of order) {
+    const chars = Math.max(l.name.length, (l.now ?? '').length * 0.78)
+    const w = (chars * em * 0.95 * H) / W + 0.004
+    const h = em * (l.now !== undefined ? 2.05 : 1.25)
+    const iw = ICON_W * ns * l.s
+    const ih = (iw * W) / H
+    const cands: Array<[number, number]> = [
+      [l.x, l.y + ih * 0.3], // 밑
+      [l.x, l.y - ih * 0.62 - h], // 위
+      [l.x + iw / 2 + w / 2, l.y - h / 2], // 오른쪽
+      [l.x - iw / 2 - w / 2, l.y - h / 2], // 왼쪽
+    ]
+    let best: { c: [number, number]; cost: number } | null = null
+    for (const [i, c] of cands.entries()) {
+      const b: Box = { x0: c[0] - w / 2, y0: c[1], x1: c[0] + w / 2, y1: c[1] + h }
+      let cost = i * 1e-6 // 같으면 밑이 먼저
+      for (const p of placed) cost += hit(b, p) * 4
+      for (const [k, ic] of icons.entries()) if (ls[k]?.id !== l.id) cost += hit(b, ic)
+      if (b.x0 < 0 || b.x1 > 1 || b.y0 < 0 || b.y1 > 1) cost += 1
+      if (best === null || cost < best.cost) best = { c, cost }
+    }
+    const [cx, cy] = best!.c
+    placed.push({ x0: cx - w / 2, y0: cy, x1: cx + w / 2, y1: cy + h })
+    out += `<span class="lb${l.cls}" style="left:${(cx * 100).toFixed(2)}%;top:${(cy * 100).toFixed(2)}%">${l.name}${l.now !== undefined ? `<small>${l.now}</small>` : ''}</span>`
+  }
+  return out + '</div>'
 }
