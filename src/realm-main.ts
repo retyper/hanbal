@@ -1,19 +1,20 @@
 /**
- * 칠십팔국 시험판 — 글자 지도의 진입점 (realm.html, docs/realm/BUILD.md §5 R1)
+ * 칠십팔국 시험판 — 앱 화면의 진입점 (realm.html, docs/realm/FLOW.md)
  *
  * 활터(index.html)와 번들을 나눴다: 시험판이 기존 게임의 첫 화면·예산을 건드리지 않게.
- * 저장은 `hanbal.realm.v1` (BUILD §1-4) — 판 시작 시드 + 계절마다 명령 기록 + 최신 스냅숏.
- * 기록으로 처음부터 다시 돌리면 스냅숏과 같아야 한다 (tests/realm 의 리플레이 시험이 같은 것을 잰다).
+ * 저장은 `hanbal.realm.v2` — 고른 나라 · 판 시작 시드 + 계절마다 명령 기록 + 최신 판.
+ * v1(나라 고르기·살림 전) 저장은 이어 받지 않는다 — 판의 모양이 달라졌다. 나라 고르기부터 다시.
  * 활터의 저장(`hanbal.save.v1`)은 건드리지 않는다.
  */
-import { byeonhanMini } from './realm/data/regions/byeonhan-mini.ts'
+import { startRealm } from './realm/data/regions/byeonhan-mini.ts'
 import type { Order, Realm, Report } from './realm/types.ts'
-import { mountTextMap } from './ui/realm/textmap.ts'
+import { mountRealmApp } from './ui/realm/app.ts'
 
-const KEY = 'hanbal.realm.v1'
+const KEY = 'hanbal.realm.v2'
 
 interface Saved {
-  readonly v: 1
+  readonly v: 2
+  readonly nation: string
   readonly seed: number
   readonly log: Order[][]
   readonly realm: Realm
@@ -26,7 +27,7 @@ function load(): Saved | null {
     const raw = localStorage.getItem(KEY)
     if (raw === null) return null
     const s = JSON.parse(raw) as Saved
-    return s.v === 1 ? s : null
+    return s.v === 2 ? s : null
   } catch {
     return null
   }
@@ -40,25 +41,25 @@ function save(s: Saved): void {
   }
 }
 
-function fresh(): Saved {
+function fresh(nation: string): Saved {
   // 시드는 화면 바깥(ui)에서만 시계로 만든다 — realm 안에서는 시계를 못 읽는다 (절대 규칙 1)
   const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0
-  return { v: 1, seed, log: [], realm: byeonhanMini(seed), before: null, report: null }
+  return { v: 2, nation, seed, log: [], realm: startRealm(seed, nation), before: null, report: null }
 }
 
-let state: Saved = load() ?? fresh()
-save(state)
+let state: Saved | null = load()
 
 const root = document.getElementById('realm')!
-const view = mountTextMap(root, {
+const app = mountRealmApp(root, {
   onAdvance(next, report, orders) {
+    if (state === null) return
     state = { ...state, log: [...state.log, [...orders]], before: state.realm, realm: next, report }
     save(state)
   },
-  onNewGame() {
-    state = fresh()
+  onNewGame(nation) {
+    state = fresh(nation)
     save(state)
-    view.show(state.realm, null, null)
+    app.show(state.realm, null, null)
   },
 })
-view.show(state.realm, state.before, state.report)
+app.show(state?.realm ?? null, state?.before ?? null, state?.report ?? null)

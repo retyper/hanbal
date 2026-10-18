@@ -28,22 +28,24 @@ const EDGE_STYLE: Readonly<Record<EdgeKind, string>> = {
   mudflat: 'stroke="#7d7466" stroke-width="5" stroke-dasharray="2 8" stroke-linecap="round"',
 }
 
+/**
+ * 지도는 제 상자의 **높이를 꽉 채운다** — 폰 세로에서는 지도가 화면보다 넓어져 옆으로 밀어 본다 (앱 화면, FLOW §5).
+ * 글씨·기호 크기는 지도 높이(cqh)를 따른다.
+ */
 export const MAP_CSS = `
-.rm .map { position: relative; width: 100%; aspect-ratio: ${W} / ${H}; background: #2a261f center / cover no-repeat;
-  border-radius: 8px; border: 1px solid #4a5260; overflow: hidden; margin: 10px 0 4px; user-select: none; }
-.rm .map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.rm .map .nd { position: absolute; transform: translate(-50%, -62%); width: 8.5%; text-align: center; cursor: pointer; }
-.rm .map .nd img.st { width: 100%; filter: drop-shadow(0 2px 2px rgba(0,0,0,.55)); }
-.rm .map .nd .nm { display: block; margin-top: -8%; font-size: clamp(9px, 1.25vw, 12px); line-height: 1.2; color: #2a1d10; font-weight: 700;
+.map { position: relative; height: 100%; aspect-ratio: ${W} / ${H}; margin: 0 auto; background: #2a261f center / cover no-repeat;
+  user-select: none; -webkit-user-select: none; container-type: size; }
+.map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.map .nd { position: absolute; transform: translate(-50%, -62%); width: 8.5%; text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.map .nd img.st { width: 100%; filter: drop-shadow(0 2px 2px rgba(0,0,0,.55)); }
+.map .nd .nm { display: block; margin-top: -8%; font-size: max(10px, 2.1cqh); line-height: 1.2; color: #2a1d10; font-weight: 700;
   text-shadow: 0 0 3px #f3e6c8, 0 0 3px #f3e6c8, 0 0 2px #f3e6c8; white-space: nowrap; }
-.rm .map .nd .ring { position: absolute; left: 50%; top: 42%; width: 82%; aspect-ratio: 1; transform: translate(-50%, -50%);
+.map .nd .ring { position: absolute; left: 50%; top: 42%; width: 82%; aspect-ratio: 1; transform: translate(-50%, -50%);
   border-radius: 50%; border: 3px solid var(--c); box-shadow: 0 0 6px var(--c); pointer-events: none; }
-.rm .map .nd .men { position: absolute; right: -8%; top: -6%; background: #1c2129; color: #9fd18b; border: 1px solid #9fd18b;
-  border-radius: 9px; padding: 0 5px; font-size: clamp(9px, 1.2vw, 12px); }
-.rm .map .nd .foe { position: absolute; right: -10%; top: -6%; background: #1c2129; color: #e8a08a; border: 1px solid #8a5a3a;
-  border-radius: 9px; padding: 0 5px; font-size: clamp(9px, 1.1vw, 11px); }
-.rm .map .nd.sel .nm { color: #7a1f10; } .rm .map .nd.sel img.st { filter: drop-shadow(0 0 6px #ffd27a); }
-.rm .maplegend { font-size: 12px; color: #9a9284; }
+.map .nd .men, .map .nd .foe { position: absolute; right: -10%; top: -6%; background: #1c2129; border-radius: 9px; padding: 0 5px;
+  font-size: max(10px, 1.9cqh); font-weight: 700; }
+.map .nd .men { color: #9fd18b; border: 1px solid #9fd18b; } .map .nd .foe { color: #e8a08a; border: 1px solid #8a5a3a; }
+.map .nd.sel .nm { color: #7a1f10; } .map .nd.sel img.st { filter: drop-shadow(0 0 7px #ffd27a) drop-shadow(0 0 3px #ffd27a); }
 `
 
 export interface MapMarch {
@@ -51,6 +53,8 @@ export interface MapMarch {
   readonly to: string
   /** 이미 길 위에 있으면 남은 계절, 이번에 고른 것이면 null */
   readonly left: number | null
+  /** 남의 군대 (보인 행군) */
+  readonly foe?: boolean
 }
 
 const px = (id: string): [number, number] => {
@@ -66,7 +70,9 @@ export function mapHtml(r: Realm, me: string, art: string, marches: readonly Map
 
   let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">`
   svg += `<defs><marker id="rm-ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">`
-  svg += `<path d="M0 0L10 5L0 10z" fill="#c8402a"/></marker></defs>`
+  svg += `<path d="M0 0L10 5L0 10z" fill="#c8402a"/></marker>`
+  svg += `<marker id="rm-ah-foe" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">`
+  svg += `<path d="M0 0L10 5L0 10z" fill="#3a2a5a"/></marker></defs>`
   for (const ed of Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))) {
     if (!seen(ed.a) || !seen(ed.b)) continue
     const [x1, y1] = px(ed.a)
@@ -88,9 +94,11 @@ export function mapHtml(r: Realm, me: string, art: string, marches: readonly Map
     const sx = x1 + (x2 - x1) * (1 - k)
     const sy = y1 + (y2 - y1) * (1 - k)
     const dash = m.left === null ? '' : ' stroke-dasharray="14 8"'
-    svg += `<line x1="${sx}" y1="${sy}" x2="${ex}" y2="${ey}" stroke="#c8402a" stroke-width="9"${dash} marker-end="url(#rm-ah)" opacity=".9"/>`
+    const col = m.foe === true ? '#3a2a5a' : '#c8402a'
+    const head = m.foe === true ? 'rm-ah-foe' : 'rm-ah'
+    svg += `<line x1="${sx}" y1="${sy}" x2="${ex}" y2="${ey}" stroke="${col}" stroke-width="9"${dash} marker-end="url(#${head})" opacity=".9"/>`
     if (m.left !== null) {
-      svg += `<text x="${(sx + ex) / 2}" y="${(sy + ey) / 2 - 12}" font-size="26" font-weight="700" fill="#7a1f10" stroke="#f3e6c8" stroke-width="5" paint-order="stroke" text-anchor="middle">${m.left}계절</text>`
+      svg += `<text x="${(sx + ex) / 2}" y="${(sy + ey) / 2 - 12}" font-size="26" font-weight="700" fill="${m.foe === true ? '#3a2a5a' : '#7a1f10'}" stroke="#f3e6c8" stroke-width="5" paint-order="stroke" text-anchor="middle">${m.foe === true ? '적 ' : ''}${m.left}계절</text>`
     }
   }
   svg += `</svg>`
@@ -120,5 +128,4 @@ export function mapHtml(r: Realm, me: string, art: string, marches: readonly Map
     nodes += `<span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${badge}<span class="nm">${n.name}</span></div>`
   }
   return `<div class="map" style="background-image:url('${art}map/${SEASON_MAP[season]}.jpg')">${svg}${nodes}</div>`
-    + `<div class="maplegend">테두리 색 = 주인 · 초록 수 = 우리 병력 · 붉은 수 = 정찰로 본 적 군세 (?는 못 봤다) · ✕ = 이번 계절 막힌 길 · 고을을 누르면 정찰할 곳으로 고른다</div>`
 }
