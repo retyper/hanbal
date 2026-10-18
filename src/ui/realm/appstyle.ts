@@ -129,6 +129,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .sprow { display: flex; align-items: center; gap: 8px; } .ap .sprow .stepper { flex-wrap: nowrap; } .ap .sprow .spn { width: 4em; font-size: 14px; }
 .ap .spsum { font-size: 14px; color: #cfc6b4; } .ap .spsum b { color: var(--gold); }
 .ap .splitp .seg button { white-space: normal; }
+.ap .nightov { position: absolute; inset: 0; z-index: 40; background: #000; }
+.ap .nightov iframe { width: 100%; height: 100%; border: 0; display: block; }
+.ap .nightov [data-close] { position: absolute; right: 10px; top: 10px; z-index: 1; font-size: 13px; padding: 4px 10px; }
+.ap .frow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } .ap .frow .mute { flex: 1 1 12em; }
 .ap .fbtn { border: 0; padding: 0; background: none; cursor: pointer; border-radius: 50%; }
 .ap .plimg { display: block; width: 100%; border-radius: 10px; margin: 6px 0; }
 .ap .rface.sm { width: 34px; height: 34px; border-width: 1px; }

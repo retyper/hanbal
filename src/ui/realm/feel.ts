@@ -66,7 +66,16 @@ function chip(tiers: readonly Tier[], lo: number, hi: number): string {
 export const fightFeel = (lo: number, hi: number): string => chip(FIGHT, lo, hi)
 export const envoyFeel = (lo: number, hi: number): string => chip(ENVOY, lo, hi)
 export const ambushFeel = (p: number): string => chip(AMBUSH, p, p)
-export const plotFeel = (lo: number, hi: number): string => chip(PLOT, lo, hi)
+/** 호감 −100..100 — 숫자 없이 사이의 온도로 */
+const FAVOR: readonly Tier[] = [
+  { at: 60, word: '매우 가깝다', color: '#3f8f3a' },
+  { at: 25, word: '가깝다', color: '#7aa83a' },
+  { at: -25, word: '데면데면', color: '#6a7080' },
+  { at: -60, word: '껄끄럽다', color: '#d0702f' },
+  { at: -Infinity, word: '원수 같다', color: '#b83a2a' },
+]
+export const favorFeel = (v: number): string => `<span class="feel" style="background:${tierOf(FAVOR, v).color}">호감 · ${tierOf(FAVOR, v).word}</span>`
+export const plotFeel =(lo: number, hi: number): string => chip(PLOT, lo, hi)
 export const alertFeel =(lo: number, hi: number): string => chip(ALERT, lo, hi)
 /** 모르는 싸움 — 본 적 없는 곳 */
 export const unknownFeel = (): string => `<span class="feel unknown">모른다</span>`

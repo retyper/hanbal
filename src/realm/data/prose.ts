@@ -2,7 +2,7 @@
  * 나라의 글 — 이름·문장은 코드가 아니라 데이터에 둔다 (docs/realm/BUILD.md §1-6)
  * 고증 검토(lore-lens)가 코드를 안 읽고 이 파일만 본다. 숫자는 여기 없다 (P.realm).
  */
-import type { Outcome, UnitKind } from '../battle.ts'
+import type { Equip, Outcome, UnitKind } from '../battle.ts'
 import type { Ask, EdgeKind, PlotOp, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, SeasonOfYear, Tag } from '../types.ts'
 
 export const SEASON_NAME: Record<SeasonOfYear, string> = {
@@ -61,7 +61,8 @@ export const SEASON_LINE: Record<SeasonOfYear, string> = {
 }
 
 export const ASK_NAME: Record<EnvoyAsk, string> = {
-  truce: '화친', trade: '교역', tribute: '조공', alliance: '동맹',
+  truce: '화친', trade: '교역', tribute: '조공 요구', alliance: '동맹',
+  gift: '선물', joint: '함께 치자', aid: '지원 요청', troops: '군대 빌리기', break: '약조 깨기',
 }
 
 export const RELATION_NAME: Record<Relation['state'], string> = {
@@ -108,7 +109,7 @@ export function fieldName(r: Realm, edge: string): string {
 }
 
 /** 남의 나라가 걸어온 청 한 줄 — 무엇을 주고 무엇을 바라나 */
-export function askLine(a: Ask, from: string): string {
+export function askLine(a: Ask, from: string, place = ''): string {
   const goods = (g: { grain: number; iron: number }): string =>
     [g.grain > 0 ? `곡식 ${g.grain}` : '', g.iron > 0 ? `철 ${g.iron}` : ''].filter((x) => x !== '').join(' · ')
   switch (a.kind) {
@@ -117,11 +118,13 @@ export function askLine(a: Ask, from: string): string {
     case 'trade': return `${josa(from, '이', '가')} ${goods(a.give)}을 줄 테니 ${goods(a.take)}을 달라고 한다.`
     case 'tribute': return `${josa(from, '이', '가')} 고개를 숙이고 ${goods(a.give)}을 바치겠다고 한다.`
     case 'demand': return `${josa(from, '이', '가')} ${goods(a.take)}을 바치라고 한다. 거절하면 전쟁이다.`
+    case 'joint': return `${josa(from, '이', '가')} ${place !== '' ? `${josa(place, '을', '를')} ` : ''}두 계절 안에 함께 치자고 한다. 받으면 우리도 그곳을 쳐야 한다. 약속을 어기면 사이가 크게 틀어진다.`
+    case 'aid': return `동맹 ${josa(from, '이', '가')} ${goods(a.take)}을 보태 달라고 한다. 거절하면 서운해한다.`
   }
 }
 
 export const ASK_KIND_NAME: Record<Ask['kind'], string> = {
-  truce: '화친', alliance: '동맹', trade: '교역', tribute: '조공 바침', demand: '조공 요구',
+  truce: '화친', alliance: '동맹', trade: '교역', tribute: '조공 바침', demand: '조공 요구', joint: '함께 치자', aid: '지원 요청',
 }
 
 /**
@@ -253,6 +256,24 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
         case 'death': return `밤사이 ${josa(line.hero !== undefined ? (after.heroes[line.hero]?.name ?? '장수') : '장수', '이', '가')} 화살에 맞아 죽었다. 쏜 자는 사라졌다.`
       }
       return null
+    case 'pledge': {
+      if (line.from !== viewer && line.to !== viewer) return null
+      const place = node(line.node)
+      if (line.from === viewer) {
+        return line.kept ? `${josa(fname(line.to), '과', '와')} 한 약속대로 ${josa(place, '을', '를')} 쳤다. 믿음이 깊어졌다.` : `${josa(fname(line.to), '과', '와')} ${josa(place, '을', '를')} 치기로 한 약속을 어겼다. 사이가 틀어졌다.`
+      }
+      return line.kept ? `${josa(fname(line.from), '이', '가')} 약속대로 ${josa(place, '을', '를')} 쳤다.` : `${josa(fname(line.from), '이', '가')} ${josa(place, '을', '를')} 치겠다던 약속을 어겼다.`
+    }
+    case 'lent': {
+      if (line.to !== viewer) return null
+      return line.back
+        ? `${fname(line.from)}에서 빌려 온 군대가 돌아갔다.`
+        : `${fname(line.from)} 군대가 ${josa(node(line.node), '을', '를')} 지키러 왔다.`
+    }
+    case 'arm': {
+      if (line.faction !== viewer) return null
+      return `${josa(nameArmy(line.army), '이', '가')} 철 ${line.iron}을 들여 ${EQUIP_NAME[line.equip]}으로 무장했다.`
+    }
     case 'recruit': {
       if (line.faction !== viewer) return null
       const h = after.heroes[line.hero]
@@ -369,4 +390,9 @@ const PLOT_DONE: Record<PlotOp, (target: string, where: string, other: string) =
   burn: (t) => `${t} 창고가 불탔다.`,
   spy: (_t, w) => `${w}에 첩자를 심었다. 네 계절 동안 군세가 보인다.`,
   assassin: (t) => `${t} 진중에 자객의 화살이 날아들었다.`,
+}
+
+/** 장비 이름 — 무장 올리기 (철의 쓰임) */
+export const EQUIP_NAME: Record<Equip, string> = {
+  stone: '돌창', bronze: '청동 무기', ironTip: '쇠촉', iron: '쇠칼', leather: '가죽 갑옷', ringSword: '고리칼',
 }
