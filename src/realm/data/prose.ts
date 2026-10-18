@@ -251,3 +251,11 @@ export const BATTLE_CLASH: Record<Outcome, readonly [string, string]> = {
   lose: ['적의 화살이 쏟아진다.', '버티지 못하고 뒤로 밀린다.'],
   routed: ['적의 화살이 쏟아진다.', '진이 무너져 뿔뿔이 흩어진다.'],
 }
+
+/**
+ * 장수 능력치 여섯의 이름 (docs/realm/HEROES.md §1) — 두 글자로 (형: "한글자로 하지말고 두글자로. 한자 하나로는 이해하기 힘들다고").
+ * 열쇠는 Hero 의 칸 이름 (tong · gung 은 장수 첫판에서 더한다). 순서가 육각형의 꼭짓점 순서다.
+ */
+export const STAT_NAME = {
+  mu: '무예', tong: '통솔', ryak: '지략', chi: '내정', deok: '매력', gung: '궁술',
+} as const

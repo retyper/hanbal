@@ -11,7 +11,7 @@ import { headcount, type UnitKind } from '../../realm/battle.ts'
 import { FACTION_ART, HERO_BUST, SEASON_ICON, UNIT_ICON, nodeIcon } from '../../realm/data/art.ts'
 import { NATIONS } from '../../realm/data/nations.ts'
 import {
-  ASK_NAME, BLOCKED_LINE, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel,
+  ASK_NAME, BLOCKED_LINE, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel,
 } from '../../realm/data/prose.ts'
 import { envoyChance, envoyChanceFor, relationOf } from '../../realm/diplomacy.ts'
 import { draftCost, draftLimit, militiaMen, riteAllowed, riteCost, settleCost, settleLimit, settleTargets } from '../../realm/economy.ts'
@@ -480,7 +480,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const caps2 = Object.values(r.heroes).filter((x) => x.status === 'captive' && x.captor === me())
     if (caps2.length > 0) {
       h += `<h4>사로잡은 장수</h4><div class="caps">`
-      for (const x of caps2) h += `<div class="cap">${bust(x, 'cface')}<b>${esc(x.name)}</b><span class="mute">무${x.mu} 략${x.ryak} 치${x.chi} 덕${x.deok}</span></div>`
+      for (const x of caps2) h += `<div class="cap">${bust(x, 'cface')}<b>${esc(x.name)}</b><span class="mute">${STAT_NAME.mu} ${x.mu} · ${STAT_NAME.ryak} ${x.ryak} · ${STAT_NAME.chi} ${x.chi} · ${STAT_NAME.deok} ${x.deok}</span></div>`
       h += `</div>`
     }
     h += `<div class="btns"><button class="btn" data-act="help">도움말</button><button class="btn ghost" data-act="newgame">새 판</button>`
