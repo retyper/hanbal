@@ -93,6 +93,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .acard, .ap .ncard, .ap .fcard { display: flex; gap: 10px; padding: 10px; margin: 8px 0; border-radius: 14px; background: var(--card); border: 1px solid var(--line); }
 .ap .ncard, .ap .fcard { flex-direction: column; gap: 6px; }
 .ap .acard .ab { flex: 1; min-width: 0; }
+.ap .pow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 4px 0 2px; } .ap .pow b { color: var(--gold); font-size: 14px; }
+.ap .pbar { flex: 1 1 80px; height: 8px; border-radius: 4px; background: #2a2f38; overflow: hidden; } .ap .pbar i { display: block; height: 100%; background: linear-gradient(90deg, #8a6a3a, #e0a050); }
+.ap .pow .mute { flex-basis: 100%; font-size: 12.5px; }
+.ap .kitrow { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin: 3px 0; font-size: 13px; } .ap .kitrow img.ic { width: 20px; height: 20px; }
+.ap .kitrow .kt { color: #c8c0b0; font-size: 12.5px; flex: 1 1 10em; } .ap .kitrow .btn.sm { margin-left: auto; }
+.ap .hints { margin: 4px 0 6px; padding-left: 18px; font-size: 13px; color: #d8c89a; } .ap .hints li { margin: 1px 0; }
 .ap .acard.fresh { border-color: #7aa83a; box-shadow: 0 0 0 2px #7aa83a55; animation: fresh 1.2s ease-out 1; } @keyframes fresh { from { background: #2f3d24; } }
 .ap .face { flex: none; width: 64px; height: 64px; border-radius: 12px; object-fit: cover; border: 1px solid #4a5363; background: #2a313c; display: block; }
 .ap .noface { background: radial-gradient(circle at 50% 38%, #4a5363 0 22%, transparent 23%), radial-gradient(ellipse at 50% 100%, #4a5363 0 45%, transparent 46%), #2a313c; }

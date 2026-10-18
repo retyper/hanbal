@@ -7,16 +7,17 @@
  * 루프·타이머가 없다 — 누르면 다시 그린다 (절대 규칙 4). 글은 FLOW §6: 짧게, AI 말투 금지.
  */
 import { aiOrders } from '../../realm/ai.ts'
-import { headcount, type UnitKind } from '../../realm/battle.ts'
+import { headcount, type Equip, type UnitKind } from '../../realm/battle.ts'
 import { FACTION_ART, HERO_BUST, SEASON_ICON, UNIT_ICON, nodeIcon } from '../../realm/data/art.ts'
 import { NATIONS } from '../../realm/data/nations.ts'
 import {
-  ASK_KIND_NAME, ASK_NAME, BLOCKED_LINE, EQUIP_NAME, PLOT_DOES, PLOT_NAME, askLine, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine,
+  ASK_KIND_NAME, ASK_NAME, BLOCKED_LINE, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine,
 } from '../../realm/data/prose.ts'
 import { envoyChance, envoyChanceFor, envoyOptions, favorOf, jointTargets, openAsks, relationOf } from '../../realm/diplomacy.ts'
 import { armCost, canGuard, draftCost, draftIronCost, draftLimit, guardCost, hhGrowth, militiaMen, riteAllowed, riteCost, settleCost, settleLimit, settleTargets } from '../../realm/economy.ts'
-import { jointWin, movesOf, type Move } from '../../realm/estimate.ts'
-import { alertRange, visibleRange } from '../../realm/intel.ts'
+import { armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
+import { kitLines } from '../../realm/kit.ts'
+import { alertRange, seenMix, visibleRange } from '../../realm/intel.ts'
 import { advance, forceOf, neighbors, newArmyId, otherEnd, planned, seasonOf, seenMarches } from '../../realm/season.ts'
 import { PLOT_OPS, plotAgents, plotChance, plotCost, plotTargets } from '../../realm/plots.ts'
 import { allianceWhy, leaderOf, truceWhy, winningAgainst } from '../../realm/stance.ts'
@@ -321,7 +322,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const feel = (w: readonly [number, number] | null): string => (w !== null ? fightFeel(w[0], w[1]) : unknownFeel())
     const node = r.nodes[m.to]!
     const walled = node.kind === 'fort' || node.tags.includes('palisade') || node.tags.includes('high')
-    let h = `<div class="how">`
+    // 병종·지형·공수가 어떻게 걸리나 (상성 — 창 > 방패 > 활 > 창 · 성과 높은 데의 궁수 · 들판의 창병 …)
+    const hints = matchupHints(r, me(), a.mix, m.to, m.edge.kind)
+    let h = hints.length > 0 ? `<ul class="hints">${hints.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''
+    h += `<div class="how">`
     h += `<button class="hw ${ambush ? '' : 'on'}" data-act="amb" data-army="${a.id}" data-v="0"><b>정면으로 친다</b>`
     h += `<span class="ln">판세 ${feel(m.win)}</span><span class="mute">${walled ? '성과 언덕을 그대로 맞는다' : '드러내 놓고 들어간다'} · 장정이 막아선다</span></button>`
     h += `<button class="hw amb ${ambush ? 'on' : ''}" data-act="amb" data-army="${a.id}" data-v="1"><b>기습한다</b>`
@@ -389,6 +393,43 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return null
   }
 
+  /**
+   * 부대의 힘과 무장 (형: "창병 궁수 방패병 다르지 않나 · 무장해서 뽑으면 그 수도 파악 · 부대마다 전투력은 어떻게 나오고 · 철이 아니면 뭘로 싸움?") —
+   * 병종마다 몇 명이 무엇을 들었나, 힘이 얼마이고 무엇 때문인가, 병종마다 무장 올리기.
+   */
+  function gearBlock(r: Realm, a: Army): string {
+    let h = ''
+    const p = armyPower(r, a.id)
+    if (p !== null) {
+      const mine = sorted(Object.values(r.armies)).filter((x) => x.faction === me()).map((x) => armyPower(r, x.id)?.total ?? 0)
+      const top = Math.max(1, ...mine)
+      // 무장은 평균이 가장 가까운 단계의 이름으로 (돌·나무 · 청동 · 쇠날 · 온 쇠 · 고리칼)
+      const R = P.realm
+      const near = ([['stone', R.equipStone], ['bronze', R.equipBronze], ['ironTip', R.equipIronTip], ['iron', R.equipIron], ['ringSword', R.equipRingSword]] as Array<[Equip, number]>)
+        .sort((x, y) => Math.abs(x[1] - p.parts.gear) - Math.abs(y[1] - p.parts.gear))[0]![0]
+      const gear = `${TIER_NAME[near]} 무장`
+      const lead = a.hero === null ? '장수가 없다' : p.parts.lead >= 1.15 ? '장수가 잘 이끈다' : '장수가 이끈다'
+      const mor = p.parts.morale < 0.9 ? '사기가 낮다' : p.parts.morale > 1.05 ? '사기가 높다' : '사기 보통'
+      h += `<div class="pow"><b>힘 ${Math.round(p.total).toLocaleString('ko-KR')}</b><span class="pbar"><i style="width:${Math.max(4, (p.total / top) * 100)}%"></i></span>`
+      h += `<span class="mute">사람 ${p.parts.men} · ${gear} · ${lead} · ${mor}</span></div>`
+    }
+    const canArm = a.march === null && r.nodes[a.at]?.owner === me()
+    const st = r.stock[me()] ?? { grain: 0, iron: 0 }
+    for (const [k, rows] of Object.entries(kitLines(a)) as Array<[UnitKind, Array<{ tier: Equip; n: number }>]>) {
+      const n = rows.reduce((s, x) => s + x.n, 0)
+      if (n <= 0) continue
+      h += `<div class="kitrow">${icon(UNIT_ICON[k])}<b>${UNIT_NAME[k]} ${n}</b><span class="kt">${rows.slice().reverse().map((x) => `${esc(GEAR_NAME[k]?.[x.tier] ?? TIER_NAME[x.tier])} ${x.n}`).join(' · ')}</span>`
+      const ac = canArm ? armCost(r, a.id, k) : null
+      const on = musters.some((o) => o.kind === 'arm' && o.army === a.id && o.unit === k)
+      if (ac !== null) {
+        const label = on ? '올리는 중 · 취소' : `${ac.n}명 → ${GEAR_NAME[k]?.[ac.to] ?? TIER_NAME[ac.to]} · 철 ${ac.iron}`
+        h += `<button class="btn sm ${on ? 'on' : ''}" data-act="arm" data-army="${a.id}" data-unit="${k}" ${on || (st.iron >= ac.iron && st.grain >= ac.grain) ? '' : 'disabled'}>${esc(label)}</button>`
+      }
+      h += `</div>`
+    }
+    return h
+  }
+
   function sortie(r: Realm): string {
     const byTo = new Map<string, Array<{ army: Army; move: Move }>>()
     for (const [army, c] of Object.entries(pick)) {
@@ -423,10 +464,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const fresh = freshArmy === a.id
       h += `<div class="acard${fresh ? ' fresh' : ''}">${bust(hero)}<div class="ab">${fresh ? `<div class="banner good">나눴다 — ${pick[a.id] !== undefined && r.edges[pick[a.id]!.edge] !== undefined ? `${esc(josa(r.nodes[otherEnd(r.edges[pick[a.id]!.edge]!, a.at)!]?.name ?? '', '으로', '로'))} 떠난다. 지도에 화살표가 생겼다.` : '여기 남는다.'}</div>` : ''}<div class="an"><b>${esc(armyName(r, a))}</b>`
       h += `<span class="mute">${esc(r.nodes[a.at]?.name ?? '')} · ${headcount(forceOf(r, a))}명</span></div><div class="units">`
-      for (const [k, n] of Object.entries(a.mix) as Array<[UnitKind, number]>) {
-        if (n > 0) h += `<span class="unit">${icon(UNIT_ICON[k])}${UNIT_NAME[k]} ${n}</span>`
-      }
-      h += `<span class="unit mute">${EQUIP_NAME[a.equip]}</span></div>`
+      h += `</div>${gearBlock(r, a)}`
       if (realm!.armies[a.id] === undefined) h += `<div class="mute">이번 계절에 나눴다</div>`
       if (a.march !== null) {
         h += `<div class="mute">${esc(r.nodes[a.march.to]?.name ?? '')}로 가는 중 · ${a.march.left}계절${a.march.ambush ? ' · 기습' : ''}</div></div></div>`
@@ -449,12 +487,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         }
       }
       if (r.nodes[a.at]?.owner === me()) h += `<button class="btn ghost" data-act="disband" data-army="${a.id}">해산</button>`
-      const ac = armCost(r, a.id)
-      const arming = musters.some((o) => o.kind === 'arm' && o.army === a.id)
-      if (ac !== null && r.nodes[a.at]?.owner === me()) {
-        const st = r.stock[me()] ?? { grain: 0, iron: 0 }
-        h += `<button class="btn ${arming ? 'on' : ''}" data-act="arm" data-army="${a.id}" ${arming || (st.iron >= ac.iron && st.grain >= ac.grain) ? '' : 'disabled'}>${arming ? '무장 올리는 중 · 취소' : `${josa(EQUIP_NAME[ac.to], '으로', '로')} · 철 ${ac.iron}`}</button>`
-      }
       h += `</div>`
       if (pick[a.id] !== undefined && !open) {
         const ed = r.edges[pick[a.id]!.edge]
@@ -497,8 +529,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<button data-act="dn" data-node="${n.id}" data-d="${step}">+</button><span class="mute">최대 ${lim} · 곡식 ${Math.ceil(draftCost(want).grain)}</span>`
       h += `<button class="btn on" data-act="draft" data-node="${n.id}" ${want <= 0 ? 'disabled' : ''}>뽑는다</button></div>`
       // 철을 더 들이면 처음부터 한 단계 좋은 무기 (철의 쓰임)
-      const ic = want > 0 ? draftIronCost(r, me(), want) : null
-      if (ic !== null) h += `<label class="chk"><input type="checkbox" data-act="diron" data-node="${n.id}" ${draftIron[n.id] === true ? 'checked' : ''}> ${josa(EQUIP_NAME[ic.to], '을', '를')} 들려 뽑는다 · 철 ${ic.iron}</label>`
+      const ic = want > 0 ? draftIronCost(r, me(), want, unit) : null
+      const base = r.factions[me()]?.equip
+      if (ic !== null) {
+        h += `<label class="chk"><input type="checkbox" data-act="diron" data-node="${n.id}" ${draftIron[n.id] === true ? 'checked' : ''}> 새로 뽑는 ${esc(UNIT_NAME[unit])} ${want}명에게 ${esc(josa(GEAR_NAME[unit]?.[ic.to] ?? TIER_NAME[ic.to], '을', '를'))} 들린다 · 철 ${ic.iron}</label>`
+        if (base !== undefined) h += `<p class="mute">철을 안 들이면 ${esc(josa(GEAR_NAME[unit]?.[base] ?? TIER_NAME[base], '을', '를'))} 든다.</p>`
+      }
       h += `</div>`
     }
     // 개척 — 맞닿은 빈땅으로 사람을 보낸다
@@ -955,6 +991,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (v !== null) alert = ` · 경계 ${alertFeel(v[0], v[1])}`
       }
       h += `<p>군세 <b>${force}</b><span class="mute">${alert}</span></p>`
+      // 정찰로 본 병종 — 몇 할씩 (형: "정찰하면 '궁수가 많다' 같은 구성이 보이게")
+      const sm = seenMix(r, me(), id)
+      if (sm !== null) {
+        const parts = (Object.entries(sm.mix) as Array<[UnitKind, number]>).filter(([, v]) => v > 0).sort((x, y) => y[1] - x[1])
+        h += `<p class="mute">병종 · ${parts.map(([k, v]) => `${UNIT_NAME[k]} ${Math.round(v * 10)}할`).join(' · ')}${sm.age > 0 ? ` (${sm.age}계절 전)` : ''}</p>`
+      }
       if (scoutable(r).includes(id)) h += `<div class="btns"><button class="btn ${scout === id ? 'on' : ''}" data-act="scout" data-node="${id}">${scout === id ? '척후를 보낸다' : '정찰'}</button></div>`
     }
     // 여기로 갈 수 있는 우리 군대
@@ -1310,8 +1352,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         for (const k of Object.keys(pick)) if (realm!.armies[k] === undefined) delete pick[k]
         break
       case 'arm': {
+        // 병종 하나씩 — 그 병종 가운데 가장 낮은 무장을 한 단계
         const army = d['army']!
-        musters = musters.some((o) => o.kind === 'arm' && o.army === army) ? musters.filter((o) => !(o.kind === 'arm' && o.army === army)) : [...musters, { kind: 'arm', army }]
+        const unit = d['unit'] as UnitKind
+        const same = (o: Order): boolean => o.kind === 'arm' && o.army === army && o.unit === unit
+        musters = musters.some(same) ? musters.filter((o) => !same(o)) : [...musters, { kind: 'arm', army, unit }]
         break
       }
       case 'disband':
