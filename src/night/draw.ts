@@ -12,9 +12,11 @@ import { P } from '../tune/params.ts'
 import { drawArcher } from '../render/stickman.ts'
 import { worldToScreenX, worldToScreenY, type Camera } from '../render/camera.ts'
 import type { World } from '../sim/types.ts'
+import { arrowSpeed } from '../sim/ballistics.ts'
+import type { Pull } from './input.ts'
 import type { Decor, Figure, Light } from './layout.ts'
 import {
-  chiefRise, fallOf, flicker, lightAt, lightRadius, moveProgress, newParts, partsOf, type Night, type Parts,
+  BOW_NAME, chiefRise, fallOf, flicker, lightAt, lightRadius, moveProgress, newParts, partsOf, type Night, type Parts,
 } from './sim.ts'
 
 /** 보이는 땅의 범위 (m) — 지붕 끝부터 판의 끝까지 */
@@ -508,6 +510,14 @@ function drawHud(ctx: CanvasRenderingContext2D, v: NightView, n: Night, now: num
   ctx.textAlign = 'left'
   const head = n.practice !== null ? `연습장 · ${n.scene.title}` : `${n.stage + 1} / 3 · ${n.scene.title}`
   ctx.fillText(head, 14, 22)
+  // 든 활 — 단계가 오르면 이름이 바뀐다 (형: "계단적 성장"). 왼쪽 아래는 "그만" 단추 자리라 오른쪽 화살 밑에
+  ctx.fillStyle = n.bowTier > 0 ? '#ffd27a' : COL.hudDim
+  ctx.font = '700 13px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
+  ctx.textAlign = 'right'
+  ctx.fillText(`활 · ${BOW_NAME[n.bowTier] ?? BOW_NAME[0]}`, cam.w - 14, 42)
+  ctx.textAlign = 'left'
+  ctx.font = '600 15px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
+  ctx.fillStyle = COL.hud
   // 화살
   ctx.textAlign = 'right'
   const left = n.practice?.infinite === true ? '∞' : String(w.arrowsLeft)
@@ -579,7 +589,89 @@ export function pumpView(v: NightView, n: Night, from: number, now: number): voi
   }
 }
 
-export function drawNight(ctx: CanvasRenderingContext2D, v: NightView, n: Night, now: number): void {
+/**
+ * 당겨 쏘기의 손잡이 (night/input.ts) — 누른 자리의 고리 · 끝까지의 테 · 끈 줄 · 손가락.
+ * 고리 안이면 회색으로 "그만" — 놓으면 쏘지 않는다. 끝까지 끌면 테가 금빛으로 찬다.
+ */
+function drawPull(ctx: CanvasRenderingContext2D, p: Pull): void {
+  if (!p.active) return
+  const dead = P.night.pullDead
+  const max = p.max
+  ctx.save()
+  ctx.lineCap = 'round'
+  // 끝까지의 테 — 옅게, 끈 몫만큼 금빛 호
+  ctx.strokeStyle = 'rgba(233,226,212,0.18)'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.arc(p.ax, p.ay, max, 0, Math.PI * 2)
+  ctx.stroke()
+  if (!p.inDead && p.frac > 0) {
+    ctx.strokeStyle = p.frac >= 1 ? '#ffd27a' : 'rgba(255,210,122,0.75)'
+    ctx.lineWidth = p.frac >= 1 ? 5 : 3
+    ctx.beginPath()
+    ctx.arc(p.ax, p.ay, max, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * p.frac)
+    ctx.stroke()
+  }
+  // 고리 — 그만두는 자리
+  ctx.setLineDash([5, 5])
+  ctx.strokeStyle = p.inDead ? '#c8c0b0' : 'rgba(200,192,176,0.45)'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.arc(p.ax, p.ay, dead, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.setLineDash([])
+  // 끈 줄과 손가락
+  ctx.strokeStyle = p.inDead ? 'rgba(200,192,176,0.5)' : '#e9c98a'
+  ctx.lineWidth = 3
+  ctx.beginPath()
+  ctx.moveTo(p.ax, p.ay)
+  ctx.lineTo(p.x, p.y)
+  ctx.stroke()
+  ctx.fillStyle = p.inDead ? '#8f887b' : '#ffd27a'
+  ctx.beginPath()
+  ctx.arc(p.x, p.y, 9, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.font = '700 13px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = '#e9e2d4'
+  ctx.fillText(p.inDead ? '그만' : p.frac >= 1 ? '끝까지' : '', p.ax, p.ay - dead - 12)
+  ctx.restore()
+}
+
+/**
+ * 살길의 앞부분 — 지금 당김·겨눔으로 쏘면 처음 previewTime 초 동안 어디로 가나 (탄도는 ballistics 와 같은 식).
+ * 앞부분만 보인다 — 떨어지는 끝은 사람이 읽는다 (활터의 조준 정체성).
+ */
+function drawPreview(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void {
+  const a = w.archer
+  if ((a.phase !== 'drawing' && a.phase !== 'full') || a.draw <= 0 || P.night.previewTime <= 0) return
+  const sp = arrowSpeed(w, a.draw, w.fx.speedMul)
+  let x = a.x
+  let y = a.y
+  let vx = Math.cos(a.aimAngle) * sp
+  let vy = Math.sin(a.aimAngle) * sp
+  const dt = 1 / P.sim.hz
+  const steps = Math.round(P.night.previewTime * P.sim.hz)
+  ctx.fillStyle = a.phase === 'full' ? 'rgba(255,210,122,0.85)' : 'rgba(233,226,212,0.55)'
+  for (let i = 1; i <= steps; i++) {
+    const s = Math.hypot(vx - w.wind * w.bow.windMul, vy)
+    const k = P.arrow.drag * w.fx.dragMul * s
+    vx -= k * (vx - w.wind * w.bow.windMul) * dt
+    vy -= k * vy * dt
+    vy -= P.arrow.gravity * dt
+    x += vx * dt
+    y += vy * dt
+    if (i % 3 !== 0) continue
+    ctx.globalAlpha = 1 - (0.7 * i) / (steps + 1)
+    ctx.beginPath()
+    ctx.arc(X(cam, x), Y(cam, y), 3.4, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.globalAlpha = 1
+}
+
+export function drawNight(ctx: CanvasRenderingContext2D, v: NightView, n: Night, now: number, pull?: Pull): void {
   const cam = v.cam
   ctx.setTransform(cam.dpr, 0, 0, cam.dpr, 0, 0)
   frameCamera(cam, n)
@@ -606,6 +698,7 @@ export function drawNight(ctx: CanvasRenderingContext2D, v: NightView, n: Night,
   void rise
 
   assassinBody(ctx, cam, n.w)
+  drawPreview(ctx, cam, n.w)
   drawFlying(ctx, cam, n.w)
 
   // 지붕을 타고 넘어가는 중 — 어둡게 덮였다 걷힌다
@@ -615,4 +708,5 @@ export function drawNight(ctx: CanvasRenderingContext2D, v: NightView, n: Night,
     ctx.fillRect(0, 0, cam.w, cam.h)
   }
   drawHud(ctx, v, n, now)
+  if (pull !== undefined) drawPull(ctx, pull)
 }

@@ -4,8 +4,10 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { bakeScene } from '../src/night/layout.ts'
-import { createNight, lightAt, stepNight, type Night } from '../src/night/sim.ts'
-import { P } from '../src/tune/params.ts'
+import { BOW_NAME, createNight, lightAt, stepNight, type Night, type NightFrame } from '../src/night/sim.ts'
+import { maxDrawOf } from '../src/sim/bow.ts'
+import { arrowSpeed } from '../src/sim/ballistics.ts'
+import { P, setParam } from '../src/tune/params.ts'
 import type { InputFrame } from '../src/sim/types.ts'
 
 const idle = (): InputFrame => ({ aimX: 10, aimY: 0, drawing: false, steady: false, parry: false })
@@ -131,5 +133,85 @@ describe('밤의 암살판', () => {
     shoot(n, 0.3) // 하늘로 — 멀리 떨어진다
     run(n, 3)
     assert.equal(n.result?.result, 'withdrew')
+  })
+})
+
+/**
+ * 당겨 쏘기 · 밤의 숨 · 활의 단계 (2026-10-18, 형: "뒤로 당겼다가 놓게" · "스태미너 너무 빨리 줄어드는데" · "계단적 성장")
+ */
+describe('밤 — 당겨 쏘기와 활의 단계', () => {
+  const frame = (n: Night): NightFrame => {
+    const a = n.w.archer
+    return { aimX: a.x + 10, aimY: a.y - 2, drawing: false, steady: false, parry: false }
+  }
+  const practice = (bowTier = 0): Night => createNight({ seed: 3, bowTier, practice: { stage: 3, alarm: false, infinite: true } })
+
+  it('끈 길이가 당김의 상한이다 — 반만 끌면 만작에 안 들고 당김이 반에서 멈춘다', () => {
+    const n = practice()
+    const inp = frame(n)
+    inp.drawing = true
+    inp.cap = 0.5
+    run(n, 2, inp)
+    const a = n.w.archer
+    const max = maxDrawOf(n.w.stats, n.w.bow.maxDrawAdd)
+    assert.equal(a.phase, 'drawing')
+    assert.ok(Math.abs(a.draw - max * 0.5) < 1e-6, `당김 ${a.draw} · 반 ${max * 0.5}`)
+    // 끝까지 끌면 만작에 든다
+    inp.cap = 1
+    run(n, 2, inp)
+    assert.equal(a.phase, 'full')
+  })
+
+  it('고리 안으로 돌아와 놓으면 쏘지 않는다', () => {
+    const n = practice()
+    const inp = frame(n)
+    inp.drawing = true
+    inp.cap = 1
+    run(n, 1, inp)
+    const shots = n.shots
+    inp.cancel = true
+    stepNight(n, inp)
+    inp.cancel = false
+    inp.drawing = false
+    run(n, 0.5, inp)
+    assert.equal(n.shots, shots)
+    assert.equal(n.w.arrows.filter((x) => x.alive).length, 0)
+    assert.equal(n.w.archer.phase, 'idle')
+  })
+
+  it(`밤의 숨은 활터보다 느리게 준다 — 끝까지 당겨 버티는 시간이 약 ${(1 / P.night.staminaDrainMul).toFixed(1)}배`, () => {
+    const hold = (): number => {
+      const n = practice()
+      const inp = frame(n)
+      inp.drawing = true
+      let t = 0
+      while (n.w.archer.phase !== 'collapsing' && t < 60 * P.sim.hz) { stepNight(n, inp); t++ }
+      return t
+    }
+    const was = P.night.staminaDrainMul
+    const slow = hold()
+    setParam('night.staminaDrainMul', 1)
+    const fast = hold()
+    setParam('night.staminaDrainMul', was)
+    const ratio = slow / fast
+    assert.ok(ratio > 1.6 && ratio < 2.4, `버틴 시간의 비 ${ratio.toFixed(2)} (${slow} / ${fast} 스텝)`)
+  })
+
+  it('활의 단계마다 한꺼번에 세진다 — 살이 빠르고 · 빨리 당기고 · 화살이 늘고 · 이름이 바뀐다', () => {
+    const lo = createNight({ seed: 3, arrows: 9 })
+    const hi = createNight({ seed: 3, arrows: 9, bowTier: 3 })
+    assert.equal(BOW_NAME[hi.bowTier], '신궁')
+    assert.ok(hi.w.arrowsLeft > lo.w.arrowsLeft)
+    assert.ok(arrowSpeed(hi.w, 1, 1) > arrowSpeed(lo.w, 1, 1) * 1.3)
+    const toFull = (n: Night): number => {
+      const inp = frame(n)
+      inp.drawing = true
+      let t = 0
+      while (n.w.archer.phase !== 'full' && t < 5 * P.sim.hz) { stepNight(n, inp); t++ }
+      return t
+    }
+    assert.ok(toFull(hi) < toFull(lo) * 0.7)
+    // 범위 밖은 끝 단계로
+    assert.equal(createNight({ seed: 3, bowTier: 9 }).bowTier, BOW_NAME.length - 1)
   })
 })

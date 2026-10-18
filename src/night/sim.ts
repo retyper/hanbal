@@ -11,9 +11,10 @@
 import { clamp01, distSqPointSegment, valueNoise } from '../core/math.ts'
 import { P } from '../tune/params.ts'
 import { stepArrows } from '../sim/ballistics.ts'
-import { stepArcher } from '../sim/bow.ts'
+import { effectiveStats, stepArcher } from '../sim/bow.ts'
+import { flowDrawMul } from '../sim/flow.ts'
 import { cancelDraw, createWorld } from '../sim/world.ts'
-import type { InputFrame, StageDef, World } from '../sim/types.ts'
+import type { BowMods, InputFrame, StageDef, World } from '../sim/types.ts'
 import { bakeScene, STAGE_COUNT, type Figure, type Light, type Scene } from './layout.ts'
 
 export type Phase = 'play' | 'move' | 'rise' | 'chief' | 'alarm' | 'end'
@@ -61,11 +62,47 @@ export interface NightOpts {
   readonly seed: number
   readonly arrows?: number
   readonly practice?: Practice
+  /** 활의 단계 0 단궁 · 1 맥궁 · 2 각궁 · 3 신궁 (형: "계단적 성장") — 없으면 0 */
+  readonly bowTier?: number
 }
+
+/** 활의 단계 이름 — 화면에 그대로 */
+export const BOW_NAME: readonly string[] = ['단궁', '맥궁', '각궁', '신궁']
+export const BOW_TIERS = BOW_NAME.length
+
+/**
+ * 밤의 입력 — 활터의 InputFrame 에 당겨 쏘기 두 가지를 얹는다 (night/input.ts 가 쓴다).
+ * 둘 다 없으면 활터와 똑같이 돈다 (시험·옛 호출자).
+ */
+export interface NightFrame extends InputFrame {
+  /** 끈 길이로 정한 당김의 상한 0..1 (만작 한계에 대한 몫) — 1 이면 활터처럼 만작까지 */
+  cap?: number
+  /** 고리 안으로 돌아와 놓았다 — 쏘지 않고 활을 내린다 (이 스텝에만 true) */
+  cancel?: boolean
+}
+
+/** 한 단계마다 한꺼번에 붙는 몫 — 완만하지 않게, 계단으로 */
+function tierBow(t: number): BowMods {
+  const N = P.night
+  return {
+    speedMul: 1 + N.tierSpeed * t,
+    drawTimeMul: Math.pow(N.tierDraw, t),
+    tremorMul: Math.pow(N.tierTremor, t),
+    scatterMul: Math.pow(N.tierTremor, t),
+    holdDrainMul: 1,
+    maxDrawAdd: N.tierMaxDraw * t,
+    windMul: 1,
+    pierceAdd: 0,
+  }
+}
+
+const tierOf = (x: number | undefined): number => Math.max(0, Math.min(BOW_TIERS - 1, Math.floor(x ?? 0)))
 
 export interface Night {
   readonly seed: number
   readonly practice: Practice | null
+  /** 활의 단계 (BOW_NAME) */
+  readonly bowTier: number
   readonly w: World
   scene: Scene
   stage: number
@@ -101,13 +138,14 @@ function stageDef(seed: number, arrows: number): StageDef {
 }
 
 export function createNight(o: NightOpts): Night {
-  const lv = P.night.stat
+  const tier = tierOf(o.bowTier)
+  const lv = P.night.stat + P.night.tierStat * tier
   const practice = o.practice ?? null
-  const arrows = practice?.infinite === true ? INFINITE : Math.max(1, Math.round(o.arrows ?? P.night.arrows))
-  const w = createWorld(stageDef(o.seed, arrows), { str: lv, steady: lv, stamina: lv, focus: lv }, 'basic')
+  const arrows = practice?.infinite === true ? INFINITE : Math.max(1, Math.round(o.arrows ?? P.night.arrows) + P.night.tierArrows * tier)
+  const w = createWorld(stageDef(o.seed, arrows), { str: lv, steady: lv, stamina: lv, focus: lv }, 'basic', tierBow(tier))
   const stage = practice !== null ? practice.stage : 0
   return {
-    seed: o.seed, practice, w, scene: bakeScene(o.seed, stage), stage, phase: 'play', phaseAt: 0, tick: 0,
+    seed: o.seed, practice, bowTier: tier, w, scene: bakeScene(o.seed, stage), stage, phase: 'play', phaseAt: 0, tick: 0,
     alarm: 0, stuck: [], events: [], result: null, chiefUp: -1, shots: 0, hits: 0, heads: 0, tore: new Set(),
   }
 }
@@ -357,14 +395,48 @@ function nextStage(n: Night): void {
   setPhase(n, 'play')
 }
 
-export function stepNight(n: Night, input: InputFrame): void {
+/** 당김이 `f`(만작 한계에 대한 몫)에 닿는 drawTime — bow.ts 의 당김 곡선(스무스스텝 → drawEase)을 거꾸로 푼다 */
+function drawTimeFor(w: World, f: number): number {
+  const full = P.bow.drawTime * effectiveStats(w.stats).drawTimeMul * w.bow.drawTimeMul * flowDrawMul(w)
+  const p = 1 - Math.pow(1 - clamp01(f), 1 / P.bow.drawEase)
+  // 스무스스텝 p = 3t² − 2t³ 의 역 (0..1 에서 하나뿐인 근)
+  const t = 0.5 - Math.sin(Math.asin(1 - 2 * p) / 3)
+  return t * full
+}
+
+/**
+ * 활 한 스텝 — 활터의 stepArcher 를 그대로 부르고, 밤의 것만 앞뒤에 얹는다 (활터는 한 줄도 안 바뀐다):
+ *   ① 그만두기 — 고리 안으로 돌아와 놓으면 쏘지 않고 내린다 (world.cancelDraw)
+ *   ② 끈 길이의 상한 — drawTime 을 그 몫에 닿는 자리까지만 두어, 이번 스텝의 당김이 상한을 넘지 않는다.
+ *      상한이 1 보다 작으면 만작(phase full)에 들지 않는다 — 덜 당긴 살은 오차가 있다 (빨간 바 계약 ③, partialDrawPenalty)
+ *   ③ 밤의 숨 — 당기는 동안 깎인 스태미나의 (1 − staminaDrainMul) 를 돌려준다 (활터의 소모 식은 그대로)
+ */
+function shootStep(w: World, input: NightFrame): void {
+  const a = w.archer
+  if (input.cancel === true) cancelDraw(w)
+  const cap = input.cap
+  if (cap !== undefined && cap < 1 && (a.phase === 'drawing' || a.phase === 'full')) {
+    const lim = drawTimeFor(w, cap) - w.dt
+    if (a.phase === 'full') {
+      a.phase = 'drawing'
+      a.holdTime = 0
+    }
+    if (a.drawTime > lim) a.drawTime = lim > 0 ? lim : 0
+  }
+  const before = a.stamina
+  const wasDrawing = a.phase === 'drawing' || a.phase === 'full'
+  stepArcher(w, input)
+  if (wasDrawing && a.stamina > 0 && a.stamina < before) a.stamina += (before - a.stamina) * (1 - P.night.staminaDrainMul)
+}
+
+export function stepNight(n: Night, input: NightFrame): void {
   const w = n.w
   n.tick++
   w.tick++
   w.elapsed += w.dt
   const evStart = w.events.length
   const shooting = n.phase === 'play' || n.phase === 'rise' || n.phase === 'chief'
-  if (shooting) stepArcher(w, input)
+  if (shooting) shootStep(w, input)
   else cancelDraw(w)
   stepArrows(w)
 

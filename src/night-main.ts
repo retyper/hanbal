@@ -8,17 +8,20 @@
  *   - **연습장** `night.html?practice=1` (형: "궁술연습장도 만들어서 아무때나 해볼수 있게") — 판 고르기 · 화살 ∞ ·
  *     발각 게이지 켬/끔. 결과는 내보내지 않고, 기록만 `hanbal.night.practice` 에 남긴다 (형의 원칙: 다 남긴다).
  *
+ *   - 두 갈래 다 `bow=<0..3>` 을 받는다 — 활의 단계 (단궁 · 맥궁 · 각궁 · 신궁, night/sim.ts BOW_NAME · P.night.tier*).
+ * 쏘기는 당겨 쏘기다 (night/input.ts) — 아무 데나 눌러 뒤로 끌고 놓는다. 활터의 입력은 그대로다.
+ *
  * 시드는 여기(바깥)에서만 시계로 만든다 — 판 안(src/night)은 시계를 못 읽는다 (절대 규칙 1).
  * 숨은 탭에서는 프레임을 예약하지 않는다 (절대 규칙 4).
  */
-import { createInput } from './input/pointer.ts'
+import { createNightInput } from './night/input.ts'
 import { createCamera, resizeCamera } from './render/camera.ts'
 import { setHeroSkin } from './render/foeart.ts'
 import { sprite } from './render/sprites.ts'
 import { createSfx, pumpSfx, unlockSfx } from './audio/sfx.ts'
 import { createSynth, noiseBurst, resumeSynth, tone, type Synth } from './audio/synth.ts'
 import { P } from './tune/params.ts'
-import { createNight, stepNight, type Night, type NightResult } from './night/sim.ts'
+import { BOW_NAME, createNight, stepNight, type Night, type NightResult } from './night/sim.ts'
 import { createView, drawNight, pumpView } from './night/draw.ts'
 import { PRACTICE_STAGES, stageTitle } from './night/layout.ts'
 
@@ -46,7 +49,9 @@ sprite('night-assassin')
 
 const cam = createCamera()
 const view = createView(cam)
-const input = createInput(canvas, cam)
+const input = createNightInput(canvas)
+/** 활의 단계 — 칠십팔국이 `bow=<n>` 으로 넘긴다 (0 단궁 · 1 맥궁 · 2 각궁 · 3 신궁). 연습장도 같은 값으로 쏜다 */
+const bowTier = Math.max(0, Math.min(BOW_NAME.length - 1, Math.floor(Number(params.get('bow') ?? 0) || 0)))
 const sfx = createSfx()
 let synth: Synth | null = null
 
@@ -103,9 +108,13 @@ const CSS = `
 #night-ui button.on { background: linear-gradient(#a57a31, #7d5a22); border-color: #e0bd78; color: #fff4dc; }
 #night-ui .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
 #night-ui .grid button { padding: 14px 8px; }
-#night-ui .steady { pointer-events: auto; position: absolute; right: 16px; bottom: 18px; width: 72px; height: 72px; border-radius: 50%;
-  font-size: 15px; background: #1b2028cc; border: 1px solid #6a7486; }
-#night-ui .steady.on { background: #3a3020; border-color: #e0bd78; }
+#night-ui .steady { pointer-events: auto; position: absolute; right: max(16px, env(safe-area-inset-right)); bottom: max(46px, calc(env(safe-area-inset-bottom) + 30px));
+  width: 92px; height: 92px; padding: 0; border-radius: 50%; border: 0; touch-action: none; -webkit-user-select: none; user-select: none;
+  background: conic-gradient(var(--sc, #6cc7b8) calc(var(--st, 1) * 360deg), #2a313c 0); box-shadow: 0 4px 14px #000a, 0 0 0 2px #e0bd7899; }
+#night-ui .steady span { position: absolute; inset: 7px; border-radius: 50%; background: #1b2028; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; color: #f3e6c8; font-size: 16px; font-weight: 800; line-height: 1.15; }
+#night-ui .steady span i { font-style: normal; font-size: 11px; font-weight: 600; color: #9aa4b2; }
+#night-ui .steady.on span { background: #3a3020; color: #ffd27a; } #night-ui .steady.on { box-shadow: 0 0 0 3px #ffd27a, 0 0 18px #ffd27a88; }
 #night-ui .turn { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); padding: 4px 12px; border-radius: 12px; background: #000a; color: #95a1ae; font-size: 12px; }
 #night-ui .quit { pointer-events: auto; position: absolute; left: 12px; top: 44px; padding: 4px 10px; font-size: 12px; background: #1b2028aa; }
 `
@@ -166,13 +175,28 @@ function showMissionIntro(): void {
   const arrows = Number(params.get('arrows') ?? P.night.arrows)
   ui.innerHTML = `<div class="card"><h1>밤의 암살</h1><p>기와지붕 위에 엎드렸다. 화살 ${arrows}발.</p>`
     + `<p class="mute">보초를 다 쓰러뜨리고 셋째 판의 창호지 뒤 그림자를 쏜다. 빗나간 살은 소리를 낸다. 시체가 등불 아래 있으면 들킨다. 등불을 쏘면 꺼진다.</p>`
-    + `<p class="mute">누르고 당긴다 · 놓으면 쏜다 · 숨 단추(또는 Shift·오른쪽 단추)로 숨을 참는다</p>`
+    + `<p class="mute">아무 데나 누르고 뒤로 끈다 — 끈 쪽의 반대로 겨눈다 · 놓으면 쏜다 · 누른 자리로 돌아와 놓으면 그만둔다. 오른쪽 아래 「숨 참기」를 누르고 있으면 떨림이 멎는다.</p>`
     + `<div class="btns"><button class="on" data-act="go">들어간다</button></div></div>`
 }
 
 function hud(): void {
-  ui.innerHTML = `<button class="steady" data-act="steady">숨</button><button class="quit" data-act="quit">그만</button>`
+  ui.innerHTML = `<button class="steady" data-act="steady"><span>숨 참기<i>누르고 있는다</i></span></button><button class="quit" data-act="quit">그만</button>`
     + (innerHeight > innerWidth ? `<div class="turn">가로로 돌리면 크게 보인다</div>` : '')
+  breathBtn = ui.querySelector<HTMLElement>('.steady')
+  shownSt = -1
+}
+
+/** 숨 참기 단추의 테 = 스태미나 (빨간 바 아래로 내려가면 붉게) — 바뀔 때만 고친다 */
+let breathBtn: HTMLElement | null = null
+let shownSt = -1
+function syncBreath(n: Night): void {
+  if (breathBtn === null || !breathBtn.isConnected) return
+  const a = n.w.archer
+  const st = a.staminaMax > 0 ? Math.round((a.stamina / a.staminaMax) * 50) / 50 : 1
+  if (st === shownSt) return
+  shownSt = st
+  breathBtn.style.setProperty('--st', String(st))
+  breathBtn.style.setProperty('--sc', st >= P.stamina.steadyZone ? '#6cc7b8' : '#ff8a5a')
 }
 
 const LINES: Record<NightResult['result'], (r: NightResult) => string> = {
@@ -212,8 +236,8 @@ function exportResult(n: Night, r: NightResult): void {
 function start(): void {
   view.pops = []
   night = practiceMode
-    ? createNight({ seed: newSeed(), practice: { stage: practiceStage, alarm: practiceAlarm, infinite: true } })
-    : createNight({ seed: Number(params.get('seed') ?? newSeed()) >>> 0, arrows: Number(params.get('arrows') ?? P.night.arrows) })
+    ? createNight({ seed: newSeed(), bowTier, practice: { stage: practiceStage, alarm: practiceAlarm, infinite: true } })
+    : createNight({ seed: Number(params.get('seed') ?? newSeed()) >>> 0, bowTier, arrows: Number(params.get('arrows') ?? P.night.arrows) })
   hud()
   acc = 0
 }
@@ -288,6 +312,7 @@ function frame(now: number): void {
     acc += realDt < maxFrame ? realDt : maxFrame
     let steps = 0
     while (acc >= step && steps < P.sim.maxCatchUpSteps) {
+      input.syncAim(n.w.archer.x, n.w.archer.y)
       stepNight(n, input.frame)
       input.endStep()
       acc -= step
@@ -299,7 +324,8 @@ function frame(now: number): void {
     for (const e of n.events) nightSound(e.t)
     pumpView(view, n, 0, now)
     n.events.length = 0
-    drawNight(ctx, view, n, now)
+    drawNight(ctx, view, n, now, input.pull)
+    syncBreath(n)
     if (n.result !== null && !shownEnd) {
       shownEnd = true
       showResult(n)
