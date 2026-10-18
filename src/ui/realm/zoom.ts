@@ -22,9 +22,14 @@ export interface MapZoom {
   dragged(): boolean
 }
 
+/** 끈 뒤 이만큼 안의 click 만 끌기의 끝으로 본다 (ms) — 화면의 손짓이라 params 가 아니라 여기 */
+const DRAG_HOLD_MS = 500
+
 export function attachZoom(wrap: HTMLElement): MapZoom {
   let z = 0 // 0 = 아직 안 정함 — 처음 apply 때 cover 로
   let moved = false
+  /** 마지막으로 끈 때 — 끈 뒤 잠깐만 "끌었다"로 친다 (끌기가 남아 다음 누르기를 삼키지 않게) */
+  let movedAt = 0
 
   // 판마다 지도 비율·가장 큰 배율이 다르다 (영남 판은 고을이 빽빽해 더 크게 본다) — mapview 가 data-aspect · data-zmax 로 단다
   const aspect = (): number => Number(map()?.dataset["aspect"]) || ASPECT
@@ -75,6 +80,7 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     const cx = (ev.touches[0]!.clientX + ev.touches[1]!.clientX) / 2 - rect.left
     const cy = (ev.touches[0]!.clientY + ev.touches[1]!.clientY) / 2 - rect.top
     moved = true
+    movedAt = performance.now()
     zoomAt(pinch.z * (dist(ev.touches) / pinch.d), cx, cy)
   }, { passive: false })
   wrap.addEventListener('touchend', (ev) => {
@@ -94,6 +100,7 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     const dy = ev.clientY - drag.y
     if (!moved && Math.hypot(dx, dy) < DRAG_PX) return
     moved = true
+    movedAt = performance.now()
     wrap.classList.add('dragging')
     wrap.scrollLeft = drag.sl - dx
     wrap.scrollTop = drag.st - dy
@@ -114,6 +121,6 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     step(dir) {
       zoomAt(dir > 0 ? z * STEP : z / STEP, wrap.clientWidth / 2, wrap.clientHeight / 2)
     },
-    dragged: () => moved,
+    dragged: () => moved && performance.now() - movedAt < DRAG_HOLD_MS,
   }
 }
