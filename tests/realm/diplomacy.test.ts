@@ -43,8 +43,9 @@ describe('관계', () => {
   })
 
   it('먼저 치면 전쟁이 된다', () => {
-    const r = byeonhanMini(1)
-    const { next, report } = advance(r, [{ kind: 'march', army: 'a-us', edge: 'e04', ambush: false }])
+    const r = planned(byeonhanMini(1), [])
+    r.armies['a-us']!.at = 'wild-dolseom' // 돌섬에서 구야 국읍으로 (뱃길 e35)
+    const { next, report } = advance(r, [{ kind: 'march', army: 'a-us', edge: 'e35', ambush: false }])
     assert.equal(relationOf(next, 'us', 'guya').state, 'war')
     assert.ok(report.lines.some((l) => l.kind === 'relation' && l.state === 'war'))
   })
@@ -120,7 +121,8 @@ describe('화친', () => {
     const r = planned(byeonhanMini(1), [])
     r.relations[pairKey('us', 'guya')] = { state: 'truce', until: 20 }
     r.relations[pairKey('us', 'miri')] = { state: 'ally', until: null }
-    const { next } = advance(r, [{ kind: 'march', army: 'a-us', edge: 'e04', ambush: false }])
+    r.armies['a-us']!.at = 'wild-dolseom'
+    const { next } = advance(r, [{ kind: 'march', army: 'a-us', edge: 'e35', ambush: false }])
     assert.equal(relationOf(next, 'us', 'guya').state, 'war')
     assert.equal(relationOf(next, 'us', 'miri').state, 'truce')
     assert.equal(relationOf(next, 'us', 'anya').state, 'war') // 중립 → 전쟁

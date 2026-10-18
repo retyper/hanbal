@@ -14,9 +14,9 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { friendly } from './diplomacy.ts'
-import { draftCost, draftLimit, hhOf, menOf, stockOf, upkeepOf } from './economy.ts'
+import { draftCost, draftLimit, hhOf, menOf, settleLimit, settleTargets, stockOf, upkeepOf } from './economy.ts'
 import { jointWin, movesOf, type Move } from './estimate.ts'
-import { armiesAt, fortMul, newArmyId, planned, seasonOf } from './season.ts'
+import { armiesAt, fortMul, neighbors, newArmyId, planned, seasonOf } from './season.ts'
 import type { UnitKind } from './battle.ts'
 import type { Army, Order, Realm } from './types.ts'
 
@@ -204,9 +204,40 @@ function plan(r: Realm, faction: string): Order[] {
   return orders
 }
 
-/** 한 세력의 이번 계절 명령 — 징병(가을·겨울)과 군대의 움직임 */
+/**
+ * 개척 (FLOW §2) — 봄·가을에, 군량 aiDraftReserve 계절치를 남기고도 곡식이 남으면 빈땅 하나에 사람을 보낸다.
+ * 품(room)이 가장 많이 남은 빈땅을, 그리로 가는 고을 가운데 가호가 가장 많은 곳에서. 보낼 수 있는 몫의 aiSettleShare 만.
+ * 남의 군대가 머물거나 그리로 가는 빈땅, **남의 국읍과 맞닿은 빈땅**은 피한다 — 사람 적은 새 마을이 큰 군대 코앞에 서면
+ * 뺏기고, 그 자리가 제 국읍을 치는 발판이 된다 (봇 대전: 갯마을이 돌섬을 개척하면 구야가 돌섬을 거쳐 국읍을 쳤다, 짐 81% → 97%).
+ */
+function settles(r: Realm, faction: string): Order[] {
+  const R = P.realm
+  const s = seasonOf(r.season)
+  if (s !== 'spring' && s !== 'autumn') return []
+  const spare = stockOf(r, faction).grain - R.aiDraftReserve * upkeepOf(r, faction, true)
+  if (spare <= 0) return []
+  const capitals = new Set(Object.values(r.factions).filter((f) => f.id !== faction).map((f) => f.capital))
+  const foe = (to: string): boolean =>
+    Object.values(r.armies).some((a) => a.faction !== faction && (a.march === null ? a.at === to : a.march.to === to)) ||
+    neighbors(r, to).some((nb) => capitals.has(nb) && r.nodes[nb]?.owner !== faction)
+  let best: { from: string; to: string; n: number; left: number; hh: number } | null = null
+  for (const t of settleTargets(r, faction)) {
+    if (foe(t.to)) continue
+    const to = r.nodes[t.to]!
+    const n = Math.min(Math.floor(settleLimit(r, faction, t.from, t.to) * R.aiSettleShare), Math.floor(spare / Math.max(1e-9, R.settleGrain)))
+    if (n < R.splitMin) continue
+    const left = (to.room ?? 0) - to.hh
+    const hh = r.nodes[t.from]!.hh
+    if (best === null || left > best.left || (left === best.left && hh > best.hh)) best = { from: t.from, to: t.to, n, left, hh }
+  }
+  return best === null ? [] : [{ kind: 'settle', faction, from: best.from, to: best.to, n: best.n }]
+}
+
+/** 한 세력의 이번 계절 명령 — 징병(가을·겨울) · 개척(봄·가을) · 군대의 움직임. 무모·무작위 봇은 개척하지 않는다 */
 export function decide(r: Realm, faction: string, brain: Brain): Order[] {
-  return [...drafts(r, faction), ...(brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
+  const ds = drafts(r, faction)
+  const ss = brain === 'reckless' || brain === 'random' ? [] : settles(ds.length > 0 ? planned(r, ds) : r, faction)
+  return [...ds, ...ss, ...(brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
 }
 
 function moves(r: Realm, faction: string, brain: Brain): Order[] {

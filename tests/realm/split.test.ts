@@ -241,7 +241,8 @@ describe('초반 유예 — 작은 나라는 아직 눈에 안 띈다', () => {
     const r = planned(byeonhanMini(1), [])
     r.season = 3 // 겨울 — 언 강
     r.armies['a-miri']!.at = 'miri-cap' // 여울목 읍락을 비운다
-    const { next } = advance(r, [{ kind: 'march', army: 'a-us', edge: 'e04', ambush: false }])
+    r.armies['a-us']!.at = 'wild-dolseom'
+    const { next } = advance(r, [{ kind: 'march', army: 'a-us', edge: 'e35', ambush: false }])
     assert.deepEqual(next.provoked, ['guya'])
     assert.equal(spared(next, 'guya', 'our-cap'), false)
     assert.equal(spared(next, 'miri', 'our-cap'), true)
@@ -258,7 +259,8 @@ describe('초반 유예 — 작은 나라는 아직 눈에 안 띈다', () => {
     const r = planned(byeonhanMini(1), [])
     delete r.provoked
     assert.equal(spared(r, 'guya', 'our-cap'), true)
-    advance(r, [{ kind: 'march', army: 'a-us', edge: 'e04', ambush: false }])
+    r.armies['a-us']!.at = 'wild-dolseom'
+    advance(r, [{ kind: 'march', army: 'a-us', edge: 'e35', ambush: false }])
   })
 
   it('첫 계절의 탐욕 이웃은 모르는 우리 땅이라도 덤비지 않는다', () => {

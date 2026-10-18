@@ -113,7 +113,8 @@ describe('한 해의 살림', () => {
     r.season = 3
     r.armies['a-us']!.mix = { spear: 900, bow: 300 }
     const hh0 = r.nodes['guya-cap']!.hh
-    const { next, report } = advance(r, [{ kind: 'march', army: 'a-us', edge: 'e04', ambush: false }])
+    r.armies['a-us']!.at = 'wild-dolseom'
+    const { next, report } = advance(r, [{ kind: 'march', army: 'a-us', edge: 'e35', ambush: false }])
     if (next.nodes['guya-cap']!.owner === 'us') {
       assert.ok(report.lines.some((l) => l.kind === 'take'))
       // 뺏길 때 hhLossOnTake, 그 뒤 계절의 살림에서 ± 조금
@@ -195,7 +196,8 @@ describe('행군은 보인다', () => {
   it('우리 고을에 맞닿은 길 위의 남의 군대만 보인다', () => {
     const r = planned(byeonhanMini(1), [])
     r.armies['a-guya-2']!.at = 'guya-vil'
-    // 봉황 → 갈대울 (갯벌 e09, 두 계절 — 우리 고을에 맞닿는다) · 구야 국읍 → 철산 (고갯길 e11, 두 계절 — 안 맞닿는다)
+    r.armies['a-guya-1']!.at = 'guya-vil'
+    // 봉황 → 갈대울 (갯벌 e09, 두 계절 — 우리 고을에 맞닿는다) · 봉황 → 철산 (고갯길 e11, 두 계절 — 안 맞닿는다)
     const { next, report } = advance(r, [
       { kind: 'march', army: 'a-guya-2', edge: 'e09', ambush: false },
       { kind: 'march', army: 'a-guya-1', edge: 'e11', ambush: false },

@@ -5,7 +5,7 @@
  * 굴림은 전부 이름이 있다 (core/rng.ts roll) — 판정 하나를 더해도 다른 판정이 밀리지 않는다.
  *
  * 도는 순서 (SYSTEMS §12 의 번호):
- *   1 명령 확정 (나누기·모으기 → 징병·해산 → 출정) → 2 정찰 · 사신 → 3 행군 → 4 기습 → 5 전투·생포
+ *   1 명령 확정 (나누기·모으기·징병·해산·개척 — 명령 순서대로 → 출정) → 2 정찰 · 사신 → 3 행군 → 4 기습 → 5 전투·생포
  *   → 7 생산·수확·군량·가호 (economy.ts) → 9 경계 감쇠 · 화친 만료 → 끝 확인 (이김·짐) · 행군 목격 → 11 계절 +1
  * 6 회유 · 8 이주 · 10 사건은 R3~R4 에서 이 자리에 끼운다 — 번호를 지켜야 순서가 안 바뀐다.
  *
@@ -20,16 +20,13 @@ import {
   type Force, type UnitKind,
 } from './battle.ts'
 import { expireRelations, onHostile, relationOf, resolveEnvoys } from './diplomacy.ts'
-import { draftCost, draftLimit, militiaMen, onTake, stepEconomy, stockOf } from './economy.ts'
+import { draftCost, draftLimit, militiaMen, onTake, settleCost, settleLimit, stepEconomy, stockOf } from './economy.ts'
+import { blockedWhy, seasonOf } from './calendar.ts'
 import type {
   Army, EdgeKind, Order, Realm, REdge, Report, ReportLine, RNode, SeasonOfYear, SnipeZone,
 } from './types.ts'
 
-const SEASONS: readonly SeasonOfYear[] = ['spring', 'summer', 'autumn', 'winter']
-
-export function seasonOf(n: number): SeasonOfYear {
-  return SEASONS[((n % 4) + 4) % 4]!
-}
+export { blockedWhy, seasonOf }
 
 /** 저격 판 하나의 열쇠 — 고을과 공격 군대. 화면의 저격과 계절 처리가 같은 열쇠로 만난다 */
 export function battleKey(node: string, army: string): string {
@@ -49,13 +46,6 @@ export function neighbors(r: Realm, node: string): string[] {
     if (o !== null) out.push(o)
   }
   return out.sort()
-}
-
-/** 이 계절에 이 길이 막혔는가 (SYSTEMS §1-1 · §1-3) */
-export function blockedWhy(ed: REdge, season: SeasonOfYear): 'winterPass' | 'summerFord' | null {
-  if (ed.kind === 'pass' && season === 'winter') return 'winterPass'
-  if (ed.kind === 'ford' && season === 'summer') return 'summerFord'
-  return null
 }
 
 /** 길 하나를 지나는 계절 수 */
@@ -339,12 +329,34 @@ function disbandArmy(r: Realm, o: Extract<Order, { kind: 'disband' }>, lines: Re
   lines.push({ kind: 'disband', army: a.id, node: node.id, n })
 }
 
+/** 개척 (FLOW §2) — 제 고을 사람을 길로 맞닿은 빈땅으로. 규칙에 안 맞으면 아무 일도 없다 (economy.settleLimit) */
+function settleLand(r: Realm, o: Extract<Order, { kind: 'settle' }>, lines: ReportLine[]): void {
+  if (r.factions[o.faction] === undefined) return
+  if (!Number.isInteger(o.n) || o.n < 1 || o.n > settleLimit(r, o.faction, o.from, o.to)) return
+  const from = r.nodes[o.from]!
+  const to = r.nodes[o.to]!
+  from.hh -= o.n
+  to.hh += o.n
+  to.owner = o.faction
+  stockOf(r, o.faction).grain -= settleCost(o.n).grain
+  revealAround(r, o.faction, o.to)
+  lines.push({ kind: 'settle', faction: o.faction, from: o.from, to: o.to, n: o.n })
+}
+
+/** 새로 쥔 땅에 서면 그 땅과 길로 맞닿은 이웃의 땅이 보인다 (판을 열 때 제 땅의 이웃을 아는 것과 같다). 군세는 아니다 */
+function revealAround(r: Realm, faction: string, node: string): void {
+  const known = (r.intel[faction] ??= {})
+  known[node] ??= { land: true, force: null, alert: null }
+  for (const nb of neighbors(r, node)) known[nb] ??= { land: true, force: null, alert: null }
+}
+
 function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
   for (const o of orders) {
     if (o.kind === 'split') splitArmy(r, o, lines)
     else if (o.kind === 'merge') mergeArmy(r, o, lines)
     else if (o.kind === 'draft') draftArmy(r, o, lines)
     else if (o.kind === 'disband') disbandArmy(r, o, lines)
+    else if (o.kind === 'settle') settleLand(r, o, lines)
   }
 }
 
@@ -506,6 +518,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
       onTake(r, node.id)
       node.owner = a.faction
       lines.push({ kind: 'take', faction: a.faction, node: node.id })
+      revealAround(r, a.faction, node.id)
     }
     // 주인이 바뀐 고을의 옛 군세 정보는 뜻이 없다 — 지운다 (아는 척하지 않는다)
     for (const known of Object.values(r.intel)) {
@@ -552,6 +565,7 @@ function resolveMarches(r: Realm, snipes: Readonly<Record<string, SnipeZone>>, l
       if (node.owner !== null) onTake(r, node.id)
       node.owner = lead.faction
       lines.push({ kind: 'take', faction: lead.faction, node: node.id })
+      revealAround(r, lead.faction, node.id)
       for (const known of Object.values(r.intel)) {
         const k = known[node.id]
         if (k !== undefined) k.force = null

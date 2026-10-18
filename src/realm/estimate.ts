@@ -17,7 +17,7 @@ export interface Move {
   readonly seasons: number
   /** 이번 계절에 막혔으면 까닭 */
   readonly blocked: 'winterPass' | 'summerFord' | null
-  /** 남의 땅인가 (싸움이 날 수 있다) */
+  /** 남이 쥔 땅인가 (싸움이 날 수 있다). 아무도 안 쥔 빈땅·소도는 아니다 */
   readonly hostile: boolean
   /** 승률 범위 [최악, 최선] — 남의 땅인데 모르면 null, 제 땅이면 null */
   readonly win: readonly [number, number] | null
@@ -67,7 +67,8 @@ export function movesOf(r: Realm, faction: string, a: Army): Move[] {
     const to = otherEnd(ed, a.at)
     if (to === null) continue
     const node = r.nodes[to]!
-    const hostile = node.owner !== faction && node.kind !== 'sodo'
+    // 아무도 안 쥔 빈땅은 칠 데가 아니다 — 장정이 없다. 개척(settle)이나 깃발 꽂기로 쥔다
+    const hostile = node.owner !== null && node.owner !== faction && node.kind !== 'sodo'
     const k = known[to]
     const { win, age } = winVs(r, faction, to, myF)
     const al = k?.alert ? alertRange(k.alert.v, r.season - k.alert.season) : null

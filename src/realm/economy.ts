@@ -7,10 +7,12 @@
  *   늘   — 군대는 곡식을 먹는다 (겨울 × winterRation). 바닥나면 사기가 떨어지고 가호가 준다
  *         곡식이 있고 싸움이 없던 고을은 가호가 조금씩 는다
  * 장정(군대 없는 고을을 지키는 사람)도 가호에 비례한다.
+ * 개척 — 제 고을 사람을 맞닿은 빈땅으로 옮긴다 (settleLimit). 새 마을은 품(room)까지 settleGrow 로 빨리 큰다.
  *
  * 순수 함수만 — season.ts 가 부른다. 이 파일은 season.ts 를 부르지 않는다 (고리를 만들지 않는다).
  */
 import { P } from '../tune/params.ts'
+import { blockedWhy, seasonOf } from './calendar.ts'
 import type { ReportLine, Realm, Stock } from './types.ts'
 
 function menIn(mix: Readonly<Partial<Record<string, number>>>): number {
@@ -64,6 +66,51 @@ export function draftLimit(r: Realm, faction: string, node: string): number {
   const cap = Math.floor(R.draftCap * (hhOf(r, faction) + men)) - men
   const grain = R.draftGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.draftGrain) : Infinity
   return Math.max(0, Math.min(per, cap, grain))
+}
+
+export function settleCost(n: number): { grain: number } {
+  return { grain: Math.ceil(n * P.realm.settleGrain) }
+}
+
+/** 이 길이 `from` 과 `to` 를 잇는가 — 이으면 그 길 */
+function edgeBetween(r: Realm, from: string, to: string) {
+  for (const id of Object.keys(r.edges).sort()) {
+    const ed = r.edges[id]!
+    if ((ed.a === from && ed.b === to) || (ed.a === to && ed.b === from)) return ed
+  }
+  return null
+}
+
+/**
+ * 개척 (FLOW §2) — `from` 에서 빈땅 `to` 로 이번 계절에 보낼 수 있는 가호 수. 안 되면 0.
+ * 셋 가운데 작은 것: from 가호의 settleShare · to 에 남은 품(room − hh) · 창고가 대는 곡식.
+ * 길로 맞닿고 그 길이 이번 계절에 열려 있어야 하고, to 는 아무도 안 쥐었거나 제 땅이며 남의 군대가 머물지 않아야 한다.
+ */
+export function settleLimit(r: Realm, faction: string, from: string, to: string): number {
+  const R = P.realm
+  const a = r.nodes[from]
+  const b = r.nodes[to]
+  if (a === undefined || b === undefined || a.owner !== faction || a.kind === 'sodo') return 0
+  if (b.kind !== 'wild' || (b.owner !== null && b.owner !== faction)) return 0
+  const ed = edgeBetween(r, from, to)
+  if (ed === null || blockedWhy(ed, seasonOf(r.season)) !== null) return 0
+  if (Object.values(r.armies).some((x) => x.at === to && x.march === null && x.faction !== faction)) return 0
+  const share = Math.floor(a.hh * R.settleShare)
+  const room = Math.max(0, (b.room ?? 0) - b.hh)
+  const grain = R.settleGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.settleGrain) : Infinity
+  return Math.max(0, Math.min(share, room, grain))
+}
+
+/** 지금 개척할 수 있는 짝 — 빈땅 id, 떠나는 고을 id 순서 (결정론) */
+export function settleTargets(r: Realm, faction: string): Array<{ from: string; to: string; edge: string }> {
+  const out: Array<{ from: string; to: string; edge: string }> = []
+  for (const id of Object.keys(r.edges).sort()) {
+    const ed = r.edges[id]!
+    for (const [from, to] of [[ed.a, ed.b], [ed.b, ed.a]] as const) {
+      if (settleLimit(r, faction, from, to) > 0) out.push({ from, to, edge: ed.id })
+    }
+  }
+  return out.sort((x, y) => (x.to < y.to ? -1 : x.to > y.to ? 1 : x.from < y.from ? -1 : x.from > y.from ? 1 : 0))
 }
 
 /** 이 계절에 나라가 군대를 먹이는 데 드는 곡식 */
@@ -124,10 +171,14 @@ export function stepEconomy(r: Realm, season: number, fought: ReadonlySet<string
         if (a.faction === f) a.morale = Math.max(R.moraleFloor, a.morale - R.hungerMorale)
       }
     }
-    // 가호 — 굶으면 줄고, 먹고 싸움이 없으면 는다
+    // 가호 — 굶으면 줄고, 먹고 싸움이 없으면 는다. 개척한 빈땅은 품(room)까지 빨리 큰다
     for (const n of nodes) {
       if (hungry) n.hh = Math.round(n.hh * (1 - R.hhHunger))
-      else if (!fought.has(n.id)) n.hh = Math.round(n.hh * (1 + R.hhGrowth))
+      else if (fought.has(n.id)) continue
+      else if (n.kind === 'wild') {
+        const room = n.room ?? 0
+        if (n.hh > 0 && n.hh < room) n.hh = Math.min(room, Math.max(n.hh + 1, Math.round(n.hh * (1 + R.settleGrow))))
+      } else n.hh = Math.round(n.hh * (1 + R.hhGrowth))
     }
   }
   // 봄이 끝날 때 심는다 — 봄 징병(1단계)이 지난 뒤의 가호

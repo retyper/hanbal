@@ -14,6 +14,8 @@ import type { Army, Faction, Hero, Mind, NodeIntel, REdge, Realm, RNode, Stock, 
 
 const node = (id: string, name: string, kind: RNode['kind'], tags: RNode['tags'], owner: string | null, hh: number): RNode =>
   ({ id, name, kind, tags, owner, hh, sown: hh })
+const wild = (id: string, name: string, tags: RNode['tags'], room: number): RNode =>
+  ({ id, name, kind: 'wild', tags, owner: null, hh: 0, sown: 0, room })
 
 const NODES: RNode[] = [
   // 갯마을 — 남쪽 바닷가 작은 나라 (국읍 하나 · 읍락 둘, PLAY §4) · 가호 600 (WORLD §4-1)
@@ -38,32 +40,60 @@ const NODES: RNode[] = [
   node('dokro-cap', '독로 포구', 'port', ['palisade'], 'dokro', 600),
   // 소도 — 누구의 땅도 아니다. 침범 금지 (SYSTEMS §8-4) [사료]
   node('sodo', '큰나무 소도', 'sodo', ['sodo'], null, 0),
+  // 빈땅 — 아무도 안 산다. 사람을 보내 개척하면 품(room)까지 빨리 큰다 (FLOW §2). 나라 사이 길이 여럿이 된다
+  wild('wild-galmae', '갈매봉 기슭', ['pines'], 200),
+  wild('wild-beodeul', '버들내 들', ['reeds'], 300),
+  wild('wild-gomgol', '곰골', ['high'], 150),
+  wild('wild-neoreun', '너른벌', [], 250),
+  wild('wild-seobu', '쇠골 갯가', [], 200),
+  wild('wild-keunseom', '큰섬', ['fog'], 180),
+  wild('wild-dolseom', '돌섬', [], 150),
 ]
 
 const e = (id: string, a: string, b: string, kind: REdge['kind'], tags: REdge['tags'] = []): REdge => ({ id, a, b, kind, tags })
 
+/**
+ * 길 (2026-10-18 형: "공격루트가 고을사이 너무 단순한거 아님?") — 빈땅 일곱을 사이에 끼워 나라 사이 길을 여럿으로.
+ * 구야 국읍이 국읍 셋과 바로 붙어 혼자 셌다 (봇 대전 이김 33%): 갯마을 뱃길(옛 e04)은 돌섬을 거치고,
+ * 철산은 국읍이 아니라 봉황 읍락에 붙고(e11), 철산–독로 고개(옛 e13)는 너른벌을, 남강 산성–미리미동 나루(옛 e18)는 버들내를 거친다.
+ * 지운 id 는 다시 쓰지 않는다 — 옛 저장·기록과 섞이지 않게.
+ */
 const EDGES: REdge[] = [
   e('e01', 'our-cap', 'our-north', 'field'),
   e('e02', 'our-cap', 'our-east', 'field'),
   e('e03', 'our-cap', 'goja-vil', 'sea'),
-  e('e04', 'our-cap', 'guya-cap', 'sea'),
   e('e05', 'our-north', 'anya-cap', 'field'),
   e('e06', 'our-north', 'miri-vil', 'ford', ['reeds']), // 낙동강 갈대 나루 — PLAY §4 의 그 나루
   e('e07', 'our-north', 'sodo', 'forest'),
   e('e08', 'our-east', 'miri-vil', 'reeds'),
   e('e09', 'our-east', 'guya-vil', 'mudflat'),
   e('e10', 'guya-vil', 'guya-cap', 'field'),
-  e('e11', 'guya-cap', 'guya-iron', 'pass'),
+  e('e11', 'guya-vil', 'guya-iron', 'pass'),
   e('e12', 'guya-cap', 'dokro-cap', 'sea'),
-  e('e13', 'guya-iron', 'dokro-cap', 'pass'),
   e('e14', 'guya-iron', 'miri-cap', 'forest'),
   e('e15', 'miri-vil', 'miri-cap', 'field'),
   e('e16', 'miri-vil', 'sodo', 'reeds'),
   e('e17', 'anya-cap', 'anya-fort', 'pass'),
-  e('e18', 'anya-fort', 'miri-cap', 'ford'), // 남강이 낙동강에 드는 나루
   e('e19', 'anya-cap', 'anya-vil', 'forest'),
   e('e20', 'anya-vil', 'goja-cap', 'pass'),
   e('e21', 'goja-cap', 'goja-vil', 'field'),
+  // 빈땅을 지나는 길
+  e('e22', 'anya-vil', 'wild-galmae', 'forest'),
+  e('e23', 'wild-galmae', 'anya-fort', 'pass'),
+  e('e24', 'sodo', 'wild-beodeul', 'forest'),
+  e('e25', 'miri-cap', 'wild-gomgol', 'pass'),
+  e('e26', 'wild-gomgol', 'guya-iron', 'pass'),
+  e('e27', 'guya-iron', 'wild-neoreun', 'pass'),
+  e('e28', 'wild-neoreun', 'guya-vil', 'field'),
+  e('e29', 'wild-neoreun', 'dokro-cap', 'field'),
+  e('e30', 'anya-vil', 'wild-seobu', 'field'),
+  e('e31', 'wild-seobu', 'goja-cap', 'field'),
+  e('e32', 'goja-cap', 'wild-keunseom', 'sea'),
+  e('e33', 'goja-vil', 'wild-keunseom', 'sea'),
+  e('e34', 'our-cap', 'wild-dolseom', 'sea'),
+  e('e35', 'wild-dolseom', 'guya-cap', 'sea'),
+  e('e37', 'anya-fort', 'wild-beodeul', 'field'),
+  e('e38', 'wild-beodeul', 'miri-cap', 'ford'), // 남강이 낙동강에 드는 나루
 ]
 
 /** 나라마다: AI 일 때의 성향 · 새 군사의 장비 · 바깥 교역 · 시작 창고 */

@@ -14,7 +14,7 @@ import type { Source } from './intel.ts'
 export type SeasonOfYear = 'spring' | 'summer' | 'autumn' | 'winter'
 
 /** 고을 종류 (SYSTEMS §1-1) */
-export type NodeKind = 'capital' | 'village' | 'sodo' | 'port' | 'fort' | 'ironMine'
+export type NodeKind = 'capital' | 'village' | 'sodo' | 'port' | 'fort' | 'ironMine' | 'wild'
 
 /**
  * 지형 꼬리표 (SYSTEMS §1-2) — 화면에는 숫자가 아니라 문장으로 나간다 (data/prose).
@@ -36,6 +36,8 @@ export interface RNode {
   hh: number
   /** 봄에 심은 가호 — 가을 수확은 이것이 정한다 (FLOW §1: 봄 징병은 그해 농사를 깎는다) */
   sown: number
+  /** 빈땅(kind 'wild')만 — 이 땅이 품을 수 있는 가호 상한. 개척해 사람을 보내면 여기까지 빨리 큰다 (economy.settleLimit) */
+  readonly room?: number
 }
 
 export interface REdge {
@@ -171,6 +173,8 @@ export type Order =
   | { readonly kind: 'draft'; readonly faction: string; readonly node: string; readonly unit: UnitKind; readonly n: number }
   /** 해산 — 제 고을에 쉬는 군대를 집으로 (사람은 그 고을 가호로 돌아간다) */
   | { readonly kind: 'disband'; readonly army: string }
+  /** 개척 — 제 고을 `from` 의 가호 n 을 길로 맞닿은 빈땅 `to` 로 옮긴다. 곡식이 든다 (economy.settleLimit · settleCost) */
+  | { readonly kind: 'settle'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number }
   /** 사신 (FLOW §4) — 한 나라가 한 계절에 하나. give 는 보내는 쪽이, take 는 받는 쪽이 내놓는다 */
   | {
       readonly kind: 'envoy'
@@ -209,6 +213,7 @@ export type ReportLine =
   | { readonly kind: 'harvest'; readonly faction: string; readonly grain: number }
   | { readonly kind: 'draft'; readonly faction: string; readonly node: string; readonly unit: UnitKind; readonly n: number; readonly army: string }
   | { readonly kind: 'disband'; readonly army: string; readonly node: string; readonly n: number }
+  | { readonly kind: 'settle'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number }
   | { readonly kind: 'hunger'; readonly faction: string }
   | { readonly kind: 'envoy'; readonly from: string; readonly to: string; readonly ask: EnvoyAsk; readonly accepted: boolean }
   | { readonly kind: 'relation'; readonly a: string; readonly b: string; readonly state: Relation['state'] }
