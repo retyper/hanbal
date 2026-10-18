@@ -304,7 +304,7 @@ export const HERO_ART = true
  *   3. 몸은 사법 자세로 다시 받았다 — 발을 넓게 딛고 가슴을 열고 머리만 과녁을 본다. 가슴이 보는 사람을 향하므로 어깨가 둘이다:
  *      활팔은 과녁 쪽(화면 오른쪽) 어깨, 시위팔은 반대쪽 어깨.
  */
-interface HeroArt {
+export interface HeroArt {
   /** 턱(앵커)의 자리 */
   readonly jawU: number
   readonly jawV: number
@@ -328,6 +328,22 @@ const HERO: Record<'plain' | 'a0' | 'a1' | 'a2', HeroArt> = {
 /** drawHeroArt 가 채우는 두 어깨의 화면 자리. */
 export const HERO_SH = { bowX: 0, bowY: 0, strX: 0, strY: 0 }
 
+/**
+ * 다른 판이 주인공의 몸을 바꿔 끼우는 자리 — 밤의 암살판(src/night)의 여자 자객 (docs/realm/SNIPE.md §0-1).
+ * **활터는 이걸 부르지 않는다** — null 이면 위의 HERO 그대로라 활터 화면은 한 픽셀도 안 바뀐다.
+ * `body` 는 public/sprites/ 의 그림 이름, `art` 는 그 그림의 턱·어깨·발 비율. 팔은 소매 그림 대신 `sleeve`·`skin` 색의 선이다.
+ */
+export interface HeroSkin {
+  readonly body: string
+  readonly art: HeroArt
+  readonly sleeve: string
+  readonly skin: string
+}
+let heroSkin: HeroSkin | null = null
+export function setHeroSkin(s: HeroSkin | null): void {
+  heroSkin = s
+}
+
 /** 그 갑옷의 그림이 있는가 — 없는 벌은 부르는 쪽이 벡터 몸을 그린다. */
 export function heroArtName(armorOn: boolean, armorLook: number): keyof typeof HERO | null {
   if (!HERO_ART) return null
@@ -343,9 +359,9 @@ export function heroArtName(armorOn: boolean, armorLook: number): keyof typeof H
 export function drawHeroArt(
   ctx: CanvasRenderingContext2D, name: keyof typeof HERO, jawX: number, jawY: number, footY: number, faceLeft: boolean,
 ): boolean {
-  const im = sprite(`hero-${name}`)
+  const im = sprite(heroSkin?.body ?? `hero-${name}`)
   if (im === null) return false
-  const art = HERO[name]
+  const art = heroSkin?.art ?? HERO[name]
   const span = (art.footV - art.jawV) * im.naturalHeight
   if (span <= 0 || footY <= jawY) return false
   const s = (footY - jawY) / span
@@ -437,6 +453,26 @@ export function drawArmArt(
   ctx: CanvasRenderingContext2D, skin: ArmSkin,
   x0: number, y0: number, jx: number, jy: number, x1: number, y1: number, wide: number,
 ): boolean {
+  // 바꿔 끼운 몸(setHeroSkin)이면 주인공의 팔은 소매 색 선 — 윗팔과 아래팔은 소매, 손목 끝만 살색
+  if (skin === 'hero' && heroSkin !== null) {
+    ctx.lineCap = 'round'
+    ctx.strokeStyle = heroSkin.sleeve
+    ctx.lineWidth = wide * 0.95
+    ctx.beginPath()
+    ctx.moveTo(x0, y0)
+    ctx.lineTo(jx, jy)
+    const hx = jx + (x1 - jx) * 0.78
+    const hy = jy + (y1 - jy) * 0.78
+    ctx.lineTo(hx, hy)
+    ctx.stroke()
+    ctx.strokeStyle = heroSkin.skin
+    ctx.lineWidth = wide * 0.6
+    ctx.beginPath()
+    ctx.moveTo(hx, hy)
+    ctx.lineTo(x1, y1)
+    ctx.stroke()
+    return true
+  }
   const a = ARM[skin]
   const up = sprite(a.upper)
   const fore = sprite(a.fore)
