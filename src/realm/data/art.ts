@@ -1,0 +1,83 @@
+/**
+ * 나라의 그림 — 누가 어떤 얼굴, 고을이 어떤 기호, 나라가 어떤 깃발 (docs/realm/ART.md · 담기는 tools/realm-plate.ps1)
+ *
+ * 화면(ui)만 읽는다. 판(realm 상태)에는 그림이 없다 — 그림을 바꿔도 저장·리플레이가 안 흔들린다.
+ * 파일은 public/realm/ 아래 이름이다 (굽기 전 원본은 assets_src/realm/, gitignore).
+ * 지도 위 자리는 map/spring.jpg (1264×848) 위의 비율 0~1 — 변한 축소판의 [상상 배치]를 낙동강·남강 그림에 얹었다.
+ */
+import type { NodeKind, RNode } from '../types.ts'
+
+/** 장수 id → 명치판 (bust/<이름>.jpg). g- 남자 장수 · w- 여인 · l- 전설 */
+export const HERO_BUST: Readonly<Record<string, string>> = {
+  chief: 'g-02-goguryeo-archer-prince', // 플레이어 — 활 쏘는 군장 (신궁)
+  'guya-1': 'g-11-gaya-iron-general', // 진지렴 거타 — 구야국의 철
+  'guya-2': 'g-04-jinhan-giant', // 험측 마루
+  'anya-1': 'w-04-gaya-swordswoman', // 신지 아라 — 안야국의 여 신지
+  'anya-2': 'w-13-young-archer', // 번예 솔미
+  'miri-1': 'g-07-drunk-warrior', // 읍차 갈미 — PLAY §4 의 술꾼
+  'goja-1': 'g-03-sea-trader', // 살해 바다쇠
+  'dokro-1': 'w-10-pirate-captain', // 읍차 너울 — 왜와 경계를 맞댄 포구
+}
+
+/** 나라 id → 깃발 (icon/emblem-*.png) · 지도의 테두리 색 */
+export const FACTION_ART: Readonly<Record<string, { emblem: string; color: string }>> = {
+  us: { emblem: 'emblem-wave', color: '#9fd18b' },
+  guya: { emblem: 'emblem-fish', color: '#e0b64a' }, // 쌍어 — 김해
+  anya: { emblem: 'emblem-mountain', color: '#d0674f' },
+  miri: { emblem: 'emblem-grain', color: '#6fa8dc' },
+  goja: { emblem: 'emblem-sun', color: '#4fc1b0' },
+  dokro: { emblem: 'emblem-boar', color: '#b48ad8' },
+}
+
+const KIND_ICON: Readonly<Record<NodeKind, string>> = {
+  capital: 'settle-capital',
+  village: 'settle-farm-village',
+  sodo: 'settle-sodo-village',
+  port: 'settle-port-town',
+  fort: 'settle-hill-fort',
+  ironMine: 'settle-iron-town',
+}
+
+/** 고을 기호 — 종류가 바탕, 지형이 다르면 고을마다 바꾼다 */
+const NODE_ICON: Readonly<Record<string, string>> = {
+  'our-north': 'settle-hamlet',
+  'our-east': 'settle-river-town',
+  'miri-vil': 'settle-river-town',
+  'goja-vil': 'settle-salt-town',
+  'anya-vil': 'settle-mountain-hold',
+}
+
+export function nodeIcon(n: RNode): string {
+  return NODE_ICON[n.id] ?? KIND_ICON[n.kind]
+}
+
+/** 지도 위 자리 (비율) — 변한 축소판 */
+export const NODE_POS: Readonly<Record<string, readonly [number, number]>> = {
+  'miri-cap': [0.6, 0.27],
+  'miri-vil': [0.51, 0.43],
+  sodo: [0.43, 0.33],
+  'anya-fort': [0.37, 0.22],
+  'anya-cap': [0.31, 0.52],
+  'anya-vil': [0.18, 0.5],
+  'goja-cap': [0.24, 0.72],
+  'goja-vil': [0.38, 0.69],
+  'our-north': [0.43, 0.52],
+  'our-cap': [0.5, 0.66],
+  'our-east': [0.58, 0.55],
+  'guya-vil': [0.67, 0.5],
+  'guya-cap': [0.72, 0.66],
+  'guya-iron': [0.75, 0.3],
+  'dokro-cap': [0.88, 0.64],
+}
+
+/** 계절 → 지도 바탕 (같은 땅의 네 철, ART ⑪) */
+export const SEASON_MAP = { spring: 'spring', summer: 'summer', autumn: 'autumn', winter: 'winter' } as const
+
+/** 병종 → 아이콘 */
+export const UNIT_ICON = {
+  spear: 'unit-spear', bow: 'unit-archer', pike: 'unit-pike', shield: 'unit-shield-wall',
+  horse: 'unit-buyeo-cavalry', crossbow: 'unit-han-crossbow', boat: 'unit-boatmen',
+} as const
+
+/** 계절 → 아이콘 */
+export const SEASON_ICON = { spring: 'status-spring', summer: 'status-summer', autumn: 'status-autumn', winter: 'status-winter' } as const

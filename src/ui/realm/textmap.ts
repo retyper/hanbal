@@ -17,8 +17,18 @@ import { P } from '../../tune/params.ts'
 import {
   BLOCKED_LINE, EDGE_NAME, NODE_KIND_NAME, OUTCOME_NAME, SEASON_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel,
 } from '../../realm/data/prose.ts'
-import type { Army, Order, Realm, Report } from '../../realm/types.ts'
+import { FACTION_ART, HERO_BUST, SEASON_ICON, UNIT_ICON } from '../../realm/data/art.ts'
+import type { Army, Hero, Order, Realm, Report } from '../../realm/types.ts'
 import type { UnitKind } from '../../realm/battle.ts'
+import { MAP_CSS, mapHtml, type MapMarch } from './mapview.ts'
+
+/** public/realm/ — 그림은 tools/realm-plate.ps1 이 굽는다. 빌드가 주입하는 BASE_URL 만이 진실이다 */
+const ART: string = (import.meta.env?.BASE_URL ?? '/') + 'realm/'
+const icon = (name: string, cls = 'ic'): string => `<img class="${cls}" src="${ART}icon/${name}.png" alt="">`
+const bust = (h: Hero, cls = 'face'): string =>
+  HERO_BUST[h.id] !== undefined ? `<img class="${cls}" src="${ART}bust/${HERO_BUST[h.id]}.jpg" alt="${h.name}">` : ''
+const emblem = (faction: string | null): string =>
+  faction !== null && FACTION_ART[faction] !== undefined ? icon(FACTION_ART[faction].emblem, 'em') : ''
 
 export interface TextMapHost {
   /** 계절을 넘긴 뒤 — 저장은 바깥이 한다 */
@@ -48,19 +58,61 @@ const CSS = `
 .rm .split { margin: 4px 0 6px; font-size: 13px; color: #b9b0a0; } .rm .split input[type=number] { width: 4em; font: inherit; background: #1c2129; color: #e2dbcd; border: 1px solid #4a5260; padding: 1px 3px; }
 .rm .note { border-color: #8a5a3a; color: #e8c3a0; }
 .rm select { font: inherit; background: #1c2129; color: #e2dbcd; border: 1px solid #4a5260; padding: 3px; }
+.rm img.ic { width: 22px; height: 22px; vertical-align: -6px; margin-right: 2px; }
+.rm img.em { width: 20px; height: 20px; vertical-align: -5px; margin-right: 3px; }
+.rm img.season { width: 34px; height: 34px; vertical-align: -10px; margin-right: 4px; }
+.rm .card.army { display: flow-root; }
+.rm img.face { float: left; width: 72px; height: 72px; border-radius: 6px; border: 1px solid #4a5260; margin: 0 10px 4px 0; object-fit: cover; }
+.rm .scene { display: flex; gap: 12px; align-items: flex-end; margin: 8px 0; }
+.rm .scene img.ev { width: min(100%, 420px); border-radius: 6px; border: 1px solid #4a5260; }
+.rm .scene img.who { width: 120px; height: 120px; border-radius: 6px; border: 2px solid #d9b36a; object-fit: cover; }
+.rm .scene .brag { font-size: 18px; color: #f3e3bd; margin-top: 6px; }
+.rm .captive { display: inline-block; text-align: center; margin: 4px 10px 4px 0; font-size: 13px; }
+.rm .captive img { display: block; width: 96px; height: 96px; border-radius: 6px; border: 1px solid #8a5a3a; object-fit: cover; margin-bottom: 2px; }
 @media (max-width: 600px) { .rm { padding: 16px 12px; } .rm table { font-size: 13px; } }
 `
 
 function mixLine(mix: Partial<Record<UnitKind, number>>): string {
   return (Object.entries(mix) as Array<[UnitKind, number]>)
     .filter(([, n]) => n > 0)
-    .map(([k, n]) => `${UNIT_NAME[k]} ${n}`)
+    .map(([k, n]) => `${icon(UNIT_ICON[k])}${UNIT_NAME[k]} ${n}`)
     .join(' · ')
+}
+
+/**
+ * 지난 계절의 한 장면 — 우리에게 가장 큰 일 하나를 그림으로 (SYSTEMS §13 "자랑할 순간은 보고 맨 위에 크게").
+ * 사로잡음 > 적장 사살 > 기습 성공 > 우리 장수를 잃음. 없으면 그림 없이 줄만.
+ */
+function sceneOf(before: Realm, after: Realm, report: Report): string {
+  type Pick = { ev: string; hero: Hero | null; line: string }
+  let best: Pick | null = null
+  let rank = 0
+  for (const l of report.lines) {
+    if (l.kind !== 'battle') continue
+    const weAtk = before.armies[l.attacker]?.faction === ME
+    const weDef = l.defender === ME
+    if (!weAtk && !weDef) continue
+    const cap = l.captured !== null ? after.heroes[l.captured] : undefined
+    const dead = l.killed !== null ? after.heroes[l.killed] : undefined
+    const node = after.nodes[l.node]?.name ?? '?'
+    const cands: Array<[number, Pick]> = []
+    if (cap !== undefined && cap.captor === ME) cands.push([4, { ev: 'event-capture', hero: cap, line: `${cap.name}을(를) 사로잡았다 — ${node}` }])
+    if (dead !== undefined && dead.faction !== ME) cands.push([3, { ev: 'event-sniped-commander', hero: dead, line: `${dead.name}이(가) 쓰러졌다 — ${node}` }])
+    if (weAtk && l.ambush === 'success') cands.push([2, { ev: 'event-night-raid', hero: null, line: `기습이 먹혔다 — ${node}` }])
+    if ((cap !== undefined && cap.faction === ME) || (dead !== undefined && dead.faction === ME)) {
+      const h = (cap ?? dead)!
+      cands.push([1, { ev: 'event-sniped-commander', hero: h, line: `${h.name}을(를) 잃었다 — ${node}` }])
+    }
+    for (const [k, p] of cands) if (k > rank) { rank = k; best = p }
+  }
+  if (best === null) return ''
+  return `<div class="scene"><img class="ev" src="${ART}event/${best.ev}.jpg" alt="">`
+    + `${best.hero !== null ? bust(best.hero, 'who') : ''}</div><div class="brag">${esc(best.line)}</div>`
 }
 
 export function mountTextMap(root: HTMLElement, host: TextMapHost): { show(r: Realm, before: Realm | null, report: Report | null): void } {
   const style = document.createElement('style')
-  style.textContent = CSS
+  style.textContent = CSS + MAP_CSS
   document.head.appendChild(style)
   root.classList.add('rm')
 
@@ -135,14 +187,25 @@ export function mountTextMap(root: HTMLElement, host: TextMapHost): { show(r: Re
     const season = seasonOf(r.season)
     const mine = Object.values(r.nodes).filter((n) => n.owner === ME)
     const known = r.intel[ME] ?? {}
-    let h = `<h1>칠십팔국 — 시험판 <span class="sub">(글자 지도 · R1)</span></h1>`
-    h += `<div class="sub">${esc(seasonLabel(r.season))} · 우리 땅 ${mine.length}곳 · 지금은 ${SEASON_NAME[season]} — `
+    let h = `<h1>칠십팔국 — 시험판 <span class="sub">(R1)</span></h1>`
+    h += `<div class="sub">${icon(SEASON_ICON[season], 'season')}${esc(seasonLabel(r.season))} · 우리 땅 ${mine.length}곳 · 지금은 ${SEASON_NAME[season]} — `
     h += season === 'winter' ? '강이 언다. 고개는 막힌다.' : season === 'summer' ? '장마. 나루가 막히고 길이 느리다.' : season === 'autumn' ? '전쟁철.' : '파종.'
     h += `</div>`
 
+    // 그린 지도 — 길 위의 우리 군대와 이번 계절 고른 출정
+    const marches: MapMarch[] = []
+    for (const a of Object.values(r.armies)) {
+      if (a.faction !== ME) continue
+      if (a.march !== null) marches.push({ from: a.march.from, to: a.march.to, left: a.march.left })
+      const c = pick[a.id]
+      const ed = c !== undefined && a.march === null ? r.edges[c.edge] : undefined
+      if (ed !== undefined) marches.push({ from: a.at, to: ed.a === a.at ? ed.b : ed.a, left: null })
+    }
+    h += mapHtml(r, ME, ART, marches, scout)
+
     if (report !== null && before !== null) {
       const lines = report.lines.map((l) => reportText(before, r, l, ME)).filter((x): x is string => x !== null)
-      h += `<h2>지난 계절 (${esc(seasonLabel(report.season))})</h2><div class="card rep">`
+      h += `<h2>지난 계절 (${esc(seasonLabel(report.season))})</h2>${sceneOf(before, r, report)}<div class="card rep">`
       h += lines.length === 0 ? '<p class="rumor">조용히 지나갔다.</p>' : lines.map((t) => `<p class="${t.startsWith('소문') ? 'rumor' : ''}">${esc(t)}</p>`).join('')
       h += `</div>`
     }
@@ -154,8 +217,9 @@ export function mountTextMap(root: HTMLElement, host: TextMapHost): { show(r: Re
     if (note !== '') h += `<div class="card note">${esc(note)}</div>`
     note = ''
     for (const a of armies) {
-      h += `<div class="card"><b>${esc(armyLabel(r, a))}</b> · ${esc(r.nodes[a.at]?.name ?? '?')} · `
-      h += `${headcount(forceOf(r, a))}명 <span class="tag">(${esc(mixLine(a.mix))})</span>`
+      const hero = a.hero !== null ? r.heroes[a.hero] : undefined
+      h += `<div class="card army">${hero !== undefined ? bust(hero) : ''}<b>${esc(armyLabel(r, a))}</b> · ${esc(r.nodes[a.at]?.name ?? '?')} · `
+      h += `${headcount(forceOf(r, a))}명 <span class="tag">(${mixLine(a.mix)})</span>`
       if (realm.armies[a.id] === undefined) h += ` <span class="tag">— 이번 계절에 떼어 냄</span>`
       if (a.march !== null) {
         h += `<div>→ ${esc(r.nodes[a.march.to]?.name ?? '?')} 가는 길 — ${a.march.left}계절 남음${a.march.ambush ? ' · 기습' : ''}</div></div>`
@@ -230,13 +294,17 @@ export function mountTextMap(root: HTMLElement, host: TextMapHost): { show(r: Re
       const tags = k?.land || ours ? n.tags.map((t) => TAG_LINE[t]).join(' ') : ''
       h += `<tr><td class="${ours ? 'ours' : ''}">${esc(n.name)} <span class="tag">${NODE_KIND_NAME[n.kind]}</span>`
       h += `${tags !== '' ? `<div class="tag">${esc(tags)}</div>` : ''}<div class="tag">길: ${esc(roads)}</div></td>`
-      h += `<td>${esc(n.owner === null ? '—' : (r.factions[n.owner]?.name ?? '?'))}</td><td>${force}</td><td>${alert}</td></tr>`
+      h += `<td>${emblem(n.owner)}${esc(n.owner === null ? '—' : (r.factions[n.owner]?.name ?? '?'))}</td><td>${force}</td><td>${alert}</td></tr>`
     }
     h += `</table>`
 
     // 포로
     const captives = Object.values(r.heroes).filter((x) => x.status === 'captive' && x.captor === ME)
-    if (captives.length > 0) h += `<h2>사로잡은 장수</h2><div class="card">${captives.map((x) => esc(`${x.name} (무${x.mu} 략${x.ryak} 치${x.chi} 덕${x.deok})`)).join('<br>')}</div>`
+    if (captives.length > 0) {
+      h += `<h2>사로잡은 장수</h2><div class="card">`
+      h += captives.map((x) => `<span class="captive">${bust(x, '')}${esc(x.name)}<br><span class="tag">무${x.mu} 략${x.ryak} 치${x.chi} 덕${x.deok}</span></span>`).join('')
+      h += `</div>`
+    }
 
     h += `<p style="margin-top:24px"><button id="rm-next">다음 계절 →</button> <button class="ghost" id="rm-new">새 판</button></p>`
     h += `<p class="sub">결과 칸: ${Object.values(OUTCOME_NAME).join(' · ')}. 승률은 아는 만큼 범위로 보인다 — 정찰로 좁힌다.</p>`
@@ -296,7 +364,17 @@ export function mountTextMap(root: HTMLElement, host: TextMapHost): { show(r: Re
     }
     root.querySelector<HTMLSelectElement>('#rm-scout')!.addEventListener('change', (ev) => {
       scout = (ev.target as HTMLSelectElement).value
+      rerender()
     })
+    // 지도의 고을을 누르면 정찰할 곳으로 — 정찰할 수 있는 곳일 때만 (다시 누르면 거둔다)
+    for (const el of root.querySelectorAll<HTMLElement>('.map .nd')) {
+      el.addEventListener('click', () => {
+        const id = el.dataset['node']!
+        if (!scoutable.includes(id)) return
+        scout = scout === id ? '' : id
+        rerender()
+      })
+    }
     root.querySelector('#rm-next')!.addEventListener('click', () => {
       const mineOrders = ordersNow()
       const all = [...mineOrders, ...aiOrders(realm)]
