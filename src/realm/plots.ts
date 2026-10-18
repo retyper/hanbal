@@ -16,7 +16,7 @@ import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { addFavor, relationOf, worsen } from './diplomacy.ts'
 import { stockOf } from './economy.ts'
-import { armyOfHero, hasTrait, heroAt, heroSeen, isRuler, plotBonus } from './heroes.ts'
+import { armyOfHero, gainXp, hasTrait, heroAt, heroSeen, isRuler, plotBonus } from './heroes.ts'
 import { alertRange } from './intel.ts'
 import { nodeStrength } from './season.ts'
 import type { Order, PlotOp, Realm, ReportLine } from './types.ts'
@@ -252,6 +252,9 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
         }
         worsen(r, o.faction, o.target, lines)
       }
+      // 해낸 자객 장수는 지략이 자란다 (HEROES §6) — 들켜 잡혔으면 아니다
+      const ag = o.agent !== undefined ? r.heroes[o.agent] : undefined
+      if (ok && ag !== undefined) gainXp(ag, 'ryak', R.xpPlot, lines)
     }
     if (ok && o.op !== 'assassin') {
       switch (o.op) {

@@ -31,7 +31,7 @@ import { blockedWhy, seasonOf } from './calendar.ts'
 import { refreshSpies, resolvePlots } from './plots.ts'
 import { noteTake } from './stance.ts'
 import {
-  ambushTraitOf, applyHeroOrders, bowMulOf, commandOf, escapeOf, hasTrait, heroesAtNode, ironhandAt, noteMet, stepHeroes, sweepHeroes,
+  ambushTraitOf, applyHeroOrders, battleGrowth, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroesAtNode, ironhandAt, noteMet, stepHeroes, sweepHeroes,
 } from './heroes.ts'
 import type {
   Army, EdgeKind, Order, Realm, REdge, Report, ReportLine, RNode, SeasonOfYear, SnipeZone,
@@ -105,7 +105,7 @@ function heroOf(r: Realm, a: Army) {
 
 export function forceOf(r: Realm, a: Army): Force {
   const h = heroOf(r, a)
-  return { mix: a.mix, equip: a.equip, mu: commandOf(h), bowMul: bowMulOf(h), morale: a.morale }
+  return { mix: a.mix, equip: a.equip, mu: commandOf(h), bowMul: bowMulOf(h), morale: a.morale + bondMoraleOf(r, h) }
 }
 
 /** 여러 군대를 한 판정 입력으로 — 병력은 더하고, 장비·지휘는 가장 큰 군대·가장 센 장수의 것 */
@@ -122,7 +122,7 @@ function mergeForces(r: Realm, armies: readonly Army[]): Force {
     if (biggest === null || c > headcount(forceOf(r, biggest))) biggest = a
     mu = Math.max(mu, commandOf(heroOf(r, a)))
     bowMul = Math.max(bowMul, bowMulOf(heroOf(r, a)))
-    moraleSum += a.morale * c
+    moraleSum += (a.morale + bondMoraleOf(r, heroOf(r, a))) * c // 믿는 장수의 덤 (HEROES §6)
     n += c
   }
   return { mix, equip: biggest?.equip ?? 'stone', mu, bowMul, morale: n > 0 ? moraleSum / n : 1 }
@@ -548,9 +548,15 @@ function fieldBattles(r: Realm, lines: ReportLine[]): void {
       const atkWon = outcome === 'rout' || outcome === 'win'
       const atkLost = outcome === 'lose' || outcome === 'routed'
       let fateOf = { captured: null as string | null, killed: null as string | null }
+      const atkHeroes = atks.map((x) => x.hero)
+      const defHeroes = defs.map((x) => x.hero)
       if (atkWon || atkLost) {
         fateOf = heroFate(r, atkWon ? defs : atks, atkWon ? lead.faction : defs[0]!.faction, outcome, 0, `field-fate:${eid}:${lead.id}`)
       }
+      // 이끈 장수가 자란다 (HEROES §6) — 사로잡히거나 죽은 이는 빠진다
+      if (atkWon) battleGrowth(r, atkHeroes, defHeroes, [], lines)
+      else if (atkLost) battleGrowth(r, defHeroes, atkHeroes, [], lines)
+      else battleGrowth(r, [], [], [...atkHeroes, ...defHeroes], lines)
       // 진 쪽(교착이면 둘 다)은 떠난 고을로 — 그새 남이 쥐었으면 이웃의 제 땅, 없으면 흩어진다
       const back = (g: Army[]): void => {
         for (const x of g) {
@@ -637,6 +643,8 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const atkLost = outcome === 'lose' || outcome === 'routed'
   let captured: string | null = null
   let killed: string | null = null
+  const atkHeroes = atks.map((x) => x.hero)
+  const defHeroes = defenders.map((x) => x.hero)
   if (atkWon || atkLost) {
     const sniped = atkWon === playerIsAtk // 플레이어가 쏜 쪽이 진 쪽이다
     let bonus = 0
@@ -645,6 +653,10 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
     if (sniped && zone === 'body') bonus += R.captureBodyShot
     ;({ captured, killed } = heroFate(r, atkWon ? defenders : atks, atkWon ? a.faction : defFaction, outcome, bonus, `fate:${key}`))
   }
+  // 이끈 장수가 자란다 (HEROES §6) — 사로잡히거나 죽은 이는 빠진다
+  if (atkWon) battleGrowth(r, atkHeroes, defHeroes, [], lines)
+  else if (atkLost) battleGrowth(r, defHeroes, atkHeroes, [], lines)
+  else battleGrowth(r, [], [], [...atkHeroes, ...defHeroes], lines)
 
   // 자리 — 이기면 다 함께 들어가 고을을 쥐고, 지거나 교착이면 저마다 떠난 고을로 돌아간다
   const from = new Map(atks.map((x) => [x.id, x.march!.from]))

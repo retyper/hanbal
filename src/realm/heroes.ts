@@ -9,7 +9,7 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { HERO_POOL } from './data/heroes-pool.ts'
-import type { EdgeKind, Hero, Order, Realm, ReportLine } from './types.ts'
+import type { EdgeKind, GrowStat, Hero, Order, Realm, ReportLine } from './types.ts'
 
 const byId = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 
@@ -237,7 +237,9 @@ export function persuadeSeasons(r: Realm, hero: string, by: string | null): numb
   const R = P.realm
   const b = by !== null ? r.heroes[by] : undefined
   const him = r.heroes[hero]
-  let n = R.persuadeSeasons + Math.round(((him?.uiri ?? 5) - (b !== undefined ? deokOf(b) : 3)) * R.persuadeUiriPer)
+  // 옛 주인을 믿던 장수는 잘 안 넘어온다 (정 — HEROES §6)
+  const loyal = him !== undefined && (bondOf(r, him) ?? 0) >= R.bondTrust ? R.bondUiri : 0
+  let n = R.persuadeSeasons + Math.round(((him?.uiri ?? 5) + loyal - (b !== undefined ? deokOf(b) : 3)) * R.persuadeUiriPer)
   if (hasTrait(b, 'charm')) n -= 1
   if (isRuler(r, hero)) n += 2
   return Math.max(1, n)
@@ -260,7 +262,7 @@ function hire(r: Realm, o: Extract<Order, { kind: 'hire' }>, lines: ReportLine[]
   const st = (r.stock[o.faction] ??= { grain: 0, iron: 0 })
   if (st.grain < w.price) return
   st.grain -= w.price
-  r.heroes[w.hero.id] = { ...structuredClone(w.hero), faction: o.faction, status: 'free', captor: null, at: w.node, post: null }
+  r.heroes[w.hero.id] = { ...structuredClone(w.hero), faction: o.faction, status: 'free', captor: null, at: w.node, post: null, bond: P.realm.bondHired }
   list.splice(i, 1)
   lines.push({ kind: 'recruit', hero: w.hero.id, faction: o.faction, how: 'wanderer' })
 }
@@ -358,13 +360,19 @@ export function stepHeroes(r: Realm, lines: ReportLine[]): void {
     h.persuade.left -= 1
     if (h.persuade.left > 0) continue
     const to = h.captor
+    const by = h.persuade.by
     delete h.persuade
     h.faction = to
     h.status = 'free'
     h.captor = null
     h.post = null
     h.at = homeOf(r, to)
+    // 새 주인과는 낯설다 — 정은 처음부터 다시
+    h.bond = R.bondPersuaded
+    h.served = 0
     lines.push({ kind: 'recruit', hero: h.id, faction: to, how: 'persuade' })
+    const pb = by !== null ? r.heroes[by] : undefined
+    if (pb !== undefined) gainXp(pb, 'deok', R.xpPersuade, lines)
   }
   // 맡은 고을 — 경계 바닥 · 대장장이
   for (const node of Object.keys(r.nodes).sort()) {
@@ -390,9 +398,115 @@ export function stepHeroes(r: Realm, lines: ReportLine[]): void {
       lines.push({ kind: 'wanderer', hero: who.id, node: at.id, until, price })
     }
   }
+  stepGrowth(r, lines)
 }
 
 /** 이 나라가 지금 들일 수 있는 떠돌이 — 제 고을에 머무는 이 */
 export function wanderersFor(r: Realm, faction: string) {
   return (r.wanderers ?? []).filter((w) => r.nodes[w.node]?.owner === faction)
+}
+
+// ───────── 정과 성장 (HEROES §6, 형: "장수를 오래쓰면 친밀도? 호감도? 이런게 올라야 하지 않을까? 장수 키우는 맛도 있어야할듯")
+//
+// 정(bond) — 섬긴 계절·이긴 싸움으로 오르고 진 싸움으로 준다. 70 이면 믿는 장수(사기 + · 남의 회유에 버틴다), 100 이면 특성 하나에 눈뜬다.
+// 공(xp) — 하는 일마다 그 능력치에 쌓인다: 싸움은 무예·통솔, 맡은 고을은 내정·매력, 암살은 지략, 회유는 매력. 차면 한 단계 (최대 10).
+
+const GROW: readonly GrowStat[] = ['mu', 'tong', 'ryak', 'chi', 'deok']
+
+/** 정이 다 차면 눈뜨는 특성 — 가장 많이 자란 능력치에 어울리는 것 (id 순서로 첫 빈 것) */
+const AWAKEN: Readonly<Record<GrowStat, readonly string[]>> = {
+  mu: ['archer', 'mountain', 'nighteye'],
+  tong: ['careful', 'hundred', 'river'],
+  ryak: ['archer', 'careful', 'nighteye'],
+  chi: ['farmer', 'ironhand', 'smith'],
+  deok: ['charm', 'shaman', 'trader'],
+}
+
+/** 이 장수의 정 — 군주는 없다(null). 적어 두지 않았으면 처음부터 섬긴 장군 */
+export function bondOf(r: Realm, h: Hero): number | null {
+  if (isRuler(r, h.id)) return null
+  return h.bond ?? P.realm.bondStart
+}
+
+/** 정의 단계 — 낯섦 0~29 · 정듦 30~69 · 믿음 70~99 · 한마음 100 */
+export function bondTier(r: Realm, h: Hero): 'new' | 'warm' | 'trust' | 'sworn' | null {
+  const b = bondOf(r, h)
+  if (b === null) return null
+  return b >= 100 ? 'sworn' : b >= P.realm.bondTrust ? 'trust' : b >= 30 ? 'warm' : 'new'
+}
+
+/** 믿는 장수가 이끄는 군대의 사기 덤 */
+export function bondMoraleOf(r: Realm, h: Hero | null): number {
+  if (h === null) return 0
+  const b = bondOf(r, h)
+  return b !== null && b >= P.realm.bondTrust ? P.realm.bondMorale : 0
+}
+
+/** 이 능력치를 한 단계 올리는 데 드는 공 */
+export function growNeed(h: Hero, stat: GrowStat): number {
+  return P.realm.growXp + P.realm.growXpPer * Math.max(0, h[stat] - 5)
+}
+
+/** 정을 더한다 (0~100). 70 을 넘으면 믿는 장수, 100 이 차면 특성 하나에 눈뜬다 */
+export function addBond(r: Realm, h: Hero, d: number, lines: ReportLine[]): void {
+  const was = bondOf(r, h)
+  if (was === null || d === 0 || h.status !== 'free') return
+  const now = Math.max(0, Math.min(100, was + d))
+  h.bond = now
+  if (was < P.realm.bondTrust && now >= P.realm.bondTrust) lines.push({ kind: 'bond', hero: h.id, tier: 'trust' })
+  if (now >= 100 && h.awoken === undefined && h.traits.length < 3) {
+    // 가장 많이 자란 능력치 — 같으면 GROW 순서, 하나도 안 자랐으면 가장 높은 능력치
+    const by = (f: (s: GrowStat) => number): GrowStat => GROW.reduce((a, s) => (f(s) > f(a) ? s : a), GROW[0]!)
+    const grownAny = GROW.some((s) => (h.grown?.[s] ?? 0) > 0)
+    const stat = grownAny ? by((s) => h.grown?.[s] ?? 0) : by((s) => h[s])
+    const t = AWAKEN[stat].find((x) => !h.traits.includes(x))
+    if (t !== undefined) {
+      ;(h as { traits: readonly string[] }).traits = [...h.traits, t]
+      h.awoken = t
+      lines.push({ kind: 'awaken', hero: h.id, trait: t })
+    }
+  }
+}
+
+/** 공을 쌓는다 — 차면 그 능력치가 한 단계 (10 까지) */
+export function gainXp(h: Hero, stat: GrowStat, n: number, lines: ReportLine[]): void {
+  if (n <= 0 || h.status !== 'free') return
+  const xp = (h.xp ??= {})
+  xp[stat] = (xp[stat] ?? 0) + n
+  while (h[stat] < 10 && (xp[stat] ?? 0) >= growNeed(h, stat)) {
+    xp[stat] = (xp[stat] ?? 0) - growNeed(h, stat)
+    h[stat] += 1
+    const g = (h.grown ??= {})
+    g[stat] = (g[stat] ?? 0) + 1
+    lines.push({ kind: 'grow', hero: h.id, stat })
+  }
+  if (h[stat] >= 10) xp[stat] = 0
+}
+
+/** 싸움이 끝났다 — 이끈 장수들 (사로잡히거나 죽은 이는 빠진다). won·lost 는 군대의 장수 id, 교착이면 drawn */
+export function battleGrowth(r: Realm, won: readonly (string | null)[], lost: readonly (string | null)[], drawn: readonly (string | null)[], lines: ReportLine[]): void {
+  const R = P.realm
+  const each = (ids: readonly (string | null)[], f: (h: Hero) => void): void => {
+    for (const id of [...new Set(ids)].sort()) {
+      const h = id !== null ? r.heroes[id] : undefined
+      if (h !== undefined && h.status === 'free') f(h)
+    }
+  }
+  each(won, (h) => { gainXp(h, 'mu', R.xpWin, lines); gainXp(h, 'tong', R.xpWin, lines); addBond(r, h, R.bondWin, lines) })
+  each(lost, (h) => { gainXp(h, 'mu', R.xpLose, lines); gainXp(h, 'tong', R.xpLose, lines); addBond(r, h, -R.bondLose, lines) })
+  each(drawn, (h) => { gainXp(h, 'mu', R.xpLose, lines); gainXp(h, 'tong', R.xpLose, lines) })
+}
+
+/** 9 — 섬긴 계절: 정이 조금 오르고, 맡은 고을이 있으면 내정·매력에 공이 쌓인다. 군주는 정이 없다 */
+function stepGrowth(r: Realm, lines: ReportLine[]): void {
+  const R = P.realm
+  for (const h of byId(Object.values(r.heroes))) {
+    if (h.status !== 'free' || isRuler(r, h.id)) continue
+    h.served = (h.served ?? 0) + 1
+    addBond(r, h, R.bondSeason, lines)
+    if (h.post !== null) {
+      gainXp(h, 'chi', R.xpPost, lines)
+      gainXp(h, 'deok', R.xpPost, lines)
+    }
+  }
 }

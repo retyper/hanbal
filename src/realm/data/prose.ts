@@ -4,6 +4,7 @@
  */
 import type { Equip, Outcome, UnitKind } from '../battle.ts'
 import type { Ask, EdgeKind, PlotOp, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, SeasonOfYear, Tag, Why } from '../types.ts'
+import { TRAIT } from './traits.ts'
 
 export const SEASON_NAME: Record<SeasonOfYear, string> = {
   spring: '봄', summer: '여름', autumn: '가을', winter: '겨울',
@@ -302,6 +303,22 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       return line.how === 'persuade'
         ? `${josa(h?.name ?? '?', '이', '가')} 마침내 무릎을 꿇었다. 우리 장수가 되었다.`
         : `${josa(h?.name ?? '?', '이', '가')} 우리 사람이 되었다.`
+    }
+    // 정과 성장 (HEROES §6) — 우리 장수만
+    case 'grow': {
+      const h = after.heroes[line.hero]
+      if (h === undefined || h.faction !== viewer) return null
+      return `${h.name}의 ${josa(STAT_NAME[line.stat], '이', '가')} 한 단계 올랐다.`
+    }
+    case 'bond': {
+      const h = after.heroes[line.hero]
+      if (h === undefined || h.faction !== viewer) return null
+      return `${josa(h.name, '이', '가')} 우리를 믿게 됐다. 이끄는 군대의 사기가 오르고, 꾀어도 잘 안 넘어간다.`
+    }
+    case 'awaken': {
+      const h = after.heroes[line.hero]
+      if (h === undefined || h.faction !== viewer) return null
+      return `${josa(h.name, '이', '가')} 「${TRAIT[line.trait]?.name ?? line.trait}」에 눈떴다.`
     }
     case 'wanderer': {
       if (after.nodes[line.node]?.owner !== viewer) return null

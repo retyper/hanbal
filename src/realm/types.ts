@@ -121,11 +121,12 @@ export interface Hero {
    * 능력치 여섯 1~10 (docs/realm/HEROES.md §1 — 화면 이름은 prose.STAT_NAME):
    * 무예 mu · 통솔 tong · 지략 ryak · 내정 chi · 매력 deok · 의리 uiri (나라·주인에 대한 마음 — 낮으면 회유·매수에 넘어간다)
    */
-  readonly mu: number
-  readonly tong: number
-  readonly ryak: number
-  readonly chi: number
-  readonly deok: number
+  // 다섯은 자란다 (HEROES §6 — heroes.gainXp). 의리는 타고난다
+  mu: number
+  tong: number
+  ryak: number
+  chi: number
+  deok: number
   readonly uiri: number
   /** 특성 id (data/traits.ts) — 0~3개 */
   readonly traits: readonly string[]
@@ -145,7 +146,23 @@ export interface Hero {
   persuade?: { by: string | null; left: number }
   /** 다친 장수 — 이 계절까지 군대를 이끌지 못한다 (암살이 먹혔다, plots.ts) */
   woundedUntil?: number
+  /**
+   * 정(情) 0~100 — 주인을 얼마나 믿나 (HEROES §6, 형: "장수를 오래쓰면 친밀도? 이런게 올라야 하지 않을까"). 군주는 없다.
+   * 없으면 P.realm.bondStart. 섬긴 계절·이긴 싸움으로 오르고 진 싸움으로 준다. 70 이면 믿는 장수, 100 이면 특성 하나에 눈뜬다
+   */
+  bond?: number
+  /** 자라는 능력치마다 쌓인 공 — growNeed 를 채우면 한 단계 오른다 */
+  xp?: Partial<Record<GrowStat, number>>
+  /** 이 장수가 자라서 오른 단계 (화면이 "얼마나 컸나"를 보인다) */
+  grown?: Partial<Record<GrowStat, number>>
+  /** 이 나라를 섬긴 계절 */
+  served?: number
+  /** 정이 다 차서 눈뜬 특성 — 한 번만 */
+  awoken?: string
 }
+
+/** 자라는 능력치 — 의리는 타고난다 */
+export type GrowStat = 'mu' | 'tong' | 'ryak' | 'chi' | 'deok'
 
 /** 떠돌이 인재 — 봄에 어느 고을에 나타나 값을 내면 들어온다 (HEROES §4-2). until 계절이 지나면 떠난다 */
 export interface Wanderer {
@@ -416,6 +433,12 @@ export type ReportLine =
   | { readonly kind: 'mystery'; readonly faction: string; readonly what: 'morale' | 'grain' | 'militia' | 'wound' | 'death'; readonly node?: string; readonly hero?: string }
   /** 장수가 들어왔다 — 회유가 끝났거나 떠돌이를 들였다 */
   | { readonly kind: 'recruit'; readonly hero: string; readonly faction: string; readonly how: 'persuade' | 'wanderer' }
+  /** 장수가 자랐다 — 능력치 하나가 한 단계 (HEROES §6) */
+  | { readonly kind: 'grow'; readonly hero: string; readonly stat: GrowStat }
+  /** 정이 문턱을 넘었다 — 믿는 장수가 됐다 */
+  | { readonly kind: 'bond'; readonly hero: string; readonly tier: 'trust' }
+  /** 정이 다 차서 특성 하나에 눈떴다 */
+  | { readonly kind: 'awaken'; readonly hero: string; readonly trait: string }
   /** 떠돌이 인재가 그 고을에 나타났다 — 고을 주인이 until 계절까지 들일 수 있다 */
   | { readonly kind: 'wanderer'; readonly hero: string; readonly node: string; readonly until: number; readonly price: number }
   /** 맡긴 장수가 고을을 잃어 물러났다 · 사로잡혔다 */
