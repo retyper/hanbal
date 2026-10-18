@@ -11,7 +11,8 @@ import { FACTION_ART, NODE_POS, REGION_ART, SEASON_MAP, nodeIcon } from '../../r
 import { EDGE_NAME, NODE_KIND_NAME, NODE_NOW } from '../../realm/data/prose.ts'
 import { visibleRange } from '../../realm/intel.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
-import type { EdgeKind, Realm } from '../../realm/types.ts'
+import type { EdgeKind, NodeKind, Realm, REdge, RegionId } from '../../realm/types.ts'
+import { ferryAt, landClipSvg, midOf, polyPath, provinceCells, riversSvg, routePoints, smoothPath, trimPolyline, type Pt } from './mapgeo.ts'
 
 /** 변한 판 지도 바탕의 크기 (map/*.jpg) — CSS 의 기본 비율. 판마다의 크기는 REGION_ART (영남 판 1024×765) */
 const W = REGION_ART['byeonhan-mini'].w
@@ -130,9 +131,12 @@ export function mapHtml(
     svg += `<radialGradient id="rm-t-${f}"><stop offset="0" stop-color="${a.color}" stop-opacity=".72"/>`
     svg += `<stop offset=".65" stop-color="${a.color}" stop-opacity=".45"/><stop offset="1" stop-color="${a.color}" stop-opacity="0"/></radialGradient>`
   }
-  svg += `</defs><g class="terr">`
-  // 땅빛 — 같은 나라 고을끼리 띠로 잇고, 고을마다 둥글게 번진다
-  for (const ed of Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))) {
+  const region = r.region ?? 'byeonhan-mini'
+  svg += `${landClipSvg(region, W, H)}</defs>`
+  if (region === 'yeongnam') svg += provincesSvg(r, region, W, H, TERRITORY_R, dim, focus)
+  else svg += `<g class="terr">`
+  // 땅빛 (변한 판) — 같은 나라 고을끼리 띠로 잇고, 고을마다 둥글게 번진다
+  if (region !== 'yeongnam') for (const ed of Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))) {
     const oa = r.nodes[ed.a]?.owner
     if (oa === null || oa === undefined || oa !== r.nodes[ed.b]?.owner || !seen(ed.a) || !seen(ed.b) || ed.kind === 'sea') continue
     const [x1, y1] = px(ed.a)
@@ -140,41 +144,51 @@ export function mapHtml(
     const c = FACTION_ART[oa]?.color ?? '#ccc'
     svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${TERRITORY_BAND}" stroke-linecap="round" opacity="${dim(oa) ? 0.06 : focus === oa ? 0.42 : 0.24}"/>`
   }
-  for (const n of Object.values(r.nodes).sort((x, y) => (x.id < y.id ? -1 : 1))) {
-    if (n.owner === null || !seen(n.id) || FACTION_ART[n.owner] === undefined) continue
-    const [x, y] = px(n.id)
-    svg += `<circle cx="${x}" cy="${y}" r="${TERRITORY_R}" fill="url(#rm-t-${n.owner})" opacity="${dim(n.owner) ? 0.15 : 1}"/>`
+  if (region !== 'yeongnam') {
+    for (const n of Object.values(r.nodes).sort((x, y) => (x.id < y.id ? -1 : 1))) {
+      if (n.owner === null || !seen(n.id) || FACTION_ART[n.owner] === undefined) continue
+      const [x, y] = px(n.id)
+      svg += `<circle cx="${x}" cy="${y}" r="${TERRITORY_R}" fill="url(#rm-t-${n.owner})" opacity="${dim(n.owner) ? 0.15 : 1}"/>`
+    }
+    svg += `</g>`
   }
-  svg += `</g>`
+  // 강 — 또렷하게 (영남 판)
+  svg += riversSvg(region, W, H)
+  // 길 — 골짜기·바닷가를 따라 휜다 (형: "직선경로만 있는게 이상하지 않냐?"). 막힌 길은 흐리고 가운데 ✕
+  const route = (ed: REdge): Pt[] => routePoints(region, ed, px(ed.a), px(ed.b), W, H)
+  const sw = RA.nodeScale < 1 ? 0.6 : 1
   for (const ed of Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))) {
     if (!seen(ed.a) || !seen(ed.b)) continue
-    const [x1, y1] = px(ed.a)
-    const [x2, y2] = px(ed.b)
+    const pts = route(ed)
     const shut = blockedWhy(ed, season) !== null
-    svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" ${EDGE_STYLE[ed.kind]} opacity="${shut ? 0.25 : 0.8}"><title>${EDGE_NAME[ed.kind]}</title></line>`
+    const style = EDGE_STYLE[ed.kind].replace(/stroke-width="(\d+)"/, (_, w: string) => `stroke-width="${(Number(w) * sw).toFixed(1)}"`)
+    svg += `<path d="${smoothPath(pts)}" fill="none" ${style} stroke-linejoin="round" opacity="${shut ? 0.25 : 0.85}"><title>${EDGE_NAME[ed.kind]}</title></path>`
+    const fr = ed.kind === 'ford' ? ferryAt(region, ed, W, H) : null
+    if (fr !== null) svg += ferrySvg(fr, sw)
     if (shut) {
-      const [mx, my] = [(x1 + x2) / 2, (y1 + y2) / 2]
-      svg += `<path d="M${mx - 12} ${my - 12}L${mx + 12} ${my + 12}M${mx + 12} ${my - 12}L${mx - 12} ${my + 12}" stroke="#a02a1a" stroke-width="6" stroke-linecap="round"/>`
+      const [mx, my] = midOf(pts)
+      const s = 12 * sw
+      svg += `<path d="M${mx - s} ${my - s}L${mx + s} ${my + s}M${mx + s} ${my - s}L${mx - s} ${my + s}" stroke="#a02a1a" stroke-width="${6 * sw}" stroke-linecap="round"/>`
     }
   }
-  // 출정 화살 — 고른 것은 굵은 실선, 길 위의 것은 점선 + 남은 계절
+  // 출정 화살 — 그 길의 모양을 따라 간다. 고른 것은 굵은 실선, 길 위의 것은 점선 + 남은 계절
+  const edgeOf = (a: string, b: string): REdge | undefined => Object.values(r.edges).find((e) => (e.a === a && e.b === b) || (e.a === b && e.b === a))
   for (const m of marches) {
-    const [x1, y1] = px(m.from)
-    const [x2, y2] = px(m.to)
-    const k = 0.78 // 고을 기호에 안 묻히게 끝을 당긴다
-    const ex = x1 + (x2 - x1) * k
-    const ey = y1 + (y2 - y1) * k
-    const sx = x1 + (x2 - x1) * (1 - k)
-    const sy = y1 + (y2 - y1) * (1 - k)
+    const ed = edgeOf(m.from, m.to)
+    let full: Pt[] = ed !== undefined ? route(ed) : [px(m.from), px(m.to)]
+    if (ed !== undefined && ed.a !== m.from) full = full.slice().reverse()
+    const k = 0.22 // 고을 기호에 안 묻히게 끝을 당긴다
+    const pts = trimPolyline(full, k, 1 - k)
     // 기습은 밤길처럼 — 어두운 짧은 점선. 정면은 붉은 실선
     const amb = m.ambush === true && m.foe !== true
     const dash = amb ? ' stroke-dasharray="2 14" stroke-linecap="round"' : m.left === null ? '' : ' stroke-dasharray="14 8"'
     const col = m.foe === true || amb ? '#3a2a5a' : '#c8402a'
     const head = m.foe === true || amb ? 'rm-ah-foe' : 'rm-ah'
-    svg += `<line x1="${sx}" y1="${sy}" x2="${ex}" y2="${ey}" stroke="${col}" stroke-width="${(amb ? 11 : 9) * lw}"${dash} marker-end="url(#${head})" opacity=".9"/>`
+    svg += `<path d="${smoothPath(pts)}" fill="none" stroke="${col}" stroke-width="${(amb ? 11 : 9) * lw}"${dash} marker-end="url(#${head})" opacity=".9"/>`
     const label = `${m.foe === true ? '적 ' : ''}${amb ? '기습' : ''}${m.left !== null ? `${amb ? ' ' : ''}${m.left}계절` : ''}`
     if (label !== '') {
-      svg += `<text x="${(sx + ex) / 2}" y="${(sy + ey) / 2 - 12}" font-size="${26 * lw}" font-weight="700" fill="${m.foe === true || amb ? '#3a2a5a' : '#7a1f10'}" stroke="#f3e6c8" stroke-width="5" paint-order="stroke" text-anchor="middle">${label}</text>`
+      const [lx, ly] = midOf(pts)
+      svg += `<text x="${lx}" y="${ly - 12}" font-size="${26 * lw}" font-weight="700" fill="${m.foe === true || amb ? '#3a2a5a' : '#7a1f10'}" stroke="#f3e6c8" stroke-width="5" paint-order="stroke" text-anchor="middle">${label}</text>`
     }
   }
   svg += `</svg>`
@@ -319,4 +333,56 @@ function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly 
     out += `<span class="lb${l.cls}" style="left:${(cx * 100).toFixed(2)}%;top:${(cy * 100).toFixed(2)}%">${l.name}${l.now !== undefined ? `<small>${l.now}</small>` : ''}</span>`
   }
   return out + '</div>'
+}
+
+// ───────── 고을마다의 땅 (형: "개활지 같은데 직선경로만" — 점이 아니라 땅을 나눠 가진 나라로 보이게, 2026-10-19)
+
+/** 땅 조각의 크기 배수 — 고을 꼴로 정한다 (집 수는 판마다 바뀌어도 땅 모양은 그대로 두려고) */
+const CELL_SIZE: Readonly<Record<NodeKind, number>> = { capital: 1.3, port: 1.1, fort: 0.95, village: 1, ironMine: 0.9, wild: 0.85, sodo: 0.7 }
+
+/** 나루의 작은 배 */
+function ferrySvg([x, y]: Pt, k: number): string {
+  const s = 7 * k
+  return `<path d="M${x - s * 1.6} ${y - s * 0.2}Q${x} ${y + s * 1.3} ${x + s * 1.6} ${y - s * 0.2}Z" fill="#6b4a2a" stroke="#2a1d10" stroke-width="${1.2 * k}"/>`
+    + `<path d="M${x} ${y - s * 0.3}V${y - s * 1.8}" stroke="#2a1d10" stroke-width="${1.2 * k}"/>`
+}
+
+/**
+ * 고을마다의 땅을 주인 색으로 — 같은 나라 사이는 옅은 점선, 다른 나라 사이는 짙은 금. 뭍 밖은 잘라 낸다 (영남 판).
+ * 땅 모양은 판마다 한 번만 셈하고(mapgeo.provinceCells) 여기서는 색만 칠한다.
+ */
+function provincesSvg(
+  r: Realm, region: RegionId, W: number, H: number, terrR: number,
+  dim: (owner: string | null) => boolean, focus: string | null,
+): string {
+  const nodes = Object.values(r.nodes).sort((x, y) => (x.id < y.id ? -1 : 1))
+  const pts = nodes.map((n) => {
+    const p = NODE_POS[n.id] ?? [0.5, 0.5]
+    return [p[0] * W, p[1] * H] as const
+  })
+  const cells = provinceCells(`${region}:${nodes.length}`, pts, nodes.map((n) => CELL_SIZE[n.kind]), terrR * 1.5)
+  const clip = region === 'yeongnam' ? ' clip-path="url(#rm-land)"' : ''
+  let fill = ''
+  let lines = ''
+  for (const [i, c] of cells.entries()) {
+    const o = nodes[i]!.owner
+    const col = o !== null ? (FACTION_ART[o]?.color ?? '#ccc') : null
+    if (col !== null) fill += `<path d="${polyPath(c.pts)}" fill="${col}" opacity="${dim(o) ? 0.06 : focus === o ? 0.46 : 0.3}"/>`
+    for (let k = 0; k < c.pts.length; k++) {
+      const j = c.nb[k]!
+      if (j !== -1 && j < i) continue // 맞닿은 금은 한 번만
+      const a = c.pts[k]!
+      const b = c.pts[(k + 1) % c.pts.length]!
+      const seg = `M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`
+      if (j === -1) {
+        if (col !== null) lines += `<path d="${seg}" stroke="${col}" stroke-width="1.6" opacity="${dim(o) ? 0.1 : 0.55}"/>`
+        continue
+      }
+      const o2 = nodes[j]!.owner
+      if (o === null && o2 === null) continue
+      if (o === o2) lines += `<path d="${seg}" stroke="${col}" stroke-width="1" opacity="${dim(o) ? 0.08 : 0.35}" stroke-dasharray="3 4"/>`
+      else lines += `<path d="${seg}" stroke="#2a1d10" stroke-width="2.2" opacity=".55"/>`
+    }
+  }
+  return `<g class="terr"${clip}>${fill}<g fill="none" stroke-linecap="round">${lines}</g></g>`
 }
