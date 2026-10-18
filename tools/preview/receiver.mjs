@@ -6,13 +6,13 @@
  *
  *   node tools/preview/receiver.mjs        # 127.0.0.1:5199 — 다 구웠으면 끈다
  *
- * 받는 것은 **public/bg · public/sprites 아래의 .webp 뿐**이다. 그 밖의 경로·확장자는 거절한다.
+ * 받는 것은 **public/bg · public/sprites · public/realm/map-* 아래의 .webp 뿐**이다. 그 밖의 경로·확장자는 거절한다.
  */
 import { createServer } from 'node:http'
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, join, normalize } from 'node:path'
 
-const OK = /^(bg|sprites)\/[a-z0-9-]+\.webp$/
+const OK = /^(bg|sprites|realm\/map-[a-z]+)\/[a-z0-9-]+\.webp$/ // 영남 판의 계절 지도도 받는다 (2026-10-18)
 createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173')
   res.setHeader('Access-Control-Allow-Methods', 'PUT, OPTIONS')
