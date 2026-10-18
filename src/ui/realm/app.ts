@@ -1133,6 +1133,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         c = [0.75, { ev: 'event-sky-drought', hero: null, line: '곡식이 바닥났다' }]
       } else if (l.kind === 'settle' && l.faction === pl) {
         c = [0.5, { ev: 'event-expedition-return', hero: null, line: `${josa(after.nodes[l.to]?.name ?? '', "을", "를")} 일구러 떠났다` }]
+      } else if (l.kind === 'build' && l.faction === pl && l.done) {
+        c = [0.55, { ev: 'event-palisade-build', hero: null, line: `${after.nodes[l.node]?.name ?? ''}에 ${josa(BUILD_NAME[l.what], "이", "가")} 섰다` }]
+      } else if (l.kind === 'rumor' && l.viewer === pl) {
+        c = [0.45, { ev: 'event-spy-rumor', hero: null, line: `${fn(l.about)}에서 첩보가 왔다` }]
+      } else if (l.kind === 'bowUp' && l.faction === pl) {
+        c = [0.65, { ev: 'event-bow-forge', hero: null, line: `자객의 활이 ${BOW_NAME[l.tier] ?? ''}이 됐다` }]
+      } else if (l.kind === 'pledge' && l.from === pl && l.kept) {
+        c = [0.8, { ev: 'event-eight-harbours', hero: null, line: `${josa(fn(l.to), '과', '와')} 함께 쳤다` }]
       } else if (l.kind === 'envoy' && l.from === pl && l.accepted && l.ask === 'trade') {
         c = [0.4, { ev: 'event-iron-trade', hero: null, line: `${josa(fn(l.to), '과', '와')} 물건을 바꿨다` }]
       }
