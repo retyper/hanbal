@@ -10,19 +10,23 @@ import { aiOrders } from '../../realm/ai.ts'
 import { headcount, type Equip, type UnitKind } from '../../realm/battle.ts'
 import { FACTION_ART, HERO_BUST, SEASON_ICON, UNIT_ICON, nodeIcon } from '../../realm/data/art.ts'
 import { NATIONS } from '../../realm/data/nations.ts'
+import { TRAIT } from '../../realm/data/traits.ts'
 import {
-  ASK_KIND_NAME, ASK_NAME, BLOCKED_LINE, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine, NODE_NOW,
+  ASK_KIND_NAME, ASK_NAME, BLOCKED_LINE, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine, NODE_NOW, BUILD_NAME, goodsLine,
 } from '../../realm/data/prose.ts'
-import { envoyChance, envoyChanceFor, envoyOptions, favorOf, jointTargets, openAsks, relationOf } from '../../realm/diplomacy.ts'
-import { armCost, canGuard, draftCost, draftIronCost, draftLimit, guardCost, hhGrowth, militiaMen, riteAllowed, riteCost, settleCost, settleLimit, settleTargets } from '../../realm/economy.ts'
+import { canEscort, envoyChanceFor, envoyOptions, favorOf, jointTargets, openAsks, relationOf } from '../../realm/diplomacy.ts'
+import {
+  GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, goodOf, guardCost, hhGrowth, militiaMen, nextBuild, nodeYield, riteAllowed, riteCost,
+  settleCost, settleLimit, settleTargets,
+} from '../../realm/economy.ts'
 import { armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
 import { kitLines } from '../../realm/kit.ts'
 import { alertRange, seenMix, visibleRange } from '../../realm/intel.ts'
-import { advance, forceOf, neighbors, newArmyId, otherEnd, planned, seasonOf, seenMarches } from '../../realm/season.ts'
+import { advance, draftable, forceOf, neighbors, newArmyId, otherEnd, planned, seasonOf, seenMarches } from '../../realm/season.ts'
 import { PLOT_OPS, plotAgents, plotChance, plotCost, plotTargets } from '../../realm/plots.ts'
 import { allianceWhy, leaderOf, truceWhy, winningAgainst } from '../../realm/stance.ts'
 import { heroSeen, isRuler, persuadeSeasons, wanderersFor } from '../../realm/heroes.ts'
-import type { Army, EnvoyAsk, Hero, Order, PlotOp, Realm, Report } from '../../realm/types.ts'
+import type { Army, EnvoyAsk, Good, Hero, Order, PlotOp, Realm, Report } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, mapHtml, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { GROW_CSS, HERO_CSS, bondChip, growthHtml, heroRadar, roleLine, traitChips, traitLines } from './heroview.ts'
@@ -107,8 +111,13 @@ const ASK_HINT: Partial<Record<Ask, string>> = {
 const GROWTH_WHY: Readonly<Record<string, string>> = {
   fed: '배부르고 평화롭다', hunger: '굶는다', post: '맡은 장수가 돌본다', settle: '새로 일군 땅이라 빨리 큰다', full: '더 들어설 자리가 없다', threat: '적이 다가와 술렁인다',
 }
-const NO_COMPOSE = { to: '', ask: 'truce' as Ask, give: { grain: 0, iron: 0 }, take: { grain: 0, iron: 0 }, target: '' }
-const DRAFTABLE: readonly UnitKind[] = ['spear', 'bow', 'shield']
+/** 빈 몫 — 다섯 물건 */
+const noGoods = (): Record<Good, number> => ({ grain: 0, iron: 0, salt: 0, wood: 0, horse: 0 })
+/** 물건의 그림 */
+const GOOD_ICON: Record<Good, string> = { grain: 'good-rice', iron: 'treasure-iron-ingots', salt: 'good-salt', wood: 'emblem-pine', horse: 'good-horse' }
+/** 사신을 꾸밀 때 한 번 누름에 오르내리는 몫 */
+const GOOD_STEP: Record<Good, number> = { grain: 10, iron: 5, salt: 5, wood: 5, horse: 1 }
+const NO_COMPOSE = { to: '', ask: 'truce' as Ask, give: noGoods(), take: noGoods(), target: '' }
 /** 공작 다섯의 그림 */
 const PLOT_ICON: Readonly<Record<PlotOp, string>> = {
   rumor: 'status-morale-down', sow: 'status-betrayal', bribe: 'good-cowries', burn: 'status-famine', spy: 'status-spy', assassin: 'unit-archer',
@@ -176,6 +185,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let heroOrders: Order[] = []
   /** 회유를 맡길 장수 — 포로마다 */
   const persuadeBy: Record<string, string> = {}
+  /** 사신과 함께 보낼 장수 — 상대 나라마다 (매력·매혹·장사꾼은 따라가야 먹힌다) */
+  const escort: Record<string, string> = {}
   let diploMode: 'envoy' | 'plot' = 'envoy'
   let plotOpen: PlotOp | null = null
   /** 암살에 보낼 자객 — 우리 장수 id, null 이면 고용 자객 */
@@ -192,7 +203,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   const settleN: Record<string, number> = {}
   const settleFrom: Record<string, string> = {}
   /** 사신을 꾸미는 중 — 누구에게 · 무엇을 · 얼마 · 어디 */
-  let compose: { to: string; ask: Ask; give: { grain: number; iron: number }; take: { grain: number; iron: number }; target: string } = { ...NO_COMPOSE, give: { grain: 0, iron: 0 }, take: { grain: 0, iron: 0 } }
+  let compose: { to: string; ask: Ask; give: Record<Good, number>; take: Record<Good, number>; target: string } = { ...NO_COMPOSE, give: noGoods(), take: noGoods() }
   let note = ''
   /** 방금 나눈 무리 — 그 카드를 밝히고 눈앞으로 가져온다 (다음 누름에 지운다) */
   let freshArmy = ''
@@ -226,7 +237,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     plotOpen = null
     openArmy = ''
     note = ''
-    compose = { ...NO_COMPOSE, give: { grain: 0, iron: 0 }, take: { grain: 0, iron: 0 } }
+    compose = { ...NO_COMPOSE, give: noGoods(), take: noGoods() }
   }
 
   function ordersNow(): Order[] {
@@ -263,7 +274,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const nation = r.factions[me()]
     return `<div class="tl">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r.season))}</b></div>`
       + `<div class="tr"><span class="stat">${icon('good-rice')}<b>${Math.floor(st.grain)}</b></span>`
-      + `<span class="stat">${icon('treasure-iron-ingots')}<b>${Math.floor(st.iron)}</b></span>`
+      + (['iron', 'salt', 'wood', 'horse'] as const).filter((g) => g === 'iron' || goodOf(st, g) > 0).map((g) => `<span class="stat">${icon(GOOD_ICON[g])}<b>${Math.floor(goodOf(st, g))}</b></span>`).join('')
       + `<span class="stat">${icon('unit-spear')}<b>${men}</b></span>`
       + `<button class="stat nat" data-act="tab" data-tab="nation">${bust(r.heroes[r.factions[me()]?.ruler ?? rulerId(me())], 'tface')}${emblem(me())}<b>${esc(nation?.name ?? '')}</b></button></div>`
   }
@@ -530,21 +541,26 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const pending = musters.filter((o): o is Extract<Order, { kind: 'draft' }> => o.kind === 'draft')
     for (const n of sorted(Object.values(r.nodes)).filter((x) => x.owner === me())) {
       const done = pending.filter((o) => o.node === n.id).reduce((s, o) => s + o.n, 0)
-      const lim = Math.max(0, draftLimit(r, me(), n.id) - done)
       const unit = draftUnit[n.id] ?? 'spear'
+      const limAll = Math.max(0, draftLimit(r, me(), n.id) - done)
+      // 기병은 말이, 수군은 배 지을 나무가 있어야 뽑는다 (땅마다 나는 것)
+      const lim = Math.max(0, Math.min(limAll, draftLimit(r, me(), n.id, unit) - done))
       const step = Math.max(1, Math.round(lim / 10))
       const want = Math.min(lim, draftN[n.id] ?? Math.min(lim, 20))
       h += `<div class="ncard"><div class="an">${icon(nodeIcon(n), 'nic')}<b>${esc(n.name)}</b>`
       h += `<span class="mute">집 ${Math.floor(n.hh)} · 장정 ${militiaMen(r, n.id)}${done > 0 ? ` · 뽑는 중 ${done}` : ''}</span></div>`
-      if (lim <= 0) {
+      if (limAll <= 0) {
         h += `<div class="mute">이번 계절엔 더 못 뽑는다</div></div>`
         continue
       }
       h += `<div class="seg">`
-      for (const u of DRAFTABLE) h += `<button class="${u === unit ? 'on' : ''}" data-act="dunit" data-node="${n.id}" data-unit="${u}">${icon(UNIT_ICON[u])}${UNIT_NAME[u]}</button>`
+      for (const u of draftable(n)) h += `<button class="${u === unit ? 'on' : ''}" data-act="dunit" data-node="${n.id}" data-unit="${u}">${icon(UNIT_ICON[u])}${UNIT_NAME[u]}</button>`
       h += `</div><div class="stepper"><button data-act="dn" data-node="${n.id}" data-d="${-step}">−</button><b>${want}</b>`
       h += `<button data-act="dn" data-node="${n.id}" data-d="${step}">+</button><span class="mute">최대 ${lim} · 곡식 ${Math.ceil(draftCost(want).grain)}</span>`
       h += `<button class="btn on" data-act="draft" data-node="${n.id}" ${want <= 0 ? 'disabled' : ''}>뽑는다</button></div>`
+      const nd = draftNeeds(unit, Math.max(1, want))
+      if (unit === 'horse') h += `<p class="mute">${lim > 0 ? `말 ${nd.horse}필이 든다.` : '말이 없다.'} 말은 목장(너른벌을 일구면)에서 나거나 바꿔 온다.</p>`
+      if (unit === 'boat') h += `<p class="mute">${lim > 0 ? `배 지을 나무 ${nd.wood}짐이 든다.` : '배 지을 나무가 없다.'} 나무는 솔숲·산·산성 땅에서 난다.</p>`
       // 철을 더 들이면 처음부터 한 단계 좋은 무기 (철의 쓰임)
       const ic = want > 0 ? draftIronCost(r, me(), want, unit) : null
       const base = r.factions[me()]?.equip
@@ -688,12 +704,23 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const who = p.by === me() ? '우리가' : josa(f.name, '이', '가')
         h += `<div class="banner ${p.by === me() ? 'bad' : 'good'}">약속: ${esc(who)} ${esc(josa(r.nodes[p.node]?.name ?? '', '을', '를'))} 친다 · ${Math.max(0, p.until - r.season)}계절 안에</div>`
       }
+      // 사신과 함께 갈 장수 (형: "장사꾼 장수는 특별히 뭘 할 수 없잖아") — 매력·매혹·장사꾼은 따라가야 먹힌다. 그 계절엔 자리를 비운다
+      const escorts = sorted(Object.values(r.heroes)).filter((x) => canEscort(r, me(), x.id))
+      if (escorts.length > 0 && envoys[f.id] === undefined) {
+        const cur = escort[f.id] ?? ''
+        h += `<div class="frow"><span class="mute">함께 보낼 장수</span><div class="seg sm"><button class="${cur === '' ? 'on' : ''}" data-act="escort" data-to="${f.id}" data-id="">없음</button>`
+        for (const x of escorts.slice(0, 4)) {
+          const tr = (x.traits ?? []).map((t) => TRAIT[t]?.name).filter((t) => t !== undefined).slice(0, 1).join('')
+          h += `<button class="${cur === x.id ? 'on' : ''}" data-act="escort" data-to="${f.id}" data-id="${x.id}">${esc(x.name)}${tr !== '' ? ` · ${esc(tr)}` : ''}</button>`
+        }
+        h += `</div></div>`
+      }
       // 사이에 따라 보낼 수 있는 사신이 다르다 (형: "동맹 되고나서도 동맹버튼이 아직도 활성이면 뭘 의미하는거고")
       h += `<div class="btns">`
       for (const ask of envoyOptions(r, me(), f.id)) {
         const sel = envoys[f.id]?.ask === ask
         const sure = ask === 'gift' || ask === 'break'
-        const c = envoyChance(r, me(), f.id, ask)
+        const c = envoyChanceFor(r, me(), f.id, ask, noGoods(), noGoods(), escort[f.id] || undefined)
         const needs = ASK_NEEDS[ask] !== undefined
         h += `<button class="btn ${sel || (compose.to === f.id && compose.ask === ask) ? 'on' : ''}${ask === 'break' ? ' ghost' : ''}" data-act="${needs ? 'compose' : 'envoy'}" data-to="${f.id}" data-ask="${ask}" ${envoys[f.id] !== undefined && !sel ? 'disabled' : ''}>`
         h += `${ASK_NAME[ask]}${sure ? '' : ` ${envoyFeel(c[0], c[1])}`}</button>`
@@ -716,15 +743,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const sides = ask === 'trade' ? (['give', 'take'] as const) : ask === 'gift' ? (['give'] as const) : (['take'] as const)
       for (const side of sides) {
         h += `<div class="tr2"><span>${side === 'give' ? '준다' : '받는다'}</span>`
-        for (const res of ['grain', 'iron'] as const) {
-          h += `<span class="stepper sm">${icon(res === 'grain' ? 'good-rice' : 'treasure-iron-ingots')}`
-          h += `<button data-act="cq" data-side="${side}" data-res="${res}" data-d="-10">−</button><b>${compose[side][res]}</b>`
-          h += `<button data-act="cq" data-side="${side}" data-res="${res}" data-d="10">+</button></span>`
+        // 다섯 물건 (땅마다 나는 것 — 곡식·철·소금·나무·말)
+        for (const res of GOODS) {
+          h += `<span class="stepper sm">${icon(GOOD_ICON[res])}`
+          h += `<button data-act="cq" data-side="${side}" data-res="${res}" data-d="${-GOOD_STEP[res]}">−</button><b>${compose[side][res]}</b>`
+          h += `<button data-act="cq" data-side="${side}" data-res="${res}" data-d="${GOOD_STEP[res]}">+</button></span>`
         }
         h += `</div>`
       }
-      ok = compose.give.grain <= st.grain && compose.give.iron <= st.iron
-        && compose.give.grain + compose.give.iron + compose.take.grain + compose.take.iron > 0
+      ok = GOODS.every((g) => compose.give[g] <= goodOf(st, g)) && GOODS.some((g) => compose.give[g] + compose.take[g] > 0)
     } else if (need === 'place') {
       const places = ask === 'joint' ? jointTargets(r, me(), to) : sorted(Object.values(r.nodes)).filter((n) => n.owner === me()).map((n) => n.id)
       if (places.length === 0) h += `<div class="mute">고를 곳이 없다.</div>`
@@ -736,7 +763,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       ok = compose.target !== ''
     }
     const sure = ask === 'gift' || ask === 'break'
-    const c = envoyChanceFor(r, me(), to, ask, compose.give, compose.take)
+    const c = envoyChanceFor(r, me(), to, ask, compose.give, compose.take, escort[to] || undefined)
     h += `<button class="btn on" data-act="envoy" data-to="${to}" data-ask="${ask}" ${ok ? '' : 'disabled'}>${ask === 'break' ? '정말 깬다' : '사신을 보낸다'}${sure ? '' : ` ${envoyFeel(c[0], c[1])}`}</button></div>`
     return h
   }
@@ -1011,7 +1038,20 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<div class="btns"><button class="btn on" data-act="tab" data-tab="draft">여기서 징병</button>`
       h += `<button class="btn ${guarded ? 'on' : ''}" data-act="guard" data-node="${id}" ${guarded || canGuard(r, me(), id) ? '' : 'disabled'}>경계 강화 · 곡식 ${guardCost().grain}</button></div>`
       h += `<p class="mute">경계를 올리면 기습이 잘 들킨다. 한 계절 동안.</p>`
-    } else if (n.kind !== 'sodo' && !(n.kind === 'wild' && n.owner === null && known?.force == null)) {
+      // 목책·해자 — 나무로 짓는다 (땅마다 나는 것). 다음 계절에 선다
+      const nb = nextBuild(r, id)
+      const queued = musters.some((o) => o.kind === 'build' && o.node === id) || (r.builds ?? []).some((b) => b.node === id)
+      if (nb !== null) {
+        const bc = buildCost(nb)
+        const ok = queued || canBuild(r, me(), id, nb)
+        h += `<div class="btns"><button class="btn ${queued ? 'on' : ''}" data-act="build" data-node="${id}" data-what="${nb}" ${ok ? '' : 'disabled'}>${queued ? `${BUILD_NAME[nb]} 짓는 중` : `${BUILD_NAME[nb]}을 두른다 · 나무 ${bc.wood} · 곡식 ${bc.grain}`}</button></div>`
+        h += `<p class="mute">${nb === 'palisade' ? '목책을 두르면 지키는 쪽이 세진다.' : '해자를 파면 목책 앞에서 한 번 더 막는다.'} 다음 계절에 선다.</p>`
+      }
+    }
+    // 이 땅에서 나는 것 — 누구 땅이든 보인다 (칠 까닭 · 바꿀 까닭)
+    const yl = goodsLine(nodeYield(r, id))
+    if (yl !== '') h += `<p class="mute">이 땅에서 나는 것 · ${esc(yl)} (이번 계절)</p>`
+    if (!ours && n.kind !== 'sodo' && !(n.kind === 'wild' && n.owner === null && known?.force == null)) {
       const f = known?.force
       let force = '못 봤다'
       if (f) {
@@ -1450,13 +1490,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'diron': draftIron[d['node']!] = draftIron[d['node']!] !== true; break
       case 'dn': {
         const node = d['node']!
-        const lim = draftLimit(r!, me(), node)
+        const lim = draftLimit(r!, me(), node, draftUnit[node] ?? 'spear')
         draftN[node] = Math.max(0, Math.min(lim, (draftN[node] ?? Math.min(lim, 20)) + Number(d['d'])))
         break
       }
       case 'draft': {
         const node = d['node']!
-        const n = draftN[node] ?? Math.min(draftLimit(r!, me(), node), 20)
+        const n = draftN[node] ?? Math.min(draftLimit(r!, me(), node, draftUnit[node] ?? 'spear'), 20)
         if (n > 0) musters = [...musters, { kind: 'draft', faction: me(), node, unit: draftUnit[node] ?? 'spear', n, ...(draftIron[node] === true ? { iron: true as const } : {}) }]
         delete draftN[node]
         break
@@ -1490,12 +1530,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'rite': rite = !rite; break
       case 'compose': {
         const same = compose.to === d['to'] && compose.ask === d['ask']
-        compose = { ...NO_COMPOSE, give: { grain: 0, iron: 0 }, take: { grain: 0, iron: 0 }, to: same ? '' : d['to']!, ask: d['ask'] as Ask }
+        compose = { ...NO_COMPOSE, give: noGoods(), take: noGoods(), to: same ? '' : d['to']!, ask: d['ask'] as Ask }
         break
       }
       case 'cq': {
         const side = d['side'] as 'give' | 'take'
-        const res = d['res'] as 'grain' | 'iron'
+        const res = d['res'] as Good
         compose[side][res] = Math.max(0, compose[side][res] + Number(d['d']))
         break
       }
@@ -1508,15 +1548,23 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         else {
           envoys[to] = {
             kind: 'envoy', from: me(), to, ask,
-            give: detailed ? { ...compose.give } : { grain: 0, iron: 0 },
-            take: detailed ? { ...compose.take } : { grain: 0, iron: 0 },
+            give: detailed ? { ...compose.give } : noGoods(),
+            take: detailed ? { ...compose.take } : noGoods(),
+            ...(escort[to] !== undefined && escort[to] !== '' ? { hero: escort[to] } : {}),
             ...(detailed && compose.target !== '' ? { target: compose.target } : {}),
           }
         }
-        compose = { ...NO_COMPOSE, give: { grain: 0, iron: 0 }, take: { grain: 0, iron: 0 } }
+        compose = { ...NO_COMPOSE, give: noGoods(), take: noGoods() }
         break
       }
       case 'unenvoy': delete envoys[d['to']!]; break
+      case 'escort': escort[d['to']!] = d['id'] ?? ''; break
+      case 'build': {
+        const node = d['node']!
+        const same = (o: Order): boolean => o.kind === 'build' && o.node === node
+        musters = musters.some(same) ? musters.filter((o) => !same(o)) : [...musters, { kind: 'build', faction: me(), node, what: d['what'] as 'palisade' | 'moat' }]
+        break
+      }
       case 'dmode': diploMode = d['v'] as 'envoy' | 'plot'; break
       case 'plot-open': plotOpen = plotOpen === d['op'] ? null : (d['op'] as PlotOp); break
       case 'plot': {
