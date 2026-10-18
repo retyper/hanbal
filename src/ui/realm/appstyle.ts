@@ -123,6 +123,19 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .rel.war { background: #4a2420; color: #f1b8a8; } .ap .rel.truce { background: #23331f; color: #cfeabf; } .ap .rel.ally { background: #1f2c40; color: #b8d4f4; }
 .ap .trade { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 10px; background: #1a1f27; }
 .ap .tr2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .ap .tr2 > span:first-child { width: 3.5em; color: var(--mute); font-size: 13px; }
+.ap .splitp { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; padding: 10px; border-radius: 12px; background: #1a1f27; }
+.ap .row .dest, .ap .row .sub { min-width: 0; overflow: hidden; text-overflow: ellipsis; } .ap .row .win, .ap .row .em { flex: none; }
+.ap .acard > .ab > .splitp, .ap .acard > .ab > .rows { margin-left: -74px; } /* 얼굴 칸 밑까지 넓게 — 폰에서 단추가 접히지 않게 */
+.ap .sprow { display: flex; align-items: center; gap: 8px; } .ap .sprow .stepper { flex-wrap: nowrap; } .ap .sprow .spn { width: 4em; font-size: 14px; }
+.ap .spsum { font-size: 14px; color: #cfc6b4; } .ap .spsum b { color: var(--gold); }
+.ap .splitp .seg button { white-space: normal; }
+.ap .askc { padding: 10px; margin: 8px 0; border-radius: 14px; background: #20252f; border: 1px solid #5a4a2a; }
+.ap .askc.threat { border-color: #8a3a2a; background: #2a1f1f; } .ap .askc p { margin: 6px 0 2px; font-size: 14.5px; }
+.ap .sus { color: #f1a08a; font-weight: 700; }
+.ap .askpill { margin-left: auto; flex: none; display: flex; align-items: center; gap: 2px; padding: 2px 10px 2px 4px; border-radius: 16px;
+  border: 1px solid #e0bd78; background: linear-gradient(#a57a31, #7d5a22); color: #fff4dc; font: inherit; font-size: 13px; font-weight: 700;
+  cursor: pointer; pointer-events: auto; animation: askpulse 1.6s ease-in-out 3; }
+@keyframes askpulse { 50% { box-shadow: 0 0 0 4px #e0bd7855; } }
 .ap .asks { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 6px 0 4px; }
 .ap .asks > div { padding: 6px 8px; border-radius: 10px; background: var(--card); display: flex; flex-direction: column; }
 .ap .asks b { font-size: 14px; color: var(--gold); } .ap .asks span { font-size: 12px; color: var(--mute); }

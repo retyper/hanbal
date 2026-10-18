@@ -6,7 +6,7 @@
  * 한 줄씩 띄우고, 기세 막대가 흔들리다 결과에 멈춘다. 움직임은 CSS 애니메이션의 지연뿐이다 (rAF·타이머 없음 — 절대 규칙 4).
  * 카드를 누르면 바로 끝까지 보인다.
  */
-import { BATTLE_AMBUSH, BATTLE_APPROACH, BATTLE_CLASH, josa } from '../../realm/data/prose.ts'
+import { BATTLE_AMBUSH, BATTLE_APPROACH, BATTLE_CLASH, fieldName, josa } from '../../realm/data/prose.ts'
 import { HERO_BUST } from '../../realm/data/art.ts'
 import type { Army, Hero, Realm, ReportLine } from '../../realm/types.ts'
 
@@ -46,11 +46,15 @@ export function battleCard(before: Realm, after: Realm, l: Battle, viewer: strin
   const weAtk = lead.faction === viewer
   if (!weAtk && l.defender !== viewer) return ''
   const node = after.nodes[l.node]
-  const place = node?.name ?? l.node
+  const field = l.field === true && l.edge !== undefined
+  const place = field ? fieldName(after, l.edge!) : (node?.name ?? l.node)
   const fname = (id: string): string => after.factions[id]?.name ?? '?'
 
   const atkIds = [l.attacker, ...l.allies]
-  const defArmies = Object.values(before.armies).filter((a) => a.at === l.node && a.march === null && a.faction === l.defender)
+  // 들판이면 같은 길 위를 마주 오던 군대 (이번 계절에 떠났으면 아직 그 끝 고을에 있다)
+  const defArmies = Object.values(before.armies).filter((a) => a.faction === l.defender && (field
+    ? a.march?.edge === l.edge || (a.march === null && a.at === l.node)
+    : a.at === l.node && a.march === null))
   const heroOf = (a: Army | undefined): Hero | null => {
     const h = a?.hero !== null && a?.hero !== undefined ? before.heroes[a.hero] : undefined
     return h !== undefined && h.status === 'free' ? h : null
@@ -75,7 +79,7 @@ export function battleCard(before: Realm, after: Realm, l: Battle, viewer: strin
     : Object.values(before.edges).find((e) => (e.a === lead.at && e.b === l.node) || (e.b === lead.at && e.a === l.node))
   const who = josa(atkHero?.name ?? `${fname(lead.faction)} 군`, '이', '가')
   if (edge !== undefined) steps.push(`${who} ${BATTLE_APPROACH[edge.kind]}`)
-  steps.push(BATTLE_AMBUSH[l.ambush])
+  steps.push(field ? '길 한가운데서 두 군대가 마주쳤다. 성도 장정도 없다.' : BATTLE_AMBUSH[l.ambush])
   if (l.ambush === 'success' && before.nodes[l.node]?.owner === l.defender) steps.push('장정이 모이지 못했다.')
   else if (l.militia > 0) steps.push(`마을 장정 ${l.militia}명이 함께 막아선다.`)
   if (l.pincer) steps.push('두 길에서 한꺼번에 들이친다.')
@@ -90,7 +94,8 @@ export function battleCard(before: Realm, after: Realm, l: Battle, viewer: strin
   const atkWon = l.outcome === 'rout' || l.outcome === 'win'
   const good = weAtk === atkWon && l.outcome !== 'draw'
   let result: string
-  if (l.outcome === 'draw') result = weAtk ? `${place}에서 물러났다` : `${josa(place, '을', '를')} 지켜 냈다`
+  if (field) result = l.outcome === 'draw' ? '둘 다 물러났다' : good ? '적을 물리치고 길을 간다' : '밀려서 돌아왔다'
+  else if (l.outcome === 'draw') result = weAtk ? `${place}에서 물러났다` : `${josa(place, '을', '를')} 지켜 냈다`
   else if (weAtk) result = atkWon ? `${josa(place, '을', '를')} 차지했다` : `${place}에서 물러났다`
   else result = atkWon ? `${josa(place, '을', '를')} 빼앗겼다` : `${josa(place, '을', '를')} 지켜 냈다`
 

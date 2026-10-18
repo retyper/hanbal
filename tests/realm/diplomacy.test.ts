@@ -81,11 +81,14 @@ describe('받아들일 확률', () => {
     assert.ok(gift > fair)
   })
 
-  it('같은 판·같은 명령이면 같은 답 · 한 나라는 한 계절에 사신 하나 · 플레이어에게 오는 사신은 (아직) 없다', () => {
+  it('같은 판·같은 명령이면 같은 답 · 상대 나라마다 한 계절에 사신 하나 · 플레이어에게 오는 사신은 없다', () => {
     const r = byeonhanMini(3)
-    const o = [envoy('miri', 'truce'), envoy('anya', 'truce')]
+    const o = [envoy('miri', 'truce'), envoy('anya', 'truce'), envoy('miri', 'alliance')]
     assert.deepEqual(advance(r, o), advance(r, o))
-    assert.equal(advance(r, o).report.lines.filter((l) => l.kind === 'envoy').length, 1)
+    // 미리미동·안야에 하나씩 — 미리미동에 보낸 둘째(동맹)는 버려진다
+    const sent = advance(r, o).report.lines.filter((l) => l.kind === 'envoy')
+    assert.equal(sent.length, 2)
+    assert.deepEqual(sent.map((l) => (l as { to: string }).to).sort(), ['anya', 'miri'])
     const toPlayer: Order = { kind: 'envoy', from: 'guya', to: 'us', ask: 'tribute', give: { grain: 0, iron: 0 }, take: { grain: 50, iron: 0 } }
     assert.equal(advance(r, [toPlayer]).report.lines.filter((l) => l.kind === 'envoy').length, 0)
   })

@@ -242,16 +242,20 @@ function pay(r: Realm, from: string, to: string, x: { grain: number; iron: numbe
   b.iron += x.iron
 }
 
-/** 2 — 사신. 한 나라는 한 계절에 첫 사신 하나만 보낸다. 받는 쪽이 플레이어면 (아직) 아무 일도 없다 */
+/**
+ * 2 — 사신. 한 계절에 **상대 나라마다** 하나씩 보낼 수 있다 (형: "한 턴에 외교나 거래나 한쪽밖에 못한다는데 말이 안돼").
+ * 같은 상대에게 둘을 보내면 첫 것만. 받는 쪽이 플레이어면 아무 일도 없다 (플레이어에게는 청 — makeAsks)
+ */
 export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
   const R = P.realm
   const sent = new Set<string>()
   for (const o of orders) {
     if (o.kind !== 'envoy') continue
-    if (sent.has(o.from) || o.from === o.to) continue
+    const pair = `${o.from}>${o.to}`
+    if (sent.has(pair) || o.from === o.to) continue
     if (r.factions[o.from] === undefined || r.factions[o.to] === undefined) continue
     if (r.factions[o.to]!.mind === 'player') continue
-    sent.add(o.from)
+    sent.add(pair)
     const give = o.ask === 'tribute' ? NONE : o.give
     const take = o.ask === 'trade' || o.ask === 'tribute' ? o.take : NONE
     if (!canPay(r, o.from, give)) continue

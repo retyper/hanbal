@@ -3,7 +3,7 @@
  * 고증 검토(lore-lens)가 코드를 안 읽고 이 파일만 본다. 숫자는 여기 없다 (P.realm).
  */
 import type { Outcome, UnitKind } from '../battle.ts'
-import type { EdgeKind, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, SeasonOfYear, Tag } from '../types.ts'
+import type { Ask, EdgeKind, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, SeasonOfYear, Tag } from '../types.ts'
 
 export const SEASON_NAME: Record<SeasonOfYear, string> = {
   spring: '봄', summer: '여름', autumn: '가을', winter: '겨울',
@@ -100,6 +100,30 @@ function nodeName(r: Realm, id: string): string {
   return r.nodes[id]?.name ?? id
 }
 
+/** 들판의 이름 — 길 양 끝 고을 사이 ("안개골 마을과 여울목 마을 사이 나루") */
+export function fieldName(r: Realm, edge: string): string {
+  const e = r.edges[edge]
+  if (e === undefined) return '들판'
+  return `${josa(nodeName(r, e.a), '과', '와')} ${nodeName(r, e.b)} 사이 ${EDGE_NAME[e.kind]}`
+}
+
+/** 남의 나라가 걸어온 청 한 줄 — 무엇을 주고 무엇을 바라나 */
+export function askLine(a: Ask, from: string): string {
+  const goods = (g: { grain: number; iron: number }): string =>
+    [g.grain > 0 ? `곡식 ${g.grain}` : '', g.iron > 0 ? `철 ${g.iron}` : ''].filter((x) => x !== '').join(' · ')
+  switch (a.kind) {
+    case 'truce': return `${josa(from, '이', '가')} 화친하자고 한다. 서로 치지 않고 장터를 연다.`
+    case 'alliance': return `${josa(from, '이', '가')} 동맹을 맺자고 한다. 같은 적을 함께 치자고 한다.`
+    case 'trade': return `${josa(from, '이', '가')} ${goods(a.give)}을 줄 테니 ${goods(a.take)}을 달라고 한다.`
+    case 'tribute': return `${josa(from, '이', '가')} 고개를 숙이고 ${goods(a.give)}을 바치겠다고 한다.`
+    case 'demand': return `${josa(from, '이', '가')} ${goods(a.take)}을 바치라고 한다. 거절하면 전쟁이다.`
+  }
+}
+
+export const ASK_KIND_NAME: Record<Ask['kind'], string> = {
+  truce: '화친', alliance: '동맹', trade: '교역', tribute: '조공 바침', demand: '조공 요구',
+}
+
 /**
  * 보고의 한 줄을 글로 — 보는 나라(viewer)의 눈으로. 남의 나라끼리의 일은 소문처럼 짧게.
  * `before` 는 넘기기 전 판 (사라진 군대의 이름을 찾으려고).
@@ -153,7 +177,11 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       }
       const side = line.allies.length === 0 ? '' : line.pincer ? ` 등 ${line.allies.length + 1}군이 두 길로` : ` 등 ${line.allies.length + 1}군이`
       const who = line.allies.length === 0 ? josa(nameArmy(line.attacker), '이', '가') : `${nameArmy(line.attacker)}${side}`
-      const head = `${node(line.node)} 싸움. ${who} ${josa(fname(line.defender), '을', '를')} 쳐서 ${OUTCOME_LINE[line.outcome]}.`
+      // 들판 싸움 — 길 위에서 마주쳤다 (성·장정 없음)
+      const fieldAt = line.field === true && line.edge !== undefined ? fieldName(after, line.edge) : null
+      const head = fieldAt !== null
+        ? `${fieldAt}에서 마주쳤다. ${who} ${josa(fname(line.defender), '과', '와')} 맞붙어 ${OUTCOME_LINE[line.outcome]}.`
+        : `${node(line.node)} 싸움. ${who} ${josa(fname(line.defender), '을', '를')} 쳐서 ${OUTCOME_LINE[line.outcome]}.`
       // 승산은 숫자로 안 나간다 (형: 숫자나오면 재미없다) — 판세를 뒤집었을 때만 한마디
       const atkWon = line.outcome === 'rout' || line.outcome === 'win'
       const atkLost = line.outcome === 'lose' || line.outcome === 'routed'
@@ -164,7 +192,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       return ours ? head + odds + amb + cap + dead : `소문. ${head}`
     }
     case 'harvest':
-      return line.faction === viewer ? `추수. 곡식 ${line.grain}이 창고에 들었다.` : null
+      return line.faction === viewer ? `추수. 곡식 ${line.grain}섬이 창고에 들었다.` : null
     case 'draft':
       return line.faction === viewer ? `${node(line.node)}에서 ${UNIT_NAME[line.unit]} ${line.n}명을 뽑았다.` : null
     case 'disband': {
@@ -184,8 +212,19 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       return `소문. ${josa(fname(line.faction), '이', '가')} 소도에서 제사를 지냈다.`
     case 'market': {
       if (line.a !== viewer && line.b !== viewer) return null
-      return `${josa(fname(line.a === viewer ? line.b : line.a), '과', '와')} 장터가 섰다. 곡식 ${line.grain}이 들어왔다.`
+      return `${josa(fname(line.a === viewer ? line.b : line.a), '과', '와')} 장터가 섰다. 곡식 ${line.grain}섬이 들어왔다.`
     }
+    case 'ask':
+      if (line.ask.to !== viewer) return null
+      return null // 보고 카드의 "사신이 왔다" 칸(받기·거절)이 대신 보인다
+    case 'answered': {
+      if (line.from === viewer) return null
+      const who = fname(line.from)
+      if (line.yes) return `${who}의 청을 받아들였다.`
+      return line.askKind === 'demand' ? `${who}의 조공 요구를 거절했다. 전쟁이다.` : `${who}의 청을 물리쳤다.`
+    }
+    case 'guard':
+      return line.faction === viewer ? `${node(line.node)}에 횃불을 늘리고 망을 세웠다.` : null
     case 'hunger':
       return line.faction === viewer ? '곡식이 바닥났다. 군사들이 굶는다.' : null
     case 'envoy': {
@@ -218,7 +257,8 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       let n = 0
       if (a !== undefined) for (const v of Object.values(a.mix)) n += v ?? 0
       const size = n > 0 ? ` ${Math.max(10, Math.round(n / 10) * 10)}명 남짓.` : ''
-      return `${fname(line.faction)} 군대가 ${node(line.from)}에서 ${josa(node(line.to), '으로', '로')} 가고 있다.${size}`
+      const hint = line.suspect === true ? ' 낌새가 수상하다. 몰래 치려는 것 같다.' : ''
+      return `${fname(line.faction)} 군대가 ${node(line.from)}에서 ${josa(node(line.to), '으로', '로')} 가고 있다.${size}${hint}`
     }
   }
 }
