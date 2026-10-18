@@ -180,7 +180,10 @@ const app = mountRealmApp(root, {
     if (taps.length < 400) taps.push([Date.now() - turnStart, act, arg])
   },
   onExport() {
-    const body = JSON.stringify({ exported: new Date().toISOString(), games, save: state }, null, 1)
+    // 그 계절에 정해 둔 명령도 담는다 — 막힌 판을 그대로 다시 돌려 보려고 (형: "9년 가을에서 다음으로 안넘어가져")
+    let draft: unknown = null
+    try { draft = JSON.parse(localStorage.getItem('hanbal.realm.draft') ?? 'null') } catch { draft = null }
+    const body = JSON.stringify({ exported: new Date().toISOString(), games, save: state, draft }, null, 1)
     const a = document.createElement('a')
     a.href = URL.createObjectURL(new Blob([body], { type: 'application/json' }))
     a.download = `78guk-records-${new Date().toISOString().slice(0, 10)}.json`
