@@ -841,7 +841,8 @@ export function checkOutcome(r: Realm): 'win' | 'lose' | null {
   if (r.nodes[capital]?.owner !== me) return 'lose'
   let held = 0
   for (const f of Object.values(r.factions)) if (r.nodes[f.capital]?.owner === me) held++
-  return held >= P.realm.winCapitals ? 'win' : null
+  // 판마다 — 영남 판은 나라가 스물하나라 더 많이 쥐어야 한다
+  return held >= (r.region === 'yeongnam' ? P.realm.winCapitalsYeongnam : P.realm.winCapitals) ? 'win' : null
 }
 
 export function advance(

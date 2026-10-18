@@ -2,7 +2,7 @@
  * 나라 헤드리스 시뮬 — 봇을 플레이어 자리에 앉혀 판을 수백 번 돌린다 (docs/realm/BUILD.md §1-5 · §3-5)
  *
  *   node --experimental-strip-types tools/realm-sim.ts [--games 300] [--seasons 40]
- *        [--bot all|reckless|cautious|planner|random] [--as us|guya|anya|miri|goja|dokro|all] [--out runs.csv]
+        [--bot all|reckless|cautious|planner|random] [--as us|guya|anya|miri|goja|dokro|all] [--region byeonhan-mini|yeongnam] [--out runs.csv]
  *
  * 재는 것 (FLOW §7 #1 의 이김·짐이 생겼다):
  *   이김    국읍 셋을 쥔 판의 비율 · 짐 = 제 국읍을 잃은 판의 비율
@@ -15,9 +15,9 @@
  */
 import { writeFileSync } from 'node:fs'
 import { aiOrders, decide, type Brain } from '../src/realm/ai.ts'
-import { NATION_IDS, startRealm } from '../src/realm/data/regions/byeonhan-mini.ts'
+import { regionNations, startRegion } from '../src/realm/data/regions/index.ts'
 import { advance } from '../src/realm/season.ts'
-import type { Realm } from '../src/realm/types.ts'
+import type { Realm, RegionId } from '../src/realm/types.ts'
 
 const args = process.argv.slice(2)
 const opt = (name: string, def: string): string => {
@@ -27,7 +27,9 @@ const opt = (name: string, def: string): string => {
 const GAMES = Number(opt('games', '300'))
 const SEASONS = Number(opt('seasons', '40'))
 const BOTS: Brain[] = opt('bot', 'all') === 'all' ? ['reckless', 'cautious', 'planner', 'random'] : [opt('bot', 'all') as Brain]
-const AS: string[] = opt('as', 'us') === 'all' ? [...NATION_IDS] : [opt('as', 'us')]
+// 판 — 변한 6국 축소판(기본) · 영남 판 (--region yeongnam)
+const REGION = opt('region', 'byeonhan-mini') as RegionId
+const AS: string[] = opt('as', 'us') === 'all' ? [...regionNations(REGION)] : [opt('as', 'us')]
 const OUT = opt('out', '')
 const EARLY = 8
 
@@ -75,7 +77,7 @@ interface Run {
 }
 
 function play(bot: Brain, as: string, seed: number): Run {
-  let r: Realm = startRealm(seed, as)
+  let r: Realm = startRegion(REGION, seed, as)
   const own = (x: Realm): number => Object.values(x.nodes).filter((n) => n.owner === as).length
   const lead = Object.values(r.heroes).filter((h) => h.faction === as).sort((a, b) => (a.id < b.id ? -1 : 1))[0]?.id
   const run: Run = { bot, as, seed, start: own(r), nodes: 0, nodesEarly: -1, win: false, lose: false, battles: 0, wins: 0, captured: 0, lostHero: false, settled: 0, wildHeld: 0, ambush: 0, ambushOk: 0, rites: 0, worldAmbush: 0, asks: 0, pacts: 0, fieldFights: 0, plots: 0, plotsOk: 0, plotsAtUs: 0, worldPlots: 0, heroes: 0, persuaded: 0, hired: 0, allies: 0, pledgeKept: 0, pledgeBroken: 0, gifts: 0, arms: 0, lent: 0, hh: 0 }
@@ -140,7 +142,7 @@ for (const as of AS) for (const bot of BOTS) for (let g = 0; g < GAMES; g++) run
 const mean = (xs: number[]): number => (xs.length === 0 ? 0 : xs.reduce((a, b) => a + b, 0) / xs.length)
 const pct = (x: number): string => `${(x * 100).toFixed(1)}%`
 
-console.log(`나라 시뮬 — 변한 6국 축소판 · ${GAMES}판 × ${SEASONS}계절 · 봇이 고른 나라를 맡는다\n`)
+console.log(`나라 시뮬 — ${REGION === "yeongnam" ? "영남 판 스물한 나라" : "변한 6국 축소판"} · ${GAMES}판 × ${SEASONS}계절 · 봇이 고른 나라를 맡는다\n`)
 console.log(`나라    봇         시작  땅@${EARLY}  끝땅   이김    짐     싸움/판  이긴 비율  생포/판  장수 잃음  개척/판  쥔 빈땅  기습/판  먹힘   제사/판  판 기습  청/판  맺음/판  들판/판  공작/판  먹힘   당함/판  판 공작  장수끝  회유/판  들임/판  동맹/판  지킴/판  저버림/판  선물/판  무장/판  빌림/판  끝 가호`)
 for (const as of AS) {
   for (const bot of BOTS) {

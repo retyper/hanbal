@@ -10,11 +10,11 @@
  * 판마다 나라·시드·계절마다 내 명령·보고·내 살림·고민한 시간·누른 것. 새 판을 열어도 지난 판은 남는다.
  * 나라 판의 "기록 내보내기"로 JSON 한 장을 받고, tools/realm-records.ts 로 읽는다.
  */
-import { startRealm } from './realm/data/regions/byeonhan-mini.ts'
+import { startRegion } from './realm/data/regions/index.ts'
 import { headcount } from './realm/battle.ts'
 import { forceOf } from './realm/season.ts'
 import { migrate } from './realm/migrate.ts'
-import type { Order, Realm, Report, ReportLine } from './realm/types.ts'
+import type { Order, Realm, RegionId, Report, ReportLine } from './realm/types.ts'
 import { mountRealmApp } from './ui/realm/app.ts'
 
 const KEY = 'hanbal.realm.v2'
@@ -110,10 +110,10 @@ function saveGames(games: GameRecord[]): void {
   }
 }
 
-function fresh(nation: string): Saved {
+function fresh(nation: string, region: RegionId): Saved {
   // 시드는 화면 바깥(ui)에서만 시계로 만든다 — realm 안에서는 시계를 못 읽는다 (절대 규칙 1)
   const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0
-  return { v: 2, nation, seed, log: [], realm: startRealm(seed, nation), before: null, report: null }
+  return { v: 2, nation, seed, log: [], realm: startRegion(region, seed, nation), before: null, report: null }
 }
 
 function myLot(r: Realm): Turn['me'] {
@@ -166,9 +166,9 @@ const app = mountRealmApp(root, {
     taps = []
     saveGames(games)
   },
-  onNewGame(nation) {
+  onNewGame(nation, region) {
     if (game !== null && game.end === null) game.end = { kind: 'quit', season: state?.realm.season ?? 0, at: new Date().toISOString() }
-    state = fresh(nation)
+    state = fresh(nation, region)
     save(state)
     game = recordFor(state)
     turnStart = Date.now()
