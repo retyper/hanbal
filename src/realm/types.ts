@@ -309,6 +309,8 @@ export interface Realm {
   asks?: Ask[]
   /** 나라마다 심어 둔 첩자 (plots.ts spy). 옛 저장에는 없다 */
   spies?: Record<string, Spy[]>
+  /** 나라마다 자객의 활 단계 0..3 (plots.assassinBow). 옛 저장에는 없다 — 0 */
+  assassinBow?: Record<string, number>
   /** 지금 떠도는 인재 (heroes.ts) · 이미 나온 명단 id */
   wanderers?: Wanderer[]
   poolUsed?: string[]
@@ -389,6 +391,8 @@ export type Order =
   | { readonly kind: 'arm'; readonly army: string; readonly unit?: UnitKind }
   /** 짓기 (나무의 쓰임) — 제 고을에 목책 또는 (목책이 있으면) 해자. 나무·곡식이 들고 다음 계절부터 선다 (economy.buildCost) */
   | { readonly kind: 'build'; readonly faction: string; readonly node: string; readonly what: BuildWhat }
+  /** 자객의 활을 한 단계 올린다 — 곡식·철이 크게 든다 (plots.bowUpCost) */
+  | { readonly kind: 'bowUp'; readonly faction: string }
 
 /** 지을 수 있는 것 — 그 고을 꼬리표가 된다 */
 export type BuildWhat = 'palisade' | 'moat'
@@ -485,7 +489,11 @@ export type ReportLine =
       readonly hero?: string
       readonly agent?: string
       readonly result?: 'wound' | 'kill'
+      /** 들킨 자객 장수의 끝 — 도망쳤다 · 사로잡혔다 (고용 자객이면 없다 — 값만 잃는다) */
+      readonly agentFate?: 'escaped' | 'captured'
     }
+  /** 자객의 활을 한 단계 올렸다 (plots.bowUp) — 0 단궁 · 1 맥궁 · 2 각궁 · 3 신궁 */
+  | { readonly kind: 'bowUp'; readonly faction: string; readonly tier: number }
   /** 누가 했는지 모르는 일 — 당한 나라의 눈 (사기가 꺾였다 · 곡식이 탔다 · 장정이 안 나왔다) */
   | { readonly kind: 'mystery'; readonly faction: string; readonly what: 'morale' | 'grain' | 'militia' | 'wound' | 'death'; readonly node?: string; readonly hero?: string }
   /** 장수가 들어왔다 — 회유가 끝났거나 떠돌이를 들였다 */

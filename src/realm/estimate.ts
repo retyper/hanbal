@@ -11,7 +11,7 @@ import {
 import { militiaMen } from './economy.ts'
 import { ambushTraitOf } from './heroes.ts'
 import { alertRange, seenMix, visibleRange } from './intel.ts'
-import { blockedWhy, conceal, forceOf, fortMul, marchSeasons, otherEnd, seasonOf, seenMarches } from './season.ts'
+import { blockedWhy, conceal, concealOf, forceOf, fortMul, marchSeasons, otherEnd, seasonOf, seenMarches } from './season.ts'
 import type { Army, EdgeKind, Realm, REdge } from './types.ts'
 
 export interface Move {
@@ -33,6 +33,10 @@ export interface Move {
   readonly age: number
   /** 기습 확률 (모르는 것은 P.realm.aiAssume* 로 본다). 큰 군대는 낮다 */
   readonly ambushP: number
+  /** 이 길로 이 군대가 숨기 좋은가 — 땅·계절·무리 크기만 (season.concealOf). 지도의 기습 길 표시 */
+  readonly conceal: 'good' | 'fair' | 'poor'
+  /** 들이칠 고을에 성·높은 터가 있나 — 기습이 성을 건너뛰는 값이 크다 */
+  readonly walled: boolean
 }
 
 type Range = readonly [number, number]
@@ -74,7 +78,8 @@ function winVs(
   const span = (f: number, dLo: number, dHi: number): Range => [winChance(f, dHi), winChance(f, dLo)]
   return {
     win: span(myF * aMul(front), lo * t * dMul(front), hi * t * dMul(front)),
-    ambush: span(myF * R.ambushSuccess * aMul(hit), Math.max(0, lo - mil) * dMul(hit), Math.max(0, hi - mil) * dMul(hit)),
+    // 먹힌 기습 — 성·장정이 없고, 첫 칼에 지키는 쪽이 먼저 잃는다 (판정의 fight 와 같다)
+    ambush: span(myF * R.ambushSuccess * aMul(hit), Math.max(0, lo - mil) * (1 - R.ambushFirstStrike) * dMul(hit), Math.max(0, hi - mil) * (1 - R.ambushFirstStrike) * dMul(hit)),
     caught: span(myF * R.ambushCaught * aMul(front), lo * t * dMul(front), hi * t * dMul(front)),
     age,
   }
@@ -149,6 +154,7 @@ export function movesOf(r: Realm, faction: string, a: Army): Move[] {
     out.push({
       edge: ed, to, seasons: marchSeasons(ed.kind, season), blocked: blockedWhy(ed, season), hostile,
       win: v.win, winAmbush: v.ambush, winCaught: v.caught, age: v.age, ambushP,
+      conceal: concealOf(r, ed.id, headcount(forceOf(r, a)), to).tier, walled: fortMul(node, season) > 1,
     })
   }
   return out

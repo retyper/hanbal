@@ -17,6 +17,7 @@ import {
   advance, armiesAt, blockedWhy, conceal, marchSeasons, neighbors, otherEnd, preview, seasonOf,
 } from '../../src/realm/season.ts'
 import { ambushChance } from '../../src/realm/battle.ts'
+import { P } from '../../src/tune/params.ts'
 import type { Order, Realm } from '../../src/realm/types.ts'
 
 /** 이름 붙은 주사위로 명령을 지어내는 봇 — 시험용. 머무는 군대마다 이웃 길 하나를 고른다 */
@@ -93,9 +94,10 @@ describe('한 계절이 돈다', () => {
     const r = byeonhanMini(1)
     const ed = r.edges['e06']!
     const node = r.nodes['miri-vil']!
-    // e06 은 '나루'(ford) 에 갈대 꼬리표 — 은폐는 길 종류가 정한다: 나루 0.10 + 언 강 0.20
+    // e06 은 '나루'(ford) 에 갈대 꼬리표 — 나루 0.10 + 언 강 0.20 + 길가 갈대 0.10 + 겨울밤 0.10 (길과 때 — 2026-10-18)
     const c = conceal(ed, node, 'winter')
-    assert.ok(Math.abs(c - 0.3) < 1e-12, `은폐 ${c}`)
+    const R = P.realm
+    assert.ok(Math.abs(c - (R.concealFord + R.ambushWinterIce + R.concealEdgeTag + R.concealWinterNight)) < 1e-12, `은폐 ${c}`)
     const p = ambushChance(c, 6, 4, 0, 0.1, 0)
     assert.ok(p >= 0.5, `기습 ${p}`)
   })

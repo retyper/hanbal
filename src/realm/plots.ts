@@ -66,11 +66,65 @@ const clamp = (p: number): number => Math.min(P.realm.plotMax, Math.max(P.realm.
  * 암살의 몫 — 자객의 지략(고용 자객은 plotHiredRyak) · 명궁 − 노린 장수의 무예.
  * 노릴 수 있는 장수는 우리가 본 장수뿐이라(heroSeen) 무예는 안다 — 범위가 아니라 한 값.
  */
-function assassinTerm(r: Realm, hero: string | undefined, agent: string | null | undefined): number {
+function assassinTerm(r: Realm, faction: string, hero: string | undefined, agent: string | null | undefined): number {
   const R = P.realm
   const a = agent !== null && agent !== undefined ? r.heroes[agent] : undefined
   const v = hero !== undefined ? r.heroes[hero] : undefined
   return R.plotPerRyak * (a?.ryak ?? R.plotHiredRyak) + (hasTrait(a, 'archer') ? R.traitArcherAssassin : 0) - R.plotAssassinPerMu * (v?.mu ?? 5)
+    + R.plotBowStep * assassinBow(r, faction)
+}
+
+// ───────── 자객 기본 · 장수는 도박 (형이 고름 — 2026-10-18)
+
+/** 이 나라 자객의 활 단계 — 0 단궁 · 1 맥궁 · 2 각궁 · 3 신궁. 밤 판의 bow= 로 넘긴다 */
+export function assassinBow(r: Realm, faction: string): number {
+  const t = r.assassinBow?.[faction] ?? 0
+  return Math.max(0, Math.min(3, Math.floor(Number.isFinite(t) ? t : 0)))
+}
+
+/** 다음 단계로 올리는 값 — 이미 신궁이면 null */
+export function bowUpCost(r: Realm, faction: string): { grain: number; iron: number; to: number } | null {
+  const R = P.realm
+  const t = assassinBow(r, faction)
+  switch (t) {
+    case 0: return { grain: R.bowUp1Grain, iron: R.bowUp1Iron, to: 1 }
+    case 1: return { grain: R.bowUp2Grain, iron: R.bowUp2Iron, to: 2 }
+    case 2: return { grain: R.bowUp3Grain, iron: R.bowUp3Iron, to: 3 }
+    default: return null
+  }
+}
+
+/** 1 — 자객의 활 올리기. 나라마다 한 계절에 한 단계, 값을 못 내면 아무 일도 없다 */
+export function applyBowUps(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
+  const done = new Set<string>()
+  for (const o of orders) {
+    if (o.kind !== 'bowUp' || done.has(o.faction) || r.factions[o.faction] === undefined) continue
+    const c = bowUpCost(r, o.faction)
+    const st = stockOf(r, o.faction)
+    if (c === null || st.grain < c.grain || st.iron < c.iron) continue
+    done.add(o.faction)
+    st.grain -= c.grain
+    st.iron -= c.iron
+    ;(r.assassinBow ??= {})[o.faction] = c.to
+    lines.push({ kind: 'bowUp', faction: o.faction, tier: c.to })
+  }
+}
+
+/** 밤 판에서 받는 화살 — 바탕 + 우리 장수를 보내면 더 + 명궁이면 더 (활 단계의 화살은 밤 판이 bow= 로 붙인다) */
+export function assassinArrows(r: Realm, agent: string | null | undefined): number {
+  const a = agent !== null && agent !== undefined ? r.heroes[agent] : undefined
+  if (a === undefined) return P.night.arrows
+  return P.night.arrows + P.realm.plotAgentArrows + (hasTrait(a, 'archer') ? P.night.archerBonus : 0)
+}
+
+/** 들킨 자객 장수가 도망칠 확률 — 지략·무예·명궁·밤눈·겁 많음 */
+export function escapeChance(r: Realm, agent: string): number {
+  const R = P.realm
+  const a = r.heroes[agent]
+  if (a === undefined) return 0
+  const trait = hasTrait(a, 'archer') || hasTrait(a, 'nighteye') || hasTrait(a, 'coward') ? R.escapeTrait : 0
+  const p = R.escapeBase + R.escapePerRyak * Math.max(0, a.ryak - 5) + R.escapePerMu * Math.max(0, a.mu - 5) + trait
+  return Math.min(R.escapeMax, Math.max(0, p))
 }
 
 /** 참값의 한 점 — 판정에 쓴다 (plotChance 의 범위 안에 든다) */
@@ -80,7 +134,7 @@ export function plotTrueChance(
   const R = P.realm
   let p = base(op) + plotBonus(r, faction)
   // 암살은 자객 대 그 장수, 나머지는 우리 꾀 대 그 나라 꾀
-  p += op === 'assassin' ? assassinTerm(r, hero, agent) : R.plotPerRyak * (bestRyak(r, faction) - bestRyak(r, target))
+  p += op === 'assassin' ? assassinTerm(r, faction, hero, agent) : R.plotPerRyak * (bestRyak(r, faction) - bestRyak(r, target))
   if (ON_NODE.has(op) && node !== undefined) p -= R.plotAlertWeight * (r.watch[node]?.alert ?? 0)
   return clamp(p)
 }
@@ -97,8 +151,8 @@ export function plotChance(
   let lo = base(op) + plotBonus(r, faction)
   let hi = lo
   if (op === 'assassin') {
-    lo += assassinTerm(r, hero, agent)
-    hi += assassinTerm(r, hero, agent)
+    lo += assassinTerm(r, faction, hero, agent)
+    hi += assassinTerm(r, faction, hero, agent)
   } else {
     lo += R.plotPerRyak * (ours - R.plotGuessRyakHi)
     hi += R.plotPerRyak * (ours - R.plotGuessRyakLo)
@@ -224,6 +278,7 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
       : roll(r.seed, r.season, `${key}:caught`) < (ok ? R.plotCaughtOnSuccess : R.plotCaughtOnFail)
     let mystery: Extract<ReportLine, { kind: 'mystery' }>['what'] | null = null
     let result: 'wound' | 'kill' | undefined
+    let agentFate: 'escaped' | 'captured' | undefined
     if (o.op === 'assassin') {
       const v = r.heroes[o.hero!]!
       if (ok) {
@@ -242,19 +297,25 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
         }
       }
       if (caught) {
-        // 들켰다 — 우리 장수였으면 사로잡히고, 그 나라와 두 칸 나빠진다 (아래 한 칸 + 여기 한 칸)
+        // 들켰다 — 그 나라와 두 칸 나빠진다 (아래 한 칸 + 여기 한 칸).
+        // 고용 자객은 값만 잃는다. 우리 장수였으면 도망과 사로잡힘을 굴린다 (자객 기본 · 장수는 도박)
         const ag = o.agent !== undefined ? r.heroes[o.agent] : undefined
         if (ag !== undefined && ag.status === 'free') {
-          ag.status = 'captive'
-          ag.captor = o.target
-          ag.at = null
-          ag.post = null
+          if (roll(r.seed, r.season, `${key}:escape`) < escapeChance(r, ag.id)) agentFate = 'escaped'
+          else {
+            ag.status = 'captive'
+            ag.captor = o.target
+            ag.at = null
+            ag.post = null
+            for (const a of Object.values(r.armies)) if (a.hero === ag.id) a.hero = null
+            agentFate = 'captured'
+          }
         }
         worsen(r, o.faction, o.target, lines)
       }
       // 해낸 자객 장수는 지략이 자란다 (HEROES §6) — 들켜 잡혔으면 아니다
       const ag = o.agent !== undefined ? r.heroes[o.agent] : undefined
-      if (ok && ag !== undefined) gainXp(ag, 'ryak', R.xpPlot, lines)
+      if (ok && ag !== undefined && ag.status === 'free') gainXp(ag, 'ryak', R.xpPlot, lines)
     }
     if (ok && o.op !== 'assassin') {
       switch (o.op) {
@@ -303,6 +364,7 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
       ...(o.op === 'assassin' ? { hero: o.hero! } : {}),
       ...(o.agent !== undefined ? { agent: o.agent } : {}),
       ...(result !== undefined ? { result } : {}),
+      ...(agentFate !== undefined ? { agentFate } : {}),
       ok, caught,
     })
     // 당한 쪽은 누가 했는지 모르고 결과만 본다 — 들켰으면 plot 줄이 누가 했는지 말한다
