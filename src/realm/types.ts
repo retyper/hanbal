@@ -72,6 +72,20 @@ export interface Faction {
 export interface Relation {
   state: 'war' | 'neutral' | 'truce' | 'ally'
   until: number | null
+  /**
+   * 호감 −100..100 (외교 둘째판, 2026-10-18 — 형: "외교가 좀 재미없음"). 없으면 0.
+   * 선물·받아 준 청·교역·장터·같은 적과 싸움으로 오르고, 들킨 공작·거절·깨진 약속·저버린 부탁으로 내린다 (diplomacy.addFavor)
+   */
+  favor?: number
+  /** 함께 치자는 약속 — `by` 가 `node` 를 `until` 계절까지 친다 (diplomacy.checkPledges) */
+  pledges?: Pledge[]
+}
+
+/** 동맹의 약속 하나 — 지키면 호감 +, 저버리면 호감 크게 − */
+export interface Pledge {
+  readonly by: string
+  readonly node: string
+  readonly until: number
 }
 
 /** 한 나라의 창고 — 국읍 창고 (SYSTEMS §7-5 자원 넷 가운데 둘) */
@@ -80,7 +94,11 @@ export interface Stock {
   iron: number
 }
 
-export type EnvoyAsk = 'truce' | 'trade' | 'tribute' | 'alliance'
+/**
+ * 사신이 청하는 것. 관계마다 할 수 있는 것이 다르다 (diplomacy.envoyOptions):
+ *   gift 선물 · joint 함께 치자(동맹) · aid 지원 요청(동맹) · troops 군대 빌리기(동맹) · break 화친·동맹을 깬다
+ */
+export type EnvoyAsk = 'truce' | 'trade' | 'tribute' | 'alliance' | 'gift' | 'joint' | 'aid' | 'troops' | 'break'
 
 export type HeroStatus = 'free' | 'captive' | 'dead'
 
@@ -147,6 +165,8 @@ export interface Army {
   /** 머무는 고을 (행군 중이면 떠난 고을) */
   at: string
   march: March | null
+  /** 동맹에게 빌려준 군대 — `to` 나라의 `node` 고을로 가서 `until` 계절까지 머물며 지킨다 (diplomacy troops). 그동안 AI 가 마음대로 안 움직인다 */
+  lent?: { readonly to: string; readonly node: string; readonly until: number }
 }
 
 /** 한 세력이 한 고을에 대해 아는 것 (SYSTEMS §2-1 세 겹 가운데 땅·군세) */
@@ -189,7 +209,8 @@ export interface Spy {
  *   demand  — 그쪽이 조공을 내놓으라 한다 (`take`). 내면 화친, **거절하면 전쟁**
  * `until` 계절 안에 답해야 한다. 답이 없으면 거절로 친다.
  */
-export type AskKind = 'truce' | 'trade' | 'tribute' | 'alliance' | 'demand'
+/** 청의 갈래 — joint(함께 치자 · node) · aid(곡식을 보태 달라) 는 동맹이 건다 */
+export type AskKind = 'truce' | 'trade' | 'tribute' | 'alliance' | 'demand' | 'joint' | 'aid'
 
 export interface Ask {
   readonly id: string
@@ -199,6 +220,8 @@ export interface Ask {
   readonly give: { readonly grain: number; readonly iron: number }
   readonly take: { readonly grain: number; readonly iron: number }
   readonly until: number
+  /** joint — 함께 칠 고을 */
+  readonly node?: string
 }
 
 export interface Realm {
@@ -250,7 +273,8 @@ export type Order =
   /** 모으기 — `army` 를 `into` 에 붓는다 */
   | { readonly kind: 'merge'; readonly army: string; readonly into: string }
   /** 징병 (FLOW §2) — 그 고을의 가호에서 n 명. 그 고을에 쉬는 제 군대가 있으면 거기 들고, 없으면 새 군대 */
-  | { readonly kind: 'draft'; readonly faction: string; readonly node: string; readonly unit: UnitKind; readonly n: number }
+  /** iron — 철을 들여 한 단계 위 장비로 뽑는다 (economy.draftIronCost) */
+  | { readonly kind: 'draft'; readonly faction: string; readonly node: string; readonly unit: UnitKind; readonly n: number; readonly iron?: boolean }
   /** 해산 — 제 고을에 쉬는 군대를 집으로 (사람은 그 고을 가호로 돌아간다) */
   | { readonly kind: 'disband'; readonly army: string }
   /** 개척 — 제 고을 `from` 의 가호 n 을 길로 맞닿은 빈땅 `to` 로 옮긴다. 곡식이 든다 (economy.settleLimit · settleCost) */
@@ -266,6 +290,8 @@ export type Order =
       readonly kind: 'plot'; readonly faction: string; readonly op: PlotOp; readonly target: string; readonly node?: string; readonly other?: string
       /** 암살(assassin) — 노릴 장수 · 보낼 자객(우리 장수, 혼자 머무는 이). 자객이 없으면 고용 자객 (곡식 더) */
       readonly hero?: string; readonly agent?: string
+      /** 밤 판(night.html)에서 손으로 쏜 암살의 결과 — 있으면 굴림 대신 이것 (SNIPE §0-3). 값은 똑같이 든다 */
+      readonly hand?: { readonly result: 'dead' | 'wounded' | 'fled' | 'withdrew'; readonly alarm: boolean }
     }
   /** 장수를 고을에 맡긴다 (HEROES §3) — 장수가 그 고을에 있어야 한다. node null 이면 맡은 자리를 떠난다 (그 고을에 혼자 머문다) */
   | { readonly kind: 'assign'; readonly hero: string; readonly node: string | null }
@@ -283,7 +309,11 @@ export type Order =
       readonly ask: EnvoyAsk
       readonly give: { readonly grain: number; readonly iron: number }
       readonly take: { readonly grain: number; readonly iron: number }
+      /** joint — 함께 칠 고을 · troops — 빌린 군대가 지킬 우리 고을 */
+      readonly target?: string
     }
+  /** 무장 올리기 (철의 쓰임) — 제 고을에 쉬는 군대의 장비를 한 단계 (economy.armCost) */
+  | { readonly kind: 'arm'; readonly army: string }
 
 /** 직접 쏜 저격의 결과 — 판 열쇠(battleKey)마다. R1 에는 저격이 없어 비어 있다 (SNIPE · SYSTEMS §6) */
 export type SnipeZone = 'head' | 'body' | 'leg' | 'drum' | 'miss'
@@ -311,6 +341,8 @@ export type ReportLine =
       readonly killed: string | null
       /** 판정에 선 장정 수 — 기습이 먹히면 0 (모이지 못했다) */
       readonly militia: number
+      /** 친 나라 — 군대가 흩어져도 남는다 (약속 셈 · diplomacy.checkPledges). 옛 보고에는 없다 */
+      readonly atkFaction?: string
       /**
        * 들판 싸움 — 같은 길을 마주 보고 가던 두 군대가 길 위에서 맞붙었다. 성·장정·기습이 없다.
        * 그때 `edge` 는 그 길, `node` 는 공격 쪽이 가던 고을. 고을 싸움이면 false (옛 보고에는 없다)
@@ -329,6 +361,12 @@ export type ReportLine =
   | { readonly kind: 'settle'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number }
   | { readonly kind: 'hunger'; readonly faction: string }
   | { readonly kind: 'envoy'; readonly from: string; readonly to: string; readonly ask: EnvoyAsk; readonly accepted: boolean }
+  /** 함께 치자는 약속을 지켰나 저버렸나 — `from` 이 약속한 나라, `to` 가 약속받은 나라 */
+  | { readonly kind: 'pledge'; readonly from: string; readonly to: string; readonly node: string; readonly kept: boolean }
+  /** 군대를 빌려줬다 (`army` 가 `to` 의 `node` 를 지키러 간다) · 돌아갔다 (back) */
+  | { readonly kind: 'lent'; readonly from: string; readonly to: string; readonly node: string; readonly army: string; readonly back: boolean }
+  /** 무장을 올렸다 */
+  | { readonly kind: 'arm'; readonly faction: string; readonly army: string; readonly equip: Equip; readonly iron: number }
   | { readonly kind: 'relation'; readonly a: string; readonly b: string; readonly state: Relation['state'] }
   | { readonly kind: 'end'; readonly outcome: 'win' | 'lose'; readonly faction: string }
   /** 우리 고을에 맞닿은 길 위의 남의 군대 — 행군은 보인다 (FLOW §7 #2) */

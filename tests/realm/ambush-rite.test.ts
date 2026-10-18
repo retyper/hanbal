@@ -137,7 +137,7 @@ describe('소도 제사', () => {
     summer.season = 1
     assert.equal(riteAllowed(summer, 'us'), false)
     const poor = byeonhanMini(1)
-    poor.stock['us']!.grain = riteCost().grain - 1
+    poor.stock['us']!.grain = riteCost(poor, 'us').grain - 1
     assert.equal(riteAllowed(poor, 'us'), false)
   })
 
@@ -169,15 +169,19 @@ describe('소도 제사', () => {
     assert.equal(report.lines.filter((l) => l.kind === 'rite').length, 1)
     assert.equal(next.blessed?.['us'], 0)
     const without = advance(byeonhanMini(1), []).next
-    assert.equal(next.stock['us']!.grain, without.stock['us']!.grain - riteCost().grain)
+    assert.equal(next.stock['us']!.grain, without.stock['us']!.grain - riteCost(r, 'us').grain)
   })
 
   it('가을 제사는 군대 사기를 올린다 — 천장까지', () => {
     const r = byeonhanMini(1)
     r.season = 2
     r.armies['a-us']!.morale = 1
+    // 가을 제사는 철기 제물이 든다 — 철이 없으면 못 지낸다
+    assert.equal(riteAllowed(r, 'us'), false)
+    r.stock['us']!.iron = riteCost(r, 'us').iron
     const { next, report } = advance(r, [{ kind: 'rite', faction: 'us' }])
     assert.ok(report.lines.some((l) => l.kind === 'rite' && l.season === 'autumn'))
+    assert.equal(next.stock['us']!.iron, 0)
     assert.ok(Math.abs(next.armies['a-us']!.morale - Math.min(P.realm.moraleMax, 1 + P.realm.riteMorale)) < 1e-9)
   })
 })

@@ -11,11 +11,11 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
-import { stockOf } from './economy.ts'
+import { menOf, stockOf } from './economy.ts'
 import { envoyBonus } from './heroes.ts'
 import { visibleRange } from './intel.ts'
 import { nodeStrength } from './season.ts'
-import type { Ask, AskKind, EnvoyAsk, Order, Realm, Relation, ReportLine } from './types.ts'
+import type { Ask, AskKind, EnvoyAsk, Order, Pledge, Realm, Relation, ReportLine } from './types.ts'
 
 export function pairKey(a: string, b: string): string {
   return a < b ? `${a}|${b}` : `${b}|${a}`
@@ -33,10 +33,176 @@ export function friendly(r: Realm, a: string, b: string): boolean {
   return s === 'truce' || s === 'ally'
 }
 
+/** 관계를 바꾼다 — 호감은 남고, 동맹이 아니게 되면 함께 치자는 약속은 사라진다 */
 function setRelation(r: Realm, a: string, b: string, state: Relation['state'], until: number | null, lines: ReportLine[]): void {
   const prev = relationOf(r, a, b)
-  ;(r.relations ??= {})[pairKey(a, b)] = { state, until }
+  const next: Relation = { state, until }
+  if (prev.favor !== undefined) next.favor = prev.favor
+  if (state === 'ally' && prev.pledges !== undefined && prev.pledges.length > 0) next.pledges = prev.pledges
+  ;(r.relations ??= {})[pairKey(a, b)] = next
   if (prev.state !== state) lines.push({ kind: 'relation', a: a < b ? a : b, b: a < b ? b : a, state })
+}
+
+// ───────── 호감 (외교 둘째판 — 형: "외교가 좀 재미없음")
+
+/** 두 나라 사이의 호감 −100..100 (없으면 0) */
+export function favorOf(r: Realm, a: string, b: string): number {
+  return relationOf(r, a, b).favor ?? 0
+}
+
+/** 호감을 더한다 (−100..100 으로 자른다). 관계가 없으면 중립으로 만든다 */
+export function addFavor(r: Realm, a: string, b: string, d: number): void {
+  if (a === b || d === 0 || r.factions[a] === undefined || r.factions[b] === undefined) return
+  const key = pairKey(a, b)
+  const rel = ((r.relations ??= {})[key] ??= { state: 'neutral', until: null })
+  rel.favor = Math.max(-100, Math.min(100, Math.round(((rel.favor ?? 0) + d) * 10) / 10))
+}
+
+/**
+ * 관계마다 보낼 수 있는 사신 (화면은 이것만 보인다):
+ *   전쟁 — 화친 · 조공 요구 · 선물      중립 — 화친 · 교역 · 선물 · 조공 요구
+ *   화친 — 동맹 · 교역 · 선물 · 깨기    동맹 — 함께 치자 · 지원 요청 · 군대 빌리기 · 교역 · 선물 · 깨기
+ */
+export function envoyOptions(r: Realm, from: string, to: string): EnvoyAsk[] {
+  switch (relationOf(r, from, to).state) {
+    case 'war': return ['truce', 'tribute', 'gift']
+    case 'neutral': return ['truce', 'trade', 'gift', 'tribute']
+    case 'truce': return ['alliance', 'trade', 'gift', 'break']
+    case 'ally': return ['joint', 'aid', 'troops', 'trade', 'gift', 'break']
+  }
+}
+
+/** 이 나라에게 지금 걸린 함께 치자는 약속 — 칠 고을 id 들 (AI 가 그 고을을 더 쳐 볼 만하게 본다) */
+export function pledgedNodes(r: Realm, faction: string): string[] {
+  const out: string[] = []
+  for (const rel of Object.values(r.relations ?? {})) for (const p of rel.pledges ?? []) if (p.by === faction && p.until >= r.season) out.push(p.node)
+  return [...new Set(out)].sort()
+}
+
+/** 함께 칠 수 있는 고을 — 동맹 `ally` 가 닿고(제 땅과 길로 맞닿고), 둘 다와 친하지 않은 세 번째 나라의 땅. id 순서 */
+export function jointTargets(r: Realm, asker: string, ally: string): string[] {
+  const out = new Set<string>()
+  for (const ed of Object.values(r.edges)) {
+    for (const [x, y] of [[ed.a, ed.b], [ed.b, ed.a]] as const) {
+      if (r.nodes[x]?.owner !== ally) continue
+      const n = r.nodes[y]
+      const o = n?.owner
+      if (n === undefined || o === null || o === undefined || o === asker || o === ally || n.kind === 'sodo') continue
+      if (friendly(r, ally, o) || friendly(r, asker, o)) continue
+      out.add(y)
+    }
+  }
+  return [...out].sort()
+}
+
+/** 9 — 함께 치자는 약속을 셈한다: 이번 계절에 그 고을을 쳤거나 쥐었으면 지킨 것, 말미가 지났으면 저버린 것 */
+export function checkPledges(r: Realm, lines: ReportLine[]): void {
+  const R = P.realm
+  const hit = new Set<string>()
+  for (const l of lines) if (l.kind === 'battle' && l.atkFaction !== undefined) hit.add(`${l.atkFaction}>${l.node}`)
+  for (const key of Object.keys(r.relations ?? {}).sort()) {
+    const rel = r.relations[key]!
+    if (rel.pledges === undefined || rel.pledges.length === 0) continue
+    const [a, b] = key.split('|') as [string, string]
+    const keep: Pledge[] = []
+    for (const p of rel.pledges) {
+      const other = p.by === a ? b : a
+      const kept = hit.has(`${p.by}>${p.node}`) || r.nodes[p.node]?.owner === p.by
+      if (kept) {
+        addFavor(r, p.by, other, R.favorPledgeKept)
+        lines.push({ kind: 'pledge', from: p.by, to: other, node: p.node, kept: true })
+      } else if (p.until <= r.season) {
+        addFavor(r, p.by, other, -R.favorPledgeBroken)
+        lines.push({ kind: 'pledge', from: p.by, to: other, node: p.node, kept: false })
+      } else keep.push(p)
+    }
+    rel.pledges = keep
+  }
+}
+
+/** 약속을 건다 — `by` 가 `node` 를 pledgeSeasons 안에 친다 */
+function pledge(r: Realm, by: string, other: string, node: string): void {
+  const rel = ((r.relations ??= {})[pairKey(by, other)] ??= { state: 'neutral', until: null })
+  ;(rel.pledges ??= []).push({ by, node, until: r.season + P.realm.pledgeSeasons })
+}
+
+/** 9 — 사이가 저절로 움직인다: 같은 적과 싸우는 두 나라는 가까워진다 (장터의 호감은 holdMarkets) */
+export function driftFavor(r: Realm): void {
+  const fs = Object.keys(r.factions).sort()
+  for (let i = 0; i < fs.length; i++) {
+    for (let j = i + 1; j < fs.length; j++) {
+      if (atWarWithSame(r, fs[i]!, fs[j]!)) addFavor(r, fs[i]!, fs[j]!, P.realm.favorCommonFoe)
+    }
+  }
+}
+
+/** 빌린 군대가 갈 길 — 빌려주는 나라 · 빌리는 나라 · 동맹의 땅만 지나 `to` 고을까지. 없으면 null. 다음 고을 id 를 낸다 */
+export function lentStep(r: Realm, army: string): { edge: string; next: string } | null {
+  const a = r.armies[army]
+  if (a === undefined || a.lent === undefined) return null
+  const goal = a.lent.node
+  if (a.at === goal) return null
+  const ok = (n: string): boolean => {
+    const o = r.nodes[n]?.owner
+    return o === a.faction || o === a.lent!.to || (o !== null && o !== undefined && relationOf(r, a.faction, o).state === 'ally')
+  }
+  // 너비 우선 — id 순서로 (결정론)
+  const prev = new Map<string, { from: string; edge: string }>()
+  const queue = [a.at]
+  const seen = new Set([a.at])
+  const edges = Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))
+  while (queue.length > 0) {
+    const cur = queue.shift()!
+    if (cur === goal) break
+    for (const ed of edges) {
+      const nx = ed.a === cur ? ed.b : ed.b === cur ? ed.a : null
+      if (nx === null || seen.has(nx) || !ok(nx)) continue
+      seen.add(nx)
+      prev.set(nx, { from: cur, edge: ed.id })
+      queue.push(nx)
+    }
+  }
+  if (!prev.has(goal)) return null
+  let n = goal
+  let step = prev.get(n)!
+  while (step.from !== a.at) {
+    n = step.from
+    step = prev.get(n)!
+  }
+  return { edge: step.edge, next: n }
+}
+
+/** 9 — 빌려준 군대: 말미가 지나면 돌아간다 (빌림 표만 거둔다 — 그 뒤엔 제 나라 AI 가 움직인다) */
+export function stepLent(r: Realm, lines: ReportLine[]): void {
+  for (const a of Object.values(r.armies).sort((x, y) => (x.id < y.id ? -1 : 1))) {
+    const l = a.lent
+    if (l === undefined) continue
+    // 빌린 나라와 사이가 틀어졌거나, 지킬 고을이 그 나라 땅이 아니게 됐거나, 말미가 지났으면
+    if (l.until < r.season || relationOf(r, a.faction, l.to).state !== 'ally' || r.nodes[l.node]?.owner !== l.to) {
+      delete a.lent
+      lines.push({ kind: 'lent', from: a.faction, to: l.to, node: l.node, army: a.id, back: true })
+    }
+  }
+}
+
+/** 빌려줄 군대 — 빌려주는 나라의 쉬는 군대 가운데 국읍의 마지막 군대가 아니고, 그 고을까지 갈 길이 있는 가장 큰 것 */
+function lenderArmy(r: Realm, lender: string, to: string, node: string): string | null {
+  const cap = r.factions[lender]?.capital
+  const mine = Object.values(r.armies).filter((a) => a.faction === lender && a.march === null && a.lent === undefined)
+    .sort((x, y) => (x.id < y.id ? -1 : 1))
+  let best: { id: string; n: number } | null = null
+  for (const a of mine) {
+    if (a.at === cap && mine.filter((x) => x.at === cap).length <= 1) continue
+    let n = 0
+    for (const v of Object.values(a.mix)) n += v ?? 0
+    if (n < P.realm.splitMin) continue
+    // 길이 있나 — 빌림 표를 잠시 달아 보고 거둔다
+    a.lent = { to, node, until: r.season }
+    const can = a.at === node || lentStep(r, a.id) !== null
+    delete a.lent
+    if (can && (best === null || n > best.n)) best = { id: a.id, n }
+  }
+  return best?.id ?? null
 }
 
 const STEP: Readonly<Record<Relation['state'], Relation['state']>> = { ally: 'truce', truce: 'neutral', neutral: 'war', war: 'war' }
@@ -95,6 +261,7 @@ export function holdMarkets(r: Realm, lines: ReportLine[]): void {
     stockOf(r, a).grain += g
     stockOf(r, b).grain += g
     lines.push({ kind: 'market', a, b, grain: g })
+    addFavor(r, a, b, P.realm.favorMarket)
   }
 }
 
@@ -192,8 +359,28 @@ function chanceAt(
       p = R.envoyAlliance + pw(ratio - 1) / 2 + (atWarWithSame(r, from, to) ? R.envoyCommonFoe : 0)
         + (mind === 'cautious' ? R.envoyCautious : mind === 'greedy' ? R.envoyGreedy : 0)
       break
+    // 선물·깨기는 늘 된다 — 받는 쪽이 고르는 일이 아니다
+    case 'gift':
+      if (R.envoyGiftAlways >= 1) return 1
+      p = R.envoyMax
+      break
+    case 'break':
+      return 1
+    case 'joint':
+      p = R.envoyJoint + pw(ratio - 1) / 2
+      break
+    case 'aid': {
+      // 내줄 여유가 적을수록 덜 준다 — 바라는 것이 그 나라 창고의 aidMaxShare 를 넘으면 그만큼 깎인다
+      const spare = Math.max(1, worth(stockOf(r, to)) * R.aidMaxShare)
+      p = R.envoyAid - Math.max(0, worth(take) / spare - 1) * 0.3
+      break
+    }
+    case 'troops':
+      p = R.envoyTroops + pw(ratio - 1) / 2
+      break
   }
   p += envoyBonus(r, from, ask) // 군주 매력 · 매혹 · 장사꾼 (heroes.ts)
+  p += R.envoyFavor * favorOf(r, from, to) // 호감
   if (rel === 'war') p += R.envoyWar
   else if (rel === 'truce' || rel === 'ally') p += R.envoyFriend
   return Math.min(R.envoyMax, Math.max(R.envoyMin, p))
@@ -264,16 +451,21 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
     if (sent.has(pair) || o.from === o.to) continue
     if (r.factions[o.from] === undefined || r.factions[o.to] === undefined) continue
     if (r.factions[o.to]!.mind === 'player') continue
+    // 그 사이에서 할 수 없는 사신은 안 간다 (전쟁 중에 동맹을 청할 수는 없다 — envoyOptions)
+    if (!envoyOptions(r, o.from, o.to).includes(o.ask)) continue
+    // 함께 치자 — 칠 고을이 있어야 하고 · 군대 빌리기 — 지킬 우리 고을이 있어야 한다
+    if (o.ask === 'joint' && (o.target === undefined || !jointTargets(r, o.from, o.to).includes(o.target))) continue
+    if (o.ask === 'troops' && (o.target === undefined || r.nodes[o.target]?.owner !== o.from)) continue
     sent.add(pair)
-    const give = o.ask === 'tribute' ? NONE : o.give
-    const take = o.ask === 'trade' || o.ask === 'tribute' ? o.take : NONE
+    const give = o.ask === 'tribute' || o.ask === 'aid' || o.ask === 'joint' || o.ask === 'troops' || o.ask === 'break' ? NONE : o.give
+    const take = o.ask === 'trade' || o.ask === 'tribute' || o.ask === 'aid' ? o.take : NONE
     if (!canPay(r, o.from, give)) continue
     const p = envoyTrueChance(r, o.from, o.to, o.ask, give, take)
-    let accepted = roll(r.seed, r.season, `envoy:${o.from}:${o.to}`) < p
-    if (accepted && (o.ask === 'trade' || o.ask === 'tribute')) {
-      // 받는 쪽이 내놓을 것이 없으면 성사되지 않는다 — 조공은 있는 만큼만
-      if (o.ask === 'trade' && !canPay(r, o.to, take)) accepted = false
-    }
+    let accepted = p >= 1 || roll(r.seed, r.season, `envoy:${o.from}:${o.to}`) < p
+    if (accepted && o.ask === 'trade' && !canPay(r, o.to, take)) accepted = false // 받는 쪽이 내놓을 것이 없으면 안 선다
+    // 군대 빌리기 — 내줄 군대가 없으면(국읍의 마지막 군대뿐이거나 길이 없으면) 못 빌려준다
+    const lend = accepted && o.ask === 'troops' ? lenderArmy(r, o.to, o.from, o.target!) : null
+    if (o.ask === 'troops' && lend === null) accepted = false
     lines.push({ kind: 'envoy', from: o.from, to: o.to, ask: o.ask, accepted })
     if (!accepted) {
       // 조공 요구를 거절당하면 그 자리에서 전쟁이다
@@ -284,20 +476,59 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
     switch (o.ask) {
       case 'truce':
         setRelation(r, o.from, o.to, 'truce', r.season + R.truceSeasons, lines)
+        addFavor(r, o.from, o.to, R.favorAccept)
         break
       case 'alliance':
         setRelation(r, o.from, o.to, 'ally', null, lines)
+        addFavor(r, o.from, o.to, R.favorAccept)
         break
       case 'trade':
         pay(r, o.to, o.from, take)
+        addFavor(r, o.from, o.to, R.favorTrade)
         break
       case 'tribute': {
         const s = stockOf(r, o.to)
         pay(r, o.to, o.from, { grain: Math.min(take.grain, s.grain), iron: Math.min(take.iron, s.iron) })
         break
       }
+      case 'gift':
+        addFavor(r, o.from, o.to, Math.min(R.favorGiftMax, worth(give) * R.favorGift))
+        break
+      case 'break':
+        breakPact(r, o.from, o.to, lines)
+        break
+      case 'joint':
+        // 그쪽이 약속한다 — pledgeSeasons 안에 그 고을을 친다
+        pledge(r, o.to, o.from, o.target!)
+        addFavor(r, o.from, o.to, R.favorAccept / 2)
+        break
+      case 'aid': {
+        const s = stockOf(r, o.to)
+        const cap = R.aidMaxShare
+        pay(r, o.to, o.from, { grain: Math.min(take.grain, Math.floor(s.grain * cap)), iron: Math.min(take.iron, Math.floor(s.iron * cap)) })
+        break
+      }
+      case 'troops': {
+        const a = r.armies[lend!]!
+        a.lent = { to: o.from, node: o.target!, until: r.season + R.troopsSeasons }
+        lines.push({ kind: 'lent', from: o.to, to: o.from, node: o.target!, army: a.id, back: false })
+        break
+      }
     }
   }
+}
+
+/**
+ * 화친·동맹을 우리 쪽에서 깬다 — 중립이 되고, 깬 나라와의 호감이 크게 깎이고, **다른 나라들도 호감이 준다** (신의의 값).
+ * 그 나라에 빌려준(빌린) 군대도 돌아간다 (stepLent).
+ */
+function breakPact(r: Realm, from: string, to: string, lines: ReportLine[]): void {
+  const R = P.realm
+  const s = relationOf(r, from, to).state
+  if (s !== 'truce' && s !== 'ally') return
+  setRelation(r, from, to, 'neutral', null, lines)
+  addFavor(r, from, to, -R.favorBreakSelf)
+  for (const x of Object.keys(r.factions).sort()) if (x !== from && x !== to) addFavor(r, from, x, -R.favorBreakOthers)
 }
 
 /**
@@ -338,32 +569,52 @@ function pickAsk(r: Realm, from: string, to: string): Ask | null {
   const mine = stockOf(r, from)
   const theirs = stockOf(r, to)
   const round10 = (x: number): number => Math.max(10, Math.round(x / 10) * 10)
-  const opts: Array<{ kind: AskKind; w: number; give: { grain: number; iron: number }; take: { grain: number; iron: number } }> = []
+  const opts: Array<{ kind: AskKind; w: number; give: { grain: number; iron: number }; take: { grain: number; iron: number }; node?: string }> = []
   const strong = 1 / Math.max(1e-9, ratio) >= R.askDemandPower
+  const fav = favorOf(r, from, to)
+  // 호감이 아주 낮으면 화친도 동맹도 안 청하고 조공을 요구한다 · 아주 높으면 동맹을 청한다
+  const hostile = fav <= R.favorHostile
   if (rel === 'war') {
-    opts.push({ kind: 'truce', w: ratio > 1 ? 3 : 1, give: NO_GOODS, take: NO_GOODS })
-  } else if (rel === 'neutral') {
+    if (!hostile) opts.push({ kind: 'truce', w: ratio > 1 ? 3 : 1, give: NO_GOODS, take: NO_GOODS })
+  } else if (rel === 'neutral' && !hostile) {
     opts.push({ kind: 'truce', w: mind === 'cautious' ? 2 : 1, give: NO_GOODS, take: NO_GOODS })
   }
-  if (rel === 'neutral' || rel === 'truce') {
-    opts.push({ kind: 'alliance', w: atWarWithSame(r, from, to) ? 3 : rel === 'truce' ? 1 : 0, give: NO_GOODS, take: NO_GOODS })
+  if ((rel === 'neutral' || rel === 'truce') && !hostile) {
+    const w = (atWarWithSame(r, from, to) ? 3 : rel === 'truce' ? 1 : 0) + (fav >= R.favorAllyAsk ? 3 : 0)
+    opts.push({ kind: 'alliance', w, give: NO_GOODS, take: NO_GOODS })
   }
-  if (rel !== 'war') {
+  if (rel !== 'war' && !hostile) {
     const t = tradeOffer(r, from, to)
     if (t !== null) opts.push({ kind: 'trade', w: 2, ...t })
+  }
+  // 동맹의 부탁 — 함께 치자 (그쪽이 싸우는 적의 고을 가운데 우리가 닿는 곳) · 곡식이 모자라면 보태 달라
+  if (rel === 'ally') {
+    const foes = jointTargets(r, from, to).filter((n) => {
+      const o = r.nodes[n]!.owner!
+      return relationOf(r, from, o).state === 'war'
+    })
+    if (foes.length > 0) {
+      const node = foes[Math.floor(roll(r.seed, r.season, `ask-joint:${from}`) * foes.length)]!
+      opts.push({ kind: 'joint', w: R.askJointWeight, give: NO_GOODS, take: NO_GOODS, node })
+    }
+    const need = Math.ceil(menOf(r, from) * R.rationPerSoldier * 2)
+    if (mine.grain < need && theirs.grain >= 40) {
+      opts.push({ kind: 'aid', w: R.askAidWeight, give: NO_GOODS, take: { grain: round10(Math.min(theirs.grain * R.aidMaxShare, need - mine.grain)), iron: 0 } })
+    }
   }
   if ((rel === 'war' || rel === 'neutral') && ratio >= R.askTributePower && mine.grain >= 20) {
     opts.push({ kind: 'tribute', w: mind === 'cautious' ? 3 : 1, give: { grain: round10(mine.grain * R.askTributeShare), iron: 0 }, take: NO_GOODS })
   }
-  if ((rel === 'war' || (rel === 'neutral' && mind === 'greedy')) && strong && theirs.grain >= 20) {
-    opts.push({ kind: 'demand', w: 2, give: NO_GOODS, take: { grain: round10(theirs.grain * R.askDemandShare), iron: 0 } })
+  if ((rel === 'war' || (rel === 'neutral' && (mind === 'greedy' || hostile))) && strong && theirs.grain >= 20) {
+    opts.push({ kind: 'demand', w: hostile ? 4 : 2, give: NO_GOODS, take: { grain: round10(theirs.grain * R.askDemandShare), iron: 0 } })
   }
   const live = opts.filter((o) => o.w > 0)
   const total = live.reduce((s, o) => s + o.w, 0)
   if (total <= 0) return null
   let x = roll(r.seed, r.season, `ask-kind:${from}`) * total
   const o = live.find((c) => (x -= c.w) < 0) ?? live[live.length - 1]!
-  return { id: `ask:${r.season}:${from}`, from, to, kind: o.kind, give: o.give, take: o.take, until: r.season + 1 }
+  const ask: Ask = { id: `ask:${r.season}:${from}`, from, to, kind: o.kind, give: o.give, take: o.take, until: r.season + 1 }
+  return o.node !== undefined ? { ...ask, node: o.node } : ask
 }
 
 /** 9 — 계절 끝: AI 나라들이 플레이어에게 청을 건다. 나라마다 aiAskChance, 플레이어는 계절에 askMaxPerSeason 까지 */
@@ -425,9 +676,21 @@ export function resolveAnswers(r: Realm, orders: readonly Order[], lines: Report
             if (relationOf(r, a.from, a.to).state !== 'ally') setRelation(r, a.from, a.to, 'truce', r.season + R.truceSeasons, lines)
           } else yes = false
           break
+        case 'joint':
+          // 우리가 약속한다 — pledgeSeasons 안에 그 고을을 친다 (안 치면 checkPledges 가 호감을 크게 깎는다)
+          if (a.node !== undefined && relationOf(r, a.from, a.to).state === 'ally') pledge(r, a.to, a.from, a.node)
+          else yes = false
+          break
+        case 'aid':
+          if (canPay(r, a.to, a.take)) pay(r, a.to, a.from, a.take)
+          else yes = false
+          break
       }
     }
     lines.push({ kind: 'answered', ask: a.id, yes, from: a.from, askKind: a.kind })
     if (!yes && a.kind === 'demand') setRelation(r, a.from, a.to, 'war', null, lines)
+    // 호감 — 받아 주면 오르고, 거절하면 조금 · 동맹의 부탁을 저버리면 크게 내린다
+    if (yes) addFavor(r, a.from, a.to, R.favorAccept)
+    else addFavor(r, a.from, a.to, -(a.kind === 'joint' || a.kind === 'aid' ? R.favorRefuseAlly : R.favorReject))
   }
 }

@@ -64,13 +64,21 @@ interface Run {
   heroes: number
   persuaded: number
   hired: number
+  /** 판 전체의 동맹 맺음 · 약속 지킴 · 저버림 · 선물 · 무장 올리기 · 군대 빌려줌 (외교 둘째판·철) · 이 나라의 판 끝 가호 */
+  allies: number
+  pledgeKept: number
+  pledgeBroken: number
+  gifts: number
+  arms: number
+  lent: number
+  hh: number
 }
 
 function play(bot: Brain, as: string, seed: number): Run {
   let r: Realm = startRealm(seed, as)
   const own = (x: Realm): number => Object.values(x.nodes).filter((n) => n.owner === as).length
   const lead = Object.values(r.heroes).filter((h) => h.faction === as).sort((a, b) => (a.id < b.id ? -1 : 1))[0]?.id
-  const run: Run = { bot, as, seed, start: own(r), nodes: 0, nodesEarly: -1, win: false, lose: false, battles: 0, wins: 0, captured: 0, lostHero: false, settled: 0, wildHeld: 0, ambush: 0, ambushOk: 0, rites: 0, worldAmbush: 0, asks: 0, pacts: 0, fieldFights: 0, plots: 0, plotsOk: 0, plotsAtUs: 0, worldPlots: 0, heroes: 0, persuaded: 0, hired: 0 }
+  const run: Run = { bot, as, seed, start: own(r), nodes: 0, nodesEarly: -1, win: false, lose: false, battles: 0, wins: 0, captured: 0, lostHero: false, settled: 0, wildHeld: 0, ambush: 0, ambushOk: 0, rites: 0, worldAmbush: 0, asks: 0, pacts: 0, fieldFights: 0, plots: 0, plotsOk: 0, plotsAtUs: 0, worldPlots: 0, heroes: 0, persuaded: 0, hired: 0, allies: 0, pledgeKept: 0, pledgeBroken: 0, gifts: 0, arms: 0, lent: 0, hh: 0 }
   for (let s = 0; s < SEASONS; s++) {
     if (s === EARLY) run.nodesEarly = own(r)
     const orders = [...decide(r, as, bot), ...aiOrders(r)]
@@ -82,6 +90,11 @@ function play(bot: Brain, as: string, seed: number): Run {
       if (l.kind === 'ask' && l.ask.to === as) run.asks++
       if (l.kind === 'relation' && (l.state === 'truce' || l.state === 'ally')) run.pacts++
       if (l.kind === 'battle' && l.field === true) run.fieldFights++
+      if (l.kind === 'relation' && l.state === 'ally') run.allies++
+      if (l.kind === 'pledge') l.kept ? run.pledgeKept++ : run.pledgeBroken++
+      if (l.kind === 'envoy' && l.ask === 'gift' && l.accepted) run.gifts++
+      if (l.kind === 'arm') run.arms++
+      if (l.kind === 'lent' && !l.back) run.lent++
       if (l.kind === 'plot') {
         run.worldPlots++
         if (l.target === as) run.plotsAtUs++
@@ -117,6 +130,7 @@ function play(bot: Brain, as: string, seed: number): Run {
   run.lostHero = lead !== undefined && r.heroes[lead]?.status !== 'free'
   run.wildHeld = Object.values(r.nodes).filter((n) => n.kind === 'wild' && n.owner !== null).length
   run.heroes = Object.values(r.heroes).filter((h) => h.faction === as && h.status === 'free').length
+  run.hh = Object.values(r.nodes).filter((n) => n.owner === as).reduce((s, n) => s + n.hh, 0)
   return run
 }
 
@@ -127,7 +141,7 @@ const mean = (xs: number[]): number => (xs.length === 0 ? 0 : xs.reduce((a, b) =
 const pct = (x: number): string => `${(x * 100).toFixed(1)}%`
 
 console.log(`나라 시뮬 — 변한 6국 축소판 · ${GAMES}판 × ${SEASONS}계절 · 봇이 고른 나라를 맡는다\n`)
-console.log(`나라    봇         시작  땅@${EARLY}  끝땅   이김    짐     싸움/판  이긴 비율  생포/판  장수 잃음  개척/판  쥔 빈땅  기습/판  먹힘   제사/판  판 기습  청/판  맺음/판  들판/판  공작/판  먹힘   당함/판  판 공작  장수끝  회유/판  들임/판`)
+console.log(`나라    봇         시작  땅@${EARLY}  끝땅   이김    짐     싸움/판  이긴 비율  생포/판  장수 잃음  개척/판  쥔 빈땅  기습/판  먹힘   제사/판  판 기습  청/판  맺음/판  들판/판  공작/판  먹힘   당함/판  판 공작  장수끝  회유/판  들임/판  동맹/판  지킴/판  저버림/판  선물/판  무장/판  빌림/판  끝 가호`)
 for (const as of AS) {
   for (const bot of BOTS) {
     const rs = runs.filter((x) => x.bot === bot && x.as === as)
@@ -147,7 +161,9 @@ for (const as of AS) {
       `${mean(rs.map((x) => x.rites)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.worldAmbush)).toFixed(2).padStart(6)}  ` +
       `${mean(rs.map((x) => x.asks)).toFixed(2).padStart(5)}  ${mean(rs.map((x) => x.pacts)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.fieldFights)).toFixed(2).padStart(7)}  ` +
       `${mean(rs.map((x) => x.plots)).toFixed(2).padStart(7)}  ${pct(pl > 0 ? plOk / pl : 0).padStart(6)}  ${mean(rs.map((x) => x.plotsAtUs)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.worldPlots)).toFixed(2).padStart(6)}  ` +
-      `${mean(rs.map((x) => x.heroes)).toFixed(2).padStart(6)}  ${mean(rs.map((x) => x.persuaded)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.hired)).toFixed(2).padStart(7)}`,
+      `${mean(rs.map((x) => x.heroes)).toFixed(2).padStart(6)}  ${mean(rs.map((x) => x.persuaded)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.hired)).toFixed(2).padStart(7)}  ` +
+      `${mean(rs.map((x) => x.allies)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.pledgeKept)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.pledgeBroken)).toFixed(2).padStart(9)}  ` +
+      `${mean(rs.map((x) => x.gifts)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.arms)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.lent)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.hh)).toFixed(0).padStart(7)}`,
     )
   }
 }

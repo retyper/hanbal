@@ -20,10 +20,12 @@ import {
   type Force, type Outcome, type UnitKind,
 } from './battle.ts'
 import {
-  expireRelations, friendly, holdMarkets, makeAsks, onHostile, relationOf, resolveAnswers, resolveEnvoys, shareIntel,
+  checkPledges, driftFavor, expireRelations, friendly, holdMarkets, makeAsks, onHostile, relationOf, resolveAnswers, resolveEnvoys,
+  shareIntel, stepLent,
 } from './diplomacy.ts'
 import {
-  applyGuard, draftCost, draftLimit, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepEconomy, stockOf,
+  applyArm, applyGuard, draftCost, draftIronCost, draftLimit, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepEconomy,
+  stockOf,
 } from './economy.ts'
 import { blockedWhy, seasonOf } from './calendar.ts'
 import { refreshSpies, resolvePlots } from './plots.ts'
@@ -314,14 +316,22 @@ function draftArmy(r: Realm, o: Extract<Order, { kind: 'draft' }>, lines: Report
   if (node === undefined || node.owner !== o.faction || r.factions[o.faction] === undefined) return
   if (!Number.isInteger(o.n) || o.n < 1 || o.n > draftLimit(r, o.faction, o.node)) return
   if (!draftable(node).includes(o.unit)) return
-  let army = armiesAt(r, node.id).find((a) => a.faction === o.faction)
+  // 철검 징병 — 철을 들이면 한 단계 위 장비로 (철이 모자라면 그냥 뽑는다)
+  const ic = o.iron === true ? draftIronCost(r, o.faction, o.n) : null
+  const up = ic !== null && !ironhandAt(r, node.id) && stockOf(r, o.faction).iron >= ic.iron ? ic : null
+  let army = armiesAt(r, node.id).find((a) => a.faction === o.faction && a.lent === undefined)
   if (army === undefined) {
     if (Object.values(r.armies).filter((x) => x.faction === o.faction).length >= P.realm.armyMax) return
     const id = newArmyId(r, o.faction)
-    army = { id, faction: o.faction, hero: null, mix: {}, equip: ironhandAt(r, node.id) ? 'iron' : r.factions[o.faction]!.equip, morale: 1, at: node.id, march: null }
+    const equip = ironhandAt(r, node.id) ? 'iron' : (up?.to ?? r.factions[o.faction]!.equip)
+    army = { id, faction: o.faction, hero: null, mix: {}, equip, morale: 1, at: node.id, march: null }
     r.armies[id] = army
   }
   const had = headcount(forceOf(r, army))
+  if (up !== null) {
+    stockOf(r, o.faction).iron -= up.iron
+    if (o.n >= had) army.equip = up.to // 섞이면 많은 쪽의 장비
+  }
   army.mix[o.unit] = (army.mix[o.unit] ?? 0) + o.n
   army.morale = (army.morale * had + o.n) / (had + o.n) // 새로 든 사람은 사기 1
   node.hh -= o.n
@@ -371,6 +381,7 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
     else if (o.kind === 'disband') disbandArmy(r, o, lines)
     else if (o.kind === 'settle') settleLand(r, o, lines)
     else if (o.kind === 'guard') applyGuard(r, o, lines)
+    else if (o.kind === 'arm') applyArm(r, o, lines)
   }
   applyHeroOrders(r, orders, lines) // 맡기기·이끌기·회유·들이기 — 나누기·해산 뒤 (떼어 낸 군대를 이끌 수 있게)
 }
@@ -551,7 +562,7 @@ function fieldBattles(r: Realm, lines: ReportLine[]): void {
       lines.push({
         kind: 'battle', node: target, attacker: lead.id, allies: atks.slice(1).map((x) => x.id), pincer: false,
         defender: defs[0]!.faction, ambush: 'none', p, outcome, captured: fateOf.captured, killed: fateOf.killed,
-        militia: 0, field: true, edge: eid,
+        militia: 0, field: true, edge: eid, atkFaction: lead.faction,
       })
     }
   }
@@ -664,7 +675,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   lines.push({
     kind: 'battle', node: node.id, attacker: a.id, allies: atks.slice(1).map((x) => x.id),
     pincer: new Set(legs.map((x) => x.edge.id)).size >= 2, defender: defFaction, ambush, p, outcome, captured, killed,
-    militia: militiaN, field: false,
+    militia: militiaN, field: false, atkFaction: a.faction,
   })
 }
 
@@ -759,7 +770,10 @@ export function advance(
   decayWatch(r) // 9
   stepHeroes(r, lines) // 9 — 회유 · 맡은 고을의 경계·철 · 떠돌이
   expireRelations(r, lines) // 9
-  holdMarkets(r, lines) // 9 — 화친·동맹의 장터
+  holdMarkets(r, lines) // 9 — 화친·동맹의 장터 (호감도 조금)
+  driftFavor(r) // 9 — 같은 적과 싸우는 나라끼리 가까워진다
+  checkPledges(r, lines) // 9 — 함께 치자는 약속을 지켰나
+  stepLent(r, lines) // 9 — 빌려준 군대가 돌아갈 때
   shareIntel(r) // 9 — 동맹은 본 것을 나눈다
   refreshSpies(r) // 9 — 첩자가 본다
   for (const [f, spies] of Object.entries(r.spies ?? {})) for (const s of spies) noteMet(r, f, heroesAtNode(r, s.node))

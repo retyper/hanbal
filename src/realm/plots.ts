@@ -14,7 +14,7 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
-import { relationOf, worsen } from './diplomacy.ts'
+import { addFavor, relationOf, worsen } from './diplomacy.ts'
 import { stockOf } from './economy.ts'
 import { armyOfHero, hasTrait, heroAt, heroSeen, isRuler, plotBonus } from './heroes.ts'
 import { alertRange } from './intel.ts'
@@ -214,15 +214,21 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
     const key = `plot:${dup}`
     // 암살은 그 장수가 지금 있는 고을의 경계를 받는다
     const at = o.op === 'assassin' ? (heroAt(r, o.hero!) ?? undefined) : o.node
-    const ok = roll(r.seed, r.season, key) < plotTrueChance(r, o.faction, o.op, o.target, at, o.hero, o.agent ?? null)
-    const caught = roll(r.seed, r.season, `${key}:caught`) < (ok ? R.plotCaughtOnSuccess : R.plotCaughtOnFail)
+    // 밤 판에서 손으로 쏜 암살이면 굴림 대신 그 결과 (SNIPE §0-3) — dead·wounded 먹힘 · fled 실패(경보면 들킴) · withdrew 실패·안 들킴
+    const hand = o.op === 'assassin' ? o.hand : undefined
+    const ok = hand !== undefined
+      ? hand.result === 'dead' || hand.result === 'wounded'
+      : roll(r.seed, r.season, key) < plotTrueChance(r, o.faction, o.op, o.target, at, o.hero, o.agent ?? null)
+    const caught = hand !== undefined
+      ? hand.alarm
+      : roll(r.seed, r.season, `${key}:caught`) < (ok ? R.plotCaughtOnSuccess : R.plotCaughtOnFail)
     let mystery: Extract<ReportLine, { kind: 'mystery' }>['what'] | null = null
     let result: 'wound' | 'kill' | undefined
     if (o.op === 'assassin') {
       const v = r.heroes[o.hero!]!
       if (ok) {
         // 먹혔다 — 낮은 확률로 죽고, 아니면 다쳐서 몇 계절 군대를 못 이끈다 (R2 에 활 저격판으로 이어진다)
-        if (roll(r.seed, r.season, `${key}:kill`) < R.plotAssassinKill) {
+        if (hand !== undefined ? hand.result === 'dead' : roll(r.seed, r.season, `${key}:kill`) < R.plotAssassinKill) {
           v.status = 'dead'
           v.at = null
           v.post = null
@@ -282,6 +288,7 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
     }
     if (caught) {
       worsen(r, o.faction, o.target, lines)
+      addFavor(r, o.faction, o.target, -R.favorPlotCaught) // 들킨 공작은 호감을 깎는다
       const hot = o.op === 'bribe' ? o.node : o.op === 'burn' ? r.factions[o.target]?.capital : undefined
       const w = hot !== undefined ? r.watch[hot] : undefined
       if (w !== undefined) w.alert = Math.min(R.alertMax, w.alert + R.plotCaughtAlert)

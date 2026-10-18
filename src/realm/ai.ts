@@ -13,9 +13,11 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
-import { allyFoe, friendly, nationPower, openAsks, relationOf } from './diplomacy.ts'
 import {
-  canGuard, draftCost, draftLimit, guardCost, hhOf, menOf, riteAllowed, riteCost, settleLimit, settleTargets, stockOf, upkeepOf,
+  allyFoe, envoyOptions, favorOf, friendly, jointTargets, lentStep, nationPower, openAsks, pledgedNodes, relationOf,
+} from './diplomacy.ts'
+import {
+  armCost, canGuard, draftCost, draftLimit, guardCost, hhOf, menOf, riteAllowed, riteCost, settleLimit, settleTargets, stockOf, upkeepOf,
 } from './economy.ts'
 import { ambushWorth, jointWin, movesOf, type Move } from './estimate.ts'
 import { armyOfHero, isRuler, persuadeSeasons, postHero, wanderersFor } from './heroes.ts'
@@ -39,14 +41,17 @@ function lastGuard(r: Realm, faction: string, a: Army): boolean {
 
 /** 동맹이 싸우는 적의 고을이면 더 쳐 볼 만하다 — 동맹은 같은 적을 먼저 친다 (FLOW §4) */
 function focus(r: Realm, faction: string, to: string): number {
-  return allyFoe(r, faction, r.nodes[to]?.owner ?? null) ? P.realm.aiAllyFocus : 0
+  // 함께 치자고 약속한 고을이면 더 — 약속을 지키려 한다
+  const pledged = pledgedNodes(r, faction).includes(to) ? P.realm.aiPledgeFocus : 0
+  return pledged + (allyFoe(r, faction, r.nodes[to]?.owner ?? null) ? P.realm.aiAllyFocus : 0)
 }
 
 /** 소도 제사 — 허락되고 군량 aiDraftReserve 계절치를 남기고도 제사 곡식이 남으면 */
 function rites(r: Realm, faction: string): Order[] {
   if (!riteAllowed(r, faction)) return []
   const spare = stockOf(r, faction).grain - P.realm.aiDraftReserve * upkeepOf(r, faction, true)
-  return spare >= riteCost().grain ? [{ kind: 'rite', faction }] : []
+  const c = riteCost(r, faction)
+  return spare >= c.grain && stockOf(r, faction).iron >= c.iron ? [{ kind: 'rite', faction }] : []
 }
 
 /** 기습의 최악 승률 — 먹힘·들킴의 최악을 먹힐 확률로 섞는다. 모르면 null */
@@ -179,7 +184,7 @@ function plan(r: Realm, faction: string): Order[] {
   const R = P.realm
   const orders: Order[] = []
   let p = r
-  const idle = (): Army[] => sorted(Object.values(p.armies)).filter((a) => a.faction === faction && a.march === null)
+  const idle = (): Army[] => sorted(Object.values(p.armies)).filter((a) => a.faction === faction && a.march === null && a.lent === undefined)
   // 모으기 — 장수 없는 쪽을 장수 있는 쪽으로
   for (const a of idle()) {
     if (p.armies[a.id] === undefined || a.hero !== null) continue
@@ -328,20 +333,68 @@ function envoys(r: Realm, faction: string): Order[] {
   if (roll(r.seed, r.season, `ai-envoy:${faction}`) >= P.realm.aiEnvoyChance) return []
   const me = nationPower(r, faction)
   const mind = r.factions[faction]?.mind
-  let best: { to: string; ask: EnvoyAsk; w: number } | null = null
+  let best: { to: string; ask: EnvoyAsk; w: number; target?: string } | null = null
   for (const f of sorted(Object.values(r.factions))) {
     if (f.id === faction || f.mind === 'player' || !Object.values(r.nodes).some((n) => n.owner === f.id)) continue
     const rel = relationOf(r, faction, f.id).state
     const ratio = me / Math.max(1, nationPower(r, f.id))
-    let c: { ask: EnvoyAsk; w: number } | null = null
+    const fav = favorOf(r, faction, f.id)
+    let c: { ask: EnvoyAsk; w: number; target?: string } | null = null
     if (rel === 'war' && ratio < 1) c = { ask: 'truce', w: 2 - ratio }
-    else if ((rel === 'neutral' || rel === 'truce') && commonFoe(r, faction, f.id)) c = { ask: 'alliance', w: 1.5 }
-    else if (rel === 'neutral' && mind === 'cautious') c = { ask: 'truce', w: 1 }
+    else if ((rel === 'neutral' || rel === 'truce') && (commonFoe(r, faction, f.id) || fav >= P.realm.favorAllyAsk)) c = { ask: 'alliance', w: 1.5 }
+    else if (rel === 'ally' && roll(r.seed, r.season, `ai-joint:${faction}:${f.id}`) < P.realm.aiJointChance) {
+      // 동맹에게 함께 치자 — 우리가 싸우는 적의 고을 가운데 동맹이 닿는 곳
+      const ts = jointTargets(r, faction, f.id).filter((n) => relationOf(r, faction, r.nodes[n]!.owner!).state === 'war')
+      if (ts.length > 0) c = { ask: 'joint', w: 1.2, target: ts[0]! }
+    } else if (rel === 'neutral' && mind === 'cautious') c = { ask: 'truce', w: 1 }
+    if (c !== null && !envoyOptions(r, faction, f.id).includes(c.ask)) c = null
     if (c !== null && (best === null || c.w > best.w)) best = { to: f.id, ...c }
   }
-  if (best === null) return []
-  return [{ kind: 'envoy', from: faction, to: best.to, ask: best.ask, give: { grain: 0, iron: 0 }, take: { grain: 0, iron: 0 } }]
+  if (best === null) return gifts(r, faction)
+  const o: Order = { kind: 'envoy', from: faction, to: best.to, ask: best.ask, give: { grain: 0, iron: 0 }, take: { grain: 0, iron: 0 } }
+  return [best.target !== undefined ? { ...o, target: best.target } : o]
 }
+
+/** 선물 — 할 말이 없을 때 신중(과 계획가)은 곡식이 남으면 가장 센 이웃 나라에 선물을 보낸다 (호감을 산다) */
+function gifts(r: Realm, faction: string): Order[] {
+  const R = P.realm
+  const mind = r.factions[faction]?.mind
+  if (mind !== 'cautious' && mind !== 'player') return []
+  const spare = stockOf(r, faction).grain - (R.aiDraftReserve + 1) * upkeepOf(r, faction, true)
+  const grain = Math.floor(Math.min(60, spare * 0.15) / 10) * 10
+  if (grain < 20) return []
+  const target = sorted(Object.values(r.factions))
+    .filter((f) => f.id !== faction && f.mind !== 'player' && relationOf(r, faction, f.id).state !== 'ally' && Object.values(r.nodes).some((n) => n.owner === f.id))
+    .sort((a, b) => nationPower(r, b.id) - nationPower(r, a.id))[0]
+  return target === undefined ? [] : [{ kind: 'envoy', from: faction, to: target.id, ask: 'gift', give: { grain, iron: 0 }, take: { grain: 0, iron: 0 } }]
+}
+
+/** 빌려준 군대 — 지킬 고을까지 한 길씩 간다 (diplomacy.lentStep). 닿으면 머문다 */
+function lentMoves(r: Realm, faction: string): Order[] {
+  const out: Order[] = []
+  for (const a of sorted(Object.values(r.armies))) {
+    if (a.faction !== faction || a.lent === undefined || a.march !== null) continue
+    const s = lentStep(r, a.id)
+    if (s !== null) out.push({ kind: 'march', army: a.id, edge: s.edge, ambush: false })
+  }
+  return out
+}
+
+/**
+ * 무장 올리기 (철의 쓰임) — 철이 넉넉하면 집에 쉬는 가장 큰 군대의 장비를 한 단계. 철을 aiIronKeep 남긴다.
+ * 무작위는 안 한다.
+ */
+function arms(r: Realm, faction: string): Order[] {
+  const s = stockOf(r, faction)
+  const spareGrain = s.grain - P.realm.aiDraftReserve * upkeepOf(r, faction, true)
+  const best = sorted(Object.values(r.armies))
+    .filter((a) => a.faction === faction && a.march === null && a.lent === undefined)
+    .map((a) => ({ a, c: armCost(r, a.id) }))
+    .filter((x) => x.c !== null && x.c.iron + P.realm.aiIronKeep <= s.iron && x.c.grain <= spareGrain)
+    .sort((x, y) => Object.values(y.a.mix).reduce((t, v) => t + (v ?? 0), 0) - Object.values(x.a.mix).reduce((t, v) => t + (v ?? 0), 0))[0]
+  return best === undefined ? [] : [{ kind: 'arm', army: best.a.id }]
+}
+
 
 function commonFoe(r: Realm, a: string, b: string): boolean {
   return Object.keys(r.factions).some((x) => x !== a && x !== b && relationOf(r, a, x).state === 'war' && relationOf(r, b, x).state === 'war')
@@ -364,6 +417,10 @@ function answers(r: Realm, faction: string): Order[] {
       }
       case 'demand':
         yes = nationPower(r, a.from) >= R.askDemandPower * nationPower(r, faction)
+        break
+      case 'aid':
+        // 동맹이 곡식을 보태 달란다 — 군량을 남기고도 낼 수 있으면
+        yes = stockOf(r, faction).grain - a.take.grain >= R.aiDraftReserve * upkeepOf(r, faction, true)
         break
       default:
         yes = true
@@ -421,13 +478,14 @@ export function decide(r: Realm, faction: string, brain: Brain): Order[] {
   // 공작은 징병·개척·제사·경계로 곡식을 쓴 뒤의 창고로 셈한다 (판정도 그 뒤다 — 2단계)
   const ps = brain === 'random' ? [] : plots([...first, ...gs].length > 0 ? planned(r, [...first, ...gs]) : r, faction, brain)
   const hs = brain === 'random' ? [] : heroCare(r, faction)
-  return [...talk, ...first, ...gs, ...ps, ...hs, ...(brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
+  const as = brain === 'random' ? [] : arms(r, faction)
+  return [...talk, ...first, ...gs, ...ps, ...hs, ...as, ...lentMoves(r, faction), ...(brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
 }
 
 function moves(r: Realm, faction: string, brain: Brain): Order[] {
   const R = P.realm
   const orders: Order[] = []
-  const armies = sorted(Object.values(r.armies)).filter((a) => a.faction === faction && a.march === null)
+  const armies = sorted(Object.values(r.armies)).filter((a) => a.faction === faction && a.march === null && a.lent === undefined) // 빌려준 군대는 lentMoves
   const waiting: Army[] = []
   let scouted = false
   /** 이번 계절에 나눈 것까지 해 본 판 — 새 군대 이름이 겹치지 않게 */
