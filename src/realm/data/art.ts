@@ -110,10 +110,16 @@ const NODE_ICON: Readonly<Record<string, string>> = {
   'miri-vil': 'settle-river-town',
   'goja-vil': 'settle-salt-town',
   'anya-vil': 'settle-mountain-hold',
+  'y-usisan-cap': 'settle-whaling', // 우시산 — 반구대의 고래잡이
 }
 
 export function nodeIcon(n: RNode): string {
   if (n.kind === 'wild') return n.owner === null || n.hh <= 0 ? KIND_ICON.wild : (SETTLED_ICON[n.id] ?? 'settle-hamlet')
+  // 마을은 지은 것이 보인다 — 해자 · 목책 (형: "짓기·자원이 지도에 안 보인다")
+  if (n.kind === 'village' && NODE_ICON[n.id] === undefined) {
+    if (n.tags.includes('moat')) return 'settle-moat'
+    if (n.tags.includes('palisade')) return 'settle-palisade'
+  }
   return NODE_ICON[n.id] ?? KIND_ICON[n.kind]
 }
 
