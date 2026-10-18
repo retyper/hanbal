@@ -6,16 +6,29 @@
  * src/sim/ 과 같은 금지를 받는다: Math.random · Date.now · DOM (BUILD §1-1).
  */
 import { P } from '../tune/params.ts'
+import type { EdgeKind } from './types.ts'
 
 /** 병종 (SYSTEMS §4-1). 기병은 부여·고구려만, 쇠뇌병은 바깥 세력만 쓴다 — 누가 쓰는지는 데이터가 정한다. */
 export type UnitKind = 'spear' | 'bow' | 'pike' | 'shield' | 'horse' | 'crossbow' | 'boat'
 
-/** 장비 단계 E (SYSTEMS §4-2) */
+/**
+ * 장비 단계 E (SYSTEMS §4-2) — 쓰는 단계는 돌·나무(stone) → 청동(bronze) → 쇠날(ironTip, 날과 촉만 쇠) → 온 쇠(iron, 쇠 날에 쇠비늘 갑옷).
+ * 고리칼(ringSword)은 그 위의 정예. 가죽(leather)은 옛 값 — 청동 단계로 친다 (kit.tierOf).
+ * 철이 아니면 무엇으로 싸우나: 돌창·나무 방패·뼈촉 화살, 그리고 청동 날 (docs/realm/SYSTEMS §4-2).
+ */
 export type Equip = 'stone' | 'bronze' | 'ironTip' | 'iron' | 'leather' | 'ringSword'
+
+/**
+ * 병종마다 무장 (형: "창병 궁수 방패병 다르지 않나 · 무장해서 뽑으면 그 수도 파악이 되어야") —
+ * 병종 → 단계 → 사람 수. 병종마다 단계의 합이 그 병종의 사람 수(mix)와 같다 (kit.ts 가 지킨다).
+ */
+export type Kit = Partial<Record<UnitKind, Partial<Record<Equip, number>>>>
 
 /** 한쪽 군대의 판정 입력. 병력 구성은 비율이 아니라 사람 수로 둔다 — 합이 곧 N 이다. */
 export interface Force {
   readonly mix: Readonly<Partial<Record<UnitKind, number>>>
+  /** 병종마다 무장 — 있으면 장비 배수는 사람 수로 가중한 평균 (gearMul). 없으면 equip 하나로 */
+  readonly kit?: Kit
   readonly equip: Equip
   /** 이끄는 장수의 지휘 1~10 — 무예와 통솔의 평균 (heroes.commandOf). 장수가 없으면 1. */
   readonly mu: number
@@ -36,6 +49,10 @@ export interface Field {
   /** 저격 X — 공격측·방어측 군대 F 전체에 한 번만 곱한다 (SNIPE). 없으면 1. */
   readonly snipeAtk: number
   readonly snipeDef: number
+  /** 싸움이 난 길의 종류 — 공격측이 걸어온 길 · 들판 싸움이면 그 길 (병종의 지형 덤 roleMul). 없으면 지형 덤이 없다 */
+  readonly edge?: EdgeKind
+  /** 방어측이 기습을 당했다 — 방패병이 버틴다 */
+  readonly ambushed?: boolean
 }
 
 export const OPEN_FIELD: Field = { fort: 1, crossing: false, ambush: 'none', snipeAtk: 1, snipeDef: 1 }
@@ -44,8 +61,9 @@ export const OPEN_FIELD: Field = { fort: 1, crossing: false, ambush: 'none', sni
  * 상성 표 — 행이 이기면 ×counterUp, 지면 ×counterDown (SYSTEMS §4-1).
  * '트인 땅'·'숲' 같은 지형 조건은 R1 에 아직 없다 — 지형 꼬리표가 들어오는 R4 에서 판에 따라 끈다.
  */
+// 창 → 방패 → 활 → 창 의 세모가 닫힌다 (창은 방패 벽을 찔러 뚫고, 방패는 화살을 막고, 활은 창병을 멀리서 쏜다)
 const BEATS: Readonly<Record<UnitKind, readonly UnitKind[]>> = {
-  spear: ['horse'],
+  spear: ['horse', 'shield'],
   bow: ['spear'],
   pike: ['horse'],
   shield: ['bow'],
@@ -70,6 +88,59 @@ export function equipMul(e: Equip): number {
     case 'leather': return R.equipLeather
     case 'ringSword': return R.equipRingSword
   }
+}
+
+/**
+ * 장비 배수 — 병종마다 무장(kit)이 있으면 사람 수로 가중한 평균. 그 병종의 kit 가 비었으면 equip 하나로 친다.
+ * 같은 군대라도 쇠촉 궁수 40 · 돌창 창병 100 이면 그 비율대로 섞인다.
+ */
+export function gearMul(f: Force): number {
+  const n = headcount(f)
+  if (n <= 0 || f.kit === undefined) return equipMul(f.equip)
+  let s = 0
+  for (const [k, c] of Object.entries(f.mix) as Array<[UnitKind, number]>) {
+    if (c <= 0) continue
+    let tn = 0
+    let ts = 0
+    for (const [e, m] of Object.entries(f.kit[k] ?? {}) as Array<[Equip, number]>) {
+      tn += m
+      ts += m * equipMul(e)
+    }
+    s += c * (tn > 0 ? ts / tn : equipMul(f.equip))
+  }
+  return s / n
+}
+
+/**
+ * 병종의 쓰임 — 공수·성·지형에 따라 (형: "창병 궁병 방패병 조합도 · 지형에따라 · 공격인지 방어인지에 따라") —
+ *   궁수: 지킬 때 세다 · 성·높은 터 위에서 더 세다 · 숲길에서는 못 쏜다
+ *   방패병: 지킬 때 세다 · 기습을 당해도 버틴다
+ *   창병: 칠 때 세다 · 들판에서 세다 · 좁은 고갯길에서는 창을 못 휘두른다
+ * 병종마다의 배수를 사람 수로 가중한 평균. 길(edge)을 모르면 지형 덤은 없다.
+ */
+export function roleMul(f: Force, field: Field, side: 'atk' | 'def'): number {
+  const R = P.realm
+  const n = headcount(f)
+  if (n <= 0) return 1
+  let s = 0
+  for (const [k, c] of Object.entries(f.mix) as Array<[UnitKind, number]>) {
+    if (c <= 0) continue
+    let m = 1
+    if (k === 'bow') {
+      if (side === 'def') m *= 1 + R.roleBowDef
+      if (side === 'def' && field.fort > 1) m *= 1 + R.roleBowWall
+      if (field.edge === 'forest') m *= 1 - R.roleBowForest
+    } else if (k === 'shield') {
+      if (side === 'def') m *= 1 + R.roleShieldDef
+      if (side === 'def' && field.ambushed === true) m *= 1 + R.roleShieldAmbush
+    } else if (k === 'spear') {
+      if (side === 'atk') m *= 1 + R.roleSpearAtk
+      if (field.edge === 'field') m *= 1 + R.roleSpearField
+      if (field.edge === 'pass') m *= 1 - R.roleSpearPass
+    }
+    s += c * m
+  }
+  return s / n
 }
 
 /** 한 병종이 다른 병종을 만났을 때의 배수 */
@@ -107,12 +178,12 @@ export function leadMul(mu: number): number {
 }
 
 /**
- * 전투력 F = N × E × L × M × T × S × X × 상성 (SYSTEMS §4-2)
+ * 전투력 F = N × E × L × M × T × S × X × 상성 × 쓰임 (SYSTEMS §4-2 · roleMul)
  * `side` 가 어느 쪽인지에 따라 자리(Field)의 배수가 붙는다.
  */
 export function power(me: Force, foe: Force, field: Field, side: 'atk' | 'def'): number {
   const R = P.realm
-  let f = fightHead(me) * equipMul(me.equip) * leadMul(me.mu) * me.morale * counterMul(me, foe)
+  let f = fightHead(me) * gearMul(me) * leadMul(me.mu) * me.morale * counterMul(me, foe) * roleMul(me, field, side)
   if (side === 'def') {
     f *= field.fort * field.snipeDef
   } else {
@@ -129,7 +200,7 @@ export function power(me: Force, foe: Force, field: Field, side: 'atk' | 'def'):
  * 척후가 "120~180" 처럼 보고하는 것은 이것이다. 실제 판정(power)은 여기에 상성·자리를 더 곱한다.
  */
 export function strength(f: Force): number {
-  return fightHead(f) * equipMul(f.equip) * leadMul(f.mu) * f.morale
+  return fightHead(f) * gearMul(f) * leadMul(f.mu) * f.morale
 }
 
 /** P(공격측 승) = Fa^k / (Fa^k + Fd^k). 둘 다 0 이면 반반. */

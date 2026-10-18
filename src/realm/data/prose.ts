@@ -295,7 +295,10 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     }
     case 'arm': {
       if (line.faction !== viewer) return null
-      return `${josa(nameArmy(line.army), '이', '가')} 철 ${line.iron}을 들여 ${EQUIP_NAME[line.equip]}으로 무장했다.`
+      if (line.unit !== undefined) {
+        return `${nameArmy(line.army)}의 ${UNIT_NAME[line.unit]} ${line.n ?? 0}명이 철 ${line.iron}을 들여 ${josa(GEAR_NAME[line.unit][line.equip], '을', '를')} 들었다.`
+      }
+      return `${josa(nameArmy(line.army), '이', '가')} 철 ${line.iron}을 들여 무장을 한 단계씩 올렸다.`
     }
     case 'recruit': {
       if (line.faction !== viewer) return null
@@ -450,7 +453,26 @@ const PLOT_DONE: Record<PlotOp, (target: string, where: string, other: string) =
   assassin: (t) => `${t} 진중에 자객의 화살이 날아들었다.`,
 }
 
-/** 장비 이름 — 무장 올리기 (철의 쓰임) */
+/**
+ * 무장 단계의 이름 — 병종을 가리지 않는 말 (형: "쇠칼을 들려뽑는다? 이게 좀 말이안됨" — 궁수에게 쇠칼은 없다).
+ * 병종마다의 이름은 GEAR_NAME. 철이 아니면 무엇으로 싸우나: 돌·나무·뼈, 그리고 청동.
+ */
 export const EQUIP_NAME: Record<Equip, string> = {
-  stone: '돌창', bronze: '청동 무기', ironTip: '쇠촉', iron: '쇠칼', leather: '가죽 갑옷', ringSword: '고리칼',
+  stone: '돌·나무 무장', bronze: '청동 무장', ironTip: '쇠날 무장', iron: '온 쇠 무장', leather: '청동 무장', ringSword: '고리칼',
+}
+
+/** 단계의 짧은 이름 — 표의 머리 */
+export const TIER_NAME: Record<Equip, string> = {
+  stone: '돌·나무', bronze: '청동', ironTip: '쇠날', iron: '온 쇠', leather: '청동', ringSword: '고리칼',
+}
+
+/** 병종마다 단계마다 드는 것 — "쇠날 창" · "쇠촉 화살" · "쇠 테 방패" */
+export const GEAR_NAME: Record<UnitKind, Record<Equip, string>> = {
+  spear: { stone: '돌창', bronze: '청동창', ironTip: '쇠날 창', iron: '쇠창과 쇠비늘 갑옷', leather: '청동창', ringSword: '고리칼과 쇠비늘 갑옷' },
+  bow: { stone: '뼈촉 화살', bronze: '청동촉 화살', ironTip: '쇠촉 화살', iron: '쇠촉 화살과 쇠비늘 갑옷', leather: '청동촉 화살', ringSword: '쇠촉 화살과 고리칼' },
+  shield: { stone: '나무 방패', bronze: '청동 장식 방패와 가죽 갑옷', ironTip: '쇠 테 방패', iron: '쇠 테 방패와 쇠비늘 갑옷', leather: '청동 장식 방패와 가죽 갑옷', ringSword: '쇠 방패와 고리칼' },
+  pike: { stone: '나무 긴창', bronze: '청동 긴창', ironTip: '쇠날 긴창', iron: '쇠 긴창과 쇠비늘 갑옷', leather: '청동 긴창', ringSword: '쇠 긴창과 고리칼' },
+  horse: { stone: '나무 창과 맨 말', bronze: '청동창과 가죽 말갖춤', ironTip: '쇠날 창과 가죽 말갖춤', iron: '쇠창과 쇠 말갖춤', leather: '청동창과 가죽 말갖춤', ringSword: '고리칼과 쇠 말갖춤' },
+  crossbow: { stone: '나무 쇠뇌', bronze: '청동 방아쇠 쇠뇌', ironTip: '쇠촉 쇠뇌', iron: '쇠촉 쇠뇌와 쇠비늘 갑옷', leather: '청동 방아쇠 쇠뇌', ringSword: '쇠촉 쇠뇌와 고리칼' },
+  boat: { stone: '돌창과 나무배', bronze: '청동창과 나무배', ironTip: '쇠날 창과 나무배', iron: '쇠창과 쇠 박은 배', leather: '청동창과 나무배', ringSword: '고리칼과 쇠 박은 배' },
 }

@@ -18,6 +18,8 @@ import {
 import { P } from '../../src/tune/params.ts'
 
 const SPEARS = (n: number, mu = 5): Force => ({ mix: { spear: n }, equip: 'ironTip', mu, morale: 1 })
+/** 쓰임(공수·지형) 덤이 없는 병종 — 바탕 셈(N × E × L × M)만 재는 시험에 (battle.roleMul 은 창·활·방패에만 붙는다) */
+const PIKES = (n: number, mu = 5): Force => ({ mix: { pike: n }, equip: 'ironTip', mu, morale: 1 })
 
 describe('이름 붙은 주사위 roll()', () => {
   it('같은 (시드, 계절, 이름) 은 같은 값', () => {
@@ -71,10 +73,10 @@ describe('전투 판정', () => {
     assert.ok(Math.abs(bins(0.9).draw - 0.036) < 1e-12)
   })
 
-  it('같은 군대끼리는 반반 · 병력 두 배면 k=2 에서 80%', () => {
-    const a = SPEARS(100)
+  it('같은 군대끼리는 반반 · 병력 두 배면 k=2 에서 80% (쓰임 덤 없는 병종으로)', () => {
+    const a = PIKES(100)
     assert.ok(Math.abs(winChance(power(a, a, OPEN_FIELD, 'atk'), power(a, a, OPEN_FIELD, 'def')) - 0.5) < 1e-12)
-    const big = SPEARS(200)
+    const big = PIKES(200)
     const p = winChance(power(big, a, OPEN_FIELD, 'atk'), power(a, big, OPEN_FIELD, 'def'))
     assert.ok(Math.abs(p - 0.8) < 1e-12, `P=${p}`)
   })
@@ -103,9 +105,9 @@ describe('전투 판정', () => {
     assert.ok(Math.abs(power(a, a, { ...OPEN_FIELD, fort: P.realm.fortSanseong }, 'def') / def - 1.6) < 1e-12)
   })
 
-  it('지휘는 무 1 → 0.85, 무 10 → 1.30', () => {
-    const lo = power(SPEARS(100, 1), SPEARS(100), OPEN_FIELD, 'atk') / headcount(SPEARS(100))
-    const hi = power(SPEARS(100, 10), SPEARS(100), OPEN_FIELD, 'atk') / headcount(SPEARS(100))
+  it('지휘는 무 1 → 0.85, 무 10 → 1.30 (쓰임 덤 없는 병종으로)', () => {
+    const lo = power(PIKES(100, 1), PIKES(100), OPEN_FIELD, 'atk') / headcount(PIKES(100))
+    const hi = power(PIKES(100, 10), PIKES(100), OPEN_FIELD, 'atk') / headcount(PIKES(100))
     assert.ok(Math.abs(lo - 0.85) < 1e-12 && Math.abs(hi - 1.3) < 1e-12, `${lo} ${hi}`)
   })
 

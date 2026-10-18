@@ -7,7 +7,7 @@
  * R1 의 범위: 지도 · 세력 · 장수 · 군대 · 정보 · 경계.
  * R1.5 (FLOW, 2026-10-18): 가호·창고(곡식·철) · 징병·해산 · 관계·사신 · 이김·짐. 사건·회유는 R3~R4.
  */
-import type { Equip, Outcome, UnitKind } from './battle.ts'
+import type { Equip, Kit, Outcome, UnitKind } from './battle.ts'
 import type { Source } from './intel.ts'
 
 /** 계절 번호 0 = 첫해 봄. 계절 = 번호 % 4 */
@@ -188,7 +188,10 @@ export interface Army {
   hero: string | null
   /** 병종별 사람 수 — 합이 병력 N */
   mix: Partial<Record<UnitKind, number>>
+  /** @deprecated 옛 화면 값 — 가장 많은 사람이 든 단계 (kit.syncKit 가 다시 셈한다). 판정은 kit 를 쓴다 */
   equip: Equip
+  /** 병종마다 무장 — 병종 → 단계 → 사람 수. 병종마다 합 = mix (kit.ts). 없으면 equip 하나로 다 든 것으로 본다 (옛 저장) */
+  kit?: Kit
   morale: number
   /** 머무는 고을 (행군 중이면 떠난 고을) */
   at: string
@@ -202,7 +205,7 @@ export interface NodeIntel {
   /** 땅 — 한 번 보면 안 낡는다 */
   land: boolean
   /** 군세 — 그때의 참 전투력 · 출처 · u · 본 계절. 없으면 본 적 없음 */
-  force: { f0: number; src: Source; u: number; season: number } | null
+  force: { f0: number; src: Source; u: number; season: number; mix?: Partial<Record<UnitKind, number>> } | null
   /** 경계 — 본 값과 본 계절 */
   alert: { v: number; season: number } | null
 }
@@ -346,8 +349,8 @@ export type Order =
       readonly why?: Why
       readonly about?: string
     }
-  /** 무장 올리기 (철의 쓰임) — 제 고을에 쉬는 군대의 장비를 한 단계 (economy.armCost) */
-  | { readonly kind: 'arm'; readonly army: string }
+  /** 무장 올리기 (철의 쓰임) — unit 이 있으면 그 병종 가운데 가장 낮은 무장을 한 단계, 없으면 병종마다 그렇게 (economy.armCost · kit.upgradeKind) */
+  | { readonly kind: 'arm'; readonly army: string; readonly unit?: UnitKind }
 
 /** 직접 쏜 저격의 결과 — 판 열쇠(battleKey)마다. R1 에는 저격이 없어 비어 있다 (SNIPE · SYSTEMS §6) */
 export type SnipeZone = 'head' | 'body' | 'leg' | 'drum' | 'miss'
@@ -402,7 +405,7 @@ export type ReportLine =
   /** 군대를 빌려줬다 (`army` 가 `to` 의 `node` 를 지키러 간다) · 돌아갔다 (back) */
   | { readonly kind: 'lent'; readonly from: string; readonly to: string; readonly node: string; readonly army: string; readonly back: boolean }
   /** 무장을 올렸다 */
-  | { readonly kind: 'arm'; readonly faction: string; readonly army: string; readonly equip: Equip; readonly iron: number }
+  | { readonly kind: 'arm'; readonly faction: string; readonly army: string; readonly equip: Equip; readonly iron: number; readonly unit?: UnitKind; readonly n?: number }
   | { readonly kind: 'relation'; readonly a: string; readonly b: string; readonly state: Relation['state'] }
   | { readonly kind: 'end'; readonly outcome: 'win' | 'lose'; readonly faction: string }
   /** 우리 고을에 맞닿은 길 위의 남의 군대 — 행군은 보인다 (FLOW §7 #2) */

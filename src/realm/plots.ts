@@ -18,7 +18,7 @@ import { addFavor, relationOf, worsen } from './diplomacy.ts'
 import { stockOf } from './economy.ts'
 import { armyOfHero, gainXp, hasTrait, heroAt, heroSeen, isRuler, plotBonus } from './heroes.ts'
 import { alertRange } from './intel.ts'
-import { nodeStrength } from './season.ts'
+import { nodeStrength, seenShares } from './season.ts'
 import type { Order, PlotOp, Realm, ReportLine } from './types.ts'
 
 type Plot = Extract<Order, { kind: 'plot' }>
@@ -184,7 +184,7 @@ function spyLook(r: Realm, faction: string, node: string): void {
   const w = r.watch[node]
   known[node] = {
     land: true,
-    force: { f0: nodeStrength(r, node, n.owner), src: 'scout', u: roll(r.seed, r.season, `spy-u:${faction}:${node}`), season: r.season },
+    force: { f0: nodeStrength(r, node, n.owner), src: 'scout', u: roll(r.seed, r.season, `spy-u:${faction}:${node}`), season: r.season, ...seenShares(r, node, n.owner) },
     alert: w !== undefined ? { v: w.alert, season: r.season } : null,
   }
 }

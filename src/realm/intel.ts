@@ -7,7 +7,8 @@
  * 소문 표식이 붙은 정보만 예외다 (여기서는 다루지 않는다 — 소문은 범위가 아니라 표식이다).
  */
 import { P } from '../tune/params.ts'
-import { winChance } from './battle.ts'
+import { winChance, type UnitKind } from './battle.ts'
+import type { Realm } from './types.ts'
 
 /** 정보의 출처마다 흐림 s (§2-2). 척후는 0 — 제 눈으로 봤다. */
 export type Source = 'scout' | 'spy' | 'captive' | 'merchant'
@@ -75,4 +76,16 @@ export function alertRange(seen: number, age: number): readonly [number, number]
  */
 export function winRange(fa: number, foe: readonly [number, number]): readonly [number, number] {
   return [winChance(fa, foe[1]), winChance(fa, foe[0])]
+}
+
+/**
+ * 본 병종의 몫 — 정찰·첩자가 그 고을에서 본 구성 (형: "정찰하면 '궁수가 많다' 같은 구성이 보이게").
+ * 몫은 P.realm.seenMixStep 눈금이고 사람 수는 없다. 본 적 없거나 낡아 모르게 됐으면(intelBlindAge) null. age 는 본 지 몇 계절.
+ */
+export function seenMix(r: Realm, viewer: string, node: string): { mix: Partial<Record<UnitKind, number>>; age: number } | null {
+  const k = r.intel[viewer]?.[node]?.force
+  if (k?.mix === undefined) return null
+  const age = r.season - k.season
+  if (age >= P.realm.intelBlindAge) return null
+  return { mix: k.mix, age }
 }

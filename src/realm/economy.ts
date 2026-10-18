@@ -14,8 +14,9 @@
 import { P } from '../tune/params.ts'
 import { blockedWhy, seasonOf } from './calendar.ts'
 import { draftCapBonus, gluttonMen, growMul, harvestMul, militiaMul, riteMul } from './heroes.ts'
-import type { Equip } from './battle.ts'
-import type { Order, ReportLine, Realm, Stock } from './types.ts'
+import type { Equip, UnitKind } from './battle.ts'
+import { TIERS, kitOf, lowestTier, nextTier, upgradeKind } from './kit.ts'
+import type { Army, Order, ReportLine, Realm, Stock } from './types.ts'
 
 function menIn(mix: Readonly<Partial<Record<string, number>>>): number {
   let n = 0
@@ -201,16 +202,9 @@ export function applyGuard(r: Realm, o: Extract<Order, { kind: 'guard' }>, lines
 
 // ───────── 철의 쓰임 (형: "철은 언제 어떻게 사용하는건지 모르겠네" — 2026-10-18)
 
-/** 장비의 다음 단계 — 돌 → 청동 → 철촉 → 철검. 가죽은 철촉으로, 철검·고리칼 위는 없다 */
+/** 장비의 다음 단계 — 돌 → 청동 → 쇠날 → 온 쇠. 가죽은 청동 단계라 쇠날로, 온 쇠·고리칼 위는 없다 (kit.nextTier) */
 export function nextEquip(e: Equip): Equip | null {
-  switch (e) {
-    case 'stone': return 'bronze'
-    case 'bronze': return 'ironTip'
-    case 'leather': return 'ironTip'
-    case 'ironTip': return 'iron'
-    case 'iron': return null
-    case 'ringSword': return null
-  }
+  return nextTier(e)
 }
 
 /** 그 단계로 올리는 데 한 사람당 드는 철 */
@@ -219,37 +213,61 @@ function ironPer(to: Equip): number {
   return to === 'bronze' ? R.armIronBronze : to === 'ironTip' ? R.armIronTip : to === 'iron' ? R.armIronIron : Infinity
 }
 
+/** 병종 하나를 올리는 몫 — 그 병종 가운데 가장 낮은 무장의 사람들이 한 단계 */
+function kindStep(a: Army, kind: UnitKind): { from: Equip; to: Equip; n: number } | null {
+  const from = lowestTier(a, kind)
+  const to = from !== null ? nextTier(from) : null
+  if (from === null || to === null) return null
+  return { from, to, n: kitOf(a)[kind]?.[from] ?? 0 }
+}
+
 /**
- * 무장 올리기의 값 — 제 고을에 쉬는 군대만. 철 = 사람 × 그 단계의 철, 곡식 = 사람 × armGrain.
- * 올릴 단계가 없거나 행군 중이거나 남의 땅이면 null. 창고가 모자라도 값은 낸다 (화면이 회색으로 보인다)
+ * 무장 올리기의 값 — 제 고을에 쉬는 군대만 (형: "창병 궁수 방패병 다르지 않나").
+ *   unit 을 주면: 그 병종 가운데 가장 낮은 무장을 든 사람들만 한 단계. `n` 은 그 사람 수, `from`→`to`.
+ *   unit 이 없으면: 병종마다 그렇게 (옛 단추). `to` 는 가장 낮은 무장이 오를 단계.
+ * 철 = 사람 × 오를 단계의 철, 곡식 = 사람 × armGrain. 올릴 것이 없거나 행군 중이거나 남의 땅이면 null.
+ * 창고가 모자라도 값은 낸다 (화면이 회색으로 보인다)
  */
-export function armCost(r: Realm, army: string): { iron: number; grain: number; to: Equip } | null {
+export function armCost(r: Realm, army: string, unit?: UnitKind): { iron: number; grain: number; to: Equip; from: Equip; n: number; unit?: UnitKind } | null {
   const a = r.armies[army]
   if (a === undefined || a.march !== null || r.nodes[a.at]?.owner !== a.faction) return null
-  const to = nextEquip(a.equip)
-  if (to === null) return null
-  const n = menIn(a.mix)
-  if (n <= 0) return null
-  return { iron: Math.ceil(n * ironPer(to)), grain: Math.ceil(n * P.realm.armGrain), to }
+  const kinds = unit !== undefined ? [unit] : (Object.keys(a.mix) as UnitKind[]).filter((k) => (a.mix[k] ?? 0) > 0).sort()
+  let iron = 0
+  let n = 0
+  let low: { from: Equip; to: Equip } | null = null
+  for (const k of kinds) {
+    const s = kindStep(a, k)
+    if (s === null || s.n <= 0) continue
+    iron += s.n * ironPer(s.to)
+    n += s.n
+    if (low === null || TIERS.indexOf(s.from) < TIERS.indexOf(low.from)) low = { from: s.from, to: s.to }
+  }
+  if (low === null || n <= 0) return null
+  const out = { iron: Math.ceil(iron), grain: Math.ceil(n * P.realm.armGrain), to: low.to, from: low.from, n }
+  return unit !== undefined ? { ...out, unit } : out
 }
 
 /** 1 — 무장 올리기. 규칙에 안 맞거나 창고가 모자라면 아무 일도 없다 */
 export function applyArm(r: Realm, o: Extract<Order, { kind: 'arm' }>, lines: ReportLine[]): void {
   const a = r.armies[o.army]
-  const c = armCost(r, o.army)
+  const c = armCost(r, o.army, o.unit)
   if (a === undefined || c === null) return
   const s = stockOf(r, a.faction)
   if (s.iron < c.iron || s.grain < c.grain) return
   s.iron -= c.iron
   s.grain -= c.grain
-  a.equip = c.to
-  lines.push({ kind: 'arm', faction: a.faction, army: a.id, equip: c.to, iron: c.iron })
+  const kinds = o.unit !== undefined ? [o.unit] : (Object.keys(a.mix) as UnitKind[]).sort()
+  for (const k of kinds) upgradeKind(a, k)
+  lines.push({ kind: 'arm', faction: a.faction, army: a.id, equip: c.to, iron: c.iron, n: c.n, ...(o.unit !== undefined ? { unit: o.unit } : {}) })
 }
 
-/** 철검 징병 — n 명을 그 나라 기본 장비보다 한 단계 위로 뽑는 데 드는 철. 올릴 단계가 없으면 null */
-export function draftIronCost(r: Realm, faction: string, n: number): { iron: number; to: Equip } | null {
+/**
+ * 쇠 들려 징병 — n 명을 그 나라 기본 장비보다 한 단계 위로 뽑는 데 드는 철. **뽑힌 그 사람들만** 그 단계를 든다.
+ * 올릴 단계가 없으면 null. 값은 병종과 상관없이 단계로 정해진다 (unit 은 화면 말을 고르려고 받는다)
+ */
+export function draftIronCost(r: Realm, faction: string, n: number, _unit?: UnitKind): { iron: number; to: Equip } | null {
   const base = r.factions[faction]?.equip
-  const to = base !== undefined ? nextEquip(base) : null
+  const to = base !== undefined ? nextTier(base) : null
   if (to === null || n <= 0) return null
   return { iron: Math.ceil(n * ironPer(to)), to }
 }

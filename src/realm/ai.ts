@@ -408,13 +408,21 @@ function lentMoves(r: Realm, faction: string): Order[] {
 function arms(r: Realm, faction: string): Order[] {
   const s = stockOf(r, faction)
   const spareGrain = s.grain - P.realm.aiDraftReserve * upkeepOf(r, faction, true)
-  const best = sorted(Object.values(r.armies))
+  const big = sorted(Object.values(r.armies))
     .filter((a) => a.faction === faction && a.march === null && a.lent === undefined)
-    .map((a) => ({ a, c: armCost(r, a.id) }))
-    .filter((x) => x.c !== null && x.c.iron + P.realm.aiIronKeep <= s.iron && x.c.grain <= spareGrain)
-    .sort((x, y) => Object.values(y.a.mix).reduce((t, v) => t + (v ?? 0), 0) - Object.values(x.a.mix).reduce((t, v) => t + (v ?? 0), 0))[0]
-  return best === undefined ? [] : [{ kind: 'arm', army: best.a.id }]
+    .sort((x, y) => Object.values(y.mix).reduce((t, v) => t + (v ?? 0), 0) - Object.values(x.mix).reduce((t, v) => t + (v ?? 0), 0))
+  // 병종마다 — 궁수(촉이 곧 힘) · 창병 · 방패병 · 그 밖 순으로, 가장 큰 군대부터 낼 수 있는 첫 것
+  for (const a of big) {
+    for (const unit of ARM_ORDER) {
+      if ((a.mix[unit] ?? 0) <= 0) continue
+      const c = armCost(r, a.id, unit)
+      if (c !== null && c.iron + P.realm.aiIronKeep <= s.iron && c.grain <= spareGrain) return [{ kind: 'arm', army: a.id, unit }]
+    }
+  }
+  return []
 }
+
+const ARM_ORDER: readonly UnitKind[] = ['bow', 'spear', 'shield', 'pike', 'horse', 'crossbow', 'boat']
 
 
 /**

@@ -161,7 +161,8 @@ const RULER: Readonly<Record<string, string>> = {
 }
 
 const a = (id: string, faction: string, hero: string | null, at: string, mix: Army['mix'], equip: Army['equip'] = 'ironTip'): Army =>
-  ({ id, faction, hero, mix, equip, morale: 1, at, march: null })
+  // 병종마다 무장 — 판 처음엔 모두 그 군대의 장비 하나 (kit.ts)
+  ({ id, faction, hero, mix, equip, kit: Object.fromEntries(Object.entries(mix).map(([k, n]) => [k, { [equip]: n }])), morale: 1, at, march: null })
 
 const ARMIES: Army[] = [
   a('a-us', 'us', 'chief', 'our-cap', { spear: 80, bow: 30, shield: 10 }),

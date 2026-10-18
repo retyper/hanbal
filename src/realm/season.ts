@@ -17,7 +17,7 @@ import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import {
   OPEN_FIELD, ambushChance, ambushSizePenalty, bins, fate, headcount, losses, pick, power, strength, winChance,
-  type Force, type Outcome, type UnitKind,
+  type Equip, type Force, type Kit, type Outcome, type UnitKind,
 } from './battle.ts'
 import {
   checkPledges, driftFavor, expireRelations, friendly, holdMarkets, makeAsks, onHostile, relationOf, resolveAnswers, resolveEnvoys,
@@ -30,6 +30,7 @@ import {
 import { blockedWhy, seasonOf } from './calendar.ts'
 import { refreshSpies, resolvePlots } from './plots.ts'
 import { noteTake } from './stance.ts'
+import { addMen, giveMen, kitOf, scaleMen, takeMen } from './kit.ts'
 import {
   ambushTraitOf, applyHeroOrders, battleGrowth, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroesAtNode, ironhandAt, noteMet, stepHeroes, sweepHeroes,
 } from './heroes.ts'
@@ -105,12 +106,13 @@ function heroOf(r: Realm, a: Army) {
 
 export function forceOf(r: Realm, a: Army): Force {
   const h = heroOf(r, a)
-  return { mix: a.mix, equip: a.equip, mu: commandOf(h), bowMul: bowMulOf(h), morale: a.morale + bondMoraleOf(r, h) }
+  return { mix: a.mix, kit: kitOf(a), equip: a.equip, mu: commandOf(h), bowMul: bowMulOf(h), morale: a.morale + bondMoraleOf(r, h) }
 }
 
-/** 여러 군대를 한 판정 입력으로 — 병력은 더하고, 장비·지휘는 가장 큰 군대·가장 센 장수의 것 */
+/** 여러 군대를 한 판정 입력으로 — 병력과 병종마다 무장은 더하고, 지휘는 가장 센 장수의 것 */
 function mergeForces(r: Realm, armies: readonly Army[]): Force {
   const mix: Partial<Record<UnitKind, number>> = {}
+  const kit: Kit = {}
   let biggest: Army | null = null
   let mu = 1
   let bowMul = 1
@@ -119,13 +121,17 @@ function mergeForces(r: Realm, armies: readonly Army[]): Force {
   for (const a of armies) {
     const c = headcount(forceOf(r, a))
     for (const [k, v] of Object.entries(a.mix) as Array<[UnitKind, number]>) mix[k] = (mix[k] ?? 0) + v
+    for (const [k, t] of Object.entries(kitOf(a)) as Array<[UnitKind, Partial<Record<Equip, number>>]>) {
+      const into = (kit[k] ??= {})
+      for (const [e, m] of Object.entries(t) as Array<[Equip, number]>) into[e] = (into[e] ?? 0) + m
+    }
     if (biggest === null || c > headcount(forceOf(r, biggest))) biggest = a
     mu = Math.max(mu, commandOf(heroOf(r, a)))
     bowMul = Math.max(bowMul, bowMulOf(heroOf(r, a)))
     moraleSum += (a.morale + bondMoraleOf(r, heroOf(r, a))) * c // 믿는 장수의 덤 (HEROES §6)
     n += c
   }
-  return { mix, equip: biggest?.equip ?? 'stone', mu, bowMul, morale: n > 0 ? moraleSum / n : 1 }
+  return { mix, kit, equip: biggest?.equip ?? 'stone', mu, bowMul, morale: n > 0 ? moraleSum / n : 1 }
 }
 
 /** 고을에 머무는(행군 중이 아닌) 군대 — id 순서로 (결정론) */
@@ -176,6 +182,29 @@ export function nodeStrength(r: Realm, node: string, owner: string | null): numb
   return f
 }
 
+/**
+ * 정찰·첩자가 보는 병종의 몫 (형: "정찰하면 '궁수가 많다' 같은 구성이 보이게") — 그 고을 주인의 머무는 군대와 장정(창병).
+ * 몫을 seenMixStep 눈금으로 둥글린다 (사람 수는 안 보인다). 아무도 없으면 빈 것 — intel force 에 펼쳐 넣는다.
+ */
+export function seenShares(r: Realm, node: string, owner: string | null): { mix?: Partial<Record<UnitKind, number>> } {
+  const sum: Partial<Record<UnitKind, number>> = {}
+  for (const a of armiesAt(r, node)) {
+    if (a.faction !== owner) continue
+    for (const [k, v] of Object.entries(a.mix) as Array<[UnitKind, number]>) sum[k] = (sum[k] ?? 0) + v
+  }
+  const m = militiaOf(r, node)
+  if (m !== null && m.faction === owner) sum.spear = (sum.spear ?? 0) + (m.mix.spear ?? 0)
+  const n = Object.values(sum).reduce((s, v) => s + (v ?? 0), 0)
+  if (n <= 0) return {}
+  const step = P.realm.seenMixStep
+  const mix: Partial<Record<UnitKind, number>> = {}
+  for (const [k, v] of Object.entries(sum) as Array<[UnitKind, number]>) {
+    const s = Math.round(v / n / step) * step
+    if (s > 0) mix[k] = Math.round(s * 100) / 100
+  }
+  return { mix }
+}
+
 function bestRyak(r: Realm, armies: readonly Army[]): number {
   let best = 1
   for (const a of armies) best = Math.max(best, heroOf(r, a)?.ryak ?? 1)
@@ -207,7 +236,7 @@ function provoke(r: Realm, attacker: string, victim: string | null, lines: Repor
 }
 
 function scaleMix(a: Army, keep: number): void {
-  for (const k of Object.keys(a.mix) as UnitKind[]) a.mix[k] = Math.round((a.mix[k] ?? 0) * keep)
+  scaleMen(a, keep) // 병종마다 · 무장 단계마다 같은 비율로 (kit.ts)
 }
 
 function byId<T extends { id: string }>(xs: Iterable<T>): T[] {
@@ -266,16 +295,13 @@ function splitArmy(r: Realm, o: Extract<Order, { kind: 'split' }>, lines: Report
   }
   const total = headcount(forceOf(r, a))
   if (taken < R.splitMin || total - taken < R.splitMin) return
-  const mix: Partial<Record<UnitKind, number>> = {}
-  for (const [k, t] of Object.entries(o.take) as Array<[UnitKind, number]>) {
-    if (t === 0) continue
-    mix[k] = t
-    a.mix[k] = (a.mix[k] ?? 0) - t
-    if (a.mix[k] === 0) delete a.mix[k]
-  }
+  // 떼어 낸 무리는 병종마다 무장 단계를 같은 비율로 가져간다 (kit.takeMen)
+  const part = takeMen(a, o.take)
   const hero = o.hero ? a.hero : null
   if (o.hero) a.hero = null
-  r.armies[o.id] = { id: o.id, faction: a.faction, hero, mix, equip: a.equip, morale: a.morale, at: a.at, march: null }
+  const b: Army = { id: o.id, faction: a.faction, hero, mix: {}, equip: a.equip, morale: a.morale, at: a.at, march: null }
+  giveMen(b, part)
+  r.armies[o.id] = b
   lines.push({ kind: 'split', army: a.id, id: o.id })
 }
 
@@ -288,9 +314,8 @@ function mergeArmy(r: Realm, o: Extract<Order, { kind: 'merge' }>, lines: Report
   if (heroOf(r, a) !== null && heroOf(r, b) !== null) return
   const na = headcount(forceOf(r, a))
   const nb = headcount(forceOf(r, b))
-  for (const [k, v] of Object.entries(a.mix) as Array<[UnitKind, number]>) b.mix[k] = (b.mix[k] ?? 0) + v
+  giveMen(b, { mix: a.mix, kit: kitOf(a) }) // 병종마다 무장째 더한다
   if (na + nb > 0) b.morale = (a.morale * na + b.morale * nb) / (na + nb)
-  if (na > nb) b.equip = a.equip
   if (heroOf(r, b) === null) b.hero = a.hero
   delete r.armies[a.id]
   lines.push({ kind: 'merge', army: a.id, into: b.id })
@@ -317,23 +342,21 @@ function draftArmy(r: Realm, o: Extract<Order, { kind: 'draft' }>, lines: Report
   if (node === undefined || node.owner !== o.faction || r.factions[o.faction] === undefined) return
   if (!Number.isInteger(o.n) || o.n < 1 || o.n > draftLimit(r, o.faction, o.node)) return
   if (!draftable(node).includes(o.unit)) return
-  // 철검 징병 — 철을 들이면 한 단계 위 장비로 (철이 모자라면 그냥 뽑는다)
-  const ic = o.iron === true ? draftIronCost(r, o.faction, o.n) : null
+  // 쇠 들려 징병 — 철을 들이면 **뽑힌 그 사람들만** 한 단계 위 무장을 든다 (철이 모자라면 그냥 뽑는다).
+  // 쇠 다루는 장수가 맡은 고을에서는 모두 온 쇠 (heroes.ironhandAt)
+  const ic = o.iron === true ? draftIronCost(r, o.faction, o.n, o.unit) : null
   const up = ic !== null && !ironhandAt(r, node.id) && stockOf(r, o.faction).iron >= ic.iron ? ic : null
+  const tier: Equip = ironhandAt(r, node.id) ? 'iron' : (up?.to ?? r.factions[o.faction]!.equip)
   let army = armiesAt(r, node.id).find((a) => a.faction === o.faction && a.lent === undefined)
   if (army === undefined) {
     if (Object.values(r.armies).filter((x) => x.faction === o.faction).length >= P.realm.armyMax) return
     const id = newArmyId(r, o.faction)
-    const equip = ironhandAt(r, node.id) ? 'iron' : (up?.to ?? r.factions[o.faction]!.equip)
-    army = { id, faction: o.faction, hero: null, mix: {}, equip, morale: 1, at: node.id, march: null }
+    army = { id, faction: o.faction, hero: null, mix: {}, equip: tier, morale: 1, at: node.id, march: null }
     r.armies[id] = army
   }
   const had = headcount(forceOf(r, army))
-  if (up !== null) {
-    stockOf(r, o.faction).iron -= up.iron
-    if (o.n >= had) army.equip = up.to // 섞이면 많은 쪽의 장비
-  }
-  army.mix[o.unit] = (army.mix[o.unit] ?? 0) + o.n
+  if (up !== null) stockOf(r, o.faction).iron -= up.iron
+  addMen(army, o.unit, o.n, tier)
   army.morale = (army.morale * had + o.n) / (had + o.n) // 새로 든 사람은 사기 1
   node.hh -= o.n
   stockOf(r, o.faction).grain -= draftCost(o.n).grain
@@ -427,7 +450,7 @@ function resolveScouts(r: Realm, orders: readonly Order[], lines: ReportLine[]):
     if (detected) w.alert = Math.min(R.alertMax, w.alert + R.alertOnDetect)
     known[node.id] = {
       land: true,
-      force: { f0: nodeStrength(r, node.id, node.owner), src: 'scout', u: roll(r.seed, r.season, `scout-u:${o.faction}:${node.id}`), season: r.season },
+      force: { f0: nodeStrength(r, node.id, node.owner), src: 'scout', u: roll(r.seed, r.season, `scout-u:${o.faction}:${node.id}`), season: r.season, ...seenShares(r, node.id, node.owner) },
       alert: { v: w.alert, season: r.season },
     }
     for (const nb of neighbors(r, node.id)) known[nb] ??= { land: true, force: null, alert: null }
@@ -446,7 +469,7 @@ export function groupPower(
   const season = seasonOf(r.season)
   let f = 0
   for (const x of atks) {
-    const field = { fort, crossing: x.edge.kind === 'ford' && season !== 'winter', ambush: x.ambush, snipeAtk: 1, snipeDef: 1 }
+    const field = { fort, crossing: x.edge.kind === 'ford' && season !== 'winter', ambush: x.ambush, snipeAtk: 1, snipeDef: 1, edge: x.edge.kind }
     f += power(forceOf(r, x.army), defF, field, 'atk')
   }
   return new Set(atks.map((x) => x.edge.id)).size >= 2 ? f * P.realm.pincer : f
@@ -540,7 +563,8 @@ function fieldBattles(r: Realm, lines: ReportLine[]): void {
       meet(r, [...atks, ...defs])
       const atkF = mergeForces(r, atks)
       const defF = mergeForces(r, defs)
-      const p = winChance(power(atkF, defF, OPEN_FIELD, 'atk'), power(defF, atkF, OPEN_FIELD, 'def'))
+      const ground = { ...OPEN_FIELD, edge: r.edges[eid]!.kind } // 들판 싸움 — 그 길의 지형
+      const p = winChance(power(atkF, defF, ground, 'atk'), power(defF, atkF, ground, 'def'))
       const outcome = pick(bins(p), roll(r.seed, r.season, `field:${eid}:${lead.id}`))
       const loss = losses(outcome)
       for (const x of atks) scaleMix(x, 1 - loss.atk)
@@ -628,7 +652,8 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const snipeAtk = playerIsAtk || zone === 'drum' ? 1 : xMul
   const snipeDef = playerIsAtk ? xMul : 1
   const fa = groupPower(r, legs, defF, fort) * snipeAtk
-  const fd = power(defF, atkF, { fort, crossing: false, ambush: 'none', snipeAtk: 1, snipeDef }, 'def')
+  // 지키는 쪽의 지형 — 앞선 군대가 걸어온 길 · 기습을 당했으면 방패병이 버틴다 (battle.roleMul)
+  const fd = power(defF, atkF, { fort, crossing: false, ambush: 'none', snipeAtk: 1, snipeDef, edge: legs[0]!.edge.kind, ambushed: ambush === 'success' }, 'def')
   const p = winChance(fa, fd)
   const outcome = pick(bins(p), roll(r.seed, r.season, `battle:${key}`))
 
