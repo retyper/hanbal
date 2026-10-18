@@ -66,7 +66,7 @@ const CSS = `
 .rm .scene { display: flex; gap: 12px; align-items: flex-end; margin: 8px 0; }
 .rm .scene img.ev { width: min(100%, 420px); border-radius: 6px; border: 1px solid #4a5260; }
 .rm .scene img.who { width: 120px; height: 120px; border-radius: 6px; border: 2px solid #d9b36a; object-fit: cover; }
-.rm .scene .brag { font-size: 18px; color: #f3e3bd; margin-top: 6px; }
+.rm .brag { font-size: 18px; font-weight: 700; color: #f3d38a; margin: 2px 0 8px; }
 .rm .captive { display: inline-block; text-align: center; margin: 4px 10px 4px 0; font-size: 13px; }
 .rm .captive img { display: block; width: 96px; height: 96px; border-radius: 6px; border: 1px solid #8a5a3a; object-fit: cover; margin-bottom: 2px; }
 @media (max-width: 600px) { .rm { padding: 16px 12px; } .rm table { font-size: 13px; } }

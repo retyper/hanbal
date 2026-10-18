@@ -53,21 +53,22 @@ export function nodeIcon(n: RNode): string {
 
 /** 지도 위 자리 (비율) — 변한 축소판 */
 export const NODE_POS: Readonly<Record<string, readonly [number, number]>> = {
-  'miri-cap': [0.6, 0.27],
-  'miri-vil': [0.51, 0.43],
-  sodo: [0.43, 0.33],
-  'anya-fort': [0.37, 0.22],
-  'anya-cap': [0.31, 0.52],
-  'anya-vil': [0.18, 0.5],
-  'goja-cap': [0.24, 0.72],
-  'goja-vil': [0.38, 0.69],
-  'our-north': [0.43, 0.52],
+  // 첫 판(2026-10-18 시식)은 가운데 넷이 겹쳐 이름이 묻혔다 — 강줄기를 따라 벌렸다
+  'miri-cap': [0.62, 0.24],
+  'miri-vil': [0.53, 0.36],
+  sodo: [0.38, 0.3],
+  'anya-fort': [0.3, 0.17],
+  'anya-cap': [0.25, 0.5],
+  'anya-vil': [0.12, 0.45],
+  'goja-cap': [0.2, 0.74],
+  'goja-vil': [0.35, 0.72],
+  'our-north': [0.41, 0.49],
   'our-cap': [0.5, 0.66],
-  'our-east': [0.58, 0.55],
-  'guya-vil': [0.67, 0.5],
-  'guya-cap': [0.72, 0.66],
-  'guya-iron': [0.75, 0.3],
-  'dokro-cap': [0.88, 0.64],
+  'our-east': [0.62, 0.52],
+  'guya-vil': [0.74, 0.43],
+  'guya-cap': [0.77, 0.66],
+  'guya-iron': [0.8, 0.24],
+  'dokro-cap': [0.92, 0.6],
 }
 
 /** 계절 → 지도 바탕 (같은 땅의 네 철, ART ⑪) */
