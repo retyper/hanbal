@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs'
 
 import { aiOrders, decide } from '../../src/realm/ai.ts'
 import { visibleRange } from '../../src/realm/intel.ts'
+import { migrate } from '../../src/realm/migrate.ts'
 import { advance } from '../../src/realm/season.ts'
 import type { Realm } from '../../src/realm/types.ts'
 
@@ -34,6 +35,14 @@ describe('옛 판', () => {
       assert.equal(nanPath(res.next), null, `계절 ${s}`)
       r = JSON.parse(JSON.stringify(res.next)) as Realm
     }
+  })
+
+  it('옛 판의 나라 이름은 우리 역사책 이름으로 바뀐다 (구야국 → 가락국 · 갯마을 → 골포국)', () => {
+    const r = JSON.parse(readFileSync(OLD, 'utf8')) as Realm
+    migrate(r)
+    assert.equal(r.factions['guya']!.name, '가락국')
+    assert.equal(r.factions['us']!.name, '골포국')
+    assert.equal(r.nodes['our-cap']!.name, '골포 도읍')
   })
 
   it('칸이 빈 정보는 모른다 (NaN 범위를 내지 않는다)', () => {

@@ -525,11 +525,11 @@ export const GEAR_NAME: Record<UnitKind, Record<Equip, string>> = {
 
 /**
  * 고을이 지금의 어디쯤인가 (형: "뭔뭔읍락 진짜 어딘지 감도 안옴. 차라리 현재 지명 비슷하게") — 지도 이름 밑과 고을 판에 작게.
- * 나라 자리는 사료의 설(구야=김해 · 안야=함안 · 미리미동=밀양 · 고자미동=고성 · 독로=동래), 마을은 길로 이어진 모양에 맞춘 짐작이다.
+ * 나라 자리는 우리 역사책과 학설(가락=김해 · 아라=함안 · 추화=밀양 · 고자=고성 · 거칠산=동래 · 골포=마산), 마을은 길로 이어진 모양에 맞춘 짐작이다.
  * 판의 데이터(RNode)가 아니라 여기 두어 옛 판에도 보인다.
  */
 export const NODE_NOW: Readonly<Record<string, string>> = {
-  'our-cap': '창원', 'our-north': '창원 북면', 'our-east': '창원 동읍',
+  'our-cap': '창원 마산', 'our-north': '창원 북면', 'our-east': '창원 동읍',
   'guya-cap': '김해', 'guya-iron': '양산 물금', 'guya-vil': '김해 진영',
   'anya-cap': '함안', 'anya-fort': '의령', 'anya-vil': '함안 군북',
   'miri-cap': '밀양', 'miri-vil': '밀양 삼랑진',

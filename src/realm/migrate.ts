@@ -14,8 +14,30 @@ import type { Realm } from './types.ts'
 /** 지금 판의 사람 눈금 — 옛 판의 몇 배인가 */
 export const PEOPLE_SCALE = 4
 
-/** 옛 판이면 사람을 키운다 (제자리에서 바꾼다). 이미 지금 눈금이면 아무 일도 없다 */
+/**
+ * 옛 이름 → 우리 역사책의 이름 (형: "가장 중요한 건 한국사 기록이야" — 2026-10-18). 저장된 판의 나라·도읍 이름도 바꾼다.
+ * 세력 id(guya 등)는 그대로라 판의 셈은 같다.
+ */
+const RENAME: Readonly<Record<string, string>> = {
+  갯마을: '골포국', 구야국: '가락국', 안야국: '아라국', 미리미동국: '추화국', 고자미동국: '고자국', 독로국: '거칠산국',
+  '갯마을 도읍': '골포 도읍', '구야 도읍': '가락 도읍', '안야 도읍': '아라 도읍', '미리미동 도읍': '추화 도읍', '고자미동 도읍': '고자 도읍', '독로 도읍': '거칠산 도읍',
+}
+
+function rename(r: Realm): void {
+  for (const f of Object.values(r.factions)) {
+    const to = RENAME[f.name]
+    if (to !== undefined) (f as { name: string }).name = to
+  }
+  for (const id of Object.keys(r.nodes)) {
+    const n = r.nodes[id]!
+    const to = RENAME[n.name]
+    if (to !== undefined) r.nodes[id] = { ...n, name: to }
+  }
+}
+
+/** 옛 판이면 사람을 키운다 (제자리에서 바꾼다). 이미 지금 눈금이면 아무 일도 없다. 옛 이름은 늘 고친다 */
 export function migrate(r: Realm): void {
+  rename(r)
   const s = r.scale ?? 1
   if (s === PEOPLE_SCALE || !(s > 0)) return
   const f = PEOPLE_SCALE / s

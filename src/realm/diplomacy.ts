@@ -372,7 +372,7 @@ function chanceAt(
         + (truceWhy(r, to, from) !== null ? R.envoyMotive : 0) + (winningAgainst(r, to, from) ? R.envoyWinning : 0)
       break
     case 'trade':
-      // 받는 쪽은 제게 없는 것을 더 쳐 준다 (뭍의 나라가 소금을 · 갯마을이 철을)
+      // 받는 쪽은 제게 없는 것을 더 쳐 준다 (뭍의 나라가 소금을 · 골포가 철을)
       p = R.envoyTrade + R.envoyGain * ((goodsWorth(give, r, to) - worth(take)) / Math.max(1, worth(take)))
       break
     case 'tribute':

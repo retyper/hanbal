@@ -1,12 +1,18 @@
 /**
  * 변한 6국 축소판 — R1 의 판 (docs/realm/BUILD.md §6 · WORLD §4 · FLOW §3)
  *
- * 나라 이름은 『삼국지』 위지 변진조 원문 그대로 쓴다 (WORLD §5 규칙 6). 자리는 비정이 설이거나
- * 없는 것이 많아 대부분 [상상 배치]다 — 구야국(김해)·안야국(함안)만 비교적 확실하다.
+ * **나라 이름은 우리 역사책이 먼저다** (형: "가장 중요한 건 한국사 기록이야" — 2026-10-18). 『삼국사기』·『삼국유사』의 이름을 쓰고,
+ * 위서 동이전 변진조의 이름은 곁들임으로만 (data/nations.ts 의 source):
+ *   가락국 (『삼국유사』 가락국기 · 위서 구야국) · 아라국 (『삼국사기』 지리지 함안 "본래 아시량국" · 위서 안야국) ·
+ *   추화국 (『삼국사기』 지리지 밀양 "본래 추화군" — 나라 이름은 [설] · 위서 미리미동국) ·
+ *   고자국 (『삼국사기』 지리지 고성 "본래 고자군" · 포상팔국의 고사포 · 위서 고자미동국) ·
+ *   거칠산국 (『삼국사기』 거도전 · 지리지 동래 "본래 거칠산군" · 위서 독로국[설]) ·
+ *   골포국 (『삼국사기』 물계자전·신라본기 나해이사금의 포상팔국 · 지금의 마산[설]).
  * 장수 이름은 지어낸다 — 사료의 칭호만 쓰고 실존 인물은 쓰지 않는다 (BUILD §8 Q6).
  *
  * FLOW §3 (2026-10-18): **여섯 나라 모두 고를 수 있다.** 잘하는 것이 하나씩 다르고 합은 비슷하게 —
- *   구야 군사·철 · 안야 지형 · 미리미동 곡창·장정 · 고자미동 바다·교역 · 독로 왜 교역·센 장수 · 갯마을 작은 나라(어려움, 군장이 세다)
+ *   가락 군사·철 · 아라 지형 · 추화 곡창·장정 · 고자 바다·교역 · 거칠산 바다 너머 교역·센 장수 · 골포 작은 나라(어려움, 군장이 세다)
+ * (판 안의 세력 id 는 옛 이름 그대로다 — guya·anya·miri·goja·dokro·us. 옛 저장과 시험이 그 id 를 쓴다)
  * 숫자(가호·병력·창고)는 봇 대전(tools/realm-sim.ts --as all)으로 맞춘 초안이다. 판의 크기 감은 PLAY §4 대본:
  * 북쪽 읍락 병력 120~180, 큰 나라는 그 두세 배.
  */
@@ -20,26 +26,26 @@ const wild = (id: string, name: string, tags: RNode['tags'], room: number): RNod
   ({ id, name, kind: 'wild', tags, owner: null, hh: 0, sown: 0, room: room * PEOPLE_SCALE })
 
 const NODES: RNode[] = [
-  // 갯마을 — 남쪽 바닷가 작은 나라 (국읍 하나 · 읍락 둘, PLAY §4) · 가호 600 (WORLD §4-1)
-  node('our-cap', '갯마을 도읍', 'capital', ['palisade'], 'us', 300),
+  // 골포국 骨浦 — 포상팔국의 하나 (『삼국사기』 물계자전), 지금의 마산 [설] · 남쪽 바닷가 작은 나라 (도읍 하나 · 마을 둘)
+  node('our-cap', '골포 도읍', 'capital', ['palisade'], 'us', 300),
   node('our-north', '안개골 마을', 'village', ['fog'], 'us', 150),
   node('our-east', '갈대울 마을', 'village', ['reeds'], 'us', 150),
-  // 구야국 狗邪 — 김해, 고김해만 · 철 · 변한의 큰 나라
-  node('guya-cap', '구야 도읍', 'port', ['palisade', 'high'], 'guya', 550),
+  // 가락국 駕洛 — 김해 (『삼국유사』 가락국기 · 위서 구야국) · 고김해만 · 철 · 변한의 큰 나라
+  node('guya-cap', '가락 도읍', 'port', ['palisade', 'high'], 'guya', 550),
   node('guya-iron', '붉은산 철광', 'ironMine', ['iron'], 'guya', 150),
   node('guya-vil', '봉황 마을', 'village', [], 'guya', 250),
-  // 안야국 安邪 — 함안, 남강 · 산성과 고개로 막힌 땅
-  node('anya-cap', '안야 도읍', 'capital', ['palisade', 'high'], 'anya', 450),
+  // 아라국 阿羅 — 함안 (『삼국사기』 지리지 "본래 아시량국" · 위서 안야국) · 남강 · 산성과 고개로 막힌 땅
+  node('anya-cap', '아라 도읍', 'capital', ['palisade', 'high'], 'anya', 450),
   node('anya-fort', '남강 산성', 'fort', ['high'], 'anya', 100),
   node('anya-vil', '솔숲 마을', 'village', ['pines'], 'anya', 250),
-  // 미리미동국 彌離彌凍 — 밀양설, 낙동강 중류 · 강가 농사
-  node('miri-cap', '미리미동 도읍', 'capital', ['palisade', 'moat'], 'miri', 750),
+  // 추화국 推火 — 밀양 (『삼국사기』 지리지 "본래 추화군" — 나라 이름은 [설] · 위서 미리미동국) · 낙동강 가 농사
+  node('miri-cap', '추화 도읍', 'capital', ['palisade', 'moat'], 'miri', 750),
   node('miri-vil', '여울목 마을', 'village', ['reeds', 'shallows'], 'miri', 450),
-  // 고자미동국 古資彌凍 — 고성설, 남해 포구
-  node('goja-cap', '고자미동 도읍', 'port', ['palisade'], 'goja', 500),
+  // 고자국 古自 — 고성 (『삼국사기』 지리지 "본래 고자군" · 포상팔국 고사포 · 위서 고자미동국) · 남해 포구
+  node('goja-cap', '고자 도읍', 'port', ['palisade'], 'goja', 500),
   node('goja-vil', '갯벌 마을', 'village', [], 'goja', 300),
-  // 독로국 瀆盧 — 동래설, 「其瀆盧國與倭接界」 왜와 경계를 맞댄다
-  node('dokro-cap', '독로 도읍', 'port', ['palisade'], 'dokro', 600),
+  // 거칠산국 居柒山 — 동래 (『삼국사기』 거도전 · 지리지 "본래 거칠산군" · 위서 독로국[설]) · 바다 건너와 맞댄다
+  node('dokro-cap', '거칠산 도읍', 'port', ['palisade'], 'dokro', 600),
   // 소도 — 누구의 땅도 아니다. 침범 금지 (SYSTEMS §8-4) [사료]
   node('sodo', '큰나무 소도', 'sodo', ['sodo'], null, 0),
   // 빈땅 — 아무도 안 산다. 사람을 보내 개척하면 품(room)까지 빨리 큰다 (FLOW §2). 나라 사이 길이 여럿이 된다
@@ -56,8 +62,8 @@ const e = (id: string, a: string, b: string, kind: REdge['kind'], tags: REdge['t
 
 /**
  * 길 (2026-10-18 형: "공격루트가 고을사이 너무 단순한거 아님?") — 빈땅 일곱을 사이에 끼워 나라 사이 길을 여럿으로.
- * 구야 국읍이 국읍 셋과 바로 붙어 혼자 셌다 (봇 대전 이김 33%): 갯마을 뱃길(옛 e04)은 돌섬을 거치고,
- * 철산은 국읍이 아니라 봉황 읍락에 붙고(e11), 철산–독로 고개(옛 e13)는 너른벌을, 남강 산성–미리미동 나루(옛 e18)는 버들내를 거친다.
+ * 가락 국읍이 국읍 셋과 바로 붙어 혼자 셌다 (봇 대전 이김 33%): 골포 뱃길(옛 e04)은 돌섬을 거치고,
+ * 철산은 국읍이 아니라 봉황 읍락에 붙고(e11), 철산–거칠산 고개(옛 e13)는 너른벌을, 남강 산성–추화 나루(옛 e18)는 버들내를 거친다.
  * 지운 id 는 다시 쓰지 않는다 — 옛 저장·기록과 섞이지 않게.
  */
 const EDGES: REdge[] = [
@@ -106,19 +112,19 @@ interface NationStart {
 }
 
 const NATION_STARTS: readonly NationStart[] = [
-  { faction: { id: 'us', name: '갯마을', capital: 'our-cap', equip: 'ironTip' }, mind: 'cautious', stock: { grain: 150, iron: 0, salt: 20, wood: 30 } },
+  { faction: { id: 'us', name: '골포국', capital: 'our-cap', equip: 'ironTip' }, mind: 'cautious', stock: { grain: 150, iron: 0, salt: 20, wood: 30 } },
   // 시작 창고는 첫 가을까지 군대를 먹일 만큼 (봄·여름·가을 세 계절치 남짓) — 모자라면 첫해부터 굶는다 (봇 대전에서 잡혔다)
-  { faction: { id: 'guya', name: '구야국', capital: 'guya-cap', equip: 'iron' }, mind: 'greedy', stock: { grain: 280, iron: 40, salt: 15, wood: 30 } },
-  { faction: { id: 'anya', name: '안야국', capital: 'anya-cap', equip: 'ironTip' }, mind: 'cautious', stock: { grain: 210, iron: 10, wood: 40 } },
-  { faction: { id: 'miri', name: '미리미동국', capital: 'miri-cap', equip: 'bronze' }, mind: 'cautious', stock: { grain: 400, iron: 0, wood: 30 } },
+  { faction: { id: 'guya', name: '가락국', capital: 'guya-cap', equip: 'iron' }, mind: 'greedy', stock: { grain: 280, iron: 40, salt: 15, wood: 30 } },
+  { faction: { id: 'anya', name: '아라국', capital: 'anya-cap', equip: 'ironTip' }, mind: 'cautious', stock: { grain: 210, iron: 10, wood: 40 } },
+  { faction: { id: 'miri', name: '추화국', capital: 'miri-cap', equip: 'bronze' }, mind: 'cautious', stock: { grain: 400, iron: 0, wood: 30 } },
   {
-    faction: { id: 'goja', name: '고자미동국', capital: 'goja-cap', equip: 'bronze', income: { grain: 10, iron: 4 } },
+    faction: { id: 'goja', name: '고자국', capital: 'goja-cap', equip: 'bronze', income: { grain: 10, iron: 4 } },
     mind: 'greedy',
     stock: { grain: 200, iron: 20, salt: 20, wood: 30 },
   },
   {
     // 「其瀆盧國與倭接界」 — 왜와 거래한다 (FLOW §3)
-    faction: { id: 'dokro', name: '독로국', capital: 'dokro-cap', equip: 'bronze', income: { grain: 20, iron: 6 } },
+    faction: { id: 'dokro', name: '거칠산국', capital: 'dokro-cap', equip: 'bronze', income: { grain: 20, iron: 6 } },
     mind: 'greedy',
     stock: { grain: 200, iron: 30, salt: 15, wood: 20, horse: 4 },
   },
@@ -143,7 +149,7 @@ const HEROES: Hero[] = [
   h('goja-ruler', '험측 바우', 'goja', 'g', [5, 5, 5, 5, 5, 7], ['river', 'trader'], 'goja-cap'),
   h('dokro-ruler', '읍차 가람', 'dokro', 'g', [6, 6, 5, 4, 4, 7], ['trader'], 'dokro-cap'),
   // 장군 — 군대를 이끌거나 고을을 맡는다
-  h('chief', '신궁', 'us', 'g', [7, 5, 6, 4, 5, 8], ['archer', 'nighteye']), // 갯마을의 활 쏘는 장군 (FLOW §3: 작은 나라는 장수가 세다)
+  h('chief', '신궁', 'us', 'g', [7, 5, 6, 4, 5, 8], ['archer', 'nighteye']), // 골포국의 활 쏘는 장군 (FLOW §3: 작은 나라는 장수가 세다)
   h('us-1', '험측 돌개', 'us', 'g', [5, 5, 4, 6, 4, 7], ['farmer'], 'our-cap'),
   h('guya-1', '견지 거타', 'guya', 'g', [7, 7, 5, 6, 4, 6], ['ironhand']),
   h('guya-2', '험측 마루', 'guya', 'g', [6, 4, 3, 3, 3, 5], ['glutton']),
@@ -153,7 +159,7 @@ const HEROES: Hero[] = [
   h('miri-2', '번예 고운', 'miri', 'w', [3, 4, 6, 7, 6, 6], ['shaman'], 'miri-cap'),
   h('goja-1', '살해 바다쇠', 'goja', 'g', [5, 5, 5, 3, 3, 5], ['river']),
   h('goja-2', '번예 물새', 'goja', 'w', [4, 4, 7, 5, 6, 5], ['charm'], 'goja-cap'),
-  h('dokro-1', '살해 너울', 'dokro', 'w', [7, 6, 6, 3, 4, 4], ['river', 'nighteye']), // 독로는 장수가 세다 (FLOW §3)
+  h('dokro-1', '살해 너울', 'dokro', 'w', [7, 6, 6, 3, 4, 4], ['river', 'nighteye']), // 거칠산은 장수가 세다 (FLOW §3)
   h('dokro-2', '견지 쇠돌', 'dokro', 'g', [6, 5, 3, 3, 3, 7], ['careful'], 'dokro-cap'),
 ]
 
@@ -229,7 +235,7 @@ export function startRealm(seed: number, player: string): Realm {
   }
 }
 
-/** 갯마을로 여는 판 — 시험들이 쓰는 기본 판 */
+/** 골포국으로 여는 판 — 시험들이 쓰는 기본 판 */
 export function byeonhanMini(seed: number): Realm {
   return startRealm(seed, 'us')
 }

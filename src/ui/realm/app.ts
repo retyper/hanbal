@@ -989,7 +989,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const mine = Object.values(r.nodes).filter((n) => n.owner === me())
     const caps = Object.values(r.nodes).filter((n) => n.owner === me() && (n.kind === 'capital' || n.kind === 'port') && Object.values(r.factions).some((f) => f.capital === n.id)).length
     const st = r.stock[me()] ?? { grain: 0, iron: 0 }
-    let h = `<div class="nhead">${nationFace(me())}<div><h3>${emblem(me())}${esc(r.factions[me()]?.name ?? '')}</h3><p class="mute">${esc(info?.blurb ?? '')}</p></div></div>`
+    let h = `<div class="nhead">${nationFace(me())}<div><h3>${emblem(me())}${esc(r.factions[me()]?.name ?? '')}</h3><p class="mute">${esc(info?.blurb ?? '')}</p>${info !== undefined ? `<p class="mute src">${esc(info.source)}</p>` : ''}</div></div>`
     h += `<div class="goal">목표 · 도읍 셋을 차지한다 <b>${caps} / 3</b></div>`
     h += `<div class="grid4"><div>${icon('settle-farm-village')}<b>${mine.length}</b><span>고을</span></div>`
     h += `<div>${icon('good-hemp')}<b>${Math.floor(mine.reduce((s, n) => s + n.hh, 0))}</b><span>집</span></div>`
@@ -1147,7 +1147,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const n of NATIONS) {
       h += `<button class="ncard pick" data-act="nation" data-id="${n.id}">${nationFace(n.id)}<div class="nb">`
       h += `<div class="an">${emblem(n.id)}<b>${esc(n.name)}</b><span class="mute">${esc(n.place)}</span>${n.hard ? '<span class="hard">어려움</span>' : ''}</div>`
-      h += `<p>${esc(n.blurb)}</p><div class="bars">`
+      h += `<p>${esc(n.blurb)}</p><p class="mute src">${esc(n.source)}</p><div class="bars">`
       for (const [k, label] of [['army', '군사'], ['grain', '곡식'], ['militia', '장정'], ['terrain', '지형']] as const) {
         const v = n.bars[k]
         h += `<span class="bar"><i>${label}</i>${'<b></b>'.repeat(v)}${'<s></s>'.repeat(5 - v)}</span>`

@@ -103,6 +103,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 @keyframes sfx { 0% { opacity: 0; } 12% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes sfxin { 0% { transform: scale(.7) translateY(16px); } 25% { transform: scale(1) translateY(0); } 100% { transform: scale(1.04); } }
 @media (prefers-reduced-motion: reduce) { .ap .seasonfx, .ap .seasonfx > div { animation-duration: .8s; } }
+.ap p.src { font-size: 12px; color: #a89c84; margin: 2px 0 4px; }
 .ap .failbox { position: absolute; left: 12px; right: 12px; top: 56px; z-index: 50; padding: 12px; border-radius: 12px; background: #3a1d18; border: 1px solid #c8402a;
   color: #f3e6c8; display: flex; flex-direction: column; gap: 6px; font-size: 13px; } .ap .failbox span { color: #e8b8a8; word-break: break-all; }
 .ap .pow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 4px 0 2px; } .ap .pow b { color: var(--gold); font-size: 14px; }

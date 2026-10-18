@@ -10,9 +10,9 @@ import type { NodeKind, RNode } from '../types.ts'
 /** 장수 id → 명치판 (bust/<이름>.jpg). g- 남자 장수 · w- 여인 · l- 전설 */
 export const HERO_BUST: Readonly<Record<string, string>> = {
   chief: 'g-02-goguryeo-archer-prince', // 플레이어 — 활 쏘는 군장 (신궁)
-  'guya-1': 'g-11-gaya-iron-general', // 진지렴 거타 — 구야국의 철
+  'guya-1': 'g-11-gaya-iron-general', // 진지렴 거타 — 가락국의 철
   'guya-2': 'g-04-jinhan-giant', // 험측 마루
-  'anya-1': 'w-04-gaya-swordswoman', // 신지 아라 — 안야국의 여 신지
+  'anya-1': 'w-04-gaya-swordswoman', // 신지 아라 — 아라국의 여 신지
   'anya-2': 'w-13-young-archer', // 번예 솔미
   'miri-1': 'g-07-drunk-warrior', // 읍차 갈미 — PLAY §4 의 술꾼
   'goja-1': 'g-03-sea-trader', // 살해 바다쇠
