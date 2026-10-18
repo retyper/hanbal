@@ -11,10 +11,10 @@ import { headcount, type UnitKind } from '../../realm/battle.ts'
 import { FACTION_ART, HERO_BUST, SEASON_ICON, UNIT_ICON, nodeIcon } from '../../realm/data/art.ts'
 import { NATIONS } from '../../realm/data/nations.ts'
 import {
-  ASK_NAME, BLOCKED_LINE, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, TAG_LINE, UNIT_NAME, reportText, seasonLabel,
+  ASK_NAME, BLOCKED_LINE, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel,
 } from '../../realm/data/prose.ts'
 import { envoyChance, envoyChanceFor, relationOf } from '../../realm/diplomacy.ts'
-import { draftCost, draftLimit, militiaMen } from '../../realm/economy.ts'
+import { draftCost, draftLimit, militiaMen, settleCost, settleLimit, settleTargets } from '../../realm/economy.ts'
 import { jointWin, movesOf, type Move } from '../../realm/estimate.ts'
 import { alertRange, visibleRange } from '../../realm/intel.ts'
 import { advance, forceOf, neighbors, newArmyId, otherEnd, planned, seasonOf, seenMarches } from '../../realm/season.ts'
@@ -22,12 +22,19 @@ import type { Army, Hero, Order, Realm, Report } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, mapHtml, type MapMarch } from './mapview.ts'
 import { APP_CSS } from './appstyle.ts'
+import { FEEL_CSS, alertFeel, ambushFeel, envoyFeel, fightFeel, unknownFeel } from './feel.ts'
 
 export interface AppHost {
-  /** 계절을 넘긴 뒤 — 저장은 바깥이 한다 */
-  onAdvance(next: Realm, report: Report, orders: readonly Order[]): void
+  /** 계절을 넘긴 뒤 — 저장은 바깥이 한다. `orders` 는 AI 것까지 전부, `mine` 은 플레이어 것 */
+  onAdvance(next: Realm, report: Report, orders: readonly Order[], mine: readonly Order[]): void
   /** 나라를 골라 새 판 */
   onNewGame(nation: string): void
+  /** 누른 것 하나 — 판 기록에 남긴다 */
+  onTap(act: string, arg: string): void
+  /** 판 기록을 파일로 */
+  onExport(): void
+  /** 남아 있는 판 기록 수 */
+  gameCount(): number
 }
 
 const ART: string = (import.meta.env?.BASE_URL ?? '/') + 'realm/'
@@ -50,7 +57,6 @@ const TABS = [
 
 const esc = (s: string): string =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
-const pct = (x: number): string => `${Math.round(x * 100)}%`
 const span = (lo: number, hi: number, f: (x: number) => string): string => (f(lo) === f(hi) ? f(lo) : `${f(lo)}~${f(hi)}`)
 const icon = (name: string, cls = 'ic'): string => `<img class="${cls}" src="${ART}icon/${name}.png" alt="">`
 const bust = (h: Hero | undefined, cls = 'face'): string =>
@@ -68,10 +74,10 @@ function nationFace(id: string): string {
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null): void } {
   const style = document.createElement('style')
-  style.textContent = APP_CSS + MAP_CSS
+  style.textContent = APP_CSS + MAP_CSS + FEEL_CSS
   document.head.appendChild(style)
   root.classList.add('ap')
-  root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><button class="next" data-act="next"></button>`
+  root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="legend"></div><button class="next" data-act="next"></button>`
     + `<nav class="tabs"></nav><div class="back" data-act="close"></div><section class="sheet"></section><div class="modal"></div>`
   const $ = (sel: string): HTMLElement => root.querySelector<HTMLElement>(sel)!
 
@@ -84,6 +90,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 이번 계절의 명령 거리 */
   let armyOrders: Order[] = [] // 나누기·모으기 — 화면은 이걸 먼저 해 본 판을 보인다
   let musters: Order[] = [] // 징병·해산
+  let settles: Order[] = [] // 개척 — 나누기처럼 먼저 해 본 판에 든다 (그래야 남은 몫·곡식이 맞게 보인다)
   const pick: Record<string, { edge: string; ambush: boolean } | undefined> = {}
   let scout = ''
   let envoy: Envoy | null = null
@@ -92,15 +99,20 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let armyMode: 'move' | 'split' = 'move'
   const draftUnit: Record<string, UnitKind> = {}
   const draftN: Record<string, number> = {}
+  const settleN: Record<string, number> = {}
+  const settleFrom: Record<string, string> = {}
   let trade = { give: { grain: 0, iron: 0 }, take: { grain: 0, iron: 0 }, to: '' }
   let note = ''
+  /** 지도에서 또렷하게 볼 나라 — 깃발 줄에서 누른다 */
+  let focus: string | null = null
 
   const me = (): string => realm!.player
-  const plan = (): Realm => planned(realm!, armyOrders)
+  const plan = (): Realm => planned(realm!, [...armyOrders, ...settles])
 
   function resetTurn(): void {
     armyOrders = []
     musters = []
+    settles = []
     for (const k of Object.keys(pick)) delete pick[k]
     scout = ''
     envoy = null
@@ -111,7 +123,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   function ordersNow(): Order[] {
     const p = plan()
-    const out: Order[] = [...armyOrders, ...musters]
+    const out: Order[] = [...armyOrders, ...settles, ...musters]
     for (const [army, c] of Object.entries(pick)) {
       const a = p.armies[army]
       if (c !== undefined && a !== undefined && a.march === null) out.push({ kind: 'march', army, edge: c.edge, ambush: c.ambush })
@@ -156,7 +168,20 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     for (const a of seenMarches(r, me())) if (a.march !== null) marches.push({ from: a.march.from, to: a.march.to, left: a.march.left, foe: true })
     const sel = sheet?.kind === 'node' ? sheet.id : scout
-    return mapHtml(r, me(), ART, marches, sel)
+    return mapHtml(r, me(), ART, marches, sel, focus)
+  }
+
+  /** 깃발 줄 — 나라마다 깃발과 땅 수 (땅의 주인은 누구나 안다). 누르면 그 나라 땅만 또렷하다 */
+  function legendHtml(r: Realm): string {
+    const count = (f: string): number => Object.values(r.nodes).filter((n) => n.owner === f).length
+    const fs = sorted(Object.values(r.factions)).map((f) => ({ f, n: count(f.id) })).sort((a, b) => b.n - a.n)
+    let h = ''
+    for (const { f, n } of fs) {
+      const c = FACTION_ART[f.id]?.color ?? '#ccc'
+      const cls = `${focus === f.id ? ' on' : ''}${f.id === me() ? ' me' : ''}${n === 0 ? ' gone' : ''}`
+      h += `<button class="lg${cls}" data-act="focus" data-id="${f.id}" style="--c:${c}">${emblem(f.id, 'lem')}<b>${n}</b><span>${esc(f.name)}</span></button>`
+    }
+    return h
   }
 
   // ───────── 군대
@@ -170,11 +195,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const on = chosen?.edge === m.edge.id
       let right = ''
       if (off) right = `<span class="mute">${BLOCKED_LINE[m.blocked!]}</span>`
-      else if (m.hostile) right = m.win !== null ? `<span class="win ${m.win[0] >= 0.6 ? 'good' : m.win[1] < 0.4 ? 'bad' : ''}">${span(m.win[0], m.win[1], pct)}</span>` : `<span class="win">?</span>`
+      else if (m.hostile) right = `<span class="win">${m.win !== null ? fightFeel(m.win[0], m.win[1]) : unknownFeel()}</span>`
       h += `<button class="row mv ${on ? 'on' : ''}" data-act="mv" data-army="${a.id}" data-edge="${m.edge.id}" ${off ? 'disabled' : ''}>`
       h += `${emblem(node.owner)}<span class="dest">${esc(node.name)}</span><span class="sub">${EDGE_NAME[m.edge.kind]} · ${m.seasons}계절</span>${right}</button>`
       if (m.hostile && !off && on) {
-        h += `<button class="chip amb ${chosen?.ambush ? 'on' : ''}" data-act="amb" data-army="${a.id}">기습 ${pct(m.ambushP)}</button>`
+        h += `<button class="chip amb ${chosen?.ambush ? 'on' : ''}" data-act="amb" data-army="${a.id}">기습 ${ambushFeel(m.ambushP)}</button>`
       }
     }
     return h
@@ -198,7 +223,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       const w = jointWin(r, me(), legs.map((x) => ({ army: x.army, edge: x.move.edge })), to)
       const two = new Set(legs.map((x) => x.move.edge.id)).size >= 2
-      h += `<div class="banner good">협공 ${esc(r.nodes[to]!.name)} · ${legs.length}군${two ? ` · 두 길 ×${P.realm.pincer}` : ''} · 승률 <b>${w === null ? '?' : span(w[0], w[1], pct)}</b></div>`
+      h += `<div class="banner good">협공 ${esc(r.nodes[to]!.name)} · ${legs.length}군${two ? ' · 두 길로 들어가 더 세다' : ''} ${w === null ? unknownFeel() : fightFeel(w[0], w[1])}</div>`
     }
     return h
   }
@@ -278,12 +303,49 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<button data-act="dn" data-node="${n.id}" data-d="${step}">+</button><span class="mute">최대 ${lim} · 곡식 ${Math.ceil(draftCost(want).grain)}</span>`
       h += `<button class="btn on" data-act="draft" data-node="${n.id}" ${want <= 0 ? 'disabled' : ''}>뽑는다</button></div></div>`
     }
+    // 개척 — 맞닿은 빈땅으로 사람을 보낸다
+    const lands = [...new Set([...settleTargets(r, me()).map((t) => t.to), ...settlePending().map((o) => o.to)])].sort()
+    if (lands.length > 0) {
+      h += `<h4>개척 · 빈땅에 사람을 보낸다</h4>`
+      for (const to of lands) h += settleCard(r, to)
+    }
     if (pending.length > 0) {
       h += `<h4>이번 계절 징병</h4>`
       pending.forEach((o) => {
         h += `<div class="row">${icon(UNIT_ICON[o.unit])}${esc(r.nodes[o.node]?.name ?? '')} ${UNIT_NAME[o.unit]} ${o.n}<button class="btn ghost sm" data-act="undraft" data-i="${musters.indexOf(o)}">취소</button></div>`
       })
     }
+    return h
+  }
+
+  // ───────── 개척
+  function settlePending(): Array<Extract<Order, { kind: 'settle' }>> {
+    return settles.filter((o): o is Extract<Order, { kind: 'settle' }> => o.kind === 'settle')
+  }
+
+  /** 빈땅 하나의 개척 카드 — 어느 고을에서 몇 집을 보낼지. `r` 은 이미 보낸 개척이 든 판이다 */
+  function settleCard(r: Realm, to: string): string {
+    const n = r.nodes[to]!
+    const froms = settleTargets(r, me()).filter((t) => t.to === to).map((t) => t.from)
+    const sent = settlePending().filter((o) => o.to === to)
+    let h = `<div class="ncard"><div class="an">${icon(nodeIcon(n), 'nic')}<b>${esc(n.name)}</b>`
+    h += `<span class="mute">가호 ${Math.floor(n.hh)} / ${n.room ?? 0}</span></div>`
+    for (const o of sent) {
+      h += `<div class="row">${esc(r.nodes[o.from]?.name ?? '')}에서 ${o.n}집<button class="btn ghost sm" data-act="unsettle" data-i="${settles.indexOf(o)}">취소</button></div>`
+    }
+    if (froms.length === 0) return h + `<div class="mute">${sent.length > 0 ? '이번 계절엔 더 못 보낸다' : '지금은 보낼 수 없다'}</div></div>`
+    const from = froms.includes(settleFrom[to] ?? '') ? settleFrom[to]! : froms[0]!
+    const lim = settleLimit(r, me(), from, to)
+    const want = Math.min(lim, settleN[to] ?? Math.min(lim, 20))
+    const step = Math.max(1, Math.round(lim / 10))
+    if (froms.length > 1) {
+      h += `<div class="seg">`
+      for (const f of froms) h += `<button class="${f === from ? 'on' : ''}" data-act="sfrom" data-node="${to}" data-from="${f}">${esc(r.nodes[f]!.name)}</button>`
+      h += `</div>`
+    } else h += `<div class="mute">${esc(r.nodes[from]!.name)}에서 떠난다</div>`
+    h += `<div class="stepper"><button data-act="sn" data-node="${to}" data-d="${-step}">−</button><b>${want}</b>`
+    h += `<button data-act="sn" data-node="${to}" data-d="${step}">+</button><span class="mute">집 · 최대 ${lim} · 곡식 ${settleCost(want).grain}</span>`
+    h += `<button class="btn on" data-act="settle" data-node="${to}" data-from="${from}" ${want <= 0 ? 'disabled' : ''}>보낸다</button></div></div>`
     return h
   }
 
@@ -301,7 +363,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const c = envoyChance(r, me(), f.id, ask)
         const sel = envoy !== null && envoy.to === f.id && envoy.ask === ask
         h += `<button class="btn ${sel ? 'on' : ''}" data-act="${ask === 'trade' ? 'trade-open' : 'envoy'}" data-to="${f.id}" data-ask="${ask}" ${envoy !== null && !sel ? 'disabled' : ''}>`
-        h += `${ASK_NAME[ask]} <span class="mute">${span(c[0], c[1], pct)}</span></button>`
+        h += `${ASK_NAME[ask]} ${envoyFeel(c[0], c[1])}</button>`
       }
       h += `</div>`
       if (trade.to === f.id && envoy === null) {
@@ -318,7 +380,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         }
         const ok = trade.give.grain <= st.grain && trade.give.iron <= st.iron && trade.give.grain + trade.give.iron + trade.take.grain + trade.take.iron > 0
         const c = envoyChanceFor(r, me(), f.id, 'trade', trade.give, trade.take)
-        h += `<button class="btn on" data-act="envoy" data-to="${f.id}" data-ask="trade" ${ok ? '' : 'disabled'}>사신을 보낸다 <span>${span(c[0], c[1], pct)}</span></button></div>`
+        h += `<button class="btn on" data-act="envoy" data-to="${f.id}" data-ask="trade" ${ok ? '' : 'disabled'}>사신을 보낸다 ${envoyFeel(c[0], c[1])}</button></div>`
       }
       h += `</div>`
     }
@@ -360,6 +422,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     h += `<div class="btns"><button class="btn" data-act="help">도움말</button><button class="btn ghost" data-act="newgame">새 판</button>`
     h += `<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a></div>`
+    h += `<div class="btns"><button class="btn ghost" data-act="export">기록 내보내기 <span class="mute">${host.gameCount()}판</span></button></div>`
     return h
   }
 
@@ -368,9 +431,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + `<p><b>한 계절 = 한 턴.</b> 명령을 고르고 다음 계절을 누른다.</p>`
       + `<p><b>봄</b> 씨를 뿌린다. 봄에 심은 집 수만큼 가을에 거둔다. <b>여름</b> 장마. 나루가 막히고 길이 느리다. `
       + `<b>가을</b> 추수. 곡식이 들어온다. <b>겨울</b> 강이 언다. 언 강으로 기습하기 좋다. 고개가 막힌다. 군량이 더 든다.</p>`
+      + `<p><b>개척</b> 빈땅은 아무도 안 사는 땅이다. 그 땅을 누르거나 징병 탭 아래에서, 맞닿은 우리 고을 사람을 보낸다. 곡식이 들고, 일군 땅은 빨리 큰다. 군대로 먼저 깃발만 꽂아 둘 수도 있다.</p>`
       + `<p><b>군사</b> 징병으로 뽑는다. 군대는 곡식을 먹는다. 곡식이 떨어지면 사기가 꺾인다.</p>`
-      + `<p><b>지도</b> 테두리 색은 주인. 초록 수는 우리 병력, 붉은 수는 척후가 본 적 군세, ?는 아직 못 본 곳. ✕는 이번 계절 막힌 길. 보랏빛 화살은 다가오는 적.</p>`
-      + `<p><b>승률</b>은 아는 만큼 범위로 보인다. 정찰하면 좁아진다.</p>`
+      + `<p><b>지도</b> 땅 색과 깃발이 주인. 왼쪽 위 깃발을 누르면 그 나라 땅만 또렷하다. 초록 수는 우리 병력, 붉은 수는 척후가 본 적 군세, ?는 아직 못 본 곳. ✕는 이번 계절 막힌 길. 보랏빛 화살은 다가오는 적.</p>`
+      + `<p><b>판세</b>는 색으로 보인다. 초록이면 해볼 만하고 붉으면 무모하다. 두 색이 섞이고 ?가 붙으면 아직 잘 모른다. 정찰하면 또렷해진다.</p>`
       + `<p><b>협공</b> 같은 계절에 두 길로 들어가면 한 판으로 싸우고 더 세다.</p>`
       + `<p><b>목표</b> 국읍 셋을 쥐면 이긴다. 우리 국읍을 잃으면 진다.</p></div>`
   }
@@ -381,16 +445,24 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const known = (r.intel[me()] ?? {})[id]
     const ours = n.owner === me()
     const who = n.owner === null ? '주인 없음' : (r.factions[n.owner]?.name ?? '')
-    let h = `<div class="an big">${icon(nodeIcon(n), 'nic')}<div><h3>${esc(n.name)}</h3><span class="mute">${emblem(n.owner)}${esc(who)} · ${NODE_KIND_NAME[n.kind]}</span></div></div>`
+    const kind = n.kind === 'wild' && n.hh > 0 ? SETTLED_NAME : NODE_KIND_NAME[n.kind]
+    let h = `<div class="an big">${icon(nodeIcon(n), 'nic')}<div><h3>${esc(n.name)}</h3><span class="mute">${emblem(n.owner)}${esc(who)} · ${kind}</span></div></div>`
     if (ours || known?.land) {
       const lines = n.tags.map((t) => TAG_LINE[t]).join(' ')
       if (lines !== '') h += `<p class="story">${esc(lines)}</p>`
+    }
+    if (n.kind === 'wild') {
+      if (n.owner === null) h += `<p class="story">아무도 살지 않는 땅이다. 사람을 보내 일구면 마을이 된다. 가호 ${n.room ?? 0}집까지 품는다.</p>`
+      if (n.owner === null || ours) {
+        const can = settleTargets(r, me()).some((t) => t.to === id) || settlePending().some((o) => o.to === id)
+        h += can ? settleCard(r, id) : `<p class="mute">우리 고을과 길로 맞닿고, 그 길이 열려 있어야 사람을 보낸다.</p>`
+      }
     }
     if (ours) {
       const men = Object.values(r.armies).filter((a) => a.at === id && a.faction === me() && a.march === null).reduce((s, a) => s + headcount(forceOf(r, a)), 0)
       h += `<div class="grid4"><div><b>${Math.floor(n.hh)}</b><span>가호</span></div><div><b>${militiaMen(r, id)}</b><span>장정</span></div><div><b>${men}</b><span>병력</span></div><div><b>${draftLimit(r, me(), id)}</b><span>징병 가능</span></div></div>`
       h += `<div class="btns"><button class="btn on" data-act="tab" data-tab="draft">여기서 징병</button></div>`
-    } else if (n.kind !== 'sodo') {
+    } else if (n.kind !== 'sodo' && !(n.kind === 'wild' && n.owner === null && known?.force == null)) {
       const f = known?.force
       let force = '못 봤다'
       if (f) {
@@ -400,7 +472,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       let alert = ''
       if (known?.alert) {
         const v = alertRange(known.alert.v, r.season - known.alert.season)
-        if (v !== null) alert = ` · 경계 ${span(v[0], v[1], pct)}`
+        if (v !== null) alert = ` · 경계 ${alertFeel(v[0], v[1])}`
       }
       h += `<p>군세 <b>${force}</b><span class="mute">${alert}</span></p>`
       if (scoutable(r).includes(id)) h += `<div class="btns"><button class="btn ${scout === id ? 'on' : ''}" data-act="scout" data-node="${id}">${scout === id ? '척후를 보낸다' : '정찰'}</button></div>`
@@ -476,6 +548,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       $('.mapwrap').innerHTML = chooseHtml()
       $('.top').innerHTML = ''
       $('.tabs').innerHTML = ''
+      $('.legend').innerHTML = ''
       $('.sheet').innerHTML = ''
       $('.modal').innerHTML = ''
       root.classList.remove('sheet-open', 'modal-open')
@@ -494,6 +567,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const el = cap !== undefined ? wrap.querySelector<HTMLElement>(`.nd[data-node="${cap}"]`) : null
       if (el !== null) wrap.scrollLeft = el.offsetLeft - wrap.clientWidth / 2
     } else wrap.scrollLeft = keep
+    $('.legend').innerHTML = legendHtml(r)
     $('.next').innerHTML = `다음 계절 <span>›</span>`
     let tabs = ''
     for (const t of TABS) tabs += `<button class="${sheet?.kind === t.id ? 'on' : ''}" data-act="tab" data-tab="${t.id}">${icon(t.icon, 'tic')}<span>${t.name}</span></button>`
@@ -533,10 +607,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const t = (ev.target as HTMLElement).closest<HTMLElement>('[data-act], .nd')
     if (t === null || !root.contains(t)) return
     if (t.classList.contains('nd') && !t.dataset['act']) {
+      host.onTap('node', t.dataset['node']!)
       openSheet({ kind: 'node', id: t.dataset['node']! })
       return
     }
     const d = t.dataset
+    host.onTap(d['act'] ?? '', d['tab'] ?? d['node'] ?? d['army'] ?? d['to'] ?? d['id'] ?? d['unit'] ?? '')
     const r = realm !== null ? plan() : null
     switch (d['act']) {
       case 'nation': host.onNewGame(d['id']!); return
@@ -544,6 +620,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'close': sheet = null; paint(); return
       case 'tab': openSheet({ kind: d['tab'] as 'army' }); return
       case 'help': openSheet({ kind: 'help' }); return
+      case 'export': host.onExport(); return
+      case 'focus': focus = focus === d['id'] ? null : d['id']!; break
       case 'rep-close': showReport = false; paint(); return
       case 'next': {
         if (realm === null || realm.outcome) return
@@ -557,7 +635,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         report = res.report
         showReport = true
         realm = res.next
-        host.onAdvance(res.next, res.report, all)
+        host.onAdvance(res.next, res.report, all, mine)
         paint()
         return
       }
@@ -622,6 +700,24 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         break
       }
       case 'undraft': musters = musters.filter((_, i) => i !== Number(d['i'])); break
+      case 'sfrom': settleFrom[d['node']!] = d['from']!; delete settleN[d['node']!]; break
+      case 'sn': {
+        const to = d['node']!
+        const from = settleFrom[to] ?? settleTargets(r!, me()).find((t) => t.to === to)?.from ?? ''
+        const lim = settleLimit(r!, me(), from, to)
+        settleN[to] = Math.max(0, Math.min(lim, (settleN[to] ?? Math.min(lim, 20)) + Number(d['d'])))
+        break
+      }
+      case 'settle': {
+        const to = d['node']!
+        const from = d['from']!
+        const lim = settleLimit(r!, me(), from, to)
+        const n = Math.min(lim, settleN[to] ?? Math.min(lim, 20))
+        if (n > 0) settles = [...settles, { kind: 'settle', faction: me(), from, to, n }]
+        delete settleN[to]
+        break
+      }
+      case 'unsettle': settles = settles.filter((_, i) => i !== Number(d['i'])); break
       case 'trade-open': trade = { give: { grain: 0, iron: 0 }, take: { grain: 0, iron: 0 }, to: trade.to === d['to'] ? '' : d['to']! }; break
       case 'tq': {
         const side = d['side'] as 'give' | 'take'

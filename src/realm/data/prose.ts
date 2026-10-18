@@ -14,8 +14,11 @@ export const EDGE_NAME: Record<EdgeKind, string> = {
 }
 
 export const NODE_KIND_NAME: Record<NodeKind, string> = {
-  capital: '국읍', village: '읍락', sodo: '소도', port: '포구', fort: '산성', ironMine: '철산',
+  capital: '국읍', village: '읍락', sodo: '소도', port: '포구', fort: '산성', ironMine: '철산', wild: '빈땅',
 }
+
+/** 빈땅을 일군 뒤의 이름 — kind 는 그대로 'wild' 지만 사람이 살면 새 마을이다 */
+export const SETTLED_NAME = '새 마을'
 
 /** 지형 꼬리표의 문장 (SYSTEMS §1-2) — 화면에는 숫자가 아니라 이 문장이 나간다 */
 export const TAG_LINE: Record<Tag, string> = {
@@ -65,7 +68,8 @@ export const RELATION_NAME: Record<Relation['state'], string> = {
   war: '전쟁', neutral: '중립', truce: '화친', ally: '동맹',
 }
 
-const pct = (x: number): string => `${Math.round(x * 100)}%`
+/** 이 승산보다 낮은데 이기면(또는 높은데 지면) "뜻밖" — 글의 문턱이라 여기 둔다 */
+const UPSET = 0.35
 
 /** 받침이 있으면 앞 것, 없으면 뒤 것 — 을/를 · 이/가 · 은/는 · 과/와 · 으로/로 */
 export function josa(word: string, withFinal: string, without: string): string {
@@ -139,7 +143,10 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       const side = line.allies.length === 0 ? '' : line.pincer ? ` 등 ${line.allies.length + 1}군이 두 길로` : ` 등 ${line.allies.length + 1}군이`
       const who = line.allies.length === 0 ? josa(nameArmy(line.attacker), '이', '가') : `${nameArmy(line.attacker)}${side}`
       const head = `${node(line.node)} 싸움. ${who} ${josa(fname(line.defender), '을', '를')} 쳐서 ${OUTCOME_LINE[line.outcome]}.`
-      const odds = ` 승산 ${pct(line.p)}.`
+      // 승산은 숫자로 안 나간다 (형: 숫자나오면 재미없다) — 판세를 뒤집었을 때만 한마디
+      const atkWon = line.outcome === 'rout' || line.outcome === 'win'
+      const atkLost = line.outcome === 'lose' || line.outcome === 'routed'
+      const odds = (atkWon && line.p < UPSET) || (atkLost && line.p > 1 - UPSET) ? ' 뜻밖이다.' : ''
       const cap = line.captured !== null ? ` ${josa(after.heroes[line.captured]?.name ?? '?', '을', '를')} 사로잡았다.` : ''
       const dead = line.killed !== null ? ` ${josa(after.heroes[line.killed]?.name ?? '?', '이', '가')} 죽었다.` : ''
       // 싸움 소식은 퍼진다 (SYSTEMS §2-2) — 남의 싸움도 한 줄은 들린다
@@ -154,6 +161,9 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (a?.faction !== viewer) return null
       return `${josa(nameArmy(line.army), '을', '를')} 집으로 돌려보냈다. ${node(line.node)}에 ${line.n}집이 돌아왔다.`
     }
+    case 'settle':
+      if (line.faction === viewer) return `${node(line.from)}에서 ${line.n}집이 ${josa(node(line.to), '으로', '로')} 옮겨 가 땅을 일군다.`
+      return `소문. ${josa(fname(line.faction), '이', '가')} ${node(line.to)}에 사람을 보냈다.`
     case 'hunger':
       return line.faction === viewer ? '곡식이 바닥났다. 군사들이 굶는다.' : null
     case 'envoy': {

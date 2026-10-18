@@ -5,7 +5,7 @@
 export const APP_CSS = `
 html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; overscroll-behavior: none; }
 .ap { --gold: #d9b36a; --ink: #e9e2d4; --mute: #8f887b; --card: #222833; --line: #343c49; --good: #8fd07a; --bad: #e08a74;
-  --tabh: calc(62px + env(safe-area-inset-bottom)); --toph: calc(48px + env(safe-area-inset-top));
+  --tabh: calc(62px + env(safe-area-inset-bottom)); --toph: calc(48px + env(safe-area-inset-top)); --legh: 34px;
   position: fixed; inset: 0; color: var(--ink); font: 15px/1.45 system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
 .ap h1, .ap h2, .ap h3, .ap .top b, .ap .next, .ap .brag { font-family: 'Gowun Batang', 'Apple SD Gothic Neo', serif; }
@@ -26,9 +26,23 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 @media (max-width: 520px) { .ap .top .stat.nat b { display: none; } .ap .top .tr { gap: 6px; } }
 
 /* 지도 — 남은 자리를 꽉. 폰 세로에서는 옆으로 민다 */
-.ap .mapwrap { position: absolute; left: 0; right: 0; top: var(--toph); bottom: var(--tabh); overflow-x: auto; overflow-y: hidden;
+.ap .mapwrap { position: absolute; left: 0; right: 0; top: calc(var(--toph) + var(--legh)); bottom: var(--tabh); overflow-x: auto; overflow-y: hidden;
   background: #1a1d22; scrollbar-width: none; touch-action: pan-x; }
 .ap .mapwrap::-webkit-scrollbar { display: none; }
+
+/* 깃발 줄 — 지도 왼쪽 위에 떠 있다. 누르면 그 나라 땅만 또렷하다 */
+.ap .legend { position: absolute; left: 0; right: 0; top: var(--toph); height: var(--legh); box-sizing: border-box; z-index: 4; display: flex;
+  align-items: center; gap: 4px; padding: 0 8px; overflow-x: auto; scrollbar-width: none; background: #0f1217; border-bottom: 1px solid #2a313c; }
+.ap .legend::-webkit-scrollbar { display: none; } .ap .legend .lg { pointer-events: auto; flex: none; }
+.ap .lg { display: flex; align-items: center; gap: 4px; padding: 2px 8px 2px 3px; border-radius: 16px; border: 1px solid #0006;
+  background: color-mix(in srgb, var(--c) 30%, #14181ee0); color: #fff; font: inherit; font-size: 12px; cursor: pointer;
+  box-shadow: 0 2px 6px #0007; border-left: 5px solid var(--c); }
+.ap .lg img.lem { width: 22px; height: 22px; } .ap .lg b { font-size: 14px; min-width: 1em; }
+.ap .lg span { display: none; } .ap .lg.on span, .ap .lg.me span { display: inline; }
+.ap .lg.on { border-color: #fff; background: color-mix(in srgb, var(--c) 55%, #14181e); }
+.ap .lg.gone { opacity: .45; }
+.ap.sheet-open .legend { opacity: .3; pointer-events: none; }
+@media (min-width: 700px) { .ap .lg span { display: inline; } }
 
 /* 다음 계절 */
 .ap .next { position: absolute; right: 14px; bottom: calc(var(--tabh) + 14px); z-index: 6; padding: 12px 20px; border-radius: 28px;

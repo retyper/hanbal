@@ -36,6 +36,15 @@ const KIND_ICON: Readonly<Record<NodeKind, string>> = {
   port: 'settle-port-town',
   fort: 'settle-hill-fort',
   ironMine: 'settle-iron-town',
+  wild: 'settle-abandoned',
+}
+
+/** 빈땅을 일구면 — 섬은 고깃배 마을, 뭍은 작은 마을 */
+const SETTLED_ICON: Readonly<Record<string, string>> = {
+  'wild-keunseom': 'settle-island-town',
+  'wild-dolseom': 'settle-fishing-village',
+  'wild-seobu': 'settle-fishing-village',
+  'wild-neoreun': 'settle-horse-ranch',
 }
 
 /** 고을 기호 — 종류가 바탕, 지형이 다르면 고을마다 바꾼다 */
@@ -48,6 +57,7 @@ const NODE_ICON: Readonly<Record<string, string>> = {
 }
 
 export function nodeIcon(n: RNode): string {
+  if (n.kind === 'wild') return n.owner === null || n.hh <= 0 ? KIND_ICON.wild : (SETTLED_ICON[n.id] ?? 'settle-hamlet')
   return NODE_ICON[n.id] ?? KIND_ICON[n.kind]
 }
 
@@ -69,6 +79,14 @@ export const NODE_POS: Readonly<Record<string, readonly [number, number]>> = {
   'guya-cap': [0.77, 0.66],
   'guya-iron': [0.8, 0.24],
   'dokro-cap': [0.92, 0.6],
+  // 빈땅 (2026-10-18, 형: "빈땅도 좀 있고 개척도 좀 해야하고") — 산기슭·강가·바닷가·섬
+  'wild-galmae': [0.13, 0.22],
+  'wild-beodeul': [0.46, 0.15],
+  'wild-gomgol': [0.72, 0.14],
+  'wild-neoreun': [0.89, 0.36],
+  'wild-seobu': [0.07, 0.65],
+  'wild-keunseom': [0.3, 0.87],
+  'wild-dolseom': [0.63, 0.82],
 }
 
 /** 계절 → 지도 바탕 (같은 땅의 네 철, ART ⑪) */
