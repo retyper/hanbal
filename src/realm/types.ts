@@ -119,7 +119,10 @@ export interface Stock {
 export type Good = 'grain' | 'iron' | 'salt' | 'wood' | 'horse'
 
 /** 판 — 변한 6국 축소판 · 영남 판 (형: "사료대로 키우고 땅도 넓힘" — 2026-10-18) */
-export type RegionId = 'byeonhan-mini' | 'yeongnam'
+export type RegionId = 'byeonhan-mini' | 'yeongnam' | 'south'
+
+/** 발견의 길 — 어떻게 그 나라를 알게 됐나 (discovery.ts · 형: "시간지나서 발견국가가 많아지면 확장하는거지 지도도") */
+export type DiscoverHow = 'border' | 'envoy' | 'market' | 'war' | 'spy' | 'scout' | 'ally' | 'rumor'
 
 /** 주고받는 몫 — 사신·청·선물. 곡식·철은 늘 있고 나머지는 없으면 0 */
 export interface Goods {
@@ -328,6 +331,11 @@ export interface Realm {
   region?: RegionId
   /** 짓는 중 — 이 계절 끝에 그 고을 꼬리표가 된다 (economy.applyBuild · stepBuilds) */
   builds?: Array<{ readonly faction: string; readonly node: string; readonly what: BuildWhat; readonly done: number }>
+  /**
+   * 발견 (2026-10-19) — 나라마다 아는 나라 id (id 순서). 없으면(옛 판 · 변한·영남 판) 모두 안다.
+   * 삼한 남부 판은 제 나라와 이웃만 알고 시작한다 (discovery.ts)
+   */
+  known?: Record<string, string[]>
 }
 
 /** 플레이어(또는 AI)가 한 계절에 내리는 명령 */
@@ -479,6 +487,8 @@ export type ReportLine =
   /** 겨울에 소금이 모자라 곡식이 썩었다 */
   | { readonly kind: 'spoil'; readonly faction: string; readonly grain: number }
   /** 첩보 — `viewer` 의 첩자가 `about` 나라에서 들은 것 (보는 나라에게만) */
+  /** 새 나라를 알게 됐다 — `faction` 이 `nation` 을 `how` 길로 (discovery.ts) */
+  | { readonly kind: 'discover'; readonly faction: string; readonly nation: string; readonly how: DiscoverHow }
   | { readonly kind: 'rumor'; readonly viewer: string; readonly about: string; readonly fact: RumorFact; readonly good?: Good; readonly node?: string; readonly other?: string }
   /** 공작의 결과. 당한 쪽이 플레이어면 화면은 들켰을 때만 누가 했는지 보인다 */
   | {

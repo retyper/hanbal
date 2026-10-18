@@ -11,6 +11,8 @@ import { headcount, type Equip, type UnitKind } from '../../realm/battle.ts'
 import { FACTION_ART, HERO_BUST, SEASON_ICON, UNIT_ICON, nodeIcon } from '../../realm/data/art.ts'
 import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../../realm/data/nations-yeongnam.ts'
+import { SOUTH_NATIONS } from '../../realm/data/nations-south.ts'
+import { knownOf, knows } from '../../realm/discovery.ts'
 import { TRAIT } from '../../realm/data/traits.ts'
 import {
   ASK_KIND_NAME, ASK_NAME, BLOCKED_LINE, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine, NODE_NOW, BUILD_NAME, BOW_NAME, CONCEAL_LINE, goodsLine,
@@ -27,7 +29,7 @@ import { advance, concealOf, draftable, forceOf, neighbors, newArmyId, otherEnd,
 import { PLOT_OPS, assassinArrows, assassinBow, bowUpCost, escapeChance, plotAgents, plotChance, plotCost, plotTargets } from '../../realm/plots.ts'
 import { allianceWhy, leaderOf, truceWhy, winningAgainst } from '../../realm/stance.ts'
 import { heroSeen, isRuler, persuadeSeasons, wanderersFor } from '../../realm/heroes.ts'
-import type { Army, EnvoyAsk, Good, Hero, Order, PlotOp, Realm, RegionId, Report } from '../../realm/types.ts'
+import type { Army, EnvoyAsk, Good, Hero, Order, PlotOp, Realm, RegionId, Report, ReportLine } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, mapHtml, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { GROW_CSS, HERO_CSS, bondChip, growthHtml, heroRadar, roleLine, traitChips, traitLines } from './heroview.ts'
@@ -144,12 +146,13 @@ const sorted = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort(
 const rulerId = (nation: string): string => `${nation}-ruler`
 
 /** 판마다 나라 고르기 글 — 변한 6국 축소판 · 영남 판 */
-const nationsOf = (region: RegionId): readonly NationInfo[] => (region === 'yeongnam' ? YEONGNAM_NATIONS : NATIONS)
+const nationsOf = (region: RegionId): readonly NationInfo[] => (region === 'yeongnam' ? YEONGNAM_NATIONS : region === 'south' ? SOUTH_NATIONS : NATIONS)
 
-/** 판 고르기의 말 (형: "사료대로 키우고 땅도 넓힘") */
+/** 판 고르기의 말 (형: "사료대로 키우고 땅도 넓힘" · "발견국가가 많아지면 확장하는거지 지도도") */
 const REGION_PICK: ReadonlyArray<{ id: RegionId; name: string; line: string }> = [
   { id: 'byeonhan-mini', name: '작은 판', line: '변한 남쪽의 여섯 나라. 한 판이 짧다.' },
-  { id: 'yeongnam', name: '큰 판', line: '낙동강과 동해·남해의 스물한 나라. 도읍 여섯을 쥐면 이긴다.' },
+  { id: 'yeongnam', name: '큰 판', line: '낙동강과 동해·남해의 스물한 나라.' },
+  { id: 'south', name: '삼한 남부', line: '넓어지는 지도 — 서른여섯 나라. 처음엔 이웃만 안다. 사신·장터·싸움·소문으로 새 나라를 알면 지도가 펼쳐진다.' },
 ]
 function nationFace(id: string): string {
   const hid = rulerId(id)
@@ -169,6 +172,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   let realm: Realm | null = null
   let before: Realm | null = null
+  /** 이번 계절에 막 알게 된 나라 — 지도에서 한 번 서서히 드러난다 (발견) */
+  let fresh = new Set<string>()
   let report: Report | null = null
   let showReport = false
   let choosing = false
@@ -319,13 +324,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       chip: m.blocked !== null ? `<span class="tn">${esc(BLOCKED_LINE[m.blocked])}</span>`
         : m.hostile ? `${m.win !== null ? fightFeel(m.win[0], m.win[1]) : unknownFeel()}${m.conceal === "good" ? `<span class="tn hide">숨기 좋은 길</span>` : ""}` : `<span class="tn">${m.seasons}계절</span>`,
     }))
-    return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets)
+    const fr = fresh
+    if (!showReport) fresh = new Set() // 드러나는 것은 한 번만 — 계절 소식을 닫고 지도를 볼 때
+    return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets, fr)
   }
 
   /** 깃발 줄 — 나라마다 깃발과 땅 수 (땅의 주인은 누구나 안다). 누르면 그 나라 땅만 또렷하다 */
   function legendHtml(r: Realm): string {
     const count = (f: string): number => Object.values(r.nodes).filter((n) => n.owner === f).length
-    const fs = sorted(Object.values(r.factions)).map((f) => ({ f, n: count(f.id) })).sort((a, b) => b.n - a.n)
+    // 아는 나라만 (삼한 남부 판의 발견 — 모르는 나라는 깃발 줄에도 없다)
+    const fs = sorted(Object.values(r.factions)).filter((f) => knows(r, me(), f.id)).map((f) => ({ f, n: count(f.id) })).sort((a, b) => b.n - a.n)
     let h = ''
     for (const { f, n } of fs) {
       const c = FACTION_ART[f.id]?.color ?? '#ccc'
@@ -701,7 +709,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<p class="mute">남의 속셈은 그 나라에 첩자를 심거나 동맹을 맺어야 들린다.</p>`
     if (L === me()) h += `<div class="banner bad">우리가 앞서간다. 다른 나라들이 손을 잡고, 맺은 약조도 깨고 등을 돌릴 수 있다.</div>`
     else if (L !== null) h += `<div class="banner">앞서가는 나라: ${emblem(L, 'fem')}<b>${esc(r.factions[L]?.name ?? '')}</b> · 다른 나라들이 함께 막으려 한다. 손잡을 때다.</div>`
-    for (const f of sorted(Object.values(r.factions)).filter((x) => x.id !== me())) {
+    for (const f of sorted(Object.values(r.factions)).filter((x) => x.id !== me() && knows(r, me(), x.id))) {
       const rel = relationOf(r, me(), f.id)
       const left = rel.until !== null ? ` ${Math.max(0, rel.until - r.season)}계절` : ''
       const lead = r.heroes[f.ruler ?? rulerId(f.id)]
@@ -820,7 +828,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<span class="mute cost">곡식 ${cost.grain}${cost.iron > 0 ? ` · 철 ${cost.iron}` : ''}</span></button>`
       if (open) {
         const afford = st.grain >= cost.grain && st.iron >= cost.iron
-        const targets = plotTargets(realm!, me(), op)
+        const targets = plotTargets(realm!, me(), op).filter((t) => knows(realm!, me(), t.target)) // 아는 나라에만 (발견)
         if (op === 'assassin') {
           h += `<img class="plimg" src="${ART}event/event-assassin-archer.jpg" alt="">`
           h += `<div class="mute">누구를 보내나</div><div class="seg"><button class="${agent === null ? 'on' : ''}" data-act="pagent" data-id="">고용 자객</button>`
@@ -1175,8 +1183,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const season = seasonOf(r.season)
     // 우리가 낀 싸움은 카드로 한 판씩 풀어 보이고, 글 줄에서는 뺀다
     const cards = report.lines.map((l, i) => (l.kind === 'battle' ? battleCard(before!, r, l, me(), ART, i) : ''))
+    // 넓어지는 지도 — 모르는 나라 이야기는 들리지 않는다 (줄에 적힌 나라 id 를 훑는다)
+    const heard = (l: ReportLine): boolean => r.known === undefined
+      || Object.values(l).every((v) => typeof v !== 'string' || r.factions[v] === undefined || knows(r, me(), v))
     const lines = report.lines
-      .filter((_, i) => cards[i] === '')
+      .filter((l, i) => cards[i] === '' && heard(l))
       .map((l) => reportText(before!, r, l, me()))
       .filter((x): x is string => x !== null)
     let h = `<div class="mcard"><div class="mt">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r.season))}</b><span>${esc(SEASON_LINE[season])}</span></div>`
@@ -1190,7 +1201,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function chooseHtml(): string {
     // 판부터 고른다 — 작은 판(변한 6국) · 큰 판(영남 스물한 나라)
     const pickLine = (x: (typeof REGION_PICK)[number]): string =>
-      x.id === 'yeongnam' ? `낙동강과 동해·남해의 스물한 나라. 도읍 ${P.realm.winCapitalsYeongnam}곳을 쥐면 이긴다.` : x.line
+      x.id === 'yeongnam' ? `${x.line} 도읍 ${P.realm.winCapitalsYeongnam}곳을 쥐면 이긴다.`
+        : x.id === 'south' ? `${x.line} 도읍 ${P.realm.winCapitalsSouth}곳을 쥐면 이긴다.` : x.line
     let h = `<div class="choose"><h1>칠십팔국</h1><div class="seg rpick">`
     for (const x of REGION_PICK) h += `<button class="${chooseRegion === x.id ? 'on' : ''}" data-act="region" data-v="${x.id}">${esc(x.name)}</button>`
     h += `</div><p class="mute">${esc(pickLine(REGION_PICK.find((x) => x.id === chooseRegion)!))} 나라를 하나 고른다.</p>`
@@ -1456,6 +1468,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         report = res.report
         showReport = true
         realm = res.next
+        fresh = new Set(knownOf(res.next, me()).filter((f) => !knows(prev, me(), f)))
         host.onAdvance(res.next, res.report, all, mine)
         seasonFx(res.next.season)
         if (res.report.lines.some((l) => l.kind === 'battle' && (l.atkFaction === me() || l.defender === me()))) ding('boom_01', 0.35) // 우리가 낀 싸움

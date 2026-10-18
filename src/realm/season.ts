@@ -30,6 +30,7 @@ import {
 import { blockedWhy, seasonOf } from './calendar.ts'
 import { applyBowUps, refreshSpies, resolvePlots } from './plots.ts'
 import { noteTake } from './stance.ts'
+import { stepDiscovery } from './discovery.ts'
 import { PEOPLE_SCALE, migrate } from './migrate.ts'
 import { spreadRumors } from './rumor.ts'
 import { addMen, giveMen, kitOf, scaleMen, takeMen } from './kit.ts'
@@ -874,7 +875,8 @@ export function checkOutcome(r: Realm): 'win' | 'lose' | null {
   let held = 0
   for (const f of Object.values(r.factions)) if (r.nodes[f.capital]?.owner === me) held++
   // 판마다 — 영남 판은 나라가 스물하나라 더 많이 쥐어야 한다
-  return held >= (r.region === 'yeongnam' ? P.realm.winCapitalsYeongnam : P.realm.winCapitals) ? 'win' : null
+  const need = r.region === 'yeongnam' ? P.realm.winCapitalsYeongnam : r.region === 'south' ? P.realm.winCapitalsSouth : P.realm.winCapitals
+  return held >= need ? 'win' : null
 }
 
 export function advance(
@@ -909,6 +911,7 @@ export function advance(
   refreshSpies(r) // 9 — 첩자가 본다
   for (const [f, spies] of Object.entries(r.spies ?? {})) for (const s of spies) noteMet(r, f, heroesAtNode(r, s.node))
   spreadRumors(r, lines) // 9 — 첩자가 들은 것 (간접 정보)
+  stepDiscovery(r, lines) // 9 — 이번 계절의 일로 서로 알게 된다 (삼한 남부 판 · 발견)
   if (r.player !== undefined) {
     for (const a of seenMarches(r, r.player)) {
       const line = { kind: 'sighted', faction: a.faction, army: a.id, from: a.march!.from, to: a.march!.to } as const

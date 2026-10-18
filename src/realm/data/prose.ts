@@ -3,7 +3,7 @@
  * 고증 검토(lore-lens)가 코드를 안 읽고 이 파일만 본다. 숫자는 여기 없다 (P.realm).
  */
 import type { Equip, Outcome, UnitKind } from '../battle.ts'
-import type { Ask, BuildWhat, EdgeKind, Good, PlotOp, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, SeasonOfYear, Tag, Why } from '../types.ts'
+import type { Ask, BuildWhat, DiscoverHow, EdgeKind, Good, PlotOp, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, SeasonOfYear, Tag, Why } from '../types.ts'
 import type { ConcealWhy } from '../season.ts'
 import { TRAIT } from './traits.ts'
 
@@ -362,6 +362,8 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
         : `${node(line.node)}에 ${josa(BUILD_NAME[line.what], '을', '를')} 짓기 시작했다. 이 계절이 끝나면 선다.`
     case 'spoil':
       return line.faction === viewer ? `겨울 동안 곡식 ${line.grain}섬이 썩었다. 소금이 모자랐다.` : null
+    case 'discover':
+      return line.faction === viewer ? DISCOVER_LINE[line.how](fname(line.nation)) : null
     case 'rumor': {
       if (line.viewer !== viewer) return null
       const who = fname(line.about)
@@ -557,6 +559,26 @@ export const NODE_NOW: Readonly<Record<string, string>> = {
   'y-w-geochang': '거창', 'y-w-jinju': '진주', 'y-w-sancheong': '산청', 'y-w-neoreun': '부산 강서',
   'y-w-gomgol': '양산 원동', 'y-w-gunwi': '군위', 'y-w-uiseong': '의성 단밀', 'y-w-cheongsong': '청송',
   'y-w-yeongdeok': '영덕', 'y-w-geoje': '거제', 'y-w-namhae': '남해',
+  // 삼한 남부 판 (data/regions/south.ts)
+  'm-baekje-cap': '서울 송파·하남', 'm-baekje-v': '서울 한강', 'm-michuhol-cap': '인천', 'n-maek-cap': '춘천',
+  'm-mokji-cap': '천안 직산', 'm-mokji-v': '아산', 'm-ungcheon-cap': '공주', 'm-sangdang-cap': '청주', 'm-sangdang-iron': '충주',
+  'm-sodo': '논산', 'm-geonma-cap': '익산', 'm-geonma-port': '군산', 'm-wansan-cap': '전주', 'm-gosaburi-cap': '정읍 고부',
+  'm-balla-cap': '나주', 'm-balla-port': '목포', 'm-mujin-cap': '광주', 'm-gampyeong-cap': '순천', 'm-gampyeong-port': '여수',
+  'm-goryong-cap': '남원', 'n-siljik-cap': '삼척', 'n-haseulla-cap': '강릉',
+  'w-byeokgol': '김제', 'w-jinan': '진안', 'w-haenam': '해남', 'w-yeonggwang': '영광', 'w-seosan': '서산', 'w-hongseong': '홍성',
+  'w-wonju': '원주', 'w-pyeongchang': '평창', 'w-uljin': '울진', 'w-yeongju': '영주',
+}
+
+/** 발견의 말 — 보는 나라가 그 나라를 어떻게 알게 됐나 (discovery.ts · 형: "발견국가가 많아지면 확장") */
+const DISCOVER_LINE: Readonly<Record<DiscoverHow, (n: string) => string>> = {
+  border: (n) => `땅이 맞닿아 ${josa(n, '을', '를')} 알게 됐다.`,
+  envoy: (n) => `사신이 오가며 ${josa(n, '을', '를')} 알게 됐다.`,
+  market: (n) => `장터에서 ${n} 사람들을 만났다.`,
+  war: (n) => `싸움터에서 ${josa(n, '을', '를')} 처음 마주쳤다.`,
+  spy: (n) => `첩자가 ${n} 이야기를 듣고 왔다.`,
+  scout: (n) => `척후가 ${n} 땅을 보고 왔다.`,
+  ally: (n) => `동맹이 ${n} 이야기를 전해 줬다.`,
+  rumor: (n) => `상인에게서 ${n} 이야기를 들었다. 지도에 새 땅이 펼쳐진다.`,
 }
 
 /** 자객의 활 단계 (plots.assassinBow · 밤 판 bow=) — 0 단궁 · 1 맥궁 · 2 각궁 · 3 신궁 */

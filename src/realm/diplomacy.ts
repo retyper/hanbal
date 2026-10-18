@@ -17,6 +17,7 @@ import { visibleRange } from './intel.ts'
 import { memoFor } from './memo.ts'
 import { nodeStrength } from './season.ts'
 import { allianceWhy, truceWhy, winningAgainst, type Motive } from './stance.ts'
+import { knows } from './discovery.ts'
 import type { Ask, AskKind, EnvoyAsk, Good, Goods, Order, Pledge, Realm, Relation, ReportLine } from './types.ts'
 
 export function pairKey(a: string, b: string): string {
@@ -689,7 +690,7 @@ export function makeAsks(r: Realm, lines: ReportLine[]): void {
   let made = 0
   for (const f of Object.keys(r.factions).sort()) {
     if (made >= R.askMaxPerSeason) break
-    if (f === me || r.factions[f]!.mind === 'player' || !alive(f)) continue
+    if (f === me || r.factions[f]!.mind === 'player' || !alive(f) || !knows(r, f, me)) continue // 모르는 나라에는 청을 못 건다 (발견)
     if (roll(r.seed, r.season, `ask:${f}`) >= R.aiAskChance) continue
     const ask = pickAsk(r, f, me)
     if (ask === null) continue

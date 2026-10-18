@@ -7,12 +7,15 @@
  * 자리·그림 이름은 realm/data/art.ts.
  */
 import { headcount } from '../../realm/battle.ts'
-import { FACTION_ART, NODE_POS, REGION_ART, SEASON_MAP, nodeIcon } from '../../realm/data/art.ts'
+import { FACTION_ART, REGION_ART, SEASON_MAP, nodeIcon, nodePos } from '../../realm/data/art.ts'
 import { EDGE_NAME, NODE_KIND_NAME, NODE_NOW } from '../../realm/data/prose.ts'
+import { SOUTH_PROJ, onSouthLand } from '../../realm/data/regions/south-geo.ts'
+import { knows } from '../../realm/discovery.ts'
 import { visibleRange } from '../../realm/intel.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
 import type { EdgeKind, NodeKind, Realm, REdge, RegionId } from '../../realm/types.ts'
 import { ferryAt, landClipSvg, midOf, polyPath, provinceCells, riversSvg, routePoints, smoothPath, trimPolyline, type Pt } from './mapgeo.ts'
+import { worldMapUrl } from './worldmap.ts'
 
 /** 변한 판 지도 바탕의 크기 (map/*.jpg) — CSS 의 기본 비율. 판마다의 크기는 REGION_ART (영남 판 1024×765) */
 const W = REGION_ART['byeonhan-mini'].w
@@ -73,6 +76,11 @@ export const MAP_CSS = `
 .map .tok.sel img { border-color: #ffd27a; box-shadow: 0 0 0 3px #ffd27a88, 0 0 12px #ffd27a; transform: scale(1.12); }
 .map .tok.going img { border-color: #c8402a; }
 .map .lb.sel { color: #7a1f10; } .map .lb.dim { opacity: .38; } .map .nd.sel img.st { filter: drop-shadow(0 0 7px #ffd27a) drop-shadow(0 0 3px #ffd27a); }
+.map[data-world] { background-color: #cdb98e; }
+.map .nd.fresh, .map .lb.fresh, .map svg .fresh { animation: rv 2.2s ease-out both; }
+@keyframes rv { from { opacity: 0; } to { opacity: 1; } }
+.map .fogw { position: absolute; z-index: 1; transform: translate(-50%, -50%); pointer-events: none; white-space: nowrap; color: #6a5634aa;
+  font-size: max(11px, calc(2.4cqh / var(--z, 1) * var(--zs, 1))); font-weight: 700; letter-spacing: .4em; }
 `
 
 export interface MapMarch {
@@ -99,14 +107,16 @@ const sizeOf = (hh: number): number => Math.min(1.35, Math.max(0.8, 0.7 + hh / 9
  */
 export function mapHtml(
   r: Realm, me: string, art: string, marches: readonly MapMarch[], selected: string, focus: string | null = null,
-  tokens: readonly MapToken[] = [], targets: readonly MapTarget[] = [],
+  tokens: readonly MapToken[] = [], targets: readonly MapTarget[] = [], fresh: ReadonlySet<string> = new Set(),
 ): string {
   // 판마다 지도 그림·좌표계·기호 크기 (영남 판은 고을이 빽빽해 작게)
-  const RA = REGION_ART[r.region ?? 'byeonhan-mini']
+  const region = r.region ?? 'byeonhan-mini'
+  const RA = REGION_ART[region]
   const W = RA.w
   const H = RA.h
+  const pos = (id: string): readonly [number, number] | undefined => nodePos(region, id)
   const px = (id: string): [number, number] => {
-    const p = NODE_POS[id] ?? [0.5, 0.5]
+    const p = pos(id) ?? [0.5, 0.5]
     return [p[0] * W, p[1] * H]
   }
   /** 땅빛 — 고을 하나가 물들이는 둘레 (지도 좌표) · 같은 나라 고을 사이 띠의 굵기 */
@@ -118,8 +128,14 @@ export function mapHtml(
   const hasTok = new Set(tokens.map((t) => t.node))
   const known = r.intel[me] ?? {}
   const season = seasonOf(r.season)
-  // 땅과 주인은 누구나 안다 (형: "어느나라가 어디 먹는지 한방에" — 2026-10-18). 모르는 것은 군세뿐이다
-  const seen = (id: string): boolean => r.nodes[id] !== undefined
+  // 아는 나라의 땅과 주인은 다 안다 (형: "어느나라가 어디 먹는지 한방에" — 2026-10-18). 모르는 것은 군세,
+  // 그리고 넓어지는 지도에서는 아직 모르는 나라 (발견 — 그 땅은 '모르는 땅'으로 덮는다)
+  const vis = visibleNodes(r, me)
+  const seen = (id: string): boolean => vis.has(id)
+  const isFresh = (id: string): boolean => {
+    const o = r.nodes[id]?.owner
+    return o !== null && o !== undefined && fresh.has(o)
+  }
   const dim = (owner: string | null): boolean => focus !== null && owner !== focus
 
   let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">`
@@ -131,12 +147,13 @@ export function mapHtml(
     svg += `<radialGradient id="rm-t-${f}"><stop offset="0" stop-color="${a.color}" stop-opacity=".72"/>`
     svg += `<stop offset=".65" stop-color="${a.color}" stop-opacity=".45"/><stop offset="1" stop-color="${a.color}" stop-opacity="0"/></radialGradient>`
   }
-  const region = r.region ?? 'byeonhan-mini'
-  svg += `${landClipSvg(region, W, H)}</defs>`
-  if (region === 'yeongnam') svg += provincesSvg(r, region, W, H, TERRITORY_R, dim, focus)
+  const cellsOn = region === 'yeongnam' || region === 'south'
+  const fog = r.known !== undefined ? fogSvg(r, region, W, H, TERRITORY_R, vis, isFresh) : null
+  svg += `${landClipSvg(region, W, H)}${fog?.defs ?? ''}</defs>`
+  if (cellsOn) svg += provincesSvg(r, region, W, H, TERRITORY_R, dim, focus, seen)
   else svg += `<g class="terr">`
   // 땅빛 (변한 판) — 같은 나라 고을끼리 띠로 잇고, 고을마다 둥글게 번진다
-  if (region !== 'yeongnam') for (const ed of Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))) {
+  if (!cellsOn) for (const ed of Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))) {
     const oa = r.nodes[ed.a]?.owner
     if (oa === null || oa === undefined || oa !== r.nodes[ed.b]?.owner || !seen(ed.a) || !seen(ed.b) || ed.kind === 'sea') continue
     const [x1, y1] = px(ed.a)
@@ -144,7 +161,7 @@ export function mapHtml(
     const c = FACTION_ART[oa]?.color ?? '#ccc'
     svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${TERRITORY_BAND}" stroke-linecap="round" opacity="${dim(oa) ? 0.06 : focus === oa ? 0.42 : 0.24}"/>`
   }
-  if (region !== 'yeongnam') {
+  if (!cellsOn) {
     for (const n of Object.values(r.nodes).sort((x, y) => (x.id < y.id ? -1 : 1))) {
       if (n.owner === null || !seen(n.id) || FACTION_ART[n.owner] === undefined) continue
       const [x, y] = px(n.id)
@@ -154,6 +171,8 @@ export function mapHtml(
   }
   // 강 — 또렷하게 (영남 판)
   svg += riversSvg(region, W, H)
+  // 모르는 땅 — 강·땅빛 위, 길 밑 (아는 고을 사이의 길은 늘 보인다)
+  svg += fog?.body ?? ''
   // 길 — 골짜기·바닷가를 따라 휜다 (형: "직선경로만 있는게 이상하지 않냐?"). 막힌 길은 흐리고 가운데 ✕
   const route = (ed: REdge): Pt[] => routePoints(region, ed, px(ed.a), px(ed.b), W, H)
   const sw = RA.nodeScale < 1 ? 0.6 : 1
@@ -174,6 +193,7 @@ export function mapHtml(
   // 출정 화살 — 그 길의 모양을 따라 간다. 고른 것은 굵은 실선, 길 위의 것은 점선 + 남은 계절
   const edgeOf = (a: string, b: string): REdge | undefined => Object.values(r.edges).find((e) => (e.a === a && e.b === b) || (e.a === b && e.b === a))
   for (const m of marches) {
+    if (!seen(m.from) || !seen(m.to)) continue
     const ed = edgeOf(m.from, m.to)
     let full: Pt[] = ed !== undefined ? route(ed) : [px(m.from), px(m.to)]
     if (ed !== undefined && ed.a !== m.from) full = full.slice().reverse()
@@ -197,8 +217,9 @@ export function mapHtml(
   const labels: LabelIn[] = []
   for (const n of Object.values(r.nodes).sort((x, y) => (x.id < y.id ? -1 : 1))) {
     if (!seen(n.id)) continue
-    const p = NODE_POS[n.id]
+    const p = pos(n.id)
     if (p === undefined) continue
+    const fr = isFresh(n.id) ? ' fresh' : ''
     const owner = n.owner
     const color = owner !== null ? (FACTION_ART[owner]?.color ?? '#ccc') : '#d9d2c0'
     const ours = owner === me
@@ -221,8 +242,8 @@ export function mapHtml(
     const tg = target.get(n.id)
     const go = tg !== undefined && !tg.off ? ` data-act="go" data-edge="${tg.edge}"` : ''
     const tcls = tg === undefined ? '' : tg.off ? ' tgt off' : tg.on ? ' tgt on' : ' tgt'
-    labels.push({ id: n.id, name: n.name, now: NODE_NOW[n.id], x: p[0], y: p[1], s: sizeOf(n.hh), cap: n.kind === 'capital' || Object.values(r.factions).some((f) => f.capital === n.id), hh: n.hh, cls: `${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}` })
-    nodes += `<div class="nd${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${tcls}"${go} data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color};--s:${sizeOf(n.hh).toFixed(2)}" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}">`
+    labels.push({ id: n.id, name: n.name, now: NODE_NOW[n.id], x: p[0], y: p[1], s: sizeOf(n.hh), cap: n.kind === 'capital' || Object.values(r.factions).some((f) => f.capital === n.id), hh: n.hh, cls: `${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${fr}` })
+    nodes += `<div class="nd${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${tcls}${fr}"${go} data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color};--s:${sizeOf(n.hh).toFixed(2)}" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}">`
     nodes += `<span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${flag}${badge}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : ''}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
@@ -230,7 +251,7 @@ export function mapHtml(
   for (const t of tokens) byNode.set(t.node, [...(byNode.get(t.node) ?? []), t])
   let toks = ''
   for (const [node, ts] of [...byNode].sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
-    const p = NODE_POS[node]
+    const p = pos(node)
     if (p === undefined) continue
     toks += `<div class="toks" style="left:${(p[0] + ICON_W * RA.nodeScale * 0.5) * 100}%;top:${p[1] * 100}%">`
     for (const t of ts) {
@@ -238,7 +259,11 @@ export function mapHtml(
     }
     toks += `</div>`
   }
-  return `<div class="map" data-aspect="${W / H}" data-zmax="${RA.zmax}" style="background-image:url('${art}${RA.dir}/${SEASON_MAP[season]}.${RA.ext}');aspect-ratio:${W} / ${H};--ns:${RA.nodeScale};--ls:${RA.labelScale}">${svg}${nodes}${toks}${placeLabels(labels, byNode, W, H, RA.nodeScale, RA.labelScale)}</div>`
+  // 넓어지는 지도는 조각을 이은 한 장에 계절 빛을 입힌다 (worldmap.ts — 다 되면 바탕을 갈아 끼운다)
+  const world = region === 'south'
+  const bgUrl = world ? worldMapUrl(art, season) : `${art}${RA.dir}/${SEASON_MAP[season]}.${RA.ext}`
+  const bg = bgUrl !== '' ? `background-image:url('${bgUrl}');` : ''
+  return `<div class="map" data-region="${region}"${world ? ` data-world="${season}"` : ''} data-aspect="${W / H}" data-zmax="${RA.zmax}" style="${bg}aspect-ratio:${W} / ${H};--ns:${RA.nodeScale};--ls:${RA.labelScale}">${svg}${fog?.words ?? ''}${nodes}${toks}${placeLabels(labels, byNode, W, H, RA.nodeScale, RA.labelScale)}</div>`
 }
 
 /** 지도 위 우리 군대의 말 — 머무는 군대 하나에 하나 */
@@ -353,18 +378,14 @@ function ferrySvg([x, y]: Pt, k: number): string {
  */
 function provincesSvg(
   r: Realm, region: RegionId, W: number, H: number, terrR: number,
-  dim: (owner: string | null) => boolean, focus: string | null,
+  dim: (owner: string | null) => boolean, focus: string | null, seen: (id: string) => boolean,
 ): string {
-  const nodes = Object.values(r.nodes).sort((x, y) => (x.id < y.id ? -1 : 1))
-  const pts = nodes.map((n) => {
-    const p = NODE_POS[n.id] ?? [0.5, 0.5]
-    return [p[0] * W, p[1] * H] as const
-  })
-  const cells = provinceCells(`${region}:${nodes.length}`, pts, nodes.map((n) => CELL_SIZE[n.kind]), terrR * 1.5)
-  const clip = region === 'yeongnam' ? ' clip-path="url(#rm-land)"' : ''
+  const { nodes, cells } = cellsOf(r, region, W, H, terrR)
+  const clip = ' clip-path="url(#rm-land)"'
   let fill = ''
   let lines = ''
   for (const [i, c] of cells.entries()) {
+    if (!seen(nodes[i]!.id)) continue // 모르는 땅은 안개가 덮는다
     const o = nodes[i]!.owner
     const col = o !== null ? (FACTION_ART[o]?.color ?? '#ccc') : null
     if (col !== null) fill += `<path d="${polyPath(c.pts)}" fill="${col}" opacity="${dim(o) ? 0.06 : focus === o ? 0.46 : 0.3}"/>`
@@ -385,4 +406,66 @@ function provincesSvg(
     }
   }
   return `<g class="terr"${clip}>${fill}<g fill="none" stroke-linecap="round">${lines}</g></g>`
+}
+
+/** 판의 고을(id 순)과 그 땅 조각 — 고을 자리는 안 바뀌니 판마다 한 번만 셈한다 (mapgeo 의 캐시) */
+function cellsOf(r: Realm, region: RegionId, W: number, H: number, terrR: number): { nodes: Realm['nodes'][string][]; cells: ReturnType<typeof provinceCells> } {
+  const nodes = Object.values(r.nodes).sort((x, y) => (x.id < y.id ? -1 : 1))
+  const pts = nodes.map((n) => {
+    const p = nodePos(region, n.id) ?? [0.5, 0.5]
+    return [p[0] * W, p[1] * H] as const
+  })
+  return { nodes, cells: provinceCells(`${region}:${nodes.length}`, pts, nodes.map((n) => CELL_SIZE[n.kind]), terrR * 1.5) }
+}
+
+// ───────── 넓어지는 지도 — 모르는 땅 (발견, docs/realm/WORLD-MAP.md §2 · 2026-10-19)
+
+/**
+ * `me` 가 지도에서 볼 수 있는 고을 — 아는 나라(제 나라 포함)의 고을, 그 고을과 길로 맞닿은 빈 땅·소도, 우리 군대가 선 곳.
+ * 발견이 없는 판이면 전부.
+ */
+export function visibleNodes(r: Realm, me: string): Set<string> {
+  if (r.known === undefined) return new Set(Object.keys(r.nodes))
+  const out = new Set<string>()
+  for (const n of Object.values(r.nodes)) if (n.owner !== null && knows(r, me, n.owner)) out.add(n.id)
+  for (const a of Object.values(r.armies)) if (a.faction === me) out.add(a.at)
+  const core = [...out]
+  for (const ed of Object.values(r.edges)) {
+    for (const [x, y] of [[ed.a, ed.b], [ed.b, ed.a]] as const) {
+      if (core.includes(x) && r.nodes[y]?.owner === null) out.add(y)
+    }
+  }
+  return out
+}
+
+/** 옛 종이빛 안개 — 보이는 고을의 땅 조각만 뚫는다. 막 알게 된 나라의 조각은 서서히 뚫린다 (.fresh) */
+function fogSvg(
+  r: Realm, region: RegionId, W: number, H: number, terrR: number, vis: ReadonlySet<string>, fresh: (id: string) => boolean,
+): { defs: string; body: string; words: string } {
+  const { nodes, cells } = cellsOf(r, region, W, H, terrR)
+  const blur = Math.round(terrR * 0.35)
+  let holes = ''
+  for (const [i, c] of cells.entries()) {
+    const id = nodes[i]!.id
+    if (!vis.has(id)) continue
+    holes += `<path d="${polyPath(c.pts)}"${fresh(id) ? ' class="fresh"' : ''}/>`
+  }
+  const defs = `<filter id="rm-fog-blur" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="${blur}"/></filter>`
+    + `<mask id="rm-fog" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="#fff"/>`
+    + `<g fill="#000" filter="url(#rm-fog-blur)">${holes}</g></mask>`
+    + `<radialGradient id="rm-fog-c" cx=".5" cy=".5" r=".75"><stop offset="0" stop-color="#ddcba3"/><stop offset="1" stop-color="#bfa678"/></radialGradient>`
+  const body = `<g class="fog" mask="url(#rm-fog)"><rect width="${W}" height="${H}" fill="url(#rm-fog-c)" opacity=".95"/></g>`
+  // "모르는 땅" 글씨 — 고른 눈금 위, 뭍이고 보이는 고을에서 먼 자리 (나라 자리를 흘리지 않게 눈금으로)
+  let words = ''
+  const seenPts = [...vis].map((id) => nodePos(region, id)).filter((p) => p !== undefined)
+  for (let gy = 0; gy < 4; gy++) {
+    for (let gx = 0; gx < 5; gx++) {
+      const x = (gx + 0.5 + (gy % 2) * 0.25) / 5
+      const y = (gy + 0.5) / 4
+      if (region === 'south' && !onSouthLand(SOUTH_PROJ.lon0 + x * (SOUTH_PROJ.lon1 - SOUTH_PROJ.lon0), SOUTH_PROJ.lat1 - y * (SOUTH_PROJ.lat1 - SOUTH_PROJ.lat0))) continue
+      if (seenPts.some((p) => Math.hypot((p[0] - x) * W, (p[1] - y) * H) < terrR * 4)) continue
+      words += `<span class="fogw" style="left:${(x * 100).toFixed(1)}%;top:${(y * 100).toFixed(1)}%">모르는 땅</span>`
+    }
+  }
+  return { defs, body, words }
 }
