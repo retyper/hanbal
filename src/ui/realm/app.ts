@@ -1115,6 +1115,29 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (lost !== undefined) cands.push([1, { ev: 'event-sniped-commander', hero: lost, line: `${josa(lost.name, '을', '를')} 잃었다` }])
       for (const [k, p] of cands) if (k > rank) { rank = k; best = p }
     }
+    // 싸움이 없어도 그 계절의 큰일 하나를 그림으로 (형: "보드게임 특성상 UX 부족한 부분들을 … 애니메이션 · 그림으로 채웠잖아")
+    const pl = after.player
+    const fn = (f: string): string => after.factions[f]?.name ?? ''
+    for (const l of rep.lines) {
+      let c: [number, { ev: string; hero: Hero | null; line: string }] | null = null
+      if (l.kind === 'relation' && (l.a === pl || l.b === pl)) {
+        const other = l.a === pl ? l.b : l.a
+        if (l.state === 'ally') c = [0.9, { ev: 'event-marriage', hero: after.heroes[after.factions[other]?.ruler ?? ''] ?? null, line: `${josa(fn(other), '과', '와')} 동맹을 맺었다` }]
+        else if (l.state === 'truce') c = [0.8, { ev: 'event-outside-envoy', hero: after.heroes[after.factions[other]?.ruler ?? ''] ?? null, line: `${josa(fn(other), '과', '와')} 화친했다` }]
+        else if (l.state === 'war') c = [0.7, { ev: 'event-people-quarrel', hero: null, line: `${josa(fn(other), '과', '와')} 전쟁이다` }]
+      } else if (l.kind === 'recruit' && l.faction === pl && after.heroes[l.hero] !== undefined) {
+        c = [0.85, { ev: 'event-defection', hero: after.heroes[l.hero]!, line: `${josa(after.heroes[l.hero]!.name, '이', '가')} 우리 장수가 됐다` }]
+      } else if (l.kind === 'rite' && l.faction === pl) {
+        c = [0.6, { ev: l.season === 'spring' ? 'event-divination' : 'event-festival', hero: null, line: l.season === 'spring' ? '봄 제사를 지냈다' : '가을 제사를 지냈다' }]
+      } else if (l.kind === 'hunger' && l.faction === pl) {
+        c = [0.75, { ev: 'event-sky-drought', hero: null, line: '곡식이 바닥났다' }]
+      } else if (l.kind === 'settle' && l.faction === pl) {
+        c = [0.5, { ev: 'event-expedition-return', hero: null, line: `${josa(after.nodes[l.to]?.name ?? '', "을", "를")} 일구러 떠났다` }]
+      } else if (l.kind === 'envoy' && l.from === pl && l.accepted && l.ask === 'trade') {
+        c = [0.4, { ev: 'event-iron-trade', hero: null, line: `${josa(fn(l.to), '과', '와')} 물건을 바꿨다` }]
+      }
+      if (c !== null && c[0] > rank) { rank = c[0]; best = c[1] }
+    }
     if (best === null) return ''
     return `<div class="scene"><img class="ev" src="${ART}event/${best.ev}.jpg" alt="">${best.hero !== null ? bust(best.hero, 'who') : ''}<div class="brag">${esc(best.line)}</div></div>`
   }
@@ -1370,6 +1393,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     const d = t.dataset
     host.onTap(d['act'] ?? '', d['tab'] ?? d['node'] ?? d['army'] ?? d['to'] ?? d['id'] ?? d['unit'] ?? '')
+    if (d['act'] !== undefined && d['act'] !== 'next') ding('click1', 0.18) // 누른 것이 먹었다는 작은 소리
     freshArmy = ''
     const r = realm !== null ? plan() : null
     switch (d['act']) {
@@ -1405,6 +1429,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         realm = res.next
         host.onAdvance(res.next, res.report, all, mine)
         seasonFx(res.next.season)
+        if (res.report.lines.some((l) => l.kind === 'battle' && (l.atkFaction === me() || l.defender === me()))) ding('boom_01', 0.35) // 우리가 낀 싸움
         paint()
         return
       }
