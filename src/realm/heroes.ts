@@ -13,6 +13,13 @@ import type { EdgeKind, GrowStat, Hero, Order, Realm, ReportLine } from './types
 
 const byId = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 
+/** id 순서로 처음 맞는 것 — byId(...).find(pred) 와 같은 답을 줄 세우지 않고 낸다 (영남 판에서 줄 세우기가 셈의 한 할이었다) */
+function firstById<T extends { id: string }>(xs: Iterable<T>, pred: (x: T) => boolean): T | null {
+  let best: T | null = null
+  for (const x of xs) if (pred(x) && (best === null || x.id < best.id)) best = x
+  return best
+}
+
 export const hasTrait = (h: Hero | null | undefined, t: string): boolean => h?.traits?.includes(t) ?? false
 
 /** 매력 — 술꾼은 +1 (HEROES §2) */
@@ -32,7 +39,7 @@ export function rulerOf(r: Realm, faction: string): Hero | null {
 
 /** 장수가 이끄는 군대 */
 export function armyOfHero(r: Realm, hero: string) {
-  return byId(Object.values(r.armies)).find((a) => a.hero === hero) ?? null
+  return firstById(Object.values(r.armies), (a) => a.hero === hero)
 }
 
 /** 장수가 지금 있는 고을 — 이끄는 군대의 자리, 아니면 혼자 머무는 자리 */
@@ -46,11 +53,8 @@ export function heroAt(r: Realm, hero: string): string | null {
 export function postHero(r: Realm, node: string): Hero | null {
   const owner = r.nodes[node]?.owner
   if (owner === null || owner === undefined) return null
-  for (const h of byId(Object.values(r.heroes))) {
-    // 사신을 따라 나간 계절에는 맡은 고을에 손이 안 간다
-    if (h.post === node && h.status === 'free' && h.faction === owner && !(h.awayUntil !== undefined && h.awayUntil >= r.season)) return h
-  }
-  return null
+  // 사신을 따라 나간 계절에는 맡은 고을에 손이 안 간다
+  return firstById(Object.values(r.heroes), (h) => h.post === node && h.status === 'free' && h.faction === owner && !(h.awayUntil !== undefined && h.awayUntil >= r.season))
 }
 
 /** 그 고을에 혼자 머무는(군대를 안 이끄는) 제 나라 장수들 — id 순서 */

@@ -21,7 +21,8 @@ import {
 } from './economy.ts'
 import { ambushWorth, jointWin, movesOf, type Move } from './estimate.ts'
 import { armyOfHero, hasTrait, isRuler, persuadeSeasons, postHero, wanderersFor } from './heroes.ts'
-import { armiesAt, fortMul, neighbors, newArmyId, planned, seasonOf, seenMarches } from './season.ts'
+import { armiesAt, extendPlan, fortMul, neighbors, newArmyId, planned, seasonOf, seenMarches } from './season.ts'
+import { withMemo } from './memo.ts'
 import type { UnitKind } from './battle.ts'
 import { bowUpCost, plotAgents, plotCost, plotTargets } from './plots.ts'
 import { allianceWhy, borders, breakWhy, leaderOf, truceWhy } from './stance.ts'
@@ -587,15 +588,29 @@ function heroCare(r: Realm, faction: string): Order[] {
  * 무모·무작위 봇은 개척하지 않고, 무작위는 제사도 안 지낸다. 제사는 징병·개척으로 곡식을 쓴 뒤의 창고로 셈한다 (판정도 그 순서다)
  */
 export function decide(r: Realm, faction: string, brain: Brain): Order[] {
+  return withMemo(r, () => decideNow(r, faction, brain))
+}
+
+function decideNow(r: Realm, faction: string, brain: Brain): Order[] {
+  // 정한 명령까지 해 본 판 — 사본 하나를 만들어 정한 만큼 얹어 간다 (예전엔 단계마다 r 에서 새로 베꼈다. 결과는 같다)
+  let q: Realm | null = null
+  let applied = 0
+  const upTo = (os: readonly Order[]): Realm => {
+    if (os.length === 0 && q === null) return r
+    if (q === null) q = planned(r, os)
+    else extendPlan(q, os.slice(applied))
+    applied = os.length
+    return q
+  }
   const ds = drafts(r, faction)
-  const ss = brain === 'reckless' || brain === 'random' ? [] : settles(ds.length > 0 ? planned(r, ds) : r, faction)
-  const rs = brain === 'random' ? [] : rites(ds.length + ss.length > 0 ? planned(r, [...ds, ...ss]) : r, faction)
+  const ss = brain === 'reckless' || brain === 'random' ? [] : settles(upTo(ds), faction)
+  const rs = brain === 'random' ? [] : rites(upTo([...ds, ...ss]), faction)
   const first = [...ds, ...ss, ...rs]
-  const gs = brain === 'random' || brain === 'reckless' ? [] : guards(first.length > 0 ? planned(r, first) : r, faction)
+  const gs = brain === 'random' || brain === 'reckless' ? [] : guards(upTo(first), faction)
   const talk = brain === 'random' ? [] : [...answers(r, faction), ...breaks(r, faction), ...envoys(r, faction)]
   const bs = brain === 'random' ? [] : builds(r, faction)
   // 공작은 징병·개척·제사·경계로 곡식을 쓴 뒤의 창고로 셈한다 (판정도 그 뒤다 — 2단계)
-  const ps = brain === 'random' ? [] : plots([...first, ...gs].length > 0 ? planned(r, [...first, ...gs]) : r, faction, brain)
+  const ps = brain === 'random' ? [] : plots(upTo([...first, ...gs]), faction, brain)
   const hs = brain === 'random' ? [] : heroCare(r, faction)
   const as = brain === 'random' ? [] : arms(r, faction)
   // 자객의 활 — 공작을 안 벌이는 계절에 드물게 (값이 크다)
@@ -763,10 +778,13 @@ function moves(r: Realm, faction: string, brain: Brain): Order[] {
 
 /** 플레이어가 아닌 모든 세력의 명령 — 저마다의 성향대로 */
 export function aiOrders(r: Realm): Order[] {
-  const out: Order[] = []
-  for (const f of sorted(Object.values(r.factions))) {
-    if (f.mind === 'player') continue
-    out.push(...decide(r, f.id, f.mind))
-  }
-  return out
+  // 나라마다 따로 셈해도 판은 하나다 — 힘·앞서가는 나라는 한 번만 (memo.ts)
+  return withMemo(r, () => {
+    const out: Order[] = []
+    for (const f of sorted(Object.values(r.factions))) {
+      if (f.mind === 'player') continue
+      out.push(...decide(r, f.id, f.mind))
+    }
+    return out
+  })
 }
