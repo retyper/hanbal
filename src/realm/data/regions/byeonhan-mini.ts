@@ -10,12 +10,14 @@
  * 숫자(가호·병력·창고)는 봇 대전(tools/realm-sim.ts --as all)으로 맞춘 초안이다. 판의 크기 감은 PLAY §4 대본:
  * 북쪽 읍락 병력 120~180, 큰 나라는 그 두세 배.
  */
+import { PEOPLE_SCALE } from '../../migrate.ts'
 import type { Army, Faction, Hero, Mind, NodeIntel, REdge, Realm, RNode, Stock, Watch } from '../../types.ts'
 
+// 아래의 집·품·군사 수는 옛 눈금으로 적고 PEOPLE_SCALE 배로 연다 (migrate.ts — 위서 동이전의 규모에 맞춘다)
 const node = (id: string, name: string, kind: RNode['kind'], tags: RNode['tags'], owner: string | null, hh: number): RNode =>
-  ({ id, name, kind, tags, owner, hh, sown: hh })
+  ({ id, name, kind, tags, owner, hh: hh * PEOPLE_SCALE, sown: hh * PEOPLE_SCALE })
 const wild = (id: string, name: string, tags: RNode['tags'], room: number): RNode =>
-  ({ id, name, kind: 'wild', tags, owner: null, hh: 0, sown: 0, room })
+  ({ id, name, kind: 'wild', tags, owner: null, hh: 0, sown: 0, room: room * PEOPLE_SCALE })
 
 const NODES: RNode[] = [
   // 갯마을 — 남쪽 바닷가 작은 나라 (국읍 하나 · 읍락 둘, PLAY §4) · 가호 600 (WORLD §4-1)
@@ -44,7 +46,7 @@ const NODES: RNode[] = [
   wild('wild-galmae', '갈매봉 기슭', ['pines'], 200),
   wild('wild-beodeul', '버들내 들', ['reeds'], 300),
   wild('wild-gomgol', '곰골', ['high'], 150),
-  wild('wild-neoreun', '너른벌', [], 250),
+  wild('wild-neoreun', '너른벌', ['pasture'], 250), // 낙동강 하구의 너른 들 — 일구면 말을 친다
   wild('wild-seobu', '쇠골 갯가', [], 200),
   wild('wild-keunseom', '큰섬', ['fog'], 180),
   wild('wild-dolseom', '돌섬', [], 150),
@@ -104,21 +106,21 @@ interface NationStart {
 }
 
 const NATION_STARTS: readonly NationStart[] = [
-  { faction: { id: 'us', name: '갯마을', capital: 'our-cap', equip: 'ironTip' }, mind: 'cautious', stock: { grain: 150, iron: 0 } },
+  { faction: { id: 'us', name: '갯마을', capital: 'our-cap', equip: 'ironTip' }, mind: 'cautious', stock: { grain: 150, iron: 0, salt: 20, wood: 30 } },
   // 시작 창고는 첫 가을까지 군대를 먹일 만큼 (봄·여름·가을 세 계절치 남짓) — 모자라면 첫해부터 굶는다 (봇 대전에서 잡혔다)
-  { faction: { id: 'guya', name: '구야국', capital: 'guya-cap', equip: 'iron' }, mind: 'greedy', stock: { grain: 280, iron: 40 } },
-  { faction: { id: 'anya', name: '안야국', capital: 'anya-cap', equip: 'ironTip' }, mind: 'cautious', stock: { grain: 210, iron: 10 } },
-  { faction: { id: 'miri', name: '미리미동국', capital: 'miri-cap', equip: 'bronze' }, mind: 'cautious', stock: { grain: 400, iron: 0 } },
+  { faction: { id: 'guya', name: '구야국', capital: 'guya-cap', equip: 'iron' }, mind: 'greedy', stock: { grain: 280, iron: 40, salt: 15, wood: 30 } },
+  { faction: { id: 'anya', name: '안야국', capital: 'anya-cap', equip: 'ironTip' }, mind: 'cautious', stock: { grain: 210, iron: 10, wood: 40 } },
+  { faction: { id: 'miri', name: '미리미동국', capital: 'miri-cap', equip: 'bronze' }, mind: 'cautious', stock: { grain: 400, iron: 0, wood: 30 } },
   {
     faction: { id: 'goja', name: '고자미동국', capital: 'goja-cap', equip: 'bronze', income: { grain: 10, iron: 4 } },
     mind: 'greedy',
-    stock: { grain: 200, iron: 20 },
+    stock: { grain: 200, iron: 20, salt: 20, wood: 30 },
   },
   {
     // 「其瀆盧國與倭接界」 — 왜와 거래한다 (FLOW §3)
     faction: { id: 'dokro', name: '독로국', capital: 'dokro-cap', equip: 'bronze', income: { grain: 20, iron: 6 } },
     mind: 'greedy',
-    stock: { grain: 200, iron: 30 },
+    stock: { grain: 200, iron: 30, salt: 15, wood: 20, horse: 4 },
   },
 ]
 
@@ -160,9 +162,11 @@ const RULER: Readonly<Record<string, string>> = {
   us: 'us-ruler', guya: 'guya-ruler', anya: 'anya-ruler', miri: 'miri-ruler', goja: 'goja-ruler', dokro: 'dokro-ruler',
 }
 
-const a = (id: string, faction: string, hero: string | null, at: string, mix: Army['mix'], equip: Army['equip'] = 'ironTip'): Army =>
+const a = (id: string, faction: string, hero: string | null, at: string, mix0: Army['mix'], equip: Army['equip'] = 'ironTip'): Army => {
+  const mix = Object.fromEntries(Object.entries(mix0).map(([k, n]) => [k, (n ?? 0) * PEOPLE_SCALE])) as Army['mix']
   // 병종마다 무장 — 판 처음엔 모두 그 군대의 장비 하나 (kit.ts)
-  ({ id, faction, hero, mix, equip, kit: Object.fromEntries(Object.entries(mix).map(([k, n]) => [k, { [equip]: n }])), morale: 1, at, march: null })
+  return { id, faction, hero, mix, equip, kit: Object.fromEntries(Object.entries(mix).map(([k, n]) => [k, { [equip]: n }])), morale: 1, at, march: null }
+}
 
 const ARMIES: Army[] = [
   a('a-us', 'us', 'chief', 'our-cap', { spear: 80, bow: 30, shield: 10 }),
@@ -221,6 +225,7 @@ export function startRealm(seed: number, player: string): Realm {
     stock,
     relations: {},
     outcome: null,
+    scale: PEOPLE_SCALE,
   }
 }
 

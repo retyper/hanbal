@@ -13,6 +13,7 @@
 import { startRealm } from './realm/data/regions/byeonhan-mini.ts'
 import { headcount } from './realm/battle.ts'
 import { forceOf } from './realm/season.ts'
+import { migrate } from './realm/migrate.ts'
 import type { Order, Realm, Report, ReportLine } from './realm/types.ts'
 import { mountRealmApp } from './ui/realm/app.ts'
 
@@ -63,7 +64,11 @@ function load(): Saved | null {
     const raw = localStorage.getItem(KEY)
     if (raw === null) return null
     const s = JSON.parse(raw) as Saved
-    return s.v === 2 ? s : null
+    if (s.v !== 2) return null
+    // 옛 판이면 사람의 눈금을 키운다 (migrate.ts — 위서 동이전의 규모)
+    if (s.realm) migrate(s.realm)
+    if (s.before) migrate(s.before)
+    return s
   } catch {
     return null
   }

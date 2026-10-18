@@ -13,6 +13,7 @@ import assert from 'node:assert/strict'
 
 import { aiOrders, decide } from '../../src/realm/ai.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
+import { PEOPLE_SCALE as S } from '../../src/realm/migrate.ts'
 import { settleCost, settleLimit, settleTargets } from '../../src/realm/economy.ts'
 import { advance, planned } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
@@ -40,8 +41,8 @@ describe('빈땅', () => {
   it('지금 개척할 수 있는 짝 — 갯마을은 국읍에서 돌섬으로', () => {
     const r = byeonhanMini(1)
     assert.deepEqual(settleTargets(r, 'us'), [{ from: 'our-cap', to: 'wild-dolseom', edge: 'e34' }])
-    // 셋 가운데 작은 것 — 가호 300 의 settleShare · 품 150 · 곡식
-    const want = Math.min(Math.floor(300 * P.realm.settleShare), 150, Math.floor(r.stock['us']!.grain / P.realm.settleGrain))
+    // 넷 가운데 작은 것 — 가호 300×눈금 의 settleShare · 품 150×눈금 · 곡식 · 나무
+    const want = Math.min(Math.floor(300 * S * P.realm.settleShare), 150 * S, Math.floor(r.stock['us']!.grain / P.realm.settleGrain), Math.floor((r.stock['us']!.wood ?? 0) / P.realm.settleWood))
     assert.equal(settleLimit(r, 'us', 'our-cap', 'wild-dolseom'), want)
   })
 })
@@ -56,10 +57,11 @@ describe('개척', () => {
     assert.equal(next.nodes['wild-dolseom']!.owner, 'us')
     assert.ok(next.nodes['wild-dolseom']!.hh >= n) // 그 계절의 성장까지
     // 국읍은 n 만큼 줄고 그 계절 성장 ±
-    assert.ok(next.nodes['our-cap']!.hh <= Math.round((300 - n) * (1 + P.realm.hhGrowth)) + 1)
+    assert.ok(next.nodes['our-cap']!.hh <= Math.round((300 * S - n) * (1 + P.realm.hhGrowth)) + 1)
     // 곡식: 개척 값 + 군량
     const plain = advance(r, []).next
-    assert.equal(plain.stock['us']!.grain - next.stock['us']!.grain, settleCost(n).grain)
+    // 떠난 사람만큼 물고기가 덜 든다 (바닷가 국읍)
+    assert.ok(Math.abs(plain.stock['us']!.grain - next.stock['us']!.grain - settleCost(n).grain) <= Math.ceil(n * P.realm.fishPerHH) + 1)
     assert.ok(next.intel['us']!['guya-cap']?.land)
   })
 
@@ -100,7 +102,7 @@ describe('개척', () => {
   })
 
   it('품까지 빨리 크고 품을 넘지 않는다 · 더 보내도 품까지만', () => {
-    let r: Realm = advance(byeonhanMini(1), [settle('us', 'our-cap', 'wild-dolseom', 20)]).next
+    let r: Realm = advance(byeonhanMini(1), [settle('us', 'our-cap', 'wild-dolseom', 20 * S)]).next
     const room = r.nodes['wild-dolseom']!.room!
     let prev = r.nodes['wild-dolseom']!.hh
     for (let i = 0; i < 40; i++) {
@@ -114,7 +116,7 @@ describe('개척', () => {
     assert.equal(prev, room)
     assert.equal(settleLimit(r, 'us', 'our-cap', 'wild-dolseom'), 0)
     // 처음 몇 계절은 보통 고을보다 훨씬 빨리 큰다
-    const s = advance(byeonhanMini(1), [settle('us', 'our-cap', 'wild-dolseom', 20)]).next
+    const s = advance(byeonhanMini(1), [settle('us', 'our-cap', 'wild-dolseom', 20 * S)]).next
     assert.ok(advance(s, []).next.nodes['wild-dolseom']!.hh >= Math.round(s.nodes['wild-dolseom']!.hh * (1 + P.realm.settleGrow)) - 1)
   })
 

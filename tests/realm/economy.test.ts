@@ -15,7 +15,7 @@ import assert from 'node:assert/strict'
 import { roll } from '../../src/core/rng.ts'
 import { NATIONS } from '../../src/realm/data/nations.ts'
 import { NATION_IDS, byeonhanMini, startRealm } from '../../src/realm/data/regions/byeonhan-mini.ts'
-import { draftCost, draftLimit, hhOf, menOf, militiaMen, upkeepOf } from '../../src/realm/economy.ts'
+import { draftCost, draftLimit, goodOf, hhOf, menOf, militiaMen, nodeYield, upkeepOf } from '../../src/realm/economy.ts'
 import { harvestMul } from '../../src/realm/heroes.ts'
 import { advance, otherEnd, planned, seenMarches } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
@@ -94,7 +94,9 @@ describe('한 해의 살림', () => {
     const r = byeonhanMini(1)
     const g0 = r.stock['us']!.grain
     const { next } = pass(r)
-    assert.equal(next.stock['us']!.grain, g0 - upkeepOf(r, 'us', false))
+    // 바닷가 고을은 물고기를 낸다 (nodeYield) — 봄에 든 것을 더하고 군량을 뺀다
+    const fish = Object.values(r.nodes).filter((n) => n.owner === 'us').reduce((s, n) => s + goodOf(nodeYield(r, n.id, 'spring'), 'grain'), 0)
+    assert.equal(next.stock['us']!.grain, g0 + fish - upkeepOf(r, 'us', false))
     assert.equal(upkeepOf(r, 'us', true), Math.ceil(menOf(r, 'us') * P.realm.rationPerSoldier * P.realm.winterRation))
   })
 

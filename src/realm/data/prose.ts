@@ -3,7 +3,7 @@
  * 고증 검토(lore-lens)가 코드를 안 읽고 이 파일만 본다. 숫자는 여기 없다 (P.realm).
  */
 import type { Equip, Outcome, UnitKind } from '../battle.ts'
-import type { Ask, EdgeKind, PlotOp, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, SeasonOfYear, Tag, Why } from '../types.ts'
+import type { Ask, BuildWhat, EdgeKind, Good, PlotOp, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, SeasonOfYear, Tag, Why } from '../types.ts'
 import { TRAIT } from './traits.ts'
 
 export const SEASON_NAME: Record<SeasonOfYear, string> = {
@@ -32,7 +32,20 @@ export const TAG_LINE: Record<Tag, string> = {
   fog: '새벽마다 골짜기에 안개가 찬다.',
   iron: '붉은 흙이 드러난 산이다.',
   sodo: '큰 나무에 방울과 북을 달았다. 칼을 들고 들어가지 않는다.',
+  pasture: '풀이 너른 들이다. 사람이 살면 말을 칠 수 있다.',
 }
+
+/** 창고의 것 다섯 — 화면 이름과 셈 단위 */
+export const GOOD_NAME: Record<Good, string> = { grain: '곡식', iron: '철', salt: '소금', wood: '나무', horse: '말' }
+export const GOOD_UNIT: Record<Good, string> = { grain: '섬', iron: '덩이', salt: '섬', wood: '짐', horse: '필' }
+
+/** 몫을 글로 — "곡식 30 · 소금 10" (없는 것은 뺀다) */
+export function goodsLine(g: Partial<Record<Good, number>>): string {
+  return (['grain', 'iron', 'salt', 'wood', 'horse'] as const).filter((k) => (g[k] ?? 0) > 0).map((k) => `${GOOD_NAME[k]} ${g[k]}`).join(' · ')
+}
+
+/** 지을 것의 이름 */
+export const BUILD_NAME: Record<BuildWhat, string> = { palisade: '목책', moat: '해자' }
 
 export const UNIT_NAME: Record<UnitKind, string> = {
   spear: '창병', bow: '궁수', pike: '장창병', shield: '방패병', horse: '기병', crossbow: '쇠뇌병', boat: '수군',
@@ -111,8 +124,7 @@ export function fieldName(r: Realm, edge: string): string {
 
 /** 남의 나라가 걸어온 청 한 줄 — 무엇을 주고 무엇을 바라나 */
 export function askLine(a: Ask, from: string, place = ''): string {
-  const goods = (g: { grain: number; iron: number }): string =>
-    [g.grain > 0 ? `곡식 ${g.grain}` : '', g.iron > 0 ? `철 ${g.iron}` : ''].filter((x) => x !== '').join(' · ')
+  const goods = goodsLine
   switch (a.kind) {
     case 'truce': return `${josa(from, '이', '가')} 화친하자고 한다. 서로 치지 않고 장터를 연다.`
     case 'alliance': return `${josa(from, '이', '가')} 동맹을 맺자고 한다. 같은 적을 함께 치자고 한다.`
@@ -335,6 +347,29 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     }
     case 'guard':
       return line.faction === viewer ? `${node(line.node)}에 횃불을 늘리고 망을 세웠다.` : null
+    case 'build':
+      if (line.faction !== viewer) return null
+      return line.done
+        ? `${node(line.node)}에 ${josa(BUILD_NAME[line.what], "이", "가")} 섰다.`
+        : `${node(line.node)}에 ${josa(BUILD_NAME[line.what], '을', '를')} 짓기 시작했다. 이 계절이 끝나면 선다.`
+    case 'spoil':
+      return line.faction === viewer ? `겨울 동안 곡식 ${line.grain}섬이 썩었다. 소금이 모자랐다.` : null
+    case 'rumor': {
+      if (line.viewer !== viewer) return null
+      const who = fname(line.about)
+      const head = `첩보 — ${who}:`
+      switch (line.fact) {
+        case 'hungry': return `${head} 곳간이 비어 간다고 한다.`
+        case 'hoard': return `${head} ${josa(GOOD_NAME[line.good ?? 'iron'], '을', '를')} 잔뜩 쌓아 두었다고 한다.`
+        case 'settled': return `${head} ${node(line.node ?? '')}에 새 마을을 일궜다고 한다.`
+        case 'building': return `${head} ${node(line.node ?? '')}에 울타리를 친다고 한다.`
+        case 'drafting': return `${head} 장정을 모아 군사로 뽑는다고 한다.`
+        case 'armed': return `${head} 대장간에 불이 꺼지지 않는다. 무장을 올렸다고 한다.`
+        case 'seekAlly': return `${head} ${line.other === viewer ? '우리' : fname(line.other ?? '')} 쪽으로 사신이 자주 간다고 한다.`
+        case 'seekTruce': return `${head} 싸움을 그치고 싶어 한다는 말이 돈다${line.other !== undefined ? ` (${line.other === viewer ? '우리와' : josa(fname(line.other), '과', '와')})` : ''}.`
+      }
+      return null
+    }
     case 'hunger':
       return line.faction === viewer ? '곡식이 바닥났다. 군사들이 굶는다.' : null
     case 'envoy': {

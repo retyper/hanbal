@@ -11,12 +11,12 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
-import { menOf, stockOf } from './economy.ts'
+import { canPayGoods, goodOf, goodsOne, goodsWorth, menOf, payGoods, stockOf, worthOf } from './economy.ts'
 import { envoyBonus } from './heroes.ts'
 import { visibleRange } from './intel.ts'
 import { nodeStrength } from './season.ts'
 import { allianceWhy, truceWhy, winningAgainst, type Motive } from './stance.ts'
-import type { Ask, AskKind, EnvoyAsk, Order, Pledge, Realm, Relation, ReportLine } from './types.ts'
+import type { Ask, AskKind, EnvoyAsk, Good, Goods, Order, Pledge, Realm, Relation, ReportLine } from './types.ts'
 
 export function pairKey(a: string, b: string): string {
   return a < b ? `${a}|${b}` : `${b}|${a}`
@@ -336,8 +336,9 @@ export function powerRange(r: Realm, asker: string, faction: string): [number, n
   return [lo, hi]
 }
 
-function worth(x: { grain: number; iron: number }): number {
-  return x.grain + x.iron * P.realm.envoyIronWorth
+/** 몫의 값 (곡식으로 친) — 물건 다섯 (economy.goodsWorth) */
+function worth(x: Goods): number {
+  return goodsWorth(x)
 }
 
 function atWarWithSame(r: Realm, a: string, b: string): boolean {
@@ -355,8 +356,9 @@ function chanceAt(
   to: string,
   ask: EnvoyAsk,
   ratio: number,
-  give: { grain: number; iron: number },
-  take: { grain: number; iron: number },
+  give: Goods,
+  take: Goods,
+  hero?: string,
 ): number {
   const R = P.realm
   const rel = relationOf(r, from, to).state
@@ -370,7 +372,8 @@ function chanceAt(
         + (truceWhy(r, to, from) !== null ? R.envoyMotive : 0) + (winningAgainst(r, to, from) ? R.envoyWinning : 0)
       break
     case 'trade':
-      p = R.envoyTrade + R.envoyGain * ((worth(give) - worth(take)) / Math.max(1, worth(take)))
+      // 받는 쪽은 제게 없는 것을 더 쳐 준다 (뭍의 나라가 소금을 · 갯마을이 철을)
+      p = R.envoyTrade + R.envoyGain * ((goodsWorth(give, r, to) - worth(take)) / Math.max(1, worth(take)))
       break
     case 'tribute':
       p = R.envoyTribute + pw(ratio - R.envoyTributePower)
@@ -403,7 +406,7 @@ function chanceAt(
       p = R.envoyTroops + pw(ratio - 1) / 2
       break
   }
-  p += envoyBonus(r, from, ask) // 군주 매력 · 매혹 · 장사꾼 (heroes.ts)
+  p += envoyBonus(r, from, ask, hero) // 군주 매력 + 따라간 장수의 매력 · 매혹 · 장사꾼 (heroes.ts)
   p += R.envoyFavor * favorOf(r, from, to) // 호감
   if (rel === 'war') p += R.envoyWar
   else if (rel === 'truce' || rel === 'ally') p += R.envoyFriend
@@ -426,13 +429,14 @@ export function envoyChanceFor(
   from: string,
   to: string,
   ask: EnvoyAsk,
-  give: { grain: number; iron: number },
-  take: { grain: number; iron: number },
+  give: Goods,
+  take: Goods,
+  hero?: string,
 ): readonly [number, number] {
   const mine = nationPower(r, from)
   const [lo, hi] = powerRange(r, from, to)
-  const a = chanceAt(r, from, to, ask, mine / Math.max(1, hi), give, take)
-  const b = chanceAt(r, from, to, ask, mine / Math.max(1, lo), give, take)
+  const a = chanceAt(r, from, to, ask, mine / Math.max(1, hi), give, take, hero)
+  const b = chanceAt(r, from, to, ask, mine / Math.max(1, lo), give, take, hero)
   return [Math.min(a, b), Math.max(a, b)]
 }
 
@@ -442,24 +446,27 @@ export function envoyTrueChance(
   from: string,
   to: string,
   ask: EnvoyAsk,
-  give: { grain: number; iron: number },
-  take: { grain: number; iron: number },
+  give: Goods,
+  take: Goods,
+  hero?: string,
 ): number {
-  return chanceAt(r, from, to, ask, nationPower(r, from) / Math.max(1, nationPower(r, to)), give, take)
+  return chanceAt(r, from, to, ask, nationPower(r, from) / Math.max(1, nationPower(r, to)), give, take, hero)
 }
 
-function canPay(r: Realm, f: string, x: { grain: number; iron: number }): boolean {
-  const s = stockOf(r, f)
-  return x.grain >= 0 && x.iron >= 0 && s.grain >= x.grain && s.iron >= x.iron
-}
+const canPay = canPayGoods
+const pay = payGoods
 
-function pay(r: Realm, from: string, to: string, x: { grain: number; iron: number }): void {
-  const a = stockOf(r, from)
-  const b = stockOf(r, to)
-  a.grain -= x.grain
-  a.iron -= x.iron
-  b.grain += x.grain
-  b.iron += x.iron
+/**
+ * 사신을 따라갈 수 있는 장수인가 — 우리 장수 · 자유 · 군대를 이끌지 않는다 · 군주가 아니다 · 다치지 않았다.
+ * (형: "장사꾼 장수는 특별히 뭘 할 수 없잖아. 사신 보낼 때 같이 보내는 것도 아니고")
+ */
+export function canEscort(r: Realm, faction: string, hero: string): boolean {
+  const h = r.heroes[hero]
+  if (h === undefined || h.faction !== faction || h.status !== 'free') return false
+  if (r.factions[faction]?.ruler === hero) return false
+  if (h.woundedUntil !== undefined && h.woundedUntil >= r.season) return false
+  if (h.awayUntil !== undefined && h.awayUntil >= r.season) return false
+  return !Object.values(r.armies).some((a) => a.hero === hero)
 }
 
 /**
@@ -485,13 +492,19 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
     const give = o.ask === 'tribute' || o.ask === 'aid' || o.ask === 'joint' || o.ask === 'troops' || o.ask === 'break' ? NONE : o.give
     const take = o.ask === 'trade' || o.ask === 'tribute' || o.ask === 'aid' ? o.take : NONE
     if (!canPay(r, o.from, give)) continue
-    const p = envoyTrueChance(r, o.from, o.to, o.ask, give, take)
+    // 따라가는 장수 — 그 장수의 매력·특성이 걸리고, 이 계절엔 자리를 비운다
+    const escort = o.hero !== undefined && canEscort(r, o.from, o.hero) ? o.hero : undefined
+    if (escort !== undefined) r.heroes[escort]!.awayUntil = r.season
+    const p = envoyTrueChance(r, o.from, o.to, o.ask, give, take, escort)
     let accepted = p >= 1 || roll(r.seed, r.season, `envoy:${o.from}:${o.to}`) < p
     if (accepted && o.ask === 'trade' && !canPay(r, o.to, take)) accepted = false // 받는 쪽이 내놓을 것이 없으면 안 선다
     // 군대 빌리기 — 내줄 군대가 없으면(국읍의 마지막 군대뿐이거나 길이 없으면) 못 빌려준다
     const lend = accepted && o.ask === 'troops' ? lenderArmy(r, o.to, o.from, o.target!) : null
     if (o.ask === 'troops' && lend === null) accepted = false
-    lines.push({ kind: 'envoy', from: o.from, to: o.to, ask: o.ask, accepted, ...(o.why !== undefined ? { why: o.why } : {}), ...(o.about !== undefined ? { about: o.about } : {}) })
+    lines.push({
+      kind: 'envoy', from: o.from, to: o.to, ask: o.ask, accepted, ...(o.why !== undefined ? { why: o.why } : {}), ...(o.about !== undefined ? { about: o.about } : {}),
+      ...(escort !== undefined ? { hero: escort } : {}),
+    })
     if (!accepted) {
       // 조공 요구를 거절당하면 그 자리에서 전쟁이다
       if (o.ask === 'tribute') setRelation(r, o.from, o.to, 'war', null, lines)
@@ -573,16 +586,31 @@ export function openAsks(r: Realm, faction: string): Ask[] {
 }
 
 /** 맞바꿈 제안 — 그쪽이 남는 것을 내고 모자란 것을 받는다. 서로 낼 것이 없으면 null */
-function tradeOffer(r: Realm, from: string, to: string): { give: { grain: number; iron: number }; take: { grain: number; iron: number } } | null {
+export function tradeOffer(r: Realm, from: string, to: string): { give: Goods; take: Goods } | null {
   const R = P.realm
   const a = stockOf(r, from)
   const b = stockOf(r, to)
+  // 물건 다섯 — 우리에게 모자라고 그쪽에 넉넉한 것을, 우리가 남는 것과 바꾼다 (형: "자원들도 다각화")
+  const lot = (g: Good): number => Math.max(1, Math.round(R.tradeLot / worthOf(g)))
+  const plenty = (s: typeof a, g: Good): boolean => goodOf(s, g) >= lot(g) * (g === 'grain' ? 4 : 2)
+  const short = (s: typeof a, g: Good): boolean => goodOf(s, g) < lot(g)
+  for (const want of TRADE_ORDER) {
+    if (!short(a, want) || !plenty(b, want)) continue
+    for (const give of TRADE_ORDER) {
+      if (give === want || !plenty(a, give)) continue
+      return { give: goodsOne(give, lot(give)), take: goodsOne(want, lot(want)) }
+    }
+  }
+  // 모자란 것이 없으면 옛 맞바꿈 — 철과 곡식
   const iron = R.askTradeIron
   const grain = Math.round(iron * R.envoyIronWorth)
   if (a.iron >= iron * 2 && b.grain >= grain) return { give: { grain: 0, iron }, take: { grain, iron: 0 } }
   if (a.grain >= grain * 3 && b.iron >= iron) return { give: { grain, iron: 0 }, take: { grain: 0, iron } }
   return null
 }
+
+/** 맞바꿀 때 먼저 보는 순서 — 철 · 소금 · 말 · 나무 · 곡식 */
+const TRADE_ORDER: readonly Good[] = ['iron', 'salt', 'horse', 'wood', 'grain']
 
 /** 한 나라가 플레이어에게 걸 청 하나 — 걸 거리가 없으면 null. 굴림은 `ask-kind:<season>:<from>` */
 function pickAsk(r: Realm, from: string, to: string): Ask | null {

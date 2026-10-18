@@ -20,6 +20,7 @@ import { seenMix } from '../../src/realm/intel.ts'
 import { kitLines, kitOf, scaleMen } from '../../src/realm/kit.ts'
 import { advance, forceOf, newArmyId, planned } from '../../src/realm/season.ts'
 import type { Army, Order, Realm } from '../../src/realm/types.ts'
+import { P } from '../../src/tune/params.ts'
 
 const fresh = (): Realm => planned(byeonhanMini(1), [])
 
@@ -82,12 +83,13 @@ describe('병종마다 무장', () => {
   it('모으면 무장째 더한다', () => {
     const r = fresh()
     const id = newArmyId(r, 'us')
-    const r1 = advance(r, [{ kind: 'split', army: 'a-us', id, take: { spear: 20 }, hero: false }]).next
-    r1.armies[id]!.kit = { spear: { stone: 20 } }
+    const n = P.realm.splitMin * 2 // 떼어 낼 수 있는 만큼 (사람 눈금 — migrate.ts)
+    const r1 = advance(r, [{ kind: 'split', army: 'a-us', id, take: { spear: n }, hero: false }]).next
+    r1.armies[id]!.kit = { spear: { stone: n } }
     const p = planned(r1, [{ kind: 'merge', army: id, into: 'a-us' }])
     const a = p.armies['a-us']!
     holds(a)
-    assert.equal(kitOf(a).spear?.stone, 20)
+    assert.equal(kitOf(a).spear?.stone, n)
   })
 
   it('싸워 잃어도 단계마다 같은 비율로 줄고 불변식을 지킨다', () => {

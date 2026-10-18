@@ -14,6 +14,7 @@ import { roll } from '../../src/core/rng.ts'
 import { aiOrders as aiOrdersOf, decide, spared } from '../../src/realm/ai.ts'
 import { headcount } from '../../src/realm/battle.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
+import { PEOPLE_SCALE as S } from '../../src/realm/migrate.ts'
 import { advance, forceOf, newArmyId, otherEnd, planned } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Army, Order, Realm, ReportLine } from '../../src/realm/types.ts'
@@ -27,9 +28,9 @@ describe('나누기 · 모으기', () => {
   it('나누면 사람 수가 그대로고, 장수는 고른 쪽으로 간다', () => {
     const r = byeonhanMini(1)
     const id = newArmyId(r, 'us')
-    const { next, report } = advance(r, [{ kind: 'split', army: 'a-us', id, take: { spear: 20, bow: 10 }, hero: true }])
-    assert.equal(men(next, 'a-us'), 90)
-    assert.equal(men(next, id), 30)
+    const { next, report } = advance(r, [{ kind: 'split', army: 'a-us', id, take: { spear: 20 * S, bow: 10 * S }, hero: true }])
+    assert.equal(men(next, 'a-us'), 90 * S)
+    assert.equal(men(next, id), 30 * S)
     assert.equal(next.armies[id]!.hero, 'chief')
     assert.equal(next.armies['a-us']!.hero, null)
     assert.equal(next.armies[id]!.equip, r.armies['a-us']!.equip)
@@ -41,25 +42,25 @@ describe('나누기 · 모으기', () => {
     const id = newArmyId(r, 'us')
     const bad: Order[] = [
       { kind: 'split', army: 'a-us', id, take: { spear: P.realm.splitMin - 1 }, hero: false }, // 별동대가 너무 작다
-      { kind: 'split', army: 'a-us', id, take: { spear: 80, bow: 30, shield: 5 }, hero: false }, // 본대가 너무 작다
-      { kind: 'split', army: 'a-us', id, take: { spear: 81 }, hero: false }, // 없는 사람
+      { kind: 'split', army: 'a-us', id, take: { spear: 80 * S, bow: 30 * S, shield: 5 * S }, hero: false }, // 본대가 너무 작다
+      { kind: 'split', army: 'a-us', id, take: { spear: 80 * S + 1 }, hero: false }, // 없는 사람
       { kind: 'split', army: 'a-us', id, take: { spear: 12.5 }, hero: false }, // 사람은 쪼개지지 않는다
-      { kind: 'split', army: 'a-us', id: 'a-guya-1', take: { spear: 20 }, hero: false }, // 이미 있는 이름
+      { kind: 'split', army: 'a-us', id: 'a-guya-1', take: { spear: 20 * S }, hero: false }, // 이미 있는 이름
     ]
     for (const o of bad) {
       const { next } = advance(r, [o])
       assert.equal(Object.values(next.armies).filter((a) => a.faction === 'us').length, 1, JSON.stringify(o))
-      assert.equal(men(next, 'a-us'), 120)
+      assert.equal(men(next, 'a-us'), 120 * S)
     }
   })
 
   it(`군대는 나라마다 ${P.realm.armyMax}개까지`, () => {
     let r = planned(byeonhanMini(1), [])
-    r.armies['a-us']!.mix = { spear: 400 }
+    r.armies['a-us']!.mix = { spear: 400 * S }
     const orders: Order[] = []
     for (let i = 0; i < P.realm.armyMax + 3; i++) {
       const id = newArmyId(r, 'us')
-      const o: Order = { kind: 'split', army: 'a-us', id, take: { spear: 20 }, hero: false }
+      const o: Order = { kind: 'split', army: 'a-us', id, take: { spear: 20 * S }, hero: false }
       orders.push(o)
       r = planned(r, [o])
     }
@@ -69,10 +70,10 @@ describe('나누기 · 모으기', () => {
   it('모으면 하나로 돌아오고 장수가 남는다 · 장수 둘은 안 모은다', () => {
     const r0 = byeonhanMini(1)
     const id = newArmyId(r0, 'us')
-    const r1 = advance(r0, [{ kind: 'split', army: 'a-us', id, take: { spear: 20, bow: 10 }, hero: true }]).next
+    const r1 = advance(r0, [{ kind: 'split', army: 'a-us', id, take: { spear: 20 * S, bow: 10 * S }, hero: true }]).next
     const r2 = advance(r1, [{ kind: 'merge', army: id, into: 'a-us' }]).next
     assert.equal(r2.armies[id], undefined)
-    assert.equal(men(r2, 'a-us'), 120)
+    assert.equal(men(r2, 'a-us'), 120 * S)
     assert.equal(r2.armies['a-us']!.hero, 'chief')
 
     const g = planned(byeonhanMini(1), [])
@@ -85,13 +86,13 @@ describe('나누기 · 모으기', () => {
     const r = byeonhanMini(1)
     const id = newArmyId(r, 'us')
     const orders: Order[] = [
-      { kind: 'split', army: 'a-us', id, take: { spear: 30 }, hero: false },
+      { kind: 'split', army: 'a-us', id, take: { spear: 30 * S }, hero: false },
       { kind: 'march', army: id, edge: 'e01', ambush: false },
     ]
     const before = JSON.stringify(r)
     const p = planned(r, orders)
     assert.equal(JSON.stringify(r), before, 'planned 는 받은 판을 건드리지 않는다')
-    assert.equal(men(p, id), 30)
+    assert.equal(men(p, id), 30 * S)
     const { next } = advance(r, orders)
     assert.equal(next.armies[id]!.at, 'our-north')
     assert.equal(next.armies['a-us']!.at, 'our-cap')

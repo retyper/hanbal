@@ -20,7 +20,7 @@ export type NodeKind = 'capital' | 'village' | 'sodo' | 'port' | 'fort' | 'ironM
  * 지형 꼬리표 (SYSTEMS §1-2) — 화면에는 숫자가 아니라 문장으로 나간다 (data/prose).
  * 규칙에 걸리는 것만 둔다; 늘릴 때는 SYSTEMS §1-2 표에 먼저 적는다.
  */
-export type Tag = 'reeds' | 'shallows' | 'pines' | 'high' | 'palisade' | 'moat' | 'fog' | 'iron' | 'sodo'
+export type Tag = 'reeds' | 'shallows' | 'pines' | 'high' | 'palisade' | 'moat' | 'fog' | 'iron' | 'sodo' | 'pasture'
 
 /** 길 종류 (SYSTEMS §1-1) */
 export type EdgeKind = 'field' | 'pass' | 'forest' | 'reeds' | 'ford' | 'sea' | 'mudflat'
@@ -99,10 +99,32 @@ export interface Pledge {
   readonly until: number
 }
 
-/** 한 나라의 창고 — 국읍 창고 (SYSTEMS §7-5 자원 넷 가운데 둘) */
+/**
+ * 한 나라의 창고 — 국읍 창고 (SYSTEMS §7-5). 곡식·철에 땅마다 나는 소금·나무·말
+ * (형: "자원들도 다각화해야할거같은데 — 뭘하든 돈만쓰면 되는게 맞나" · "갯마을은 철이 안나는 지역인가?").
+ * 소금·나무·말은 옛 저장에 없다 — 없으면 0 (economy.goodOf).
+ *   소금 — 바닷가에서 난다. 겨울에 곡식이 썩지 않게 하고, 멀리 나간 군대의 양식을 아낀다. 뭍의 나라가 탐낸다
+ *   나무 — 솔숲·산·숲길 고을에서 난다. 목책·해자를 짓고, 배(수군)를 만들고, 빈땅을 일군다
+ *   말   — 너른 들(목장)에서 난다. 기병을 뽑는다. 변한엔 드물다
+ */
 export interface Stock {
   grain: number
   iron: number
+  salt?: number
+  wood?: number
+  horse?: number
+}
+
+/** 창고의 것 다섯 */
+export type Good = 'grain' | 'iron' | 'salt' | 'wood' | 'horse'
+
+/** 주고받는 몫 — 사신·청·선물. 곡식·철은 늘 있고 나머지는 없으면 0 */
+export interface Goods {
+  readonly grain: number
+  readonly iron: number
+  readonly salt?: number
+  readonly wood?: number
+  readonly horse?: number
 }
 
 /**
@@ -146,6 +168,8 @@ export interface Hero {
   persuade?: { by: string | null; left: number }
   /** 다친 장수 — 이 계절까지 군대를 이끌지 못한다 (암살이 먹혔다, plots.ts) */
   woundedUntil?: number
+  /** 사신을 따라 나갔다 — 이 계절까지 자리를 비운다 (맡은 고을에 손이 안 간다) */
+  awayUntil?: number
   /**
    * 정(情) 0~100 — 주인을 얼마나 믿나 (HEROES §6, 형: "장수를 오래쓰면 친밀도? 이런게 올라야 하지 않을까"). 군주는 없다.
    * 없으면 P.realm.bondStart. 섬긴 계절·이긴 싸움으로 오르고 진 싸움으로 준다. 70 이면 믿는 장수, 100 이면 특성 하나에 눈뜬다
@@ -248,8 +272,8 @@ export interface Ask {
   readonly from: string
   readonly to: string
   readonly kind: AskKind
-  readonly give: { readonly grain: number; readonly iron: number }
-  readonly take: { readonly grain: number; readonly iron: number }
+  readonly give: Goods
+  readonly take: Goods
   readonly until: number
   /** joint — 함께 칠 고을 */
   readonly node?: string
@@ -290,6 +314,13 @@ export interface Realm {
   poolUsed?: string[]
   /** 나라마다 능력치를 본 남의 장수 — 싸워 봤거나 정찰·첩자로 봤다 (heroes.heroSeen) */
   met?: Record<string, string[]>
+  /**
+   * 사람의 눈금 (형: "가구수랑 징병량이 … 실제로 이 시대에 이 수준이었나?" — 위서 동이전: 변진 큰 나라 4~5천 가).
+   * 이 판의 가호·군사가 옛 판의 몇 배인가 — 옛 저장(없음 = 1)은 migrate.ts 가 키운다
+   */
+  scale?: number
+  /** 짓는 중 — 이 계절 끝에 그 고을 꼬리표가 된다 (economy.applyBuild · stepBuilds) */
+  builds?: Array<{ readonly faction: string; readonly node: string; readonly what: BuildWhat; readonly done: number }>
 }
 
 /** 플레이어(또는 AI)가 한 계절에 내리는 명령 */
@@ -341,16 +372,33 @@ export type Order =
       readonly from: string
       readonly to: string
       readonly ask: EnvoyAsk
-      readonly give: { readonly grain: number; readonly iron: number }
-      readonly take: { readonly grain: number; readonly iron: number }
+      readonly give: Goods
+      readonly take: Goods
       /** joint — 함께 칠 고을 · troops — 빌린 군대가 지킬 우리 고을 */
       readonly target?: string
+      /**
+       * 사신과 함께 가는 장수 (형: "장사꾼 장수는 특별히 뭘 할 수 없잖아. 사신 보낼 때 같이 보내는 것도 아니고") —
+       * 그 장수의 매력·매혹·장사꾼이 이 사신에 걸린다. 그 계절엔 군대를 못 이끌고 고을도 못 맡는다 (다음 계절에 돌아온다)
+       */
+      readonly hero?: string
       /** AI 가 보낸 사신의 까닭 (stance.ts) — 보고에 말로 */
       readonly why?: Why
       readonly about?: string
     }
   /** 무장 올리기 (철의 쓰임) — unit 이 있으면 그 병종 가운데 가장 낮은 무장을 한 단계, 없으면 병종마다 그렇게 (economy.armCost · kit.upgradeKind) */
   | { readonly kind: 'arm'; readonly army: string; readonly unit?: UnitKind }
+  /** 짓기 (나무의 쓰임) — 제 고을에 목책 또는 (목책이 있으면) 해자. 나무·곡식이 들고 다음 계절부터 선다 (economy.buildCost) */
+  | { readonly kind: 'build'; readonly faction: string; readonly node: string; readonly what: BuildWhat }
+
+/** 지을 수 있는 것 — 그 고을 꼬리표가 된다 */
+export type BuildWhat = 'palisade' | 'moat'
+
+/**
+ * 첩보 (형: "속셈은 … 간접정보로 전달받아야함. 첩보로 뭔가 철광이 새로 생겼다거나 그런거") — 첩자가 그 나라에서 듣고 본 것.
+ *   hungry 곡식이 바닥나 간다 · hoard 무엇을 쌓는다(good) · settled 새 마을을 일궜다(node) · drafting 군사를 모은다 ·
+ *   seekAlly ○○와 손잡으려 한다(other) · seekTruce ○○와 화친을 바란다(other) · armed 무장을 올렸다 · building 무엇을 짓는다(node)
+ */
+export type RumorFact = 'hungry' | 'hoard' | 'settled' | 'drafting' | 'seekAlly' | 'seekTruce' | 'armed' | 'building'
 
 /** 직접 쏜 저격의 결과 — 판 열쇠(battleKey)마다. R1 에는 저격이 없어 비어 있다 (SNIPE · SYSTEMS §6) */
 export type SnipeZone = 'head' | 'body' | 'leg' | 'drum' | 'miss'
@@ -397,7 +445,7 @@ export type ReportLine =
   | { readonly kind: 'disband'; readonly army: string; readonly node: string; readonly n: number }
   | { readonly kind: 'settle'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number }
   | { readonly kind: 'hunger'; readonly faction: string }
-  | { readonly kind: 'envoy'; readonly from: string; readonly to: string; readonly ask: EnvoyAsk; readonly accepted: boolean; readonly why?: Why; readonly about?: string }
+  | { readonly kind: 'envoy'; readonly from: string; readonly to: string; readonly ask: EnvoyAsk; readonly accepted: boolean; readonly why?: Why; readonly about?: string; readonly hero?: string }
   /** 화친·동맹을 맺어 상대 땅으로 가던 군대가 발길을 돌렸다 — `node` 는 가려던 고을 */
   | { readonly kind: 'recall'; readonly faction: string; readonly army: string; readonly node: string }
   /** 함께 치자는 약속을 지켰나 저버렸나 — `from` 이 약속한 나라, `to` 가 약속받은 나라 */
@@ -417,6 +465,12 @@ export type ReportLine =
   | { readonly kind: 'answered'; readonly ask: string; readonly yes: boolean; readonly from: string; readonly askKind: AskKind }
   /** 경계 강화 */
   | { readonly kind: 'guard'; readonly faction: string; readonly node: string }
+  /** 짓기 — 시작했다(done false) · 섰다(done true) */
+  | { readonly kind: 'build'; readonly faction: string; readonly node: string; readonly what: BuildWhat; readonly done: boolean }
+  /** 겨울에 소금이 모자라 곡식이 썩었다 */
+  | { readonly kind: 'spoil'; readonly faction: string; readonly grain: number }
+  /** 첩보 — `viewer` 의 첩자가 `about` 나라에서 들은 것 (보는 나라에게만) */
+  | { readonly kind: 'rumor'; readonly viewer: string; readonly about: string; readonly fact: RumorFact; readonly good?: Good; readonly node?: string; readonly other?: string }
   /** 공작의 결과. 당한 쪽이 플레이어면 화면은 들켰을 때만 누가 했는지 보인다 */
   | {
       readonly kind: 'plot'

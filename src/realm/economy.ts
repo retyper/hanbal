@@ -16,7 +16,7 @@ import { blockedWhy, seasonOf } from './calendar.ts'
 import { draftCapBonus, gluttonMen, growMul, harvestMul, militiaMul, riteMul } from './heroes.ts'
 import type { Equip, UnitKind } from './battle.ts'
 import { TIERS, kitOf, lowestTier, nextTier, upgradeKind } from './kit.ts'
-import type { Army, Order, ReportLine, Realm, Stock } from './types.ts'
+import type { Army, BuildWhat, Good, Goods, Order, ReportLine, Realm, Stock } from './types.ts'
 
 function menIn(mix: Readonly<Partial<Record<string, number>>>): number {
   let n = 0
@@ -42,6 +42,118 @@ export function stockOf(r: Realm, faction: string): Stock {
   return (r.stock[faction] ??= { grain: 0, iron: 0 })
 }
 
+// ───────── 물건 다섯 (형: "자원들도 다각화해야할거같은데" — 2026-10-18)
+
+/** 창고·몫의 것 — 셈하는 순서 (결정론) */
+export const GOODS: readonly Good[] = ['grain', 'iron', 'salt', 'wood', 'horse']
+
+/** 몫 하나의 그 물건 — 없으면 0 (옛 저장에는 소금·나무·말이 없다) */
+export function goodOf(x: Partial<Record<Good, number>> | undefined, g: Good): number {
+  const v = x?.[g]
+  return typeof v === 'number' && Number.isFinite(v) ? v : 0
+}
+
+/** 그 물건 하나가 곡식 몇의 값인가 */
+export function worthOf(g: Good): number {
+  const R = P.realm
+  switch (g) {
+    case 'grain': return 1
+    case 'iron': return R.envoyIronWorth
+    case 'salt': return R.worthSalt
+    case 'wood': return R.worthWood
+    case 'horse': return R.worthHorse
+  }
+}
+
+/** 몫의 값 (곡식으로 친) — `faction` 을 주면 그 나라에 없는 것은 worthLackMul 배로 친다 (뭍의 나라가 소금을 탐낸다) */
+export function goodsWorth(x: Partial<Record<Good, number>>, r?: Realm, faction?: string): number {
+  let w = 0
+  for (const g of GOODS) {
+    const n = goodOf(x, g)
+    if (n === 0) continue
+    const lack = r !== undefined && faction !== undefined && g !== 'grain' && goodOf(stockOf(r, faction), g) <= 0
+    w += n * worthOf(g) * (lack ? P.realm.worthLackMul : 1)
+  }
+  return w
+}
+
+/** 한 가지만 담은 몫 */
+export function goodsOne(g: Good, n: number): Goods {
+  return g === 'grain' ? { grain: n, iron: 0 } : g === 'iron' ? { grain: 0, iron: n } : { grain: 0, iron: 0, [g]: n }
+}
+
+/** 이 나라 창고가 그 몫을 낼 수 있나 */
+export function canPayGoods(r: Realm, faction: string, x: Partial<Record<Good, number>>): boolean {
+  const s = stockOf(r, faction)
+  return GOODS.every((g) => goodOf(x, g) >= 0 && goodOf(s, g) >= goodOf(x, g))
+}
+
+/** 몫을 옮긴다 (모자라도 그대로 — 먼저 canPayGoods 로 본다) */
+export function payGoods(r: Realm, from: string, to: string, x: Partial<Record<Good, number>>): void {
+  const a = stockOf(r, from)
+  const b = stockOf(r, to)
+  for (const g of GOODS) {
+    const n = goodOf(x, g)
+    if (n === 0) continue
+    a[g] = goodOf(a, g) - n
+    b[g] = goodOf(b, g) + n
+  }
+}
+
+/** 창고에 더한다 (빼려면 음수) */
+export function addGood(r: Realm, faction: string, g: Good, n: number): void {
+  const s = stockOf(r, faction)
+  s[g] = goodOf(s, g) + n
+}
+
+/** 바닷가 고을 — 항구이거나 뱃길·갯벌이 닿는다. 소금과 물고기가 난다 */
+export function isCoast(r: Realm, node: string): boolean {
+  const n = r.nodes[node]
+  if (n === undefined || n.kind === 'sodo') return false
+  if (n.kind === 'port') return true
+  return Object.values(r.edges).some((e) => (e.a === node || e.b === node) && (e.kind === 'sea' || e.kind === 'mudflat'))
+}
+
+/** 나무가 나는 고을 — 솔숲·높은 터·산성이거나 숲길이 닿는다 */
+export function isWoody(r: Realm, node: string): boolean {
+  const n = r.nodes[node]
+  if (n === undefined || n.kind === 'sodo') return false
+  if (n.tags.includes('pines') || n.tags.includes('high') || n.kind === 'fort') return true
+  return Object.values(r.edges).some((e) => (e.a === node || e.b === node) && e.kind === 'forest')
+}
+
+/** 그 고을이 계절마다 내는 것 — 화면·첩보·AI 가 함께 쓴다. 사람이 안 사는 빈땅은 아무것도 안 낸다 */
+export function nodeYield(r: Realm, node: string, season = seasonOf(r.season)): Partial<Record<Good, number>> {
+  const R = P.realm
+  const n = r.nodes[node]
+  if (n === undefined || n.owner === null || n.kind === 'sodo' || (n.kind === 'wild' && n.hh <= 0)) return {}
+  const out: Partial<Record<Good, number>> = {}
+  if (n.kind === 'ironMine') out.iron = R.ironPerMine
+  if (n.kind === 'port') out.iron = (out.iron ?? 0) + R.ironPerPort
+  if (isCoast(r, node)) {
+    out.salt = R.saltPerCoast
+    if (season !== 'winter') out.grain = Math.round(n.hh * R.fishPerHH)
+  }
+  if (isWoody(r, node)) out.wood = R.woodPerNode
+  if (n.tags.includes('pasture')) out.horse = R.horsePerPasture
+  return out
+}
+
+/** 제 땅 밖에 나가 있는 군사 — 길 위이거나 남의 땅에 머문다 (절인 양식이 든다) */
+export function awayMen(r: Realm, faction: string): number {
+  let n = 0
+  for (const a of Object.values(r.armies)) {
+    if (a.faction !== faction) continue
+    if (a.march !== null || r.nodes[a.at]?.owner !== faction) n += menIn(a.mix)
+  }
+  return n
+}
+
+/** 밖에 나간 군사의 소금 — 이만큼 있으면 군량이 늘지 않는다 */
+export function awaySalt(r: Realm, faction: string): number {
+  return Math.ceil(awayMen(r, faction) * P.realm.saltPerAway)
+}
+
 /** 장정 (SYSTEMS §4-6 · FLOW §2) — 그 고을 가호에 비례. 산성은 사람은 적어도 성이 높다 */
 export function militiaMen(r: Realm, node: string): number {
   const R = P.realm
@@ -63,7 +175,7 @@ export function draftCost(n: number): { grain: number } {
  * 이 고을에서 이번 계절에 뽑을 수 있는 수 — 셋 가운데 작은 것:
  * 고을 가호의 draftPerSeason · 나라 상한(가호+군사의 draftCap)까지 남은 몫 · 창고가 대는 채비
  */
-export function draftLimit(r: Realm, faction: string, node: string): number {
+export function draftLimit(r: Realm, faction: string, node: string, unit?: UnitKind): number {
   const R = P.realm
   const n = r.nodes[node]
   if (n === undefined || n.owner !== faction || n.kind === 'sodo') return 0
@@ -71,11 +183,76 @@ export function draftLimit(r: Realm, faction: string, node: string): number {
   const men = menOf(r, faction)
   const cap = Math.floor((R.draftCap + draftCapBonus(r, faction)) * (hhOf(r, faction) + men)) - men
   const grain = R.draftGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.draftGrain) : Infinity
-  return Math.max(0, Math.min(per, cap, grain))
+  // 배와 말 — 수군은 나무로 배를 짓고, 기병은 말이 있어야 한다
+  const s = stockOf(r, faction)
+  const goods = unit === 'boat' && R.boatWood > 0 ? Math.floor(goodOf(s, 'wood') / R.boatWood)
+    : unit === 'horse' && R.horsePerRider > 0 ? Math.floor(goodOf(s, 'horse') / R.horsePerRider) : Infinity
+  return Math.max(0, Math.min(per, cap, grain, goods))
 }
 
-export function settleCost(n: number): { grain: number } {
-  return { grain: Math.ceil(n * P.realm.settleGrain) }
+/** 그 병종 n 명을 뽑는 데 곡식 말고 드는 것 — 수군은 나무(배), 기병은 말 */
+export function draftNeeds(unit: UnitKind, n: number): { wood: number; horse: number } {
+  const R = P.realm
+  return { wood: unit === 'boat' ? Math.ceil(n * R.boatWood) : 0, horse: unit === 'horse' ? Math.ceil(n * R.horsePerRider) : 0 }
+}
+
+export function settleCost(n: number): { grain: number; wood: number } {
+  return { grain: Math.ceil(n * P.realm.settleGrain), wood: Math.ceil(n * P.realm.settleWood) }
+}
+
+// ───────── 짓기 (나무의 쓰임)
+
+/** 목책·해자의 값 */
+export function buildCost(what: BuildWhat): { wood: number; grain: number } {
+  const R = P.realm
+  return what === 'palisade' ? { wood: R.buildPalisadeWood, grain: R.buildPalisadeGrain } : { wood: R.buildMoatWood, grain: R.buildMoatGrain }
+}
+
+/** 여기에 지금 지을 수 있나 — 제 고을 · 아직 없는 것 · 해자는 목책이 먼저 · 짓는 중이 아니다 · 창고가 댄다 */
+export function canBuild(r: Realm, faction: string, node: string, what: BuildWhat): boolean {
+  const n = r.nodes[node]
+  if (n === undefined || n.owner !== faction || n.kind === 'sodo' || (n.kind === 'wild' && n.hh <= 0)) return false
+  if (n.tags.includes(what)) return false
+  if (what === 'moat' && !n.tags.includes('palisade')) return false
+  if ((r.builds ?? []).some((b) => b.node === node)) return false
+  const c = buildCost(what)
+  const s = stockOf(r, faction)
+  return goodOf(s, 'wood') >= c.wood && s.grain >= c.grain
+}
+
+/** 지을 수 있는 것 — 목책이 없으면 목책, 있으면 해자 */
+export function nextBuild(r: Realm, node: string): BuildWhat | null {
+  const n = r.nodes[node]
+  if (n === undefined) return null
+  if (!n.tags.includes('palisade')) return 'palisade'
+  if (!n.tags.includes('moat')) return 'moat'
+  return null
+}
+
+/** 1 — 짓기를 시작한다. 이 계절 끝에 선다 (stepBuilds) */
+export function applyBuild(r: Realm, o: Extract<Order, { kind: 'build' }>, lines: ReportLine[]): void {
+  if (!canBuild(r, o.faction, o.node, o.what)) return
+  const c = buildCost(o.what)
+  addGood(r, o.faction, 'wood', -c.wood)
+  stockOf(r, o.faction).grain -= c.grain
+  ;(r.builds ??= []).push({ faction: o.faction, node: o.node, what: o.what, done: r.season })
+  lines.push({ kind: 'build', faction: o.faction, node: o.node, what: o.what, done: false })
+}
+
+/** 9 — 다 지은 것이 선다. 그 사이 고을을 잃었으면 무너진다 */
+export function stepBuilds(r: Realm, lines: ReportLine[]): void {
+  const keep: NonNullable<Realm['builds']> = []
+  for (const b of r.builds ?? []) {
+    if (b.done > r.season) {
+      keep.push(b)
+      continue
+    }
+    const n = r.nodes[b.node]
+    if (n === undefined || n.owner !== b.faction || n.tags.includes(b.what)) continue
+    r.nodes[b.node] = { ...n, tags: [...n.tags, b.what] }
+    lines.push({ kind: 'build', faction: b.faction, node: b.node, what: b.what, done: true })
+  }
+  r.builds = keep
 }
 
 /** 이 길이 `from` 과 `to` 를 잇는가 — 이으면 그 길 */
@@ -104,7 +281,8 @@ export function settleLimit(r: Realm, faction: string, from: string, to: string)
   const share = Math.floor(a.hh * R.settleShare)
   const room = Math.max(0, (b.room ?? 0) - b.hh)
   const grain = R.settleGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.settleGrain) : Infinity
-  return Math.max(0, Math.min(share, room, grain))
+  const wood = R.settleWood > 0 ? Math.floor(goodOf(stockOf(r, faction), 'wood') / R.settleWood) : Infinity
+  return Math.max(0, Math.min(share, room, grain, wood))
 }
 
 /** 지금 개척할 수 있는 짝 — 빈땅 id, 떠나는 고을 id 순서 (결정론) */
@@ -308,7 +486,9 @@ export function hhGrowth(r: Realm, node: string): { per: number; why: string[] }
 
 /** 이 계절에 나라가 군대를 먹이는 데 드는 곡식 */
 export function upkeepOf(r: Realm, faction: string, winter: boolean): number {
-  return Math.ceil((menOf(r, faction) + gluttonMen(r, faction)) * P.realm.rationPerSoldier * (winter ? P.realm.winterRation : 1))
+  // 제 땅 밖에 나간 군사는 더 먹는다 — 절인 양식(소금)이 있으면 그대로
+  const away = goodOf(stockOf(r, faction), 'salt') >= awaySalt(r, faction) ? 0 : awayMen(r, faction) * (P.realm.awayRation - 1)
+  return Math.ceil((menOf(r, faction) + gluttonMen(r, faction) + away) * P.realm.rationPerSoldier * (winter ? P.realm.winterRation : 1))
 }
 
 /** 고을을 뺏겼다 — 사람이 흩어진다 */
@@ -331,10 +511,11 @@ export function stepEconomy(r: Realm, season: number, fought: ReadonlySet<string
     const s = stockOf(r, f)
     const fac = r.factions[f]!
     const nodes = Object.values(r.nodes).filter((n) => n.owner === f).sort((x, y) => (x.id < y.id ? -1 : 1))
-    // 철 — 철산 · 포구의 교역 · 바깥 교역
+    // 땅마다 나는 것 — 철산·포구의 철 · 바닷가의 소금·물고기 · 숲의 나무 · 목장의 말 (nodeYield) · 바깥 교역
+    const sname = season === 0 ? 'spring' : season === 1 ? 'summer' : season === 2 ? 'autumn' : 'winter'
     for (const n of nodes) {
-      if (n.kind === 'ironMine') s.iron += R.ironPerMine
-      if (n.kind === 'port') s.iron += R.ironPerPort
+      const y = nodeYield(r, n.id, sname)
+      for (const g of GOODS) if (goodOf(y, g) !== 0) s[g] = goodOf(s, g) + goodOf(y, g)
     }
     if (fac.income !== undefined) {
       s.grain += fac.income.grain
@@ -353,13 +534,27 @@ export function stepEconomy(r: Realm, season: number, fought: ReadonlySet<string
         lines.push(blessed > 0 ? { kind: 'harvest', faction: f, grain, blessed } : { kind: 'harvest', faction: f, grain })
       }
     }
-    // 군량
+    // 군량 — 밖에 나간 군사는 절인 양식(소금)을 쓰거나, 없으면 더 먹는다 (upkeepOf 가 같은 셈을 한다)
     const need = upkeepOf(r, f, winter)
+    const salted = awaySalt(r, f)
+    if (salted > 0 && goodOf(s, 'salt') >= salted) s.salt = goodOf(s, 'salt') - salted
     let hungry = false
     if (s.grain >= need) s.grain -= need
     else {
       s.grain = 0
       hungry = need > 0
+    }
+    // 겨울 — 소금으로 못 덮은 곡식은 썩는다. 소금은 덮은 만큼 쓴다
+    if (winter && s.grain > 0) {
+      const salt = goodOf(s, 'salt')
+      const covered = Math.min(s.grain, salt * R.saltKeeps)
+      const used = R.saltKeeps > 0 ? Math.min(salt, Math.ceil(covered / R.saltKeeps)) : 0
+      if (used > 0) s.salt = salt - used
+      const rot = Math.floor((s.grain - covered) * R.spoilShare)
+      if (rot > 0) {
+        s.grain -= rot
+        lines.push({ kind: 'spoil', faction: f, grain: rot })
+      }
     }
     if (hungry) {
       lines.push({ kind: 'hunger', faction: f })

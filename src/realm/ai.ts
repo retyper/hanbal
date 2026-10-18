@@ -14,18 +14,18 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import {
-  allyFoe, envoyOptions, friendly, jointTargets, lentStep, nationPower, openAsks, pledgedNodes, relationOf,
+  allyFoe, canEscort, envoyOptions, friendly, jointTargets, lentStep, nationPower, openAsks, pledgedNodes, relationOf, tradeOffer,
 } from './diplomacy.ts'
 import {
-  armCost, canGuard, draftCost, draftLimit, guardCost, hhOf, menOf, riteAllowed, riteCost, settleLimit, settleTargets, stockOf, upkeepOf,
+  armCost, buildCost, canBuild, canGuard, draftCost, draftLimit, goodsWorth, guardCost, hhOf, menOf, nextBuild, riteAllowed, riteCost, settleLimit, settleTargets, stockOf, upkeepOf,
 } from './economy.ts'
 import { ambushWorth, jointWin, movesOf, type Move } from './estimate.ts'
-import { armyOfHero, isRuler, persuadeSeasons, postHero, wanderersFor } from './heroes.ts'
+import { armyOfHero, hasTrait, isRuler, persuadeSeasons, postHero, wanderersFor } from './heroes.ts'
 import { armiesAt, fortMul, neighbors, newArmyId, planned, seasonOf, seenMarches } from './season.ts'
 import type { UnitKind } from './battle.ts'
 import { plotAgents, plotCost, plotTargets } from './plots.ts'
 import { allianceWhy, breakWhy, truceWhy } from './stance.ts'
-import type { Army, EnvoyAsk, Order, PlotOp, Realm, Why } from './types.ts'
+import type { Army, EnvoyAsk, Hero, Order, PlotOp, Realm, Why } from './types.ts'
 
 export type Brain = 'greedy' | 'cautious' | 'reckless' | 'random' | 'planner'
 
@@ -353,12 +353,59 @@ function envoys(r: Realm, faction: string): Order[] {
     if (c !== null && !envoyOptions(r, faction, f.id).includes(c.ask)) c = null
     if (c !== null && (best === null || c.w > best.w)) best = { to: f.id, ...c }
   }
-  if (best === null) return gifts(r, faction)
+  if (best === null) return trades(r, faction) ?? gifts(r, faction)
   const { to, ask, target, why, about } = best
+  const hero = escortFor(r, faction, ask)
   return [{
     kind: 'envoy', from: faction, to, ask, give: { grain: 0, iron: 0 }, take: { grain: 0, iron: 0 },
     ...(target !== undefined ? { target } : {}), ...(why !== undefined ? { why } : {}), ...(about !== undefined ? { about } : {}),
+    ...(hero !== null ? { hero } : {}),
   }]
+}
+
+/**
+ * 맞바꿈 — 할 말이 없을 때, 제게 모자란 것을 넉넉히 가진 이웃에게 남는 것을 내고 바꾼다 (diplomacy.tradeOffer · 형: "자원들도 다각화").
+ * 플레이어에게는 사신이 아니라 청으로 간다(makeAsks) — 여기서는 AI 끼리만. 없으면 null
+ */
+function trades(r: Realm, faction: string): Order[] | null {
+  for (const f of sorted(Object.values(r.factions))) {
+    if (f.id === faction || f.mind === 'player' || !Object.values(r.nodes).some((n) => n.owner === f.id)) continue
+    if (!envoyOptions(r, faction, f.id).includes('trade')) continue
+    const t = tradeOffer(r, faction, f.id)
+    if (t === null) continue
+    const hero = escortFor(r, faction, 'trade')
+    return [{ kind: 'envoy', from: faction, to: f.id, ask: 'trade', give: t.give, take: t.take, why: 'surplus', ...(hero !== null ? { hero } : {}) }]
+  }
+  return null
+}
+
+/**
+ * 사신에 딸려 보낼 장수 — 노는 우리 장수 가운데 그 사신에 맞는 이 (교역이면 장사꾼, 아니면 매혹, 아니면 매력 높은 이).
+ * 매력 6 아래면 안 보낸다. aiEnvoyHero 로 가끔
+ */
+function escortFor(r: Realm, faction: string, ask: EnvoyAsk): string | null {
+  if (roll(r.seed, r.season, `ai-escort:${faction}`) >= P.realm.aiEnvoyHero) return null
+  const score = (h: Hero): number => (ask === 'trade' && hasTrait(h, 'trader') ? 20 : 0) + (hasTrait(h, 'charm') ? 10 : 0) + h.deok
+  const best = sorted(Object.values(r.heroes)).filter((h) => canEscort(r, faction, h.id))
+    .sort((a, b) => score(b) - score(a) || (a.id < b.id ? -1 : 1))[0]
+  return best !== undefined && score(best) >= 6 ? best.id : null
+}
+
+/**
+ * 짓기 (나무의 쓰임) — 나무가 넉넉하면 남의 땅과 맞닿은 고을부터 목책, 목책이 있으면 해자. 한 계절에 하나.
+ * 군량 aiDraftReserve 계절치를 남긴다
+ */
+function builds(r: Realm, faction: string): Order[] {
+  const spare = stockOf(r, faction).grain - P.realm.aiDraftReserve * upkeepOf(r, faction, true)
+  const front = (id: string): boolean => neighbors(r, id).some((x) => { const o = r.nodes[x]?.owner; return o !== null && o !== undefined && o !== faction })
+  const mine = sorted(Object.values(r.nodes)).filter((n) => n.owner === faction && n.kind !== 'sodo' && !(n.kind === 'wild' && n.hh <= 0))
+    .sort((a, b) => (front(b.id) ? 1 : 0) - (front(a.id) ? 1 : 0) || b.hh - a.hh || (a.id < b.id ? -1 : 1))
+  for (const n of mine) {
+    const what = nextBuild(r, n.id)
+    if (what === null || !canBuild(r, faction, n.id, what) || buildCost(what).grain > spare) continue
+    return [{ kind: 'build', faction, node: n.id, what }]
+  }
+  return []
 }
 
 /**
@@ -435,11 +482,10 @@ function answers(r: Realm, faction: string): Order[] {
   for (const a of openAsks(r, faction)) {
     let yes: boolean
     switch (a.kind) {
-      case 'trade': {
-        const val = (x: { grain: number; iron: number }): number => x.grain + x.iron * R.envoyIronWorth
-        yes = val(a.give) >= val(a.take) * 0.9
+      case 'trade':
+        // 제게 없는 것은 더 쳐 준다 (economy.goodsWorth)
+        yes = goodsWorth(a.give, r, faction) >= goodsWorth(a.take) * 0.9
         break
-      }
       case 'demand':
         yes = nationPower(r, a.from) >= R.askDemandPower * nationPower(r, faction)
         break
@@ -500,11 +546,12 @@ export function decide(r: Realm, faction: string, brain: Brain): Order[] {
   const first = [...ds, ...ss, ...rs]
   const gs = brain === 'random' || brain === 'reckless' ? [] : guards(first.length > 0 ? planned(r, first) : r, faction)
   const talk = brain === 'random' ? [] : [...answers(r, faction), ...breaks(r, faction), ...envoys(r, faction)]
+  const bs = brain === 'random' ? [] : builds(r, faction)
   // 공작은 징병·개척·제사·경계로 곡식을 쓴 뒤의 창고로 셈한다 (판정도 그 뒤다 — 2단계)
   const ps = brain === 'random' ? [] : plots([...first, ...gs].length > 0 ? planned(r, [...first, ...gs]) : r, faction, brain)
   const hs = brain === 'random' ? [] : heroCare(r, faction)
   const as = brain === 'random' ? [] : arms(r, faction)
-  return [...talk, ...first, ...gs, ...ps, ...hs, ...as, ...lentMoves(r, faction), ...(brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
+  return [...talk, ...first, ...gs, ...ps, ...hs, ...as, ...bs, ...lentMoves(r, faction), ...(brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
 }
 
 function moves(r: Realm, faction: string, brain: Brain): Order[] {

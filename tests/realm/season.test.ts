@@ -12,6 +12,7 @@ import assert from 'node:assert/strict'
 
 import { roll } from '../../src/core/rng.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
+import { PEOPLE_SCALE as S } from '../../src/realm/migrate.ts'
 import {
   advance, armiesAt, blockedWhy, conceal, marchSeasons, neighbors, otherEnd, preview, seasonOf,
 } from '../../src/realm/season.ts'
@@ -121,7 +122,7 @@ describe('한 계절이 돈다', () => {
       r = advance(r, [{ kind: 'march', army: 'a-us', edge: 'e01', ambush: false }]).next
       r = advance(r, []).next // 여름을 건너뛴다
       // 우리 군대를 크게 키워 이기는 판을 많이 만든다 — 생포는 이긴 판에서만 굴린다
-      r.armies['a-us']!.mix = { spear: 600, bow: 200 }
+      r.armies['a-us']!.mix = { spear: 600 * S, bow: 200 * S }
       const o: Order[] = [{ kind: 'march', army: 'a-us', edge: 'e05', ambush: false }]
       const leg = advance(r, o, { 'anya-cap:a-us': 'leg' }).report.lines.find((l) => l.kind === 'battle')
       const miss = advance(r, o, {}).report.lines.find((l) => l.kind === 'battle')

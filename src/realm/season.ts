@@ -24,12 +24,14 @@ import {
   shareIntel, stepLent,
 } from './diplomacy.ts'
 import {
-  applyArm, applyGuard, draftCost, draftIronCost, draftLimit, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepEconomy,
+  addGood, applyArm, applyBuild, applyGuard, draftCost, draftIronCost, draftLimit, draftNeeds, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepBuilds, stepEconomy,
   stockOf,
 } from './economy.ts'
 import { blockedWhy, seasonOf } from './calendar.ts'
 import { refreshSpies, resolvePlots } from './plots.ts'
 import { noteTake } from './stance.ts'
+import { migrate } from './migrate.ts'
+import { spreadRumors } from './rumor.ts'
 import { addMen, giveMen, kitOf, scaleMen, takeMen } from './kit.ts'
 import {
   ambushTraitOf, applyHeroOrders, battleGrowth, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroesAtNode, ironhandAt, noteMet, stepHeroes, sweepHeroes,
@@ -327,20 +329,22 @@ function mergeArmy(r: Realm, o: Extract<Order, { kind: 'merge' }>, lines: Report
  */
 export function planned(realm: Realm, orders: readonly Order[]): Realm {
   const r = structuredClone(realm)
+  migrate(r)
   applyArmyOrders(r, orders, [])
   return r
 }
 
 /** 뽑을 수 있는 병종 — 창병·궁수·방패병, 포구에서는 수군도 (FLOW §2) */
+/** 뽑을 수 있는 병종 — 기병은 어디서나 (말이 있어야 한다 — economy.draftLimit), 수군은 포구에서 (배를 지을 나무가 든다) */
 export function draftable(node: RNode): readonly UnitKind[] {
-  return node.kind === 'port' ? ['spear', 'bow', 'shield', 'boat'] : ['spear', 'bow', 'shield']
+  return node.kind === 'port' ? ['spear', 'bow', 'shield', 'horse', 'boat'] : ['spear', 'bow', 'shield', 'horse']
 }
 
 /** 징병 (FLOW §2) — 규칙에 안 맞으면 아무 일도 없다. 그 고을에 쉬는 제 군대가 있으면 거기 든다 */
 function draftArmy(r: Realm, o: Extract<Order, { kind: 'draft' }>, lines: ReportLine[]): void {
   const node = r.nodes[o.node]
   if (node === undefined || node.owner !== o.faction || r.factions[o.faction] === undefined) return
-  if (!Number.isInteger(o.n) || o.n < 1 || o.n > draftLimit(r, o.faction, o.node)) return
+  if (!Number.isInteger(o.n) || o.n < 1 || o.n > draftLimit(r, o.faction, o.node, o.unit)) return
   if (!draftable(node).includes(o.unit)) return
   // 쇠 들려 징병 — 철을 들이면 **뽑힌 그 사람들만** 한 단계 위 무장을 든다 (철이 모자라면 그냥 뽑는다).
   // 쇠 다루는 장수가 맡은 고을에서는 모두 온 쇠 (heroes.ironhandAt)
@@ -360,6 +364,9 @@ function draftArmy(r: Realm, o: Extract<Order, { kind: 'draft' }>, lines: Report
   army.morale = (army.morale * had + o.n) / (had + o.n) // 새로 든 사람은 사기 1
   node.hh -= o.n
   stockOf(r, o.faction).grain -= draftCost(o.n).grain
+  const need = draftNeeds(o.unit, o.n) // 배의 나무 · 기병의 말
+  if (need.wood > 0) addGood(r, o.faction, 'wood', -need.wood)
+  if (need.horse > 0) addGood(r, o.faction, 'horse', -need.horse)
   lines.push({ kind: 'draft', faction: o.faction, node: node.id, unit: o.unit, n: o.n, army: army.id })
 }
 
@@ -386,6 +393,7 @@ function settleLand(r: Realm, o: Extract<Order, { kind: 'settle' }>, lines: Repo
   to.hh += o.n
   to.owner = o.faction
   stockOf(r, o.faction).grain -= settleCost(o.n).grain
+  addGood(r, o.faction, 'wood', -settleCost(o.n).wood)
   revealAround(r, o.faction, o.to)
   lines.push({ kind: 'settle', faction: o.faction, from: o.from, to: o.to, n: o.n })
 }
@@ -406,6 +414,7 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
     else if (o.kind === 'settle') settleLand(r, o, lines)
     else if (o.kind === 'guard') applyGuard(r, o, lines)
     else if (o.kind === 'arm') applyArm(r, o, lines)
+    else if (o.kind === 'build') applyBuild(r, o, lines)
   }
   applyHeroOrders(r, orders, lines) // 맡기기·이끌기·회유·들이기 — 나누기·해산 뒤 (떼어 낸 군대를 이끌 수 있게)
 }
@@ -798,6 +807,7 @@ export function advance(
   snipes: Readonly<Record<string, SnipeZone>> = {},
 ): { next: Realm; report: Report } {
   const r = structuredClone(realm)
+  migrate(r) // 옛 판이면 사람의 눈금을 키운다
   const lines: ReportLine[] = []
   const fought = new Set<string>()
   const season = ((r.season % 4) + 4) % 4
@@ -818,8 +828,10 @@ export function advance(
   checkPledges(r, lines) // 9 — 함께 치자는 약속을 지켰나
   stepLent(r, lines) // 9 — 빌려준 군대가 돌아갈 때
   shareIntel(r) // 9 — 동맹은 본 것을 나눈다
+  stepBuilds(r, lines) // 9 — 다 지은 목책·해자가 선다
   refreshSpies(r) // 9 — 첩자가 본다
   for (const [f, spies] of Object.entries(r.spies ?? {})) for (const s of spies) noteMet(r, f, heroesAtNode(r, s.node))
+  spreadRumors(r, lines) // 9 — 첩자가 들은 것 (간접 정보)
   if (r.player !== undefined) {
     for (const a of seenMarches(r, r.player)) {
       const line = { kind: 'sighted', faction: a.faction, army: a.id, from: a.march!.from, to: a.march!.to } as const

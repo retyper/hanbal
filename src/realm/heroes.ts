@@ -47,7 +47,8 @@ export function postHero(r: Realm, node: string): Hero | null {
   const owner = r.nodes[node]?.owner
   if (owner === null || owner === undefined) return null
   for (const h of byId(Object.values(r.heroes))) {
-    if (h.post === node && h.status === 'free' && h.faction === owner) return h
+    // 사신을 따라 나간 계절에는 맡은 고을에 손이 안 간다
+    if (h.post === node && h.status === 'free' && h.faction === owner && !(h.awayUntil !== undefined && h.awayUntil >= r.season)) return h
   }
   return null
 }
@@ -86,14 +87,22 @@ export function escapeOf(h: Hero): number {
 // ───────── 나라·고을에 걸리는 것
 
 /** 사신 받아 줄 확률 가산 — 군주 매력 + 그 나라 장수의 매혹 · (교역이면) 장사꾼 */
-export function envoyBonus(r: Realm, from: string, ask: string): number {
+/**
+ * 사신 받아 줄 확률 가산 — 군주의 매력이 바탕이고, **사신을 따라간 장수**(escort)의 매력·매혹·장사꾼이 그 위에 (형: "장사꾼 장수는
+ * 특별히 뭘 할 수 없잖아. 사신 보낼 때 같이 보내는 것도 아니고"). 따라간 장수가 없으면 군주의 몫뿐이다.
+ */
+export function envoyBonus(r: Realm, from: string, ask: string, escort?: string): number {
   const R = P.realm
   let b = 0
   const ruler = rulerOf(r, from)
   if (ruler !== null) b += R.rulerDeokEnvoy * (deokOf(ruler) - 5)
-  const mine = Object.values(r.heroes).filter((h) => h.faction === from && h.status === 'free')
-  if (mine.some((h) => hasTrait(h, 'charm'))) b += R.traitCharm
-  if (ask === 'trade' && mine.some((h) => hasTrait(h, 'trader'))) b += R.traitTrader
+  const h = escort !== undefined ? r.heroes[escort] : undefined
+  const went = h !== undefined && h.faction === from && h.status === 'free' ? h : null
+  if (went !== null) b += R.heroDeokEnvoy * (deokOf(went) - 5)
+  // 특성은 군주 것과 따라간 장수 것 — 같은 특성은 한 번만
+  const has = (t: string): boolean => (ruler !== null && hasTrait(ruler, t)) || (went !== null && hasTrait(went, t))
+  if (has('charm')) b += R.traitCharm
+  if (ask === 'trade' && has('trader')) b += R.traitTrader
   return b
 }
 
