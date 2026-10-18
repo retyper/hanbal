@@ -14,7 +14,7 @@ export const EDGE_NAME: Record<EdgeKind, string> = {
 }
 
 export const NODE_KIND_NAME: Record<NodeKind, string> = {
-  capital: '국읍', village: '읍락', sodo: '소도', port: '포구', fort: '산성', ironMine: '철산', wild: '빈땅',
+  capital: '도읍', village: '마을', sodo: '소도', port: '항구', fort: '산성', ironMine: '철광', wild: '빈땅',
 }
 
 /** 빈땅을 일군 뒤의 이름 — kind 는 그대로 'wild' 지만 사람이 살면 새 마을이다 */
@@ -135,11 +135,22 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       return `${josa(nameArmy(line.army), '이', '가')} ${nameArmy(line.into)}에 합쳤다.`
     }
     case 'take':
-      return `${josa(fname(line.faction), '이', '가')} ${josa(node(line.node), '을', '를')} 쥐었다.`
+      return `${josa(fname(line.faction), '이', '가')} ${josa(node(line.node), '을', '를')} 차지했다.`
     case 'battle': {
       const atk = before.armies[line.attacker]
       const ours = atk?.faction === viewer || line.defender === viewer
-      const amb = line.ambush === 'success' ? ' 기습이 먹혔다.' : line.ambush === 'caught' ? ' 기습이 들켰다.' : ''
+      // 기습은 정면과 다르게 들려야 한다 (형: "느껴지는게 없음") — 무엇을 건너뛰었는지, 무엇에 맞았는지
+      const nd = after.nodes[line.node]
+      const walled = nd !== undefined && (nd.kind === 'fort' || nd.tags.includes('palisade') || nd.tags.includes('high'))
+      const weAtk = atk?.faction === viewer
+      let amb = ''
+      if (line.ambush === 'success') {
+        amb = weAtk
+          ? ` 숨어 들어가 기습이 먹혔다.${walled ? ' 성문이 닫히기 전에 들이쳤다.' : ''} 장정이 모이지 못했다.`
+          : ` 기습을 당했다.${walled ? ' 성문을 닫을 틈도 없었다.' : ''} 장정이 모이지 못했다.`
+      } else if (line.ambush === 'caught') {
+        amb = weAtk ? ' 기습이 들켰다. 적이 기다리고 있었다.' : ' 몰래 오는 적을 먼저 알아챘다.'
+      }
       const side = line.allies.length === 0 ? '' : line.pincer ? ` 등 ${line.allies.length + 1}군이 두 길로` : ` 등 ${line.allies.length + 1}군이`
       const who = line.allies.length === 0 ? josa(nameArmy(line.attacker), '이', '가') : `${nameArmy(line.attacker)}${side}`
       const head = `${node(line.node)} 싸움. ${who} ${josa(fname(line.defender), '을', '를')} 쳐서 ${OUTCOME_LINE[line.outcome]}.`
@@ -164,6 +175,17 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     case 'settle':
       if (line.faction === viewer) return `${node(line.from)}에서 ${line.n}집이 ${josa(node(line.to), '으로', '로')} 옮겨 가 땅을 일군다.`
       return `소문. ${josa(fname(line.faction), '이', '가')} ${node(line.to)}에 사람을 보냈다.`
+    case 'rite':
+      if (line.faction === viewer) {
+        return line.season === 'spring'
+          ? '소도에서 봄 제사를 지냈다. 올가을 수확이 늘 것이다.'
+          : '소도에서 가을 제사를 지냈다. 군사들 기운이 올랐다.'
+      }
+      return `소문. ${josa(fname(line.faction), '이', '가')} 소도에서 제사를 지냈다.`
+    case 'market': {
+      if (line.a !== viewer && line.b !== viewer) return null
+      return `${josa(fname(line.a === viewer ? line.b : line.a), '과', '와')} 장터가 섰다. 곡식 ${line.grain}이 들어왔다.`
+    }
     case 'hunger':
       return line.faction === viewer ? '곡식이 바닥났다. 군사들이 굶는다.' : null
     case 'envoy': {
@@ -189,7 +211,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     }
     case 'end':
       if (line.faction !== viewer) return null
-      return line.outcome === 'win' ? '국읍 셋을 쥐었다. 변한의 맹주가 되었다.' : '국읍을 잃었다. 나라가 무너졌다.'
+      return line.outcome === 'win' ? '도읍 셋을 차지했다. 변한의 맹주가 되었다.' : '도읍을 빼앗겼다. 나라가 무너졌다.'
     case 'sighted': {
       if (viewer !== before.player) return null
       const a = before.armies[line.army] ?? after.armies[line.army]
@@ -199,4 +221,33 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       return `${fname(line.faction)} 군대가 ${node(line.from)}에서 ${josa(node(line.to), '으로', '로')} 가고 있다.${size}`
     }
   }
+}
+
+/**
+ * 싸움 한 판을 차례로 (형: "확률에 따라 답이 정해져있긴 하지만 진행되는걸 실시간으로 되는듯 하게") — ui/realm/battlecard.ts 가 쓴다.
+ * 판정은 이미 났다. 이 글은 그 결과를 한 줄씩 풀어 보여 줄 뿐이다.
+ */
+export const BATTLE_APPROACH: Record<EdgeKind, string> = {
+  field: '들판을 가로질러 다가선다.',
+  pass: '고갯길을 넘어 내려온다.',
+  forest: '숲길을 헤치고 나온다.',
+  reeds: '갈대숲에 몸을 숨기고 다가선다.',
+  ford: '나루를 건너 물을 차고 오른다.',
+  sea: '배를 대고 뭍에 오른다.',
+  mudflat: '갯벌을 건너 발이 빠지며 다가선다.',
+}
+
+export const BATTLE_AMBUSH = {
+  success: '밤이 깊었다. 적은 아직 잠들어 있다.',
+  caught: '어둠 속에서 북이 울린다. 들켰다. 적이 기다리고 있었다.',
+  none: '해가 뜨자 두 진이 마주 선다.',
+} as const
+
+/** 맞붙은 뒤 — 결과마다 두 줄 (공격하는 쪽의 눈) */
+export const BATTLE_CLASH: Record<Outcome, readonly [string, string]> = {
+  rout: ['화살이 한 차례 쏟아진다.', '첫 부딪힘에 적진이 무너진다.'],
+  win: ['창끝이 맞부딪힌다. 밀고 밀린다.', '한참 만에 적이 물러서기 시작한다.'],
+  draw: ['창끝이 맞부딪힌다. 밀고 밀린다.', '해가 지도록 승부가 나지 않는다.'],
+  lose: ['적의 화살이 쏟아진다.', '버티지 못하고 뒤로 밀린다.'],
+  routed: ['적의 화살이 쏟아진다.', '진이 무너져 뿔뿔이 흩어진다.'],
 }

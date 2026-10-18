@@ -36,14 +36,14 @@ export const MAP_CSS = `
 .map { position: relative; height: 100%; aspect-ratio: ${W} / ${H}; margin: 0 auto; background: #2a261f center / cover no-repeat;
   user-select: none; -webkit-user-select: none; container-type: size; }
 .map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.map .nd { position: absolute; transform: translate(-50%, -62%); width: 8.5%; text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.map .nd { position: absolute; transform: translate(-50%, -62%); width: calc(8.5% * var(--s, 1)); text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .map .nd img.st { width: 100%; filter: drop-shadow(0 2px 2px rgba(0,0,0,.55)); }
-.map .nd .nm { display: block; margin-top: -8%; font-size: max(10px, 2.1cqh); line-height: 1.2; color: #2a1d10; font-weight: 700;
+.map .nd .nm { display: block; margin-top: -8%; font-size: max(10px, calc(2.1cqh / var(--z, 1) * var(--zs, 1))); line-height: 1.2; color: #2a1d10; font-weight: 700;
   text-shadow: 0 0 3px #f3e6c8, 0 0 3px #f3e6c8, 0 0 2px #f3e6c8; white-space: nowrap; }
 .map .nd .ring { position: absolute; left: 50%; top: 42%; width: 82%; aspect-ratio: 1; transform: translate(-50%, -50%);
   border-radius: 50%; border: 3px solid var(--c); box-shadow: 0 0 6px var(--c); pointer-events: none; }
 .map .nd .men, .map .nd .foe { position: absolute; right: -10%; top: -6%; background: #1c2129; border-radius: 9px; padding: 0 5px;
-  font-size: max(10px, 1.9cqh); font-weight: 700; }
+  font-size: max(10px, calc(1.9cqh / var(--z, 1) * var(--zs, 1))); font-weight: 700; }
 .map .nd .men { color: #9fd18b; border: 1px solid #9fd18b; } .map .nd .foe { color: #e8a08a; border: 1px solid #8a5a3a; }
 .map .nd .flag { position: absolute; left: -18%; top: -34%; width: 52%; aspect-ratio: 1.15; pointer-events: none; }
 .map .nd .flag::before { content: ''; position: absolute; left: 0; top: 0; width: 7%; height: 150%; background: #3a2a18; border-radius: 2px; }
@@ -63,7 +63,15 @@ export interface MapMarch {
   readonly left: number | null
   /** 남의 군대 (보인 행군) */
   readonly foe?: boolean
+  /** 기습으로 들어간다 — 어두운 점선 · "기습" 글씨 */
+  readonly ambush?: boolean
 }
+
+/**
+ * 고을 그림의 크기 — 집이 많을수록 크다 (형: "규모를 이해하기 쉽게"). 빈땅·작은 마을 0.8 ~ 큰 도읍 1.35.
+ * 화면의 생김새라 params 가 아니라 여기 둔다.
+ */
+const sizeOf = (hh: number): number => Math.min(1.35, Math.max(0.8, 0.7 + hh / 900))
 
 const px = (id: string): [number, number] => {
   const p = NODE_POS[id] ?? [0.5, 0.5]
@@ -130,12 +138,15 @@ export function mapHtml(r: Realm, me: string, art: string, marches: readonly Map
     const ey = y1 + (y2 - y1) * k
     const sx = x1 + (x2 - x1) * (1 - k)
     const sy = y1 + (y2 - y1) * (1 - k)
-    const dash = m.left === null ? '' : ' stroke-dasharray="14 8"'
-    const col = m.foe === true ? '#3a2a5a' : '#c8402a'
-    const head = m.foe === true ? 'rm-ah-foe' : 'rm-ah'
-    svg += `<line x1="${sx}" y1="${sy}" x2="${ex}" y2="${ey}" stroke="${col}" stroke-width="9"${dash} marker-end="url(#${head})" opacity=".9"/>`
-    if (m.left !== null) {
-      svg += `<text x="${(sx + ex) / 2}" y="${(sy + ey) / 2 - 12}" font-size="26" font-weight="700" fill="${m.foe === true ? '#3a2a5a' : '#7a1f10'}" stroke="#f3e6c8" stroke-width="5" paint-order="stroke" text-anchor="middle">${m.foe === true ? '적 ' : ''}${m.left}계절</text>`
+    // 기습은 밤길처럼 — 어두운 짧은 점선. 정면은 붉은 실선
+    const amb = m.ambush === true && m.foe !== true
+    const dash = amb ? ' stroke-dasharray="2 14" stroke-linecap="round"' : m.left === null ? '' : ' stroke-dasharray="14 8"'
+    const col = m.foe === true || amb ? '#3a2a5a' : '#c8402a'
+    const head = m.foe === true || amb ? 'rm-ah-foe' : 'rm-ah'
+    svg += `<line x1="${sx}" y1="${sy}" x2="${ex}" y2="${ey}" stroke="${col}" stroke-width="${amb ? 11 : 9}"${dash} marker-end="url(#${head})" opacity=".9"/>`
+    const label = `${m.foe === true ? '적 ' : ''}${amb ? '기습' : ''}${m.left !== null ? `${amb ? ' ' : ''}${m.left}계절` : ''}`
+    if (label !== '') {
+      svg += `<text x="${(sx + ex) / 2}" y="${(sy + ey) / 2 - 12}" font-size="26" font-weight="700" fill="${m.foe === true || amb ? '#3a2a5a' : '#7a1f10'}" stroke="#f3e6c8" stroke-width="5" paint-order="stroke" text-anchor="middle">${label}</text>`
     }
   }
   svg += `</svg>`
@@ -163,7 +174,7 @@ export function mapHtml(r: Realm, me: string, art: string, marches: readonly Map
     const who = owner === null ? '주인 없음' : (r.factions[owner]?.name ?? '?')
     const fa = owner !== null ? FACTION_ART[owner] : undefined
     const flag = fa !== undefined ? `<span class="flag${ours ? ' me' : ''}"><img src="${art}icon/${fa.emblem}.png" alt=""></span>` : ''
-    nodes += `<div class="nd${selected === n.id ? ' sel' : ''}${dim(owner) ? ' dim' : ''}" data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color}" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}">`
+    nodes += `<div class="nd${selected === n.id ? ' sel' : ''}${dim(owner) ? ' dim' : ''}" data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color};--s:${sizeOf(n.hh).toFixed(2)}" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}">`
     nodes += `<span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${flag}${badge}<span class="nm">${n.name}</span></div>`
   }
   return `<div class="map" style="background-image:url('${art}map/${SEASON_MAP[season]}.jpg')">${svg}${nodes}</div>`

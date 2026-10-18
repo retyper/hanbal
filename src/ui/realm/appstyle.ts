@@ -26,8 +26,14 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 @media (max-width: 520px) { .ap .top .stat.nat b { display: none; } .ap .top .tr { gap: 6px; } }
 
 /* 지도 — 남은 자리를 꽉. 폰 세로에서는 옆으로 민다 */
-.ap .mapwrap { position: absolute; left: 0; right: 0; top: calc(var(--toph) + var(--legh)); bottom: var(--tabh); overflow-x: auto; overflow-y: hidden;
-  background: #1a1d22; scrollbar-width: none; touch-action: pan-x; }
+.ap .mapwrap { position: absolute; left: 0; right: 0; top: calc(var(--toph) + var(--legh)); bottom: var(--tabh); overflow: auto;
+  background: #1a1d22; scrollbar-width: none; touch-action: pan-x pan-y; cursor: grab; }
+.ap .mapwrap.dragging { cursor: grabbing; }
+/* 확대·축소 단추 — 지도 왼쪽 아래 */
+.ap .zbtns { position: absolute; left: 12px; bottom: calc(var(--tabh) + 14px); z-index: 6; display: flex; flex-direction: column; gap: 6px; }
+.ap .zbtns button { width: 42px; height: 42px; border-radius: 12px; border: 1px solid #4a5363; background: #1b2028e6; color: var(--ink);
+  font-size: 22px; cursor: pointer; box-shadow: 0 4px 10px #0008; }
+.ap.sheet-open .zbtns, .ap.choosing .zbtns { display: none; }
 .ap .mapwrap::-webkit-scrollbar { display: none; }
 
 /* 깃발 줄 — 지도 왼쪽 위에 떠 있다. 누르면 그 나라 땅만 또렷하다 */
@@ -117,6 +123,19 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .rel.war { background: #4a2420; color: #f1b8a8; } .ap .rel.truce { background: #23331f; color: #cfeabf; } .ap .rel.ally { background: #1f2c40; color: #b8d4f4; }
 .ap .trade { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 10px; background: #1a1f27; }
 .ap .tr2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .ap .tr2 > span:first-child { width: 3.5em; color: var(--mute); font-size: 13px; }
+.ap .asks { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 6px 0 4px; }
+.ap .asks > div { padding: 6px 8px; border-radius: 10px; background: var(--card); display: flex; flex-direction: column; }
+.ap .asks b { font-size: 14px; color: var(--gold); } .ap .asks span { font-size: 12px; color: var(--mute); }
+.ap .how { display: flex; gap: 6px; margin: 2px 0 6px; }
+.ap .hw { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 9px 10px; border-radius: 12px;
+  border: 1px solid var(--line); background: #1f252e; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.ap .hw b { font-size: 15px; } .ap .hw .ln { font-size: 13px; color: #cfc6b4; } .ap .hw .mute { white-space: normal; font-size: 12px; }
+.ap .hw.on { border-color: #e0bd78; background: #3a3020; } .ap .hw.amb.on { border-color: #9a7ad8; background: #2a2440; }
+.ap .tip { margin: 0 0 6px; }
+.ap .flow3 { display: flex; align-items: stretch; gap: 6px; margin: 4px 0; }
+.ap .flow3 > div { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 8px 6px; border-radius: 12px; background: var(--card); }
+.ap .flow3 > div img.ic { width: 34px; height: 34px; } .ap .flow3 b { font-size: 15px; } .ap .flow3 span { font-size: 12px; color: var(--mute); white-space: normal; }
+.ap .flow3 > i { align-self: center; font-style: normal; color: var(--gold); font-size: 13px; white-space: nowrap; }
 .ap .goer { margin: 8px 0; } .ap .gname { font-size: 14px; font-weight: 600; }
 .ap .story { color: #cfc6b4; font-style: italic; }
 .ap .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0; }
@@ -125,6 +144,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .goal { padding: 10px 12px; border-radius: 12px; background: #2d2716; color: #f3dca4; margin: 8px 0; }
 .ap .goal b { float: right; }
 .ap .nhead { display: flex; gap: 12px; align-items: center; } .ap .nhead h3 { margin: 0; }
+.ap .rface { flex: none; width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2px solid #6a5a3a; display: block; }
+.ap .fn { display: flex; flex-direction: column; min-width: 0; } .ap .fn b { display: flex; align-items: center; gap: 4px; }
+.ap .top .stat.nat { border: 0; background: none; color: inherit; font: inherit; padding: 0; cursor: pointer; gap: 4px; }
+.ap .tface { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); display: block; }
 .ap img.nface { width: 84px; height: 84px; border-radius: 14px; object-fit: cover; border: 1px solid #6a5a3a; }
 .ap .caps { display: flex; gap: 10px; flex-wrap: wrap; } .ap .cap { display: flex; flex-direction: column; align-items: center; font-size: 13px; width: 92px; text-align: center; }
 .ap img.cface { width: 84px; height: 84px; border-radius: 12px; object-fit: cover; border: 2px solid #8a5a3a; }

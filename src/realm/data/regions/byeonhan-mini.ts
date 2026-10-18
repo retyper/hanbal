@@ -19,25 +19,25 @@ const wild = (id: string, name: string, tags: RNode['tags'], room: number): RNod
 
 const NODES: RNode[] = [
   // 갯마을 — 남쪽 바닷가 작은 나라 (국읍 하나 · 읍락 둘, PLAY §4) · 가호 600 (WORLD §4-1)
-  node('our-cap', '갯마을 국읍', 'capital', ['palisade'], 'us', 300),
-  node('our-north', '안개골 읍락', 'village', ['fog'], 'us', 150),
-  node('our-east', '갈대울 읍락', 'village', ['reeds'], 'us', 150),
+  node('our-cap', '갯마을 도읍', 'capital', ['palisade'], 'us', 300),
+  node('our-north', '안개골 마을', 'village', ['fog'], 'us', 150),
+  node('our-east', '갈대울 마을', 'village', ['reeds'], 'us', 150),
   // 구야국 狗邪 — 김해, 고김해만 · 철 · 변한의 큰 나라
-  node('guya-cap', '구야 국읍', 'port', ['palisade', 'high'], 'guya', 550),
-  node('guya-iron', '붉은산 철산', 'ironMine', ['iron'], 'guya', 150),
-  node('guya-vil', '봉황 읍락', 'village', [], 'guya', 250),
+  node('guya-cap', '구야 도읍', 'port', ['palisade', 'high'], 'guya', 550),
+  node('guya-iron', '붉은산 철광', 'ironMine', ['iron'], 'guya', 150),
+  node('guya-vil', '봉황 마을', 'village', [], 'guya', 250),
   // 안야국 安邪 — 함안, 남강 · 산성과 고개로 막힌 땅
-  node('anya-cap', '안야 국읍', 'capital', ['palisade', 'high'], 'anya', 450),
+  node('anya-cap', '안야 도읍', 'capital', ['palisade', 'high'], 'anya', 450),
   node('anya-fort', '남강 산성', 'fort', ['high'], 'anya', 100),
-  node('anya-vil', '솔숲 읍락', 'village', ['pines'], 'anya', 250),
+  node('anya-vil', '솔숲 마을', 'village', ['pines'], 'anya', 250),
   // 미리미동국 彌離彌凍 — 밀양설, 낙동강 중류 · 강가 농사
-  node('miri-cap', '미리미동 국읍', 'capital', ['palisade', 'moat'], 'miri', 750),
-  node('miri-vil', '여울목 읍락', 'village', ['reeds', 'shallows'], 'miri', 450),
+  node('miri-cap', '미리미동 도읍', 'capital', ['palisade', 'moat'], 'miri', 750),
+  node('miri-vil', '여울목 마을', 'village', ['reeds', 'shallows'], 'miri', 450),
   // 고자미동국 古資彌凍 — 고성설, 남해 포구
-  node('goja-cap', '고자미동 포구', 'port', ['palisade'], 'goja', 500),
-  node('goja-vil', '갯벌 읍락', 'village', [], 'goja', 300),
+  node('goja-cap', '고자미동 도읍', 'port', ['palisade'], 'goja', 500),
+  node('goja-vil', '갯벌 마을', 'village', [], 'goja', 300),
   // 독로국 瀆盧 — 동래설, 「其瀆盧國與倭接界」 왜와 경계를 맞댄다
-  node('dokro-cap', '독로 포구', 'port', ['palisade'], 'dokro', 600),
+  node('dokro-cap', '독로 도읍', 'port', ['palisade'], 'dokro', 600),
   // 소도 — 누구의 땅도 아니다. 침범 금지 (SYSTEMS §8-4) [사료]
   node('sodo', '큰나무 소도', 'sodo', ['sodo'], null, 0),
   // 빈땅 — 아무도 안 산다. 사람을 보내 개척하면 품(room)까지 빨리 큰다 (FLOW §2). 나라 사이 길이 여럿이 된다
