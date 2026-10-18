@@ -24,7 +24,7 @@ import { heroSeen, isRuler, persuadeSeasons, wanderersFor } from '../../realm/he
 import type { Army, EnvoyAsk, Hero, Order, PlotOp, Realm, Report } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, mapHtml, type MapMarch } from './mapview.ts'
-import { HERO_CSS, heroRadar, roleLine, traitChips, traitLines } from './heroview.ts'
+import { GROW_CSS, HERO_CSS, bondChip, growthHtml, heroRadar, roleLine, traitChips, traitLines } from './heroview.ts'
 import { APP_CSS } from './appstyle.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
 import { attachZoom } from './zoom.ts'
@@ -125,7 +125,7 @@ function nationFace(id: string): string {
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null): void } {
   const style = document.createElement('style')
-  style.textContent = APP_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + HERO_CSS
+  style.textContent = APP_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + HERO_CSS + GROW_CSS
   document.head.appendChild(style)
   root.classList.add('ap')
   root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="legend"></div><div class="zbtns"><button data-act="zin">＋</button><button data-act="zout">－</button></div><button class="next" data-act="next"></button>`
@@ -758,7 +758,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const seen = h.faction === me() || heroSeen(realm!, me(), h.id)
     return `<button class="hrow${isRuler(r, h.id) ? ' ruler' : ''}" data-act="hero" data-id="${h.id}">${bust(h)}<span class="hb">`
       + `<b>${esc(h.name)}${isRuler(r, h.id) ? ' <span class="mute">군주</span>' : ''}</b><span class="mute">${esc(roleLine(r, h))}</span>`
-      + `<span class="tr3">${traitChips(h, seen)}</span>${extra}</span></button>`
+      + `<span class="tr3">${h.faction === me() && h.status === 'free' ? bondChip(r, h) : ''}${traitChips(h, seen)}</span>${extra}</span></button>`
   }
 
   function heroesSheet(r: Realm): string {
@@ -802,6 +802,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<div class="hn">${esc(x.name)}</div><div class="mute">${emblem(x.faction)}${esc(r.factions[x.faction]?.name ?? '떠돌이')}${isRuler(r, x.id) ? ' 군주' : ''} · ${esc(roleLine(r, x))}</div>`
     h += heroRadar(x, seen, ours)
     h += `<div class="tr3">${traitChips(x, seen)}</div>${traitLines(x, seen)}`
+    if (ours) h += growthHtml(r, x)
     if (!seen) h += `<p class="mute">싸워 보거나 정찰하면 능력치가 보인다.</p>`
     h += `<div class="hacts">`
     const pending = heroOrders.filter((o) => (o.kind === 'assign' || o.kind === 'lead' || o.kind === 'persuade' || o.kind === 'hire') && o.hero === id)

@@ -6,8 +6,9 @@
  */
 import { STAT_NAME, josa } from '../../realm/data/prose.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
-import { armyOfHero, isRuler } from '../../realm/heroes.ts'
-import type { Hero, Realm } from '../../realm/types.ts'
+import { armyOfHero, bondOf, bondTier, growNeed, isRuler } from '../../realm/heroes.ts'
+import type { GrowStat, Hero, Realm } from '../../realm/types.ts'
+import { P } from '../../tune/params.ts'
 import { radarSvg } from './radar.ts'
 
 const esc = (s: string): string =>
@@ -73,4 +74,57 @@ export const HERO_CSS = `
 .ap .hcard .radar { margin: 2px auto; }
 .ap .tline { text-align: left; font-size: 13.5px; margin: 3px 0; color: #d8d0c0; } .ap .tline.bad { color: #f1b8a8; }
 .ap .hacts { display: flex; flex-direction: column; gap: 6px; width: 100%; margin-top: 8px; }
+`
+
+// ───────── 정과 성장 (HEROES §7, 형: "장수를 오래쓰면 친밀도? 호감도? 이런게 올라야 하지 않을까? 장수 키우는 맛도 있어야할듯")
+
+const BOND_WORD: Record<'new' | 'warm' | 'trust' | 'sworn', string> = { new: '낯설다', warm: '정이 들었다', trust: '믿는다', sworn: '한마음' }
+const BOND_GIVES: Record<'new' | 'warm' | 'trust' | 'sworn', string> = {
+  new: '함께 지내고 이기다 보면 정이 든다.',
+  warm: '더 깊어지면 이끄는 군대의 사기가 오르고, 꾀어도 잘 안 넘어간다.',
+  trust: '이끄는 군대의 사기가 오른다. 꾀어도 잘 안 넘어간다. 정이 끝까지 차면 새 특성에 눈뜬다.',
+  sworn: '목숨을 맡긴 사이다.',
+}
+const GROW: readonly GrowStat[] = ['mu', 'tong', 'ryak', 'chi', 'deok']
+const GROW_HOW: Record<GrowStat, string> = { mu: '싸우면', tong: '싸우면', ryak: '공작에 성공하면', chi: '고을을 맡으면', deok: '고을을 맡거나 회유하면' }
+
+/** 정 띠 — 숫자 없이 길이와 말로 */
+export function bondChip(r: Realm, h: Hero): string {
+  const t = bondTier(r, h)
+  return t === null ? '' : `<span class="bondc ${t}">정 · ${BOND_WORD[t]}</span>`
+}
+
+/** 우리 장수 카드의 정과 자람 — 무엇을 하면 무엇이 자라는지까지 */
+export function growthHtml(r: Realm, h: Hero): string {
+  const t = bondTier(r, h)
+  let s = ''
+  if (t !== null) {
+    const b = bondOf(r, h) ?? 0
+    s += `<div class="bond"><div class="bl"><b>정</b><span>${BOND_WORD[t]}</span>${h.served !== undefined && h.served > 0 ? `<span class="mute">함께한 지 ${h.served}계절</span>` : ''}</div>`
+    s += `<div class="bbar"><i style="width:${Math.max(3, Math.min(100, b))}%"></i><u style="left:${P.realm.bondTrust}%"></u></div><p class="mute">${BOND_GIVES[t]}</p></div>`
+  }
+  s += `<div class="grow"><div class="bl"><b>자람</b><span class="mute">다음 단계까지</span></div>`
+  for (const k of GROW) {
+    const v = h[k]
+    const max = v >= 10
+    const p = max ? 100 : Math.min(100, ((h.xp?.[k] ?? 0) / growNeed(h, k)) * 100)
+    const up = h.grown?.[k] ?? 0
+    s += `<div class="gr"><span class="gn">${STAT_NAME[k]}</span><span class="gbar"><i style="width:${Math.max(2, p)}%"></i></span>`
+    s += `<span class="gx">${max ? '끝까지' : up > 0 ? `+${up}` : ''}</span><span class="mute gh">${GROW_HOW[k]}</span></div>`
+  }
+  return s + `</div>`
+}
+
+export const GROW_CSS = `
+.ap .bondc { display: inline-block; padding: 0 7px; border-radius: 9px; font-size: 11.5px; border: 1px solid #6a5a3a; color: #d8c89a; }
+.ap .bondc.trust { border-color: #c9a23a; color: #f0d27a; } .ap .bondc.sworn { border-color: #e07a5f; color: #ffd0b8; background: #3a2018; }
+.ap .bond, .ap .grow { width: 100%; text-align: left; margin-top: 8px; }
+.ap .bl { display: flex; gap: 8px; align-items: baseline; } .ap .bl b { color: var(--gold); }
+.ap .bbar { position: relative; height: 9px; border-radius: 5px; background: #2a2f38; margin: 4px 0; overflow: hidden; }
+.ap .bbar i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #8a6a3a, #e0a050); border-radius: 5px; }
+.ap .bbar u { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff6; }
+.ap .gr { display: grid; grid-template-columns: 3em 1fr 3.2em; gap: 6px; align-items: center; font-size: 13px; margin: 3px 0; }
+.ap .gr .gh { grid-column: 2 / 4; font-size: 11.5px; margin-top: -3px; }
+.ap .gbar { height: 7px; border-radius: 4px; background: #2a2f38; overflow: hidden; } .ap .gbar i { display: block; height: 100%; background: #7aa83a; }
+.ap .gx { font-size: 12px; color: #9fd07a; }
 `
