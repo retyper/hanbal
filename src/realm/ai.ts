@@ -20,10 +20,10 @@ import {
   armCost, canGuard, draftCost, draftLimit, guardCost, hhOf, menOf, riteAllowed, riteCost, settleLimit, settleTargets, stockOf, upkeepOf,
 } from './economy.ts'
 import { ambushWorth, jointWin, movesOf, type Move } from './estimate.ts'
-import { armyOfHero, isRuler, persuadeSeasons, postHero, wanderersFor } from './heroes.ts'
+import { armyOfHero, hasTrait, isRuler, persuadeSeasons, postHero, wanderersFor } from './heroes.ts'
 import { armiesAt, fortMul, neighbors, newArmyId, planned, seasonOf, seenMarches } from './season.ts'
 import type { UnitKind } from './battle.ts'
-import { plotAgents, plotCost, plotTargets } from './plots.ts'
+import { bowUpCost, plotAgents, plotCost, plotTargets } from './plots.ts'
 import { allianceWhy, breakWhy, truceWhy } from './stance.ts'
 import type { Army, EnvoyAsk, Order, PlotOp, Realm, Why } from './types.ts'
 
@@ -73,7 +73,9 @@ function low(t: Move): number | null {
  */
 function march(a: Army, t: Move): Order {
   const amb = ambushLow(t)
-  const ambush = amb !== null && t.win !== null ? amb > t.win[0] : t.ambushP >= P.realm.aiAmbushWorth
+  // 길과 때 — 숨기 좋은 길로 성 뒤 고을을 칠 때는 기습이 수다 (예전엔 AI 가 기습을 거의 안 했다)
+  const walledGood = t.hostile && t.walled && t.conceal === 'good' && t.ambushP >= P.realm.aiAmbushWalled
+  const ambush = walledGood || (amb !== null && t.win !== null ? amb > t.win[0] : t.ambushP >= P.realm.aiAmbushWorth)
   return { kind: 'march', army: a.id, edge: t.edge.id, ambush }
 }
 
@@ -299,6 +301,16 @@ function guards(r: Realm, faction: string): Order[] {
  * 노리는 나라: 싸우는 나라가 먼저, 없으면 화친·동맹이 아닌 가장 센 나라 — 플레이어도 든다.
  * 군량 세 계절치를 남기고도 값을 낼 수 있어야 한다.
  */
+/** 자객의 활 올리기 — aiBowUpChance 로 드물게, 노릴 적장이 보이고 군량 aiDraftReserve 계절치를 남기고도 값을 낼 때 */
+function bows(r: Realm, faction: string): Order[] {
+  if (roll(r.seed, r.season, `ai-bow:${faction}`) >= P.realm.aiBowUpChance) return []
+  const c = bowUpCost(r, faction)
+  if (c === null || plotTargets(r, faction, 'assassin').length === 0) return []
+  const st = stockOf(r, faction)
+  if (st.grain - P.realm.aiDraftReserve * upkeepOf(r, faction, true) < c.grain || st.iron - P.realm.aiIronKeep < c.iron) return []
+  return [{ kind: 'bowUp', faction }]
+}
+
 function plots(r: Realm, faction: string, brain: Brain): Order[] {
   if (roll(r.seed, r.season, `ai-plot:${faction}`) >= P.realm.aiPlotChance) return []
   const foes = sorted(Object.values(r.factions))
@@ -311,7 +323,9 @@ function plots(r: Realm, faction: string, brain: Brain): Order[] {
   // 암살 — 본 장수가 있으면 가끔 (자객은 지략 높은 혼자 있는 장수, 없으면 고용 자객)
   const marks = plotTargets(r, faction, 'assassin').filter((t) => t.target === target)
   if (marks.length > 0 && roll(r.seed, r.season, `ai-assassin:${faction}`) < P.realm.aiAssassinChance) {
-    const agent = plotAgents(r, faction).sort((a, b) => (r.heroes[b]!.ryak - r.heroes[a]!.ryak) || (a < b ? -1 : 1))[0]
+    // 자객 기본 · 장수는 도박 — 명궁이거나 지략이 아주 높은 장수만 보내고, 아니면 고용 자객 (잃어도 값뿐이다)
+    const agent = plotAgents(r, faction).filter((id) => hasTrait(r.heroes[id], 'archer') || r.heroes[id]!.ryak >= P.realm.aiAgentRyak)
+      .sort((a, b) => (r.heroes[b]!.ryak - r.heroes[a]!.ryak) || (a < b ? -1 : 1))[0]
     const c = plotCost('assassin', agent ?? null)
     if (stockOf(r, faction).grain - P.realm.aiDraftReserve * upkeepOf(r, faction, true) >= c.grain) {
       const m = marks[0]!
@@ -504,7 +518,9 @@ export function decide(r: Realm, faction: string, brain: Brain): Order[] {
   const ps = brain === 'random' ? [] : plots([...first, ...gs].length > 0 ? planned(r, [...first, ...gs]) : r, faction, brain)
   const hs = brain === 'random' ? [] : heroCare(r, faction)
   const as = brain === 'random' ? [] : arms(r, faction)
-  return [...talk, ...first, ...gs, ...ps, ...hs, ...as, ...lentMoves(r, faction), ...(brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
+  // 자객의 활 — 공작을 안 벌이는 계절에 드물게 (값이 크다)
+  const bs = brain === 'random' || ps.length > 0 ? [] : bows(r, faction)
+  return [...talk, ...first, ...gs, ...ps, ...bs, ...hs, ...as, ...lentMoves(r, faction), ...(brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
 }
 
 function moves(r: Realm, faction: string, brain: Brain): Order[] {

@@ -13,7 +13,9 @@ import { aiOrders } from '../../src/realm/ai.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { relationOf } from '../../src/realm/diplomacy.ts'
 import { militiaMen } from '../../src/realm/economy.ts'
-import { PLOT_OPS, plotChance, plotCost, plotTargets, plotTrueChance } from '../../src/realm/plots.ts'
+import {
+  PLOT_OPS, assassinArrows, assassinBow, bowUpCost, escapeChance, plotChance, plotCost, plotTargets, plotTrueChance,
+} from '../../src/realm/plots.ts'
 import { advance } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Order, PlotOp, Realm, ReportLine } from '../../src/realm/types.ts'
@@ -26,13 +28,13 @@ const plot = (op: PlotOp, target: string, extra: { node?: string; other?: string
 const plotLines = (lines: readonly ReportLine[]): PlotLine[] => lines.filter((l): l is PlotLine => l.kind === 'plot')
 
 /** 이 공작이 바라는 대로(먹혔나 · 들켰나) 굴러가는 판을 시드를 바꿔 가며 찾는다 */
-function find(o: Order, want: { ok: boolean; caught: boolean }, prep: (r: Realm) => void = () => {}) {
+function find(o: Order, want: { ok: boolean; caught: boolean; agentFate?: 'escaped' | 'captured' }, prep: (r: Realm) => void = () => {}) {
   for (let seed = 1; seed <= 400; seed++) {
     const r = byeonhanMini(seed)
     prep(r)
     const res = advance(r, [o])
     const l = plotLines(res.report.lines)[0]
-    if (l !== undefined && l.ok === want.ok && l.caught === want.caught) return { before: r, ...res }
+    if (l !== undefined && l.ok === want.ok && l.caught === want.caught && (want.agentFate === undefined || l.agentFate === want.agentFate)) return { before: r, ...res }
   }
   throw new Error(`그런 판을 못 찾았다: ${JSON.stringify(want)}`)
 }
@@ -210,11 +212,67 @@ describe('공작 — 암살 (형: "암살자를 보내야지 장군 지혼자 �
     assert.ok(report.lines.some((x) => x.kind === 'mystery' && x.faction === 'guya'))
   })
 
-  it('들키면 보낸 자객이 사로잡히고 그 나라와 두 칸 나빠진다', () => {
-    const { before, next } = find(kill('us-1'), { ok: false, caught: true }, seen)
+  it('들켜 도망을 못 치면 보낸 장수가 사로잡히고 그 나라와 두 칸 나빠진다', () => {
+    const { before, next } = find(kill('us-1'), { ok: false, caught: true, agentFate: 'captured' }, seen)
     assert.equal(next.heroes['us-1']!.status, 'captive')
     assert.equal(next.heroes['us-1']!.captor, 'guya')
     assert.equal(relationOf(before, 'us', 'guya').state, 'neutral')
     assert.equal(relationOf(next, 'us', 'guya').state, 'war')
+  })
+
+  // 자객 기본 · 장수는 도박 (형이 고름 — 2026-10-18)
+  it('들켜도 장수가 빠져나올 수 있다 — 도망은 지략·무예·특성을 받는다', () => {
+    const { next, report } = find(kill('us-1'), { ok: false, caught: true, agentFate: 'escaped' }, seen)
+    assert.equal(next.heroes['us-1']!.status, 'free')
+    assert.equal(plotLines(report.lines)[0]!.agentFate, 'escaped')
+    const r = byeonhanMini(1)
+    const h = r.heroes['us-1']!
+    const base = escapeChance(r, 'us-1')
+    h.ryak = 9
+    assert.ok(escapeChance(r, 'us-1') > base)
+  })
+
+  it('고용 자객은 들켜도 장수를 잃지 않는다 — 값만 잃는다', () => {
+    const { before, next, report } = find(kill(), { ok: false, caught: true }, seen)
+    const mine = (x: Realm): string[] => Object.values(x.heroes).filter((h) => h.faction === 'us' && h.status === 'free').map((h) => h.id).sort()
+    assert.deepEqual(mine(next), mine(before))
+    assert.equal(plotLines(report.lines)[0]!.agentFate, undefined)
+    assert.ok(next.stock['us']!.grain < before.stock['us']!.grain)
+  })
+
+  it('한 적장은 한 계절에 한 번만 — 둘째 암살·둘째 손맛은 없다', () => {
+    const r = byeonhanMini(2)
+    seen(r)
+    const hand = { result: 'dead' as const, alarm: false }
+    const second: Order = { kind: 'plot', faction: 'us', op: 'assassin', target: 'guya', hero: 'guya-1', agent: 'us-1', hand }
+    const { report, next } = advance(r, [kill(), second])
+    assert.equal(plotLines(report.lines).length, 1)
+    // 첫 것(굴림)만 셌다 — 둘째의 손맛 'dead' 는 안 먹었다
+    const l = plotLines(report.lines)[0]!
+    assert.equal(l.agent, undefined)
+    if (!l.ok) assert.equal(next.heroes['guya-1']!.status, 'free')
+  })
+
+  it('자객의 활은 계단으로 오른다 — 값이 들고, 굴림의 몫이 오른다, 신궁 위는 없다', () => {
+    const r = byeonhanMini(1)
+    seen(r)
+    r.stock['us'] = { grain: 2000, iron: 500 }
+    const t = plotTargets(r, 'us', 'assassin')[0]!
+    const p0 = plotTrueChance(r, 'us', 'assassin', t.target, t.node, t.hero, null)
+    assert.equal(assassinBow(r, 'us'), 0)
+    let x = r
+    for (let i = 1; i <= 4; i++) {
+      const res = advance(x, [{ kind: 'bowUp', faction: 'us' }, { kind: 'bowUp', faction: 'us' }])
+      x = res.next
+      assert.equal(assassinBow(x, 'us'), Math.min(3, i), `단계 ${i}`)
+      assert.equal(res.report.lines.filter((l) => l.kind === 'bowUp').length, i <= 3 ? 1 : 0, '한 계절에 한 단계')
+    }
+    assert.equal(bowUpCost(x, 'us'), null)
+    // 굴림의 몫 — 같은 판에 활만 신궁으로
+    const y = structuredClone(r)
+    y.assassinBow = { us: 3 }
+    assert.ok(plotTrueChance(y, 'us', 'assassin', t.target, t.node, t.hero, null) > p0)
+    // 우리 장수를 보내면 밤 판 화살이 더 많다
+    assert.ok(assassinArrows(r, 'us-1') > assassinArrows(r, null))
   })
 })

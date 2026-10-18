@@ -28,7 +28,7 @@ import {
   stockOf,
 } from './economy.ts'
 import { blockedWhy, seasonOf } from './calendar.ts'
-import { refreshSpies, resolvePlots } from './plots.ts'
+import { applyBowUps, refreshSpies, resolvePlots } from './plots.ts'
 import { noteTake } from './stance.ts'
 import { addMen, giveMen, kitOf, scaleMen, takeMen } from './kit.ts'
 import {
@@ -83,7 +83,46 @@ export function conceal(ed: REdge, node: RNode, season: SeasonOfYear): number {
   // 언 강 — 지키는 쪽이 강을 벽으로 믿는다. "겨울 = 기습의 계절"이 숫자로도 참이 되게
   if (winter && (ed.kind === 'ford' || ed.kind === 'reeds')) c += R.ambushWinterIce
   if ((season === 'spring' || season === 'autumn') && node.tags.includes('fog')) c += R.concealFog
+  // 길과 때 (형이 고름: "길과 때의 싸움") — 길에 갈대·솔숲·안개가 붙으면 더 숨고, 겨울은 밤이 길다
+  if (ed.tags.some((t) => t === 'reeds' || t === 'pines' || t === 'fog')) c += R.concealEdgeTag
+  if (winter) c += R.concealWinterNight
   return c
+}
+
+/** 은폐의 까닭 열쇠 — 화면이 말로 바꾼다 (prose.CONCEAL_LINE) */
+export type ConcealWhy =
+  | 'forest' | 'reeds' | 'reedsWinter' | 'field' | 'pass' | 'ford' | 'sea' | 'mudflat'
+  | 'edgeTag' | 'fog' | 'ice' | 'winterNight' | 'bigArmy' | 'smallArmy'
+
+/**
+ * 이 길로 기습하면 숨기 좋은가 — 지도가 기습 길을 표시한다 (형이 고름: "길과 때의 싸움" — 2026-10-18).
+ * `to` 는 들이칠 고을(안개 꼬리표를 본다) — 없으면 두 끝 가운데 숨기 좋은 쪽. `armySize` 를 주면 무리 크기를 넣는다.
+ * 경계·략은 넣지 않는다 (상대마다 다르다 — 그건 판세 칩의 몫). 땅과 계절과 무리 크기만.
+ */
+export function concealOf(r: Realm, edgeId: string, armySize?: number, to?: string): { tier: 'good' | 'fair' | 'poor'; value: number; why: ConcealWhy[] } {
+  const R = P.realm
+  const ed = r.edges[edgeId]
+  if (ed === undefined) return { tier: 'poor', value: 0, why: [] }
+  const season = seasonOf(r.season)
+  const ends = to !== undefined ? [to] : [ed.a, ed.b]
+  const nodes = ends.map((id) => r.nodes[id]).filter((n): n is RNode => n !== undefined)
+  const best = nodes.map((n) => ({ n, c: conceal(ed, n, season) })).sort((x, y) => y.c - x.c)[0]
+  let value = best?.c ?? 0
+  const why: ConcealWhy[] = []
+  const winter = season === 'winter'
+  why.push(ed.kind === 'reeds' && winter ? 'reedsWinter' : ed.kind)
+  if (ed.tags.some((t) => t === 'reeds' || t === 'pines' || t === 'fog')) why.push('edgeTag')
+  if (best !== undefined && (season === 'spring' || season === 'autumn') && best.n.tags.includes('fog')) why.push('fog')
+  if (winter && (ed.kind === 'ford' || ed.kind === 'reeds')) why.push('ice')
+  if (winter) why.push('winterNight')
+  if (armySize !== undefined) {
+    const pen = ambushSizePenalty(armySize)
+    value -= pen
+    if (pen > 0) why.push('bigArmy')
+    else if (armySize > 0) why.push('smallArmy')
+  }
+  const tier = value >= R.concealGood ? 'good' : value >= R.concealFair ? 'fair' : 'poor'
+  return { tier, value, why }
 }
 
 /** 방어측 지형·성 배수 T (SYSTEMS §4-2 · §1-2) — 겹치면 곱한다 */
@@ -638,6 +677,8 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
     for (const nb of neighbors(r, node.id)) {
       if (r.nodes[nb]?.owner === defFaction) r.watch[nb]!.alert = Math.min(R.alertMax, r.watch[nb]!.alert + R.alertOnAmbushed)
     }
+    // 첫 칼 — 맞붙기 전에 자다 깬 쪽이 먼저 잃는다 (길과 때의 싸움: 먹힌 기습은 확실히 남는 게 있어야 한다)
+    for (const d of defenders) scaleMix(d, 1 - R.ambushFirstStrike)
   }
 
   // 저격 — 플레이어가 쏜 쪽은 상대 군대. 머리·몸통·북은 그 쪽 F 전체에 한 번, 다리·몸통은 생포에 (SYSTEMS §4-2 · §5-3)
@@ -661,6 +702,8 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const loss = losses(outcome)
   // 들킨 군대는 기다리던 적에게 걸렸다 — 더 잃는다
   for (const l of legs) scaleMix(l.army, 1 - Math.min(1, loss.atk + (l.ambush === 'caught' ? R.ambushCaughtLoss : 0)))
+  // 들킨 기습 — 되레 매복에 걸렸다. 걸린 군대는 싸운 뒤에도 사기가 꺾여 있다 (이번 판정은 ambushCaught 배수로 이미 받았다)
+  for (const l of legs) if (l.ambush === 'caught') l.army.morale = Math.max(R.moraleFloor, l.army.morale - R.ambushCaughtMorale)
   for (const d of defenders) scaleMix(d, 1 - loss.def)
 
   // 5 — 진 쪽 장수의 운명 (생포를 먼저, 남은 몫에서 전사)
@@ -805,6 +848,7 @@ export function advance(
   applyOrders(r, orders, lines) // 1
   resolveScouts(r, orders, lines) // 2
   resolveEnvoys(r, orders, lines) // 2
+  applyBowUps(r, orders, lines) // 2 — 자객의 활을 올린다 (이번 계절 공작부터 든다)
   resolvePlots(r, orders, lines) // 2 — 공작
   resolveRites(r, orders, lines) // 2 — 소도 제사
   resolveMarches(r, snipes, lines, fought) // 3 · 4 · 5

@@ -4,6 +4,7 @@
  */
 import type { Equip, Outcome, UnitKind } from '../battle.ts'
 import type { Ask, EdgeKind, PlotOp, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, SeasonOfYear, Tag, Why } from '../types.ts'
+import type { ConcealWhy } from '../season.ts'
 import { TRAIT } from './traits.ts'
 
 export const SEASON_NAME: Record<SeasonOfYear, string> = {
@@ -256,9 +257,14 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
         const did = PLOT_DONE[line.op](target, where, line.other !== undefined ? fname(line.other) : '')
         if (line.op === 'assassin' && line.hero !== undefined) {
           const who = after.heroes[line.hero]?.name ?? '?'
-          if (line.ok) return `자객의 화살이 ${josa(who, '을', '를')} 꿰뚫었다. ${line.result === 'kill' ? `${josa(who, '이', '가')} 죽었다.` : `${josa(who, '은', '는')} 두 계절 동안 일어나지 못한다.`}`
-          const agent = line.agent !== undefined ? (after.heroes[line.agent]?.name ?? '자객') : '자객'
-          return `암살이 틀어졌다.${line.caught ? ` ${josa(agent, '이', '가')} 붙잡혔다.` : ` ${josa(agent, '은', '는')} 어둠 속으로 물러났다.`}`
+          // 들켰을 때 — 고용 자객은 값만 잃고, 우리 장수는 빠져나오거나 붙잡힌다 (자객 기본 · 장수는 도박)
+          const agent = line.agent !== undefined ? (after.heroes[line.agent]?.name ?? '자객') : '고용 자객'
+          const fateLine = !line.caught ? ''
+            : line.agent === undefined ? ` ${josa(agent, '이', '가')} 붙잡혔다. 값만 날렸다.`
+              : line.agentFate === 'escaped' ? ` 들켰지만 ${josa(agent, '이', '가')} 지붕을 타고 빠져나왔다.`
+                : ` ${josa(agent, '이', '가')} 붙잡혔다.`
+          if (line.ok) return `자객의 화살이 ${josa(who, '을', '를')} 꿰뚫었다. ${line.result === 'kill' ? `${josa(who, '이', '가')} 죽었다.` : `${josa(who, '은', '는')} 두 계절 동안 일어나지 못한다.`}${fateLine}`
+          return `암살이 틀어졌다.${line.caught ? fateLine : ` ${josa(agent, '은', '는')} 어둠 속으로 물러났다.`}`
         }
         if (line.ok) return `공작이 먹혔다. ${did}${line.caught ? ` 다만 ${josa(target, '이', '가')} 눈치챘다.` : ''}`
         return `공작이 틀어졌다. ${PLOT_NAME[line.op]}.${line.caught ? ` ${josa(target, '이', '가')} 알아챘다. 사이가 나빠졌다.` : ''}`
@@ -269,6 +275,8 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       }
       return null
     }
+    case 'bowUp':
+      return line.faction === viewer ? `자객의 활을 ${josa(BOW_NAME[line.tier] ?? '새 활', '으로', '로')} 바꿨다. 더 멀리, 더 세게 난다.` : null
     case 'mystery':
       if (line.faction !== viewer) return null
       switch (line.what) {
@@ -495,4 +503,28 @@ export const NODE_NOW: Readonly<Record<string, string>> = {
   sodo: '창녕',
   'wild-galmae': '함안 여항산', 'wild-beodeul': '남강 어귀', 'wild-gomgol': '양산 원동', 'wild-neoreun': '김해 대저',
   'wild-seobu': '마산 진동', 'wild-keunseom': '거제', 'wild-dolseom': '가덕도',
+}
+
+/** 자객의 활 단계 (plots.assassinBow · 밤 판 bow=) — 0 단궁 · 1 맥궁 · 2 각궁 · 3 신궁 */
+export const BOW_NAME: readonly string[] = ['단궁', '맥궁', '각궁', '신궁']
+
+/**
+ * 기습 길의 까닭 (season.concealOf — 형이 고름: "길과 때의 싸움"). 지도·칠 곳 고르기에 한 줄씩.
+ * 좋게 하는 것과 나쁘게 하는 것이 섞인다 — 말이 곧 까닭이다.
+ */
+export const CONCEAL_LINE: Readonly<Record<ConcealWhy, string>> = {
+  forest: '숲이 우거져 몸을 숨기기 좋다',
+  reeds: '갈대가 사람 키를 넘는다',
+  reedsWinter: '겨울이라 갈대가 누웠다',
+  field: '트인 들길이라 멀리서 보인다',
+  pass: '외길 고개라 지키는 눈이 몰려 있다',
+  ford: '나루는 건너는 동안 훤히 보인다',
+  sea: '돛이 멀리서 보인다',
+  mudflat: '갯벌은 숨을 데가 없다',
+  edgeTag: '길가에 숨을 데가 많다',
+  fog: '안개가 낀다',
+  ice: '강이 얼어 지키는 쪽이 방심한다',
+  winterNight: '겨울밤이 길다',
+  bigArmy: '무리가 커서 눈에 띈다',
+  smallArmy: '무리가 작아 숨기 쉽다',
 }
