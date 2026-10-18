@@ -129,6 +129,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .sprow { display: flex; align-items: center; gap: 8px; } .ap .sprow .stepper { flex-wrap: nowrap; } .ap .sprow .spn { width: 4em; font-size: 14px; }
 .ap .spsum { font-size: 14px; color: #cfc6b4; } .ap .spsum b { color: var(--gold); }
 .ap .splitp .seg button { white-space: normal; }
+.ap .fbtn { border: 0; padding: 0; background: none; cursor: pointer; border-radius: 50%; }
+.ap .plimg { display: block; width: 100%; border-radius: 10px; margin: 6px 0; }
+.ap .rface.sm { width: 34px; height: 34px; border-width: 1px; }
 .ap .dseg { margin-bottom: 8px; } .ap .dseg button { font-size: 15px; padding: 8px; }
 .ap .plh { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; padding: 0; }
 .ap .plh > span:nth-child(2) { flex: 1; min-width: 0; display: flex; flex-direction: column; } .ap .plh .mute { white-space: normal; }
@@ -190,7 +193,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap.choosing .next, .ap.choosing .tabs, .ap.choosing .top { display: none; }
 .ap .choose { max-width: 980px; margin: 0 auto; padding: calc(18px + env(safe-area-inset-top)) 14px 30px; }
 .ap .choose h1 { font-size: 34px; margin: 0; color: var(--gold); text-align: center; letter-spacing: .08em; }
-.ap .choose > p { text-align: center; }
+.ap .choose > p { text-align: center; } .ap .choose-links { margin: 6px 0 0; }
 .ap .ncards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; margin-top: 14px; }
 .ap .ncard.pick { flex-direction: row; align-items: flex-start; text-align: left; color: var(--ink); font: inherit; cursor: pointer; }
 .ap .ncard.pick:active { border-color: var(--gold); }

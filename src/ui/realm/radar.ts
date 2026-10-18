@@ -16,7 +16,7 @@ export interface RadarAxis {
 export function radarSvg(axes: readonly RadarAxis[], color: string, size = 180): string {
   const n = axes.length
   const c = size / 2
-  const r = size * 0.34
+  const r = size * 0.3
   const at = (i: number, k: number): [number, number] => {
     const a = -Math.PI / 2 + (i * 2 * Math.PI) / n
     return [c + Math.cos(a) * r * k, c + Math.sin(a) * r * k]

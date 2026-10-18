@@ -17,6 +17,26 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'miri-1': 'g-07-drunk-warrior', // 읍차 갈미 — PLAY §4 의 술꾼
   'goja-1': 'g-03-sea-trader', // 살해 바다쇠
   'dokro-1': 'w-10-pirate-captain', // 읍차 너울 — 왜와 경계를 맞댄 포구
+  // 군주 — 장군과 따로 (형: "군주는 따로 있어야 하고 장군이랑 별개여야")
+  'us-ruler': 'w-07-shaman-queen', // 읍차 해솔 — 매혹
+  'guya-ruler': 'g-01-master-smith', // 진지렴 쇠보 — 쇠의 나라의 대장장이 군주
+  'anya-ruler': 'g-06-strategist', // 신지 아단 — 신중
+  'miri-ruler': 'w-16-clan-matriarch', // 신지 달래 — 곡창의 여가장
+  'goja-ruler': 'g-05-mahan-chieftain', // 험측 바우 — 물길·장사
+  'dokro-ruler': 'g-13-baekje-general', // 읍차 가람
+  // 둘째 장군들
+  'us-1': 'g-09-farmer-conscript',
+  'miri-2': 'w-02-goguryeo-lady',
+  'goja-2': 'w-17-mahan-pearl-diver',
+  'dokro-2': 'g-08-veteran',
+  // 떠돌이 인재 스물 (data/heroes-pool.ts) — 여인 열다섯
+  'wander-01': 'w-18-jinhan-salt-widow', 'wander-02': 'w-03-goguryeo-archer', 'wander-03': 'w-12-court-dancer',
+  'wander-04': 'w-11-assassin', 'wander-05': 'w-15-captive-noble', 'wander-06': 'w-06-buyeo-huntress',
+  'wander-07': 'w-19-buyeo-fur-princess', 'wander-08': 'w-22-dongye-tiger-huntress', 'wander-09': 'w-05-baekje-queen',
+  'wander-10': 'w-21-baekje-court-dancer', 'wander-11': 'g-16-goguryeo-gaema-commander', 'wander-12': 'g-14-captive-general',
+  'wander-13': 'w-14-feast-spy', 'wander-14': 'g-10-buyeo-horse-lord', 'wander-15': 'w-09-byeonhan-smith',
+  'wander-16': 'w-20-gaya-smith-daughter', 'wander-17': 'g-12-silla-youth', 'wander-18': 'w-01-silla-princess',
+  'wander-19': 'g-15-shaman-man', 'wander-20': 'w-08-mahan-warrior',
 }
 
 /** 나라 id → 깃발 (icon/emblem-*.png) · 지도의 테두리 색 */

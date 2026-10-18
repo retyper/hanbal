@@ -228,6 +228,12 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       const where = line.node !== undefined ? node(line.node) : target
       if (line.faction === viewer) {
         const did = PLOT_DONE[line.op](target, where, line.other !== undefined ? fname(line.other) : '')
+        if (line.op === 'assassin' && line.hero !== undefined) {
+          const who = after.heroes[line.hero]?.name ?? '?'
+          if (line.ok) return `자객의 화살이 ${josa(who, '을', '를')} 꿰뚫었다. ${line.result === 'kill' ? `${josa(who, '이', '가')} 죽었다.` : `${josa(who, '은', '는')} 두 계절 동안 일어나지 못한다.`}`
+          const agent = line.agent !== undefined ? (after.heroes[line.agent]?.name ?? '자객') : '자객'
+          return `암살이 틀어졌다.${line.caught ? ` ${josa(agent, '이', '가')} 붙잡혔다.` : ` ${josa(agent, '은', '는')} 어둠 속으로 물러났다.`}`
+        }
         if (line.ok) return `공작이 먹혔다. ${did}${line.caught ? ` 다만 ${josa(target, '이', '가')} 눈치챘다.` : ''}`
         return `공작이 틀어졌다. ${PLOT_NAME[line.op]}.${line.caught ? ` ${josa(target, '이', '가')} 알아챘다. 사이가 나빠졌다.` : ''}`
       }
@@ -243,8 +249,27 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
         case 'morale': return '진중에 흉흉한 소문이 돈다. 군사들 기운이 꺾였다. 누가 퍼뜨렸는지 모른다.'
         case 'grain': return '밤사이 창고에 불이 났다. 누가 놓았는지 모른다.'
         case 'militia': return `${line.node !== undefined ? node(line.node) : '어느 마을'} 장정들이 술렁인다. 누군가 손을 쓴 것 같다.`
+        case 'wound': return `밤사이 ${josa(line.hero !== undefined ? (after.heroes[line.hero]?.name ?? '장수') : '장수', '이', '가')} 날아든 화살에 맞았다. 쏜 자는 사라졌다.`
+        case 'death': return `밤사이 ${josa(line.hero !== undefined ? (after.heroes[line.hero]?.name ?? '장수') : '장수', '이', '가')} 화살에 맞아 죽었다. 쏜 자는 사라졌다.`
       }
       return null
+    case 'recruit': {
+      if (line.faction !== viewer) return null
+      const h = after.heroes[line.hero]
+      return line.how === 'persuade'
+        ? `${josa(h?.name ?? '?', '이', '가')} 마침내 무릎을 꿇었다. 우리 장수가 되었다.`
+        : `${josa(h?.name ?? '?', '이', '가')} 우리 사람이 되었다.`
+    }
+    case 'wanderer': {
+      if (after.nodes[line.node]?.owner !== viewer) return null
+      return null // 보고 카드의 "떠돌이 인재" 칸(들인다)이 대신 보인다
+    }
+    case 'heroMoved': {
+      if (line.faction !== viewer) return null
+      const name = after.heroes[line.hero]?.name ?? '?'
+      if (line.captor !== null) return `${josa(name, '이', '가')} 고을을 잃고 ${fname(line.captor)}에 사로잡혔다.`
+      return `${josa(name, '이', '가')} 고을을 잃고 ${line.to !== null ? josa(node(line.to), '으로', '로') : '이웃 고을로'} 물러났다.`
+    }
     case 'guard':
       return line.faction === viewer ? `${node(line.node)}에 횃불을 늘리고 망을 세웠다.` : null
     case 'hunger':
@@ -316,15 +341,16 @@ export const BATTLE_CLASH: Record<Outcome, readonly [string, string]> = {
 
 /**
  * 장수 능력치 여섯의 이름 (docs/realm/HEROES.md §1) — 두 글자로 (형: "한글자로 하지말고 두글자로. 한자 하나로는 이해하기 힘들다고").
- * 열쇠는 Hero 의 칸 이름 (tong · gung 은 장수 첫판에서 더한다). 순서가 육각형의 꼭짓점 순서다.
+ * 열쇠는 Hero 의 칸 이름 (tong · uiri 는 장수 첫판에서 더한다). 순서가 육각형의 꼭짓점 순서다.
+ * 궁술은 뺐다 — 형: "장군 특성에 궁술?? 암살자를 보내야지 장군 지혼자 왜 가냐?" 활은 자객(공작 암살 · 명궁 특성)의 몫.
  */
 export const STAT_NAME = {
-  mu: '무예', tong: '통솔', ryak: '지략', chi: '내정', deok: '매력', gung: '궁술',
+  mu: '무예', tong: '통솔', ryak: '지략', chi: '내정', deok: '매력', uiri: '의리',
 } as const
 
 /** 공작 다섯 (plots.ts) — 화면의 이름 · 한 줄 · 먹혔을 때 보고 */
 export const PLOT_NAME: Record<PlotOp, string> = {
-  rumor: '소문', sow: '이간', bribe: '매수', burn: '방화', spy: '첩자',
+  rumor: '소문', sow: '이간', bribe: '매수', burn: '방화', spy: '첩자', assassin: '암살',
 }
 
 export const PLOT_DOES: Record<PlotOp, string> = {
@@ -333,6 +359,7 @@ export const PLOT_DOES: Record<PlotOp, string> = {
   bribe: '그 마을 장정들을 매수한다. 두 계절 동안 싸우러 나오지 않는다',
   burn: '그 나라 창고에 불을 놓아 곡식을 태운다',
   spy: '그 마을에 첩자를 심는다. 네 계절 동안 군세가 늘 보인다',
+  assassin: '밤에 자객을 보내 적장을 쏜다. 맞히면 다치거나 죽는다. 들키면 자객이 잡힌다',
 }
 
 const PLOT_DONE: Record<PlotOp, (target: string, where: string, other: string) => string> = {
@@ -341,4 +368,5 @@ const PLOT_DONE: Record<PlotOp, (target: string, where: string, other: string) =
   bribe: (_t, w) => `${w} 장정들이 두 계절 동안 나서지 않는다.`,
   burn: (t) => `${t} 창고가 불탔다.`,
   spy: (_t, w) => `${w}에 첩자를 심었다. 네 계절 동안 군세가 보인다.`,
+  assassin: (t) => `${t} 진중에 자객의 화살이 날아들었다.`,
 }
