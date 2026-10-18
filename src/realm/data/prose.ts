@@ -3,7 +3,7 @@
  * 고증 검토(lore-lens)가 코드를 안 읽고 이 파일만 본다. 숫자는 여기 없다 (P.realm).
  */
 import type { Outcome, UnitKind } from '../battle.ts'
-import type { Ask, EdgeKind, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, SeasonOfYear, Tag } from '../types.ts'
+import type { Ask, EdgeKind, PlotOp, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, SeasonOfYear, Tag } from '../types.ts'
 
 export const SEASON_NAME: Record<SeasonOfYear, string> = {
   spring: '봄', summer: '여름', autumn: '가을', winter: '겨울',
@@ -223,6 +223,28 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (line.yes) return `${who}의 청을 받아들였다.`
       return line.askKind === 'demand' ? `${who}의 조공 요구를 거절했다. 전쟁이다.` : `${who}의 청을 물리쳤다.`
     }
+    case 'plot': {
+      const target = fname(line.target)
+      const where = line.node !== undefined ? node(line.node) : target
+      if (line.faction === viewer) {
+        const did = PLOT_DONE[line.op](target, where, line.other !== undefined ? fname(line.other) : '')
+        if (line.ok) return `공작이 먹혔다. ${did}${line.caught ? ` 다만 ${josa(target, '이', '가')} 눈치챘다.` : ''}`
+        return `공작이 틀어졌다. ${PLOT_NAME[line.op]}.${line.caught ? ` ${josa(target, '이', '가')} 알아챘다. 사이가 나빠졌다.` : ''}`
+      }
+      // 우리가 당한 공작 — 들켰을 때만 누가 했는지 안다
+      if ((line.target === viewer || line.other === viewer) && line.caught) {
+        return `${fname(line.faction)}의 ${PLOT_NAME[line.op]} 공작을 잡아냈다.${line.ok ? ' 그래도 일은 벌어졌다.' : ''}`
+      }
+      return null
+    }
+    case 'mystery':
+      if (line.faction !== viewer) return null
+      switch (line.what) {
+        case 'morale': return '진중에 흉흉한 소문이 돈다. 군사들 기운이 꺾였다. 누가 퍼뜨렸는지 모른다.'
+        case 'grain': return '밤사이 창고에 불이 났다. 누가 놓았는지 모른다.'
+        case 'militia': return `${line.node !== undefined ? node(line.node) : '어느 마을'} 장정들이 술렁인다. 누군가 손을 쓴 것 같다.`
+      }
+      return null
     case 'guard':
       return line.faction === viewer ? `${node(line.node)}에 횃불을 늘리고 망을 세웠다.` : null
     case 'hunger':
@@ -299,3 +321,24 @@ export const BATTLE_CLASH: Record<Outcome, readonly [string, string]> = {
 export const STAT_NAME = {
   mu: '무예', tong: '통솔', ryak: '지략', chi: '내정', deok: '매력', gung: '궁술',
 } as const
+
+/** 공작 다섯 (plots.ts) — 화면의 이름 · 한 줄 · 먹혔을 때 보고 */
+export const PLOT_NAME: Record<PlotOp, string> = {
+  rumor: '소문', sow: '이간', bribe: '매수', burn: '방화', spy: '첩자',
+}
+
+export const PLOT_DOES: Record<PlotOp, string> = {
+  rumor: '그 나라 진중에 흉흉한 소문을 퍼뜨려 군사들 기운을 꺾는다',
+  sow: '두 나라 사이를 갈라놓는다. 화친이 깨지고, 전쟁이 붙기도 한다',
+  bribe: '그 마을 장정들을 매수한다. 두 계절 동안 싸우러 나오지 않는다',
+  burn: '그 나라 창고에 불을 놓아 곡식을 태운다',
+  spy: '그 마을에 첩자를 심는다. 네 계절 동안 군세가 늘 보인다',
+}
+
+const PLOT_DONE: Record<PlotOp, (target: string, where: string, other: string) => string> = {
+  rumor: (t) => `${t} 진중에 소문이 돌아 군사들 기운이 꺾였다.`,
+  sow: (t, _w, o) => `${josa(t, '과', '와')} ${o} 사이가 틀어졌다.`,
+  bribe: (_t, w) => `${w} 장정들이 두 계절 동안 나서지 않는다.`,
+  burn: (t) => `${t} 창고가 불탔다.`,
+  spy: (_t, w) => `${w}에 첩자를 심었다. 네 계절 동안 군세가 보인다.`,
+}

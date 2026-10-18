@@ -11,20 +11,21 @@ import { headcount, type UnitKind } from '../../realm/battle.ts'
 import { FACTION_ART, HERO_BUST, SEASON_ICON, UNIT_ICON, nodeIcon } from '../../realm/data/art.ts'
 import { NATIONS } from '../../realm/data/nations.ts'
 import {
-  ASK_KIND_NAME, ASK_NAME, BLOCKED_LINE, askLine, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel,
+  ASK_KIND_NAME, ASK_NAME, BLOCKED_LINE, PLOT_DOES, PLOT_NAME, askLine, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel,
 } from '../../realm/data/prose.ts'
 import { envoyChance, envoyChanceFor, openAsks, relationOf } from '../../realm/diplomacy.ts'
 import { canGuard, draftCost, draftLimit, guardCost, militiaMen, riteAllowed, riteCost, settleCost, settleLimit, settleTargets } from '../../realm/economy.ts'
 import { jointWin, movesOf, type Move } from '../../realm/estimate.ts'
 import { alertRange, visibleRange } from '../../realm/intel.ts'
 import { advance, forceOf, neighbors, newArmyId, otherEnd, planned, seasonOf, seenMarches } from '../../realm/season.ts'
-import type { Army, Hero, Order, Realm, Report } from '../../realm/types.ts'
+import { PLOT_OPS, plotChance, plotCost, plotTargets } from '../../realm/plots.ts'
+import type { Army, Hero, Order, PlotOp, Realm, Report } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, mapHtml, type MapMarch } from './mapview.ts'
 import { APP_CSS } from './appstyle.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
 import { attachZoom } from './zoom.ts'
-import { FEEL_CSS, alertFeel, ambushFeel, envoyFeel, fightFeel, unknownFeel } from './feel.ts'
+import { FEEL_CSS, alertFeel, ambushFeel, envoyFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
 
 export interface AppHost {
   /** 계절을 넘긴 뒤 — 저장은 바깥이 한다. `orders` 는 AI 것까지 전부, `mine` 은 플레이어 것 */
@@ -63,6 +64,10 @@ const ASKS: ReadonlyArray<{ ask: Ask; does: string }> = [
   { ask: 'alliance', does: '같이 싸운다 · 본 것을 나눈다 · 땅을 지나간다' },
 ]
 const DRAFTABLE: readonly UnitKind[] = ['spear', 'bow', 'shield']
+/** 공작 다섯의 그림 */
+const PLOT_ICON: Readonly<Record<PlotOp, string>> = {
+  rumor: 'status-morale-down', sow: 'status-betrayal', bribe: 'good-cowries', burn: 'status-famine', spy: 'status-spy',
+}
 const TABS = [
   { id: 'army', name: '군대', icon: 'unit-general' },
   { id: 'draft', name: '징병', icon: 'unit-spear' },
@@ -120,6 +125,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let fastNext = false
   /** 이번 계절의 사신 — 상대 나라마다 하나 */
   const envoys: Record<string, Envoy> = {}
+  /** 이번 계절의 공작 (한 계절에 P.realm.plotsPerSeason 개) · 외교 판의 갈래 · 펼친 공작 */
+  let plots: Order[] = []
+  let diploMode: 'envoy' | 'plot' = 'envoy'
+  let plotOpen: PlotOp | null = null
   /** 시트 안의 손 상태 */
   let openArmy = ''
   let armyMode: 'move' | 'split' = 'move'
@@ -147,6 +156,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const k of Object.keys(answers)) delete answers[k]
     guards = []
     for (const k of Object.keys(envoys)) delete envoys[k]
+    plots = []
+    plotOpen = null
     openArmy = ''
     note = ''
     trade = { give: { grain: 0, iron: 0 }, take: { grain: 0, iron: 0 }, to: '' }
@@ -164,6 +175,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const [ask, yes] of Object.entries(answers)) out.push({ kind: 'answer', ask, yes })
     for (const node of guards) out.push({ kind: 'guard', faction: me(), node })
     for (const to of Object.keys(envoys).sort()) out.push(envoys[to]!)
+    out.push(...plots)
     return out
   }
 
@@ -495,7 +507,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   // ───────── 외교
   function diploSheet(r: Realm): string {
-    let h = `<h3>외교</h3>${asksHtml()}`
+    let h = `<h3>외교</h3><div class="seg dseg"><button class="${diploMode === 'envoy' ? 'on' : ''}" data-act="dmode" data-v="envoy">사신</button><button class="${diploMode === 'plot' ? 'on' : ''}" data-act="dmode" data-v="plot">공작 ${plots.length > 0 ? plots.length : ''}</button></div>`
+    if (diploMode === 'plot') return h + plotSheet(r)
+    h += asksHtml()
     const out = Object.values(envoys)
     for (const e of out) {
       h += `<div class="banner good">사신: ${esc(r.factions[e.to]?.name ?? '')}에 ${ASK_NAME[e.ask]}<button class="btn ghost sm" data-act="unenvoy" data-to="${e.to}">거둔다</button></div>`
@@ -531,6 +545,41 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const ok = trade.give.grain <= st.grain && trade.give.iron <= st.iron && trade.give.grain + trade.give.iron + trade.take.grain + trade.take.iron > 0
         const c = envoyChanceFor(r, me(), f.id, 'trade', trade.give, trade.take)
         h += `<button class="btn on" data-act="envoy" data-to="${f.id}" data-ask="trade" ${ok ? '' : 'disabled'}>사신을 보낸다 ${envoyFeel(c[0], c[1])}</button></div>`
+      }
+      h += `</div>`
+    }
+    return h
+  }
+
+  // ───────── 공작 (형: "다양한 외교나 공작이 가능 해야하는거 아님?")
+  function plotSheet(r: Realm): string {
+    const max = P.realm.plotsPerSeason
+    let h = `<p class="mute">몰래 하는 일. 한 계절에 ${max}개까지. 들키면 그 나라와 사이가 나빠진다. 지략 높은 장수가 있으면 잘 된다.</p>`
+    for (const [i, o] of plots.entries()) {
+      if (o.kind !== 'plot') continue
+      const where = o.node !== undefined ? r.nodes[o.node]?.name : o.other !== undefined ? `${r.factions[o.target]?.name} ↔ ${r.factions[o.other]?.name}` : r.factions[o.target]?.name
+      h += `<div class="banner good">${PLOT_NAME[o.op]} · ${esc(where ?? '')}<button class="btn ghost sm" data-act="unplot" data-i="${i}">거둔다</button></div>`
+    }
+    const full = plots.length >= max
+    const st = r.stock[me()] ?? { grain: 0, iron: 0 }
+    for (const op of PLOT_OPS) {
+      const cost = plotCost(op)
+      const open = plotOpen === op
+      h += `<div class="ncard"><button class="plh" data-act="plot-open" data-op="${op}">${icon(PLOT_ICON[op], 'nic')}<span><b>${PLOT_NAME[op]}</b><span class="mute">${PLOT_DOES[op]}</span></span>`
+      h += `<span class="mute cost">곡식 ${cost.grain}${cost.iron > 0 ? ` · 철 ${cost.iron}` : ''}</span></button>`
+      if (open) {
+        const afford = st.grain >= cost.grain && st.iron >= cost.iron
+        const targets = plotTargets(realm!, me(), op)
+        if (targets.length === 0) h += `<div class="mute">지금은 노릴 데가 없다.${op === 'bribe' || op === 'spy' ? ' 아는 마을이어야 한다. 정찰부터.' : ''}</div>`
+        h += `<div class="rows">`
+        for (const t of targets) {
+          const label = t.node !== undefined ? `${r.nodes[t.node]?.name} · ${r.factions[t.target]?.name}` : t.other !== undefined ? `${r.factions[t.target]?.name} ↔ ${r.factions[t.other]?.name}` : (r.factions[t.target]?.name ?? '')
+          const c = plotChance(realm!, me(), op, t.target, t.node)
+          const dup = plots.some((p) => p.kind === 'plot' && p.op === op && p.target === t.target && p.node === t.node && p.other === t.other)
+          h += `<button class="row ${dup ? 'on' : ''}" data-act="plot" data-op="${op}" data-target="${t.target}" data-node="${t.node ?? ''}" data-other="${t.other ?? ''}" ${(full && !dup) || !afford ? 'disabled' : ''}>`
+          h += `${emblem(t.target)}<span class="dest">${esc(label)}</span><span class="win">${plotFeel(c[0], c[1])}</span></button>`
+        }
+        h += `</div>${afford ? '' : '<div class="mute">곡식이나 철이 모자라다</div>'}`
       }
       h += `</div>`
     }
@@ -944,6 +993,20 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         break
       }
       case 'unenvoy': delete envoys[d['to']!]; break
+      case 'dmode': diploMode = d['v'] as 'envoy' | 'plot'; break
+      case 'plot-open': plotOpen = plotOpen === d['op'] ? null : (d['op'] as PlotOp); break
+      case 'plot': {
+        const op = d['op'] as PlotOp
+        const o: Order = {
+          kind: 'plot', faction: me(), op, target: d['target']!,
+          ...(d['node'] ? { node: d['node'] } : {}), ...(d['other'] ? { other: d['other'] } : {}),
+        }
+        const same = (p: Order): boolean => p.kind === 'plot' && p.op === op && p.target === o.target && p.node === (o as { node?: string }).node && p.other === (o as { other?: string }).other
+        if (plots.some(same)) plots = plots.filter((p) => !same(p))
+        else if (plots.length < P.realm.plotsPerSeason) plots = [...plots, o]
+        break
+      }
+      case 'unplot': plots = plots.filter((_, i) => i !== Number(d['i'])); break
       case 'scout': scout = scout === d['node'] ? '' : d['node']!; break
       default: return
     }

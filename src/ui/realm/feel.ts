@@ -33,6 +33,15 @@ const AMBUSH: readonly Tier[] = [
   { at: 0, word: '어림없다', color: '#b83a2a' },
 ]
 
+/** 공작 — 먹힐 확률 */
+const PLOT: readonly Tier[] = [
+  { at: 0.7, word: '잘 될 듯', color: '#3f8f3a' },
+  { at: 0.45, word: '해볼 만', color: '#7aa83a' },
+  { at: 0.25, word: '글쎄', color: '#c9a23a' },
+  { at: 0.1, word: '어렵다', color: '#d0702f' },
+  { at: 0, word: '어림없다', color: '#b83a2a' },
+]
+
 /** 경계 — 높을수록 기습이 어렵다 */
 const ALERT: readonly Tier[] = [
   { at: 0.6, word: '삼엄하다', color: '#b83a2a' },
@@ -57,7 +66,8 @@ function chip(tiers: readonly Tier[], lo: number, hi: number): string {
 export const fightFeel = (lo: number, hi: number): string => chip(FIGHT, lo, hi)
 export const envoyFeel = (lo: number, hi: number): string => chip(ENVOY, lo, hi)
 export const ambushFeel = (p: number): string => chip(AMBUSH, p, p)
-export const alertFeel = (lo: number, hi: number): string => chip(ALERT, lo, hi)
+export const plotFeel = (lo: number, hi: number): string => chip(PLOT, lo, hi)
+export const alertFeel =(lo: number, hi: number): string => chip(ALERT, lo, hi)
 /** 모르는 싸움 — 본 적 없는 곳 */
 export const unknownFeel = (): string => `<span class="feel unknown">모른다</span>`
 
