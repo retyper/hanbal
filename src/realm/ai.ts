@@ -14,7 +14,7 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import {
-  allyFoe, envoyOptions, favorOf, friendly, jointTargets, lentStep, nationPower, openAsks, pledgedNodes, relationOf,
+  allyFoe, envoyOptions, friendly, jointTargets, lentStep, nationPower, openAsks, pledgedNodes, relationOf,
 } from './diplomacy.ts'
 import {
   armCost, canGuard, draftCost, draftLimit, guardCost, hhOf, menOf, riteAllowed, riteCost, settleLimit, settleTargets, stockOf, upkeepOf,
@@ -24,7 +24,8 @@ import { armyOfHero, isRuler, persuadeSeasons, postHero, wanderersFor } from './
 import { armiesAt, fortMul, neighbors, newArmyId, planned, seasonOf, seenMarches } from './season.ts'
 import type { UnitKind } from './battle.ts'
 import { plotAgents, plotCost, plotTargets } from './plots.ts'
-import type { Army, EnvoyAsk, Order, PlotOp, Realm } from './types.ts'
+import { allianceWhy, breakWhy, truceWhy } from './stance.ts'
+import type { Army, EnvoyAsk, Order, PlotOp, Realm, Why } from './types.ts'
 
 export type Brain = 'greedy' | 'cautious' | 'reckless' | 'random' | 'planner'
 
@@ -329,30 +330,50 @@ function plots(r: Realm, faction: string, brain: Brain): Order[] {
   return near === undefined ? [] : [{ kind: 'plot', faction, op, target, node: near.node! }]
 }
 
+/**
+ * AI 끼리의 사신 — 까닭이 있을 때만 (stance.ts). 까닭이 있으면 aiEnvoyChance 로 꺼낸다.
+ * 밀리거나 굶으면 화친이 가장 급하고, 같은 적·앞서가는 나라가 있으면 동맹, 동맹에게는 함께 치자.
+ */
 function envoys(r: Realm, faction: string): Order[] {
   if (roll(r.seed, r.season, `ai-envoy:${faction}`) >= P.realm.aiEnvoyChance) return []
-  const me = nationPower(r, faction)
-  const mind = r.factions[faction]?.mind
-  let best: { to: string; ask: EnvoyAsk; w: number; target?: string } | null = null
+  let best: { to: string; ask: EnvoyAsk; w: number; target?: string; why?: Why; about?: string } | null = null
   for (const f of sorted(Object.values(r.factions))) {
     if (f.id === faction || f.mind === 'player' || !Object.values(r.nodes).some((n) => n.owner === f.id)) continue
     const rel = relationOf(r, faction, f.id).state
-    const ratio = me / Math.max(1, nationPower(r, f.id))
-    const fav = favorOf(r, faction, f.id)
-    let c: { ask: EnvoyAsk; w: number; target?: string } | null = null
-    if (rel === 'war' && ratio < 1) c = { ask: 'truce', w: 2 - ratio }
-    else if ((rel === 'neutral' || rel === 'truce') && (commonFoe(r, faction, f.id) || fav >= P.realm.favorAllyAsk)) c = { ask: 'alliance', w: 1.5 }
+    let c: { ask: EnvoyAsk; w: number; target?: string; why?: Why; about?: string } | null = null
+    const tw = truceWhy(r, faction, f.id)
+    const aw = allianceWhy(r, faction, f.id)
+    if (tw !== null) c = { ask: 'truce', w: tw.why === 'losing' || tw.why === 'hungry' ? 3 : 2, ...tw }
+    else if (aw !== null) c = { ask: 'alliance', w: aw.why === 'favor' ? 1.2 : 1.5, ...aw }
     else if (rel === 'ally' && roll(r.seed, r.season, `ai-joint:${faction}:${f.id}`) < P.realm.aiJointChance) {
       // 동맹에게 함께 치자 — 우리가 싸우는 적의 고을 가운데 동맹이 닿는 곳
       const ts = jointTargets(r, faction, f.id).filter((n) => relationOf(r, faction, r.nodes[n]!.owner!).state === 'war')
-      if (ts.length > 0) c = { ask: 'joint', w: 1.2, target: ts[0]! }
-    } else if (rel === 'neutral' && mind === 'cautious') c = { ask: 'truce', w: 1 }
+      if (ts.length > 0) c = { ask: 'joint', w: 1.2, target: ts[0]!, why: 'commonFoe', about: r.nodes[ts[0]!]!.owner! }
+    }
     if (c !== null && !envoyOptions(r, faction, f.id).includes(c.ask)) c = null
     if (c !== null && (best === null || c.w > best.w)) best = { to: f.id, ...c }
   }
   if (best === null) return gifts(r, faction)
-  const o: Order = { kind: 'envoy', from: faction, to: best.to, ask: best.ask, give: { grain: 0, iron: 0 }, take: { grain: 0, iron: 0 } }
-  return [best.target !== undefined ? { ...o, target: best.target } : o]
+  const { to, ask, target, why, about } = best
+  return [{
+    kind: 'envoy', from: faction, to, ask, give: { grain: 0, iron: 0 }, take: { grain: 0, iron: 0 },
+    ...(target !== undefined ? { target } : {}), ...(why !== undefined ? { why } : {}), ...(about !== undefined ? { about } : {}),
+  }]
+}
+
+/**
+ * 약조를 깬다 (형: "동맹국도 우릴 배신할수 있고 적국도 아군이 되기도 하는 … 근거가 있게") — 까닭이 있을 때 aiBreakChance 로.
+ * 상대가 앞서가는 나라가 됐거나(너무 커졌다), 탐욕스러운 나라에게 상대가 만만해 보일 때. 플레이어도 든다 — 깨면 통보가 간다.
+ * 깨면 다음 계절부터 칠 수 있다 (spared) — 한 계절의 말미가 플레이어에게는 경고다.
+ */
+function breaks(r: Realm, faction: string): Order[] {
+  for (const f of sorted(Object.values(r.factions))) {
+    if (f.id === faction) continue
+    const m = breakWhy(r, faction, f.id)
+    if (m === null || roll(r.seed, r.season, `ai-break:${faction}:${f.id}`) >= P.realm.aiBreakChance) continue
+    return [{ kind: 'envoy', from: faction, to: f.id, ask: 'break', give: { grain: 0, iron: 0 }, take: { grain: 0, iron: 0 }, why: m.why, ...(m.about !== undefined ? { about: m.about } : {}) }]
+  }
+  return []
 }
 
 /** 선물 — 할 말이 없을 때 신중(과 계획가)은 곡식이 남으면 가장 센 이웃 나라에 선물을 보낸다 (호감을 산다) */
@@ -395,10 +416,6 @@ function arms(r: Realm, faction: string): Order[] {
   return best === undefined ? [] : [{ kind: 'arm', army: best.a.id }]
 }
 
-
-function commonFoe(r: Realm, a: string, b: string): boolean {
-  return Object.keys(r.factions).some((x) => x !== a && x !== b && relationOf(r, a, x).state === 'war' && relationOf(r, b, x).state === 'war')
-}
 
 /**
  * 플레이어 자리에 앉은 봇의 답 (tools/realm-sim) — 화친·동맹·바침은 받는다, 맞바꿈은 손해가 아니면,
@@ -474,7 +491,7 @@ export function decide(r: Realm, faction: string, brain: Brain): Order[] {
   const rs = brain === 'random' ? [] : rites(ds.length + ss.length > 0 ? planned(r, [...ds, ...ss]) : r, faction)
   const first = [...ds, ...ss, ...rs]
   const gs = brain === 'random' || brain === 'reckless' ? [] : guards(first.length > 0 ? planned(r, first) : r, faction)
-  const talk = brain === 'random' ? [] : [...answers(r, faction), ...envoys(r, faction)]
+  const talk = brain === 'random' ? [] : [...answers(r, faction), ...breaks(r, faction), ...envoys(r, faction)]
   // 공작은 징병·개척·제사·경계로 곡식을 쓴 뒤의 창고로 셈한다 (판정도 그 뒤다 — 2단계)
   const ps = brain === 'random' ? [] : plots([...first, ...gs].length > 0 ? planned(r, [...first, ...gs]) : r, faction, brain)
   const hs = brain === 'random' ? [] : heroCare(r, faction)

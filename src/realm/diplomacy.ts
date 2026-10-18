@@ -15,6 +15,7 @@ import { menOf, stockOf } from './economy.ts'
 import { envoyBonus } from './heroes.ts'
 import { visibleRange } from './intel.ts'
 import { nodeStrength } from './season.ts'
+import { allianceWhy, truceWhy, winningAgainst, type Motive } from './stance.ts'
 import type { Ask, AskKind, EnvoyAsk, Order, Pledge, Realm, Relation, ReportLine } from './types.ts'
 
 export function pairKey(a: string, b: string): string {
@@ -39,8 +40,25 @@ function setRelation(r: Realm, a: string, b: string, state: Relation['state'], u
   const next: Relation = { state, until }
   if (prev.favor !== undefined) next.favor = prev.favor
   if (state === 'ally' && prev.pledges !== undefined && prev.pledges.length > 0) next.pledges = prev.pledges
+  if (prev.took !== undefined) next.took = prev.took
   ;(r.relations ??= {})[pairKey(a, b)] = next
   if (prev.state !== state) lines.push({ kind: 'relation', a: a < b ? a : b, b: a < b ? b : a, state })
+  if ((state === 'truce' || state === 'ally') && (prev.state === 'war' || prev.state === 'neutral')) recall(r, a, b, lines)
+}
+
+/**
+ * 화친·동맹을 맺으면 서로의 땅으로 가던 군대가 발길을 돌린다 — 다음 계절에 떠난 고을로 돌아간다
+ * (형: "화친 받았는데 다음계절에 목록에서 또 뜨네" — 오던 군대가 그대로 닿아 싸우는 바람에 맺자마자 다시 전쟁이 됐었다)
+ */
+function recall(r: Realm, a: string, b: string, lines: ReportLine[]): void {
+  for (const x of Object.values(r.armies).sort((p, q) => (p.id < q.id ? -1 : 1))) {
+    const m = x.march
+    if (m === null || x.lent !== undefined) continue
+    const other = x.faction === a ? b : x.faction === b ? a : null
+    if (other === null || r.nodes[m.to]?.owner !== other) continue
+    x.march = { from: m.to, to: m.from, edge: m.edge, left: 1, ambush: false }
+    lines.push({ kind: 'recall', faction: x.faction, army: x.id, node: m.to })
+  }
 }
 
 // ───────── 호감 (외교 둘째판 — 형: "외교가 좀 재미없음")
@@ -302,7 +320,7 @@ export function nationPower(r: Realm, faction: string): number {
 }
 
 /** `asker` 의 정보로 본 `faction` 의 힘 — 본 고을은 범위, 못 본 고을은 0~envoyUnknownNode */
-function powerRange(r: Realm, asker: string, faction: string): [number, number] {
+export function powerRange(r: Realm, asker: string, faction: string): [number, number] {
   const known = r.intel[asker] ?? {}
   let lo = 0
   let hi = 0
@@ -346,8 +364,10 @@ function chanceAt(
   const pw = (x: number): number => R.envoyPower * Math.max(-1, Math.min(R.envoyPowerCap - 1, x))
   let p: number
   switch (ask) {
+    // 받는 쪽도 제 속셈으로 본다 — 제게도 멈출 까닭이 있으면 더 받고, 이기고 있는 싸움이면 잘 안 받는다 (stance.ts)
     case 'truce':
       p = R.envoyTruce + pw(ratio - 1) + (mind === 'cautious' ? R.envoyCautious : mind === 'greedy' ? R.envoyGreedy : 0)
+        + (truceWhy(r, to, from) !== null ? R.envoyMotive : 0) + (winningAgainst(r, to, from) ? R.envoyWinning : 0)
       break
     case 'trade':
       p = R.envoyTrade + R.envoyGain * ((worth(give) - worth(take)) / Math.max(1, worth(take)))
@@ -356,9 +376,13 @@ function chanceAt(
       p = R.envoyTribute + pw(ratio - R.envoyTributePower)
       break
     case 'alliance':
+    {
+      const w = allianceWhy(r, to, from)?.why
       p = R.envoyAlliance + pw(ratio - 1) / 2 + (atWarWithSame(r, from, to) ? R.envoyCommonFoe : 0)
         + (mind === 'cautious' ? R.envoyCautious : mind === 'greedy' ? R.envoyGreedy : 0)
+        + (w !== undefined && w !== 'commonFoe' ? R.envoyMotive : 0)
       break
+    }
     // 선물·깨기는 늘 된다 — 받는 쪽이 고르는 일이 아니다
     case 'gift':
       if (R.envoyGiftAlways >= 1) return 1
@@ -450,7 +474,8 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
     const pair = `${o.from}>${o.to}`
     if (sent.has(pair) || o.from === o.to) continue
     if (r.factions[o.from] === undefined || r.factions[o.to] === undefined) continue
-    if (r.factions[o.to]!.mind === 'player') continue
+    // 플레이어에게는 사신 대신 청이 간다 — 다만 약조를 깨는 것은 청이 아니라 통보다
+    if (r.factions[o.to]!.mind === 'player' && o.ask !== 'break') continue
     // 그 사이에서 할 수 없는 사신은 안 간다 (전쟁 중에 동맹을 청할 수는 없다 — envoyOptions)
     if (!envoyOptions(r, o.from, o.to).includes(o.ask)) continue
     // 함께 치자 — 칠 고을이 있어야 하고 · 군대 빌리기 — 지킬 우리 고을이 있어야 한다
@@ -466,7 +491,7 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
     // 군대 빌리기 — 내줄 군대가 없으면(국읍의 마지막 군대뿐이거나 길이 없으면) 못 빌려준다
     const lend = accepted && o.ask === 'troops' ? lenderArmy(r, o.to, o.from, o.target!) : null
     if (o.ask === 'troops' && lend === null) accepted = false
-    lines.push({ kind: 'envoy', from: o.from, to: o.to, ask: o.ask, accepted })
+    lines.push({ kind: 'envoy', from: o.from, to: o.to, ask: o.ask, accepted, ...(o.why !== undefined ? { why: o.why } : {}), ...(o.about !== undefined ? { about: o.about } : {}) })
     if (!accepted) {
       // 조공 요구를 거절당하면 그 자리에서 전쟁이다
       if (o.ask === 'tribute') setRelation(r, o.from, o.to, 'war', null, lines)
@@ -534,11 +559,10 @@ function breakPact(r: Realm, from: string, to: string, lines: ReportLine[]): voi
 /**
  * 청(請) — 남의 나라가 플레이어에게 거는 것 (형: "적이 뭔가 거래를 걸어온다거나 동맹요구하거나 그런거 없어?" — 2026-10-18).
  * 계절 끝에 AI 가 만들고(makeAsks), 플레이어는 다음 계절에 답한다(answer 명령 → resolveAnswers). 답이 없으면 거절.
- * 무엇을 청하나는 사이·힘의 비·성향·창고가 정한다:
- *   전쟁 중   — 지는 쪽은 화친을, 훨씬 센 쪽은 조공을 내놓으면 멈추겠다고
- *   중립      — 화친(신중할수록) · 맞바꿈 · 같은 적이 있으면 동맹 · 우리가 훨씬 세면 조공을 바친다 · 탐욕스럽고 훨씬 세면 조공 요구
- *   화친      — 맞바꿈 · 동맹
- *   동맹      — 맞바꿈
+ * 무엇을 청하나는 그 나라의 **속셈**이 정한다 (stance.ts) — 청마다 까닭(why)이 붙어 화면에 말로 보인다:
+ *   화친 — 밀린다 · 두 쪽 싸움 · 굶주림 · 앞서가는 나라 (이기고 있는 싸움이면 안 청한다)
+ *   동맹 — 같은 적 · 앞서가는 나라 · 가까워짐      맞바꿈 — 남는 것이 있다
+ *   바침 — 훨씬 약하다      요구 — 훨씬 세다      함께 치자·보태 달라 — 동맹이라
  */
 
 const NO_GOODS = { grain: 0, iron: 0 }
@@ -569,23 +593,19 @@ function pickAsk(r: Realm, from: string, to: string): Ask | null {
   const mine = stockOf(r, from)
   const theirs = stockOf(r, to)
   const round10 = (x: number): number => Math.max(10, Math.round(x / 10) * 10)
-  const opts: Array<{ kind: AskKind; w: number; give: { grain: number; iron: number }; take: { grain: number; iron: number }; node?: string }> = []
+  const opts: Array<{ kind: AskKind; w: number; give: { grain: number; iron: number }; take: { grain: number; iron: number }; node?: string } & Motive> = []
   const strong = 1 / Math.max(1e-9, ratio) >= R.askDemandPower
   const fav = favorOf(r, from, to)
-  // 호감이 아주 낮으면 화친도 동맹도 안 청하고 조공을 요구한다 · 아주 높으면 동맹을 청한다
+  // 호감이 아주 낮으면 화친도 동맹도 안 청하고 조공을 요구한다
   const hostile = fav <= R.favorHostile
-  if (rel === 'war') {
-    if (!hostile) opts.push({ kind: 'truce', w: ratio > 1 ? 3 : 1, give: NO_GOODS, take: NO_GOODS })
-  } else if (rel === 'neutral' && !hostile) {
-    opts.push({ kind: 'truce', w: mind === 'cautious' ? 2 : 1, give: NO_GOODS, take: NO_GOODS })
-  }
-  if ((rel === 'neutral' || rel === 'truce') && !hostile) {
-    const w = (atWarWithSame(r, from, to) ? 3 : rel === 'truce' ? 1 : 0) + (fav >= R.favorAllyAsk ? 3 : 0)
-    opts.push({ kind: 'alliance', w, give: NO_GOODS, take: NO_GOODS })
-  }
+  // 화친·동맹은 까닭이 있을 때만 (stance.ts) — 이기고 있는 나라가 갑자기 화친하자고 하지 않는다
+  const tw = hostile ? null : truceWhy(r, from, to)
+  if (tw !== null) opts.push({ kind: 'truce', w: tw.why === 'losing' || tw.why === 'hungry' ? 4 : 2, give: NO_GOODS, take: NO_GOODS, ...tw })
+  const aw = allianceWhy(r, from, to)
+  if (aw !== null) opts.push({ kind: 'alliance', w: aw.why === 'favor' ? 2 : 3, give: NO_GOODS, take: NO_GOODS, ...aw })
   if (rel !== 'war' && !hostile) {
     const t = tradeOffer(r, from, to)
-    if (t !== null) opts.push({ kind: 'trade', w: 2, ...t })
+    if (t !== null) opts.push({ kind: 'trade', w: 2, ...t, why: 'surplus' })
   }
   // 동맹의 부탁 — 함께 치자 (그쪽이 싸우는 적의 고을 가운데 우리가 닿는 곳) · 곡식이 모자라면 보태 달라
   if (rel === 'ally') {
@@ -595,25 +615,29 @@ function pickAsk(r: Realm, from: string, to: string): Ask | null {
     })
     if (foes.length > 0) {
       const node = foes[Math.floor(roll(r.seed, r.season, `ask-joint:${from}`) * foes.length)]!
-      opts.push({ kind: 'joint', w: R.askJointWeight, give: NO_GOODS, take: NO_GOODS, node })
+      opts.push({ kind: 'joint', w: R.askJointWeight, give: NO_GOODS, take: NO_GOODS, node, why: 'commonFoe', about: r.nodes[node]!.owner! })
     }
     const need = Math.ceil(menOf(r, from) * R.rationPerSoldier * 2)
     if (mine.grain < need && theirs.grain >= 40) {
-      opts.push({ kind: 'aid', w: R.askAidWeight, give: NO_GOODS, take: { grain: round10(Math.min(theirs.grain * R.aidMaxShare, need - mine.grain)), iron: 0 } })
+      opts.push({ kind: 'aid', w: R.askAidWeight, give: NO_GOODS, take: { grain: round10(Math.min(theirs.grain * R.aidMaxShare, need - mine.grain)), iron: 0 }, why: 'hungry' })
     }
   }
-  if ((rel === 'war' || rel === 'neutral') && ratio >= R.askTributePower && mine.grain >= 20) {
-    opts.push({ kind: 'tribute', w: mind === 'cautious' ? 3 : 1, give: { grain: round10(mine.grain * R.askTributeShare), iron: 0 }, take: NO_GOODS })
+  // 바침 — 훨씬 약한 나라가 우리를 두려워할 때 (싸우는 중이면 이기고 있지 않을 때)
+  if ((rel === 'war' || rel === 'neutral') && ratio >= R.askTributePower && mine.grain >= 20 && !winningAgainst(r, from, to)) {
+    opts.push({ kind: 'tribute', w: mind === 'cautious' ? 3 : 1, give: { grain: round10(mine.grain * R.askTributeShare), iron: 0 }, take: NO_GOODS, why: 'weak' })
   }
   if ((rel === 'war' || (rel === 'neutral' && (mind === 'greedy' || hostile))) && strong && theirs.grain >= 20) {
-    opts.push({ kind: 'demand', w: hostile ? 4 : 2, give: NO_GOODS, take: { grain: round10(theirs.grain * R.askDemandShare), iron: 0 } })
+    opts.push({ kind: 'demand', w: hostile ? 4 : 2, give: NO_GOODS, take: { grain: round10(theirs.grain * R.askDemandShare), iron: 0 }, why: 'strong' })
   }
   const live = opts.filter((o) => o.w > 0)
   const total = live.reduce((s, o) => s + o.w, 0)
   if (total <= 0) return null
   let x = roll(r.seed, r.season, `ask-kind:${from}`) * total
   const o = live.find((c) => (x -= c.w) < 0) ?? live[live.length - 1]!
-  const ask: Ask = { id: `ask:${r.season}:${from}`, from, to, kind: o.kind, give: o.give, take: o.take, until: r.season + 1 }
+  const ask: Ask = {
+    id: `ask:${r.season}:${from}`, from, to, kind: o.kind, give: o.give, take: o.take, until: r.season + 1, why: o.why,
+    ...(o.about !== undefined ? { about: o.about } : {}),
+  }
   return o.node !== undefined ? { ...ask, node: o.node } : ask
 }
 

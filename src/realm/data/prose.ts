@@ -3,7 +3,7 @@
  * 고증 검토(lore-lens)가 코드를 안 읽고 이 파일만 본다. 숫자는 여기 없다 (P.realm).
  */
 import type { Equip, Outcome, UnitKind } from '../battle.ts'
-import type { Ask, EdgeKind, PlotOp, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, SeasonOfYear, Tag } from '../types.ts'
+import type { Ask, EdgeKind, PlotOp, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, SeasonOfYear, Tag, Why } from '../types.ts'
 
 export const SEASON_NAME: Record<SeasonOfYear, string> = {
   spring: '봄', summer: '여름', autumn: '가을', winter: '겨울',
@@ -120,6 +120,28 @@ export function askLine(a: Ask, from: string, place = ''): string {
     case 'demand': return `${josa(from, '이', '가')} ${goods(a.take)}을 바치라고 한다. 거절하면 전쟁이다.`
     case 'joint': return `${josa(from, '이', '가')} ${place !== '' ? `${josa(place, '을', '를')} ` : ''}두 계절 안에 함께 치자고 한다. 받으면 우리도 그곳을 쳐야 한다. 약속을 어기면 사이가 크게 틀어진다.`
     case 'aid': return `동맹 ${josa(from, '이', '가')} ${goods(a.take)}을 보태 달라고 한다. 거절하면 서운해한다.`
+  }
+}
+
+/**
+ * 속셈의 까닭을 말로 (stance.ts — 형: "근거가 있게 움직여야해"). `about` 은 까닭이 가리키는 나라 이름,
+ * `them` 은 깨기·만만함의 상대 ("우리" 또는 나라 이름). 주어는 그 일을 꺼낸 나라다.
+ */
+export function whyLine(why: Why | undefined, about = '', them = '우리'): string {
+  switch (why) {
+    case undefined: return ''
+    case 'losing': return '싸움에서 밀리고 있다.'
+    case 'fronts': return about !== '' ? `여러 나라와 싸우느라 힘이 갈렸다. ${about} 쪽에 힘을 모으려 한다.` : '여러 나라와 싸우느라 힘이 갈렸다.'
+    case 'hungry': return '곡식이 바닥나 싸움을 이어 가기 어렵다.'
+    case 'leader': return `${josa(about, '이', '가')} 너무 커졌다. 함께 막지 않으면 그쪽이 이긴다고 본다.`
+    case 'commonFoe': return `둘 다 ${josa(about, '과', '와')} 싸우고 있다.`
+    case 'favor': return '그동안 사이가 가까워졌다.'
+    case 'weak': return them === '우리' ? '우리 힘을 두려워한다.' : `${them}의 힘을 두려워한다.`
+    case 'strong': return '제 힘을 믿는다.'
+    case 'surplus': return '남는 것을 모자란 것과 바꾸고 싶어 한다.'
+    case 'ally': return '동맹이라 기댄다.'
+    case 'tooBig': return `${josa(them, '이', '가')} 너무 커졌다고 본다. 이대로 두면 ${them === '우리' ? '우리가' : '그쪽이'} 이긴다고 여긴다.`
+    case 'prey': return `${josa(them, '을', '를')} 만만하게 본다.`
   }
 }
 
@@ -296,14 +318,33 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     case 'hunger':
       return line.faction === viewer ? '곡식이 바닥났다. 군사들이 굶는다.' : null
     case 'envoy': {
-      if (line.from !== viewer && line.to !== viewer) return null
+      const about = line.about !== undefined ? fname(line.about) : ''
+      // 남의 나라끼리 — 판이 움직이는 일(맺기·깨기)만 소문으로, 까닭을 붙여
+      if (line.from !== viewer && line.to !== viewer) {
+        if (!line.accepted || line.why === undefined) return null
+        const a = fname(line.from)
+        const b = fname(line.to)
+        switch (line.ask) {
+          case 'alliance': return `소문 — ${josa(a, '과', '와')} ${josa(b, '이', '가')} 동맹을 맺었다. ${a} 쪽 속셈: ${whyLine(line.why, about, b)}`
+          case 'truce': return `소문 — ${josa(a, '과', '와')} ${josa(b, '이', '가')} 화친했다. ${a} 쪽 속셈: ${whyLine(line.why, about, b)}`
+          case 'break': return `소문 — ${josa(a, '이', '가')} ${josa(b, '과', '와')}의 약조를 깼다. ${whyLine(line.why, about, b)}`
+          default: return null
+        }
+      }
       const other = line.from === viewer ? line.to : line.from
       if (line.from === viewer) {
+        if (line.ask === 'break') return `${josa(fname(other), '과', '와')}의 약조를 깼다.`
         return line.accepted
           ? `${josa(fname(other), '이', '가')} ${josa(ASK_NAME[line.ask], '을', '를')} 받아들였다.`
           : `${josa(fname(other), '이', '가')} ${josa(ASK_NAME[line.ask], '을', '를')} 거절했다.`
       }
+      if (line.ask === 'break') return `${josa(fname(other), '이', '가')} 우리와의 약조를 깼다. ${whyLine(line.why, about)} 이제 언제든 쳐들어올 수 있다.`
       return `${fname(other)}에서 ${ASK_NAME[line.ask]} 사신이 왔다.`
+    }
+    case 'recall': {
+      if (line.faction === viewer) return `약조를 맺어 ${josa(node(line.node), '으로', '로')} 가던 ${josa(nameArmy(line.army), '을', '를')} 돌린다.`
+      if (after.nodes[line.node]?.owner !== viewer) return null
+      return `${josa(node(line.node), '으로', '로')} 오던 ${fname(line.faction)} 군대가 발길을 돌렸다.`
     }
     case 'relation': {
       if (line.a !== viewer && line.b !== viewer) return null

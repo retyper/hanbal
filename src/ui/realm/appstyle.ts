@@ -65,6 +65,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
   background: none; color: var(--mute); font: inherit; font-size: 12px; cursor: pointer; }
 .ap .tabs button img.tic { width: 32px; height: 32px; opacity: .75; filter: grayscale(.4); }
 .ap .tabs button.on { color: var(--gold); } .ap .tabs button.on img.tic { opacity: 1; filter: none; transform: translateY(-2px); }
+.ap .tabs button { position: relative; } .ap .tabs .dot { position: absolute; top: 5px; right: calc(50% - 22px); width: 10px; height: 10px; border-radius: 50%; background: #e0402a; box-shadow: 0 0 0 2px var(--bg, #14161a); }
+.ap .newb { display: inline-block; margin-top: 2px; padding: 1px 7px; border-radius: 9px; background: #3f8f3a; color: #fff; font-size: 11.5px; font-weight: 700; }
 
 /* 올라오는 판 */
 .ap .back { position: absolute; inset: 0; bottom: var(--tabh); background: #0007; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 6; }
@@ -91,6 +93,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .acard, .ap .ncard, .ap .fcard { display: flex; gap: 10px; padding: 10px; margin: 8px 0; border-radius: 14px; background: var(--card); border: 1px solid var(--line); }
 .ap .ncard, .ap .fcard { flex-direction: column; gap: 6px; }
 .ap .acard .ab { flex: 1; min-width: 0; }
+.ap .acard.fresh { border-color: #7aa83a; box-shadow: 0 0 0 2px #7aa83a55; animation: fresh 1.2s ease-out 1; } @keyframes fresh { from { background: #2f3d24; } }
 .ap .face { flex: none; width: 64px; height: 64px; border-radius: 12px; object-fit: cover; border: 1px solid #4a5363; background: #2a313c; display: block; }
 .ap .noface { background: radial-gradient(circle at 50% 38%, #4a5363 0 22%, transparent 23%), radial-gradient(ellipse at 50% 100%, #4a5363 0 45%, transparent 46%), #2a313c; }
 .ap .an { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; } .ap .an.big h3 { margin: 0; }
@@ -132,7 +135,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .nightov { position: absolute; inset: 0; z-index: 40; background: #000; }
 .ap .nightov iframe { width: 100%; height: 100%; border: 0; display: block; }
 .ap .nightov [data-close] { position: absolute; right: 10px; top: 10px; z-index: 1; font-size: 13px; padding: 4px 10px; }
-.ap .frow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } .ap .frow .mute { flex: 1 1 12em; }
+.ap .frow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } .ap .frow .mute { flex: 1 1 12em; } .ap .why { font-size: 13px; color: #d8c89a; margin: 4px 0 2px; } .ap .askc .why { margin: 2px 0 4px; }
 .ap .fbtn { border: 0; padding: 0; background: none; cursor: pointer; border-radius: 50%; }
 .ap .plimg { display: block; width: 100%; border-radius: 10px; margin: 6px 0; }
 .ap .rface.sm { width: 34px; height: 34px; border-width: 1px; }

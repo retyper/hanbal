@@ -185,3 +185,8 @@ const app = mountRealmApp(root, {
   gameCount: () => games.length,
 })
 app.show(state?.realm ?? null, state?.before ?? null, state?.report ?? null)
+
+// 홈 화면에 앱으로 (형: "매번 웹페이지로 플레이해야돼?") — 활터와 같은 워커. https 에서만, 로드가 끝난 뒤에 (main.ts 와 같은 규칙)
+if (location.protocol === 'https:' && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}) }, { once: true })
+}

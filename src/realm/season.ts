@@ -29,6 +29,7 @@ import {
 } from './economy.ts'
 import { blockedWhy, seasonOf } from './calendar.ts'
 import { refreshSpies, resolvePlots } from './plots.ts'
+import { noteTake } from './stance.ts'
 import {
   ambushTraitOf, applyHeroOrders, bowMulOf, commandOf, escapeOf, hasTrait, heroesAtNode, ironhandAt, noteMet, stepHeroes, sweepHeroes,
 } from './heroes.ts'
@@ -397,6 +398,9 @@ function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): v
     if (a === undefined || ed === undefined || a.march !== null) continue
     const to = otherEnd(ed, a.at)
     if (to === null) continue
+    // AI 의 명령은 계절 처음의 판으로 짰다 — 이번 계절 1 에서 화친을 맺은 나라 땅으로는 가지 않는다 (깨는 것은 플레이어만 고른다)
+    const owner = r.nodes[to]?.owner ?? null
+    if (r.factions[a.faction]?.mind !== 'player' && owner !== null && relationOf(r, a.faction, owner).state === 'truce') continue
     const why = blockedWhy(ed, season)
     if (why !== null) {
       lines.push({ kind: 'blocked', army: a.id, edge: ed.id, why })
@@ -653,6 +657,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
     }
     for (const x of atks) x.at = node.id
     if (node.kind !== 'sodo' && node.owner !== a.faction && !allied(r, a.faction, node.owner)) {
+      noteTake(r, a.faction, node.owner)
       onTake(r, node.id)
       node.owner = a.faction
       lines.push({ kind: 'take', faction: a.faction, node: node.id })
@@ -702,6 +707,7 @@ function resolveMarches(r: Realm, snipes: Readonly<Record<string, SnipeZone>>, l
     // 동맹의 땅은 지나갈 뿐 쥐지 않는다
     if (node.owner !== lead.faction && node.kind !== 'sodo' && !allied(r, lead.faction, node.owner)) {
       provoke(r, lead.faction, node.owner, lines)
+      noteTake(r, lead.faction, node.owner)
       if (node.owner !== null) onTake(r, node.id)
       node.owner = lead.faction
       lines.push({ kind: 'take', faction: lead.faction, node: node.id })

@@ -57,7 +57,7 @@ describe('나누기 · 모으기', () => {
     let r = planned(byeonhanMini(1), [])
     r.armies['a-us']!.mix = { spear: 400 }
     const orders: Order[] = []
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < P.realm.armyMax + 3; i++) {
       const id = newArmyId(r, 'us')
       const o: Order = { kind: 'split', army: 'a-us', id, take: { spear: 20 }, hero: false }
       orders.push(o)

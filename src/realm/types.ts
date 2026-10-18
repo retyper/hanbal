@@ -79,7 +79,18 @@ export interface Relation {
   favor?: number
   /** 함께 치자는 약속 — `by` 가 `node` 를 `until` 계절까지 친다 (diplomacy.checkPledges) */
   pledges?: Pledge[]
+  /** 땅을 앗은 마지막 계절 — 앗은 나라 id 로 (stance.tookRecently: 밀리는 쪽이 화친을 청할 까닭) */
+  took?: Record<string, number>
 }
+
+/**
+ * 속셈의 까닭 (stance.ts) — 남의 나라가 화친·동맹·깨기·청을 꺼내는 까닭. 화면에 말로 보인다.
+ * losing 밀린다 · fronts 두 쪽 싸움 · hungry 굶주림 · leader 앞서가는 나라 · commonFoe 같은 적 · favor 가까워짐 ·
+ * weak 센 이웃이 두렵다 · strong 제 힘을 믿는다 · surplus 남는 것 · ally 동맹이라 · tooBig 상대가 너무 커졌다 · prey 상대가 만만하다
+ */
+export type Why =
+  | 'losing' | 'fronts' | 'hungry' | 'leader' | 'commonFoe' | 'favor'
+  | 'weak' | 'strong' | 'surplus' | 'ally' | 'tooBig' | 'prey'
 
 /** 동맹의 약속 하나 — 지키면 호감 +, 저버리면 호감 크게 − */
 export interface Pledge {
@@ -222,6 +233,9 @@ export interface Ask {
   readonly until: number
   /** joint — 함께 칠 고을 */
   readonly node?: string
+  /** 왜 청하나 (stance.ts) — 까닭이 가리키는 나라는 about */
+  readonly why?: Why
+  readonly about?: string
 }
 
 export interface Realm {
@@ -311,6 +325,9 @@ export type Order =
       readonly take: { readonly grain: number; readonly iron: number }
       /** joint — 함께 칠 고을 · troops — 빌린 군대가 지킬 우리 고을 */
       readonly target?: string
+      /** AI 가 보낸 사신의 까닭 (stance.ts) — 보고에 말로 */
+      readonly why?: Why
+      readonly about?: string
     }
   /** 무장 올리기 (철의 쓰임) — 제 고을에 쉬는 군대의 장비를 한 단계 (economy.armCost) */
   | { readonly kind: 'arm'; readonly army: string }
@@ -360,7 +377,9 @@ export type ReportLine =
   | { readonly kind: 'disband'; readonly army: string; readonly node: string; readonly n: number }
   | { readonly kind: 'settle'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number }
   | { readonly kind: 'hunger'; readonly faction: string }
-  | { readonly kind: 'envoy'; readonly from: string; readonly to: string; readonly ask: EnvoyAsk; readonly accepted: boolean }
+  | { readonly kind: 'envoy'; readonly from: string; readonly to: string; readonly ask: EnvoyAsk; readonly accepted: boolean; readonly why?: Why; readonly about?: string }
+  /** 화친·동맹을 맺어 상대 땅으로 가던 군대가 발길을 돌렸다 — `node` 는 가려던 고을 */
+  | { readonly kind: 'recall'; readonly faction: string; readonly army: string; readonly node: string }
   /** 함께 치자는 약속을 지켰나 저버렸나 — `from` 이 약속한 나라, `to` 가 약속받은 나라 */
   | { readonly kind: 'pledge'; readonly from: string; readonly to: string; readonly node: string; readonly kept: boolean }
   /** 군대를 빌려줬다 (`army` 가 `to` 의 `node` 를 지키러 간다) · 돌아갔다 (back) */

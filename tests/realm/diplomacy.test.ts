@@ -106,7 +106,8 @@ describe('화친', () => {
     r.relations[pairKey('us', 'guya')]!.until = r.season + 6
     const ours = (x: Realm): Set<string> => new Set(Object.values(x.nodes).filter((n) => n.owner === 'us').map((n) => n.id))
     for (let s = 0; s < 6; s++) {
-      const orders = decide(r, 'guya', 'greedy')
+      // 약조 깨기는 따로 본다 (stance.test) — 여기서는 화친이 이어지는 동안 치지 않는지만
+      const orders = decide(r, 'guya', 'greedy').filter((o) => !(o.kind === 'envoy' && o.ask === 'break'))
       const p = planned(r, orders)
       for (const o of orders) {
         if (o.kind !== 'march') continue
