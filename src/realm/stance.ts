@@ -12,6 +12,7 @@
 import { P } from '../tune/params.ts'
 import { stockOf, upkeepOf } from './economy.ts'
 import { favorOf, nationPower, pairKey, powerRange, relationOf } from './diplomacy.ts'
+import { memoFor } from './memo.ts'
 import type { Realm, Why } from './types.ts'
 
 export interface Motive {
@@ -43,6 +44,14 @@ export function capitalsHeld(r: Realm, f: string): number {
  * 여럿이면 도읍이 많은 쪽, 같으면 힘이 센 쪽. 없으면 null. 다른 나라들은 이 나라를 함께 막으려 한다.
  */
 export function leaderOf(r: Realm, viewer: string): string | null {
+  const m = memoFor(r)
+  if (m?.leader.has(viewer) === true) return m.leader.get(viewer)!
+  const L = leaderNow(r, viewer)
+  m?.leader.set(viewer, L)
+  return L
+}
+
+function leaderNow(r: Realm, viewer: string): string | null {
   const R = P.realm
   const fs = live(r)
   const pw = new Map(fs.map((f) => [f, seen(r, viewer, f)]))

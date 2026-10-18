@@ -30,7 +30,7 @@ import {
 import { blockedWhy, seasonOf } from './calendar.ts'
 import { applyBowUps, refreshSpies, resolvePlots } from './plots.ts'
 import { noteTake } from './stance.ts'
-import { migrate } from './migrate.ts'
+import { PEOPLE_SCALE, migrate } from './migrate.ts'
 import { spreadRumors } from './rumor.ts'
 import { addMen, giveMen, kitOf, scaleMen, takeMen } from './kit.ts'
 import {
@@ -363,14 +363,46 @@ function mergeArmy(r: Realm, o: Extract<Order, { kind: 'merge' }>, lines: Report
 }
 
 /**
+ * 먼저 해 볼 판의 사본 — 통째로 structuredClone 하면 영남 판에서 AI 셈의 절반이 복사에 든다 (2026-10-19 프로필: 46%).
+ * applyArmyOrders 는 길·관계 같은 칸(PLAN_SHARED)을 건드리지 않고, 정보(intel)는 칸을 **새로 넣기만** 한다(revealAround 의 ??=).
+ * 그래서 그 칸들은 같이 쓰고 정보는 두 겹만 얕게 베낀다 — 나머지는 깊이 베낀다. 옛 눈금의 판(migrate 가 정보를 고쳐 쓴다)은 통째로.
+ * 결과는 통째 복사와 같다 (시험: 같은 판이면 같은 명령 · 판 넘기기 결정론).
+ */
+/** applyArmyOrders 가 손대지 않는 칸 — 사본도 같은 것을 같이 본다 (관계·만난 장수·청·첩자·도발·제사·자객의 활) */
+const PLAN_SHARED = new Set(['edges', 'relations', 'met', 'asks', 'spies', 'provoked', 'blessed', 'assassinBow'])
+
+function cloneForPlan(realm: Realm): Realm {
+  if ((realm.scale ?? 1) !== PEOPLE_SCALE) return structuredClone(realm)
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(realm)) {
+    if (PLAN_SHARED.has(k)) out[k] = v
+    else if (k === 'intel') {
+      const intel: Record<string, unknown> = {}
+      for (const [f, m] of Object.entries(v as Realm['intel'])) intel[f] = { ...m }
+      out[k] = intel
+    } else out[k] = typeof v === 'object' && v !== null ? structuredClone(v) : v
+  }
+  return out as unknown as Realm
+}
+
+/**
  * 나누기·모으기·징병·해산만 먼저 해 본 판 — 화면이 "떼어 낸 별동대"·"새로 뽑은 군대"에게 길을 고르게 할 때 쓴다.
  * 받은 realm 은 건드리지 않는다. advance 의 1단계와 같은 함수를 지난다.
  */
 export function planned(realm: Realm, orders: readonly Order[]): Realm {
-  const r = structuredClone(realm)
+  const r = cloneForPlan(realm)
   migrate(r)
   applyArmyOrders(r, orders, [])
   return r
+}
+
+/**
+ * 먼저 해 본 판에 명령을 더 얹는다 — **planned() 가 돌려준 제 사본에만** 쓴다 (제자리에서 바꾼다).
+ * AI 가 징병→개척→제사→경계를 차례로 정하며 판을 네 번 통째로 베끼던 것을 한 번으로 줄인다.
+ * 나누기·모으기·장수 명령이 없는 명령(징병·개척·제사·경계)은 한꺼번에 얹은 것과 결과가 같다 (판 지문으로 확인).
+ */
+export function extendPlan(p: Realm, orders: readonly Order[]): void {
+  if (orders.length > 0) applyArmyOrders(p, orders, [])
 }
 
 /** 뽑을 수 있는 병종 — 창병·궁수·방패병, 포구에서는 수군도 (FLOW §2) */

@@ -14,6 +14,7 @@ import { P } from '../tune/params.ts'
 import { canPayGoods, goodOf, goodsOne, goodsWorth, menOf, payGoods, stockOf, worthOf } from './economy.ts'
 import { envoyBonus } from './heroes.ts'
 import { visibleRange } from './intel.ts'
+import { memoFor } from './memo.ts'
 import { nodeStrength } from './season.ts'
 import { allianceWhy, truceWhy, winningAgainst, type Motive } from './stance.ts'
 import type { Ask, AskKind, EnvoyAsk, Good, Goods, Order, Pledge, Realm, Relation, ReportLine } from './types.ts'
@@ -314,13 +315,21 @@ export function allyFoe(r: Realm, faction: string, owner: string | null): boolea
 
 /** 한 나라의 힘 — 제 고을마다 머무는 군대와 장정 (정보가 다루는 F 와 같은 잣대) */
 export function nationPower(r: Realm, faction: string): number {
+  const m = memoFor(r)
+  const hit = m?.power.get(faction)
+  if (hit !== undefined) return hit
   let f = 0
   for (const n of Object.values(r.nodes)) if (n.owner === faction) f += nodeStrength(r, n.id, faction)
+  m?.power.set(faction, f)
   return f
 }
 
 /** `asker` 의 정보로 본 `faction` 의 힘 — 본 고을은 범위, 못 본 고을은 0~envoyUnknownNode */
 export function powerRange(r: Realm, asker: string, faction: string): [number, number] {
+  const m = memoFor(r)
+  const key = `${asker}>${faction}`
+  const hit = m?.range.get(key)
+  if (hit !== undefined) return [hit[0], hit[1]]
   const known = r.intel[asker] ?? {}
   let lo = 0
   let hi = 0
@@ -333,6 +342,7 @@ export function powerRange(r: Realm, asker: string, faction: string): [number, n
       hi += v[1]
     } else hi += P.realm.envoyUnknownNode
   }
+  m?.range.set(key, [lo, hi])
   return [lo, hi]
 }
 
