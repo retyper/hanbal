@@ -132,6 +132,20 @@ export interface Watch {
   lull: number
   /** 경계를 강화한 계절 (guard 명령) — 한 고을 한 계절 한 번. 옛 저장에는 없다 */
   guarded?: number
+  /** 매수 공작이 먹혀 장정이 서지 않는 마지막 계절 (plots.ts). 옛 저장에는 없다 */
+  bribedUntil?: number
+}
+
+/**
+ * 공작 — 몰래 하는 일 (형: "다양한 외교나 공작이 가능 해야하는거 아님?" — 2026-10-18, plots.ts)
+ *   rumor 소문 · sow 이간 · bribe 매수 · burn 방화 · spy 첩자
+ */
+export type PlotOp = 'rumor' | 'sow' | 'bribe' | 'burn' | 'spy'
+
+/** 심어 둔 첩자 — `until` 계절까지 그 고을 군세를 계절마다 새로 안다 */
+export interface Spy {
+  readonly node: string
+  readonly until: number
 }
 
 /**
@@ -179,6 +193,8 @@ export interface Realm {
   blessed?: Record<string, number>
   /** 답을 기다리는 청 (diplomacy.openAsks). 옛 저장에는 없다 */
   asks?: Ask[]
+  /** 나라마다 심어 둔 첩자 (plots.ts spy). 옛 저장에는 없다 */
+  spies?: Record<string, Spy[]>
 }
 
 /** 플레이어(또는 AI)가 한 계절에 내리는 명령 */
@@ -207,6 +223,8 @@ export type Order =
   | { readonly kind: 'answer'; readonly ask: string; readonly yes: boolean }
   /** 경계 강화 — 곡식을 내고 그 고을 경계를 올린다 (economy.canGuard · guardCost). 한 고을 한 계절 한 번 */
   | { readonly kind: 'guard'; readonly faction: string; readonly node: string }
+  /** 공작 (plots.ts) — 한 계절에 plotsPerSeason 까지, 같은 대상에 같은 공작은 하나. sow 는 `other`, bribe·spy 는 `node` */
+  | { readonly kind: 'plot'; readonly faction: string; readonly op: PlotOp; readonly target: string; readonly node?: string; readonly other?: string }
   /** 사신 (FLOW §4) — 한 나라가 한 계절에 하나. give 는 보내는 쪽이, take 는 받는 쪽이 내놓는다 */
   | {
       readonly kind: 'envoy'
@@ -272,6 +290,19 @@ export type ReportLine =
   | { readonly kind: 'answered'; readonly ask: string; readonly yes: boolean; readonly from: string; readonly askKind: AskKind }
   /** 경계 강화 */
   | { readonly kind: 'guard'; readonly faction: string; readonly node: string }
+  /** 공작의 결과. 당한 쪽이 플레이어면 화면은 들켰을 때만 누가 했는지 보인다 */
+  | {
+      readonly kind: 'plot'
+      readonly faction: string
+      readonly op: PlotOp
+      readonly target: string
+      readonly node?: string
+      readonly other?: string
+      readonly ok: boolean
+      readonly caught: boolean
+    }
+  /** 누가 했는지 모르는 일 — 당한 나라의 눈 (사기가 꺾였다 · 곡식이 탔다 · 장정이 안 나왔다) */
+  | { readonly kind: 'mystery'; readonly faction: string; readonly what: 'morale' | 'grain' | 'militia'; readonly node?: string }
 
 export interface Report {
   readonly season: number

@@ -3,7 +3,7 @@
  *
  * 관계: 전쟁 · 중립 · 화친(정한 계절까지) · 동맹. 판은 중립에서 시작하고, 먼저 치면 전쟁이 된다.
  * 화친·동맹을 깨고 치면 **모든 나라**와의 관계가 한 칸 내려간다 — 신의가 값이다.
- * 사신: 화친 · 교역(곡식↔철) · 조공 요구 · 동맹. 한 나라가 한 계절에 하나.
+ * 사신: 화친 · 교역(곡식↔철) · 조공 요구 · 동맹. 상대 나라마다 한 계절에 하나. 몰래 하는 일은 plots.ts(공작).
  *
  * 받아들일 확률은 정보의 계약을 따른다 — envoyChance 는 **묻는 쪽의 정보로** 범위를 낸다.
  * 판정은 참값으로 셈한 한 점(그 범위 안에 든다)에 이름 붙은 주사위 `envoy:<from>:<to>` 를 굴린다.
@@ -39,6 +39,13 @@ function setRelation(r: Realm, a: string, b: string, state: Relation['state'], u
 }
 
 const STEP: Readonly<Record<Relation['state'], Relation['state']>> = { ally: 'truce', truce: 'neutral', neutral: 'war', war: 'war' }
+
+/** 두 나라 사이가 한 칸 나빠진다 (동맹→화친→중립→전쟁) — 공작이 들키거나 이간이 먹힐 때 (plots.ts) */
+export function worsen(r: Realm, a: string, b: string, lines: ReportLine[]): void {
+  if (a === b || r.factions[a] === undefined || r.factions[b] === undefined) return
+  const down = STEP[relationOf(r, a, b).state]
+  setRelation(r, a, b, down, down === 'truce' ? r.season + P.realm.truceSeasons : null, lines)
+}
 
 /**
  * `attacker` 가 `victim` 을 쳤다 (싸움이든, 장정 없는 땅을 걸어 들어가든). 전쟁이 된다.

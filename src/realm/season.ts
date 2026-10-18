@@ -5,8 +5,8 @@
  * 굴림은 전부 이름이 있다 (core/rng.ts roll) — 판정 하나를 더해도 다른 판정이 밀리지 않는다.
  *
  * 도는 순서 (SYSTEMS §12 의 번호):
- *   1 명령 확정 (나누기·모으기·징병·해산·개척 — 명령 순서대로 → 출정) → 2 정찰 · 사신 · 소도 제사 → 3 행군 → 4 기습 → 5 전투·생포
- *   → 7 생산·수확·군량·가호 (economy.ts) → 9 경계 감쇠 · 화친 만료 · 장터 · 동맹의 눈 나누기 → 끝 확인 (이김·짐) · 행군 목격 → 11 계절 +1
+ *   1 명령 확정 (나누기·모으기·징병·해산·개척 — 명령 순서대로 → 출정) → 2 정찰 · 사신 · 공작 · 소도 제사 → 3 행군 → 4 기습 → 5 전투·생포
+ *   → 7 생산·수확·군량·가호 (economy.ts) → 9 경계 감쇠 · 화친 만료 · 장터 · 동맹의 눈 나누기 · 첩자 → 끝 확인 (이김·짐) · 행군 목격 → 11 계절 +1
  * 6 회유 · 8 이주 · 10 사건은 R3~R4 에서 이 자리에 끼운다 — 번호를 지켜야 순서가 안 바뀐다.
  *
  * 정보의 틈 (R1 에 적어 둔 것) — FLOW §7 #2 로 정했다: **행군은 보인다.** 우리 고을에 맞닿은 길 위의 남의 군대는
@@ -26,6 +26,7 @@ import {
   applyGuard, draftCost, draftLimit, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepEconomy, stockOf,
 } from './economy.ts'
 import { blockedWhy, seasonOf } from './calendar.ts'
+import { refreshSpies, resolvePlots } from './plots.ts'
 import type {
   Army, EdgeKind, Order, Realm, REdge, Report, ReportLine, RNode, SeasonOfYear, SnipeZone,
 } from './types.ts'
@@ -720,6 +721,7 @@ export function advance(
   applyOrders(r, orders, lines) // 1
   resolveScouts(r, orders, lines) // 2
   resolveEnvoys(r, orders, lines) // 2
+  resolvePlots(r, orders, lines) // 2 — 공작
   resolveRites(r, orders, lines) // 2 — 소도 제사
   resolveMarches(r, snipes, lines, fought) // 3 · 4 · 5
   stepEconomy(r, season, fought, lines) // 7
@@ -727,6 +729,7 @@ export function advance(
   expireRelations(r, lines) // 9
   holdMarkets(r, lines) // 9 — 화친·동맹의 장터
   shareIntel(r) // 9 — 동맹은 본 것을 나눈다
+  refreshSpies(r) // 9 — 첩자가 본다
   if (r.player !== undefined) {
     for (const a of seenMarches(r, r.player)) {
       const line = { kind: 'sighted', faction: a.faction, army: a.id, from: a.march!.from, to: a.march!.to } as const

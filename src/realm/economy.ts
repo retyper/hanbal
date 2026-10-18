@@ -44,6 +44,9 @@ export function militiaMen(r: Realm, node: string): number {
   const R = P.realm
   const n = r.nodes[node]
   if (n === undefined || n.owner === null || n.kind === 'sodo') return 0
+  // 매수당한 고을 — 장정이 서지 않는다 (plots.ts bribe)
+  const bribed = r.watch[node]?.bribedUntil
+  if (bribed !== undefined && bribed >= r.season) return 0
   // 그 나라의 국읍이면 다 나와 막는다 (판이 끝나는 자리)
   const capital = r.factions[n.owner]?.capital === n.id
   return Math.round(n.hh * R.militiaPerHH * (n.kind === 'fort' ? R.militiaFortMul : 1) * (capital ? R.militiaCapitalMul : 1))

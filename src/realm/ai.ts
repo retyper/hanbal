@@ -20,7 +20,8 @@ import {
 import { ambushWorth, jointWin, movesOf, type Move } from './estimate.ts'
 import { armiesAt, fortMul, neighbors, newArmyId, planned, seasonOf, seenMarches } from './season.ts'
 import type { UnitKind } from './battle.ts'
-import type { Army, EnvoyAsk, Order, Realm } from './types.ts'
+import { plotCost, plotTargets } from './plots.ts'
+import type { Army, EnvoyAsk, Order, PlotOp, Realm } from './types.ts'
 
 export type Brain = 'greedy' | 'cautious' | 'reckless' | 'random' | 'planner'
 
@@ -286,6 +287,32 @@ function guards(r: Realm, faction: string): Order[] {
  * AI 끼리의 사신 — 한 계절에 aiEnvoyChance 로 하나. 지고 있는 전쟁이면 화친, 같은 적이 있으면 동맹, 신중하면 이웃과 화친.
  * 플레이어에게는 사신이 아니라 청(diplomacy.makeAsks)을 건다 — 여기서는 플레이어를 고르지 않는다.
  */
+/**
+ * 공작 (plots.ts) — 계절마다 aiPlotChance 로 하나. 탐욕은 방화·매수, 신중(과 계획가)은 첩자·소문.
+ * 노리는 나라: 싸우는 나라가 먼저, 없으면 화친·동맹이 아닌 가장 센 나라 — 플레이어도 든다.
+ * 군량 세 계절치를 남기고도 값을 낼 수 있어야 한다.
+ */
+function plots(r: Realm, faction: string, brain: Brain): Order[] {
+  if (roll(r.seed, r.season, `ai-plot:${faction}`) >= P.realm.aiPlotChance) return []
+  const foes = sorted(Object.values(r.factions))
+    .filter((f) => f.id !== faction && !friendly(r, faction, f.id) && Object.values(r.nodes).some((n) => n.owner === f.id))
+    .map((f) => ({ id: f.id, war: relationOf(r, faction, f.id).state === 'war', power: nationPower(r, f.id) }))
+    .sort((a, b) => (a.war !== b.war ? (a.war ? -1 : 1) : b.power - a.power))
+  const target = foes[0]?.id
+  if (target === undefined) return []
+  const pickOp = roll(r.seed, r.season, `ai-plot-op:${faction}`) < 0.5
+  const op: PlotOp = brain === 'greedy' || brain === 'reckless' ? (pickOp ? 'burn' : 'bribe') : pickOp ? 'spy' : 'rumor'
+  const c = plotCost(op)
+  const st = stockOf(r, faction)
+  if (st.grain - P.realm.aiDraftReserve * upkeepOf(r, faction, true) < c.grain || st.iron < c.iron) return []
+  if (op === 'rumor' || op === 'burn') return [{ kind: 'plot', faction, op, target }]
+  // 매수·첩자 — 그 나라 고을 가운데 우리 땅과 맞닿은 곳을 먼저
+  const ours = new Set(Object.values(r.nodes).filter((n) => n.owner === faction).map((n) => n.id))
+  const cands = plotTargets(r, faction, op).filter((t) => t.target === target)
+  const near = cands.find((t) => neighbors(r, t.node!).some((x) => ours.has(x))) ?? cands[0]
+  return near === undefined ? [] : [{ kind: 'plot', faction, op, target, node: near.node! }]
+}
+
 function envoys(r: Realm, faction: string): Order[] {
   if (roll(r.seed, r.season, `ai-envoy:${faction}`) >= P.realm.aiEnvoyChance) return []
   const me = nationPower(r, faction)
@@ -346,7 +373,9 @@ export function decide(r: Realm, faction: string, brain: Brain): Order[] {
   const first = [...ds, ...ss, ...rs]
   const gs = brain === 'random' || brain === 'reckless' ? [] : guards(first.length > 0 ? planned(r, first) : r, faction)
   const talk = brain === 'random' ? [] : [...answers(r, faction), ...envoys(r, faction)]
-  return [...talk, ...first, ...gs, ...(brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
+  // 공작은 징병·개척·제사·경계로 곡식을 쓴 뒤의 창고로 셈한다 (판정도 그 뒤다 — 2단계)
+  const ps = brain === 'random' ? [] : plots([...first, ...gs].length > 0 ? planned(r, [...first, ...gs]) : r, faction, brain)
+  return [...talk, ...first, ...gs, ...ps, ...(brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
 }
 
 function moves(r: Realm, faction: string, brain: Brain): Order[] {
