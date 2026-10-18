@@ -45,7 +45,8 @@ const NODES: RNode[] = [
   node('goja-cap', '고자 도읍', 'port', ['palisade'], 'goja', 500),
   node('goja-vil', '갯벌 마을', 'village', [], 'goja', 300),
   // 거칠산국 居柒山 — 동래 (『삼국사기』 거도전 · 지리지 "본래 거칠산군" · 위서 독로국[설]) · 바다 건너와 맞댄다
-  node('dokro-cap', '거칠산 도읍', 'port', ['palisade'], 'dokro', 600),
+  // 솔숲 — 도읍 뒤 금정산의 솔숲에서 나무가 난다 (봇 대전: 거칠산은 나무가 없어 개척·배가 막혀 짐 11%. 빈땅을 따로 두면 사람이 빠져 도읍이 얇아졌다)
+  node('dokro-cap', '거칠산 도읍', 'port', ['palisade', 'pines'], 'dokro', 600),
   // 소도 — 누구의 땅도 아니다. 침범 금지 (SYSTEMS §8-4) [사료]
   node('sodo', '큰나무 소도', 'sodo', ['sodo'], null, 0),
   // 빈땅 — 아무도 안 산다. 사람을 보내 개척하면 품(room)까지 빨리 큰다 (FLOW §2). 나라 사이 길이 여럿이 된다
