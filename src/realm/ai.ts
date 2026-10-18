@@ -25,6 +25,7 @@ import { armiesAt, fortMul, neighbors, newArmyId, planned, seasonOf, seenMarches
 import type { UnitKind } from './battle.ts'
 import { bowUpCost, plotAgents, plotCost, plotTargets } from './plots.ts'
 import { allianceWhy, borders, breakWhy, leaderOf, truceWhy } from './stance.ts'
+import { knows } from './discovery.ts'
 import type { Army, EnvoyAsk, Hero, Order, PlotOp, Realm, Why } from './types.ts'
 
 export type Brain = 'greedy' | 'cautious' | 'reckless' | 'random' | 'planner'
@@ -326,7 +327,7 @@ function bows(r: Realm, faction: string): Order[] {
 function plots(r: Realm, faction: string, brain: Brain): Order[] {
   if (roll(r.seed, r.season, `ai-plot:${faction}`) >= P.realm.aiPlotChance) return []
   const foes = sorted(Object.values(r.factions))
-    .filter((f) => f.id !== faction && !friendly(r, faction, f.id) && Object.values(r.nodes).some((n) => n.owner === f.id))
+    .filter((f) => f.id !== faction && knows(r, faction, f.id) && !friendly(r, faction, f.id) && Object.values(r.nodes).some((n) => n.owner === f.id))
     .map((f) => ({ id: f.id, war: relationOf(r, faction, f.id).state === 'war', power: nationPower(r, f.id) }))
     .sort((a, b) => (a.war !== b.war ? (a.war ? -1 : 1) : b.power - a.power))
   const target = foes[0]?.id
@@ -364,7 +365,7 @@ function envoys(r: Realm, faction: string): Order[] {
   if (roll(r.seed, r.season, `ai-envoy:${faction}`) >= P.realm.aiEnvoyChance) return []
   let best: { to: string; ask: EnvoyAsk; w: number; target?: string; why?: Why; about?: string } | null = null
   for (const f of sorted(Object.values(r.factions))) {
-    if (f.id === faction || f.mind === 'player' || !Object.values(r.nodes).some((n) => n.owner === f.id)) continue
+    if (f.id === faction || f.mind === 'player' || !knows(r, faction, f.id) || !Object.values(r.nodes).some((n) => n.owner === f.id)) continue
     const rel = relationOf(r, faction, f.id).state
     let c: { ask: EnvoyAsk; w: number; target?: string; why?: Why; about?: string } | null = null
     const tw = truceWhy(r, faction, f.id)
@@ -396,7 +397,7 @@ function envoys(r: Realm, faction: string): Order[] {
  */
 function trades(r: Realm, faction: string): Order[] | null {
   for (const f of sorted(Object.values(r.factions))) {
-    if (f.id === faction || f.mind === 'player' || !Object.values(r.nodes).some((n) => n.owner === f.id)) continue
+    if (f.id === faction || f.mind === 'player' || !knows(r, faction, f.id) || !Object.values(r.nodes).some((n) => n.owner === f.id)) continue
     if (!envoyOptions(r, faction, f.id).includes('trade')) continue
     const t = tradeOffer(r, faction, f.id)
     if (t === null) continue
@@ -442,7 +443,7 @@ function builds(r: Realm, faction: string): Order[] {
  */
 function breaks(r: Realm, faction: string): Order[] {
   for (const f of sorted(Object.values(r.factions))) {
-    if (f.id === faction) continue
+    if (f.id === faction || !knows(r, faction, f.id)) continue
     const m = breakWhy(r, faction, f.id)
     if (m === null || roll(r.seed, r.season, `ai-break:${faction}:${f.id}`) >= P.realm.aiBreakChance) continue
     return [{ kind: 'envoy', from: faction, to: f.id, ask: 'break', give: { grain: 0, iron: 0 }, take: { grain: 0, iron: 0 }, why: m.why, ...(m.about !== undefined ? { about: m.about } : {}) }]
@@ -459,7 +460,7 @@ function gifts(r: Realm, faction: string): Order[] {
   const grain = Math.floor(Math.min(60, spare * 0.15) / 10) * 10
   if (grain < 20) return []
   const target = sorted(Object.values(r.factions))
-    .filter((f) => f.id !== faction && f.mind !== 'player' && relationOf(r, faction, f.id).state !== 'ally' && Object.values(r.nodes).some((n) => n.owner === f.id))
+    .filter((f) => f.id !== faction && knows(r, faction, f.id) && f.mind !== 'player' && relationOf(r, faction, f.id).state !== 'ally' && Object.values(r.nodes).some((n) => n.owner === f.id))
     .sort((a, b) => nationPower(r, b.id) - nationPower(r, a.id))[0]
   return target === undefined ? [] : [{ kind: 'envoy', from: faction, to: target.id, ask: 'gift', give: { grain, iron: 0 }, take: { grain: 0, iron: 0 } }]
 }
@@ -764,8 +765,16 @@ function moves(r: Realm, faction: string, brain: Brain): Order[] {
 /** 플레이어가 아닌 모든 세력의 명령 — 저마다의 성향대로 */
 export function aiOrders(r: Realm): Order[] {
   const out: Order[] = []
-  for (const f of sorted(Object.values(r.factions))) {
+  const player = r.player
+  for (const [i, f] of sorted(Object.values(r.factions)).entries()) {
     if (f.mind === 'player') continue
+    // 넓어지는 지도 (삼한 남부 판) — 플레이어가 아직 모르는 먼 나라는 가볍게 굴린다: aiFarEvery 계절에 한 번만 다 생각하고,
+    // 나머지 계절은 청에 답하고 징병만 한다 (나라가 서른여섯이라 폰에서 버티려고). 발견이 없는 판은 늘 다 생각한다
+    const far = r.known !== undefined && player !== undefined && !knows(r, player, f.id)
+    if (far && (r.season + i) % P.realm.aiFarEvery !== 0) {
+      out.push(...answers(r, f.id), ...drafts(r, f.id))
+      continue
+    }
     out.push(...decide(r, f.id, f.mind))
   }
   return out

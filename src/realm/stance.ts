@@ -12,6 +12,7 @@
 import { P } from '../tune/params.ts'
 import { stockOf, upkeepOf } from './economy.ts'
 import { favorOf, nationPower, pairKey, powerRange, relationOf } from './diplomacy.ts'
+import { knows } from './discovery.ts'
 import type { Realm, Why } from './types.ts'
 
 export interface Motive {
@@ -44,15 +45,17 @@ export function capitalsHeld(r: Realm, f: string): number {
  */
 export function leaderOf(r: Realm, viewer: string): string | null {
   const R = P.realm
-  const fs = live(r)
+  // 아는 나라만 본다 (삼한 남부 판의 발견 — 모르는 나라는 앞서가는지도 모른다)
+  const fs = live(r).filter((f) => f === viewer || knows(r, viewer, f))
   const pw = new Map(fs.map((f) => [f, seen(r, viewer, f)]))
   const total = [...pw.values()].reduce((s, v) => s + v, 0)
+  const capsNeed = r.region === 'yeongnam' ? R.leaderCapitalsYeongnam : r.region === 'south' ? R.leaderCapitalsSouth : R.leaderCapitals
+  const shareNeed = r.region === 'yeongnam' ? R.leaderShareYeongnam : r.region === 'south' ? R.leaderShareSouth : R.leaderShare
   let best: { f: string; caps: number; p: number } | null = null
   for (const f of fs) {
     const caps = capitalsHeld(r, f)
     const p = pw.get(f)!
-    const big = r.region === 'yeongnam'
-    if (caps < (big ? R.leaderCapitalsYeongnam : R.leaderCapitals) && (total <= 0 || p / total < (big ? R.leaderShareYeongnam : R.leaderShare))) continue
+    if (caps < capsNeed && (total <= 0 || p / total < shareNeed)) continue
     if (best === null || caps > best.caps || (caps === best.caps && p > best.p)) best = { f, caps, p }
   }
   return best?.f ?? null

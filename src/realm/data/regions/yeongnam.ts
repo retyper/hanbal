@@ -354,3 +354,6 @@ export function startYeongnam(seed: number, player: string): Realm {
     region: 'yeongnam',
   }
 }
+
+/** 삼한 남부 판(regions/south.ts)이 영남의 나라·고을·길·장수·군대를 그대로 가져다 쓴다 */
+export const YEONGNAM_DATA = { NODES, EDGES, NATION_STARTS, HEROES, ARMIES } as const

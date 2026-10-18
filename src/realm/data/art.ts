@@ -7,6 +7,8 @@
  */
 import type { NodeKind, RegionId, RNode } from '../types.ts'
 import { GEO as YEONGNAM_GEO, yeongnamPos } from './regions/yeongnam.ts'
+import { southGeo } from './regions/south.ts'
+import { southPos } from './regions/south-geo.ts'
 
 /**
  * 판마다 지도 그림 — 폴더 · 확장자 · 그림 크기(SVG 좌표계) · 고을 기호·글씨 크기 배수 · 가장 큰 배율(cover 의 몇 배, zoom.ts) · 땅빛 둘레 (mapview.ts)
@@ -15,6 +17,8 @@ import { GEO as YEONGNAM_GEO, yeongnamPos } from './regions/yeongnam.ts'
 export const REGION_ART: Readonly<Record<RegionId, { dir: string; ext: string; w: number; h: number; nodeScale: number; labelScale: number; zmax: number; terrR: number; terrBand: number }>> = {
   'byeonhan-mini': { dir: 'map', ext: 'jpg', w: 1264, h: 848, nodeScale: 1, labelScale: 1, zmax: 2.2, terrR: 150, terrBand: 90 },
   yeongnam: { dir: 'map-yeongnam', ext: 'webp', w: 1024, h: 765, nodeScale: 0.34, labelScale: 0.72, zmax: 4, terrR: 50, terrBand: 28 },
+  // 삼한 남부 — 조각 넷을 이은 그림(ui/realm/worldmap.ts 가 합친다). 크기는 조각 눈금(1024px = 경도 2.9° · 765px = 위도 2.0°)으로 경도 5.5° × 위도 3.75°
+  south: { dir: 'map-world', ext: 'webp', w: 1942, h: 1434, nodeScale: 0.2, labelScale: 0.6, zmax: 6, terrR: 52, terrBand: 28 },
 }
 
 /** 장수 id → 명치판 (bust/<이름>.jpg). g- 남자 장수 · w- 여인 · l- 전설 */
@@ -57,6 +61,14 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'saro-1': 'g-08-veteran', 'saro-2': 'w-03-goguryeo-archer', 'daegaya-1': 'w-09-byeonhan-smith', 'sabeol-1': 'w-19-buyeo-fur-princess',
   'dabeol-1': 'g-07-drunk-warrior', 'usisan-1': 'g-01-master-smith', 'jomun-1': 'g-13-baekje-general', 'iseo-1': 'w-26-iseo-tomboy-general',
   'samul-1': 'w-08-mahan-warrior', 'bihwa-1': 'g-10-buyeo-horse-lord', 'eumjeup-1': 'w-01-silla-princess',
+  // 삼한 남부 판의 새 군주·장군 (data/regions/south.ts) — 있는 명치판을 나눠 쓴다. 새 얼굴은 그림 줄(인물 — 챗지피티)
+  'baekje-ruler': 'g-13-baekje-general', 'mokji-ruler': 'w-05-baekje-queen', 'michuhol-ruler': 'w-21-baekje-court-dancer',
+  'ungcheon-ruler': 'g-05-mahan-chieftain', 'sangdang-ruler': 'g-01-master-smith', 'geonma-ruler': 'w-17-mahan-pearl-diver',
+  'wansan-ruler': 'g-04-jinhan-giant', 'gosaburi-ruler': 'w-14-feast-spy', 'balla-ruler': 'g-15-shaman-man',
+  'mujin-ruler': 'w-16-clan-matriarch', 'gampyeong-ruler': 'g-03-sea-trader', 'goryong-ruler': 'w-02-goguryeo-lady',
+  'maek-ruler': 'g-10-buyeo-horse-lord', 'siljik-ruler': 'w-18-jinhan-salt-widow', 'haseulla-ruler': 'w-22-dongye-tiger-huntress',
+  'baekje-1': 'g-16-goguryeo-gaema-commander', 'mokji-1': 'g-08-veteran', 'wansan-1': 'w-13-young-archer', 'balla-1': 'w-08-mahan-warrior',
+  'maek-1': 'w-06-buyeo-huntress', 'haseulla-1': 'g-09-farmer-conscript', 'gampyeong-1': 'w-10-pirate-captain',
 }
 
 /** 나라 id → 깃발 (icon/emblem-*.png) · 지도의 테두리 색 */
@@ -83,6 +95,22 @@ export const FACTION_ART: Readonly<Record<string, { emblem: string; color: strin
   samul: { emblem: 'emblem-sailboat', color: '#3f86c6' },
   eumjeup: { emblem: 'emblem-antler', color: '#e5a3b8' },
   chopal: { emblem: 'emblem-reeds', color: '#b8a0d0' },
+  // 삼한 남부 판의 새 나라 열다섯 — 깃발은 아직 있는 것을 나눠 쓴다 (새 문장은 그림 줄 ART-QUEUE 에)
+  baekje: { emblem: 'emblem-sun', color: '#c9504a' },
+  mokji: { emblem: 'emblem-crown', color: '#d4a03a' },
+  michuhol: { emblem: 'emblem-wave', color: '#4a9fd0' },
+  ungcheon: { emblem: 'emblem-bear', color: '#8d7a5a' },
+  sangdang: { emblem: 'emblem-cauldron', color: '#6a8aa0' },
+  geonma: { emblem: 'emblem-horse', color: '#b8784a' },
+  wansan: { emblem: 'emblem-mountain', color: '#7a9a4a' },
+  gosaburi: { emblem: 'emblem-reeds', color: '#a6a05a' },
+  balla: { emblem: 'emblem-samjogo', color: '#9a4a6a' },
+  mujin: { emblem: 'emblem-stars', color: '#5a6ab0' },
+  gampyeong: { emblem: 'emblem-sailboat', color: '#3aa08a' },
+  goryong: { emblem: 'emblem-snake', color: '#7a5aa0' },
+  maek: { emblem: 'emblem-tiger', color: '#a0703a' },
+  siljik: { emblem: 'emblem-fish', color: '#5aa0b8' },
+  haseulla: { emblem: 'emblem-bow', color: '#c06a8a' },
 }
 
 const KIND_ICON: Readonly<Record<NodeKind, string>> = {
@@ -110,7 +138,22 @@ const NODE_ICON: Readonly<Record<string, string>> = {
   'miri-vil': 'settle-river-town',
   'goja-vil': 'settle-salt-town',
   'anya-vil': 'settle-mountain-hold',
+  'n-haseulla-cap': 'settle-dongye', // 하슬라 — 동예의 바닷가 읍락 (과하마 · 물범 가죽)
+  'm-baekje-v': 'settle-river-town',
+  'm-sodo': 'settle-sodo-village',
   'y-usisan-cap': 'settle-whaling', // 우시산 — 반구대의 고래잡이
+}
+
+/**
+ * 판마다의 고을 자리 — 삼한 남부 판은 같은 고을(영남 판의 y-*)도 다른 틀이라 경위도에서 다시 셈한다.
+ * 다른 판은 NODE_POS 그대로.
+ */
+export function nodePos(region: RegionId | undefined, id: string): readonly [number, number] | undefined {
+  if (region === 'south') {
+    const ll = southGeo(id)
+    return ll !== undefined ? southPos(ll[0], ll[1]) : undefined
+  }
+  return NODE_POS[id]
 }
 
 export function nodeIcon(n: RNode): string {
