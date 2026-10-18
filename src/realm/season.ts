@@ -16,11 +16,15 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import {
-  ambushChance, ambushSizePenalty, bins, fate, headcount, losses, pick, power, strength, winChance,
-  type Force, type UnitKind,
+  OPEN_FIELD, ambushChance, ambushSizePenalty, bins, fate, headcount, losses, pick, power, strength, winChance,
+  type Force, type Outcome, type UnitKind,
 } from './battle.ts'
-import { expireRelations, holdMarkets, onHostile, relationOf, resolveEnvoys, shareIntel } from './diplomacy.ts'
-import { draftCost, draftLimit, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepEconomy, stockOf } from './economy.ts'
+import {
+  expireRelations, friendly, holdMarkets, makeAsks, onHostile, relationOf, resolveAnswers, resolveEnvoys, shareIntel,
+} from './diplomacy.ts'
+import {
+  applyGuard, draftCost, draftLimit, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepEconomy, stockOf,
+} from './economy.ts'
 import { blockedWhy, seasonOf } from './calendar.ts'
 import type {
   Army, EdgeKind, Order, Realm, REdge, Report, ReportLine, RNode, SeasonOfYear, SnipeZone,
@@ -357,6 +361,7 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
     else if (o.kind === 'draft') draftArmy(r, o, lines)
     else if (o.kind === 'disband') disbandArmy(r, o, lines)
     else if (o.kind === 'settle') settleLand(r, o, lines)
+    else if (o.kind === 'guard') applyGuard(r, o, lines)
   }
 }
 
@@ -419,6 +424,108 @@ export function groupPower(
     f += power(forceOf(r, x.army), defF, field, 'atk')
   }
   return new Set(atks.map((x) => x.edge.id)).size >= 2 ? f * P.realm.pincer : f
+}
+
+/** 5 — 진 쪽 장수의 운명: 생포를 먼저, 남은 몫에서 전사. 굴림은 `rollKey` */
+function heroFate(
+  r: Realm,
+  loserArmies: readonly Army[],
+  winner: string,
+  outcome: Outcome,
+  bonus: number,
+  rollKey: string,
+): { captured: string | null; killed: string | null } {
+  const loserHero = loserArmies.map((x) => heroOf(r, x)).find((x) => x !== null) ?? null
+  if (loserHero === null) return { captured: null, killed: null }
+  const f = fate(outcome, bonus)
+  const r2 = roll(r.seed, r.season, rollKey)
+  let captured: string | null = null
+  let killed: string | null = null
+  if (r2 < f.capture) {
+    loserHero.status = 'captive'
+    loserHero.captor = winner
+    captured = loserHero.id
+  } else if (r2 < f.capture + f.death) {
+    loserHero.status = 'dead'
+    killed = loserHero.id
+  }
+  if (captured !== null || killed !== null) for (const x of loserArmies) if (x.hero === loserHero.id) x.hero = null
+  return { captured, killed }
+}
+
+/**
+ * 들판에서 마주칠 사이인가 — 다른 나라이고, 동맹·화친이 아니며, 전쟁 중이거나 한쪽이 다른 쪽 땅으로 가고 있다.
+ * 중립끼리 그냥 엇갈려 지나가는 길은 싸움이 아니다.
+ */
+function meetHostile(r: Realm, a: Army, b: Army): boolean {
+  if (a.faction === b.faction || allied(r, a.faction, b.faction) || friendly(r, a.faction, b.faction)) return false
+  if (relationOf(r, a.faction, b.faction).state === 'war') return true
+  return r.nodes[a.march!.to]?.owner === b.faction || r.nodes[b.march!.to]?.owner === a.faction
+}
+
+/**
+ * 3 — 들판 싸움 (형: "군대가 항상 마을에서 싸우나? 야전에서 마주칠수도 있는거 아닌가?" — 2026-10-18).
+ * 같은 길을 **마주 보고** 가는 적대 무리 둘이 이번 계절 그 길 위에 있으면 길 한가운데서 맞붙는다.
+ * 성·장정·기습이 없다(둘 다 걷는 중). 지는 쪽은 떠난 고을로 물러나고, 이긴 쪽은 가던 길을 그대로 간다.
+ * 교착이면 둘 다 물러난다. 길마다 id 순서로, 한 길에 무리가 여럿이면 앞선 짝부터 (결정론).
+ */
+function fieldBattles(r: Realm, lines: ReportLine[]): void {
+  const marching = byId(Object.values(r.armies).filter((a) => a.march !== null))
+  for (const eid of [...new Set(marching.map((a) => a.march!.edge))].sort()) {
+    for (;;) {
+      const on = marching.filter((a) => r.armies[a.id] !== undefined && a.march !== null && a.march.edge === eid)
+      const groups = arrivalGroups(on)
+      let pair: [Army[], Army[]] | null = null
+      for (let i = 0; i < groups.length && pair === null; i++) {
+        for (let j = i + 1; j < groups.length && pair === null; j++) {
+          const gi = groups[i]!
+          const gj = groups[j]!
+          if (gi[0]!.march!.to !== gj[0]!.march!.to && meetHostile(r, gi[0]!, gj[0]!)) pair = [gi, gj]
+        }
+      }
+      if (pair === null) break
+      // 남의 땅으로 가던 쪽이 공격 쪽 — 둘 다거나 아무도 아니면 앞선 군대 id 쪽
+      const [g1, g2] = pair
+      const into = (g: Army[], h: Army[]): boolean => r.nodes[g[0]!.march!.to]?.owner === h[0]!.faction
+      const g1First = into(g1, g2) === into(g2, g1) ? g1[0]!.id < g2[0]!.id : into(g1, g2)
+      const atks = g1First ? g1 : g2
+      const defs = g1First ? g2 : g1
+      const lead = atks[0]!
+      const target = lead.march!.to
+      provoke(r, lead.faction, defs[0]!.faction, lines)
+      const atkF = mergeForces(r, atks)
+      const defF = mergeForces(r, defs)
+      const p = winChance(power(atkF, defF, OPEN_FIELD, 'atk'), power(defF, atkF, OPEN_FIELD, 'def'))
+      const outcome = pick(bins(p), roll(r.seed, r.season, `field:${eid}:${lead.id}`))
+      const loss = losses(outcome)
+      for (const x of atks) scaleMix(x, 1 - loss.atk)
+      for (const x of defs) scaleMix(x, 1 - loss.def)
+      const atkWon = outcome === 'rout' || outcome === 'win'
+      const atkLost = outcome === 'lose' || outcome === 'routed'
+      let fateOf = { captured: null as string | null, killed: null as string | null }
+      if (atkWon || atkLost) {
+        fateOf = heroFate(r, atkWon ? defs : atks, atkWon ? lead.faction : defs[0]!.faction, outcome, 0, `field-fate:${eid}:${lead.id}`)
+      }
+      // 진 쪽(교착이면 둘 다)은 떠난 고을로 — 그새 남이 쥐었으면 이웃의 제 땅, 없으면 흩어진다
+      const back = (g: Army[]): void => {
+        for (const x of g) {
+          const home = x.march!.from
+          x.march = null
+          const to = retreatTo(r, x, home, home)
+          if (to !== null) x.at = to
+          else delete r.armies[x.id]
+        }
+      }
+      if (!atkWon) back(atks)
+      if (!atkLost) back(defs)
+      lines.push({
+        kind: 'battle', node: target, attacker: lead.id, allies: atks.slice(1).map((x) => x.id), pincer: false,
+        defender: defs[0]!.faction, ambush: 'none', p, outcome, captured: fateOf.captured, killed: fateOf.killed,
+        militia: 0, field: true, edge: eid,
+      })
+    }
+  }
+  for (const a of Object.values(r.armies)) if (headcount(forceOf(r, a)) < 1) delete r.armies[a.id]
 }
 
 /** 4·5 — 한 나라의 군대들이 같은 계절에 적 고을에 닿았다: 기습 → 전투 → 생포. 하나여도 같은 길을 지난다 */
@@ -485,27 +592,12 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   let captured: string | null = null
   let killed: string | null = null
   if (atkWon || atkLost) {
-    const loserArmies = atkWon ? defenders : atks
-    const loserHero = loserArmies.map((x) => heroOf(r, x)).find((x) => x !== null) ?? null
-    if (loserHero !== null) {
-      const sniped = atkWon === playerIsAtk // 플레이어가 쏜 쪽이 진 쪽이다
-      let bonus = 0
-      if (atkWon && ambush === 'success') bonus += R.captureAmbush
-      if (sniped && zone === 'leg') bonus += R.captureLegShot
-      if (sniped && zone === 'body') bonus += R.captureBodyShot
-      const f = fate(outcome, bonus)
-      const r2 = roll(r.seed, r.season, `fate:${key}`)
-      const winner = atkWon ? a.faction : defFaction
-      if (r2 < f.capture) {
-        loserHero.status = 'captive'
-        loserHero.captor = winner
-        captured = loserHero.id
-      } else if (r2 < f.capture + f.death) {
-        loserHero.status = 'dead'
-        killed = loserHero.id
-      }
-      if (captured !== null || killed !== null) for (const x of loserArmies) if (x.hero === loserHero.id) x.hero = null
-    }
+    const sniped = atkWon === playerIsAtk // 플레이어가 쏜 쪽이 진 쪽이다
+    let bonus = 0
+    if (atkWon && ambush === 'success') bonus += R.captureAmbush
+    if (sniped && zone === 'leg') bonus += R.captureLegShot
+    if (sniped && zone === 'body') bonus += R.captureBodyShot
+    ;({ captured, killed } = heroFate(r, atkWon ? defenders : atks, atkWon ? a.faction : defFaction, outcome, bonus, `fate:${key}`))
   }
 
   // 자리 — 이기면 다 함께 들어가 고을을 쥐고, 지거나 교착이면 저마다 떠난 고을로 돌아간다
@@ -541,12 +633,13 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   lines.push({
     kind: 'battle', node: node.id, attacker: a.id, allies: atks.slice(1).map((x) => x.id),
     pincer: new Set(legs.map((x) => x.edge.id)).size >= 2, defender: defFaction, ambush, p, outcome, captured, killed,
-    militia: militiaN,
+    militia: militiaN, field: false,
   })
 }
 
 /** 3·4·5 — 행군: 남은 계절을 줄이고, 닿은 군대를 무리(협공)로 처리한다. 싸움이 난 고을을 `fought` 에 적는다 */
 function resolveMarches(r: Realm, snipes: Readonly<Record<string, SnipeZone>>, lines: ReportLine[], fought: Set<string>): void {
+  fieldBattles(r, lines) // 길 위에서 먼저 마주친다
   const marching = byId(Object.values(r.armies).filter((a) => a.march !== null))
   for (const a of marching) a.march!.left -= 1
   for (const g of arrivalGroups(marching.filter((a) => a.march!.left <= 0))) {
@@ -581,6 +674,20 @@ function resolveMarches(r: Realm, snipes: Readonly<Record<string, SnipeZone>>, l
   for (const a of Object.values(r.armies)) if (headcount(forceOf(r, a)) < 1) delete r.armies[a.id]
 }
 
+/**
+ * 기습 낌새 (형: "기습에 대비하거나" — 2026-10-18) — 우리 고을로 기습해 오는 보인 행군을 알아챘나.
+ * 그 고을의 경계가 높을수록, 기습하는 장수의 략이 낮을수록 잘 챈다. 못 채면 그냥 행군으로 보인다.
+ * 굴림은 군대마다 `suspect:<army>` — 같은 계절 같은 군대는 늘 같다.
+ */
+export function suspects(r: Realm, a: Army): boolean {
+  const R = P.realm
+  const m = a.march
+  if (m === null || !m.ambush || r.nodes[m.to]?.owner !== r.player) return false
+  const alert = r.watch[m.to]?.alert ?? 0
+  const p = R.suspectBase + R.suspectPerAlert * alert - R.suspectPerRyak * ((heroOf(r, a)?.ryak ?? 1) - 1)
+  return roll(r.seed, r.season, `suspect:${a.id}`) < Math.min(1, Math.max(0, p))
+}
+
 /** 9 — 경계는 계절마다 0 으로 돌아간다 */
 function decayWatch(r: Realm): void {
   for (const w of Object.values(r.watch)) w.alert = Math.max(0, w.alert - P.realm.alertDecay)
@@ -609,6 +716,7 @@ export function advance(
   const lines: ReportLine[] = []
   const fought = new Set<string>()
   const season = ((r.season % 4) + 4) % 4
+  resolveAnswers(r, orders, lines) // 1 — 지난 계절에 온 청에 답한다 (답이 없으면 거절)
   applyOrders(r, orders, lines) // 1
   resolveScouts(r, orders, lines) // 2
   resolveEnvoys(r, orders, lines) // 2
@@ -621,7 +729,8 @@ export function advance(
   shareIntel(r) // 9 — 동맹은 본 것을 나눈다
   if (r.player !== undefined) {
     for (const a of seenMarches(r, r.player)) {
-      lines.push({ kind: 'sighted', faction: a.faction, army: a.id, from: a.march!.from, to: a.march!.to })
+      const line = { kind: 'sighted', faction: a.faction, army: a.id, from: a.march!.from, to: a.march!.to } as const
+      lines.push(suspects(r, a) ? { ...line, suspect: true } : line)
     }
     if (r.outcome === null || r.outcome === undefined) {
       const end = checkOutcome(r)
@@ -630,6 +739,7 @@ export function advance(
         lines.push({ kind: 'end', outcome: end, faction: r.player })
       }
     }
+    makeAsks(r, lines) // 9 — 남의 나라가 다음 계절에 답할 청을 건다
   }
   const report: Report = { season: r.season, lines }
   r.season += 1 // 11

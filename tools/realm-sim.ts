@@ -9,6 +9,7 @@
  *   땅      EARLY 계절째 · 끝의 제 고을 수
  *   싸움    판당 싸움 수 · 이긴 비율 · 판당 생포 · 첫 장수를 잃은 판
  *   기습    이 나라가 친 기습/판 · 그 가운데 먹힌 비율 · 판 전체(모든 나라)의 기습/판 · 제사/판
+ *   외교    이 나라가 받은 청/판 · 판 전체에서 맺어진 화친·동맹/판 · 판 전체의 들판 싸움/판
  * `--as all` 은 여섯 나라를 차례로 고른다 — FLOW §3 "잘하는 것이 다르고 합은 비슷하게"를 재는 표.
  * 합격선의 씨앗 — "신중 봇이 무모 봇보다 나아야 정보 체계가 장식이 아니다" (BUILD §3-5). 감이 아니라 숫자로 (CLAUDE.md).
  */
@@ -51,13 +52,17 @@ interface Run {
   rites: number
   worldAmbush: number
   wildHeld: number
+  /** 이 나라가 받은 청 · 판 전체에서 맺어진 화친·동맹 · 판 전체의 들판 싸움 */
+  asks: number
+  pacts: number
+  fieldFights: number
 }
 
 function play(bot: Brain, as: string, seed: number): Run {
   let r: Realm = startRealm(seed, as)
   const own = (x: Realm): number => Object.values(x.nodes).filter((n) => n.owner === as).length
   const lead = Object.values(r.heroes).filter((h) => h.faction === as).sort((a, b) => (a.id < b.id ? -1 : 1))[0]?.id
-  const run: Run = { bot, as, seed, start: own(r), nodes: 0, nodesEarly: -1, win: false, lose: false, battles: 0, wins: 0, captured: 0, lostHero: false, settled: 0, wildHeld: 0, ambush: 0, ambushOk: 0, rites: 0, worldAmbush: 0 }
+  const run: Run = { bot, as, seed, start: own(r), nodes: 0, nodesEarly: -1, win: false, lose: false, battles: 0, wins: 0, captured: 0, lostHero: false, settled: 0, wildHeld: 0, ambush: 0, ambushOk: 0, rites: 0, worldAmbush: 0, asks: 0, pacts: 0, fieldFights: 0 }
   for (let s = 0; s < SEASONS; s++) {
     if (s === EARLY) run.nodesEarly = own(r)
     const orders = [...decide(r, as, bot), ...aiOrders(r)]
@@ -65,6 +70,9 @@ function play(bot: Brain, as: string, seed: number): Run {
     for (const l of report.lines) {
       if (l.kind === 'settle' && l.faction === as) run.settled++
       if (l.kind === 'rite' && l.faction === as) run.rites++
+      if (l.kind === 'ask' && l.ask.to === as) run.asks++
+      if (l.kind === 'relation' && (l.state === 'truce' || l.state === 'ally')) run.pacts++
+      if (l.kind === 'battle' && l.field === true) run.fieldFights++
       if (l.kind === 'battle' && l.ambush !== 'none') {
         run.worldAmbush++
         if (r.armies[l.attacker]?.faction === as) {
@@ -101,7 +109,7 @@ const mean = (xs: number[]): number => (xs.length === 0 ? 0 : xs.reduce((a, b) =
 const pct = (x: number): string => `${(x * 100).toFixed(1)}%`
 
 console.log(`나라 시뮬 — 변한 6국 축소판 · ${GAMES}판 × ${SEASONS}계절 · 봇이 고른 나라를 맡는다\n`)
-console.log(`나라    봇         시작  땅@${EARLY}  끝땅   이김    짐     싸움/판  이긴 비율  생포/판  장수 잃음  개척/판  쥔 빈땅  기습/판  먹힘   제사/판  판 기습`)
+console.log(`나라    봇         시작  땅@${EARLY}  끝땅   이김    짐     싸움/판  이긴 비율  생포/판  장수 잃음  개척/판  쥔 빈땅  기습/판  먹힘   제사/판  판 기습  청/판  맺음/판  들판/판`)
 for (const as of AS) {
   for (const bot of BOTS) {
     const rs = runs.filter((x) => x.bot === bot && x.as === as)
@@ -116,7 +124,8 @@ for (const as of AS) {
       `${mean(rs.map((x) => x.captured)).toFixed(2).padStart(7)}  ${pct(mean(rs.map((x) => (x.lostHero ? 1 : 0)))).padStart(9)}  ` +
       `${mean(rs.map((x) => x.settled)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.wildHeld)).toFixed(2).padStart(7)}  ` +
       `${mean(rs.map((x) => x.ambush)).toFixed(2).padStart(7)}  ${pct(amb > 0 ? ambOk / amb : 0).padStart(6)}  ` +
-      `${mean(rs.map((x) => x.rites)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.worldAmbush)).toFixed(2).padStart(6)}`,
+      `${mean(rs.map((x) => x.rites)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.worldAmbush)).toFixed(2).padStart(6)}  ` +
+      `${mean(rs.map((x) => x.asks)).toFixed(2).padStart(5)}  ${mean(rs.map((x) => x.pacts)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.fieldFights)).toFixed(2).padStart(7)}`,
     )
   }
 }

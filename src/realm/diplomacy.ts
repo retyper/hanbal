@@ -7,14 +7,14 @@
  *
  * 받아들일 확률은 정보의 계약을 따른다 — envoyChance 는 **묻는 쪽의 정보로** 범위를 낸다.
  * 판정은 참값으로 셈한 한 점(그 범위 안에 든다)에 이름 붙은 주사위 `envoy:<from>:<to>` 를 굴린다.
- * 지금은 남의 나라가 플레이어에게 사신을 보내지 않는다 (받기·거절 화면이 생기면 붙인다).
+ * 남의 나라는 플레이어에게 사신 대신 **청**(Ask)을 건다 — 아래 makeAsks · resolveAnswers. AI 끼리는 사신을 주고받는다 (ai.ts envoys).
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { stockOf } from './economy.ts'
 import { visibleRange } from './intel.ts'
 import { nodeStrength } from './season.ts'
-import type { EnvoyAsk, Order, Realm, Relation, ReportLine } from './types.ts'
+import type { Ask, AskKind, EnvoyAsk, Order, Realm, Relation, ReportLine } from './types.ts'
 
 export function pairKey(a: string, b: string): string {
   return a < b ? `${a}|${b}` : `${b}|${a}`
@@ -284,5 +284,137 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
         break
       }
     }
+  }
+}
+
+/**
+ * 청(請) — 남의 나라가 플레이어에게 거는 것 (형: "적이 뭔가 거래를 걸어온다거나 동맹요구하거나 그런거 없어?" — 2026-10-18).
+ * 계절 끝에 AI 가 만들고(makeAsks), 플레이어는 다음 계절에 답한다(answer 명령 → resolveAnswers). 답이 없으면 거절.
+ * 무엇을 청하나는 사이·힘의 비·성향·창고가 정한다:
+ *   전쟁 중   — 지는 쪽은 화친을, 훨씬 센 쪽은 조공을 내놓으면 멈추겠다고
+ *   중립      — 화친(신중할수록) · 맞바꿈 · 같은 적이 있으면 동맹 · 우리가 훨씬 세면 조공을 바친다 · 탐욕스럽고 훨씬 세면 조공 요구
+ *   화친      — 맞바꿈 · 동맹
+ *   동맹      — 맞바꿈
+ */
+
+const NO_GOODS = { grain: 0, iron: 0 }
+
+/** 지금 이 나라가 답할 수 있는 청 — id 순서 */
+export function openAsks(r: Realm, faction: string): Ask[] {
+  return (r.asks ?? []).filter((a) => a.to === faction && a.until >= r.season).sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0))
+}
+
+/** 맞바꿈 제안 — 그쪽이 남는 것을 내고 모자란 것을 받는다. 서로 낼 것이 없으면 null */
+function tradeOffer(r: Realm, from: string, to: string): { give: { grain: number; iron: number }; take: { grain: number; iron: number } } | null {
+  const R = P.realm
+  const a = stockOf(r, from)
+  const b = stockOf(r, to)
+  const iron = R.askTradeIron
+  const grain = Math.round(iron * R.envoyIronWorth)
+  if (a.iron >= iron * 2 && b.grain >= grain) return { give: { grain: 0, iron }, take: { grain, iron: 0 } }
+  if (a.grain >= grain * 3 && b.iron >= iron) return { give: { grain, iron: 0 }, take: { grain: 0, iron } }
+  return null
+}
+
+/** 한 나라가 플레이어에게 걸 청 하나 — 걸 거리가 없으면 null. 굴림은 `ask-kind:<season>:<from>` */
+function pickAsk(r: Realm, from: string, to: string): Ask | null {
+  const R = P.realm
+  const rel = relationOf(r, from, to).state
+  const ratio = nationPower(r, to) / Math.max(1, nationPower(r, from)) // 플레이어가 이 나라의 몇 배인가
+  const mind = r.factions[from]?.mind
+  const mine = stockOf(r, from)
+  const theirs = stockOf(r, to)
+  const round10 = (x: number): number => Math.max(10, Math.round(x / 10) * 10)
+  const opts: Array<{ kind: AskKind; w: number; give: { grain: number; iron: number }; take: { grain: number; iron: number } }> = []
+  const strong = 1 / Math.max(1e-9, ratio) >= R.askDemandPower
+  if (rel === 'war') {
+    opts.push({ kind: 'truce', w: ratio > 1 ? 3 : 1, give: NO_GOODS, take: NO_GOODS })
+  } else if (rel === 'neutral') {
+    opts.push({ kind: 'truce', w: mind === 'cautious' ? 2 : 1, give: NO_GOODS, take: NO_GOODS })
+  }
+  if (rel === 'neutral' || rel === 'truce') {
+    opts.push({ kind: 'alliance', w: atWarWithSame(r, from, to) ? 3 : rel === 'truce' ? 1 : 0, give: NO_GOODS, take: NO_GOODS })
+  }
+  if (rel !== 'war') {
+    const t = tradeOffer(r, from, to)
+    if (t !== null) opts.push({ kind: 'trade', w: 2, ...t })
+  }
+  if ((rel === 'war' || rel === 'neutral') && ratio >= R.askTributePower && mine.grain >= 20) {
+    opts.push({ kind: 'tribute', w: mind === 'cautious' ? 3 : 1, give: { grain: round10(mine.grain * R.askTributeShare), iron: 0 }, take: NO_GOODS })
+  }
+  if ((rel === 'war' || (rel === 'neutral' && mind === 'greedy')) && strong && theirs.grain >= 20) {
+    opts.push({ kind: 'demand', w: 2, give: NO_GOODS, take: { grain: round10(theirs.grain * R.askDemandShare), iron: 0 } })
+  }
+  const live = opts.filter((o) => o.w > 0)
+  const total = live.reduce((s, o) => s + o.w, 0)
+  if (total <= 0) return null
+  let x = roll(r.seed, r.season, `ask-kind:${from}`) * total
+  const o = live.find((c) => (x -= c.w) < 0) ?? live[live.length - 1]!
+  return { id: `ask:${r.season}:${from}`, from, to, kind: o.kind, give: o.give, take: o.take, until: r.season + 1 }
+}
+
+/** 9 — 계절 끝: AI 나라들이 플레이어에게 청을 건다. 나라마다 aiAskChance, 플레이어는 계절에 askMaxPerSeason 까지 */
+export function makeAsks(r: Realm, lines: ReportLine[]): void {
+  const R = P.realm
+  const me = r.player
+  if (me === undefined || r.factions[me] === undefined || r.outcome) return
+  const alive = (f: string): boolean => Object.values(r.nodes).some((n) => n.owner === f)
+  if (!alive(me)) return
+  let made = 0
+  for (const f of Object.keys(r.factions).sort()) {
+    if (made >= R.askMaxPerSeason) break
+    if (f === me || r.factions[f]!.mind === 'player' || !alive(f)) continue
+    if (roll(r.seed, r.season, `ask:${f}`) >= R.aiAskChance) continue
+    const ask = pickAsk(r, f, me)
+    if (ask === null) continue
+    ;(r.asks ??= []).push(ask)
+    lines.push({ kind: 'ask', ask })
+    made++
+  }
+}
+
+/**
+ * 1 — 청에 답한다. 이번 계절이 마감인 청은 모두 여기서 끝난다: 받기 명령이 있으면 받고, 없으면 거절.
+ * 받았는데 낼 것이 모자라면 거절로 친다. 조공 요구를 거절하면 전쟁이다.
+ */
+export function resolveAnswers(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
+  const R = P.realm
+  const due = (r.asks ?? []).filter((a) => a.until <= r.season).sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0))
+  if (due.length === 0) return
+  r.asks = (r.asks ?? []).filter((a) => a.until > r.season)
+  for (const a of due) {
+    if (r.factions[a.from] === undefined || r.factions[a.to] === undefined) continue
+    const ans = orders.find((o): o is Extract<Order, { kind: 'answer' }> => o.kind === 'answer' && o.ask === a.id)
+    let yes = ans?.yes === true
+    if (yes) {
+      switch (a.kind) {
+        case 'truce':
+          setRelation(r, a.from, a.to, 'truce', r.season + R.truceSeasons, lines)
+          break
+        case 'alliance':
+          setRelation(r, a.from, a.to, 'ally', null, lines)
+          break
+        case 'trade':
+          if (canPay(r, a.from, a.give) && canPay(r, a.to, a.take)) {
+            pay(r, a.from, a.to, a.give)
+            pay(r, a.to, a.from, a.take)
+          } else yes = false
+          break
+        case 'tribute': {
+          const s = stockOf(r, a.from)
+          pay(r, a.from, a.to, { grain: Math.min(a.give.grain, s.grain), iron: Math.min(a.give.iron, s.iron) })
+          if (relationOf(r, a.from, a.to).state !== 'ally') setRelation(r, a.from, a.to, 'truce', r.season + R.truceSeasons, lines)
+          break
+        }
+        case 'demand':
+          if (canPay(r, a.to, a.take)) {
+            pay(r, a.to, a.from, a.take)
+            if (relationOf(r, a.from, a.to).state !== 'ally') setRelation(r, a.from, a.to, 'truce', r.season + R.truceSeasons, lines)
+          } else yes = false
+          break
+      }
+    }
+    lines.push({ kind: 'answered', ask: a.id, yes, from: a.from, askKind: a.kind })
+    if (!yes && a.kind === 'demand') setRelation(r, a.from, a.to, 'war', null, lines)
   }
 }

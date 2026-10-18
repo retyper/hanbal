@@ -158,6 +158,30 @@ export function resolveRites(r: Realm, orders: readonly Order[], lines: ReportLi
   }
 }
 
+/** 경계 강화 (형: "우리가 경계를 강화하거나" — 2026-10-18) — 곡식을 내고 그 고을의 경계를 올린다 */
+export function guardCost(): { grain: number } {
+  return { grain: P.realm.guardGrain }
+}
+
+/** 이 고을의 경계를 이번 계절에 강화할 수 있나 — 제 고을 · 이번 계절에 아직 안 함 · 곡식이 있다 */
+export function canGuard(r: Realm, faction: string, node: string): boolean {
+  const n = r.nodes[node]
+  if (n === undefined || n.owner !== faction || n.kind === 'sodo') return false
+  if (r.watch[node]?.guarded === r.season) return false
+  return stockOf(r, faction).grain >= guardCost().grain
+}
+
+/** 1 — 경계 강화. 규칙에 안 맞으면 아무 일도 없다 */
+export function applyGuard(r: Realm, o: Extract<Order, { kind: 'guard' }>, lines: ReportLine[]): void {
+  if (!canGuard(r, o.faction, o.node)) return
+  const w = (r.watch[o.node] ??= { alert: 0, lull: 0 })
+  w.alert = Math.min(P.realm.alertMax, w.alert + P.realm.guardAlert)
+  w.lull = 0 // 방심도 걷힌다
+  w.guarded = r.season
+  stockOf(r, o.faction).grain -= guardCost().grain
+  lines.push({ kind: 'guard', faction: o.faction, node: o.node })
+}
+
 /** 이 계절에 나라가 군대를 먹이는 데 드는 곡식 */
 export function upkeepOf(r: Realm, faction: string, winter: boolean): number {
   return Math.ceil(menOf(r, faction) * P.realm.rationPerSoldier * (winter ? P.realm.winterRation : 1))

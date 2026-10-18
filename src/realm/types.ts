@@ -130,6 +130,28 @@ export interface NodeIntel {
 export interface Watch {
   alert: number
   lull: number
+  /** 경계를 강화한 계절 (guard 명령) — 한 고을 한 계절 한 번. 옛 저장에는 없다 */
+  guarded?: number
+}
+
+/**
+ * 남의 나라가 거는 청(請) — 플레이어가 받기·거절로 답한다 (형: "적이 뭔가 거래를 걸어온다거나 동맹요구하거나" — 2026-10-18).
+ *   truce · alliance — 화친·동맹을 청한다
+ *   trade   — 맞바꿈: `give` 는 그쪽이 주고 `take` 는 우리가 준다
+ *   tribute — 그쪽이 조공을 바친다 (`give`). 받으면 화친이 된다
+ *   demand  — 그쪽이 조공을 내놓으라 한다 (`take`). 내면 화친, **거절하면 전쟁**
+ * `until` 계절 안에 답해야 한다. 답이 없으면 거절로 친다.
+ */
+export type AskKind = 'truce' | 'trade' | 'tribute' | 'alliance' | 'demand'
+
+export interface Ask {
+  readonly id: string
+  readonly from: string
+  readonly to: string
+  readonly kind: AskKind
+  readonly give: { readonly grain: number; readonly iron: number }
+  readonly take: { readonly grain: number; readonly iron: number }
+  readonly until: number
 }
 
 export interface Realm {
@@ -155,6 +177,8 @@ export interface Realm {
   outcome: { kind: 'win' | 'lose'; season: number } | null
   /** 봄 제사를 지낸 해 (Math.floor(season / 4)) — 나라마다. 그해 가을 수확이 는다 (economy.riteAllowed). 옛 저장에는 없다 */
   blessed?: Record<string, number>
+  /** 답을 기다리는 청 (diplomacy.openAsks). 옛 저장에는 없다 */
+  asks?: Ask[]
 }
 
 /** 플레이어(또는 AI)가 한 계절에 내리는 명령 */
@@ -179,6 +203,10 @@ export type Order =
   | { readonly kind: 'settle'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number }
   /** 소도 제사 — 봄·가을에, 소도와 길로 맞닿은 고을을 쥔 나라만. 곡식이 든다 (economy.riteAllowed · riteCost) */
   | { readonly kind: 'rite'; readonly faction: string }
+  /** 청에 답한다 — 받기(yes) · 거절. 답하지 않은 청은 거절로 친다 */
+  | { readonly kind: 'answer'; readonly ask: string; readonly yes: boolean }
+  /** 경계 강화 — 곡식을 내고 그 고을 경계를 올린다 (economy.canGuard · guardCost). 한 고을 한 계절 한 번 */
+  | { readonly kind: 'guard'; readonly faction: string; readonly node: string }
   /** 사신 (FLOW §4) — 한 나라가 한 계절에 하나. give 는 보내는 쪽이, take 는 받는 쪽이 내놓는다 */
   | {
       readonly kind: 'envoy'
@@ -215,6 +243,12 @@ export type ReportLine =
       readonly killed: string | null
       /** 판정에 선 장정 수 — 기습이 먹히면 0 (모이지 못했다) */
       readonly militia: number
+      /**
+       * 들판 싸움 — 같은 길을 마주 보고 가던 두 군대가 길 위에서 맞붙었다. 성·장정·기습이 없다.
+       * 그때 `edge` 는 그 길, `node` 는 공격 쪽이 가던 고을. 고을 싸움이면 false (옛 보고에는 없다)
+       */
+      readonly field?: boolean
+      readonly edge?: string
     }
   /** 가을 수확 — `blessed` 는 그 가운데 봄 제사로 더 든 몫 */
   | { readonly kind: 'harvest'; readonly faction: string; readonly grain: number; readonly blessed?: number }
@@ -230,7 +264,14 @@ export type ReportLine =
   | { readonly kind: 'relation'; readonly a: string; readonly b: string; readonly state: Relation['state'] }
   | { readonly kind: 'end'; readonly outcome: 'win' | 'lose'; readonly faction: string }
   /** 우리 고을에 맞닿은 길 위의 남의 군대 — 행군은 보인다 (FLOW §7 #2) */
-  | { readonly kind: 'sighted'; readonly faction: string; readonly army: string; readonly from: string; readonly to: string }
+  /** `suspect` — 우리 고을로 오는 기습을 낌새챘다 (경계·굴림). 못 챘으면 그냥 행군으로 보인다 */
+  | { readonly kind: 'sighted'; readonly faction: string; readonly army: string; readonly from: string; readonly to: string; readonly suspect?: boolean }
+  /** 새 청이 왔다 — 다음 계절에 답한다 */
+  | { readonly kind: 'ask'; readonly ask: Ask }
+  /** 청에 답했다 (답이 없어 거절로 친 것도) */
+  | { readonly kind: 'answered'; readonly ask: string; readonly yes: boolean; readonly from: string; readonly askKind: AskKind }
+  /** 경계 강화 */
+  | { readonly kind: 'guard'; readonly faction: string; readonly node: string }
 
 export interface Report {
   readonly season: number

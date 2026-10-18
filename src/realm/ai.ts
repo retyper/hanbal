@@ -13,12 +13,14 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
-import { allyFoe, friendly } from './diplomacy.ts'
-import { draftCost, draftLimit, hhOf, menOf, riteAllowed, riteCost, settleLimit, settleTargets, stockOf, upkeepOf } from './economy.ts'
+import { allyFoe, friendly, nationPower, openAsks, relationOf } from './diplomacy.ts'
+import {
+  canGuard, draftCost, draftLimit, guardCost, hhOf, menOf, riteAllowed, riteCost, settleLimit, settleTargets, stockOf, upkeepOf,
+} from './economy.ts'
 import { ambushWorth, jointWin, movesOf, type Move } from './estimate.ts'
-import { armiesAt, fortMul, neighbors, newArmyId, planned, seasonOf } from './season.ts'
+import { armiesAt, fortMul, neighbors, newArmyId, planned, seasonOf, seenMarches } from './season.ts'
 import type { UnitKind } from './battle.ts'
-import type { Army, Order, Realm } from './types.ts'
+import type { Army, EnvoyAsk, Order, Realm } from './types.ts'
 
 export type Brain = 'greedy' | 'cautious' | 'reckless' | 'random' | 'planner'
 
@@ -265,6 +267,75 @@ function settles(r: Realm, faction: string): Order[] {
 }
 
 /**
+ * 경계 강화 — 보인 남의 행군이 제 고을로 오면, 군량을 남기고도 곡식이 있으면 그 고을의 경계를 올린다.
+ * 기습인지 아닌지는 모른다 (낌새는 화면의 몫) — 오는 것이 보이면 대비한다.
+ */
+function guards(r: Realm, faction: string): Order[] {
+  let spare = stockOf(r, faction).grain - P.realm.aiDraftReserve * upkeepOf(r, faction, true)
+  const out: Order[] = []
+  const nodes = [...new Set(seenMarches(r, faction).map((a) => a.march!.to))].sort()
+  for (const node of nodes) {
+    if (spare < guardCost().grain || !canGuard(r, faction, node)) continue
+    out.push({ kind: 'guard', faction, node })
+    spare -= guardCost().grain
+  }
+  return out
+}
+
+/**
+ * AI 끼리의 사신 — 한 계절에 aiEnvoyChance 로 하나. 지고 있는 전쟁이면 화친, 같은 적이 있으면 동맹, 신중하면 이웃과 화친.
+ * 플레이어에게는 사신이 아니라 청(diplomacy.makeAsks)을 건다 — 여기서는 플레이어를 고르지 않는다.
+ */
+function envoys(r: Realm, faction: string): Order[] {
+  if (roll(r.seed, r.season, `ai-envoy:${faction}`) >= P.realm.aiEnvoyChance) return []
+  const me = nationPower(r, faction)
+  const mind = r.factions[faction]?.mind
+  let best: { to: string; ask: EnvoyAsk; w: number } | null = null
+  for (const f of sorted(Object.values(r.factions))) {
+    if (f.id === faction || f.mind === 'player' || !Object.values(r.nodes).some((n) => n.owner === f.id)) continue
+    const rel = relationOf(r, faction, f.id).state
+    const ratio = me / Math.max(1, nationPower(r, f.id))
+    let c: { ask: EnvoyAsk; w: number } | null = null
+    if (rel === 'war' && ratio < 1) c = { ask: 'truce', w: 2 - ratio }
+    else if ((rel === 'neutral' || rel === 'truce') && commonFoe(r, faction, f.id)) c = { ask: 'alliance', w: 1.5 }
+    else if (rel === 'neutral' && mind === 'cautious') c = { ask: 'truce', w: 1 }
+    if (c !== null && (best === null || c.w > best.w)) best = { to: f.id, ...c }
+  }
+  if (best === null) return []
+  return [{ kind: 'envoy', from: faction, to: best.to, ask: best.ask, give: { grain: 0, iron: 0 }, take: { grain: 0, iron: 0 } }]
+}
+
+function commonFoe(r: Realm, a: string, b: string): boolean {
+  return Object.keys(r.factions).some((x) => x !== a && x !== b && relationOf(r, a, x).state === 'war' && relationOf(r, b, x).state === 'war')
+}
+
+/**
+ * 플레이어 자리에 앉은 봇의 답 (tools/realm-sim) — 화친·동맹·바침은 받는다, 맞바꿈은 손해가 아니면,
+ * 조공 요구는 그쪽이 askDemandPower 배 넘게 세면 낸다(못 내면 어쩔 수 없다).
+ */
+function answers(r: Realm, faction: string): Order[] {
+  const R = P.realm
+  const out: Order[] = []
+  for (const a of openAsks(r, faction)) {
+    let yes: boolean
+    switch (a.kind) {
+      case 'trade': {
+        const val = (x: { grain: number; iron: number }): number => x.grain + x.iron * R.envoyIronWorth
+        yes = val(a.give) >= val(a.take) * 0.9
+        break
+      }
+      case 'demand':
+        yes = nationPower(r, a.from) >= R.askDemandPower * nationPower(r, faction)
+        break
+      default:
+        yes = true
+    }
+    out.push({ kind: 'answer', ask: a.id, yes })
+  }
+  return out
+}
+
+/**
  * 한 세력의 이번 계절 명령 — 징병(가을·겨울) · 개척(봄·가을) · 소도 제사(봄·가을) · 군대의 움직임.
  * 무모·무작위 봇은 개척하지 않고, 무작위는 제사도 안 지낸다. 제사는 징병·개척으로 곡식을 쓴 뒤의 창고로 셈한다 (판정도 그 순서다)
  */
@@ -272,7 +343,10 @@ export function decide(r: Realm, faction: string, brain: Brain): Order[] {
   const ds = drafts(r, faction)
   const ss = brain === 'reckless' || brain === 'random' ? [] : settles(ds.length > 0 ? planned(r, ds) : r, faction)
   const rs = brain === 'random' ? [] : rites(ds.length + ss.length > 0 ? planned(r, [...ds, ...ss]) : r, faction)
-  return [...ds, ...ss, ...rs, ...(brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
+  const first = [...ds, ...ss, ...rs]
+  const gs = brain === 'random' || brain === 'reckless' ? [] : guards(first.length > 0 ? planned(r, first) : r, faction)
+  const talk = brain === 'random' ? [] : [...answers(r, faction), ...envoys(r, faction)]
+  return [...talk, ...first, ...gs, ...(brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
 }
 
 function moves(r: Realm, faction: string, brain: Brain): Order[] {
