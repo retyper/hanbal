@@ -37,46 +37,51 @@ const wild = (id: string, name: string, tags: RNode['tags'], room: number, ll: r
   return { id, name, kind: 'wild', tags, owner: null, hh: 0, sown: 0, room: room * PEOPLE_SCALE }
 }
 
+/*
+ * 크기는 고르게 (2026-10-19 봇 대전) — 2~3세기 진한은 열두 나라가 엇비슷했고 사로·대가야가 커진 것은 뒤의 일이다.
+ * 처음 판에 사로(도읍 650 · 군대 둘)와 대가야가 커서 이김 47%·42%, 맞닿은 작은 나라는 짐 60~80% 였다.
+ * 그래서 사로·대가야·가락·아라를 이웃 크기로 줄이고, 도읍마다 목책을 두르고, 분지로 드는 길(모화 골짜기 · 초계 분지 · 마산–함안 고개)을 고개로 했다.
+ */
 const NODES: RNode[] = [
   // ── 동해 쪽 진한
-  node('y-saro-cap', '사로 도읍', 'capital', ['palisade'], 'saro', 650, [129.21, 35.84]), // 경주 — 『삼국사기』 신라본기
-  node('y-saro-fort', '토함 산성', 'fort', ['high'], 'saro', 100, [129.33, 35.77]),
-  node('y-saro-port', '감포 항구', 'port', [], 'saro', 200, [129.42, 35.8]), // 바닷가에 붙도록 안으로
-  node('y-eumjeup-cap', '음즙벌 도읍', 'capital', [], 'eumjeup', 300, [129.23, 35.99]), // 안강
+  node('y-saro-cap', '사로 도읍', 'capital', ['palisade'], 'saro', 340, [129.21, 35.84]), // 경주 — 『삼국사기』 신라본기
+  node('y-saro-fort', '토함 산성', 'fort', ['high'], 'saro', 60, [129.33, 35.77]),
+  node('y-saro-port', '감포 항구', 'port', [], 'saro', 100, [129.42, 35.8]), // 바닷가에 붙도록 안으로
+  node('y-eumjeup-cap', '음즙벌 도읍', 'capital', ['palisade'], 'eumjeup', 350, [129.23, 35.99]), // 안강
   node('y-eumjeup-port', '영일 포구', 'port', [], 'eumjeup', 150, [129.33, 36.05]), // 포항 영일만
   node('y-usisan-cap', '우시산 도읍', 'capital', ['palisade'], 'usisan', 350, [129.3, 35.56]), // 울산 — 『삼국사기』 거도전
   node('y-usisan-iron', '달천 철광', 'ironMine', ['iron'], 'usisan', 120, [129.38, 35.64]), // 울산 달천
   node('y-dokro-cap', '거칠산 도읍', 'port', ['palisade'], 'dokro', 450, [129.08, 35.21]), // 동래
   node('y-dokro-v', '기장 포구', 'port', [], 'dokro', 150, [129.2, 35.27]),
   // ── 남해 바닷가 가야
-  node('y-guya-cap', '가락 도읍', 'port', ['palisade', 'high'], 'guya', 550, [128.88, 35.23]), // 김해 — 『삼국유사』 가락국기
+  node('y-guya-cap', '가락 도읍', 'port', ['palisade', 'high'], 'guya', 460, [128.88, 35.23]), // 김해 — 『삼국유사』 가락국기
   node('y-guya-iron', '물금 철광', 'ironMine', ['iron'], 'guya', 150, [128.98, 35.33]), // 양산 물금
   node('y-guya-v', '봉황 마을', 'village', [], 'guya', 250, [128.76, 35.28]), // 김해 진영
   node('y-us-cap', '골포 도읍', 'capital', ['palisade'], 'us', 300, [128.57, 35.22]), // 마산 [설] — 포상팔국
   node('y-us-v', '다호리 마을', 'village', ['reeds'], 'us', 150, [128.62, 35.34]), // 창원 동읍 다호리 (봉황 마을과 겹치지 않게 조금 서북으로)
-  node('y-anya-cap', '아라 도읍', 'capital', ['palisade', 'high'], 'anya', 450, [128.41, 35.27]), // 함안 — 지리지 "본래 아시량국"
+  node('y-anya-cap', '아라 도읍', 'capital', ['palisade', 'high'], 'anya', 400, [128.41, 35.27]), // 함안 — 지리지 "본래 아시량국"
   node('y-anya-fort', '남강 산성', 'fort', ['high'], 'anya', 100, [128.26, 35.34]), // 의령
   node('y-goja-cap', '고자 도읍', 'port', ['palisade'], 'goja', 400, [128.32, 35.0]), // 고성 — 지리지 "본래 고자군"
   node('y-goja-v', '갯벌 마을', 'village', [], 'goja', 200, [128.42, 34.95]), // 통영 쪽 — 그림의 바닷가에 맞춰 올렸다
-  node('y-samul-cap', '사물 도읍', 'port', [], 'samul', 300, [128.07, 35.07]), // 사천 — 지리지 "본래 사물현"
+  node('y-samul-cap', '사물 도읍', 'port', ['palisade'], 'samul', 300, [128.07, 35.07]), // 사천 — 지리지 "본래 사물현"
   // ── 낙동강 가운데
   node('y-miri-cap', '추화 도읍', 'capital', ['palisade', 'moat'], 'miri', 600, [128.75, 35.49]), // 밀양 [설]
   node('y-miri-v', '삼랑 나루 마을', 'village', ['reeds', 'shallows'], 'miri', 300, [128.82, 35.41]), // 삼랑진
-  node('y-bihwa-cap', '비화 도읍', 'capital', [], 'bihwa', 400, [128.5, 35.54]), // 창녕 — 『삼국유사』 오가야
-  node('y-chopal-cap', '초팔 도읍', 'capital', [], 'chopal', 250, [128.27, 35.57]), // 합천 초계 — 신라본기 파사이사금
-  node('y-iseo-cap', '이서 도읍', 'capital', [], 'iseo', 350, [128.73, 35.65]), // 청도 — 신라본기 유례이사금
-  node('y-apdok-cap', '압독 도읍', 'capital', [], 'apdok', 350, [128.74, 35.83]), // 경산 — 신라본기 파사이사금
+  node('y-bihwa-cap', '비화 도읍', 'capital', ['palisade'], 'bihwa', 400, [128.5, 35.54]), // 창녕 — 『삼국유사』 오가야
+  node('y-chopal-cap', '초팔 도읍', 'capital', ['palisade'], 'chopal', 300, [128.27, 35.57]), // 합천 초계 — 신라본기 파사이사금
+  node('y-iseo-cap', '이서 도읍', 'capital', ['palisade'], 'iseo', 350, [128.73, 35.65]), // 청도 — 신라본기 유례이사금
+  node('y-apdok-cap', '압독 도읍', 'capital', ['palisade'], 'apdok', 350, [128.74, 35.83]), // 경산 — 신라본기 파사이사금
   node('y-dabeol-cap', '다벌 도읍', 'capital', ['palisade'], 'dabeol', 450, [128.6, 35.86]), // 대구 — 신라본기 파사이사금
   node('y-dabeol-v', '팔공 산마을', 'village', ['high'], 'dabeol', 150, [128.68, 36.0]),
-  node('y-golbeol-cap', '골벌 도읍', 'capital', [], 'golbeol', 350, [128.94, 35.96]), // 영천 — 신라본기 조분이사금
-  node('y-daegaya-cap', '대가야 도읍', 'capital', ['palisade', 'high'], 'daegaya', 500, [128.26, 35.73]), // 고령 — 지리지 "본래 대가야국"
+  node('y-golbeol-cap', '골벌 도읍', 'capital', ['palisade'], 'golbeol', 350, [128.94, 35.96]), // 영천 — 신라본기 조분이사금
+  node('y-daegaya-cap', '대가야 도읍', 'capital', ['palisade', 'high'], 'daegaya', 340, [128.26, 35.73]), // 고령 — 지리지 "본래 대가야국"
   node('y-daegaya-iron', '야로 철광', 'ironMine', ['iron'], 'daegaya', 120, [128.16, 35.63]), // 합천 야로
-  node('y-byeokjin-cap', '벽진 도읍', 'capital', [], 'byeokjin', 350, [128.28, 35.92]), // 성주 — 『삼국유사』 오가야 성산가야
+  node('y-byeokjin-cap', '벽진 도읍', 'capital', ['palisade'], 'byeokjin', 350, [128.28, 35.92]), // 성주 — 『삼국유사』 오가야 성산가야
   // ── 북쪽
-  node('y-gammun-cap', '감문 도읍', 'capital', [], 'gammun', 300, [128.11, 36.12]), // 김천 — 신라본기 조분이사금
+  node('y-gammun-cap', '감문 도읍', 'capital', ['palisade'], 'gammun', 300, [128.11, 36.12]), // 김천 — 신라본기 조분이사금
   node('y-sabeol-cap', '사벌 도읍', 'capital', ['palisade'], 'sabeol', 450, [128.16, 36.41]), // 상주 — 신라본기 첨해이사금·석우로전
   node('y-sabeol-v', '낙동 나루 마을', 'village', ['shallows'], 'sabeol', 200, [128.3, 36.36]),
-  node('y-jomun-cap', '조문 도읍', 'capital', [], 'jomun', 400, [128.7, 36.35]), // 의성 — 신라본기 벌휴이사금
+  node('y-jomun-cap', '조문 도읍', 'capital', ['palisade'], 'jomun', 400, [128.7, 36.35]), // 의성 — 신라본기 벌휴이사금
   // 소도 둘 — 누구의 땅도 아니다 (SYSTEMS §8-4)
   node('y-sodo-east', '가지산 소도', 'sodo', ['sodo'], null, 0, [129.0, 35.66]),
   node('y-sodo-west', '가야산 소도', 'sodo', ['sodo'], null, 0, [128.12, 35.82]),
@@ -110,7 +115,7 @@ const EDGES: REdge[] = [
   e('y06', 'y-goja-cap', 'y-anya-cap', 'pass'),
   e('y07', 'y-goja-v', 'y-us-cap', 'sea'),
   e('y08', 'y-goja-v', 'y-w-geoje', 'sea'),
-  e('y09', 'y-us-cap', 'y-anya-cap', 'field'),
+  e('y09', 'y-us-cap', 'y-anya-cap', 'pass'), // 마산에서 함안으로 넘는 고개
   e('y10', 'y-us-cap', 'y-us-v', 'field'),
   e('y11', 'y-us-cap', 'y-w-geoje', 'sea'),
   e('y12', 'y-us-v', 'y-guya-v', 'reeds'),
@@ -133,11 +138,11 @@ const EDGES: REdge[] = [
   e('y27', 'y-usisan-cap', 'y-usisan-iron', 'field'),
   e('y28', 'y-usisan-iron', 'y-saro-port', 'field'),
   e('y29', 'y-usisan-cap', 'y-w-gomgol', 'pass'),
-  e('y30', 'y-usisan-cap', 'y-saro-cap', 'field'),
+  e('y30', 'y-usisan-cap', 'y-saro-cap', 'pass'), // 모화 골짜기 — 뒤에 신라가 관문성을 쌓은 목
   e('y31', 'y-w-gomgol', 'y-miri-cap', 'pass'),
   e('y69', 'y-saro-cap', 'y-saro-fort', 'pass'),
   e('y70', 'y-saro-fort', 'y-saro-port', 'forest'),
-  e('y67', 'y-eumjeup-cap', 'y-saro-cap', 'field'),
+  e('y67', 'y-eumjeup-cap', 'y-saro-cap', 'reeds'), // 형산강 아래 안강 들의 물가
   e('y66', 'y-eumjeup-cap', 'y-eumjeup-port', 'field'),
   e('y75', 'y-eumjeup-port', 'y-saro-port', 'sea'),
   e('y65', 'y-w-yeongdeok', 'y-eumjeup-port', 'field'),
@@ -149,7 +154,7 @@ const EDGES: REdge[] = [
   e('y35', 'y-bihwa-cap', 'y-chopal-cap', 'ford'), // 낙동강·황강
   e('y36', 'y-bihwa-cap', 'y-iseo-cap', 'pass'), // 비슬산
   e('y37', 'y-bihwa-cap', 'y-dabeol-cap', 'field'),
-  e('y38', 'y-chopal-cap', 'y-daegaya-cap', 'field'),
+  e('y38', 'y-chopal-cap', 'y-daegaya-cap', 'pass'), // 초계 분지는 둘레가 산이다 — 들어오는 길이 고개다
   e('y39', 'y-chopal-cap', 'y-w-geochang', 'pass'),
   e('y40', 'y-daegaya-cap', 'y-daegaya-iron', 'forest'),
   e('y41', 'y-daegaya-iron', 'y-w-geochang', 'forest'),
@@ -199,7 +204,7 @@ interface NationStart {
 const st = (grain: number, iron: number, more: Partial<Stock> = {}): Stock => ({ grain, iron, ...more })
 
 const NATION_STARTS: readonly NationStart[] = [
-  { faction: { id: 'saro', name: '사로국', capital: 'y-saro-cap', equip: 'bronze' }, mind: 'greedy', stock: st(320, 10, { salt: 15, wood: 30 }) },
+  { faction: { id: 'saro', name: '사로국', capital: 'y-saro-cap', equip: 'bronze' }, mind: 'cautious', stock: st(320, 10, { salt: 15, wood: 30 }) },
   { faction: { id: 'guya', name: '가락국', capital: 'y-guya-cap', equip: 'iron' }, mind: 'greedy', stock: st(280, 40, { salt: 15, wood: 30 }) },
   { faction: { id: 'daegaya', name: '대가야', capital: 'y-daegaya-cap', equip: 'ironTip' }, mind: 'cautious', stock: st(260, 25, { wood: 40 }) },
   { faction: { id: 'anya', name: '아라국', capital: 'y-anya-cap', equip: 'ironTip' }, mind: 'cautious', stock: st(220, 10, { wood: 40 }) },
@@ -284,11 +289,11 @@ const a = (id: string, faction: string, hero: string | null, at: string, mix0: A
 }
 
 const ARMIES: Army[] = [
-  a('a-saro-1', 'saro', 'saro-1', 'y-saro-cap', { spear: 110, bow: 50, shield: 20 }),
-  a('a-saro-2', 'saro', 'saro-2', 'y-saro-fort', { spear: 40, bow: 30 }),
-  a('a-guya-1', 'guya', 'guya-1', 'y-guya-cap', { spear: 100, bow: 50, shield: 30 }, 'iron'),
-  a('a-daegaya', 'daegaya', 'daegaya-1', 'y-daegaya-cap', { spear: 90, bow: 50, shield: 20 }, 'ironTip'),
-  a('a-anya', 'anya', 'anya-1', 'y-anya-cap', { spear: 90, bow: 60, shield: 20 }, 'ironTip'),
+  a('a-saro-1', 'saro', 'saro-1', 'y-saro-cap', { spear: 70, bow: 30, shield: 10 }),
+  a('a-saro-2', 'saro', null, 'y-saro-fort', { spear: 10, bow: 10 }),
+  a('a-guya-1', 'guya', 'guya-1', 'y-guya-cap', { spear: 90, bow: 45, shield: 20 }, 'iron'),
+  a('a-daegaya', 'daegaya', 'daegaya-1', 'y-daegaya-cap', { spear: 65, bow: 35, shield: 10 }, 'ironTip'),
+  a('a-anya', 'anya', 'anya-1', 'y-anya-cap', { spear: 80, bow: 50, shield: 15 }, 'ironTip'),
   a('a-miri', 'miri', 'miri-1', 'y-miri-v', { spear: 90, bow: 40, shield: 10 }),
   a('a-dabeol', 'dabeol', 'dabeol-1', 'y-dabeol-cap', { spear: 90, bow: 40, shield: 10 }),
   a('a-sabeol', 'sabeol', 'sabeol-1', 'y-sabeol-cap', { spear: 80, bow: 40, horse: 10 }),
@@ -303,8 +308,8 @@ const ARMIES: Army[] = [
   a('a-byeokjin', 'byeokjin', 'byeokjin-1', 'y-byeokjin-cap', { spear: 60, bow: 30, shield: 10 }),
   a('a-gammun', 'gammun', 'gammun-1', 'y-gammun-cap', { spear: 60, bow: 30 }),
   a('a-samul', 'samul', 'samul-1', 'y-samul-cap', { spear: 60, bow: 30, boat: 10 }),
-  a('a-eumjeup', 'eumjeup', 'eumjeup-1', 'y-eumjeup-cap', { spear: 60, bow: 30 }),
-  a('a-chopal', 'chopal', 'chopal-1', 'y-chopal-cap', { spear: 50, bow: 30 }),
+  a('a-eumjeup', 'eumjeup', 'eumjeup-1', 'y-eumjeup-cap', { spear: 70, bow: 30 }),
+  a('a-chopal', 'chopal', 'chopal-1', 'y-chopal-cap', { spear: 60, bow: 35 }),
   a('a-us', 'us', 'chief', 'y-us-cap', { spear: 80, bow: 30, shield: 10 }, 'ironTip'),
 ]
 

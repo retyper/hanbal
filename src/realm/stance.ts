@@ -141,7 +141,22 @@ export function allianceWhy(r: Realm, a: string, b: string): Motive | null {
   if (foe !== undefined) return { why: 'commonFoe', about: foe }
   const L = leaderOf(r, a)
   if (L !== null && L !== a && L !== b && threatened(r, a, L) && threatened(r, b, L)) return { why: 'leader', about: L }
+  // 같은 큰 이웃 — 둘 다 맞닿은 이웃이 둘 어느 쪽보다 훨씬 세고 둘 가운데 하나를 치고 있으면, 다음은 우리다 (영남 판: 사로가 음즙벌·우시산·골벌을 하나씩 삼켰다)
+  const big = bigNeighbor(r, a, b)
+  if (big !== null) return { why: 'commonFoe', about: big }
   if (rel === 'truce' && fav >= R.favorAllyAsk) return { why: 'favor' }
+  return null
+}
+
+/** `a`·`b` 가 같이 맞닿은, 둘 어느 쪽보다 stanceBigNeighbor 배 센(a 의 눈으로) 나라 가운데 둘 중 하나와 싸우는 나라 — 없으면 null */
+function bigNeighbor(r: Realm, a: string, b: string): string | null {
+  const R = P.realm
+  const top = Math.max(seen(r, a, a), seen(r, a, b))
+  for (const x of live(r)) {
+    if (x === a || x === b || !(atWar(r, a, x) || atWar(r, b, x))) continue
+    if (!borders(r, a, x) || !borders(r, b, x)) continue
+    if (seen(r, a, x) >= top * R.stanceBigNeighbor) return x
+  }
   return null
 }
 
