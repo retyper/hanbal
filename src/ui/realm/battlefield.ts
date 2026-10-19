@@ -38,9 +38,10 @@ export const HARD_LINE = {
 
 /** 명령의 이름 · 그림 · 무엇을 이기고 무엇에 지나 */
 export const CMD_NAME: Record<Cmd, string> = {
-  charge: '돌격', volley: '화살비', hold: '방진', flank: '옆치기', fire: '불', duel: '일기토', capture: '적장 사로잡기', retreat: '물러난다',
+  // 장수 겨루기 — '일기토(一騎討ち)'는 일본 게임 말이라 쓰지 않는다 (형 2026-10-19)
+  charge: '돌격', volley: '화살비', hold: '방진', flank: '옆치기', fire: '불', duel: '장수 겨루기', capture: '적장 사로잡기', retreat: '물러난다',
 }
-const CMD_ICON: Record<Cmd, string> = {
+export const CMD_ICON: Record<Cmd, string> = {
   charge: UNIT_ICON.spear, volley: UNIT_ICON.bow, hold: UNIT_ICON.shield, flank: UNIT_ICON.horse,
   fire: 'unit-fire-archers', duel: 'unit-general', capture: 'unit-axemen', retreat: 'unit-drummers',
 }
@@ -70,7 +71,7 @@ export const BATTLE_SFX = {
   charge: 'swing_01', volley: 'shot_loose', hold: 'parry_01', flank: 'roar_01', fire: 'crash_01', duel: 'unsheath_01', capture: 'sheath_01', retreat: 'switch2',
   /** 맞부딪힘 — 세모에서 이겼다(필살) · 그냥 */
   crit: 'impactPunch_heavy_000', clash: 'impactWood_heavy_000',
-  /** 사로잡았다 · 일기토에서 이겼다 · 마지막 일격(적이 무너졌다) · 이겼다 · 졌다 */
+  /** 사로잡았다 · 장수 겨루기에서 이겼다 · 마지막 일격(적이 무너졌다) · 이겼다 · 졌다 */
   caught: 'jingleUnlock', duelWin: 'herodeath_01', final: 'bossdeath_01', win: 'jingleClear', lose: 'fail_gong',
 } as const
 
@@ -123,8 +124,8 @@ function clashLine(l: RoundLog, weAtk: boolean, ourName: string, foeName: string
   switch (l.ev) {
     case 'capture-ok': return mine ? `${josa(foeName, '을', '를')} 사로잡았다! 적진이 무너진다.` : `${josa(ourName, '이', '가')} 사로잡혔다…`
     case 'capture-fail': return mine ? '적장을 쫓았으나 놓쳤다. 그 사이 적이 밀고 들어온다.' : '적이 우리 장수를 노렸으나 빠져나왔다.'
-    case 'duel-win': return mine ? `${josa(ourName, '이', '가')} 일기토에서 이겼다! 적의 기세가 꺾인다.` : `적장이 나섰으나 ${josa(ourName, '이', '가')} 꺾었다!`
-    case 'duel-lose': return mine ? `${josa(ourName, '이', '가')} 일기토에서 밀렸다. 군사들이 술렁인다.` : `${josa(ourName, '이', '가')} 적장에게 밀렸다.`
+    case 'duel-win': return mine ? `${josa(ourName, '이', '가')} 장수 겨루기에서 이겼다! 적의 기세가 꺾인다.` : `적장이 나섰으나 ${josa(ourName, '이', '가')} 꺾었다!`
+    case 'duel-lose': return mine ? `${josa(ourName, '이', '가')} 장수 겨루기에서 밀렸다. 군사들이 술렁인다.` : `${josa(ourName, '이', '가')} 적장에게 밀렸다.`
     case 'fire-ok': return mine ? '불길이 바람을 타고 적진으로 번진다!' : '적이 놓은 불이 우리 쪽으로 번진다!'
     case 'fire-back': return mine ? '바람이 돌았다 — 불길이 우리 쪽으로 온다.' : '적이 불을 놓았으나 바람이 돌았다.'
     case 'retreat': return l.by === ourSide ? '징을 쳐 군사를 물린다.' : '적이 징을 치며 물러난다.'

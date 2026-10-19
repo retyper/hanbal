@@ -737,7 +737,7 @@ function shiftMorale(armies: readonly Army[], d: number): void {
 
 /**
  * 5 — 장수의 운명 (형: "그냥 싸우다가 운좋게 잡히는게 아니라") — 사로잡기는 라운드의 명령으로만 된다.
- * 일기토에서 진 장수는 쓰러지거나 다친다. 무너진 쪽 장수는 난전에 쓰러질 수 있다 (무예가 높으면 빠져나온다, 겁 많으면 먼저 달아난다).
+ * 장수 겨루기에서 진 장수는 쓰러지거나 다친다. 무너진 쪽 장수는 난전에 쓰러질 수 있다 (무예가 높으면 빠져나온다, 겁 많으면 먼저 달아난다).
  */
 function battleFates(
   r: Realm, res: FightResult, a: Side, d: Side, atkArmies: readonly Army[], defArmies: readonly Army[], atkFaction: string, defFaction: string, key: string,
@@ -989,7 +989,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   shiftMorale(atks, res.dma)
   shiftMorale(defenders, res.dmd)
 
-  // 5 — 장수의 운명 (사로잡기는 명령으로만 · 일기토 · 무너진 쪽의 난전)
+  // 5 — 장수의 운명 (사로잡기는 명령으로만 · 장수 겨루기 · 무너진 쪽의 난전)
   const atkWon = outcome === 'rout' || outcome === 'win'
   const atkLost = outcome === 'lose' || outcome === 'routed'
   const atkHeroes = atks.map((x) => x.hero)

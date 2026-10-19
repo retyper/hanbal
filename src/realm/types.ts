@@ -257,7 +257,7 @@ export type Ration = 'light' | 'full'
 /**
  * 싸움의 명령 (tactics.ts — 형: "포켓몬이나 가위바위보식 상성 · 포획시도는 유저가 직접" 2026-10-19)
  *   세모: 돌격 charge > 화살비 volley > 방진 hold > 돌격
- *   한 번씩: 옆치기 flank · 불 fire · 일기토 duel
+ *   한 번씩: 옆치기 flank · 불 fire · 장수 겨루기 duel
  *   사로잡기 capture · 물러나기 retreat
  */
 export type Cmd = 'charge' | 'hold' | 'volley' | 'flank' | 'fire' | 'duel' | 'capture' | 'retreat'

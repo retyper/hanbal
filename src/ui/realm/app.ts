@@ -1618,8 +1618,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const between = report.lines.filter((l): l is Rel => isWar(l) && l.a !== me() && l.b !== me() && heard(l))
     const lines = report.lines
       .filter((l, i) => cards[i] === '' && heard(l) && !onUs.includes(l as Rel) && !between.includes(l as Rel))
-      .map((l) => reportText(before!, r, l, me()))
-      .filter((x): x is string => x !== null)
+      .map((l) => ({ l, x: reportText(before!, r, l, me()) }))
+      .filter((y): y is { l: ReportLine; x: string } => y.x !== null)
     // 차례 — 나라가 무너졌으면 그것부터, 그다음 싸움 카드, 그다음 소식이 한 줄씩 올라와 쌓인다
     // (형: "한번에 왕창 텍스트 똭 놓지말고 하나씩 올라와서 쌓이게 · 너무빠르게말고 · 한번탭하면 바로 다나오게")
     let t = 0
@@ -1652,7 +1652,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         t += LINE_S
       }
     }
-    h += `<div class="lines">${lines.length === 0 ? `<p class="mute rv" style="--t:${t}s">조용한 계절이었다.</p>` : lines.map((x, i) => `<p class="rv${x.startsWith('소문') ? ' mute' : ''}" style="--t:${(t + i * LINE_S).toFixed(2)}s">${tx(x)}</p>`).join('')}</div>`
+    h += `<div class="lines">${lines.length === 0 ? `<p class="mute rv" style="--t:${t}s">조용한 계절이었다.</p>` : lines.map((y, i) => reportRow(r, y.l, y.x, t + i * LINE_S)).join('')}</div>`
     const tail = asksHtml() + threatsHtml(r)
     if (tail !== '') h += `<div class="rv" style="--t:${(t + Math.max(1, lines.length) * LINE_S).toFixed(2)}s">${tail}</div>`
     return h + `<button class="btn on wide" data-act="rep-close">확인</button></div>`
@@ -1670,10 +1670,68 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const lands = (x: string): number => Object.values(r.nodes).filter((n) => n.owner === x).length
     const guess = leaderOf(r, f) === me() ? '우리가 앞서간다고 보고 막으려 한다' : tookRecently(r, me(), f) ? '빼앗긴 땅을 되찾으려 한다'
       : lands(f) > lands(me()) ? '우리를 만만하게 본다' : '우리 땅이 탐나는 모양이다'
-    let h = `<div class="warc rv" style="--t:${t}s">${bust(lord, 'flord')}${moodImg(ART, 'angry', 'mood wm')}<div class="wb"><b>${emblem(f, 'fem')}${esc(josa(name, '이', '가'))} 전쟁을 걸어왔다</b>`
+    let h = `<div class="warc rv" style="--t:${t}s">${bust(lord, 'flord')}${moodImg(ART, 'angry', 'mood wm')}<div class="wb"><b>${emblem(f, 'fem')}<span>${esc(josa(name, '이', '가'))} 전쟁을 걸어왔다</span></b>`
     h += `<span>${tx(why.replace(/^.*?— /, ''))}</span><span class="mute">속셈 · ${tx(guess)}</span>`
     h += `<div class="btns"><button class="btn sm${envoys[f]?.ask === 'truce' ? ' on' : ''}" data-act="envoy" data-to="${f}" data-ask="truce">${envoys[f]?.ask === 'truce' ? '화친 사신을 보낸다 · 거두기' : '화친을 청한다'}</button><button class="btn ghost sm" data-act="nat-diplo" data-to="${f}">외교 판</button></div></div></div>`
     return h
+  }
+
+  /**
+   * 보고 한 줄을 그림으로 (형: "눈에 안들어옴. 국가아이콘이라던가 자원아이콘이라던가 화살표 방향 적극이용 · 항상 최선의 전달은 이미지나 애니메이션") —
+   * 왼쪽에 무슨 일인지 그림 하나, 가운데에 누가→누구 / 어디→어디 (깃발·고을 그림과 화살표), 그 옆에 글 (낱말 색).
+   */
+  function reportRow(r: Realm, l: ReportLine, text: string, t: number): string {
+    const L = l as unknown as Record<string, unknown>
+    const isF = (v: unknown): v is string => typeof v === 'string' && r.factions[v] !== undefined
+    const isN = (v: unknown): v is string => typeof v === 'string' && r.nodes[v] !== undefined
+    const nchip = (id: string): string => `<span class="nchip">${icon(nodeIcon(r.nodes[id]!), 'nci')}${esc(r.nodes[id]!.name)}</span>`
+    const fchip = (f: string): string => emblem(f, 'rem')
+    let ic = ''
+    switch (l.kind) {
+      case 'take': ic = 'settle-besieged'; break
+      case 'arrive': ic = 'unit-spear'; break
+      case 'sighted': ic = 'status-spy'; break
+      case 'harvest': case 'spoil': ic = 'good-rice'; break
+      case 'market': ic = 'settle-market'; break
+      case 'draft': ic = UNIT_ICON[l.unit]; break
+      case 'disband': case 'settle': case 'migrate': ic = 'settle-farm-village'; break
+      case 'hunger': ic = 'status-famine'; break
+      case 'envoy': case 'answered': case 'ask': case 'recall': ic = 'good-tribute-bell'; break
+      case 'relation': ic = l.state === 'war' ? 'status-betrayal' : l.state === 'ally' ? 'status-alliance' : 'good-tribute-bell'; break
+      case 'plot': ic = PLOT_ICON[l.op]; break
+      case 'mystery': case 'rumor': case 'confess': ic = 'status-spy'; break
+      case 'build': ic = 'settle-palisade'; break
+      case 'rite': ic = 'status-good-omen'; break
+      case 'blocked': ic = 'settle-pass'; break
+      case 'discover': ic = 'settle-beacon'; break
+      case 'arm': ic = 'treasure-iron-ingots'; break
+      case 'bowUp': ic = 'unit-archer'; break
+      case 'suzerain': ic = 'treasure-silla-crown'; break
+      case 'grow': case 'bond': case 'awaken': ic = 'status-morale-up'; break
+      default: ic = ''
+    }
+    // 장수 얼굴이 주인공인 줄 — 들임·떠돌이·자람
+    const hero = typeof L['hero'] === 'string' ? (r.heroes[L['hero'] as string] ?? (realm!.wanderers ?? []).find((w) => w.hero.id === L['hero'])?.hero) : undefined
+    const lead = (l.kind === 'recruit' || l.kind === 'wanderer' || l.kind === 'grow' || l.kind === 'bond' || l.kind === 'awaken') && hero !== undefined
+      ? bust(hero, 'rface rl') : ic !== '' ? icon(ic, 'ri') : '<i class="ri dot"></i>'
+    // 누가→누구 · 어디→어디
+    let flow = ''
+    const from = L['from']
+    const to = L['to']
+    if (l.kind === 'sighted' && isF(L['faction']) && isN(to)) flow = `${fchip(L['faction'] as string)}<i class="ar foe">➜</i>${nchip(to as string)}`
+    else if (isN(from) && isN(to)) flow = `${nchip(from)}<i class="ar">➜</i>${nchip(to)}`
+    else if (isF(from) && isF(to)) flow = `${fchip(from)}<i class="ar">➜</i>${fchip(to)}`
+    else if (isF(L['a']) && isF(L['b'])) {
+      const by = L['by']
+      const [x, y] = by === L['b'] ? [L['b'] as string, L['a'] as string] : [L['a'] as string, L['b'] as string]
+      flow = `${fchip(x)}<i class="ar">${l.kind === 'relation' && l.state === 'war' ? '⚔' : l.kind === 'market' || (l.kind === 'relation' && l.state !== 'war') ? '⇄' : '➜'}</i>${fchip(y)}`
+    } else if (l.kind === 'take' && isF(l.faction)) flow = `${fchip(l.faction)}<i class="ar">➜</i>${nchip(l.node)}`
+    else if (isF(L['faction']) && L['faction'] !== me()) flow = fchip(L['faction'] as string)
+    else if (isN(L['node'])) flow = nchip(L['node'] as string)
+    // 수가 핵심인 줄은 크게
+    const big = l.kind === 'harvest' ? `<b class="rn good">+${Math.round(l.grain)}</b>` : l.kind === 'spoil' ? `<b class="rn good">+${Math.round(l.grain)}</b>` : l.kind === 'draft' ? `<b class="rn">+${l.n}</b>` : ''
+    const mute = text.startsWith('소문') ? ' mute' : ''
+    return `<div class="rrow rv${mute}" style="--t:${t.toFixed(2)}s">${lead}${flow !== '' ? `<span class="rflow">${flow}</span>` : ''}${big}<span class="rtx">${tx(text)}</span></div>`
   }
 
   /** 이번 계절에 무너진 나라 — 지난 판엔 땅이 있었는데 이제 없다. 우리가 아는 나라만 */
@@ -1690,7 +1748,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const lord = r.heroes[r.factions[f]?.ruler ?? rulerId(f)]
     const byLine = by === me() ? '우리가 마지막 땅을 쥐었다' : by !== null ? `${josa(r.factions[by]?.name ?? '', '이', '가')} 도읍을 쥐었다` : '땅이 모두 흩어졌다'
     const fate = lord === undefined ? '' : lord.status === 'captive' ? ` · 군주 ${josa(lord.name, '은', '는')} 사로잡혔다` : lord.status === 'dead' ? ` · 군주 ${josa(lord.name, '은', '는')} 죽었다` : ` · 군주 ${josa(lord.name, '은', '는')} 몸을 피했다`
-    return `<div class="fall rv" style="--t:${t}s">${bust(lord, 'flord')}<div>${emblem(f, 'fem')}<b>${esc(josa(name, '이', '가'))} 무너졌다</b><span>${tx(byLine + fate)}</span></div></div>`
+    return `<div class="fall rv" style="--t:${t}s">${bust(lord, 'flord')}<div><b>${emblem(f, 'fem')}<span>${esc(josa(name, '이', '가'))} 무너졌다</span></b><span>${tx(byLine + fate)}</span></div></div>`
   }
 
   // ───────── 판 바깥 — 첫 화면 · 판 고르기 · 나라 고르기 (front.ts)

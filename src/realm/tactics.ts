@@ -5,7 +5,7 @@
  * 한 판은 tacRounds 라운드. 라운드마다 두 쪽이 **동시에** 명령을 낸다 — 상대는 우리의 이번 선택을 보지 않는다.
  *   세모: 돌격 > 화살비 > 방진 > 돌격 (돌격은 활을 쏘는 쪽을 덮치고, 화살비는 서 있는 방패 벽을 두드리고, 방진은 돌격을 꺾는다)
  *   명령의 세기는 병종 구성이 정한다 — 창·기병은 돌격, 궁수·쇠뇌는 화살비, 방패·장창은 방진. 물 위에서는 수군이 돌격·화살비에 낀다.
- *   한 번씩 쓰는 것: 옆치기(산기슭으로 돌아왔거나 들길의 기병) · 불(갈대·숲, 여름이 아닐 때) · 일기토(무예 높은 장수끼리)
+ *   한 번씩 쓰는 것: 옆치기(산기슭으로 돌아왔거나 들길의 기병) · 불(갈대·숲, 여름이 아닐 때) · 장수 겨루기(무예 높은 장수끼리)
  *   사로잡기: 적이 줄수록 · 적 사기가 꺾일수록 · 우리가 우세할수록 잘 된다. 실패하면 그 라운드를 쫓는 데 쓴다.
  *   물러나기: 손실을 줄이고 끝낸다.
  * 라운드마다 밀린 만큼 사람이 줄고 사기가 오간다. 처음보다 많이 줄었거나 사기가 꺾이면 무너진다.
@@ -31,7 +31,7 @@ export interface Side {
   readonly hero: { readonly id: string; readonly mu: number; readonly ryak: number; readonly coward: boolean } | null
   /** 군량이 바닥이다 — 라운드마다 사기가 꺾인다 */
   readonly hungry: boolean
-  /** 이 싸움에서 쓸 수 있는 한 번짜리 명령 (옆치기 · 불) — 일기토·사로잡기는 장수로 정해진다 */
+  /** 이 싸움에서 쓸 수 있는 한 번짜리 명령 (옆치기 · 불) — 장수 겨루기·사로잡기는 장수로 정해진다 */
   readonly specials: readonly Cmd[]
   /** 물 위 싸움 — 수군이 돌격·화살비에 낀다 */
   readonly water: boolean
@@ -60,7 +60,7 @@ export interface FightResult {
   readonly captured: 'a' | 'd' | null
   /** 무너진 쪽 — 그 쪽 장수가 난전에 쓰러질 수 있다 */
   readonly broke: 'a' | 'd' | null
-  /** 일기토에서 진 장수 — 쓰러졌나 다쳤나 */
+  /** 장수 겨루기에서 진 장수 — 쓰러졌나 다쳤나 */
   readonly duel: { readonly loser: 'a' | 'd'; readonly kill: boolean } | null
   readonly rounds: readonly RoundLog[]
   readonly pending?: Pending
@@ -135,10 +135,10 @@ interface State {
   md: number
   usedA: Set<Cmd>
   usedD: Set<Cmd>
-  /** 일기토로 장수를 잃은 쪽 */
+  /** 장수 겨루기로 장수를 잃은 쪽 */
   lostA: boolean
   lostD: boolean
-  /** 일기토로 다친 장수 — 사로잡기가 쉽다 */
+  /** 장수 겨루기로 다친 장수 — 사로잡기가 쉽다 */
   hurtA: boolean
   hurtD: boolean
 }
@@ -315,7 +315,7 @@ export function fightRounds(atk: Side, def: Side, key: string, seed: number, sea
     let lossScale = 1
     let beat: 'a' | 'd' | null = null
 
-    // 일기토 — 장수끼리 나선다. 군대는 숨을 죽이고 본다 (이 라운드 손실이 적다)
+    // 장수 겨루기 — 장수끼리 나선다. 군대는 숨을 죽이고 본다 (이 라운드 손실이 적다)
     if (cA === 'duel' || cD === 'duel') {
       const starter: 'a' | 'd' = cA === 'duel' ? 'a' : 'd'
       const muA = atk.hero?.mu ?? 1
@@ -368,8 +368,8 @@ export function fightRounds(atk: Side, def: Side, key: string, seed: number, sea
       const winsOver = (x: Cmd, y: Cmd): boolean => BEATS[x] === y || (x === 'flank' && y === 'hold')
       if (winsOver(cA, cD)) beat = 'a'
       else if (winsOver(cD, cA)) beat = 'd'
-      if (beat === 'a') { effA *= R.tacTriUp; effD *= R.tacTriDown }
-      else if (beat === 'd') { effD *= R.tacTriUp; effA *= R.tacTriDown }
+      if (beat === 'a') { effA *= R.tacTriUp; effD *= R.tacTriDown; takeA *= R.tacTriTakeWin; takeD *= R.tacTriTakeLose }
+      else if (beat === 'd') { effD *= R.tacTriUp; effA *= R.tacTriDown; takeD *= R.tacTriTakeWin; takeA *= R.tacTriTakeLose }
     }
 
     const p = edgeOf(effA, effD)

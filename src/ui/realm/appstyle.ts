@@ -250,7 +250,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .fall { display: flex; gap: 12px; align-items: center; margin: 8px 0 12px; padding: 12px; border-radius: 14px; background: linear-gradient(90deg, #2a1414, #1b2028); border: 1px solid #7a3a2a; }
 .ap .fall img.flord, .ap .fall .flord { width: 72px; height: 72px; flex: none; border-radius: 12px; object-fit: cover; border: 2px solid #7a3a2a; filter: grayscale(.7) brightness(.85); }
 .ap .fall b { display: flex; align-items: center; gap: 6px; font-family: 'Gowun Batang', serif; font-size: 20px; color: #f0b8a0; }
-.ap .fall span { display: block; font-size: 13.5px; color: var(--mute); margin-top: 3px; }
+.ap .fall > div > span { display: block; font-size: 13.5px; color: var(--mute); margin-top: 3px; }
 /* 지도에서 고른 말 — 아래 띠 · 합치기 */
 .ap .selbar { position: absolute; left: 64px; right: 14px; bottom: calc(var(--tabh) + 70px); z-index: 7; display: none; align-items: center; gap: 8px; flex-wrap: wrap;
   padding: 8px 10px; border-radius: 16px; background: #1b2028f2; border: 1px solid #8a7040; box-shadow: 0 6px 20px #000a; }
@@ -307,7 +307,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .warc img.mood.wm { position: absolute; left: 62px; top: 58px; width: 36px; height: 36px; }
 .ap .warc .wb { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .ap .warc .wb b { display: flex; align-items: center; gap: 6px; font-family: 'Gowun Batang', serif; font-size: 19px; color: #ffb09a; }
-.ap .warc .wb span { font-size: 13.5px; } .ap .warc .btns { margin-top: 4px; }
+.ap .warc .wb > span { font-size: 13.5px; } .ap .warc .btns { margin-top: 4px; }
 .ap .warbar { display: flex; align-items: center; gap: 6px; margin: 6px 0; padding: 7px 10px; border-radius: 10px; background: #2a1c1a; border: 1px solid #6a3a30; font-size: 14px; }
 .ap .warbar i { font-style: normal; color: #ff8a70; font-size: 16px; } .ap .warbar span { margin-left: 4px; }
 /* 이주 — 집 옮기기는 개척(갈색)과 갈라 누런 흙빛 */
@@ -334,4 +334,17 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .paths .pbar.pact i { background: linear-gradient(90deg, #3f6f8f, #8fc0e0); }
 .ap .paths .clock { display: flex; gap: 3px; } .ap .paths .clock i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #8fc0e0; }
 .ap .paths .clock i.on { background: #8fc0e0; } .ap .paths .path.rival span { color: #e8a08a; }
+/* 보고 한 줄 — 그림 · 누가→누구 · 글 (app.reportRow) */
+.ap .lines .rrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0; padding: 6px 8px; border-radius: 10px; background: #ffffff08; border-left: 3px solid #4a4030; }
+.ap .lines .rrow.mute { opacity: .75; border-left-color: #2f3540; }
+.ap .lines .rrow img.ri { width: 30px; height: 30px; flex: none; filter: drop-shadow(0 1px 2px #0008); }
+.ap .lines .rrow i.ri.dot { width: 8px; height: 8px; border-radius: 50%; background: #6a5a3a; margin: 0 11px; }
+.ap .lines .rrow img.rface.rl { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); flex: none; }
+.ap .lines .rflow { display: inline-flex; align-items: center; gap: 4px; flex: none; }
+.ap .lines .rflow img.rem { width: 24px; height: 24px; }
+.ap .lines .rflow .ar { font-style: normal; color: var(--gold); font-weight: 800; } .ap .lines .rflow .ar.foe { color: #ff8a70; }
+.ap .lines .nchip { display: inline-flex; align-items: center; gap: 2px; padding: 1px 6px 1px 2px; border-radius: 9px; background: #2a2418; color: #d9a86a; font-size: 12.5px; font-weight: 700; }
+.ap .lines .nchip img.nci { width: 20px; height: 20px; }
+.ap .lines .rn { font-size: 17px; color: var(--ink); } .ap .lines .rn.good { color: #ecc862; }
+.ap .lines .rtx { flex: 1 1 160px; min-width: 0; font-size: 14.5px; }
 `

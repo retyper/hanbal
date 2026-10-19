@@ -8,6 +8,7 @@
  */
 import { BATTLE_AMBUSH, BATTLE_APPROACH, BATTLE_CLASH, fieldName, josa } from '../../realm/data/prose.ts'
 import { HERO_BUST } from '../../realm/data/art.ts'
+import { CMD_ICON, CMD_NAME } from './battlefield.ts'
 import type { Army, Hero, Realm, ReportLine } from '../../realm/types.ts'
 
 type Battle = Extract<ReportLine, { kind: 'battle' }>
@@ -39,8 +40,58 @@ function face(h: Hero | null, art: string): string {
   return file !== undefined ? `<img class="bkf" src="${art}bust/${file}.jpg" alt="">` : `<span class="bkf noface"></span>`
 }
 
+/**
+ * 전장에서 합마다 싸운 판의 요약 — 전장에서 본 그대로 (합마다 우리 명령 × 적 명령 · 이겼나 · 사람 수 앞뒤 · 결과).
+ * 옛 한 줄 이야기(battleCard)는 합이 없던 판에서만 쓴다 — 전장과 다른 글이 나오면 헷갈린다.
+ */
+function battleSummary(after: Realm, l: Battle, weAtk: boolean, art: string, place: string, result: string, good: boolean): string {
+  const st = l.start!
+  const rds = l.rounds!
+  const last = rds[rds.length - 1]
+  const fr = [last?.na ?? 1, last?.nd ?? 1]
+  const [ui, fi] = weAtk ? [0, 1] : [1, 0]
+  const heroOf = (i: number): Hero | null => {
+    const id = st.heroes[i] ?? null
+    return id !== null ? (after.heroes[id] ?? null) : null
+  }
+  const name = (i: number): string => heroOf(i)?.name ?? `${after.factions[i === 0 ? (l.atkFaction ?? '') : l.defender]?.name ?? ''} 군`
+  const n0 = (i: number): number => st.men[i] ?? 0
+  const n1 = (i: number): number => Math.round((st.men[i] ?? 0) * (fr[i] ?? 1))
+  let h = `<div class="bk sum"><div class="bkh"><span class="bkp">${esc(place)} 싸움</span></div>`
+  h += `<div class="bkv"><div class="bks">${face(heroOf(ui), art)}<b>${esc(name(ui))}</b><span>우리 ${n0(ui).toLocaleString('ko-KR')} → ${n1(ui).toLocaleString('ko-KR')}</span></div><i>VS</i>`
+  h += `<div class="bks">${face(heroOf(fi), art)}<b>${esc(name(fi))}</b><span>적 ${n0(fi).toLocaleString('ko-KR')} → ${n1(fi).toLocaleString('ko-KR')}</span></div></div>`
+  // 합마다 — 우리 명령 × 적 명령, 상성을 이겼나(○)·졌나(✕)
+  h += `<div class="bkr3">`
+  for (const rd of rds) {
+    const us = weAtk ? rd.a : rd.d
+    const them = weAtk ? rd.d : rd.a
+    const won = rd.beat === (weAtk ? 'a' : 'd')
+    const lost = rd.beat !== null && !won
+    h += `<span class="bkrd${won ? ' w' : lost ? ' l' : ''}"><img src="${art}icon/${CMD_ICON[us]}.png" alt="${CMD_NAME[us]}" title="${CMD_NAME[us]}"><i>${won ? '○' : lost ? '✕' : '·'}</i><img src="${art}icon/${CMD_ICON[them]}.png" alt="${CMD_NAME[them]}" title="${CMD_NAME[them]}"></span>`
+  }
+  h += `</div>`
+  if (l.captured !== null) h += `<p class="bkl now">${esc(josa(after.heroes[l.captured]?.name ?? '?', '을', '를'))} 사로잡았다!</p>`
+  if (l.killed !== null) h += `<p class="bkl now">${esc(josa(after.heroes[l.killed]?.name ?? '?', '이', '가'))} 쓰러졌다.</p>`
+  return h + `<div class="bkr now ${good ? 'good' : l.outcome === 'draw' ? '' : 'bad'}">${esc(result)}</div></div>`
+}
+
 /** 우리가 낀 싸움 하나의 카드. 우리가 안 꼈으면 '' */
 export function battleCard(before: Realm, after: Realm, l: Battle, viewer: string, art: string, idx: number): string {
+  if (l.rounds !== undefined && l.rounds.length > 0 && l.start !== undefined) {
+    const weA = (l.atkFaction ?? before.armies[l.attacker]?.faction) === viewer
+    if (!weA && l.defender !== viewer) return ''
+    const fieldB = l.field === true && l.edge !== undefined
+    const placeB = fieldB ? fieldName(after, l.edge!) : (after.nodes[l.node]?.name ?? l.node)
+    const atkWonB = l.outcome === 'rout' || l.outcome === 'win'
+    const goodB = weA === atkWonB && l.outcome !== 'draw'
+    let res: string
+    if (fieldB) res = l.outcome === 'draw' ? '둘 다 물러났다' : goodB ? '적을 물리치고 길을 간다' : '밀려서 돌아왔다'
+    else if (l.outcome === 'draw') res = weA ? `${placeB}에서 물러났다` : `${josa(placeB, '을', '를')} 지켜 냈다`
+    else if (weA) res = atkWonB ? `${josa(placeB, '을', '를')} 차지했다` : `${placeB}에서 물러났다`
+    else res = atkWonB ? `${josa(placeB, '을', '를')} 빼앗겼다` : `${josa(placeB, '을', '를')} 지켜 냈다`
+    if (l.outcome === 'rout' || l.outcome === 'routed') res = `${goodB ? '대승' : '대패'} — ${res}`
+    return battleSummary(after, l, weA, art, placeB, res, goodB)
+  }
   const lead = before.armies[l.attacker]
   if (lead === undefined) return ''
   const weAtk = lead.faction === viewer
@@ -133,4 +184,10 @@ export const BATTLE_CSS = `
 @keyframes bkin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .ap .modal.fast .bkl, .ap .modal.fast .bkr, .ap .modal.fast .bkbar i { animation-delay: 0s !important; animation-duration: .01s !important; }
 @media (prefers-reduced-motion: reduce) { .ap .bkl, .ap .bkr, .ap .bkbar i { animation-duration: .01s !important; animation-delay: 0s !important; } }
+
+.ap .bk.sum .bkr3 { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin: 8px 0 4px; }
+.ap .bkrd { display: inline-flex; align-items: center; gap: 2px; padding: 2px 6px; border-radius: 10px; background: #ffffff0a; border: 1px solid #3a4250; }
+.ap .bkrd img { width: 22px; height: 22px; } .ap .bkrd i { font-style: normal; font-weight: 800; width: 14px; text-align: center; color: var(--mute); }
+.ap .bkrd.w { border-color: #6a9a5a; } .ap .bkrd.w i { color: #9fd18b; } .ap .bkrd.l { border-color: #9a4a3a; } .ap .bkrd.l i { color: #ff8a70; }
+.ap .bk .now { opacity: 1; animation: none; }
 `
