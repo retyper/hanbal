@@ -38,6 +38,8 @@ export interface RNode {
   sown: number
   /** 빈땅(kind 'wild')만 — 이 땅이 품을 수 있는 가호 상한. 개척해 사람을 보내면 여기까지 빨리 큰다 (economy.settleLimit) */
   readonly room?: number
+  /** 억지로 이주시킨 고을 — 이 계절까지 집이 늘지 않는다 (economy.migrateHouses · 형: "강제이주"). 없으면 없음 */
+  uprooted?: number
 }
 
 export interface REdge {
@@ -66,6 +68,8 @@ export interface Faction {
    * 능력치가 나라 전체에 작게 걸린다 (heroes.rulerOf). 옛 판에는 없다.
    */
   readonly ruler?: string
+  /** 집 자동 분배를 껐다 (economy.stepMigration). 없으면 켜짐 — 옛 판도 켜짐. AI 는 늘 켜짐 */
+  migrateOff?: boolean
 }
 
 /** 나라 사이 관계 (FLOW §4) — 판은 중립에서 시작한다. 화친은 `until` 계절에 끝난다 */
@@ -459,6 +463,10 @@ export type Order =
   | { readonly kind: 'disband'; readonly army: string }
   /** 개척 — 제 고을 `from` 의 가호 n 을 길로 맞닿은 빈땅 `to` 로 옮긴다. 곡식이 든다 (economy.settleLimit · settleCost) */
   | { readonly kind: 'settle'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number }
+  /** 이주 — 제 고을 `from` 의 집 n 을 제 땅으로 이어진 제 고을 `to` 로 억지로 옮긴다. 곡식이 들고 두 고을은 한동안 집이 안 는다 (economy.migrateLimit) */
+  | { readonly kind: 'migrate'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number }
+  /** 집 자동 분배 켜기·끄기 (Faction.migrateOff) */
+  | { readonly kind: 'migrateAuto'; readonly faction: string; readonly on: boolean }
   /** 소도 제사 — 봄·가을에, 소도와 길로 맞닿은 고을을 쥔 나라만. 곡식이 든다 (economy.riteAllowed · riteCost) */
   | { readonly kind: 'rite'; readonly faction: string }
   /** 청에 답한다 — 받기(yes) · 거절. 답하지 않은 청은 거절로 친다 */
@@ -576,6 +584,8 @@ export type ReportLine =
   | { readonly kind: 'draft'; readonly faction: string; readonly node: string; readonly unit: UnitKind; readonly n: number; readonly army: string }
   | { readonly kind: 'disband'; readonly army: string; readonly node: string; readonly n: number }
   | { readonly kind: 'settle'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number }
+  /** 집이 옮겨 갔다 — auto 면 붐비는 고을에서 저절로, 아니면 억지 이주 */
+  | { readonly kind: 'migrate'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number; readonly auto?: boolean }
   | { readonly kind: 'hunger'; readonly faction: string }
   | { readonly kind: 'envoy'; readonly from: string; readonly to: string; readonly ask: EnvoyAsk; readonly accepted: boolean; readonly why?: Why; readonly about?: string; readonly hero?: string }
   /** 화친·동맹을 맺어 상대 땅으로 가던 군대가 발길을 돌렸다 — `node` 는 가려던 고을 */

@@ -253,6 +253,11 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     case 'settle':
       if (line.faction === viewer) return `${node(line.from)}에서 ${line.n}집이 ${josa(node(line.to), '으로', '로')} 옮겨 가 땅을 일군다.`
       return `소문. ${josa(fname(line.faction), '이', '가')} ${node(line.to)}에 사람을 보냈다.`
+    case 'migrate':
+      // 남의 나라 집 옮기기는 들리지 않는다
+      if (line.faction !== viewer) return null
+      if (line.auto === true) return `${josa(node(line.from), '이', '가')} 붐벼 집 ${line.n}이 ${josa(node(line.to), '으로', '로')} 옮겨 갔다.`
+      return `${node(line.from)}의 집 ${line.n}을 ${josa(node(line.to), '으로', '로')} 옮겼다. 두 고을은 자리 잡느라 한동안 집이 늘지 않는다.`
     case 'rite':
       if (line.faction === viewer) {
         return line.season === 'spring'
