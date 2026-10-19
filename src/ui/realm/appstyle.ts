@@ -288,4 +288,17 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .nacts .nah { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; } .ap .nacts .nah b { font-size: 16px; }
 .ap .nacts .nal { margin: 8px 0 4px; font-size: 13px; color: var(--gold); } .ap .nacts .nal .mute { font-size: 12px; }
 .ap .nacts .btns { flex-wrap: wrap; } .ap .nacts .row .sub { margin-left: auto; margin-right: 6px; }
+/* 지도 보기 켜고 끄기 (형: "좌하단에는 확대축소말고 뭔가 보이기 안보이기 토글") */
+.ap .zbtns .lyb { font-size: 18px; }
+.ap .layers { position: absolute; left: 62px; bottom: calc(var(--tabh) + 14px); z-index: 8; display: none; flex-direction: column; gap: 4px;
+  padding: 8px; border-radius: 14px; background: #1b2028f2; border: 1px solid #4a5363; box-shadow: 0 8px 24px #000a; width: min(70vw, 240px); }
+.ap .layers:not(:empty) { display: flex; } .ap.sheet-open .layers, .ap.choosing .layers { display: none; }
+.ap .layers .lyh { font-size: 12.5px; color: var(--gold); margin: 0 2px 2px; }
+.ap .layers .lyr { display: grid; grid-template-columns: 18px auto 1fr; align-items: center; gap: 6px; padding: 7px 8px; border-radius: 10px; border: 1px solid transparent;
+  background: none; color: var(--mute); font: inherit; text-align: left; cursor: pointer; }
+.ap .layers .lyr.on { color: var(--ink); background: #ffffff0a; border-color: #4a5363; } .ap .layers .lyr i { font-style: normal; color: var(--gold); }
+.ap .layers .lyr b { font-size: 14px; } .ap .layers .lyr span { font-size: 11.5px; color: var(--mute); text-align: right; }
+.ap.hide-terr .map .terr { display: none; } .ap.hide-roads .map .ly-roads { display: none; } .ap.hide-marches .map .ly-marches { display: none; }
+.ap.hide-labels .map .lbs { display: none; } .ap.hide-flags .map .nd .flag { display: none; } .ap.hide-force .map .nd .foe { display: none; }
+.ap.hide-army .map .toks { display: none; }
 `

@@ -183,6 +183,7 @@ export function mapHtml(
   const allEdges = Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))
   const sep = separatedRoutes(`${region}:${W}x${H}:${allEdges.length}`, allEdges.map((ed) => [ed.id, routePoints(region, ed, px(ed.a), px(ed.b), W, H)] as const), 12 * sw, RA.terrR * 0.4)
   const route = (ed: REdge): Pt[] => sep.get(ed.id) ?? routePoints(region, ed, px(ed.a), px(ed.b), W, H)
+  svg += `<g class="ly-roads">` // 보기 켜고 끄기 (app 의 .layers) — 길
   for (const ed of Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))) {
     if (!seen(ed.a) || !seen(ed.b)) continue
     const pts = route(ed)
@@ -201,6 +202,7 @@ export function mapHtml(
       svg += `<path d="M${mx - s} ${my - s}L${mx + s} ${my + s}M${mx + s} ${my - s}L${mx - s} ${my + s}" stroke="#a02a1a" stroke-width="${6 * sw}" stroke-linecap="round"/>`
     }
   }
+  svg += `</g><g class="ly-marches">` // 출정 화살
   // 출정 화살 — 그 길의 모양을 따라 간다. 고른 것은 굵은 실선, 길 위의 것은 점선 + 남은 계절
   const edgeOf = (a: string, b: string): REdge | undefined => Object.values(r.edges).find((e) => (e.a === a && e.b === b) || (e.a === b && e.b === a))
   for (const m of marches) {
@@ -222,7 +224,7 @@ export function mapHtml(
       svg += `<text x="${lx}" y="${ly - 12}" font-size="${26 * lw}" font-weight="700" fill="${m.foe === true || amb ? '#3a2a5a' : '#7a1f10'}" stroke="#f3e6c8" stroke-width="5" paint-order="stroke" text-anchor="middle">${label}</text>`
     }
   }
-  svg += `</svg>`
+  svg += `</g></svg>`
 
   let nodes = ''
   const labels: LabelIn[] = []

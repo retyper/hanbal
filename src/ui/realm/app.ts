@@ -89,6 +89,18 @@ const LINE_S = 0.6
 const FALL_S = 1.6
 /** 싸움 카드 하나가 다 풀리는 데 걸리는 때 — 카드 안 줄들의 가장 늦은 --d 에 한 박자 */
 const battleCardSeconds = (html: string): number => Math.max(0, ...[...html.matchAll(/--d:([\d.]+)s/g)].map((m) => Number(m[1]))) + 0.8
+/** 지도 보기 켜고 끄기 — 겹마다 이름과 무엇인지 */
+const LAYERS = [
+  { id: 'terr', name: '땅빛', hint: '나라 색 · 경계' },
+  { id: 'roads', name: '길', hint: '들길·고갯길·나루…' },
+  { id: 'marches', name: '행군 화살', hint: '우리 출정 · 다가오는 적' },
+  { id: 'labels', name: '이름', hint: '고을 이름' },
+  { id: 'flags', name: '깃발', hint: '고을 주인' },
+  { id: 'force', name: '군세 수', hint: '척후가 본 적 군세' },
+  { id: 'army', name: '우리 군대', hint: '장수 얼굴 말' },
+] as const
+type LayerId = (typeof LAYERS)[number]['id']
+const LAYER_KEY = 'hanbal.realm.layers'
 const HAND_NAME = { dead: '적장이 쓰러졌다', wounded: '적장이 다쳤다', fled: '적장이 달아났다', withdrew: '조용히 물러났다', skip: '자객에게 맡겼다' } as const
 
 type Ask = EnvoyAsk
@@ -183,7 +195,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   style.textContent = APP_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS + HERO_CSS + GROW_CSS + FRONT_CSS.replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
-  root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="legend"></div><div class="zbtns"><button data-act="zin">＋</button><button data-act="zout">－</button></div><button class="next" data-act="next"></button><div class="selbar"></div><div class="roadkey"></div><button class="homebtn" data-act="home">우리 땅</button>`
+  root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="legend"></div><div class="zbtns"><button data-act="layers" class="lyb" aria-label="보기">👁</button><button data-act="zin">＋</button><button data-act="zout">－</button></div><div class="layers"></div><button class="next" data-act="next"></button><div class="selbar"></div><div class="roadkey"></div><button class="homebtn" data-act="home">우리 땅</button>`
     + `<nav class="tabs"></nav><div class="back" data-act="close"></div><section class="sheet"></section><div class="modal"></div><div class="plbox"></div>`
   const $ = (sel: string): HTMLElement => root.querySelector<HTMLElement>(sel)!
   const zoom = attachZoom($('.mapwrap'))
@@ -254,6 +266,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let armySel: string[] = []
   /** 길 보기 펼침 */
   let roadOpen = false
+  /** 지도 보기 켜고 끄기 — 펼침 (켜고 끈 것은 이 기기에 기억) */
+  let layersOpen = false
+  const hiddenLayers = new Set<LayerId>()
+  try {
+    const v = JSON.parse(localStorage.getItem(LAYER_KEY) ?? '[]') as unknown
+    if (Array.isArray(v)) for (const x of v) if (LAYERS.some((l) => l.id === x)) hiddenLayers.add(x as LayerId)
+  } catch { /* 처음엔 다 켜짐 */ }
+  applyLayers()
   /** 탭의 빨간 점 — 본 것 */
   let seenKeys = new Set<string>()
   /** 지도에서 또렷하게 볼 나라 — 깃발 줄에서 누른다 */
@@ -389,6 +409,27 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const fr = fresh
     if (!showReport) fresh = new Set() // 드러나는 것은 한 번만 — 계절 소식을 닫고 지도를 볼 때
     return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets, fr)
+  }
+
+  /** 지도에서 켜고 끄는 겹 (형: "좌하단에는 확대축소말고 뭔가 보이기 안보이기 토글 필요할듯") — 끈 것은 .ap.hide-<id> */
+  function layersHtml(): string {
+    let h = `<div class="lyh">지도에 보이기</div>`
+    for (const l of LAYERS) {
+      const on = !hiddenLayers.has(l.id)
+      h += `<button class="lyr${on ? ' on' : ''}" data-act="layer" data-v="${l.id}"><i>${on ? '●' : '○'}</i><b>${l.name}</b><span>${l.hint}</span></button>`
+    }
+    return h
+  }
+
+  function toggleLayer(id: LayerId): void {
+    if (hiddenLayers.has(id)) hiddenLayers.delete(id)
+    else hiddenLayers.add(id)
+    applyLayers()
+    try { localStorage.setItem(LAYER_KEY, JSON.stringify([...hiddenLayers])) } catch { /* 저장 못 하는 곳 */ }
+  }
+
+  function applyLayers(): void {
+    for (const l of LAYERS) root.classList.toggle(`hide-${l.id}`, hiddenLayers.has(l.id))
   }
 
   /**
@@ -1603,6 +1644,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     $('.selbar').innerHTML = sb
     root.classList.toggle('sel-open', sb !== '')
     $('.roadkey').innerHTML = roadKeyHtml()
+    $('.layers').innerHTML = layersOpen ? layersHtml() : ''
     // 답할 청이 남았으면 깃발 줄 끝에 사신 알림 — 누르면 외교 판
     const waiting = openAsks(realm, me()).filter((a) => answers[a.id] === undefined).length
     $('.legend').innerHTML = legendHtml(r) + (waiting > 0 ? `<button class="askpill" data-act="tab" data-tab="diplo">${icon('good-tribute-bell')}사신 ${waiting}</button>` : '')
@@ -1779,6 +1821,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'selclose': armySel = []; break
       case 'roadkey': roadOpen = !roadOpen; break
+      case 'layers': layersOpen = !layersOpen; break
+      case 'layer': toggleLayer(d['v'] as LayerId); break
       case 'compose-go': case 'nat-diplo': {
         // 고을 판에서 자세히 꾸며야 하는 사신 — 외교 판의 그 나라 칸을 열어 준다
         diploMode = 'envoy'
