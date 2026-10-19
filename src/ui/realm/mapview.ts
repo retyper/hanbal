@@ -44,12 +44,48 @@ export const MAP_CSS = `
 .map .nd { position: absolute; transform: translate(-50%, -62%); width: calc(8.5% * var(--s, 1) * var(--ns, 1)); text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .map .nd img.st { width: 100%; filter: drop-shadow(0 2px 2px rgba(0,0,0,.55)); }
 .map .lbs { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
-.map .lb { position: absolute; transform: translateX(-50%); text-align: center; white-space: nowrap; display: block; font-size: clamp(10px, calc(2.1cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 17px); line-height: 1.2; color: #2a1d10; font-weight: 700;
-  text-shadow: 0 0 3px #f3e6c8, 0 0 3px #f3e6c8, 0 0 2px #f3e6c8; background: #f3e6c899; border-radius: 4px; padding: 0 3px; }
+/* 고을 배너 — 깃발·이름·군세가 한 덩어리 (문명 6 도시 배너 · Old World 의 위계 — docs/GAP.md M1) */
+.map .lb { position: absolute; transform: translateX(-50%); text-align: center; white-space: nowrap; display: flex; align-items: center; gap: .18em;
+  font-size: clamp(10px, calc(1.9cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 16px); line-height: 1.2; color: #2a1d10; font-weight: 700;
+  background: linear-gradient(#fbf4e3f2, #efe2c4f2); border: 1px solid color-mix(in srgb, var(--c, #8a7a5a) 65%, #2a1d10);
+  border-left: .32em solid var(--c, #8a7a5a); border-radius: .2em .55em .55em .2em; padding: 0 .35em 0 .2em; box-shadow: 0 1px 3px #0006; }
+.map .lb .lbe { width: 1.1em; height: 1.1em; object-fit: contain; flex: none; filter: drop-shadow(0 0 1px #fff); }
+.map .lb .lbt { display: flex; flex-direction: column; align-items: flex-start; }
+.map .lb .lbf { margin-left: .25em; padding: 0 .35em; border-radius: .6em; background: #2a1414; color: #f0b8a0; font-size: .82em; font-weight: 800; }
+.map .lb .lbf.old { opacity: .6; }
+/* 도읍 — 크고 두껍게, 금빛 별 */
+.map .lb.k-cap { font-size: clamp(11px, calc(2.2cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 18px); border-width: 2px; border-left-width: .38em;
+  background: linear-gradient(#fff8e6f5, #f0dfb8f5); }
+/* 빈땅·소도 — 주인 없는 땅은 띠 없이 옅게 (위계가 낮다) */
+.map .lb.k-free { background: #f3e6c8b0; border-color: transparent; border-left-color: transparent; box-shadow: none; font-weight: 600; font-style: italic; color: #4a3a28; }
+/* 우리 고을 — 금빛 테 */
+.map .lb.me { box-shadow: 0 0 0 1.5px #ffd27a, 0 1px 4px #0007; }
+.ap.hide-flags .map .lb .lbe { display: none; } .ap.hide-force .map .lb .lbf { display: none; }
 .map .lb .star { font-style: normal; color: #b8860b; margin-right: 2px; text-shadow: 0 0 2px #fff8d0, 0 0 3px #fff8d0; } /* 도읍 (형: "수도같은건 별표해야하지 않나?") */
-.map .lb small { display: block; font-size: .78em; font-weight: 500; color: #4a3a28; margin-top: -1px; }
+/* 지금 땅이름 줄은 가까이 볼 때만 (멀리서는 배너가 한 줄로 작게) */
+.map[data-zl="far"] .lb small { display: none; }
+.map .lb small { display: block; font-size: .74em; font-weight: 500; color: #5a4a36; margin-top: -2px; }
+/* 받침 — 주인 색이 땅에 번진 둥근 자리 (고을이 땅 위에 앉아 보이게). 도읍은 크고 금빛 테 */
+.map .nd .base { position: absolute; left: 50%; top: 80%; width: 118%; aspect-ratio: 2.6; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; z-index: -1;
+  background: radial-gradient(ellipse at 50% 45%, color-mix(in srgb, var(--c) 70%, transparent) 0, color-mix(in srgb, var(--c) 35%, transparent) 45%, transparent 72%); }
+.map .nd.k-cap .base { width: 140%; box-shadow: inset 0 0 0 2px #e8c06a99; }
+.map .nd.k-free .base { opacity: .4; }
+/* 고리 — 평소엔 없다. 고를 때 · 갈 곳 · 위협받을 때만 */
 .map .nd .ring { position: absolute; left: 50%; top: 42%; width: 82%; aspect-ratio: 1; transform: translate(-50%, -50%);
-  border-radius: 50%; border: 3px solid var(--c); box-shadow: 0 0 6px var(--c); pointer-events: none; }
+  border-radius: 50%; border: 3px solid var(--c); box-shadow: 0 0 6px var(--c); pointer-events: none; display: none; }
+.map .nd.sel .ring, .map .nd.tgt .ring, .map .nd.threat .ring { display: block; }
+.map .nd.sel .ring { border: 3px solid #ffd27a; box-shadow: 0 0 0 3px #ffd27a55, 0 0 14px #ffd27a; animation: selp 1.6s ease-in-out infinite; }
+@keyframes selp { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.12); } }
+/* 위협 — 적이 오는 우리 고을 (Total War 의 붉은 영향권 — GAP M4) */
+.map .nd.threat .ring { border: 3px solid #d0301c; box-shadow: 0 0 0 4px #d0301c44, 0 0 16px #d0301c; animation: thr 1.1s ease-in-out infinite alternate; }
+@keyframes thr { from { opacity: .45; } to { opacity: 1; } }
+.map .nd .thr { position: absolute; left: 50%; top: -18%; transform: translateX(-50%); font-size: clamp(11px, calc(2.2cqh / var(--z, 1) * var(--zs, 1)), 18px);
+  color: #fff; background: #b0281a; border-radius: 50%; width: 1.5em; height: 1.5em; line-height: 1.5em; box-shadow: 0 0 8px #d0301c; pointer-events: none; z-index: 2; }
+/* 갈 수 없는 곳 — 군대를 고르면 흐려진다 (이동 범위만 또렷 — GAP M3) */
+.map .nd.far { opacity: .42; filter: saturate(.5); } .map .lb.far { opacity: .45; }
+.map svg .mvglow { animation: mvg 1.2s linear infinite; } @keyframes mvg { to { stroke-dashoffset: -40; } }
+.map svg .thrarrow { animation: thr 1s ease-in-out infinite alternate; }
+@media (prefers-reduced-motion: reduce) { .map .nd.sel .ring, .map .nd.threat .ring, .map svg .mvglow, .map svg .thrarrow { animation: none; } }
 .map .nd .men, .map .nd .foe { position: absolute; left: 86%; top: 42%; transform: translateY(-50%); background: #1c2129; border-radius: 9px; padding: 0 5px;
   font-size: clamp(10px, calc(1.9cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 15px); font-weight: 700; white-space: nowrap; }
 .map .nd .men { color: #9fd18b; border: 1px solid #9fd18b; } .map .nd .foe { color: #e8a08a; border: 1px solid #8a5a3a; }
@@ -74,12 +110,18 @@ export const MAP_CSS = `
 .map .toks { position: absolute; transform: translate(2px, -50%); display: flex; gap: 3px; z-index: 4; pointer-events: none; }
 .map .tok { pointer-events: auto; display: flex; flex-direction: column; align-items: center; padding: 0; border: 0; background: none; cursor: pointer;
   -webkit-tap-highlight-color: transparent; width: clamp(26px, calc(4.2cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 46px); }
-.map .tok img { width: 100%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 2px solid #9fd18b; background: #1c2129; box-shadow: 0 2px 4px #0008; }
-.map .tok b { margin-top: -6px; background: #1c2129; color: #9fd18b; border: 1px solid #9fd18b; border-radius: 8px; padding: 0 4px;
+.map .tok { position: relative; }
+.map .tok img { width: 100%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 2.5px solid var(--tc, #9fd18b); background: #1c2129; box-shadow: 0 0 0 1.5px #1c2129, 0 2px 4px #0008; }
+.map .tok .hp { position: absolute; left: 12%; right: 12%; top: calc(100% - 1.05em); height: 4px; border-radius: 2px; background: #1c2129; overflow: hidden; z-index: 1; }
+.map .tok .hp::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--p, 1) * 100%); background: linear-gradient(90deg, #6aa84f, #b6e08f); }
+.map .tok .dir { position: absolute; left: 50%; top: 50%; width: 150%; height: 150%; transform: translate(-50%, -50%) rotate(var(--a, 0deg)); pointer-events: none; }
+.map .tok .dir::after { content: ''; position: absolute; right: -2px; top: 50%; transform: translateY(-50%); border: .4em solid transparent; border-left: .62em solid #f3e6c8; filter: drop-shadow(0 0 2px #000); }
+.map .tok b { position: relative; z-index: 2; margin-top: -6px; background: #1c2129; color: #9fd18b; border: 1px solid #9fd18b; border-radius: 8px; padding: 0 4px;
   font-size: clamp(10px, calc(1.6cqh / var(--z, 1) * var(--zs, 1)), 13px); line-height: 1.3; }
 .map .tok.sel img { border-color: #ffd27a; box-shadow: 0 0 0 3px #ffd27a88, 0 0 12px #ffd27a; transform: scale(1.12); }
 .map .tok.going img { border-color: #c8402a; }
 .map .toks.mv { transform: translate(-50%, -50%); } .map .toks.mv .tok img { border-style: dashed; border-color: #f3e6c8; }
+.map .lb.crowd { visibility: hidden; } /* 겹쳐 자리가 없는 작은 고을 이름 — declutter */
 .map .lb.sel { color: #7a1f10; } .map .lb.dim { opacity: 0; } /* 한 나라만 볼 때 다른 나라 글씨는 감춘다 (형: "다른나라들은 글자정돈 완전 투명하게") */ .map .nd.sel img.st { filter: drop-shadow(0 0 7px #ffd27a) drop-shadow(0 0 3px #ffd27a); }
 .map[data-world] { background-color: #cdb98e; }
 .map .nd.fresh, .map .lb.fresh, .map svg .fresh { animation: rv 2.2s ease-out both; }
@@ -150,6 +192,10 @@ export function mapHtml(
     return o !== null && o !== undefined && fresh.has(o)
   }
   const dim = (owner: string | null): boolean => focus !== null && owner !== focus
+  // 군대를 골랐으면 갈 수 있는 곳만 또렷하다 (Total War 의 노란 이동 범위 — GAP M3)
+  const ranging = targets.length > 0
+  // 우리 고을로 오는 적 — 그 고을에 붉은 고리, 그 길은 붉게 깜빡 (GAP M4)
+  const threatened = new Set(marches.filter((m) => m.foe === true && r.nodes[m.to]?.owner === me).map((m) => m.to))
 
   let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">`
   svg += `<defs><marker id="rm-ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">`
@@ -202,6 +248,16 @@ export function mapHtml(
       svg += `<path d="M${mx - s} ${my - s}L${mx + s} ${my + s}M${mx + s} ${my - s}L${mx - s} ${my + s}" stroke="#a02a1a" stroke-width="${6 * sw}" stroke-linecap="round"/>`
     }
   }
+  if (ranging) {
+    for (const t of targets) {
+      if (t.edge === '' || t.off) continue
+      const ed = r.edges[t.edge]
+      if (ed === undefined || !seen(ed.a) || !seen(ed.b)) continue
+      const d = smoothPath(route(ed))
+      svg += `<path d="${d}" fill="none" stroke="#ffd27a" stroke-width="${(16 * sw).toFixed(1)}" stroke-linecap="round" opacity=".28"/>`
+      svg += `<path class="mvglow" d="${d}" fill="none" stroke="#fff3c8" stroke-width="${(4 * sw).toFixed(1)}" stroke-dasharray="${(10 * sw).toFixed(1)} ${(10 * sw).toFixed(1)}" stroke-linecap="round" opacity=".95"/>`
+    }
+  }
   svg += `</g><g class="ly-marches">` // 출정 화살
   // 출정 화살 — 그 길의 모양을 따라 간다. 고른 것은 굵은 실선, 길 위의 것은 점선 + 남은 계절
   const edgeOf = (a: string, b: string): REdge | undefined => Object.values(r.edges).find((e) => (e.a === a && e.b === b) || (e.a === b && e.b === a))
@@ -215,13 +271,15 @@ export function mapHtml(
     // 기습은 밤길처럼 — 어두운 짧은 점선. 정면은 붉은 실선
     const amb = m.ambush === true && m.foe !== true
     const dash = amb ? ' stroke-dasharray="2 14" stroke-linecap="round"' : m.left === null ? '' : ' stroke-dasharray="14 8"'
-    const col = m.foe === true || amb ? '#3a2a5a' : '#c8402a'
-    const head = m.foe === true || amb ? 'rm-ah-foe' : 'rm-ah'
-    svg += `<path d="${smoothPath(pts)}" fill="none" stroke="${col}" stroke-width="${(amb ? 11 : 9) * lw}"${dash} marker-end="url(#${head})" opacity=".9"/>`
+    const onUs = m.foe === true && threatened.has(m.to)
+    const col = onUs ? '#b0281a' : m.foe === true || amb ? '#3a2a5a' : '#c8402a'
+    const head = onUs ? 'rm-ah' : m.foe === true || amb ? 'rm-ah-foe' : 'rm-ah'
+    if (onUs) svg += `<path d="${smoothPath(pts)}" fill="none" stroke="#ffb09a" stroke-width="${18 * lw}" stroke-linecap="round" opacity=".35"/>`
+    svg += `<path${onUs ? ' class="thrarrow"' : ''} d="${smoothPath(pts)}" fill="none" stroke="${col}" stroke-width="${(amb ? 11 : onUs ? 10 : 9) * lw}"${dash} marker-end="url(#${head})" opacity=".9"/>`
     const label = `${m.foe === true ? '적 ' : ''}${amb ? '기습' : ''}${m.left !== null ? `${amb ? ' ' : ''}${m.left}계절` : ''}`
     if (label !== '') {
       const [lx, ly] = midOf(pts)
-      svg += `<text x="${lx}" y="${ly - 12}" font-size="${26 * lw}" font-weight="700" fill="${m.foe === true || amb ? '#3a2a5a' : '#7a1f10'}" stroke="#f3e6c8" stroke-width="5" paint-order="stroke" text-anchor="middle">${label}</text>`
+      svg += `<text x="${lx}" y="${ly - 12}" font-size="${26 * lw}" font-weight="700" fill="${onUs ? '#8a1a0a' : m.foe === true || amb ? '#3a2a5a' : '#7a1f10'}" stroke="#f3e6c8" stroke-width="5" paint-order="stroke" text-anchor="middle">${label}</text>`
     }
   }
   svg += `</g></svg>`
@@ -237,6 +295,7 @@ export function mapHtml(
     const color = owner !== null ? (FACTION_ART[owner]?.color ?? '#ccc') : '#d9d2c0'
     const ours = owner === me
     let badge = ''
+    let force = ''
     if (ours && !hasTok.has(n.id)) {
       const men = Object.values(r.armies).filter((a) => a.at === n.id && a.faction === me && a.march === null)
         .reduce((s, a) => s + headcount(forceOf(r, a)), 0)
@@ -245,26 +304,37 @@ export function mapHtml(
       const f = known[n.id]?.force
       if (f) {
         const v = visibleRange({ f0: f.f0, src: f.src, u: f.u }, r.season - f.season)
-        // 척후·첩자가 본 군세만 — 못 본 곳마다 ?를 흩뿌리지 않는다 (형: "빨간물음표들 위치가 너무 중구난방")
-        if (v !== null) badge = `<span class="foe${r.season - f.season > 0 ? ' old' : ''}">${span(v[0], v[1])}</span>`
+        // 척후·첩자가 본 군세만 — 못 본 곳마다 ?를 흩뿌리지 않는다 (형: "빨간물음표들 위치가 너무 중구난방"). 배너 끝에 붙는다
+        if (v !== null) force = `<i class="lbf${r.season - f.season > 0 ? ' old' : ''}">${span(v[0], v[1])}</i>`
       }
     }
+    const cap = Object.values(r.factions).some((f) => f.capital === n.id)
+    const kcls = cap ? ' k-cap' : owner === null || n.kind === 'sodo' ? ' k-free' : ''
+    const far = ranging && !target.has(n.id) ? ' far' : ''
+    const thr = threatened.has(n.id) ? ' threat' : ''
     const who = owner === null ? '주인 없음' : (r.factions[owner]?.name ?? '?')
     const fa = owner !== null ? FACTION_ART[owner] : undefined
-    const flag = fa !== undefined ? `<span class="flag${ours ? ' me' : ''}"><img src="${art}icon/${fa.emblem}.png" alt=""></span>` : ''
+    const emb = fa !== undefined ? `${art}icon/${fa.emblem}.png` : ''
     // 고른 군대가 갈 수 있는 곳 — 누르면 그리로 간다 (data-act="go")
     const tg = target.get(n.id)
     const go = tg !== undefined && !tg.off ? ` data-act="go" data-edge="${tg.edge}"` : ''
     const tcls = tg === undefined ? '' : tg.off ? ' tgt off' : tg.on ? ' tgt on' : ' tgt'
-    labels.push({ id: n.id, name: n.name, now: NODE_NOW[n.id], x: p[0], y: p[1], s: sizeOf(n.hh), cap: n.kind === 'capital' || Object.values(r.factions).some((f) => f.capital === n.id), hh: n.hh, cls: `${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${fr}` })
-    nodes += `<div class="nd${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${tcls}${fr}"${go} data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color};--s:${sizeOf(n.hh).toFixed(2)}" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}">`
-    nodes += `<span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${flag}${badge}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : ''}</div>`
+    labels.push({
+      id: n.id, name: n.name, now: NODE_NOW[n.id], x: p[0], y: p[1], s: sizeOf(n.hh), cap: n.kind === 'capital' || cap, hh: n.hh,
+      cls: `${kcls}${ours ? ' me' : ''}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${far}${fr}`,
+      color: owner !== null ? color : '', emb, force,
+    })
+    nodes += `<div class="nd${kcls}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${tcls}${far}${thr}${fr}"${go} data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color};--s:${sizeOf(n.hh).toFixed(2)}" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}">`
+    nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : ''}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()
   for (const t of tokens) if (t.march === undefined) byNode.set(t.node, [...(byNode.get(t.node) ?? []), t])
-  const tokBtn = (t: MapToken): string =>
-    `<button class="tok${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}" data-act="tok" data-army="${t.army}"><img src="${t.img}" alt=""><b>${t.men}</b></button>`
+  const myColor = FACTION_ART[me]?.color ?? '#9fd18b'
+  const topMen = Math.max(1, ...tokens.map((t) => t.men))
+  const tokBtn = (t: MapToken, ang?: number): string =>
+    `<button class="tok${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}" data-act="tok" data-army="${t.army}" style="--tc:${myColor}">`
+    + `${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}<img src="${t.img}" alt=""><i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i><b>${t.men}</b></button>`
   let toks = ''
   // 길 위의 우리 군대 — 떠난 쪽에서 삼분의 일쯤 (가운데의 "n계절" 글씨를 안 가린다)
   for (const t of tokens) {
@@ -272,8 +342,13 @@ export function mapHtml(
     const ed = edgeOf(t.march.from, t.march.to)
     let full: Pt[] = ed !== undefined ? route(ed) : [px(t.march.from), px(t.march.to)]
     if (ed !== undefined && ed.a !== t.march.from) full = full.slice().reverse()
-    const [mx, my] = midOf(trimPolyline(full, 0.28, 0.4))
-    toks += `<div class="toks mv" style="left:${(mx / W) * 100}%;top:${(my / H) * 100}%">${tokBtn(t)}</div>`
+    const seg = trimPolyline(full, 0.28, 0.4)
+    const [mx, my] = midOf(seg)
+    // 가는 쪽 — 그 토막의 처음에서 끝으로 (화면 좌표: 지도 비율로 늘린다)
+    const a0 = seg[0]!
+    const a1 = seg[seg.length - 1]!
+    const ang = (Math.atan2(a1[1] - a0[1], a1[0] - a0[0]) * 180) / Math.PI
+    toks += `<div class="toks mv" style="left:${(mx / W) * 100}%;top:${(my / H) * 100}%">${tokBtn(t, ang)}</div>`
   }
   for (const [node, ts] of [...byNode].sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
     const p = pos(node)
@@ -336,6 +411,12 @@ interface LabelIn {
   readonly cap: boolean
   readonly hh: number
   readonly cls: string
+  /** 주인 나라 색 — 배너의 띠 (주인이 없으면 '') */
+  readonly color: string
+  /** 주인 나라 깃발 그림 주소 ('' 이면 없음) */
+  readonly emb: string
+  /** 척후가 본 군세 칩 html ('' 이면 없음) */
+  readonly force: string
 }
 
 interface Box { x0: number; y0: number; x1: number; y1: number }
@@ -368,7 +449,8 @@ function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly 
   let out = '<div class="lbs">'
   const order = ls.slice().sort((a, b) => (a.cap !== b.cap ? (a.cap ? -1 : 1) : b.hh - a.hh || (a.id < b.id ? -1 : 1)))
   for (const l of order) {
-    const chars = Math.max(l.name.length + (l.cap ? 1 : 0), (l.now ?? '').length * 0.78)
+    // 배너 — 깃발(1.4자) · 별 · 군세 칩도 자리를 먹는다
+    const chars = Math.max(l.name.length + (l.cap ? 1 : 0), (l.now ?? '').length * 0.78) + (l.emb !== '' ? 1.6 : 0) + (l.force !== '' ? 3.5 : 0) + 0.8
     const w = (chars * em * 0.95 * H) / W + 0.004
     const h = em * (l.now !== undefined ? 2.05 : 1.25)
     const iw = ICON_W * ns * l.s
@@ -390,7 +472,8 @@ function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly 
     }
     const [cx, cy] = best!.c
     placed.push({ x0: cx - w / 2, y0: cy, x1: cx + w / 2, y1: cy + h })
-    out += `<span class="lb${l.cls}" data-n="${l.id}" style="left:${(cx * 100).toFixed(2)}%;top:${(cy * 100).toFixed(2)}%">${l.cap ? '<i class="star">★</i>' : ''}${l.name}${l.now !== undefined ? `<small>${l.now}</small>` : ''}</span>`
+    out += `<span class="lb${l.cls}" data-n="${l.id}" style="left:${(cx * 100).toFixed(2)}%;top:${(cy * 100).toFixed(2)}%${l.color !== '' ? `;--c:${l.color}` : ''}">`
+      + `${l.emb !== '' ? `<img class="lbe" src="${l.emb}" alt="">` : ''}<span class="lbt"><span>${l.cap ? '<i class="star">★</i>' : ''}${l.name}</span>${l.now !== undefined ? `<small>${l.now}</small>` : ''}</span>${l.force}</span>`
   }
   return out + '</div>'
 }
@@ -423,12 +506,17 @@ function provincesSvg(
   let mine = ''
   let lines = ''
   let gold = ''
+  // 나라마다 — 그 나라 땅(잘라 낼 틀)과 바깥 둘레. 둘레를 굵고 옅게 그려 땅 안쪽으로만 잘라 내면 문명 6 의 '안쪽 띠'가 된다 (GAP M2)
+  const own = new Map<string, string>()
+  const rim = new Map<string, string>()
   for (const [i, d] of t.fills.entries()) {
     if (d === '' || !seen(nodes[i]!.id)) continue // 모르는 땅은 안개가 덮는다
     const o = nodes[i]!.owner
     if (o === null) continue
-    fill += `<path d="${d}" fill="${FACTION_ART[o]?.color ?? '#ccc'}" opacity="${dim(o) ? 0.06 : focus === o ? 0.46 : o === me ? 0.4 : 0.28}"/>`
+    // 안은 옅게 — 나라는 둘레로 읽힌다
+    fill += `<path d="${d}" fill="${FACTION_ART[o]?.color ?? '#ccc'}" opacity="${dim(o) ? 0.05 : focus === o ? 0.34 : o === me ? 0.26 : 0.17}"/>`
     if (o === me && !dim(o)) mine += d
+    if (!dim(o)) own.set(o, (own.get(o) ?? '') + d)
   }
   for (const e of t.edges) {
     if (!seen(nodes[e.i]!.id) && (e.j < 0 || !seen(nodes[e.j]!.id))) continue
@@ -437,12 +525,25 @@ function provincesSvg(
     if (o === null && o2 === null) continue
     const col = FACTION_ART[(o ?? o2)!]?.color ?? '#ccc'
     if (o === o2) lines += `<path d="${e.d}" stroke="${col}" stroke-width="${(1 * k).toFixed(1)}" opacity="${dim(o) ? 0.08 : 0.4}" stroke-dasharray="${3 * k} ${4 * k}"/>`
-    else if (e.j < 0) lines += `<path d="${e.d}" stroke="${col}" stroke-width="${(1.8 * k).toFixed(1)}" opacity="${dim(o) ? 0.1 : 0.6}"/>`
-    else lines += `<path d="${e.d}" stroke="#2a1d10" stroke-width="${(2.4 * k).toFixed(1)}" opacity=".6"/>`
+    else {
+      // 나라의 바깥 둘레 — 두 쪽 저마다 제 색 띠를 안쪽에 갖는다. 금 자체는 그 나라 색으로 또렷하게
+      for (const x of [o, o2]) if (x !== null && own.has(x)) rim.set(x, (rim.get(x) ?? '') + e.d)
+      if (e.j < 0) lines += `<path d="${e.d}" stroke="${col}" stroke-width="${(2.4 * k).toFixed(1)}" opacity="${dim(o) ? 0.1 : 0.85}"/>`
+      else lines += `<path d="${e.d}" stroke="#2a1d10" stroke-width="${(2.6 * k).toFixed(1)}" opacity=".7"/>`
+    }
     // 우리 땅의 둘레 — 짙은 띠 위에 금빛
     if ((o === me) !== (o2 === me)) gold += e.d
   }
-  let h = `<g class="terr"${clip}>${fill}`
+  let band = ''
+  let cps = ''
+  for (const [o, d] of [...rim].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
+    const col = FACTION_ART[o]?.color ?? '#ccc'
+    cps += `<clipPath id="rm-own-${o}"><path d="${own.get(o)!}"/></clipPath>`
+    band += `<path d="${d}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${(o === me ? 26 : 20) * k}" opacity="${o === me ? 0.5 : 0.42}"/>`
+  }
+  const blurK = (3 * k).toFixed(1)
+  let h = `<defs><filter id="rm-band" x="-2%" y="-2%" width="104%" height="104%"><feGaussianBlur stdDeviation="${blurK}"/></filter>${cps}</defs>`
+  h += `<g class="terr"${clip}>${fill}<g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#rm-band)">${band}</g>`
   if (mine !== '') h += `<path d="${mine}" fill="url(#rm-mine)"/>`
   h += `<g fill="none" stroke-linecap="round" stroke-linejoin="round">${lines}`
   if (gold !== '') h += `<path d="${gold}" stroke="#2a1d10" stroke-width="${(6.5 * k).toFixed(1)}" opacity=".55"/><path class="mine-edge" d="${gold}" stroke="#ffd27a" stroke-width="${(3.2 * k).toFixed(1)}"/>`

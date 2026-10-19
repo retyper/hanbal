@@ -17,7 +17,7 @@ const box = (e: Element): Box => {
 const hit = (a: Box, b: Box, pad: number): boolean => a.l < b.r + pad && a.r + pad > b.l && a.t < b.b + pad && a.b + pad > b.t
 
 /** 걸리면 안 되는 것들 — 이름 말고 지도 위의 기호 */
-const OBST = '.tok img, .tok b, .nd img.st, .nd .flag, .nd .foe, .nd .men, .nd .tchip'
+const OBST = '.tok img, .tok b, .nd img.st, .nd .thr, .nd .men, .nd .tchip'
 
 export function declutter(map: HTMLElement): void {
   const labels = [...map.querySelectorAll<HTMLElement>('.lbs .lb')]
@@ -26,8 +26,9 @@ export function declutter(map: HTMLElement): void {
   if (mr.width <= 0) return
   const obst = [...map.querySelectorAll(OBST)].map(box).filter((b) => b.r > b.l && b.b > b.t)
   const placed: Box[] = []
-  // 도읍이 먼저 — 별이 붙은 이름
-  labels.sort((a, b) => Number(b.querySelector('.star') !== null) - Number(a.querySelector('.star') !== null))
+  // 먼저 자리를 잡는 차례 — 도읍(별) · 우리 고을 · 여느 고을 · 주인 없는 땅 (지도 글씨의 위계 — GAP M1)
+  const rank = (l: HTMLElement): number => (l.querySelector('.star') !== null ? 0 : l.classList.contains('me') ? 1 : l.classList.contains('k-free') ? 3 : 2)
+  labels.sort((a, b) => rank(a) - rank(b))
   for (const l of labels) {
     const icon = map.querySelector(`.nd[data-node="${l.dataset['n'] ?? ''}"] img.st`)
     const b0 = box(l)
@@ -45,14 +46,23 @@ export function declutter(map: HTMLElement): void {
       [cx - w / 2, ic.t - h - 2], // 위
       [ic.r + 3, ic.b - h * 0.2], // 오른쪽 아래
       [ic.l - w - 3, ic.b - h * 0.2], // 왼쪽 아래
+      // 한 바퀴 더 멀리 — 빽빽한 판에서 도읍·우리 고을처럼 숨기지 않는 이름이 비켜 설 자리
+      [cx - w / 2, ic.b + h * 1.9], [cx - w / 2, ic.t - h * 2.1], [ic.r + 3, ic.t - h], [ic.l - w - 3, ic.t - h],
+      [ic.r + 3, ic.b + h * 0.6], [ic.l - w - 3, ic.b + h * 0.6], [cx + w * 0.4, ic.b + h * 1.2], [cx - w * 1.4, ic.b + h * 1.2],
     ]
     let pick = tries[0]!
+    let found = false
     for (const [x, y] of tries) {
       const b = { l: x, t: y, r: x + w, b: y + h }
       if (obst.some((o) => hit(b, o, 0)) || placed.some((o) => hit(b, o, 2))) continue
       pick = [x, y]
+      found = true
       break
     }
+    // 빈 데가 없으면 덜 중요한 이름은 숨긴다 — 가까이 보면 다시 뜬다 (CK3·지도 그리기의 글씨 위계). 도읍·우리 고을은 늘 남는다
+    const crowd = !found && rank(l) >= 2
+    l.classList.toggle('crowd', crowd)
+    if (crowd) continue
     // .lb 는 translateX(-50%) 로 가운데를 맞춘다 — left 는 상자 가운데
     l.style.left = `${(((pick[0] + w / 2) - mr.left) / mr.width * 100).toFixed(3)}%`
     l.style.top = `${((pick[1] - mr.top) / mr.height * 100).toFixed(3)}%`
