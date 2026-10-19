@@ -34,6 +34,7 @@ import { noteTake } from './stance.ts'
 import { stepDiscovery, stepSight } from './discovery.ts'
 import { limitHands } from './hands.ts'
 import { stepSuzerain, suzerainEnd } from './suzerain.ts'
+import { pathsEnd, stepPaths } from './paths.ts'
 import { PEOPLE_SCALE, migrate } from './migrate.ts'
 import { spreadRumors } from './rumor.ts'
 import { addMen, giveMen, kitOf, scaleMen, takeMen } from './kit.ts'
@@ -1188,6 +1189,7 @@ export function advance(
   stepDiscovery(r, lines) // 9 — 이번 계절의 일로 서로 알게 된다 (삼한 남부 판 · 발견)
   stepSight(r, lines) // 9 — 우리 군대·사신·장사꾼이 본 땅 (지도는 보고 다닌 만큼)
   stepSuzerain(r, lines) // 9 — 맹약 시계 (맹주의 길)
+  stepPaths(r, lines) // 9 — 교역 장부 · 제사 사슬 (철과 뱃길 · 큰 제사)
   if (r.player !== undefined) {
     for (const a of seenMarches(r, r.player)) {
       const line = { kind: 'sighted', faction: a.faction, army: a.id, from: a.march!.from, to: a.march!.to } as const
@@ -1196,6 +1198,7 @@ export function advance(
     if (r.outcome === null || r.outcome === undefined) {
       const end = checkOutcome(r)
       const pact = end === null ? suzerainEnd(r) : null
+      const via = end === null && pact === null ? pathsEnd(r) : null
       if (end !== null) {
         r.outcome = { kind: end, season: r.season, path: 'conquest' }
         lines.push({ kind: 'end', outcome: end, faction: r.player, path: 'conquest' })
@@ -1203,6 +1206,10 @@ export function advance(
         // 맹주의 길 — 우리가 진왕이 됐거나, 남이 됐다
         r.outcome = { kind: pact.kind, season: r.season, path: 'suzerain', by: pact.by }
         lines.push({ kind: 'end', outcome: pact.kind, faction: r.player, path: 'suzerain', by: pact.by })
+      } else if (via !== null) {
+        // 철과 뱃길 · 큰 제사 — 우리가 이뤘거나, 남이 이뤘다
+        r.outcome = { kind: via.kind, season: r.season, path: via.path, by: via.by }
+        lines.push({ kind: 'end', outcome: via.kind, faction: r.player, path: via.path, by: via.by })
       }
     }
     makeAsks(r, lines) // 9 — 남의 나라가 다음 계절에 답할 청을 건다

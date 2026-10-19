@@ -334,4 +334,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .paths .pbar.pact i { background: linear-gradient(90deg, #3f6f8f, #8fc0e0); }
 .ap .paths .clock { display: flex; gap: 3px; } .ap .paths .clock i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #8fc0e0; }
 .ap .paths .clock i.on { background: #8fc0e0; } .ap .paths .path.rival span { color: #e8a08a; }
+.ap .paths .pbar.iron i { background: linear-gradient(90deg, #5a6a7a, #a9c3dc); } .ap .paths .pbar.rite i { background: linear-gradient(90deg, #7a4a6a, #e0a0c8); }
+.ap .paths .flags { display: flex; gap: 2px; min-height: 18px; } .ap .paths .flags img { width: 18px; height: 18px; }
+.ap .paths .clock.rite i { border-color: #e0a0c8; } .ap .paths .clock.rite i.on { background: #e0a0c8; }
 `

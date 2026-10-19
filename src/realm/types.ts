@@ -413,8 +413,8 @@ export interface Realm {
   /** 나라 사이 관계 — 열쇠는 diplomacy.pairKey(a, b). 없으면 중립 */
   relations: Record<string, Relation>
   /** 판의 끝 — 플레이어가 이겼나 졌나 (FLOW §7 #1) */
-  /** `path` — 어느 길로 끝났나 (정복 · 맹주). 옛 판은 없다 = 정복. `by` — 맹주가 된 나라 (남이 됐으면 우리가 진다) */
-  outcome: { kind: 'win' | 'lose'; season: number; path?: 'conquest' | 'suzerain'; by?: string } | null
+  /** `path` — 어느 길로 끝났나 (정복 · 맹주 · 철과 뱃길 · 큰 제사). 옛 판은 없다 = 정복. `by` — 그 길을 이룬 나라 (남이면 우리가 진다) */
+  outcome: { kind: 'win' | 'lose'; season: number; path?: 'conquest' | 'suzerain' | 'ironsea' | 'rite'; by?: string } | null
   /** 이긴 뒤에도 계속 둔다 — 남은 나라까지 (형: "이어서 진행해서 전부 점령하고 싶은 마음도"). 화면의 일이라 판정은 안 바뀐다 */
   endless?: boolean
   /** 계속 둬서 도읍을 모두 쥔 계절 */
@@ -425,6 +425,12 @@ export interface Realm {
   asks?: Ask[]
   /** 맹약 시계 — 나라마다 맹주의 셈을 채운 계절이 내리 몇인가 · 지난 계절 손잡은 나라 수 (suzerain.ts). 옛 저장에는 없다 */
   suzerain?: Record<string, { streak: number; have: number }>
+  /** 교역 장부 — 나라마다 오간 철 (계절 s · 상대 w · 철 n). 네 계절 창 (paths.ts 철과 뱃길). 옛 저장에는 없다 */
+  ironBook?: Record<string, Array<{ s: number; w: string; n: number }>>
+  /** 제사 사슬 — 나라마다 봄·가을 제사를 내리 지낸 수 (paths.ts 큰 제사). 옛 저장에는 없다 */
+  riteChain?: Record<string, number>
+  /** 소문을 이미 낸 길 — "iron:<나라>" · "rite:<나라>" (같은 소문을 되풀이하지 않게) */
+  pathNear?: Record<string, true>
   /** 나라마다 심어 둔 첩자 (plots.ts spy). 옛 저장에는 없다 */
   spies?: Record<string, Spy[]>
   /** 나라마다 자객의 활 단계 0..3 (plots.assassinBow). 옛 저장에는 없다 — 0 */
@@ -616,7 +622,13 @@ export type ReportLine =
    * (형: "누가 나랑 전쟁나면 상대가 걸어왔다는걸 알려줘야지... 그냥무작정 전쟁이다라 그러면 어떡하냐"). 옛 기록엔 없다
    */
   | { readonly kind: 'relation'; readonly a: string; readonly b: string; readonly state: Relation['state']; readonly by?: string; readonly why?: RelationWhy }
-  | { readonly kind: 'end'; readonly outcome: 'win' | 'lose'; readonly faction: string; readonly path?: 'conquest' | 'suzerain'; readonly by?: string }
+  | { readonly kind: 'end'; readonly outcome: 'win' | 'lose'; readonly faction: string; readonly path?: 'conquest' | 'suzerain' | 'ironsea' | 'rite'; readonly by?: string }
+  /** 큰 제사의 사슬 — 우리 것이면 제사철마다, 남의 것이면 가까워졌을 때 소문 (paths.ts) */
+  | { readonly kind: 'pathRite'; readonly faction: string; readonly chain: number; readonly need: number; readonly hh: number; readonly hhNeed: number }
+  /** 철과 뱃길 — 가까워졌을 때 (우리 것이면 알림, 남의 것이면 소문) */
+  | { readonly kind: 'pathIron'; readonly faction: string; readonly partners: number; readonly iron: number; readonly score: number; readonly need: number }
+  /** 장터에서 철이 팔렸다 — `from` 이 `to` 에게 철 `iron` 을 곡식 `grain` 에 */
+  | { readonly kind: 'ironMarket'; readonly from: string; readonly to: string; readonly iron: number; readonly grain: number }
   /** 맹약 — `faction` 과 손잡은 나라 `have` / 필요한 `need` · 내리 `streak` 계절 (suzerain.ts — 우리 것이면 맹약의 해, 남의 것이면 소문) */
   | { readonly kind: 'suzerain'; readonly faction: string; readonly have: number; readonly need: number; readonly streak: number }
   /** 전쟁 중인 나라에 사신으로 간 장수가 붙잡혔다 */

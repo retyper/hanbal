@@ -18,6 +18,7 @@ import { memoFor } from './memo.ts'
 import { nodeStrength } from './season.ts'
 import { allianceWhy, truceWhy, winningAgainst, type Motive } from './stance.ts'
 import { knows } from './discovery.ts'
+import { noteIron } from './paths.ts'
 import type { Ask, AskKind, EnvoyAsk, Good, Goods, Order, Pledge, Realm, Relation, RelationWhy, ReportLine } from './types.ts'
 
 export function pairKey(a: string, b: string): string {
@@ -295,6 +296,19 @@ export function holdMarkets(r: Realm, lines: ReportLine[]): void {
     stockOf(r, b).grain += g
     lines.push({ kind: 'market', a, b, grain: g })
     addFavor(r, a, b, P.realm.favorMarket)
+    // 철 장터 — 철광을 쥔 쪽이 없는 쪽에 판다 (변진의 철을 이웃이 사 간다)
+    const mineA = Object.values(r.nodes).some((n) => n.owner === a && n.kind === 'ironMine')
+    const mineB = Object.values(r.nodes).some((n) => n.owner === b && n.kind === 'ironMine')
+    if (mineA !== mineB) {
+      const [seller, buyer] = mineA ? [a, b] : [b, a]
+      const price = P.realm.marketIronPrice
+      const n = Math.min(P.realm.marketIron, Math.floor(stockOf(r, seller).iron), price > 0 ? Math.floor(stockOf(r, buyer).grain / price) : Infinity)
+      if (n > 0) {
+        pay(r, seller, buyer, { iron: n })
+        payGoods(r, buyer, seller, { grain: n * price })
+        lines.push({ kind: 'ironMarket', from: seller, to: buyer, iron: n, grain: n * price })
+      }
+    }
   }
 }
 
@@ -478,7 +492,11 @@ export function envoyTrueChance(
 }
 
 const canPay = canPayGoods
-const pay = payGoods
+/** 몫을 옮기고, 철이 오갔으면 두 나라 교역 장부에 적는다 (철과 뱃길 — paths.ts) */
+const pay = (r: Realm, from: string, to: string, x: Partial<Record<Good, number>>): void => {
+  payGoods(r, from, to, x)
+  noteIron(r, from, to, goodOf(x, 'iron'))
+}
 
 /**
  * 사신을 따라갈 수 있는 장수인가 — 우리 장수 · 자유 · 군대를 이끌지 않는다 · 군주가 아니다 · 다치지 않았다.

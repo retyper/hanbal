@@ -193,8 +193,11 @@ describe('화친·동맹으로 얻는 것', () => {
     const a = advance(r, [])
     const b = advance(byeonhanMini(1), [])
     assert.ok(a.report.lines.some((l) => l.kind === 'market' && l.grain === P.realm.truceTrade))
-    assert.equal(a.next.stock['us']!.grain, b.next.stock['us']!.grain + P.realm.truceTrade)
-    assert.equal(a.next.stock['guya']!.grain, b.next.stock['guya']!.grain + P.realm.truceTrade)
+    // 철 장터 — 철광을 쥔 쪽이 없는 쪽에 철을 판다 (철과 뱃길). 그 값만큼 곡식이 오간다
+    const im = a.report.lines.find((l) => l.kind === 'ironMarket')
+    const paid = (f: string): number => (im === undefined || im.kind !== 'ironMarket' ? 0 : im.to === f ? -im.grain : im.from === f ? im.grain : 0)
+    assert.equal(a.next.stock['us']!.grain, b.next.stock['us']!.grain + P.realm.truceTrade + paid('us'))
+    assert.equal(a.next.stock['guya']!.grain, b.next.stock['guya']!.grain + P.realm.truceTrade + paid('guya'))
   })
 
   it('동맹은 본 것을 나눈다 — 더 새로운 쪽으로', () => {
