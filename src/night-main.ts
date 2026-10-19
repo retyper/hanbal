@@ -24,7 +24,8 @@ import { createSfx, pumpSfx, unlockSfx } from './audio/sfx.ts'
 import { createSynth, noiseBurst, resumeSynth, tone, type Synth } from './audio/synth.ts'
 import { P } from './tune/params.ts'
 import { BOW_NAME, createNight, stepNight, type Night, type NightResult } from './night/sim.ts'
-import { createView, drawNight, pumpView } from './night/draw.ts'
+import { createView, drawNight, pumpView, shakeView } from './night/draw.ts'
+import { hitStopMs, pumpEvents, updateFx } from './render/effects.ts'
 import { PRACTICE_STAGES, stageTitle } from './night/layout.ts'
 import { rehearsalSeed, reportsResult, type NightMode } from './night/mission.ts'
 
@@ -35,6 +36,10 @@ const PRACTICE_KEEP = 200
 
 const canvas = document.getElementById('night') as HTMLCanvasElement
 const ui = document.getElementById('night-ui') as HTMLDivElement
+/** 판 전체(캔버스 + 글자판) — 세로 폰이면 통째로 옆으로 눕힌다 (layoutStage) */
+const stage = document.getElementById('stage') as HTMLDivElement
+/** 세로 폰에서 눕혀 그릴지 — 이 기기에만 기억한다 (기본 눕힘) */
+const ROTATE_KEY = 'hanbal.night.rotate'
 const ctx = canvas.getContext('2d')!
 const params = new URLSearchParams(location.search)
 const practiceMode = params.get('practice') === '1'
@@ -73,16 +78,13 @@ const missionSeed = Number(params.get('seed') ?? newSeed()) >>> 0
 const missionArrows = Number(params.get('arrows') ?? P.night.arrows)
 const mode = (): NightMode => (practiceMode ? 'practice' : rehearsal ? 'rehearsal' : 'mission')
 
-// ───────────────────────── 소리 — 밤의 것만 (활 소리는 활터 sfx 그대로) ─────────────────────────
+// ───────────────────────── 소리 — 밤의 것만 (활 소리 · 맞은 소리(신음·헤드샷)는 활터 sfx 그대로) ─────────────────────────
 
 function nightSound(kind: string): void {
   const s = synth
   if (s === null) return
   const base = { attack: 0.002, delay: 0, q: 1, endFreq: 0 }
   switch (kind) {
-    case 'head': case 'body': case 'leg': case 'chief':
-      noiseBurst(s, 71, { ...base, dur: 0.12, filterType: 'lowpass', freq: 700, endFreq: 180, gain: 0.5, decay: 0.12 })
-      break
     case 'wall':
       noiseBurst(s, 72, { ...base, dur: 0.08, filterType: 'bandpass', freq: 1400, q: 4, gain: 0.45, decay: 0.08 })
       break
@@ -110,8 +112,8 @@ function nightSound(kind: string): void {
 
 const CSS = `
 #night-ui { position: fixed; inset: 0; pointer-events: none; font: 15px/1.45 system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; }
-#night-ui .card { pointer-events: auto; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(92vw, 440px);
-  max-height: 90vh; overflow-y: auto; box-sizing: border-box; padding: 18px; border-radius: 18px; background: #141a22ee; border: 1px solid #4a4030;
+#night-ui .card { pointer-events: auto; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(92%, 440px);
+  max-height: 90%; overflow-y: auto; box-sizing: border-box; padding: 18px; border-radius: 18px; background: #141a22ee; border: 1px solid #4a4030;
   box-shadow: 0 16px 40px #000c; text-align: center; color: #e9e2d4; }
 #night-ui h1 { font-family: 'Gowun Batang', serif; font-size: 26px; margin: 2px 0 6px; color: #d9b36a; }
 #night-ui p { margin: 6px 0; color: #cfc6b4; } #night-ui .mute { color: #8f887b; font-size: 13px; }
@@ -127,7 +129,7 @@ const CSS = `
   align-items: center; justify-content: center; color: #f3e6c8; font-size: 16px; font-weight: 800; line-height: 1.15; }
 #night-ui .steady span i { font-style: normal; font-size: 11px; font-weight: 600; color: #9aa4b2; }
 #night-ui .steady.on span { background: #3a3020; color: #ffd27a; } #night-ui .steady.on { box-shadow: 0 0 0 3px #ffd27a, 0 0 18px #ffd27a88; }
-#night-ui .turn { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); padding: 4px 12px; border-radius: 12px; background: #000a; color: #95a1ae; font-size: 12px; }
+#night-ui .turn { pointer-events: auto; position: absolute; left: 12px; top: 116px; padding: 4px 10px; border-radius: 12px; background: #1b2028aa; color: #95a1ae; font-size: 12px; border: 1px solid #4a5363; }
 #night-ui .quit { pointer-events: auto; position: absolute; left: 12px; top: 44px; padding: 4px 10px; font-size: 12px; background: #1b2028aa; }
 #night-ui .skip { pointer-events: auto; position: absolute; left: 12px; top: 80px; padding: 4px 10px; font-size: 12px; background: #1b2028aa; }
 #night-ui .tag { position: absolute; left: 50%; top: 46px; transform: translateX(-50%); padding: 3px 14px; border-radius: 12px;
@@ -203,7 +205,8 @@ function hud(): void {
     + (rehearsal ? `<div class="tag">연습</div>` : '')
     // 진짜 임무에서 첫 살을 쏘기 전까지만 건너뛸 수 있다 — 쏘고 나서 맡기는 길은 없다
     + (!practiceMode && !rehearsal && (night?.shots ?? 0) === 0 ? `<button class="skip" data-act="skip">건너뛰기</button>` : '')
-    + (innerHeight > innerWidth ? `<div class="turn">가로로 돌리면 크게 보인다</div>` : '')
+    // 세로 폰 — 눕혀 그리는 중이면 '세로로 보기', 아니면 '가로로 눕히기' (회전 잠금을 켠 폰도 가로로 쏠 수 있게)
+    + (portraitScreen() ? `<button class="turn" data-act="turn">${rotatePref() ? '폰을 옆으로 눕혀 쏜다 · 세로로 보기' : '작게 보인다 · 가로로 눕히기'}</button>` : '')
   breathBtn = ui.querySelector<HTMLElement>('.steady')
   skipBtn = ui.querySelector<HTMLElement>('.skip')
   shownSt = -1
@@ -279,7 +282,7 @@ function skipMission(seen: boolean): void {
   }
   night = null
   if (window.parent !== window) window.parent.postMessage({ type: RESULT_KEY, ...out }, location.origin)
-  ui.innerHTML = `<div class="card"><h1>자객에게 맡겼다</h1><p class="mute">자객 솜씨로 굴린다. 결과는 계절이 넘어갈 때 온다.</p>`
+  ui.innerHTML = `<div class="card"><h1>자객에게 맡겼다</h1><p class="mute">자객이 제 솜씨대로 해낸다. 어찌 됐는지는 계절이 넘어갈 때 들려온다.</p>`
     + `<div class="btns"><button class="on" data-act="back">돌아가기</button></div></div>`
 }
 
@@ -308,6 +311,7 @@ ui.addEventListener('click', (ev) => {
     case 'skip': if (night !== null && night.result === null && night.shots === 0 && !rehearsal) skipMission(true); break
     case 'menu': showPractice(); break
     case 'practice': location.search = '?practice=1'; break
+    case 'turn': setRotatePref(!rotatePref()); layoutStage(); if (night !== null && night.result === null) hud(); break
     case 'back': location.href = back; break
     case 'quit':
       if (night !== null && practiceMode) showPractice()
@@ -348,6 +352,53 @@ function unlock(): void {
 }
 canvas.addEventListener('pointerdown', unlock, { passive: true })
 
+// ───────────────────────── 세로 폰 — 판을 옆으로 눕힌다 ─────────────────────────
+//
+// 형: "화면을 세로로 플레이 하고있는데 활쏠때만 가로로 고정되게 만들어야하나?"
+// 밤 판은 지붕에서 마당 끝까지 35m 가 한 화면에 들어와야 한다 — 세로 폰(폭 390px)에 맞추면 1m 가 11px,
+// 보초 머리(반지름 0.14m)가 점 하나다. 활터는 과녁이 거리만큼 커지지만 밤 판의 사람은 커질 수 없다.
+// screen.orientation.lock 은 전체화면에서만 되고 아이폰 사파리는 아예 없다 — 그래서 **판을 통째로 90° 눕혀 그린다.**
+// 폰의 회전 잠금이 켜져 있어도 폰만 옆으로 돌리면 가로 판이 된다. 회전 잠금이 꺼져 있으면 폰을 돌리는 순간
+// 화면이 진짜 가로가 되어 눕힘이 저절로 풀린다. 원하면 '세로로 보기'로 끈다 (이 기기에 기억).
+
+const portraitScreen = (): boolean => innerHeight > innerWidth
+
+function rotatePref(): boolean {
+  try {
+    return localStorage.getItem(ROTATE_KEY) !== '0'
+  } catch {
+    return true
+  }
+}
+
+function setRotatePref(on: boolean): void {
+  try {
+    localStorage.setItem(ROTATE_KEY, on ? '1' : '0')
+  } catch {
+    // 저장이 막힌 창 — 이번만 바뀐다
+  }
+}
+
+let rotatedNow = false
+function layoutStage(): void {
+  const rot = portraitScreen() && rotatePref()
+  const st = stage.style
+  if (rot) {
+    // 판 점 (x, y) → 화면 (innerWidth − y, x): 오른쪽으로 90°. 판의 위가 화면 오른쪽 — 폰을 왼쪽으로 눕혀 쥔다
+    st.width = `${innerHeight}px`
+    st.height = `${innerWidth}px`
+    st.transform = `translate(${innerWidth}px, 0) rotate(90deg)`
+  } else {
+    st.width = '100%'
+    st.height = '100%'
+    st.transform = ''
+  }
+  if (rot !== rotatedNow) {
+    rotatedNow = rot
+    input.setRotated(rot)
+  }
+}
+
 // ───────────────────────── 돌림 ─────────────────────────
 
 let raf = 0
@@ -366,7 +417,10 @@ function frame(now: number): void {
   if (n !== null) {
     const step = 1 / P.sim.hz
     const maxFrame = step * P.sim.maxCatchUpSteps
-    acc += realDt < maxFrame ? realDt : maxFrame
+    // 히트스톱 — 활터 루프와 같다 (game/loop.ts): 맞힌 순간 판을 잠깐 세운다. 단 당기는 중에는 안 세운다 (시위가 얼면 안 된다)
+    const ph = n.w.archer.phase
+    const frozen = hitStopMs(view.fx) > 0 && ph !== 'drawing' && ph !== 'full'
+    if (!frozen) acc += realDt < maxFrame ? realDt : maxFrame
     let steps = 0
     while (acc >= step && steps < P.sim.maxCatchUpSteps) {
       input.syncAim(n.w.archer.x, n.w.archer.y)
@@ -377,7 +431,10 @@ function frame(now: number): void {
     }
     if (steps >= P.sim.maxCatchUpSteps) acc = 0
     pumpSfx(sfx, n.w)
+    pumpEvents(view.fx, n.w)
     n.w.events.length = 0
+    updateFx(view.fx, realDt)
+    shakeView(view, realDt)
     for (const e of n.events) nightSound(e.t)
     pumpView(view, n, 0, now)
     n.events.length = 0
@@ -408,9 +465,11 @@ function wake(): void {
 }
 document.addEventListener('visibilitychange', wake)
 addEventListener('resize', () => {
+  layoutStage()
   if (night !== null && night.result === null) hud()
 })
 
+layoutStage()
 if (practiceMode) showPractice()
 else showMissionIntro()
 wake()

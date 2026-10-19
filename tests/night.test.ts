@@ -65,6 +65,21 @@ describe('밤의 암살판', () => {
     assert.ok(c.alarm > 0, '몸통에 맞으면 신음 소리')
   })
 
+  it('형체를 맞히면 활터와 같은 명중 사건을 낸다 — 활터의 소리·불꽃·히트스톱·남는 궤적이 그대로 읽는다', () => {
+    const seed = 11
+    const hits = (n: Night) => n.w.events.filter((e) => e.t === 'hit')
+    const a = createNight({ seed, practice: { stage: 3, alarm: true, infinite: true } })
+    shoot(a, angleFor(seed, 'head'))
+    const h = hits(a)
+    assert.equal(h.length, 1)
+    assert.ok(h[0]!.t === 'hit' && h[0]!.foe && h[0]!.head && h[0]!.execute, '머리 — 신음 없이(execute) 헤드샷')
+    assert.ok(h[0]!.t === 'hit' && a.w.arrows[h[0]!.arrow] !== undefined, '어느 살인지 안다 (남는 궤적)')
+    const b = createNight({ seed, practice: { stage: 3, alarm: true, infinite: true } })
+    shoot(b, angleFor(seed, 'body'))
+    const g = hits(b)
+    assert.ok(g.length === 1 && g[0]!.t === 'hit' && g[0]!.foe && !g[0]!.head && !g[0]!.execute, '몸통 — 신음')
+  })
+
   it('보초를 다 쓰러뜨리면 지붕을 넘어 다음 판 — 화살은 그대로, 게이지는 조금 가라앉는다', () => {
     const n = createNight({ seed: 3, arrows: 7 })
     n.alarm = 0.5

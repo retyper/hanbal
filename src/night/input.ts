@@ -36,6 +36,11 @@ export interface NightInput {
   /** 고정 스텝 하나가 끝날 때 — 놓음·그만둠을 한 스텝은 보인 뒤에 내린다 */
   endStep(): void
   setSteady(on: boolean): void
+  /**
+   * 세로 폰에서 판을 옆으로 눕혀 그릴 때 (night-main.ts layoutStage — 화면 회전 잠금이 켜져 있어도 가로로 쏜다).
+   * 판은 오른쪽으로 90° 돌아가 있다: 화면 점 (sx, sy) → 판 점 (sy, 판 높이 − sx). 끄면 그대로
+   */
+  setRotated(on: boolean): void
   dispose(): void
 }
 
@@ -61,11 +66,17 @@ export function createNightInput(canvas: HTMLCanvasElement): NightInput {
 
   let rectL = 0
   let rectT = 0
+  let rectW = 0
+  let rotated = false
   const syncRect = (): void => {
     const r = canvas.getBoundingClientRect()
     rectL = r.left
     rectT = r.top
+    rectW = r.width
   }
+  /** 손가락의 화면 자리 → 판 위 자리 (CSS px). 눕혀 그렸으면 돌려 푼다 */
+  const localX = (e: PointerEvent): number => (rotated ? e.clientY - rectT : e.clientX - rectL)
+  const localY = (e: PointerEvent): number => (rotated ? rectW - (e.clientX - rectL) : e.clientY - rectT)
   syncRect()
 
   const syncSteady = (): void => {
@@ -117,8 +128,8 @@ export function createNightInput(canvas: HTMLCanvasElement): NightInput {
     syncRect()
     pointerId = e.pointerId
     pull.active = true
-    pull.ax = pull.x = e.clientX - rectL
-    pull.ay = pull.y = e.clientY - rectT
+    pull.ax = pull.x = localX(e)
+    pull.ay = pull.y = localY(e)
     pull.frac = 0
     pull.max = Math.max(P.night.pullDead * 2, Math.min(P.night.pullMax, P.night.pullMaxShare * Math.min(canvas.clientWidth, canvas.clientHeight)))
     pull.inDead = true
@@ -131,8 +142,8 @@ export function createNightInput(canvas: HTMLCanvasElement): NightInput {
       syncSteady()
     }
     if (!pull.active || e.pointerId !== pointerId) return
-    pull.x = e.clientX - rectL
-    pull.y = e.clientY - rectT
+    pull.x = localX(e)
+    pull.y = localY(e)
     update()
   }
 
@@ -158,8 +169,8 @@ export function createNightInput(canvas: HTMLCanvasElement): NightInput {
       return
     }
     if (e.pointerId !== pointerId) return
-    pull.x = e.clientX - rectL
-    pull.y = e.clientY - rectT
+    pull.x = localX(e)
+    pull.y = localY(e)
     update()
     finish(false)
     try {
@@ -252,6 +263,10 @@ export function createNightInput(canvas: HTMLCanvasElement): NightInput {
     setSteady(on) {
       uiHeld = on
       syncSteady()
+    },
+    setRotated(on) {
+      rotated = on
+      syncRect()
     },
     dispose() {
       canvas.removeEventListener('pointerdown', onDown)
