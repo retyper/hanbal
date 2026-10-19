@@ -34,12 +34,12 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'goja-1': 'g-03-sea-trader', // 살해 바다쇠
   'dokro-1': 'w-10-pirate-captain', // 읍차 너울 — 왜와 경계를 맞댄 포구
   // 군주 — 장군과 따로 (형: "군주는 따로 있어야 하고 장군이랑 별개여야")
-  'us-ruler': 'w-07-shaman-queen', // 읍차 해솔 — 매혹
-  'guya-ruler': 'g-01-master-smith', // 진지렴 쇠보 — 쇠의 나라의 대장장이 군주
-  'anya-ruler': 'g-06-strategist', // 신지 아단 — 신중
-  'miri-ruler': 'w-16-clan-matriarch', // 신지 달래 — 곡창의 여가장
-  'goja-ruler': 'g-05-mahan-chieftain', // 험측 바우 — 물길·장사
-  'dokro-ruler': 'g-13-baekje-general', // 읍차 가람
+  'us-ruler': 'w-63-us-haesol', // 읍차 해솔 — 매혹
+  'guya-ruler': 'g-39-guya-soebo', // 진지렴 쇠보 — 쇠의 나라의 대장장이 군주
+  'anya-ruler': 'g-40-anya-adan', // 신지 아단 — 신중
+  'miri-ruler': 'w-64-miri-dallae', // 신지 달래 — 곡창의 여가장
+  'goja-ruler': 'g-41-goja-bau', // 험측 바우 — 물길·장사
+  'dokro-ruler': 'g-42-dokro-garam', // 읍차 가람
   // 둘째 장군들
   'us-1': 'g-09-farmer-conscript',
   'miri-2': 'w-02-goguryeo-lady',
@@ -55,11 +55,11 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'wander-19': 'g-15-shaman-man', 'wander-20': 'w-08-mahan-warrior',
   // 영남 판 (data/regions/yeongnam.ts) — 변한 판과 같은 나라는 같은 얼굴. 새 군주 열다섯은 있는 명치판을 나눠 쓴다 (여인이 많다)
   // 영남 판을 위해 새로 받은 여덟 (2026-10-18): 사로 이사금 · 대가야 왕 · 사벌 노장 · 사물 바다 군장 · 우시산 고래잡이 여군장 · 압독 여왕 · 비화가야 무녀 군주 · 이서 여장수
-  'saro-ruler': 'g-17-saro-isageum', 'daegaya-ruler': 'g-18-daegaya-king', 'dabeol-ruler': 'g-16-goguryeo-gaema-commander',
+  'saro-ruler': 'g-17-saro-isageum', 'daegaya-ruler': 'g-18-daegaya-king', 'dabeol-ruler': 'g-35-dabeol-dalgu',
   'sabeol-ruler': 'g-19-sabeol-veteran', 'usisan-ruler': 'w-23-usisan-whale-queen', 'bihwa-ruler': 'w-25-bihwa-priestess',
-  'jomun-ruler': 'w-06-buyeo-huntress', 'golbeol-ruler': 'w-22-dongye-tiger-huntress', 'apdok-ruler': 'w-24-apdok-queen',
-  'iseo-ruler': 'w-12-court-dancer', 'byeokjin-ruler': 'w-20-gaya-smith-daughter', 'gammun-ruler': 'g-15-shaman-man',
-  'samul-ruler': 'g-20-samul-sea-lord', 'eumjeup-ruler': 'g-12-silla-youth', 'chopal-ruler': 'g-14-captive-general',
+  'jomun-ruler': 'w-59-jomun-irang', 'golbeol-ruler': 'w-60-golbeol-beom', 'apdok-ruler': 'w-24-apdok-queen',
+  'iseo-ruler': 'w-61-iseo-sinae', 'byeokjin-ruler': 'w-62-byeokjin-byeol', 'gammun-ruler': 'g-36-gammun-gamdol',
+  'samul-ruler': 'g-20-samul-sea-lord', 'eumjeup-ruler': 'g-37-eumjeup-jeup', 'chopal-ruler': 'g-38-chopal-palmae',
   'saro-1': 'g-08-veteran', 'saro-2': 'w-03-goguryeo-archer', 'daegaya-1': 'w-09-byeonhan-smith', 'sabeol-1': 'w-19-buyeo-fur-princess',
   'dabeol-1': 'g-07-drunk-warrior', 'usisan-1': 'g-01-master-smith', 'jomun-1': 'g-13-baekje-general', 'iseo-1': 'w-26-iseo-tomboy-general',
   'samul-1': 'w-08-mahan-warrior', 'bihwa-1': 'g-10-buyeo-horse-lord', 'eumjeup-1': 'w-01-silla-princess',
@@ -74,12 +74,12 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   // 삼한과 북녘 판의 새 군주·장군 (data/regions/world.ts) — 있는 명치판을 나눠 쓴다. 새 얼굴은 그림 줄(ART-QUEUE 5c)
   'goguryeo-ruler': 'g-28-goguryeo-damul', 'goguryeo-1': 'g-16-goguryeo-gaema-commander', 'goguryeo-2': 'w-03-goguryeo-archer',
   'biryuna-ruler': 'w-52-biryuna-songbi', 'biryuna-1': 'g-08-veteran', 'yeonna-ruler': 'g-29-yeonna-myeongsol', 'yeonna-1': 'w-13-young-archer',
-  'hwanna-ruler': 'w-15-captive-noble', 'hwanna-1': 'g-03-sea-trader', 'gwanna-ruler': 'g-01-master-smith', 'gwanna-1': 'g-11-gaya-iron-general',
-  'buyeo-ruler': 'g-10-buyeo-horse-lord', 'buyeo-1': 'w-06-buyeo-huntress', 'maga-ruler': 'w-19-buyeo-fur-princess', 'maga-1': 'g-04-jinhan-giant',
-  'uga-ruler': 'g-09-farmer-conscript', 'uga-1': 'g-07-drunk-warrior', 'jeoga-ruler': 'g-14-captive-general', 'jeoga-1': 'w-11-assassin',
-  'guga-ruler': 'w-16-clan-matriarch', 'guga-1': 'g-12-silla-youth', 'dongokjeo-ruler': 'w-18-jinhan-salt-widow', 'dongokjeo-1': 'g-05-mahan-chieftain',
-  'bukokjeo-ruler': 'g-15-shaman-man', 'bukokjeo-1': 'w-17-mahan-pearl-diver', 'bullae-ruler': 'w-22-dongye-tiger-huntress', 'bullae-1': 'g-13-baekje-general',
-  'tamna-ruler': 'w-07-shaman-queen', 'tamna-1': 'g-20-samul-sea-lord',
+  'hwanna-ruler': 'w-53-hwanna-gabi', 'hwanna-1': 'g-03-sea-trader', 'gwanna-ruler': 'g-30-gwanna-soemoe', 'gwanna-1': 'g-11-gaya-iron-general',
+  'buyeo-ruler': 'g-31-buyeo-geumha', 'buyeo-1': 'w-06-buyeo-huntress', 'maga-ruler': 'w-54-maga-dalli', 'maga-1': 'g-04-jinhan-giant',
+  'uga-ruler': 'g-32-uga-sodu', 'uga-1': 'g-07-drunk-warrior', 'jeoga-ruler': 'g-33-jeoga-metdol', 'jeoga-1': 'w-11-assassin',
+  'guga-ruler': 'w-55-guga-nuri', 'guga-1': 'g-12-silla-youth', 'dongokjeo-ruler': 'w-56-dongokjeo-sogeum', 'dongokjeo-1': 'g-05-mahan-chieftain',
+  'bukokjeo-ruler': 'g-34-bukokjeo-duman', 'bukokjeo-1': 'w-17-mahan-pearl-diver', 'bullae-ruler': 'w-57-bullae-bakdal', 'bullae-1': 'g-13-baekje-general',
+  'tamna-ruler': 'w-58-tamna-halla', 'tamna-1': 'g-20-samul-sea-lord',
   // 여인 장수 더 (형 2026-10-19: "장수도 여캐 많았으면 좋겠으니 챗지피티로") — 판마다 장수 절반쯤이 여인. 아라·고자 둘은 변한 판의 얼굴 그대로
   // 제 얼굴(w-29 ~ w-45, 그림 줄 5d)을 받기 전까지는 있는 명치판을 빌린다 — 받으면 여기만 바꾼다
   'us-2': 'w-29-golpo-janmul', 'guya-3': 'w-30-guya-soebi',
