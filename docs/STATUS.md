@@ -14,6 +14,13 @@
 - 동맹 장면 그림은 혼인 → 회맹. 옛 사냥대회·영고는 `_prev/`.
 - ★ `realm-plate.ps1` 함정을 막았다: deghost 한 96px 깃발을 cut/ 에 넣어 원본으로 삼음. plate 뒤 바이트만 바뀐 아이콘은 git 으로 되돌린다.
 - 다음: 그림 줄 맨 위(`ART-QUEUE.md`) — 요동 조각 M9(챗지피티) · 장군 얼굴 5e 스물아홉(제미나이 Argon, 한도 풀리면) · 길 기호 · 밤 경비.
+- **다시 시작하는 법 (세션을 끄고 새로 켤 때):**
+  1. 챗지피티 한도 확인 → 풀렸으면 M9 요동 조각부터 (밑그림 tools/world-sketch.js TILES.m9a~d).
+  2. 제미나이 Jay(u/4) → 왼쪽 '이미지' → 모델 Argon → 5e 를 한 사람씩 새 대화로. 머리말·꼬리말은 `ART.md` 0-3 끝, 어휘는 0-4.
+     받으면 (77,0) 870 정사각으로 잘라 반짝이 피하기 → `assets_src/realm/heroines/bust/NN-…png`(여인 65~) · `generals/bust/NN-…png`(남자 43~)
+     → `powershell -File tools/realm-plate.ps1` → `git diff --name-only public/realm/icon` 의 바이트만 바뀐 것은 `git show HEAD:경로 > 경로` 로 되돌림 → HERO_BUST 한 줄 바꾸기 → `npm test` → 커밋·푸시.
+  3. 깃발 더 받을 때는 제미나이 u/3 "Goguryeo Banner Game Icon Generation" 대화에서 "EXACTLY the same style as the banners above" 로 이어 시키면 한 화풍.
+- 이번에 쓴 잘라 내기·깃발 처리 스크립트는 세션 임시 폴더에 있었다 — 다시 쓰려면 `tools/` 로 옮겨 만들 것 (crop-bust: System.Drawing 으로 정사각 자르기 / flag: key-png 40 50 → slice-grid 1 1 fit 512).
 
 **(앞 기록) 그림 굽기 — 아직 0장:** 형이 챗지피티 계정을 두 번 바꿔 줬지만 둘 다 오늘 몫이 이미 다 써져 있었다 ("YunCheol Shin" 은 01:02, retyper 는 오전 9:30 에 풀림).
 같은 깃발 격자 주문(항아리·돌문을 맨 앞 + 말 탄 궁수·물개·별·쟁기·왕관·쌍물고기·사슴뿔·삼족오·달·산·가마·은행잎·볏단·고인돌 16개, 원·해·햇살 금지)이 그 계정 대화에 남아 있다 — 풀리면 그대로 다시 보낸다.
