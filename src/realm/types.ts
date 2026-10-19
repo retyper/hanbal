@@ -319,6 +319,10 @@ export interface Realm {
   relations: Record<string, Relation>
   /** 판의 끝 — 플레이어가 이겼나 졌나 (FLOW §7 #1) */
   outcome: { kind: 'win' | 'lose'; season: number } | null
+  /** 이긴 뒤에도 계속 둔다 — 남은 나라까지 (형: "이어서 진행해서 전부 점령하고 싶은 마음도"). 화면의 일이라 판정은 안 바뀐다 */
+  endless?: boolean
+  /** 계속 둬서 도읍을 모두 쥔 계절 */
+  unified?: number
   /** 봄 제사를 지낸 해 (Math.floor(season / 4)) — 나라마다. 그해 가을 수확이 는다 (economy.riteAllowed). 옛 저장에는 없다 */
   blessed?: Record<string, number>
   /** 답을 기다리는 청 (diplomacy.openAsks). 옛 저장에는 없다 */

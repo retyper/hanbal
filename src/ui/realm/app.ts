@@ -169,6 +169,7 @@ function nationFace(id: string, cls = 'nface'): string {
 const KIT: FrontKit = {
   art: ART, esc, icon, nations: nationsOf, face: nationFace,
   emblem: (f, cls) => emblem(f, cls),
+  bust: (id) => (HERO_BUST[id] !== undefined ? `${ART}bust/${HERO_BUST[id]}.jpg` : null),
 }
 
 /** 첫 화면 · 판 고르기 · 나라 고르기 · 자세히 — null 이면 판 위 */
@@ -1304,7 +1305,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   function modalHtml(r: Realm): string {
-    if (r.outcome) return looking ? '' : endingHtml(KIT, r, host.history())
+    // 이겼어도 계속 두는 판이면 보고가 이어진다 — 도읍을 모두 쥔 계절에 한 번 더 끝 화면
+    const endNow = r.outcome && (!r.endless || (r.unified !== undefined && r.unified === r.season - 1))
+    if (endNow) return looking ? '' : endingHtml(KIT, r, host.history())
     if (!showReport || before === null || report === null) return ''
     const season = seasonOf(r.season)
     // 우리가 낀 싸움은 카드로 한 판씩 풀어 보이고, 글 줄에서는 뺀다
@@ -1606,6 +1609,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'fr-start': if (front !== null && front.kind === 'detail') host.onNewGame(d['id']!, front.region); return
       case 'fr-again': if (realm !== null) host.onNewGame(realm.player, realm.region ?? 'byeonhan-mini'); return
       case 'fr-look': looking = true; paint(); return
+      case 'fr-endless': if (realm !== null) { realm.endless = true; looking = false; showReport = false } paint(); return
       case 'pl-next': case 'pl-skip': {
         if (prologue === null) return
         if (d['act'] === 'pl-next' && prologue < PROLOGUE_STEPS - 1) { prologue++; paint(); return }
@@ -1627,7 +1631,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'focus': focus = focus === d['id'] ? null : d['id']!; break
       case 'rep-close': showReport = false; paint(); return
       case 'next': {
-        if (realm === null || realm.outcome) return
+        if (realm === null || (realm.outcome && !realm.endless)) return
         const mine = ordersNow()
         const all = [...mine, ...aiOrders(realm)]
         const prev = realm
@@ -1647,6 +1651,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         showReport = true
         realm = res.next
         fresh = new Set(knownOf(res.next, me()).filter((f) => !knows(prev, me(), f)))
+        // 계속 둔 판 — 도읍을 모두 쥐면 한 번 더 끝 화면 (하나가 됐다)
+        if (res.next.endless === true && res.next.unified === undefined && Object.values(res.next.factions).every((f) => res.next.nodes[f.capital]?.owner === me())) res.next.unified = res.report.season
         host.onAdvance(res.next, res.report, all, mine)
         seasonFx(res.next.season)
         if (res.report.lines.some((l) => l.kind === 'battle' && (l.atkFaction === me() || l.defender === me()))) ding('boom_01', 0.35) // 우리가 낀 싸움

@@ -24,6 +24,8 @@ export interface FrontKit {
   /** 나라의 군장 얼굴 (명치판) */
   readonly face: (nation: string, cls?: string) => string
   readonly nations: (region: RegionId) => readonly NationInfo[]
+  /** 장수 명치판 그림의 주소 — 없으면 null (끝 화면의 콜라주) */
+  readonly bust?: (hero: string) => string | null
 }
 
 /** 지난 계절들의 보고 — 판 기록에서 (realm-main) */
@@ -50,7 +52,7 @@ export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, 
   h += `<h1>칠십팔국</h1><p class="sub">삼한의 일흔여덟 나라 · 고구려와 부여의 북녘</p>`
   h += `<p class="hook">왕이 하나가 아니던 때. 한 읍락의 군장으로 시작해, 이웃을 알고 · 사귀고 · 쳐서 도읍을 하나씩 쥔다.</p>`
   h += `<div class="fbtns">`
-  if (r !== null && !r.outcome) {
+  if (r !== null && (!r.outcome || (r.endless === true && r.outcome.kind === 'win'))) {
     const me = r.player
     const region = r.region ?? 'byeonhan-mini'
     const name = r.factions[me]?.name ?? ''
@@ -167,18 +169,40 @@ const HEAD: Readonly<Record<RegionId, string>> = {
   world: '삼한과 북녘에 이름을 떨쳤다',
 }
 
+/** 이긴 뒤 계속 둬서 도읍을 모두 쥐었을 때 */
+const HEAD_ALL: Readonly<Record<RegionId, string>> = {
+  'byeonhan-mini': '변한의 바닷가가 한 나라가 됐다',
+  yeongnam: '낙동강의 나라들이 하나가 됐다',
+  south: '삼한의 남쪽이 하나가 됐다',
+  world: '삼한과 북녘이 하나가 됐다',
+}
+
+/** 콜라주 자리 — 왼쪽·위·너비 (%) · 기울기. 여섯 장까지 */
+const SLOTS: ReadonlyArray<readonly [number, number, number, number]> = [
+  [2, 3, 46, -5], [50, 1, 46, 4], [26, 27, 44, -2], [1, 50, 44, 3], [54, 47, 44, -4], [28, 64, 42, 2],
+]
+/** 도읍을 쥔 장면 — 차례로 돌려 쓴다 */
+const TAKE_ART = ['event-night-raid', 'event-eight-harbours', 'event-expedition-return', 'event-goguryeo-hunt'] as const
+
+/**
+ * 끝 화면 — 그 판의 큰 장면들이 한 장씩 사진처럼 떨어져 쌓이고, 마지막에 잔치 그림 위로 제목이 뜬다
+ * (형: "승리하는건 나중에 문명처럼 영상처럼 … 지금은 이미지 들만 가지고 콜라주같은거로"). 누르면 바로 다 보인다.
+ * 이겼으면 "계속 둔다" — 남은 나라까지 (형: "이어서 진행해서 전부 점령하고 싶은 마음도 드네").
+ */
 export function endingHtml(k: FrontKit, r: Realm, history: History): string {
   const win = r.outcome?.kind === 'win'
+  const all = r.unified !== undefined
   const region = r.region ?? 'byeonhan-mini'
   const me = r.player
   const name = (f: string): string => r.factions[f]?.name ?? ''
   const node = (id: string): string => r.nodes[id]?.name ?? ''
-  const caps = new Set(Object.values(r.factions).map((f) => f.capital))
-  const events: Array<{ s: number; t: string; big: boolean }> = []
+  const capOf = new Map(Object.values(r.factions).map((f) => [f.capital, f.id]))
+  const events: Array<{ s: number; t: string; big: boolean; img: string; em?: string }> = []
   let won = 0
   let lost = 0
   let found = 0
   let heroes = 0
+  let takes = 0
   for (const { s, lines } of history) {
     for (const l of lines) {
       if (l.kind === 'battle') {
@@ -187,28 +211,44 @@ export function endingHtml(k: FrontKit, r: Realm, history: History): string {
         if (l.atkFaction === me) { if (atkWon) won++; else if (defWon) lost++ }
         else if (l.defender === me) { if (defWon) won++; else if (atkWon) lost++ }
       } else if (l.kind === 'take' && l.faction === me) {
-        events.push({ s, t: `${node(l.node)}을(를) 쥐었다`, big: caps.has(l.node) })
+        const was = capOf.get(l.node)
+        const img = `${k.art}event/${TAKE_ART[takes++ % TAKE_ART.length]}.jpg`
+        events.push({ s, t: `${node(l.node)}을(를) 쥐었다`, big: was !== undefined, img, ...(was !== undefined && was !== me ? { em: was } : {}) })
       } else if (l.kind === 'relation' && (l.a === me || l.b === me) && (l.state === 'ally' || l.state === 'truce')) {
-        events.push({ s, t: `${name(l.a === me ? l.b : l.a)}과(와) ${l.state === 'ally' ? '동맹을 맺었다' : '화친했다'}`, big: l.state === 'ally' })
+        const other = l.a === me ? l.b : l.a
+        const img = `${k.art}event/${l.state === 'ally' ? 'event-marriage' : 'event-outside-envoy'}.jpg`
+        events.push({ s, t: `${name(other)}과(와) ${l.state === 'ally' ? '동맹을 맺었다' : '화친했다'}`, big: l.state === 'ally', img, em: other })
       } else if (l.kind === 'recruit' && l.faction === me) {
         heroes++
-        events.push({ s, t: `${r.heroes[l.hero]?.name ?? '장수'}이(가) 우리 장수가 됐다`, big: false })
+        events.push({ s, t: `${r.heroes[l.hero]?.name ?? '장수'}이(가) 우리 장수가 됐다`, big: false, img: k.bust?.(l.hero) ?? `${k.art}event/event-wanderer-arrives.jpg` })
       } else if (l.kind === 'discover' && l.faction === me) {
         found++
       }
     }
   }
   // 큰일 먼저 — 도읍과 동맹, 그다음 나머지. 계절 순으로
-  const pickd = [...events.filter((e) => e.big), ...events.filter((e) => !e.big)].slice(0, 9).sort((a, b) => a.s - b.s)
+  const ranked = [...events.filter((e) => e.big), ...events.filter((e) => !e.big)]
+  const pickd = ranked.slice(0, 9).sort((a, b) => a.s - b.s)
+  const shots = ranked.slice(0, SLOTS.length).sort((a, b) => a.s - b.s)
   const years = Math.floor((r.outcome?.season ?? r.season) / 4) + 1
-  let h = `<div class="mcard end front-end"><img class="ev" src="${k.art}event/${win ? 'event-festival' : 'event-sky-drought'}.jpg" alt="">`
-  h += `<h2>${k.esc(win ? HEAD[region] : '도읍이 무너졌다')}</h2>`
+  const title = win ? (all ? HEAD_ALL[region] : HEAD[region]) : '도읍이 무너졌다'
+  let h = `<div class="mcard end front-end" data-act="rep-fast"><div class="clg${win ? '' : ' lose'}">`
+  shots.forEach((e, i) => {
+    const [x, y, w, rot] = SLOTS[i]!
+    h += `<figure class="cp" style="--i:${i};left:${x}%;top:${y}%;width:${w}%;--r:${rot}deg"><img src="${e.img}" alt="">`
+    h += `${e.em !== undefined ? k.emblem(e.em, 'cpem') : ''}<figcaption><i>${k.esc(seasonLabel(e.s))}</i>${k.esc(e.t)}</figcaption></figure>`
+  })
+  // 마지막 장 — 잔치(이김) · 가뭄(짐) 위로 제목
+  h += `<figure class="cp last" style="--i:${shots.length}"><img src="${k.art}event/${win ? 'event-festival' : 'event-sky-drought'}.jpg" alt=""><figcaption><b>${k.esc(title)}</b></figcaption></figure></div>`
+  h += `<div class="after" style="--n:${shots.length + 1}">`
   h += `<p class="mute">${k.emblem(me, 'cem')}${k.esc(name(me))} · ${k.esc(seasonLabel(r.outcome?.season ?? r.season))}${win ? '' : ' — 여기까지였다'}</p>`
   h += `<div class="stats"><span><b>${years}</b>해</span><span><b>${capsHeld(r, me)}</b>도읍</span><span><b>${won}</b>이긴 싸움</span><span><b>${lost}</b>진 싸움</span>`
   h += `${r.known !== undefined ? `<span><b>${found}</b>새로 안 나라</span>` : ''}<span><b>${heroes}</b>얻은 장수</span></div>`
   if (pickd.length > 0) h += `<div class="chron"><h4>연대기</h4>${pickd.map((e) => `<p class="${e.big ? 'big' : ''}"><i>${k.esc(seasonLabel(e.s))}</i>${k.esc(e.t)}</p>`).join('')}</div>`
-  h += `<div class="btns"><button class="btn on" data-act="fr-again">${k.esc(name(me))}로 다시</button><button class="btn" data-act="fr-new">새 판</button>`
-  return h + `<button class="btn ghost" data-act="fr-look">지도 둘러보기</button></div></div>`
+  h += `<div class="btns">`
+  if (win && !all) h += `<button class="btn on" data-act="fr-endless">계속 둔다 · 남은 나라까지</button>`
+  h += `<button class="btn${win && !all ? '' : ' on'}" data-act="fr-again">${k.esc(name(me))}로 다시</button><button class="btn" data-act="fr-new">새 판</button>`
+  return h + `<button class="btn ghost" data-act="fr-look">지도 둘러보기</button></div></div></div>`
 }
 
 export const FRONT_CSS = `
@@ -282,6 +322,25 @@ export const FRONT_CSS = `
 .ap .front-end .stats span { min-width: 64px; padding: 6px 8px; border-radius: 10px; background: #ffffff0d; text-align: center; font-size: 12px; color: #a89c84; }
 .ap .front-end .stats b { display: block; font-size: 20px; color: var(--gold); }
 .ap .front-end .chron { text-align: left; margin: 8px 0; } .ap .front-end .chron h4 { margin: 4px 0; color: var(--gold); }
+.ap .front-end .clg { position: relative; aspect-ratio: 4 / 3.3; margin: -4px -4px 6px; border-radius: 12px; overflow: hidden;
+  background: #d9c8a0 url('__ART__map-world/hanji.webp') center / 320px; box-shadow: inset 0 0 40px #5a4020aa; }
+.ap .front-end .clg.lose { filter: grayscale(.55) brightness(.85); }
+.ap .front-end .cp { position: absolute; margin: 0; padding: 5px 5px 0; background: #f6eedb; box-shadow: 0 6px 18px #000a; border-radius: 3px;
+  opacity: 0; transform: rotate(var(--r)); animation: cpin .8s cubic-bezier(.2, 1.3, .4, 1) calc(var(--i) * 1.1s + .4s) both; }
+.ap .front-end .cp img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 2px; }
+.ap .front-end .cp img.cpem { position: absolute; right: -6px; top: -8px; width: 26%; aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 2px 3px #000a); }
+.ap .front-end .cp figcaption { font-size: 11px; color: #3a2a18; padding: 3px 2px 5px; line-height: 1.3; text-align: left; }
+.ap .front-end .cp figcaption i { font-style: normal; color: #8a6a40; margin-right: 4px; }
+.ap .front-end .cp.last { left: 8%; top: 14%; width: 84%; height: 72%; z-index: 2; --r: 0deg; padding: 0; background: none; border-radius: 12px; overflow: hidden;
+  animation: cplast 1.4s ease-out calc(var(--i) * 1.1s + .6s) both; }
+.ap .front-end .cp.last img { aspect-ratio: auto; height: 100%; }
+.ap .front-end .cp.last figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 10px 10px; text-align: center; background: linear-gradient(#0000, #000c); }
+.ap .front-end .cp.last b { font-family: 'Gowun Batang', serif; font-size: clamp(20px, 5.4vw, 28px); color: #f3d48a; text-shadow: 0 2px 8px #000; }
+.ap .front-end .after { animation: bkin .7s ease-out calc(var(--n) * 1.1s + 1.4s) both; }
+@keyframes cpin { from { opacity: 0; transform: scale(1.5) rotate(0deg); } to { opacity: 1; transform: rotate(var(--r)); } }
+@keyframes cplast { from { opacity: 0; transform: scale(1.12); } to { opacity: 1; transform: none; } }
+.ap .modal.fast .front-end .cp, .ap .modal.fast .front-end .after { animation-delay: 0s !important; animation-duration: .01s !important; }
+@media (prefers-reduced-motion: reduce) { .ap .front-end .cp, .ap .front-end .after { animation-delay: 0s !important; animation-duration: .01s !important; } }
 .ap .front-end .chron p { margin: 3px 0; font-size: 13px; } .ap .front-end .chron p.big { color: #f3d48a; } .ap .front-end .chron i { font-style: normal; color: #8f8778; margin-right: 6px; }
 .ap .lookbar { position: absolute; top: calc(8px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 40; display: flex; gap: 8px; align-items: center;
   padding: 6px 10px; border-radius: 12px; background: #14181ee8; border: 1px solid #8a7040; font-size: 13px; }
