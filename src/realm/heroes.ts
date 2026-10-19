@@ -476,14 +476,16 @@ export function addBond(r: Realm, h: Hero, d: number, lines: ReportLine[]): void
   const now = Math.max(0, Math.min(100, was + d))
   h.bond = now
   if (was < P.realm.bondTrust && now >= P.realm.bondTrust) lines.push({ kind: 'bond', hero: h.id, tier: 'trust' })
-  if (now >= 100 && h.awoken === undefined && h.traits.length < 3) {
+  // 옛 판의 장수는 특성 줄이 없다 (형의 9년 가을 막힘 — "reading 'length'") — 없으면 빈 줄로 친다
+  const traits = h.traits ?? []
+  if (now >= 100 && h.awoken === undefined && traits.length < 3) {
     // 가장 많이 자란 능력치 — 같으면 GROW 순서, 하나도 안 자랐으면 가장 높은 능력치
     const by = (f: (s: GrowStat) => number): GrowStat => GROW.reduce((a, s) => (f(s) > f(a) ? s : a), GROW[0]!)
     const grownAny = GROW.some((s) => (h.grown?.[s] ?? 0) > 0)
     const stat = grownAny ? by((s) => h.grown?.[s] ?? 0) : by((s) => h[s])
-    const t = AWAKEN[stat].find((x) => !h.traits.includes(x))
+    const t = AWAKEN[stat].find((x) => !traits.includes(x))
     if (t !== undefined) {
-      ;(h as { traits: readonly string[] }).traits = [...h.traits, t]
+      ;(h as { traits: readonly string[] }).traits = [...traits, t]
       h.awoken = t
       lines.push({ kind: 'awaken', hero: h.id, trait: t })
     }

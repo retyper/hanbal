@@ -38,6 +38,9 @@ function rename(r: Realm): void {
 /** 옛 판이면 사람을 키운다 (제자리에서 바꾼다). 이미 지금 눈금이면 아무 일도 없다. 옛 이름은 늘 고친다 */
 export function migrate(r: Realm): void {
   rename(r)
+  // 특성이 생기기 전의 판 — 장수마다 빈 특성 줄을 채운다 (없으면 정이 100에 닿는 계절에 막혔다)
+  for (const h of Object.values(r.heroes)) if (!Array.isArray(h.traits)) (h as { traits: readonly string[] }).traits = []
+  for (const w of r.wanderers ?? []) if (!Array.isArray(w.hero.traits)) (w.hero as { traits: readonly string[] }).traits = []
   const s = r.scale ?? 1
   if (s === PEOPLE_SCALE || !(s > 0)) return
   const f = PEOPLE_SCALE / s

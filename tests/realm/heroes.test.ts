@@ -15,9 +15,10 @@ import { fightHead } from '../../src/realm/battle.ts'
 import { TRAIT } from '../../src/realm/data/traits.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import {
-  alertFloor, armyOfHero, harvestMul, heroSeen, persuadeSeasons, rulerOf, sweepHeroes, wanderersFor,
+  addBond, alertFloor, armyOfHero, harvestMul, heroSeen, persuadeSeasons, rulerOf, sweepHeroes, wanderersFor,
 } from '../../src/realm/heroes.ts'
 import { advance, forceOf, planned } from '../../src/realm/season.ts'
+import { migrate } from '../../src/realm/migrate.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Order, Realm, ReportLine } from '../../src/realm/types.ts'
 
@@ -160,5 +161,22 @@ describe('본 장수 · 결정론', () => {
     const o: Order[] = [{ kind: 'assign', hero: 'us-1', node: 'our-cap' }]
     assert.deepEqual(advance(r, o), advance(r, o))
     assert.ok(P.realm.persuadeSeasons >= 1)
+  })
+})
+
+describe('옛 판 — 특성 줄이 없는 장수 (형의 9년 가을 막힘, 2026-10-19)', () => {
+  it('정이 100에 닿아도 막히지 않는다 · migrate 가 빈 특성 줄을 채운다', () => {
+    const r = byeonhanMini(1)
+    for (const h of Object.values(r.heroes)) delete (h as { traits?: unknown }).traits
+    const h = Object.values(r.heroes).find((x) => x.faction === 'us' && x.status === 'free' && !x.id.endsWith('-ruler'))!
+    ;(h as { bond?: number }).bond = 99.5
+    const lines: ReportLine[] = []
+    assert.doesNotThrow(() => addBond(r, h, 5, lines))
+    assert.ok(lines.some((l) => l.kind === 'awaken'))
+    const r2 = byeonhanMini(2)
+    for (const x of Object.values(r2.heroes)) delete (x as { traits?: unknown }).traits
+    migrate(r2)
+    assert.ok(Object.values(r2.heroes).every((x) => Array.isArray(x.traits)))
+    assert.doesNotThrow(() => advance(r2, []))
   })
 })
