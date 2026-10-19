@@ -275,7 +275,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .ritebtn .cost { display: flex; gap: 8px; flex-wrap: wrap; font-size: 13px; } .ap .ritebtn .cost span { display: inline-flex; align-items: center; gap: 3px; }
 .ap .ritebtn .cost img { width: 20px; height: 20px; } .ap .ritebtn .gain { font-size: 12.5px; color: #9fd18b; } .ap .ritebtn .short { color: #e8a08a; }
 /* 징병 · 개척 — 군사는 붉은 기, 집 옮기기는 갈색 (형: "집 들이는거랑 군사뽑는거랑 구분이안가서 헷갈림") */
-.ap .twoway { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 10px; }
+.ap .twoway { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 6px 0 10px; }
 .ap .twoway .sec { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 12px; border-radius: 14px; text-align: left; cursor: pointer; font: inherit; color: var(--ink); }
 .ap .twoway .sec img { width: 30px; height: 30px; } .ap .twoway .sec b { font-size: 15px; } .ap .twoway .sec span { font-size: 12px; color: var(--mute); }
 .ap .sec.men { background: #3a1c18; border: 1px solid #a0483a; } .ap .sec.home { background: #33281a; border: 1px solid #9a7444; }
@@ -310,4 +310,13 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .warc .wb span { font-size: 13.5px; } .ap .warc .btns { margin-top: 4px; }
 .ap .warbar { display: flex; align-items: center; gap: 6px; margin: 6px 0; padding: 7px 10px; border-radius: 10px; background: #2a1c1a; border: 1px solid #6a3a30; font-size: 14px; }
 .ap .warbar i { font-style: normal; color: #ff8a70; font-size: 16px; } .ap .warbar span { margin-left: 4px; }
+/* 이주 — 집 옮기기는 개척(갈색)과 갈라 누런 흙빛 */
+.ap .sec.move { background: #2e2a14; border: 1px solid #8a7a3a; } .ap .sech.move { background: #2e2a14; color: #e0cc80; }
+.ap .btn.on.move { background: #6a5a22; border-color: #a89048; color: #fff6dc; }
+.ap .crowd { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 10px; }
+.ap .crow { display: grid; grid-template-columns: 6.5em 1fr auto; align-items: center; gap: 8px; font-size: 13px; }
+.ap .crow .cn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ap .cbar { position: relative; height: 8px; border-radius: 4px; background: #2a313c; overflow: hidden; }
+.ap .cbar i { position: absolute; left: 0; top: 0; bottom: 0; background: #7aa86a; } .ap .cbar.near i { background: #d0a850; } .ap .cbar.full i { background: #d06a50; }
+.ap .seg.wrap { flex-wrap: wrap; } .ap .seg.wrap button { flex: 1 0 30%; }
 `

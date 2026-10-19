@@ -16,7 +16,7 @@ import { blockedWhy, seasonOf } from './calendar.ts'
 import { draftCapBonus, gluttonMen, growMul, harvestMul, militiaMul, riteMul } from './heroes.ts'
 import type { Equip, UnitKind } from './battle.ts'
 import { TIERS, kitOf, lowestTier, nextTier, upgradeKind } from './kit.ts'
-import type { Army, BuildWhat, Good, Goods, Order, ReportLine, Realm, Stock } from './types.ts'
+import type { Army, BuildWhat, Good, Goods, Order, ReportLine, Realm, RNode, Stock } from './types.ts'
 
 function menIn(mix: Readonly<Partial<Record<string, number>>>): number {
   let n = 0
@@ -285,6 +285,155 @@ export function settleLimit(r: Realm, faction: string, from: string, to: string)
   return Math.max(0, Math.min(share, room, grain, wood))
 }
 
+// ───────── 이주 (형: "집 분배하는거 자동으로 분배하기 · 그게 디폴트이고 자동안하면 본인이 직접 이주 · 전방에 강제이주시키거나 수도에 집중")
+
+/** 고을이 편히 품는 집 — 빈땅은 품(room), 그 밖은 고을 종류마다. 소도는 0 */
+export function homeRoom(n: RNode): number {
+  const R = P.realm
+  switch (n.kind) {
+    case 'wild': return n.room ?? 0
+    case 'capital': return R.roomCapital
+    case 'port': return R.roomPort
+    case 'village': return R.roomVillage
+    case 'ironMine': return R.roomIronMine
+    case 'fort': return R.roomFort
+    case 'sodo': return 0
+  }
+}
+
+/** 붐빔 — 집 ÷ 품. 1 을 넘으면 붐빈다 (집이 덜 는다) */
+export function crowdOf(n: RNode): number {
+  const room = homeRoom(n)
+  return room > 0 ? n.hh / room : 0
+}
+
+/** 적이 이 고을로 오고 있다 — 자동 분배는 여기로 안 보낸다 */
+function threatened(r: Realm, node: string, faction: string): boolean {
+  return Object.values(r.armies).some((a) => a.faction !== faction && a.march !== null && a.march.to === node)
+}
+
+/**
+ * 억지 이주 길 — 제 땅만 밟고, 이번 계절 열린 길로 `from` 에서 `to` 까지 이어지나 (BFS · id 순서).
+ * 이어지면 지나는 고을들, 아니면 null.
+ */
+export function migratePath(r: Realm, faction: string, from: string, to: string): string[] | null {
+  if (from === to) return null
+  const season = seasonOf(r.season)
+  const prev = new Map<string, string>([[from, '']])
+  const q = [from]
+  const edges = Object.keys(r.edges).sort().map((id) => r.edges[id]!)
+  while (q.length > 0) {
+    const cur = q.shift()!
+    if (cur === to) break
+    for (const ed of edges) {
+      const nx = ed.a === cur ? ed.b : ed.b === cur ? ed.a : null
+      if (nx === null || prev.has(nx) || r.nodes[nx]?.owner !== faction || r.nodes[nx]?.kind === 'sodo') continue
+      if (blockedWhy(ed, season) !== null) continue
+      prev.set(nx, cur)
+      q.push(nx)
+    }
+  }
+  if (!prev.has(to)) return null
+  const path = [to]
+  for (let c = prev.get(to)!; c !== ''; c = prev.get(c)!) path.unshift(c)
+  return path
+}
+
+/** 억지 이주로 `from` 에서 이번 계절 보낼 수 있는 집 — 몫 · 곡식 · 이어진 길. 안 되면 0 */
+export function migrateLimit(r: Realm, faction: string, from: string, to: string): number {
+  const R = P.realm
+  const a = r.nodes[from]
+  const b = r.nodes[to]
+  if (a === undefined || b === undefined || a.owner !== faction || b.owner !== faction || a.kind === 'sodo' || b.kind === 'sodo') return 0
+  if (migratePath(r, faction, from, to) === null) return 0
+  const share = Math.floor(a.hh * R.migrateShare)
+  const grain = R.migrateGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.migrateGrain) : Infinity
+  return Math.max(0, Math.min(share, grain))
+}
+
+export function migrateCost(n: number): { grain: number } {
+  return { grain: Math.ceil(n * P.realm.migrateGrain) }
+}
+
+/** 억지 이주 — 집을 옮기고 곡식을 내고, 두 고을은 한동안 집이 안 는다 (뿌리 뽑힌 사람들이 자리 잡는 동안) */
+export function migrateHouses(r: Realm, o: Extract<Order, { kind: 'migrate' }>, lines: ReportLine[]): void {
+  if (!Number.isInteger(o.n) || o.n < 1 || o.n > migrateLimit(r, o.faction, o.from, o.to)) return
+  const a = r.nodes[o.from]!
+  const b = r.nodes[o.to]!
+  a.hh -= o.n
+  b.hh += o.n
+  stockOf(r, o.faction).grain -= migrateCost(o.n).grain
+  const until = r.season + P.realm.migrateCalm
+  a.uprooted = Math.max(a.uprooted ?? -1, until)
+  b.uprooted = Math.max(b.uprooted ?? -1, until)
+  lines.push({ kind: 'migrate', faction: o.faction, from: o.from, to: o.to, n: o.n })
+}
+
+/** 자동 분배 켜기·끄기 */
+export function setMigrateAuto(r: Realm, o: Extract<Order, { kind: 'migrateAuto' }>): void {
+  const f = r.factions[o.faction]
+  if (f === undefined) return
+  if (o.on) delete f.migrateOff
+  else f.migrateOff = true
+}
+
+/**
+ * 이번 계절 저절로 옮겨 갈 집 — 붐비는(품을 넘긴) 제 고을에서 길로 맞닿은 한산한 제 고을로.
+ * 받는 고을: 적이 안 오고 · 싸움이 안 났고 · 붐빔이 떠나는 고을보다 migrateAutoGap 넘게 낮다. 그 가운데 가장 한산한 곳 (같으면 id).
+ * 양: 두 고을 붐빔을 같게 만드는 몫의 반과 migrateAutoShare 가운데 작은 것. 결정론 — 굴림이 없다.
+ * 화면이 미리보기로, 엔진이 계절 끝에 같은 함수를 부른다.
+ */
+export function autoFlows(r: Realm, faction: string, fought: ReadonlySet<string> = new Set()): Array<{ from: string; to: string; n: number }> {
+  const R = P.realm
+  const fac = r.factions[faction]
+  if (fac === undefined || fac.migrateOff === true) return []
+  const season = seasonOf(r.season)
+  const mine = Object.values(r.nodes).filter((n) => n.owner === faction && n.kind !== 'sodo').sort((x, y) => (x.id < y.id ? -1 : 1))
+  const hh = new Map(mine.map((n) => [n.id, n.hh]))
+  const crowd = (id: string): number => {
+    const room = homeRoom(r.nodes[id]!)
+    return room > 0 ? hh.get(id)! / room : Infinity
+  }
+  const out: Array<{ from: string; to: string; n: number }> = []
+  const edges = Object.keys(r.edges).sort().map((id) => r.edges[id]!)
+  for (const src of mine) {
+    if (src.hh <= 0 || crowd(src.id) <= 1) continue
+    let best: string | null = null
+    for (const ed of edges) {
+      const nx = ed.a === src.id ? ed.b : ed.b === src.id ? ed.a : null
+      if (nx === null || !hh.has(nx) || blockedWhy(ed, season) !== null) continue
+      if (homeRoom(r.nodes[nx]!) <= 0 || fought.has(nx) || threatened(r, nx, faction)) continue
+      if (crowd(nx) > crowd(src.id) - R.migrateAutoGap) continue
+      if (best === null || crowd(nx) < crowd(best) || (crowd(nx) === crowd(best) && nx < best)) best = nx
+    }
+    if (best === null) continue
+    const ra = homeRoom(src)
+    const rb = homeRoom(r.nodes[best]!)
+    const a = hh.get(src.id)!
+    const b = hh.get(best)!
+    const even = a - ((a + b) / (ra + rb)) * ra // 이만큼 옮기면 두 고을 붐빔이 같다
+    const n = Math.floor(Math.min(a * R.migrateAutoShare, even / 2))
+    if (n < 1) continue
+    hh.set(src.id, a - n)
+    hh.set(best, b + n)
+    out.push({ from: src.id, to: best, n })
+  }
+  return out
+}
+
+/** 9 — 계절 끝, 자동 분배를 켠 나라마다 붐비는 고을의 집이 한산한 고을로 옮겨 간다. 굶는 나라는 안 옮긴다 */
+export function stepMigration(r: Realm, fought: ReadonlySet<string>, lines: ReportLine[]): void {
+  const hungry = new Set(lines.filter((l): l is Extract<ReportLine, { kind: 'hunger' }> => l.kind === 'hunger').map((l) => l.faction))
+  for (const f of Object.keys(r.factions).sort()) {
+    if (hungry.has(f)) continue
+    for (const fl of autoFlows(r, f, fought)) {
+      r.nodes[fl.from]!.hh -= fl.n
+      r.nodes[fl.to]!.hh += fl.n
+      lines.push({ kind: 'migrate', faction: f, from: fl.from, to: fl.to, n: fl.n, auto: true })
+    }
+  }
+}
+
 /** 지금 개척할 수 있는 짝 — 빈땅 id, 떠나는 고을 id 순서 (결정론) */
 export function settleTargets(r: Realm, faction: string): Array<{ from: string; to: string; edge: string }> {
   const out: Array<{ from: string; to: string; edge: string }> = []
@@ -472,8 +621,11 @@ export function hhGrowth(r: Realm, node: string): { per: number; why: string[] }
   const threat = Object.values(r.armies).some((a) => a.faction !== f && a.march !== null && a.march.to === node)
   if (threat) why.push('threat')
   if (grain < upkeepOf(r, f, season === 'winter')) return { per: -Math.round(n.hh * R.hhHunger), why: [...why, 'hunger'] }
-  const g = growMul(r, node)
-  if (g > 1) why.push('post')
+  if ((n.uprooted ?? -1) >= r.season) return { per: 0, why: [...why, 'uprooted'] }
+  const crowded = n.kind !== 'wild' && crowdOf(n) > 1
+  const g = growMul(r, node) * (crowded ? R.crowdGrowMul : 1)
+  if (growMul(r, node) > 1) why.push('post')
+  if (crowded) why.push('crowded')
   if (n.kind === 'wild') {
     const room = n.room ?? 0
     if (n.hh <= 0) return { per: 0, why }
@@ -566,10 +718,11 @@ export function stepEconomy(r: Realm, season: number, fought: ReadonlySet<string
     for (const n of nodes) {
       if (hungry) n.hh = Math.round(n.hh * (1 - R.hhHunger))
       else if (fought.has(n.id)) continue
+      else if ((n.uprooted ?? -1) >= r.season) continue // 억지로 옮긴 고을 — 자리 잡는 동안 안 는다
       else if (n.kind === 'wild') {
         const room = n.room ?? 0
         if (n.hh > 0 && n.hh < room) n.hh = Math.min(room, Math.max(n.hh + 1, Math.round(n.hh * (1 + R.settleGrow * growMul(r, n.id)))))
-      } else n.hh = Math.round(n.hh * (1 + R.hhGrowth * growMul(r, n.id)))
+      } else n.hh = Math.round(n.hh * (1 + R.hhGrowth * growMul(r, n.id) * (crowdOf(n) > 1 ? R.crowdGrowMul : 1))) // 붐비면 덜 는다
     }
   }
   // 봄이 끝날 때 심는다 — 봄 징병(1단계)이 지난 뒤의 가호

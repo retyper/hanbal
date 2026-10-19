@@ -26,7 +26,7 @@ import {
 } from './diplomacy.ts'
 import {
   addGood, applyArm, applyBuild, applyGuard, draftCost, draftIronCost, draftLimit, draftNeeds, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepBuilds, stepEconomy,
-  stockOf,
+  migrateHouses, setMigrateAuto, stepMigration, stockOf,
 } from './economy.ts'
 import { blockedWhy, seasonOf } from './calendar.ts'
 import { applyBowUps, refreshSpies, resolvePlots } from './plots.ts'
@@ -497,6 +497,8 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
     else if (o.kind === 'draft') draftArmy(r, o, lines)
     else if (o.kind === 'disband') disbandArmy(r, o, lines)
     else if (o.kind === 'settle') settleLand(r, o, lines)
+    else if (o.kind === 'migrate') migrateHouses(r, o, lines)
+    else if (o.kind === 'migrateAuto') setMigrateAuto(r, o)
     else if (o.kind === 'guard') applyGuard(r, o, lines)
     else if (o.kind === 'arm') applyArm(r, o, lines)
     else if (o.kind === 'build') applyBuild(r, o, lines)
@@ -1150,6 +1152,7 @@ export function advance(
   stepFood(r, lines) // 5 끝 — 남의 땅에 머무는 군대가 군량을 먹는다
   sweepHeroes(r, lines) // 5 끝 — 잃은 고을에 혼자 있던 장수는 물러나거나 잡힌다
   stepEconomy(r, season, fought, lines) // 7
+  stepMigration(r, fought, lines) // 7 끝 — 붐비는 고을의 집이 한산한 제 고을로 (자동 분배)
   decayWatch(r) // 9
   stepHeroes(r, lines) // 9 — 회유 · 맡은 고을의 경계·철 · 떠돌이
   expireRelations(r, lines) // 9
