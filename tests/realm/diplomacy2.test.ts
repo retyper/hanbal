@@ -17,7 +17,7 @@ import {
 import { armCost, draftIronCost, hhGrowth, riteCost } from '../../src/realm/economy.ts'
 import { advance, planned } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
-import type { EnvoyAsk, Order, Realm, ReportLine } from '../../src/realm/types.ts'
+import type { EnvoyAsk, Hand, Order, Realm, ReportLine } from '../../src/realm/types.ts'
 
 const NONE = { grain: 0, iron: 0 }
 const envoy = (to: string, ask: EnvoyAsk, extra: Partial<Extract<Order, { kind: 'envoy' }>> = {}): Order =>
@@ -222,6 +222,38 @@ describe('손으로 쏜 암살 (SNIPE §0-3)', () => {
     assert.deepEqual([line(quiet.report.lines).ok, line(quiet.report.lines).caught], [false, false])
     // 값은 똑같이 든다
     assert.equal(quiet.next.stock['us']!.grain, dead.next.stock['us']!.grain)
+  })
+
+  // 건너뛰기 (형: "건너뛰기 버튼도 추가해서") — 쏘지 않고 굴린다. 진짜 지붕을 본 뒤면 굴림이 plotSkipSeenMul 만큼
+  const skip = (seed: number, hand?: Hand) => {
+    const r = byeonhanMini(seed)
+    r.met = { us: ['guya-1'] }
+    return advance(r, [{ kind: 'plot', faction: 'us', op: 'assassin', target: 'guya', hero: 'guya-1', ...(hand !== undefined ? { hand } : {}) }])
+  }
+
+  it('건너뛰기 — 안 보고 맡기면 안 쏜 것과 같다 · 같은 판이면 같은 결과', () => {
+    for (const seed of [1, 2, 3, 4, 5]) {
+      const none = skip(seed)
+      const blind = skip(seed, { result: 'skip', alarm: false, seen: false })
+      assert.deepEqual(line(blind.report.lines), line(none.report.lines))
+      assert.deepEqual(blind.next.heroes['guya-1'], none.next.heroes['guya-1'])
+      assert.deepEqual(skip(seed, { result: 'skip', alarm: false, seen: true }), skip(seed, { result: 'skip', alarm: false, seen: true }))
+    }
+  })
+
+  it('건너뛰기 — 지붕을 본 뒤에 맡기면 굴림이 조금 준다 (먹힌 판의 부분집합 · 더 많이 먹히는 일은 없다)', () => {
+    assert.ok(P.realm.plotSkipSeenMul > 0 && P.realm.plotSkipSeenMul < 1)
+    let blindOk = 0
+    let seenOk = 0
+    for (let seed = 1; seed <= 400; seed++) {
+      const b = line(skip(seed, { result: 'skip', alarm: false, seen: false }).report.lines).ok
+      const s = line(skip(seed, { result: 'skip', alarm: false, seen: true }).report.lines).ok
+      if (s) assert.ok(b, `seed ${seed}: 보고 맡긴 쪽만 먹혔다`)
+      blindOk += b ? 1 : 0
+      seenOk += s ? 1 : 0
+    }
+    assert.ok(seenOk < blindOk, `본 뒤 ${seenOk} < 안 보고 ${blindOk}`)
+    assert.ok(seenOk > 0)
   })
 })
 

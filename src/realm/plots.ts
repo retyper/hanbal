@@ -279,10 +279,13 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
     // 암살은 그 장수가 지금 있는 고을의 경계를 받는다
     const at = o.op === 'assassin' ? (heroAt(r, o.hero!) ?? undefined) : o.node
     // 밤 판에서 손으로 쏜 암살이면 굴림 대신 그 결과 (SNIPE §0-3) — dead·wounded 먹힘 · fled 실패(경보면 들킴) · withdrew 실패·안 들킴
-    const hand = o.op === 'assassin' ? o.hand : undefined
+    // 건너뛰기(skip)는 손이 아니다 — 굴린다. 진짜 지붕을 보고 맡겼으면 굴림이 준다 (plotSkipSeenMul)
+    const given = o.op === 'assassin' ? o.hand : undefined
+    const hand = given !== undefined && given.result !== 'skip' ? given : undefined
+    const skipMul = given?.result === 'skip' && given.seen === true ? R.plotSkipSeenMul : 1
     const ok = hand !== undefined
       ? hand.result === 'dead' || hand.result === 'wounded'
-      : roll(r.seed, r.season, key) < plotTrueChance(r, o.faction, o.op, o.target, at, o.hero, o.agent ?? null)
+      : roll(r.seed, r.season, key) < plotTrueChance(r, o.faction, o.op, o.target, at, o.hero, o.agent ?? null) * skipMul
     const caught = hand !== undefined
       ? hand.alarm
       : roll(r.seed, r.season, `${key}:caught`) < (ok ? R.plotCaughtOnSuccess : R.plotCaughtOnFail)
