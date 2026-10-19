@@ -183,6 +183,12 @@ const NEW_HEROES: Hero[] = [
   h('bukokjeo-1', '장수 물범', 'bukokjeo', 'w', [5, 5, 5, 3, 4, 6], ['river']),
   h('bullae-1', '삼로 과하', 'bullae', 'g', [6, 5, 4, 3, 4, 6], []),
   h('tamna-1', '살해 오름', 'tamna', 'g', [5, 5, 4, 4, 4, 6], ['mountain']),
+  // 여인 장수 더 (형 2026-10-19: "장수도 여캐 많았으면") — 도읍에 머문다
+  h('hwanna-2', '조의 버들', 'hwanna', 'w', [6, 5, 5, 4, 5, 7], ['archer'], 'g-hwanna-cap'),
+  h('gwanna-2', '조의 쇠눈', 'gwanna', 'w', [7, 6, 4, 3, 3, 7], ['careful'], 'g-gwanna-cap'),
+  h('uga-2', '견사 누리', 'uga', 'w', [3, 4, 5, 7, 7, 7], ['farmer'], 'b-uga-cap'),
+  h('dongokjeo-2', '장수 소금비', 'dongokjeo', 'w', [5, 5, 5, 5, 4, 6], ['river'], 'o-dong-cap'),
+  h('tamna-2', '살해 오름비', 'tamna', 'w', [5, 4, 5, 4, 6, 6], ['mountain'], 't-tamna-cap'),
 ]
 
 const a = (id: string, faction: string, hero: string | null, at: string, mix0: Army['mix'], equip: Army['equip'] = 'bronze'): Army => {
