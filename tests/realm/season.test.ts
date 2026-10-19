@@ -96,9 +96,7 @@ describe('한 계절이 돈다', () => {
     assert.ok(a.morale < m0)
     const R = P.realm
     const full = marchSeasons('ford', 'summer') + R.hardExtra
-    // 곡식이 모자라 가볍게 갔으면(군량 = 남은 길) 한 계절 빨리
-    const light = a.food === a.march!.left
-    assert.equal(a.march!.left, full - 1 - (light ? 1 : 0))
+    assert.equal(a.march!.left, full - 1)
   })
 
   it('PLAY §4 의 겨울 — 언 갈대 나루 기습은 반을 넘는다', () => {

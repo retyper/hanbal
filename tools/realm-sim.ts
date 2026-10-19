@@ -18,6 +18,7 @@ import { aiOrders, decide, type Brain } from '../src/realm/ai.ts'
 import { regionNations, startRegion } from '../src/realm/data/regions/index.ts'
 import { advance } from '../src/realm/season.ts'
 import type { Realm, RegionId } from '../src/realm/types.ts'
+import { P } from '../src/tune/params.ts'
 
 const args = process.argv.slice(2)
 const opt = (name: string, def: string): string => {
@@ -31,6 +32,11 @@ const BOTS: Brain[] = opt('bot', 'all') === 'all' ? ['reckless', 'cautious', 'pl
 const REGION = opt('region', 'byeonhan-mini') as RegionId
 const AS: string[] = opt('as', 'us') === 'all' ? [...regionNations(REGION)] : [opt('as', 'us')]
 const OUT = opt('out', '')
+// --set rationPack=0,tacK=2 — 조율해 볼 때 (params.ts 를 고치기 전에)
+for (const kv of opt('set', '').split(',').filter((x) => x !== '')) {
+  const [k, v] = kv.split('=')
+  ;(P.realm as unknown as Record<string, number>)[k!] = Number(v)
+}
 const EARLY = 8
 
 interface Run {

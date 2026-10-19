@@ -39,7 +39,7 @@ import {
   ambushTraitOf, applyHeroOrders, battleGrowth, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroesAtNode, ironhandAt, noteMet, stepHeroes, sweepHeroes,
 } from './heroes.ts'
 import type {
-  Approach, Army, Cmd, EdgeKind, Hero, Order, Ration, Realm, REdge, Report, ReportLine, RNode, SeasonOfYear, SnipeZone, Tactic,
+  Approach, Army, BattleStart, Cmd, EdgeKind, Hero, Order, Ration, Realm, REdge, Report, ReportLine, RNode, SeasonOfYear, SnipeZone, Tactic,
 } from './types.ts'
 
 export { blockedWhy, seasonOf }
@@ -534,10 +534,9 @@ function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): v
       left += P.realm.hardExtra
       lines.push({ kind: 'blocked', army: a.id, edge: ed.id, why, lost: Math.max(0, before - headcount(forceOf(r, a))) })
     }
-    // 군량 — 넉넉히면 곡식을 들여 챙기고, 가볍게면 그냥 가되 고갯길을 한 계절 빨리 넘는다
+    // 군량 — 넉넉히면 곡식을 들여 길 계절 + 남겨 둘 계절을 챙기고, 가볍게면 길 계절만 (닿자마자 바닥이다)
     const ration = rationFor(r, a, o.ration, left)
     if (ration === 'light') {
-      if (left >= 2) left -= 1
       a.food = left
     } else {
       stockOf(r, a.faction).grain -= rationCost(r, a, left)
@@ -570,10 +569,15 @@ export function rationCost(r: Realm, a: Army, left: number): number {
   return Math.ceil(headcount(forceOf(r, a)) * R.rationPerSoldier * R.rationPack * (left + R.rationReserve))
 }
 
-/** 실제로 챙길 군량 — 곡식이 모자라면 가볍게. 고르지 않았으면(AI · 옛 명령) 넉넉히 */
+/**
+ * 실제로 챙길 군량 — 곡식이 모자라면 가볍게.
+ * 고르지 않았으면(AI · 옛 명령) 곡식이 넉넉한 나라만 넉넉히 챙긴다 (aiRationRich 배 — 군량 값에 나라 살림이 마르지 않게)
+ */
 export function rationFor(r: Realm, a: Army, want: Ration | undefined, left: number): Ration {
   if (want === 'light') return 'light'
-  return stockOf(r, a.faction).grain >= rationCost(r, a, left) ? 'full' : 'light'
+  const cost = rationCost(r, a, left)
+  const grain = stockOf(r, a.faction).grain
+  return grain >= cost * (want === undefined ? P.realm.aiRationRich : 1) ? 'full' : 'light'
 }
 
 /** 절벽 타기가 될 확률 — 적을수록 · 무예 높을수록 · 산사람이면 */
@@ -699,6 +703,15 @@ function sideOf(
     hungry: hungryOf(armies), specials, water: o.water, player: r.factions[faction]?.mind === 'player', seen: o.seen,
     ...(o.moraleBonus !== undefined ? { moraleBonus: o.moraleBonus } : {}),
     ...(o.captureBonus !== undefined && o.captureBonus > 0 ? { captureBonus: o.captureBonus } : {}),
+  }
+}
+
+/** 싸움이 시작될 때의 사람 · 사기 · 장수 — 전장 화면의 막대 */
+function startOf(a: Side, d: Side, af: Force, df: Force): BattleStart {
+  return {
+    men: [headcount(af), headcount(df)],
+    morale: [a.morale + (a.moraleBonus ?? 0), d.morale + (d.moraleBonus ?? 0)],
+    heroes: [a.hero?.id ?? null, d.hero?.id ?? null],
   }
 }
 
@@ -848,7 +861,7 @@ function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines
       lines.push({
         kind: 'battle', node: target, attacker: lead.id, allies: atks.slice(1).map((x) => x.id), pincer: false,
         defender: defs[0]!.faction, ambush: 'none', p, outcome, captured: fateOf.captured, killed: fateOf.killed,
-        militia: 0, field: true, edge: eid, atkFaction: lead.faction, rounds: res.rounds, key,
+        militia: 0, field: true, edge: eid, atkFaction: lead.faction, rounds: res.rounds, key, start: startOf(sa, sd, atkF, defF),
         ...(res.pending !== undefined ? { pending: res.pending } : {}), ...(res.led ? { led: true } : {}),
       })
     }
@@ -1004,7 +1017,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   lines.push({
     kind: 'battle', node: node.id, attacker: a.id, allies: atks.slice(1).map((x) => x.id),
     pincer: new Set(legs.map((x) => x.edge.id)).size >= 2, defender: defFaction, ambush, p, outcome, captured, killed,
-    militia: militiaN, field: false, atkFaction: a.faction, rounds: res.rounds, key, approach: approachOf(lead),
+    militia: militiaN, field: false, atkFaction: a.faction, rounds: res.rounds, key, approach: approachOf(lead), start: startOf(sa, sd, atkF, defF),
     ...(fell ? { fell: true } : {}), ...(res.pending !== undefined ? { pending: res.pending } : {}), ...(res.led ? { led: true } : {}),
   })
 }
@@ -1130,7 +1143,10 @@ export function advance(
   applyBowUps(r, orders, lines) // 2 — 자객의 활을 올린다 (이번 계절 공작부터 든다)
   resolvePlots(r, orders, lines) // 2 — 공작
   resolveRites(r, orders, lines) // 2 — 소도 제사
-  resolveMarches(r, snipes, tactics, lines, fought) // 3 · 4 · 5
+  // 전장에서 내린 명령은 명령 줄로도 온다 (판 기록에 남는다) — 따로 받은 tactics 가 먼저 (시험 돌림)
+  const led: Record<string, Tactic> = { ...tactics }
+  for (const o of orders) if (o.kind === 'command' && led[o.key] === undefined) led[o.key] = { cmds: o.cmds }
+  resolveMarches(r, snipes, led, lines, fought) // 3 · 4 · 5
   stepFood(r, lines) // 5 끝 — 남의 땅에 머무는 군대가 군량을 먹는다
   sweepHeroes(r, lines) // 5 끝 — 잃은 고을에 혼자 있던 장수는 물러나거나 잡힌다
   stepEconomy(r, season, fought, lines) // 7

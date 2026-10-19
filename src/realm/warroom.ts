@@ -22,18 +22,25 @@ export interface Rehearsal {
   readonly line: BattleLine | null
   /** 시험 돌림의 뒤 판 (이름·장수 얼굴용 — 버린다) */
   readonly after: Realm
+  /** 아직 안 끝낸 우리 싸움 수 (지금 판 포함) */
+  readonly left: number
 }
 
 /**
  * 시험 돌림 — `done` 은 다 고른 판(열쇠 → 명령), `cur` 은 지금 고르는 판과 그 명령.
- * 돌려주는 line 은 `cur` 판이거나(아직 고르는 중), 아직 안 본 우리 판의 첫째.
+ * 돌려주는 line 은 `want` 판(다 고른 판의 결과 보기)이거나, `cur` 판(아직 고르는 중)이거나, 아직 안 본 우리 판의 첫째.
  */
-export function rehearse(prev: Realm, orders: readonly Order[], done: Readonly<Record<string, Tactic>>, cur: { key: string; cmds: readonly Cmd[] } | null, me: string): Rehearsal {
+export function rehearse(
+  prev: Realm, orders: readonly Order[], done: Readonly<Record<string, Tactic>>, cur: { key: string; cmds: readonly Cmd[] } | null, me: string, want?: string,
+): Rehearsal {
   const tactics: Record<string, Tactic> = { ...done, [ANY_BATTLE]: { cmds: [], open: true } }
   if (cur !== null) tactics[cur.key] = { cmds: cur.cmds, open: true }
   const { next, report } = advance(prev, orders, {}, tactics)
-  const line = report.lines.find((l): l is BattleLine => ours(l, me) && l.key !== undefined && (l.key === cur?.key || done[l.key] === undefined)) ?? null
-  return { line, after: next }
+  const open = report.lines.filter((l): l is BattleLine => ours(l, me) && l.key !== undefined && (l.key === cur?.key || done[l.key] === undefined))
+  const line = want !== undefined
+    ? (report.lines.find((l): l is BattleLine => ours(l, me) && l.key === want) ?? null)
+    : (open[0] ?? null)
+  return { line, after: next, left: open.length }
 }
 
 /** 이번 계절에 우리가 낄 싸움이 있나 — 없으면 전장 화면 없이 넘긴다 */

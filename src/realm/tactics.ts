@@ -265,7 +265,7 @@ export function fightRounds(atk: Side, def: Side, key: string, seed: number, sea
       if (c === undefined && tactic.open === true && memo.pending === undefined) {
         const m: Partial<Record<Cmd, number>> = {}
         for (const o of opts) m[o] = might(me, o)
-        memo.pending = { round: i, options: opts, might: m, capture: cap, hint: hintOf(me, foePick, `${key}:t${i}`, seed, season), weAtk: isAtk }
+        memo.pending = { round: i, options: opts, might: m, capture: cap, hint: hintOf(me, foePick, `${key}:t${i}`, seed, season), weAtk: isAtk, seen: me.seen }
       }
       return aiPick
     }

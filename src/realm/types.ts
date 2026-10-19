@@ -236,7 +236,7 @@ export interface March {
  */
 export type Approach = 'road' | 'night' | 'ford' | 'ridge' | 'cliff'
 
-/** 챙길 군량 — 가볍게(곡식이 안 들고 고갯길을 빨리 가지만 오래 못 버틴다) · 넉넉히(곡식이 든다) */
+/** 챙길 군량 — 가볍게(곡식이 안 들지만 닿자마자 바닥 — 싸울 때 오래 못 버틴다) · 넉넉히(곡식이 든다) */
 export type Ration = 'light' | 'full'
 
 /**
@@ -288,6 +288,15 @@ export interface Pending {
   readonly hint: Cmd | null
   /** 우리가 공격 쪽인가 */
   readonly weAtk: boolean
+  /** 낌새가 척후·눈으로 본 것인가 (아니면 짐작) */
+  readonly seen: boolean
+}
+
+/** 싸움이 시작될 때 — 사람 수 · 사기 · 이끄는 장수 (공격, 지킴). 전장 화면이 막대의 처음으로 쓴다 */
+export interface BattleStart {
+  readonly men: readonly [number, number]
+  readonly morale: readonly [number, number]
+  readonly heroes: readonly [string | null, string | null]
 }
 
 export interface Army {
@@ -421,6 +430,8 @@ export interface Realm {
 /** 플레이어(또는 AI)가 한 계절에 내리는 명령 */
 export type Order =
   | { readonly kind: 'march'; readonly army: string; readonly edge: string; readonly ambush: boolean; readonly approach?: Approach; readonly ration?: Ration }
+  /** 전장에서 직접 내린 명령 — 그 판(key)의 라운드마다 (advance 가 tactics 로 받는다 · 판 기록에 남아 다시 돌려도 같다) */
+  | { readonly kind: 'command'; readonly key: string; readonly cmds: readonly Cmd[] }
   | { readonly kind: 'scout'; readonly faction: string; readonly node: string; readonly hero: string | null }
   /** 나누기 (SYSTEMS §4-5) — `id` 는 새 군대의 이름 (season.newArmyId). `hero` 면 장수가 별동대를 이끈다 */
   | {
@@ -545,6 +556,7 @@ export type ReportLine =
       readonly pending?: Pending
       /** 플레이어가 직접 명령을 낸 판인가 */
       readonly led?: boolean
+      readonly start?: BattleStart
     }
   /** 가을 수확 — `blessed` 는 그 가운데 봄 제사로 더 든 몫 */
   | { readonly kind: 'harvest'; readonly faction: string; readonly grain: number; readonly blessed?: number }
