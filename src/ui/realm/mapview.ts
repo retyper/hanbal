@@ -80,7 +80,7 @@ export const MAP_CSS = `
 .map .nd.fresh, .map .lb.fresh, .map svg .fresh { animation: rv 2.2s ease-out both; }
 @keyframes rv { from { opacity: 0; } to { opacity: 1; } }
 .map .fogw { position: absolute; z-index: 1; transform: translate(-50%, -50%); pointer-events: none; white-space: nowrap; color: #6a5634aa;
-  font-size: max(11px, calc(2.4cqh / var(--z, 1) * var(--zs, 1))); font-weight: 700; letter-spacing: .4em; }
+  font-size: max(11px, calc(min(2.4cqh, 1.8cqw) / var(--z, 1) * var(--zs, 1))); font-weight: 700; letter-spacing: .4em; }
 `
 
 export interface MapMarch {
@@ -315,7 +315,10 @@ interface Box { x0: number; y0: number; x1: number; y1: number }
 const hit = (a: Box, b: Box): number => Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)) * Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0))
 
 function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly unknown[]>, W: number, H: number, ns: number, lsc: number): string {
-  const em = LABEL_EM * lsc
+  // 글씨는 배율의 제곱근으로 줄어든다(CSS --zs). 세로로 긴 판은 처음부터 크게 키워 보므로(가로 칸을 채우는 배율 ≈ 2 / 비율)
+  // 그만큼 작게 셈한다 — 안 그러면 이름 상자가 실제의 두세 배라 이웃 고을 옆으로 밀려난다
+  const zHint = W < H ? 2 / (W / H) : 1
+  const em = (LABEL_EM * lsc) / Math.sqrt(zHint)
   // 그림이 차지하는 자리 — 고을 그림과 말
   const icons: Box[] = ls.map((l) => {
     const w = ICON_W * ns * l.s
@@ -325,9 +328,13 @@ function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly 
   for (const [id, ts] of toks) {
     const l = ls.find((x) => x.id === id)
     if (l === undefined) continue
-    const x0 = l.x + ICON_W * ns * 0.5
-    const tw = (Math.max(30 / H, 0.042) * H * ts.length) / W
-    icons.push({ x0, y0: l.y - 0.03, x1: x0 + tw, y1: l.y + 0.03 })
+    const iw = ICON_W * ns * l.s
+    const ih = (iw * W) / H
+    const x0 = l.x + iw * 0.5
+    // 말 표시는 화면에서 거의 같은 크기 — 큰 판(고을 그림이 작다)에서는 고을 그림 크기로 어림한다
+    const tw = Math.min((Math.max(30 / H, 0.042) * H * ts.length) / W, iw * 1.3 * ts.length)
+    const th = Math.min(0.03, ih * 0.65)
+    icons.push({ x0, y0: l.y - th, x1: x0 + tw, y1: l.y + th })
   }
   const placed: Box[] = []
   let out = '<div class="lbs">'

@@ -27,6 +27,8 @@ const DRAG_HOLD_MS = 500
 
 export function attachZoom(wrap: HTMLElement): MapZoom {
   let z = 0 // 0 = 아직 안 정함 — 처음 apply 때 cover 로
+  /** 배율을 정한 판 — 새 판(다른 비율)을 열면 cover 부터 다시 */
+  let zFor = ''
   let moved = false
   /** 마지막으로 끈 때 — 끈 뒤 잠깐만 "끌었다"로 친다 (끌기가 남아 다음 누르기를 삼키지 않게) */
   let movedAt = 0
@@ -114,7 +116,9 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
 
   return {
     apply() {
-      if (z === 0) z = cover()
+      const region = map()?.dataset["region"] ?? ''
+      if (z === 0 || region !== zFor) z = cover()
+      zFor = region
       z = clamp(z)
       paintZ()
     },
