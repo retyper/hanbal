@@ -62,7 +62,7 @@ export const TUT_STEPS: readonly TutStep[] = [
     hl: ['.next'], done: (c) => c.r.season >= 1,
   },
   {
-    id: 'march', text: '갈대울의 군대 말(신궁 얼굴)을 누르고 봉황 마을을 누른다. 「대로로 간다」를 고르고 군량은 넉넉히.',
+    id: 'march', text: '갈대울의 우리 군대 말(장수 얼굴)을 누르고 봉황 마을을 누른다. 「대로로 간다」를 고르고 군량은 넉넉히.',
     hl: ['.tok[data-army="a-us"]', '.nd[data-node="guya-vil"]', '[data-act="ap"][data-v="road"]', '[data-act="ration"][data-v="full"]'],
     done: (c) => c.orders.some((o) => o.kind === 'march') || Object.values(c.r.armies).some((a) => a.faction === c.r.player && (a.march !== null || a.at === 'guya-vil')),
   },
@@ -94,28 +94,50 @@ export function tutAt(from: number, c: TutCtx): number {
   return i
 }
 
-/** 지금 단계의 빛낼 곳 — <style> 하나로 (다시 그려지는 화면에서도 빛나게) */
-export function tutStyle(step: TutStep | undefined): string {
-  if (step === undefined || step.hl.length === 0) return ''
-  return `${step.hl.map((s) => `.ap ${s}, .wr ${s}`).join(',\n')} { outline: 3px solid #ffd27a; outline-offset: 2px; box-shadow: 0 0 14px #ffd27acc; animation: tutglow 1.1s ease-in-out infinite alternate; border-radius: 10px; }`
+/**
+ * 띠에 보일 단계 — 지금 할 단계(`at`) 또는 '이전'으로 돌아가 다시 보는 단계(`view`).
+ * 돌아가 보는 것은 안내만 다시 보는 것이다 — 판은 되돌리지 않는다.
+ */
+export function tutShown(at: number, view: number | null): number {
+  return view !== null && view < at ? Math.max(0, view) : at
 }
 
-export function tutBandHtml(i: number, esc: (s: string) => string): string {
+/**
+ * '다음' · '이전' (형: "이건 건너뛴다가 아니라 '다음'이어야함. 자연스럽게 '이전' 으로 갈수도 있어야함. 배우기 그 버튼은 없애") —
+ * 돌아가 보던 중이면 한 칸씩 앞으로(지금 단계에 닿으면 돌아가 보기가 끝난다), 지금 단계에서 '다음'이면 그 단계를 넘긴다.
+ */
+export function tutStep(at: number, view: number | null, dir: 1 | -1): { at: number; view: number | null } {
+  const shown = tutShown(at, view)
+  if (dir < 0) return { at, view: shown > 0 ? shown - 1 : view }
+  if (view !== null && shown < at) return { at, view: shown + 1 >= at ? null : shown + 1 }
+  return { at: Math.min(TUT_STEPS.length, at + 1), view: null }
+}
+
+/** 지금 단계의 빛낼 곳 — <style> 하나로. 전장이 열린 동안은 빛내지 않는다 (형: "싸우는도중에 하단에 배우기 창 계속 떠있어서 짜증나") */
+export function tutStyle(step: TutStep | undefined): string {
+  if (step === undefined || step.hl.length === 0) return ''
+  return `${step.hl.map((s) => `.ap:not(.war-open):not(:has(.wr)) ${s}`).join(',\n')} { outline: 3px solid #ffd27a; outline-offset: 2px; box-shadow: 0 0 14px #ffd27acc; animation: tutglow 1.1s ease-in-out infinite alternate; border-radius: 10px; }`
+}
+
+export function tutBandHtml(i: number, esc: (s: string) => string, at = i): string {
   if (i >= TUT_STEPS.length) {
     return `<div class="tutb done"><b>다 배웠다</b><span>이제 작은 판(변한 여섯 나라)이 열렸다. 처음 화면의 「새 판」에서 고른다.</span><button class="btn sm on" data-act="tut-end">처음으로</button></div>`
   }
   const s = TUT_STEPS[i]!
-  return `<div class="tutb"><i>배우기 ${i + 1} / ${TUT_STEPS.length}</i><span>${esc(s.text)}</span>`
-    + `<span class="tutbtns"><button class="btn sm ghost" data-act="tut-skip">이건 건너뛴다</button><button class="btn sm ghost" data-act="tut-quit">배우기 그만</button></span></div>`
+  const back = i < at ? `<em class="tutback">지난 단계를 다시 보는 중</em>` : ''
+  return `<div class="tutb"><i>${i + 1}/${TUT_STEPS.length}</i>${back}<span>${esc(s.text)}</span>`
+    + `<span class="tutbtns">${i > 0 ? '<button class="btn sm ghost" data-act="tut-prev">‹ 이전</button>' : ''}<button class="btn sm" data-act="tut-next">다음 ›</button></span></div>`
 }
 
 export const TUT_CSS = `
 .ap .tutband { position: absolute; left: 8px; right: 8px; top: calc(var(--toph) + var(--legh) + 6px); z-index: 70; pointer-events: none; display: flex; justify-content: center; }
 .ap .tutband:empty { display: none; }
-.ap:has(.wr) .tutband { top: auto; bottom: 10px; z-index: 70; } /* 전장에서는 아래로 — 두 장수 얼굴을 가리지 않게 */
+/* 전장이 열린 동안은 띠를 숨긴다 — 싸움에 집중 (전투 쪽이 다는 war-open, 아니면 전장 DOM 으로) */
+.ap.war-open .tutband, .ap:has(.wr) .tutband { display: none; }
 .tutb { pointer-events: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; max-width: 560px; padding: 9px 12px; border-radius: 14px;
   background: #1b2028f4; border: 1px solid #c8a050; box-shadow: 0 6px 20px #000b; color: #eee6d4; font-size: 14px; line-height: 1.45; }
 .tutb i { font-style: normal; color: #f3d48a; font-weight: 700; font-size: 12.5px; } .tutb > span:not(.tutbtns) { flex: 1 1 260px; }
 .tutb .tutbtns { display: flex; gap: 6px; margin-left: auto; } .tutb.done b { color: #9fd18b; }
+.tutb .tutback { font-style: normal; font-size: 12px; color: #c8c0f0; }
 @keyframes tutglow { from { box-shadow: 0 0 4px #ffd27a66; } to { box-shadow: 0 0 18px #ffd27a; } }
 `
