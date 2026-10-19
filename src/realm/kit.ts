@@ -142,9 +142,14 @@ export function giveMen(b: Army, part: { mix: Men; kit: Kit }): void {
 
 /** 잃는다 — 병종마다 round(n × keep) 명이 남고, 단계마다 같은 비율로 (싸움의 손실) */
 export function scaleMen(a: Army, keep: number): void {
+  scaleKinds(a, () => keep)
+}
+
+/** 병종마다 다른 몫으로 줄인다 — 싸움에서 무리마다 잃은 만큼 (궁수가 맞았으면 궁수가 준다 · tactics 전투 2판) */
+export function scaleKinds(a: Army, keepOf: (k: UnitKind) => number): void {
   const kit = kitOf(a)
   for (const k of Object.keys(a.mix) as UnitKind[]) {
-    const n = Math.round((a.mix[k] ?? 0) * keep)
+    const n = Math.round((a.mix[k] ?? 0) * keepOf(k))
     a.mix[k] = n
     kit[k] = spread(kit[k] ?? {}, n)
   }

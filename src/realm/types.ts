@@ -260,15 +260,55 @@ export type Ration = 'light' | 'full'
  *   한 번씩: 옆치기 flank · 불 fire · 장수 겨루기 duel
  *   사로잡기 capture · 물러나기 retreat
  */
-export type Cmd = 'charge' | 'hold' | 'volley' | 'flank' | 'fire' | 'duel' | 'capture' | 'retreat'
+export type Cmd =
+  // 앞줄(창·방패) — 돌격 · 방진 · 길 트기 · 땅의 수: 여울 막기 · 바위 굴리기 · 성문 깨기 · 배 들이받기
+  | 'charge' | 'hold' | 'open' | 'ford' | 'rocks' | 'gate' | 'ram'
+  // 활 — 화살비(적 앞줄) · 맞쏘기(적 활) · 불화살 · 높은 곳
+  | 'volley' | 'counter' | 'fire' | 'height'
+  // 말 — 옆치기 · 돌파 · 추격 · 호위
+  | 'flank' | 'punch' | 'pursue' | 'guard'
+  // 장수 — 북을 친다(그냥 지휘) · 장수 겨루기 · 적장 사로잡기 · 물러나기
+  | 'drum' | 'duel' | 'capture' | 'retreat'
+
+/**
+ * 전투 2판 (docs/realm/BATTLE.md §전투 2판 · 형 2026-10-19: "어떤 군대가 창병움직이면 다른애들 가만있냐. 각자 행동 컨트롤") —
+ * 군대를 세 무리로 나눠 깃발마다 따로 부린다: 앞줄(창·방패·긴창 · 물 위의 배) · 활(궁수·쇠뇌) · 말(기병).
+ */
+export type Grp = 'front' | 'bows' | 'horse'
+
+/** 한 합의 명령 — 무리마다 하나 + 장수의 명령 하나. 빠진 무리는 맡긴다 */
+export interface RoundOrder {
+  readonly front?: Cmd
+  readonly bows?: Cmd
+  readonly horse?: Cmd
+  readonly lead?: Cmd
+}
+
+/**
+ * 한 합에서 일어난 일 하나 — 누가(s · g) 몇이(n) 무엇을(c) 누구에게(tg) 해서 어떻게 됐나(res) · 상대가 잃은 사람(tl) · 우리가 잃은 사람(sl).
+ * 화면은 이것으로 "우리 기병 120이 왼쪽으로 돌아 적 궁수를 쳤다. 적 궁수 30이 쓰러졌다" 를 짓는다 (prose.roundStory)
+ */
+export interface Act {
+  readonly s: 'a' | 'd'
+  readonly g: Grp | 'lead'
+  readonly c: Cmd
+  readonly n: number
+  readonly tg?: Grp | 'lead'
+  readonly tl?: number
+  readonly sl?: number
+  readonly res: 'won' | 'lost' | 'even' | 'hit' | 'blocked' | 'wasted' | 'ok' | 'fail' | 'stall'
+  /** 사로잡기 — 적장 곁 호위 */
+  readonly guard?: number
+}
 
 /** 라운드 하나의 기록 — 화면이 그대로 풀어 보인다. n 은 처음 사람의 몫 0~1, m 은 사기 */
 export interface RoundLog {
+  /** 그 합의 앞줄 명령(앞줄이 없으면 장수·활·말의 것) — 요약 칩 */
   readonly a: Cmd
   readonly d: Cmd
   /** 세모에서 이긴 쪽 */
   readonly beat: 'a' | 'd' | null
-  /** 이번 라운드에 공격 쪽이 민 몫 0~1 */
+  /** 이번 라운드에 공격 쪽이 민 몫 0~1 (잃은 사람으로) */
   readonly push: number
   readonly na: number
   readonly nd: number
@@ -278,28 +318,43 @@ export interface RoundLog {
   readonly ev?: 'capture-ok' | 'capture-fail' | 'duel-win' | 'duel-lose' | 'fire-ok' | 'fire-back' | 'retreat'
   /** ev 를 낸 쪽 */
   readonly by?: 'a' | 'd'
+  /** 두 쪽의 무리별 명령 */
+  readonly oa?: RoundOrder
+  readonly od?: RoundOrder
+  /** 이 합에서 일어난 일 — 차례대로 */
+  readonly acts?: readonly Act[]
+  /** 합이 끝났을 때 무리별 남은 사람 (공격 쪽 · 지킴 쪽) */
+  readonly ga?: Readonly<Partial<Record<Grp, number>>>
+  readonly gd?: Readonly<Partial<Record<Grp, number>>>
 }
 
 /**
  * 플레이어가 고른 싸움 명령 — advance 의 tactics[battleKey] (snipes 와 같은 길).
- * cmds[i] 가 i 라운드의 명령. 모자라면 맡긴다(AI 가 고른다).
+ * cmds[i] 가 i 라운드의 명령 — 무리별 RoundOrder (옛 판의 Cmd 한 개도 받는다: 그 명령을 맞는 무리에 건다). 모자라면 맡긴다(AI 가 고른다).
  * open 이면 모자란 데서 다음 고를 것을 pending 에 적는다 (전장 화면의 시험 돌림) — 나머지는 맡긴 것으로 끝까지 돈다
  */
 export interface Tactic {
-  readonly cmds: readonly Cmd[]
+  readonly cmds: readonly (Cmd | RoundOrder)[]
   readonly open?: boolean
 }
 
 /** 전장 화면이 다음 라운드를 고를 때 보는 것 — 시험 돌림(open)에서만 나온다 */
 export interface Pending {
   readonly round: number
-  /** 고를 수 있는 명령 */
-  readonly options: readonly Cmd[]
-  /** 명령마다 우리 세기 (0.4~2 쯤 — 화면은 말·색으로) */
-  readonly might: Readonly<Partial<Record<Cmd, number>>>
+  /** 우리 무리마다 — 지금 사람 수 · 고를 수 있는 명령 */
+  readonly groups: ReadonlyArray<{ readonly g: Grp; readonly men: number; readonly options: readonly Cmd[] }>
+  /** 장수의 명령 */
+  readonly lead: readonly Cmd[]
+  /** 적 무리마다 지금 사람 수 */
+  readonly foe: Readonly<Partial<Record<Grp, number>>>
+  /** 적이 흔들린다 — 사기가 꺾여 방진이 돌격을 못 받아 낼 지경 (눈에 보인다) */
+  readonly foeWaver: boolean
   /** 사로잡기 확률 — 적장이 없으면 0 (화면은 말·색으로) */
   readonly capture: number
-  /** 적진의 낌새 — 본 것(saw: 척후·첩자·눈앞) 또는 들은 것(habit: 겨뤄 본 적장의 버릇). 없으면 null */
+  /** 사로잡으러 보낼 날랜 무리 · 적장 곁 호위 (사람 수 — 셀 수 있는 것) */
+  readonly squad: number
+  readonly escort: number
+  /** 적진의 낌새 — 적 앞줄의 다음 명령. 본 것(saw) 또는 들은 것(habit). 없으면 null */
   readonly hint: Cmd | null
   readonly hintSrc?: 'saw' | 'habit'
   /** 우리가 공격 쪽인가 */
@@ -313,7 +368,12 @@ export interface BattleStart {
   readonly men: readonly [number, number]
   readonly morale: readonly [number, number]
   readonly heroes: readonly [string | null, string | null]
+  /** 병종 — 싸움 이야기가 무리 이름(창병·방패병 …)을 짓는다 */
+  readonly mix?: readonly [Readonly<Partial<Record<UnitKind, number>>>, Readonly<Partial<Record<UnitKind, number>>>]
 }
+
+/** 싸움이 끝난 까닭 — 이야기의 마지막 줄 */
+export type EndWhy = 'captured' | 'men' | 'morale' | 'retreat' | 'share' | 'draw'
 
 export interface Army {
   readonly id: string
@@ -465,7 +525,7 @@ export interface Realm {
 export type Order =
   | { readonly kind: 'march'; readonly army: string; readonly edge: string; readonly ambush: boolean; readonly approach?: Approach; readonly ration?: Ration }
   /** 전장에서 직접 내린 명령 — 그 판(key)의 라운드마다 (advance 가 tactics 로 받는다 · 판 기록에 남아 다시 돌려도 같다) */
-  | { readonly kind: 'command'; readonly key: string; readonly cmds: readonly Cmd[] }
+  | { readonly kind: 'command'; readonly key: string; readonly cmds: readonly (Cmd | RoundOrder)[] }
   | { readonly kind: 'scout'; readonly faction: string; readonly node: string; readonly hero: string | null }
   /** 나누기 (SYSTEMS §4-5) — `id` 는 새 군대의 이름 (season.newArmyId). `hero` 면 장수가 별동대를 이끈다 */
   | {
@@ -595,6 +655,10 @@ export type ReportLine =
       /** 플레이어가 직접 명령을 낸 판인가 */
       readonly led?: boolean
       readonly start?: BattleStart
+      /** 앞선 군대가 걸어온 길의 종류 — 싸움 이름(○○나루 싸움 …)에 쓴다. 들판이면 edge 의 종류 */
+      readonly via?: EdgeKind
+      /** 싸움이 끝난 까닭 */
+      readonly endWhy?: EndWhy
     }
   /** 가을 수확 — `blessed` 는 그 가운데 봄 제사로 더 든 몫 */
   | { readonly kind: 'harvest'; readonly faction: string; readonly grain: number; readonly blessed?: number }

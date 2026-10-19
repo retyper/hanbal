@@ -6,9 +6,9 @@
  * 한 줄씩 띄우고, 기세 막대가 흔들리다 결과에 멈춘다. 움직임은 CSS 애니메이션의 지연뿐이다 (rAF·타이머 없음 — 절대 규칙 4).
  * 카드를 누르면 바로 끝까지 보인다.
  */
-import { BATTLE_AMBUSH, BATTLE_APPROACH, BATTLE_CLASH, fieldName, josa } from '../../realm/data/prose.ts'
+import { BATTLE_AMBUSH, BATTLE_APPROACH, BATTLE_CLASH, endStory, fieldName, josa, roundStory, storyCtx } from '../../realm/data/prose.ts'
 import { HERO_BUST } from '../../realm/data/art.ts'
-import { CMD_ICON, CMD_NAME } from './battlefield.ts'
+import { CMD_ICON, CMD_NAME, warName } from './battlefield.ts'
 import type { Army, Hero, Realm, ReportLine } from '../../realm/types.ts'
 
 type Battle = Extract<ReportLine, { kind: 'battle' }>
@@ -41,10 +41,10 @@ function face(h: Hero | null, art: string): string {
 }
 
 /**
- * 전장에서 합마다 싸운 판의 요약 — 전장에서 본 그대로 (합마다 우리 명령 × 적 명령 · 이겼나 · 사람 수 앞뒤 · 결과).
- * 옛 한 줄 이야기(battleCard)는 합이 없던 판에서만 쓴다 — 전장과 다른 글이 나오면 헷갈린다.
+ * 전장에서 합마다 싸운 판의 요약 — 전장에서 본 그대로 (싸움 이름 · 합마다 우리 명령 × 적 명령 · 이겼나 · 무슨 일이 있었나 ·
+ * 사람 수 앞뒤 · 왜 무너졌나 · 결과). 옛 한 줄 이야기(battleCard)는 합이 없던 판에서만 쓴다 — 전장과 다른 글이 나오면 헷갈린다.
  */
-function battleSummary(after: Realm, l: Battle, weAtk: boolean, art: string, place: string, result: string, good: boolean): string {
+function battleSummary(after: Realm, l: Battle, weAtk: boolean, art: string, viewer: string, result: string, good: boolean): string {
   const st = l.start!
   const rds = l.rounds!
   const last = rds[rds.length - 1]
@@ -57,7 +57,7 @@ function battleSummary(after: Realm, l: Battle, weAtk: boolean, art: string, pla
   const name = (i: number): string => heroOf(i)?.name ?? `${after.factions[i === 0 ? (l.atkFaction ?? '') : l.defender]?.name ?? ''} 군`
   const n0 = (i: number): number => st.men[i] ?? 0
   const n1 = (i: number): number => Math.round((st.men[i] ?? 0) * (fr[i] ?? 1))
-  let h = `<div class="bk sum"><div class="bkh"><span class="bkp">${esc(place)} 싸움</span></div>`
+  let h = `<div class="bk sum"><div class="bkh"><span class="bkp">${esc(warName(after, l))}</span></div>`
   h += `<div class="bkv"><div class="bks">${face(heroOf(ui), art)}<b>${esc(name(ui))}</b><span>우리 ${n0(ui).toLocaleString('ko-KR')} → ${n1(ui).toLocaleString('ko-KR')}</span></div><i>VS</i>`
   h += `<div class="bks">${face(heroOf(fi), art)}<b>${esc(name(fi))}</b><span>적 ${n0(fi).toLocaleString('ko-KR')} → ${n1(fi).toLocaleString('ko-KR')}</span></div></div>`
   // 합마다 — 우리 명령 × 적 명령, 상성을 이겼나(○)·졌나(✕)
@@ -70,6 +70,15 @@ function battleSummary(after: Realm, l: Battle, weAtk: boolean, art: string, pla
     h += `<span class="bkrd${won ? ' w' : lost ? ' l' : ''}"><img src="${art}icon/${CMD_ICON[us]}.png" alt="${CMD_NAME[us]}" title="${CMD_NAME[us]}"><i>${won ? '○' : lost ? '✕' : '·'}</i><img src="${art}icon/${CMD_ICON[them]}.png" alt="${CMD_NAME[them]}" title="${CMD_NAME[them]}"></span>`
   }
   h += `</div>`
+  // 합마다 무슨 일이 있었나 — 전장의 이야기 그대로 (합마다 앞 두 줄) · 끝에 왜 무너졌나
+  const ctx = storyCtx(after, l, viewer)
+  if (ctx !== null) {
+    rds.forEach((rd, i) => {
+      const s = roundStory(rd, rds[i - 1], ctx).slice(0, 2)
+      if (s.length > 0) h += `<p class="bkl now bkst"><i>${i + 1}</i>${esc(s.join(' '))}</p>`
+    })
+    h += `<p class="bkl now bkwhy">${esc(endStory(l, ctx))}</p>`
+  }
   if (l.captured !== null) h += `<p class="bkl now">${esc(josa(after.heroes[l.captured]?.name ?? '?', '을', '를'))} 사로잡았다!</p>`
   if (l.killed !== null) h += `<p class="bkl now">${esc(josa(after.heroes[l.killed]?.name ?? '?', '이', '가'))} 쓰러졌다.</p>`
   return h + `<div class="bkr now ${good ? 'good' : l.outcome === 'draw' ? '' : 'bad'}">${esc(result)}</div></div>`
@@ -90,7 +99,7 @@ export function battleCard(before: Realm, after: Realm, l: Battle, viewer: strin
     else if (weA) res = atkWonB ? `${josa(placeB, '을', '를')} 차지했다` : `${placeB}에서 물러났다`
     else res = atkWonB ? `${josa(placeB, '을', '를')} 빼앗겼다` : `${josa(placeB, '을', '를')} 지켜 냈다`
     if (l.outcome === 'rout' || l.outcome === 'routed') res = `${goodB ? '대승' : '대패'} — ${res}`
-    return battleSummary(after, l, weA, art, placeB, res, goodB)
+    return battleSummary(after, l, weA, art, viewer, res, goodB)
   }
   const lead = before.armies[l.attacker]
   if (lead === undefined) return ''
@@ -190,4 +199,6 @@ export const BATTLE_CSS = `
 .ap .bkrd img { width: 22px; height: 22px; } .ap .bkrd i { font-style: normal; font-weight: 800; width: 14px; text-align: center; color: var(--mute); }
 .ap .bkrd.w { border-color: #6a9a5a; } .ap .bkrd.w i { color: #9fd18b; } .ap .bkrd.l { border-color: #9a4a3a; } .ap .bkrd.l i { color: #ff8a70; }
 .ap .bk .now { opacity: 1; animation: none; }
+.ap .bk .bkst { font-size: 13.5px; line-height: 1.5; } .ap .bk .bkst i { font-style: normal; display: inline-block; min-width: 18px; color: var(--gold); font-weight: 700; }
+.ap .bk .bkwhy { font-size: 14px; color: #e8dcc0; text-align: center; }
 `

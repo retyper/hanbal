@@ -4,7 +4,8 @@
  */
 import { P } from '../../tune/params.ts'
 import type { Equip, Outcome, UnitKind } from '../battle.ts'
-import type { Ask, BuildWhat, DiscoverHow, EdgeKind, Good, PlotOp, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, SeasonOfYear, Tag, Why } from '../types.ts'
+import type { Ask, BuildWhat, Cmd, DiscoverHow, EdgeKind, Good, Grp, PlotOp, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, RoundLog, RoundOrder, SeasonOfYear, Tag, Why } from '../types.ts'
+import { groupOf } from '../tactics.ts'
 import type { ConcealWhy } from '../season.ts'
 import { TRAIT } from './traits.ts'
 
@@ -604,6 +605,221 @@ export const BATTLE_CLASH: Record<Outcome, readonly [string, string]> = {
   draw: ['창끝이 맞부딪힌다. 밀고 밀린다.', '해가 지도록 승부가 나지 않는다.'],
   lose: ['적의 화살이 쏟아진다.', '버티지 못하고 뒤로 밀린다.'],
   routed: ['적의 화살이 쏟아진다.', '진이 무너져 뿔뿔이 흩어진다.'],
+}
+
+type Battle = Extract<ReportLine, { kind: 'battle' }>
+
+/** 이름의 첫 마디 — "삼랑 나루 마을" → "삼랑" */
+function rootName(name: string): string {
+  return name.split(' ')[0] ?? name
+}
+/** 끝이 이미 그 말이면 또 붙이지 않는다 — "너른벌" + "벌" → "너른벌" */
+function withTail(root: string, tail: string): string {
+  return root.endsWith(tail) ? root : `${root}${tail}`
+}
+
+/**
+ * 싸움의 이름 — 싸운 땅에서 딴다 (형: "황산벌전투 옥포해전 칠천량전투 이런것들 … 그지역들을따서").
+ * 바다로 왔으면 "○○ 바다 싸움", 나루·갈대 물가면 "○○나루 싸움", 고개면 "○○재 싸움", 갯벌이면 "○○ 갯벌 싸움",
+ * 숲이면 "○○숲 싸움", 성(도읍·산성·목책) 앞이면 "○○성 싸움", 그 밖은 "○○벌 싸움". ○○ 은 그 고을 이름의 첫 마디.
+ */
+export function battleName(r: Realm, l: Pick<Battle, 'node' | 'field' | 'edge' | 'via' | 'approach'>): string {
+  const node = r.nodes[l.node]
+  const root = rootName(node?.name ?? l.node)
+  const kind = l.field === true && l.edge !== undefined ? r.edges[l.edge]?.kind : l.via
+  switch (kind) {
+    case 'sea': return `${root} 바다 싸움`
+    case 'ford': case 'reeds': return `${withTail(root, '나루')} 싸움`
+    case 'pass': return `${withTail(root, '재')} 싸움`
+    case 'mudflat': return `${root} 갯벌 싸움`
+    case 'forest': if (l.field === true) return `${withTail(root, '숲')} 싸움`; break
+    default: break
+  }
+  const walled = node !== undefined && (node.kind === 'capital' || node.kind === 'fort' || node.tags.includes('palisade') || l.approach === 'cliff')
+  if (l.field !== true && walled) return `${withTail(root, '성')} 싸움`
+  return `${withTail(root, '벌')} 싸움`
+}
+
+/** 무리를 부르는 이름 — 그 무리에 든 병종 (많은 차례로 둘까지): "창병·방패병" · "궁수" · "기병" */
+export function groupLabel(mix: Readonly<Partial<Record<UnitKind, number>>>, g: Grp): string {
+  const ks = (Object.keys(mix) as UnitKind[]).filter((k) => (mix[k] ?? 0) > 0 && groupOf(k) === g).sort((p, q) => (mix[q] ?? 0) - (mix[p] ?? 0))
+  if (ks.length === 0) return GROUP_NAME[g]
+  return ks.slice(0, 2).map((k) => UNIT_NAME[k]).join('·')
+}
+export const GROUP_NAME: Record<Grp, string> = { front: '앞줄', bows: '활', horse: '기병' }
+
+/** 명령마다 그 무리가 한 일 — 끝이 '-다' (잇는 꼴은 '-고') */
+const DID: Readonly<Partial<Record<Cmd, string>>> = {
+  charge: '창끝을 낮추고 돌격했다', hold: '방패를 겹쳐 방진을 쳤다', open: '앞줄을 벌려 활에 길을 텄다',
+  ford: '여울목을 막아섰다', rocks: '비탈 위에서 바위를 굴렸다', gate: '성문을 들이쳤다', ram: '뱃머리로 들이받았다',
+  volley: '화살비를 퍼부었다', counter: '맞은편 궁수를 겨눠 맞쏘았다', fire: '불화살을 날렸다', height: '높은 곳에서 내리쏘았다',
+  flank: '옆으로 돌아 들어갔다', punch: '앞줄 사이로 내달았다', pursue: '흔들리는 맞은편을 쫓았다', guard: '장수 곁을 지켰다',
+}
+const did = (c: Cmd): string => DID[c] ?? '맞섰다'
+const didAnd = (c: Cmd): string => did(c).replace(/다$/, '고')
+
+/** 싸움 이야기를 짓는 데 쓰는 것 — [공격 쪽, 지킴 쪽] */
+export interface StoryCtx {
+  /** 쪽을 부르는 말 — 우리 쪽은 '우리', 맞은편은 '적' */
+  readonly side: readonly [string, string]
+  /** 장수 이름 — 없으면 null */
+  readonly hero: readonly [string | null, string | null]
+  /** 처음 병종 */
+  readonly mix: readonly [Readonly<Partial<Record<UnitKind, number>>>, Readonly<Partial<Record<UnitKind, number>>>]
+  /** 처음 사기 · 처음 사람 */
+  readonly m0: readonly [number, number]
+  readonly men0: readonly [number, number]
+}
+
+/** 그 판의 이야기 틀 — 보는 나라가 낀 쪽이 '우리', 맞은편이 '적' (안 꼈으면 나라 이름). 판 기록(start)이 없으면 null */
+export function storyCtx(r: Realm, l: { readonly start?: Battle['start'] | undefined; readonly atkFaction?: string | undefined; readonly defender: string }, viewer: string): StoryCtx | null {
+  const st = l.start
+  if (st === undefined) return null
+  const fname = (f: string | undefined): string => (f !== undefined ? (r.factions[f]?.name ?? '?') : '?')
+  const side: [string, string] = l.atkFaction === viewer ? ['우리', '적'] : l.defender === viewer ? ['적', '우리'] : [fname(l.atkFaction), fname(l.defender)]
+  const hn = (id: string | null): string | null => (id !== null ? (r.heroes[id]?.name ?? null) : null)
+  return {
+    side, hero: [hn(st.heroes[0]), hn(st.heroes[1])], mix: st.mix ?? [{}, {}], m0: [st.morale[0], st.morale[1]], men0: [st.men[0], st.men[1]],
+  }
+}
+
+const ix = (s: 'a' | 'd'): 0 | 1 => (s === 'a' ? 0 : 1)
+const opp = (s: 'a' | 'd'): 'a' | 'd' => (s === 'a' ? 'd' : 'a')
+const ppl = (n: number): string => `${Math.round(n).toLocaleString('ko-KR')}명`
+
+/**
+ * 한 합의 이야기 — 두세 문장 (형: "누가 얼마가 어떻게 공격한거고 그게 어떻게 된거고 몇명이 어떻게 침투해서 어떤작전으로 시도를 했고
+ * 어떻게된 어느쪽 군사들이 어떻게 와해됐는지"). 장수의 일(사로잡기·겨루기·물러나기) → 앞줄 맞붙음 → 크게 잃게 한 일 차례로,
+ * 그 합에 새로 흔들린 쪽이 있으면 끝에 한 줄.
+ */
+export function roundStory(rd: RoundLog, prev: RoundLog | undefined, c: StoryCtx): string[] {
+  const acts = rd.acts ?? []
+  const who = (s: 'a' | 'd'): string => c.side[ix(s)]
+  const grp = (s: 'a' | 'd', g: Grp | 'lead' | undefined): string => (g === undefined || g === 'lead' ? '장수' : groupLabel(c.mix[ix(s)], g))
+  const heroOf = (s: 'a' | 'd'): string => c.hero[ix(s)] ?? `${who(s)} 장수`
+  const orderOf = (s: 'a' | 'd'): RoundOrder | undefined => (s === 'a' ? rd.oa : rd.od)
+  const out: string[] = []
+
+  // 장수의 일
+  for (const a of acts) {
+    if (a.g !== 'lead') continue
+    const x = a.s
+    const y = opp(x)
+    if (a.c === 'retreat') {
+      out.push(`${josa(who(x), '이', '가')} 징을 쳐 군사를 물렸다 — 물러나며 ${josa(ppl(a.sl ?? 0), '을', '를')} 잃었다.`)
+    } else if (a.c === 'duel') {
+      out.push(`${josa(heroOf(x), '이', '가')} 앞으로 나서 ${josa(heroOf(y), '과', '와')} 겨뤘다 — `
+        + (a.res === 'won' ? `${josa(heroOf(y), '이', '가')} 말에서 떨어졌다. ${who(y)} 군사들이 술렁인다.` : `${josa(heroOf(x), '이', '가')} 밀려 다쳤다. ${who(x)} 군사들이 술렁인다.`))
+    } else if (a.c === 'capture') {
+      const yo = orderOf(y)
+      const where = (c.mix[ix(x)].horse ?? 0) > 0 ? '말을 달려 적진 옆을 돌아' : yo?.front === 'open' ? '벌어진 앞줄 틈으로' : '앞줄 틈을 비집고'
+      const guard = yo?.horse === 'guard' ? `기병이 둘러싼 호위 ${ppl(a.guard ?? 0)}` : `장수 곁 호위 ${ppl(a.guard ?? 0)}`
+      out.push(a.res === 'ok'
+        ? `${who(x)} 날랜 무리 ${josa(ppl(a.n), '이', '가')} ${where} 파고들어 ${josa(guard, '을', '를')} 뚫고 ${josa(heroOf(y), '을', '를')} 사로잡았다!`
+        : `${who(x)} 날랜 무리 ${josa(ppl(a.n), '이', '가')} ${where} 파고들었으나 ${guard}에 막혔다 — ${josa(ppl(a.sl ?? 0), '을', '를')} 잃고 돌아섰다.`)
+    }
+  }
+
+  // 앞줄 맞붙음 — 두 쪽 앞줄을 한 문장으로
+  const fr = acts.filter((a) => a.g === 'front' && a.tg === 'front')
+  if (fr.length > 0) {
+    const win = fr.find((a) => a.res === 'won')
+    const lose = fr.find((a) => a.res === 'lost')
+    const f0 = fr[0]!
+    if (win !== undefined) {
+      const x = win.s
+      const y = opp(x)
+      const yc = orderOf(y)?.front
+      const lg = grp(y, 'front')
+      let why: string
+      if (win.c === 'hold' || win.c === 'ford' || win.c === 'rocks') why = `달려든 ${josa(`${who(y)} ${lg}`, '이', '가')} 방패 벽에 부딪혀 꺾였다`
+      else if (win.c === 'open') why = `서 있는 ${who(y)} 방진이 화살받이가 됐다`
+      else if (yc === 'open') why = `벌어진 ${who(y)} 앞줄을 뚫고 들어갔다`
+      else if (lose !== undefined || yc === 'hold') why = `흔들리던 ${who(y)} 방진이 뚫렸다`
+      else why = `${josa(`${who(y)} ${lg}`, '이', '가')} 밀렸다`
+      out.push(`${who(x)} ${grp(x, 'front')} ${josa(ppl(win.n), '이', '가')} ${did(win.c)} — ${why}. ${who(y)} 앞줄 ${josa(ppl(win.tl ?? 0), '이', '가')} 쓰러지고 ${(win.sl ?? 0) > 0 ? `${josa(who(x), '은', '는')} ${josa(ppl(win.sl ?? 0), '을', '를')} 잃었다` : `${josa(who(x), '은', '는')} 하나도 잃지 않았다`}.`)
+    } else if (f0.res === 'stall') {
+      const [p, q] = fr.length > 1 ? [fr[0]!, fr[1]!] : [f0, undefined]
+      out.push(q !== undefined
+        ? `${who(p.s)} ${grp(p.s, 'front')} ${josa(ppl(p.n), '과', '와')} ${who(q.s)} ${grp(q.s, 'front')} ${josa(ppl(q.n), '이', '가')} 마주 섰으나 서로 버티며 크게 붙지 않았다.`
+        : `${who(p.s)} ${grp(p.s, 'front')} ${josa(ppl(p.n), '이', '가')} ${did(p.c)}.`)
+    } else if (fr.length > 1) {
+      const [p, q] = [fr[0]!, fr[1]!]
+      out.push(`${who(p.s)} ${grp(p.s, 'front')} ${josa(ppl(p.n), '이', '가')} ${didAnd(p.c)} ${who(q.s)} ${grp(q.s, 'front')} ${josa(ppl(q.n), '은', '는')} ${did(q.c)} — `
+        + `${p.c === 'hold' && q.c === 'charge' || p.c === 'charge' && q.c === 'hold' ? '흔들리던 방진이라 돌격을 꺾지 못하고 ' : ''}맞붙어 ${who(p.s)} ${ppl(p.sl ?? 0)}, ${who(q.s)} ${josa(ppl(q.sl ?? 0), '이', '가')} 쓰러졌다.`)
+    } else {
+      out.push(`${who(f0.s)} ${grp(f0.s, 'front')} ${josa(ppl(f0.n), '이', '가')} ${did(f0.c)} — ${who(opp(f0.s))} ${josa(ppl(f0.tl ?? 0), '이', '가')} 쓰러졌다.`)
+    }
+  }
+
+  // 그 밖의 일 — 크게 잃게 한 차례로 (헛걸음·막힘도 이야기다)
+  const rest = acts.filter((a) => a.g !== 'lead' && !(a.g === 'front' && a.tg === 'front') && a.c !== 'guard' && !(a.c === 'punch' && a.res === 'hit'))
+    .filter((a) => (a.tl ?? 0) > 0 || a.res === 'blocked' || a.res === 'wasted' || a.res === 'fail')
+    .sort((p, q) => (q.tl ?? 0) - (p.tl ?? 0))
+  for (const a of rest) {
+    if (out.length >= 3) break
+    const x = a.s
+    const y = opp(x)
+    const me = `${who(x)} ${grp(x, a.g)} ${josa(ppl(a.n), '이', '가')}`
+    const them = `${who(y)} ${grp(y, a.tg)}`
+    const tl = ppl(a.tl ?? 0)
+    if (a.c === 'charge') out.push(`${who(x)} 돌격이 그대로 ${them}까지 덮쳐 ${josa(tl, '이', '가')} 쓰러졌다.`)
+    else if (a.c === 'punch') out.push(`${me} 앞줄 사이로 내달았으나 ${who(y)} 방진에 부딪혀 크게 다쳤다.`)
+    else if (a.c === 'fire') out.push(a.res === 'fail'
+      ? `${me} 불화살을 날렸으나 바람이 돌아 불길이 ${who(x)} 쪽으로 왔다.`
+      : `${me} 불화살을 날렸다 — 불길이 ${who(y)} 진으로 번져 ${josa(tl, '이', '가')} 쓰러졌다.`)
+    else if (a.res === 'wasted') out.push(a.c === 'pursue'
+      ? `${me} 쫓으러 나섰으나 ${josa(who(y), '은', '는')} 아직 흔들리지 않았다 — 헛걸음이었다.`
+      : `${me} 맞쏠 적 궁수가 없어 화살만 버렸다.`)
+    else if (a.c === 'flank' && a.res === 'blocked') out.push(`${me} 옆으로 돌았으나 ${who(y)} 기병이 막아섰다 — 말끼리 맞붙어 ${who(y)} ${ppl(a.tl ?? 0)}, ${who(x)} ${josa(ppl(a.sl ?? 0), '이', '가')} 떨어졌다.`)
+    else if (a.c === 'flank') out.push(`${me} 옆으로 돌아 ${them}의 옆구리를 쳤다 — ${them} ${josa(tl, '이', '가')} 쓰러졌다.`)
+    else if (a.res === 'won') out.push(`${me} 서 있는 ${them} 위로 화살비를 퍼부었다 — 방패 벽 너머로 ${josa(tl, '이', '가')} 쓰러졌다.`)
+    else out.push(`${me} ${did(a.c)} — ${them} ${josa(tl, '이', '가')} 쓰러졌다.`)
+  }
+
+  // 새로 흔들린 쪽
+  for (const s of ['a', 'd'] as const) {
+    const m = s === 'a' ? rd.ma : rd.md
+    const was = prev === undefined ? c.m0[ix(s)] : s === 'a' ? prev.ma : prev.md
+    const base = Math.max(0.05, c.m0[ix(s)])
+    if (rd.ev !== 'capture-ok' && rd.ev !== 'retreat' && m / base < P.realm.tacHoldSteady && was / base >= P.realm.tacHoldSteady) out.push(`${who(s)} 진이 흔들린다 — 깃발이 기울고 대열이 성기다.`)
+  }
+  return out
+}
+
+/** 싸움이 끝난 까닭 — 진 쪽이 왜 무너졌나 (한 줄) */
+export function endStory(l: Pick<Battle, 'outcome' | 'endWhy' | 'rounds'>, c: StoryCtx): string {
+  const rds = l.rounds ?? []
+  const last = rds[rds.length - 1]
+  const atkLost = l.outcome === 'lose' || l.outcome === 'routed'
+  let loser: 'a' | 'd' = atkLost ? 'a' : 'd'
+  if (l.endWhy === 'retreat' && last?.by !== undefined) loser = last.by
+  const w = opp(loser)
+  const L = c.side[ix(loser)]
+  const now = (s: 'a' | 'd'): number => Math.round(c.men0[ix(s)] * (last === undefined ? 1 : s === 'a' ? last.na : last.nd))
+  switch (l.endWhy) {
+    case 'captured': return `${josa(c.hero[ix(loser)] ?? `${L} 장수`, '이', '가')} 사로잡히자 ${L} 군사들은 이끌 사람을 잃고 흩어졌다.`
+    case 'men': return `${L} 군사가 ${ppl(c.men0[ix(loser)])}에서 ${josa(ppl(now(loser)), '으로', '로')} 줄자 더 버티지 못하고 무너졌다.`
+    case 'morale': {
+      // 가장 크게 꺾인 무리
+      const g0 = c.mix[ix(loser)]
+      const ga = last === undefined ? undefined : loser === 'a' ? last.ga : last.gd
+      let worst: Grp | null = null
+      let wf = 1
+      for (const g of ['front', 'bows', 'horse'] as const) {
+        let n0 = 0
+        for (const k of Object.keys(g0) as UnitKind[]) if (groupOf(k) === g) n0 += g0[k] ?? 0
+        if (n0 <= 0 || ga?.[g] === undefined) continue
+        const f = ga[g]! / n0
+        if (f < wf) { wf = f; worst = g }
+      }
+      const g = worst !== null ? `${josa(groupLabel(g0, worst), '이', '가')} 꺾이자 ` : ''
+      return `${L} ${g}기세가 무너져 군사들이 등을 보이고 달아났다.`
+    }
+    case 'retreat': return `${josa(L, '이', '가')} 더 잃기 전에 징을 쳐 물러났다.`
+    case 'draw': return '어느 쪽도 무너지지 않아 날이 저물자 서로 물러났다.'
+    default: return l.outcome === 'draw' ? '어느 쪽도 무너지지 않아 날이 저물자 서로 물러났다.' : `끝까지 맞붙은 끝에 ${c.side[ix(w)]} 쪽이 더 많이 남아 싸움터를 차지했다.`
+  }
 }
 
 /**

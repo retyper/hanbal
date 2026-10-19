@@ -8,7 +8,7 @@
  * 다 고르면 그 명령들(tactics)로 진짜 advance 를 돌린다. 시험 돌림의 판은 버린다.
  */
 import { ANY_BATTLE, advance } from './season.ts'
-import type { Cmd, Order, Realm, ReportLine, Tactic } from './types.ts'
+import type { Cmd, Order, Realm, ReportLine, RoundOrder, Tactic } from './types.ts'
 
 export type BattleLine = Extract<ReportLine, { kind: 'battle' }>
 
@@ -31,7 +31,7 @@ export interface Rehearsal {
  * 돌려주는 line 은 `want` 판(다 고른 판의 결과 보기)이거나, `cur` 판(아직 고르는 중)이거나, 아직 안 본 우리 판의 첫째.
  */
 export function rehearse(
-  prev: Realm, orders: readonly Order[], done: Readonly<Record<string, Tactic>>, cur: { key: string; cmds: readonly Cmd[] } | null, me: string, want?: string,
+  prev: Realm, orders: readonly Order[], done: Readonly<Record<string, Tactic>>, cur: { key: string; cmds: readonly (Cmd | RoundOrder)[] } | null, me: string, want?: string,
 ): Rehearsal {
   const tactics: Record<string, Tactic> = { ...done, [ANY_BATTLE]: { cmds: [], open: true } }
   if (cur !== null) tactics[cur.key] = { cmds: cur.cmds, open: true }
