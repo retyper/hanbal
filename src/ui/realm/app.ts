@@ -39,6 +39,7 @@ import { BATTLE_CSS, battleCard } from './battlecard.ts'
 import { APPROACH_DOES, APPROACH_NAME, HARD_LINE, WAR_CSS, openWar } from './battlefield.ts'
 import { attachZoom } from './zoom.ts'
 import { TINT_CSS, tint } from './tint.ts'
+import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
 import { FRONT_CSS, PROLOGUE_STEPS, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History } from './front.ts'
 import { FEEL_CSS, alertFeel, ambushFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
 
@@ -179,7 +180,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void } {
   const style = document.createElement('style')
-  style.textContent = APP_CSS + TINT_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS + HERO_CSS + GROW_CSS + FRONT_CSS.replaceAll('__ART__', ART)
+  style.textContent = APP_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS + HERO_CSS + GROW_CSS + FRONT_CSS.replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
   root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="legend"></div><div class="zbtns"><button data-act="zin">＋</button><button data-act="zout">－</button></div><button class="next" data-act="next"></button><div class="selbar"></div><div class="roadkey"></div><button class="homebtn" data-act="home">우리 땅</button>`
@@ -451,7 +452,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const { f, n } of fs) {
       const c = FACTION_ART[f.id]?.color ?? '#ccc'
       const cls = `${focus === f.id ? ' on' : ''}${f.id === me() ? ' me' : ''}${n === 0 ? ' gone' : ''}`
-      h += `<button class="lg${cls}" data-act="focus" data-id="${f.id}" style="--c:${c}">${emblem(f.id, 'lem')}<b>${n}</b><span>${esc(f.name)}</span></button>`
+      // 남의 나라는 군장 얼굴(탈)을 함께 — 깃발 줄만 봐도 누가 우리를 어떻게 보는지 (mood.ts)
+      const mood = f.id !== me() && n > 0 ? moodImg(ART, moodOf(r, me(), f.id).mood, 'mood sm') : ''
+      h += `<button class="lg${cls}" data-act="focus" data-id="${f.id}" style="--c:${c}">${emblem(f.id, 'lem')}<b>${n}</b><span>${esc(f.name)}</span>${mood}</button>`
     }
     return h
   }
@@ -854,6 +857,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const left = rel.until !== null ? ` ${Math.max(0, rel.until - r.season)}계절` : ''
       const lead = r.heroes[f.ruler ?? rulerId(f.id)]
       h += `<div class="fcard"><div class="an">${lead !== undefined ? `<button class="fbtn" data-act="hero" data-id="${lead.id}">${bust(lead, 'rface')}</button>` : ''}<div class="fn"><b>${emblem(f.id, 'fem')}${esc(f.name)}</b><span class="mute">${lead !== undefined ? `군주 ${esc(lead.name)}${lead.status === 'captive' ? ' · 사로잡힘' : lead.status === 'dead' ? ' · 죽음' : ''}` : ''}</span></div><span class="rel ${rel.state}">${REL_NAME[rel.state]}${left}</span></div>`
+      const md = moodOf(r, me(), f.id)
+      h += `<div class="moodl ${md.mood}">${moodImg(ART, md.mood)}<div><b>${esc(MOOD_WORD[md.mood])}</b><span>${tx(md.why)}</span></div></div>`
       h += `<div class="frow"><span class="mute">${REL_NOW[rel.state]}</span>${favorFeel(favorOf(r, me(), f.id))}</div>`
       // 그쪽 속셈 — 첩자를 심었거나 동맹일 때만 보인다 (형: "속셈은 아무에게나 드러내게 하지 말고 … 간접정보로"). 깰 속셈은 안 보인다
       const tw = readsMind(r, f.id) ? truceWhy(r, f.id, me()) : null
@@ -1283,6 +1288,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const fac = r.factions[f]!
     const rel = relationOf(r, me(), f)
     let h = `<div class="nacts"><div class="nah">${emblem(f, 'fem')}<b>${esc(fac.name)}</b><span class="rel ${rel.state}">${REL_NAME[rel.state]}</span>${favorFeel(favorOf(r, me(), f))}</div>`
+    // 그 군장의 얼굴 — 우리를 어떻게 보나 (mood.ts)
+    const md = moodOf(r, me(), f)
+    h += `<div class="moodl ${md.mood}">${moodImg(ART, md.mood)}<div><b>${esc(MOOD_WORD[md.mood])}</b><span>${tx(md.why)}</span></div></div>`
     // 사신
     const sent = envoys[f]
     if (sent !== undefined) h += `<div class="banner good">사신: ${ASK_NAME[sent.ask]}<button class="btn ghost sm" data-act="unenvoy" data-to="${f}">거둔다</button></div>`
