@@ -62,7 +62,7 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'dabeol-1': 'g-07-drunk-warrior', 'usisan-1': 'g-01-master-smith', 'jomun-1': 'g-13-baekje-general', 'iseo-1': 'w-26-iseo-tomboy-general',
   'samul-1': 'w-08-mahan-warrior', 'bihwa-1': 'g-10-buyeo-horse-lord', 'eumjeup-1': 'w-01-silla-princess',
   // 삼한 남부 판의 새 군주·장군 (data/regions/south.ts) — 있는 명치판을 나눠 쓴다. 새 얼굴은 그림 줄(인물 — 챗지피티)
-  'baekje-ruler': 'g-13-baekje-general', 'mokji-ruler': 'w-05-baekje-queen', 'michuhol-ruler': 'w-21-baekje-court-dancer',
+  'baekje-ruler': 'g-21-baekje-onnuri', 'mokji-ruler': 'w-27-mokji-jinha', 'michuhol-ruler': 'w-28-michuhol-bira',
   'ungcheon-ruler': 'g-05-mahan-chieftain', 'sangdang-ruler': 'g-01-master-smith', 'geonma-ruler': 'w-17-mahan-pearl-diver',
   'wansan-ruler': 'g-04-jinhan-giant', 'gosaburi-ruler': 'w-14-feast-spy', 'balla-ruler': 'g-15-shaman-man',
   'mujin-ruler': 'w-16-clan-matriarch', 'gampyeong-ruler': 'g-03-sea-trader', 'goryong-ruler': 'w-02-goguryeo-lady',
