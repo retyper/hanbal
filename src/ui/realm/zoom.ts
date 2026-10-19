@@ -12,6 +12,8 @@ const ASPECT = 1264 / 848
 const MAX_OVER_COVER = 2.2
 const STEP = 1.35
 const DRAG_PX = 6
+/** 밝혀진 땅 둘레에 두는 여백 (지도 너비·높이의 몫) */
+const SEEN_PAD = 0.07
 
 export interface MapZoom {
   /** 다시 그린 지도에 지금 배율을 입힌다 */
@@ -37,7 +39,18 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
   const aspect = (): number => Number(map()?.dataset["aspect"]) || ASPECT
   const maxOver = (): number => Number(map()?.dataset["zmax"]) || MAX_OVER_COVER
   const cover = (): number => Math.max(1, wrap.clientWidth / (wrap.clientHeight * aspect()))
-  const clamp = (v: number): number => Math.min(cover() * maxOver(), Math.max(1, v))
+  /**
+   * 가장 작게 볼 배율 — 밝혀진 땅(mapview 의 data-seen)이 칸을 채우는 데까지만 줄인다
+   * (형: "지도크기도 문명처럼 유저가 보이는 구역을 기반으로 최대 축소 가능한 정도를 조절"). 땅이 넓어지면 더 줄일 수 있다.
+   */
+  const minZ = (): number => {
+    const b = (map()?.dataset["seen"] ?? "0,0,1,1").split(",").map(Number)
+    const bw = Math.min(1, (b[2]! - b[0]!) + 2 * SEEN_PAD)
+    const bh = Math.min(1, (b[3]! - b[1]!) + 2 * SEEN_PAD)
+    const fit = Math.min(wrap.clientWidth / (bw * wrap.clientHeight * aspect()), 1 / bh)
+    return Math.max(1, Math.min(fit, cover() * maxOver() * 0.8))
+  }
+  const clamp = (v: number): number => Math.min(cover() * maxOver(), Math.max(minZ(), v))
   const map = (): HTMLElement | null => wrap.querySelector<HTMLElement>('.map')
 
   function paintZ(): void {
@@ -117,7 +130,7 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
   return {
     apply() {
       const region = map()?.dataset["region"] ?? ''
-      if (z === 0 || region !== zFor) z = cover()
+      if (z === 0 || region !== zFor) z = Math.max(cover(), minZ())
       zFor = region
       z = clamp(z)
       paintZ()

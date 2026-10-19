@@ -268,4 +268,13 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .ritebtn { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; }
 .ap .ritebtn .cost { display: flex; gap: 8px; flex-wrap: wrap; font-size: 13px; } .ap .ritebtn .cost span { display: inline-flex; align-items: center; gap: 3px; }
 .ap .ritebtn .cost img { width: 20px; height: 20px; } .ap .ritebtn .gain { font-size: 12.5px; color: #9fd18b; } .ap .ritebtn .short { color: #e8a08a; }
+/* 징병 · 개척 — 군사는 붉은 기, 집 옮기기는 갈색 (형: "집 들이는거랑 군사뽑는거랑 구분이안가서 헷갈림") */
+.ap .twoway { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 10px; }
+.ap .twoway .sec { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 12px; border-radius: 14px; text-align: left; cursor: pointer; font: inherit; color: var(--ink); }
+.ap .twoway .sec img { width: 30px; height: 30px; } .ap .twoway .sec b { font-size: 15px; } .ap .twoway .sec span { font-size: 12px; color: var(--mute); }
+.ap .sec.men { background: #3a1c18; border: 1px solid #a0483a; } .ap .sec.home { background: #33281a; border: 1px solid #9a7444; }
+.ap .sech { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 10px; margin: 14px 0 6px; scroll-margin-top: 8px; }
+.ap .sech img { width: 22px; height: 22px; } .ap .sech.men { background: #3a1c18; color: #f0a090; } .ap .sech.home { background: #33281a; color: #e4b878; }
+.ap .ncard.draftc { border-left: 4px solid #b0503e; } .ap .ncard.settlec { border-left: 4px solid #a8804a; }
+.ap .btn.on.men { background: #9a3a2c; border-color: #c8604a; color: #fff2ec; } .ap .btn.on.home { background: #7a5a30; border-color: #b08850; color: #fff6e6; }
 `

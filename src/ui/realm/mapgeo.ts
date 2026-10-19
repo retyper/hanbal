@@ -215,3 +215,70 @@ export function landClipSvg(region: RegionId, W: number, H: number): string {
 }
 
 export const polyPath = (p: readonly Pt[]): string => (p.length === 0 ? '' : `M${p.map((q) => `${f1(q[0])} ${f1(q[1])}`).join('L')}Z`)
+
+/**
+ * 길끼리 겹치지 않게 (형: "길 라인끼리 겹치는문제도 해결필요") — 같은 골짜기를 따라가는 두 길은 한 줄로 포개진다.
+ * 길마다 고른 간격으로 점을 다시 찍고, 다른 길의 점과 `gap` 보다 가까우면 서로 밀어 낸다 (세 번).
+ * 두 끝 고을 둘레(`endR`)는 그대로 둔다 — 고을에서 길이 갈라지는 자리는 모여야 맞다. 판마다 한 번 셈해 둔다.
+ */
+const sepCache = new Map<string, Map<string, Pt[]>>()
+export function separatedRoutes(key: string, routes: ReadonlyArray<readonly [string, readonly Pt[]]>, gap: number, endR: number): Map<string, Pt[]> {
+  const hit = sepCache.get(key)
+  if (hit !== undefined) return hit
+  const step = gap * 0.8
+  // 다시 찍기 — 꺾은선을 step 간격으로
+  const pts = routes.map(([id, p]) => {
+    const out: Array<[number, number]> = [[p[0]![0], p[0]![1]]]
+    for (let i = 1; i < p.length; i++) {
+      const [ax, ay] = p[i - 1]!
+      const [bx, by] = p[i]!
+      const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / step))
+      for (let k = 1; k <= n; k++) out.push([ax + ((bx - ax) * k) / n, ay + ((by - ay) * k) / n])
+    }
+    return { id, a: p[0]!, b: p[p.length - 1]!, out }
+  })
+  const cell = gap
+  for (let it = 0; it < 3; it++) {
+    const grid = new Map<string, Array<[number, number, number]>>()
+    pts.forEach((r, ri) => r.out.forEach(([x, y], pi) => {
+      const k = `${Math.floor(x / cell)},${Math.floor(y / cell)}`
+      ;(grid.get(k) ?? grid.set(k, []).get(k)!).push([ri, pi, 0])
+    }))
+    const push = pts.map((r) => r.out.map(() => [0, 0] as [number, number]))
+    pts.forEach((r, ri) => r.out.forEach(([x, y], pi) => {
+      if (Math.hypot(x - r.a[0], y - r.a[1]) < endR || Math.hypot(x - r.b[0], y - r.b[1]) < endR) return
+      const cx = Math.floor(x / cell)
+      const cy = Math.floor(y / cell)
+      for (let gx = cx - 1; gx <= cx + 1; gx++) for (let gy = cy - 1; gy <= cy + 1; gy++) {
+        for (const [rj, pj] of grid.get(`${gx},${gy}`) ?? []) {
+          if (rj === ri) continue
+          const [ox, oy] = pts[rj]!.out[pj]!
+          const d = Math.hypot(x - ox, y - oy)
+          if (d >= gap) continue
+          // 똑같은 자리면 길 id 순서로 갈라 민다
+          const [ux, uy] = d > 0.01 ? [(x - ox) / d, (y - oy) / d] : ri < rj ? [0, -1] : [0, 1]
+          const f = (gap - d) / 2
+          push[ri]![pi]![0] += ux * f
+          push[ri]![pi]![1] += uy * f
+        }
+      }
+    }))
+    pts.forEach((r, ri) => r.out.forEach((q, pi) => {
+      q[0] += push[ri]![pi]![0]
+      q[1] += push[ri]![pi]![1]
+    }))
+    // 밀린 점이 들쭉날쭉하지 않게 이웃과 한 번 고른다 (끝점은 그대로)
+    for (const r of pts) {
+      for (let i = 1; i < r.out.length - 1; i++) {
+        const p0 = r.out[i - 1]!
+        const p1 = r.out[i]!
+        const p2 = r.out[i + 1]!
+        p1[0] = (p0[0] + p1[0] * 2 + p2[0]) / 4
+        p1[1] = (p0[1] + p1[1] * 2 + p2[1]) / 4
+      }
+    }
+  }
+  const res = new Map(pts.map((r) => [r.id, r.out as Pt[]]))
+  sepCache.set(key, res)
+  return res
+}

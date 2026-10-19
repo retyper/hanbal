@@ -14,7 +14,7 @@ import { knows } from '../../realm/discovery.ts'
 import { visibleRange } from '../../realm/intel.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
 import type { EdgeKind, NodeKind, Realm, REdge, RegionId } from '../../realm/types.ts'
-import { ferryAt, landClipSvg, midOf, polyPath, provinceCells, riversSvg, routePoints, smoothPath, trimPolyline, type Pt } from './mapgeo.ts'
+import { separatedRoutes, ferryAt, landClipSvg, midOf, polyPath, provinceCells, riversSvg, routePoints, smoothPath, trimPolyline, type Pt } from './mapgeo.ts'
 import { worldMapUrl } from './worldmap.ts'
 
 /** 변한 판 지도 바탕의 크기 (map/*.jpg) — CSS 의 기본 비율. 판마다의 크기는 REGION_ART (영남 판 1024×765) */
@@ -43,13 +43,14 @@ export const MAP_CSS = `
 .map .nd { position: absolute; transform: translate(-50%, -62%); width: calc(8.5% * var(--s, 1) * var(--ns, 1)); text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .map .nd img.st { width: 100%; filter: drop-shadow(0 2px 2px rgba(0,0,0,.55)); }
 .map .lbs { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
-.map .lb { position: absolute; transform: translateX(-50%); text-align: center; white-space: nowrap; display: block; font-size: max(10px, calc(2.1cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1))); line-height: 1.2; color: #2a1d10; font-weight: 700;
+.map .lb { position: absolute; transform: translateX(-50%); text-align: center; white-space: nowrap; display: block; font-size: clamp(10px, calc(2.1cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 17px); line-height: 1.2; color: #2a1d10; font-weight: 700;
   text-shadow: 0 0 3px #f3e6c8, 0 0 3px #f3e6c8, 0 0 2px #f3e6c8; background: #f3e6c899; border-radius: 4px; padding: 0 3px; }
+.map .lb .star { font-style: normal; color: #b8860b; margin-right: 2px; text-shadow: 0 0 2px #fff8d0, 0 0 3px #fff8d0; } /* 도읍 (형: "수도같은건 별표해야하지 않나?") */
 .map .lb small { display: block; font-size: .78em; font-weight: 500; color: #4a3a28; margin-top: -1px; }
 .map .nd .ring { position: absolute; left: 50%; top: 42%; width: 82%; aspect-ratio: 1; transform: translate(-50%, -50%);
   border-radius: 50%; border: 3px solid var(--c); box-shadow: 0 0 6px var(--c); pointer-events: none; }
 .map .nd .men, .map .nd .foe { position: absolute; left: 86%; top: 42%; transform: translateY(-50%); background: #1c2129; border-radius: 9px; padding: 0 5px;
-  font-size: max(10px, calc(1.9cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1))); font-weight: 700; white-space: nowrap; }
+  font-size: clamp(10px, calc(1.9cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 15px); font-weight: 700; white-space: nowrap; }
 .map .nd .men { color: #9fd18b; border: 1px solid #9fd18b; } .map .nd .foe { color: #e8a08a; border: 1px solid #8a5a3a; }
 .map .nd .foe.old { opacity: .6; border-style: dashed; } .map .nd.tgt .foe { display: none; }
 .map .nd .flag { position: absolute; left: -18%; top: -34%; width: 52%; aspect-ratio: 1.15; pointer-events: none; }
@@ -66,15 +67,15 @@ export const MAP_CSS = `
 @keyframes tgt { from { opacity: .55; } to { opacity: 1; } }
 .map .nd .tchip { position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, -2px); white-space: nowrap; pointer-events: none; z-index: 3; }
 .map .nd .tchip .tn.hide { margin-left: 3px; background: #2a3a24e8; color: #c8e8a8; }
-.map .nd .tchip .feel { font-size: max(10px, calc(1.8cqh / var(--z, 1) * var(--zs, 1))); padding: 1px 6px; }
+.map .nd .tchip .feel { font-size: clamp(10px, calc(1.8cqh / var(--z, 1) * var(--zs, 1)), 14px); padding: 1px 6px; }
 .map .nd .tchip .tn.stay { background: #2a3a24e8; color: #c8e8a8; }
-.map .nd .tchip .tn { background: #1c2129e8; color: #f3e6c8; border-radius: 9px; padding: 1px 7px; font-size: max(10px, calc(1.8cqh / var(--z, 1) * var(--zs, 1))); font-weight: 700; }
+.map .nd .tchip .tn { background: #1c2129e8; color: #f3e6c8; border-radius: 9px; padding: 1px 7px; font-size: clamp(10px, calc(1.8cqh / var(--z, 1) * var(--zs, 1)), 14px); font-weight: 700; }
 .map .toks { position: absolute; transform: translate(2px, -50%); display: flex; gap: 3px; z-index: 4; pointer-events: none; }
 .map .tok { pointer-events: auto; display: flex; flex-direction: column; align-items: center; padding: 0; border: 0; background: none; cursor: pointer;
-  -webkit-tap-highlight-color: transparent; width: calc(4.2cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)); min-width: 26px; }
+  -webkit-tap-highlight-color: transparent; width: clamp(26px, calc(4.2cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 46px); }
 .map .tok img { width: 100%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 2px solid #9fd18b; background: #1c2129; box-shadow: 0 2px 4px #0008; }
 .map .tok b { margin-top: -6px; background: #1c2129; color: #9fd18b; border: 1px solid #9fd18b; border-radius: 8px; padding: 0 4px;
-  font-size: max(10px, calc(1.6cqh / var(--z, 1) * var(--zs, 1))); line-height: 1.3; }
+  font-size: clamp(10px, calc(1.6cqh / var(--z, 1) * var(--zs, 1)), 13px); line-height: 1.3; }
 .map .tok.sel img { border-color: #ffd27a; box-shadow: 0 0 0 3px #ffd27a88, 0 0 12px #ffd27a; transform: scale(1.12); }
 .map .tok.going img { border-color: #c8402a; }
 .map .toks.mv { transform: translate(-50%, -50%); } .map .toks.mv .tok img { border-style: dashed; border-color: #f3e6c8; }
@@ -86,7 +87,7 @@ export const MAP_CSS = `
   animation: fogdrift var(--d, 40s) ease-in-out infinite alternate; }
 @keyframes fogdrift { from { transform: translate(-50%, -50%); } to { transform: translate(-38%, -54%); } }
 .map .rumor { position: absolute; z-index: 2; transform: translate(-50%, -50%); pointer-events: none; text-align: center; white-space: nowrap;
-  font-family: 'Gowun Batang', serif; color: #3d2e1ccc; font-weight: 700; font-size: max(10px, calc(2.1cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1))); }
+  font-family: 'Gowun Batang', serif; color: #3d2e1ccc; font-weight: 700; font-size: clamp(10px, calc(2.1cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 17px); }
 .map .rumor i { display: block; margin: 0 auto 2px; width: 1.6em; height: 1.1em; border-radius: 48% 52% 45% 55%;
   background: radial-gradient(ellipse at 45% 50%, #2a1d10cc 0, #2a1d1088 45%, #2a1d1000 72%); }
 .map .rumor small { display: block; font-size: .7em; font-weight: 500; opacity: .8; }
@@ -190,14 +191,21 @@ export function mapHtml(
   // 모르는 땅 — 강·땅빛 위, 길 밑 (아는 고을 사이의 길은 늘 보인다)
   svg += fog?.body ?? ''
   // 길 — 골짜기·바닷가를 따라 휜다 (형: "직선경로만 있는게 이상하지 않냐?"). 막힌 길은 흐리고 가운데 ✕
-  const route = (ed: REdge): Pt[] => routePoints(region, ed, px(ed.a), px(ed.b), W, H)
   const sw = RA.nodeScale < 1 ? 0.6 : 1
+  // 같은 골짜기를 따라가는 길이 한 줄로 포개지지 않게 서로 밀어 둔다 (mapgeo.separatedRoutes — 판마다 한 번)
+  const allEdges = Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))
+  const sep = separatedRoutes(`${region}:${W}x${H}:${allEdges.length}`, allEdges.map((ed) => [ed.id, routePoints(region, ed, px(ed.a), px(ed.b), W, H)] as const), 12 * sw, RA.terrR * 0.4)
+  const route = (ed: REdge): Pt[] => sep.get(ed.id) ?? routePoints(region, ed, px(ed.a), px(ed.b), W, H)
   for (const ed of Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))) {
     if (!seen(ed.a) || !seen(ed.b)) continue
     const pts = route(ed)
     const shut = blockedWhy(ed, season) !== null
     const style = EDGE_STYLE[ed.kind].replace(/stroke-width="(\d+)"/, (_, w: string) => `stroke-width="${(Number(w) * sw).toFixed(1)}"`)
-    svg += `<path d="${smoothPath(pts)}" fill="none" ${style} stroke-linejoin="round" opacity="${shut ? 0.25 : 0.85}"><title>${EDGE_NAME[ed.kind]}</title></path>`
+    // 밑에 옅은 한지빛 테두리를 깔아 바탕과 떼어 본다 (형: "지도랑 색이 비슷해서 길 색이 잘 안보이는건")
+    const d = smoothPath(pts)
+    const w0 = Number(/stroke-width="([\d.]+)"/.exec(style)?.[1] ?? 5)
+    svg += `<path d="${d}" fill="none" stroke="#f8eed6" stroke-width="${(w0 + 5 * sw).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round" opacity="${shut ? 0.2 : 0.8}"/>`
+    svg += `<path d="${d}" fill="none" ${style} stroke-linejoin="round" opacity="${shut ? 0.3 : 0.95}"><title>${EDGE_NAME[ed.kind]}</title></path>`
     const fr = ed.kind === 'ford' ? ferryAt(region, ed, W, H) : null
     if (fr !== null) svg += ferrySvg(fr, sw)
     if (shut) {
@@ -289,7 +297,10 @@ export function mapHtml(
   const world = worldGeoOf(region) !== null
   const bgUrl = world ? worldMapUrl(art, season, region) : `${art}${RA.dir}/${SEASON_MAP[season]}.${RA.ext}`
   const bg = bgUrl !== '' ? `background-image:url('${bgUrl}');` : ''
-  return `<div class="map" data-region="${region}"${world ? ` data-world="${season}"` : ''} data-aspect="${W / H}" data-zmax="${RA.zmax}" style="${bg}aspect-ratio:${W} / ${H};--ns:${RA.nodeScale};--ls:${RA.labelScale}">${svg}${fog?.words ?? ''}${nodes}${toks}${placeLabels(labels, byNode, W, H, RA.nodeScale, RA.labelScale)}</div>`
+  // 밝혀진 땅의 테두리 (0~1) — 축소는 여기까지만 (zoom.ts · 형: "문명처럼 유저가 보이는 구역을 기반으로 최대 축소")
+  const sp = [...vis].map((id) => pos(id)).filter((p): p is readonly [number, number] => p !== undefined)
+  const seenBox = sp.length === 0 ? '0,0,1,1' : [Math.min(...sp.map((p) => p[0])), Math.min(...sp.map((p) => p[1])), Math.max(...sp.map((p) => p[0])), Math.max(...sp.map((p) => p[1]))].map((v) => v.toFixed(3)).join(',')
+  return `<div class="map" data-seen="${seenBox}" data-region="${region}"${world ? ` data-world="${season}"` : ''} data-aspect="${W / H}" data-zmax="${RA.zmax}" style="${bg}aspect-ratio:${W} / ${H};--ns:${RA.nodeScale};--ls:${RA.labelScale}">${svg}${fog?.words ?? ''}${nodes}${toks}${placeLabels(labels, byNode, W, H, RA.nodeScale, RA.labelScale)}</div>`
 }
 
 /** 지도 위 우리 군대의 말 — 머무는 군대 하나에 하나 */
@@ -368,7 +379,7 @@ function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly 
   let out = '<div class="lbs">'
   const order = ls.slice().sort((a, b) => (a.cap !== b.cap ? (a.cap ? -1 : 1) : b.hh - a.hh || (a.id < b.id ? -1 : 1)))
   for (const l of order) {
-    const chars = Math.max(l.name.length, (l.now ?? '').length * 0.78)
+    const chars = Math.max(l.name.length + (l.cap ? 1 : 0), (l.now ?? '').length * 0.78)
     const w = (chars * em * 0.95 * H) / W + 0.004
     const h = em * (l.now !== undefined ? 2.05 : 1.25)
     const iw = ICON_W * ns * l.s
@@ -390,7 +401,7 @@ function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly 
     }
     const [cx, cy] = best!.c
     placed.push({ x0: cx - w / 2, y0: cy, x1: cx + w / 2, y1: cy + h })
-    out += `<span class="lb${l.cls}" style="left:${(cx * 100).toFixed(2)}%;top:${(cy * 100).toFixed(2)}%">${l.name}${l.now !== undefined ? `<small>${l.now}</small>` : ''}</span>`
+    out += `<span class="lb${l.cls}" style="left:${(cx * 100).toFixed(2)}%;top:${(cy * 100).toFixed(2)}%">${l.cap ? '<i class="star">★</i>' : ''}${l.name}${l.now !== undefined ? `<small>${l.now}</small>` : ''}</span>`
   }
   return out + '</div>'
 }

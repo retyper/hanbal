@@ -37,6 +37,7 @@ import { GROW_CSS, HERO_CSS, bondChip, growthHtml, heroRadar, roleLine, traitChi
 import { APP_CSS } from './appstyle.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
 import { attachZoom } from './zoom.ts'
+import { TINT_CSS, tint } from './tint.ts'
 import { FRONT_CSS, PROLOGUE_STEPS, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History } from './front.ts'
 import { FEEL_CSS, alertFeel, ambushFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
 
@@ -177,7 +178,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void } {
   const style = document.createElement('style')
-  style.textContent = APP_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + HERO_CSS + GROW_CSS + FRONT_CSS.replaceAll('__ART__', ART)
+  style.textContent = APP_CSS + TINT_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + HERO_CSS + GROW_CSS + FRONT_CSS.replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
   root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="legend"></div><div class="zbtns"><button data-act="zin">＋</button><button data-act="zout">－</button></div><button class="next" data-act="next"></button><div class="selbar"></div><div class="roadkey"></div>`
@@ -257,6 +258,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let focus: string | null = null
 
   const me = (): string => realm!.player
+  /** 안내 글에 낱말 색 — 나라는 그 나라 색, 군사는 붉게, 마을은 갈색 (tint.ts) */
+  const tx = (s: string): string => (realm === null ? esc(s) : tint(esc(s), {
+    nations: Object.values(realm.factions).map((f) => [f.name, FACTION_ART[f.id]?.color ?? '#888'] as const),
+    heroes: Object.values(realm.heroes).map((x) => x.name),
+    places: Object.values(realm.nodes).map((n) => n.name),
+  }))
   // 맡기기·이끌기는 나누기처럼 먼저 해 본 판에 든다 — 장수 카드가 바뀐 자리를 바로 보인다
   // 들이기도 든다 — 들인 떠돌이가 바로 우리 장수로 보이고 군대를 이끌 수 있게 (형: "들인다 했을때 바로 적용되어야 하고 군사배치에도 쓸수 있어야 함")
   const plan = (): Realm => planned(realm!, [...armyOrders, ...settles, ...heroOrders.filter((o) => o.kind === 'hire' || o.kind === 'assign' || o.kind === 'lead')])
@@ -610,7 +617,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   function armySheet(r: Realm): string {
     let h = `<h3>군대</h3>${threatsHtml(r)}${sortie(r)}`
-    if (note !== '') h += `<div class="banner bad">${esc(note)}</div>`
+    if (note !== '') h += `<div class="banner bad">${tx(note)}</div>`
     const armies = sorted(Object.values(r.armies)).filter((a) => a.faction === me())
     if (armies.length === 0) h += `<p class="mute">군대가 없다. 징병으로 뽑는다.</p>`
     for (const a of armies) {
@@ -658,14 +665,19 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   // ───────── 징병
   function draftSheet(r: Realm): string {
     const season = seasonOf(r.season)
-    let h = `<h3>징병</h3>`
-    if (note !== '') h += `<div class="banner bad">${esc(note)}</div>`
+    let h = `<h3>징병 · 개척</h3>`
+    if (note !== '') h += `<div class="banner bad">${tx(note)}</div>`
+    // 군사 뽑기와 집 옮기기(개척)를 두 칸으로 갈라 색으로 (형: "집 들이는거랑 군사뽑는거랑 구분이안가서 헷갈림")
+    const lands = [...new Set([...settleTargets(r, me()).map((t) => t.to), ...settlePending().map((o) => o.to)])].sort()
+    h += `<div class="twoway"><button class="sec men" data-act="jump" data-to="sec-draft">${icon('unit-spear')}<b>군사 뽑기</b><span>집 사람이 군사가 된다</span></button>`
+    h += `<button class="sec home" data-act="jump" data-to="sec-settle">${icon('settle-farm-village')}<b>개척</b><span>${lands.length > 0 ? '집을 빈땅으로 옮겨 새 마을' : '맞닿은 빈땅이 없다'}</span></button></div>`
+    h += `<h4 id="sec-draft" class="sech men">${icon('unit-spear')}군사 뽑기</h4>`
     // 집 · 장정 · 군사가 뭐가 다른지 (형: "장정이랑 징병, 병사 뭔차이임?") — 한 줄 그림으로
     h += `<div class="flow3"><div>${icon('settle-farm-village')}<b>집</b><span>농사짓고 곡식을 낸다</span></div><i>징병 →</i>`
       + `<div>${icon('unit-spear')}<b>군사</b><span>움직이고 쳐들어간다 · 곡식을 먹는다</span></div></div>`
-      + `<p class="mute">장정은 뽑지 않은 집의 사내들이다. 적이 오면 제 고을만 지킨다. 집이 많을수록 많고, 곡식을 안 먹는다.</p>`
-    if (season === 'spring') h += `<div class="banner bad">봄에 뽑으면 그해 가을 수확이 준다</div>`
-    if (season === 'autumn' || season === 'winter') h += `<div class="banner good">거둔 뒤라 뽑기 좋은 때다</div>`
+      + `<p class="mute">${tx('장정은 뽑지 않은 집의 사내들이다. 적이 오면 제 고을만 지킨다. 집이 많을수록 많고, 곡식을 안 먹는다.')}</p>`
+    if (season === 'spring') h += `<div class="banner bad">${tx('봄에 뽑으면 그해 가을 수확이 준다')}</div>`
+    if (season === 'autumn' || season === 'winter') h += `<div class="banner good">${tx('거둔 뒤라 뽑기 좋은 때다')}</div>`
     const pending = musters.filter((o): o is Extract<Order, { kind: 'draft' }> => o.kind === 'draft')
     for (const n of sorted(Object.values(r.nodes)).filter((x) => x.owner === me())) {
       const done = pending.filter((o) => o.node === n.id).reduce((s, o) => s + o.n, 0)
@@ -675,8 +687,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const lim = Math.max(0, Math.min(limAll, draftLimit(r, me(), n.id, unit) - done))
       const step = Math.max(1, Math.round(lim / 10))
       const want = Math.min(lim, draftN[n.id] ?? Math.min(lim, 20))
-      h += `<div class="ncard"><div class="an">${icon(nodeIcon(n), 'nic')}<b>${esc(n.name)}</b>`
-      h += `<span class="mute">집 ${Math.floor(n.hh)} · 장정 ${militiaMen(r, n.id)}${done > 0 ? ` · 뽑는 중 ${done}` : ''}</span></div>`
+      h += `<div class="ncard draftc"><div class="an">${icon(nodeIcon(n), 'nic')}<b>${esc(n.name)}</b>`
+      h += `<span class="mute">${tx(`집 ${Math.floor(n.hh)} · 장정 ${militiaMen(r, n.id)}${done > 0 ? ` · 뽑는 중 군사 ${done}` : ''}`)}</span></div>`
       if (limAll <= 0) {
         h += `<div class="mute">이번 계절엔 더 못 뽑는다</div></div>`
         continue
@@ -684,8 +696,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<div class="seg">`
       for (const u of draftable(n)) h += `<button class="${u === unit ? 'on' : ''}" data-act="dunit" data-node="${n.id}" data-unit="${u}">${icon(UNIT_ICON[u])}${UNIT_NAME[u]}</button>`
       h += `</div><div class="stepper"><button data-act="dn" data-node="${n.id}" data-d="${-step}">−</button><b>${want}</b>`
-      h += `<button data-act="dn" data-node="${n.id}" data-d="${step}">+</button><span class="mute">최대 ${lim} · 곡식 ${Math.ceil(draftCost(want).grain)}</span>`
-      h += `<button class="btn on" data-act="draft" data-node="${n.id}" ${want <= 0 ? 'disabled' : ''}>뽑는다</button></div>`
+      h += `<button data-act="dn" data-node="${n.id}" data-d="${step}">+</button><span class="mute">명 · 최대 ${lim} · ${tx(`곡식 ${Math.ceil(draftCost(want).grain)}`)}</span>`
+      h += `<button class="btn on men" data-act="draft" data-node="${n.id}" ${want <= 0 ? 'disabled' : ''}>군사 ${want}명 뽑기</button></div>`
       const nd = draftNeeds(unit, Math.max(1, want))
       if (unit === 'horse') h += `<p class="mute">${lim > 0 ? `말 ${nd.horse}필이 든다.` : '말이 없다.'} 말은 목장(너른벌을 일구면)에서 나거나 바꿔 온다.</p>`
       if (unit === 'boat') h += `<p class="mute">${lim > 0 ? `배 지을 나무 ${nd.wood}짐이 든다.` : '배 지을 나무가 없다.'} 나무는 솔숲·산·산성 땅에서 난다.</p>`
@@ -698,12 +710,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       h += `</div>`
     }
-    // 개척 — 맞닿은 빈땅으로 사람을 보낸다
-    const lands = [...new Set([...settleTargets(r, me()).map((t) => t.to), ...settlePending().map((o) => o.to)])].sort()
-    if (lands.length > 0) {
-      h += `<h4>개척 · 빈땅에 사람을 보낸다</h4>`
-      for (const to of lands) h += settleCard(r, to)
-    }
+    // 개척 — 맞닿은 빈땅으로 집을 옮긴다 (군사가 아니다)
+    h += `<h4 id="sec-settle" class="sech home">${icon('settle-farm-village')}개척 · 집을 옮겨 새 마을을 일군다</h4>`
+    h += `<p class="mute">${tx('군사가 아니라 농사지을 집을 보낸다. 보낸 집은 그 빈땅에서 마을이 되고, 떠난 고을의 집은 준다.')}</p>`
+    if (lands.length > 0) for (const to of lands) h += settleCard(r, to)
+    else h += `<p class="mute">${tx('지금은 우리 고을과 맞닿은 빈땅이 없다.')}</p>`
     if (pending.length > 0) {
       h += `<h4>이번 계절 징병</h4>`
       pending.forEach((o) => {
@@ -723,8 +734,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const n = r.nodes[to]!
     const froms = settleTargets(r, me()).filter((t) => t.to === to).map((t) => t.from)
     const sent = settlePending().filter((o) => o.to === to)
-    let h = `<div class="ncard"><div class="an">${icon(nodeIcon(n), 'nic')}<b>${esc(n.name)}</b>`
-    h += `<span class="mute">집 ${Math.floor(n.hh)} / ${n.room ?? 0}</span></div>`
+    let h = `<div class="ncard settlec"><div class="an">${icon(nodeIcon(n), 'nic')}<b>${esc(n.name)}</b>`
+    h += `<span class="mute">${tx(`집 ${Math.floor(n.hh)} / ${n.room ?? 0}`)}</span></div>`
     for (const o of sent) {
       h += `<div class="row">${esc(r.nodes[o.from]?.name ?? '')}에서 ${o.n}집<button class="btn ghost sm" data-act="unsettle" data-i="${settles.indexOf(o)}">취소</button></div>`
     }
@@ -739,8 +750,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `</div>`
     } else h += `<div class="mute">${esc(r.nodes[from]!.name)}에서 떠난다</div>`
     h += `<div class="stepper"><button data-act="sn" data-node="${to}" data-d="${-step}">−</button><b>${want}</b>`
-    h += `<button data-act="sn" data-node="${to}" data-d="${step}">+</button><span class="mute">집 · 최대 ${lim} · 곡식 ${settleCost(want).grain}</span>`
-    h += `<button class="btn on" data-act="settle" data-node="${to}" data-from="${from}" ${want <= 0 ? 'disabled' : ''}>보낸다</button></div></div>`
+    h += `<button data-act="sn" data-node="${to}" data-d="${step}">+</button><span class="mute">${tx(`집 · 최대 ${lim} · 곡식 ${settleCost(want).grain}`)}</span>`
+    h += `<button class="btn on home" data-act="settle" data-node="${to}" data-from="${from}" ${want <= 0 ? 'disabled' : ''}>${want}집 옮기기</button></div></div>`
     return h
   }
 
@@ -1345,7 +1356,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         t += LINE_S
       }
     }
-    h += `<div class="lines">${lines.length === 0 ? `<p class="mute rv" style="--t:${t}s">조용한 계절이었다.</p>` : lines.map((x, i) => `<p class="rv${x.startsWith('소문') ? ' mute' : ''}" style="--t:${(t + i * LINE_S).toFixed(2)}s">${esc(x)}</p>`).join('')}</div>`
+    h += `<div class="lines">${lines.length === 0 ? `<p class="mute rv" style="--t:${t}s">조용한 계절이었다.</p>` : lines.map((x, i) => `<p class="rv${x.startsWith('소문') ? ' mute' : ''}" style="--t:${(t + i * LINE_S).toFixed(2)}s">${tx(x)}</p>`).join('')}</div>`
     const tail = asksHtml() + threatsHtml(r)
     if (tail !== '') h += `<div class="rv" style="--t:${(t + Math.max(1, lines.length) * LINE_S).toFixed(2)}s">${tail}</div>`
     return h + `<button class="btn on wide" data-act="rep-close">확인</button></div>`
@@ -1365,7 +1376,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const lord = r.heroes[r.factions[f]?.ruler ?? rulerId(f)]
     const byLine = by === me() ? '우리가 마지막 땅을 쥐었다' : by !== null ? `${josa(r.factions[by]?.name ?? '', '이', '가')} 도읍을 쥐었다` : '땅이 모두 흩어졌다'
     const fate = lord === undefined ? '' : lord.status === 'captive' ? ` · 군주 ${josa(lord.name, '은', '는')} 사로잡혔다` : lord.status === 'dead' ? ` · 군주 ${josa(lord.name, '은', '는')} 죽었다` : ` · 군주 ${josa(lord.name, '은', '는')} 몸을 피했다`
-    return `<div class="fall rv" style="--t:${t}s">${bust(lord, 'flord')}<div>${emblem(f, 'fem')}<b>${esc(josa(name, '이', '가'))} 무너졌다</b><span>${esc(byLine + fate)}</span></div></div>`
+    return `<div class="fall rv" style="--t:${t}s">${bust(lord, 'flord')}<div>${emblem(f, 'fem')}<b>${esc(josa(name, '이', '가'))} 무너졌다</b><span>${tx(byLine + fate)}</span></div></div>`
   }
 
   // ───────── 판 바깥 — 첫 화면 · 판 고르기 · 나라 고르기 (front.ts)
@@ -1680,6 +1691,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'selclose': armySel = []; break
       case 'roadkey': roadOpen = !roadOpen; break
+      case 'jump': $('.sheet').querySelector(`#${d['to']}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }); return
       case 'selmerge': {
         // 고른 군대를 하나로 — 장수가 이끄는 군대로 모은다
         if (r === null) break
