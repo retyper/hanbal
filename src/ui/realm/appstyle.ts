@@ -137,6 +137,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .seg { display: flex; border: 1px solid #4a5363; border-radius: 10px; overflow: hidden; }
 .ap .seg button { flex: 1; padding: 6px 4px; border: 0; background: #1f252e; color: var(--mute); font: inherit; font-size: 13px; cursor: pointer; }
 .ap .seg button.on { background: #3a3020; color: var(--gold); }
+/* 얼굴로 고르기 — 함께 보낼 장수 · 암살에 보낼 이 (이름 글자 대신 명치판) */
+.ap .fpick { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0; }
+.ap .fpick button { width: 54px; height: 54px; padding: 0; border-radius: 50%; overflow: hidden; border: 2px solid var(--line); background: #1a1f27; color: var(--mute);
+  font: inherit; font-size: 18px; cursor: pointer; opacity: .72; transition: transform .12s, opacity .12s; }
+.ap .fpick button.on { border-color: var(--gold); box-shadow: 0 0 0 2px #d9b36a66, 0 0 14px #d9b36a55; opacity: 1; transform: scale(1.08); }
+.ap .fpick img.fp { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
 .ap .stepper { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .ap .stepper button { width: 34px; height: 34px; border-radius: 10px; border: 1px solid #4a5363; background: #2a313c; color: var(--ink); font-size: 20px; cursor: pointer; }
 .ap .stepper b { min-width: 2.4em; text-align: center; font-size: 17px; }

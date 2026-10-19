@@ -743,10 +743,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const escorts = sorted(Object.values(r.heroes)).filter((x) => canEscort(r, me(), x.id))
       if (escorts.length > 0 && envoys[f.id] === undefined) {
         const cur = escort[f.id] ?? ''
-        h += `<div class="frow"><span class="mute">함께 보낼 장수</span><div class="seg sm"><button class="${cur === '' ? 'on' : ''}" data-act="escort" data-to="${f.id}" data-id="">없음</button>`
-        for (const x of escorts.slice(0, 4)) {
+        // 이름 글자 대신 얼굴 (형: "함께보낼장수선택할땐 이미지가보이게 해. 텍스트로 이름보여주지말고")
+        h += `<div class="frow"><span class="mute">함께 보낼 장수</span><div class="fpick"><button class="none${cur === '' ? ' on' : ''}" data-act="escort" data-to="${f.id}" data-id="" aria-label="혼자 보낸다">✕</button>`
+        for (const x of escorts.slice(0, 6)) {
           const tr = (x.traits ?? []).map((t) => TRAIT[t]?.name).filter((t) => t !== undefined).slice(0, 1).join('')
-          h += `<button class="${cur === x.id ? 'on' : ''}" data-act="escort" data-to="${f.id}" data-id="${x.id}">${esc(x.name)}${tr !== '' ? ` · ${esc(tr)}` : ''}</button>`
+          h += `<button class="${cur === x.id ? 'on' : ''}" data-act="escort" data-to="${f.id}" data-id="${x.id}" aria-label="${esc(x.name)}${tr !== '' ? ` · ${esc(tr)}` : ''}">${bust(x, 'fp')}</button>`
         }
         h += `</div></div>`
       }
@@ -845,8 +846,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const targets = plotTargets(realm!, me(), op).filter((t) => knows(realm!, me(), t.target)) // 아는 나라에만 (발견)
         if (op === 'assassin') {
           h += `<img class="plimg" src="${ART}event/event-assassin-archer.jpg" alt="">`
-          h += `<div class="mute">누구를 보내나</div><div class="seg"><button class="${agent === null ? 'on' : ''}" data-act="pagent" data-id="">고용 자객</button>`
-          for (const id of agents.slice(0, 3)) h += `<button class="${agent === id ? 'on' : ''}" data-act="pagent" data-id="${id}">${esc(r.heroes[id]?.name ?? id)}</button>`
+          h += `<div class="mute">누구를 보내나</div><div class="fpick"><button class="${agent === null ? 'on' : ''}" data-act="pagent" data-id="" aria-label="고용 자객">${icon('unit-archer', 'fp')}</button>`
+          for (const id of agents.slice(0, 5)) h += `<button class="${agent === id ? 'on' : ''}" data-act="pagent" data-id="${id}" aria-label="${esc(r.heroes[id]?.name ?? id)}">${bust(r.heroes[id], 'fp')}</button>`
           h += `</div>`
           // 누가 가느냐가 곧 무엇을 걸었느냐다 (형이 고름: "자객 기본 · 장수는 도박")
           if (agent === null) h += `<div class="mute">고용 자객 — 들켜 잡혀도 값만 잃는다. 장수는 안 잃는다.</div>`

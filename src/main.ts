@@ -82,6 +82,16 @@ if (import.meta.env.DEV) {
 const save = loadSave()
 
 const overlay = createOverlay()
+// 칠십팔국으로 돌아가는 길 (형 2026-10-19: "활쏘기 게임으로 가면 원래게임으로 돌아올방법이없으니") — 아래 단추 줄 맨 앞
+{
+  const back = document.createElement('a')
+  back.className = 'hb-btn'
+  back.href = `${import.meta.env.BASE_URL}realm.html`
+  back.innerHTML = '<span class="hb-lbl">‹ 칠십팔국</span>'
+  back.setAttribute('aria-label', '칠십팔국으로 돌아가기')
+  back.style.textDecoration = 'none'
+  overlay.hud().prepend(back)
+}
 // 자리를 뜰 때 패널이 열려 있으면 복귀 첫 발까지 3클릭이 든다 (닫기 → 다음 판 → 발사).
 // 기준은 2클릭이다 (C1). 성장 화면은 refresh()로 매번 다시 그리므로 닫아도 잃는 상태가 없다.
 document.addEventListener('visibilitychange', () => {
