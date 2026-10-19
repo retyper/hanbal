@@ -38,7 +38,8 @@ import { APP_CSS } from './appstyle.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
 import { APPROACH_DOES, APPROACH_NAME, HARD_LINE, WAR_CSS, openWar } from './battlefield.ts'
 import { attachZoom } from './zoom.ts'
-import { TUT_CSS, TUT_STEPS, tutAt, tutBandHtml, tutStyle } from './tutorial.ts'
+import { TUT_CSS, TUT_STEPS, tutAt, tutBandHtml, tutShown, tutStep, tutStyle } from './tutorial.ts'
+import { LOG_CSS, logNations, logRows, logbookHtml, type LogFilter } from './logbook.ts'
 import { markTutorialOver, markWon, tutorialOver, unlockedBoards } from './unlock.ts'
 import { TINT_CSS, tint } from './tint.ts'
 import { handsOf, idleHeroes } from '../../realm/hands.ts'
@@ -112,7 +113,7 @@ type Ask = EnvoyAsk
 type Envoy = Extract<Order, { kind: 'envoy' }>
 type Sheet =
   | { kind: 'army' } | { kind: 'draft' } | { kind: 'diplo' } | { kind: 'scout' } | { kind: 'nation' } | { kind: 'help' }
-  | { kind: 'node'; id: string } | { kind: 'heroes' } | { kind: 'hero'; id: string }
+  | { kind: 'node'; id: string } | { kind: 'heroes' } | { kind: 'hero'; id: string } | { kind: 'log' }
 
 const REL_NAME = { war: '전쟁', neutral: '중립', truce: '화친', ally: '동맹' } as const
 /** 지금 사이가 뜻하는 것 — 나라 카드 밑 한 줄 */
@@ -199,10 +200,10 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void } {
   const style = document.createElement('style')
-  style.textContent = APP_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS + HERO_CSS + GROW_CSS + FRONT_CSS.replaceAll('__ART__', ART)
+  style.textContent = APP_CSS + LOG_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS + HERO_CSS + GROW_CSS + FRONT_CSS.replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
-  root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="legend"></div><div class="zbtns"><button data-act="layers" class="lyb" aria-label="보기">👁</button><button data-act="zin">＋</button><button data-act="zout">－</button></div><div class="layers"></div><button class="next" data-act="next"></button><div class="selbar"></div><div class="roadkey"></div><button class="homebtn" data-act="home">우리 땅</button><div class="tutband"></div>`
+  root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="legend"></div><div class="zbtns"><button data-act="layers" class="lyb" aria-label="보기">👁</button><button data-act="zin">＋</button><button data-act="zout">－</button></div><div class="layers"></div><button class="next" data-act="next"></button><div class="selbar"></div><div class="roadkey"></div><button class="homebtn" data-act="home">우리 땅</button><button class="logbtn" data-act="log-open">지난 기록</button><div class="tutband"></div>`
     + `<nav class="tabs"></nav><div class="back" data-act="close"></div><section class="sheet"></section><div class="modal"></div><div class="plbox"></div>`
   const $ = (sel: string): HTMLElement => root.querySelector<HTMLElement>(sel)!
   const zoom = attachZoom($('.mapwrap'))
@@ -214,15 +215,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   tutBase.textContent = TUT_CSS
   document.head.appendChild(tutBase)
   /** 배우는 판 — 지금 단계 · 이 판에서 누른 단추 · 그만뒀나 (이 기기에 판마다 기억) */
-  let tut = { seed: -1, i: 0, acts: new Set<string>(), off: false }
+  /** 배우는 판 — i 지금 할 단계 · view '이전'으로 돌아가 보는 단계 (null 이면 지금 단계) */
+  let tut = { seed: -1, i: 0, acts: new Set<string>(), off: false, view: null as number | null }
   const TUT_KEY = 'hanbal.realm.tut'
   const loadTut = (): void => {
     if (realm === null || realm.region !== 'tutorial') return
     if (tut.seed === realm.seed) return
-    tut = { seed: realm.seed, i: 0, acts: new Set(), off: false }
+    tut = { seed: realm.seed, i: 0, acts: new Set(), off: false, view: null }
     try {
       const d = JSON.parse(localStorage.getItem(TUT_KEY) ?? 'null') as { seed?: number; i?: number; acts?: string[]; off?: boolean } | null
-      if (d !== null && d.seed === realm.seed) tut = { seed: realm.seed, i: d.i ?? 0, acts: new Set(d.acts ?? []), off: d.off === true }
+      if (d !== null && d.seed === realm.seed) tut = { seed: realm.seed, i: d.i ?? 0, acts: new Set(d.acts ?? []), off: d.off === true, view: null }
     } catch { /* 처음부터 */ }
   }
   const saveTut = (): void => {
@@ -299,6 +301,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let armySel: string[] = []
   /** 길 보기 펼침 */
   let roadOpen = false
+  /** 지난 기록 — 걸러 보기 갈래 · 나라 (logbook.ts) */
+  let logFilter: LogFilter = 'all'
+  let logNation: string | null = null
   /** 지도 보기 켜고 끄기 — 펼침 (켜고 끈 것은 이 기기에 기억) */
   let layersOpen = false
   const hiddenLayers = new Set<LayerId>()
@@ -513,8 +518,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       saveTut()
       if (i >= TUT_STEPS.length) markTutorialOver('done')
     }
-    band.innerHTML = tutBandHtml(i, esc)
-    tutSheet.textContent = tutStyle(TUT_STEPS[i])
+    const shown = tutShown(i, tut.view)
+    band.innerHTML = tutBandHtml(shown, esc, i)
+    tutSheet.textContent = tutStyle(TUT_STEPS[shown])
   }
 
   /**
@@ -1363,7 +1369,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       for (const x of caps2) h += `<div class="cap">${bust(x, 'cface')}<b>${esc(x.name)}</b><span class="mute">${STAT_NAME.mu} ${x.mu} · ${STAT_NAME.ryak} ${x.ryak} · ${STAT_NAME.chi} ${x.chi} · ${STAT_NAME.deok} ${x.deok}</span></div>`
       h += `</div>`
     }
-    h += `<div class="btns"><button class="btn" data-act="help">도움말</button><button class="btn ghost" data-act="newgame">새 판</button><button class="btn ghost" data-act="mute">${muted() ? "소리 켜기" : "소리 끄기"}</button>`
+    h += `<div class="btns"><button class="btn" data-act="help">도움말</button><button class="btn" data-act="log-open">지난 기록</button><button class="btn ghost" data-act="newgame">새 판</button><button class="btn ghost" data-act="mute">${muted() ? "소리 켜기" : "소리 끄기"}</button>`
     h += `<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a>${PRACTICE_READY ? `<a class="btn ghost" href="${PRACTICE}">궁술 연습장</a>` : ''}</div>`
     h += `<div class="btns"><button class="btn ghost" data-act="export">기록 내보내기 <span class="mute">${host.gameCount()}판</span></button></div>`
     return h
@@ -1692,6 +1698,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return h
   }
 
+  /** 지난 기록 판 (형: "최근로그 확인할수 있어야함. 어디서 조공요구했는지 · 어디서 전쟁선포했는지") — logbook.ts */
+  function logSheet(): string {
+    const r = realm!
+    const hist = host.history()
+    const heard = (l: ReportLine): boolean => r.known === undefined
+      || Object.values(l).every((v) => typeof v !== 'string' || r.factions[v] === undefined || knows(r, me(), v))
+    const rows = logRows(r, hist, me(), logFilter, logNation, heard)
+    const nations = logNations(r, hist, me()).filter((f) => knows(r, me(), f))
+    return logbookHtml({ esc, emblem: (f, cls) => emblem(f, cls), row: (l, text) => reportRow(r, l, text, 0) }, r, rows, nations, logFilter, logNation)
+  }
+
   /**
    * 보고 한 줄을 그림으로 (형: "눈에 안들어옴. 국가아이콘이라던가 자원아이콘이라던가 화살표 방향 적극이용 · 항상 최선의 전달은 이미지나 애니메이션") —
    * 왼쪽에 무슨 일인지 그림 하나, 가운데에 누가→누구 / 어디→어디 (깃발·고을 그림과 화살표), 그 옆에 글 (낱말 색).
@@ -1707,6 +1724,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'take': ic = 'settle-besieged'; break
       case 'arrive': ic = 'unit-spear'; break
       case 'sighted': ic = 'status-spy'; break
+      case 'battle': ic = 'unit-shield-wall'; break
       case 'harvest': case 'spoil': ic = 'good-rice'; break
       case 'market': ic = 'settle-market'; break
       case 'draft': ic = UNIT_ICON[l.unit]; break
@@ -1741,7 +1759,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const by = L['by']
       const [x, y] = by === L['b'] ? [L['b'] as string, L['a'] as string] : [L['a'] as string, L['b'] as string]
       flow = `${fchip(x)}<i class="ar">${l.kind === 'relation' && l.state === 'war' ? '⚔' : l.kind === 'market' || (l.kind === 'relation' && l.state !== 'war') ? '⇄' : '➜'}</i>${fchip(y)}`
-    } else if (l.kind === 'take' && isF(l.faction)) flow = `${fchip(l.faction)}<i class="ar">➜</i>${nchip(l.node)}`
+    } else if (l.kind === 'battle' && isF(l.atkFaction) && isF(l.defender)) flow = `${fchip(l.atkFaction)}<i class="ar">⚔</i>${fchip(l.defender)}`
+    else if (l.kind === 'take' && isF(l.faction)) flow = `${fchip(l.faction)}<i class="ar">➜</i>${nchip(l.node)}`
     else if (isF(L['faction']) && L['faction'] !== me()) flow = fchip(L['faction'] as string)
     else if (isN(L['node'])) flow = nchip(L['node'] as string)
     // 수가 핵심인 줄은 크게
@@ -1947,6 +1966,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         case 'hero': body = heroSheet(r, sheet.id); break
         case 'nation': body = nationSheet(r); break
         case 'help': body = helpSheet(); break
+        case 'log': body = logSheet(); break
         case 'node': body = nodeSheet(r, sheet.id); break
       }
     }
@@ -2051,8 +2071,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         front = { kind: 'nations', region: d['v'] as RegionId }; $('.mapwrap').scrollTop = 0; paint(); return
       case 'fr-tutorial': host.onNewGame('us', 'tutorial'); return
       case 'fr-locked': return
-      case 'tut-skip': tut.i++; saveTut(); paint(); return
-      case 'tut-quit': tut.off = true; saveTut(); markTutorialOver('quit'); paint(); return
+      case 'tut-next': case 'tut-prev': {
+        const nx = tutStep(tut.i, tut.view, d['act'] === 'tut-next' ? 1 : -1)
+        tut.i = nx.at
+        tut.view = nx.view
+        saveTut()
+        if (tut.i >= TUT_STEPS.length) markTutorialOver('done')
+        paint()
+        return
+      }
       case 'tut-end': markTutorialOver('done'); front = { kind: 'title' }; paint(); return
       case 'fr-nation': if (front !== null && front.kind === 'nations') front = { kind: 'detail', region: front.region, id: d['id']! }; $('.mapwrap').scrollTop = 0; paint(); return
       case 'fr-start': if (front !== null && front.kind === 'detail') host.onNewGame(d['id']!, front.region); return
@@ -2115,6 +2142,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'selclose': armySel = []; break
       case 'roadkey': roadOpen = !roadOpen; break
+      case 'log-open': openSheet({ kind: 'log' }); return
+      case 'log-f': logFilter = d['v'] as LogFilter; break
+      case 'log-n': logNation = d['id'] ? d['id'] : null; break
       case 'layers': layersOpen = !layersOpen; break
       case 'layer': toggleLayer(d['v'] as LayerId); break
       case 'compose-go': case 'nat-diplo': {
