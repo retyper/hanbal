@@ -491,10 +491,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<div class="how">`
       for (const x of approachMoves(r, me(), a, m)) {
         const does = APPROACH_DOES[x.ap]
-        h += `<button class="hw ${x.ap !== 'road' ? 'amb ' : ''}${chosen === x.ap ? 'on' : ''}" data-act="ap" data-army="${a.id}" data-v="${x.ap}"><b>${APPROACH_NAME[x.ap]}</b>`
+        // 한 줄에 하나 — 왼쪽은 이름과 얻고 거는 것, 오른쪽은 판세 (좁은 폰에서도 읽히게)
+        h += `<button class="hw ${x.ap !== 'road' ? 'amb ' : ''}${chosen === x.ap ? 'on' : ''}" data-act="ap" data-army="${a.id}" data-v="${x.ap}"><span class="hwl"><b>${APPROACH_NAME[x.ap]}${x.seasons !== m.seasons ? ` <small>${x.seasons}계절</small>` : ''}</b>`
+        h += `<span class="mute">${tx(`${does.gain}. ${does.risk}`)}</span></span><span class="hwr">`
         if (x.ap === 'road') h += `<span class="ln">판세 ${feel(x.hit)}</span>`
-        else h += `<span class="ln">${x.ap === 'cliff' ? '오를 낌새' : '숨어 닿기'} ${ambushFeel(x.p)}</span><span class="ln">먹히면 ${feel(x.hit)}</span><span class="ln">들키면 ${feel(x.miss)}</span>`
-        h += `<span class="mute">${esc(does.gain)}. ${esc(does.risk)}${x.seasons !== m.seasons ? ` · ${x.seasons}계절` : ''}</span></button>`
+        else h += `<span class="ln">${x.ap === 'cliff' ? '오르기' : '몰래 닿기'} ${ambushFeel(x.p)}</span><span class="ln">안 들키면 ${feel(x.hit)}</span><span class="ln">들키면 ${feel(x.miss)}</span>`
+        h += `</span></button>`
       }
       h += `</div>`
       // 길과 때 (형이 고름: "길과 때의 싸움") — 이 길이 왜 숨기 좋은지·나쁜지
@@ -1286,7 +1288,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (dead !== undefined && dead.faction !== after.player) cands.push([3, { ev: 'event-sniped-commander', hero: dead, line: `${dead.name}이(가) 쓰러졌다` }])
       // 겨울 기습은 눈 속 매복 그림으로
       const raid = seasonOf(b.season) === 'winter' ? 'event-winter-ambush' : 'event-night-raid'
-      if (weAtk && l.ambush === 'success') cands.push([2, { ev: raid, hero: null, line: `${node} 기습이 먹혔다` }])
+      if (weAtk && l.ambush === 'success') cands.push([2, { ev: raid, hero: null, line: `${node}에 몰래 들이쳤다` }])
       if (weAtk && l.ambush === 'caught') cands.push([2, { ev: raid, hero: null, line: `${node} 기습이 들켰다` }])
       if (!weAtk && l.ambush === 'success') cands.push([2, { ev: raid, hero: null, line: `${node}에 기습을 당했다` }])
       const lost = cap !== undefined && cap.faction === after.player ? cap : dead !== undefined && dead.faction === after.player ? dead : undefined

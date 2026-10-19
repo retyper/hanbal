@@ -48,7 +48,8 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     const bw = Math.min(1, (b[2]! - b[0]!) + 2 * SEEN_PAD)
     const bh = Math.min(1, (b[3]! - b[1]!) + 2 * SEEN_PAD)
     const fit = Math.min(wrap.clientWidth / (bw * wrap.clientHeight * aspect()), 1 / bh)
-    return Math.max(1, Math.min(fit, cover() * maxOver() * 0.8))
+    // 칸보다 작게는 안 줄인다 (옆이 까맣게 비지 않게)
+    return Math.max(cover(), Math.min(fit, cover() * maxOver() * 0.8))
   }
   const clamp = (v: number): number => Math.min(cover() * maxOver(), Math.max(minZ(), v))
   const map = (): HTMLElement | null => wrap.querySelector<HTMLElement>('.map')

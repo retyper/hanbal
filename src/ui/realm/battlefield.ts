@@ -24,8 +24,8 @@ export const APPROACH_NAME: Record<Approach, string> = {
 }
 export const APPROACH_DOES: Record<Approach, { gain: string; risk: string }> = {
   road: { gain: '빠르고 질서 있게 닿는다 — 사기가 오른다', risk: '숨지 않는다. 적은 성과 장정으로 맞는다' },
-  night: { gain: '먹히면 잠든 적을 친다 — 성도 장정도 없다', risk: '들키면 기다리던 적의 매복에 걸린다' },
-  ford: { gain: '갈대에 숨어 건넌다 — 먹히면 강을 믿던 적을 친다', risk: '들키면 물 한가운데서 맞아 크게 잃는다' },
+  night: { gain: '들키지 않으면 잠든 적을 친다 — 성문도 장정도 못 막는다', risk: '들키면 기다리던 적의 매복에 걸린다' },
+  ford: { gain: '갈대에 숨어 건넌다 — 들키지 않으면 강만 믿던 적을 친다', risk: '들키면 물 한가운데서 맞아 크게 잃는다' },
   ridge: { gain: '한 계절 더 돌아 뒤로 나온다 — 성을 비켜 치고 옆을 칠 수 있다', risk: '들키면 산길에서 걸린다' },
   cliff: { gain: '산성 절벽을 넘어 성 안으로 — 적은 사람일수록 잘 된다', risk: '실패하면 떨어져 많이 잃는다' },
 }

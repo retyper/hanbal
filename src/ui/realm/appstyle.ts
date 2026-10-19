@@ -182,10 +182,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .asks { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 6px 0 4px; }
 .ap .asks > div { padding: 6px 8px; border-radius: 10px; background: var(--card); display: flex; flex-direction: column; }
 .ap .asks b { font-size: 14px; color: var(--gold); } .ap .asks span { font-size: 12px; color: var(--mute); }
-.ap .how { display: flex; gap: 6px; margin: 2px 0 6px; }
-.ap .hw { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 9px 10px; border-radius: 12px;
+.ap .how { display: flex; flex-direction: column; gap: 6px; margin: 2px 0 6px; }
+.ap .hw { min-width: 0; display: flex; flex-direction: row; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 12px;
   border: 1px solid var(--line); background: #1f252e; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
 .ap .hw b { font-size: 15px; } .ap .hw .ln { font-size: 13px; color: #cfc6b4; } .ap .hw .mute { white-space: normal; font-size: 12px; }
+.ap .hw .hwl { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; } .ap .hw .hwl small { font-weight: 400; color: var(--mute); font-size: 12px; }
+.ap .hw .hwr { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; } .ap .hw .hwr .ln { white-space: nowrap; }
 .ap .hw.on { border-color: #e0bd78; background: #3a3020; } .ap .hw.amb.on { border-color: #9a7ad8; background: #2a2440; }
 .ap .tip { margin: 0 0 6px; }
 .ap .flow3 { display: flex; align-items: stretch; gap: 6px; margin: 4px 0; }

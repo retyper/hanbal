@@ -220,7 +220,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       let amb = ''
       if (line.ambush === 'success') {
         amb = weAtk
-          ? ` 숨어 들어가 기습이 먹혔다.${walled ? ' 성문이 닫히기 전에 들이쳤다.' : ''} 장정이 모이지 못했다.`
+          ? ` 몰래 닿아 적이 모른 채 들이쳤다.${walled ? ' 성문이 닫히기 전에 들이쳤다.' : ''} 장정이 모이지 못했다.`
           : ` 기습을 당했다.${walled ? ' 성문을 닫을 틈도 없었다.' : ''} 장정이 모이지 못했다.`
       } else if (line.ambush === 'caught') {
         amb = weAtk ? ' 기습이 들켰다. 적이 기다리고 있었다.' : ' 몰래 오는 적을 먼저 알아챘다.'
@@ -296,7 +296,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
         const knew = exposedOf(line)
           ? ` ${josa(target, '이', '가')} 우리 짓인 줄 안다. 사이가 나빠졌다.`
           : ` ${josa(target, '이', '가')} 눈치챘지만 누가 했는지는 모른다.`
-        if (line.ok) return `공작이 먹혔다. ${did}${line.caught ? knew : ''}`
+        if (line.ok) return `공작이 뜻대로 됐다. ${did}${line.caught ? knew : ''}`
         return `공작이 틀어졌다. ${PLOT_NAME[line.op]}.${line.caught ? knew : ''}`
       }
       // 우리가 당한 공작 — 들켰으면 일이 있었음을 안다. 누가 보냈는지는 드러났을 때만 (형: "어디서보낸 첩자인지 알기도 모르기도")
