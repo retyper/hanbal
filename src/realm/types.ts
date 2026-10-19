@@ -297,11 +297,12 @@ export interface Pending {
   readonly might: Readonly<Partial<Record<Cmd, number>>>
   /** 사로잡기 확률 — 적장이 없으면 0 (화면은 말·색으로) */
   readonly capture: number
-  /** 적의 낌새 — 다음 명령을 이것으로 짐작한다 (틀릴 수 있다) */
+  /** 적진의 낌새 — 본 것(saw: 척후·첩자·눈앞) 또는 들은 것(habit: 겨뤄 본 적장의 버릇). 없으면 null */
   readonly hint: Cmd | null
+  readonly hintSrc?: 'saw' | 'habit'
   /** 우리가 공격 쪽인가 */
   readonly weAtk: boolean
-  /** 낌새가 척후·눈으로 본 것인가 (아니면 짐작) */
+  /** 상대를 보고 있나 (척후·첩자·눈앞) */
   readonly seen: boolean
 }
 

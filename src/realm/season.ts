@@ -36,7 +36,7 @@ import { PEOPLE_SCALE, migrate } from './migrate.ts'
 import { spreadRumors } from './rumor.ts'
 import { addMen, giveMen, kitOf, scaleMen, takeMen } from './kit.ts'
 import {
-  ambushTraitOf, applyHeroOrders, battleGrowth, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroesAtNode, ironhandAt, noteMet, stepHeroes, sweepHeroes,
+  ambushTraitOf, applyHeroOrders, battleGrowth, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, ironhandAt, noteMet, stepHeroes, sweepHeroes,
 } from './heroes.ts'
 import type {
   Approach, Army, BattleStart, Cmd, EdgeKind, Hero, Order, Ration, Realm, REdge, Report, ReportLine, RNode, SeasonOfYear, SnipeZone, Tactic,
@@ -691,6 +691,13 @@ function freshSight(r: Realm, faction: string, node: string): boolean {
 }
 
 /** tactics.Side 를 만든다 */
+/** 상대 장수와 겨뤄 본 적이 있나 — 이 싸움에서 만나기(meet) **전에** 본다 (낌새 habit) */
+function knewLead(r: Realm, faction: string, foes: readonly Army[]): boolean {
+  const h = leadHero(r, foes)
+  return h !== null && heroSeen(r, faction, h.id)
+}
+const knowFoe = (s: Side, knew: boolean): Side => (knew ? { ...s, knowsFoe: true } : s)
+
 function sideOf(
   r: Realm, armies: readonly Army[], f: Force, F: number, faction: string,
   o: { water: boolean; edge?: EdgeKind; fire: boolean; flank: boolean; seen: boolean; moraleBonus?: number; captureBonus?: number },
@@ -826,6 +833,8 @@ function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines
       const ed = r.edges[eid]!
       const key = fieldKey(eid, lead.id)
       provoke(r, lead.faction, defs[0]!.faction, lines)
+      const knewA = knewLead(r, lead.faction, defs)
+      const knewD = knewLead(r, defs[0]!.faction, atks)
       meet(r, [...atks, ...defs])
       const atkF = mergeForces(r, atks)
       const defF = mergeForces(r, defs)
@@ -834,8 +843,8 @@ function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines
       const fd = power(defF, atkF, ground, 'def')
       const p = winChance(fa, fd)
       const common = { water: isWater(ed.kind), edge: ed.kind, fire: fireable(ed, undefined, season), flank: false }
-      const sa = sideOf(r, atks, atkF, fa, lead.faction, { ...common, seen: true })
-      const sd = sideOf(r, defs, defF, fd, defs[0]!.faction, { ...common, seen: true })
+      const sa = knowFoe(sideOf(r, atks, atkF, fa, lead.faction, { ...common, seen: true }), knewA)
+      const sd = knowFoe(sideOf(r, defs, defF, fd, defs[0]!.faction, { ...common, seen: true }), knewD)
       const res = fightRounds(sa, sd, key, r.seed, r.season, tacticFor(tactics, key))
       const outcome = res.outcome
       for (const x of atks) scaleMix(x, res.na)
@@ -891,6 +900,8 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const defFaction = node.owner !== null && !allied(r, a.faction, node.owner) ? node.owner : defenders[0]!.faction
   const w = r.watch[node.id]!
   provoke(r, a.faction, defFaction, lines)
+  const knewA = knewLead(r, a.faction, defenders)
+  const knewD = knewLead(r, defFaction, atks)
   meet(r, [...atks, ...defenders, ...heroesAtNode(r, node.id).map((h) => ({ hero: h }))])
 
   // 4 — 진군 방식: 군대마다 제 길로 따로 굴린다. 큰 군대는 잘 안 숨는다
@@ -959,14 +970,14 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const flankWon = won.some((x) => x.ap === 'ridge')
   const atkBonus = legs.every((x) => x.ap === 'road') ? R.apRoadMorale : 0
   const defBonus = -((won.some((x) => x.ap === 'ridge') ? R.apRidgeMorale : 0) + (won.some((x) => x.ap === 'cliff') ? R.apCliffMorale : 0))
-  const sa = sideOf(r, atks, atkF, fa, a.faction, {
+  const sa = knowFoe(sideOf(r, atks, atkF, fa, a.faction, {
     water, edge: edgeKind, fire, flank: flankWon, seen: freshSight(r, a.faction, node.id), moraleBonus: atkBonus,
     captureBonus: playerIsAtk ? capShot : 0,
-  })
-  const sd = sideOf(r, standing, defF, fd, defFaction, {
+  }), knewA)
+  const sd = knowFoe(sideOf(r, standing, defF, fd, defFaction, {
     water, edge: edgeKind, fire, flank: false, seen: ambush !== 'success', moraleBonus: defBonus,
     captureBonus: playerIsAtk ? 0 : capShot,
-  })
+  }), knewD)
   const res = fightRounds(sa, sd, key, r.seed, r.season, tacticFor(tactics, key))
   const outcome = res.outcome
 

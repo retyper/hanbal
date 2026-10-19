@@ -39,6 +39,8 @@ export interface Side {
   readonly player: boolean
   /** 상대를 보고 있나 (이번 계절 정찰·첩자 · 지키는 쪽은 다가오는 것을 봤다) — 낌새가 잘 맞는다 */
   readonly seen: boolean
+  /** 상대 장수와 겨뤄 본 적이 있다 — 그 버릇(즐겨 내는 명령)을 안다 */
+  readonly knowsFoe?: boolean
   /** 사로잡기 가산 (저격 발 묶음 …) */
   readonly captureBonus?: number
   /** 배우는 판 — sure 면 이쪽 사로잡기는 반드시 되고, never 면 아예 못 한다 */
@@ -216,13 +218,28 @@ export function aiCmd(me: Side, foe: Side, opts: readonly Cmd[], cap: number, ed
   return BASIC[BASIC.length - 1]!
 }
 
-/** 귀띔 — 적의 이번 명령을 맞힐 수도 틀릴 수도 있다 */
-function hintOf(me: Side, foeCmd: Cmd, key: string, seed: number, season: number): Cmd {
+/** 낌새를 Pending 칸으로 */
+const hintFields = (h: { cmd: Cmd; src: 'saw' | 'habit' } | null): { hint: Cmd | null; hintSrc?: 'saw' | 'habit' } => (h === null ? { hint: null } : { hint: h.cmd, hintSrc: h.src })
+
+/**
+ * 적진의 낌새 — 짐작이 아니라 **본 것 · 들은 것**에서만 (형: "적진의 낌새는 직접본거나 주변정보여야지 짐작이머냐"):
+ *  - saw: 척후·첩자가 이번 계절 봤거나 눈앞에서 맞붙는다 — 적이 이번 합에 낼 명령을 거의 맞힌다 (지략이 높으면 더)
+ *  - habit: 그 적장과 겨뤄 본 적이 있다 — 그 장수가 즐겨 내는 명령(그 군대가 가장 센 명령)을 안다. 이번 합에 꼭 그러진 않는다
+ *  - 둘 다 없으면 낌새가 없다
+ */
+function hintOf(me: Side, foe: Side, foeCmd: Cmd, key: string, seed: number, season: number): { cmd: Cmd; src: 'saw' | 'habit' } | null {
   const R = P.realm
-  const acc = Math.min(0.95, (me.seen ? R.tacHintScout : R.tacHintBase) + R.tacHintPerRyak * Math.max(0, (me.hero?.ryak ?? 1) - 5))
-  if (roll(seed, season, `${key}:hint`) < acc) return foeCmd
-  const others = BASIC.filter((c) => c !== foeCmd)
-  return others[Math.floor(roll(seed, season, `${key}:hint-alt`) * others.length)] ?? 'charge'
+  if (me.seen) {
+    const acc = Math.min(0.95, R.tacHintScout + R.tacHintPerRyak * Math.max(0, (me.hero?.ryak ?? 1) - 5))
+    if (roll(seed, season, `${key}:hint`) < acc) return { cmd: foeCmd, src: 'saw' }
+    const others = BASIC.filter((c) => c !== foeCmd)
+    return { cmd: others[Math.floor(roll(seed, season, `${key}:hint-alt`) * others.length)] ?? 'charge', src: 'saw' }
+  }
+  if (me.knowsFoe === true && foe.hero !== null) {
+    const fav = [...BASIC].sort((x, y) => might(foe, y) - might(foe, x) || (x < y ? -1 : 1))[0]!
+    return { cmd: fav, src: 'habit' }
+  }
+  return null
 }
 
 /**
@@ -258,7 +275,7 @@ export function fightRounds(atk: Side, def: Side, key: string, seed: number, sea
     // 맡긴 쪽(또는 AI)을 먼저 정한다 — 플레이어의 이번 선택을 보지 않는다
     const aiA = ai(atk, def, optA, capA, edge, st.na, true)
     const aiD = ai(def, atk, optD, capD, 1 - edge, st.nd, false)
-    const pick = (me: Side, opts: Cmd[], aiPick: Cmd, foePick: Cmd, cap: number, isAtk: boolean): Cmd => {
+    const pick = (me: Side, foe: Side, opts: Cmd[], aiPick: Cmd, foePick: Cmd, cap: number, isAtk: boolean): Cmd => {
       if (!me.player || tactic === undefined) return aiPick
       const c = tactic.cmds[i]
       if (c !== undefined && opts.includes(c)) {
@@ -268,12 +285,12 @@ export function fightRounds(atk: Side, def: Side, key: string, seed: number, sea
       if (c === undefined && tactic.open === true && memo.pending === undefined) {
         const m: Partial<Record<Cmd, number>> = {}
         for (const o of opts) m[o] = might(me, o)
-        memo.pending = { round: i, options: opts, might: m, capture: cap, hint: hintOf(me, foePick, `${key}:t${i}`, seed, season), weAtk: isAtk, seen: me.seen }
+        memo.pending = { round: i, options: opts, might: m, capture: cap, ...hintFields(hintOf(me, foe, foePick, `${key}:t${i}`, seed, season)), weAtk: isAtk, seen: me.seen }
       }
       return aiPick
     }
-    const cA = pick(atk, optA, aiA, aiD, capA, true)
-    const cD = pick(def, optD, aiD, aiA, capD, false)
+    const cA = pick(atk, def, optA, aiA, aiD, capA, true)
+    const cD = pick(def, atk, optD, aiD, aiA, capD, false)
     if (cA === 'duel') st.usedA.add('duel')
     if (cD === 'duel') st.usedD.add('duel')
     if (cA === 'flank' || cA === 'fire') st.usedA.add(cA)

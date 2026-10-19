@@ -45,14 +45,19 @@ const CMD_ICON: Record<Cmd, string> = {
   fire: 'unit-fire-archers', duel: 'unit-general', capture: 'unit-axemen', retreat: 'unit-drummers',
 }
 const CMD_DOES: Record<Cmd, string> = {
-  charge: '활 쏘는 적을 덮친다 · 방진에 꺾인다 · 창병·기병이 세다',
-  volley: '서 있는 방패 벽을 두드린다 · 돌격에 덮친다 · 궁수가 세다',
-  hold: '돌격을 받아 꺾는다 · 화살비에 맞는다 · 방패병이 세다 · 덜 잃는다',
+  charge: '활 쏘는 적을 덮친다 · 방진에 꺾인다',
+  volley: '서 있는 방패 벽을 두드린다 · 돌격에 덮친다',
+  hold: '돌격을 받아 꺾는다 · 화살비에 맞는다 · 덜 잃는다',
   flank: '방진의 옆구리를 찌른다 · 어느 명령에도 지지 않는다 · 한 번뿐',
   fire: '갈대·숲에 불을 놓는다 · 바람이 돌면 우리가 흔들린다 · 한 번뿐',
   duel: '장수끼리 나선다 · 이기면 적이 무너지고, 지면 우리 장수가 다치거나 쓰러진다',
   capture: '적이 줄고 흔들릴수록 잘 된다 · 놓치면 그 합을 쫓는 데 쓴다',
   retreat: '덜 잃고 물러난다 · 장수는 안 잡힌다',
+}
+/** 겨뤄 본 적장의 버릇 — 즐겨 내는 명령 */
+const HABIT_LINE: Record<Cmd, string> = {
+  charge: '늘 먼저 달려든다', volley: '멀찍이서 활부터 쏜다', hold: '방패 뒤에서 버티기를 좋아한다',
+  flank: '옆으로 돌아 들어온다', fire: '불을 잘 쓴다', duel: '스스로 나서 겨루기를 즐긴다', capture: '장수를 노린다', retreat: '불리하면 일찍 물러난다',
 }
 /** 적의 낌새 — 다음 명령을 이렇게 비친다 */
 const HINT_LINE: Record<Cmd, string> = {
@@ -87,10 +92,19 @@ function face(id: string | null, art: string, fallback: string): string {
   return file !== undefined ? `<img class="wf" src="${art}bust/${file}.jpg" alt="">` : `<img class="wf unit" src="${art}icon/${fallback}.png" alt="">`
 }
 
-function mightWord(m: number): [string, string] {
-  if (m >= 1.2) return ['세다', 'hi']
-  if (m >= 0.9) return ['보통', 'mid']
-  return ['약하다', 'lo']
+/** 그 명령을 받쳐 주는 우리 병종 */
+const CMD_UNITS: Partial<Record<Cmd, string>> = { charge: '창병·기병', volley: '궁수', hold: '방패병' }
+
+/**
+ * 이 명령이 우리 군에 얼마나 맞나 — 무엇 때문인지까지 (형: "세다 약하다가 뭔말인지 모르겠음").
+ * 돌격은 창병·기병이, 화살비는 궁수가, 방진은 방패병이 많을수록 거세다.
+ */
+function mightWord(c: Cmd, m: number): [string, string] {
+  const u = CMD_UNITS[c]
+  if (u === undefined) return m >= 1.2 ? ['잘 맞는다', 'hi'] : m >= 0.9 ? ['그저 그렇다', 'mid'] : ['안 맞는다', 'lo']
+  if (m >= 1.2) return [`우리 ${u}이 넉넉해 잘 먹힌다`, 'hi']
+  if (m >= 0.9) return [`우리 ${u}이 조금 있어 그저 그렇다`, 'mid']
+  return [`우리 ${u}이 적어 잘 안 먹힌다`, 'lo']
 }
 
 function captureWord(p: number): [string, string] {
@@ -246,14 +260,17 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   if (p !== undefined && p.round === shown) {
     // 다음 합을 고른다
     h += `<div class="wnext"><div class="wrn">${ROUND_NAME[shown] ?? `${shown + 1}`} 합 — 명령을 내린다</div>`
-    if (p.hint !== null) h += `<p class="whint"><b>적진의 낌새</b> ${esc(HINT_LINE[p.hint])} <span class="mute">${p.seen ? '(척후가 본 적이다 — 대개 맞다)' : '(짐작이다 — 틀릴 수 있다)'}</span></p>`
+    // 낌새는 본 것·들은 것에서만 (형: "직접본거나 주변정보여야지 짐작이머냐")
+    if (p.hint !== null && p.hintSrc === 'habit') h += `<p class="whint"><b>적장의 버릇</b> ${esc(josa(foeName, '은', '는'))} 겨뤄 보니 ${esc(HABIT_LINE[p.hint])} <span class="mute">— 이번 합에도 그럴지는 모른다</span></p>`
+    else if (p.hint !== null) h += `<p class="whint"><b>적진의 낌새</b> ${esc(HINT_LINE[p.hint])} <span class="mute">— ${l.field === true ? '눈앞에서 맞붙어 보인다' : weAtk ? '척후가 이번 계절 보고 왔다' : '다가오는 것을 지켜봤다'}</span></p>`
+    else h += `<p class="whint mute">적진의 속이 보이지 않는다 — 척후를 보냈거나 그 적장과 겨뤄 본 적이 있으면 보인다.</p>`
     h += `<div class="wcmdgrid">`
     for (const c of p.options) {
       let feel: [string, string]
       if (c === 'capture') feel = captureWord(p.capture)
       else if (c === 'retreat') feel = ['', '']
       else if (c === 'duel' || c === 'fire') feel = ['한 번', 'mid']
-      else feel = mightWord(p.might[c] ?? 1)
+      else feel = mightWord(c, p.might[c] ?? 1)
       const tip = p.hint !== null && COUNTER[p.hint] === c ? `<em>낌새의 맞수</em>` : ''
       h += `<button class="wcmd ${c}" data-war="cmd" data-c="${c}"><img src="${art}icon/${CMD_ICON[c]}.png" alt=""><b>${CMD_NAME[c]}</b>`
       h += `${feel[0] !== '' ? `<span class="wf-${feel[1]}">${feel[0]}</span>` : ''}${tip}<small>${esc(CMD_DOES[c])}</small></button>`
