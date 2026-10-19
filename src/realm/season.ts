@@ -32,6 +32,8 @@ import { blockedWhy, seasonOf } from './calendar.ts'
 import { applyBowUps, refreshSpies, resolvePlots } from './plots.ts'
 import { noteTake } from './stance.ts'
 import { stepDiscovery, stepSight } from './discovery.ts'
+import { limitHands } from './hands.ts'
+import { stepSuzerain, suzerainEnd } from './suzerain.ts'
 import { PEOPLE_SCALE, migrate } from './migrate.ts'
 import { spreadRumors } from './rumor.ts'
 import { addMen, giveMen, kitOf, scaleMen, takeMen } from './kit.ts'
@@ -1157,9 +1159,11 @@ export function advance(
   resolveAnswers(r, orders, lines) // 1 — 지난 계절에 온 청에 답한다 (답이 없으면 거절)
   applyOrders(r, orders, lines) // 1
   resolveScouts(r, orders, lines) // 2
-  resolveEnvoys(r, orders, lines) // 2
+  // 사신·공작은 보낼 사람만큼 (hands.ts) — 맡기기·이끌기를 다 적용한 판으로 센다
+  const handed = limitHands(r, orders)
+  resolveEnvoys(r, handed, lines) // 2
   applyBowUps(r, orders, lines) // 2 — 자객의 활을 올린다 (이번 계절 공작부터 든다)
-  resolvePlots(r, orders, lines) // 2 — 공작
+  resolvePlots(r, handed, lines) // 2 — 공작
   resolveRites(r, orders, lines) // 2 — 소도 제사
   // 전장에서 내린 명령은 명령 줄로도 온다 (판 기록에 남는다) — 따로 받은 tactics 가 먼저 (시험 돌림)
   const led: Record<string, Tactic> = { ...tactics }
@@ -1183,6 +1187,7 @@ export function advance(
   spreadRumors(r, lines) // 9 — 첩자가 들은 것 (간접 정보)
   stepDiscovery(r, lines) // 9 — 이번 계절의 일로 서로 알게 된다 (삼한 남부 판 · 발견)
   stepSight(r, lines) // 9 — 우리 군대·사신·장사꾼이 본 땅 (지도는 보고 다닌 만큼)
+  stepSuzerain(r, lines) // 9 — 맹약 시계 (맹주의 길)
   if (r.player !== undefined) {
     for (const a of seenMarches(r, r.player)) {
       const line = { kind: 'sighted', faction: a.faction, army: a.id, from: a.march!.from, to: a.march!.to } as const
@@ -1190,9 +1195,14 @@ export function advance(
     }
     if (r.outcome === null || r.outcome === undefined) {
       const end = checkOutcome(r)
+      const pact = end === null ? suzerainEnd(r) : null
       if (end !== null) {
-        r.outcome = { kind: end, season: r.season }
-        lines.push({ kind: 'end', outcome: end, faction: r.player })
+        r.outcome = { kind: end, season: r.season, path: 'conquest' }
+        lines.push({ kind: 'end', outcome: end, faction: r.player, path: 'conquest' })
+      } else if (pact !== null) {
+        // 맹주의 길 — 우리가 진왕이 됐거나, 남이 됐다
+        r.outcome = { kind: pact.kind, season: r.season, path: 'suzerain', by: pact.by }
+        lines.push({ kind: 'end', outcome: pact.kind, faction: r.player, path: 'suzerain', by: pact.by })
       }
     }
     makeAsks(r, lines) // 9 — 남의 나라가 다음 계절에 답할 청을 건다

@@ -319,4 +319,19 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .cbar { position: relative; height: 8px; border-radius: 4px; background: #2a313c; overflow: hidden; }
 .ap .cbar i { position: absolute; left: 0; top: 0; bottom: 0; background: #7aa86a; } .ap .cbar.near i { background: #d0a850; } .ap .cbar.full i { background: #d06a50; }
 .ap .seg.wrap { flex-wrap: wrap; } .ap .seg.wrap button { flex: 1 0 30%; }
+/* 외교의 손 — 보낼 사람 (VICTORY §2-2) */
+.ap .hands { display: flex; align-items: center; gap: 10px; margin: 6px 0 8px; padding: 8px 10px; border-radius: 12px; background: #1b2028; border: 1px solid #4a5363; }
+.ap .hands .hf { display: flex; flex: none; } .ap .hands .hf span { margin-right: -8px; transition: opacity .2s; } .ap .hands .hf span.used { opacity: .3; }
+.ap .hands .hface { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid #8a7040; background: #2a313c; display: block; }
+.ap .hands .ht { display: flex; flex-direction: column; margin-left: 8px; min-width: 0; } .ap .hands .ht b { font-size: 14.5px; } .ap .hands .ht span { font-size: 12px; color: var(--mute); }
+/* 이기는 길 — 정복 · 맹주 (VICTORY §1) */
+.ap .paths { margin: 8px 0 12px; padding: 10px; border-radius: 12px; background: #1b2028; border: 1px solid #4a4030; }
+.ap .paths h4 { margin: 0 0 6px; color: var(--gold); }
+.ap .paths .path { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 8px; margin: 4px 0; font-size: 13px; }
+.ap .paths .path.sub, .ap .paths .path.rival { grid-template-columns: auto 1fr; }
+.ap .paths .pbar { position: relative; height: 9px; border-radius: 5px; background: #2a313c; overflow: hidden; }
+.ap .paths .pbar i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #8a6a30, #e0bd78); }
+.ap .paths .pbar.pact i { background: linear-gradient(90deg, #3f6f8f, #8fc0e0); }
+.ap .paths .clock { display: flex; gap: 3px; } .ap .paths .clock i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #8fc0e0; }
+.ap .paths .clock i.on { background: #8fc0e0; } .ap .paths .path.rival span { color: #e8a08a; }
 `

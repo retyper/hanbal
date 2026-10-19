@@ -2,6 +2,7 @@
  * 나라의 글 — 이름·문장은 코드가 아니라 데이터에 둔다 (docs/realm/BUILD.md §1-6)
  * 고증 검토(lore-lens)가 코드를 안 읽고 이 파일만 본다. 숫자는 여기 없다 (P.realm).
  */
+import { P } from '../../tune/params.ts'
 import type { Equip, Outcome, UnitKind } from '../battle.ts'
 import type { Ask, BuildWhat, DiscoverHow, EdgeKind, Good, PlotOp, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, SeasonOfYear, Tag, Why } from '../types.ts'
 import type { ConcealWhy } from '../season.ts'
@@ -499,7 +500,28 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     }
     case 'end':
       if (line.faction !== viewer) return null
-      return line.outcome === 'win' ? '도읍 셋을 차지했다. 변한의 맹주가 되었다.' : '도읍을 빼앗겼다. 나라가 무너졌다.'
+      if (line.path === 'suzerain') {
+        return line.outcome === 'win'
+          ? '여러 나라 군장이 모여 우리 군장을 진왕으로 받들었다. 맹주가 되었다.'
+          : `${josa(fname(line.by ?? ''), '이', '가')} 진왕이 되었다. 여러 나라가 그 아래 섰다. 우리 판은 여기까지다.`
+      }
+      return line.outcome === 'win' ? '도읍을 넉넉히 차지했다. 이 판의 맹주가 되었다.' : '도읍을 빼앗겼다. 나라가 무너졌다.'
+    case 'suzerain': {
+      // 맹주의 길 — 우리 것이면 맹약의 해, 남의 것이면 소문 (보고판이 모르는 나라 줄은 거른다)
+      const left = Math.max(0, P.realm.suzerainSeasons - line.streak)
+      if (line.faction === viewer) {
+        return line.streak > 0
+          ? `맹약의 해 — 아는 나라 가운데 ${line.have}곳이 우리와 손잡았다. 이대로 ${left}계절 더 버티면 진왕이 된다.`
+          : `손잡은 나라가 ${line.have}곳이다. ${line.need}곳이 되면 맹약의 해가 시작된다.`
+      }
+      return line.streak > 0
+        ? `소문 — ${fname(line.faction)} 군장 곁에 군장들이 모였다. 이대로 ${left}계절이면 진왕이 된다. 그 맹약을 깨야 한다.`
+        : `소문 — ${fname(line.faction)} 군장 곁에 군장들이 모인다. 진왕을 바란다.`
+    }
+    case 'envoyHeld':
+      if (line.from === viewer) return `${josa(fname(line.to), '이', '가')} 사신으로 간 ${josa(after.heroes[line.hero]?.name ?? '장수', '을', '를')} 붙잡았다.`
+      if (line.to === viewer) return `${fname(line.from)}에서 온 사신 ${josa(after.heroes[line.hero]?.name ?? '장수', '을', '를')} 붙잡았다.`
+      return null
     case 'sighted': {
       if (viewer !== before.player) return null
       const a = before.armies[line.army] ?? after.armies[line.army]

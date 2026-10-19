@@ -180,7 +180,7 @@ describe('이김 · 짐', () => {
     r.nodes['guya-cap']!.owner = 'us'
     r.nodes['miri-cap']!.owner = 'us'
     const { next, report } = advance(r, [])
-    assert.deepEqual(next.outcome, { kind: 'win', season: r.season })
+    assert.deepEqual(next.outcome, { kind: 'win', season: r.season, path: 'conquest' })
     assert.ok(report.lines.some((l) => l.kind === 'end' && l.outcome === 'win'))
     next.nodes['our-cap']!.owner = 'guya'
     assert.equal(advance(next, []).next.outcome?.kind, 'win')

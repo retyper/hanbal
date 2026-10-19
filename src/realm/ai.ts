@@ -21,6 +21,7 @@ import {
 } from './economy.ts'
 import { ambushWorth, jointWin, movesOf, type Move } from './estimate.ts'
 import { armyOfHero, hasTrait, isRuler, persuadeSeasons, postHero, wanderersFor } from './heroes.ts'
+import { limitHands } from './hands.ts'
 import { armiesAt, extendPlan, fortMul, neighbors, newArmyId, planned, seasonOf, seenMarches } from './season.ts'
 import { memoFor, withMemo } from './memo.ts'
 import type { UnitKind } from './battle.ts'
@@ -804,7 +805,8 @@ export function aiOrders(r: Realm): Order[] {
         out.push(...answers(r, f.id), ...drafts(r, f.id))
         continue
       }
-      out.push(...decide(r, f.id, f.mind))
+      // 사신·공작은 보낼 사람만큼만 낸다 (hands.ts — 엔진도 같은 규칙으로 버린다)
+      out.push(...limitHands(r, decide(r, f.id, f.mind)))
     }
     return out
   })
