@@ -540,14 +540,10 @@ function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): v
       left += P.realm.hardExtra
       lines.push({ kind: 'blocked', army: a.id, edge: ed.id, why, lost: Math.max(0, before - headcount(forceOf(r, a))) })
     }
-    // 군량 — 넉넉히면 곡식을 들여 길 계절 + 남겨 둘 계절을 챙기고, 가볍게면 길 계절만 (닿자마자 바닥이다)
-    const ration = rationFor(r, a, o.ration, left)
-    if (ration === 'light') {
-      a.food = left
-    } else {
-      stockOf(r, a.faction).grain -= rationCost(r, a, left)
-      a.food = left + P.realm.rationReserve
-    }
+    // 군량 — 길 계절에 더해 몇 계절치를 챙기나. 더 챙길수록 곡식이 들고, 0 이면 닿자마자 바닥이다
+    const extra = rationFor(r, a, o.ration, left)
+    if (extra > 0) stockOf(r, a.faction).grain -= rationCost(r, a, left, extra)
+    a.food = left + extra
     a.march = { from: a.at, to, edge: ed.id, left, ambush: approach !== 'road', ...(approach !== 'road' && approach !== 'night' ? { approach } : {}), ...(why !== null ? { hard: why } : {}) }
   }
 }
@@ -569,21 +565,39 @@ export function approachOf(m: { readonly ambush: boolean; readonly approach?: Ap
   return m.approach ?? (m.ambush ? 'night' : 'road')
 }
 
-/** 넉넉히 챙기는 군량의 곡식 — 사람 × 계절치 × (길 계절 + 남겨 둘 계절) */
-export function rationCost(r: Realm, a: Army, left: number): number {
+/**
+ * 길 계절에 더해 `extra` 계절치를 챙기는 곡식 — 사람 × 계절치 × (길 계절 + 기본 계절) × extra/기본.
+ * extra 가 기본(rationReserve)이면 옛 "넉넉히"와 같은 값, 0 이면 들지 않는다(옛 "가볍게"). 사이는 곧게 나눈다.
+ */
+export function rationCost(r: Realm, a: Army, left: number, extra: number = P.realm.rationReserve): number {
   const R = P.realm
-  return Math.ceil(headcount(forceOf(r, a)) * R.rationPerSoldier * R.rationPack * (left + R.rationReserve))
+  if (extra <= 0) return 0
+  const full = headcount(forceOf(r, a)) * R.rationPerSoldier * R.rationPack * (left + R.rationReserve)
+  return Math.ceil(R.rationReserve > 0 ? (full * extra) / R.rationReserve : full)
+}
+
+/** 명령의 군량 → 더 챙길 계절 수 (옛 'light' 0 · 'full' 기본) */
+export function rationExtra(want: Ration | undefined): number | undefined {
+  if (want === undefined) return undefined
+  if (want === 'light') return 0
+  if (want === 'full') return P.realm.rationReserve
+  return Math.max(0, Math.min(P.realm.rationMaxExtra, Math.floor(want)))
 }
 
 /**
- * 실제로 챙길 군량 — 곡식이 모자라면 가볍게.
- * 고르지 않았으면(AI · 옛 명령) 곡식이 넉넉한 나라만 넉넉히 챙긴다 (aiRationRich 배 — 군량 값에 나라 살림이 마르지 않게)
+ * 실제로 챙길 계절 수 (길 계절에 더해).
+ *  - 옛 'full': 기본만큼 — 곡식이 모자라면 0 (옛 규칙 그대로, 옛 판 다시 돌리기가 같게)
+ *  - 수: 그 수까지 곡식이 대는 만큼
+ *  - 고르지 않았으면(AI): 곡식이 군량 값의 aiRationRich 배 넘게 있어야 기본만큼 (나라 살림이 마르지 않게)
  */
-export function rationFor(r: Realm, a: Army, want: Ration | undefined, left: number): Ration {
-  if (want === 'light') return 'light'
-  const cost = rationCost(r, a, left)
+export function rationFor(r: Realm, a: Army, want: Ration | undefined, left: number): number {
+  const R = P.realm
   const grain = stockOf(r, a.faction).grain
-  return grain >= cost * (want === undefined ? P.realm.aiRationRich : 1) ? 'full' : 'light'
+  if (want === undefined) return grain >= rationCost(r, a, left) * R.aiRationRich ? R.rationReserve : 0
+  if (want === 'full') return grain >= rationCost(r, a, left) ? R.rationReserve : 0
+  let n = rationExtra(want)!
+  while (n > 0 && grain < rationCost(r, a, left, n)) n--
+  return n
 }
 
 /** 절벽 타기가 될 확률 — 적을수록 · 무예 높을수록 · 산사람이면 */

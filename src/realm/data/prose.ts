@@ -68,6 +68,19 @@ export function seasonLabel(n: number): string {
   return `${Math.floor(n / 4) + 1}년 ${SEASON_NAME[s[((n % 4) + 4) % 4]!]}`
 }
 
+const COUNT_WORD = ['', '한', '두', '세', '네', '다섯', '여섯', '일곱', '여덟'] as const
+
+/**
+ * 언제 닿나 — 지금 `season` 에서 `k` 계절을 가면 (형: "다음계절 누를때 바로가는게 아니잖아. 그 턴이 다음턴인지 그다음인지 몰라가지고 헷갈림").
+ * 계절을 한 번 넘기면 1 줄어든다 — k=1 이면 다음 계절 소식에 닿아 있다.
+ *   "다음 계절(1년 겨울)에 닿는다" · "두 계절 뒤(2년 봄)에 닿는다". `short` 면 "에 닿는다" 를 뺀다.
+ */
+export function arriveWhen(season: number, k: number, short = false): string {
+  const n = Math.max(1, Math.round(k))
+  const when = n === 1 ? '다음 계절' : `${COUNT_WORD[n] ?? String(n)} 계절 뒤`
+  return `${when}(${seasonLabel(season + n)})${short ? '' : '에 닿는다'}`
+}
+
 /** 계절이 넘어갈 때 뜨는 한 줄 (FLOW §1) */
 export const SEASON_LINE: Record<SeasonOfYear, string> = {
   spring: '봄. 씨를 뿌린다. 지금 뽑은 사람은 가을에 거두지 못한다.',
@@ -252,13 +265,14 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       return `${josa(nameArmy(line.army), '을', '를')} 집으로 돌려보냈다. ${node(line.node)}에 ${line.n}집이 돌아왔다.`
     }
     case 'settle':
-      if (line.faction === viewer) return `${node(line.from)}에서 ${line.n}집이 ${josa(node(line.to), '으로', '로')} 옮겨 가 땅을 일군다.`
-      return `소문. ${josa(fname(line.faction), '이', '가')} ${node(line.to)}에 사람을 보냈다.`
+      // 개척은 계절을 넘기면 바로 자리 잡는다 — 길 위에 머물지 않는다
+      if (line.faction === viewer) return `${josa(node(line.from), '에서', '에서')} 집 ${josa(String(line.n), '이', '가')} ${josa(node(line.to), '으로', '로')} 옮겨 가 자리 잡았다. 새 마을이 큰다.`
+      return `소문. ${josa(fname(line.faction), '이', '가')} ${josa(node(line.to), '에', '에')} 사람을 보냈다.`
     case 'migrate':
       // 남의 나라 집 옮기기는 들리지 않는다
       if (line.faction !== viewer) return null
-      if (line.auto === true) return `${josa(node(line.from), '이', '가')} 붐벼 집 ${line.n}이 ${josa(node(line.to), '으로', '로')} 옮겨 갔다.`
-      return `${node(line.from)}의 집 ${line.n}을 ${josa(node(line.to), '으로', '로')} 옮겼다. 두 고을은 자리 잡느라 한동안 집이 늘지 않는다.`
+      if (line.auto === true) return `${josa(node(line.from), '이', '가')} 붐벼 집 ${josa(String(line.n), '이', '가')} ${josa(node(line.to), '으로', '로')} 옮겨 갔다.`
+      return `${josa(node(line.from), '의', '의')} 집 ${josa(String(line.n), '을', '를')} ${josa(node(line.to), '으로', '로')} 옮겼다. 두 고을은 자리 잡느라 한동안 집이 늘지 않는다.`
     case 'rite':
       if (line.faction === viewer) {
         return line.season === 'spring'

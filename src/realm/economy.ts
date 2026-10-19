@@ -441,6 +441,19 @@ export function stepMigration(r: Realm, fought: ReadonlySet<string>, lines: Repo
 }
 
 /** 지금 개척할 수 있는 짝 — 빈땅 id, 떠나는 고을 id 순서 (결정론) */
+/**
+ * 개척에 집을 내보낼 고을의 기본값 — 도읍이 아닌, 그 빈땅과 길로 맞닿은 고을 가운데 가장 붐비는 곳 (자리 대비).
+ * 도읍밖에 없으면 도읍. 보낼 데가 없으면 null.
+ * (형: "골포 도읍에서 빼오는건지 몰랐는데 저런식으로 도읍을 default로 빼와도 되는거야?")
+ */
+export function settleSource(r: Realm, faction: string, to: string): string | null {
+  const froms = settleTargets(r, faction).filter((t) => t.to === to).map((t) => t.from)
+  if (froms.length === 0) return null
+  const caps = new Set(Object.values(r.factions).map((f) => f.capital))
+  const pool = froms.some((f) => !caps.has(f)) ? froms.filter((f) => !caps.has(f)) : froms
+  return pool.slice().sort((a, b) => crowdOf(r.nodes[b]!) - crowdOf(r.nodes[a]!) || (a < b ? -1 : a > b ? 1 : 0))[0]!
+}
+
 export function settleTargets(r: Realm, faction: string): Array<{ from: string; to: string; edge: string }> {
   const out: Array<{ from: string; to: string; edge: string }> = []
   for (const id of Object.keys(r.edges).sort()) {
