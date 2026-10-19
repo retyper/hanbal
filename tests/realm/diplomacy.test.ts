@@ -121,7 +121,7 @@ describe('화친', () => {
     assert.ok(report.lines.some((l) => l.kind === 'relation' && l.state === 'neutral'))
   })
 
-  it('화친을 깨고 치면 전쟁 · 남은 나라와는 한 칸씩 내려간다', () => {
+  it('화친을 깨고 치면 전쟁 · 맺은 나라와는 한 칸씩 내려가고, 중립인 나라는 호감만 깎인다', () => {
     const r = planned(byeonhanMini(1), [])
     r.relations[pairKey('us', 'guya')] = { state: 'truce', until: 20 }
     r.relations[pairKey('us', 'miri')] = { state: 'ally', until: null }
@@ -129,7 +129,9 @@ describe('화친', () => {
     const { next } = advance(r, [{ kind: 'march', army: 'a-us', edge: 'e35', ambush: false }])
     assert.equal(relationOf(next, 'us', 'guya').state, 'war')
     assert.equal(relationOf(next, 'us', 'miri').state, 'truce')
-    assert.equal(relationOf(next, 'us', 'anya').state, 'war') // 중립 → 전쟁
+    // 중립인 나라가 덩달아 전쟁을 걸지는 않는다 (2026-10-19 형: "그냥무작정 전쟁이다라 그러면 어떡하냐")
+    assert.equal(relationOf(next, 'us', 'anya').state, 'neutral')
+    assert.ok((relationOf(next, 'us', 'anya').favor ?? 0) < (relationOf(r, 'us', 'anya').favor ?? 0))
   })
 })
 

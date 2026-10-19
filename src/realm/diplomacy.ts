@@ -248,6 +248,9 @@ export function onHostile(r: Realm, attacker: string, victim: string | null, lin
   for (const x of Object.keys(r.factions).sort()) {
     if (x === attacker || x === victim) continue
     const s = relationOf(r, attacker, x).state
+    // 맺은 사이만 한 칸 물러난다 (동맹→화친→중립). 중립인 나라가 덩달아 전쟁을 걸지는 않는다 — 호감이 깎일 뿐
+    // (형: "그냥무작정 전쟁이다라 그러면 어떡하냐" — 약조를 깬 한 번에 판의 모든 나라와 전쟁이 나던 것)
+    if (s !== 'truce' && s !== 'ally') { addFavor(r, attacker, x, -P.realm.favorBreakOthers); continue }
     const down = STEP[s]
     setRelation(r, attacker, x, down, down === 'truce' ? r.season + P.realm.truceSeasons : null, lines, { by: x, why: 'distrust' })
   }
