@@ -37,6 +37,7 @@ import { GROW_CSS, HERO_CSS, bondChip, growthHtml, heroRadar, roleLine, traitChi
 import { APP_CSS } from './appstyle.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
 import { attachZoom } from './zoom.ts'
+import { FRONT_CSS, PROLOGUE_STEPS, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History } from './front.ts'
 import { FEEL_CSS, alertFeel, ambushFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
 
 export interface AppHost {
@@ -50,6 +51,10 @@ export interface AppHost {
   onExport(): void
   /** 남아 있는 판 기록 수 */
   gameCount(): number
+  /** 이 판의 지난 계절 보고들 — 끝 화면의 연대기 */
+  history(): History
+  /** 마지막으로 저장한 때 (ISO) — 첫 화면의 "이어 하기" */
+  savedAt(): string | null
 }
 
 const ART: string = (import.meta.env?.BASE_URL ?? '/') + 'realm/'
@@ -149,26 +154,28 @@ const rulerId = (nation: string): string => `${nation}-ruler`
 /** 판마다 나라 고르기 글 — 변한 6국 축소판 · 영남 판 */
 const nationsOf = (region: RegionId): readonly NationInfo[] => (region === 'yeongnam' ? YEONGNAM_NATIONS : region === 'south' ? SOUTH_NATIONS : region === 'world' ? WORLD_NATIONS : NATIONS)
 
-/** 판 고르기의 말 (형: "사료대로 키우고 땅도 넓힘" · "발견국가가 많아지면 확장하는거지 지도도") */
-const REGION_PICK: ReadonlyArray<{ id: RegionId; name: string; line: string }> = [
-  { id: 'byeonhan-mini', name: '작은 판', line: '변한 남쪽의 여섯 나라. 한 판이 짧다.' },
-  { id: 'yeongnam', name: '큰 판', line: '낙동강과 동해·남해의 스물한 나라.' },
-  { id: 'south', name: '삼한 남부', line: '넓어지는 지도 — 서른여섯 나라. 처음엔 이웃만 안다. 사신·장터·싸움·소문으로 새 나라를 알면 지도가 펼쳐진다.' },
-  { id: 'world', name: '삼한과 북녘', line: '탐라에서 부여의 들까지 쉰 나라 — 고구려 다섯 나부 · 부여 · 옥저 · 동예가 더해진다. 처음엔 이웃만 안다.' },
-]
-function nationFace(id: string): string {
+function nationFace(id: string, cls = 'nface'): string {
   const hid = rulerId(id)
   const file = hid !== undefined ? HERO_BUST[hid] : undefined
-  return file !== undefined ? `<img class="nface" src="${ART}bust/${file}.jpg" alt="">` : ''
+  return file !== undefined ? `<img class="${cls}" src="${ART}bust/${file}.jpg" alt="">` : ''
 }
 
-export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null): void } {
+/** 판의 앞과 끝(front.ts)이 쓰는 그림 손 */
+const KIT: FrontKit = {
+  art: ART, esc, icon, nations: nationsOf, face: nationFace,
+  emblem: (f, cls) => emblem(f, cls),
+}
+
+/** 첫 화면 · 판 고르기 · 나라 고르기 · 자세히 — null 이면 판 위 */
+type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region: RegionId } | { kind: 'detail'; region: RegionId; id: string }
+
+export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void } {
   const style = document.createElement('style')
-  style.textContent = APP_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + HERO_CSS + GROW_CSS
+  style.textContent = APP_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + HERO_CSS + GROW_CSS + FRONT_CSS.replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
   root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="legend"></div><div class="zbtns"><button data-act="zin">＋</button><button data-act="zout">－</button></div><button class="next" data-act="next"></button>`
-    + `<nav class="tabs"></nav><div class="back" data-act="close"></div><section class="sheet"></section><div class="modal"></div>`
+    + `<nav class="tabs"></nav><div class="back" data-act="close"></div><section class="sheet"></section><div class="modal"></div><div class="plbox"></div>`
   const $ = (sel: string): HTMLElement => root.querySelector<HTMLElement>(sel)!
   const zoom = attachZoom($('.mapwrap'))
 
@@ -178,9 +185,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let fresh = new Set<string>()
   let report: Report | null = null
   let showReport = false
-  let choosing = false
-  /** 나라 고르기 화면에서 고른 판 */
-  let chooseRegion: RegionId = 'byeonhan-mini'
+  /** 판 바깥의 화면 — 처음엔 첫 화면 */
+  let front: Front | null = { kind: 'title' }
+  /** 새 판의 서막 몇째 장 — null 이면 없음 */
+  let prologue: number | null = null
+  /** 끝난 판의 지도를 둘러보는 중 */
+  let looking = false
   let sheet: Sheet | null = null
   /** 이번 계절의 명령 거리 */
   let armyOrders: Order[] = [] // 나누기·모으기 — 화면은 이걸 먼저 해 본 판을 보인다
@@ -1181,12 +1191,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   function modalHtml(r: Realm): string {
-    if (r.outcome) {
-      const win = r.outcome.kind === 'win'
-      return `<div class="mcard end"><img class="ev" src="${ART}event/${win ? 'event-festival' : 'event-sky-drought'}.jpg" alt="">`
-        + `<h2>${win ? '변한을 차지했다' : '도읍이 무너졌다'}</h2><p class="mute">${esc(seasonLabel(r.outcome.season))}</p>`
-        + `<button class="btn on wide" data-act="newgame">새 판</button></div>`
-    }
+    if (r.outcome) return looking ? '' : endingHtml(KIT, r, host.history())
     if (!showReport || before === null || report === null) return ''
     const season = seasonOf(r.season)
     // 우리가 낀 싸움은 카드로 한 판씩 풀어 보이고, 글 줄에서는 뺀다
@@ -1205,28 +1210,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return h + `<button class="btn on wide" data-act="rep-close">확인</button></div>`
   }
 
-  // ───────── 나라 고르기
-  function chooseHtml(): string {
-    // 판부터 고른다 — 작은 판(변한 6국) · 큰 판(영남 스물한 나라)
-    const pickLine = (x: (typeof REGION_PICK)[number]): string =>
-      x.id === 'yeongnam' ? `${x.line} 도읍 ${P.realm.winCapitalsYeongnam}곳을 쥐면 이긴다.`
-        : x.id === 'south' ? `${x.line} 도읍 ${P.realm.winCapitalsSouth}곳을 쥐면 이긴다.`
-          : x.id === 'world' ? `${x.line} 도읍 ${P.realm.winCapitalsWorld}곳을 쥐면 이긴다.` : x.line
-    let h = `<div class="choose"><h1>칠십팔국</h1><div class="seg rpick">`
-    for (const x of REGION_PICK) h += `<button class="${chooseRegion === x.id ? 'on' : ''}" data-act="region" data-v="${x.id}">${esc(x.name)}</button>`
-    h += `</div><p class="mute">${esc(pickLine(REGION_PICK.find((x) => x.id === chooseRegion)!))} 나라를 하나 고른다.</p>`
-    h += `${PRACTICE_READY ? `<p class="choose-links"><a class="btn ghost" href="${PRACTICE}">궁술 연습장</a></p>` : ''}<div class="ncards">`
-    for (const n of nationsOf(chooseRegion)) {
-      h += `<button class="ncard pick" data-act="nation" data-id="${n.id}">${nationFace(n.id)}<div class="nb">`
-      h += `<div class="an">${emblem(n.id)}<b>${esc(n.name)}</b><span class="mute">${esc(n.place)}</span>${n.hard ? '<span class="hard">어려움</span>' : ''}</div>`
-      h += `<p>${esc(n.blurb)}</p><p class="mute src">${esc(n.source)}</p><div class="bars">`
-      for (const [k, label] of [['army', '군사'], ['grain', '곡식'], ['militia', '장정'], ['terrain', '지형']] as const) {
-        const v = n.bars[k]
-        h += `<span class="bar"><i>${label}</i>${'<b></b>'.repeat(v)}${'<s></s>'.repeat(5 - v)}</span>`
-      }
-      h += `</div></div></button>`
+  // ───────── 판 바깥 — 첫 화면 · 판 고르기 · 나라 고르기 (front.ts)
+  function frontHtml(f: Front): string {
+    const links = `<p class="fine"><a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a> ${PRACTICE_READY ? `<a class="btn ghost" href="${PRACTICE}">궁술 연습장</a>` : ''}</p>`
+    switch (f.kind) {
+      case 'title': return titleHtml(KIT, realm, host.savedAt(), links)
+      case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome)
+      case 'nations': return nationsHtml(KIT, f.region)
+      case 'detail': return detailHtml(KIT, f.region, f.id)
     }
-    return h + `</div></div>`
   }
 
   // ───────── 그리기
@@ -1334,9 +1326,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   function paintNow(): void {
     saveDraft()
-    if (realm === null || choosing) {
+    if (realm === null && front === null) front = { kind: 'title' }
+    $('.plbox').innerHTML = realm !== null && front === null && prologue !== null ? prologueHtml(KIT, realm, prologue) : ''
+    if (realm === null || front !== null) {
       root.classList.add('choosing')
-      $('.mapwrap').innerHTML = chooseHtml()
+      $('.mapwrap').innerHTML = frontHtml(front!)
       $('.top').innerHTML = ''
       $('.tabs').innerHTML = ''
       $('.legend').innerHTML = ''
@@ -1446,9 +1440,26 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     freshArmy = ''
     const r = realm !== null ? plan() : null
     switch (d['act']) {
-      case 'nation': host.onNewGame(d['id']!, chooseRegion); return
-      case 'region': chooseRegion = d['v'] as RegionId; break
-      case 'newgame': choosing = true; sheet = null; chooseRegion = realm?.region ?? chooseRegion; paint(); return
+      case 'continue': front = null; paint(); return
+      case 'fr-new': case 'newgame': front = { kind: 'boards' }; sheet = null; looking = false; paint(); return
+      case 'fr-back': front = { kind: 'title' }; paint(); return
+      case 'fr-board': front = { kind: 'nations', region: d['v'] as RegionId }; $('.mapwrap').scrollTop = 0; paint(); return
+      case 'fr-nation': if (front !== null && front.kind === 'nations') front = { kind: 'detail', region: front.region, id: d['id']! }; $('.mapwrap').scrollTop = 0; paint(); return
+      case 'fr-start': if (front !== null && front.kind === 'detail') host.onNewGame(d['id']!, front.region); return
+      case 'fr-again': if (realm !== null) host.onNewGame(realm.player, realm.region ?? 'byeonhan-mini'); return
+      case 'fr-look': looking = true; paint(); return
+      case 'pl-next': case 'pl-skip': {
+        if (prologue === null) return
+        if (d['act'] === 'pl-next' && prologue < PROLOGUE_STEPS - 1) { prologue++; paint(); return }
+        // 서막이 걷히고 지도가 열린다 — 한지가 걷히며 본 땅이 번진다
+        prologue = null
+        root.querySelector('.prologue')?.classList.add('out')
+        root.classList.add('opening')
+        // 서막이 사라진 뒤 한 번 — 첫 계절을 알린다. 지도는 다시 그릴 때마다 새로 생기니 animationend 대신 한 번 거둔다
+        setTimeout(() => { $('.plbox').innerHTML = ''; if (realm !== null) seasonFx(realm.season) }, 900)
+        setTimeout(() => root.classList.remove('opening'), 3000)
+        return
+      }
       case 'close': sheet = null; paint(); return
       case 'tab': markSeen(d['tab']!); openSheet({ kind: d['tab'] as 'army' }); return
       case 'help': openSheet({ kind: 'help' }); return
@@ -1699,12 +1710,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   })
 
   return {
-    show(r, b, rep) {
+    show(r, b, rep, fresh = false) {
       realm = r
       before = b
       report = rep
       showReport = rep !== null
-      choosing = r === null
+      front = fresh ? null : { kind: 'title' }
+      prologue = fresh ? 0 : null
+      looking = false
       resetTurn()
       restoreDraft()
       loadSeen()

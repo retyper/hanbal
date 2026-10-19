@@ -58,6 +58,10 @@ foreach ($prefix in @('settle', 'emblem', 'unit', 'status', 'good', 'treasure'))
 foreach ($f in Get-ChildItem "$Src/cut" -File -Filter 'event-*.png') {
   Fit $f.FullName "$Out/event/$($f.BaseName).jpg" 640 84; $n++
 }
+# 첫 화면 그림 (front.ts)
+foreach ($f in Get-ChildItem "$Src/cut" -File -Filter 'title-*.png') {
+  Fit $f.FullName "$Out/title/$($f.BaseName).jpg" 1024 84; $n++
+}
 # 계절 넘김 띠 — 가로로 긴 그림 (seasonFx)
 foreach ($f in Get-ChildItem "$Src/cut" -File -Filter 'season-*.png') {
   Fit $f.FullName "$Out/season/$($f.BaseName).jpg" 1024 80; $n++

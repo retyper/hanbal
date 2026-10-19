@@ -18,6 +18,8 @@ import type { Order, Realm, RegionId, Report, ReportLine } from './realm/types.t
 import { mountRealmApp } from './ui/realm/app.ts'
 
 const KEY = 'hanbal.realm.v2'
+/** 한 계절 앞의 저장 — 지금 것이 깨졌으면 이걸로 되살린다 */
+const PREV = 'hanbal.realm.v2.prev'
 const GAMES = 'hanbal.realm.games'
 /** 판 기록이 이보다 커지면 오래된 판부터 누른 것을 덜고, 그래도 크면 판을 덜어 낸다 (localStorage 는 5MB 안팎) */
 const GAMES_MAX_CHARS = 3_000_000
@@ -30,6 +32,8 @@ interface Saved {
   readonly realm: Realm
   readonly before: Realm | null
   readonly report: Report | null
+  /** 저장한 때 (ISO) — 첫 화면의 "○분 전 저장됨" */
+  readonly at?: string
 }
 
 /** 한 계절의 기록 */
@@ -60,8 +64,12 @@ interface GameRecord {
 }
 
 function load(): Saved | null {
+  return loadFrom(KEY) ?? loadFrom(PREV)
+}
+
+function loadFrom(key: string): Saved | null {
   try {
-    const raw = localStorage.getItem(KEY)
+    const raw = localStorage.getItem(key)
     if (raw === null) return null
     const s = JSON.parse(raw) as Saved
     if (s.v !== 2) return null
@@ -74,12 +82,20 @@ function load(): Saved | null {
   }
 }
 
-function save(s: Saved): void {
+function save(s: Saved): Saved {
+  const out: Saved = { ...s, at: new Date().toISOString() }
   try {
-    localStorage.setItem(KEY, JSON.stringify(s))
+    const old = localStorage.getItem(KEY)
+    if (old !== null) localStorage.setItem(PREV, old)
+  } catch {
+    // 앞 저장을 못 옮겨도 지금 것은 쓴다
+  }
+  try {
+    localStorage.setItem(KEY, JSON.stringify(out))
   } catch {
     // 저장이 막힌 창(사생활 보호 모드) — 판은 계속 돈다, 다음에 이어서 못 할 뿐
   }
+  return out
 }
 
 function loadGames(): GameRecord[] {
@@ -153,8 +169,7 @@ const root = document.getElementById('realm')!
 const app = mountRealmApp(root, {
   onAdvance(next, report, orders, mine) {
     if (state === null) return
-    state = { ...state, log: [...state.log, [...orders]], before: state.realm, realm: next, report }
-    save(state)
+    state = save({ ...state, log: [...state.log, [...orders]], before: state.realm, realm: next, report })
     game ??= recordFor(state)
     const now = Date.now()
     game.turns.push({
@@ -168,13 +183,12 @@ const app = mountRealmApp(root, {
   },
   onNewGame(nation, region) {
     if (game !== null && game.end === null) game.end = { kind: 'quit', season: state?.realm.season ?? 0, at: new Date().toISOString() }
-    state = fresh(nation, region)
-    save(state)
+    state = save(fresh(nation, region))
     game = recordFor(state)
     turnStart = Date.now()
     taps = []
     saveGames(games)
-    app.show(state.realm, null, null)
+    app.show(state.realm, null, null, true) // 새 판 — 서막부터
   },
   onTap(act, arg) {
     if (taps.length < 400) taps.push([Date.now() - turnStart, act, arg])
@@ -191,6 +205,8 @@ const app = mountRealmApp(root, {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000) // 바로 거두면 받기가 끊기는 브라우저가 있다 — 한 번만 도는 정리
   },
   gameCount: () => games.length,
+  history: () => (game?.turns ?? []).map((t) => ({ s: t.s, lines: t.lines })),
+  savedAt: () => state?.at ?? null,
 })
 app.show(state?.realm ?? null, state?.before ?? null, state?.report ?? null)
 
