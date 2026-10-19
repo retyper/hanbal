@@ -136,14 +136,14 @@ export const FACTION_ART: Readonly<Record<string, { emblem: string; color: strin
   hwanna: { emblem: 'emblem-tortoise', color: '#3a7a6a' },
   gwanna: { emblem: 'emblem-crow', color: '#4a4a5a' },
   buyeo: { emblem: 'emblem-deer', color: '#e8e0c8' },
-  maga: { emblem: 'emblem-moon', color: '#b07a3a' },
-  uga: { emblem: 'emblem-pine', color: '#7a8a3a' },
-  jeoga: { emblem: 'emblem-sodo-bird', color: '#8a5a3a' },
+  maga: { emblem: 'emblem-maga', color: '#b07a3a' },
+  uga: { emblem: 'emblem-uga', color: '#7a8a3a' },
+  jeoga: { emblem: 'emblem-jeoga', color: '#8a5a3a' },
   guga: { emblem: 'emblem-dog', color: '#c0a060' },
   dongokjeo: { emblem: 'emblem-harpoon', color: '#3a8ab0' },
-  bukokjeo: { emblem: 'emblem-fish', color: '#2a6a8a' },
-  bullae: { emblem: 'emblem-tiger', color: '#d08a3a' },
-  tamna: { emblem: 'emblem-sailboat', color: '#5ab0a0' },
+  bukokjeo: { emblem: 'emblem-bukokjeo', color: '#2a6a8a' },
+  bullae: { emblem: 'emblem-bullae', color: '#d08a3a' },
+  tamna: { emblem: 'emblem-tamna', color: '#5ab0a0' },
 }
 
 const KIND_ICON: Readonly<Record<NodeKind, string>> = {
