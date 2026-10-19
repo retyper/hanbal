@@ -88,11 +88,26 @@ export const RELATION_NAME: Record<Relation['state'], string> = {
 /** 이 승산보다 낮은데 이기면(또는 높은데 지면) "뜻밖" — 글의 문턱이라 여기 둔다 */
 const UPSET = 0.35
 
-/** 받침이 있으면 앞 것, 없으면 뒤 것 — 을/를 · 이/가 · 은/는 · 과/와 · 으로/로 */
+/**
+ * 숫자를 우리말로 읽을 때 끝소리의 받침 — 0 없음 · 8 ㄹ · 그 밖 받침 있음 (josa 가 쓴다).
+ * 끝자리: 영(ㅇ) 일(ㄹ) 이 삼(ㅁ) 사 오 육(ㄱ) 칠(ㄹ) 팔(ㄹ) 구 · 끝이 0 이면 십(ㅂ) 백(ㄱ) 천(ㄴ) 만(ㄴ).
+ * "철 2를" · "집 16이" · "곡식 300을" · "군사 1로" (형: "텍스트들 규칙에서 항상 한글 조사 틀리지 않게").
+ */
+function numberFinal(s: string): number {
+  const d = s.replace(/[^0-9]/g, '')
+  if (d === '' || /^0+$/.test(d)) return 21 // 영 — ㅇ
+  const zeros = d.length - d.replace(/0+$/, '').length
+  if (zeros > 0) return zeros === 1 ? 17 : zeros === 2 ? 1 : 4 // 십(ㅂ) · 백(ㄱ) · 천·만(ㄴ)
+  return ({ '1': 8, '2': 0, '3': 16, '4': 0, '5': 0, '6': 1, '7': 8, '8': 8, '9': 0 } as Record<string, number>)[d[d.length - 1]!]!
+}
+
+/** 받침이 있으면 앞 것, 없으면 뒤 것 — 을/를 · 이/가 · 은/는 · 과/와 · 으로/로. 숫자로 끝나면 우리말 읽기로 판정한다 */
 export function josa(word: string, withFinal: string, without: string): string {
   const c = word.charCodeAt(word.length - 1)
-  if (c < 0xac00 || c > 0xd7a3) return word + without
-  const fin = (c - 0xac00) % 28
+  let fin: number
+  if (c >= 0x30 && c <= 0x39) fin = numberFinal(word)
+  else if (c < 0xac00 || c > 0xd7a3) return word + without
+  else fin = (c - 0xac00) % 28
   if (withFinal === '으로' && fin === 8) return word + without // ㄹ 받침은 "로"
   return word + (fin !== 0 ? withFinal : without)
 }
@@ -130,11 +145,11 @@ export function askLine(a: Ask, from: string, place = ''): string {
   switch (a.kind) {
     case 'truce': return `${josa(from, '이', '가')} 화친하자고 한다. 서로 치지 않고 장터를 연다.`
     case 'alliance': return `${josa(from, '이', '가')} 동맹을 맺자고 한다. 같은 적을 함께 치자고 한다.`
-    case 'trade': return `${josa(from, '이', '가')} ${goods(a.give)}을 줄 테니 ${goods(a.take)}을 달라고 한다.`
-    case 'tribute': return `${josa(from, '이', '가')} 고개를 숙이고 ${goods(a.give)}을 바치겠다고 한다.`
-    case 'demand': return `${josa(from, '이', '가')} ${goods(a.take)}을 바치라고 한다. 거절하면 전쟁이다.`
+    case 'trade': return `${josa(from, '이', '가')} ${josa(goods(a.give), '을', '를')} 줄 테니 ${josa(goods(a.take), '을', '를')} 달라고 한다.`
+    case 'tribute': return `${josa(from, '이', '가')} 고개를 숙이고 ${josa(goods(a.give), '을', '를')} 바치겠다고 한다.`
+    case 'demand': return `${josa(from, '이', '가')} ${josa(goods(a.take), '을', '를')} 바치라고 한다. 거절하면 전쟁이다.`
     case 'joint': return `${josa(from, '이', '가')} ${place !== '' ? `${josa(place, '을', '를')} ` : ''}두 계절 안에 함께 치자고 한다. 받으면 우리도 그곳을 쳐야 한다. 약속을 어기면 사이가 크게 틀어진다.`
-    case 'aid': return `동맹 ${josa(from, '이', '가')} ${goods(a.take)}을 보태 달라고 한다. 거절하면 서운해한다.`
+    case 'aid': return `동맹 ${josa(from, '이', '가')} ${josa(goods(a.take), '을', '를')} 보태 달라고 한다. 거절하면 서운해한다.`
   }
 }
 
@@ -257,8 +272,8 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     case 'migrate':
       // 남의 나라 집 옮기기는 들리지 않는다
       if (line.faction !== viewer) return null
-      if (line.auto === true) return `${josa(node(line.from), '이', '가')} 붐벼 집 ${line.n}이 ${josa(node(line.to), '으로', '로')} 옮겨 갔다.`
-      return `${node(line.from)}의 집 ${line.n}을 ${josa(node(line.to), '으로', '로')} 옮겼다. 두 고을은 자리 잡느라 한동안 집이 늘지 않는다.`
+      if (line.auto === true) return `${josa(node(line.from), '이', '가')} 붐벼 집 ${josa(String(line.n), '이', '가')} ${josa(node(line.to), '으로', '로')} 옮겨 갔다.`
+      return `${node(line.from)}의 집 ${josa(String(line.n), '을', '를')} ${josa(node(line.to), '으로', '로')} 옮겼다. 두 고을은 자리 잡느라 한동안 집이 늘지 않는다.`
     case 'rite':
       if (line.faction === viewer) {
         return line.season === 'spring'
@@ -271,8 +286,8 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       return `${josa(fname(line.a === viewer ? line.b : line.a), '과', '와')} 장터가 섰다. 곡식 ${line.grain}섬이 들어왔다.`
     }
     case 'ironMarket':
-      if (line.from === viewer) return `${josa(fname(line.to), '이', '가')} 장터에서 우리 철 ${line.iron}을 곡식 ${line.grain}섬에 사 갔다.`
-      if (line.to === viewer) return `${fname(line.from)} 장터에서 철 ${line.iron}을 곡식 ${line.grain}섬에 사 왔다.`
+      if (line.from === viewer) return `${josa(fname(line.to), '이', '가')} 장터에서 우리 철 ${josa(String(line.iron), '을', '를')} 곡식 ${line.grain}섬에 사 갔다.`
+      if (line.to === viewer) return `${fname(line.from)} 장터에서 철 ${josa(String(line.iron), '을', '를')} 곡식 ${line.grain}섬에 사 왔다.`
       return null
     case 'pathIron':
       // 철과 뱃길 — 우리 것이면 알림, 남의 것이면 소문
@@ -376,9 +391,9 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     case 'arm': {
       if (line.faction !== viewer) return null
       if (line.unit !== undefined) {
-        return `${nameArmy(line.army)}의 ${UNIT_NAME[line.unit]} ${line.n ?? 0}명이 철 ${line.iron}을 들여 ${josa(GEAR_NAME[line.unit][line.equip], '을', '를')} 들었다.`
+        return `${nameArmy(line.army)}의 ${UNIT_NAME[line.unit]} ${line.n ?? 0}명이 철 ${josa(String(line.iron), '을', '를')} 들여 ${josa(GEAR_NAME[line.unit][line.equip], '을', '를')} 들었다.`
       }
-      return `${josa(nameArmy(line.army), '이', '가')} 철 ${line.iron}을 들여 무장을 한 단계씩 올렸다.`
+      return `${josa(nameArmy(line.army), '이', '가')} 철 ${josa(String(line.iron), '을', '를')} 들여 무장을 한 단계씩 올렸다.`
     }
     case 'recruit': {
       if (line.faction !== viewer) return null

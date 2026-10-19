@@ -1179,7 +1179,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           const bu = bowUpCost(realm!, me())
           const buying = musters.some((o) => o.kind === 'bowUp')
           h += `<div class="frow"><span class="mute">자객의 활 · <b>${esc(BOW_NAME[bt] ?? '')}</b></span>`
-          if (bu !== null) h += `<button class="btn sm ${buying ? 'on' : ''}" data-act="bowup" ${buying || (st.grain >= bu.grain && st.iron >= bu.iron) ? '' : 'disabled'}>${buying ? '올리는 중 · 취소' : `${esc(BOW_NAME[bu.to] ?? '')}으로 · 곡식 ${bu.grain} · 철 ${bu.iron}`}</button>`
+          if (bu !== null) h += `<button class="btn sm ${buying ? 'on' : ''}" data-act="bowup" ${buying || (st.grain >= bu.grain && st.iron >= bu.iron) ? '' : 'disabled'}>${buying ? '올리는 중 · 취소' : `${esc(josa(BOW_NAME[bu.to] ?? '', '으로', '로'))} · 곡식 ${bu.grain} · 철 ${bu.iron}`}</button>`
           h += `</div><p class="mute">활이 한 단계 오를 때마다 화살이 빨라지고 세지고 덜 떨린다. 직접 쏘지 않을 때도 더 잘 된다.</p>`
         }
         if (targets.length === 0) h += `<div class="mute">지금은 노릴 데가 없다.${op === 'bribe' || op === 'spy' ? ' 아는 마을이어야 한다. 정찰부터.' : op === 'assassin' ? ' 겨뤄 본 적장만 노릴 수 있다.' : ''}</div>`
@@ -1308,7 +1308,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (x.post !== at && r.nodes[at]?.owner === me()) h += `<button class="btn" data-act="assign" data-id="${id}" data-node="${at}">${esc(josa(atName, '을', '를'))} 맡는다</button>`
         if (x.post != null) h += `<button class="btn ghost" data-act="assign" data-id="${id}" data-node="">맡은 일을 그만둔다</button>`
         for (const a of sorted(Object.values(r.armies)).filter((b) => b.faction === me() && b.at === at && b.march === null && b.hero === null)) {
-          h += `<button class="btn" data-act="lead" data-id="${id}" data-army="${a.id}">${esc(armyName(r, a))}을 이끈다</button>`
+          h += `<button class="btn" data-act="lead" data-id="${id}" data-army="${a.id}">${esc(josa(armyName(r, a), '을', '를'))} 이끈다</button>`
         }
       }
       h += `<p class="mute">맡긴 고을엔 내정·지략·매력과 특성이 걸린다. 장군이 군대를 이끌면 무예·통솔이 싸움에 걸린다.</p>`
@@ -1387,7 +1387,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 철과 뱃길 — 교역 장부: 올해 철을 바꾼 나라 깃발이 한 줄로 · 셈(나라 수 × 철) 막대
     const io = ironOf(r, me())
     h += `<div class="path"><b>철·뱃길</b>${bar(io.score, io.need, 'iron')}<span>${io.partners.length}나라 · 철 ${io.iron}</span></div>`
-    h += `<div class="path sub"><span class="flags">${io.partners.length > 0 ? io.partners.map((f) => emblem(f, 'fem')).join('') : ''}</span><span class="mute">${tx(!io.gate ? '철광이나 포구를 하나는 쥐어야 뱃길이 열린다' : `올해 ${io.minPartners}나라 넘게와 철을 바꾸고, 바꾼 나라 수 × 철이 ${io.need}을 넘으면 변진의 쇠가 우리 뱃길로 흐른다`)}</span></div>`
+    h += `<div class="path sub"><span class="flags">${io.partners.length > 0 ? io.partners.map((f) => emblem(f, 'fem')).join('') : ''}</span><span class="mute">${tx(!io.gate ? '철광이나 포구를 하나는 쥐어야 뱃길이 열린다' : `올해 ${io.minPartners}나라 넘게와 철을 바꾸고, 바꾼 나라 수 × 철이 ${josa(String(io.need), '을', '를')} 넘으면 변진의 쇠가 우리 뱃길로 흐른다`)}</span></div>`
     // 큰 제사 — 사슬(봄·가을 제사를 내리) · 집 막대
     const ri = riteOf(r, me())
     const chain = Array.from({ length: ri.need }, (_, i) => `<i class="${i < ri.chain ? 'on' : ''}" title="${i % 2 === 0 ? '봄' : '가을'}"></i>`).join('')
@@ -1460,7 +1460,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (nb !== null) {
         const bc = buildCost(nb)
         const ok = queued || (canBuild(r, me(), id, nb) && left().wood >= bc.wood && left().grain >= bc.grain)
-        h += `<div class="btns"><button class="btn ${queued ? 'on' : ''}" data-act="build" data-node="${id}" data-what="${nb}" ${ok ? '' : 'disabled'}>${queued ? `${BUILD_NAME[nb]} 짓는 중` : `${BUILD_NAME[nb]}을 두른다 · 나무 ${bc.wood} · 곡식 ${bc.grain}`}</button></div>`
+        h += `<div class="btns"><button class="btn ${queued ? 'on' : ''}" data-act="build" data-node="${id}" data-what="${nb}" ${ok ? '' : 'disabled'}>${queued ? `${BUILD_NAME[nb]} 짓는 중` : `${josa(BUILD_NAME[nb], '을', '를')} 두른다 · 나무 ${bc.wood} · 곡식 ${bc.grain}`}</button></div>`
         h += `<p class="mute">${nb === 'palisade' ? '목책을 두르면 지키는 쪽이 세진다.' : '해자를 파면 목책 앞에서 한 번 더 막는다.'} 다음 계절에 선다.</p>`
       }
     }
@@ -1604,7 +1604,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       } else if (l.kind === 'rumor' && l.viewer === pl) {
         c = [0.45, { ev: 'event-spy-rumor', hero: null, line: `${fn(l.about)}에서 첩보가 왔다` }]
       } else if (l.kind === 'bowUp' && l.faction === pl) {
-        c = [0.65, { ev: 'event-bow-forge', hero: null, line: `자객의 활이 ${BOW_NAME[l.tier] ?? ''}이 됐다` }]
+        c = [0.65, { ev: 'event-bow-forge', hero: null, line: `자객의 활이 ${josa(BOW_NAME[l.tier] ?? '', '이', '가')} 됐다` }]
       } else if (l.kind === 'pledge' && l.from === pl && l.kept) {
         c = [0.8, { ev: 'event-eight-harbours', hero: null, line: `${josa(fn(l.to), '과', '와')} 함께 쳤다` }]
       } else if (l.kind === 'envoy' && l.from === pl && l.accepted && l.ask === 'trade') {

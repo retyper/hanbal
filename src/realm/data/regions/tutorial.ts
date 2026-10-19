@@ -52,7 +52,7 @@ const h = (
 
 const HEROES: Hero[] = [
   h('us-ruler', '읍차 해솔', 'us', 'w', [3, 5, 6, 6, 8, 9], ['charm'], 'our-cap'),
-  h('chief', '신궁', 'us', 'g', [7, 5, 6, 4, 5, 8], ['archer', 'nighteye']),
+  h('chief', '살해 매눈', 'us', 'g', [7, 5, 6, 4, 5, 8], ['archer', 'nighteye']),
   h('us-1', '험측 돌개', 'us', 'g', [5, 5, 4, 6, 4, 7], ['farmer'], 'our-cap'),
   h('guya-ruler', '진지렴 쇠보', 'guya', 'g', [6, 7, 4, 5, 4, 8], ['smith'], 'guya-cap'),
   // 사로잡기를 배우는 상대 장수 — 여인. 무예가 낮아 일기토도 겁낼 것 없다

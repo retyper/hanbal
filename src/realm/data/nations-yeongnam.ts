@@ -127,7 +127,7 @@ export const YEONGNAM_NATIONS: readonly NationInfo[] = [
   },
   {
     id: 'us', name: '골포국', place: '마산 (설)',
-    blurb: '가장 작은 바닷가 나라. 군장이 신궁이다. 어렵다.',
+    blurb: '가장 작은 바닷가 나라. 땅은 좁아도 매눈의 활 솜씨는 바다 건너까지 알려졌다. 어렵다.',
     source: '『삼국사기』 물계자전·나해이사금 — 바닷가 여덟 나라(포상팔국)의 하나.',
     bars: { army: 1, grain: 2, militia: 1, terrain: 2 },
     hard: true,

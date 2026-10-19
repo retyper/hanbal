@@ -259,7 +259,7 @@ const HEROES: Hero[] = [
   h('chopal-ruler', '읍차 팔매', 'chopal', 'g', [6, 5, 4, 4, 4, 6], ['careful'], 'y-chopal-cap'),
   h('us-ruler', '읍차 해솔', 'us', 'w', [3, 5, 6, 6, 8, 9], ['charm'], 'y-us-cap'),
   // 장군 — 나라마다 군대를 이끄는 이 (큰 나라는 둘)
-  h('chief', '신궁', 'us', 'g', [7, 5, 6, 4, 5, 8], ['archer', 'nighteye']),
+  h('chief', '살해 매눈', 'us', 'g', [7, 5, 6, 4, 5, 8], ['archer', 'nighteye']),
   h('saro-1', '견지 박달', 'saro', 'g', [7, 7, 5, 4, 4, 7], ['careful']),
   h('saro-2', '번예 노을', 'saro', 'w', [6, 5, 6, 4, 5, 6], ['archer']),
   h('guya-1', '견지 거타', 'guya', 'g', [7, 7, 5, 6, 4, 6], ['ironhand']),

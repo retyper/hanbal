@@ -150,7 +150,7 @@ const HEROES: Hero[] = [
   h('goja-ruler', '험측 바우', 'goja', 'g', [5, 5, 5, 5, 5, 7], ['river', 'trader'], 'goja-cap'),
   h('dokro-ruler', '읍차 가람', 'dokro', 'g', [6, 6, 5, 4, 4, 7], ['trader'], 'dokro-cap'),
   // 장군 — 군대를 이끌거나 고을을 맡는다
-  h('chief', '신궁', 'us', 'g', [7, 5, 6, 4, 5, 8], ['archer', 'nighteye']), // 골포국의 활 쏘는 장군 (FLOW §3: 작은 나라는 장수가 세다)
+  h('chief', '살해 매눈', 'us', 'g', [7, 5, 6, 4, 5, 8], ['archer', 'nighteye']), // 골포국의 활 쏘는 장군 (FLOW §3: 작은 나라는 장수가 세다)
   h('us-1', '험측 돌개', 'us', 'g', [5, 5, 4, 6, 4, 7], ['farmer'], 'our-cap'),
   h('guya-1', '견지 거타', 'guya', 'g', [7, 7, 5, 6, 4, 6], ['ironhand']),
   h('guya-2', '험측 마루', 'guya', 'g', [6, 4, 3, 3, 3, 5], ['glutton']),

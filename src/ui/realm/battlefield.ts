@@ -103,9 +103,9 @@ const CMD_UNITS: Partial<Record<Cmd, string>> = { charge: '창병·기병', voll
 function mightWord(c: Cmd, m: number): [string, string] {
   const u = CMD_UNITS[c]
   if (u === undefined) return m >= 1.2 ? ['잘 맞는다', 'hi'] : m >= 0.9 ? ['그저 그렇다', 'mid'] : ['안 맞는다', 'lo']
-  if (m >= 1.2) return [`우리 ${u}이 넉넉해 잘 먹힌다`, 'hi']
-  if (m >= 0.9) return [`우리 ${u}이 조금 있어 그저 그렇다`, 'mid']
-  return [`우리 ${u}이 적어 잘 안 먹힌다`, 'lo']
+  if (m >= 1.2) return [`우리 ${josa(u, '이', '가')} 넉넉해 잘 먹힌다`, 'hi']
+  if (m >= 0.9) return [`우리 ${josa(u, '이', '가')} 조금 있어 그저 그렇다`, 'mid']
+  return [`우리 ${josa(u, '이', '가')} 적어 잘 안 먹힌다`, 'lo']
 }
 
 function captureWord(p: number): [string, string] {
