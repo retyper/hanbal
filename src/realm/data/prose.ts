@@ -167,6 +167,9 @@ export const ASK_KIND_NAME: Record<Ask['kind'], string> = {
  * 보고의 한 줄을 글로 — 보는 나라(viewer)의 눈으로. 남의 나라끼리의 일은 소문처럼 짧게.
  * `before` 는 넘기기 전 판 (사라진 군대의 이름을 찾으려고).
  */
+/** 들킨 공작이 누가 보냈는지까지 드러났나 — 옛 줄(exposed 없음)은 들킴이 곧 드러남이었다 */
+const exposedOf = (l: { readonly caught: boolean; readonly exposed?: boolean }): boolean => l.caught && (l.exposed ?? true)
+
 export function reportText(before: Realm, after: Realm, line: ReportLine, viewer: string): string | null {
   const nameArmy = (id: string): string => (before.armies[id] !== undefined ? armyName(before, id) : armyName(after, id))
   const fname = (id: string): string => after.factions[id]?.name ?? '?'
@@ -275,16 +278,41 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
             : line.agent === undefined ? ` ${josa(agent, '이', '가')} 붙잡혔다. 값만 날렸다.`
               : line.agentFate === 'escaped' ? ` 들켰지만 ${josa(agent, '이', '가')} 지붕을 타고 빠져나왔다.`
                 : ` ${josa(agent, '이', '가')} 붙잡혔다.`
-          if (line.ok) return `자객의 화살이 ${josa(who, '을', '를')} 꿰뚫었다. ${line.result === 'kill' ? `${josa(who, '이', '가')} 죽었다.` : `${josa(who, '은', '는')} 두 계절 동안 일어나지 못한다.`}${fateLine}`
-          return `암살이 틀어졌다.${line.caught ? fateLine : ` ${josa(agent, '은', '는')} 어둠 속으로 물러났다.`}`
+          const whoKnows = !line.caught ? '' : exposedOf(line)
+            ? ` ${josa(target, '이', '가')} 우리가 보낸 줄 안다. 사이가 크게 틀어졌다.`
+            : line.agentFate === 'captured' ? ` 아직 입을 다물고 있다 — ${josa(target, '은', '는')} 누가 보냈는지 모른다.`
+              : ` ${josa(target, '은', '는')} 누가 보냈는지 모른다.`
+          if (line.ok) return `자객의 화살이 ${josa(who, '을', '를')} 꿰뚫었다. ${line.result === 'kill' ? `${josa(who, '이', '가')} 죽었다.` : `${josa(who, '은', '는')} 두 계절 동안 일어나지 못한다.`}${fateLine}${whoKnows}`
+          return `암살이 틀어졌다.${line.caught ? fateLine + whoKnows : ` ${josa(agent, '은', '는')} 어둠 속으로 물러났다.`}`
         }
-        if (line.ok) return `공작이 먹혔다. ${did}${line.caught ? ` 다만 ${josa(target, '이', '가')} 눈치챘다.` : ''}`
-        return `공작이 틀어졌다. ${PLOT_NAME[line.op]}.${line.caught ? ` ${josa(target, '이', '가')} 알아챘다. 사이가 나빠졌다.` : ''}`
+        const knew = exposedOf(line)
+          ? ` ${josa(target, '이', '가')} 우리 짓인 줄 안다. 사이가 나빠졌다.`
+          : ` ${josa(target, '이', '가')} 눈치챘지만 누가 했는지는 모른다.`
+        if (line.ok) return `공작이 먹혔다. ${did}${line.caught ? knew : ''}`
+        return `공작이 틀어졌다. ${PLOT_NAME[line.op]}.${line.caught ? knew : ''}`
       }
-      // 우리가 당한 공작 — 들켰을 때만 누가 했는지 안다
+      // 우리가 당한 공작 — 들켰으면 일이 있었음을 안다. 누가 보냈는지는 드러났을 때만 (형: "어디서보낸 첩자인지 알기도 모르기도")
       if ((line.target === viewer || line.other === viewer) && line.caught) {
-        return `${fname(line.faction)}의 ${PLOT_NAME[line.op]} 공작을 잡아냈다.${line.ok ? ' 그래도 일은 벌어졌다.' : ''}`
+        const from = exposedOf(line) ? fname(line.faction) : null
+        if (line.op === 'assassin' && line.target === viewer) {
+          const v = line.hero !== undefined ? (after.heroes[line.hero]?.name ?? '장수') : '장수'
+          const hit = !line.ok ? `${josa(v, '을', '를')} 노린 화살이 빗나갔다.`
+            : line.result === 'kill' ? `${josa(v, '이', '가')} 자객의 화살에 죽었다.` : `${josa(v, '이', '가')} 자객의 화살에 맞았다.`
+          const caughtAgent = line.agent === undefined || line.agentFate === 'captured'
+          const catchLine = caughtAgent ? ' 자객을 붙잡았다.' : ' 자객은 지붕을 타고 달아났다.'
+          if (from !== null) return `${hit}${catchLine} ${josa(from, '이', '가')} 보낸 자객이다.`
+          return `${hit}${catchLine} ${caughtAgent ? '입을 열지 않는다 — 어디서 왔는지 모른다.' : '어디서 왔는지 모른다.'}`
+        }
+        if (from !== null) return `${from}의 ${PLOT_NAME[line.op]} 공작을 잡아냈다.${line.ok ? ' 그래도 일은 벌어졌다.' : ''}`
+        if (line.other === viewer && line.target !== viewer) return null // 이간의 다른 쪽은 누가 했는지 모르면 알 길이 없다
+        return `누군가 ${PLOT_NAME[line.op]} 공작을 벌이다 들켰다. 어디서 보냈는지는 모른다.${line.ok ? ' 그래도 일은 벌어졌다.' : ''}`
       }
+      return null
+    }
+    case 'confess': {
+      const name = after.heroes[line.hero]?.name ?? '자객'
+      if (line.to === viewer) return `붙잡아 둔 자객 ${josa(name, '이', '가')} 입을 열었다. ${josa(fname(line.from), '이', '가')} 보냈다고 한다.`
+      if (line.from === viewer) return `붙잡힌 ${josa(name, '이', '가')} 끝내 실토했다. ${josa(fname(line.to), '이', '가')} 우리가 보낸 줄 알게 됐다.`
       return null
     }
     case 'bowUp':
