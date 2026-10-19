@@ -87,7 +87,7 @@ export const FACTION_ART: Readonly<Record<string, { emblem: string; color: strin
   guya: { emblem: 'emblem-twinfish', color: '#e0b64a' }, // 쌍어 — 김해
   anya: { emblem: 'emblem-mountain', color: '#d0674f' },
   miri: { emblem: 'emblem-grain', color: '#6fa8dc' },
-  goja: { emblem: 'emblem-sun', color: '#4fc1b0' },
+  goja: { emblem: 'emblem-pine', color: '#4fc1b0' },
   dokro: { emblem: 'emblem-boar', color: '#b48ad8' },
   // 영남 판의 새 나라 열다섯 — 깃발은 나눠 쓰고 색으로 가른다
   saro: { emblem: 'emblem-rooster', color: '#f0d050' },
