@@ -74,7 +74,7 @@ function winVs(
   // 행군은 보인다 (FLOW §7 #2) — 그 고을 주인이 보내는 보인 증원은 범위 위쪽에 더한다 (언제 닿을지는 모른다)
   let extra = 0
   for (const a of seenMarches(r, faction)) if (a.faction === node.owner && a.march!.to === to) extra += strength(forceOf(r, a))
-  const mil = strength({ mix: { spear: militiaMen(r, to) }, equip: 'bronze', mu: 1, morale: 1 })
+  const mil = strength({ mix: { spear: militiaMen(r, to) }, equip: 'stone', mu: 1, morale: P.realm.militiaMorale })
   const lo = range[0]
   const hi = range[1] + extra
   const span = (f: number, dLo: number, dHi: number): Range => [winChance(f, dHi), winChance(f, dLo)]

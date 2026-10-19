@@ -192,7 +192,8 @@ export function militiaOf(r: Realm, node: string): Army | null {
   const n = r.nodes[node]
   const men = militiaMen(r, node)
   if (n === undefined || n.owner === null || men <= 0) return null
-  return { id: `~militia:${node}`, faction: n.owner, hero: null, mix: { spear: men }, equip: 'bronze', morale: 1, at: node, march: null }
+  // 농사꾼이 돌창·몽둥이로 나와 막는다 — 수는 많아도 약하다 (militiaMorale)
+  return { id: `~militia:${node}`, faction: n.owner, hero: null, mix: { spear: men }, equip: 'stone', morale: P.realm.militiaMorale, at: node, march: null }
 }
 
 /** 동맹의 땅은 지나간다 (FLOW §4) — 그 고을의 주인과 머무는 군대가 전부 제 편이거나 동맹이면 싸움이 아니다 */
@@ -447,7 +448,7 @@ function draftArmy(r: Realm, o: Extract<Order, { kind: 'draft' }>, lines: Report
   if (up !== null) stockOf(r, o.faction).iron -= up.iron
   addMen(army, o.unit, o.n, tier)
   army.morale = (army.morale * had + o.n) / (had + o.n) // 새로 든 사람은 사기 1
-  node.hh -= o.n
+  node.hh -= Math.round(o.n * P.realm.draftHHPerMan) // 집이 사라지는 게 아니라 일손이 빠진다
   stockOf(r, o.faction).grain -= draftCost(o.n).grain
   const need = draftNeeds(o.unit, o.n) // 배의 나무 · 기병의 말
   if (need.wood > 0) addGood(r, o.faction, 'wood', -need.wood)
@@ -462,7 +463,7 @@ function disbandArmy(r: Realm, o: Extract<Order, { kind: 'disband' }>, lines: Re
   const node = r.nodes[a.at]
   if (node === undefined || node.owner !== a.faction) return
   const n = headcount(forceOf(r, a))
-  node.hh += n
+  node.hh += Math.round(n * P.realm.draftHHPerMan) // 빠졌던 일손이 돌아온다
   if (a.hero !== null && r.heroes[a.hero] !== undefined) r.heroes[a.hero]!.at = node.id // 장수는 그 고을에 혼자 남는다
   delete r.armies[a.id]
   lines.push({ kind: 'disband', army: a.id, node: node.id, n })

@@ -734,12 +734,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (note !== '') h += `<div class="banner bad">${tx(note)}</div>`
     // 군사 뽑기와 집 옮기기(개척)를 두 칸으로 갈라 색으로 (형: "집 들이는거랑 군사뽑는거랑 구분이안가서 헷갈림")
     const lands = [...new Set([...settleTargets(r, me()).map((t) => t.to), ...settlePending().map((o) => o.to)])].sort()
-    h += `<div class="twoway"><button class="sec men" data-act="jump" data-to="sec-draft">${icon('unit-spear')}<b>군사 뽑기</b><span>집 사람이 군사가 된다</span></button>`
+    h += `<div class="twoway"><button class="sec men" data-act="jump" data-to="sec-draft">${icon('unit-spear')}<b>군사 뽑기</b><span>집에서 사내를 뽑는다</span></button>`
     h += `<button class="sec home" data-act="jump" data-to="sec-settle">${icon('settle-farm-village')}<b>개척</b><span>${lands.length > 0 ? '집을 빈땅으로 옮겨 새 마을' : '맞닿은 빈땅이 없다'}</span></button>`
     h += `<button class="sec move" data-act="jump" data-to="sec-move">${icon('unit-porters')}<b>이주</b><span>${r.factions[me()]?.migrateOff === true ? '자동 분배 꺼짐' : '자동 분배 켜짐'}</span></button></div>`
     h += `<h4 id="sec-draft" class="sech men">${icon('unit-spear')}군사 뽑기</h4>`
     // 집 · 장정 · 군사가 뭐가 다른지 (형: "장정이랑 징병, 병사 뭔차이임?") — 한 줄 그림으로
-    h += `<div class="flow3"><div>${icon('settle-farm-village')}<b>집</b><span>농사짓고 곡식을 낸다</span></div><i>징병 →</i>`
+    h += `<div class="flow3"><div>${icon('settle-farm-village')}<b>집</b><span>다섯 식구 남짓 · 농사짓고 곡식을 낸다</span></div><i>징병 →</i>`
       + `<div>${icon('unit-spear')}<b>군사</b><span>움직이고 쳐들어간다 · 곡식을 먹는다</span></div></div>`
       + `<p class="mute">${tx('장정은 뽑지 않은 집의 사내들이다. 적이 오면 제 고을만 지킨다. 집이 많을수록 많고, 곡식을 안 먹는다.')}</p>`
     if (season === 'spring') h += `<div class="banner bad">${tx('봄에 뽑으면 그해 가을 수확이 준다')}</div>`
@@ -1294,7 +1294,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + `<p><b>봄</b> 씨를 뿌린다. 봄에 심은 집 수만큼 가을에 거둔다. <b>여름</b> 장마. 나루가 막히고 길이 느리다. `
       + `<b>가을</b> 추수. 곡식이 들어온다. <b>겨울</b> 강이 언다. 언 강으로 기습하기 좋다. 고개가 막힌다. 군량이 더 든다.</p>`
       + `<p><b>개척</b> 빈땅은 아무도 안 사는 땅이다. 그 땅을 누르거나 징병 탭 아래에서, 맞닿은 우리 고을 사람을 보낸다. 곡식이 들고, 일군 땅은 빨리 큰다. 군대로 먼저 깃발만 꽂아 둘 수도 있다.</p>`
-      + `<p><b>집 · 장정 · 군사</b> 집은 농사짓고 곡식을 낸다. 징병하면 집이 군사가 된다. 군사는 움직이고 쳐들어가지만 곡식을 먹는다. 곡식이 떨어지면 사기가 꺾인다. 장정은 뽑지 않은 집의 사내들로, 적이 오면 제 고을만 지킨다. 해산하면 군사가 다시 집이 된다.</p>`
+      + `<p><b>집 · 장정 · 군사</b> 집은 농사짓고 곡식을 낸다. 집 한 채는 다섯 식구 남짓이다. 징병하면 집에서 사내를 뽑는다 — 군사 둘에 집 한 채 몫의 일손이 빠져 그만큼 덜 거둔다. 군사는 움직이고 쳐들어가지만 곡식을 먹는다. 곡식이 떨어지면 사기가 꺾인다. 장정은 뽑히지 않은 사내들로, 적이 오면 돌창·몽둥이를 들고 제 고을만 지킨다(집 둘에 하나꼴 · 수는 많아도 약하다). 해산하면 일손이 집으로 돌아간다.</p>`
       + `<p><b>지도</b> 땅 색과 깃발이 주인. 왼쪽 위 깃발을 누르면 그 나라 땅만 또렷하다. 초록 수는 우리 군사, 붉은 수는 척후가 본 적 군세, ?는 아직 못 본 곳. ✕는 이번 계절 막힌 길. 보랏빛 화살은 다가오는 적.</p>`
       + `<p><b>판세</b>는 색으로 보인다. 초록이면 이길 듯하고 붉으면 질 듯하다. 두 색이 섞이고 ?가 붙으면 아직 잘 모른다. 정찰하면 또렷해진다.</p>`
       + `<p><b>소도</b> 성스러운 땅이라 아무도 못 친다. 소도 곁 고을을 차지하면 봄·가을에 제사를 지낸다. 봄 제사는 수확을, 가을 제사는 사기를 올린다.</p>`
@@ -1325,6 +1325,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     if (ours) {
       const men = Object.values(r.armies).filter((a) => a.at === id && a.faction === me() && a.march === null).reduce((s, a) => s + headcount(forceOf(r, a)), 0)
+      h += `<p class="mute">${tx(`집 ${Math.floor(n.hh).toLocaleString('ko-KR')} · 사람 약 ${Math.round(n.hh * P.realm.peoplePerHH).toLocaleString('ko-KR')}`)}</p>`
       h += `<div class="grid4"><div><b>${Math.floor(n.hh)}</b><span>집</span></div><div><b>${militiaMen(r, id)}</b><span>장정</span></div><div><b>${men}</b><span>군사</span></div><div><b>${draftLimit(r, me(), id)}</b><span>더 뽑을 수</span></div></div>`
       const g = hhGrowth(r, id)
       h += `<p class="mute">다음 계절 집 <b>${g.per >= 0 ? '+' : ''}${g.per}</b>${g.why.length > 0 ? ` · ${g.why.map((w) => GROWTH_WHY[w] ?? w).join(' · ')}` : ''}</p>`

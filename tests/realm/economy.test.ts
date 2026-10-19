@@ -127,11 +127,12 @@ describe('한 해의 살림', () => {
 })
 
 describe('징병 · 해산', () => {
-  it('징병은 가호를 군사로 옮기고 채비 곡식을 쓴다 — (가호 + 군사)는 그대로', () => {
+  it('징병은 가호의 일손을 군사로 옮기고 채비 곡식을 쓴다 — 군사 하나에 집 draftHHPerMan 몫', () => {
     const r = byeonhanMini(1)
     const n = 20
     const p = planned(r, [{ kind: 'draft', faction: 'us', node: 'our-cap', unit: 'bow', n }])
-    assert.equal(hhOf(p, 'us') + menOf(p, 'us'), hhOf(r, 'us') + menOf(r, 'us'))
+    // 집이 통째로 사라지지 않는다 (형: "5명으로 무슨 고을을 어떻게 지켜") — 일손 몫만 빠진다
+    assert.equal(hhOf(p, 'us'), hhOf(r, 'us') - Math.round(n * P.realm.draftHHPerMan))
     assert.equal(menOf(p, 'us'), menOf(r, 'us') + n)
     assert.equal(p.stock['us']!.grain, r.stock['us']!.grain - draftCost(n).grain)
     assert.equal(p.armies['a-us']!.mix.bow, (r.armies['a-us']!.mix.bow ?? 0) + n, '쉬는 군대에 든다')
@@ -165,8 +166,7 @@ describe('징병 · 해산', () => {
     const r = byeonhanMini(1)
     const p = planned(r, [{ kind: 'disband', army: 'a-us' }])
     assert.equal(p.armies['a-us'], undefined)
-    assert.equal(p.nodes['our-cap']!.hh, r.nodes['our-cap']!.hh + menOf(r, 'us'))
-    assert.equal(hhOf(p, 'us') + menOf(p, 'us'), hhOf(r, 'us') + menOf(r, 'us'))
+    assert.equal(p.nodes['our-cap']!.hh, r.nodes['our-cap']!.hh + Math.round(menOf(r, 'us') * P.realm.draftHHPerMan))
     // 남의 땅에서는 해산하지 못한다
     const away = planned(r, [])
     away.armies['a-us']!.at = 'sodo'
