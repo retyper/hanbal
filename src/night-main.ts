@@ -5,6 +5,8 @@
  *   - **임무** `night.html?seed=…&arrows=…&id=…` — 칠십팔국의 공작 '암살'이 연다. 끝나면 결과를
  *     localStorage `hanbal.night.result` 에 남긴다 (`{ id, seed, result, alarm, arrowsLeft, stage, at }`).
  *     칠십팔국은 돌아와서 그 키를 읽고 지운다. 같은 창 안의 틀(iframe)로 열었으면 `postMessage` 도 한 번 보낸다.
+ *     첫 화면에서 **연습 먼저**(다른 시드의 지붕 · 같은 활·화살 · 결과 안 보냄)와 **건너뛰기**(`result: 'skip'`,
+ *     진짜 지붕에서 첫 살 전에 누르면 `seen: true` — 굴림이 조금 준다)를 고른다 (형 2026-10-19).
  *   - **연습장** `night.html?practice=1` (형: "궁술연습장도 만들어서 아무때나 해볼수 있게") — 판 고르기 · 화살 ∞ ·
  *     발각 게이지 켬/끔. 결과는 내보내지 않고, 기록만 `hanbal.night.practice` 에 남긴다 (형의 원칙: 다 남긴다).
  *
@@ -24,6 +26,7 @@ import { P } from './tune/params.ts'
 import { BOW_NAME, createNight, stepNight, type Night, type NightResult } from './night/sim.ts'
 import { createView, drawNight, pumpView } from './night/draw.ts'
 import { PRACTICE_STAGES, stageTitle } from './night/layout.ts'
+import { rehearsalSeed, reportsResult, type NightMode } from './night/mission.ts'
 
 const RESULT_KEY = 'hanbal.night.result'
 const PRACTICE_KEY = 'hanbal.night.practice'
@@ -60,6 +63,15 @@ const newSeed = (): number => (Date.now() ^ Math.floor(Math.random() * 0x7ffffff
 let night: Night | null = null
 let practiceStage = 0
 let practiceAlarm = true
+/**
+ * 임무 전 연습 (형: "암살은 쏘기전에 연습모드 먼저 할수 있게 해줘") — 같은 활·같은 화살 수로 **다른 지붕**을 쏴 본다.
+ * 시드는 진짜 시드에서 갈라 내되 같지 않게 — 진짜 지붕의 배치를 미리 보지 못한다. 결과는 칠십팔국으로 안 보낸다.
+ */
+let rehearsal = false
+let rehearsals = 0
+const missionSeed = Number(params.get('seed') ?? newSeed()) >>> 0
+const missionArrows = Number(params.get('arrows') ?? P.night.arrows)
+const mode = (): NightMode => (practiceMode ? 'practice' : rehearsal ? 'rehearsal' : 'mission')
 
 // ───────────────────────── 소리 — 밤의 것만 (활 소리는 활터 sfx 그대로) ─────────────────────────
 
@@ -117,6 +129,9 @@ const CSS = `
 #night-ui .steady.on span { background: #3a3020; color: #ffd27a; } #night-ui .steady.on { box-shadow: 0 0 0 3px #ffd27a, 0 0 18px #ffd27a88; }
 #night-ui .turn { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); padding: 4px 12px; border-radius: 12px; background: #000a; color: #95a1ae; font-size: 12px; }
 #night-ui .quit { pointer-events: auto; position: absolute; left: 12px; top: 44px; padding: 4px 10px; font-size: 12px; background: #1b2028aa; }
+#night-ui .skip { pointer-events: auto; position: absolute; left: 12px; top: 80px; padding: 4px 10px; font-size: 12px; background: #1b2028aa; }
+#night-ui .tag { position: absolute; left: 50%; top: 46px; transform: translateX(-50%); padding: 3px 14px; border-radius: 12px;
+  background: #3a3020dd; border: 1px solid #e0bd78; color: #ffd27a; font-weight: 800; letter-spacing: .2em; }
 `
 const style = document.createElement('style')
 style.textContent = CSS
@@ -171,20 +186,31 @@ function showPractice(): void {
   ui.innerHTML = h
 }
 
+/** 임무 첫 화면 — 연습 먼저 · 들어간다 · 건너뛰기 (쏘기 전에 고른다) */
 function showMissionIntro(): void {
-  const arrows = Number(params.get('arrows') ?? P.night.arrows)
-  ui.innerHTML = `<div class="card"><h1>밤의 암살</h1><p>기와지붕 위에 엎드렸다. 화살 ${arrows}발.</p>`
+  night = null
+  rehearsal = false
+  ui.innerHTML = `<div class="card"><h1>밤의 암살</h1><p>기와지붕 위에 엎드렸다. 화살 ${missionArrows}발.</p>`
     + `<p class="mute">보초를 다 쓰러뜨리고 셋째 판의 창호지 뒤 그림자를 쏜다. 빗나간 살은 소리를 낸다. 시체가 등불 아래 있으면 들킨다. 등불을 쏘면 꺼진다.</p>`
     + `<p class="mute">아무 데나 누르고 뒤로 끈다 — 끈 쪽의 반대로 겨눈다 · 놓으면 쏜다 · 누른 자리로 돌아와 놓으면 그만둔다. 오른쪽 아래 「숨 참기」를 누르고 있으면 떨림이 멎는다.</p>`
-    + `<div class="btns"><button class="on" data-act="go">들어간다</button></div></div>`
+    + `<div class="btns"><button data-act="rehearse">연습 먼저</button><button class="on" data-act="go">들어간다</button></div>`
+    + `<p class="mute">연습은 다른 지붕에서 같은 활·같은 화살로 쏜다. 몇 번이든 되고, 결과는 남지 않는다.</p>`
+    + `<div class="btns"><button data-act="skip0">건너뛰기 · 자객에게 맡긴다</button></div></div>`
 }
 
 function hud(): void {
   ui.innerHTML = `<button class="steady" data-act="steady"><span>숨 참기<i>누르고 있는다</i></span></button><button class="quit" data-act="quit">그만</button>`
+    + (rehearsal ? `<div class="tag">연습</div>` : '')
+    // 진짜 임무에서 첫 살을 쏘기 전까지만 건너뛸 수 있다 — 쏘고 나서 맡기는 길은 없다
+    + (!practiceMode && !rehearsal && (night?.shots ?? 0) === 0 ? `<button class="skip" data-act="skip">건너뛰기</button>` : '')
     + (innerHeight > innerWidth ? `<div class="turn">가로로 돌리면 크게 보인다</div>` : '')
   breathBtn = ui.querySelector<HTMLElement>('.steady')
+  skipBtn = ui.querySelector<HTMLElement>('.skip')
   shownSt = -1
 }
+
+/** 건너뛰기 단추 — 첫 살을 쏘면 거둔다 */
+let skipBtn: HTMLElement | null = null
 
 /** 숨 참기 단추의 테 = 스태미나 (빨간 바 아래로 내려가면 붉게) — 바뀔 때만 고친다 */
 let breathBtn: HTMLElement | null = null
@@ -210,9 +236,13 @@ const LINES: Record<NightResult['result'], (r: NightResult) => string> = {
 function showResult(n: Night): void {
   const r = n.result!
   const good = r.result === 'dead' || r.result === 'wounded' || r.result === 'cleared'
-  let h = `<div class="card"><h1 style="color:${good ? '#8fd07a' : '#e08a74'}">${esc(LINES[r.result](r))}</h1>`
+  let h = `<div class="card">${rehearsal ? '<p class="mute">연습 — 남지 않는다</p>' : ''}<h1 style="color:${good ? '#8fd07a' : '#e08a74'}">${esc(LINES[r.result](r))}</h1>`
   h += `<p class="mute">쏜 ${n.shots} · 맞힘 ${n.hits} · 머리 ${n.heads}${n.practice === null ? ` · 남은 화살 ${r.arrowsLeft}` : ''}</p><div class="btns">`
-  if (n.practice !== null) {
+  if (rehearsal) {
+    // 연습 — 칠십팔국으로 안 보낸다. 다시 연습하거나 진짜로 들어간다
+    h += `<button data-act="rehearse">다시 연습</button><button class="on" data-act="go">진짜로 쏜다</button></div>`
+    h += `<div class="btns"><button data-act="skip0">건너뛰기 · 자객에게 맡긴다</button>`
+  } else if (n.practice !== null) {
     saveRun({ at: new Date().toISOString(), stage: n.stage, alarm: n.practice.alarm, shots: n.shots, hits: n.hits, heads: n.heads, result: r.result })
     h += `<button class="on" data-act="go">다시</button><button data-act="menu">판 고르기</button>`
   } else {
@@ -224,6 +254,7 @@ function showResult(n: Night): void {
 
 /** 임무의 결과를 칠십팔국으로 — localStorage 한 키 (+ 틀 안이면 postMessage) */
 function exportResult(n: Night, r: NightResult): void {
+  if (!reportsResult(mode())) return // 연습은 남지 않는다
   const out = { id: missionId, seed: n.seed, ...r, at: new Date().toISOString() }
   try {
     localStorage.setItem(RESULT_KEY, JSON.stringify(out))
@@ -233,11 +264,32 @@ function exportResult(n: Night, r: NightResult): void {
   if (window.parent !== window) window.parent.postMessage({ type: RESULT_KEY, ...out }, location.origin)
 }
 
+/**
+ * 건너뛰기 — 쏘지 않고 자객 솜씨로 굴린다 (칠십팔국 plots.ts). `seen` 은 진짜 지붕을 본 뒤인가 —
+ * 그러면 굴림이 조금 준다 (P.realm.plotSkipSeenMul). 틀 안이면 칠십팔국이 밤 판을 닫는다
+ */
+function skipMission(seen: boolean): void {
+  if (practiceMode || missionId === '') return
+  rehearsal = false // 연습 중이었어도 건너뛰면 진짜 임무를 맡긴다
+  const out = { id: missionId, seed: missionSeed, result: 'skip' as const, alarm: false, seen, at: new Date().toISOString() }
+  try {
+    localStorage.setItem(RESULT_KEY, JSON.stringify(out))
+  } catch {
+    // 저장이 막힌 창 — 안 쏜 것과 같다 (굴림)
+  }
+  night = null
+  if (window.parent !== window) window.parent.postMessage({ type: RESULT_KEY, ...out }, location.origin)
+  ui.innerHTML = `<div class="card"><h1>자객에게 맡겼다</h1><p class="mute">자객 솜씨로 굴린다. 결과는 계절이 넘어갈 때 온다.</p>`
+    + `<div class="btns"><button class="on" data-act="back">돌아가기</button></div></div>`
+}
+
 function start(): void {
   view.pops = []
   night = practiceMode
     ? createNight({ seed: newSeed(), bowTier, practice: { stage: practiceStage, alarm: practiceAlarm, infinite: true } })
-    : createNight({ seed: Number(params.get('seed') ?? newSeed()) >>> 0, bowTier, arrows: Number(params.get('arrows') ?? P.night.arrows) })
+    : rehearsal
+      ? createNight({ seed: rehearsalSeed(missionSeed, rehearsals), bowTier, arrows: missionArrows })
+      : createNight({ seed: missionSeed, bowTier, arrows: missionArrows })
   hud()
   acc = 0
 }
@@ -249,12 +301,17 @@ ui.addEventListener('click', (ev) => {
   switch (t.dataset['act']) {
     case 'stage': practiceStage = Number(t.dataset['i']); showPractice(); break
     case 'alarm': practiceAlarm = !practiceAlarm; showPractice(); break
-    case 'go': start(); break
+    // 들어간다 · 진짜로 쏜다 — 연습에서 왔으면 연습을 끄고 진짜 시드로
+    case 'go': if (!practiceMode) rehearsal = false; start(); break
+    case 'rehearse': rehearsal = true; rehearsals++; start(); break
+    case 'skip0': skipMission(false); break
+    case 'skip': if (night !== null && night.result === null && night.shots === 0 && !rehearsal) skipMission(true); break
     case 'menu': showPractice(); break
     case 'practice': location.search = '?practice=1'; break
     case 'back': location.href = back; break
     case 'quit':
       if (night !== null && practiceMode) showPractice()
+      else if (rehearsal) showMissionIntro() // 연습에서 그만 — 첫 화면으로
       else if (night !== null && night.result === null) {
         // 임무에서 그만 — 조용히 물러난 것으로 친다
         night.result = { result: 'withdrew', alarm: night.alarm >= 1, arrowsLeft: night.w.arrowsLeft, stage: night.stage }
@@ -326,6 +383,10 @@ function frame(now: number): void {
     n.events.length = 0
     drawNight(ctx, view, n, now, input.pull)
     syncBreath(n)
+    if (skipBtn !== null && n.shots > 0) {
+      skipBtn.remove()
+      skipBtn = null
+    }
     if (n.result !== null && !shownEnd) {
       shownEnd = true
       showResult(n)

@@ -1676,6 +1676,7 @@ export const SPEC = {
     plotBaseAssassin: k(0.35, 0, 1, 0.01, '공작 바탕 — 암살'),
     plotAssassinPerMu: k(0.04, 0, 0.2, 0.01, '암살: 노린 장수 무예 1 마다 감산 (자객 지략 1 마다 가산은 plotPerRyak)'),
     plotAssassinKill: k(0.25, 0, 1, 0.01, '암살이 먹히면 죽을 확률 (나머지는 다친다)'),
+    plotSkipSeenMul: k(0.85, 0.5, 1, 0.05, '암살 건너뛰기: 진짜 지붕을 본 뒤에 자객에게 맡기면 굴림이 이만큼 (안 보고 맡기면 1 — 보고 고르는 맛을 막는다)'),
     plotWoundSeasons: k(2, 1, 8, 1, '다친 장수가 군대를 못 이끄는 계절'),
     plotRumorMorale: k(0.15, 0, 0.5, 0.01, '소문이 먹히면 그 나라 군대 사기가 이만큼 준다 (moraleFloor 까지)'),
     plotSowWar: k(0.35, 0, 1, 0.05, '이간: 중립인 두 나라가 전쟁이 될 확률 (화친·동맹은 한 칸 내려간다)'),

@@ -139,6 +139,16 @@ export interface Goods {
  */
 export type EnvoyAsk = 'truce' | 'trade' | 'tribute' | 'alliance' | 'gift' | 'joint' | 'aid' | 'troops' | 'break'
 
+/**
+ * 밤 판의 손 — 직접 쏜 결과(dead·wounded·fled·withdrew) 또는 건너뛰기(skip: 자객 솜씨로 굴린다).
+ * 건너뛰기의 `seen` 은 진짜 지붕을 본 뒤에 맡겼나 — 그러면 굴림이 plotSkipSeenMul 만큼 준다 (보고 고르는 맛을 막는다)
+ */
+export interface Hand {
+  readonly result: 'dead' | 'wounded' | 'fled' | 'withdrew' | 'skip'
+  readonly alarm: boolean
+  readonly seen?: boolean
+}
+
 export type HeroStatus = 'free' | 'captive' | 'dead'
 
 export interface Hero {
@@ -371,7 +381,7 @@ export type Order =
       /** 암살(assassin) — 노릴 장수 · 보낼 자객(우리 장수, 혼자 머무는 이). 자객이 없으면 고용 자객 (곡식 더) */
       readonly hero?: string; readonly agent?: string
       /** 밤 판(night.html)에서 손으로 쏜 암살의 결과 — 있으면 굴림 대신 이것 (SNIPE §0-3). 값은 똑같이 든다 */
-      readonly hand?: { readonly result: 'dead' | 'wounded' | 'fled' | 'withdrew'; readonly alarm: boolean }
+      readonly hand?: Hand
     }
   /** 장수를 고을에 맡긴다 (HEROES §3) — 장수가 그 고을에 있어야 한다. node null 이면 맡은 자리를 떠난다 (그 고을에 혼자 머문다) */
   | { readonly kind: 'assign'; readonly hero: string; readonly node: string | null }

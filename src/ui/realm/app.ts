@@ -30,7 +30,7 @@ import { advance, concealOf, draftable, forceOf, neighbors, newArmyId, otherEnd,
 import { PLOT_OPS, assassinArrows, assassinBow, bowUpCost, escapeChance, plotAgents, plotChance, plotCost, plotTargets } from '../../realm/plots.ts'
 import { allianceWhy, leaderOf, truceWhy, winningAgainst } from '../../realm/stance.ts'
 import { heroSeen, isRuler, persuadeSeasons, wanderersFor } from '../../realm/heroes.ts'
-import type { Army, EnvoyAsk, Good, Hero, Order, PlotOp, Realm, RegionId, Report, ReportLine } from '../../realm/types.ts'
+import type { Army, EnvoyAsk, Good, Hand, Hero, Order, PlotOp, Realm, RegionId, Report, ReportLine } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, mapHtml, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { GROW_CSS, HERO_CSS, bondChip, growthHtml, heroRadar, roleLine, traitChips, traitLines } from './heroview.ts'
@@ -81,7 +81,7 @@ const PRACTICE: string = (import.meta.env?.BASE_URL ?? '/') + 'night.html?practi
 /** night.html 이 올라갔다 (f9e77aa) — 없는 쪽으로 보내지 않으려 둔 스위치 */
 const PRACTICE_READY = true
 const NIGHT: string = (import.meta.env?.BASE_URL ?? '/') + 'night.html'
-const HAND_NAME = { dead: '적장이 쓰러졌다', wounded: '적장이 다쳤다', fled: '적장이 달아났다', withdrew: '조용히 물러났다' } as const
+const HAND_NAME = { dead: '적장이 쓰러졌다', wounded: '적장이 다쳤다', fled: '적장이 달아났다', withdrew: '조용히 물러났다', skip: '자객에게 맡겼다' } as const
 
 type Ask = EnvoyAsk
 type Envoy = Extract<Order, { kind: 'envoy' }>
@@ -237,7 +237,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 방금 나눈 무리 — 그 카드를 밝히고 눈앞으로 가져온다 (다음 누름에 지운다) */
   let freshArmy = ''
   /** 이번 계절에 직접 쏜 결과 — 적장마다 (한 번만 쏜다) */
-  const hands: Record<string, { result: 'dead' | 'wounded' | 'fled' | 'withdrew'; alarm: boolean }> = {}
+  const hands: Record<string, Hand> = {}
   /** 지도에서 고른 우리 군대 — 갈 곳이 밝아진다 */
   let armySel = ''
   /** 탭의 빨간 점 — 본 것 */
@@ -813,8 +813,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 직접 쏘기 — 한 계절에 한 적장은 한 번만 쏜다 (거뒀다 다시 걸어도 쏜 결과가 남는다) */
   function shootHtml(i: number, o: Extract<Order, { kind: 'plot' }>): string {
     const hand = o.hand ?? (o.hero !== undefined ? hands[o.hero] : undefined)
+    // 건너뛰기 — 자객 솜씨로 굴린다. 진짜 지붕을 보고 맡겼으면 조금 덜 산다 (plotSkipSeenMul)
+    if (hand?.result === 'skip') return `<div class="banner">${HAND_NAME.skip} · 자객 솜씨로 굴린다${hand.seen === true ? ' · 지붕을 본 뒤라 조금 덜 된다' : ''}</div>`
     if (hand !== undefined) return `<div class="banner ${hand.result === 'dead' || hand.result === 'wounded' ? 'good' : 'bad'}">직접 쐈다 · ${HAND_NAME[hand.result]}${hand.alarm ? ' · 들켰다' : ''} · 이번 계절엔 다시 못 쏜다</div>`
-    return `<button class="btn on wide" data-act="shoot" data-i="${i}">${icon('unit-archer')} 직접 쏜다 · 밤 지붕 위로</button><p class="mute">한 번만 쏜다. 안 쏘면 자객 솜씨로 굴린다.</p>`
+    return `<button class="btn on wide" data-act="shoot" data-i="${i}">${icon('unit-archer')} 직접 쏜다 · 밤 지붕 위로</button><p class="mute">들어가면 먼저 연습해 볼 수 있다. 진짜는 한 번만 쏜다. 안 쏘거나 건너뛰면 자객 솜씨로 굴린다.</p>`
   }
 
   function plotSheet(r: Realm): string {
@@ -901,13 +903,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   window.addEventListener('message', (ev) => {
     if (ev.origin !== location.origin) return
-    const m = ev.data as { type?: string; id?: string; result?: 'dead' | 'wounded' | 'fled' | 'withdrew'; alarm?: boolean }
-    if (m?.type !== 'hanbal.night.result' || typeof m.id !== 'string' || !m.id.startsWith('plot-') || m.result === undefined) return
+    // 밤 판의 결과 — 연습은 결과를 안 보낸다 (night-main.ts). skip 은 건너뛰기, seen 이면 진짜 지붕을 본 뒤다
+    const m = ev.data as { type?: string; id?: string; result?: Hand['result'] | 'cleared'; alarm?: boolean; seen?: boolean }
+    if (m?.type !== 'hanbal.night.result' || typeof m.id !== 'string' || !m.id.startsWith('plot-') || m.result === undefined || m.result === 'cleared') return
     const i = Number(m.id.slice(5))
     const o = plots[i]
     if (o === undefined || o.kind !== 'plot' || o.op !== 'assassin') return
-    plots = plots.map((p, j) => (j === i ? { ...o, hand: { result: m.result!, alarm: m.alarm === true } } : p))
-    if (o.hero !== undefined) hands[o.hero] = { result: m.result!, alarm: m.alarm === true }
+    const hand: Hand = m.result === 'skip' ? { result: 'skip', alarm: false, seen: m.seen === true } : { result: m.result, alarm: m.alarm === true }
+    plots = plots.map((p, j) => (j === i ? { ...o, hand } : p))
+    if (o.hero !== undefined) hands[o.hero] = hand
+    // 건너뛰면 밤 판을 닫는다 (쏜 결과는 밤 판의 "돌아가기"로 닫는다)
+    if (m.result === 'skip') root.querySelector('.nightov')?.remove()
     host.onTap('night', m.result)
     paint()
   })
@@ -1251,7 +1257,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     Object.assign(answers, rec<boolean>('answers'))
     Object.assign(envoys, rec<Envoy>('envoys'))
     Object.assign(persuadeBy, rec<string>('persuadeBy'))
-    Object.assign(hands, rec<{ result: 'dead' | 'wounded' | 'fled' | 'withdrew'; alarm: boolean }>('hands'))
+    Object.assign(hands, rec<Hand>('hands'))
   }
 
   /**
