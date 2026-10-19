@@ -347,4 +347,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .lines .nchip img.nci { width: 20px; height: 20px; }
 .ap .lines .rn { font-size: 17px; color: var(--ink); } .ap .lines .rn.good { color: #ecc862; }
 .ap .lines .rtx { flex: 1 1 160px; min-width: 0; font-size: 14.5px; }
+.ap .paths .pbar.iron i { background: linear-gradient(90deg, #5a6a7a, #a9c3dc); } .ap .paths .pbar.rite i { background: linear-gradient(90deg, #7a4a6a, #e0a0c8); }
+.ap .paths .flags { display: flex; gap: 2px; min-height: 18px; } .ap .paths .flags img { width: 18px; height: 18px; }
+.ap .paths .clock.rite i { border-color: #e0a0c8; } .ap .paths .clock.rite i.on { background: #e0a0c8; }
 `

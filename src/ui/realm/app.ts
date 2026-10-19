@@ -43,6 +43,7 @@ import { markTutorialOver, markWon, tutorialOver, unlockedBoards } from './unloc
 import { TINT_CSS, tint } from './tint.ts'
 import { handsOf, idleHeroes } from '../../realm/hands.ts'
 import { pactOf } from '../../realm/suzerain.ts'
+import { ironOf, riteOf } from '../../realm/paths.ts'
 import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
 import { FRONT_CSS, PROLOGUE_STEPS, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History } from './front.ts'
 import { FEEL_CSS, alertFeel, ambushFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
@@ -1383,6 +1384,21 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<div class="path"><b>정복</b>${bar(held, need)}<span>도읍 ${held}/${need}</span></div>`
     h += `<div class="path"><b>맹주</b>${bar(pact.have.length, pact.need, 'pact')}<span>손잡은 나라 ${pact.have.length}/${pact.need}</span></div>`
     h += `<div class="path sub"><span class="clock">${clock}</span><span class="mute">${tx(streak > 0 ? `맹약의 해 ${streak}/${S} 계절 — 끊기지 않으면 진왕이 된다` : '아는 나라 절반 넘게와 동맹이나 조공으로 손잡고 (조공국 하나는 있어야) 네 계절을 버티면 진왕이 된다')}</span></div>`
+    // 철과 뱃길 — 교역 장부: 올해 철을 바꾼 나라 깃발이 한 줄로 · 셈(나라 수 × 철) 막대
+    const io = ironOf(r, me())
+    h += `<div class="path"><b>철·뱃길</b>${bar(io.score, io.need, 'iron')}<span>${io.partners.length}나라 · 철 ${io.iron}</span></div>`
+    h += `<div class="path sub"><span class="flags">${io.partners.length > 0 ? io.partners.map((f) => emblem(f, 'fem')).join('') : ''}</span><span class="mute">${tx(!io.gate ? '철광이나 포구를 하나는 쥐어야 뱃길이 열린다' : `올해 ${io.minPartners}나라 넘게와 철을 바꾸고, 바꾼 나라 수 × 철이 ${io.need}을 넘으면 변진의 쇠가 우리 뱃길로 흐른다`)}</span></div>`
+    // 큰 제사 — 사슬(봄·가을 제사를 내리) · 집 막대
+    const ri = riteOf(r, me())
+    const chain = Array.from({ length: ri.need }, (_, i) => `<i class="${i < ri.chain ? 'on' : ''}" title="${i % 2 === 0 ? '봄' : '가을'}"></i>`).join('')
+    h += `<div class="path"><b>큰 제사</b>${bar(ri.hh, ri.hhNeed, 'rite')}<span>집 ${ri.hh.toLocaleString('ko-KR')}/${ri.hhNeed.toLocaleString('ko-KR')}</span></div>`
+    h += `<div class="path sub"><span class="clock rite">${chain}</span><span class="mute">${tx(`봄·가을 제사를 한 번도 거르지 않고 ${ri.need}번 지내고, 그해 가을 집이 넉넉하면 큰 제사가 열린다 — 사슬 ${ri.chain}/${ri.need}`)}</span></div>`
+    // 남의 철과 뱃길 · 큰 제사 — 소문으로 들은 것 (아는 나라만)
+    for (const key of Object.keys(r.pathNear ?? {}).sort()) {
+      const [kind, f] = key.split(':') as [string, string]
+      if (f === me() || !knows(r, me(), f)) continue
+      h += `<div class="path rival">${emblem(f, 'fem')}<span>${tx(kind === 'iron' ? `소문 — ${r.factions[f]?.name ?? ''} 포구로 철이 흐른다. 뱃길을 끊지 않으면 그 나라가 이긴다` : `소문 — ${r.factions[f]?.name ?? ''}의 제사 사슬이 길다. 소도 곁 땅을 흔들지 않으면 큰 제사가 열린다`)}</span></div>`
+    }
     // 남의 맹약 — 소문 (아는 나라만)
     for (const f of Object.keys(r.suzerain ?? {}).sort()) {
       if (f === me() || !knows(r, me(), f)) continue

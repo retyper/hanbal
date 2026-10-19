@@ -270,6 +270,24 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (line.a !== viewer && line.b !== viewer) return null
       return `${josa(fname(line.a === viewer ? line.b : line.a), '과', '와')} 장터가 섰다. 곡식 ${line.grain}섬이 들어왔다.`
     }
+    case 'ironMarket':
+      if (line.from === viewer) return `${josa(fname(line.to), '이', '가')} 장터에서 우리 철 ${line.iron}을 곡식 ${line.grain}섬에 사 갔다.`
+      if (line.to === viewer) return `${fname(line.from)} 장터에서 철 ${line.iron}을 곡식 ${line.grain}섬에 사 왔다.`
+      return null
+    case 'pathIron':
+      // 철과 뱃길 — 우리 것이면 알림, 남의 것이면 소문
+      if (line.faction === viewer) return `교역 장부 — 올해 ${line.partners}나라와 철을 바꿨다. 뱃길이 무르익는다. 조금만 더 바꾸면 변진의 쇠가 우리 뱃길로 흐른다.`
+      return `소문 — ${fname(line.faction)} 포구에 이웃 나라 배들이 줄을 선다. 철이 그리로 흐른다. 그 뱃길을 끊어야 한다.`
+    case 'pathRite':
+      // 큰 제사 — 우리 것은 제사철마다 사슬, 남의 것은 소문
+      if (line.faction === viewer) {
+        const left = Math.max(0, line.need - line.chain)
+        const hhLine = line.hh >= line.hhNeed ? '집도 넉넉하다.' : `집이 ${line.hhNeed - line.hh}채 더 있어야 큰 제사를 열 수 있다.`
+        return left > 0
+          ? `제사 사슬 ${line.chain}/${line.need} — 한 번도 거르지 않았다. ${left}번 더 지내면 큰 제사를 연다. ${hhLine}`
+          : `제사 사슬을 다 이었다. 가을에 집이 넉넉하면 큰 제사가 열린다. ${hhLine}`
+      }
+      return `소문 — ${fname(line.faction)}은(는) 해마다 빠짐없이 하늘에 제사한다. 큰 제사가 머지않았다. 소도 곁 땅을 흔들어야 한다.`
     case 'ask':
       if (line.ask.to !== viewer) return null
       return null // 보고 카드의 "사신이 왔다" 칸(받기·거절)이 대신 보인다
@@ -500,6 +518,16 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     }
     case 'end':
       if (line.faction !== viewer) return null
+      if (line.path === 'ironsea') {
+        return line.outcome === 'win'
+          ? '변진의 쇠가 우리 뱃길로 흘렀다. 이웃 나라들이 다 우리 철을 사 간다. 바다의 맹주가 되었다.'
+          : `${josa(fname(line.by ?? ''), '이', '가')} 철과 뱃길을 쥐었다. 이웃이 다 그 철을 사 간다. 우리 판은 여기까지다.`
+      }
+      if (line.path === 'rite') {
+        return line.outcome === 'win'
+          ? '온 나라가 모여 하늘에 절했다. 큰 제사가 열리고, 군장들이 우리 소도 앞에 섰다.'
+          : `${josa(fname(line.by ?? ''), '이', '가')} 큰 제사를 열었다. 온 나라가 그 소도 앞에 절했다. 우리 판은 여기까지다.`
+      }
       if (line.path === 'suzerain') {
         return line.outcome === 'win'
           ? '여러 나라 군장이 모여 우리 군장을 진왕으로 받들었다. 맹주가 되었다.'
