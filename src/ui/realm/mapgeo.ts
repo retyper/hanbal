@@ -2,7 +2,8 @@
  * 지도의 땅 모양 — 휘는 길 · 강 · 고을마다의 땅 (형: "강도 안 뚜렷하고 개활지 같은데 직선 경로만 있는게 이상하지 않냐?" — 2026-10-19)
  *
  * mapview 가 읽는다. 셈은 다 그림을 위한 것이다 — 판(realm)은 그대로 점과 길이다.
- *   길: 영남 판은 tools/yeongnam-routes.ts 가 미리 셈한 물길(ROUTES), 변한 판은 길마다 살짝 휜 한 구비.
+ *   길: 영남 판은 tools/yeongnam-routes.ts 가 미리 셈한 물길(ROUTES), 남부 판은 그 영남 길 + tools/south-routes.ts 의 마한·충청·경기·강원 길,
+ *       변한 판은 길마다 살짝 휜 한 구비.
  *   강: 영남 판의 실제 강(yeongnam-geo RIVERS)을 또렷하게 덧그린다.
  *   땅: 고을마다 가장 가까운 땅을 나눈 칸(보로노이 — 큰 고을이 조금 넓다)을 둘레로 자르고, 영남 판은 뭍 밖을 잘라 낸다.
  * 땅 모양은 판마다 한 번만 셈해 둔다 (고을 자리는 안 바뀐다) — 계절마다는 색만 바뀐다.
@@ -12,6 +13,8 @@ import { FERRIES, ROUTES } from '../../realm/data/regions/yeongnam-routes.ts'
 import { YEONGNAM_PROJ, yeongnamPos } from '../../realm/data/regions/yeongnam.ts'
 import type { WorldGeo } from '../../realm/data/regions/geoframe.ts'
 import { worldGeoOf } from '../../realm/data/regions/index.ts'
+import { SOUTH_FERRIES, SOUTH_ROUTES } from '../../realm/data/regions/south-routes.ts'
+import { SOUTH_WORLD } from '../../realm/data/regions/south-geo.ts'
 import type { REdge, RegionId } from '../../realm/types.ts'
 
 export type Pt = readonly [number, number]
@@ -22,11 +25,20 @@ function yToWorld(g: WorldGeo, [x, y]: Pt): Pt {
   return g.pos(P.lon0 + x * (P.lon1 - P.lon0), P.lat1 - y * (P.lat1 - P.lat0))
 }
 
-/** 판마다 미리 셈한 물길 (그림 좌표 0..1) — 넓은 판은 영남 길만 있다. 마한·북녘 쪽 길은 아직 한 구비 */
+/** 남부 판 그림 좌표(0..1) → 넓어지는 지도의 그림 좌표 — 남부 판에선 그대로, 삼한과 북녘 판에선 위도를 옮긴다 */
+function southToWorld(g: WorldGeo, [x, y]: Pt): Pt {
+  const P = SOUTH_WORLD.proj
+  return g.pos(P.lon0 + x * (P.lon1 - P.lon0), P.lat1 - y * (P.lat1 - P.lat0))
+}
+
+/** 판마다 미리 셈한 물길 (그림 좌표 0..1) — 영남 길 · 남부 판 길(tools/south-routes.ts)을 그 판 좌표로 옮겨 쓴다. 북녘 쪽 길은 아직 한 구비 */
 function viaOf(region: RegionId, id: string): readonly Pt[] | undefined {
   if (region === 'yeongnam') return ROUTES[id]
   const g = worldGeoOf(region)
-  if (g !== null) return ROUTES[id]?.map((p) => yToWorld(g, p))
+  if (g === null) return undefined
+  const s = SOUTH_ROUTES[id]
+  if (s !== undefined) return s.map((p) => southToWorld(g, p))
+  return ROUTES[id]?.map((p) => yToWorld(g, p))
   return undefined
 }
 
@@ -44,11 +56,12 @@ export function routePoints(region: RegionId, ed: REdge, a: Pt, b: Pt, W: number
   return [a, [(a[0] + b[0]) / 2 - dy * bend, (a[1] + b[1]) / 2 + dx * bend], b]
 }
 
-/** 나루의 배 자리 (그림 좌표) — 영남 판의 나루 길만 */
+/** 나루의 배 자리 (그림 좌표) — 영남 판 · 남부 판의 나루 길 */
 export function ferryAt(region: RegionId, ed: REdge, W: number, H: number): Pt | null {
   const g = worldGeoOf(region)
+  const fs = g !== null ? SOUTH_FERRIES[ed.id] : undefined
   const f0 = region === 'yeongnam' || g !== null ? FERRIES[ed.id] : undefined
-  const f = f0 !== undefined && g !== null ? yToWorld(g, f0) : f0
+  const f = fs !== undefined && g !== null ? southToWorld(g, fs) : f0 !== undefined && g !== null ? yToWorld(g, f0) : f0
   return f !== undefined ? [f[0] * W, f[1] * H] : null
 }
 

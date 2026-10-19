@@ -6,7 +6,7 @@
  * 뭍 다각형들은 서로 겹친다(조각 경계를 넘어 그렸다) — 합친 것이 뭍이다.
  */
 import { inside, makeWorldGeo, type LL, type WorldGeo, type WorldRiver, type WorldTile } from './geoframe.ts'
-import { ISLES as Y_ISLES, LAND as Y_LAND, RIVERS as Y_RIVERS } from './yeongnam-geo.ts'
+import { ISLES as Y_ISLES, LAND as Y_LAND, MOUNTAINS as Y_MOUNTAINS, RIVERS as Y_RIVERS } from './yeongnam-geo.ts'
 
 /** 판의 틀 — 경도 lon0..lon1 이 가로 0..1, 위도 lat1..lat0 이 세로 0..1 */
 export const SOUTH_PROJ = { lon0: 124.8, lon1: 130.3, lat0: 34.55, lat1: 38.3 } as const
@@ -71,6 +71,19 @@ export const SOUTH_RIVERS: readonly WorldRiver[] = [
   { name: '임진강', w: 6, pts: [[127.1, 38.3], [126.95, 38.05], [126.75, 37.85], [126.65, 37.76]] },
   { name: '안성천', w: 4, pts: [[127.35, 37.0], [127.1, 36.98], [126.92, 36.96]] },
   { name: '낙동강 윗줄기', w: 7, pts: [[129.0, 37.1], [128.75, 36.75], [128.73, 36.57], [128.45, 36.42], [128.25, 36.25]] },
+]
+
+/** 산줄기 [경도0, 경도1, 위도0, 위도1] — 길 모양을 셈할 때만 쓴다 (tools/south-routes.ts). 조각 밑그림의 산과 같은 자리 */
+export const SOUTH_MOUNTAINS: readonly (readonly [number, number, number, number])[] = [
+  ...Y_MOUNTAINS,
+  [126.75, 127.3, 36.5, 37.0], // 차령산맥
+  [127.15, 127.8, 37.65, 38.3], // 광주산맥 · 북한강 산골
+  [127.1, 127.3, 36.28, 36.42], // 계룡산
+  [127.65, 128.6, 36.35, 37.0], // 소백산맥 북쪽 (속리 · 월악 · 소백 · 죽령 · 새재)
+  [128.5, 129.2, 36.9, 38.3], // 태백산맥 (설악 · 오대 · 태백)
+  [127.9, 128.2, 37.25, 37.5], // 치악
+  [126.75, 127.15, 35.35, 35.55], // 노령산맥 (갈재)
+  [126.95, 127.08, 35.08, 35.2], // 무등산
 ]
 
 /** 이 경위도가 뭍(또는 섬) 위인가 */
