@@ -82,14 +82,24 @@ export function assassinBow(r: Realm, faction: string): number {
   return Math.max(0, Math.min(3, Math.floor(Number.isFinite(t) ? t : 0)))
 }
 
-/** 다음 단계로 올리는 값 — 이미 신궁이면 null */
+/** 단궁(박달나무 활)의 고장 — 동예의 나라들 (위서 예전 「단궁」 [곁들임]) */
+export const DANGUNG_NATIONS: readonly string[] = ['bullae', 'haseulla']
+
+/** 이 나라는 단궁을 얻을 수 있나 — 동예 나라이거나, 판에 있는 동예 나라와 동맹이다 */
+export function hasDangung(r: Realm, faction: string): boolean {
+  return DANGUNG_NATIONS.some((d) => d === faction || (r.factions[d] !== undefined && relationOf(r, faction, d).state === 'ally'))
+}
+
+/** 다음 단계로 올리는 값 — 이미 신궁이면 null. 단궁의 고장과 손잡으면 싸다 */
 export function bowUpCost(r: Realm, faction: string): { grain: number; iron: number; to: number } | null {
   const R = P.realm
   const t = assassinBow(r, faction)
+  const k = hasDangung(r, faction) ? R.bowUpDangung : 1
+  const c = (grain: number, iron: number, to: number): { grain: number; iron: number; to: number } => ({ grain: Math.round(grain * k), iron: Math.round(iron * k), to })
   switch (t) {
-    case 0: return { grain: R.bowUp1Grain, iron: R.bowUp1Iron, to: 1 }
-    case 1: return { grain: R.bowUp2Grain, iron: R.bowUp2Iron, to: 2 }
-    case 2: return { grain: R.bowUp3Grain, iron: R.bowUp3Iron, to: 3 }
+    case 0: return c(R.bowUp1Grain, R.bowUp1Iron, 1)
+    case 1: return c(R.bowUp2Grain, R.bowUp2Iron, 2)
+    case 2: return c(R.bowUp3Grain, R.bowUp3Iron, 3)
     default: return null
   }
 }

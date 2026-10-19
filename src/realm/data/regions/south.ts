@@ -13,7 +13,7 @@
  */
 import { initialKnown } from '../../discovery.ts'
 import { PEOPLE_SCALE } from '../../migrate.ts'
-import type { Army, Faction, Hero, Mind, NodeIntel, REdge, Realm, RNode, Stock, Watch } from '../../types.ts'
+import type { Army, Faction, Hero, Mind, NodeIntel, REdge, Realm, RegionId, RNode, Stock, Watch } from '../../types.ts'
 import { GEO as YEONGNAM_GEO, YEONGNAM_DATA } from './yeongnam.ts'
 
 /** 새 고을의 실제 자리 [경도, 위도] — 영남 판 고을은 yeongnam.ts 의 GEO 를 쓴다 */
@@ -133,7 +133,7 @@ const NEW_EDGES: REdge[] = [
   e('s45', 'w-uljin', 'w-yeongju', 'pass'), // 태백 넘는 길
 ]
 
-interface NationStart {
+export interface NationStart {
   readonly faction: Omit<Faction, 'mind'>
   readonly mind: Exclude<Mind, 'player'>
   readonly stock: Stock
@@ -239,9 +239,21 @@ export function southGeo(id: string): readonly [number, number] | undefined {
 /** 고를 수 있는 나라 id — 나라 고르기 화면의 순서 */
 export const SOUTH_NATION_IDS: readonly string[] = STARTS.map((n) => n.faction.id)
 
+/** 삼한 남부 판의 재료 — 삼한과 북녘 판(world.ts)이 그대로 이어 쓴다 */
+export const SOUTH_DATA = { NODES, EDGES, STARTS, HEROES, ARMIES } as const
+
 /** 삼한 남부 판을 연다 — 고른 나라가 플레이어. 나라마다 제 땅과 이웃만 안다 */
 export function startSouth(seed: number, player: string): Realm {
-  const me = SOUTH_NATION_IDS.includes(player) ? player : 'us'
+  return openDiscoveryBoard(SOUTH_DATA, 'south', seed, player)
+}
+
+/** 발견이 있는 판을 연다 (삼한 남부 · 삼한과 북녘) — 고른 나라가 플레이어, 없는 나라면 우리(us) */
+export function openDiscoveryBoard(
+  data: { readonly NODES: readonly RNode[]; readonly EDGES: readonly REdge[]; readonly STARTS: readonly NationStart[]; readonly HEROES: readonly Hero[]; readonly ARMIES: readonly Army[] },
+  region: RegionId, seed: number, player: string,
+): Realm {
+  const { NODES, EDGES, STARTS, HEROES, ARMIES } = data
+  const me = STARTS.some((n) => n.faction.id === player) ? player : 'us'
   const factions: Faction[] = STARTS.map((n) => ({ ...n.faction, mind: n.faction.id === me ? 'player' : n.mind, ruler: `${n.faction.id}-ruler` }))
   const nodes = byId(NODES)
   const edges = byId(EDGES)
@@ -276,7 +288,7 @@ export function startSouth(seed: number, player: string): Realm {
     relations: {},
     outcome: null,
     scale: PEOPLE_SCALE,
-    region: 'south',
+    region,
   }
   r.known = initialKnown(r)
   return r

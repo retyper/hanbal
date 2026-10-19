@@ -304,7 +304,7 @@ function arrivalGroups(armies: readonly Army[]): Army[][] {
  * 저격 화면은 여기서 나온 열쇠로 판을 열고, 결과를 advance 의 snipes 에 넣는다. 협공은 판 하나다.
  */
 export function preview(realm: Realm, orders: readonly Order[]): string[] {
-  const r = structuredClone(realm)
+  const r = plainClone(realm)
   applyOrders(r, orders, [])
   const keys: string[] = []
   const arriving = Object.values(r.armies).filter((a) => a.march !== null && a.march.left === 1)
@@ -372,6 +372,18 @@ function mergeArmy(r: Realm, o: Extract<Order, { kind: 'merge' }>, lines: Report
 /** applyArmyOrders 가 손대지 않는 칸 — 사본도 같은 것을 같이 본다 (관계·만난 장수·청·첩자·도발·제사·자객의 활) */
 const PLAN_SHARED = new Set(['edges', 'relations', 'met', 'asks', 'spies', 'provoked', 'blessed', 'assassinBow'])
 
+/**
+ * 평범한 객체·배열의 깊은 사본 — 판은 JSON 같은 평범한 값뿐이라(types.ts) structuredClone 과 같은 것이 나온다.
+ * 작은 객체가 많을 때 structuredClone 보다 몇 배 빠르다 (쉰 나라 판에서 사본 값이 AI 셈의 2할이었다).
+ */
+function plainClone<T>(v: T): T {
+  if (typeof v !== 'object' || v === null) return v
+  if (Array.isArray(v)) return v.map(plainClone) as T
+  const out: Record<string, unknown> = {}
+  for (const k in v) out[k] = plainClone((v as Record<string, unknown>)[k])
+  return out as T
+}
+
 function cloneForPlan(realm: Realm): Realm {
   if ((realm.scale ?? 1) !== PEOPLE_SCALE) return structuredClone(realm)
   const out: Record<string, unknown> = {}
@@ -381,7 +393,7 @@ function cloneForPlan(realm: Realm): Realm {
       const intel: Record<string, unknown> = {}
       for (const [f, m] of Object.entries(v as Realm['intel'])) intel[f] = { ...m }
       out[k] = intel
-    } else out[k] = typeof v === 'object' && v !== null ? structuredClone(v) : v
+    } else out[k] = plainClone(v)
   }
   return out as unknown as Realm
 }
@@ -875,7 +887,7 @@ export function checkOutcome(r: Realm): 'win' | 'lose' | null {
   let held = 0
   for (const f of Object.values(r.factions)) if (r.nodes[f.capital]?.owner === me) held++
   // 판마다 — 영남 판은 나라가 스물하나라 더 많이 쥐어야 한다
-  const need = r.region === 'yeongnam' ? P.realm.winCapitalsYeongnam : r.region === 'south' ? P.realm.winCapitalsSouth : P.realm.winCapitals
+  const need = r.region === 'yeongnam' ? P.realm.winCapitalsYeongnam : r.region === 'south' ? P.realm.winCapitalsSouth : r.region === 'world' ? P.realm.winCapitalsWorld : P.realm.winCapitals
   return held >= need ? 'win' : null
 }
 
@@ -884,7 +896,7 @@ export function advance(
   orders: readonly Order[],
   snipes: Readonly<Record<string, SnipeZone>> = {},
 ): { next: Realm; report: Report } {
-  const r = structuredClone(realm)
+  const r = plainClone(realm)
   migrate(r) // 옛 판이면 사람의 눈금을 키운다
   const lines: ReportLine[] = []
   const fought = new Set<string>()

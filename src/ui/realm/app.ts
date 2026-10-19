@@ -12,6 +12,7 @@ import { FACTION_ART, HERO_BUST, SEASON_ICON, UNIT_ICON, nodeIcon } from '../../
 import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../../realm/data/nations-yeongnam.ts'
 import { SOUTH_NATIONS } from '../../realm/data/nations-south.ts'
+import { WORLD_NATIONS } from '../../realm/data/nations-world.ts'
 import { knownOf, knows } from '../../realm/discovery.ts'
 import { TRAIT } from '../../realm/data/traits.ts'
 import {
@@ -146,13 +147,14 @@ const sorted = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort(
 const rulerId = (nation: string): string => `${nation}-ruler`
 
 /** 판마다 나라 고르기 글 — 변한 6국 축소판 · 영남 판 */
-const nationsOf = (region: RegionId): readonly NationInfo[] => (region === 'yeongnam' ? YEONGNAM_NATIONS : region === 'south' ? SOUTH_NATIONS : NATIONS)
+const nationsOf = (region: RegionId): readonly NationInfo[] => (region === 'yeongnam' ? YEONGNAM_NATIONS : region === 'south' ? SOUTH_NATIONS : region === 'world' ? WORLD_NATIONS : NATIONS)
 
 /** 판 고르기의 말 (형: "사료대로 키우고 땅도 넓힘" · "발견국가가 많아지면 확장하는거지 지도도") */
 const REGION_PICK: ReadonlyArray<{ id: RegionId; name: string; line: string }> = [
   { id: 'byeonhan-mini', name: '작은 판', line: '변한 남쪽의 여섯 나라. 한 판이 짧다.' },
   { id: 'yeongnam', name: '큰 판', line: '낙동강과 동해·남해의 스물한 나라.' },
   { id: 'south', name: '삼한 남부', line: '넓어지는 지도 — 서른여섯 나라. 처음엔 이웃만 안다. 사신·장터·싸움·소문으로 새 나라를 알면 지도가 펼쳐진다.' },
+  { id: 'world', name: '삼한과 북녘', line: '탐라에서 부여의 들까지 쉰 나라 — 고구려 다섯 나부 · 부여 · 옥저 · 동예가 더해진다. 처음엔 이웃만 안다.' },
 ]
 function nationFace(id: string): string {
   const hid = rulerId(id)
@@ -1208,7 +1210,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 판부터 고른다 — 작은 판(변한 6국) · 큰 판(영남 스물한 나라)
     const pickLine = (x: (typeof REGION_PICK)[number]): string =>
       x.id === 'yeongnam' ? `${x.line} 도읍 ${P.realm.winCapitalsYeongnam}곳을 쥐면 이긴다.`
-        : x.id === 'south' ? `${x.line} 도읍 ${P.realm.winCapitalsSouth}곳을 쥐면 이긴다.` : x.line
+        : x.id === 'south' ? `${x.line} 도읍 ${P.realm.winCapitalsSouth}곳을 쥐면 이긴다.`
+          : x.id === 'world' ? `${x.line} 도읍 ${P.realm.winCapitalsWorld}곳을 쥐면 이긴다.` : x.line
     let h = `<div class="choose"><h1>칠십팔국</h1><div class="seg rpick">`
     for (const x of REGION_PICK) h += `<button class="${chooseRegion === x.id ? 'on' : ''}" data-act="region" data-v="${x.id}">${esc(x.name)}</button>`
     h += `</div><p class="mute">${esc(pickLine(REGION_PICK.find((x) => x.id === chooseRegion)!))} 나라를 하나 고른다.</p>`

@@ -314,14 +314,22 @@ function homeOf(r: Realm, faction: string): string | null {
  * 사로잡히거나 죽은 장수는 자리가 없다.
  */
 function placeOrphans(r: Realm): void {
+  const leading = ledHeroes(r)
   for (const h of byId(Object.values(r.heroes))) {
     if (h.status !== 'free') {
       h.at = null
       h.post = null
       continue
     }
-    if (h.at === null && armyOfHero(r, h.id) === null) h.at = homeOf(r, h.faction)
+    if (h.at === null && !leading.has(h.id)) h.at = homeOf(r, h.faction)
   }
+}
+
+/** 군대를 이끄는 장수들 — 군대를 하나하나 다시 훑지 않게 한 번에 (쉰 나라 판에서 장수×군대가 크다) */
+function ledHeroes(r: Realm): Set<string> {
+  const out = new Set<string>()
+  for (const a of Object.values(r.armies)) if (a.hero !== null) out.add(a.hero)
+  return out
 }
 
 /**
@@ -330,8 +338,9 @@ function placeOrphans(r: Realm): void {
  */
 export function sweepHeroes(r: Realm, lines: ReportLine[]): void {
   placeOrphans(r)
+  const leading = ledHeroes(r)
   for (const h of byId(Object.values(r.heroes))) {
-    if (h.status !== 'free' || h.at === null || armyOfHero(r, h.id) !== null) continue
+    if (h.status !== 'free' || h.at === null || leading.has(h.id)) continue
     const node = r.nodes[h.at]
     if (node === undefined || node.owner === h.faction) continue
     h.post = null

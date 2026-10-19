@@ -1,20 +1,22 @@
 /**
  * 넓어지는 지도의 바탕 — 조각 그림을 한 장으로 잇는다 (docs/realm/WORLD-MAP.md §1 · 형: "부분부분 만든걸 합쳐가지고")
  *
- * 조각(public/realm/map-world/*.webp)을 경위도 틀(SOUTH_TILES)대로 캔버스에 놓고, 앞 조각과 겹친 띠는 서서히 비치게 섞는다.
- * 계절 그림은 따로 없다 — 봄 한 장에 계절 빛을 입힌다(여름 짙은 초록 · 가을 금빛 · 겨울 흰빛). 한 번 만들면 계절마다 주소를 남겨 둔다.
+ * 조각(public/realm/map-world/*.webp)을 판의 경위도 틀(WorldGeo.tiles)대로 캔버스에 놓고, 앞 조각과 겹친 띠는 서서히 비치게 섞는다.
+ * 계절 그림은 따로 없다 — 봄 한 장에 계절 빛을 입힌다(여름 짙은 초록 · 가을 금빛 · 겨울 흰빛). 한 번 만들면 판·계절마다 주소를 남겨 둔다.
  * 다 만들어지면 그 판의 지도(.map[data-world])의 바탕을 바꾼다 — 다시 그리지 않는다. 화면 전용 (판 상태를 안 건드린다).
  */
-import { SOUTH_PROJ, SOUTH_TILES } from '../../realm/data/regions/south-geo.ts'
-import type { SeasonOfYear } from '../../realm/types.ts'
+import type { WorldGeo } from '../../realm/data/regions/geoframe.ts'
+import { worldGeoOf } from '../../realm/data/regions/index.ts'
+import type { RegionId, SeasonOfYear } from '../../realm/types.ts'
 
-/** 조각 눈금 — 1024px 이 경도 2.9°, 765px 이 위도 2.0° */
-const PX = 1024 / 2.9
-const PY = 765 / 2.0
+/** 조각 눈금 — 1024px 이 경도 2.9°, 765px 이 위도 2.0° (판의 scale 배로 잇는다) */
+const PX0 = 1024 / 2.9
+const PY0 = 765 / 2.0
 
-const urls = new Map<SeasonOfYear, string>()
-let base: Promise<HTMLCanvasElement> | null = null
-const pending = new Set<SeasonOfYear>()
+/** 열쇠 `판:계절` */
+const urls = new Map<string, string>()
+const bases = new Map<RegionId, Promise<HTMLCanvasElement>>()
+const pending = new Set<string>()
 
 /**
  * 계절 빛 — 픽셀 하나 [r,g,b] → [r,g,b]. 시험할 수 있게 따로 둔다.
@@ -44,17 +46,22 @@ async function load(src: string): Promise<HTMLImageElement> {
 }
 
 /** 봄 바탕 한 장 — 조각을 잇는다 */
-function buildBase(art: string): Promise<HTMLCanvasElement> {
-  base ??= (async () => {
-    const W = Math.round((SOUTH_PROJ.lon1 - SOUTH_PROJ.lon0) * PX)
-    const H = Math.round((SOUTH_PROJ.lat1 - SOUTH_PROJ.lat0) * PY)
+function buildBase(art: string, region: RegionId, geo: WorldGeo): Promise<HTMLCanvasElement> {
+  const hit = bases.get(region)
+  if (hit !== undefined) return hit
+  const made = (async () => {
+    const PROJ = geo.proj
+    const PX = PX0 * geo.scale
+    const PY = PY0 * geo.scale
+    const W = Math.round((PROJ.lon1 - PROJ.lon0) * PX)
+    const H = Math.round((PROJ.lat1 - PROJ.lat0) * PY)
     const c = document.createElement('canvas')
     c.width = W
     c.height = H
     const g = c.getContext('2d')!
     g.fillStyle = '#cdb98e' // 조각이 안 닿는 데는 빈 옛 종이
     g.fillRect(0, 0, W, H)
-    for (const t of SOUTH_TILES) {
+    for (const t of geo.tiles) {
       const im = await load(`${art}map-world/${t.file}.webp`)
       const tw = Math.round((t.lon1 - t.lon0) * PX)
       const th = Math.round((t.lat1 - t.lat0) * PY)
@@ -83,15 +90,17 @@ function buildBase(art: string): Promise<HTMLCanvasElement> {
       if (t.fade.s !== undefined) fade(0, th, 0, th - t.fade.s * PY)
       tg.globalCompositeOperation = 'destination-in'
       tg.drawImage(mask, 0, 0)
-      g.drawImage(tile, Math.round((t.lon0 - SOUTH_PROJ.lon0) * PX), Math.round((SOUTH_PROJ.lat1 - t.lat1) * PY))
+      g.drawImage(tile, Math.round((t.lon0 - PROJ.lon0) * PX), Math.round((PROJ.lat1 - t.lat1) * PY))
     }
     return c
   })()
-  return base
+  bases.set(region, made)
+  made.catch(() => bases.delete(region))
+  return made
 }
 
-async function build(art: string, season: SeasonOfYear): Promise<string> {
-  const src = await buildBase(art)
+async function build(art: string, season: SeasonOfYear, region: RegionId, geo: WorldGeo): Promise<string> {
+  const src = await buildBase(art, region, geo)
   const c = document.createElement('canvas')
   c.width = src.width
   c.height = src.height
@@ -116,16 +125,19 @@ async function build(art: string, season: SeasonOfYear): Promise<string> {
  * 그 계절의 바탕 주소 — 이미 만들었으면 바로, 아니면 '' 를 주고 만들기 시작한다.
  * 다 되면 `.map[data-world]` 들의 바탕을 그 계절 것으로 바꾼다.
  */
-export function worldMapUrl(art: string, season: SeasonOfYear): string {
-  const hit = urls.get(season)
+export function worldMapUrl(art: string, season: SeasonOfYear, region: RegionId): string {
+  const geo = worldGeoOf(region)
+  if (geo === null) return ''
+  const key = `${region}:${season}`
+  const hit = urls.get(key)
   if (hit !== undefined) return hit
-  if (!pending.has(season)) {
-    pending.add(season)
-    void build(art, season).then((u) => {
-      urls.set(season, u)
-      pending.delete(season)
-      for (const el of document.querySelectorAll<HTMLElement>(`.map[data-world="${season}"]`)) el.style.backgroundImage = `url('${u}')`
-    }).catch(() => pending.delete(season))
+  if (!pending.has(key)) {
+    pending.add(key)
+    void build(art, season, region, geo).then((u) => {
+      urls.set(key, u)
+      pending.delete(key)
+      for (const el of document.querySelectorAll<HTMLElement>(`.map[data-region="${region}"][data-world="${season}"]`)) el.style.backgroundImage = `url('${u}')`
+    }).catch(() => pending.delete(key))
   }
   return ''
 }

@@ -22,7 +22,7 @@ import {
 import { ambushWorth, jointWin, movesOf, type Move } from './estimate.ts'
 import { armyOfHero, hasTrait, isRuler, persuadeSeasons, postHero, wanderersFor } from './heroes.ts'
 import { armiesAt, extendPlan, fortMul, neighbors, newArmyId, planned, seasonOf, seenMarches } from './season.ts'
-import { withMemo } from './memo.ts'
+import { memoFor, withMemo } from './memo.ts'
 import type { UnitKind } from './battle.ts'
 import { bowUpCost, plotAgents, plotCost, plotTargets } from './plots.ts'
 import { allianceWhy, borders, breakWhy, leaderOf, truceWhy } from './stance.ts'
@@ -54,7 +54,13 @@ function leaderFor(r: Realm, faction: string): string | null {
 /** 동맹이 싸우는 적의 고을이면 더 쳐 볼 만하다 — 동맹은 같은 적을 먼저 친다 (FLOW §4) */
 function focus(r: Realm, faction: string, to: string): number {
   // 함께 치자고 약속한 고을이면 더 — 약속을 지키려 한다
-  const pledged = pledgedNodes(r, faction).includes(to) ? P.realm.aiPledgeFocus : 0
+  const m = memoFor(r)?.pledged
+  let mine = m?.get(faction)
+  if (mine === undefined) {
+    mine = new Set(pledgedNodes(r, faction))
+    m?.set(faction, mine)
+  }
+  const pledged = mine.has(to) ? P.realm.aiPledgeFocus : 0
   // 힘의 균형 — 앞서가는 나라(도읍 둘 또는 힘 3할)는 모두가 막으려 한다 (stance.leaderOf, 제 정보로 본다)
   const owner = r.nodes[to]?.owner ?? null
   const lead = owner !== null && owner !== faction && leaderFor(r, faction) === owner ? P.realm.aiLeaderFocus : 0
@@ -788,7 +794,8 @@ export function aiOrders(r: Realm): Order[] {
       // 넓어지는 지도 (삼한 남부 판) — 플레이어가 아직 모르는 먼 나라는 가볍게 굴린다: aiFarEvery 계절에 한 번만 다 생각하고,
       // 나머지 계절은 청에 답하고 징병만 한다 (나라가 서른여섯이라 폰에서 버티려고). 발견이 없는 판은 늘 다 생각한다
       const far = r.known !== undefined && player !== undefined && !knows(r, player, f.id)
-      if (far && (r.season + i) % P.realm.aiFarEvery !== 0) {
+      const every = r.region === 'world' ? P.realm.aiFarEveryWorld : P.realm.aiFarEvery
+      if (far && (r.season + i) % every !== 0) {
         out.push(...answers(r, f.id), ...drafts(r, f.id))
         continue
       }

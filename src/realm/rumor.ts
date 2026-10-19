@@ -20,7 +20,7 @@ interface Fact { readonly fact: RumorFact; readonly good?: Good; readonly node?:
 const hoardAt = (g: Good): number => 4 * Math.max(1, Math.round(P.realm.tradeLot / worthOf(g)))
 
 /** `about` 나라에서 이번 계절에 들릴 만한 것 — 순서는 고정 (굴림이 고른다) */
-function factsAbout(r: Realm, about: string, lines: readonly ReportLine[]): Fact[] {
+function factsAbout(r: Realm, about: string, lines: readonly ReportLine[], alive: ReadonlySet<string>): Fact[] {
   const out: Fact[] = []
   const s = stockOf(r, about)
   if (s.grain < upkeepOf(r, about, false) * 2) out.push({ fact: 'hungry' })
@@ -34,7 +34,7 @@ function factsAbout(r: Realm, about: string, lines: readonly ReportLine[]): Fact
   if (lines.some((l) => l.kind === 'draft' && l.faction === about)) out.push({ fact: 'drafting' })
   if (lines.some((l) => l.kind === 'arm' && l.faction === about)) out.push({ fact: 'armed' })
   for (const x of Object.keys(r.factions).sort()) {
-    if (x === about || !Object.values(r.nodes).some((n) => n.owner === x)) continue
+    if (x === about || !alive.has(x)) continue
     if (truceWhy(r, about, x) !== null) out.push({ fact: 'seekTruce', other: x })
     else if (allianceWhy(r, about, x) !== null) out.push({ fact: 'seekAlly', other: x })
   }
@@ -44,6 +44,8 @@ function factsAbout(r: Realm, about: string, lines: readonly ReportLine[]): Fact
 /** 9 — 첩자를 심은 나라마다, 그 첩자가 있는 나라의 소식 0~2개 (보고에 `rumor`) */
 export function spreadRumors(r: Realm, lines: ReportLine[]): void {
   const now = [...lines]
+  // 땅이 있는 나라 — 한 번만 센다 (나라가 쉰이면 나라마다 고을을 다 훑는 값이 크다)
+  let alive: Set<string> | null = null
   for (const viewer of Object.keys(r.spies ?? {}).sort()) {
     const abouts = new Set<string>()
     for (const sp of r.spies?.[viewer] ?? []) {
@@ -51,9 +53,15 @@ export function spreadRumors(r: Realm, lines: ReportLine[]): void {
       if (sp.until >= r.season && o !== null && o !== undefined && o !== viewer) abouts.add(o)
     }
     for (const about of [...abouts].sort()) {
-      const left = factsAbout(r, about, now)
-      for (let i = 0; i < 2 && left.length > 0; i++) {
+      // 소식거리는 굴림이 먹힐 때만 센다 (속셈 셈이 무겁다 — 결과는 늘 세는 것과 같다)
+      let left: Fact[] | null = null
+      for (let i = 0; i < 2 && (left === null || left.length > 0); i++) {
         if (roll(r.seed, r.season, `rumor:${viewer}:${about}:${i}`) >= P.realm.rumorChance) continue
+        if (left === null) {
+          alive ??= new Set(Object.values(r.nodes).map((n) => n.owner).filter((o): o is string => o !== null))
+          left = factsAbout(r, about, now, alive)
+          if (left.length === 0) break
+        }
         const j = Math.floor(roll(r.seed, r.season, `rumor-pick:${viewer}:${about}:${i}`) * left.length)
         const f = left.splice(Math.min(j, left.length - 1), 1)[0]!
         lines.push({ kind: 'rumor', viewer, about, ...f })

@@ -119,7 +119,7 @@ export interface Stock {
 export type Good = 'grain' | 'iron' | 'salt' | 'wood' | 'horse'
 
 /** 판 — 변한 6국 축소판 · 영남 판 (형: "사료대로 키우고 땅도 넓힘" — 2026-10-18) */
-export type RegionId = 'byeonhan-mini' | 'yeongnam' | 'south'
+export type RegionId = 'byeonhan-mini' | 'yeongnam' | 'south' | 'world'
 
 /** 발견의 길 — 어떻게 그 나라를 알게 됐나 (discovery.ts · 형: "시간지나서 발견국가가 많아지면 확장하는거지 지도도") */
 export type DiscoverHow = 'border' | 'envoy' | 'market' | 'war' | 'spy' | 'scout' | 'ally' | 'rumor'

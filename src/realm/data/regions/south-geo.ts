@@ -5,9 +5,8 @@
  * 화면(mapview)은 이것으로 땅빛을 뭍 안에 가두고 강을 덧그린다. 판(realm 상태)의 셈에는 안 쓴다 — 시험이 고을이 뭍 위에 있는지 본다.
  * 뭍 다각형들은 서로 겹친다(조각 경계를 넘어 그렸다) — 합친 것이 뭍이다.
  */
+import { inside, makeWorldGeo, type LL, type WorldGeo, type WorldRiver, type WorldTile } from './geoframe.ts'
 import { ISLES as Y_ISLES, LAND as Y_LAND, RIVERS as Y_RIVERS } from './yeongnam-geo.ts'
-
-type LL = readonly [number, number]
 
 /** 판의 틀 — 경도 lon0..lon1 이 가로 0..1, 위도 lat1..lat0 이 세로 0..1 */
 export const SOUTH_PROJ = { lon0: 124.8, lon1: 130.3, lat0: 34.55, lat1: 38.3 } as const
@@ -19,31 +18,26 @@ export function southPos(lon: number, lat: number): readonly [number, number] {
 }
 
 /** 조각 — 그림 파일 · 경위도 틀 · 앞 조각과 겹친 띠(섞는 쪽) */
-export const SOUTH_TILES: readonly {
-  readonly file: string
-  readonly lon0: number; readonly lon1: number; readonly lat0: number; readonly lat1: number
-  /** 이 조각의 가장자리 가운데 앞 조각과 겹친 띠의 너비(도) — 그 띠는 서서히 비친다 */
-  readonly fade: { readonly e?: number; readonly w?: number; readonly s?: number }
-}[] = [
+export const SOUTH_TILES: readonly WorldTile[] = [
   { file: 'yeongnam-spring', lon0: 127.4, lon1: 130.3, lat0: 34.55, lat1: 36.55, fade: {} },
   { file: 'mahan-spring', lon0: 124.8, lon1: 127.7, lat0: 34.55, lat1: 36.55, fade: { e: 0.3 } },
   { file: 'm2-spring', lon0: 124.8, lon1: 127.7, lat0: 36.3, lat1: 38.3, fade: { s: 0.25 } },
   { file: 'm3-spring', lon0: 127.4, lon1: 130.3, lat0: 36.3, lat1: 38.3, fade: { s: 0.25, w: 0.3 } },
 ]
 
-const MAHAN_LAND: readonly LL[] = [
+export const MAHAN_LAND: readonly LL[] = [
   [126.45, 36.7], [126.5, 36.5], [126.55, 36.35], [126.6, 36.12], [126.68, 36.0], [126.6, 35.92], [126.5, 35.82], [126.47, 35.7],
   [126.5, 35.62], [126.62, 35.56], [126.5, 35.48], [126.4, 35.32], [126.35, 35.15], [126.42, 35.02], [126.36, 34.88], [126.42, 34.78],
   [126.38, 34.62], [126.45, 34.5], [126.62, 34.45], [126.75, 34.56], [126.85, 34.62], [126.98, 34.55], [127.12, 34.62], [127.25, 34.55],
   [127.38, 34.7], [127.5, 34.85], [127.6, 34.93], [127.7, 34.95], [127.8, 34.9], [127.8, 36.7],
 ]
-const M2_LAND: readonly LL[] = [
+export const M2_LAND: readonly LL[] = [
   [124.7, 38.4], [124.75, 38.15], [125.1, 38.05], [125.35, 37.95], [125.6, 38.0], [125.75, 37.98], [126.0, 37.92], [126.2, 37.85],
   [126.35, 37.82], [126.45, 37.78], [126.55, 37.72], [126.62, 37.6], [126.58, 37.45], [126.68, 37.3], [126.75, 37.18], [126.88, 36.98],
   [126.7, 36.95], [126.6, 36.98], [126.4, 36.95], [126.3, 36.88], [126.12, 36.82], [126.2, 36.7], [126.35, 36.6], [126.42, 36.45],
   [126.5, 36.2], [127.8, 36.2], [127.8, 38.4],
 ]
-const M3_LAND: readonly LL[] = [
+export const M3_LAND: readonly LL[] = [
   [127.3, 38.4], [128.45, 38.4], [128.6, 38.2], [128.68, 38.05], [128.85, 37.88], [128.95, 37.77], [129.05, 37.65], [129.12, 37.5],
   [129.2, 37.4], [129.3, 37.25], [129.37, 37.05], [129.42, 36.85], [129.43, 36.6], [129.42, 36.4], [129.42, 36.2], [127.3, 36.2],
 ]
@@ -65,7 +59,7 @@ export const SOUTH_ISLES: readonly (readonly LL[])[] = [
 ]
 
 /** 강 — 이름 · 굵기(1536 폭 기준) · 물길 */
-export const SOUTH_RIVERS: readonly { readonly name: string; readonly w: number; readonly pts: readonly LL[] }[] = [
+export const SOUTH_RIVERS: readonly WorldRiver[] = [
   ...Y_RIVERS,
   { name: '금강', w: 8, pts: [[127.6, 36.55], [127.35, 36.55], [127.1, 36.45], [126.9, 36.3], [126.95, 36.25], [126.8, 36.08], [126.68, 36.0]] },
   { name: '만경강', w: 5, pts: [[127.2, 35.92], [126.95, 35.86], [126.72, 35.88], [126.55, 35.85]] },
@@ -79,19 +73,11 @@ export const SOUTH_RIVERS: readonly { readonly name: string; readonly w: number;
   { name: '낙동강 윗줄기', w: 7, pts: [[129.0, 37.1], [128.75, 36.75], [128.73, 36.57], [128.45, 36.42], [128.25, 36.25]] },
 ]
 
-/** 점이 다각형 안에 있나 (짝홀 규칙) */
-function inside(p: LL, poly: readonly LL[]): boolean {
-  let c = false
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const [xi, yi] = poly[i]!
-    const [xj, yj] = poly[j]!
-    if (yi > p[1] !== yj > p[1] && p[0] < ((xj - xi) * (p[1] - yi)) / (yj - yi) + xi) c = !c
-  }
-  return c
-}
-
 /** 이 경위도가 뭍(또는 섬) 위인가 */
 export function onSouthLand(lon: number, lat: number): boolean {
   const p: LL = [lon, lat]
   return SOUTH_LANDS.some((l) => inside(p, l)) || SOUTH_ISLES.some((l) => inside(p, l))
 }
+
+/** 삼한 남부 판의 땅 묶음 — 화면이 읽는다 */
+export const SOUTH_WORLD: WorldGeo = makeWorldGeo({ proj: SOUTH_PROJ, tiles: SOUTH_TILES, lands: SOUTH_LANDS, isles: SOUTH_ISLES, rivers: SOUTH_RIVERS, scale: 1 })

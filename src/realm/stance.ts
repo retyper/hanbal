@@ -58,8 +58,8 @@ function leaderNow(r: Realm, viewer: string): string | null {
   const fs = live(r).filter((f) => f === viewer || knows(r, viewer, f))
   const pw = new Map(fs.map((f) => [f, seen(r, viewer, f)]))
   const total = [...pw.values()].reduce((s, v) => s + v, 0)
-  const capsNeed = r.region === 'yeongnam' ? R.leaderCapitalsYeongnam : r.region === 'south' ? R.leaderCapitalsSouth : R.leaderCapitals
-  const shareNeed = r.region === 'yeongnam' ? R.leaderShareYeongnam : r.region === 'south' ? R.leaderShareSouth : R.leaderShare
+  const capsNeed = r.region === 'yeongnam' ? R.leaderCapitalsYeongnam : r.region === 'south' ? R.leaderCapitalsSouth : r.region === 'world' ? R.leaderCapitalsWorld : R.leaderCapitals
+  const shareNeed = r.region === 'yeongnam' ? R.leaderShareYeongnam : r.region === 'south' ? R.leaderShareSouth : r.region === 'world' ? R.leaderShareWorld : R.leaderShare
   let best: { f: string; caps: number; p: number } | null = null
   for (const f of fs) {
     const caps = capitalsHeld(r, f)

@@ -7,8 +7,7 @@
  */
 import type { NodeKind, RegionId, RNode } from '../types.ts'
 import { GEO as YEONGNAM_GEO, yeongnamPos } from './regions/yeongnam.ts'
-import { southGeo } from './regions/south.ts'
-import { southPos } from './regions/south-geo.ts'
+import { placeOf, worldGeoOf } from './regions/index.ts'
 
 /**
  * 판마다 지도 그림 — 폴더 · 확장자 · 그림 크기(SVG 좌표계) · 고을 기호·글씨 크기 배수 · 가장 큰 배율(cover 의 몇 배, zoom.ts) · 땅빛 둘레 (mapview.ts)
@@ -19,6 +18,8 @@ export const REGION_ART: Readonly<Record<RegionId, { dir: string; ext: string; w
   yeongnam: { dir: 'map-yeongnam', ext: 'webp', w: 1024, h: 765, nodeScale: 0.34, labelScale: 0.72, zmax: 4, terrR: 50, terrBand: 28 },
   // 삼한 남부 — 조각 넷을 이은 그림(ui/realm/worldmap.ts 가 합친다). 크기는 조각 눈금(1024px = 경도 2.9° · 765px = 위도 2.0°)으로 경도 5.5° × 위도 3.75°
   south: { dir: 'map-world', ext: 'webp', w: 1942, h: 1434, nodeScale: 0.2, labelScale: 0.6, zmax: 6, terrR: 52, terrBand: 28 },
+  // 삼한과 북녘 — 조각 열넷. 같은 눈금으로 경도 5.5° × 위도 12.5° (세로로 긴 판 — 내려 가며 본다)
+  world: { dir: 'map-world', ext: 'webp', w: 1942, h: 4781, nodeScale: 0.2, labelScale: 0.6, zmax: 6, terrR: 52, terrBand: 28 },
 }
 
 /** 장수 id → 명치판 (bust/<이름>.jpg). g- 남자 장수 · w- 여인 · l- 전설 */
@@ -69,6 +70,15 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'maek-ruler': 'g-10-buyeo-horse-lord', 'siljik-ruler': 'w-18-jinhan-salt-widow', 'haseulla-ruler': 'w-22-dongye-tiger-huntress',
   'baekje-1': 'g-16-goguryeo-gaema-commander', 'mokji-1': 'g-08-veteran', 'wansan-1': 'w-13-young-archer', 'balla-1': 'w-08-mahan-warrior',
   'maek-1': 'w-06-buyeo-huntress', 'haseulla-1': 'g-09-farmer-conscript', 'gampyeong-1': 'w-10-pirate-captain',
+  // 삼한과 북녘 판의 새 군주·장군 (data/regions/world.ts) — 있는 명치판을 나눠 쓴다. 새 얼굴은 그림 줄(ART-QUEUE 5c)
+  'goguryeo-ruler': 'g-02-goguryeo-archer-prince', 'goguryeo-1': 'g-16-goguryeo-gaema-commander', 'goguryeo-2': 'w-03-goguryeo-archer',
+  'biryuna-ruler': 'w-02-goguryeo-lady', 'biryuna-1': 'g-08-veteran', 'yeonna-ruler': 'g-06-strategist', 'yeonna-1': 'w-13-young-archer',
+  'hwanna-ruler': 'w-15-captive-noble', 'hwanna-1': 'g-03-sea-trader', 'gwanna-ruler': 'g-01-master-smith', 'gwanna-1': 'g-11-gaya-iron-general',
+  'buyeo-ruler': 'g-10-buyeo-horse-lord', 'buyeo-1': 'w-06-buyeo-huntress', 'maga-ruler': 'w-19-buyeo-fur-princess', 'maga-1': 'g-04-jinhan-giant',
+  'uga-ruler': 'g-09-farmer-conscript', 'uga-1': 'g-07-drunk-warrior', 'jeoga-ruler': 'g-14-captive-general', 'jeoga-1': 'w-11-assassin',
+  'guga-ruler': 'w-16-clan-matriarch', 'guga-1': 'g-12-silla-youth', 'dongokjeo-ruler': 'w-18-jinhan-salt-widow', 'dongokjeo-1': 'g-05-mahan-chieftain',
+  'bukokjeo-ruler': 'g-15-shaman-man', 'bukokjeo-1': 'w-17-mahan-pearl-diver', 'bullae-ruler': 'w-22-dongye-tiger-huntress', 'bullae-1': 'g-13-baekje-general',
+  'tamna-ruler': 'w-07-shaman-queen', 'tamna-1': 'g-20-samul-sea-lord',
 }
 
 /** 나라 id → 깃발 (icon/emblem-*.png) · 지도의 테두리 색 */
@@ -111,6 +121,22 @@ export const FACTION_ART: Readonly<Record<string, { emblem: string; color: strin
   maek: { emblem: 'emblem-tiger', color: '#a0703a' },
   siljik: { emblem: 'emblem-fish', color: '#5aa0b8' },
   haseulla: { emblem: 'emblem-seal', color: '#c06a8a' },
+  // 삼한과 북녘 판 — 고구려 삼족오 · 비류나 말 탄 궁수 · 연나 돌성문 · 환나 현무 · 관나 까마귀 · 부여 사슴 · 구가 개 · 동옥저 작살
+  // 마가·우가·저가(말·소·돼지)와 북옥저·불내·탐라는 제 깃발이 아직 없다 — 그림 줄 4c
+  goguryeo: { emblem: 'emblem-samjogo', color: '#c43c2c' },
+  biryuna: { emblem: 'emblem-horsearcher', color: '#8a5a9a' },
+  yeonna: { emblem: 'emblem-stonegate', color: '#6a7a8a' },
+  hwanna: { emblem: 'emblem-tortoise', color: '#3a7a6a' },
+  gwanna: { emblem: 'emblem-crow', color: '#4a4a5a' },
+  buyeo: { emblem: 'emblem-deer', color: '#e8e0c8' },
+  maga: { emblem: 'emblem-moon', color: '#b07a3a' },
+  uga: { emblem: 'emblem-pine', color: '#7a8a3a' },
+  jeoga: { emblem: 'emblem-sodo-bird', color: '#8a5a3a' },
+  guga: { emblem: 'emblem-dog', color: '#c0a060' },
+  dongokjeo: { emblem: 'emblem-harpoon', color: '#3a8ab0' },
+  bukokjeo: { emblem: 'emblem-fish', color: '#2a6a8a' },
+  bullae: { emblem: 'emblem-tiger', color: '#d08a3a' },
+  tamna: { emblem: 'emblem-sailboat', color: '#5ab0a0' },
 }
 
 const KIND_ICON: Readonly<Record<NodeKind, string>> = {
@@ -145,13 +171,14 @@ const NODE_ICON: Readonly<Record<string, string>> = {
 }
 
 /**
- * 판마다의 고을 자리 — 삼한 남부 판은 같은 고을(영남 판의 y-*)도 다른 틀이라 경위도에서 다시 셈한다.
+ * 판마다의 고을 자리 — 넓어지는 지도(삼한 남부 · 삼한과 북녘)는 같은 고을(영남 판의 y-*)도 다른 틀이라 경위도에서 다시 셈한다.
  * 다른 판은 NODE_POS 그대로.
  */
 export function nodePos(region: RegionId | undefined, id: string): readonly [number, number] | undefined {
-  if (region === 'south') {
-    const ll = southGeo(id)
-    return ll !== undefined ? southPos(ll[0], ll[1]) : undefined
+  const g = worldGeoOf(region)
+  if (g !== null) {
+    const ll = placeOf(region, id)
+    return ll !== undefined ? g.pos(ll[0], ll[1]) : undefined
   }
   return NODE_POS[id]
 }

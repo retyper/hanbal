@@ -12,6 +12,8 @@ export interface Memo {
   readonly power: Map<string, number>
   readonly range: Map<string, [number, number]>
   readonly leader: Map<string, string | null>
+  /** 나라마다 함께 치자고 약속한 고을 (diplomacy.pledgedNodes) */
+  readonly pledged: Map<string, ReadonlySet<string>>
 }
 
 let active: Memo | null = null
@@ -25,7 +27,7 @@ export function memoFor(r: Realm): Memo | null {
 export function withMemo<T>(r: Realm, fn: () => T): T {
   if (active !== null && active.r === r) return fn()
   const prev = active
-  active = { r, power: new Map(), range: new Map(), leader: new Map() }
+  active = { r, power: new Map(), range: new Map(), leader: new Map(), pledged: new Map() }
   try {
     return fn()
   } finally {

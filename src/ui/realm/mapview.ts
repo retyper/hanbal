@@ -9,7 +9,7 @@
 import { headcount } from '../../realm/battle.ts'
 import { FACTION_ART, REGION_ART, SEASON_MAP, nodeIcon, nodePos } from '../../realm/data/art.ts'
 import { EDGE_NAME, NODE_KIND_NAME, NODE_NOW } from '../../realm/data/prose.ts'
-import { SOUTH_PROJ, onSouthLand } from '../../realm/data/regions/south-geo.ts'
+import { worldGeoOf } from '../../realm/data/regions/index.ts'
 import { knows } from '../../realm/discovery.ts'
 import { visibleRange } from '../../realm/intel.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
@@ -147,7 +147,7 @@ export function mapHtml(
     svg += `<radialGradient id="rm-t-${f}"><stop offset="0" stop-color="${a.color}" stop-opacity=".72"/>`
     svg += `<stop offset=".65" stop-color="${a.color}" stop-opacity=".45"/><stop offset="1" stop-color="${a.color}" stop-opacity="0"/></radialGradient>`
   }
-  const cellsOn = region === 'yeongnam' || region === 'south'
+  const cellsOn = region === 'yeongnam' || worldGeoOf(region) !== null
   const fog = r.known !== undefined ? fogSvg(r, region, W, H, TERRITORY_R, vis, isFresh) : null
   svg += `${landClipSvg(region, W, H)}${fog?.defs ?? ''}</defs>`
   if (cellsOn) svg += provincesSvg(r, region, W, H, TERRITORY_R, dim, focus, seen)
@@ -260,8 +260,8 @@ export function mapHtml(
     toks += `</div>`
   }
   // 넓어지는 지도는 조각을 이은 한 장에 계절 빛을 입힌다 (worldmap.ts — 다 되면 바탕을 갈아 끼운다)
-  const world = region === 'south'
-  const bgUrl = world ? worldMapUrl(art, season) : `${art}${RA.dir}/${SEASON_MAP[season]}.${RA.ext}`
+  const world = worldGeoOf(region) !== null
+  const bgUrl = world ? worldMapUrl(art, season, region) : `${art}${RA.dir}/${SEASON_MAP[season]}.${RA.ext}`
   const bg = bgUrl !== '' ? `background-image:url('${bgUrl}');` : ''
   return `<div class="map" data-region="${region}"${world ? ` data-world="${season}"` : ''} data-aspect="${W / H}" data-zmax="${RA.zmax}" style="${bg}aspect-ratio:${W} / ${H};--ns:${RA.nodeScale};--ls:${RA.labelScale}">${svg}${fog?.words ?? ''}${nodes}${toks}${placeLabels(labels, byNode, W, H, RA.nodeScale, RA.labelScale)}</div>`
 }
@@ -458,11 +458,14 @@ function fogSvg(
   // "모르는 땅" 글씨 — 고른 눈금 위, 뭍이고 보이는 고을에서 먼 자리 (나라 자리를 흘리지 않게 눈금으로)
   let words = ''
   const seenPts = [...vis].map((id) => nodePos(region, id)).filter((p) => p !== undefined)
-  for (let gy = 0; gy < 4; gy++) {
+  const g = worldGeoOf(region)
+  // 세로로 긴 판은 줄을 늘린다 — 칸이 거의 정사각이 되게
+  const rows = Math.max(4, Math.round((4 * H) / W * 1.25))
+  for (let gy = 0; gy < rows; gy++) {
     for (let gx = 0; gx < 5; gx++) {
       const x = (gx + 0.5 + (gy % 2) * 0.25) / 5
-      const y = (gy + 0.5) / 4
-      if (region === 'south' && !onSouthLand(SOUTH_PROJ.lon0 + x * (SOUTH_PROJ.lon1 - SOUTH_PROJ.lon0), SOUTH_PROJ.lat1 - y * (SOUTH_PROJ.lat1 - SOUTH_PROJ.lat0))) continue
+      const y = (gy + 0.5) / rows
+      if (g !== null && !g.onLand(g.proj.lon0 + x * (g.proj.lon1 - g.proj.lon0), g.proj.lat1 - y * (g.proj.lat1 - g.proj.lat0))) continue
       if (seenPts.some((p) => Math.hypot((p[0] - x) * W, (p[1] - y) * H) < terrR * 4)) continue
       words += `<span class="fogw" style="left:${(x * 100).toFixed(1)}%;top:${(y * 100).toFixed(1)}%">모르는 땅</span>`
     }
