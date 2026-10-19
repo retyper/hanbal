@@ -118,3 +118,70 @@ export function stepDiscovery(r: Realm, lines: ReportLine[]): void {
     discover(r, f, pick, 'rumor', lines)
   }
 }
+
+// ───────── 본 땅 — 지도는 보고 다닌 만큼 그려진다 (형: "지도 밝히는건 정찰같은게 해야하지 않나" — 2026-10-19)
+//
+// 나라를 아는 것(known)과 그 땅을 본 것(intel.land)은 다르다. 땅을 보는 길:
+//   제 땅과 그 이웃 (판을 열 때) · 정찰한 고을과 그 이웃 · 새로 쥔 고을의 이웃 · 동맹이 나눠 준 땅 (season.ts)
+//   그리고 여기 — 우리 군대가 선 고을과 그 이웃 · 싸운 고을 · 사신과 장사꾼이 오간 길 (도읍에서 도읍까지)
+// 플레이어 눈만 넓힌다 — AI 는 땅을 안 보고 나라를 본다 (발견). 굴림 없음.
+
+/** 9 — 이번 계절에 본 땅 (플레이어) */
+export function stepSight(r: Realm, lines: ReportLine[]): void {
+  if (r.known === undefined || r.player === undefined) return
+  const me = r.player
+  const known = (r.intel[me] ??= {})
+  const adj = new Map<string, string[]>()
+  for (const ed of Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))) {
+    ;(adj.get(ed.a) ?? adj.set(ed.a, []).get(ed.a)!).push(ed.b)
+    ;(adj.get(ed.b) ?? adj.set(ed.b, []).get(ed.b)!).push(ed.a)
+  }
+  const see = (id: string): void => {
+    if (r.nodes[id] !== undefined) known[id] ??= { land: true, force: null, alert: null }
+  }
+  const around = (id: string): void => {
+    see(id)
+    for (const nb of adj.get(id) ?? []) see(nb)
+  }
+  // 군대 — 선 자리와 가는 길 끝
+  for (const a of Object.values(r.armies).sort((x, y) => (x.id < y.id ? -1 : 1))) {
+    if (a.faction !== me) continue
+    around(a.at)
+    if (a.march !== null) see(a.march.to)
+  }
+  const seen = lines.slice()
+  for (const l of seen) {
+    if (l.kind === 'battle' && (l.defender === me || r.armies[l.attacker]?.faction === me)) around(l.node)
+    // 사신·장사꾼이 오간 길 — 도읍에서 도읍까지 가장 짧은 길의 고을들. 그 길에 사는 나라도 알게 된다
+    let other: string | null = null
+    let how: DiscoverHow = 'envoy'
+    if (l.kind === 'envoy' && (l.from === me || l.to === me)) other = l.from === me ? l.to : l.from
+    if (l.kind === 'market' && (l.a === me || l.b === me)) { other = l.a === me ? l.b : l.a; how = 'market' }
+    if (other === null) continue
+    const from = r.factions[me]?.capital
+    const to = r.factions[other]?.capital
+    if (from === undefined || to === undefined) continue
+    for (const id of pathBetween(adj, from, to)) {
+      see(id)
+      const o = r.nodes[id]?.owner
+      if (o !== null && o !== undefined && o !== me) discover(r, me, o, how, lines)
+    }
+  }
+}
+
+/** 길로 가장 짧은 고을들 (양 끝 포함) — 같은 길이면 id 순 (adj 가 정렬돼 있다) */
+function pathBetween(adj: ReadonlyMap<string, readonly string[]>, from: string, to: string): string[] {
+  const prev = new Map<string, string>([[from, from]])
+  const q = [from]
+  for (let i = 0; i < q.length && !prev.has(to); i++) {
+    for (const nb of adj.get(q[i]!) ?? []) {
+      if (prev.has(nb)) continue
+      prev.set(nb, q[i]!)
+      q.push(nb)
+    }
+  }
+  if (!prev.has(to)) return []
+  const out = [to]
+  while (out[out.length - 1] !== from) out.push(prev.get(out[out.length - 1]!)!)
+  return out.reverse()
+}

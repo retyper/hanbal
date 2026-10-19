@@ -30,7 +30,7 @@ import {
 import { blockedWhy, seasonOf } from './calendar.ts'
 import { applyBowUps, refreshSpies, resolvePlots } from './plots.ts'
 import { noteTake } from './stance.ts'
-import { stepDiscovery } from './discovery.ts'
+import { stepDiscovery, stepSight } from './discovery.ts'
 import { PEOPLE_SCALE, migrate } from './migrate.ts'
 import { spreadRumors } from './rumor.ts'
 import { addMen, giveMen, kitOf, scaleMen, takeMen } from './kit.ts'
@@ -924,6 +924,7 @@ export function advance(
   for (const [f, spies] of Object.entries(r.spies ?? {})) for (const s of spies) noteMet(r, f, heroesAtNode(r, s.node))
   spreadRumors(r, lines) // 9 — 첩자가 들은 것 (간접 정보)
   stepDiscovery(r, lines) // 9 — 이번 계절의 일로 서로 알게 된다 (삼한 남부 판 · 발견)
+  stepSight(r, lines) // 9 — 우리 군대·사신·장사꾼이 본 땅 (지도는 보고 다닌 만큼)
   if (r.player !== undefined) {
     for (const a of seenMarches(r, r.player)) {
       const line = { kind: 'sighted', faction: a.faction, army: a.id, from: a.march!.from, to: a.march!.to } as const

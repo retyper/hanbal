@@ -79,8 +79,15 @@ export const MAP_CSS = `
 .map[data-world] { background-color: #cdb98e; }
 .map .nd.fresh, .map .lb.fresh, .map svg .fresh { animation: rv 2.2s ease-out both; }
 @keyframes rv { from { opacity: 0; } to { opacity: 1; } }
-.map .fogw { position: absolute; z-index: 1; transform: translate(-50%, -50%); pointer-events: none; white-space: nowrap; color: #6a5634aa;
-  font-size: max(11px, calc(min(2.4cqh, 1.8cqw) / var(--z, 1) * var(--zs, 1))); font-weight: 700; letter-spacing: .4em; }
+.map .fogc { position: absolute; z-index: 1; transform: translate(-50%, -50%); pointer-events: none; opacity: .5; mix-blend-mode: multiply;
+  animation: fogdrift var(--d, 40s) ease-in-out infinite alternate; }
+@keyframes fogdrift { from { transform: translate(-50%, -50%); } to { transform: translate(-38%, -54%); } }
+.map .rumor { position: absolute; z-index: 2; transform: translate(-50%, -50%); pointer-events: none; text-align: center; white-space: nowrap;
+  font-family: 'Gowun Batang', serif; color: #3d2e1ccc; font-weight: 700; font-size: max(10px, calc(2.1cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1))); }
+.map .rumor i { display: block; margin: 0 auto 2px; width: 1.6em; height: 1.1em; border-radius: 48% 52% 45% 55%;
+  background: radial-gradient(ellipse at 45% 50%, #2a1d10cc 0, #2a1d1088 45%, #2a1d1000 72%); }
+.map .rumor small { display: block; font-size: .7em; font-weight: 500; opacity: .8; }
+@media (prefers-reduced-motion: reduce) { .map .fogc { animation: none; } }
 `
 
 export interface MapMarch {
@@ -148,7 +155,11 @@ export function mapHtml(
     svg += `<stop offset=".65" stop-color="${a.color}" stop-opacity=".45"/><stop offset="1" stop-color="${a.color}" stop-opacity="0"/></radialGradient>`
   }
   const cellsOn = region === 'yeongnam' || worldGeoOf(region) !== null
-  const fog = r.known !== undefined ? fogSvg(r, region, W, H, TERRITORY_R, vis, isFresh) : null
+  // 두 끝을 다 본 길은 그 길을 따라 띠로 밝다 (누가 걸어 본 길)
+  const corridors = r.known === undefined ? [] : Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))
+    .filter((ed) => seen(ed.a) && seen(ed.b))
+    .map((ed) => smoothPath(routePoints(region, ed, px(ed.a), px(ed.b), W, H)))
+  const fog = r.known !== undefined ? fogSvg(r, me, region, W, H, TERRITORY_R, vis, isFresh, corridors, art) : null
   svg += `${landClipSvg(region, W, H)}${fog?.defs ?? ''}</defs>`
   if (cellsOn) svg += provincesSvg(r, region, W, H, TERRITORY_R, dim, focus, seen)
   else svg += `<g class="terr">`
@@ -428,54 +439,82 @@ function cellsOf(r: Realm, region: RegionId, W: number, H: number, terrR: number
 // ───────── 넓어지는 지도 — 모르는 땅 (발견, docs/realm/WORLD-MAP.md §2 · 2026-10-19)
 
 /**
- * `me` 가 지도에서 볼 수 있는 고을 — 아는 나라(제 나라 포함)의 고을, 그 고을과 길로 맞닿은 빈 땅·소도, 우리 군대가 선 곳.
- * 발견이 없는 판이면 전부.
+ * `me` 가 지도에서 볼 수 있는 고을 — 본 땅(intel.land: 제 땅·이웃 · 정찰 · 군대가 선 곳 · 사신이 오간 길 · 동맹이 나눠 준 땅).
+ * 본 땅이라도 주인을 모르는 나라면 그리지 않는다 (나라를 흘리지 않게). 발견이 없는 판이면 전부.
  */
 export function visibleNodes(r: Realm, me: string): Set<string> {
   if (r.known === undefined) return new Set(Object.keys(r.nodes))
   const out = new Set<string>()
-  for (const n of Object.values(r.nodes)) if (n.owner !== null && knows(r, me, n.owner)) out.add(n.id)
-  for (const a of Object.values(r.armies)) if (a.faction === me) out.add(a.at)
-  const core = [...out]
-  for (const ed of Object.values(r.edges)) {
-    for (const [x, y] of [[ed.a, ed.b], [ed.b, ed.a]] as const) {
-      if (core.includes(x) && r.nodes[y]?.owner === null) out.add(y)
-    }
+  const k = r.intel[me] ?? {}
+  for (const n of Object.values(r.nodes)) {
+    if (n.owner !== me && k[n.id]?.land !== true) continue
+    if (n.owner === null || knows(r, me, n.owner)) out.add(n.id)
   }
+  for (const a of Object.values(r.armies)) if (a.faction === me) out.add(a.at)
   return out
 }
 
-/** 옛 종이빛 안개 — 보이는 고을의 땅 조각만 뚫는다. 막 알게 된 나라의 조각은 서서히 뚫린다 (.fresh) */
+/** 같은 id 면 같은 흔들림 (0..1) — 그림 자리 고르기에만 */
+const jit = (s: string): number => {
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619)
+  return ((h >>> 0) % 10007) / 10007
+}
+
+/**
+ * 모르는 땅은 빈 한지다 (형: "한국엔 양피지가 없으니까 한지스타일로" — 2026-10-19). 닥나무 결이 보이는 종이 위에
+ * 고구려 벽화의 구름무늬가 흘러가고, 본 땅만 붓으로 칠해져 있다 — 가장자리는 먹이 번진 듯 들쭉날쭉.
+ * 이름만 들은 나라(아는데 땅을 못 본 나라)는 도읍 자리에 먹점 하나와 이름만 — 대강의 자리다.
+ */
 function fogSvg(
-  r: Realm, region: RegionId, W: number, H: number, terrR: number, vis: ReadonlySet<string>, fresh: (id: string) => boolean,
+  r: Realm, me: string, region: RegionId, W: number, H: number, terrR: number, vis: ReadonlySet<string>, fresh: (id: string) => boolean,
+  corridors: readonly string[], art: string,
 ): { defs: string; body: string; words: string } {
   const { nodes, cells } = cellsOf(r, region, W, H, terrR)
-  const blur = Math.round(terrR * 0.35)
+  const blur = Math.round(terrR * 0.3)
   let holes = ''
   for (const [i, c] of cells.entries()) {
     const id = nodes[i]!.id
     if (!vis.has(id)) continue
     holes += `<path d="${polyPath(c.pts)}"${fresh(id) ? ' class="fresh"' : ''}/>`
   }
-  const defs = `<filter id="rm-fog-blur" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="${blur}"/></filter>`
+  for (const d of corridors) holes += `<path d="${d}" fill="none" stroke="#000" stroke-width="${Math.round(terrR * 1.6)}" stroke-linecap="round" stroke-linejoin="round"/>`
+  const tile = Math.round(Math.min(W, H) * 0.42)
+  const defs = `<filter id="rm-fog-blur" x="-5%" y="-5%" width="110%" height="110%">`
+    + `<feTurbulence type="fractalNoise" baseFrequency="${(3 / terrR).toFixed(4)}" numOctaves="2" seed="11" result="n"/>`
+    + `<feDisplacementMap in="SourceGraphic" in2="n" scale="${Math.round(terrR * 0.9)}" xChannelSelector="R" yChannelSelector="G" result="d"/>`
+    + `<feGaussianBlur in="d" stdDeviation="${blur}"/></filter>`
     + `<mask id="rm-fog" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="#fff"/>`
     + `<g fill="#000" filter="url(#rm-fog-blur)">${holes}</g></mask>`
-    + `<radialGradient id="rm-fog-c" cx=".5" cy=".5" r=".75"><stop offset="0" stop-color="#ddcba3"/><stop offset="1" stop-color="#bfa678"/></radialGradient>`
-  const body = `<g class="fog" mask="url(#rm-fog)"><rect width="${W}" height="${H}" fill="url(#rm-fog-c)" opacity=".95"/></g>`
-  // "모르는 땅" 글씨 — 고른 눈금 위, 뭍이고 보이는 고을에서 먼 자리 (나라 자리를 흘리지 않게 눈금으로)
+    + `<pattern id="rm-hanji" patternUnits="userSpaceOnUse" width="${tile}" height="${tile}"><image href="${art}map-world/hanji.webp" width="${tile}" height="${tile}" preserveAspectRatio="none"/></pattern>`
+  const body = `<g class="fog" mask="url(#rm-fog)"><rect width="${W}" height="${H}" fill="#efe4cc"/><rect width="${W}" height="${H}" fill="url(#rm-hanji)"/></g>`
+  // 구름무늬 — 고른 눈금 위, 본 고을에서 먼 자리 (나라 자리를 흘리지 않게 눈금으로)
   let words = ''
   const seenPts = [...vis].map((id) => nodePos(region, id)).filter((p) => p !== undefined)
-  const g = worldGeoOf(region)
-  // 세로로 긴 판은 줄을 늘린다 — 칸이 거의 정사각이 되게
-  const rows = Math.max(4, Math.round((4 * H) / W * 1.25))
+  const cols = W < H ? 3 : 5
+  const rows = Math.max(3, Math.round((cols * H) / W * 0.9))
+  const cw = (W < H ? 26 : 14)
   for (let gy = 0; gy < rows; gy++) {
-    for (let gx = 0; gx < 5; gx++) {
-      const x = (gx + 0.5 + (gy % 2) * 0.25) / 5
-      const y = (gy + 0.5) / rows
-      if (g !== null && !g.onLand(g.proj.lon0 + x * (g.proj.lon1 - g.proj.lon0), g.proj.lat1 - y * (g.proj.lat1 - g.proj.lat0))) continue
-      if (seenPts.some((p) => Math.hypot((p[0] - x) * W, (p[1] - y) * H) < terrR * 4)) continue
-      words += `<span class="fogw" style="left:${(x * 100).toFixed(1)}%;top:${(y * 100).toFixed(1)}%">모르는 땅</span>`
+    for (let gx = 0; gx < cols; gx++) {
+      const key = `${region}:${gx}:${gy}`
+      const x = (gx + 0.5 + (gy % 2) * 0.3 + (jit(key) - 0.5) * 0.4) / cols
+      const y = (gy + 0.5 + (jit(key + 'y') - 0.5) * 0.5) / rows
+      if (seenPts.some((p) => Math.hypot((p[0] - x) * W, (p[1] - y) * H) < terrR * 3.2)) continue
+      const n = 1 + Math.floor(jit(key + 'n') * 8)
+      const flip = jit(key + 'f') < 0.5 ? ' scaleX(-1)' : ''
+      words += `<img class="fogc" src="${art}map-world/cloud-${n}.webp" alt="" style="left:${(x * 100).toFixed(1)}%;top:${(y * 100).toFixed(1)}%;width:${(cw * (0.8 + jit(key + 's') * 0.5)).toFixed(1)}%;--d:${Math.round(30 + jit(key + 'd') * 30)}s${flip ? ';rotate:y 180deg' : ''}">`
     }
+  }
+  // 이름만 들은 나라 — 도읍 자리 언저리에 먹점과 이름
+  for (const f of Object.keys(r.factions).sort()) {
+    if (f === me || !knows(r, me, f)) continue
+    if (Object.values(r.nodes).some((n) => n.owner === f && vis.has(n.id))) continue
+    const cap = r.factions[f]!.capital
+    const p = nodePos(region, cap)
+    if (p === undefined || r.nodes[cap]?.owner !== f) continue
+    const x = p[0] + ((jit(f) - 0.5) * terrR * 1.6) / W
+    const y = p[1] + ((jit(f + 'y') - 0.5) * terrR * 1.6) / H
+    words += `<span class="rumor" style="left:${(x * 100).toFixed(1)}%;top:${(y * 100).toFixed(1)}%"><i></i>${r.factions[f]!.name}<small>소문으로 들은 나라</small></span>`
   }
   return { defs, body, words }
 }

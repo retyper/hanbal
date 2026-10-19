@@ -13,7 +13,8 @@ import { WORLD_NATIONS } from '../../src/realm/data/nations-world.ts'
 import { WORLD_GEO } from '../../src/realm/data/regions/world-geo.ts'
 import { WORLD_DATA, WORLD_NATION_IDS, startWorld, worldGeo } from '../../src/realm/data/regions/world.ts'
 import { pairKey } from '../../src/realm/diplomacy.ts'
-import { knows } from '../../src/realm/discovery.ts'
+import { knows, stepSight } from '../../src/realm/discovery.ts'
+import type { ReportLine } from '../../src/realm/types.ts'
 import { bowUpCost } from '../../src/realm/plots.ts'
 import { advance } from '../../src/realm/season.ts'
 import { aiOrders } from '../../src/realm/ai.ts'
@@ -81,6 +82,23 @@ describe('삼한과 북녘 판', () => {
     assert.ok(html.includes('data-node="g-gungnae-cap"'))
     assert.ok(!html.includes('data-node="t-tamna-cap"'))
     assert.ok(html.includes('mask="url(#rm-fog)"'))
+  })
+
+  it('지도는 본 만큼 — 아는 나라라도 못 본 고을은 안 그린다 · 이름만 들은 나라는 먹점 · 사신이 오간 길은 열린다', () => {
+    const r = startWorld(1, 'goguryeo')
+    // 알지만 못 본 나라 — 땅은 안 그리고 도읍 언저리에 소문만
+    r.known!['goguryeo']!.push('tamna')
+    const html = mapHtml(r, 'goguryeo', '/', [], '')
+    assert.ok(!html.includes('data-node="t-tamna-cap"'))
+    assert.ok(html.includes('class="rumor"') && html.includes('탐라'))
+    assert.ok(!html.includes('모르는 땅'))
+    // 사신이 다녀오면 도읍에서 도읍까지 길의 고을이 보인다
+    const far = Object.values(r.nodes).find((n) => n.owner === 'buyeo' && n.kind === 'capital')!
+    assert.ok(r.intel['goguryeo']![far.id]?.land !== true)
+    const lines: ReportLine[] = [{ kind: 'envoy', from: 'goguryeo', to: 'buyeo', ask: 'truce', accepted: false }]
+    stepSight(r, lines)
+    assert.equal(r.intel['goguryeo']![far.id]?.land, true)
+    assert.ok(knows(r, 'goguryeo', 'buyeo'))
   })
 
   it('판이 흐른다 — 같은 시드면 같은 판', () => {
