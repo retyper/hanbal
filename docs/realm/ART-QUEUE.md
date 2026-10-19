@@ -2,7 +2,7 @@
 
 > 형 (2026-10-19): *"챗지피티를 중요한 이미지 생성에 항상 다음 만들거 목록화해두고 크레딧 생길때마다 생성시켜야지 뭐하냐"*
 
-**아침에 형이 "챗지피티 이미지 요청부터" 하라고 하면**: 이 줄의 맨 위부터 굽는다 — **① 깃발 다시(빨간 해 동그라미 없이 — 아래 2b)** ② 요동 조각 M9a~d ③ 인물 5b → 5. 막히면 계정을 바꿔 달라고 한다.
+**아침에 형이 "챗지피티 이미지 요청부터" 하라고 하면**: 이 줄의 맨 위부터 굽는다 — **① 깃발 다시(빨간 해 동그라미 없이 — 아래 2b)** ② **여인 장수 5d (형: "장수도 여캐 많았으면 좋겠으니 챗지피티로")** ③ 요동 조각 M9a~d ④ 인물 5b → 5. 막히면 계정을 바꿔 달라고 한다.
 
 **규칙**
 - 이 줄은 **비지 않게** 둔다. 새 기능·새 나라·새 사건이 생기면 그 자리에서 여기 적는다.
@@ -44,6 +44,35 @@
 ## 인물 — 챗지피티로 (형 2026-10-19: "제미나이로 인물 만드는게 진짜 퀄리티 떨어지긴 하네")
 
 한 장에 한 명 · 새 대화마다 한 사람 (ART 0-3). 지도 조각 다음 차례.
+
+### 5d 여인 장수 열일곱 — 먼저 (형 2026-10-19: "장수도 여캐 많았으면 좋겠으니 챗지피티로 만들어줘")
+
+판마다 장수 절반쯤을 여인으로 늘렸다 (data/regions/*.ts — 도읍에 머무는 둘째·셋째 장수). 지금은 있는 명치판을 빌려 쓴다 (data/art.ts HERO_BUST).
+받으면 `assets_src/realm/heroines/bust/<번호-이름>.png` → `tools/realm-plate.ps1` (320px JPEG) → `public/realm/bust/w-<번호-이름>.jpg` → HERO_BUST 의 빌린 이름만 바꾼다.
+2026-10-19 낮에 하나 시켰다가 retyper 계정 한도(다음 날 오전 9:30)로 0장 — 그 대화는 버린다.
+
+**머리말** (미추홀 비라 때와 같다 — 사람마다 새 대화): *Generate one image: premium Korean MMORPG character illustration, bold clean ink outlines, cel shading with soft painterly lighting, beautiful detailed face. Upper-body bust portrait framed from just above the head down to the solar plexus (mid-chest), both shoulders and upper arms visible, facing the viewer, slightly turned. Plain very dark navy-blue background (#1c2129) with a soft warm glow behind the head. Square 1:1. No text, no border.*
+**꼬리말**: *NOT Chinese: no hanfu, no Chinese hairpins, no Chinese characters. NOT Japanese: no kimono. No red circle or sun disc. Tasteful, fully clothed, adult.*
+
+| 파일 | 장수 (id) | 얼굴 · 체형 · 차림 |
+|---|---|---|
+| w-29-golpo-janmul | 골포 살해 잔물 (us-2) | 마산만 포구의 20대 초 · 동글한 얼굴, 큰 눈, 보조개 · 가냘픔 · 조개 꿴 두 갈래 땋은 머리, 쪽빛 이마띠, 삼베 조끼, 그물, 쇠촉 작살 (no ama diver) |
+| w-30-guya-soebi | 가락 견지 쇠비 (guya-3) | 덩이쇠 장사꾼 장수 · 차가운 고양이상, 붉은 입술 · 키 크고 어깨 넓은 근육형 · 가야 세로 철판 어깨 갑옷 한쪽, 수정 구슬·곡옥, 덩이쇠 꾸러미 |
+| w-31-dabeol-dalbit | 다벌 번예 달빛 (dabeol-2) | 밤 척후 · 여우상, 눈밑 점, 은근한 웃음 · 마르고 날렵 · 짙은 쪽빛 두건, 짧은 각궁, 검은 깃털, 가죽 흉갑 |
+| w-32-golbeol-budeul | 골벌 살해 부들 (golbeol-2) | 늪의 매복꾼 · 주근깨 말괄량이, 짧게 친 머리, 볼에 진흙 · 잔근육 · 갈대 도롱이, 부들 이삭, 단검 |
+| w-33-gammun-gamsil | 감문 읍차 감실 (gammun-2) | 점치는 책사 · 농염한 30대, 졸린 듯 깊은 눈매 · 풍만한 곡선형 · 감빛 어깨걸이, 청동거울, 청동 방울, 높이 틀어 올린 머리에 천띠 |
+| w-34-chopal-deulme | 초팔 살해 들메 (chopal-2) | 합천 산골 창잡이 · 북방 외꺼풀, 높은 광대, 굳은 표정 · 키 크고 탄탄 · 털 깃, 곰 발톱 목걸이, 쇠창 |
+| w-35-jomun-odi | 조문 번예 오디 (jomun-2) | 누에 치는 사신감 · 동글동글 귀여운 상, 활짝 웃음 · 통통하고 풍만 · 옅은 명주 저고리에 오디빛 띠, 고치 바구니, 구슬 |
+| w-36-baekje-maena | 백제 견지 매나 (baekje-2) | 매 부리는 척후 · 서늘한 미인, 아몬드 눈 · 키 크고 가냘픔 · 금동 투조 머리띠, 가죽 장갑 위의 매, 화살통 |
+| w-37-michuhol-gaennae | 미추홀 살해 갯내 (michuhol-2) | 소금밭 밀정 · 단발, 여우 같은 눈웃음 · 작고 날렵 · 짙은 삼베, 소금 자루, 숨긴 단도 (주근깨는 군주 비라 몫 — 넣지 말 것) |
+| w-38-sangdang-bulmae | 상당 살해 불매 (sangdang-2) | 풀무 대장장이 · 그을음, 눈썹 흉터, 자신만만 · 굵은 팔의 근육형 · 가죽 앞치마, 쇠망치, 벌건 쇳덩이 빛 |
+| w-39-gosaburi-galmae | 고사부리 번예 갈매 (gosaburi-2) | 배 위의 궁수 · 볕에 그을린 활달한 얼굴 · 단단한 곡선형 · 갈매기 깃털, 짧은 활, 물방울 |
+| w-40-mujin-munui | 무진 읍차 무늬 (mujin-2) | 문신한 무녀 춤꾼 · 신비롭고 부드러운 얼굴 · 가냘픔 · 맨팔의 소용돌이 문신, 방울, 오색 띠 |
+| w-41-hwanna-beodeul | 환나 조의 버들 (hwanna-2) | 고구려 궁수 · 밝고 당찬 · 탄탄 · 점무늬 저고리에 다른 색 띠, 조우관(새 깃 둘), 맥궁 |
+| w-42-gwanna-soenun | 관나 조의 쇠눈 (gwanna-2) | 개마 무사 · 엄하고 날카로운 눈 · 키 크고 단단 · 쇠비늘 찰갑, 볏 달린 투구는 손에, 긴 창 |
+| w-43-uga-nuri | 우가 견사 누리 (uga-2) | 부여 소 치는 살림꾼 · 순하고 따뜻한 얼굴 · 통통 · 흰 옷, 털모자, 금 장식, 고삐 |
+| w-44-okjeo-sogeumbi | 동옥저 장수 소금비 (dongokjeo-2) | 바닷가 소금·물고기 · 북방 주근깨, 바람에 튼 볼 · 다부짐 · 물범 가죽 조끼, 소금 자루, 말린 물고기 |
+| w-45-tamna-oreumbi | 탐라 살해 오름비 (tamna-2) | 제주 말 부리는 여인 · 그을린 피부, 바람머리, 시원한 웃음 · 탄탄 · 현무암 구슬, 말 갈기 끈, 짚 비옷 (no ama diver) |
 
 | # | 무엇 | 왜 |
 |---|---|---|

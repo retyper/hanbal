@@ -79,6 +79,12 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'guga-ruler': 'w-16-clan-matriarch', 'guga-1': 'g-12-silla-youth', 'dongokjeo-ruler': 'w-18-jinhan-salt-widow', 'dongokjeo-1': 'g-05-mahan-chieftain',
   'bukokjeo-ruler': 'g-15-shaman-man', 'bukokjeo-1': 'w-17-mahan-pearl-diver', 'bullae-ruler': 'w-22-dongye-tiger-huntress', 'bullae-1': 'g-13-baekje-general',
   'tamna-ruler': 'w-07-shaman-queen', 'tamna-1': 'g-20-samul-sea-lord',
+  // 여인 장수 더 (형 2026-10-19: "장수도 여캐 많았으면 좋겠으니 챗지피티로") — 판마다 장수 절반쯤이 여인. 아라·고자 둘은 변한 판의 얼굴 그대로
+  // 제 얼굴(w-29 ~ w-45, 그림 줄 5d)을 받기 전까지는 있는 명치판을 빌린다 — 받으면 여기만 바꾼다
+  'us-2': 'w-08-mahan-warrior', 'guya-3': 'w-20-gaya-smith-daughter',
+  'dabeol-2': 'w-11-assassin', 'golbeol-2': 'w-26-iseo-tomboy-general', 'gammun-2': 'w-05-baekje-queen', 'chopal-2': 'w-22-dongye-tiger-huntress', 'jomun-2': 'w-21-baekje-court-dancer',
+  'baekje-2': 'w-03-goguryeo-archer', 'michuhol-2': 'w-14-feast-spy', 'sangdang-2': 'w-09-byeonhan-smith', 'gosaburi-2': 'w-10-pirate-captain', 'mujin-2': 'w-12-court-dancer',
+  'hwanna-2': 'w-13-young-archer', 'gwanna-2': 'w-04-gaya-swordswoman', 'uga-2': 'w-19-buyeo-fur-princess', 'dongokjeo-2': 'w-18-jinhan-salt-widow', 'tamna-2': 'w-06-buyeo-huntress',
 }
 
 /** 나라 id → 깃발 (icon/emblem-*.png) · 지도의 테두리 색 */

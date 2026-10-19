@@ -281,6 +281,14 @@ const HEROES: Hero[] = [
   h('samul-1', '살해 사공', 'samul', 'w', [5, 5, 4, 3, 4, 6], ['river']),
   h('eumjeup-1', '살해 벌', 'eumjeup', 'w', [5, 4, 4, 4, 4, 6], []),
   h('chopal-1', '살해 여울', 'chopal', 'g', [5, 4, 5, 3, 4, 6], []),
+  // 여인 장수 더 (형 2026-10-19: "장수도 여캐 많았으면") — 도읍에 머문다. 아라·고자의 둘은 변한 판과 같은 사람
+  h('anya-2', '번예 솔미', 'anya', 'w', [4, 4, 6, 4, 4, 6], ['nighteye'], 'y-anya-cap'),
+  h('goja-2', '번예 물새', 'goja', 'w', [4, 4, 7, 5, 6, 5], ['charm'], 'y-goja-cap'),
+  h('dabeol-2', '번예 달빛', 'dabeol', 'w', [5, 4, 7, 4, 5, 6], ['nighteye'], 'y-dabeol-cap'),
+  h('golbeol-2', '살해 부들', 'golbeol', 'w', [6, 5, 5, 3, 4, 5], ['river'], 'y-golbeol-cap'),
+  h('gammun-2', '읍차 감실', 'gammun', 'w', [3, 4, 7, 6, 7, 6], ['shaman'], 'y-gammun-cap'),
+  h('chopal-2', '살해 들메', 'chopal', 'w', [7, 5, 4, 3, 4, 7], ['mountain'], 'y-chopal-cap'),
+  h('jomun-2', '번예 오디', 'jomun', 'w', [3, 4, 5, 6, 8, 6], ['charm'], 'y-jomun-cap'),
 ]
 
 const a = (id: string, faction: string, hero: string | null, at: string, mix0: Army['mix'], equip: Army['equip'] = 'bronze'): Army => {
