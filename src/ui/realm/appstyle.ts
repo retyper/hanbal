@@ -238,4 +238,34 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .bars { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 10px; }
 .ap .bar { display: flex; align-items: center; gap: 2px; font-size: 12px; } .ap .bar i { font-style: normal; width: 2.4em; color: var(--mute); }
 .ap .bar b, .ap .bar s { width: 12px; height: 8px; border-radius: 2px; background: var(--gold); } .ap .bar s { background: #3a4250; }
+/* 보고판 — 계절 띠가 걷힌 뒤 뜨고, 안의 것이 차례로 올라와 쌓인다. 누르면 다 (app.modalHtml) */
+.ap .modal.late { animation: mlate .45s ease-out 1.9s both; }
+@keyframes mlate { from { opacity: 0; visibility: hidden; } to { opacity: 1; visibility: visible; } }
+.ap .modal.late .mcard { --t0: .35s; }
+.ap .rv { animation: bkin .45s ease-out calc(var(--t0, 0s) + var(--t, 0s)) both; }
+.ap .modal.fast { animation: none; } .ap .modal.fast .rv { animation-delay: 0s !important; animation-duration: .01s !important; }
+@media (prefers-reduced-motion: reduce) { .ap .rv { animation-duration: .01s !important; animation-delay: 0s !important; } .ap .modal.late { animation-delay: .6s; } }
+.ap .fall { display: flex; gap: 12px; align-items: center; margin: 8px 0 12px; padding: 12px; border-radius: 14px; background: linear-gradient(90deg, #2a1414, #1b2028); border: 1px solid #7a3a2a; }
+.ap .fall img.flord, .ap .fall .flord { width: 72px; height: 72px; flex: none; border-radius: 12px; object-fit: cover; border: 2px solid #7a3a2a; filter: grayscale(.7) brightness(.85); }
+.ap .fall b { display: flex; align-items: center; gap: 6px; font-family: 'Gowun Batang', serif; font-size: 20px; color: #f0b8a0; }
+.ap .fall span { display: block; font-size: 13.5px; color: var(--mute); margin-top: 3px; }
+/* 지도에서 고른 말 — 아래 띠 · 합치기 */
+.ap .selbar { position: absolute; left: 64px; right: 14px; bottom: calc(var(--tabh) + 70px); z-index: 7; display: none; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 10px; border-radius: 16px; background: #1b2028f2; border: 1px solid #8a7040; box-shadow: 0 6px 20px #000a; }
+.ap.sel-open .selbar { display: flex; } .ap.sheet-open .selbar { display: none; }
+.ap .selbar .sbf { display: flex; } .ap .selbar .sbface { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid #ffd27a; margin-right: -8px; background: #2a313c; display: block; }
+.ap .selbar .sbt { flex: 1; min-width: 140px; margin-left: 10px; display: flex; flex-direction: column; } .ap .selbar .sbt b { font-size: 14.5px; } .ap .selbar .sbt span { font-size: 12.5px; color: var(--mute); }
+.ap .selbar .sbwhy { font-size: 12px; color: #e8a08a; width: 100%; text-align: right; }
+.ap .selbar .sbx { border: 0; background: none; color: var(--mute); font-size: 18px; padding: 4px 6px; cursor: pointer; }
+/* 길 보기 — 선의 생김새가 무슨 길인지 */
+.ap .roadkey { position: absolute; right: 14px; top: calc(var(--toph) + var(--legh) + 8px); z-index: 6; }
+.ap.sheet-open .roadkey, .ap.choosing .roadkey { display: none; }
+.ap .roadkey > button { padding: 6px 10px; border-radius: 12px; border: 1px solid #4a5363; background: #1b2028e6; color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+.ap .roadkey .rk { margin-top: 6px; padding: 10px 12px; border-radius: 14px; background: #1b2028f2; border: 1px solid #4a5363; width: min(78vw, 300px); box-sizing: border-box; }
+.ap .roadkey .rk div { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 3px 0; } .ap .roadkey .rk svg { flex: none; background: #f3e6c8; border-radius: 4px; }
+.ap .roadkey .rk span { color: var(--mute); font-size: 12px; } .ap .roadkey .rk h5 { margin: 8px 0 2px; font-size: 13px; color: var(--gold); }
+/* 제사 단추 — 드는 것을 그림과 함께 */
+.ap .ritebtn { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; }
+.ap .ritebtn .cost { display: flex; gap: 8px; flex-wrap: wrap; font-size: 13px; } .ap .ritebtn .cost span { display: inline-flex; align-items: center; gap: 3px; }
+.ap .ritebtn .cost img { width: 20px; height: 20px; } .ap .ritebtn .gain { font-size: 12.5px; color: #9fd18b; } .ap .ritebtn .short { color: #e8a08a; }
 `

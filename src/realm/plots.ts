@@ -15,6 +15,7 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { addFavor, relationOf, worsen } from './diplomacy.ts'
+import { knows } from './discovery.ts'
 import { stockOf } from './economy.ts'
 import { armyOfHero, gainXp, hasTrait, heroAt, heroSeen, isRuler, plotBonus } from './heroes.ts'
 import { alertRange } from './intel.ts'
@@ -180,7 +181,8 @@ const alive = (r: Realm, f: string): boolean => Object.values(r.nodes).some((n) 
 
 /** 지금 벌일 수 있는 대상 — 결정론 순서. 값을 못 내도 목록에는 든다 (화면이 "곡식이 모자라다"를 보인다) */
 export function plotTargets(r: Realm, faction: string, op: PlotOp): Array<{ target: string; node?: string; other?: string; hero?: string }> {
-  const others = Object.keys(r.factions).sort().filter((f) => f !== faction && alive(r, f))
+  // 아는 나라에만 — 모르는 나라에 소문을 퍼뜨릴 수는 없다 (발견)
+  const others = Object.keys(r.factions).sort().filter((f) => f !== faction && alive(r, f) && knows(r, faction, f))
   if (op === 'assassin') {
     // 우리가 본 남의 장수 — 군주는 뺀다 (도읍 깊이 있다), 어디 있는지 알아야 한다
     const out: Array<{ target: string; node: string; hero: string }> = []
@@ -220,7 +222,7 @@ export function plotAgents(r: Realm, faction: string): string[] {
 
 function valid(r: Realm, o: Plot): boolean {
   if (r.factions[o.faction] === undefined || r.factions[o.target] === undefined || o.target === o.faction) return false
-  if (!PLOT_OPS.includes(o.op) || !alive(r, o.target)) return false
+  if (!PLOT_OPS.includes(o.op) || !alive(r, o.target) || !knows(r, o.faction, o.target)) return false
   if (o.op === 'assassin') {
     const v = o.hero !== undefined ? r.heroes[o.hero] : undefined
     if (v === undefined || v.status !== 'free' || v.faction !== o.target || isRuler(r, v.id) || !heroSeen(r, o.faction, v.id)) return false

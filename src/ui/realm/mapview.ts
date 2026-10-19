@@ -22,7 +22,7 @@ const W = REGION_ART['byeonhan-mini'].w
 const H = REGION_ART['byeonhan-mini'].h
 
 /** 길 종류의 선 — 색 · 굵기 · 점선 */
-const EDGE_STYLE: Readonly<Record<EdgeKind, string>> = {
+export const EDGE_STYLE: Readonly<Record<EdgeKind, string>> = {
   field: 'stroke="#6b4a2a" stroke-width="5"',
   pass: 'stroke="#4a3a2e" stroke-width="5" stroke-dasharray="3 9" stroke-linecap="round"',
   forest: 'stroke="#3d5a2c" stroke-width="5" stroke-dasharray="14 7"',
@@ -48,9 +48,10 @@ export const MAP_CSS = `
 .map .lb small { display: block; font-size: .78em; font-weight: 500; color: #4a3a28; margin-top: -1px; }
 .map .nd .ring { position: absolute; left: 50%; top: 42%; width: 82%; aspect-ratio: 1; transform: translate(-50%, -50%);
   border-radius: 50%; border: 3px solid var(--c); box-shadow: 0 0 6px var(--c); pointer-events: none; }
-.map .nd .men, .map .nd .foe { position: absolute; right: -10%; top: -6%; background: #1c2129; border-radius: 9px; padding: 0 5px;
-  font-size: max(10px, calc(1.9cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1))); font-weight: 700; }
+.map .nd .men, .map .nd .foe { position: absolute; left: 86%; top: 42%; transform: translateY(-50%); background: #1c2129; border-radius: 9px; padding: 0 5px;
+  font-size: max(10px, calc(1.9cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1))); font-weight: 700; white-space: nowrap; }
 .map .nd .men { color: #9fd18b; border: 1px solid #9fd18b; } .map .nd .foe { color: #e8a08a; border: 1px solid #8a5a3a; }
+.map .nd .foe.old { opacity: .6; border-style: dashed; } .map .nd.tgt .foe { display: none; }
 .map .nd .flag { position: absolute; left: -18%; top: -34%; width: 52%; aspect-ratio: 1.15; pointer-events: none; }
 .map .nd .flag::before { content: ''; position: absolute; left: 0; top: 0; width: 7%; height: 150%; background: #3a2a18; border-radius: 2px; }
 .map .nd .flag::after { content: ''; position: absolute; left: 7%; top: 0; right: 0; height: 100%; background: var(--c);
@@ -66,6 +67,7 @@ export const MAP_CSS = `
 .map .nd .tchip { position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, -2px); white-space: nowrap; pointer-events: none; z-index: 3; }
 .map .nd .tchip .tn.hide { margin-left: 3px; background: #2a3a24e8; color: #c8e8a8; }
 .map .nd .tchip .feel { font-size: max(10px, calc(1.8cqh / var(--z, 1) * var(--zs, 1))); padding: 1px 6px; }
+.map .nd .tchip .tn.stay { background: #2a3a24e8; color: #c8e8a8; }
 .map .nd .tchip .tn { background: #1c2129e8; color: #f3e6c8; border-radius: 9px; padding: 1px 7px; font-size: max(10px, calc(1.8cqh / var(--z, 1) * var(--zs, 1))); font-weight: 700; }
 .map .toks { position: absolute; transform: translate(2px, -50%); display: flex; gap: 3px; z-index: 4; pointer-events: none; }
 .map .tok { pointer-events: auto; display: flex; flex-direction: column; align-items: center; padding: 0; border: 0; background: none; cursor: pointer;
@@ -75,6 +77,7 @@ export const MAP_CSS = `
   font-size: max(10px, calc(1.6cqh / var(--z, 1) * var(--zs, 1))); line-height: 1.3; }
 .map .tok.sel img { border-color: #ffd27a; box-shadow: 0 0 0 3px #ffd27a88, 0 0 12px #ffd27a; transform: scale(1.12); }
 .map .tok.going img { border-color: #c8402a; }
+.map .toks.mv { transform: translate(-50%, -50%); } .map .toks.mv .tok img { border-style: dashed; border-color: #f3e6c8; }
 .map .lb.sel { color: #7a1f10; } .map .lb.dim { opacity: .38; } .map .nd.sel img.st { filter: drop-shadow(0 0 7px #ffd27a) drop-shadow(0 0 3px #ffd27a); }
 .map[data-world] { background-color: #cdb98e; }
 .map .nd.fresh, .map .lb.fresh, .map svg .fresh { animation: rv 2.2s ease-out both; }
@@ -105,6 +108,8 @@ export interface MapMarch {
  * 고을 그림의 크기 — 집이 많을수록 크다 (형: "규모를 이해하기 쉽게"). 빈땅·작은 마을 0.8 ~ 큰 도읍 1.35.
  * 화면의 생김새라 params 가 아니라 여기 둔다.
  */
+/** 본 군세의 폭 — 같으면 한 수 */
+const span = (lo: number, hi: number): string => (Math.round(lo) === Math.round(hi) ? `${Math.round(lo)}` : `${Math.round(lo)}~${Math.round(hi)}`)
 const sizeOf = (hh: number): number => Math.min(1.35, Math.max(0.8, 0.7 + hh / 900))
 
 
@@ -132,7 +137,7 @@ export function mapHtml(
   /** 화살·글씨 굵기 — 작은 기호에 맞춘다 */
   const lw = RA.nodeScale < 1 ? 0.65 : 1
   const target = new Map(targets.map((t) => [t.node, t]))
-  const hasTok = new Set(tokens.map((t) => t.node))
+  const hasTok = new Set(tokens.filter((t) => t.march === undefined).map((t) => t.node))
   const known = r.intel[me] ?? {}
   const season = seasonOf(r.season)
   // 아는 나라의 땅과 주인은 다 안다 (형: "어느나라가 어디 먹는지 한방에" — 2026-10-18). 모르는 것은 군세,
@@ -243,8 +248,9 @@ export function mapHtml(
       const f = known[n.id]?.force
       if (f) {
         const v = visibleRange({ f0: f.f0, src: f.src, u: f.u }, r.season - f.season)
-        badge = `<span class="foe">${v === null ? '?' : `${Math.round(v[0])}~${Math.round(v[1])}`}</span>`
-      } else if (owner !== null && n.kind !== 'sodo') badge = `<span class="foe">?</span>`
+        // 척후·첩자가 본 군세만 — 못 본 곳마다 ?를 흩뿌리지 않는다 (형: "빨간물음표들 위치가 너무 중구난방")
+        if (v !== null) badge = `<span class="foe${r.season - f.season > 0 ? ' old' : ''}">${span(v[0], v[1])}</span>`
+      }
     }
     const who = owner === null ? '주인 없음' : (r.factions[owner]?.name ?? '?')
     const fa = owner !== null ? FACTION_ART[owner] : undefined
@@ -259,15 +265,24 @@ export function mapHtml(
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()
-  for (const t of tokens) byNode.set(t.node, [...(byNode.get(t.node) ?? []), t])
+  for (const t of tokens) if (t.march === undefined) byNode.set(t.node, [...(byNode.get(t.node) ?? []), t])
+  const tokBtn = (t: MapToken): string =>
+    `<button class="tok${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}" data-act="tok" data-army="${t.army}"><img src="${t.img}" alt=""><b>${t.men}</b></button>`
   let toks = ''
+  // 길 위의 우리 군대 — 떠난 쪽에서 삼분의 일쯤 (가운데의 "n계절" 글씨를 안 가린다)
+  for (const t of tokens) {
+    if (t.march === undefined || !seen(t.march.from) || !seen(t.march.to)) continue
+    const ed = edgeOf(t.march.from, t.march.to)
+    let full: Pt[] = ed !== undefined ? route(ed) : [px(t.march.from), px(t.march.to)]
+    if (ed !== undefined && ed.a !== t.march.from) full = full.slice().reverse()
+    const [mx, my] = midOf(trimPolyline(full, 0.28, 0.4))
+    toks += `<div class="toks mv" style="left:${(mx / W) * 100}%;top:${(my / H) * 100}%">${tokBtn(t)}</div>`
+  }
   for (const [node, ts] of [...byNode].sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
     const p = pos(node)
     if (p === undefined) continue
     toks += `<div class="toks" style="left:${(p[0] + ICON_W * RA.nodeScale * 0.5) * 100}%;top:${p[1] * 100}%">`
-    for (const t of ts) {
-      toks += `<button class="tok${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}" data-act="tok" data-army="${t.army}"><img src="${t.img}" alt=""><b>${t.men}</b></button>`
-    }
+    for (const t of ts) toks += tokBtn(t)
     toks += `</div>`
   }
   // 넓어지는 지도는 조각을 이은 한 장에 계절 빛을 입힌다 (worldmap.ts — 다 되면 바탕을 갈아 끼운다)
@@ -287,6 +302,8 @@ export interface MapToken {
   readonly sel: boolean
   /** 이번 계절 떠나기로 했다 */
   readonly going: boolean
+  /** 길 위에 있다 — 그 길 가운데에 둔다 */
+  readonly march?: { readonly from: string; readonly to: string }
 }
 
 /** 고른 군대가 갈 수 있는 고을 — 칩은 판세(싸울 곳) 또는 걸리는 계절 */

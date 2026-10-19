@@ -109,7 +109,7 @@ export function battleCard(before: Realm, after: Realm, l: Battle, viewer: strin
   let h = `<div class="bk" data-act="bk-fast"><style>${keyf}</style>`
   h += `<div class="bkh"><span class="bkp">${esc(place)} 싸움</span></div>`
   h += `<div class="bkv">${weAtk ? atkSide : defSide}<i>VS</i>${weAtk ? defSide : atkSide}</div>`
-  h += `<div class="bkbar"><i style="animation:${anim} ${total}s ease-in-out both"></i></div>`
+  h += `<div class="bkbar"><i style="animation:${anim} ${total}s ease-in-out calc(var(--t0, 0s) + var(--t, 0s)) both"></i></div>`
   steps.forEach((s, i) => {
     h += `<p class="bkl" style="--d:${(i + 1) * STEP_S}s">${esc(s)}</p>`
   })
@@ -127,8 +127,8 @@ export const BATTLE_CSS = `
 .ap .bkf { width: 74px; height: 74px; border-radius: 12px; object-fit: cover; border: 2px solid #6a5a3a; display: block; background: #2a313c; }
 .ap .bkbar { position: relative; height: 10px; margin: 10px 0 6px; border-radius: 5px; background: #8a3a2a; overflow: hidden; }
 .ap .bkbar i { position: absolute; left: 0; top: 0; bottom: 0; width: 50%; background: linear-gradient(90deg, #3f8f3a, #8fd07a); }
-.ap .bkl { margin: 4px 0; font-size: 14.5px; opacity: 0; animation: bkin .35s ease-out var(--d) both; }
-.ap .bkr { margin-top: 8px; text-align: center; font-size: 19px; font-weight: 800; opacity: 0; animation: bkin .4s ease-out var(--d) both; }
+.ap .bkl { margin: 4px 0; font-size: 14.5px; opacity: 0; animation: bkin .35s ease-out calc(var(--t0, 0s) + var(--t, 0s) + var(--d)) both; }
+.ap .bkr { margin-top: 8px; text-align: center; font-size: 19px; font-weight: 800; opacity: 0; animation: bkin .4s ease-out calc(var(--t0, 0s) + var(--t, 0s) + var(--d)) both; }
 .ap .bkr.good { color: #8fd07a; } .ap .bkr.bad { color: #e08a74; }
 @keyframes bkin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .ap .modal.fast .bkl, .ap .modal.fast .bkr, .ap .modal.fast .bkbar i { animation-delay: 0s !important; animation-duration: .01s !important; }
