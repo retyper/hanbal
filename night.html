@@ -13,13 +13,17 @@
     <title>밤의 암살</title>
     <style>
       html, body { margin: 0; height: 100%; overflow: hidden; background: #04060b; color: #e9e2d4; overscroll-behavior: none; }
+      /* #stage 는 세로 폰이면 night-main.ts 가 옆으로 눕힌다 — 눕힌 상자 안에서 fixed 는 그 상자를 기준으로 한다 */
+      #stage { position: fixed; left: 0; top: 0; width: 100%; height: 100%; transform-origin: 0 0; overflow: hidden; }
       #night { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
     </style>
   </head>
   <body>
     <!-- 밤의 암살판 — 기와지붕 위에서 등불 아래 형체를 쏜다 (docs/realm/SNIPE.md §0). 활터는 index.html 그대로다. -->
-    <canvas id="night"></canvas>
-    <div id="night-ui"></div>
+    <div id="stage">
+      <canvas id="night"></canvas>
+      <div id="night-ui"></div>
+    </div>
     <script type="module" src="/src/night-main.ts"></script>
   </body>
 </html>

@@ -125,6 +125,9 @@ export interface Night {
   readonly tore: Set<number>
 }
 
+/** 밤의 형체가 활터 명중 사건에 쓰는 과녁 번호 — 활터 과녁(0 부터)과 안 겹치게 음수로 (NIGHT_TARGET − 형체 번호) */
+const NIGHT_TARGET = -1000
+
 /** 이 무한 화살 수 밑으로 내려가면 다시 채운다 (연습장) */
 const INFINITE = 999
 
@@ -304,6 +307,12 @@ function sweep(n: Night, ax: number, ay: number, bx: number, by: number, angle: 
       n.stuck.push({ x: x - f.x, y: y - f.y, angle, fig: f.id })
       n.hits++
       if (z === 'head') n.heads++
+      // 활터의 명중 사건을 그대로 낸다 — 활터의 소리(신음·헤드샷)·불꽃·히트스톱·남는 궤적이 이걸 읽는다.
+      // 머리는 소리 없이 쓰러진다(신음 없음 = execute) — 밤의 소음 규칙(noise 0)과 같다.
+      n.w.events.push({
+        t: 'hit', targetId: NIGHT_TARGET - f.id, x, y, score: 0, accuracy: 0, chain: 0, combo: 0,
+        head: z === 'head', foe: true, dmg: 0, execute: z === 'head', arrow: id,
+      })
       if (f.role === 'chief') {
         n.events.push({ t: 'chief', x, y })
         finish(n, z === 'head' ? 'dead' : 'wounded')

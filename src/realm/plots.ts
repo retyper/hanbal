@@ -9,7 +9,11 @@
  *
  * 한 나라는 한 계절에 plotsPerSeason 까지, 같은 대상에 같은 공작은 하나. 2단계(정찰·사신 자리)에서 처리한다.
  * 먹힐 확률 = 바탕 + 략 차이 × 계수 − 고을 경계(매수·첩자) → [plotMin, plotMax]. 굴림 `plot:<나라>:<op>:<대상>:<고을|상대>`.
- * 실패하면 plotCaughtOnFail, 먹혀도 plotCaughtOnSuccess 로 들킨다 — 들키면 그 나라와 한 칸 나빠진다.
+ * 실패하면 plotCaughtOnFail, 먹혀도 plotCaughtOnSuccess 로 들킨다. 들킴은 세 갈래다 (형: "어디서보낸 첩자인지 알기도 모르기도"):
+ *   안 들킴 — 당한 쪽은 결과만 본다 (mystery)
+ *   들켰지만 누가 보냈는지 모름 — 경계만 오르고 자객은 잡히거나 달아난다. 사이는 그대로다
+ *   누가 보냈는지 드러남 (exposeChance) — 그 나라와 한 칸(암살은 두 칸) 나빠지고 호감이 깎이며, 그 나라를 아는 다른 나라들도 조금 등 돌린다
+ * 입을 다문 채 붙잡힌 자객 장수는 계절마다 실토할 수 있다 (stepConfessions) — 실토하면 그때 드러난다.
  * 화면은 확률을 숫자로 안 쓴다 — plotChance 의 범위를 감으로 보인다 (정보의 계약: 모르는 장수·경계는 범위).
  */
 import { roll } from '../core/rng.ts'
@@ -255,9 +259,61 @@ function spyLook(r: Realm, faction: string, node: string): void {
   }
 }
 
-/** 2 — 공작. 값을 내고, 굴리고, 먹히면 효과, 들키면 그 나라와 한 칸 나빠진다 */
+/**
+ * 들킨 공작에서 누가 보냈는지까지 드러날 확률 (형: "어디서보낸 첩자인지 알기도 모르기도 하고").
+ *   바탕 − 보낸 이의 지략 (자객 장수 · 고용 자객은 plotHiredRyak 에 고용 감산 · 그 밖의 공작은 그 나라 최고 략)
+ *   + 그 고을(없으면 표적 나라 국읍)의 경계 × 계수 + 얼굴이 알려진 우리 장수가 붙잡혔으면 가산 → [최소, 최대]
+ * `agent` — 암살이면 자객 장수 id 또는 null(고용 자객), 다른 공작이면 undefined.
+ */
+export function exposeChance(r: Realm, faction: string, target: string, node: string | undefined, agent: string | null | undefined, agentCaptured = false): number {
+  const R = P.realm
+  const a = agent !== null && agent !== undefined ? r.heroes[agent] : undefined
+  const ryak = agent === undefined ? bestRyak(r, faction) : (a?.ryak ?? R.plotHiredRyak)
+  const at = node ?? r.factions[target]?.capital
+  const alert = at !== undefined ? (r.watch[at]?.alert ?? 0) : 0
+  const p = R.plotExposeBase - R.plotExposePerRyak * (ryak - 5) - (agent === null ? R.plotExposeHired : 0)
+    + R.plotExposePerAlert * alert + (agentCaptured ? R.plotExposeCaptured : 0)
+  return Math.min(R.plotExposeMax, Math.max(R.plotExposeMin, p))
+}
+
+/**
+ * 드러났다 — 당한 나라와 한 칸 나빠지고 호감이 깎인다. 그 나라를 아는 다른 나라들도 조금 등 돌린다 (뒤에서 칼 쓰는 나라).
+ * `steps` 는 나빠지는 칸 수 — 암살은 둘.
+ */
+function expose(r: Realm, from: string, to: string, steps: number, lines: ReportLine[]): void {
+  const R = P.realm
+  for (let i = 0; i < steps; i++) worsen(r, from, to, lines)
+  addFavor(r, from, to, -R.favorPlotCaught)
+  for (const x of Object.keys(r.factions).sort()) {
+    if (x !== from && x !== to && alive(r, x) && knows(r, x, from)) addFavor(r, from, x, -R.favorPlotExposedOthers)
+  }
+}
+
+/**
+ * 붙잡혔지만 입을 다문 자객 장수 — 계절마다 실토를 굴린다 (`confess:<장수>`). 실토하면 그때 드러난다 (암살이라 두 칸).
+ * 풀려났거나 죽었거나 잡은 나라가 바뀌었으면 지운다.
+ */
+function stepConfessions(r: Realm, lines: ReportLine[]): void {
+  const hid = r.hiddenAgents
+  if (hid === undefined) return
+  for (const id of Object.keys(hid).sort()) {
+    const e = hid[id]!
+    const h = r.heroes[id]
+    if (h === undefined || h.status !== 'captive' || h.captor !== e.to || r.factions[e.from] === undefined || r.factions[e.to] === undefined) {
+      delete hid[id]
+      continue
+    }
+    if (roll(r.seed, r.season, `confess:${id}`) >= P.realm.plotConfess) continue
+    delete hid[id]
+    expose(r, e.from, e.to, 2, lines)
+    lines.push({ kind: 'confess', hero: id, from: e.from, to: e.to })
+  }
+}
+
+/** 2 — 공작. 값을 내고, 굴리고, 먹히면 효과. 들키면 경계가 오르고, 누가 했는지까지 드러나면 그 나라와 나빠진다 */
 export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
   const R = P.realm
+  stepConfessions(r, lines) // 지난 계절까지 붙잡힌 자객이 먼저 입을 연다
   const count = new Map<string, number>()
   const done = new Set<string>()
   const agents = new Set<string>()
@@ -312,8 +368,8 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
         }
       }
       if (caught) {
-        // 들켰다 — 그 나라와 두 칸 나빠진다 (아래 한 칸 + 여기 한 칸).
-        // 고용 자객은 값만 잃는다. 우리 장수였으면 도망과 사로잡힘을 굴린다 (자객 기본 · 장수는 도박)
+        // 들켰다 — 고용 자객은 값만 잃는다. 우리 장수였으면 도망과 사로잡힘을 굴린다 (자객 기본 · 장수는 도박).
+        // 누가 보냈는지 드러나면 그 나라와 두 칸 나빠진다 (아래 expose)
         const ag = o.agent !== undefined ? r.heroes[o.agent] : undefined
         if (ag !== undefined && ag.status === 'free') {
           if (roll(r.seed, r.season, `${key}:escape`) < escapeChance(r, ag.id)) agentFate = 'escaped'
@@ -326,7 +382,6 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
             agentFate = 'captured'
           }
         }
-        worsen(r, o.faction, o.target, lines)
       }
       // 해낸 자객 장수는 지략이 자란다 (HEROES §6) — 들켜 잡혔으면 아니다
       const ag = o.agent !== undefined ? r.heroes[o.agent] : undefined
@@ -365,12 +420,17 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
           break
       }
     }
+    // 들킴 세 갈래 — 들켰으면 누가 보냈는지까지 드러났나를 따로 굴린다 (`<키>:exposed`)
+    let exposed = false
     if (caught) {
-      worsen(r, o.faction, o.target, lines)
-      addFavor(r, o.faction, o.target, -R.favorPlotCaught) // 들킨 공작은 호감을 깎는다
-      const hot = o.op === 'bribe' ? o.node : o.op === 'burn' ? r.factions[o.target]?.capital : undefined
+      const agent = o.op === 'assassin' ? (o.agent ?? null) : undefined
+      exposed = roll(r.seed, r.season, `${key}:exposed`) < exposeChance(r, o.faction, o.target, at, agent, agentFate === 'captured')
+      // 누가 했는지 몰라도 그 고을(소문·이간·방화는 국읍)은 경계를 올린다
+      const hot = at ?? r.factions[o.target]?.capital
       const w = hot !== undefined ? r.watch[hot] : undefined
       if (w !== undefined) w.alert = Math.min(R.alertMax, w.alert + R.plotCaughtAlert)
+      if (exposed) expose(r, o.faction, o.target, o.op === 'assassin' ? 2 : 1, lines)
+      else if (agentFate === 'captured' && o.agent !== undefined) (r.hiddenAgents ??= {})[o.agent] = { from: o.faction, to: o.target }
     }
     lines.push({
       kind: 'plot', faction: o.faction, op: o.op, target: o.target,
@@ -380,9 +440,9 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
       ...(o.agent !== undefined ? { agent: o.agent } : {}),
       ...(result !== undefined ? { result } : {}),
       ...(agentFate !== undefined ? { agentFate } : {}),
-      ok, caught,
+      ok, caught, exposed,
     })
-    // 당한 쪽은 누가 했는지 모르고 결과만 본다 — 들켰으면 plot 줄이 누가 했는지 말한다
+    // 당한 쪽은 누가 했는지 모르고 결과만 본다 — 들켰으면 plot 줄이 말한다 (드러났으면 누가, 아니면 "누가 보냈는지 모른다")
     if (mystery !== null && !caught) {
       const extra = mystery === 'militia' ? { node: o.node! } : mystery === 'wound' || mystery === 'death' ? { hero: o.hero! } : {}
       lines.push({ kind: 'mystery', faction: o.target, what: mystery, ...extra })

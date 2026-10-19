@@ -331,6 +331,11 @@ export interface Realm {
   spies?: Record<string, Spy[]>
   /** 나라마다 자객의 활 단계 0..3 (plots.assassinBow). 옛 저장에는 없다 — 0 */
   assassinBow?: Record<string, number>
+  /**
+   * 붙잡혔지만 누가 보냈는지 입을 다문 자객 장수 — 장수 id → 보낸 나라 · 잡은 나라 (plots.ts).
+   * 계절마다 실토할 수 있다(P.realm.plotConfess). 풀려나거나 죽으면 지운다. 옛 저장에는 없다
+   */
+  hiddenAgents?: Record<string, { readonly from: string; readonly to: string }>
   /** 지금 떠도는 인재 (heroes.ts) · 이미 나온 명단 id */
   wanderers?: Wanderer[]
   poolUsed?: string[]
@@ -513,7 +518,13 @@ export type ReportLine =
       readonly node?: string
       readonly other?: string
       readonly ok: boolean
+      /** 들켰다 — 당한 나라가 일이 있었음을 안다 (경계가 오른다) */
       readonly caught: boolean
+      /**
+       * 누가 보냈는지까지 드러났다 (caught 일 때만 참일 수 있다) — 그때만 사이·호감이 나빠진다.
+       * 옛 줄에는 없다 — 그때는 들킴이 곧 드러남이었다 (caught 와 같다고 본다)
+       */
+      readonly exposed?: boolean
       /** 암살 — 노린 장수 · 보낸 자객(없으면 고용 자객) · 먹혔으면 다쳤나 죽었나 */
       readonly hero?: string
       readonly agent?: string
@@ -521,6 +532,8 @@ export type ReportLine =
       /** 들킨 자객 장수의 끝 — 도망쳤다 · 사로잡혔다 (고용 자객이면 없다 — 값만 잃는다) */
       readonly agentFate?: 'escaped' | 'captured'
     }
+  /** 붙잡혀 입을 다물던 자객 장수가 실토했다 — 이제 누가 보냈는지 안다 (plots.ts) */
+  | { readonly kind: 'confess'; readonly hero: string; readonly from: string; readonly to: string }
   /** 자객의 활을 한 단계 올렸다 (plots.bowUp) — 0 단궁 · 1 맥궁 · 2 각궁 · 3 신궁 */
   | { readonly kind: 'bowUp'; readonly faction: string; readonly tier: number }
   /** 누가 했는지 모르는 일 — 당한 나라의 눈 (사기가 꺾였다 · 곡식이 탔다 · 장정이 안 나왔다) */

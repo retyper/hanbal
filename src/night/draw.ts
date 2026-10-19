@@ -7,12 +7,13 @@
  *   → 자객(활터 궁수) → 나는 살 → 글자판(HUD)
  * 사람은 그림 파일이 아니라 도형이다 — 머리 원 · 몸통 · 다리 (형: "타겟 에셋 인물마다 만들지 말고").
  */
-import { clamp01, valueNoise } from '../core/math.ts'
+import { TAU, clamp, clamp01, damp, lerp, valueNoise } from '../core/math.ts'
 import { P } from '../tune/params.ts'
 import { drawArcher } from '../render/stickman.ts'
-import { worldToScreenX, worldToScreenY, type Camera } from '../render/camera.ts'
+import { THEME, worldToScreenX, worldToScreenY, type Camera } from '../render/camera.ts'
+import { createFx, drawFx, type Fx } from '../render/effects.ts'
 import type { World } from '../sim/types.ts'
-import { arrowSpeed } from '../sim/ballistics.ts'
+import { effectiveStats } from '../sim/bow.ts'
 import type { Pull } from './input.ts'
 import type { Decor, Figure, Light } from './layout.ts'
 import {
@@ -72,10 +73,42 @@ export interface NightView {
   pops: Array<{ text: string; x: number; y: number; born: number; color: string }>
   /** 경보 번쩍임 — 벽시계 ms */
   flashAt: number
+  /**
+   * 활터의 명중 반응 그대로 (render/effects.ts) — 불꽃 · 파열 링 · '헤드샷!' · 히트스톱 · 남는 궤적(빗나간 살은 더 오래).
+   * 밤 판은 형체를 맞히면 활터와 같은 'hit' 사건을 낸다 (night/sim.ts). 돌림(night-main)이 pumpEvents·updateFx 를 부른다
+   */
+  fx: Fx
+  /** 화면 흔들림 — 활터 카메라와 같은 규칙 (render/camera.ts updateCamera: 진폭 P.hit.shakeAmp · 감쇠 · 컷오프) */
+  shakeAmp: number
+  shakeAge: number
 }
 
 export function createView(cam: Camera): NightView {
-  return { cam, dark: null, pops: [], flashAt: -1e9 }
+  return { cam, dark: null, pops: [], flashAt: -1e9, fx: createFx(), shakeAmp: 0, shakeAge: 0 }
+}
+
+/** 활터 카메라의 흔들림 배수 (render/camera.ts VIEW.foeShakeMul · headShakeMul · shakeFreq — 거기는 밖으로 안 낸다) */
+const SHAKE = { foe: 1.5, head: 2, freq: 34 } as const
+
+/** 흔들림을 실시간으로 깎는다 — 컷오프에서 강제로 끊는다 (다음 조준을 방해하지 않게, 활터와 같다) */
+export function shakeView(v: NightView, dtReal: number): void {
+  const cam = v.cam
+  if (v.shakeAmp <= 0) {
+    cam.shakeX = 0
+    cam.shakeY = 0
+    return
+  }
+  v.shakeAge += dtReal
+  if (v.shakeAge >= P.hit.shakeCutoff) {
+    v.shakeAmp = 0
+    cam.shakeX = 0
+    cam.shakeY = 0
+    return
+  }
+  v.shakeAmp = damp(v.shakeAmp, 0, P.hit.shakeDecay, dtReal)
+  const ph = v.shakeAge * SHAKE.freq * TAU
+  cam.shakeX = Math.sin(ph) * v.shakeAmp
+  cam.shakeY = Math.sin(ph * 1.37 + 1.1) * v.shakeAmp
 }
 
 /** 화면 크기에 맞춰 판 전체가 들어오게 */
@@ -91,8 +124,6 @@ export function frameCamera(cam: Camera, n: Night): void {
   // 땅(g − 0.8)이 아래 띠 위에 붙게
   const groundPx = cam.h - bottom
   cam.y = (g - 0.8) + (groundPx - cam.h * 0.5) / s
-  cam.shakeX = 0
-  cam.shakeY = 0
 }
 
 const X = (cam: Camera, x: number): number => worldToScreenX(cam, x)
@@ -579,10 +610,13 @@ export function pumpView(v: NightView, n: Night, from: number, now: number): voi
     const e = n.events[i]
     if (e === undefined) continue
     switch (e.t) {
+      // 다음 지붕 — 지난 판의 박힌 살·남은 궤적을 거둔다
+      case 'stage': v.fx = createFx(); break
       case 'notice': v.pops.push({ text: '?!', x: e.x, y: e.y, born: now, color: '#ffcf6a' }); break
       case 'drum': v.flashAt = now; v.pops.push({ text: '경보!', x: 15, y: n.scene.ground + 3.5, born: now, color: COL.alarm }); break
-      case 'head': v.pops.push({ text: '머리', x: e.x, y: e.y + 0.4, born: now, color: COL.good }); break
-      case 'chief': v.pops.push({ text: '명중', x: e.x, y: e.y + 0.5, born: now, color: COL.good }); break
+      // 머리 · 몸 · 다리 — 글자('헤드샷!')와 불꽃은 활터 effects 가 낸다. 여기서는 흔들림만
+      case 'head': case 'body': case 'leg': v.shakeAmp = P.hit.shakeAmp * (e.t === 'head' ? SHAKE.head : SHAKE.foe); v.shakeAge = 0; break
+      case 'chief': v.shakeAmp = P.hit.shakeAmp * SHAKE.head; v.shakeAge = 0; v.pops.push({ text: '명중', x: e.x, y: e.y + 0.5, born: now, color: COL.good }); break
       case 'flee': v.pops.push({ text: '촛불이 꺼졌다', x: 24.5, y: n.scene.ground + 3.2, born: now, color: COL.hud }); break
       default: break
     }
@@ -640,33 +674,45 @@ function drawPull(ctx: CanvasRenderingContext2D, p: Pull): void {
 }
 
 /**
- * 살길의 앞부분 — 지금 당김·겨눔으로 쏘면 처음 previewTime 초 동안 어디로 가나 (탄도는 ballistics 와 같은 식).
- * 앞부분만 보인다 — 떨어지는 끝은 사람이 읽는다 (활터의 조준 정체성).
+ * 호흡정지 사선의 아랫도리 — 활터와 같은 규칙 (render/stickman.ts "호흡정지 사선"):
+ * **숨을 참아야만** 화살이 갈 길이 점선으로 스며 나온다 (steadyBlend). 숨을 안 참으면 아무것도 안 보인다.
+ * 활터의 점선은 땅(y 0)에서 끊기는데, 밤 판의 궁수는 지붕(y 0) 위에 서고 표적은 그 아래 마당에 있다 —
+ * 그래서 지붕 높이까지는 활터 궁수 그림(drawArcher)이 그리고, 여기서는 **같은 적분을 이어** 지붕 아래부터 마당까지만 찍는다.
+ * 각·속도·바람·점 간격·길이(P.steady.previewTime)·색·투명도가 활터와 한 글자도 다르지 않아야 한다.
  */
-function drawPreview(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void {
+function drawPreview(ctx: CanvasRenderingContext2D, cam: Camera, w: World, ground: number): void {
   const a = w.archer
-  if ((a.phase !== 'drawing' && a.phase !== 'full') || a.draw <= 0 || P.night.previewTime <= 0) return
-  const sp = arrowSpeed(w, a.draw, w.fx.speedMul)
+  if (a.steadyBlend <= 0.02 || (a.phase !== 'drawing' && a.phase !== 'full')) return
+  const spd = lerp(P.bow.minSpeed, P.bow.maxSpeed, Math.pow(clamp(a.draw, 0, 1), P.bow.drawCurve))
+    * effectiveStats(w.stats).speedMul * w.fx.speedMul * w.bow.speedMul
+  const ang = a.aimAngle + a.tremorOffset
+  let vx = Math.cos(ang) * spd
+  let vy = Math.sin(ang) * spd
   let x = a.x
   let y = a.y
-  let vx = Math.cos(a.aimAngle) * sp
-  let vy = Math.sin(a.aimAngle) * sp
-  const dt = 1 / P.sim.hz
-  const steps = Math.round(P.night.previewTime * P.sim.hz)
-  ctx.fillStyle = a.phase === 'full' ? 'rgba(255,210,122,0.85)' : 'rgba(233,226,212,0.55)'
+  const dtp = 1 / 60
+  const steps = Math.floor(P.steady.previewTime / dtp)
+  ctx.fillStyle = THEME.target2
+  ctx.globalAlpha = 0.5 * a.steadyBlend
+  let distSinceDot = P.steady.previewDotGap
   for (let i = 1; i <= steps; i++) {
-    const s = Math.hypot(vx - w.wind * w.bow.windMul, vy)
-    const k = P.arrow.drag * w.fx.dragMul * s
-    vx -= k * (vx - w.wind * w.bow.windMul) * dt
-    vy -= k * vy * dt
-    vy -= P.arrow.gravity * dt
-    x += vx * dt
-    y += vy * dt
-    if (i % 3 !== 0) continue
-    ctx.globalAlpha = 1 - (0.7 * i) / (steps + 1)
-    ctx.beginPath()
-    ctx.arc(X(cam, x), Y(cam, y), 3.4, 0, Math.PI * 2)
-    ctx.fill()
+    const rvx = vx - w.wind * w.bow.windMul
+    const kd = P.arrow.drag * w.fx.dragMul * Math.hypot(rvx, vy)
+    vx -= kd * rvx * dtp
+    vy -= kd * vy * dtp
+    vy -= P.arrow.gravity * dtp
+    const stepDist = Math.hypot(vx, vy) * dtp
+    x += vx * dtp
+    y += vy * dtp
+    if (y <= ground) break
+    distSinceDot += stepDist
+    if (distSinceDot >= P.steady.previewDotGap) {
+      distSinceDot -= P.steady.previewDotGap
+      if (y > 0) continue // 지붕 위는 활터 궁수 그림이 이미 찍었다
+      ctx.beginPath()
+      ctx.arc(X(cam, x), Y(cam, y), 1.6, 0, Math.PI * 2)
+      ctx.fill()
+    }
   }
   ctx.globalAlpha = 1
 }
@@ -698,8 +744,9 @@ export function drawNight(ctx: CanvasRenderingContext2D, v: NightView, n: Night,
   void rise
 
   assassinBody(ctx, cam, n.w)
-  drawPreview(ctx, cam, n.w)
+  drawPreview(ctx, cam, n.w, g)
   drawFlying(ctx, cam, n.w)
+  drawFx(ctx, cam, v.fx)
 
   // 지붕을 타고 넘어가는 중 — 어둡게 덮였다 걷힌다
   const mv = moveProgress(n)
