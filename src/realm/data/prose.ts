@@ -451,13 +451,44 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       return `${josa(node(line.node), '으로', '로')} 오던 ${fname(line.faction)} 군대가 발길을 돌렸다.`
     }
     case 'relation': {
-      if (line.a !== viewer && line.b !== viewer) return null
-      const other = fname(line.a === viewer ? line.b : line.a)
+      const by = line.by
+      const why = line.why
+      // 남의 나라끼리 — 전쟁·동맹만 (누가 먼저 걸었나까지)
+      if (line.a !== viewer && line.b !== viewer) {
+        const [x, y] = by === line.b ? [line.b, line.a] : [line.a, line.b]
+        if (line.state === 'war') {
+          const how = why === 'betray' ? '약조를 깨고 쳐들어갔다' : why === 'tribute' ? '조공을 거절당하자 칼을 뽑았다' : why === 'sow' ? '이간에 넘어가 등을 돌렸다' : why === 'plot' ? '공작이 드러나 칼을 뽑았다' : '군대를 들였다'
+          return by !== undefined ? `${josa(fname(x), '이', '가')} ${josa(fname(y), '과', '와')} 전쟁을 벌였다 — ${how}.` : `${josa(fname(x), '과', '와')} ${fname(y)} 사이에 전쟁이 났다.`
+        }
+        if (line.state === 'ally') return `${josa(fname(x), '과', '와')} ${josa(fname(y), '이', '가')} 동맹을 맺었다.`
+        return null
+      }
+      const other = line.a === viewer ? line.b : line.a
+      const o = fname(other)
       switch (line.state) {
-        case 'war': return `${josa(other, '과', '와')} 전쟁이다.`
-        case 'truce': return `${josa(other, '과', '와')} 화친을 맺었다.`
-        case 'ally': return `${josa(other, '과', '와')} 동맹을 맺었다.`
-        case 'neutral': return `${josa(other, '과', '와')}의 화친이 끝났다.`
+        case 'war':
+          if (by === viewer) {
+            if (why === 'tribute' || why === 'demand') return `${josa(o, '이', '가')} 우리 요구를 거절했다. ${josa(o, '과', '와')} 전쟁이다.`
+            return why === 'betray' ? `우리가 약조를 깨고 ${josa(o, '을', '를')} 쳤다. 전쟁이다. 다른 나라들도 우리를 덜 믿는다.` : `우리가 ${o} 땅에 군대를 들였다. ${josa(o, '과', '와')} 전쟁이다.`
+          }
+          if (by === other) {
+            const how = why === 'betray' ? '약조를 깨고 쳐들어왔다' : why === 'attack' ? '우리 땅에 군대를 들였다'
+              : why === 'tribute' ? '바치라는 요구를 우리가 거절하자 칼을 뽑았다' : why === 'demand' ? '우리가 그 요구를 거절하자 칼을 뽑았다'
+                : why === 'plot' ? '우리가 보낸 공작이 드러나 노했다' : '칼을 뽑았다'
+            return `${josa(o, '이', '가')} 우리에게 전쟁을 걸어왔다 — ${how}.`
+          }
+          return why === 'sow' ? `누군가의 이간으로 ${josa(o, '과', '와')} 틀어져 전쟁이 됐다.` : `${josa(o, '과', '와')} 전쟁이다.`
+        case 'truce':
+          // 동맹에서 한 칸 물러난 것 — 맺은 게 아니다
+          if (why === 'distrust') return `${josa(o, '이', '가')} 우리를 덜 믿어 동맹을 거두고 화친만 남겼다.`
+          if (why === 'plot' || why === 'sow') return `${josa(o, '과', '와')} 틀어져 동맹이 화친으로 물러났다.`
+          return `${josa(o, '과', '와')} 화친을 맺었다.`
+        case 'ally': return `${josa(o, '과', '와')} 동맹을 맺었다.`
+        case 'neutral':
+          if (why === 'break') return null // 사신 줄(약조를 깼다)이 이미 말한다
+          if (why === 'distrust') return `${josa(o, '이', '가')} 우리를 믿지 못해 맺은 사이를 거뒀다.`
+          if (why === 'plot') return `우리가 보낸 공작이 드러나 ${josa(o, '이', '가')} 등을 돌렸다.`
+          return `${josa(o, '과', '와')}의 화친이 끝났다.`
       }
       return null
     }

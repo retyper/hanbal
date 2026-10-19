@@ -18,7 +18,7 @@ import { memoFor } from './memo.ts'
 import { nodeStrength } from './season.ts'
 import { allianceWhy, truceWhy, winningAgainst, type Motive } from './stance.ts'
 import { knows } from './discovery.ts'
-import type { Ask, AskKind, EnvoyAsk, Good, Goods, Order, Pledge, Realm, Relation, ReportLine } from './types.ts'
+import type { Ask, AskKind, EnvoyAsk, Good, Goods, Order, Pledge, Realm, Relation, RelationWhy, ReportLine } from './types.ts'
 
 export function pairKey(a: string, b: string): string {
   return a < b ? `${a}|${b}` : `${b}|${a}`
@@ -37,14 +37,14 @@ export function friendly(r: Realm, a: string, b: string): boolean {
 }
 
 /** 관계를 바꾼다 — 호감은 남고, 동맹이 아니게 되면 함께 치자는 약속은 사라진다 */
-function setRelation(r: Realm, a: string, b: string, state: Relation['state'], until: number | null, lines: ReportLine[]): void {
+function setRelation(r: Realm, a: string, b: string, state: Relation['state'], until: number | null, lines: ReportLine[], cause?: { by?: string; why: RelationWhy }): void {
   const prev = relationOf(r, a, b)
   const next: Relation = { state, until }
   if (prev.favor !== undefined) next.favor = prev.favor
   if (state === 'ally' && prev.pledges !== undefined && prev.pledges.length > 0) next.pledges = prev.pledges
   if (prev.took !== undefined) next.took = prev.took
   ;(r.relations ??= {})[pairKey(a, b)] = next
-  if (prev.state !== state) lines.push({ kind: 'relation', a: a < b ? a : b, b: a < b ? b : a, state })
+  if (prev.state !== state) lines.push({ kind: 'relation', a: a < b ? a : b, b: a < b ? b : a, state, ...(cause?.by !== undefined ? { by: cause.by } : {}), ...(cause !== undefined ? { why: cause.why } : {}) })
   if ((state === 'truce' || state === 'ally') && (prev.state === 'war' || prev.state === 'neutral')) recall(r, a, b, lines)
 }
 
@@ -228,10 +228,10 @@ function lenderArmy(r: Realm, lender: string, to: string, node: string): string 
 const STEP: Readonly<Record<Relation['state'], Relation['state']>> = { ally: 'truce', truce: 'neutral', neutral: 'war', war: 'war' }
 
 /** 두 나라 사이가 한 칸 나빠진다 (동맹→화친→중립→전쟁) — 공작이 들키거나 이간이 먹힐 때 (plots.ts) */
-export function worsen(r: Realm, a: string, b: string, lines: ReportLine[]): void {
+export function worsen(r: Realm, a: string, b: string, lines: ReportLine[], cause?: { by?: string; why: RelationWhy }): void {
   if (a === b || r.factions[a] === undefined || r.factions[b] === undefined) return
   const down = STEP[relationOf(r, a, b).state]
-  setRelation(r, a, b, down, down === 'truce' ? r.season + P.realm.truceSeasons : null, lines)
+  setRelation(r, a, b, down, down === 'truce' ? r.season + P.realm.truceSeasons : null, lines, cause)
 }
 
 /**
@@ -242,13 +242,14 @@ export function onHostile(r: Realm, attacker: string, victim: string | null, lin
   if (victim === null || victim === attacker || r.factions[victim] === undefined) return
   const prev = relationOf(r, attacker, victim).state
   if (prev === 'war') return
-  setRelation(r, attacker, victim, 'war', null, lines)
-  if (prev !== 'truce' && prev !== 'ally') return
+  const betray = prev === 'truce' || prev === 'ally'
+  setRelation(r, attacker, victim, 'war', null, lines, { by: attacker, why: betray ? 'betray' : 'attack' })
+  if (!betray) return
   for (const x of Object.keys(r.factions).sort()) {
     if (x === attacker || x === victim) continue
     const s = relationOf(r, attacker, x).state
     const down = STEP[s]
-    setRelation(r, attacker, x, down, down === 'truce' ? r.season + P.realm.truceSeasons : null, lines)
+    setRelation(r, attacker, x, down, down === 'truce' ? r.season + P.realm.truceSeasons : null, lines, { by: x, why: 'distrust' })
   }
 }
 
@@ -258,7 +259,7 @@ export function expireRelations(r: Realm, lines: ReportLine[]): void {
     const rel = r.relations[key]!
     if (rel.state === 'truce' && rel.until !== null && rel.until <= r.season) {
       const [a, b] = key.split('|') as [string, string]
-      setRelation(r, a, b, 'neutral', null, lines)
+      setRelation(r, a, b, 'neutral', null, lines, { why: 'expire' })
     }
   }
 }
@@ -518,7 +519,7 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
     })
     if (!accepted) {
       // 조공 요구를 거절당하면 그 자리에서 전쟁이다
-      if (o.ask === 'tribute') setRelation(r, o.from, o.to, 'war', null, lines)
+      if (o.ask === 'tribute') setRelation(r, o.from, o.to, 'war', null, lines, { by: o.from, why: 'tribute' })
       continue
     }
     pay(r, o.from, o.to, give)
@@ -575,7 +576,7 @@ function breakPact(r: Realm, from: string, to: string, lines: ReportLine[]): voi
   const R = P.realm
   const s = relationOf(r, from, to).state
   if (s !== 'truce' && s !== 'ally') return
-  setRelation(r, from, to, 'neutral', null, lines)
+  setRelation(r, from, to, 'neutral', null, lines, { by: from, why: 'break' })
   addFavor(r, from, to, -R.favorBreakSelf)
   for (const x of Object.keys(r.factions).sort()) if (x !== from && x !== to) addFavor(r, from, x, -R.favorBreakOthers)
 }
@@ -751,7 +752,7 @@ export function resolveAnswers(r: Realm, orders: readonly Order[], lines: Report
       }
     }
     lines.push({ kind: 'answered', ask: a.id, yes, from: a.from, askKind: a.kind })
-    if (!yes && a.kind === 'demand') setRelation(r, a.from, a.to, 'war', null, lines)
+    if (!yes && a.kind === 'demand') setRelation(r, a.from, a.to, 'war', null, lines, { by: a.from, why: 'demand' })
     // 호감 — 받아 주면 오르고, 거절하면 조금 · 동맹의 부탁을 저버리면 크게 내린다
     if (yes) addFavor(r, a.from, a.to, R.favorAccept)
     else addFavor(r, a.from, a.to, -(a.kind === 'joint' || a.kind === 'aid' ? R.favorRefuseAlly : R.favorReject))

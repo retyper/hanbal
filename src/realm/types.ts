@@ -118,6 +118,12 @@ export interface Stock {
 /** 창고의 것 다섯 */
 export type Good = 'grain' | 'iron' | 'salt' | 'wood' | 'horse'
 
+/**
+ * 사이가 바뀐 까닭 — attack 땅에 군대를 들였다 · betray 화친·동맹을 깨고 쳤다 · distrust 남의 배신을 보고 등 돌렸다 ·
+ * plot 공작이 드러났다 · sow 이간에 넘어갔다 · tribute 조공 요구를 거절당했다 · demand 요구를 거절당했다 · break 약조를 깼다 · expire 기한이 끝났다 · envoy 사신이 맺었다
+ */
+export type RelationWhy = 'attack' | 'betray' | 'distrust' | 'plot' | 'sow' | 'tribute' | 'demand' | 'break' | 'expire' | 'envoy'
+
 /** 판 — 변한 6국 축소판 · 영남 판 (형: "사료대로 키우고 땅도 넓힘" — 2026-10-18) */
 export type RegionId = 'byeonhan-mini' | 'yeongnam' | 'south' | 'world'
 
@@ -586,7 +592,11 @@ export type ReportLine =
   | { readonly kind: 'lent'; readonly from: string; readonly to: string; readonly node: string; readonly army: string; readonly back: boolean }
   /** 무장을 올렸다 */
   | { readonly kind: 'arm'; readonly faction: string; readonly army: string; readonly equip: Equip; readonly iron: number; readonly unit?: UnitKind; readonly n?: number }
-  | { readonly kind: 'relation'; readonly a: string; readonly b: string; readonly state: Relation['state'] }
+  /**
+   * 두 나라 사이가 바뀌었다. `by` — 먼저 그렇게 만든 나라 (전쟁을 건 쪽 · 깬 쪽), `why` — 까닭
+   * (형: "누가 나랑 전쟁나면 상대가 걸어왔다는걸 알려줘야지... 그냥무작정 전쟁이다라 그러면 어떡하냐"). 옛 기록엔 없다
+   */
+  | { readonly kind: 'relation'; readonly a: string; readonly b: string; readonly state: Relation['state']; readonly by?: string; readonly why?: RelationWhy }
   | { readonly kind: 'end'; readonly outcome: 'win' | 'lose'; readonly faction: string }
   /** 우리 고을에 맞닿은 길 위의 남의 군대 — 행군은 보인다 (FLOW §7 #2) */
   /** `suspect` — 우리 고을로 오는 기습을 낌새챘다 (경계·굴림). 못 챘으면 그냥 행군으로 보인다 */

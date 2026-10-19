@@ -282,7 +282,7 @@ export function exposeChance(r: Realm, faction: string, target: string, node: st
  */
 function expose(r: Realm, from: string, to: string, steps: number, lines: ReportLine[]): void {
   const R = P.realm
-  for (let i = 0; i < steps; i++) worsen(r, from, to, lines)
+  for (let i = 0; i < steps; i++) worsen(r, from, to, lines, { by: to, why: 'plot' })
   addFavor(r, from, to, -R.favorPlotCaught)
   for (const x of Object.keys(r.factions).sort()) {
     if (x !== from && x !== to && alive(r, x) && knows(r, x, from)) addFavor(r, from, x, -R.favorPlotExposedOthers)
@@ -396,8 +396,8 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
         case 'sow': {
           const other = o.other!
           const s = relationOf(r, o.target, other).state
-          if (s === 'truce' || s === 'ally') worsen(r, o.target, other, lines)
-          else if (s === 'neutral' && roll(r.seed, r.season, `${key}:war`) < R.plotSowWar) worsen(r, o.target, other, lines)
+          if (s === 'truce' || s === 'ally') worsen(r, o.target, other, lines, { why: 'sow' })
+          else if (s === 'neutral' && roll(r.seed, r.season, `${key}:war`) < R.plotSowWar) worsen(r, o.target, other, lines, { why: 'sow' })
           break
         }
         case 'bribe':
