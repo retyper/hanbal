@@ -40,7 +40,7 @@ import { APPROACH_DOES, APPROACH_NAME, HARD_LINE, WAR_CSS, openWar } from './bat
 import { attachZoom } from './zoom.ts'
 import { TINT_CSS, tint } from './tint.ts'
 import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
-import { FRONT_CSS, PROLOGUE_STEPS, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History } from './front.ts'
+import { FRONT_CSS, PROLOGUE_STEPS, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History } from './front.ts'
 import { FEEL_CSS, alertFeel, ambushFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
 
 export interface AppHost {
@@ -1268,10 +1268,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function nationSheet(r: Realm): string {
     const info = nationsOf(r.region ?? 'byeonhan-mini').find((x) => x.id === me())
     const mine = Object.values(r.nodes).filter((n) => n.owner === me())
-    const caps = Object.values(r.nodes).filter((n) => n.owner === me() && (n.kind === 'capital' || n.kind === 'port') && Object.values(r.factions).some((f) => f.capital === n.id)).length
     const st = r.stock[me()] ?? { grain: 0, iron: 0 }
     let h = `<div class="nhead">${nationFace(me())}<div><h3>${emblem(me())}${esc(r.factions[me()]?.name ?? '')}</h3><p class="mute">${esc(info?.blurb ?? '')}</p>${info !== undefined ? `<p class="mute src">${esc(info.source)}</p>` : ''}</div></div>`
-    h += `<div class="goal">목표 · 도읍 셋을 차지한다 <b>${caps} / 3</b></div>`
+    const need = winNeed(r.region ?? 'byeonhan-mini')
+    const held = Object.values(r.factions).filter((x) => r.nodes[x.capital]?.owner === me()).length
+    h += `<div class="goal">목표 · 도읍 ${need}곳을 차지한다 (우리 도읍 포함) <b>${held} / ${need}</b></div>`
     h += `<div class="grid4"><div>${icon('settle-farm-village')}<b>${mine.length}</b><span>고을</span></div>`
     h += `<div>${icon('good-hemp')}<b>${Math.floor(mine.reduce((s, n) => s + n.hh, 0))}</b><span>집</span></div>`
     h += `<div>${icon('good-rice')}<b>${Math.floor(st.grain)}</b><span>곡식</span></div>`
@@ -1299,7 +1300,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + `<p><b>판세</b>는 색으로 보인다. 초록이면 이길 듯하고 붉으면 질 듯하다. 두 색이 섞이고 ?가 붙으면 아직 잘 모른다. 정찰하면 또렷해진다.</p>`
       + `<p><b>소도</b> 성스러운 땅이라 아무도 못 친다. 소도 곁 고을을 차지하면 봄·가을에 제사를 지낸다. 봄 제사는 수확을, 가을 제사는 사기를 올린다.</p>`
       + `<p><b>협공</b> 같은 계절에 두 길로 들어가면 한 판으로 싸우고 더 세다.</p>`
-      + `<p><b>목표</b> 나라마다 도읍이 하나씩 있다. 도읍 셋을 차지하면 이긴다. 우리 도읍을 빼앗기면 진다.</p></div>`
+      + `<p><b>목표</b> 나라마다 도읍(★)이 하나씩 있다. 판이 클수록 더 많이 쥐어야 한다 — 나라 판의 목표 줄에 몇 곳인지 나온다. 우리 도읍을 빼앗기면 진다.</p></div>`
   }
 
   // ───────── 고을
