@@ -12,7 +12,8 @@
  */
 import type { NationInfo } from '../../realm/data/nations.ts'
 import { lockWhy } from './unlock.ts'
-import { seasonLabel } from '../../realm/data/prose.ts'
+import { seasonOf } from '../../realm/calendar.ts'
+import { battleName, josa, seasonLabel } from '../../realm/data/prose.ts'
 import type { Realm, RegionId, ReportLine } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 
@@ -225,8 +226,18 @@ export function endingHtml(k: FrontKit, r: Realm, history: History): string {
       if (l.kind === 'battle') {
         const atkWon = l.outcome === 'rout' || l.outcome === 'win'
         const defWon = l.outcome === 'lose' || l.outcome === 'routed'
+        const ourWin = (l.atkFaction === me && atkWon) || (l.defender === me && defWon)
         if (l.atkFaction === me) { if (atkWon) won++; else if (defWon) lost++ }
         else if (l.defender === me) { if (defWon) won++; else if (atkWon) lost++ }
+        // 이긴 싸움은 그 이름으로 연대기에 (형: "황산벌전투 옥포해전 … 그지역들을따서") — 크게 이겼거나 적장을 잡았으면 큰일
+        if (ourWin && r.nodes[l.node] !== undefined) {
+          const caught = l.captured !== null ? r.heroes[l.captured] : undefined
+          const big = l.outcome === 'rout' || l.outcome === 'routed' || caught !== undefined
+          const art = caught !== undefined ? 'event-capture' : l.approach === 'night' ? 'event-night-raid' : l.via === 'ford' || l.via === 'reeds' ? 'event-monsoon-ford' : seasonOf(s) === 'winter' ? 'event-winter-ambush' : 'event-expedition-return'
+          const t = `${battleName(r, l)} — ${big ? '크게 이겼다' : '이겼다'}${caught !== undefined ? ` · ${josa(caught.name, '을', '를')} 사로잡았다` : ''}`
+          const foe = l.atkFaction === me ? l.defender : l.atkFaction
+          events.push({ s, t, big, img: `${k.art}event/${art}.jpg`, ...(foe !== undefined ? { em: foe } : {}) })
+        }
       } else if (l.kind === 'take' && l.faction === me) {
         const was = capOf.get(l.node)
         const img = `${k.art}event/${TAKE_ART[takes++ % TAKE_ART.length]}.jpg`

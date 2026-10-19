@@ -19,7 +19,7 @@ import {
   OPEN_FIELD, ambushChance, ambushSizePenalty, headcount, power, strength, winChance,
   type Equip, type Force, type Kit, type UnitKind,
 } from './battle.ts'
-import { fightRounds, type FightResult, type Side } from './tactics.ts'
+import { fightRounds, groupOf, type FightResult, type Side, type Terrain } from './tactics.ts'
 import {
   checkPledges, driftFavor, expireRelations, friendly, holdMarkets, makeAsks, onHostile, relationOf, resolveAnswers, resolveEnvoys,
   shareIntel, stepLent,
@@ -37,7 +37,7 @@ import { stepSuzerain, suzerainEnd } from './suzerain.ts'
 import { pathsEnd, stepPaths } from './paths.ts'
 import { PEOPLE_SCALE, migrate } from './migrate.ts'
 import { spreadRumors } from './rumor.ts'
-import { addMen, giveMen, kitOf, scaleMen, takeMen } from './kit.ts'
+import { addMen, giveMen, kitOf, scaleKinds, scaleMen, takeMen } from './kit.ts'
 import {
   ambushTraitOf, applyHeroOrders, battleGrowth, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, ironhandAt, noteMet, stepHeroes, sweepHeroes,
 } from './heroes.ts'
@@ -717,17 +717,18 @@ const knowFoe = (s: Side, knew: boolean): Side => (knew ? { ...s, knowsFoe: true
 
 function sideOf(
   r: Realm, armies: readonly Army[], f: Force, F: number, faction: string,
-  o: { water: boolean; edge?: EdgeKind; fire: boolean; flank: boolean; seen: boolean; moraleBonus?: number; captureBonus?: number },
+  o: { water: boolean; edge?: EdgeKind; fire: boolean; flank: boolean; seen: boolean; moraleBonus?: number; captureBonus?: number; terrain?: Terrain },
 ): Side {
   const h = leadHero(r, armies)
-  const n = headcount(f)
   const specials: Cmd[] = []
-  // 옆치기 — 산기슭으로 돌아 들어왔거나, 들길에서 기병이 넉넉하다
-  if (o.flank || (o.edge === 'field' && n > 0 && (f.mix.horse ?? 0) / n >= 0.2)) specials.push('flank')
   if (o.fire) specials.push('fire')
+  // 땅의 수 — 배 들이받기는 수군이 넉넉한 쪽만 (전체의 15%)
+  const n = headcount(f)
+  const boats = n > 0 && (f.mix.boat ?? 0) / n >= 0.15
+  const terrain: Terrain = { ...(o.terrain ?? {}), ...(o.water && boats ? { ram: true } : {}), ...(o.flank ? { height: true } : {}) }
   return {
     F, mix: f.mix, morale: f.morale, hero: h === null ? null : { id: h.id, mu: h.mu, ryak: h.ryak, coward: hasTrait(h, 'coward') },
-    hungry: hungryOf(armies), specials, water: o.water, player: r.factions[faction]?.mind === 'player', seen: o.seen,
+    hungry: hungryOf(armies), specials, terrain, water: o.water, player: r.factions[faction]?.mind === 'player', seen: o.seen,
     ...(o.moraleBonus !== undefined ? { moraleBonus: o.moraleBonus } : {}),
     ...(o.captureBonus !== undefined && o.captureBonus > 0 ? { captureBonus: o.captureBonus } : {}),
     // 배우는 판 — 우리 쪽 사로잡기는 반드시 되고, 상대는 우리 장수를 잡지 않는다 (형: "튜토리얼급이니 100% 성공하도록")
@@ -741,7 +742,13 @@ function startOf(a: Side, d: Side, af: Force, df: Force): BattleStart {
     men: [headcount(af), headcount(df)],
     morale: [a.morale + (a.moraleBonus ?? 0), d.morale + (d.moraleBonus ?? 0)],
     heroes: [a.hero?.id ?? null, d.hero?.id ?? null],
+    mix: [{ ...af.mix }, { ...df.mix }],
   }
+}
+
+/** 무리마다 잃은 만큼 병종을 줄인다 (궁수가 맞았으면 궁수가 준다 — 전투 2판) */
+function scaleByGroups(a: Army, keep: Readonly<Record<'front' | 'bows' | 'horse', number>>): void {
+  scaleKinds(a, (k) => keep[groupOf(k)])
 }
 
 /** 싸움 끝의 사기 — 라운드에서 오간 만큼 (바닥·천장) */
@@ -860,12 +867,13 @@ function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines
       const fd = power(defF, atkF, ground, 'def')
       const p = winChance(fa, fd)
       const common = { water: isWater(ed.kind), edge: ed.kind, fire: fireable(ed, undefined, season), flank: false }
+      const defTerrain: Terrain = { ...(ed.kind === 'pass' || ed.kind === 'forest' ? { height: true } : {}), ...(ed.kind === 'ford' || ed.kind === 'reeds' ? { ford: true } : {}), ...(ed.kind === 'pass' ? { rocks: true } : {}) }
       const sa = knowFoe(sideOf(r, atks, atkF, fa, lead.faction, { ...common, seen: true }), knewA)
-      const sd = knowFoe(sideOf(r, defs, defF, fd, defs[0]!.faction, { ...common, seen: true }), knewD)
+      const sd = knowFoe(sideOf(r, defs, defF, fd, defs[0]!.faction, { ...common, seen: true, terrain: defTerrain }), knewD)
       const res = fightRounds(sa, sd, key, r.seed, r.season, tacticFor(tactics, key))
       const outcome = res.outcome
-      for (const x of atks) scaleMix(x, res.na)
-      for (const x of defs) scaleMix(x, res.nd)
+      for (const x of atks) scaleByGroups(x, res.ga)
+      for (const x of defs) scaleByGroups(x, res.gd)
       shiftMorale(atks, res.dma)
       shiftMorale(defs, res.dmd)
       const atkWon = outcome === 'rout' || outcome === 'win'
@@ -892,7 +900,7 @@ function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines
       lines.push({
         kind: 'battle', node: target, attacker: lead.id, allies: atks.slice(1).map((x) => x.id), pincer: false,
         defender: defs[0]!.faction, ambush: 'none', p, outcome, captured: fateOf.captured, killed: fateOf.killed,
-        militia: 0, field: true, edge: eid, atkFaction: lead.faction, rounds: res.rounds, key, start: startOf(sa, sd, atkF, defF),
+        militia: 0, field: true, edge: eid, atkFaction: lead.faction, rounds: res.rounds, key, start: startOf(sa, sd, atkF, defF), via: ed.kind, endWhy: res.endWhy,
         ...(res.pending !== undefined ? { pending: res.pending } : {}), ...(res.led ? { led: true } : {}),
       })
     }
@@ -987,20 +995,31 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const flankWon = won.some((x) => x.ap === 'ridge')
   const atkBonus = legs.every((x) => x.ap === 'road') ? R.apRoadMorale : 0
   const defBonus = -((won.some((x) => x.ap === 'ridge') ? R.apRidgeMorale : 0) + (won.some((x) => x.ap === 'cliff') ? R.apCliffMorale : 0))
+  // 땅의 수 (형: "지형적으로 특별한경우에 다양하게 뭔가를 더 할수 있게") — 그 자리에서만, 한 번씩
+  //   치는 쪽: 성벽·목책 앞이면 성문 깨기 (성을 넘었으면 없다)
+  //   지키는 쪽: 강을 건너오면 여울 막기 · 고개·산성·높은 터면 바위 굴리기와 높은 곳 (잠든 채 들이쳐졌으면 없다)
+  const surprised = ambush === 'success'
+  const atkTerrain: Terrain = fort0 > 1.02 && !overWall ? { gate: true } : {}
+  const highGround = node.kind === 'fort' || node.tags.includes('high')
+  const defTerrain: Terrain = surprised ? {} : {
+    ...(edgeKind === 'ford' || edgeKind === 'reeds' ? { ford: true } : {}),
+    ...(edgeKind === 'pass' || highGround ? { rocks: true } : {}),
+    ...(highGround || edgeKind === 'pass' || edgeKind === 'forest' ? { height: true } : {}),
+  }
   const sa = knowFoe(sideOf(r, atks, atkF, fa, a.faction, {
     water, edge: edgeKind, fire, flank: flankWon, seen: freshSight(r, a.faction, node.id), moraleBonus: atkBonus,
-    captureBonus: playerIsAtk ? capShot : 0,
+    captureBonus: playerIsAtk ? capShot : 0, terrain: atkTerrain,
   }), knewA)
   const sd = knowFoe(sideOf(r, standing, defF, fd, defFaction, {
     water, edge: edgeKind, fire, flank: false, seen: ambush !== 'success', moraleBonus: defBonus,
-    captureBonus: playerIsAtk ? 0 : capShot,
+    captureBonus: playerIsAtk ? 0 : capShot, terrain: defTerrain,
   }), knewD)
   const res = fightRounds(sa, sd, key, r.seed, r.season, tacticFor(tactics, key))
   const outcome = res.outcome
 
   // 손실 · 사기 — 장정은 판정에만 선다 (r.armies 에 없다)
-  for (const l of legs) scaleMix(l.army, res.na)
-  for (const d of defenders) scaleMix(d, res.nd)
+  for (const l of legs) scaleByGroups(l.army, res.ga)
+  for (const d of defenders) scaleByGroups(d, res.gd)
   shiftMorale(atks, res.dma)
   shiftMorale(defenders, res.dmd)
 
@@ -1051,6 +1070,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
     kind: 'battle', node: node.id, attacker: a.id, allies: atks.slice(1).map((x) => x.id),
     pincer: new Set(legs.map((x) => x.edge.id)).size >= 2, defender: defFaction, ambush, p, outcome, captured, killed,
     militia: militiaN, field: false, atkFaction: a.faction, rounds: res.rounds, key, approach: approachOf(lead), start: startOf(sa, sd, atkF, defF),
+    via: edgeKind, endWhy: res.endWhy,
     ...(fell ? { fell: true } : {}), ...(res.pending !== undefined ? { pending: res.pending } : {}), ...(res.led ? { led: true } : {}),
   })
 }
