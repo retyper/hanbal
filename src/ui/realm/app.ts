@@ -38,6 +38,8 @@ import { APP_CSS } from './appstyle.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
 import { APPROACH_DOES, APPROACH_NAME, HARD_LINE, WAR_CSS, openWar } from './battlefield.ts'
 import { attachZoom } from './zoom.ts'
+import { TUT_CSS, TUT_STEPS, tutAt, tutBandHtml, tutStyle } from './tutorial.ts'
+import { markTutorialOver, markWon, tutorialOver, unlockedBoards } from './unlock.ts'
 import { TINT_CSS, tint } from './tint.ts'
 import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
 import { FRONT_CSS, PROLOGUE_STEPS, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History } from './front.ts'
@@ -173,7 +175,8 @@ const sorted = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort(
 const rulerId = (nation: string): string => `${nation}-ruler`
 
 /** 판마다 나라 고르기 글 — 변한 6국 축소판 · 영남 판 */
-const nationsOf = (region: RegionId): readonly NationInfo[] => (region === 'yeongnam' ? YEONGNAM_NATIONS : region === 'south' ? SOUTH_NATIONS : region === 'world' ? WORLD_NATIONS : NATIONS)
+const nationsOf = (region: RegionId): readonly NationInfo[] => (region === 'yeongnam' ? YEONGNAM_NATIONS : region === 'south' ? SOUTH_NATIONS : region === 'world' ? WORLD_NATIONS
+  : region === 'tutorial' ? NATIONS.filter((n) => n.id === 'us' || n.id === 'guya') : NATIONS)
 
 function nationFace(id: string, cls = 'nface'): string {
   const hid = rulerId(id)
@@ -196,10 +199,32 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   style.textContent = APP_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS + HERO_CSS + GROW_CSS + FRONT_CSS.replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
-  root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="legend"></div><div class="zbtns"><button data-act="layers" class="lyb" aria-label="보기">👁</button><button data-act="zin">＋</button><button data-act="zout">－</button></div><div class="layers"></div><button class="next" data-act="next"></button><div class="selbar"></div><div class="roadkey"></div><button class="homebtn" data-act="home">우리 땅</button>`
+  root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="legend"></div><div class="zbtns"><button data-act="layers" class="lyb" aria-label="보기">👁</button><button data-act="zin">＋</button><button data-act="zout">－</button></div><div class="layers"></div><button class="next" data-act="next"></button><div class="selbar"></div><div class="roadkey"></div><button class="homebtn" data-act="home">우리 땅</button><div class="tutband"></div>`
     + `<nav class="tabs"></nav><div class="back" data-act="close"></div><section class="sheet"></section><div class="modal"></div><div class="plbox"></div>`
   const $ = (sel: string): HTMLElement => root.querySelector<HTMLElement>(sel)!
   const zoom = attachZoom($('.mapwrap'))
+  // 배우는 판의 빛낼 곳 — 단계마다 갈아 끼우는 <style> (tutorial.ts)
+  const tutSheet = document.createElement('style')
+  tutSheet.textContent = ''
+  document.head.appendChild(tutSheet)
+  const tutBase = document.createElement('style')
+  tutBase.textContent = TUT_CSS
+  document.head.appendChild(tutBase)
+  /** 배우는 판 — 지금 단계 · 이 판에서 누른 단추 · 그만뒀나 (이 기기에 판마다 기억) */
+  let tut = { seed: -1, i: 0, acts: new Set<string>(), off: false }
+  const TUT_KEY = 'hanbal.realm.tut'
+  const loadTut = (): void => {
+    if (realm === null || realm.region !== 'tutorial') return
+    if (tut.seed === realm.seed) return
+    tut = { seed: realm.seed, i: 0, acts: new Set(), off: false }
+    try {
+      const d = JSON.parse(localStorage.getItem(TUT_KEY) ?? 'null') as { seed?: number; i?: number; acts?: string[]; off?: boolean } | null
+      if (d !== null && d.seed === realm.seed) tut = { seed: realm.seed, i: d.i ?? 0, acts: new Set(d.acts ?? []), off: d.off === true }
+    } catch { /* 처음부터 */ }
+  }
+  const saveTut = (): void => {
+    try { localStorage.setItem(TUT_KEY, JSON.stringify({ seed: tut.seed, i: tut.i, acts: [...tut.acts], off: tut.off })) } catch { /* 저장 못 하는 곳 */ }
+  }
 
   let realm: Realm | null = null
   let before: Realm | null = null
@@ -463,6 +488,30 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<h5>땅 사이 금</h5><div>${line('stroke="#2a1d10" stroke-width="3"')}<span>나라와 나라의 경계</span></div>`
     h += `<div>${line('stroke="#6b4a2a" stroke-width="3" stroke-dasharray="3 4"')}<span>같은 나라 고을끼리의 금</span></div></div>`
     return h
+  }
+
+  /** 배우는 판의 띠 — 지금 할 일 하나 · 눌러야 할 곳이 빛난다 (tutorial.ts) */
+  function paintTut(r: Realm): void {
+    const band = $('.tutband')
+    if (realm === null || realm.region !== 'tutorial' || front !== null || prologue !== null || (realm.outcome && !realm.endless)) {
+      band.innerHTML = ''
+      tutSheet.textContent = ''
+      return
+    }
+    loadTut()
+    if (tut.off) {
+      band.innerHTML = ''
+      tutSheet.textContent = ''
+      return
+    }
+    const i = tutAt(tut.i, { r, orders: ordersNow(), report, acts: tut.acts })
+    if (i !== tut.i) {
+      tut.i = i
+      saveTut()
+      if (i >= TUT_STEPS.length) markTutorialOver('done')
+    }
+    band.innerHTML = tutBandHtml(i, esc)
+    tutSheet.textContent = tutStyle(TUT_STEPS[i])
   }
 
   /**
@@ -1593,8 +1642,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function frontHtml(f: Front): string {
     const links = `<p class="fine"><a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a> ${PRACTICE_READY ? `<a class="btn ghost" href="${PRACTICE}">궁술 연습장</a>` : ''}</p>`
     switch (f.kind) {
-      case 'title': return titleHtml(KIT, realm, host.savedAt(), links)
-      case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome)
+      case 'title': return titleHtml(KIT, realm, host.savedAt(), links, realm === null && !tutorialOver())
+      case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null))
       case 'nations': return nationsHtml(KIT, f.region)
       case 'detail': return detailHtml(KIT, f.region, f.id)
     }
@@ -1715,6 +1764,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       $('.legend').innerHTML = ''
       $('.selbar').innerHTML = ''
       $('.roadkey').innerHTML = ''
+      $('.tutband').innerHTML = ''
+      tutSheet.textContent = ''
       $('.sheet').innerHTML = ''
       $('.modal').innerHTML = ''
       $('.modal').dataset['html'] = ''
@@ -1738,6 +1789,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         wrap.scrollTop = el.offsetTop - wrap.clientHeight / 2
       }
     } else [wrap.scrollLeft, wrap.scrollTop] = keep
+    paintTut(r)
     const sb = selBarHtml(r)
     $('.selbar').innerHTML = sb
     root.classList.toggle('sel-open', sb !== '')
@@ -1818,6 +1870,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     fresh = new Set(knownOf(res.next, me()).filter((f) => !knows(prev, me(), f)))
     // 계속 둔 판 — 도읍을 모두 쥐면 한 번 더 끝 화면 (하나가 됐다)
     if (res.next.endless === true && res.next.unified === undefined && Object.values(res.next.factions).every((f) => res.next.nodes[f.capital]?.owner === me())) res.next.unified = res.report.season
+    // 판을 이기면 다음 판이 열린다 (unlock.ts)
+    if (res.next.outcome?.kind === 'win' && prev.outcome == null) markWon(res.next.region ?? 'byeonhan-mini')
     host.onAdvance(res.next, res.report, all, mine)
     seasonFx(res.next.season)
     if (res.report.lines.some((l) => l.kind === 'battle' && (l.atkFaction === me() || l.defender === me()))) ding('boom_01', 0.35) // 우리가 낀 싸움
@@ -1850,6 +1904,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     const d = t.dataset
     host.onTap(d['act'] ?? '', d['tab'] ?? d['node'] ?? d['army'] ?? d['to'] ?? d['id'] ?? d['unit'] ?? '')
+    if (realm?.region === 'tutorial') loadTut() // 이 판의 배우기 기록을 먼저 (다시 연 뒤 첫 누름이 기록을 덮지 않게)
+    if (realm?.region === 'tutorial' && d['act'] !== undefined && !tut.acts.has(d['act'])) {
+      tut.acts.add(d['act'])
+      saveTut()
+      if (front === null) paintTut(plan()) // 다시 그리지 않는 단추(우리 땅 등)에도 띠가 넘어가게
+    }
     if (d['act'] !== undefined && d['act'] !== 'next') ding('click1', 0.18) // 누른 것이 먹었다는 작은 소리
     freshArmy = ''
     const r = realm !== null ? plan() : null
@@ -1857,7 +1917,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'continue': front = null; paint(); return
       case 'fr-new': case 'newgame': front = { kind: 'boards' }; sheet = null; looking = false; paint(); return
       case 'fr-back': front = { kind: 'title' }; paint(); return
-      case 'fr-board': front = { kind: 'nations', region: d['v'] as RegionId }; $('.mapwrap').scrollTop = 0; paint(); return
+      case 'fr-board':
+        if (d['v'] === 'tutorial') { host.onNewGame('us', 'tutorial'); return } // 배우는 판은 나라를 고르지 않는다
+        front = { kind: 'nations', region: d['v'] as RegionId }; $('.mapwrap').scrollTop = 0; paint(); return
+      case 'fr-tutorial': host.onNewGame('us', 'tutorial'); return
+      case 'fr-locked': return
+      case 'tut-skip': tut.i++; saveTut(); paint(); return
+      case 'tut-quit': tut.off = true; saveTut(); markTutorialOver('quit'); paint(); return
+      case 'tut-end': markTutorialOver('done'); front = { kind: 'title' }; paint(); return
       case 'fr-nation': if (front !== null && front.kind === 'nations') front = { kind: 'detail', region: front.region, id: d['id']! }; $('.mapwrap').scrollTop = 0; paint(); return
       case 'fr-start': if (front !== null && front.kind === 'detail') host.onNewGame(d['id']!, front.region); return
       case 'fr-again': if (realm !== null) host.onNewGame(realm.player, realm.region ?? 'byeonhan-mini'); return
@@ -1871,7 +1938,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         root.querySelector('.prologue')?.classList.add('out')
         root.classList.add('opening')
         // 서막이 사라진 뒤 한 번 — 첫 계절을 알린다. 지도는 다시 그릴 때마다 새로 생기니 animationend 대신 한 번 거둔다
-        setTimeout(() => { $('.plbox').innerHTML = ''; if (realm !== null) seasonFx(realm.season) }, 900)
+        setTimeout(() => { $('.plbox').innerHTML = ''; if (realm !== null) { seasonFx(realm.season); paintTut(plan()) } }, 900)
         setTimeout(() => root.classList.remove('opening'), 3000)
         return
       }

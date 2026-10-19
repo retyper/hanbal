@@ -706,6 +706,8 @@ function sideOf(
     hungry: hungryOf(armies), specials, water: o.water, player: r.factions[faction]?.mind === 'player', seen: o.seen,
     ...(o.moraleBonus !== undefined ? { moraleBonus: o.moraleBonus } : {}),
     ...(o.captureBonus !== undefined && o.captureBonus > 0 ? { captureBonus: o.captureBonus } : {}),
+    // 배우는 판 — 우리 쪽 사로잡기는 반드시 되고, 상대는 우리 장수를 잡지 않는다 (형: "튜토리얼급이니 100% 성공하도록")
+    ...(r.region === 'tutorial' ? { capture: r.factions[faction]?.mind === 'player' ? 'sure' as const : 'never' as const } : {}),
   }
 }
 
@@ -1123,6 +1125,8 @@ export function checkOutcome(r: Realm): 'win' | 'lose' | null {
   if (r.nodes[capital]?.owner !== me) return 'lose'
   let held = 0
   for (const f of Object.values(r.factions)) if (r.nodes[f.capital]?.owner === me) held++
+  // 배우는 판 — 상대 도읍 하나만 쥐면 (제 도읍 포함 둘)
+  if (r.region === 'tutorial') return held >= 2 ? 'win' : null
   // 판마다 — 영남 판은 나라가 스물하나라 더 많이 쥐어야 한다
   const need = r.region === 'yeongnam' ? P.realm.winCapitalsYeongnam : r.region === 'south' ? P.realm.winCapitalsSouth : r.region === 'world' ? P.realm.winCapitalsWorld : P.realm.winCapitals
   return held >= need ? 'win' : null

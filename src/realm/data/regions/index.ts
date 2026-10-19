@@ -11,8 +11,9 @@ import { SOUTH_NATION_IDS, southGeo, startSouth } from './south.ts'
 import { WORLD_GEO } from './world-geo.ts'
 import { WORLD_NATION_IDS, startWorld, worldGeo } from './world.ts'
 import { YEONGNAM_NATION_IDS, startYeongnam } from './yeongnam.ts'
+import { TUTORIAL_NATION_IDS, startTutorial } from './tutorial.ts'
 
-export const REGION_IDS: readonly RegionId[] = ['byeonhan-mini', 'yeongnam', 'south', 'world']
+export const REGION_IDS: readonly RegionId[] = ['tutorial', 'byeonhan-mini', 'yeongnam', 'south', 'world']
 
 /** 그 판의 고를 수 있는 나라 id */
 export function regionNations(region: RegionId): readonly string[] {
@@ -20,6 +21,7 @@ export function regionNations(region: RegionId): readonly string[] {
     case 'yeongnam': return YEONGNAM_NATION_IDS
     case 'south': return SOUTH_NATION_IDS
     case 'world': return WORLD_NATION_IDS
+    case 'tutorial': return TUTORIAL_NATION_IDS
     default: return NATION_IDS
   }
 }
@@ -30,6 +32,7 @@ export function startRegion(region: RegionId, seed: number, player: string): Rea
     case 'yeongnam': return startYeongnam(seed, player)
     case 'south': return startSouth(seed, player)
     case 'world': return startWorld(seed, player)
+    case 'tutorial': return startTutorial(seed)
     default: return startRealm(seed, player)
   }
 }

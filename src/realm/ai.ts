@@ -791,6 +791,11 @@ export function aiOrders(r: Realm): Order[] {
     const player = r.player
     for (const [i, f] of sorted(Object.values(r.factions)).entries()) {
       if (f.mind === 'player') continue
+      // 배우는 판 — 상대는 먼저 치지 않는다. 청에만 답한다
+      if (r.region === 'tutorial') {
+        out.push(...answers(r, f.id))
+        continue
+      }
       // 넓어지는 지도 (삼한 남부 판) — 플레이어가 아직 모르는 먼 나라는 가볍게 굴린다: aiFarEvery 계절에 한 번만 다 생각하고,
       // 나머지 계절은 청에 답하고 징병만 한다 (나라가 서른여섯이라 폰에서 버티려고). 발견이 없는 판은 늘 다 생각한다
       const far = r.known !== undefined && player !== undefined && !knows(r, player, f.id)

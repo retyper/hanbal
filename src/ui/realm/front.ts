@@ -11,6 +11,7 @@
  * 글을 만들기만 한다 — 상태는 app.ts 가 쥐고, 누름은 data-act 로 app.ts 가 받는다.
  */
 import type { NationInfo } from '../../realm/data/nations.ts'
+import { lockWhy } from './unlock.ts'
 import { seasonLabel } from '../../realm/data/prose.ts'
 import type { Realm, RegionId, ReportLine } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
@@ -32,6 +33,7 @@ export interface FrontKit {
 export type History = ReadonlyArray<{ readonly s: number; readonly lines: readonly ReportLine[] }>
 
 export const BOARDS: ReadonlyArray<{ id: RegionId; name: string; line: string; thumb: string; length: string }> = [
+  { id: 'tutorial', name: '배우는 판', line: '골포국과 가락국, 두 나라만. 징병·개척·정찰·사신·출정·전장·사로잡기·회유·공작·제사를 하나씩 해 본다.', thumb: 'map/spring.jpg', length: '아주 짧다' },
   { id: 'byeonhan-mini', name: '작은 판', line: '변한 남쪽 바닷가의 여섯 나라. 쇠와 뱃길을 두고 겨룬다.', thumb: 'map/spring.jpg', length: '짧다' },
   { id: 'yeongnam', name: '큰 판', line: '낙동강 물길과 동해·남해의 스물한 나라. 사로·가락·대가야가 아직 이웃 읍락과 키를 잰다.', thumb: 'map-yeongnam/spring.webp', length: '보통' },
   { id: 'south', name: '삼한 남부', line: '한강에서 영산강, 동해 바닷가까지 서른여섯 나라. 처음엔 이웃만 안다 — 지도는 보고 다닌 만큼 칠해진다.', thumb: 'map-world/m2-spring.webp', length: '길다' },
@@ -40,6 +42,7 @@ export const BOARDS: ReadonlyArray<{ id: RegionId; name: string; line: string; t
 
 /** 이기려면 쥘 도읍 수 (season.ts checkOutcome 과 같은 값) */
 export function winNeed(region: RegionId): number {
+  if (region === 'tutorial') return 2 // 배우는 판 — 가락 도읍 하나 (제 도읍 포함 둘)
   return region === 'yeongnam' ? P.realm.winCapitalsYeongnam : region === 'south' ? P.realm.winCapitalsSouth : region === 'world' ? P.realm.winCapitalsWorld : P.realm.winCapitals
 }
 
@@ -47,7 +50,7 @@ const capsHeld = (r: Realm, f: string): number => Object.values(r.factions).filt
 
 // ───────── 첫 화면
 
-export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, links = ''): string {
+export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, links = '', firstTime = false): string {
   let h = `<div class="front title"><div class="kv" style="background-image:url('${k.art}title/title-keyart.jpg')"></div><div class="tv">`
   h += `<h1>칠십팔국</h1><p class="sub">삼한의 일흔여덟 나라 · 고구려와 부여의 북녘</p>`
   h += `<p class="hook">왕이 하나가 아니던 때. 한 읍락의 군장으로 시작해, 이웃을 알고 · 사귀고 · 쳐서 도읍을 하나씩 쥔다.</p>`
@@ -60,7 +63,9 @@ export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, 
     h += `<span>${k.esc(seasonLabel(r.season))} · 도읍 ${capsHeld(r, me)}/${winNeed(region)}${r.known !== undefined ? ` · 아는 나라 ${(r.known[me]?.length ?? 0) + 1}/${Object.keys(r.factions).length}` : ''}</span>`
     h += `${savedAt !== null ? `<small>${k.esc(agoText(savedAt))} 저장됨</small>` : ''}</span></button>`
   }
-  h += `<button class="btn on big" data-act="fr-new">새 판</button></div>`
+  // 처음 켠 사람은 배우는 판으로 (형: "맨 위 첫번째 할 게임은 1:1수준으로 여러 기능 익혀가며 쉽게")
+  if (firstTime) h += `<button class="btn on big" data-act="fr-tutorial">처음이면 — 배우는 판부터</button><button class="btn big" data-act="fr-new">새 판</button></div>`
+  else h += `<button class="btn on big" data-act="fr-new">새 판</button></div>`
   return h + `<p class="fine">판은 계절마다 저절로 저장된다.</p>${links}</div></div>`
 }
 
@@ -73,12 +78,21 @@ function agoText(iso: string): string {
 
 // ───────── 판 고르기
 
-export function boardHtml(k: FrontKit, hasGame: boolean): string {
+/**
+ * 판 고르기 — 위에서부터 배우는 판 → 작은 판 → … 차례로 열린다 (unlock.ts). 잠긴 판은 자물쇠와 여는 길.
+ * `unlocked` 가 없으면 다 열린 것으로 (시험)
+ */
+export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<RegionId>): string {
   let h = `<div class="front boards"><div class="fhead"><button class="btn ghost" data-act="fr-back">‹ 처음으로</button><h2>어느 땅에서 시작할까</h2></div><div class="bcards">`
+  const names = Object.fromEntries(BOARDS.map((b) => [b.id, b.name])) as Partial<Record<RegionId, string>>
   for (const b of BOARDS) {
-    h += `<button class="bcard" data-act="fr-board" data-v="${b.id}"><span class="bth" style="background-image:url('${k.art}${b.thumb}')"></span>`
+    const open = unlocked === undefined || unlocked.has(b.id)
+    h += `<button class="bcard${open ? '' : ' locked'}" data-act="${open ? 'fr-board' : 'fr-locked'}" data-v="${b.id}"><span class="bth" style="background-image:url('${k.art}${b.thumb}')">${open ? '' : '<i class="lock">🔒</i>'}</span>`
     h += `<span class="bb"><b>${k.esc(b.name)}</b><span>${k.esc(b.line)}</span>`
-    h += `<span class="bmeta">나라 ${k.nations(b.id).length} · 도읍 ${winNeed(b.id)}곳을 쥐면 이긴다 · 한 판이 ${b.length}</span></span></button>`
+    const goal = b.id === 'tutorial' ? '가락 도읍을 쥐면 끝난다' : `도읍 ${winNeed(b.id)}곳을 쥐면 이긴다`
+    h += open
+      ? `<span class="bmeta">나라 ${k.nations(b.id).length} · ${goal} · 한 판이 ${b.length}</span></span></button>`
+      : `<span class="bmeta lockwhy">${k.esc(lockWhy(b.id, names))}</span></span></button>`
   }
   h += `</div>${hasGame ? '<p class="fine">새 판을 시작하면 지금 판은 끝난 판으로 기록된다.</p>' : ''}</div>`
   return h
@@ -120,6 +134,7 @@ export function detailHtml(k: FrontKit, region: RegionId, id: string): string {
 // ───────── 서막 — 시대 · 우리 나라 · 할 일
 
 const ERA: Readonly<Record<RegionId, string>> = {
+  tutorial: '변한의 남쪽 바닷가. 작은 골포국과 이웃 가락국 — 두 나라만 있는 땅에서 군장의 일을 하나씩 배운다.',
   'byeonhan-mini': '변한의 남쪽 바닷가. 쇠를 캐고 배를 띄우는 여섯 나라가 서로를 엿본다.',
   yeongnam: '낙동강 물길을 따라 스물한 나라. 훗날 신라가 될 사로도, 가야가 될 가락과 대가야도 아직은 이웃 읍락과 키를 잰다.',
   south: '한강에서 영산강, 동해 바닷가까지. 마한·진한·변한의 서른여섯 나라가 저마다 깃발을 올렸다.',
@@ -163,6 +178,7 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
 // ───────── 끝 — 연대기
 
 const HEAD: Readonly<Record<RegionId, string>> = {
+  tutorial: '가락 도읍을 쥐었다 — 군장의 일을 다 배웠다',
   'byeonhan-mini': '변한의 바닷가를 차지했다',
   yeongnam: '낙동강의 나라들을 거느렸다',
   south: '삼한의 남쪽에 이름을 떨쳤다',
@@ -171,6 +187,7 @@ const HEAD: Readonly<Record<RegionId, string>> = {
 
 /** 이긴 뒤 계속 둬서 도읍을 모두 쥐었을 때 */
 const HEAD_ALL: Readonly<Record<RegionId, string>> = {
+  tutorial: '두 나라가 한 나라가 됐다',
   'byeonhan-mini': '변한의 바닷가가 한 나라가 됐다',
   yeongnam: '낙동강의 나라들이 하나가 됐다',
   south: '삼한의 남쪽이 하나가 됐다',
@@ -281,6 +298,10 @@ export const FRONT_CSS = `
 .ap .front .bth { display: block; height: 120px; background: center / cover no-repeat; }
 .ap .front .bb { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px 12px; } .ap .front .bb b { font-size: 17px; color: var(--gold); }
 .ap .front .bb span { font-size: 13px; color: #cfc6b4; line-height: 1.5; } .ap .front .bb .bmeta { font-size: 12px; color: #a89c84; }
+.ap .front .bcard.locked { cursor: default; } .ap .front .bcard.locked .bth { filter: grayscale(1) brightness(.45); position: relative; }
+.ap .front .bcard.locked .bth .lock { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-style: normal; font-size: 34px; }
+.ap .front .bcard.locked .bb b { color: #8f8778; } .ap .front .bcard.locked .bmeta.lockwhy { color: #e8c070; }
+.ap .front .bcard.locked:hover, .ap .front .bcard.locked:active { border-color: var(--line); }
 /* 나라 고르기 — 옛 .choose 와 같은 카드 */
 .ap .front.choose .ncards { max-width: 980px; margin: 8px auto; padding: 0 14px 24px; }
 /* 자세히 */
