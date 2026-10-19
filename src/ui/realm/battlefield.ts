@@ -134,8 +134,12 @@ function clashLine(l: RoundLog, weAtk: boolean, ourName: string, foeName: string
   return '두 진이 맞부딪힌다.'
 }
 
-function pushWord(push: number, weAtk: boolean): [string, string] {
-  const p = weAtk ? push : 1 - push
+/**
+ * 그 합의 말 — 눈에 보이는 잃은 수로 정한다 (우리 −37 · 적 −47 이면 우리가 민 것). 필살을 냈는데 "밀렸다"가 뜨면 헷갈린다.
+ * 양쪽 다 안 잃었으면 판정의 기세(push)로.
+ */
+function pushWord(push: number, weAtk: boolean, lostUs: number, lostFoe: number): [string, string] {
+  const p = lostUs + lostFoe > 0 ? lostFoe / (lostUs + lostFoe) : weAtk ? push : 1 - push
   if (p >= 0.62) return ['크게 밀었다', 'good']
   if (p >= 0.53) return ['조금 밀었다', 'good']
   if (p <= 0.38) return ['크게 밀렸다', 'bad']
@@ -225,7 +229,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const lostFoe = Math.max(0, Math.round(men0(foeI) * ((prevN[foeI] ?? 1) - (foeI === 0 ? rd.na : rd.nd))))
     const us = weAtk ? rd.a : rd.d
     const them = weAtk ? rd.d : rd.a
-    const [pw, pc] = pushWord(rd.push, weAtk)
+    const [pw, pc] = pushWord(rd.push, weAtk, lostUs, lostFoe)
     const crit = rd.beat === (weAtk ? 'a' : 'd')
     const d = (k: number): string => (slow ? ` style="--d:${STAGE_S[k]}s"` : '')
     h += `<div class="wrd${slow ? ' slow' : ''}${crit ? ' crit' : ''}"><div class="wrn">${ROUND_NAME[i] ?? `${i + 1}`} 합</div>`
