@@ -40,6 +40,8 @@ export interface RNode {
   readonly room?: number
   /** 억지로 이주시킨 고을 — 이 계절까지 집이 늘지 않는다 (economy.migrateHouses · 형: "강제이주"). 없으면 없음 */
   uprooted?: number
+  /** 이번 계절 이 고을에서 억지로 내보낸 집 — 한 계절 몫(migrateShare)을 여러 번 나눠 눌러도 넘지 않게 */
+  movedOut?: { readonly season: number; readonly n: number }
 }
 
 export interface REdge {

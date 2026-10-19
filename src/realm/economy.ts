@@ -346,7 +346,9 @@ export function migrateLimit(r: Realm, faction: string, from: string, to: string
   const b = r.nodes[to]
   if (a === undefined || b === undefined || a.owner !== faction || b.owner !== faction || a.kind === 'sodo' || b.kind === 'sodo') return 0
   if (migratePath(r, faction, from, to) === null) return 0
-  const share = Math.floor(a.hh * R.migrateShare)
+  // 한 계절 몫은 계절 처음의 집 기준 — 이미 내보낸 만큼 뺀다 (형: "최대로 해서 옮기기 적용했는데 왜 더 옮겨지는거임? 2개씩 계속 쌓임")
+  const sent = a.movedOut?.season === r.season ? a.movedOut.n : 0
+  const share = Math.floor((a.hh + sent) * R.migrateShare) - sent
   const grain = R.migrateGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.migrateGrain) : Infinity
   return Math.max(0, Math.min(share, grain))
 }
@@ -362,6 +364,7 @@ export function migrateHouses(r: Realm, o: Extract<Order, { kind: 'migrate' }>, 
   const b = r.nodes[o.to]!
   a.hh -= o.n
   b.hh += o.n
+  a.movedOut = { season: r.season, n: (a.movedOut?.season === r.season ? a.movedOut.n : 0) + o.n }
   stockOf(r, o.faction).grain -= migrateCost(o.n).grain
   const until = r.season + P.realm.migrateCalm
   a.uprooted = Math.max(a.uprooted ?? -1, until)
@@ -398,11 +401,14 @@ export function autoFlows(r: Realm, faction: string, fought: ReadonlySet<string>
   const edges = Object.keys(r.edges).sort().map((id) => r.edges[id]!)
   for (const src of mine) {
     if (src.hh <= 0 || crowd(src.id) <= 1) continue
+    // 이번 계절 억지로 옮긴 고을은 저절로 다시 건드리지 않는다
+    if ((src.uprooted ?? -1) >= r.season) continue
     let best: string | null = null
     for (const ed of edges) {
       const nx = ed.a === src.id ? ed.b : ed.b === src.id ? ed.a : null
       if (nx === null || !hh.has(nx) || blockedWhy(ed, season) !== null) continue
       if (homeRoom(r.nodes[nx]!) <= 0 || fought.has(nx) || threatened(r, nx, faction)) continue
+      if ((r.nodes[nx]!.uprooted ?? -1) >= r.season) continue
       if (crowd(nx) > crowd(src.id) - R.migrateAutoGap) continue
       if (best === null || crowd(nx) < crowd(best) || (crowd(nx) === crowd(best) && nx < best)) best = nx
     }

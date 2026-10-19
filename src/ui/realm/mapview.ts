@@ -181,7 +181,7 @@ export function mapHtml(
   const sw = RA.nodeScale < 1 ? 0.6 : 1
   // 같은 골짜기를 따라가는 길이 한 줄로 포개지지 않게 서로 밀어 둔다 (mapgeo.separatedRoutes — 판마다 한 번)
   const allEdges = Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))
-  const sep = separatedRoutes(`${region}:${W}x${H}:${allEdges.length}`, allEdges.map((ed) => [ed.id, routePoints(region, ed, px(ed.a), px(ed.b), W, H)] as const), 12 * sw, RA.terrR * 0.4)
+  const sep = separatedRoutes(`${region}:${W}x${H}:${allEdges.length}`, allEdges.map((ed) => [ed.id, routePoints(region, ed, px(ed.a), px(ed.b), W, H)] as const), 14 * sw, RA.terrR * 0.15)
   const route = (ed: REdge): Pt[] => sep.get(ed.id) ?? routePoints(region, ed, px(ed.a), px(ed.b), W, H)
   svg += `<g class="ly-roads">` // 보기 켜고 끄기 (app 의 .layers) — 길
   for (const ed of Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))) {

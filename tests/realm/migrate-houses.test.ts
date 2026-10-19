@@ -104,4 +104,17 @@ describe('이주', () => {
     assert.ok(g.why.includes('crowded'))
     assert.ok(g.per / n.hh < calm)
   })
+  it('억지 이주 — 한 계절 몫은 나눠 눌러도 넘지 않는다 · 억지로 옮긴 고을은 저절로 다시 안 건드린다 (형: "2개씩 계속 쌓임")', () => {
+    const r = byeonhanMini(3)
+    const [f, a, b] = pairOf(r)
+    r.stock[f]!.grain = 100000
+    const start = r.nodes[a]!.hh
+    const max = migrateLimit(r, f, a, b)
+    let p = planned(r, [{ kind: 'migrate', faction: f, from: a, to: b, n: max }])
+    assert.equal(p.nodes[a]!.hh, start - max)
+    assert.equal(migrateLimit(p, f, a, b), 0, '다 썼으면 더 못 보낸다')
+    p = planned(r, [{ kind: 'migrate', faction: f, from: a, to: b, n: max }, { kind: 'migrate', faction: f, from: a, to: b, n: 2 }])
+    assert.equal(p.nodes[a]!.hh, start - max, '두 번째는 아무 일도 없다')
+    assert.deepEqual(autoFlows(p, f).filter((x) => x.from === a || x.to === a), [])
+  })
 })

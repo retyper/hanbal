@@ -238,7 +238,7 @@ export function separatedRoutes(key: string, routes: ReadonlyArray<readonly [str
     return { id, a: p[0]!, b: p[p.length - 1]!, out }
   })
   const cell = gap
-  for (let it = 0; it < 3; it++) {
+  for (let it = 0; it < 6; it++) {
     const grid = new Map<string, Array<[number, number, number]>>()
     pts.forEach((r, ri) => r.out.forEach(([x, y], pi) => {
       const k = `${Math.floor(x / cell)},${Math.floor(y / cell)}`
