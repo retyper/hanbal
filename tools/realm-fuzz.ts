@@ -31,7 +31,7 @@ const KIT: FrontKit = {
 const BRAINS: Brain[] = ['planner', 'reckless', 'random']
 
 let runs = 0
-for (const region of ['byeonhan-mini', 'yeongnam', 'south', 'world'] as RegionId[]) {
+for (const region of ['tutorial', 'byeonhan-mini', 'yeongnam', 'south', 'world'] as RegionId[]) {
   const nations = regionNations(region)
   for (let seed = 1; seed <= SEEDS; seed++) {
     const as = nations[(seed * 7) % nations.length]!

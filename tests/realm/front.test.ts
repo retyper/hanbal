@@ -33,10 +33,11 @@ describe('판의 앞과 끝', () => {
     assert.ok(!titleHtml(KIT, r, null).includes('continue'))
   })
 
-  it('판 고르기 넷 · 이기는 도읍 수는 판정과 같은 값', () => {
-    assert.equal(BOARDS.length, 4)
+  it('판 고르기 다섯(배우는 판이 맨 위) · 이기는 도읍 수는 판정과 같은 값', () => {
+    assert.equal(BOARDS.length, 5)
+    assert.equal(BOARDS[0]!.id, 'tutorial')
     const h = boardHtml(KIT, false)
-    for (const b of BOARDS) assert.ok(h.includes(`data-v="${b.id}"`) && h.includes(`도읍 ${winNeed(b.id)}곳`))
+    for (const b of BOARDS) assert.ok(h.includes(`data-v="${b.id}"`) && (b.id === 'tutorial' || h.includes(`도읍 ${winNeed(b.id)}곳`)))
     // 도읍을 winNeed 만큼 쥐면 checkOutcome 이 이김
     const r = startYeongnam(2, 'saro')
     const caps = Object.values(r.factions).map((f) => f.capital).filter((c) => c !== r.factions['saro']!.capital)

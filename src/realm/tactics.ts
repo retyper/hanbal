@@ -41,6 +41,8 @@ export interface Side {
   readonly seen: boolean
   /** 사로잡기 가산 (저격 발 묶음 …) */
   readonly captureBonus?: number
+  /** 배우는 판 — sure 면 이쪽 사로잡기는 반드시 되고, never 면 아예 못 한다 */
+  readonly capture?: 'sure' | 'never'
   /** 맡겼을 때의 성향 — 겁 많은 장수는 일찍 물러난다 */
 }
 
@@ -156,7 +158,8 @@ function shareOf(a: Side, d: Side, st: State): number {
  */
 export function captureChance(me: Side, foe: Side, myN: number, foeN: number, foeM: number, edge: number, foeHurt: boolean): number {
   const R = P.realm
-  if (foe.hero === null) return 0
+  if (foe.hero === null || me.capture === 'never') return 0
+  if (me.capture === 'sure') return 1
   let c = R.tacCapBase + R.tacCapPerLoss * (1 - foeN) + R.tacCapEdge * (edge - 0.5)
   c += R.tacCapMorale * Math.max(0, 1 - foeM / Math.max(0.05, foe.morale))
   c += R.tacCapPerMu * ((me.hero?.mu ?? 3) - foe.hero.mu)

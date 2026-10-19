@@ -15,6 +15,7 @@ import { placeOf, worldGeoOf } from './regions/index.ts'
  */
 export const REGION_ART: Readonly<Record<RegionId, { dir: string; ext: string; w: number; h: number; nodeScale: number; labelScale: number; zmax: number; terrR: number; terrBand: number }>> = {
   'byeonhan-mini': { dir: 'map', ext: 'jpg', w: 1264, h: 848, nodeScale: 1, labelScale: 1, zmax: 2.2, terrR: 150, terrBand: 90 },
+  tutorial: { dir: 'map', ext: 'jpg', w: 1264, h: 848, nodeScale: 1, labelScale: 1, zmax: 2.2, terrR: 150, terrBand: 90 }, // 배우는 판 — 변한 지도를 빌린다
   yeongnam: { dir: 'map-yeongnam', ext: 'webp', w: 1024, h: 765, nodeScale: 0.34, labelScale: 0.72, zmax: 4, terrR: 50, terrBand: 28 },
   // 삼한 남부 — 조각 넷을 이은 그림(ui/realm/worldmap.ts 가 합친다). 크기는 조각 눈금(1024px = 경도 2.9° · 765px = 위도 2.0°)으로 경도 5.5° × 위도 3.75°
   south: { dir: 'map-world', ext: 'webp', w: 1942, h: 1434, nodeScale: 0.2, labelScale: 0.6, zmax: 6, terrR: 52, terrBand: 28 },
