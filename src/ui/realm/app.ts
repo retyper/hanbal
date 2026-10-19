@@ -182,7 +182,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   style.textContent = APP_CSS + TINT_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS + HERO_CSS + GROW_CSS + FRONT_CSS.replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
-  root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="legend"></div><div class="zbtns"><button data-act="zin">＋</button><button data-act="zout">－</button></div><button class="next" data-act="next"></button><div class="selbar"></div><div class="roadkey"></div>`
+  root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="legend"></div><div class="zbtns"><button data-act="zin">＋</button><button data-act="zout">－</button></div><button class="next" data-act="next"></button><div class="selbar"></div><div class="roadkey"></div><button class="homebtn" data-act="home">우리 땅</button>`
     + `<nav class="tabs"></nav><div class="back" data-act="close"></div><section class="sheet"></section><div class="modal"></div><div class="plbox"></div>`
   const $ = (sel: string): HTMLElement => root.querySelector<HTMLElement>(sel)!
   const zoom = attachZoom($('.mapwrap'))
@@ -1778,6 +1778,23 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         sheet = { kind: 'diplo' }
         paint()
         requestAnimationFrame(() => $('.sheet').querySelector<HTMLElement>(d['act'] === 'compose-go' ? '.trade' : `[data-to="${d['to']}"]`)?.scrollIntoView({ block: 'center' }))
+        return
+      }
+      case 'home': {
+        // 우리 도읍으로 지도를 옮긴다 (형: "내나라가 지도상에서 정확히 어딘지 가늠이 안됨")
+        const wrap = $('.mapwrap')
+        const cap = realm !== null ? realm.factions[me()]?.capital : undefined
+        const el = cap !== undefined ? wrap.querySelector<HTMLElement>(`.nd[data-node="${cap}"]`) : null
+        const map = wrap.querySelector<HTMLElement>('.map')
+        // 지도 끝 너머(구름 그림이 삐져나온 자리)까지 밀지 않는다
+        const cl = (v: number, max: number): number => Math.max(0, Math.min(v, max))
+        if (el !== null && map !== null) {
+          wrap.scrollTo({
+            left: cl(map.offsetLeft + el.offsetLeft - wrap.clientWidth / 2, map.offsetLeft + map.offsetWidth - wrap.clientWidth),
+            top: cl(map.offsetTop + el.offsetTop - wrap.clientHeight / 2, map.offsetTop + map.offsetHeight - wrap.clientHeight),
+            behavior: 'smooth',
+          })
+        }
         return
       }
       case 'jump': $('.sheet').querySelector(`#${d['to']}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }); return

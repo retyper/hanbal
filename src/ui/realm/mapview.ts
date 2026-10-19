@@ -14,7 +14,8 @@ import { knows } from '../../realm/discovery.ts'
 import { visibleRange } from '../../realm/intel.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
 import type { EdgeKind, NodeKind, Realm, REdge, RegionId } from '../../realm/types.ts'
-import { separatedRoutes, ferryAt, landClipSvg, midOf, polyPath, provinceCells, riversSvg, routePoints, smoothPath, trimPolyline, type Pt } from './mapgeo.ts'
+import { separatedRoutes, ferryAt, landClipSvg, midOf, naturalLines, riversSvg, routePoints, smoothPath, trimPolyline, type Pt } from './mapgeo.ts'
+import { territory, type Territory } from './territory.ts'
 import { worldMapUrl } from './worldmap.ts'
 
 /** 변한 판 지도 바탕의 크기 (map/*.jpg) — CSS 의 기본 비율. 판마다의 크기는 REGION_ART (영남 판 1024×765) */
@@ -132,9 +133,8 @@ export function mapHtml(
     const p = pos(id) ?? [0.5, 0.5]
     return [p[0] * W, p[1] * H]
   }
-  /** 땅빛 — 고을 하나가 물들이는 둘레 (지도 좌표) · 같은 나라 고을 사이 띠의 굵기 */
+  /** 땅빛 — 고을 하나가 물들이는 둘레 (지도 좌표) */
   const TERRITORY_R = RA.terrR
-  const TERRITORY_BAND = RA.terrBand
   /** 화살·글씨 굵기 — 작은 기호에 맞춘다 */
   const lw = RA.nodeScale < 1 ? 0.65 : 1
   const target = new Map(targets.map((t) => [t.node, t]))
@@ -160,32 +160,19 @@ export function mapHtml(
     svg += `<radialGradient id="rm-t-${f}"><stop offset="0" stop-color="${a.color}" stop-opacity=".72"/>`
     svg += `<stop offset=".65" stop-color="${a.color}" stop-opacity=".45"/><stop offset="1" stop-color="${a.color}" stop-opacity="0"/></radialGradient>`
   }
-  const cellsOn = region === 'yeongnam' || worldGeoOf(region) !== null
   // 두 끝을 다 본 길은 그 길을 따라 띠로 밝다 (누가 걸어 본 길)
   const corridors = r.known === undefined ? [] : Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))
     .filter((ed) => seen(ed.a) && seen(ed.b))
     .map((ed) => smoothPath(routePoints(region, ed, px(ed.a), px(ed.b), W, H)))
   const fog = r.known !== undefined ? fogSvg(r, me, region, W, H, TERRITORY_R, vis, isFresh, corridors, art) : null
-  svg += `${landClipSvg(region, W, H)}${fog?.defs ?? ''}</defs>`
-  if (cellsOn) svg += provincesSvg(r, region, W, H, TERRITORY_R, dim, focus, seen)
-  else svg += `<g class="terr">`
-  // 땅빛 (변한 판) — 같은 나라 고을끼리 띠로 잇고, 고을마다 둥글게 번진다
-  if (!cellsOn) for (const ed of Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))) {
-    const oa = r.nodes[ed.a]?.owner
-    if (oa === null || oa === undefined || oa !== r.nodes[ed.b]?.owner || !seen(ed.a) || !seen(ed.b) || ed.kind === 'sea') continue
-    const [x1, y1] = px(ed.a)
-    const [x2, y2] = px(ed.b)
-    const c = FACTION_ART[oa]?.color ?? '#ccc'
-    svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${TERRITORY_BAND}" stroke-linecap="round" opacity="${dim(oa) ? 0.06 : focus === oa ? 0.42 : 0.24}"/>`
-  }
-  if (!cellsOn) {
-    for (const n of Object.values(r.nodes).sort((x, y) => (x.id < y.id ? -1 : 1))) {
-      if (n.owner === null || !seen(n.id) || FACTION_ART[n.owner] === undefined) continue
-      const [x, y] = px(n.id)
-      svg += `<circle cx="${x}" cy="${y}" r="${TERRITORY_R}" fill="url(#rm-t-${n.owner})" opacity="${dim(n.owner) ? 0.15 : 1}"/>`
-    }
-    svg += `</g>`
-  }
+  const landClip = landClipSvg(region, W, H)
+  // 우리 땅의 무늬 — 금빛 빗금이 은은하게 (형: "내나라가 지도상에서 정확히 어딘지 가늠이 안됨")
+  const hatch = Math.round(TERRITORY_R * 0.16)
+  svg += `<pattern id="rm-mine" patternUnits="userSpaceOnUse" width="${hatch}" height="${hatch}" patternTransform="rotate(35)">`
+    + `<rect width="${hatch}" height="${hatch}" fill="#ffe7a8" opacity=".16"/><path d="M0 0V${hatch}" stroke="#fff3c8" stroke-width="${Math.max(1, hatch * 0.18).toFixed(1)}" opacity=".5"/></pattern>`
+  svg += `${landClip}${fog?.defs ?? ''}</defs>`
+  // 땅빛 — 고을마다의 땅을 산·강을 따라 가르고(territory.ts) 주인 색으로
+  svg += provincesSvg(r, region, W, H, TERRITORY_R, dim, focus, seen, me, landClip !== '')
   // 강 — 또렷하게 (영남 판)
   svg += riversSvg(region, W, H)
   // 모르는 땅 — 강·땅빛 위, 길 밑 (아는 고을 사이의 길은 늘 보인다)
@@ -419,49 +406,59 @@ function ferrySvg([x, y]: Pt, k: number): string {
 }
 
 /**
- * 고을마다의 땅을 주인 색으로 — 같은 나라 사이는 옅은 점선, 다른 나라 사이는 짙은 금. 뭍 밖은 잘라 낸다 (영남 판).
- * 땅 모양은 판마다 한 번만 셈하고(mapgeo.provinceCells) 여기서는 색만 칠한다.
+ * 고을마다의 땅을 주인 색으로 — 같은 나라 사이는 옅은 점선, 다른 나라 사이는 짙은 금, 강을 따라 갈린 금은 강과 겹친다.
+ * **우리 땅**은 금빛 빗금을 깔고 둘레를 짙은 띠 위 금빛 겹선으로 두른다 (형: "내나라가 지도상에서 정확히 어딘지 가늠이 안됨").
+ * 땅 모양은 판마다 한 번만 셈하고(territory.ts) 여기서는 색만 칠한다. 뭍이 있는 판은 뭍 밖을 잘라 낸다.
  */
 function provincesSvg(
   r: Realm, region: RegionId, W: number, H: number, terrR: number,
-  dim: (owner: string | null) => boolean, focus: string | null, seen: (id: string) => boolean,
+  dim: (owner: string | null) => boolean, focus: string | null, seen: (id: string) => boolean, me: string, clipped: boolean,
 ): string {
-  const { nodes, cells } = cellsOf(r, region, W, H, terrR)
-  const clip = ' clip-path="url(#rm-land)"'
+  const { nodes, t } = terrOf(r, region, W, H, terrR)
+  const clip = clipped ? ' clip-path="url(#rm-land)"' : ''
+  const k = Math.max(1, W / 1100) // 굵기 — 그림 폭에 맞춘다
   let fill = ''
+  let mine = ''
   let lines = ''
-  for (const [i, c] of cells.entries()) {
-    if (!seen(nodes[i]!.id)) continue // 모르는 땅은 안개가 덮는다
+  let gold = ''
+  for (const [i, d] of t.fills.entries()) {
+    if (d === '' || !seen(nodes[i]!.id)) continue // 모르는 땅은 안개가 덮는다
     const o = nodes[i]!.owner
-    const col = o !== null ? (FACTION_ART[o]?.color ?? '#ccc') : null
-    if (col !== null) fill += `<path d="${polyPath(c.pts)}" fill="${col}" opacity="${dim(o) ? 0.06 : focus === o ? 0.46 : 0.3}"/>`
-    for (let k = 0; k < c.pts.length; k++) {
-      const j = c.nb[k]!
-      if (j !== -1 && j < i) continue // 맞닿은 금은 한 번만
-      const a = c.pts[k]!
-      const b = c.pts[(k + 1) % c.pts.length]!
-      const seg = `M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`
-      if (j === -1) {
-        if (col !== null) lines += `<path d="${seg}" stroke="${col}" stroke-width="1.6" opacity="${dim(o) ? 0.1 : 0.55}"/>`
-        continue
-      }
-      const o2 = nodes[j]!.owner
-      if (o === null && o2 === null) continue
-      if (o === o2) lines += `<path d="${seg}" stroke="${col}" stroke-width="1" opacity="${dim(o) ? 0.08 : 0.35}" stroke-dasharray="3 4"/>`
-      else lines += `<path d="${seg}" stroke="#2a1d10" stroke-width="2.2" opacity=".55"/>`
-    }
+    if (o === null) continue
+    fill += `<path d="${d}" fill="${FACTION_ART[o]?.color ?? '#ccc'}" opacity="${dim(o) ? 0.06 : focus === o ? 0.46 : o === me ? 0.4 : 0.28}"/>`
+    if (o === me && !dim(o)) mine += d
   }
-  return `<g class="terr"${clip}>${fill}<g fill="none" stroke-linecap="round">${lines}</g></g>`
+  for (const e of t.edges) {
+    if (!seen(nodes[e.i]!.id) && (e.j < 0 || !seen(nodes[e.j]!.id))) continue
+    const o = nodes[e.i]!.owner
+    const o2 = e.j >= 0 ? nodes[e.j]!.owner : null
+    if (o === null && o2 === null) continue
+    const col = FACTION_ART[(o ?? o2)!]?.color ?? '#ccc'
+    if (o === o2) lines += `<path d="${e.d}" stroke="${col}" stroke-width="${(1 * k).toFixed(1)}" opacity="${dim(o) ? 0.08 : 0.4}" stroke-dasharray="${3 * k} ${4 * k}"/>`
+    else if (e.j < 0) lines += `<path d="${e.d}" stroke="${col}" stroke-width="${(1.8 * k).toFixed(1)}" opacity="${dim(o) ? 0.1 : 0.6}"/>`
+    else lines += `<path d="${e.d}" stroke="#2a1d10" stroke-width="${(2.4 * k).toFixed(1)}" opacity=".6"/>`
+    // 우리 땅의 둘레 — 짙은 띠 위에 금빛
+    if ((o === me) !== (o2 === me)) gold += e.d
+  }
+  let h = `<g class="terr"${clip}>${fill}`
+  if (mine !== '') h += `<path d="${mine}" fill="url(#rm-mine)"/>`
+  h += `<g fill="none" stroke-linecap="round" stroke-linejoin="round">${lines}`
+  if (gold !== '') h += `<path d="${gold}" stroke="#2a1d10" stroke-width="${(6.5 * k).toFixed(1)}" opacity=".55"/><path class="mine-edge" d="${gold}" stroke="#ffd27a" stroke-width="${(3.2 * k).toFixed(1)}"/>`
+  return h + `</g></g>`
 }
 
-/** 판의 고을(id 순)과 그 땅 조각 — 고을 자리는 안 바뀌니 판마다 한 번만 셈한다 (mapgeo 의 캐시) */
-function cellsOf(r: Realm, region: RegionId, W: number, H: number, terrR: number): { nodes: Realm['nodes'][string][]; cells: ReturnType<typeof provinceCells> } {
+/**
+ * 판의 고을(id 순)과 그 땅 — 산·강·뭍을 따라 가른다 (territory.ts). 고을 자리는 안 바뀌니 판마다 한 번만 셈한다.
+ * 뭍 자료가 없는 판(변한 축소판)은 바다로 번지지 않게 퍼지는 끝을 줄인다.
+ */
+function terrOf(r: Realm, region: RegionId, W: number, H: number, terrR: number): { nodes: Realm['nodes'][string][]; t: Territory } {
   const nodes = Object.values(r.nodes).sort((x, y) => (x.id < y.id ? -1 : 1))
-  const pts = nodes.map((n) => {
+  const nat = naturalLines(region, W, H)
+  const seeds = nodes.map((n) => {
     const p = nodePos(region, n.id) ?? [0.5, 0.5]
-    return [p[0] * W, p[1] * H] as const
+    return { x: p[0] * W, y: p[1] * H, size: CELL_SIZE[n.kind] }
   })
-  return { nodes, cells: provinceCells(`${region}:${nodes.length}`, pts, nodes.map((n) => CELL_SIZE[n.kind]), terrR * 1.5) }
+  return { nodes, t: territory(`${region}:${W}x${H}:${nodes.length}`, W, H, terrR * (nat.land === null ? 1.15 : 1.5), { seeds, ...nat }) }
 }
 
 // ───────── 넓어지는 지도 — 모르는 땅 (발견, docs/realm/WORLD-MAP.md §2 · 2026-10-19)
@@ -498,17 +495,21 @@ function fogSvg(
   r: Realm, me: string, region: RegionId, W: number, H: number, terrR: number, vis: ReadonlySet<string>, fresh: (id: string) => boolean,
   corridors: readonly string[], art: string,
 ): { defs: string; body: string; words: string } {
-  const { nodes, cells } = cellsOf(r, region, W, H, terrR)
+  const { nodes, t } = terrOf(r, region, W, H, terrR)
   const blur = Math.round(terrR * 0.3)
   let holes = ''
-  for (const [i, c] of cells.entries()) {
+  for (const [i, d] of t.fills.entries()) {
     const id = nodes[i]!.id
     if (!vis.has(id)) continue
-    holes += `<path d="${polyPath(c.pts)}"${fresh(id) ? ' class="fresh"' : ''}/>`
+    const p = nodePos(region, id)
+    // 땅을 못 받은 고을(이웃에 다 먹힌 작은 자리)도 제 둘레는 보인다
+    const dot = p !== undefined ? `M${(p[0] * W - terrR * 0.5).toFixed(1)} ${(p[1] * H).toFixed(1)}a${(terrR * 0.5).toFixed(1)} ${(terrR * 0.5).toFixed(1)} 0 1 0 ${terrR.toFixed(1)} 0a${(terrR * 0.5).toFixed(1)} ${(terrR * 0.5).toFixed(1)} 0 1 0 ${(-terrR).toFixed(1)} 0Z` : ''
+    holes += `<path d="${d}${dot}"${fresh(id) ? ' class="fresh"' : ''}/>`
   }
   for (const d of corridors) holes += `<path d="${d}" fill="none" stroke="#000" stroke-width="${Math.round(terrR * 1.6)}" stroke-linecap="round" stroke-linejoin="round"/>`
   const tile = Math.round(Math.min(W, H) * 0.42)
-  const defs = `<filter id="rm-fog-blur" x="-5%" y="-5%" width="110%" height="110%">`
+  // 거르개 자리는 판 전체 — 본 땅이 좁으면 ±5% 자리 밖으로 번진 먹이 잘려 곧은 금이 생겼다
+  const defs = `<filter id="rm-fog-blur" filterUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}">`
     + `<feTurbulence type="fractalNoise" baseFrequency="${(3 / terrR).toFixed(4)}" numOctaves="2" seed="11" result="n"/>`
     + `<feDisplacementMap in="SourceGraphic" in2="n" scale="${Math.round(terrR * 0.9)}" xChannelSelector="R" yChannelSelector="G" result="d"/>`
     + `<feGaussianBlur in="d" stdDeviation="${blur}"/></filter>`
