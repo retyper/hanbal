@@ -43,6 +43,7 @@ function setRelation(r: Realm, a: string, b: string, state: Relation['state'], u
   if (prev.favor !== undefined) next.favor = prev.favor
   if (state === 'ally' && prev.pledges !== undefined && prev.pledges.length > 0) next.pledges = prev.pledges
   if (prev.took !== undefined) next.took = prev.took
+  if (prev.vassal !== undefined && state !== 'war') next.vassal = prev.vassal // 칼을 뽑으면 조공은 끊긴다
   ;(r.relations ??= {})[pairKey(a, b)] = next
   if (prev.state !== state) lines.push({ kind: 'relation', a: a < b ? a : b, b: a < b ? b : a, state, ...(cause?.by !== undefined ? { by: cause.by } : {}), ...(cause !== undefined ? { why: cause.why } : {}) })
   if ((state === 'truce' || state === 'ally') && (prev.state === 'war' || prev.state === 'neutral')) recall(r, a, b, lines)
@@ -226,6 +227,14 @@ function lenderArmy(r: Realm, lender: string, to: string, node: string): string 
 }
 
 const STEP: Readonly<Record<Relation['state'], Relation['state']>> = { ally: 'truce', truce: 'neutral', neutral: 'war', war: 'war' }
+
+/** `vassal` 이 `lord` 에게 tributeSeasons 동안 조공하는 사이가 된다 (맹주의 길 — suzerain.ts) */
+export function makeVassal(r: Realm, vassal: string, lord: string): void {
+  if (vassal === lord || r.factions[vassal] === undefined || r.factions[lord] === undefined) return
+  const key = pairKey(vassal, lord)
+  const rel = ((r.relations ??= {})[key] ??= { state: 'neutral', until: null })
+  rel.vassal = { lord, until: r.season + P.realm.tributeSeasons }
+}
 
 /** 두 나라 사이가 한 칸 나빠진다 (동맹→화친→중립→전쟁) — 공작이 들키거나 이간이 먹힐 때 (plots.ts) */
 export function worsen(r: Realm, a: string, b: string, lines: ReportLine[], cause?: { by?: string; why: RelationWhy }): void {
@@ -510,6 +519,16 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
     // 따라가는 장수 — 그 장수의 매력·특성이 걸리고, 이 계절엔 자리를 비운다
     const escort = o.hero !== undefined && canEscort(r, o.from, o.hero) ? o.hero : undefined
     if (escort !== undefined) r.heroes[escort]!.awayUntil = r.season
+    // 싸우는 나라에 이름난 장수를 보내면 붙잡힐 수 있다 (VICTORY §2-2 — 외교관 하나가 너무 중요해지지 않게)
+    if (escort !== undefined && relationOf(r, o.from, o.to).state === 'war' && roll(r.seed, r.season, `envoyHeld:${o.from}:${o.to}`) < R.envoyHeldWar) {
+      const h = r.heroes[escort]!
+      h.status = 'captive'
+      h.captor = o.to
+      h.at = null
+      h.post = null
+      lines.push({ kind: 'envoyHeld', from: o.from, to: o.to, hero: escort })
+      continue
+    }
     const p = envoyTrueChance(r, o.from, o.to, o.ask, give, take, escort)
     let accepted = p >= 1 || roll(r.seed, r.season, `envoy:${o.from}:${o.to}`) < p
     if (accepted && o.ask === 'trade' && !canPay(r, o.to, take)) accepted = false // 받는 쪽이 내놓을 것이 없으면 안 선다
@@ -542,6 +561,9 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
       case 'tribute': {
         const s = stockOf(r, o.to)
         pay(r, o.to, o.from, { grain: Math.min(take.grain, s.grain), iron: Math.min(take.iron, s.iron) })
+        // 바치기로 했으니 조공국이다 — 칼을 거두고 화친한다
+        makeVassal(r, o.to, o.from)
+        if (relationOf(r, o.from, o.to).state !== 'ally') setRelation(r, o.from, o.to, 'truce', r.season + R.truceSeasons, lines, { by: o.to, why: 'envoy' })
         break
       }
       case 'gift':
@@ -734,12 +756,14 @@ export function resolveAnswers(r: Realm, orders: readonly Order[], lines: Report
         case 'tribute': {
           const s = stockOf(r, a.from)
           pay(r, a.from, a.to, { grain: Math.min(a.give.grain, s.grain), iron: Math.min(a.give.iron, s.iron) })
+          makeVassal(r, a.from, a.to) // 바치겠다는 나라 — 받아 주면 우리 조공국
           if (relationOf(r, a.from, a.to).state !== 'ally') setRelation(r, a.from, a.to, 'truce', r.season + R.truceSeasons, lines)
           break
         }
         case 'demand':
           if (canPay(r, a.to, a.take)) {
             pay(r, a.to, a.from, a.take)
+            makeVassal(r, a.to, a.from) // 요구를 들어주면 그 나라의 조공국이 된다
             if (relationOf(r, a.from, a.to).state !== 'ally') setRelation(r, a.from, a.to, 'truce', r.season + R.truceSeasons, lines)
           } else yes = false
           break

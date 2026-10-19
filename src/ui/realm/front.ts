@@ -248,7 +248,11 @@ export function endingHtml(k: FrontKit, r: Realm, history: History): string {
   const pickd = ranked.slice(0, 9).sort((a, b) => a.s - b.s)
   const shots = ranked.slice(0, SLOTS.length).sort((a, b) => a.s - b.s)
   const years = Math.floor((r.outcome?.season ?? r.season) / 4) + 1
-  const title = win ? (all ? HEAD_ALL[region] : HEAD[region]) : '도읍이 무너졌다'
+  // 어느 길로 끝났나 — 맹주(진왕)면 제목이 다르다 (VICTORY §1-2)
+  const pact = r.outcome?.path === 'suzerain'
+  const title = win
+    ? (all ? HEAD_ALL[region] : pact ? '진왕이 됐다 — 여러 나라 군장이 우리를 받들었다' : HEAD[region])
+    : pact ? `${name(r.outcome?.by ?? '')}이(가) 진왕이 됐다` : '도읍이 무너졌다'
   let h = `<div class="mcard end front-end" data-act="rep-fast"><div class="clg${win ? '' : ' lose'}">`
   shots.forEach((e, i) => {
     const [x, y, w, rot] = SLOTS[i]!
@@ -256,7 +260,7 @@ export function endingHtml(k: FrontKit, r: Realm, history: History): string {
     h += `${e.em !== undefined ? k.emblem(e.em, 'cpem') : ''}<figcaption><i>${k.esc(seasonLabel(e.s))}</i>${k.esc(e.t)}</figcaption></figure>`
   })
   // 마지막 장 — 잔치(이김) · 가뭄(짐) 위로 제목
-  h += `<figure class="cp last" style="--i:${shots.length}"><img src="${k.art}event/${win ? 'event-festival' : 'event-sky-drought'}.jpg" alt=""><figcaption><b>${k.esc(title)}</b></figcaption></figure></div>`
+  h += `<figure class="cp last" style="--i:${shots.length}"><img src="${k.art}event/${win ? (pact ? 'event-eight-harbours' : 'event-festival') : pact ? 'event-outside-envoy' : 'event-sky-drought'}.jpg" alt=""><figcaption><b>${k.esc(title)}</b></figcaption></figure></div>`
   h += `<div class="after" style="--n:${shots.length + 1}">`
   h += `<p class="mute">${k.emblem(me, 'cem')}${k.esc(name(me))} · ${k.esc(seasonLabel(r.outcome?.season ?? r.season))}${win ? '' : ' — 여기까지였다'}</p>`
   h += `<div class="stats"><span><b>${years}</b>해</span><span><b>${capsHeld(r, me)}</b>도읍</span><span><b>${won}</b>이긴 싸움</span><span><b>${lost}</b>진 싸움</span>`
