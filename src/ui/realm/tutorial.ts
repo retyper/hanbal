@@ -41,8 +41,8 @@ export const TUT_STEPS: readonly TutStep[] = [
     hl: ['[data-act="tab"][data-tab="draft"]', '[data-act="draft"]'], done: (c) => has(c, 'draft'),
   },
   {
-    id: 'settle', text: '같은 판 아래 「개척」에서 빈땅 돌섬에 집을 보낸다. 사람이 살면 새 마을이 된다.',
-    hl: ['[data-act="jump"][data-to="sec-settle"]', '[data-act="settle"]', '.nd[data-node="wild-dolseom"]'], done: (c) => has(c, 'settle') || has(c, 'migrate'),
+    id: 'settle', text: '아래 「백성」을 열고 「개척」에서 빈땅 돌섬에 집을 보낸다. 군사가 아니라 농사지을 집이다. 사람이 살면 새 마을이 된다.',
+    hl: ['[data-act="tab"][data-tab="people"]', '[data-act="jump"][data-to="sec-settle"]', '[data-act="settle"]', '.nd[data-node="wild-dolseom"]'], done: (c) => has(c, 'settle') || has(c, 'migrate'),
   },
   {
     id: 'scout', text: '오른쪽 봉황 마을을 누르고 「척후를 여기로 보낸다」. 적 군세가 얼마인지 보인다.',

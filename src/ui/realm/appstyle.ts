@@ -350,4 +350,25 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .paths .pbar.iron i { background: linear-gradient(90deg, #5a6a7a, #a9c3dc); } .ap .paths .pbar.rite i { background: linear-gradient(90deg, #7a4a6a, #e0a0c8); }
 .ap .paths .flags { display: flex; gap: 2px; min-height: 18px; } .ap .paths .flags img { width: 18px; height: 18px; }
 .ap .paths .clock.rite i { border-color: #e0a0c8; } .ap .paths .clock.rite i.on { background: #e0a0c8; }
+/* 백성 — 보내는 곳 ⟶ 받는 곳을 좌우로 (형: "보낼곳 받을곳은 좌 우로 배치해야 직관적이지") */
+.ap .mv2 { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 6px; margin: 8px 0 6px; }
+.ap .mv3 { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; gap: 6px; margin: 8px 0 4px; }
+.ap .mvc { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 6px; border-radius: 12px; background: #2a2418; border: 1px solid #6a5434; text-align: center; min-width: 0; }
+.ap .mvc b { font-size: 14px; color: #f0d8b0; word-break: keep-all; } .ap .mvc .mute { font-size: 12px; }
+.ap .mvc img.mvi { width: 44px; height: 44px; } .ap .mvc .cbar { width: 90%; margin-top: 3px; }
+.ap .mvr { font-size: 11px; color: var(--mute); letter-spacing: .04em; }
+.ap .mvmid { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.ap .mvmid .mva { font-style: normal; font-size: 26px; line-height: 1; color: #e4b878; }
+.ap .mvcol { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ap .mvpick { display: flex; align-items: center; gap: 4px; padding: 5px 6px; border-radius: 10px; border: 1px solid #3a3426; background: #1f1c16; color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; text-align: left; word-break: keep-all; }
+.ap .mvpick.on { border-color: #e4b878; background: #3a2e1c; color: #ffe8c0; } .ap .mvpick img.mvs { width: 22px; height: 22px; flex: none; }
+.ap .row.mvq { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; } .ap .row.mvq .ar { font-style: normal; color: #e4b878; }
+.ap .row.mvq .nchip, .ap .mvq .nchip { display: inline-flex; padding: 1px 7px; border-radius: 9px; background: #2a2418; color: #d9a86a; font-size: 12.5px; font-weight: 700; }
+/* 군량 — 계절치 스테퍼 */
+.ap .ration { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0 2px; padding: 8px 10px; border-radius: 12px; background: #2a2418; border: 1px solid #6a5434; }
+.ap .ration img.rci { width: 26px; height: 26px; } .ap .ration b { font-size: 14px; }
+.ap .twoway { grid-template-columns: 1fr 1fr; } /* 백성 판은 개척·이주 두 칸 */
+/* 아래 탭이 여섯 — 폰 세로에서 글이 넘치지 않게 */
+.ap .tabs button { min-width: 0; } .ap .tabs button span { white-space: nowrap; }
+@media (max-width: 420px) { .ap .tabs button img.tic { width: 28px; height: 28px; } .ap .tabs button { font-size: 11.5px; } }
 `

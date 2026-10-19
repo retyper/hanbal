@@ -252,7 +252,11 @@ export interface March {
 export type Approach = 'road' | 'night' | 'ford' | 'ridge' | 'cliff'
 
 /** 챙길 군량 — 가볍게(곡식이 안 들지만 닿자마자 바닥 — 싸울 때 오래 못 버틴다) · 넉넉히(곡식이 든다) */
-export type Ration = 'light' | 'full'
+/**
+ * 군량 — 길 계절에 더해 챙기는 계절 수(0 = 길 계절만, 닿자마자 바닥). 옛 명령의 'light'·'full' 도 받는다 (0 · rationReserve)
+ * (형: "군량은 넉넉히랑 안듦 두개밖에 없는데 이거 기본수치로 주고 줄일수 있게 해야할듯")
+ */
+export type Ration = 'light' | 'full' | number
 
 /**
  * 싸움의 명령 (tactics.ts — 형: "포켓몬이나 가위바위보식 상성 · 포획시도는 유저가 직접" 2026-10-19)
