@@ -33,29 +33,29 @@ const NEW_NODES: RNode[] = [
   // ── 한강
   node('m-baekje-cap', '위례 도읍', 'capital', ['palisade'], 'baekje', 450, [127.12, 37.53]), // 하남 위례성 [설] — 『삼국사기』 백제본기 온조
   node('m-baekje-v', '한강 나루 마을', 'village', ['shallows'], 'baekje', 200, [126.92, 37.58]),
-  node('m-michuhol-cap', '미추홀 도읍', 'port', [], 'michuhol', 300, [126.68, 37.45]), // 인천 — 백제본기 비류
-  node('n-maek-cap', '맥 도읍', 'capital', ['high'], 'maek', 300, [127.73, 37.88]), // 춘천 — 지리지 "삭주는 본래 맥국"
+  node('m-michuhol-cap', '미추홀 도읍', 'port', ['palisade'], 'michuhol', 300, [126.68, 37.45]), // 인천 — 백제본기 비류
+  node('n-maek-cap', '맥 도읍', 'capital', ['palisade', 'high'], 'maek', 300, [127.73, 37.88]), // 춘천 — 지리지 "삭주는 본래 맥국"
   // ── 경기 남부 · 충청 (마한 북부)
   node('m-mokji-cap', '목지 도읍', 'capital', ['palisade'], 'mokji', 550, [127.17, 36.9]), // 천안 직산 [설] — 위서 목지국, 진왕의 자리
   node('m-mokji-v', '아산만 포구', 'port', [], 'mokji', 200, [126.95, 36.9]),
-  node('m-ungcheon-cap', '웅천 도읍', 'capital', ['high'], 'ungcheon', 350, [127.12, 36.46]), // 공주 — 지리지 "본래 백제 웅천"
-  node('m-sangdang-cap', '상당 도읍', 'capital', [], 'sangdang', 350, [127.49, 36.64]), // 청주 — 지리지 "본래 백제 상당"
+  node('m-ungcheon-cap', '웅천 도읍', 'capital', ['palisade', 'high'], 'ungcheon', 350, [127.12, 36.46]), // 공주 — 지리지 "본래 백제 웅천"
+  node('m-sangdang-cap', '상당 도읍', 'capital', ['palisade'], 'sangdang', 350, [127.49, 36.64]), // 청주 — 지리지 "본래 백제 상당"
   node('m-sangdang-iron', '국원 철광', 'ironMine', ['iron'], 'sangdang', 120, [127.93, 36.97]), // 충주 — 철이 난다
   node('m-sodo', '마한 소도', 'sodo', ['sodo'], null, 0, [127.05, 36.18]), // 위서 한조: 마한의 소도
   // ── 전라 (마한 남부)
   node('m-geonma-cap', '건마 도읍', 'capital', ['palisade'], 'geonma', 450, [126.96, 35.95]), // 익산 [설] — 위서 건마국 · 지리지 "금마저"
   node('m-geonma-port', '군산 포구', 'port', [], 'geonma', 150, [126.74, 35.97]),
-  node('m-wansan-cap', '완산 도읍', 'capital', [], 'wansan', 400, [127.15, 35.82]), // 전주 — 지리지 "본래 백제 완산"
-  node('m-gosaburi-cap', '고사부리 도읍', 'capital', [], 'gosaburi', 300, [126.84, 35.62]), // 정읍 고부 — 지리지 "본래 백제 고사부리"
+  node('m-wansan-cap', '완산 도읍', 'capital', ['palisade'], 'wansan', 400, [127.15, 35.82]), // 전주 — 지리지 "본래 백제 완산"
+  node('m-gosaburi-cap', '고사부리 도읍', 'capital', ['palisade'], 'gosaburi', 300, [126.84, 35.62]), // 정읍 고부 — 지리지 "본래 백제 고사부리"
   node('m-balla-cap', '발라 도읍', 'capital', ['palisade'], 'balla', 450, [126.72, 35.02]), // 나주 — 지리지 "본래 백제 발라" (영산강 큰 무덤의 고장)
   node('m-balla-port', '목포 포구', 'port', [], 'balla', 150, [126.47, 34.8]),
-  node('m-mujin-cap', '무진 도읍', 'capital', ['high'], 'mujin', 350, [126.92, 35.16]), // 광주 — 지리지 "본래 백제 무진주"
-  node('m-gampyeong-cap', '감평 도읍', 'capital', [], 'gampyeong', 300, [127.48, 34.98]), // 순천 — 지리지 "본래 백제 감평"
+  node('m-mujin-cap', '무진 도읍', 'capital', ['palisade', 'high'], 'mujin', 350, [126.92, 35.16]), // 광주 — 지리지 "본래 백제 무진주"
+  node('m-gampyeong-cap', '감평 도읍', 'capital', ['palisade'], 'gampyeong', 300, [127.48, 34.98]), // 순천 — 지리지 "본래 백제 감평"
   node('m-gampyeong-port', '여수 포구', 'port', [], 'gampyeong', 120, [127.66, 34.97]),
-  node('m-goryong-cap', '고룡 도읍', 'capital', ['high'], 'goryong', 300, [127.39, 35.41]), // 남원 — 지리지 "본래 백제 고룡"
+  node('m-goryong-cap', '고룡 도읍', 'capital', ['palisade', 'high'], 'goryong', 300, [127.39, 35.41]), // 남원 — 지리지 "본래 백제 고룡"
   // ── 동해 북쪽
   node('n-siljik-cap', '실직 도읍', 'capital', ['palisade'], 'siljik', 300, [129.14, 37.44]), // 삼척 — 신라본기 파사이사금
-  node('n-haseulla-cap', '하슬라 읍락', 'capital', [], 'haseulla', 300, [128.88, 37.75]), // 강릉 — 지리지 "하서량(하슬라)", 동예의 남쪽 읍락
+  node('n-haseulla-cap', '하슬라 읍락', 'capital', ['palisade'], 'haseulla', 300, [128.88, 37.75]), // 강릉 — 지리지 "하서량(하슬라)", 동예의 남쪽 읍락
   // ── 빈땅
   wild('w-byeokgol', '벽골 들', [], 300, [126.88, 35.8]), // 김제 벽골제
   wild('w-jinan', '진안 고원', ['high', 'pines'], 200, [127.42, 35.79]),
@@ -151,7 +151,7 @@ const NEW_STARTS: readonly NationStart[] = [
   { faction: { id: 'gosaburi', name: '고사부리국', capital: 'm-gosaburi-cap', equip: 'bronze' }, mind: 'cautious', stock: st(220, 0, { wood: 25 }) },
   { faction: { id: 'balla', name: '발라국', capital: 'm-balla-cap', equip: 'bronze' }, mind: 'greedy', stock: st(300, 5, { salt: 15, wood: 25 }) },
   { faction: { id: 'mujin', name: '무진국', capital: 'm-mujin-cap', equip: 'bronze' }, mind: 'cautious', stock: st(240, 0, { wood: 35 }) },
-  { faction: { id: 'gampyeong', name: '감평국', capital: 'm-gampyeong-cap', equip: 'bronze' }, mind: 'greedy', stock: st(200, 5, { salt: 15, wood: 30 }) },
+  { faction: { id: 'gampyeong', name: '감평국', capital: 'm-gampyeong-cap', equip: 'bronze' }, mind: 'cautious', stock: st(200, 5, { salt: 15, wood: 30 }) },
   { faction: { id: 'goryong', name: '고룡국', capital: 'm-goryong-cap', equip: 'bronze' }, mind: 'cautious', stock: st(200, 0, { wood: 40 }) },
   { faction: { id: 'maek', name: '맥국', capital: 'n-maek-cap', equip: 'bronze' }, mind: 'greedy', stock: st(200, 0, { wood: 35, horse: 4 }) },
   { faction: { id: 'siljik', name: '실직국', capital: 'n-siljik-cap', equip: 'bronze' }, mind: 'cautious', stock: st(200, 5, { salt: 15, wood: 30 }) },
@@ -219,6 +219,11 @@ const NEW_ARMIES: Army[] = [
   a('a-maek', 'maek', 'maek-1', 'n-maek-cap', { spear: 60, bow: 40 }),
   a('a-siljik', 'siljik', 'siljik-1', 'n-siljik-cap', { spear: 60, bow: 30 }),
   a('a-haseulla', 'haseulla', 'haseulla-1', 'n-haseulla-cap', { spear: 50, bow: 40, horse: 5 }),
+  // 영남의 작은 바닷가 나라 — 이 판에서는 이웃이 저만 알고 달려든다(발견). 장수 없는 도읍 지기를 둔다 (docs/BALANCE.md 2026-10-19 삼한 남부)
+  a('a-dokro-g', 'dokro', null, 'y-dokro-cap', { spear: 40, shield: 20 }),
+  a('a-samul-g', 'samul', null, 'y-samul-cap', { spear: 30, shield: 15 }),
+  // 맥국 — 한강 위 산골, 백제·목지가 강을 타고 올라온다
+  a('a-maek-g', 'maek', null, 'n-maek-cap', { spear: 30, shield: 10 }),
 ]
 
 const byId = <T extends { id: string }>(xs: readonly T[]): Record<string, T> =>
