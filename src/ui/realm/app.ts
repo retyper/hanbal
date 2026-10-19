@@ -130,7 +130,7 @@ const GROWTH_WHY: Readonly<Record<string, string>> = {
 /** 빈 몫 — 다섯 물건 */
 const noGoods = (): Record<Good, number> => ({ grain: 0, iron: 0, salt: 0, wood: 0, horse: 0 })
 /** 물건의 그림 */
-const GOOD_ICON: Record<Good, string> = { grain: 'good-rice', iron: 'treasure-iron-ingots', salt: 'good-salt', wood: 'emblem-pine', horse: 'good-horse' }
+const GOOD_ICON: Record<Good, string> = { grain: 'good-rice', iron: 'treasure-iron-ingots', salt: 'good-salt', wood: 'good-wood', horse: 'good-horse' } // 나무는 장작 짐 (형: '주고받을 거래에 이상한 소나무국기있음')
 /** 사신을 꾸밀 때 한 번 누름에 오르내리는 몫 */
 const GOOD_STEP: Record<Good, number> = { grain: 10, iron: 5, salt: 5, wood: 5, horse: 1 }
 const NO_COMPOSE = { to: '', ask: 'truce' as Ask, give: noGoods(), take: noGoods(), target: '' }
