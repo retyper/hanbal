@@ -401,7 +401,7 @@ function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly 
     }
     const [cx, cy] = best!.c
     placed.push({ x0: cx - w / 2, y0: cy, x1: cx + w / 2, y1: cy + h })
-    out += `<span class="lb${l.cls}" style="left:${(cx * 100).toFixed(2)}%;top:${(cy * 100).toFixed(2)}%">${l.cap ? '<i class="star">★</i>' : ''}${l.name}${l.now !== undefined ? `<small>${l.now}</small>` : ''}</span>`
+    out += `<span class="lb${l.cls}" data-n="${l.id}" style="left:${(cx * 100).toFixed(2)}%;top:${(cy * 100).toFixed(2)}%">${l.cap ? '<i class="star">★</i>' : ''}${l.name}${l.now !== undefined ? `<small>${l.now}</small>` : ''}</span>`
   }
   return out + '</div>'
 }

@@ -1263,12 +1263,59 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         h += `<button class="btn ${scout === id ? 'on' : ''}" data-act="scout" data-node="${id}">${scout === id ? '척후가 여기로 간다 · 누르면 거둔다' : there !== '' ? `척후를 ${esc(there)}에서 여기로 돌린다` : '척후를 여기로 보낸다'}</button></div>`
       }
     }
+    // 이 나라와 지금 할 수 있는 것 — 외교 판까지 안 가고 여기서 바로 (형: "타국 마을 누르면 … 얘내랑 할수있는 상호작용만 추려서 보여주고 바로 할수 있게")
+    if (!ours && n.owner !== null && n.kind !== 'sodo' && knows(r, me(), n.owner) && r.factions[n.owner] !== undefined) h += nationActs(r, n.owner, id)
     // 여기로 갈 수 있는 우리 군대
     const goers = sorted(Object.values(r.armies)).filter((a) => a.faction === me() && a.march === null && movesOf(r, me(), a).some((m) => m.to === id))
     if (goers.length > 0) {
       h += `<h4>보낼 군대</h4>`
       for (const a of goers) h += `<div class="goer"><span class="gname">${esc(armyName(r, a))} <span class="mute">${headcount(forceOf(r, a))}명</span></span>${moveRows(r, a, id)}</div>`
     }
+    return h
+  }
+
+  /**
+   * 남의 고을을 눌렀을 때 — 그 나라와 이번 계절 할 수 있는 것만 추려서 바로 누르게:
+   * 사신(사이에 따라 열리는 것만) · 이 고을에 첩자·매수 · 그 나라에 소문·불 · 이 고을에 있는 적장 암살.
+   * 자세히 꾸며야 하는 사신(교역·조공·함께 치자 …)은 외교 판의 그 칸을 열어 준다.
+   */
+  function nationActs(r: Realm, f: string, node: string): string {
+    const fac = r.factions[f]!
+    const rel = relationOf(r, me(), f)
+    let h = `<div class="nacts"><div class="nah">${emblem(f, 'fem')}<b>${esc(fac.name)}</b><span class="rel ${rel.state}">${REL_NAME[rel.state]}</span>${favorFeel(favorOf(r, me(), f))}</div>`
+    // 사신
+    const sent = envoys[f]
+    if (sent !== undefined) h += `<div class="banner good">사신: ${ASK_NAME[sent.ask]}<button class="btn ghost sm" data-act="unenvoy" data-to="${f}">거둔다</button></div>`
+    else {
+      h += `<div class="nal">사신</div><div class="btns">`
+      for (const ask of envoyOptions(r, me(), f)) {
+        const sure = ask === 'gift' || ask === 'break'
+        const c = envoyChanceFor(r, me(), f, ask, noGoods(), noGoods(), escort[f] || undefined)
+        const needs = ASK_NEEDS[ask] !== undefined
+        h += `<button class="btn sm${ask === 'break' ? ' ghost' : ''}" data-act="${needs ? 'compose-go' : 'envoy'}" data-to="${f}" data-ask="${ask}">${ASK_NAME[ask]}${sure ? '' : ` ${envoyFeel(c[0], c[1])}`}</button>`
+      }
+      h += `</div>`
+    }
+    // 공작 — 이 고을·이 나라를 노리는 것만
+    const max = P.realm.plotsPerSeason
+    const st = left()
+    const rows: string[] = []
+    for (const op of PLOT_OPS) {
+      if (op === 'sow') continue // 두 나라를 갈라놓는 것은 외교 판에서
+      const ts = plotTargets(realm!, me(), op).filter((t) => t.target === f && (t.node === undefined || t.node === node))
+      for (const t of ts) {
+        const cost = plotCost(op, null)
+        const dup = plots.some((p) => p.kind === 'plot' && p.op === op && p.target === t.target && p.node === t.node && p.hero === t.hero)
+        const hero = t.hero !== undefined ? r.heroes[t.hero] : undefined
+        const c = plotChance(realm!, me(), op, t.target, t.node, t.hero, null)
+        const can = dup || (plots.length < max && st.grain >= cost.grain && st.iron >= cost.iron)
+        rows.push(`<button class="row ${dup ? 'on' : ''}" data-act="plot" data-op="${op}" data-target="${t.target}" data-node="${t.node ?? ''}" data-other="" data-hero="${t.hero ?? ''}" data-agent="" ${can ? '' : 'disabled'}>`
+          + `${hero !== undefined ? bust(hero, 'rface sm') : icon(PLOT_ICON[op], 'nic')}<span class="dest">${PLOT_NAME[op]}${hero !== undefined ? ` · ${esc(hero.name)}` : ''}</span>`
+          + `<span class="sub">${tx(`곡식 ${cost.grain}${cost.iron > 0 ? ` · 철 ${cost.iron}` : ''}`)}</span><span class="win">${plotFeel(c[0], c[1])}</span></button>`)
+      }
+    }
+    if (rows.length > 0) h += `<div class="nal">공작 <span class="mute">한 계절에 ${max}가지 · 지금 ${plots.length}</span></div><div class="rows">${rows.join('')}</div>`
+    h += `<button class="btn ghost wide" data-act="nat-diplo" data-to="${f}">외교 판에서 자세히</button></div>`
     return h
   }
 
@@ -1724,6 +1771,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'selclose': armySel = []; break
       case 'roadkey': roadOpen = !roadOpen; break
+      case 'compose-go': case 'nat-diplo': {
+        // 고을 판에서 자세히 꾸며야 하는 사신 — 외교 판의 그 나라 칸을 열어 준다
+        diploMode = 'envoy'
+        if (d['act'] === 'compose-go') compose = { ...NO_COMPOSE, give: noGoods(), take: noGoods(), to: d['to']!, ask: d['ask'] as Ask }
+        sheet = { kind: 'diplo' }
+        paint()
+        requestAnimationFrame(() => $('.sheet').querySelector<HTMLElement>(d['act'] === 'compose-go' ? '.trade' : `[data-to="${d['to']}"]`)?.scrollIntoView({ block: 'center' }))
+        return
+      }
       case 'jump': $('.sheet').querySelector(`#${d['to']}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }); return
       case 'selmerge': {
         // 고른 군대를 하나로 — 장수가 이끄는 군대로 모은다

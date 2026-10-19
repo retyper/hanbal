@@ -279,4 +279,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .sech img { width: 22px; height: 22px; } .ap .sech.men { background: #3a1c18; color: #f0a090; } .ap .sech.home { background: #33281a; color: #e4b878; }
 .ap .ncard.draftc { border-left: 4px solid #b0503e; } .ap .ncard.settlec { border-left: 4px solid #a8804a; }
 .ap .btn.on.men { background: #9a3a2c; border-color: #c8604a; color: #fff2ec; } .ap .btn.on.home { background: #7a5a30; border-color: #b08850; color: #fff6e6; }
+/* 남의 고을 판 — 그 나라와 할 수 있는 것 (app.nationActs) */
+.ap .nacts { margin: 12px 0 6px; padding: 10px; border-radius: 14px; background: #1b2028; border: 1px solid #4a5363; }
+.ap .nacts .nah { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; } .ap .nacts .nah b { font-size: 16px; }
+.ap .nacts .nal { margin: 8px 0 4px; font-size: 13px; color: var(--gold); } .ap .nacts .nal .mute { font-size: 12px; }
+.ap .nacts .btns { flex-wrap: wrap; } .ap .nacts .row .sub { margin-left: auto; margin-right: 6px; }
 `

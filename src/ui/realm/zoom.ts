@@ -6,6 +6,8 @@
  * 루프·타이머 없이 이벤트에서 바로 바꾼다 (절대 규칙 4). 지도 칸을 다시 그려도 `apply` 로 배율이 이어진다.
  */
 
+import { declutterSoon } from './declutter.ts'
+
 /** 지도 바탕 그림의 가로:세로 (mapview 의 W / H) */
 const ASPECT = 1264 / 848
 /** cover 배율에 곱해 가장 크게 · 한 단추에 키우는 몫 · 끌기로 치는 거리(px) */
@@ -61,6 +63,7 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     // 글씨는 배율의 제곱근만큼 — 크게 보면 조금 커지되 고을 그림만큼 부풀지 않게
     m.style.setProperty('--z', String(z))
     m.style.setProperty('--zs', String(Math.sqrt(z)))
+    declutterSoon(wrap) // 배율이 바뀌면 글씨가 말·숫자와 겹칠 수 있다 — 그린 뒤 비킨다
   }
 
   /** (cx, cy) 칸 안의 점을 축으로 배율을 바꾼다 — 그 점 아래 땅이 손가락 밑에 남는다 */
