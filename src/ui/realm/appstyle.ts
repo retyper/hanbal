@@ -262,6 +262,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 /* 길 보기 — 선의 생김새가 무슨 길인지 */
 .ap .roadkey { position: absolute; right: 14px; top: calc(var(--toph) + var(--legh) + 8px); z-index: 6; }
 .ap.sheet-open .roadkey, .ap.choosing .roadkey { display: none; }
+/* 우리 땅으로 — 왼쪽 위, 깃발 줄 밑 (확대 단추와 떨어져) */
+.ap .homebtn { position: absolute; left: 12px; top: calc(var(--toph) + var(--legh) + 8px); z-index: 6; padding: 6px 12px; border-radius: 12px;
+  border: 1px solid #c8a050; background: #2a2418e6; color: #ffd27a; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 0 0 1px #0006; }
+.ap.sheet-open .homebtn, .ap.choosing .homebtn { display: none; }
 .ap .roadkey > button { padding: 6px 10px; border-radius: 12px; border: 1px solid #4a5363; background: #1b2028e6; color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
 .ap .roadkey .rk { margin-top: 6px; padding: 10px 12px; border-radius: 14px; background: #1b2028f2; border: 1px solid #4a5363; width: min(78vw, 300px); box-sizing: border-box; }
 .ap .roadkey .rk div { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 3px 0; } .ap .roadkey .rk svg { flex: none; background: #f3e6c8; border-radius: 4px; }

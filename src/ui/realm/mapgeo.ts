@@ -8,13 +8,13 @@
  *   땅: 고을마다 가장 가까운 땅을 나눈 칸(보로노이 — 큰 고을이 조금 넓다)을 둘레로 자르고, 영남 판은 뭍 밖을 잘라 낸다.
  * 땅 모양은 판마다 한 번만 셈해 둔다 (고을 자리는 안 바뀐다) — 계절마다는 색만 바뀐다.
  */
-import { ISLES, LAND, RIVERS } from '../../realm/data/regions/yeongnam-geo.ts'
+import { ISLES, LAND, MOUNTAINS, RIVERS } from '../../realm/data/regions/yeongnam-geo.ts'
 import { FERRIES, ROUTES } from '../../realm/data/regions/yeongnam-routes.ts'
 import { YEONGNAM_PROJ, yeongnamPos } from '../../realm/data/regions/yeongnam.ts'
 import type { WorldGeo } from '../../realm/data/regions/geoframe.ts'
 import { worldGeoOf } from '../../realm/data/regions/index.ts'
 import { SOUTH_FERRIES, SOUTH_ROUTES } from '../../realm/data/regions/south-routes.ts'
-import { SOUTH_WORLD } from '../../realm/data/regions/south-geo.ts'
+import { SOUTH_MOUNTAINS, SOUTH_WORLD } from '../../realm/data/regions/south-geo.ts'
 import type { REdge, RegionId } from '../../realm/types.ts'
 
 export type Pt = readonly [number, number]
@@ -281,4 +281,28 @@ export function separatedRoutes(key: string, routes: ReadonlyArray<readonly [str
   const res = new Map(pts.map((r) => [r.id, r.out as Pt[]]))
   sepCache.set(key, res)
   return res
+}
+
+/**
+ * 땅을 가를 자연의 금 — 판마다의 강 · 산줄기 · 뭍 (그림 좌표). territory.ts 가 읽는다.
+ * 변한 축소판은 밑그림뿐이라 강·뭍 자료가 없다 — 그 판은 거리만으로 가른다.
+ */
+export function naturalLines(region: RegionId, W: number, H: number): {
+  rivers: Pt[][]; rough: Array<[number, number, number, number]>; land: Pt[][] | null
+} {
+  const g = worldGeoOf(region)
+  if (region !== 'yeongnam' && g === null) return { rivers: [], rough: [], land: null }
+  const pos = g !== null ? g.pos : yeongnamPos
+  const px = ([lon, lat]: readonly [number, number]): Pt => {
+    const [x, y] = pos(lon, lat)
+    return [x * W, y * H]
+  }
+  const rivers = (g !== null ? g.rivers : RIVERS).map((rv) => rv.pts.map(px))
+  const rough = (g !== null ? SOUTH_MOUNTAINS : MOUNTAINS).map(([lon0, lon1, lat0, lat1]) => {
+    const a = px([lon0, lat1])
+    const b = px([lon1, lat0])
+    return [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])] as [number, number, number, number]
+  })
+  const land = g !== null ? [...g.lands, ...g.isles].map((l) => l.map(px)) : [LAND, ...ISLES].map((l) => l.map(px))
+  return { rivers, rough, land }
 }
