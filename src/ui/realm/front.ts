@@ -244,7 +244,7 @@ export function endingHtml(k: FrontKit, r: Realm, history: History): string {
         events.push({ s, t: `${node(l.node)}을(를) 쥐었다`, big: was !== undefined, img, ...(was !== undefined && was !== me ? { em: was } : {}) })
       } else if (l.kind === 'relation' && (l.a === me || l.b === me) && (l.state === 'ally' || l.state === 'truce')) {
         const other = l.a === me ? l.b : l.a
-        const img = `${k.art}event/${l.state === 'ally' ? 'event-marriage' : 'event-outside-envoy'}.jpg`
+        const img = `${k.art}event/${l.state === 'ally' ? 'event-alliance-oath' : 'event-outside-envoy'}.jpg`
         events.push({ s, t: `${name(other)}과(와) ${l.state === 'ally' ? '동맹을 맺었다' : '화친했다'}`, big: l.state === 'ally', img, em: other })
       } else if (l.kind === 'recruit' && l.faction === me) {
         heroes++

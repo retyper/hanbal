@@ -1640,7 +1640,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       let c: [number, { ev: string; hero: Hero | null; line: string }] | null = null
       if (l.kind === 'relation' && (l.a === pl || l.b === pl)) {
         const other = l.a === pl ? l.b : l.a
-        if (l.state === 'ally') c = [0.9, { ev: 'event-marriage', hero: after.heroes[after.factions[other]?.ruler ?? ''] ?? null, line: `${josa(fn(other), '과', '와')} 동맹을 맺었다` }]
+        if (l.state === 'ally') c = [0.9, { ev: 'event-alliance-oath', hero: after.heroes[after.factions[other]?.ruler ?? ''] ?? null, line: `${josa(fn(other), '과', '와')} 동맹을 맺었다` }]
         else if (l.state === 'truce') c = [0.8, { ev: 'event-outside-envoy', hero: after.heroes[after.factions[other]?.ruler ?? ''] ?? null, line: `${josa(fn(other), '과', '와')} 화친했다` }]
         else if (l.state === 'war') c = [0.7, { ev: 'event-people-quarrel', hero: null, line: `${josa(fn(other), '과', '와')} 전쟁이다` }]
       } else if (l.kind === 'recruit' && l.faction === pl && after.heroes[l.hero] !== undefined) {

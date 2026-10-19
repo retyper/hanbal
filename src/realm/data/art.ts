@@ -65,15 +65,15 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'samul-1': 'w-08-mahan-warrior', 'bihwa-1': 'g-10-buyeo-horse-lord', 'eumjeup-1': 'w-01-silla-princess',
   // 삼한 남부 판의 새 군주·장군 (data/regions/south.ts) — 있는 명치판을 나눠 쓴다. 새 얼굴은 그림 줄(인물 — 챗지피티)
   'baekje-ruler': 'g-21-baekje-onnuri', 'mokji-ruler': 'w-27-mokji-jinha', 'michuhol-ruler': 'w-28-michuhol-bira',
-  'ungcheon-ruler': 'g-05-mahan-chieftain', 'sangdang-ruler': 'g-01-master-smith', 'geonma-ruler': 'w-17-mahan-pearl-diver',
-  'wansan-ruler': 'g-04-jinhan-giant', 'gosaburi-ruler': 'w-14-feast-spy', 'balla-ruler': 'g-15-shaman-man',
-  'mujin-ruler': 'w-16-clan-matriarch', 'gampyeong-ruler': 'g-03-sea-trader', 'goryong-ruler': 'w-02-goguryeo-lady',
-  'maek-ruler': 'g-10-buyeo-horse-lord', 'siljik-ruler': 'w-18-jinhan-salt-widow', 'haseulla-ruler': 'w-22-dongye-tiger-huntress',
+  'ungcheon-ruler': 'g-22-ungcheon-gomnae', 'sangdang-ruler': 'g-23-sangdang-soedal', 'geonma-ruler': 'w-46-geonma-maru',
+  'wansan-ruler': 'g-24-wansan-onsan', 'gosaburi-ruler': 'w-47-gosaburi-baram', 'balla-ruler': 'g-25-balla-keunmoe',
+  'mujin-ruler': 'w-48-mujin-mudeung', 'gampyeong-ruler': 'g-26-gampyeong-gaetbeol', 'goryong-ruler': 'w-49-goryong-gureum',
+  'maek-ruler': 'g-27-maek-maekdol', 'siljik-ruler': 'w-50-siljik-mulga', 'haseulla-ruler': 'w-51-haseulla-dangung',
   'baekje-1': 'g-16-goguryeo-gaema-commander', 'mokji-1': 'g-08-veteran', 'wansan-1': 'w-13-young-archer', 'balla-1': 'w-08-mahan-warrior',
   'maek-1': 'w-06-buyeo-huntress', 'haseulla-1': 'g-09-farmer-conscript', 'gampyeong-1': 'w-10-pirate-captain',
   // 삼한과 북녘 판의 새 군주·장군 (data/regions/world.ts) — 있는 명치판을 나눠 쓴다. 새 얼굴은 그림 줄(ART-QUEUE 5c)
-  'goguryeo-ruler': 'g-02-goguryeo-archer-prince', 'goguryeo-1': 'g-16-goguryeo-gaema-commander', 'goguryeo-2': 'w-03-goguryeo-archer',
-  'biryuna-ruler': 'w-02-goguryeo-lady', 'biryuna-1': 'g-08-veteran', 'yeonna-ruler': 'g-06-strategist', 'yeonna-1': 'w-13-young-archer',
+  'goguryeo-ruler': 'g-28-goguryeo-damul', 'goguryeo-1': 'g-16-goguryeo-gaema-commander', 'goguryeo-2': 'w-03-goguryeo-archer',
+  'biryuna-ruler': 'w-52-biryuna-songbi', 'biryuna-1': 'g-08-veteran', 'yeonna-ruler': 'g-29-yeonna-myeongsol', 'yeonna-1': 'w-13-young-archer',
   'hwanna-ruler': 'w-15-captive-noble', 'hwanna-1': 'g-03-sea-trader', 'gwanna-ruler': 'g-01-master-smith', 'gwanna-1': 'g-11-gaya-iron-general',
   'buyeo-ruler': 'g-10-buyeo-horse-lord', 'buyeo-1': 'w-06-buyeo-huntress', 'maga-ruler': 'w-19-buyeo-fur-princess', 'maga-1': 'g-04-jinhan-giant',
   'uga-ruler': 'g-09-farmer-conscript', 'uga-1': 'g-07-drunk-warrior', 'jeoga-ruler': 'g-14-captive-general', 'jeoga-1': 'w-11-assassin',
@@ -82,10 +82,10 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'tamna-ruler': 'w-07-shaman-queen', 'tamna-1': 'g-20-samul-sea-lord',
   // 여인 장수 더 (형 2026-10-19: "장수도 여캐 많았으면 좋겠으니 챗지피티로") — 판마다 장수 절반쯤이 여인. 아라·고자 둘은 변한 판의 얼굴 그대로
   // 제 얼굴(w-29 ~ w-45, 그림 줄 5d)을 받기 전까지는 있는 명치판을 빌린다 — 받으면 여기만 바꾼다
-  'us-2': 'w-08-mahan-warrior', 'guya-3': 'w-20-gaya-smith-daughter',
-  'dabeol-2': 'w-11-assassin', 'golbeol-2': 'w-26-iseo-tomboy-general', 'gammun-2': 'w-05-baekje-queen', 'chopal-2': 'w-22-dongye-tiger-huntress', 'jomun-2': 'w-21-baekje-court-dancer',
-  'baekje-2': 'w-03-goguryeo-archer', 'michuhol-2': 'w-14-feast-spy', 'sangdang-2': 'w-09-byeonhan-smith', 'gosaburi-2': 'w-10-pirate-captain', 'mujin-2': 'w-12-court-dancer',
-  'hwanna-2': 'w-13-young-archer', 'gwanna-2': 'w-04-gaya-swordswoman', 'uga-2': 'w-19-buyeo-fur-princess', 'dongokjeo-2': 'w-18-jinhan-salt-widow', 'tamna-2': 'w-06-buyeo-huntress',
+  'us-2': 'w-29-golpo-janmul', 'guya-3': 'w-30-guya-soebi',
+  'dabeol-2': 'w-31-dabeol-dalbit', 'golbeol-2': 'w-32-golbeol-budeul', 'gammun-2': 'w-33-gammun-gamsil', 'chopal-2': 'w-34-chopal-deulme', 'jomun-2': 'w-35-jomun-odi',
+  'baekje-2': 'w-36-baekje-maena', 'michuhol-2': 'w-37-michuhol-gaennae', 'sangdang-2': 'w-38-sangdang-bulmae', 'gosaburi-2': 'w-39-gosaburi-galmae', 'mujin-2': 'w-40-mujin-munui',
+  'hwanna-2': 'w-41-hwanna-beodeul', 'gwanna-2': 'w-42-gwanna-soenun', 'uga-2': 'w-43-uga-nuri', 'dongokjeo-2': 'w-44-okjeo-sogeumbi', 'tamna-2': 'w-45-tamna-oreumbi',
 }
 
 /** 나라 id → 깃발 (icon/emblem-*.png) · 지도의 테두리 색 */
