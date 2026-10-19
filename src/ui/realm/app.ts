@@ -27,7 +27,7 @@ import { armyPower, jointWin, matchupHints, movesOf, type Move } from '../../rea
 import { kitLines } from '../../realm/kit.ts'
 import { alertRange, seenMix, visibleRange } from '../../realm/intel.ts'
 import { advance, concealOf, draftable, forceOf, neighbors, newArmyId, otherEnd, planned, seasonOf, seenMarches } from '../../realm/season.ts'
-import { PLOT_OPS, assassinArrows, assassinBow, bowUpCost, escapeChance, plotAgents, plotChance, plotCost, plotTargets } from '../../realm/plots.ts'
+import { PLOT_OPS, exposeChance, assassinArrows, assassinBow, bowUpCost, escapeChance, plotAgents, plotChance, plotCost, plotTargets } from '../../realm/plots.ts'
 import { allianceWhy, leaderOf, truceWhy, winningAgainst } from '../../realm/stance.ts'
 import { heroSeen, isRuler, persuadeSeasons, wanderersFor } from '../../realm/heroes.ts'
 import type { Army, EdgeKind, EnvoyAsk, Good, Hand, Hero, Order, PlotOp, Realm, RegionId, Report, ReportLine } from '../../realm/types.ts'
@@ -934,7 +934,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (o.op === 'assassin' && plotOpen !== 'assassin') h += shootHtml(i, o)
     }
     const full = plots.length >= max
-    const st = r.stock[me()] ?? { grain: 0, iron: 0 }
+    const st = left()
     for (const op of PLOT_OPS) {
       // 암살은 자객을 고른다 — 우리 장수(혼자 머무는 이) 또는 고용 자객
       const agents = op === 'assassin' ? plotAgents(realm!, me()) : []
@@ -946,6 +946,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (open) {
         const afford = st.grain >= cost.grain && st.iron >= cost.iron
         const targets = plotTargets(realm!, me(), op).filter((t) => knows(realm!, me(), t.target)) // 아는 나라에만 (발견)
+        // 들키면 누가 보냈는지 드러날 수 있다 — 드러나면 그 나라와 크게 틀어지고 다른 나라도 우리를 덜 믿는다
+        if (targets[0] !== undefined) {
+          const ex = exposeChance(realm!, me(), targets[0].target, targets[0].node, op === 'assassin' ? agent : undefined)
+          h += `<div class="mute">들켜도 누가 보냈는지 숨길 길 ${plotFeel(1 - ex, 1 - ex)} · 드러나면 그 나라와 크게 틀어지고 다른 나라들도 우리를 덜 믿는다.</div>`
+        }
         if (op === 'assassin') {
           h += `<img class="plimg" src="${ART}event/event-assassin-archer.jpg" alt="">`
           h += `<div class="mute">누구를 보내나</div><div class="fpick"><button class="${agent === null ? 'on' : ''}" data-act="pagent" data-id="" aria-label="고용 자객">${icon('unit-archer', 'fp')}</button>`
