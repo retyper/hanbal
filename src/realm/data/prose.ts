@@ -624,6 +624,8 @@ export const BATTLE_CLASH: Record<Outcome, readonly [string, string]> = {
 type Battle = Extract<ReportLine, { kind: 'battle' }>
 
 /** 이름의 첫 마디 — "삼랑 나루 마을" → "삼랑" */
+/** 땅을 이르는 흔한 낱말 — 싸움 이름의 뿌리로는 뜻이 없다 */
+const GENERIC_ROOT = new Set(['갯벌', '바다', '나루', '들', '벌', '섬', '고개', '마을', '포구', '항구', '산성', '도읍', '빈땅', '새'])
 function rootName(name: string): string {
   return name.split(' ')[0] ?? name
 }
@@ -639,7 +641,9 @@ function withTail(root: string, tail: string): string {
  */
 export function battleName(r: Realm, l: Pick<Battle, 'node' | 'field' | 'edge' | 'via' | 'approach'>): string {
   const node = r.nodes[l.node]
-  const root = rootName(node?.name ?? l.node)
+  let root = rootName(node?.name ?? l.node)
+  // 고을 이름의 첫 마디가 땅 낱말뿐이면("갯벌 마을" → 갯벌) 그 땅 주인 나라 이름으로 — "갯벌 바다 싸움" 대신 "가락 바다 싸움"
+  if (GENERIC_ROOT.has(root) && node?.owner != null) root = (r.factions[node.owner]?.name ?? root).replace(/(국|부)$/, '')
   const kind = l.field === true && l.edge !== undefined ? r.edges[l.edge]?.kind : l.via
   switch (kind) {
     case 'sea': return `${root} 바다 싸움`
