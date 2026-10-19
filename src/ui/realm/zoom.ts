@@ -63,6 +63,8 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     // 글씨는 배율의 제곱근만큼 — 크게 보면 조금 커지되 고을 그림만큼 부풀지 않게
     m.style.setProperty('--z', String(z))
     m.style.setProperty('--zs', String(Math.sqrt(z)))
+    // 멀리 볼 때는 배너의 둘째 줄(지금 땅이름)을 감춘다 — 글씨가 고을을 덮지 않게 (GAP M1)
+    m.dataset['zl'] = z >= cover() * 1.45 ? 'near' : 'far'
     declutterSoon(wrap) // 배율이 바뀌면 글씨가 말·숫자와 겹칠 수 있다 — 그린 뒤 비킨다
   }
 
