@@ -78,15 +78,27 @@ describe('한 계절이 돈다', () => {
     assert.equal(marchSeasons('field', 'summer'), 2)
   })
 
-  it('막힌 길로는 떠나지 않고 보고에 남는다', () => {
+  it('막힌 길도 갈 수는 있다 — 사람·사기를 잃고 더 걸린다 (형: "불가능하게 만들지 말고 패널티")', () => {
     let r = byeonhanMini(3)
     // 봄: 갯마을 → 안개골 (나루 e06 이 안개골에서 나간다). 닿으면 여름
     r = advance(r, [{ kind: 'march', army: 'a-us', edge: 'e01', ambush: false }]).next
     assert.equal(seasonOf(r.season), 'summer')
     assert.equal(r.armies['a-us']!.at, 'our-north')
-    const { next, report } = advance(r, [{ kind: 'march', army: 'a-us', edge: 'e06', ambush: false }])
-    assert.equal(next.armies['a-us']!.march, null)
-    assert.ok(report.lines.some((l) => l.kind === 'blocked' && l.why === 'summerFord'))
+    const men0 = Object.values(r.armies['a-us']!.mix).reduce((s, v) => s + (v ?? 0), 0)
+    const m0 = r.armies['a-us']!.morale
+    // 넉넉히 챙기면 장마 나루는 2(여름) + 1(불어난 물) 계절 — 한 계절 지나 2 남는다
+    const { next, report } = advance(r, [{ kind: 'march', army: 'a-us', edge: 'e06', ambush: false, ration: 'full' }])
+    const a = next.armies['a-us']!
+    assert.equal(a.march?.hard, 'summerFord')
+    const line = report.lines.find((l) => l.kind === 'blocked' && l.why === 'summerFord')
+    assert.ok(line !== undefined && line.kind === 'blocked' && (line.lost ?? 0) > 0)
+    assert.ok(Object.values(a.mix).reduce((s, v) => s + (v ?? 0), 0) < men0)
+    assert.ok(a.morale < m0)
+    const R = P.realm
+    const full = marchSeasons('ford', 'summer') + R.hardExtra
+    // 곡식이 모자라 가볍게 갔으면(군량 = 남은 길) 한 계절 빨리
+    const light = a.food === a.march!.left
+    assert.equal(a.march!.left, full - 1 - (light ? 1 : 0))
   })
 
   it('PLAY §4 의 겨울 — 언 갈대 나루 기습은 반을 넘는다', () => {

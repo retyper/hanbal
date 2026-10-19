@@ -11,8 +11,10 @@ import {
 import { militiaMen } from './economy.ts'
 import { ambushTraitOf } from './heroes.ts'
 import { alertRange, seenMix, visibleRange } from './intel.ts'
-import { blockedWhy, conceal, concealOf, forceOf, fortMul, marchSeasons, otherEnd, seasonOf, seenMarches } from './season.ts'
-import type { Army, EdgeKind, Realm, REdge } from './types.ts'
+import {
+  approachConceal, approachOptions, blockedWhy, cliffChance, conceal, concealOf, forceOf, fortMul, marchSeasons, otherEnd, seasonOf, seenMarches,
+} from './season.ts'
+import type { Approach, Army, EdgeKind, Realm, REdge } from './types.ts'
 
 export interface Move {
   readonly edge: REdge
@@ -156,6 +158,47 @@ export function movesOf(r: Realm, faction: string, a: Army): Move[] {
       win: v.win, winAmbush: v.ambush, winCaught: v.caught, age: v.age, ambushP,
       conceal: concealOf(r, ed.id, headcount(forceOf(r, a)), to).tier, walled: fortMul(node, season) > 1,
     })
+  }
+  return out
+}
+
+/** 진군 방식 하나의 셈 — 고르는 화면이 말·색으로 보인다 (확률은 숫자로 안 보인다) */
+export interface ApproachMove {
+  readonly ap: Approach
+  /** 먹힐 확률 (대로는 1 — 숨지 않는다) */
+  readonly p: number
+  /** 먹혔을 때 · 들켰을 때의 판세 범위. 모르면 null */
+  readonly hit: Range | null
+  readonly miss: Range | null
+  /** 길 계절 (산기슭은 더 걸린다) */
+  readonly seasons: number
+}
+
+/**
+ * 진군 방식마다의 셈 (형: "강을 도하해 기습 · 대로로 행군 · 산기슭 · 절벽" 2026-10-19) — 판정(season.fight)과 같은 규칙을 범위로.
+ * 산기슭이 먹히면 성을 반쯤 비켜 친다 — 정면과 기습 범위의 가운데로 본다. 절벽은 사람이 적을수록 잘 된다.
+ */
+export function approachMoves(r: Realm, faction: string, a: Army, m: Move): ApproachMove[] {
+  const R = P.realm
+  const node = r.nodes[m.to]!
+  const season = seasonOf(r.season)
+  const myRyak = a.hero !== null ? (r.heroes[a.hero]?.ryak ?? 1) : 1
+  const known = (r.intel[faction] ?? {})[m.to]
+  const al = known?.alert ? alertRange(known.alert.v, r.season - known.alert.season) : null
+  const size = -ambushSizePenalty(headcount(forceOf(r, a))) + ambushTraitOf(a.hero !== null ? (r.heroes[a.hero] ?? null) : null, m.edge.kind)
+  const mid = (x: Range | null, y: Range | null): Range | null => (x === null || y === null ? null : [(x[0] + y[0]) / 2, (x[1] + y[1]) / 2])
+  const out: ApproachMove[] = []
+  for (const ap of approachOptions(r, m.edge, m.to)) {
+    const seasons = m.seasons + (ap === 'ridge' ? R.apRidgeExtra : 0)
+    if (ap === 'road') {
+      out.push({ ap, p: 1, hit: m.win, miss: m.win, seasons })
+      continue
+    }
+    const p = ap === 'cliff'
+      ? cliffChance(r, a)
+      : ambushChance(conceal(m.edge, node, season) + approachConceal(ap), myRyak, R.aiAssumeRyak, size, 0, al === null ? R.aiAssumeAlert : al[1])
+    const hit = ap === 'ridge' ? mid(m.win, m.winAmbush) : m.winAmbush
+    out.push({ ap, p, hit, miss: m.winCaught, seasons })
   }
   return out
 }

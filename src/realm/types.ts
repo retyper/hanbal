@@ -218,8 +218,76 @@ export interface March {
   readonly to: string
   readonly edge: string
   left: number
-  /** 기습으로 들어가는가 — 아니면 정면 (S = 1.0) */
+  /** 기습으로 들어가는가 — 아니면 정면 (S = 1.0). approach 가 대로가 아니면 참 */
   readonly ambush: boolean
+  /** 진군 방식 (tactics.ts) — 없으면 옛 판: ambush 면 밤길, 아니면 대로 */
+  readonly approach?: Approach
+  /** 계절에 막힌 길을 억지로 간다 — 눈 덮인 고개 · 불어난 나루 (사람·사기를 잃었다) */
+  readonly hard?: 'winterPass' | 'summerFord'
+}
+
+/**
+ * 진군 방식 (형: "강을 도하해 기습 · 대로로 행군 · 산기슭으로 · 절벽을 올라간다" 2026-10-19) — tactics.approachOptions
+ *   road 대로 — 드러내 놓고 간다. 기습이 없고 질서 있게 닿는다
+ *   night 밤길 — 어둠을 타고 숨어 닿는다 (옛 '기습')
+ *   ford 여울 건너기 — 강 있는 길만. 먹히면 성·장정을 건너뛰고, 들키면 물 한가운데서 맞는다
+ *   ridge 산기슭 돌기 — 한 계절 더 걸리지만 잘 숨고, 먹히면 뒤를 친다
+ *   cliff 절벽 타기 — 산성·높은 터만. 소수 정예일수록 잘 되고, 먹히면 성을 넘는다. 떨어지면 크게 잃는다
+ */
+export type Approach = 'road' | 'night' | 'ford' | 'ridge' | 'cliff'
+
+/** 챙길 군량 — 가볍게(곡식이 안 들고 고갯길을 빨리 가지만 오래 못 버틴다) · 넉넉히(곡식이 든다) */
+export type Ration = 'light' | 'full'
+
+/**
+ * 싸움의 명령 (tactics.ts — 형: "포켓몬이나 가위바위보식 상성 · 포획시도는 유저가 직접" 2026-10-19)
+ *   세모: 돌격 charge > 화살비 volley > 방진 hold > 돌격
+ *   한 번씩: 옆치기 flank · 불 fire · 일기토 duel
+ *   사로잡기 capture · 물러나기 retreat
+ */
+export type Cmd = 'charge' | 'hold' | 'volley' | 'flank' | 'fire' | 'duel' | 'capture' | 'retreat'
+
+/** 라운드 하나의 기록 — 화면이 그대로 풀어 보인다. n 은 처음 사람의 몫 0~1, m 은 사기 */
+export interface RoundLog {
+  readonly a: Cmd
+  readonly d: Cmd
+  /** 세모에서 이긴 쪽 */
+  readonly beat: 'a' | 'd' | null
+  /** 이번 라운드에 공격 쪽이 민 몫 0~1 */
+  readonly push: number
+  readonly na: number
+  readonly nd: number
+  readonly ma: number
+  readonly md: number
+  /** 이 라운드의 큰일 */
+  readonly ev?: 'capture-ok' | 'capture-fail' | 'duel-win' | 'duel-lose' | 'fire-ok' | 'fire-back' | 'retreat'
+  /** ev 를 낸 쪽 */
+  readonly by?: 'a' | 'd'
+}
+
+/**
+ * 플레이어가 고른 싸움 명령 — advance 의 tactics[battleKey] (snipes 와 같은 길).
+ * cmds[i] 가 i 라운드의 명령. 모자라면 맡긴다(AI 가 고른다).
+ * open 이면 모자란 데서 다음 고를 것을 pending 에 적는다 (전장 화면의 시험 돌림) — 나머지는 맡긴 것으로 끝까지 돈다
+ */
+export interface Tactic {
+  readonly cmds: readonly Cmd[]
+  readonly open?: boolean
+}
+
+/** 전장 화면이 다음 라운드를 고를 때 보는 것 — 시험 돌림(open)에서만 나온다 */
+export interface Pending {
+  readonly round: number
+  /** 고를 수 있는 명령 */
+  readonly options: readonly Cmd[]
+  /** 명령마다 우리 세기 (0.4~2 쯤 — 화면은 말·색으로) */
+  readonly might: Readonly<Partial<Record<Cmd, number>>>
+  /** 사로잡기 확률 — 적장이 없으면 0 (화면은 말·색으로) */
+  readonly capture: number
+  /** 적의 낌새 — 다음 명령을 이것으로 짐작한다 (틀릴 수 있다) */
+  readonly hint: Cmd | null
+  /** 우리가 공격 쪽인가 */
+  readonly weAtk: boolean
 }
 
 export interface Army {
@@ -236,6 +304,8 @@ export interface Army {
   /** 머무는 고을 (행군 중이면 떠난 고을) */
   at: string
   march: March | null
+  /** 남은 군량 (계절치) — 제 땅·동맹 땅에선 다시 찬다. 없으면 넉넉한 것으로 본다 (옛 판) */
+  food?: number
   /** 동맹에게 빌려준 군대 — `to` 나라의 `node` 고을로 가서 `until` 계절까지 머물며 지킨다 (diplomacy troops). 그동안 AI 가 마음대로 안 움직인다 */
   lent?: { readonly to: string; readonly node: string; readonly until: number }
 }
@@ -350,7 +420,7 @@ export interface Realm {
 
 /** 플레이어(또는 AI)가 한 계절에 내리는 명령 */
 export type Order =
-  | { readonly kind: 'march'; readonly army: string; readonly edge: string; readonly ambush: boolean }
+  | { readonly kind: 'march'; readonly army: string; readonly edge: string; readonly ambush: boolean; readonly approach?: Approach; readonly ration?: Ration }
   | { readonly kind: 'scout'; readonly faction: string; readonly node: string; readonly hero: string | null }
   /** 나누기 (SYSTEMS §4-5) — `id` 는 새 군대의 이름 (season.newArmyId). `hero` 면 장수가 별동대를 이끈다 */
   | {
@@ -433,7 +503,10 @@ export type SnipeZone = 'head' | 'body' | 'leg' | 'drum' | 'miss'
 /** 보고의 한 줄 — 글은 ui 가 짓는다. 여기는 무슨 일이 있었는지만 */
 export type ReportLine =
   | { readonly kind: 'scout'; readonly faction: string; readonly node: string; readonly detected: boolean }
-  | { readonly kind: 'blocked'; readonly army: string; readonly edge: string; readonly why: 'winterPass' | 'summerFord' }
+  /** 막힌 길 — lost 가 있으면 억지로 떠나 그만큼 잃었다 (2026-10-19 부터). 없으면 옛 보고: 떠나지 못했다 */
+  | { readonly kind: 'blocked'; readonly army: string; readonly edge: string; readonly why: 'winterPass' | 'summerFord'; readonly lost?: number }
+  /** 군량이 떨어졌다 — 사기가 꺾이고 lost 명이 빠졌다 */
+  | { readonly kind: 'hungry'; readonly army: string; readonly lost: number }
   | { readonly kind: 'arrive'; readonly army: string; readonly node: string }
   | { readonly kind: 'split'; readonly army: string; readonly id: string }
   | { readonly kind: 'merge'; readonly army: string; readonly into: string }
@@ -461,6 +534,17 @@ export type ReportLine =
        */
       readonly field?: boolean
       readonly edge?: string
+      /** 라운드마다 (tactics.ts) — 옛 보고에는 없다 */
+      readonly rounds?: readonly RoundLog[]
+      /** 앞선 군대의 진군 방식 · 절벽에서 떨어졌나 */
+      readonly approach?: Approach
+      readonly fell?: boolean
+      /** 판의 열쇠 (season.battleKey · 들판이면 fieldKey) */
+      readonly key?: string
+      /** 시험 돌림(open)에서 멈춘 자리 */
+      readonly pending?: Pending
+      /** 플레이어가 직접 명령을 낸 판인가 */
+      readonly led?: boolean
     }
   /** 가을 수확 — `blessed` 는 그 가운데 봄 제사로 더 든 몫 */
   | { readonly kind: 'harvest'; readonly faction: string; readonly grain: number; readonly blessed?: number }

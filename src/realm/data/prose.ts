@@ -180,7 +180,15 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     case 'blocked': {
       const a = before.armies[line.army]
       if (a?.faction !== viewer) return null
-      return `${BLOCKED_LINE[line.why]}. ${josa(nameArmy(line.army), '은', '는')} 떠나지 못했다.`
+      if (line.lost === undefined) return `${BLOCKED_LINE[line.why]}. ${josa(nameArmy(line.army), '은', '는')} 떠나지 못했다.`
+      return line.why === 'winterPass'
+        ? `${josa(nameArmy(line.army), '이', '가')} 눈 덮인 고개를 넘는다. 얼어서 ${line.lost}명을 잃고 한 계절 더 걸린다.`
+        : `${josa(nameArmy(line.army), '이', '가')} 불어난 나루를 건넌다. 물살에 ${line.lost}명이 떠내려갔고 한 계절 더 걸린다.`
+    }
+    case 'hungry': {
+      const a = after.armies[line.army] ?? before.armies[line.army]
+      if (a?.faction !== viewer) return null
+      return `${josa(nameArmy(line.army), '은', '는')} 군량이 떨어졌다. 배를 곯아 ${line.lost}명이 흩어지고 사기가 꺾였다.`
     }
     case 'arrive': {
       const a = after.armies[line.army] ?? before.armies[line.army]

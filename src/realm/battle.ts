@@ -53,6 +53,8 @@ export interface Field {
   readonly edge?: EdgeKind
   /** 방어측이 기습을 당했다 — 방패병이 버틴다 */
   readonly ambushed?: boolean
+  /** 포구 싸움 — 지키는 수군이 세다 */
+  readonly port?: boolean
 }
 
 export const OPEN_FIELD: Field = { fort: 1, crossing: false, ambush: 'none', snipeAtk: 1, snipeDef: 1 }
@@ -137,6 +139,12 @@ export function roleMul(f: Force, field: Field, side: 'atk' | 'def'): number {
       if (side === 'atk') m *= 1 + R.roleSpearAtk
       if (field.edge === 'field') m *= 1 + R.roleSpearField
       if (field.edge === 'pass') m *= 1 - R.roleSpearPass
+    } else if (k === 'boat') {
+      // 수군 — 물 위에서 세고 뭍에서 약하다. 포구를 지킬 때 배를 벽처럼 쓴다
+      const e = field.edge
+      if (e === 'ford' || e === 'reeds' || e === 'sea' || e === 'mudflat') m *= 1 + R.roleBoatWater
+      else if (e !== undefined) m *= 1 - R.roleBoatLand
+      if (side === 'def' && field.port === true) m *= 1 + R.roleBoatPort
     }
     s += c * m
   }
