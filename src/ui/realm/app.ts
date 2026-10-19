@@ -1128,9 +1128,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const cands: Array<[number, { ev: string; hero: Hero | null; line: string }]> = []
       if (cap !== undefined && cap.captor === after.player) cands.push([4, { ev: 'event-capture', hero: cap, line: `${josa(cap.name, '을', '를')} 사로잡았다` }])
       if (dead !== undefined && dead.faction !== after.player) cands.push([3, { ev: 'event-sniped-commander', hero: dead, line: `${dead.name}이(가) 쓰러졌다` }])
-      if (weAtk && l.ambush === 'success') cands.push([2, { ev: 'event-night-raid', hero: null, line: `${node} 기습이 먹혔다` }])
-      if (weAtk && l.ambush === 'caught') cands.push([2, { ev: 'event-night-raid', hero: null, line: `${node} 기습이 들켰다` }])
-      if (!weAtk && l.ambush === 'success') cands.push([2, { ev: 'event-night-raid', hero: null, line: `${node}에 기습을 당했다` }])
+      // 겨울 기습은 눈 속 매복 그림으로
+      const raid = seasonOf(b.season) === 'winter' ? 'event-winter-ambush' : 'event-night-raid'
+      if (weAtk && l.ambush === 'success') cands.push([2, { ev: raid, hero: null, line: `${node} 기습이 먹혔다` }])
+      if (weAtk && l.ambush === 'caught') cands.push([2, { ev: raid, hero: null, line: `${node} 기습이 들켰다` }])
+      if (!weAtk && l.ambush === 'success') cands.push([2, { ev: raid, hero: null, line: `${node}에 기습을 당했다` }])
       const lost = cap !== undefined && cap.faction === after.player ? cap : dead !== undefined && dead.faction === after.player ? dead : undefined
       if (lost !== undefined) cands.push([1, { ev: 'event-sniped-commander', hero: lost, line: `${josa(lost.name, '을', '를')} 잃었다` }])
       for (const [k, p] of cands) if (k > rank) { rank = k; best = p }
@@ -1146,7 +1148,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         else if (l.state === 'truce') c = [0.8, { ev: 'event-outside-envoy', hero: after.heroes[after.factions[other]?.ruler ?? ''] ?? null, line: `${josa(fn(other), '과', '와')} 화친했다` }]
         else if (l.state === 'war') c = [0.7, { ev: 'event-people-quarrel', hero: null, line: `${josa(fn(other), '과', '와')} 전쟁이다` }]
       } else if (l.kind === 'recruit' && l.faction === pl && after.heroes[l.hero] !== undefined) {
-        c = [0.85, { ev: 'event-defection', hero: after.heroes[l.hero]!, line: `${josa(after.heroes[l.hero]!.name, '이', '가')} 우리 장수가 됐다` }]
+        const ev = l.how === 'persuade' ? 'event-captive-persuade' : 'event-wanderer-arrives'
+        c = [0.85, { ev, hero: after.heroes[l.hero]!, line: `${josa(after.heroes[l.hero]!.name, '이', '가')} 우리 장수가 됐다` }]
+      } else if (l.kind === 'wanderer' && after.nodes[l.node]?.owner === pl) {
+        const w = (after.wanderers ?? []).find((x) => x.hero.id === l.hero)
+        if (w !== undefined) c = [0.5, { ev: 'event-wanderer-arrives', hero: w.hero, line: `떠돌이 ${josa(w.hero.name, '이', '가')} ${after.nodes[l.node]?.name ?? ''}에 왔다` }]
       } else if (l.kind === 'rite' && l.faction === pl) {
         c = [0.6, { ev: l.season === 'spring' ? 'event-divination' : 'event-festival', hero: null, line: l.season === 'spring' ? '봄 제사를 지냈다' : '가을 제사를 지냈다' }]
       } else if (l.kind === 'hunger' && l.faction === pl) {
@@ -1295,7 +1301,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const s = seasonOf(season)
     const el = document.createElement('div')
     el.className = `seasonfx ${s}`
-    el.innerHTML = `<div>${icon(SEASON_ICON[s], 'sfx-ic')}<b>${esc(seasonLabel(season))}</b><span>${esc(SEASON_LINE[s])}</span></div>`
+    el.innerHTML = `<i class="band" style="background-image:url('${ART}season/season-${s}.jpg')"></i><div>${icon(SEASON_ICON[s], 'sfx-ic')}<b>${esc(seasonLabel(season))}</b><span>${esc(SEASON_LINE[s])}</span></div>`
     el.addEventListener('animationend', () => el.remove(), { once: true })
     root.appendChild(el)
     ding('impactBell_heavy_000', 0.45)

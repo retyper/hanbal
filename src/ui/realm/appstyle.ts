@@ -94,13 +94,17 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .ncard, .ap .fcard { flex-direction: column; gap: 6px; }
 .ap .acard .ab { flex: 1; min-width: 0; }
 .ap .seasonfx { position: absolute; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; pointer-events: none;
-  background: radial-gradient(circle, #0009 0, #0000 70%); animation: sfx 1.6s ease-out forwards; }
-.ap .seasonfx > div { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 18px 34px; border-radius: 18px;
+  background: radial-gradient(circle, #0009 0, #0000 70%); animation: sfx 2.2s ease-out forwards; }
+.ap .seasonfx .band { position: absolute; left: 0; right: 0; top: 50%; height: min(52vh, 340px); transform: translateY(-50%);
+  background: #14181e center / cover no-repeat; -webkit-mask-image: linear-gradient(to bottom, #0000, #000 16%, #000 84%, #0000);
+  mask-image: linear-gradient(to bottom, #0000, #000 16%, #000 84%, #0000); animation: sfxband 2.2s ease-out forwards; }
+.ap .seasonfx > div { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 18px 34px; border-radius: 18px;
   background: #14181ee8; border: 1px solid #8a7040; box-shadow: 0 8px 40px #000a; animation: sfxin 1.6s cubic-bezier(.2, 1.4, .4, 1) forwards; }
 .ap .seasonfx b { font-family: 'Gowun Batang', serif; font-size: 30px; color: var(--gold); letter-spacing: 2px; }
 .ap .seasonfx span { font-size: 13.5px; color: #d8d0c0; } .ap .seasonfx img.sfx-ic { width: 54px; height: 54px; }
 .ap .seasonfx.spring b { color: #f2b8c6; } .ap .seasonfx.summer b { color: #9fd18b; } .ap .seasonfx.autumn b { color: #f0b060; } .ap .seasonfx.winter b { color: #cfe3f5; }
 @keyframes sfx { 0% { opacity: 0; } 12% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes sfxband { 0% { transform: translateY(-50%) scale(1.06); } 100% { transform: translateY(-50%) scale(1); } }
 @keyframes sfxin { 0% { transform: scale(.7) translateY(16px); } 25% { transform: scale(1) translateY(0); } 100% { transform: scale(1.04); } }
 @media (prefers-reduced-motion: reduce) { .ap .seasonfx, .ap .seasonfx > div { animation-duration: .8s; } }
 .ap p.src { font-size: 12px; color: #a89c84; margin: 2px 0 4px; }

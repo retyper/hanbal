@@ -95,22 +95,22 @@ export const FACTION_ART: Readonly<Record<string, { emblem: string; color: strin
   samul: { emblem: 'emblem-sailboat', color: '#3f86c6' },
   eumjeup: { emblem: 'emblem-antler', color: '#e5a3b8' },
   chopal: { emblem: 'emblem-reeds', color: '#b8a0d0' },
-  // 삼한 남부 판의 새 나라 열다섯 — 깃발은 아직 있는 것을 나눠 쓴다 (새 문장은 그림 줄 ART-QUEUE 에)
-  baekje: { emblem: 'emblem-sun', color: '#c9504a' },
-  mokji: { emblem: 'emblem-crown', color: '#d4a03a' },
+  // 삼한 남부 판의 새 나라 열다섯 — 백제 매(매사냥) · 목지 팔주령 · 상당 세형동검 · 무진 고인돌 · 발라 독무덤 · 하슬라 물범(반어피)
+  baekje: { emblem: 'emblem-falcon', color: '#c9504a' },
+  mokji: { emblem: 'emblem-bells', color: '#d4a03a' },
   michuhol: { emblem: 'emblem-wave', color: '#4a9fd0' },
   ungcheon: { emblem: 'emblem-bear', color: '#8d7a5a' },
-  sangdang: { emblem: 'emblem-cauldron', color: '#6a8aa0' },
-  geonma: { emblem: 'emblem-horse', color: '#b8784a' },
-  wansan: { emblem: 'emblem-mountain', color: '#7a9a4a' },
-  gosaburi: { emblem: 'emblem-reeds', color: '#a6a05a' },
-  balla: { emblem: 'emblem-samjogo', color: '#9a4a6a' },
-  mujin: { emblem: 'emblem-stars', color: '#5a6ab0' },
-  gampyeong: { emblem: 'emblem-sailboat', color: '#3aa08a' },
+  sangdang: { emblem: 'emblem-dagger', color: '#6a8aa0' },
+  geonma: { emblem: 'emblem-plough', color: '#b8784a' },
+  wansan: { emblem: 'emblem-ginkgo', color: '#7a9a4a' },
+  gosaburi: { emblem: 'emblem-egret', color: '#a6a05a' },
+  balla: { emblem: 'emblem-jars', color: '#9a4a6a' },
+  mujin: { emblem: 'emblem-dolmen', color: '#5a6ab0' },
+  gampyeong: { emblem: 'emblem-crab', color: '#3aa08a' },
   goryong: { emblem: 'emblem-snake', color: '#7a5aa0' },
   maek: { emblem: 'emblem-tiger', color: '#a0703a' },
   siljik: { emblem: 'emblem-fish', color: '#5aa0b8' },
-  haseulla: { emblem: 'emblem-bow', color: '#c06a8a' },
+  haseulla: { emblem: 'emblem-seal', color: '#c06a8a' },
 }
 
 const KIND_ICON: Readonly<Record<NodeKind, string>> = {

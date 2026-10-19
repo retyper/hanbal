@@ -58,5 +58,9 @@ foreach ($prefix in @('settle', 'emblem', 'unit', 'status', 'good', 'treasure'))
 foreach ($f in Get-ChildItem "$Src/cut" -File -Filter 'event-*.png') {
   Fit $f.FullName "$Out/event/$($f.BaseName).jpg" 640 84; $n++
 }
+# 계절 넘김 띠 — 가로로 긴 그림 (seasonFx)
+foreach ($f in Get-ChildItem "$Src/cut" -File -Filter 'season-*.png') {
+  Fit $f.FullName "$Out/season/$($f.BaseName).jpg" 1024 80; $n++
+}
 $kb = [Math]::Round(((Get-ChildItem $Out -Recurse -File | Measure-Object Length -Sum).Sum) / 1KB)
 "담았다: $n 장 → $Out ($kb KB)"
