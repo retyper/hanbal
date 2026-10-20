@@ -122,6 +122,21 @@ export function isWoody(r: Realm, node: string): boolean {
   return Object.values(r.edges).some((e) => (e.a === node || e.b === node) && e.kind === 'forest')
 }
 
+/**
+ * 그 땅의 특산 — 사람이 살면 나는 것 (곡식 말고). 주인이 없어도 정해져 있다 — 지도가 고을마다 그림으로 보이고,
+ * 빈땅을 일구기 전에 "여기 말이 난다"를 알 수 있다. nodeYield 와 같은 규칙 (형: "마을마다 특산품이 다른거라면 이미지마다 명확히")
+ */
+export function nodeSpecials(r: Realm, node: string): Good[] {
+  const n = r.nodes[node]
+  if (n === undefined || n.kind === 'sodo') return []
+  const out: Good[] = []
+  if (n.kind === 'ironMine' || n.kind === 'port') out.push('iron')
+  if (isCoast(r, node)) out.push('salt')
+  if (isWoody(r, node)) out.push('wood')
+  if (n.tags.includes('pasture')) out.push('horse')
+  return out
+}
+
 /** 그 고을이 계절마다 내는 것 — 화면·첩보·AI 가 함께 쓴다. 사람이 안 사는 빈땅은 아무것도 안 낸다 */
 export function nodeYield(r: Realm, node: string, season = seasonOf(r.season)): Partial<Record<Good, number>> {
   const R = P.realm

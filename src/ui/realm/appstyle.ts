@@ -268,7 +268,11 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap.sheet-open .homebtn, .ap.choosing .homebtn { display: none; }
 .ap .roadkey > button { padding: 6px 10px; border-radius: 12px; border: 1px solid #4a5363; background: #1b2028e6; color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
 .ap .roadkey .rk { margin-top: 6px; padding: 10px 12px; border-radius: 14px; background: #1b2028f2; border: 1px solid #4a5363; width: min(78vw, 300px); box-sizing: border-box; }
-.ap .roadkey .rk div { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 3px 0; } .ap .roadkey .rk svg { flex: none; background: #f3e6c8; border-radius: 4px; }
+.ap .roadkey .rk div { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 3px 0; }
+.ap .roadkey .rk { max-height: calc(100dvh - var(--toph) - var(--legh) - 120px); overflow-y: auto; }
+.ap .roadkey .rk b { white-space: nowrap; }
+.ap .roadkey .rk .rki { width: 34px; height: 34px; flex: none; object-fit: contain; }
+.ap .roadkey .rk .rkg { gap: 12px; flex-wrap: wrap; } .ap .roadkey .rk .rkg span { color: var(--ink); display: inline-flex; align-items: center; gap: 3px; } .ap .roadkey .rk svg { flex: none; background: #f3e6c8; border-radius: 4px; }
 .ap .roadkey .rk span { color: var(--mute); font-size: 12px; } .ap .roadkey .rk h5 { margin: 8px 0 2px; font-size: 13px; color: var(--gold); }
 /* 제사 단추 — 드는 것을 그림과 함께 */
 .ap .ritebtn { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; }
@@ -300,7 +304,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .layers .lyr b { font-size: 14px; } .ap .layers .lyr span { font-size: 11.5px; color: var(--mute); text-align: right; }
 .ap.hide-terr .map .terr { display: none; } .ap.hide-roads .map .ly-roads { display: none; } .ap.hide-marches .map .ly-marches { display: none; }
 .ap.hide-labels .map .lbs { display: none; } .ap.hide-flags .map .nd .flag { display: none; } .ap.hide-force .map .nd .foe { display: none; }
-.ap.hide-army .map .toks { display: none; }
+.ap.hide-army .map .toks { display: none; } .ap.hide-goods .map .nd .sp { display: none; }
 /* 전쟁을 걸어왔다 · 이웃끼리 전쟁 (app.warCard) */
 .ap .warc { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0 12px; padding: 12px; border-radius: 14px; background: linear-gradient(90deg, #3a1410, #1b2028); border: 1px solid #a0483a; position: relative; }
 .ap .warc .flord { width: 76px; height: 76px; flex: none; border-radius: 12px; object-fit: cover; border: 2px solid #c8604a; }

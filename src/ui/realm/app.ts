@@ -8,7 +8,7 @@
  */
 import { aiOrders } from '../../realm/ai.ts'
 import { headcount, type Equip, type UnitKind } from '../../realm/battle.ts'
-import { FACTION_ART, HERO_BUST, SEASON_ICON, UNIT_ICON, nodeIcon } from '../../realm/data/art.ts'
+import { FACTION_ART, GOOD_ICON, HERO_BUST, SEASON_ICON, UNIT_ICON, nodeIcon } from '../../realm/data/art.ts'
 import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../../realm/data/nations-yeongnam.ts'
 import { SOUTH_NATIONS } from '../../realm/data/nations-south.ts'
@@ -16,11 +16,11 @@ import { WORLD_NATIONS } from '../../realm/data/nations-world.ts'
 import { knownOf, knows } from '../../realm/discovery.ts'
 import { TRAIT } from '../../realm/data/traits.ts'
 import {
-  ASK_KIND_NAME, ASK_NAME, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, arriveWhen, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine, NODE_NOW, BUILD_NAME, BOW_NAME, CONCEAL_LINE, goodsLine,
+  ASK_KIND_NAME, ASK_NAME, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, arriveWhen, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine, NODE_NOW, BUILD_NAME, BOW_NAME, CONCEAL_LINE, goodsLine, GOOD_NAME,
 } from '../../realm/data/prose.ts'
 import { canEscort, envoyChanceFor, envoyOptions, favorOf, jointTargets, openAsks, relationOf } from '../../realm/diplomacy.ts'
 import {
-  GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, goodOf, guardCost, hhGrowth, militiaMen, nextBuild, nodeYield, riteAllowed, riteCost,
+  GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, goodOf, guardCost, hhGrowth, militiaMen, nextBuild, nodeYield, nodeSpecials, riteAllowed, riteCost,
   settleCost, settleLimit, settleSource, settleTargets, autoFlows, crowdOf, homeRoom, migrateCost, migrateLimit, migratePath,
 } from '../../realm/economy.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
@@ -32,7 +32,7 @@ import { allianceWhy, leaderOf, tookRecently, truceWhy, winningAgainst } from '.
 import { heroSeen, isRuler, persuadeSeasons, wanderersFor } from '../../realm/heroes.ts'
 import type { Approach, Army, EdgeKind, EnvoyAsk, Good, Hand, Hero, Order, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
-import { EDGE_STYLE, MAP_CSS, mapHtml, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
+import { EDGE_STYLE, MAP_CSS, ROUTE_SIGN_NAME, mapHtml, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { GROW_CSS, HERO_CSS, bondChip, growthHtml, heroRadar, roleLine, traitChips, traitLines } from './heroview.ts'
 import { APP_CSS } from './appstyle.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
@@ -102,6 +102,7 @@ const LAYERS = [
   { id: 'marches', name: '행군 화살', hint: '우리 출정 · 다가오는 적' },
   { id: 'labels', name: '이름', hint: '고을 이름' },
   { id: 'flags', name: '깃발', hint: '고을 주인' },
+  { id: 'goods', name: '특산', hint: '쇠·소금·나무·말 — 고을마다 나는 것' },
   { id: 'force', name: '군세 수', hint: '척후가 본 적 군세' },
   { id: 'army', name: '우리 군대', hint: '장수 얼굴 말' },
 ] as const
@@ -150,7 +151,6 @@ const GROWTH_WHY: Readonly<Record<string, string>> = {
 /** 빈 몫 — 다섯 물건 */
 const noGoods = (): Record<Good, number> => ({ grain: 0, iron: 0, salt: 0, wood: 0, horse: 0 })
 /** 물건의 그림 */
-const GOOD_ICON: Record<Good, string> = { grain: 'good-rice', iron: 'treasure-iron-ingots', salt: 'good-salt', wood: 'good-wood', horse: 'good-horse' } // 나무는 장작 짐 (형: '주고받을 거래에 이상한 소나무국기있음')
 /** 사신을 꾸밀 때 한 번 누름에 오르내리는 몫 */
 const GOOD_STEP: Record<Good, number> = { grain: 10, iron: 5, salt: 5, wood: 5, horse: 1 }
 const NO_COMPOSE = { to: '', ask: 'truce' as Ask, give: noGoods(), take: noGoods(), target: '' }
@@ -500,6 +500,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       ['mudflat', '두 계절 · 발이 빠진다'],
     ]
     h += `<div class="rk"><h5>길</h5>${ROAD.map(([k, t]) => `<div>${line(EDGE_STYLE[k])}<b>${EDGE_NAME[k]}</b><span>${t}</span></div>`).join('')}`
+    // 길 기호 — 계절·닿는 고을에 따라 바뀐다 (mapview.routeSign)
+    h += `<h5>길 기호 · 계절따라 바뀐다</h5>`
+    h += (Object.keys(ROUTE_SIGN_NAME) as RouteSign[]).map((s) => `<div><img class="rki" src="${ART}icon/route-${s}.png" alt=""><span>${esc(ROUTE_SIGN_NAME[s])}</span></div>`).join('')
+    h += `<h5>특산 · 고을 위 둥근 표</h5><div class="rkg">${(['iron', 'salt', 'wood', 'horse'] as const).map((g) => `<span>${icon(GOOD_ICON[g])}${GOOD_NAME[g]}</span>`).join('')}</div>`
+    h += `<div><span>흐린 표는 아무도 안 사는 땅 — 일구면 난다</span></div>`
     h += `<h5>화살</h5>`
     h += `<div>${line('stroke="#c8402a" stroke-width="7"')}<span>이번 계절 떠나기로 고른 길</span></div>`
     h += `<div>${line('stroke="#c8402a" stroke-width="7" stroke-dasharray="10 6"')}<span>이미 가는 중 · 남은 계절이 적힌다</span></div>`
@@ -1525,6 +1530,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 이 땅에서 나는 것 — 누구 땅이든 보인다 (칠 까닭 · 바꿀 까닭)
     const yl = goodsLine(nodeYield(r, id))
     if (yl !== '') h += `<p class="mute">이 땅에서 나는 것 · ${esc(yl)} (이번 계절)</p>`
+    else {
+      // 아무도 안 사는 땅 — 일구면 무엇이 나는지 (지도의 흐린 특산 표와 같은 것)
+      const sp = nodeSpecials(r, id)
+      if (sp.length > 0) h += `<p class="mute">사람이 살면 나는 것 · ${sp.map((g) => `${icon(GOOD_ICON[g])}${GOOD_NAME[g]}`).join(' · ')}</p>`
+    }
     if (!ours && n.kind !== 'sodo' && !(n.kind === 'wild' && n.owner === null && known?.force == null)) {
       const f = known?.force
       let force = '못 봤다'

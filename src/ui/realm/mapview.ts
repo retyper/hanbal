@@ -7,13 +7,14 @@
  * 자리·그림 이름은 realm/data/art.ts.
  */
 import { headcount } from '../../realm/battle.ts'
-import { FACTION_ART, REGION_ART, SEASON_MAP, nodeIcon, nodePos } from '../../realm/data/art.ts'
-import { EDGE_NAME, NODE_KIND_NAME, NODE_NOW } from '../../realm/data/prose.ts'
+import { FACTION_ART, GOOD_ICON, REGION_ART, SEASON_MAP, nodeIcon, nodePos } from '../../realm/data/art.ts'
+import { EDGE_NAME, GOOD_NAME, NODE_KIND_NAME, NODE_NOW } from '../../realm/data/prose.ts'
 import { worldGeoOf } from '../../realm/data/regions/index.ts'
 import { knows } from '../../realm/discovery.ts'
+import { nodeSpecials } from '../../realm/economy.ts'
 import { visibleRange } from '../../realm/intel.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
-import type { EdgeKind, NodeKind, Realm, REdge, RegionId } from '../../realm/types.ts'
+import type { EdgeKind, NodeKind, Realm, REdge, RegionId, SeasonOfYear } from '../../realm/types.ts'
 import { separatedRoutes, ferryAt, landClipSvg, midOf, naturalLines, riversSvg, routePoints, smoothPath, trimPolyline, type Pt } from './mapgeo.ts'
 import { territory, type Territory } from './territory.ts'
 import { worldMapUrl } from './worldmap.ts'
@@ -86,6 +87,12 @@ export const MAP_CSS = `
 .map svg .mvglow { animation: mvg 1.2s linear infinite; } @keyframes mvg { to { stroke-dashoffset: -40; } }
 .map svg .thrarrow { animation: thr 1s ease-in-out infinite alternate; }
 @media (prefers-reduced-motion: reduce) { .map .nd.sel .ring, .map .nd.threat .ring, .map svg .mvglow, .map svg .thrarrow { animation: none; } }
+/* 특산 — 고을 그림 오른쪽 위에 작은 둥근 표 (쇠·소금·나무·말). 아무도 안 사는 땅은 흐리게 — 일구면 난다 */
+.map .nd .sp { position: absolute; right: -8%; top: -4%; display: flex; justify-content: flex-end; gap: 1px; pointer-events: none; z-index: 1; width: 100%; }
+.map .nd .sp img { width: 23%; aspect-ratio: 1; object-fit: contain; border-radius: 50%; background: #f8eed6e8; padding: 2%; box-sizing: border-box;
+  box-shadow: 0 0 0 1px #6b4a2a, 0 1px 2px #0007; }
+.map .nd .sp.idle img { opacity: .6; filter: saturate(.5); }
+.map svg .rsign { pointer-events: auto; filter: drop-shadow(0 0 1.5px #f8eed6) drop-shadow(0 0 1.5px #f8eed6) drop-shadow(0 1px 2px #0009); } .map[data-zl="far"] svg .rs-f { display: none; } /* 들길은 흔해 가까이 볼 때만 */
 .map .nd .men, .map .nd .foe { position: absolute; left: 86%; top: 42%; transform: translateY(-50%); background: #1c2129; border-radius: 9px; padding: 0 5px;
   font-size: clamp(10px, calc(1.9cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 15px); font-weight: 700; white-space: nowrap; }
 .map .nd .men { color: #9fd18b; border: 1px solid #9fd18b; } .map .nd .foe { color: #e8a08a; border: 1px solid #8a5a3a; }
@@ -229,6 +236,8 @@ export function mapHtml(
   const allEdges = Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))
   const sep = separatedRoutes(`${region}:${W}x${H}:${allEdges.length}`, allEdges.map((ed) => [ed.id, routePoints(region, ed, px(ed.a), px(ed.b), W, H)] as const), 14 * sw, RA.terrR * 0.15)
   const route = (ed: REdge): Pt[] => sep.get(ed.id) ?? routePoints(region, ed, px(ed.a), px(ed.b), W, H)
+  /** 길 기호의 크기 — 고을 그림의 절반 남짓 */
+  const signW = ICON_W * RA.nodeScale * W * 0.6
   svg += `<g class="ly-roads">` // 보기 켜고 끄기 (app 의 .layers) — 길
   for (const ed of Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))) {
     if (!seen(ed.a) || !seen(ed.b)) continue
@@ -240,11 +249,20 @@ export function mapHtml(
     const w0 = Number(/stroke-width="([\d.]+)"/.exec(style)?.[1] ?? 5)
     svg += `<path d="${d}" fill="none" stroke="#f8eed6" stroke-width="${(w0 + 5 * sw).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round" opacity="${shut ? 0.2 : 0.8}"/>`
     svg += `<path d="${d}" fill="none" ${style} stroke-linejoin="round" opacity="${shut ? 0.3 : 0.95}"><title>${EDGE_NAME[ed.kind]}</title></path>`
+    // 길 기호 — 나루는 나루터에, 다른 길은 가운데에서 조금 비켜 (행군 화살의 "n계절" 글씨를 안 가린다)
     const fr = ed.kind === 'ford' ? ferryAt(region, ed, W, H) : null
-    if (fr !== null) svg += ferrySvg(fr, sw)
+    const at = fr ?? midOf(trimPolyline(pts, 0.6, 0.64))
+    const sz = signW
+    // 막힌 길은 짧아도 기호를 단다 — 왜 막혔는지가 그림이다 (눈 덮인 고개 · 불어난 나루)
+    const signed = fr !== null || shut || lenOf(pts) > sz * 2
+    if (signed) {
+      const sign = routeSign(r, ed, season, fr !== null)
+      svg += `<image class="rsign${ed.kind === 'field' && sign === 'oxcart' ? ' rs-f' : ''}" href="${art}icon/route-${sign}.png" x="${(at[0] - sz / 2).toFixed(1)}" y="${(at[1] - sz * 0.62).toFixed(1)}" width="${sz.toFixed(1)}" height="${sz.toFixed(1)}"><title>${ROUTE_SIGN_NAME[sign]}</title></image>`
+    }
     if (shut) {
-      const [mx, my] = midOf(pts)
-      const s = 12 * sw
+      // 기호가 있으면 ✕ 는 그 오른쪽 아래 귀퉁이에 작게 — 그림을 가리지 않게
+      const [mx, my] = signed ? [at[0] + sz * 0.38, at[1] + sz * 0.26] : midOf(pts)
+      const s = (signed ? 7 : 12) * sw
       svg += `<path d="M${mx - s} ${my - s}L${mx + s} ${my + s}M${mx + s} ${my - s}L${mx - s} ${my + s}" stroke="#a02a1a" stroke-width="${6 * sw}" stroke-linecap="round"/>`
     }
   }
@@ -277,6 +295,14 @@ export function mapHtml(
     if (onUs) svg += `<path d="${smoothPath(pts)}" fill="none" stroke="#ffb09a" stroke-width="${18 * lw}" stroke-linecap="round" opacity=".35"/>`
     svg += `<path${onUs ? ' class="thrarrow"' : ''} d="${smoothPath(pts)}" fill="none" stroke="${col}" stroke-width="${(amb ? 11 : onUs ? 10 : 9) * lw}"${dash} marker-end="url(#${head})" opacity=".9"/>`
     const label = `${m.foe === true ? '적 ' : ''}${amb ? '기습' : ''}${m.left !== null ? `${amb ? ' ' : ''}${m.left}계절` : ''}`
+    // 보인 적의 행군 — 창을 멘 줄 그림 (무엇이 오는지 한눈에)
+    if (m.foe === true) {
+      // 글씨("적 n계절")의 왼쪽에 붙인다 — 고을 그림 밑에 묻히지 않게
+      const [cx, cy] = midOf(pts)
+      const half = (label.length * 26 * lw * 0.95) / 2
+      const cs = signW * 1.2
+      svg += `<image class="rsign" href="${art}icon/route-column.png" x="${(cx - half - cs).toFixed(1)}" y="${(cy - 12 - cs * 0.8).toFixed(1)}" width="${cs.toFixed(1)}" height="${cs.toFixed(1)}"><title>${ROUTE_SIGN_NAME.column}</title></image>`
+    }
     if (label !== '') {
       const [lx, ly] = midOf(pts)
       svg += `<text x="${lx}" y="${ly - 12}" font-size="${26 * lw}" font-weight="700" fill="${onUs ? '#8a1a0a' : m.foe === true || amb ? '#3a2a5a' : '#7a1f10'}" stroke="#f3e6c8" stroke-width="5" paint-order="stroke" text-anchor="middle">${label}</text>`
@@ -325,7 +351,10 @@ export function mapHtml(
       color: owner !== null ? color : '', emb, force,
     })
     nodes += `<div class="nd${kcls}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${tcls}${far}${thr}${fr}"${go} data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color};--s:${sizeOf(n.hh).toFixed(2)}" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}">`
-    nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : ''}</div>`
+    // 특산 — 사람이 살면 나는 것 (쇠·소금·나무·말). 빈땅도 보여 "일구면 말이 난다"를 미리 안다
+    const sp = nodeSpecials(r, n.id)
+    const spec = sp.length > 0 ? `<span class="sp${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}">`).join('')}</span>` : ''
+    nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${spec}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : ''}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()
@@ -483,12 +512,49 @@ function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly 
 /** 땅 조각의 크기 배수 — 고을 꼴로 정한다 (집 수는 판마다 바뀌어도 땅 모양은 그대로 두려고) */
 const CELL_SIZE: Readonly<Record<NodeKind, number>> = { capital: 1.3, port: 1.1, fort: 0.95, village: 1, ironMine: 0.9, wild: 0.85, sodo: 0.7 }
 
-/** 나루의 작은 배 */
-function ferrySvg([x, y]: Pt, k: number): string {
-  const s = 7 * k
-  return `<path d="M${x - s * 1.6} ${y - s * 0.2}Q${x} ${y + s * 1.3} ${x + s * 1.6} ${y - s * 0.2}Z" fill="#6b4a2a" stroke="#2a1d10" stroke-width="${1.2 * k}"/>`
-    + `<path d="M${x} ${y - s * 0.3}V${y - s * 1.8}" stroke="#2a1d10" stroke-width="${1.2 * k}"/>`
+// ───────── 길 기호 (public/realm/icon/route-* · 2026-10-20 그림 열여섯)
+
+/** 길 기호의 이름 — 기호에 손을 대면 뜨는 말, 길 보기 표 */
+export const ROUTE_SIGN_NAME = {
+  oxcart: '들길 — 소달구지가 다니는 트인 길',
+  caravan: '쇠 나는 고을로 가는 길 — 짐말이 오간다',
+  cairn: '고갯길 — 서낭당 돌무더기',
+  snowpass: '눈 덮인 고개 — 겨울엔 얼어서 사람을 잃는다',
+  fortstair: '산성으로 오르는 고개 — 지키는 쪽이 높다',
+  jangseung: '숲길 — 장승이 선 숨기 좋은 길',
+  boardwalk: '갈대 늪 — 널다리 · 숨기 좋다',
+  steppingstones: '갯벌 — 돌을 디뎌 건넌다 · 더디다',
+  ferry: '나루 — 배로 강을 건넌다',
+  logbridge: '여울 — 통나무 다리로 건넌다',
+  raft: '장마에 불어난 나루 — 뗏목으로 건너다 사람을 잃는다',
+  searoute: '바닷길 — 배로 건넌다',
+  sotdae: '소도로 드는 길 — 솟대 너머는 싸움이 없는 땅',
+  column: '보인 적의 행군',
+} as const
+export type RouteSign = keyof typeof ROUTE_SIGN_NAME
+
+/**
+ * 길 기호 — 그 길에 걸린 규칙이 그림으로 보인다. 규칙이 바뀌면 그림도 바뀐다:
+ * 겨울 고개는 눈 덮인 길(얼어서 사람을 잃는다), 여름 나루는 뗏목(물이 불었다), 산성으로 오르는 고개는 돌계단(높은 쪽이 지킨다),
+ * 소도로 드는 길은 솟대, 쇠 나는 고을로 가는 들길은 짐말. 계절이 바뀔 때 "어, 고개 그림이 바뀌었네" 하고 규칙을 알아차리게
+ * (형: "오 이게 구현이 되어있네. 오 이게 의도한대로 진행이 되네").
+ */
+export function routeSign(r: Realm, ed: REdge, season: SeasonOfYear, ferry: boolean): RouteSign {
+  const to = (k: NodeKind): boolean => r.nodes[ed.a]?.kind === k || r.nodes[ed.b]?.kind === k
+  if (ed.kind !== 'sea' && to('sodo')) return 'sotdae'
+  switch (ed.kind) {
+    case 'pass': return season === 'winter' ? 'snowpass' : to('fort') ? 'fortstair' : 'cairn'
+    case 'ford': return season === 'summer' ? 'raft' : ferry ? 'ferry' : 'logbridge'
+    case 'forest': return 'jangseung'
+    case 'reeds': return 'boardwalk'
+    case 'mudflat': return 'steppingstones'
+    case 'sea': return 'searoute'
+    case 'field': return to('ironMine') ? 'caravan' : 'oxcart'
+  }
 }
+
+/** 꺾은선의 길이 */
+const lenOf = (p: readonly Pt[]): number => p.reduce((s, q, i) => (i === 0 ? 0 : s + Math.hypot(q[0] - p[i - 1]![0], q[1] - p[i - 1]![1])), 0)
 
 /**
  * 고을마다의 땅을 주인 색으로 — 같은 나라 사이는 옅은 점선, 다른 나라 사이는 짙은 금, 강을 따라 갈린 금은 강과 겹친다.

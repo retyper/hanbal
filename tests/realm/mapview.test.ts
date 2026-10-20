@@ -10,7 +10,8 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { startYeongnam } from '../../src/realm/data/regions/yeongnam.ts'
-import { mapHtml, type MapTarget, type MapToken } from '../../src/ui/realm/mapview.ts'
+import { nodeSpecials } from '../../src/realm/economy.ts'
+import { mapHtml, routeSign, type MapTarget, type MapToken } from '../../src/ui/realm/mapview.ts'
 
 describe('지도 겉모습', () => {
   it('고을 배너 — 깃발과 나라 색이 이름과 한 덩어리 · 도읍과 우리 고을이 구별된다', () => {
@@ -59,5 +60,31 @@ describe('지도 겉모습', () => {
     const h = mapHtml(r, 'saro', '/', [], '', null, toks)
     assert.ok(/<i class="dir" style="--a:-?\d+deg"><\/i>/.test(h))
     assert.ok(h.includes('class="hp" style="--p:0.25"') && h.includes('class="hp" style="--p:1.00"'))
+  })
+
+  // 형 2026-10-20: "오 이게 구현이 되어있네. 오 이게 의도한대로 진행이 되네" — 규칙이 바뀌면 그림도 바뀐다
+  it('길 기호 — 겨울 고개는 눈길 · 여름 나루는 뗏목 · 소도로 드는 길은 솟대', () => {
+    const r = startYeongnam(1, 'saro')
+    const pass = Object.values(r.edges).find((e) => e.kind === 'pass' && !['sodo', 'fort'].some((k) => r.nodes[e.a]!.kind === k || r.nodes[e.b]!.kind === k))!
+    assert.equal(routeSign(r, pass, 'spring', false), 'cairn')
+    assert.equal(routeSign(r, pass, 'winter', false), 'snowpass')
+    const ford = Object.values(r.edges).find((e) => e.kind === 'ford' && r.nodes[e.a]!.kind !== 'sodo' && r.nodes[e.b]!.kind !== 'sodo')!
+    assert.equal(routeSign(r, ford, 'autumn', true), 'ferry')
+    assert.equal(routeSign(r, ford, 'summer', true), 'raft')
+    const sodo = Object.values(r.edges).find((e) => e.kind !== 'sea' && (r.nodes[e.a]!.kind === 'sodo' || r.nodes[e.b]!.kind === 'sodo'))
+    if (sodo !== undefined) assert.equal(routeSign(r, sodo, 'spring', false), 'sotdae')
+    r.season = 3 // 겨울 — 지도에 눈길 그림이 뜬다
+    assert.ok(mapHtml(r, 'saro', '/', [], '').includes('route-snowpass.png'))
+  })
+
+  it('특산 — 고을마다 나는 것이 그림 표로 · 빈땅은 흐리게 (일구면 난다)', () => {
+    const r = startYeongnam(1, 'saro')
+    const h = mapHtml(r, 'saro', '/', [], '')
+    const mine = Object.values(r.nodes).find((n) => n.kind === 'ironMine')!
+    assert.ok(nodeSpecials(r, mine.id).includes('iron'))
+    assert.ok(new RegExp(`data-node="${mine.id}"[^>]*>.*?<span class="sp[^"]*"><img src="/icon/treasure-iron-ingots.png"`).test(h))
+    const wild = Object.values(r.nodes).find((n) => n.kind === 'wild' && n.owner === null && nodeSpecials(r, n.id).length > 0)
+    if (wild !== undefined) assert.ok(new RegExp(`data-node="${wild.id}"[^>]*>.*?<span class="sp idle">`).test(h))
+    assert.deepEqual(nodeSpecials(r, Object.values(r.nodes).find((n) => n.kind === 'sodo')?.id ?? ''), [])
   })
 })

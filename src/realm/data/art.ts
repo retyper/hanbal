@@ -5,7 +5,7 @@
  * 파일은 public/realm/ 아래 이름이다 (굽기 전 원본은 assets_src/realm/, gitignore).
  * 지도 위 자리는 map/spring.jpg (1264×848) 위의 비율 0~1 — 변한 축소판의 [상상 배치]를 낙동강·남강 그림에 얹었다.
  */
-import type { NodeKind, RegionId, RNode } from '../types.ts'
+import type { Good, NodeKind, RegionId, RNode } from '../types.ts'
 import { GEO as YEONGNAM_GEO, yeongnamPos } from './regions/yeongnam.ts'
 import { placeOf, worldGeoOf } from './regions/index.ts'
 
@@ -150,6 +150,9 @@ export const FACTION_ART: Readonly<Record<string, { emblem: string; color: strin
   tamna: { emblem: 'emblem-tamna', color: '#5ab0a0' },
 }
 
+/** 물건의 그림 — 창고 · 사신 · 지도의 특산 표가 함께 쓴다. 나무는 장작 짐 (형: '주고받을 거래에 이상한 소나무국기있음') */
+export const GOOD_ICON: Readonly<Record<Good, string>> = { grain: 'good-rice', iron: 'treasure-iron-ingots', salt: 'good-salt', wood: 'good-wood', horse: 'good-horse' }
+
 const KIND_ICON: Readonly<Record<NodeKind, string>> = {
   capital: 'settle-capital',
   village: 'settle-farm-village',
@@ -195,11 +198,13 @@ export function nodePos(region: RegionId | undefined, id: string): readonly [num
 }
 
 export function nodeIcon(n: RNode): string {
-  if (n.kind === 'wild') return n.owner === null || n.hh <= 0 ? KIND_ICON.wild : (SETTLED_ICON[n.id] ?? 'settle-hamlet')
+  if (n.kind === 'wild') return n.owner === null || n.hh <= 0 ? KIND_ICON.wild : (SETTLED_ICON[n.id] ?? (n.tags.includes('pasture') ? 'settle-horse-ranch' : 'settle-hamlet'))
   // 마을은 지은 것이 보인다 — 해자 · 목책 (형: "짓기·자원이 지도에 안 보인다")
   if (n.kind === 'village' && NODE_ICON[n.id] === undefined) {
     if (n.tags.includes('moat')) return 'settle-moat'
     if (n.tags.includes('palisade')) return 'settle-palisade'
+    // 말이 나는 들은 목장 마을 — 특산이 그림에서 보이게 (형: "특산품이 다른거라면 이미지마다 명확히")
+    if (n.tags.includes('pasture')) return 'settle-horse-ranch'
   }
   return NODE_ICON[n.id] ?? KIND_ICON[n.kind]
 }
