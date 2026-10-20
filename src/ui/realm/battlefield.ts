@@ -153,7 +153,7 @@ function introLine(l: BattleLine, weAtk: boolean, foe: string): string {
     case 'road': return '대로로 당당히 다가섰다. 적도 진을 치고 기다린다.'
     case 'night': return ok ? '밤길로 숨어 닿았다. 적은 아직 잠들어 있다 — 성문이 닫히기 전에 들이친다.' : '어둠 속에서 북이 울린다. 들켰다 — 적이 기다리고 있었다.'
     case 'ford': return ok ? '갈대에 숨어 여울을 건넜다. 적은 강을 벽으로 믿고 있었다.' : '강 한가운데서 들켰다. 물을 헤치는 사이 화살이 쏟아진다.'
-    case 'ridge': return ok ? '산기슭을 돌아 적의 뒤로 나왔다 — 높은 곳을 잡았다.' : '산길에서 적의 척후에게 들켰다.'
+    case 'ridge': return ok ? '산기슭을 돌아 적의 뒤로 나왔다 — 높은 곳을 잡았다.' : '산길에서 적의 정찰꾼에게 들켰다.'
     case 'cliff': return ok ? '절벽을 타고 올라 성 안으로 뛰어내렸다!' : '절벽을 오르다 들켰다. 돌과 화살에 많이 떨어졌다.'
   }
 }
@@ -253,7 +253,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const hl = p.hint !== null ? (p.hintSrc === 'habit' ? HABIT_LINE[p.hint] : HINT_LINE[p.hint]) : undefined
     if (p.hint !== null && hl !== undefined && p.hintSrc === 'habit') h += `<p class="whint"><b>적장의 버릇</b> ${esc(josa(foeName, '은', '는'))} 겨뤄 보니 ${esc(hl)} <span class="mute">— 이번 합에도 그럴지는 모른다</span></p>`
     else if (p.hint !== null && hl !== undefined) h += `<p class="whint"><b>적 앞줄의 낌새</b> ${esc(hl)} <span class="mute">— ${l.field === true ? '눈앞에서 맞붙어 보인다' : weAtk ? '척후가 이번 계절 보고 왔다' : '다가오는 것을 지켜봤다'}</span></p>`
-    else h += `<p class="whint mute">적진의 속이 보이지 않는다 — 척후를 보냈거나 그 적장과 겨뤄 본 적이 있으면 보인다.</p>`
+    else h += `<p class="whint mute">적진의 속이 보이지 않는다 — 정찰을 보냈거나 그 적장과 겨뤄 본 적이 있으면 보인다.</p>`
     if (p.foeWaver) h += `<p class="whint warn"><b>적이 흔들린다</b> 깃발이 기울고 대열이 성기다 — 방진도 돌격을 못 받아 낸다. 쫓을 때다.</p>`
     // 맞은편 — 적 무리마다 사람 수
     const foeRow = (Object.entries(p.foe) as [Grp, number][]).filter(([, v]) => v > 0).map(([g, v]) => `${esc(groupLabel(mixOf(foeI), g))} ${v}명`).join(' · ')

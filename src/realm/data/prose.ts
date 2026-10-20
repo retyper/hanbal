@@ -218,8 +218,8 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     case 'scout':
       if (line.faction !== viewer) return null
       return line.detected
-        ? `척후가 ${josa(node(line.node), '을', '를')} 보고 왔다. 들켰다. 그 고을이 경계를 올린다.`
-        : `척후가 ${josa(node(line.node), '을', '를')} 보고 왔다.`
+        ? `정찰꾼이 ${josa(node(line.node), '을', '를')} 보고 왔다. 들켰다. 그 고을이 경계를 올린다.`
+        : `정찰꾼이 ${josa(node(line.node), '을', '를')} 보고 왔다.`
     case 'blocked': {
       const a = before.armies[line.army]
       if (a?.faction !== viewer) return null
@@ -361,7 +361,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
           ? ` ${josa(target, '이', '가')} 우리 짓인 줄 안다. 사이가 나빠졌다.`
           : ` ${josa(target, '이', '가')} 눈치챘지만 누가 했는지는 모른다.`
         if (line.ok) return `공작이 뜻대로 됐다. ${did}${line.caught ? knew : ''}`
-        return `공작이 틀어졌다. ${PLOT_NAME[line.op]}.${line.caught ? knew : ''}`
+        return `${PLOT_FAIL[line.op](target, where, line.other !== undefined ? fname(line.other) : '')}${line.caught ? knew : ''}`
       }
       // 우리가 당한 공작 — 들켰으면 일이 있었음을 안다. 누가 보냈는지는 드러났을 때만 (형: "어디서보낸 첩자인지 알기도 모르기도")
       if ((line.target === viewer || line.other === viewer) && line.caught) {
@@ -873,6 +873,16 @@ export const PLOT_DOES: Record<PlotOp, string> = {
   assassin: '밤에 자객을 보내 적장을 쏜다. 맞히면 다치거나 죽는다. 들키면 자객이 잡힌다',
 }
 
+/** 공작이 안 됐을 때 — 무엇을 하려다 왜 안 됐는지 한 문장 (형 2026-10-20: "\"공작이 틀어졌다. 첩자.\" 이게 뭔말이야. 알아들을수있게 써라좀") */
+const PLOT_FAIL: Record<PlotOp, (target: string, where: string, other: string) => string> = {
+  rumor: (t) => `${t} 진중에 소문을 퍼뜨리려 했지만 아무도 믿지 않았다. 군사들 기운은 그대로다.`,
+  sow: (t, _w, o) => `${josa(t, '과', '와')} ${josa(o, '을', '를')} 갈라놓으려 했지만 두 나라는 우리 말을 믿지 않았다.`,
+  bribe: (_t, w) => `${w} 장정들을 매수하려 했지만 값을 받지 않았다. 그대로 싸우러 나온다.`,
+  burn: (t) => `${t} 창고에 불을 놓으려 했지만 지키는 눈이 많아 다가가지 못했다.`,
+  spy: (_t, w) => `${w}에 첩자를 심으려 했지만 마을에 섞여 들지 못했다. 군세는 여전히 안 보인다.`,
+  assassin: (t) => `${t} 진중으로 자객을 보냈지만 활을 겨눌 틈이 없었다.`,
+}
+
 const PLOT_DONE: Record<PlotOp, (target: string, where: string, other: string) => string> = {
   rumor: (t) => `${t} 진중에 소문이 돌아 군사들 기운이 꺾였다.`,
   sow: (t, _w, o) => `${josa(t, '과', '와')} ${o} 사이가 틀어졌다.`,
@@ -957,7 +967,7 @@ const DISCOVER_LINE: Readonly<Record<DiscoverHow, (n: string) => string>> = {
   market: (n) => `장터에서 ${n} 사람들을 만났다.`,
   war: (n) => `싸움터에서 ${josa(n, '을', '를')} 처음 마주쳤다.`,
   spy: (n) => `첩자가 ${n} 이야기를 듣고 왔다.`,
-  scout: (n) => `척후가 ${n} 땅을 보고 왔다.`,
+  scout: (n) => `정찰꾼이 ${n} 땅을 보고 왔다.`,
   ally: (n) => `동맹이 ${n} 이야기를 전해 줬다.`,
   rumor: (n) => `상인에게서 ${n} 이야기를 들었다. 지도에 새 땅이 펼쳐진다.`,
 }

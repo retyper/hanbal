@@ -56,7 +56,7 @@ export const TUT_STEPS: readonly TutStep[] = [
     press: ['[data-act="settle"][data-node="wild-dolseom"]', tab('people')], done: (c) => has(c, 'settle') || has(c, 'migrate'),
   },
   {
-    id: 'scout', text: '오른쪽 봉황 마을을 누르고 「척후를 여기로 보낸다」. 적 군세가 얼마인지 보인다.',
+    id: 'scout', text: '오른쪽 봉황 마을을 누르고 「여기로 정찰을 보낸다」. 적 군세가 얼마인지 보인다. 정찰은 「외교」에서도 고른다.',
     press: ['[data-act="scout"][data-node="guya-vil"]', '.nd[data-node="guya-vil"]'], done: (c) => has(c, 'scout'),
   },
   {

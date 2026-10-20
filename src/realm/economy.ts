@@ -3,7 +3,8 @@
  *
  * 한 해의 흐름이 숫자로 선다:
  *   봄   — 심는다. 봄이 끝날 때의 가호가 `sown` 이 된다 → 가을 수확을 정한다. 봄에 징병하면 그해 농사가 준다
- *   가을 — 거둔다. sown × harvestPerHH 가 국읍 창고로
+ *   가을 — 거둔다. 여름이 끝나 가을로 들 때 sown × harvestPerHH 가 국읍 창고로 — 가을 소식에 가을걷이가 오고, 그 곡식을 가을에 쓴다
+ *          (형 2026-10-20: "추수가 가을이아니라 겨울에 들어와버리는데" — 전에는 가을이 끝날 때 거둬 겨울 소식에 떴다)
  *   늘   — 군대는 곡식을 먹는다 (겨울 × winterRation). 바닥나면 사기가 떨어지고 가호가 준다
  *         곡식이 있고 싸움이 없던 고을은 가호가 조금씩 는다
  * 장정(군대 없는 고을을 지키는 사람)도 가호에 비례한다.
@@ -646,9 +647,9 @@ export function hhGrowth(r: Realm, node: string): { per: number; why: string[] }
   if (n === undefined || n.owner === null || n.kind === 'sodo') return { per: 0, why: [] }
   const f = n.owner
   const season = seasonOf(r.season)
-  // 굶나 — 이번 계절 수확(가을)을 더하고 군량을 뺀다
+  // 굶나 — 이번 계절 끝의 가을걷이(여름이 끝날 때)를 더하고 군량을 뺀다
   let grain = stockOf(r, f).grain
-  if (season === 'autumn') {
+  if (season === 'summer') {
     for (const x of Object.values(r.nodes)) if (x.owner === f) grain += x.sown * R.harvestPerHH * harvestMul(r, x.id)
   }
   const why: string[] = []
@@ -707,8 +708,8 @@ export function stepEconomy(r: Realm, season: number, fought: ReadonlySet<string
       s.grain += fac.income.grain
       s.iron += fac.income.iron
     }
-    // 가을 — 봄에 심은 만큼 거둔다
-    if (season === 2) {
+    // 가을걷이 — 여름이 끝나 가을로 들 때, 봄에 심은 만큼 거둔다 (가을 소식에 뜬다)
+    if (season === 1) {
       let sown = 0
       for (const n of nodes) sown += n.sown * harvestMul(r, n.id)
       const base = Math.round(sown * R.harvestPerHH)

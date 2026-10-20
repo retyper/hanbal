@@ -150,8 +150,7 @@ describe('소도 제사', () => {
 
   it('봄 제사는 그해 가을 수확을 늘린다', () => {
     const run = (orders: Order[]): Extract<ReportLine, { kind: 'harvest' }> => {
-      let r = advance(byeonhanMini(1), orders).next
-      r = advance(r, []).next // 여름
+      const r = advance(byeonhanMini(1), orders).next // 여름
       const h = advance(r, []).report.lines.find((l) => l.kind === 'harvest' && l.faction === 'us')
       assert.ok(h !== undefined && h.kind === 'harvest')
       return h

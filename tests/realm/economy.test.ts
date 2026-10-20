@@ -68,11 +68,12 @@ describe('한 해의 살림', () => {
 
   it('가을 수확 = 봄에 심은 가호 × 군주·맡은 장수의 배수 × harvestPerHH', () => {
     let r = byeonhanMini(1)
-    r = pass(r).next // 봄
-    r = pass(r).next // 여름
+    r = pass(r).next // 봄이 끝나 여름
     const sown = Object.values(r.nodes).filter((n) => n.owner === 'us').reduce((s, n) => s + n.sown * harvestMul(r, n.id), 0)
-    const { lines } = pass(r) // 가을
+    const { lines, next } = pass(r) // 여름이 끝나 가을 — 가을 소식에 가을걷이
+    assert.equal(next.season % 4, 2, '가을로 넘어가는 소식')
     assert.equal(harvestOf(lines, 'us'), Math.round(sown * P.realm.harvestPerHH))
+    assert.equal(harvestOf(pass(next).lines, 'us'), 0, '가을이 끝나 겨울로 갈 때는 거두지 않는다')
     // 가을이 아니면 거두지 않는다
     assert.equal(harvestOf(pass(byeonhanMini(1)).lines, 'us'), 0)
   })
@@ -82,8 +83,7 @@ describe('한 해의 살림', () => {
     const run = (springDraft: boolean, summerDraft: boolean): number => {
       let r = byeonhanMini(1)
       r = pass(r, springDraft ? [draft] : []).next
-      r = pass(r, summerDraft ? [draft] : []).next
-      return harvestOf(pass(r).lines, 'us')
+      return harvestOf(pass(r, summerDraft ? [draft] : []).lines, 'us') // 여름이 끝날 때 거둔다
     }
     const none = run(false, false)
     assert.ok(run(true, false) < none, '봄 징병')

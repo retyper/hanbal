@@ -164,7 +164,7 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
     const ways: Array<[string, string, string]> = [
       ['unit-spear', '군대', '징병해 군대를 세우고, 이웃 고을을 쳐서 쥔다'],
       ['good-tribute-bell', '사신', '화친·동맹·교역 — 적의 적은 벗이 된다'],
-      [r.known !== undefined ? 'unit-scouts' : 'status-spy', r.known !== undefined ? '정찰' : '첩자', r.known !== undefined ? '척후와 군대가 다닌 만큼 지도가 밝아진다' : '적의 군세와 속셈을 엿본다'],
+      [r.known !== undefined ? 'unit-scouts' : 'status-spy', r.known !== undefined ? '정찰' : '첩자', r.known !== undefined ? '정찰꾼과 군대가 다닌 만큼 지도가 밝아진다' : '적의 군세와 속셈을 엿본다'],
     ]
     body = `<div class="pl pgoal"><p class="gl">도읍 <b>${need}</b>곳을 쥐면 이긴다.<br><small>우리 도읍을 잃으면 진다.</small></p><div class="ways">`
       + ways.map(([ic, t, d]) => `<div class="way">${k.icon(ic, 'wic')}<b>${t}</b><span>${d}</span></div>`).join('')

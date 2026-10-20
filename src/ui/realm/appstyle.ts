@@ -374,6 +374,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .ration { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0 2px; padding: 8px 10px; border-radius: 12px; background: #2a2418; border: 1px solid #6a5434; }
 .ap .ration img.rci { width: 26px; height: 26px; } .ap .ration b { font-size: 14px; }
 .ap .twoway { grid-template-columns: 1fr 1fr; } /* 백성 판은 개척·이주 두 칸 */
+/* 우리 나라 깃발 — 어디서든 금빛 후광 (기록 · 보고 · 깃발 줄 · 외교) */
+.ap img.mine { border-radius: 50%; background: radial-gradient(circle, #ffd27a55 0, #ffd27a00 70%); box-shadow: 0 0 0 1.5px #ffd27a, 0 0 7px 1px #ffd27acc; }
+/* 자동 분배 — 백성 판 맨 위 큰 단추. 켜져 있으면 잠겨 ✓ */
+.ap .autobtn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 14px; margin: 4px 0 8px; font-size: 16px; }
+.ap .autobtn small { font-size: 12px; font-weight: 500; opacity: .85; line-height: 1.35; }
+.ap .autobtn:disabled { background: #24301f; border-color: #5a7a44; color: #b8e09a; opacity: 1; cursor: default; }
 /* 아래 탭이 여섯 — 폰 세로에서 글이 넘치지 않게 */
 .ap .tabs button { min-width: 0; } .ap .tabs button span { white-space: nowrap; }
 @media (max-width: 420px) { .ap .tabs button img.tic { width: 28px; height: 28px; } .ap .tabs button { font-size: 11.5px; } }

@@ -103,7 +103,7 @@ const LAYERS = [
   { id: 'labels', name: '이름', hint: '고을 이름' },
   { id: 'flags', name: '깃발', hint: '고을 주인' },
   { id: 'goods', name: '특산', hint: '쇠·소금·나무·말 — 고을마다 나는 것' },
-  { id: 'force', name: '군세 수', hint: '척후가 본 적 군세' },
+  { id: 'force', name: '군세 수', hint: '정찰꾼이 본 적 군세' },
   { id: 'army', name: '우리 군대', hint: '장수 얼굴 말' },
 ] as const
 type LayerId = (typeof LAYERS)[number]['id']
@@ -174,7 +174,9 @@ const span = (lo: number, hi: number, f: (x: number) => string): string => (f(lo
 const icon = (name: string, cls = 'ic'): string => `<img class="${cls}" src="${ART}icon/${name}.png" alt="">`
 const bust = (h: Hero | undefined, cls = 'face'): string =>
   h !== undefined && HERO_BUST[h.id] !== undefined ? `<img class="${cls}" src="${ART}bust/${HERO_BUST[h.id]}.jpg" alt="">` : `<span class="${cls} noface"></span>`
-const emblem = (f: string | null, cls = 'em'): string => (f !== null && FACTION_ART[f] !== undefined ? icon(FACTION_ART[f].emblem, cls) : '')
+/** 우리 나라 — 깃발마다 금빛 후광을 두른다 (형 2026-10-20: "사용자의 나라는 로그에서 아이콘도 뭔가 후광이 있거나 특별하게 … 내나라가 어느나란지도 모르겠어서") */
+let MINE = ''
+const emblem = (f: string | null, cls = 'em'): string => (f !== null && FACTION_ART[f] !== undefined ? icon(FACTION_ART[f].emblem, f === MINE ? `${cls} mine` : cls) : '')
 const sorted = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 
 /** 나라마다 얼굴 하나 — 그 나라의 군주 (판의 Faction.ruler 와 같은 id — 나라 고르기 화면엔 판이 없어 이름 규칙으로) */
@@ -271,7 +273,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   const persuadeBy: Record<string, string> = {}
   /** 사신과 함께 보낼 장수 — 상대 나라마다 (매력·매혹·장사꾼은 따라가야 먹힌다) */
   const escort: Record<string, string> = {}
-  let diploMode: 'envoy' | 'plot' = 'envoy'
+  let diploMode: 'envoy' | 'plot' | 'scout' = 'envoy'
   let plotOpen: PlotOp | null = null
   /** 암살에 보낼 자객 — 우리 장수 id, null 이면 고용 자객 */
   let plotAgent: string | null = null
@@ -329,6 +331,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }))
   // 맡기기·이끌기는 나누기처럼 먼저 해 본 판에 든다 — 장수 카드가 바뀐 자리를 바로 보인다
   // 들이기도 든다 — 들인 떠돌이가 바로 우리 장수로 보이고 군대를 이끌 수 있게 (형: "들인다 했을때 바로 적용되어야 하고 군사배치에도 쓸수 있어야 함")
+  /** 이번 계절 끝에 자동 분배가 켜져 있나 — 고른 명령이 있으면 그것, 아니면 판 */
+  const autoMigOn = (): boolean => {
+    const o = settles.filter((x): x is Extract<Order, { kind: 'migrateAuto' }> => x.kind === 'migrateAuto').pop()
+    return o !== undefined ? o.on : realm?.factions[me()]?.migrateOff !== true
+  }
+  const setAutoMig = (want: boolean): void => {
+    settles = settles.filter((o) => o.kind !== 'migrateAuto')
+    if ((realm!.factions[me()]?.migrateOff !== true) !== want) settles = [...settles, { kind: 'migrateAuto', faction: me(), on: want }]
+  }
   const plan = (): Realm => planned(realm!, [...armyOrders, ...settles, ...heroOrders.filter((o) => o.kind === 'hire' || o.kind === 'assign' || o.kind === 'lead')])
 
   /**
@@ -869,9 +880,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     let h = `<h3 class="sech home">${icon('settle-farm-village')}백성 · 집을 옮긴다</h3>`
     if (note !== '') h += `<div class="banner bad">${tx(note)}</div>`
     h += `<p class="mute">${tx('군사가 아니라 농사짓는 집을 옮긴다. 옮긴 집은 계절을 넘기면 바로 그 고을에 자리 잡는다.')}</p>`
+    // 자동 분배 — 맨 위 큰 단추. 누르면 켜지고(단추는 잠긴다), 직접 옮기면 꺼져서 다시 누를 수 있다
+    // (형 2026-10-20: "자동분배는 맨 위에 큰버튼으로 … 한번 누르면 비활성화. 본인이 직접 재분배 해서 숫자가 달라진경우에 다시활성화")
+    h += autoMigOn()
+      ? `<button class="btn wide autobtn" disabled><b>✓ 자동 분배 중</b><small>${tx('붐비는 고을의 집이 계절마다 한산한 고을로 저절로 옮겨 간다. 아래에서 직접 옮기면 꺼진다.')}</small></button>`
+      : `<button class="btn on wide autobtn" data-act="mig-auto" data-v="1"><b>자동 분배</b><small>${tx('누르면 붐비는 고을부터 고르게 나눈다. 이번 계절 직접 옮긴 것은 거둔다.')}</small></button>`
     const lands = [...new Set([...settleTargets(r, me()).map((t) => t.to), ...settlePending().map((o) => o.to)])].sort()
     h += `<div class="twoway"><button class="sec home" data-act="jump" data-to="sec-settle">${icon('settle-farm-village')}<b>개척</b><span>${lands.length > 0 ? '집을 빈땅으로 옮겨 새 마을' : '맞닿은 빈땅이 없다'}</span></button>`
-    h += `<button class="sec move" data-act="jump" data-to="sec-move">${icon('unit-porters')}<b>이주</b><span>${r.factions[me()]?.migrateOff === true ? '우리 고을끼리 · 자동 분배 꺼짐' : '우리 고을끼리 · 자동 분배 켜짐'}</span></button></div>`
+    h += `<button class="sec move" data-act="jump" data-to="sec-move">${icon('unit-porters')}<b>이주</b><span>${autoMigOn() ? '우리 고을끼리 · 자동 분배 중' : '우리 고을끼리 · 직접 옮긴다'}</span></button></div>`
     h += `<h4 id="sec-settle" class="sech home">${icon('settle-farm-village')}개척 · 빈땅에 새 마을을 일군다</h4>`
     if (lands.length > 0) for (const to of lands) h += settleCard(r, to)
     else h += `<p class="mute">${tx('지금은 우리 고을과 맞닿은 빈땅이 없다.')}</p>`
@@ -945,7 +961,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * `r` 은 이번 계절 고른 개척·이주가 든 판이다.
    */
   function migrateSection(r: Realm): string {
-    const on = r.factions[me()]?.migrateOff !== true
+    const on = autoMigOn()
     const mine = sorted(Object.values(r.nodes)).filter((n) => n.owner === me() && n.kind !== 'sodo' && homeRoom(n) > 0)
     let h = `<h4 id="sec-move" class="sech move">${icon('unit-porters')}이주 · 우리 고을끼리 집을 옮긴다</h4>`
     h += `<p class="mute">${tx('고을마다 편히 품는 집이 있다. 넘치면 붐벼 집이 덜 는다. 전방 고을에 집이 많으면 장정이 많아 지키기 좋고, 도읍에 모으면 그곳에서 더 뽑는다.')}</p>`
@@ -957,13 +973,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<div class="crow"><span class="cn">${esc(n.name)}</span><span class="cbar ${cls}"><i style="width:${Math.min(100, c * 100).toFixed(0)}%"></i></span><span class="mute">${tx(`집 ${Math.floor(n.hh)} / ${homeRoom(n)}`)}${c > 1 ? ' · 붐빈다' : ''}</span></div>`
     }
     h += `</div>`
-    // 자동 분배
-    h += `<div class="seg"><button class="${on ? 'on' : ''}" data-act="mig-auto" data-v="1">자동 분배</button><button class="${on ? '' : 'on'}" data-act="mig-auto" data-v="0">직접만 옮긴다</button></div>`
+    // 자동 분배 — 켜기는 판 맨 위 큰 단추. 여기서는 이번 계절 저절로 옮겨 갈 것만 보인다
     if (on) {
       const fl = autoFlows(r, me())
       h += fl.length === 0 ? `<p class="mute">${tx('이번 계절엔 붐비는 고을이 없다. 저절로 옮겨 갈 집이 없다.')}</p>`
         : `<p class="mute">${tx(`이번 계절 저절로 옮겨 갈 집 — ${arriveWhen(r.season, 1)}`)}</p>${fl.map((x) => `<div class="row mvq"><span class="nchip">${esc(r.nodes[x.from]?.name ?? '')}</span><i class="ar">⟶</i><span class="nchip">${esc(r.nodes[x.to]?.name ?? '')}</span>${tx(` 집 ${x.n}`)}</div>`).join('')}`
-    } else h += `<p class="mute">${tx('붐비는 고을이 있어도 집이 저절로 옮겨 가지 않는다. 아래에서 직접 옮긴다.')}</p>`
+    } else h += `<p class="mute">${tx('자동 분배가 꺼져 있다 — 붐비는 고을이 있어도 집이 저절로 옮겨 가지 않는다. 아래에서 직접 옮긴다.')}</p>`
     // 억지 이주 — 고른 것
     for (const o of settles) {
       if (o.kind !== 'migrate') continue
@@ -983,9 +998,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<div class="mvmid"><span class="stepper sm"><button data-act="mig-n" data-d="${-step}" data-lim="${lim}" data-cur="${want}">−</button><b>${want}</b>`
     h += `<button data-act="mig-n" data-d="${step}" data-lim="${lim}" data-cur="${want}">+</button></span><i class="mva">⟶</i><span class="mute">집</span></div>`
     h += `<div class="mvcol"><span class="mvr">받는 곳</span>${tos.map((n) => `<button class="mvpick${n.id === to ? ' on' : ''}" data-act="mig-to" data-node="${n.id}">${icon(nodeIcon(n), 'mvs')}${esc(n.name)}</button>`).join('')}</div></div>`
-    h += `<div class="mv2">${moveSide(r, from, -want, '보내는 곳')}<div class="mvmid"><i class="mva">⟶</i></div>${moveSide(r, to, want, '받는 곳')}</div>`
-    h += `<p class="mute">${tx(`한 번에 최대 ${lim}집 · 곡식 ${migrateCost(want).grain}. 억지로 옮기면 두 고을 모두 한 계절 동안 집이 늘지 않는다 — 사람들이 자리 잡는 동안이다.`)}</p>`
+    // 옮기기 — 숫자 바로 밑에 (형: "이주에서 수치수정은 있는데 옮기기 확정버튼이없는데" — 맨 아래 묻혀 안 보였다)
     h += `<button class="btn on move wide" data-act="migrate" data-from="${from}" data-to="${to}" data-n="${want}" ${want <= 0 ? 'disabled' : ''}>${want}집 옮기기 · ${esc(arriveWhen(r.season, 1, true))} 자리 잡는다</button>`
+    h += `<div class="mv2">${moveSide(r, from, -want, '보내는 곳')}<div class="mvmid"><i class="mva">⟶</i></div>${moveSide(r, to, want, '받는 곳')}</div>`
+    h += `<p class="mute">${tx(`한 번에 최대 ${lim}집 · 곡식 ${migrateCost(want).grain}. 억지로 옮기면 두 고을 모두 한 계절 동안 집이 늘지 않는다 — 사람들이 자리 잡는 동안이다.${on ? ' 직접 옮기면 자동 분배가 꺼진다.' : ''}`)}</p>`
     return h
   }
 
@@ -999,7 +1015,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const ans = answers[a.id]
       h += `<div class="askc ${a.kind === 'demand' ? 'threat' : ''}"><div class="an">${bust(lead, 'rface')}<div class="fn"><b>${emblem(a.from, 'fem')}${esc(realm!.factions[a.from]?.name ?? '')}</b>`
       h += `<span class="mute">${ASK_KIND_NAME[a.kind]}</span></div></div><p>${esc(askLine(a, realm!.factions[a.from]?.name ?? '', a.node !== undefined ? (realm!.nodes[a.node]?.name ?? '') : ''))}</p>`
-      if (a.why !== undefined && readsMind(realm!, a.from)) h += `<div class="why">속셈 · ${esc(whyLine(a.why, a.about !== undefined ? (realm!.factions[a.about]?.name ?? '') : ''))}</div>`
+      if (a.why !== undefined && readsMind(realm!, a.from)) h += heardHtml(realm!, a.from, `저들이 이 청을 낸 까닭은 이렇습니다 — ${whyLine(a.why, a.about !== undefined ? (realm!.factions[a.about]?.name ?? '') : '')}`)
       h += `<div class="btns"><button class="btn ${ans === true ? 'on' : ''}" data-act="answer" data-id="${a.id}" data-yes="1">받는다</button>`
       h += `<button class="btn ${ans === false ? 'on' : ''}" data-act="answer" data-id="${a.id}" data-yes="0">거절한다</button>`
       if (ans === undefined) h += `<span class="mute">답하지 않으면 거절</span>`
@@ -1074,9 +1090,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   function diploSheet(r: Realm): string {
-    let h = `<h3>외교</h3><div class="seg dseg"><button class="${diploMode === 'envoy' ? 'on' : ''}" data-act="dmode" data-v="envoy">사신</button><button class="${diploMode === 'plot' ? 'on' : ''}" data-act="dmode" data-v="plot">공작 ${plots.length > 0 ? plots.length : ''}</button></div>`
+    let h = `<h3>외교</h3><div class="seg dseg"><button class="${diploMode === 'envoy' ? 'on' : ''}" data-act="dmode" data-v="envoy">사신</button><button class="${diploMode === 'plot' ? 'on' : ''}" data-act="dmode" data-v="plot">공작 ${plots.length > 0 ? plots.length : ''}</button><button class="${diploMode === 'scout' ? 'on' : ''}" data-act="dmode" data-v="scout">정찰${scout !== '' ? ' 1' : ''}</button></div>`
     h += handsHtml(r)
     if (diploMode === 'plot') return h + plotSheet(r)
+    if (diploMode === 'scout') return h + scoutSheet(r) // 정찰 — 외교 판 안에 (형: "척후도 외교에 넣아야 겠는데")
     h += asksHtml()
     const out = Object.values(envoys)
     for (const e of out) {
@@ -1087,7 +1104,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<div class="asks">${ASKS.map((x) => `<div><b>${ASK_NAME[x.ask]}</b><span>${x.does}</span></div>`).join('')}</div>`
     // 앞서가는 나라 — 모두 이기려 하니, 앞선 나라는 다른 나라들이 함께 막으려 한다 (stance.leaderOf)
     const L = leaderOf(r, me())
-    h += `<p class="mute">남의 속셈은 그 나라에 첩자를 심거나 동맹을 맺어야 들린다.</p>`
+    h += `<p class="mute">남의 속은 그 나라에 첩자를 심거나 동맹을 맺어야 귀에 들어온다. 그 밖엔 우리 신하의 짐작뿐이다.</p>`
     if (L === me()) h += `<div class="banner bad">우리가 앞서간다. 다른 나라들이 손을 잡고, 맺은 약조도 깨고 등을 돌릴 수 있다.</div>`
     else if (L !== null) h += `<div class="banner">앞서가는 나라: ${emblem(L, 'fem')}<b>${esc(r.factions[L]?.name ?? '')}</b> · 다른 나라들이 함께 막으려 한다. 손잡을 때다.</div>`
     // 지금 벌어진 전쟁 — 아는 나라끼리 (형: "누구랑 누가 전쟁나면 그걸 좀 잘 보여줬음")
@@ -1106,15 +1123,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const lead = r.heroes[f.ruler ?? rulerId(f.id)]
       h += `<div class="fcard"><div class="an">${lead !== undefined ? `<button class="fbtn" data-act="hero" data-id="${lead.id}">${bust(lead, 'rface')}</button>` : ''}<div class="fn"><b>${emblem(f.id, 'fem')}${esc(f.name)}</b><span class="mute">${lead !== undefined ? `군주 ${esc(lead.name)}${lead.status === 'captive' ? ' · 사로잡힘' : lead.status === 'dead' ? ' · 죽음' : ''}` : ''}</span></div><span class="rel ${rel.state}">${REL_NAME[rel.state]}${left}</span></div>`
       const md = moodOf(r, me(), f.id)
-      h += `<div class="moodl ${md.mood}">${moodImg(ART, md.mood)}<div><b>${esc(MOOD_WORD[md.mood])}</b><span>${tx(md.why)}</span></div></div>`
+      h += `<div class="moodl ${md.mood}">${moodImg(ART, md.mood)}<div><b>${esc(MOOD_WORD[md.mood])}</b>${said(advisor(r), md.say)}</div></div>`
       h += `<div class="frow"><span class="mute">${REL_NOW[rel.state]}</span>${favorFeel(favorOf(r, me(), f.id))}</div>`
       // 그쪽 속셈 — 첩자를 심었거나 동맹일 때만 보인다 (형: "속셈은 아무에게나 드러내게 하지 말고 … 간접정보로"). 깰 속셈은 안 보인다
       const tw = readsMind(r, f.id) ? truceWhy(r, f.id, me()) : null
       const aw = tw === null && readsMind(r, f.id) ? allianceWhy(r, f.id, me()) : null
       const mw = tw ?? aw
       if (mw !== null) {
-        h += `<div class="why">속셈 · ${tw !== null ? '화친할 마음이 있다' : '손잡을 마음이 있다'} — ${esc(whyLine(mw.why, mw.about !== undefined ? (r.factions[mw.about]?.name ?? '') : ''))}</div>`
-      } else if (readsMind(r, f.id) && rel.state === 'war' && winningAgainst(r, f.id, me())) h += `<div class="why">속셈 · 이기고 있다고 여긴다 — 화친은 잘 안 받는다</div>`
+        h += heardHtml(r, f.id, `${tw !== null ? '화친할 마음이 있다고 합니다' : '손잡을 마음이 있다고 합니다'} — ${whyLine(mw.why, mw.about !== undefined ? (r.factions[mw.about]?.name ?? '') : '')}`)
+      } else if (readsMind(r, f.id) && rel.state === 'war' && winningAgainst(r, f.id, me())) h += heardHtml(r, f.id, '저들은 이기고 있다고 여깁니다. 화친은 잘 안 받을 겁니다.')
       // 맺은 약속 — 두 계절 안에 칠 곳 (동맹의 "함께 치자")
       for (const p of rel.pledges ?? []) {
         const who = p.by === me() ? '우리가' : josa(f.name, '이', '가')
@@ -1188,6 +1205,25 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   // ───────── 공작 (형: "다양한 외교나 공작이 가능 해야하는거 아님?")
+  /**
+   * 우리 쪽에서 짐작을 말하는 사람 — 지략이 가장 높은 우리 장수 (군주도 든다). 화면은 판이 아는 것을 내레이션하지 않고 이 사람의 입으로 짐작한다
+   * (형 2026-10-20: "전지적작가시점에서 정보전달하면안된다니까? 주변정보나 인물의 발언 같은걸로 해야해")
+   */
+  function advisor(r: Realm): Hero | undefined {
+    return sorted(Object.values(r.heroes)).filter((h) => h.faction === me() && h.status !== 'dead' && h.status !== 'captive')
+      .sort((a, b) => b.ryak - a.ryak || (a.id < b.id ? -1 : 1))[0]
+  }
+  /** 사람의 말 한 줄 — 얼굴 · 이름 · 따옴표 */
+  function said(h: Hero | undefined, text: string, who?: string, face?: string): string {
+    return `<span class="said">${face ?? bust(h, 'sface')}<span><i>${esc(who ?? (h !== undefined ? `${h.name}의 짐작` : '신하의 짐작'))}</i><q>${tx(text)}</q></span></span>`
+  }
+  /** 그 나라 속을 들은 말 — 첩자가 전했나, 동맹이 귀띔했나 (readsMind 일 때만) */
+  function heardHtml(r: Realm, f: string, text: string): string {
+    const ally = relationOf(r, me(), f).state === 'ally'
+    const lord = r.heroes[r.factions[f]?.ruler ?? rulerId(f)]
+    return `<div class="why">${ally ? said(lord, text, `동맹 ${r.factions[f]?.name ?? ''}의 귀띔`) : said(undefined, text, '심어 둔 첩자가 전한 말', icon('status-spy', 'sface'))}</div>`
+  }
+
   /** 그 나라 속을 읽나 — 그 나라 땅에 우리 첩자가 있거나 동맹이다. 아니면 속셈은 안 보인다 */
   function readsMind(r: Realm, f: string): boolean {
     if (relationOf(r, me(), f).state === 'ally') return true
@@ -1398,7 +1434,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   // ───────── 정찰
   function scoutSheet(r: Realm): string {
     const known = r.intel[me()] ?? {}
-    let h = `<h3>정찰</h3><p class="mute">척후는 한 계절에 한 곳만 간다. 하나를 고르면 앞서 고른 곳은 풀린다.</p>`
+    let h = `<p class="mute">정찰꾼은 한 계절에 한 곳만 간다. 하나를 고르면 앞서 고른 곳은 풀린다. 다녀오면 그곳의 군세·병종·경계가 보인다.</p>`
     for (const id of scoutable(r)) {
       const n = r.nodes[id]!
       const f = known[id]?.force
@@ -1483,7 +1519,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + `<b>가을</b> 추수. 곡식이 들어온다. <b>겨울</b> 강이 언다. 언 강으로 기습하기 좋다. 고개가 막힌다. 군량이 더 든다.</p>`
       + `<p><b>개척</b> 빈땅은 아무도 안 사는 땅이다. 그 땅을 누르거나 징병 탭 아래에서, 맞닿은 우리 고을 사람을 보낸다. 곡식이 들고, 일군 땅은 빨리 큰다. 군대로 먼저 깃발만 꽂아 둘 수도 있다.</p>`
       + `<p><b>집 · 장정 · 군사</b> 집은 농사짓고 곡식을 낸다. 집 한 채는 다섯 식구 남짓이다. 징병하면 집에서 사내를 뽑는다 — 군사 둘에 집 한 채 몫의 일손이 빠져 그만큼 덜 거둔다. 군사는 움직이고 쳐들어가지만 곡식을 먹는다. 곡식이 떨어지면 사기가 꺾인다. 장정은 뽑히지 않은 사내들로, 적이 오면 돌창·몽둥이를 들고 제 고을만 지킨다(집 둘에 하나꼴 · 수는 많아도 약하다). 해산하면 일손이 집으로 돌아간다.</p>`
-      + `<p><b>지도</b> 땅 색과 깃발이 주인. 왼쪽 위 깃발을 누르면 그 나라 땅만 또렷하다. 초록 수는 우리 군사, 붉은 수는 척후가 본 적 군세, ?는 아직 못 본 곳. ✕는 이번 계절 막힌 길. 보랏빛 화살은 다가오는 적.</p>`
+      + `<p><b>지도</b> 땅 색과 깃발이 주인. 왼쪽 위 깃발을 누르면 그 나라 땅만 또렷하다. 초록 수는 우리 군사, 붉은 수는 정찰꾼이 본 적 군세, ?는 아직 못 본 곳. ✕는 이번 계절 막힌 길. 보랏빛 화살은 다가오는 적.</p>`
       + `<p><b>판세</b>는 색으로 보인다. 초록이면 이길 듯하고 붉으면 질 듯하다. 두 색이 섞이고 ?가 붙으면 아직 잘 모른다. 정찰하면 또렷해진다.</p>`
       + `<p><b>소도</b> 성스러운 땅이라 아무도 못 친다. 소도 곁 고을을 차지하면 봄·가을에 제사를 지낸다. 봄 제사는 수확을, 가을 제사는 사기를 올린다.</p>`
       + `<p><b>협공</b> 같은 계절에 두 길로 들어가면 한 판으로 싸우고 더 세다.</p>`
@@ -1563,8 +1599,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 척후는 한 계절에 한 곳뿐 — 여러 곳을 누르면 다 가는 줄 알지 않게 (형: "매판 눌러줘야하고 누르면 전부다 정찰 가겠지? 할거라고")
       if (scoutable(r).includes(id)) {
         const there = scout !== '' && scout !== id ? (r.nodes[scout]?.name ?? '') : ''
-        h += `<div class="scoutbox"><div class="mute">척후는 한 계절에 <b>한 곳</b>만 간다. 보내면 이번 계절 이곳의 군세·병종·경계가 보인다.</div>`
-        h += `<button class="btn ${scout === id ? 'on' : ''}" data-act="scout" data-node="${id}">${scout === id ? '척후가 여기로 간다 · 누르면 거둔다' : there !== '' ? `척후를 ${esc(there)}에서 여기로 돌린다` : '척후를 여기로 보낸다'}</button></div>`
+        h += `<div class="scoutbox"><div class="mute">정찰꾼은 한 계절에 <b>한 곳</b>만 간다. 보내면 이번 계절 이곳의 군세·병종·경계가 보인다.</div>`
+        h += `<button class="btn ${scout === id ? 'on' : ''}" data-act="scout" data-node="${id}">${scout === id ? '정찰꾼이 여기로 간다 · 누르면 거둔다' : there !== '' ? `정찰꾼을 ${esc(there)}에서 여기로 돌린다` : '여기로 정찰을 보낸다'}</button></div>`
       }
     }
     // 이 나라와 지금 할 수 있는 것 — 외교 판까지 안 가고 여기서 바로 (형: "타국 마을 누르면 … 얘내랑 할수있는 상호작용만 추려서 보여주고 바로 할수 있게")
@@ -1589,7 +1625,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     let h = `<div class="nacts"><div class="nah">${emblem(f, 'fem')}<b>${esc(fac.name)}</b><span class="rel ${rel.state}">${REL_NAME[rel.state]}</span>${favorFeel(favorOf(r, me(), f))}</div>`
     // 그 군장의 얼굴 — 우리를 어떻게 보나 (mood.ts)
     const md = moodOf(r, me(), f)
-    h += `<div class="moodl ${md.mood}">${moodImg(ART, md.mood)}<div><b>${esc(MOOD_WORD[md.mood])}</b><span>${tx(md.why)}</span></div></div>`
+    h += `<div class="moodl ${md.mood}">${moodImg(ART, md.mood)}<div><b>${esc(MOOD_WORD[md.mood])}</b>${said(advisor(r), md.say)}</div></div>`
     // 사신
     const sent = envoys[f]
     if (sent !== undefined) h += `<div class="banner good">사신: ${ASK_NAME[sent.ask]}<button class="btn ghost sm" data-act="unenvoy" data-to="${f}">거둔다</button></div>`
@@ -1764,10 +1800,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const why = reportText(before!, r, l, me()) ?? ''
     // 속셈 짐작 — 화면에 보이는 것으로만
     const lands = (x: string): number => Object.values(r.nodes).filter((n) => n.owner === x).length
-    const guess = leaderOf(r, f) === me() ? '우리가 앞서간다고 보고 막으려 한다' : tookRecently(r, me(), f) ? '빼앗긴 땅을 되찾으려 한다'
-      : lands(f) > lands(me()) ? '우리를 만만하게 본다' : '우리 땅이 탐나는 모양이다'
+    const guess = leaderOf(r, f) === me() ? '우리가 앞서간다고 보고 막으려는 듯합니다.' : tookRecently(r, me(), f) ? '빼앗긴 땅을 되찾으려는 겁니다.'
+      : lands(f) > lands(me()) ? '우리를 만만하게 보는 모양입니다.' : '우리 땅이 탐나는 모양입니다.'
     let h = `<div class="warc rv" style="--t:${t}s">${bust(lord, 'flord')}${moodImg(ART, 'angry', 'mood wm')}<div class="wb"><b>${emblem(f, 'fem')}<span>${esc(josa(name, '이', '가'))} 전쟁을 걸어왔다</span></b>`
-    h += `<span>${tx(why.replace(/^.*?— /, ''))}</span><span class="mute">속셈 · ${tx(guess)}</span>`
+    h += `<span>${tx(why.replace(/^.*?— /, ''))}</span>${said(advisor(r), guess)}`
     h += `<div class="btns"><button class="btn sm${envoys[f]?.ask === 'truce' ? ' on' : ''}" data-act="envoy" data-to="${f}" data-ask="truce">${envoys[f]?.ask === 'truce' ? '화친 사신을 보낸다 · 거두기' : '화친을 청한다'}</button><button class="btn ghost sm" data-act="nat-diplo" data-to="${f}">외교 판</button></div></div></div>`
     return h
   }
@@ -1975,12 +2011,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
   }
 
+  /** 마지막으로 깐 지도 글 — 같으면 다시 깔지 않는다 */
+  let lastMap = ''
+
   function paintNow(): void {
+    MINE = realm?.player ?? ''
     saveDraft()
     if (realm === null && front === null) front = { kind: 'title' }
     $('.plbox').innerHTML = realm !== null && front === null && prologue !== null ? prologueHtml(KIT, realm, prologue) : ''
     if (realm === null || front !== null) {
       root.classList.add('choosing')
+      lastMap = ''
       $('.mapwrap').innerHTML = frontHtml(front!)
       $('.top').innerHTML = ''
       $('.tabs').innerHTML = ''
@@ -2002,7 +2043,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const wrap = $('.mapwrap')
     const keep = [wrap.scrollLeft, wrap.scrollTop] as const
     const first = wrap.querySelector('.map') === null
-    wrap.innerHTML = mapPart(r)
+    // 지도가 그대로면 다시 깔지 않는다 — 징병 수 ± 처럼 판만 바뀔 때마다 바탕 그림이 깜빡였다 (형: "뒷배경이 너무 깜빡거림")
+    const mh = mapPart(r)
+    if (mh !== lastMap || first) {
+      wrap.innerHTML = mh
+      lastMap = mh
+    }
     zoom.apply()
     if (first) {
       // 처음엔 우리 국읍이 가운데 오게
@@ -2103,6 +2149,41 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (res.report.lines.some((l) => l.kind === 'battle' && (l.atkFaction === me() || l.defender === me()))) ding('boom_01', 0.35) // 우리가 낀 싸움
     paint()
   }
+
+  // ───────── 폰 뒤로가기 — 웹 페이지 뒤로가 아니라 열린 창부터 닫는다 (형 2026-10-20: "뒤로가기 누르면 … 그냥 웹페이지 뒤로가버리는데")
+  // 지킴 칸 하나를 쌓아 두고, 뒤로가기가 그 칸을 걷으면(popstate) 한 겹 닫고 다시 쌓는다. 처음 화면에서 누르면 그때 페이지를 떠난다.
+  /** 한 겹 닫는다 — 닫은 게 있으면 true */
+  function backOne(): boolean {
+    if (root.classList.contains('war-open') || root.querySelector('.wr') !== null) return true // 싸움 중엔 닫지 않는다 (싸움은 끝까지)
+    const fail = root.querySelector('.failbox')
+    if (fail !== null) { fail.remove(); return true }
+    if (front !== null) {
+      if (front.kind === 'detail') front = { kind: 'nations', region: front.region }
+      else if (front.kind === 'nations') front = { kind: 'boards' }
+      else if (front.kind === 'boards') front = { kind: 'title' }
+      else return false // 처음 화면 — 떠난다
+      paint()
+      return true
+    }
+    if (prologue !== null) return true
+    if (showReport && root.classList.contains('modal-open')) showReport = false
+    else if (layersOpen) layersOpen = false
+    else if (roadOpen) roadOpen = false
+    else if (sheet !== null) sheet = null
+    else if (armySel.length > 0) armySel = []
+    else front = { kind: 'title' } // 아무것도 안 열려 있으면 처음 화면으로
+    paint()
+    return true
+  }
+  try {
+    history.replaceState({ realmBase: true }, '')
+    history.pushState({ realmGuard: true }, '')
+  } catch { /* 막힌 곳 */ }
+  addEventListener('popstate', () => {
+    if (backOne()) {
+      try { history.pushState({ realmGuard: true }, '') } catch { /* 막힌 곳 */ }
+    } else history.back()
+  })
 
   // ───────── 손짓 — 한 곳에서 받는다
   root.addEventListener('click', (ev) => {
@@ -2397,10 +2478,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'unsettle': settles = settles.filter((_, i) => i !== Number(d['i'])); break
       case 'mig-auto': {
-        // 켜고 끄기는 명령 — 계절 처음의 판과 같아지면 명령을 거둔다
+        // 켜고 끄기는 명령 — 계절 처음의 판과 같아지면 명령을 거둔다. 켜면 이번 계절 직접 옮긴 것은 거둔다 (자동이 맡는다)
         const want = d['v'] === '1'
-        settles = settles.filter((o) => o.kind !== 'migrateAuto')
-        if ((realm!.factions[me()]?.migrateOff !== true) !== want) settles = [...settles, { kind: 'migrateAuto', faction: me(), on: want }]
+        if (want) settles = settles.filter((o) => o.kind !== 'migrate')
+        setAutoMig(want)
         break
       }
       case 'mig-from': migFrom = d['node']!; migN = 0; break
@@ -2408,7 +2489,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'mig-n': migN = Math.max(0, Math.min(Number(d['lim']), Number(d['cur']) + Number(d['d']))); break
       case 'migrate': {
         const n = Number(d['n'])
-        if (n > 0) settles = [...settles, { kind: 'migrate', faction: me(), from: d['from']!, to: d['to']!, n }]
+        if (n > 0) {
+          settles = [...settles, { kind: 'migrate', faction: me(), from: d['from']!, to: d['to']!, n }]
+          setAutoMig(false) // 직접 나눴으면 자동 분배는 꺼진다 — 다시 누를 수 있다
+        }
         migN = 0
         break
       }
@@ -2468,7 +2552,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         musters = musters.some(same) ? musters.filter((o) => !same(o)) : [...musters, { kind: 'build', faction: me(), node, what: d['what'] as 'palisade' | 'moat' }]
         break
       }
-      case 'dmode': diploMode = d['v'] as 'envoy' | 'plot'; break
+      case 'dmode': diploMode = d['v'] as 'envoy' | 'plot' | 'scout'; break
       case 'plot-open': plotOpen = plotOpen === d['op'] ? null : (d['op'] as PlotOp); break
       case 'plot': {
         const op = d['op'] as PlotOp
