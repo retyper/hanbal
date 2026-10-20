@@ -24,7 +24,8 @@ import { mapHtml } from '../../src/ui/realm/mapview.ts'
 describe('삼한과 북녘 판', () => {
   it('나라 쉰 · 고을은 틀 안 뭍 위 · 길은 있는 고을끼리 · id 가 안 겹친다', () => {
     const r = startWorld(1, 'goguryeo')
-    assert.equal(WORLD_NATION_IDS.length, 50)
+    assert.equal(WORLD_NATION_IDS.length, 52)
+    assert.ok(Object.values(r.nodes).some((n) => n.name === '독도'), '독도가 판에 있다')
     assert.equal(r.player, 'goguryeo')
     assert.equal(r.region, 'world')
     for (const xs of [WORLD_DATA.NODES, WORLD_DATA.EDGES, WORLD_DATA.HEROES, WORLD_DATA.ARMIES]) {

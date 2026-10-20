@@ -38,7 +38,7 @@ export const BOARDS: ReadonlyArray<{ id: RegionId; name: string; line: string; t
   { id: 'byeonhan-mini', name: '작은 판', line: '변한 남쪽 바닷가의 여섯 나라. 쇠와 뱃길을 두고 겨룬다.', thumb: 'map/spring.jpg', length: '짧다' },
   { id: 'yeongnam', name: '큰 판', line: '낙동강 물길과 동해·남해의 스물한 나라. 사로·가락·대가야가 아직 이웃 읍락과 키를 잰다.', thumb: 'map-yeongnam/spring.webp', length: '보통' },
   { id: 'south', name: '삼한 남부', line: '한강에서 영산강, 동해 바닷가까지 서른여섯 나라. 처음엔 이웃만 안다 — 지도는 보고 다닌 만큼 칠해진다.', thumb: 'map-world/m2-spring.webp', length: '길다' },
-  { id: 'world', name: '삼한과 북녘', line: '탐라에서 부여의 들까지 쉰 나라. 고구려 다섯 나부 · 부여의 네 가 · 옥저 · 동예가 더해진다.', thumb: 'map-world/m7b-spring.webp', length: '아주 길다' },
+  { id: 'world', name: '삼한과 북녘', line: '탐라에서 부여의 들까지, 옛 조선 땅 요동과 동해의 우산국까지 쉰두 나라. 고구려 다섯 나부 · 부여의 네 가 · 옥저 · 동예 · 양맥.', thumb: 'map-world/m7b-spring.webp', length: '아주 길다' },
 ]
 
 /** 이기려면 쥘 도읍 수 (season.ts checkOutcome 과 같은 값) */

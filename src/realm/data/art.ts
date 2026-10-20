@@ -19,8 +19,8 @@ export const REGION_ART: Readonly<Record<RegionId, { dir: string; ext: string; w
   yeongnam: { dir: 'map-yeongnam', ext: 'webp', w: 1024, h: 765, nodeScale: 0.34, labelScale: 0.72, zmax: 4, terrR: 50, terrBand: 28 },
   // 삼한 남부 — 조각 넷을 이은 그림(ui/realm/worldmap.ts 가 합친다). 크기는 조각 눈금(1024px = 경도 2.9° · 765px = 위도 2.0°)으로 경도 5.5° × 위도 3.75°
   south: { dir: 'map-world', ext: 'webp', w: 1942, h: 1434, nodeScale: 0.2, labelScale: 0.6, zmax: 6, terrR: 52, terrBand: 28 },
-  // 삼한과 북녘 — 조각 열넷. 같은 눈금으로 경도 5.5° × 위도 12.5° (세로로 긴 판 — 내려 가며 본다)
-  world: { dir: 'map-world', ext: 'webp', w: 1942, h: 4781, nodeScale: 0.2, labelScale: 0.6, zmax: 6, terrR: 52, terrBand: 28 },
+  // 삼한과 북녘 — 조각 스물다섯. 같은 눈금으로 경도 13.9° × 위도 12.5° (요동·요서·연해주까지 — 2026-10-20). 기호는 경도 5.5° 판일 때와 같은 크기가 되게 줄인다
+  world: { dir: 'map-world', ext: 'webp', w: 4908, h: 4781, nodeScale: 0.079, labelScale: 0.6, zmax: 15, terrR: 52, terrBand: 28 },
 }
 
 /** 장수 id → 명치판 (bust/<이름>.jpg). g- 남자 장수 · w- 여인 · l- 전설 */
@@ -80,6 +80,8 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'guga-ruler': 'w-55-guga-nuri', 'guga-1': 'g-47-guga-sanyanggae', 'dongokjeo-ruler': 'w-56-dongokjeo-sogeum', 'dongokjeo-1': 'g-05-mahan-chieftain',
   'bukokjeo-ruler': 'g-34-bukokjeo-duman', 'bukokjeo-1': 'w-70-bukokjeo-mulbeom', 'bullae-ruler': 'w-57-bullae-bakdal', 'bullae-1': 'g-50-bullae-gwaha',
   'tamna-ruler': 'w-58-tamna-halla', 'tamna-1': 'g-52-tamna-oreum',
+  // 넓어진 땅 (2026-10-20) — 우산국 우해왕 (울릉도 전설). 양맥 군장 맥손 · 장수 솔매 · 우산 장수 강치는 얼굴이 아직 없다 (그림 줄)
+  'usan-ruler': 'g-58-usan-uhae',
   // 여인 장수 더 (형 2026-10-19: "장수도 여캐 많았으면 좋겠으니 챗지피티로") — 판마다 장수 절반쯤이 여인. 아라·고자 둘은 변한 판의 얼굴 그대로
   // 제 얼굴(w-29 ~ w-45, 그림 줄 5d)을 받기 전까지는 있는 명치판을 빌린다 — 받으면 여기만 바꾼다
   'us-2': 'w-29-golpo-janmul', 'guya-3': 'w-30-guya-soebi',
@@ -131,6 +133,8 @@ export const FACTION_ART: Readonly<Record<string, { emblem: string; color: strin
   // 삼한과 북녘 판 — 고구려 삼족오 · 비류나 말 탄 궁수 · 연나 돌성문 · 환나 현무 · 관나 까마귀 · 부여 사슴 · 구가 개 · 동옥저 작살
   // 마가·우가·저가(말·소·돼지)와 북옥저·불내·탐라는 제 깃발이 아직 없다 — 그림 줄 4c
   goguryeo: { emblem: 'emblem-samjogo', color: '#c43c2c' },
+  yangmaek: { emblem: 'emblem-bow', color: '#7a8a3a' }, // 맥궁 — 맥 사람의 활 (요동 태자하)
+  usan: { emblem: 'emblem-seal', color: '#2f7fa0' }, // 강치 — 독도의 바다사자 (하슬라의 물범 깃발을 빌림 · 제 깃발은 그림 줄)
   biryuna: { emblem: 'emblem-horsearcher', color: '#8a5a9a' },
   yeonna: { emblem: 'emblem-stonegate', color: '#6a7a8a' },
   hwanna: { emblem: 'emblem-tortoise', color: '#3a7a6a' },

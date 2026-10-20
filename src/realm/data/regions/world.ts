@@ -8,8 +8,12 @@
  *   부여 — 『삼국유사』 북부여·동부여 · 『삼국사기』 고구려본기(금와·대소). 마가·우가·저가·구가는 위서 부여전 [위서]
  *   동옥저 — 『삼국사기』 고구려본기 태조왕 4년 · 북옥저 — 동명성왕 10년
  *   불내(동예) — 위서 동이전 예전의 불내예 [위서] · 탐라 — 『삼국사기』 백제본기 문주왕 2년 · 『고려사』 지리지 삼성 이야기
+ *   양맥 — 『삼국사기』 고구려본기 유리왕 33년 "서쪽으로 양맥을 쳐서 그 나라를 멸했다" · 자리는 태자하 골짜기 [설] (2026-10-20)
  * 낙랑·대방은 **땅으로도 나라로도 그리지 않는다** (WORLD §5 규칙 0). 대동강·재령의 들은 임자 없는 빈땅이고,
  * 서북 바깥 길목은 압록 하구 환나부의 바깥 교역(income)으로만 남는다.
+ * 요동·요서는 **옛 조선의 땅** — 임자 없는 빈땅으로 두고, 이름은 비파형동검·돌무덤이 나온 자리에서 땄다 (정가와자 · 십이대영자 · 강상·누상).
+ * 그 땅에 있던 군(요동군 등)도 낙랑과 같이 그리지 않는다. 요하 서쪽 끝(경도 119°) 너머는 바깥이다.
+ * 연해주 남쪽은 북옥저의 바닷가 — 단결(크로우노프카) 문화를 옥저로 보는 설을 따른다.
  * 고을 자리는 오늘 지명에 맞춘 설이다 — 나부·가의 자리는 전하지 않아 지어 앉혔다 [설].
  */
 import { PEOPLE_SCALE } from '../../migrate.ts'
@@ -66,6 +70,31 @@ const NEW_NODES: RNode[] = [
   wild('w-huifa', '휘발하 골짜기', [], 250, [126.3, 42.6]),
   wild('w-haeran', '해란강 들', [], 200, [129.1, 42.95]),
   wild('w-mudan', '목단강 숲', ['pines'], 150, [128.6, 43.8]),
+  // ── 요동 — 양맥 (『삼국사기』 유리왕 33년 "서쪽으로 양맥을 쳐서 그 나라를 멸했다") · 태자하 골짜기 [설]
+  node('y-yangmaek-cap', '양맥 도읍', 'capital', ['palisade', 'high'], 'yangmaek', 300, [123.75, 41.3]), // 본계 쪽 [설]
+  node('y-yangmaek-v', '태자하 마을', 'village', [], 'yangmaek', 160, [123.2, 41.2]),
+  // ── 옛 조선의 땅 — 임자 없는 빈땅. 이름은 비파형동검·돌무덤이 나온 자리에서 [설]
+  wild('w-amnok-mouth', '압록 어귀', ['shallows'], 220, [124.35, 40.15]), // 태조왕 94년 서안평을 친 길목
+  wild('w-cheonsan', '천산 골', ['high', 'pines'], 150, [123.2, 40.45]),
+  wild('w-gangsang', '돌무덤 언덕', [], 180, [121.65, 39.05]), // 강상·누상 돌무덤 (요동반도 끝)
+  wild('w-liao-mouth', '요하 갈대밭', ['shallows'], 220, [122.3, 40.9]),
+  wild('w-honha', '혼하 들', [], 300, [123.45, 41.85]), // 정가와자 — 비파형동검 무덤
+  wild('w-liao-upper', '요하 윗들', [], 260, [123.85, 42.45]),
+  wild('w-songyo', '송요 들', ['pasture'], 250, [123.6, 44.2]),
+  // ── 요서 — 바깥과 맞닿는 가장자리. 요하 서쪽 끝(경도 119°) 너머는 그리지 않는다
+  wild('w-uimuryeo', '의무려산', ['high', 'pines'], 120, [121.6, 41.65]),
+  wild('w-daeneung', '대릉하 들', [], 300, [120.5, 41.55]), // 조양 십이대영자 — 비파형동검
+  wild('w-liaoxi-coast', '요서 바닷가', [], 200, [120.95, 40.95]),
+  wild('w-noha', '노합하 들', [], 220, [120.4, 42.9]),
+  wild('w-sand', '모래 초원', ['pasture'], 180, [120.3, 43.85]), // 커르친 — 모래 언덕과 풀밭
+  // ── 연해주 — 북옥저의 바닷가 (단결(크로우노프카) 문화를 옥저로 보는 설)
+  node('o-dangyeol', '단결 마을', 'village', ['pines'], 'bukokjeo', 120, [131.35, 43.35]),
+  wild('w-tumen-mouth', '두만강 어귀', ['shallows'], 150, [130.5, 42.5]),
+  wild('w-khanka', '흥개호 들', ['shallows'], 180, [131.9, 44.5]),
+  // ── 동해 — 우산국 (『삼국사기』 신라본기 지증왕 13년 이사부 · 시대는 뒤) · 독도는 우산국의 바위섬 (『세종실록』 지리지 "우산·무릉 두 섬")
+  // 자리는 조각 그림(m12b)에 그려진 섬에 맞췄다
+  node('u-usan-cap', '우산 도읍', 'capital', ['palisade', 'high'], 'usan', 160, [130.68, 37.92]),
+  wild('w-dokdo', '독도', ['high'], 20, [132.15, 37.26]),
 ]
 
 const e = (id: string, a: string, b: string, kind: REdge['kind'], tags: REdge['tags'] = []): REdge => ({ id, a, b, kind, tags })
@@ -124,6 +153,37 @@ const NEW_EDGES: REdge[] = [
   e('k44', 't-tamna-cap', 't-tamna-v', 'field'),
   e('k45', 't-tamna-cap', 'm-balla-port', 'sea'),
   e('k46', 't-tamna-cap', 'm-gampyeong-port', 'sea'),
+  // 요동 — 압록 건너 · 천산 · 양맥 · 혼하
+  e('k50', 'g-hwanna-cap', 'w-amnok-mouth', 'ford'), // 압록
+  e('k51', 'w-amnok-mouth', 'w-cheonsan', 'forest'),
+  e('k52', 'w-cheonsan', 'w-gangsang', 'field'),
+  e('k53', 'w-cheonsan', 'y-yangmaek-v', 'pass'),
+  e('k54', 'y-yangmaek-cap', 'y-yangmaek-v', 'field'),
+  e('k55', 'y-yangmaek-cap', 'g-jolbon', 'pass'), // 졸본의 서쪽
+  e('k56', 'y-yangmaek-v', 'w-liao-mouth', 'field'),
+  e('k57', 'y-yangmaek-cap', 'w-honha', 'field'),
+  e('k58', 'w-honha', 'g-biryu-cap', 'forest'), // 혼하 윗골 → 비류수
+  e('k59', 'w-honha', 'w-liao-upper', 'field'),
+  e('k60', 'w-liao-upper', 'b-uga-cap', 'field'),
+  e('k61', 'w-liao-upper', 'w-songyo', 'field'),
+  e('k62', 'w-songyo', 'b-maga-cap', 'field'),
+  // 요서 — 요하 건너
+  e('k63', 'w-liao-mouth', 'w-uimuryeo', 'ford'), // 요하
+  e('k64', 'w-uimuryeo', 'w-daeneung', 'pass'),
+  e('k65', 'w-daeneung', 'w-liaoxi-coast', 'field'),
+  e('k66', 'w-liaoxi-coast', 'w-liao-mouth', 'ford'),
+  e('k67', 'w-daeneung', 'w-noha', 'pass'),
+  e('k68', 'w-noha', 'w-sand', 'field'),
+  e('k69', 'w-sand', 'w-songyo', 'ford'), // 서요하
+  // 연해주 — 두만강 건너
+  e('k70', 'o-buk-cap', 'w-tumen-mouth', 'ford'), // 두만강
+  e('k71', 'w-tumen-mouth', 'o-dangyeol', 'forest'),
+  e('k72', 'o-dangyeol', 'w-khanka', 'forest'),
+  e('k73', 'w-khanka', 'w-mudan', 'forest'),
+  // 동해 — 우산국 · 독도 (뱃길)
+  e('k74', 'u-usan-cap', 'n-siljik-cap', 'sea'),
+  e('k75', 'u-usan-cap', 'n-haseulla-cap', 'sea'),
+  e('k76', 'u-usan-cap', 'w-dokdo', 'sea'),
 ]
 
 const st = (grain: number, iron: number, more: Partial<Stock> = {}): Stock => ({ grain, iron, ...more })
@@ -144,6 +204,8 @@ const NEW_STARTS: readonly NationStart[] = [
   { faction: { id: 'bukokjeo', name: '북옥저', capital: 'o-buk-cap', equip: 'bronze' }, mind: 'cautious', stock: st(200, 0, { salt: 15, wood: 40 }) },
   { faction: { id: 'bullae', name: '불내', capital: 'd-bullae-cap', equip: 'bronze' }, mind: 'cautious', stock: st(220, 5, { salt: 15, wood: 30, horse: 8 }) },
   { faction: { id: 'tamna', name: '탐라', capital: 't-tamna-cap', equip: 'bronze' }, mind: 'cautious', stock: st(200, 0, { salt: 20, wood: 20 }) },
+  { faction: { id: 'yangmaek', name: '양맥', capital: 'y-yangmaek-cap', equip: 'bronze' }, mind: 'cautious', stock: st(230, 5, { wood: 40, horse: 4 }) },
+  { faction: { id: 'usan', name: '우산국', capital: 'u-usan-cap', equip: 'bronze' }, mind: 'cautious', stock: st(160, 0, { salt: 20, wood: 30 }) },
 ]
 
 const h = (
@@ -189,6 +251,12 @@ const NEW_HEROES: Hero[] = [
   h('uga-2', '견사 누리', 'uga', 'w', [3, 4, 5, 7, 7, 7], ['farmer'], 'b-uga-cap'),
   h('dongokjeo-2', '장수 소금비', 'dongokjeo', 'w', [5, 5, 5, 5, 4, 6], ['river'], 'o-dong-cap'),
   h('tamna-2', '살해 오름비', 'tamna', 'w', [5, 4, 5, 4, 6, 6], ['mountain'], 't-tamna-cap'),
+  // 양맥 — 맥궁(맥 사람의 활)의 고장. 칭호는 지었다
+  h('yangmaek-ruler', '군장 맥손', 'yangmaek', 'g', [6, 5, 6, 4, 5, 8], ['archer'], 'y-yangmaek-cap'),
+  h('yangmaek-1', '장수 솔매', 'yangmaek', 'w', [6, 5, 5, 4, 4, 7], ['river']),
+  // 우산국 — 사자 나무 이야기(이사부)의 섬. 바다에 밝고 겁이 없다
+  h('usan-ruler', '우해왕 물너울', 'usan', 'g', [6, 5, 6, 4, 5, 8], ['river'], 'u-usan-cap'),
+  h('usan-1', '장수 강치', 'usan', 'w', [5, 5, 5, 4, 4, 7], ['river']),
 ]
 
 const a = (id: string, faction: string, hero: string | null, at: string, mix0: Army['mix'], equip: Army['equip'] = 'bronze'): Army => {
@@ -213,6 +281,8 @@ const NEW_ARMIES: Army[] = [
   a('a-bukokjeo', 'bukokjeo', 'bukokjeo-1', 'o-buk-cap', { spear: 50, bow: 40 }),
   a('a-bullae', 'bullae', 'bullae-1', 'd-bullae-cap', { spear: 50, bow: 50, horse: 5 }),
   a('a-tamna', 'tamna', 'tamna-1', 't-tamna-cap', { spear: 40, bow: 30, boat: 15 }),
+  a('a-yangmaek', 'yangmaek', 'yangmaek-1', 'y-yangmaek-cap', { spear: 50, bow: 50 }),
+  a('a-usan', 'usan', 'usan-1', 'u-usan-cap', { spear: 30, bow: 20, boat: 20 }),
 ]
 
 const S = SOUTH_DATA

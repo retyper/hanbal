@@ -91,6 +91,18 @@ const NEW: readonly NationInfo[] = [
     source: '『삼국사기』 백제본기 문주왕 2년 탐라국이 방물을 바쳤다 (시대는 뒤). 『고려사』 지리지 — 고을나·양을나·부을나 세 사람이 땅에서 솟았다. 위서의 주호 [곁들임].',
     bars: { army: 1, grain: 2, militia: 2, terrain: 5 },
   },
+  {
+    id: 'yangmaek', name: '양맥', place: '요동 태자하 (설)',
+    blurb: '옛 조선 땅 요동의 맥 사람들. 맥궁을 잘 쏜다. 서쪽엔 임자 없는 요하의 들, 동쪽엔 고구려가 있다.',
+    source: '『삼국사기』 고구려본기 — 유리왕 33년 오이·마리가 서쪽으로 양맥을 쳐서 그 나라를 멸했다. 자리는 태자하 골짜기로 보는 설. 맥궁은 위서 [곁들임].',
+    bars: { army: 3, grain: 3, militia: 3, terrain: 4 },
+  },
+  {
+    id: 'usan', name: '우산국', place: '울릉도 · 독도',
+    blurb: '동해 한가운데 벼랑 섬. 뱃길로만 닿는다. 동쪽 바위섬 독도까지가 우산국의 바다다.',
+    source: '『삼국사기』 신라본기 지증왕 13년 — 우산국이 항복했다. 이사부가 나무 사자로 겁을 주었다 (시대는 뒤). 『세종실록』 지리지 — 우산·무릉 두 섬은 서로 멀지 않아 날이 맑으면 바라보인다.',
+    bars: { army: 1, grain: 1, militia: 2, terrain: 5 },
+  },
 ]
 
 export const WORLD_NATIONS: readonly NationInfo[] = [...SOUTH_NATIONS, ...NEW]
