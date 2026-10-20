@@ -2116,6 +2116,7 @@ export const SPEC = {
     favorRefuseAlly: k(10, 0, 40, 1, '동맹의 부탁(함께 치기·지원)을 저버리면 호감 −'),
     favorPlotCaught: k(15, 0, 50, 1, '공작이 들키면 그 나라 호감 −'),
     favorPledgeKept: k(12, 0, 50, 1, '함께 치자는 약속을 지키면 호감 +'),
+    deedsKeep: k(14, 4, 60, 1, '나라 사이에 있었던 일을 몇 개까지 적어 두나 (나라 카드 — 오래된 것부터 걷는다)'),
     favorPledgeBroken: k(25, 0, 80, 1, '함께 치자는 약속을 저버리면 호감 −'),
     favorBreakSelf: k(40, 0, 100, 1, '화친·동맹을 먼저 깨면 그 나라 호감 −'),
     favorBreakOthers: k(10, 0, 50, 1, '화친·동맹을 먼저 깨면 다른 나라들 호감 − (신의의 값)'),

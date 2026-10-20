@@ -89,6 +89,23 @@ export interface Relation {
   took?: Record<string, number>
   /** 조공하는 사이 — 이 쌍의 한쪽이 `lord` 에게 `until` 계절까지 조공한다 (맹주의 길 — suzerain.ts). 전쟁이 나면 끊긴다 */
   vassal?: { readonly lord: string; readonly until: number }
+  /** 두 나라 사이에 있었던 일 — 새것이 뒤, 오래된 것부터 걷는다 (P.realm.deedsKeep). 나라 카드의 "우리 사이에 있었던 일" */
+  deeds?: Deed[]
+}
+
+/**
+ * 나라 사이에 있었던 일 하나 — `by` 가 한 일 (형: "이나라가 나한테 잘못한일 잘한일 … 언제 그랬는지와 함께").
+ *   rel 사이가 바뀜(st·why) · take 고을을 빼앗음(n) · yes/no 청을 들어줌·물리침(ask) · gift 선물 ·
+ *   kept/broke 함께 치자는 약속을 지킴·어김(n) · plot 공작이 들킴
+ */
+export interface Deed {
+  readonly s: number
+  readonly by: string
+  readonly k: 'rel' | 'take' | 'yes' | 'no' | 'gift' | 'kept' | 'broke' | 'plot'
+  readonly st?: Relation['state']
+  readonly why?: RelationWhy
+  readonly n?: string
+  readonly ask?: string
 }
 
 /**
@@ -239,6 +256,11 @@ export interface March {
   readonly approach?: Approach
   /** 계절에 막힌 길을 억지로 간다 — 눈 덮인 고개 · 불어난 나루 (사람·사기를 잃었다) */
   readonly hard?: 'winterPass' | 'summerFord'
+  /**
+   * 떠날 때 그 고을의 주인 (null = 빈땅). 가는 사이 싸우지 않는 다른 나라 땅이 됐으면 들어가지 않고 돌아선다 —
+   * 빈땅을 일구러 갔다가 남이 먼저 쥔 땅에 "우리가 군대를 들였다"가 되던 것 (형: "전쟁시도하지 않았는데 왜"). 없으면 옛 판 — 그대로 들어간다
+   */
+  readonly aim?: string | null
 }
 
 /**
@@ -689,7 +711,7 @@ export type ReportLine =
   | { readonly kind: 'hunger'; readonly faction: string }
   | { readonly kind: 'envoy'; readonly from: string; readonly to: string; readonly ask: EnvoyAsk; readonly accepted: boolean; readonly why?: Why; readonly about?: string; readonly hero?: string }
   /** 화친·동맹을 맺어 상대 땅으로 가던 군대가 발길을 돌렸다 — `node` 는 가려던 고을 */
-  | { readonly kind: 'recall'; readonly faction: string; readonly army: string; readonly node: string }
+  | { readonly kind: 'recall'; readonly faction: string; readonly army: string; readonly node: string; /** 왜 돌아섰나 — 없으면 화친·동맹을 맺어서, owner 면 가는 사이 그 나라 땅이 돼서 */ readonly owner?: string }
   /** 함께 치자는 약속을 지켰나 저버렸나 — `from` 이 약속한 나라, `to` 가 약속받은 나라 */
   | { readonly kind: 'pledge'; readonly from: string; readonly to: string; readonly node: string; readonly kept: boolean }
   /** 군대를 빌려줬다 (`army` 가 `to` 의 `node` 를 지키러 간다) · 돌아갔다 (back) */

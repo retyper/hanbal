@@ -8,6 +8,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
   --tabh: calc(62px + env(safe-area-inset-bottom)); --toph: calc(48px + env(safe-area-inset-top)); --legh: 34px;
   position: fixed; inset: 0; color: var(--ink); font: 15px/1.45 system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+/* 그림은 마우스를 받지 않는다 — 누르는 건 늘 감싼 단추·칸이다. 브라우저 확장(포토샵 등)이 그림마다 띄우는 단추도 이걸로 안 뜬다 (형: "ps 버튼 뜨는게 짜증남") */
+.ap img { pointer-events: none; -webkit-user-drag: none; }
 .ap h1, .ap h2, .ap h3, .ap .top b, .ap .next, .ap .brag { font-family: 'Gowun Batang', 'Apple SD Gothic Neo', serif; }
 .ap h3 { margin: 4px 0 10px; font-size: 19px; color: var(--gold); } .ap h4 { margin: 14px 0 6px; font-size: 14px; color: var(--mute); font-weight: 600; }
 .ap p { margin: 6px 0; } .ap .mute { color: var(--mute); font-size: 13px; }
@@ -165,6 +167,11 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .nightov iframe { width: 100%; height: 100%; border: 0; display: block; }
 .ap .nightov [data-close] { position: absolute; right: 10px; top: 10px; z-index: 1; font-size: 13px; padding: 4px 10px; }
 .ap .frow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } .ap .frow .mute { flex: 1 1 12em; } .ap .why { font-size: 13px; color: #d8c89a; margin: 4px 0 2px; } .ap .askc .why { margin: 2px 0 4px; }
+/* 나라 카드 — 우리 사이에 있었던 일 (때 · 무엇). 그쪽이 잘한 일은 초록, 잘못한 일은 붉게, 우리가 한 일은 금빛 */
+.ap .deeds { border-top: 1px dashed var(--line); padding-top: 6px; } .ap .deeds h5 { margin: 0 0 4px; font-size: 12px; color: var(--mute); font-weight: 600; }
+.ap .deeds .dd { display: flex; gap: 8px; font-size: 13px; line-height: 1.4; padding: 2px 0 2px 8px; border-left: 3px solid var(--line); margin: 2px 0; }
+.ap .deeds .dd span { flex: none; color: var(--mute); font-size: 12px; min-width: 4.4em; } .ap .deeds .dd.good { border-color: var(--good); } .ap .deeds .dd.bad { border-color: var(--bad); } .ap .deeds .dd.us { border-color: var(--gold); }
+.ap .deeds .btn { margin-top: 4px; }
 .ap .fbtn { border: 0; padding: 0; background: none; cursor: pointer; border-radius: 50%; }
 .ap .plimg { display: block; width: 100%; border-radius: 10px; margin: 6px 0; }
 .ap .rface.sm { width: 34px; height: 34px; border-width: 1px; }

@@ -18,7 +18,7 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
-import { addFavor, relationOf, worsen } from './diplomacy.ts'
+import { addFavor, noteDeed, relationOf, worsen } from './diplomacy.ts'
 import { knows } from './discovery.ts'
 import { stockOf } from './economy.ts'
 import { armyOfHero, gainXp, hasTrait, heroAt, heroSeen, isRuler, plotBonus } from './heroes.ts'
@@ -283,6 +283,7 @@ export function exposeChance(r: Realm, faction: string, target: string, node: st
 function expose(r: Realm, from: string, to: string, steps: number, lines: ReportLine[]): void {
   const R = P.realm
   for (let i = 0; i < steps; i++) worsen(r, from, to, lines, { by: to, why: 'plot' })
+  noteDeed(r, from, to, { by: from, k: 'plot' })
   addFavor(r, from, to, -R.favorPlotCaught)
   for (const x of Object.keys(r.factions).sort()) {
     if (x !== from && x !== to && alive(r, x) && knows(r, x, from)) addFavor(r, from, x, -R.favorPlotExposedOthers)

@@ -19,7 +19,7 @@ import { nodeStrength } from './season.ts'
 import { allianceWhy, truceWhy, winningAgainst, type Motive } from './stance.ts'
 import { knows } from './discovery.ts'
 import { noteIron } from './paths.ts'
-import type { Ask, AskKind, EnvoyAsk, Good, Goods, Order, Pledge, Realm, Relation, RelationWhy, ReportLine } from './types.ts'
+import type { Ask, AskKind, EnvoyAsk, Good, Goods, Order, Deed, Pledge, Realm, Relation, RelationWhy, ReportLine } from './types.ts'
 
 export function pairKey(a: string, b: string): string {
   return a < b ? `${a}|${b}` : `${b}|${a}`
@@ -45,7 +45,9 @@ function setRelation(r: Realm, a: string, b: string, state: Relation['state'], u
   if (state === 'ally' && prev.pledges !== undefined && prev.pledges.length > 0) next.pledges = prev.pledges
   if (prev.took !== undefined) next.took = prev.took
   if (prev.vassal !== undefined && state !== 'war') next.vassal = prev.vassal // 칼을 뽑으면 조공은 끊긴다
+  if (prev.deeds !== undefined) next.deeds = prev.deeds
   ;(r.relations ??= {})[pairKey(a, b)] = next
+  if (prev.state !== state && cause?.why !== 'plot') noteDeed(r, a, b, { by: cause?.by ?? '', k: 'rel', st: state, ...(cause !== undefined ? { why: cause.why } : {}) })
   if (prev.state !== state) lines.push({ kind: 'relation', a: a < b ? a : b, b: a < b ? b : a, state, ...(cause?.by !== undefined ? { by: cause.by } : {}), ...(cause !== undefined ? { why: cause.why } : {}) })
   if ((state === 'truce' || state === 'ally') && (prev.state === 'war' || prev.state === 'neutral')) recall(r, a, b, lines)
 }
@@ -66,6 +68,15 @@ function recall(r: Realm, a: string, b: string, lines: ReportLine[]): void {
 }
 
 // ───────── 호감 (외교 둘째판 — 형: "외교가 좀 재미없음")
+
+/** 두 나라 사이에 있었던 일을 적는다 — 나라 카드에 언제 무엇이 있었는지 보인다. 오래된 것부터 걷는다 */
+export function noteDeed(r: Realm, a: string, b: string, d: Omit<Deed, 's'>): void {
+  if (a === b || r.factions[a] === undefined || r.factions[b] === undefined || r.region === 'tutorial') return
+  const rel = ((r.relations ??= {})[pairKey(a, b)] ??= { state: 'neutral', until: null })
+  const list = (rel.deeds ??= [])
+  list.push({ s: r.season, ...d })
+  if (list.length > P.realm.deedsKeep) list.splice(0, list.length - P.realm.deedsKeep)
+}
 
 /** 두 나라 사이의 호감 −100..100 (없으면 0) */
 export function favorOf(r: Realm, a: string, b: string): number {
@@ -132,9 +143,11 @@ export function checkPledges(r: Realm, lines: ReportLine[]): void {
       const kept = hit.has(`${p.by}>${p.node}`) || r.nodes[p.node]?.owner === p.by
       if (kept) {
         addFavor(r, p.by, other, R.favorPledgeKept)
+        noteDeed(r, p.by, other, { by: p.by, k: 'kept', n: p.node })
         lines.push({ kind: 'pledge', from: p.by, to: other, node: p.node, kept: true })
       } else if (p.until <= r.season) {
         addFavor(r, p.by, other, -R.favorPledgeBroken)
+        noteDeed(r, p.by, other, { by: p.by, k: 'broke', n: p.node })
         lines.push({ kind: 'pledge', from: p.by, to: other, node: p.node, kept: false })
       } else keep.push(p)
     }
@@ -557,6 +570,8 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
       kind: 'envoy', from: o.from, to: o.to, ask: o.ask, accepted, ...(o.why !== undefined ? { why: o.why } : {}), ...(o.about !== undefined ? { about: o.about } : {}),
       ...(escort !== undefined ? { hero: escort } : {}),
     })
+    if (o.ask === 'gift') { if (accepted) noteDeed(r, o.from, o.to, { by: o.from, k: 'gift' }) }
+    else if (o.ask !== 'break') noteDeed(r, o.from, o.to, { by: o.to, k: accepted ? 'yes' : 'no', ask: o.ask })
     if (!accepted) {
       // 조공 요구를 거절당하면 그 자리에서 전쟁이다
       if (o.ask === 'tribute') setRelation(r, o.from, o.to, 'war', null, lines, { by: o.from, why: 'tribute' })
@@ -797,6 +812,7 @@ export function resolveAnswers(r: Realm, orders: readonly Order[], lines: Report
       }
     }
     lines.push({ kind: 'answered', ask: a.id, yes, from: a.from, askKind: a.kind })
+    noteDeed(r, a.from, a.to, { by: a.to, k: yes ? 'yes' : 'no', ask: `a:${a.kind}` })
     if (!yes && a.kind === 'demand') setRelation(r, a.from, a.to, 'war', null, lines, { by: a.from, why: 'demand' })
     // 호감 — 받아 주면 오르고, 거절하면 조금 · 동맹의 부탁을 저버리면 크게 내린다
     if (yes) addFavor(r, a.from, a.to, R.favorAccept)

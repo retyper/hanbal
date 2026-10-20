@@ -544,7 +544,7 @@ function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): v
     const extra = rationFor(r, a, o.ration, left)
     if (extra > 0) stockOf(r, a.faction).grain -= rationCost(r, a, left, extra)
     a.food = left + extra
-    a.march = { from: a.at, to, edge: ed.id, left, ambush: approach !== 'road', ...(approach !== 'road' && approach !== 'night' ? { approach } : {}), ...(why !== null ? { hard: why } : {}) }
+    a.march = { from: a.at, to, edge: ed.id, left, ambush: approach !== 'road', ...(approach !== 'road' && approach !== 'night' ? { approach } : {}), ...(why !== null ? { hard: why } : {}), aim: owner }
   }
 }
 
@@ -1046,7 +1046,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
     }
     for (const x of atks) x.at = node.id
     if (node.kind !== 'sodo' && node.owner !== a.faction && !allied(r, a.faction, node.owner)) {
-      noteTake(r, a.faction, node.owner)
+      noteTake(r, a.faction, node.owner, node.id)
       onTake(r, node.id)
       node.owner = a.faction
       lines.push({ kind: 'take', faction: a.faction, node: node.id })
@@ -1090,6 +1090,17 @@ function resolveMarches(
     if (live.length === 0) continue
     const lead = live[0]!
     const node = r.nodes[lead.march!.to]!
+    // 가는 사이 주인이 바뀌어 싸우지 않던 나라 땅이 됐다 — 들어가면 그 나라를 친 것이 된다. 들어가지 않고 떠난 고을로 돌아선다
+    const now = node.owner
+    const aim = lead.march!.aim
+    if (aim !== undefined && now !== null && now !== aim && now !== lead.faction && !allied(r, lead.faction, now) && relationOf(r, lead.faction, now).state !== 'war') {
+      for (const a of live) {
+        const m = a.march!
+        a.march = { from: m.to, to: m.from, edge: m.edge, left: 1, ambush: false, aim: r.nodes[m.from]?.owner ?? null }
+        lines.push({ kind: 'recall', faction: a.faction, army: a.id, node: m.to, owner: now })
+      }
+      continue
+    }
     if (contested(r, node.id, lead.faction)) {
       fought.add(node.id)
       fight(r, live, snipes, tactics, lines)
@@ -1103,7 +1114,7 @@ function resolveMarches(
     // 동맹의 땅은 지나갈 뿐 쥐지 않는다
     if (node.owner !== lead.faction && node.kind !== 'sodo' && !allied(r, lead.faction, node.owner)) {
       provoke(r, lead.faction, node.owner, lines)
-      noteTake(r, lead.faction, node.owner)
+      noteTake(r, lead.faction, node.owner, node.id)
       if (node.owner !== null) onTake(r, node.id)
       node.owner = lead.faction
       lines.push({ kind: 'take', faction: lead.faction, node: node.id })

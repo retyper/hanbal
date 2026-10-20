@@ -16,7 +16,7 @@ import { WORLD_NATIONS } from '../../realm/data/nations-world.ts'
 import { knownOf, knows } from '../../realm/discovery.ts'
 import { TRAIT } from '../../realm/data/traits.ts'
 import {
-  ASK_KIND_NAME, ASK_NAME, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, arriveWhen, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine, NODE_NOW, BUILD_NAME, BOW_NAME, CONCEAL_LINE, goodsLine, GOOD_NAME, tagNow,
+  ASK_KIND_NAME, ASK_NAME, deedText, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, arriveWhen, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine, NODE_NOW, BUILD_NAME, BOW_NAME, CONCEAL_LINE, goodsLine, GOOD_NAME, tagNow,
 } from '../../realm/data/prose.ts'
 import { canEscort, envoyChanceFor, envoyOptions, favorOf, jointTargets, openAsks, relationOf } from '../../realm/diplomacy.ts'
 import {
@@ -273,6 +273,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   const persuadeBy: Record<string, string> = {}
   /** 사신과 함께 보낼 장수 — 상대 나라마다 (매력·매혹·장사꾼은 따라가야 먹힌다) */
   const escort: Record<string, string> = {}
+  /** 나라 카드에서 "있었던 일"을 다 펼친 나라 */
+  const deedsOpen = new Set<string>()
   let diploMode: 'envoy' | 'plot' | 'scout' = 'envoy'
   let plotOpen: PlotOp | null = null
   /** 암살에 보낼 자객 — 우리 장수 id, null 이면 고용 자객 */
@@ -1127,6 +1129,18 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const md = moodOf(r, me(), f.id)
       h += `<div class="moodl ${md.mood}">${moodImg(ART, md.mood)}<div><b>${esc(MOOD_WORD[md.mood])}</b>${said(advisor(r), md.say)}</div></div>`
       h += `<div class="frow"><span class="mute">${REL_NOW[rel.state]}</span>${favorFeel(favorOf(r, me(), f.id))}</div>`
+      // 우리 사이에 있었던 일 — 언제 누가 무엇을 (형: "이나라가 나한테 잘못한일 잘한일 이런거를 언제 그랬는지와 함께")
+      const deeds = (rel.deeds ?? []).slice().reverse()
+      if (deeds.length > 0) {
+        const open = deedsOpen.has(f.id)
+        h += `<div class="deeds"><h5>우리 사이에 있었던 일</h5>`
+        for (const d of open ? deeds : deeds.slice(0, 3)) {
+          const t = deedText(r, me(), f.id, d)
+          h += `<div class="dd ${t.tone}"><span>${seasonLabel(d.s)}</span>${esc(t.text)}</div>`
+        }
+        if (deeds.length > 3) h += `<button class="btn ghost sm" data-act="deeds" data-to="${f.id}">${open ? '접기' : `더 보기 · ${deeds.length - 3}`}</button>`
+        h += `</div>`
+      }
       // 그쪽 속셈 — 첩자를 심었거나 동맹일 때만 보인다 (형: "속셈은 아무에게나 드러내게 하지 말고 … 간접정보로"). 깰 속셈은 안 보인다
       const tw = readsMind(r, f.id) ? truceWhy(r, f.id, me()) : null
       const aw = tw === null && readsMind(r, f.id) ? allianceWhy(r, f.id, me()) : null
@@ -1844,8 +1858,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'draft': ic = UNIT_ICON[l.unit]; break
       case 'disband': case 'settle': case 'migrate': ic = 'settle-farm-village'; break
       case 'hunger': ic = 'status-famine'; break
-      case 'envoy': case 'answered': case 'ask': case 'recall': ic = 'good-tribute-bell'; break
-      case 'relation': ic = l.state === 'war' ? 'status-betrayal' : l.state === 'ally' ? 'status-alliance' : 'good-tribute-bell'; break
+      case 'envoy': case 'answered': case 'ask': ic = 'good-tribute-bell'; break
+      case 'recall': ic = l.owner !== undefined ? 'unit-spear' : 'good-tribute-bell'; break
+      // 전쟁 줄의 그림은 까닭대로 — 배신만 등 뒤의 칼, 이간·공작은 그 공작 그림, 나머지는 환두대도 (형: "이간도 안했는데 이간 칼 이미지가 뜸")
+      case 'relation': ic = l.state === 'war'
+        ? (l.why === 'betray' || l.why === 'distrust' ? 'status-betrayal' : l.why === 'sow' ? PLOT_ICON.sow : l.why === 'plot' ? 'status-spy' : 'treasure-ring-sword')
+        : l.state === 'ally' ? 'status-alliance' : 'good-tribute-bell'; break
       case 'plot': ic = PLOT_ICON[l.op]; break
       case 'mystery': case 'rumor': case 'confess': ic = 'status-spy'; break
       case 'build': ic = 'settle-palisade'; break
@@ -2550,6 +2568,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'unenvoy': delete envoys[d['to']!]; break
       case 'escort': escort[d['to']!] = d['id'] ?? ''; break
+      case 'deeds': { const t = d['to']!; if (deedsOpen.has(t)) deedsOpen.delete(t); else deedsOpen.add(t); break }
       case 'build': {
         const node = d['node']!
         const same = (o: Order): boolean => o.kind === 'build' && o.node === node

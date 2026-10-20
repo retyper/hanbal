@@ -4,7 +4,7 @@
  */
 import { P } from '../../tune/params.ts'
 import type { Equip, Outcome, UnitKind } from '../battle.ts'
-import type { Art, Ask, BuildWhat, Cmd, DiscoverHow, EdgeKind, Good, Grp, PlotOp, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, RoundLog, RoundOrder, SeasonOfYear, Tag, Why } from '../types.ts'
+import type { Art, Ask, BuildWhat, Deed, Cmd, DiscoverHow, EdgeKind, Good, Grp, PlotOp, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, RoundLog, RoundOrder, SeasonOfYear, Tag, Why } from '../types.ts'
 import { groupOf } from '../tactics.ts'
 import type { ConcealWhy } from '../season.ts'
 import { TRAIT } from './traits.ts'
@@ -201,6 +201,46 @@ export function whyLine(why: Why | undefined, about = '', them = '우리'): stri
 
 export const ASK_KIND_NAME: Record<Ask['kind'], string> = {
   truce: '화친', alliance: '동맹', trade: '교역', tribute: '조공 바침', demand: '조공 요구', joint: '함께 치자', aid: '지원 요청',
+}
+
+/**
+ * 나라 사이에 있었던 일 하나를 글로 — 보는 나라(viewer)의 눈으로 (나라 카드 "우리 사이에 있었던 일").
+ * tone: good 그쪽이 우리에게 잘한 일 · bad 그쪽이 우리에게 잘못한 일 · us 우리가 한 일
+ */
+export function deedText(r: Realm, viewer: string, other: string, d: Deed): { text: string; tone: 'good' | 'bad' | 'us' | 'plain' } {
+  const o = r.factions[other]?.name ?? '?'
+  const nn = (id: string | undefined): string => (id !== undefined ? (r.nodes[id]?.name ?? '?') : '?')
+  const askName = (a: string | undefined): string => (a === undefined ? '청' : a.startsWith('a:') ? ASK_KIND_NAME[a.slice(2) as Ask['kind']] : ASK_NAME[a as EnvoyAsk]) ?? '청'
+  const we = d.by === viewer
+  switch (d.k) {
+    case 'take': return we ? { text: `우리가 ${o}의 ${josa(nn(d.n), '을', '를')} 빼앗았다`, tone: 'us' } : { text: `${josa(o, '이', '가')} 우리 ${josa(nn(d.n), '을', '를')} 빼앗았다`, tone: 'bad' }
+    case 'gift': return we ? { text: `우리가 ${o}에 선물을 보냈다`, tone: 'us' } : { text: `${josa(o, '이', '가')} 선물을 보내왔다`, tone: 'good' }
+    case 'yes': return we ? { text: `${o}의 ${askName(d.ask)} 청을 우리가 들어줬다`, tone: 'us' } : { text: `${josa(o, '이', '가')} 우리 ${askName(d.ask)} 청을 들어줬다`, tone: 'good' }
+    case 'no': return we ? { text: `${o}의 ${askName(d.ask)} 청을 우리가 물리쳤다`, tone: 'us' } : { text: `${josa(o, '이', '가')} 우리 ${askName(d.ask)} 청을 물리쳤다`, tone: 'bad' }
+    case 'kept': return we ? { text: `함께 치자는 약속을 지켜 우리가 ${josa(nn(d.n), '을', '를')} 쳤다`, tone: 'us' } : { text: `${josa(o, '이', '가')} 약속대로 ${josa(nn(d.n), '을', '를')} 쳐 줬다`, tone: 'good' }
+    case 'broke': return we ? { text: `우리가 ${josa(nn(d.n), '을', '를')} 치기로 한 약속을 저버렸다`, tone: 'us' } : { text: `${josa(o, '이', '가')} ${josa(nn(d.n), '을', '를')} 치기로 한 약속을 저버렸다`, tone: 'bad' }
+    case 'plot': return we ? { text: `우리가 ${o}에 보낸 공작이 들켰다`, tone: 'us' } : { text: `${josa(o, '이', '가')} 우리에게 보낸 공작이 들켰다`, tone: 'bad' }
+    case 'rel': {
+      const st = d.st ?? 'neutral'
+      if (st === 'ally') return { text: `${josa(o, '과', '와')} 동맹을 맺었다`, tone: 'good' }
+      if (d.why === 'sow') return { text: `누군가의 이간으로 ${josa(o, '과', '와')} 틀어졌다 — ${RELATION_NAME[st]}`, tone: 'plain' }
+      if (st === 'war') {
+        if (we) return { text: d.why === 'betray' ? `우리가 약조를 깨고 ${josa(o, '을', '를')} 쳤다` : d.why === 'tribute' || d.why === 'demand' ? `${josa(o, '이', '가')} 우리 요구를 거절해 전쟁이 됐다` : `우리가 ${o} 땅에 군대를 들여 전쟁이 됐다`, tone: 'us' }
+        if (d.by === other) return { text: d.why === 'betray' ? `${josa(o, '이', '가')} 약조를 깨고 쳐들어왔다` : d.why === 'attack' ? `${josa(o, '이', '가')} 우리 땅에 쳐들어왔다` : d.why === 'tribute' || d.why === 'demand' ? `우리가 그 요구를 거절하자 ${josa(o, '이', '가')} 칼을 뽑았다` : d.why === 'plot' ? `우리 공작이 드러나 ${josa(o, '이', '가')} 칼을 뽑았다` : `${josa(o, '이', '가')} 전쟁을 걸어왔다`, tone: 'bad' }
+        return { text: `${josa(o, '과', '와')} 전쟁이 났다`, tone: 'plain' }
+      }
+      if (st === 'truce') {
+        if (d.why === 'distrust') return { text: `${josa(o, '이', '가')} 우리를 덜 믿어 동맹을 거두고 화친만 남겼다`, tone: 'bad' }
+        if (d.why === 'expire') return { text: `${josa(o, '과', '와')} 동맹이 화친으로 물러났다`, tone: 'plain' }
+        return { text: `${josa(o, '과', '와')} 화친을 맺었다`, tone: 'good' }
+      }
+      // 중립 — 맺은 사이가 끝났다
+      if (d.why === 'break') return we ? { text: `우리가 ${josa(o, '과', '와')}의 약조를 깼다`, tone: 'us' } : { text: `${josa(o, '이', '가')} 우리와의 약조를 깼다`, tone: 'bad' }
+      if (d.why === 'distrust') return { text: `${josa(o, '이', '가')} 우리를 믿지 못해 맺은 사이를 거뒀다`, tone: 'bad' }
+      if (d.why === 'expire') return { text: `${josa(o, '과', '와')}의 화친이 끝났다`, tone: 'plain' }
+      return { text: `${josa(o, '과', '와')} 사이가 중립이 됐다`, tone: 'plain' }
+    }
+  }
 }
 
 /**
@@ -515,7 +555,9 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       return `${fname(other)}에서 ${ASK_NAME[line.ask]} 사신이 왔다.`
     }
     case 'recall': {
+      if (line.faction === viewer && line.owner !== undefined) return `${josa(node(line.node), '이', '가')} 가는 사이 ${fname(line.owner)} 땅이 됐다 — 싸우지 않는 사이라 ${josa(nameArmy(line.army), '을', '를')} 돌린다.`
       if (line.faction === viewer) return `약조를 맺어 ${josa(node(line.node), '으로', '로')} 가던 ${josa(nameArmy(line.army), '을', '를')} 돌린다.`
+      if (line.owner !== undefined) return null
       if (after.nodes[line.node]?.owner !== viewer) return null
       return `${josa(node(line.node), '으로', '로')} 오던 ${fname(line.faction)} 군대가 발길을 돌렸다.`
     }

@@ -11,7 +11,7 @@
  */
 import { P } from '../tune/params.ts'
 import { stockOf, upkeepOf } from './economy.ts'
-import { favorOf, nationPower, pairKey, powerRange, relationOf } from './diplomacy.ts'
+import { favorOf, nationPower, noteDeed, pairKey, powerRange, relationOf } from './diplomacy.ts'
 import { knows } from './discovery.ts'
 import { memoFor } from './memo.ts'
 import type { Realm, Why } from './types.ts'
@@ -179,8 +179,9 @@ export function breakWhy(r: Realm, a: string, b: string): Motive | null {
 }
 
 /** 땅을 앗았다 — 앗긴 쪽이 기억한다 (tookRecently) */
-export function noteTake(r: Realm, taker: string, victim: string | null): void {
+export function noteTake(r: Realm, taker: string, victim: string | null, node?: string): void {
   if (victim === null || victim === taker || r.factions[victim] === undefined || r.factions[taker] === undefined) return
   const rel = ((r.relations ??= {})[pairKey(taker, victim)] ??= { state: 'neutral', until: null })
   ;(rel.took ??= {})[taker] = r.season
+  if (node !== undefined) noteDeed(r, taker, victim, { by: taker, k: 'take', n: node })
 }
