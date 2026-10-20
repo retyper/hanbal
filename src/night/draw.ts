@@ -12,6 +12,7 @@ import { P } from '../tune/params.ts'
 import { drawArcher } from '../render/stickman.ts'
 import { THEME, worldToScreenX, worldToScreenY, type Camera } from '../render/camera.ts'
 import { createFx, drawFx, type Fx } from '../render/effects.ts'
+import { drawArrowArt } from '../render/foeart.ts'
 import type { World } from '../sim/types.ts'
 import { effectiveStats } from '../sim/bow.ts'
 import type { Pull } from './input.ts'
@@ -420,6 +421,8 @@ function drawFlying(ctx: CanvasRenderingContext2D, cam: Camera, w: World): void 
     ctx.moveTo(X(cam, a.px - (a.x - a.px) * 3), Y(cam, a.py - (a.y - a.py) * 3))
     ctx.lineTo(X(cam, bx), Y(cam, by))
     ctx.stroke()
+    // 날아가는 살도 활터의 그림 화살 (형: "암살부분은 왜 이전 신궁 UI랑 에셋 이런거 거의 안가져온거임?") — 그림이 아직 안 왔으면 선
+    if (drawArrowArt(ctx, 'basic', X(cam, bx), Y(cam, by), X(cam, a.x), Y(cam, a.y))) continue
     ctx.strokeStyle = COL.arrow
     ctx.lineWidth = Math.max(1.4, cam.scale * 0.03)
     ctx.beginPath()
@@ -560,14 +563,35 @@ function drawHud(ctx: CanvasRenderingContext2D, v: NightView, n: Night, now: num
   ctx.fillStyle = n.bowTier > 0 ? '#ffd27a' : COL.hudDim
   ctx.font = '700 13px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   ctx.textAlign = 'right'
-  ctx.fillText(`활 · ${BOW_NAME[n.bowTier] ?? BOW_NAME[0]}`, cam.w - 14, 42)
+  ctx.fillText(`활 · ${BOW_NAME[n.bowTier] ?? BOW_NAME[0]}`, cam.w - 14, 98)
   ctx.textAlign = 'left'
   ctx.font = '600 15px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   ctx.fillStyle = COL.hud
-  // 화살
+  // 남은 화살 — 활터 HUD 처럼 큰 숫자 + 그림 화살 눈금 (형: "화살 발수도 제대로 안보이는데"). 마지막 한 발은 붉다
   ctx.textAlign = 'right'
-  const left = n.practice?.infinite === true ? '∞' : String(w.arrowsLeft)
-  ctx.fillText(`화살 ${left}`, cam.w - 14, 22)
+  const inf = n.practice?.infinite === true
+  const low = !inf && w.arrowsLeft <= 1
+  ctx.font = '800 30px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
+  ctx.fillStyle = low ? COL.alarm : '#f3e6c8'
+  ctx.fillText(inf ? '∞' : String(w.arrowsLeft), cam.w - 38, 26)
+  ctx.font = '700 14px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
+  ctx.fillStyle = COL.hudDim
+  ctx.fillText('발', cam.w - 14, 32)
+  if (!inf) {
+    const glyph = 36
+    for (let i = 0; i < Math.min(w.arrowsLeft, 12); i++) {
+      const cx = cam.w - 22 - i * 13
+      ctx.shadowColor = low ? COL.alarm : '#e8d6a8'
+      ctx.shadowBlur = 6
+      if (!drawArrowArt(ctx, 'basic', cx, 62 + glyph / 2, cx, 62 - glyph / 2, 2)) {
+        ctx.fillStyle = low ? COL.alarm : '#e8d6a8'
+        ctx.fillRect(cx - 1, 62 - glyph / 2, 2, glyph)
+      }
+      ctx.shadowBlur = 0
+    }
+  }
+  ctx.font = '600 15px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
+  ctx.fillStyle = COL.hud
   // 발각 게이지 — 가운데 위
   if (n.practice?.alarm !== false) {
     const gw = Math.min(220, cam.w * 0.34)
