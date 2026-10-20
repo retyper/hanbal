@@ -19,9 +19,15 @@ export const WORLD_PROJ = { lon0: 119.0, lon1: 132.9, lat0: 32.8, lat1: 45.3 } a
  * 겹친 띠: 위 조각의 남쪽(s) 0.25° · 오른쪽 조각의 서쪽(w) 0.3° 가 서서히 비친다.
  */
 export const WORLD_TILES: readonly WorldTile[] = [
-  // 아직 조각이 없는 바다 칸 — 빈 바다 그림(sea-filler, M11c 의 탁 트인 바다를 떼어 냄)을 맨 밑에 깐다. 제 조각이 오면 바꾼다 (그림 줄 M12 · M9e~g)
-  ...([[119.0, 32.8], [119.0, 34.55], [119.0, 36.3], [121.9, 32.8], [121.9, 34.55], [121.9, 36.3], [130.0, 32.8], [130.0, 34.55], [130.0, 38.05]] as const)
-    .map(([lo, la]) => ({ file: 'sea-filler', lon0: lo, lon1: lo + 2.9, lat0: la, lat1: la + 2.0, fade: la > 32.8 ? { s: 0.25 } : {} })),
+  // 아직 조각이 없는 바다 칸 — 빈 바다 그림(sea-filler, M11c 의 탁 트인 바다를 떼어 냄)을 맨 밑에 깐다. 제 조각이 오면 바꾼다 (그림 줄 M12)
+  // 서해 칸은 서해 빛 빈 바다(sea-filler-west — M12d 의 탁 트인 바다를 떼어 냄), 동해 칸은 동해 빛(sea-filler)
+  ...([[121.9, 32.8, 'sea-filler-west'], [121.9, 34.55, 'sea-filler-west'], [130.0, 38.05, 'sea-filler']] as const)
+    .map(([lo, la, file]) => ({ file, lon0: lo, lon1: lo + 2.9, lat0: la, lat1: la + 2.0, fade: la > 32.8 ? { s: 0.25 } : {} })),
+  // 바깥 땅이 걸친 바다 칸 (M12c~h, 2026-10-20 제미나이 Argon) — 산동·강소·규슈·혼슈는 고을·이름 없이 땅만
+  { file: 'm12f-spring', lon0: 119.0, lon1: 121.9, lat0: 32.8, lat1: 34.8, fade: {} }, // 강소 바닷가 · 옛 회수 하구
+  { file: 'm12e-spring', lon0: 119.0, lon1: 121.9, lat0: 34.55, lat1: 36.55, fade: { s: 0.25 } }, // 산동 남쪽 바닷가 · 교주만
+  { file: 'm12c-spring', lon0: 119.0, lon1: 121.9, lat0: 36.3, lat1: 38.3, fade: { s: 0.25 } }, // 산동반도 북쪽 · 묘도 섬줄
+  { file: 'm12d-spring', lon0: 121.9, lon1: 124.8, lat0: 36.3, lat1: 38.3, fade: { s: 0.25 } }, // 산동 끝 · 백령도
   // 요서 줄 (경도 119.0–121.9) · 요동 줄 (121.9–124.8)
   { file: 'm10a-spring', lon0: 119.0, lon1: 121.9, lat0: 38.05, lat1: 40.05, fade: { s: 0.25 }, trim: { e: 16, s: 16 } },
   { file: 'm10b-spring', lon0: 119.0, lon1: 121.9, lat0: 39.8, lat1: 41.8, fade: { s: 0.25 }, trim: { e: 22, w: 19 } },
@@ -46,6 +52,8 @@ export const WORLD_TILES: readonly WorldTile[] = [
   { file: 'm8a-spring', lon0: 124.8, lon1: 127.7, lat0: 43.3, lat1: 45.3, fade: { s: 0.25 }, trim: { s: 38, w: 20 } },
   { file: 'm8b-spring', lon0: 127.4, lon1: 130.3, lat0: 43.3, lat1: 45.3, fade: { s: 0.25, w: 0.3 }, trim: { e: 19, n: 41, s: 40, w: 24 } },
   // 연해주 줄 (130.0–132.9) — 동해 북쪽 바다를 먼저, 두만강 하구 · 흥개호를 위로
+  { file: 'm12g-spring', lon0: 130.0, lon1: 132.9, lat0: 32.8, lat1: 34.8, fade: { w: 0.3 } }, // 규슈 북쪽 · 간몬 해협 (바깥 땅)
+  { file: 'm12h-spring', lon0: 130.0, lon1: 132.9, lat0: 34.55, lat1: 36.55, fade: { s: 0.25, w: 0.3 } }, // 혼슈 서쪽 바닷가 (바깥 땅)
   { file: 'm12b-spring', lon0: 130.0, lon1: 132.9, lat0: 36.3, lat1: 38.3, fade: { s: 0.25, w: 0.3 } }, // 울릉도 · 독도
   { file: 'm11c-spring', lon0: 130.0, lon1: 132.9, lat0: 39.8, lat1: 41.8, fade: { s: 0.25, w: 0.3 } },
   { file: 'm11a-spring', lon0: 130.0, lon1: 132.9, lat0: 41.55, lat1: 43.55, fade: { s: 0.25, w: 0.3 }, trim: { w: 34 } },
