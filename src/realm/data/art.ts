@@ -80,8 +80,8 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'guga-ruler': 'w-55-guga-nuri', 'guga-1': 'g-47-guga-sanyanggae', 'dongokjeo-ruler': 'w-56-dongokjeo-sogeum', 'dongokjeo-1': 'g-05-mahan-chieftain',
   'bukokjeo-ruler': 'g-34-bukokjeo-duman', 'bukokjeo-1': 'w-70-bukokjeo-mulbeom', 'bullae-ruler': 'w-57-bullae-bakdal', 'bullae-1': 'g-50-bullae-gwaha',
   'tamna-ruler': 'w-58-tamna-halla', 'tamna-1': 'g-52-tamna-oreum',
-  // 넓어진 땅 (2026-10-20) — 우산국 우해왕 (울릉도 전설). 양맥 군장 맥손 · 장수 솔매 · 우산 장수 강치는 얼굴이 아직 없다 (그림 줄)
-  'usan-ruler': 'g-58-usan-uhae',
+  // 넓어진 땅 (2026-10-20) — 우산국 우해왕 (울릉도 전설) · 양맥 군장 맥손 · 장수 솔매 · 우산 장수 강치 (그림 줄 5f, 제미나이)
+  'usan-ruler': 'g-58-usan-uhae', 'yangmaek-ruler': 'g-59-yangmaek-maekson', 'yangmaek-1': 'w-79-yangmaek-solmae', 'usan-1': 'w-80-usan-gangchi',
   // 여인 장수 더 (형 2026-10-19: "장수도 여캐 많았으면 좋겠으니 챗지피티로") — 판마다 장수 절반쯤이 여인. 아라·고자 둘은 변한 판의 얼굴 그대로
   // 제 얼굴(w-29 ~ w-45, 그림 줄 5d)을 받기 전까지는 있는 명치판을 빌린다 — 받으면 여기만 바꾼다
   'us-2': 'w-29-golpo-janmul', 'guya-3': 'w-30-guya-soebi',
@@ -134,7 +134,7 @@ export const FACTION_ART: Readonly<Record<string, { emblem: string; color: strin
   // 마가·우가·저가(말·소·돼지)와 북옥저·불내·탐라는 제 깃발이 아직 없다 — 그림 줄 4c
   goguryeo: { emblem: 'emblem-samjogo', color: '#c43c2c' },
   yangmaek: { emblem: 'emblem-bow', color: '#7a8a3a' }, // 맥궁 — 맥 사람의 활 (요동 태자하)
-  usan: { emblem: 'emblem-seal', color: '#2f7fa0' }, // 강치 — 독도의 바다사자 (하슬라의 물범 깃발을 빌림 · 제 깃발은 그림 줄)
+  usan: { emblem: 'emblem-usan', color: '#2f7fa0' }, // 강치 — 독도 바위 위의 바다사자 (2026-10-20 제미나이)
   biryuna: { emblem: 'emblem-horsearcher', color: '#8a5a9a' },
   yeonna: { emblem: 'emblem-stonegate', color: '#6a7a8a' },
   hwanna: { emblem: 'emblem-tortoise', color: '#3a7a6a' },
