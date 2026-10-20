@@ -549,6 +549,7 @@ export const ROUTE_SIGN_NAME = {
   ferry: '나루 — 배로 강을 건넌다',
   logbridge: '여울 — 통나무 다리로 건넌다',
   raft: '장마에 불어난 나루 — 뗏목으로 건너다 사람을 잃는다',
+  icefloe: '언 강 — 겨울엔 얼음 위로 건넌다 · 강을 믿던 쪽이 기습에 당하기 쉽다',
   searoute: '바닷길 — 배로 건넌다',
   sotdae: '소도로 드는 길 — 솟대 너머는 싸움이 없는 땅',
   column: '보인 적의 행군',
@@ -557,7 +558,7 @@ export type RouteSign = keyof typeof ROUTE_SIGN_NAME
 
 /**
  * 길 기호 — 그 길에 걸린 규칙이 그림으로 보인다. 규칙이 바뀌면 그림도 바뀐다:
- * 겨울 고개는 눈 덮인 길(얼어서 사람을 잃는다), 여름 나루는 뗏목(물이 불었다), 산성으로 오르는 고개는 돌계단(높은 쪽이 지킨다),
+ * 겨울 고개는 눈 덮인 길(얼어서 사람을 잃는다), 여름 나루는 뗏목(물이 불었다), 겨울 나루·갈대는 언 강(기습이 쉽다 — ambushWinterIce), 산성으로 오르는 고개는 돌계단(높은 쪽이 지킨다),
  * 소도로 드는 길은 솟대, 쇠 나는 고을로 가는 들길은 짐말. 계절이 바뀔 때 "어, 고개 그림이 바뀌었네" 하고 규칙을 알아차리게
  * (형: "오 이게 구현이 되어있네. 오 이게 의도한대로 진행이 되네").
  */
@@ -566,9 +567,9 @@ export function routeSign(r: Realm, ed: REdge, season: SeasonOfYear, ferry: bool
   if (ed.kind !== 'sea' && to('sodo')) return 'sotdae'
   switch (ed.kind) {
     case 'pass': return season === 'winter' ? 'snowpass' : to('fort') ? 'fortstair' : 'cairn'
-    case 'ford': return season === 'summer' ? 'raft' : ferry ? 'ferry' : 'logbridge'
+    case 'ford': return season === 'summer' ? 'raft' : season === 'winter' ? 'icefloe' : ferry ? 'ferry' : 'logbridge'
     case 'forest': return 'jangseung'
-    case 'reeds': return 'boardwalk'
+    case 'reeds': return season === 'winter' ? 'icefloe' : 'boardwalk'
     case 'mudflat': return 'steppingstones'
     case 'sea': return 'searoute'
     case 'field': return to('ironMine') ? 'caravan' : 'oxcart'

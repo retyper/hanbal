@@ -45,7 +45,7 @@
 | ~~2b~~ | **깃발 전부 다시 — 빨간 해 동그라미 없이** (2026-10-19 밤: 자국이 흐리게 남던 항아리·돌문 둘은 제미나이로 새로 받음 · 나머지 44 는 deghost 판) (형: "일장기같이 만드냐" — 내 주문에 red sun disc 를 넣었다. 지금은 tools/realm-undisc.mjs 로 덮어 둔 임시). 천 위에 먹 그림만, 둘레에 오방색 띠나 구름무늬 테. 부정어: NO red circle, NO sun disc, NO rising-sun rays | 일장기처럼 읽혔다 | 4×4 셋, 투명 | cut/emblem-* |
 | ~~3~~ | ~~고을 기호~~ — 2026-10-19 열여섯 받음 (목책·해자 마을은 지은 것이 지도에 보인다) | | | |
 | ~~4~~ | ~~길 기호~~ — 2026-10-20 열여섯 받음 (public/realm/icon/route-*: ferry·cairn·jangseung·searoute·logbridge·steppingstones·snowpass·boardwalk·sotdae·ropebridge·raft·fortstair·resthut·oxcart·caravan·column) · 지도에 얹음 (mapview.routeSign — 계절따라 바뀐다, GAP §11). resthut·ropebridge 는 아직 쓸 자리 없음 | | | |
-| 4d | **언 강·언 갈대 길 기호** 하나 — 겨울 나루·갈대는 강이 얼어 기습이 쉽다 (ambushWinterIce). 지금 겨울 나루는 통나무 다리 그대로 | 규칙이 그림으로 안 보인다 (GAP §11 ⬜) | 길 기호 시트와 같은 화풍 한 칸, 투명 | icon/route-icefloe |
+| ~~4d~~ | ~~언 강·언 갈대 길 기호~~ — 2026-10-20 밤 제미나이 u/2 로 받음 (route-icefloe) · — 겨울 나루·갈대는 강이 얼어 기습이 쉽다 (ambushWinterIce). 지금 겨울 나루는 통나무 다리 그대로 | 규칙이 그림으로 안 보인다 (GAP §11 ⬜) | 길 기호 시트와 같은 화풍 한 칸, 투명 | icon/route-icefloe |
 | ~~4b~~ | ~~삼한 남부 새 나라 문장~~ — 2026-10-19 받음 (성곽 칸은 기와지붕이라 버림 · 백제는 매) · 남은 다섯(개·작살·말 탄 궁수·돌성문·현무)은 북쪽 나라 몫 | | | |
 | ~~4c~~ | ~~북쪽 나라 문장~~ — 2026-10-19 밤 제미나이로 받음: 마가 말 · 우가 소 머리 · 저가 멧돼지 · 북옥저 늑대(가문비 숲) · 불내 과하마(과일나무 아래)·단궁 · 탐라 한라산·조랑말 (cut/emblem-maga…tamna) |
 
