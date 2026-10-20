@@ -11,7 +11,7 @@ import { FACTION_ART, GOOD_ICON, REGION_ART, SEASON_MAP, nodeIcon, nodePos } fro
 import { EDGE_NAME, GOOD_NAME, NODE_KIND_NAME, NODE_NOW, tagNow } from '../../realm/data/prose.ts'
 import { worldGeoOf } from '../../realm/data/regions/index.ts'
 import { knows } from '../../realm/discovery.ts'
-import { nodeSpecials } from '../../realm/economy.ts'
+import { isCoast, nodeSpecials } from '../../realm/economy.ts'
 import { visibleRange } from '../../realm/intel.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
 import type { EdgeKind, NodeKind, Realm, REdge, RegionId, SeasonOfYear } from '../../realm/types.ts'
@@ -92,6 +92,8 @@ export const MAP_CSS = `
 .map .nd .sp img { width: 23%; aspect-ratio: 1; object-fit: contain; border-radius: 50%; background: #f8eed6e8; padding: 2%; box-sizing: border-box;
   box-shadow: 0 0 0 1px #6b4a2a, 0 1px 2px #0007; }
 .map .nd .sp.idle img { opacity: .6; filter: saturate(.5); }
+/* 겨울 고기잡이 표 — 얼어 흐려진다 */
+.map .nd .sp img.frz { opacity: .55; filter: grayscale(1) brightness(1.15); background: #dff1ff; box-shadow: 0 0 0 1px #7fb6d8, 0 1px 2px #0007; }
 /* 지은 것 — 목책·해자 (고을 왼쪽 위) */
 .map .nd .df { position: absolute; left: -8%; top: -4%; display: flex; gap: 1px; pointer-events: none; z-index: 1; width: 100%; }
 .map .nd .df img { width: 26%; aspect-ratio: 1; object-fit: contain; border-radius: 50%; background: #2a1d10d0; box-shadow: 0 0 0 1px #c8a050, 0 1px 2px #0007; }
@@ -365,7 +367,11 @@ export function mapHtml(
     nodes += `<div class="nd${kcls}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${tcls}${far}${thr}${fr}"${go} data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color};--s:${sizeOf(n.hh).toFixed(2)}" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}">`
     // 특산 — 사람이 살면 나는 것 (쇠·소금·나무·말). 빈땅도 보여 "일구면 말이 난다"를 미리 안다
     const sp = nodeSpecials(r, n.id)
-    const spec = sp.length > 0 ? `<span class="sp${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}">`).join('')}</span>` : ''
+    // 바닷가 고기잡이 — 곡식이 조금 난다. 겨울엔 바다가 거칠어 쉰다 (economy.nodeYield) → 표가 얼어 흐려진다
+    const fish = n.kind !== 'sodo' && isCoast(r, n.id)
+      ? `<img class="${season === 'winter' ? 'frz' : ''}" src="${art}icon/good-dried-fish.png" alt="고기" title="${season === 'winter' ? '겨울 — 바다가 거칠어 고기잡이를 쉰다' : '고기잡이 — 겨울 빼고 곡식이 조금 난다'}">`
+      : ''
+    const spec = sp.length > 0 || fish !== '' ? `<span class="sp${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}">`).join('')}${fish}</span>` : ''
     // 계절따라 걸리는 규칙도 그림으로 — 봄·가을 안개(숨기 좋다) · 겨울 언 해자(못 막는다) (prose.tagNow 와 같은 것)
     const now = n.tags.map((t) => tagNow(t, season)).filter((x) => x !== null).join(' ')
     const mist = n.tags.includes('fog') && now !== '' ? `<span class="mist" title="${now}"><img src="${art}map-world/cloud-3.webp" alt=""></span>` : ''

@@ -20,7 +20,7 @@ import {
 } from '../../realm/data/prose.ts'
 import { canEscort, envoyChanceFor, envoyOptions, favorOf, jointTargets, openAsks, relationOf } from '../../realm/diplomacy.ts'
 import {
-  GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, goodOf, guardCost, hhGrowth, militiaMen, nextBuild, nodeYield, nodeSpecials, riteAllowed, riteCost,
+  GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeYield, nodeSpecials, riteAllowed, riteCost,
   settleCost, settleLimit, settleSource, settleTargets, autoFlows, crowdOf, homeRoom, migrateCost, migrateLimit, migratePath,
 } from '../../realm/economy.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
@@ -1579,6 +1579,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const sp = nodeSpecials(r, id)
       if (sp.length > 0) h += `<p class="mute">사람이 살면 나는 것 · ${sp.map((g) => `${icon(GOOD_ICON[g])}${GOOD_NAME[g]}`).join(' · ')}</p>`
     }
+    // 바닷가 — 고기잡이는 겨울에 쉰다 (지도의 고기 표가 겨울엔 얼어 흐려진다)
+    if (n.kind !== 'sodo' && isCoast(r, id)) h += `<p class="mute">${icon('good-dried-fish')}${seasonOf(r.season) === 'winter' ? '겨울 — 바다가 거칠어 고기잡이를 쉰다. 봄에 다시 곡식이 난다.' : '바닷가 — 고기잡이로 곡식이 조금 난다. 겨울엔 쉰다.'}</p>`
     if (!ours && n.kind !== 'sodo' && !(n.kind === 'wild' && n.owner === null && known?.force == null)) {
       const f = known?.force
       let force = '못 봤다'
