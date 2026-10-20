@@ -19,10 +19,11 @@ export function southPos(lon: number, lat: number): readonly [number, number] {
 
 /** 조각 — 그림 파일 · 경위도 틀 · 앞 조각과 겹친 띠(섞는 쪽) */
 export const SOUTH_TILES: readonly WorldTile[] = [
-  { file: 'yeongnam-spring', lon0: 127.4, lon1: 130.3, lat0: 34.55, lat1: 36.55, fade: {} },
-  { file: 'mahan-spring', lon0: 124.8, lon1: 127.7, lat0: 34.55, lat1: 36.55, fade: { e: 0.3 } },
-  { file: 'm2-spring', lon0: 124.8, lon1: 127.7, lat0: 36.3, lat1: 38.3, fade: { s: 0.25 } },
-  { file: 'm3-spring', lon0: 127.4, lon1: 130.3, lat0: 36.3, lat1: 38.3, fade: { s: 0.25, w: 0.3 } },
+  // trim — 첫 묶음 조각의 가장자리 종이 테두리 (삼한과 북녘 판과 같은 값, world-geo.ts)
+  { file: 'yeongnam-spring', lon0: 127.4, lon1: 130.3, lat0: 34.55, lat1: 36.55, fade: {}, trim: { e: 51, n: 18, s: 25, w: 33 } },
+  { file: 'mahan-spring', lon0: 124.8, lon1: 127.7, lat0: 34.55, lat1: 36.55, fade: { e: 0.3 }, trim: { n: 34, w: 60 } },
+  { file: 'm2-spring', lon0: 124.8, lon1: 127.7, lat0: 36.3, lat1: 38.3, fade: { s: 0.25 }, trim: { e: 16, s: 51, w: 58 } },
+  { file: 'm3-spring', lon0: 127.4, lon1: 130.3, lat0: 36.3, lat1: 38.3, fade: { s: 0.25, w: 0.3 }, trim: { e: 61, s: 45, w: 47 } },
 ]
 
 export const MAHAN_LAND: readonly LL[] = [
