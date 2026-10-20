@@ -448,8 +448,13 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       return null // 보고 카드의 "떠돌이 인재" 칸(들인다)이 대신 보인다
     }
     case 'heroMoved': {
+      // 우리가 쥔 고을에서 적장을 붙잡았다
+      if (line.faction !== viewer && line.captor === viewer) return `${fname(line.faction)}의 ${josa(after.heroes[line.hero]?.name ?? '장수', '을', '를')} 사로잡았다. 고을이 떨어질 때 빠져나가지 못했다.`
       if (line.faction !== viewer) return null
       const name = after.heroes[line.hero]?.name ?? '?'
+      if (line.fate === 'fell') return `${josa(name, '이', '가')} 고을을 지키다 쓰러졌다.`
+      if (line.fate === 'caught' && line.captor !== null) return `${josa(name, '이', '가')} ${line.to !== null ? josa(node(line.to), '으로', '로') : '이웃 고을로'} 물러나다 ${fname(line.captor)} 군사에게 붙잡혔다.`
+      if (line.fate === 'slipped' && line.to !== null) return `${josa(name, '이', '가')} 고을을 잃었지만 적의 눈을 피해 ${josa(node(line.to), '으로', '로')} 빠져나왔다.`
       if (line.captor !== null) return `${josa(name, '이', '가')} 고을을 잃고 ${fname(line.captor)}에 사로잡혔다.`
       return `${josa(name, '이', '가')} 고을을 잃고 ${line.to !== null ? josa(node(line.to), '으로', '로') : '이웃 고을로'} 물러났다.`
     }

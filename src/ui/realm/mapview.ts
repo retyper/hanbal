@@ -92,6 +92,9 @@ export const MAP_CSS = `
 .map .nd .sp img { width: 23%; aspect-ratio: 1; object-fit: contain; border-radius: 50%; background: #f8eed6e8; padding: 2%; box-sizing: border-box;
   box-shadow: 0 0 0 1px #6b4a2a, 0 1px 2px #0007; }
 .map .nd .sp.idle img { opacity: .6; filter: saturate(.5); }
+/* 지은 것 — 목책·해자 (고을 왼쪽 위) */
+.map .nd .df { position: absolute; left: -8%; top: -4%; display: flex; gap: 1px; pointer-events: none; z-index: 1; width: 100%; }
+.map .nd .df img { width: 26%; aspect-ratio: 1; object-fit: contain; border-radius: 50%; background: #2a1d10d0; box-shadow: 0 0 0 1px #c8a050, 0 1px 2px #0007; }
 /* 안개 — 고을 아랫도리를 덮는 흰 김과 구름무늬 하나 */
 .map .nd .mist { position: absolute; left: 50%; top: 66%; width: 170%; aspect-ratio: 2.2; transform: translate(-50%, -50%); pointer-events: none; z-index: 1;
   background: radial-gradient(ellipse at 50% 50%, #fffdf6d8 0, #fffdf690 38%, #fffdf600 70%); animation: mistb 5s ease-in-out infinite alternate; }
@@ -367,7 +370,10 @@ export function mapHtml(
     const now = n.tags.map((t) => tagNow(t, season)).filter((x) => x !== null).join(' ')
     const mist = n.tags.includes('fog') && now !== '' ? `<span class="mist" title="${now}"><img src="${art}map-world/cloud-3.webp" alt=""></span>` : ''
     const ice = n.tags.includes('moat') && season === 'winter' ? `<i class="ice" title="${now}">❄</i>` : ''
-    nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${mist}${ice}${spec}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : ''}</div>`
+    // 지은 것 — 목책 · 해자 작은 표 (왼쪽 위). 그림만으로는 도읍·포구의 울타리가 지은 것인지 알 수 없었다
+    const dfs = (['palisade', 'moat'] as const).filter((t) => n.tags.includes(t))
+    const def = dfs.length > 0 ? `<span class="df">${dfs.map((t) => `<img src="${art}icon/settle-${t}.png" alt="" title="${DEF_TITLE[t]}">`).join('')}</span>` : ''
+    nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${mist}${ice}${def}${spec}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : ''}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()
@@ -524,6 +530,9 @@ function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly 
 
 /** 땅 조각의 크기 배수 — 고을 꼴로 정한다 (집 수는 판마다 바뀌어도 땅 모양은 그대로 두려고) */
 const CELL_SIZE: Readonly<Record<NodeKind, number>> = { capital: 1.3, port: 1.1, fort: 0.95, village: 1, ironMine: 0.9, wild: 0.85, sodo: 0.7 }
+
+/** 지은 것의 말 — 고을 왼쪽 위 작은 표 */
+const DEF_TITLE = { palisade: '목책 — 한 번 지으면 계속 선다. 지키는 쪽이 세다', moat: '해자 — 목책 앞에서 한 번 더 막는다. 겨울엔 언다' } as const
 
 // ───────── 길 기호 (public/realm/icon/route-* · 2026-10-20 그림 열여섯)
 

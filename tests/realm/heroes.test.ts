@@ -180,3 +180,46 @@ describe('옛 판 — 특성 줄이 없는 장수 (형의 9년 가을 막힘, 20
     assert.doesNotThrow(() => advance(r2, []))
   })
 })
+
+// 형 2026-10-20: "수성에서 지면 장수가 무조건 사로잡혀? 죽거나 후퇴하거나 이런경우는 없어? 그것도 그 장수 능력치에따라 달라져야할듯"
+describe('고을이 떨어질 때 혼자 머물던 장수', () => {
+  /** 우리 고을 하나에 장수를 혼자 두고, 그 고을을 적이 쥐었다 — n 판의 운명을 센다 */
+  const fates = (stat: number, safeNeighbor: boolean, n = 120): Record<string, number> => {
+    const out: Record<string, number> = { moved: 0, caught: 0, slipped: 0, fell: 0, captive: 0 }
+    for (let seed = 1; seed <= n; seed++) {
+      const r = byeonhanMini(seed)
+      const h = Object.values(r.heroes).find((x) => x.faction === 'us' && armyOfHero(r, x.id) === null && x.status === 'free')!
+      h.mu = stat
+      h.ryak = stat
+      h.at = 'our-east'
+      r.nodes['our-east']!.owner = 'guya'
+      if (!safeNeighbor) {
+        // 이웃은 다 적 땅 · 멀리 떨어진 섬 하나만 우리 것 (빠져나갈 곳)
+        for (const ed of Object.values(r.edges)) for (const [x, y] of [[ed.a, ed.b], [ed.b, ed.a]] as const) if (x === 'our-east') r.nodes[y]!.owner = 'guya'
+        r.nodes['wild-keunseom']!.owner = 'us'
+        r.nodes['wild-keunseom']!.hh = 50
+      }
+      const lines: ReportLine[] = []
+      sweepHeroes(r, lines)
+      const l = lines.find((x) => x.kind === 'heroMoved' && x.hero === h.id)
+      assert.ok(l !== undefined && l.kind === 'heroMoved')
+      const k = l.fate ?? (l.captor !== null ? 'captive' : 'moved')
+      out[k] = (out[k] ?? 0) + 1
+    }
+    return out
+  }
+
+  it('늘 사로잡히지 않는다 — 물러나기 · 붙잡히기 · 쓰러지기가 갈리고, 무예·지략이 높으면 더 잘 빠진다', () => {
+    const weak = fates(2, true)
+    const strong = fates(9, true)
+    assert.ok(weak.moved! > 0 && (weak.caught! + weak.fell!) > 0, `약한 장수도 갈린다 ${JSON.stringify(weak)}`)
+    assert.ok(strong.moved! > weak.moved!, `센 장수가 더 잘 물러난다 ${JSON.stringify(strong)} vs ${JSON.stringify(weak)}`)
+  })
+
+  it('물러날 이웃이 없으면 도읍으로 빠져나가거나 사로잡힌다', () => {
+    const weak = fates(2, false)
+    const strong = fates(9, false)
+    assert.ok(strong.slipped! > weak.slipped!, `${JSON.stringify(strong)} vs ${JSON.stringify(weak)}`)
+    assert.ok(weak.captive! > 0)
+  })
+})

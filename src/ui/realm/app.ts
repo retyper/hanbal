@@ -889,6 +889,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<div class="twoway"><button class="sec home" data-act="jump" data-to="sec-settle">${icon('settle-farm-village')}<b>개척</b><span>${lands.length > 0 ? '집을 빈땅으로 옮겨 새 마을' : '맞닿은 빈땅이 없다'}</span></button>`
     h += `<button class="sec move" data-act="jump" data-to="sec-move">${icon('unit-porters')}<b>이주</b><span>${autoMigOn() ? '우리 고을끼리 · 자동 분배 중' : '우리 고을끼리 · 직접 옮긴다'}</span></button></div>`
     h += `<h4 id="sec-settle" class="sech home">${icon('settle-farm-village')}개척 · 빈땅에 새 마을을 일군다</h4>`
+    // 빈땅은 아무 나라 땅도 아니다 — 사람이 가서 살면 그때 우리 마을이 된다 (형: "우리영토가 아닌데도 사람을보내서 살게하는거야? 그게맞나??")
+    h += `<p class="mute">${tx('빈땅은 주인 없는 땅이다. 우리 고을과 길로 맞닿은 빈땅에 집을 보내면, 자리 잡는 대로 그 땅이 우리 마을이 된다. 남의 나라 땅에는 보낼 수 없다.')}</p>`
     if (lands.length > 0) for (const to of lands) h += settleCard(r, to)
     else h += `<p class="mute">${tx('지금은 우리 고을과 맞닿은 빈땅이 없다.')}</p>`
     h += migrateSection(r)
@@ -1566,7 +1568,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const bc = buildCost(nb)
         const ok = queued || (canBuild(r, me(), id, nb) && left().wood >= bc.wood && left().grain >= bc.grain)
         h += `<div class="btns"><button class="btn ${queued ? 'on' : ''}" data-act="build" data-node="${id}" data-what="${nb}" ${ok ? '' : 'disabled'}>${queued ? `${BUILD_NAME[nb]} 짓는 중` : `${josa(BUILD_NAME[nb], '을', '를')} 두른다 · 나무 ${bc.wood} · 곡식 ${bc.grain}`}</button></div>`
-        h += `<p class="mute">${nb === 'palisade' ? '목책을 두르면 지키는 쪽이 세진다.' : '해자를 파면 목책 앞에서 한 번 더 막는다.'} 다음 계절에 선다.</p>`
+        h += `<p class="mute">${nb === 'palisade' ? '목책을 두르면 지키는 쪽이 세진다.' : '해자를 파면 목책 앞에서 한 번 더 막는다. 겨울엔 얼어 못 막는다.'} 다음 계절에 서고, 한 번 지으면 계속 선다 — 고을을 빼앗기면 빼앗은 나라 것이 된다.</p>`
       }
     }
     // 이 땅에서 나는 것 — 누구 땅이든 보인다 (칠 까닭 · 바꿀 까닭)

@@ -206,6 +206,8 @@ export function nodeIcon(n: RNode): string {
     // 말이 나는 들은 목장 마을 — 특산이 그림에서 보이게 (형: "특산품이 다른거라면 이미지마다 명확히")
     if (n.tags.includes('pasture')) return 'settle-horse-ranch'
   }
+  // 도읍 그림은 통나무 울타리를 둘렀다 — 목책이 없는 도읍은 울타리 없는 큰 마을로 (형: "목책이나 해자 … 이미지랑 일치 확실히 시켜야 혼란이 없을듯")
+  if (n.kind === 'capital' && NODE_ICON[n.id] === undefined && !n.tags.includes('palisade')) return 'settle-market'
   return NODE_ICON[n.id] ?? KIND_ICON[n.kind]
 }
 

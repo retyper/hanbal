@@ -758,7 +758,11 @@ export type ReportLine =
   /** 떠돌이 인재가 그 고을에 나타났다 — 고을 주인이 until 계절까지 들일 수 있다 */
   | { readonly kind: 'wanderer'; readonly hero: string; readonly node: string; readonly until: number; readonly price: number }
   /** 맡긴 장수가 고을을 잃어 물러났다 · 사로잡혔다 */
-  | { readonly kind: 'heroMoved'; readonly hero: string; readonly faction: string; readonly to: string | null; readonly captor: string | null }
+  | {
+      readonly kind: 'heroMoved'; readonly hero: string; readonly faction: string; readonly to: string | null; readonly captor: string | null
+      /** 어떻게 — fell 지키다 쓰러졌다 · caught 물러나다 붙잡혔다 · slipped 이웃이 없었지만 빠져나왔다 (없으면 옛 꼴: 물러났다/사로잡혔다) */
+      readonly fate?: 'fell' | 'caught' | 'slipped'
+    }
 
 export interface Report {
   readonly season: number

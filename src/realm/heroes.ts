@@ -333,7 +333,9 @@ function ledHeroes(r: Realm): Set<string> {
 }
 
 /**
- * 고을을 잃었다 — 거기 혼자 머물던 장수는 이웃 제 고을로 물러나고, 갈 데가 없으면 그 고을을 쥔 나라에 사로잡힌다.
+ * 고을을 잃었다 — 거기 혼자 머물던 장수의 운명은 능력치로 갈린다 (형: "수성에서 지면 장수가 무조건 사로잡혀?"):
+ *   지키다 쓰러진다(무예가 낮을수록) · 이웃 제 고을로 물러난다(가다 붙잡히기도 — 무예·지략이 높으면 덜) ·
+ *   물러날 이웃이 없으면 적의 눈을 피해 도읍으로 빠져나가거나(무예·지략 · 겁 많으면 먼저 달아난다) 그 고을을 쥔 나라에 사로잡힌다.
  * 군주가 도읍에서 사로잡히면 군주의 효과도 끝난다. 행군이 끝난 뒤(3·4·5) 부른다.
  */
 export function sweepHeroes(r: Realm, lines: ReportLine[]): void {
@@ -344,16 +346,36 @@ export function sweepHeroes(r: Realm, lines: ReportLine[]): void {
     const node = r.nodes[h.at]
     if (node === undefined || node.owner === h.faction) continue
     h.post = null
+    const R = P.realm
+    const lost = h.at
     const safe = neighborsOf(r, h.at).find((n) => r.nodes[n]?.owner === h.faction && r.nodes[n]?.kind !== 'sodo') ?? null
-    if (safe !== null) {
+    if (node.owner === null) {
+      h.at = homeOf(r, h.faction)
+      continue
+    }
+    const wit = escapeOf(h) + R.heroFallPerRyak * (h.ryak - 5) + (hasTrait(h, 'coward') ? R.heroFallCoward : 0)
+    const roll1 = roll(r.seed, r.season, `fall:${h.id}:${lost}`)
+    const pDie = hasTrait(h, 'coward') ? 0 : Math.max(0, R.heroFallDeath - escapeOf(h))
+    if (roll1 < pDie) {
+      h.status = 'dead'
+      h.at = null
+      lines.push({ kind: 'heroMoved', hero: h.id, faction: h.faction, to: null, captor: null, fate: 'fell' })
+      continue
+    }
+    const roll2 = roll(r.seed, r.season, `flee:${h.id}:${lost}`)
+    const home = homeOf(r, h.faction)
+    if (safe !== null && roll2 >= Math.max(0, R.heroFallCaught - wit)) {
       h.at = safe
       lines.push({ kind: 'heroMoved', hero: h.id, faction: h.faction, to: safe, captor: null })
-    } else if (node.owner !== null) {
+    } else if (safe === null && home !== null && roll2 < Math.min(0.95, R.heroFallSlip + wit)) {
+      h.at = home
+      lines.push({ kind: 'heroMoved', hero: h.id, faction: h.faction, to: home, captor: null, fate: 'slipped' })
+    } else {
       h.status = 'captive'
       h.captor = node.owner
       h.at = null
-      lines.push({ kind: 'heroMoved', hero: h.id, faction: h.faction, to: null, captor: node.owner })
-    } else h.at = homeOf(r, h.faction)
+      lines.push({ kind: 'heroMoved', hero: h.id, faction: h.faction, to: safe, captor: node.owner, ...(safe !== null ? { fate: 'caught' as const } : {}) })
+    }
   }
 }
 
