@@ -9,7 +9,7 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { HERO_POOL } from './data/heroes-pool.ts'
-import type { EdgeKind, GrowStat, Hero, Order, Realm, ReportLine } from './types.ts'
+import type { Art, EdgeKind, GrowStat, Hero, Order, Realm, ReportLine } from './types.ts'
 
 const byId = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 
@@ -84,6 +84,21 @@ export function ambushTraitOf(h: Hero | null, kind: EdgeKind): number {
 }
 
 /** 졌을 때 빠져나오기 — 무예가 높으면 생포·전사가 준다. 겁 많음은 아예 안 잡힌다 */
+/**
+ * 그 장수의 비기 — 특성이 먼저(명궁 · 무당 핏줄 · 매혹 · 백 사람의 이름 · 산사람/물길잡이/밤눈), 없으면 가장 높은 능력치가
+ * tacArtMinStat 이상일 때 (무예 선봉 · 지략 거짓 퇴각 · 통솔 진을 다잡는다 · 매력 큰 외침). 둘 다 아니면 비기가 없다 — 그냥 북을 친다.
+ */
+export function heroArt(h: Hero): Art | undefined {
+  if (hasTrait(h, 'archer')) return 'snipe'
+  if (hasTrait(h, 'shaman')) return 'rite'
+  if (hasTrait(h, 'charm')) return 'sway'
+  if (hasTrait(h, 'hundred')) return 'stand'
+  if (hasTrait(h, 'mountain') || hasTrait(h, 'river') || hasTrait(h, 'nighteye')) return 'ambush'
+  const best = ([['mu', 'vanguard'], ['ryak', 'feint'], ['tong', 'order'], ['deok', 'shout']] as const)
+    .map(([k, a]) => ({ v: h[k], a })).sort((x, y) => y.v - x.v)[0]!
+  return best.v >= P.realm.tacArtMinStat ? best.a : undefined
+}
+
 export function escapeOf(h: Hero): number {
   return P.realm.heroEscapePerMu * (h.mu - 5)
 }

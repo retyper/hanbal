@@ -20,7 +20,7 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import type { Outcome, UnitKind } from './battle.ts'
-import type { Act, Cmd, EndWhy, Grp, Pending, RoundLog, RoundOrder, Tactic } from './types.ts'
+import type { Act, Art, Cmd, EndWhy, Grp, Pending, RoundLog, RoundOrder, Tactic } from './types.ts'
 
 /** 땅이 주는 한 번짜리 수 — season 이 그 싸움 자리를 보고 정한다 */
 export interface Terrain {
@@ -45,7 +45,7 @@ export interface Side {
   readonly morale: number
   /** 싸움 앞의 사기 덤·감 (대로로 질서 있게 · 절벽에서 적이 뒤에 나타났다 …) */
   readonly moraleBonus?: number
-  readonly hero: { readonly id: string; readonly mu: number; readonly ryak: number; readonly coward: boolean } | null
+  readonly hero: { readonly id: string; readonly mu: number; readonly ryak: number; readonly coward: boolean; readonly art?: Art } | null
   /** 군량이 바닥이다 — 라운드마다 사기가 꺾인다 */
   readonly hungry: boolean
   /** 이 싸움에서 쓸 수 있는 한 번짜리 명령 (불화살 fire) — 그 밖의 땅의 수는 terrain */
@@ -102,7 +102,7 @@ export const COUNTER: Readonly<Partial<Record<Cmd, Cmd>>> = { volley: 'charge', 
 const HOLDS: ReadonlySet<Cmd> = new Set(['hold', 'ford', 'rocks'])
 const CHARGES: ReadonlySet<Cmd> = new Set(['charge', 'gate', 'ram'])
 /** 한 번만 쓰는 명령 */
-const ONCE: ReadonlySet<Cmd> = new Set(['ford', 'rocks', 'gate', 'ram', 'fire', 'height', 'duel'])
+const ONCE: ReadonlySet<Cmd> = new Set(['ford', 'rocks', 'gate', 'ram', 'fire', 'height', 'duel', 'art'])
 
 function clamp(x: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, x))
@@ -284,6 +284,9 @@ export function groupOptions(me: Side, foe: Side, g: Grp, used: ReadonlySet<Cmd>
 /** 장수의 명령 */
 export function leadOptions(me: Side, foe: Side, used: ReadonlySet<Cmd>, foeHeroGone: boolean): Cmd[] {
   const out: Cmd[] = ['drum']
+  // 장수의 비기 — 한 판에 한 번 (명궁의 한 발은 쏠 적장이 있어야)
+  const art = me.hero?.art
+  if (art !== undefined && !used.has('art') && (art !== 'snipe' || (foe.hero !== null && !foeHeroGone))) out.push('art')
   if (me.hero !== null && foe.hero !== null && !foeHeroGone && me.hero.mu >= P.realm.tacDuelMu && !used.has('duel')) out.push('duel')
   if (foe.hero !== null && !foeHeroGone && me.capture !== 'never') out.push('capture')
   out.push('retreat')
@@ -345,6 +348,7 @@ function aiOrder(c: Ctx, me: Side, foe: Side, mine: 'a' | 'd', st: State, cap: n
   else if (atk && edge < (coward ? 0.35 : 0.22) && myN < 0.75) lead = 'retreat'
   else if (!atk && edge < 0.12 && myN < 0.5) lead = 'retreat'
   else if (lopts.includes('duel') && me.hero !== null && foe.hero !== null && me.hero.mu >= foe.hero.mu + 1 && r('duel') < 0.4) lead = 'duel'
+  else if (lopts.includes('art') && artNow(me.hero!.art!, foe, foeRatio, r)) lead = 'art'
   const out: { front?: Cmd; bows?: Cmd; horse?: Cmd; lead: Cmd } = { lead }
   if (groups.includes('front')) {
     const opts = groupOptions(me, foe, 'front', used)
@@ -385,6 +389,13 @@ function aiOrder(c: Ctx, me: Side, foe: Side, mine: 'a' | 'd', st: State, cap: n
     else out.horse = out.front === 'charge' ? 'punch' : 'flank'
   }
   return out
+}
+
+/** 맡긴 쪽이 비기를 쓸 때 — 항복 권유는 적이 흔들릴 때 · 거짓 퇴각은 적 앞줄이 달려드는 버릇일 때 · 나머지는 반쯤 일찍 */
+function artNow(art: Art, foe: Side, foeRatio: number, r: (k: string) => number): boolean {
+  if (art === 'sway') return foeRatio < P.realm.tacHoldSteady
+  if (art === 'feint') return groupsOf(foe.mix).includes('front') && frontHabit(foe) === 'charge' && r('art') < 0.6
+  return r('art') < 0.5
 }
 
 /** 낌새를 Pending 칸으로 */
@@ -500,6 +511,7 @@ export function fightRounds(atk: Side, def: Side, key: string, seed: number, sea
           capture: cap.p, squad: cap.squad, escort: cap.escort,
           ...hintFields(hintOf(me, foe, foeAi.front, `${key}:t${i}`, seed, season)),
           weAtk: mine === 'a', seen: me.seen,
+          ...(me.hero?.art !== undefined ? { art: me.hero.art } : {}),
         }
       }
       return settle(me, foe, {}, ai, used, gone)
@@ -576,9 +588,11 @@ function resolveRound(
   const start = (x: 'a' | 'd', g: Grp): number => Math.round(menNow(side(x).g0, side(x).f, g))
   const has = (x: 'a' | 'd', g: Grp): boolean => side(x).o[g] !== undefined && men(x, g) >= 1
   const pow = (x: 'a' | 'd', g: Grp): number => { const q = side(x); return groupPower(q.s, q.g0, q.f, q.m, q.lost, g) }
+  /** 비기(버텨라 · 진을 다잡는다)가 걸린 쪽은 이 합에 덜 잃는다 */
+  const standMul: Record<'a' | 'd', number> = { a: 1, d: 1 }
   const hurt = (x: 'a' | 'd', g: Grp, n: number): number => {
     const q = side(x)
-    const cut = Math.min(Math.max(0, n), menNow(q.g0, q.f, g) - q.loss[g])
+    const cut = Math.min(Math.max(0, n) * standMul[x], menNow(q.g0, q.f, g) - q.loss[g])
     q.loss[g] += cut
     return Math.round(cut)
   }
@@ -667,6 +681,58 @@ function resolveRound(
     acts.push({ s: x, g: 'lead', c: 'capture', n: cap.squad, tg: 'lead', sl, res: 'fail', guard: cap.escort })
   }
 
+  // ── 장수의 비기 — 한 판에 한 번 (heroes.heroArt). 앞줄이 맞붙기 전에 건다
+  const vanguard: Record<'a' | 'd', number> = { a: 1, d: 1 }
+  const feint: Record<'a' | 'd', boolean> = { a: false, d: false }
+  const moraleOf = (x: 'a' | 'd'): number => (x === 'a' ? st.ma : st.md)
+  const addMorale = (x: 'a' | 'd', v: number): void => { if (x === 'a') st.ma += v; else st.md += v }
+  for (const x of ['a', 'd'] as const) {
+    if (side(x).o.lead !== 'art' || duelRes?.loser === x) continue
+    const art = side(x).s.hero?.art
+    if (art === undefined) continue
+    const y = other(x)
+    const ratioY = moraleOf(y) / Math.max(0.05, side(y).s.morale)
+    switch (art) {
+      case 'snipe': {
+        // 명궁의 한 발 — 적장을 쏜다. 다친 적장은 사로잡기 쉽고, 적 군사가 술렁인다
+        if (y === 'a') st.hurtA = true
+        else st.hurtD = true
+        addMorale(y, -R.tacArtShot)
+        acts.push({ s: x, g: 'lead', c: 'art', art, n: 1, tg: 'lead', res: 'hit' })
+        break
+      }
+      case 'rite': case 'shout':
+        addMorale(x, R.tacArtRally * (art === 'rite' ? 1.5 : 1))
+        acts.push({ s: x, g: 'lead', c: 'art', art, n: 1, res: 'ok' })
+        break
+      case 'sway': {
+        // 항복 권유 — 흔들리는 적만 무기를 버린다
+        if (ratioY >= R.tacHoldSteady) { acts.push({ s: x, g: 'lead', c: 'art', art, n: 1, res: 'wasted' }); break }
+        let tl = 0
+        for (const g of GRPS) tl += hurt(y, g, men(y, g) * R.tacArtSway)
+        acts.push({ s: x, g: 'lead', c: 'art', art, n: 1, tl, res: 'hit' })
+        break
+      }
+      case 'ambush': {
+        const tg: Grp = has(y, 'bows') || men(y, 'bows') >= 1 ? 'bows' : 'front'
+        const tl = hurt(y, tg, men(y, tg) * R.tacArtAmbush)
+        acts.push({ s: x, g: 'lead', c: 'art', art, n: 1, tg, tl, res: tl > 0 ? 'hit' : 'wasted' })
+        break
+      }
+      case 'vanguard':
+        vanguard[x] = R.tacArtVanguard
+        acts.push({ s: x, g: 'lead', c: 'art', art, n: 1, res: 'ok' })
+        break
+      case 'feint':
+        feint[x] = true // 맞붙음에서 — 적이 달려들었으면 꾀에 걸린다
+        break
+      case 'stand': case 'order':
+        standMul[x] = R.tacArtStand
+        acts.push({ s: x, g: 'lead', c: 'art', art, n: 1, res: 'ok' })
+        break
+    }
+  }
+
   // ── 앞줄 맞붙음 (+ 말 돌파)
   let beat: 'a' | 'd' | null = null
   const fa0 = front('a')
@@ -694,7 +760,7 @@ function resolveRound(
       if (o.bows === 'height' && HOLDS.has(fc ?? 'hold')) s *= 1 + (R.tacHeight - 1) * 0.5
       if (front(y) === 'ford' && CHARGES.has(fc ?? 'hold')) s *= R.tacFordCharge
       if (o.horse === 'punch' && has(x, 'horse')) s += pow(x, 'horse') * R.tacChargeMul
-      return s * draw[x]
+      return s * draw[x] * vanguard[x]
     }
     const charging = (x: 'a' | 'd'): boolean => CHARGES.has(front(x) ?? 'hold') || (side(x).o.horse === 'punch' && has(x, 'horse') && !has(x, 'front'))
     const holding = (x: 'a' | 'd'): boolean => HOLDS.has(front(x) ?? 'charge') && has(x, 'front')
@@ -707,6 +773,13 @@ function resolveRound(
     let scale = lossScale
     // 세모의 한 변: 방진 > 돌격 — 단 흔들리지 않는 방진만 (화살비·옆치기로 흔들어 놓고 돌격하면 뚫린다). 성문 깨기는 방진에 꺾이지 않는다
     const steady = (x: 'a' | 'd'): number => (x === 'a' ? st.ma / Math.max(0.05, atk.morale) : st.md / Math.max(0.05, def.morale))
+    // 거짓 퇴각 — 물러나는 척 적의 돌격을 끌어들여 옆에서 친다. 적이 안 달려들면 헛일
+    for (const [x, y] of [['a', 'd'], ['d', 'a']] as const) {
+      if (!feint[x]) continue
+      const caught = beat === null && charging(y)
+      if (caught) beat = x
+      acts.push({ s: x, g: 'lead', c: 'art', art: 'feint', n: 1, res: caught ? 'won' : 'wasted' })
+    }
     for (const [h, c2] of [['a', 'd'], ['d', 'a']] as const) {
       if (!holding(h) || !charging(c2) || beat !== null) continue
       if (steady(h) < R.tacHoldBreak) beat = c2 // 흔들리던 방진이 뚫렸다

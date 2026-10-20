@@ -13,8 +13,9 @@
  */
 import { HERO_BUST, UNIT_ICON } from '../../realm/data/art.ts'
 import { GROUP_NAME, battleName, endStory, fieldName, groupLabel, josa, roundStory, storyCtx } from '../../realm/data/prose.ts'
+import { groupMen } from '../../realm/tactics.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
-import type { Approach, Cmd, Grp, Order, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
+import type { Approach, Art, Cmd, Grp, Order, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
 
 const esc = (s: string): string =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
@@ -42,13 +43,13 @@ export const CMD_NAME: Record<Cmd, string> = {
   charge: '돌격', hold: '방진', open: '길 트기', ford: '여울 막기', rocks: '바위 굴리기', gate: '성문 깨기', ram: '배 들이받기',
   volley: '화살비', counter: '맞쏘기', fire: '불화살', height: '높은 곳',
   flank: '옆치기', punch: '돌파', pursue: '추격', guard: '호위',
-  drum: '북을 친다', duel: '장수 겨루기', capture: '적장 사로잡기', retreat: '물러난다',
+  drum: '북을 친다', duel: '장수 겨루기', capture: '적장 사로잡기', retreat: '물러난다', art: '장수의 비기',
 }
 export const CMD_ICON: Record<Cmd, string> = {
   charge: UNIT_ICON.spear, hold: UNIT_ICON.shield, open: UNIT_ICON.pike, ford: 'unit-gaya-heavy', rocks: 'unit-slingers', gate: 'emblem-stonegate', ram: UNIT_ICON.boat,
   volley: UNIT_ICON.bow, counter: UNIT_ICON.crossbow, fire: 'unit-fire-archers', height: 'unit-scouts',
   flank: UNIT_ICON.horse, punch: UNIT_ICON.horse, pursue: UNIT_ICON.horse, guard: 'unit-general',
-  drum: 'unit-drummers', duel: 'unit-general', capture: 'unit-axemen', retreat: 'unit-porters',
+  drum: 'unit-drummers', duel: 'unit-general', capture: 'unit-axemen', retreat: 'unit-porters', art: 'status-morale-up',
 }
 /** 깃발 한 줄 — 무엇을 이기고 무엇에 지나 */
 const CMD_DOES: Record<Cmd, string> = {
@@ -71,6 +72,28 @@ const CMD_DOES: Record<Cmd, string> = {
   duel: '장수끼리 나선다 · 이기면 적이 무너지고, 지면 우리 장수가 다치거나 쓰러진다 · 한 번',
   capture: '날랜 무리를 적장에게 보낸다 · 무리가 호위보다 크고 적이 흔들릴수록 잘 된다 · 놓치면 무리를 잃는다',
   retreat: '징을 쳐 물린다 · 덜 잃고 장수는 안 잡힌다',
+  art: '그 장수만의 수 · 한 판에 한 번',
+}
+
+/** 장수의 비기 — 이름 · 그림 · 하는 일 (heroes.heroArt · tactics 의 비기). 장수마다 다르니 깃발에 그 이름으로 뜬다 */
+export const ART_NAME: Readonly<Record<Art, string>> = {
+  snipe: '명궁의 한 발', rite: '진중 굿', sway: '항복 권유', stand: '버텨라', ambush: '샛길 기습',
+  vanguard: '선봉에 선다', feint: '거짓 퇴각', order: '진을 다잡는다', shout: '큰 외침',
+}
+export const ART_ICON: Readonly<Record<Art, string>> = {
+  snipe: 'unit-archer', rite: 'unit-shaman', sway: 'status-betrayal', stand: 'unit-shield-wall', ambush: 'unit-scouts',
+  vanguard: 'unit-general', feint: 'unit-porters', order: 'unit-drummers', shout: 'status-morale-up',
+}
+export const ART_DOES: Readonly<Record<Art, string>> = {
+  snipe: '장수가 몸소 적장을 쏜다 — 적장이 다쳐 사로잡기 쉬워지고 적 사기가 꺾인다 · 한 번',
+  rite: '진중에서 굿을 한다 — 우리 사기가 크게 오른다 (처음보다 높아질 수 있다) · 한 번',
+  sway: '흔들리는 적에게 무기를 버리라 외친다 — 무리마다 일부가 넘어온다 · 안 흔들리면 헛일 · 한 번',
+  stand: '백 사람의 이름을 부르며 버틴다 — 이 합 우리가 덜 잃는다 · 한 번',
+  ambush: '샛길로 돌린 무리가 먼저 친다 — 적 궁수(없으면 앞줄)가 쓰러진다 · 한 번',
+  vanguard: '장수가 맨 앞에 선다 — 이 합 우리 앞줄이 세다 · 한 번',
+  feint: '물러나는 척 적의 돌격을 끌어들인다 — 적이 달려들면 꺾고, 안 달려들면 헛일 · 한 번',
+  order: '흐트러진 진을 다잡는다 — 이 합 우리가 덜 잃는다 · 한 번',
+  shout: '크게 외쳐 군사를 일으킨다 — 우리 사기가 오른다 · 한 번',
 }
 /** 겨뤄 본 적장의 버릇 — 앞줄이 즐겨 하는 것 */
 const HABIT_LINE: Partial<Record<Cmd, string>> = {
@@ -90,7 +113,7 @@ export const BATTLE_SFX = {
   charge: 'swing_01', hold: 'parry_01', open: 'shot_longbow', ford: 'parry_02', rocks: 'crash_02', gate: 'impactWood_heavy_001', ram: 'impactPlank_medium_000',
   volley: 'shot_loose', counter: 'shot_flecha', fire: 'crash_01', height: 'shot_longbow',
   flank: 'roar_01', punch: 'roar_01', pursue: 'roar_01', guard: 'parry_02',
-  drum: 'impactWood_medium_000', duel: 'unsheath_01', capture: 'sheath_01', retreat: 'switch2',
+  drum: 'impactWood_medium_000', duel: 'unsheath_01', capture: 'sheath_01', retreat: 'switch2', art: 'roar_01',
   /** 맞부딪힘 — 상성에서 이겼다(필살) · 그냥 */
   crit: 'impactPunch_heavy_000', clash: 'impactWood_heavy_000',
   /** 사로잡았다 · 장수 겨루기 · 마지막 일격(적이 무너졌다) · 이겼다 · 졌다 */
@@ -110,6 +133,24 @@ export interface WarHost {
   ding(name: string, vol?: number): void
   /** 다 골랐다 — 이 명령들로 진짜 넘긴다 */
   done(tactics: Record<string, Tactic>): void
+}
+
+/** 무리의 그림 — 싸움 기록의 잃은 사람 칩 */
+const GROUP_ICON: Readonly<Record<Grp, string>> = { front: UNIT_ICON.spear, bows: UNIT_ICON.bow, horse: UNIT_ICON.horse }
+
+/** 한 합에 무리마다 잃은 사람 — [무리, 수] (그 합 앞의 무리 수에서 뺀다) */
+function groupLoss(before: Readonly<Partial<Record<Grp, number>>>, after: Readonly<Partial<Record<Grp, number>>> | undefined): Array<[Grp, number]> {
+  if (after === undefined) return []
+  return (['front', 'bows', 'horse'] as const).map((g) => [g, Math.max(0, Math.round((before[g] ?? 0) - (after[g] ?? 0)))] as [Grp, number]).filter(([, n]) => n > 0)
+}
+
+/** 맡겼을 때 — 장수의 지략이 무엇을 해 주나 (aiOrder: 지략만큼 적 앞줄의 버릇을 읽어 맞수를 둔다 · 흔들리는 적에 들이친다) */
+function autoLine(h: { name: string; ryak: number } | undefined): string {
+  if (h === undefined) return '장수가 없다 — 무리마다 제 버릇대로 싸운다'
+  const full = Math.max(1, Math.min(5, Math.round(h.ryak / 2)))
+  const dots = '●'.repeat(full) + '○'.repeat(5 - full)
+  const feel = h.ryak >= 8 ? '적의 수를 잘 읽어 맞수를 둔다 — 맡겨도 좋다' : h.ryak >= 6 ? '곧잘 맞수를 둔다' : h.ryak >= 4 ? '반쯤은 제 버릇대로 싸운다' : '수를 잘 못 읽는다 — 직접 고르는 게 낫다'
+  return `${esc(h.name)} · 지략 <span class="wdots">${dots}</span> — ${feel}`
 }
 
 function face(id: string | null, art: string, fallback: string): string {
@@ -159,9 +200,12 @@ function introLine(l: BattleLine, weAtk: boolean, foe: string): string {
 }
 
 /** 한 쪽이 든 깃발들 — 앞줄 · 활 · 기병 · 장수(북은 빼고) */
-function flags(o: RoundOrder | undefined, chip: Cmd, art: string): string {
+function flags(o: RoundOrder | undefined, chip: Cmd, art: string, ak?: Art): string {
   const xs: Cmd[] = o === undefined ? [chip] : [o.front, o.bows, o.horse, o.lead !== 'drum' ? o.lead : undefined].filter((c): c is Cmd => c !== undefined)
-  return xs.map((c) => `<span class="wfl"><img src="${art}icon/${CMD_ICON[c]}.png" alt="">${CMD_NAME[c]}</span>`).join('')
+  // 장수의 비기는 그 비기의 이름·그림으로 (빛나는 칩)
+  return xs.map((c) => (c === 'art' && ak !== undefined
+    ? `<span class="wfl art"><img src="${art}icon/${ART_ICON[ak]}.png" alt="">${ART_NAME[ak]}</span>`
+    : `<span class="wfl"><img src="${art}icon/${CMD_ICON[c]}.png" alt="">${CMD_NAME[c]}</span>`)).join('')
 }
 
 /** 그 판의 이름 — 땅에서 딴다 (prose.battleName). 옛 보고처럼 판 기록이 모자라면 곳 이름으로 */
@@ -208,13 +252,22 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     keys += `@keyframes ${k}{from{width:${w0}%}to{width:${w1}%}}`
     return `<i class="wgr" style="width:${w1}%;animation-name:${k}"></i>`
   }
+  // 마지막 합에 맞은 쪽은 흔들린다 (형: "피격당한쪽이 흔들리거나") — 우리는 붉게, 적은 금빛으로 번쩍
+  const hitOf = (i: 0 | 1): string => {
+    if (!anim) return ''
+    const lost = Math.round(men0(i) * (n0(i) - n(i)))
+    if (lost <= 0) return ''
+    const j: 0 | 1 = i === 0 ? 1 : 0
+    const other = Math.round(men0(j) * (n0(j) - n(j)))
+    return ` hit${lost > other * 1.3 ? ' hithard' : ''}`
+  }
   const side = (i: 0 | 1, hero: string | null, f: string | undefined, name: string, cls: string): string => {
     const now = Math.round(men0(i) * n(i))
     const old = Math.round(men0(i) * n0(i))
     const base = Math.max(0.05, st?.morale[i] ?? 1)
     const mr = (x: number): number => Math.round(Math.max(0, Math.min(1.2, x / base)) * 83)
     const num = old !== now ? `<span class="wn swap"><s>${old}명</s><u>${now}명</u></span>` : `<span class="wn">${now}명</span>`
-    return `<div class="ws ${cls}">${face(hero, art, unitOf(i))}<b>${esc(name)}</b><span>${esc(fname(f))}</span>`
+    return `<div class="ws ${cls}${hitOf(i)}" style="--hd:${STAGE_S[1] + 0.15}s">${face(hero, art, unitOf(i))}<b>${esc(name)}</b><span>${esc(fname(f))}</span>`
       + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}</div>${num}`
       + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}</div><span class="wn">사기</span></div>`
   }
@@ -235,12 +288,20 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const crit = rd.beat === ourS
     const d = (k: number): string => (slow ? ` style="--d:${STAGE_S[k]}s"` : '')
     h += `<div class="wrd${slow ? ' slow' : ''}${crit ? ' crit' : ''}"><div class="wrn">${ROUND_NAME[i] ?? `${i + 1}`} 합</div>`
-    h += `<div class="wcmds"${d(0)}><span class="wc us">${flags(weAtk ? rd.oa : rd.od, weAtk ? rd.a : rd.d, art)}</span><i>×</i><span class="wc foe">${flags(weAtk ? rd.od : rd.oa, weAtk ? rd.d : rd.a, art)}</span></div>`
+    const akOf = (sd: 'a' | 'd'): Art | undefined => (rd.acts ?? []).find((x) => x.c === 'art' && x.s === sd)?.art
+    h += `<div class="wcmds"${d(0)}><span class="wc us">${flags(weAtk ? rd.oa : rd.od, weAtk ? rd.a : rd.d, art, akOf(ourS))}</span><i>×</i><span class="wc foe">${flags(weAtk ? rd.od : rd.oa, weAtk ? rd.d : rd.a, art, akOf(ourS === 'a' ? 'd' : 'a'))}</span></div>`
     const story = ctx !== null ? roundStory(rd, rounds[i - 1], ctx) : []
     h += `<div class="wst"${d(1)}>${story.map((s) => `<p>${esc(s)}</p>`).join('')}</div>`
     // 사로잡기·물러나기로 끝난 합은 밀고 밀린 것이 없다
     if (rd.ev === 'capture-ok' || rd.ev === 'retreat') h += `<p class="wpush"${d(2)}>싸움이 거기서 끝났다</p></div>`
-    else h += `<p class="wpush ${pc}"${d(2)}>${pw} · 우리 −${lostUs} · 적 −${lostFoe}</p></div>`
+    else {
+      // 무리마다 — 앞줄·활·말 그림과 잃은 수 (형: "전투로그에서도 다이나믹함이 보이게끔 유닛마다 아이콘도 같이")
+      const gBefore = (sd: 0 | 1): Readonly<Partial<Record<Grp, number>>> => (i === 0 ? groupMen(mixOf(sd) as Parameters<typeof groupMen>[0]) : (sd === 0 ? rounds[i - 1]!.ga : rounds[i - 1]!.gd) ?? {})
+      const chips = (sd: 0 | 1): string => groupLoss(gBefore(sd), sd === 0 ? rd.ga : rd.gd).map(([g, k]) => `<span class="wl"><img src="${art}icon/${GROUP_ICON[g]}.png" alt="">−${k}</span>`).join('')
+      const cu = chips(ourI)
+      const cf = chips(foeI)
+      h += `<p class="wpush ${pc}"${d(2)}>${pw}</p><p class="wloss"${d(2)}><span class="us">우리 ${cu !== '' ? cu : `−${lostUs}`}</span><span class="foe">적 ${cf !== '' ? cf : `−${lostFoe}`}</span></p></div>`
+    }
   })
   h += `</div>`
 
@@ -269,7 +330,10 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         const [w, cls] = captureWord(p.capture)
         feel = `<span class="wf-${cls}">${w}</span><span class="wcap">날랜 무리 ${p.squad}명 · 적장 곁 호위 ${p.escort}명</span>`
       }
-      return `<button class="wcmd ${c}${on ? ' on' : ''}" data-war="pick" data-g="${g}" data-c="${c}"><img src="${art}icon/${CMD_ICON[c]}.png" alt=""><b>${CMD_NAME[c]}</b>${tag}${feel}<small>${esc(CMD_DOES[c])}</small></button>`
+      // 장수의 비기 — 그 장수만의 이름·그림 (형: "아이콘과 함께 그거라는걸 알게 해줘야함")
+      const ak = c === 'art' ? p.art : undefined
+      if (ak !== undefined) tag = `<em class="art">비기</em>`
+      return `<button class="wcmd ${c}${on ? ' on' : ''}" data-war="pick" data-g="${g}" data-c="${c}"><img src="${art}icon/${ak !== undefined ? ART_ICON[ak] : CMD_ICON[c]}.png" alt=""><b>${ak !== undefined ? ART_NAME[ak] : CMD_NAME[c]}</b>${tag}${feel}<small>${esc(ak !== undefined ? ART_DOES[ak] : CMD_DOES[c])}</small></button>`
     }
     for (const gr of p.groups) {
       if (gr.options.length === 0) continue
@@ -280,8 +344,12 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       h += `<div class="wgrp"><div class="wgh"><b>장수</b> ${esc(ourName)}${sel.lead === undefined ? '<span class="mute"> — 안 고르면 북을 친다</span>' : ''}</div>`
       h += `<div class="wcmdgrid">${p.lead.map((c) => opt('lead', c)).join('')}</div></div>`
     }
-    h += `<div class="wfoot"><button class="btn ghost" data-war="auto">이 싸움은 맡긴다</button>${left > 1 ? `<button class="btn ghost" data-war="autoall">남은 싸움 다 맡긴다</button>` : ''}`
-    h += `<button class="btn on" data-war="go">북을 울린다</button></div></div>`
+    // 맡기면 장수의 지략대로 — 그 장수의 얼굴·지략을 단추 옆에 (형: "장수의 지략?수치가 … 버튼주변에 뭔가보여지면")
+    const ourH = ourHero !== null ? (prev.heroes[ourHero] ?? after.heroes[ourHero]) : undefined
+    h += `<div class="wfoot"><div class="wauto">${ourH !== undefined ? face(ourHero, art, unitOf(ourI)) : ''}<span>${autoLine(ourH)}</span></div>`
+    h += `<button class="btn ghost" data-war="auto">이 싸움은 맡긴다</button>${left > 1 ? `<button class="btn ghost" data-war="autoall">남은 싸움 다 맡긴다</button>` : ''}`
+    // 고른 깃발로 이 합을 싸운다 (형: "전투 설정하고 시작하기가 북을울린다야?")
+    h += `<button class="btn on" data-war="go">북을 울린다<small>고른 깃발로 이 합을 싸운다</small></button></div></div>`
   } else if (ended) {
     const atkWon = l.outcome === 'rout' || l.outcome === 'win'
     const good = weAtk === atkWon && l.outcome !== 'draw'
@@ -345,6 +413,30 @@ export const WAR_CSS = `
 .ap .wrd.crit .wst p:first-child { color: var(--gold); }
 .ap .wpush { margin: 4px 0 0; text-align: center; font-size: 13px; color: var(--mute); }
 .ap .wpush.good { color: var(--good); } .ap .wpush.bad { color: var(--bad); }
+.ap .wfl.art { color: #ffd27a; text-shadow: 0 0 6px #ffd27a88; } .ap .wcmd.art { border-color: #c8a050; background: linear-gradient(#2a2418, #1d1a14); } .ap .wcmd em.art { background: #c8a050; color: #1b1408; }
+/* 무리마다 잃은 사람 — 그림 칩 */
+.ap .wloss { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin: 3px 0 0; font-size: 13px; }
+.ap .wloss > span { display: inline-flex; align-items: center; gap: 5px; } .ap .wloss .us { color: #9fd18b; } .ap .wloss .foe { color: #e8a08a; }
+.ap .wl { display: inline-flex; align-items: center; gap: 1px; font-weight: 700; } .ap .wl img { width: 22px; height: 22px; object-fit: contain; }
+.ap .wrd.slow .wloss { opacity: 0; animation: wrin .45s ease-out var(--d, 0s) both; }
+/* 맞은 쪽 — 흔들리고 번쩍 (우리 붉게 · 적 금빛) */
+.ap .ws.hit { animation: wshake .5s ease-in-out var(--hd, 1.2s) both; position: relative; }
+.ap .ws.hit.hithard { animation-name: wshakeh; }
+.ap .ws.hit::after { content: ''; position: absolute; inset: -4px; border-radius: 14px; pointer-events: none; opacity: 0; animation: wflash .6s ease-out var(--hd, 1.2s) both; }
+.ap .ws.us.hit::after { background: radial-gradient(circle, #ff4a3a66, #ff4a3a00 70%); } .ap .ws.foe.hit::after { background: radial-gradient(circle, #ffd27a66, #ffd27a00 70%); }
+@keyframes wshake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-5px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+@keyframes wshakeh { 0%, 100% { transform: translateX(0) rotate(0); } 15% { transform: translateX(-9px) rotate(-2deg); } 35% { transform: translateX(8px) rotate(2deg); } 55% { transform: translateX(-6px) rotate(-1deg); } 75% { transform: translateX(3px); } }
+@keyframes wflash { 0% { opacity: 0; } 25% { opacity: 1; } 100% { opacity: 0; } }
+/* 맡기기 — 그 장수의 얼굴과 지략 */
+.ap .wauto { flex: 1 1 100%; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #d8cfbf; }
+.ap .wauto .wf { width: 30px; height: 30px; border-radius: 50%; } .ap .wauto .wdots { color: var(--gold); letter-spacing: 1px; }
+.ap .wfoot .btn small { display: block; font-size: 11px; font-weight: 500; opacity: .85; }
+/* 이겼다 — 크게 (형: "이기면 … 막 지랄 발광") */
+.ap .wend.good { animation: wrin .5s ease-out var(--d, 0s) both, wwin 1.4s ease-out calc(var(--d, 0s) + .3s) both; }
+.ap .wend.good b { display: inline-block; animation: wwinb .9s cubic-bezier(.2, 1.6, .4, 1) calc(var(--d, 0s) + .3s) both; }
+@keyframes wwin { 0% { box-shadow: 0 0 0 0 #ffd27a00; } 30% { box-shadow: 0 0 0 6px #ffd27aaa, 0 0 40px 10px #ffd27a88; } 100% { box-shadow: 0 0 0 0 #ffd27a00, 0 0 18px 2px #ffd27a33; } }
+@keyframes wwinb { 0% { transform: scale(.4); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .ap .ws.hit, .ap .ws.hit::after, .ap .wend.good, .ap .wend.good b { animation: none; } }
 .ap .wrd.slow .wcmds, .ap .wrd.slow .wst, .ap .wrd.slow .wpush { opacity: 0; animation: wrin .45s ease-out var(--d, 0s) both; }
 .ap .wrd.slow .wcmds { animation-name: wrflip; }
 @keyframes wrin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
@@ -411,12 +503,21 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     timers.push(window.setTimeout(() => { if (document.visibilityState === 'visible') host.ding(name, vol) }, s * 1000))
   }
 
+  /** 폰 떨림 — 잘됐을 때만 (좋은 합 · 사로잡기 · 이김). 진 쪽 떨림은 헷갈려서 안 쓴다 (형: "공격하거나 잘됐을때로 긍정 피드백 시켜야 하나? 헷갈리니까??") */
+  const buzz = (s: number, pattern: number[]): void => {
+    if (typeof navigator.vibrate !== 'function') return
+    timers.push(window.setTimeout(() => { if (document.visibilityState === 'visible') navigator.vibrate(pattern) }, s * 1000))
+  }
   // 소리 — 깃발 → 맞부딪힘(필살이면 크게) → 마지막 일격 · 이김/짐. 탭이 보일 때만
   const sound = (rd: RoundLog | undefined, weAtk: boolean, end: BattleLine | null): void => {
     clearTimers()
     if (document.visibilityState !== 'visible') return
     if (rd !== undefined) {
       const ourSide = weAtk ? 'a' : 'd'
+      const wePushed = weAtk ? rd.push > 0.55 : rd.push < 0.45
+      if (rd.ev === 'capture-ok' && rd.by === ourSide) buzz(STAGE_S[1], [30, 50, 30, 50, 70])
+      else if (rd.beat === ourSide) buzz(STAGE_S[1], [25, 40, 25])
+      else if (wePushed) buzz(STAGE_S[1], [15])
       at(STAGE_S[0], BATTLE_SFX[weAtk ? rd.a : rd.d], 0.45)
       if (rd.ev === 'capture-ok') at(STAGE_S[1], rd.by === ourSide ? BATTLE_SFX.caught : BATTLE_SFX.lose, 0.5)
       else if (rd.ev === 'duel-win' || rd.ev === 'duel-lose') at(STAGE_S[1], BATTLE_SFX.duelWin, 0.45)
@@ -427,6 +528,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       const good = (end.atkFaction === host.me) === atkWon && end.outcome !== 'draw'
       if (end.outcome === 'rout' || end.outcome === 'routed') at(STAGE_S[2] + 0.4, BATTLE_SFX.final, 0.5)
       at(STAGE_S[2] + 1, good ? BATTLE_SFX.win : BATTLE_SFX.lose, 0.45)
+      // 이겼다 — 부우웅 크게 (듀오링고처럼)
+      if (good) buzz(STAGE_S[2] + 1, end.outcome === 'rout' ? [60, 40, 60, 40, 60, 40, 120, 60, 300] : [50, 50, 50, 50, 200])
     }
   }
 

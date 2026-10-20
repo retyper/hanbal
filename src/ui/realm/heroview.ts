@@ -6,7 +6,8 @@
  */
 import { STAT_NAME, josa } from '../../realm/data/prose.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
-import { armyOfHero, bondOf, bondTier, growNeed, isRuler } from '../../realm/heroes.ts'
+import { armyOfHero, bondOf, bondTier, growNeed, heroArt, isRuler } from '../../realm/heroes.ts'
+import { ART_DOES, ART_NAME } from './battlefield.ts'
 import type { GrowStat, Hero, Realm } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { radarSvg } from './radar.ts'
@@ -35,11 +36,13 @@ export function traitChips(h: Hero, seen: boolean): string {
   }).join('')
 }
 
-/** 특성 설명 줄 — 카드 안에서 칩 밑에 */
+/** 특성 설명 줄 — 카드 안에서 칩 밑에. 끝에 그 장수의 비기 (싸움에서 장수 깃발로 한 번 — tactics) */
 export function traitLines(h: Hero, seen: boolean): string {
   if (!seen) return ''
+  const art = heroArt(h)
   return (h.traits ?? []).map((id) => TRAIT[id]).filter((t) => t !== undefined)
     .map((t) => `<p class="tline${t!.bad === true ? ' bad' : ''}"><b>${esc(t!.name)}</b> ${esc(t!.line)}</p>`).join('')
+    + (art !== undefined ? `<p class="tline art"><b>비기 · ${esc(ART_NAME[art])}</b> ${esc(ART_DOES[art])}</p>` : '<p class="tline mute">비기 없음 — 싸움에선 북을 쳐 지휘한다</p>')
 }
 
 /** 지금 하는 일 한 줄 */
@@ -72,7 +75,7 @@ export const HERO_CSS = `
 .ap .hcard img.big { width: 150px; height: 150px; border-radius: 16px; object-fit: cover; border: 2px solid #6a5a3a; }
 .ap .hcard .hn { font-size: 20px; color: var(--gold); font-family: 'Gowun Batang', serif; }
 .ap .hcard .radar { margin: 2px auto; }
-.ap .tline { text-align: left; font-size: 13.5px; margin: 3px 0; color: #d8d0c0; } .ap .tline.bad { color: #f1b8a8; }
+.ap .tline { text-align: left; font-size: 13.5px; margin: 3px 0; color: #d8d0c0; } .ap .tline.bad { color: #f1b8a8; } .ap .tline.art b { color: #ffd27a; }
 .ap .hacts { display: flex; flex-direction: column; gap: 6px; width: 100%; margin-top: 8px; }
 `
 

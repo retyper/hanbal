@@ -39,7 +39,7 @@ import { PEOPLE_SCALE, migrate } from './migrate.ts'
 import { spreadRumors } from './rumor.ts'
 import { addMen, giveMen, kitOf, scaleKinds, scaleMen, takeMen } from './kit.ts'
 import {
-  ambushTraitOf, applyHeroOrders, battleGrowth, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, ironhandAt, noteMet, stepHeroes, sweepHeroes,
+  ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, ironhandAt, noteMet, stepHeroes, sweepHeroes,
 } from './heroes.ts'
 import type {
   Approach, Army, BattleStart, Cmd, EdgeKind, Hero, Order, Ration, Realm, REdge, Report, ReportLine, RNode, SeasonOfYear, SnipeZone, Tactic,
@@ -727,7 +727,7 @@ function sideOf(
   const boats = n > 0 && (f.mix.boat ?? 0) / n >= 0.15
   const terrain: Terrain = { ...(o.terrain ?? {}), ...(o.water && boats ? { ram: true } : {}), ...(o.flank ? { height: true } : {}) }
   return {
-    F, mix: f.mix, morale: f.morale, hero: h === null ? null : { id: h.id, mu: h.mu, ryak: h.ryak, coward: hasTrait(h, 'coward') },
+    F, mix: f.mix, morale: f.morale, hero: h === null ? null : { id: h.id, mu: h.mu, ryak: h.ryak, coward: hasTrait(h, 'coward'), ...(heroArt(h) !== undefined ? { art: heroArt(h)! } : {}) },
     hungry: hungryOf(armies), specials, terrain, water: o.water, player: r.factions[faction]?.mind === 'player', seen: o.seen,
     ...(o.moraleBonus !== undefined ? { moraleBonus: o.moraleBonus } : {}),
     ...(o.captureBonus !== undefined && o.captureBonus > 0 ? { captureBonus: o.captureBonus } : {}),

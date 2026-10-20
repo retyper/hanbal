@@ -271,8 +271,15 @@ export type Cmd =
   | 'volley' | 'counter' | 'fire' | 'height'
   // 말 — 옆치기 · 돌파 · 추격 · 호위
   | 'flank' | 'punch' | 'pursue' | 'guard'
-  // 장수 — 북을 친다(그냥 지휘) · 장수 겨루기 · 적장 사로잡기 · 물러나기
-  | 'drum' | 'duel' | 'capture' | 'retreat'
+  // 장수 — 북을 친다(그냥 지휘) · 장수 겨루기 · 적장 사로잡기 · 물러나기 · 그 장수만의 비기(한 판에 한 번 — Art)
+  | 'drum' | 'duel' | 'capture' | 'retreat' | 'art'
+
+/**
+ * 장수의 비기 — 장수마다 하나, 한 판에 한 번 (형 2026-10-20: "장수스킬 장수가 있건없건 똑같나?? 싸우는 장수의 특별한 액티브 스킬이 있다면
+ * 아이콘과 함께 그거라는걸 알게 해줘야함"). 특성이 먼저, 없으면 가장 높은 능력치(7 이상)에서 (heroes.heroArt).
+ *   snipe 명궁의 한 발 · rite 진중 굿 · sway 항복 권유 · stand 버텨라 · ambush 샛길 기습 · vanguard 선봉에 선다 · feint 거짓 퇴각 · order 진을 다잡는다 · shout 큰 외침
+ */
+export type Art = 'snipe' | 'rite' | 'sway' | 'stand' | 'ambush' | 'vanguard' | 'feint' | 'order' | 'shout'
 
 /**
  * 전투 2판 (docs/realm/BATTLE.md §전투 2판 · 형 2026-10-19: "어떤 군대가 창병움직이면 다른애들 가만있냐. 각자 행동 컨트롤") —
@@ -303,6 +310,8 @@ export interface Act {
   readonly res: 'won' | 'lost' | 'even' | 'hit' | 'blocked' | 'wasted' | 'ok' | 'fail' | 'stall'
   /** 사로잡기 — 적장 곁 호위 */
   readonly guard?: number
+  /** 장수의 비기 — c 가 'art' 일 때 무엇 */
+  readonly art?: Art
 }
 
 /** 라운드 하나의 기록 — 화면이 그대로 풀어 보인다. n 은 처음 사람의 몫 0~1, m 은 사기 */
@@ -365,6 +374,8 @@ export interface Pending {
   readonly weAtk: boolean
   /** 상대를 보고 있나 (척후·첩자·눈앞) */
   readonly seen: boolean
+  /** 우리 장수의 비기 — 장수의 명령에 'art' 가 있으면 그것 */
+  readonly art?: Art
 }
 
 /** 싸움이 시작될 때 — 사람 수 · 사기 · 이끄는 장수 (공격, 지킴). 전장 화면이 막대의 처음으로 쓴다 */

@@ -307,3 +307,44 @@ describe('진군 방식 · 군량 · 막힌 길', () => {
     assert.ok(gFull < gLight, `넉넉히 ${gFull} < 가볍게 ${gLight} (처음 ${g0})`)
   })
 })
+
+// 형 2026-10-20: "장수스킬 장수가 있건없건 똑같나?? 싸우는 장수의 특별한 액티브 스킬이 있다면 아이콘과 함께 그거라는걸 알게 해줘야함"
+describe('장수의 비기', () => {
+  const withArt = (art: NonNullable<NonNullable<Side['hero']>['art']>, player = true): Side =>
+    side(100, EVEN, player, { hero: { id: player ? 'me' : 'foe', mu: 5, ryak: 5, coward: false, art } })
+
+  it('비기가 있는 장수만 장수 깃발에 「비기」가 뜨고, 한 판에 한 번', () => {
+    assert.ok(optionsOf(withArt('vanguard'), side(100, EVEN), new Set(), false).includes('art'))
+    assert.ok(!optionsOf(side(100, EVEN, true), side(100, EVEN), new Set(), false).includes('art'), '비기 없는 장수')
+    assert.ok(!optionsOf(withArt('vanguard'), side(100, EVEN), new Set<Cmd>(['art']), false).includes('art'), '쓴 뒤엔 없다')
+    assert.ok(!optionsOf(withArt('snipe'), side(100, EVEN, false, { hero: null }), new Set(), false).includes('art'), '쏠 적장이 없으면 명궁의 한 발도 없다')
+  })
+
+  it('비기를 쓰면 그 합 기록에 그 비기가 남고 · 전장 화면이 장수의 비기를 안다', () => {
+    const t: Tactic = { cmds: [{ front: 'charge', lead: 'art' }], open: true }
+    const res = fightRounds(withArt('shout'), side(100, EVEN), 'art-1', 7, 0, t)
+    assert.ok(res.rounds[0]!.acts?.some((a) => a.c === 'art' && a.art === 'shout'))
+    assert.equal(res.pending?.art, 'shout')
+    assert.ok(!res.pending!.lead.includes('art'), '두 번째 합엔 다시 못 쓴다')
+  })
+
+  it('선봉에 선다 — 같은 판이면 우리 쪽이 덜 잃는다 · 버텨라 — 그 합에 덜 잃는다', () => {
+    const run = (lead: Cmd, art: NonNullable<NonNullable<Side['hero']>['art']>): number => {
+      let lost = 0
+      for (let k = 0; k < 30; k++) {
+        const r = fightRounds(withArt(art), side(100, EVEN), `art-v-${k}`, k + 1, 0, { cmds: [{ front: 'charge', bows: 'volley', lead }] })
+        lost += 1 - r.rounds[0]!.na
+      }
+      return lost
+    }
+    assert.ok(run('art', 'vanguard') < run('drum', 'vanguard'), '선봉')
+    assert.ok(run('art', 'stand') < run('drum', 'stand'), '버텨라')
+  })
+
+  it('명궁의 한 발 — 적장이 다쳐 사로잡기가 쉬워진다', () => {
+    const t: Tactic = { cmds: [{ lead: 'art' }], open: true }
+    const shot = fightRounds(withArt('snipe'), side(100, EVEN), 'art-s', 3, 0, t)
+    const plain = fightRounds(side(100, EVEN, true), side(100, EVEN), 'art-s', 3, 0, { cmds: [{ lead: 'drum' }], open: true })
+    assert.ok((shot.pending?.capture ?? 0) > (plain.pending?.capture ?? 0))
+  })
+})

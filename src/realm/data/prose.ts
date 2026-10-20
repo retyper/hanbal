@@ -4,7 +4,7 @@
  */
 import { P } from '../../tune/params.ts'
 import type { Equip, Outcome, UnitKind } from '../battle.ts'
-import type { Ask, BuildWhat, Cmd, DiscoverHow, EdgeKind, Good, Grp, PlotOp, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, RoundLog, RoundOrder, SeasonOfYear, Tag, Why } from '../types.ts'
+import type { Art, Ask, BuildWhat, Cmd, DiscoverHow, EdgeKind, Good, Grp, PlotOp, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, RoundLog, RoundOrder, SeasonOfYear, Tag, Why } from '../types.ts'
 import { groupOf } from '../tactics.ts'
 import type { ConcealWhy } from '../season.ts'
 import { TRAIT } from './traits.ts'
@@ -738,7 +738,23 @@ export function roundStory(rd: RoundLog, prev: RoundLog | undefined, c: StoryCtx
     if (a.g !== 'lead') continue
     const x = a.s
     const y = opp(x)
-    if (a.c === 'retreat') {
+    if (a.c === 'art' && a.art !== undefined) {
+      // 장수의 비기 — 그 장수의 이름으로 (형: "싸우는 장수의 특별한 액티브 스킬")
+      const hx = heroOf(x)
+      const hy = heroOf(y)
+      const line: Record<Art, string> = {
+        snipe: `${josa(hx, '이', '가')} 몸소 활을 당겨 ${josa(hy, '을', '를')} 맞혔다 — ${who(y)} 진이 술렁인다.`,
+        rite: `${hx}의 진중에서 굿판이 벌어졌다 — 북과 방울 소리에 ${who(x)} 군사들이 들끓는다.`,
+        sway: a.res === 'hit' ? `${josa(hx, '이', '가')} 무기를 버리면 살려 준다고 외쳤다 — 흔들리던 ${who(y)} 군사 ${josa(ppl(a.tl ?? 0), '이', '가')} 창을 내려놓았다.` : `${josa(hx, '이', '가')} 항복하라 외쳤지만 ${who(y)} 군사들은 꿈쩍도 않는다.`,
+        stand: `${josa(hx, '이', '가')} 백 사람의 이름을 하나하나 부르며 버티라 했다 — ${who(x)} 군사들이 이를 악문다.`,
+        ambush: a.res === 'hit' ? `${hx}의 날랜 무리가 샛길로 돌아 먼저 덮쳤다 — ${who(y)} ${grp(y, a.tg)} ${josa(ppl(a.tl ?? 0), '이', '가')} 쓰러졌다.` : `${hx}의 날랜 무리가 샛길로 돌았지만 칠 데가 없었다.`,
+        vanguard: `${josa(hx, '이', '가')} 칼을 뽑아 맨 앞에 섰다 — ${who(x)} 앞줄이 함성을 지른다.`,
+        feint: a.res === 'won' ? `${josa(hx, '이', '가')} 물러나는 척하자 ${who(y)} 군사가 우르르 달려들었다 — 기다리던 옆구리 공격에 걸렸다.` : `${josa(hx, '이', '가')} 물러나는 척했지만 ${who(y)} 군사는 따라오지 않았다.`,
+        order: `${josa(hx, '이', '가')} 흐트러진 진을 다잡았다 — ${who(x)} 대열이 다시 선다.`,
+        shout: `${josa(hx, '이', '가')} 크게 외쳐 군사를 일으켰다 — ${who(x)} 군사들의 기세가 오른다.`,
+      }
+      out.push(line[a.art])
+    } else if (a.c === 'retreat') {
       out.push(`${josa(who(x), '이', '가')} 징을 쳐 군사를 물렸다 — 물러나며 ${josa(ppl(a.sl ?? 0), '을', '를')} 잃었다.`)
     } else if (a.c === 'duel') {
       out.push(`${josa(heroOf(x), '이', '가')} 앞으로 나서 ${josa(heroOf(y), '과', '와')} 겨뤘다 — `
