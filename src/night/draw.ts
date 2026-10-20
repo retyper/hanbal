@@ -273,6 +273,21 @@ function drawGroundAndRoof(ctx: CanvasRenderingContext2D, cam: Camera, g: number
 // ───────────────────────── 형체 ─────────────────────────
 
 /** 형체 하나 — 몸은 검게. `rim` 이 0 보다 크면 빛 받은 쪽 가장자리를 밝게 */
+/** 빛 받은 테의 두께 (화면 px) — 검은 몸을 빛 반대쪽으로 이만큼 밀어 덮으면 빛 쪽에만 테가 남는다 */
+const RIM_EDGE_PX = 1.6
+
+/** 이 사람에게 빛이 오는 쪽 (+1 오른쪽 · −1 왼쪽) — 가장 가까운 켜진 불. 제가 든 등불이면 얼굴 쪽 */
+function lightSide(sc: Night['scene'], f: Figure): number {
+  let best: { d: number; s: number } | null = null
+  for (const l of sc.lights) {
+    if (!l.lit) continue
+    const s = l.carrier === f.id ? f.facing : Math.sign(l.x - f.x) || 1
+    const d = l.carrier === f.id ? 0 : Math.abs(l.x - f.x)
+    if (best === null || d < best.d) best = { d, s }
+  }
+  return best?.s ?? 1
+}
+
 function figurePath(ctx: CanvasRenderingContext2D, cam: Camera, n: Night, f: Figure, rise: number, mode: 'fill' | 'rim', rim: number, rimCol: string): void {
   partsOf(f, parts, f.role === 'chief' ? rise : undefined)
   const s = cam.scale
@@ -732,12 +747,19 @@ export function drawNight(ctx: CanvasRenderingContext2D, v: NightView, n: Night,
 
   drawDarkness(ctx, v, n)
 
-  // 빛 받은 가장자리 — 밝은 곳의 형체만 또렷 (어둠 속은 흐릿한 윤곽)
+  // 빛 받은 가장자리 — 밝은 곳의 형체만 또렷 (어둠 속은 흐릿한 윤곽).
+  // 테만 남긴다: 주황으로 몸 전체를 칠한 뒤 검은 몸을 빛 반대쪽으로 한 뼘 밀어 다시 덮는다 — 빛 쪽 가장자리만 탄다
+  // (전에는 테가 몸을 통째로 덮어 "주황 마네킹"으로 보였다 — ART-QUEUE 8)
   for (const f of sc.figures) {
     if (f.role === 'chief') continue
     const lit = lightAt(sc, f.x, f.y + 1, n.tick)
-    if (lit > 0.05) figurePath(ctx, cam, n, f, 1, 'rim', Math.min(0.95, lit * 1.4), COL.rim)
-    else figurePath(ctx, cam, n, f, 1, 'rim', 0.13, COL.rimCool)
+    if (lit > 0.05) {
+      figurePath(ctx, cam, n, f, 1, 'rim', Math.min(0.95, lit * 1.4), COL.rim)
+      ctx.save()
+      ctx.translate(-lightSide(sc, f) * RIM_EDGE_PX, RIM_EDGE_PX * 0.4)
+      figurePath(ctx, cam, n, f, 1, 'fill', 0, COL.body)
+      ctx.restore()
+    } else figurePath(ctx, cam, n, f, 1, 'rim', 0.13, COL.rimCool)
   }
   for (const l of sc.lights) drawFlame(ctx, cam, l, n.tick)
   drawDoor(ctx, cam, n)
