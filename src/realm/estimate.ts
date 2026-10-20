@@ -37,9 +37,13 @@ export interface Move {
   readonly ambushP: number
   /** 이 길로 이 군대가 숨기 좋은가 — 땅·계절·무리 크기만 (season.concealOf). 지도의 기습 길 표시 */
   readonly conceal: 'good' | 'fair' | 'poor'
+  /** 무리가 커서 숨기 어렵다 (concealOf 의 bigArmy) — 지도 칩 "무리가 커 들킨다" */
+  readonly bigArmy: boolean
   /** 들이칠 고을에 성·높은 터가 있나 — 기습이 성을 건너뛰는 값이 크다 */
   readonly walled: boolean
 }
+
+const concealBits = (c: ReturnType<typeof concealOf>): { conceal: Move['conceal']; bigArmy: boolean } => ({ conceal: c.tier, bigArmy: c.why.includes('bigArmy') })
 
 type Range = readonly [number, number]
 
@@ -156,7 +160,7 @@ export function movesOf(r: Realm, faction: string, a: Army): Move[] {
     out.push({
       edge: ed, to, seasons: marchSeasons(ed.kind, season), blocked: blockedWhy(ed, season), hostile,
       win: v.win, winAmbush: v.ambush, winCaught: v.caught, age: v.age, ambushP,
-      conceal: concealOf(r, ed.id, headcount(forceOf(r, a)), to).tier, walled: fortMul(node, season) > 1,
+      ...concealBits(concealOf(r, ed.id, headcount(forceOf(r, a)), to)), walled: fortMul(node, season) > 1,
     })
   }
   return out

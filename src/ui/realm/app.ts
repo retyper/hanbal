@@ -452,7 +452,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 막힌 길도 갈 수는 있다 — 무엇을 잃는지 칩으로 미리 (형: "불가능하게 만들지 말고 패널티 · 사전에 안내")
       node: m.to, edge: m.edge.id, off: false, on: armySel.every((id) => pick[id]?.edge === m.edge.id),
       chip: m.blocked !== null ? `<span class="tn hard">${esc(HARD_LINE[m.blocked])}</span>`
-        : m.hostile ? `${m.win !== null ? fightFeel(m.win[0], m.win[1]) : unknownFeel()}${m.conceal === "good" ? `<span class="tn hide">숨기 좋은 길</span>` : ""}` : `<span class="tn">${m.seasons}계절</span>`,
+        : m.hostile ? `${m.win !== null ? fightFeel(m.win[0], m.win[1]) : unknownFeel()}${m.conceal === "good" ? `<span class="tn hide">숨기 좋은 길</span>` : m.bigArmy ? `<span class="tn big">무리가 커 들킨다</span>` : ""}` : `<span class="tn">${m.seasons}계절</span>`,
     }))
     // 머물기도 지도에서 — 제 고을을 누르면 떠나기를 거둔다 (형: "머물기는 지도에서 선택을 못하고")
     if (a !== undefined && a.march === null) targets.push({ node: a.at, edge: '', off: false, on: armySel.every((id) => pick[id] === undefined), chip: `<span class="tn stay">머문다</span>` })
