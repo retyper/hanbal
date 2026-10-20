@@ -49,7 +49,7 @@ foreach ($pair in @(@('map-base-source', 'spring'), @('map-monsoon', 'summer'), 
   Fit "$Src/$($pair[0]).png" "$Out/map/$($pair[1]).jpg" 1264 82; $n++
 }
 # 기호·깃발·병종·계절 — 알파
-foreach ($prefix in @('settle', 'emblem', 'unit', 'status', 'good', 'treasure')) {
+foreach ($prefix in @('settle', 'route', 'emblem', 'unit', 'status', 'good', 'treasure')) {
   foreach ($f in Get-ChildItem "$Src/cut" -File -Filter "$prefix-*.png") {
     Fit $f.FullName "$Out/icon/$($f.BaseName).png" 96; $n++
   }

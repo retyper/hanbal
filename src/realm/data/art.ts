@@ -60,7 +60,7 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'jomun-ruler': 'w-59-jomun-irang', 'golbeol-ruler': 'w-60-golbeol-beom', 'apdok-ruler': 'w-24-apdok-queen',
   'iseo-ruler': 'w-61-iseo-sinae', 'byeokjin-ruler': 'w-62-byeokjin-byeol', 'gammun-ruler': 'g-36-gammun-gamdol',
   'samul-ruler': 'g-20-samul-sea-lord', 'eumjeup-ruler': 'g-37-eumjeup-jeup', 'chopal-ruler': 'g-38-chopal-palmae',
-  'saro-1': 'g-08-veteran', 'saro-2': 'w-03-goguryeo-archer', 'daegaya-1': 'w-09-byeonhan-smith', 'sabeol-1': 'w-19-buyeo-fur-princess',
+  'saro-1': 'g-08-veteran', 'saro-2': 'w-66-saro-noeul', 'daegaya-1': 'w-09-byeonhan-smith', 'sabeol-1': 'w-19-buyeo-fur-princess',
   'dabeol-1': 'g-07-drunk-warrior', 'usisan-1': 'g-01-master-smith', 'jomun-1': 'g-13-baekje-general', 'iseo-1': 'w-26-iseo-tomboy-general',
   'samul-1': 'w-08-mahan-warrior', 'bihwa-1': 'g-10-buyeo-horse-lord', 'eumjeup-1': 'w-01-silla-princess',
   // 삼한 남부 판의 새 군주·장군 (data/regions/south.ts) — 있는 명치판을 나눠 쓴다. 새 얼굴은 그림 줄(인물 — 챗지피티)
@@ -72,10 +72,10 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'baekje-1': 'g-16-goguryeo-gaema-commander', 'mokji-1': 'g-08-veteran', 'wansan-1': 'w-13-young-archer', 'balla-1': 'w-08-mahan-warrior',
   'maek-1': 'w-06-buyeo-huntress', 'haseulla-1': 'g-09-farmer-conscript', 'gampyeong-1': 'w-10-pirate-captain',
   // 삼한과 북녘 판의 새 군주·장군 (data/regions/world.ts) — 있는 명치판을 나눠 쓴다. 새 얼굴은 그림 줄(ART-QUEUE 5c)
-  'goguryeo-ruler': 'g-28-goguryeo-damul', 'goguryeo-1': 'g-16-goguryeo-gaema-commander', 'goguryeo-2': 'w-03-goguryeo-archer',
+  'goguryeo-ruler': 'g-28-goguryeo-damul', 'goguryeo-1': 'g-16-goguryeo-gaema-commander', 'goguryeo-2': 'w-65-goguryeo-hwalmi',
   'biryuna-ruler': 'w-52-biryuna-songbi', 'biryuna-1': 'g-08-veteran', 'yeonna-ruler': 'g-29-yeonna-myeongsol', 'yeonna-1': 'w-13-young-archer',
-  'hwanna-ruler': 'w-53-hwanna-gabi', 'hwanna-1': 'g-03-sea-trader', 'gwanna-ruler': 'g-30-gwanna-soemoe', 'gwanna-1': 'g-11-gaya-iron-general',
-  'buyeo-ruler': 'g-31-buyeo-geumha', 'buyeo-1': 'w-06-buyeo-huntress', 'maga-ruler': 'w-54-maga-dalli', 'maga-1': 'g-04-jinhan-giant',
+  'hwanna-ruler': 'w-53-hwanna-gabi', 'hwanna-1': 'g-43-hwanna-amnok', 'gwanna-ruler': 'g-30-gwanna-soemoe', 'gwanna-1': 'g-11-gaya-iron-general',
+  'buyeo-ruler': 'g-31-buyeo-geumha', 'buyeo-1': 'w-06-buyeo-huntress', 'maga-ruler': 'w-54-maga-dalli', 'maga-1': 'g-44-maga-malgup',
   'uga-ruler': 'g-32-uga-sodu', 'uga-1': 'g-07-drunk-warrior', 'jeoga-ruler': 'g-33-jeoga-metdol', 'jeoga-1': 'w-11-assassin',
   'guga-ruler': 'w-55-guga-nuri', 'guga-1': 'g-12-silla-youth', 'dongokjeo-ruler': 'w-56-dongokjeo-sogeum', 'dongokjeo-1': 'g-05-mahan-chieftain',
   'bukokjeo-ruler': 'g-34-bukokjeo-duman', 'bukokjeo-1': 'w-17-mahan-pearl-diver', 'bullae-ruler': 'w-57-bullae-bakdal', 'bullae-1': 'g-13-baekje-general',
