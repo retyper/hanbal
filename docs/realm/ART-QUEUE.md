@@ -67,7 +67,7 @@
 2026-10-19 낮에 하나 시켰다가 retyper 계정 한도(다음 날 오전 9:30)로 0장 — 그 대화는 버린다.
 
 **머리말** (미추홀 비라 때와 같다 — 사람마다 새 대화): *Generate one image: premium Korean MMORPG character illustration, bold clean ink outlines, cel shading with soft painterly lighting, beautiful detailed face. Upper-body bust portrait framed from just above the head down to the solar plexus (mid-chest), both shoulders and upper arms visible, facing the viewer, slightly turned. Plain very dark navy-blue background (#1c2129) with a soft warm glow behind the head. Square 1:1. No text, no border.*
-**꼬리말**: *NOT Chinese: no hanfu, no Chinese hairpins, no Chinese characters. NOT Japanese: no kimono. No red circle or sun disc. Tasteful, fully clothed, adult.*
+**꼬리말**: *NOT Chinese: no hanfu, no Chinese hairpins, no Chinese characters. NOT Japanese: no kimono, no ninja (no face mask, no wide obi, no katana or shuriken). No red circle or sun disc. Tasteful, fully clothed, adult.*
 
 | 파일 | 장수 (id) | 얼굴 · 체형 · 차림 |
 |---|---|---|
@@ -96,6 +96,16 @@
 | ~~5~~ | ~~영남·변한 군주 명치판~~ — 2026-10-19 밤 다 받음 (달구·감돌·즙·팔매·쇠보·아단·바우·가람 g-35~42 · 이랑·범·시내·별·해솔·달래 w-59~64). 추화는 판에 없음 |
 | ~~5b~~ | ~~삼한 남부 군주 명치판 15~~ — 2026-10-19 밤 다 받음 (남자 g-22~27 · 여인 w-46~51) |
 | ~~5c~~ | ~~삼한과 북녘 군주 명치판 14~~ — 2026-10-19 밤 다 받음 (남자 g-28~34 · 여인 w-52~58) |
+
+## 자객 — 닌자 결 걷기 (형 2026-10-21: "자객은 닌자 형상화 하지 않게 주의해. 한국식 암살자여야함.")
+
+지금 남은 닌자 결 셋 — **챗지피티로 시험 한 장 먼저**, 지금보다 나으면 나머지 (크레딧을 아낀다). 차림 규칙은 ART.md 0 부정어 밑 「자객·암살자는 한국식」.
+
+| # | 무엇 | 닌자 결 | 넣는 곳 |
+|---|---|---|---|
+| A1 | 밤 암살판 여자 자객 궁사 몸 (팔 없음, 마젠타 바탕) | 넓은 검은 허리띠(오비 같다) · 감은 정강이 · 목도리 | public/sprites/night-assassin.png — **같은 키·자세·팔 자리**를 지킨다 (night/draw.ts 가 팔을 따로 그린다) |
+| A2 | 공작 암살 삽화 — 밤 지붕 위 자객이 적장을 겨눔 | 머리 감싼 두건 · 짙은 쫄옷 | public/realm/event/event-assassin-archer.jpg |
+| A3 | 여인 장수 명치판 「자객」 | 턱 밑 복면 | public/realm/bust/w-11-assassin.jpg |
 
 ## 제미나이 (넓은 그림 — 챗지피티 한도가 다 찼을 때)
 

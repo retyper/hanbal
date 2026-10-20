@@ -31,7 +31,8 @@
 | 삼한 바탕 | 초가 · 움집 · 통나무 목책 · 삼베 · 상투(魁頭露紒) · 큰 새 깃털 · 문신 · 납작머리(편두) |
 
 - **용은 고구려 벽화의 청룡**이다: *slender four-legged Korean dragon from Goguryeo tomb murals, feline body, flame-like mane, NO long catfish whiskers, NOT a Chinese dragon.* 이무기는 **뿔·다리 없는 거대한 물뱀**.
-- 매 주문 끝에 **부정어**를 붙인다: *NOT Chinese: no hanfu cross-collar silk robes with huge sleeves, no Chinese crowns or guan hats, no Chinese long whiskered dragons, no pagodas, no Chinese characters. NOT Japanese: no kimono, no samurai.*
+- 매 주문 끝에 **부정어**를 붙인다: *NOT Chinese: no hanfu cross-collar silk robes with huge sleeves, no Chinese crowns or guan hats, no Chinese long whiskered dragons, no pagodas, no Chinese characters. NOT Japanese: no kimono, no samurai, no ninja (no face mask, no hood-mask, no wide obi sash, no tabi, no katana, no shuriken or kunai).*
+- **자객·암살자는 한국식** (형 2026-10-21: "자객은 닌자 형상화 하지 않게 주의해. 한국식 암살자여야함."): 삼국·삼한 차림 저고리(앞여밈)와 통 넓은 바지 · 대님·행전 · 가는 천 허리띠와 띠고리 · 두건이나 상투·땋은 머리 · 짚신·가죽신 · 맥궁(각궁)·환두 손칼 · 곡옥. 복면·감싼 두건 마스크·닌자식 웅크림은 안 된다.
 - ~~군현(낙랑·대방) 사람만 바깥 옷을 입는다~~ → 형 (2026-10-18): *"중국식으로 만들지마. 기본적으로 한반도 풍으로 해야해."*
   군현 사신·관리 그림도 **그리지 않는다** (장수 16번 낙랑 사신 → 고구려 개마무사 장수로 바꿈). 군현 사건에 그림이 필요하면 형에게 먼저 묻는다.
 - **중국풍은 무조건 뺀다** (형, 2026-10-18: *"중국풍은 무조건 없애야한다니까. 중국이나 선비족 용병이라는 설정이면 괜찮지만"*).
