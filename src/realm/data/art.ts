@@ -72,13 +72,13 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'baekje-1': 'g-16-goguryeo-gaema-commander', 'mokji-1': 'g-08-veteran', 'wansan-1': 'w-13-young-archer', 'balla-1': 'w-08-mahan-warrior',
   'maek-1': 'w-68-maek-beombal', 'haseulla-1': 'g-09-farmer-conscript', 'gampyeong-1': 'w-10-pirate-captain',
   // 삼한과 북녘 판의 새 군주·장군 (data/regions/world.ts) — 있는 명치판을 나눠 쓴다. 새 얼굴은 그림 줄(ART-QUEUE 5c)
-  'goguryeo-ruler': 'g-28-goguryeo-damul', 'goguryeo-1': 'g-16-goguryeo-gaema-commander', 'goguryeo-2': 'w-65-goguryeo-hwalmi',
-  'biryuna-ruler': 'w-52-biryuna-songbi', 'biryuna-1': 'g-08-veteran', 'yeonna-ruler': 'g-29-yeonna-myeongsol', 'yeonna-1': 'w-13-young-archer',
-  'hwanna-ruler': 'w-53-hwanna-gabi', 'hwanna-1': 'g-43-hwanna-amnok', 'gwanna-ruler': 'g-30-gwanna-soemoe', 'gwanna-1': 'g-11-gaya-iron-general',
+  'goguryeo-ruler': 'g-28-goguryeo-damul', 'goguryeo-1': 'g-49-goguryeo-sona', 'goguryeo-2': 'w-65-goguryeo-hwalmi',
+  'biryuna-ruler': 'w-52-biryuna-songbi', 'biryuna-1': 'g-51-biryuna-mulgyeol', 'yeonna-ruler': 'g-29-yeonna-myeongsol', 'yeonna-1': 'w-71-yeonna-neoul',
+  'hwanna-ruler': 'w-53-hwanna-gabi', 'hwanna-1': 'g-43-hwanna-amnok', 'gwanna-ruler': 'g-30-gwanna-soemoe', 'gwanna-1': 'g-48-gwanna-musoe',
   'buyeo-ruler': 'g-31-buyeo-geumha', 'buyeo-1': 'w-67-buyeo-haedal', 'maga-ruler': 'w-54-maga-dalli', 'maga-1': 'g-44-maga-malgup',
   'uga-ruler': 'g-32-uga-sodu', 'uga-1': 'g-46-uga-nureongso', 'jeoga-ruler': 'g-33-jeoga-metdol', 'jeoga-1': 'w-69-jeoga-eomni',
   'guga-ruler': 'w-55-guga-nuri', 'guga-1': 'g-47-guga-sanyanggae', 'dongokjeo-ruler': 'w-56-dongokjeo-sogeum', 'dongokjeo-1': 'g-05-mahan-chieftain',
-  'bukokjeo-ruler': 'g-34-bukokjeo-duman', 'bukokjeo-1': 'w-17-mahan-pearl-diver', 'bullae-ruler': 'w-57-bullae-bakdal', 'bullae-1': 'g-13-baekje-general',
+  'bukokjeo-ruler': 'g-34-bukokjeo-duman', 'bukokjeo-1': 'w-70-bukokjeo-mulbeom', 'bullae-ruler': 'w-57-bullae-bakdal', 'bullae-1': 'g-50-bullae-gwaha',
   'tamna-ruler': 'w-58-tamna-halla', 'tamna-1': 'g-20-samul-sea-lord',
   // 여인 장수 더 (형 2026-10-19: "장수도 여캐 많았으면 좋겠으니 챗지피티로") — 판마다 장수 절반쯤이 여인. 아라·고자 둘은 변한 판의 얼굴 그대로
   // 제 얼굴(w-29 ~ w-45, 그림 줄 5d)을 받기 전까지는 있는 명치판을 빌린다 — 받으면 여기만 바꾼다
