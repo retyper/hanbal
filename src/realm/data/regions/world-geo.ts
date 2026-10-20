@@ -37,7 +37,7 @@ export const WORLD_TILES: readonly WorldTile[] = [
   { file: 'mahan-spring', lon0: 124.8, lon1: 127.7, lat0: 34.55, lat1: 36.55, fade: { e: 0.3, s: 0.25 }, trim: { n: 34, w: 60 } },
   { file: 'm2-spring', lon0: 124.8, lon1: 127.7, lat0: 36.3, lat1: 38.3, fade: { s: 0.25 }, trim: { e: 16, s: 51, w: 58 } },
   { file: 'm3-spring', lon0: 127.4, lon1: 130.3, lat0: 36.3, lat1: 38.3, fade: { s: 0.25, w: 0.3 }, trim: { e: 61, s: 45, w: 47 } },
-  { file: 'm5a-spring', lon0: 124.8, lon1: 127.7, lat0: 38.05, lat1: 40.05, fade: { s: 0.25 } }, // 2026-10-20 다시 받음 — 첫 판은 황해도를 바다로 칠했다
+  { file: 'm5a-spring', lon0: 124.8, lon1: 127.7, lat0: 38.05, lat1: 40.05, fade: { s: 0.25 } }, // 2026-10-20 다시 받음 — 첫 판은 황해도를 바다로 칠했다 · 같은 날 밤 제미나이(Argon)로 또 바꿈
   { file: 'm5b-spring', lon0: 127.4, lon1: 130.3, lat0: 38.05, lat1: 40.05, fade: { s: 0.25, w: 0.3 }, trim: { e: 53, n: 19, s: 29, w: 22 } },
   { file: 'm6a-spring', lon0: 124.8, lon1: 127.7, lat0: 39.8, lat1: 41.8, fade: { s: 0.25 }, trim: { e: 32, n: 47, s: 54, w: 29 } },
   { file: 'm6b-spring', lon0: 127.4, lon1: 130.3, lat0: 39.8, lat1: 41.8, fade: { s: 0.25, w: 0.3 }, trim: { e: 24, n: 48, s: 17, w: 18 } },
