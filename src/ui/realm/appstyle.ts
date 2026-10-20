@@ -260,7 +260,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .selbar .sbwhy { font-size: 12px; color: #e8a08a; width: 100%; text-align: right; }
 .ap .selbar .sbx { border: 0; background: none; color: var(--mute); font-size: 18px; padding: 4px 6px; cursor: pointer; }
 /* 길 보기 — 선의 생김새가 무슨 길인지 */
-.ap .roadkey { position: absolute; right: 14px; top: calc(var(--toph) + var(--legh) + 8px); z-index: 6; }
+/* 단추는 늘 오른쪽 끝에 — 펼친 표가 넓어지면 단추가 왼쪽으로 밀려 「우리 땅」 밑에 숨어 못 접었다 (형 2026-10-20: "길 안내 책자 폈는데 접을수가 없음") */
+.ap .roadkey { position: absolute; right: 14px; top: calc(var(--toph) + var(--legh) + 8px); z-index: 6; display: flex; flex-direction: column; align-items: flex-end; }
+.ap .roadkey:has(.rk) { z-index: 12; } /* 펼친 표는 「우리 땅」·「지난 기록」 위로 */
 .ap.sheet-open .roadkey, .ap.choosing .roadkey { display: none; }
 /* 우리 땅으로 — 왼쪽 위, 깃발 줄 밑 (확대 단추와 떨어져) */
 .ap .homebtn { position: absolute; left: 12px; top: calc(var(--toph) + var(--legh) + 8px); z-index: 6; padding: 6px 12px; border-radius: 12px;

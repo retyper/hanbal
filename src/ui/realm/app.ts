@@ -38,7 +38,7 @@ import { APP_CSS } from './appstyle.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
 import { APPROACH_DOES, APPROACH_NAME, HARD_LINE, WAR_CSS, openWar } from './battlefield.ts'
 import { attachZoom } from './zoom.ts'
-import { TUT_CSS, TUT_STEPS, tutAt, tutBandHtml, tutShown, tutStep, tutStyle } from './tutorial.ts'
+import { TUT_CSS, TUT_STEPS, createSpot, tutAt, tutBandHtml, tutStyle } from './tutorial.ts'
 import { LOG_CSS, logNations, logRows, logbookHtml, type LogFilter } from './logbook.ts'
 import { markTutorialOver, markWon, tutorialOver, unlockedBoards } from './unlock.ts'
 import { TINT_CSS, tint } from './tint.ts'
@@ -216,17 +216,18 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   const tutBase = document.createElement('style')
   tutBase.textContent = TUT_CSS
   document.head.appendChild(tutBase)
-  /** 배우는 판 — 지금 단계 · 이 판에서 누른 단추 · 그만뒀나 (이 기기에 판마다 기억) */
-  /** 배우는 판 — i 지금 할 단계 · view '이전'으로 돌아가 보는 단계 (null 이면 지금 단계) */
-  let tut = { seed: -1, i: 0, acts: new Set<string>(), off: false, view: null as number | null }
+  // 누를 곳만 밝히고 그곳만 눌리게 (tutorial.createSpot — 형: "그걸 눌러야 진행되게")
+  const spot = createSpot(root)
+  /** 배우는 판 — 지금 할 단계 · 이 판에서 누른 단추 · 그만뒀나 (이 기기에 판마다 기억) */
+  let tut = { seed: -1, i: 0, acts: new Set<string>(), off: false }
   const TUT_KEY = 'hanbal.realm.tut'
   const loadTut = (): void => {
     if (realm === null || realm.region !== 'tutorial') return
     if (tut.seed === realm.seed) return
-    tut = { seed: realm.seed, i: 0, acts: new Set(), off: false, view: null }
+    tut = { seed: realm.seed, i: 0, acts: new Set(), off: false }
     try {
       const d = JSON.parse(localStorage.getItem(TUT_KEY) ?? 'null') as { seed?: number; i?: number; acts?: string[]; off?: boolean } | null
-      if (d !== null && d.seed === realm.seed) tut = { seed: realm.seed, i: d.i ?? 0, acts: new Set(d.acts ?? []), off: d.off === true, view: null }
+      if (d !== null && d.seed === realm.seed) tut = { seed: realm.seed, i: d.i ?? 0, acts: new Set(d.acts ?? []), off: d.off === true }
     } catch { /* 처음부터 */ }
   }
   const saveTut = (): void => {
@@ -521,23 +522,26 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (realm === null || realm.region !== 'tutorial' || front !== null || prologue !== null || (realm.outcome && !realm.endless)) {
       band.innerHTML = ''
       tutSheet.textContent = ''
+      spot.set(undefined, null)
       return
     }
     loadTut()
     if (tut.off) {
       band.innerHTML = ''
       tutSheet.textContent = ''
+      spot.set(undefined, null)
       return
     }
-    const i = tutAt(tut.i, { r, orders: ordersNow(), report, acts: tut.acts })
+    const ctx = { r, orders: ordersNow(), report, acts: tut.acts }
+    const i = tutAt(tut.i, ctx)
     if (i !== tut.i) {
       tut.i = i
       saveTut()
       if (i >= TUT_STEPS.length) markTutorialOver('done')
     }
-    const shown = tutShown(i, tut.view)
-    band.innerHTML = tutBandHtml(shown, esc, i)
-    tutSheet.textContent = tutStyle(TUT_STEPS[shown])
+    band.innerHTML = tutBandHtml(i, esc)
+    tutSheet.textContent = tutStyle(TUT_STEPS[i])
+    spot.set(TUT_STEPS[i], ctx)
   }
 
   /**
@@ -1635,7 +1639,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const node = after.nodes[l.node]?.name ?? ''
       const cands: Array<[number, { ev: string; hero: Hero | null; line: string }]> = []
       if (cap !== undefined && cap.captor === after.player) cands.push([4, { ev: 'event-capture', hero: cap, line: `${josa(cap.name, '을', '를')} 사로잡았다` }])
-      if (dead !== undefined && dead.faction !== after.player) cands.push([3, { ev: 'event-sniped-commander', hero: dead, line: `${dead.name}이(가) 쓰러졌다` }])
+      if (dead !== undefined && dead.faction !== after.player) cands.push([3, { ev: 'event-sniped-commander', hero: dead, line: `${josa(dead.name, '이', '가')} 쓰러졌다` }])
       // 겨울 기습은 눈 속 매복 그림으로
       const raid = seasonOf(b.season) === 'winter' ? 'event-winter-ambush' : 'event-night-raid'
       if (weAtk && l.ambush === 'success') cands.push([2, { ev: raid, hero: null, line: `${node}에 몰래 들이쳤다` }])
@@ -1985,6 +1989,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       $('.roadkey').innerHTML = ''
       $('.tutband').innerHTML = ''
       tutSheet.textContent = ''
+      spot.set(undefined, null)
       $('.sheet').innerHTML = ''
       $('.modal').innerHTML = ''
       $('.modal').dataset['html'] = ''
@@ -2143,15 +2148,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         front = { kind: 'nations', region: d['v'] as RegionId }; $('.mapwrap').scrollTop = 0; paint(); return
       case 'fr-tutorial': host.onNewGame('us', 'tutorial'); return
       case 'fr-locked': return
-      case 'tut-next': case 'tut-prev': {
-        const nx = tutStep(tut.i, tut.view, d['act'] === 'tut-next' ? 1 : -1)
-        tut.i = nx.at
-        tut.view = nx.view
-        saveTut()
-        if (tut.i >= TUT_STEPS.length) markTutorialOver('done')
-        paint()
-        return
-      }
       case 'tut-end': markTutorialOver('done'); front = { kind: 'title' }; paint(); return
       case 'fr-nation': if (front !== null && front.kind === 'nations') front = { kind: 'detail', region: front.region, id: d['id']! }; $('.mapwrap').scrollTop = 0; paint(); return
       case 'fr-start': if (front !== null && front.kind === 'detail') host.onNewGame(d['id']!, front.region); return

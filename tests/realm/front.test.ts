@@ -13,6 +13,7 @@ import { YEONGNAM_NATIONS } from '../../src/realm/data/nations-yeongnam.ts'
 import { SOUTH_NATIONS } from '../../src/realm/data/nations-south.ts'
 import { WORLD_NATIONS } from '../../src/realm/data/nations-world.ts'
 import { startYeongnam } from '../../src/realm/data/regions/yeongnam.ts'
+import { josa } from '../../src/realm/data/prose.ts'
 import { checkOutcome } from '../../src/realm/season.ts'
 import type { RegionId } from '../../src/realm/types.ts'
 import { BOARDS, PROLOGUE_STEPS, boardHtml, endingHtml, prologueHtml, titleHtml, winNeed, type FrontKit } from '../../src/ui/realm/front.ts'
@@ -63,9 +64,11 @@ describe('판의 앞과 끝', () => {
       { s: 2, lines: [{ kind: 'take', faction: 'saro', node: cap }, { kind: 'take', faction: 'guya', node: 'x' }] },
       { s: 4, lines: [{ kind: 'relation', a: 'saro', b: 'dabeol', state: 'ally' }] },
     ])
-    assert.ok(h.includes(`${r.nodes[cap]!.name}을(를) 쥐었다`))
+    assert.ok(h.includes(`${josa(r.nodes[cap]!.name, '을', '를')} 쥐었다`), '조사는 받침 따라 — 「을(를)」 둘 다 적기 없이')
+    assert.ok(!h.includes('을(를)'))
     assert.ok(h.includes('동맹을 맺었다'))
     assert.ok(h.includes('data-act="fr-again"') && h.includes('data-act="fr-look"'))
-    assert.ok(!h.includes('x을(를)'))
+    assert.ok(!h.includes('x를 쥐었다'), '남이 쥔 것은 우리 연대기에 없다')
+    assert.ok(h.includes('으로 다시') && !/국로 다시/.test(h), '「○○국으로 다시」 — 「골포국로」가 아니다')
   })
 })

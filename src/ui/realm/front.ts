@@ -241,14 +241,14 @@ export function endingHtml(k: FrontKit, r: Realm, history: History): string {
       } else if (l.kind === 'take' && l.faction === me) {
         const was = capOf.get(l.node)
         const img = `${k.art}event/${TAKE_ART[takes++ % TAKE_ART.length]}.jpg`
-        events.push({ s, t: `${node(l.node)}을(를) 쥐었다`, big: was !== undefined, img, ...(was !== undefined && was !== me ? { em: was } : {}) })
+        events.push({ s, t: `${josa(node(l.node), "을", "를")} 쥐었다`, big: was !== undefined, img, ...(was !== undefined && was !== me ? { em: was } : {}) })
       } else if (l.kind === 'relation' && (l.a === me || l.b === me) && (l.state === 'ally' || l.state === 'truce')) {
         const other = l.a === me ? l.b : l.a
         const img = `${k.art}event/${l.state === 'ally' ? 'event-alliance-oath' : 'event-outside-envoy'}.jpg`
-        events.push({ s, t: `${name(other)}과(와) ${l.state === 'ally' ? '동맹을 맺었다' : '화친했다'}`, big: l.state === 'ally', img, em: other })
+        events.push({ s, t: `${josa(name(other), '과', '와')} ${l.state === 'ally' ? '동맹을 맺었다' : '화친했다'}`, big: l.state === 'ally', img, em: other })
       } else if (l.kind === 'recruit' && l.faction === me) {
         heroes++
-        events.push({ s, t: `${r.heroes[l.hero]?.name ?? '장수'}이(가) 우리 장수가 됐다`, big: false, img: k.bust?.(l.hero) ?? `${k.art}event/event-wanderer-arrives.jpg` })
+        events.push({ s, t: `${josa(r.heroes[l.hero]?.name ?? '장수', '이', '가')} 우리 장수가 됐다`, big: false, img: k.bust?.(l.hero) ?? `${k.art}event/event-wanderer-arrives.jpg` })
       } else if (l.kind === 'discover' && l.faction === me) {
         found++
       }
@@ -268,7 +268,7 @@ export function endingHtml(k: FrontKit, r: Realm, history: History): string {
     rite: '온 나라가 모여 하늘에 절했다',
   }
   const PATH_LOSE: Partial<Record<string, string>> = {
-    suzerain: `${by}이(가) 진왕이 됐다`,
+    suzerain: `${josa(by, '이', '가')} 진왕이 됐다`,
     ironsea: `${by}의 뱃길로 변진의 쇠가 흘렀다`,
     rite: `온 나라가 ${by}의 큰 제사에 절했다`,
   }
@@ -294,7 +294,7 @@ export function endingHtml(k: FrontKit, r: Realm, history: History): string {
   if (pickd.length > 0) h += `<div class="chron"><h4>연대기</h4>${pickd.map((e) => `<p class="${e.big ? 'big' : ''}"><i>${k.esc(seasonLabel(e.s))}</i>${k.esc(e.t)}</p>`).join('')}</div>`
   h += `<div class="btns">`
   if (win && !all) h += `<button class="btn on" data-act="fr-endless">계속 둔다 · 남은 나라까지</button>`
-  h += `<button class="btn${win && !all ? '' : ' on'}" data-act="fr-again">${k.esc(name(me))}로 다시</button><button class="btn" data-act="fr-new">새 판</button>`
+  h += `<button class="btn${win && !all ? '' : ' on'}" data-act="fr-again">${k.esc(josa(name(me), "으로", "로"))} 다시</button><button class="btn" data-act="fr-new">새 판</button>`
   return h + `<button class="btn ghost" data-act="fr-look">지도 둘러보기</button></div></div></div>`
 }
 

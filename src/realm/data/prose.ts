@@ -327,7 +327,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
           ? `제사 사슬 ${line.chain}/${line.need} — 한 번도 거르지 않았다. ${left}번 더 지내면 큰 제사를 연다. ${hhLine}`
           : `제사 사슬을 다 이었다. 가을에 집이 넉넉하면 큰 제사가 열린다. ${hhLine}`
       }
-      return `소문 — ${fname(line.faction)}은(는) 해마다 빠짐없이 하늘에 제사한다. 큰 제사가 머지않았다. 소도 곁 땅을 흔들어야 한다.`
+      return `소문 — ${josa(fname(line.faction), '은', '는')} 해마다 빠짐없이 하늘에 제사한다. 큰 제사가 머지않았다. 소도 곁 땅을 흔들어야 한다.`
     case 'ask':
       if (line.ask.to !== viewer) return null
       return null // 보고 카드의 "사신이 왔다" 칸(받기·거절)이 대신 보인다

@@ -3,16 +3,17 @@
  * "배우기에서 이건 건너뛴다가 아니라 '다음'이어야함. 자연스럽게 '이전' 으로 갈수도 있어야함. 배우기 그 버튼은 없애")
  *  - 기록은 최근 계절이 위 · 갈래와 나라로 거른다
  *  - 남이 우리에게 건 조공 요구(ask) · 우리에게 건 전쟁(relation by) 이 기록에 글로 남는다
- *  - 배우기 띠: 다음 · 이전 (이전은 안내만 다시 본다) · '배우기 그만' 단추가 없다
+ *  - 배우기: 넘기는 단추가 없다 — 누를 곳을 눌러야 넘어간다 (형 2026-10-20)
  */
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { onHostile } from '../../src/realm/diplomacy.ts'
 import { startYeongnam } from '../../src/realm/data/regions/yeongnam.ts'
-import type { Ask, ReportLine } from '../../src/realm/types.ts'
+import { startTutorial } from '../../src/realm/data/regions/tutorial.ts'
+import type { Ask, Order, ReportLine } from '../../src/realm/types.ts'
 import { logNations, logRows, logText } from '../../src/ui/realm/logbook.ts'
-import { TUT_STEPS, tutBandHtml, tutShown, tutStep } from '../../src/ui/realm/tutorial.ts'
+import { TUT_STEPS, tutAt, tutBandHtml, tutPick } from '../../src/ui/realm/tutorial.ts'
 
 const all = (): boolean => true
 
@@ -52,28 +53,36 @@ describe('지난 기록', () => {
   })
 })
 
-describe('배우기 띠 — 다음 · 이전', () => {
-  it('다음은 지금 단계를 넘기고, 이전은 안내만 되돌려 본다', () => {
-    let s = { at: 3, view: null as number | null }
-    s = tutStep(s.at, s.view, -1)
-    assert.deepEqual(s, { at: 3, view: 2 })
-    assert.equal(tutShown(s.at, s.view), 2)
-    s = tutStep(s.at, s.view, -1)
-    assert.equal(tutShown(s.at, s.view), 1)
-    s = tutStep(s.at, s.view, 1)
-    s = tutStep(s.at, s.view, 1)
-    assert.deepEqual(s, { at: 3, view: null }, '돌아가 보던 것이 지금 단계에 닿으면 끝난다')
-    s = tutStep(s.at, s.view, 1)
-    assert.deepEqual(s, { at: 4, view: null })
-    assert.equal(tutStep(0, null, -1).view, null, '첫 단계에서 이전은 없다')
-    assert.equal(tutStep(TUT_STEPS.length - 1, null, 1).at, TUT_STEPS.length)
+// 형 2026-10-20: "다음만 누르면 넘어가지는데? … 그걸 눌러야 진행되게 만들어줘. 다음 이전 버튼 없어도 되겠다"
+describe('배우기 — 누를 곳을 눌러야 넘어간다', () => {
+  const tr = startTutorial(1)
+  const ctx = { r: tr, orders: [], report: null, acts: new Set<string>() }
+
+  it('띠에는 넘기는 단추가 없다 — 말과 몇째 단계뿐', () => {
+    for (let i = 0; i < TUT_STEPS.length; i++) {
+      const h = tutBandHtml(i, (x) => x)
+      assert.ok(!h.includes('tut-next') && !h.includes('tut-prev') && !h.includes('<button'), `${i}단계`)
+    }
+    assert.ok(tutBandHtml(TUT_STEPS.length, (x) => x).includes('data-act="tut-end"'), '다 배운 뒤엔 처음으로')
   })
 
-  it("띠에는 '다음 ›'과 '‹ 이전'이 있고 '배우기 그만'은 없다", () => {
-    const h = tutBandHtml(2, (x) => x, 4)
-    assert.ok(h.includes('data-act="tut-next"') && h.includes('data-act="tut-prev"'))
-    assert.ok(!h.includes('그만') && !h.includes('건너뛴다'))
-    assert.ok(h.includes('다시 보는 중'))
-    assert.ok(!tutBandHtml(0, (x) => x, 0).includes('tut-prev'))
+  it('하지 않으면 그 단계에 머문다 — 누른 단추와 고른 명령으로만 넘어간다', () => {
+    assert.equal(tutAt(0, ctx), 0)
+    assert.equal(tutAt(0, { ...ctx, acts: new Set(['home']) }), 1)
+  })
+
+  it('누를 곳은 나중 것부터 — 판이 열려 있으면 그 안의 단추, 아니면 탭', () => {
+    const draft = TUT_STEPS.find((s) => s.id === 'draft')!
+    assert.equal(tutPick(draft, ctx, (s) => s.includes('tab')), '[data-act="tab"][data-tab="draft"]')
+    assert.equal(tutPick(draft, ctx, () => true), '[data-act="draft"]')
+    assert.equal(tutPick(draft, ctx, () => false), null, '못 찾으면 없다 — 어둡게 막지 않는다')
+  })
+
+  it('마지막 단계 — 군대를 보내기 전엔 「다음 계절」이 아니라 군대 말을 가리킨다', () => {
+    const win = TUT_STEPS.find((s) => s.id === 'win')!
+    const seen = (s: string): boolean => s === '.next' || s.startsWith('.tok')
+    assert.equal(tutPick(win, ctx, seen), '.tok[data-army="a-us"]')
+    const going = { ...ctx, orders: [{ kind: 'march', army: 'a-us', edge: 'e10', ambush: false }] as Order[] }
+    assert.equal(tutPick(win, going, seen), '.next')
   })
 })
