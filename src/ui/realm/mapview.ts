@@ -88,15 +88,20 @@ export const MAP_CSS = `
 .map svg .thrarrow { animation: thr 1s ease-in-out infinite alternate; }
 @media (prefers-reduced-motion: reduce) { .map .nd.sel .ring, .map .nd.threat .ring, .map svg .mvglow, .map svg .thrarrow { animation: none; } }
 /* 특산 — 고을 그림 오른쪽 위에 작은 둥근 표 (쇠·소금·나무·말). 아무도 안 사는 땅은 흐리게 — 일구면 난다 */
-.map .nd .sp { position: absolute; right: -8%; top: -4%; display: flex; justify-content: flex-end; gap: 1px; pointer-events: none; z-index: 1; width: 100%; }
-.map .nd .sp img { width: 23%; aspect-ratio: 1; object-fit: contain; border-radius: 50%; background: #f8eed6e8; padding: 2%; box-sizing: border-box;
+/* 작게 겹쳐 쌓는다 — 넷이 나란히 서면 고을 그림과 길을 덮었다 (형: "자원들이랑 지도 길 이런거랑 좀안겹치게") */
+.map .nd .sp { position: absolute; right: -4%; top: -9%; display: flex; justify-content: flex-end; gap: 0; pointer-events: none; z-index: 1; width: 100%; }
+.map .nd .sp img { width: 17%; aspect-ratio: 1; object-fit: contain; border-radius: 50%; background: #f8eed6f0; padding: 1.6%; box-sizing: border-box;
   box-shadow: 0 0 0 1px #6b4a2a, 0 1px 2px #0007; }
+.map .nd .sp img + img { margin-left: -4%; }
 .map .nd .sp.idle img { opacity: .6; filter: saturate(.5); }
 /* 겨울 고기잡이 표 — 얼어 흐려진다 */
 .map .nd .sp img.frz { opacity: .55; filter: grayscale(1) brightness(1.15); background: #dff1ff; box-shadow: 0 0 0 1px #7fb6d8, 0 1px 2px #0007; }
 /* 지은 것 — 목책·해자 (고을 왼쪽 위) */
-.map .nd .df { position: absolute; left: -8%; top: -4%; display: flex; gap: 1px; pointer-events: none; z-index: 1; width: 100%; }
-.map .nd .df img { width: 26%; aspect-ratio: 1; object-fit: contain; border-radius: 50%; background: #2a1d10d0; box-shadow: 0 0 0 1px #c8a050, 0 1px 2px #0007; }
+/* 글자 표 — 마을 그림으로 두면 또 하나의 마을처럼 보였다 (형: "도읍 좌상단에 마을이미지는 뭐지? 이거장터라는 얘긴가?") */
+.map .nd .df { position: absolute; left: -6%; top: -6%; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; pointer-events: none; z-index: 1; }
+.map .nd .df i { font-style: normal; font-size: clamp(8px, calc(1.5cqh / var(--z, 1) * var(--zs, 1)), 12px); line-height: 1.25; padding: 0 .45em; border-radius: .7em; white-space: nowrap;
+  color: #f3e3bd; background: #2a1d10e0; box-shadow: 0 0 0 1px #c8a050, 0 1px 2px #0007; }
+.map .nd .df i.moat { color: #d6ecff; background: #1d3346e0; box-shadow: 0 0 0 1px #7fb6d8, 0 1px 2px #0007; }
 /* 안개 — 고을 아랫도리를 덮는 흰 김과 구름무늬 하나 */
 .map .nd .mist { position: absolute; left: 50%; top: 66%; width: 170%; aspect-ratio: 2.2; transform: translate(-50%, -50%); pointer-events: none; z-index: 1;
   background: radial-gradient(ellipse at 50% 50%, #fffdf6d8 0, #fffdf690 38%, #fffdf600 70%); animation: mistb 5s ease-in-out infinite alternate; }
@@ -378,7 +383,7 @@ export function mapHtml(
     const ice = n.tags.includes('moat') && season === 'winter' ? `<i class="ice" title="${now}">❄</i>` : ''
     // 지은 것 — 목책 · 해자 작은 표 (왼쪽 위). 그림만으로는 도읍·포구의 울타리가 지은 것인지 알 수 없었다
     const dfs = (['palisade', 'moat'] as const).filter((t) => n.tags.includes(t))
-    const def = dfs.length > 0 ? `<span class="df">${dfs.map((t) => `<img src="${art}icon/settle-${t}.png" alt="" title="${DEF_TITLE[t]}">`).join('')}</span>` : ''
+    const def = dfs.length > 0 ? `<span class="df">${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${t === 'palisade' ? '목책' : '해자'}</i>`).join('')}</span>` : ''
     nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${mist}${ice}${def}${spec}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : ''}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다

@@ -15,6 +15,34 @@ import { radarSvg } from './radar.ts'
 const esc = (s: string): string =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 
+/**
+ * 이름 앞의 칭호 — 성이 아니다 (형: "이름들이 이렇게 성이 2자고 이름이 2~3자야? 옛날에 그랬어?").
+ * 삼한·부여·고구려 사람은 성 없이 이름만 썼다 (성은 뒤 시대 · 왕실 몇). 그래서 판의 이름은 "칭호 + 이름"이다 — 칭호는 작게 떼어 보인다.
+ * 변진의 우두머리 칭호 차례(삼국지 위서 동이전): 신지 · 험측 · 번예 · 살해 · 읍차.
+ */
+export const TITLE_MEAN: Readonly<Record<string, string>> = {
+  신지: '삼한 큰 나라의 우두머리', 험측: '변진에서 신지 다음가는 우두머리', 번예: '변진의 셋째 우두머리', 살해: '변진의 넷째 우두머리', 읍차: '작은 나라·고을의 우두머리',
+  견지: '마한 우두머리의 칭호', 견사: '사신을 맡은 벼슬', 장수: '군대를 이끄는 이', 군장: '고을과 나라의 우두머리', 거수: '무리의 우두머리',
+  선인: '고구려의 낮은 벼슬', 패자: '고구려의 높은 벼슬', 조의: '고구려의 벼슬 — 검은 옷을 입는다', 우태: '고구려의 벼슬', 대가: '큰 무리를 거느린 귀족',
+  진지렴: '진한의 우두머리 칭호', 삼로: '옥저·동예 읍락의 어른', 대사: '부여의 벼슬',
+  마가: '부여의 네 가 — 말', 우가: '부여의 네 가 — 소', 저가: '부여의 네 가 — 돼지', 구가: '부여의 네 가 — 개',
+  왕: '임금', 대왕: '임금', 우해왕: '우산국의 임금',
+}
+
+/** "읍차 가람" → 칭호 · 이름. 칭호가 없으면 이름만 */
+export function splitTitle(name: string): { title: string | null; given: string } {
+  const i = name.indexOf(' ')
+  if (i < 0) return { title: null, given: name }
+  const t = name.slice(0, i)
+  return TITLE_MEAN[t] !== undefined ? { title: t, given: name.slice(i + 1) } : { title: null, given: name }
+}
+
+/** 이름 HTML — 칭호는 작고 흐리게 앞에, 누르고 있으면 뜻 (성처럼 읽히지 않게) */
+export function nameHtml(name: string): string {
+  const { title, given } = splitTitle(name)
+  return title === null ? esc(given) : `<small class="ttl" title="${esc(`${title} — ${TITLE_MEAN[title]} (칭호이지 성이 아니다)`)}">${esc(title)}</small>${esc(given)}`
+}
+
 /** 육각형 꼭짓점 순서 — STAT_NAME 의 순서 */
 const AXES = ['mu', 'tong', 'ryak', 'chi', 'deok', 'uiri'] as const
 

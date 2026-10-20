@@ -172,6 +172,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .deeds .dd { display: flex; gap: 8px; font-size: 13px; line-height: 1.4; padding: 2px 0 2px 8px; border-left: 3px solid var(--line); margin: 2px 0; }
 .ap .deeds .dd span { flex: none; color: var(--mute); font-size: 12px; min-width: 4.4em; } .ap .deeds .dd.good { border-color: var(--good); } .ap .deeds .dd.bad { border-color: var(--bad); } .ap .deeds .dd.us { border-color: var(--gold); }
 .ap .deeds .btn { margin-top: 4px; }
+/* 이름 앞 칭호 — 성처럼 읽히지 않게 작고 흐리게 · 이름만 들은 장수 표 */
+.ap .ttl { font-size: .72em; color: var(--mute); font-weight: 500; margin-right: .3em; letter-spacing: -.02em; }
+.ap .heard { font-size: 11px; color: #c9b98f; border: 1px solid #5a5040; border-radius: 8px; padding: 0 6px; margin-left: 4px; font-weight: 500; white-space: nowrap; }
+.ap .heardp { font-size: 13px; color: #d8c89a; background: #2a2a22; border-left: 3px solid #8a7a50; padding: 6px 8px; border-radius: 6px; }
 .ap .fbtn { border: 0; padding: 0; background: none; cursor: pointer; border-radius: 50%; }
 .ap .plimg { display: block; width: 100%; border-radius: 10px; margin: 6px 0; }
 .ap .rface.sm { width: 34px; height: 34px; border-width: 1px; }
