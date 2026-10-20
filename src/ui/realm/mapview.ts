@@ -131,6 +131,8 @@ export const MAP_CSS = `
 .map .nd .tchip .tn.hide { margin-left: 3px; background: #2a3a24e8; color: #c8e8a8; }
 .map .nd .tchip .feel { font-size: clamp(10px, calc(1.8cqh / var(--z, 1) * var(--zs, 1)), 14px); padding: 1px 6px; }
 .map .nd .tchip .tn.big { margin-left: 3px; background: #3a2a24e8; color: #e8b8a0; }
+.map .nd .tchip .tn.when { margin-left: 3px; } .map .nd .tchip .tn.pin { margin-left: 3px; background: #4a3a14ee; color: #ffe08a; box-shadow: 0 0 0 1px #ffd27a; }
+.map .nd .tchip .tn.hard + .tn.when, .map .nd .tchip .feel + .tn.when { margin-left: 3px; }
 .map .nd .tchip .tn.stay { background: #2a3a24e8; color: #c8e8a8; }
 .map .nd .tchip .tn { background: #1c2129e8; color: #f3e6c8; border-radius: 9px; padding: 1px 7px; font-size: clamp(10px, calc(1.8cqh / var(--z, 1) * var(--zs, 1)), 14px); font-weight: 700; }
 .map .toks { position: absolute; transform: translate(2px, -50%); display: flex; gap: 3px; z-index: 4; pointer-events: none; }

@@ -462,13 +462,28 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
     })
     const a = armySel.length > 0 ? r.armies[armySel[0]!] : undefined
+    // 다른 우리 군대가 언제 어디에 닿나 — 이미 가는 군대 · 이번 계절에 보낼 군대. 칠 곳 칩에 협공을 미리 (형: "같은 계절에 도착하게 맞춰서 … 합쳐져서 공격이 안오네??")
+    const others = new Map<string, number[]>()
+    for (const o of Object.values(r.armies)) {
+      if (o.faction !== me() || armySel.includes(o.id)) continue
+      const c = pick[o.id]
+      const when = o.march !== null ? { to: o.march.to, k: o.march.left } : c !== undefined ? (() => { const mv = movesOf(r, me(), o).find((x) => x.edge.id === c.edge); return mv !== undefined ? { to: mv.to, k: mv.seasons } : null })() : null
+      if (when !== null) others.set(when.to, [...(others.get(when.to) ?? []), when.k])
+    }
+    const pincerChip = (to: string, k: number, hostile: boolean): string => {
+      const ks = others.get(to)
+      if (!hostile || ks === undefined) return ''
+      if (ks.includes(k)) return `<span class="tn pin">협공</span>`
+      const d = Math.min(...ks.map((x) => Math.abs(x - k)))
+      return `<span class="tn hard">${d}계절 어긋남</span>`
+    }
     const targets: MapTarget[] = a === undefined || a.march !== null ? [] : movesOf(r, me(), a).map((m) => ({
       // 막힌 길도 갈 수는 있다 — 무엇을 잃는지 칩으로 미리 (형: "불가능하게 만들지 말고 패널티 · 사전에 안내")
       node: m.to, edge: m.edge.id, off: false, on: armySel.every((id) => pick[id]?.edge === m.edge.id),
       // 걸리는 계절은 늘 — 칠 곳에도 (형: "적을 치러갈때 그 마을까지 얼마나걸리는지 여전히 안보임")
       chip: (m.blocked !== null ? `<span class="tn hard">${esc(HARD_LINE[m.blocked])}</span>`
         : m.hostile ? `${m.win !== null ? fightFeel(m.win[0], m.win[1]) : unknownFeel()}${m.conceal === "good" ? `<span class="tn hide">숨기 좋은 길</span>` : m.bigArmy ? `<span class="tn big">무리가 커 들킨다</span>` : ""}` : '')
-        + `<span class="tn when">${m.seasons === 1 ? '다음 계절 닿음' : `${m.seasons}계절 걸림`}</span>`,
+        + `<span class="tn when">${m.seasons}계절</span>${pincerChip(m.to, m.seasons, m.hostile)}`,
     }))
     // 머물기도 지도에서 — 제 고을을 누르면 떠나기를 거둔다 (형: "머물기는 지도에서 선택을 못하고")
     if (a !== undefined && a.march === null) targets.push({ node: a.at, edge: '', off: false, on: armySel.every((id) => pick[id] === undefined), chip: `<span class="tn stay">머문다</span>` })
@@ -571,7 +586,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<b>${esc(armyName(r, first))}</b><span>${esc(josa(r.nodes[first.march.to]?.name ?? '', '으로', '로'))} 가는 중 · ${esc(arriveWhen(r.season, first.march.left))}</span>`
     } else if (sel.length === 1) {
       const more = Object.values(r.armies).filter((x) => x.faction === me() && x.id !== first.id && x.at === first.at && x.march === null).length
-      h += `<b>${esc(armyName(r, first))} · ${headcount(forceOf(r, first))}명</b><span>갈 곳을 누른다 · 제 고을을 누르면 머문다${more > 0 ? ' · 옆 말을 누르면 함께 고른다' : ''}</span>`
+      h += `<b>${esc(armyName(r, first))} · ${headcount(forceOf(r, first))}명</b><span>갈 곳을 누른다 · 제 고을을 누르면 머문다 · 칩의 숫자는 닿는 데 걸리는 계절 · 협공은 다른 우리 군대와 같은 계절에 닿아 한 판으로 싸운다${more > 0 ? ' · 옆 말을 누르면 함께 고른다' : ''}</span>`
     } else {
       const men = sel.reduce((s, a) => s + headcount(forceOf(r, a)), 0)
       const heroes = sel.filter((a) => a.hero !== null).length
@@ -757,13 +772,20 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   function sortie(r: Realm): string {
-    const byTo = new Map<string, Array<{ army: Army; move: Move }>>()
+    const byTo = new Map<string, Array<{ army: Army; move: Pick<Move, 'seasons' | 'edge' | 'hostile'> }>>()
     for (const [army, c] of Object.entries(pick)) {
       const a = r.armies[army]
       if (c === undefined || a === undefined || a.march !== null) continue
       const m = movesOf(r, me(), a).find((x) => x.edge.id === c.edge)
       if (m === undefined) continue
       byTo.set(m.to, [...(byTo.get(m.to) ?? []), { army: a, move: m }])
+    }
+    // 이미 길 위에 있는 군대도 — 앞서 보낸 군대와 이번에 보내는 군대가 같은 계절에 닿으면 협공이다
+    for (const a of sorted(Object.values(r.armies))) {
+      const ed = a.march !== null ? r.edges[a.march.edge] : undefined
+      if (a.faction !== me() || a.march === null || ed === undefined || !byTo.has(a.march.to)) continue
+      const own = r.nodes[a.march.to]?.owner ?? null
+      byTo.get(a.march.to)!.push({ army: a, move: { seasons: a.march.left, edge: ed, hostile: own !== null && own !== me() } })
     }
     let h = ''
     for (const [to, legs] of [...byTo].sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
