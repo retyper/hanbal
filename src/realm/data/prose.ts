@@ -38,6 +38,16 @@ export const TAG_LINE: Record<Tag, string> = {
   pasture: '풀이 너른 들이다. 사람이 살면 말을 칠 수 있다.',
 }
 
+/**
+ * 계절따라 달라지는 꼬리표 — 지금 계절에 규칙이 걸리면 한 줄 (지도의 안개·❄ 표와 같은 것, season.conceal · fortMul).
+ * 형: "이렇게 하면 이렇게 될까? 오 이게 의도한대로 진행이 되네" — 계절이 바뀌면 땅의 말이 바뀐다
+ */
+export function tagNow(t: Tag, season: SeasonOfYear): string | null {
+  if (t === 'fog' && (season === 'spring' || season === 'autumn')) return '지금은 안개철 — 이리 드는 군대가 숨기 좋다.'
+  if (t === 'moat' && season === 'winter') return '지금은 해자가 얼었다 — 겨울엔 막아 주지 못한다.'
+  return null
+}
+
 /** 창고의 것 다섯 — 화면 이름과 셈 단위 */
 export const GOOD_NAME: Record<Good, string> = { grain: '곡식', iron: '철', salt: '소금', wood: '나무', horse: '말' }
 export const GOOD_UNIT: Record<Good, string> = { grain: '섬', iron: '덩이', salt: '섬', wood: '짐', horse: '필' }

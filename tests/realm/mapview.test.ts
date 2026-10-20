@@ -9,6 +9,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
+import { startRealm } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { startYeongnam } from '../../src/realm/data/regions/yeongnam.ts'
 import { nodeSpecials } from '../../src/realm/economy.ts'
 import { mapHtml, routeSign, type MapTarget, type MapToken } from '../../src/ui/realm/mapview.ts'
@@ -86,5 +87,20 @@ describe('지도 겉모습', () => {
     const wild = Object.values(r.nodes).find((n) => n.kind === 'wild' && n.owner === null && nodeSpecials(r, n.id).length > 0)
     if (wild !== undefined) assert.ok(new RegExp(`data-node="${wild.id}"[^>]*>.*?<span class="sp idle">`).test(h))
     assert.deepEqual(nodeSpecials(r, Object.values(r.nodes).find((n) => n.kind === 'sodo')?.id ?? ''), [])
+  })
+
+  it('계절따라 걸리는 규칙 — 봄·가을 안개 고을엔 김이 서리고 · 겨울 해자엔 ❄', () => {
+    const r = startRealm(1, 'our')
+    const at = (season: number): string => {
+      r.season = season
+      return mapHtml(r, 'our', '/', [], '')
+    }
+    const fogNode = /data-node="our-north"[^>]*>(?:(?!<\/div>).)*class="mist"/
+    assert.ok(fogNode.test(at(0)), '봄 — 안개골에 안개')
+    assert.ok(!fogNode.test(at(1)), '여름 — 안개 없음')
+    assert.ok(fogNode.test(at(2)), '가을 — 안개')
+    const ice = /data-node="miri-cap"[^>]*>(?:(?!<\/div>).)*class="ice"/
+    assert.ok(ice.test(at(3)), '겨울 — 추화 해자가 얼었다')
+    assert.ok(!ice.test(at(0)))
   })
 })

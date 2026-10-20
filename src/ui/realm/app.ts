@@ -16,7 +16,7 @@ import { WORLD_NATIONS } from '../../realm/data/nations-world.ts'
 import { knownOf, knows } from '../../realm/discovery.ts'
 import { TRAIT } from '../../realm/data/traits.ts'
 import {
-  ASK_KIND_NAME, ASK_NAME, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, arriveWhen, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine, NODE_NOW, BUILD_NAME, BOW_NAME, CONCEAL_LINE, goodsLine, GOOD_NAME,
+  ASK_KIND_NAME, ASK_NAME, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, arriveWhen, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine, NODE_NOW, BUILD_NAME, BOW_NAME, CONCEAL_LINE, goodsLine, GOOD_NAME, tagNow,
 } from '../../realm/data/prose.ts'
 import { canEscort, envoyChanceFor, envoyOptions, favorOf, jointTargets, openAsks, relationOf } from '../../realm/diplomacy.ts'
 import {
@@ -1498,6 +1498,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (ours || known?.land) {
       const lines = n.tags.map((t) => TAG_LINE[t]).join(' ')
       if (lines !== '') h += `<p class="story">${esc(lines)}</p>`
+      const now = n.tags.map((t) => tagNow(t, seasonOf(r.season))).filter((x) => x !== null).join(' ')
+      if (now !== '') h += `<p class="mute">${esc(now)}</p>`
     }
     if (n.kind === 'sodo') h += riteCard(r)
     if (n.kind === 'wild') {

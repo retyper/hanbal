@@ -8,7 +8,7 @@
  */
 import { headcount } from '../../realm/battle.ts'
 import { FACTION_ART, GOOD_ICON, REGION_ART, SEASON_MAP, nodeIcon, nodePos } from '../../realm/data/art.ts'
-import { EDGE_NAME, GOOD_NAME, NODE_KIND_NAME, NODE_NOW } from '../../realm/data/prose.ts'
+import { EDGE_NAME, GOOD_NAME, NODE_KIND_NAME, NODE_NOW, tagNow } from '../../realm/data/prose.ts'
 import { worldGeoOf } from '../../realm/data/regions/index.ts'
 import { knows } from '../../realm/discovery.ts'
 import { nodeSpecials } from '../../realm/economy.ts'
@@ -92,6 +92,14 @@ export const MAP_CSS = `
 .map .nd .sp img { width: 23%; aspect-ratio: 1; object-fit: contain; border-radius: 50%; background: #f8eed6e8; padding: 2%; box-sizing: border-box;
   box-shadow: 0 0 0 1px #6b4a2a, 0 1px 2px #0007; }
 .map .nd .sp.idle img { opacity: .6; filter: saturate(.5); }
+/* 안개 — 고을 아랫도리를 덮는 흰 김과 구름무늬 하나 */
+.map .nd .mist { position: absolute; left: 50%; top: 66%; width: 170%; aspect-ratio: 2.2; transform: translate(-50%, -50%); pointer-events: none; z-index: 1;
+  background: radial-gradient(ellipse at 50% 50%, #fffdf6d8 0, #fffdf690 38%, #fffdf600 70%); animation: mistb 5s ease-in-out infinite alternate; }
+.map .nd .mist img { position: absolute; left: 4%; bottom: 4%; width: 46%; opacity: .85; }
+@keyframes mistb { from { opacity: .7; } to { opacity: 1; } }
+.map .nd .ice { position: absolute; left: 4%; top: 46%; font-style: normal; font-size: clamp(10px, calc(2cqh / var(--z, 1) * var(--zs, 1)), 16px); color: #e8f6ff;
+  background: #2a5a7ae0; border-radius: 50%; width: 1.4em; height: 1.4em; line-height: 1.4em; text-align: center; box-shadow: 0 0 0 1px #bfe6ff, 0 1px 3px #0008; z-index: 2; }
+@media (prefers-reduced-motion: reduce) { .map .nd .mist { animation: none; } }
 .map svg .rsign { pointer-events: auto; filter: drop-shadow(0 0 1.5px #f8eed6) drop-shadow(0 0 1.5px #f8eed6) drop-shadow(0 1px 2px #0009); } .map[data-zl="far"] svg .rs-f { display: none; } /* 들길은 흔해 가까이 볼 때만 */
 .map .nd .men, .map .nd .foe { position: absolute; left: 86%; top: 42%; transform: translateY(-50%); background: #1c2129; border-radius: 9px; padding: 0 5px;
   font-size: clamp(10px, calc(1.9cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 15px); font-weight: 700; white-space: nowrap; }
@@ -354,7 +362,11 @@ export function mapHtml(
     // 특산 — 사람이 살면 나는 것 (쇠·소금·나무·말). 빈땅도 보여 "일구면 말이 난다"를 미리 안다
     const sp = nodeSpecials(r, n.id)
     const spec = sp.length > 0 ? `<span class="sp${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}">`).join('')}</span>` : ''
-    nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${spec}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : ''}</div>`
+    // 계절따라 걸리는 규칙도 그림으로 — 봄·가을 안개(숨기 좋다) · 겨울 언 해자(못 막는다) (prose.tagNow 와 같은 것)
+    const now = n.tags.map((t) => tagNow(t, season)).filter((x) => x !== null).join(' ')
+    const mist = n.tags.includes('fog') && now !== '' ? `<span class="mist" title="${now}"><img src="${art}map-world/cloud-3.webp" alt=""></span>` : ''
+    const ice = n.tags.includes('moat') && season === 'winter' ? `<i class="ice" title="${now}">❄</i>` : ''
+    nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${mist}${ice}${spec}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : ''}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()
