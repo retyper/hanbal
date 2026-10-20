@@ -13,6 +13,11 @@ export interface WorldTile {
   readonly lon0: number; readonly lon1: number; readonly lat0: number; readonly lat1: number
   /** 이 조각의 가장자리 가운데 앞 조각과 겹친 띠의 너비(도) — 그 띠는 서서히 비친다 */
   readonly fade: { readonly e?: number; readonly w?: number; readonly s?: number }
+  /**
+   * 그림 가장자리의 누런 종이 테두리 폭 (그림 1024×765 기준 px) — 잘라 내고 남은 것을 조각 틀에 맞춰 편다.
+   * 첫 묶음 조각(챗지피티)은 가장자리에 종이빛 테두리를 칠해 와서, 그대로 이으면 이음매마다 줄이 생겼다 (2026-10-20)
+   */
+  readonly trim?: { readonly e?: number; readonly w?: number; readonly n?: number; readonly s?: number }
 }
 
 export interface WorldRiver { readonly name: string; readonly w: number; readonly pts: readonly LL[] }

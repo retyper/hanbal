@@ -69,7 +69,11 @@ function buildBase(art: string, region: RegionId, geo: WorldGeo): Promise<HTMLCa
       tile.width = tw
       tile.height = th
       const tg = tile.getContext('2d')!
-      tg.drawImage(im, 0, 0, tw, th)
+      // 가장자리 종이 테두리를 잘라 내고 편다 (WorldTile.trim — 그림 1024×765 기준 px)
+      const k = im.width / 1024
+      const cw = (t.trim?.w ?? 0) * k
+      const cn = (t.trim?.n ?? 0) * k
+      tg.drawImage(im, cw, cn, im.width - cw - (t.trim?.e ?? 0) * k, im.height - cn - (t.trim?.s ?? 0) * k, 0, 0, tw, th)
       // 겹친 띠 — 바깥 끝은 비치고 안쪽으로 갈수록 이 조각이 덮는다
       const mask = document.createElement('canvas')
       mask.width = tw
