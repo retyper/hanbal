@@ -627,13 +627,20 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /**
    * 지도에서 고른 말 — 아래에 띠로. 같은 고을에서 둘 넘게 고르면 합치기 단추, 길 위의 군대면 어디로 가는 중인지.
    */
+  /** 회군 단추 — 길 위의 우리 군대 (형: "가는도중에 있는 군대는 회군할수 있게 해야하는거아님?"). 고른 판(plan)에는 이미 돌아선 길이 보인다 */
+  function turnBackBtn(a: Army): string {
+    if (a.lent !== undefined) return ''
+    const on = armyOrders.some((o) => o.kind === 'turnBack' && o.army === a.id)
+    return `<div class="btns"><button class="btn ${on ? 'on' : 'ghost'} sm" data-act="turnback" data-army="${a.id}">${on ? '회군한다 · 누르면 거둔다' : '회군 — 떠난 고을로 돌린다'}</button></div>`
+  }
+
   function selBarHtml(r: Realm): string {
     const sel = armySel.map((id) => r.armies[id]).filter((a): a is Army => a !== undefined)
     if (sel.length === 0) return ''
     let h = `<div class="sbf">${sel.map((a) => bust(a.hero !== null ? r.heroes[a.hero] : undefined, 'sbface')).join('')}</div><div class="sbt">`
     const first = sel[0]!
     if (first.march !== null) {
-      h += `<b>${esc(armyName(r, first))}</b><span>${esc(josa(r.nodes[first.march.to]?.name ?? '', '으로', '로'))} 가는 중 · ${esc(arriveWhen(r.season, first.march.left))}</span>`
+      h += `<b>${esc(armyName(r, first))}</b><span>${esc(josa(r.nodes[first.march.to]?.name ?? '', '으로', '로'))} 가는 중 · ${esc(arriveWhen(r.season, first.march.left))}</span>${turnBackBtn(first)}`
     } else if (sel.length === 1) {
       const more = Object.values(r.armies).filter((x) => x.faction === me() && x.id !== first.id && x.at === first.at && x.march === null).length
       h += `<b>${esc(armyName(r, first))} · ${headcount(forceOf(r, first))}명</b><span>갈 곳을 누른다 · 제 고을을 누르면 머문다 · 칩의 숫자는 닿는 데 걸리는 계절 · 협공은 다른 우리 군대와 같은 계절에 닿아 한 판으로 싸운다${more > 0 ? ' · 옆 말을 누르면 함께 고른다' : ''}</span>`
@@ -865,7 +872,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `</div>${gearBlock(r, a)}`
       if (realm!.armies[a.id] === undefined) h += `<div class="mute">이번 계절에 나눴다</div>`
       if (a.march !== null) {
-        h += `<div class="mute">${esc(josa(r.nodes[a.march.to]?.name ?? '', '으로', '로'))} 가는 중 · ${esc(arriveWhen(r.season, a.march.left))}${a.march.ambush ? ' · 몰래 가는 길' : ''}</div></div></div>`
+        h += `<div class="mute">${esc(josa(r.nodes[a.march.to]?.name ?? '', '으로', '로'))} 가는 중 · ${esc(arriveWhen(r.season, a.march.left))}${a.march.ambush ? ' · 몰래 가는 길' : ''}</div>`
+        h += turnBackBtn(a)
+        h += `</div></div>`
         continue
       }
       if (disbanding) {
@@ -2776,6 +2785,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         break
       }
       case 'selclose': armySel = []; break
+      case 'turnback': {
+        const id = d['army']!
+        const has = armyOrders.some((o) => o.kind === 'turnBack' && o.army === id)
+        armyOrders = has ? armyOrders.filter((o) => !(o.kind === 'turnBack' && o.army === id)) : [...armyOrders, { kind: 'turnBack', army: id }]
+        break
+      }
       case 'roadkey': roadOpen = !roadOpen; break
       case 'log-open': openSheet({ kind: 'log' }); return
       case 'log-f': logFilter = d['v'] as LogFilter; break

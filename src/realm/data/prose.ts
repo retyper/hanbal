@@ -642,6 +642,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       return `${fname(other)}에서 ${ASK_NAME[line.ask]} 사신이 왔다.`
     }
     case 'recall': {
+      if (line.faction === viewer && line.why === 'order') return `${josa(node(line.node), '으로', '로')} 가던 ${josa(nameArmy(line.army), '이', '가')} 발길을 돌린다 — 떠난 고을로 돌아간다.`
       if (line.faction === viewer && line.owner !== undefined) return `${josa(node(line.node), '이', '가')} 가는 사이 ${fname(line.owner)} 땅이 됐다 — 싸우지 않는 사이라 ${josa(nameArmy(line.army), '을', '를')} 돌린다.`
       if (line.faction === viewer) return `약조를 맺어 ${josa(node(line.node), '으로', '로')} 가던 ${josa(nameArmy(line.army), '을', '를')} 돌린다.`
       if (line.owner !== undefined) return null

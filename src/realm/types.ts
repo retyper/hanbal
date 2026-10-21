@@ -637,6 +637,8 @@ export type Order =
   | { readonly kind: 'draft'; readonly faction: string; readonly node: string; readonly unit: UnitKind; readonly n: number; readonly iron?: boolean }
   /** 해산 — 제 고을에 쉬는 군대를 집으로 (사람은 그 고을 가호로 돌아간다) */
   | { readonly kind: 'disband'; readonly army: string }
+  /** 회군 — 길 위의 군대를 떠난 고을로 돌린다. 온 만큼 걸려 돌아간다(적어도 한 계절) */
+  | { readonly kind: 'turnBack'; readonly army: string }
   /** 개척 — 제 고을 `from` 의 가호 n 을 길로 맞닿은 빈땅 `to` 로 옮긴다. 곡식이 든다 (economy.settleLimit · settleCost) */
   | { readonly kind: 'settle'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number }
   /** 이주 — 제 고을 `from` 의 집 n 을 제 땅으로 이어진 제 고을 `to` 로 억지로 옮긴다. 곡식이 들고 두 고을은 한동안 집이 안 는다 (economy.migrateLimit) */
@@ -775,7 +777,7 @@ export type ReportLine =
   | { readonly kind: 'hunger'; readonly faction: string }
   | { readonly kind: 'envoy'; readonly from: string; readonly to: string; readonly ask: EnvoyAsk; readonly accepted: boolean; readonly why?: Why; readonly about?: string; readonly hero?: string; readonly node?: string }
   /** 화친·동맹을 맺어 상대 땅으로 가던 군대가 발길을 돌렸다 — `node` 는 가려던 고을 */
-  | { readonly kind: 'recall'; readonly faction: string; readonly army: string; readonly node: string; /** 왜 돌아섰나 — 없으면 화친·동맹을 맺어서, owner 면 가는 사이 그 나라 땅이 돼서 */ readonly owner?: string }
+  | { readonly kind: 'recall'; readonly faction: string; readonly army: string; readonly node: string; /** 왜 돌아섰나 — 없으면 화친·동맹을 맺어서, owner 면 가는 사이 그 나라 땅이 돼서, why 'order' 면 회군 명령 */ readonly owner?: string; readonly why?: 'order' }
   /** 함께 치자는 약속을 지켰나 저버렸나 — `from` 이 약속한 나라, `to` 가 약속받은 나라 */
   | { readonly kind: 'pledge'; readonly from: string; readonly to: string; readonly node: string; readonly kept: boolean }
   /** 군대를 빌려줬다 (`army` 가 `to` 의 `node` 를 지키러 간다) · 돌아갔다 (back) */

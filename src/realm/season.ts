@@ -462,6 +462,20 @@ function draftArmy(r: Realm, o: Extract<Order, { kind: 'draft' }>, lines: Report
 }
 
 /** 해산 — 제 땅에 쉬는 군대를 집으로. 사람은 그 고을 가호로 돌아간다. 장수는 남는다 */
+/**
+ * 회군 (형: "가는도중에 있는 군대는 회군할수 있게 해야하는거아님?") — 길 위의 군대가 떠난 고을로 돌아선다.
+ * 이미 온 만큼 걸려 돌아간다 (적어도 한 계절). 기습은 풀린다. 빌려준 군대는 못 돌린다
+ */
+function turnBack(r: Realm, o: Extract<Order, { kind: 'turnBack' }>, lines: ReportLine[]): void {
+  const a = r.armies[o.army]
+  const m = a?.march
+  if (a === undefined || m === null || m === undefined || a.lent !== undefined) return
+  const ed = r.edges[m.edge]
+  const total = ed !== undefined ? marchSeasons(ed.kind, seasonOf(r.season)) : 1
+  a.march = { from: m.to, to: m.from, edge: m.edge, left: Math.max(1, total - m.left), ambush: false, aim: r.nodes[m.from]?.owner ?? null }
+  lines.push({ kind: 'recall', faction: a.faction, army: a.id, node: m.to, why: 'order' })
+}
+
 function disbandArmy(r: Realm, o: Extract<Order, { kind: 'disband' }>, lines: ReportLine[]): void {
   const a = r.armies[o.army]
   if (a === undefined || a.march !== null) return
@@ -502,6 +516,7 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
     else if (o.kind === 'merge') mergeArmy(r, o, lines)
     else if (o.kind === 'draft') draftArmy(r, o, lines)
     else if (o.kind === 'disband') disbandArmy(r, o, lines)
+    else if (o.kind === 'turnBack') turnBack(r, o, lines)
     else if (o.kind === 'settle') settleLand(r, o, lines)
     else if (o.kind === 'migrate') migrateHouses(r, o, lines)
     else if (o.kind === 'migrateAuto') setMigrateAuto(r, o)

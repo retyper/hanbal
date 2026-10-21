@@ -45,3 +45,21 @@ describe('가던 고을의 주인이 바뀌면', () => {
     assert.equal(deedText(next, 'miri', 'us', war).tone, 'bad')
   })
 })
+
+describe('회군 (형: "가는도중에 있는 군대는 회군할수 있게 해야하는거아님?")', () => {
+  it('길 위의 군대를 돌리면 온 만큼 걸려 떠난 고을로 돌아온다 · 싸우지 않는다 · 같은 판 같은 명령이면 같은 답', () => {
+    const r = planned(byeonhanMini(1), [])
+    const a = r.armies['a-us']!
+    a.at = 'sodo'
+    // 두 계절 길의 첫 계절이 지났다 — 한 계절 남음
+    a.march = { from: 'sodo', to: 'wild-beodeul', edge: 'e24', left: 1, ambush: true, aim: null }
+    const o = [{ kind: 'turnBack' as const, army: 'a-us' }]
+    const { next, report } = advance(r, o)
+    assert.deepEqual(advance(r, o), advance(r, o))
+    assert.ok(report.lines.some((l) => l.kind === 'recall' && l.army === 'a-us' && l.why === 'order'))
+    assert.ok(!report.lines.some((l) => l.kind === 'battle'))
+    const back = next.armies['a-us']!
+    assert.ok(back.at === 'sodo' || back.march?.to === 'sodo', JSON.stringify(back.march))
+    assert.notEqual(back.at, 'wild-beodeul')
+  })
+})
