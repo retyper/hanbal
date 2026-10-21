@@ -681,8 +681,11 @@ export function tradeOffer(r: Realm, from: string, to: string): { give: Goods; t
   const R = P.realm
   const a = stockOf(r, from)
   const b = stockOf(r, to)
+  // 한 몫의 크기 — 두 나라 가운데 작은 창고의 몫, 판마다 들쭉날쭉 (형: "나는 수백수천씩 갖고있는데 수십씩 교환하자고 하거나 … 크기가 다이나믹 했음")
+  const swing = R.tradeLotSwingLo + (R.tradeLotSwingHi - R.tradeLotSwingLo) * roll(r.seed, r.season, `trade-lot:${from}:${to}`)
+  const lotWorth = Math.max(R.tradeLot, Math.min(goodsWorth(a), goodsWorth(b)) * R.tradeLotShare * swing)
   // 물건 다섯 — 우리에게 모자라고 그쪽에 넉넉한 것을, 우리가 남는 것과 바꾼다 (형: "자원들도 다각화")
-  const lot = (g: Good): number => Math.max(1, Math.round(R.tradeLot / worthOf(g)))
+  const lot = (g: Good): number => Math.max(1, Math.round(lotWorth / worthOf(g)))
   const plenty = (s: typeof a, g: Good): boolean => goodOf(s, g) >= lot(g) * (g === 'grain' ? 4 : 2)
   const short = (s: typeof a, g: Good): boolean => goodOf(s, g) < lot(g)
   for (const want of TRADE_ORDER) {
@@ -693,7 +696,7 @@ export function tradeOffer(r: Realm, from: string, to: string): { give: Goods; t
     }
   }
   // 모자란 것이 없으면 옛 맞바꿈 — 철과 곡식
-  const iron = R.askTradeIron
+  const iron = Math.max(R.askTradeIron, Math.round(lotWorth / R.envoyIronWorth))
   const grain = Math.round(iron * R.envoyIronWorth)
   if (a.iron >= iron * 2 && b.grain >= grain) return { give: { grain: 0, iron }, take: { grain, iron: 0 } }
   if (a.grain >= grain * 3 && b.iron >= iron) return { give: { grain, iron: 0 }, take: { grain: 0, iron } }

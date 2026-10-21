@@ -27,8 +27,8 @@ export const CARDS: Readonly<Record<CardKind, CardInfo>> = {
     name: '가뭄', kind: 'sky', bad: true, icon: 'status-drought', art: 'event-sky-drought',
     line: '봄비가 오지 않는다. 논바닥이 갈라진다. 이대로면 가을 수확량이 크게 줄어든다.',
     opts: [
-      { name: '소도에 빈다', does: '곡식을 조금 바친다 · 가을걷이가 조금 준다' },
-      { name: '보를 쌓는다', does: '곡식이 많이 든다 · 가을걷이가 거의 그대로다' },
+      { name: '소도에 빈다', does: '곡식을 조금 바친다 · 가을 수확량이 조금 줄어든다' },
+      { name: '보를 쌓는다', does: '곡식이 많이 든다 · 가을 수확량이 거의 그대로다' },
     ],
   },
   bounty: {
@@ -43,7 +43,7 @@ export const CARDS: Readonly<Record<CardKind, CardInfo>> = {
     name: '메뚜기 떼', kind: 'sky', bad: true, icon: 'status-famine', art: 'event-sky-drought',
     line: '하늘이 누렇게 메뚜기 떼가 몰려온다.',
     opts: [
-      { name: '불을 지른다', does: '밭을 조금 태운다 · 가을걷이가 조금 준다 (틀림없이)' },
+      { name: '불을 지른다', does: '밭을 조금 태운다 · 가을 수확량이 조금 줄어든다 (틀림없이)' },
       { name: '지나가길 기다린다', does: '운이 좋으면 그대로, 나쁘면 가을걷이가 반으로' },
     ],
   },
@@ -51,7 +51,7 @@ export const CARDS: Readonly<Record<CardKind, CardInfo>> = {
     name: '돌림병', kind: 'people', bad: true, icon: 'status-plague', art: 'event-plague',
     line: '{n}에 돌림병이 돈다. 앓는 집이 늘어 간다.',
     opts: [
-      { name: '고을 문을 닫는다', does: '{n}의 집이 조금 준다 · 곡식이 조금 든다 · 번지지 않는다' },
+      { name: '고을 문을 닫는다', does: '{n}의 집이 조금 줄어든다 · 곡식이 조금 든다 · 번지지 않는다' },
       { name: '내버려 둔다', does: '그냥 지나가기도 하고, 큰 고을 둘의 집이 크게 줄기도 한다' },
     ],
   },

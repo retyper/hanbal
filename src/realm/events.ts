@@ -93,8 +93,15 @@ export function cardValid(r: Realm, c: Card): boolean {
 
 const clampMorale = (v: number): number => Math.min(P.realm.moraleMax, v)
 
-/** 곡식 몫 — 창고에 비례하되 바닥이 있다 */
-const grainCost = (r: Realm, f: string, share: number): number => Math.max(P.realm.cardGrainMin, Math.round((r.stock[f]?.grain ?? 0) * share))
+/**
+ * 곡식 몫 — 창고에 비례하되 바닥이 있고, 사건마다 크기가 들쭉날쭉하다
+ * (형: "적게요구하거나 약탈을 조금만 해가는놈들일수도 있겠지만 그것도 어느정도 크기가 다이나믹 했음")
+ */
+const grainCost = (r: Realm, f: string, share: number): number => {
+  const R = P.realm
+  const swing = R.cardSwingLo + (R.cardSwingHi - R.cardSwingLo) * roll(r.seed, r.season, 'card-amt')
+  return Math.max(R.cardGrainMin, Math.round((r.stock[f]?.grain ?? 0) * share * swing))
+}
 
 function setHarvest(r: Realm, f: string, mul: number): void {
   const year = Math.floor(r.season / 4)

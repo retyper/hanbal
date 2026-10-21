@@ -109,7 +109,8 @@ export function stepDiscovery(r: Realm, lines: ReportLine[]): void {
   }
   // 소문 — 아는 나라가 아는, 아직 모르는 나라 하나
   for (const f of fs) {
-    if (roll(r.seed, r.season, `disc:${f}`) >= P.realm.discoverDrift) continue
+    // 영남 판은 더 좁고 촘촘해 소문이 빨리 돈다 (2026-10-21 안개를 켜며 — 80판 시뮬로 맞춘 값, BALANCE)
+    if (roll(r.seed, r.season, `disc:${f}`) >= (r.region === 'yeongnam' ? P.realm.discoverDriftYeongnam : P.realm.discoverDrift)) continue
     const cands = new Set<string>()
     for (const g of knownOf(r, f)) for (const x of knownOf(r, g)) if (x !== f && !knows(r, f, x) && alive(x)) cands.add(x)
     const list = [...cands].sort()
