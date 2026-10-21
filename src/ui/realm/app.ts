@@ -512,7 +512,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (a !== undefined && a.march === null) targets.push({ node: a.at, edge: '', off: false, on: armySel.every((id) => pick[id] === undefined), chip: `<span class="tn stay">머문다</span>` })
     const fr = fresh
     if (!showReport) fresh = new Set() // 드러나는 것은 한 번만 — 계절 소식을 닫고 지도를 볼 때
-    return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets, fr)
+    // 군대를 고르지 않았을 때만 — 개척할 수 있는 빈땅에 「＋마을」
+    const stl = armySel.length === 0 && r.region !== 'tutorial' ? new Set(settleTargets(r, me()).map((t) => t.to)) : new Set<string>()
+    return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets, fr, stl)
   }
 
   /** 지도에서 켜고 끄는 겹 (형: "좌하단에는 확대축소말고 뭔가 보이기 안보이기 토글 필요할듯") — 끈 것은 .ap.hide-<id> */
@@ -925,10 +927,35 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   // ───────── 백성 — 개척 · 이주 (집을 옮긴다. 군사가 아니다)
+  /**
+   * 지금 할 만한 일 — 백성 판 맨 위 (형: "개척이랑 이주가 전혀 직관적이지가 않아… 어떻게 해야할지 더 고민해봐").
+   * 설명을 읽고 고르는 대신, 할 수 있는 일을 먼저 보이고 누르면 그 카드로 간다
+   */
+  function peopleTodo(r: Realm): string {
+    const items: string[] = []
+    const lands = [...new Set(settleTargets(r, me()).map((t) => t.to))].sort()
+    for (const id of lands.slice(0, 3)) {
+      const n = r.nodes[id]!
+      const gains = nodeSpecials(r, id).map((g) => GOOD_NAME[g])
+      // 이미 우리 마을로 일구는 중이면 "더 보낼 수 있다"
+      const growing = n.owner === me() && n.hh > 0
+      const head = growing ? `${esc(n.name)}에 집을 더 보낼 수 있다` : `${esc(n.name)}에 마을을 세울 수 있다`
+      const sub = growing ? `자리 ${Math.max(0, (n.room ?? 0) - Math.floor(n.hh))}집 남았다` : `집을 보내면 우리 땅이 된다 · ${n.room ?? 0}집까지${gains.length > 0 ? ` · ${gains.join('·')} 난다` : ''}`
+      items.push(`<button class="todo home" data-act="jump" data-to="stl-${id}">${icon('settle-hamlet')}<span><b>${head}</b><small>${tx(sub)}</small></span><i>›</i></button>`)
+    }
+    const full = sorted(Object.values(r.nodes)).filter((n) => n.owner === me() && n.kind !== 'sodo' && homeRoom(n) > 0 && crowdOf(n) > 1)
+    for (const n of full.slice(0, 2)) {
+      items.push(`<button class="todo move" data-act="jump" data-to="sec-move">${icon('unit-porters')}<span><b>${esc(josa(n.name, '이', '가'))} 붐빈다</b><small>${tx(autoMigOn() ? '자동 분배가 계절마다 옆 고을로 나눈다 · 빈땅에 보내도 좋다' : '집이 덜 는다 — 옆 고을로 옮기거나 빈땅에 마을을 세운다')}</small></span><i>›</i></button>`)
+    }
+    if (items.length === 0) return `<div class="todos"><p class="mute">${tx('지금은 할 일이 없다. 고을이 다 품 안이고, 맞닿은 빈땅도 없다 — 군대로 땅을 넓히면 빈땅이 맞닿는다.')}</p></div>`
+    return `<div class="todos"><h4>지금 할 수 있는 일</h4>${items.join('')}</div>`
+  }
+
   function peopleSheet(r: Realm): string {
     let h = `<h3 class="sech home">${icon('settle-farm-village')}백성 · 집을 옮긴다</h3>`
     if (note !== '') h += `<div class="banner bad">${tx(note)}</div>`
-    h += `<p class="mute">${tx('군사가 아니라 농사짓는 집을 옮긴다. 옮긴 집은 계절을 넘기면 바로 그 고을에 자리 잡는다.')}</p>`
+    h += `<p class="mute">${tx('군사가 아니라 농사짓는 집이다. 옮긴 집은 다음 계절에 자리 잡는다.')}</p>`
+    h += peopleTodo(r)
     // 자동 분배 — 맨 위 큰 단추. 누르면 켜지고(단추는 잠긴다), 직접 옮기면 꺼져서 다시 누를 수 있다
     // (형 2026-10-20: "자동분배는 맨 위에 큰버튼으로 … 한번 누르면 비활성화. 본인이 직접 재분배 해서 숫자가 달라진경우에 다시활성화")
     // 단추 밑 말은 짧게 — 지금 무엇을 하고 있나만 (형: "자동분배중 버튼밑 텍스트가 너무길어서 칸이 넘어가져버림 · 제대로 된거 맞음?").
@@ -941,8 +968,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       ? `<button class="btn wide autobtn" disabled data-more="붐비는(품을 넘긴) 고을의 집이 계절마다 길로 맞닿은 한산한 우리 고을로 저절로 옮겨 간다. 아래에서 직접 옮기면 꺼진다."><b>✓ 자동 분배 중</b><small>${tx(autoSub)}</small></button>`
       : `<button class="btn on wide autobtn" data-act="mig-auto" data-v="1" data-more="누르면 붐비는 고을의 집을 계절마다 한산한 고을로 저절로 옮긴다. 이번 계절 직접 옮긴 것은 거둔다."><b>자동 분배 켜기</b><small>${tx('붐비는 고을을 저절로 나눈다')}</small></button>`
     const lands = [...new Set([...settleTargets(r, me()).map((t) => t.to), ...settlePending().map((o) => o.to)])].sort()
-    h += `<div class="twoway"><button class="sec home" data-act="jump" data-to="sec-settle">${icon('settle-farm-village')}<b>개척</b><span>${lands.length > 0 ? '집을 빈땅으로 옮겨 새 마을' : '맞닿은 빈땅이 없다'}</span></button>`
-    h += `<button class="sec move" data-act="jump" data-to="sec-move">${icon('unit-porters')}<b>이주</b><span>${autoMigOn() ? '우리 고을끼리 · 자동 분배 중' : '우리 고을끼리 · 직접 옮긴다'}</span></button></div>`
+    // 두 낱말 — 무엇이 달라지나로 (개척: 땅이 는다 · 이주: 땅은 그대로, 사람만 옮긴다)
+    h += `<div class="twoway"><button class="sec home" data-act="jump" data-to="sec-settle">${icon('settle-farm-village')}<b>개척</b><span>빈땅에 새 마을 · <u>우리 땅이 는다</u></span><small>${lands.length > 0 ? `지금 ${lands.length}곳` : '맞닿은 빈땅이 없다'}</small></button>`
+    h += `<button class="sec move" data-act="jump" data-to="sec-move">${icon('unit-porters')}<b>이주</b><span>우리 고을끼리 · <u>땅은 그대로</u></span><small>${autoMigOn() ? '보통은 저절로 (자동 분배)' : '직접 옮긴다'}</small></button></div>`
     h += `<h4 id="sec-settle" class="sech home">${icon('settle-farm-village')}개척 · 빈땅에 새 마을을 일군다</h4>`
     // 빈땅은 아무 나라 땅도 아니다 — 사람이 가서 살면 그때 우리 마을이 된다 (형: "우리영토가 아닌데도 사람을보내서 살게하는거야? 그게맞나??")
     h += `<p class="mute">${tx('빈땅은 주인 없는 땅이다. 우리 고을과 길로 맞닿은 빈땅에 집을 보내면, 자리 잡는 대로 그 땅이 우리 마을이 된다. 남의 나라 땅에는 보낼 수 없다.')}</p>`
@@ -983,8 +1011,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const froms = settleTargets(r, me()).filter((t) => t.to === to).map((t) => t.from)
     const sent = settlePending().filter((o) => o.to === to)
     const room = n.room ?? 0
-    let h = `<div class="ncard settlec"><div class="an">${icon(nodeIcon(n), 'nic')}<b>${esc(n.name)}</b>`
+    let h = `<div class="ncard settlec" id="stl-${to}"><div class="an">${icon(nodeIcon(n), 'nic')}<b>${esc(n.name)}</b>`
     h += `<span class="mute">${tx(`자리 ${room} 가운데 ${Math.floor(n.hh)} 찼다`)}</span></div>`
+    // 세우면 무엇을 얻나 — 먼저 (형: "개척이랑 이주가 전혀 직관적이지가 않아")
+    const gains = nodeSpecials(r, to).map((g) => `${icon(GOOD_ICON[g], 'gic')}${GOOD_NAME[g]}`)
+    if (!(n.owner === me() && n.hh > 0)) h += `<p class="gain">${tx(`마을이 서면 — 우리 땅 하나 더 · 집 ${room}채까지 늘어난다`)}${gains.length > 0 ? ` · ${gains.join(' ')} 난다` : ''}</p>`
     for (const o of sent) {
       h += `<div class="row mvq"><span class="nchip">${esc(r.nodes[o.from]?.name ?? '')}</span><i class="ar">⟶</i><span class="nchip">${esc(n.name)}</span>${tx(` 집 ${o.n} · ${arriveWhen(r.season, 1)}`)}<button class="btn ghost sm" data-act="unsettle" data-i="${settles.indexOf(o)}">취소</button></div>`
     }
@@ -1920,6 +1951,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (weAtk && l.ambush === 'success') cands.push([2, { ev: raid, hero: null, line: `${node}에 몰래 들이쳤다` }])
       if (weAtk && l.ambush === 'caught') cands.push([2, { ev: raid, hero: null, line: `${node} 기습이 들켰다` }])
       if (!weAtk && l.ambush === 'success') cands.push([2, { ev: raid, hero: null, line: `${node}에 기습을 당했다` }])
+      // 우리 원군이 닿아 이겼다 — 로한의 기병대 (형: "열세에 밀린 아군에 … 쾌감")
+      const ourSide = weAtk ? 'a' : 'd'
+      const came = (l.rounds ?? []).find((x) => x.relief?.side === ourSide)?.relief
+      const atkWon = l.outcome === 'rout' || l.outcome === 'win'
+      if (came !== undefined && atkWon === weAtk && l.outcome !== 'draw') cands.push([3.5, { ev: came.horse ? 'event-goguryeo-hunt' : 'event-expedition-return', hero: null, line: `원군이 닿아 ${node} 싸움을 이겼다` }])
       const lost = cap !== undefined && cap.faction === after.player ? cap : dead !== undefined && dead.faction === after.player ? dead : undefined
       if (lost !== undefined) cands.push([1, { ev: 'event-sniped-commander', hero: lost, line: `${josa(lost.name, '을', '를')} 잃었다` }])
       for (const [k, p] of cands) if (k > rank) { rank = k; best = p }

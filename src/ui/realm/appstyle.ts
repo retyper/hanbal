@@ -391,6 +391,14 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .autobtn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 14px; margin: 4px 0 8px; font-size: 16px; }
 .ap .autobtn small { font-size: 12px; font-weight: 500; opacity: .85; line-height: 1.35; white-space: normal; max-width: 100%; overflow-wrap: anywhere; text-align: center; }
 .ap .autobtn { white-space: normal; max-width: 100%; box-sizing: border-box; }
+.ap .todos { margin: 6px 0 10px; display: flex; flex-direction: column; gap: 6px; } .ap .todos h4 { margin: 2px 0; color: var(--gold); }
+.ap .todo { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; border-radius: 12px; border: 1px solid #5a7a44; background: #1f2a1a; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.ap .todo.move { border-color: #5a6a8a; background: #1c2230; }
+.ap .todo img { width: 34px; height: 34px; } .ap .todo > span { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.ap .todo small { font-size: 12px; color: #b8b09c; white-space: normal; } .ap .todo i { font-style: normal; font-size: 22px; color: #8f8778; }
+.ap .twoway .sec small { display: block; font-size: 11.5px; color: #a89c84; margin-top: 2px; } .ap .twoway .sec u { text-decoration: none; color: #f3d48a; }
+.ap .settlec .gain { margin: 4px 0 6px; padding: 6px 9px; border-radius: 9px; background: #24301f; color: #d8f0c0; font-size: 13px; }
+.ap .settlec .gain .gic { width: 20px; height: 20px; vertical-align: middle; margin: 0 2px; }
 .ap .autobtn:disabled { background: #24301f; border-color: #5a7a44; color: #b8e09a; opacity: 1; cursor: default; }
 /* 아래 탭이 여섯 — 폰 세로에서 글이 넘치지 않게 */
 .ap .tabs button { min-width: 0; } .ap .tabs button span { white-space: nowrap; }

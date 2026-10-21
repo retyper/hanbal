@@ -379,6 +379,8 @@ export interface Act {
 
 /** 라운드 하나의 기록 — 화면이 그대로 풀어 보인다. n 은 처음 사람의 몫 0~1, m 은 사기 */
 export interface RoundLog {
+  /** 이 합 처음에 원군이 닿았다 — 그 쪽 · 닿은 사람 · 기병이 있었나 (tactics.fightRounds · 형: "로한의 기병대 같은 쾌감") */
+  readonly relief?: { readonly side: 'a' | 'd'; readonly men: number; readonly horse: boolean }
   /** 그 합의 앞줄 명령(앞줄이 없으면 장수·활·말의 것) — 요약 칩 */
   readonly a: Cmd
   readonly d: Cmd
@@ -469,6 +471,8 @@ export interface Army {
   march: March | null
   /** 남은 군량 (계절치) — 제 땅·동맹 땅에선 다시 찬다. 없으면 넉넉한 것으로 본다 (옛 판) */
   food?: number
+  /** 이 고을에 닿은 계절 — 같은 계절에 적이 들이치면 원군으로 늦게 붙는다 (season.fight) */
+  came?: number
   /** 동맹에게 빌려준 군대 — `to` 나라의 `node` 고을로 가서 `until` 계절까지 머물며 지킨다 (diplomacy troops). 그동안 AI 가 마음대로 안 움직인다 */
   lent?: { readonly to: string; readonly node: string; readonly until: number }
 }

@@ -8,7 +8,7 @@
  */
 import { BATTLE_AMBUSH, BATTLE_APPROACH, BATTLE_CLASH, endStory, fieldName, josa, roundStory, storyCtx } from '../../realm/data/prose.ts'
 import { HERO_BUST } from '../../realm/data/art.ts'
-import { CMD_ICON, CMD_NAME, actRows, warName } from './battlefield.ts'
+import { CMD_ICON, CMD_NAME, actRows, reliefBanner, warName } from './battlefield.ts'
 import type { Army, Hero, Realm, ReportLine } from '../../realm/types.ts'
 
 type Battle = Extract<ReportLine, { kind: 'battle' }>
@@ -76,7 +76,7 @@ function battleSummary(after: Realm, l: Battle, weAtk: boolean, art: string, vie
     rds.forEach((rd, i) => {
       const rows = actRows(rd.acts, weAtk ? 'a' : 'd', art, st.mix?.[0] ?? {}, st.mix?.[1] ?? {})
       const s = roundStory(rd, rds[i - 1], ctx).slice(0, rows !== '' ? 1 : 2)
-      if (rows !== '' || s.length > 0) h += `<div class="bkl now bkst"><i>${i + 1}</i><div>${rows}${s.length > 0 ? `<p class="bksm">${esc(s.join(' '))}</p>` : ''}</div></div>`
+      if (rows !== '' || s.length > 0 || rd.relief !== undefined) h += `<div class="bkl now bkst"><i>${i + 1}</i><div>${reliefBanner(rd, weAtk ? 'a' : 'd', art)}${rows}${s.length > 0 ? `<p class="bksm">${esc(s.join(' '))}</p>` : ''}</div></div>`
     })
     h += `<p class="bkl now bkwhy">${esc(endStory(l, ctx))}</p>`
   }

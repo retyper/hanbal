@@ -180,6 +180,18 @@ export function actRows(acts: readonly Act[] | undefined, ourS: 'a' | 'd', art: 
   return h + '</div>'
 }
 
+/** 원군이 닿은 합의 띠 (형: "열세에 밀린 아군에 로한의 기병대 같은 쾌감") — 우리 원군은 금빛, 적 원군은 붉게 */
+export function reliefBanner(rd: RoundLog, ourS: 'a' | 'd', art: string): string {
+  const x = rd.relief
+  if (x === undefined) return ''
+  const us = x.side === ourS
+  const ic = x.horse ? UNIT_ICON.horse : UNIT_ICON.spear
+  const line = us
+    ? (x.horse ? `우리 기병 원군 ${x.men}명이 옆구리를 들이친다! 적이 흔들린다` : `우리 원군 ${x.men}명이 닿았다! 적의 옆을 친다`)
+    : (x.horse ? `적의 기병 원군 ${x.men}명이 닿았다 — 우리 옆이 뚫린다` : `적의 원군 ${x.men}명이 닿았다 — 우리가 밀린다`)
+  return `<div class="wrelief ${us ? 'us' : 'foe'}"><img src="${art}icon/${ic}.png" alt=""><b>${us ? '원군이다!' : '적의 원군'}</b><span>${esc(line)}</span></div>`
+}
+
 /** 한 합에 무리마다 잃은 사람 — [무리, 수] (그 합 앞의 무리 수에서 뺀다) */
 function groupLoss(before: Readonly<Partial<Record<Grp, number>>>, after: Readonly<Partial<Record<Grp, number>>> | undefined): Array<[Grp, number]> {
   if (after === undefined) return []
@@ -329,7 +341,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const [pw, pc] = pushWord(rd.push, weAtk, lostUs, lostFoe)
     const crit = rd.beat === ourS
     const d = (k: number): string => (slow ? ` style="--d:${STAGE_S[k]}s"` : '')
-    h += `<div class="wrd${slow ? ' slow' : ''}${crit ? ' crit' : ''}"><div class="wrn">${ROUND_NAME[i] ?? `${i + 1}`} 합</div>`
+    h += `<div class="wrd${slow ? ' slow' : ''}${crit ? ' crit' : ''}"><div class="wrn">${ROUND_NAME[i] ?? `${i + 1}`} 합</div>${reliefBanner(rd, ourS, art)}`
     const akOf = (sd: 'a' | 'd'): Art | undefined => (rd.acts ?? []).find((x) => x.c === 'art' && x.s === sd)?.art
     h += `<div class="wcmds"${d(0)}><span class="wc us">${flags(weAtk ? rd.oa : rd.od, weAtk ? rd.a : rd.d, art, akOf(ourS))}</span><i>×</i><span class="wc foe">${flags(weAtk ? rd.od : rd.oa, weAtk ? rd.d : rd.a, art, akOf(ourS === 'a' ? 'd' : 'a'))}</span></div>`
     const story = ctx !== null ? roundStory(rd, rounds[i - 1], ctx) : []
@@ -454,6 +466,13 @@ export const WAR_CSS = `
 .ap .wcmds > i { font-style: normal; color: #c8402a; }
 .ap .wst { margin: 6px 0 2px; }
 .ap .wacts { display: flex; flex-direction: column; gap: 4px; margin: 2px 0 6px; }
+.ap .wrelief { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0 6px; padding: 8px 10px; border-radius: 12px; font-size: 14px; animation: wrel .9s ease-out both; }
+.ap .wrelief img { width: 34px; height: 34px; object-fit: contain; }
+.ap .wrelief b { font-family: 'Gowun Batang', serif; font-size: 18px; }
+.ap .wrelief.us { background: linear-gradient(90deg, #5a4318, #2c2416); border: 1px solid #e0bd78; color: #fff1cc; box-shadow: 0 0 18px #e0bd7855; }
+.ap .wrelief.us b { color: #ffd27a; }
+.ap .wrelief.foe { background: linear-gradient(90deg, #4a1c16, #241614); border: 1px solid #b0584a; color: #ffd0c4; }
+@keyframes wrel { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
 .ap .wact { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; padding: 4px 8px; border-radius: 9px; background: #ffffff08; border-left: 3px solid #6a6458; font-size: 13.5px; }
 .ap .wact.us { border-left-color: #c9a45a; } .ap .wact.foe { border-left-color: #b0584a; }
 .ap .wact img { width: 26px; height: 26px; object-fit: contain; }

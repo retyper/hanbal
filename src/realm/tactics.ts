@@ -63,6 +63,8 @@ export interface Side {
   readonly captureBonus?: number
   /** 배우는 판 — sure 면 이쪽 사로잡기는 반드시 되고, never 면 아예 못 한다 */
   readonly capture?: 'sure' | 'never'
+  /** 원군 — mix 가운데 이만큼(병종별)은 처음엔 없고 at 합 처음에 닿는다 (P.realm.relief*) */
+  readonly relief?: { readonly mix: Readonly<Partial<Record<UnitKind, number>>>; readonly at: number }
 }
 
 export interface FightResult {
@@ -448,6 +450,43 @@ export function fightRounds(atk: Side, def: Side, key: string, seed: number, sea
   }
   const rounds: RoundLog[] = []
   const memo: { pending?: Pending; led: boolean } = { led: false }
+  // 원군 — 처음엔 그 몫이 빠진 채 싸운다. 무너짐은 와 있는 사람에 대해 잰다 (base)
+  const away = (s: Side, g0: Record<Grp, number>): Record<Grp, number> => {
+    const rg = s.relief !== undefined ? groupMen(s.relief.mix) : { front: 0, bows: 0, horse: 0 }
+    const out = { front: 0, bows: 0, horse: 0 }
+    for (const g of GRPS) out[g] = g0[g] > 0 ? Math.min(1, rg[g] / g0[g]) : 0
+    return out
+  }
+  const awayA = away(atk, g0a)
+  const awayD = away(def, g0d)
+  for (const g of GRPS) {
+    st.fa[g] -= awayA[g]
+    st.fd[g] -= awayD[g]
+  }
+  let baseA = aliveShare(g0a, st.fa)
+  let baseD = aliveShare(g0d, st.fd)
+  const arrive = (sd: 'a' | 'd'): RoundLog['relief'] => {
+    const R = P.realm
+    const s = sd === 'a' ? atk : def
+    const f = sd === 'a' ? st.fa : st.fd
+    const aw = sd === 'a' ? awayA : awayD
+    for (const g of GRPS) f[g] += aw[g]
+    if (sd === 'a') baseA = 1
+    else baseD = 1
+    const rg = groupMen(s.relief!.mix)
+    const men = totalOf(rg)
+    const horse = men > 0 ? rg.horse / men : 0
+    const shock = R.reliefShock + R.reliefHorse * horse
+    if (sd === 'a') {
+      st.md = Math.max(0, st.md - shock)
+      st.ma += R.reliefLift
+    } else {
+      st.ma = Math.max(0, st.ma - shock)
+      st.md += R.reliefLift
+    }
+    return { side: sd, men: Math.round(men), horse: horse >= 0.3 }
+  }
+  let came: RoundLog['relief'] = undefined
   let captured: 'a' | 'd' | null = null
   let broke: 'a' | 'd' | null = null
   let retreat: 'a' | 'd' | 'both' | null = null
@@ -459,8 +498,12 @@ export function fightRounds(atk: Side, def: Side, key: string, seed: number, sea
   const small = c.n0a + c.n0d < R.tacSmallBattle
 
   for (let i = 0; i < max; i++) {
+    // 원군이 닿는 합 — 합을 고르기 전에 와 있다
+    came = undefined
+    if (atk.relief !== undefined && baseA < 1 && i >= atk.relief.at) came = arrive('a')
+    if (def.relief !== undefined && baseD < 1 && i >= def.relief.at) came = arrive('d')
     // 셋째 합 뒤로는 팽팽할 때만 더 간다
-    if (i >= min) {
+    if (i >= min && came === undefined) {
       const s = shareOf(c, st)
       if (small || Math.abs(s - 0.5) >= R.tacExtendBand) break
     }
@@ -522,7 +565,7 @@ export function fightRounds(atk: Side, def: Side, key: string, seed: number, sea
       for (const x of [o.front, o.bows, o.horse, o.lead]) if (x !== undefined && ONCE.has(x)) used.add(x)
     }
     const res = resolveRound(c, st, oa, od, i, rk, capOf)
-    rounds.push(res.log)
+    rounds.push(came !== undefined ? { relief: came, ...res.log } : res.log)
     if (res.captured !== null) {
       captured = res.captured
       break
@@ -533,8 +576,8 @@ export function fightRounds(atk: Side, def: Side, key: string, seed: number, sea
       break
     }
     // 무너짐 — 처음보다 많이 줄었거나 사기가 꺾였다. 둘 다면 더 밀린 쪽만
-    const na = aliveShare(g0a, st.fa)
-    const nd = aliveShare(g0d, st.fd)
+    const na = aliveShare(g0a, st.fa) / Math.max(0.05, baseA)
+    const nd = aliveShare(g0d, st.fd) / Math.max(0.05, baseD)
     const menA = na < R.tacBreakMen
     const menD = nd < R.tacBreakMen
     const downA = menA || st.ma / Math.max(0.05, atk.morale) < R.tacBreakMorale
@@ -547,6 +590,11 @@ export function fightRounds(atk: Side, def: Side, key: string, seed: number, sea
     }
   }
 
+  // 싸움이 원군이 닿기 전에 끝났다 — 원군은 다치지 않고 뒤늦게 닿는다
+  for (const g of GRPS) {
+    if (baseA < 1) st.fa[g] += awayA[g]
+    if (baseD < 1) st.fd[g] += awayD[g]
+  }
   const s = shareOf(c, st)
   let outcome: Outcome
   if (captured === 'd' || broke === 'd' || retreat === 'd') outcome = s >= R.tacRoutShare || captured === 'd' ? 'rout' : 'win'

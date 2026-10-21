@@ -925,6 +925,18 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const season = seasonOf(r.season)
   const a = atks[0]!
   const node = r.nodes[a.march!.to]!
+  // 같은 계절 이 고을로 닿는 지키는 쪽 군대 — 먼저 들인다 (원군: 처음부터 섞지 않고 늦게 붙는다 · 아래 reliefD)
+  const owner0 = node.owner
+  if (owner0 !== null && !allied(r, a.faction, owner0)) {
+    for (const x of byId(Object.values(r.armies))) {
+      const m = x.march
+      if (m === null || m.to !== node.id || m.left > 0 || atks.includes(x) || !allied(r, x.faction, owner0)) continue
+      x.march = null
+      x.at = node.id
+      x.came = r.season
+      lines.push({ kind: 'arrive', army: x.id, node: node.id })
+    }
+  }
   const defenders = armiesAt(r, node.id).filter((d) => !allied(r, a.faction, d.faction))
   const defFaction = node.owner !== null && !allied(r, a.faction, node.owner) ? node.owner : defenders[0]!.faction
   const w = r.watch[node.id]!
@@ -1010,14 +1022,24 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
     ...(edgeKind === 'pass' || highGround ? { rocks: true } : {}),
     ...(highGround || edgeKind === 'pass' || edgeKind === 'forest' ? { height: true } : {}),
   }
-  const sa = knowFoe(sideOf(r, atks, atkF, fa, a.faction, {
+  // 원군 (형: "로한의 기병대 같은 쾌감") — 치는 쪽: 가장 많은 사람이 오는 길이 먼저 붙고, 다른 길로 온 군대는 늦게 옆구리를 친다.
+  // 지키는 쪽: 이번 계절에 닿은 군대는 먼저 와 있던 이들(장정 포함)이 버티는 사이 늦게 붙는다. 먼저 와 있던 이가 없으면 원군이 아니다
+  const menOf = (xs: readonly Army[]): number => xs.reduce((s, x) => s + headcount(forceOf(r, x)), 0)
+  const byEdge = new Map<string, Army[]>()
+  for (const l of legs) byEdge.set(l.edge.id, [...(byEdge.get(l.edge.id) ?? []), l.army])
+  const mainEdge = [...byEdge.entries()].sort((x, y) => menOf(y[1]) - menOf(x[1]) || (x[0] < y[0] ? -1 : 1))[0]![0]
+  const lateA = legs.filter((l) => l.edge.id !== mainEdge).map((l) => l.army)
+  const lateD = defenders.filter((d) => d.came === r.season)
+  const reliefA = lateA.length > 0 ? { relief: { mix: mergeForces(r, lateA).mix, at: R.reliefRound } } : {}
+  const reliefD = lateD.length > 0 && standing.length > lateD.length ? { relief: { mix: mergeForces(r, lateD).mix, at: R.reliefRound } } : {}
+  const sa = knowFoe({ ...sideOf(r, atks, atkF, fa, a.faction, {
     water, edge: edgeKind, fire, flank: flankWon, seen: freshSight(r, a.faction, node.id), moraleBonus: atkBonus,
     captureBonus: playerIsAtk ? capShot : 0, terrain: atkTerrain,
-  }), knewA)
-  const sd = knowFoe(sideOf(r, standing, defF, fd, defFaction, {
+  }), ...reliefA }, knewA)
+  const sd = knowFoe({ ...sideOf(r, standing, defF, fd, defFaction, {
     water, edge: edgeKind, fire, flank: false, seen: ambush !== 'success', moraleBonus: defBonus,
     captureBonus: playerIsAtk ? 0 : capShot, terrain: defTerrain,
-  }), knewD)
+  }), ...reliefD }, knewD)
   const res = fightRounds(sa, sd, key, r.seed, r.season, tacticFor(tactics, key))
   const outcome = res.outcome
 
@@ -1090,7 +1112,8 @@ function resolveMarches(
     if (a.food !== undefined) a.food -= 1 // 길 위에서 군량을 먹는다
   }
   for (const g of arrivalGroups(marching.filter((a) => a.march!.left <= 0))) {
-    const live = g.filter((a) => r.armies[a.id] !== undefined) // 앞의 싸움에서 흩어진 군대는 빠진다
+    // 앞의 싸움에서 흩어진 군대 · 지키는 원군으로 이미 들어간 군대는 빠진다
+    const live = g.filter((a) => r.armies[a.id] !== undefined && a.march !== null)
     if (live.length === 0) continue
     const lead = live[0]!
     const node = r.nodes[lead.march!.to]!
@@ -1113,6 +1136,7 @@ function resolveMarches(
     for (const a of live) {
       a.march = null
       a.at = node.id
+      a.came = r.season
       lines.push({ kind: 'arrive', army: a.id, node: node.id })
     }
     // 동맹의 땅은 지나갈 뿐 쥐지 않는다

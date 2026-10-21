@@ -148,6 +148,12 @@ export const MAP_CSS = `
   font-size: clamp(10px, calc(1.6cqh / var(--z, 1) * var(--zs, 1)), 13px); line-height: 1.3; }
 .map .tok.sel img { border-color: #ffd27a; box-shadow: 0 0 0 3px #ffd27a88, 0 0 12px #ffd27a; transform: scale(1.12); }
 .map .tok.going img { border-color: #c8402a; }
+/* 개척할 수 있는 빈땅 — 누르면 그 땅 카드에 "사람 보내기" */
+.map .nd .stl { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); white-space: nowrap; pointer-events: none; z-index: 2;
+  font-size: clamp(10px, calc(1.6cqh / var(--z, 1) * var(--zs, 1)), 13px); font-weight: 700; color: #f4ffe8; background: #3f6a2ae6; border: 1px solid #b6e08f;
+  border-radius: 9px; padding: 0 6px; box-shadow: 0 1px 4px #0008; animation: stlp 1.6s ease-in-out infinite alternate; }
+@keyframes stlp { from { box-shadow: 0 0 0 #b6e08f00; } to { box-shadow: 0 0 10px #b6e08faa; } }
+@media (prefers-reduced-motion: reduce) { .map .nd .stl { animation: none; } }
 .map .toks.mv { transform: translate(-50%, -50%); } .map .toks.mv .tok img { border-style: dashed; border-color: #f3e6c8; }
 /* 길 위의 우리 군대 — 발맞춰 걷듯 들썩이고, 밑에 "이동 중 · 다음 계절 도착" (형: "언제도착하는지 글씨가 가려져서 안보이기도") */
 .map .toks.mv .tok { animation: mvbob .55s ease-in-out infinite alternate; }
@@ -199,6 +205,8 @@ const sizeOf = (hh: number): number => Math.min(1.35, Math.max(0.8, 0.7 + hh / 9
 export function mapHtml(
   r: Realm, me: string, art: string, marches: readonly MapMarch[], selected: string, focus: string | null = null,
   tokens: readonly MapToken[] = [], targets: readonly MapTarget[] = [], fresh: ReadonlySet<string> = new Set(),
+  /** 지금 사람을 보내 마을을 세울 수 있는 빈땅 — 지도에 「＋마을」 (형: "개척이랑 이주가 전혀 직관적이지가 않아") */
+  settleable: ReadonlySet<string> = new Set(),
 ): string {
   // 판마다 지도 그림·좌표계·기호 크기 (영남 판은 고을이 빽빽해 작게)
   const region = r.region ?? 'byeonhan-mini'
@@ -397,7 +405,7 @@ export function mapHtml(
     // 지은 것 — 목책 · 해자 작은 표 (왼쪽 위). 그림만으로는 도읍·포구의 울타리가 지은 것인지 알 수 없었다
     const dfs = (['palisade', 'moat'] as const).filter((t) => n.tags.includes(t))
     const def = dfs.length > 0 ? `<span class="df">${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${t === 'palisade' ? '목책' : '해자'}</i>`).join('')}</span>` : ''
-    nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${mist}${ice}${def}${spec}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : ''}</div>`
+    nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${mist}${ice}${def}${spec}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : settleable.has(n.id) ? '<span class="stl">＋마을</span>' : ''}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()
