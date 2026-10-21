@@ -270,7 +270,7 @@ export type WarGround = 'field' | 'ford' | 'pass' | 'forest' | 'gate' | 'sea' | 
  * 받아 둔 싸움터 그림 (public/realm/battle/battle-<땅>.jpg). 아직 없는 땅은 있는 장면 그림을 어둡게 깐다 —
  * 그림이 오면 여기에 이름만 더한다 (ART-QUEUE)
  */
-const WAR_BG_READY: ReadonlySet<WarGround> = new Set<WarGround>(['field', 'ford', 'pass', 'forest'])
+const WAR_BG_READY: ReadonlySet<WarGround> = new Set<WarGround>(['field', 'ford', 'pass', 'forest', 'gate', 'sea', 'snow', 'night'])
 const WAR_BG_FALLBACK: Readonly<Record<WarGround, string>> = {
   field: 'event/event-goguryeo-hunt', ford: 'event/event-monsoon-ford', pass: 'event/event-goguryeo-hunt', forest: 'event/event-night-raid',
   gate: 'event/event-palisade-build', sea: 'event/event-eight-harbours', snow: 'event/event-winter-ambush', night: 'event/event-night-raid',
