@@ -543,7 +543,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (!showReport) fresh = new Set() // 드러나는 것은 한 번만 — 계절 소식을 닫고 지도를 볼 때
     // 군대를 고르지 않았을 때만 — 개척할 수 있는 빈땅에 「＋마을」
     const stl = armySel.length === 0 && r.region !== 'tutorial' ? new Set(settleTargets(r, me()).map((t) => t.to)) : new Set<string>()
-    return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets, fr, stl)
+    // 지난 계절 싸움으로 주인이 바뀐 고을 (보고에 남은 것) — 지도에 불과 연기
+    const burn = new Set<string>()
+    for (const l of report?.lines ?? []) if (l.kind === 'battle' && l.field !== true && (l.outcome === 'win' || l.outcome === 'rout') && r.nodes[l.node]?.owner === l.atkFaction) burn.add(l.node)
+    return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets, fr, stl, burn)
   }
 
   /** 지도에서 켜고 끄는 겹 (형: "좌하단에는 확대축소말고 뭔가 보이기 안보이기 토글 필요할듯") — 끈 것은 .ap.hide-<id> */

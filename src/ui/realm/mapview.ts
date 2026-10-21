@@ -84,6 +84,12 @@ export const MAP_CSS = `
     radial-gradient(ellipse 12% 8% at 85% 20%, #1a160e24, #1a160e00), radial-gradient(ellipse 16% 10% at 38% 85%, #1a160e22, #1a160e00);
   animation: clsh 110s linear infinite alternate; }
 @keyframes clsh { from { transform: translate(-6%, -2%); } to { transform: translate(6%, 2%); } }
+/* 지난 계절 넘어간 고을 — 불과 연기 */
+.map .nd .burnfx { position: absolute; left: 22%; bottom: 18%; width: 62%; pointer-events: none; z-index: 2; transform-origin: 50% 100%; animation: bflick 1.2s ease-in-out infinite alternate; }
+.map .nd .burnsm { position: absolute; left: 20%; bottom: 55%; width: 85%; pointer-events: none; z-index: 1; opacity: .75; animation: bsmoke 6s ease-in-out infinite alternate; }
+@keyframes bflick { from { transform: scaleY(.9) skewX(-3deg); } to { transform: scaleY(1.08) skewX(3deg); } }
+@keyframes bsmoke { from { transform: translateY(0) scale(1); } to { transform: translateY(-14%) scale(1.15); } }
+@media (prefers-reduced-motion: reduce) { .map .nd .burnfx, .map .nd .burnsm { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .map .nd .smk, .map .clsh { display: none; } .map .nd.k-port img.st { animation: none; } }
 .map .lbs { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
 /* 고을 배너 — 깃발·이름·군세가 한 덩어리 (문명 6 도시 배너 · Old World 의 위계 — docs/GAP.md M1) */
@@ -251,6 +257,8 @@ export function mapHtml(
   tokens: readonly MapToken[] = [], targets: readonly MapTarget[] = [], fresh: ReadonlySet<string> = new Set(),
   /** 지금 사람을 보내 마을을 세울 수 있는 빈땅 — 지도에 「＋마을」 (형: "개척이랑 이주가 전혀 직관적이지가 않아") */
   settleable: ReadonlySet<string> = new Set(),
+  /** 지난 계절 주인이 바뀐 고을 — 불타고 연기가 오른다 (그림 realm/fx) */
+  burning: ReadonlySet<string> = new Set(),
 ): string {
   // 판마다 지도 그림·좌표계·기호 크기 (영남 판은 고을이 빽빽해 작게)
   const region = r.region ?? 'byeonhan-mini'
@@ -462,7 +470,7 @@ export function mapHtml(
     // 지은 것 — 목책 · 해자 작은 표 (왼쪽 위). 그림만으로는 도읍·포구의 울타리가 지은 것인지 알 수 없었다
     const dfs = (['palisade', 'moat'] as const).filter((t) => n.tags.includes(t))
     const def = dfs.length > 0 ? `<span class="df">${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${t === 'palisade' ? '목책' : '해자'}</i>`).join('')}</span>` : ''
-    nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${lived ? '<i class="smk"></i>' : ''}${mist}${ice}${def}${spec}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : settleable.has(n.id) ? '<span class="stl">＋마을</span>' : ''}</div>`
+    nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${mist}${ice}${def}${spec}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : settleable.has(n.id) ? '<span class="stl">＋마을</span>' : ''}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()
