@@ -458,3 +458,30 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .tabs button { min-width: 0; } .ap .tabs button span { white-space: nowrap; }
 @media (max-width: 420px) { .ap .tabs button img.tic { width: 28px; height: 28px; } .ap .tabs button { font-size: 11.5px; } }
 `
+
+/**
+ * 계절 입자 — 봄 꽃잎 · 여름 장맛비 · 가을 잎 · 겨울 눈이 지도 위로 흩날린다 (그림 realm/fx · 제미나이)
+ * 지도를 가리지 않게 성기고 옅게. 누르기는 지나간다. 움직임을 줄이라는 기기에선 안 띄운다.
+ * __ART__ 는 app.ts 가 바꿔 넣는다.
+ */
+export const SEASONP_CSS = `
+.ap .seasonp { position: absolute; left: 0; right: 0; top: calc(var(--toph) + var(--legh)); bottom: var(--tabh); pointer-events: none; overflow: hidden; z-index: 1; }
+.ap.choosing .seasonp { display: none; }
+.ap .seasonp i { position: absolute; top: -40vmin; width: 30vmin; max-width: 240px; aspect-ratio: 1; background: center / contain no-repeat; opacity: .5;
+  animation: spfall 28s linear infinite; will-change: transform; }
+.ap .seasonp i:nth-child(1) { left: 2%; animation-delay: -4s; }
+.ap .seasonp i:nth-child(2) { left: 30%; animation-delay: -17s; animation-duration: 34s; }
+.ap .seasonp i:nth-child(3) { left: 58%; animation-delay: -10s; animation-duration: 31s; }
+.ap .seasonp i:nth-child(4) { left: 84%; animation-delay: -24s; animation-duration: 37s; }
+.ap .seasonp[data-s="spring"] i { background-image: url(__ART__fx/petals.png); }
+.ap .seasonp[data-s="autumn"] i { background-image: url(__ART__fx/leaves.png); opacity: .42; }
+/* 눈·비는 희어서 밝은 바탕(안 가 본 땅)에 묻힌다 — 옅은 테두리 그림자 */
+.ap .seasonp[data-s="winter"] i { background-image: url(__ART__fx/snow.png); opacity: .75; animation-name: spsnow; filter: drop-shadow(0 0 1.5px rgba(30, 45, 70, .75)); }
+.ap .seasonp[data-s="summer"] i { background-image: url(__ART__fx/rain.png); width: 44vmin; max-width: 360px; opacity: .8; animation-name: sprain; animation-duration: 5s;
+  filter: brightness(.55) saturate(1.5) drop-shadow(0 0 1px rgba(255, 255, 255, .5)); }
+.ap .seasonp[data-s="summer"] i:nth-child(2) { animation-duration: 6s; } .ap .seasonp[data-s="summer"] i:nth-child(3) { animation-duration: 4.4s; } .ap .seasonp[data-s="summer"] i:nth-child(4) { animation-duration: 5.6s; }
+@keyframes spfall { from { transform: translate(0, 0) rotate(0deg); } to { transform: translate(-14vw, calc(100vh + 60vmin)) rotate(150deg); } }
+@keyframes spsnow { from { transform: translate(0, 0); } to { transform: translate(-5vw, calc(100vh + 60vmin)); } }
+@keyframes sprain { from { transform: translate(0, 0); } to { transform: translate(-40vmin, calc(100vh + 60vmin)); } }
+@media (prefers-reduced-motion: reduce) { .ap .seasonp { display: none; } }
+`
