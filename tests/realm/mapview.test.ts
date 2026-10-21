@@ -107,4 +107,28 @@ describe('지도 겉모습', () => {
     assert.ok(ice.test(at(3)), '겨울 — 추화 해자가 얼었다')
     assert.ok(!ice.test(at(0)))
   })
+
+  it('출정 화살촉은 닿는 쪽을 향한다 — 끝 바로 앞 잔 점이 촉을 뒤집지 않는다 (형: "가지산소도에서 곰골로 … 화살표가 반대방향")', () => {
+    const r = startYeongnam(7, 'saro')
+    r.known = undefined
+    const reversed: string[] = []
+    for (const e of Object.values(r.edges)) {
+      for (const [f, t] of [[e.a, e.b], [e.b, e.a]] as const) {
+        const h = mapHtml(r, 'saro', '/', [{ from: f, to: t, left: null }], '')
+        const d = /ly-marches[sS]*? d="([^"]+)"/.exec(h)?.[1]
+        if (d === undefined) continue
+        const n = (d.match(/-?d+(.d+)?/g) ?? []).map(Number)
+        const pts: Array<[number, number]> = []
+        for (let i = 0; i + 1 < n.length; i += 2) pts.push([n[i]!, n[i + 1]!])
+        const end = pts[pts.length - 1]!
+        let k = pts.length - 2
+        while (k > 0 && Math.hypot(pts[k]![0] - end[0], pts[k]![1] - end[1]) < 0.05) k--
+        const tan = [end[0] - pts[k]![0], end[1] - pts[k]![1]]
+        const chord = [end[0] - pts[0]![0], end[1] - pts[0]![1]]
+        if (tan[0]! * chord[0]! + tan[1]! * chord[1]! < 0) reversed.push(`${e.id} ${f}→${t}`)
+      }
+    }
+    // y22 (가락 철산 → 추화 도읍) 는 길 자체가 산을 끼고 고리처럼 돌아 들어간다 — 촉이 아니라 길 모양
+    assert.deepEqual(reversed.filter((x) => !x.startsWith('y22 ')), [])
+  })
 })

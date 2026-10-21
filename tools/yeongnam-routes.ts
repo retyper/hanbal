@@ -213,6 +213,17 @@ function simplify(pts: readonly P[], tol: number): P[] {
   return [...l.slice(0, -1), ...r]
 }
 
+/**
+ * 손으로 그은 길 (경도·위도) — A* 가 남의 고을 곁을 비키다 고리를 그린 곳 (2026-10-21 형: "비화도읍에서 삼강나루로 가는경로가 이상하 추화도읍을 빙 돌아서 가는 길로 보이고있어").
+ * 길의 a → b 차례로 적는다.
+ */
+const HAND: Readonly<Record<string, readonly P[]>> = {
+  // 삼랑 나루 마을 → 비화 도읍 — 낙동강 동쪽 기슭 갈대밭을 따라 거슬러 오른다 (추화 도읍 남쪽)
+  y34: [[128.74, 35.405], [128.62, 35.395], [128.52, 35.415], [128.48, 35.47]],
+  // 추화 도읍 → 삼랑 나루 마을 — 밀양강을 따라 내려간다
+  y32: [[128.77, 35.46], [128.8, 35.43]],
+}
+
 const realm = startYeongnam(1, 'saro')
 const pos = (id: string): P => toXY(GEO[id]!)
 const out: string[] = []
@@ -223,7 +234,8 @@ for (const ed of Object.values(realm.edges).sort((x, y) => (x.id < y.id ? -1 : 1
   const a = pos(ed.a)
   const b = pos(ed.b)
   const others = Object.keys(GEO).filter((id) => id !== ed.a && id !== ed.b).map(pos)
-  const pts = route(a, b, ed.kind, others)
+  const hand = HAND[ed.id]
+  const pts = hand !== undefined ? [a, ...hand.map(toXY), b] : route(a, b, ed.kind, others)
   const via = pts.slice(1, -1).map((p) => `[${r4(p[0])}, ${r4(p[1])}]`)
   out.push(`  ${ed.id}: [${via.join(', ')}],`)
   // 나루 — 길이 강을 지나는 자리에 배 표시

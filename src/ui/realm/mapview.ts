@@ -15,7 +15,7 @@ import { isCoast, nodeHarvest, nodeSpecials, nodeYield } from '../../realm/econo
 import { visibleRange } from '../../realm/intel.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
 import type { EdgeKind, NodeKind, Realm, REdge, RegionId, SeasonOfYear } from '../../realm/types.ts'
-import { separatedRoutes, ferryAt, landClipSvg, midOf, naturalLines, riversSvg, routePoints, smoothPath, trimPolyline, type Pt } from './mapgeo.ts'
+import { separatedRoutes, ferryAt, landClipSvg, midOf, naturalLines, riversSvg, routePoints, smoothPath, tidyEnds, trimPolyline, type Pt } from './mapgeo.ts'
 import { territory, type Territory } from './territory.ts'
 import { worldMapUrl } from './worldmap.ts'
 
@@ -373,7 +373,7 @@ export function mapHtml(
     let full: Pt[] = ed !== undefined ? route(ed) : [px(m.from), px(m.to)]
     if (ed !== undefined && ed.a !== m.from) full = full.slice().reverse()
     const k = 0.22 // 고을 기호에 안 묻히게 끝을 당긴다
-    const pts = trimPolyline(full, k, 1 - k)
+    const pts = tidyEnds(trimPolyline(full, k, 1 - k), 0.08)
     // 기습은 밤길처럼 — 어두운 짧은 점선. 정면은 붉은 실선
     const amb = m.ambush === true && m.foe !== true
     const dash = amb ? ' stroke-dasharray="2 14" stroke-linecap="round"' : m.left === null ? '' : ' stroke-dasharray="14 8"'

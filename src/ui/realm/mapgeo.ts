@@ -113,6 +113,22 @@ export function trimPolyline(p: readonly Pt[], t0: number, t1: number): Pt[] {
   return [s.q, ...p.slice(s.i + 1, e.i + 1), e.q]
 }
 
+/**
+ * 끝 곁의 잔 점을 덜어 낸다 — 길 가르기(separatedRoutes)가 민 점이 끝 바로 앞에서 뒤로 한 발 물러나 있으면
+ * 곡선의 마지막 방향이 거꾸로 서서 화살촉이 떠난 쪽을 가리킨다 (2026-10-21 형: "가지산소도에서 곰골로 병사보내는데 화살표가 반대방향임").
+ * 양 끝에서 길이의 몫 `frac` 안에 든 가운데 점은 버린다.
+ */
+export function tidyEnds(p: readonly Pt[], frac: number): Pt[] {
+  if (p.length <= 2) return [...p]
+  let total = 0
+  for (let i = 1; i < p.length; i++) total += Math.hypot(p[i]![0] - p[i - 1]![0], p[i]![1] - p[i - 1]![1])
+  const min = total * frac
+  const s = p[0]!
+  const e = p[p.length - 1]!
+  const mid = p.slice(1, -1).filter((q) => Math.hypot(q[0] - s[0], q[1] - s[1]) > min && Math.hypot(q[0] - e[0], q[1] - e[1]) > min)
+  return [s, ...mid, e]
+}
+
 /** 꺾은선의 가운데 점 */
 export const midOf = (p: readonly Pt[]): Pt => trimPolyline(p, 0.5, 0.5)[0]!
 
