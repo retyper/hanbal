@@ -156,6 +156,20 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .rel { margin-left: auto; padding: 2px 10px; border-radius: 12px; font-size: 12px; background: #2a313c; }
 .ap .rel.war { background: #4a2420; color: #f1b8a8; } .ap .rel.truce { background: #23331f; color: #cfeabf; } .ap .rel.ally { background: #1f2c40; color: #b8d4f4; }
 .ap .trade { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 10px; background: #1a1f27; }
+/* 사신 꾸미기 — 무엇을 · 누가 가나 (얼굴 줄) */
+.ap .trade .cmh { display: flex; flex-direction: column; gap: 2px; } .ap .trade .cmh b { color: var(--gold); font-size: 15px; }
+.ap .who .wlist { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 6px; -webkit-overflow-scrolling: touch; }
+.ap .who .wg { flex: none; width: 70px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; border-radius: 12px;
+  border: 1px solid var(--line); background: #141920; color: var(--ink); font: inherit; cursor: pointer; }
+.ap .who .wg .wfc { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #4a5363; background: #2a313c; display: block; }
+.ap .who .wg b { font-size: 12px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap .who .wg i { font-style: normal; font-size: 10.5px; color: #f3d48a; } .ap .who .wg small { font-size: 10.5px; color: var(--mute); }
+.ap .who .wg .feel { font-size: 10.5px; padding: 0 5px; }
+.ap .who .wg.on { border-color: var(--gold); background: #2a2416; box-shadow: 0 0 0 2px #d9b36a55; } .ap .who .wg.on .wfc { border-color: var(--gold); }
+.ap .who .wg:disabled { opacity: .42; cursor: default; }
+.ap .who p { margin: 0; font-size: 12px; } .ap .who .warnl { color: #f0a090; }
+.ap .sentb { display: flex; align-items: center; gap: 8px; } .ap .sentb span { flex: 1; min-width: 0; }
+.ap .sentb .sface { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #8a7040; flex: none; }
 .ap .tr2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .ap .tr2 > span:first-child { width: 3.5em; color: var(--mute); font-size: 13px; }
 .ap .splitp { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; padding: 10px; border-radius: 12px; background: #1a1f27; }
 .ap .row .dest, .ap .row .sub { min-width: 0; overflow: hidden; text-overflow: ellipsis; } .ap .row .win, .ap .row .em { flex: none; }

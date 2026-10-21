@@ -524,17 +524,30 @@ export function canEscort(r: Realm, faction: string, hero: string): boolean {
   return !Object.values(r.armies).some((a) => a.hero === hero)
 }
 
+/** 사이를 바꾸는 사신 — 한 나라에 한 계절 하나만 */
+const SHIFT_ASKS: ReadonlySet<EnvoyAsk> = new Set<EnvoyAsk>(['truce', 'alliance', 'tribute'])
+
 /**
- * 2 — 사신. 한 계절에 **상대 나라마다** 하나씩 보낼 수 있다 (형: "한 턴에 외교나 거래나 한쪽밖에 못한다는데 말이 안돼").
- * 같은 상대에게 둘을 보내면 첫 것만. 받는 쪽이 플레이어면 아무 일도 없다 (플레이어에게는 청 — makeAsks)
+ * 같은 나라에 한 계절 함께 보낼 수 없는 두 사신인가 (형: "동맹과 교역은 동시에 못하는거야?") —
+ * 같은 사신 둘 · 사이를 바꾸는 사신 둘(화친·동맹·조공) · 약조 깨기와 다른 것은 안 된다. 동맹 + 교역 · 함께 치자 + 선물은 된다
+ */
+export function envoyClash(a: EnvoyAsk, b: EnvoyAsk): boolean {
+  if (a === b || a === 'break' || b === 'break') return true
+  return SHIFT_ASKS.has(a) && SHIFT_ASKS.has(b)
+}
+
+/**
+ * 2 — 사신. 한 계절에 상대 나라마다 — 서로 부딪히지 않는 것이면 여럿 (envoyClash · 사신마다 보낼 사람 하나).
+ * 부딪히는 것은 첫 것만. 받는 쪽이 플레이어면 아무 일도 없다 (플레이어에게는 청 — makeAsks)
  */
 export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
   const R = P.realm
-  const sent = new Set<string>()
+  const sent = new Map<string, EnvoyAsk[]>()
   for (const o of orders) {
     if (o.kind !== 'envoy') continue
     const pair = `${o.from}>${o.to}`
-    if (sent.has(pair) || o.from === o.to) continue
+    const before = sent.get(pair) ?? []
+    if (before.some((x) => envoyClash(x, o.ask)) || o.from === o.to) continue
     if (r.factions[o.from] === undefined || r.factions[o.to] === undefined) continue
     // 플레이어에게는 사신 대신 청이 간다 — 다만 약조를 깨는 것은 청이 아니라 통보다
     if (r.factions[o.to]!.mind === 'player' && o.ask !== 'break') continue
@@ -543,7 +556,9 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
     // 함께 치자 — 칠 고을이 있어야 하고 · 군대 빌리기 — 지킬 우리 고을이 있어야 한다
     if (o.ask === 'joint' && (o.target === undefined || !jointTargets(r, o.from, o.to).includes(o.target))) continue
     if (o.ask === 'troops' && (o.target === undefined || r.nodes[o.target]?.owner !== o.from)) continue
-    sent.add(pair)
+    sent.set(pair, [...before, o.ask])
+    // 그 나라에 둘째 사신부터는 굴림 열쇠에 무엇을 청했는지를 붙인다 (첫 사신은 옛 열쇠 그대로 — 결정론)
+    const rk = before.length === 0 ? `${o.from}:${o.to}` : `${o.from}:${o.to}:${o.ask}`
     const give = o.ask === 'tribute' || o.ask === 'aid' || o.ask === 'joint' || o.ask === 'troops' || o.ask === 'break' ? NONE : o.give
     const take = o.ask === 'trade' || o.ask === 'tribute' || o.ask === 'aid' ? o.take : NONE
     if (!canPay(r, o.from, give)) continue
@@ -551,7 +566,7 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
     const escort = o.hero !== undefined && canEscort(r, o.from, o.hero) ? o.hero : undefined
     if (escort !== undefined) r.heroes[escort]!.awayUntil = r.season
     // 싸우는 나라에 이름난 장수를 보내면 붙잡힐 수 있다 (VICTORY §2-2 — 외교관 하나가 너무 중요해지지 않게)
-    if (escort !== undefined && relationOf(r, o.from, o.to).state === 'war' && roll(r.seed, r.season, `envoyHeld:${o.from}:${o.to}`) < R.envoyHeldWar) {
+    if (escort !== undefined && relationOf(r, o.from, o.to).state === 'war' && roll(r.seed, r.season, `envoyHeld:${rk}`) < R.envoyHeldWar) {
       const h = r.heroes[escort]!
       h.status = 'captive'
       h.captor = o.to
@@ -561,7 +576,7 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
       continue
     }
     const p = envoyTrueChance(r, o.from, o.to, o.ask, give, take, escort)
-    let accepted = p >= 1 || roll(r.seed, r.season, `envoy:${o.from}:${o.to}`) < p
+    let accepted = p >= 1 || roll(r.seed, r.season, `envoy:${rk}`) < p
     if (accepted && o.ask === 'trade' && !canPay(r, o.to, take)) accepted = false // 받는 쪽이 내놓을 것이 없으면 안 선다
     // 군대 빌리기 — 내줄 군대가 없으면(국읍의 마지막 군대뿐이거나 길이 없으면) 못 빌려준다
     const lend = accepted && o.ask === 'troops' ? lenderArmy(r, o.to, o.from, o.target!) : null

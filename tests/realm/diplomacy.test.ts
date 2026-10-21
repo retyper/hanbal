@@ -14,7 +14,7 @@ import assert from 'node:assert/strict'
 
 import { decide } from '../../src/realm/ai.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
-import { envoyChance, envoyChanceFor, envoyTrueChance, pairKey, relationOf } from '../../src/realm/diplomacy.ts'
+import { envoyChance, envoyChanceFor, envoyClash, envoyTrueChance, pairKey, relationOf } from '../../src/realm/diplomacy.ts'
 import { advance, otherEnd, planned } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
 import type { EnvoyAsk, Order, Realm, ReportLine } from '../../src/realm/types.ts'
@@ -81,7 +81,17 @@ describe('받아들일 확률', () => {
     assert.ok(gift > fair)
   })
 
-  it('같은 판·같은 명령이면 같은 답 · 상대 나라마다 한 계절에 사신 하나 · 플레이어에게 오는 사신은 없다', () => {
+  it('한 나라에 부딪히지 않는 사신은 함께 간다 — 화친 + 교역 (형: "동맹과 교역은 동시에 못하는거야?")', () => {
+    assert.ok(!envoyClash('alliance', 'trade') && !envoyClash('joint', 'gift') && !envoyClash('truce', 'trade'))
+    assert.ok(envoyClash('truce', 'alliance') && envoyClash('trade', 'trade') && envoyClash('break', 'gift') && envoyClash('tribute', 'truce'))
+    const r = byeonhanMini(3)
+    const o = [envoy('miri', 'truce'), envoy('miri', 'trade', { grain: 20, iron: 0 }, { grain: 10, iron: 0 })]
+    const sent = advance(r, o).report.lines.filter((l): l is Extract<ReportLine, { kind: 'envoy' }> => l.kind === 'envoy')
+    assert.deepEqual(sent.map((l) => l.ask), ['truce', 'trade'])
+    assert.deepEqual(advance(r, o), advance(r, o))
+  })
+
+  it('같은 판·같은 명령이면 같은 답 · 상대 나라마다 부딪히는 사신은 첫 것만 · 플레이어에게 오는 사신은 없다', () => {
     const r = byeonhanMini(3)
     const o = [envoy('miri', 'truce'), envoy('anya', 'truce'), envoy('miri', 'alliance')]
     assert.deepEqual(advance(r, o), advance(r, o))

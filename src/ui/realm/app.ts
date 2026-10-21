@@ -19,7 +19,7 @@ import { CARDS } from '../../realm/data/cards.ts'
 import {
   ASK_KIND_NAME, ASK_NAME, deedText, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, arriveWhen, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine, NODE_NOW, BUILD_NAME, BOW_NAME, CONCEAL_LINE, goodsLine, GOOD_NAME, tagNow,
 } from '../../realm/data/prose.ts'
-import { canEscort, envoyChanceFor, envoyOptions, favorOf, jointTargets, openAsks, relationOf } from '../../realm/diplomacy.ts'
+import { canEscort, envoyChanceFor, envoyClash, envoyOptions, favorOf, jointTargets, openAsks, relationOf } from '../../realm/diplomacy.ts'
 import {
   GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeYield, nodeSpecials, riteAllowed, riteCost,
   settleCost, settleLimit, settleSource, settleTargets, autoFlows, crowdOf, homeRoom, migrateCost, migrateLimit, migratePath,
@@ -161,7 +161,10 @@ const noGoods = (): Record<Good, number> => ({ grain: 0, iron: 0, salt: 0, wood:
 /** 물건의 그림 */
 /** 사신을 꾸밀 때 한 번 누름에 오르내리는 몫 */
 const GOOD_STEP: Record<Good, number> = { grain: 10, iron: 5, salt: 5, wood: 5, horse: 1 }
-const NO_COMPOSE = { to: '', ask: 'truce' as Ask, give: noGoods(), take: noGoods(), target: '' }
+/** hero — 사신으로 가는 우리 장수 ('' 이면 군장의 사자) */
+const NO_COMPOSE = { to: '', ask: 'truce' as Ask, give: noGoods(), take: noGoods(), target: '', hero: '' }
+/** 이번 계절 사신의 열쇠 — 한 나라에 부딪히지 않는 사신 여럿 (envoyClash · 형: "동맹과 교역은 동시에 못하는거야?") */
+const ekey = (to: string, ask: Ask): string => `${to}:${ask}`
 /** 공작 다섯의 그림 */
 const PLOT_ICON: Readonly<Record<PlotOp, string>> = {
   rumor: 'status-morale-down', sow: 'status-betrayal', bribe: 'good-cowries', burn: 'status-famine', spy: 'status-spy', assassin: 'unit-archer',
@@ -278,8 +281,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let guards: string[] = []
   /** 보고 카드에서 답·경계를 누른 뒤 다시 그릴 때는 싸움 카드를 다시 돌리지 않는다 */
   let fastNext = false
-  /** 이번 계절의 사신 — 상대 나라마다 하나 */
+  /** 이번 계절의 사신 — ekey(나라, 청)마다 하나 */
   const envoys: Record<string, Envoy> = {}
+  /** 그 나라에 이번 계절 보낸 사신들 */
+  const sentTo = (to: string): Envoy[] => Object.values(envoys).filter((e) => e.to === to)
   /** 이번 계절의 공작 (한 계절에 P.realm.plotsPerSeason 개) · 외교 판의 갈래 · 펼친 공작 */
   let plots: Order[] = []
   /** 장수 명령 — 맡기기 · 이끌기 · 회유 · 떠돌이 들이기 (HEROES §3·§4) */
@@ -290,8 +295,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   const tierPick: Partial<Record<RegionId, number>> = {}
   /** 원정 고르는 중 — 장수마다 갈 곳·길이 (명령이 되기 전) */
   const expPick: Record<string, { dest: ExpDest; len: 0 | 1 | 2 }> = {}
-  /** 사신과 함께 보낼 장수 — 상대 나라마다 (매력·매혹·장사꾼은 따라가야 먹힌다) */
-  const escort: Record<string, string> = {}
   /** 나라 카드에서 "있었던 일"을 다 펼친 나라 */
   const deedsOpen = new Set<string>()
   let diploMode: 'envoy' | 'plot' | 'scout' = 'envoy'
@@ -314,7 +317,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let migTo = ''
   let migN = 0
   /** 사신을 꾸미는 중 — 누구에게 · 무엇을 · 얼마 · 어디 */
-  let compose: { to: string; ask: Ask; give: Record<Good, number>; take: Record<Good, number>; target: string } = { ...NO_COMPOSE, give: noGoods(), take: noGoods() }
+  let compose: { to: string; ask: Ask; give: Record<Good, number>; take: Record<Good, number>; target: string; hero: string } = { ...NO_COMPOSE, give: noGoods(), take: noGoods() }
   let note = ''
   /** 방금 나눈 무리 — 그 카드를 밝히고 눈앞으로 가져온다 (다음 누름에 지운다) */
   let freshArmy = ''
@@ -1210,10 +1213,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (diploMode === 'scout') return h + scoutSheet(r) // 정찰 — 외교 판 안에 (형: "척후도 외교에 넣아야 겠는데")
     h += asksHtml()
     const out = Object.values(envoys)
-    for (const e of out) {
-      h += `<div class="banner good">사신: ${esc(r.factions[e.to]?.name ?? '')}에 ${ASK_NAME[e.ask]}${envoyWhere(r, e)}<button class="btn ghost sm" data-act="unenvoy" data-to="${e.to}">거둔다</button></div>`
-    }
-    if (out.length === 0) h += `<p class="mute">나라마다 한 계절에 사신 하나씩 보낼 수 있다</p>`
+    for (const e of out) h += sentBanner(r, e, true)
+    if (out.length === 0) h += `<p class="mute">${tx('사신마다 한 사람이 간다 — 사자나 쉬는 장수. 한 나라에 동맹과 교역처럼 서로 안 부딪히는 사신은 함께 보낼 수 있다.')}</p>`
     // 맺으면 뭐가 되는지 (형: "화친이랑 동맹도 되면 뭐가 되는건지 모르겠네")
     h += `<div class="asks">${ASKS.map((x) => `<div><b>${ASK_NAME[x.ask]}</b><span>${x.does}</span></div>`).join('')}</div>`
     // 앞서가는 나라 — 모두 이기려 하니, 앞선 나라는 다른 나라들이 함께 막으려 한다 (stance.leaderOf)
@@ -1263,35 +1264,82 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const who = p.by === me() ? '우리가' : josa(f.name, '이', '가')
         h += `<div class="banner ${p.by === me() ? 'bad' : 'good'}">약속: ${esc(who)} ${esc(josa(r.nodes[p.node]?.name ?? '', '을', '를'))} 친다 · ${Math.max(0, p.until - r.season)}계절 안에</div>`
       }
-      // 사신과 함께 갈 장수 (형: "장사꾼 장수는 특별히 뭘 할 수 없잖아") — 매력·매혹·장사꾼은 따라가야 먹힌다. 그 계절엔 자리를 비운다
-      const taken = new Set(Object.values(envoys).map((e) => e.hero).filter((x): x is string => x !== undefined))
-      const escorts = sorted(Object.values(r.heroes)).filter((x) => canEscort(r, me(), x.id) && !taken.has(x.id))
-      if (escorts.length > 0 && envoys[f.id] === undefined) {
-        const cur = escort[f.id] ?? ''
-        // 이름 글자 대신 얼굴 (형: "함께보낼장수선택할땐 이미지가보이게 해. 텍스트로 이름보여주지말고")
-        h += `<div class="frow"><span class="mute">함께 보낼 장수</span><div class="fpick"><button class="none${cur === '' ? ' on' : ''}" data-act="escort" data-to="${f.id}" data-id="" aria-label="혼자 보낸다">✕</button>`
-        for (const x of escorts.slice(0, 6)) {
-          const tr = (x.traits ?? []).map((t) => TRAIT[t]?.name).filter((t) => t !== undefined).slice(0, 1).join('')
-          h += `<button class="${cur === x.id ? 'on' : ''}" data-act="escort" data-to="${f.id}" data-id="${x.id}" aria-label="${esc(x.name)}${tr !== '' ? ` · ${esc(tr)}` : ''}">${bust(x, 'fp')}</button>`
-        }
-        h += `</div></div>`
-      }
       // 사이에 따라 보낼 수 있는 사신이 다르다 (형: "동맹 되고나서도 동맹버튼이 아직도 활성이면 뭘 의미하는거고")
-      h += `<div class="btns">`
-      for (const ask of envoyOptions(r, me(), f.id)) {
-        const sel = envoys[f.id]?.ask === ask
-        const sure = ask === 'gift' || ask === 'break'
-        const c = envoyChanceFor(r, me(), f.id, ask, noGoods(), noGoods(), escort[f.id] || undefined)
-        const needs = ASK_NEEDS[ask] !== undefined
-        h += `<button class="btn ${sel || (compose.to === f.id && compose.ask === ask) ? 'on' : ''}${ask === 'break' ? ' ghost' : ''}" data-act="${needs ? 'compose' : 'envoy'}" data-to="${f.id}" data-ask="${ask}" ${(envoys[f.id] !== undefined && !sel) || (envoys[f.id] === undefined && handsFull(r)) ? 'disabled' : ''}>`
-        h += `${askLabel(r, f.id, ask)}${sure ? '' : ` ${envoyFeel(c[0], c[1])}`}</button>`
-      }
-      h += `</div>`
-      if (compose.to === f.id && envoys[f.id] === undefined) h += composeHtml(r, f.id)
+      h += askButtons(r, f.id, '')
+      if (compose.to === f.id && envoys[ekey(f.id, compose.ask)] === undefined) h += composeHtml(r, f.id)
       h += `</div>`
     }
     if (gone.length > 0) h += `<h4>무너진 나라</h4><p class="mute">${gone.map((f) => `${emblem(f.id, 'fem')}${esc(f.name)}`).join(' · ')}</p>`
     return h
+  }
+
+  /** 보낸 사신 한 줄 — 누가 갔나(얼굴) · 어느 나라에 무엇을 · 거두기 */
+  function sentBanner(r: Realm, e: Envoy, nation: boolean): string {
+    const who = e.hero !== undefined ? r.heroes[e.hero] : undefined
+    const face = who !== undefined ? bust(who, 'sface') : icon('unit-scouts', 'sface')
+    const whoName = who !== undefined ? who.name : '사자'
+    return `<div class="banner good sentb">${face}<span>${tx(`${josa(whoName, '이', '가')} 간다 — ${nation ? `${r.factions[e.to]?.name ?? ''}에 ` : ''}${ASK_NAME[e.ask]}`)}${envoyWhere(r, e)}</span><button class="btn ghost sm" data-act="unenvoy" data-key="${ekey(e.to, e.ask)}">거둔다</button></div>`
+  }
+
+  /**
+   * 사신 단추들 — 누르면 아래에 꾸미기(누가 가나 · 무엇을)가 열린다. 이미 보낸 것은 켜진 채로(누르면 거둔다),
+   * 보낸 것과 부딪히는 것·보낼 사람이 없으면 꺼진다. sm — 고을 판의 작은 단추
+   */
+  function askButtons(r: Realm, to: string, sm: string): string {
+    let h = `<div class="btns">`
+    for (const ask of envoyOptions(r, me(), to)) {
+      const k = ekey(to, ask)
+      const sel = envoys[k] !== undefined
+      const clash = !sel && sentTo(to).some((e) => envoyClash(e.ask, ask))
+      const sure = ask === 'gift' || ask === 'break'
+      const c = envoyChanceFor(r, me(), to, ask, noGoods(), noGoods())
+      const on = sel || (compose.to === to && compose.ask === ask)
+      h += `<button class="btn${sm}${on ? ' on' : ''}${ask === 'break' ? ' ghost' : ''}" ${sel ? `data-act="unenvoy" data-key="${k}"` : `data-act="compose" data-to="${to}" data-ask="${ask}"`} ${clash || (!sel && handsFull(r)) ? 'disabled' : ''}>`
+      h += `${askLabel(r, to, ask)}${sel ? ' ✓' : sure ? '' : ` ${envoyFeel(c[0], c[1])}`}</button>`
+    }
+    h += `</div>`
+    // 단추가 왜 꺼졌나 — 보낼 사람이 다 나갔다
+    if (handsFull(r)) h += `<p class="mute">${tx(`보낼 사람이 다 나갔다 (${handsUsed()}/${handsCap(r)}) — 군대에서 장수를 빼 쉬게 하면 한 사람 더 보낸다.`)}</p>`
+    return h
+  }
+
+  /**
+   * 누가 가나 (형: "함께보낼 장수 선택은 맨날 못하네. 동맹 누르면 리스트가 뜨고 거기서 선택하거나하게 해주면 … 장수로 외교를 한다가 느껴질거같은데").
+   * 군장의 사자(늘 있다) + 우리 장수 모두 — 갈 수 있는 이는 얼굴 밑에 그이가 가면 먹힐 낌새, 못 가는 이는 흐리게 까닭과.
+   * 장수가 가면 그 계절 자리를 비우고, 싸우는 나라에 가면 붙잡힐 수 있다
+   */
+  function whoGoesHtml(r: Realm, to: string, ask: Ask): string {
+    const busy = new Set<string>()
+    for (const e of Object.values(envoys)) if (e.hero !== undefined) busy.add(e.hero)
+    for (const p of plots) if (p.kind === 'plot' && p.agent !== undefined) busy.add(p.agent)
+    const sure = ask === 'gift' || ask === 'break'
+    const feel = (hero?: string): string => {
+      if (sure) return ''
+      const c = envoyChanceFor(r, me(), to, ask, compose.give, compose.take, hero)
+      return envoyFeel(c[0], c[1])
+    }
+    const leading = new Set(Object.values(r.armies).map((a) => a.hero).filter((x): x is string => x !== null))
+    const ruler = r.factions[me()]?.ruler
+    const mine = sorted(Object.values(r.heroes)).filter((x) => x.faction === me() && x.status === 'free' && x.id !== ruler)
+    // 갈 수 있는 이 먼저
+    const can = (id: string): boolean => canEscort(r, me(), id) && !busy.has(id)
+    mine.sort((a, b) => Number(can(b.id)) - Number(can(a.id)))
+    let h = `<div class="who"><div class="nal">누가 가나</div><div class="wlist">`
+    h += `<button class="wg${compose.hero === '' ? ' on' : ''}" data-act="chero" data-id="">${icon('unit-scouts', 'wfc')}<b>사자</b>${feel()}</button>`
+    for (const x of mine) {
+      const ok = can(x.id)
+      const why = ok ? '' : busy.has(x.id) ? '다른 일' : leading.has(x.id) ? '군대를 이끈다' : x.woundedUntil !== undefined && x.woundedUntil >= r.season ? '다쳤다' : '나가 있다'
+      const tr = (x.traits ?? []).filter((t) => t === 'charm' || (ask === 'trade' && t === 'trader')).map((t) => TRAIT[t]?.name).filter((t) => t !== undefined)[0]
+      h += `<button class="wg${compose.hero === x.id ? ' on' : ''}" data-act="chero" data-id="${x.id}" ${ok ? '' : 'disabled'}>${bust(x, 'wfc')}<b>${esc(x.name)}</b>`
+      h += ok ? `${tr !== undefined ? `<i>${esc(tr)}</i>` : ''}${feel(x.id)}` : `<small>${why}</small>`
+      h += `</button>`
+    }
+    h += `</div>`
+    const went = compose.hero !== '' ? r.heroes[compose.hero] : undefined
+    if (went !== undefined && relationOf(r, me(), to).state === 'war') h += `<p class="mute warnl">${tx(`싸우는 나라다 — ${josa(went.name, '이', '가')} 붙잡힐 수 있다`)}</p>`
+    else if (mine.length > 0 && !mine.some((x) => can(x.id))) h += `<p class="mute">${tx('장수가 다 바쁘다. 군대에서 장수를 빼 쉬게 하면 그이를 보낼 수 있다.')}</p>`
+    else h += `<p class="mute">${tx('매력이 높거나 매혹·장사꾼(교역) 특성이 있는 장수가 가면 더 잘 먹힌다. 그 계절엔 자리를 비운다.')}</p>`
+    return h + `</div>`
   }
 
   /** 사신 단추의 이름 — 깨기는 무엇을 깨는지 (형: "약조는 무슨약조를 했엇고 뭘 깨는지 알아야 할거같은데") */
@@ -1315,7 +1363,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const ask = compose.ask
     const need = ASK_NEEDS[ask]
     const st = r.stock[me()] ?? { grain: 0, iron: 0 }
-    let h = `<div class="trade"><div class="mute">${esc(ask === 'break' ? breakHint(r, to) : (ASK_HINT[ask] ?? ''))}</div>`
+    let h = `<div class="trade"><div class="cmh"><b>${askLabel(r, to, ask)}</b><span class="mute">${esc(ask === 'break' ? breakHint(r, to) : (ASK_HINT[ask] ?? ASKS.find((x) => x.ask === ask)?.does ?? ''))}</span></div>`
+    h += whoGoesHtml(r, to, ask)
     let ok = true
     if (need === 'goods') {
       const sides = ask === 'trade' ? (['give', 'take'] as const) : ask === 'gift' ? (['give'] as const) : (['take'] as const)
@@ -1341,7 +1390,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       ok = compose.target !== ''
     }
     const sure = ask === 'gift' || ask === 'break'
-    const c = envoyChanceFor(r, me(), to, ask, compose.give, compose.take, escort[to] || undefined)
+    const c = envoyChanceFor(r, me(), to, ask, compose.give, compose.take, compose.hero || undefined)
     h += `<button class="btn on" data-act="envoy" data-to="${to}" data-ask="${ask}" ${ok ? '' : 'disabled'}>${ask === 'break' ? '정말 깬다' : '사신을 보낸다'}${sure ? '' : ` ${envoyFeel(c[0], c[1])}`}</button></div>`
     return h
   }
@@ -1896,18 +1945,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const md = moodOf(r, me(), f)
     h += `<div class="moodl ${md.mood}">${moodImg(ART, md.mood)}<div><b>${esc(MOOD_WORD[md.mood])}</b>${said(advisor(r), md.say)}</div></div>`
     // 사신
-    const sent = envoys[f]
-    if (sent !== undefined) h += `<div class="banner good">사신: ${ASK_NAME[sent.ask]}${envoyWhere(r, sent)}<button class="btn ghost sm" data-act="unenvoy" data-to="${f}">거둔다</button></div>`
-    else {
-      h += `<div class="nal">사신</div><div class="btns">`
-      for (const ask of envoyOptions(r, me(), f)) {
-        const sure = ask === 'gift' || ask === 'break'
-        const c = envoyChanceFor(r, me(), f, ask, noGoods(), noGoods(), escort[f] || undefined)
-        const needs = ASK_NEEDS[ask] !== undefined
-        h += `<button class="btn sm${ask === 'break' ? ' ghost' : ''}" data-act="${needs ? 'compose-go' : 'envoy'}" data-to="${f}" data-ask="${ask}" ${handsFull(r) ? 'disabled' : ''}>${askLabel(r, f, ask)}${sure ? '' : ` ${envoyFeel(c[0], c[1])}`}</button>`
-      }
-      h += `</div>`
-    }
+    // 사신 — 누르면 이 자리에서 누가 가나·무엇을 (형: "사신자세히는 사신선택지들 밑에 있어야할듯")
+    h += `<div class="nal">사신</div>`
+    for (const e of sentTo(f)) h += sentBanner(r, e, false)
+    h += askButtons(r, f, ' sm')
+    if (compose.to === f && envoys[ekey(f, compose.ask)] === undefined) h += composeHtml(r, f)
+    h += `<div class="btns"><button class="btn ghost sm" data-act="nat-diplo" data-to="${f}">사신 자세히 · 그 나라와 있었던 일</button></div>`
     // 공작 — 이 고을·이 나라를 노리는 것만
     const max = P.realm.plotsPerSeason
     const st = left()
@@ -1926,9 +1969,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           + `<span class="sub">${tx(`곡식 ${cost.grain}${cost.iron > 0 ? ` · 철 ${cost.iron}` : ''}`)}</span><span class="win">${plotFeel(c[0], c[1])}</span></button>`)
       }
     }
-    if (rows.length > 0) h += `<div class="nal">공작 <span class="mute">한 계절에 ${max}가지 · 지금 ${plots.length}</span></div><div class="rows">${rows.join('')}</div>`
-    // 외교 판의 사신 칸 · 공작 칸 — 둘 다 바로 (형: "외교에서 자세히 누르면 공작으로는 안넘어가네")
-    h += `<div class="btns"><button class="btn ghost" data-act="nat-diplo" data-to="${f}">사신 자세히</button><button class="btn ghost" data-act="nat-plot" data-to="${f}">공작 자세히</button></div></div>`
+    h += `<div class="nal">공작 <span class="mute">한 계절에 ${max}가지 · 지금 ${plots.length}</span></div>`
+    if (rows.length > 0) h += `<div class="rows">${rows.join('')}</div>`
+    // 외교 판의 공작 칸 — 공작 밑에 (형: "외교에서 자세히 누르면 공작으로는 안넘어가네")
+    h += `<div class="btns"><button class="btn ghost sm" data-act="nat-plot" data-to="${f}">공작 자세히</button></div></div>`
     return h
   }
 
@@ -2097,7 +2141,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       : lands(f) > lands(me()) ? '우리를 만만하게 보는 모양입니다.' : '우리 땅이 탐나는 모양입니다.'
     let h = `<div class="warc rv" style="--t:${t}s">${bust(lord, 'flord')}${moodImg(ART, 'angry', 'mood wm')}<div class="wb"><b>${emblem(f, 'fem')}<span>${esc(josa(name, '이', '가'))} 전쟁을 걸어왔다</span></b>`
     h += `<span>${tx(why.replace(/^.*?— /, ''))}</span>${said(advisor(r), guess)}`
-    h += `<div class="btns"><button class="btn sm${envoys[f]?.ask === 'truce' ? ' on' : ''}" data-act="envoy" data-to="${f}" data-ask="truce">${envoys[f]?.ask === 'truce' ? '화친 사신을 보낸다 · 거두기' : '화친을 청한다'}</button><button class="btn ghost sm" data-act="nat-diplo" data-to="${f}">외교 판</button></div></div></div>`
+    h += `<div class="btns"><button class="btn sm${envoys[ekey(f, 'truce')] !== undefined ? ' on' : ''}" data-act="envoy" data-to="${f}" data-ask="truce">${envoys[ekey(f, 'truce')] !== undefined ? '화친 사신을 보낸다 · 거두기' : '화친을 청한다'}</button><button class="btn ghost sm" data-act="nat-diplo" data-to="${f}">외교 판</button></div></div></div>`
     return h
   }
 
@@ -2259,7 +2303,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     Object.assign(pick, rec<{ edge: string; ambush: boolean; ration?: Ration }>('pick'))
     for (const p of Object.values(pick)) if (p !== undefined && typeof p.ration === 'string') p.ration = rationExtra(p.ration) ?? P.realm.rationReserve
     Object.assign(answers, rec<boolean>('answers'))
-    Object.assign(envoys, rec<Envoy>('envoys'))
+    // 옛 초안은 나라 열쇠 — 새 열쇠로 다시 단다
+    for (const e of Object.values(rec<Envoy>('envoys'))) if (e !== null && typeof e === 'object' && typeof e.to === 'string') envoys[ekey(e.to, e.ask)] = e
     Object.assign(persuadeBy, rec<string>('persuadeBy'))
     Object.assign(hands, rec<Hand>('hands'))
   }
@@ -2900,21 +2945,24 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const ask = d['ask'] as Ask
         const to = d['to']!
         const detailed = compose.to === to && compose.ask === ask
-        if (envoys[to]?.ask === ask) delete envoys[to]
+        const k = ekey(to, ask)
+        if (envoys[k] !== undefined) delete envoys[k]
         else {
-          envoys[to] = {
+          // 부딪히는 사신은 거두고 보낸다
+          for (const e of sentTo(to)) if (envoyClash(e.ask, ask)) delete envoys[ekey(to, e.ask)]
+          envoys[k] = {
             kind: 'envoy', from: me(), to, ask,
             give: detailed ? { ...compose.give } : noGoods(),
             take: detailed ? { ...compose.take } : noGoods(),
-            ...(escort[to] !== undefined && escort[to] !== '' ? { hero: escort[to] } : {}),
+            ...(detailed && compose.hero !== '' ? { hero: compose.hero } : {}),
             ...(detailed && compose.target !== '' ? { target: compose.target } : {}),
           }
         }
         compose = { ...NO_COMPOSE, give: noGoods(), take: noGoods() }
         break
       }
-      case 'unenvoy': delete envoys[d['to']!]; break
-      case 'escort': escort[d['to']!] = d['id'] ?? ''; break
+      case 'unenvoy': delete envoys[d['key']!]; break
+      case 'chero': compose.hero = d['id'] ?? ''; break
       case 'deeds': { const t = d['to']!; if (deedsOpen.has(t)) deedsOpen.delete(t); else deedsOpen.add(t); break }
       case 'build': {
         const node = d['node']!
