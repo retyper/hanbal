@@ -1,0 +1,70 @@
+칠십팔국 소리 후보 — 전부 CC0 (퍼블릭 도메인). 출처 표기 의무는 없지만 나중에 찾으려고 적는다. (2026-10-22 수집)
+형식: 파일  출처 · ID/주소 · 제목 · 올린이 · 라이선스
+
+ui_open_a.ogg  Freesound · ID 136778 (https://freesound.org/s/136778/) · "Page Turn" · davidbain · CC0
+ui_open_b.ogg  Freesound · ID 353125 (https://freesound.org/s/353125/) · "Paper Rustle" · BenjaminNelan · CC0
+ui_open_c.ogg  Freesound · ID 615337 (https://freesound.org/s/615337/) · "Paper_Flip_01" · Rookster · CC0
+ui_order_a.ogg  Freesound · ID 369710 (https://freesound.org/s/369710/) · "Wood Knock" · Mrguff · CC0
+ui_order_b.ogg  Freesound · ID 368523 (https://freesound.org/s/368523/) · "Claves_Oneshot_Smartphone_Recording_01" · cabled_mess · CC0
+ui_order_c.ogg  Freesound · ID 742279 (https://freesound.org/s/742279/) · "Ashboy34 - Temple block - Lunarlander 1969" · Sadiquecat · CC0
+ui_cancel_a.ogg  Freesound · ID 565133 (https://freesound.org/s/565133/) · "UI_Cancel" · unfa · CC0
+ui_cancel_b.ogg  Freesound · ID 788602 (https://freesound.org/s/788602/) · "Cancel or No Button Sound" · el_boss · CC0
+ui_cancel_c.ogg  Freesound · ID 500928 (https://freesound.org/s/500928/) · "wood-click-2.wav" · husamalhomsi · CC0
+season_turn_a.ogg  Freesound · ID 18654 (https://freesound.org/s/18654/) · "gong.aiff" · nkuitse · CC0
+season_turn_b.ogg  Freesound · ID 445633 (https://freesound.org/s/445633/) · "Traditional Asian Percussion 01.wav" · LilMati · CC0
+season_turn_c.ogg  Freesound · ID 131348 (https://freesound.org/s/131348/) · "Bell at Daitokuji temple,kyoto.wav" · nahmandub · CC0
+amb_spring_a.ogg  Freesound · ID 387978 (https://freesound.org/s/387978/) · "Birds Singing 03.wav" · DCPoke · CC0
+amb_spring_b.ogg  Freesound · ID 559518 (https://freesound.org/s/559518/) · "Birds Singing Near Stream" · HighPeakEmma · CC0
+amb_summer_a.ogg  Freesound · ID 272169 (https://freesound.org/s/272169/) · "Cicadas " · dethrok · CC0
+amb_summer_b.ogg  Freesound · ID 422048 (https://freesound.org/s/422048/) · "forest_cicada_loop.flac" · Nimlos · CC0
+amb_autumn_a.ogg  Freesound · ID 457318 (https://freesound.org/s/457318/) · "Autumn wind and dry leaves.wav" · Stek59 · CC0
+amb_autumn_b.ogg  Freesound · ID 405140 (https://freesound.org/s/405140/) · "Autumn leaves falling on forest floor, moderate wind (loopable)" · Mjeno · CC0
+amb_autumn_c.ogg  Freesound · ID 378725 (https://freesound.org/s/378725/) · "Leaves Rustling in Wind - Zoom H6.wav" · lunchmoney · CC0
+amb_winter_a.ogg  Freesound · ID 216608 (https://freesound.org/s/216608/) · "Cold winter " · jordivburgel · CC0
+amb_winter_b.ogg  Freesound · ID 638434 (https://freesound.org/s/638434/) · "Cold Howling Wind/Breeze (Loopable)" · The_Isot_is_Back · CC0
+amb_winter_c.ogg  Freesound · ID 256862 (https://freesound.org/s/256862/) · "Howling Wind" · Kodack · CC0
+war_drums_a.ogg  Freesound · ID 274223 (https://freesound.org/s/274223/) · "War Drum Loop" · PearceWilsonKing · CC0
+war_drums_b.ogg  Freesound · ID 342465 (https://freesound.org/s/342465/) · "Tribe Drum Loop" · PearceWilsonKing · CC0
+battle_clash_a.ogg  Freesound · ID 611765 (https://freesound.org/s/611765/) · "Swords Clashing" · Sam300Productions · CC0
+battle_clash_b.ogg  Freesound · ID 518992 (https://freesound.org/s/518992/) · "SwordClash.wav" · Amaiguri · CC0
+battle_clash_c.ogg  Freesound · ID 563011 (https://freesound.org/s/563011/) · "People screaming in agony when charging into battle" · florianreichelt · CC0
+arrow_volley_a.ogg  Freesound · ID 474121 (https://freesound.org/s/474121/) · "volley of arrows01.wav" · mcaseydesign · CC0
+arrow_volley_b.ogg  Freesound · ID 394004 (https://freesound.org/s/394004/) · "Arrows Fly By.mp3" · DigPro120 · CC0
+arrow_volley_c.ogg  Freesound · ID 675820 (https://freesound.org/s/675820/) · "S23-22 Arrows fly & hit; indoors.wav" · craigsmith · CC0
+horses_a.ogg  Freesound · ID 583261 (https://freesound.org/s/583261/) · "Horses running final.wav" · C-V · CC0
+horses_b.ogg  Freesound · ID 165532 (https://freesound.org/s/165532/) · "SRS_Foley_Horse_Galloping.wav" · StephenSaldanha · CC0
+horses_c.ogg  Freesound · ID 175356 (https://freesound.org/s/175356/) · "Horse Galloping.wav" · Max_Headroom · CC0
+horn_victory_a.ogg  Freesound · ID 539956 (https://freesound.org/s/539956/) · "war horn.wav" · adharca · CC0
+horn_victory_b.ogg  Freesound · ID 175946 (https://freesound.org/s/175946/) · "Horn002.wav" · freefire66 · CC0
+defeat_a.ogg  Freesound · ID 415200 (https://freesound.org/s/415200/) · "Deep Gong Tolling.mp3" · Yin_Yang_Jake007 · CC0
+defeat_b.ogg  Freesound · ID 155461 (https://freesound.org/s/155461/) · "gong bash resonance" · hiddenpersuader · CC0
+coins_a.ogg  Freesound · ID 338260 (https://freesound.org/s/338260/) · "Money Bag" · PhilSavlem · CC0
+coins_b.ogg  Freesound · ID 17502 (https://freesound.org/s/17502/) · "Coin dropping.wav" · Jace · CC0
+coins_c.ogg  Freesound · ID 443334 (https://freesound.org/s/443334/) · "MONEY_001.wav" · rolandseer · CC0
+envoy_a.ogg  Freesound · ID 581833 (https://freesound.org/s/581833/) · "SFX - Horse - Walk.wav" · MrFizzywig · CC0
+envoy_b.ogg  Freesound · ID 269571 (https://freesound.org/s/269571/) · "horse neigh shortened.wav" · shadoWisp · CC0
+envoy_c.ogg  Freesound · ID 94024 (https://freesound.org/s/94024/) · "BurmaBell.aif" · LozKaye · CC0
+feast_a.ogg  Freesound · ID 460107 (https://freesound.org/s/460107/) · "Traditional Asian Percussion 03.wav" · LilMati · CC0
+feast_b.ogg  Freesound · ID 460039 (https://freesound.org/s/460039/) · "Traditional Asian Percussion 02.wav" · LilMati · CC0
+feast_c.ogg  Freesound · ID 697381 (https://freesound.org/s/697381/) · "Thingyan Doe(Myanmar )" · ManDaKi · CC0
+birth_a.ogg  Freesound · ID 452379 (https://freesound.org/s/452379/) · "Small Bell #2" · steffcaffrey · CC0
+birth_b.ogg  Freesound · ID 271370 (https://freesound.org/s/271370/) · "singing bowl strike sound" · inoshirodesign · CC0
+birth_c.ogg  Freesound · ID 94934 (https://freesound.org/s/94934/) · "Taegum-1.aif" · bletort · CC0
+capture_a.ogg  Freesound · ID 167914 (https://freesound.org/s/167914/) · "Steel chain dragged, shower reverb" · ani_music · CC0
+capture_b.ogg  Freesound · ID 581268 (https://freesound.org/s/581268/) · "shackles.wav" · zaqqazlowell · CC0
+capture_c.ogg  Freesound · ID 799421 (https://freesound.org/s/799421/) · "chaindrop 1" · Logicogonist · CC0
+dex_new_a.ogg  Freesound · ID 456965 (https://freesound.org/s/456965/) · "Short Success Sound Glockenspiel Treasure Video Game.mp3" · FunWithSound · CC0
+dex_new_b.ogg  Freesound · ID 715067 (https://freesound.org/s/715067/) · "achievement-sparkle" · SkySpeira · CC0
+dex_new_c.ogg  Freesound · ID 24551 (https://freesound.org/s/24551/) · "kayageum1_A2.wav" · spt3125 · CC0
+bgm_map_a.ogg  Freesound · ID 521367 (https://freesound.org/s/521367/) · "blossom valley in paradise" · neolein · CC0
+bgm_map_b.ogg  Freesound · ID 664200 (https://freesound.org/s/664200/) · "Karst mountains" · neolein · CC0
+bgm_map_c.ogg  Freesound · ID 472707 (https://freesound.org/s/472707/) · "guzheng solo" · neolein · CC0
+bgm_war_c.ogg  Freesound · ID 527829 (https://freesound.org/s/527829/) · "War Drums Loop.wav" · BaDoink · CC0
+bgm_war_d.ogg  Freesound · ID 346455 (https://freesound.org/s/346455/) · "Epic_Battle_Music_1.MP3" · Airwolf89 · CC0
+bgm_map_d.ogg  OpenGameArt · https://opengameart.org/content/orien · "Orien" · Tozan · CC0
+bgm_map_e.ogg  OpenGameArt · https://opengameart.org/content/mysterious-sparrow-lake · "Mysterious Sparrow Lake" · Tozan · CC0
+bgm_war_a.ogg  OpenGameArt · https://opengameart.org/content/prepare-your-swords · "Prepare your swords" · bojidar-bg · CC0
+bgm_war_b.ogg  OpenGameArt · https://opengameart.org/content/call-to-war · "Call to War" (사이트 미리듣기 ogg) · Umplix · CC0
+horn_victory_c.ogg  OpenGameArt · https://opengameart.org/content/victory-fanfare-short · "Victory Fanfare Short" (사이트 미리듣기 ogg) · cynicmusic · CC0
+defeat_c.ogg  OpenGameArt · https://opengameart.org/content/medieval-defeat-theme · "Medieval: Defeat Theme" (사이트 미리듣기 ogg) · RandomMind · CC0
+war_drums_c.ogg  OpenGameArt · https://opengameart.org/content/prehistoric-drum-loop · "Prehistoric Drum Loop" (select.ogg) · hornpipe2 · CC0

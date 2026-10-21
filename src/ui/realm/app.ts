@@ -54,6 +54,7 @@ import { pactOf } from '../../realm/suzerain.ts'
 import { ironOf, riteOf } from '../../realm/paths.ts'
 import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
 import { FRONT_CSS, PROLOGUE_STEPS, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History } from './front.ts'
+import { SCENE_SOUND, makeMusic, snd } from './sound.ts'
 import { FEEL_CSS, alertFeel, ambushFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
 
 export interface AppHost {
@@ -80,8 +81,9 @@ const DRAFT_KEY = 'hanbal.realm.draft'
 /** 탭의 빨간 점 — 이 판에서 이미 본 것 (dotKeys) */
 const SEEN_KEY = 'hanbal.realm.seen'
 /** 밤 활 연습장 (SNIPE §0, 형: "궁술연습장도 만들어서 아무때나 해볼수 있게") */
-/** 소리 (public/sfx — 활터와 같은 곳). 끄기는 나라 판에서, 기억은 이 기기에만 */
-const SFX: string = (import.meta.env?.BASE_URL ?? '/') + 'sfx/'
+/** 소리 (public/sfx — 활터와 같은 곳 · 이름에 / 가 있으면 public 아래 길: realm/sfx — sound.ts). 끄기는 나라 판에서, 기억은 이 기기에만 */
+const BASE: string = import.meta.env?.BASE_URL ?? '/'
+const SFX: string = BASE + 'sfx/'
 const MUTE_KEY = 'hanbal.realm.mute'
 function muted(): boolean {
   try { return localStorage.getItem(MUTE_KEY) === '1' } catch { return false }
@@ -89,7 +91,7 @@ function muted(): boolean {
 function ding(name: string, vol = 0.6): void {
   if (muted()) return
   try {
-    const a = new Audio(`${SFX}${name}.ogg`)
+    const a = new Audio(`${name.includes('/') ? BASE : SFX}${name}.ogg`)
     a.volume = vol
     void a.play().catch(() => {})
   } catch { /* 소리를 못 내는 곳 */ }
@@ -100,6 +102,8 @@ const PRACTICE_READY = true
 const NIGHT: string = (import.meta.env?.BASE_URL ?? '/') + 'night.html'
 /** 보고판이 쌓이는 빠르기 (초) — 소식 한 줄 · 무너진 나라 한 장. 계절 띠(seasonFx)가 걷힌 뒤 시작한다 (CSS .modal.late) */
 const LINE_S = 0.6
+/** 계절 종이 울린 뒤 그 계절 장면의 소리가 나기까지 (ms) */
+const SCENE_CUE_MS = 1400
 const FALL_S = 1.6
 /** 싸움 카드 하나가 다 풀리는 데 걸리는 때 — 카드 안 줄들의 가장 늦은 --d 에 한 박자 */
 const battleCardSeconds = (html: string): number => Math.max(0, ...[...html.matchAll(/--d:([\d.]+)s/g)].map((m) => Number(m[1]))) + 0.8
@@ -229,6 +233,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   document.head.appendChild(style)
   root.classList.add('ap')
   installTips(root)
+  /** 배경 음악 · 계절 바람 — 싸움 창이 열려 있으면 싸움 음악 */
+  const music = makeMusic(BASE, muted)
+  let warOn = false
   root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="legend"></div><div class="zbtns"><button data-act="layers" class="lyb" aria-label="보기">👁</button><button data-act="zin">＋</button><button data-act="zout">－</button></div><div class="layers"></div><button class="next" data-act="next"></button><div class="selbar"></div><div class="roadkey"></div><button class="homebtn" data-act="home">우리 땅</button><button class="logbtn" data-act="log-open">지난 기록</button><div class="tutband"></div>`
     + `<nav class="tabs"></nav><div class="back" data-act="close"></div><section class="sheet"></section><div class="modal"></div><div class="plbox"></div>`
   const $ = (sel: string): HTMLElement => root.querySelector<HTMLElement>(sel)!
@@ -2441,7 +2448,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     el.innerHTML = `<i class="band" style="background-image:url('${ART}season/season-${s}.jpg')"></i><div>${icon(SEASON_ICON[s], 'sfx-ic')}<b>${esc(seasonLabel(season))}</b><span>${esc(SEASON_LINE[s])}</span></div>`
     el.addEventListener('animationend', () => el.remove(), { once: true })
     root.appendChild(el)
-    ding('impactBell_heavy_000', 0.45)
+    ding(snd('season_turn'), 0.4)
   }
 
   /** 막혔다 — 화면 위에 까닭과 기록 내보내기 단추를 띄우고, 판 기록에도 남긴다 (형이 보내 주면 그 판을 그대로 다시 돌려 본다) */
@@ -2460,6 +2467,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   function paint(): void {
     try {
+      if (!warOn && realm !== null) music.map(seasonOf(realm.season))
       paintNow()
     } catch (e) {
       failNote(e)
@@ -2594,6 +2602,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const html = dexToastHtml(DEX_KIT, items)
     if (html === '') return
     root.insertAdjacentHTML('beforeend', html)
+    ding(snd('dex_new'), 0.35)
     const el = root.querySelector('.dxtoast')
     el?.addEventListener('animationend', () => el.remove(), { once: true })
   }
@@ -2623,7 +2632,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     host.onAdvance(res.next, res.report, all, mine)
     dexToast(recordDex(res.next))
     seasonFx(res.next.season)
-    if (res.report.lines.some((l) => l.kind === 'battle' && (l.atkFaction === me() || l.defender === me()))) ding('boom_01', 0.35) // 우리가 낀 싸움
+    // 우리가 낀 싸움이면 북, 아니면 이 계절 머리 장면의 소리 (혼인·아이·동맹…) — 종이 잦아든 뒤
+    const ourWar = res.report.lines.some((l) => l.kind === 'battle' && (l.atkFaction === me() || l.defender === me()))
+    const ev = /event\/([\w-]+)\.jpg/.exec(sceneOf(prev, res.next, res.report))?.[1]
+    const cue = ourWar ? 'war_drums' : ev !== undefined ? SCENE_SOUND[ev] : undefined
+    if (cue !== undefined) window.setTimeout(() => { if (document.visibilityState === 'visible') ding(snd(cue), 0.4) }, SCENE_CUE_MS)
     paint()
   }
 
@@ -2697,7 +2710,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       saveTut()
       if (front === null) paintTut(plan()) // 다시 그리지 않는 단추(우리 땅 등)에도 띠가 넘어가게
     }
-    if (d['act'] !== undefined && d['act'] !== 'next') ding('click1', 0.18) // 누른 것이 먹었다는 작은 소리
+    if (d['act'] !== undefined && d['act'] !== 'next') ding(snd(/-open$|^help$/.test(d['act']) ? 'ui_open' : 'ui_order'), 0.2) // 누른 것이 먹었다는 작은 소리 · 책장을 펴면 종이 소리
     freshArmy = ''
     const r = realm !== null ? plan() : null
     switch (d['act']) {
@@ -2757,7 +2770,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'help': openSheet({ kind: 'help' }); return
       case 'export': host.onExport(); return
       case 'failclose': root.querySelector('.failbox')?.remove(); return
-      case 'mute': try { localStorage.setItem(MUTE_KEY, muted() ? '0' : '1') } catch { /* 저장 못 하는 곳 */ } break
+      case 'mute': try { localStorage.setItem(MUTE_KEY, muted() ? '0' : '1') } catch { /* 저장 못 하는 곳 */ } music.refresh(); break
       case 'focus': focus = focus === d['id'] ? null : d['id']!; break
       case 'rep-close': showReport = false; paint(); return
       case 'next': {
@@ -2768,11 +2781,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         fastNext = false
         // 우리가 낄 싸움이 있으면 전장이 먼저 열린다 — 합마다 직접 지휘하고, 그 명령으로 넘긴다 (battlefield.ts)
         const finish = (tactics: Record<string, Tactic>): void => {
+          warOn = false
           const cmds: Order[] = Object.entries(tactics).map(([key, t]) => ({ kind: 'command', key, cmds: t.cmds }))
           endSeason(prev, [...orders, ...cmds], ai)
         }
         try {
-          if (openWar(root, prev, [...orders, ...ai], { art: ART, me: me(), ding, done: finish })) return
+          if (openWar(root, prev, [...orders, ...ai], { art: ART, me: me(), ding, done: finish })) { warOn = true; music.war(); return }
         } catch (e) {
           failNote(e)
           return

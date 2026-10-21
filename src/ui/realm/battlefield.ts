@@ -17,6 +17,7 @@ import { groupMen } from '../../realm/tactics.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
 import { seasonOf } from '../../realm/season.ts'
 import type { Act, Approach, Art, Cmd, Grp, Order, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
+import { snd } from './sound.ts'
 
 const esc = (s: string): string =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
@@ -112,13 +113,13 @@ const TERRAIN_CMD: ReadonlySet<Cmd> = new Set<Cmd>(['ford', 'rocks', 'gate', 'ra
 /** 소리 자리 (형: "공방필살 마지막일격등 상황에 맞게 소리 들어갈곳") — public/sfx 의 활터 소리. 바꾸려면 여기만 */
 export const BATTLE_SFX = {
   charge: 'swing_01', hold: 'parry_01', open: 'shot_longbow', ford: 'parry_02', rocks: 'crash_02', gate: 'impactWood_heavy_001', ram: 'impactPlank_medium_000',
-  volley: 'shot_loose', counter: 'shot_flecha', fire: 'crash_01', height: 'shot_longbow',
+  volley: snd('arrow_volley'), counter: 'shot_flecha', fire: 'crash_01', height: 'shot_longbow',
   flank: 'roar_01', punch: 'roar_01', pursue: 'roar_01', guard: 'parry_02',
   drum: 'impactWood_medium_000', duel: 'unsheath_01', capture: 'sheath_01', retreat: 'switch2', art: 'roar_01',
   /** 맞부딪힘 — 상성에서 이겼다(필살) · 그냥 */
   crit: 'impactPunch_heavy_000', clash: 'impactWood_heavy_000',
   /** 사로잡았다 · 장수 겨루기 · 마지막 일격(적이 무너졌다) · 이겼다 · 졌다 */
-  caught: 'jingleUnlock', duelWin: 'herodeath_01', final: 'bossdeath_01', win: 'jingleClear', lose: 'fail_gong',
+  caught: 'jingleUnlock', duelWin: 'herodeath_01', final: 'bossdeath_01', win: snd('horn_victory'), lose: snd('defeat'),
   /** 싸움이 열린다 — 북 두 번, 종 한 번 */
   openDrum: 'impactWood_heavy_000', openBell: 'impactBell_heavy_001',
 } as const

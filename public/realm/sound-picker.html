@@ -1,0 +1,179 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>칠십팔국 소리 고르기</title>
+<style>
+  :root { color-scheme: dark; }
+  body { background:#171c23; color:#e2dbcd; margin:0; padding:22px 16px 60px;
+         font-family:"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; }
+  h1 { font-size:20px; letter-spacing:.06em; margin:0 0 6px; }
+  h2 { font-size:15px; letter-spacing:.1em; color:#ffb347; margin:30px 0 4px; }
+  h3 { font-size:14px; color:#e2dbcd; margin:20px 0 2px; }
+  h3 code { font-size:12px; }
+  p  { color:#95a1ae; font-size:13px; line-height:1.7; max-width:760px; margin:6px 0 10px; }
+  .row { display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+         padding:9px 0; border-top:1px solid #2c333d; }
+  .no  { font-weight:700; color:#ffb347; min-width:34px; font-size:15px; }
+  .nm  { font-size:13px; color:#ccd6e0; flex:1; min-width:160px; }
+  .dl  { font-size:11px; color:#6f7c8a; }
+  audio { height:34px; max-width:100%; }
+  code { background:#232a33; padding:1px 5px; border-radius:3px; color:#ffd88f; }
+  .warn { color:#e8a07a; }
+  .pick { color:#7fd17a; font-size:12px; }
+</style></head><body>
+
+<h1>칠십팔국 소리 고르기</h1>
+<p>전부 <b>CC0</b>(퍼블릭 도메인) — Freesound 와 OpenGameArt 에서 받아 <code>public/realm/sfx/</code> 에 넣어 둔 후보다.
+<b class="pick">★ 지금 쓰는 것</b> 표시가 붙은 게 내가 먼저 골라 게임에 붙여 둔 것이다 (<code>src/ui/realm/sound.ts</code> 의 PICK). 들어 보고 <b>칸마다 번호만 말해 주면</b> 그걸로 바꾼다 (예: "3, 7, 12번").
+다 별로면 "OO 다시 찾아"라고 하면 된다.</p>
+<p>★ 나는 소리를 못 듣는다. 제목·길이·다운로드 수·설명만 보고 골랐다. 그래서 <span class="warn">일본·중국 느낌이 세게 나는 것</span>이
+섞였을 수 있다 — 그런 건 바로 빼 달라고 해 줘. 출처는 <code>sfx/CREDITS.txt</code>.</p>
+
+<div id="list"></div>
+
+<script>
+// [칸 제목, 쓰는 곳 설명, [[파일, 설명, 길이]...]]
+const GROUPS = [
+  ['① 화면 소리', [
+    ['ui_open', '문서가 열릴 때 — 종이·두루마리 넘기는 소리', [
+      ['ui_open_a', '책장 넘기기 · davidbain', '2.0초'],
+      ['ui_open_b', '종이 바스락 · BenjaminNelan', '1.1초'],
+      ['ui_open_c', '종이 한 장 넘김 · Rookster', '0.8초'],
+    ]],
+    ['ui_order', '명령을 내릴 때 — 나무를 톡 치는 부드러운 확인음', [
+      ['ui_order_a', '나무 두드림 · Mrguff', '0.9초'],
+      ['ui_order_b', '딱따기(클라베스) · cabled_mess', '0.4초'],
+      ['ui_order_c', '목탁 같은 나무토막 · Sadiquecat', '1.2초'],
+    ]],
+    ['ui_cancel', '물리기·닫기', [
+      ['ui_cancel_a', '취소음 (전자음일 수 있다) · unfa', '0.6초'],
+      ['ui_cancel_b', '취소·아니오 버튼 · el_boss', '0.6초'],
+      ['ui_cancel_c', '아주 짧은 나무 딸깍 · husamalhomsi', '0.1초'],
+    ]],
+  ]],
+  ['② 계절', [
+    ['season_turn', '계절이 넘어갈 때 — 징이나 큰북 한 번', [
+      ['season_turn_a', '징 · nkuitse', '5.2초'],
+      ['season_turn_b', '동아시아 타악기 한 소절 · LilMati', '4.0초'],
+      ['season_turn_c', '절 범종 (교토 대덕사 녹음 — 종소리 자체는 우리 범종과 비슷할 것) · nahmandub', '7.7초'],
+    ]],
+    ['amb_spring', '봄 바탕소리 (되풀이) — 새소리', [
+      ['amb_spring_a', '새 지저귐 (다운로드 14만 회) · DCPoke', '26초'],
+      ['amb_spring_b', '시냇가 새소리 · HighPeakEmma', '40초'],
+    ]],
+    ['amb_summer', '여름 바탕소리 — 매미·풀벌레', [
+      ['amb_summer_a', '매미 · dethrok', '46초'],
+      ['amb_summer_b', '숲 매미 (되풀이용으로 다듬은 것) · Nimlos', '15초'],
+    ]],
+    ['amb_autumn', '가을 바탕소리 — 바람과 마른 잎', [
+      ['amb_autumn_a', '가을바람과 마른 잎 (다운로드 5만 회) · Stek59', '43초'],
+      ['amb_autumn_b', '숲 바닥에 지는 잎, 바람 (되풀이용) · Mjeno', '20초'],
+      ['amb_autumn_c', '바람에 나뭇잎 · lunchmoney', '36초'],
+    ]],
+    ['amb_winter', '겨울 바탕소리 — 찬바람', [
+      ['amb_winter_a', '추운 겨울 · jordivburgel', '40초'],
+      ['amb_winter_b', '차가운 바람 (되풀이용) · The_Isot_is_Back', '21초'],
+      ['amb_winter_c', '울부짖는 바람 · Kodack', '26초'],
+    ]],
+  ]],
+  ['③ 싸움', [
+    ['war_drums', '군사를 낼 때 — 짧은 전쟁북', [
+      ['war_drums_a', '전쟁북 되풀이 · PearceWilsonKing', '7.4초'],
+      ['war_drums_b', '부족 북 되풀이 · PearceWilsonKing', '8.3초'],
+      ['war_drums_c', '원시 북 되풀이 (OpenGameArt) · hornpipe2', '5.7초'],
+    ]],
+    ['battle_clash', '맞붙을 때 — 여럿이 칼 부딪는 소리', [
+      ['battle_clash_a', '칼 여러 번 부딪힘 · Sam300Productions', '10초'],
+      ['battle_clash_b', '칼 부딪힘 · Amaiguri', '6.6초'],
+      ['battle_clash_c', '함성 지르며 돌격 (말소리 없는 비명·고함) · florianreichelt', '18초'],
+    ]],
+    ['arrow_volley', '화살 비 — 여러 대가 한꺼번에', [
+      ['arrow_volley_a', '화살 일제 사격 · mcaseydesign', '2.7초'],
+      ['arrow_volley_b', '화살이 스쳐 날아감 · DigPro120', '4.5초'],
+      ['arrow_volley_c', '화살이 날아와 꽂힘 · craigsmith', '4.5초'],
+    ]],
+    ['horses', '기병 — 말 달리는 소리', [
+      ['horses_a', '말 여러 마리 달림 · C-V', '11초'],
+      ['horses_b', '말 질주 (폴리) · StephenSaldanha', '12초'],
+      ['horses_c', '말 질주 (다운로드 1.5만 회) · Max_Headroom', '5.8초'],
+    ]],
+    ['horn_victory', '이겼을 때 — 뿔나팔', [
+      ['horn_victory_a', '전쟁 뿔나팔 · adharca', '4.4초'],
+      ['horn_victory_b', '뿔나팔 · freefire66', '4.5초'],
+      ['horn_victory_c', '승리 팡파르 (관현악, 서양풍일 수 있다 · OpenGameArt) · cynicmusic', '12초'],
+    ]],
+    ['defeat', '졌을 때 — 무겁게 가라앉는 소리', [
+      ['defeat_a', '낮은 징 울림 · Yin_Yang_Jake007', '6.4초'],
+      ['defeat_b', '징 세게 친 뒤 울림 · hiddenpersuader', '7.8초'],
+      ['defeat_c', '패배 음악 (중세풍, 서양풍일 수 있다 · OpenGameArt) · RandomMind', '45초'],
+    ]],
+  ]],
+  ['④ 외교·살림', [
+    ['coins', '교역·재물이 들어올 때', [
+      ['coins_a', '돈주머니 · PhilSavlem', '1.7초'],
+      ['coins_b', '동전 떨어짐 · Jace', '2.3초'],
+      ['coins_c', '돈 소리 · rolandseer', '2.1초'],
+    ]],
+    ['envoy', '사신이 오갈 때 — 말·방울', [
+      ['envoy_a', '말이 걸어감 · MrFizzywig', '8.7초'],
+      ['envoy_b', '말 울음 (짧게) · shadoWisp', '1.5초'],
+      ['envoy_c', '버마 종 (방울 대신) · LozKaye', '5.9초'],
+    ]],
+    ['feast', '혼인·잔치 — 흥겨운 북', [
+      ['feast_a', '동아시아 타악기 ③ · LilMati', '12초'],
+      ['feast_b', '동아시아 타악기 ② · LilMati', '8초'],
+      ['feast_c', '미얀마 축제 북 · ManDaKi', '6.2초'],
+    ]],
+    ['birth', '아이가 태어날 때 — 맑고 조용한 울림', [
+      ['birth_a', '작은 종 · steffcaffrey', '1.9초'],
+      ['birth_b', '싱잉볼 · inoshirodesign', '6.3초'],
+      ['birth_c', '<b>대금</b> 한 가락 (우리 피리!) · bletort', '6.7초'],
+    ]],
+    ['capture', '사로잡을 때 — 쇠사슬·포승', [
+      ['capture_a', '쇠사슬 끌림 · ani_music', '2.2초'],
+      ['capture_b', '족쇄 · zaqqazlowell', '0.8초'],
+      ['capture_c', '사슬 떨어짐 · Logicogonist', '0.9초'],
+    ]],
+    ['dex_new', '도감에 새 사람이 들 때 — 짧고 밝은 소리', [
+      ['dex_new_a', '글로켄슈필 보물 소리 (다운로드 1.4만 회) · FunWithSound', '2.5초'],
+      ['dex_new_b', '반짝 업적음 · SkySpeira', '1.8초'],
+      ['dex_new_c', '<b>가야금</b> 한 음 (진짜 가야금 녹음) · spt3125', '9.5초'],
+    ]],
+  ]],
+  ['⑤ 바탕 음악', [
+    ['bgm_map', '지도 화면 — 차분하게 오래 깔리는 음악 (하나 또는 둘을 돌려 튼다)', [
+      ['bgm_map_a', '고쟁(가야금 사촌) — 꽃 핀 골짜기 · neolein', '63초'],
+      ['bgm_map_b', '고쟁 — 카르스트 산 · neolein', '109초'],
+      ['bgm_map_c', '고쟁 독주 · neolein', '85초'],
+      ['bgm_map_d', '느린 동양풍 곡 "Orien" (미디 악기) · Tozan', '143초'],
+      ['bgm_map_e', '동양풍 곡 "참새 호수" (미디 악기) · Tozan', '122초'],
+    ]],
+    ['bgm_war', '싸움 화면 — 긴장되는 음악', [
+      ['bgm_war_a', '"칼을 준비하라" · bojidar-bg', '88초'],
+      ['bgm_war_b', '"전쟁의 부름" 북·뿔나팔 (서양풍일 수 있다) · Umplix', '76초'],
+      ['bgm_war_c', '전쟁북 되풀이 (북만, 선율 없음) · BaDoink', '106초'],
+      ['bgm_war_d', '웅장한 전투 음악 (영화풍 관현악, 다운로드 1.1만 회) · Airwolf89', '111초'],
+    ]],
+  ]],
+]
+
+/** 게임에 붙인 것 — src/ui/realm/sound.ts 의 PICK 과 같게 둔다 */
+const PICK = { ui_order: 'b', ui_open: 'c', season_turn: 'a', war_drums: 'a', arrow_volley: 'a', horses: 'c',
+  horn_victory: 'a', defeat: 'a', capture: 'b', dex_new: 'c', birth: 'c', feast: 'a', envoy: 'b', coins: 'c',
+  amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b', bgm_map: 'a', bgm_war: 'a' }
+let n = 0
+const out = []
+for (const [title, slots] of GROUPS) {
+  out.push(`<h2>${title}</h2>`)
+  for (const [slot, note, files] of slots) {
+    out.push(`<h3>${note} <code>${slot}</code></h3>`)
+    for (const [file, desc, len] of files) {
+      n++
+      out.push(`<div class="row"><b class="no">${n}</b><audio controls preload="none" src="sfx/${file}.ogg"></audio>`
+        + (PICK[slot] !== undefined && file === `${slot}_${PICK[slot]}` ? '<b class="pick">★ 지금 쓰는 것</b>' : '')
+        + `<span class="nm">${desc}</span><span class="dl">${len} · sfx/${file}.ogg</span></div>`)
+    }
+  }
+}
+document.getElementById('list').innerHTML = out.join('\n')
+</script>
+</body></html>
