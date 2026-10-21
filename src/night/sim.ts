@@ -15,7 +15,7 @@ import { effectiveStats, stepArcher } from '../sim/bow.ts'
 import { flowDrawMul } from '../sim/flow.ts'
 import { cancelDraw, createWorld } from '../sim/world.ts'
 import type { BowMods, InputFrame, StageDef, World } from '../sim/types.ts'
-import { bakeScene, STAGE_COUNT, type Figure, type Light, type Scene } from './layout.ts'
+import { bakeScene, guardOf, STAGE_COUNT, type Figure, type Guard, type Light, type Scene } from './layout.ts'
 
 export type Phase = 'play' | 'move' | 'rise' | 'chief' | 'alarm' | 'end'
 
@@ -36,6 +36,10 @@ export type NightEventKind =
   | 'stage' // 다음 판
   | 'rise' // 적장 그림자가 일어선다
   | 'flee' // 적장이 촛불을 끄고 사라졌다
+  | 'startle' // 그림자가 선 뒤 빗나간 살 — 촛불이 흔들린다 (기다림이 준다)
+  | 'ember' // 모닥불에 살이 꽂혔다 (불똥)
+  | 'tend' // 보초가 꺼진 불을 붙이러 간다
+  | 'relit' // 다시 붙었다
 
 export interface NightEvent {
   readonly t: NightEventKind
@@ -64,6 +68,8 @@ export interface NightOpts {
   readonly practice?: Practice
   /** 활의 단계 0 단궁 · 1 맥궁 · 2 각궁 · 3 신궁 (형: "계단적 성장") — 없으면 0 */
   readonly bowTier?: number
+  /** 경비 0 느슨 · 1 보통 · 2 삼엄 (layout.ts Guard) — 없으면 보통 */
+  readonly guard?: number
 }
 
 /** 활의 단계 이름 — 화면에 그대로 */
@@ -103,6 +109,8 @@ export interface Night {
   readonly practice: Practice | null
   /** 활의 단계 (BOW_NAME) */
   readonly bowTier: number
+  /** 경비 (GUARD_NAME) */
+  readonly guard: Guard
   readonly w: World
   scene: Scene
   stage: number
@@ -115,8 +123,10 @@ export interface Night {
   stuck: Stuck[]
   events: NightEvent[]
   result: NightResult | null
-  /** 적장이 선 틱 — 그 뒤에 쏜 살이 빗나가면 달아난다 */
+  /** 적장이 선 틱 — 그 뒤에 쏜 살이 빗나가면 기다림이 준다 */
   chiefUp: number
+  /** 적장이 촛불을 끄기까지 남은 기다림 (s) — 빗나간 살마다 chiefMissCut 만큼 준다 */
+  chiefLeft: number
   /** 쏜 살 · 맞힌 살 · 머리 — 연습장 기록 */
   shots: number
   hits: number
@@ -147,9 +157,10 @@ export function createNight(o: NightOpts): Night {
   const arrows = practice?.infinite === true ? INFINITE : Math.max(1, Math.round(o.arrows ?? P.night.arrows) + P.night.tierArrows * tier)
   const w = createWorld(stageDef(o.seed, arrows), { str: lv, steady: lv, stamina: lv, focus: lv }, 'basic', tierBow(tier))
   const stage = practice !== null ? practice.stage : 0
+  const guard = guardOf(o.guard ?? 1)
   return {
-    seed: o.seed, practice, bowTier: tier, w, scene: bakeScene(o.seed, stage), stage, phase: 'play', phaseAt: 0, tick: 0,
-    alarm: 0, stuck: [], events: [], result: null, chiefUp: -1, shots: 0, hits: 0, heads: 0, tore: new Set(),
+    seed: o.seed, practice, bowTier: tier, guard, w, scene: bakeScene(o.seed, stage, guard), stage, phase: 'play', phaseAt: 0, tick: 0,
+    alarm: 0, stuck: [], events: [], result: null, chiefUp: -1, chiefLeft: P.night.chiefPatience, shots: 0, hits: 0, heads: 0, tore: new Set(),
   }
 }
 
@@ -194,7 +205,7 @@ export function lightRadius(l: Light): number {
   switch (l.kind) {
     case 'torch': return P.night.lightTorch
     case 'lantern': return P.night.lightLantern
-    case 'fire': return P.night.lightFire
+    case 'fire': return P.night.lightFire * (1 - (P.night.fireDim * l.hits) / Math.max(1, P.night.fireHits))
     case 'candle': return P.night.lightCandle
   }
 }
@@ -249,16 +260,20 @@ function noise(n: Night, amount: number, x: number): void {
   n.alarm += amount * (P.night.hearFloor + (1 - P.night.hearFloor) * prox)
 }
 
+/** 순찰의 지금 자리 — 왕복 0..2 삼각파 */
+function patrolX(f: Figure): number {
+  const p = f.patrol!
+  const span = Math.max(0.1, p.x1 - p.x0)
+  return p.x0 + span * (f.pu > 1 ? 2 - f.pu : f.pu)
+}
+
 function movePatrols(n: Night): void {
-  const t = n.tick / P.sim.hz
   for (const f of n.scene.figures) {
-    if (!f.alive || f.patrol === null || f.watching > 0) continue
+    if (!f.alive || f.patrol === null || f.watching > 0 || f.task !== null) continue
     const span = Math.max(0.1, f.patrol.x1 - f.patrol.x0)
-    // 왕복 — 0..2 를 도는 삼각파
-    const u = (f.patrol.phase * 2 + (t * f.patrol.speed) / span) % 2
-    const back = u > 1
-    f.x = f.patrol.x0 + span * (back ? 2 - u : u)
-    f.facing = back ? -1 : 1
+    f.pu = (f.pu + (dt() * f.patrol.speed) / span) % 2
+    f.x = patrolX(f)
+    f.facing = f.pu > 1 ? -1 : 1
   }
   // 든 불은 사람을 따라간다 — 쓰러지면 땅에 떨어진다
   for (const l of n.scene.lights) {
@@ -327,11 +342,8 @@ function sweep(n: Night, ax: number, ay: number, bx: number, by: number, angle: 
       if (!l.lit || l.kind === 'candle') continue
       const r = l.kind === 'fire' ? 0.35 : 0.17
       if ((x - l.x) ** 2 + (y - l.y) ** 2 > r * r) continue
-      if (l.kind === 'fire') break // 모닥불은 살 하나로 안 꺼진다 — 땅에 꽂히는 것과 같다
-      l.lit = false
-      n.events.push({ t: 'lamp', x, y })
-      noise(n, P.night.noiseLamp, x)
-      n.stuck.push({ x, y, angle, fig: -1 })
+      hitLight(n, l, x, y)
+      if (l.kind !== 'fire') n.stuck.push({ x, y, angle, fig: -1 }) // 모닥불에 든 살은 타 버린다
       return 'stop'
     }
     // 담·기둥·기와
@@ -356,18 +368,145 @@ function sweep(n: Night, ax: number, ay: number, bx: number, by: number, angle: 
   return null
 }
 
-/** 빛 안의 시체를 앞을 보는 보초가 본다 */
+/**
+ * 살이 불에 닿았다 — 횃불·등불은 꺼지고, 모닥불은 살 fireHits 개에 사그라든다 (그 전엔 불똥 소리만).
+ * 경비가 삼엄하면 불이 꺼지는 것만으로 수상히 여긴다 (darkSuspect)
+ */
+export function hitLight(n: Night, l: Light, x: number, y: number): void {
+  if (l.kind === 'fire') {
+    l.hits++
+    n.events.push({ t: 'ember', x, y })
+    noise(n, P.night.noiseFire, x)
+    if (l.hits < P.night.fireHits) return
+  }
+  l.lit = false
+  n.events.push({ t: 'lamp', x, y })
+  noise(n, P.night.noiseLamp, x)
+  if (n.guard >= 2 && n.practice?.alarm !== false) n.alarm += P.night.darkSuspect
+}
+
+/** 경비 단계의 몫 — 느슨 · 보통(1) · 삼엄 */
+const byGuard = (n: Night, loose: number, tight: number): number => (n.guard === 0 ? loose : n.guard === 2 ? tight : 1)
+
+/** 이 불을 다시 붙이는 데 걸리는 시간 (s) */
+export function relightSecs(n: Night, l: Light): number {
+  return P.night.relightTime * (l.kind === 'fire' ? P.night.relightFire : 1) * byGuard(n, P.night.relightLoose, P.night.relightTight)
+}
+
+/** 한 걸음 — 닿았으면 참 */
+function walkTo(f: Figure, x: number): boolean {
+  const step = P.night.patrolSpeed * P.night.tendWalk * dt()
+  const d = x - f.x
+  if (Math.abs(d) <= step) {
+    f.x = x
+    return true
+  }
+  f.facing = d > 0 ? 1 : -1
+  f.x += step * f.facing
+  return false
+}
+
+/**
+ * 꺼진 불을 다시 붙인다 (형: "불꺼지면 경비들은 불키러 가야하는거 아님?") — 판이 도는 동안 틱마다.
+ *  ① 맡은 보초: 불 옆까지 걸어가(go) · 붙이고(light, 게이지) · 제자리로(back). 시체를 보면 멈춰 선다
+ *  ② 아무도 안 맡은 꺼진 불: 든 사람이 살아 있으면 그 자리에서, 아니면 가장 가까운 한가한 보초가 간다
+ * 그래서 불을 끄면 보초가 어둠 속으로 혼자 걸어 나온다 — 거기서 쓰러뜨리면 아무도 못 본다.
+ * 다 붙이기 전에 쓰러뜨리지 못하면 불이 돌아와 그 옆의 시체가 보인다.
+ */
+function tendLights(n: Night): void {
+  const sc = n.scene
+  for (const f of sc.figures) {
+    const t = f.task
+    if (t === null) continue
+    if (!f.alive) {
+      f.task = null
+      continue
+    }
+    const l = sc.lights[t.light]
+    if (l === undefined) {
+      f.task = null
+      continue
+    }
+    if (t.step === 'go') {
+      if (f.watching > 0) continue
+      if (l.lit) t.step = 'back' // 다른 이가 먼저 붙였다
+      else {
+        const side = f.x >= l.x ? 1 : -1
+        if (walkTo(f, l.x + side * (l.kind === 'fire' ? 0.6 : 0.35))) {
+          t.step = 'light'
+          t.at = n.tick
+          f.facing = l.x >= f.x ? 1 : -1
+        }
+      }
+    } else if (t.step === 'light') {
+      if (secs(n, t.at) >= relightSecs(n, l)) {
+        l.lit = true
+        l.hits = 0
+        t.step = 'back'
+        n.events.push({ t: 'relit', x: l.x, y: l.y })
+      }
+    } else if (f.watching === 0 && walkTo(f, f.patrol !== null ? patrolX(f) : t.homeX)) {
+      f.task = null
+      f.pose = t.homePose
+      if (f.patrol === null) f.facing = t.homeFacing
+    }
+  }
+  for (const l of sc.lights) {
+    if (l.lit || l.kind === 'candle') continue
+    if (sc.figures.some((f) => f.alive && f.task?.light === l.id)) continue
+    let who: Figure | null = null
+    if (l.carrier >= 0) {
+      const c = sc.figures[l.carrier]
+      if (c !== undefined && c.alive && c.task === null) who = c
+    } else {
+      let best = P.night.relightReach
+      for (const f of sc.figures) {
+        if (!f.alive || f.role !== 'guard' || f.task !== null || f.watching > 0) continue
+        const d = Math.abs(f.x - l.x)
+        if (d < best) {
+          best = d
+          who = f
+        }
+      }
+    }
+    if (who === null) continue
+    const self = l.carrier === who.id
+    who.task = { light: l.id, step: self ? 'light' : 'go', at: n.tick, homeX: who.x, homePose: who.pose, homeFacing: who.facing }
+    if (who.pose === 'sit') who.pose = 'stand'
+    n.events.push({ t: 'tend', x: who.x, y: who.y + 2 * who.size })
+  }
+}
+
+/** 이 보초가 불을 붙이는 중이면 0..1 (게이지), 붙이러 가는 중이면 0, 아니면 −1 — 그리기용 */
+export function tendProgress(n: Night, f: Figure): number {
+  const t = f.task
+  if (t === null || !f.alive) return -1
+  if (t.step === 'go') return 0
+  if (t.step === 'back') return -1
+  const l = n.scene.lights[t.light]
+  return l === undefined ? -1 : clamp01(secs(n, t.at) / relightSecs(n, l))
+}
+
+/** 걷고 있나 — 순찰 · 불 붙이러 오가는 길 (그리기의 다리) */
+export function walking(f: Figure): boolean {
+  if (!f.alive || f.watching > 0) return false
+  if (f.task !== null) return f.task.step !== 'light'
+  return f.patrol !== null
+}
+
+/** 빛 안의 시체를 앞을 보는 보초가 본다 — 불을 붙이는 중인 보초는 불만 본다 */
 function watch(n: Night): number {
   if (n.practice?.alarm === false) return 0
   const sc = n.scene
+  const sight = P.night.sightRange * byGuard(n, P.night.sightLoose, P.night.sightTight)
   let rise = 0
   for (const g of sc.figures) {
-    if (!g.alive || g.role !== 'guard') continue
+    if (!g.alive || g.role !== 'guard' || g.task?.step === 'light') continue
     let sees: Figure | null = null
     for (const c of sc.figures) {
       if (c.alive || c.role !== 'guard') continue
       const dx = c.x - g.x
-      if (Math.abs(dx) > P.night.sightRange || dx * g.facing < -0.5) continue
+      if (Math.abs(dx) > sight || dx * g.facing < -0.5) continue
       if (lightAt(sc, c.x, c.y + CHEST, n.tick) < P.night.corpseLight) continue
       sees = c
       break
@@ -395,7 +534,7 @@ const missSet = new Set<number>()
 /** 다음 판으로 — 화살 잔량과 게이지(조금 가라앉힌 채)는 따라간다 */
 function nextStage(n: Night): void {
   n.stage++
-  n.scene = bakeScene(n.seed, n.stage)
+  n.scene = bakeScene(n.seed, n.stage, n.guard)
   n.stuck = []
   n.alarm *= P.night.alarmCarry
   for (const a of n.w.arrows) a.alive = false
@@ -462,6 +601,7 @@ export function stepNight(n: Night, input: NightFrame): void {
   }
 
   movePatrols(n)
+  if (n.phase === 'play') tendLights(n)
 
   const alarmBefore = n.alarm
   for (const a of w.arrows) {
@@ -480,10 +620,13 @@ export function stepNight(n: Night, input: NightFrame): void {
       noise(n, roof ? P.night.noiseTile : P.night.noiseGround, a.x)
       n.stuck.push({ x: a.x, y: a.y, angle, fig: -1 })
     }
-    // 적장이 선 뒤에 쏜 살이 적장을 못 맞히고 끝났다 → 촛불을 끄고 사라진다
+    // 적장이 선 뒤에 쏜 살이 적장을 못 맞히고 끝났다 → 촛불이 흔들린다 (기다림이 준다 — 다 닳으면 끄고 사라진다)
     if (n.phase === 'chief' && (got === 'stop' || (got === null && (landed || !a.alive)))) {
       const launched = n.tick - Math.round(a.age * P.sim.hz)
-      if (launched >= n.chiefUp) flee(n)
+      if (launched >= n.chiefUp) {
+        n.chiefLeft -= P.night.chiefMissCut
+        n.events.push({ t: 'startle', x: 0, y: 0 })
+      }
     }
   }
   n.alarm += watch(n)
@@ -523,10 +666,12 @@ export function stepNight(n: Night, input: NightFrame): void {
       if (secs(n, n.phaseAt) >= P.night.chiefRise) {
         setPhase(n, 'chief')
         n.chiefUp = n.tick
+        n.chiefLeft = P.night.chiefPatience
       }
       break
     case 'chief':
-      if (secs(n, n.phaseAt) >= P.night.chiefPatience || outOfArrows(n)) flee(n)
+      n.chiefLeft -= dt()
+      if (n.chiefLeft <= 0 || outOfArrows(n)) flee(n)
       break
     case 'alarm':
       if (secs(n, n.phaseAt) >= P.night.alarmTime) finish(n, 'fled')
@@ -553,6 +698,13 @@ export function chiefRise(n: Night): number {
   if (n.phase === 'rise') return clamp01(secs(n, n.phaseAt) / P.night.chiefRise)
   if (n.phase === 'chief') return 1
   return n.result !== null && n.result.result !== 'fled' && n.stage === STAGE_COUNT - 1 && n.chiefUp >= 0 ? 1 : 0
+}
+
+/** 촛불 게이지 — 적장이 남은 기다림 0..1 (그림자가 서는 동안은 1) · 그 밖엔 −1 */
+export function chiefCandle(n: Night): number {
+  if (n.phase === 'rise') return 1
+  if (n.phase === 'chief') return clamp01(n.chiefLeft / P.night.chiefPatience)
+  return -1
 }
 
 /** 쓰러지는 몸의 기울기 0..1 */

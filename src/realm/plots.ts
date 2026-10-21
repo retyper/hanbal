@@ -132,6 +132,19 @@ export function assassinArrows(r: Realm, agent: string | null | undefined): numb
   return P.night.arrows + P.realm.plotAgentArrows + (hasTrait(a, 'archer') ? P.night.archerBonus : 0)
 }
 
+/**
+ * 밤 판의 경비 0 느슨 · 1 보통 · 2 삼엄 (night/layout.ts Guard · 형: "경비가 삼엄한 암살이랑 안삼엄한거랑 조금 달라야") —
+ * 그 장수가 있는 고을의 경계 + 도읍이면 더 + 군주면 더. 판의 사람·불 수와 불을 다시 붙이는 빠르기가 달라진다
+ */
+export function assassinGuard(r: Realm, hero: string): 0 | 1 | 2 {
+  const R = P.realm
+  const h = r.heroes[hero]
+  const at = h?.at ?? null
+  const node = at !== null ? r.nodes[at] : undefined
+  const v = (at !== null ? (r.watch[at]?.alert ?? 0) : 0) + (node?.kind === 'capital' ? R.guardCapital : 0) + (hero.endsWith('-ruler') ? R.guardRuler : 0)
+  return v >= R.guardHigh ? 2 : v >= R.guardMid ? 1 : 0
+}
+
 /** 들킨 자객 장수가 도망칠 확률 — 지략·무예·명궁·밤눈·겁 많음 */
 export function escapeChance(r: Realm, agent: string): number {
   const R = P.realm

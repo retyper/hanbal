@@ -16,9 +16,9 @@ import { drawArrowArt } from '../render/foeart.ts'
 import type { World } from '../sim/types.ts'
 import { effectiveStats } from '../sim/bow.ts'
 import type { Pull } from './input.ts'
-import type { Decor, Figure, Light } from './layout.ts'
+import { GUARD_NAME, type Decor, type Figure, type Light } from './layout.ts'
 import {
-  BOW_NAME, chiefRise, fallOf, flicker, lightAt, lightRadius, moveProgress, newParts, partsOf, type Night, type Parts,
+  BOW_NAME, chiefCandle, chiefRise, fallOf, flicker, lightAt, lightRadius, moveProgress, newParts, partsOf, tendProgress, walking, type Night, type Parts,
 } from './sim.ts'
 
 /** 보이는 땅의 범위 (m) — 지붕 끝부터 판의 끝까지 */
@@ -317,8 +317,7 @@ function figurePath(ctx: CanvasRenderingContext2D, cam: Camera, n: Night, f: Fig
   }
   const extra = mode === 'rim' ? 2.2 : 0
   // 걷는 다리 — 순찰은 걸음마다 다리를 벌린다 (틱 기반)
-  const walking = f.alive && f.patrol !== null && f.watching === 0
-  const swing = walking ? Math.sin((n.tick / P.sim.hz) * 7 + f.id) * 0.22 : 0
+  const swing = walking(f) ? Math.sin((n.tick / P.sim.hz) * 7 + f.id) * 0.22 : 0
   const hip = { x: parts.l1x, y: parts.l1y }
   for (const k of [-1, 1]) {
     ctx.beginPath()
@@ -360,10 +359,23 @@ function figurePath(ctx: CanvasRenderingContext2D, cam: Camera, n: Night, f: Fig
 }
 
 function drawFlame(ctx: CanvasRenderingContext2D, cam: Camera, l: Light, tick: number): void {
-  if (!l.lit || l.kind === 'candle') return
+  if (l.kind === 'candle') return
   const s = cam.scale
+  if (!l.lit) {
+    // 꺼진 모닥불 — 불씨만 붉게 남는다 (다시 살릴 수 있다는 표시)
+    if (l.kind !== 'fire') return
+    ctx.fillStyle = `rgba(200,60,30,${0.45 + 0.25 * flicker(l, tick)})`
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath()
+      ctx.arc(X(cam, l.x + i * 0.12), Y(cam, l.y - 0.18 + Math.abs(i) * 0.02), 0.045 * s, 0, Math.PI * 2)
+      ctx.fill()
+    }
+    return
+  }
   const f = flicker(l, tick)
-  const size = (l.kind === 'fire' ? 0.55 : l.kind === 'torch' ? 0.28 : 0.16) * f
+  // 모닥불은 살이 꽂힐수록 사그라든다
+  const dim = l.kind === 'fire' ? 1 - (0.6 * l.hits) / Math.max(1, P.night.fireHits) : 1
+  const size = (l.kind === 'fire' ? 0.55 * dim : l.kind === 'torch' ? 0.28 : 0.16) * f
   const x = X(cam, l.x)
   const y = Y(cam, l.y)
   if (l.kind === 'lantern') {
@@ -380,6 +392,38 @@ function drawFlame(ctx: CanvasRenderingContext2D, cam: Camera, l: Light, tick: n
   ctx.beginPath()
   ctx.arc(x, y - size * 0.2 * s, size * 0.22 * s, 0, Math.PI * 2)
   ctx.fill()
+}
+
+/**
+ * 불 붙이는 보초 머리 위 게이지 (형: "모션을 정확히 만들지 않더라도 불 붙이는 중 하면서 게이지바가 나오면") —
+ * 붙이러 가는 길엔 글자만, 붙이는 중엔 게이지. 다 차면 불이 돌아온다
+ */
+function drawTend(ctx: CanvasRenderingContext2D, cam: Camera, n: Night): void {
+  const s = cam.scale
+  for (const f of n.scene.figures) {
+    const p = tendProgress(n, f)
+    if (p < 0) continue
+    const cx = X(cam, f.x)
+    const top = Y(cam, f.y + 2.05 * f.size)
+    const bw = Math.max(72, 1.5 * s)
+    const bh = Math.max(8, 0.14 * s)
+    ctx.font = `700 ${Math.max(11, Math.round(0.24 * s))}px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'bottom'
+    ctx.fillStyle = '#ffe2a8'
+    const going = f.task?.step === 'go'
+    ctx.fillText(going ? '불 붙이러 간다' : '불 붙이는 중', cx, top - bh - 3)
+    if (!going) {
+      ctx.fillStyle = '#3a3f48'
+      ctx.fillRect(cx - bw / 2, top - bh, bw, bh)
+      ctx.fillStyle = '#ffb35c'
+      ctx.fillRect(cx - bw / 2, top - bh, bw * p, bh)
+      ctx.strokeStyle = '#ffe2a8'
+      ctx.lineWidth = 1
+      ctx.strokeRect(cx - bw / 2 + 0.5, top - bh + 0.5, bw - 1, bh - 1)
+    }
+    ctx.textBaseline = 'middle'
+  }
 }
 
 function drawStuck(ctx: CanvasRenderingContext2D, cam: Camera, n: Night): void {
@@ -528,6 +572,25 @@ function drawDoor(ctx: CanvasRenderingContext2D, cam: Camera, n: Night): void {
     figurePath(ctx, cam, n, chief, 0, 'fill', 0, COL.shadow)
     ctx.restore()
   }
+  // 촛불 게이지 — 그림자가 서면 닳는다. 다 닳으면 촛불을 끄고 달아난다 (형: "어떻게잡으라는겨")
+  const cl = chiefCandle(n)
+  if (cl >= 0) {
+    const gy = y - 0.45 * s
+    const gh = Math.max(8, 0.16 * s)
+    ctx.fillStyle = '#3a3f48'
+    ctx.fillRect(x, gy, w, gh)
+    ctx.fillStyle = cl > 0.5 ? '#ffd27a' : cl > 0.25 ? '#ff9a4a' : COL.alarm
+    ctx.fillRect(x, gy, w * cl, gh)
+    ctx.strokeStyle = '#ffe2a8'
+    ctx.lineWidth = 1
+    ctx.strokeRect(x + 0.5, gy + 0.5, w - 1, gh - 1)
+    ctx.font = `700 ${Math.max(11, Math.round(0.26 * s))}px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'bottom'
+    ctx.fillStyle = '#ffe2a8'
+    ctx.fillText(n.phase === 'rise' ? '그림자가 일어선다 — 창호지 너머를 쏴라' : '촛불 — 다 닳으면 달아난다', x + w / 2, gy - 0.06 * s)
+    ctx.textBaseline = 'middle'
+  }
   // 문살
   ctx.strokeStyle = COL.lattice
   ctx.lineWidth = Math.max(1, s * 0.035)
@@ -559,6 +622,12 @@ function drawHud(ctx: CanvasRenderingContext2D, v: NightView, n: Night, now: num
   ctx.textAlign = 'left'
   const head = n.practice !== null ? `연습장 · ${n.scene.title}` : `${n.stage + 1} / 3 · ${n.scene.title}`
   ctx.fillText(head, 14, 22)
+  // 경비 — 머리줄 바로 옆 (밑은 "그만" 단추 자리)
+  const hw = ctx.measureText(head).width
+  ctx.font = '700 12px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
+  ctx.fillStyle = n.guard === 2 ? '#ff9a7a' : n.guard === 0 ? '#9fd08a' : COL.hudDim
+  ctx.fillText(`경비 ${GUARD_NAME[n.guard]}`, 14 + hw + 10, 22)
+  ctx.font = '600 15px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
   // 든 활 — 단계가 오르면 이름이 바뀐다 (형: "계단적 성장"). 왼쪽 아래는 "그만" 단추 자리라 오른쪽 화살 밑에
   ctx.fillStyle = n.bowTier > 0 ? '#ffd27a' : COL.hudDim
   ctx.font = '700 13px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
@@ -657,6 +726,8 @@ export function pumpView(v: NightView, n: Night, from: number, now: number): voi
       case 'head': case 'body': case 'leg': v.shakeAmp = P.hit.shakeAmp * (e.t === 'head' ? SHAKE.head : SHAKE.foe); v.shakeAge = 0; break
       case 'chief': v.shakeAmp = P.hit.shakeAmp * SHAKE.head; v.shakeAge = 0; v.pops.push({ text: '명중', x: e.x, y: e.y + 0.5, born: now, color: COL.good }); break
       case 'flee': v.pops.push({ text: '촛불이 꺼졌다', x: 24.5, y: n.scene.ground + 3.2, born: now, color: COL.hud }); break
+      case 'startle': v.pops.push({ text: '촛불이 흔들린다', x: 24.5, y: n.scene.ground + 3.6, born: now, color: '#ff9a4a' }); break
+      case 'tend': v.pops.push({ text: '불이 꺼졌네?', x: e.x, y: e.y, born: now, color: '#e8d6a8' }); break
       default: break
     }
   }
@@ -786,6 +857,7 @@ export function drawNight(ctx: CanvasRenderingContext2D, v: NightView, n: Night,
     } else figurePath(ctx, cam, n, f, 1, 'rim', 0.13, COL.rimCool)
   }
   for (const l of sc.lights) drawFlame(ctx, cam, l, n.tick)
+  drawTend(ctx, cam, n)
   drawDoor(ctx, cam, n)
   void rise
 

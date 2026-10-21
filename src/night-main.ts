@@ -26,7 +26,7 @@ import { P } from './tune/params.ts'
 import { BOW_NAME, createNight, stepNight, type Night, type NightResult } from './night/sim.ts'
 import { createView, drawNight, pumpView, shakeView } from './night/draw.ts'
 import { hitStopMs, pumpEvents, updateFx } from './render/effects.ts'
-import { PRACTICE_STAGES, stageTitle } from './night/layout.ts'
+import { GUARD_NAME, guardOf, PRACTICE_STAGES, stageTitle, type Guard } from './night/layout.ts'
 import { rehearsalSeed, reportsResult, type NightMode } from './night/mission.ts'
 
 const RESULT_KEY = 'hanbal.night.result'
@@ -66,6 +66,8 @@ let synth: Synth | null = null
 const newSeed = (): number => (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0
 
 let night: Night | null = null
+// 개발 서버에서만 — 브라우저 확인용으로 지금 판을 들여다본다 (배포본엔 없다)
+if (import.meta.env?.DEV === true) (window as unknown as { __night: () => Night | null }).__night = () => night
 let practiceStage = 0
 let practiceAlarm = true
 /**
@@ -76,6 +78,9 @@ let rehearsal = false
 let rehearsals = 0
 const missionSeed = Number(params.get('seed') ?? newSeed()) >>> 0
 const missionArrows = Number(params.get('arrows') ?? P.night.arrows)
+/** 경비 — 칠십팔국이 `guard=<0..2>` 로 넘긴다 (없으면 보통). 연습장에선 고른다 */
+const missionGuard: Guard = guardOf(params.get('guard') ?? 1)
+let practiceGuard: Guard = 1
 const mode = (): NightMode => (practiceMode ? 'practice' : rehearsal ? 'rehearsal' : 'mission')
 
 // ───────────────────────── 소리 — 밤의 것만 (활 소리 · 맞은 소리(신음·헤드샷)는 활터 sfx 그대로) ─────────────────────────
@@ -102,6 +107,12 @@ function nightSound(kind: string): void {
       break
     case 'notice':
       tone(s, 77, { freq: 660, endFreq: 880, type: 'triangle', dur: 0.12, gain: 0.15, attack: 0.005, decay: 0.1, delay: 0 })
+      break
+    case 'ember':
+      noiseBurst(s, 78, { ...base, dur: 0.22, filterType: 'bandpass', freq: 2200, endFreq: 900, q: 1.5, gain: 0.3, decay: 0.2 })
+      break
+    case 'startle':
+      tone(s, 79, { freq: 330, endFreq: 260, type: 'triangle', dur: 0.18, gain: 0.14, attack: 0.005, decay: 0.16, delay: 0 })
       break
     default:
       break
@@ -181,6 +192,7 @@ function showPractice(): void {
     h += `<button class="${i === practiceStage ? 'on' : ''}" data-act="stage" data-i="${i}">${esc(stageTitle(i))}</button>`
   }
   h += `</div><div class="btns"><button class="${practiceAlarm ? 'on' : ''}" data-act="alarm">발각 게이지 ${practiceAlarm ? '켬' : '끔'}</button>`
+  h += `<button data-act="guard">경비 · ${GUARD_NAME[practiceGuard]}</button>`
   h += `<button class="on" data-act="go">시작</button></div>`
   if (last !== undefined) h += `<p class="mute">지난번 ${esc(stageTitle(last.stage))} · 쏜 ${last.shots} · 맞힘 ${last.hits} · 머리 ${last.heads}</p>`
   if (all.shots > 0) h += `<p class="mute">모두 ${runs.length}판 · 쏜 ${all.shots} · 맞힘 ${all.hits} (${Math.round((all.hits / all.shots) * 100)}%) · 머리 ${all.heads}</p>`
@@ -193,7 +205,10 @@ function showMissionIntro(): void {
   night = null
   rehearsal = false
   ui.innerHTML = `<div class="card"><h1>밤의 암살</h1><p>기와지붕 위에 엎드렸다. 화살 ${missionArrows}발.</p>`
-    + `<p class="mute">보초를 다 쓰러뜨리고 셋째 판의 창호지 뒤 그림자를 쏜다. 빗나간 살은 소리를 낸다. 시체가 등불 아래 있으면 들킨다. 등불을 쏘면 꺼진다.</p>`
+    + `<p>경비 · <b>${GUARD_NAME[missionGuard]}</b> — ${GUARD_LINE[missionGuard]}</p>`
+    + `<p class="mute">보초를 다 쓰러뜨리고 셋째 판의 창호지 뒤 그림자를 쏜다. 빗나간 살은 소리를 낸다. 시체가 불빛 아래 있으면 들킨다.</p>`
+    + `<p class="mute">횃불·등불은 쏘면 꺼지고, 모닥불은 살 ${P.night.fireHits}발에 사그라든다. 불이 꺼지면 보초가 다시 붙이러 온다 — 어둠 속에서, 불이 붙기 전에 쓰러뜨려라.</p>`
+    + `<p class="mute">그림자가 일어서면 창호지 위 촛불 게이지가 닳는다. 다 닳으면 촛불을 끄고 달아난다. 빗나가면 더 빨리 닳는다.</p>`
     + `<p class="mute">아무 데나 누르고 뒤로 끈다 — 끈 쪽의 반대로 겨눈다 · 놓으면 쏜다 · 누른 자리로 돌아와 놓으면 그만둔다. 오른쪽 아래 「숨 참기」를 누르고 있으면 떨림이 멎는다.</p>`
     + `<div class="btns"><button data-act="rehearse">연습 먼저</button><button class="on" data-act="go">들어간다</button></div>`
     + `<p class="mute">연습은 다른 지붕에서 같은 활·같은 화살로 쏜다. 몇 번이든 되고, 결과는 남지 않는다.</p>`
@@ -228,6 +243,12 @@ function syncBreath(n: Night): void {
   breathBtn.style.setProperty('--sc', st >= P.stamina.steadyZone ? '#6cc7b8' : '#ff8a5a')
 }
 
+const GUARD_LINE: readonly string[] = [
+  '보초가 적고, 꺼진 불을 느릿느릿 붙인다.',
+  '여느 밤이다.',
+  '보초가 많고 불도 많다. 불이 꺼지기만 해도 수상히 여기고, 금방 다시 붙인다.',
+]
+
 const LINES: Record<NightResult['result'], (r: NightResult) => string> = {
   dead: () => '적장이 쓰러졌다.',
   wounded: () => '적장이 크게 다쳤다. 한동안 군대를 못 이끈다.',
@@ -240,7 +261,10 @@ function showResult(n: Night): void {
   const r = n.result!
   const good = r.result === 'dead' || r.result === 'wounded' || r.result === 'cleared'
   let h = `<div class="card">${rehearsal ? '<p class="mute">연습 — 남지 않는다</p>' : ''}<h1 style="color:${good ? '#8fd07a' : '#e08a74'}">${esc(LINES[r.result](r))}</h1>`
-  h += `<p class="mute">쏜 ${n.shots} · 맞힘 ${n.hits} · 머리 ${n.heads}${n.practice === null ? ` · 남은 화살 ${r.arrowsLeft}` : ''}</p><div class="btns">`
+  h += `<p class="mute">쏜 ${n.shots} · 맞힘 ${n.hits} · 머리 ${n.heads}${n.practice === null ? ` · 남은 화살 ${r.arrowsLeft}` : ''}</p>`
+  // 촛불로 놓쳤으면 어떻게 잡는지 (형: "촛불이 꺼져서 도망치는건 대체뭔데. 어떻게잡으라는겨")
+  if (r.result === 'fled' && !r.alarm && n.chiefUp >= 0) h += `<p class="mute">그림자가 서면 창호지 위 촛불 게이지가 닳는다. 다 닳기 전에 그림자의 머리나 몸을 쏴야 한다. 빗나가면 게이지가 뭉텅 준다.</p>`
+  h += `<div class="btns">`
   if (rehearsal) {
     // 연습 — 칠십팔국으로 안 보낸다. 다시 연습하거나 진짜로 들어간다
     h += `<button data-act="rehearse">다시 연습</button><button class="on" data-act="go">진짜로 쏜다</button></div>`
@@ -289,10 +313,10 @@ function skipMission(seen: boolean): void {
 function start(): void {
   view.pops = []
   night = practiceMode
-    ? createNight({ seed: newSeed(), bowTier, practice: { stage: practiceStage, alarm: practiceAlarm, infinite: true } })
+    ? createNight({ seed: newSeed(), bowTier, guard: practiceGuard, practice: { stage: practiceStage, alarm: practiceAlarm, infinite: true } })
     : rehearsal
-      ? createNight({ seed: rehearsalSeed(missionSeed, rehearsals), bowTier, arrows: missionArrows })
-      : createNight({ seed: missionSeed, bowTier, arrows: missionArrows })
+      ? createNight({ seed: rehearsalSeed(missionSeed, rehearsals), bowTier, guard: missionGuard, arrows: missionArrows })
+      : createNight({ seed: missionSeed, bowTier, guard: missionGuard, arrows: missionArrows })
   hud()
   acc = 0
 }
@@ -304,13 +328,14 @@ ui.addEventListener('click', (ev) => {
   switch (t.dataset['act']) {
     case 'stage': practiceStage = Number(t.dataset['i']); showPractice(); break
     case 'alarm': practiceAlarm = !practiceAlarm; showPractice(); break
+    case 'guard': practiceGuard = ((practiceGuard + 1) % 3) as Guard; showPractice(); break
     // 들어간다 · 진짜로 쏜다 — 연습에서 왔으면 연습을 끄고 진짜 시드로
     case 'go': if (!practiceMode) rehearsal = false; start(); break
     case 'rehearse': rehearsal = true; rehearsals++; start(); break
     case 'skip0': skipMission(false); break
     case 'skip': if (night !== null && night.result === null && night.shots === 0 && !rehearsal) skipMission(true); break
     case 'menu': showPractice(); break
-    case 'practice': location.search = '?practice=1'; break
+    case 'practice': location.search = `?practice=1&bow=${bowTier}&back=${encodeURIComponent(back)}`; break
     case 'turn': setRotatePref(!rotatePref()); layoutStage(); if (night !== null && night.result === null) hud(); break
     case 'back': location.href = back; break
     case 'quit':
