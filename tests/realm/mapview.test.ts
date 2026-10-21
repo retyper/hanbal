@@ -110,7 +110,7 @@ describe('지도 겉모습', () => {
 
   it('출정 화살촉은 닿는 쪽을 향한다 — 끝 바로 앞 잔 점이 촉을 뒤집지 않는다 (형: "가지산소도에서 곰골로 … 화살표가 반대방향")', () => {
     const r = startYeongnam(7, 'saro')
-    r.known = undefined
+    delete r.known
     const reversed: string[] = []
     for (const e of Object.values(r.edges)) {
       for (const [f, t] of [[e.a, e.b], [e.b, e.a]] as const) {
