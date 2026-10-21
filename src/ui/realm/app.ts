@@ -2112,7 +2112,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         c = [big ? 0.92 : g.kind === 'none' ? 0.3 : 0.6, { ev: 'event-expedition-return', hero: g.kind === 'wanderer' ? after.heroes[g.hero] ?? null : after.heroes[l.hero] ?? null,
           line: `${DESTS[l.dest].name}에서 ${josa(after.heroes[l.hero]?.name ?? '', '이', '가')} 돌아왔다${g.kind === 'wanderer' ? ` · ${josa(after.heroes[g.hero]?.name ?? '', '이', '가')} 따라왔다` : g.kind === 'skill' ? ` · 「${TRAIT[g.trait]?.name ?? ''}」을 배웠다` : ''}` }]
       } else if (l.kind === 'wed' && l.faction === pl) {
-        c = [0.7, { ev: 'event-festival', hero: after.heroes[l.a] ?? null, line: `${josa(after.heroes[l.a]?.name ?? '', '과', '와')} ${josa(after.heroes[l.b]?.name ?? '', '이', '가')} 혼인했다` }]
+        c = [0.7, { ev: 'event-marriage', hero: after.heroes[l.a] ?? null, line: `${josa(after.heroes[l.a]?.name ?? '', '과', '와')} ${josa(after.heroes[l.b]?.name ?? '', '이', '가')} 혼인했다` }]
       } else if (l.kind === 'birth' && l.faction === pl) {
         c = [l.surprise !== undefined ? 0.95 : 0.8, { ev: 'event-egg-birth', hero: null, line: `${after.heroes[l.a]?.name ?? ''}·${after.heroes[l.b]?.name ?? ''}의 아이 ${josa(after.heroes[l.hero]?.name ?? '', '이', '가')} 나섰다` }]
       } else if (l.kind === 'hunger' && l.faction === pl) {
