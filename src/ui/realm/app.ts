@@ -1478,11 +1478,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   // ───────── 공작 (형: "다양한 외교나 공작이 가능 해야하는거 아님?")
   /**
-   * 우리 쪽에서 짐작을 말하는 사람 — 지략이 가장 높은 우리 장수 (군주도 든다). 화면은 판이 아는 것을 내레이션하지 않고 이 사람의 입으로 짐작한다
+   * 우리 쪽에서 짐작을 말하는 사람 — 지략이 가장 높은 우리 신하. 화면은 판이 아는 것을 내레이션하지 않고 이 사람의 입으로 짐작한다
    * (형 2026-10-20: "전지적작가시점에서 정보전달하면안된다니까? 주변정보나 인물의 발언 같은걸로 해야해")
+   * 우리 군주는 빠진다 — 군주는 플레이어 자신이다 (형 2026-10-21: "본인이본인한테 뭔가 말을한다는게 말이되나?"). 신하가 없으면 이름 없는 "신하의 짐작"
    */
   function advisor(r: Realm): Hero | undefined {
-    return sorted(Object.values(r.heroes)).filter((h) => h.faction === me() && h.status !== 'dead' && h.status !== 'captive')
+    return sorted(Object.values(r.heroes)).filter((h) => h.faction === me() && h.status !== 'dead' && h.status !== 'captive' && !isRuler(r, h.id))
       .sort((a, b) => b.ryak - a.ryak || (a.id < b.id ? -1 : 1))[0]
   }
   /** 사람의 말 한 줄 — 얼굴 · 이름 · 따옴표 */
