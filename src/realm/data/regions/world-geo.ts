@@ -29,35 +29,35 @@ export const WORLD_TILES: readonly WorldTile[] = [
   { file: 'm12c-spring', lon0: 119.0, lon1: 121.9, lat0: 36.3, lat1: 38.3, fade: { s: 0.25 } }, // 산동반도 북쪽 · 묘도 섬줄
   { file: 'm12d-spring', lon0: 121.9, lon1: 124.8, lat0: 36.3, lat1: 38.3, fade: { s: 0.25 } }, // 산동 끝 · 백령도
   // 요서 줄 (경도 119.0–121.9) · 요동 줄 (121.9–124.8)
-  { file: 'm10a-spring', lon0: 119.0, lon1: 121.9, lat0: 38.05, lat1: 40.05, fade: { s: 0.25 }, trim: { e: 16, s: 16 } },
-  { file: 'm10b-spring', lon0: 119.0, lon1: 121.9, lat0: 39.8, lat1: 41.8, fade: { s: 0.25 }, trim: { e: 22, w: 19 } },
-  { file: 'm10c-spring', lon0: 119.0, lon1: 121.9, lat0: 41.55, lat1: 43.55, fade: { s: 0.25 }, trim: { e: 40 } },
-  { file: 'm10d-spring', lon0: 119.0, lon1: 121.9, lat0: 43.3, lat1: 45.3, fade: { s: 0.25 }, trim: { e: 19 } },
-  { file: 'm9a-spring', lon0: 121.9, lon1: 124.8, lat0: 38.05, lat1: 40.05, fade: { s: 0.25 }, trim: { s: 23, w: 55 } },
-  { file: 'm9b-spring', lon0: 121.9, lon1: 124.8, lat0: 39.8, lat1: 41.8, fade: { s: 0.25 }, trim: { n: 33 } },
-  { file: 'm9c-spring', lon0: 121.9, lon1: 124.8, lat0: 41.55, lat1: 43.55, fade: { s: 0.25 }, trim: { n: 23, s: 30, w: 30 } },
-  { file: 'm9d-spring', lon0: 121.9, lon1: 124.8, lat0: 43.3, lat1: 45.3, fade: { s: 0.25 }, trim: { e: 28, s: 19 } },
-  { file: 'm4a-spring', lon0: 124.8, lon1: 127.7, lat0: 32.8, lat1: 34.8, fade: {} },
-  { file: 'm4b-spring', lon0: 127.4, lon1: 130.3, lat0: 32.8, lat1: 34.8, fade: { w: 0.3 }, trim: { n: 20, w: 20 } },
-  { file: 'yeongnam-spring', lon0: 127.4, lon1: 130.3, lat0: 34.55, lat1: 36.55, fade: { s: 0.25 }, trim: { e: 51, n: 18, s: 25, w: 33 } },
-  { file: 'mahan-spring', lon0: 124.8, lon1: 127.7, lat0: 34.55, lat1: 36.55, fade: { e: 0.3, s: 0.25 }, trim: { n: 34, w: 60 } },
-  { file: 'm2-spring', lon0: 124.8, lon1: 127.7, lat0: 36.3, lat1: 38.3, fade: { s: 0.25 }, trim: { e: 16, s: 51, w: 58 } },
-  { file: 'm3-spring', lon0: 127.4, lon1: 130.3, lat0: 36.3, lat1: 38.3, fade: { s: 0.25, w: 0.3 }, trim: { e: 61, s: 45, w: 47 } },
-  { file: 'm5a-spring', lon0: 124.8, lon1: 127.7, lat0: 38.05, lat1: 40.05, fade: { s: 0.25 } }, // 2026-10-20 다시 받음 — 첫 판은 황해도를 바다로 칠했다 · 같은 날 밤 제미나이(Argon)로 또 바꿈
-  { file: 'm5b-spring', lon0: 127.4, lon1: 130.3, lat0: 38.05, lat1: 40.05, fade: { s: 0.25, w: 0.3 }, trim: { e: 53, n: 19, s: 29, w: 22 } },
-  { file: 'm6a-spring', lon0: 124.8, lon1: 127.7, lat0: 39.8, lat1: 41.8, fade: { s: 0.25 }, trim: { e: 32, n: 47, s: 54, w: 29 } },
-  { file: 'm6b-spring', lon0: 127.4, lon1: 130.3, lat0: 39.8, lat1: 41.8, fade: { s: 0.25, w: 0.3 }, trim: { e: 24, n: 48, s: 17, w: 18 } },
-  { file: 'm7a-spring', lon0: 124.8, lon1: 127.7, lat0: 41.55, lat1: 43.55, fade: { s: 0.25 }, trim: { e: 51, n: 28, s: 54, w: 50 } },
-  { file: 'm7b-spring', lon0: 127.4, lon1: 130.3, lat0: 41.55, lat1: 43.55, fade: { s: 0.25, w: 0.3 }, trim: { e: 53, s: 43, w: 35 } },
-  { file: 'm8a-spring', lon0: 124.8, lon1: 127.7, lat0: 43.3, lat1: 45.3, fade: { s: 0.25 }, trim: { s: 38, w: 20 } },
-  { file: 'm8b-spring', lon0: 127.4, lon1: 130.3, lat0: 43.3, lat1: 45.3, fade: { s: 0.25, w: 0.3 }, trim: { e: 19, n: 41, s: 40, w: 24 } },
+  { file: 'm10a-spring', lon0: 119.0, lon1: 121.9, lat0: 38.05, lat1: 40.05, fade: { s: 0.25 } },
+  { file: 'm10b-spring', lon0: 119.0, lon1: 121.9, lat0: 39.8, lat1: 41.8, fade: { s: 0.25 } },
+  { file: 'm10c-spring', lon0: 119.0, lon1: 121.9, lat0: 41.55, lat1: 43.55, fade: { s: 0.25 } },
+  { file: 'm10d-spring', lon0: 119.0, lon1: 121.9, lat0: 43.3, lat1: 45.3, fade: { s: 0.25 } },
+  { file: 'm9a-spring', lon0: 121.75, lon1: 124.8, lat0: 38.05, lat1: 40.05, fade: { s: 0.25, w: 0.15 } },
+  { file: 'm9b-spring', lon0: 121.75, lon1: 124.8, lat0: 39.8, lat1: 41.8, fade: { s: 0.25, w: 0.15 } },
+  { file: 'm9c-spring', lon0: 121.75, lon1: 124.8, lat0: 41.55, lat1: 43.55, fade: { s: 0.25, w: 0.15 } },
+  { file: 'm9d-spring', lon0: 121.75, lon1: 124.8, lat0: 43.3, lat1: 45.3, fade: { s: 0.25, w: 0.15 } },
+  { file: 'm4a-spring', lon0: 124.65, lon1: 127.7, lat0: 32.8, lat1: 34.8, fade: { w: 0.15 } },
+  { file: 'm4b-spring', lon0: 127.4, lon1: 130.3, lat0: 32.8, lat1: 34.8, fade: { w: 0.3 } },
+  { file: 'yeongnam-spring', lon0: 127.4, lon1: 130.3, lat0: 34.55, lat1: 36.55, fade: { s: 0.25 } },
+  { file: 'mahan-spring', lon0: 124.65, lon1: 127.7, lat0: 34.55, lat1: 36.55, fade: { e: 0.3, s: 0.25, w: 0.15 } },
+  { file: 'm2-spring', lon0: 124.65, lon1: 127.7, lat0: 36.3, lat1: 38.3, fade: { s: 0.25, w: 0.15 } },
+  { file: 'm3-spring', lon0: 127.4, lon1: 130.3, lat0: 36.3, lat1: 38.3, fade: { s: 0.25, w: 0.3 } },
+  { file: 'm5a-spring', lon0: 124.65, lon1: 127.7, lat0: 38.05, lat1: 40.05, fade: { s: 0.25, w: 0.15 } }, // 2026-10-20 다시 받음 — 첫 판은 황해도를 바다로 칠했다 · 같은 날 밤 제미나이(Argon)로 또 바꿈
+  { file: 'm5b-spring', lon0: 127.4, lon1: 130.3, lat0: 38.05, lat1: 40.05, fade: { s: 0.25, w: 0.3 } },
+  { file: 'm6a-spring', lon0: 124.65, lon1: 127.7, lat0: 39.8, lat1: 41.8, fade: { s: 0.25, w: 0.15 } },
+  { file: 'm6b-spring', lon0: 127.4, lon1: 130.3, lat0: 39.8, lat1: 41.8, fade: { s: 0.25, w: 0.3 } },
+  { file: 'm7a-spring', lon0: 124.65, lon1: 127.7, lat0: 41.55, lat1: 43.55, fade: { s: 0.25, w: 0.15 } },
+  { file: 'm7b-spring', lon0: 127.4, lon1: 130.3, lat0: 41.55, lat1: 43.55, fade: { s: 0.25, w: 0.3 } },
+  { file: 'm8a-spring', lon0: 124.65, lon1: 127.7, lat0: 43.3, lat1: 45.3, fade: { s: 0.25, w: 0.15 } },
+  { file: 'm8b-spring', lon0: 127.4, lon1: 130.3, lat0: 43.3, lat1: 45.3, fade: { s: 0.25, w: 0.3 } },
   // 연해주 줄 (130.0–132.9) — 동해 북쪽 바다를 먼저, 두만강 하구 · 흥개호를 위로
   { file: 'm12g-spring', lon0: 130.0, lon1: 132.9, lat0: 32.8, lat1: 34.8, fade: { w: 0.3 } }, // 규슈 북쪽 · 간몬 해협 (바깥 땅)
   { file: 'm12h-spring', lon0: 130.0, lon1: 132.9, lat0: 34.55, lat1: 36.55, fade: { s: 0.25, w: 0.3 } }, // 혼슈 서쪽 바닷가 (바깥 땅)
   { file: 'm12b-spring', lon0: 130.0, lon1: 132.9, lat0: 36.3, lat1: 38.3, fade: { s: 0.25, w: 0.3 } }, // 울릉도 · 독도
   { file: 'm11c-spring', lon0: 130.0, lon1: 132.9, lat0: 39.8, lat1: 41.8, fade: { s: 0.25, w: 0.3 } },
-  { file: 'm11a-spring', lon0: 130.0, lon1: 132.9, lat0: 41.55, lat1: 43.55, fade: { s: 0.25, w: 0.3 }, trim: { w: 34 } },
-  { file: 'm11b-spring', lon0: 130.0, lon1: 132.9, lat0: 43.3, lat1: 45.3, fade: { s: 0.25, w: 0.3 }, trim: { e: 49 } },
+  { file: 'm11a-spring', lon0: 130.0, lon1: 132.9, lat0: 41.55, lat1: 43.55, fade: { s: 0.25, w: 0.3 } },
+  { file: 'm11b-spring', lon0: 130.0, lon1: 132.9, lat0: 43.3, lat1: 45.3, fade: { s: 0.25, w: 0.3 } },
 ]
 
 // 요서·요동 조각의 뭍 (tools/world-sketch.js TILES.m9a … m10d)
