@@ -481,7 +481,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       return {
         army: a.id, node: a.at, men: headcount(forceOf(r, a)), sel: armySel.includes(a.id), going: pick[a.id] !== undefined,
         img: file !== undefined ? `${ART}bust/${file}.jpg` : `${ART}icon/${UNIT_ICON[top]}.png`,
-        ...(a.march !== null ? { march: { from: a.march.from, to: a.march.to } } : {}),
+        ...(a.march !== null ? { march: { from: a.march.from, to: a.march.to, left: a.march.left } } : {}),
       }
     })
     const a = armySel.length > 0 ? r.armies[armySel[0]!] : undefined
@@ -1591,6 +1591,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return h + `</div></div>`
   }
 
+  /** 도읍을 잃고 피한 조정 — 되찾을 날이 얼마나 남았나 (형: "내도읍 뺏기자마자 지는건 좀 오바") */
+  function exileHtml(r: Realm): string {
+    const ex = r.factions[me()]?.exile
+    if (ex === undefined || r.outcome) return ''
+    const cap = r.nodes[r.factions[me()]!.capital]
+    const left = Math.max(1, ex.since + P.realm.exileSeasons - r.season)
+    return `<div class="banner bad exileb">${icon('status-bad-omen')}${tx(`도읍 ${josa(cap?.name ?? '', '을', '를')} 잃었다 — 조정은 ${r.nodes[ex.seat]?.name ?? ''}에 피해 있다. ${left}계절 안에 되찾지 못하면 나라가 끝난다.`)}</div>`
+  }
+
   /**
    * 회유의 가망을 말로 (숫자 대신 감) — 마음의 벽이 얼마나 두꺼운가 · 무너진 뒤 넘어올 가망. 굴림이라 정해진 계절은 없다
    * (형: "몇계절 뒤 확정적으로 합류하는게 이상해. 매 시도마다 확률적이어야")
@@ -1681,6 +1690,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const held = Object.values(r.factions).filter((x) => r.nodes[x.capital]?.owner === me()).length
     h += cardHtml(realm!) // 미리 적용한 판(r)에선 카드가 이미 답해져 사라졌다 — 실제 판으로
     h += `<div class="goal">목표 · 도읍 ${need}곳을 차지한다 (우리 도읍 포함) <b>${held} / ${need}</b>${(r.tier ?? 1) > 1 ? ` <span class="tierc">난세 ${r.tier}단계</span>` : ''}</div>`
+    h += exileHtml(r)
     h += pathsHtml(r, held, need)
     h += `<div class="grid4"><div>${icon('settle-farm-village')}<b>${mine.length}</b><span>고을</span></div>`
     h += `<div>${icon('good-hemp')}<b>${Math.floor(mine.reduce((s, n) => s + n.hh, 0))}</b><span>집</span></div>`
@@ -2105,6 +2115,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'grow': case 'bond': case 'awaken': ic = 'status-morale-up'; break
       case 'wed': ic = 'status-alliance'; break
       case 'persuade': ic = l.step === 'waver' ? 'status-alliance' : 'status-morale-down'; break
+      case 'exile': ic = 'status-bad-omen'; break
+      case 'retake': ic = 'settle-capital'; break
       case 'card': ic = CARDS[l.card].icon; break
       case 'omen': ic = 'status-good-omen'; break
       case 'expGo': case 'expBack': ic = 'settle-port-town'; break

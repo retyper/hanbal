@@ -74,6 +74,11 @@ export interface Faction {
   readonly ruler?: string
   /** 집 자동 분배를 껐다 (economy.stepMigration). 없으면 켜짐 — 옛 판도 켜짐. AI 는 늘 켜짐 */
   migrateOff?: boolean
+  /**
+   * 도읍을 잃고 피한 조정 (형: "내도읍 뺏기자마자 지는건 좀 오바") — since 계절부터 seat 고을에서 버틴다.
+   * exileSeasons 안에 도읍을 되찾으면 사라지고, 못 되찾거나 고을을 다 잃으면 진다 (season.stepExile)
+   */
+  exile?: { since: number; seat: string }
 }
 
 /** 나라 사이 관계 (FLOW §4) — 판은 중립에서 시작한다. 화친은 `until` 계절에 끝난다 */
@@ -778,6 +783,10 @@ export type ReportLine =
    * (형: "누가 나랑 전쟁나면 상대가 걸어왔다는걸 알려줘야지... 그냥무작정 전쟁이다라 그러면 어떡하냐"). 옛 기록엔 없다
    */
   | { readonly kind: 'relation'; readonly a: string; readonly b: string; readonly state: Relation['state']; readonly by?: string; readonly why?: RelationWhy }
+  /** 도읍이 무너져 조정이 seat 으로 피했다 · until 계절까지 되찾아야 · 또는 피한 곳을 옮겼다(moved) */
+  | { readonly kind: 'exile'; readonly faction: string; readonly capital: string; readonly seat: string; readonly until: number; readonly moved?: boolean }
+  /** 잃었던 도읍을 되찾았다 */
+  | { readonly kind: 'retake'; readonly faction: string; readonly capital: string }
   | { readonly kind: 'end'; readonly outcome: 'win' | 'lose'; readonly faction: string; readonly path?: 'conquest' | 'suzerain' | 'ironsea' | 'rite'; readonly by?: string }
   /** 큰 제사의 사슬 — 우리 것이면 제사철마다, 남의 것이면 가까워졌을 때 소문 (paths.ts) */
   | { readonly kind: 'pathRite'; readonly faction: string; readonly chain: number; readonly need: number; readonly hh: number; readonly hhNeed: number }

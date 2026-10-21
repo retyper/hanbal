@@ -186,9 +186,9 @@ describe('이김 · 짐', () => {
     assert.equal(advance(next, []).next.outcome?.kind, 'win')
   })
 
-  it('제 국읍을 잃으면 진다 · 다른 나라를 고른 판도 같다', () => {
+  it('제 고을을 다 잃으면 진다 · 다른 나라를 고른 판도 같다 (도읍만 잃으면 피해 버틴다 — exile.test.ts)', () => {
     const r = planned(startRealm(1, 'miri'), [])
-    r.nodes['miri-cap']!.owner = 'guya'
+    for (const n of Object.values(r.nodes)) if (n.owner === 'miri') n.owner = 'guya'
     const { next, report } = advance(r, [])
     assert.equal(next.outcome?.kind, 'lose')
     assert.ok(report.lines.some((l) => l.kind === 'end' && l.outcome === 'lose' && l.faction === 'miri'))

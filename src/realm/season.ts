@@ -1181,11 +1181,44 @@ function decayWatch(r: Realm): void {
  * 판의 끝 (FLOW §7 #1) — 이김: 국읍(나라마다의 capital) winCapitals 곳을 쥔다 (제 국읍 포함).
  * 짐: 제 국읍을 잃는다. 한 번 정해지면 바뀌지 않는다.
  */
+/**
+ * 도읍을 잃은 조정 (형: "내도읍 뺏기자마자 지는건 좀 오바") — 우리 나라만. 도읍이 넘어가면 가장 큰 제 고을로 피하고,
+ * exileSeasons 안에 되찾으면 돌아온다. 피한 고을도 잃으면 다음으로 큰 고을로 옮긴다. checkOutcome 앞에 부른다.
+ */
+export function stepExile(r: Realm, lines: ReportLine[]): void {
+  const me = r.player
+  const fac = r.factions[me]
+  if (fac === undefined) return
+  const cap = fac.capital
+  if (r.nodes[cap]?.owner === me) {
+    if (fac.exile !== undefined) {
+      delete fac.exile
+      lines.push({ kind: 'retake', faction: me, capital: cap })
+    }
+    return
+  }
+  const seats = Object.values(r.nodes).filter((n) => n.owner === me && n.kind !== 'sodo').sort((a, b) => b.hh - a.hh || (a.id < b.id ? -1 : 1))
+  const seat = seats[0]
+  if (seat === undefined) return // 고을이 없다 — checkOutcome 이 끝낸다
+  if (fac.exile === undefined) {
+    fac.exile = { since: r.season, seat: seat.id }
+    lines.push({ kind: 'exile', faction: me, capital: cap, seat: seat.id, until: r.season + P.realm.exileSeasons })
+  } else if (r.nodes[fac.exile.seat]?.owner !== me) {
+    fac.exile.seat = seat.id
+    lines.push({ kind: 'exile', faction: me, capital: cap, seat: seat.id, until: fac.exile.since + P.realm.exileSeasons, moved: true })
+  }
+}
+
 export function checkOutcome(r: Realm): 'win' | 'lose' | null {
   const me = r.player
   const capital = r.factions[me]?.capital
   if (capital === undefined) return null
-  if (r.nodes[capital]?.owner !== me) return 'lose'
+  if (r.nodes[capital]?.owner !== me) {
+    // 피한 조정이 버틸 고을이 있고 기한이 남았으면 아직 안 졌다
+    const ex = r.factions[me]?.exile
+    const any = Object.values(r.nodes).some((n) => n.owner === me && n.kind !== 'sodo')
+    return ex !== undefined && any && r.season - ex.since < P.realm.exileSeasons ? null : 'lose'
+  }
   let held = 0
   for (const f of Object.values(r.factions)) if (r.nodes[f.capital]?.owner === me) held++
   // 배우는 판 — 상대 도읍 하나만 쥐면 (제 도읍 포함 둘)
@@ -1246,6 +1279,7 @@ export function advance(
       lines.push(suspects(r, a) ? { ...line, suspect: true } : line)
     }
     if (r.outcome === null || r.outcome === undefined) {
+      stepExile(r, lines)
       const end = checkOutcome(r)
       const pact = end === null ? suzerainEnd(r) : null
       const via = end === null && pact === null ? pathsEnd(r) : null

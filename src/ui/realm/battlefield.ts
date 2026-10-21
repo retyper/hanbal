@@ -15,7 +15,7 @@ import { HERO_BUST, UNIT_ICON } from '../../realm/data/art.ts'
 import { GROUP_NAME, battleName, endStory, fieldName, groupLabel, josa, roundStory, storyCtx } from '../../realm/data/prose.ts'
 import { groupMen } from '../../realm/tactics.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
-import type { Approach, Art, Cmd, Grp, Order, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
+import type { Act, Approach, Art, Cmd, Grp, Order, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
 
 const esc = (s: string): string =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
@@ -137,6 +137,48 @@ export interface WarHost {
 
 /** 무리의 그림 — 싸움 기록의 잃은 사람 칩 */
 const GROUP_ICON: Readonly<Record<Grp, string>> = { front: UNIT_ICON.spear, bows: UNIT_ICON.bow, horse: UNIT_ICON.horse }
+
+/** 무리를 대표하는 병종 그림 — 그 무리에서 가장 많은 병종 (창병·방패병·장창병 · 궁수·쇠뇌 · 기병) */
+function groupIcon(mix: Readonly<Partial<Record<string, number>>>, g: Grp | 'lead'): string {
+  if (g === 'lead') return 'unit-general'
+  const ks = Object.keys(mix).filter((k) => (mix[k] ?? 0) > 0 && (k === 'bow' || k === 'crossbow' ? 'bows' : k === 'horse' ? 'horse' : 'front') === g)
+    .sort((p, q) => (mix[q] ?? 0) - (mix[p] ?? 0))
+  const k = ks[0] as keyof typeof UNIT_ICON | undefined
+  return k !== undefined && UNIT_ICON[k] !== undefined ? UNIT_ICON[k] : GROUP_ICON[g]
+}
+
+/** 일의 결과 — 한 일을 한 쪽에서 보아 먹혔나(ok) · 막혔나(no) · 맞섰나(even) */
+const ACT_RES: Readonly<Record<Act['res'], 'ok' | 'no' | 'even'>> = {
+  won: 'ok', hit: 'ok', ok: 'ok', lost: 'no', blocked: 'no', wasted: 'no', fail: 'no', even: 'even', stall: 'even',
+}
+
+/**
+ * 한 합의 일을 그림 줄로 (형: "창병 방패병 이런게 아이콘으로 안뜨고 누가 누굴 공격하고 성공했는지 실패했는지가 한눈에 안보여") —
+ * [우리/적 · 무리 그림 · 명령] → [맞은편 무리 그림] · ✓ 먹혔다 / ✕ 막혔다 / = 맞섰다 · 맞은편이 잃은 사람.
+ * 우리에게 좋은 일은 초록, 나쁜 일은 붉게. 글 이야기는 그 밑에 작게 남는다
+ */
+export function actRows(acts: readonly Act[] | undefined, ourS: 'a' | 'd', art: string, mixA: Readonly<Partial<Record<string, number>>>, mixD: Readonly<Partial<Record<string, number>>>): string {
+  const list = (acts ?? []).filter((x) => !(x.c === 'drum' && x.tg === undefined))
+  if (list.length === 0) return ''
+  const mixOfS = (s: 'a' | 'd'): Readonly<Partial<Record<string, number>>> => (s === 'a' ? mixA : mixD)
+  let h = '<div class="wacts">'
+  for (const x of list) {
+    const us = x.s === ourS
+    const other = x.s === 'a' ? 'd' : 'a'
+    const r = ACT_RES[x.res]
+    const good = r === 'even' ? '' : (r === 'ok') === us ? ' good' : ' bad'
+    const verb = x.c === 'art' && x.art !== undefined ? ART_NAME[x.art] : CMD_NAME[x.c]
+    const badge = r === 'ok' ? '✓' : r === 'no' ? '✕' : '='
+    const word = r === 'ok' ? (x.tg !== undefined ? '먹혔다' : '해냈다') : r === 'no' ? (x.res === 'wasted' ? '헛방' : '막혔다') : '맞섰다'
+    h += `<div class="wact${us ? ' us' : ' foe'}${good}"><span class="who">${us ? '우리' : '적'}</span><img src="${art}icon/${groupIcon(mixOfS(x.s), x.g)}.png" alt=""><b>${esc(verb)}</b>`
+    if (x.tg !== undefined) h += `<i class="arw">→</i><img class="tg" src="${art}icon/${groupIcon(mixOfS(other), x.tg)}.png" alt="">`
+    h += `<span class="res">${badge} ${word}</span>`
+    if ((x.tl ?? 0) > 0) h += `<span class="loss">${us ? '적' : '우리'} −${x.tl}</span>`
+    if ((x.sl ?? 0) > 0) h += `<span class="loss own">${us ? '우리' : '적'} −${x.sl}</span>`
+    h += '</div>'
+  }
+  return h + '</div>'
+}
 
 /** 한 합에 무리마다 잃은 사람 — [무리, 수] (그 합 앞의 무리 수에서 뺀다) */
 function groupLoss(before: Readonly<Partial<Record<Grp, number>>>, after: Readonly<Partial<Record<Grp, number>>> | undefined): Array<[Grp, number]> {
@@ -291,7 +333,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const akOf = (sd: 'a' | 'd'): Art | undefined => (rd.acts ?? []).find((x) => x.c === 'art' && x.s === sd)?.art
     h += `<div class="wcmds"${d(0)}><span class="wc us">${flags(weAtk ? rd.oa : rd.od, weAtk ? rd.a : rd.d, art, akOf(ourS))}</span><i>×</i><span class="wc foe">${flags(weAtk ? rd.od : rd.oa, weAtk ? rd.d : rd.a, art, akOf(ourS === 'a' ? 'd' : 'a'))}</span></div>`
     const story = ctx !== null ? roundStory(rd, rounds[i - 1], ctx) : []
-    h += `<div class="wst"${d(1)}>${story.map((s) => `<p>${esc(s)}</p>`).join('')}</div>`
+    // 누가 누구를 · 됐나 — 그림 줄이 먼저, 글 이야기는 그 밑에 작게
+    const rows = actRows(rd.acts, ourS, art, mixOf(0), mixOf(1))
+    h += `<div class="wst${rows !== '' ? ' sm' : ''}"${d(1)}>${rows}${story.map((s) => `<p>${esc(s)}</p>`).join('')}</div>`
     // 사로잡기·물러나기로 끝난 합은 밀고 밀린 것이 없다
     if (rd.ev === 'capture-ok' || rd.ev === 'retreat') h += `<p class="wpush"${d(2)}>싸움이 거기서 끝났다</p></div>`
     else {
@@ -409,6 +453,16 @@ export const WAR_CSS = `
 .ap .wfl img { width: 22px; height: 22px; object-fit: contain; }
 .ap .wcmds > i { font-style: normal; color: #c8402a; }
 .ap .wst { margin: 6px 0 2px; }
+.ap .wacts { display: flex; flex-direction: column; gap: 4px; margin: 2px 0 6px; }
+.ap .wact { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; padding: 4px 8px; border-radius: 9px; background: #ffffff08; border-left: 3px solid #6a6458; font-size: 13.5px; }
+.ap .wact.us { border-left-color: #c9a45a; } .ap .wact.foe { border-left-color: #b0584a; }
+.ap .wact img { width: 26px; height: 26px; object-fit: contain; }
+.ap .wact .who { font-size: 11px; color: #a89c84; min-width: 24px; }
+.ap .wact .arw { font-style: normal; color: #a89c84; }
+.ap .wact .res { margin-left: auto; font-weight: 700; padding: 1px 7px; border-radius: 8px; background: #ffffff10; color: #d8cfbd; }
+.ap .wact.good .res { background: #2f4a26; color: #b8e09a; } .ap .wact.bad .res { background: #4a2420; color: #ffb0a0; }
+.ap .wact .loss { font-size: 12px; color: #e0a090; } .ap .wact .loss.own { color: #a89c84; }
+.ap .wst.sm p { font-size: 12.5px; color: #a89c84; margin: 2px 0; }
 .ap .wst p { margin: 3px 0; font-size: 14.5px; line-height: 1.5; }
 .ap .wrd.crit .wst p:first-child { color: var(--gold); }
 .ap .wpush { margin: 4px 0 0; text-align: center; font-size: 13px; color: var(--mute); }

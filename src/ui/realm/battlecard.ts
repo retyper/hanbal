@@ -8,7 +8,7 @@
  */
 import { BATTLE_AMBUSH, BATTLE_APPROACH, BATTLE_CLASH, endStory, fieldName, josa, roundStory, storyCtx } from '../../realm/data/prose.ts'
 import { HERO_BUST } from '../../realm/data/art.ts'
-import { CMD_ICON, CMD_NAME, warName } from './battlefield.ts'
+import { CMD_ICON, CMD_NAME, actRows, warName } from './battlefield.ts'
 import type { Army, Hero, Realm, ReportLine } from '../../realm/types.ts'
 
 type Battle = Extract<ReportLine, { kind: 'battle' }>
@@ -74,8 +74,9 @@ function battleSummary(after: Realm, l: Battle, weAtk: boolean, art: string, vie
   const ctx = storyCtx(after, l, viewer)
   if (ctx !== null) {
     rds.forEach((rd, i) => {
-      const s = roundStory(rd, rds[i - 1], ctx).slice(0, 2)
-      if (s.length > 0) h += `<p class="bkl now bkst"><i>${i + 1}</i>${esc(s.join(' '))}</p>`
+      const rows = actRows(rd.acts, weAtk ? 'a' : 'd', art, st.mix?.[0] ?? {}, st.mix?.[1] ?? {})
+      const s = roundStory(rd, rds[i - 1], ctx).slice(0, rows !== '' ? 1 : 2)
+      if (rows !== '' || s.length > 0) h += `<div class="bkl now bkst"><i>${i + 1}</i><div>${rows}${s.length > 0 ? `<p class="bksm">${esc(s.join(' '))}</p>` : ''}</div></div>`
     })
     h += `<p class="bkl now bkwhy">${esc(endStory(l, ctx))}</p>`
   }
@@ -199,6 +200,7 @@ export const BATTLE_CSS = `
 .ap .bkrd img { width: 22px; height: 22px; } .ap .bkrd i { font-style: normal; font-weight: 800; width: 14px; text-align: center; color: var(--mute); }
 .ap .bkrd.w { border-color: #6a9a5a; } .ap .bkrd.w i { color: #9fd18b; } .ap .bkrd.l { border-color: #9a4a3a; } .ap .bkrd.l i { color: #ff8a70; }
 .ap .bk .now { opacity: 1; animation: none; }
-.ap .bk .bkst { font-size: 13.5px; line-height: 1.5; } .ap .bk .bkst i { font-style: normal; display: inline-block; min-width: 18px; color: var(--gold); font-weight: 700; }
+.ap .bk .bkst { font-size: 13.5px; line-height: 1.5; display: flex; gap: 6px; align-items: flex-start; } .ap .bk .bkst > div { flex: 1; min-width: 0; }
+.ap .bk .bksm { margin: 2px 0 0; font-size: 12.5px; color: #a89c84; } .ap .bk .bkst i { font-style: normal; display: inline-block; min-width: 18px; color: var(--gold); font-weight: 700; }
 .ap .bk .bkwhy { font-size: 14px; color: #e8dcc0; text-align: center; }
 `

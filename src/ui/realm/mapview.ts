@@ -149,6 +149,13 @@ export const MAP_CSS = `
 .map .tok.sel img { border-color: #ffd27a; box-shadow: 0 0 0 3px #ffd27a88, 0 0 12px #ffd27a; transform: scale(1.12); }
 .map .tok.going img { border-color: #c8402a; }
 .map .toks.mv { transform: translate(-50%, -50%); } .map .toks.mv .tok img { border-style: dashed; border-color: #f3e6c8; }
+/* 길 위의 우리 군대 — 발맞춰 걷듯 들썩이고, 밑에 "이동 중 · 다음 계절 도착" (형: "언제도착하는지 글씨가 가려져서 안보이기도") */
+.map .toks.mv .tok { animation: mvbob .55s ease-in-out infinite alternate; }
+@keyframes mvbob { from { transform: translateY(0) rotate(-3deg); } to { transform: translateY(-12%) rotate(3deg); } }
+.map .toks.mv .mvtag { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 2px; white-space: nowrap; z-index: 3; pointer-events: none;
+  font-size: clamp(10px, calc(1.6cqh / var(--z, 1) * var(--zs, 1)), 13px); font-weight: 700; color: #fff4dc; background: #7a1f10e6; border-radius: 8px; padding: 1px 6px; box-shadow: 0 1px 3px #0008; }
+.map svg .mvflow { animation: mvf .9s linear infinite; } @keyframes mvf { to { stroke-dashoffset: -22; } }
+@media (prefers-reduced-motion: reduce) { .map .toks.mv .tok, .map svg .mvflow { animation: none; } }
 .map .lb.crowd { visibility: hidden; } /* 겹쳐 자리가 없는 작은 고을 이름 — declutter */
 .map .lb.sel { color: #7a1f10; } .map .lb.dim { opacity: 0; } /* 한 나라만 볼 때 다른 나라 글씨는 감춘다 (형: "다른나라들은 글자정돈 완전 투명하게") */ .map .nd.sel img.st { filter: drop-shadow(0 0 7px #ffd27a) drop-shadow(0 0 3px #ffd27a); }
 .map[data-world] { background-color: #cdb98e; }
@@ -314,8 +321,12 @@ export function mapHtml(
     const col = onUs ? '#b0281a' : m.foe === true || amb ? '#3a2a5a' : '#c8402a'
     const head = onUs ? 'rm-ah' : m.foe === true || amb ? 'rm-ah-foe' : 'rm-ah'
     if (onUs) svg += `<path d="${smoothPath(pts)}" fill="none" stroke="#ffb09a" stroke-width="${18 * lw}" stroke-linecap="round" opacity=".35"/>`
-    svg += `<path${onUs ? ' class="thrarrow"' : ''} d="${smoothPath(pts)}" fill="none" stroke="${col}" stroke-width="${(amb ? 11 : onUs ? 10 : 9) * lw}"${dash} marker-end="url(#${head})" opacity=".9"/>`
-    const label = `${m.foe === true ? '적 ' : ''}${amb ? '기습' : ''}${m.left !== null ? `${amb ? ' ' : ''}${m.left}계절` : ''}`
+    // 길 위의 우리 행군은 점선이 가는 쪽으로 흐른다 (형: "이동중이면 … 애니메이션이 뭔가 있음 좋겠음")
+    const flow = m.left !== null && m.foe !== true && !amb ? ' class="mvflow"' : onUs ? ' class="thrarrow"' : ''
+    svg += `<path${flow} d="${smoothPath(pts)}" fill="none" stroke="${col}" stroke-width="${(amb ? 11 : onUs ? 10 : 9) * lw}"${dash} marker-end="url(#${head})" opacity=".9"/>`
+    // 언제 닿나 — 우리 행군은 말 밑 꼬리표가 말한다(가려지지 않게). 적 행군은 길 위 글씨로 "다음 계절 닿음"
+    const when = m.left !== null ? (m.left <= 1 ? '다음 계절' : `${m.left}계절 뒤`) : ''
+    const label = m.foe === true ? `적 · ${when} 닿음` : m.left !== null ? '' : amb ? '기습' : ''
     // 보인 적의 행군 — 창을 멘 줄 그림 (무엇이 오는지 한눈에)
     if (m.foe === true) {
       // 글씨("적 n계절")의 왼쪽에 붙인다 — 고을 그림 밑에 묻히지 않게
@@ -409,7 +420,9 @@ export function mapHtml(
     const a0 = seg[0]!
     const a1 = seg[seg.length - 1]!
     const ang = (Math.atan2(a1[1] - a0[1], a1[0] - a0[0]) * 180) / Math.PI
-    toks += `<div class="toks mv" style="left:${(mx / W) * 100}%;top:${(my / H) * 100}%">${tokBtn(t, ang)}</div>`
+    const left = t.march.left
+    const tag = `이동 중 · ${left <= 1 ? '다음 계절 도착' : `${left}계절 뒤 도착`}`
+    toks += `<div class="toks mv" style="left:${(mx / W) * 100}%;top:${(my / H) * 100}%">${tokBtn(t, ang)}<span class="mvtag">${tag}</span></div>`
   }
   for (const [node, ts] of [...byNode].sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
     const p = pos(node)
@@ -438,8 +451,8 @@ export interface MapToken {
   readonly sel: boolean
   /** 이번 계절 떠나기로 했다 */
   readonly going: boolean
-  /** 길 위에 있다 — 그 길 가운데에 둔다 */
-  readonly march?: { readonly from: string; readonly to: string }
+  /** 길 위에 있다 — 그 길 가운데에 둔다 · left 남은 계절 */
+  readonly march?: { readonly from: string; readonly to: string; readonly left: number }
 }
 
 /** 고른 군대가 갈 수 있는 고을 — 칩은 판세(싸울 곳) 또는 걸리는 계절 */

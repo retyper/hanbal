@@ -676,6 +676,15 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       }
       return null
     }
+    case 'exile': {
+      if (line.faction !== viewer) return null
+      const left = Math.max(1, line.until - after.season + 1)
+      return line.moved === true
+        ? `피해 있던 고을마저 빼앗겼다. 조정이 다시 ${josa(node(line.seat), '으로', '로')} 옮겼다. 도읍 ${josa(node(line.capital), '을', '를')} 되찾을 날이 ${left}계절 남았다.`
+        : `도읍 ${josa(node(line.capital), '이', '가')} 무너졌다. 군장과 조정이 ${josa(node(line.seat), '으로', '로')} 피했다. ${left}계절 안에 도읍을 되찾지 못하면 나라가 끝난다.`
+    }
+    case 'retake':
+      return line.faction === viewer ? `도읍 ${josa(node(line.capital), '을', '를')} 되찾았다! 조정이 돌아왔다.` : null
     case 'end':
       if (line.faction !== viewer) return null
       if (line.path === 'ironsea') {
@@ -693,7 +702,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
           ? '여러 나라 군장이 모여 우리 군장을 진왕으로 받들었다. 맹주가 되었다.'
           : `${josa(fname(line.by ?? ''), '이', '가')} 진왕이 되었다. 여러 나라가 그 아래 섰다. 우리 판은 여기까지다.`
       }
-      return line.outcome === 'win' ? '도읍을 넉넉히 차지했다. 이 판의 맹주가 되었다.' : '도읍을 빼앗겼다. 나라가 무너졌다.'
+      return line.outcome === 'win' ? '도읍을 넉넉히 차지했다. 이 판의 맹주가 되었다.' : '도읍을 끝내 되찾지 못했다. 나라가 무너졌다.'
     case 'suzerain': {
       // 맹주의 길 — 우리 것이면 맹약의 해, 남의 것이면 소문 (보고판이 모르는 나라 줄은 거른다)
       const left = Math.max(0, P.realm.suzerainSeasons - line.streak)

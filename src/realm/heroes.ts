@@ -350,6 +350,9 @@ function neighborsOf(r: Realm, node: string): string[] {
 export function homeOf(r: Realm, faction: string): string | null {
   const cap = r.factions[faction]?.capital
   if (cap !== undefined && r.nodes[cap]?.owner === faction) return cap
+  // 도읍을 잃고 피한 조정이 있는 곳
+  const seat = r.factions[faction]?.exile?.seat
+  if (seat !== undefined && r.nodes[seat]?.owner === faction) return seat
   return byId(Object.values(r.nodes)).find((n) => n.owner === faction && n.kind !== 'sodo')?.id ?? null
 }
 

@@ -204,16 +204,15 @@ const HEAD_ALL: Readonly<Record<RegionId, string>> = {
   world: '삼한과 북녘이 하나가 됐다',
 }
 
-/** 콜라주 자리 — 왼쪽·위·너비 (%) · 기울기. 여섯 장까지 */
-const SLOTS: ReadonlyArray<readonly [number, number, number, number]> = [
-  [2, 3, 46, -5], [50, 1, 46, 4], [26, 27, 44, -2], [1, 50, 44, 3], [54, 47, 44, -4], [28, 64, 42, 2],
-]
+/** 끝 화면 필름에 거는 장면 수 (마지막 제목 장 빼고) */
+const SHOTS = 6
 /** 도읍을 쥔 장면 — 차례로 돌려 쓴다 */
 const TAKE_ART = ['event-night-raid', 'event-eight-harbours', 'event-expedition-return', 'event-goguryeo-hunt'] as const
 
 /**
- * 끝 화면 — 그 판의 큰 장면들이 한 장씩 사진처럼 떨어져 쌓이고, 마지막에 잔치 그림 위로 제목이 뜬다
- * (형: "승리하는건 나중에 문명처럼 영상처럼 … 지금은 이미지 들만 가지고 콜라주같은거로"). 누르면 바로 다 보인다.
+ * 끝 화면 — 그 판의 큰 장면들이 **영화 필름처럼** 어두운 화면에 한 장씩 떠올랐다 사라지고, 마지막에 잔치 그림 위로 제목이 뜬다
+ * (형: "사진콜라주 좀 별로인거같고 너무빨라서 읽을수가 없음. 영화 필름처럼 어두운 배경에서 페이드인아웃").
+ * 한 장에 글을 읽을 만큼 머문다. 누르면 마지막 장으로 바로 간다.
  * 이겼으면 "계속 둔다" — 남은 나라까지 (형: "이어서 진행해서 전부 점령하고 싶은 마음도 드네").
  */
 export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): string {
@@ -266,7 +265,7 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): 
   // 큰일 먼저 — 도읍과 동맹, 그다음 나머지. 계절 순으로
   const ranked = [...events.filter((e) => e.big), ...events.filter((e) => !e.big)]
   const pickd = ranked.slice(0, 9).sort((a, b) => a.s - b.s)
-  const shots = ranked.slice(0, SLOTS.length).sort((a, b) => a.s - b.s)
+  const shots = ranked.slice(0, SHOTS).sort((a, b) => a.s - b.s)
   const years = Math.floor((r.outcome?.season ?? r.season) / 4) + 1
   // 어느 길로 끝났나 — 맹주(진왕)면 제목이 다르다 (VICTORY §1-2)
   const path = r.outcome?.path
@@ -288,14 +287,15 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): 
   const lastArt = win
     ? (path === 'suzerain' ? 'event-eight-harbours' : path === 'ironsea' ? 'event-iron-trade' : path === 'rite' ? 'event-yeonggo' : 'event-festival')
     : (path === 'suzerain' || path === 'ironsea' ? 'event-outside-envoy' : path === 'rite' ? 'event-divination' : 'event-sky-drought')
-  let h = `<div class="mcard end front-end" data-act="rep-fast"><div class="clg${win ? '' : ' lose'}">`
+  let h = `<div class="mcard end front-end" data-act="rep-fast"><div class="clg film${win ? '' : ' lose'}">`
   shots.forEach((e, i) => {
-    const [x, y, w, rot] = SLOTS[i]!
-    h += `<figure class="cp" style="--i:${i};left:${x}%;top:${y}%;width:${w}%;--r:${rot}deg"><img src="${e.img}" alt="">`
-    h += `${e.em !== undefined ? k.emblem(e.em, 'cpem') : ''}<figcaption><i>${k.esc(seasonLabel(e.s))}</i>${k.esc(e.t)}</figcaption></figure>`
+    // 홀수 장은 반대로 천천히 민다 (켄 번스)
+    h += `<figure class="cp${i % 2 === 1 ? ' odd' : ''}" style="--i:${i}"><img src="${e.img}" alt="">`
+    h += `<figcaption>${e.em !== undefined ? k.emblem(e.em, 'cpem') : ''}<i>${k.esc(seasonLabel(e.s))}</i><span>${k.esc(e.t)}</span></figcaption></figure>`
   })
   // 마지막 장 — 잔치(이김) · 가뭄(짐) 위로 제목
-  h += `<figure class="cp last" style="--i:${shots.length}"><img src="${k.art}event/${lastArt}.jpg" alt=""><figcaption><b>${k.esc(title)}</b></figcaption></figure></div>`
+  h += `<figure class="cp last" style="--i:${shots.length}"><img src="${k.art}event/${lastArt}.jpg" alt=""><figcaption><b>${k.esc(title)}</b></figcaption></figure>`
+  h += `<span class="skip">누르면 넘긴다</span></div>`
   h += `<div class="after" style="--n:${shots.length + 1}">`
   h += `<p class="mute">${k.emblem(me, 'cem')}${k.esc(name(me))} · ${k.esc(seasonLabel(r.outcome?.season ?? r.season))}${win ? '' : ' — 여기까지였다'}</p>`
   h += `<div class="stats"><span><b>${years}</b>해</span><span><b>${capsHeld(r, me)}</b>도읍</span><span><b>${won}</b>이긴 싸움</span><span><b>${lost}</b>진 싸움</span>`
@@ -382,23 +382,32 @@ export const FRONT_CSS = `
 .ap .front-end .stats span { min-width: 64px; padding: 6px 8px; border-radius: 10px; background: #ffffff0d; text-align: center; font-size: 12px; color: #a89c84; }
 .ap .front-end .stats b { display: block; font-size: 20px; color: var(--gold); }
 .ap .front-end .chron { text-align: left; margin: 8px 0; } .ap .front-end .chron h4 { margin: 4px 0; color: var(--gold); }
-.ap .front-end .clg { position: relative; aspect-ratio: 4 / 3.3; margin: -4px -4px 6px; border-radius: 12px; overflow: hidden;
-  background: #d9c8a0 url('__ART__map-world/hanji.webp') center / 320px; box-shadow: inset 0 0 40px #5a4020aa; }
-.ap .front-end .clg.lose { filter: grayscale(.55) brightness(.85); }
-.ap .front-end .cp { position: absolute; margin: 0; padding: 5px 5px 0; background: #f6eedb; box-shadow: 0 6px 18px #000a; border-radius: 3px;
-  opacity: 0; transform: rotate(var(--r)); animation: cpin .8s cubic-bezier(.2, 1.3, .4, 1) calc(var(--i) * 1.1s + .4s) both; }
-.ap .front-end .cp img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 2px; }
-.ap .front-end .cp img.cpem { position: absolute; right: -6px; top: -8px; width: 26%; aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 2px 3px #000a); }
-.ap .front-end .cp figcaption { font-size: 11px; color: #3a2a18; padding: 3px 2px 5px; line-height: 1.3; text-align: left; }
-.ap .front-end .cp figcaption i { font-style: normal; color: #8a6a40; margin-right: 4px; }
-.ap .front-end .cp.last { left: 8%; top: 14%; width: 84%; height: 72%; z-index: 2; --r: 0deg; padding: 0; background: none; border-radius: 12px; overflow: hidden;
-  animation: cplast 1.4s ease-out calc(var(--i) * 1.1s + .6s) both; }
-.ap .front-end .cp.last img { aspect-ratio: auto; height: 100%; }
-.ap .front-end .cp.last figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 10px 10px; text-align: center; background: linear-gradient(#0000, #000c); }
-.ap .front-end .cp.last b { font-family: 'Gowun Batang', serif; font-size: clamp(20px, 5.4vw, 28px); color: #f3d48a; text-shadow: 0 2px 8px #000; }
-.ap .front-end .after { animation: bkin .7s ease-out calc(var(--n) * 1.1s + 1.4s) both; }
-@keyframes cpin { from { opacity: 0; transform: scale(1.5) rotate(0deg); } to { opacity: 1; transform: rotate(var(--r)); } }
-@keyframes cplast { from { opacity: 0; transform: scale(1.12); } to { opacity: 1; transform: none; } }
+/* 끝 화면 필름 — 검은 바탕에 한 장씩 떠올랐다 사라진다. 한 장 --film 초 (형: "너무빨라서 읽을수가 없음") */
+.ap .front-end .clg.film { --film: 4.2s; position: relative; aspect-ratio: 16 / 11; margin: -4px -4px 6px; border-radius: 12px; overflow: hidden; background: #000;
+  box-shadow: inset 0 0 0 1px #2a2620; }
+.ap .front-end .clg.film::before, .ap .front-end .clg.film::after { content: ''; position: absolute; left: 0; right: 0; height: 7%; background: #000; z-index: 3; }
+.ap .front-end .clg.film::before { top: 0; } .ap .front-end .clg.film::after { bottom: 0; }
+.ap .front-end .clg.lose .cp img { filter: grayscale(.55) brightness(.8); }
+.ap .front-end .cp { position: absolute; inset: 0; margin: 0; opacity: 0;
+  animation: film var(--film) ease-in-out calc(var(--i) * (var(--film) - .9s) + .5s) both; }
+.ap .front-end .cp img { display: block; width: 100%; height: 100%; object-fit: cover; animation: kenb var(--film) linear calc(var(--i) * (var(--film) - .9s) + .5s) both; }
+.ap .front-end .cp.odd img { animation-name: kenb2; }
+.ap .front-end .cp figcaption { position: absolute; left: 0; right: 0; bottom: 7%; padding: 40px 16px 14px; text-align: center; background: linear-gradient(#0000, #000d 60%);
+  color: #f1e6cc; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.ap .front-end .cp figcaption i { font-style: normal; color: #c9a45a; font-size: 12px; letter-spacing: .1em; }
+.ap .front-end .cp figcaption span { font-family: 'Gowun Batang', serif; font-size: clamp(15px, 4vw, 21px); line-height: 1.4; text-shadow: 0 2px 6px #000; }
+.ap .front-end .cp img.cpem { position: static; width: 34px; height: 34px; object-fit: contain; animation: none; filter: drop-shadow(0 2px 3px #000a); }
+.ap .front-end .cp.last { z-index: 2; animation: cplast 1.8s ease-out calc(var(--i) * (var(--film) - .9s) + .5s) both; }
+.ap .front-end .cp.last img { animation: none; }
+.ap .front-end .cp.last b { font-family: 'Gowun Batang', serif; font-size: clamp(22px, 6vw, 32px); color: #f3d48a; text-shadow: 0 2px 8px #000; }
+.ap .front-end .clg .skip { position: absolute; right: 10px; top: 9%; z-index: 4; font-size: 11px; color: #ffffff80; }
+.ap .front-end .after { animation: bkin .7s ease-out calc(var(--n) * (4.2s - .9s) + 1.2s) both; }
+@keyframes film { 0% { opacity: 0; } 18% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes kenb { from { transform: scale(1.12) translate(-2%, 1%); } to { transform: scale(1.02) translate(1%, -1%); } }
+@keyframes kenb2 { from { transform: scale(1.02) translate(2%, -1%); } to { transform: scale(1.12) translate(-1%, 1%); } }
+@keyframes cplast { from { opacity: 0; transform: scale(1.08); } to { opacity: 1; transform: none; } }
+.ap .modal.fast .front-end .cp:not(.last) { display: none; }
+.ap .modal.fast .front-end .clg .skip { display: none; }
 .ap .modal.fast .front-end .cp, .ap .modal.fast .front-end .after { animation-delay: 0s !important; animation-duration: .01s !important; }
 @media (prefers-reduced-motion: reduce) { .ap .front-end .cp, .ap .front-end .after { animation-delay: 0s !important; animation-duration: .01s !important; } }
 .ap .front-end .chron p { margin: 3px 0; font-size: 13px; } .ap .front-end .chron p.big { color: #f3d48a; } .ap .front-end .chron i { font-style: normal; color: #8f8778; margin-right: 6px; }
