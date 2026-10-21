@@ -88,6 +88,10 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'dabeol-2': 'w-31-dabeol-dalbit', 'golbeol-2': 'w-32-golbeol-budeul', 'gammun-2': 'w-33-gammun-gamsil', 'chopal-2': 'w-34-chopal-deulme', 'jomun-2': 'w-35-jomun-odi',
   'baekje-2': 'w-36-baekje-maena', 'michuhol-2': 'w-37-michuhol-gaennae', 'sangdang-2': 'w-38-sangdang-bulmae', 'gosaburi-2': 'w-39-gosaburi-galmae', 'mujin-2': 'w-40-mujin-munui',
   'hwanna-2': 'w-41-hwanna-beodeul', 'gwanna-2': 'w-42-gwanna-soenun', 'uga-2': 'w-43-uga-nuri', 'dongokjeo-2': 'w-44-okjeo-sogeumbi', 'tamna-2': 'w-45-tamna-oreumbi',
+  // 얼굴이 없던 첫째 장수 열셋 (2026-10-21 밤 챗지피티 격자 둘 — 칸마다 생김새를 적었다)
+  'golbeol-1': 'g-60-golbeol-golgae', 'apdok-1': 'g-61-apdok-ap', 'gammun-1': 'g-62-gammun-gamnamu', 'chopal-1': 'g-63-chopal-yeoul',
+  'michuhol-1': 'g-64-michuhol-sogeumkkun', 'sangdang-1': 'g-65-sangdang-soemangchi', 'geonma-1': 'g-66-geonma-malbalgup', 'gosaburi-1': 'g-67-gosaburi-buri',
+  'mujin-1': 'g-68-mujin-bitgoeul', 'goryong-1': 'g-69-goryong-yong', 'siljik-1': 'g-70-siljik-pado', 'byeokjin-1': 'w-81-byeokjin-byeolbit', 'ungcheon-1': 'w-82-ungcheon-gom',
 }
 
 /** 혼인에서 난 아이의 얼굴 — 젊은 명치판(그림 줄 K1)에서 성별(look)에 맞춰 id 로 하나 고른다 */
