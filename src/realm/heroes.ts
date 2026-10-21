@@ -9,6 +9,7 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { HERO_POOL } from './data/heroes-pool.ts'
+import { TRAITS, TRAIT, type TraitGrade } from './data/traits.ts'
 import type { Art, EdgeKind, GrowStat, Hero, Order, Realm, ReportLine } from './types.ts'
 
 const byId = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
@@ -302,6 +303,7 @@ export function applyHeroOrders(r: Realm, orders: readonly Order[], lines: Repor
     else if (o.kind === 'lead') leadArmy(r, o)
     else if (o.kind === 'persuade') startPersuade(r, o)
     else if (o.kind === 'hire') hire(r, o, lines)
+    else if (o.kind === 'wed') wed(r, o, lines)
   }
   placeOrphans(r)
 }
@@ -433,6 +435,8 @@ export function stepHeroes(r: Realm, lines: ReportLine[]): void {
     const pb = by !== null ? r.heroes[by] : undefined
     if (pb !== undefined) gainXp(pb, 'deok', R.xpPersuade, lines)
   }
+  // 혼인의 열매 — 때가 된 아이가 나선다
+  stepBirths(r, lines)
   // 맡은 고을 — 경계 바닥 · 대장장이
   for (const node of Object.keys(r.nodes).sort()) {
     const h = postHero(r, node)
@@ -570,4 +574,103 @@ function stepGrowth(r: Realm, lines: ReportLine[]): void {
       gainXp(h, 'deok', R.xpPost, lines)
     }
   }
+}
+
+// ───────── 혈통 — 혼인과 자식 (SYSTEMS §5-10 · 슬롯 ⑨ · 팰 교배)
+//
+// 우리 장수 둘(남녀 · 한 사람은 한 번)을 혼인시킨다 → wedSeasons 뒤 자식 장수가 나선다 (판 안에서 몇은 자라게 줄였다 — 판타지).
+// 물려받기: 부모 특성 하나하나가 wedTraitPass 로 내려온다 (셋까지) · wedSurprise 로 부모 누구에게도 없던 한 등급 위 특성이 터진다.
+// 능력치는 부모 평균 ± wedSpread. 칭호는 부모 둘 중 하나의 것.
+
+/** 혼인할 수 있나 — 같은 나라 · 자유로운 몸 · 남녀 · 둘 다 짝 없음 */
+export function canWed(r: Realm, faction: string, a: string, b: string): boolean {
+  const x = r.heroes[a]
+  const y = r.heroes[b]
+  if (x === undefined || y === undefined || a === b) return false
+  if (x.faction !== faction || y.faction !== faction || x.status !== 'free' || y.status !== 'free') return false
+  if (x.look === y.look || x.spouse !== undefined || y.spouse !== undefined) return false
+  return !(r.births ?? []).some((v) => v.a === a || v.b === a || v.a === b || v.b === b)
+}
+
+function wed(r: Realm, o: Extract<Order, { kind: 'wed' }>, lines: ReportLine[]): void {
+  if (!canWed(r, o.faction, o.a, o.b)) return
+  const st = (r.stock[o.faction] ??= { grain: 0, iron: 0 })
+  if (st.grain < P.realm.wedGrain) return
+  st.grain -= P.realm.wedGrain
+  const [a, b] = o.a < o.b ? [o.a, o.b] : [o.b, o.a]
+  r.heroes[a]!.spouse = b
+  r.heroes[b]!.spouse = a
+  const due = r.season + P.realm.wedSeasons
+  ;(r.births ??= []).push({ a, b, faction: o.faction, due })
+  lines.push({ kind: 'wed', faction: o.faction, a, b, due })
+}
+
+const GRADE_UP: Readonly<Record<TraitGrade, TraitGrade>> = { common: 'good', good: 'rare', rare: 'precious', precious: 'precious', legend: 'legend' }
+const GRADE_RANK: Readonly<Record<TraitGrade, number>> = { common: 0, good: 1, rare: 2, precious: 3, legend: 4 }
+
+/** 자식이 물려받을 수 있는 것 — 화면이 혼인 전에 다 보인다 (정보의 계약) */
+export function inheritOf(r: Realm, a: string, b: string): { traits: string[]; surpriseGrade: TraitGrade } {
+  const pa = r.heroes[a]?.traits ?? []
+  const pb = r.heroes[b]?.traits ?? []
+  const traits = [...new Set([...pa, ...pb])].filter((t) => TRAIT[t] !== undefined).sort()
+  let best: TraitGrade = 'common'
+  for (const t of traits) {
+    const g = TRAIT[t]!.grade
+    if (TRAIT[t]!.bad !== true && GRADE_RANK[g] > GRADE_RANK[best]) best = g
+  }
+  return { traits, surpriseGrade: GRADE_UP[best] }
+}
+
+/** 아이 이름 — 우리말 이름 (실존 인물은 쓰지 않는다 · BUILD §8 Q6). 판에 이미 있는 이름은 건너뛴다 */
+const KID_NAMES: readonly string[] = [
+  '가람', '나래', '다온', '라온', '미르', '보람', '새롬', '슬기', '여름', '은솔', '하늬', '한별', '해랑', '도담', '아름',
+  '이든', '시루', '단비', '온새', '노을', '들메', '꽃님', '푸름', '여울', '가온', '새벽', '마루', '바람', '초롱', '누리',
+]
+
+function makeKid(r: Realm, v: { a: string; b: string; faction: string; due: number }, lines: ReportLine[]): void {
+  const R = P.realm
+  const pa = r.heroes[v.a]
+  const pb = r.heroes[v.b]
+  if (pa === undefined || pb === undefined) return
+  const id = `kid-${v.a}-${v.b}`
+  if (r.heroes[id] !== undefined) return
+  const home = homeOf(r, v.faction)
+  if (home === null) return // 나라가 없어졌다 — 아이는 떠돌다 사라진다
+  const k = (what: string): number => roll(r.seed, r.season, `kid:${id}:${what}`)
+  const stat = (x: number, y: number, what: string): number => Math.max(1, Math.min(10, Math.round((x + y) / 2 + (k(what) * 2 - 1) * R.wedSpread)))
+  // 물려받기 — 하나하나 반반, 셋까지
+  const inh = inheritOf(r, v.a, v.b)
+  const traits: string[] = inh.traits.filter((t) => k(`t:${t}`) < R.wedTraitPass).slice(0, 3)
+  // 혈통의 대박 — 부모 누구에게도 없던 한 등급 위 특성
+  let surprise: string | undefined
+  if (traits.length < 3 && k('surprise') < R.wedSurprise) {
+    const pool = TRAITS.filter((t) => t.bad !== true && t.grade !== 'legend' && !inh.traits.includes(t.id))
+    const at = pool.filter((t) => GRADE_RANK[t.grade] >= GRADE_RANK[inh.surpriseGrade])
+    const from = at.length > 0 ? at : pool
+    if (from.length > 0) {
+      surprise = from[Math.floor(k('surprise-who') * from.length)]!.id
+      traits.push(surprise)
+    }
+  }
+  const title = (k('title') < 0.5 ? pa : pb).name.split(' ')
+  const used = new Set(Object.values(r.heroes).map((h) => h.name.split(' ').slice(-1)[0]))
+  const free = KID_NAMES.filter((n) => !used.has(n))
+  const given = free.length > 0 ? free[Math.floor(k('name') * free.length)]! : KID_NAMES[Math.floor(k('name') * KID_NAMES.length)]!
+  const name = title.length > 1 ? `${title[0]} ${given}` : given
+  r.heroes[id] = {
+    id, name, faction: v.faction, look: k('look') < 0.5 ? 'g' : 'w',
+    mu: stat(pa.mu, pb.mu, 'mu'), tong: stat(pa.tong, pb.tong, 'tong'), ryak: stat(pa.ryak, pb.ryak, 'ryak'),
+    chi: stat(pa.chi, pb.chi, 'chi'), deok: stat(pa.deok, pb.deok, 'deok'), uiri: stat(pa.uiri, pb.uiri, 'uiri'),
+    traits, status: 'free', captor: null, at: home, post: null, bond: R.wedBond, parents: [v.a, v.b],
+  }
+  lines.push({ kind: 'birth', faction: v.faction, hero: id, a: v.a, b: v.b, ...(surprise !== undefined ? { surprise } : {}) })
+}
+
+/** 때가 된 혼인의 열매 — 계절마다 (stepHeroes) */
+function stepBirths(r: Realm, lines: ReportLine[]): void {
+  if (r.births === undefined || r.births.length === 0) return
+  const due = r.births.filter((v) => v.due <= r.season)
+  if (due.length === 0) return
+  r.births = r.births.filter((v) => v.due > r.season)
+  for (const v of due) makeKid(r, v, lines)
 }

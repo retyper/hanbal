@@ -231,6 +231,10 @@ export interface Hero {
   served?: number
   /** 정이 다 차서 눈뜬 특성 — 한 번만 */
   awoken?: string
+  /** 혼인한 짝 (혈통 — heroes.wed · SYSTEMS §5-10). 한 사람은 한 번 */
+  spouse?: string
+  /** 부모 — 혼인에서 난 자식 장수 */
+  parents?: readonly [string, string]
 }
 
 /** 자라는 능력치 — 의리는 타고난다 */
@@ -518,6 +522,8 @@ export interface Realm {
   unified?: number
   /** 지난 판에서 따라온 장수 (계승 가신 — legacy.ts · VISION §5-4). 판을 열 때 한 번 정해진다. 옛 저장에는 없다 */
   retainers?: string[]
+  /** 혼인의 열매 — due 계절에 자식 장수가 나선다 (heroes.stepHeroes). 옛 저장에는 없다 */
+  births?: Array<{ a: string; b: string; faction: string; due: number }>
   /** 봄 제사를 지낸 해 (Math.floor(season / 4)) — 나라마다. 그해 가을 수확이 는다 (economy.riteAllowed). 옛 저장에는 없다 */
   blessed?: Record<string, number>
   /** 답을 기다리는 청 (diplomacy.openAsks). 옛 저장에는 없다 */
@@ -609,6 +615,8 @@ export type Order =
   | { readonly kind: 'persuade'; readonly hero: string; readonly by: string | null }
   /** 떠돌이 인재를 들인다 — 그 인재가 머문 고을의 주인만, 곡식 price */
   | { readonly kind: 'hire'; readonly faction: string; readonly hero: string }
+  /** 우리 장수 둘(남녀)을 혼인시킨다 — 잔치 곡식이 들고, 몇 계절 뒤 자식 장수가 나선다 (SYSTEMS §5-10 · 팰 교배) */
+  | { readonly kind: 'wed'; readonly faction: string; readonly a: string; readonly b: string }
   /** 사신 (FLOW §4) — 한 나라가 한 계절에 하나. give 는 보내는 쪽이, take 는 받는 쪽이 내놓는다 */
   | {
       readonly kind: 'envoy'
@@ -790,6 +798,10 @@ export type ReportLine =
   | { readonly kind: 'bond'; readonly hero: string; readonly tier: 'trust' }
   /** 정이 다 차서 특성 하나에 눈떴다 */
   | { readonly kind: 'awaken'; readonly hero: string; readonly trait: string }
+  /** 혼인했다 — due 계절에 아이가 나선다 */
+  | { readonly kind: 'wed'; readonly faction: string; readonly a: string; readonly b: string; readonly due: number }
+  /** 혼인의 열매 — 자식 장수가 나섰다. surprise = 부모 누구에게도 없던 특성이 터졌다 */
+  | { readonly kind: 'birth'; readonly faction: string; readonly hero: string; readonly a: string; readonly b: string; readonly surprise?: string }
   /** 떠돌이 인재가 그 고을에 나타났다 — 고을 주인이 until 계절까지 들일 수 있다 */
   | { readonly kind: 'wanderer'; readonly hero: string; readonly node: string; readonly until: number; readonly price: number }
   /** 맡긴 장수가 고을을 잃어 물러났다 · 사로잡혔다 */

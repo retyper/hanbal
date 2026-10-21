@@ -483,6 +483,21 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (h === undefined || h.faction !== viewer) return null
       return `${josa(h.name, '이', '가')} 「${TRAIT[line.trait]?.name ?? line.trait}」에 눈떴다.`
     }
+    // 혈통 (SYSTEMS §5-10) — 우리 것만
+    case 'wed': {
+      if (line.faction !== viewer) return null
+      const a = after.heroes[line.a]?.name ?? '?'
+      const b = after.heroes[line.b]?.name ?? '?'
+      return `${josa(a, '과', '와')} ${josa(b, '이', '가')} 혼인했다. 잔치를 열었다. ${line.due - after.season}계절쯤 뒤 아이가 나선다.`
+    }
+    case 'birth': {
+      if (line.faction !== viewer) return null
+      const k = after.heroes[line.hero]
+      const a = after.heroes[line.a]?.name ?? '?'
+      const b = after.heroes[line.b]?.name ?? '?'
+      const s = line.surprise !== undefined ? ` 부모 누구에게도 없던 「${TRAIT[line.surprise]?.name ?? line.surprise}」의 피가 터졌다!` : ''
+      return `${josa(a, '과', '와')} ${b}의 아이 ${josa(k?.name ?? '?', '이', '가')} 자라 나섰다.${s}`
+    }
     case 'wanderer': {
       if (after.nodes[line.node]?.owner !== viewer) return null
       return null // 보고 카드의 "떠돌이 인재" 칸(들인다)이 대신 보인다

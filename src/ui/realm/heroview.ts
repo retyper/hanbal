@@ -105,6 +105,11 @@ export const HERO_CSS = `
 .ap .hcard .radar { margin: 2px auto; }
 .ap .tline { text-align: left; font-size: 13.5px; margin: 3px 0; color: #d8d0c0; } .ap .tline.bad { color: #f1b8a8; } .ap .tline.art b { color: #ffd27a; }
 .ap .hacts { display: flex; flex-direction: column; gap: 6px; width: 100%; margin-top: 8px; }
+.ap .wed { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 10px; border-radius: 12px; border: 1px solid #6a4a5a; background: #231a20; }
+.ap .wed > b { color: #f0b8c8; }
+.ap .wcand { display: flex; gap: 10px; align-items: center; padding: 6px 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.ap .wcand:disabled { opacity: .5; cursor: default; } .ap .wcand .face { width: 46px; height: 46px; flex: none; }
+.ap .wcand > span { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 `
 
 // ───────── 정과 성장 (HEROES §7, 형: "장수를 오래쓰면 친밀도? 호감도? 이런게 올라야 하지 않을까? 장수 키우는 맛도 있어야할듯")
