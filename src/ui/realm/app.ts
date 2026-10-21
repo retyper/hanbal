@@ -2083,7 +2083,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const ourSide = weAtk ? 'a' : 'd'
       const came = (l.rounds ?? []).find((x) => x.relief?.side === ourSide)?.relief
       const atkWon = l.outcome === 'rout' || l.outcome === 'win'
-      if (came !== undefined && atkWon === weAtk && l.outcome !== 'draw') cands.push([3.5, { ev: came.horse ? 'event-goguryeo-hunt' : 'event-expedition-return', hero: null, line: `원군이 닿아 ${node} 싸움을 이겼다` }])
+      if (came !== undefined && atkWon === weAtk && l.outcome !== 'draw') cands.push([3.5, { ev: came.horse ? 'event-relief-cavalry' : 'event-expedition-return', hero: null, line: `원군이 닿아 ${node} 싸움을 이겼다` }])
       const lost = cap !== undefined && cap.faction === after.player ? cap : dead !== undefined && dead.faction === after.player ? dead : undefined
       if (lost !== undefined) cands.push([1, { ev: 'event-sniped-commander', hero: lost, line: `${josa(lost.name, '을', '를')} 잃었다` }])
       for (const [k, p] of cands) if (k > rank) { rank = k; best = p }
