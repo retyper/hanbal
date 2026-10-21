@@ -100,7 +100,7 @@
 ## 싸움터 배경 여덟 (2026-10-21, 형: "싸울때 배경이 전쟁터 배경이어야" — GAP §12 · battlefield.warGround)
 
 넓은 그림이라 **제미나이**(Jay 허용 — 제미나이만). 받으면 `public/realm/battle/battle-<땅>.jpg` (1600×1000 근처 jpg) · `battlefield.ts` 의 WAR_BG_READY 에 이름을 더한다.
-**시험 한 장(field) 먼저** — 형에게 보이고 나머지.
+**시험 한 장(field) 먼저** — 형에게 보이고 나머지. **field 는 2026-10-21 낮 받음** (battle-field.jpg · 사람 없는 들 · 깃발 둘 · 먼 목책 마을)
 - 공통: 한반도 원삼국 시대 싸움터, **사람 없이 빈 땅**(위에 카드가 얹힌다 — 가운데가 너무 바쁘지 않게), 꽂힌 깃발·부러진 창·화살 몇 개, 해 질 녘·흐린 빛. 기존 event-* 장면과 같은 붓질.
   부정어: no people, no text, no red sun disc, no Chinese/Japanese architecture, no pagoda, no tiled curved roofs.
 | 땅 | 장면 |
