@@ -12,7 +12,7 @@ import assert from 'node:assert/strict'
 
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import {
-  envoyChance, envoyOptions, favorOf, jointTargets, lentStep, pairKey, relationOf,
+  envoyChance, envoyChanceFor, envoyOptions, favorOf, jointTargets, lentStep, pairKey, relationOf,
 } from '../../src/realm/diplomacy.ts'
 import { armCost, draftIronCost, hhGrowth, riteCost } from '../../src/realm/economy.ts'
 import { advance, planned } from '../../src/realm/season.ts'
@@ -112,6 +112,16 @@ describe('동맹이 하는 일', () => {
     }
     assert.ok(broken !== undefined)
     assert.ok(favorOf(r, 'us', 'miri') < favorOf(next, 'us', 'miri'))
+  })
+
+  it('지원 요청은 아무것도 안 주는 교역과 같은 셈 · 저들 창고에 없는 것을 달라면 바닥', () => {
+    const r = byeonhanMini(1)
+    ally(r, 'miri')
+    const none = { grain: 0, iron: 0, salt: 0, wood: 0, horse: 0 }
+    const take = { ...none, grain: 40 }
+    assert.deepEqual(envoyChanceFor(r, 'us', 'miri', 'aid', none, take), envoyChanceFor(r, 'us', 'miri', 'trade', none, take))
+    const huge = { ...none, grain: (r.stock['miri']?.grain ?? 0) + 1 }
+    assert.deepEqual(envoyChanceFor(r, 'us', 'miri', 'trade', { ...none, iron: 999 }, huge), [P.realm.envoyMin, P.realm.envoyMin])
   })
 
   it('지원 요청 — 동맹이 제 창고의 몫까지 곡식을 보탠다', () => {

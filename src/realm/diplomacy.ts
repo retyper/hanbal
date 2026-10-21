@@ -11,7 +11,7 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
-import { canPayGoods, goodOf, goodsOne, goodsWorth, menOf, payGoods, stockOf, worthOf } from './economy.ts'
+import { GOODS, canPayGoods, goodOf, goodsOne, goodsWorth, menOf, payGoods, stockOf, worthOf } from './economy.ts'
 import { envoyBonus } from './heroes.ts'
 import { visibleRange } from './intel.ts'
 import { memoFor } from './memo.ts'
@@ -422,10 +422,20 @@ function chanceAt(
       p = R.envoyTruce + pw(ratio - 1) + (mind === 'cautious' ? R.envoyCautious : mind === 'greedy' ? R.envoyGreedy : 0)
         + (truceWhy(r, to, from) !== null ? R.envoyMotive : 0) + (winningAgainst(r, to, from) ? R.envoyWinning : 0)
       break
+    // 교역과 지원 요청은 같은 셈 — 그들이 내주는 값과 받는 값 · 내줄 여유 (형: "교역으로 쌀 120 달라고 할때랑 지원요청으로 달라고 할때랑
+    // 확률이 같아야하는거 아닌가?"). 지원 요청은 아무것도 안 주는 교역이다. 사이(동맹·화친)와 호감은 아래에서 둘 다에 똑같이 붙는다
     case 'trade':
+    case 'aid': {
+      const st = stockOf(r, to)
+      // 창고에 없는 것은 못 내준다 (형: "상대 자원이 부족해서 거래가 성립이 안되면 … 알아서 받을확률 0")
+      if (GOODS.some((g) => goodOf(take, g) > goodOf(st, g))) return R.envoyMin
       // 받는 쪽은 제게 없는 것을 더 쳐 준다 (뭍의 나라가 소금을 · 골포가 철을)
-      p = R.envoyTrade + R.envoyGain * ((goodsWorth(give, r, to) - worth(take)) / Math.max(1, worth(take)))
+      p = R.envoyTrade + R.envoyGain * ((goodsWorth(ask === 'aid' ? NONE : give, r, to) - worth(take)) / Math.max(1, worth(take)))
+      // 내줄 여유가 적을수록 덜 준다 — 바라는 것이 그 나라 창고의 aidMaxShare 를 넘으면 그만큼 깎인다
+      const spare = Math.max(1, worth(st) * R.aidMaxShare)
+      p -= Math.max(0, worth(take) / spare - 1) * R.envoySpareCut
       break
+    }
     case 'tribute':
       p = R.envoyTribute + pw(ratio - R.envoyTributePower)
       break
@@ -447,12 +457,6 @@ function chanceAt(
     case 'joint':
       p = R.envoyJoint + pw(ratio - 1) / 2
       break
-    case 'aid': {
-      // 내줄 여유가 적을수록 덜 준다 — 바라는 것이 그 나라 창고의 aidMaxShare 를 넘으면 그만큼 깎인다
-      const spare = Math.max(1, worth(stockOf(r, to)) * R.aidMaxShare)
-      p = R.envoyAid - Math.max(0, worth(take) / spare - 1) * 0.3
-      break
-    }
     case 'troops':
       p = R.envoyTroops + pw(ratio - 1) / 2
       break

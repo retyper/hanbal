@@ -143,9 +143,9 @@ const ASKS: ReadonlyArray<{ ask: Ask; does: string }> = [
 /** 자세한 것이 필요한 사신 — goods: 곡식·철 · place: 고을 · confirm: 다짐 */
 const ASK_NEEDS: Partial<Record<Ask, 'goods' | 'place' | 'confirm'>> = { trade: 'goods', gift: 'goods', aid: 'goods', tribute: 'goods', joint: 'place', troops: 'place', break: 'confirm' }
 const ASK_HINT: Partial<Record<Ask, string>> = {
-  trade: '무엇을 주고 무엇을 받을지 정한다.',
+  trade: '무엇을 주고 무엇을 받을지 정한다. 저들 창고에 없는 것은 못 받는다.',
   gift: '선물은 늘 받는다. 호감이 오른다.',
-  aid: '동맹에게 곡식·철을 보태 달라고 한다. 호감이 높을수록 많이 준다.',
+  aid: '동맹에게 그냥 달라고 한다 — 아무것도 안 주는 교역과 같은 셈이다. 호감이 높고 저들 창고가 넉넉할수록 잘 준다.',
   tribute: '바치라고 할 몫을 정한다. 거절하면 전쟁이 난다.',
   joint: '동맹이 두 계절 안에 칠 곳을 고른다. 지키면 호감이 오르고, 못 지키면 내려간다.',
   troops: '동맹 군대가 와서 몇 계절 지켜 줄 우리 고을을 고른다.',
@@ -1415,6 +1415,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         h += `</div>`
       }
       ok = GOODS.every((g) => compose.give[g] <= goodOf(st, g)) && GOODS.some((g) => compose.give[g] + compose.take[g] > 0)
+      // 저들 창고에 그만큼 없다 — 받아 줄 수가 없다 (형: "상대 자원이 부족해서 거래가 성립이 안되면 어떻게 해야함??")
+      const theirs = r.stock[to]
+      const short = theirs !== undefined ? GOODS.filter((g) => compose.take[g] > goodOf(theirs, g)) : []
+      if (short.length > 0) h += `<div class="banner bad">${tx(`저들 창고에 ${josa(short.map((g) => GOOD_NAME[g]).join('·'), '이', '가')} 그만큼 없다 — 줄여서 청한다.`)}</div>`
     } else if (need === 'place') {
       const places = ask === 'joint' ? jointTargets(r, me(), to) : sorted(Object.values(r.nodes)).filter((n) => n.owner === me()).map((n) => n.id)
       if (places.length === 0) h += `<div class="mute">고를 곳이 없다.</div>`
