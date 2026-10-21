@@ -6,7 +6,7 @@
  * 기록은 이 기기에만 (판 저장·판 해금처럼). 상태는 app.ts 가 쥐고, 누름은 data-act 로 app.ts 가 받는다.
  */
 import { DEX_CAUGHT, DEX_HEARD, DEX_MET, DEX_SERVED, dexCatalog, dexCounts, dexLevel, scanDex, type Dex, type DexHero } from '../../realm/dex.ts'
-import { GRADE_COLOR, GRADE_NAME } from '../../realm/data/traits.ts'
+import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
 import { josa } from '../../realm/data/prose.ts'
 import type { Realm, RegionId } from '../../realm/types.ts'
 import { heroRadar, nameHtml, traitChips } from './heroview.ts'
@@ -39,6 +39,7 @@ function saveDex(d: Dex): void {
 export function recordDex(r: Realm): Array<{ id: string; lv: 2 | 3 | 4 }> {
   const { dex, fresh } = scanDex(loadDex(), r)
   if (fresh.length > 0) saveDex(dex)
+  recordClan(r)
   const out: Array<{ id: string; lv: 2 | 3 | 4 }> = []
   for (const x of fresh) {
     const lv = dexLevel(x.now)
@@ -47,12 +48,56 @@ export function recordDex(r: Realm): Array<{ id: string; lv: 2 | 3 | 4 }> {
   return out
 }
 
-export type DexBoard = RegionId | 'wander' | 'all'
+// ───────── 가문 — 혼인에서 난 아이 (혈통 · SYSTEMS §5-10 "도감에 족보 칸이 열린다")
+// 아이는 판마다 새로 생기는 사람이라 도감 명단(dex.ts)에 없다 — 우리 나라에서 난 아이를 따로 쌓는다. 판의 시드로 갈라 같은 이름도 다른 사람이다.
+
+const CLAN_KEY = 'hanbal.realm.clan'
+
+interface ClanKid { name: string; look: 'g' | 'w'; parents: [string, string]; traits: string[]; board: RegionId; nation: string; stats: number[] }
+
+function loadClan(): Record<string, ClanKid> {
+  try {
+    const v = JSON.parse(localStorage.getItem(CLAN_KEY) ?? 'null') as Record<string, ClanKid> | null
+    return v !== null && typeof v === 'object' ? v : {}
+  } catch {
+    return {}
+  }
+}
+
+function recordClan(r: Realm): void {
+  if (r.region === 'tutorial') return
+  const had = loadClan()
+  let changed = false
+  for (const h of Object.values(r.heroes)) {
+    if (h.parents === undefined || h.faction !== r.player) continue
+    const key = `${r.seed}:${h.id}`
+    if (had[key] !== undefined) continue
+    had[key] = {
+      name: h.name, look: h.look, parents: [r.heroes[h.parents[0]]?.name ?? '?', r.heroes[h.parents[1]]?.name ?? '?'], traits: [...h.traits],
+      board: r.region ?? 'byeonhan-mini', nation: r.factions[r.player]?.name ?? '', stats: [h.mu, h.tong, h.ryak, h.chi, h.deok, h.uiri],
+    }
+    changed = true
+  }
+  if (changed) try { localStorage.setItem(CLAN_KEY, JSON.stringify(had)) } catch { /* 저장 못 하는 곳 */ }
+}
+
+function clanHtml(k: DexKit): string {
+  const kids = Object.values(loadClan())
+  if (kids.length === 0) return `<p class="mute dxclan">아직 아무도 없다. 장수 카드에서 우리 장수 둘을 혼인시키면, 몇 계절 뒤 난 아이가 여기 오른다.</p>`
+  let h = `<div class="dxclan">`
+  for (const x of kids) {
+    const chips = x.traits.map((t) => TRAIT[t]).filter((t) => t !== undefined).map((t) => `<span class="trait" style="--g:${GRADE_COLOR[t!.grade]}"><b>${k.esc(t!.name)}</b></span>`).join('')
+    h += `<div class="clk"><span class="dxf none">${x.look === 'w' ? '여' : '남'}</span><div><b>${nameHtml(x.name)}</b><span class="mute">${k.esc(x.parents.join(' · '))}의 아이 · ${k.esc(BOARD_NAME[x.board])} ${k.esc(x.nation)}</span><span class="tr3">${chips}</span></div></div>`
+  }
+  return h + `</div>`
+}
+
+export type DexBoard = RegionId | 'wander' | 'all' | 'clan'
 
 const BOARD_NAME: Readonly<Record<RegionId | 'wander', string>> = {
   tutorial: '배우는 판', 'byeonhan-mini': '작은 판', yeongnam: '큰 판', south: '삼한 남부', world: '삼한과 북녘', wander: '떠돌이',
 }
-const TABS: readonly DexBoard[] = ['all', 'byeonhan-mini', 'yeongnam', 'south', 'world', 'wander']
+const TABS: readonly Exclude<DexBoard, 'clan'>[] = ['all', 'byeonhan-mini', 'yeongnam', 'south', 'world', 'wander']
 export const LV_NAME = ['모른다', '들음', '만남', '사로잡음', '거느림'] as const
 
 interface DexKit {
@@ -109,6 +154,8 @@ export function dexHtml(k: DexKit, board: DexBoard, sel: string | null, back: st
     const got = xs.filter((x) => dexLevel(dex[x.id]?.f ?? 0) >= 2).length
     h += `<button class="${t === board ? 'on' : ''}" data-act="dex-board" data-v="${t}">${t === 'all' ? '모두' : BOARD_NAME[t]}<small>${got}/${xs.length}</small></button>`
   }
+  h += `<button class="${board === 'clan' ? 'on' : ''}" data-act="dex-board" data-v="clan">가문<small>${Object.keys(loadClan()).length}</small></button>`
+  if (board === 'clan') return h + `</div>${clanHtml(k)}</div>`
   h += `</div><div class="dxgrid">`
   const xs = board === 'all' ? all : all.filter((x) => x.board === board)
   for (const x of xs) h += card(k, x, dex[x.id]?.f ?? 0, x.id === sel)
@@ -161,6 +208,9 @@ export const DEX_CSS = `
 .ap .dexp .pips i.on:nth-child(3) { background: #e0915a; } .ap .dexp .pips i.on:nth-child(4) { background: #f0c860; }
 .ap .dexp .rope { position: absolute; top: 46px; right: 10px; width: 22px; height: 22px; border-radius: 50%; background: #8a5a2a; border: 2px solid #e0b070;
   box-shadow: 0 1px 4px #000a; } .ap .dexp .rope::after { content: ''; position: absolute; inset: 4px; border-radius: 50%; border: 2px dashed #f0d8a8; }
+.ap .dexp .dxclan { max-width: 980px; margin: 10px auto; padding: 0 14px 40px; display: flex; flex-direction: column; gap: 8px; }
+.ap .dexp .clk { display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 12px; border: 1px solid #6a4a5a; background: #231a20; }
+.ap .dexp .clk > div { display: flex; flex-direction: column; gap: 2px; } .ap .dexp .clk .dxf.none { font-size: 16px; color: #f0b8c8; }
 .ap .dexp .dxsel { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); width: min(560px, 100%); max-height: 62vh; overflow-y: auto; z-index: 6; box-sizing: border-box;
   padding: 14px 16px calc(16px + env(safe-area-inset-bottom)); border-radius: 18px 18px 0 0; background: #181c23f5; border: 1px solid #4a4436; border-bottom: none;
   box-shadow: 0 -8px 30px #000a; animation: dxup .25s ease-out both; }
