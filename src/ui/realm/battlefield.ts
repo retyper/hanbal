@@ -11,7 +11,7 @@
  * 움직임은 CSS 애니메이션의 지연뿐이고, 소리만 타이머로 — 탭이 보일 때만 (절대 규칙 4).
  * 확률은 숫자로 안 보인다 — 사로잡기는 말과 색으로, 대신 사람 수(날랜 무리 · 호위)는 보인다 (realm-no-numbers).
  */
-import { HERO_BUST, UNIT_ICON } from '../../realm/data/art.ts'
+import { UNIT_ICON, bustOf } from '../../realm/data/art.ts'
 import { GROUP_NAME, battleName, endStory, fieldName, groupLabel, josa, roundStory, storyCtx } from '../../realm/data/prose.ts'
 import { groupMen } from '../../realm/tactics.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
@@ -209,7 +209,7 @@ function autoLine(h: { name: string; ryak: number } | undefined): string {
 }
 
 function face(id: string | null, art: string, fallback: string): string {
-  const file = id !== null ? HERO_BUST[id] : undefined
+  const file = id !== null ? bustOf(id) : undefined
   return file !== undefined ? `<img class="wf" src="${art}bust/${file}.jpg" alt="">` : `<img class="wf unit" src="${art}icon/${fallback}.png" alt="">`
 }
 

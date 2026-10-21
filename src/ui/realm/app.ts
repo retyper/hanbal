@@ -8,7 +8,7 @@
  */
 import { aiOrders } from '../../realm/ai.ts'
 import { headcount, type Equip, type UnitKind } from '../../realm/battle.ts'
-import { FACTION_ART, GOOD_ICON, HERO_BUST, SEASON_ICON, UNIT_ICON, nodeIcon } from '../../realm/data/art.ts'
+import { FACTION_ART, GOOD_ICON, SEASON_ICON, UNIT_ICON, bustOf, kidBust, nodeIcon, noteKids } from '../../realm/data/art.ts'
 import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../../realm/data/nations-yeongnam.ts'
 import { SOUTH_NATIONS } from '../../realm/data/nations-south.ts'
@@ -185,7 +185,7 @@ const esc = (s: string): string =>
 const span = (lo: number, hi: number, f: (x: number) => string): string => (f(lo) === f(hi) ? f(lo) : `${f(lo)}~${f(hi)}`)
 const icon = (name: string, cls = 'ic'): string => `<img class="${cls}" src="${ART}icon/${name}.png" alt="">`
 const bust = (h: Hero | undefined, cls = 'face'): string =>
-  h !== undefined && HERO_BUST[h.id] !== undefined ? `<img class="${cls}" src="${ART}bust/${HERO_BUST[h.id]}.jpg" alt="">` : `<span class="${cls} noface"></span>`
+  h !== undefined && bustOf(h.id) !== undefined ? `<img class="${cls}" src="${ART}bust/${bustOf(h.id)}.jpg" alt="">` : `<span class="${cls} noface"></span>`
 /** 우리 나라 — 깃발마다 금빛 후광을 두른다 (형 2026-10-20: "사용자의 나라는 로그에서 아이콘도 뭔가 후광이 있거나 특별하게 … 내나라가 어느나란지도 모르겠어서") */
 let MINE = ''
 const emblem = (f: string | null, cls = 'em'): string => (f !== null && FACTION_ART[f] !== undefined ? icon(FACTION_ART[f].emblem, f === MINE ? `${cls} mine` : cls) : '')
@@ -200,18 +200,22 @@ const nationsOf = (region: RegionId): readonly NationInfo[] => (region === 'yeon
 
 function nationFace(id: string, cls = 'nface'): string {
   const hid = rulerId(id)
-  const file = hid !== undefined ? HERO_BUST[hid] : undefined
+  const file = hid !== undefined ? bustOf(hid) : undefined
   return file !== undefined ? `<img class="${cls}" src="${ART}bust/${file}.jpg" alt="">` : ''
 }
 
 /** 도감(dex.ts)이 쓰는 그림 손 */
-const DEX_KIT = { esc, bust: (id: string): string | null => (HERO_BUST[id] !== undefined ? `${ART}bust/${HERO_BUST[id]}.jpg` : null) }
+const DEX_KIT = {
+  esc,
+  bust: (id: string): string | null => (bustOf(id) !== undefined ? `${ART}bust/${bustOf(id)}.jpg` : null),
+  kid: (key: string, look: 'g' | 'w'): string | null => { const f = kidBust(key, look); return f !== undefined ? `${ART}bust/${f}.jpg` : null },
+}
 
 /** 판의 앞과 끝(front.ts)이 쓰는 그림 손 */
 const KIT: FrontKit = {
   art: ART, esc, icon, nations: nationsOf, face: nationFace,
   emblem: (f, cls) => emblem(f, cls),
-  bust: (id) => (HERO_BUST[id] !== undefined ? `${ART}bust/${HERO_BUST[id]}.jpg` : null),
+  bust: (id) => (bustOf(id) !== undefined ? `${ART}bust/${bustOf(id)}.jpg` : null),
 }
 
 /** 첫 화면 · 판 고르기 · 나라 고르기 · 자세히 — null 이면 판 위 */
@@ -500,7 +504,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 길 위의 군대도 말을 둔다 — 길 가운데쯤에 (형: "내 군대 번예연이 군대가 지도에서 안보임")
     const tokens: MapToken[] = sorted(Object.values(r.armies)).filter((a) => a.faction === me()).map((a) => {
       const hero = a.hero !== null ? r.heroes[a.hero] : undefined
-      const file = hero !== undefined ? HERO_BUST[hero.id] : undefined
+      const file = hero !== undefined ? bustOf(hero.id) : undefined
       const top = (Object.entries(a.mix) as Array<[UnitKind, number]>).sort((x, y) => y[1] - x[1])[0]?.[0] ?? 'spear'
       return {
         army: a.id, node: a.at, men: headcount(forceOf(r, a)), sel: armySel.includes(a.id), going: pick[a.id] !== undefined,
@@ -1684,7 +1688,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (x === undefined) return ''
     const ours = x.faction === me() && x.status === 'free'
     const seen = x.faction === me() || heroSeen(realm!, me(), x.id) || (realm!.wanderers ?? []).some((w) => w.hero.id === id)
-    const file = HERO_BUST[x.id]
+    const file = bustOf(x.id)
     let h = `<div class="hcard">${file !== undefined ? `<img class="big" src="${ART}bust/${file}.jpg" alt="">` : bust(x, 'face')}`
     h += `<div class="hn">${nameHtml(x.name)}</div><div class="mute">${emblem(x.faction)}${esc(r.factions[x.faction]?.name ?? '떠돌이')}${isRuler(r, x.id) ? ' 군주' : ''} · ${esc(roleLine(r, x))}</div>`
     h += heroRadar(x, seen, ours)
@@ -2464,6 +2468,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   function paintNow(): void {
     MINE = realm?.player ?? ''
+    if (realm !== null) noteKids(Object.values(realm.heroes))
     saveDraft()
     if (realm === null && front === null) front = { kind: 'title' }
     $('.plbox').innerHTML = realm !== null && front === null && prologue !== null ? prologueHtml(KIT, realm, prologue) : ''

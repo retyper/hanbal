@@ -7,7 +7,7 @@
  * 카드를 누르면 바로 끝까지 보인다.
  */
 import { BATTLE_AMBUSH, BATTLE_APPROACH, BATTLE_CLASH, endStory, fieldName, josa, roundStory, storyCtx } from '../../realm/data/prose.ts'
-import { HERO_BUST } from '../../realm/data/art.ts'
+import { bustOf } from '../../realm/data/art.ts'
 import { CMD_ICON, CMD_NAME, actRows, reliefBanner, warName } from './battlefield.ts'
 import type { Army, Hero, Realm, ReportLine } from '../../realm/types.ts'
 
@@ -36,7 +36,7 @@ function wobble(key: string): [number, number, number] {
 }
 
 function face(h: Hero | null, art: string): string {
-  const file = h !== null ? HERO_BUST[h.id] : undefined
+  const file = h !== null ? bustOf(h.id) : undefined
   return file !== undefined ? `<img class="bkf" src="${art}bust/${file}.jpg" alt="">` : `<span class="bkf noface"></span>`
 }
 

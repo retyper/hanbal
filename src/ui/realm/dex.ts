@@ -85,9 +85,10 @@ function clanHtml(k: DexKit): string {
   const kids = Object.values(loadClan())
   if (kids.length === 0) return `<p class="mute dxclan">아직 아무도 없다. 장수 카드에서 우리 장수 둘을 혼인시키면, 몇 계절 뒤 난 아이가 여기 오른다.</p>`
   let h = `<div class="dxclan">`
-  for (const x of kids) {
+  for (const [key, x] of Object.entries(loadClan())) {
     const chips = x.traits.map((t) => TRAIT[t]).filter((t) => t !== undefined).map((t) => `<span class="trait" style="--g:${GRADE_COLOR[t!.grade]}"><b>${k.esc(t!.name)}</b></span>`).join('')
-    h += `<div class="clk"><span class="dxf none">${x.look === 'w' ? '여' : '남'}</span><div><b>${nameHtml(x.name)}</b><span class="mute">${k.esc(x.parents.join(' · '))}의 아이 · ${k.esc(BOARD_NAME[x.board])} ${k.esc(x.nation)}</span><span class="tr3">${chips}</span></div></div>`
+    const pic = k.kid(key.split(':').slice(1).join(':'), x.look)
+    h += `<div class="clk">${pic !== null ? `<img class="dxf" src="${pic}" alt="">` : `<span class="dxf none">${x.look === 'w' ? '여' : '남'}</span>`}<div><b>${nameHtml(x.name)}</b><span class="mute">${k.esc(x.parents.join(' · '))}의 아이 · ${k.esc(BOARD_NAME[x.board])} ${k.esc(x.nation)}</span><span class="tr3">${chips}</span></div></div>`
   }
   return h + `</div>`
 }
@@ -104,6 +105,8 @@ interface DexKit {
   readonly esc: (s: string) => string
   /** 명치판 그림 주소 — 없으면 null */
   readonly bust: (hero: string) => string | null
+  /** 아이의 얼굴 (판 밖 가문 칸 — 판의 장수 id 와 성별로) */
+  readonly kid: (hero: string, look: 'g' | 'w') => string | null
 }
 
 /** 모르는 장수의 귀띔 — 어디 가면 만나나 */

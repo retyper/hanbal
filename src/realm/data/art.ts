@@ -90,6 +90,32 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'hwanna-2': 'w-41-hwanna-beodeul', 'gwanna-2': 'w-42-gwanna-soenun', 'uga-2': 'w-43-uga-nuri', 'dongokjeo-2': 'w-44-okjeo-sogeumbi', 'tamna-2': 'w-45-tamna-oreumbi',
 }
 
+/** 혼인에서 난 아이의 얼굴 — 젊은 명치판(그림 줄 K1)에서 성별(look)에 맞춰 id 로 하나 고른다 */
+export const KID_BUST: Readonly<Record<'g' | 'w', readonly string[]>> = {
+  g: ['y-g-01', 'y-g-02', 'y-g-03', 'y-g-04', 'y-g-05', 'y-g-06', 'y-g-07', 'y-g-08', 'y-g-09'],
+  w: ['y-w-01', 'y-w-02', 'y-w-03', 'y-w-04', 'y-w-05', 'y-w-06', 'y-w-07', 'y-w-08', 'y-w-09'],
+}
+
+export function kidBust(id: string, look: 'g' | 'w'): string | undefined {
+  const pool = KID_BUST[look]
+  let x = 0
+  for (const c of id) x = (x * 31 + c.charCodeAt(0)) >>> 0
+  return pool.length > 0 ? pool[x % pool.length] : undefined
+}
+
+/** 판의 아이들 — id 만 아는 곳(싸움 기록·고을 판의 말)도 얼굴을 찾게, 화면이 판을 그릴 때 적어 둔다 */
+const kidFace = new Map<string, string>()
+export function noteKids(heroes: Iterable<{ readonly id: string; readonly look: 'g' | 'w'; readonly parents?: unknown }>): void {
+  for (const h of heroes) {
+    if (h.parents === undefined || kidFace.has(h.id)) continue
+    const f = kidBust(h.id, h.look)
+    if (f !== undefined) kidFace.set(h.id, f)
+  }
+}
+
+/** 장수 id → 명치판 이름 (아이도) */
+export const bustOf = (id: string): string | undefined => HERO_BUST[id] ?? kidFace.get(id)
+
 /** 나라 id → 깃발 (icon/emblem-*.png) · 지도의 테두리 색 */
 export const FACTION_ART: Readonly<Record<string, { emblem: string; color: string }>> = {
   us: { emblem: 'emblem-shell', color: '#9fd18b' },
