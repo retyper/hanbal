@@ -1973,6 +1973,7 @@ export const SPEC = {
     persuadeSeasons: k(4, 1, 12, 1, '회유에 드는 바탕 계절 (+ 의리·매력 차 · 매혹 −1 · 군주였으면 +2, 최소 1)'),
     persuadeGrain: k(10, 0, 100, 1, '회유 중 계절마다 드는 곡식'),
     wandererChance: k(0.6, 0, 1, 0.05, '봄마다 떠돌이 인재가 나타날 확률'),
+    retainMax: k(3, 0, 10, 1, '계승 가신 — 판이 끝날 때 다음 판에 데려갈 장수 수 (VISION §5-4)'),
     wandererStay: k(2, 1, 8, 1, '떠돌이가 머무는 계절'),
     wandererPricePer: k(4, 0, 20, 1, '떠돌이 값 — 능력치 합 × 이것 (곡식)'),
     aiHireReserve: k(3, 0, 8, 1, 'AI — 떠돌이를 들이거나 회유할 때 남길 군량 (계절치)'),

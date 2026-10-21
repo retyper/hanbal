@@ -121,14 +121,14 @@ function barsHtml(n: NationInfo): string {
   return h + `</div>`
 }
 
-export function detailHtml(k: FrontKit, region: RegionId, id: string): string {
+export function detailHtml(k: FrontKit, region: RegionId, id: string, carry = ''): string {
   const n = k.nations(region).find((x) => x.id === id)
   if (n === undefined) return nationsHtml(k, region)
   let h = `<div class="front detail"><div class="fhead"><button class="btn ghost" data-act="fr-board" data-v="${region}">‹ 다른 나라</button></div>`
   h += `<div class="dcard">${k.face(id, 'dface')}<div class="db"><div class="dn">${k.emblem(id, 'dem')}<div><b>${k.esc(n.name)}</b><span>${k.esc(n.place)}</span></div></div>`
   h += `<p class="blurb">${k.esc(n.blurb)}</p>${barsHtml(n)}`
   h += `<p class="src">${k.esc(n.source)}</p>${n.hard ? '<p class="hard">어려운 나라다 — 처음이면 다른 나라를 권한다.</p>' : ''}`
-  h += `<button class="btn on big" data-act="fr-start" data-id="${id}">이 나라로 시작</button></div></div></div>`
+  h += `${carry}<button class="btn on big" data-act="fr-start" data-id="${id}">이 나라로 시작</button></div></div></div>`
   return h
 }
 
@@ -144,6 +144,15 @@ const ERA: Readonly<Record<RegionId, string>> = {
 
 export const PROLOGUE_STEPS = 3
 
+/** 지난 판에서 따라온 장수 (계승 가신 — legacy.ts) */
+function carriedHtml(k: FrontKit, r: Realm): string {
+  const ids = r.retainers ?? []
+  if (ids.length === 0) return ''
+  const faces = ids.map((id) => { const src = k.bust?.(id) ?? null; return src !== null ? `<img src="${src}" alt="">` : '' }).join('')
+  const names = ids.map((id) => r.heroes[id]?.name ?? '').filter((x) => x !== '')
+  return `<p class="carried">${faces}<span>지난 판에서 <b>${k.esc(josa(names.join(' · '), '이', '가'))}</b> 따라왔다</span></p>`
+}
+
 export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
   const region = r.region ?? 'byeonhan-mini'
   const me = r.player
@@ -158,7 +167,7 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
   } else if (step === 1) {
     body = `<div class="pl pyou">${k.face(me, 'pface')}<div class="pt">${k.emblem(me, 'pem')}<b>${k.esc(f?.name ?? '')}</b>`
       + `<span>${k.esc(n?.place ?? '')}</span>${ruler !== undefined ? `<p class="who">군장 <b>${k.esc(ruler.name)}</b></p>` : ''}`
-      + `<p>${k.esc(n?.blurb ?? '')}</p></div></div>`
+      + `<p>${k.esc(n?.blurb ?? '')}</p>${carriedHtml(k, r)}</div></div>`
   } else {
     const need = winNeed(region)
     const ways: Array<[string, string, string]> = [
@@ -207,7 +216,7 @@ const TAKE_ART = ['event-night-raid', 'event-eight-harbours', 'event-expedition-
  * (형: "승리하는건 나중에 문명처럼 영상처럼 … 지금은 이미지 들만 가지고 콜라주같은거로"). 누르면 바로 다 보인다.
  * 이겼으면 "계속 둔다" — 남은 나라까지 (형: "이어서 진행해서 전부 점령하고 싶은 마음도 드네").
  */
-export function endingHtml(k: FrontKit, r: Realm, history: History): string {
+export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): string {
   const win = r.outcome?.kind === 'win'
   const all = r.unified !== undefined
   const region = r.region ?? 'byeonhan-mini'
@@ -292,7 +301,7 @@ export function endingHtml(k: FrontKit, r: Realm, history: History): string {
   h += `<div class="stats"><span><b>${years}</b>해</span><span><b>${capsHeld(r, me)}</b>도읍</span><span><b>${won}</b>이긴 싸움</span><span><b>${lost}</b>진 싸움</span>`
   h += `${r.known !== undefined ? `<span><b>${found}</b>새로 안 나라</span>` : ''}<span><b>${heroes}</b>얻은 장수</span></div>`
   if (pickd.length > 0) h += `<div class="chron"><h4>연대기</h4>${pickd.map((e) => `<p class="${e.big ? 'big' : ''}"><i>${k.esc(seasonLabel(e.s))}</i>${k.esc(e.t)}</p>`).join('')}</div>`
-  h += `<div class="btns">`
+  h += `${keep}<div class="btns">`
   if (win && !all) h += `<button class="btn on" data-act="fr-endless">계속 둔다 · 남은 나라까지</button>`
   h += `<button class="btn${win && !all ? '' : ' on'}" data-act="fr-again">${k.esc(josa(name(me), "으로", "로"))} 다시</button><button class="btn" data-act="fr-new">새 판</button>`
   return h + `<button class="btn ghost" data-act="fr-look">지도 둘러보기</button></div></div></div>`

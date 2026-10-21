@@ -16,6 +16,8 @@ import { forceOf } from './realm/season.ts'
 import { migrate } from './realm/migrate.ts'
 import type { Order, Realm, RegionId, Report, ReportLine } from './realm/types.ts'
 import { mountRealmApp } from './ui/realm/app.ts'
+import { takeRetainers } from './ui/realm/legacy.ts'
+import { bringRetainers } from './realm/legacy.ts'
 
 const KEY = 'hanbal.realm.v2'
 /** 한 계절 앞의 저장 — 지금 것이 깨졌으면 이걸로 되살린다 */
@@ -129,7 +131,9 @@ function saveGames(games: GameRecord[]): void {
 function fresh(nation: string, region: RegionId): Saved {
   // 시드는 화면 바깥(ui)에서만 시계로 만든다 — realm 안에서는 시계를 못 읽는다 (절대 규칙 1)
   const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0
-  return { v: 2, nation, seed, log: [], realm: startRegion(region, seed, nation), before: null, report: null }
+  const realm = startRegion(region, seed, nation)
+  bringRetainers(realm, takeRetainers(region)) // 계승 가신 — 지난 판에서 고른 셋이 우리 도읍에 (VISION §5-4)
+  return { v: 2, nation, seed, log: [], realm, before: null, report: null }
 }
 
 function myLot(r: Realm): Turn['me'] {
