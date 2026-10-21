@@ -2,6 +2,7 @@
  * 나라의 글 — 이름·문장은 코드가 아니라 데이터에 둔다 (docs/realm/BUILD.md §1-6)
  * 고증 검토(lore-lens)가 코드를 안 읽고 이 파일만 본다. 숫자는 여기 없다 (P.realm).
  */
+import { CARDS } from './cards.ts'
 import { DESTS } from './dests.ts'
 import { P } from '../../tune/params.ts'
 import type { Equip, Outcome, UnitKind } from '../battle.ts'
@@ -483,6 +484,30 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       const h = after.heroes[line.hero]
       if (h === undefined || h.faction !== viewer) return null
       return `${josa(h.name, '이', '가')} 「${TRAIT[line.trait]?.name ?? line.trait}」에 눈떴다.`
+    }
+    // 사건 카드 · 점괘 (SYSTEMS §9) — 우리 것만
+    case 'card': {
+      if (line.faction !== viewer) return null
+      const c = CARDS[line.card]
+      const who = line.hero !== undefined ? (after.heroes[line.hero]?.name ?? '?') : ''
+      const what = line.card === 'quarrel' ? `${who} 편을 들었다` : c.opts[line.pick].name
+      const bits: string[] = []
+      if (line.good === true) bits.push(line.card === 'pirates' ? '도적을 물리쳤다' : '다행히 그냥 지나갔다')
+      if (line.good === false) bits.push(line.card === 'pirates' ? '도적에게 당했다' : '운이 나빴다')
+      if (line.card === 'exile' && line.hero !== undefined) bits.push(`${josa(who, '이', '가')} 우리 장수가 됐다`)
+      if (line.grain !== undefined) bits.push(`곡식 ${line.grain > 0 ? '+' : ''}${line.grain}`)
+      if (line.iron !== undefined) bits.push(`쇠 ${line.iron > 0 ? '+' : ''}${line.iron}`)
+      if (line.hh !== undefined) bits.push(`집 ${line.hh}`)
+      if (line.card === 'drought' || line.card === 'bounty' || line.card === 'locust') {
+        const m = after.harvestMod?.[viewer]
+        if (m !== undefined && m.year === Math.floor((after.season - 1) / 4) && m.mul !== 1) bits.push(`올 가을걷이 ${m.mul > 1 ? '+' : ''}${Math.round((m.mul - 1) * 100)}%`)
+      }
+      return `「${c.name}」 — ${what}.${bits.length > 0 ? ` ${bits.join(' · ')}.` : ''}`
+    }
+    case 'omen': {
+      if (line.faction !== viewer) return null
+      const by = line.shaman ? '무당 핏줄 장수가 점을 쳤다' : '제사 끝에 점을 쳤다'
+      return `${by} — 다음 계절, ${line.card !== null ? `「${CARDS[line.card].name}」의 조짐이 보인다` : '조용한 계절이 보인다'}. 점괘는 틀릴 때도 있다.`
     }
     // 원정 (SYSTEMS §15-4) — 우리 것만
     case 'expGo': {

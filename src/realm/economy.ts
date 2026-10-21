@@ -14,6 +14,7 @@
  */
 import { P } from '../tune/params.ts'
 import { blockedWhy, seasonOf } from './calendar.ts'
+import { tierMul } from './tier.ts'
 import { draftCapBonus, gluttonMen, growMul, harvestMul, militiaMul, riteMul } from './heroes.ts'
 import type { Equip, UnitKind } from './battle.ts'
 import { TIERS, kitOf, lowestTier, nextTier, upgradeKind } from './kit.ts'
@@ -712,7 +713,9 @@ export function stepEconomy(r: Realm, season: number, fought: ReadonlySet<string
     if (season === 1) {
       let sown = 0
       for (const n of nodes) sown += n.sown * harvestMul(r, n.id)
-      const base = Math.round(sown * R.harvestPerHH)
+      // 난세 단계 — 이웃 나라는 단계만큼 더 거둔다 (tier.ts) · 그해의 사건(가뭄·풍년·메뚜기 — events.ts)
+      const tm = tierMul(r.tier ?? 1)
+      const base = Math.round(sown * R.harvestPerHH * (f !== r.player ? tm.income : tm.ours) * harvestModOf(r, f))
       // 봄 제사를 지낸 해면 더 든다
       const blessed = r.blessed?.[f] === Math.floor(r.season / 4) ? Math.round(base * R.riteHarvest * riteMul(r, f)) : 0
       const grain = base + blessed
@@ -762,4 +765,10 @@ export function stepEconomy(r: Realm, season: number, fought: ReadonlySet<string
   }
   // 봄이 끝날 때 심는다 — 봄 징병(1단계)이 지난 뒤의 가호
   if (season === 0) for (const n of Object.values(r.nodes)) n.sown = n.hh
+}
+
+/** 그해 가을걷이에 걸린 사건의 배수 (가뭄·풍년·메뚜기 — events.ts). 그해가 아니면 1 */
+export function harvestModOf(r: Realm, f: string): number {
+  const m = r.harvestMod?.[f]
+  return m !== undefined && m.year === Math.floor(r.season / 4) ? m.mul : 1
 }

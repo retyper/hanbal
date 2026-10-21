@@ -83,7 +83,7 @@ function agoText(iso: string): string {
  * 판 고르기 — 위에서부터 배우는 판 → 작은 판 → … 차례로 열린다 (unlock.ts). 잠긴 판은 자물쇠와 여는 길.
  * `unlocked` 가 없으면 다 열린 것으로 (시험)
  */
-export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<RegionId>): string {
+export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<RegionId>, tierWon?: (r: RegionId) => number): string {
   let h = `<div class="front boards"><div class="fhead"><button class="btn ghost" data-act="fr-back">‹ 처음으로</button><h2>어느 땅에서 시작할까</h2></div><div class="bcards">`
   const names = Object.fromEntries(BOARDS.map((b) => [b.id, b.name])) as Partial<Record<RegionId, string>>
   for (const b of BOARDS) {
@@ -92,7 +92,7 @@ export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<
     h += `<span class="bb"><b>${k.esc(b.name)}</b><span>${k.esc(b.line)}</span>`
     const goal = b.id === 'tutorial' ? '가락 도읍을 쥐면 끝난다' : `도읍 ${winNeed(b.id)}곳을 쥐면 이긴다`
     h += open
-      ? `<span class="bmeta">나라 ${k.nations(b.id).length} · ${goal} · 한 판이 ${b.length}</span></span></button>`
+      ? `<span class="bmeta">나라 ${k.nations(b.id).length} · ${goal} · 한 판이 ${b.length}</span>${b.id !== 'tutorial' && (tierWon?.(b.id) ?? 0) > 0 ? `<span class="bmeta tierw">난세 ${tierWon!(b.id)}단계까지 이겼다</span>` : ''}</span></button>`
       : `<span class="bmeta lockwhy">${k.esc(lockWhy(b.id, names))}</span></span></button>`
   }
   h += `</div>${hasGame ? '<p class="fine">새 판을 시작하면 지금 판은 끝난 판으로 기록된다.</p>' : ''}</div>`

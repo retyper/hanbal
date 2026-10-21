@@ -15,6 +15,7 @@ import { SOUTH_NATIONS } from '../../realm/data/nations-south.ts'
 import { WORLD_NATIONS } from '../../realm/data/nations-world.ts'
 import { knownOf, knows } from '../../realm/discovery.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
+import { CARDS } from '../../realm/data/cards.ts'
 import {
   ASK_KIND_NAME, ASK_NAME, deedText, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, arriveWhen, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine, NODE_NOW, BUILD_NAME, BOW_NAME, CONCEAL_LINE, goodsLine, GOOD_NAME, tagNow,
 } from '../../realm/data/prose.ts'
@@ -37,6 +38,7 @@ import { EDGE_STYLE, MAP_CSS, ROUTE_SIGN_NAME, mapHtml, type RouteSign, type Map
 import { LEGACY_CSS, carryHtml, retainHtml, syncRetain, toggleCarry, toggleKeep } from './legacy.ts'
 import { DEX_CSS, dexHtml, dexToastHtml, loadDex, recordDex, type DexBoard } from './dex.ts'
 import { dexCounts } from '../../realm/dex.ts'
+import { tierMul } from '../../realm/tier.ts'
 import { GROW_CSS, HERO_CSS, TITLE_MEAN, bondChip, growthHtml, heroRadar, nameHtml, roleLine, splitTitle, traitChips, traitLines } from './heroview.ts'
 import { APP_CSS } from './appstyle.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
@@ -44,7 +46,7 @@ import { APPROACH_DOES, APPROACH_NAME, HARD_LINE, WAR_CSS, openWar } from './bat
 import { attachZoom } from './zoom.ts'
 import { TUT_CSS, TUT_STEPS, createSpot, tutAt, tutBandHtml, tutStyle } from './tutorial.ts'
 import { LOG_CSS, logNations, logRows, logbookHtml, type LogFilter } from './logbook.ts'
-import { markTutorialOver, markWon, tutorialOver, unlockedBoards } from './unlock.ts'
+import { markTutorialOver, markWon, tutorialOver, unlockedBoards, tierOpen, tierWon } from './unlock.ts'
 import { TINT_CSS, tint } from './tint.ts'
 import { handsOf, idleHeroes } from '../../realm/hands.ts'
 import { pactOf } from '../../realm/suzerain.ts'
@@ -57,7 +59,8 @@ export interface AppHost {
   /** 계절을 넘긴 뒤 — 저장은 바깥이 한다. `orders` 는 AI 것까지 전부, `mine` 은 플레이어 것 */
   onAdvance(next: Realm, report: Report, orders: readonly Order[], mine: readonly Order[]): void
   /** 나라를 골라 새 판 */
-  onNewGame(nation: string, region: RegionId): void
+  /** tier — 난세 단계 (없으면 1) */
+  onNewGame(nation: string, region: RegionId, tier?: number): void
   /** 누른 것 하나 — 판 기록에 남긴다 */
   onTap(act: string, arg: string): void
   /** 판 기록을 파일로 */
@@ -280,6 +283,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let heroOrders: Order[] = []
   /** 회유를 맡길 장수 — 포로마다 */
   const persuadeBy: Record<string, string> = {}
+  /** 나라 자세히에서 고른 난세 단계 — 판마다 */
+  const tierPick: Partial<Record<RegionId, number>> = {}
   /** 원정 고르는 중 — 장수마다 갈 곳·길이 (명령이 되기 전) */
   const expPick: Record<string, { dest: ExpDest; len: 0 | 1 | 2 }> = {}
   /** 사신과 함께 보낼 장수 — 상대 나라마다 (매력·매혹·장사꾼은 따라가야 먹힌다) */
@@ -408,7 +413,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     if (scout !== '') out.push({ kind: 'scout', faction: me(), node: scout, hero: null })
     if (rite) out.push({ kind: 'rite', faction: me() })
-    for (const [ask, yes] of Object.entries(answers)) out.push({ kind: 'answer', ask, yes })
+    // 사건 카드의 답은 answers 의 'card:<계절>' 칸에 (참 = 첫째 · 거짓 = 둘째) — 초안 저장·계절 초기화를 청의 답과 함께 탄다
+    for (const [ask, yes] of Object.entries(answers)) {
+      if (ask.startsWith('card:')) { if (ask === `card:${realm?.season ?? -1}`) out.push({ kind: 'card', faction: me(), pick: yes ? 0 : 1 }) } else out.push({ kind: 'answer', ask, yes })
+    }
     for (const node of guards) out.push({ kind: 'guard', faction: me(), node })
     for (const to of Object.keys(envoys).sort()) out.push(envoys[to]!)
     out.push(...plots)
@@ -1044,6 +1052,24 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return h
   }
 
+  /**
+   * 사건 카드 — 이번 계절 우리에게 온 일 (events.ts · 림월드 스토리텔러). 선택 둘, 고르지 않으면 첫째.
+   * 보고판 꼬리와 나라 판 맨 위에 같은 카드
+   */
+  function cardHtml(r: Realm): string {
+    const c = r.card
+    if (c === undefined || c === null || c.season !== r.season || r.outcome) return ''
+    const info = CARDS[c.kind]
+    const sub = (s: string): string => s.replaceAll('{a}', r.heroes[c.hero ?? '']?.name ?? '').replaceAll('{b}', r.heroes[c.hero2 ?? '']?.name ?? '').replaceAll('{n}', r.nodes[c.node ?? '']?.name ?? '')
+    const ans = answers[`card:${c.season}`]
+    const pick = ans === undefined ? null : ans ? 0 : 1
+    let h = `<div class="cardc${info.bad ? ' bad' : ''}"><img class="cimg" src="${ART}event/${info.art}.jpg" alt=""><div class="cb"><b>${icon(info.icon, 'cic')}사건 · ${esc(info.name)}</b><p>${esc(sub(info.line))}</p><div class="copts">`
+    info.opts.forEach((o, i) => {
+      h += `<button class="copt${pick === i ? ' on' : ''}" data-act="card-pick" data-v="${i}"><b>${esc(sub(o.name))}</b><span>${esc(sub(o.does))}</span>${i === 0 && pick === null ? '<i>고르지 않으면 이것</i>' : ''}</button>`
+    })
+    return h + `</div></div></div>`
+  }
+
   // ───────── 남의 나라가 걸어온 청 · 다가오는 적 (형: "적이 뭔가 거래를 걸어온다거나 동맹요구하거나 · 기습에 대비하거나 경계를 강화하거나")
   function asksHtml(): string {
     const asks = openAsks(realm!, me())
@@ -1599,7 +1625,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     let h = `<div class="nhead">${nationFace(me())}<div><h3>${emblem(me())}${esc(r.factions[me()]?.name ?? '')}</h3><p class="mute">${esc(info?.blurb ?? '')}</p>${info !== undefined ? `<p class="mute src">${esc(info.source)}</p>` : ''}</div></div>`
     const need = winNeed(r.region ?? 'byeonhan-mini')
     const held = Object.values(r.factions).filter((x) => r.nodes[x.capital]?.owner === me()).length
-    h += `<div class="goal">목표 · 도읍 ${need}곳을 차지한다 (우리 도읍 포함) <b>${held} / ${need}</b></div>`
+    h += cardHtml(realm!) // 미리 적용한 판(r)에선 카드가 이미 답해져 사라졌다 — 실제 판으로
+    h += `<div class="goal">목표 · 도읍 ${need}곳을 차지한다 (우리 도읍 포함) <b>${held} / ${need}</b>${(r.tier ?? 1) > 1 ? ` <span class="tierc">난세 ${r.tier}단계</span>` : ''}</div>`
     h += pathsHtml(r, held, need)
     h += `<div class="grid4"><div>${icon('settle-farm-village')}<b>${mine.length}</b><span>고을</span></div>`
     h += `<div>${icon('good-hemp')}<b>${Math.floor(mine.reduce((s, n) => s + n.hh, 0))}</b><span>집</span></div>`
@@ -1851,6 +1878,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (w !== undefined) c = [0.5, { ev: 'event-wanderer-arrives', hero: w.hero, line: `떠돌이 ${josa(w.hero.name, '이', '가')} ${after.nodes[l.node]?.name ?? ''}에 왔다` }]
       } else if (l.kind === 'rite' && l.faction === pl) {
         c = [0.6, { ev: l.season === 'spring' ? 'event-divination' : 'event-festival', hero: null, line: l.season === 'spring' ? '봄 제사를 지냈다' : '가을 제사를 지냈다' }]
+      } else if (l.kind === 'card' && l.faction === pl) {
+        c = [0.88, { ev: CARDS[l.card].art, hero: l.hero !== undefined ? after.heroes[l.hero] ?? null : null, line: `${CARDS[l.card].name} — ${l.card === 'quarrel' ? `${after.heroes[l.hero ?? '']?.name ?? ''} 편을 들었다` : CARDS[l.card].opts[l.pick].name}` }]
       } else if (l.kind === 'expBack' && l.faction === pl) {
         const g = l.got
         const big = g.kind === 'wanderer' || g.kind === 'skill'
@@ -1889,7 +1918,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (endNow) {
       if (looking) return ''
       syncRetain(r) // 계승 가신 — 처음이면 솜씨 좋은 셋을 골라 둔다
-      return endingHtml(KIT, r, host.history(), retainHtml(DEX_KIT, r))
+      // 이겼으면 다음 난세 단계가 열렸다
+      const t = r.tier ?? 1
+      const opened = r.outcome?.kind === 'win' && t < 10 ? `<p class="tierup">난세 <b>${t + 1}단계</b>가 열렸다 — 이웃이 처음부터 더 센 판</p>` : ''
+      return endingHtml(KIT, r, host.history(), opened + retainHtml(DEX_KIT, r))
     }
     if (!showReport || before === null || report === null) return ''
     const season = seasonOf(r.season)
@@ -1946,7 +1978,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<div class="lines">${going.map((a, i) => `<div class="rrow rv" style="--t:${(t + (lines.length + i) * LINE_S).toFixed(2)}s">${icon('unit-spear', 'ri')}<span class="rflow"><span class="nchip">${esc(r.nodes[a.march!.from]?.name ?? '')}</span><i class="ar">➜</i><span class="nchip">${esc(r.nodes[a.march!.to]?.name ?? '')}</span></span>`
         + `<span class="rtx">${tx(`${josa(armyName(r, a), '이', '가')} 가는 중 — ${arriveWhen(r.season, a.march!.left)}`)}</span></div>`).join('')}</div>`
     }
-    const tail = asksHtml() + threatsHtml(r)
+    const tail = cardHtml(realm!) + asksHtml() + threatsHtml(r)
     if (tail !== '') h += `<div class="rv" style="--t:${(t + Math.max(1, lines.length) * LINE_S).toFixed(2)}s">${tail}</div>`
     return h + `<button class="btn on wide" data-act="rep-close">확인</button></div>`
   }
@@ -2018,6 +2050,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'suzerain': ic = 'treasure-silla-crown'; break
       case 'grow': case 'bond': case 'awaken': ic = 'status-morale-up'; break
       case 'wed': ic = 'status-alliance'; break
+      case 'card': ic = CARDS[l.card].icon; break
+      case 'omen': ic = 'status-good-omen'; break
       case 'expGo': case 'expBack': ic = 'settle-port-town'; break
       case 'birth': ic = 'status-good-omen'; break
       default: ic = ''
@@ -2064,6 +2098,18 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return `<div class="fall rv" style="--t:${t}s">${bust(lord, 'flord')}<div><b>${emblem(f, 'fem')}<span>${esc(josa(name, '이', '가'))} 무너졌다</span></b><span>${tx(byLine + fate)}</span></div></div>`
   }
 
+  /**
+   * 난세 단계 고르기 — 디아블로의 고통 단계 (tier.ts · 형의 메모: "최대한 빨리 보스를 잡을때까지 강해지려고함"). 이 판을 이긴 단계 + 1 까지 열린다
+   */
+  function tierHtml(region: RegionId): string {
+    const open = tierOpen(region)
+    const pick = Math.min(tierPick[region] ?? open, open)
+    if (open <= 1) return `<p class="tierp mute">이 판을 이기면 <b>난세 2단계</b>가 열린다 — 이웃이 처음부터 더 세다.</p>`
+    let h = `<div class="tierp"><b>난세 ${pick}단계</b><span class="mute">${pick === 1 ? '처음 그대로' : `이웃의 첫 군대가 ${Math.round((tierMul(pick).army - 1) * 100)}% 크고 창고가 넉넉하다`}</span><div class="seg">`
+    for (let t = 1; t <= open; t++) h += `<button class="${t === pick ? 'on' : ''}" data-act="tier-pick" data-v="${t}">${t}</button>`
+    return h + `</div></div>`
+  }
+
   // ───────── 판 바깥 — 첫 화면 · 판 고르기 · 나라 고르기 (front.ts)
   function frontHtml(f: Front): string {
     const links = `<p class="fine"><a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a> ${PRACTICE_READY ? `<a class="btn ghost" href="${PRACTICE}">궁술 연습장</a>` : ''}</p>`
@@ -2075,9 +2121,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         return titleHtml(KIT, realm, host.savedAt(), links, realm === null && !tutorialOver(), dexBtn)
       }
       case 'dex': return dexHtml(DEX_KIT, f.board, f.sel, f.back === null ? '판으로' : '처음으로')
-      case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null))
+      case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null), tierWon)
       case 'nations': return nationsHtml(KIT, f.region)
-      case 'detail': return detailHtml(KIT, f.region, f.id, f.region === 'tutorial' ? '' : carryHtml(DEX_KIT))
+      case 'detail': return detailHtml(KIT, f.region, f.id, f.region === 'tutorial' ? '' : tierHtml(f.region) + carryHtml(DEX_KIT))
     }
   }
 
@@ -2330,7 +2376,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 계속 둔 판 — 도읍을 모두 쥐면 한 번 더 끝 화면 (하나가 됐다)
     if (res.next.endless === true && res.next.unified === undefined && Object.values(res.next.factions).every((f) => res.next.nodes[f.capital]?.owner === me())) res.next.unified = res.report.season
     // 판을 이기면 다음 판이 열린다 (unlock.ts)
-    if (res.next.outcome?.kind === 'win' && prev.outcome == null) markWon(res.next.region ?? 'byeonhan-mini')
+    if (res.next.outcome?.kind === 'win' && prev.outcome == null) markWon(res.next.region ?? 'byeonhan-mini', res.next.tier ?? 1)
     host.onAdvance(res.next, res.report, all, mine)
     dexToast(recordDex(res.next))
     seasonFx(res.next.season)
@@ -2422,8 +2468,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'fr-locked': return
       case 'tut-end': markTutorialOver('done'); front = { kind: 'title' }; paint(); return
       case 'fr-nation': if (front !== null && front.kind === 'nations') front = { kind: 'detail', region: front.region, id: d['id']! }; $('.mapwrap').scrollTop = 0; paint(); return
-      case 'fr-start': if (front !== null && front.kind === 'detail') host.onNewGame(d['id']!, front.region); return
-      case 'fr-again': if (realm !== null) host.onNewGame(realm.player, realm.region ?? 'byeonhan-mini'); return
+      case 'fr-start': if (front !== null && front.kind === 'detail') host.onNewGame(d['id']!, front.region, Math.min(tierPick[front.region] ?? tierOpen(front.region), tierOpen(front.region))); return
+      case 'fr-again': if (realm !== null) { const rg = realm.region ?? 'byeonhan-mini'; host.onNewGame(realm.player, rg, Math.min(realm.tier ?? 1, tierOpen(rg))) } return
+      case 'tier-pick': if (front !== null && front.kind === 'detail') tierPick[front.region] = Number(d['v']); paint(); return
       case 'fr-look': looking = true; paint(); return
       case 'keep': if (realm !== null) toggleKeep(realm, d['id']!); fastNext = true; paint(); return
       case 'carry-tog': toggleCarry(d['id']!); paint(); return
@@ -2441,6 +2488,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         break
       }
       case 'unexp': heroOrders = heroOrders.filter((o) => !(o.kind === 'expedition' && o.hero === d['id'])); break
+      case 'card-pick': if (realm?.card) { answers[`card:${realm.card.season}`] = d['v'] === '0'; fastNext = true } break
       case 'unwed': heroOrders = heroOrders.filter((o) => !(o.kind === 'wed' && (o.a === d['id'] || o.b === d['id']))); break
       case 'dex-open': root.querySelector('.dxtoast')?.remove(); front = { kind: 'dex', board: 'all', sel: null, back: front }; sheet = null; paint(); return
       case 'dex-close': if (front !== null && front.kind === 'dex') front = front.back; paint(); return

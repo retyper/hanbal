@@ -11,6 +11,8 @@ import type { Equip, Kit, Outcome, UnitKind } from './battle.ts'
 import type { Source } from './intel.ts'
 
 /** 계절 번호 0 = 첫해 봄. 계절 = 번호 % 4 */
+import type { CardKind } from './data/cards.ts'
+
 export type SeasonOfYear = 'spring' | 'summer' | 'autumn' | 'winter'
 
 /** 고을 종류 (SYSTEMS §1-1) */
@@ -235,6 +237,15 @@ export interface Hero {
   spouse?: string
   /** 부모 — 혼인에서 난 자식 장수 */
   parents?: readonly [string, string]
+}
+
+/** 사건 카드 한 장 (events.ts · data/cards.ts) — season 계절에 답한다. hero·hero2·node 는 카드에 붙은 사람·고을 */
+export interface Card {
+  readonly kind: CardKind
+  readonly season: number
+  readonly hero?: string
+  readonly hero2?: string
+  readonly node?: string
 }
 
 /** 원정 한 번 — back 계절에 돌아와 got 을 푼다 */
@@ -539,6 +550,13 @@ export interface Realm {
   unified?: number
   /** 지난 판에서 따라온 장수 (계승 가신 — legacy.ts · VISION §5-4). 판을 열 때 한 번 정해진다. 옛 저장에는 없다 */
   retainers?: string[]
+  /** 난세 단계 1~10 (tier.ts) — 판을 열 때 정해진다. 없으면 1 */
+  tier?: number
+  /** 그해 가을걷이 배수 — 사건이 건다 (events.ts · economy.harvestModOf). year = Math.floor(season / 4). 옛 저장에는 없다 */
+  harvestMod?: Record<string, { year: number; mul: number }>
+  /** 이번 계절 우리 나라에 온 사건 카드 (events.ts) · 한 계절 앞서 뽑아 둔 다음 카드 (점괘가 엿본다). 옛 저장에는 없다 */
+  card?: Card | null
+  cardNext?: Card | null
   /** 혼인의 열매 — due 계절에 자식 장수가 나선다 (heroes.stepHeroes). 옛 저장에는 없다 */
   births?: Array<{ a: string; b: string; faction: string; due: number }>
   /** 원정 — 지도 바깥 먼 땅으로 간 장수. 결과는 보낼 때 정해진다 (expedition.ts · SYSTEMS §15-4). 옛 저장에는 없다 */
@@ -634,6 +652,8 @@ export type Order =
   | { readonly kind: 'persuade'; readonly hero: string; readonly by: string | null }
   /** 떠돌이 인재를 들인다 — 그 인재가 머문 고을의 주인만, 곡식 price */
   | { readonly kind: 'hire'; readonly faction: string; readonly hero: string }
+  /** 사건 카드의 답 — 고르지 않으면 0 (events.resolveCard) */
+  | { readonly kind: 'card'; readonly faction: string; readonly pick: 0 | 1 }
   /** 장수를 지도 바깥 먼 땅으로 원정 보낸다 — len 0 짧게 · 1 보통 · 2 길게 (expedition.ts) */
   | { readonly kind: 'expedition'; readonly faction: string; readonly hero: string; readonly dest: ExpDest; readonly len: 0 | 1 | 2 }
   /** 우리 장수 둘(남녀)을 혼인시킨다 — 잔치 곡식이 들고, 몇 계절 뒤 자식 장수가 나선다 (SYSTEMS §5-10 · 팰 교배) */
@@ -819,6 +839,13 @@ export type ReportLine =
   | { readonly kind: 'bond'; readonly hero: string; readonly tier: 'trust' }
   /** 정이 다 차서 특성 하나에 눈떴다 */
   | { readonly kind: 'awaken'; readonly hero: string; readonly trait: string }
+  /** 사건 카드의 결과 — 무엇이 얼마나 오갔나 · good 은 운에 맡긴 쪽이 잘됐나 */
+  | {
+      readonly kind: 'card'; readonly faction: string; readonly card: CardKind; readonly pick: 0 | 1
+      readonly grain?: number; readonly iron?: number; readonly hh?: number; readonly good?: boolean; readonly hero?: string; readonly node?: string
+    }
+  /** 점괘 — 다음 계절 카드를 엿봤다 (card null 이면 조용한 계절). right 는 맞았나 — 화면에는 안 보인다 */
+  | { readonly kind: 'omen'; readonly faction: string; readonly card: CardKind | null; readonly right: boolean; readonly shaman: boolean }
   /** 원정을 떠났다 · 돌아왔다 (got 을 풀었다) */
   | { readonly kind: 'expGo'; readonly faction: string; readonly hero: string; readonly dest: ExpDest; readonly back: number }
   | { readonly kind: 'expBack'; readonly faction: string; readonly hero: string; readonly dest: ExpDest; readonly got: ExpGot }

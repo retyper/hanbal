@@ -36,6 +36,7 @@ import { limitHands } from './hands.ts'
 import { stepSuzerain, suzerainEnd } from './suzerain.ts'
 import { pathsEnd, stepPaths } from './paths.ts'
 import { sendExpeditions, stepExpeditions } from './expedition.ts'
+import { resolveCard, stepCards } from './events.ts'
 import { PEOPLE_SCALE, migrate } from './migrate.ts'
 import { spreadRumors } from './rumor.ts'
 import { addMen, giveMen, kitOf, scaleKinds, scaleMen, takeMen } from './kit.ts'
@@ -510,6 +511,7 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
   }
   applyHeroOrders(r, orders, lines) // 맡기기·이끌기·회유·들이기 — 나누기·해산 뒤 (떼어 낸 군대를 이끌 수 있게)
   sendExpeditions(r, orders, lines) // 원정 — 장수 명령 뒤 (군대에서 빠진 장수도 보낼 수 있게)
+  resolveCard(r, orders, lines) // 사건 카드의 답 — 가을걷이(7) 전에 (가뭄·풍년이 그해 배수를 건다)
 }
 
 /** 1 — 명령 확정: 나누기·모으기를 먼저 하고, 출정 명령을 군대에 싣는다. 막힌 길은 보고에 남기고 떠나지 않는다 */
@@ -1264,5 +1266,6 @@ export function advance(
   }
   const report: Report = { season: r.season, lines }
   r.season += 1 // 11
+  stepCards(r, lines) // 11 끝 — 새 계절의 사건 카드를 펴고 다음 카드를 뽑아 둔다 · 점괘 (events.ts)
   return { next: r, report }
 }

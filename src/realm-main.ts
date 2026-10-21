@@ -18,6 +18,7 @@ import type { Order, Realm, RegionId, Report, ReportLine } from './realm/types.t
 import { mountRealmApp } from './ui/realm/app.ts'
 import { takeRetainers } from './ui/realm/legacy.ts'
 import { bringRetainers } from './realm/legacy.ts'
+import { applyTier } from './realm/tier.ts'
 
 const KEY = 'hanbal.realm.v2'
 /** 한 계절 앞의 저장 — 지금 것이 깨졌으면 이걸로 되살린다 */
@@ -128,10 +129,11 @@ function saveGames(games: GameRecord[]): void {
   }
 }
 
-function fresh(nation: string, region: RegionId): Saved {
+function fresh(nation: string, region: RegionId, tier = 1): Saved {
   // 시드는 화면 바깥(ui)에서만 시계로 만든다 — realm 안에서는 시계를 못 읽는다 (절대 규칙 1)
   const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0
   const realm = startRegion(region, seed, nation)
+  applyTier(realm, tier) // 난세 단계 — 이웃이 처음부터 세다 (tier.ts)
   bringRetainers(realm, takeRetainers(region)) // 계승 가신 — 지난 판에서 고른 셋이 우리 도읍에 (VISION §5-4)
   return { v: 2, nation, seed, log: [], realm, before: null, report: null }
 }
@@ -185,9 +187,9 @@ const app = mountRealmApp(root, {
     taps = []
     saveGames(games)
   },
-  onNewGame(nation, region) {
+  onNewGame(nation, region, tier) {
     if (game !== null && game.end === null) game.end = { kind: 'quit', season: state?.realm.season ?? 0, at: new Date().toISOString() }
-    state = save(fresh(nation, region))
+    state = save(fresh(nation, region, tier ?? 1))
     game = recordFor(state)
     turnStart = Date.now()
     taps = []

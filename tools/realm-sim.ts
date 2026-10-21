@@ -16,6 +16,7 @@
 import { writeFileSync } from 'node:fs'
 import { aiOrders, decide, type Brain } from '../src/realm/ai.ts'
 import { regionNations, startRegion } from '../src/realm/data/regions/index.ts'
+import { applyTier } from '../src/realm/tier.ts'
 import { advance } from '../src/realm/season.ts'
 import type { Realm, RegionId } from '../src/realm/types.ts'
 import { P } from '../src/tune/params.ts'
@@ -32,6 +33,7 @@ const BOTS: Brain[] = opt('bot', 'all') === 'all' ? ['reckless', 'cautious', 'pl
 const REGION = opt('region', 'byeonhan-mini') as RegionId
 const AS: string[] = opt('as', 'us') === 'all' ? [...regionNations(REGION)] : [opt('as', 'us')]
 const OUT = opt('out', '')
+const TIER = Number(opt('tier', '1'))
 // --set rationPack=0,tacK=2 — 조율해 볼 때 (params.ts 를 고치기 전에)
 for (const kv of opt('set', '').split(',').filter((x) => x !== '')) {
   const [k, v] = kv.split('=')
@@ -84,6 +86,7 @@ interface Run {
 
 function play(bot: Brain, as: string, seed: number): Run {
   let r: Realm = startRegion(REGION, seed, as)
+  applyTier(r, TIER) // 난세 단계 (--tier 3)
   const own = (x: Realm): number => Object.values(x.nodes).filter((n) => n.owner === as).length
   const lead = Object.values(r.heroes).filter((h) => h.faction === as).sort((a, b) => (a.id < b.id ? -1 : 1))[0]?.id
   const run: Run = { bot, as, seed, start: own(r), nodes: 0, nodesEarly: -1, win: false, lose: false, battles: 0, wins: 0, captured: 0, lostHero: false, settled: 0, wildHeld: 0, ambush: 0, ambushOk: 0, rites: 0, worldAmbush: 0, asks: 0, pacts: 0, fieldFights: 0, plots: 0, plotsOk: 0, plotsAtUs: 0, worldPlots: 0, heroes: 0, persuaded: 0, hired: 0, allies: 0, pledgeKept: 0, pledgeBroken: 0, gifts: 0, arms: 0, lent: 0, hh: 0 }

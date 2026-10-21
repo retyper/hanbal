@@ -86,6 +86,9 @@ describe('한 계절이 돈다', () => {
     assert.equal(r.armies['a-us']!.at, 'our-north')
     const men0 = Object.values(r.armies['a-us']!.mix).reduce((s, v) => s + (v ?? 0), 0)
     const m0 = r.armies['a-us']!.morale
+    // 사건 카드(해무리 · 잔치)가 사기를 올리면 재는 것이 섞인다 — 이 시험엔 카드가 없다 (events.ts)
+    r.card = null
+    r.cardNext = null
     // 넉넉히 챙기면 장마 나루는 2(여름) + 1(불어난 물) 계절 — 한 계절 지나 2 남는다
     const { next, report } = advance(r, [{ kind: 'march', army: 'a-us', edge: 'e06', ambush: false, ration: 'full' }])
     const a = next.armies['a-us']!
