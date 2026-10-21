@@ -911,7 +911,25 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (season === 'spring') h += `<div class="banner bad">${tx('봄에 뽑으면 그해 가을 수확량이 줄어든다')}</div>`
     if (season === 'autumn' || season === 'winter') h += `<div class="banner good">${tx('거둔 뒤라 뽑기 좋은 때다')}</div>`
     const pending = musters.filter((o): o is Extract<Order, { kind: 'draft' }> => o.kind === 'draft')
-    for (const n of sorted(Object.values(r.nodes)).filter((x) => x.owner === me())) {
+    for (const n of sorted(Object.values(r.nodes)).filter((x) => x.owner === me())) h += draftCard(r, n.id, false)
+    if (pending.length > 0) {
+      h += `<h4>이번 계절 징병</h4>`
+      pending.forEach((o) => {
+        h += `<div class="row">${icon(UNIT_ICON[o.unit])}${esc(r.nodes[o.node]?.name ?? '')} ${UNIT_NAME[o.unit]} ${o.n}<button class="btn ghost sm" data-act="undraft" data-i="${musters.indexOf(o)}">취소</button></div>`
+      })
+    }
+    return h
+  }
+
+  /**
+   * 고을 하나의 징병 칸 — 징병 판과 고을 판이 같이 쓴다. big 이면 병종을 큰 그림으로
+   * (형: "내도시 누르면 여기서 징병 누를필요 없이 바로 큰 병종별 이미지와 함께 간편하게 뽑을수 있게")
+   */
+  function draftCard(r: Realm, id: string, big: boolean): string {
+    const n = r.nodes[id]!
+    const pending = musters.filter((o): o is Extract<Order, { kind: 'draft' }> => o.kind === 'draft')
+    let h = ''
+    {
       const done = pending.filter((o) => o.node === n.id).reduce((s, o) => s + o.n, 0)
       const unit = draftUnit[n.id] ?? 'spear'
       const limAll = Math.max(0, draftLimit(r, me(), n.id) - done)
@@ -919,15 +937,26 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const lim = Math.max(0, Math.min(limAll, draftLimit(r, me(), n.id, unit) - done))
       const step = Math.max(1, Math.round(lim / 10))
       const want = Math.min(lim, draftN[n.id] ?? Math.min(lim, 20))
-      h += `<div class="ncard draftc"><div class="an">${icon(nodeIcon(n), 'nic')}<b>${esc(n.name)}</b>`
+      h += `<div class="ncard draftc${big ? ' big' : ''}"><div class="an">${big ? `<b>여기서 군사 뽑기</b>` : `${icon(nodeIcon(n), 'nic')}<b>${esc(n.name)}</b>`}`
       h += `<span class="mute">${tx(`집 ${Math.floor(n.hh)} · 장정 ${militiaMen(r, n.id)}${done > 0 ? ` · 뽑는 중 군사 ${done}` : ''}`)}</span></div>`
       if (limAll <= 0) {
         h += `<div class="mute">이번 계절엔 더 못 뽑는다</div></div>`
-        continue
+        return h
       }
-      h += `<div class="seg">`
-      for (const u of draftable(n)) h += `<button class="${u === unit ? 'on' : ''}" data-act="dunit" data-node="${n.id}" data-unit="${u}">${icon(UNIT_ICON[u])}${UNIT_NAME[u]}</button>`
-      h += `</div><div class="stepper"><button data-act="dn" data-node="${n.id}" data-d="${-step}">−</button><b>${want}</b>`
+      if (big) {
+        // 병종 — 큰 그림 타일 (누르면 그 병종으로)
+        h += `<div class="dbig">`
+        for (const u of draftable(n)) {
+          const ul = Math.max(0, Math.min(limAll, draftLimit(r, me(), n.id, u) - done))
+          h += `<button class="${u === unit ? 'on' : ''}" data-act="dunit" data-node="${n.id}" data-unit="${u}" ${ul <= 0 ? 'disabled' : ''}><img src="${ART}icon/${UNIT_ICON[u]}.png" alt=""><b>${UNIT_NAME[u]}</b><small>${ul > 0 ? `${ul}명까지` : u === 'horse' ? '말이 없다' : u === 'boat' ? '나무가 없다' : '못 뽑는다'}</small></button>`
+        }
+        h += `</div>`
+      } else {
+        h += `<div class="seg">`
+        for (const u of draftable(n)) h += `<button class="${u === unit ? 'on' : ''}" data-act="dunit" data-node="${n.id}" data-unit="${u}">${icon(UNIT_ICON[u])}${UNIT_NAME[u]}</button>`
+        h += `</div>`
+      }
+      h += `<div class="stepper"><button data-act="dn" data-node="${n.id}" data-d="${-step}">−</button><b>${want}</b>`
       h += `<button data-act="dn" data-node="${n.id}" data-d="${step}">+</button><span class="mute">명 · 최대 ${lim} · ${tx(`곡식 ${Math.ceil(draftCost(want).grain)}`)}</span>`
       h += `<button class="btn on men" data-act="draft" data-node="${n.id}" ${want <= 0 ? 'disabled' : ''}>군사 ${want}명 뽑기</button></div>`
       const nd = draftNeeds(unit, Math.max(1, want))
@@ -940,13 +969,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         h += `<label class="chk"><input type="checkbox" data-act="diron" data-node="${n.id}" ${draftIron[n.id] === true ? 'checked' : left().iron < ic.iron ? 'disabled' : ''}> 새로 뽑는 ${esc(UNIT_NAME[unit])} ${want}명에게 ${esc(josa(GEAR_NAME[unit]?.[ic.to] ?? TIER_NAME[ic.to], '을', '를'))} 들린다 · 철 ${ic.iron}</label>`
         if (base !== undefined) h += `<p class="mute">철을 안 들이면 ${esc(josa(GEAR_NAME[unit]?.[base] ?? TIER_NAME[base], '을', '를'))} 든다.</p>`
       }
-      h += `</div>`
-    }
-    if (pending.length > 0) {
-      h += `<h4>이번 계절 징병</h4>`
-      pending.forEach((o) => {
-        h += `<div class="row">${icon(UNIT_ICON[o.unit])}${esc(r.nodes[o.node]?.name ?? '')} ${UNIT_NAME[o.unit]} ${o.n}<button class="btn ghost sm" data-act="undraft" data-i="${musters.indexOf(o)}">취소</button></div>`
+      // 고을 판 — 이 고을에서 이번 계절 뽑기로 한 것
+      if (big) pending.filter((o) => o.node === n.id).forEach((o) => {
+        h += `<div class="row">${icon(UNIT_ICON[o.unit])}${UNIT_NAME[o.unit]} ${o.n}명 뽑는다<button class="btn ghost sm" data-act="undraft" data-i="${musters.indexOf(o)}">취소</button></div>`
       })
+      h += `</div>`
     }
     return h
   }
@@ -1912,7 +1939,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const g = hhGrowth(r, id)
       h += `<p class="mute">다음 계절 집 <b>${g.per >= 0 ? '+' : ''}${g.per}</b>${g.why.length > 0 ? ` · ${g.why.map((w) => GROWTH_WHY[w] ?? w).join(' · ')}` : ''}</p>`
       const guarded = guards.includes(id)
-      h += `<div class="btns"><button class="btn on" data-act="tab" data-tab="draft">여기서 징병</button><button class="btn" data-act="mig-here" data-node="${id}">여기로 모으기</button><button class="btn" data-act="mig-out" data-node="${id}">여기서 내보내기</button>`
+      h += draftCard(r, id, true)
+      h += `<div class="btns"><button class="btn" data-act="mig-here" data-node="${id}">여기로 모으기</button><button class="btn" data-act="mig-out" data-node="${id}">여기서 내보내기</button>`
       h += `<button class="btn ${guarded ? 'on' : ''}" data-act="guard" data-node="${id}" ${guarded || (canGuard(r, me(), id) && left().grain >= guardCost().grain) ? '' : 'disabled'}>경계 강화 · 곡식 ${guardCost().grain}</button></div>`
       h += `<p class="mute">경계를 올리면 기습이 잘 들킨다. 한 계절 동안.</p>`
       // 목책·해자 — 나무로 짓는다 (땅마다 나는 것). 다음 계절에 선다

@@ -153,6 +153,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .stepper button.btn { width: auto; height: auto; font-size: 14px; margin-left: auto; white-space: nowrap; flex: none; }
 .ap .stepper .mute { flex: 1 1 4em; min-width: 0; }
 .ap .sheet { overflow-x: hidden; }
+/* 고을 판의 징병 — 병종을 큰 그림으로 */
+.ap .draftc.big .dbig { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; margin: 6px 0; }
+.ap .draftc.big .dbig button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 12px; border: 1px solid var(--line); background: #161b22; color: var(--ink); font: inherit; cursor: pointer; }
+.ap .draftc.big .dbig img { width: 56px; height: 56px; object-fit: contain; filter: drop-shadow(0 2px 2px #0008); }
+.ap .draftc.big .dbig b { font-size: 13px; } .ap .draftc.big .dbig small { font-size: 11px; color: var(--mute); }
+.ap .draftc.big .dbig button.on { border-color: var(--gold); background: #2a2416; box-shadow: 0 0 0 2px #d9b36a55; } .ap .draftc.big .dbig button:disabled { opacity: .4; }
 .ap .yield { display: flex; flex-direction: column; gap: 2px; margin: 6px 0; padding: 7px 10px; border-radius: 10px; background: #1f2418; border: 1px solid #4f5a3a; font-size: 13px; }
 .ap .yield b { color: var(--gold); font-size: 13.5px; } .ap .yield span { color: #d8dcc8; display: flex; align-items: center; gap: 4px; } .ap .yield .ic { width: 18px; height: 18px; }
 /* 판을 열 때 — 카드가 아래에서 한 장씩, 살짝 기울었다 바로 선다 (하스스톤처럼 서로 다른 때에) */
