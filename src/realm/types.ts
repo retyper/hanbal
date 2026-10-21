@@ -215,7 +215,11 @@ export interface Hero {
   /** 맡은 고을 — 내정·지략·매력·특성이 그 고을에 걸린다. 없으면 null */
   post: string | null
   /** 회유 중 — 사로잡은 나라가 계절마다 곡식을 내며 설득한다 (HEROES §4-1). by = 맡은 장수 */
-  persuade?: { by: string | null; left: number }
+  /**
+   * 회유 — resist 는 남은 마음의 벽(림월드의 저항). 계절마다 깎이고, 다 깎인 뒤엔 계절마다 넘어올지 굴린다 (heroes.stepHeroes).
+   * left 는 옛 판의 남은 계절 (resist 가 없으면 그대로 센다)
+   */
+  persuade?: { by: string | null; left: number; resist?: number; tries?: number }
   /** 다친 장수 — 이 계절까지 군대를 이끌지 못한다 (암살이 먹혔다, plots.ts) */
   woundedUntil?: number
   /** 사신을 따라 나갔다 — 이 계절까지 자리를 비운다 (맡은 고을에 손이 안 간다) */
@@ -833,6 +837,8 @@ export type ReportLine =
   | { readonly kind: 'mystery'; readonly faction: string; readonly what: 'morale' | 'grain' | 'militia' | 'wound' | 'death'; readonly node?: string; readonly hero?: string }
   /** 장수가 들어왔다 — 회유가 끝났거나 떠돌이를 들였다 */
   | { readonly kind: 'recruit'; readonly hero: string; readonly faction: string; readonly how: 'persuade' | 'wanderer' }
+  /** 회유가 한 걸음 — waver 마음의 벽이 무너졌다(이제부터 넘어올 수도) · refuse 또 고개를 저었다 */
+  | { readonly kind: 'persuade'; readonly hero: string; readonly faction: string; readonly step: 'waver' | 'refuse' }
   /** 장수가 자랐다 — 능력치 하나가 한 단계 (HEROES §6) */
   | { readonly kind: 'grow'; readonly hero: string; readonly stat: GrowStat }
   /** 정이 문턱을 넘었다 — 믿는 장수가 됐다 */

@@ -120,7 +120,9 @@ describe('회유 · 떠돌이', () => {
     assert.ok(n >= 1)
     let recruited = false
     r = pass(r, [{ kind: 'persuade', hero: 'guya-2', by: 'us-ruler' }]).next
-    for (let i = 1; i < n + 1 && !recruited; i++) {
+    // 굴림이라 정해진 계절이 없다 — 넉넉히 기다린다
+    for (let i = 1; i < 40 && !recruited; i++) {
+      r.stock['us']!.grain = 1000
       if (r.heroes['guya-2']!.faction === 'us') recruited = true
       else r = pass(r).next
     }
@@ -128,6 +130,40 @@ describe('회유 · 떠돌이', () => {
     assert.equal(h.faction, 'us')
     assert.equal(h.status, 'free')
     assert.notEqual(h.at, null)
+  })
+
+  it('회유는 굴림이다 — 같은 장수도 판마다 넘어오는 계절이 다르고, 일편단심은 거의 안 넘어오고, 배신의 상은 쉽게 넘어온다', () => {
+    /** 회유를 걸고 넘어올 때까지 센 계절 (cap 이면 끝내 안 왔다) */
+    const woo = (seed: number, trait: string | null, cap = 24): { n: number; refuse: number } => {
+      let r = structuredClone(byeonhanMini(seed))
+      const g = r.heroes['guya-2']!
+      g.status = 'captive'
+      g.captor = 'us'
+      ;(g as unknown as { traits: string[] }).traits = trait === null ? g.traits.filter((t) => t !== 'steadfast') : [trait]
+      r.armies['a-guya-2']!.hero = null
+      let refuse = 0
+      r.stock['us']!.grain = 5000
+      let res = pass(r, [{ kind: 'persuade', hero: 'guya-2', by: 'us-ruler' }])
+      for (let i = 1; i <= cap; i++) {
+        refuse += res.lines.filter((l) => l.kind === 'persuade' && l.step === 'refuse').length
+        if (res.next.heroes['guya-2']!.faction === 'us') return { n: i, refuse }
+        r = res.next
+        r.stock['us']!.grain = 5000
+        res = pass(r)
+      }
+      return { n: cap, refuse }
+    }
+    const plain = Array.from({ length: 40 }, (_, i) => woo(i + 1, null))
+    assert.ok(new Set(plain.map((x) => x.n)).size >= 3, '판마다 걸린 계절이 다르다')
+    assert.ok(plain.some((x) => x.refuse > 0), '고개를 젓는 계절이 있다')
+    const avg = (xs: Array<{ n: number }>): number => xs.reduce((s, x) => s + x.n, 0) / xs.length
+    const steady = Array.from({ length: 40 }, (_, i) => woo(i + 1, 'steadfast'))
+    const traitor = Array.from({ length: 40 }, (_, i) => woo(i + 1, 'traitor'))
+    assert.ok(avg(steady) > avg(plain) + 6, `일편단심 ${avg(steady)} · 보통 ${avg(plain)}`)
+    assert.ok(avg(traitor) < avg(plain), `배신의 상 ${avg(traitor)} · 보통 ${avg(plain)}`)
+    // 매혹 있는 매력 8 군주가 달래도 세 해 남짓 — 여느 장수가 달래면 훨씬 더 (넘어올 확률이 바닥 recruitMin)
+    assert.ok(avg(steady) > avg(plain) * 3, `일편단심 ${steady.map((x) => x.n).join(',')}`)
+    assert.ok(steady.filter((x) => x.n >= 15).length >= 6, '네 해 가까이 달래도 안 오는 판이 있다')
   })
 
   it('떠돌이는 봄에 오고, 그 고을 주인만 값을 내고 들인다', () => {

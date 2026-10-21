@@ -260,18 +260,44 @@ function leadArmy(r: Realm, o: Extract<Order, { kind: 'lead' }>): void {
 }
 
 /**
- * 회유 계절 수 — 우리 매력·매혹 대 그의 의리 (형: 의리가 낮으면 회유가 쉽다). 군주였던 이는 오래 걸린다
+ * 회유 — 마음의 벽 (림월드의 저항 · 형: "매 시도마다 확률적이어야 하는거 아닌가 림월드처럼"):
+ * 바탕 + 의리 + 옛 주인을 믿었나 + 군주였나 + 일편단심
  */
-export function persuadeSeasons(r: Realm, hero: string, by: string | null): number {
+export function resistOf(r: Realm, hero: string): number {
+  const R = P.realm
+  const him = r.heroes[hero]
+  if (him === undefined) return 0
+  const loyal = (bondOf(r, him) ?? 0) >= R.bondTrust ? R.resistLoyal : 0
+  return R.resistBase + Math.max(0, him.uiri - 5) * R.resistPerUiri + loyal + (isRuler(r, hero) ? R.resistRuler : 0)
+    + (hasTrait(him, 'steadfast') ? R.resistSteadfast : 0)
+}
+
+/** 한 계절에 깎는 벽의 평균 — 회유하는 이의 매력·매혹 (없으면 매력 3) */
+export function persuadeDropOf(r: Realm, by: string | null): number {
+  const R = P.realm
+  const b = by !== null ? r.heroes[by] : undefined
+  const d = b !== undefined ? deokOf(b) : 3
+  return Math.max(0.2, R.persuadeDrop * (1 + (d - 5) * R.persuadeDropPerDeok) * (hasTrait(b, 'charm') ? R.persuadeCharm : 1))
+}
+
+/** 벽이 무너진 뒤 계절마다 넘어올 확률 */
+export function recruitChance(r: Realm, hero: string, by: string | null): number {
   const R = P.realm
   const b = by !== null ? r.heroes[by] : undefined
   const him = r.heroes[hero]
-  // 옛 주인을 믿던 장수는 잘 안 넘어온다 (정 — HEROES §6)
-  const loyal = him !== undefined && (bondOf(r, him) ?? 0) >= R.bondTrust ? R.bondUiri : 0
-  let n = R.persuadeSeasons + Math.round(((him?.uiri ?? 5) + loyal - (b !== undefined ? deokOf(b) : 3)) * R.persuadeUiriPer)
-  if (hasTrait(b, 'charm')) n -= 1
-  if (isRuler(r, hero)) n += 2
-  return Math.max(1, n)
+  if (him === undefined) return 0
+  const p = R.recruitBase + ((b !== undefined ? deokOf(b) : 3) - him.uiri) * R.recruitPer + (hasTrait(b, 'charm') ? R.recruitCharm : 0)
+    + (hasTrait(him, 'traitor') ? R.recruitTraitor : 0) - (hasTrait(him, 'steadfast') ? R.recruitSteadfast : 0)
+  return Math.min(R.recruitMax, Math.max(R.recruitMin, p))
+}
+
+/**
+ * 회유에 드는 계절의 어림 — 벽을 깎는 계절 + 넘어올 때까지 기다리는 계절의 평균 (AI 의 곡식 셈 · 화면의 "몇 계절쯤").
+ * 정해진 값이 아니다 — 굴림이라 더 걸리기도 덜 걸리기도 한다
+ */
+export function persuadeSeasons(r: Realm, hero: string, by: string | null): number {
+  const resist = r.heroes[hero]?.persuade?.resist ?? resistOf(r, hero)
+  return Math.max(1, Math.ceil(Math.max(0, resist) / persuadeDropOf(r, by)) + Math.round(1 / Math.max(0.01, recruitChance(r, hero, by))))
 }
 
 function startPersuade(r: Realm, o: Extract<Order, { kind: 'persuade' }>): void {
@@ -280,7 +306,8 @@ function startPersuade(r: Realm, o: Extract<Order, { kind: 'persuade' }>): void 
   const by = o.by !== null ? r.heroes[o.by] : undefined
   if (o.by !== null && (by === undefined || by.status !== 'free' || by.faction !== h.captor)) return
   const left = persuadeSeasons(r, h.id, o.by)
-  h.persuade = h.persuade === undefined ? { by: o.by, left } : { by: o.by, left: Math.min(h.persuade.left, left) }
+  // 회유하는 이를 바꿔도 깎인 벽은 남는다
+  h.persuade = h.persuade === undefined ? { by: o.by, left, resist: resistOf(r, h.id), tries: 0 } : { ...h.persuade, by: o.by }
 }
 
 function hire(r: Realm, o: Extract<Order, { kind: 'hire' }>, lines: ReportLine[]): void {
@@ -419,8 +446,26 @@ export function stepHeroes(r: Realm, lines: ReportLine[]): void {
     const st = (r.stock[h.captor] ??= { grain: 0, iron: 0 })
     if (st.grain < R.persuadeGrain) continue
     st.grain -= R.persuadeGrain
-    h.persuade.left -= 1
-    if (h.persuade.left > 0) continue
+    const pz = h.persuade
+    if (pz.resist === undefined) {
+      // 옛 판 — 남은 계절을 센다
+      pz.left -= 1
+      if (pz.left > 0) continue
+    } else if (pz.resist > 0) {
+      // 벽을 깎는다 — 매력만큼, 흔들림 있게
+      const sway = 1 + (roll(r.seed, r.season, `woo-drop:${h.id}`) * 2 - 1) * R.persuadeSway
+      pz.resist = Math.max(0, pz.resist - persuadeDropOf(r, pz.by) * sway)
+      pz.left = persuadeSeasons(r, h.id, pz.by)
+      if (pz.resist > 0) continue
+      lines.push({ kind: 'persuade', hero: h.id, faction: h.captor, step: 'waver' })
+      continue // 무너진 계절엔 아직 — 다음 계절부터 굴린다
+    } else {
+      pz.tries = (pz.tries ?? 0) + 1
+      if (roll(r.seed, r.season, `woo-try:${h.id}`) >= recruitChance(r, h.id, pz.by)) {
+        lines.push({ kind: 'persuade', hero: h.id, faction: h.captor, step: 'refuse' })
+        continue
+      }
+    }
     const to = h.captor
     const by = h.persuade.by
     delete h.persuade

@@ -77,7 +77,7 @@ export function traitLines(h: Hero, seen: boolean): string {
 export function roleLine(r: Realm, h: Hero): string {
   const node = (id: string | null | undefined): string => (id != null ? (r.nodes[id]?.name ?? '?') : '?')
   if (h.status === 'dead') return '죽었다'
-  if (h.status === 'captive') return `${r.factions[h.captor ?? '']?.name ?? '?'}에 사로잡혀 있다${h.persuade ? ` · 회유 중 (${h.persuade.left}계절 남음)` : ''}`
+  if (h.status === 'captive') return `${r.factions[h.captor ?? '']?.name ?? '?'}에 사로잡혀 있다${h.persuade ? ` · 회유 중 · ${h.persuade.resist === undefined ? `${h.persuade.left}계절 남음` : h.persuade.resist > 0 ? '아직 마음을 닫았다' : `마음이 흔들린다${(h.persuade.tries ?? 0) > 0 ? ` · ${h.persuade.tries}번 고개를 저었다` : ''}`}` : ''}`
   if (isRuler(r, h.id)) return `군주 · ${node(h.at)}에 있다`
   const ex = (r.expeditions ?? []).find((x) => x.hero === h.id)
   if (ex !== undefined) return `원정 중 · ${Math.max(1, ex.back - r.season + 1)}계절 뒤 돌아온다`

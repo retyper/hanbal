@@ -31,7 +31,7 @@ import { advance, concealOf, draftable, forceOf, neighbors, newArmyId, otherEnd,
 import { PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bowUpCost, escapeChance, plotAgents, plotChance, plotCost, plotTargets } from '../../realm/plots.ts'
 import { allianceWhy, leaderOf, tookRecently, truceWhy, winningAgainst } from '../../realm/stance.ts'
 import { DESTS, DEST_IDS, EXP_SEASONS, expAmount, expBlock, expOdds, onExpedition } from '../../realm/expedition.ts'
-import { canWed, heroSeen, inheritOf, isRuler, persuadeSeasons, wanderersFor } from '../../realm/heroes.ts'
+import { canWed, heroSeen, inheritOf, isRuler, persuadeDropOf, recruitChance, resistOf, wanderersFor } from '../../realm/heroes.ts'
 import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { EDGE_STYLE, MAP_CSS, ROUTE_SIGN_NAME, mapHtml, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
@@ -1585,9 +1585,24 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         for (const y of bys.slice(0, 4)) h += `<button class="${y.id === by ? 'on' : ''}" data-act="pby" data-id="${id}" data-by="${y.id}">${esc(y.name)}</button>`
         h += `</div>`
       }
-      h += `<button class="btn on" data-act="persuade" data-id="${id}" data-by="${by ?? ''}">회유한다 · ${persuadeSeasons(realm!, id, by)}계절쯤 · 계절마다 곡식 ${P.realm.persuadeGrain}</button>`
+      h += `<button class="btn on" data-act="persuade" data-id="${id}" data-by="${by ?? ''}">회유한다 · 계절마다 곡식 ${P.realm.persuadeGrain}</button>`
+      h += `<p class="mute">${tx(wooLine(realm!, id, by))}</p>`
     }
     return h + `</div></div>`
+  }
+
+  /**
+   * 회유의 가망을 말로 (숫자 대신 감) — 마음의 벽이 얼마나 두꺼운가 · 무너진 뒤 넘어올 가망. 굴림이라 정해진 계절은 없다
+   * (형: "몇계절 뒤 확정적으로 합류하는게 이상해. 매 시도마다 확률적이어야")
+   */
+  function wooLine(r: Realm, id: string, by: string | null): string {
+    const x = r.heroes[id]
+    if (x === undefined) return ''
+    const wall = (x.persuade?.resist ?? resistOf(r, id)) / persuadeDropOf(r, by)
+    const p = recruitChance(r, id, by)
+    const w = wall <= 0 ? '마음의 벽이 무너졌다' : wall <= 2 ? '마음의 벽이 얇다' : wall <= 5 ? '마음의 벽이 두껍다' : '마음의 벽이 아주 두껍다'
+    const c = p >= 0.6 ? '넘어올 가망이 크다' : p >= 0.35 ? '넘어올 가망은 반반쯤' : p >= 0.15 ? '넘어올 가망이 적다' : '좀처럼 넘어오지 않을 사람이다'
+    return `${w} · 무너진 뒤에도 ${c}. 계절마다 해 보는 일이라 빨리 오기도, 끝내 안 오기도 한다.`
   }
 
   /**
@@ -2089,6 +2104,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'suzerain': ic = 'treasure-silla-crown'; break
       case 'grow': case 'bond': case 'awaken': ic = 'status-morale-up'; break
       case 'wed': ic = 'status-alliance'; break
+      case 'persuade': ic = l.step === 'waver' ? 'status-alliance' : 'status-morale-down'; break
       case 'card': ic = CARDS[l.card].icon; break
       case 'omen': ic = 'status-good-omen'; break
       case 'expGo': case 'expBack': ic = 'settle-port-town'; break

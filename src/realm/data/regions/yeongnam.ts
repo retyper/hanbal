@@ -264,7 +264,7 @@ const HEROES: Hero[] = [
   h('saro-2', '번예 노을', 'saro', 'w', [6, 5, 6, 4, 5, 6], ['archer']),
   h('guya-1', '견지 거타', 'guya', 'g', [7, 7, 5, 6, 4, 6], ['ironhand']),
   h('daegaya-1', '견지 쇠뫼', 'daegaya', 'w', [6, 6, 5, 5, 5, 7], ['smith']),
-  h('anya-1', '견지 아라', 'anya', 'w', [5, 6, 7, 5, 6, 8], ['mountain']),
+  h('anya-1', '견지 아라', 'anya', 'w', [5, 6, 7, 5, 6, 8], ['mountain', 'steadfast']),
   h('miri-1', '읍차 갈미', 'miri', 'g', [4, 4, 4, 5, 5, 4], ['drinker']),
   h('dabeol-1', '살해 들개', 'dabeol', 'g', [6, 5, 4, 3, 3, 5], ['glutton']),
   h('sabeol-1', '살해 말갈기', 'sabeol', 'w', [6, 6, 5, 4, 5, 6], ['river']),

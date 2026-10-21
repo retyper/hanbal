@@ -462,6 +462,13 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       }
       return `${josa(nameArmy(line.army), '이', '가')} 철 ${josa(String(line.iron), '을', '를')} 들여 무장을 한 단계씩 올렸다.`
     }
+    case 'persuade': {
+      if (line.faction !== viewer) return null
+      const h = after.heroes[line.hero]
+      return line.step === 'waver'
+        ? `${josa(h?.name ?? '?', '의', '의')} 마음이 흔들린다. 이제부터는 넘어올 수도 있다.`
+        : `${josa(h?.name ?? '?', '이', '가')} 또 고개를 저었다. 회유는 이어 간다.`
+    }
     case 'recruit': {
       if (line.faction !== viewer) return null
       const h = after.heroes[line.hero]

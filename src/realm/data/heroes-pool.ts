@@ -27,7 +27,7 @@ export const HERO_POOL: readonly Hero[] = [
   w('wander-11', '험측 바위', 'g', [8, 6, 3, 3, 3, 6], ['glutton']),
   w('wander-12', '견지 쇠울', 'g', [5, 5, 4, 6, 4, 7], ['smith']),
   w('wander-13', '살해 노을', 'w', [6, 6, 6, 3, 5, 3], ['coward', 'nighteye']),
-  w('wander-14', '읍차 한결', 'g', [4, 7, 5, 5, 6, 8], ['hundred']),
+  w('wander-14', '읍차 한결', 'g', [4, 7, 5, 5, 6, 8], ['hundred', 'steadfast']),
   w('wander-15', '번예 단비', 'w', [3, 4, 5, 7, 6, 4], ['drinker', 'farmer']),
   w('wander-16', '견지 아름', 'w', [5, 6, 6, 5, 7, 6], ['ironhand']),
   w('wander-17', '살해 마파람', 'g', [7, 5, 6, 2, 3, 3], ['river', 'mountain']),

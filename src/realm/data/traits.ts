@@ -32,7 +32,8 @@ export const TRAITS: readonly TraitInfo[] = [
   { id: 'shaman', name: '무당 핏줄', grade: 'rare', line: '그 나라 제사의 효과가 두 배다' },
   { id: 'ironhand', name: '철의 손', grade: 'precious', line: '맡은 고을에서 뽑는 군사가 철검을 든다' },
   { id: 'hundred', name: '백 사람의 이름', grade: 'precious', line: '맡은 고을의 장정이 1.5배로 선다' },
-  { id: 'traitor', name: '배신의 상', grade: 'common', bad: true, line: '충성이 낮으면 적과 내통한다 (아직은 이름뿐)' },
+  { id: 'traitor', name: '배신의 상', grade: 'common', bad: true, line: '충성이 낮으면 적과 내통한다. 사로잡히면 쉽게 넘어온다' },
+  { id: 'steadfast', name: '일편단심', grade: 'good', line: '사로잡혀도 옛 주인을 저버리지 않는다. 회유가 거의 먹히지 않는다' },
 ]
 
 export const TRAIT: Readonly<Record<string, TraitInfo>> = Object.fromEntries(TRAITS.map((t) => [t.id, t]))
