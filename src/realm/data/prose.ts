@@ -602,8 +602,17 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
         }
       }
       const other = line.from === viewer ? line.to : line.from
+      // 어디를 함께 치나 · 빌린 군대가 어디를 지키나 (형: "어딜치자고 한건지도 좀 같이 말해줘라")
+      const at = line.node !== undefined ? after.nodes[line.node] : undefined
+      const atOwner = at?.owner !== null && at?.owner !== undefined ? fname(at.owner) : ''
       if (line.from === viewer) {
         if (line.ask === 'break') return `${josa(fname(other), '과', '와')}의 약조를 깼다.`
+        if (line.ask === 'joint' && at !== undefined) {
+          const place = `${atOwner !== '' ? `${atOwner}의 ` : ''}${at.name}`
+          return line.accepted
+            ? `${josa(fname(other), '이', '가')} ${josa(place, '을', '를')} 함께 치기로 했다. 두 계절 안에 그쪽 군대도 그리로 간다.`
+            : `${josa(fname(other), '이', '가')} ${josa(place, '을', '를')} 함께 치자는 말을 거절했다.`
+        }
         return line.accepted
           ? `${josa(fname(other), '이', '가')} ${josa(ASK_NAME[line.ask], '을', '를')} 받아들였다.`
           : `${josa(fname(other), '이', '가')} ${josa(ASK_NAME[line.ask], '을', '를')} 거절했다.`

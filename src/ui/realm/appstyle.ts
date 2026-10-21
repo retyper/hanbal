@@ -389,7 +389,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap img.mine { border-radius: 50%; background: radial-gradient(circle, #ffd27a55 0, #ffd27a00 70%); box-shadow: 0 0 0 1.5px #ffd27a, 0 0 7px 1px #ffd27acc; }
 /* 자동 분배 — 백성 판 맨 위 큰 단추. 켜져 있으면 잠겨 ✓ */
 .ap .autobtn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 14px; margin: 4px 0 8px; font-size: 16px; }
-.ap .autobtn small { font-size: 12px; font-weight: 500; opacity: .85; line-height: 1.35; }
+.ap .autobtn small { font-size: 12px; font-weight: 500; opacity: .85; line-height: 1.35; white-space: normal; max-width: 100%; overflow-wrap: anywhere; text-align: center; }
+.ap .autobtn { white-space: normal; max-width: 100%; box-sizing: border-box; }
 .ap .autobtn:disabled { background: #24301f; border-color: #5a7a44; color: #b8e09a; opacity: 1; cursor: default; }
 /* 아래 탭이 여섯 — 폰 세로에서 글이 넘치지 않게 */
 .ap .tabs button { min-width: 0; } .ap .tabs button span { white-space: nowrap; }

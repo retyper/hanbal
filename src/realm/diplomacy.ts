@@ -569,6 +569,8 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
     lines.push({
       kind: 'envoy', from: o.from, to: o.to, ask: o.ask, accepted, ...(o.why !== undefined ? { why: o.why } : {}), ...(o.about !== undefined ? { about: o.about } : {}),
       ...(escort !== undefined ? { hero: escort } : {}),
+      // 함께 칠 고을 · 빌린 군대가 지킬 고을 — 보고에 어디인지 (형: "어딜치자고 한건지도 좀 같이 말해줘라")
+      ...((o.ask === 'joint' || o.ask === 'troops') && o.target !== undefined ? { node: o.target } : {}),
     })
     if (o.ask === 'gift') { if (accepted) noteDeed(r, o.from, o.to, { by: o.from, k: 'gift' }) }
     else if (o.ask !== 'break') noteDeed(r, o.from, o.to, { by: o.to, k: accepted ? 'yes' : 'no', ask: o.ask })

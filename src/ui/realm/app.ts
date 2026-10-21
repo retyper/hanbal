@@ -931,9 +931,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<p class="mute">${tx('군사가 아니라 농사짓는 집을 옮긴다. 옮긴 집은 계절을 넘기면 바로 그 고을에 자리 잡는다.')}</p>`
     // 자동 분배 — 맨 위 큰 단추. 누르면 켜지고(단추는 잠긴다), 직접 옮기면 꺼져서 다시 누를 수 있다
     // (형 2026-10-20: "자동분배는 맨 위에 큰버튼으로 … 한번 누르면 비활성화. 본인이 직접 재분배 해서 숫자가 달라진경우에 다시활성화")
+    // 단추 밑 말은 짧게 — 지금 무엇을 하고 있나만 (형: "자동분배중 버튼밑 텍스트가 너무길어서 칸이 넘어가져버림 · 제대로 된거 맞음?").
+    // 자동 분배는 품을 넘긴(붐비는) 고을이 있을 때만 움직인다 — 다 품 안이면 할 일이 없다고 그대로 말한다
+    const flowsNow = autoMigOn() ? autoFlows(r, me()) : []
+    const fullNow = Object.values(r.nodes).filter((n) => n.owner === me() && n.kind !== 'sodo' && homeRoom(n) > 0 && crowdOf(n) > 1).length
+    const autoSub = flowsNow.length > 0 ? `이번 계절 집 ${flowsNow.reduce((s, x) => s + x.n, 0)}채가 옮겨 간다`
+      : fullNow > 0 ? '붐비는 고을 곁에 받을 고을이 없다' : '모든 고을이 품 안 — 옮길 일이 없다'
     h += autoMigOn()
-      ? `<button class="btn wide autobtn" disabled><b>✓ 자동 분배 중</b><small>${tx('붐비는 고을의 집이 계절마다 한산한 고을로 저절로 옮겨 간다. 아래에서 직접 옮기면 꺼진다.')}</small></button>`
-      : `<button class="btn on wide autobtn" data-act="mig-auto" data-v="1"><b>자동 분배</b><small>${tx('누르면 붐비는 고을부터 고르게 나눈다. 이번 계절 직접 옮긴 것은 거둔다.')}</small></button>`
+      ? `<button class="btn wide autobtn" disabled data-more="붐비는(품을 넘긴) 고을의 집이 계절마다 길로 맞닿은 한산한 우리 고을로 저절로 옮겨 간다. 아래에서 직접 옮기면 꺼진다."><b>✓ 자동 분배 중</b><small>${tx(autoSub)}</small></button>`
+      : `<button class="btn on wide autobtn" data-act="mig-auto" data-v="1" data-more="누르면 붐비는 고을의 집을 계절마다 한산한 고을로 저절로 옮긴다. 이번 계절 직접 옮긴 것은 거둔다."><b>자동 분배 켜기</b><small>${tx('붐비는 고을을 저절로 나눈다')}</small></button>`
     const lands = [...new Set([...settleTargets(r, me()).map((t) => t.to), ...settlePending().map((o) => o.to)])].sort()
     h += `<div class="twoway"><button class="sec home" data-act="jump" data-to="sec-settle">${icon('settle-farm-village')}<b>개척</b><span>${lands.length > 0 ? '집을 빈땅으로 옮겨 새 마을' : '맞닿은 빈땅이 없다'}</span></button>`
     h += `<button class="sec move" data-act="jump" data-to="sec-move">${icon('unit-porters')}<b>이주</b><span>${autoMigOn() ? '우리 고을끼리 · 자동 분배 중' : '우리 고을끼리 · 직접 옮긴다'}</span></button></div>`
@@ -1158,6 +1164,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return h
   }
 
+  /** 함께 칠 곳 · 빌린 군대가 지킬 곳 (형: "어딜치자고 한건지도 좀 같이 말해줘라") */
+  function envoyWhere(r: Realm, e: Extract<Order, { kind: 'envoy' }>): string {
+    const n = e.target !== undefined ? r.nodes[e.target] : undefined
+    if (n === undefined) return ''
+    const owner = n.owner !== null ? r.factions[n.owner]?.name : undefined
+    return ` — ${esc(owner !== undefined && n.owner !== me() ? `${owner}의 ` : '')}${esc(e.ask === 'joint' ? `${josa(n.name, '을', '를')} 함께 친다` : `${n.name} 지키기`)}`
+  }
+
   function diploSheet(r: Realm): string {
     let h = `<h3>외교</h3><div class="seg dseg"><button class="${diploMode === 'envoy' ? 'on' : ''}" data-act="dmode" data-v="envoy">사신</button><button class="${diploMode === 'plot' ? 'on' : ''}" data-act="dmode" data-v="plot">공작 ${plots.length > 0 ? plots.length : ''}</button><button class="${diploMode === 'scout' ? 'on' : ''}" data-act="dmode" data-v="scout">정찰${scout !== '' ? ' 1' : ''}</button></div>`
     h += handsHtml(r)
@@ -1166,7 +1180,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += asksHtml()
     const out = Object.values(envoys)
     for (const e of out) {
-      h += `<div class="banner good">사신: ${esc(r.factions[e.to]?.name ?? '')}에 ${ASK_NAME[e.ask]}<button class="btn ghost sm" data-act="unenvoy" data-to="${e.to}">거둔다</button></div>`
+      h += `<div class="banner good">사신: ${esc(r.factions[e.to]?.name ?? '')}에 ${ASK_NAME[e.ask]}${envoyWhere(r, e)}<button class="btn ghost sm" data-act="unenvoy" data-to="${e.to}">거둔다</button></div>`
     }
     if (out.length === 0) h += `<p class="mute">나라마다 한 계절에 사신 하나씩 보낼 수 있다</p>`
     // 맺으면 뭐가 되는지 (형: "화친이랑 동맹도 되면 뭐가 되는건지 모르겠네")
@@ -1827,7 +1841,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<div class="moodl ${md.mood}">${moodImg(ART, md.mood)}<div><b>${esc(MOOD_WORD[md.mood])}</b>${said(advisor(r), md.say)}</div></div>`
     // 사신
     const sent = envoys[f]
-    if (sent !== undefined) h += `<div class="banner good">사신: ${ASK_NAME[sent.ask]}<button class="btn ghost sm" data-act="unenvoy" data-to="${f}">거둔다</button></div>`
+    if (sent !== undefined) h += `<div class="banner good">사신: ${ASK_NAME[sent.ask]}${envoyWhere(r, sent)}<button class="btn ghost sm" data-act="unenvoy" data-to="${f}">거둔다</button></div>`
     else {
       h += `<div class="nal">사신</div><div class="btns">`
       for (const ask of envoyOptions(r, me(), f)) {

@@ -760,7 +760,7 @@ export type ReportLine =
   /** 집이 옮겨 갔다 — auto 면 붐비는 고을에서 저절로, 아니면 억지 이주 */
   | { readonly kind: 'migrate'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number; readonly auto?: boolean }
   | { readonly kind: 'hunger'; readonly faction: string }
-  | { readonly kind: 'envoy'; readonly from: string; readonly to: string; readonly ask: EnvoyAsk; readonly accepted: boolean; readonly why?: Why; readonly about?: string; readonly hero?: string }
+  | { readonly kind: 'envoy'; readonly from: string; readonly to: string; readonly ask: EnvoyAsk; readonly accepted: boolean; readonly why?: Why; readonly about?: string; readonly hero?: string; readonly node?: string }
   /** 화친·동맹을 맺어 상대 땅으로 가던 군대가 발길을 돌렸다 — `node` 는 가려던 고을 */
   | { readonly kind: 'recall'; readonly faction: string; readonly army: string; readonly node: string; /** 왜 돌아섰나 — 없으면 화친·동맹을 맺어서, owner 면 가는 사이 그 나라 땅이 돼서 */ readonly owner?: string }
   /** 함께 치자는 약속을 지켰나 저버렸나 — `from` 이 약속한 나라, `to` 가 약속받은 나라 */
