@@ -79,6 +79,8 @@ export function roleLine(r: Realm, h: Hero): string {
   if (h.status === 'dead') return '죽었다'
   if (h.status === 'captive') return `${r.factions[h.captor ?? '']?.name ?? '?'}에 사로잡혀 있다${h.persuade ? ` · 회유 중 (${h.persuade.left}계절 남음)` : ''}`
   if (isRuler(r, h.id)) return `군주 · ${node(h.at)}에 있다`
+  const ex = (r.expeditions ?? []).find((x) => x.hero === h.id)
+  if (ex !== undefined) return `원정 중 · ${Math.max(1, ex.back - r.season + 1)}계절 뒤 돌아온다`
   const hurt = h.woundedUntil !== undefined && h.woundedUntil > r.season ? ` · 다쳐 누웠다 (${h.woundedUntil - r.season}계절)` : ''
   const a = armyOfHero(r, h.id)
   if (a !== null) {
@@ -105,6 +107,13 @@ export const HERO_CSS = `
 .ap .hcard .radar { margin: 2px auto; }
 .ap .tline { text-align: left; font-size: 13.5px; margin: 3px 0; color: #d8d0c0; } .ap .tline.bad { color: #f1b8a8; } .ap .tline.art b { color: #ffd27a; }
 .ap .hacts { display: flex; flex-direction: column; gap: 6px; width: 100%; margin-top: 8px; }
+.ap .exp { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 10px; border-radius: 12px; border: 1px solid #3a5a6a; background: #18222a; }
+.ap .exp > b { color: #9fd0f0; } .ap .exp .seg { flex-wrap: wrap; }
+.ap .odds { display: flex; flex-direction: column; gap: 3px; }
+.ap .od { position: relative; display: flex; align-items: center; gap: 8px; padding: 3px 8px; border-radius: 7px; background: #1f2830; overflow: hidden; font-size: 12.5px; }
+.ap .od i { position: absolute; left: 0; top: 0; bottom: 0; background: #2f4a5a; } .ap .od b, .ap .od em { position: relative; font-weight: 500; }
+.ap .od b { flex: 1; } .ap .od em { font-style: normal; color: #9fd0f0; font-size: 12px; }
+.ap .od.wanderer i, .ap .od.skill i { background: #5a4a2a; } .ap .od.wanderer em, .ap .od.skill em { color: #f0c860; } .ap .od.none em { color: var(--mute); }
 .ap .wed { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 10px; border-radius: 12px; border: 1px solid #6a4a5a; background: #231a20; }
 .ap .wed > b { color: #f0b8c8; }
 .ap .wcand { display: flex; gap: 10px; align-items: center; padding: 6px 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }

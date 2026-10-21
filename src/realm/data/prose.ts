@@ -2,6 +2,7 @@
  * 나라의 글 — 이름·문장은 코드가 아니라 데이터에 둔다 (docs/realm/BUILD.md §1-6)
  * 고증 검토(lore-lens)가 코드를 안 읽고 이 파일만 본다. 숫자는 여기 없다 (P.realm).
  */
+import { DESTS } from './dests.ts'
 import { P } from '../../tune/params.ts'
 import type { Equip, Outcome, UnitKind } from '../battle.ts'
 import type { Art, Ask, BuildWhat, Deed, Cmd, DiscoverHow, EdgeKind, Good, Grp, PlotOp, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, RoundLog, RoundOrder, SeasonOfYear, Tag, Why } from '../types.ts'
@@ -483,12 +484,28 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (h === undefined || h.faction !== viewer) return null
       return `${josa(h.name, '이', '가')} 「${TRAIT[line.trait]?.name ?? line.trait}」에 눈떴다.`
     }
+    // 원정 (SYSTEMS §15-4) — 우리 것만
+    case 'expGo': {
+      if (line.faction !== viewer) return null
+      return `${josa(after.heroes[line.hero]?.name ?? '?', '이', '가')} ${josa(DESTS[line.dest].name, '으로', '로')} 원정을 떠났다. ${line.back - after.season + 1}계절 뒤 돌아온다.`
+    }
+    case 'expBack': {
+      if (line.faction !== viewer) return null
+      const who = after.heroes[line.hero]?.name ?? '?'
+      const g = line.got
+      const what = g.kind === 'iron' ? `쇠 ${josa(String(g.n), '을', '를')} 싣고 왔다.`
+        : g.kind === 'grain' ? `곡식 ${josa(String(g.n), '을', '를')} 싣고 왔다.`
+        : g.kind === 'wanderer' ? `그곳에서 만난 ${josa(after.heroes[g.hero]?.name ?? '?', '이', '가')} 따라왔다. 우리 장수가 됐다!`
+        : g.kind === 'skill' ? `그곳 사람들에게서 「${TRAIT[g.trait]?.name ?? g.trait}」의 재주를 배워 왔다.`
+        : '빈손이다. 길만 멀었다.'
+      return `${josa(who, '이', '가')} ${DESTS[line.dest].name}에서 돌아왔다. ${what}`
+    }
     // 혈통 (SYSTEMS §5-10) — 우리 것만
     case 'wed': {
       if (line.faction !== viewer) return null
       const a = after.heroes[line.a]?.name ?? '?'
       const b = after.heroes[line.b]?.name ?? '?'
-      return `${josa(a, '과', '와')} ${josa(b, '이', '가')} 혼인했다. 잔치를 열었다. ${line.due - after.season}계절쯤 뒤 아이가 나선다.`
+      return `${josa(a, '과', '와')} ${josa(b, '이', '가')} 혼인했다. 잔치를 열었다. ${line.due - after.season + 1}계절쯤 뒤 아이가 나선다.`
     }
     case 'birth': {
       if (line.faction !== viewer) return null

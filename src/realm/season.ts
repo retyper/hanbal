@@ -35,6 +35,7 @@ import { stepDiscovery, stepSight } from './discovery.ts'
 import { limitHands } from './hands.ts'
 import { stepSuzerain, suzerainEnd } from './suzerain.ts'
 import { pathsEnd, stepPaths } from './paths.ts'
+import { sendExpeditions, stepExpeditions } from './expedition.ts'
 import { PEOPLE_SCALE, migrate } from './migrate.ts'
 import { spreadRumors } from './rumor.ts'
 import { addMen, giveMen, kitOf, scaleKinds, scaleMen, takeMen } from './kit.ts'
@@ -508,6 +509,7 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
     else if (o.kind === 'build') applyBuild(r, o, lines)
   }
   applyHeroOrders(r, orders, lines) // 맡기기·이끌기·회유·들이기 — 나누기·해산 뒤 (떼어 낸 군대를 이끌 수 있게)
+  sendExpeditions(r, orders, lines) // 원정 — 장수 명령 뒤 (군대에서 빠진 장수도 보낼 수 있게)
 }
 
 /** 1 — 명령 확정: 나누기·모으기를 먼저 하고, 출정 명령을 군대에 싣는다. 막힌 길은 보고에 남기고 떠나지 않는다 */
@@ -1221,6 +1223,7 @@ export function advance(
   stepMigration(r, fought, lines) // 7 끝 — 붐비는 고을의 집이 한산한 제 고을로 (자동 분배)
   decayWatch(r) // 9
   stepHeroes(r, lines) // 9 — 회유 · 맡은 고을의 경계·철 · 떠돌이
+  stepExpeditions(r, lines) // 9 — 돌아온 원정이 짐을 푼다
   expireRelations(r, lines) // 9
   holdMarkets(r, lines) // 9 — 화친·동맹의 장터 (호감도 조금)
   driftFavor(r) // 9 — 같은 적과 싸우는 나라끼리 가까워진다

@@ -320,7 +320,7 @@ function neighborsOf(r: Realm, node: string): string[] {
 }
 
 /** 나라의 아무 제 고을 — 도읍이 먼저, 없으면 id 순서 첫 고을 */
-function homeOf(r: Realm, faction: string): string | null {
+export function homeOf(r: Realm, faction: string): string | null {
   const cap = r.factions[faction]?.capital
   if (cap !== undefined && r.nodes[cap]?.owner === faction) return cap
   return byId(Object.values(r.nodes)).find((n) => n.owner === faction && n.kind !== 'sodo')?.id ?? null
@@ -338,7 +338,8 @@ function placeOrphans(r: Realm): void {
       h.post = null
       continue
     }
-    if (h.at === null && !leading.has(h.id)) h.at = homeOf(r, h.faction)
+    // 원정 간 장수는 판에 없다 (expedition.ts)
+    if (h.at === null && !leading.has(h.id) && !(h.awayUntil !== undefined && h.awayUntil >= r.season)) h.at = homeOf(r, h.faction)
   }
 }
 

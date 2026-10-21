@@ -237,6 +237,23 @@ export interface Hero {
   parents?: readonly [string, string]
 }
 
+/** 원정 한 번 — back 계절에 돌아와 got 을 푼다 */
+export interface Expedition {
+  readonly hero: string
+  readonly faction: string
+  readonly dest: ExpDest
+  readonly len: 0 | 1 | 2
+  readonly back: number
+  readonly got: ExpGot
+}
+export type ExpDest = 'wa' | 'juho' | 'neukdo' | 'north'
+/** 원정에서 얻은 것 — 철 · 곡식 · 떠돌이 장수 · 낯선 재주(특성) · 빈손 */
+export type ExpGot =
+  | { readonly kind: 'iron' | 'grain'; readonly n: number }
+  | { readonly kind: 'wanderer'; readonly hero: string }
+  | { readonly kind: 'skill'; readonly trait: string }
+  | { readonly kind: 'none' }
+
 /** 자라는 능력치 — 의리는 타고난다 */
 export type GrowStat = 'mu' | 'tong' | 'ryak' | 'chi' | 'deok'
 
@@ -524,6 +541,8 @@ export interface Realm {
   retainers?: string[]
   /** 혼인의 열매 — due 계절에 자식 장수가 나선다 (heroes.stepHeroes). 옛 저장에는 없다 */
   births?: Array<{ a: string; b: string; faction: string; due: number }>
+  /** 원정 — 지도 바깥 먼 땅으로 간 장수. 결과는 보낼 때 정해진다 (expedition.ts · SYSTEMS §15-4). 옛 저장에는 없다 */
+  expeditions?: Expedition[]
   /** 봄 제사를 지낸 해 (Math.floor(season / 4)) — 나라마다. 그해 가을 수확이 는다 (economy.riteAllowed). 옛 저장에는 없다 */
   blessed?: Record<string, number>
   /** 답을 기다리는 청 (diplomacy.openAsks). 옛 저장에는 없다 */
@@ -615,6 +634,8 @@ export type Order =
   | { readonly kind: 'persuade'; readonly hero: string; readonly by: string | null }
   /** 떠돌이 인재를 들인다 — 그 인재가 머문 고을의 주인만, 곡식 price */
   | { readonly kind: 'hire'; readonly faction: string; readonly hero: string }
+  /** 장수를 지도 바깥 먼 땅으로 원정 보낸다 — len 0 짧게 · 1 보통 · 2 길게 (expedition.ts) */
+  | { readonly kind: 'expedition'; readonly faction: string; readonly hero: string; readonly dest: ExpDest; readonly len: 0 | 1 | 2 }
   /** 우리 장수 둘(남녀)을 혼인시킨다 — 잔치 곡식이 들고, 몇 계절 뒤 자식 장수가 나선다 (SYSTEMS §5-10 · 팰 교배) */
   | { readonly kind: 'wed'; readonly faction: string; readonly a: string; readonly b: string }
   /** 사신 (FLOW §4) — 한 나라가 한 계절에 하나. give 는 보내는 쪽이, take 는 받는 쪽이 내놓는다 */
@@ -798,6 +819,9 @@ export type ReportLine =
   | { readonly kind: 'bond'; readonly hero: string; readonly tier: 'trust' }
   /** 정이 다 차서 특성 하나에 눈떴다 */
   | { readonly kind: 'awaken'; readonly hero: string; readonly trait: string }
+  /** 원정을 떠났다 · 돌아왔다 (got 을 풀었다) */
+  | { readonly kind: 'expGo'; readonly faction: string; readonly hero: string; readonly dest: ExpDest; readonly back: number }
+  | { readonly kind: 'expBack'; readonly faction: string; readonly hero: string; readonly dest: ExpDest; readonly got: ExpGot }
   /** 혼인했다 — due 계절에 아이가 나선다 */
   | { readonly kind: 'wed'; readonly faction: string; readonly a: string; readonly b: string; readonly due: number }
   /** 혼인의 열매 — 자식 장수가 나섰다. surprise = 부모 누구에게도 없던 특성이 터졌다 */

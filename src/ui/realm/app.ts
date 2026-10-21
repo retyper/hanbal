@@ -29,8 +29,9 @@ import { alertRange, seenMix, visibleRange } from '../../realm/intel.ts'
 import { advance, concealOf, draftable, forceOf, neighbors, newArmyId, otherEnd, planned, rationCost, rationExtra, seasonOf, seenMarches } from '../../realm/season.ts'
 import { PLOT_OPS, exposeChance, assassinArrows, assassinBow, bowUpCost, escapeChance, plotAgents, plotChance, plotCost, plotTargets } from '../../realm/plots.ts'
 import { allianceWhy, leaderOf, tookRecently, truceWhy, winningAgainst } from '../../realm/stance.ts'
+import { DESTS, DEST_IDS, EXP_SEASONS, expAmount, expBlock, expOdds, onExpedition } from '../../realm/expedition.ts'
 import { canWed, heroSeen, inheritOf, isRuler, persuadeSeasons, wanderersFor } from '../../realm/heroes.ts'
-import type { Approach, Army, EdgeKind, EnvoyAsk, Good, Hand, Hero, Order, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
+import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { EDGE_STYLE, MAP_CSS, ROUTE_SIGN_NAME, mapHtml, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { LEGACY_CSS, carryHtml, retainHtml, syncRetain, toggleCarry, toggleKeep } from './legacy.ts'
@@ -279,6 +280,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let heroOrders: Order[] = []
   /** 회유를 맡길 장수 — 포로마다 */
   const persuadeBy: Record<string, string> = {}
+  /** 원정 고르는 중 — 장수마다 갈 곳·길이 (명령이 되기 전) */
+  const expPick: Record<string, { dest: ExpDest; len: 0 | 1 | 2 }> = {}
   /** 사신과 함께 보낼 장수 — 상대 나라마다 (매력·매혹·장사꾼은 따라가야 먹힌다) */
   const escort: Record<string, string> = {}
   /** 나라 카드에서 "있었던 일"을 다 펼친 나라 */
@@ -1476,7 +1479,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (x.spouse !== undefined) {
       const sp = r.heroes[x.spouse]
       const kid = (r.births ?? []).find((v) => v.a === id || v.b === id)
-      h += `<p class="mute">짝 · ${sp !== undefined ? nameHtml(sp.name) : '?'}${kid !== undefined ? ` · 아이가 ${Math.max(1, kid.due - r.season)}계절쯤 뒤 나선다` : ''}</p>`
+      h += `<p class="mute">짝 · ${sp !== undefined ? nameHtml(sp.name) : '?'}${kid !== undefined ? ` · 아이가 ${Math.max(1, kid.due - r.season + 1)}계절쯤 뒤 나선다` : ''}</p>`
     }
     if (x.parents !== undefined) h += `<p class="mute">${x.parents.map((p) => (r.heroes[p] !== undefined ? nameHtml(r.heroes[p]!.name) : '?')).join(' · ')}의 아이</p>`
     const weds = heroOrders.filter((o): o is Extract<Order, { kind: 'wed' }> => o.kind === 'wed' && (o.a === id || o.b === id))
@@ -1485,6 +1488,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<div class="banner good">이번 계절: ${esc(josa(other?.name ?? '', '과', '와'))} 혼인한다 · 곡식 ${P.realm.wedGrain}<button class="btn ghost sm" data-act="unwed" data-id="${id}">취소</button></div>`
     }
     if (ours && weds.length === 0 && x.spouse === undefined) h += wedHtml(r, x)
+    h += expHtml(r, x)
     const pending = heroOrders.filter((o) => (o.kind === 'assign' || o.kind === 'lead' || o.kind === 'persuade' || o.kind === 'hire') && o.hero === id)
     for (const o of pending) {
       const what = o.kind === 'assign' ? (o.node === null ? '맡은 일을 그만둔다' : `${josa(r.nodes[o.node]?.name ?? '', '을', '를')} 맡는다`) : o.kind === 'lead' ? '군대를 이끈다' : o.kind === 'hire' ? '우리 장수로 들였다' : '회유한다'
@@ -1539,6 +1543,36 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<span class="tr3">${chips}<span class="trait" style="--g:${GRADE_COLOR[inh.surpriseGrade]}"><b>?</b><i>${GRADE_NAME[inh.surpriseGrade]} 이상 · 드묾</i></span></span></span></button>`
     }
     if (grain < P.realm.wedGrain) h += `<p class="mute">곡식이 모자란다 (${Math.floor(grain)} / ${P.realm.wedGrain}).</p>`
+    return h + `</div>`
+  }
+
+  /**
+   * 원정 — 먼 땅 넷 · 길이 셋 · 무엇이 자주·가끔·드물게 나오나 (숫자 대신 말 — 메모리 realm-no-numbers). 결과는 보낼 때 정해진다
+   * (형의 메모: "팰월드에선 … 매 지대에서 확인 … 발견도 도박" — 팰 파견 자리)
+   */
+  function expHtml(r: Realm, x: Hero): string {
+    const away = onExpedition(r, x.id)
+    if (away !== undefined) return `<div class="exp"><b>원정 중</b><span class="mute">${esc(DESTS[away.dest].name)} · ${Math.max(1, away.back - r.season + 1)}계절 뒤 돌아온다. 무엇을 가져올지는 떠날 때 이미 정해졌다.</span></div>`
+    if (x.faction !== me() || x.status !== 'free' || isRuler(r, x.id)) return ''
+    const sent = heroOrders.find((o): o is Extract<Order, { kind: 'expedition' }> => o.kind === 'expedition' && o.hero === x.id)
+    if (sent !== undefined) return `<div class="banner good">이번 계절: ${esc(josa(DESTS[sent.dest].name, '으로', '로'))} 원정 · ${EXP_SEASONS[sent.len]}계절<button class="btn ghost sm" data-act="unexp" data-id="${x.id}">취소</button></div>`
+    const pick = expPick[x.id] ?? { dest: 'wa' as ExpDest, len: 1 as 0 | 1 | 2 }
+    const word = (p: number): string => (p >= 0.3 ? '자주' : p >= 0.12 ? '가끔' : p > 0 ? '드물게' : '없다')
+    const odds = expOdds(x, pick.dest, pick.len)
+    const block = expBlock(r, me(), x.id, pick.dest, pick.len)
+    let h = `<div class="exp"><b>원정</b><span class="mute">먼 땅으로 보낸다. 좋은 장수일수록 좋은 것을 가져오지만, 그동안 판에 없다. 무엇을 가져올지는 떠날 때 정해진다.</span><div class="seg">`
+    for (const d of DEST_IDS) h += `<button class="${d === pick.dest ? 'on' : ''}" data-act="exp-dest" data-id="${x.id}" data-v="${d}">${esc(DESTS[d].name)}</button>`
+    h += `</div><p class="mute">${esc(DESTS[pick.dest].line)}${DESTS[pick.dest].sea ? ' (바닷길 — 포구가 있어야 간다)' : ''}</p><div class="seg">`
+    for (const l of [0, 1, 2] as const) h += `<button class="${l === pick.len ? 'on' : ''}" data-act="exp-len" data-id="${x.id}" data-v="${l}">${['짧게', '보통', '길게'][l]} · ${EXP_SEASONS[l]}계절</button>`
+    h += `</div><div class="odds">`
+    const rows: Array<[keyof typeof odds, string]> = [
+      ['iron', `쇠 (${expAmount(x, pick.dest, pick.len, 'iron')}쯤)`], ['grain', `곡식 (${expAmount(x, pick.dest, pick.len, 'grain')}쯤)`],
+      ['wanderer', '그곳 사람이 따라온다 (새 장수)'], ['skill', `낯선 재주 (${DESTS[pick.dest].skills.map((t) => TRAIT[t]?.name ?? t).join('·')})`], ['none', '빈손'],
+    ]
+    for (const [k, label] of rows) h += `<span class="od ${k}"><i style="width:${Math.round(odds[k] * 100)}%"></i><b>${esc(label)}</b><em>${word(odds[k])}</em></span>`
+    h += `</div>`
+    h += block !== null ? `<p class="mute">${esc(block)}</p>`
+      : `<button class="btn" data-act="exp-go" data-id="${x.id}">${esc(josa(DESTS[pick.dest].name, '으로', '로'))} 보낸다 · 길 양식 곡식 ${P.realm.expGrainPer * EXP_SEASONS[pick.len]}</button>`
     return h + `</div>`
   }
 
@@ -1817,6 +1851,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (w !== undefined) c = [0.5, { ev: 'event-wanderer-arrives', hero: w.hero, line: `떠돌이 ${josa(w.hero.name, '이', '가')} ${after.nodes[l.node]?.name ?? ''}에 왔다` }]
       } else if (l.kind === 'rite' && l.faction === pl) {
         c = [0.6, { ev: l.season === 'spring' ? 'event-divination' : 'event-festival', hero: null, line: l.season === 'spring' ? '봄 제사를 지냈다' : '가을 제사를 지냈다' }]
+      } else if (l.kind === 'expBack' && l.faction === pl) {
+        const g = l.got
+        const big = g.kind === 'wanderer' || g.kind === 'skill'
+        c = [big ? 0.92 : g.kind === 'none' ? 0.3 : 0.6, { ev: 'event-expedition-return', hero: g.kind === 'wanderer' ? after.heroes[g.hero] ?? null : after.heroes[l.hero] ?? null,
+          line: `${DESTS[l.dest].name}에서 ${josa(after.heroes[l.hero]?.name ?? '', '이', '가')} 돌아왔다${g.kind === 'wanderer' ? ` · ${josa(after.heroes[g.hero]?.name ?? '', '이', '가')} 따라왔다` : g.kind === 'skill' ? ` · 「${TRAIT[g.trait]?.name ?? ''}」을 배웠다` : ''}` }]
       } else if (l.kind === 'wed' && l.faction === pl) {
         c = [0.7, { ev: 'event-festival', hero: after.heroes[l.a] ?? null, line: `${josa(after.heroes[l.a]?.name ?? '', '과', '와')} ${josa(after.heroes[l.b]?.name ?? '', '이', '가')} 혼인했다` }]
       } else if (l.kind === 'birth' && l.faction === pl) {
@@ -1979,12 +2018,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'suzerain': ic = 'treasure-silla-crown'; break
       case 'grow': case 'bond': case 'awaken': ic = 'status-morale-up'; break
       case 'wed': ic = 'status-alliance'; break
+      case 'expGo': case 'expBack': ic = 'settle-port-town'; break
       case 'birth': ic = 'status-good-omen'; break
       default: ic = ''
     }
     // 장수 얼굴이 주인공인 줄 — 들임·떠돌이·자람
     const hero = typeof L['hero'] === 'string' ? (r.heroes[L['hero'] as string] ?? (realm!.wanderers ?? []).find((w) => w.hero.id === L['hero'])?.hero) : undefined
-    const lead = (l.kind === 'recruit' || l.kind === 'wanderer' || l.kind === 'grow' || l.kind === 'bond' || l.kind === 'awaken' || l.kind === 'birth') && hero !== undefined
+    const lead = (l.kind === 'recruit' || l.kind === 'wanderer' || l.kind === 'grow' || l.kind === 'bond' || l.kind === 'awaken' || l.kind === 'birth' || l.kind === 'expBack') && hero !== undefined
       ? bust(hero, 'rface rl') : ic !== '' ? icon(ic, 'ri') : '<i class="ri dot"></i>'
     // 누가→누구 · 어디→어디
     let flow = ''
@@ -2393,6 +2433,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         heroOrders = [...heroOrders.filter((o) => !(o.kind === 'wed' && (o.a === a || o.b === a || o.a === b || o.b === b))), { kind: 'wed', faction: me(), a, b }]
         break
       }
+      case 'exp-dest': expPick[d['id']!] = { dest: d['v'] as ExpDest, len: expPick[d['id']!]?.len ?? 1 }; break
+      case 'exp-len': expPick[d['id']!] = { dest: expPick[d['id']!]?.dest ?? 'wa', len: Number(d['v']) as 0 | 1 | 2 }; break
+      case 'exp-go': {
+        const pk = expPick[d['id']!] ?? { dest: 'wa' as ExpDest, len: 1 as 0 | 1 | 2 }
+        heroOrders = [...heroOrders.filter((o) => !(o.kind === 'expedition' && o.hero === d['id'])), { kind: 'expedition', faction: me(), hero: d['id']!, dest: pk.dest, len: pk.len }]
+        break
+      }
+      case 'unexp': heroOrders = heroOrders.filter((o) => !(o.kind === 'expedition' && o.hero === d['id'])); break
       case 'unwed': heroOrders = heroOrders.filter((o) => !(o.kind === 'wed' && (o.a === d['id'] || o.b === d['id']))); break
       case 'dex-open': root.querySelector('.dxtoast')?.remove(); front = { kind: 'dex', board: 'all', sel: null, back: front }; sheet = null; paint(); return
       case 'dex-close': if (front !== null && front.kind === 'dex') front = front.back; paint(); return
