@@ -353,14 +353,19 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const base = Math.max(0.05, st?.morale[i] ?? 1)
     const mr = (x: number): number => Math.round(Math.max(0, Math.min(1.2, x / base)) * 83)
     const num = old !== now ? `<span class="wn swap"><s>${old}명</s><u>${now}명</u></span>` : `<span class="wn">${now}명</span>`
-    return `<div class="ws ${cls}${hitOf(i)}" style="--hd:${STAGE_S[1] + 0.15}s">${face(hero, art, unitOf(i))}<b>${esc(name)}</b><span>${esc(fname(f))}</span>`
+    const hitFx = hitOf(i) !== '' ? `<img class="wfx-hit" src="${art}fx/impact.png" alt="">` : ''
+    return `<div class="ws ${cls}${hitOf(i)}" style="--hd:${STAGE_S[1] + 0.15}s">${hitFx}${face(hero, art, unitOf(i))}<b>${esc(name)}</b><span>${esc(fname(f))}</span>`
       + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}</div>${num}`
       + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}</div><span class="wn">사기</span></div>`
   }
 
   // 싸움터 배경 (땅마다) · 위 카드는 굴려도 그 자리에 (형: "싸우는로그가 스크롤로 보이더라도 상단에 캐릭터랑 체력바 있는 그 카드는 고정")
   const ground = warGround(prev, l)
-  let h = `<div class="wbg g-${ground}${WAR_BG_READY.has(ground) ? '' : ' stand'}" style="background-image:url('${warBg(art, ground)}')"></div><div class="wrbox">`
+  let h = `<div class="wbg g-${ground}${WAR_BG_READY.has(ground) ? '' : ' stand'}" style="background-image:url('${warBg(art, ground)}')"></div>`
+  // 싸움의 기운 — 흙먼지 둘이 바닥을 흐르고, 맞부딪는 순간 화살 한 무리가 가로지른다 (그림: realm/fx)
+  h += `<div class="wfx"><img class="wfx-dust a" src="${art}fx/dust.png" alt=""><img class="wfx-dust b" src="${art}fx/dust.png" alt="">`
+  if (anim) h += `<img class="wfx-arrows" src="${art}fx/arrows.png" alt="" style="--ad:${STAGE_S[1] - 0.45}s">`
+  h += `</div><div class="wrbox">`
   h += `<div class="wtop"><div class="wrh"><b>${esc(warName(after, l))}</b>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}</div>`
   h += `<div class="wvs">${side(ourI, ourHero, ourF, ourName, 'us')}<i class="vs">VS</i>${side(foeI, foeHero, foeF, foeName, 'foe')}</div></div>`
   if (keys !== '') h += `<style>${keys}</style>`
@@ -451,7 +456,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     else res = atkWon ? `${josa(place, '을', '를')} 빼앗긴다` : `${josa(place, '을', '를')} 지켜 냈다`
     const big = l.outcome === 'rout' || l.outcome === 'routed' ? (good ? '대승 — ' : '대패 — ') : ''
     const d = anim ? ` style="--d:${STAGE_S[2] + 0.8}s"` : ''
-    h += `<div class="wend ${good ? 'good' : l.outcome === 'draw' ? '' : 'bad'}"${d}><b>${big}${esc(res)}</b>`
+    const fall = l.field !== true && atkWon
+    if (fall) h += `<div class="wfx burn"${d}><img class="wfx-smoke" src="${art}fx/smoke.png" alt=""><img class="wfx-fire" src="${art}fx/fire.png" alt=""><img class="wfx-fire r" src="${art}fx/fire.png" alt=""></div>`
+    h += `<div class="wend ${good ? 'good' : l.outcome === 'draw' ? '' : 'bad'}"${d}>${good ? `<img class="wfx-gold" src="${art}fx/gold.png" alt="">` : ''}<b>${big}${esc(res)}</b>`
     if (ctx !== null && (l.rounds ?? []).length > 0) h += `<p class="wwhy">${esc(endStory(l, ctx))}</p>`
     if (l.captured !== null) {
       const c = after.heroes[l.captured]
@@ -543,6 +550,24 @@ export const WAR_CSS = `
 @keyframes wshake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-5px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
 @keyframes wshakeh { 0%, 100% { transform: translateX(0) rotate(0); } 15% { transform: translateX(-9px) rotate(-2deg); } 35% { transform: translateX(8px) rotate(2deg); } 55% { transform: translateX(-6px) rotate(-1deg); } 75% { transform: translateX(3px); } }
 @keyframes wflash { 0% { opacity: 0; } 25% { opacity: 1; } 100% { opacity: 0; } }
+/* 그림 효과 (realm/fx — 제미나이, 검은 바탕을 밝기로 알파) */
+.ap .wfx { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.ap .wfx-dust { position: absolute; bottom: -14%; width: 60vw; max-width: 640px; opacity: .3; animation: wdust 26s linear infinite; }
+.ap .wfx-dust.a { left: -20%; } .ap .wfx-dust.b { left: 45%; animation-duration: 34s; animation-direction: reverse; opacity: .22; }
+@keyframes wdust { 0% { transform: translateX(-6%) scale(1); } 50% { transform: translateX(6%) scale(1.08); } 100% { transform: translateX(-6%) scale(1); } }
+.ap .wfx-arrows { position: absolute; top: 18%; left: -30%; width: min(46vw, 420px); opacity: 0; animation: warrows 1.1s ease-in var(--ad, 0s) both; }
+@keyframes warrows { 0% { opacity: 0; transform: translate(0, 40px) rotate(-6deg); } 15% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; transform: translate(150vw, -60px) rotate(-6deg); } }
+.ap .ws .wfx-hit { position: absolute; left: 50%; top: 42px; width: 150px; height: 150px; margin: -75px 0 0 -75px; z-index: 2; pointer-events: none; opacity: 0; animation: whitfx .55s ease-out var(--hd, 1.2s) both; }
+@keyframes whitfx { 0% { opacity: 0; transform: scale(.3) rotate(0); } 25% { opacity: 1; transform: scale(1.05) rotate(12deg); } 100% { opacity: 0; transform: scale(1.35) rotate(24deg); } }
+.ap .wend { position: relative; } .ap .wend > b { position: relative; }
+.ap .wend .wfx-gold { position: absolute; left: 50%; top: 2px; width: 240px; margin-left: -120px; pointer-events: none; opacity: 0; animation: wgold 1.6s ease-out calc(var(--d, 0s) + .25s) both; }
+@keyframes wgold { 0% { opacity: 0; transform: scale(.2) rotate(-20deg); } 30% { opacity: 1; transform: scale(1.1) rotate(0); } 100% { opacity: 0; transform: scale(1.5) rotate(15deg); } }
+.ap .wfx.burn { opacity: 0; animation: wrin 1.2s ease-out var(--d, 0s) both; }
+.ap .wfx-fire { position: absolute; bottom: 4%; left: 6%; width: min(30vw, 260px); animation: wflick 1.4s ease-in-out infinite alternate; transform-origin: 50% 100%; }
+.ap .wfx-fire.r { left: auto; right: 4%; width: min(24vw, 210px); animation-duration: 1.1s; }
+.ap .wfx-smoke { position: absolute; bottom: 18%; left: 2%; width: min(42vw, 380px); opacity: .7; animation: wsmoke 9s ease-in-out infinite alternate; }
+@keyframes wflick { from { transform: scaleY(.92) skewX(-2deg); } to { transform: scaleY(1.06) skewX(2deg); } }
+@keyframes wsmoke { from { transform: translateY(0) scale(1); } to { transform: translateY(-30px) scale(1.12); } }
 /* 맡기기 — 그 장수의 얼굴과 지략 */
 .ap .wauto { flex: 1 1 100%; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #d8cfbf; }
 .ap .wauto .wf { width: 30px; height: 30px; border-radius: 50%; } .ap .wauto .wdots { color: var(--gold); letter-spacing: 1px; }
@@ -552,7 +577,7 @@ export const WAR_CSS = `
 .ap .wend.good b { display: inline-block; animation: wwinb .9s cubic-bezier(.2, 1.6, .4, 1) calc(var(--d, 0s) + .3s) both; }
 @keyframes wwin { 0% { box-shadow: 0 0 0 0 #ffd27a00; } 30% { box-shadow: 0 0 0 6px #ffd27aaa, 0 0 40px 10px #ffd27a88; } 100% { box-shadow: 0 0 0 0 #ffd27a00, 0 0 18px 2px #ffd27a33; } }
 @keyframes wwinb { 0% { transform: scale(.4); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { .ap .ws.hit, .ap .ws.hit::after, .ap .wend.good, .ap .wend.good b { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ap .ws.hit, .ap .ws.hit::after, .ap .wend.good, .ap .wend.good b, .ap .wfx-dust, .ap .wfx-fire, .ap .wfx-smoke { animation: none; } .ap .wfx-arrows, .ap .ws .wfx-hit, .ap .wend .wfx-gold { display: none; } }
 .ap .wrd.slow .wcmds, .ap .wrd.slow .wst, .ap .wrd.slow .wpush { opacity: 0; animation: wrin .45s ease-out var(--d, 0s) both; }
 .ap .wrd.slow .wcmds { animation-name: wrflip; }
 @keyframes wrin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
