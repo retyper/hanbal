@@ -410,6 +410,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .todo.move { border-color: #5a6a8a; background: #1c2230; }
 .ap .todo img { width: 34px; height: 34px; } .ap .todo > span { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
 .ap .todo small { font-size: 12px; color: #b8b09c; white-space: normal; } .ap .todo i { font-style: normal; font-size: 22px; color: #8f8778; }
+/* 백성 판 — 새 마을 세우기 그림 한 줄 · 접힌 집 나누기 */
+.ap .stlhow { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; padding: 8px 10px; border-radius: 12px; background: #1f2a1a; border: 1px solid #4a6a3a; font-size: 13px; }
+.ap .stlhow .shi { width: 30px; height: 30px; } .ap .stlhow i { font-style: normal; color: #b6e08f; font-weight: 700; } .ap .stlhow b { color: #f4ffe8; }
+.ap .migfold { display: flex; align-items: center; gap: 10px; width: 100%; margin: 14px 0 6px; padding: 9px 12px; border-radius: 12px; border: 1px dashed #5a6a8a; background: #181d27; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.ap .migfold img { width: 30px; height: 30px; } .ap .migfold span { display: flex; flex-direction: column; flex: 1; min-width: 0; } .ap .migfold small { font-size: 12px; color: var(--mute); }
+.ap .migfold i { font-style: normal; font-size: 12px; color: #9fb0d0; } .ap .migfold.on { border-style: solid; }
 .ap .twoway .sec small { display: block; font-size: 11.5px; color: #a89c84; margin-top: 2px; } .ap .twoway .sec u { text-decoration: none; color: #f3d48a; }
 .ap .settlec .gain { margin: 4px 0 6px; padding: 6px 9px; border-radius: 9px; background: #24301f; color: #d8f0c0; font-size: 13px; }
 .ap .settlec .gain .gic { width: 20px; height: 20px; vertical-align: middle; margin: 0 2px; }

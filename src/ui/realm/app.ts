@@ -34,7 +34,7 @@ import { DESTS, DEST_IDS, EXP_SEASONS, expAmount, expBlock, expOdds, onExpeditio
 import { canWed, heroSeen, inheritOf, isRuler, persuadeDropOf, recruitChance, resistOf, wanderersFor } from '../../realm/heroes.ts'
 import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
-import { EDGE_STYLE, MAP_CSS, ROUTE_SIGN_NAME, mapHtml, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
+import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { LEGACY_CSS, carryHtml, retainHtml, syncRetain, toggleCarry, toggleKeep } from './legacy.ts'
 import { DEX_CSS, dexHtml, dexToastHtml, loadDex, recordDex, type DexBoard } from './dex.ts'
 import { dexCounts } from '../../realm/dex.ts'
@@ -174,7 +174,7 @@ const TABS = [
   { id: 'army', name: '군대', icon: 'unit-shield-wall', more: '우리 군대를 고르고 길을 정한다. 지도에서 군대를 눌러도 된다.' },
   { id: 'draft', name: '징병', icon: 'unit-spear', more: '마을 장정을 군사로 뽑는다. 뽑은 만큼 그 마을 농사 손이 준다.' },
   // 백성 — 개척·이주 (형: "군사징병이랑 개척 좀 확실히 구분필요함")
-  { id: 'people', name: '백성', icon: 'settle-farm-village', more: '빈 땅을 일구고(개척), 사람을 다른 마을로 옮긴다(이주).' },
+  { id: 'people', name: '백성', icon: 'settle-farm-village', more: '우리 집을 맞닿은 빈땅으로 보내 새 마을을 세운다. 고을끼리 집 나누기는 보통 저절로 된다.' },
   { id: 'diplo', name: '외교', icon: 'good-tribute-bell', more: '이웃 나라와 화친·동맹을 맺고, 사신의 청에 답하고, 몰래 공작(소문·암살…)을 보낸다.' },
   { id: 'heroes', name: '장수', icon: 'unit-general', more: '우리 장수와 사로잡은 장수. 군대를 맡기고, 혼인시키고, 원정을 보낸다.' },
   { id: 'nation', name: '나라', icon: 'settle-capital', more: '나라 살림 · 목표 · 이번 계절 사건 · 제사.' },
@@ -316,6 +316,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let migFrom = ''
   let migTo = ''
   let migN = 0
+  /** 고을끼리 집 나누기(이주) 칸을 펼쳤나 — 보통은 접어 둔다 (형: "개척이랑 이주 차이 아직도 모르겠음") */
+  let migOpen = false
   /** 사신을 꾸미는 중 — 누구에게 · 무엇을 · 얼마 · 어디 */
   let compose: { to: string; ask: Ask; give: Record<Good, number>; take: Record<Good, number>; target: string; hero: string } = { ...NO_COMPOSE, give: noGoods(), take: noGoods() }
   let note = ''
@@ -543,11 +545,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   /**
    * 길 보기 — 선의 생김새가 무슨 길이고 무엇이 다른지 (형: "경로에 직선이랑 점선 이런건 뭔차이임").
-   * 길의 선은 mapview.EDGE_STYLE 그대로 그려 보인다.
+   * 길의 선은 지도의 것(mapview.roadSvg) 그대로 그려 보인다.
    */
   function roadKeyHtml(): string {
     let h = `<button data-act="roadkey">${roadOpen ? '길 보기 ✕' : '길 보기'}</button>`
     if (!roadOpen) return h
+    const road = (k: EdgeKind): string => `<svg width="54" height="16" viewBox="0 0 54 16">${roadSvg('M7 8H47', k, 0.85)}</svg>`
     const line = (attrs: string): string => `<svg width="54" height="14" viewBox="0 0 54 14"><path d="M4 7H50" fill="none" ${attrs.replace(/stroke-width="(\d+)"/, (_, w: string) => `stroke-width="${Math.max(3, Number(w) * 0.7)}"`)}/></svg>`
     const ROAD: ReadonlyArray<[EdgeKind, string]> = [
       ['field', '한 계절 · 빠르고 트였다 · 숨기 어렵다'],
@@ -558,7 +561,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       ['sea', '배로 건너는 바닷길'],
       ['mudflat', '두 계절 · 발이 빠진다'],
     ]
-    h += `<div class="rk"><h5>길</h5>${ROAD.map(([k, t]) => `<div>${line(EDGE_STYLE[k])}<b>${EDGE_NAME[k]}</b><span>${t}</span></div>`).join('')}`
+    h += `<div class="rk"><h5>길</h5>${ROAD.map(([k, t]) => `<div>${road(k)}<b>${EDGE_NAME[k]}</b><span>${t}</span></div>`).join('')}`
     // 길 기호 — 계절·닿는 고을에 따라 바뀐다 (mapview.routeSign)
     h += `<h5>길 기호 · 계절따라 바뀐다</h5>`
     h += (Object.keys(ROUTE_SIGN_NAME) as RouteSign[]).map((s) => `<div><img class="rki" src="${ART}icon/route-${s}.png" alt=""><span>${esc(ROUTE_SIGN_NAME[s])}</span></div>`).join('')
@@ -948,17 +951,31 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     const full = sorted(Object.values(r.nodes)).filter((n) => n.owner === me() && n.kind !== 'sodo' && homeRoom(n) > 0 && crowdOf(n) > 1)
     for (const n of full.slice(0, 2)) {
-      items.push(`<button class="todo move" data-act="jump" data-to="sec-move">${icon('unit-porters')}<span><b>${esc(josa(n.name, '이', '가'))} 붐빈다</b><small>${tx(autoMigOn() ? '자동 분배가 계절마다 옆 고을로 나눈다 · 빈땅에 보내도 좋다' : '집이 덜 는다 — 옆 고을로 옮기거나 빈땅에 마을을 세운다')}</small></span><i>›</i></button>`)
+      items.push(`<button class="todo move" data-act="mig-open" data-v="1">${icon('unit-porters')}<span><b>${esc(josa(n.name, '이', '가'))} 붐빈다</b><small>${tx(autoMigOn() ? '자동 분배가 계절마다 옆 고을로 나눈다 · 빈땅에 보내도 좋다' : '집이 덜 는다 — 옆 고을로 옮기거나 빈땅에 마을을 세운다')}</small></span><i>›</i></button>`)
     }
     if (items.length === 0) return `<div class="todos"><p class="mute">${tx('지금은 할 일이 없다. 고을이 다 품 안이고, 맞닿은 빈땅도 없다 — 군대로 땅을 넓히면 빈땅이 맞닿는다.')}</p></div>`
     return `<div class="todos"><h4>지금 할 수 있는 일</h4>${items.join('')}</div>`
   }
 
+  /**
+   * 백성 판 — 할 일은 하나, 새 마을 세우기(개척). 고을끼리 집 나누기(이주)는 보통 저절로 되니 맨 아래에 접어 둔다
+   * (형: "개척이랑 이주 차이 아직도 모르겠음" — 두 낱말을 나란히 두고 차이를 설명하는 대신, 고를 일을 하나로 줄인다)
+   */
   function peopleSheet(r: Realm): string {
-    let h = `<h3 class="sech home">${icon('settle-farm-village')}백성 · 집을 옮긴다</h3>`
+    let h = `<h3 class="sech home">${icon('settle-farm-village')}백성 · 새 마을 세우기</h3>`
     if (note !== '') h += `<div class="banner bad">${tx(note)}</div>`
-    h += `<p class="mute">${tx('군사가 아니라 농사짓는 집이다. 옮긴 집은 다음 계절에 자리 잡는다.')}</p>`
+    // 그림 한 줄 — [우리 고을] 집 ⟶ [빈땅] = 우리 마을
+    h += `<div class="stlhow">${icon('settle-farm-village', 'shi')}<span>우리 고을</span><i>집 ⟶</i>${icon('settle-hamlet', 'shi')}<span>빈땅</span><i>=</i><b>새 우리 마을</b></div>`
+    h += `<p class="mute">${tx('우리 고을의 집(농사짓는 사람)을 길로 맞닿은 빈땅에 보내면, 다음 계절 그 땅이 우리 마을이 된다. 군대 없이 땅을 넓히는 길이다.')}</p>`
     h += peopleTodo(r)
+    h += `<h4 id="sec-settle" class="sech home">${icon('settle-farm-village')}마을을 세울 수 있는 빈땅</h4>`
+    h += settleList(r)
+    h += migFold(r)
+    return h
+  }
+
+  /** 고을끼리 집 나누기 — 접힌 줄 하나(지금 무엇이 저절로 되고 있나), 펼치면 자동 분배 단추와 직접 옮기기 */
+  function migFold(r: Realm): string {
     // 자동 분배 — 맨 위 큰 단추. 누르면 켜지고(단추는 잠긴다), 직접 옮기면 꺼져서 다시 누를 수 있다
     // (형 2026-10-20: "자동분배는 맨 위에 큰버튼으로 … 한번 누르면 비활성화. 본인이 직접 재분배 해서 숫자가 달라진경우에 다시활성화")
     // 단추 밑 말은 짧게 — 지금 무엇을 하고 있나만 (형: "자동분배중 버튼밑 텍스트가 너무길어서 칸이 넘어가져버림 · 제대로 된거 맞음?").
@@ -967,20 +984,20 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const fullNow = Object.values(r.nodes).filter((n) => n.owner === me() && n.kind !== 'sodo' && homeRoom(n) > 0 && crowdOf(n) > 1).length
     const autoSub = flowsNow.length > 0 ? `이번 계절 집 ${flowsNow.reduce((s, x) => s + x.n, 0)}채가 옮겨 간다`
       : fullNow > 0 ? '붐비는 고을 곁에 받을 고을이 없다' : '모든 고을이 품 안 — 옮길 일이 없다'
+    let h = `<button class="migfold${migOpen ? ' on' : ''}" data-act="mig-open">${icon('unit-porters')}<span><b>고을끼리 집 나누기</b><small>${tx(autoMigOn() ? `보통은 저절로 · ${autoSub}` : '자동 분배가 꺼져 있다 — 직접 나눈다')}</small></span><i>${migOpen ? '접기' : '펼치기'}</i></button>`
+    if (!migOpen) return h
     h += autoMigOn()
       ? `<button class="btn wide autobtn" disabled data-more="붐비는(품을 넘긴) 고을의 집이 계절마다 길로 맞닿은 한산한 우리 고을로 저절로 옮겨 간다. 아래에서 직접 옮기면 꺼진다."><b>✓ 자동 분배 중</b><small>${tx(autoSub)}</small></button>`
       : `<button class="btn on wide autobtn" data-act="mig-auto" data-v="1" data-more="누르면 붐비는 고을의 집을 계절마다 한산한 고을로 저절로 옮긴다. 이번 계절 직접 옮긴 것은 거둔다."><b>자동 분배 켜기</b><small>${tx('붐비는 고을을 저절로 나눈다')}</small></button>`
+    return h + migrateSection(r)
+  }
+
+  /** 마을을 세울 수 있는 빈땅 카드들 */
+  function settleList(r: Realm): string {
     const lands = [...new Set([...settleTargets(r, me()).map((t) => t.to), ...settlePending().map((o) => o.to)])].sort()
-    // 두 낱말 — 무엇이 달라지나로 (개척: 땅이 는다 · 이주: 땅은 그대로, 사람만 옮긴다)
-    h += `<div class="twoway"><button class="sec home" data-act="jump" data-to="sec-settle">${icon('settle-farm-village')}<b>개척</b><span>빈땅에 새 마을 · <u>우리 땅이 는다</u></span><small>${lands.length > 0 ? `지금 ${lands.length}곳` : '맞닿은 빈땅이 없다'}</small></button>`
-    h += `<button class="sec move" data-act="jump" data-to="sec-move">${icon('unit-porters')}<b>이주</b><span>우리 고을끼리 · <u>땅은 그대로</u></span><small>${autoMigOn() ? '보통은 저절로 (자동 분배)' : '직접 옮긴다'}</small></button></div>`
-    h += `<h4 id="sec-settle" class="sech home">${icon('settle-farm-village')}개척 · 빈땅에 새 마을을 일군다</h4>`
     // 빈땅은 아무 나라 땅도 아니다 — 사람이 가서 살면 그때 우리 마을이 된다 (형: "우리영토가 아닌데도 사람을보내서 살게하는거야? 그게맞나??")
-    h += `<p class="mute">${tx('빈땅은 주인 없는 땅이다. 우리 고을과 길로 맞닿은 빈땅에 집을 보내면, 자리 잡는 대로 그 땅이 우리 마을이 된다. 남의 나라 땅에는 보낼 수 없다.')}</p>`
-    if (lands.length > 0) for (const to of lands) h += settleCard(r, to)
-    else h += `<p class="mute">${tx('지금은 우리 고을과 맞닿은 빈땅이 없다.')}</p>`
-    h += migrateSection(r)
-    return h
+    if (lands.length === 0) return `<p class="mute">${tx('지금은 우리 고을과 맞닿은 빈땅이 없다. 남의 나라 땅에는 보낼 수 없다 — 군대로 땅을 넓히면 빈땅이 맞닿는다.')}</p>`
+    return lands.map((to) => settleCard(r, to)).join('')
   }
 
   /** 고을 하나 — 옮기기 판의 왼쪽(보내는 곳)·오른쪽(받는 곳) 카드. 집이 얼마에서 얼마로 */
@@ -1054,8 +1071,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function migrateSection(r: Realm): string {
     const on = autoMigOn()
     const mine = sorted(Object.values(r.nodes)).filter((n) => n.owner === me() && n.kind !== 'sodo' && homeRoom(n) > 0)
-    let h = `<h4 id="sec-move" class="sech move">${icon('unit-porters')}이주 · 우리 고을끼리 집을 옮긴다</h4>`
-    h += `<p class="mute">${tx('고을마다 편히 품는 집이 있다. 넘치면 붐벼 집이 덜 는다. 전방 고을에 집이 많으면 장정이 많아 지키기 좋고, 도읍에 모으면 그곳에서 더 뽑는다.')}</p>`
+    let h = `<div id="sec-move"></div>`
+    h += `<p class="mute">${tx('땅은 그대로, 우리 고을끼리 집만 옮긴다. 고을마다 편히 품는 집이 있다. 넘치면 붐벼 집이 덜 는다. 전방 고을에 집이 많으면 장정이 많아 지키기 좋고, 도읍에 모으면 그곳에서 더 뽑는다.')}</p>`
     // 붐빔 막대 — 고을마다
     h += `<div class="crowd">`
     for (const n of mine) {
@@ -2736,6 +2753,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         }
         return
       }
+      case 'mig-open':
+        migOpen = d['v'] === '1' ? true : !migOpen
+        paint()
+        if (migOpen) requestAnimationFrame(() => $('.sheet').querySelector('.migfold')?.scrollIntoView({ block: 'start', behavior: 'smooth' }))
+        return
       case 'jump': $('.sheet').querySelector(`#${d['to']}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }); return
       case 'selmerge': {
         // 고른 군대를 하나로 — 장수가 이끄는 군대로 모은다
@@ -2915,6 +2937,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (d['act'] === 'mig-here') migTo = d['node']!
         else migFrom = d['node']!
         migN = 0
+        migOpen = true
         sheet = { kind: 'people' }
         paint()
         requestAnimationFrame(() => $('.sheet').querySelector('#sec-move')?.scrollIntoView({ block: 'start' }))

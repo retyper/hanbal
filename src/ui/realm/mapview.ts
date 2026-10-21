@@ -23,15 +23,41 @@ import { worldMapUrl } from './worldmap.ts'
 const W = REGION_ART['byeonhan-mini'].w
 const H = REGION_ART['byeonhan-mini'].h
 
-/** 길 종류의 선 — 색 · 굵기 · 점선 */
-export const EDGE_STYLE: Readonly<Record<EdgeKind, string>> = {
-  field: 'stroke="#6b4a2a" stroke-width="5"',
-  pass: 'stroke="#4a3a2e" stroke-width="5" stroke-dasharray="3 9" stroke-linecap="round"',
-  forest: 'stroke="#3d5a2c" stroke-width="5" stroke-dasharray="14 7"',
-  reeds: 'stroke="#7a7a3a" stroke-width="5" stroke-dasharray="10 6"',
-  ford: 'stroke="#3d7fa8" stroke-width="6" stroke-dasharray="16 6"',
-  sea: 'stroke="#2f6e9a" stroke-width="4" stroke-dasharray="6 10" stroke-linecap="round"',
-  mudflat: 'stroke="#7d7466" stroke-width="5" stroke-dasharray="2 8" stroke-linecap="round"',
+
+/**
+ * 길의 생김새 — 테두리 두른 관 대신 밟아 다진 흙길처럼 (형: "길같지가 않고 오브젝트같아").
+ *   어깨(sh) — 길가의 닳은 풀·흙, 넓고 옅게 두 겹 · 바닥(bed) — 길 자체 · 가운데(mid) — 바퀴 자국·디딤돌·물살
+ */
+interface RoadLook {
+  readonly sh: string
+  readonly shW: number
+  readonly bed: string
+  readonly bedW: number
+  readonly bedDash?: string
+  readonly mid?: string
+  readonly midW?: number
+  readonly midDash?: string
+}
+const ROAD_LOOK: Readonly<Record<EdgeKind, RoadLook>> = {
+  field: { sh: '#ead6a0', shW: 15, bed: '#8a6238', bedW: 6.5, mid: '#d9b97c', midW: 1.6, midDash: '7 6' }, // 수레바퀴 자국
+  pass: { sh: '#d4c4a2', shW: 13, bed: '#5a4636', bedW: 5, mid: '#f1e5c8', midW: 3, midDash: '0.1 8' }, // 디딤돌
+  forest: { sh: '#8aa562', shW: 15, bed: '#5e4a2c', bedW: 5, bedDash: '13 5' }, // 나무 그늘에 끊긴다
+  reeds: { sh: '#d2ca82', shW: 14, bed: '#7a7a3a', bedW: 5, bedDash: '10 6' },
+  ford: { sh: '#d4ebf6', shW: 14, bed: '#3d7fa8', bedW: 6, mid: '#eef8ff', midW: 1.8, midDash: '5 9' }, // 물살
+  sea: { sh: '#dcf0fa', shW: 9, bed: '#2f6e9a', bedW: 3.5, bedDash: '6 10' },
+  mudflat: { sh: '#dcd1ba', shW: 14, bed: '#7d7466', bedW: 5, bedDash: '2 8' },
+}
+
+/** 길 한 줄의 SVG — 지도와 길 보기(범례)가 같은 것을 쓴다. k 굵기 배율 · op 흐림(막힌 길) */
+export function roadSvg(d: string, kind: EdgeKind, k: number, op = 1, title = ''): string {
+  const L = ROAD_LOOK[kind]
+  const w = (x: number): string => (x * k).toFixed(1)
+  const dash = (x: string | undefined): string => (x === undefined ? '' : ` stroke-dasharray="${x.split(' ').map((v) => w(Number(v))).join(' ')}"`)
+  let s = `<path d="${d}" fill="none" stroke="${L.sh}" stroke-width="${w(L.shW * 1.55)}" stroke-linecap="round" stroke-linejoin="round" opacity="${(0.2 * op).toFixed(2)}"/>`
+  s += `<path d="${d}" fill="none" stroke="${L.sh}" stroke-width="${w(L.shW)}" stroke-linecap="round" stroke-linejoin="round" opacity="${(0.42 * op).toFixed(2)}"/>`
+  s += `<path d="${d}" fill="none" stroke="${L.bed}" stroke-width="${w(L.bedW)}"${dash(L.bedDash)} stroke-linecap="round" stroke-linejoin="round" opacity="${(0.9 * op).toFixed(2)}">${title !== '' ? `<title>${title}</title>` : ''}</path>`
+  if (L.mid !== undefined) s += `<path d="${d}" fill="none" stroke="${L.mid}" stroke-width="${w(L.midW ?? 1.5)}"${dash(L.midDash)} stroke-linecap="round" opacity="${(0.85 * op).toFixed(2)}"/>`
+  return s
 }
 
 /**
@@ -274,31 +300,43 @@ export function mapHtml(
   const route = (ed: REdge): Pt[] => sep.get(ed.id) ?? routePoints(region, ed, px(ed.a), px(ed.b), W, H)
   /** 길 기호의 크기 — 고을 그림의 절반 남짓 */
   const signW = ICON_W * RA.nodeScale * W * 0.6
+  /** 고을 그림의 반 너비 (지도 좌표) — 그 밑에 묻힌 길은 안 보인다 */
+  const nodeHalf = ICON_W * RA.nodeScale * W * 0.45
   svg += `<g class="ly-roads">` // 보기 켜고 끄기 (app 의 .layers) — 길
   for (const ed of Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))) {
     if (!seen(ed.a) || !seen(ed.b)) continue
     const pts = route(ed)
     const shut = blockedWhy(ed, season) !== null
-    const style = EDGE_STYLE[ed.kind].replace(/stroke-width="(\d+)"/, (_, w: string) => `stroke-width="${(Number(w) * sw).toFixed(1)}"`)
-    // 밑에 옅은 한지빛 테두리를 깔아 바탕과 떼어 본다 (형: "지도랑 색이 비슷해서 길 색이 잘 안보이는건")
+    // 길가는 옅은 흙빛 어깨로 바탕과 떼어 본다 (형: "지도랑 색이 비슷해서 길 색이 잘 안보이는건" · "길같지가 않고 오브젝트같아")
     const d = smoothPath(pts)
-    const w0 = Number(/stroke-width="([\d.]+)"/.exec(style)?.[1] ?? 5)
-    svg += `<path d="${d}" fill="none" stroke="#f8eed6" stroke-width="${(w0 + 5 * sw).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round" opacity="${shut ? 0.2 : 0.8}"/>`
-    svg += `<path d="${d}" fill="none" ${style} stroke-linejoin="round" opacity="${shut ? 0.3 : 0.95}"><title>${EDGE_NAME[ed.kind]}</title></path>`
-    // 길 기호 — 나루는 나루터에, 다른 길은 가운데에서 조금 비켜 (행군 화살의 "n계절" 글씨를 안 가린다)
+    svg += roadSvg(d, ed.kind, sw, shut ? 0.35 : 1, EDGE_NAME[ed.kind])
+    // 길 기호 — 나루는 나루터에, 다른 길은 고을 그림 사이 드러난 길의 가운데에서 조금 비켜 (행군 화살의 "n계절" 글씨를 안 가린다).
+    // 고을이 가까워 드러난 길이 짧으면 기호를 줄이고, 그래도 모자라면 길 옆으로 비켜 단다 (형: "너무 가까운 마을사이 낑긴 도로이미지 안보이는데")
     const fr = ed.kind === 'ford' ? ferryAt(region, ed, W, H) : null
-    const at = fr ?? midOf(trimPolyline(pts, 0.6, 0.64))
-    const sz = signW
-    // 막힌 길은 짧아도 기호를 단다 — 왜 막혔는지가 그림이다 (눈 덮인 고개 · 불어난 나루)
-    const signed = fr !== null || shut || lenOf(pts) > sz * 2
-    if (signed) {
-      const sign = routeSign(r, ed, season, fr !== null)
-      svg += `<image class="rsign${ed.kind === 'field' && sign === 'oxcart' ? ' rs-f' : ''}" href="${art}icon/route-${sign}.png" x="${(at[0] - sz / 2).toFixed(1)}" y="${(at[1] - sz * 0.62).toFixed(1)}" width="${sz.toFixed(1)}" height="${sz.toFixed(1)}"><title>${ROUTE_SIGN_NAME[sign]}</title></image>`
+    const len = lenOf(pts)
+    const t0 = Math.min(0.45, nodeHalf / Math.max(1, len))
+    const gap = len * (1 - 2 * t0)
+    let sz = signW
+    let at: Pt = fr ?? midOf(trimPolyline(pts, t0 + (1 - 2 * t0) * 0.55, t0 + (1 - 2 * t0) * 0.6))
+    if (fr === null && gap < sz * 1.15) {
+      sz = Math.max(signW * 0.62, Math.min(signW, gap * 0.95))
+      if (gap < sz * 0.9) {
+        // 길 옆으로 — 두 고을을 잇는 줄에 직각으로, 고을 그림 반 너비만큼
+        const [a, b] = [pts[0]!, pts[pts.length - 1]!]
+        const ux = (b[0] - a[0]) / Math.max(1, len)
+        const uy = (b[1] - a[1]) / Math.max(1, len)
+        const m = midOf(pts)
+        const side = uy > 0 ? 1 : -1
+        at = [m[0] - uy * side * nodeHalf, m[1] + ux * side * nodeHalf]
+      }
     }
+    // 길마다 기호를 단다 — 막힌 길은 왜 막혔는지가 그림이다 (눈 덮인 고개 · 불어난 나루)
+    const sign = routeSign(r, ed, season, fr !== null)
+    svg += `<image class="rsign${ed.kind === 'field' && sign === 'oxcart' ? ' rs-f' : ''}" href="${art}icon/route-${sign}.png" x="${(at[0] - sz / 2).toFixed(1)}" y="${(at[1] - sz * 0.62).toFixed(1)}" width="${sz.toFixed(1)}" height="${sz.toFixed(1)}"><title>${ROUTE_SIGN_NAME[sign]}</title></image>`
     if (shut) {
-      // 기호가 있으면 ✕ 는 그 오른쪽 아래 귀퉁이에 작게 — 그림을 가리지 않게
-      const [mx, my] = signed ? [at[0] + sz * 0.38, at[1] + sz * 0.26] : midOf(pts)
-      const s = (signed ? 7 : 12) * sw
+      // ✕ 는 기호의 오른쪽 아래 귀퉁이에 작게 — 그림을 가리지 않게
+      const [mx, my] = [at[0] + sz * 0.38, at[1] + sz * 0.26]
+      const s = 7 * sw
       svg += `<path d="M${mx - s} ${my - s}L${mx + s} ${my + s}M${mx + s} ${my - s}L${mx - s} ${my + s}" stroke="#a02a1a" stroke-width="${6 * sw}" stroke-linecap="round"/>`
     }
   }
