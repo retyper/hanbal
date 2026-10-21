@@ -235,6 +235,11 @@ export const DEX_CSS = `
 .ap .dxt img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; object-position: top; }
 .ap .dxt span { display: flex; flex-direction: column; line-height: 1.2; } .ap .dxt small { font-size: 11px; color: var(--mute); } .ap .dxt b { font-size: 14px; }
 .ap .dxt.lv3 { border-color: #e0915a; } .ap .dxt.lv3 small { color: #f0b080; } .ap .dxt.lv4 { border-color: #f0c860; } .ap .dxt.lv4 small { color: #f0c860; }
+/* 새로 오른 장수 얼굴 뒤로 금빛이 한 번 터진다 (realm/fx/gold.png · __ART__ 는 app.ts 가 바꿔 넣는다) */
+.ap .dxt { position: relative; } .ap .dxt img { position: relative; }
+.ap .dxt:not(.more)::before { content: ''; position: absolute; left: -32px; top: 50%; width: 104px; height: 104px; margin-top: -52px; pointer-events: none;
+  background: url(__ART__fx/gold.png) center / contain no-repeat; animation: dxglow 1.6s ease-out .25s both; }
+@keyframes dxglow { 0% { opacity: 0; transform: scale(.4) rotate(-20deg); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.3) rotate(12deg); } }
 .ap .dxt.more { font-size: 12px; color: var(--mute); padding: 4px 12px; align-self: flex-end; }
-@media (prefers-reduced-motion: reduce) { .ap .dxtoast { animation-duration: 6s; } .ap .dexp .dxsel { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ap .dxtoast { animation-duration: 6s; } .ap .dexp .dxsel { animation: none; } .ap .dxt::before { display: none; } }
 `

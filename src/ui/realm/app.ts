@@ -229,7 +229,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void } {
   const style = document.createElement('style')
-  style.textContent = TIP_CSS + APP_CSS + LOG_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS + HERO_CSS + GROW_CSS + DEX_CSS + LEGACY_CSS + (FRONT_CSS + SEASONP_CSS).replaceAll('__ART__', ART)
+  style.textContent = TIP_CSS + APP_CSS + LOG_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + (FRONT_CSS + SEASONP_CSS).replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
   installTips(root)
