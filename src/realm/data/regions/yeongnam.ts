@@ -14,6 +14,7 @@
  */
 import { PEOPLE_SCALE } from '../../migrate.ts'
 import type { Army, Faction, Hero, Mind, NodeIntel, REdge, Realm, RNode, Stock, Watch } from '../../types.ts'
+import { initialKnown } from '../../discovery.ts'
 
 /** 지도 그림의 투영 — 경도 lon0..lon1 이 가로 0..1, 위도 lat1..lat0 이 세로 0..1 (tools/yeongnam-sketch.js 와 같다) */
 export const YEONGNAM_PROJ = { lon0: 127.4, lon1: 130.3, lat0: 34.55, lat1: 36.55 } as const
@@ -348,7 +349,7 @@ export function startYeongnam(seed: number, player: string): Realm {
   for (const n of NODES) watch[n.id] = { alert: 0, lull: 0 }
   const stock: Record<string, Stock> = {}
   for (const n of NATION_STARTS) stock[n.faction.id] = { ...n.stock }
-  return {
+  const r: Realm = {
     seed: seed >>> 0,
     season: 0,
     nodes,
@@ -366,6 +367,9 @@ export function startYeongnam(seed: number, player: string): Realm {
     scale: PEOPLE_SCALE,
     region: 'yeongnam',
   }
+  // 처음엔 이웃만 안다 — 지도는 보고 다닌 만큼 칠해진다 (형: "이렇게 복잡한 정보가 한번에 들어오면 사람은 게임하기 싫어져 … 시작할땐 주변 밝혀진애들만")
+  r.known = initialKnown(r)
+  return r
 }
 
 /** 삼한 남부 판(regions/south.ts)이 영남의 나라·고을·길·장수·군대를 그대로 가져다 쓴다 */

@@ -156,6 +156,18 @@ export function nodeYield(r: Realm, node: string, season = seasonOf(r.season)): 
   return out
 }
 
+/**
+ * 고을 하나의 다음 가을걷이 짐작 — 봄에 심은 만큼(여름이 끝날 때 거둔다). 가을·겨울엔 다음 봄에 심을 집으로 짐작한다.
+ * 난세 단계·그해 사건·제사는 빼고 (화면의 "약")
+ */
+export function nodeHarvest(r: Realm, node: string): number {
+  const n = r.nodes[node]
+  if (n === undefined || n.owner === null || n.kind === 'sodo') return 0
+  const season = seasonOf(r.season)
+  const sown = season === 'autumn' || season === 'winter' ? n.hh : n.sown
+  return Math.round(sown * P.realm.harvestPerHH * harvestMul(r, node))
+}
+
 /** 제 땅 밖에 나가 있는 군사 — 길 위이거나 남의 땅에 머문다 (절인 양식이 든다) */
 export function awayMen(r: Realm, faction: string): number {
   let n = 0

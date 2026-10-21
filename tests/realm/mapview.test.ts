@@ -12,7 +12,7 @@ import assert from 'node:assert/strict'
 import { startRealm } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { startYeongnam } from '../../src/realm/data/regions/yeongnam.ts'
 import { nodeSpecials } from '../../src/realm/economy.ts'
-import { mapHtml, routeSign, type MapTarget, type MapToken } from '../../src/ui/realm/mapview.ts'
+import { mapHtml, routeSign, visibleNodes, type MapTarget, type MapToken } from '../../src/ui/realm/mapview.ts'
 
 describe('지도 겉모습', () => {
   it('고을 배너 — 깃발과 나라 색이 이름과 한 덩어리 · 도읍과 우리 고을이 구별된다', () => {
@@ -82,10 +82,13 @@ describe('지도 겉모습', () => {
   it('특산 — 고을마다 나는 것이 그림 표로 · 빈땅은 흐리게 (일구면 난다)', () => {
     const r = startYeongnam(1, 'saro')
     const h = mapHtml(r, 'saro', '/', [], '')
-    const mine = Object.values(r.nodes).find((n) => n.kind === 'ironMine')!
+    // 영남 판은 처음엔 이웃만 보인다 — 보이는 고을 가운데서
+    const vis = visibleNodes(r, 'saro')
+    for (const n of Object.values(r.nodes)) if (n.kind === 'ironMine' && !vis.has(n.id)) r.known!['saro']!.push(n.owner ?? '')
+    const mine = Object.values(r.nodes).find((n) => n.kind === 'ironMine' && visibleNodes(r, 'saro').has(n.id))!
     assert.ok(nodeSpecials(r, mine.id).includes('iron'))
     assert.ok(new RegExp(`data-node="${mine.id}"[^>]*>.*?<span class="sp[^"]*"><img src="/icon/treasure-iron-ingots.png"`).test(h))
-    const wild = Object.values(r.nodes).find((n) => n.kind === 'wild' && n.owner === null && nodeSpecials(r, n.id).length > 0)
+    const wild = Object.values(r.nodes).find((n) => n.kind === 'wild' && n.owner === null && nodeSpecials(r, n.id).length > 0 && visibleNodes(r, 'saro').has(n.id))
     if (wild !== undefined) assert.ok(new RegExp(`data-node="${wild.id}"[^>]*>.*?<span class="sp idle">`).test(h))
     assert.deepEqual(nodeSpecials(r, Object.values(r.nodes).find((n) => n.kind === 'sodo')?.id ?? ''), [])
   })

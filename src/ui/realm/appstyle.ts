@@ -20,6 +20,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .top { position: absolute; left: 0; right: 0; top: 0; height: var(--toph); padding: env(safe-area-inset-top) 10px 0; box-sizing: border-box;
   display: flex; align-items: center; justify-content: space-between; gap: 8px; z-index: 5;
   background: linear-gradient(#0f1217f0, #0f1217c0); border-bottom: 1px solid #2a313c; }
+.ap .top .lobby + .tl { margin-right: auto; }
+.ap .top .lobby { flex: none; width: 34px; height: 34px; margin-right: 6px; border-radius: 10px; border: 1px solid #5a5040; background: #1c2027; color: #e8d9b0; font-size: 19px; line-height: 1; cursor: pointer; }
 .ap .top .tl { display: flex; align-items: center; gap: 6px; font-size: 16px; white-space: nowrap; }
 .ap .top img.sic { width: 30px; height: 30px; }
 .ap .top .tr { display: flex; align-items: center; gap: 10px; overflow: hidden; }
@@ -151,6 +153,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .stepper button.btn { width: auto; height: auto; font-size: 14px; margin-left: auto; white-space: nowrap; flex: none; }
 .ap .stepper .mute { flex: 1 1 4em; min-width: 0; }
 .ap .sheet { overflow-x: hidden; }
+.ap .yield { display: flex; flex-direction: column; gap: 2px; margin: 6px 0; padding: 7px 10px; border-radius: 10px; background: #1f2418; border: 1px solid #4f5a3a; font-size: 13px; }
+.ap .yield b { color: var(--gold); font-size: 13.5px; } .ap .yield span { color: #d8dcc8; display: flex; align-items: center; gap: 4px; } .ap .yield .ic { width: 18px; height: 18px; }
 /* 판을 열 때 — 카드가 아래에서 한 장씩, 살짝 기울었다 바로 선다 (하스스톤처럼 서로 다른 때에) */
 .ap .sheet.deal > * { animation: deal .42s cubic-bezier(.2, .9, .3, 1.18) both; }
 .ap .sheet.deal > :nth-child(even) { --rot: 1.2deg; }

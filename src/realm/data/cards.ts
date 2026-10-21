@@ -25,7 +25,7 @@ export interface CardInfo {
 export const CARDS: Readonly<Record<CardKind, CardInfo>> = {
   drought: {
     name: '가뭄', kind: 'sky', bad: true, icon: 'status-drought', art: 'event-sky-drought',
-    line: '봄비가 오지 않는다. 논바닥이 갈라진다. 이대로면 가을걷이가 크게 준다.',
+    line: '봄비가 오지 않는다. 논바닥이 갈라진다. 이대로면 가을 수확량이 크게 줄어든다.',
     opts: [
       { name: '소도에 빈다', does: '곡식을 조금 바친다 · 가을걷이가 조금 준다' },
       { name: '보를 쌓는다', does: '곡식이 많이 든다 · 가을걷이가 거의 그대로다' },
@@ -35,7 +35,7 @@ export const CARDS: Readonly<Record<CardKind, CardInfo>> = {
     name: '풍년 조짐', kind: 'sky', bad: false, icon: 'status-feast', art: 'event-festival',
     line: '벼 이삭이 고개를 숙인다. 올해는 풍년이 들겠다.',
     opts: [
-      { name: '창고에 쌓는다', does: '가을걷이가 크게 는다' },
+      { name: '창고에 쌓는다', does: '가을 수확량이 크게 늘어난다' },
       { name: '크게 잔치한다', does: '곡식을 조금 쓴다 · 군대 사기와 장수의 정이 오른다' },
     ],
   },
@@ -67,8 +67,8 @@ export const CARDS: Readonly<Record<CardKind, CardInfo>> = {
     name: '장수끼리 다툼', kind: 'people', bad: true, icon: 'status-morale-down', art: 'event-people-quarrel',
     line: '{a} · {b} 두 장수가 공을 두고 다툰다. 누구 편을 들까.',
     opts: [
-      { name: '{a} 편을 든다', does: '{a} 쪽 정이 오르고 {b} 쪽 정이 준다' },
-      { name: '{b} 편을 든다', does: '{b} 쪽 정이 오르고 {a} 쪽 정이 준다' },
+      { name: '{a} 편을 든다', does: '{a} 쪽 정이 오르고 {b} 쪽 정이 떨어진다' },
+      { name: '{b} 편을 든다', does: '{b} 쪽 정이 오르고 {a} 쪽 정이 떨어진다' },
     ],
   },
   waship: {

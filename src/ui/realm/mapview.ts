@@ -11,7 +11,7 @@ import { FACTION_ART, GOOD_ICON, REGION_ART, SEASON_MAP, nodeIcon, nodePos } fro
 import { EDGE_NAME, GOOD_NAME, NODE_KIND_NAME, NODE_NOW, tagNow } from '../../realm/data/prose.ts'
 import { worldGeoOf } from '../../realm/data/regions/index.ts'
 import { knows } from '../../realm/discovery.ts'
-import { isCoast, nodeSpecials } from '../../realm/economy.ts'
+import { isCoast, nodeHarvest, nodeSpecials, nodeYield } from '../../realm/economy.ts'
 import { visibleRange } from '../../realm/intel.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
 import type { EdgeKind, NodeKind, Realm, REdge, RegionId, SeasonOfYear } from '../../realm/types.ts'
@@ -44,7 +44,7 @@ const ROAD_LOOK: Readonly<Record<EdgeKind, RoadLook>> = {
   forest: { sh: '#8aa562', shW: 15, bed: '#5e4a2c', bedW: 5, bedDash: '13 5' }, // 나무 그늘에 끊긴다
   reeds: { sh: '#d2ca82', shW: 14, bed: '#7a7a3a', bedW: 5, bedDash: '10 6' },
   ford: { sh: '#d4ebf6', shW: 14, bed: '#3d7fa8', bedW: 6, mid: '#eef8ff', midW: 1.8, midDash: '5 9' }, // 물살
-  sea: { sh: '#dcf0fa', shW: 9, bed: '#2f6e9a', bedW: 3.5, bedDash: '6 10' },
+  sea: { sh: '#e4f6ff', shW: 13, bed: '#22608f', bedW: 4.5, bedDash: '8 8' }, // 뱃길 — 멀리 건너오는 길이라 또렷하게
   mudflat: { sh: '#dcd1ba', shW: 14, bed: '#7d7466', bedW: 5, bedDash: '2 8' },
 }
 
@@ -151,6 +151,9 @@ export const MAP_CSS = `
 .map .nd .ice { position: absolute; left: 4%; top: 46%; font-style: normal; font-size: clamp(10px, calc(2cqh / var(--z, 1) * var(--zs, 1)), 16px); color: #e8f6ff;
   background: #2a5a7ae0; border-radius: 50%; width: 1.4em; height: 1.4em; line-height: 1.4em; text-align: center; box-shadow: 0 0 0 1px #bfe6ff, 0 1px 3px #0008; z-index: 2; }
 @media (prefers-reduced-motion: reduce) { .map .nd .mist { animation: none; } }
+.map svg .mine-edge { animation: mglow 3.2s ease-in-out infinite alternate; }
+@keyframes mglow { from { opacity: .65; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .map svg .mine-edge { animation: none; } }
 .map svg .rsign { pointer-events: auto; filter: drop-shadow(0 0 1.5px #f8eed6) drop-shadow(0 0 1.5px #f8eed6) drop-shadow(0 1px 2px #0009); } .map[data-zl="far"] svg .rs-f { display: none; } /* 들길은 흔해 가까이 볼 때만 */
 .map .nd .men, .map .nd .foe { position: absolute; left: 86%; top: 42%; transform: translateY(-50%); background: #1c2129; border-radius: 9px; padding: 0 5px;
   font-size: clamp(10px, calc(1.9cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 15px); font-weight: 700; white-space: nowrap; }
@@ -296,10 +299,6 @@ export function mapHtml(
     .map((ed) => smoothPath(routePoints(region, ed, px(ed.a), px(ed.b), W, H)))
   const fog = r.known !== undefined ? fogSvg(r, me, region, W, H, TERRITORY_R, vis, isFresh, corridors, art) : null
   const landClip = landClipSvg(region, W, H)
-  // 우리 땅의 무늬 — 금빛 빗금이 은은하게 (형: "내나라가 지도상에서 정확히 어딘지 가늠이 안됨")
-  const hatch = Math.round(TERRITORY_R * 0.16)
-  svg += `<pattern id="rm-mine" patternUnits="userSpaceOnUse" width="${hatch}" height="${hatch}" patternTransform="rotate(35)">`
-    + `<rect width="${hatch}" height="${hatch}" fill="#ffe7a8" opacity=".16"/><path d="M0 0V${hatch}" stroke="#fff3c8" stroke-width="${Math.max(1, hatch * 0.18).toFixed(1)}" opacity=".5"/></pattern>`
   svg += `${landClip}${fog?.defs ?? ''}</defs>`
   // 땅빛 — 고을마다의 땅을 산·강을 따라 가르고(territory.ts) 주인 색으로
   svg += provincesSvg(r, region, W, H, TERRITORY_R, dim, focus, seen, me, landClip !== '')
@@ -431,6 +430,9 @@ export function mapHtml(
     const kcls = (cap ? ' k-cap' : owner === null || n.kind === 'sodo' ? ' k-free' : '') + (n.kind === 'port' ? ' k-port' : '')
     // 살아 있는 지도 (형: "화면들이 너무 정적… 어딘가는 계속 움직이거나") — 사람 사는 고을엔 밥 짓는 연기, 박자는 고을마다 다르게
     const lived = owner !== null && n.hh > 0 && n.kind !== 'sodo'
+    const yl = (Object.entries(nodeYield(r, n.id, season)) as Array<[keyof typeof GOOD_NAME, number]>).filter(([, v]) => v > 0).map(([g, v]) => `${GOOD_NAME[g]} ${v}`)
+    const hv = nodeHarvest(r, n.id)
+    const more = owner === null ? '' : [yl.length > 0 ? `이번 계절 · ${yl.join(' · ')}` : '', hv > 0 ? `가을걷이 곡식 약 ${hv}` : ''].filter((x) => x !== '').join(' / ')
     const far = ranging && !target.has(n.id) ? ' far' : ''
     const thr = threatened.has(n.id) ? ' threat' : ''
     const who = owner === null ? '주인 없음' : (r.factions[owner]?.name ?? '?')
@@ -445,7 +447,7 @@ export function mapHtml(
       cls: `${kcls}${ours ? ' me' : ''}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${far}${fr}`,
       color: owner !== null ? color : '', emb, force,
     })
-    nodes += `<div class="nd${kcls}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${tcls}${far}${thr}${fr}"${go} data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color};--s:${sizeOf(n.hh).toFixed(2)};--d:${(-beat(n.id) * 7).toFixed(2)}s" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}">`
+    nodes += `<div class="nd${kcls}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${tcls}${far}${thr}${fr}"${go} data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color};--s:${sizeOf(n.hh).toFixed(2)};--d:${(-beat(n.id) * 7).toFixed(2)}s" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}"${more !== '' ? ` data-more="${more}"` : ''}>`
     // 특산 — 사람이 살면 나는 것 (쇠·소금·나무·말). 빈땅도 보여 "일구면 말이 난다"를 미리 안다
     const sp = nodeSpecials(r, n.id)
     // 바닷가 고기잡이 — 곡식이 조금 난다. 겨울엔 바다가 거칠어 쉰다 (economy.nodeYield) → 표가 얼어 흐려진다
@@ -724,7 +726,8 @@ function provincesSvg(
   const blurK = (3 * k).toFixed(1)
   let h = `<defs><filter id="rm-band" x="-2%" y="-2%" width="104%" height="104%"><feGaussianBlur stdDeviation="${blurK}"/></filter>${cps}</defs>`
   h += `<g class="terr"${clip}>${fill}<g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#rm-band)">${band}</g>`
-  if (mine !== '') h += `<path d="${mine}" fill="url(#rm-mine)"/>`
+  // 우리 땅 — 옅은 금빛 (빗금은 비 같다고 해서 뺐다 · 형: "비오는줄알았다"). 금빛 경계가 천천히 숨 쉰다
+  if (mine !== '') h += `<path d="${mine}" fill="#ffe7a8" opacity=".13"/>`
   h += `<g fill="none" stroke-linecap="round" stroke-linejoin="round">${lines}`
   if (gold !== '') h += `<path d="${gold}" stroke="#2a1d10" stroke-width="${(6.5 * k).toFixed(1)}" opacity=".55"/><path class="mine-edge" d="${gold}" stroke="#ffd27a" stroke-width="${(3.2 * k).toFixed(1)}"/>`
   return h + `</g></g>`

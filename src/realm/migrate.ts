@@ -8,6 +8,7 @@
  *
  * 옛 저장(scale 없음 = 1)은 판을 넘기거나 먼저 해 볼 때(season.advance · planned) 한 번 키운다.
  */
+import { initialKnown } from './discovery.ts'
 import { scaleMen } from './kit.ts'
 import type { Realm } from './types.ts'
 
@@ -44,6 +45,18 @@ export function migrate(r: Realm): void {
   // 특성이 생기기 전의 판 — 장수마다 빈 특성 줄을 채운다 (없으면 정이 100에 닿는 계절에 막혔다)
   for (const h of Object.values(r.heroes)) if (!Array.isArray(h.traits)) (h as { traits: readonly string[] }).traits = []
   for (const w of r.wanderers ?? []) if (!Array.isArray(w.hero.traits)) (w.hero as { traits: readonly string[] }).traits = []
+  // 발견이 없던 영남 판 — 이웃과, 이미 사이가 생긴(사신·싸움·약조) 나라만 아는 것으로 (형: "시작할땐 주변 밝혀진애들만")
+  if (r.region === 'yeongnam' && r.known === undefined) {
+    const k = initialKnown(r)
+    for (const key of Object.keys(r.relations ?? {})) {
+      const [a, b] = key.split('|')
+      if (a === undefined || b === undefined || r.factions[a] === undefined || r.factions[b] === undefined) continue
+      if (!k[a]!.includes(b)) k[a]!.push(b)
+      if (!k[b]!.includes(a)) k[b]!.push(a)
+    }
+    for (const x of Object.values(k)) x.sort()
+    r.known = k
+  }
   const s = r.scale ?? 1
   if (s === PEOPLE_SCALE || !(s > 0)) return
   const f = PEOPLE_SCALE / s

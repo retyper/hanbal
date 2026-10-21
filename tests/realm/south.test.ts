@@ -13,6 +13,7 @@ import { knows } from '../../src/realm/discovery.ts'
 import { onSouthLand, southPos } from '../../src/realm/data/regions/south-geo.ts'
 import { SOUTH_NATION_IDS, southGeo, startSouth } from '../../src/realm/data/regions/south.ts'
 import { startYeongnam } from '../../src/realm/data/regions/yeongnam.ts'
+import { startRealm } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { advance } from '../../src/realm/season.ts'
 import type { Realm } from '../../src/realm/types.ts'
 import { mapHtml, visibleNodes } from '../../src/ui/realm/mapview.ts'
@@ -78,13 +79,16 @@ describe('삼한 남부 판', () => {
     assert.ok(!html.includes('data-node="n-siljik-cap"'), '모르는 실직이 지도에 보인다')
     assert.ok(!html.includes(r.nodes['n-siljik-cap']!.name), '모르는 실직의 이름이 보인다')
     assert.ok(html.includes('mask="url(#rm-fog)"'))
-    // 영남 판은 안개가 없다
-    assert.ok(!mapHtml(startYeongnam(1, 'us'), 'us', '/', [], '').includes('rm-fog'))
+    // 영남 판도 처음엔 이웃만 (형: "시작할땐 주변 밝혀진애들만") · 작은 판(변한)은 안개가 없다
+    assert.ok(mapHtml(startYeongnam(1, 'us'), 'us', '/', [], '').includes('rm-fog'))
+    assert.ok(!mapHtml(startRealm(1, 'us'), 'us', '/', [], '').includes('rm-fog'))
   })
 
-  it('발견이 없는 판은 모두가 모두를 안다', () => {
-    const r = startYeongnam(1, 'us')
+  it('발견이 없는 판(작은 판)은 모두가 모두를 안다 · 영남 판은 이웃만 알고 시작한다', () => {
+    const r = startRealm(1, 'us')
     assert.equal(r.known, undefined)
-    assert.ok(knows(r, 'us', 'saro'))
+    assert.ok(Object.keys(r.factions).every((f) => knows(r, 'us', f)))
+    const y = startYeongnam(1, 'us')
+    assert.ok(y.known !== undefined && !Object.keys(y.factions).every((f) => knows(y, 'us', f)))
   })
 })

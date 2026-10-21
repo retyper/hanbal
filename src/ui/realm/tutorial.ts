@@ -68,7 +68,7 @@ export const TUT_STEPS: readonly TutStep[] = [
     done: (c) => has(c, 'envoy'),
   },
   {
-    id: 'rite', text: '안개골 위 「큰나무 소도」를 누르고 봄 제사를 지낸다. 가을에 거두는 곡식이 는다.',
+    id: 'rite', text: '안개골 위 「큰나무 소도」를 누르고 봄 제사를 지낸다. 그해 가을 수확량이 늘어난다.',
     press: ['[data-act="rite"]', '.nd[data-node="sodo"]'], done: (c) => has(c, 'rite') || c.r.season > 0,
   },
   {

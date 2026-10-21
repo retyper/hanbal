@@ -138,6 +138,20 @@ export function josa(word: string, withFinal: string, without: string): string {
   return word + (fin !== 0 ? withFinal : without)
 }
 
+/** 물건마다 어디에 쓰나 — 위 띠의 말풍선 (형: "소금은 어디다쓰는거지?") */
+export const GOOD_USE: Record<Good, string> = {
+  grain: '군사가 먹고(군량), 징병·개척·공작에 든다. 여름이 끝날 때 봄에 심은 만큼 거둔다.',
+  iron: '징병 때 들이면 한 단계 좋은 무기를 든다. 활을 고친다. 교역에서 값이 높다.',
+  salt: `겨울에 곡식이 썩지 않게 지킨다(소금 하나에 곡식 ${P.realm.saltKeeps}). 우리 땅 밖에 나간 군대의 절인 양식이 되어 군량이 덜 든다.`,
+  wood: '목책·해자를 두르고, 수군의 배를 짓고, 새 마을을 세울 때 든다.',
+  horse: '기병을 뽑을 때 든다.',
+}
+
+/** 싸움에 걸어온 길 — "구야국 군대가 뱃길로 건너와 가락국을 쳐서…" (형: "옆나라가 아닌데 멀리서 돌섬으로 어떻게 쳐들어온거임") */
+const VIA_LINE: Partial<Record<EdgeKind, string>> = {
+  sea: '뱃길로 건너와 ', ford: '나루를 건너와 ', reeds: '갈대밭을 헤치고 ', pass: '고개를 넘어와 ', mudflat: '갯벌을 건너와 ', forest: '숲길로 와 ',
+}
+
 const OUTCOME_LINE: Record<Outcome, string> = {
   rout: '크게 이겼다', win: '이겼다', draw: '맞붙었다가 물러났다', lose: '졌다', routed: '크게 졌다',
 }
@@ -313,7 +327,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       const fieldAt = line.field === true && line.edge !== undefined ? fieldName(after, line.edge) : null
       const head = fieldAt !== null
         ? `${fieldAt}에서 마주쳤다. ${who} ${josa(fname(line.defender), '과', '와')} 맞붙어 ${OUTCOME_LINE[line.outcome]}.`
-        : `${node(line.node)} 싸움. ${who} ${josa(fname(line.defender), '을', '를')} 쳐서 ${OUTCOME_LINE[line.outcome]}.`
+        : `${node(line.node)} 싸움. ${who} ${line.via !== undefined ? (VIA_LINE[line.via] ?? '') : ''}${josa(fname(line.defender), '을', '를')} 쳐서 ${OUTCOME_LINE[line.outcome]}.`
       // 승산은 숫자로 안 나간다 (형: 숫자나오면 재미없다) — 판세를 뒤집었을 때만 한마디
       const atkWon = line.outcome === 'rout' || line.outcome === 'win'
       const atkLost = line.outcome === 'lose' || line.outcome === 'routed'
