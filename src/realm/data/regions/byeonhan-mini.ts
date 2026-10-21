@@ -243,3 +243,6 @@ export function startRealm(seed: number, player: string): Realm {
 export function byeonhanMini(seed: number): Realm {
   return startRealm(seed, 'us')
 }
+
+/** 도감(dex.ts)이 판 바깥에서 읽는 명단 — 나라와 장수 */
+export const MINI_DATA = { NATION_STARTS, HEROES } as const

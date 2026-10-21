@@ -33,6 +33,8 @@ import { heroSeen, isRuler, persuadeSeasons, wanderersFor } from '../../realm/he
 import type { Approach, Army, EdgeKind, EnvoyAsk, Good, Hand, Hero, Order, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { EDGE_STYLE, MAP_CSS, ROUTE_SIGN_NAME, mapHtml, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
+import { DEX_CSS, dexHtml, dexToastHtml, loadDex, recordDex, type DexBoard } from './dex.ts'
+import { dexCounts } from '../../realm/dex.ts'
 import { GROW_CSS, HERO_CSS, TITLE_MEAN, bondChip, growthHtml, heroRadar, nameHtml, roleLine, splitTitle, traitChips, traitLines } from './heroview.ts'
 import { APP_CSS } from './appstyle.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
@@ -192,6 +194,9 @@ function nationFace(id: string, cls = 'nface'): string {
   return file !== undefined ? `<img class="${cls}" src="${ART}bust/${file}.jpg" alt="">` : ''
 }
 
+/** 도감(dex.ts)이 쓰는 그림 손 */
+const DEX_KIT = { esc, bust: (id: string): string | null => (HERO_BUST[id] !== undefined ? `${ART}bust/${HERO_BUST[id]}.jpg` : null) }
+
 /** 판의 앞과 끝(front.ts)이 쓰는 그림 손 */
 const KIT: FrontKit = {
   art: ART, esc, icon, nations: nationsOf, face: nationFace,
@@ -201,10 +206,12 @@ const KIT: FrontKit = {
 
 /** 첫 화면 · 판 고르기 · 나라 고르기 · 자세히 — null 이면 판 위 */
 type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region: RegionId } | { kind: 'detail'; region: RegionId; id: string }
+  /** 도감 — back: 돌아갈 판 바깥 화면 (null 이면 판으로) */
+  | { kind: 'dex'; board: DexBoard; sel: string | null; back: Front | null }
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void } {
   const style = document.createElement('style')
-  style.textContent = APP_CSS + LOG_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS + HERO_CSS + GROW_CSS + FRONT_CSS.replaceAll('__ART__', ART)
+  style.textContent = APP_CSS + LOG_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS + HERO_CSS + GROW_CSS + DEX_CSS + FRONT_CSS.replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
   root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="legend"></div><div class="zbtns"><button data-act="layers" class="lyb" aria-label="보기">👁</button><button data-act="zin">＋</button><button data-act="zout">－</button></div><div class="layers"></div><button class="next" data-act="next"></button><div class="selbar"></div><div class="roadkey"></div><button class="homebtn" data-act="home">우리 땅</button><button class="logbtn" data-act="log-open">지난 기록</button><div class="tutband"></div>`
@@ -1535,7 +1542,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       for (const x of caps2) h += `<div class="cap">${bust(x, 'cface')}<b>${nameHtml(x.name)}</b><span class="mute">${STAT_NAME.mu} ${x.mu} · ${STAT_NAME.ryak} ${x.ryak} · ${STAT_NAME.chi} ${x.chi} · ${STAT_NAME.deok} ${x.deok}</span></div>`
       h += `</div>`
     }
-    h += `<div class="btns"><button class="btn" data-act="help">도움말</button><button class="btn" data-act="log-open">지난 기록</button><button class="btn ghost" data-act="newgame">새 판</button><button class="btn ghost" data-act="mute">${muted() ? "소리 켜기" : "소리 끄기"}</button>`
+    h += `<div class="btns"><button class="btn" data-act="help">도움말</button><button class="btn" data-act="log-open">지난 기록</button><button class="btn" data-act="dex-open">도감</button><button class="btn ghost" data-act="newgame">새 판</button><button class="btn ghost" data-act="mute">${muted() ? "소리 켜기" : "소리 끄기"}</button>`
     h += `<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a>${PRACTICE_READY ? `<a class="btn ghost" href="${PRACTICE}">궁술 연습장</a>` : ''}</div>`
     h += `<div class="btns"><button class="btn ghost" data-act="export">기록 내보내기 <span class="mute">${host.gameCount()}판</span></button></div>`
     return h
@@ -1976,7 +1983,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function frontHtml(f: Front): string {
     const links = `<p class="fine"><a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a> ${PRACTICE_READY ? `<a class="btn ghost" href="${PRACTICE}">궁술 연습장</a>` : ''}</p>`
     switch (f.kind) {
-      case 'title': return titleHtml(KIT, realm, host.savedAt(), links, realm === null && !tutorialOver())
+      case 'title': {
+        // 도감 — 판을 넘어 남는 것 (VISION §5-4). 만난 장수 수를 단추에
+        const c = dexCounts(loadDex())
+        const dexBtn = `<button class="btn big" data-act="dex-open">도감 <small class="mute">${c.met}/${c.total}</small></button>`
+        return titleHtml(KIT, realm, host.savedAt(), links, realm === null && !tutorialOver(), dexBtn)
+      }
+      case 'dex': return dexHtml(DEX_KIT, f.board, f.sel, f.back === null ? '판으로' : '처음으로')
       case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null))
       case 'nations': return nationsHtml(KIT, f.region)
       case 'detail': return detailHtml(KIT, f.region, f.id)
@@ -2098,7 +2111,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (realm === null || front !== null) {
       root.classList.add('choosing')
       lastMap = ''
+      // 도감은 장수를 누를 때마다 다시 그린다 — 내려 본 자리를 지킨다
+      const keepFront = front?.kind === 'dex' ? (root.querySelector('.front.dexp')?.scrollTop ?? 0) : 0
       $('.mapwrap').innerHTML = frontHtml(front!)
+      if (keepFront > 0) { const fe = root.querySelector('.front.dexp'); if (fe !== null) fe.scrollTop = keepFront }
       $('.top').innerHTML = ''
       $('.tabs').innerHTML = ''
       $('.legend').innerHTML = ''
@@ -2198,6 +2214,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     paint()
   }
 
+  /** 도감에 오른 장수 알림 — 오른쪽 위에 몇 초 (CSS 로 걷히고, 다 걷히면 치운다). 누르면 도감 */
+  function dexToast(items: ReturnType<typeof recordDex>): void {
+    root.querySelector('.dxtoast')?.remove()
+    const html = dexToastHtml(DEX_KIT, items)
+    if (html === '') return
+    root.insertAdjacentHTML('beforeend', html)
+    const el = root.querySelector('.dxtoast')
+    el?.addEventListener('animationend', () => el.remove(), { once: true })
+  }
+
   /** 계절을 넘긴다 — 우리 명령(전장의 명령 줄 포함) + AI 명령. 막히면 까닭을 띄운다 */
   function endSeason(prev: Realm, mine: Order[], ai: Order[]): void {
     const all = [...mine, ...ai]
@@ -2221,6 +2247,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 판을 이기면 다음 판이 열린다 (unlock.ts)
     if (res.next.outcome?.kind === 'win' && prev.outcome == null) markWon(res.next.region ?? 'byeonhan-mini')
     host.onAdvance(res.next, res.report, all, mine)
+    dexToast(recordDex(res.next))
     seasonFx(res.next.season)
     if (res.report.lines.some((l) => l.kind === 'battle' && (l.atkFaction === me() || l.defender === me()))) ding('boom_01', 0.35) // 우리가 낀 싸움
     paint()
@@ -2234,7 +2261,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const fail = root.querySelector('.failbox')
     if (fail !== null) { fail.remove(); return true }
     if (front !== null) {
-      if (front.kind === 'detail') front = { kind: 'nations', region: front.region }
+      if (front.kind === 'dex') {
+        if (front.sel !== null) front = { ...front, sel: null }
+        else front = front.back
+      } else if (front.kind === 'detail') front = { kind: 'nations', region: front.region }
       else if (front.kind === 'nations') front = { kind: 'boards' }
       else if (front.kind === 'boards') front = { kind: 'title' }
       else return false // 처음 화면 — 떠난다
@@ -2310,6 +2340,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'fr-start': if (front !== null && front.kind === 'detail') host.onNewGame(d['id']!, front.region); return
       case 'fr-again': if (realm !== null) host.onNewGame(realm.player, realm.region ?? 'byeonhan-mini'); return
       case 'fr-look': looking = true; paint(); return
+      case 'dex-open': root.querySelector('.dxtoast')?.remove(); front = { kind: 'dex', board: 'all', sel: null, back: front }; sheet = null; paint(); return
+      case 'dex-close': if (front !== null && front.kind === 'dex') front = front.back; paint(); return
+      case 'dex-board': if (front !== null && front.kind === 'dex') { front = { ...front, board: d['v'] as DexBoard, sel: null }; root.querySelector('.front.dexp')?.scrollTo(0, 0) } paint(); return
+      case 'dex-sel': if (front !== null && front.kind === 'dex') front = { ...front, sel: d['id'] === undefined || d['id'] === front.sel ? null : d['id'] }; paint(); return
       case 'fr-endless': if (realm !== null) { realm.endless = true; looking = false; showReport = false } paint(); return
       case 'pl-next': case 'pl-skip': {
         if (prologue === null) return
@@ -2690,6 +2724,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       resetTurn()
       restoreDraft()
       loadSeen()
+      if (r !== null) recordDex(r) // 열 때 한 번 — 알림 없이 (이 판에서 이미 본 장수)
       sheet = null
       paint()
     },

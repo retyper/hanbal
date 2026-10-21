@@ -51,7 +51,7 @@ const capsHeld = (r: Realm, f: string): number => Object.values(r.factions).filt
 
 // ───────── 첫 화면
 
-export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, links = '', firstTime = false): string {
+export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, links = '', firstTime = false, more = ''): string {
   let h = `<div class="front title"><div class="kv" style="background-image:url('${k.art}title/title-keyart.jpg')"></div><div class="tv">`
   h += `<h1>칠십팔국</h1><p class="sub">삼한의 일흔여덟 나라 · 고구려와 부여의 북녘</p>`
   h += `<p class="hook">왕이 하나가 아니던 때. 한 읍락의 군장으로 시작해, 이웃을 알고 · 사귀고 · 쳐서 도읍을 하나씩 쥔다.</p>`
@@ -65,8 +65,8 @@ export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, 
     h += `${savedAt !== null ? `<small>${k.esc(agoText(savedAt))} 저장됨</small>` : ''}</span></button>`
   }
   // 처음 켠 사람은 배우는 판으로 (형: "맨 위 첫번째 할 게임은 1:1수준으로 여러 기능 익혀가며 쉽게")
-  if (firstTime) h += `<button class="btn on big" data-act="fr-tutorial">처음이면 — 배우는 판부터</button><button class="btn big" data-act="fr-new">새 판</button></div>`
-  else h += `<button class="btn on big" data-act="fr-new">새 판</button></div>`
+  if (firstTime) h += `<button class="btn on big" data-act="fr-tutorial">처음이면 — 배우는 판부터</button><button class="btn big" data-act="fr-new">새 판</button>${more}</div>`
+  else h += `<button class="btn on big" data-act="fr-new">새 판</button>${more}</div>`
   return h + `<p class="fine">판은 계절마다 저절로 저장된다.</p>${links}</div></div>`
 }
 
