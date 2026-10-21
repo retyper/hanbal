@@ -151,6 +151,30 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .stepper button.btn { width: auto; height: auto; font-size: 14px; margin-left: auto; white-space: nowrap; flex: none; }
 .ap .stepper .mute { flex: 1 1 4em; min-width: 0; }
 .ap .sheet { overflow-x: hidden; }
+/* 판을 열 때 — 카드가 아래에서 한 장씩, 살짝 기울었다 바로 선다 (하스스톤처럼 서로 다른 때에) */
+.ap .sheet.deal > * { animation: deal .42s cubic-bezier(.2, .9, .3, 1.18) both; }
+.ap .sheet.deal > :nth-child(even) { --rot: 1.2deg; }
+.ap .sheet.deal > :nth-child(2) { animation-delay: 0.000s; }
+.ap .sheet.deal > :nth-child(3) { animation-delay: 0.035s; }
+.ap .sheet.deal > :nth-child(4) { animation-delay: 0.070s; }
+.ap .sheet.deal > :nth-child(5) { animation-delay: 0.105s; }
+.ap .sheet.deal > :nth-child(6) { animation-delay: 0.140s; }
+.ap .sheet.deal > :nth-child(7) { animation-delay: 0.175s; }
+.ap .sheet.deal > :nth-child(8) { animation-delay: 0.210s; }
+.ap .sheet.deal > :nth-child(9) { animation-delay: 0.245s; }
+.ap .sheet.deal > :nth-child(10) { animation-delay: 0.280s; }
+.ap .sheet.deal > :nth-child(11) { animation-delay: 0.315s; }
+.ap .sheet.deal > :nth-child(12) { animation-delay: 0.350s; }
+.ap .sheet.deal > :nth-child(13) { animation-delay: 0.385s; }
+.ap .sheet.deal > :nth-child(14) { animation-delay: 0.420s; }
+.ap .sheet.deal > :nth-child(15) { animation-delay: 0.455s; }
+.ap .sheet.deal > :nth-child(16) { animation-delay: 0.490s; }
+.ap .sheet.deal > :nth-child(17) { animation-delay: 0.525s; }
+.ap .sheet.deal > :nth-child(18) { animation-delay: 0.560s; }
+.ap .sheet.deal > :nth-child(19) { animation-delay: 0.595s; }
+.ap .sheet.deal > :nth-child(n+20) { animation-delay: .63s; }
+@keyframes deal { from { opacity: 0; transform: translateY(22px) rotate(var(--rot, -1.2deg)) scale(.97); } }
+@media (prefers-reduced-motion: reduce) { .ap .sheet.deal > * { animation: none; } }
 .ap .btn, .ap .row, .ap .chip { white-space: nowrap; }
 .ap .stepper.sm button { width: 28px; height: 28px; font-size: 16px; } .ap .stepper.sm b { min-width: 2em; font-size: 15px; }
 .ap .rel { margin-left: auto; padding: 2px 10px; border-radius: 12px; font-size: 12px; background: #2a313c; }

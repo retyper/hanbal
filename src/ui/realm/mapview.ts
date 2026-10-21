@@ -70,6 +70,21 @@ export const MAP_CSS = `
 .map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .map .nd { position: absolute; transform: translate(-50%, -62%); width: calc(8.5% * var(--s, 1) * var(--ns, 1)); text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .map .nd img.st { width: 100%; filter: drop-shadow(0 2px 2px rgba(0,0,0,.55)); }
+/* 살아 있는 지도 — CSS 만 (규칙 4: 숨은 탭에선 그리지 않는다). 밥 짓는 연기 · 포구의 배 · 구름 그림자 */
+.map .nd .smk { position: absolute; left: 46%; top: 10%; width: 30%; aspect-ratio: 1; pointer-events: none; z-index: 1; }
+.map .nd .smk::before, .map .nd .smk::after { content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(circle, #fbf8f0f0 0, #d9d2c4b0 40%, #a89f9040 60%, #a89f9000 72%); opacity: 0;
+  animation: smk 5.5s ease-out infinite; animation-delay: var(--d, 0s); }
+.map .nd .smk::after { animation-delay: calc(var(--d, 0s) - 2.75s); left: 18%; }
+@keyframes smk { 0% { opacity: 0; transform: translate(0, 0) scale(.45); } 15% { opacity: .9; } 60% { opacity: .55; } 100% { opacity: 0; transform: translate(45%, -230%) scale(2); } }
+.map .nd.k-port img.st { animation: pbob 3.4s ease-in-out infinite alternate; animation-delay: var(--d, 0s); transform-origin: 50% 80%; }
+@keyframes pbob { from { transform: translateY(0) rotate(-.6deg); } to { transform: translateY(-1.6%) rotate(.6deg); } }
+.map .clsh { position: absolute; inset: -12%; pointer-events: none; z-index: 0; opacity: .55;
+  background: radial-gradient(ellipse 14% 9% at 20% 30%, #1a160e2e, #1a160e00), radial-gradient(ellipse 18% 11% at 62% 58%, #1a160e26, #1a160e00),
+    radial-gradient(ellipse 12% 8% at 85% 20%, #1a160e24, #1a160e00), radial-gradient(ellipse 16% 10% at 38% 85%, #1a160e22, #1a160e00);
+  animation: clsh 110s linear infinite alternate; }
+@keyframes clsh { from { transform: translate(-6%, -2%); } to { transform: translate(6%, 2%); } }
+@media (prefers-reduced-motion: reduce) { .map .nd .smk, .map .clsh { display: none; } .map .nd.k-port img.st { animation: none; } }
 .map .lbs { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
 /* 고을 배너 — 깃발·이름·군세가 한 덩어리 (문명 6 도시 배너 · Old World 의 위계 — docs/GAP.md M1) */
 .map .lb { position: absolute; transform: translateX(-50%); text-align: center; white-space: nowrap; display: flex; align-items: center; gap: .18em;
@@ -413,7 +428,9 @@ export function mapHtml(
       }
     }
     const cap = Object.values(r.factions).some((f) => f.capital === n.id)
-    const kcls = cap ? ' k-cap' : owner === null || n.kind === 'sodo' ? ' k-free' : ''
+    const kcls = (cap ? ' k-cap' : owner === null || n.kind === 'sodo' ? ' k-free' : '') + (n.kind === 'port' ? ' k-port' : '')
+    // 살아 있는 지도 (형: "화면들이 너무 정적… 어딘가는 계속 움직이거나") — 사람 사는 고을엔 밥 짓는 연기, 박자는 고을마다 다르게
+    const lived = owner !== null && n.hh > 0 && n.kind !== 'sodo'
     const far = ranging && !target.has(n.id) ? ' far' : ''
     const thr = threatened.has(n.id) ? ' threat' : ''
     const who = owner === null ? '주인 없음' : (r.factions[owner]?.name ?? '?')
@@ -428,7 +445,7 @@ export function mapHtml(
       cls: `${kcls}${ours ? ' me' : ''}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${far}${fr}`,
       color: owner !== null ? color : '', emb, force,
     })
-    nodes += `<div class="nd${kcls}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${tcls}${far}${thr}${fr}"${go} data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color};--s:${sizeOf(n.hh).toFixed(2)}" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}">`
+    nodes += `<div class="nd${kcls}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${tcls}${far}${thr}${fr}"${go} data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color};--s:${sizeOf(n.hh).toFixed(2)};--d:${(-beat(n.id) * 7).toFixed(2)}s" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}">`
     // 특산 — 사람이 살면 나는 것 (쇠·소금·나무·말). 빈땅도 보여 "일구면 말이 난다"를 미리 안다
     const sp = nodeSpecials(r, n.id)
     // 바닷가 고기잡이 — 곡식이 조금 난다. 겨울엔 바다가 거칠어 쉰다 (economy.nodeYield) → 표가 얼어 흐려진다
@@ -443,7 +460,7 @@ export function mapHtml(
     // 지은 것 — 목책 · 해자 작은 표 (왼쪽 위). 그림만으로는 도읍·포구의 울타리가 지은 것인지 알 수 없었다
     const dfs = (['palisade', 'moat'] as const).filter((t) => n.tags.includes(t))
     const def = dfs.length > 0 ? `<span class="df">${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${t === 'palisade' ? '목책' : '해자'}</i>`).join('')}</span>` : ''
-    nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${mist}${ice}${def}${spec}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : settleable.has(n.id) ? '<span class="stl">＋마을</span>' : ''}</div>`
+    nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${lived ? '<i class="smk"></i>' : ''}${mist}${ice}${def}${spec}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : settleable.has(n.id) ? '<span class="stl">＋마을</span>' : ''}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()
@@ -484,7 +501,7 @@ export function mapHtml(
   // 밝혀진 땅의 테두리 (0~1) — 축소는 여기까지만 (zoom.ts · 형: "문명처럼 유저가 보이는 구역을 기반으로 최대 축소")
   const sp = [...vis].map((id) => pos(id)).filter((p): p is readonly [number, number] => p !== undefined)
   const seenBox = sp.length === 0 ? '0,0,1,1' : [Math.min(...sp.map((p) => p[0])), Math.min(...sp.map((p) => p[1])), Math.max(...sp.map((p) => p[0])), Math.max(...sp.map((p) => p[1]))].map((v) => v.toFixed(3)).join(',')
-  return `<div class="map" data-seen="${seenBox}" data-region="${region}"${world ? ` data-world="${season}"` : ''} data-aspect="${W / H}" data-zmax="${RA.zmax}" style="${bg}aspect-ratio:${W} / ${H};--ns:${RA.nodeScale};--ls:${RA.labelScale}">${svg}${fog?.words ?? ''}${nodes}${toks}${placeLabels(labels, byNode, W, H, RA.nodeScale, RA.labelScale)}</div>`
+  return `<div class="map" data-seen="${seenBox}" data-region="${region}"${world ? ` data-world="${season}"` : ''} data-aspect="${W / H}" data-zmax="${RA.zmax}" style="${bg}aspect-ratio:${W} / ${H};--ns:${RA.nodeScale};--ls:${RA.labelScale}">${svg}<div class="clsh"></div>${fog?.words ?? ''}${nodes}${toks}${placeLabels(labels, byNode, W, H, RA.nodeScale, RA.labelScale)}</div>`
 }
 
 /** 지도 위 우리 군대의 말 — 머무는 군대 하나에 하나 */
@@ -649,6 +666,8 @@ export function routeSign(r: Realm, ed: REdge, season: SeasonOfYear, ferry: bool
 }
 
 /** 꺾은선의 길이 */
+/** 고을마다의 박자 0..1 — 연기·출렁임이 한꺼번에 움직이지 않게 (id 에서 딴다, 결정론) */
+const beat = (id: string): number => [...id].reduce((s, c) => (s * 31 + c.charCodeAt(0)) % 997, 7) / 997
 const lenOf = (p: readonly Pt[]): number => p.reduce((s, q, i) => (i === 0 ? 0 : s + Math.hypot(q[0] - p[i - 1]![0], q[1] - p[i - 1]![1])), 0)
 
 /**

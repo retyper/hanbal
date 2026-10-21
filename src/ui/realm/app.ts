@@ -2398,6 +2398,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   /** 마지막으로 깐 지도 글 — 같으면 다시 깔지 않는다 */
   let lastMap = ''
+  /** 지난번 그린 판 — 바뀌었을 때만 카드를 펼친다 */
+  let lastSheet = ''
 
   function paintNow(): void {
     MINE = realm?.player ?? ''
@@ -2481,6 +2483,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         case 'node': body = nodeSheet(r, sheet.id); break
       }
     }
+    // 판을 새로 열 때만 카드가 한 장씩 펼쳐진다 (형: "하스스톤은 … 촤라락 하고 별개의 오브젝트가 서로다른 시간순서로 펴지고") —
+    // 같은 판을 다시 그릴 때(숫자 ± 따위)는 펼치지 않는다
+    const sk = sheet === null ? '' : sheet.kind === 'node' || sheet.kind === 'hero' ? `${sheet.kind}:${sheet.id}` : sheet.kind
+    sh.classList.toggle('deal', sk !== '' && sk !== lastSheet)
+    lastSheet = sk
     sh.innerHTML = sheet !== null ? `<div class="grip" data-act="close"></div>${body}` : ''
     sh.scrollTop = keepSheet
     // 방금 나눈 무리를 눈앞에 (형: "유저가 뭔가를 하면 항상 바로바로 적용돼야함")
