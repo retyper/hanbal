@@ -343,6 +343,8 @@ function threatened(r: Realm, node: string, faction: string): boolean {
 
 /**
  * 억지 이주 길 — 제 땅만 밟고, 이번 계절 열린 길로 `from` 에서 `to` 까지 이어지나 (BFS · id 순서).
+ * 소도는 누구의 땅도 아니지만 사람이 지나갈 수는 있다 — 소도 너머 고을로도 옮긴다 (머물 수는 없다)
+ * (2026-10-21 형: "빈 곰골에 군대를 투입해 내땅으로만들었는데 가구 이동을 못하네" — 곰골은 가지산 소도로만 우리 땅과 이어졌다).
  * 이어지면 지나는 고을들, 아니면 null.
  */
 export function migratePath(r: Realm, faction: string, from: string, to: string): string[] | null {
@@ -356,7 +358,9 @@ export function migratePath(r: Realm, faction: string, from: string, to: string)
     if (cur === to) break
     for (const ed of edges) {
       const nx = ed.a === cur ? ed.b : ed.b === cur ? ed.a : null
-      if (nx === null || prev.has(nx) || r.nodes[nx]?.owner !== faction || r.nodes[nx]?.kind === 'sodo') continue
+      if (nx === null || prev.has(nx)) continue
+      const n = r.nodes[nx]
+      if (n === undefined || (n.kind === 'sodo' ? nx === to : n.owner !== faction)) continue
       if (blockedWhy(ed, season) !== null) continue
       prev.set(nx, cur)
       q.push(nx)

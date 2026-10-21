@@ -11,7 +11,8 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
-import { autoFlows, crowdOf, hhGrowth, homeRoom, migrateCost, migrateLimit } from '../../src/realm/economy.ts'
+import { startYeongnam } from '../../src/realm/data/regions/yeongnam.ts'
+import { autoFlows, crowdOf, hhGrowth, homeRoom, migrateCost, migrateLimit, migratePath } from '../../src/realm/economy.ts'
 import { advance, planned } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Realm } from '../../src/realm/types.ts'
@@ -116,5 +117,14 @@ describe('이주', () => {
     p = planned(r, [{ kind: 'migrate', faction: f, from: a, to: b, n: max }, { kind: 'migrate', faction: f, from: a, to: b, n: 2 }])
     assert.equal(p.nodes[a]!.hh, start - max, '두 번째는 아무 일도 없다')
     assert.deepEqual(autoFlows(p, f).filter((x) => x.from === a || x.to === a), [])
+  })
+
+  it('소도는 지나갈 수 있다 — 가지산 소도로만 이어진 곰골을 쥐면 사로 도읍에서 집을 옮긴다 (머물 곳으로는 안 된다)', () => {
+    const r = startYeongnam(3, 'saro')
+    r.nodes['y-w-gomgol']!.owner = 'saro'
+    r.season = 0 // 봄 — 숲길이 열려 있다
+    assert.deepEqual(migratePath(r, 'saro', 'y-saro-cap', 'y-w-gomgol'), ['y-saro-cap', 'y-sodo-east', 'y-w-gomgol'])
+    assert.ok(migrateLimit(r, 'saro', 'y-saro-cap', 'y-w-gomgol') > 0)
+    assert.equal(migratePath(r, 'saro', 'y-saro-cap', 'y-sodo-east'), null)
   })
 })

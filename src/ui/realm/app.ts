@@ -399,6 +399,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   function resetTurn(): void {
     armyOrders = []
+    armySel = [] // 지난 계절에 움직인 군대가 다음 계절에 골라진 채로 남지 않게 (형: "전계절에 이동시킨유닛이 자동선택되어있음")
     musters = []
     settles = []
     for (const k of Object.keys(pick)) delete pick[k]
