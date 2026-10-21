@@ -15,6 +15,7 @@ import { HERO_BUST, UNIT_ICON } from '../../realm/data/art.ts'
 import { GROUP_NAME, battleName, endStory, fieldName, groupLabel, josa, roundStory, storyCtx } from '../../realm/data/prose.ts'
 import { groupMen } from '../../realm/tactics.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
+import { seasonOf } from '../../realm/season.ts'
 import type { Act, Approach, Art, Cmd, Grp, Order, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
 
 const esc = (s: string): string =>
@@ -262,6 +263,37 @@ function flags(o: RoundOrder | undefined, chip: Cmd, art: string, ak?: Art): str
     : `<span class="wfl"><img src="${art}icon/${CMD_ICON[c]}.png" alt="">${CMD_NAME[c]}</span>`)).join('')
 }
 
+/** 싸움터 그림의 땅 — HoMM3 처럼 그 땅이 배경이 된다 (형: "싸울때 배경이 전쟁터 배경이어야") · docs/GAP.md §12 */
+export type WarGround = 'field' | 'ford' | 'pass' | 'forest' | 'gate' | 'sea' | 'snow' | 'night'
+
+/**
+ * 받아 둔 싸움터 그림 (public/realm/battle/battle-<땅>.jpg). 아직 없는 땅은 있는 장면 그림을 어둡게 깐다 —
+ * 그림이 오면 여기에 이름만 더한다 (ART-QUEUE)
+ */
+const WAR_BG_READY: ReadonlySet<WarGround> = new Set<WarGround>([])
+const WAR_BG_FALLBACK: Readonly<Record<WarGround, string>> = {
+  field: 'event/event-goguryeo-hunt', ford: 'event/event-monsoon-ford', pass: 'event/event-goguryeo-hunt', forest: 'event/event-night-raid',
+  gate: 'event/event-palisade-build', sea: 'event/event-eight-harbours', snow: 'event/event-winter-ambush', night: 'event/event-night-raid',
+}
+
+/** 이 싸움이 어디서 났나 — 밤길 · 겨울 · 성문 · 물 · 길의 종류 순으로 */
+export function warGround(r: Realm, l: BattleLine): WarGround {
+  const node = r.nodes[l.node]
+  if (l.approach === 'night' && l.ambush === 'success') return 'night'
+  if (seasonOf(r.season) === 'winter') return 'snow'
+  const via = l.via
+  if (via === 'sea' || (l.field !== true && node?.kind === 'port' && via === undefined)) return 'sea'
+  if (l.field !== true && node !== undefined && (node.kind === 'fort' || node.kind === 'capital' || node.tags.includes('palisade'))) return 'gate'
+  if (via === 'ford' || via === 'reeds' || via === 'mudflat') return 'ford'
+  if (via === 'pass') return 'pass'
+  if (via === 'forest') return 'forest'
+  return 'field'
+}
+
+function warBg(art: string, g: WarGround): string {
+  return WAR_BG_READY.has(g) ? `${art}battle/battle-${g}.jpg` : `${art}${WAR_BG_FALLBACK[g]}.jpg`
+}
+
 /** 그 판의 이름 — 땅에서 딴다 (prose.battleName). 옛 보고처럼 판 기록이 모자라면 곳 이름으로 */
 export function warName(r: Realm, l: BattleLine): string {
   return r.nodes[l.node] !== undefined ? battleName(r, l) : `${l.field === true && l.edge !== undefined ? fieldName(r, l.edge) : l.node} 싸움`
@@ -326,9 +358,11 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}</div><span class="wn">사기</span></div>`
   }
 
-  let h = `<div class="wrbox">`
-  h += `<div class="wrh"><b>${esc(warName(after, l))}</b>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}</div>`
-  h += `<div class="wvs">${side(ourI, ourHero, ourF, ourName, 'us')}<i class="vs">VS</i>${side(foeI, foeHero, foeF, foeName, 'foe')}</div>`
+  // 싸움터 배경 (땅마다) · 위 카드는 굴려도 그 자리에 (형: "싸우는로그가 스크롤로 보이더라도 상단에 캐릭터랑 체력바 있는 그 카드는 고정")
+  const ground = warGround(prev, l)
+  let h = `<div class="wbg g-${ground}${WAR_BG_READY.has(ground) ? '' : ' stand'}" style="background-image:url('${warBg(art, ground)}')"></div><div class="wrbox">`
+  h += `<div class="wtop"><div class="wrh"><b>${esc(warName(after, l))}</b>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}</div>`
+  h += `<div class="wvs">${side(ourI, ourHero, ourF, ourName, 'us')}<i class="vs">VS</i>${side(foeI, foeHero, foeF, foeName, 'foe')}</div></div>`
   if (keys !== '') h += `<style>${keys}</style>`
   h += `<p class="wintro">${esc(introLine(l, weAtk, fname(foeF)))}${l.militia > 0 && !weAtk ? ` 마을 장정 ${l.militia}명이 함께 선다.` : l.militia > 0 ? ` 마을 장정 ${l.militia}명이 막아선다.` : ''}</p>`
   // 지나간 합들 — 마지막 합만 천천히
@@ -433,8 +467,17 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
 export const WAR_CSS = `
 .ap .tn.hard { color: #f0a08a; }
 .ap.war-open .tutband, .ap.war-open .tutbar { display: none; }
-.ap .wr { position: fixed; inset: 0; z-index: 60; background: #0d0f13f2; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-.ap .wrbox { max-width: 600px; margin: 0 auto; padding: 14px 14px 40px; }
+.ap .wr { position: fixed; inset: 0; z-index: 60; background: #0d0f13; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+/* 싸움터 — 화면 뒤에 붙박이. 받아 둔 싸움터 그림이 없으면(stand) 장면 그림을 더 어둡고 흐리게 */
+.ap .wbg { position: fixed; inset: 0; z-index: 0; background: center / cover no-repeat; filter: brightness(.42) saturate(.85); }
+.ap .wbg.stand { filter: brightness(.3) saturate(.7) blur(2px); transform: scale(1.04); }
+.ap .wbg.g-snow { filter: brightness(.45) saturate(.6) hue-rotate(-8deg); } .ap .wbg.g-night { filter: brightness(.3) saturate(.7); }
+.ap .wbg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(#0d0f1399, #0d0f1333 30%, #0d0f13cc 85%); }
+.ap .wrbox { position: relative; z-index: 1; max-width: 600px; margin: 0 auto; padding: 0 14px 40px; }
+/* 위 카드 — 굴려도 늘 보인다 (포켓몬의 HP 창) */
+.ap .wtop { position: sticky; top: 0; z-index: 3; margin: 0 -14px; padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
+  background: linear-gradient(#0d0f13f0, #0d0f13e0 80%, #0d0f1300); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+@media (max-width: 520px) { .ap .wtop .wf { width: 58px; height: 58px; } .ap .wtop .wrh { font-size: 16px; margin-bottom: 4px; } }
 .ap .wrh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; color: var(--gold); font-size: 19px; margin-bottom: 8px; }
 .ap .wrh b { font-family: 'Gowun Batang', serif; letter-spacing: 1px; }
 .ap .wvs { display: flex; align-items: flex-start; gap: 8px; }
@@ -453,9 +496,9 @@ export const WAR_CSS = `
 .ap .wbar.men i { background: linear-gradient(90deg, #3f8f3a, #8fd07a); } .ap .ws.foe .wbar.men i { background: linear-gradient(90deg, #8a3a2a, #e08a74); }
 .ap .wbar.mor { height: 5px; } .ap .wbar.mor i { background: #d9b36a; }
 .ap .ws .wn { font-size: 12px; color: var(--ink); }
-.ap .wintro { margin: 12px 0 6px; padding: 8px 10px; border-radius: 10px; background: #1a1f27; font-size: 14.5px; }
+.ap .wintro { margin: 12px 0 6px; padding: 8px 10px; border-radius: 10px; background: #1a1f27e6; font-size: 14.5px; }
 .ap .wlog { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
-.ap .wrd { padding: 8px 10px; border-radius: 12px; background: #161a20; border: 1px solid #343c49; }
+.ap .wrd { padding: 8px 10px; border-radius: 12px; background: #161a20e6; border: 1px solid #343c49; }
 .ap .wrd.crit { border-color: #d9b36a; box-shadow: 0 0 0 1px #d9b36a55 inset; }
 .ap .wrn { font-size: 12px; color: var(--mute); margin-bottom: 4px; }
 .ap .wcmds { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; }
