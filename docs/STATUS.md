@@ -8,6 +8,11 @@
 
 ### ▶ 2026-10-22 낮 — 파이어베이스 · 글꼴 · 소리는 형이 받는다 (다음 대화는 여기부터)
 
+- **서버 맞추기 지음 (docs/realm/SERVER.md):** src/net/ — firestore(REST) · bundle(합치기·결정표·기록 지문) · auth(구글 id_token → 파이어베이스) · sync(열 때·2분 묶음·가려질 때·고르기·계정 지우기) · 화면: 첫 화면 「구글로 이어 하기」 · 나라 판 계정 칸 · 갈라진 판 카드 둘 · 보안 규칙 게시(꼴 검사 · 익명 읽기 403 확인)
+  - **막힌 것: 구글 클라우드 콘솔 첫 진입 약관 동의(형이 눌러야 함)** → 그다음 내가 OAuth 웹 클라이언트에 원본(https://retyper.github.io · http://localhost:5173)과 리디렉션(…/hanbal/realm.html · …/realm.html)을 넣는다. 그 전엔 「구글로 들어가기」가 구글에서 redirect_uri_mismatch 로 막힌다
+  - 로그인 창은 내가 못 누른다 — 형이 폰·피시에서 들어가 같은 판이 이어지는지 본다
+- 계절 입자 낱낱이(형: "뭉탱이로 내리고 입자가 커") — tools/particle-strip.mjs · 36개 · 눈은 작은 송이 위주
+- 지도 조각 m12c~h: 챗지피티 YunCheol 도 무료 한도(10-22 18:50 풀림) — 주문 글은 그때 그대로 (조각마다 새 대화 · 밑그림 + m2 화풍)
 - **파이어베이스 만들어 둠** (콘솔: 형 계정 roqkfeke12): 프로젝트 chilsippalguk · Firestore 서울(asia-northeast3, Standard, 무료 Spark) · 보안 규칙 `firestore.rules`(users/{uid}/** 는 그 사람만) 게시 · Google 로그인 켬(공개 이름 칠십팔국) · 승인 도메인에 retyper.github.io · 웹 앱 chilsippalguk-web 설정은 `src/net/firebase-config.ts`
   - 다음: SDK 없이 REST 로 붙인다(A6 의존 0) — 구글 OAuth(id_token) → identitytoolkit signInWithIdp → Firestore REST. 구글 클라우드 콘솔에서 OAuth 웹 클라이언트에 리디렉션 주소(retyper.github.io/hanbal/realm.html) 넣기가 남았다
 - **글꼴 셋:** 본문 고운돋움 · 제목 고운바탕 · 큰 의식 글자 송명 (--body/--serif/--display · tools/fetch-gfont.mjs)
