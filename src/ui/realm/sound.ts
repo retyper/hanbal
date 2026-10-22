@@ -12,12 +12,16 @@ export const PICK = {
   horn_victory: 'a', defeat: 'a', capture: 'b',
   dex_new: 'c', birth: 'c', feast: 'a', envoy: 'b', coins: 'c',
   amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b',
-  bgm_map: 'a', bgm_war: 'a',
+  bgm_map: 'f', bgm_war: 'a',
 } as const
+/** ogg 가 아닌 후보 — 형이 받아 온 것은 받은 꼴 그대로 둔다 (assets_src/realm/sfx-in) */
+const EXT: Readonly<Partial<Record<string, string>>> = { bgm_map_f: 'mp3' }
 export type Slot = keyof typeof PICK
 
 /** ding 에 넘기는 이름 — public 아래 길 (확장자 없음) */
 export const snd = (slot: Slot): string => `realm/sfx/${slot}_${PICK[slot]}`
+/** 고른 후보의 파일 이름 (확장자까지) */
+export const sndFile = (slot: Slot): string => `${slot}_${PICK[slot]}.${EXT[`${slot}_${PICK[slot]}`] ?? 'ogg'}`
 
 /** 장면 그림(event-*) → 그 장면의 소리. 없으면 소리 없이 */
 export const SCENE_SOUND: Readonly<Record<string, Slot>> = {
@@ -79,7 +83,7 @@ function track(base: string, vol: number): { want(slot: Slot | null): void; paus
   const node = (slot: Slot): { el: HTMLAudioElement; gain: GainNode | null } => {
     let n = els.get(slot)
     if (n === undefined) {
-      const el = new Audio(`${base}${snd(slot)}.ogg`)
+      const el = new Audio(`${base}realm/sfx/${sndFile(slot)}`)
       el.loop = true
       n = { el, gain: wire(el, vol) }
       if (n.gain !== null) n.gain.gain.value = 0

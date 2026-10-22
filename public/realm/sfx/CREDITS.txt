@@ -68,3 +68,4 @@ bgm_war_b.ogg  OpenGameArt · https://opengameart.org/content/call-to-war · "Ca
 horn_victory_c.ogg  OpenGameArt · https://opengameart.org/content/victory-fanfare-short · "Victory Fanfare Short" (사이트 미리듣기 ogg) · cynicmusic · CC0
 defeat_c.ogg  OpenGameArt · https://opengameart.org/content/medieval-defeat-theme · "Medieval: Defeat Theme" (사이트 미리듣기 ogg) · RandomMind · CC0
 war_drums_c.ogg  OpenGameArt · https://opengameart.org/content/prehistoric-drum-loop · "Prehistoric Drum Loop" (select.ogg) · hornpipe2 · CC0
+bgm_map_f.mp3  형이 받아 온 평상시 음악 (assets_src/realm/sfx-in/bgm후보.mp3) · 출처·이용 조건 적을 것 (형에게 물음)
