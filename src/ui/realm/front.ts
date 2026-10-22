@@ -78,8 +78,9 @@ const capsHeld = (r: Realm, f: string): number => Object.values(r.factions).filt
 // ───────── 첫 화면
 
 export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, links = '', firstTime = false, more = ''): string {
-  let h = `<div class="front title"><div class="kv" style="background-image:url('${k.art}title/title-keyart.jpg')"></div><div class="tv">`
-  h += `<h1>칠십팔국</h1><p class="sub">삼한의 일흔여덟 나라 · 고구려와 부여의 북녘</p>`
+  // 로비 — 산마루에서 내려다본 일흔여덟 나라의 땅 · 로고는 청동 거울과 맥궁의 문장 + 붓글씨 (형: "게임 로고랑 파비콘, 로비 배경은 좀 제대로")
+  let h = `<div class="front title"><div class="kv" style="background-image:url('${k.art}title/title-lobby.jpg')"></div><div class="tv">`
+  h += `<div class="logo"><img class="lemb" src="${k.art}logo/emblem.png" alt=""><h1>칠십팔국</h1></div><p class="sub">삼한의 일흔여덟 나라 · 고구려와 부여의 북녘</p>`
   h += `<p class="hook">왕이 하나가 아니던 때. 한 읍락의 군장으로 시작해, 이웃을 알고 · 사귀고 · 쳐서 도읍을 하나씩 쥔다.</p>`
   h += `<div class="fbtns">`
   if (r !== null && (!r.outcome || (r.endless === true && r.outcome.kind === 'win'))) {
@@ -349,12 +350,19 @@ export const FRONT_CSS = `
 .ap .front .btn.big { padding: 12px 26px; font-size: 16px; }
 /* 첫 화면 */
 .ap .front.title { overflow: hidden; display: flex; align-items: flex-end; justify-content: center; }
-.ap .front.title .kv { position: absolute; inset: 0; background: center 30% / cover no-repeat; animation: kv 18s ease-out both; }
-.ap .front.title .kv::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, #0000 30%, #0b0d10cc 68%, #0b0d10 100%); }
+.ap .front.title .kv { position: absolute; inset: 0; background: center 40% / cover no-repeat; animation: kv 18s ease-out both; }
+.ap .front.title .kv::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 55% at 50% 52%, #0b0d1066, #0000 70%), linear-gradient(to bottom, #0000 35%, #0b0d10b3 70%, #0b0d10 100%); }
 @keyframes kv { from { transform: scale(1.08); filter: brightness(.6); } 12% { filter: brightness(1); } to { transform: scale(1); } }
 .ap .front.title .tv { position: relative; text-align: center; padding: 0 18px calc(26px + env(safe-area-inset-bottom)); max-width: 640px; animation: tv 1.4s .3s ease-out both; }
 @keyframes tv { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
-.ap .front.title h1 { font-family: var(--display); font-weight: 400; font-size: clamp(44px, 11vw, 76px); margin: 0; color: #f3d48a; letter-spacing: .12em; text-shadow: 0 3px 18px #000c; }
+/* 로고 — 문장(청동 거울·맥궁) 위에 붓글씨 이름. 금빛 그러데이션 글자 + 어두운 테 · 문장은 숨 쉬듯 빛난다 */
+.ap .front.title .logo { position: relative; display: flex; flex-direction: column; align-items: center; margin-bottom: 2px; }
+.ap .front.title .lemb { width: clamp(84px, 16vw, 128px); aspect-ratio: 1; filter: drop-shadow(0 4px 14px #000d) drop-shadow(0 0 18px #e8b85a55); animation: lemb 4.5s ease-in-out infinite; }
+@keyframes lemb { 0%, 100% { filter: drop-shadow(0 4px 14px #000d) drop-shadow(0 0 14px #e8b85a40); } 50% { filter: drop-shadow(0 4px 14px #000d) drop-shadow(0 0 26px #f0c86a88); } }
+.ap .front.title h1 { font-family: 'East Sea Dokdo', var(--display); font-weight: 400; font-size: clamp(72px, 17vw, 132px); line-height: .9; margin: -6px 0 0; letter-spacing: .04em;
+  background: linear-gradient(#fff4cc 10%, #f0c86a 48%, #b07a2c 80%, #7a4e18); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 2px 0 #2a1606) drop-shadow(0 6px 16px #000e); }
+@media (prefers-reduced-motion: reduce) { .ap .front.title .lemb { animation: none; } }
 .ap .front.title .sub { margin: 2px 0 8px; color: #e8dcc0; font-size: 14px; letter-spacing: .08em; }
 .ap .front.title .hook { margin: 0 auto 16px; color: #cfc6b4; font-size: 13.5px; line-height: 1.6; max-width: 460px; }
 .ap .front .fbtns { display: flex; flex-direction: column; align-items: center; gap: 10px; }
