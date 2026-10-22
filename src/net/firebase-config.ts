@@ -10,3 +10,6 @@ export const FIREBASE = {
   messagingSenderId: '301142621904',
   appId: '1:301142621904:web:f45dec2ce95ce3b15628d5',
 } as const
+
+/** 구글 로그인 — 파이어베이스가 만든 웹 OAuth 클라이언트 (구글 클라우드 콘솔 「Web client (auto created by Google Service)」) */
+export const GOOGLE_CLIENT_ID = '301142621904-q1cul3q4iv76ml9v0iulv5e75vavc66p.apps.googleusercontent.com'
