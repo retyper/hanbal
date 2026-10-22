@@ -614,7 +614,7 @@ export const WAR_CSS = `
   background: radial-gradient(circle, #000b 0, #0000 72%); animation: sfx 2.4s ease-out forwards; }
 .ap .warfx > div { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 36px; border-radius: 18px; background: #1a1210ee;
   border: 1px solid #a0502a; box-shadow: 0 8px 40px #000c; animation: sfxin 1.6s cubic-bezier(.2, 1.4, .4, 1) forwards; }
-.ap .warfx b { font-family: 'Gowun Batang', serif; font-size: 30px; color: #f0c080; letter-spacing: 2px; }
+.ap .warfx b { font-family: var(--display); font-weight: 400; font-size: 32px; color: #f0c080; letter-spacing: 2px; }
 .ap .warfx span { font-size: 13.5px; color: #e0d0c0; }
 @media (prefers-reduced-motion: reduce) { .ap .wr *, .ap .warfx, .ap .warfx * { animation-duration: .01s !important; animation-delay: 0s !important; transition: none !important; } }
 `

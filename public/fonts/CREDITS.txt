@@ -8,7 +8,16 @@ Barlow Condensed 500/600 — SIL Open Font License 1.1
   https://fonts.google.com/specimen/Barlow+Condensed  (제작: Jeremy Tribby)
   쓰는 곳: 숫자·계기 글자 (--num). Bahnschrift/DIN이 없는 기기(안드로이드·iOS)의 대역.
 
+Gowun Dodum (고운돋움) 400 — SIL Open Font License 1.1
+  https://fonts.google.com/specimen/Gowun+Dodum  (제작: 야곰닷넷 / Yoon Design)
+  쓰는 곳: 칠십팔국 본문 (--body). 기기 기본 글꼴(맑은 고딕·애플 고딕·로보토)마다 달라 보이던 것을 하나로.
+
+Song Myung (송명) 400 — SIL Open Font License 1.1
+  https://fonts.google.com/specimen/Song+Myung  (제작: JIKJI SOFT)
+  쓰는 곳: 큰 의식 글자 — 첫 화면 이름 · 계절 띠 · 싸움 이름 띠 (--display)
+
+받는 법: node tools/fetch-gfont.mjs "<글꼴 이름>" <굵기> <파일 앞이름>
+
 woff2 조각과 unicode-range는 Google Fonts가 만든 것 그대로다 — 손대지 않았다.
 브라우저는 화면에 실제로 나온 글자가 든 조각만 받는다 (한글 95조각 중 보통 2~4개).
-다시 받으려면: tools/README 없음 — fonts.googleapis.com/css2 의 CSS를 받아
-url() 만 상대경로로 바꾸면 된다.
+다시 받으려면: tools/fetch-gfont.mjs (fonts.googleapis.com/css2 의 CSS를 받아 url() 만 상대경로로 바꾼다).

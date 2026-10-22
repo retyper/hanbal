@@ -6,11 +6,17 @@ export const APP_CSS = `
 html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; overscroll-behavior: none; }
 .ap { --gold: #d9b36a; --ink: #e9e2d4; --mute: #8f887b; --card: #222833; --line: #343c49; --good: #8fd07a; --bad: #e08a74;
   --tabh: calc(62px + env(safe-area-inset-bottom)); --toph: calc(48px + env(safe-area-inset-top)); --legh: 34px;
-  position: fixed; inset: 0; color: var(--ink); font: 15px/1.45 system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  /* 글꼴 셋 (public/fonts — 자체 호스팅, 기기마다 같게): 본문 고운돋움 · 제목 고운바탕 · 큰 의식 글자(계절·싸움 이름·첫 화면) 송명.
+     조각에 없는 글자는 다음 글꼴로 넘어가니 깨지지 않는다 */
+  --body: 'Gowun Dodum', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --serif: 'Gowun Batang', 'Apple SD Gothic Neo', 'Batang', serif;
+  --display: 'Song Myung', 'Gowun Batang', 'Batang', serif;
+  position: fixed; inset: 0; color: var(--ink); font: 15px/1.45 var(--body);
   -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
 /* 그림은 마우스를 받지 않는다 — 누르는 건 늘 감싼 단추·칸이다. 브라우저 확장(포토샵 등)이 그림마다 띄우는 단추도 이걸로 안 뜬다 (형: "ps 버튼 뜨는게 짜증남") */
 .ap img { pointer-events: none; -webkit-user-drag: none; }
-.ap h1, .ap h2, .ap h3, .ap .top b, .ap .next, .ap .brag { font-family: 'Gowun Batang', 'Apple SD Gothic Neo', serif; }
+.ap button, .ap input, .ap select, .ap textarea { font-family: inherit; }
+.ap h1, .ap h2, .ap h3, .ap .top b, .ap .next, .ap .brag { font-family: var(--serif); }
 .ap h3 { margin: 4px 0 10px; font-size: 19px; color: var(--gold); } .ap h4 { margin: 14px 0 6px; font-size: 14px; color: var(--mute); font-weight: 600; }
 .ap p { margin: 6px 0; } .ap .mute { color: var(--mute); font-size: 13px; }
 .ap img.ic { width: 22px; height: 22px; vertical-align: -6px; margin-right: 2px; }
@@ -104,7 +110,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
   mask-image: linear-gradient(to bottom, #0000, #000 16%, #000 84%, #0000); animation: sfxband 2.2s ease-out forwards; }
 .ap .seasonfx > div { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 18px 34px; border-radius: 18px;
   background: #14181ee8; border: 1px solid #8a7040; box-shadow: 0 8px 40px #000a; animation: sfxin 1.6s cubic-bezier(.2, 1.4, .4, 1) forwards; }
-.ap .seasonfx b { font-family: 'Gowun Batang', serif; font-size: 30px; color: var(--gold); letter-spacing: 2px; }
+.ap .seasonfx b { font-family: var(--display); font-weight: 400; font-size: 32px; color: var(--gold); letter-spacing: 2px; }
 .ap .seasonfx span { font-size: 13.5px; color: #d8d0c0; } .ap .seasonfx img.sfx-ic { width: 54px; height: 54px; }
 .ap .seasonfx.spring b { color: #f2b8c6; } .ap .seasonfx.summer b { color: #9fd18b; } .ap .seasonfx.autumn b { color: #f0b060; } .ap .seasonfx.winter b { color: #cfe3f5; }
 @keyframes sfx { 0% { opacity: 0; } 12% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }

@@ -327,7 +327,7 @@ export const FRONT_CSS = `
 @keyframes kv { from { transform: scale(1.08); filter: brightness(.6); } 12% { filter: brightness(1); } to { transform: scale(1); } }
 .ap .front.title .tv { position: relative; text-align: center; padding: 0 18px calc(26px + env(safe-area-inset-bottom)); max-width: 640px; animation: tv 1.4s .3s ease-out both; }
 @keyframes tv { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
-.ap .front.title h1 { font-family: 'Gowun Batang', serif; font-size: clamp(44px, 11vw, 76px); margin: 0; color: #f3d48a; letter-spacing: .12em; text-shadow: 0 3px 18px #000c; }
+.ap .front.title h1 { font-family: var(--display); font-weight: 400; font-size: clamp(44px, 11vw, 76px); margin: 0; color: #f3d48a; letter-spacing: .12em; text-shadow: 0 3px 18px #000c; }
 .ap .front.title .sub { margin: 2px 0 8px; color: #e8dcc0; font-size: 14px; letter-spacing: .08em; }
 .ap .front.title .hook { margin: 0 auto 16px; color: #cfc6b4; font-size: 13.5px; line-height: 1.6; max-width: 460px; }
 .ap .front .fbtns { display: flex; flex-direction: column; align-items: center; gap: 10px; }
