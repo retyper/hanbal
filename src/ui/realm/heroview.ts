@@ -40,7 +40,7 @@ export function splitTitle(name: string): { title: string | null; given: string 
 /** 이름 HTML — 칭호는 작고 흐리게 앞에, 누르고 있으면 뜻 (성처럼 읽히지 않게) */
 export function nameHtml(name: string): string {
   const { title, given } = splitTitle(name)
-  return title === null ? esc(given) : `<small class="ttl" title="${esc(`${title} — ${TITLE_MEAN[title]} (칭호이지 성이 아니다)`)}">${esc(title)}</small>${esc(given)}`
+  return title === null ? esc(given) : `<small class="ttl" title="${esc(`${title} — ${TITLE_MEAN[title]}`)}">${esc(title)}</small>${esc(given)}`
 }
 
 /** 육각형 꼭짓점 순서 — STAT_NAME 의 순서 */

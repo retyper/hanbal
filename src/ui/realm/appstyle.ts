@@ -217,6 +217,11 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .sprow { display: flex; align-items: center; gap: 8px; } .ap .sprow .stepper { flex-wrap: nowrap; } .ap .sprow .spn { width: 4em; font-size: 14px; }
 .ap .spsum { font-size: 14px; color: #cfc6b4; } .ap .spsum b { color: var(--gold); }
 .ap .splitp .seg button { white-space: normal; }
+/* 출정 판 — 단계 머리 · 맨 아래 고정 띠 (판이 굴러도 늘 보인다) */
+.ap .sortiep .sth { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 13px; font-weight: 700; color: var(--gold); }
+.ap .sortiep .sth .seg.sm { margin-left: auto; } .ap .sortiep .sth .seg.sm button { padding: 2px 10px; font-size: 12px; white-space: nowrap; }
+.ap .sortiebar { position: sticky; bottom: 0; z-index: 3; display: flex; gap: 6px; margin: 12px -14px -18px; padding: 10px 14px 12px; background: linear-gradient(#171b22ee, #171b22); border-top: 1px solid var(--line); box-shadow: 0 -6px 14px #0007; }
+.ap .sortiebar .go { flex: 1; font-size: 15px; } .ap .sortiebar .btn { margin: 0; }
 .ap .nightov { position: absolute; inset: 0; z-index: 40; background: #000; }
 .ap .nightov iframe { width: 100%; height: 100%; border: 0; display: block; }
 .ap .nightov [data-close] { position: absolute; right: 10px; top: 10px; z-index: 1; font-size: 13px; padding: 4px 10px; }
