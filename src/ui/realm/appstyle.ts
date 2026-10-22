@@ -535,4 +535,18 @@ export const UI_CSS = `
 /* 아래 판(시트) · 보고판 — 옻칠한 나무에 청동 테 */
 .ap .sheet { border: 18px solid transparent; border-image: url(__ART__ui/panel.png?v=2) 64 fill / 18px stretch; background: none; border-radius: 0; padding: 0 2px 6px; }
 .ap .mcard { border: 18px solid transparent; border-image: url(__ART__ui/panel.png?v=2) 64 fill / 18px stretch; background: none; border-radius: 0; padding: 4px; }
+/* 위 띠 · 아래 탭 — 옻칠한 널판에 청동 띠 */
+.ap .top { border: 0 solid transparent; border-width: 0 0 5px; border-image: url(__ART__ui/bar.png?v=1) 14 0 fill / 0 0 5px stretch; background: none; }
+.ap .tabs { border: 0 solid transparent; border-width: 5px 0 0; border-image: url(__ART__ui/bar.png?v=1) 14 0 fill / 5px 0 0 stretch; background: none; }
+/* 판 안의 카드 · 「이어 하기」 — 짙은 밤빛 판에 가는 청동 줄 · 모서리 징 */
+.ap .acard, .ap .ncard:not(.pick), .ap .fcard, .ap .front .cont { border: 10px solid transparent; border-radius: 0; background: none;
+  border-image: url(__ART__ui/card.png?v=1) 24 fill / 10px stretch; padding: 2px; }
+/* 판 안의 작은 칸들 — 푸른 잿빛 대신 나무판에 어울리는 짙은 밤빛 · 청동빛 줄 */
+.ap { --card: #2a1f16; --line: #4d3b26; }
+/* 판 손잡이 — 옻칠 나무 빛에 청동 손잡이 */
+.ap .grip { background: #26170d; } .ap .grip::after { background: #8a6a3a; box-shadow: 0 1px 0 #0008; }
+/* 마디 단추 — 작은 쇠판, 고른 것은 금빛 */
+.ap .seg { border: 0; border-radius: 0; overflow: visible; gap: 3px; }
+.ap .seg button { border: 6px solid transparent; border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 6px 8px stretch; background: none; padding: 0 2px; color: #d8cdb4; }
+.ap .seg button.on { border-image-source: url(__ART__ui/btn-gold.png?v=2); border-image-slice: 30 35 fill; background: none; color: #2a1606; font-weight: 700; }
 `
