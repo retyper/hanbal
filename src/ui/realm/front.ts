@@ -114,14 +114,13 @@ export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<
   const names = Object.fromEntries(BOARDS.map((b) => [b.id, b.name])) as Partial<Record<RegionId, string>>
   for (const b of BOARDS) {
     const open = unlocked === undefined || unlocked.has(b.id)
-    // 그림 위에 제목과 때 — 아래에 이야기 한 줄 · 무엇을 하나 · 작은 표(나라 수 · 이기는 길 · 길이)
-    h += `<button class="bcard${open ? '' : ' locked'}" data-act="${open ? 'fr-board' : 'fr-locked'}" data-v="${b.id}"><span class="bth" style="background-image:url('${k.art}${b.art}')">`
-    h += `${b.badge !== undefined && open ? `<i class="bbadge">${k.esc(b.badge)}</i>` : ''}${open ? '' : '<i class="lock">🔒</i>'}<span class="btitle"><small>${k.esc(b.era)}</small><b>${k.esc(b.name)}</b></span></span>`
-    h += `<span class="bb"><span class="bhook">${k.esc(b.hook)}</span><span class="bplay">${k.esc(b.play)}</span>`
+    // 카드는 그림 · 때 · 제목만 — 이야기와 작은 표는 펼침(길게 누르기 · 마우스 올리기 — tips.ts)으로
     const goal = b.id === 'tutorial' ? '미추홀 도읍을 쥐면 끝' : `도읍 ${winNeed(b.id)}곳을 쥐면 이긴다`
-    h += open
-      ? `<span class="bmeta"><i>나라 ${k.nations(b.id).length}</i><i>${goal}</i><i>한 판이 ${b.length}</i></span>${b.id !== 'tutorial' && (tierWon?.(b.id) ?? 0) > 0 ? `<span class="bmeta tierw">난세 ${tierWon!(b.id)}단계까지 이겼다</span>` : ''}</span></button>`
-      : `<span class="bmeta lockwhy">${k.esc(lockWhy(b.id, names))}</span></span></button>`
+    const won = b.id !== 'tutorial' && (tierWon?.(b.id) ?? 0) > 0 ? `<i>난세 ${tierWon!(b.id)}단계까지 이겼다</i>` : ''
+    const peek = `<span class="peek"><small>${k.esc(b.era)}</small><b>${k.esc(b.name)}</b><span class="ph">${k.esc(b.hook)}</span><span class="pp">${k.esc(b.play)}</span>`
+      + `<span class="pm"><i>나라 ${k.nations(b.id).length}</i><i>${goal}</i><i>한 판이 ${b.length}</i>${won}</span></span>`
+    h += `<button class="bcard${open ? '' : ' locked'}" data-act="${open ? 'fr-board' : 'fr-locked'}" data-v="${b.id}" data-peek><span class="bth" style="background-image:url('${k.art}${b.art}')">`
+    h += `${b.badge !== undefined && open ? `<i class="bbadge">${k.esc(b.badge)}</i>` : ''}${open ? '' : '<i class="lock">🔒</i>'}<span class="btitle"><small>${k.esc(b.era)}</small><b>${k.esc(b.name)}</b>${open ? '' : `<em>${k.esc(lockWhy(b.id, names))}</em>`}</span></span>${peek}</button>`
   }
   h += `</div>${hasGame ? '<p class="fine">새 판을 시작하면 지금 판은 끝난 판으로 기록된다.</p>' : ''}</div>`
   return h
@@ -379,6 +378,8 @@ export const FRONT_CSS = `
 .ap .front .bb .bhook { font-family: var(--serif); font-size: 15px; color: #efe5cf; line-height: 1.55; } .ap .front .bb .bplay { font-size: 13px; color: #b8ad96; line-height: 1.5; }
 .ap .front .bb .bmeta { display: flex; flex-wrap: wrap; gap: 4px; font-size: 12px; color: #a89c84; } .ap .front .bb .bmeta i { font-style: normal; padding: 1px 8px; border-radius: 9px; border: 1px solid #3a4250; }
 .ap .front .bb .bmeta.tierw, .ap .front .bb .bmeta.lockwhy { display: block; }
+.ap .front .btitle em { font-style: normal; font-size: 12.5px; color: #e8c070; margin-top: 2px; }
+.ap .front .bcards .bcard { -webkit-touch-callout: none; }
 .ap .front .bcard.locked { cursor: default; } .ap .front .bcard.locked .bth { filter: grayscale(1) brightness(.45); position: relative; }
 .ap .front .bcard.locked .bth .lock { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-style: normal; font-size: 34px; }
 .ap .front .bcard.locked .bb b { color: #8f8778; } .ap .front .bcard.locked .bmeta.lockwhy { color: #e8c070; }

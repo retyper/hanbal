@@ -7,12 +7,20 @@
  *   - **누르고 있으면 조금 뒤** — 무엇이든(단추·고을 포함) `data-more` 가 있으면 그것을, 없으면 `data-tip`/`title`.
  *     길게 누른 뒤의 떼기는 누르기로 치지 않는다 (단추가 눌리지 않는다)
  * 짧은 말은 `data-tip`(없으면 `title`), 긴 말은 `data-more`. 컴퓨터에선 `title` 이 그대로 마우스에 뜬다.
+ *
+ * **펼침**(`data-peek` + 안에 숨긴 `.peek`) — 카드처럼 그림만 보이고 설명은 따로 (형: "설명을 카드에 같이 넣지 말고
+ * 탭 누르고 있거나 마우스 올려놓거나 하면 손가락 비켜서 옆에 설명이 나오게"). 마우스는 올리면 커서 옆에 따라다니고,
+ * 손가락은 길게 누르면 손가락 위쪽에(가리지 않게) 뜬다. 짧게 누르면 카드의 일을 한다.
  */
 import { P } from '../../tune/params.ts'
 
 /** 눌러서 일이 일어나는 것 — 이런 데선 누르기는 그 일, 설명은 길게 눌러야 */
 const ACTS = 'button, a, input, select, label, [data-act], .nd'
-const TIPS = '[data-more], [data-tip], [title]'
+const TIPS = '[data-more], [data-tip], [title], [data-peek]'
+const PEEK = '[data-peek]'
+/** 펼침 말풍선이 손가락·커서에서 떨어지는 거리 (CSS px) — 엄지가 가리지 않게 */
+const PEEK_GAP_TOUCH = 44
+const PEEK_GAP_MOUSE = 18
 /** 이만큼 움직이면 끄는 것(스크롤)으로 보고 길게 누르기를 접는다 (CSS px) */
 const SLOP = 10
 
@@ -57,6 +65,54 @@ export function installTips(root: HTMLElement): void {
     hideTimer = window.setTimeout(hide, long ? P.realm.tipLong : P.realm.tipShort)
   }
 
+  /** 펼침 — 점(손가락·커서) 곁에 띄운다. 손가락이면 위쪽, 커서면 오른쪽(모자라면 반대쪽) */
+  let peeking: HTMLElement | null = null
+  const placeAt = (x: number, y: number, touch: boolean): void => {
+    const vw = window.innerWidth, vh = window.innerHeight
+    const bw = bub.offsetWidth, bh = bub.offsetHeight
+    let left: number, top: number
+    if (touch) {
+      left = x - bw / 2
+      top = y - bh - PEEK_GAP_TOUCH
+      if (top < 8) { top = y - bh / 2; left = x + PEEK_GAP_TOUCH; if (left + bw > vw - 8) left = x - PEEK_GAP_TOUCH - bw }
+    } else {
+      left = x + PEEK_GAP_MOUSE
+      if (left + bw > vw - 8) left = x - PEEK_GAP_MOUSE - bw
+      top = y - 24
+    }
+    bub.style.left = `${Math.max(8, Math.min(vw - bw - 8, left))}px`
+    bub.style.top = `${Math.max(8, Math.min(vh - bh - 8, top))}px`
+  }
+  const peekAt = (el: HTMLElement, x: number, y: number, touch: boolean): void => {
+    const html = el.querySelector('.peek')?.innerHTML ?? ''
+    if (html === '') return
+    if (!bub.isConnected) root.appendChild(bub)
+    bub.innerHTML = html
+    bub.classList.add('on', 'peekb')
+    bub.classList.remove('long')
+    placeAt(x, y, touch)
+    peeking = el
+    hideAt = performance.now()
+    window.clearTimeout(hideTimer)
+    if (touch) hideTimer = window.setTimeout(hide, P.realm.tipLong)
+  }
+  const unpeek = (): void => { if (peeking !== null) { peeking = null; hide(); bub.classList.remove('peekb') } }
+  // 마우스 — 올리면 펼치고, 움직이면 따라가고, 나가면 거둔다
+  root.addEventListener('pointerover', (ev) => {
+    if (ev.pointerType !== 'mouse') return
+    const el = (ev.target as HTMLElement).closest<HTMLElement>(PEEK)
+    if (el === null || !root.contains(el)) return
+    if (el !== peeking) peekAt(el, ev.clientX, ev.clientY, false)
+  })
+  root.addEventListener('pointermove', (ev) => {
+    if (ev.pointerType === 'mouse' && peeking !== null) placeAt(ev.clientX, ev.clientY, false)
+  })
+  root.addEventListener('pointerout', (ev) => {
+    if (ev.pointerType !== 'mouse' || peeking === null) return
+    const to = ev.relatedTarget as Node | null
+    if (to === null || !peeking.contains(to)) unpeek()
+  })
+
   const cancelHold = (): void => {
     if (hold !== null) window.clearTimeout(hold.timer)
     hold = null
@@ -71,6 +127,15 @@ export function installTips(root: HTMLElement): void {
     if (el === null || !root.contains(el) || el === bub) return
     const timer = window.setTimeout(() => {
       if (hold === null) return
+      // 펼침 카드 — 손가락 곁에
+      if (el.matches(PEEK) && ev.pointerType !== 'mouse') {
+        swallow = el.closest(ACTS) !== null
+        peekAt(el, hold.x, hold.y, true)
+        hold = null
+        navigator.vibrate?.(8)
+        return
+      }
+      if (el.matches(PEEK)) { hold = null; return } // 마우스는 올리기로 이미 펼쳤다
       const more = el.dataset['more']
       const short = shortOf(el)
       const html = more !== undefined ? `${short !== '' ? `<b>${esc(short)}</b>` : ''}<span>${esc(more)}</span>` : esc(short)
@@ -102,7 +167,7 @@ export function installTips(root: HTMLElement): void {
     }
     const el = (ev.target as HTMLElement).closest<HTMLElement>(TIPS)
     if (el === null || !root.contains(el) || el === bub) return
-    if (el.closest(ACTS) !== null) return // 단추는 단추 일을 한다 — 설명은 길게 눌러서
+    if (el.closest(ACTS) !== null || el.matches(PEEK)) return // 단추는 단추 일을 한다 — 설명은 길게 눌러서
     if (bub.classList.contains('on') && performance.now() - hideAt < P.realm.tipHold * 2) return // 막 길게 눌러 띄운 것
     show(el, esc(shortOf(el)), false)
   }, true)
@@ -116,6 +181,14 @@ export const TIP_CSS = `
   box-shadow: 0 6px 22px #000a; pointer-events: none; opacity: 0; transform: translateY(4px); transition: opacity .12s, transform .12s; visibility: hidden; }
 .ap .tipb.on { opacity: 1; transform: none; visibility: visible; }
 .ap .tipb b { display: block; color: var(--gold); margin-bottom: 3px; } .ap .tipb span { display: block; }
+/* 펼침 — 카드의 설명 (숨긴 .peek 의 안을 그대로) */
+.ap .peek { display: none; }
+.ap .tipb.peekb { max-width: min(340px, calc(100vw - 24px)); padding: 11px 13px; transition: opacity .12s; }
+.ap .tipb.peekb small { display: block; font-size: 11.5px; color: #c9b88e; letter-spacing: .06em; }
+.ap .tipb.peekb b { font-family: var(--display); font-weight: 400; font-size: 20px; margin: 1px 0 6px; }
+.ap .tipb.peekb .ph { display: block; font-family: var(--serif); font-size: 14.5px; line-height: 1.55; color: #f3ead6; margin-bottom: 6px; }
+.ap .tipb.peekb .pp { display: block; font-size: 13px; color: #c8bea8; margin-bottom: 8px; }
+.ap .tipb.peekb .pm { display: flex; flex-wrap: wrap; gap: 4px; } .ap .tipb.peekb .pm i { font-style: normal; font-size: 11.5px; padding: 1px 8px; border-radius: 9px; border: 1px solid #5a4a2e; color: #d8c79e; }
 .ap [data-tip], .ap [data-more], .ap [title] { -webkit-touch-callout: none; }
 .ap .trait, .ap .ttl, .ap [data-tip]:not(button) { cursor: help; }
 `
