@@ -511,3 +511,28 @@ export const CLOUD_CSS = `
 .ap .cloudpick .pickc { display: flex; flex-direction: column; gap: 4px; align-items: center; padding: 16px 10px; border-radius: 14px; }
 .ap .cloudpick .pickc b { font-family: var(--serif); font-size: 20px; color: var(--gold); } .ap .cloudpick .pickc small { color: var(--mute); }
 `
+
+/**
+ * 손으로 만든 결 — 단추와 판을 그림(9칸 늘이기)으로 (형 2026-10-22: "버튼이나 ui 스타일도 생 css 같은 걸로 만든 거 같지 않게 … 이미지를 교묘히").
+ * 그림: realm/ui/ — 어두운 쇠판(보조 단추) · 금빛 청동판(주 단추 · 다음 계절) · 옻칠 나무에 청동 테(시트·보고판). 제미나이 · tools/nine-slice.mjs
+ * 그림의 가운데 기둥은 한 줄로 고르게 해 두어, 단추가 길어져도 무늬가 늘어나 보이지 않는다. __ART__ 는 app.ts 가 바꿔 넣는다.
+ */
+export const UI_CSS = `
+.ap .btn { border-style: solid; border-color: transparent; border-width: 9px 12px; border-radius: 0; background: none;
+  border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 9px 12px stretch; padding: 3px 6px; color: #efe3c6; text-shadow: 0 1px 2px #000c;
+  transition: filter .12s, transform .06s; }
+.ap .btn:hover { filter: brightness(1.12); } .ap .btn:active { transform: translateY(1px); filter: brightness(.9); }
+.ap .btn.on { border-image-source: url(__ART__ui/btn-gold.png?v=2); border-image-slice: 30 35 fill; color: #2a1606; font-weight: 700; text-shadow: 0 1px 0 #f7dc9a; }
+.ap .btn.ghost { color: #c9bea6; filter: saturate(.7) brightness(.92); } .ap .btn.ghost:hover { filter: saturate(.8) brightness(1.05); }
+.ap .btn:disabled, .ap .btn:disabled:hover { filter: grayscale(.7) brightness(.7); opacity: .6; transform: none; }
+.ap .btn.sm { border-width: 7px 9px; border-image-width: 7px 9px; padding: 1px 4px; }
+.ap .btn.wide { padding: 7px 8px; } .ap .btn.big { padding: 7px 18px; }
+.ap .btn.on.men { filter: hue-rotate(-28deg) saturate(1.25); } .ap .btn.on.home, .ap .btn.on.move { filter: saturate(.85); }
+/* 다음 계절 — 큰 금빛 판 */
+.ap .next { border-style: solid; border-color: transparent; border-width: 12px 16px; border-radius: 0; background: none; box-shadow: none;
+  border-image: url(__ART__ui/btn-gold.png?v=2) 30 35 fill / 12px 16px stretch; padding: 4px 10px; color: #2a1606; text-shadow: 0 1px 0 #f7dc9a;
+  filter: drop-shadow(0 6px 12px #000b); }
+/* 아래 판(시트) · 보고판 — 옻칠한 나무에 청동 테 */
+.ap .sheet { border: 18px solid transparent; border-image: url(__ART__ui/panel.png?v=2) 64 fill / 18px stretch; background: none; border-radius: 0; padding: 0 2px 6px; }
+.ap .mcard { border: 18px solid transparent; border-image: url(__ART__ui/panel.png?v=2) 64 fill / 18px stretch; background: none; border-radius: 0; padding: 4px; }
+`
