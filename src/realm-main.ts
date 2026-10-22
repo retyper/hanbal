@@ -17,6 +17,8 @@ import { migrate } from './realm/migrate.ts'
 import type { Order, Realm, RegionId, Report, ReportLine } from './realm/types.ts'
 import { mountRealmApp } from './ui/realm/app.ts'
 import { takeRetainers } from './ui/realm/legacy.ts'
+import { account, deleteAccount, finishSignIn, signIn, signOut } from './net/auth.ts'
+import { canSync, makeSync } from './net/sync.ts'
 import { bringRetainers } from './realm/legacy.ts'
 import { applyTier } from './realm/tier.ts'
 
@@ -171,6 +173,24 @@ function recordFor(s: Saved): GameRecord {
 
 if (state !== null) game = recordFor(state)
 
+// ───────── 계정 · 서버 맞추기 (docs/realm/SERVER.md) — 판은 늘 기기가 먼저, 서버는 뒤따른다
+const sync = makeSync({
+  local: () => state,
+  record: () => game,
+  adopt(saveJson, recordJson) {
+    // 서버 판으로 바꾼다 — 기기에 쓰고 판을 새로 연다 (불러오기·migrate 는 여느 때처럼 load 가 한다)
+    try { localStorage.setItem(KEY, saveJson) } catch { return }
+    if (recordJson !== null) {
+      try {
+        const rec = JSON.parse(recordJson) as GameRecord
+        const i = games.findIndex((g) => g.seed === rec.seed)
+        if (i < 0 || games[i]!.turns.length < rec.turns.length) { if (i >= 0) games.splice(i, 1); games.push(rec); saveGames(games) }
+      } catch { /* 기록이 깨졌으면 판만 */ }
+    }
+    location.reload()
+  },
+}, () => app.cloudChanged())
+
 const root = document.getElementById('realm')!
 const app = mountRealmApp(root, {
   onAdvance(next, report, orders, mine) {
@@ -186,6 +206,7 @@ const app = mountRealmApp(root, {
     turnStart = now
     taps = []
     saveGames(games)
+    sync.dirty(next.outcome != null) // 판이 끝났으면 바로, 아니면 2분 묶음
   },
   onNewGame(nation, region, tier) {
     if (game !== null && game.end === null) game.end = { kind: 'quit', season: state?.realm.season ?? 0, at: new Date().toISOString() }
@@ -194,6 +215,7 @@ const app = mountRealmApp(root, {
     turnStart = Date.now()
     taps = []
     saveGames(games)
+    sync.dirty(true)
     app.show(state.realm, null, null, true) // 새 판 — 서막부터
   },
   onTap(act, arg) {
@@ -213,8 +235,30 @@ const app = mountRealmApp(root, {
   gameCount: () => games.length,
   history: () => (game?.turns ?? []).map((t) => ({ s: t.s, lines: t.lines })),
   savedAt: () => state?.at ?? null,
+  cloud: {
+    available: canSync,
+    who: () => account(),
+    state: () => sync.state(),
+    signIn,
+    signOut() { signOut(); sync.forget(); app.cloudChanged() },
+    syncNow() { void sync.start() },
+    choose(pick) { void sync.choose(pick) },
+    async remove() {
+      await sync.wipe()
+      const r = await deleteAccount()
+      if (r === 'ok') sync.forget()
+      app.cloudChanged()
+      return r
+    },
+  },
 })
 app.show(state?.realm ?? null, state?.before ?? null, state?.report ?? null)
+
+void finishSignIn()
+  .then((r) => { if (r !== null && 'error' in r) console.warn('[계정] 로그인 못 함:', r.error) })
+  .catch((e: unknown) => console.warn('[계정] 로그인 못 함:', e))
+  .finally(() => { if (account() !== null) void sync.start(); app.cloudChanged() })
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sync.flush() })
 
 // 홈 화면에 앱으로 (형: "매번 웹페이지로 플레이해야돼?") — 활터와 같은 워커. https 에서만, 로드가 끝난 뒤에 (main.ts 와 같은 규칙)
 if (location.protocol === 'https:' && 'serviceWorker' in navigator) {

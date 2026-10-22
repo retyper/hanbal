@@ -494,3 +494,15 @@ export const SEASONP_CSS = `
 @keyframes sprain { from { transform: translate(0, 0); } to { transform: translate(-45vh, calc(100vh + 96px)); } }
 @media (prefers-reduced-motion: reduce) { .ap .seasonp { display: none; } }
 `
+
+/** 계정 칸 · 갈라진 판 고르기 (docs/realm/SERVER.md) */
+export const CLOUD_CSS = `
+.ap .acct { padding: 10px 12px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); margin-bottom: 14px; }
+.ap .acct p { margin: 4px 0; } .ap .btn.danger { color: #f0a090; border-color: #6a3a32; }
+.ap .acctl { margin-top: 6px; } .ap .acctl .btn { padding: 4px 12px; }
+.ap .cloudpick { position: absolute; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 16px; background: #0b0d11e6; }
+.ap .cloudpick > div { max-width: 520px; width: 100%; } .ap .cloudpick h3 { text-align: center; }
+.ap .cloudpick .pickrow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.ap .cloudpick .pickc { display: flex; flex-direction: column; gap: 4px; align-items: center; padding: 16px 10px; border-radius: 14px; }
+.ap .cloudpick .pickc b { font-family: var(--serif); font-size: 20px; color: var(--gold); } .ap .cloudpick .pickc small { color: var(--mute); }
+`

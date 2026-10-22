@@ -40,7 +40,7 @@ import { DEX_CSS, dexHtml, dexToastHtml, loadDex, recordDex, type DexBoard } fro
 import { dexCounts } from '../../realm/dex.ts'
 import { tierMul } from '../../realm/tier.ts'
 import { GROW_CSS, HERO_CSS, TITLE_MEAN, bondChip, growthHtml, heroRadar, nameHtml, roleLine, splitTitle, traitChips, traitLines } from './heroview.ts'
-import { APP_CSS, SEASONP_CSS } from './appstyle.ts'
+import { APP_CSS, CLOUD_CSS, SEASONP_CSS } from './appstyle.ts'
 import { installTips, TIP_CSS } from './tips.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
 import { APPROACH_DOES, APPROACH_NAME, HARD_LINE, WAR_CSS, openWar } from './battlefield.ts'
@@ -55,6 +55,7 @@ import { ironOf, riteOf } from '../../realm/paths.ts'
 import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
 import { FRONT_CSS, PROLOGUE_STEPS, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History } from './front.ts'
 import { SCENE_SOUND, makeMusic, playOnce, snd } from './sound.ts'
+import type { Side, SyncState } from '../../net/sync.ts'
 import { FEEL_CSS, alertFeel, ambushFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
 
 export interface AppHost {
@@ -73,6 +74,22 @@ export interface AppHost {
   history(): History
   /** 마지막으로 저장한 때 (ISO) — 첫 화면의 "이어 하기" */
   savedAt(): string | null
+  /** 계정·서버 맞추기 (docs/realm/SERVER.md) — 없으면 계정 칸을 안 그린다 */
+  cloud?: CloudHost
+}
+
+/** 계정 — realm-main 이 net/auth · net/sync 를 이어 준다 */
+export interface CloudHost {
+  /** 이 브라우저에서 맞추기가 되나 (gzip 이 없는 옛 브라우저는 안 된다) */
+  available(): boolean
+  who(): { email: string; name: string } | null
+  state(): SyncState
+  signIn(): void
+  signOut(): void
+  syncNow(): void
+  choose(pick: 'here' | 'there'): void
+  /** 계정 지우기 — 서버 자료·계정을 지운다 (기기 판은 남는다) */
+  remove(): Promise<'ok' | 'relogin'>
 }
 
 const ART: string = (import.meta.env?.BASE_URL ?? '/') + 'realm/'
@@ -237,9 +254,9 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
   /** 도감 — back: 돌아갈 판 바깥 화면 (null 이면 판으로) */
   | { kind: 'dex'; board: DexBoard; sel: string | null; back: Front | null }
 
-export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void } {
+export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = TIP_CSS + APP_CSS + LOG_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + (FRONT_CSS + SEASONP_CSS).replaceAll('__ART__', ART)
+  style.textContent = TIP_CSS + APP_CSS + LOG_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + CLOUD_CSS + (FRONT_CSS + SEASONP_CSS).replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
   installTips(root)
@@ -1888,7 +1905,52 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<div class="btns"><button class="btn" data-act="help">도움말</button><button class="btn" data-act="log-open">지난 기록</button><button class="btn" data-act="dex-open">도감</button><button class="btn ghost" data-act="lobby">첫 화면으로</button><button class="btn ghost" data-act="newgame">새 판</button><button class="btn ghost" data-act="mute">${muted() ? "소리 켜기" : "소리 끄기"}</button>`
     h += `<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a>${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}</div>`
     h += `<div class="btns"><button class="btn ghost" data-act="export">기록 내보내기 <span class="mute">${host.gameCount()}판</span></button></div>`
+    return h + acctHtml()
+  }
+
+  // ───────── 계정 (docs/realm/SERVER.md) — 나라 판 맨 아래 · 첫 화면 한 줄 · 갈라진 판 고르기
+  /** 계정 지우기를 한 번 눌렀다 — 두 번째 누름에서 지운다 (브라우저 확인 창은 쓰지 않는다) */
+  let acctArmed = false
+  function syncWord(s: SyncState): string {
+    switch (s.kind) {
+      case 'off': return '맞추지 않는다'
+      case 'busy': return '맞추는 중…'
+      case 'choose': return '두 기기의 판이 갈라졌다 — 고를 것'
+      case 'error': return `못 맞췄다 — ${s.msg}`
+      case 'idle': return s.at !== null ? `맞췄다 · ${new Date(s.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}` : '맞출 준비'
+    }
+  }
+  function acctHtml(): string {
+    const c = host.cloud
+    if (c === undefined) return ''
+    let h = `<h3>계정</h3><div class="acct">`
+    if (!c.available()) return h + `<p class="mute">이 브라우저에서는 계정 맞추기가 안 된다 (너무 옛 브라우저). 이 기기에서는 그대로 이어 한다.</p></div>`
+    const who = c.who()
+    if (who === null) {
+      h += `<p class="mute">구글로 들어오면 폰·피시 어디서든 같은 판과 도감을 이어 한다. 안 들어와도 이 기기에서는 그대로 된다.</p>`
+      return h + `<div class="btns"><button class="btn on" data-act="acct-in">구글로 들어가기</button></div></div>`
+    }
+    h += `<p><b>${esc(who.name !== '' ? who.name : who.email)}</b> <span class="mute">${esc(who.email)}</span></p><p class="mute">${esc(syncWord(c.state()))}</p>`
+    h += `<div class="btns"><button class="btn" data-act="acct-sync">지금 맞추기</button><button class="btn ghost" data-act="acct-out">나가기</button>`
+    h += `<button class="btn ghost danger" data-act="acct-del">${acctArmed ? '정말 지운다 — 서버의 판·도감·기록이 다 지워진다' : '계정 지우기'}</button></div></div>`
     return h
+  }
+  /** 첫 화면 한 줄 — 새 기기에서 판을 시작하기 전에 들어와야 저쪽 판을 받는다 */
+  function acctLine(): string {
+    const c = host.cloud
+    if (c === undefined || !c.available()) return ''
+    const who = c.who()
+    if (who === null) return `<p class="fine acctl"><button class="btn ghost" data-act="acct-in">구글로 이어 하기</button> <span class="mute">다른 기기의 판을 이어 한다</span></p>`
+    return `<p class="fine acctl mute">${esc(who.email)} · ${esc(syncWord(c.state()))}</p>`
+  }
+  /** 갈라진 판 고르기 — 카드 둘. 고르지 않은 쪽도 기기에 한 벌 남는다 (sync OTHER_KEY) */
+  function chooseHtml(): string {
+    const s = host.cloud?.state()
+    if (s?.kind !== 'choose') return ''
+    const card = (x: Side, pick: 'here' | 'there', title: string): string =>
+      `<button class="btn pickc" data-act="acct-pick" data-v="${pick}"><small>${title}</small><b>${esc(x.nation)}</b><span>${esc(seasonLabel(x.season))}</span><span class="mute">${x.savedAt !== '' ? esc(new Date(x.savedAt).toLocaleString('ko-KR')) : ''}</span></button>`
+    return `<div class="cloudpick"><div><h3>어느 판으로 이어 할까</h3><p class="mute">이 기기와 다른 기기에서 따로 나아간 판이 있다. 고르지 않은 쪽도 이 기기에 한 벌 남겨 둔다.</p>`
+      + `<div class="pickrow">${card(s.here, 'here', '이 기기 판')}${card(s.there, 'there', '다른 기기 판')}</div></div></div>`
   }
 
   /**
@@ -2373,7 +2435,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         // 도감 — 판을 넘어 남는 것 (VISION §5-4). 만난 장수 수를 단추에
         const c = dexCounts(loadDex())
         const dexBtn = `<button class="btn big" data-act="dex-open">도감 <small class="mute">${c.met}/${c.total}</small></button>`
-        return titleHtml(KIT, realm, host.savedAt(), links, realm === null && !tutorialOver(), dexBtn)
+        return titleHtml(KIT, realm, host.savedAt(), acctLine() + links, realm === null && !tutorialOver(), dexBtn)
       }
       case 'dex': return dexHtml(DEX_KIT, f.board, f.sel, f.back === null ? '판으로' : '처음으로')
       case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null), tierWon)
@@ -2784,6 +2846,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'tab': markSeen(d['tab']!); openSheet({ kind: d['tab'] as 'army' }); return
       case 'help': openSheet({ kind: 'help' }); return
       case 'export': host.onExport(); return
+      case 'acct-in': host.cloud?.signIn(); return
+      case 'acct-out': host.cloud?.signOut(); acctArmed = false; paint(); return
+      case 'acct-sync': host.cloud?.syncNow(); return
+      case 'acct-pick': host.cloud?.choose(d['v'] === 'there' ? 'there' : 'here'); return
+      case 'acct-del':
+        if (!acctArmed) { acctArmed = true; paint(); return }
+        acctArmed = false
+        void host.cloud?.remove().then((r) => { if (r === 'relogin') failNote(new Error('계정을 지우려면 다시 들어와야 한다 — 구글로 들어가기를 한 번 더 누른 뒤 지우기')); paint() })
+        return
       case 'failclose': root.querySelector('.failbox')?.remove(); return
       case 'mute': try { localStorage.setItem(MUTE_KEY, muted() ? '0' : '1') } catch { /* 저장 못 하는 곳 */ } music.refresh(); break
       case 'focus': focus = focus === d['id'] ? null : d['id']!; break
@@ -3152,6 +3223,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   })
 
   return {
+    cloudChanged() {
+      // 고르기 카드는 판 위·첫 화면 어디서든 맨 위에
+      root.querySelector('.cloudpick')?.remove()
+      const h = chooseHtml()
+      if (h !== '') root.insertAdjacentHTML('beforeend', h)
+      paint()
+    },
     show(r, b, rep, fresh = false) {
       realm = r
       before = b
