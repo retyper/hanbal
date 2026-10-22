@@ -6,7 +6,15 @@
 
 ## ★★ 여기서 이어서 한다 (2026-10-17 — 대개편 설계 중)
 
-### ▶ 2026-10-22 새벽 둘 — 소리 · 여인 열일곱 (다음 대화는 여기부터)
+### ▶ 2026-10-22 낮 — 파이어베이스 · 글꼴 · 소리는 형이 받는다 (다음 대화는 여기부터)
+
+- **파이어베이스 만들어 둠** (콘솔: 형 계정 roqkfeke12): 프로젝트 chilsippalguk · Firestore 서울(asia-northeast3, Standard, 무료 Spark) · 보안 규칙 `firestore.rules`(users/{uid}/** 는 그 사람만) 게시 · Google 로그인 켬(공개 이름 칠십팔국) · 승인 도메인에 retyper.github.io · 웹 앱 chilsippalguk-web 설정은 `src/net/firebase-config.ts`
+  - 다음: SDK 없이 REST 로 붙인다(A6 의존 0) — 구글 OAuth(id_token) → identitytoolkit signInWithIdp → Firestore REST. 구글 클라우드 콘솔에서 OAuth 웹 클라이언트에 리디렉션 주소(retyper.github.io/hanbal/realm.html) 넣기가 남았다
+- **글꼴 셋:** 본문 고운돋움 · 제목 고운바탕 · 큰 의식 글자 송명 (--body/--serif/--display · tools/fetch-gfont.mjs)
+- **소리:** 내가 고른 CC0 는 형이 "너무 별로" — 형이 받아 `assets_src/realm/sfx-in/` 에 넣는다(지금 bgm후보.mp3 하나, 출처 아직). 국립국악원 국악기 디지털 음원은 공공누리 1유형(출처 표시, 상업·변경 가능)
+- 재상: 장수 하나를 앉히는 자리 권함(짐작·맡김(내정만)·작은 보정·군대 못 이끎) — 형 답 기다림
+
+### ▶ 2026-10-22 새벽 둘 — 소리 · 여인 열일곱
 
 - **소리 붙임:** `public/realm/sfx/` CC0 후보 67개(Freesound·OpenGameArt, CREDITS.txt) · 고르는 곳 `public/realm/sound-picker.html` (★ 지금 쓰는 것 표시) · 고른 글자는 `src/ui/realm/sound.ts` PICK 한 곳
   - 배경 음악(지도·싸움) + 계절 바람소리 한 줄씩, 탭이 가려지면 멈춤 · 첫 탭에 시작(브라우저가 막음) · 「소리 끄기」가 음악도 끈다
