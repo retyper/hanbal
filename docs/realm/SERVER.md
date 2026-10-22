@@ -40,6 +40,7 @@ users/{uid}/saves/main           판 한 벌 — 계정마다 하나 (나중에 
   data       bytes   gzip(JSON(Saved))      Saved 는 realm-main 의 v:2 그대로 (migrate 도 그대로 탄다)
   seed       int     판의 시드 — 판의 이름
   rev        int     log.length — 이 판에서 넘긴 계절 수. 같은 판이면 클수록 새것
+  h          string  logHash(log) — 명령 기록의 지문(FNV-1a). "서버 판이 내 판의 앞부분인가"를 data 없이 가린다
   meta       map     {nation, nationName, region, tier, season, outcome?}  고르기 카드용 — data 를 안 풀고 보인다
   device     map     {id, kind: 'web'|'android'|'ios'}
   savedAt    string  기기 시각 (ISO) — 사람에게 "3분 전"
@@ -69,7 +70,9 @@ users/{uid}/records/{seed}       판 기록 한 판에 한 장
 | 있음 | 없음 | 받는다 (data 를 받아 풀어 기기에 저장) |
 | 같은 판(seed 같음), 서버 rev > 기기 rev, 기기는 마지막 맞춤 뒤 안 나아감 | | 받는다 — 다른 기기에서 더 둔 판 |
 | 같은 판, 기기 rev > 서버 rev, 서버는 마지막 맞춤 그대로(updateTime 같음) | | 올린다 |
-| 둘 다 마지막 맞춤 뒤에 나아감 (같은 판이 갈라짐 · 다른 판) | | **고른다** — 카드 둘: "이 기기 판(사로국 · 3년 봄 · 방금)" / "저 기기 판(구야국 · 1년 가을 · 2시간 전)". 고르지 않은 쪽은 기기의 `.v2.prev` 처럼 한 벌 남긴다(`hanbal.realm.v2.other`) |
+| 둘 다 나아감(처음 맞추는 기기 · 로그아웃 뒤 포함), 같은 판, 기기 rev ≥ 서버 rev, 기기 기록의 앞 rev 계절 지문 = 서버 h | | 올린다 — 서버 판이 내 판의 앞부분이다 |
+| 둘 다 나아감, 같은 판, 서버 rev > 기기 rev | | 서버 판을 받아 본다 → 내 기록이 그 앞부분이면 받고(lineage), 아니면 고른다 |
+| 그 밖 (같은 판이 갈라짐 · 다른 판) | | **고른다** — 카드 둘: "이 기기 판(사로국 · 3년 봄 · 방금)" / "저 기기 판(구야국 · 1년 가을 · 2시간 전)". 고르지 않은 쪽은 기기의 `.v2.prev` 처럼 한 벌 남긴다(`hanbal.realm.v2.other`) |
 | 같음 | 같음 | 아무것도 안 한다 |
 
 올리기:

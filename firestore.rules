@@ -18,7 +18,7 @@ service cloud.firestore {
         allow read, delete: if me(uid);
         allow create, update: if me(uid)
           && slot in ['main', 'slot2', 'slot3']
-          && request.resource.data.keys().hasOnly(['v', 'fmt', 'data', 'seed', 'rev', 'meta', 'device', 'savedAt', 'updatedAt'])
+          && request.resource.data.keys().hasOnly(['v', 'fmt', 'data', 'seed', 'rev', 'h', 'meta', 'device', 'savedAt', 'updatedAt'])
           && request.resource.data.data is bytes && request.resource.data.data.size() < 900000
           && request.resource.data.seed is int && request.resource.data.rev is int;
       }
