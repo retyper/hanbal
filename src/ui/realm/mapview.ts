@@ -68,7 +68,7 @@ export const MAP_CSS = `
 .map { position: relative; height: 100%; aspect-ratio: ${W} / ${H}; margin: 0 auto; background: #2a261f center / cover no-repeat;
   user-select: none; -webkit-user-select: none; container-type: size; }
 .map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.map .nd { position: absolute; transform: translate(-50%, -62%); width: calc(8.5% * var(--s, 1) * var(--ns, 1)); text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.map .nd { position: absolute; transform: translate(-50%, -62%); width: calc(8.5% * var(--s, 1) * var(--ns, 1) * var(--cs, 1)); text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .map .nd img.st { width: 100%; filter: drop-shadow(0 2px 2px rgba(0,0,0,.55)); }
 /* 살아 있는 지도 — CSS 만 (규칙 4: 숨은 탭에선 그리지 않는다). 밥 짓는 연기 · 포구의 배 · 구름 그림자 */
 .map .nd .smk { position: absolute; left: 46%; top: 10%; width: 30%; aspect-ratio: 1; pointer-events: none; z-index: 1; }
@@ -116,6 +116,8 @@ export const MAP_CSS = `
 /* 받침 — 주인 색이 땅에 번진 둥근 자리 (고을이 땅 위에 앉아 보이게). 도읍은 크고 금빛 테 */
 .map .nd .base { position: absolute; left: 50%; top: 80%; width: 118%; aspect-ratio: 2.6; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; z-index: -1;
   background: radial-gradient(ellipse at 50% 45%, color-mix(in srgb, var(--c) 70%, transparent) 0, color-mix(in srgb, var(--c) 35%, transparent) 45%, transparent 72%); }
+/* 도읍은 크게 — 군장이 있는 곳 (형: "도읍은 별표가 있기는 하지만 이미지도 좀 달라야") */
+.map .nd.k-cap { --cs: 1.45; z-index: 2; }
 .map .nd.k-cap .base { width: 140%; box-shadow: inset 0 0 0 2px #e8c06a99; }
 .map .nd.k-free .base { opacity: .4; }
 /* 고리 — 평소엔 없다. 고를 때 · 갈 곳 · 위협받을 때만 */

@@ -208,10 +208,8 @@ const NODE_ICON: Readonly<Record<string, string>> = {
   'miri-vil': 'settle-river-town',
   'goja-vil': 'settle-salt-town',
   'anya-vil': 'settle-mountain-hold',
-  'n-haseulla-cap': 'settle-dongye', // 하슬라 — 동예의 바닷가 읍락 (과하마 · 물범 가죽)
   'm-baekje-v': 'settle-river-town',
   'm-sodo': 'settle-sodo-village',
-  'y-usisan-cap': 'settle-whaling', // 우시산 — 반구대의 고래잡이
 }
 
 /**
@@ -227,7 +225,32 @@ export function nodePos(region: RegionId | undefined, id: string): readonly [num
   return NODE_POS[id]
 }
 
+/**
+ * 도읍의 갈래 — 군장이 있는 곳은 갈래마다 생김이 다르다 (형: "도읍은 별표가 있기는 하지만 이미지도 좀 달라야 … 사료로 최대한").
+ *  - 마한: 국읍마다 천군이 있고 소도에 큰 나무와 솟대 · 집은 초가 흙집이 무덤 꼴 (위서 동이전 한전 "草屋土室 形如冢")
+ *  - 진한·변한: 성책을 두르고 나무를 가로로 쌓아 집을 지었다 (변진 "有城柵" · "作屋橫累木") · 변한은 쇠가 난다
+ *  - 고구려: 돌로 쌓은 성 · 큰 집 곁의 높은 다락 창고 부경 (고구려전 "無大倉庫 家家自有小倉 名之為桴京")
+ *  - 부여: 둥근 목책을 성으로 삼고 궁실 · 창고 · 뇌옥이 있다 (부여전 "作城柵皆員 … 有宮室倉庫牢獄")
+ *  - 동예·옥저: 큰 군장 없이 읍락의 어른(삼로)이 다스린다 · 바닷가 (동예전·동옥저전) — 탐라·우산도 바닷가 읍락으로
+ * 고을 id 로 가린다 — 도읍은 늘 `-cap` 으로 끝나고, 앞 글자가 판의 갈래다 (m- 마한 · g- 고구려 · b- 부여 · n-/o-/d-/t-/u- 동쪽·바다)
+ */
+export type CapKin = 'mahan' | 'jinbyeon' | 'goguryeo' | 'buyeo' | 'dongye'
+export function capKin(id: string): CapKin {
+  if (id.startsWith('m-')) return 'mahan'
+  if (id.startsWith('g-') || id === 'y-yangmaek-cap') return 'goguryeo' // 양맥 — 압록 가의 맥족, 고구려와 같은 갈래
+  if (id.startsWith('b-')) return 'buyeo'
+  if (/^(n|o|d|t|u)-/.test(id)) return 'dongye'
+  return 'jinbyeon'
+}
+/** 도읍 기호 — 목책을 둘렀으면 갈래의 성, 아니면 울 없는 군장 마을. 동예·옥저는 늘 읍락 (목책 그림과 실제가 어긋나지 않게) */
+export function capitalIcon(n: RNode): string {
+  const kin = capKin(n.id)
+  if (kin === 'dongye') return 'capital-dongye'
+  return n.tags.includes('palisade') ? `capital-${kin}` : 'capital-open'
+}
+
 export function nodeIcon(n: RNode): string {
+  if (n.kind === 'capital' || n.id.endsWith('-cap')) return capitalIcon(n)
   if (n.kind === 'wild') return n.owner === null || n.hh <= 0 ? KIND_ICON.wild : (SETTLED_ICON[n.id] ?? (n.tags.includes('pasture') ? 'settle-horse-ranch' : 'settle-hamlet'))
   // 마을은 지은 것이 보인다 — 해자 · 목책 (형: "짓기·자원이 지도에 안 보인다")
   if (n.kind === 'village' && NODE_ICON[n.id] === undefined) {
@@ -236,8 +259,6 @@ export function nodeIcon(n: RNode): string {
     // 말이 나는 들은 목장 마을 — 특산이 그림에서 보이게 (형: "특산품이 다른거라면 이미지마다 명확히")
     if (n.tags.includes('pasture')) return 'settle-horse-ranch'
   }
-  // 도읍 그림은 통나무 울타리를 둘렀다 — 목책이 없는 도읍은 울타리 없는 큰 마을로 (형: "목책이나 해자 … 이미지랑 일치 확실히 시켜야 혼란이 없을듯")
-  if (n.kind === 'capital' && NODE_ICON[n.id] === undefined && !n.tags.includes('palisade')) return 'settle-market'
   return NODE_ICON[n.id] ?? KIND_ICON[n.kind]
 }
 
