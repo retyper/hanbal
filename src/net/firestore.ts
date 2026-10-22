@@ -15,6 +15,8 @@ export type FsFields = Record<string, FsValue>
 
 const ROOT = `projects/${FIREBASE.projectId}/databases/(default)/documents`
 const API = `https://firestore.googleapis.com/v1/${ROOT}`
+/** keepalive fetch 의 몸 한계 (브라우저 64KB) — 머리·여유를 빼고 */
+const KEEPALIVE_MAX = 62_000
 
 /** 문서의 온전한 이름 — commit 이 쓴다 */
 export const docName = (path: string): string => `${ROOT}/${path}`
@@ -81,9 +83,10 @@ export class FsError extends Error {
   get conflict(): boolean { return this.code === 'FAILED_PRECONDITION' || this.code === 'ABORTED' || this.status === 409 }
 }
 
-async function call(url: string, token: string, init: RequestInit = {}): Promise<Response> {
+/** allow404: 읽기에서만 — 없는 문서는 null 이다. 쓰기(commit)의 404 는 실패다 (프로젝트·DB 가 틀렸거나 문서가 지워졌다) */
+async function call(url: string, token: string, init: RequestInit = {}, allow404 = false): Promise<Response> {
   const res = await fetch(url, { ...init, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } })
-  if (!res.ok && res.status !== 404) {
+  if (!res.ok && !(allow404 && res.status === 404)) {
     let code = '', msg = res.statusText
     try { const e = (await res.json()) as { error?: { status?: string; message?: string } }; code = e.error?.status ?? ''; msg = e.error?.message ?? msg } catch { /* 몸이 JSON 이 아니다 */ }
     throw new FsError(res.status, code, msg)
@@ -96,7 +99,7 @@ export interface FsDoc { readonly fields: Record<string, unknown>; readonly upda
 /** 문서 하나 — 없으면 null. mask 를 주면 그 필드만 받는다 (판의 data 를 안 받고 meta 만 볼 때) */
 export async function getDoc(path: string, token: string, mask?: readonly string[]): Promise<FsDoc | null> {
   const q = mask !== undefined ? '?' + mask.map((m) => `mask.fieldPaths=${encodeURIComponent(m)}`).join('&') : ''
-  const res = await call(`${API}/${path}${q}`, token)
+  const res = await call(`${API}/${path}${q}`, token, {}, true)
   if (res.status === 404) return null
   const d = (await res.json()) as { fields?: FsFields; updateTime: string }
   return { fields: fromFields(d.fields ?? {}), updateTime: d.updateTime }
@@ -107,7 +110,7 @@ export async function listIds(collection: string, token: string): Promise<string
   const ids: string[] = []
   let page = ''
   do {
-    const res = await call(`${API}/${collection}?pageSize=300&mask.fieldPaths=v${page !== '' ? `&pageToken=${encodeURIComponent(page)}` : ''}`, token)
+    const res = await call(`${API}/${collection}?pageSize=300&mask.fieldPaths=v${page !== '' ? `&pageToken=${encodeURIComponent(page)}` : ''}`, token, {}, true)
     if (res.status === 404) break
     const d = (await res.json()) as { documents?: Array<{ name: string }>; nextPageToken?: string }
     for (const x of d.documents ?? []) ids.push(x.name.slice(x.name.lastIndexOf('/') + 1))
@@ -136,7 +139,10 @@ export async function commit(writes: readonly Write[], token: string, keepalive 
       }
     }),
   }
-  const res = await call(`https://firestore.googleapis.com/v1/${ROOT}:commit`, token, { method: 'POST', body: JSON.stringify(body), keepalive })
+  const json = JSON.stringify(body)
+  // keepalive 는 몸 64KB 까지 — 넘으면 안 보낸다 (부르는 쪽이 다음 열 때 올린다)
+  if (keepalive && json.length > KEEPALIVE_MAX) throw new FsError(413, 'TOO_LARGE', 'keepalive 몸이 크다')
+  const res = await call(`https://firestore.googleapis.com/v1/${ROOT}:commit`, token, { method: 'POST', body: json, keepalive })
   const d = (await res.json()) as { writeResults?: Array<{ updateTime?: string }>; commitTime?: string }
   return (d.writeResults ?? []).map((r) => r.updateTime ?? d.commitTime ?? '')
 }

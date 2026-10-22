@@ -116,7 +116,14 @@ export async function idToken(): Promise<string | null> {
   const s = load()
   if (s === null) return null
   if (mem !== null && mem.exp - 60_000 > Date.now()) return mem.token
-  const d = await post(`https://securetoken.googleapis.com/v1/token?key=${FIREBASE.apiKey}`, new URLSearchParams({ grant_type: 'refresh_token', refresh_token: s.refresh }))
+  let d: Record<string, unknown>
+  try {
+    d = await post(`https://securetoken.googleapis.com/v1/token?key=${FIREBASE.apiKey}`, new URLSearchParams({ grant_type: 'refresh_token', refresh_token: s.refresh }))
+  } catch (e) {
+    // 토큰이 죽었다(다른 기기에서 계정을 지움 · 막힘) — 로그아웃하고 손님으로. 판은 기기에 남는다
+    if (/INVALID_REFRESH_TOKEN|USER_NOT_FOUND|USER_DISABLED|TOKEN_EXPIRED/.test(String((e as Error).message))) { signOut(); return null }
+    throw e
+  }
   mem = { token: String(d['id_token']), exp: Date.now() + Number(d['expires_in'] ?? 3600) * 1000 }
   if (typeof d['refresh_token'] === 'string' && d['refresh_token'] !== s.refresh) store({ ...s, refresh: d['refresh_token'] })
   return mem.token

@@ -179,7 +179,7 @@ const sync = makeSync({
   record: () => game,
   adopt(saveJson, recordJson) {
     // 서버 판으로 바꾼다 — 기기에 쓰고 판을 새로 연다 (불러오기·migrate 는 여느 때처럼 load 가 한다)
-    try { localStorage.setItem(KEY, saveJson) } catch { return }
+    try { localStorage.setItem(KEY, saveJson) } catch { return false }
     if (recordJson !== null) {
       try {
         const rec = JSON.parse(recordJson) as GameRecord
@@ -188,6 +188,7 @@ const sync = makeSync({
       } catch { /* 기록이 깨졌으면 판만 */ }
     }
     location.reload()
+    return true
   },
 }, () => app.cloudChanged())
 
@@ -244,9 +245,11 @@ const app = mountRealmApp(root, {
     syncNow() { void sync.start() },
     choose(pick) { void sync.choose(pick) },
     async remove() {
-      await sync.wipe()
-      const r = await deleteAccount()
-      if (r === 'ok') sync.forget()
+      // 서버 자료부터 지우고 계정을 지운다. 로그인이 오래돼 계정이 안 지워지면 로그아웃까지만 — 다시 들어와 한 번 더 (맞추기가 다시 올리지 않게)
+      let r: 'ok' | 'relogin' | 'error' = 'error'
+      try { await sync.wipe(); r = await deleteAccount() } catch (e) { console.warn('[계정] 지우기 실패:', e) }
+      if (r === 'relogin') signOut()
+      if (r !== 'error') sync.forget()
       app.cloudChanged()
       return r
     },

@@ -89,7 +89,7 @@ export interface CloudHost {
   syncNow(): void
   choose(pick: 'here' | 'there'): void
   /** 계정 지우기 — 서버 자료·계정을 지운다 (기기 판은 남는다) */
-  remove(): Promise<'ok' | 'relogin'>
+  remove(): Promise<'ok' | 'relogin' | 'error'>
 }
 
 const ART: string = (import.meta.env?.BASE_URL ?? '/') + 'realm/'
@@ -2853,7 +2853,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'acct-del':
         if (!acctArmed) { acctArmed = true; paint(); return }
         acctArmed = false
-        void host.cloud?.remove().then((r) => { if (r === 'relogin') failNote(new Error('계정을 지우려면 다시 들어와야 한다 — 구글로 들어가기를 한 번 더 누른 뒤 지우기')); paint() })
+        void host.cloud?.remove().then((r) => {
+          if (r === 'relogin') failNote(new Error('서버의 판·기록은 지웠다. 계정까지 지우려면 「구글로 들어가기」로 다시 들어와 「계정 지우기」를 한 번 더 누른다'))
+          else if (r === 'error') failNote(new Error('계정을 못 지웠다 — 잠시 뒤 다시'))
+          paint()
+        })
         return
       case 'failclose': root.querySelector('.failbox')?.remove(); return
       case 'mute': try { localStorage.setItem(MUTE_KEY, muted() ? '0' : '1') } catch { /* 저장 못 하는 곳 */ } music.refresh(); break

@@ -15,11 +15,9 @@ export interface Progress {
   /** 혈통 — 열쇠 `seed:hero` (ui/realm/dex.ts ClanKid) */
   clan: Record<string, unknown>
   unlock: UnlockRec
-  /** 계승 가신 (ui/realm/legacy.ts Rec) — 없으면 null */
-  retain: unknown
 }
 
-export const EMPTY: Progress = { dex: {}, clan: {}, unlock: { won: [] }, retain: null }
+export const EMPTY: Progress = { dex: {}, clan: {}, unlock: { won: [] } }
 
 const maxRec = (a: Record<string, number> | undefined, b: Record<string, number> | undefined): Record<string, number> | undefined => {
   if (a === undefined && b === undefined) return undefined
@@ -30,23 +28,25 @@ const maxRec = (a: Record<string, number> | undefined, b: Record<string, number>
 
 /**
  * a(이 기기)와 b(서버)를 합친다. 겹치면:
- * 도감은 비트 OR · 처음 본 판은 a 먼저 / 혈통은 합집합(a 먼저) / 해금은 합집합·큰 값·done>quit / 계승 가신은 a 가 있으면 a (기기에서 방금 고른 것)
+ * 도감은 비트 OR · 처음 본 판은 b(서버) 먼저 / 혈통은 합집합(b 먼저) / 해금은 합집합(정렬)·큰 값·done>quit.
+ * 겹칠 때 늘 서버 쪽을 따르고 이긴 판은 정렬한다 — 두 기기가 서로 제 것을 올리는 핑퐁(쓰기 낭비)이 없다.
+ * 계승 가신은 맞추지 않는다 (sync.ts PROGRESS_KEYS)
  */
 export function mergeProgress(a: Progress, b: Progress): Progress {
   const dex: Record<string, DexEntry> = {}
   for (const [id, e] of Object.entries(b.dex)) dex[id] = { ...e }
   for (const [id, e] of Object.entries(a.dex)) {
     const o = dex[id]
-    const bb = e.b ?? o?.b
+    const bb = o?.b ?? e.b
     dex[id] = { f: (o?.f ?? 0) | e.f, ...(bb !== undefined ? { b: bb } : {}) }
   }
-  const clan = { ...b.clan, ...a.clan }
-  const won = [...new Set([...a.unlock.won, ...b.unlock.won])]
+  const clan = { ...a.clan, ...b.clan }
+  const won = [...new Set([...a.unlock.won, ...b.unlock.won])].sort()
   const tut = a.unlock.tutorial === 'done' || b.unlock.tutorial === 'done' ? 'done' : (a.unlock.tutorial ?? b.unlock.tutorial)
   const tiers = maxRec(a.unlock.tiers, b.unlock.tiers)
   const nations = maxRec(a.unlock.nations, b.unlock.nations)
   const unlock: UnlockRec = { won, ...(tut !== undefined ? { tutorial: tut } : {}), ...(tiers !== undefined ? { tiers } : {}), ...(nations !== undefined ? { nations } : {}) }
-  return { dex, clan, unlock, retain: a.retain ?? b.retain }
+  return { dex, clan, unlock }
 }
 
 /** 같은가 — 합친 것이 서버와 다를 때만 올린다 (쓰기를 아낀다, S6) */
@@ -75,7 +75,7 @@ export interface RemoteHead { readonly seed: number; readonly rev: number; reado
 /** 이 기기 판 — 지문은 앞에서 n 계절까지로 잰다 (서버 판이 내 판의 앞부분인가) */
 export interface LocalHead { readonly seed: number; readonly rev: number; hashAt(n: number): string }
 /** 마지막으로 맞춘 자리 (기기의 hanbal.sync) */
-export interface LastSync { readonly seed: number; readonly rev: number; readonly updateTime: string }
+export interface LastSync { readonly seed: number; readonly rev: number; readonly h: string; readonly updateTime: string }
 
 /** fetch: 서버 판이 더 나아갔는데 갈라졌는지 모른다 — 받아서 lineage 로 가린다 */
 export type Plan = 'none' | 'push' | 'pull' | 'fetch' | 'choose'
@@ -84,11 +84,16 @@ export function plan(local: LocalHead | null, remote: RemoteHead | null, last: L
   if (local === null && remote === null) return 'none'
   if (remote === null) return 'push'
   if (local === null) return 'pull'
-  const localMoved = last === null || last.seed !== local.seed || last.rev !== local.rev
+  const localMoved = last === null || last.seed !== local.seed || last.rev !== local.rev || local.hashAt(last.rev) !== last.h
   const remoteMoved = last === null || last.updateTime !== remote.updateTime
   if (!localMoved && !remoteMoved) return 'none'
   if (!localMoved) return 'pull'
-  if (!remoteMoved) return 'push'
+  if (!remoteMoved) {
+    // 서버는 맞춘 그대로. 이 기기 판이 그 맞춘 판의 뒤를 이은 것일 때만 올린다 —
+    // 저장이 막혀 옛 판으로 물러났거나 묵은 탭에서 갈라진 판이 서버의 더 나아간 판을 덮지 않게
+    const descends = last !== null && local.seed === last.seed ? local.rev >= last.rev && local.hashAt(last.rev) === last.h : true
+    return descends ? 'push' : 'fetch'
+  }
   // 둘 다 나아갔다 (또는 처음 맞추는 기기 · 로그아웃했다 다시 들어옴). 같은 판이면 기록의 앞부분으로 가린다 — 한 줄기면 덮어도 잃는 계절이 없다
   if (local.seed !== remote.seed) return 'choose'
   if (local.rev >= remote.rev) return local.hashAt(remote.rev) === remote.h ? (local.rev === remote.rev ? 'none' : 'push') : 'choose'
