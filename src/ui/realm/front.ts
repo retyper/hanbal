@@ -12,6 +12,7 @@
  */
 import type { NationInfo } from '../../realm/data/nations.ts'
 import { badgeRank, lockWhy } from './unlock.ts'
+import { CHAPTERS, chapterOfRegion } from '../../realm/data/campaign.ts'
 import { seasonOf } from '../../realm/calendar.ts'
 import { battleName, josa, seasonLabel } from '../../realm/data/prose.ts'
 import type { Realm, RegionId, ReportLine } from '../../realm/types.ts'
@@ -111,9 +112,23 @@ function agoText(iso: string): string {
  * `unlocked` 가 없으면 다 열린 것으로 (시험)
  */
 export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<RegionId>, tierWon?: (r: RegionId) => number): string {
-  let h = `<div class="front boards"><div class="fhead"><button class="btn ghost" data-act="fr-back">‹ 처음으로</button><h2>어느 이야기로 시작할까</h2></div><div class="bcards">`
+  let h = `<div class="front boards"><div class="fhead"><button class="btn ghost" data-act="fr-back">‹ 처음으로</button><h2>어느 이야기로 시작할까</h2></div>`
   const names = Object.fromEntries(BOARDS.map((b) => [b.id, b.name])) as Partial<Record<RegionId, string>>
+  // 캠페인 — 사료의 사건 하나가 한 장 (CAMPAIGN.md · 형: "문명처럼 … 특수한 승리조건"). 장은 배우는 차례로 열린다
+  h += `<h3 class="bsec"><b>캠페인</b><span>삼국의 새벽 — 사서에 남은 일을 그 사람이 되어</span></h3><div class="bcards chaps">`
+  CHAPTERS.forEach((c, i) => {
+    const prev = CHAPTERS[i - 1]
+    const ready = c.region !== null
+    const open = ready && (unlocked === undefined || unlocked.has(c.region!))
+    const why = !ready ? '짓는 중 — 곧 열린다' : prev !== undefined ? `앞 장 「${prev.name}」에서 이기면 열린다` : lockWhy(c.region!, names)
+    const peek = `<span class="peek"><small>${c.n}장 · ${k.esc(c.era)}</small><b>${k.esc(c.name)}</b><span class="ph">${k.esc(c.hook)}</span>`
+      + `<span class="pp">${k.esc(c.hero)} — ${k.esc(c.goal)}</span></span>`
+    h += `<button class="bcard chap${open ? '' : ' locked'}" ${open ? `data-act="fr-board" data-v="${c.region}"` : 'data-act="fr-locked"'} data-peek><span class="bth" style="background-image:url('${k.art}${c.art}')">`
+    h += `<i class="bbadge">${c.n}장</i>${open ? '' : '<i class="lock">🔒</i>'}<span class="btitle"><small>${k.esc(c.era)} · ${k.esc(c.hero)}</small><b>${k.esc(c.name)}</b>${open ? '' : `<em>${k.esc(why)}</em>`}</span></span>${peek}</button>`
+  })
+  h += `</div><h3 class="bsec"><b>자유 판</b><span>나라 하나를 골라 마음대로 — 정복 · 맹주 · 철과 뱃길 · 큰 제사</span></h3><div class="bcards">`
   for (const b of BOARDS) {
+    if (CHAPTERS.some((c) => c.region === b.id)) continue // 장으로 올라간 판
     const open = unlocked === undefined || unlocked.has(b.id)
     // 카드는 그림 · 때 · 제목만 — 이야기와 작은 표는 펼침(길게 누르기 · 마우스 올리기 — tips.ts)으로
     const goal = b.id === 'tutorial' ? '미추홀 도읍을 쥐면 끝' : `도읍 ${winNeed(b.id)}곳을 쥐면 이긴다`
@@ -210,7 +225,10 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
       ['good-tribute-bell', '사신', '화친·동맹·교역 — 적의 적은 벗이 된다'],
       [r.known !== undefined ? 'unit-scouts' : 'status-spy', r.known !== undefined ? '정찰' : '첩자', r.known !== undefined ? '정찰꾼과 군대가 다닌 만큼 지도가 밝아진다' : '적의 군세와 속셈을 엿본다'],
     ]
-    body = `<div class="pl pgoal"><p class="gl">도읍 <b>${need}</b>곳을 쥐면 이긴다.<br><small>우리 도읍을 잃으면 진다.</small></p><div class="ways">`
+    // 캠페인의 장이면 그 장의 목표를 (CAMPAIGN.md)
+    const ch = chapterOfRegion(region)
+    const head = ch !== undefined ? `<small class="gch">${ch.n}장 · ${k.esc(ch.name)}</small>${k.esc(ch.goal)}.` : `도읍 <b>${need}</b>곳을 쥐면 이긴다.`
+    body = `<div class="pl pgoal"><p class="gl">${head}<br><small>우리 도읍을 잃으면 진다.</small></p><div class="ways">`
       + ways.map(([ic, t, d]) => `<div class="way">${k.icon(ic, 'wic')}<b>${t}</b><span>${d}</span></div>`).join('')
       + `</div><p class="ptip">한 계절에 명령을 정하고 <b>다음 계절</b>을 누른다. 모든 나라가 한꺼번에 움직인다.</p></div>`
   }
@@ -388,6 +406,12 @@ export const FRONT_CSS = `
 .ap .front .bb .bmeta.tierw, .ap .front .bb .bmeta.lockwhy { display: block; }
 .ap .front .btitle em { font-style: normal; font-size: 12.5px; color: #e8c070; margin-top: 2px; }
 .ap .front .bcards .bcard { -webkit-touch-callout: none; }
+/* 캠페인 · 자유 판 머리 */
+.ap .front .bsec { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; max-width: 1180px; margin: 14px auto 0; padding: 0 16px; font-weight: 400; }
+.ap .front .bsec b { font-family: var(--display); font-weight: 400; font-size: 22px; color: #f3d48a; letter-spacing: .08em; } .ap .front .bsec span { font-size: 13px; color: #b8ad96; }
+.ap .front .bcards.chaps { padding-bottom: 8px; }
+.ap .front .pgoal .gl .gch { display: block; font-size: 13px; letter-spacing: .1em; color: #8a6a3a; margin-bottom: 4px; }
+.ap .front .bcard.chap .bbadge { background: linear-gradient(#f0d08a, #b8863a); font-family: var(--serif); }
 .ap .front .bcard.locked { cursor: default; } .ap .front .bcard.locked .bth { filter: grayscale(1) brightness(.45); position: relative; }
 .ap .front .bcard.locked .bth .lock { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-style: normal; font-size: 34px; }
 .ap .front .bcard.locked .bb b { color: #8f8778; } .ap .front .bcard.locked .bmeta.lockwhy { color: #e8c070; }

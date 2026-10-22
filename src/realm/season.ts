@@ -14,6 +14,7 @@
  * 맞닿지 않은 길로 들어온 증원은 여전히 못 본다 — 그건 정찰의 몫이다.
  */
 import { roll } from '../core/rng.ts'
+import { scenarioOutcome } from './scenario.ts'
 import { P } from '../tune/params.ts'
 import {
   OPEN_FIELD, ambushChance, ambushSizePenalty, headcount, power, strength, winChance,
@@ -1258,9 +1259,11 @@ export function checkOutcome(r: Realm): 'win' | 'lose' | null {
     const any = Object.values(r.nodes).some((n) => n.owner === me && n.kind !== 'sodo')
     return ex !== undefined && any && r.season - ex.since < P.realm.exileSeasons ? null : 'lose'
   }
+  // 캠페인의 장 — 그 장의 목표로 (scenario.ts)
+  if (r.scenario !== undefined) return scenarioOutcome(r)
   let held = 0
   for (const f of Object.values(r.factions)) if (r.nodes[f.capital]?.owner === me) held++
-  // 배우는 판 — 상대 도읍 하나만 쥐면 (제 도읍 포함 둘)
+  // 배우는 판(옛 저장 — 장이 얹히기 전) — 상대 도읍 하나만 쥐면 (제 도읍 포함 둘)
   if (r.region === 'tutorial') return held >= 2 ? 'win' : null
   // 판마다 — 영남 판은 나라가 스물하나라 더 많이 쥐어야 한다
   const need = r.region === 'yeongnam' ? P.realm.winCapitalsYeongnam : r.region === 'south' ? P.realm.winCapitalsSouth : r.region === 'world' ? P.realm.winCapitalsWorld : P.realm.winCapitals
@@ -1320,8 +1323,9 @@ export function advance(
     if (r.outcome === null || r.outcome === undefined) {
       stepExile(r, lines)
       const end = checkOutcome(r)
-      const pact = end === null ? suzerainEnd(r) : null
-      const via = end === null && pact === null ? pathsEnd(r) : null
+      // 장에서는 맹주 · 철과 뱃길 · 큰 제사의 끝이 닫힌다 — 그 장의 목표 하나뿐
+      const pact = end === null && r.scenario === undefined ? suzerainEnd(r) : null
+      const via = end === null && pact === null && r.scenario === undefined ? pathsEnd(r) : null
       if (end !== null) {
         r.outcome = { kind: end, season: r.season, path: 'conquest' }
         lines.push({ kind: 'end', outcome: end, faction: r.player, path: 'conquest' })

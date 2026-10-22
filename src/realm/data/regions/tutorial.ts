@@ -11,6 +11,7 @@
  * 고을·장수 id 는 tut- — 다른 판의 같은 이름과 엉키지 않게 (지금의 지명 · 명치판 그림이 id 로 붙는다).
  */
 import { PEOPLE_SCALE } from '../../migrate.ts'
+import { chapterScenario } from '../campaign.ts'
 import type { Army, Faction, Hero, NodeIntel, REdge, Realm, RNode, Stock, Watch } from '../../types.ts'
 
 const node = (id: string, name: string, kind: RNode['kind'], tags: RNode['tags'], owner: string | null, hh: number): RNode =>
@@ -121,5 +122,6 @@ export function startTutorial(seed: number): Realm {
     outcome: null,
     scale: PEOPLE_SCALE,
     region: 'tutorial',
+    scenario: chapterScenario('brothers'),
   }
 }

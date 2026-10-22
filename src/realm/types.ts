@@ -535,6 +535,27 @@ export interface Ask {
   readonly about?: string
 }
 
+/**
+ * 캠페인 장의 목표 하나 (scenario.ts · CAMPAIGN.md §2)
+ *   hold 이 고을들을 쥔다 · submit 이 나라들이 따른다(동맹·조공) · fell 이 장수를 쓰러뜨린다(사로잡음·죽음) ·
+ *   event 그 장의 사건을 이룬다 · survive 이만큼 버틴다
+ */
+export type Goal =
+  | { readonly kind: 'hold'; readonly nodes: readonly string[] }
+  | { readonly kind: 'submit'; readonly factions: readonly string[]; readonly how: 'ally' | 'tribute' | 'either' }
+  | { readonly kind: 'fell'; readonly hero: string }
+  | { readonly kind: 'event'; readonly id: string }
+  | { readonly kind: 'survive'; readonly seasons: number }
+
+/** 캠페인의 장 — 판을 열 때 얹힌다 (data/campaign.ts). `marks` 는 이룬 사건 id (id 순서) */
+export interface Scenario {
+  readonly id: string
+  readonly win: readonly Goal[]
+  /** 기한 — 이 계절 수 안에 이뤄야 한다. 없으면 없음 */
+  readonly limit?: number
+  marks?: string[]
+}
+
 export interface Realm {
   readonly seed: number
   season: number
@@ -614,6 +635,8 @@ export interface Realm {
    * 삼한 남부 판은 제 나라와 이웃만 알고 시작한다 (discovery.ts)
    */
   known?: Record<string, string[]>
+  /** 캠페인의 장 (scenario.ts) — 있으면 이 장의 목표로 이긴다. 자유 판 · 옛 저장에는 없다 */
+  scenario?: Scenario
 }
 
 /** 플레이어(또는 AI)가 한 계절에 내리는 명령 */
