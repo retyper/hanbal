@@ -3,6 +3,7 @@
  * 배우는 판 → 작은 판(변한) → 영남 → 삼한 남부 → 삼한과 북녘. 앞 판을 한 번 이기면 다음 판이 열린다 (배우는 판은 끝내거나 그만둬도).
  * 기록은 이 기기에만 (판 저장처럼). 이미 어느 판을 하고 있는 사람은 그 판까지 열린 것으로 친다 — 지금 판을 잃지 않게.
  */
+import { josa } from '../../realm/data/prose.ts'
 import type { RegionId } from '../../realm/types.ts'
 
 export const BOARD_ORDER: readonly RegionId[] = ['tutorial', 'byeonhan-mini', 'yeongnam', 'south', 'world']
@@ -106,5 +107,6 @@ export function lockWhy(region: RegionId, names: Readonly<Partial<Record<RegionI
   const i = BOARD_ORDER.indexOf(region)
   const prev = i > 0 ? BOARD_ORDER[i - 1]! : null
   if (prev === null) return ''
-  return prev === 'tutorial' ? '배우는 판을 끝내면 열린다' : `${names[prev] ?? ''} 판을 이기면 열린다`
+  const n = names[prev] ?? ''
+  return `「${n}」${josa(n, '을', '를').slice(n.length)} ${prev === 'tutorial' ? '끝내면' : '이기면'} 열린다`
 }

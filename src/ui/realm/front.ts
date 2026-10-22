@@ -35,12 +35,36 @@ export interface FrontKit {
 /** 지난 계절들의 보고 — 판 기록에서 (realm-main) */
 export type History = ReadonlyArray<{ readonly s: number; readonly lines: readonly ReportLine[] }>
 
-export const BOARDS: ReadonlyArray<{ id: RegionId; name: string; line: string; thumb: string; length: string }> = [
-  { id: 'tutorial', name: '배우는 판', line: '백제와 미추홀 — 온조와 형 비류의 두 나라만. 징병·개척·정찰·사신·출정·전장·사로잡기·회유·공작·제사를 하나씩 해 본다.', thumb: 'map/spring.jpg', length: '아주 짧다' },
-  { id: 'byeonhan-mini', name: '작은 판', line: '변한 남쪽 바닷가의 여섯 나라. 쇠와 뱃길을 두고 겨룬다.', thumb: 'map/spring.jpg', length: '짧다' },
-  { id: 'yeongnam', name: '큰 판', line: '낙동강 물길과 동해·남해의 스물한 나라. 사로·가락·대가야가 아직 이웃 읍락과 키를 잰다.', thumb: 'map-yeongnam/spring.webp', length: '보통' },
-  { id: 'south', name: '삼한 남부', line: '한강에서 영산강, 동해 바닷가까지 서른여섯 나라. 처음엔 이웃만 안다 — 지도는 보고 다닌 만큼 칠해진다.', thumb: 'map-world/m2-spring.webp', length: '길다' },
-  { id: 'world', name: '삼한과 북녘', line: '탐라에서 부여의 들까지, 옛 조선 땅 요동과 동해의 우산국까지 쉰두 나라. 고구려 다섯 나부 · 부여의 네 가 · 옥저 · 동예 · 양맥.', thumb: 'map-world/m7b-spring.webp', length: '아주 길다' },
+/**
+ * 판 — 해 보고 싶은 이야기 묶음 (형 2026-10-22: "지도가 작냐 크냐가 중요한게 아님 … 게임 패키지처럼 정말 이거 해보고싶다라는 마음이 들게
+ * 각각 이미지랑 제목 제대로"). 제목 · 때와 곳 · 한 줄 이야기 · 무엇을 하나 · 그림(keyart — 제미나이). 나라 수·길이는 아래 작은 표로.
+ */
+export const BOARDS: ReadonlyArray<{ id: RegionId; name: string; era: string; hook: string; play: string; art: string; length: string; badge?: string }> = [
+  {
+    id: 'tutorial', name: '형제의 강', era: '기원전 18년 · 한강', art: 'keyart/tutorial.jpg', length: '아주 짧다', badge: '처음이면 여기부터',
+    hook: '졸본을 떠나온 두 형제. 형은 바다로, 아우는 강으로 — 한강의 주인은 하나다.',
+    play: '온조가 되어 형 비류의 미추홀을 아우른다. 징병부터 사로잡기까지 하나씩 배운다.',
+  },
+  {
+    id: 'byeonhan-mini', name: '쇠의 바다', era: '2세기 · 변한 남쪽 바닷가', art: 'keyart/byeonhan.jpg', length: '짧다',
+    hook: '덩이쇠 한 장이 곧 돈이던 바다. 쇠를 쥔 나라가 뱃길을 쥔다.',
+    play: '변한 여섯 나라 가운데 하나로 쇠와 뱃길을 다툰다.',
+  },
+  {
+    id: 'yeongnam', name: '낙동강 스물한 나라', era: '2세기 · 낙동강', art: 'keyart/yeongnam.jpg', length: '보통',
+    hook: '훗날 신라가 될 사로도, 가야가 될 가락도 아직은 강가의 작은 나라였다.',
+    play: '스물한 나라 가운데 하나로 강을 오르내리며 판을 넓힌다.',
+  },
+  {
+    id: 'south', name: '삼한', era: '3세기 · 한강에서 영산강까지', art: 'keyart/south.jpg', length: '길다',
+    hook: '천군이 소도에서 하늘에 제사하던 땅. 마한·진한·변한 서른여섯 나라가 깃발을 올렸다.',
+    play: '처음엔 이웃만 안다 — 보고 다닌 만큼 지도가 칠해진다.',
+  },
+  {
+    id: 'world', name: '북녘의 바람', era: '3세기 · 탐라에서 부여의 들까지', art: 'keyart/world.jpg', length: '아주 길다',
+    hook: '압록 골짜기의 고구려 다섯 나부와 송화강 들의 부여 네 가가 남쪽을 내려다본다.',
+    play: '쉰두 나라 — 요동·옥저·동해의 우산국까지. 가장 긴 판.',
+  },
 ]
 
 /** 이기려면 쥘 도읍 수 (season.ts checkOutcome 과 같은 값) */
@@ -86,15 +110,17 @@ function agoText(iso: string): string {
  * `unlocked` 가 없으면 다 열린 것으로 (시험)
  */
 export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<RegionId>, tierWon?: (r: RegionId) => number): string {
-  let h = `<div class="front boards"><div class="fhead"><button class="btn ghost" data-act="fr-back">‹ 처음으로</button><h2>어느 땅에서 시작할까</h2></div><div class="bcards">`
+  let h = `<div class="front boards"><div class="fhead"><button class="btn ghost" data-act="fr-back">‹ 처음으로</button><h2>어느 이야기로 시작할까</h2></div><div class="bcards">`
   const names = Object.fromEntries(BOARDS.map((b) => [b.id, b.name])) as Partial<Record<RegionId, string>>
   for (const b of BOARDS) {
     const open = unlocked === undefined || unlocked.has(b.id)
-    h += `<button class="bcard${open ? '' : ' locked'}" data-act="${open ? 'fr-board' : 'fr-locked'}" data-v="${b.id}"><span class="bth" style="background-image:url('${k.art}${b.thumb}')">${open ? '' : '<i class="lock">🔒</i>'}</span>`
-    h += `<span class="bb"><b>${k.esc(b.name)}</b><span>${k.esc(b.line)}</span>`
-    const goal = b.id === 'tutorial' ? '미추홀 도읍을 쥐면 끝난다' : `도읍 ${winNeed(b.id)}곳을 쥐면 이긴다`
+    // 그림 위에 제목과 때 — 아래에 이야기 한 줄 · 무엇을 하나 · 작은 표(나라 수 · 이기는 길 · 길이)
+    h += `<button class="bcard${open ? '' : ' locked'}" data-act="${open ? 'fr-board' : 'fr-locked'}" data-v="${b.id}"><span class="bth" style="background-image:url('${k.art}${b.art}')">`
+    h += `${b.badge !== undefined && open ? `<i class="bbadge">${k.esc(b.badge)}</i>` : ''}${open ? '' : '<i class="lock">🔒</i>'}<span class="btitle"><small>${k.esc(b.era)}</small><b>${k.esc(b.name)}</b></span></span>`
+    h += `<span class="bb"><span class="bhook">${k.esc(b.hook)}</span><span class="bplay">${k.esc(b.play)}</span>`
+    const goal = b.id === 'tutorial' ? '미추홀 도읍을 쥐면 끝' : `도읍 ${winNeed(b.id)}곳을 쥐면 이긴다`
     h += open
-      ? `<span class="bmeta">나라 ${k.nations(b.id).length} · ${goal} · 한 판이 ${b.length}</span>${b.id !== 'tutorial' && (tierWon?.(b.id) ?? 0) > 0 ? `<span class="bmeta tierw">난세 ${tierWon!(b.id)}단계까지 이겼다</span>` : ''}</span></button>`
+      ? `<span class="bmeta"><i>나라 ${k.nations(b.id).length}</i><i>${goal}</i><i>한 판이 ${b.length}</i></span>${b.id !== 'tutorial' && (tierWon?.(b.id) ?? 0) > 0 ? `<span class="bmeta tierw">난세 ${tierWon!(b.id)}단계까지 이겼다</span>` : ''}</span></button>`
       : `<span class="bmeta lockwhy">${k.esc(lockWhy(b.id, names))}</span></span></button>`
   }
   h += `</div>${hasGame ? '<p class="fine">새 판을 시작하면 지금 판은 끝난 판으로 기록된다.</p>' : ''}</div>`
@@ -107,7 +133,7 @@ export function nationsHtml(k: FrontKit, region: RegionId): string {
   const b = BOARDS.find((x) => x.id === region)!
   const all = k.nations(region)
   const wonN = all.filter((n) => (k.won?.(region, n.id) ?? 0) > 0).length
-  let h = `<div class="front choose"><div class="fhead"><button class="btn ghost" data-act="fr-new">‹ 판 고르기</button><h2>${k.esc(b.name)} — 어느 나라로</h2>`
+  let h = `<div class="front choose"><div class="fhead"><button class="btn ghost" data-act="fr-new">‹ 이야기 고르기</button><h2>「${k.esc(b.name)}」 — 어느 나라로</h2>`
   if (wonN > 0) h += `<span class="wonc">휘장 ${wonN}/${all.length}</span>`
   h += `</div><div class="ncards">`
   for (const n of all) {
@@ -340,12 +366,19 @@ export const FRONT_CSS = `
 .ap .front .cont .ct span { font-size: 13px; color: #d8d0c0; } .ap .front .cont small { font-size: 11px; color: #8f8778; }
 .ap .front img.cem { width: 22px; height: 22px; vertical-align: middle; }
 /* 판 고르기 */
-.ap .front .bcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; padding: 10px 14px; max-width: 980px; margin: 0 auto; }
+.ap .front .bcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 14px; padding: 10px 14px 24px; max-width: 1180px; margin: 0 auto; }
 .ap .front .bcard { display: flex; flex-direction: column; padding: 0; overflow: hidden; border-radius: 16px; background: var(--card); border: 1px solid var(--line); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
 .ap .front .bcard:active, .ap .front .bcard:hover { border-color: var(--gold); }
-.ap .front .bth { display: block; height: 120px; background: center / cover no-repeat; }
-.ap .front .bb { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px 12px; } .ap .front .bb b { font-size: 17px; color: var(--gold); }
-.ap .front .bb span { font-size: 13px; color: #cfc6b4; line-height: 1.5; } .ap .front .bb .bmeta { font-size: 12px; color: #a89c84; }
+/* 판 카드 — 상자 그림처럼: 그림 위에 때와 제목, 아래에 이야기 한 줄 */
+.ap .front .bth { position: relative; display: block; aspect-ratio: 16 / 9; background: center / cover no-repeat; }
+.ap .front .bth::after { content: ''; position: absolute; inset: 40% 0 0; background: linear-gradient(#0000, #0b0d11e8); }
+.ap .front .btitle { position: absolute; left: 14px; right: 14px; bottom: 10px; z-index: 1; display: flex; flex-direction: column; text-shadow: 0 2px 10px #000; }
+.ap .front .btitle small { font-size: 12px; letter-spacing: .08em; color: #e8d8b0; } .ap .front .btitle b { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 3.4vw, 34px); color: #f3d48a; letter-spacing: .06em; line-height: 1.15; }
+.ap .front .bbadge { position: absolute; top: 10px; left: 10px; z-index: 1; font-style: normal; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 10px; background: #d9b36ae8; color: #2a1d10; }
+.ap .front .bb { display: flex; flex-direction: column; gap: 6px; padding: 10px 14px 14px; }
+.ap .front .bb .bhook { font-family: var(--serif); font-size: 15px; color: #efe5cf; line-height: 1.55; } .ap .front .bb .bplay { font-size: 13px; color: #b8ad96; line-height: 1.5; }
+.ap .front .bb .bmeta { display: flex; flex-wrap: wrap; gap: 4px; font-size: 12px; color: #a89c84; } .ap .front .bb .bmeta i { font-style: normal; padding: 1px 8px; border-radius: 9px; border: 1px solid #3a4250; }
+.ap .front .bb .bmeta.tierw, .ap .front .bb .bmeta.lockwhy { display: block; }
 .ap .front .bcard.locked { cursor: default; } .ap .front .bcard.locked .bth { filter: grayscale(1) brightness(.45); position: relative; }
 .ap .front .bcard.locked .bth .lock { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-style: normal; font-size: 34px; }
 .ap .front .bcard.locked .bb b { color: #8f8778; } .ap .front .bcard.locked .bmeta.lockwhy { color: #e8c070; }
