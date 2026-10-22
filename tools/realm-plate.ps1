@@ -51,12 +51,13 @@ foreach ($pair in @(@('map-base-source', 'spring'), @('map-monsoon', 'summer'), 
 # 기호·깃발·병종·계절 — 알파
 foreach ($prefix in @('settle', 'route', 'emblem', 'unit', 'status', 'good', 'treasure')) {
   foreach ($f in Get-ChildItem "$Src/cut" -File -Filter "$prefix-*.png") {
+    if ($f.BaseName -in @('good-rice', 'good-salt', 'emblem-crow')) { continue }  # 2026-10-23: 이 셋은 다른 길(key-png·햇살 걷기)로 구운 public 이 원본보다 새것 — 덮지 않는다
     Fit $f.FullName "$Out/icon/$($f.BaseName).png" 96; $n++
   }
 }
 # 사건 삽화
 foreach ($f in Get-ChildItem "$Src/cut" -File -Filter 'event-*.png') {
-  Fit $f.FullName "$Out/event/$($f.BaseName).jpg" 640 84; $n++
+  Fit $f.FullName "$Out/event/$($f.BaseName).jpg" 1152 86; $n++   # 2026-10-23: 640 → 1152 (퀄리티가 크기보다 먼저)
 }
 # 첫 화면 그림 (front.ts)
 foreach ($f in Get-ChildItem "$Src/cut" -File -Filter 'title-*.png') {
