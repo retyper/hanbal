@@ -11,7 +11,7 @@
  * 글을 만들기만 한다 — 상태는 app.ts 가 쥐고, 누름은 data-act 로 app.ts 가 받는다.
  */
 import type { NationInfo } from '../../realm/data/nations.ts'
-import { lockWhy } from './unlock.ts'
+import { badgeRank, lockWhy } from './unlock.ts'
 import { seasonOf } from '../../realm/calendar.ts'
 import { battleName, josa, seasonLabel } from '../../realm/data/prose.ts'
 import type { Realm, RegionId, ReportLine } from '../../realm/types.ts'
@@ -28,6 +28,8 @@ export interface FrontKit {
   readonly nations: (region: RegionId) => readonly NationInfo[]
   /** 장수 명치판 그림의 주소 — 없으면 null (끝 화면의 콜라주) */
   readonly bust?: (hero: string) => string | null
+  /** 그 나라로 이긴 가장 높은 난세 단계 — 휘장 (unlock.nationWon). 없으면 0 */
+  readonly won?: (region: RegionId, nation: string) => number
 }
 
 /** 지난 계절들의 보고 — 판 기록에서 (realm-main) */
@@ -103,10 +105,15 @@ export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<
 
 export function nationsHtml(k: FrontKit, region: RegionId): string {
   const b = BOARDS.find((x) => x.id === region)!
-  let h = `<div class="front choose"><div class="fhead"><button class="btn ghost" data-act="fr-new">‹ 판 고르기</button><h2>${k.esc(b.name)} — 어느 나라로</h2></div><div class="ncards">`
-  for (const n of k.nations(region)) {
+  const all = k.nations(region)
+  const wonN = all.filter((n) => (k.won?.(region, n.id) ?? 0) > 0).length
+  let h = `<div class="front choose"><div class="fhead"><button class="btn ghost" data-act="fr-new">‹ 판 고르기</button><h2>${k.esc(b.name)} — 어느 나라로</h2>`
+  if (wonN > 0) h += `<span class="wonc">휘장 ${wonN}/${all.length}</span>`
+  h += `</div><div class="ncards">`
+  for (const n of all) {
+    const w = k.won?.(region, n.id) ?? 0
     h += `<button class="ncard pick" data-act="fr-nation" data-id="${n.id}">${k.face(n.id, 'nface')}<div class="nb">`
-    h += `<div class="an">${k.emblem(n.id)}<b>${k.esc(n.name)}</b><span class="mute">${k.esc(n.place)}</span>${n.hard ? '<span class="hard">어려움</span>' : ''}</div>`
+    h += `<div class="an">${k.emblem(n.id)}<b>${k.esc(n.name)}</b><span class="mute">${k.esc(n.place)}</span>${n.hard ? '<span class="hard">어려움</span>' : ''}${w > 0 ? `<span class="wonb r${badgeRank(w)}">휘장 · 난세 ${w}</span>` : ''}</div>`
     h += `<p>${k.esc(n.blurb)}</p>${barsHtml(n)}</div></button>`
   }
   return h + `</div></div>`
@@ -341,7 +348,12 @@ export const FRONT_CSS = `
 .ap .front .bcard.locked .bth .lock { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-style: normal; font-size: 34px; }
 .ap .front .bcard.locked .bb b { color: #8f8778; } .ap .front .bcard.locked .bmeta.lockwhy { color: #e8c070; }
 .ap .front .bcard.locked:hover, .ap .front .bcard.locked:active { border-color: var(--line); }
-/* 나라 고르기 — 옛 .choose 와 같은 카드 */
+/* 나라 고르기 — 옛 .choose 와 같은 카드 · 휘장(이 나라로 이겼다)은 단계따라 구리 → 은 → 금 → 붉은 금 */
+.ap .front .wonb { margin-left: auto; padding: 1px 9px; border-radius: 10px; font-size: 12px; font-weight: 700; white-space: nowrap; color: #2a1d10;
+  background: linear-gradient(#f0d27a, #b8892e); box-shadow: inset 0 1px 0 #fff6, 0 0 0 1px #0005; }
+.ap .front .wonb.r1 { background: linear-gradient(#e3b07a, #9a6a3a); } .ap .front .wonb.r2 { background: linear-gradient(#eef1f5, #9aa4b0); }
+.ap .front .wonb.r4 { color: #fff4dc; background: linear-gradient(#f2c46a, #b8452a); }
+.ap .front .wonc { margin-left: auto; font-size: 13px; color: #e8c070; }
 .ap .front.choose .ncards { max-width: 980px; margin: 8px auto; padding: 0 14px 24px; }
 /* 자세히 */
 .ap .front .dcard { display: flex; gap: 16px; max-width: 760px; margin: 10px auto; padding: 0 14px 24px; flex-wrap: wrap; }

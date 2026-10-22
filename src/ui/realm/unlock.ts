@@ -13,6 +13,8 @@ interface Rec {
   tutorial?: 'done' | 'quit'
   /** 판마다 이긴 가장 높은 난세 단계 (tier.ts) — 그다음 단계가 열린다 */
   tiers?: Partial<Record<RegionId, number>>
+  /** 나라마다 이긴 가장 높은 난세 단계 — 휘장 (META §2-①: 문명의 "이 지도자로 이겨 봤다"). 열쇠는 `판/나라` */
+  nations?: Record<string, number>
 }
 
 function load(): Rec {
@@ -23,7 +25,9 @@ function load(): Rec {
     for (const b of BOARD_ORDER) { const t = v?.tiers?.[b]; if (typeof t === 'number' && t >= 1) tiers[b] = Math.floor(t) }
     // 난세 단계가 생기기 전에 이긴 판은 1단계를 이긴 것으로 친다
     for (const b of won) tiers[b] ??= 1
-    return { won, tiers, ...(v?.tutorial !== undefined ? { tutorial: v.tutorial } : {}) }
+    const nations: Record<string, number> = {}
+    for (const [key, t] of Object.entries(v?.nations ?? {})) if (typeof t === 'number' && t >= 1) nations[key] = Math.floor(t)
+    return { won, tiers, nations, ...(v?.tutorial !== undefined ? { tutorial: v.tutorial } : {}) }
   } catch {
     return { won: [] }
   }
@@ -52,8 +56,13 @@ export function unlockedFrom(won: readonly RegionId[], tutorialOver: boolean, pl
   return out
 }
 
-export function markWon(region: RegionId, tier = 1): void {
+export function markWon(region: RegionId, tier = 1, nation?: string): void {
   const r = load()
+  if (nation !== undefined && region !== 'tutorial') {
+    const ns = (r.nations ??= {})
+    const key = `${region}/${nation}`
+    ns[key] = Math.max(ns[key] ?? 0, Math.max(1, Math.floor(tier)))
+  }
   if (!r.won.includes(region)) r.won.push(region)
   const tiers = (r.tiers ??= {})
   tiers[region] = Math.max(tiers[region] ?? 0, Math.max(1, Math.floor(tier)))
@@ -71,6 +80,16 @@ export function markTutorialOver(how: 'done' | 'quit'): void {
 export function tierOpen(region: RegionId): number {
   if (region === 'tutorial') return 1
   return Math.min(10, (load().tiers?.[region] ?? 0) + 1)
+}
+
+/** 그 나라로 이긴 가장 높은 난세 단계 (휘장) — 없으면 0 */
+export function nationWon(region: RegionId, nation: string): number {
+  return load().nations?.[`${region}/${nation}`] ?? 0
+}
+
+/** 휘장의 빛깔 — 단계가 오를수록 짙어진다: 구리 → 은 → 금 → 붉은 금 */
+export function badgeRank(tier: number): 0 | 1 | 2 | 3 | 4 {
+  return tier <= 0 ? 0 : tier === 1 ? 1 : tier <= 3 ? 2 : tier <= 6 ? 3 : 4
 }
 
 /** 그 판에서 이긴 가장 높은 단계 — 없으면 0 */

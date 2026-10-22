@@ -47,7 +47,7 @@ import { APPROACH_DOES, APPROACH_NAME, HARD_LINE, WAR_CSS, openWar } from './bat
 import { attachZoom } from './zoom.ts'
 import { TUT_CSS, TUT_STEPS, createSpot, tutAt, tutBandHtml, tutStyle } from './tutorial.ts'
 import { LOG_CSS, logNations, logRows, logbookHtml, type LogFilter } from './logbook.ts'
-import { markTutorialOver, markWon, tutorialOver, unlockedBoards, tierOpen, tierWon } from './unlock.ts'
+import { markTutorialOver, markWon, nationWon, tutorialOver, unlockedBoards, tierOpen, tierWon } from './unlock.ts'
 import { TINT_CSS, tint } from './tint.ts'
 import { handsOf, idleHeroes } from '../../realm/hands.ts'
 import { pactOf } from '../../realm/suzerain.ts'
@@ -220,6 +220,7 @@ const KIT: FrontKit = {
   art: ART, esc, icon, nations: nationsOf, face: nationFace,
   emblem: (f, cls) => emblem(f, cls),
   bust: (id) => (bustOf(id) !== undefined ? `${ART}bust/${bustOf(id)}.jpg` : null),
+  won: nationWon,
 }
 
 /** 첫 화면 · 판 고르기 · 나라 고르기 · 자세히 — null 이면 판 위 */
@@ -2159,7 +2160,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 이겼으면 다음 난세 단계가 열렸다
       const t = r.tier ?? 1
       const opened = r.outcome?.kind === 'win' && t < 10 ? `<p class="tierup">난세 <b>${t + 1}단계</b>가 열렸다 — 이웃이 처음부터 더 센 판</p>` : ''
-      return endingHtml(KIT, r, host.history(), opened + retainHtml(DEX_KIT, r))
+      // 휘장 — 이 나라로 이겼다는 표가 나라 고르기에 붙는다 (META §2-①)
+      const badge = r.outcome?.kind === 'win' && (r.region ?? 'byeonhan-mini') !== 'tutorial'
+        ? `<p class="tierup">${esc(josa(r.factions[me()]?.name ?? '', '으로', '로'))} 이긴 <b>휘장</b>을 받았다 — 나라 고르기에 붙는다</p>` : ''
+      return endingHtml(KIT, r, host.history(), opened + badge + retainHtml(DEX_KIT, r))
     }
     if (!showReport || before === null || report === null) return ''
     const season = seasonOf(r.season)
@@ -2629,7 +2633,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 계속 둔 판 — 도읍을 모두 쥐면 한 번 더 끝 화면 (하나가 됐다)
     if (res.next.endless === true && res.next.unified === undefined && Object.values(res.next.factions).every((f) => res.next.nodes[f.capital]?.owner === me())) res.next.unified = res.report.season
     // 판을 이기면 다음 판이 열린다 (unlock.ts)
-    if (res.next.outcome?.kind === 'win' && prev.outcome == null) markWon(res.next.region ?? 'byeonhan-mini', res.next.tier ?? 1)
+    if (res.next.outcome?.kind === 'win' && prev.outcome == null) markWon(res.next.region ?? 'byeonhan-mini', res.next.tier ?? 1, me())
     host.onAdvance(res.next, res.report, all, mine)
     dexToast(recordDex(res.next))
     seasonFx(res.next.season)

@@ -296,9 +296,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .ncard.pick:active { border-color: var(--gold); }
 .ap .ncard.pick .nb { flex: 1; min-width: 0; } .ap .ncard.pick p { font-size: 13px; color: #cfc6b4; margin: 4px 0 6px; }
 .ap .hard { margin-left: auto; padding: 1px 8px; border-radius: 10px; background: #4a2420; color: #f1b8a8; font-size: 12px; }
-.ap .bars { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 10px; }
-.ap .bar { display: flex; align-items: center; gap: 2px; font-size: 12px; } .ap .bar i { font-style: normal; width: 2.4em; color: var(--mute); }
-.ap .bar b, .ap .bar s { width: 12px; height: 8px; border-radius: 2px; background: var(--gold); } .ap .bar s { background: #3a4250; }
+/* 능력치 칸 — 카드가 좁으면 눈금이 줄어든다 (형: "능력치 부분이 우측으로 칸 넘어가지 않게") */
+.ap .bars { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 3px 8px; }
+.ap .bar { display: flex; align-items: center; gap: 2px; font-size: 12px; min-width: 0; } .ap .bar i { font-style: normal; flex: none; width: 2.4em; color: var(--mute); }
+.ap .bar b, .ap .bar s { flex: 1 1 0; min-width: 3px; max-width: 12px; height: 8px; border-radius: 2px; background: var(--gold); } .ap .bar s { background: #3a4250; }
 /* 보고판 — 계절 띠가 걷힌 뒤 뜨고, 안의 것이 차례로 올라와 쌓인다. 누르면 다 (app.modalHtml) */
 .ap .modal.late { animation: mlate .45s ease-out 1.9s both; }
 @keyframes mlate { from { opacity: 0; visibility: hidden; } to { opacity: 1; visibility: visible; } }
