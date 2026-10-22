@@ -12,6 +12,7 @@ import { WORLD_GEO } from './world-geo.ts'
 import { WORLD_NATION_IDS, startWorld, worldGeo } from './world.ts'
 import { YEONGNAM_NATION_IDS, startYeongnam } from './yeongnam.ts'
 import { TUTORIAL_NATION_IDS, startTutorial } from './tutorial.ts'
+import { TUTORIAL_WORLD, tutorialGeo } from './tutorial-geo.ts'
 
 export const REGION_IDS: readonly RegionId[] = ['tutorial', 'byeonhan-mini', 'yeongnam', 'south', 'world']
 
@@ -44,10 +45,10 @@ export function regionOf(r: Realm): RegionId {
 
 /** 조각 지도를 이은 판(넓어지는 지도)이면 그 땅 묶음 — 아니면 null */
 export function worldGeoOf(region: RegionId | undefined): WorldGeo | null {
-  return region === 'south' ? SOUTH_WORLD : region === 'world' ? WORLD_GEO : null
+  return region === 'south' ? SOUTH_WORLD : region === 'world' ? WORLD_GEO : region === 'tutorial' ? TUTORIAL_WORLD : null
 }
 
 /** 넓어지는 지도의 고을 자리 [경도, 위도] */
 export function placeOf(region: RegionId | undefined, id: string): readonly [number, number] | undefined {
-  return region === 'south' ? southGeo(id) : region === 'world' ? worldGeo(id) : undefined
+  return region === 'south' ? southGeo(id) : region === 'world' ? worldGeo(id) : region === 'tutorial' ? tutorialGeo(id) : undefined
 }

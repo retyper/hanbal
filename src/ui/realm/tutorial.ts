@@ -39,12 +39,12 @@ export interface TutStep {
 
 const has = (c: TutCtx, k: Order['kind']): boolean => c.orders.some((o) => o.kind === k)
 const marching = (c: TutCtx): boolean => has(c, 'march') || Object.values(c.r.armies).some((a) => a.faction === c.r.player && a.march !== null)
-const FOE_HERO = 'guya-3'
+const FOE_HERO = 'tut-haebi'
 const tab = (t: string): string => `[data-act="tab"][data-tab="${t}"]`
 
 export const TUT_STEPS: readonly TutStep[] = [
   {
-    id: 'look', text: '여기가 우리 골포국이다. 금빛 테두리 안이 우리 땅이다. 빛나는 「우리 땅」을 눌러 본다.',
+    id: 'look', text: '여기가 우리 백제다. 금빛 테두리 안이 우리 땅이다. 빛나는 「우리 땅」을 눌러 본다.',
     press: ['.homebtn'], done: (c) => c.acts.has('home'),
   },
   {
@@ -52,33 +52,33 @@ export const TUT_STEPS: readonly TutStep[] = [
     press: ['[data-act="draft"]', tab('draft')], done: (c) => has(c, 'draft'),
   },
   {
-    id: 'settle', text: '「백성」을 열고 빈땅 돌섬으로 집을 보낸다. 군사가 아니라 농사지을 집이다. 사람이 살면 새 마을이 된다.',
-    press: ['[data-act="settle"][data-node="wild-dolseom"]', tab('people')], done: (c) => has(c, 'settle') || has(c, 'migrate'),
+    id: 'settle', text: '「백성」을 열고 빈땅 솔뫼로 집을 보낸다. 군사가 아니라 농사지을 집이다. 사람이 살면 새 마을이 된다.',
+    press: ['[data-act="settle"][data-node="tut-solmoe"]', tab('people')], done: (c) => has(c, 'settle') || has(c, 'migrate'),
   },
   {
-    id: 'scout', text: '오른쪽 봉황 마을을 누르고 「여기로 정찰을 보낸다」. 적 군세가 얼마인지 보인다. 정찰은 「외교」에서도 고른다.',
-    press: ['[data-act="scout"][data-node="guya-vil"]', '.nd[data-node="guya-vil"]'], done: (c) => has(c, 'scout'),
+    id: 'scout', text: '오른쪽 갯골 마을을 누르고 「여기로 정찰을 보낸다」. 적 군세가 얼마인지 보인다. 정찰은 「외교」에서도 고른다.',
+    press: ['[data-act="scout"][data-node="tut-gaetgol"]', '.nd[data-node="tut-gaetgol"]'], done: (c) => has(c, 'scout'),
   },
   {
-    id: 'envoy', text: '가락국에 「선물」 사신을 보낸다. 곡식을 조금 얹고 「사신을 보낸다」. 선물은 늘 받는다. 사신은 칠 나라와도 오간다.',
+    id: 'envoy', text: '미추홀에 「선물」 사신을 보낸다. 곡식을 조금 얹고 「사신을 보낸다」. 선물은 늘 받는다. 사신은 칠 나라와도 오간다.',
     press: [
       '.trade [data-act="envoy"]', '.trade [data-act="cq"][data-side="give"][data-res="grain"]:not([data-d^="-"])',
-      '[data-act="compose"][data-ask="gift"]', '[data-act="compose-go"][data-ask="gift"]', '.nd[data-node="guya-vil"]',
+      '[data-act="compose"][data-ask="gift"]', '[data-act="compose-go"][data-ask="gift"]', '.nd[data-node="tut-gaetgol"]',
     ],
     done: (c) => has(c, 'envoy'),
   },
   {
-    id: 'rite', text: '안개골 위 「큰나무 소도」를 누르고 봄 제사를 지낸다. 그해 가을 수확량이 늘어난다.',
-    press: ['[data-act="rite"]', '.nd[data-node="sodo"]'], done: (c) => has(c, 'rite') || c.r.season > 0,
+    id: 'rite', text: '아차 마을 위 「큰나무 소도」를 누르고 봄 제사를 지낸다. 그해 가을 수확량이 늘어난다.',
+    press: ['[data-act="rite"]', '.nd[data-node="tut-sodo"]'], done: (c) => has(c, 'rite') || c.r.season > 0,
   },
   {
     id: 'next', text: '이제 「다음 계절」을 누른다. 고른 일이 한꺼번에 이루어지고 소식이 온다.',
     press: ['.next'], done: (c) => c.r.season >= 1,
   },
   {
-    id: 'march', text: '갈대울의 우리 군대 말(장수 얼굴)을 누르고, 밝아진 봉황 마을을 누른다. 그리로 간다.',
-    press: ['.nd[data-node="guya-vil"][data-act="go"]', '.tok[data-army="a-us"]'],
-    done: (c) => has(c, 'march') || Object.values(c.r.armies).some((a) => a.faction === c.r.player && (a.march !== null || a.at === 'guya-vil')),
+    id: 'march', text: '갈대울의 우리 군대 말(장수 얼굴)을 누르고, 밝아진 갯골 마을을 누른다. 그리로 간다.',
+    press: ['.nd[data-node="tut-gaetgol"][data-act="go"]', '.tok[data-army="a-us"]'],
+    done: (c) => has(c, 'march') || Object.values(c.r.armies).some((a) => a.faction === c.r.player && (a.march !== null || a.at === 'tut-gaetgol')),
   },
   {
     id: 'battle', text: '「다음 계절」을 누르면 전장이 열린다. 합마다 명령을 하나 고른다. 여기선 「적장 사로잡기」를 골라 본다 — 이 판에선 반드시 잡힌다.',
@@ -86,18 +86,18 @@ export const TUT_STEPS: readonly TutStep[] = [
     done: (c) => c.r.heroes[FOE_HERO]?.status === 'captive' || c.r.heroes[FOE_HERO]?.faction === c.r.player,
   },
   {
-    id: 'persuade', text: '사로잡은 견지 쇠비를 우리 장수로 만든다. 「장수」에서 그 얼굴을 누르고 「회유한다」.',
+    id: 'persuade', text: '사로잡은 해비를 우리 장수로 만든다. 「장수」에서 그 얼굴을 누르고 「회유한다」.',
     press: ['[data-act="persuade"]', `[data-act="hero"][data-id="${FOE_HERO}"]`, tab('heroes')],
     done: (c) => c.orders.some((o) => o.kind === 'persuade') || c.r.heroes[FOE_HERO]?.persuade !== undefined || c.r.heroes[FOE_HERO]?.faction === c.r.player,
   },
   {
-    id: 'plot', text: '「외교」의 「공작」에서 가락국에 소문을 퍼뜨린다. 적 군사의 사기가 꺾인다.',
+    id: 'plot', text: '「외교」의 「공작」에서 미추홀에 소문을 퍼뜨린다. 적 군사의 사기가 꺾인다.',
     press: ['[data-act="plot"][data-op="rumor"]', '[data-act="plot-open"][data-op="rumor"]', '[data-act="dmode"][data-v="plot"]', tab('diplo')],
     done: (c) => c.orders.some((o) => o.kind === 'plot'),
   },
   {
-    id: 'win', text: '마지막이다. 군대를 가락 도읍으로 보내 쥐면 이 판을 이긴다.',
-    press: [['.next', marching], '.nd[data-node="guya-cap"][data-act="go"]', '.tok[data-army="a-us"]', ['.next', () => true]],
+    id: 'win', text: '마지막이다. 군대를 미추홀 도읍으로 보내 쥐면 이 판을 이긴다.',
+    press: [['.next', marching], '.nd[data-node="tut-michuhol-cap"][data-act="go"]', '.tok[data-army="a-us"]', ['.next', () => true]],
     done: (c) => c.r.outcome?.kind === 'win',
   },
 ]

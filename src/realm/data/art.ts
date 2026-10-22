@@ -15,7 +15,8 @@ import { placeOf, worldGeoOf } from './regions/index.ts'
  */
 export const REGION_ART: Readonly<Record<RegionId, { dir: string; ext: string; w: number; h: number; nodeScale: number; labelScale: number; zmax: number; terrR: number; terrBand: number }>> = {
   'byeonhan-mini': { dir: 'map', ext: 'jpg', w: 1264, h: 848, nodeScale: 1, labelScale: 1, zmax: 2.2, terrR: 150, terrBand: 90 },
-  tutorial: { dir: 'map', ext: 'jpg', w: 1264, h: 848, nodeScale: 1, labelScale: 1, zmax: 2.2, terrR: 150, terrBand: 90 }, // 배우는 판 — 변한 지도를 빌린다
+  // 배우는 판 — 한강 아래 (삼한 남부 판의 조각을 좁게 · tutorial-geo.ts). 경도 1.4° × 위도 0.95° 를 조각 눈금의 두 배로
+  tutorial: { dir: 'map-world', ext: 'webp', w: 989, h: 727, nodeScale: 0.5, labelScale: 0.85, zmax: 2.5, terrR: 100, terrBand: 60 },
   yeongnam: { dir: 'map-yeongnam', ext: 'webp', w: 1024, h: 765, nodeScale: 0.34, labelScale: 0.72, zmax: 4, terrR: 50, terrBand: 28 },
   // 삼한 남부 — 조각 넷을 이은 그림(ui/realm/worldmap.ts 가 합친다). 크기는 조각 눈금(1024px = 경도 2.9° · 765px = 위도 2.0°)으로 경도 5.5° × 위도 3.75°
   south: { dir: 'map-world', ext: 'webp', w: 1942, h: 1434, nodeScale: 0.2, labelScale: 0.6, zmax: 6, terrR: 52, terrBand: 28 },
@@ -64,6 +65,8 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'dabeol-1': 'g-45-dabeol-deulgae', 'usisan-1': 'g-01-master-smith', 'jomun-1': 'g-13-baekje-general', 'iseo-1': 'w-26-iseo-tomboy-general',
   'samul-1': 'w-73-samul-sagong', 'bihwa-1': 'g-57-bihwa-neup', 'eumjeup-1': 'w-72-eumjeup-beol',
   // 삼한 남부 판의 새 군주·장군 (data/regions/south.ts) — 있는 명치판을 나눠 쓴다. 새 얼굴은 그림 줄(인물 — 챗지피티)
+  // 배우는 판 — 온조 형제와 신하 (tutorial.ts)
+  'tut-onjo': 'g-02-goguryeo-archer-prince', 'tut-biryu': 'g-28-goguryeo-damul', 'tut-ogan': 'g-13-baekje-general', 'tut-maryeo': 'g-09-farmer-conscript', 'tut-haebi': 'w-30-guya-soebi',
   'baekje-ruler': 'g-21-baekje-onnuri', 'mokji-ruler': 'w-27-mokji-jinha', 'michuhol-ruler': 'w-28-michuhol-bira',
   'ungcheon-ruler': 'g-22-ungcheon-gomnae', 'sangdang-ruler': 'g-23-sangdang-soedal', 'geonma-ruler': 'w-46-geonma-maru',
   'wansan-ruler': 'g-24-wansan-onsan', 'gosaburi-ruler': 'w-47-gosaburi-baram', 'balla-ruler': 'g-25-balla-keunmoe',
@@ -236,7 +239,7 @@ export function nodePos(region: RegionId | undefined, id: string): readonly [num
  */
 export type CapKin = 'mahan' | 'jinbyeon' | 'goguryeo' | 'buyeo' | 'dongye'
 export function capKin(id: string): CapKin {
-  if (id.startsWith('m-')) return 'mahan'
+  if (id.startsWith('m-') || id.startsWith('tut-')) return 'mahan' // 배우는 판 — 한강 아래 백제·미추홀
   if (id.startsWith('g-') || id === 'y-yangmaek-cap') return 'goguryeo' // 양맥 — 압록 가의 맥족, 고구려와 같은 갈래
   if (id.startsWith('b-')) return 'buyeo'
   if (/^(n|o|d|t|u)-/.test(id)) return 'dongye'

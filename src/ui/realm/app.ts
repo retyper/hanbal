@@ -213,7 +213,7 @@ const rulerId = (nation: string): string => `${nation}-ruler`
 
 /** 판마다 나라 고르기 글 — 변한 6국 축소판 · 영남 판 */
 const nationsOf = (region: RegionId): readonly NationInfo[] => (region === 'yeongnam' ? YEONGNAM_NATIONS : region === 'south' ? SOUTH_NATIONS : region === 'world' ? WORLD_NATIONS
-  : region === 'tutorial' ? NATIONS.filter((n) => n.id === 'us' || n.id === 'guya') : NATIONS)
+  : region === 'tutorial' ? SOUTH_NATIONS.filter((n) => n.id === 'baekje' || n.id === 'michuhol') : NATIONS)
 
 function nationFace(id: string, cls = 'nface'): string {
   const hid = rulerId(id)
@@ -2831,9 +2831,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'fr-back': front = { kind: 'title' }; paint(); return
       case 'lobby': saveDraft(); front = { kind: 'title' }; sheet = null; armySel = []; paint(); return
       case 'fr-board':
-        if (d['v'] === 'tutorial') { host.onNewGame('us', 'tutorial'); return } // 배우는 판은 나라를 고르지 않는다
+        if (d['v'] === 'tutorial') { host.onNewGame('baekje', 'tutorial'); return } // 배우는 판은 나라를 고르지 않는다 — 언제나 백제(온조)
         front = { kind: 'nations', region: d['v'] as RegionId }; $('.mapwrap').scrollTop = 0; paint(); return
-      case 'fr-tutorial': host.onNewGame('us', 'tutorial'); return
+      case 'fr-tutorial': host.onNewGame('baekje', 'tutorial'); return
       case 'fr-locked': return
       case 'tut-end': markTutorialOver('done'); front = { kind: 'title' }; paint(); return
       case 'fr-nation': if (front !== null && front.kind === 'nations') front = { kind: 'detail', region: front.region, id: d['id']! }; $('.mapwrap').scrollTop = 0; paint(); return

@@ -13,7 +13,7 @@
 import { startRegion } from './realm/data/regions/index.ts'
 import { headcount } from './realm/battle.ts'
 import { forceOf } from './realm/season.ts'
-import { migrate } from './realm/migrate.ts'
+import { isOldTutorial, migrate, remapOldTutorial, remapOldTutorialJson } from './realm/migrate.ts'
 import type { Order, Realm, RegionId, Report, ReportLine } from './realm/types.ts'
 import { mountRealmApp } from './ui/realm/app.ts'
 import { takeRetainers } from './ui/realm/legacy.ts'
@@ -76,8 +76,13 @@ function loadFrom(key: string): Saved | null {
   try {
     const raw = localStorage.getItem(key)
     if (raw === null) return null
-    const s = JSON.parse(raw) as Saved
+    let s = JSON.parse(raw) as Saved
     if (s.v !== 2) return null
+    // 옛 배우는 판(골포·가락) → 한강 아래 백제·미추홀 — 하던 자리 그대로 잇는다 (migrate.remapOldTutorial)
+    if (isOldTutorial(s.realm)) {
+      const fresh = startRegion('tutorial', s.seed, 'baekje')
+      s = { ...s, nation: 'baekje', realm: remapOldTutorial(s.realm, fresh), before: s.before !== null ? remapOldTutorial(s.before, fresh) : null, report: s.report !== null ? remapOldTutorialJson(s.report) : null, log: remapOldTutorialJson(s.log) }
+    }
     // 옛 판이면 사람의 눈금을 키운다 (migrate.ts — 위서 동이전의 규모)
     if (s.realm) migrate(s.realm)
     if (s.before) migrate(s.before)

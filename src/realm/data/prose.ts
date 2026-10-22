@@ -1111,6 +1111,7 @@ export const NODE_NOW: Readonly<Record<string, string>> = {
   'y-w-gomgol': '양산 원동', 'y-w-gunwi': '군위', 'y-w-uiseong': '의성 단밀', 'y-w-cheongsong': '청송',
   'y-w-yeongdeok': '영덕', 'y-w-geoje': '거제', 'y-w-namhae': '남해',
   // 삼한 남부 판 (data/regions/south.ts)
+  'tut-wirye-cap': '서울 송파 풍납토성', 'tut-acha': '서울 광진 아차산', 'tut-galdae': '서울 마포', 'tut-sodo': '남양주', 'tut-solmoe': '성남 남한산', 'tut-gaetgol': '부천', 'tut-michuhol-cap': '인천 문학산',
   'm-baekje-cap': '서울 송파·하남', 'm-baekje-v': '서울 한강', 'm-michuhol-cap': '인천', 'n-maek-cap': '춘천',
   'm-mokji-cap': '천안 직산', 'm-mokji-v': '아산', 'm-ungcheon-cap': '공주', 'm-sangdang-cap': '청주', 'm-sangdang-iron': '충주',
   'm-sodo': '논산', 'm-geonma-cap': '익산', 'm-geonma-port': '군산', 'm-wansan-cap': '전주', 'm-gosaburi-cap': '정읍 고부',

@@ -36,7 +36,7 @@ export interface FrontKit {
 export type History = ReadonlyArray<{ readonly s: number; readonly lines: readonly ReportLine[] }>
 
 export const BOARDS: ReadonlyArray<{ id: RegionId; name: string; line: string; thumb: string; length: string }> = [
-  { id: 'tutorial', name: '배우는 판', line: '골포국과 가락국, 두 나라만. 징병·개척·정찰·사신·출정·전장·사로잡기·회유·공작·제사를 하나씩 해 본다.', thumb: 'map/spring.jpg', length: '아주 짧다' },
+  { id: 'tutorial', name: '배우는 판', line: '백제와 미추홀 — 온조와 형 비류의 두 나라만. 징병·개척·정찰·사신·출정·전장·사로잡기·회유·공작·제사를 하나씩 해 본다.', thumb: 'map/spring.jpg', length: '아주 짧다' },
   { id: 'byeonhan-mini', name: '작은 판', line: '변한 남쪽 바닷가의 여섯 나라. 쇠와 뱃길을 두고 겨룬다.', thumb: 'map/spring.jpg', length: '짧다' },
   { id: 'yeongnam', name: '큰 판', line: '낙동강 물길과 동해·남해의 스물한 나라. 사로·가락·대가야가 아직 이웃 읍락과 키를 잰다.', thumb: 'map-yeongnam/spring.webp', length: '보통' },
   { id: 'south', name: '삼한 남부', line: '한강에서 영산강, 동해 바닷가까지 서른여섯 나라. 처음엔 이웃만 안다 — 지도는 보고 다닌 만큼 칠해진다.', thumb: 'map-world/m2-spring.webp', length: '길다' },
@@ -45,7 +45,7 @@ export const BOARDS: ReadonlyArray<{ id: RegionId; name: string; line: string; t
 
 /** 이기려면 쥘 도읍 수 (season.ts checkOutcome 과 같은 값) */
 export function winNeed(region: RegionId): number {
-  if (region === 'tutorial') return 2 // 배우는 판 — 가락 도읍 하나 (제 도읍 포함 둘)
+  if (region === 'tutorial') return 2 // 배우는 판 — 미추홀 도읍 하나 (제 도읍 포함 둘)
   return region === 'yeongnam' ? P.realm.winCapitalsYeongnam : region === 'south' ? P.realm.winCapitalsSouth : region === 'world' ? P.realm.winCapitalsWorld : P.realm.winCapitals
 }
 
@@ -92,7 +92,7 @@ export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<
     const open = unlocked === undefined || unlocked.has(b.id)
     h += `<button class="bcard${open ? '' : ' locked'}" data-act="${open ? 'fr-board' : 'fr-locked'}" data-v="${b.id}"><span class="bth" style="background-image:url('${k.art}${b.thumb}')">${open ? '' : '<i class="lock">🔒</i>'}</span>`
     h += `<span class="bb"><b>${k.esc(b.name)}</b><span>${k.esc(b.line)}</span>`
-    const goal = b.id === 'tutorial' ? '가락 도읍을 쥐면 끝난다' : `도읍 ${winNeed(b.id)}곳을 쥐면 이긴다`
+    const goal = b.id === 'tutorial' ? '미추홀 도읍을 쥐면 끝난다' : `도읍 ${winNeed(b.id)}곳을 쥐면 이긴다`
     h += open
       ? `<span class="bmeta">나라 ${k.nations(b.id).length} · ${goal} · 한 판이 ${b.length}</span>${b.id !== 'tutorial' && (tierWon?.(b.id) ?? 0) > 0 ? `<span class="bmeta tierw">난세 ${tierWon!(b.id)}단계까지 이겼다</span>` : ''}</span></button>`
       : `<span class="bmeta lockwhy">${k.esc(lockWhy(b.id, names))}</span></span></button>`
@@ -142,7 +142,7 @@ export function detailHtml(k: FrontKit, region: RegionId, id: string, carry = ''
 // ───────── 서막 — 시대 · 우리 나라 · 할 일
 
 const ERA: Readonly<Record<RegionId, string>> = {
-  tutorial: '변한의 남쪽 바닷가. 작은 골포국과 이웃 가락국 — 두 나라만 있는 땅에서 군장의 일을 하나씩 배운다.',
+  tutorial: '한강 아래. 졸본에서 내려온 형제 가운데 형 비류는 바닷가 미추홀에, 아우 온조는 하남 위례성에 자리 잡았다 — 형제의 두 나라에서 군장의 일을 하나씩 배운다.',
   'byeonhan-mini': '변한의 남쪽 바닷가. 쇠를 캐고 배를 띄우는 여섯 나라가 서로를 엿본다.',
   yeongnam: '낙동강 물길을 따라 스물한 나라. 훗날 신라가 될 사로도, 가야가 될 가락과 대가야도 아직은 이웃 읍락과 키를 잰다.',
   south: '한강에서 영산강, 동해 바닷가까지. 마한·진한·변한의 서른여섯 나라가 저마다 깃발을 올렸다.',
@@ -168,7 +168,9 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
   const ruler = f?.ruler !== undefined ? r.heroes[f.ruler] : undefined
   let body = ''
   if (step === 0) {
-    body = `<div class="pl pera"><p class="l1">기원 2세기.</p><p class="l2">옛 조선이 무너진 지 삼백 년, 왕이 하나가 아니던 때.</p>`
+    // 배우는 판은 백제가 서던 해 — 『삼국사기』 온조왕 원년 (기원전 18)
+    const [when, age] = region === 'tutorial' ? ['기원전 18년.', '옛 조선이 무너진 지 아흔 해, 주몽이 졸본에 고구려를 세운 무렵.'] : ['기원 2세기.', '옛 조선이 무너진 지 삼백 년, 왕이 하나가 아니던 때.']
+    body = `<div class="pl pera"><p class="l1">${when}</p><p class="l2">${age}</p>`
       + `<p class="l3">${k.esc(ERA[region])}</p>`
       + `<p class="l4">${r.known !== undefined ? '그러나 너는 아직 이웃밖에 모른다. 지도는 빈 한지다.' : '저마다 제 도읍을 지키며, 남의 도읍을 넘본다.'}</p></div>`
   } else if (step === 1) {
@@ -195,7 +197,7 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
 // ───────── 끝 — 연대기
 
 const HEAD: Readonly<Record<RegionId, string>> = {
-  tutorial: '가락 도읍을 쥐었다 — 군장의 일을 다 배웠다',
+  tutorial: '미추홀 도읍을 쥐었다 — 군장의 일을 다 배웠다',
   'byeonhan-mini': '변한의 바닷가를 차지했다',
   yeongnam: '낙동강의 나라들을 거느렸다',
   south: '삼한의 남쪽에 이름을 떨쳤다',

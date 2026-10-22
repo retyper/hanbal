@@ -71,3 +71,35 @@ export function migrate(r: Realm): void {
   }
   r.scale = PEOPLE_SCALE
 }
+
+/**
+ * 옛 배우는 판(골포·가락 — 변한 지도를 빌린 판) → 한강 아래 백제·미추홀 (2026-10-22, data/regions/tutorial.ts).
+ * 판의 id 를 새 판 것으로 바꾸고 이름·생김(그림이 붙는 것)은 새 판에서 가져온다. 하던 판은 그 자리 그대로 잇는다.
+ * 'sodo' 는 꼴(kind)·표(tag) 값과 글자가 같아 통째 바꾸기에서 빼고 따로 옮긴다.
+ */
+const OLD_TUT_ID: Readonly<Record<string, string>> = {
+  'our-cap': 'tut-wirye-cap', 'our-north': 'tut-acha', 'our-east': 'tut-galdae', 'wild-dolseom': 'tut-solmoe', 'guya-vil': 'tut-gaetgol', 'guya-cap': 'tut-michuhol-cap',
+  'us-ruler': 'tut-onjo', chief: 'tut-ogan', 'us-1': 'tut-maryeo', 'guya-ruler': 'tut-biryu', 'guya-3': 'tut-haebi', us: 'baekje', guya: 'michuhol',
+}
+export function isOldTutorial(r: Realm | null | undefined): boolean {
+  return r?.region === 'tutorial' && r.nodes['our-cap'] !== undefined
+}
+/** 판 밖의 것(보고 등)도 같은 id 로 — JSON 으로 받아 JSON 으로 돌려준다 */
+export function remapOldTutorialJson<T>(v: T): T {
+  let j = JSON.stringify(v)
+  for (const [a, b] of Object.entries(OLD_TUT_ID)) j = j.replaceAll(`"${a}"`, `"${b}"`)
+  return JSON.parse(j) as T
+}
+export function remapOldTutorial(r: Realm, fresh: Realm): Realm {
+  if (!isOldTutorial(r)) return r
+  const x = remapOldTutorialJson(r) as Realm & { nodes: Record<string, Realm['nodes'][string]>; edges: Record<string, Realm['edges'][string]> }
+  // 소도 — 고을 열쇠 · 길 끝 · 앎 · 지켜봄
+  if (x.nodes['sodo'] !== undefined) { x.nodes['tut-sodo'] = { ...x.nodes['sodo']!, id: 'tut-sodo' }; delete x.nodes['sodo'] }
+  for (const [id, e] of Object.entries(x.edges)) x.edges[id] = { ...e, a: e.a === 'sodo' ? 'tut-sodo' : e.a, b: e.b === 'sodo' ? 'tut-sodo' : e.b, kind: fresh.edges[id]?.kind ?? e.kind }
+  for (const k of Object.values(x.intel)) if (k['sodo'] !== undefined) { k['tut-sodo'] = k['sodo']!; delete k['sodo'] }
+  if (x.watch['sodo'] !== undefined) { x.watch['tut-sodo'] = x.watch['sodo']!; delete x.watch['sodo'] }
+  for (const id of Object.keys(x.nodes)) { const n = fresh.nodes[id]; if (n !== undefined) x.nodes[id] = { ...x.nodes[id]!, name: n.name } }
+  for (const id of Object.keys(x.heroes)) { const h = fresh.heroes[id]; if (h !== undefined) x.heroes[id] = { ...x.heroes[id]!, name: h.name, look: h.look } }
+  for (const id of Object.keys(x.factions)) { const f = fresh.factions[id]; if (f !== undefined) x.factions[id] = { ...x.factions[id]!, name: f.name } }
+  return x
+}
