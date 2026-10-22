@@ -1,9 +1,35 @@
 rules_version = '2';
+// 칠십팔국 — docs/realm/SERVER.md §6. 내 것은 로그인한 나만 읽고 쓴다. 쓸 때 꼴을 본다.
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 칠십팔국 — 내 판·도감·휘장은 로그인한 나만 읽고 쓴다 (users/{내 uid}/...)
-    match /users/{uid}/{doc=**} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+    function me(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow read, delete: if me(uid);
+      allow create, update: if me(uid)
+        && request.resource.data.keys().hasOnly(['v', 'progress', 'updatedAt'])
+        && request.resource.data.v is int
+        && (!('progress' in request.resource.data) || (request.resource.data.progress is string && request.resource.data.progress.size() < 200000));
+
+      // 판 한 벌 — 칸은 main (나중에 slot2, slot3)
+      match /saves/{slot} {
+        allow read, delete: if me(uid);
+        allow create, update: if me(uid)
+          && slot in ['main', 'slot2', 'slot3']
+          && request.resource.data.keys().hasOnly(['v', 'fmt', 'data', 'seed', 'rev', 'meta', 'device', 'savedAt', 'updatedAt'])
+          && request.resource.data.data is bytes && request.resource.data.data.size() < 900000
+          && request.resource.data.seed is int && request.resource.data.rev is int;
+      }
+
+      // 판 기록 — 판마다 한 장 (seed)
+      match /records/{seed} {
+        allow read, delete: if me(uid);
+        allow create, update: if me(uid)
+          && request.resource.data.keys().hasOnly(['v', 'fmt', 'data', 'nation', 'region', 'started', 'end', 'updatedAt'])
+          && request.resource.data.data is bytes && request.resource.data.data.size() < 900000;
+      }
     }
   }
 }
