@@ -301,6 +301,26 @@ export function warName(r: Realm, l: BattleLine): string {
 }
 
 /** 전장 한 판의 화면 — 보인 합(shown)까지. 마지막 합은 천천히 풀린다(anim). sel 은 지금 고르는 깃발 */
+/** 활을 쏘는 명령 — 그 합에 화살이 날아간다 */
+const SHOOT_CMD: ReadonlySet<string> = new Set(['volley', 'counter', 'open', 'height'])
+/** 한 무리의 화살 수 */
+const VOLLEY_N = 14
+
+/**
+ * 화살 한 무리 — 낱낱이 (형: "화살이 지금 이미지 통째로 날아가는데"). dir r: 우리(왼쪽)가 쏜다 · l: 적(오른쪽)이 쏜다.
+ * 화살마다 떠나는 자리·높이·거리·때가 조금씩 다르다 (꾸밈이라 판의 시드와 상관없이 고정된 굴림)
+ */
+function volleyHtml(art: string, dir: 'r' | 'l', at: number): string {
+  let s = dir === 'r' ? 3 : 11
+  const rnd = (): number => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff
+  let h = ''
+  for (let i = 0; i < VOLLEY_N; i++) {
+    h += `<i style="--x:${(2 + rnd() * 14).toFixed(1)}%;--y:${(52 + rnd() * 24).toFixed(1)}%;--dx:${(56 + rnd() * 16).toFixed(1)}vw;--up:${(12 + rnd() * 16).toFixed(1)}vh;--t:${(at + rnd() * 0.35).toFixed(2)}s;--z:${(0.75 + rnd() * 0.4).toFixed(2)}">`
+      + `<b style="background-image:url('${art}fx/arrow.png')"></b></i>`
+  }
+  return `<div class="wfx-volley ${dir}">${h}</div>`
+}
+
 export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: string, shown: number, anim: boolean, left: number, sel: RoundOrder = {}): string {
   const weAtk = l.atkFaction === me
   const st = l.start
@@ -363,9 +383,13 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   // 싸움터 배경 (땅마다) · 위 카드는 굴려도 그 자리에 (형: "싸우는로그가 스크롤로 보이더라도 상단에 캐릭터랑 체력바 있는 그 카드는 고정")
   const ground = warGround(prev, l)
   let h = `<div class="wbg g-${ground}${WAR_BG_READY.has(ground) ? '' : ' stand'}" style="background-image:url('${warBg(art, ground)}')"></div>`
-  // 싸움의 기운 — 흙먼지 둘이 바닥을 흐르고, 맞부딪는 순간 화살 한 무리가 가로지른다 (그림: realm/fx)
+  // 싸움의 기운 — 흙먼지 둘이 바닥을 흐르고, 이 합에 활을 쏜 쪽에서 화살이 낱낱이 활꼴로 날아간다 (그림: realm/fx)
   h += `<div class="wfx"><img class="wfx-dust a" src="${art}fx/dust.png" alt=""><img class="wfx-dust b" src="${art}fx/dust.png" alt="">`
-  if (anim) h += `<img class="wfx-arrows" src="${art}fx/arrows.png" alt="" style="--ad:${STAGE_S[1] - 0.45}s">`
+  if (anim && last !== undefined) {
+    const usShoot = SHOOT_CMD.has(weAtk ? last.a : last.d), foeShoot = SHOOT_CMD.has(weAtk ? last.d : last.a)
+    if (usShoot) h += volleyHtml(art, 'r', STAGE_S[1] - 0.5)
+    if (foeShoot) h += volleyHtml(art, 'l', STAGE_S[1] - (usShoot ? 0.25 : 0.5))
+  }
   h += `</div><div class="wrbox">`
   h += `<div class="wtop"><div class="wrh"><b>${esc(warName(after, l))}</b>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}</div>`
   h += `<div class="wvs">${side(ourI, ourHero, ourF, ourName, 'us')}<i class="vs">VS</i>${side(foeI, foeHero, foeF, foeName, 'foe')}</div></div>`
@@ -556,8 +580,13 @@ export const WAR_CSS = `
 .ap .wfx-dust { position: absolute; bottom: -14%; width: 60vw; max-width: 640px; opacity: .3; animation: wdust 26s linear infinite; }
 .ap .wfx-dust.a { left: -20%; } .ap .wfx-dust.b { left: 45%; animation-duration: 34s; animation-direction: reverse; opacity: .22; }
 @keyframes wdust { 0% { transform: translateX(-6%) scale(1); } 50% { transform: translateX(6%) scale(1.08); } 100% { transform: translateX(-6%) scale(1); } }
-.ap .wfx-arrows { position: absolute; top: 18%; left: -30%; width: min(46vw, 420px); opacity: 0; animation: warrows 1.1s ease-in var(--ad, 0s) both; }
-@keyframes warrows { 0% { opacity: 0; transform: translate(0, 40px) rotate(-6deg); } 15% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; transform: translate(150vw, -60px) rotate(-6deg); } }
+/* 화살 — 앞으로는 고르게(바깥 i), 위아래는 오르다 떨어지게(안쪽 b), 머리는 오를 때 들리고 떨어질 때 숙인다. 적이 쏘면 통째로 뒤집는다 */
+.ap .wfx-volley { position: absolute; inset: 0; } .ap .wfx-volley.l { transform: scaleX(-1); }
+.ap .wfx-volley i { position: absolute; left: var(--x); top: var(--y); width: calc(var(--z) * 96px); height: calc(var(--z) * 13px); opacity: 0; animation: wvx .95s linear var(--t) both; }
+.ap .wfx-volley b { position: absolute; inset: 0; background: center / 100% 100% no-repeat; animation: wvy .95s linear var(--t) both; }
+.ap .wfx-volley b::before { content: ''; position: absolute; right: 92%; top: 38%; height: 24%; width: 110%; border-radius: 2px; background: linear-gradient(to left, #ffffff99, #fff0); }
+@keyframes wvx { 0% { opacity: 0; transform: translateX(0); } 8% { opacity: 1; } 88% { opacity: 1; } 100% { opacity: 0; transform: translateX(var(--dx)); } }
+@keyframes wvy { 0% { transform: translateY(0) rotate(-28deg); animation-timing-function: ease-out; } 50% { transform: translateY(calc(var(--up) * -1)) rotate(0deg); animation-timing-function: ease-in; } 100% { transform: translateY(0) rotate(30deg); } }
 .ap .ws .wfx-hit { position: absolute; left: 50%; top: 42px; width: 150px; height: 150px; margin: -75px 0 0 -75px; z-index: 2; pointer-events: none; opacity: 0; animation: whitfx .55s ease-out var(--hd, 1.2s) both; }
 @keyframes whitfx { 0% { opacity: 0; transform: scale(.3) rotate(0); } 25% { opacity: 1; transform: scale(1.05) rotate(12deg); } 100% { opacity: 0; transform: scale(1.35) rotate(24deg); } }
 .ap .wend { position: relative; } .ap .wend > b { position: relative; }
@@ -578,7 +607,7 @@ export const WAR_CSS = `
 .ap .wend.good b { display: inline-block; animation: wwinb .9s cubic-bezier(.2, 1.6, .4, 1) calc(var(--d, 0s) + .3s) both; }
 @keyframes wwin { 0% { box-shadow: 0 0 0 0 #ffd27a00; } 30% { box-shadow: 0 0 0 6px #ffd27aaa, 0 0 40px 10px #ffd27a88; } 100% { box-shadow: 0 0 0 0 #ffd27a00, 0 0 18px 2px #ffd27a33; } }
 @keyframes wwinb { 0% { transform: scale(.4); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { .ap .ws.hit, .ap .ws.hit::after, .ap .wend.good, .ap .wend.good b, .ap .wfx-dust, .ap .wfx-fire, .ap .wfx-smoke { animation: none; } .ap .wfx-arrows, .ap .ws .wfx-hit, .ap .wend .wfx-gold { display: none; } }
+@media (prefers-reduced-motion: reduce) { .ap .ws.hit, .ap .ws.hit::after, .ap .wend.good, .ap .wend.good b, .ap .wfx-dust, .ap .wfx-fire, .ap .wfx-smoke { animation: none; } .ap .wfx-volley, .ap .ws .wfx-hit, .ap .wend .wfx-gold { display: none; } }
 .ap .wrd.slow .wcmds, .ap .wrd.slow .wst, .ap .wrd.slow .wpush { opacity: 0; animation: wrin .45s ease-out var(--d, 0s) both; }
 .ap .wrd.slow .wcmds { animation-name: wrflip; }
 @keyframes wrin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
