@@ -54,7 +54,7 @@ import { pactOf } from '../../realm/suzerain.ts'
 import { ironOf, riteOf } from '../../realm/paths.ts'
 import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
 import { FRONT_CSS, PROLOGUE_STEPS, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History } from './front.ts'
-import { SCENE_SOUND, makeMusic, snd } from './sound.ts'
+import { SCENE_SOUND, makeMusic, playOnce, snd } from './sound.ts'
 import { FEEL_CSS, alertFeel, ambushFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
 
 export interface AppHost {
@@ -90,11 +90,7 @@ function muted(): boolean {
 }
 function ding(name: string, vol = 0.6): void {
   if (muted()) return
-  try {
-    const a = new Audio(`${name.includes('/') ? BASE : SFX}${name}.ogg`)
-    a.volume = vol
-    void a.play().catch(() => {})
-  } catch { /* 소리를 못 내는 곳 */ }
+  playOnce(`${name.includes('/') ? BASE : SFX}${name}.ogg`, vol) // 탭이 가려져 있으면 안 낸다 (규칙 4)
 }
 const PRACTICE: string = (import.meta.env?.BASE_URL ?? '/') + 'night.html?practice=1'
 /** night.html 이 올라갔다 (f9e77aa) — 없는 쪽으로 보내지 않으려 둔 스위치 */
@@ -235,7 +231,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   root.classList.add('ap')
   installTips(root)
   /** 배경 음악 · 계절 바람 — 싸움 창이 열려 있으면 싸움 음악 */
-  const music = makeMusic(BASE, muted)
+  const music = makeMusic(BASE, muted, () => root.querySelector('.nightov') !== null) // 밤 판이 떠 있으면 조용히 — 밤 판은 제 소리를 낸다
   let warOn = false
   root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="seasonp" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="legend"></div><div class="zbtns"><button data-act="layers" class="lyb" aria-label="보기">👁</button><button data-act="zin">＋</button><button data-act="zout">－</button></div><div class="layers"></div><button class="next" data-act="next"></button><div class="selbar"></div><div class="roadkey"></div><button class="homebtn" data-act="home">우리 땅</button><button class="logbtn" data-act="log-open">지난 기록</button><div class="tutband"></div>`
     + `<nav class="tabs"></nav><div class="back" data-act="close"></div><section class="sheet"></section><div class="modal"></div><div class="plbox"></div>`
@@ -1627,7 +1623,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     ov.className = 'nightov'
     ov.innerHTML = `<iframe src="${src}" title="${title}"></iframe><button class="btn" data-close>닫기</button>`
     root.appendChild(ov)
-    const close = (): void => ov.remove()
+    music.refresh()
+    const close = (): void => { ov.remove(); music.refresh() }
     ov.querySelector('[data-close]')!.addEventListener('click', close)
     // "돌아가기"는 틀을 about:blank 로 보낸다 — 그때만 닫는다 (결과판의 '연습장'처럼 틀 안에서 옮겨 가는 건 그대로 둔다)
     const ifr = ov.querySelector('iframe')!
@@ -2450,7 +2447,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const el = document.createElement('div')
     el.className = `seasonfx ${s}`
     el.innerHTML = `<i class="band" style="background-image:url('${ART}season/season-${s}.jpg')"></i><div>${icon(SEASON_ICON[s], 'sfx-ic')}<b>${esc(seasonLabel(season))}</b><span>${esc(SEASON_LINE[s])}</span></div>`
-    el.addEventListener('animationend', () => el.remove(), { once: true })
+    el.addEventListener('animationend', (e) => { if (e.target === el) el.remove() }) // 안쪽 글자의 애니메이션이 먼저 끝나도 띠를 걷지 않는다
     root.appendChild(el)
     ding(snd('season_turn'), 0.4)
   }
@@ -2609,7 +2606,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     root.insertAdjacentHTML('beforeend', html)
     ding(snd('dex_new'), 0.35)
     const el = root.querySelector('.dxtoast')
-    el?.addEventListener('animationend', () => el.remove(), { once: true })
+    el?.addEventListener('animationend', (e) => { if (e.target === el) el.remove() }) // 얼굴 뒤 금빛이 먼저 끝나도 알림은 그대로
   }
 
   /** 계절을 넘긴다 — 우리 명령(전장의 명령 줄 포함) + AI 명령. 막히면 까닭을 띄운다 */
