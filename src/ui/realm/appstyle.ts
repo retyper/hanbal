@@ -472,22 +472,25 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
  * __ART__ 는 app.ts 가 바꿔 넣는다.
  */
 export const SEASONP_CSS = `
-.ap .seasonp { position: absolute; left: 0; right: 0; top: calc(var(--toph) + var(--legh)); bottom: var(--tabh); pointer-events: none; overflow: hidden; z-index: 1; }
+.ap .seasonp { position: absolute; left: 0; right: 0; top: calc(var(--toph) + var(--legh)); bottom: var(--tabh); pointer-events: none; overflow: hidden; z-index: 1;
+  --sz: 22px; --sp: 1s; --op: .8; }
 .ap.choosing .seasonp, .ap.war-open .seasonp, .ap:has(.nightov) .seasonp { display: none; } /* 밤 판·싸움 창 밑에서는 쉬게 — 화면 일을 나눠 쓴다 */
-.ap .seasonp i { position: absolute; top: -40vmin; width: 30vmin; max-width: 240px; aspect-ratio: 1; background: center / contain no-repeat; opacity: .5;
-  animation: spfall 28s linear infinite; will-change: transform; }
-.ap .seasonp i:nth-child(1) { left: 2%; animation-delay: -4s; }
-.ap .seasonp i:nth-child(2) { left: 30%; animation-delay: -17s; animation-duration: 34s; }
-.ap .seasonp i:nth-child(3) { left: 58%; animation-delay: -10s; animation-duration: 31s; }
-.ap .seasonp i:nth-child(4) { left: 84%; animation-delay: -24s; animation-duration: 37s; }
-.ap .seasonp[data-s="spring"] i { background-image: url(__ART__fx/petals.png); }
-.ap .seasonp[data-s="autumn"] i { background-image: url(__ART__fx/leaves.png); opacity: .42; }
-/* 눈·비는 희어서 밝은 바탕(안 가 본 땅)에 묻힌다 — 테두리 그림자(비는 어둡게까지)를 그림에 구워 두었다. CSS filter 는 폰 GPU 를 먹는다 */
-.ap .seasonp[data-s="winter"] i { background-image: url(__ART__fx/snow.png); opacity: .75; animation-name: spsnow; }
-.ap .seasonp[data-s="summer"] i { background-image: url(__ART__fx/rain.png); width: 44vmin; max-width: 360px; opacity: .8; animation-name: sprain; animation-duration: 5s; }
-.ap .seasonp[data-s="summer"] i:nth-child(2) { animation-duration: 6s; } .ap .seasonp[data-s="summer"] i:nth-child(3) { animation-duration: 4.4s; } .ap .seasonp[data-s="summer"] i:nth-child(4) { animation-duration: 5.6s; }
-@keyframes spfall { from { transform: translate(0, 0) rotate(0deg); } to { transform: translate(-14vw, calc(100vh + 60vmin)) rotate(150deg); } }
-@keyframes spsnow { from { transform: translate(0, 0); } to { transform: translate(-5vw, calc(100vh + 60vmin)); } }
-@keyframes sprain { from { transform: translate(0, 0); } to { transform: translate(-40vmin, calc(100vh + 60vmin)); } }
+/* 입자 하나하나 — 자리 --x · 크기 --z · 빠르기 --d · 시작 --t · 흔들림 --w · 띠의 칸 --c 는 app.ts(seasonParticles)가 준다.
+   그림은 덩어리에서 낱낱이 잘라 낸 여덟 칸 띠 (tools/particle-strip.mjs — 형: "뭉탱이로 내리고 … 개별적으로 흩날려야") */
+.ap .seasonp i { position: absolute; top: -48px; left: var(--x); width: calc(var(--z) * var(--sz)); aspect-ratio: 1; opacity: var(--op);
+  background: 0 0 / 800% 100% no-repeat; background-position-x: calc(var(--c) * 100% / 7);
+  animation: spfall calc(var(--d) * var(--sp)) linear calc(var(--t) * var(--sp)) infinite; will-change: transform; }
+.ap .seasonp[data-s="spring"] { --sz: 20px; } .ap .seasonp[data-s="spring"] i { background-image: url(__ART__fx/petals-strip.png); }
+.ap .seasonp[data-s="autumn"] { --sz: 28px; --sp: 1.1s; } .ap .seasonp[data-s="autumn"] i { background-image: url(__ART__fx/leaves-strip.png); }
+/* 눈 — 대부분 결정 없는 작은 송이(둥근 점), 넷에 하나만 결정. 희어서 밝은 땅에 묻히니 옅은 테두리 */
+.ap .seasonp[data-s="winter"] { --sz: 18px; --sp: 1.3s; --op: .9; } .ap .seasonp[data-s="winter"] i { background-image: url(__ART__fx/snow-strip.png); animation-name: spsnow; }
+.ap .seasonp[data-s="winter"] i.o { width: calc(var(--z) * 9px); border-radius: 50%; background: radial-gradient(circle, #fff 0 48%, #fff0 74%); box-shadow: 0 0 2px 1px #52637f88; }
+/* 여름 장맛비 — 빗줄기 하나하나가 빠르게 비스듬히 (그림자·어둡게는 그림에 구워 둠) */
+.ap .seasonp[data-s="summer"] { --sz: 42px; --sp: .11s; --op: .75; } .ap .seasonp[data-s="summer"] i { background-image: url(__ART__fx/rain-strip.png); animation-name: sprain; }
+@keyframes spfall { 0% { transform: translate(0, 0) rotate(0deg); } 25% { transform: translate(var(--w), 28vh) rotate(70deg); } 50% { transform: translate(0, 56vh) rotate(150deg); }
+  75% { transform: translate(calc(var(--w) * -1), 84vh) rotate(230deg); } 100% { transform: translate(0, calc(100vh + 96px)) rotate(310deg); } }
+@keyframes spsnow { 0% { transform: translate(0, 0); } 25% { transform: translate(var(--w), 28vh); } 50% { transform: translate(0, 56vh); }
+  75% { transform: translate(calc(var(--w) * -1), 84vh); } 100% { transform: translate(0, calc(100vh + 96px)); } }
+@keyframes sprain { from { transform: translate(0, 0); } to { transform: translate(-45vh, calc(100vh + 96px)); } }
 @media (prefers-reduced-motion: reduce) { .ap .seasonp { display: none; } }
 `

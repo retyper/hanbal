@@ -219,6 +219,19 @@ const KIT: FrontKit = {
   won: nationWon,
 }
 
+/** 계절 입자 서른여섯 — 자리·크기·빠르기·흔들림·그림 칸을 한 번 정해 둔다 (꾸밈이라 판의 시드와 상관없다). 넷 중 셋은 눈일 때 둥근 송이(.o) */
+const SP_N = 36
+function seasonParticles(): string {
+  let s = 7
+  const rnd = (): number => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff
+  let h = ''
+  for (let i = 0; i < SP_N; i++) {
+    const d = 9 + rnd() * 9
+    h += `<i${i % 4 !== 0 ? ' class="o"' : ''} style="--x:${(rnd() * 100).toFixed(1)}%;--z:${(0.6 + rnd() * 0.8).toFixed(2)};--d:${d.toFixed(1)};--t:${(-rnd() * d).toFixed(1)};--w:${Math.round(12 + rnd() * 40)}px;--c:${Math.floor(rnd() * 8)}"></i>`
+  }
+  return h
+}
+
 /** 첫 화면 · 판 고르기 · 나라 고르기 · 자세히 — null 이면 판 위 */
 type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region: RegionId } | { kind: 'detail'; region: RegionId; id: string }
   /** 도감 — back: 돌아갈 판 바깥 화면 (null 이면 판으로) */
@@ -233,7 +246,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 배경 음악 · 계절 바람 — 싸움 창이 열려 있으면 싸움 음악 */
   const music = makeMusic(BASE, muted, () => root.querySelector('.nightov') !== null) // 밤 판이 떠 있으면 조용히 — 밤 판은 제 소리를 낸다
   let warOn = false
-  root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="seasonp" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="legend"></div><div class="zbtns"><button data-act="layers" class="lyb" aria-label="보기">👁</button><button data-act="zin">＋</button><button data-act="zout">－</button></div><div class="layers"></div><button class="next" data-act="next"></button><div class="selbar"></div><div class="roadkey"></div><button class="homebtn" data-act="home">우리 땅</button><button class="logbtn" data-act="log-open">지난 기록</button><div class="tutband"></div>`
+  root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="seasonp" aria-hidden="true">${seasonParticles()}</div><div class="legend"></div><div class="zbtns"><button data-act="layers" class="lyb" aria-label="보기">👁</button><button data-act="zin">＋</button><button data-act="zout">－</button></div><div class="layers"></div><button class="next" data-act="next"></button><div class="selbar"></div><div class="roadkey"></div><button class="homebtn" data-act="home">우리 땅</button><button class="logbtn" data-act="log-open">지난 기록</button><div class="tutband"></div>`
     + `<nav class="tabs"></nav><div class="back" data-act="close"></div><section class="sheet"></section><div class="modal"></div><div class="plbox"></div>`
   const $ = (sel: string): HTMLElement => root.querySelector<HTMLElement>(sel)!
   const zoom = attachZoom($('.mapwrap'))
