@@ -365,6 +365,8 @@ export const FRONT_CSS = `
 /* 서막 */
 .ap .prologue { position: absolute; inset: 0; z-index: 70; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px 18px;
   background: #e9dfc6 url('__ART__map-world/hanji.webp') center / 520px; color: #2a1d10; animation: plin .6s ease-out both; }
+/* 바탕은 첫 장에서만 서서히 — 다음 장은 바로 깔린다 (바꿀 때마다 판이 비쳐 보였다 — 형: "다음 누를때마다 자꾸 게임화면 잠깐 나옴"). 글자는 장마다 먹물처럼 번진다 */
+.ap .prologue:not(.s0) { animation: none; }
 .ap .prologue.out { animation: plout 1.1s ease-in forwards; pointer-events: none; }
 @keyframes plin { from { opacity: 0; } to { opacity: 1; } } @keyframes plout { to { opacity: 0; transform: scale(1.04); filter: blur(4px); } }
 .ap .prologue .pin { max-width: 680px; width: 100%; font-family: 'Gowun Batang', serif; }

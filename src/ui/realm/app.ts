@@ -2560,7 +2560,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (realm !== null) noteKids(Object.values(realm.heroes))
     saveDraft()
     if (realm === null && front === null) front = { kind: 'title' }
-    $('.plbox').innerHTML = realm !== null && front === null && prologue !== null ? prologueHtml(KIT, realm, prologue) : ''
+    // 서막 — 같은 장이면 다시 깔지 않는다 (다시 깔면 글자가 처음부터 다시 번진다)
+    const pl = realm !== null && front === null && prologue !== null ? prologueHtml(KIT, realm, prologue) : ''
+    if ($('.plbox').dataset['html'] !== pl) { $('.plbox').innerHTML = pl; $('.plbox').dataset['html'] = pl }
     if (realm === null || front !== null) {
       root.classList.add('choosing')
       lastMap = ''
@@ -2838,7 +2840,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         root.querySelector('.prologue')?.classList.add('out')
         root.classList.add('opening')
         // 서막이 사라진 뒤 한 번 — 첫 계절을 알린다. 지도는 다시 그릴 때마다 새로 생기니 animationend 대신 한 번 거둔다
-        setTimeout(() => { $('.plbox').innerHTML = ''; if (realm !== null) { seasonFx(realm.season); paintTut(plan()) } }, 900)
+        setTimeout(() => { $('.plbox').innerHTML = ''; $('.plbox').dataset['html'] = ''; if (realm !== null) { seasonFx(realm.season); paintTut(plan()) } }, 900)
         setTimeout(() => root.classList.remove('opening'), 3000)
         return
       }
