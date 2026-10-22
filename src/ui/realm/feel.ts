@@ -70,7 +70,7 @@ export const ambushFeel = (p: number): string => chip(AMBUSH, p, p)
 const FAVOR: readonly Tier[] = [
   { at: 60, word: '매우 가깝다', color: '#3f8f3a' },
   { at: 25, word: '가깝다', color: '#7aa83a' },
-  { at: -25, word: '데면데면', color: '#6a7080' },
+  { at: -25, word: '데면데면', color: '#80706a' },
   { at: -60, word: '껄끄럽다', color: '#d0702f' },
   { at: -Infinity, word: '원수 같다', color: '#b83a2a' },
 ]
@@ -84,5 +84,5 @@ export const FEEL_CSS = `
 .ap .feel { display: inline-block; padding: 2px 9px; border-radius: 11px; color: #fff; font-size: 12.5px; font-weight: 700; line-height: 1.5;
   text-shadow: 0 1px 1px #0008; white-space: nowrap; vertical-align: middle; }
 .ap .feel.wide { opacity: .85; border: 1px dashed #fff8; }
-.ap .feel.unknown { background: #3a4250; color: #c8c0b0; }
+.ap .feel.unknown { background: #54412a; color: #c8c0b0; }
 `

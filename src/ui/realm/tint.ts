@@ -57,5 +57,5 @@ export const TINT_CSS = `
 .ap .tw { font-weight: 700; }
 .ap .tw.men { color: #f0907a; } .ap .tw.loss { color: #ff7a62; } .ap .tw.gain { color: #9fd18b; }
 .ap .tw.home { color: #d9a86a; } .ap .tw.grain { color: #ecc862; } .ap .tw.iron { color: #a9c3dc; } .ap .tw.hero { color: #f3d48a; }
-.ap .tw.nat { color: #fff; padding: 0 4px; border-radius: 5px; background: color-mix(in srgb, var(--c) 55%, #1b2028); box-shadow: inset 0 -2px 0 var(--c); }
+.ap .tw.nat { color: #fff; padding: 0 4px; border-radius: 5px; background: color-mix(in srgb, var(--c) 55%, #1f1710); box-shadow: inset 0 -2px 0 var(--c); }
 `

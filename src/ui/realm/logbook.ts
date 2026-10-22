@@ -128,13 +128,13 @@ export function logbookHtml(k: LogKit, r: Realm, rows: readonly LogRow[], nation
 
 export const LOG_CSS = `
 .ap .logf, .ap .logn { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 8px; }
-.ap .logf button, .ap .logn button { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 14px; border: 1px solid #4a5363;
-  background: #1f252e; color: var(--mute); font: inherit; font-size: 13px; cursor: pointer; }
+.ap .logf button, .ap .logn button { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 14px; border: 1px solid #6a5236;
+  background: #241a12; color: var(--mute); font: inherit; font-size: 13px; cursor: pointer; }
 .ap .logf button.on, .ap .logn button.on { color: var(--ink); border-color: var(--gold); background: #3a3020; }
 .ap .logn img.lem { width: 18px; height: 18px; }
 .ap .logl .logs { margin: 12px 0 4px; color: var(--gold); font-size: 14px; }
 .ap .logl .rrow { animation: none; opacity: 1; }
 .ap .logbtn { position: absolute; left: 96px; top: calc(var(--toph) + var(--legh) + 8px); z-index: 6; padding: 6px 12px; border-radius: 12px;
-  border: 1px solid #4a5363; background: #1b2028e6; color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+  border: 1px solid #6a5236; background: #1f1710e6; color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
 .ap.sheet-open .logbtn, .ap.choosing .logbtn { display: none; }
 `

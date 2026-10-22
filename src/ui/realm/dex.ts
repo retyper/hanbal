@@ -186,9 +186,9 @@ export function dexToastHtml(k: DexKit, items: ReadonlyArray<{ id: string; lv: 2
 
 export const DEX_CSS = `
 .ap .dexp .dxsum { max-width: 980px; margin: 4px auto 0; padding: 0 14px; }
-.ap .dexp .dxbar { position: relative; height: 10px; border-radius: 5px; background: #2a2f38; overflow: hidden; }
+.ap .dexp .dxbar { position: relative; height: 10px; border-radius: 5px; background: #30241a; overflow: hidden; }
 .ap .dexp .dxbar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; }
-.ap .dexp .dxbar .h { background: #4a5260; z-index: 1; } .ap .dexp .dxbar .m { background: #7a8aa0; z-index: 2; }
+.ap .dexp .dxbar .h { background: #60524a; z-index: 1; } .ap .dexp .dxbar .m { background: #7a8aa0; z-index: 2; }
 .ap .dexp .dxbar .c { background: #c07a4a; z-index: 3; } .ap .dexp .dxbar .s { background: #e0b860; z-index: 4; }
 .ap .dexp .dxsum p { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin: 6px 0 2px; font-size: 12.5px; color: #a89c84; }
 .ap .dexp .dxsum p b { font-size: 17px; color: var(--gold); margin-right: 3px; }
@@ -202,12 +202,12 @@ export const DEX_CSS = `
 .ap .dexp .dxc.sel { outline: 2px solid var(--gold); outline-offset: 1px; }
 .ap .dexp .dxf { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; object-position: top; }
 .ap .dexp .dxc.lv1 .dxf { filter: grayscale(.85) brightness(.75); }
-.ap .dexp .dxf.none { display: grid; place-items: center; background: #14181e; color: #4a5260; font-size: 28px; font-weight: 700; border: 1px dashed #3a4250; box-sizing: border-box; }
+.ap .dexp .dxf.none { display: grid; place-items: center; background: #17110c; color: #60524a; font-size: 28px; font-weight: 700; border: 1px dashed #54412a; box-sizing: border-box; }
 .ap .dexp .dxn { font-size: 12.5px; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ap .dexp .dxc.lv0 .dxn { color: #5a6270; } .ap .dexp .dxn .ttl { font-size: 10px; }
+.ap .dexp .dxc.lv0 .dxn { color: #70625a; } .ap .dexp .dxn .ttl { font-size: 10px; }
 .ap .dexp .dxm { font-size: 10.5px; color: var(--mute); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ap .dexp .pips { display: flex; gap: 3px; margin-top: 1px; } .ap .dexp .pips i { width: 6px; height: 6px; border-radius: 50%; background: #333a46; }
-.ap .dexp .pips i.on:nth-child(1) { background: #7a8290; } .ap .dexp .pips i.on:nth-child(2) { background: #a8b8d0; }
+.ap .dexp .pips { display: flex; gap: 3px; margin-top: 1px; } .ap .dexp .pips i { width: 6px; height: 6px; border-radius: 50%; background: #463a33; }
+.ap .dexp .pips i.on:nth-child(1) { background: #90827a; } .ap .dexp .pips i.on:nth-child(2) { background: #a8b8d0; }
 .ap .dexp .pips i.on:nth-child(3) { background: #e0915a; } .ap .dexp .pips i.on:nth-child(4) { background: #f0c860; }
 .ap .dexp .rope { position: absolute; top: 46px; right: 10px; width: 22px; height: 22px; border-radius: 50%; background: #8a5a2a; border: 2px solid #e0b070;
   box-shadow: 0 1px 4px #000a; } .ap .dexp .rope::after { content: ''; position: absolute; inset: 4px; border-radius: 50%; border: 2px dashed #f0d8a8; }
@@ -215,23 +215,23 @@ export const DEX_CSS = `
 .ap .dexp .clk { display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 12px; border: 1px solid #6a4a5a; background: #231a20; }
 .ap .dexp .clk > div { display: flex; flex-direction: column; gap: 2px; } .ap .dexp .clk .dxf.none { font-size: 16px; color: #f0b8c8; }
 .ap .dexp .dxsel { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); width: min(560px, 100%); max-height: 62vh; overflow-y: auto; z-index: 6; box-sizing: border-box;
-  padding: 14px 16px calc(16px + env(safe-area-inset-bottom)); border-radius: 18px 18px 0 0; background: #181c23f5; border: 1px solid #4a4436; border-bottom: none;
+  padding: 14px 16px calc(16px + env(safe-area-inset-bottom)); border-radius: 18px 18px 0 0; background: #231c18f5; border: 1px solid #4a4436; border-bottom: none;
   box-shadow: 0 -8px 30px #000a; animation: dxup .25s ease-out both; }
 @keyframes dxup { from { transform: translate(-50%, 30px); opacity: 0; } to { transform: translateX(-50%); opacity: 1; } }
-.ap .dexp .dxsel .x { position: absolute; right: 10px; top: 8px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: #222833; color: var(--ink); cursor: pointer; }
+.ap .dexp .dxsel .x { position: absolute; right: 10px; top: 8px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: #2a1f16; color: var(--ink); cursor: pointer; }
 .ap .dexp .dxtop { display: flex; gap: 12px; align-items: center; } .ap .dexp .dxtop > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .ap .dexp .dxbig { width: 96px; height: 96px; border-radius: 14px; object-fit: cover; object-position: top; border: 1px solid #6a5a3a; flex: none; }
-.ap .dexp .dxbig.none { display: grid; place-items: center; background: #14181e; color: #4a5260; font-size: 40px; }
+.ap .dexp .dxbig.none { display: grid; place-items: center; background: #17110c; color: #60524a; font-size: 40px; }
 .ap .dexp .dxname { font-size: 19px; color: var(--gold); font-family: 'Gowun Batang', serif; }
 .ap .dexp .grade { align-self: flex-start; padding: 0 8px; border-radius: 9px; border: 1.5px solid var(--g); font-size: 12px; }
-.ap .dexp .lvs { display: flex; flex-wrap: wrap; gap: 4px; } .ap .dexp .lvs i { font-style: normal; font-size: 11.5px; padding: 1px 7px; border-radius: 9px; border: 1px solid #333a46; color: #5a6270; }
+.ap .dexp .lvs { display: flex; flex-wrap: wrap; gap: 4px; } .ap .dexp .lvs i { font-style: normal; font-size: 11.5px; padding: 1px 7px; border-radius: 9px; border: 1px solid #463a33; color: #70625a; }
 .ap .dexp .lvs i.on { color: var(--ink); border-color: #8a7a5a; background: #2a2618; }
 .ap .dexp .dxstat { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; } .ap .dexp .dxtr { flex: 1; min-width: 180px; display: flex; flex-wrap: wrap; gap: 4px; }
 .ap .dexp .dxtr p { flex-basis: 100%; }
 .ap .dxtoast { position: absolute; right: 10px; top: calc(64px + env(safe-area-inset-top)); z-index: 45; display: flex; flex-direction: column; gap: 6px; cursor: pointer;
   animation: dxt 5.5s ease-in-out both; } .ap .dxtoast.gone { display: none; }
 @keyframes dxt { 0% { opacity: 0; transform: translateX(30px); } 8%, 82% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateX(30px); visibility: hidden; } }
-.ap .dxt { display: flex; align-items: center; gap: 8px; padding: 5px 12px 5px 5px; border-radius: 26px; background: #181c23ee; border: 1px solid #8a7a5a; box-shadow: 0 4px 14px #0009; }
+.ap .dxt { display: flex; align-items: center; gap: 8px; padding: 5px 12px 5px 5px; border-radius: 26px; background: #231c18ee; border: 1px solid #8a7a5a; box-shadow: 0 4px 14px #0009; }
 .ap .dxt img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; object-position: top; }
 .ap .dxt span { display: flex; flex-direction: column; line-height: 1.2; } .ap .dxt small { font-size: 11px; color: var(--mute); } .ap .dxt b { font-size: 14px; }
 .ap .dxt.lv3 { border-color: #e0915a; } .ap .dxt.lv3 small { color: #f0b080; } .ap .dxt.lv4 { border-color: #f0c860; } .ap .dxt.lv4 small { color: #f0c860; }

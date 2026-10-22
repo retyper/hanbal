@@ -516,10 +516,10 @@ export const WAR_CSS = `
 .ap .wvs .vs { font-style: normal; font-weight: 800; color: #c8402a; font-size: 20px; align-self: center; }
 .ap .ws { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; }
 .ap .ws b { font-size: 15px; margin-top: 4px; } .ap .ws > span { font-size: 12px; color: var(--mute); }
-.ap .wf { width: 84px; height: 84px; border-radius: 14px; object-fit: cover; border: 2px solid #6a5a3a; background: #2a313c; }
+.ap .wf { width: 84px; height: 84px; border-radius: 14px; object-fit: cover; border: 2px solid #6a5a3a; background: #3a2c1e; }
 .ap .wf.unit { object-fit: contain; padding: 6px; }
 .ap .ws.foe .wf { border-color: #7a3a2a; }
-.ap .wbar { width: 100%; height: 8px; border-radius: 4px; background: #2a2f38; overflow: hidden; margin-top: 6px; }
+.ap .wbar { width: 100%; height: 8px; border-radius: 4px; background: #30241a; overflow: hidden; margin-top: 6px; }
 .ap .wbar i { display: block; height: 100%; }
 .ap .wbar i.wgr { animation-duration: 1s; animation-timing-function: ease-out; animation-delay: 2.4s; animation-fill-mode: both; }
 .ap .wn.swap { display: inline-grid; } .ap .wn.swap > * { grid-area: 1 / 1; text-decoration: none; }
@@ -528,13 +528,13 @@ export const WAR_CSS = `
 .ap .wbar.men i { background: linear-gradient(90deg, #3f8f3a, #8fd07a); } .ap .ws.foe .wbar.men i { background: linear-gradient(90deg, #8a3a2a, #e08a74); }
 .ap .wbar.mor { height: 5px; } .ap .wbar.mor i { background: #d9b36a; }
 .ap .ws .wn { font-size: 12px; color: var(--ink); }
-.ap .wintro { margin: 12px 0 6px; padding: 8px 10px; border-radius: 10px; background: #1a1f27e6; font-size: 14.5px; }
+.ap .wintro { margin: 12px 0 6px; padding: 8px 10px; border-radius: 10px; background: #1e160fe6; font-size: 14.5px; }
 .ap .wlog { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
-.ap .wrd { padding: 8px 10px; border-radius: 12px; background: #161a20e6; border: 1px solid #343c49; }
+.ap .wrd { padding: 8px 10px; border-radius: 12px; background: #201a16e6; border: 1px solid #4d3b26; }
 .ap .wrd.crit { border-color: #d9b36a; box-shadow: 0 0 0 1px #d9b36a55 inset; }
 .ap .wrn { font-size: 12px; color: var(--mute); margin-bottom: 4px; }
 .ap .wcmds { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; }
-.ap .wc { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 3px; padding: 3px 6px; border-radius: 12px; background: #222833; flex: 1; min-width: 0; }
+.ap .wc { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 3px; padding: 3px 6px; border-radius: 12px; background: #2a1f16; flex: 1; min-width: 0; }
 .ap .wc.foe { background: #2d1f1d; }
 .ap .wfl { display: inline-flex; align-items: center; gap: 2px; font-size: 12.5px; white-space: nowrap; padding: 0 3px; }
 .ap .wfl img { width: 22px; height: 22px; object-fit: contain; }
@@ -612,7 +612,7 @@ export const WAR_CSS = `
 .ap .wrd.slow .wcmds { animation-name: wrflip; }
 @keyframes wrin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes wrflip { from { opacity: 0; transform: rotateX(90deg); } to { opacity: 1; transform: none; } }
-.ap .wnext { margin-top: 12px; padding: 10px; border-radius: 14px; background: #1b2028; border: 1px solid #4a4030; animation: wrin .4s ease-out both; }
+.ap .wnext { margin-top: 12px; padding: 10px; border-radius: 14px; background: #1f1710; border: 1px solid #4a4030; animation: wrin .4s ease-out both; }
 .ap .wr.slow .wnext { animation-delay: 3.1s; }
 .ap .whint { margin: 2px 0 6px; font-size: 14px; } .ap .whint b { color: var(--gold); margin-right: 4px; }
 .ap .whint.warn b { color: #ff9a70; }
@@ -620,20 +620,20 @@ export const WAR_CSS = `
 .ap .wgrp { margin: 8px 0; }
 .ap .wgh { font-size: 13.5px; margin-bottom: 4px; } .ap .wgh b { color: var(--gold); margin-right: 4px; }
 .ap .wcmdgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
-.ap .wcmd { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 7px 9px; border-radius: 12px; border: 1px solid #4a5363;
-  background: #222833; color: var(--ink); font: inherit; text-align: left; cursor: pointer; position: relative; }
+.ap .wcmd { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 7px 9px; border-radius: 12px; border: 1px solid #6a5236;
+  background: #2a1f16; color: var(--ink); font: inherit; text-align: left; cursor: pointer; position: relative; }
 .ap .wcmd.on { border-color: var(--gold); background: #3a3222; box-shadow: 0 0 0 2px #d9b36a66; }
 .ap .wcmd img { width: 30px; height: 30px; object-fit: contain; position: absolute; right: 8px; top: 7px; opacity: .9; }
 .ap .wcmd b { font-size: 15.5px; } .ap .wcmd small { font-size: 11.5px; color: var(--mute); line-height: 1.35; padding-right: 2px; }
 .ap .wcmd em { font-style: normal; font-size: 11px; color: #14161a; background: var(--gold); border-radius: 6px; padding: 0 5px; }
 .ap .wcmd em.land { background: #7fb07a; }
 .ap .wcmd .wcap { font-size: 12px; color: var(--ink); }
-.ap .wcmd.capture { border-color: #8a6a2a; } .ap .wcmd.retreat { background: #1a1d22; }
+.ap .wcmd.capture { border-color: #8a6a2a; } .ap .wcmd.retreat { background: #221d1a; }
 .ap .wf-hi { color: var(--good); font-weight: 700; font-size: 13px; } .ap .wf-mid { color: var(--gold); font-size: 13px; }
 .ap .wf-lo { color: var(--bad); font-size: 13px; } .ap .wf-no { color: #8b8478; font-size: 13px; }
 .ap .wfoot { display: flex; gap: 8px; justify-content: flex-end; align-items: center; margin-top: 10px; flex-wrap: wrap; }
 .ap .wfoot .btn.on { font-size: 16px; padding: 8px 18px; }
-.ap .wend { margin-top: 14px; padding: 12px; border-radius: 14px; text-align: center; background: #1b2028; animation: wrin .5s ease-out var(--d, 0s) both; }
+.ap .wend { margin-top: 14px; padding: 12px; border-radius: 14px; text-align: center; background: #1f1710; animation: wrin .5s ease-out var(--d, 0s) both; }
 .ap .wend b { font-size: 21px; } .ap .wend.good b { color: var(--good); } .ap .wend.bad b { color: var(--bad); }
 .ap .wend .wwhy { font-size: 14.5px; color: #e8dcc0; }
 .ap .wr.fast .wrd.slow .wcmds, .ap .wr.fast .wrd.slow .wst, .ap .wr.fast .wrd.slow .wpush, .ap .wr.fast .wend, .ap .wr.fast .wnext { animation-delay: 0s !important; animation-duration: .01s !important; }

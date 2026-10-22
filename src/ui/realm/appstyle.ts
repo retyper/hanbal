@@ -3,8 +3,8 @@
  * 움직임은 CSS 전환뿐이다 (rAF·타이머 없음 — 절대 규칙 4).
  */
 export const APP_CSS = `
-html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; overscroll-behavior: none; }
-.ap { --gold: #d9b36a; --ink: #e9e2d4; --mute: #8f887b; --card: #222833; --line: #343c49; --good: #8fd07a; --bad: #e08a74;
+html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; overscroll-behavior: none; }
+.ap { --gold: #d9b36a; --ink: #e9e2d4; --mute: #8f887b; --card: #2a1f16; --line: #4d3b26; --good: #8fd07a; --bad: #e08a74;
   --tabh: calc(62px + env(safe-area-inset-bottom)); --toph: calc(48px + env(safe-area-inset-top)); --legh: 34px;
   /* 글꼴 셋 (public/fonts — 자체 호스팅, 기기마다 같게): 본문 고운돋움 · 제목 고운바탕 · 큰 의식 글자(계절·싸움 이름·첫 화면) 송명.
      조각에 없는 글자는 다음 글꼴로 넘어가니 깨지지 않는다 */
@@ -25,9 +25,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 /* 위 상태 줄 */
 .ap .top { position: absolute; left: 0; right: 0; top: 0; height: var(--toph); padding: env(safe-area-inset-top) 10px 0; box-sizing: border-box;
   display: flex; align-items: center; justify-content: space-between; gap: 8px; z-index: 5;
-  background: linear-gradient(#0f1217f0, #0f1217c0); border-bottom: 1px solid #2a313c; }
+  background: linear-gradient(#120d09f0, #120d09c0); border-bottom: 1px solid #3a2c1e; }
 .ap .top .lobby + .tl { margin-right: auto; }
-.ap .top .lobby { flex: none; width: 34px; height: 34px; margin-right: 6px; border-radius: 10px; border: 1px solid #5a5040; background: #1c2027; color: #e8d9b0; font-size: 19px; line-height: 1; cursor: pointer; }
+.ap .top .lobby { flex: none; width: 34px; height: 34px; margin-right: 6px; border-radius: 10px; border: 1px solid #5a5040; background: #27201c; color: #e8d9b0; font-size: 19px; line-height: 1; cursor: pointer; }
 .ap .top .tl { display: flex; align-items: center; gap: 6px; font-size: 16px; white-space: nowrap; }
 .ap .top img.sic { width: 30px; height: 30px; }
 .ap .top .tr { display: flex; align-items: center; gap: 10px; overflow: hidden; }
@@ -37,25 +37,25 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 
 /* 지도 — 남은 자리를 꽉. 폰 세로에서는 옆으로 민다 */
 .ap .mapwrap { position: absolute; left: 0; right: 0; top: calc(var(--toph) + var(--legh)); bottom: var(--tabh); overflow: auto;
-  background: #1a1d22; scrollbar-width: none; touch-action: pan-x pan-y; cursor: grab; }
+  background: #221d1a; scrollbar-width: none; touch-action: pan-x pan-y; cursor: grab; }
 .ap .mapwrap.dragging { cursor: grabbing; }
 /* 확대·축소 단추 — 지도 왼쪽 아래 */
 .ap .zbtns { position: absolute; left: 12px; bottom: calc(var(--tabh) + 14px); z-index: 6; display: flex; flex-direction: column; gap: 6px; }
-.ap .zbtns button { width: 42px; height: 42px; border-radius: 12px; border: 1px solid #4a5363; background: #1b2028e6; color: var(--ink);
+.ap .zbtns button { width: 42px; height: 42px; border-radius: 12px; border: 1px solid #6a5236; background: #1f1710e6; color: var(--ink);
   font-size: 22px; cursor: pointer; box-shadow: 0 4px 10px #0008; }
 .ap.sheet-open .zbtns, .ap.choosing .zbtns { display: none; }
 .ap .mapwrap::-webkit-scrollbar { display: none; }
 
 /* 깃발 줄 — 지도 왼쪽 위에 떠 있다. 누르면 그 나라 땅만 또렷하다 */
 .ap .legend { position: absolute; left: 0; right: 0; top: var(--toph); height: var(--legh); box-sizing: border-box; z-index: 4; display: flex;
-  align-items: center; gap: 4px; padding: 0 8px; overflow-x: auto; scrollbar-width: none; background: #0f1217; border-bottom: 1px solid #2a313c; }
+  align-items: center; gap: 4px; padding: 0 8px; overflow-x: auto; scrollbar-width: none; background: #120d09; border-bottom: 1px solid #3a2c1e; }
 .ap .legend::-webkit-scrollbar { display: none; } .ap .legend .lg { pointer-events: auto; flex: none; }
 .ap .lg { display: flex; align-items: center; gap: 4px; padding: 2px 8px 2px 3px; border-radius: 16px; border: 1px solid #0006;
-  background: color-mix(in srgb, var(--c) 30%, #14181ee0); color: #fff; font: inherit; font-size: 12px; cursor: pointer;
+  background: color-mix(in srgb, var(--c) 30%, #17110ce0); color: #fff; font: inherit; font-size: 12px; cursor: pointer;
   box-shadow: 0 2px 6px #0007; border-left: 5px solid var(--c); }
 .ap .lg img.lem { width: 22px; height: 22px; } .ap .lg b { font-size: 14px; min-width: 1em; }
 .ap .lg span { display: none; } .ap .lg.on span, .ap .lg.me span { display: inline; }
-.ap .lg.on { border-color: #fff; background: color-mix(in srgb, var(--c) 55%, #14181e); }
+.ap .lg.on { border-color: #fff; background: color-mix(in srgb, var(--c) 55%, #17110c); }
 .ap .lg.gone { opacity: .45; }
 .ap.sheet-open .legend { opacity: .3; pointer-events: none; }
 @media (min-width: 700px) { .ap .lg span { display: inline; } }
@@ -70,7 +70,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 
 /* 아래 탭 */
 .ap .tabs { position: absolute; left: 0; right: 0; bottom: 0; height: var(--tabh); padding-bottom: env(safe-area-inset-bottom); box-sizing: border-box;
-  display: flex; background: #0f1217; border-top: 1px solid #2a313c; z-index: 8; }
+  display: flex; background: #120d09; border-top: 1px solid #3a2c1e; z-index: 8; }
 .ap .tabs button { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; border: 0;
   background: none; color: var(--mute); font: inherit; font-size: 12px; cursor: pointer; }
 .ap .tabs button img.tic { width: 32px; height: 32px; opacity: .75; filter: grayscale(.4); }
@@ -82,23 +82,23 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .back { position: absolute; inset: 0; bottom: var(--tabh); background: #0007; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 6; }
 .ap.sheet-open .back { opacity: 1; pointer-events: auto; }
 .ap .sheet { position: absolute; left: 0; right: 0; bottom: var(--tabh); max-height: 72%; overflow-y: auto; overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch; background: #1b2028; border-radius: 18px 18px 0 0; border-top: 1px solid #3a4250;
+  -webkit-overflow-scrolling: touch; background: #1f1710; border-radius: 18px 18px 0 0; border-top: 1px solid #54412a;
   padding: 0 14px 18px; box-sizing: border-box; z-index: 7; transform: translateY(105%); transition: transform .22s ease-out;
   box-shadow: 0 -8px 24px #0009; user-select: text; -webkit-user-select: text; }
 .ap.sheet-open .sheet { transform: none; }
 .ap:not(.sheet-open) .sheet { visibility: hidden; transition: transform .22s ease-out, visibility 0s .22s; }
 @media (min-width: 900px) { .ap .sheet { left: auto; right: 12px; width: 440px; bottom: calc(var(--tabh) + 8px); border-radius: 16px; max-height: calc(100% - var(--tabh) - var(--toph) - 20px); } }
-.ap .grip { position: sticky; top: 0; height: 22px; margin: 0 -14px 4px; background: #1b2028; cursor: pointer; z-index: 1; }
-.ap .grip::after { content: ''; position: absolute; left: 50%; top: 9px; width: 42px; height: 4px; margin-left: -21px; border-radius: 2px; background: #4a5363; }
+.ap .grip { position: sticky; top: 0; height: 22px; margin: 0 -14px 4px; background: #1f1710; cursor: pointer; z-index: 1; }
+.ap .grip::after { content: ''; position: absolute; left: 50%; top: 9px; width: 42px; height: 4px; margin-left: -21px; border-radius: 2px; background: #6a5236; }
 
 /* 판 안의 것들 */
-.ap .btn { display: inline-flex; align-items: center; gap: 4px; padding: 7px 12px; border-radius: 10px; border: 1px solid #4a5363; background: #2a313c;
+.ap .btn { display: inline-flex; align-items: center; gap: 4px; padding: 7px 12px; border-radius: 10px; border: 1px solid #6a5236; background: #3a2c1e;
   color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; text-decoration: none; }
 .ap .btn.on { background: linear-gradient(#a57a31, #7d5a22); border-color: #e0bd78; color: #fff4dc; }
 .ap .btn.ghost { background: transparent; color: var(--mute); } .ap .btn:disabled { opacity: .4; cursor: default; }
 .ap .btn.sm { padding: 3px 9px; font-size: 13px; margin-left: auto; } .ap .btn.wide { width: 100%; justify-content: center; margin-top: 10px; padding: 11px; }
 .ap .btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.ap .banner { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin: 6px 0; border-radius: 10px; background: #2a2f38; font-size: 14px; }
+.ap .banner { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin: 6px 0; border-radius: 10px; background: #30241a; font-size: 14px; }
 .ap .banner.good { background: #24331f; color: #cfeabf; } .ap .banner.bad { background: #3a2622; color: #f1c6b8; }
 .ap .acard, .ap .ncard, .ap .fcard { display: flex; gap: 10px; padding: 10px; margin: 8px 0; border-radius: 14px; background: var(--card); border: 1px solid var(--line); }
 .ap .ncard, .ap .fcard { flex-direction: column; gap: 6px; }
@@ -106,10 +106,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .seasonfx { position: absolute; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; pointer-events: none;
   background: radial-gradient(circle, #0009 0, #0000 70%); animation: sfx 2.2s ease-out forwards; }
 .ap .seasonfx .band { position: absolute; left: 0; right: 0; top: 50%; height: min(52vh, 340px); transform: translateY(-50%);
-  background: #14181e center / cover no-repeat; -webkit-mask-image: linear-gradient(to bottom, #0000, #000 16%, #000 84%, #0000);
+  background: #17110c center / cover no-repeat; -webkit-mask-image: linear-gradient(to bottom, #0000, #000 16%, #000 84%, #0000);
   mask-image: linear-gradient(to bottom, #0000, #000 16%, #000 84%, #0000); animation: sfxband 2.2s ease-out forwards; }
 .ap .seasonfx > div { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 18px 34px; border-radius: 18px;
-  background: #14181ee8; border: 1px solid #8a7040; box-shadow: 0 8px 40px #000a; animation: sfxin 1.6s cubic-bezier(.2, 1.4, .4, 1) forwards; }
+  background: #17110ce8; border: 1px solid #8a7040; box-shadow: 0 8px 40px #000a; animation: sfxin 1.6s cubic-bezier(.2, 1.4, .4, 1) forwards; }
 .ap .seasonfx b { font-family: var(--display); font-weight: 400; font-size: 32px; color: var(--gold); letter-spacing: 2px; }
 .ap .seasonfx span { font-size: 13.5px; color: #d8d0c0; } .ap .seasonfx img.sfx-ic { width: 54px; height: 54px; }
 .ap .seasonfx.spring b { color: #f2b8c6; } .ap .seasonfx.summer b { color: #9fd18b; } .ap .seasonfx.autumn b { color: #f0b060; } .ap .seasonfx.winter b { color: #cfe3f5; }
@@ -121,47 +121,47 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .failbox { position: absolute; left: 12px; right: 12px; top: 56px; z-index: 50; padding: 12px; border-radius: 12px; background: #3a1d18; border: 1px solid #c8402a;
   color: #f3e6c8; display: flex; flex-direction: column; gap: 6px; font-size: 13px; } .ap .failbox span { color: #e8b8a8; word-break: break-all; }
 .ap .pow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 4px 0 2px; } .ap .pow b { color: var(--gold); font-size: 14px; }
-.ap .pbar { flex: 1 1 80px; height: 8px; border-radius: 4px; background: #2a2f38; overflow: hidden; } .ap .pbar i { display: block; height: 100%; background: linear-gradient(90deg, #8a6a3a, #e0a050); }
+.ap .pbar { flex: 1 1 80px; height: 8px; border-radius: 4px; background: #30241a; overflow: hidden; } .ap .pbar i { display: block; height: 100%; background: linear-gradient(90deg, #8a6a3a, #e0a050); }
 .ap .pow .mute { flex-basis: 100%; font-size: 12.5px; }
 .ap .kitrow { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin: 3px 0; font-size: 13px; } .ap .kitrow img.ic { width: 20px; height: 20px; }
 .ap .kitrow .kt { color: #c8c0b0; font-size: 12.5px; flex: 1 1 10em; } .ap .kitrow .btn.sm { margin-left: auto; }
 .ap .hints { margin: 4px 0 6px; padding-left: 18px; font-size: 13px; color: #d8c89a; } .ap .hints li { margin: 1px 0; }
 .ap .acard.fresh { border-color: #7aa83a; box-shadow: 0 0 0 2px #7aa83a55; animation: fresh 1.2s ease-out 1; } @keyframes fresh { from { background: #2f3d24; } }
-.ap .face { flex: none; width: 64px; height: 64px; border-radius: 12px; object-fit: cover; border: 1px solid #4a5363; background: #2a313c; display: block; }
-.ap .noface { background: radial-gradient(circle at 50% 38%, #4a5363 0 22%, transparent 23%), radial-gradient(ellipse at 50% 100%, #4a5363 0 45%, transparent 46%), #2a313c; }
+.ap .face { flex: none; width: 64px; height: 64px; border-radius: 12px; object-fit: cover; border: 1px solid #6a5236; background: #3a2c1e; display: block; }
+.ap .noface { background: radial-gradient(circle at 50% 38%, #6a5236 0 22%, transparent 23%), radial-gradient(ellipse at 50% 100%, #6a5236 0 45%, transparent 46%), #3a2c1e; }
 .ap .an { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; } .ap .an.big h3 { margin: 0; }
 .ap img.nic { width: 44px; height: 44px; } .ap img.fem { width: 30px; height: 30px; }
 .ap .units { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 4px; font-size: 14px; }
 .ap .go { margin-top: 6px; color: var(--bad); font-weight: 600; }
 .ap .rows { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
 .ap .row { display: flex; align-items: center; gap: 6px; width: 100%; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--line);
-  background: #1f252e; color: var(--ink); font: inherit; font-size: 14px; text-align: left; cursor: pointer; box-sizing: border-box; margin: 3px 0; }
+  background: #241a12; color: var(--ink); font: inherit; font-size: 14px; text-align: left; cursor: pointer; box-sizing: border-box; margin: 3px 0; }
 .ap .row.on { border-color: #e0bd78; background: #3a3020; } .ap .row:disabled { opacity: .45; cursor: default; }
 .ap .row .dest { font-weight: 600; } .ap .row .sub { color: var(--mute); font-size: 13px; }
 .ap .row .win, .ap .row > .mute { margin-left: auto; font-weight: 700; } .ap .win.good { color: var(--good); } .ap .win.bad { color: var(--bad); }
-.ap .chip { align-self: flex-end; padding: 5px 12px; border-radius: 16px; border: 1px solid #4a5363; background: #222833; color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+.ap .chip { align-self: flex-end; padding: 5px 12px; border-radius: 16px; border: 1px solid #6a5236; background: #2a1f16; color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
 .ap .chip.on { background: #3a2a5a; border-color: #9a7ad8; }
 .ap .split { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
 .ap .split label { display: flex; align-items: center; gap: 4px; font-size: 14px; }
-.ap input[type=number] { width: 4.2em; font: inherit; font-size: 15px; background: #14181e; color: var(--ink); border: 1px solid #4a5363; border-radius: 8px; padding: 4px 6px; }
-.ap .seg { display: flex; border: 1px solid #4a5363; border-radius: 10px; overflow: hidden; }
-.ap .seg button { flex: 1; padding: 6px 4px; border: 0; background: #1f252e; color: var(--mute); font: inherit; font-size: 13px; cursor: pointer; }
+.ap input[type=number] { width: 4.2em; font: inherit; font-size: 15px; background: #17110c; color: var(--ink); border: 1px solid #6a5236; border-radius: 8px; padding: 4px 6px; }
+.ap .seg { display: flex; border: 1px solid #6a5236; border-radius: 10px; overflow: hidden; }
+.ap .seg button { flex: 1; padding: 6px 4px; border: 0; background: #241a12; color: var(--mute); font: inherit; font-size: 13px; cursor: pointer; }
 .ap .seg button.on { background: #3a3020; color: var(--gold); }
 /* 얼굴로 고르기 — 함께 보낼 장수 · 암살에 보낼 이 (이름 글자 대신 명치판) */
 .ap .fpick { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0; }
-.ap .fpick button { width: 54px; height: 54px; padding: 0; border-radius: 50%; overflow: hidden; border: 2px solid var(--line); background: #1a1f27; color: var(--mute);
+.ap .fpick button { width: 54px; height: 54px; padding: 0; border-radius: 50%; overflow: hidden; border: 2px solid var(--line); background: #1e160f; color: var(--mute);
   font: inherit; font-size: 18px; cursor: pointer; opacity: .72; transition: transform .12s, opacity .12s; }
 .ap .fpick button.on { border-color: var(--gold); box-shadow: 0 0 0 2px #d9b36a66, 0 0 14px #d9b36a55; opacity: 1; transform: scale(1.08); }
 .ap .fpick img.fp { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
 .ap .stepper { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.ap .stepper button { width: 34px; height: 34px; border-radius: 10px; border: 1px solid #4a5363; background: #2a313c; color: var(--ink); font-size: 20px; cursor: pointer; }
+.ap .stepper button { width: 34px; height: 34px; border-radius: 10px; border: 1px solid #6a5236; background: #3a2c1e; color: var(--ink); font-size: 20px; cursor: pointer; }
 .ap .stepper b { min-width: 2.4em; text-align: center; font-size: 17px; }
 .ap .stepper button.btn { width: auto; height: auto; font-size: 14px; margin-left: auto; white-space: nowrap; flex: none; }
 .ap .stepper .mute { flex: 1 1 4em; min-width: 0; }
 .ap .sheet { overflow-x: hidden; }
 /* 고을 판의 징병 — 병종을 큰 그림으로 */
 .ap .draftc.big .dbig { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; margin: 6px 0; }
-.ap .draftc.big .dbig button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 12px; border: 1px solid var(--line); background: #161b22; color: var(--ink); font: inherit; cursor: pointer; }
+.ap .draftc.big .dbig button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 12px; border: 1px solid var(--line); background: #221b16; color: var(--ink); font: inherit; cursor: pointer; }
 .ap .draftc.big .dbig img { width: 56px; height: 56px; object-fit: contain; filter: drop-shadow(0 2px 2px #0008); }
 .ap .draftc.big .dbig b { font-size: 13px; } .ap .draftc.big .dbig small { font-size: 11px; color: var(--mute); }
 .ap .draftc.big .dbig button.on { border-color: var(--gold); background: #2a2416; box-shadow: 0 0 0 2px #d9b36a55; } .ap .draftc.big .dbig button:disabled { opacity: .4; }
@@ -193,15 +193,15 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 @media (prefers-reduced-motion: reduce) { .ap .sheet.deal > * { animation: none; } }
 .ap .btn, .ap .row, .ap .chip { white-space: nowrap; }
 .ap .stepper.sm button { width: 28px; height: 28px; font-size: 16px; } .ap .stepper.sm b { min-width: 2em; font-size: 15px; }
-.ap .rel { margin-left: auto; padding: 2px 10px; border-radius: 12px; font-size: 12px; background: #2a313c; }
+.ap .rel { margin-left: auto; padding: 2px 10px; border-radius: 12px; font-size: 12px; background: #3a2c1e; }
 .ap .rel.war { background: #4a2420; color: #f1b8a8; } .ap .rel.truce { background: #23331f; color: #cfeabf; } .ap .rel.ally { background: #1f2c40; color: #b8d4f4; }
-.ap .trade { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 10px; background: #1a1f27; }
+.ap .trade { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 10px; background: #1e160f; }
 /* 사신 꾸미기 — 무엇을 · 누가 가나 (얼굴 줄) */
 .ap .trade .cmh { display: flex; flex-direction: column; gap: 2px; } .ap .trade .cmh b { color: var(--gold); font-size: 15px; }
 .ap .who .wlist { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 6px; -webkit-overflow-scrolling: touch; }
 .ap .who .wg { flex: none; width: 70px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; border-radius: 12px;
-  border: 1px solid var(--line); background: #141920; color: var(--ink); font: inherit; cursor: pointer; }
-.ap .who .wg .wfc { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #4a5363; background: #2a313c; display: block; }
+  border: 1px solid var(--line); background: #201914; color: var(--ink); font: inherit; cursor: pointer; }
+.ap .who .wg .wfc { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #6a5236; background: #3a2c1e; display: block; }
 .ap .who .wg b { font-size: 12px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ap .who .wg i { font-style: normal; font-size: 10.5px; color: #f3d48a; } .ap .who .wg small { font-size: 10.5px; color: var(--mute); }
 .ap .who .wg .feel { font-size: 10.5px; padding: 0 5px; }
@@ -211,7 +211,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .sentb { display: flex; align-items: center; gap: 8px; } .ap .sentb span { flex: 1; min-width: 0; }
 .ap .sentb .sface { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #8a7040; flex: none; }
 .ap .tr2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .ap .tr2 > span:first-child { width: 3.5em; color: var(--mute); font-size: 13px; }
-.ap .splitp { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; padding: 10px; border-radius: 12px; background: #1a1f27; }
+.ap .splitp { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; padding: 10px; border-radius: 12px; background: #1e160f; }
 .ap .row .dest, .ap .row .sub { min-width: 0; overflow: hidden; text-overflow: ellipsis; } .ap .row .win, .ap .row .em { flex: none; }
 .ap .acard > .ab > .splitp, .ap .acard > .ab > .rows { margin-left: -74px; } /* 얼굴 칸 밑까지 넓게 — 폰에서 단추가 접히지 않게 */
 .ap .sprow { display: flex; align-items: center; gap: 8px; } .ap .sprow .stepper { flex-wrap: nowrap; } .ap .sprow .spn { width: 4em; font-size: 14px; }
@@ -220,7 +220,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 /* 출정 판 — 단계 머리 · 맨 아래 고정 띠 (판이 굴러도 늘 보인다) */
 .ap .sortiep .sth { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 13px; font-weight: 700; color: var(--gold); }
 .ap .sortiep .sth .seg.sm { margin-left: auto; } .ap .sortiep .sth .seg.sm button { padding: 2px 10px; font-size: 12px; white-space: nowrap; }
-.ap .sortiebar { position: sticky; bottom: 0; z-index: 3; display: flex; gap: 6px; margin: 12px -14px -18px; padding: 10px 14px 12px; background: linear-gradient(#171b22ee, #171b22); border-top: 1px solid var(--line); box-shadow: 0 -6px 14px #0007; }
+.ap .sortiebar { position: sticky; bottom: 0; z-index: 3; display: flex; gap: 6px; margin: 12px -14px -18px; padding: 10px 14px 12px; background: linear-gradient(#221b17ee, #221b17); border-top: 1px solid var(--line); box-shadow: 0 -6px 14px #0007; }
 .ap .sortiebar .go { flex: 1; font-size: 15px; } .ap .sortiebar .btn { margin: 0; }
 .ap .nightov { position: absolute; inset: 0; z-index: 40; background: #000; }
 .ap .nightov iframe { width: 100%; height: 100%; border: 0; display: block; }
@@ -242,7 +242,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .plh { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; padding: 0; }
 .ap .plh > span:nth-child(2) { flex: 1; min-width: 0; display: flex; flex-direction: column; } .ap .plh .mute { white-space: normal; }
 .ap .plh .cost { flex: none; white-space: nowrap; }
-.ap .askc { padding: 10px; margin: 8px 0; border-radius: 14px; background: #20252f; border: 1px solid #5a4a2a; }
+.ap .askc { padding: 10px; margin: 8px 0; border-radius: 14px; background: #2f2520; border: 1px solid #5a4a2a; }
 .ap .askc.threat { border-color: #8a3a2a; background: #2a1f1f; } .ap .askc p { margin: 6px 0 2px; font-size: 14.5px; }
 .ap .sus { color: #f1a08a; font-weight: 700; }
 .ap .askpill { margin-left: auto; flex: none; display: flex; align-items: center; gap: 2px; padding: 2px 10px 2px 4px; border-radius: 16px;
@@ -254,7 +254,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .asks b { font-size: 14px; color: var(--gold); } .ap .asks span { font-size: 12px; color: var(--mute); }
 .ap .how { display: flex; flex-direction: column; gap: 6px; margin: 2px 0 6px; }
 .ap .hw { min-width: 0; display: flex; flex-direction: row; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 12px;
-  border: 1px solid var(--line); background: #1f252e; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+  border: 1px solid var(--line); background: #241a12; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
 .ap .hw b { font-size: 15px; } .ap .hw .ln { font-size: 13px; color: #cfc6b4; } .ap .hw .mute { white-space: normal; font-size: 12px; }
 .ap .hw .hwl { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; } .ap .hw .hwl small { font-weight: 400; color: var(--mute); font-size: 12px; }
 .ap .hw .hwr { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; } .ap .hw .hwr .ln { white-space: nowrap; }
@@ -285,7 +285,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .modal { position: absolute; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; padding: 16px; background: #000b; }
 .ap.modal-open .modal { display: flex; }
 .ap .mcard { width: min(100%, 520px); max-height: 100%; overflow-y: auto; box-sizing: border-box; padding: 14px; border-radius: 18px;
-  background: #1b2028; border: 1px solid #4a4030; box-shadow: 0 16px 40px #000c; }
+  background: #1f1710; border: 1px solid #4a4030; box-shadow: 0 16px 40px #000c; }
 .ap .mt { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 18px; margin-bottom: 8px; }
 .ap .mt span { color: var(--mute); font-size: 14px; } .ap .mt img.sic { width: 34px; height: 34px; }
 .ap .scene { position: relative; margin: 6px 0 10px; }
@@ -293,7 +293,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .scene img.who { position: absolute; right: 10px; bottom: 42px; width: 30%; max-width: 130px; aspect-ratio: 1; object-fit: cover; border-radius: 12px; border: 2px solid var(--gold); box-shadow: 0 6px 16px #000a; }
 .ap .brag { font-size: 20px; font-weight: 700; color: #f6d88e; margin-top: 8px; text-shadow: 0 2px 6px #000; }
 .ap .lines p { font-size: 15px; border-left: 3px solid #4a4030; padding-left: 8px; }
-.ap .lines p.mute { border-left-color: #2f3540; }
+.ap .lines p.mute { border-left-color: #40352f; }
 .ap .mcard.end { text-align: center; } .ap .mcard.end img.ev { width: 100%; border-radius: 12px; } .ap .mcard.end h2 { font-size: 26px; color: var(--gold); margin: 12px 0 2px; }
 
 /* 나라 고르기 */
@@ -310,7 +310,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 /* 능력치 칸 — 카드가 좁으면 눈금이 줄어든다 (형: "능력치 부분이 우측으로 칸 넘어가지 않게") */
 .ap .bars { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 3px 8px; }
 .ap .bar { display: flex; align-items: center; gap: 2px; font-size: 12px; min-width: 0; } .ap .bar i { font-style: normal; flex: none; width: 2.4em; color: var(--mute); }
-.ap .bar b, .ap .bar s { flex: 1 1 0; min-width: 3px; max-width: 12px; height: 8px; border-radius: 2px; background: var(--gold); } .ap .bar s { background: #3a4250; }
+.ap .bar b, .ap .bar s { flex: 1 1 0; min-width: 3px; max-width: 12px; height: 8px; border-radius: 2px; background: var(--gold); } .ap .bar s { background: #54412a; }
 /* 보고판 — 계절 띠가 걷힌 뒤 뜨고, 안의 것이 차례로 올라와 쌓인다. 누르면 다 (app.modalHtml) */
 .ap .modal.late { animation: mlate .45s ease-out 1.9s both; }
 @keyframes mlate { from { opacity: 0; visibility: hidden; } to { opacity: 1; visibility: visible; } }
@@ -318,15 +318,15 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .rv { animation: bkin .45s ease-out calc(var(--t0, 0s) + var(--t, 0s)) both; }
 .ap .modal.fast { animation: none; } .ap .modal.fast .rv { animation-delay: 0s !important; animation-duration: .01s !important; }
 @media (prefers-reduced-motion: reduce) { .ap .rv { animation-duration: .01s !important; animation-delay: 0s !important; } .ap .modal.late { animation-delay: .6s; } }
-.ap .fall { display: flex; gap: 12px; align-items: center; margin: 8px 0 12px; padding: 12px; border-radius: 14px; background: linear-gradient(90deg, #2a1414, #1b2028); border: 1px solid #7a3a2a; }
+.ap .fall { display: flex; gap: 12px; align-items: center; margin: 8px 0 12px; padding: 12px; border-radius: 14px; background: linear-gradient(90deg, #2a1414, #1f1710); border: 1px solid #7a3a2a; }
 .ap .fall img.flord, .ap .fall .flord { width: 72px; height: 72px; flex: none; border-radius: 12px; object-fit: cover; border: 2px solid #7a3a2a; filter: grayscale(.7) brightness(.85); }
 .ap .fall b { display: flex; align-items: center; gap: 6px; font-family: 'Gowun Batang', serif; font-size: 20px; color: #f0b8a0; }
 .ap .fall > div > span { display: block; font-size: 13.5px; color: var(--mute); margin-top: 3px; }
 /* 지도에서 고른 말 — 아래 띠 · 합치기 */
 .ap .selbar { position: absolute; left: 64px; right: 14px; bottom: calc(var(--tabh) + 70px); z-index: 7; display: none; align-items: center; gap: 8px; flex-wrap: wrap;
-  padding: 8px 10px; border-radius: 16px; background: #1b2028f2; border: 1px solid #8a7040; box-shadow: 0 6px 20px #000a; }
+  padding: 8px 10px; border-radius: 16px; background: #1f1710f2; border: 1px solid #8a7040; box-shadow: 0 6px 20px #000a; }
 .ap.sel-open .selbar { display: flex; } .ap.sheet-open .selbar { display: none; }
-.ap .selbar .sbf { display: flex; } .ap .selbar .sbface { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid #ffd27a; margin-right: -8px; background: #2a313c; display: block; }
+.ap .selbar .sbf { display: flex; } .ap .selbar .sbface { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid #ffd27a; margin-right: -8px; background: #3a2c1e; display: block; }
 .ap .selbar .sbt { flex: 1; min-width: 140px; margin-left: 10px; display: flex; flex-direction: column; } .ap .selbar .sbt b { font-size: 14.5px; } .ap .selbar .sbt span { font-size: 12.5px; color: var(--mute); }
 .ap .selbar .sbwhy { font-size: 12px; color: #e8a08a; width: 100%; text-align: right; }
 .ap .selbar .sbx { border: 0; background: none; color: var(--mute); font-size: 18px; padding: 4px 6px; cursor: pointer; }
@@ -339,8 +339,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .homebtn { position: absolute; left: 12px; top: calc(var(--toph) + var(--legh) + 8px); z-index: 6; padding: 6px 12px; border-radius: 12px;
   border: 1px solid #c8a050; background: #2a2418e6; color: #ffd27a; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 0 0 1px #0006; }
 .ap.sheet-open .homebtn, .ap.choosing .homebtn { display: none; }
-.ap .roadkey > button { padding: 6px 10px; border-radius: 12px; border: 1px solid #4a5363; background: #1b2028e6; color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
-.ap .roadkey .rk { margin-top: 6px; padding: 10px 12px; border-radius: 14px; background: #1b2028f2; border: 1px solid #4a5363; width: min(78vw, 300px); box-sizing: border-box; }
+.ap .roadkey > button { padding: 6px 10px; border-radius: 12px; border: 1px solid #6a5236; background: #1f1710e6; color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+.ap .roadkey .rk { margin-top: 6px; padding: 10px 12px; border-radius: 14px; background: #1f1710f2; border: 1px solid #6a5236; width: min(78vw, 300px); box-sizing: border-box; }
 .ap .roadkey .rk div { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 3px 0; }
 .ap .roadkey .rk { max-height: calc(100dvh - var(--toph) - var(--legh) - 120px); overflow-y: auto; }
 .ap .roadkey .rk b { white-space: nowrap; }
@@ -361,25 +361,25 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .ncard.draftc { border-left: 4px solid #b0503e; } .ap .ncard.settlec { border-left: 4px solid #a8804a; }
 .ap .btn.on.men { background: #9a3a2c; border-color: #c8604a; color: #fff2ec; } .ap .btn.on.home { background: #7a5a30; border-color: #b08850; color: #fff6e6; }
 /* 남의 고을 판 — 그 나라와 할 수 있는 것 (app.nationActs) */
-.ap .nacts { margin: 12px 0 6px; padding: 10px; border-radius: 14px; background: #1b2028; border: 1px solid #4a5363; }
+.ap .nacts { margin: 12px 0 6px; padding: 10px; border-radius: 14px; background: #1f1710; border: 1px solid #6a5236; }
 .ap .nacts .nah { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; } .ap .nacts .nah b { font-size: 16px; }
 .ap .nacts .nal { margin: 8px 0 4px; font-size: 13px; color: var(--gold); } .ap .nacts .nal .mute { font-size: 12px; }
 .ap .nacts .btns { flex-wrap: wrap; } .ap .nacts .row .sub { margin-left: auto; margin-right: 6px; }
 /* 지도 보기 켜고 끄기 (형: "좌하단에는 확대축소말고 뭔가 보이기 안보이기 토글") */
 .ap .zbtns .lyb { font-size: 18px; }
 .ap .layers { position: absolute; left: 62px; bottom: calc(var(--tabh) + 14px); z-index: 8; display: none; flex-direction: column; gap: 4px;
-  padding: 8px; border-radius: 14px; background: #1b2028f2; border: 1px solid #4a5363; box-shadow: 0 8px 24px #000a; width: min(70vw, 240px); }
+  padding: 8px; border-radius: 14px; background: #1f1710f2; border: 1px solid #6a5236; box-shadow: 0 8px 24px #000a; width: min(70vw, 240px); }
 .ap .layers:not(:empty) { display: flex; } .ap.sheet-open .layers, .ap.choosing .layers { display: none; }
 .ap .layers .lyh { font-size: 12.5px; color: var(--gold); margin: 0 2px 2px; }
 .ap .layers .lyr { display: grid; grid-template-columns: 18px auto 1fr; align-items: center; gap: 6px; padding: 7px 8px; border-radius: 10px; border: 1px solid transparent;
   background: none; color: var(--mute); font: inherit; text-align: left; cursor: pointer; }
-.ap .layers .lyr.on { color: var(--ink); background: #ffffff0a; border-color: #4a5363; } .ap .layers .lyr i { font-style: normal; color: var(--gold); }
+.ap .layers .lyr.on { color: var(--ink); background: #ffffff0a; border-color: #6a5236; } .ap .layers .lyr i { font-style: normal; color: var(--gold); }
 .ap .layers .lyr b { font-size: 14px; } .ap .layers .lyr span { font-size: 11.5px; color: var(--mute); text-align: right; }
 .ap.hide-terr .map .terr { display: none; } .ap.hide-roads .map .ly-roads { display: none; } .ap.hide-marches .map .ly-marches { display: none; }
 .ap.hide-labels .map .lbs { display: none; } .ap.hide-flags .map .nd .flag { display: none; } .ap.hide-force .map .nd .foe { display: none; }
 .ap.hide-army .map .toks { display: none; } .ap.hide-goods .map .nd .sp { display: none; }
 /* 전쟁을 걸어왔다 · 이웃끼리 전쟁 (app.warCard) */
-.ap .warc { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0 12px; padding: 12px; border-radius: 14px; background: linear-gradient(90deg, #3a1410, #1b2028); border: 1px solid #a0483a; position: relative; }
+.ap .warc { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0 12px; padding: 12px; border-radius: 14px; background: linear-gradient(90deg, #3a1410, #1f1710); border: 1px solid #a0483a; position: relative; }
 .ap .warc .flord { width: 76px; height: 76px; flex: none; border-radius: 12px; object-fit: cover; border: 2px solid #c8604a; }
 .ap .warc img.mood.wm { position: absolute; left: 62px; top: 58px; width: 36px; height: 36px; }
 .ap .warc .wb { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -393,27 +393,27 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .crowd { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 10px; }
 .ap .crow { display: grid; grid-template-columns: 6.5em 1fr auto; align-items: center; gap: 8px; font-size: 13px; }
 .ap .crow .cn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ap .cbar { position: relative; height: 8px; border-radius: 4px; background: #2a313c; overflow: hidden; }
+.ap .cbar { position: relative; height: 8px; border-radius: 4px; background: #3a2c1e; overflow: hidden; }
 .ap .cbar i { position: absolute; left: 0; top: 0; bottom: 0; background: #7aa86a; } .ap .cbar.near i { background: #d0a850; } .ap .cbar.full i { background: #d06a50; }
 .ap .seg.wrap { flex-wrap: wrap; } .ap .seg.wrap button { flex: 1 0 30%; }
 /* 외교의 손 — 보낼 사람 (VICTORY §2-2) */
-.ap .hands { display: flex; align-items: center; gap: 10px; margin: 6px 0 8px; padding: 8px 10px; border-radius: 12px; background: #1b2028; border: 1px solid #4a5363; }
+.ap .hands { display: flex; align-items: center; gap: 10px; margin: 6px 0 8px; padding: 8px 10px; border-radius: 12px; background: #1f1710; border: 1px solid #6a5236; }
 .ap .hands .hf { display: flex; flex: none; } .ap .hands .hf span { margin-right: -8px; transition: opacity .2s; } .ap .hands .hf span.used { opacity: .3; }
-.ap .hands .hface { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid #8a7040; background: #2a313c; display: block; }
+.ap .hands .hface { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid #8a7040; background: #3a2c1e; display: block; }
 .ap .hands .ht { display: flex; flex-direction: column; margin-left: 8px; min-width: 0; } .ap .hands .ht b { font-size: 14.5px; } .ap .hands .ht span { font-size: 12px; color: var(--mute); }
 /* 이기는 길 — 정복 · 맹주 (VICTORY §1) */
-.ap .paths { margin: 8px 0 12px; padding: 10px; border-radius: 12px; background: #1b2028; border: 1px solid #4a4030; }
+.ap .paths { margin: 8px 0 12px; padding: 10px; border-radius: 12px; background: #1f1710; border: 1px solid #4a4030; }
 .ap .paths h4 { margin: 0 0 6px; color: var(--gold); }
 .ap .paths .path { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 8px; margin: 4px 0; font-size: 13px; }
 .ap .paths .path.sub, .ap .paths .path.rival { grid-template-columns: auto 1fr; }
-.ap .paths .pbar { position: relative; height: 9px; border-radius: 5px; background: #2a313c; overflow: hidden; }
+.ap .paths .pbar { position: relative; height: 9px; border-radius: 5px; background: #3a2c1e; overflow: hidden; }
 .ap .paths .pbar i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #8a6a30, #e0bd78); }
 .ap .paths .pbar.pact i { background: linear-gradient(90deg, #3f6f8f, #8fc0e0); }
 .ap .paths .clock { display: flex; gap: 3px; } .ap .paths .clock i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #8fc0e0; }
 .ap .paths .clock i.on { background: #8fc0e0; } .ap .paths .path.rival span { color: #e8a08a; }
 /* 보고 한 줄 — 그림 · 누가→누구 · 글 (app.reportRow) */
 .ap .lines .rrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0; padding: 6px 8px; border-radius: 10px; background: #ffffff08; border-left: 3px solid #4a4030; }
-.ap .lines .rrow.mute { opacity: .75; border-left-color: #2f3540; }
+.ap .lines .rrow.mute { opacity: .75; border-left-color: #40352f; }
 .ap .lines .rrow img.ri { width: 30px; height: 30px; flex: none; filter: drop-shadow(0 1px 2px #0008); }
 .ap .lines .rrow i.ri.dot { width: 8px; height: 8px; border-radius: 50%; background: #6a5a3a; margin: 0 11px; }
 .ap .lines .rrow img.rface.rl { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); flex: none; }
@@ -453,13 +453,13 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; ove
 .ap .autobtn { white-space: normal; max-width: 100%; box-sizing: border-box; }
 .ap .todos { margin: 6px 0 10px; display: flex; flex-direction: column; gap: 6px; } .ap .todos h4 { margin: 2px 0; color: var(--gold); }
 .ap .todo { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; border-radius: 12px; border: 1px solid #5a7a44; background: #1f2a1a; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
-.ap .todo.move { border-color: #5a6a8a; background: #1c2230; }
+.ap .todo.move { border-color: #8a6a5a; background: #30221c; }
 .ap .todo img { width: 34px; height: 34px; } .ap .todo > span { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
 .ap .todo small { font-size: 12px; color: #b8b09c; white-space: normal; } .ap .todo i { font-style: normal; font-size: 22px; color: #8f8778; }
 /* 백성 판 — 새 마을 세우기 그림 한 줄 · 접힌 집 나누기 */
 .ap .stlhow { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; padding: 8px 10px; border-radius: 12px; background: #1f2a1a; border: 1px solid #4a6a3a; font-size: 13px; }
 .ap .stlhow .shi { width: 30px; height: 30px; } .ap .stlhow i { font-style: normal; color: #b6e08f; font-weight: 700; } .ap .stlhow b { color: #f4ffe8; }
-.ap .migfold { display: flex; align-items: center; gap: 10px; width: 100%; margin: 14px 0 6px; padding: 9px 12px; border-radius: 12px; border: 1px dashed #5a6a8a; background: #181d27; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.ap .migfold { display: flex; align-items: center; gap: 10px; width: 100%; margin: 14px 0 6px; padding: 9px 12px; border-radius: 12px; border: 1px dashed #8a6a5a; background: #271d18; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
 .ap .migfold img { width: 30px; height: 30px; } .ap .migfold span { display: flex; flex-direction: column; flex: 1; min-width: 0; } .ap .migfold small { font-size: 12px; color: var(--mute); }
 .ap .migfold i { font-style: normal; font-size: 12px; color: #9fb0d0; } .ap .migfold.on { border-style: solid; }
 .ap .twoway .sec small { display: block; font-size: 11.5px; color: #a89c84; margin-top: 2px; } .ap .twoway .sec u { text-decoration: none; color: #f3d48a; }
@@ -543,6 +543,20 @@ export const UI_CSS = `
   border-image: url(__ART__ui/card.png?v=1) 24 fill / 10px stretch; padding: 2px; }
 /* 판 안의 작은 칸들 — 푸른 잿빛 대신 나무판에 어울리는 짙은 밤빛 · 청동빛 줄 */
 .ap { --card: #2a1f16; --line: #4d3b26; }
+/* 글씨 — 판 위에서 또렷하게 (형: "버튼이 까매서 글씨도 까매가지고 안보이는경우 · 글씨가 너무 얇아서 안보이는경우도")
+   쇠판 단추는 늘 밝은 글씨, 금빛 판은 늘 짙은 글씨 · 단추 글씨는 굵게 */
+.ap .btn, .ap .seg button, .ap .next { font-weight: 700; }
+.ap .btn:not(.on) .mute, .ap .btn:not(.on) small, .ap .seg button:not(.on) .mute { color: #cbbf9f; }
+.ap .btn.on .mute, .ap .btn.on small, .ap .seg button.on .mute { color: #4a2e10; }
+.ap .btn.on.men, .ap .btn.on.home, .ap .btn.on.move { color: #2a1606; }
+.ap .btn.danger { color: #ffb4a4; }
+.ap .btn:disabled { color: #c8bda8; }
+/* 얇은 글씨 — 흐린 말은 한 단 밝게 · 판 안 글씨는 그림자로 가장자리를 세우고, 작은 글씨는 획을 살짝 두껍게 */
+.ap { --mute: #ada391; }
+.ap .tabs button { font-size: 13px; color: #cdbf9f; font-weight: 700; } .ap .tabs button.on { color: var(--gold); }
+.ap .sheet, .ap .modal, .ap .tipb { text-shadow: 0 1px 1px #0009; }
+.ap .sheet .mute, .ap .sheet small, .ap .modal .mute, .ap .modal small, .ap .tabs button, .ap .legend .lg { -webkit-text-stroke: .25px currentColor; }
+.ap .sheet, .ap .modal, .ap .front { scrollbar-color: #8a6a3a #1f1710; }
 /* 판 손잡이 — 옻칠 나무 빛에 청동 손잡이 */
 .ap .grip { background: #26170d; } .ap .grip::after { background: #8a6a3a; box-shadow: 0 1px 0 #0008; }
 /* 마디 단추 — 작은 쇠판, 고른 것은 금빛 */

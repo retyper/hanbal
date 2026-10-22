@@ -384,7 +384,7 @@ export const FRONT_CSS = `
 .ap .front.title .sub { margin: 2px 0 8px; color: #e8dcc0; font-size: 14px; letter-spacing: .08em; }
 .ap .front.title .hook { margin: 0 auto 16px; color: #cfc6b4; font-size: 13.5px; line-height: 1.6; max-width: 460px; }
 .ap .front .fbtns { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.ap .front .cont { display: flex; align-items: center; gap: 12px; width: min(420px, 92vw); padding: 10px 14px; border-radius: 16px; background: #1b2028ee; border: 1px solid #c9a45a; color: var(--ink); font: inherit; text-align: left; cursor: pointer; animation: glow 2.6s ease-in-out infinite alternate; }
+.ap .front .cont { display: flex; align-items: center; gap: 12px; width: min(420px, 92vw); padding: 10px 14px; border-radius: 16px; background: #1f1710ee; border: 1px solid #c9a45a; color: var(--ink); font: inherit; text-align: left; cursor: pointer; animation: glow 2.6s ease-in-out infinite alternate; }
 @keyframes glow { from { box-shadow: 0 0 0 #c9a45a00; } to { box-shadow: 0 0 22px #c9a45a55; } }
 .ap .front .cont .cface { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #c9a45a; }
 .ap .front .cont .ct { display: flex; flex-direction: column; gap: 2px; } .ap .front .cont .ct b { font-size: 16px; color: #f3d48a; display: flex; align-items: center; gap: 6px; }
@@ -402,7 +402,7 @@ export const FRONT_CSS = `
 .ap .front .bbadge { position: absolute; top: 10px; left: 10px; z-index: 1; font-style: normal; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 10px; background: #d9b36ae8; color: #2a1d10; }
 .ap .front .bb { display: flex; flex-direction: column; gap: 6px; padding: 10px 14px 14px; }
 .ap .front .bb .bhook { font-family: var(--serif); font-size: 15px; color: #efe5cf; line-height: 1.55; } .ap .front .bb .bplay { font-size: 13px; color: #b8ad96; line-height: 1.5; }
-.ap .front .bb .bmeta { display: flex; flex-wrap: wrap; gap: 4px; font-size: 12px; color: #a89c84; } .ap .front .bb .bmeta i { font-style: normal; padding: 1px 8px; border-radius: 9px; border: 1px solid #3a4250; }
+.ap .front .bb .bmeta { display: flex; flex-wrap: wrap; gap: 4px; font-size: 12px; color: #a89c84; } .ap .front .bb .bmeta i { font-style: normal; padding: 1px 8px; border-radius: 9px; border: 1px solid #54412a; }
 .ap .front .bb .bmeta.tierw, .ap .front .bb .bmeta.lockwhy { display: block; }
 .ap .front .btitle em { font-style: normal; font-size: 12.5px; color: #e8c070; margin-top: 2px; }
 .ap .front .bcards .bcard { -webkit-touch-callout: none; }
@@ -412,7 +412,11 @@ export const FRONT_CSS = `
 .ap .front .bcards.chaps { padding-bottom: 8px; }
 .ap .front .pgoal .gl .gch { display: block; font-size: 13px; letter-spacing: .1em; color: #8a6a3a; margin-bottom: 4px; }
 .ap .front .bcard.chap .bbadge { background: linear-gradient(#f0d08a, #b8863a); font-family: var(--serif); }
-.ap .front .bcard.locked { cursor: default; } .ap .front .bcard.locked .bth { filter: grayscale(1) brightness(.45); position: relative; }
+/* 잠긴 판 — 그림만 잿빛으로 어둡게, 제목과 여는 길 글씨는 또렷하게 (그림 위에 덮개) */
+.ap .front .bcard.locked { cursor: default; } .ap .front .bcard.locked .bth { filter: grayscale(1); position: relative; }
+.ap .front .bcard.locked .bth::after { inset: 0; background: linear-gradient(#0b0d1199, #0b0d11f0); }
+.ap .front .bcard.locked .btitle b { color: #c9bfae; } .ap .front .bcard.locked .btitle em { color: #f0d08a; font-size: 13px; }
+.ap .front .bcard.locked .lock, .ap .front .bbadge { z-index: 2; }
 .ap .front .bcard.locked .bth .lock { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-style: normal; font-size: 34px; }
 .ap .front .bcard.locked .bb b { color: #8f8778; } .ap .front .bcard.locked .bmeta.lockwhy { color: #e8c070; }
 .ap .front .bcard.locked:hover, .ap .front .bcard.locked:active { border-color: var(--line); }
@@ -454,7 +458,6 @@ export const FRONT_CSS = `
 .ap .prologue .ptip { font-size: 14px; text-align: center; animation-delay: 2.4s; color: #4a3a28; }
 .ap .prologue .pnav { display: flex; align-items: center; gap: 10px; margin-top: 18px; }
 .ap .prologue .pdots i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #2a1d1033; margin: 0 3px; } .ap .prologue .pdots i.on { background: #7a1f10; }
-.ap .prologue .btn.ghost { color: #4a3a28; border-color: #4a3a2855; }
 /* 지도가 열린다 — 한지가 걷히고 본 땅이 번진다 */
 .ap.opening .map { animation: mapin 2.4s cubic-bezier(.2, .8, .3, 1) both; }
 @keyframes mapin { from { transform: scale(.82); filter: sepia(.6) brightness(1.15); } to { transform: none; filter: none; } }
@@ -494,6 +497,6 @@ export const FRONT_CSS = `
 @media (prefers-reduced-motion: reduce) { .ap .front-end .cp, .ap .front-end .after { animation-delay: 0s !important; animation-duration: .01s !important; } }
 .ap .front-end .chron p { margin: 3px 0; font-size: 13px; } .ap .front-end .chron p.big { color: #f3d48a; } .ap .front-end .chron i { font-style: normal; color: #8f8778; margin-right: 6px; }
 .ap .lookbar { position: absolute; top: calc(8px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 40; display: flex; gap: 8px; align-items: center;
-  padding: 6px 10px; border-radius: 12px; background: #14181ee8; border: 1px solid #8a7040; font-size: 13px; }
+  padding: 6px 10px; border-radius: 12px; background: #17110ce8; border: 1px solid #8a7040; font-size: 13px; }
 @media (prefers-reduced-motion: reduce) { .ap .front.title .kv, .ap .prologue p, .ap .prologue .way, .ap.opening .map { animation-duration: .01s !important; animation-delay: 0s !important; } }
 `

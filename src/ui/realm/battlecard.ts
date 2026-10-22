@@ -179,13 +179,13 @@ export function battleCard(before: Realm, after: Realm, l: Battle, viewer: strin
 }
 
 export const BATTLE_CSS = `
-.ap .bk { margin: 8px 0 12px; padding: 10px; border-radius: 14px; background: #161a20; border: 1px solid #4a4030; cursor: pointer; }
+.ap .bk { margin: 8px 0 12px; padding: 10px; border-radius: 14px; background: #201a16; border: 1px solid #4a4030; cursor: pointer; }
 .ap .bkh { text-align: center; color: var(--gold); font-weight: 700; margin-bottom: 6px; }
 .ap .bkv { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .ap .bkv > i { font-style: normal; font-weight: 800; color: #c8402a; font-size: 18px; }
 .ap .bks { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; }
 .ap .bks b { font-size: 14px; margin-top: 4px; } .ap .bks span { font-size: 12px; color: var(--mute); }
-.ap .bkf { width: 74px; height: 74px; border-radius: 12px; object-fit: cover; border: 2px solid #6a5a3a; display: block; background: #2a313c; }
+.ap .bkf { width: 74px; height: 74px; border-radius: 12px; object-fit: cover; border: 2px solid #6a5a3a; display: block; background: #3a2c1e; }
 .ap .bkbar { position: relative; height: 10px; margin: 10px 0 6px; border-radius: 5px; background: #8a3a2a; overflow: hidden; }
 .ap .bkbar i { position: absolute; left: 0; top: 0; bottom: 0; width: 50%; background: linear-gradient(90deg, #3f8f3a, #8fd07a); }
 .ap .bkl { margin: 4px 0; font-size: 14.5px; opacity: 0; animation: bkin .35s ease-out calc(var(--t0, 0s) + var(--t, 0s) + var(--d)) both; }
@@ -196,7 +196,7 @@ export const BATTLE_CSS = `
 @media (prefers-reduced-motion: reduce) { .ap .bkl, .ap .bkr, .ap .bkbar i { animation-duration: .01s !important; animation-delay: 0s !important; } }
 
 .ap .bk.sum .bkr3 { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin: 8px 0 4px; }
-.ap .bkrd { display: inline-flex; align-items: center; gap: 2px; padding: 2px 6px; border-radius: 10px; background: #ffffff0a; border: 1px solid #3a4250; }
+.ap .bkrd { display: inline-flex; align-items: center; gap: 2px; padding: 2px 6px; border-radius: 10px; background: #ffffff0a; border: 1px solid #54412a; }
 .ap .bkrd img { width: 22px; height: 22px; } .ap .bkrd i { font-style: normal; font-weight: 800; width: 14px; text-align: center; color: var(--mute); }
 .ap .bkrd.w { border-color: #6a9a5a; } .ap .bkrd.w i { color: #9fd18b; } .ap .bkrd.l { border-color: #9a4a3a; } .ap .bkrd.l i { color: #ff8a70; }
 .ap .bk .now { opacity: 1; animation: none; }

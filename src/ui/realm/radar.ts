@@ -23,10 +23,10 @@ export function radarSvg(axes: readonly RadarAxis[], color: string, size = 180):
   }
   const poly = (k: number): string => axes.map((_, i) => at(i, k).map((v) => v.toFixed(1)).join(',')).join(' ')
   let s = `<svg class="radar" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" aria-hidden="true">`
-  for (const k of [1, 0.75, 0.5, 0.25]) s += `<polygon points="${poly(k)}" fill="${k === 1 ? '#1f252e' : 'none'}" stroke="#3a4250" stroke-width="1"/>`
+  for (const k of [1, 0.75, 0.5, 0.25]) s += `<polygon points="${poly(k)}" fill="${k === 1 ? '#241a12' : 'none'}" stroke="#54412a" stroke-width="1"/>`
   axes.forEach((_, i) => {
     const [x, y] = at(i, 1)
-    s += `<line x1="${c}" y1="${c}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#3a4250" stroke-width="1"/>`
+    s += `<line x1="${c}" y1="${c}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#54412a" stroke-width="1"/>`
   })
   if (axes.every((a) => a.value !== null)) {
     const pts = axes.map((a, i) => at(i, Math.max(0.05, a.value! / MAX)).map((v) => v.toFixed(1)).join(',')).join(' ')
