@@ -280,7 +280,12 @@ function leadArmy(r: Realm, o: Extract<Order, { kind: 'lead' }>): void {
   // 군주도 친히 이끈다(친정) — 도읍을 비우는 동안 다스림이 준다 (rulerReach)
   if (h === undefined || a === undefined || h.status !== 'free') return
   if (a.faction !== h.faction || a.hero !== null || a.march !== null) return
-  if (armyOfHero(r, h.id) !== null || h.at !== a.at) return
+  if (armyOfHero(r, h.id) !== null || h.at === null) return
+  // 멀리 서 있는 우리 군대 — 우리 땅으로 이어져 있으면 그리로 가서 이끈다 (그 계절은 길에 있다 · 맡기기의 멀리 가기와 같다)
+  if (h.at !== a.at) {
+    if ((h.awayUntil !== undefined && h.awayUntil >= r.season) || r.nodes[a.at]?.owner !== h.faction || migratePath(r, h.faction, h.at, a.at) === null) return
+    h.awayUntil = r.season
+  }
   a.hero = h.id
   h.at = null
   h.post = null

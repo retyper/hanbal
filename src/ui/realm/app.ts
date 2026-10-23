@@ -476,6 +476,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * (형 10-23: "백성 배치 … 아직도 이해가 안 돼" → 문명의 개척자처럼 지도에 말 하나). armySel 과 함께 켜지지 않는다
    */
   let partySel = ''
+  /** 장수 판의 「사신으로 보낸다」 — 다음에 꾸리는 사신에 이 장수를 미리 고른다 */
+  let envoyPick = ''
   /** 백성 배치 판에서 고르는 중인 몫 — 고을 → 더하고 뺀 집 (모아 둔 백성 = −합) */
   let placeDraft: Record<string, number> = {}
   /** 백성 배치 −/+ 한 번의 몫 — 뗄 때는 한 집은 남기고 한도 안에서, 부을 때는 모아 둔 만큼 · 품까지. 0 이면 못 누른다 */
@@ -582,6 +584,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     musters = []
     settles = []
     for (const k of Object.keys(pick)) delete pick[k]
+    // 고정해 둔 곳을 우리가 차지했거나(없어졌거나) 하면 고정은 저절로 풀린다 — 우리 땅은 정찰할 것이 없다
+    if (scoutKeep !== '' && realm !== null && (realm.nodes[scoutKeep] === undefined || realm.nodes[scoutKeep]?.owner === me())) setKeep('')
     // 고정해 둔 곳이 아직 맞닿아 있으면 그리로 — 아니면 이번 계절은 쉰다(고정은 남는다)
     scout = scoutKeep !== '' && realm !== null && scoutable(realm).includes(scoutKeep) ? scoutKeep : ''
     rite = false
@@ -2125,8 +2129,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (army === undefined && at !== null) {
         if (x.post !== at && r.nodes[at]?.owner === me()) h += `<button class="btn" data-act="assign" data-id="${id}" data-node="${at}">${esc(josa(atName, '을', '를'))} 맡는다</button>`
         if (x.post != null) h += `<button class="btn ghost" data-act="assign" data-id="${id}" data-node="">맡은 일을 그만둔다</button>`
-        for (const a of sorted(Object.values(r.armies)).filter((b) => b.faction === me() && b.at === at && b.march === null && b.hero === null)) {
-          h += `<button class="btn" data-act="lead" data-id="${id}" data-army="${a.id}">${esc(josa(armyName(r, a), '을', '를'))} 이끈다</button>`
+        // 장수 없는 우리 군대 — 여기 있으면 바로, 멀리 있으면 가서 이끈다 (우리 땅으로 이어진 곳)
+        for (const a of sorted(Object.values(r.armies)).filter((b) => b.faction === me() && b.march === null && b.hero === null && (b.at === at || (r.nodes[b.at]?.owner === me() && migratePath(r, me(), at, b.at) !== null)))) {
+          h += `<button class="btn" data-act="lead" data-id="${id}" data-army="${a.id}">${esc(josa(armyName(r, a), '을', '를'))} ${a.at === at ? '이끈다' : `${esc(josa(r.nodes[a.at]?.name ?? '', '에', '에'))} 가서 이끈다`} <small>${headcount(forceOf(r, a))}명</small></button>`
         }
         // 다른 고을 맡기 — 우리 땅으로 이어진 곳이면 정예 호위를 거느리고 간다 (그 계절은 길에 있다)
         const far = sorted(Object.values(r.nodes)).filter((n) => n.owner === me() && n.id !== at && n.kind !== 'sodo' && n.hh > 0 && migratePath(r, me(), at, n.id) !== null)
@@ -2139,7 +2144,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           h += `</div>`
         }
       }
-      h += `<p class="mute">맡기기·이끌기 ${guideBtn('post')}</p>`
+      // 사신·자객 — 다른 탭으로 가서 고르지 않게, 이 장수를 고른 채로 그 판을 연다
+      if (!handLocked(r, id) && !handsFull(r)) h += `<div class="btns jobs"><button class="btn" data-act="hero-envoy" data-id="${id}">${icon('good-tribute-bell')}사신으로 보낸다</button><button class="btn" data-act="hero-agent" data-id="${id}">${icon('status-spy')}자객으로 보낸다</button></div>`
+      h += `<p class="mute">맡기기·이끌기·사신·자객·원정 — 한 계절에 하나 ${guideBtn('post')}</p>`
     }
     // 회유 — 우리가 사로잡은 장수
     if (x.status === 'captive' && x.captor === me() && x.persuade === undefined && pending.length === 0) {
@@ -3573,6 +3580,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'guide-close': root.querySelector('.guidebox')?.remove(); return
       case 'hero-back': openSheet({ kind: 'heroes' }); return
+      case 'hero-envoy': envoyPick = d['id']!; diploMode = 'envoy'; openSheet({ kind: 'diplo' }); return
+      case 'hero-agent': plotAgent = d['id']!; diploMode = 'plot'; openSheet({ kind: 'diplo' }); return
       case 'cohabit': heroOrders = [...heroOrders.filter((o) => !(o.kind === 'cohabit' && o.hero === d['id'])), { kind: 'cohabit', hero: d['id']! }]; break
       case 'uncohabit': { const sp = realm!.heroes[d['id']!]?.spouse; heroOrders = heroOrders.filter((o) => !(o.kind === 'cohabit' && (o.hero === d['id'] || o.hero === sp))); break }
       case 'pl-open': {
@@ -3810,6 +3819,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'compose': {
         const same = compose.to === d['to'] && compose.ask === d['ask']
         compose = { ...NO_COMPOSE, give: noGoods(), take: noGoods(), to: same ? '' : d['to']!, ask: d['ask'] as Ask }
+        // 장수 판에서 「사신으로 보낸다」 한 장수 — 갈 수 있으면 미리 고른다
+        if (envoyPick !== '' && realm !== null && canEscort(realm, me(), envoyPick) && heroBusy(realm, envoyPick) === null && !Object.values(envoys).some((e) => e.hero === envoyPick) && !plots.some((p) => p.kind === 'plot' && p.agent === envoyPick)) compose.hero = envoyPick
         break
       }
       case 'cq': {
@@ -3841,7 +3852,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         break
       }
       case 'unenvoy': delete envoys[d['key']!]; break
-      case 'chero': compose.hero = d['id'] ?? ''; break
+      case 'chero': compose.hero = d['id'] ?? ''; envoyPick = ''; break
       case 'deeds': { const t = d['to']!; if (deedsOpen.has(t)) deedsOpen.delete(t); else deedsOpen.add(t); break }
       case 'build': {
         const node = d['node']!
