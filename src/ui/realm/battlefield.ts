@@ -315,7 +315,9 @@ export function warGround(r: Realm, l: BattleLine): WarGround {
   return 'field'
 }
 
-function warBg(art: string, g: WarGround): string {
+/** def — 우리가 지키는 싸움. 성문 싸움이면 우리 성이 왼쪽에 선 그림으로 (형 10-23: "우리 고을에 쳐들어온 공성전이면 우리 성이 좌측에 있는 이미지여야") */
+function warBg(art: string, g: WarGround, def = false): string {
+  if (g === 'gate' && def) return `${art}battle/battle-gate-def.jpg`
   return WAR_BG_READY.has(g) ? `${art}battle/battle-${g}.jpg` : `${art}${WAR_BG_FALLBACK[g]}.jpg`
 }
 
@@ -415,7 +417,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
 
   // 싸움터 배경 (땅마다) · 위 카드는 굴려도 그 자리에 (형: "싸우는로그가 스크롤로 보이더라도 상단에 캐릭터랑 체력바 있는 그 카드는 고정")
   const ground = warGround(prev, l)
-  let h = `<div class="wbg g-${ground}${WAR_BG_READY.has(ground) ? '' : ' stand'}" style="background-image:url('${warBg(art, ground)}')"></div>`
+  let h = `<div class="wbg g-${ground}${WAR_BG_READY.has(ground) ? '' : ' stand'}" style="background-image:url('${warBg(art, ground, !weAtk)}')"></div>`
   // 싸움의 기운 — 흙먼지 둘이 바닥을 흐르고, 이 합에 활을 쏜 쪽에서 화살이 낱낱이 활꼴로 날아간다 (그림: realm/fx)
   h += `<div class="wfx"><img class="wfx-dust a" src="${art}fx/dust.png" alt=""><img class="wfx-dust b" src="${art}fx/dust.png" alt="">${AIR_EMBERS}`
   if (anim && last !== undefined) {
@@ -425,7 +427,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   }
   h += `</div><div class="wrbox">`
   // 위 카드는 그 싸움터를 무대로 — 길·성문·물가·눈밭·밤 (형 10-23: "길에서 마주치거나 수성하거나 공성할 때는 그 위치에 맞게 배경")
-  h += `<div class="wtop" style="--wtbg:url('${warBg(art, ground)}')"><div class="wrh"><b>${esc(warName(after, l))}</b>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}</div>`
+  h += `<div class="wtop" style="--wtbg:url('${warBg(art, ground, !weAtk)}')"><div class="wrh"><b>${esc(warName(after, l))}</b>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}</div>`
   h += `<div class="wvs">${side(ourI, ourHero, ourF, ourName, 'us')}<img class="vs" src="${art}ui/vs.png" alt="VS">${side(foeI, foeHero, foeF, foeName, 'foe')}</div></div>`
   if (keys !== '') h += `<style>${keys}</style>`
   h += `<p class="wintro">${esc(introLine(l, weAtk, fname(foeF)))}${l.militia > 0 && !weAtk ? ` 마을 장정 ${l.militia}명이 함께 선다.` : l.militia > 0 ? ` 마을 장정 ${l.militia}명이 막아선다.` : ''}</p>`
@@ -820,7 +822,7 @@ function openHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: str
   const side = (cls: string, f: string | undefined, hero: string | null, n: number, fallback: string): string =>
     `<div class="wosd ${cls}" style="--c:${color(f)}">${emb(f)}<span class="wpf big">${face(hero, art, fallback)}<i></i></span><b>${esc(hname(hero, f))}</b><span>${esc(fname(f))} · ${n.toLocaleString('ko-KR')}명</span></div>`
   const share = Math.round((us / Math.max(1, us + them)) * 100)
-  return `<div class="wob" style="background-image:url('${warBg(art, ground)}')"></div><div class="wofl"></div>`
+  return `<div class="wob" style="background-image:url('${warBg(art, ground, !weAtk)}')"></div><div class="wofl"></div>`
     + `<div class="wohead"><b>${esc(warName(after, l))}</b><span>${esc(sub)}</span></div>`
     + `<div class="woin">${side('us', ourF, ourHero, us, UNIT_ICON.spear)}<div class="wom"><img class="wox" src="${art}ui/vs.png" alt="VS"></div>${side('foe', foeF, foeHero, them, UNIT_ICON.shield)}</div>`
     + `<div class="wofoot"><div class="wobar"><i class="us" style="width:${share}%"></i><i class="foe" style="width:${100 - share}%"></i></div>`
