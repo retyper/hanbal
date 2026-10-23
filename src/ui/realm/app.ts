@@ -967,7 +967,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     let h = `<div class="sbf">${icon('unit-porters', 'sbface ppface')}</div><div class="sbt"><b>${esc(r.nodes[p.home]?.name ?? '')} 개척단 · 백성 ${p.hh}가구</b>`
     if (was != null) h += `<span>${esc(josa(r.nodes[was.to]?.name ?? '', '으로', '로'))} 가는 중 · ${esc(arriveWhen(realm!.season, was.left))}</span>`
     else if (p.march !== null) h += `<span>→ ${esc(r.nodes[p.march.to]?.name ?? '')} · ${foundable(r, me(), p.march.to) ? '닿으면 새 마을' : '지나간다'} · ${esc(arriveWhen(realm!.season, p.march.left))}</span>`
-    else h += `<span>${partyTargets(r, p.id).length > 0 ? '빈땅에 닿으면 마을이 선다 · 우리 고을에서는 자리 잡을 수 있다' : '지금 갈 수 있는 길이 없다'}</span>`
+    else h += `<span>${partyTargets(r, p.id).length > 0 ? '보낼 곳을 선택한다' : '지금 갈 수 있는 길이 없다'}</span>`
     h += `</div>`
     if (joinHere(p.at).some((x) => x.id === p.id)) h += `<button class="btn pri home sm" data-act="ptjoin" data-army="${p.id}">여기 자리 잡기</button>`
     if (formOf(p.id) !== undefined) h += `<button class="btn ghost sm" data-act="party-undo" data-node="${p.home}">꾸리기 거두기</button>`

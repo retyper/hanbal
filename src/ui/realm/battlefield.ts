@@ -684,7 +684,7 @@ export const WAR_CSS = `
 .ap .wtop { position: sticky; top: 0; z-index: 3; margin: 0 -14px; padding: calc(16px + env(safe-area-inset-top)) 30px 22px;
   background: linear-gradient(#0d0f1388, #0d0f1311 35%, #0d0f1344 70%, #0d0f13f2), var(--wtbg) center 55% / cover no-repeat; background-origin: border-box;
   filter: drop-shadow(0 6px 14px #000a); }
-.ap .wtop::after { content: ''; position: absolute; inset: 0; border: 22px solid transparent; border-image: url(__ART__ui/frame-panel.png) 118 / 22px stretch; pointer-events: none; z-index: 2; }
+.ap .wtop::after { content: ''; position: absolute; inset: 0; border: 22px solid transparent; border-image: url(__ART__ui/frame-panel.png?v=3) 118 / 22px stretch; pointer-events: none; z-index: 2; }
 .ap .wtop.def { background: linear-gradient(#0d0f1388, #0d0f1311 35%, #0d0f1344 70%, #0d0f13f2), var(--wtbg) center 55% / cover no-repeat; }
 @media (max-width: 520px) { .ap .wtop { padding: calc(12px + env(safe-area-inset-top)) 22px 18px; } .ap .wtop::after { border-width: 16px; border-image-width: 16px; } }
 /* 장수 초상 — 쇠 귀퉁이 청동 테 안에 얼굴 (테 그림이 얼굴 위에 얹힌다) */
@@ -724,7 +724,7 @@ export const WAR_CSS = `
 .ap .wbar i { position: relative; display: block; height: 100%; border-radius: 6px; overflow: hidden; }
 .ap .wbar i::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, #ffffff00 0 9px, #ffffff2a 9px 15px); background-size: 34px 100%; animation: wbarflow 1.1s linear infinite; }
 .ap .wbar i::after { content: ''; position: absolute; top: 0; bottom: 0; left: -45%; width: 45%; background: linear-gradient(90deg, #fff0, #ffffffb0, #fff0); animation: wbarshine 3s ease-in-out infinite; }
-.ap .ws.foe .wbar i::after { animation-delay: 1.4s; } .ap .ws.foe .wbar i::before { animation-direction: reverse; }
+.ap .ws.foe .wbar i::after { animation-delay: 1.4s; }
 @keyframes wbarflow { to { background-position: 34px 0; } }
 @keyframes wbarshine { 0% { left: -45%; } 55%, 100% { left: 110%; } }
 @media (prefers-reduced-motion: reduce) { .ap .wbar i::before, .ap .wbar i::after, .ap .ws.us .wpf > i, .ap .wbg, .ap .wember { animation: none !important; } }
@@ -740,7 +740,7 @@ export const WAR_CSS = `
 .ap .wlog { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
 .ap .wrd, .ap .wnext, .ap .wend { scroll-margin-top: var(--wtoph, 170px); }
 /* 합 기록 · 다음 합 · 결과 · 들머리 — 같은 청동 테 (형 10-23: "밋밋한 CSS UI 찾아서 개선") */
-.ap.ap :is(.wrd, .wnext, .wend, .wintro) { border: 11px solid transparent; border-image: url(__ART__ui/frame-panel.png) 118 / 11px stretch; border-radius: 0; background-clip: padding-box; }
+.ap.ap :is(.wrd, .wnext, .wend, .wintro) { border: 11px solid transparent; border-image: url(__ART__ui/frame-panel.png?v=3) 118 / 11px stretch; border-radius: 0; background-clip: padding-box; }
 .ap.ap .wrd.crit { filter: drop-shadow(0 0 5px #d9b36a99); box-shadow: none; }
 .ap .wrd { padding: 8px 10px; border-radius: 12px; background: #201a16e6; border: 1px solid #4d3b26; }
 .ap .wrd.crit { border-color: #d9b36a; box-shadow: 0 0 0 1px #d9b36a55 inset; }
@@ -894,8 +894,8 @@ export const WAR_CSS = `
   background: #2a1f16; color: var(--ink); font: inherit; text-align: left; cursor: pointer; position: relative; }
 .ap .wcmd.on { border-color: var(--gold); background: #3a3222; box-shadow: 0 0 0 2px #d9b36a66; }
 /* 깃발 카드 — 같은 청동 테 (가늘게) · 고르면 금빛이 번진다 */
-.ap .wcmd { border: 12px solid transparent; border-image: url(__ART__ui/frame-panel.png) 118 / 12px stretch; background: #1d1610 padding-box; border-radius: 0; }
-.ap .wcmd.on { border-image: url(__ART__ui/frame-panel.png) 118 / 12px stretch; background: #3a2e1c padding-box; box-shadow: none; filter: drop-shadow(0 0 6px #ffd27aaa); animation: wcmdland .18s cubic-bezier(.3, 1.6, .5, 1); }
+.ap .wcmd { border: 12px solid transparent; border-image: url(__ART__ui/frame-panel.png?v=3) 118 / 12px stretch; background: #1d1610 padding-box; border-radius: 0; }
+.ap .wcmd.on { border-image: url(__ART__ui/frame-panel.png?v=3) 118 / 12px stretch; background: #3a2e1c padding-box; box-shadow: none; filter: drop-shadow(0 0 6px #ffd27aaa); animation: wcmdland .18s cubic-bezier(.3, 1.6, .5, 1); }
 .ap .wcmd { transition: transform .12s ease-out, filter .12s; } .ap .wcmd:hover:not(.on) { transform: translateY(-4px); filter: drop-shadow(0 8px 8px #000a); } .ap .wcmd:active { transform: translateY(1px) scale(.97); transition-duration: .06s; }
 @keyframes wcmdland { 0% { transform: scale(1.08); } 100% { transform: scale(1); } }
 /* 깃발 카드 — 왼쪽에 깃발 한 폭, 고르면 깃발이 들려 나부낀다 */

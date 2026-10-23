@@ -412,7 +412,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .fall > div > span { display: block; font-size: 13.5px; color: var(--mute); margin-top: 3px; }
 /* 지도에서 고른 말 — 아래 띠 · 합치기 */
 .ap .selbar { position: absolute; left: 64px; right: 14px; bottom: calc(var(--tabh) + 70px); z-index: 7; display: none; align-items: center; gap: 8px; flex-wrap: wrap;
-  padding: 6px 8px; border: 12px solid transparent; border-image: url(__ART__ui/frame-panel.png) 118 / 12px stretch; background: #1f1710f2 padding-box; filter: drop-shadow(0 6px 14px #000a); }
+  padding: 6px 8px; border: 12px solid transparent; border-image: url(__ART__ui/frame-panel.png?v=3) 118 / 12px stretch; background: #1f1710f2 padding-box; filter: drop-shadow(0 6px 14px #000a); }
 .ap .selbar .sbt b { display: flex; align-items: center; gap: 6px; }
 .ap.sel-open .selbar { display: flex; } .ap.sheet-open .selbar { display: none; }
 .ap .selbar .sbf { display: flex; } .ap .selbar .sbface { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid #ffd27a; margin-right: -8px; background: #3a2c1e; display: block; }
@@ -539,7 +539,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .nudge .ndf { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
 /* 카드 상자 — 청동·옻칠 나무 테 (ui/frame-panel.png · 싸움판 위 카드와 한 벌). 겹 클래스로 뒤에 오는 판별 CSS 보다 앞선다 */
 .ap.ap :is(.acard, .ncard, .fcard, .hrow, .nacts, .askc, .trade, .splitp, .paths, .warc, .fall, .acct, .exp, .wed, .scouthd, .hands) {
-  border: 11px solid transparent; border-image: url(__ART__ui/frame-panel.png) 118 / 11px stretch; border-radius: 0; background-clip: padding-box; }
+  border: 11px solid transparent; border-image: url(__ART__ui/frame-panel.png?v=3) 118 / 11px stretch; border-radius: 0; background-clip: padding-box; }
 .ap.ap :is(.acard.fresh) { box-shadow: none; filter: drop-shadow(0 0 6px #7aa83aaa); }
 .ap.ap .hrow.ruler { filter: drop-shadow(0 0 5px #c9a45a88); }
 @media (max-width: 420px) { .ap.ap :is(.acard, .ncard, .fcard, .hrow, .nacts, .askc, .trade, .splitp, .paths, .warc, .fall, .acct, .exp, .wed, .scouthd, .hands) { border-width: 9px; border-image-width: 9px; } }
