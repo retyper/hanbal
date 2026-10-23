@@ -39,7 +39,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 @media (max-width: 520px) { .ap .top .stat.nat b { display: none; } .ap .top .tr { gap: 6px; } }
 
 /* 지도 — 남은 자리를 꽉. 폰 세로에서는 옆으로 민다 */
-.ap .mapwrap { position: absolute; left: 0; right: 0; top: calc(var(--toph) + var(--legh)); bottom: var(--tabh); overflow: auto;
+.ap .mapwrap { position: absolute; z-index: 0; /* 지도 속 층(도읍 기호 등)을 한 층으로 묶는다 — 계절 입자(.seasonp)가 늘 그 위로 (형 10-23: "눈이 도읍 뒤에 가려짐") */ left: 0; right: 0; top: calc(var(--toph) + var(--legh)); bottom: var(--tabh); overflow: auto;
   background: #221d1a; scrollbar-width: none; touch-action: pan-x pan-y; cursor: grab; }
 .ap .mapwrap.dragging { cursor: grabbing; }
 /* 확대·축소 단추 — 지도 왼쪽 아래 */
