@@ -20,6 +20,8 @@ import { P } from '../../tune/params.ts'
 const ACTS = 'button, a, input, select, label, [data-act], .nd'
 const TIPS = '[data-more], [data-tip], [title], [data-peek]'
 const PEEK = '[data-peek]'
+/** 기다리지 않고 바로 뜨는 것 — 싸움 깃발 카드 (형 10-23: "탭하면 설명 나오는 거 잘 만들었는데 너무 느림") */
+const INSTANT = '.wcmd'
 /** 펼침 말풍선이 손가락·커서에서 떨어지는 거리 (CSS px) — 엄지가 가리지 않게 */
 const PEEK_GAP_TOUCH = 44
 const PEEK_GAP_MOUSE = 18
@@ -135,7 +137,7 @@ export function installTips(root: HTMLElement): void {
       const short = shortOf(el)
       show(el, more !== undefined ? `${short !== '' ? `<b>${esc(short)}</b>` : ''}<span>${esc(more)}</span>` : esc(short), more !== undefined)
       window.clearTimeout(hideTimer) // 올려 둔 동안은 떠 있는다
-    }, P.realm.tipHover)
+    }, el.closest(INSTANT) !== null ? 0 : P.realm.tipHover)
     hovering = { el, timer }
   })
   root.addEventListener('pointerout', (ev) => {
@@ -157,6 +159,14 @@ export function installTips(root: HTMLElement): void {
     if (ev.pointerType === 'mouse' && ev.button !== 0) return
     const el = (ev.target as HTMLElement).closest<HTMLElement>(TIPS)
     if (el === null || !root.contains(el) || el === bub) return
+    // 싸움 깃발 카드 — 탭하자마자 설명 (누르기는 그대로 깃발을 고른다)
+    if (el.closest(INSTANT) !== null) {
+      const more = el.dataset['more']
+      const short = shortOf(el)
+      const html = more !== undefined ? `${short !== '' ? `<b>${esc(short)}</b>` : ''}<span>${esc(more)}</span>` : esc(short)
+      if (html !== '') show(el, html, true)
+      return
+    }
     const timer = window.setTimeout(() => {
       if (hold === null) return
       // 펼침 카드 — 손가락 곁에

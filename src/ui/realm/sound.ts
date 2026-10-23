@@ -52,7 +52,8 @@ export const ROTATE: Readonly<Partial<Record<Slot, readonly string[]>>> = { bgm_
  * 2026-10-23 잰 값: map c4 -12.0 · c9 -11.9 · war c7 -12.5 · title c6 -14.0 · 끝 이김 w5(Joy of Victory) -18.0 · 끝 짐 c6 -14.8
  */
 const TRACK_GAIN: Readonly<Partial<Record<string, number>>> = {
-  bgm_map_c4: 0.56, bgm_map_c9: 0.56, bgm_war_c7: 0.6, bgm_title_c6: 0.72, bgm_end_lose_c6: 0.87,
+  // 싸움 음악(사물놀이)은 꽹과리가 앞에 나서 깃발 소리를 덮는다 — 지도 음악보다 한참 낮게 (형 10-23: "꽹과리 소리 너무 많이 시끄러운데")
+  bgm_map_c4: 0.56, bgm_map_c9: 0.56, bgm_war_c7: 0.3, bgm_war_c8: 0.5, bgm_title_c6: 0.72, bgm_end_lose_c6: 0.87,
 }
 const gainOf = (slot: Slot, pick: string = PICK[slot]): number => TRACK_GAIN[`${slot}_${pick}`] ?? 1
 
