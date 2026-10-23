@@ -139,3 +139,21 @@ bgm_war_c7.ogg  공유마당 · 「국악 BGM #197 (사물놀이)」 · 주식�
 bgm_war_c8.ogg  공유마당 · 「LSMBG0704_사물놀이」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312616
 bgm_end_win_c5.ogg  공유마당 · 「국악 BGM #179 (벅차오르는)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386919
 bgm_end_lose_c6.ogg  공유마당 · 「국악 BGM #228 (비극적인)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386968
+
+# 깃발 소리 — 형이 소리 고르기 판에서 고른 것 (2026-10-23 밤)
+cmd_art_c2.ogg  공유마당 · 「국악 효과음 #611 (웅장한)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387601
+cmd_capture_c1.ogg  Freesound · 「Lasso rope being spun, spinning through air then throw」 · zapsplat.com · CC0 · https://freesound.org/s/719638/
+cmd_charge_c1.ogg  Freesound · 「Stampede」 · bevibeldesign · CC0 · https://freesound.org/s/350425/
+cmd_drum_c1.ogg  공유마당 · 「전통악기_북_치다_빠른속도_MKH418_ST_192」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형 · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287483
+cmd_duel_c2.ogg  공유마당 · 「칼 부딪는1」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254778
+cmd_fire_c1.ogg  Freesound · 「Burning arrow 05.wav」 · Introspectral · CC0 · https://freesound.org/s/262478/
+cmd_ford_c5.ogg  공유마당 · 「foleywatersplash01」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252339
+cmd_gate_c4.ogg  공유마당 · 「나무문 박살내는」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253053
+cmd_guard_c3.ogg  Freesound · 「shield guard」 · nekoninja · CC0 · https://freesound.org/s/370203/
+cmd_height_c5.ogg  공유마당 · 「화살 맞는2」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254995
+cmd_hold_c2.ogg  Freesound · 「Rowdy Group Hype Grunt, Boot Stomp and Shield Smash - WITH reverb.wav」 · WelvynZPorterSamples · CC0 · https://freesound.org/s/621326/
+cmd_horse_c4.ogg  Freesound · 「6 horses gallop.wav」 · bruno.auzet · CC0 · https://freesound.org/s/527430/
+cmd_open_c3.ogg  Freesound · 「Lightmetal_armor」 · mitchanary · CC0 · https://freesound.org/s/506148/
+cmd_ram_c3.ogg  Freesound · 「Boat Violently Beaching onto Shore - NO reverb.wav」 · WelvynZPorterSamples · CC0 · https://freesound.org/s/621332/
+cmd_retreat_c4.ogg  공유마당 · 「징소리A」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254592
+cmd_rocks_c1.ogg  공유마당 · 「절벽에서 돌 떨어지는」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254528

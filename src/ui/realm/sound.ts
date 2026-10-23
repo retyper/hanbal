@@ -27,6 +27,8 @@ export const PICK = {
   battle_clash: 'c14', battle_crit: 'g1',
   // 판이 끝났을 때(이겼다·졌다 화면) — 싸움 하나 이긴·진 음악과 따로 (형 10-23: "게임 승리했을 때나 패배했을 때 사운드는 없어?")
   bgm_end_win: 'c5', bgm_end_lose: 'c6',
+  // 깃발 소리 — 깃발마다 제 소리 (형 10-23: "돌격 방진 바위 굴리기 … 다 그만의 이펙트와 사운드") · 맞쏘기는 화살비 소리를 흩어 친다
+  cmd_art: 'c2', cmd_capture: 'c1', cmd_charge: 'c1', cmd_drum: 'c1', cmd_duel: 'c2', cmd_fire: 'c1', cmd_ford: 'c5', cmd_gate: 'c4', cmd_guard: 'c3', cmd_height: 'c5', cmd_hold: 'c2', cmd_horse: 'c4', cmd_open: 'c3', cmd_ram: 'c3', cmd_retreat: 'c4', cmd_rocks: 'c1',
   tap_arms: 'g1', tap_coin: 'g1', tap_brush: 'g1', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'g1',
 } as const
 /** ogg 가 아닌 후보 — 형이 받아 온 것은 받은 꼴 그대로 · 공유마당 음악은 mp3 · 누르는 소리는 브라우저로 잘라 낸 wav */

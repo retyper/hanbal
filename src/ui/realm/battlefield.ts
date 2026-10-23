@@ -107,11 +107,12 @@ const TERRAIN_CMD: ReadonlySet<Cmd> = new Set<Cmd>(['ford', 'rocks', 'gate', 'ra
 
 /** 소리 자리 (형: "공방필살 마지막일격등 상황에 맞게 소리 들어갈곳") — public/sfx 의 활터 소리. 바꾸려면 여기만 */
 export const BATTLE_SFX = {
-  charge: 'swing_01', hold: 'parry_01', open: 'shot_longbow', ford: 'parry_02', rocks: 'crash_02', gate: 'impactWood_heavy_001', ram: 'impactPlank_medium_000',
-  volley: snd('arrow_volley'), counter: 'shot_flecha', fire: 'crash_01', height: 'shot_longbow',
+  // 깃발마다 형이 고른 소리 (sound.ts PICK cmd_*) · 맞쏘기는 화살비 소리 (형 10-23: "맞쏘기는 화살 소리여야지")
+  charge: snd('cmd_charge'), hold: snd('cmd_hold'), open: snd('cmd_open'), ford: snd('cmd_ford'), rocks: snd('cmd_rocks'), gate: snd('cmd_gate'), ram: snd('cmd_ram'),
+  volley: snd('arrow_volley'), counter: snd('arrow_volley'), fire: snd('cmd_fire'), height: snd('cmd_height'),
   // 사람 고함·비명(roar · herodeath · bossdeath)은 걷었다 (형 10-23: "비명소리인지 사람 고함인지 너무 AI 가 만든 티") — 말발굽·쇠·북으로
-  flank: snd('horses'), punch: snd('horses'), pursue: snd('horses'), guard: 'parry_02',
-  drum: 'impactWood_medium_000', duel: 'unsheath_01', capture: 'sheath_01', retreat: 'switch2', art: 'impactBell_heavy_000',
+  flank: snd('cmd_horse'), punch: snd('cmd_horse'), pursue: snd('cmd_horse'), guard: snd('cmd_guard'),
+  drum: snd('cmd_drum'), duel: snd('cmd_duel'), capture: snd('cmd_capture'), retreat: snd('cmd_retreat'), art: snd('cmd_art'),
   /** 맞부딪힘 — 상성에서 이겼다(필살) · 그냥 */
   crit: snd('battle_crit'), clash: snd('battle_clash'),
   /** 사로잡았다 · 장수 겨루기 · 마지막 일격(적이 무너졌다) · 이겼다 · 졌다 */
@@ -359,19 +360,18 @@ const AIR_EMBERS = Array.from({ length: 16 }, (_, i) => {
 
 /**
  * 깃발 소리의 박자 — [연출이 시작한 뒤(초), 크기, 빠르기]. 화면의 연출과 같은 때에 맞춘다
- * (방패가 쿵 내려앉는 때 · 통나무가 칠 때 · 바위가 닿을 때). 없는 깃발은 한 번만.
+ * (방패가 쿵 내려앉는 때 · 통나무가 칠 때 · 바위가 닿을 때). 형이 고른 소리는 제 안에 박자가 있는 긴 것이 많아
+ * (북 빠른 가락 · 칼 세 번 · 말발굽) 한 번만 친다 — 짧은 것만 겹쳐 친다. 없는 깃발은 시작에 한 번.
  */
 const CMD_BEAT: Partial<Record<Cmd, ReadonlyArray<readonly [number, number, number]>>> = {
-  hold: [[0.38, 1, 1], [0.54, 0.8, 1.08], [0.7, 0.85, 0.94], [0.86, 0.7, 1.04]],
-  ford: [[0.38, 1, 1], [0.6, 0.8, 1.06], [0.82, 0.7, 0.95]],
-  guard: [[0.42, 1, 1], [0.6, 0.75, 1.1]],
-  open: [[0.1, 0.8, 1], [0.3, 0.6, 1.1]],
-  gate: [[0.3, 1, 1], [0.66, 0.9, 0.95], [1.02, 1, 0.9]],
-  ram: [[0.3, 1, 1], [0.66, 0.9, 0.95], [1.02, 1, 0.9]],
-  rocks: [[0.92, 1, 1], [1.06, 0.8, 0.9], [1.2, 0.9, 1.1], [1.34, 0.7, 0.95]],
-  charge: [[0.05, 0.8, 1], [0.25, 0.7, 1.1], [0.45, 0.6, 0.95]],
-  drum: [[0, 1, 1], [0.32, 0.9, 1], [0.64, 1, 1]],
-  duel: [[0.35, 1, 1], [0.5, 0.9, 1.1]],
+  hold: [[0.3, 1, 1]],
+  ford: [[0.38, 1, 1], [0.82, 0.75, 0.95]],
+  guard: [[0.42, 1, 1], [0.62, 0.75, 1.1]],
+  gate: [[0.28, 0.85, 1.05], [1.0, 1, 0.95]],
+  ram: [[0.25, 1, 1]],
+  rocks: [[0.45, 1, 1]],
+  duel: [[0.3, 1, 1]],
+  capture: [[0.05, 1, 1]],
 }
 
 /** 한 무리의 화살 수 */
@@ -1094,7 +1094,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       const theirs = weAtk ? rd.d : rd.a
       // 깃발 소리 — 연출과 같은 박자로 (우리 것 크게, 적 것은 조금 작게)
       const beat = (c: Cmd, s0: number, vol: number): void => {
-        if (c === 'volley' || c === 'counter' || c === 'height') { volley(STAGE_S[0], BATTLE_SFX[c], vol * 0.93); return }
+        if (c === 'volley' || c === 'counter') { volley(STAGE_S[0], BATTLE_SFX[c], vol * 0.93); return }
         const b = CMD_BEAT[c]
         if (b === undefined) { at(s0, BATTLE_SFX[c], vol); return }
         for (const [dt, v, rt] of b) at(s0 + dt, BATTLE_SFX[c], vol * v, rt)
