@@ -152,6 +152,25 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cere { position: absolute; inset: 0; z-index: 75; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; cursor: pointer;
   background: #000; animation: cin .6s ease-out both; }
 .ap .cere.out { animation: cout .45s ease-in forwards; }
+/* 등용 — 하얀 번쩍 → 특성 빛 → 큰 얼굴이 떠오른다 · 이름 · 「주군을 모시겠습니다」 · 특성이 하나씩 */
+.ap .cere.hire { background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--gc) 40%, #0000) 0, #0b0907 62%); }
+.ap .cere.hire .cflash { position: absolute; inset: 0; background: #fff; animation: hflash 1.2s ease-out forwards; z-index: 3; pointer-events: none; }
+@keyframes hflash { 0% { opacity: 1; } 35% { opacity: .85; } 100% { opacity: 0; } }
+.ap .cere.hire .cglow { position: absolute; left: 50%; top: 40%; width: min(120vw, 900px); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--gc) 55%, #fff0) 0, #0000 60%); animation: hglow 3.2s ease-in-out infinite alternate; pointer-events: none; }
+@keyframes hglow { from { opacity: .55; transform: translate(-50%, -50%) scale(.92); } to { opacity: .95; transform: translate(-50%, -50%) scale(1.05); } }
+.ap .cere.hire .cmote i { position: absolute; bottom: -10px; left: var(--x); width: 5px; height: 5px; border-radius: 50%; background: radial-gradient(circle, #fff8e0, var(--gc) 60%, #0000 72%);
+  opacity: 0; animation: hmote var(--sp) linear var(--t) infinite; }
+@keyframes hmote { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: .9; } 100% { opacity: 0; transform: translateY(-80vh); } }
+.ap .cere.hire .hframe { position: relative; z-index: 1; width: min(64vw, 340px); aspect-ratio: 1; animation: hrise 1.5s cubic-bezier(.2, 1, .3, 1) .35s both; }
+.ap .cere.hire .hframe .hbust { position: absolute; inset: 8%; width: 84%; height: 84%; object-fit: cover; border-radius: 6px; box-shadow: 0 0 40px var(--gc), 0 12px 30px #000c; }
+.ap .cere.hire .hframe .hfr { position: absolute; inset: 0; background: url(__ART__ui/frame-portrait.png) center / 100% 100% no-repeat; filter: drop-shadow(0 4px 10px #000c); }
+@keyframes hrise { 0% { opacity: 0; transform: scale(.82) translateY(18px); filter: brightness(3) blur(10px); } 60% { opacity: 1; filter: brightness(1.2) blur(0); } 100% { opacity: 1; transform: none; filter: none; } }
+.ap .cere.hire .cw { animation-delay: 1.1s; } .ap .cere.hire .cw > b { color: #fff4d8; text-shadow: 0 0 22px var(--gc), 0 3px 6px #000; }
+.ap .cere.hire .hname { font-size: clamp(22px, 6vw, 30px); font-weight: 800; color: #fff; text-shadow: 0 2px 8px #000; }
+.ap .cere.hire em { font-style: normal; font-family: var(--display); font-size: clamp(18px, 5vw, 24px); color: #ffe6b0; text-shadow: 0 2px 8px #000; opacity: 0; animation: wrin .6s ease-out 1.6s both; }
+.ap .cere.hire .ctr { border-color: var(--g); opacity: 0; animation: wrin .4s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .ap .cere.hire .cflash, .ap .cere.hire .cmote, .ap .cere.hire .cglow { display: none; } }
 @keyframes cin { from { opacity: 0; } to { opacity: 1; } } @keyframes cout { to { opacity: 0; } }
 .ap .cere .cbg { position: absolute; inset: -3%; background: center / cover no-repeat; filter: brightness(.55); animation: cbgz 7s ease-out both; }
 @keyframes cbgz { from { transform: scale(1.12); } to { transform: scale(1); } }

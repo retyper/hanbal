@@ -2978,6 +2978,24 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         scenes.push(`<div class="cere wed"><i class="cbg" style="background-image:url('${ART}event/event-marriage.jpg')"></i><div class="cpet">${petals}</div>`
           + `<div class="cpair"><div class="cl">${bust(a, 'cf')}<b>${esc(a?.name ?? '')}</b></div><div class="cr">${bust(b, 'cf')}<b>${esc(b?.name ?? '')}</b></div></div>`
           + `<div class="cw"><b>혼례</b><span>${esc(josa(a?.name ?? '', '과', '와'))} ${esc(josa(b?.name ?? '', '이', '가'))} 짝을 맺었다</span><small>신혼 ${P.realm.wedHoney}계절 — 함께 지내면 아이가 일찍 온다</small></div></div>`)
+      } else if (l.kind === 'recruit' && l.faction === me()) {
+        // 등용 — 하얗게 번쩍인 뒤 큰 얼굴이 떠오르고 이름·특성 · 그 장수의 가장 좋은 특성 빛으로 (형 10-23: "장수 새로 등용할 때 빠방하는 거 아직 없어?")
+        const x = r.heroes[l.hero]
+        if (x !== undefined) {
+          const RANK = { common: 0, good: 1, rare: 2, precious: 3, legend: 4 } as const
+          const ts = (x.traits ?? []).map((t) => TRAIT[t]).filter((t): t is NonNullable<typeof t> => t !== undefined)
+          const top = ts.filter((t) => t.bad !== true).sort((p, q) => RANK[q.grade] - RANK[p.grade])[0]
+          const gc = top !== undefined ? GRADE_COLOR[top.grade] : '#f0d090'
+          const file = bustOf(x.id)
+          const face = file !== undefined ? `<img class="hbust" src="${ART}bust/${file}.jpg" alt="">` : bust(x, 'hbust')
+          let motes = ''
+          for (let i = 0; i < 18; i++) motes += `<i style="--x:${(i * 41) % 100}%;--t:${((i * 0.37) % 2.2).toFixed(2)}s;--sp:${(2.6 + ((i * 0.61) % 1.8)).toFixed(2)}s"></i>`
+          const chips = ts.map((t, i) => `<span class="ctr" style="--g:${GRADE_COLOR[t.grade]};animation-delay:${(1.5 + i * 0.18).toFixed(2)}s">${esc(t.name)}</span>`).join('')
+          const how = l.how === 'persuade' ? '마음을 돌려 우리 장수가 되었다' : '떠돌던 인재가 우리를 찾아왔다'
+          scenes.push(`<div class="cere hire" style="--gc:${gc}"><i class="cflash"></i><i class="cglow"></i><div class="cmote">${motes}</div>`
+            + `<div class="hframe">${face}<i class="hfr"></i></div>`
+            + `<div class="cw"><b>등용</b><span class="hname">${esc(x.name)}</span><span>${how}</span><em>「주군을 모시겠습니다」</em>${chips !== '' ? `<div class="ctrs">${chips}</div>` : ''}</div></div>`)
+        }
       } else if (l.kind === 'birth' && l.faction === me()) {
         const kid = r.heroes[l.hero], a = r.heroes[l.a], b = r.heroes[l.b]
         const traits = (kid?.traits ?? []).map((t) => `<span class="ctr${t === l.surprise ? ' new' : ''}">${esc(TRAIT[t]?.name ?? t)}${t === l.surprise ? ' · 타고났다' : ''}</span>`).join('')
@@ -2991,7 +3009,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (i >= scenes.length) return
       root.insertAdjacentHTML('beforeend', scenes[i]!)
       const el = root.lastElementChild as HTMLElement
-      if (document.visibilityState === 'visible') ding(snd(el.classList.contains('wed') ? 'feast' : 'birth'), 0.45)
+      if (document.visibilityState === 'visible') ding(snd(el.classList.contains('wed') ? 'feast' : el.classList.contains('hire') ? 'dex_new' : 'birth'), 0.5)
+      if (el.classList.contains('hire')) buzz([20, 40, 20, 40, 60])
       let gone = false
       const close = (): void => { if (gone) return; gone = true; el.classList.add('out'); window.setTimeout(() => { el.remove(); show(i + 1) }, 450) }
       el.addEventListener('click', (e) => { e.stopPropagation(); close() })
