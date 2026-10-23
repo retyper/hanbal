@@ -657,7 +657,7 @@ export const UI_CSS = `
 .ap .btn:hover { filter: brightness(1.12); } .ap .btn:active:not(:disabled) { transform: translateY(1px) scale(.96); filter: brightness(.9); transition-duration: .08s; }
 .ap .btn:not(:active) { transition: filter .12s, transform .16s cubic-bezier(.3, 1.8, .5, 1); }
 /* 금빛 판은 「누르면 나아가는 단추」(go)에만 — 골라 둔 것(on)은 쇠판에 금테와 ✓ (형: "선택한 적 없는데 선택되어 있는 버튼") */
-.ap .btn.pri { border-image-source: url(__ART__ui/btn-gold.png?v=2); border-image-slice: 30 35 fill; color: #2a1606; font-weight: 700; text-shadow: 0 1px 0 #f7dc9a; }
+.ap .btn.pri { border-image-source: url(__ART__ui/btn-gold.png?v=2); border-image-slice: 30 35 fill; color: #2a1606; font-weight: 700; text-shadow: 1px 1px 0 #f7dc9a; }
 .ap .btn.on { box-shadow: 0 0 0 2px #e0bd78, 0 0 10px #e0bd7888; color: #ffe2a0; filter: none; }
 .ap .btn.on::before { content: '✓ '; color: #ffd27a; }
 .ap .btn.ghost { color: #c9bea6; filter: saturate(.7) brightness(.92); } .ap .btn.ghost:hover { filter: saturate(.8) brightness(1.05); }
@@ -667,7 +667,7 @@ export const UI_CSS = `
 .ap .btn.pri.men { filter: hue-rotate(-28deg) saturate(1.25); } .ap .btn.pri.home, .ap .btn.pri.move { filter: saturate(.85); }
 /* 다음 계절 — 큰 금빛 판 */
 .ap .next { border-style: solid; border-color: transparent; border-width: 12px 16px; border-radius: 0; background: none; box-shadow: none;
-  border-image: url(__ART__ui/btn-gold.png?v=2) 30 35 fill / 12px 16px stretch; padding: 4px 10px; color: #2a1606; text-shadow: 0 1px 0 #f7dc9a;
+  border-image: url(__ART__ui/btn-gold.png?v=2) 30 35 fill / 12px 16px stretch; padding: 4px 10px; color: #2a1606; text-shadow: 1px 1px 0 #f7dc9a;
   filter: drop-shadow(0 6px 12px #000b); }
 /* 아래 판(시트) · 보고판 — 옻칠한 나무에 청동 테 */
 .ap .sheet { border: 18px solid transparent; border-image: url(__ART__ui/panel.png?v=2) 64 fill / 18px stretch; background: none; border-radius: 0; padding: 0 2px 6px; }

@@ -2384,7 +2384,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         else {
           const k = partySize(r, me(), id)
           const c = partyCost(k)
-          h += `<div class="btns"><button class="btn pri home wide" data-act="party" data-node="${id}" ${k > 0 ? '' : 'disabled'}>${icon('unit-porters')}개척단 꾸리기${k > 0 ? ` · 백성 ${k}가구 ${costHtml({ grain: c.grain, wood: c.wood })}` : ''}</button></div>`
+          const near = partyMoves(r, me(), id).filter((m) => m.found).sort((x, y) => x.seasons - y.seasons || (x.to < y.to ? -1 : 1))[0]
+          const what = near !== undefined ? `${esc(josa(r.nodes[near.to]?.name ?? '', '으로', '로'))} 개척단 보내기` : '개척단 꾸리기'
+          h += `<div class="btns"><button class="btn pri home wide" data-act="party" data-node="${id}" ${k > 0 ? '' : 'disabled'}>${icon('unit-porters')}${what}${k > 0 ? ` · 백성 ${k}가구 ${costHtml({ grain: c.grain, wood: c.wood })}` : ''}</button></div>`
           h += `<p class="mute">${k > 0 ? '지도에 개척단이 선다. 빈땅으로 보내면 새 마을이 서고, 다른 우리 고을로 데려가 「여기 자리 잡기」를 누르면 그 고을로 이주한다.' : esc(partyWhy(r, id))}</p>`
         }
       }
@@ -3388,7 +3390,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 개척단 — 꾸리면 판이 닫히고 그 개척단이 골라진다 (지도에서 갈 곳이 빛난다)
       case 'party': {
         const node = d['node']!
-        settles = [...settles, { kind: 'party', faction: me(), node }]
+        // 맞닿은 빈땅이 있으면 가장 가까운(계절이 덜 드는) 곳으로 바로 떠난다 — 다른 곳을 누르면 그리로 바꾼다
+        const near = r !== null ? partyMoves(r, me(), node).filter((m) => m.found).sort((x, y) => x.seasons - y.seasons || (x.to < y.to ? -1 : 1))[0] : undefined
+        settles = [...settles, { kind: 'party', faction: me(), node, ...(near !== undefined ? { edge: near.edge } : {}) }]
         armySel = []
         partySel = formId(node)
         sheet = null
