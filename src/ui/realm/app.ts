@@ -33,7 +33,7 @@ import { advance, concealOf, draftable, forceOf, neighbors, newArmyId, otherEnd,
 import { PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bowUpCost, escapeChance, plotAgents, plotChance, plotCost, plotTargets } from '../../realm/plots.ts'
 import { allianceWhy, leaderOf, tookRecently, truceWhy, winningAgainst } from '../../realm/stance.ts'
 import { DESTS, DEST_IDS, EXP_SEASONS, expAmount, expBlock, expOdds, onExpedition } from '../../realm/expedition.ts'
-import { canWed, heroSeen, inheritOf, isRuler, persuadeDropOf, recruitChance, resistOf, wanderersFor } from '../../realm/heroes.ts'
+import { canWed, heroSeen, honeyLeft, inheritOf, isRuler, persuadeDropOf, recruitChance, resistOf, wanderersFor } from '../../realm/heroes.ts'
 import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
@@ -127,6 +127,9 @@ const NIGHT: string = (import.meta.env?.BASE_URL ?? '/') + 'night.html'
 const LINE_S = 0.6
 /** 계절 종이 울린 뒤 그 계절 장면의 소리가 나기까지 (ms) */
 const SCENE_CUE_MS = 1400
+/** 혼례·탄생 장면 — 계절 띠가 걷힌 뒤 뜨고, 이만큼 머문다 (누르면 바로 넘긴다) */
+const CEREMONY_LEAD_MS = 2000
+const CEREMONY_MS = 6500
 /** 판을 그린 뒤 다음 계절 지도 그림을 미리 받기까지 (ms) — 그리는 동안 끼어들지 않게 */
 const WARM_MS = 1200
 const FALL_S = 1.6
@@ -1550,7 +1553,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<button class="wg${compose.hero === '' ? ' on' : ''}" data-act="chero" data-id="">${icon('unit-scouts', 'wfc')}<b>사자</b>${feel()}</button>`
     for (const x of mine) {
       const ok = can(x.id)
-      const why = ok ? '' : busy.has(x.id) ? '다른 일' : leading.has(x.id) ? '군대를 이끈다' : x.woundedUntil !== undefined && x.woundedUntil >= r.season ? '다쳤다' : '나가 있다'
+      const why = ok ? '' : busy.has(x.id) ? '다른 일' : leading.has(x.id) ? '군대를 이끈다' : x.woundedUntil !== undefined && x.woundedUntil >= r.season ? '다쳤다' : honeyLeft(r, x.id) > 0 ? '신혼' : '나가 있다'
       const tr = (x.traits ?? []).filter((t) => t === 'charm' || (ask === 'trade' && t === 'trader')).map((t) => TRAIT[t]?.name).filter((t) => t !== undefined)[0]
       h += `<button class="wg${compose.hero === x.id ? ' on' : ''}" data-act="chero" data-id="${x.id}" ${ok ? '' : 'disabled'}>${bust(x, 'wfc')}<b>${esc(x.name)}</b>`
       h += ok ? `${tr !== undefined ? `<i>${esc(tr)}</i>` : ''}${feel(x.id)}` : `<small>${why}</small>`
@@ -1854,7 +1857,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (x.spouse !== undefined) {
       const sp = r.heroes[x.spouse]
       const kid = (r.births ?? []).find((v) => v.a === id || v.b === id)
-      h += `<p class="mute">짝 · ${sp !== undefined ? nameHtml(sp.name) : '?'}${kid !== undefined ? ` · 아이가 ${Math.max(1, kid.due - r.season + 1)}계절쯤 뒤 나선다` : ''}</p>`
+      const honey = honeyLeft(r, id)
+      // 신혼 — 등불 밝힌 신방 (형 10-23: "가정을 꾸리는 도중에는 야시시한 상태 표시랑 배경 이미지")
+      if (honey > 0 && sp !== undefined) {
+        h += `<div class="honey" style="--hbg:url('${ART}event/event-marriage.jpg')"><div class="hfaces">${bust(x, 'hf')}${bust(sp, 'hf')}</div>`
+          + `<b>신방에 들었다</b><span>${esc(josa(sp.name, '과', '와'))} 함께 지낸다 · ${honey}계절</span>`
+          + `<small>그동안 원정·사신·자객으로는 못 나간다${kid !== undefined ? ` · 아이는 ${Math.max(1, kid.due - r.season + 1)}계절쯤 뒤` : ''}</small></div>`
+      } else h += `<p class="mute">짝 · ${sp !== undefined ? nameHtml(sp.name) : '?'}${kid !== undefined ? ` · 아이가 ${Math.max(1, kid.due - r.season + 1)}계절쯤 뒤 나선다` : ''}</p>`
     }
     if (x.parents !== undefined) h += `<p class="mute">${x.parents.map((p) => (r.heroes[p] !== undefined ? nameHtml(r.heroes[p]!.name) : '?')).join(' · ')}의 아이</p>`
     const weds = heroOrders.filter((o): o is Extract<Order, { kind: 'wed' }> => o.kind === 'wed' && (o.a === id || o.b === id))
@@ -2647,6 +2656,42 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     ding(snd('season_turn'), 0.4)
   }
 
+  /**
+   * 혼례와 아이 — 계절 띠가 걷힌 뒤 한 장면씩 (형 10-23: "혼인하고 자식 낳는 거 하면 별도의 연출 필요하지 않나?").
+   * 혼례: 두 사람이 양쪽에서 다가와 나란히 · 꽃잎. 아이: 금빛 속에서 얼굴이 떠오르고 물려받은 특성이 하나씩. 누르면 다음 장면
+   */
+  function ceremonyFx(r: Realm, rep: Report): void {
+    const scenes: string[] = []
+    for (const l of rep.lines) {
+      if (l.kind === 'wed' && l.faction === me()) {
+        const a = r.heroes[l.a], b = r.heroes[l.b]
+        let petals = ''
+        for (let i = 0; i < 22; i++) petals += `<i style="--x:${(i * 37) % 100}%;--t:${((i * 0.29) % 2.4).toFixed(2)}s;--sp:${(3.6 + ((i * 0.53) % 2.2)).toFixed(2)}s"></i>`
+        scenes.push(`<div class="cere wed"><i class="cbg" style="background-image:url('${ART}event/event-marriage.jpg')"></i><div class="cpet">${petals}</div>`
+          + `<div class="cpair"><div class="cl">${bust(a, 'cf')}<b>${esc(a?.name ?? '')}</b></div><div class="cr">${bust(b, 'cf')}<b>${esc(b?.name ?? '')}</b></div></div>`
+          + `<div class="cw"><b>혼례</b><span>${esc(josa(a?.name ?? '', '과', '와'))} ${esc(josa(b?.name ?? '', '이', '가'))} 짝을 맺었다</span><small>신방에 들어 ${P.realm.wedHoney}계절 함께 지낸다</small></div></div>`)
+      } else if (l.kind === 'birth' && l.faction === me()) {
+        const kid = r.heroes[l.hero], a = r.heroes[l.a], b = r.heroes[l.b]
+        const traits = (kid?.traits ?? []).map((t) => `<span class="ctr${t === l.surprise ? ' new' : ''}">${esc(TRAIT[t]?.name ?? t)}${t === l.surprise ? ' · 타고났다' : ''}</span>`).join('')
+        scenes.push(`<div class="cere birth"><i class="cbg" style="background-image:url('${ART}event/event-egg-birth.jpg')"></i><i class="cglow"></i>`
+          + `<div class="ckid">${bust(kid, 'cf big')}<div class="cpar">${bust(a, 'cf sm')}${bust(b, 'cf sm')}</div></div>`
+          + `<div class="cw"><b>탄생</b><span>${esc(a?.name ?? '')}·${esc(b?.name ?? '')}의 아이 ${esc(josa(kid?.name ?? '', '이', '가'))} 자라 나섰다</span>${traits !== '' ? `<div class="ctrs">${traits}</div>` : ''}</div></div>`)
+      }
+    }
+    if (scenes.length === 0) return
+    const show = (i: number): void => {
+      if (i >= scenes.length) return
+      root.insertAdjacentHTML('beforeend', scenes[i]!)
+      const el = root.lastElementChild as HTMLElement
+      if (document.visibilityState === 'visible') ding(snd(el.classList.contains('wed') ? 'feast' : 'birth'), 0.45)
+      let gone = false
+      const close = (): void => { if (gone) return; gone = true; el.classList.add('out'); window.setTimeout(() => { el.remove(); show(i + 1) }, 450) }
+      el.addEventListener('click', (e) => { e.stopPropagation(); close() })
+      window.setTimeout(close, CEREMONY_MS)
+    }
+    window.setTimeout(() => show(0), CEREMONY_LEAD_MS)
+  }
+
   /** 막혔다 — 화면 위에 까닭과 기록 내보내기 단추를 띄우고, 판 기록에도 남긴다 (형이 보내 주면 그 판을 그대로 다시 돌려 본다) */
   function failNote(e: unknown): void {
     const msg = e instanceof Error ? `${e.message} @ ${(e.stack ?? '').split('\n').slice(1, 3).join(' ').trim()}` : String(e)
@@ -2864,6 +2909,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     host.onAdvance(res.next, res.report, all, mine)
     dexToast(recordDex(res.next))
     seasonFx(res.next.season)
+    ceremonyFx(res.next, res.report)
     // 우리가 낀 싸움이면 북, 아니면 이 계절 머리 장면의 소리 (혼인·아이·동맹…) — 종이 잦아든 뒤
     const ourWar = res.report.lines.some((l) => l.kind === 'battle' && (l.atkFaction === me() || l.defender === me()))
     const ev = /event\/([\w-]+)\.jpg/.exec(sceneOf(prev, res.next, res.report))?.[1]

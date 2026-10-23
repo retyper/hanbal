@@ -651,6 +651,17 @@ function stepGrowth(r: Realm, lines: ReportLine[]): void {
 // 물려받기: 부모 특성 하나하나가 wedTraitPass 로 내려온다 (셋까지) · wedSurprise 로 부모 누구에게도 없던 한 등급 위 특성이 터진다.
 // 능력치는 부모 평균 ± wedSpread. 칭호는 부모 둘 중 하나의 것.
 
+/**
+ * 신혼 — 혼인한 뒤 wedHoney 계절 동안 부부는 집에 머문다: 원정·사신·자객으로 못 나간다 (형 10-23: "가정을 꾸리는 도중에는 … 원정도 못 보내고?").
+ * 남은 계절 수 (0 이면 신혼이 아니다). 군대를 이끌고 고을을 맡는 일은 그대로 한다
+ */
+export function honeyLeft(r: Realm, hero: string): number {
+  const v = (r.births ?? []).find((x) => x.a === hero || x.b === hero)
+  if (v === undefined) return 0
+  const wedAt = v.due - P.realm.wedSeasons
+  return Math.max(0, wedAt + P.realm.wedHoney - r.season + 1)
+}
+
 /** 혼인할 수 있나 — 같은 나라 · 자유로운 몸 · 남녀 · 둘 다 짝 없음 */
 export function canWed(r: Realm, faction: string, a: string, b: string): boolean {
   const x = r.heroes[a]

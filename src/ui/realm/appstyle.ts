@@ -124,6 +124,53 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .seasonfx span { font-size: 13.5px; color: #d8d0c0; } .ap .seasonfx img.sfx-ic { width: 54px; height: 54px; }
 .ap .seasonfx.spring b { color: #f2b8c6; } .ap .seasonfx.summer b { color: #9fd18b; } .ap .seasonfx.autumn b { color: #f0b060; } .ap .seasonfx.winter b { color: #cfe3f5; }
 @keyframes sfx { 0% { opacity: 0; } 12% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
+/* 신방 — 붉은 등불 · 비단 휘장 · 은은히 일렁이는 불빛 */
+.ap .honey { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 3px; margin: 8px 0; padding: 14px 12px 12px; border-radius: 16px; text-align: center;
+  background: linear-gradient(#2a0a12cc, #3a0c18aa 45%, #1a0608ee), var(--hbg) center 40% / cover; border: 1px solid #c86a7a; box-shadow: inset 0 0 40px #ff6a7a33, 0 4px 18px #000a; }
+.ap .honey::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 20%, #ffb07055, #0000 50%), radial-gradient(ellipse at 75% 25%, #ff7a8a44, #0000 45%);
+  animation: hflick 2.8s ease-in-out infinite alternate; pointer-events: none; }
+@keyframes hflick { from { opacity: .6; } 40% { opacity: 1; } 70% { opacity: .75; } to { opacity: .95; } }
+.ap .honey .hfaces { position: relative; display: flex; } .ap .honey .hf { width: 54px; height: 54px; border-radius: 50%; object-fit: cover; border: 2px solid #f0a0b0; box-shadow: 0 0 12px #ff8a9a88; }
+.ap .honey .hf + .hf { margin-left: -12px; }
+.ap .honey b { position: relative; font-family: var(--display); font-weight: 400; font-size: 22px; color: #ffd0d8; letter-spacing: 2px; text-shadow: 0 0 10px #ff6a8a99, 0 2px 4px #000; }
+.ap .honey span { position: relative; font-size: 14px; color: #f8e0e4; } .ap .honey small { position: relative; font-size: 12px; color: #e8b8c0; }
+@media (prefers-reduced-motion: reduce) { .ap .honey::before { animation: none; } }
+/* 혼례 · 탄생 — 한 장면씩 판 전체 */
+.ap .cere { position: absolute; inset: 0; z-index: 75; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; cursor: pointer;
+  background: #000; animation: cin .6s ease-out both; }
+.ap .cere.out { animation: cout .45s ease-in forwards; }
+@keyframes cin { from { opacity: 0; } to { opacity: 1; } } @keyframes cout { to { opacity: 0; } }
+.ap .cere .cbg { position: absolute; inset: -3%; background: center / cover no-repeat; filter: brightness(.55); animation: cbgz 7s ease-out both; }
+@keyframes cbgz { from { transform: scale(1.12); } to { transform: scale(1); } }
+.ap .cere.wed .cbg { filter: brightness(.5) saturate(1.1) sepia(.15); }
+.ap .cere.wed::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, #ff8a9a22, #2a061088 75%); pointer-events: none; }
+.ap .cere .cpair { position: relative; z-index: 1; display: flex; gap: 6px; }
+.ap .cere .cpair > div { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.ap .cere .cl { animation: cpl 1.1s cubic-bezier(.2, 1.1, .4, 1) .2s both; } .ap .cere .cr { animation: cpr 1.1s cubic-bezier(.2, 1.1, .4, 1) .2s both; }
+@keyframes cpl { from { opacity: 0; transform: translateX(-30vw); } to { opacity: 1; transform: none; } }
+@keyframes cpr { from { opacity: 0; transform: translateX(30vw); } to { opacity: 1; transform: none; } }
+.ap .cere .cf { width: clamp(96px, 28vw, 160px); height: auto; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 3px solid #f0c8a0; box-shadow: 0 0 22px #ffb08099, 0 8px 24px #000c; }
+.ap .cere .cpair b { color: #fff; font-size: 16px; text-shadow: 0 2px 6px #000; }
+.ap .cere .cw { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; padding: 0 16px; animation: wrin .7s ease-out .9s both; }
+.ap .cere .cw > b { font-family: var(--display); font-weight: 400; font-size: clamp(44px, 13vw, 76px); letter-spacing: 6px; color: #ffe0c0; text-shadow: 0 0 22px #ff9a7a, 0 3px 6px #000; }
+.ap .cere.birth .cw > b { color: #fff0c0; text-shadow: 0 0 26px #f6d27a, 0 3px 6px #000; }
+.ap .cere .cw span { font-size: clamp(15px, 4vw, 19px); color: #fff; text-shadow: 0 1px 5px #000; } .ap .cere .cw small { font-size: 13px; color: #f0d8c8; }
+.ap .cere .cpet { position: absolute; inset: 0; pointer-events: none; }
+.ap .cere .cpet i { position: absolute; top: -4%; left: var(--x); width: 11px; height: 8px; border-radius: 60% 0 60% 0; background: linear-gradient(135deg, #ffd6e0, #f08aa0); opacity: 0;
+  animation: cpetal var(--sp) linear var(--t) infinite; }
+@keyframes cpetal { 0% { opacity: 0; transform: translate(0, 0) rotate(0); } 10% { opacity: .95; } 100% { opacity: 0; transform: translate(-50px, 108vh) rotate(420deg); } }
+.ap .cere .cglow { position: absolute; left: 50%; top: 42%; width: 70vmin; height: 70vmin; margin: -35vmin 0 0 -35vmin; border-radius: 50%;
+  background: radial-gradient(circle, #fff4c8cc, #f6d27a55 35%, #0000 70%); animation: cglow 2.4s ease-out both, cpulse 2.6s ease-in-out 2.4s infinite alternate; }
+@keyframes cglow { from { opacity: 0; transform: scale(.2); } to { opacity: 1; transform: none; } } @keyframes cpulse { to { opacity: .7; transform: scale(.94); } }
+.ap .cere .ckid { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; animation: ckid 1.4s cubic-bezier(.2, 1.3, .4, 1) .5s both; }
+@keyframes ckid { from { opacity: 0; transform: scale(.4); filter: brightness(3); } to { opacity: 1; transform: none; filter: none; } }
+.ap .cere .cf.big { width: clamp(130px, 38vw, 210px); border-color: #f6d27a; box-shadow: 0 0 30px #f6d27acc, 0 10px 30px #000c; }
+.ap .cere .cpar { display: flex; gap: 8px; margin-top: -18px; } .ap .cere .cf.sm { width: 46px; border-width: 2px; }
+.ap .cere .ctrs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 6px; }
+.ap .cere .ctr { padding: 3px 10px; border-radius: 999px; background: #1a120ccc; border: 1px solid #c8a060; color: #f6e6c0; font-size: 13px; opacity: 0; animation: wrin .5s ease-out both; }
+.ap .cere .ctr:nth-child(1) { animation-delay: 1.5s; } .ap .cere .ctr:nth-child(2) { animation-delay: 1.8s; } .ap .cere .ctr:nth-child(3) { animation-delay: 2.1s; } .ap .cere .ctr:nth-child(4) { animation-delay: 2.4s; }
+.ap .cere .ctr.new { border-color: #ffd27a; color: #fff2c0; box-shadow: 0 0 14px #ffd27aaa; }
+@media (prefers-reduced-motion: reduce) { .ap .cere *, .ap .cere { animation-duration: .01s !important; animation-delay: 0s !important; } }
 @keyframes sfxband { 0% { transform: translateY(-50%) scale(1.06); } 100% { transform: translateY(-50%) scale(1); } }
 @keyframes sfxin { 0% { transform: scale(.7) translateY(16px); } 25% { transform: scale(1) translateY(0); } 100% { transform: scale(1.04); } }
 @media (prefers-reduced-motion: reduce) { .ap .seasonfx, .ap .seasonfx > div { animation-duration: .8s; } }

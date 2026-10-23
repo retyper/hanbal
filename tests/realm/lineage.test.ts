@@ -9,7 +9,10 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
-import { canWed, inheritOf } from '../../src/realm/heroes.ts'
+import { canWed, honeyLeft, inheritOf } from '../../src/realm/heroes.ts'
+import { canEscort } from '../../src/realm/diplomacy.ts'
+import { expBlock } from '../../src/realm/expedition.ts'
+import { plotAgents } from '../../src/realm/plots.ts'
 import { advance } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Order, Realm, ReportLine } from '../../src/realm/types.ts'
@@ -34,6 +37,21 @@ function couple(r: Realm): [string, string] {
 }
 
 describe('혈통 — 혼인', () => {
+  it('신혼 — wedHoney 계절 동안 원정·사신·자객으로 못 나가고, 지나면 다시 나간다', () => {
+    let r = byeonhanMini(3)
+    const [a, b] = couple(r)
+    r.stock[r.player]!.grain = 1000
+    r = pass(r, [{ kind: 'wed', faction: r.player, a, b }]).next
+    for (let i = 0; i < P.realm.wedHoney; i++) {
+      assert.equal(honeyLeft(r, a), P.realm.wedHoney - i)
+      assert.equal(canEscort(r, r.player, a), false)
+      assert.ok(!plotAgents(r, r.player).includes(a))
+      assert.ok(expBlock(r, r.player, a, 'north', 0)?.startsWith('신혼'))
+      r = pass(r).next
+    }
+    assert.equal(honeyLeft(r, a), 0)
+  })
+
   it('같은 나라 · 남녀 · 짝 없음만', () => {
     const r = byeonhanMini(3)
     const [a, b] = couple(r)

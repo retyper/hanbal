@@ -6,7 +6,7 @@
  */
 import { STAT_NAME, josa } from '../../realm/data/prose.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
-import { armyOfHero, bondOf, bondTier, growNeed, heroArt, isRuler } from '../../realm/heroes.ts'
+import { armyOfHero, bondOf, bondTier, growNeed, heroArt, honeyLeft, isRuler } from '../../realm/heroes.ts'
 import { ART_DOES, ART_NAME } from './battlefield.ts'
 import type { GrowStat, Hero, Realm } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
@@ -85,7 +85,8 @@ export function roleLine(r: Realm, h: Hero): string {
   }
   const ex = (r.expeditions ?? []).find((x) => x.hero === h.id)
   if (ex !== undefined) return `원정 중 · ${Math.max(1, ex.back - r.season + 1)}계절 뒤 돌아온다`
-  const hurt = h.woundedUntil !== undefined && h.woundedUntil > r.season ? ` · 다쳐 누웠다 (${h.woundedUntil - r.season}계절)` : ''
+  const honey = honeyLeft(r, h.id)
+  const hurt = (h.woundedUntil !== undefined && h.woundedUntil > r.season ? ` · 다쳐 누웠다 (${h.woundedUntil - r.season}계절)` : '') + (honey > 0 ? ` · 신혼 (${honey}계절)` : '')
   const a = armyOfHero(r, h.id)
   if (a !== null) {
     let n = 0
