@@ -367,6 +367,36 @@ function hire(r: Realm, o: Extract<Order, { kind: 'hire' }>, lines: ReportLine[]
   lines.push({ kind: 'recruit', hero: w.hero.id, faction: o.faction, how: 'wanderer' })
 }
 
+/**
+ * 한 장수 한 계절 한 가지 일 (형 10-23: "원정 보냈는데 조공 요구에 협보를 보낼 수도 있잖아 · 장수 하나가 여러 가지 일을 전부 할 수 있게 … 논리에 맞지 않아").
+ * 장수를 쓰는 명령 — 맡기기(고을)·이끌기·원정·회유(설득하는 이)·사신 동행·자객·정찰. 같은 장수의 두 번째 일은 버린다(먼저 온 것이 이긴다).
+ * 원정 중이거나 자리를 비운(멀리 가는 길) 장수의 일도 버린다. 화면은 같은 규칙으로 고를 거리에서 미리 막는다 (app.ts heroBusy).
+ */
+export function heroJobOf(o: Order): string | null {
+  switch (o.kind) {
+    case 'assign': return o.node !== null ? o.hero : null
+    case 'lead': case 'expedition': return o.hero
+    case 'persuade': return o.by
+    case 'envoy': return o.hero ?? null
+    case 'plot': return o.agent ?? null
+    case 'scout': return o.hero
+    default: return null
+  }
+}
+export function oneJobPerHero(r: Realm, orders: readonly Order[]): Order[] {
+  const seen = new Set<string>()
+  return orders.filter((o) => {
+    const id = heroJobOf(o)
+    if (id === null) return true
+    const h = r.heroes[id]
+    if (h === undefined) return true
+    const away = (r.expeditions ?? []).some((x) => x.hero === id) || (h.awayUntil !== undefined && h.awayUntil >= r.season)
+    if (away || seen.has(id)) return false
+    seen.add(id)
+    return true
+  })
+}
+
 /** 1 — 장수 명령. 규칙에 안 맞으면 아무 일도 없다 */
 export function applyHeroOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
   for (const o of orders) {

@@ -577,7 +577,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 @keyframes plpulse { from { opacity: .75; } to { opacity: 1; } }
 .ap .plcard { margin: 0 0 8px; padding: 9px 10px; border-radius: 10px; background: #1f1a14; border: 1px solid #3a3024; transition: border-color .2s, background .2s; }
 .ap .plcard.up { border-color: #6fae5a; background: #1c2416; } .ap .plcard.down { border-color: #b8784a; background: #261c14; }
-.ap .plh { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; } .ap .plh b { font-size: 15px; }
+.ap .plch { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; } .ap .plch b { font-size: 15px; }
 .ap .pltag { font-size: 11.5px; padding: 1px 7px; border-radius: 999px; } .ap .pltag.rv { background: #183048; color: #a8d4ff; border: 1px solid #3a6a9a; } .ap .pltag.hl { background: #2e2618; color: #d8c090; border: 1px solid #6a5a3a; }
 .ap .plrow { display: flex; align-items: center; gap: 8px; } .ap .plrow > .btn { flex: none; min-width: 54px; font-variant-numeric: tabular-nums; }
 .ap .plmid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; } .ap .plmid > b { font-size: 15px; font-variant-numeric: tabular-nums; }

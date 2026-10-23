@@ -43,7 +43,7 @@ import { spreadRumors } from './rumor.ts'
 import { addMen, giveMen, kitOf, scaleKinds, scaleMen, takeMen } from './kit.ts'
 import { formParty, joinParty, moveParty, stepParties } from './parties.ts'
 import {
-  ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, ironhandAt, noteMet, releaseCaptives, stepHeroes, sweepHeroes,
+  ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, ironhandAt, noteMet, oneJobPerHero, releaseCaptives, stepHeroes, sweepHeroes,
 } from './heroes.ts'
 import type {
   Approach, Army, BattleStart, Cmd, EdgeKind, Hero, Order, Ration, Realm, REdge, Report, ReportLine, RNode, SeasonOfYear, SnipeZone, Tactic,
@@ -411,8 +411,9 @@ function cloneForPlan(realm: Realm): Realm {
  * 나누기·모으기·징병·해산만 먼저 해 본 판 — 화면이 "떼어 낸 별동대"·"새로 뽑은 군대"에게 길을 고르게 할 때 쓴다.
  * 받은 realm 은 건드리지 않는다. advance 의 1단계와 같은 함수를 지난다.
  */
-export function planned(realm: Realm, orders: readonly Order[]): Realm {
+export function planned(realm: Realm, orders0: readonly Order[]): Realm {
   const r = cloneForPlan(realm)
+  const orders = oneJobPerHero(r, orders0)
   migrate(r)
   applyArmyOrders(r, orders, [])
   return r
@@ -1291,6 +1292,7 @@ export function advance(
 ): { next: Realm; report: Report } {
   const r = plainClone(realm)
   migrate(r) // 옛 판이면 사람의 눈금을 키운다
+  orders = oneJobPerHero(r, orders) // 한 장수 한 계절 한 가지 일
   const lines: ReportLine[] = []
   const fought = new Set<string>()
   const season = ((r.season % 4) + 4) % 4
