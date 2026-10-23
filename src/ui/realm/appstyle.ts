@@ -60,6 +60,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .lg span { display: none; } .ap .lg.on span, .ap .lg.me span { display: inline; }
 .ap .lg.on { border-color: #fff; background: color-mix(in srgb, var(--c) 55%, #17110c); }
 .ap .lg.gone { opacity: .45; }
+/* 우리와 싸우는 나라 — 붉은 테 · 칼 · 이름도 늘 보인다 */
+.ap .lg.war { border: 2px solid #e0503a; box-shadow: 0 0 8px #e0503a99; position: relative; }
+.ap .lg.war span { display: inline; }
+.ap .lg .lgwar { font-style: normal; font-size: 13px; color: #ffb09a; margin-left: 2px; }
 .ap.sheet-open .legend { opacity: .3; pointer-events: none; }
 @media (min-width: 700px) { .ap .lg span { display: inline; } }
 

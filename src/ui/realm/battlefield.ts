@@ -11,7 +11,7 @@
  * 움직임은 CSS 애니메이션의 지연뿐이고, 소리만 타이머로 — 탭이 보일 때만 (절대 규칙 4).
  * 확률은 숫자로 안 보인다 — 사로잡기는 말과 색으로, 대신 사람 수(날랜 무리 · 호위)는 보인다 (realm-no-numbers).
  */
-import { UNIT_ICON, bustOf } from '../../realm/data/art.ts'
+import { FACTION_ART, UNIT_ICON, bustOf } from '../../realm/data/art.ts'
 import { GROUP_NAME, battleName, endStory, fieldName, groupLabel, josa, roundStory, storyCtx } from '../../realm/data/prose.ts'
 import { groupMen } from '../../realm/tactics.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
@@ -397,7 +397,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const mr = (x: number): number => Math.round(Math.max(0, Math.min(1.2, x / base)) * 83)
     const num = old !== now ? `<span class="wn swap"><s>${old}명</s><u>${now}명</u></span>` : `<span class="wn">${now}명</span>`
     const hitFx = hitOf(i) !== '' ? `<img class="wfx-hit" src="${art}fx/impact.png" alt="">` : ''
-    return `<div class="ws ${cls}${hitOf(i)}" style="--hd:${STAGE_S[1] + 0.15}s">${hitFx}${face(hero, art, unitOf(i))}<b>${esc(name)}</b><span>${esc(fname(f))}</span>`
+    const em = f !== undefined ? FACTION_ART[f]?.emblem : undefined
+    return `<div class="ws ${cls}${hitOf(i)}" style="--hd:${STAGE_S[1] + 0.15}s">${hitFx}${face(hero, art, unitOf(i))}<b>${esc(name)}</b><span class="wnat">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
       + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}</div>${num}`
       + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}</div><span class="wn">사기</span></div>`
   }
@@ -413,7 +414,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     if (foeShoot) h += volleyHtml(art, 'l', STAGE_S[1] - (usShoot ? 0.25 : 0.5))
   }
   h += `</div><div class="wrbox">`
-  h += `<div class="wtop"><div class="wrh"><b>${esc(warName(after, l))}</b>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}</div>`
+  // 위 카드는 그 싸움터를 무대로 — 길·성문·물가·눈밭·밤 (형 10-23: "길에서 마주치거나 수성하거나 공성할 때는 그 위치에 맞게 배경")
+  h += `<div class="wtop" style="--wtbg:url('${warBg(art, ground)}')"><div class="wrh"><b>${esc(warName(after, l))}</b>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}</div>`
   h += `<div class="wvs">${side(ourI, ourHero, ourF, ourName, 'us')}<i class="vs">VS</i>${side(foeI, foeHero, foeF, foeName, 'foe')}</div></div>`
   if (keys !== '') h += `<style>${keys}</style>`
   h += `<p class="wintro">${esc(introLine(l, weAtk, fname(foeF)))}${l.militia > 0 && !weAtk ? ` 마을 장정 ${l.militia}명이 함께 선다.` : l.militia > 0 ? ` 마을 장정 ${l.militia}명이 막아선다.` : ''}</p>`
@@ -526,16 +528,20 @@ export const WAR_CSS = `
 .ap .wsc { position: absolute; inset: 0; z-index: 1; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
 .ap .wsc .wrbox { overflow-wrap: anywhere; }
 .ap .wfxl { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.ap .wfxt { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
 .ap .wwin { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
 /* 싸움터 — 화면 뒤에 붙박이. 받아 둔 싸움터 그림이 없으면(stand) 장면 그림을 더 어둡고 흐리게 */
-.ap .wbg { position: absolute; inset: 0; z-index: 0; background: center / cover no-repeat; filter: brightness(.42) saturate(.85); }
+.ap .wbg { position: absolute; inset: 0; z-index: 0; background: center / cover no-repeat; filter: brightness(.62) saturate(.9); }
 .ap .wbg.stand { filter: brightness(.3) saturate(.7) blur(2px); transform: scale(1.04); }
 .ap .wbg.g-snow { filter: brightness(.45) saturate(.6) hue-rotate(-8deg); } .ap .wbg.g-night { filter: brightness(.3) saturate(.7); }
-.ap .wbg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(#0d0f1399, #0d0f1333 30%, #0d0f13cc 85%); }
+.ap .wbg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(#0d0f1340, #0d0f1300 30%, #0d0f1388 55%, #0d0f13dd 90%); }
 .ap .wrbox { position: relative; z-index: 1; max-width: 600px; margin: 0 auto; padding: 0 14px 40px; }
 /* 위 카드 — 굴려도 늘 보인다 (포켓몬의 HP 창) */
 .ap .wtop { position: sticky; top: 0; z-index: 3; margin: 0 -14px; padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
-  background: linear-gradient(#0d0f13f0, #0d0f13e0 80%, #0d0f1300); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  background: linear-gradient(#0d0f1388, #0d0f1311 35%, #0d0f1344 70%, #0d0f13f2), var(--wtbg) center 55% / cover no-repeat;
+  border-bottom: 1px solid #6a5236; border-radius: 0 0 16px 16px; box-shadow: 0 6px 18px #000a; }
+.ap .wtop .ws b, .ap .wtop .ws > span, .ap .wtop .wn, .ap .wrh { text-shadow: 0 1px 3px #000, 0 0 8px #000c; }
+.ap .wtop .wf { box-shadow: 0 4px 14px #000c; }
 @media (max-width: 520px) { .ap .wtop .wf { width: 58px; height: 58px; } .ap .wtop .wrh { font-size: 16px; margin-bottom: 4px; } }
 .ap .wrh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; color: var(--gold); font-size: 19px; margin-bottom: 8px; }
 .ap .wrh b { font-family: 'Gowun Batang', serif; letter-spacing: 1px; }
@@ -543,6 +549,8 @@ export const WAR_CSS = `
 .ap .wvs .vs { font-style: normal; font-weight: 800; color: #c8402a; font-size: 20px; align-self: center; }
 .ap .ws { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; }
 .ap .ws b { font-size: 15px; margin-top: 4px; } .ap .ws > span { font-size: 12px; color: var(--mute); }
+.ap .ws .wnat { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: #e8dcc0; }
+.ap .ws .wnat img { width: 20px; height: 20px; object-fit: contain; filter: drop-shadow(0 1px 2px #000); }
 .ap .wf { width: 84px; height: 84px; border-radius: 14px; object-fit: cover; border: 2px solid #6a5a3a; background: #3a2c1e; }
 .ap .wf.unit { object-fit: contain; padding: 6px; }
 .ap .ws.foe .wf { border-color: #7a3a2a; }
@@ -674,6 +682,37 @@ export const WAR_CSS = `
 .ap .wend .wwhy { font-size: 14.5px; color: #e8dcc0; }
 .ap .wr.fast .wrd.slow .wcmds, .ap .wr.fast .wrd.slow .wst, .ap .wr.fast .wrd.slow .wpush, .ap .wr.fast .wend, .ap .wr.fast .wnext { animation-delay: 0s !important; animation-duration: .01s !important; }
 .ap .wr.fast .wbar i.wgr, .ap .wr.fast .wn.swap > * { animation-delay: 0s !important; animation-duration: .01s !important; }
+/* 싸움이 열린다 — 판 전체: 싸움터 그림이 다가오고, 양쪽 깃발·장수가 밀려들고, 이름이 쾅 (형 10-23: "전투가 발생했다는 게 확 실감이 안 나는데")
+   히어로즈·토탈워의 싸움 앞 화면처럼 — 누가 누구와 어디서, 세기는 막대로 */
+.ap .wopen { position: fixed; inset: 0; z-index: 70; overflow: hidden; background: #000; cursor: pointer; animation: woout 3.4s ease-in forwards; }
+@keyframes woout { 0%, 86% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+.ap .wopen .wob { position: absolute; inset: -4%; background: center / cover no-repeat; filter: brightness(.75) saturate(1.05); animation: wozoom 3.4s ease-out both; }
+@keyframes wozoom { from { transform: scale(1.18); filter: brightness(.2); } 25% { filter: brightness(.8); } to { transform: scale(1); } }
+.ap .wopen::before { content: ''; position: absolute; inset: 0; z-index: 1; background: radial-gradient(ellipse at 50% 50%, #0000 30%, #000c 100%); }
+.ap .wopen .wofl { position: absolute; inset: 0; z-index: 2; background: radial-gradient(circle, #ff6a3a88, #b0281a55 40%, #0000 75%); opacity: 0; animation: woflash .7s ease-out .9s both; }
+@keyframes woflash { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
+.ap .wopen .woin { position: absolute; inset: 0; z-index: 3; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; padding: 0 4vw; animation: woshake .5s ease-out .9s both; }
+@keyframes woshake { 0%, 100% { transform: none; } 20% { transform: translate(-8px, 3px); } 40% { transform: translate(7px, -4px); } 60% { transform: translate(-4px, 2px); } 80% { transform: translate(2px, -1px); } }
+.ap .wosd { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; min-width: 0; }
+.ap .wosd.us { animation: woinl .55s cubic-bezier(.2, 1.3, .4, 1) .25s both; } .ap .wosd.foe { animation: woinr .55s cubic-bezier(.2, 1.3, .4, 1) .45s both; }
+@keyframes woinl { from { opacity: 0; transform: translateX(-60vw); } to { opacity: 1; transform: none; } }
+@keyframes woinr { from { opacity: 0; transform: translateX(60vw); } to { opacity: 1; transform: none; } }
+.ap .wosd .woe { width: clamp(40px, 11vw, 64px); aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 2px 6px #000); }
+.ap .wosd .wf { width: clamp(84px, 26vw, 150px); height: auto; aspect-ratio: 1; border-radius: 18px; border: 3px solid var(--c, #9fd18b); box-shadow: 0 0 0 2px #000a, 0 10px 30px #000d, 0 0 24px var(--c, #9fd18b); }
+.ap .wosd b { font-family: var(--display); font-weight: 400; font-size: clamp(16px, 4.4vw, 24px); color: #fff; text-shadow: 0 2px 6px #000; }
+.ap .wosd span { font-size: 13px; color: #f0e4cc; text-shadow: 0 1px 4px #000; }
+.ap .wom { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.ap .wom .wox { font-style: normal; font-size: clamp(34px, 10vw, 60px); color: #ffcf8a; text-shadow: 0 0 18px #ff6a3a, 0 2px 4px #000; animation: wostamp .5s cubic-bezier(.2, 1.6, .4, 1) .8s both; }
+@keyframes wostamp { from { opacity: 0; transform: scale(3.2) rotate(-12deg); } to { opacity: 1; transform: none; } }
+.ap .wohead { position: absolute; z-index: 3; left: 0; right: 0; top: 14%; text-align: center; padding: 0 16px; animation: wrin .5s ease-out .95s both; }
+.ap .wohead b { display: block; font-family: var(--display); font-weight: 400; font-size: clamp(30px, 8.5vw, 52px); color: #f6d8a0; letter-spacing: 3px; text-shadow: 0 0 14px #000, 0 3px 6px #000; }
+.ap .wohead span { display: block; margin-top: 4px; font-size: clamp(15px, 4vw, 19px); color: #fff; text-shadow: 0 1px 5px #000; }
+.ap .wofoot { position: absolute; z-index: 3; left: 50%; bottom: 14%; width: min(80vw, 460px); transform: translateX(-50%); text-align: center; animation: wrin .5s ease-out 1.15s both; }
+.ap .wobar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; box-shadow: 0 0 0 2px #000a, 0 4px 14px #000c; }
+.ap .wobar i { display: block; height: 100%; } .ap .wobar i.us { background: linear-gradient(90deg, #3f8f3a, #8fd07a); } .ap .wobar i.foe { background: linear-gradient(90deg, #e08a74, #8a3a2a); }
+.ap .wofoot em { display: inline-block; margin-top: 10px; font-style: normal; font-size: 13.5px; color: #ffd6c8; background: #5a1a10cc; border: 1px solid #c8402a; border-radius: 999px; padding: 3px 12px; }
+.ap .wofoot small { display: block; margin-top: 8px; font-size: 11.5px; color: #e0d0c0aa; }
+@media (prefers-reduced-motion: reduce) { .ap .wopen, .ap .wopen * { animation-duration: .01s !important; animation-delay: 0s !important; } .ap .wopen { animation: woout 2.2s steps(1) forwards !important; } }
 /* 싸움이 열린다 — 계절 띠처럼 가운데 이름 (북 · 종) */
 .ap .warfx { position: fixed; inset: 0; z-index: 70; display: flex; align-items: center; justify-content: center; pointer-events: none;
   background: radial-gradient(circle, #000b 0, #0000 72%); animation: sfx 2.4s ease-out forwards; }
@@ -683,6 +722,38 @@ export const WAR_CSS = `
 .ap .warfx span { font-size: 13.5px; color: #e0d0c0; }
 @media (prefers-reduced-motion: reduce) { .ap .wr *, .ap .warfx, .ap .warfx * { animation-duration: .01s !important; animation-delay: 0s !important; transition: none !important; } }
 `
+
+/** 싸움이 열리는 판 — 싸움터 그림 · 양쪽 깃발과 장수 · 이름 · 누가 쳐들어왔나 · 세기 막대 · 어느 나라와 싸우는 중인가 */
+function openHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: string, us: number, them: number): string {
+  const weAtk = l.atkFaction === me
+  const atkF = l.atkFaction ?? prev.armies[l.attacker]?.faction
+  const ourF = weAtk ? atkF : l.defender
+  const foeF = weAtk ? l.defender : atkF
+  const fname = (f: string | undefined): string => (f !== undefined ? (after.factions[f]?.name ?? '?') : '?')
+  const st = l.start
+  const ourHero = st?.heroes[weAtk ? 0 : 1] ?? null
+  const foeHero = st?.heroes[weAtk ? 1 : 0] ?? null
+  const hname = (id: string | null, f: string | undefined): string => (id !== null ? (prev.heroes[id]?.name ?? after.heroes[id]?.name ?? '?') : `${fname(f)} 군`)
+  const color = (f: string | undefined): string => (f !== undefined ? (FACTION_ART[f]?.color ?? '#ccc') : '#ccc')
+  const emb = (f: string | undefined): string => {
+    const e = f !== undefined ? FACTION_ART[f]?.emblem : undefined
+    return e !== undefined ? `<img class="woe" src="${art}icon/${e}.png" alt="">` : ''
+  }
+  const place = after.nodes[l.node]?.name ?? prev.nodes[l.node]?.name ?? ''
+  const foe = fname(foeF)
+  const sub = l.field === true ? `길에서 ${josa(foe, '과', '와')} 맞닥뜨렸다`
+    : weAtk ? `${josa(place, '을', '를')} 친다`
+    : `${josa(foe, '이', '가')} ${josa(place, '으로', '로')} 쳐들어왔다!`
+  const ground = warGround(prev, l)
+  const side = (cls: string, f: string | undefined, hero: string | null, n: number, fallback: string): string =>
+    `<div class="wosd ${cls}" style="--c:${color(f)}">${emb(f)}${face(hero, art, fallback)}<b>${esc(hname(hero, f))}</b><span>${esc(fname(f))} · ${n.toLocaleString('ko-KR')}명</span></div>`
+  const share = Math.round((us / Math.max(1, us + them)) * 100)
+  return `<div class="wob" style="background-image:url('${warBg(art, ground)}')"></div><div class="wofl"></div>`
+    + `<div class="wohead"><b>${esc(warName(after, l))}</b><span>${esc(sub)}</span></div>`
+    + `<div class="woin">${side('us', ourF, ourHero, us, UNIT_ICON.spear)}<div class="wom"><i class="wox">⚔</i></div>${side('foe', foeF, foeHero, them, UNIT_ICON.shield)}</div>`
+    + `<div class="wofoot"><div class="wobar"><i class="us" style="width:${share}%"></i><i class="foe" style="width:${100 - share}%"></i></div>`
+    + `<em>⚔ ${esc(josa(foe, '과', '와'))} 싸우는 중</em><small>누르면 넘어간다</small></div>`
+}
 
 /**
  * 전장을 연다 — 이번 계절에 우리가 낄 싸움이 없으면 false (부른 쪽이 바로 넘긴다).
@@ -703,9 +774,10 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   // (형 10-23: "전투 스크롤할 때 뒷배경이 자꾸 움직임 · 전투할 때 뭔가 선택하면 깜빡임")
   const ov = document.createElement('div')
   ov.className = 'wr'
-  ov.innerHTML = '<div class="wbg"></div><div class="wfxl"></div><div class="wsc"></div><div class="wwin"></div>'
+  ov.innerHTML = '<div class="wbg"></div><div class="wfxl"></div><div class="wsc"></div><div class="wfxt"></div><div class="wwin"></div>'
   const bgEl = ov.querySelector<HTMLElement>('.wbg')!
   const fxEl = ov.querySelector<HTMLElement>('.wfxl')!
+  const fxTop = ov.querySelector<HTMLElement>('.wfxt')!
   const sc = ov.querySelector<HTMLElement>('.wsc')!
   const winEl = ov.querySelector<HTMLElement>('.wwin')!
   root.appendChild(ov)
@@ -761,15 +833,17 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const us = st !== undefined ? st.men[weAtk ? 0 : 1] : 0
     const them = st !== undefined ? st.men[weAtk ? 1 : 0] : 0
     const el = document.createElement('div')
-    el.className = 'warfx'
-    el.innerHTML = `<div><b>${esc(warName(t.after, l))}</b><span>우리 ${us.toLocaleString('ko-KR')}명 · 적 ${them.toLocaleString('ko-KR')}명</span></div>`
+    el.className = 'wopen'
+    el.innerHTML = openHtml(prev, t.after, l, host.me, host.art, us, them)
     el.addEventListener('animationend', (e) => { if (e.target === el) el.remove() })
+    el.addEventListener('click', (e) => { e.stopPropagation(); el.remove() })
     root.appendChild(el)
     if (document.visibilityState === 'visible') {
       at(0, BATTLE_SFX.openDrum, 0.5)
       at(0.38, BATTLE_SFX.openDrum, 0.5)
-      at(0.95, BATTLE_SFX.openBell, 0.4)
-      at(1.2, BATTLE_SFX.cry, 0.32)
+      at(0.9, BATTLE_SFX.openBell, 0.45)
+      at(0.95, BATTLE_SFX.cry, 0.4)
+      buzz(0.9, [40, 30, 90])
     }
   }
 
@@ -784,6 +858,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       if (bgEl.style.backgroundImage !== bg.style.backgroundImage) bgEl.style.backgroundImage = bg.style.backgroundImage
       bg.remove()
     }
+    // 화살은 글판 위로 날아간다 — 흙먼지만 뒤에 (형 10-23: "배경이 막 화살 날아다니는 거 같은데 보드판 뒤로 밀려서 안 보임")
+    fxTop.replaceChildren(...tpl.content.querySelectorAll('.wfx-volley'))
     fxEl.replaceChildren(...tpl.content.querySelectorAll('.wfx'))
     sc.replaceChildren(tpl.content)
     // 싸움이 끝났다 — 이겼으면 「승리」가 쾅, 졌으면 「패배」가 내려앉는다 (형: "승리했다는 이펙트가 더 확실히")

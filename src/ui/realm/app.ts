@@ -780,10 +780,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     let h = ''
     for (const { f, n } of fs) {
       const c = FACTION_ART[f.id]?.color ?? '#ccc'
-      const cls = `${focus === f.id ? ' on' : ''}${f.id === me() ? ' me' : ''}${n === 0 ? ' gone' : ''}`
+      const atWar = f.id !== me() && n > 0 && relationOf(r, me(), f.id).state === 'war'
+      const cls = `${focus === f.id ? ' on' : ''}${f.id === me() ? ' me' : ''}${n === 0 ? ' gone' : ''}${atWar ? ' war' : ''}`
       // 남의 나라는 군장 얼굴(탈)을 함께 — 깃발 줄만 봐도 누가 우리를 어떻게 보는지 (mood.ts)
       const mood = f.id !== me() && n > 0 ? moodImg(ART, moodOf(r, me(), f.id).mood, 'mood sm') : ''
-      h += `<button class="lg${cls}" data-act="focus" data-id="${f.id}" style="--c:${c}">${emblem(f.id, 'lem')}<b>${n}</b><span>${esc(f.name)}</span>${mood}</button>`
+      h += `<button class="lg${cls}" data-act="focus" data-id="${f.id}" style="--c:${c}"${atWar ? ` title="${esc(josa(f.name, '과', '와'))} 싸우는 중"` : ''}>${atWar ? '<i class="lgwar">⚔</i>' : ''}${emblem(f.id, 'lem')}<b>${n}</b><span>${esc(f.name)}</span>${mood}</button>`
     }
     return h
   }
