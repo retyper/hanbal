@@ -160,3 +160,5 @@ cmd_duel_c1.ogg  공유마당 · 「칼 뽑는1」 · 김용배 · CC BY(저작�
 cmd_fire_c3.ogg  공유마당 · 「불 붙는」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253636
 cmd_charge_m1.ogg  돌격 = cmd_charge_c1(Freesound 350425 「Stampede」 · bevibeldesign · CC0) + war_cry_c1(위 함성) 을 섞음
 march_go_c7.ogg  공유마당 · 「갑옷 걷는」 + 「북 소리C」를 일곱 사람 발맞춤으로 겹쳐 섞음 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252709
+war_bell_k1.ogg  Kenney (https://kenney.nl) · 「Impact Sounds」 impactBell_heavy_001 · CC0 — 싸움이 열릴 때 종 (옛 활터 소리 · 고르기 판에서 바꾼다)
+war_drum_k1.ogg  Kenney (https://kenney.nl) · 「Impact Sounds」 impactWood_heavy_000 · CC0 — 싸움이 열릴 때 북 (옛 활터 소리)

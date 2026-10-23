@@ -163,7 +163,7 @@ export function growthHtml(r: Realm, h: Hero): string {
     s += `<div class="bond"><div class="bl"><b>정</b><span>${BOND_WORD[t]}</span>${h.served !== undefined && h.served > 0 ? `<span class="mute">함께한 지 ${h.served}계절</span>` : ''}</div>`
     s += `<div class="bbar"><i style="width:${Math.max(3, Math.min(100, b))}%"></i><u style="left:${P.realm.bondTrust}%"></u></div><p class="mute">${BOND_GIVES[t]}</p></div>`
   }
-  s += `<div class="grow"><div class="bl"><b>자람</b><span class="mute">다음 단계까지</span></div>`
+  s += `<div class="grow"><div class="bl"><b>성장</b><span class="mute">다음 단계까지</span></div>`
   for (const k of GROW) {
     const v = h[k]
     const max = v >= 10
