@@ -1208,9 +1208,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const ac = canArm ? armCost(r, a.id, k) : null
       const on = musters.some((o) => o.kind === 'arm' && o.army === a.id && o.unit === k)
       if (ac !== null) {
-        const label = on ? '올리는 중 · 취소' : `${ac.n}명 → ${GEAR_NAME[k]?.[ac.to] ?? TIER_NAME[ac.to]} ${costHtml({ iron: ac.iron })}`
+        // 글은 esc, 드는 값 칩은 그 뒤에 (칩까지 esc 하면 <span class="cost"> 가 글자로 보였다 — 형 10-23)
+        const label = on ? '올리는 중 · 취소' : `${esc(`${ac.n}명 → ${GEAR_NAME[k]?.[ac.to] ?? TIER_NAME[ac.to]}`)} ${costHtml({ iron: ac.iron })}`
         // 올리는 중이면 이 단추는 "취소" — 골라 둔 표(금테 ✓)를 달지 않는다 (형 10-23: "올리는중 취소 버튼이 이상하게 황금색 테두리")
-        h += `<button class="btn sm ${on ? 'ghost' : ''}" data-act="arm" data-army="${a.id}" data-unit="${k}" ${on || (st.iron >= ac.iron && st.grain >= ac.grain) ? '' : 'disabled'}>${esc(label)}</button>`
+        h += `<button class="btn sm ${on ? 'ghost' : ''}" data-act="arm" data-army="${a.id}" data-unit="${k}" ${on || (st.iron >= ac.iron && st.grain >= ac.grain) ? '' : 'disabled'}>${label}</button>`
       }
       h += `</div>`
     }
