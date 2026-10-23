@@ -249,14 +249,14 @@ export const MAP_CSS = `
 .map .tok.sel img { border-color: #ffd27a; box-shadow: 0 0 0 3px #ffd27a88, 0 0 12px #ffd27a; transform: scale(1.12); }
 .map .tok.going img { border-color: #c8402a; }
 /* 개척할 수 있는 빈땅 — 누르면 그 땅 카드에 "사람 보내기" */
-.map .nd .stl { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); white-space: nowrap; pointer-events: none; z-index: 2;
+.map .nd .stl { position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, -2px); /* 그림 위에 — 밑에는 고을 이름표가 온다 (형 10-23: "개마 들머리 뒤에 뭐가 있는지 모르겠어") */ white-space: nowrap; pointer-events: none; z-index: 2;
   font-size: clamp(10px, calc(1.6cqh / var(--z, 1) * var(--zs, 1)), 13px); font-weight: 700; color: #f4ffe8; background: #3f6a2ae6; border: 1px solid #b6e08f;
   border-radius: 9px; padding: 0 6px; box-shadow: 0 1px 4px #0008; animation: stlp 1.6s ease-in-out infinite alternate; }
 @keyframes stlp { from { box-shadow: 0 0 0 #b6e08f00; } to { box-shadow: 0 0 10px #b6e08faa; } }
 @media (prefers-reduced-motion: reduce) { .map .nd .stl { animation: none; } }
 .map .nd .stl.go { background: #6b4a2ae6; border-color: #e0b070; color: #fbe8c8; animation: none; }
 /* 붐빔 — 우리 고을 그림 밑 (가까우면 노란 띠, 넘치면 붉은 글) */
-.map .nd .crw { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); pointer-events: none; z-index: 2; white-space: nowrap; }
+.map .nd .crw { position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, -2px); /* 위로 — 밑의 이름표와 안 겹치게 */ pointer-events: none; z-index: 2; white-space: nowrap; }
 .map .nd .crw.near { width: 40%; height: 4px; border-radius: 2px; background: #e8c040; box-shadow: 0 0 0 1px #201811; }
 .map .nd .crw.full { font-size: clamp(9px, calc(1.5cqh / var(--z, 1) * var(--zs, 1)), 12px); font-weight: 700; color: #ffd8c8; background: #8a2a14e8;
   border: 1px solid #f0a08a; border-radius: 8px; padding: 0 5px; }
