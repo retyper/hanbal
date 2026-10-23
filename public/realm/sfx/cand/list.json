@@ -1,0 +1,552 @@
+[
+ {
+  "slot": "bgm_title",
+  "id": "bgm_title_1",
+  "file": "bgm_title_1.ogg",
+  "title": "국악 BGM #113 (의식적인)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386853&menuNo=200020",
+  "seconds": 70.1
+ },
+ {
+  "slot": "bgm_title",
+  "id": "bgm_title_2",
+  "file": "bgm_title_2.ogg",
+  "title": "국악 BGM #218 (웅장하게 준비를 하는)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386958&menuNo=200020",
+  "seconds": 72.7
+ },
+ {
+  "slot": "bgm_title",
+  "id": "bgm_title_3",
+  "file": "bgm_title_3.ogg",
+  "title": "국악 BGM #31 (힘찬)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386771&menuNo=200020",
+  "seconds": 65
+ },
+ {
+  "slot": "bgm_title",
+  "id": "bgm_title_4",
+  "file": "bgm_title_4.ogg",
+  "title": "국악 BGM #28 (신성한)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386768&menuNo=200020",
+  "seconds": 68.2
+ },
+ {
+  "slot": "bgm_title",
+  "id": "bgm_title_5",
+  "file": "bgm_title_5.ogg",
+  "title": "국악 BGM #179 (벅차오르는)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386919&menuNo=200020",
+  "seconds": 75.9
+ },
+ {
+  "slot": "bgm_title",
+  "id": "bgm_title_6",
+  "file": "bgm_title_6.ogg",
+  "title": "Kingdom (가야금,타악기,대금,스트링,브라스)",
+  "author": "한국저작권위원회",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13262857&menuNo=200020",
+  "seconds": 87.6
+ },
+ {
+  "slot": "bgm_map",
+  "id": "bgm_map_1",
+  "file": "bgm_map_1.ogg",
+  "title": "국악 BGM #111 (고요한)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386851&menuNo=200020",
+  "seconds": 63.1
+ },
+ {
+  "slot": "bgm_map",
+  "id": "bgm_map_2",
+  "file": "bgm_map_2.ogg",
+  "title": "국악 BGM #34 (아련하고 차분한)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386774&menuNo=200020",
+  "seconds": 72.6
+ },
+ {
+  "slot": "bgm_map",
+  "id": "bgm_map_3",
+  "file": "bgm_map_3.ogg",
+  "title": "국악 BGM #44 (느긋한 마을)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386784&menuNo=200020",
+  "seconds": 65.8
+ },
+ {
+  "slot": "bgm_map",
+  "id": "bgm_map_4",
+  "file": "bgm_map_4.ogg",
+  "title": "국악 BGM #81 (평화로운 마을)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386821&menuNo=200020",
+  "seconds": 67.9
+ },
+ {
+  "slot": "bgm_map",
+  "id": "bgm_map_5",
+  "file": "bgm_map_5.ogg",
+  "title": "국악 BGM #139 (차분한 마을)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386879&menuNo=200020",
+  "seconds": 65.9
+ },
+ {
+  "slot": "bgm_map",
+  "id": "bgm_map_6",
+  "file": "bgm_map_6.ogg",
+  "title": "국악 BGM #136 (차분하게 즐기는)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386876&menuNo=200020",
+  "seconds": 66.5
+ },
+ {
+  "slot": "bgm_war",
+  "id": "bgm_war_1",
+  "file": "bgm_war_1.ogg",
+  "title": "국악 BGM #38 (긴박한 상황)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386778&menuNo=200020",
+  "seconds": 58.9
+ },
+ {
+  "slot": "bgm_war",
+  "id": "bgm_war_2",
+  "file": "bgm_war_2.ogg",
+  "title": "국악 BGM #154 (긴장감을 높이는)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386894&menuNo=200020",
+  "seconds": 63.1
+ },
+ {
+  "slot": "bgm_war",
+  "id": "bgm_war_3",
+  "file": "bgm_war_3.ogg",
+  "title": "국악 BGM #149 (저항하는)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386889&menuNo=200020",
+  "seconds": 65.8
+ },
+ {
+  "slot": "bgm_war",
+  "id": "bgm_war_4",
+  "file": "bgm_war_4.ogg",
+  "title": "국악 BGM #60 (결전 직전의 상황)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386800&menuNo=200020",
+  "seconds": 66.9
+ },
+ {
+  "slot": "bgm_war",
+  "id": "bgm_war_5",
+  "file": "bgm_war_5.ogg",
+  "title": "국악 BGM #21 (위태로운)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386761&menuNo=200020",
+  "seconds": 63
+ },
+ {
+  "slot": "bgm_war",
+  "id": "bgm_war_6",
+  "file": "bgm_war_6.ogg",
+  "title": "국악 BGM #8 (위태로운 어두운)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386748&menuNo=200020",
+  "seconds": 74.2
+ },
+ {
+  "slot": "bgm_win",
+  "id": "bgm_win_1",
+  "file": "bgm_win_1.ogg",
+  "title": "국악 효과음 #490 (마침내 해내다)",
+  "author": "공유마당",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13380323&menuNo=200020",
+  "seconds": 8.6
+ },
+ {
+  "slot": "bgm_win",
+  "id": "bgm_win_2",
+  "file": "bgm_win_2.ogg",
+  "title": "국악 효과음 #136 (시원한 마무리)",
+  "author": "공유마당",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13379969&menuNo=200020",
+  "seconds": 5.9
+ },
+ {
+  "slot": "bgm_win",
+  "id": "bgm_win_3",
+  "file": "bgm_win_3.ogg",
+  "title": "국악 효과음 #312 (통쾌한)",
+  "author": "공유마당",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13380145&menuNo=200020",
+  "seconds": 6
+ },
+ {
+  "slot": "bgm_win",
+  "id": "bgm_win_4",
+  "file": "bgm_win_4.ogg",
+  "title": "국악 효과음 #370 (신나는 벅찬)",
+  "author": "공유마당",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13380203&menuNo=200020",
+  "seconds": 6.4
+ },
+ {
+  "slot": "bgm_win",
+  "id": "bgm_win_5",
+  "file": "bgm_win_5.ogg",
+  "title": "Joy of Victory",
+  "author": "유종수",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13211110&menuNo=200020",
+  "seconds": 35
+ },
+ {
+  "slot": "bgm_win",
+  "id": "bgm_win_6",
+  "file": "bgm_win_6.ogg",
+  "title": "국악 BGM #31 (힘찬)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386771&menuNo=200020",
+  "seconds": 28
+ },
+ {
+  "slot": "bgm_lose",
+  "id": "bgm_lose_1",
+  "file": "bgm_lose_1.ogg",
+  "title": "국악 효과음 #139 (절망적인)",
+  "author": "공유마당",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13379972&menuNo=200020",
+  "seconds": 5.9
+ },
+ {
+  "slot": "bgm_lose",
+  "id": "bgm_lose_2",
+  "file": "bgm_lose_2.ogg",
+  "title": "국악 효과음 #492 (포기한)",
+  "author": "공유마당",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13380325&menuNo=200020",
+  "seconds": 8.9
+ },
+ {
+  "slot": "bgm_lose",
+  "id": "bgm_lose_3",
+  "file": "bgm_lose_3.ogg",
+  "title": "국악 효과음 #137 (무거운 마무리)",
+  "author": "공유마당",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13379970&menuNo=200020",
+  "seconds": 5.4
+ },
+ {
+  "slot": "bgm_lose",
+  "id": "bgm_lose_4",
+  "file": "bgm_lose_4.ogg",
+  "title": "국악 BGM #64 (비장한)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386804&menuNo=200020",
+  "seconds": 30
+ },
+ {
+  "slot": "bgm_lose",
+  "id": "bgm_lose_5",
+  "file": "bgm_lose_5.ogg",
+  "title": "국악 BGM #112 (비극적인)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386852&menuNo=200020",
+  "seconds": 30
+ },
+ {
+  "slot": "bgm_lose",
+  "id": "bgm_lose_6",
+  "file": "bgm_lose_6.ogg",
+  "title": "국악 BGM #228 (비극적인)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386968&menuNo=200020",
+  "seconds": 30
+ },
+ {
+  "slot": "battle_clash",
+  "id": "battle_clash_1",
+  "file": "battle_clash_1.ogg",
+  "title": "warriors fighting swords shields",
+  "author": "mario1298",
+  "license": "CC0",
+  "url": "https://freesound.org/s/177084/",
+  "seconds": 2.8
+ },
+ {
+  "slot": "battle_clash",
+  "id": "battle_clash_2",
+  "file": "battle_clash_2.ogg",
+  "title": "Sword clash 1.wav",
+  "author": "spycrah",
+  "license": "CC0",
+  "url": "https://freesound.org/s/471095/",
+  "seconds": 0.9
+ },
+ {
+  "slot": "battle_clash",
+  "id": "battle_clash_3",
+  "file": "battle_clash_3.ogg",
+  "title": "Swords Clash - High Quality #3",
+  "author": "Christopherderp",
+  "license": "CC0",
+  "url": "https://freesound.org/s/364531/",
+  "seconds": 2.1
+ },
+ {
+  "slot": "battle_clash",
+  "id": "battle_clash_4",
+  "file": "battle_clash_4.ogg",
+  "title": "Sword block combo.wav",
+  "author": "ethanchase7744",
+  "license": "CC0",
+  "url": "https://freesound.org/s/440069/",
+  "seconds": 1.5
+ },
+ {
+  "slot": "battle_clash",
+  "id": "battle_clash_5",
+  "file": "battle_clash_5.ogg",
+  "title": "swords_effects",
+  "author": "orcomarcio",
+  "license": "CC0",
+  "url": "https://freesound.org/s/750514/",
+  "seconds": 2.9
+ },
+ {
+  "slot": "battle_clash",
+  "id": "battle_clash_6",
+  "file": "battle_clash_6.ogg",
+  "title": "swords.wav",
+  "author": "hello_flowers",
+  "license": "CC0",
+  "url": "https://freesound.org/s/37605/",
+  "seconds": 0.4
+ },
+ {
+  "slot": "war_cry",
+  "id": "war_cry_1",
+  "file": "war_cry_1.ogg",
+  "title": "People screaming in agony when charging into battle",
+  "author": "florianreichelt",
+  "license": "CC0",
+  "url": "https://freesound.org/s/563011/",
+  "seconds": 3
+ },
+ {
+  "slot": "war_cry",
+  "id": "war_cry_2",
+  "file": "war_cry_2.ogg",
+  "title": "Battlecry.wav",
+  "author": "spookymodem",
+  "license": "CC0",
+  "url": "https://freesound.org/s/249807/",
+  "seconds": 1.5
+ },
+ {
+  "slot": "war_cry",
+  "id": "war_cry_3",
+  "file": "war_cry_3.ogg",
+  "title": "Kallag Warcry",
+  "author": "Perditious_C",
+  "license": "CC0",
+  "url": "https://freesound.org/s/197582/",
+  "seconds": 3
+ },
+ {
+  "slot": "war_cry",
+  "id": "war_cry_4",
+  "file": "war_cry_4.ogg",
+  "title": "yells.mp3",
+  "author": "jasinski",
+  "license": "CC0",
+  "url": "https://freesound.org/s/18365/",
+  "seconds": 3
+ },
+ {
+  "slot": "war_cry",
+  "id": "war_cry_5",
+  "file": "war_cry_5.ogg",
+  "title": "RoaringCrowd.wav",
+  "author": "benfree",
+  "license": "CC0",
+  "url": "https://freesound.org/s/130568/",
+  "seconds": 3
+ },
+ {
+  "slot": "war_cry",
+  "id": "war_cry_6",
+  "file": "war_cry_6.ogg",
+  "title": "soldier shouts \"germans!\" high",
+  "author": "JD_Brick_Productions",
+  "license": "CC0",
+  "url": "https://freesound.org/s/620472/",
+  "seconds": 2.7
+ },
+ {
+  "slot": "arrow_volley",
+  "id": "arrow_volley_1",
+  "file": "arrow_volley_1.ogg",
+  "title": "volley of arrows01.wav",
+  "author": "mcaseydesign",
+  "license": "CC0",
+  "url": "https://freesound.org/s/474121/",
+  "seconds": 2.1
+ },
+ {
+  "slot": "arrow_volley",
+  "id": "arrow_volley_2",
+  "file": "arrow_volley_2.ogg",
+  "title": "Arrows Fly By.mp3",
+  "author": "DigPro120",
+  "license": "CC0",
+  "url": "https://freesound.org/s/394004/",
+  "seconds": 2.5
+ },
+ {
+  "slot": "arrow_volley",
+  "id": "arrow_volley_3",
+  "file": "arrow_volley_3.ogg",
+  "title": "Arrow Flyby",
+  "author": "modusmogulus",
+  "license": "CC0",
+  "url": "https://freesound.org/s/789389/",
+  "seconds": 0.8
+ },
+ {
+  "slot": "arrow_volley",
+  "id": "arrow_volley_4",
+  "file": "arrow_volley_4.ogg",
+  "title": "arrow cutting through the air.wav",
+  "author": "bruno.auzet",
+  "license": "CC0",
+  "url": "https://freesound.org/s/527435/",
+  "seconds": 2.2
+ },
+ {
+  "slot": "arrow_volley",
+  "id": "arrow_volley_5",
+  "file": "arrow_volley_5.ogg",
+  "title": "S23-22 Arrows fly & hit; indoors.wav",
+  "author": "craigsmith",
+  "license": "CC0",
+  "url": "https://freesound.org/s/675820/",
+  "seconds": 2.2
+ },
+ {
+  "slot": "arrow_volley",
+  "id": "arrow_volley_6",
+  "file": "arrow_volley_6.ogg",
+  "title": "G39-01-Arrows fly by.wav",
+  "author": "craigsmith",
+  "license": "CC0",
+  "url": "https://freesound.org/s/438618/",
+  "seconds": 2.5
+ },
+ {
+  "slot": "season_turn",
+  "id": "season_turn_1",
+  "file": "season_turn_1.ogg",
+  "title": "gong.WAV",
+  "author": "BOSS MUSIC",
+  "license": "CC0",
+  "url": "https://freesound.org/s/121800/",
+  "seconds": 2.9
+ },
+ {
+  "slot": "season_turn",
+  "id": "season_turn_2",
+  "file": "season_turn_2.ogg",
+  "title": "gong.aiff",
+  "author": "nkuitse",
+  "license": "CC0",
+  "url": "https://freesound.org/s/18654/",
+  "seconds": 3
+ },
+ {
+  "slot": "season_turn",
+  "id": "season_turn_3",
+  "file": "season_turn_3.ogg",
+  "title": "Gong.wav",
+  "author": "DiArchangeli",
+  "license": "CC0",
+  "url": "https://freesound.org/s/127265/",
+  "seconds": 3
+ },
+ {
+  "slot": "season_turn",
+  "id": "season_turn_4",
+  "file": "season_turn_4.ogg",
+  "title": "Old Church Bell.wav",
+  "author": "dsp9000",
+  "license": "CC0",
+  "url": "https://freesound.org/s/76405/",
+  "seconds": 3
+ },
+ {
+  "slot": "season_turn",
+  "id": "season_turn_5",
+  "file": "season_turn_5.ogg",
+  "title": "Instrument_gong_soft.aif",
+  "author": "vrodge",
+  "license": "CC0",
+  "url": "https://freesound.org/s/119545/",
+  "seconds": 2.5
+ },
+ {
+  "slot": "season_turn",
+  "id": "season_turn_6",
+  "file": "season_turn_6.ogg",
+  "title": "국악 효과음 #135 (알림소리 겸손한)",
+  "author": "공유마당",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13379968&menuNo=200020",
+  "seconds": 5.5
+ },
+ {
+  "slot": "season_turn",
+  "id": "season_turn_7",
+  "file": "season_turn_7.ogg",
+  "title": "국악 효과음 #559 (새롭게 시작하는 느낌)",
+  "author": "공유마당",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13380392&menuNo=200020",
+  "seconds": 9.8
+ }
+]
