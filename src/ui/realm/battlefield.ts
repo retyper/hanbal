@@ -327,6 +327,12 @@ export function warName(r: Realm, l: BattleLine): string {
 /** 전장 한 판의 화면 — 보인 합(shown)까지. 마지막 합은 천천히 풀린다(anim). sel 은 지금 고르는 깃발 */
 /** 활을 쏘는 명령 — 그 합에 화살이 날아간다 */
 const SHOOT_CMD: ReadonlySet<string> = new Set(['volley', 'counter', 'open', 'height'])
+/** 싸움터에 날아오르는 불티 — 낱낱이, 자리·크기·빠르기가 조금씩 다르게 (꾸밈이라 판의 시드와 상관없다) */
+const AIR_EMBERS = Array.from({ length: 16 }, (_, i) => {
+  const f = (k: number): number => ((Math.sin(i * 12.9898 + k * 78.233) * 43758.5453) % 1 + 1) % 1
+  return `<i class="wember" style="--x:${(f(1) * 100).toFixed(1)}%;--s:${(3 + f(2) * 5).toFixed(1)}px;--d:${(6 + f(3) * 7).toFixed(1)}s;--t:${(-f(4) * 12).toFixed(1)}s;--w:${Math.round((f(5) - 0.5) * 120)}px"></i>`
+}).join('')
+
 /** 한 무리의 화살 수 */
 const VOLLEY_N = 14
 /** 화살비 소리 — [늦게(초), 크기, 빠르기] 여섯 발. 화면의 화살과 같은 결로 흩어진다 (꾸밈이라 판의 시드와 상관없다) */
@@ -411,7 +417,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   const ground = warGround(prev, l)
   let h = `<div class="wbg g-${ground}${WAR_BG_READY.has(ground) ? '' : ' stand'}" style="background-image:url('${warBg(art, ground)}')"></div>`
   // 싸움의 기운 — 흙먼지 둘이 바닥을 흐르고, 이 합에 활을 쏜 쪽에서 화살이 낱낱이 활꼴로 날아간다 (그림: realm/fx)
-  h += `<div class="wfx"><img class="wfx-dust a" src="${art}fx/dust.png" alt=""><img class="wfx-dust b" src="${art}fx/dust.png" alt="">`
+  h += `<div class="wfx"><img class="wfx-dust a" src="${art}fx/dust.png" alt=""><img class="wfx-dust b" src="${art}fx/dust.png" alt="">${AIR_EMBERS}`
   if (anim && last !== undefined) {
     const usShoot = SHOOT_CMD.has(weAtk ? last.a : last.d), foeShoot = SHOOT_CMD.has(weAtk ? last.d : last.a)
     if (usShoot) h += volleyHtml(art, 'r', STAGE_S[1] - 0.5)
@@ -541,21 +547,31 @@ export const WAR_CSS = `
 .ap .wwin { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
 /* 싸움터 — 화면 뒤에 붙박이. 받아 둔 싸움터 그림이 없으면(stand) 장면 그림을 더 어둡고 흐리게 */
 .ap .wbg { position: absolute; inset: 0; z-index: 0; background: center / cover no-repeat; filter: brightness(.62) saturate(.9); }
+.ap .wbg { animation: wbgpan 26s ease-in-out infinite alternate; }
+@keyframes wbgpan { from { transform: scale(1.04) translate(-1%, 0); } to { transform: scale(1.1) translate(1.2%, -1%); } }
+.ap .wember { position: absolute; bottom: -10px; left: var(--x); width: var(--s); height: var(--s); border-radius: 50%; background: radial-gradient(circle, #fff2c0, #ffb04a 45%, #ff6a1a00 70%);
+  opacity: 0; animation: wemberup var(--d) linear var(--t) infinite; }
+@keyframes wemberup { 0% { opacity: 0; transform: translate(0, 0); } 10% { opacity: .9; } 70% { opacity: .6; } 100% { opacity: 0; transform: translate(var(--w), -70vh); } }
 .ap .wbg.stand { filter: brightness(.3) saturate(.7) blur(2px); transform: scale(1.04); }
 .ap .wbg.g-snow { filter: brightness(.45) saturate(.6) hue-rotate(-8deg); } .ap .wbg.g-night { filter: brightness(.3) saturate(.7); }
 .ap .wbg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(#0d0f1340, #0d0f1300 30%, #0d0f1388 55%, #0d0f13dd 90%); }
 .ap .wrbox { position: relative; z-index: 1; max-width: 600px; margin: 0 auto; padding: 0 14px 40px; }
 /* 위 카드 — 굴려도 늘 보인다 (포켓몬의 HP 창) */
-.ap .wtop { position: sticky; top: 0; z-index: 3; margin: 0 -14px; padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
-  background: linear-gradient(#0d0f1388, #0d0f1311 35%, #0d0f1344 70%, #0d0f13f2), var(--wtbg) center 55% / cover no-repeat;
-  border: 22px solid transparent; border-image: url(__ART__ui/frame-panel.png) 118 / 22px stretch; background-clip: padding-box; box-shadow: 0 6px 18px #000a; }
-@media (max-width: 520px) { .ap .wtop { border-width: 16px; border-image-width: 16px; } }
+.ap .wtop { position: sticky; top: 0; z-index: 3; margin: 0 -14px; padding: calc(16px + env(safe-area-inset-top)) 30px 22px;
+  background: linear-gradient(#0d0f1388, #0d0f1311 35%, #0d0f1344 70%, #0d0f13f2), var(--wtbg) center 55% / cover no-repeat; background-origin: border-box;
+  filter: drop-shadow(0 6px 14px #000a); }
+.ap .wtop::after { content: ''; position: absolute; inset: 0; border: 22px solid transparent; border-image: url(__ART__ui/frame-panel.png) 118 / 22px stretch; pointer-events: none; z-index: 2; }
+.ap .wtop.def { background: linear-gradient(#0d0f1388, #0d0f1311 35%, #0d0f1344 70%, #0d0f13f2), var(--wtbg) center 55% / cover no-repeat; }
+@media (max-width: 520px) { .ap .wtop { padding: calc(12px + env(safe-area-inset-top)) 22px 18px; } .ap .wtop::after { border-width: 16px; border-image-width: 16px; } }
 /* 장수 초상 — 쇠 귀퉁이 청동 테 안에 얼굴 (테 그림이 얼굴 위에 얹힌다) */
-.ap .wpf { position: relative; display: grid; place-items: center; width: var(--pf, 108px); aspect-ratio: 1; flex: none; }
+.ap .wpf { position: relative; display: grid; place-items: center; width: var(--pf, 172px); aspect-ratio: 1; flex: none; }
 .ap .wpf > i { position: absolute; inset: 0; background: url(__ART__ui/frame-portrait.png) center / 100% 100% no-repeat; pointer-events: none; z-index: 1; filter: drop-shadow(0 3px 6px #000c); }
 .ap .wpf .wf { width: 66%; height: 66%; border: 0; border-radius: 2px; box-shadow: none; }
 .ap .ws.foe .wpf > i { filter: drop-shadow(0 3px 6px #000c) sepia(.35) hue-rotate(-20deg) saturate(1.3); }
-@media (max-width: 520px) { .ap .wtop .wpf { --pf: 80px; } }
+@media (max-width: 520px) { .ap .wtop .wpf { --pf: min(128px, 33vw); } }
+/* 우리 장수 테는 숨 쉬듯 빛난다 */
+.ap .ws.us .wpf > i { animation: wpfglow 2.6s ease-in-out infinite alternate; }
+@keyframes wpfglow { from { filter: drop-shadow(0 3px 6px #000c); } to { filter: drop-shadow(0 3px 6px #000c) drop-shadow(0 0 10px #9fd18b88); } }
 .ap .wpf.big { --pf: clamp(120px, 34vw, 190px); }
 .ap .wosd .wpf .wf { width: 66%; height: 66%; border: 0; border-radius: 2px; box-shadow: none; }
 .ap .wvs img.vs { width: clamp(52px, 13vw, 78px); height: auto; align-self: center; filter: drop-shadow(0 3px 6px #000c); }
@@ -564,8 +580,10 @@ export const WAR_CSS = `
 .ap .ws .wnat { background: #0b0a08c8; border: 1px solid #6a523688; border-radius: 999px; padding: 1px 9px 1px 4px; text-shadow: 0 1px 2px #000; }
 .ap .wtop .ws b, .ap .wtop .ws > span, .ap .wtop .wn, .ap .wrh { text-shadow: 0 1px 3px #000, 0 0 8px #000c; }
 .ap .wtop .wf { box-shadow: 0 4px 14px #000c; }
-@media (max-width: 520px) { .ap .wtop .wf { width: 58px; height: 58px; } .ap .wtop .wrh { font-size: 16px; margin-bottom: 4px; } }
-.ap .wrh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; color: var(--gold); font-size: 19px; margin-bottom: 8px; }
+@media (max-width: 520px) { .ap .wtop .wrh { font-size: 17px; } }
+.ap .wrh { position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 0; color: var(--gold); font-size: 21px; margin: -6px 0 4px; }
+.ap .wrh b { padding: 2px 18px 3px; border-radius: 4px; background: linear-gradient(#2a1c0ee6, #1a1008e6); border: 1px solid #8a6a3a; box-shadow: 0 2px 8px #000c; }
+.ap .wrh .mute { font-size: 12px; margin-top: 2px; }
 .ap .wrh b { font-family: 'Gowun Batang', serif; letter-spacing: 1px; }
 .ap .wvs { display: flex; align-items: flex-start; gap: 8px; }
 .ap .wvs .vs { font-style: normal; font-weight: 800; color: #c8402a; font-size: 20px; align-self: center; }
@@ -577,14 +595,22 @@ export const WAR_CSS = `
 .ap .wf { box-sizing: border-box; width: 84px; height: 84px; border-radius: 14px; object-fit: cover; border: 2px solid #6a5a3a; background: #3a2c1e; }
 .ap .wf.unit { object-fit: contain; padding: 6px; }
 .ap .ws.foe .wf { border-color: #7a3a2a; }
-.ap .wbar { width: 100%; height: 8px; border-radius: 4px; background: #30241a; overflow: hidden; margin-top: 6px; }
-.ap .wbar i { display: block; height: 100%; }
+.ap .wbar { position: relative; width: 100%; height: 12px; border-radius: 6px; background: linear-gradient(#0c0805, #22180f); overflow: hidden; margin-top: 7px;
+  box-shadow: inset 0 1px 3px #000e, 0 0 0 1px #8a6a3a, 0 0 0 2.5px #1a120c; }
+.ap .wbar i { position: relative; display: block; height: 100%; border-radius: 6px; overflow: hidden; }
+.ap .wbar i::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, #ffffff00 0 9px, #ffffff2a 9px 15px); background-size: 34px 100%; animation: wbarflow 1.1s linear infinite; }
+.ap .wbar i::after { content: ''; position: absolute; top: 0; bottom: 0; left: -45%; width: 45%; background: linear-gradient(90deg, #fff0, #ffffffb0, #fff0); animation: wbarshine 3s ease-in-out infinite; }
+.ap .ws.foe .wbar i::after { animation-delay: 1.4s; } .ap .ws.foe .wbar i::before { animation-direction: reverse; }
+@keyframes wbarflow { to { background-position: 34px 0; } }
+@keyframes wbarshine { 0% { left: -45%; } 55%, 100% { left: 110%; } }
+@media (prefers-reduced-motion: reduce) { .ap .wbar i::before, .ap .wbar i::after, .ap .ws.us .wpf > i, .ap .wbg, .ap .wember { animation: none !important; } }
 .ap .wbar i.wgr { animation-duration: 1s; animation-timing-function: ease-out; animation-delay: 2.4s; animation-fill-mode: both; }
 .ap .wn.swap { display: inline-grid; } .ap .wn.swap > * { grid-area: 1 / 1; text-decoration: none; }
 .ap .wn.swap s { animation: wout .3s ease-out 2.4s both; } .ap .wn.swap u { animation: wrin .3s ease-out 2.4s both; }
 @keyframes wout { to { opacity: 0; } }
-.ap .wbar.men i { background: linear-gradient(90deg, #3f8f3a, #8fd07a); } .ap .ws.foe .wbar.men i { background: linear-gradient(90deg, #8a3a2a, #e08a74); }
-.ap .wbar.mor { height: 5px; } .ap .wbar.mor i { background: #d9b36a; }
+.ap .wbar.men i { background: linear-gradient(90deg, #2f7a2a, #6fc05a 60%, #b6f09a); box-shadow: 0 0 10px #6fc05a99; }
+.ap .ws.foe .wbar.men i { background: linear-gradient(90deg, #f0a088, #d0583c 40%, #7a2618); box-shadow: 0 0 10px #d0583c99; }
+.ap .wbar.mor { height: 8px; } .ap .wbar.mor i { background: linear-gradient(90deg, #a87a2a, #f6d27a 70%, #fff2c0); box-shadow: 0 0 8px #f6d27a88; }
 .ap .ws .wn { font-size: 12px; color: var(--ink); }
 .ap .wintro { margin: 12px 0 6px; padding: 8px 10px; border-radius: 10px; background: #1e160fe6; font-size: 14.5px; }
 .ap .wlog { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }

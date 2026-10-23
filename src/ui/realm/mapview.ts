@@ -469,15 +469,15 @@ export function mapHtml(
     const when = m.left !== null ? (m.left <= 1 ? '다음 계절' : `${m.left}계절 뒤`) : ''
     const label = label0 !== '' ? label0 : m.foe === true ? `적 · ${when} 닿음` : m.left !== null ? '' : amb ? '기습' : ''
     // 보인 적의 행군 — 창을 멘 줄 그림 (무엇이 오는지 한눈에)
+    // 보인 적의 행군 — 창을 멘 줄 그림을 길 한가운데 바로 위에 얹고, 글씨는 그 밑에 (형 10-23: "보인 적의 행군 이미지가 제대로 된 위치가 아닌 이상한 곳에")
+    const cs = signW * 1.2
     if (m.foe === true) {
-      // 글씨("적 n계절")의 왼쪽에 붙인다 — 고을 그림 밑에 묻히지 않게
       const [cx, cy] = midOf(pts)
-      const half = (label.length * 26 * lw * 0.95) / 2
-      const cs = signW * 1.2
-      svg += `<image class="rsign" href="${art}icon/route-column.png" x="${(cx - half - cs).toFixed(1)}" y="${(cy - 12 - cs * 0.8).toFixed(1)}" width="${cs.toFixed(1)}" height="${cs.toFixed(1)}"><title>${ROUTE_SIGN_NAME.column}</title></image>`
+      svg += `<image class="rsign" href="${art}icon/route-column.png" x="${(cx - cs / 2).toFixed(1)}" y="${(cy - cs * 0.85).toFixed(1)}" width="${cs.toFixed(1)}" height="${cs.toFixed(1)}"><title>${ROUTE_SIGN_NAME.column}</title></image>`
     }
     if (label !== '') {
-      const [lx, ly] = midOf(pts)
+      const [lx, ly0] = midOf(pts)
+      const ly = m.foe === true ? ly0 + cs * 0.45 + 12 : ly0
       svg += `<text x="${lx}" y="${ly - 12}" font-size="${26 * lw}" font-weight="700" fill="${m.ally === true ? '#2c5a28' : onUs ? '#8a1a0a' : m.foe === true || amb ? '#3a2a5a' : '#7a1f10'}" stroke="#f3e6c8" stroke-width="5" paint-order="stroke" text-anchor="middle">${label}</text>`
     }
   }

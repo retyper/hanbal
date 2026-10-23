@@ -34,6 +34,16 @@ export function goalBandHtml(r: Realm, esc: (s: string) => string, folded = fals
   const marks = states.map((ok) => (ok ? '◆' : '◇')).join('')
   let h = `<button class="gbh" data-act="goal-fold" aria-expanded="${folded ? 'false' : 'true'}"><small>${ch.n}장</small><b>${esc(ch.name)}</b><span class="gmk">${folded ? marks : ''}</span><i class="gfold">${folded ? '▸' : '▾'}</i></button>`
   if (folded) return h
+  return h + goalRowsHtml(r, esc)
+}
+
+/** 장의 목표 줄들 — 좌상단 띠와 나라 판의 「이 장의 승리 조건」이 같이 쓴다 */
+export function goalRowsHtml(r: Realm, esc: (s: string) => string): string {
+  const ch = chapterOfRegion(r.region ?? 'byeonhan-mini')
+  const sc = r.scenario ?? ch?.scenario
+  if (sc === undefined) return ''
+  const done = r.outcome?.kind === 'win'
+  let h = ''
   for (const g of sc.win) {
     const st = goalState({ ...r, scenario: sc }, g)
     const ok = st.done || done
@@ -56,11 +66,11 @@ export const GOAL_CSS = `
 .ap .goalb .gbh .gmk { color: #e8c070; font-size: 11px; letter-spacing: 1px; } .ap .goalb .gbh .gfold { margin-left: auto; font-style: normal; color: #c9b88e; font-size: 12px; }
 .ap .goalb.folded .gbh { margin: 0; }
 .ap .goalb .gbh small { font-size: 11px; color: #c9b88e; letter-spacing: .08em; } .ap .goalb .gbh b { font-family: var(--serif); font-size: 14px; color: #f3d48a; }
-.ap .goalb .gbr { display: flex; gap: 6px; font-size: 12.5px; color: #e9e2d4; line-height: 1.35; margin: 2px 0; }
-.ap .goalb .gbr .gck { flex: none; width: 14px; text-align: center; color: #c9a45a; }
-.ap .goalb .gbr.ok { color: #b9d9a6; } .ap .goalb .gbr.ok .gck { color: #8fd07a; }
-.ap .goalb .gbr.gleft { color: #c8bea8; } .ap .goalb .gbr.gleft.warn { color: #f0a080; }
-.ap .goalb .gbar { display: block; height: 4px; margin-top: 3px; border-radius: 2px; background: #0007; overflow: hidden; }
-.ap .goalb .gbar > i { display: block; height: 100%; background: linear-gradient(90deg, #8a6a3a, #e8c070); }
+.ap :is(.goalb, .chapg) .gbr { display: flex; gap: 6px; font-size: 12.5px; color: #e9e2d4; line-height: 1.35; margin: 2px 0; }
+.ap :is(.goalb, .chapg) .gbr .gck { flex: none; width: 14px; text-align: center; color: #c9a45a; }
+.ap :is(.goalb, .chapg) .gbr.ok { color: #b9d9a6; } .ap :is(.goalb, .chapg) .gbr.ok .gck { color: #8fd07a; }
+.ap :is(.goalb, .chapg) .gbr.gleft { color: #c8bea8; } .ap :is(.goalb, .chapg) .gbr.gleft.warn { color: #f0a080; }
+.ap :is(.goalb, .chapg) .gbar { display: block; height: 4px; margin-top: 3px; border-radius: 2px; background: #0007; overflow: hidden; }
+.ap :is(.goalb, .chapg) .gbar > i { display: block; height: 100%; background: linear-gradient(90deg, #8a6a3a, #e8c070); }
 .ap.choosing .goalb { display: none; }
 `

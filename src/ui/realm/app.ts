@@ -44,7 +44,7 @@ import { dexCounts } from '../../realm/dex.ts'
 import { LEVEL_LINE, TIER_MAX, levelName } from '../../realm/tier.ts'
 import { GROW_CSS, HERO_CSS, TITLE_MEAN, bondChip, growthHtml, heroRadar, nameHtml, roleLine, splitTitle, traitChips, traitLines } from './heroview.ts'
 import { APP_CSS, CLOUD_CSS, SEASONP_CSS, UI_CSS } from './appstyle.ts'
-import { GOAL_CSS, goalBandHtml } from './goalband.ts'
+import { GOAL_CSS, goalBandHtml, goalRowsHtml } from './goalband.ts'
 import { installTips, TIP_CSS } from './tips.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
 import { APPROACH_DOES, APPROACH_NAME, HARD_LINE, WAR_CSS, openWar } from './battlefield.ts'
@@ -2075,9 +2075,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const need = winNeed(r.region ?? 'byeonhan-mini')
     const held = Object.values(r.factions).filter((x) => r.nodes[x.capital]?.owner === me()).length
     h += cardHtml(realm!) // 미리 적용한 판(r)에선 카드가 이미 답해져 사라졌다 — 실제 판으로
-    h += `<div class="goal">목표 · 도읍 ${need}곳을 차지한다 (우리 도읍 포함) <b>${held} / ${need}</b>${(r.tier ?? 1) !== 1 ? ` <span class="tierc">${levelName(r.tier ?? 1)}</span>` : ''}</div>`
+    if (r.scenario === undefined) h += `<div class="goal">목표 · 도읍 ${need}곳을 차지한다 (우리 도읍 포함) <b>${held} / ${need}</b>${(r.tier ?? 1) !== 1 ? ` <span class="tierc">${levelName(r.tier ?? 1)}</span>` : ''}</div>`
     h += exileHtml(r)
-    h += pathsHtml(r, held, need)
+    // 캠페인의 장은 그 장의 목표가 승리 조건 — 모두 이루면 이기고 다음 장이 열린다 (넷 가운데 하나인 일반 판의 길은 안 쓴다) (형 10-23: "좌상단 체크 깨는 거는 그걸 깨야 다음 게임이 열려서 그런 거지?")
+    if (r.scenario !== undefined) h += `<div class="paths chapg"><h4>이 장의 승리 조건 <small>모두 이루면 이긴다 · 이기면 다음 장이 열린다</small></h4>${goalRowsHtml(r, esc)}</div>`
+    else h += pathsHtml(r, held, need)
     h += `<div class="grid4"><div>${icon('settle-farm-village')}<b>${mine.length}</b><span>고을</span></div>`
     h += `<div>${icon('good-hemp')}<b>${Math.floor(mine.reduce((s, n) => s + n.hh, 0))}</b><span>집</span></div>`
     h += `<div>${icon('good-rice')}<b>${Math.floor(st.grain)}</b><span>곡식</span></div>`
