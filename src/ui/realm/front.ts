@@ -94,8 +94,8 @@ export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, 
     h += `${savedAt !== null ? `<small>최근 저장 · ${k.esc(agoText(savedAt))}</small>` : ''}</span></button>`
   }
   // 처음 켠 사람은 배우는 판으로 (형: "맨 위 첫번째 할 게임은 1:1수준으로 여러 기능 익혀가며 쉽게")
-  if (firstTime) h += `<button class="btn pri big" data-act="fr-tutorial">처음이면 — 배우는 판부터</button><button class="btn big" data-act="fr-new">새 판</button>${more}</div>`
-  else h += `<button class="btn pri big" data-act="fr-new">새 판</button>${more}</div>`
+  if (firstTime) h += `<button class="btn pri big" data-act="fr-tutorial">처음이면 — 배우는 판부터</button><button class="btn big" data-act="fr-new">새 게임</button>${more}</div>`
+  else h += `<button class="btn pri big" data-act="fr-new">새 게임</button>${more}</div>`
   return h + `${links}</div></div>`
 }
 
@@ -139,7 +139,7 @@ export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<
     h += `<button class="bcard${open ? '' : ' locked'}" data-act="${open ? 'fr-board' : 'fr-locked'}" data-v="${b.id}" data-peek><span class="bth" style="background-image:url('${k.art}${b.art}')">`
     h += `${b.badge !== undefined && open ? `<i class="bbadge">${k.esc(b.badge)}</i>` : ''}${open ? '' : '<i class="lock">🔒</i>'}<span class="btitle"><small>${k.esc(b.era)}</small><b>${k.esc(b.name)}</b>${open ? '' : `<em>${k.esc(lockWhy(b.id, names))}</em>`}</span></span>${peek}</button>`
   }
-  h += `</div>${hasGame ? '<p class="fine">새 판을 시작하면 지금 판은 끝난 판으로 기록된다.</p>' : ''}</div>`
+  h += `</div>${hasGame ? '<p class="fine">새 게임을 시작하면 지금 판은 끝난 판으로 기록된다.</p>' : ''}</div>`
   return h
 }
 
@@ -185,6 +185,7 @@ export function detailHtml(k: FrontKit, region: RegionId, id: string, carry = ''
 
 const ERA: Readonly<Record<RegionId, string>> = {
   tutorial: '한강 아래. 졸본에서 내려온 형제 가운데 형 비류는 바닷가 미추홀에, 아우 온조는 하남 위례성에 자리 잡았다 — 형제의 두 나라에서 군장의 일을 하나씩 배운다.',
+  jumong: '혼강 골짜기. 동부여를 빠져나온 주몽이 엄리대수를 건너 졸본에 나라를 세웠다 — 이웃 비류국의 송양은 제가 먼저 왕이었다고 한다.',
   'byeonhan-mini': '변한의 남쪽 바닷가. 쇠를 캐고 배를 띄우는 여섯 나라가 서로를 엿본다.',
   yeongnam: '낙동강 물길을 따라 스물한 나라. 훗날 신라가 될 사로도, 가야가 될 가락과 대가야도 아직은 이웃 읍락과 키를 잰다.',
   south: '한강에서 영산강, 동해 바닷가까지. 마한·진한·변한의 서른여섯 나라가 저마다 깃발을 올렸다.',
@@ -211,7 +212,9 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
   let body = ''
   if (step === 0) {
     // 배우는 판은 백제가 서던 해 — 『삼국사기』 온조왕 원년 (기원전 18)
-    const [when, age] = region === 'tutorial' ? ['기원전 18년.', '옛 조선이 무너진 지 아흔 해, 주몽이 졸본에 고구려를 세운 무렵.'] : ['기원 2세기.', '옛 조선이 무너진 지 삼백 년, 왕이 하나가 아니던 때.']
+    const [when, age] = region === 'tutorial' ? ['기원전 18년.', '옛 조선이 무너진 지 아흔 해, 주몽이 졸본에 고구려를 세운 무렵.']
+      : region === 'jumong' ? ['기원전 37년.', '옛 조선이 무너진 지 일흔 해, 동부여의 왕자들이 활 잘 쏘는 사내를 시기하던 때.']
+        : ['기원 2세기.', '옛 조선이 무너진 지 삼백 년, 왕이 하나가 아니던 때.']
     body = `<div class="pl pera"><p class="l1">${when}</p><p class="l2">${age}</p>`
       + `<p class="l3">${k.esc(ERA[region])}</p>`
       + `<p class="l4">${r.known !== undefined ? '그러나 너는 아직 이웃밖에 모른다. 지도는 빈 한지다.' : '저마다 제 도읍을 지키며, 남의 도읍을 넘본다.'}</p></div>`
@@ -243,6 +246,7 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
 
 const HEAD: Readonly<Record<RegionId, string>> = {
   tutorial: '미추홀 도읍을 쥐었다 — 군장의 일을 다 배웠다',
+  jumong: '송양이 따르고 행인·북옥저를 거느렸다 — 고구려가 섰다',
   'byeonhan-mini': '변한의 바닷가를 차지했다',
   yeongnam: '낙동강의 나라들을 거느렸다',
   south: '삼한의 남쪽에 이름을 떨쳤다',
@@ -252,6 +256,7 @@ const HEAD: Readonly<Record<RegionId, string>> = {
 /** 이긴 뒤 계속 둬서 도읍을 모두 쥐었을 때 */
 const HEAD_ALL: Readonly<Record<RegionId, string>> = {
   tutorial: '두 나라가 한 나라가 됐다',
+  jumong: '졸본에서 두만강까지 하나가 됐다',
   'byeonhan-mini': '변한의 바닷가가 한 나라가 됐다',
   yeongnam: '낙동강의 나라들이 하나가 됐다',
   south: '삼한의 남쪽이 하나가 됐다',
@@ -365,7 +370,7 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): 
   if (pickd.length > 0) h += `<div class="chron"><h4>연대기</h4>${pickd.map((e) => `<p class="${e.big ? 'big' : ''}"><i>${k.esc(seasonLabel(e.s))}</i>${k.esc(e.t)}</p>`).join('')}</div>`
   h += `${keep}<div class="btns">`
   if (win && !all) h += `<button class="btn pri" data-act="fr-endless">계속하기 (무한 모드)<small>남은 나라까지 이어서 한다</small></button>`
-  h += `<button class="btn${win && !all ? '' : ' pri'}" data-act="fr-again">${k.esc(josa(name(me), "으로", "로"))} 다시</button><button class="btn" data-act="fr-new">새 판</button>`
+  h += `<button class="btn${win && !all ? '' : ' pri'}" data-act="fr-again">${k.esc(josa(name(me), "으로", "로"))} 다시</button><button class="btn" data-act="fr-new">새 게임</button>`
   return h + `<button class="btn ghost" data-act="fr-look">지도 둘러보기</button></div></div></div>`
 }
 

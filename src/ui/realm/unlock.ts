@@ -5,6 +5,7 @@
  */
 import { josa } from '../../realm/data/prose.ts'
 import type { RegionId } from '../../realm/types.ts'
+import { CHAPTERS } from '../../realm/data/campaign.ts'
 
 export const BOARD_ORDER: readonly RegionId[] = ['tutorial', 'byeonhan-mini', 'yeongnam', 'south', 'world']
 const KEY = 'hanbal.realm.unlock'
@@ -21,7 +22,7 @@ interface Rec {
 function load(): Rec {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Partial<Rec> | null
-    const won = Array.isArray(v?.won) ? v.won.filter((x) => BOARD_ORDER.includes(x)) : []
+    const won = Array.isArray(v?.won) ? v.won.filter((x) => BOARD_ORDER.includes(x) || CHAPTERS.some((c) => c.region === x)) : []
     const tiers: Partial<Record<RegionId, number>> = {}
     for (const b of BOARD_ORDER) { const t = v?.tiers?.[b]; if (typeof t === 'number' && t >= 1) tiers[b] = Math.floor(t) }
     // 난세 단계가 생기기 전에 이긴 판은 1단계를 이긴 것으로 친다
@@ -53,6 +54,13 @@ export function unlockedFrom(won: readonly RegionId[], tutorialOver: boolean, pl
     const open = i <= reach || won.includes(prev) || (prev === 'tutorial' && (tutorialOver || reach >= 1 || won.length > 0))
     if (!open) break
     out.add(BOARD_ORDER[i]!)
+  }
+  // 캠페인의 장 — 앞 장을 이기면 다음 장 (형 10-23: "1장 깼는데 2장 안 열림"). 자유 판의 차례와 따로 간다
+  for (let i = 1; i < CHAPTERS.length; i++) {
+    const c = CHAPTERS[i]!
+    const prev = CHAPTERS[i - 1]!.region
+    if (c.region === null || prev === null) continue
+    if (won.includes(prev) || (prev === 'tutorial' && tutorialOver) || playing === c.region) out.add(c.region)
   }
   return out
 }

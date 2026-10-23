@@ -20,7 +20,7 @@ export function tierMul(tier: number): { army: number; stock: number; income: nu
 /** 판을 열 때 — 이웃 나라를 단계만큼 세게. 1단계면 아무것도 안 한다 */
 export function applyTier(r: Realm, tier: number): void {
   const t = Math.max(1, Math.min(TIER_MAX, Math.floor(tier)))
-  if (t <= 1 || r.region === 'tutorial') return
+  if (t <= 1 || r.region === 'tutorial') return // 캠페인의 장도 단계를 받는다 (형 10-23: 쉬움·어려움)
   const m = tierMul(t)
   for (const a of Object.values(r.armies)) if (a.faction !== r.player) scaleMen(a, m.army)
   for (const [f, st] of Object.entries(r.stock)) {

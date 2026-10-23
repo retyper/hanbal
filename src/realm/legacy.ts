@@ -39,7 +39,7 @@ export function snapshot(h: Hero): Hero {
  * 배우는 판·셋 넘는 몫·그 판의 군주는 들이지 않는다.
  */
 export function bringRetainers(r: Realm, list: readonly Hero[]): string[] {
-  if (r.region === 'tutorial') return []
+  if (r.region === 'tutorial' || r.scenario !== undefined) return [] // 캠페인의 장은 사서의 사람들로만
   const me = r.player
   const cap = r.factions[me]?.capital ?? null
   const out: string[] = []

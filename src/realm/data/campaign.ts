@@ -10,6 +10,8 @@ export interface Chapter {
   /** 몇째 장 */
   readonly n: number
   readonly region: RegionId | null
+  /** 우리 나라 — 장은 나라를 고르지 않는다 */
+  readonly nation: string
   readonly name: string
   readonly era: string
   /** 주인공 */
@@ -25,7 +27,7 @@ export interface Chapter {
 
 export const CHAPTERS: readonly Chapter[] = [
   {
-    id: 'brothers', n: 1, region: 'tutorial', name: '형제의 강', era: '기원전 18년 · 한강', hero: '온조',
+    id: 'brothers', n: 1, region: 'tutorial', nation: 'baekje', name: '형제의 강', era: '기원전 18년 · 한강', hero: '온조',
     hook: '졸본을 떠나온 두 형제. 형은 바다로, 아우는 강으로 — 한강의 주인은 하나다.',
     goal: '형 비류의 미추홀 도읍을 쥔다',
     art: 'keyart/tutorial.jpg',
@@ -33,12 +35,12 @@ export const CHAPTERS: readonly Chapter[] = [
     scenario: { id: 'brothers', win: [{ kind: 'hold', nodes: ['tut-michuhol-cap'] }] },
   },
   {
-    id: 'jumong', n: 2, region: null, name: '주몽, 졸본에 서다', era: '기원전 37년 · 졸본', hero: '주몽',
+    id: 'jumong', n: 2, region: 'jumong', nation: 'goguryeo', name: '주몽, 졸본에 서다', era: '기원전 37년 · 졸본', hero: '주몽',
     hook: '동부여를 빠져나온 활 잘 쏘는 사내. 비류수 가에 나라를 세우자 송양왕이 활 솜씨를 겨루자 한다.',
     goal: '비류국 송양이 스스로 따르게 하고, 행인국과 북옥저 도읍을 쥔다',
     art: 'keyart/jumong.jpg',
     source: '『삼국사기』 고구려본기 — 송양이 나라를 들어 항복하니 그 땅을 다물도라 하였다.',
-    scenario: { id: 'jumong', win: [{ kind: 'submit', factions: ['biryu'], how: 'either' }] },
+    scenario: { id: 'jumong', win: [{ kind: 'submit', factions: ['biryuna'], how: 'either' }, { kind: 'hold', nodes: ['jm-haengin-cap', 'jm-okjeo-cap'] }] },
   },
 ]
 

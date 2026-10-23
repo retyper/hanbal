@@ -7,6 +7,7 @@
  * 고른 것은 이 기기에만 (판 저장·도감처럼).
  */
 import { retainable, snapshot } from '../../realm/legacy.ts'
+import { chapterOfRegion } from '../../realm/data/campaign.ts'
 import type { Hero, Realm, RegionId } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { nameHtml } from './heroview.ts'
@@ -74,7 +75,7 @@ export function toggleCarry(id: string): void {
 
 /** 새 판을 열 때 — 켜진 이를 넘기고 기록을 비운다. 배우는 판이면 손대지 않는다 */
 export function takeRetainers(region: RegionId): Hero[] {
-  if (region === 'tutorial') return []
+  if (region === 'tutorial' || chapterOfRegion(region) !== undefined) return [] // 캠페인의 장은 데려가지 않는다 (켜 둔 이는 다음 자유 판으로)
   const had = load()
   if (had === null) return []
   save(null)

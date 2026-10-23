@@ -132,7 +132,7 @@ export function tutStyle(step: TutStep | undefined): string {
 
 export function tutBandHtml(i: number, esc: (s: string) => string): string {
   if (i >= TUT_STEPS.length) {
-    return `<div class="tutb done"><b>다 배웠다</b><span>이제 작은 판(변한 여섯 나라)이 열렸다. 처음 화면의 「새 판」에서 고른다.</span><button class="btn sm on" data-act="tut-end">처음으로</button></div>`
+    return `<div class="tutb done"><b>다 배웠다</b><span>이제 작은 판(변한 여섯 나라)이 열렸다. 처음 화면의 「새 게임」에서 고른다.</span><button class="btn sm on" data-act="tut-end">처음으로</button></div>`
   }
   return `<div class="tutb"><i>${i + 1}/${TUT_STEPS.length}</i><span>${esc(TUT_STEPS[i]!.text)}</span></div>`
 }

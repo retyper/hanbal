@@ -96,7 +96,7 @@ function clanHtml(k: DexKit): string {
 export type DexBoard = RegionId | 'wander' | 'all' | 'clan'
 
 const BOARD_NAME: Readonly<Record<RegionId | 'wander', string>> = {
-  tutorial: '배우는 판', 'byeonhan-mini': '작은 판', yeongnam: '큰 판', south: '삼한 남부', world: '삼한과 북녘', wander: '떠돌이',
+  tutorial: '배우는 판', jumong: '주몽 장', 'byeonhan-mini': '작은 판', yeongnam: '큰 판', south: '삼한 남부', world: '삼한과 북녘', wander: '떠돌이',
 }
 const TABS: readonly Exclude<DexBoard, 'clan'>[] = ['all', 'byeonhan-mini', 'yeongnam', 'south', 'world', 'wander']
 export const LV_NAME = ['모른다', '들음', '만남', '사로잡음', '거느림'] as const

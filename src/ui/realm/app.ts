@@ -13,6 +13,8 @@ import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../../realm/data/nations-yeongnam.ts'
 import { SOUTH_NATIONS } from '../../realm/data/nations-south.ts'
 import { WORLD_NATIONS } from '../../realm/data/nations-world.ts'
+import { HAENGIN_NATION } from '../../realm/data/regions/jumong.ts'
+import { chapterOfRegion } from '../../realm/data/campaign.ts'
 import { knownOf, knows } from '../../realm/discovery.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
 import { CARDS } from '../../realm/data/cards.ts'
@@ -215,7 +217,8 @@ const rulerId = (nation: string): string => `${nation}-ruler`
 
 /** 판마다 나라 고르기 글 — 변한 6국 축소판 · 영남 판 */
 const nationsOf = (region: RegionId): readonly NationInfo[] => (region === 'yeongnam' ? YEONGNAM_NATIONS : region === 'south' ? SOUTH_NATIONS : region === 'world' ? WORLD_NATIONS
-  : region === 'tutorial' ? SOUTH_NATIONS.filter((n) => n.id === 'baekje' || n.id === 'michuhol') : NATIONS)
+  : region === 'tutorial' ? SOUTH_NATIONS.filter((n) => n.id === 'baekje' || n.id === 'michuhol')
+    : region === 'jumong' ? [...WORLD_NATIONS.filter((n) => ['goguryeo', 'biryuna', 'buyeo', 'bukokjeo'].includes(n.id)), HAENGIN_NATION] : NATIONS)
 
 function nationFace(id: string, cls = 'nface'): string {
   const hid = rulerId(id)
@@ -1941,7 +1944,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<div class="menu3"><button class="btn" data-act="help">도움말</button><button class="btn" data-act="log-open">지난 기록</button><button class="btn" data-act="dex-open">도감</button>`
     h += `<button class="btn ghost" data-act="mute">${muted() ? '소리 켜기' : '소리 끄기'}</button><button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>`
     h += `<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}" data-tip="활쏘기 모드 (신궁)">활터</a>${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
-    h += `<button class="btn ghost" data-act="newgame" data-tip="판 고르기로 — 새 판을 시작하기 전까지 지금 판은 그대로다">새 판</button><button class="btn ghost" data-act="lobby" data-tip="첫 화면으로 — 이 판은 저장돼 있어 「이어 하기」로 돌아온다">게임 종료</button></div>`
+    h += `<button class="btn ghost" data-act="newgame" data-tip="판 고르기로 — 새 게임을 시작하기 전까지 지금 판은 그대로다">새 게임</button><button class="btn ghost" data-act="lobby" data-tip="첫 화면으로 — 이 판은 저장돼 있어 「이어 하기」로 돌아온다">게임 종료</button></div>`
     return h + acctHtml()
   }
 
@@ -2868,7 +2871,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'fr-back': front = { kind: 'title' }; paint(); return
       case 'lobby': saveDraft(); front = { kind: 'title' }; sheet = null; armySel = []; paint(); return
       case 'fr-board':
-        if (d['v'] === 'tutorial') { host.onNewGame('baekje', 'tutorial'); return } // 배우는 판은 나라를 고르지 않는다 — 언제나 백제(온조)
+        // 캠페인의 장은 나라를 고르지 않는다 — 배우는 판은 백제(온조), 2장은 고구려(주몽)
+        { const ch = chapterOfRegion(d['v'] as RegionId); if (ch !== undefined) { host.onNewGame(ch.nation, d['v'] as RegionId); return } }
         front = { kind: 'nations', region: d['v'] as RegionId }; $('.mapwrap').scrollTop = 0; paint(); return
       case 'fr-tutorial': host.onNewGame('baekje', 'tutorial'); return
       case 'fr-locked': return

@@ -17,6 +17,8 @@ export const REGION_ART: Readonly<Record<RegionId, { dir: string; ext: string; w
   'byeonhan-mini': { dir: 'map', ext: 'jpg', w: 1264, h: 848, nodeScale: 1, labelScale: 1, zmax: 2.2, terrR: 150, terrBand: 90 },
   // 배우는 판 — 한강 아래 (삼한 남부 판의 조각을 좁게 · tutorial-geo.ts). 경도 1.4° × 위도 0.95° 를 조각 눈금의 두 배로
   tutorial: { dir: 'map-world', ext: 'webp', w: 989, h: 727, nodeScale: 0.5, labelScale: 0.85, zmax: 2.5, terrR: 100, terrBand: 60 },
+  // 캠페인 2장 — 혼강에서 두만강까지 (삼한과 북녘 판의 조각을 좁게 · jumong-geo.ts). 경도 5.3° × 위도 2.25° 를 조각 눈금 그대로
+  jumong: { dir: 'map-world', ext: 'webp', w: 1871, h: 861, nodeScale: 0.32, labelScale: 0.75, zmax: 5, terrR: 60, terrBand: 34 },
   yeongnam: { dir: 'map-yeongnam', ext: 'webp', w: 1024, h: 765, nodeScale: 0.34, labelScale: 0.72, zmax: 4, terrR: 50, terrBand: 28 },
   // 삼한 남부 — 조각 넷을 이은 그림(ui/realm/worldmap.ts 가 합친다). 크기는 조각 눈금(1024px = 경도 2.9° · 765px = 위도 2.0°)으로 경도 5.5° × 위도 3.75°
   south: { dir: 'map-world', ext: 'webp', w: 1942, h: 1434, nodeScale: 0.2, labelScale: 0.6, zmax: 6, terrR: 52, terrBand: 28 },
@@ -66,6 +68,10 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'samul-1': 'w-73-samul-sagong', 'bihwa-1': 'g-57-bihwa-neup', 'eumjeup-1': 'w-72-eumjeup-beol',
   // 삼한 남부 판의 새 군주·장군 (data/regions/south.ts) — 있는 명치판을 나눠 쓴다. 새 얼굴은 그림 줄(인물 — 챗지피티)
   // 배우는 판 — 온조 형제와 신하 (tutorial.ts)
+  // 캠페인 2장 — 주몽과 세 벗 · 송양 · 대소 (jumong.ts)
+  'jm-jumong': 'g-02-goguryeo-archer-prince', 'jm-oi': 'g-16-goguryeo-gaema-commander', 'jm-mari': 'g-49-goguryeo-sona', 'jm-hyeopbo': 'g-06-strategist',
+  'jm-songyang': 'g-51-biryuna-mulgyeol', 'jm-songbi': 'w-52-biryuna-songbi', 'jm-daeso': 'g-10-buyeo-horse-lord', 'jm-haedal': 'w-67-buyeo-haedal',
+  'jm-haengin-ruler': 'g-33-jeoga-metdol', 'jm-haengin-1': 'w-71-yeonna-neoul', 'jm-okjeo-ruler': 'g-34-bukokjeo-duman', 'jm-okjeo-1': 'w-70-bukokjeo-mulbeom',
   'tut-onjo': 'g-02-goguryeo-archer-prince', 'tut-biryu': 'g-28-goguryeo-damul', 'tut-ogan': 'g-13-baekje-general', 'tut-maryeo': 'g-09-farmer-conscript', 'tut-haebi': 'w-30-guya-soebi',
   'baekje-ruler': 'g-21-baekje-onnuri', 'mokji-ruler': 'w-27-mokji-jinha', 'michuhol-ruler': 'w-28-michuhol-bira',
   'ungcheon-ruler': 'g-22-ungcheon-gomnae', 'sangdang-ruler': 'g-23-sangdang-soedal', 'geonma-ruler': 'w-46-geonma-maru',
@@ -181,6 +187,7 @@ export const FACTION_ART: Readonly<Record<string, { emblem: string; color: strin
   bukokjeo: { emblem: 'emblem-bukokjeo', color: '#2a6a8a' },
   bullae: { emblem: 'emblem-bullae', color: '#d08a3a' },
   tamna: { emblem: 'emblem-tamna', color: '#5ab0a0' },
+  haengin: { emblem: 'emblem-moon', color: '#6a8a5a' }, // 캠페인 2장 — 태백산 기슭의 행인국 (초승달)
 }
 
 /** 물건의 그림 — 창고 · 사신 · 지도의 특산 표가 함께 쓴다. 나무는 장작 짐 (형: '주고받을 거래에 이상한 소나무국기있음') */
