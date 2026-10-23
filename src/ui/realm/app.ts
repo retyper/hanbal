@@ -34,7 +34,7 @@ import { PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bow
 import { allianceWhy, leaderOf, tookRecently, truceWhy, winningAgainst } from '../../realm/stance.ts'
 import { DESTS, DEST_IDS, EXP_SEASONS, destReachable, expAmount, expBlock, expOdds, onExpedition } from '../../realm/expedition.ts'
 import { foundable, joinable, partiesOf, partyCost, partyMoves, partySize } from '../../realm/parties.ts'
-import { canWed, heroSeen, honeyLeft, together, inheritOf, isRuler, persuadeDropOf, recruitChance, resistOf, wanderersFor } from '../../realm/heroes.ts'
+import { canCohabit, canWed, heroSeen, honeyLeft, together, inheritOf, isRuler, persuadeDropOf, recruitChance, resistOf, wanderersFor } from '../../realm/heroes.ts'
 import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
@@ -612,6 +612,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (o.kind === 'assign' && o.hero === id && o.node !== null) return `이번 계절 ${josa(r.nodes[o.node]?.name ?? '', '을', '를')} 맡는다`
       if (o.kind === 'lead' && o.hero === id) return '이번 계절 군대를 이끈다'
       if (o.kind === 'persuade' && o.by === id) return '이번 계절 포로를 달랜다'
+      if (o.kind === 'cohabit' && o.hero === id) return '이번 계절 짝에게 가서 함께 지낸다'
     }
     return null
   }
@@ -2084,6 +2085,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (honey > 0 && sp !== undefined) {
         h += `<div class="honey" style="--hbg:url('${ART}event/event-marriage.jpg')"><div class="hfaces">${bust(x, 'hf')}${bust(sp, 'hf')}</div>`
           + `<b>신방에 들었다</b><span>${esc(josa(sp.name, '과', '와'))} 함께 지낸다 · ${honey}계절</span>`
+          + (!near && ours && heroOrders.some((o) => o.kind === 'cohabit' && (o.hero === id || o.hero === x.spouse))
+            ? `<button class="btn home sm on" data-act="uncohabit" data-id="${id}">이번 계절 함께 지내러 간다 · 누르면 거둔다</button>`
+            : !near && ours && canCohabit(realm!, id) && heroBusy(r, id) === null ? `<button class="btn pri home sm" data-act="cohabit" data-id="${id}">${esc(josa(r.nodes[sp.at ?? '']?.name ?? '', '으로', '로'))} 가서 함께 지낸다</button>` : '')
           + `<small>${near ? '함께 지낸다' : '떨어져 있다 — 이번 계절이 지나면 아이가 한 계절 늦어진다'}${kid !== undefined ? ` · 아이는 ${Math.max(1, kid.due - r.season + 1)}계절쯤 뒤${(kid.late ?? 0) > 0 ? ` (떨어져 지내 ${kid.late}계절 늦어졌다)` : ''}` : ''}</small></div>`
       } else h += `<p class="mute">짝 · ${sp !== undefined ? nameHtml(sp.name) : '?'}${kid !== undefined ? ` · 아이가 ${Math.max(1, kid.due - r.season + 1)}계절쯤 뒤 나선다` : ''}</p>`
     }
@@ -3537,6 +3541,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'guide-close': root.querySelector('.guidebox')?.remove(); return
       case 'hero-back': openSheet({ kind: 'heroes' }); return
+      case 'cohabit': heroOrders = [...heroOrders.filter((o) => !(o.kind === 'cohabit' && o.hero === d['id'])), { kind: 'cohabit', hero: d['id']! }]; break
+      case 'uncohabit': { const sp = realm!.heroes[d['id']!]?.spouse; heroOrders = heroOrders.filter((o) => !(o.kind === 'cohabit' && (o.hero === d['id'] || o.hero === sp))); break }
       case 'pl-open': {
         const o = settles.find((x): x is Extract<Order, { kind: 'place' }> => x.kind === 'place')
         placeDraft = o !== undefined ? { ...o.delta } : {}

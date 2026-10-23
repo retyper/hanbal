@@ -375,7 +375,7 @@ function hire(r: Realm, o: Extract<Order, { kind: 'hire' }>, lines: ReportLine[]
 export function heroJobOf(o: Order): string | null {
   switch (o.kind) {
     case 'assign': return o.node !== null ? o.hero : null
-    case 'lead': case 'expedition': return o.hero
+    case 'lead': case 'expedition': case 'cohabit': return o.hero
     case 'persuade': return o.by
     case 'envoy': return o.hero ?? null
     case 'plot': return o.agent ?? null
@@ -407,6 +407,7 @@ export function applyHeroOrders(r: Realm, orders: readonly Order[], lines: Repor
     else if (o.kind === 'lead') leadArmy(r, o)
     else if (o.kind === 'persuade') startPersuade(r, o)
     else if (o.kind === 'wed') wed(r, o, lines)
+    else if (o.kind === 'cohabit') cohabit(r, o, lines)
   }
   placeOrphans(r)
 }
@@ -725,6 +726,29 @@ export function together(r: Realm, a: string, b: string): boolean {
   if (x === undefined || y === undefined || x.status !== 'free' || y.status !== 'free' || x.at === null || y.at === null) return false
   const away = (id: string): boolean => Object.values(r.armies).some((m) => m.hero === id && m.march !== null)
   return x.at === y.at && !away(a) && !away(b)
+}
+
+/** 짝에게 갈 수 있나 — 짝이 있고 둘 다 판 위에 있고, 아직 떨어져 있으며, 우리 땅으로 이어져 있다. 짝이 길 위의 군대를 이끌면 못 간다 */
+export function canCohabit(r: Realm, hero: string): boolean {
+  const h = r.heroes[hero]
+  if (h === undefined || h.status !== 'free' || h.spouse === undefined || h.at === null) return false
+  const sp = r.heroes[h.spouse]
+  if (sp === undefined || sp.status !== 'free' || sp.at === null || sp.at === h.at) return false
+  if (Object.values(r.armies).some((m) => (m.hero === h.id || m.hero === sp.id) && m.march !== null)) return false
+  if (h.awayUntil !== undefined && h.awayUntil >= r.season) return false
+  return migratePath(r, h.faction, h.at, sp.at) !== null
+}
+
+/** 짝에게 간다 — 이끌던 군대·맡은 고을은 내려놓고 짝이 있는 고을로 (그 계절부터 함께 지낸다) */
+function cohabit(r: Realm, o: Extract<Order, { kind: 'cohabit' }>, lines: ReportLine[]): void {
+  if (!canCohabit(r, o.hero)) return
+  const h = r.heroes[o.hero]!
+  const sp = r.heroes[h.spouse!]!
+  const a = armyOfHero(r, h.id)
+  if (a !== null) a.hero = null
+  h.at = sp.at
+  if (h.post !== sp.at) h.post = null
+  lines.push({ kind: 'cohabit', faction: h.faction, hero: h.id, with: sp.id, to: sp.at! })
 }
 
 /** 혼인할 수 있나 — 같은 나라 · 자유로운 몸 · 남녀 · 둘 다 짝 없음 */

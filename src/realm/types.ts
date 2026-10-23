@@ -711,6 +711,8 @@ export type Order =
   | { readonly kind: 'assign'; readonly hero: string; readonly node: string | null }
   /** 혼자 머무는 장수가 같은 고을의 장수 없는 군대를 이끈다 */
   | { readonly kind: 'lead'; readonly hero: string; readonly army: string }
+  /** 짝에게 가서 함께 지낸다 — 신방에 들었는데 떨어져 있을 때 (형 10-23: "버튼 하나 눌러서 같이 지내게") */
+  | { readonly kind: 'cohabit'; readonly hero: string }
   /** 포로 회유를 시작한다 — 다 될 때까지 계절마다 곡식이 든다. by = 설득을 맡은 우리 장수 (매력·매혹이 빠르기를 정한다) */
   | { readonly kind: 'persuade'; readonly hero: string; readonly by: string | null }
   /** 떠돌이 인재를 들인다 — 그 인재가 머문 고을의 주인만, 곡식 price */
@@ -823,6 +825,7 @@ export type ReportLine =
   /** 집이 옮겨 갔다 — auto 면 붐비는 고을에서 저절로, 아니면 억지 이주 */
   | { readonly kind: 'migrate'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number; readonly auto?: boolean; readonly walk?: boolean }
   | { readonly kind: 'place'; readonly faction: string; readonly n: number; readonly to: readonly string[] }
+  | { readonly kind: 'cohabit'; readonly faction: string; readonly hero: string; readonly with: string; readonly to: string }
   | { readonly kind: 'hunger'; readonly faction: string }
   | { readonly kind: 'envoy'; readonly from: string; readonly to: string; readonly ask: EnvoyAsk; readonly accepted: boolean; readonly why?: Why; readonly about?: string; readonly hero?: string; readonly node?: string }
   /** 화친·동맹을 맺어 상대 땅으로 가던 군대가 발길을 돌렸다 — `node` 는 가려던 고을 */
