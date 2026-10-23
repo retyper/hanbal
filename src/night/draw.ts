@@ -18,8 +18,21 @@ import { effectiveStats } from '../sim/bow.ts'
 import type { Pull } from './input.ts'
 import { GUARD_NAME, type Decor, type Figure, type Light } from './layout.ts'
 import {
-  BOW_NAME, chiefCandle, chiefRise, fallOf, flicker, lightAt, lightRadius, moveProgress, newParts, partsOf, tendProgress, walking, type Night, type Parts,
+  BOW_NAME, CHEST, byGuard, chiefCandle, chiefRise, fallOf, flicker, lightAt, lightRadius, moveProgress, newParts, partsOf, tendProgress, walking,
+  type Night, type NightEventKind, type Parts,
 } from './sim.ts'
+
+/**
+ * 보이는 판정 (형 10-23: "어떻게 깨라는지 모르겠음" · GAP §13 — 마크 오브 닌자처럼 소리·눈길을 그린다).
+ * 판은 이미 소리 크기·눈길 거리·빛 안의 시체를 셈한다 — 여기서는 그것을 읽어 그리기만 한다 (규칙 2).
+ */
+/** 소리 고리가 퍼지는 때 (ms) · 들은 보초 머리 위 「?」 */
+const RING_MS = 1300
+/** 맞은 곳마다의 소리 — sim.ts 가 noise() 에 넣는 값과 같다 (머리는 소리가 없다) */
+const NOISE_OF: Partial<Record<NightEventKind, () => number>> = {
+  ground: () => P.night.noiseGround, wall: () => P.night.noiseWall, tile: () => P.night.noiseTile, paper: () => P.night.noisePaper,
+  lamp: () => P.night.noiseLamp, body: () => P.night.noiseGroan, leg: () => P.night.noiseScream, ember: () => P.night.noiseFire,
+}
 
 /** 보이는 땅의 범위 (m) — 지붕 끝부터 판의 끝까지 */
 const VIEW = { x0: -3, x1: 32, top: 6.2 }
@@ -74,6 +87,8 @@ export interface NightView {
   pops: Array<{ text: string; x: number; y: number; born: number; color: string }>
   /** 경보 번쩍임 — 벽시계 ms */
   flashAt: number
+  /** 소리 고리 — 맞은 자리에서 퍼진다. r 은 들리는 거리(m), loud 0..1 */
+  rings: Array<{ x: number; y: number; r: number; loud: number; born: number }>
   /**
    * 활터의 명중 반응 그대로 (render/effects.ts) — 불꽃 · 파열 링 · '헤드샷!' · 히트스톱 · 남는 궤적(빗나간 살은 더 오래).
    * 밤 판은 형체를 맞히면 활터와 같은 'hit' 사건을 낸다 (night/sim.ts). 돌림(night-main)이 pumpEvents·updateFx 를 부른다
@@ -85,7 +100,7 @@ export interface NightView {
 }
 
 export function createView(cam: Camera): NightView {
-  return { cam, dark: null, pops: [], flashAt: -1e9, fx: createFx(), shakeAmp: 0, shakeAge: 0 }
+  return { cam, dark: null, pops: [], flashAt: -1e9, rings: [], fx: createFx(), shakeAmp: 0, shakeAge: 0 }
 }
 
 /** 활터 카메라의 흔들림 배수 (render/camera.ts VIEW.foeShakeMul · headShakeMul · shakeFreq — 거기는 밖으로 안 낸다) */
@@ -833,7 +848,79 @@ export function pumpView(v: NightView, n: Night, from: number, now: number): voi
       case 'tend': v.pops.push({ text: '불이 꺼졌네?', x: e.x, y: e.y, born: now, color: '#e8d6a8' }); break
       default: break
     }
+    heard(v, n, e.t, e.x, e.y, now)
   }
+}
+
+/**
+ * 소리가 났다 — 고리를 띄우고, 들은 보초(가장 가까운 산 보초 · sim.noise 와 같은 셈)의 머리 위에 「?」.
+ * 고리의 크기는 소리의 크기 — 가장 큰 소리(비명)가 들리는 거리 끝까지 간다
+ */
+function heard(v: NightView, n: Night, t: NightEventKind, x: number, y: number, now: number): void {
+  const amount = NOISE_OF[t]?.() ?? 0
+  if (amount <= 0) return
+  const loud = clamp01(amount / Math.max(1e-6, P.night.noiseScream))
+  v.rings.push({ x, y, r: P.night.hearRange * (0.35 + 0.65 * loud), loud, born: now })
+  if (n.practice?.alarm === false) return
+  let best: Figure | null = null
+  for (const f of n.scene.figures) {
+    if (!f.alive || f.role !== 'guard' || Math.abs(f.x - x) > P.night.hearRange) continue
+    if (best === null || Math.abs(f.x - x) < Math.abs(best.x - x)) best = f
+  }
+  if (best !== null) v.pops.push({ text: '?', x: best.x, y: best.y + 2.1 * best.size, born: now, color: loud > 0.6 ? '#ff8a5a' : '#ffe2a0' })
+}
+
+function drawRings(ctx: CanvasRenderingContext2D, cam: Camera, v: NightView, now: number): void {
+  v.rings = v.rings.filter((r) => now - r.born < RING_MS)
+  for (const r of v.rings) {
+    const k = (now - r.born) / RING_MS
+    ctx.strokeStyle = r.loud > 0.6 ? '#ff8a5a' : '#ffe2a0'
+    ctx.globalAlpha = (1 - k) * (0.35 + 0.45 * r.loud)
+    ctx.lineWidth = 1.5 + 2.5 * r.loud * (1 - k)
+    ctx.beginPath()
+    ctx.arc(X(cam, r.x), Y(cam, r.y), Math.max(1, r.r * (0.15 + 0.85 * Math.sqrt(k)) * cam.scale), 0, TAU)
+    ctx.stroke()
+  }
+  ctx.globalAlpha = 1
+}
+
+/**
+ * 보초의 눈길 — 바라보는 쪽 땅 위로 옅은 부채꼴 (시체를 보는 거리 · 경비 단계 배수까지 sim.watch 와 같다).
+ * 시체를 보고 있으면 붉어진다. 불을 붙이는 중인 보초는 불만 본다 — 눈길이 없다
+ */
+function drawSight(ctx: CanvasRenderingContext2D, cam: Camera, n: Night): void {
+  if (n.phase !== 'play') return
+  const sc = n.scene
+  const reach = P.night.sightRange * byGuard(n, P.night.sightLoose, P.night.sightTight)
+  for (const f of sc.figures) {
+    if (!f.alive || f.role !== 'guard' || f.task?.step === 'light') continue
+    const eyeX = X(cam, f.x + 0.12 * f.facing)
+    const eyeY = Y(cam, f.y + 1.65 * f.size)
+    const endX = X(cam, f.x + reach * f.facing)
+    const grad = ctx.createLinearGradient(eyeX, 0, endX, 0)
+    const col = f.watching > 0 ? '255,80,60' : '255,226,160'
+    grad.addColorStop(0, `rgba(${col},${f.watching > 0 ? 0.32 : 0.16})`)
+    grad.addColorStop(1, `rgba(${col},0)`)
+    ctx.fillStyle = grad
+    ctx.beginPath()
+    ctx.moveTo(eyeX, eyeY)
+    ctx.lineTo(endX, Y(cam, sc.ground + 2.2))
+    ctx.lineTo(endX, Y(cam, sc.ground))
+    ctx.closePath()
+    ctx.fill()
+  }
+}
+
+/** 빛 안에 쓰러진 보초 — 다른 보초 눈에 띈다. 붉은 테가 숨 쉬듯 (형: 불빛 안 시체는 들킨다를 그림으로) */
+function drawExposed(ctx: CanvasRenderingContext2D, cam: Camera, n: Night, now: number): void {
+  const sc = n.scene
+  for (const c of sc.figures) {
+    if (c.alive || c.role !== 'guard') continue
+    if (lightAt(sc, c.x, c.y + CHEST, n.tick) < P.night.corpseLight) continue
+    const pulse = 0.55 + 0.35 * Math.sin(now / 160)
+    figurePath(ctx, cam, n, c, 1, 'rim', pulse, '#ff3a2a')
+  }
+  ctx.globalAlpha = 1
 }
 
 /**
@@ -959,8 +1046,11 @@ export function drawNight(ctx: CanvasRenderingContext2D, v: NightView, n: Night,
       ctx.restore()
     } else figurePath(ctx, cam, n, f, 1, 'rim', 0.13, COL.rimCool)
   }
+  drawSight(ctx, cam, n)
+  drawExposed(ctx, cam, n, now)
   for (const l of sc.lights) drawFlame(ctx, cam, l, n.tick)
   drawTend(ctx, cam, n)
+  drawRings(ctx, cam, v, now)
   drawDoor(ctx, cam, n)
   void rise
 

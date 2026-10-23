@@ -197,7 +197,7 @@ export function partsOf(f: Figure, out: Parts, rise = f.pose === 'sit' ? 0 : 1):
 }
 
 /** 서 있는 몸의 무게중심 높이 — 시체가 보이는가를 이 점의 밝기로 잰다 */
-const CHEST = 0.6
+export const CHEST = 0.6
 
 // ───────────────────────── 빛 ─────────────────────────
 
@@ -400,7 +400,7 @@ export function hitLight(n: Night, l: Light, x: number, y: number): void {
 }
 
 /** 경비 단계의 몫 — 느슨 · 보통(1) · 삼엄 */
-const byGuard = (n: Night, loose: number, tight: number): number => (n.guard === 0 ? loose : n.guard === 2 ? tight : 1)
+export const byGuard = (n: Night, loose: number, tight: number): number => (n.guard === 0 ? loose : n.guard === 2 ? tight : 1)
 
 /** 이 불을 다시 붙이는 데 걸리는 시간 (s) */
 export function relightSecs(n: Night, l: Light): number {

@@ -194,3 +194,25 @@ describe('밤 — 판을 깰 길', () => {
     assert.ok(got !== undefined, '그림자에 닿는 각이 하나도 없다 (기둥이 막는다)')
   })
 })
+
+/**
+ * 보이는 판정 (형 10-23 · GAP §13) — 소리가 나면 고리가 뜨고, 들은 보초(가장 가까운 산 보초) 머리 위에 「?」.
+ * 머리를 맞히면 소리가 없다 — 고리도 「?」도 없다
+ */
+describe('밤 — 소리 고리', () => {
+  it('담에 맞은 소리는 고리와 「?」 · 머리는 조용하다', async () => {
+    const { createView, pumpView } = await import('../src/night/draw.ts')
+    const n = createNight({ seed: 3, practice: { stage: 1, alarm: true, infinite: true } })
+    const v = createView({ x: 0, y: 0, scale: 30, w: 800, h: 400, dpr: 1 } as never)
+    const g = n.scene.figures.find((f) => f.role === 'guard' && f.alive)!
+    n.events.push({ t: 'wall', x: g.x + 1, y: n.scene.ground + 1 })
+    pumpView(v, n, 0, 1000)
+    assert.equal(v.rings.length, 1)
+    assert.ok(v.pops.some((p) => p.text === '?'))
+    const v2 = createView({ x: 0, y: 0, scale: 30, w: 800, h: 400, dpr: 1 } as never)
+    n.events.push({ t: 'head', x: g.x, y: g.y + 1.8 })
+    pumpView(v2, n, n.events.length - 1, 1000)
+    assert.equal(v2.rings.length, 0)
+    assert.ok(!v2.pops.some((p) => p.text === '?'))
+  })
+})
