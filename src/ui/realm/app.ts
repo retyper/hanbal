@@ -622,10 +622,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       for (const k of ['hero', 'agent', 'by', 'a', 'b'] as const) { const v = (o as Record<string, unknown>)[k]; if (typeof v === 'string') busy.add(v) }
     }
     for (const e of Object.values(envoys)) if (e.hero !== undefined) busy.add(e.hero)
-    return sorted(Object.values(p.heroes)).filter((h) => h.faction === me() && h.status === 'free' && !isRuler(p, h.id) && h.at !== null && h.post == null
+    const idle = sorted(Object.values(p.heroes)).filter((h) => h.faction === me() && h.status === 'free' && !isRuler(p, h.id) && h.at !== null && h.post == null
       && !Object.values(p.armies).some((a) => a.hero === h.id) && !busy.has(h.id)
       && !(h.awayUntil !== undefined && h.awayUntil >= p.season) && !(h.woundedUntil !== undefined && h.woundedUntil > p.season)
       && !(p.expeditions ?? []).some((x) => x.hero === h.id))
+    // 사신·공작은 「군장의 사자 + 일 없는 장수」가 나른다 (hands.ts) — 군장의 사자를 넘어 쓴 만큼은 일 없는 장수가 나르는 중이라 쉬는 게 아니다
+    // (형 10-23: "장수 하나 사신 보내기 했었는데 쉬고 있는 장수 있다고 뜨는 바람에 사신 보내기 취소되고 … 안 쉬는데 쉰다고 잡는 거 심각한 문제")
+    const carrying = Math.max(0, handsUsed() - P.realm.handsBase)
+    return idle.slice(0, Math.max(0, idle.length - carrying))
   }
 
   /** 그 판 맨 위 — 왜 데려왔는지 한 줄 · 그냥 넘기기 */
@@ -1306,7 +1310,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `</div>`
       // 장수 없는 군대 — 이끌 장수를 얼굴로 (출정 단추와 줄을 나눈다 · 형 10-23: "출정 버튼이랑 장수 이끌게 하기 버튼 구분 · 장수 얼굴 이미지도")
       if (a.hero === null) {
-        const can = sorted(Object.values(r.heroes)).filter((x) => x.faction === me() && x.status === 'free' && x.at === a.at && !Object.values(r.armies).some((b) => b.hero === x.id) && heroBusy(r, x.id) === null)
+        const can = sorted(Object.values(r.heroes)).filter((x) => x.faction === me() && x.status === 'free' && x.at === a.at && !Object.values(r.armies).some((b) => b.hero === x.id) && heroBusy(r, x.id) === null && !handLocked(r, x.id))
         if (can.length > 0) {
           h += `<div class="leadrow"><span class="mute">이끌 장수</span>`
           for (const y of can) {
@@ -1599,6 +1603,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
   function handsFull(r: Realm): boolean {
     return handsUsed() >= handsCap(r)
+  }
+  /** 이 장수에게 일을 주면 사신·공작 손이 모자라 빠진다 — 일 없는 장수이고 손이 다 찼다 */
+  function handLocked(r: Realm, id: string): boolean {
+    return idleHeroes(r, me()).includes(id) && handsUsed() >= handsCap(r)
   }
   function handsHtml(r: Realm): string {
     const cap = handsCap(r)
@@ -2073,7 +2081,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const what = o.kind === 'assign' ? (o.node === null ? '맡은 일을 그만둔다' : `${josa(r.nodes[o.node]?.name ?? '', '을', '를')} 맡는다`) : o.kind === 'lead' ? '군대를 이끈다' : o.kind === 'hire' ? '우리 장수로 들였다' : '회유한다'
       h += `<div class="banner good">이번 계절: ${esc(what)}<button class="btn ghost sm" data-act="unhero" data-id="${id}">취소</button></div>`
     }
-    if (ours && !isRuler(r, id) && pending.every((o) => o.kind === 'hire') && busy === null) {
+    const locked = ours && busy === null && pending.length === 0 && handLocked(r, id)
+    if (locked) h += `<div class="banner busyb">⧗ 이번 계절 사신·공작을 나르는 손이다 — 사신·공작을 하나 거두면 이 장수에게 일을 줄 수 있다</div>`
+    if (ours && !isRuler(r, id) && pending.every((o) => o.kind === 'hire') && busy === null && !locked) {
       const army = Object.values(r.armies).find((a) => a.hero === id)
       const at = army?.at ?? x.at ?? null
       const atName = at !== null ? (r.nodes[at]?.name ?? '') : ''
