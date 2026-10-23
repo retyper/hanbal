@@ -456,13 +456,16 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     h += `<div class="wnext"><div class="wrn">${ROUND_NAME[shown] ?? `${shown + 1}`} 합 </div>`
     // 낌새는 본 것·들은 것에서만 (형: "직접본거나 주변정보여야지 짐작이머냐")
     const hl = p.hint !== null ? (p.hintSrc === 'habit' ? HABIT_LINE[p.hint] : HINT_LINE[p.hint]) : undefined
-    if (p.hint !== null && hl !== undefined && p.hintSrc === 'habit') h += `<p class="whint"><b>적장의 버릇</b> ${esc(josa(foeName, '은', '는'))} 겨뤄 보니 ${esc(hl)} <span class="mute">— 이번 합에도 그럴지는 모른다</span></p>`
-    else if (p.hint !== null && hl !== undefined) h += `<p class="whint"><b>적 앞줄의 낌새</b> ${esc(hl)} <span class="mute">— ${l.field === true ? '눈앞에서 맞붙어 보인다' : weAtk ? '척후가 이번 계절 보고 왔다' : '다가오는 것을 지켜봤다'}</span></p>`
-    else h += `<p class="whint mute">적진의 속이 보이지 않는다 — 정찰을 보냈거나 그 적장과 겨뤄 본 적이 있으면 보인다.</p>`
-    if (p.foeWaver) h += `<p class="whint warn"><b>적이 흔들린다</b> 깃발이 기울고 대열이 성기다 — 방진도 돌격을 못 받아 낸다. 쫓을 때다.</p>`
-    // 맞은편 — 적 무리마다 사람 수
-    const foeRow = (Object.entries(p.foe) as [Grp, number][]).filter(([, v]) => v > 0).map(([g, v]) => `${esc(groupLabel(mixOf(foeI), g))} ${v}명`).join(' · ')
-    if (foeRow !== '') h += `<p class="wfoe">맞은편 — 적 ${foeRow}</p>`
+    // 고르기 전에 읽을 것 — 한 칸에 하나씩, 줄을 나눠 (형 10-23: "적 줄의 낌새나 전투 정보 같은 건 줄바꿈 해서 보고 생각해 본 뒤 고를 수 있게")
+    h += `<div class="wintel">`
+    if (p.hint !== null && hl !== undefined && p.hintSrc === 'habit') h += `<div class="wi"><b>적장의 버릇</b><p>${esc(josa(foeName, '은', '는'))} 겨뤄 보니 ${esc(hl)}</p><small>이번 합에도 그럴지는 모른다</small></div>`
+    else if (p.hint !== null && hl !== undefined) h += `<div class="wi"><b>적 앞줄의 낌새</b><p>${esc(hl)}</p><small>${l.field === true ? '눈앞에서 맞붙어 보인다' : weAtk ? '척후가 이번 계절 보고 왔다' : '다가오는 것을 지켜봤다'}</small></div>`
+    else h += `<div class="wi dim"><b>적진의 속</b><p>보이지 않는다</p><small>정찰을 보냈거나 그 적장과 겨뤄 본 적이 있으면 보인다</small></div>`
+    if (p.foeWaver) h += `<div class="wi warn"><b>적이 흔들린다</b><p>깃발이 기울고 대열이 성기다</p><small>방진도 돌격을 못 받아 낸다 — 쫓을 때다</small></div>`
+    // 맞은편 — 적 무리마다 사람 수, 무리 하나에 한 칸
+    const foes = (Object.entries(p.foe) as [Grp, number][]).filter(([, v]) => v > 0)
+    if (foes.length > 0) h += `<div class="wi foe"><b>맞은편</b><div class="wfoes">${foes.map(([g, v]) => `<span><img src="${art}icon/${GROUP_ICON[g]}.png" alt="">${esc(groupLabel(mixOf(foeI), g))} <i>${v}명</i></span>`).join('')}</div></div>`
+    h += `</div>`
     const opt = (g: Grp | 'lead', c: Cmd): string => {
       const on = sel[g] === c
       let tag = ''
@@ -661,6 +664,17 @@ export const WAR_CSS = `
 .ap .wnext { margin-top: 12px; padding: 10px; border-radius: 14px; background: #1f1710; border: 1px solid #4a4030; animation: wrin .4s ease-out both; }
 .ap .wr.slow .wnext { animation-delay: 3.1s; }
 .ap .whint { margin: 2px 0 6px; font-size: 14px; } .ap .whint b { color: var(--gold); margin-right: 4px; }
+.ap .wintel { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 12px; }
+.ap .wintel .wi { padding: 8px 10px; border-radius: 10px; background: #15100bcc; border-left: 3px solid var(--gold); }
+.ap .wintel .wi > b { display: block; font-size: 12.5px; color: var(--gold); letter-spacing: .04em; }
+.ap .wintel .wi p { margin: 2px 0 0; font-size: 15.5px; line-height: 1.45; color: #f3e8d2; }
+.ap .wintel .wi small { display: block; margin-top: 2px; font-size: 12px; color: var(--mute); }
+.ap .wintel .wi.warn { border-left-color: #ff9a70; } .ap .wintel .wi.warn > b { color: #ff9a70; }
+.ap .wintel .wi.dim { border-left-color: #5a5040; } .ap .wintel .wi.dim p { color: #b8ae9c; }
+.ap .wintel .wi.foe { border-left-color: #c8604a; } .ap .wintel .wi.foe > b { color: #e0a090; }
+.ap .wfoes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.ap .wfoes span { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px 2px 3px; border-radius: 999px; background: #2a1812; border: 1px solid #6a3a2a; font-size: 13.5px; }
+.ap .wfoes img { width: 22px; height: 22px; object-fit: contain; } .ap .wfoes i { font-style: normal; color: #f0c0b0; }
 .ap .whint.warn b { color: #ff9a70; }
 .ap .wfoe { margin: 0 0 8px; font-size: 13px; color: #e0b0a0; }
 .ap .wgrp { margin: 8px 0; }
