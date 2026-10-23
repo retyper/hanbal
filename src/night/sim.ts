@@ -340,10 +340,20 @@ function sweep(n: Night, ax: number, ay: number, bx: number, by: number, angle: 
     // 불 — 맞히면 꺼진다 (창호지 뒤 촛불은 문 너머라 안 닿는다)
     for (const l of sc.lights) {
       if (!l.lit || l.kind === 'candle') continue
-      const r = l.kind === 'fire' ? 0.35 : 0.17
-      if ((x - l.x) ** 2 + (y - l.y) ** 2 > r * r) continue
+      if (l.kind === 'fire') {
+        // 모닥불 — 위에 매단 물동이를 맞히면 쏟아져 꺼진다. 불길에 든 살은 타 버리고 불똥만 튄다 (살로 불을 끄진 못한다)
+        if ((x - l.x) ** 2 + (y - (l.y + P.night.jarHeight)) ** 2 <= P.night.jarRadius ** 2) {
+          hitLight(n, l, x, y)
+          return 'stop'
+        }
+        if ((x - l.x) ** 2 + (y - l.y) ** 2 > FLAME_R * FLAME_R) continue
+        n.events.push({ t: 'ember', x, y })
+        noise(n, P.night.noiseFire, x)
+        return 'stop'
+      }
+      if ((x - l.x) ** 2 + (y - l.y) ** 2 > LAMP_R * LAMP_R) continue
       hitLight(n, l, x, y)
-      if (l.kind !== 'fire') n.stuck.push({ x, y, angle, fig: -1 }) // 모닥불에 든 살은 타 버린다
+      n.stuck.push({ x, y, angle, fig: -1 })
       return 'stop'
     }
     // 담·기둥·기와
@@ -368,8 +378,12 @@ function sweep(n: Night, ax: number, ay: number, bx: number, by: number, angle: 
   return null
 }
 
+/** 모닥불 불길 · 횃불·등불의 맞는 반지름 (m) — 그림의 불꽃 크기 */
+const FLAME_R = 0.35
+const LAMP_R = 0.17
+
 /**
- * 살이 불에 닿았다 — 횃불·등불은 꺼지고, 모닥불은 살 fireHits 개에 사그라든다 (그 전엔 불똥 소리만).
+ * 살이 불에 닿았다 — 횃불·등불은 꺼지고, 모닥불은 물동이에 살 fireHits 개가 들면 쏟아져 꺼진다.
  * 경비가 삼엄하면 불이 꺼지는 것만으로 수상히 여긴다 (darkSuspect)
  */
 export function hitLight(n: Night, l: Light, x: number, y: number): void {

@@ -504,7 +504,9 @@ export const WAR_CSS = `
 .ap .tn.hard { color: #f0a08a; }
 .ap.war-open .tutband, .ap.war-open .tutbar { display: none; }
 .ap .wr { position: fixed; inset: 0; z-index: 60; background: #0d0f13; overflow: hidden; }
-.ap .wsc { position: absolute; inset: 0; z-index: 1; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+/* 위아래로만 굴린다 — 옆으로 밀리던 것 (형 10-23: "전투 화면에서 불필요하게 x축 스크롤") */
+.ap .wsc { position: absolute; inset: 0; z-index: 1; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+.ap .wsc .wrbox { overflow-wrap: anywhere; }
 .ap .wfxl { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
 .ap .wwin { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
 /* 싸움터 — 화면 뒤에 붙박이. 받아 둔 싸움터 그림이 없으면(stand) 장면 그림을 더 어둡고 흐리게 */

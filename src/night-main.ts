@@ -207,7 +207,7 @@ function showMissionIntro(): void {
   ui.innerHTML = `<div class="card"><h1>밤의 암살</h1><p>기와지붕 위에 엎드렸다. 화살 ${missionArrows}발.</p>`
     + `<p>경비 · <b>${GUARD_NAME[missionGuard]}</b> — ${GUARD_LINE[missionGuard]}</p>`
     + `<p class="mute">보초를 다 쓰러뜨리고 셋째 판의 창호지 뒤 그림자를 쏜다. 빗나간 살은 소리를 낸다. 시체가 불빛 아래 있으면 들킨다.</p>`
-    + `<p class="mute">횃불·등불은 쏘면 꺼지고, 모닥불은 살 ${P.night.fireHits}발에 사그라든다. 불이 꺼지면 보초가 다시 붙이러 온다 — 어둠 속에서, 불이 붙기 전에 쓰러뜨려라.</p>`
+    + `<p class="mute">횃불·등불은 쏘면 꺼지고, 모닥불은 위에 매단 물동이를 쏘면 쏟아져 꺼진다. 불이 꺼지면 보초가 다시 붙이러 온다 — 어둠 속에서, 불이 붙기 전에 쓰러뜨려라.</p>`
     + `<p class="mute">그림자가 일어서면 창호지 위 촛불 게이지가 닳는다. 다 닳으면 촛불을 끄고 달아난다. 빗나가면 더 빨리 닳는다.</p>`
     + `<p class="mute">아무 데나 누르고 뒤로 끈다 — 끈 쪽의 반대로 겨눈다 · 놓으면 쏜다 · 누른 자리로 돌아와 놓으면 그만둔다. 오른쪽 아래 「숨 참기」를 누르고 있으면 떨림이 멎는다.</p>`
     + `<div class="btns"><button data-act="rehearse">연습 먼저</button><button class="on" data-act="go">들어간다</button></div>`

@@ -358,9 +358,59 @@ function figurePath(ctx: CanvasRenderingContext2D, cam: Camera, n: Night, f: Fig
   ctx.globalAlpha = 1
 }
 
+/**
+ * 모닥불 위 삼발이와 물동이 (형 10-23: "모닥불을 활로 쏴서 불 끄는 게 말이 되나" — 물동이를 쏘면 쏟아져 꺼진다).
+ * 불이 꺼지면 물동이는 불 옆에 엎어져 있고 바닥이 젖어 있다
+ */
+function drawJar(ctx: CanvasRenderingContext2D, cam: Camera, l: Light): void {
+  const s = cam.scale
+  const jx = X(cam, l.x)
+  const jy = Y(cam, l.y + P.night.jarHeight)
+  const r = P.night.jarRadius * s
+  ctx.lineCap = 'round'
+  if (l.lit) {
+    // 삼발이 — 장대 셋이 물동이 위에서 묶인다
+    const top = Y(cam, l.y + P.night.jarHeight + 0.45)
+    ctx.strokeStyle = '#3a2a1a'
+    ctx.lineWidth = Math.max(1.5, 0.05 * s)
+    for (const dx of [-0.75, 0.75, 0.15]) {
+      ctx.beginPath()
+      ctx.moveTo(X(cam, l.x + dx), Y(cam, l.y - 0.25))
+      ctx.lineTo(jx, top)
+      ctx.stroke()
+    }
+    // 줄과 물동이 (질그릇 · 아가리에 물빛)
+    ctx.strokeStyle = '#8a7a5a'
+    ctx.lineWidth = Math.max(1, 0.02 * s)
+    ctx.beginPath()
+    ctx.moveTo(jx, top)
+    ctx.lineTo(jx, jy - r)
+    ctx.stroke()
+    ctx.fillStyle = '#7a4a2a'
+    ctx.beginPath()
+    ctx.ellipse(jx, jy, r * 1.1, r, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = '#5a8aa8'
+    ctx.beginPath()
+    ctx.ellipse(jx, jy - r * 0.85, r * 0.55, r * 0.18, 0, 0, Math.PI * 2)
+    ctx.fill()
+    return
+  }
+  // 엎어진 물동이와 젖은 땅
+  ctx.fillStyle = 'rgba(70,110,140,0.35)'
+  ctx.beginPath()
+  ctx.ellipse(X(cam, l.x + 0.3), Y(cam, l.y - 0.28), 1.1 * s, 0.08 * s, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = '#6a3e22'
+  ctx.beginPath()
+  ctx.ellipse(X(cam, l.x + 0.85), Y(cam, l.y - 0.12), r * 1.1, r, 1.2, 0, Math.PI * 2)
+  ctx.fill()
+}
+
 function drawFlame(ctx: CanvasRenderingContext2D, cam: Camera, l: Light, tick: number): void {
   if (l.kind === 'candle') return
   const s = cam.scale
+  if (l.kind === 'fire') drawJar(ctx, cam, l)
   if (!l.lit) {
     // 꺼진 모닥불 — 불씨만 붉게 남는다 (다시 살릴 수 있다는 표시)
     if (l.kind !== 'fire') return
@@ -625,7 +675,7 @@ export function goalLine(n: Night): string {
     case 1: {
       const fire = sc.lights.find((l) => l.kind === 'fire')
       if (fire !== undefined && fire.lit) {
-        return `모닥불에 살 ${Math.max(1, P.night.fireHits - fire.hits)}발을 쏘면 꺼진다 · 불빛 안에 쓰러진 보초는 들킨다`
+        return '불 위에 매단 물동이를 쏘면 쏟아져 모닥불이 꺼진다 · 불빛 안에 쓰러진 보초는 들킨다'
       }
       const lantern = sc.lights.some((l) => l.kind === 'lantern' && l.lit && sc.figures[l.carrier]?.alive === true)
       if (lantern) return '등불 든 보초는 등불부터 쏜다 · 다시 붙이는 동안 쓰러뜨린다'

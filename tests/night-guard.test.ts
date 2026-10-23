@@ -165,19 +165,19 @@ describe('밤 — 판을 깰 길', () => {
     for (let i = 0; i < P.sim.hz * 2 && n.w.arrows.some((x) => x.alive && x.outcome === 'flying'); i++) stepNight(n, aim(n, ang, false))
   }
 
-  it('안뜰 — 지붕에서 모닥불을 맞힐 각이 첫 화면부터 있다 (시드 여럿)', () => {
+  it('안뜰 — 지붕에서 모닥불 위 물동이를 맞혀 불을 끌 각이 첫 화면부터 있다 (시드 여럿)', () => {
     for (const seed of [1, 2, 3, 5, 7, 11]) {
       let found = false
       // 등불 든 순찰이 불 앞을 지나갈 수 있다 — 조금 기다렸다 쏘는 것까지 본다
       for (const wait of [0, 2, 4]) {
-        for (let ang = -0.34; ang <= -0.2 && !found; ang += 0.002) {
+        for (let ang = -0.4; ang <= -0.05 && !found; ang += 0.002) {
           const n = createNight({ seed, practice: { stage: 1, alarm: true, infinite: true } })
           run(n, wait)
           shootAt(n, ang)
-          found = n.scene.lights.find((l) => l.kind === 'fire')!.hits > 0
+          found = !n.scene.lights.find((l) => l.kind === 'fire')!.lit
         }
       }
-      assert.ok(found, `시드 ${seed} — 모닥불을 맞힐 각이 없다 (앉은 보초가 가린다)`)
+      assert.ok(found, `시드 ${seed} — 물동이를 맞힐 각이 없다 (앉은 보초가 가린다)`)
     }
   })
 
