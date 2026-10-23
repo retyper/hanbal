@@ -12,20 +12,62 @@ export const PICK = {
   horn_victory: 'a', defeat: 'a', capture: 'b',
   dex_new: 'c', birth: 'c', feast: 'a', envoy: 'b', coins: 'c',
   amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b',
-  bgm_map: 'f', bgm_war: 'a',
+  bgm_map: 'f', bgm_war: 'e',
   // 이기고 진 뒤의 음악 — 형이 받아 오면 public/realm/sfx/bgm_win_a.* · bgm_lose_a.* 로 둔다. 파일이 없으면 듣던 음악을 그대로 둔다
   bgm_win: 'a', bgm_lose: 'a',
+  // 누를 때 나는 소리 — 누른 것의 바탕(쇠·엽전·붓·말굽·방울·북·바둑돌)대로 (형 10-23: "탭할 때 나는 sfx 도 소재에 맞게 다양한 소리").
+  // 형이 받아 오면 public/realm/sfx/<자리>_a.* 로 둔다. 그 전엔 TAP_STANDIN 의 소리로 (지도 고을은 소리 없이)
+  tap_arms: 'a', tap_coin: 'a', tap_brush: 'a', tap_move: 'a', tap_bell: 'a', tap_drum: 'a', tap_map: 'a', tap_cancel: 'a',
 } as const
 /** ogg 가 아닌 후보 — 형이 받아 온 것은 받은 꼴 그대로 둔다 (assets_src/realm/sfx-in) */
-const EXT: Readonly<Partial<Record<string, string>>> = { bgm_map_f: 'mp3' }
+const EXT: Readonly<Partial<Record<string, string>>> = { bgm_map_f: 'mp3', bgm_map_g: 'mp3', bgm_war_e: 'mp3' }
 export type Slot = keyof typeof PICK
 /** 아직 파일을 안 받은 자리 — 없으면 소리 없이 듣던 음악을 둔다 (있으면 출처를 적는다) */
-export const LATER: ReadonlySet<Slot> = new Set<Slot>(['bgm_win', 'bgm_lose'])
+export const LATER: ReadonlySet<Slot> = new Set<Slot>([
+  'bgm_win', 'bgm_lose',
+  'tap_arms', 'tap_coin', 'tap_brush', 'tap_move', 'tap_bell', 'tap_drum', 'tap_map', 'tap_cancel',
+])
+/** 한 곡이 끝나면 다음 곡으로 넘어가는 자리 — 첫 글자가 PICK 이다 (형이 받은 평상시 음악 둘: bgm후보 · 배경음2) */
+export const ROTATE: Readonly<Partial<Record<Slot, readonly string[]>>> = { bgm_map: ['f', 'g'] }
 
-/** ding 에 넘기는 이름 — public 아래 길 (확장자 없음) */
-export const snd = (slot: Slot): string => `realm/sfx/${slot}_${PICK[slot]}`
+type TapSlot = Extract<Slot, `tap_${string}`>
+/** 누른 단추(data-act) → 그 바탕의 소리. 맞는 줄이 없으면 나무 딱(ui_order) */
+const TAP: ReadonlyArray<readonly [RegExp, TapSlot | 'ui_open']> = [
+  // 닫기 · 물리기 · 되돌리기
+  [/^(close|rep-close|selclose|dex-close|failclose|sortie-cancel|fr-back|turnback|undo-split|un[a-z]+)$/, 'tap_cancel'],
+  // 책장 · 기록 · 도움말
+  [/-open$|^(help|tab|log-n|log-f|mig-n|layers|layer|deeds|jump|roadkey|hero)$/, 'ui_open'],
+  // 군사 — 뽑기 · 편성 · 진군 · 지키기 · 쏘기
+  [/^(draft|dunit|diron|dn|assign|tok|sq|sqall|ap|mv|go|guard|arm|shoot|sortie-go|lead|merge|selmerge|disband|bowup|shero|sdest|sstay)$/, 'tap_arms'],
+  // 곡식 · 쇠 · 교역 — 고용 · 짓기 · 군량 · 주고받기
+  [/^(hire|build|ration|cq)$/, 'tap_coin'],
+  // 글 · 꾀 · 사신 — 붓과 도장
+  [/^(compose|compose-go|ctarget|chero|plot|nat-plot|pagent|persuade|pby|answer|envoy|nat-diplo|dmode)$/, 'tap_brush'],
+  // 사람이 움직인다 — 정찰 · 원정 · 옮겨 살기
+  [/^(scout|exp-go|exp-dest|exp-len|settle|sn|sfrom|migrate|mig-[a-z]+)$/, 'tap_move'],
+  // 고르기 · 혼인 · 제사
+  [/^(wed|rite|card-pick|tier-pick|dex-sel|keep|carry-tog|focus)$/, 'tap_bell'],
+  // 지도의 고을을 누른다 — 바둑돌 놓듯
+  [/^node$/, 'tap_map'],
+  // 판을 연다
+  [/^(fr-start|fr-board|fr-nation|fr-again|fr-endless|fr-tutorial|fr-new|newgame|continue)$/, 'tap_drum'],
+]
+/** 형의 파일이 오기 전에 대신 내는 소리 — null 이면 소리 없이 (지금까지와 같게) */
+const TAP_STANDIN: Readonly<Record<TapSlot, Slot | null>> = {
+  tap_arms: 'ui_order', tap_coin: 'ui_order', tap_brush: 'ui_order', tap_move: 'ui_order',
+  tap_bell: 'ui_order', tap_drum: 'ui_order', tap_cancel: 'ui_order', tap_map: null,
+}
+/** 누른 것의 소리 — 아직 안 받은 자리면 대신 소리 (없으면 null) */
+export function tapSlot(act: string): Slot | null {
+  const s = TAP.find(([re]) => re.test(act))?.[1] ?? 'ui_order'
+  if (s === 'ui_open' || s === 'ui_order' || !LATER.has(s)) return s
+  return TAP_STANDIN[s]
+}
+
+/** ding 에 넘기는 이름 — public 아래 길 (확장자까지 — 형이 받아 온 mp3 도 있다) */
+export const snd = (slot: Slot): string => `realm/sfx/${sndFile(slot)}`
 /** 고른 후보의 파일 이름 (확장자까지) */
-export const sndFile = (slot: Slot): string => `${slot}_${PICK[slot]}.${EXT[`${slot}_${PICK[slot]}`] ?? 'ogg'}`
+export const sndFile = (slot: Slot, pick: string = PICK[slot]): string => `${slot}_${pick}.${EXT[`${slot}_${pick}`] ?? 'ogg'}`
 
 /** 장면 그림(event-*) → 그 장면의 소리. 없으면 소리 없이 */
 export const SCENE_SOUND: Readonly<Record<string, Slot>> = {
@@ -92,7 +134,17 @@ function track(base: string, vol: number): { want(slot: Slot | null): void; paus
     let n = els.get(slot)
     if (n === undefined) {
       const el = new Audio(`${base}realm/sfx/${sndFile(slot)}`)
-      el.loop = true
+      const list = ROTATE[slot]
+      el.loop = list === undefined
+      if (list !== undefined) {
+        // 한 곡이 끝나면 다음 곡 — 같은 요소에 주소만 바꿔 끼운다
+        let i = 0
+        el.addEventListener('ended', () => {
+          i = (i + 1) % list.length
+          el.src = `${base}realm/sfx/${sndFile(slot, list[i])}`
+          if (cur === slot) start()
+        })
+      }
       el.addEventListener('error', () => {
         missing.add(slot)
         if (cur === slot) { cur = null; if (prev !== null && !missing.has(prev)) { cur = prev; start() } }

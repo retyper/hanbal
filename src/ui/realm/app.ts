@@ -55,7 +55,7 @@ import { pactOf } from '../../realm/suzerain.ts'
 import { ironOf, riteOf } from '../../realm/paths.ts'
 import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
 import { FRONT_CSS, PROLOGUE_STEPS, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History } from './front.ts'
-import { SCENE_SOUND, makeMusic, playOnce, snd } from './sound.ts'
+import { SCENE_SOUND, makeMusic, playOnce, snd, tapSlot } from './sound.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
 import { FEEL_CSS, alertFeel, ambushFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
 
@@ -108,7 +108,7 @@ function muted(): boolean {
 }
 function ding(name: string, vol = 0.6): void {
   if (muted()) return
-  playOnce(`${name.includes('/') ? BASE : SFX}${name}.ogg`, vol) // 탭이 가려져 있으면 안 낸다 (규칙 4)
+  playOnce(`${name.includes('/') ? BASE : SFX}${name}${/.w+$/.test(name) ? '' : '.ogg'}`, vol) // 탭이 가려져 있으면 안 낸다 (규칙 4)
 }
 const PRACTICE: string = (import.meta.env?.BASE_URL ?? '/') + 'night.html?practice=1'
 /** night.html 이 올라갔다 (f9e77aa) — 없는 쪽으로 보내지 않으려 둔 스위치 */
@@ -2820,6 +2820,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         return
       }
       host.onTap('node', t.dataset['node']!)
+      const tap = tapSlot('node')
+      if (tap !== null) ding(snd(tap), 0.2)
       openSheet({ kind: 'node', id: t.dataset['node']! })
       return
     }
@@ -2831,7 +2833,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       saveTut()
       if (front === null) paintTut(plan()) // 다시 그리지 않는 단추(우리 땅 등)에도 띠가 넘어가게
     }
-    if (d['act'] !== undefined && d['act'] !== 'next') ding(snd(/-open$|^help$/.test(d['act']) ? 'ui_open' : 'ui_order'), 0.2) // 누른 것이 먹었다는 작은 소리 · 책장을 펴면 종이 소리
+    // 누른 것이 먹었다는 작은 소리 — 누른 것의 바탕대로 (책장은 종이 · 군사는 쇠 · 교역은 엽전 …)
+    const tap = d['act'] !== undefined && d['act'] !== 'next' ? tapSlot(d['act']) : null
+    if (tap !== null) ding(snd(tap), 0.2)
     freshArmy = ''
     const r = realm !== null ? plan() : null
     switch (d['act']) {
