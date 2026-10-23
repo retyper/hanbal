@@ -9,10 +9,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
-import { canWed, honeyLeft, inheritOf } from '../../src/realm/heroes.ts'
-import { canEscort } from '../../src/realm/diplomacy.ts'
-import { expBlock } from '../../src/realm/expedition.ts'
-import { plotAgents } from '../../src/realm/plots.ts'
+import { canWed, honeyLeft, inheritOf, together } from '../../src/realm/heroes.ts'
 import { advance } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Order, Realm, ReportLine } from '../../src/realm/types.ts'
@@ -22,8 +19,19 @@ const pass = (r: Realm, orders: Order[] = []): { next: Realm; lines: readonly Re
   return { next, lines: report.lines }
 }
 
-/** 우리 나라의 남녀 짝 하나 — 없으면 남의 장수 하나를 우리 사람으로 */
+/** 우리 나라의 남녀 짝 하나 — 없으면 남의 장수 하나를 우리 사람으로. 둘 다 도읍에 함께 둔다 (신혼에 떨어져 있으면 아이가 늦다) */
 function couple(r: Realm): [string, string] {
+  const [a, b] = couple0(r)
+  const cap = r.factions[r.player]!.capital
+  for (const id of [a, b]) {
+    for (const m of Object.values(r.armies)) if (m.hero === id) m.hero = null
+    r.heroes[id]!.at = cap
+    r.heroes[id]!.post = null
+  }
+  return [a, b]
+}
+
+function couple0(r: Realm): [string, string] {
   const ours = Object.values(r.heroes).filter((h) => h.faction === r.player && h.status === 'free').sort((a, b) => (a.id < b.id ? -1 : 1))
   const g = ours.find((h) => h.look === 'g')
   const w = ours.find((h) => h.look === 'w')
@@ -37,19 +45,29 @@ function couple(r: Realm): [string, string] {
 }
 
 describe('혈통 — 혼인', () => {
-  it('신혼 — wedHoney 계절 동안 원정·사신·자객으로 못 나가고, 지나면 다시 나간다', () => {
-    let r = byeonhanMini(3)
-    const [a, b] = couple(r)
-    r.stock[r.player]!.grain = 1000
-    r = pass(r, [{ kind: 'wed', faction: r.player, a, b }]).next
-    for (let i = 0; i < P.realm.wedHoney; i++) {
-      assert.equal(honeyLeft(r, a), P.realm.wedHoney - i)
-      assert.equal(canEscort(r, r.player, a), false)
-      assert.ok(!plotAgents(r, r.player).includes(a))
-      assert.ok(expBlock(r, r.player, a, 'hills', 0)?.startsWith('신혼'))
-      r = pass(r).next
+  it('신혼 — 무엇이든 하지만, 떨어져 지낸 계절마다 아이가 한 계절씩 늦어진다', () => {
+    const run = (apart: boolean): number => {
+      let r = byeonhanMini(3)
+      const [a, b] = couple(r)
+      r.stock[r.player]!.grain = 1000
+      const cap = r.factions[r.player]!.capital
+      for (const id of [a, b]) {
+        for (const m of Object.values(r.armies)) if (m.hero === id) m.hero = null
+        r.heroes[id]!.at = cap
+        r.heroes[id]!.post = null
+      }
+      r = pass(r, [{ kind: 'wed', faction: r.player, a, b }]).next
+      const other = Object.values(r.nodes).find((n) => n.owner === r.player && n.id !== cap && n.kind !== 'wild')!.id
+      for (let i = 0; i < P.realm.wedHoney; i++) {
+        assert.equal(honeyLeft(r, a), P.realm.wedHoney - i)
+        assert.equal(together(r, a, b), !apart || i === 0)
+        if (apart) r.heroes[b]!.at = other
+        r = pass(r).next
+      }
+      assert.equal(honeyLeft(r, a), 0)
+      return r.births![0]!.due
     }
-    assert.equal(honeyLeft(r, a), 0)
+    assert.equal(run(true), run(false) + P.realm.wedHoney)
   })
 
   it('같은 나라 · 남녀 · 짝 없음만', () => {

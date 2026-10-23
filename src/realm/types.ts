@@ -606,7 +606,8 @@ export interface Realm {
   card?: Card | null
   cardNext?: Card | null
   /** 혼인의 열매 — due 계절에 자식 장수가 나선다 (heroes.stepHeroes). 옛 저장에는 없다 */
-  births?: Array<{ a: string; b: string; faction: string; due: number }>
+  /** 혼인의 열매 — due 계절에 아이가 나선다 · wed 혼인한 계절 · late 신혼에 떨어져 지내 늦어진 계절 (옛 저장엔 wed·late 가 없다) */
+  births?: Array<{ a: string; b: string; faction: string; due: number; wed?: number; late?: number }>
   /** 원정 — 지도 바깥 먼 땅으로 간 장수. 결과는 보낼 때 정해진다 (expedition.ts · SYSTEMS §15-4). 옛 저장에는 없다 */
   expeditions?: Expedition[]
   /** 길 위·고을에 선 개척단 (parties.ts) — 옛 저장에는 없다 */

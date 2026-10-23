@@ -34,7 +34,7 @@ import { PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bow
 import { allianceWhy, leaderOf, tookRecently, truceWhy, winningAgainst } from '../../realm/stance.ts'
 import { DESTS, DEST_IDS, EXP_SEASONS, destReachable, expAmount, expBlock, expOdds, onExpedition } from '../../realm/expedition.ts'
 import { foundable, partiesOf, partyCost, partyMoves, partySize } from '../../realm/parties.ts'
-import { canWed, heroSeen, honeyLeft, inheritOf, isRuler, persuadeDropOf, recruitChance, resistOf, wanderersFor } from '../../realm/heroes.ts'
+import { canWed, heroSeen, honeyLeft, together, inheritOf, isRuler, persuadeDropOf, recruitChance, resistOf, wanderersFor } from '../../realm/heroes.ts'
 import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
@@ -533,10 +533,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (nudgedAt !== r.season) return ''
     const idle = kind === 'heroes' ? restingHeroes(plan()) : []
     const msg = kind === 'heroes'
-      ? (idle.length > 0 ? `쉬는 장수 ${idle.length}명 — ${esc(idle.slice(0, 3).map((x) => x.name).join(' · '))}${idle.length > 3 ? ' …' : ''}. 군대·고을을 맡기거나 사신·자객으로 보낼 수 있다` : '')
+      ? (idle.length > 0 ? `쉬는 장수 ${idle.length}명 — 누르면 그 장수에게 일을 준다` : '')
       : (scout === '' ? '이번 계절 정찰을 아직 안 보냈다 — 볼 곳을 하나 고른다' : '')
     if (msg === '') return ''
-    return `<div class="nudge"><span>${msg}</span><button class="btn sm" data-act="next">그냥 넘긴다 ›</button></div>`
+    // 누가 쉬는지 얼굴로 바로 — 누르면 그 장수 판 (형 10-23: "쉬는 장수 1명 뜨긴 하는데 누가 쉬는지를 바로바로 알 수 있어야지")
+    const faces = idle.map((x) => `<button class="ndg" data-act="hero" data-id="${x.id}">${bust(x, 'ndf')}<b>${esc(x.name)}</b></button>`).join('')
+    return `<div class="nudge"><span>${msg}</span>${faces !== '' ? `<div class="ndgs">${faces}</div>` : ''}<button class="btn sm" data-act="next">그냥 넘긴다 ›</button></div>`
   }
 
   function ordersNow(): Order[] {
@@ -1840,11 +1842,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const sp = r.heroes[x.spouse]
       const kid = (r.births ?? []).find((v) => v.a === id || v.b === id)
       const honey = honeyLeft(r, id)
+      const near = together(r, id, x.spouse)
       // 신혼 — 등불 밝힌 신방 (형 10-23: "가정을 꾸리는 도중에는 야시시한 상태 표시랑 배경 이미지")
       if (honey > 0 && sp !== undefined) {
         h += `<div class="honey" style="--hbg:url('${ART}event/event-marriage.jpg')"><div class="hfaces">${bust(x, 'hf')}${bust(sp, 'hf')}</div>`
           + `<b>신방에 들었다</b><span>${esc(josa(sp.name, '과', '와'))} 함께 지낸다 · ${honey}계절</span>`
-          + `<small>그동안 원정·사신·자객으로는 못 나간다${kid !== undefined ? ` · 아이는 ${Math.max(1, kid.due - r.season + 1)}계절쯤 뒤` : ''}</small></div>`
+          + `<small>${near ? '함께 지낸다' : '떨어져 있다 — 이번 계절이 지나면 아이가 한 계절 늦어진다'}${kid !== undefined ? ` · 아이는 ${Math.max(1, kid.due - r.season + 1)}계절쯤 뒤${(kid.late ?? 0) > 0 ? ` (떨어져 지내 ${kid.late}계절 늦어졌다)` : ''}` : ''}</small></div>`
       } else h += `<p class="mute">짝 · ${sp !== undefined ? nameHtml(sp.name) : '?'}${kid !== undefined ? ` · 아이가 ${Math.max(1, kid.due - r.season + 1)}계절쯤 뒤 나선다` : ''}</p>`
     }
     if (x.parents !== undefined) h += `<p class="mute">${x.parents.map((p) => (r.heroes[p] !== undefined ? nameHtml(r.heroes[p]!.name) : '?')).join(' · ')}의 아이</p>`
@@ -2685,7 +2688,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         for (let i = 0; i < 22; i++) petals += `<i style="--x:${(i * 37) % 100}%;--t:${((i * 0.29) % 2.4).toFixed(2)}s;--sp:${(3.6 + ((i * 0.53) % 2.2)).toFixed(2)}s"></i>`
         scenes.push(`<div class="cere wed"><i class="cbg" style="background-image:url('${ART}event/event-marriage.jpg')"></i><div class="cpet">${petals}</div>`
           + `<div class="cpair"><div class="cl">${bust(a, 'cf')}<b>${esc(a?.name ?? '')}</b></div><div class="cr">${bust(b, 'cf')}<b>${esc(b?.name ?? '')}</b></div></div>`
-          + `<div class="cw"><b>혼례</b><span>${esc(josa(a?.name ?? '', '과', '와'))} ${esc(josa(b?.name ?? '', '이', '가'))} 짝을 맺었다</span><small>신방에 들어 ${P.realm.wedHoney}계절 함께 지낸다</small></div></div>`)
+          + `<div class="cw"><b>혼례</b><span>${esc(josa(a?.name ?? '', '과', '와'))} ${esc(josa(b?.name ?? '', '이', '가'))} 짝을 맺었다</span><small>신혼 ${P.realm.wedHoney}계절 — 함께 지내면 아이가 일찍 온다</small></div></div>`)
       } else if (l.kind === 'birth' && l.faction === me()) {
         const kid = r.heroes[l.hero], a = r.heroes[l.a], b = r.heroes[l.b]
         const traits = (kid?.traits ?? []).map((t) => `<span class="ctr${t === l.surprise ? ' new' : ''}">${esc(TRAIT[t]?.name ?? t)}${t === l.surprise ? ' · 타고났다' : ''}</span>`).join('')

@@ -523,6 +523,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 /* 「다음 계절」 전에 데려온 판의 맨 위 한 줄 */
 .ap .nudge { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; padding: 8px 10px; border-radius: 10px; background: #3a2a14; border: 1px solid #c9a45a88; font-size: 13px; color: #f3e2b8; }
 .ap .nudge span { flex: 1 1 200px; } .ap .nudge .btn { margin-left: auto; }
+.ap .nudge .ndgs { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 6px; }
+.ap .nudge .ndg { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border-radius: 999px; border: 1px solid #c9a45a; background: #241a0e; color: #f3e2b8; font: inherit; font-size: 13px; cursor: pointer; }
+.ap .nudge .ndf { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
 .ap .tabs button { min-width: 0; } .ap .tabs button span { white-space: nowrap; }
 @media (max-width: 420px) { .ap .tabs button img.tic { width: 28px; height: 28px; } .ap .tabs button { font-size: 11.5px; } }
 `

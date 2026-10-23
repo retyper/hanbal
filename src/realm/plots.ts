@@ -21,7 +21,7 @@ import { P } from '../tune/params.ts'
 import { addFavor, noteDeed, relationOf, worsen } from './diplomacy.ts'
 import { knows } from './discovery.ts'
 import { stockOf } from './economy.ts'
-import { armyOfHero, gainXp, hasTrait, heroAt, heroSeen, honeyLeft, isRuler, plotBonus } from './heroes.ts'
+import { armyOfHero, gainXp, hasTrait, heroAt, heroSeen, isRuler, plotBonus } from './heroes.ts'
 import { alertRange } from './intel.ts'
 import { nodeStrength, seenShares } from './season.ts'
 import type { Order, PlotOp, Realm, ReportLine } from './types.ts'
@@ -232,7 +232,7 @@ export function plotTargets(r: Realm, faction: string, op: PlotOp): Array<{ targ
 /** 자객으로 보낼 수 있는 우리 장수 — 군대 없이 혼자 머무는 이. 군주도 친히 간다(명궁 군주의 자리) — 들키면 호위가 빼내지만 다쳐 돌아온다. 그 계절엔 아무것도 못 한다 */
 export function plotAgents(r: Realm, faction: string): string[] {
   return Object.values(r.heroes)
-    .filter((h) => h.faction === faction && h.status === 'free' && h.at !== null && armyOfHero(r, h.id) === null && honeyLeft(r, h.id) === 0)
+    .filter((h) => h.faction === faction && h.status === 'free' && h.at !== null && armyOfHero(r, h.id) === null)
     .map((h) => h.id)
     .sort()
 }

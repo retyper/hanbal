@@ -652,14 +652,23 @@ function stepGrowth(r: Realm, lines: ReportLine[]): void {
 // 능력치는 부모 평균 ± wedSpread. 칭호는 부모 둘 중 하나의 것.
 
 /**
- * 신혼 — 혼인한 뒤 wedHoney 계절 동안 부부는 집에 머문다: 원정·사신·자객으로 못 나간다 (형 10-23: "가정을 꾸리는 도중에는 … 원정도 못 보내고?").
- * 남은 계절 수 (0 이면 신혼이 아니다). 군대를 이끌고 고을을 맡는 일은 그대로 한다
+ * 신혼 — 혼인한 뒤 wedHoney 계절. 부부는 무엇이든 할 수 있지만, 그동안 **떨어져 지낸 계절마다 아이가 한 계절씩 늦어진다**
+ * (형 10-23: "결혼한 동안 아무것도 못 하게 하는 게 맞나? … 활동은 할 수 있잖아. 근데 패널티는 있어야 할 것 같은데"). 남은 계절 수 (0 이면 신혼이 아니다)
  */
 export function honeyLeft(r: Realm, hero: string): number {
   const v = (r.births ?? []).find((x) => x.a === hero || x.b === hero)
   if (v === undefined) return 0
-  const wedAt = v.due - P.realm.wedSeasons
+  const wedAt = v.wed ?? v.due - P.realm.wedSeasons
   return Math.max(0, wedAt + P.realm.wedHoney - r.season + 1)
+}
+
+/** 부부가 함께 있나 — 같은 고을에 둘 다 머문다 (원정·길 위의 군대·사로잡힘이면 떨어진 것) */
+export function together(r: Realm, a: string, b: string): boolean {
+  const x = r.heroes[a]
+  const y = r.heroes[b]
+  if (x === undefined || y === undefined || x.status !== 'free' || y.status !== 'free' || x.at === null || y.at === null) return false
+  const away = (id: string): boolean => Object.values(r.armies).some((m) => m.hero === id && m.march !== null)
+  return x.at === y.at && !away(a) && !away(b)
 }
 
 /** 혼인할 수 있나 — 같은 나라 · 자유로운 몸 · 남녀 · 둘 다 짝 없음 */
@@ -681,7 +690,7 @@ function wed(r: Realm, o: Extract<Order, { kind: 'wed' }>, lines: ReportLine[]):
   r.heroes[a]!.spouse = b
   r.heroes[b]!.spouse = a
   const due = r.season + P.realm.wedSeasons
-  ;(r.births ??= []).push({ a, b, faction: o.faction, due })
+  ;(r.births ??= []).push({ a, b, faction: o.faction, due, wed: r.season })
   lines.push({ kind: 'wed', faction: o.faction, a, b, due })
 }
 
@@ -749,6 +758,13 @@ function makeKid(r: Realm, v: { a: string; b: string; faction: string; due: numb
 /** 때가 된 혼인의 열매 — 계절마다 (stepHeroes) */
 function stepBirths(r: Realm, lines: ReportLine[]): void {
   if (r.births === undefined || r.births.length === 0) return
+  // 신혼에 떨어져 지냈으면 아이가 한 계절 늦어진다
+  for (const v of r.births) {
+    if (honeyLeft(r, v.a) > 0 && !together(r, v.a, v.b)) {
+      v.due += 1
+      v.late = (v.late ?? 0) + 1
+    }
+  }
   const due = r.births.filter((v) => v.due <= r.season)
   if (due.length === 0) return
   r.births = r.births.filter((v) => v.due > r.season)

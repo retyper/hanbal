@@ -12,7 +12,7 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { GOODS, canPayGoods, goodOf, goodsOne, goodsWorth, menOf, payGoods, stockOf, worthOf } from './economy.ts'
-import { envoyBonus, honeyLeft } from './heroes.ts'
+import { envoyBonus } from './heroes.ts'
 import { visibleRange } from './intel.ts'
 import { memoFor } from './memo.ts'
 import { marchSeasons, nodeStrength } from './season.ts'
@@ -550,7 +550,6 @@ export function canEscort(r: Realm, faction: string, hero: string): boolean {
   if (r.factions[faction]?.ruler === hero) return false
   if (h.woundedUntil !== undefined && h.woundedUntil >= r.season) return false
   if (h.awayUntil !== undefined && h.awayUntil >= r.season) return false
-  if (honeyLeft(r, hero) > 0) return false // 신혼 — 집에 머문다
   return !Object.values(r.armies).some((a) => a.hero === hero)
 }
 

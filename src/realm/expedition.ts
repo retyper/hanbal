@@ -13,7 +13,7 @@ import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { HERO_POOL } from './data/heroes-pool.ts'
 import { TRAIT } from './data/traits.ts'
-import { armyOfHero, homeOf, honeyLeft, isRuler } from './heroes.ts'
+import { armyOfHero, homeOf, isRuler } from './heroes.ts'
 import { DESTS } from './data/dests.ts'
 import type { ExpDest, ExpGot, Expedition, Hero, Order, Realm, ReportLine } from './types.ts'
 
@@ -70,7 +70,6 @@ export function expBlock(r: Realm, faction: string, hero: string, dest: ExpDest,
   if (onExpedition(r, hero) !== undefined) return '벌써 원정 중이다'
   if (h.woundedUntil !== undefined && h.woundedUntil > r.season) return '다쳐 누워 있다'
   if (h.awayUntil !== undefined && h.awayUntil >= r.season) return '자리를 비웠다'
-  if (honeyLeft(r, hero) > 0) return '신혼이다 — 짝과 집에 머문다'
   const a = armyOfHero(r, hero)
   if (a !== null && a.march !== null) return '군대를 이끌고 가는 중이다'
   if ((r.expeditions ?? []).filter((x) => x.faction === faction).length >= P.realm.expMax) return `원정은 한꺼번에 ${P.realm.expMax}까지다`
