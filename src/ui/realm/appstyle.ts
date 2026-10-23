@@ -559,6 +559,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cost .cgi { width: 16px; height: 16px; object-fit: contain; }
 .ap .btn.pri .cost .cg { background: #2a0e08e0; }
 .ap .hback { margin: 0 0 6px; }
+/* 보낼 사람 줄 — 얼굴 밑에 맡은 일 · 쉬는 이는 「쉰다」 */
+.ap .hands .hf > span { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; vertical-align: top; }
+.ap .hands .hf > span small { font-size: 10.5px; line-height: 1.1; max-width: 64px; text-align: center; color: #9fd18b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap .hands .hf > span.used small { color: #e8c88a; }
+/* 누가 가나 — 다른 일을 맡은 이 */
+.ap .wg.off { opacity: .55; filter: grayscale(.6); cursor: default; } .ap .wg .busyw { font-style: normal; font-size: 11px; color: #e8a08a; }
 /* 군대의 힘 — 그림 칩 넷 (군사 · 무장 · 장수 · 사기) · 눌러 두면 말 (data-tip) */
 .ap .pchips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
 .ap .pch { position: relative; display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px 1px 3px; border-radius: 999px; background: #2a2016; border: 1px solid #5a4630; font-size: 12.5px; color: #efe3c6; }

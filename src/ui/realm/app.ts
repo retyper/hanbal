@@ -604,7 +604,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (h.woundedUntil !== undefined && h.woundedUntil > r.season) return `다쳐 누웠다 · ${h.woundedUntil - r.season}계절`
     if (h.awayUntil !== undefined && h.awayUntil >= r.season) return '자리를 비웠다'
     if (plots.some((o) => o.kind === 'plot' && o.agent === id)) return '이번 계절 자객으로 간다'
-    if (Object.values(envoys).some((e) => e.hero === id)) return '이번 계절 사신을 따라간다'
+    const ev = Object.values(envoys).find((e) => e.hero === id)
+    if (ev !== undefined) return `이번 계절 ${r.factions[ev.to]?.name ?? ''}에 사신으로 간다`
     for (const o of heroOrders) {
       if (o.kind === 'expedition' && o.hero === id) return '이번 계절 원정을 떠난다'
       if (o.kind === 'wed' && (o.a === id || o.b === id)) return '이번 계절 혼인한다'
@@ -1612,9 +1613,25 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const cap = handsCap(r)
     const used = handsUsed()
     const idle = idleHeroes(r, me())
-    // 사자 먼저 쓰이는 것으로 — 쓴 만큼 흐리게
-    const faces = [icon('unit-scouts', 'hface msgr'), ...idle.map((id) => bust(r.heroes[id], 'hface'))]
-    let h = `<div class="hands"><div class="hf">${faces.map((f, i) => `<span class="${i < used ? 'used' : ''}">${f}</span>`).join('')}</div>`
+    // 얼굴마다 맡은 일 — 이름 붙은 일(사신 따라간 장수 · 자객)은 그 얼굴에, 이름 없는 일은 사자부터 차례로
+    const slots: Array<{ face: string; id?: string; job?: string }> = [{ face: icon('unit-scouts', 'hface msgr') }, ...idle.map((id) => ({ face: bust(r.heroes[id], 'hface'), id }))]
+    const fn = (f: string): string => r.factions[f]?.name ?? ''
+    const loose: string[] = []
+    for (const e of Object.values(envoys)) {
+      const job = `${fn(e.to)} ${ASK_NAME[e.ask as Ask] ?? '사신'}`
+      const s = e.hero !== undefined ? slots.find((x) => x.id === e.hero && x.job === undefined) : undefined
+      if (s !== undefined) s.job = job
+      else loose.push(job)
+    }
+    for (const o of plots) {
+      if (o.kind !== 'plot') continue
+      const job = o.op === 'assassin' ? '자객' : `${PLOT_NAME[o.op]}`
+      const s = o.agent !== undefined ? slots.find((x) => x.id === o.agent && x.job === undefined) : undefined
+      if (s !== undefined) s.job = job
+      else loose.push(job)
+    }
+    for (const job of loose) { const s = slots.find((x) => x.job === undefined); if (s !== undefined) s.job = job }
+    let h = `<div class="hands"><div class="hf">${slots.map((s) => `<span class="${s.job !== undefined ? 'used' : ''}">${s.face}<small>${s.job !== undefined ? esc(s.job) : s.id === undefined ? '보낼 수 있다' : '쉰다'}</small></span>`).join('')}</div>`
     h += `<div class="ht"><b>이번 계절 보낼 사람 ${Math.min(used, cap)}/${cap}</b></div></div>`
     if (used >= cap) h += `<div class="banner bad">${tx('보낼 사람이 다 나갔다. 장수를 군대·고을에서 빼서 쉬게 하면 더 보낼 수 있다.')}</div>`
     return h
@@ -1745,7 +1762,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     mine.sort((a, b) => Number(can(b.id)) - Number(can(a.id)))
     let h = `<div class="who"><div class="nal">누가 가나</div><div class="wlist">`
     h += `<button class="wg${compose.hero === '' ? ' on' : ''}" data-act="chero" data-id="">${icon('unit-scouts', 'wfc')}<b>사자</b>${feel()}</button>`
-    // 갈 수 있는 장수만 — 못 가는 이는 고를 거리에 안 띄운다 (형 10-23)
+    // 갈 수 있는 장수 — 이미 다른 일을 맡은 이는 흐리게 남기고 무슨 일인지 (형 10-23: "이미 다른 일 하고 있는데 … 뭘 일 시켰고 뭘 안 시켰는지 모르잖아")
+    for (const x of mine.filter((y) => !can(y.id) && canEscort(r, me(), y.id))) {
+      const e = Object.values(envoys).find((v) => v.hero === x.id)
+      const why = e !== undefined ? `${r.factions[e.to]?.name ?? ''} 사신` : plots.some((p) => p.kind === 'plot' && p.agent === x.id) ? '자객' : (heroBusy(r, x.id) ?? '다른 일').replace(/^이번 계절 /, '')
+      h += `<button class="wg off" disabled>${bust(x, 'wfc')}<b>${esc(x.name)}</b><i class="busyw">${esc(why)}</i></button>`
+    }
     for (const x of mine.filter((y) => can(y.id))) {
       const tr = (x.traits ?? []).filter((t) => t === 'charm' || (ask === 'trade' && t === 'trader')).map((t) => TRAIT[t]?.name).filter((t) => t !== undefined)[0]
       h += `<button class="wg${compose.hero === x.id ? ' on' : ''}" data-act="chero" data-id="${x.id}">${bust(x, 'wfc')}<b>${esc(x.name)}</b>`
