@@ -198,6 +198,29 @@ const sync = makeSync({
 }, () => app.cloudChanged())
 
 const root = document.getElementById('realm')!
+/**
+ * 스플래시를 걷는다 — 글꼴과 첫 화면 그림을 다 받았을 때 (늦어도 SPLASH_MAX_MS). 너무 빨리 걷히면 번쩍이므로 SPLASH_MIN_MS 는 보인다
+ * (realm.html #splash · 형 10-23: "이미지 로딩되는 게 고스란히 보이는데")
+ */
+const SPLASH_MIN_MS = 1300
+const SPLASH_MAX_MS = 6000
+function hideSplashWhenReady(): void {
+  const el = document.getElementById('splash')
+  if (el === null) return
+  const t0 = performance.now()
+  const img = (src: string): Promise<void> => new Promise((ok) => { const i = new Image(); i.onload = i.onerror = () => ok(); i.src = src })
+  const base = import.meta.env.BASE_URL
+  const ready = Promise.all([document.fonts.ready.then(() => undefined), img(`${base}realm/title/title-lobby.jpg`), img(`${base}realm/logo/emblem.png`)])
+  const late = new Promise<void>((ok) => setTimeout(ok, SPLASH_MAX_MS))
+  void Promise.race([ready, late]).then(() => {
+    setTimeout(() => {
+      el.classList.add('out')
+      el.addEventListener('transitionend', () => el.remove(), { once: true })
+    }, Math.max(0, SPLASH_MIN_MS - (performance.now() - t0)))
+  })
+}
+hideSplashWhenReady()
+
 const app = mountRealmApp(root, {
   onAdvance(next, report, orders, mine) {
     if (state === null) return

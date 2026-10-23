@@ -17,10 +17,28 @@
     <title>칠십팔국</title>
     <style>
       html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; color: #e9e2d4; }
+      /* 스플래시 — 스크립트보다 먼저 뜬다. 먹빛 바탕에 청동 거울 문장이 숨 쉬듯 빛나고, 붓 한 획이 그어지며 받는 동안 기다린다.
+         그림·글꼴을 다 받으면 걷힌다 (형 10-23: "게임 시작할 때 이미지 로딩되는 게 고스란히 보이는데 스플래시 스크린은 아직인가?") */
+      #splash { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+        background: radial-gradient(ellipse at 50% 42%, #2a2218 0, #14110d 55%, #0a0907 100%); transition: opacity .7s ease, visibility .7s; }
+      #splash.out { opacity: 0; visibility: hidden; }
+      #splash img { width: min(38vw, 170px); aspect-ratio: 1; opacity: 0; animation: spin 1.2s ease-out .1s forwards, spglow 3s ease-in-out 1.3s infinite; }
+      #splash svg { width: min(60vw, 280px); height: 22px; overflow: visible; }
+      #splash path { fill: none; stroke: #c9a45a; stroke-width: 5; stroke-linecap: round; stroke-dasharray: 320; stroke-dashoffset: 320; opacity: .85; animation: sppath 2.6s cubic-bezier(.4, 0, .2, 1) .5s forwards; }
+      /* 오른쪽 아래 — 말 탄 궁수 그림자가 달린다 (여섯 컷 · public/realm/fx/run-strip.png · 제미나이 실루엣) */
+      #splash .run { position: absolute; right: 6vw; bottom: 8vh; width: min(34vw, 150px); aspect-ratio: 170 / 165; background: url(realm/fx/run-strip.png) 0 0 / 600% 100% no-repeat;
+        opacity: .7; animation: sprun .56s steps(6) infinite, spbob .28s ease-in-out infinite alternate; }
+      @keyframes spin { from { opacity: 0; transform: scale(.85); filter: brightness(.4); } to { opacity: 1; transform: none; filter: none; } }
+      @keyframes spglow { 0%, 100% { filter: drop-shadow(0 0 10px #e8b85a33); } 50% { filter: drop-shadow(0 0 26px #f0c86a99); } }
+      @keyframes sppath { to { stroke-dashoffset: 0; } }
+      @keyframes sprun { from { background-position-x: 0%; } to { background-position-x: 120%; } }
+      @keyframes spbob { from { transform: translateY(0); } to { transform: translateY(-3px); } }
+      @media (prefers-reduced-motion: reduce) { #splash img, #splash path, #splash .run { animation: none; opacity: 1; stroke-dashoffset: 0; } }
     </style>
   </head>
   <body>
     <!-- 칠십팔국 시험판 — 앱 화면 (docs/realm/FLOW.md §5). 활터는 index.html 그대로다. -->
+    <div id="splash" aria-hidden="true"><img src="realm/logo/emblem.png" alt="" /><svg viewBox="0 0 300 22"><path d="M6 13 C60 4, 118 20, 176 11 S 262 6, 296 12" /></svg><i class="run"></i></div>
     <main id="realm"></main>
     <script type="module" src="/src/realm-main.ts"></script>
   </body>

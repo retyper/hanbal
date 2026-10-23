@@ -414,19 +414,22 @@ export const FRONT_CSS = `
 @keyframes kvlit { from { filter: brightness(.6); } to { filter: brightness(1); } }
 @keyframes kvpan { from { transform: translateX(0); } to { transform: translateX(calc(100vw - 100%)); } }
 @media (orientation: portrait) and (prefers-reduced-motion: reduce) { .ap .front.title .kv { animation: kvlit 2.4s ease-out both; transform: translateX(calc((100vw - 100%) / 2)); } }
-.ap .front.title .tv { position: relative; text-align: center; padding: 0 18px calc(26px + env(safe-area-inset-bottom)); max-width: 640px; animation: tv 1.4s .3s ease-out both; }
+/* 로고는 화면 위쪽 가운데에 크게, 단추는 아래에 널찍하게 (형 10-23: "로고랑 아이콘은 좀 더 크게, 화면 중상단 쯤 · UI 들이 너무 붙어 있음") */
+.ap .front.title .tv { position: relative; align-self: stretch; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center;
+  padding: calc(9vh + env(safe-area-inset-top)) 18px calc(30px + env(safe-area-inset-bottom)); max-width: 640px; width: 100%; box-sizing: border-box; animation: tv 1.4s .3s ease-out both; }
 @keyframes tv { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 /* 로고 — 문장(청동 거울·맥궁) 위에 붓글씨 이름. 금빛 그러데이션 글자 + 어두운 테 · 문장은 숨 쉬듯 빛난다 */
 .ap .front.title .logo { position: relative; display: flex; flex-direction: column; align-items: center; margin-bottom: 2px; }
-.ap .front.title .lemb { width: clamp(84px, 16vw, 128px); aspect-ratio: 1; filter: drop-shadow(0 4px 14px #000d) drop-shadow(0 0 18px #e8b85a55); animation: lemb 4.5s ease-in-out infinite; }
+.ap .front.title .lemb { width: clamp(120px, 30vw, 190px); aspect-ratio: 1; filter: drop-shadow(0 4px 14px #000d) drop-shadow(0 0 18px #e8b85a55); animation: lemb 4.5s ease-in-out infinite; }
 @keyframes lemb { 0%, 100% { filter: drop-shadow(0 4px 14px #000d) drop-shadow(0 0 14px #e8b85a40); } 50% { filter: drop-shadow(0 4px 14px #000d) drop-shadow(0 0 26px #f0c86a88); } }
-.ap .front.title h1 { font-family: 'East Sea Dokdo', var(--display); font-weight: 400; font-size: clamp(72px, 17vw, 132px); line-height: .9; margin: -6px 0 0; letter-spacing: .04em;
+.ap .front.title h1 { font-family: 'East Sea Dokdo', var(--display); font-weight: 400; font-size: clamp(96px, 24vw, 176px); line-height: .9; margin: -4px 0 0; letter-spacing: .04em;
   background: linear-gradient(#fff4cc 10%, #f0c86a 48%, #b07a2c 80%, #7a4e18); -webkit-background-clip: text; background-clip: text; color: transparent;
   filter: drop-shadow(0 2px 0 #2a1606) drop-shadow(0 6px 16px #000e); }
 @media (prefers-reduced-motion: reduce) { .ap .front.title .lemb { animation: none; } }
 .ap .front.title .sub { margin: 2px 0 8px; color: #e8dcc0; font-size: 14px; letter-spacing: .08em; }
 .ap .front.title .hook { margin: 0 auto 16px; color: #cfc6b4; font-size: 13.5px; line-height: 1.6; max-width: 460px; }
-.ap .front .fbtns { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.ap .front .fbtns { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: auto; }
+.ap .front.title .fine { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 22px 16px 0; }
 .ap .front .cont { display: flex; align-items: center; gap: 12px; width: min(420px, 92vw); padding: 10px 14px; border-radius: 16px; background: #1f1710ee; border: 1px solid #c9a45a; color: var(--ink); font: inherit; text-align: left; cursor: pointer; animation: glow 2.6s ease-in-out infinite alternate; }
 @keyframes glow { from { box-shadow: 0 0 0 #c9a45a00; } to { box-shadow: 0 0 22px #c9a45a55; } }
 .ap .front .cont .cface { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #c9a45a; }
