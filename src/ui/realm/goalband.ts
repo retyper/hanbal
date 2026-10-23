@@ -11,8 +11,9 @@ function goalLabel(r: Realm, g: Goal): string {
   switch (g.kind) {
     case 'hold': return `${g.nodes.map((id) => r.nodes[id]?.name ?? id).join(' · ')} 쥐기`
     case 'submit': {
+      // 무엇을 하라는지 또렷이 — 동맹이든 조공이든 (형 10-23: "따르게 하기는 뭐임? 조공 바치게 하란 거야 점령하란 거야")
       const names = g.factions.map((f) => r.factions[f]?.name ?? f).join(' · ')
-      return `${josa(names, '이', '가')} 따르게 하기`
+      return g.how === 'ally' ? `${josa(names, '과', '와')} 동맹 맺기` : g.how === 'tribute' ? `${names}에게 조공 받기` : `${josa(names, '과', '와')} 동맹 맺기 또는 조공 받기`
     }
     case 'fell': return `${josa(r.heroes[g.hero]?.name ?? g.hero, '을', '를')} 쓰러뜨리기`
     case 'event': return g.id
@@ -30,7 +31,8 @@ export function goalBandHtml(r: Realm, esc: (s: string) => string): string {
     const st = goalState({ ...r, scenario: sc }, g)
     const ok = st.done || done
     const bar = ok ? '' : `<i class="gbar"><i style="width:${Math.round((st.have / Math.max(1, st.need)) * 100)}%"></i></i>`
-    h += `<div class="gbr${ok ? ' ok' : ''}"><span class="gck">${ok ? '✓' : '◇'}</span><span>${esc(goalLabel(r, g))}${bar}</span></div>`
+    const tip = g.kind === 'submit' ? ' data-tip="외교에서 사신을 보내 화친 → 동맹을 맺거나, 싸워서 이긴 뒤 조공을 요구한다 — 그 나라를 빼앗지 않아도 된다"' : ''
+    h += `<div class="gbr${ok ? ' ok' : ''}"${tip}><span class="gck">${ok ? '✓' : '◇'}</span><span>${esc(goalLabel(r, g))}${bar}</span></div>`
   }
   const left = seasonsLeft({ ...r, scenario: sc })
   if (left !== null && !done) h += `<div class="gbr gleft${left <= 2 ? ' warn' : ''}"><span class="gck">⧗</span><span>${left}계절 남았다</span></div>`

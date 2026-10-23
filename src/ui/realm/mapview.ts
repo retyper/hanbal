@@ -66,7 +66,9 @@ export function roadSvg(d: string, kind: EdgeKind, k: number, op = 1, title = ''
  */
 export const MAP_CSS = `
 .map { position: relative; height: 100%; aspect-ratio: ${W} / ${H}; margin: 0 auto; background: #2a261f center / cover no-repeat;
-  user-select: none; -webkit-user-select: none; container-type: size; }
+  user-select: none; -webkit-user-select: none; container-type: size;
+  /* 가장자리 고을 이름·말이 밖으로 삐져나가 굴릴 자리를 늘리지 않게 — 지도 바깥 빈 바탕까지 끌려 나갔다 (형 10-23: "맵에서 지도 바깥으로 막 나가지지 않게") */
+  overflow: clip; }
 .map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .map .nd { position: absolute; transform: translate(-50%, -62%); width: calc(8.5% * var(--s, 1) * var(--ns, 1) * var(--cs, 1)); text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .map .nd img.st { width: 100%; filter: drop-shadow(0 2px 2px rgba(0,0,0,.55)); }

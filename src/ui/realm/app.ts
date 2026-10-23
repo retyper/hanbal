@@ -904,7 +904,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const on = musters.some((o) => o.kind === 'arm' && o.army === a.id && o.unit === k)
       if (ac !== null) {
         const label = on ? '올리는 중 · 취소' : `${ac.n}명 → ${GEAR_NAME[k]?.[ac.to] ?? TIER_NAME[ac.to]} · 철 ${ac.iron}`
-        h += `<button class="btn sm ${on ? 'on' : ''}" data-act="arm" data-army="${a.id}" data-unit="${k}" ${on || (st.iron >= ac.iron && st.grain >= ac.grain) ? '' : 'disabled'}>${esc(label)}</button>`
+        // 올리는 중이면 이 단추는 "취소" — 골라 둔 표(금테 ✓)를 달지 않는다 (형 10-23: "올리는중 취소 버튼이 이상하게 황금색 테두리")
+        h += `<button class="btn sm ${on ? 'ghost' : ''}" data-act="arm" data-army="${a.id}" data-unit="${k}" ${on || (st.iron >= ac.iron && st.grain >= ac.grain) ? '' : 'disabled'}>${esc(label)}</button>`
       }
       h += `</div>`
     }
@@ -1642,7 +1643,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           const bu = bowUpCost(realm!, me())
           const buying = musters.some((o) => o.kind === 'bowUp')
           h += `<div class="frow"><span class="mute">자객의 활 · <b>${esc(BOW_NAME[bt] ?? '')}</b></span>`
-          if (bu !== null) h += `<button class="btn sm ${buying ? 'on' : ''}" data-act="bowup" ${buying || (st.grain >= bu.grain && st.iron >= bu.iron) ? '' : 'disabled'}>${buying ? '올리는 중 · 취소' : `${esc(josa(BOW_NAME[bu.to] ?? '', '으로', '로'))} · 곡식 ${bu.grain} · 철 ${bu.iron}`}</button>`
+          if (bu !== null) h += `<button class="btn sm ${buying ? 'ghost' : ''}" data-act="bowup" ${buying || (st.grain >= bu.grain && st.iron >= bu.iron) ? '' : 'disabled'}>${buying ? '올리는 중 · 취소' : `${esc(josa(BOW_NAME[bu.to] ?? '', '으로', '로'))} · 곡식 ${bu.grain} · 철 ${bu.iron}`}</button>`
           h += `</div><p class="mute">활이 한 단계 오를 때마다 화살이 빨라지고 세지고 덜 떨린다. 직접 쏘지 않을 때도 더 잘 된다.</p>`
         }
         if (targets.length === 0) h += `<div class="mute">지금은 노릴 데가 없다.${op === 'bribe' || op === 'spy' ? ' 아는 마을이어야 한다. 정찰부터.' : op === 'assassin' ? ' 겨뤄 본 적장만 노릴 수 있다.' : ''}</div>`
@@ -2479,7 +2480,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function frontHtml(f: Front): string {
     const links = `<p class="fine"><a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a> ${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
       // 소리의 출처 — 공공누리 제1유형·CC BY 는 출처를 밝혀야 쓸 수 있다 (형 10-23: "출처표기해야 상업적으로 사용가능하니까 주의")
-      + ` <a class="btn ghost" href="${BASE}realm/sfx/CREDITS.txt" target="_blank" rel="noopener">소리 출처</a></p>`
+      + ` <a class="btn ghost" href="${BASE}realm/credits.html">소리 출처</a></p>`
     switch (f.kind) {
       case 'title': {
         // 도감 — 판을 넘어 남는 것 (VISION §5-4). 만난 장수 수를 단추에

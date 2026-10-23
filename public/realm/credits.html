@@ -1,0 +1,57 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>칠십팔국 · 소리 출처</title>
+<style>
+  :root { color-scheme: dark; --gold: #e0bd78; --ink: #e8dcc0; --mute: #9a8f7c; }
+  body { margin: 0; background: #14110d; color: var(--ink); font-family: "Gowun Dodum", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; }
+  header { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #14110df0; border-bottom: 1px solid #3a2f22; backdrop-filter: blur(6px); }
+  header h1 { margin: 0; font-size: 18px; color: var(--gold); letter-spacing: .06em; }
+  .back { padding: 8px 14px; border-radius: 10px; border: 1px solid #6a5236; background: #1f1710; color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; text-decoration: none; }
+  main { max-width: 760px; margin: 0 auto; padding: 8px 16px 48px; }
+  .lead { color: var(--mute); font-size: 13px; line-height: 1.7; }
+  h2 { font-size: 15px; color: var(--gold); margin: 26px 0 8px; letter-spacing: .08em; }
+  h2 small { color: var(--mute); font-weight: 400; letter-spacing: 0; margin-left: 6px; }
+  .row { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 9px 12px; margin: 6px 0; border-radius: 10px; background: #211a12; border-left: 3px solid #6a5236; }
+  .row b { font-size: 14px; font-weight: 600; }
+  .row .who { color: var(--mute); font-size: 12.5px; }
+  .row .lic { grid-row: span 2; align-self: center; font-size: 11.5px; color: #c9e0b0; white-space: nowrap; }
+  .row a { color: #bcd3f0; font-size: 12px; word-break: break-all; }
+  .note { margin-top: 26px; padding: 12px 14px; border-radius: 12px; background: #1d2418; color: #c9d8b8; font-size: 12.5px; line-height: 1.7; }
+  @media (max-width: 480px) { .row { grid-template-columns: 1fr; } .row .lic { grid-row: auto; } }
+</style></head><body>
+<header><a class="back" href="realm.html" onclick="if (history.length > 1) { history.back(); return false }">‹ 돌아가기</a><h1>소리 출처</h1></header>
+<main>
+<p class="lead">이 게임에 쓴 소리와 음악은 모두 출처를 밝히면 쓸 수 있는 것들이다 — 공공누리 제1유형(출처표시) · CC BY(저작자 표시) · CC0(퍼블릭 도메인). 누르는 소리는 앞부분을 짧게 잘라 썼다.</p>
+<div id="list">불러오는 중…</div>
+<p class="note">공공누리 제1유형 — 이 게임의 소리 가운데 공공누리 표시가 있는 것은 (재)전주정보문화산업진흥원이 공공누리 제1유형으로 개방한 저작물을 이용하였으며, 공유마당(gongu.copyright.or.kr)에서 무료로 받을 수 있다.</p>
+</main>
+<script>
+const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+const GROUPS = [
+  ['공유마당', '공공누리 제1유형 · CC BY', (d) => d.startsWith('공유마당')],
+  ['형이 받아 온 음악', '출처 확인 중', (d) => d.startsWith('형이')],
+  ['Freesound · OpenGameArt', 'CC0', () => true],
+]
+fetch('sfx/CREDITS.txt').then((r) => r.text()).then((t) => {
+  const rows = t.split('\n').map((l) => l.trim()).filter((l) => l !== '' && !l.startsWith('#') && /^\S+\.(ogg|mp3|wav)\s/.test(l))
+    .map((l) => { const m = l.match(/^(\S+)\s+(.*)$/); return { file: m[1], desc: m[2] } })
+  const used = new Set()
+  let h = ''
+  for (const [title, lic, test] of GROUPS) {
+    const list = rows.filter((x) => !used.has(x.file) && test(x.desc))
+    if (list.length === 0) continue
+    list.forEach((x) => used.add(x.file))
+    h += `<h2>${esc(title)}<small>${esc(lic)} · ${list.length}</small></h2>`
+    for (const x of list) {
+      const parts = x.desc.split(' · ')
+      const url = (x.desc.match(/https?:\/\/\S+?(?=[\s)]|$)/) || [''])[0]
+      const name = (x.desc.match(/「([^」]+)」|"([^"]+)"/) || [])[1] || (x.desc.match(/"([^"]+)"/) || [])[1] || parts[1] || x.file
+      const license = /공공누리/.test(x.desc) ? '공공누리 1유형' : /CC BY/.test(x.desc) ? 'CC BY' : /CC0/.test(x.desc) ? 'CC0' : ''
+      const who = title === 'Freesound · OpenGameArt' ? (parts[3] || '') : title === '공유마당' ? (parts[2] || '') : ''
+      h += `<div class="row"><b>${esc(name)}</b><span class="lic">${esc(license)}</span><span class="who">${esc(who)}${who ? ' · ' : ''}${esc(x.file)}${url ? ` · <a href="${esc(url)}" target="_blank" rel="noopener">원본</a>` : ''}</span></div>`
+    }
+  }
+  document.getElementById('list').innerHTML = h
+}).catch(() => { document.getElementById('list').textContent = '출처 목록을 불러오지 못했다 — sfx/CREDITS.txt' })
+</script>
+</body></html>

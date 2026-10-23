@@ -37,7 +37,7 @@ export const CHAPTERS: readonly Chapter[] = [
   {
     id: 'jumong', n: 2, region: 'jumong', nation: 'goguryeo', name: '주몽, 졸본에 서다', era: '기원전 37년 · 졸본', hero: '주몽',
     hook: '동부여를 빠져나온 활 잘 쏘는 사내. 비류수 가에 나라를 세우자 송양왕이 활 솜씨를 겨루자 한다.',
-    goal: '비류국 송양이 스스로 따르게 하고, 행인국과 북옥저 도읍을 쥔다',
+    goal: '송양의 비류국과 동맹을 맺거나 조공을 받고, 행인국과 북옥저 도읍을 차지한다',
     art: 'keyart/jumong.jpg',
     source: '『삼국사기』 고구려본기 — 송양이 나라를 들어 항복하니 그 땅을 다물도라 하였다.',
     scenario: { id: 'jumong', win: [{ kind: 'submit', factions: ['biryuna'], how: 'either' }, { kind: 'hold', nodes: ['jm-haengin-cap', 'jm-okjeo-cap'] }] },

@@ -453,7 +453,8 @@ export const FRONT_CSS = `
 .ap .front .bsec { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; max-width: 1180px; margin: 14px auto 0; padding: 0 16px; font-weight: 400; }
 .ap .front .bsec b { font-family: var(--display); font-weight: 400; font-size: 22px; color: #f3d48a; letter-spacing: .08em; } .ap .front .bsec span { font-size: 13px; color: #b8ad96; }
 .ap .front .bcards.chaps { padding-bottom: 8px; }
-.ap .front .pgoal .gl .gch { display: block; font-size: 13px; letter-spacing: .1em; color: #8a6a3a; margin-bottom: 4px; }
+/* 서막 마지막 장의 장 이름 — 제 줄에, 읽히는 크기로 (형 10-23: "2장 주몽 졸본에서다 다음 줄바꿈도 안 돼 있고 맨 위 글씨가 이상하게 더 작음") */
+.ap .prologue .pgoal .gl .gch, .ap .front .pgoal .gl .gch { display: block; font-size: clamp(15px, 1.8vw, 18px); letter-spacing: .12em; color: #8a5a2a; margin-bottom: 10px; }
 .ap .front .bcard.chap .bbadge { background: linear-gradient(#f0d08a, #b8863a); font-family: var(--serif); }
 /* 잠긴 판 — 그림만 잿빛으로 어둡게, 제목과 여는 길 글씨는 또렷하게 (그림 위에 덮개) */
 .ap .front .bcard.locked { cursor: default; } .ap .front .bcard.locked .bth { filter: grayscale(1); position: relative; }
@@ -486,7 +487,7 @@ export const FRONT_CSS = `
 .ap .prologue:not(.s0) { animation: none; }
 .ap .prologue.out { animation: plout 1.1s ease-in forwards; pointer-events: none; }
 @keyframes plin { from { opacity: 0; } to { opacity: 1; } } @keyframes plout { to { opacity: 0; transform: scale(1.04); filter: blur(4px); } }
-.ap .prologue .pin { max-width: 680px; width: 100%; font-family: 'Gowun Batang', serif; }
+.ap .prologue .pin { max-width: 680px; width: 100%; font-family: 'Gowun Batang', serif; word-break: keep-all; overflow-wrap: anywhere; } /* 낱말 가운데서 줄이 갈리지 않게 (북 / 옥저) */
 .ap .prologue p { margin: 0 0 14px; line-height: 1.75; font-size: clamp(16px, 2.1vw, 21px); opacity: 0; animation: ink 1.2s ease-out forwards; }
 .ap .prologue .pera .l1 { font-size: clamp(26px, 3.6vw, 40px); font-weight: 700; } .ap .prologue .pera .l2 { animation-delay: .9s; } .ap .prologue .pera .l3 { animation-delay: 2s; } .ap .prologue .pera .l4 { animation-delay: 3.4s; color: #7a1f10; }
 @keyframes ink { from { opacity: 0; filter: blur(3px); transform: translateY(6px); } to { opacity: 1; filter: none; transform: none; } }

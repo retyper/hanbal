@@ -12,7 +12,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
   --serif: 'Gowun Batang', 'Apple SD Gothic Neo', 'Batang', serif;
   --display: 'Song Myung', 'Gowun Batang', 'Batang', serif;
   position: fixed; inset: 0; color: var(--ink); font: 15px/1.45 var(--body);
-  -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+  -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none;
+  /* 꾹 누르면 설명이 뜬다 — 글이 골라지거나 아이폰의 복사 메뉴가 뜨지 않게 (형 10-23: "꾹 누르고 있으면 텍스트 선택돼 버림") */
+  -webkit-touch-callout: none; }
+.ap input, .ap textarea { user-select: text; -webkit-user-select: text; }
 /* 그림은 마우스를 받지 않는다 — 누르는 건 늘 감싼 단추·칸이다. 브라우저 확장(포토샵 등)이 그림마다 띄우는 단추도 이걸로 안 뜬다 (형: "ps 버튼 뜨는게 짜증남") */
 .ap img { pointer-events: none; -webkit-user-drag: none; }
 .ap button, .ap input, .ap select, .ap textarea { font-family: inherit; }
@@ -84,7 +87,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .sheet { position: absolute; left: 0; right: 0; bottom: var(--tabh); max-height: 72%; overflow-y: auto; overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch; background: #1f1710; border-radius: 18px 18px 0 0; border-top: 1px solid #54412a;
   padding: 0 14px 18px; box-sizing: border-box; z-index: 7; transform: translateY(105%); transition: transform .22s ease-out;
-  box-shadow: 0 -8px 24px #0009; user-select: text; -webkit-user-select: text; }
+  box-shadow: 0 -8px 24px #0009; }
 .ap.sheet-open .sheet { transform: none; }
 .ap:not(.sheet-open) .sheet { visibility: hidden; transition: transform .22s ease-out, visibility 0s .22s; }
 @media (min-width: 900px) { .ap .sheet { left: auto; right: 12px; width: 440px; bottom: calc(var(--tabh) + 8px); border-radius: 16px; max-height: calc(100% - var(--tabh) - var(--toph) - 20px); } }
@@ -487,7 +490,9 @@ export const SEASONP_CSS = `
 .ap .seasonp i { position: absolute; top: -48px; left: var(--x); width: calc(var(--z) * var(--sz)); aspect-ratio: 1; opacity: var(--op);
   background: 0 0 / 800% 100% no-repeat; background-position-x: calc(var(--c) * 100% / 7);
   animation: spfall calc(var(--d) * var(--sp)) linear calc(var(--t) * var(--sp)) infinite; will-change: transform; }
-.ap .seasonp[data-s="spring"] { --sz: 20px; } .ap .seasonp[data-s="spring"] i { background-image: url(__ART__fx/petals-strip.png); }
+/* 봄 꽃비는 작고 성기게 — 셋에 하나만 (형 10-23: "너무 크고 너무 많이 내려. 좀 적당히") */
+.ap .seasonp[data-s="spring"] { --sz: 12px; --op: .7; --sp: 1.25s; } .ap .seasonp[data-s="spring"] i { background-image: url(__ART__fx/petals-strip.png); }
+.ap .seasonp[data-s="spring"] i:not(:nth-child(3n)) { display: none; }
 .ap .seasonp[data-s="autumn"] { --sz: 28px; --sp: 1.1s; } .ap .seasonp[data-s="autumn"] i { background-image: url(__ART__fx/leaves-strip.png); }
 /* 눈 — 대부분 결정 없는 작은 송이(둥근 점), 넷에 하나만 결정. 희어서 밝은 땅에 묻히니 옅은 테두리 */
 .ap .seasonp[data-s="winter"] { --sz: 18px; --sp: 1.3s; --op: .9; } .ap .seasonp[data-s="winter"] i { background-image: url(__ART__fx/snow-strip.png); animation-name: spsnow; }
