@@ -589,6 +589,9 @@ export const WAR_CSS = `
 .ap .wintro { margin: 12px 0 6px; padding: 8px 10px; border-radius: 10px; background: #1e160fe6; font-size: 14.5px; }
 .ap .wlog { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
 .ap .wrd, .ap .wnext, .ap .wend { scroll-margin-top: var(--wtoph, 170px); }
+/* 합 기록 · 다음 합 · 결과 · 들머리 — 같은 청동 테 (형 10-23: "밋밋한 CSS UI 찾아서 개선") */
+.ap.ap :is(.wrd, .wnext, .wend, .wintro) { border: 11px solid transparent; border-image: url(__ART__ui/frame-panel.png) 118 / 11px stretch; border-radius: 0; background-clip: padding-box; }
+.ap.ap .wrd.crit { filter: drop-shadow(0 0 5px #d9b36a99); box-shadow: none; }
 .ap .wrd { padding: 8px 10px; border-radius: 12px; background: #201a16e6; border: 1px solid #4d3b26; }
 .ap .wrd.crit { border-color: #d9b36a; box-shadow: 0 0 0 1px #d9b36a55 inset; }
 .ap .wrn { font-size: 12px; color: var(--mute); margin-bottom: 4px; }

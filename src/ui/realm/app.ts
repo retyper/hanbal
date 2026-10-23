@@ -131,6 +131,19 @@ function ding(name: string, vol = 0.6, rate = 1): void {
 }
 /** 판마다 「?」 단추로 여는 설명 — 판 위에는 고를 것만 두고, 읽을 거리는 여기로 (형 10-23: "설명서를 물음표 버튼 같은 거 하나 만들어서 필요할 때 읽어 볼 수 있게") */
 const GUIDE: Readonly<Record<string, { readonly title: string; readonly body: readonly string[] }>> = {
+  paths: { title: '승리 조건 — 넷 가운데 하나만 이루면 이긴다', body: [
+    '정복 — 나라마다 도읍(★)이 하나씩 있다. 막대만큼 도읍을 쥐면 이긴다. 우리 도읍을 빼앗기면 진다.',
+    '맹주 — 아는 나라 절반 넘게와 동맹이나 조공으로 손잡고(조공국 하나는 있어야) 네 계절을 끊기지 않고 버티면 진왕이 된다. 동그라미가 그 네 계절이다.',
+    '철·뱃길 — 철광이나 포구를 하나 쥐어야 열린다. 한 해 안에 여러 나라와 철을 바꾸고, 바꾼 나라 수 × 철이 막대를 채우면 변진의 쇠가 우리 뱃길로 흐른다.',
+    '큰 제사 — 소도 곁 고을을 쥐고 봄·가을 제사를 한 번도 거르지 않고 이어 지내고, 그해 가을 집이 넉넉하면 큰 제사가 열린다. 사슬 고리가 이어 지낸 제사다.',
+    '소문 — 다른 나라가 어느 길에 가까우면 아래에 붉게 뜬다. 그 길을 끊어야 한다.',
+  ] },
+  move: { title: '군대 옮기기', body: [
+    '군대 말을 누르고, 지도에서 빛나는 곳을 누르면 그리로 간다. 제 고을을 누르면 머문다.',
+    '칩의 숫자는 닿는 데 걸리는 계절이다. 초록은 이길 듯, 붉음은 질 듯.',
+    '협공 — 다른 우리 군대와 같은 계절에 닿으면 한 판으로 함께 싸운다.',
+    '같은 고을의 다른 말을 더 누르면 함께 골라진다. 합치기도 여기서.',
+  ] },
   envoy: { title: '사신', body: [
     '사신마다 한 사람이 간다 — 군장의 사자나 쉬는 장수.',
     '이번 계절 보낼 사람 = 사자 하나 + 쉬는 장수 수. 사신·공작 하나에 한 사람이 든다.',
@@ -308,7 +321,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = TIP_CSS + APP_CSS + LOG_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + CLOUD_CSS + WINFX_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
+  style.textContent = TIP_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + CLOUD_CSS + WINFX_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
   installTips(root)
@@ -891,7 +904,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<b>${esc(armyName(r, first))}</b><span>${esc(josa(r.nodes[first.march.to]?.name ?? '', '으로', '로'))} 가는 중 · ${esc(arriveWhen(r.season, first.march.left))}</span>${turnBackBtn(first)}`
     } else if (sel.length === 1) {
       const more = Object.values(r.armies).filter((x) => x.faction === me() && x.id !== first.id && x.at === first.at && x.march === null).length
-      h += `<b>${esc(armyName(r, first))} · ${headcount(forceOf(r, first))}명</b><span>갈 곳을 누른다 · 제 고을을 누르면 머문다 · 칩의 숫자는 닿는 데 걸리는 계절 · 협공은 다른 우리 군대와 같은 계절에 닿아 한 판으로 싸운다${more > 0 ? ' · 옆 말을 누르면 함께 고른다' : ''}</span>`
+      h += `<b>${esc(armyName(r, first))} · ${headcount(forceOf(r, first))}명 ${guideBtn('move')}</b><span>빛나는 곳을 누른다${more > 0 ? ' · 옆 말도 누르면 함께' : ''}</span>`
     } else {
       const men = sel.reduce((s, a) => s + headcount(forceOf(r, a)), 0)
       const heroes = sel.filter((a) => a.hero !== null).length
@@ -2051,6 +2064,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const mine = Object.values(r.nodes).filter((n) => n.owner === me())
     const st = r.stock[me()] ?? { grain: 0, iron: 0 }
     let h = `<div class="nhead">${nationFace(me())}<div><h3>${emblem(me())}${esc(r.factions[me()]?.name ?? '')}</h3><p class="mute">${esc(info?.blurb ?? '')}</p>${info !== undefined ? `<p class="mute src">${esc(info.source)}</p>` : ''}</div></div>`
+    // 군주가 사로잡혔다 — 돌아오는 길을 말한다 (형 10-23: "주몽을 뺏겨 버렸네 … 주몽 없이 고구려를 어떻게 끌지")
+    const rul = r.factions[me()]?.ruler
+    const rh = rul !== undefined ? r.heroes[rul] : undefined
+    if (rh !== undefined && rh.status === 'captive' && rh.captor !== null) {
+      const by = r.factions[rh.captor]?.name ?? ''
+      h += `<div class="banner bad">${tx(`⛓ 군주 ${josa(rh.name, '이', '가')} ${by}에 사로잡혀 있다 — ${josa(by, '과', '와')} 화친을 맺거나 ${by}의 도읍을 빼앗으면 돌아온다. 그동안 군주의 다스림이 걸리지 않는다.`)}</div>`
+    }
     h += customsHtml({ esc }, me(), customsOf(r, me()))
     const need = winNeed(r.region ?? 'byeonhan-mini')
     const held = Object.values(r.factions).filter((x) => r.nodes[x.capital]?.owner === me()).length
@@ -2133,19 +2153,19 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const streak = r.suzerain?.[me()]?.streak ?? 0
     const S = P.realm.suzerainSeasons
     const clock = Array.from({ length: S }, (_, i) => `<i class="${i < streak ? 'on' : ''}"></i>`).join('')
-    let h = `<div class="paths"><h4>이기는 길</h4>`
+    let h = `<div class="paths"><h4 class="qh">승리 조건 <small>넷 가운데 하나만 이루면 이긴다</small>${guideBtn('paths')}</h4>`
     h += `<div class="path"><b>정복</b>${bar(held, need)}<span>도읍 ${held}/${need}</span></div>`
     h += `<div class="path"><b>맹주</b>${bar(pact.have.length, pact.need, 'pact')}<span>손잡은 나라 ${pact.have.length}/${pact.need}</span></div>`
-    h += `<div class="path sub"><span class="clock">${clock}</span><span class="mute">${tx(streak > 0 ? `맹약의 해 ${streak}/${S} 계절 — 끊기지 않으면 진왕이 된다` : '아는 나라 절반 넘게와 동맹이나 조공으로 손잡고 (조공국 하나는 있어야) 네 계절을 버티면 진왕이 된다')}</span></div>`
+    h += `<div class="path sub"><span class="clock">${clock}</span><span class="mute">${streak > 0 ? `맹약 ${streak}/${S} 계절` : '손잡고 네 계절 버티기'}</span></div>`
     // 철과 뱃길 — 교역 장부: 올해 철을 바꾼 나라 깃발이 한 줄로 · 셈(나라 수 × 철) 막대
     const io = ironOf(r, me())
     h += `<div class="path"><b>철·뱃길</b>${bar(io.score, io.need, 'iron')}<span>${io.partners.length}나라 · 철 ${io.iron}</span></div>`
-    h += `<div class="path sub"><span class="flags">${io.partners.length > 0 ? io.partners.map((f) => emblem(f, 'fem')).join('') : ''}</span><span class="mute">${tx(!io.gate ? '철광이나 포구를 하나는 쥐어야 뱃길이 열린다' : `올해 ${io.minPartners}나라 넘게와 철을 바꾸고, 바꾼 나라 수 × 철이 ${josa(String(io.need), '을', '를')} 넘으면 변진의 쇠가 우리 뱃길로 흐른다`)}</span></div>`
+    h += `<div class="path sub"><span class="flags">${io.partners.length > 0 ? io.partners.map((f) => emblem(f, 'fem')).join('') : ''}</span><span class="mute">${!io.gate ? '철광·포구를 쥐어야 열린다' : `올해 ${io.minPartners}나라 넘게와 철 바꾸기`}</span></div>`
     // 큰 제사 — 사슬(봄·가을 제사를 내리) · 집 막대
     const ri = riteOf(r, me())
     const chain = Array.from({ length: ri.need }, (_, i) => `<i class="${i < ri.chain ? 'on' : ''}" title="${i % 2 === 0 ? '봄' : '가을'}"></i>`).join('')
     h += `<div class="path"><b>큰 제사</b>${bar(ri.hh, ri.hhNeed, 'rite')}<span>집 ${ri.hh.toLocaleString('ko-KR')}/${ri.hhNeed.toLocaleString('ko-KR')}</span></div>`
-    h += `<div class="path sub"><span class="clock rite">${chain}</span><span class="mute">${tx(`봄·가을 제사를 한 번도 거르지 않고 ${ri.need}번 지내고, 그해 가을 집이 넉넉하면 큰 제사가 열린다 — 사슬 ${ri.chain}/${ri.need}`)}</span></div>`
+    h += `<div class="path sub"><span class="clock rite">${chain}</span><span class="mute">제사 사슬 ${ri.chain}/${ri.need}</span></div>`
     // 남의 철과 뱃길 · 큰 제사 — 소문으로 들은 것 (아는 나라만)
     for (const key of Object.keys(r.pathNear ?? {}).sort()) {
       const [kind, f] = key.split(':') as [string, string]
@@ -2167,7 +2187,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + `<p><b>한 계절 = 한 턴.</b> 명령을 고르고 다음 계절을 누른다.</p>`
       + `<p><b>봄</b>에 심은 집 수만큼 가을에 거두니, 봄에 군사를 뽑으면 그만큼 가을걷이가 준다. <b>여름</b>엔 장마로 나루가 막히고 길이 느려진다. `
       + `<b>가을</b>엔 곡식이 들어오고, <b>겨울</b>엔 강이 얼어 언 강을 건너 기습하기 좋지만 고개가 막히고 군량이 더 든다.</p>`
-      + `<p><b>백성 분배</b> 빈땅은 아무도 안 사는 땅이다. 빈땅을 눌러 「새 마을 개척」을 하면 맞닿은 우리 고을의 백성이 가서 마을을 연다. 우리 고을을 눌러 「백성 분배」를 하면 그 고을 백성을 빈땅이나 다른 우리 고을로 보낸다. 곡식이 든다. 붐비는 고을의 백성은 저절로도 옮겨 간다.</p>`
+      + `<p><b>개척단</b> 빈땅은 아무도 안 사는 땅이다. 우리 고을에서 「개척단 꾸리기」를 하면 지도에 개척단이 서고, 군대처럼 빈땅으로 옮기면 그 자리에 마을이 선다. 빈땅을 눌러 「개척단 보내기」를 해도 된다. 곡식·나무가 든다. 붐비는 고을의 백성은 저절로 이웃 고을로 옮겨 간다.</p>`
       + `<p><b>백성 · 장정 · 군사</b> 백성은 가구로 센다. 한 가구는 다섯 식구 남짓이고, 농사지어 곡식을 낸다. 징병하면 가구에서 사내를 뽑는다 — 군사 둘에 한 가구 몫의 일손이 빠져 그만큼 덜 거둔다. 군사는 움직이고 쳐들어가지만 곡식을 먹는다. 곡식이 떨어지면 사기가 꺾인다. 장정은 뽑히지 않은 사내들로, 적이 오면 돌창·몽둥이를 들고 제 고을만 지킨다(집 둘에 하나꼴 · 수는 많아도 약하다). 해산하면 일손이 집으로 돌아간다.</p>`
       + `<p><b>지도</b> 땅 색과 깃발이 주인. 왼쪽 위 깃발을 누르면 그 나라 땅만 또렷하다. 초록 수는 우리 군사, 붉은 수는 정찰꾼이 본 적 군세, ?는 아직 못 본 곳. ✕는 이번 계절 막힌 길. 보랏빛 화살은 다가오는 적.</p>`
       + `<p><b>판세</b>는 색으로 보인다. 초록이면 이길 듯하고 붉으면 질 듯하다. 두 색이 섞이고 ?가 붙으면 아직 잘 모른다. 정찰하면 또렷해진다.</p>`

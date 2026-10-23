@@ -327,9 +327,26 @@ export function persuadeSeasons(r: Realm, hero: string, by: string | null): numb
   return Math.max(1, Math.ceil(Math.max(0, resist) / persuadeDropOf(r, by)) + Math.round(1 / Math.max(0.01, recruitChance(r, hero, by))))
 }
 
+/**
+ * 사로잡힌 장수가 풀려난다 — `captor` 가 잡아 둔 `of` 나라 장수들이 제 나라 도읍으로 (화친·동맹을 맺을 때 · 잡아 둔 나라의 도읍이 떨어질 때).
+ * (형 10-23: "주몽을 뺏겨 버렸네… 주몽 없이 고구려를 어떻게 끌지" — 예전엔 돌아오는 길이 없었다)
+ */
+export function releaseCaptives(r: Realm, captor: string, of: string, why: 'peace' | 'take', lines: ReportLine[]): void {
+  for (const h of byId(Object.values(r.heroes))) {
+    if (h.status !== 'captive' || h.captor !== captor || h.faction !== of) continue
+    h.status = 'free'
+    h.captor = null
+    h.post = null
+    delete h.persuade
+    h.at = homeOf(r, of)
+    lines.push({ kind: 'freed', hero: h.id, faction: of, from: captor, why })
+  }
+}
+
 function startPersuade(r: Realm, o: Extract<Order, { kind: 'persuade' }>): void {
   const h = r.heroes[o.hero]
   if (h === undefined || h.status !== 'captive' || h.captor === null) return
+  if (isRuler(r, h.id)) return // 군주는 꺾이지 않는다 — 회유를 받지 않는다
   const by = o.by !== null ? r.heroes[o.by] : undefined
   if (o.by !== null && (by === undefined || by.status !== 'free' || by.faction !== h.captor)) return
   const left = persuadeSeasons(r, h.id, o.by)

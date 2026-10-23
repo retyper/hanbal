@@ -12,7 +12,7 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { GOODS, canPayGoods, goodOf, goodsOne, goodsWorth, menOf, payGoods, stockOf, worthOf } from './economy.ts'
-import { envoyBonus } from './heroes.ts'
+import { envoyBonus, releaseCaptives } from './heroes.ts'
 import { visibleRange } from './intel.ts'
 import { memoFor } from './memo.ts'
 import { marchSeasons, nodeStrength } from './season.ts'
@@ -51,7 +51,12 @@ function setRelation(r: Realm, a: string, b: string, state: Relation['state'], u
   ;(r.relations ??= {})[pairKey(a, b)] = next
   if (prev.state !== state && cause?.why !== 'plot') noteDeed(r, a, b, { by: cause?.by ?? '', k: 'rel', st: state, ...(cause !== undefined ? { why: cause.why } : {}) })
   if (prev.state !== state) lines.push({ kind: 'relation', a: a < b ? a : b, b: a < b ? b : a, state, ...(cause?.by !== undefined ? { by: cause.by } : {}), ...(cause !== undefined ? { why: cause.why } : {}) })
-  if ((state === 'truce' || state === 'ally') && (prev.state === 'war' || prev.state === 'neutral')) recall(r, a, b, lines)
+  if ((state === 'truce' || state === 'ally') && (prev.state === 'war' || prev.state === 'neutral')) {
+    recall(r, a, b, lines)
+    // 화친을 맺으면 서로 잡아 둔 장수를 돌려준다
+    releaseCaptives(r, a, b, 'peace', lines)
+    releaseCaptives(r, b, a, 'peace', lines)
+  }
 }
 
 /**

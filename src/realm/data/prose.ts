@@ -349,6 +349,11 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (a?.faction !== viewer) return null
       return `${josa(nameArmy(line.army), '을', '를')} 집으로 돌려보냈다. ${node(line.node)}에 ${line.n}집이 돌아왔다.`
     }
+    case 'freed':
+      if (line.faction !== viewer) return null
+      return line.why === 'peace'
+        ? `${josa(fname(line.from), '과', '와')} 화친을 맺자 사로잡혔던 ${josa(after.heroes[line.hero]?.name ?? '', '이', '가')} 풀려나 돌아왔다.`
+        : `${fname(line.from)}의 도읍이 떨어져 갇혀 있던 ${josa(after.heroes[line.hero]?.name ?? '', '이', '가')} 풀려나 돌아왔다.`
     case 'heroGo':
       if (line.faction !== viewer) return null
       return `${josa(after.heroes[line.hero]?.name ?? '', '이', '가')} 정예 ${P.realm.escortMen}명을 거느리고 ${josa(node(line.to), '으로', '로')} 가서 그곳을 맡았다.`

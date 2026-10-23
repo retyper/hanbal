@@ -857,6 +857,8 @@ export type ReportLine =
   | { readonly kind: 'answered'; readonly ask: string; readonly yes: boolean; readonly from: string; readonly askKind: AskKind }
   /** 경계 강화 */
   | { readonly kind: 'guard'; readonly faction: string; readonly node: string }
+  /** 사로잡혔던 장수가 풀려나 돌아왔다 — 화친(peace) · 잡아 둔 나라의 도읍이 떨어져서(take) */
+  | { readonly kind: 'freed'; readonly hero: string; readonly faction: string; readonly from: string; readonly why: 'peace' | 'take' }
   /** 장수가 정예 호위를 거느리고 맡을 고을로 떠났다 (멀리 맡기기) */
   | { readonly kind: 'heroGo'; readonly faction: string; readonly hero: string; readonly from: string; readonly to: string }
   /** 개척단이 떠났다 · 흩어졌다 */

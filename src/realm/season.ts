@@ -43,7 +43,7 @@ import { spreadRumors } from './rumor.ts'
 import { addMen, giveMen, kitOf, scaleKinds, scaleMen, takeMen } from './kit.ts'
 import { formParty, moveParty, stepParties } from './parties.ts'
 import {
-  ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, ironhandAt, noteMet, stepHeroes, sweepHeroes,
+  ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, ironhandAt, noteMet, releaseCaptives, stepHeroes, sweepHeroes,
 } from './heroes.ts'
 import type {
   Approach, Army, BattleStart, Cmd, EdgeKind, Hero, Order, Ration, Realm, REdge, Report, ReportLine, RNode, SeasonOfYear, SnipeZone, Tactic,
@@ -488,6 +488,12 @@ function disbandArmy(r: Realm, o: Extract<Order, { kind: 'disband' }>, lines: Re
   if (a.hero !== null && r.heroes[a.hero] !== undefined) r.heroes[a.hero]!.at = node.id // 장수는 그 고을에 혼자 남는다
   delete r.armies[a.id]
   lines.push({ kind: 'disband', army: a.id, node: node.id, n })
+}
+
+/** 도읍이 떨어지면 그 나라가 잡아 두었던 빼앗은 쪽 장수들이 풀려난다 */
+function freeAtCapital(r: Realm, node: string, prevOwner: string | null, taker: string, lines: ReportLine[]): void {
+  if (prevOwner === null || r.factions[prevOwner]?.capital !== node) return
+  releaseCaptives(r, prevOwner, taker, 'take', lines)
 }
 
 /** 개척 (FLOW §2) — 제 고을 사람을 길로 맞닿은 빈땅으로. 규칙에 안 맞으면 아무 일도 없다 (economy.settleLimit) */
@@ -1093,6 +1099,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
     if (node.kind !== 'sodo' && node.owner !== a.faction && !allied(r, a.faction, node.owner)) {
       noteTake(r, a.faction, node.owner, node.id)
       onTake(r, node.id)
+      freeAtCapital(r, node.id, node.owner, a.faction, lines)
       node.owner = a.faction
       lines.push({ kind: 'take', faction: a.faction, node: node.id })
       revealAround(r, a.faction, node.id)
@@ -1163,6 +1170,7 @@ function resolveMarches(
       provoke(r, lead.faction, node.owner, lines)
       noteTake(r, lead.faction, node.owner, node.id)
       if (node.owner !== null) onTake(r, node.id)
+      freeAtCapital(r, node.id, node.owner, lead.faction, lines)
       node.owner = lead.faction
       lines.push({ kind: 'take', faction: lead.faction, node: node.id })
       revealAround(r, lead.faction, node.id)

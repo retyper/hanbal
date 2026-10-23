@@ -412,7 +412,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .fall > div > span { display: block; font-size: 13.5px; color: var(--mute); margin-top: 3px; }
 /* 지도에서 고른 말 — 아래 띠 · 합치기 */
 .ap .selbar { position: absolute; left: 64px; right: 14px; bottom: calc(var(--tabh) + 70px); z-index: 7; display: none; align-items: center; gap: 8px; flex-wrap: wrap;
-  padding: 8px 10px; border-radius: 16px; background: #1f1710f2; border: 1px solid #8a7040; box-shadow: 0 6px 20px #000a; }
+  padding: 6px 8px; border: 12px solid transparent; border-image: url(__ART__ui/frame-panel.png) 118 / 12px stretch; background: #1f1710f2 padding-box; filter: drop-shadow(0 6px 14px #000a); }
+.ap .selbar .sbt b { display: flex; align-items: center; gap: 6px; }
 .ap.sel-open .selbar { display: flex; } .ap.sheet-open .selbar { display: none; }
 .ap .selbar .sbf { display: flex; } .ap .selbar .sbface { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid #ffd27a; margin-right: -8px; background: #3a2c1e; display: block; }
 .ap .selbar .sbt { flex: 1; min-width: 140px; margin-left: 10px; display: flex; flex-direction: column; } .ap .selbar .sbt b { font-size: 14.5px; } .ap .selbar .sbt span { font-size: 12.5px; color: var(--mute); }
@@ -493,7 +494,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .hands .ht { display: flex; flex-direction: column; margin-left: 8px; min-width: 0; } .ap .hands .ht b { font-size: 14.5px; } .ap .hands .ht span { font-size: 12px; color: var(--mute); }
 /* 이기는 길 — 정복 · 맹주 (VICTORY §1) */
 .ap .paths { margin: 8px 0 12px; padding: 10px; border-radius: 12px; background: #1f1710; border: 1px solid #4a4030; }
-.ap .paths h4 { margin: 0 0 6px; color: var(--gold); }
+.ap .paths h4 { margin: 0 0 6px; color: var(--gold); flex-wrap: wrap; } .ap .paths h4 small { font-size: 12px; color: #e8d8b0; font-weight: 400; }
 .ap .paths .path { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 8px; margin: 4px 0; font-size: 13px; }
 .ap .paths .path.sub, .ap .paths .path.rival { grid-template-columns: auto 1fr; }
 .ap .paths .pbar { position: relative; height: 9px; border-radius: 5px; background: #3a2c1e; overflow: hidden; }
@@ -536,6 +537,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .nudge .ndgs { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 6px; }
 .ap .nudge .ndg { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border-radius: 999px; border: 1px solid #c9a45a; background: #241a0e; color: #f3e2b8; font: inherit; font-size: 13px; cursor: pointer; }
 .ap .nudge .ndf { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+/* 카드 상자 — 청동·옻칠 나무 테 (ui/frame-panel.png · 싸움판 위 카드와 한 벌). 겹 클래스로 뒤에 오는 판별 CSS 보다 앞선다 */
+.ap.ap :is(.acard, .ncard, .fcard, .hrow, .nacts, .askc, .trade, .splitp, .paths, .warc, .fall, .acct, .exp, .wed, .scouthd, .hands) {
+  border: 11px solid transparent; border-image: url(__ART__ui/frame-panel.png) 118 / 11px stretch; border-radius: 0; background-clip: padding-box; }
+.ap.ap :is(.acard.fresh) { box-shadow: none; filter: drop-shadow(0 0 6px #7aa83aaa); }
+.ap.ap .hrow.ruler { filter: drop-shadow(0 0 5px #c9a45a88); }
+@media (max-width: 420px) { .ap.ap :is(.acard, .ncard, .fcard, .hrow, .nacts, .askc, .trade, .splitp, .paths, .warc, .fall, .acct, .exp, .wed, .scouthd, .hands) { border-width: 9px; border-image-width: 9px; } }
 .ap .tabs button { min-width: 0; } .ap .tabs button span { white-space: nowrap; }
 @media (max-width: 420px) { .ap .tabs button img.tic { width: 28px; height: 28px; } .ap .tabs button { font-size: 11.5px; } }
 `
