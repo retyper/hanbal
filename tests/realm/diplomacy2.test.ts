@@ -7,12 +7,13 @@
  *  - 동맹이 플레이어에게 건 함께 치자 청을 받으면 플레이어가 약속한다 · 저버리면 호감 −
  *  - 무장 올리기 · 철검 징병 · hhGrowth · 제사 값 · 손으로 쏜 암살(hand) · 결정론
  */
+import { aiOrders } from '../../src/realm/ai.ts'
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import {
-  envoyChance, envoyChanceFor, envoyOptions, favorOf, jointTargets, lentStep, pairKey, relationOf,
+  envoyChance, envoyChanceFor, envoyOptions, favorOf, jointTargets, lentEta, lentStep, pairKey, relationOf,
 } from '../../src/realm/diplomacy.ts'
 import { armCost, draftIronCost, hhGrowth, riteCost } from '../../src/realm/economy.ts'
 import { advance, planned } from '../../src/realm/season.ts'
@@ -137,15 +138,20 @@ describe('동맹이 하는 일', () => {
     const a = next.armies[lent.army]!
     assert.equal(a.lent?.node, 'our-north')
     assert.deepEqual(lentStep(next, a.id)?.next, 'our-north')
-    // 말미가 지나면 빌림 표를 거둔다
+    // 언제 닿는지 — 소식에도 화면에도
+    assert.ok((lent.eta ?? 0) > 0 && (lentEta(next, a.id) ?? 0) > 0)
+    // 닿으면 한 번 알리고, 말미가 지나면 빌림 표를 거둔다
     let r = next
     let back = false
+    let arrived = 0
     for (let i = 0; i < P.realm.troopsSeasons + 2 && !back; i++) {
-      const s = advance(r, [])
+      const s = advance(r, aiOrders(r)) // 빌린 군대는 제 나라 AI 가 걸린다
       back = s.report.lines.some((l) => l.kind === 'lent' && l.back)
+      arrived += s.report.lines.filter((l) => l.kind === 'lent' && l.arrived === true).length
       r = s.next
     }
     assert.ok(back)
+    assert.equal(arrived, 1)
     assert.equal(r.armies[lent.army]?.lent, undefined)
   })
 

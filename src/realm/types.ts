@@ -477,7 +477,7 @@ export interface Army {
   /** 이 고을에 닿은 계절 — 같은 계절에 적이 들이치면 원군으로 늦게 붙는다 (season.fight) */
   came?: number
   /** 동맹에게 빌려준 군대 — `to` 나라의 `node` 고을로 가서 `until` 계절까지 머물며 지킨다 (diplomacy troops). 그동안 AI 가 마음대로 안 움직인다 */
-  lent?: { readonly to: string; readonly node: string; readonly until: number }
+  lent?: { readonly to: string; readonly node: string; readonly until: number; readonly arrived?: boolean }
 }
 
 /** 한 세력이 한 고을에 대해 아는 것 (SYSTEMS §2-1 세 겹 가운데 땅·군세) */
@@ -807,7 +807,7 @@ export type ReportLine =
   /** 함께 치자는 약속을 지켰나 저버렸나 — `from` 이 약속한 나라, `to` 가 약속받은 나라 */
   | { readonly kind: 'pledge'; readonly from: string; readonly to: string; readonly node: string; readonly kept: boolean }
   /** 군대를 빌려줬다 (`army` 가 `to` 의 `node` 를 지키러 간다) · 돌아갔다 (back) */
-  | { readonly kind: 'lent'; readonly from: string; readonly to: string; readonly node: string; readonly army: string; readonly back: boolean }
+  | { readonly kind: 'lent'; readonly from: string; readonly to: string; readonly node: string; readonly army: string; readonly back: boolean; readonly arrived?: boolean; readonly until?: number; readonly eta?: number }
   /** 무장을 올렸다 */
   | { readonly kind: 'arm'; readonly faction: string; readonly army: string; readonly equip: Equip; readonly iron: number; readonly unit?: UnitKind; readonly n?: number }
   /**

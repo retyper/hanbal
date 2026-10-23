@@ -468,9 +468,11 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     }
     case 'lent': {
       if (line.to !== viewer) return null
-      return line.back
-        ? `${fname(line.from)}에서 빌려 온 군대가 돌아갔다.`
-        : `${fname(line.from)} 군대가 ${josa(node(line.node), '을', '를')} 지키러 왔다.`
+      const till = line.until !== undefined ? ` ${seasonLabel(line.until)}까지 머문다.` : ''
+      if (line.back) return `${fname(line.from)}에서 빌려 온 군대가 돌아갔다.`
+      if (line.arrived === true) return `${fname(line.from)} 군대가 ${josa(node(line.node), '에', '에')} 닿아 지키기 시작했다.${till}`
+      if (line.eta === undefined || line.eta <= 0) return `${fname(line.from)} 군대가 ${josa(node(line.node), '을', '를')} 지킨다.${till}`
+      return `${fname(line.from)} 군대가 ${josa(node(line.node), '을', '를')} 지키러 떠났다. ${arriveWhen(after.season, line.eta)}.${till}`
     }
     case 'arm': {
       if (line.faction !== viewer) return null

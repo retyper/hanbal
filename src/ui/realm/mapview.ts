@@ -219,6 +219,8 @@ export const MAP_CSS = `
 .map .tok .dir::after { content: ''; position: absolute; right: -2px; top: 50%; transform: translateY(-50%); border: .4em solid transparent; border-left: .62em solid #f3e6c8; filter: drop-shadow(0 0 2px #000); }
 .map .tok b { position: relative; z-index: 2; margin-top: -6px; background: #201811; color: #9fd18b; border: 1px solid #9fd18b; border-radius: 8px; padding: 0 4px;
   font-size: clamp(10px, calc(1.6cqh / var(--z, 1) * var(--zs, 1)), 13px); line-height: 1.3; }
+.map .tok.ally b { color: #cfe8b8; border-color: var(--tc); }
+.map .tok.ally img { border-style: double; border-width: 4px; }
 .map .tok.sel img { border-color: #ffd27a; box-shadow: 0 0 0 3px #ffd27a88, 0 0 12px #ffd27a; transform: scale(1.12); }
 .map .tok.going img { border-color: #c8402a; }
 /* 개척할 수 있는 빈땅 — 누르면 그 땅 카드에 "사람 보내기" */
@@ -260,6 +262,8 @@ export interface MapMarch {
   readonly foe?: boolean
   /** 기습으로 들어간다 — 어두운 점선 · "기습" 글씨 */
   readonly ambush?: boolean
+  /** 우리를 지키러 오는 동맹 군대 — 초록 점선 · "도우러 · n계절" */
+  readonly ally?: boolean
 }
 
 /**
@@ -409,15 +413,16 @@ export function mapHtml(
     const amb = m.ambush === true && m.foe !== true
     const dash = amb ? ' stroke-dasharray="2 14" stroke-linecap="round"' : m.left === null ? '' : ' stroke-dasharray="14 8"'
     const onUs = m.foe === true && threatened.has(m.to)
-    const col = onUs ? '#b0281a' : m.foe === true || amb ? '#3a2a5a' : '#c8402a'
+    const col = m.ally === true ? '#3f7a3a' : onUs ? '#b0281a' : m.foe === true || amb ? '#3a2a5a' : '#c8402a'
     const head = onUs ? 'rm-ah' : m.foe === true || amb ? 'rm-ah-foe' : 'rm-ah'
     if (onUs) svg += `<path d="${smoothPath(pts)}" fill="none" stroke="#ffb09a" stroke-width="${18 * lw}" stroke-linecap="round" opacity=".35"/>`
     // 길 위의 우리 행군은 점선이 가는 쪽으로 흐른다 (형: "이동중이면 … 애니메이션이 뭔가 있음 좋겠음")
     const flow = m.left !== null && m.foe !== true && !amb ? ' class="mvflow"' : onUs ? ' class="thrarrow"' : ''
+    const label0 = m.ally === true && m.left !== null ? `도우러 · ${m.left <= 1 ? '다음 계절' : `${m.left}계절 뒤`}` : ''
     svg += `<path${flow} d="${smoothPath(pts)}" fill="none" stroke="${col}" stroke-width="${(amb ? 11 : onUs ? 10 : 9) * lw}"${dash} marker-end="url(#${head})" opacity=".9"/>`
     // 언제 닿나 — 우리 행군은 말 밑 꼬리표가 말한다(가려지지 않게). 적 행군은 길 위 글씨로 "다음 계절 닿음"
     const when = m.left !== null ? (m.left <= 1 ? '다음 계절' : `${m.left}계절 뒤`) : ''
-    const label = m.foe === true ? `적 · ${when} 닿음` : m.left !== null ? '' : amb ? '기습' : ''
+    const label = label0 !== '' ? label0 : m.foe === true ? `적 · ${when} 닿음` : m.left !== null ? '' : amb ? '기습' : ''
     // 보인 적의 행군 — 창을 멘 줄 그림 (무엇이 오는지 한눈에)
     if (m.foe === true) {
       // 글씨("적 n계절")의 왼쪽에 붙인다 — 고을 그림 밑에 묻히지 않게
@@ -428,7 +433,7 @@ export function mapHtml(
     }
     if (label !== '') {
       const [lx, ly] = midOf(pts)
-      svg += `<text x="${lx}" y="${ly - 12}" font-size="${26 * lw}" font-weight="700" fill="${onUs ? '#8a1a0a' : m.foe === true || amb ? '#3a2a5a' : '#7a1f10'}" stroke="#f3e6c8" stroke-width="5" paint-order="stroke" text-anchor="middle">${label}</text>`
+      svg += `<text x="${lx}" y="${ly - 12}" font-size="${26 * lw}" font-weight="700" fill="${m.ally === true ? '#2c5a28' : onUs ? '#8a1a0a' : m.foe === true || amb ? '#3a2a5a' : '#7a1f10'}" stroke="#f3e6c8" stroke-width="5" paint-order="stroke" text-anchor="middle">${label}</text>`
     }
   }
   svg += `</g></svg>`
@@ -501,8 +506,8 @@ export function mapHtml(
   const myColor = FACTION_ART[me]?.color ?? '#9fd18b'
   const topMen = Math.max(1, ...tokens.map((t) => t.men))
   const tokBtn = (t: MapToken, ang?: number): string =>
-    `<button class="tok${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}" data-act="tok" data-army="${t.army}" style="--tc:${myColor}">`
-    + `${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}<img src="${t.img}" alt=""><i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i><b>${t.men}</b></button>`
+    `<button class="tok${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}${t.ally !== undefined ? ' ally' : ''}" data-act="tok" data-army="${t.army}" style="--tc:${t.ally ?? myColor}">`
+    + `${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}<img src="${t.img}" alt=""><i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i><b>${t.ally !== undefined ? '도움 ' : ''}${t.men}</b></button>`
   let toks = ''
   // 길 위의 우리 군대 — 떠난 쪽에서 삼분의 일쯤 (가운데의 "n계절" 글씨를 안 가린다)
   for (const t of tokens) {
@@ -550,6 +555,8 @@ export interface MapToken {
   readonly going: boolean
   /** 길 위에 있다 — 그 길 가운데에 둔다 · left 남은 계절 */
   readonly march?: { readonly from: string; readonly to: string; readonly left: number }
+  /** 동맹이 빌려준 군대 — 그 나라 색 테와 「도움」 (형: "지켜주는 군대를 요청하면 언제 어디로 오는지 … 안보이는데?") */
+  readonly ally?: string
 }
 
 /** 고른 군대가 갈 수 있는 고을 — 칩은 판세(싸울 곳) 또는 걸리는 계절 */

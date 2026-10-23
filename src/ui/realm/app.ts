@@ -21,7 +21,7 @@ import { CARDS } from '../../realm/data/cards.ts'
 import {
   ASK_KIND_NAME, ASK_NAME, deedText, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, arriveWhen, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine, NODE_NOW, BUILD_NAME, BOW_NAME, CONCEAL_LINE, goodsLine, GOOD_NAME, GOOD_USE, tagNow,
 } from '../../realm/data/prose.ts'
-import { canEscort, envoyChanceFor, envoyClash, envoyOptions, favorOf, jointTargets, openAsks, relationOf } from '../../realm/diplomacy.ts'
+import { canEscort, envoyChanceFor, envoyClash, envoyOptions, favorOf, jointTargets, lentEta, openAsks, relationOf } from '../../realm/diplomacy.ts'
 import {
   GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeHarvest, nodeYield, nodeSpecials, upkeepOf, riteAllowed, riteCost,
   settleCost, settleLimit, settleSource, settleTargets, autoFlows, crowdOf, homeRoom, migrateCost, migrateLimit, migratePath,
@@ -586,11 +586,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const ed = c !== undefined && a.march === null ? r.edges[c.edge] : undefined
       if (ed !== undefined) marches.push({ from: a.at, to: otherEnd(ed, a.at)!, left: null, ambush: c!.ambush })
     }
-    for (const a of seenMarches(r, me())) if (a.march !== null) marches.push({ from: a.march.from, to: a.march.to, left: a.march.left, foe: true })
+    // 우리를 지키러 오는 동맹 군대는 적이 아니다 — 초록 화살 「도우러」
+    for (const a of seenMarches(r, me())) if (a.march !== null && a.lent?.to !== me()) marches.push({ from: a.march.from, to: a.march.to, left: a.march.left, foe: true })
+    for (const a of lentToMe(r)) if (a.march !== null) marches.push({ from: a.march.from, to: a.march.to, left: a.march.left, ally: true })
     const sel = sheet?.kind === 'node' ? sheet.id : scout
     // 지도에서 바로 움직인다 (형: "다른게임에서는 지도에서 바로 배치 조절하는거 같은데") — 말을 누르고, 밝아진 고을을 누른다
     // 길 위의 군대도 말을 둔다 — 길 가운데쯤에 (형: "내 군대 번예연이 군대가 지도에서 안보임")
-    const tokens: MapToken[] = sorted(Object.values(r.armies)).filter((a) => a.faction === me()).map((a) => {
+    const tokens: MapToken[] = [...sorted(Object.values(r.armies)).filter((a) => a.faction === me()), ...lentToMe(r)].map((a) => {
       const hero = a.hero !== null ? r.heroes[a.hero] : undefined
       const file = hero !== undefined ? bustOf(hero.id) : undefined
       const top = (Object.entries(a.mix) as Array<[UnitKind, number]>).sort((x, y) => y[1] - x[1])[0]?.[0] ?? 'spear'
@@ -598,9 +600,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         army: a.id, node: a.at, men: headcount(forceOf(r, a)), sel: armySel.includes(a.id), going: pick[a.id] !== undefined,
         img: file !== undefined ? `${ART}bust/${file}.jpg` : `${ART}icon/${UNIT_ICON[top]}.png`,
         ...(a.march !== null ? { march: { from: a.march.from, to: a.march.to, left: a.march.left } } : {}),
+        ...(a.faction !== me() ? { ally: FACTION_ART[a.faction]?.color ?? '#9fd18b' } : {}),
       }
     })
-    const a = armySel.length > 0 ? r.armies[armySel[0]!] : undefined
+    const a0 = armySel.length > 0 ? r.armies[armySel[0]!] : undefined
+    const a = a0?.faction === me() ? a0 : undefined
     // 다른 우리 군대가 언제 어디에 닿나 — 이미 가는 군대 · 이번 계절에 보낼 군대. 칠 곳 칩에 협공을 미리 (형: "같은 계절에 도착하게 맞춰서 … 합쳐져서 공격이 안오네??")
     const others = new Map<string, number[]>()
     for (const o of Object.values(r.armies)) {
@@ -734,7 +738,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (sel.length === 0) return ''
     let h = `<div class="sbf">${sel.map((a) => bust(a.hero !== null ? r.heroes[a.hero] : undefined, 'sbface')).join('')}</div><div class="sbt">`
     const first = sel[0]!
-    if (first.march !== null) {
+    if (first.faction !== me()) {
+      h += `<b>${esc(r.factions[first.faction]?.name ?? '')} 군대 · ${headcount(forceOf(r, first))}명</b><span>${esc(lentLine(r, first))}</span>`
+    } else if (first.march !== null) {
       h += `<b>${esc(armyName(r, first))}</b><span>${esc(josa(r.nodes[first.march.to]?.name ?? '', '으로', '로'))} 가는 중 · ${esc(arriveWhen(r.season, first.march.left))}</span>${turnBackBtn(first)}`
     } else if (sel.length === 1) {
       const more = Object.values(r.armies).filter((x) => x.faction === me() && x.id !== first.id && x.at === first.at && x.march === null).length
@@ -748,6 +754,22 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       return h + `<button class="sbx" data-act="selclose" aria-label="고르기 풀기">✕</button>`
     }
     return h + `</div><button class="sbx" data-act="selclose" aria-label="고르기 풀기">✕</button>`
+  }
+
+  /** 동맹이 빌려준, 우리를 지키는 군대 (diplomacy troops) */
+  function lentToMe(r: Realm): Army[] {
+    return sorted(Object.values(r.armies)).filter((a) => a.faction !== me() && a.lent?.to === me())
+  }
+
+  /** 빌린 군대가 어디를 언제 지키나 — 지도 띠 · 고을 판 */
+  function lentLine(r: Realm, a: Army): string {
+    const l = a.lent!
+    const place = r.nodes[l.node]?.name ?? ''
+    const till = `${seasonLabel(l.until)}까지 머문다`
+    const eta = lentEta(r, a.id)
+    if (eta === 0) return `${josa(place, '을', '를')} 지키는 중 · ${till}`
+    if (eta === null) return `${josa(place, '으로', '로')} 가는 길이 막혔다 · ${till}`
+    return `${josa(place, '을', '를')} 지키러 오는 중 · ${arriveWhen(r.season, eta)} · ${till}`
   }
 
   /** 깃발 줄 — 나라마다 깃발과 땅 수 (땅의 주인은 누구나 안다). 누르면 그 나라 땅만 또렷하다 */
@@ -2120,6 +2142,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     if (ours) {
       const men = Object.values(r.armies).filter((a) => a.at === id && a.faction === me() && a.march === null).reduce((s, a) => s + headcount(forceOf(r, a)), 0)
+      for (const a of lentToMe(r).filter((x) => x.lent!.node === id)) h += `<p class="story">${emblem(a.faction)} ${esc(r.factions[a.faction]?.name ?? '')} 군대 ${headcount(forceOf(r, a))}명 — ${esc(lentLine(r, a))}</p>`
       h += `<p class="mute">${tx(`집 ${Math.floor(n.hh).toLocaleString('ko-KR')} · 사람 약 ${Math.round(n.hh * P.realm.peoplePerHH).toLocaleString('ko-KR')}`)}</p>`
       h += `<div class="grid4"><div><b>${Math.floor(n.hh)}</b><span>집</span></div><div><b>${militiaMen(r, id)}</b><span>장정</span></div><div><b>${men}</b><span>군사</span></div><div><b>${draftLimit(r, me(), id)}</b><span>더 뽑을 수</span></div></div>`
       const g = hhGrowth(r, id)
@@ -3042,8 +3065,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         // 같은 고을에 머무는 말을 더 누르면 함께 골라진다. 다른 고을·길 위의 말이면 그것만
         const id = d['army']!
         const x = r?.armies[id]
-        const sameNode = (y: string): boolean => r?.armies[y]?.at === x?.at && r?.armies[y]?.march === null
+        const sameNode = (y: string): boolean => r?.armies[y]?.at === x?.at && r?.armies[y]?.march === null && r?.armies[y]?.faction === me()
         if (armySel.includes(id)) armySel = armySel.filter((y) => y !== id)
+        else if (x !== undefined && x.faction !== me()) armySel = [id] // 동맹 군대 — 보기만
         else if (x !== undefined && x.march === null && armySel.length > 0 && armySel.every(sameNode)) armySel = [...armySel, id]
         else armySel = [id]
         break

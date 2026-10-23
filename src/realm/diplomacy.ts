@@ -15,7 +15,8 @@ import { GOODS, canPayGoods, goodOf, goodsOne, goodsWorth, menOf, payGoods, stoc
 import { envoyBonus } from './heroes.ts'
 import { visibleRange } from './intel.ts'
 import { memoFor } from './memo.ts'
-import { nodeStrength } from './season.ts'
+import { marchSeasons, nodeStrength } from './season.ts'
+import { seasonOf } from './calendar.ts'
 import { allianceWhy, truceWhy, winningAgainst, type Motive } from './stance.ts'
 import { knows } from './discovery.ts'
 import { noteIron } from './paths.ts'
@@ -175,17 +176,24 @@ export function driftFavor(r: Realm): void {
 /** 빌린 군대가 갈 길 — 빌려주는 나라 · 빌리는 나라 · 동맹의 땅만 지나 `to` 고을까지. 없으면 null. 다음 고을 id 를 낸다 */
 export function lentStep(r: Realm, army: string): { edge: string; next: string } | null {
   const a = r.armies[army]
-  if (a === undefined || a.lent === undefined) return null
+  if (a === undefined || a.lent === undefined || a.at === a.lent.node) return null
+  return lentPath(r, army, a.at)[0] ?? null
+}
+
+/** 빌린 군대가 `from` 에서 지킬 고을까지 지나갈 길 — 한 길씩. 길이 없거나 이미 닿았으면 [] */
+function lentPath(r: Realm, army: string, from: string): Array<{ edge: string; next: string }> {
+  const a = r.armies[army]
+  if (a === undefined || a.lent === undefined) return []
   const goal = a.lent.node
-  if (a.at === goal) return null
+  if (from === goal) return []
   const ok = (n: string): boolean => {
     const o = r.nodes[n]?.owner
     return o === a.faction || o === a.lent!.to || (o !== null && o !== undefined && relationOf(r, a.faction, o).state === 'ally')
   }
   // 너비 우선 — id 순서로 (결정론)
   const prev = new Map<string, { from: string; edge: string }>()
-  const queue = [a.at]
-  const seen = new Set([a.at])
+  const queue = [from]
+  const seen = new Set([from])
   const edges = Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))
   while (queue.length > 0) {
     const cur = queue.shift()!
@@ -198,14 +206,26 @@ export function lentStep(r: Realm, army: string): { edge: string; next: string }
       queue.push(nx)
     }
   }
-  if (!prev.has(goal)) return null
-  let n = goal
-  let step = prev.get(n)!
-  while (step.from !== a.at) {
-    n = step.from
-    step = prev.get(n)!
-  }
-  return { edge: step.edge, next: n }
+  if (!prev.has(goal)) return []
+  const out: Array<{ edge: string; next: string }> = []
+  for (let n = goal; n !== from; n = prev.get(n)!.from) out.unshift({ edge: prev.get(n)!.edge, next: n })
+  return out
+}
+
+/**
+ * 빌린 군대가 지킬 고을에 몇 계절 뒤 닿나 — 0 이면 이미 지키고 있다, null 이면 길이 막혔다.
+ * 화면이 쓴다 (형: "지켜주는 군대를 요청하면 언제 어디로 오는지 … 안보이는데?")
+ */
+export function lentEta(r: Realm, army: string): number | null {
+  const a = r.armies[army]
+  if (a === undefined || a.lent === undefined) return null
+  let k = a.march !== null ? a.march.left : 0
+  const from = a.march !== null ? a.march.to : a.at
+  if (from === a.lent.node) return k
+  const path = lentPath(r, army, from)
+  if (path.length === 0) return null
+  for (const s of path) k += marchSeasons(r.edges[s.edge]!.kind, seasonOf(r.season + k))
+  return k
 }
 
 /** 9 — 빌려준 군대: 말미가 지나면 돌아간다 (빌림 표만 거둔다 — 그 뒤엔 제 나라 AI 가 움직인다) */
@@ -217,6 +237,10 @@ export function stepLent(r: Realm, lines: ReportLine[]): void {
     if (l.until < r.season || relationOf(r, a.faction, l.to).state !== 'ally' || r.nodes[l.node]?.owner !== l.to) {
       delete a.lent
       lines.push({ kind: 'lent', from: a.faction, to: l.to, node: l.node, army: a.id, back: true })
+    } else if (l.arrived !== true && a.at === l.node && a.march === null) {
+      // 닿았다 — 한 번만 알린다
+      a.lent = { ...l, arrived: true }
+      lines.push({ kind: 'lent', from: a.faction, to: l.to, node: l.node, army: a.id, back: false, arrived: true, until: l.until })
     }
   }
 }
@@ -643,8 +667,9 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
       }
       case 'troops': {
         const a = r.armies[lend!]!
-        a.lent = { to: o.from, node: o.target!, until: r.season + R.troopsSeasons }
-        lines.push({ kind: 'lent', from: o.to, to: o.from, node: o.target!, army: a.id, back: false })
+        a.lent = { to: o.from, node: o.target!, until: r.season + R.troopsSeasons, ...(a.at === o.target ? { arrived: true } : {}) }
+        const eta = lentEta(r, a.id)
+        lines.push({ kind: 'lent', from: o.to, to: o.from, node: o.target!, army: a.id, back: false, until: a.lent.until, ...(eta !== null ? { eta } : {}) })
         break
       }
     }
