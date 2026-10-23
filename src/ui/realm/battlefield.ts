@@ -48,12 +48,6 @@ export const CMD_NAME: Record<Cmd, string> = {
   flank: '옆치기', punch: '돌파', pursue: '추격', guard: '호위',
   drum: '격려', duel: '장수 겨루기', capture: '적장 사로잡기', retreat: '물러난다', art: '장수의 비기',
 }
-export const CMD_ICON: Record<Cmd, string> = {
-  charge: UNIT_ICON.spear, hold: UNIT_ICON.shield, open: UNIT_ICON.pike, ford: 'unit-gaya-heavy', rocks: 'unit-slingers', gate: 'cmd-gate', ram: UNIT_ICON.boat,
-  volley: UNIT_ICON.bow, counter: UNIT_ICON.crossbow, fire: 'unit-fire-archers', height: 'unit-scouts',
-  flank: UNIT_ICON.horse, punch: UNIT_ICON.horse, pursue: UNIT_ICON.horse, guard: 'unit-general',
-  drum: 'unit-drummers', duel: 'unit-general', capture: 'unit-axemen', retreat: 'unit-porters', art: 'status-morale-up',
-}
 /** 깃발 한 줄 — 무엇을 이기고 무엇에 지나 */
 const CMD_DOES: Record<Cmd, string> = {
   charge: '길 튼 적을 뚫고 궁수까지 덮친다 · 버티는 방진에 꺾인다 (흔들리는 방진은 뚫는다)',

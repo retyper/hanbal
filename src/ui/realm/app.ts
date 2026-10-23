@@ -129,6 +129,27 @@ function ding(name: string, vol = 0.6, rate = 1): void {
   if (muted()) return
   playOnce(`${name.includes('/') ? BASE : SFX}${name}${/.w+$/.test(name) ? '' : '.ogg'}`, vol, rate) // 탭이 가려져 있으면 안 낸다 (규칙 4)
 }
+/** 판마다 「?」 단추로 여는 설명 — 판 위에는 고를 것만 두고, 읽을 거리는 여기로 (형 10-23: "설명서를 물음표 버튼 같은 거 하나 만들어서 필요할 때 읽어 볼 수 있게") */
+const GUIDE: Readonly<Record<string, { readonly title: string; readonly body: readonly string[] }>> = {
+  envoy: { title: '사신', body: [
+    '사신마다 한 사람이 간다 — 군장의 사자나 쉬는 장수.',
+    '이번 계절 보낼 사람 = 사자 하나 + 쉬는 장수 수. 사신·공작 하나에 한 사람이 든다.',
+    '한 나라에 동맹과 교역처럼 서로 안 부딪히는 사신은 함께 보낼 수 있다.',
+    '매력이 높거나 매혹·장사꾼(교역) 특성이 있는 장수가 가면 더 잘 먹힌다. 싸우는 나라에 가면 붙잡힐 수 있다.',
+  ] },
+  plot: { title: '공작', body: [
+    '몰래 하는 일 — 소문·방화·첩자·매수·이간·암살.',
+    '보낼 사람만큼 벌인다 (위의 「이번 계절 보낼 사람」).',
+    '보낸 게 드러나면 그 나라와 사이가 한 칸 나빠진다 — 동맹은 화친으로, 화친은 중립으로, 중립은 전쟁으로. 암살은 두 칸.',
+    '지략 높은 장수가 있으면 잘 된다.',
+  ] },
+  scout: { title: '정찰', body: [
+    '정찰꾼은 한 계절에 한 곳만 간다. 장수는 안 간다.',
+    '하나를 고르면 앞서 고른 곳은 풀린다.',
+    '다녀오면 그곳의 군세·병종·경계가 보인다. 오래되면 흐려진다.',
+  ] },
+}
+const guideBtn = (k: string): string => `<button class="qi" data-act="guide" data-k="${k}" aria-label="설명 보기">?</button>`
 const PRACTICE: string = (import.meta.env?.BASE_URL ?? '/') + 'night.html?practice=1'
 /** night.html 이 올라갔다 (f9e77aa) — 없는 쪽으로 보내지 않으려 둔 스위치 */
 const PRACTICE_READY = true
@@ -1415,7 +1436,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 사자 먼저 쓰이는 것으로 — 쓴 만큼 흐리게
     const faces = [icon('unit-scouts', 'hface msgr'), ...idle.map((id) => bust(r.heroes[id], 'hface'))]
     let h = `<div class="hands"><div class="hf">${faces.map((f, i) => `<span class="${i < used ? 'used' : ''}">${f}</span>`).join('')}</div>`
-    h += `<div class="ht"><b>이번 계절 보낼 사람 ${Math.min(used, cap)}/${cap}</b><span>${tx('군장의 사자 하나 + 쉬는 장수 수 — 사신·공작 하나에 한 사람')}</span></div></div>`
+    h += `<div class="ht"><b>이번 계절 보낼 사람 ${Math.min(used, cap)}/${cap}</b></div></div>`
     if (used >= cap) h += `<div class="banner bad">${tx('보낼 사람이 다 나갔다. 장수를 군대·고을에서 빼서 쉬게 하면 더 보낼 수 있다.')}</div>`
     return h
   }
@@ -1429,7 +1450,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   function diploSheet(r: Realm): string {
-    let h = `<h3>외교</h3><div class="seg dseg"><button class="${diploMode === 'envoy' ? 'on' : ''}" data-act="dmode" data-v="envoy">사신</button><button class="${diploMode === 'plot' ? 'on' : ''}" data-act="dmode" data-v="plot">공작 ${plots.length > 0 ? plots.length : ''}</button><button class="${diploMode === 'scout' ? 'on' : ''}" data-act="dmode" data-v="scout">정찰${scout !== '' ? ' 1' : ''}</button></div>`
+    let h = `<h3 class="qh">외교 ${guideBtn(diploMode)}</h3><div class="seg dseg"><button class="${diploMode === 'envoy' ? 'on' : ''}" data-act="dmode" data-v="envoy">사신</button><button class="${diploMode === 'plot' ? 'on' : ''}" data-act="dmode" data-v="plot">공작 ${plots.length > 0 ? plots.length : ''}</button><button class="${diploMode === 'scout' ? 'on' : ''}" data-act="dmode" data-v="scout">정찰${scout !== '' ? ' 1' : ''}</button></div>`
     // 정찰은 사람 손을 안 쓴다 — 장수 얼굴 줄 대신 정찰꾼 그림 (형 10-23: "정찰에는 장수 얼굴을 보여 줄 필요 없으니 정찰꾼 그래픽")
     if (diploMode === 'scout') return h + `<div class="scouthd">${icon('unit-scouts', 'scic')}<div><b>정찰꾼</b><span>한 계절에 한 곳 · 장수는 안 간다</span></div></div>` + scoutSheet(r)
     h += handsHtml(r)
@@ -1437,7 +1458,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += asksHtml()
     const out = Object.values(envoys)
     for (const e of out) h += sentBanner(r, e, true)
-    if (out.length === 0) h += `<p class="mute">${tx('사신마다 한 사람이 간다 — 사자나 쉬는 장수. 한 나라에 동맹과 교역처럼 서로 안 부딪히는 사신은 함께 보낼 수 있다.')}</p>`
     // 맺으면 뭐가 되는지 (형: "화친이랑 동맹도 되면 뭐가 되는건지 모르겠네")
     h += `<div class="asks">${ASKS.map((x) => `<div><b>${ASK_NAME[x.ask]}</b><span>${x.does}</span></div>`).join('')}</div>`
     // 앞서가는 나라 — 모두 이기려 하니, 앞선 나라는 다른 나라들이 함께 막으려 한다 (stance.leaderOf)
@@ -1669,7 +1689,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   function plotSheet(r: Realm): string {
     const max = P.realm.plotsPerSeason
-    let h = `<p class="mute">몰래 하는 일. 보낼 사람만큼 벌인다(위의 「보낼 사람」). 보낸 게 드러나면 그 나라와 사이가 한 칸 나빠진다 — 동맹은 화친으로, 화친은 중립으로, 중립은 전쟁으로 (암살은 두 칸). 지략 높은 장수가 있으면 잘 된다.</p>`
+    let h = ''
     for (const [i, o] of plots.entries()) {
       if (o.kind !== 'plot') continue
       const where = o.node !== undefined ? r.nodes[o.node]?.name : o.other !== undefined ? `${r.factions[o.target]?.name} ↔ ${r.factions[o.other]?.name}` : r.factions[o.target]?.name
@@ -2013,7 +2033,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   // ───────── 정찰
   function scoutSheet(r: Realm): string {
     const known = r.intel[me()] ?? {}
-    let h = `<p class="mute">정찰꾼은 한 계절에 한 곳만 간다. 하나를 고르면 앞서 고른 곳은 풀린다. 다녀오면 그곳의 군세·병종·경계가 보인다.</p>`
+    let h = ''
     for (const id of scoutable(r)) {
       const n = r.nodes[id]!
       const f = known[id]?.force
@@ -3221,6 +3241,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'layers': layersOpen = !layersOpen; break
       case 'layer': toggleLayer(d['v'] as LayerId); break
       case 'htab': heroTab = d['v'] as typeof heroTab; break
+      case 'guide': {
+        const g = GUIDE[d['k'] ?? '']
+        if (g === undefined) return
+        root.querySelector('.guidebox')?.remove()
+        root.insertAdjacentHTML('beforeend', `<div class="guidebox" data-act="guide-close"><div class="gbx" role="dialog" aria-label="${esc(g.title)}"><b>${esc(g.title)}</b>${g.body.map((p) => `<p>${tx(p)}</p>`).join('')}<button class="btn sm" data-act="guide-close">닫기</button></div></div>`)
+        return
+      }
+      case 'guide-close': root.querySelector('.guidebox')?.remove(); return
       case 'nat-plot':
         diploMode = 'plot'
         sheet = { kind: 'diplo' }

@@ -311,6 +311,14 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .farseg button { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.2; } .ap .farseg small { font-size: 10.5px; opacity: .8; }
 .ap .scouthd { display: flex; align-items: center; gap: 10px; margin: 4px 0 10px; padding: 8px 10px; border-radius: 12px; background: #1d2418; border: 1px solid #4f5a3a; }
 .ap .scouthd .scic { width: 52px; height: 52px; } .ap .scouthd b { display: block; font-size: 15px; color: var(--gold); } .ap .scouthd span { font-size: 12.5px; color: var(--mute); }
+/* 「?」 — 판 이름 옆 작은 동그라미 · 누르면 설명 */
+.ap .qh { display: flex; align-items: center; gap: 8px; }
+.ap .qi { width: 24px; height: 24px; border-radius: 50%; border: 1px solid #c9a45a; background: #241a0e; color: #f3d48a; font: inherit; font-size: 14px; font-weight: 700; line-height: 1; cursor: pointer; padding: 0; }
+.ap .guidebox { position: absolute; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; padding: 16px; background: #000a; }
+.ap .guidebox .gbx { max-width: 440px; width: 100%; padding: 16px 18px; border-radius: 14px; background: #1f1710; border: 1px solid #c9a45a; box-shadow: 0 10px 40px #000c; }
+.ap .guidebox .gbx > b { display: block; font-size: 17px; color: var(--gold); margin-bottom: 6px; }
+.ap .guidebox .gbx p { margin: 6px 0; font-size: 14.5px; line-height: 1.6; color: #ece2cf; }
+.ap .guidebox .gbx .btn { display: block; margin: 12px 0 0 auto; }
 .ap .dseg { margin-bottom: 8px; } .ap .dseg button { font-size: 15px; padding: 8px; }
 .ap .plh { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; padding: 0; }
 .ap .plh > span:nth-child(2) { flex: 1; min-width: 0; display: flex; flex-direction: column; } .ap .plh .mute { white-space: normal; }
