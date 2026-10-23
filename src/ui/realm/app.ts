@@ -108,15 +108,14 @@ const SEEN_KEY = 'hanbal.realm.seen'
 const BASE: string = import.meta.env?.BASE_URL ?? '/'
 const SFX: string = BASE + 'sfx/'
 const MUTE_KEY = 'hanbal.realm.mute'
-/** 폰에서 전체 화면 (위쪽 시간·배터리 줄을 숨긴다) — 끄면 '0' (형 10-23: "안드로이드 상하단 바 유지되는 거야? 상단은 필요 없지 않나") */
-const FULL_KEY = 'hanbal.realm.full'
-const wantFull = (): boolean => { try { return localStorage.getItem(FULL_KEY) !== '0' } catch { return true } }
-/** 손가락으로 누른 그때에만 된다(브라우저 규칙) — 폰(굵은 손끝)에서만, 이미 전체 화면이면 그대로 */
-function goFull(): void {
-  const d = document.documentElement
-  if (document.fullscreenElement !== null || typeof d.requestFullscreen !== 'function' || !matchMedia('(pointer: coarse)').matches) return
-  d.requestFullscreen({ navigationUI: 'hide' }).catch(() => { /* 막힌 곳 */ })
-}
+/**
+ * 전체 화면은 「앱으로 설치」로만 — 브라우저에서 전체 화면을 켜면 크롬이 「전체 화면을 종료하려면 …」 안내를 늘 띄우고, 페이지는 그것을 끌 수 없다
+ * (형 10-23: "어디에서도 이런 거 안 나오게"). 설치한 앱은 realm.webmanifest 의 display:fullscreen 으로 처음부터 바 없이 뜨고 안내도 없다.
+ * 크롬이 설치를 권할 수 있으면(beforeinstallprompt — realm.html 이 받아 둔다) 설정에 「앱으로 설치」 단추가 뜬다.
+ */
+type InstallPrompt = { prompt(): Promise<void> }
+const installPrompt = (): InstallPrompt | null => (window as unknown as { __bip?: InstallPrompt }).__bip ?? null
+const installed = (): boolean => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches
 /** 장의 목표 띠를 접어 두었나 — 이 기기에만 */
 const GOAL_FOLD_KEY = 'hanbal.realm.goalfold'
 function goalFolded(): boolean {
@@ -2236,7 +2235,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     // 차림 — 세 칸 격자로 줄을 맞춘다: 보기 · 설정과 다른 놀이 · 판 (형: "버튼들이 너무 질서없이")
     h += `<div class="menu3"><button class="btn" data-act="help">도움말</button><button class="btn" data-act="log-open">지난 기록</button><button class="btn" data-act="dex-open">도감</button>`
-    h += `<button class="btn ghost" data-act="full">${wantFull() ? '전체 화면 끄기' : '전체 화면 켜기'}</button>`
+    if (!installed() && installPrompt() !== null) h += `<button class="btn ghost" data-act="install">앱으로 설치 — 바 없는 전체 화면</button>`
     h += `<button class="btn ghost" data-act="mute">${muted() ? '소리 켜기' : '소리 끄기'}</button><button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>`
     h += `<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}" data-tip="활쏘기 모드 (신궁)">활터</a>${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
     h += `<button class="btn ghost" data-act="newgame" data-tip="판 고르기로 — 새 게임을 시작하기 전까지 지금 판은 그대로다">새 게임</button><button class="btn ghost" data-act="lobby" data-tip="첫 화면으로 — 이 판은 저장돼 있어 「이어 하기」로 돌아온다">게임 종료</button></div>`
@@ -3218,7 +3217,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   // ───────── 손짓 — 한 곳에서 받는다
   // 전체 화면 — 처음 손이 닿는 그 순간에 (형 10-23: "게임 시작하자마자 되어야 하는 거 아님?").
   // 브라우저는 손짓 없이는 못 켜게 막는다 — 첫 화면·불러오는 화면을 포함해 어디든 처음 누르면 켠다 (손을 뗄 때가 브라우저가 허락하는 때)
-  for (const k of ['pointerup', 'touchend', 'click', 'keydown'] as const) document.addEventListener(k, () => { if (wantFull()) goFull() }, { capture: true, passive: true })
   root.addEventListener('click', (ev) => {
     const t = (ev.target as HTMLElement).closest<HTMLElement>('[data-act], .nd')
     if (t === null || !root.contains(t)) return
@@ -3335,10 +3333,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         })
         return
       case 'failclose': root.querySelector('.failbox')?.remove(); return
-      case 'full': {
-        const on = !wantFull()
-        try { localStorage.setItem(FULL_KEY, on ? '1' : '0') } catch { /* 저장 못 하는 곳 */ }
-        if (!on && document.fullscreenElement !== null) document.exitFullscreen().catch(() => { /* 막힌 곳 */ })
+      case 'install': {
+        const p = installPrompt()
+        if (p !== null) void p.prompt().catch(() => { /* 막힌 곳 */ }).finally(() => { delete (window as unknown as { __bip?: InstallPrompt }).__bip; paint() })
         break
       }
       case 'mute': try { localStorage.setItem(MUTE_KEY, muted() ? '0' : '1') } catch { /* 저장 못 하는 곳 */ } music.refresh(); break
