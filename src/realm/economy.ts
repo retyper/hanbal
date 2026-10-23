@@ -15,6 +15,7 @@
 import { P } from '../tune/params.ts'
 import { blockedWhy, seasonOf } from './calendar.ts'
 import { tierMul } from './tier.ts'
+import { hasCustom } from './data/customs.ts'
 import { draftCapBonus, gluttonMen, growMul, harvestMul, militiaMul, riteMul } from './heroes.ts'
 import type { Equip, UnitKind } from './battle.ts'
 import { TIERS, kitOf, lowestTier, nextTier, upgradeKind } from './kit.ts'
@@ -74,7 +75,9 @@ export function goodsWorth(x: Partial<Record<Good, number>>, r?: Realm, faction?
     const n = goodOf(x, g)
     if (n === 0) continue
     const lack = r !== undefined && faction !== undefined && g !== 'grain' && goodOf(stockOf(r, faction), g) <= 0
-    w += n * worthOf(g) * (lack ? P.realm.worthLackMul : 1)
+    // 구슬(마한) — 금·은·쇠를 귀히 여기지 않는다: 쇠를 싸게 친다 (CUSTOMS §7)
+    const plain = g === 'iron' && r !== undefined && faction !== undefined && hasCustom(r, faction, 'guseul') ? P.realm.guseulIron : 1
+    w += n * worthOf(g) * (lack ? P.realm.worthLackMul : 1) * plain
   }
   return w
 }

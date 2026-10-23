@@ -19,6 +19,23 @@ import type { Realm, RegionId, ReportLine } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { winFxHtml } from './winfx.ts'
 import { levelName } from '../../realm/tier.ts'
+import { KYEOL_INFO, customDef, kyeolOf, nativeCustoms, type CustomId } from '../../realm/data/customs.ts'
+
+/**
+ * 나라의 결과 풍습 카드 (CUSTOMS.md §7) — 결의 사서 한 문장(동사로) · 걸린 풍습마다 하는 일과 내주는 것 · 사서 한 줄.
+ * 나라 고르기와 나라 판이 함께 쓴다. ids 를 주지 않으면 제 결의 풍습
+ */
+export function customsHtml(k: Pick<FrontKit, 'esc'>, nation: string, ids?: readonly CustomId[]): string {
+  const ky = KYEOL_INFO[kyeolOf(nation)]
+  if (ky.name === '') return ''
+  const list = ids ?? nativeCustoms(nation)
+  let h = `<div class="kyeol"><p class="kl"><b>${k.esc(ky.name)}</b> ${k.esc(ky.line)}</p>`
+  for (const id of list) {
+    const c = customDef(id)
+    h += `<div class="cust" data-tip="${k.esc(c.source)}"><b>${k.esc(c.name)}</b><span class="do">${k.esc(c.does)}</span><span class="co">${k.esc(c.cost)}</span></div>`
+  }
+  return h + '</div>'
+}
 
 /** app.ts 가 넘기는 그림 손 */
 export interface FrontKit {
@@ -177,7 +194,7 @@ export function detailHtml(k: FrontKit, region: RegionId, id: string, carry = ''
   if (n === undefined) return nationsHtml(k, region)
   let h = `<div class="front detail"><div class="fhead"><button class="btn ghost" data-act="fr-board" data-v="${region}">‹ 다른 나라</button></div>`
   h += `<div class="dcard">${k.face(id, 'dface')}<div class="db"><div class="dn">${k.emblem(id, 'dem')}<div><b>${k.esc(n.name)}</b><span>${k.esc(n.place)}</span></div></div>`
-  h += `<p class="blurb">${k.esc(n.blurb)}</p>${barsHtml(n)}`
+  h += `<p class="blurb">${k.esc(n.blurb)}</p>${customsHtml(k, id)}${barsHtml(n)}`
   h += `<p class="src">${k.esc(n.source)}</p>${n.hard ? '<p class="hard">어려운 나라다 — 처음이면 다른 나라를 권한다.</p>' : ''}`
   h += `${carry}<button class="btn pri big" data-act="fr-start" data-id="${id}">이 나라로 시작</button></div></div></div>`
   return h
@@ -491,6 +508,13 @@ export const FRONT_CSS = `
 @keyframes mapin { from { transform: scale(.82); filter: sepia(.6) brightness(1.15); } to { transform: none; filter: none; } }
 .ap.opening .map svg mask g path { animation: rv 2.6s .3s ease-out both; }
 /* 끝 */
+/* 나라의 결 · 풍습 카드 */
+.ap .kyeol { margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
+.ap .kyeol .kl { margin: 0; font-size: 13px; color: #d8cfbd; } .ap .kyeol .kl b { color: var(--gold); margin-right: 4px; }
+.ap .cust { display: grid; grid-template-columns: auto 1fr; gap: 1px 8px; padding: 6px 9px; border-radius: 10px; background: #2a201599; border-left: 3px solid #c9a45a; font-size: 12.5px; }
+.ap .cust b { grid-row: span 2; align-self: center; color: #f3d48a; font-size: 14px; min-width: 52px; }
+.ap .cust .do { color: #d8e6c8; } .ap .cust .co { color: #e0b0a0; }
+.ap .cust .do::before { content: '+ '; color: #9fd18b; } .ap .cust .co::before { content: '− '; color: #e08a74; }
 .ap .front-end .stats { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 8px 0; }
 .ap .front-end .stats span { min-width: 64px; padding: 6px 8px; border-radius: 10px; background: #ffffff0d; text-align: center; font-size: 12px; color: #a89c84; }
 .ap .front-end .stats b { display: block; font-size: 20px; color: var(--gold); }

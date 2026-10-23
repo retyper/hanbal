@@ -19,6 +19,7 @@ import { nodeStrength } from './season.ts'
 import { allianceWhy, truceWhy, winningAgainst, type Motive } from './stance.ts'
 import { knows } from './discovery.ts'
 import { noteIron } from './paths.ts'
+import { hasCustom } from './data/customs.ts'
 import type { Ask, AskKind, EnvoyAsk, Good, Goods, Order, Deed, Pledge, Realm, Relation, RelationWhy, ReportLine } from './types.ts'
 
 export function pairKey(a: string, b: string): string {
@@ -620,9 +621,12 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
         if (relationOf(r, o.from, o.to).state !== 'ally') setRelation(r, o.from, o.to, 'truce', r.season + R.truceSeasons, lines, { by: o.to, why: 'envoy' })
         break
       }
-      case 'gift':
-        addFavor(r, o.from, o.to, Math.min(R.favorGiftMax, worth(give) * R.favorGift))
+      case 'gift': {
+        // 구슬(마한) — 구슬을 보배로 여기는 나라의 선물은 더 크게 먹힌다 (CUSTOMS §7)
+        const bead = hasCustom(r, o.from, 'guseul') ? 1 + R.guseulGift : 1
+        addFavor(r, o.from, o.to, Math.min(R.favorGiftMax * bead, worth(give) * R.favorGift * bead))
         break
+      }
       case 'break':
         breakPact(r, o.from, o.to, lines)
         break

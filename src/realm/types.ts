@@ -12,6 +12,7 @@ import type { Source } from './intel.ts'
 
 /** 계절 번호 0 = 첫해 봄. 계절 = 번호 % 4 */
 import type { CardKind } from './data/cards.ts'
+import type { CustomId } from './data/customs.ts'
 
 export type SeasonOfYear = 'spring' | 'summer' | 'autumn' | 'winter'
 
@@ -74,6 +75,8 @@ export interface Faction {
   readonly ruler?: string
   /** 집 자동 분배를 껐다 (economy.stepMigration). 없으면 켜짐 — 옛 판도 켜짐. AI 는 늘 켜짐 */
   migrateOff?: boolean
+  /** 풍습 (data/customs.ts · CUSTOMS.md §7) — 없으면 제 결의 풍습 둘. 섞임으로 받거나 버리면 여기 적힌다 */
+  customs?: CustomId[]
   /**
    * 도읍을 잃고 피한 조정 (형: "내도읍 뺏기자마자 지는건 좀 오바") — since 계절부터 seat 고을에서 버틴다.
    * exileSeasons 안에 도읍을 되찾으면 사라지고, 못 되찾거나 고을을 다 잃으면 진다 (season.stepExile)
