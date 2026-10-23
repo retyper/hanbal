@@ -11,6 +11,7 @@ import { P } from '../tune/params.ts'
 import { HERO_POOL } from './data/heroes-pool.ts'
 import { TRAITS, TRAIT, type TraitGrade } from './data/traits.ts'
 import type { Art, EdgeKind, GrowStat, Hero, Order, Realm, ReportLine } from './types.ts'
+import { migratePath } from './economy.ts'
 
 const byId = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 
@@ -247,7 +248,7 @@ export function heroSeen(r: Realm, faction: string, hero: string): boolean {
 
 // ───────── 명령 (1 단계 — planned 에도 든다)
 
-function assignHero(r: Realm, o: Extract<Order, { kind: 'assign' }>): void {
+function assignHero(r: Realm, o: Extract<Order, { kind: 'assign' }>, lines: ReportLine[]): void {
   const h = r.heroes[o.hero]
   if (h === undefined || h.status !== 'free' || isRuler(r, h.id)) return
   if (o.node === null) {
@@ -260,7 +261,13 @@ function assignHero(r: Realm, o: Extract<Order, { kind: 'assign' }>): void {
   if (a !== null) {
     if (a.at !== o.node || a.march !== null) return
     a.hero = null
-  } else if (h.at !== o.node) return
+  } else if (h.at !== o.node) {
+    // 멀리 맡기기 — 우리 땅으로 이어져 있으면 정예 호위를 거느리고 그 고을로 간다. 그 계절은 길에 있다
+    // (형 10-23: "군사랑 같이 이동시켜야 다른 마을로 가서 맡길 수 있는 거야? … 장수들이 어딜 가면 항상 혼자 안 가잖아")
+    if (h.at === null || (h.awayUntil !== undefined && h.awayUntil >= r.season) || migratePath(r, h.faction, h.at, o.node) === null) return
+    lines.push({ kind: 'heroGo', faction: h.faction, hero: h.id, from: h.at, to: o.node })
+    h.awayUntil = r.season
+  }
   // 한 고을에 맡은 장수는 하나 — 먼저 있던 장수는 자리만 내놓고 그 고을에 남는다
   for (const x of Object.values(r.heroes)) if (x.id !== h.id && x.post === o.node && x.faction === h.faction) x.post = null
   h.at = o.node
@@ -346,7 +353,7 @@ function hire(r: Realm, o: Extract<Order, { kind: 'hire' }>, lines: ReportLine[]
 /** 1 — 장수 명령. 규칙에 안 맞으면 아무 일도 없다 */
 export function applyHeroOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
   for (const o of orders) {
-    if (o.kind === 'assign') assignHero(r, o)
+    if (o.kind === 'assign') assignHero(r, o, lines)
     else if (o.kind === 'lead') leadArmy(r, o)
     else if (o.kind === 'persuade') startPersuade(r, o)
     else if (o.kind === 'hire') hire(r, o, lines)

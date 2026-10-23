@@ -307,6 +307,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .fbtn { border: 0; padding: 0; background: none; cursor: pointer; border-radius: 50%; }
 .ap .plimg { display: block; width: 100%; border-radius: 10px; margin: 6px 0; }
 .ap .rface.sm { width: 34px; height: 34px; border-width: 1px; }
+.ap .farh { margin: 10px 0 4px; } .ap .farh b { display: block; font-size: 13.5px; color: var(--gold); } .ap .farh span { font-size: 12px; }
+.ap .farseg button { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.2; } .ap .farseg small { font-size: 10.5px; opacity: .8; }
 .ap .scouthd { display: flex; align-items: center; gap: 10px; margin: 4px 0 10px; padding: 8px 10px; border-radius: 12px; background: #1d2418; border: 1px solid #4f5a3a; }
 .ap .scouthd .scic { width: 52px; height: 52px; } .ap .scouthd b { display: block; font-size: 15px; color: var(--gold); } .ap .scouthd span { font-size: 12.5px; color: var(--mute); }
 .ap .dseg { margin-bottom: 8px; } .ap .dseg button { font-size: 15px; padding: 8px; }

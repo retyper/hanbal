@@ -24,7 +24,7 @@ import {
 import { canEscort, envoyChanceFor, envoyClash, envoyOptions, favorOf, jointTargets, lentEta, openAsks, relationOf } from '../../realm/diplomacy.ts'
 import {
   GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeHarvest, nodeYield, nodeSpecials, upkeepOf, riteAllowed, riteCost,
-  autoFlows, crowdOf,
+  autoFlows, crowdOf, migratePath,
 } from '../../realm/economy.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
 import { kitLines } from '../../realm/kit.ts'
@@ -1886,6 +1886,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (x.post != null) h += `<button class="btn ghost" data-act="assign" data-id="${id}" data-node="">맡은 일을 그만둔다</button>`
         for (const a of sorted(Object.values(r.armies)).filter((b) => b.faction === me() && b.at === at && b.march === null && b.hero === null)) {
           h += `<button class="btn" data-act="lead" data-id="${id}" data-army="${a.id}">${esc(josa(armyName(r, a), '을', '를'))} 이끈다</button>`
+        }
+        // 다른 고을 맡기 — 우리 땅으로 이어진 곳이면 정예 호위를 거느리고 간다 (그 계절은 길에 있다)
+        const far = sorted(Object.values(r.nodes)).filter((n) => n.owner === me() && n.id !== at && n.kind !== 'sodo' && n.hh > 0 && migratePath(r, me(), at, n.id) !== null)
+        if (far.length > 0 && heroBusy(r, id) === null) {
+          h += `<div class="farh"><b>다른 고을을 맡으러 간다</b><span class="mute">정예 ${P.realm.escortMen}명이 따라간다 · 이번 계절은 길에 있다</span></div><div class="seg wrap farseg">`
+          for (const n of far) {
+            const holder = Object.values(r.heroes).find((y) => y.post === n.id && y.faction === me())
+            h += `<button data-act="assign" data-id="${id}" data-node="${n.id}">${esc(n.name)}${holder !== undefined ? `<small>${esc(holder.name)} 대신</small>` : ''}</button>`
+          }
+          h += `</div>`
         }
       }
       h += `<p class="mute">맡긴 고을엔 내정·지략·매력과 특성이 걸린다. 장군이 군대를 이끌면 무예·통솔이 싸움에 걸린다.</p>`

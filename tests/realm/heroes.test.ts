@@ -56,13 +56,18 @@ describe('장수 — 판의 처음', () => {
 })
 
 describe('맡기기 · 이끌기', () => {
-  it('고을에 혼자 있는 장수를 그 고을에 맡긴다 — 농사꾼이면 수확이 는다 · 다른 고을이나 군주는 안 된다', () => {
+  it('고을에 혼자 있는 장수를 그 고을에 맡긴다 — 농사꾼이면 수확이 는다 · 우리 땅으로 이어진 다른 고을은 호위를 거느리고 가서 맡는다 · 군주는 안 된다', () => {
     const r = byeonhanMini(1)
     const before = harvestMul(r, 'our-cap')
     const p = planned(r, [{ kind: 'assign', hero: 'us-1', node: 'our-cap' }])
     assert.equal(p.heroes['us-1']!.post, 'our-cap')
     assert.ok(harvestMul(p, 'our-cap') > before)
-    assert.equal(planned(r, [{ kind: 'assign', hero: 'us-1', node: 'our-north' }]).heroes['us-1']!.post, null)
+    const far = planned(r, [{ kind: 'assign', hero: 'us-1', node: 'our-north' }]).heroes['us-1']!
+    assert.equal(far.post, 'our-north')
+    assert.equal(far.at, 'our-north')
+    assert.equal(far.awayUntil, r.season) // 그 계절은 길에 있다
+    const foe = Object.values(r.nodes).find((n) => n.owner !== null && n.owner !== 'us' && n.kind !== 'sodo')!
+    assert.equal(planned(r, [{ kind: 'assign', hero: 'us-1', node: foe.id }]).heroes['us-1']!.post, null)
     assert.equal(planned(r, [{ kind: 'assign', hero: 'us-ruler', node: 'our-cap' }]).heroes['us-ruler']!.post, null)
   })
 
