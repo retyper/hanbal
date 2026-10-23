@@ -349,9 +349,15 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (a?.faction !== viewer) return null
       return `${josa(nameArmy(line.army), '을', '를')} 집으로 돌려보냈다. ${node(line.node)}에 ${line.n}집이 돌아왔다.`
     }
+    case 'party':
+      if (line.faction !== viewer) return null
+      return `${node(line.node)}에서 개척단 ${line.n}가구가 떠났다. 빈땅에 닿으면 마을을 연다.`
+    case 'partyLost':
+      if (line.faction !== viewer) return null
+      return `개척단 ${line.n}가구가 ${josa(node(line.node), '에서', '에서')} 적을 만나 흩어졌다.`
     case 'settle':
       // 개척은 계절을 넘기면 바로 자리 잡는다 — 길 위에 머물지 않는다
-      if (line.faction === viewer) return `${josa(node(line.from), '에서', '에서')} 집 ${josa(String(line.n), '이', '가')} ${josa(node(line.to), '으로', '로')} 옮겨 가 자리 잡았다. 새 마을이 큰다.`
+      if (line.faction === viewer) return `${node(line.from)}의 백성 ${line.n}가구가 ${josa(node(line.to), '에', '에')} 자리 잡았다. 새 마을이 선다.`
       return `소문. ${josa(fname(line.faction), '이', '가')} ${josa(node(line.to), '에', '에')} 사람을 보냈다.`
     case 'migrate':
       // 남의 나라 집 옮기기는 들리지 않는다

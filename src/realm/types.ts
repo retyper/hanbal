@@ -458,6 +458,17 @@ export interface BattleStart {
 /** 싸움이 끝난 까닭 — 이야기의 마지막 줄 */
 export type EndWhy = 'captured' | 'men' | 'morale' | 'retreat' | 'share' | 'draw'
 
+/** 개척단 — 고을에서 떠난 백성 몇 가구. 빈땅에 닿으면 마을이 선다 (parties.ts) */
+export interface Party {
+  readonly id: string
+  readonly faction: string
+  /** 떠난 고을 */
+  readonly home: string
+  at: string
+  readonly hh: number
+  march: { readonly from: string; readonly to: string; readonly edge: string; left: number } | null
+}
+
 export interface Army {
   readonly id: string
   readonly faction: string
@@ -598,6 +609,8 @@ export interface Realm {
   births?: Array<{ a: string; b: string; faction: string; due: number }>
   /** 원정 — 지도 바깥 먼 땅으로 간 장수. 결과는 보낼 때 정해진다 (expedition.ts · SYSTEMS §15-4). 옛 저장에는 없다 */
   expeditions?: Expedition[]
+  /** 길 위·고을에 선 개척단 (parties.ts) — 옛 저장에는 없다 */
+  parties?: Record<string, Party>
   /** 봄 제사를 지낸 해 (Math.floor(season / 4)) — 나라마다. 그해 가을 수확이 는다 (economy.riteAllowed). 옛 저장에는 없다 */
   blessed?: Record<string, number>
   /** 답을 기다리는 청 (diplomacy.openAsks). 옛 저장에는 없다 */
@@ -667,6 +680,10 @@ export type Order =
   | { readonly kind: 'turnBack'; readonly army: string }
   /** 개척 — 제 고을 `from` 의 가호 n 을 길로 맞닿은 빈땅 `to` 로 옮긴다. 곡식이 든다 (economy.settleLimit · settleCost) */
   | { readonly kind: 'settle'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number }
+  /** 개척단 꾸리기 — 고을 `node` 의 백성을 떼어 낸다. edge 를 주면 바로 그 길로 떠난다 (parties.ts) */
+  | { readonly kind: 'party'; readonly faction: string; readonly node: string; readonly edge?: string }
+  /** 개척단을 길 하나로 보낸다 */
+  | { readonly kind: 'partyGo'; readonly party: string; readonly edge: string }
   /** 이주 — 제 고을 `from` 의 집 n 을 제 땅으로 이어진 제 고을 `to` 로 억지로 옮긴다. 곡식이 들고 두 고을은 한동안 집이 안 는다 (economy.migrateLimit) */
   | { readonly kind: 'migrate'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number }
   /** 집 자동 분배 켜기·끄기 (Faction.migrateOff) */
@@ -839,6 +856,9 @@ export type ReportLine =
   | { readonly kind: 'answered'; readonly ask: string; readonly yes: boolean; readonly from: string; readonly askKind: AskKind }
   /** 경계 강화 */
   | { readonly kind: 'guard'; readonly faction: string; readonly node: string }
+  /** 개척단이 떠났다 · 흩어졌다 */
+  | { readonly kind: 'party'; readonly faction: string; readonly party: string; readonly node: string; readonly n: number }
+  | { readonly kind: 'partyLost'; readonly faction: string; readonly party: string; readonly node: string; readonly n: number }
   /** 짓기 — 시작했다(done false) · 섰다(done true) */
   | { readonly kind: 'build'; readonly faction: string; readonly node: string; readonly what: BuildWhat; readonly done: boolean }
   /** 겨울에 소금이 모자라 곡식이 썩었다 */

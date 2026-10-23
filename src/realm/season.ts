@@ -41,6 +41,7 @@ import { resolveCard, stepCards } from './events.ts'
 import { PEOPLE_SCALE, migrate } from './migrate.ts'
 import { spreadRumors } from './rumor.ts'
 import { addMen, giveMen, kitOf, scaleKinds, scaleMen, takeMen } from './kit.ts'
+import { formParty, moveParty, stepParties } from './parties.ts'
 import {
   ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, ironhandAt, noteMet, stepHeroes, sweepHeroes,
 } from './heroes.ts'
@@ -519,6 +520,8 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
     else if (o.kind === 'disband') disbandArmy(r, o, lines)
     else if (o.kind === 'turnBack') turnBack(r, o, lines)
     else if (o.kind === 'settle') settleLand(r, o, lines)
+    else if (o.kind === 'party') formParty(r, o, lines)
+    else if (o.kind === 'partyGo') moveParty(r, o)
     else if (o.kind === 'migrate') migrateHouses(r, o, lines)
     else if (o.kind === 'migrateAuto') setMigrateAuto(r, o)
     else if (o.kind === 'guard') applyGuard(r, o, lines)
@@ -1294,6 +1297,7 @@ export function advance(
   const led: Record<string, Tactic> = { ...tactics }
   for (const o of orders) if (o.kind === 'command' && led[o.key] === undefined) led[o.key] = { cmds: o.cmds }
   resolveMarches(r, snipes, led, lines, fought) // 3 · 4 · 5
+  stepParties(r, lines) // 5 — 개척단이 한 계절 간다 · 빈땅에 닿으면 마을 · 적 곁이면 흩어진다
   stepFood(r, lines) // 5 끝 — 남의 땅에 머무는 군대가 군량을 먹는다
   sweepHeroes(r, lines) // 5 끝 — 잃은 고을에 혼자 있던 장수는 물러나거나 잡힌다
   stepEconomy(r, season, fought, lines) // 7

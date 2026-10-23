@@ -227,6 +227,7 @@ export const MAP_CSS = `
   font-size: clamp(10px, calc(1.6cqh / var(--z, 1) * var(--zs, 1)), 13px); line-height: 1.3; }
 .map .tok.ally b { color: #cfe8b8; border-color: var(--tc); }
 .map .tok.ally img { border-style: double; border-width: 4px; }
+.map .tok.party img { border-style: dashed; background: #3a2c1e; object-fit: contain; padding: 8%; } .map .tok.party b { color: #f0d8b0; border-color: #c8a070; }
 .map .tok.sel img { border-color: #ffd27a; box-shadow: 0 0 0 3px #ffd27a88, 0 0 12px #ffd27a; transform: scale(1.12); }
 .map .tok.going img { border-color: #c8402a; }
 /* 개척할 수 있는 빈땅 — 누르면 그 땅 카드에 "사람 보내기" */
@@ -500,7 +501,7 @@ export function mapHtml(
     // 고른 군대가 갈 수 있는 곳 — 누르면 그리로 간다 (data-act="go")
     const tg = target.get(n.id)
     const go = tg !== undefined && !tg.off ? ` data-act="${tg.act ?? 'go'}" data-edge="${tg.edge}"` : ''
-    const tcls = (tg === undefined ? '' : tg.off ? ' tgt off' : tg.on ? ' tgt on' : ' tgt') + (tg?.act === 'pgo' ? ' pp' : '')
+    const tcls = (tg === undefined ? '' : tg.off ? ' tgt off' : tg.on ? ' tgt on' : ' tgt') + (tg?.act === 'ptgo' ? ' pp' : '')
     labels.push({
       id: n.id, name: n.name, now: NODE_NOW[n.id], x: p[0], y: p[1], s: sizeOf(n.hh), cap: n.kind === 'capital' || cap, hh: n.hh,
       cls: `${kcls}${ours ? ' me' : ''}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${far}${fr}`,
@@ -532,8 +533,8 @@ export function mapHtml(
   const myColor = FACTION_ART[me]?.color ?? '#9fd18b'
   const topMen = Math.max(1, ...tokens.map((t) => t.men))
   const tokBtn = (t: MapToken, ang?: number): string =>
-    `<button class="tok${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}${t.ally !== undefined ? ' ally' : ''}" data-act="tok" data-army="${t.army}" style="--tc:${t.ally ?? myColor}">`
-    + `${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}<img src="${t.img}" alt=""><i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i><b>${t.ally !== undefined ? '도움 ' : ''}${t.men}</b></button>`
+    `<button class="tok${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}${t.ally !== undefined ? ' ally' : ''}${t.party === true ? ' party' : ''}" data-act="${t.party === true ? 'ptok' : 'tok'}" data-army="${t.army}" style="--tc:${t.party === true ? '#c8a070' : t.ally ?? myColor}">`
+    + `${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}<img src="${t.img}" alt=""><i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i><b>${t.ally !== undefined ? '도움 ' : t.party === true ? '개척 ' : ''}${t.men}</b></button>`
   let toks = ''
   // 길 위의 우리 군대 — 떠난 쪽에서 삼분의 일쯤 (가운데의 "n계절" 글씨를 안 가린다)
   for (const t of tokens) {
@@ -583,6 +584,8 @@ export interface MapToken {
   readonly march?: { readonly from: string; readonly to: string; readonly left: number }
   /** 동맹이 빌려준 군대 — 그 나라 색 테와 「도움」 (형: "지켜주는 군대를 요청하면 언제 어디로 오는지 … 안보이는데?") */
   readonly ally?: string
+  /** 개척단 — 흙빛 테 · 누르면 'ptok' · 수는 가구 (parties.ts) */
+  readonly party?: boolean
 }
 
 /** 고른 군대가 갈 수 있는 고을 — 칩은 판세(싸울 곳) 또는 걸리는 계절 */
