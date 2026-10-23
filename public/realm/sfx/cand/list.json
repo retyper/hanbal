@@ -1595,7 +1595,7 @@
   "author": "craigsmith",
   "license": "CC0",
   "url": "https://freesound.org/s/675821/",
-  "seconds": 1.0
+  "seconds": 1
  },
  {
   "slot": "cmd_counter",
@@ -1655,7 +1655,7 @@
   "author": "craigsmith",
   "license": "CC0",
   "url": "https://freesound.org/s/480656/",
-  "seconds": 3.0
+  "seconds": 3
  },
  {
   "slot": "march_go",
@@ -1665,7 +1665,7 @@
   "author": "craigsmith",
   "license": "CC0",
   "url": "https://freesound.org/s/480434/",
-  "seconds": 3.0
+  "seconds": 3
  },
  {
   "slot": "march_go",
@@ -1685,7 +1685,7 @@
   "author": "stib",
   "license": "CC0",
   "url": "https://freesound.org/s/240724/",
-  "seconds": 3.0
+  "seconds": 3
  },
  {
   "slot": "march_go",
@@ -1695,7 +1695,7 @@
   "author": "ciapaqua",
   "license": "CC0",
   "url": "https://freesound.org/s/637107/",
-  "seconds": 3.0
+  "seconds": 3
  },
  {
   "slot": "march_go",
@@ -1705,7 +1705,7 @@
   "author": "craigsmith · 한국저작권위원회",
   "license": "CC0 + CC BY (저작자표시)",
   "url": "https://freesound.org/s/480656/",
-  "seconds": 3.0
+  "seconds": 3
  },
  {
   "slot": "march_go",
@@ -1715,7 +1715,7 @@
   "author": "김용배",
   "license": "CC BY (저작자표시)",
   "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252709&menuNo=200020",
-  "seconds": 3.0
+  "seconds": 3
  },
  {
   "slot": "march_go",
@@ -1725,7 +1725,7 @@
   "author": "craigsmith · adharca",
   "license": "CC0",
   "url": "https://freesound.org/s/480675/",
-  "seconds": 3.0
+  "seconds": 3
  },
  {
   "slot": "draft_go",
@@ -1745,7 +1745,7 @@
   "author": "jbeetle",
   "license": "CC0",
   "url": "https://freesound.org/s/274510/",
-  "seconds": 2.0
+  "seconds": 2
  },
  {
   "slot": "draft_go",
@@ -1846,5 +1846,65 @@
   "license": "CC0",
   "url": "https://freesound.org/s/270588/",
   "seconds": 2.5
+ },
+ {
+  "id": "bgm_bridal_1",
+  "slot": "bgm_bridal",
+  "file": "bgm_bridal_1.ogg",
+  "title": "국악 BGM #47 (끈적한)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386787&menuNo=200020",
+  "seconds": 74.1
+ },
+ {
+  "id": "bgm_bridal_2",
+  "slot": "bgm_bridal",
+  "file": "bgm_bridal_2.ogg",
+  "title": "국악 BGM #70 (황홀한)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386810&menuNo=200020",
+  "seconds": 75.7
+ },
+ {
+  "id": "bgm_bridal_3",
+  "slot": "bgm_bridal",
+  "file": "bgm_bridal_3.ogg",
+  "title": "국악 BGM #105 (몽롱한 기분이 드는)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386845&menuNo=200020",
+  "seconds": 61.4
+ },
+ {
+  "id": "bgm_bridal_4",
+  "slot": "bgm_bridal",
+  "file": "bgm_bridal_4.ogg",
+  "title": "국악 BGM #171 (나른한)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386911&menuNo=200020",
+  "seconds": 71.8
+ },
+ {
+  "id": "bgm_bridal_5",
+  "slot": "bgm_bridal",
+  "file": "bgm_bridal_5.ogg",
+  "title": "국악 BGM #180 (몽롱한)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386920&menuNo=200020",
+  "seconds": 72.8
+ },
+ {
+  "id": "bgm_bridal_6",
+  "slot": "bgm_bridal",
+  "file": "bgm_bridal_6.ogg",
+  "title": "국악 BGM #187 (부드러운·상냥한)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386927&menuNo=200020",
+  "seconds": 83.3
  }
 ]

@@ -27,6 +27,8 @@ export const PICK = {
   battle_clash: 'c14', battle_crit: 'g1',
   // 판이 끝났을 때(이겼다·졌다 화면) — 싸움 하나 이긴·진 음악과 따로 (형 10-23: "게임 승리했을 때나 패배했을 때 사운드는 없어?")
   bgm_end_win: 'w5', bgm_end_lose: 'c6',
+  // 신방 — 장수 판의 「신방을 살펴본다」 장면 (형 10-24) · c1 = 국악 BGM #47 (끈적한) — 형이 소리 고르기 판에서 바꾼다
+  bgm_bridal: 'c1',
   // 깃발 소리 — 깃발마다 제 소리 (형 10-23: "돌격 방진 바위 굴리기 … 다 그만의 이펙트와 사운드") · 맞쏘기는 화살비 소리를 흩어 친다
   // 싸움이 열릴 때 — 종 「댕」 한 번 · 북 두 번 (형 10-23: "싸움 발생할 때 댕 하고 이상한 소리 · 소리 설정 웹페이지에서 바꿀 수 있게") — k1 은 옛 활터 소리
   war_bell: 'c5', war_drum: 'c4', draft_go: 'c4', arm_go: 'c6',
@@ -258,6 +260,8 @@ export function makeMusic(base: string, muted: () => boolean, quiet: () => boole
   /** 이겼다 · 졌다 — 싸움 끝 · 판 끝 */
   result(kind: 'win' | 'lose'): void
   ending(kind: 'win' | 'lose'): void
+  /** 신방 장면 — 닫으면 부른 쪽이 map() 으로 되돌린다 */
+  bridal(): void
   refresh(): void
 } {
   const bgm = track(base, BGM_VOL)
@@ -291,6 +295,7 @@ export function makeMusic(base: string, muted: () => boolean, quiet: () => boole
     result(kind) { mode = { bgm: kind === 'win' ? 'bgm_win' : 'bgm_lose', amb: null }; apply() },
     /** 판이 끝났다 — 이겼다·졌다 화면의 음악 */
     ending(kind) { mode = { bgm: kind === 'win' ? 'bgm_end_win' : 'bgm_end_lose', amb: null }; apply() },
+    bridal() { mode = { bgm: 'bgm_bridal', amb: null }; apply() },
     refresh: apply,
   }
 }

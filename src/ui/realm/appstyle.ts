@@ -148,6 +148,28 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .honey b { position: relative; font-family: var(--display); font-weight: 400; font-size: 22px; color: #ffd0d8; letter-spacing: 2px; text-shadow: 0 0 10px #ff6a8a99, 0 2px 4px #000; }
 .ap .honey span { position: relative; font-size: 14px; color: #f8e0e4; } .ap .honey small { position: relative; font-size: 12px; color: #e8b8c0; }
 @media (prefers-reduced-motion: reduce) { .ap .honey::before { animation: none; } }
+.ap .honey .bridal-go { position: relative; margin: 4px 0 2px; border-color: #f0a0b0aa; color: #ffe0e6; background: linear-gradient(#5a2a3acc, #2a1218cc); box-shadow: 0 0 12px #ff8a9a55; }
+/* 신방을 살펴본다 — 넉 장이 천천히 밀리며 넘어간다 (켄 번스) · 등잔빛 너울 · 마지막 장은 남는다 */
+.ap .cere.bridal { background: #070405; justify-content: flex-start; padding-top: max(18px, env(safe-area-inset-top)); }
+.ap .cere.bridal .bpic { position: absolute; inset: -4%; background: center / cover no-repeat; opacity: 0; animation: bpin 1.4s ease-in-out calc(var(--i) * var(--s)) both, bkb calc(var(--s) + 1.6s) ease-out calc(var(--i) * var(--s)) both; }
+.ap .cere.bridal .bpic.odd { animation-name: bpin, bkb2; }
+.ap .cere.bridal .bpic:nth-of-type(4) { inset: -2% -4% 0; background-position: center 100%; transform-origin: 50% 100%; } /* 댓돌 위 신 — 그림 맨 아래가 잘리지 않게 */
+.ap .cere.bridal .bveil { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 70% 60% at 50% 42%, #0000 40%, #0a0406cc 100%), linear-gradient(#0a0406cc, #0000 30%, #0000 85%, #0a040699); animation: bflick 3.2s ease-in-out infinite alternate; }
+.ap .cere.bridal .bcap { position: absolute; left: 0; right: 0; top: calc(max(18px, env(safe-area-inset-top)) + 70px); z-index: 1; text-align: center; font-family: var(--display); font-size: clamp(22px, 6vw, 34px); letter-spacing: 3px; color: #ffe8d6; text-shadow: 0 0 18px #ff9a6a99, 0 2px 6px #000;
+  opacity: 0; animation: bcap var(--s) ease-in-out calc(var(--i) * var(--s) + .5s) both; }
+.ap .cere.bridal .bcap:last-of-type { animation-fill-mode: backwards; }
+.ap .cere.bridal .bmote { position: absolute; inset: 0; pointer-events: none; }
+.ap .cere.bridal .bmote i { position: absolute; bottom: -8px; left: var(--x); width: 4px; height: 4px; border-radius: 50%; background: radial-gradient(circle, #fff2d8, #ffb07a 60%, #0000 72%); animation: hmote var(--sp) linear var(--t) infinite; }
+.ap .cere.bridal .bpair { position: relative; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 6px 14px; border-radius: 999px; background: #1a0c10b0; box-shadow: 0 0 18px #ff8a9a44; animation: bpin .8s ease-out .6s both; }
+.ap .cere.bridal .bpair .cf { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; border: 2px solid #f0a0b0; }
+.ap .cere.bridal .bpair b { font-size: 15px; color: #ffe0e6; text-shadow: 0 1px 4px #000; }
+.ap .cere.bridal .bskip { position: absolute; z-index: 2; bottom: max(10px, env(safe-area-inset-bottom)); left: 0; right: 0; text-align: center; font-size: 12px; color: #e8c0c8aa; }
+@keyframes bpin { from { opacity: 0; } to { opacity: 1; } }
+@keyframes bkb { from { transform: scale(1.02) translate(-1%, 1%); } to { transform: scale(1.12) translate(1.5%, -1%); } }
+@keyframes bkb2 { from { transform: scale(1.1) translate(1.5%, 0); } to { transform: scale(1.02); } }
+@keyframes bcap { 0% { opacity: 0; transform: translateY(8px); } 18%, 78% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+@keyframes bflick { from { opacity: .92; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ap .cere.bridal .bpic { animation: bpin .01s calc(var(--i) * var(--s)) both; } .ap .cere.bridal .bveil, .ap .cere.bridal .bmote { animation: none; } }
 /* 혼례 · 탄생 — 한 장면씩 판 전체 */
 .ap .cere { position: absolute; inset: 0; z-index: 75; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; cursor: pointer;
   background: #000; animation: cin .6s ease-out both; }

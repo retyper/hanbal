@@ -213,6 +213,13 @@ const SCENE_CUE_MS = 1400
 /** 혼례·탄생 장면 — 계절 띠가 걷힌 뒤 뜨고, 이만큼 머문다 (누르면 바로 넘긴다) */
 const CEREMONY_LEAD_MS = 2000
 const CEREMONY_MS = 6500
+/** 신방 넉 장 — 휘장 너머 그림자 · 풀린 옷고름 · 이불 끝의 발 · 댓돌 위 포개진 신 (그림: realm/event/event-bridal-*) */
+const BRIDAL_SHOTS: ReadonlyArray<readonly [string, string]> = [
+  ['event-bridal-a', '등잔불이 낮게 흔들린다'],
+  ['event-bridal-b', '옷고름이 풀렸다'],
+  ['event-bridal-c', '이불 끝으로 두 발이 얽혔다'],
+  ['event-bridal-d', '댓돌 위 신 두 켤레가 포개졌다'],
+]
 /** 판을 그린 뒤 다음 계절 지도 그림을 미리 받기까지 (ms) — 그리는 동안 끼어들지 않게 */
 const WARM_MS = 1200
 const FALL_S = 1.6
@@ -2092,11 +2099,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const near = together(r, id, x.spouse)
       // 신혼 — 등불 밝힌 신방 (형 10-23: "가정을 꾸리는 도중에는 야시시한 상태 표시랑 배경 이미지")
       if (honey > 0 && sp !== undefined) {
-        h += `<div class="honey" style="--hbg:url('${ART}event/event-marriage.jpg')"><div class="hfaces">${bust(x, 'hf')}${bust(sp, 'hf')}</div>`
+        h += `<div class="honey" style="--hbg:url('${ART}event/event-bridal-a.jpg')"><div class="hfaces">${bust(x, 'hf')}${bust(sp, 'hf')}</div>`
           + `<b>신방에 들었다</b><span>${esc(josa(sp.name, '과', '와'))} 함께 지낸다 · ${honey}계절</span>`
           + (!near && ours && heroOrders.some((o) => o.kind === 'cohabit' && (o.hero === id || o.hero === x.spouse))
             ? `<button class="btn home sm on" data-act="uncohabit" data-id="${id}">이번 계절 함께 지내러 간다 · 누르면 거둔다</button>`
             : !near && ours && canCohabit(realm!, id) && heroBusy(r, id) === null ? `<button class="btn pri home sm" data-act="cohabit" data-id="${id}">${esc(josa(r.nodes[sp.at ?? '']?.name ?? '', '으로', '로'))} 가서 함께 지낸다</button>` : '')
+          + `<button class="btn sm bridal-go" data-act="bridal-look" data-id="${id}">신방을 살펴본다</button>`
           + `<small>${near ? '함께 지낸다' : '떨어져 있다 — 이번 계절이 지나면 아이가 한 계절 늦어진다'}${kid !== undefined ? ` · 아이는 ${Math.max(1, kid.due - r.season + 1)}계절쯤 뒤${(kid.late ?? 0) > 0 ? ` (떨어져 지내 ${kid.late}계절 늦어졌다)` : ''}` : ''}</small></div>`
       } else h += `<p class="mute">짝 · ${sp !== undefined ? nameHtml(sp.name) : '?'}${kid !== undefined ? ` · 아이가 ${Math.max(1, kid.due - r.season + 1)}계절쯤 뒤 나선다` : ''}</p>`
     }
@@ -2984,6 +2992,32 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 혼례와 아이 — 계절 띠가 걷힌 뒤 한 장면씩 (형 10-23: "혼인하고 자식 낳는 거 하면 별도의 연출 필요하지 않나?").
    * 혼례: 두 사람이 양쪽에서 다가와 나란히 · 꽃잎. 아이: 금빛 속에서 얼굴이 떠오르고 물려받은 특성이 하나씩. 누르면 다음 장면
    */
+  /**
+   * 신방을 살펴본다 — 등잔 아래 넉 장이 천천히 넘어간다 · 두 사람 얼굴은 아래에 작게 (형 10-24: "신방 카드에 신방을 살펴본다 버튼 · 어느 정도 선정성을 갖춘 상업용 이미지 · 영상 연출 · 배경음악")
+   * 그림 속 사람은 얼굴이 안 보이게 — 누구인지는 화면이 얹는 얼굴이 말한다. 누르면 닫힌다.
+   */
+  function bridalLook(r: Realm, id: string): void {
+    const x = r.heroes[id]
+    const sp = x?.spouse !== undefined ? r.heroes[x.spouse] : undefined
+    if (x === undefined || sp === undefined || root.querySelector('.cere.bridal') !== null) return
+    const S = P.realm.bridalShotS
+    const pics = BRIDAL_SHOTS.map(([f, line], i) => `<i class="bpic${i % 2 === 1 ? ' odd' : ''}" style="--i:${i};background-image:url('${ART}event/${f}.jpg')"></i><span class="bcap" style="--i:${i}">${esc(line)}</span>`).join('')
+    let motes = ''
+    for (let i = 0; i < 14; i++) motes += `<i style="--x:${(i * 43) % 100}%;--t:${((i * 0.41) % 3).toFixed(2)}s;--sp:${(5 + ((i * 0.7) % 3)).toFixed(2)}s"></i>`
+    root.insertAdjacentHTML('beforeend', `<div class="cere bridal" style="--s:${S}s;--n:${BRIDAL_SHOTS.length}">${pics}<i class="bveil"></i><div class="bmote">${motes}</div>`
+      + `<div class="bpair">${bust(x, 'cf')}<b>${esc(x.name)} · ${esc(sp.name)}</b>${bust(sp, 'cf')}</div><span class="bskip">누르면 닫힌다</span></div>`)
+    const el = root.lastElementChild as HTMLElement
+    music.bridal()
+    let gone = false
+    const close = (): void => {
+      if (gone) return
+      gone = true
+      el.classList.add('out')
+      window.setTimeout(() => { el.remove(); if (realm !== null) music.map(seasonOf(realm.season)) }, 450)
+    }
+    el.addEventListener('click', (e) => { e.stopPropagation(); close() })
+  }
+
   function ceremonyFx(r: Realm, rep: Report): void {
     noteKids(Object.values(r.heroes)) // 갓 난 아이도 얼굴이 있게 — 화면이 판을 그리기 전에 장면이 먼저 뜬다
     const scenes: string[] = []
@@ -3580,6 +3614,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'guide-close': root.querySelector('.guidebox')?.remove(); return
       case 'hero-back': openSheet({ kind: 'heroes' }); return
+      case 'bridal-look': if (realm !== null) bridalLook(realm, d['id']!); return
       case 'hero-envoy': envoyPick = d['id']!; diploMode = 'envoy'; openSheet({ kind: 'diplo' }); return
       case 'hero-agent': plotAgent = d['id']!; diploMode = 'plot'; openSheet({ kind: 'diplo' }); return
       case 'cohabit': heroOrders = [...heroOrders.filter((o) => !(o.kind === 'cohabit' && o.hero === d['id'])), { kind: 'cohabit', hero: d['id']! }]; break
