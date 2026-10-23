@@ -1726,5 +1726,125 @@
   "license": "CC0",
   "url": "https://freesound.org/s/480675/",
   "seconds": 3.0
+ },
+ {
+  "slot": "draft_go",
+  "id": "draft_go_1",
+  "file": "draft_go_1.ogg",
+  "title": "Men Shouting Hey.wav",
+  "author": "Jace",
+  "license": "CC0",
+  "url": "https://freesound.org/s/57204/",
+  "seconds": 1.2
+ },
+ {
+  "slot": "draft_go",
+  "id": "draft_go_2",
+  "file": "draft_go_2.ogg",
+  "title": "3 Men Cheering",
+  "author": "jbeetle",
+  "license": "CC0",
+  "url": "https://freesound.org/s/274510/",
+  "seconds": 2.0
+ },
+ {
+  "slot": "draft_go",
+  "id": "draft_go_3",
+  "file": "draft_go_3.ogg",
+  "title": "Middle Ages War Cry.wav",
+  "author": "joelcarrsound",
+  "license": "CC0",
+  "url": "https://freesound.org/s/521830/",
+  "seconds": 1.8
+ },
+ {
+  "slot": "draft_go",
+  "id": "draft_go_4",
+  "file": "draft_go_4.ogg",
+  "title": "Rowdy Group Hype Grunt, Boot Stomp and Shield Smash - WITH reverb.wav",
+  "author": "WelvynZPorterSamples",
+  "license": "CC0",
+  "url": "https://freesound.org/s/621326/",
+  "seconds": 2.5
+ },
+ {
+  "slot": "draft_go",
+  "id": "draft_go_5",
+  "file": "draft_go_5.ogg",
+  "title": "국악기_사물북1 + Men Shouting Hey.wav + 갑옷 걷는 — 섞음: 북 한 번에 「헤이!」, 아홉 걸음이 줄로 모여듦",
+  "author": "한국저작권위원회 · Jace · 김용배",
+  "license": "CC BY (저작자표시) · CC0",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13265848&menuNo=200020",
+  "seconds": 2.5
+ },
+ {
+  "slot": "draft_go",
+  "id": "draft_go_6",
+  "file": "draft_go_6.ogg",
+  "title": "SE_11_03_ 동양적인 징 임펙트 효과음 + 3 Men Cheering + 갑옷 걷는 — 섞음: 징 한 번, 세 사내가 받아 외치고 발이 모여듦",
+  "author": "공유마당 · jbeetle · 김용배",
+  "license": "CC BY (저작자표시) · CC0",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13355475&menuNo=200020",
+  "seconds": 2.5
+ },
+ {
+  "slot": "arm_go",
+  "id": "arm_go_1",
+  "file": "arm_go_1.ogg",
+  "title": "Hammering on Anvil",
+  "author": "SamsterBirdies",
+  "license": "CC0",
+  "url": "https://freesound.org/s/363169/",
+  "seconds": 2.4
+ },
+ {
+  "slot": "arm_go",
+  "id": "arm_go_2",
+  "file": "arm_go_2.ogg",
+  "title": "양양대장간_낫",
+  "author": "JICA",
+  "license": "공공누리 제1유형",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13372073&menuNo=200020",
+  "seconds": 2.5
+ },
+ {
+  "slot": "arm_go",
+  "id": "arm_go_3",
+  "file": "arm_go_3.ogg",
+  "title": "대장간 망치질(말굽)",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253140&menuNo=200020",
+  "seconds": 2.5
+ },
+ {
+  "slot": "arm_go",
+  "id": "arm_go_4",
+  "file": "arm_go_4.ogg",
+  "title": "Clanks.wav",
+  "author": "markgia",
+  "license": "CC0",
+  "url": "https://freesound.org/s/176226/",
+  "seconds": 2.4
+ },
+ {
+  "slot": "arm_go",
+  "id": "arm_go_5",
+  "file": "arm_go_5.ogg",
+  "title": "Sword draw unsheathe + Unsheathed blade + unsheath_sword.wav + Sword from sheath.wav + 칼 뽑는1 — 섞음: 다섯 칼을 0.3초 안에 차례로 뽑음",
+  "author": "SamsterBirdies · deleted_user_2906614 · Qat · Aleks41 · 김용배",
+  "license": "CC0 · CC BY (저작자표시)",
+  "url": "https://freesound.org/s/581594/",
+  "seconds": 2.5
+ },
+ {
+  "slot": "arm_go",
+  "id": "arm_go_6",
+  "file": "arm_go_6.ogg",
+  "title": "Anvil Hit 2 + Lightmetal_armor + unsheath_sword.wav — 섞음: 모루 쾅 · 갑옷 철컥 · 칼 스릉",
+  "author": "michorvath · mitchanary · Qat",
+  "license": "CC0",
+  "url": "https://freesound.org/s/270588/",
+  "seconds": 2.5
  }
 ]

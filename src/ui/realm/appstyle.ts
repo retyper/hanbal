@@ -516,6 +516,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .lines .rrow img.rface.rl { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); flex: none; }
 .ap .lines .rflow { display: inline-flex; align-items: center; gap: 4px; flex: none; }
 .ap .lines .rflow img.rem { width: 24px; height: 24px; }
+.ap .remq { position: relative; display: inline-grid; place-items: center; } .ap .remq img.rem { filter: brightness(0) opacity(.55); }
+.ap .remq b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 15px; font-weight: 900; color: #f3e2b8; text-shadow: 0 1px 2px #000; }
 .ap .lines .rflow .ar { font-style: normal; color: var(--gold); font-weight: 800; } .ap .lines .rflow .ar.foe { color: #ff8a70; }
 .ap .lines .nchip { display: inline-flex; align-items: center; gap: 2px; padding: 1px 6px 1px 2px; border-radius: 9px; background: #2a2418; color: #d9a86a; font-size: 12.5px; font-weight: 700; }
 .ap .lines .nchip img.nci { width: 20px; height: 20px; }

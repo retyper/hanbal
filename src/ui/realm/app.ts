@@ -2778,7 +2778,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     let flow = ''
     const from = L['from']
     const to = L['to']
-    if (l.kind === 'sighted' && isF(L['faction']) && isN(to)) flow = `${fchip(L['faction'] as string)}<i class="ar foe">➜</i>${nchip(to as string)}`
+    // 누가 보냈는지 모르는 공작 — 국기 대신 물음표 실루엣 (형 10-23: "어느 나란지 모른다고 했는데 왼쪽에 국기가 그대로 표시됨")
+    const unk = `<span class="remq">${icon('emblem-stonegate', 'rem')}<b>?</b></span>`
+    if (l.kind === 'plot' && l.faction !== me()) {
+      const known = l.caught && (l.exposed ?? true)
+      flow = `${known ? fchip(l.faction) : unk}<i class="ar foe">➜</i>${l.node !== undefined && isN(l.node) ? nchip(l.node) : isF(l.target) ? fchip(l.target) : ''}`
+    } else if (l.kind === 'sighted' && isF(L['faction']) && isN(to)) flow = `${fchip(L['faction'] as string)}<i class="ar foe">➜</i>${nchip(to as string)}`
     else if (isN(from) && isN(to)) flow = `${nchip(from)}<i class="ar">➜</i>${nchip(to)}`
     else if (isF(from) && isF(to)) flow = `${fchip(from)}<i class="ar">➜</i>${fchip(to)}`
     else if (isF(L['a']) && isF(L['b'])) {
