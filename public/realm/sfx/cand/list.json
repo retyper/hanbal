@@ -548,5 +548,193 @@
   "license": "CC BY (저작자표시)",
   "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13380392&menuNo=200020",
   "seconds": 9.8
+ },
+ {
+  "slot": "battle_clash",
+  "id": "battle_clash_7",
+  "file": "battle_clash_7.ogg",
+  "title": "Vikings in battle (swords crossing, shields bashing, men yelling)",
+  "author": "DeadVDI",
+  "license": "CC0",
+  "url": "https://freesound.org/s/376646/",
+  "seconds": 2.6,
+  "note": "���� 76.8�� �������� �ڸ� ��"
+ },
+ {
+  "slot": "battle_clash",
+  "id": "battle_clash_8",
+  "file": "battle_clash_8.ogg",
+  "title": "Vikings in battle (swords crossing, shields bashing, men yelling)",
+  "author": "DeadVDI",
+  "license": "CC0",
+  "url": "https://freesound.org/s/376646/",
+  "seconds": 2.6,
+  "note": "���� 130.5�� �������� �ڸ� ��"
+ },
+ {
+  "slot": "battle_clash",
+  "id": "battle_clash_9",
+  "file": "battle_clash_9.ogg",
+  "title": "sword against sword.wav",
+  "author": "Fenodyrie",
+  "license": "CC0",
+  "url": "https://freesound.org/s/568790/",
+  "seconds": 2.5,
+  "note": "���� 2.1�� �������� �ڸ� ��"
+ },
+ {
+  "slot": "battle_clash",
+  "id": "battle_clash_10",
+  "file": "battle_clash_10.ogg",
+  "title": "SwordBattle2.wav",
+  "author": "freefire66",
+  "license": "CC0",
+  "url": "https://freesound.org/s/175951/",
+  "seconds": 2.6,
+  "note": "���� 29.7�� �������� �ڸ� ��"
+ },
+ {
+  "slot": "battle_clash",
+  "id": "battle_clash_11",
+  "file": "battle_clash_11.ogg",
+  "title": "swordfight.wav",
+  "author": "sidequesting",
+  "license": "CC0",
+  "url": "https://freesound.org/s/503023/",
+  "seconds": 2.6,
+  "note": "���� 91.4�� �������� �ڸ� ��"
+ },
+ {
+  "slot": "battle_clash",
+  "id": "battle_clash_12",
+  "file": "battle_clash_12.ogg",
+  "title": "S11-14 Group of men yelling with sword fight clicking.wav",
+  "author": "craigsmith",
+  "license": "CC0",
+  "url": "https://freesound.org/s/675091/",
+  "seconds": 2.5,
+  "note": "���� 1.4�� �������� �ڸ� ��"
+ },
+ {
+  "slot": "battle_clash",
+  "id": "battle_clash_13",
+  "file": "battle_clash_13.ogg",
+  "title": "SwordBattle1.wav",
+  "author": "freefire66",
+  "license": "CC0",
+  "url": "https://freesound.org/s/175950/",
+  "seconds": 2.6,
+  "note": "���� 47.0�� �������� �ڸ� ��"
+ },
+ {
+  "slot": "battle_clash",
+  "id": "battle_clash_14",
+  "file": "battle_clash_14.ogg",
+  "title": "Į�ο�BG",
+  "author": "����",
+  "license": "CC BY (������ǥ��)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254793&menuNo=200020",
+  "seconds": 2.6,
+  "note": "���� 0.0�� �������� �ڸ� ��"
+ },
+ {
+  "slot": "bgm_war",
+  "id": "bgm_war_7",
+  "file": "bgm_war_7.ogg",
+  "title": "���� BGM #197 (�繰����)",
+  "author": "�ֽ�ȸ�� ����Ƽ��",
+  "license": "CC BY (������ǥ��)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386937&menuNo=200020",
+  "seconds": 66.9
+ },
+ {
+  "slot": "bgm_war",
+  "id": "bgm_war_8",
+  "file": "bgm_war_8.ogg",
+  "title": "LSMBG0704_�繰����",
+  "author": "�ѱ����۱�����ȸ",
+  "license": "CC BY (������ǥ��)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312616&menuNo=200020",
+  "seconds": 90.6
+ },
+ {
+  "slot": "bgm_war",
+  "id": "bgm_war_9",
+  "file": "bgm_war_9.ogg",
+  "title": "���� BGM #64 (������)",
+  "author": "�ֽ�ȸ�� ����Ƽ��",
+  "license": "CC BY (������ǥ��)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386804&menuNo=200020",
+  "seconds": 67.9
+ },
+ {
+  "slot": "bgm_war",
+  "id": "bgm_war_10",
+  "file": "bgm_war_10.ogg",
+  "title": "���� BGM #58 (������ ���� ȥ��)",
+  "author": "�ֽ�ȸ�� ����Ƽ��",
+  "license": "CC BY (������ǥ��)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386798&menuNo=200020",
+  "seconds": 70.4
+ },
+ {
+  "slot": "bgm_war",
+  "id": "bgm_war_11",
+  "file": "bgm_war_11.ogg",
+  "title": "���� BGM #183 (���Բ� ���� ��ġ��)",
+  "author": "�ֽ�ȸ�� ����Ƽ��",
+  "license": "CC BY (������ǥ��)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386923&menuNo=200020",
+  "seconds": 67.9
+ },
+ {
+  "slot": "bgm_war",
+  "id": "bgm_war_12",
+  "file": "bgm_war_12.ogg",
+  "title": "BLACK BOX - South Korea",
+  "author": "������",
+  "license": "CC BY (������ǥ��)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13288291&menuNo=200020",
+  "seconds": 130
+ },
+ {
+  "slot": "bgm_map",
+  "id": "bgm_map_7",
+  "file": "bgm_map_7.ogg",
+  "title": "���� BGM #14 (�����ϴ�)",
+  "author": "�ֽ�ȸ�� ����Ƽ��",
+  "license": "CC BY (������ǥ��)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386754&menuNo=200020",
+  "seconds": 66.7
+ },
+ {
+  "slot": "bgm_map",
+  "id": "bgm_map_8",
+  "file": "bgm_map_8.ogg",
+  "title": "���� BGM #29 (�����ϰ� ������)",
+  "author": "�ֽ�ȸ�� ����Ƽ��",
+  "license": "CC BY (������ǥ��)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386769&menuNo=200020",
+  "seconds": 69.6
+ },
+ {
+  "slot": "bgm_map",
+  "id": "bgm_map_9",
+  "file": "bgm_map_9.ogg",
+  "title": "���� BGM #182 (������ ������Ű��)",
+  "author": "�ֽ�ȸ�� ����Ƽ��",
+  "license": "CC BY (������ǥ��)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386922&menuNo=200020",
+  "seconds": 67.9
+ },
+ {
+  "slot": "bgm_map",
+  "id": "bgm_map_10",
+  "file": "bgm_map_10.ogg",
+  "title": "���� BGM #192 (�����ϰ� �����ο�)",
+  "author": "�ֽ�ȸ�� ����Ƽ��",
+  "license": "CC BY (������ǥ��)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386932&menuNo=200020",
+  "seconds": 69.2
  }
 ]
