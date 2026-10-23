@@ -587,6 +587,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cost .cgi { width: 16px; height: 16px; object-fit: contain; }
 .ap .btn.pri .cost .cg { background: #2a0e08e0; }
 .ap .hback { margin: 0 0 6px; }
+/* 정찰 고정 📌 */
+.ap .srow { display: flex; align-items: stretch; gap: 4px; } .ap .srow > .row { flex: 1; min-width: 0; }
+.ap .srow .pin { flex: none; width: 40px; border-radius: 8px; border: 1px solid #5a4630; background: #1f1810; font-size: 16px; filter: grayscale(1) opacity(.45); cursor: pointer; }
+.ap .srow .pin.on { filter: none; border-color: #e0b04a; background: #3a2c14; box-shadow: 0 0 8px #e0b04a66; }
 /* 보낼 사람 줄 — 얼굴 밑에 맡은 일 · 쉬는 이는 「쉰다」 */
 .ap .hands .hf > span { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; vertical-align: top; }
 .ap .hands .hf > span small { font-size: 10.5px; line-height: 1.1; max-width: 64px; text-align: center; color: #9fd18b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

@@ -405,6 +405,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let settles: Order[] = [] // 개척 — 나누기처럼 먼저 해 본 판에 든다 (그래야 남은 몫·곡식이 맞게 보인다)
   const pick: Record<string, { edge: string; ambush: boolean; approach?: Approach; ration?: Ration } | undefined> = {}
   let scout = ''
+  /** 정찰 고정 — 매 계절 저절로 그곳으로 (형 10-23: "정찰을 매 턴 보내야 하는데 지속 정찰로 고정 버튼") · 이 기기에 */
+  const KEEP_KEY = 'hanbal.realm.scoutKeep'
+  let scoutKeep = ((): string => { try { return localStorage.getItem(KEEP_KEY) ?? '' } catch { return '' } })()
+  const setKeep = (v: string): void => { scoutKeep = v; try { if (v === '') localStorage.removeItem(KEEP_KEY); else localStorage.setItem(KEEP_KEY, v) } catch { /* 저장 못 하는 곳 */ } }
   /** 소도 제사 — 봄·가을에 한 번 */
   let rite = false
   /** 남의 나라가 걸어온 청에 대한 답 — 답이 없으면 거절로 친다 */
@@ -578,7 +582,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     musters = []
     settles = []
     for (const k of Object.keys(pick)) delete pick[k]
-    scout = ''
+    // 고정해 둔 곳이 아직 맞닿아 있으면 그리로 — 아니면 이번 계절은 쉰다(고정은 남는다)
+    scout = scoutKeep !== '' && realm !== null && scoutable(realm).includes(scoutKeep) ? scoutKeep : ''
     rite = false
     for (const k of Object.keys(answers)) delete answers[k]
     guards = []
@@ -2246,9 +2251,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const f = known[id]?.force
       const age = f ? r.season - f.season : null
       const v = f ? visibleRange({ f0: f.f0, src: f.src, u: f.u }, age!) : null
-      h += `<button class="row ${scout === id ? 'on' : ''}" data-act="scout" data-node="${id}">${emblem(n.owner)}<span class="dest">${esc(n.name)}</span>`
+      h += `<div class="srow"><button class="row ${scout === id ? 'on' : ''}" data-act="scout" data-node="${id}">${emblem(n.owner)}<span class="dest">${esc(n.name)}</span>`
       h += `<span class="sub">${v !== null ? `${span(v[0], v[1], (x) => String(Math.round(x)))} · ${age === 0 ? '이번 계절' : `${age}계절 전`}` : '못 봤다'}</span></button>`
+      // 📌 고정 — 매 계절 저절로 여기로
+      h += `<button class="pin${scoutKeep === id ? ' on' : ''}" data-act="scout-keep" data-node="${id}" data-tip="${scoutKeep === id ? '매 계절 여기로 정찰 — 누르면 고정을 푼다' : '매 계절 여기로 정찰 고정'}" aria-label="정찰 고정">📌</button></div>`
     }
+    if (scoutKeep !== '' && !scoutable(r).includes(scoutKeep)) h += `<p class="mute">📌 고정한 ${esc(josa(r.nodes[scoutKeep]?.name ?? '', '은', '는'))} 지금 맞닿지 않아 쉰다</p>`
     return h
   }
 
@@ -2484,6 +2492,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (scoutable(r).includes(id)) {
         const there = scout !== '' && scout !== id ? (r.nodes[scout]?.name ?? '') : ''
         h += `<div class="scoutbox"><div class="mute">정찰꾼은 한 계절에 <b>한 곳</b>만 간다. 보내면 이번 계절 이곳의 군세·병종·경계가 보인다.</div>`
+        h += `<button class="btn sm ${scoutKeep === id ? 'on' : 'ghost'}" data-act="scout-keep" data-node="${id}">${scoutKeep === id ? '📌 매 계절 여기로 · 누르면 고정을 푼다' : '📌 매 계절 여기로 고정'}</button>`
         h += `<button class="btn ${scout === id ? 'on' : ''}" data-act="scout" data-node="${id}">${scout === id ? '정찰꾼이 여기로 간다 · 누르면 거둔다' : there !== '' ? `정찰꾼을 ${esc(there)}에서 여기로 돌린다` : '여기로 정찰을 보낸다'}</button></div>`
       }
     }
@@ -3876,7 +3885,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         heroOrders = had ? heroOrders.filter((o) => !(o.kind === 'hire' && o.hero === id)) : [...heroOrders, { kind: 'hire', faction: me(), hero: id }]
         break
       }
-      case 'scout': scout = scout === d['node'] ? '' : d['node']!; break
+      case 'scout': scout = scout === d['node'] ? '' : d['node']!; if (scout === '' && scoutKeep === d['node']) setKeep(''); break
+      case 'scout-keep': { const n = d['node']!; if (scoutKeep === n) setKeep(''); else { setKeep(n); scout = n } break }
       default: return
     }
     paint()
