@@ -50,7 +50,7 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'dokro-2': 'g-08-veteran',
   // 떠돌이 인재 스물 (data/heroes-pool.ts) — 여인 열다섯
   'wander-01': 'w-18-jinhan-salt-widow', 'wander-02': 'w-03-goguryeo-archer', 'wander-03': 'w-12-court-dancer',
-  'wander-04': 'w-11-assassin', 'wander-05': 'w-15-captive-noble', 'wander-06': 'w-06-buyeo-huntress',
+  'wander-04': 'w-11-assassin', 'wander-05': 'w-83-gyeonji-beodeul', 'wander-06': 'w-06-buyeo-huntress',
   'wander-07': 'w-19-buyeo-fur-princess', 'wander-08': 'w-22-dongye-tiger-huntress', 'wander-09': 'w-05-baekje-queen',
   'wander-10': 'w-21-baekje-court-dancer', 'wander-11': 'g-16-goguryeo-gaema-commander', 'wander-12': 'g-14-captive-general',
   'wander-13': 'w-14-feast-spy', 'wander-14': 'g-10-buyeo-horse-lord', 'wander-15': 'w-09-byeonhan-smith',

@@ -134,7 +134,7 @@ export const BATTLE_SFX = {
   /** 사로잡았다 · 장수 겨루기 · 마지막 일격(적이 무너졌다) · 이겼다 · 졌다 */
   caught: 'jingleUnlock', duelWin: 'impactMetal_medium_001', final: 'impactWood_heavy_001', win: snd('horn_victory'), lose: snd('defeat'),
   /** 싸움이 열린다 — 북 두 번, 종 한 번, 함성 */
-  openDrum: 'impactWood_heavy_000', openBell: 'impactBell_heavy_001', cry: snd('war_cry'),
+  openDrum: snd('war_drum'), openBell: snd('war_bell'), cry: snd('war_cry'),
 } as const
 
 /**
