@@ -38,9 +38,9 @@ fetch('sfx/CREDITS.txt').then((r) => r.text()).then((t) => {
   const used = new Set()
   let h = ''
   for (const [title, lic, test] of GROUPS) {
-    const list = rows.filter((x) => !used.has(x.file) && test(x.desc))
+    const list = rows.filter((x) => !used.has(x) && test(x.desc))
     if (list.length === 0) continue
-    list.forEach((x) => used.add(x.file))
+    list.forEach((x) => used.add(x))
     h += `<h2>${esc(title)}<small>${esc(lic)} · ${list.length}</small></h2>`
     for (const x of list) {
       const parts = x.desc.split(' · ')

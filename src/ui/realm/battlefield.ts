@@ -119,7 +119,7 @@ export const BATTLE_SFX = {
   flank: snd('horses'), punch: snd('horses'), pursue: snd('horses'), guard: 'parry_02',
   drum: 'impactWood_medium_000', duel: 'unsheath_01', capture: 'sheath_01', retreat: 'switch2', art: 'impactBell_heavy_000',
   /** 맞부딪힘 — 상성에서 이겼다(필살) · 그냥 */
-  crit: 'impactPunch_heavy_000', clash: 'impactWood_heavy_000',
+  crit: snd('battle_crit'), clash: snd('battle_clash'),
   /** 사로잡았다 · 장수 겨루기 · 마지막 일격(적이 무너졌다) · 이겼다 · 졌다 */
   caught: 'jingleUnlock', duelWin: 'impactMetal_medium_001', final: 'impactWood_heavy_001', win: snd('horn_victory'), lose: snd('defeat'),
   /** 싸움이 열린다 — 북 두 번, 종 한 번, 함성 */
@@ -278,12 +278,20 @@ function introLine(l: BattleLine, weAtk: boolean, foe: string): string {
 }
 
 /** 한 쪽이 든 깃발들 — 앞줄 · 활 · 기병 · 장수(북은 빼고) */
+/**
+ * 깃발 그림 — 명령마다 한 폭 (public/realm/flag · 제미나이 Argon 네 장을 잘랐다, assets_src/realm/flags).
+ * 형 10-23: "깃발을 고르는 거였다면 돌격·방진·길 트기 같은 카드들을 깃발처럼 이미지 만들어서 UI 고도화 했어야"
+ */
+export function flagSrc(art: string, c: Cmd, ak?: Art): string {
+  return `${art}flag/flag-${c === 'art' ? (ak !== undefined ? `art-${ak}` : 'drum') : c}.png`
+}
+
 function flags(o: RoundOrder | undefined, chip: Cmd, art: string, ak?: Art): string {
   const xs: Cmd[] = o === undefined ? [chip] : [o.front, o.bows, o.horse, o.lead !== 'drum' ? o.lead : undefined].filter((c): c is Cmd => c !== undefined)
   // 장수의 비기는 그 비기의 이름·그림으로 (빛나는 칩)
   return xs.map((c) => (c === 'art' && ak !== undefined
-    ? `<span class="wfl art"><img src="${art}icon/${ART_ICON[ak]}.png" alt="">${ART_NAME[ak]}</span>`
-    : `<span class="wfl"><img src="${art}icon/${CMD_ICON[c]}.png" alt="">${CMD_NAME[c]}</span>`)).join('')
+    ? `<span class="wfl art"><img class="flg" src="${flagSrc(art, c, ak)}" alt="">${ART_NAME[ak]}</span>`
+    : `<span class="wfl"><img class="flg" src="${flagSrc(art, c)}" alt="">${CMD_NAME[c]}</span>`)).join('')
 }
 
 /** 싸움터 그림의 땅 — HoMM3 처럼 그 땅이 배경이 된다 (형: "싸울때 배경이 전쟁터 배경이어야") · docs/GAP.md §12 */
@@ -480,7 +488,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       // 장수의 비기 — 그 장수만의 이름·그림 (형: "아이콘과 함께 그거라는걸 알게 해줘야함")
       const ak = c === 'art' ? p.art : undefined
       if (ak !== undefined) tag = `<em class="art">비기</em>`
-      return `<button class="wcmd ${c}${on ? ' on' : ''}" data-war="pick" data-g="${g}" data-c="${c}"><img src="${art}icon/${ak !== undefined ? ART_ICON[ak] : CMD_ICON[c]}.png" alt=""><b>${ak !== undefined ? ART_NAME[ak] : CMD_NAME[c]}</b>${tag}${feel}<small>${esc(ak !== undefined ? ART_DOES[ak] : CMD_DOES[c])}</small></button>`
+      return `<button class="wcmd ${c}${on ? ' on' : ''}" data-war="pick" data-g="${g}" data-c="${c}"><img class="wflag" src="${flagSrc(art, c, ak)}" alt=""><span class="wct"><b>${ak !== undefined ? ART_NAME[ak] : CMD_NAME[c]}</b>${tag}${feel}<small>${esc(ak !== undefined ? ART_DOES[ak] : CMD_DOES[c])}</small></span></button>`
     }
     for (const gr of p.groups) {
       if (gr.options.length === 0) continue
@@ -683,6 +691,14 @@ export const WAR_CSS = `
 .ap .wcmd { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 7px 9px; border-radius: 12px; border: 1px solid #6a5236;
   background: #2a1f16; color: var(--ink); font: inherit; text-align: left; cursor: pointer; position: relative; }
 .ap .wcmd.on { border-color: var(--gold); background: #3a3222; box-shadow: 0 0 0 2px #d9b36a66; }
+/* 깃발 카드 — 왼쪽에 깃발 한 폭, 고르면 깃발이 들려 나부낀다 */
+.ap .wcmd { flex-direction: row; align-items: flex-start; gap: 8px; padding: 7px 9px 7px 6px; }
+.ap .wcmd img.wflag { position: static; width: 44px; height: auto; flex: none; opacity: 1; filter: drop-shadow(0 2px 3px #000a); transform-origin: 18% 4%; transition: transform .25s; }
+.ap .wcmd .wct { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
+.ap .wcmd.on img.wflag { transform: translateY(-3px) scale(1.08); filter: drop-shadow(0 0 7px #ffd27acc) drop-shadow(0 2px 3px #000a); animation: wflagwave 1.4s ease-in-out infinite alternate; }
+@keyframes wflagwave { from { transform: translateY(-3px) scale(1.08) rotate(-2deg) skewY(0deg); } to { transform: translateY(-3px) scale(1.08) rotate(1.5deg) skewY(-2deg); } }
+@media (prefers-reduced-motion: reduce) { .ap .wcmd.on img.wflag { animation: none; } }
+.ap .wfl img.flg { width: auto; height: 26px; object-fit: contain; border-radius: 0; background: none; }
 .ap .wcmd img { width: 30px; height: 30px; object-fit: contain; position: absolute; right: 8px; top: 7px; opacity: .9; }
 .ap .wcmd b { font-size: 15.5px; } .ap .wcmd small { font-size: 11.5px; color: var(--mute); line-height: 1.35; padding-right: 2px; }
 .ap .wcmd em { font-style: normal; font-size: 11px; color: #14161a; background: var(--gold); border-radius: 6px; padding: 0 5px; }

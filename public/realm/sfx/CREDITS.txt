@@ -111,3 +111,15 @@ bgm_lose_g3.mp3  공유마당 · 「국악 BGM #64 (비장한 분위기)」 · �
 war_cry_g1.wav  공유마당 · 「battlefieldbackground01」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252054 · 앞 3초를 잘라 씀
 war_cry_g2.wav  공유마당 · 「battlefieldbackground02」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252055 · 앞 3초를 잘라 씀
 war_cry_g3.wav  공유마당 · 「돌격 나팔」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253190 · 앞 3초를 잘라 씀
+# 맞부딪힘(battle_clash · battle_crit) — 여러 소리를 2~3초씩 잘라 겹친 것은 원본마다 한 줄씩 적는다 (CC BY 는 잘라 겹쳐 변경함)
+battle_clash_g1.mp3  Freesound · ID 376646 (https://freesound.org/s/376646/) · "Vikings in battle (swords crossing, shields bashing, men yelling)" · DeadVDI · CC0 · 2.2초 잘라 씀
+battle_clash_g2.mp3  공유마당 · 「칼싸움BG」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254793 · 2.2초 잘라 겹쳐 씀(변경함)
+battle_clash_g2.mp3  공유마당 · 「battlefieldbackground04」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252057 · 2.2초 잘라 겹쳐 씀(변경함)
+battle_clash_g3.mp3  Freesound · ID 175951 (https://freesound.org/s/175951/) · "SwordBattle2.wav" · freefire66 · CC0 · 2.2초 잘라 겹쳐 씀
+battle_clash_g3.mp3  Freesound · ID 479537 (https://freesound.org/s/479537/) · "R05-24-Battle Scene.wav" · craigsmith · CC0 · 2.2초 잘라 겹쳐 씀
+battle_crit_g1.mp3  Freesound · ID 376646 (https://freesound.org/s/376646/) · "Vikings in battle (swords crossing, shields bashing, men yelling)" · DeadVDI · CC0 · 2.6초 잘라 씀
+battle_crit_g2.mp3  Freesound · ID 177084 (https://freesound.org/s/177084/) · "warriors fighting swords shields" · mario1298 · CC0 · 2.6초 잘라 겹쳐 씀
+battle_crit_g2.mp3  공유마당 · 「battlefieldbackground05」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252058 · 2.6초 잘라 겹쳐 씀(변경함)
+battle_crit_g3.mp3  공유마당 · 「칼 부딪는1」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254778 · 잘라 겹쳐 씀(변경함)
+battle_crit_g3.mp3  공유마당 · 「칼싸움BG」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254793 · 잘라 겹쳐 씀(변경함)
+battle_crit_g3.mp3  공유마당 · 「battlefieldbackground04」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252057 · 잘라 겹쳐 씀(변경함)

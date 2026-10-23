@@ -39,6 +39,16 @@ const GROUPS = [
       ["war_cry_g2", "battlefieldbackground02 · 김용배 · CC BY", "3초 잘라 냄", "wav"],
       ["war_cry_g3", "돌격 나팔 · 김용배 · CC BY", "3초 잘라 냄", "wav"],
     ]],
+    ['battle_clash', '맞부딪힘 — 한 합마다 (여럿이 칼·창·방패로 엉겨 붙는 소리)', [
+      ["battle_clash_g1", "Vikings in battle (swords crossing, shields bashing, men yelling) · DeadVDI · CC0", "2.2초 잘라 냄", "mp3"],
+      ["battle_clash_g2", "칼싸움BG + battlefieldbackground04 겹침 · 김용배 · CC BY", "2.2초 잘라 겹침", "mp3"],
+      ["battle_clash_g3", "SwordBattle2 (freefire66) + R05-24-Battle Scene (craigsmith) 겹침 · CC0", "2.2초 잘라 겹침", "mp3"],
+    ]],
+    ['battle_crit', '필살 맞부딪힘 — 상성에서 이긴 합 (더 무겁게 · 큰 한 방 + 함성)', [
+      ["battle_crit_g1", "Vikings in battle — 방패 부딪는 큰 한 방 자리 · DeadVDI · CC0", "2.6초 잘라 냄", "mp3"],
+      ["battle_crit_g2", "warriors fighting swords shields (mario1298 · CC0) + battlefieldbackground05 (김용배 · CC BY) 겹침", "2.6초 잘라 겹침", "mp3"],
+      ["battle_crit_g3", "칼 부딪는1 + 칼싸움BG + battlefieldbackground04 겹침 · 김용배 · CC BY", "2.6초 잘라 겹침", "mp3"],
+    ]],
     ['tap_arms', '군사 명령을 누를 때 — 쇠·칼집·활시위', [
       ["tap_arms_g1", "칼 집에넣는 · 김용배 · CC BY", "잘라 냄", "wav"],
       ["tap_arms_g2", "국악 효과음 #361 (칼같이 쳐내는) · 주식회사 아이티앤 · CC BY", "잘라 냄", "wav"],
@@ -222,7 +232,8 @@ const GROUPS = [
 const PICK = { ui_order: 'b', ui_open: 'c', season_turn: 'a', war_drums: 'a', arrow_volley: 'a', horses: 'c',
   horn_victory: 'a', defeat: 'a', capture: 'b', dex_new: 'c', birth: 'c', feast: 'a', envoy: 'b', coins: 'c',
   amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b', bgm_map: 'f', bgm_war: 'g1', bgm_title: 'g1', bgm_lose: 'g1',
-  tap_arms: 'g1', tap_coin: 'g1', tap_brush: 'g1', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'g1', war_cry: 'g1' }
+  tap_arms: 'g1', tap_coin: 'g1', tap_brush: 'g1', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'g1', war_cry: 'g1',
+  battle_clash: 'g1', battle_crit: 'g1' }
 let n = 0
 const out = []
 for (const [title, slots] of GROUPS) {
