@@ -137,7 +137,6 @@ bgm_map_c9.ogg  공유마당 · 「국악 BGM #182 (마음을 진정시키는)�
 bgm_map_c10.ogg  공유마당 · 「국악 BGM #192 (한적하고 여유로운)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386932
 bgm_war_c7.ogg  공유마당 · 「국악 BGM #197 (사물놀이)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386937
 bgm_war_c8.ogg  공유마당 · 「LSMBG0704_사물놀이」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312616
-bgm_end_win_c5.ogg  공유마당 · 「국악 BGM #179 (벅차오르는)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386919
 bgm_end_lose_c6.ogg  공유마당 · 「국악 BGM #228 (비극적인)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386968
 
 # 깃발 소리 — 형이 소리 고르기 판에서 고른 것 (2026-10-23 밤)
@@ -145,8 +144,6 @@ cmd_art_c2.ogg  공유마당 · 「국악 효과음 #611 (웅장한)」 · 주�
 cmd_capture_c1.ogg  Freesound · 「Lasso rope being spun, spinning through air then throw」 · zapsplat.com · CC0 · https://freesound.org/s/719638/
 cmd_charge_c1.ogg  Freesound · 「Stampede」 · bevibeldesign · CC0 · https://freesound.org/s/350425/
 cmd_drum_c1.ogg  공유마당 · 「전통악기_북_치다_빠른속도_MKH418_ST_192」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형 · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287483
-cmd_duel_c2.ogg  공유마당 · 「칼 부딪는1」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254778
-cmd_fire_c1.ogg  Freesound · 「Burning arrow 05.wav」 · Introspectral · CC0 · https://freesound.org/s/262478/
 cmd_ford_c5.ogg  공유마당 · 「foleywatersplash01」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252339
 cmd_gate_c4.ogg  공유마당 · 「나무문 박살내는」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253053
 cmd_guard_c3.ogg  Freesound · 「shield guard」 · nekoninja · CC0 · https://freesound.org/s/370203/
@@ -157,3 +154,8 @@ cmd_open_c3.ogg  Freesound · 「Lightmetal_armor」 · mitchanary · CC0 · htt
 cmd_ram_c3.ogg  Freesound · 「Boat Violently Beaching onto Shore - NO reverb.wav」 · WelvynZPorterSamples · CC0 · https://freesound.org/s/621332/
 cmd_retreat_c4.ogg  공유마당 · 「징소리A」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254592
 cmd_rocks_c1.ogg  공유마당 · 「절벽에서 돌 떨어지는」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254528
+bgm_end_win_w5.ogg  공유마당 · 「Joy of Victory」 · 유종수 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13211110
+cmd_counter_c10.ogg  공유마당 · 「K드라마 효과음 (495)」 화살 소리 일곱을 겹쳐 섞음 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13281778
+cmd_duel_c1.ogg  공유마당 · 「칼 뽑는1」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254783
+cmd_fire_c3.ogg  공유마당 · 「불 붙는」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253636
+cmd_charge_m1.ogg  돌격 = cmd_charge_c1(Freesound 350425 「Stampede」 · bevibeldesign · CC0) + war_cry_c1(위 함성) 을 섞음

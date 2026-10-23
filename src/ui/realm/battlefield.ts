@@ -109,7 +109,7 @@ const TERRAIN_CMD: ReadonlySet<Cmd> = new Set<Cmd>(['ford', 'rocks', 'gate', 'ra
 export const BATTLE_SFX = {
   // 깃발마다 형이 고른 소리 (sound.ts PICK cmd_*) · 맞쏘기는 화살비 소리 (형 10-23: "맞쏘기는 화살 소리여야지")
   charge: snd('cmd_charge'), hold: snd('cmd_hold'), open: snd('cmd_open'), ford: snd('cmd_ford'), rocks: snd('cmd_rocks'), gate: snd('cmd_gate'), ram: snd('cmd_ram'),
-  volley: snd('arrow_volley'), counter: snd('arrow_volley'), fire: snd('cmd_fire'), height: snd('cmd_height'),
+  volley: snd('arrow_volley'), counter: snd('cmd_counter'), fire: snd('cmd_fire'), height: snd('cmd_height'),
   // 사람 고함·비명(roar · herodeath · bossdeath)은 걷었다 (형 10-23: "비명소리인지 사람 고함인지 너무 AI 가 만든 티") — 말발굽·쇠·북으로
   flank: snd('cmd_horse'), punch: snd('cmd_horse'), pursue: snd('cmd_horse'), guard: snd('cmd_guard'),
   drum: snd('cmd_drum'), duel: snd('cmd_duel'), capture: snd('cmd_capture'), retreat: snd('cmd_retreat'), art: snd('cmd_art'),
@@ -1094,7 +1094,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       const theirs = weAtk ? rd.d : rd.a
       // 깃발 소리 — 연출과 같은 박자로 (우리 것 크게, 적 것은 조금 작게)
       const beat = (c: Cmd, s0: number, vol: number): void => {
-        if (c === 'volley' || c === 'counter') { volley(STAGE_S[0], BATTLE_SFX[c], vol * 0.93); return }
+        if (c === 'volley') { volley(STAGE_S[0], BATTLE_SFX[c], vol * 0.93); return }
         const b = CMD_BEAT[c]
         if (b === undefined) { at(s0, BATTLE_SFX[c], vol); return }
         for (const [dt, v, rt] of b) at(s0 + dt, BATTLE_SFX[c], vol * v, rt)
@@ -1103,7 +1103,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       if (theirs !== mine) beat(theirs, STAGE_S[1] - 0.4, 0.28)
       // 우리가 달려드는 합엔 함성
       const ours = weAtk ? rd.a : rd.d
-      if (ours === 'charge' || ours === 'pursue' || ours === 'flank') at(STAGE_S[0] + 0.15, BATTLE_SFX.cry, 0.26)
+      if (ours === 'pursue' || ours === 'flank') at(STAGE_S[0] + 0.15, BATTLE_SFX.cry, 0.26) // 돌격은 소리 안에 함성이 섞였다
       if (rd.ev === 'capture-ok') at(STAGE_S[1], rd.by === ourSide ? BATTLE_SFX.caught : BATTLE_SFX.lose, 0.5)
       else if (rd.ev === 'duel-win' || rd.ev === 'duel-lose') at(STAGE_S[1], BATTLE_SFX.duelWin, 0.45)
       else at(STAGE_S[1], rd.beat !== null ? BATTLE_SFX.crit : BATTLE_SFX.clash, rd.beat !== null ? 0.6 : 0.4)
