@@ -62,9 +62,9 @@ export function winFxHtml(word: string, sub: string, delay: number, lose = false
 export const WINFX_CSS = `
 .ap .winfx { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; pointer-events: none; overflow: hidden; }
 /* 글자 뒤를 어둡게 — 밝은 그림 위에서도 금빛 글자가 읽히게 */
-.ap .winfx::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 45% at 50% 50%, #000d, #0006 60%, #0000 85%); opacity: 0; animation: wfdim .5s ease-out var(--wd) both; }
+.ap .winfx::before { content: ''; position: absolute; inset: -60px; background: radial-gradient(ellipse 60% 45% at 50% 50%, #000d, #0006 60%, #0000 85%); opacity: 0; animation: wfdim .5s ease-out var(--wd) both; }
 @keyframes wfdim { to { opacity: 1; } }
-.ap .winfx .wf-flash { position: absolute; inset: 0; background: radial-gradient(ellipse 70% 60% at 50% 50%, #fffbeef0, #f6d27a99 40%, #f0c86a22 75%); opacity: 0;
+.ap .winfx .wf-flash { position: absolute; inset: -60px; background: radial-gradient(ellipse 70% 60% at 50% 50%, #fffbeef0, #f6d27a99 40%, #f0c86a22 75%); opacity: 0;
   animation: wfflash .9s ease-out calc(var(--wd) + .05s) both; }
 .ap .winfx.lose .wf-flash { background: radial-gradient(ellipse 70% 50% at 50% 50%, #000c, #0000 80%); animation-duration: 1.8s; }
 @keyframes wfflash { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }
@@ -100,7 +100,7 @@ export const WINFX_CSS = `
 @keyframes wfquake { 0%, 100% { transform: none; } 15% { transform: translate(-10px, 6px); } 30% { transform: translate(9px, -7px); } 45% { transform: translate(-6px, 4px); } 60% { transform: translate(4px, -3px); } 80% { transform: translate(-2px, 1px); } }
 .ap .winfx.big:not(.lose) .wf-word b { font-size: clamp(190px, 46vw, 440px); }
 /* 패배 — 밑의 화면 빛이 잿빛으로 식는다 */
-.ap .winfx.lose::after { content: ''; position: absolute; inset: 0; z-index: -1; backdrop-filter: grayscale(.85) brightness(.75); -webkit-backdrop-filter: grayscale(.85) brightness(.75);
+.ap .winfx.lose::after { content: ''; position: absolute; inset: -60px; z-index: -1; backdrop-filter: grayscale(.85) brightness(.75); -webkit-backdrop-filter: grayscale(.85) brightness(.75);
   opacity: 0; animation: wfdim 1.6s ease-out var(--wd) both; }
 .ap .winfx.lose.big::before { background: radial-gradient(ellipse 75% 60% at 50% 50%, #1a0402ee, #3a0a0499 60%, #12020288 100%); }
 /* 재 */

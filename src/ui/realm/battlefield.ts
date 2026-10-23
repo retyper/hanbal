@@ -329,6 +329,28 @@ export function warName(r: Realm, l: BattleLine): string {
 /** 전장 한 판의 화면 — 보인 합(shown)까지. 마지막 합은 천천히 풀린다(anim). sel 은 지금 고르는 깃발 */
 /** 활을 쏘는 명령 — 그 합에 화살이 날아간다 */
 const SHOOT_CMD: ReadonlySet<string> = new Set(['volley', 'counter', 'open', 'height'])
+/** 장수 기술의 결 — 초상이 튀어나오는 몸짓 */
+type CutKind = 'cheer' | 'strike' | 'grab' | 'back' | 'shot' | 'call' | 'guard'
+const CUT_OF: Readonly<Partial<Record<Cmd, CutKind>>> = { drum: 'cheer', duel: 'strike', capture: 'grab', retreat: 'back' }
+const ART_CUT: Readonly<Record<Art, CutKind>> = {
+  snipe: 'shot', rite: 'cheer', sway: 'call', stand: 'guard', ambush: 'strike', vanguard: 'strike', feint: 'back', order: 'cheer', shout: 'call',
+}
+/** 기술 몸짓마다 한 마디 — 초상 옆에 크게 */
+const CUT_SHOUT: Readonly<Record<CutKind, string>> = { cheer: '힘을 내라!', strike: '나를 따르라!', grab: '사로잡아라!', back: '물러서라!', shot: '한 발로 끝낸다', call: '무기를 버려라!', guard: '버텨라!' }
+
+/** 장수 기술이 나가는 장면 — 초상 · 이름 · 기술 이름 · 결마다 다른 효과 (1.4초쯤 · 누르면 바로 걷힌다) */
+function cutHtml(art: string, hero: string | null, name: string, skill: string, kind: CutKind): string {
+  const file = hero !== null ? bustOf(hero) : undefined
+  const face = file !== undefined ? `<img class="wcf" src="${art}bust/${file}.jpg" alt="">` : `<img class="wcf unit" src="${art}icon/unit-general.png" alt="">`
+  let fx = ''
+  if (kind === 'cheer' || kind === 'call') for (let i = 0; i < 3; i++) fx += `<i class="wcring" style="--t:${(0.35 + i * 0.18).toFixed(2)}s"></i>`
+  if (kind === 'cheer') for (let i = 0; i < 14; i++) fx += `<i class="wcspark" style="--x:${(8 + ((i * 37) % 84)).toFixed(0)}%;--t:${(0.3 + ((i * 0.11) % 0.7)).toFixed(2)}s"></i>`
+  if (kind === 'strike' || kind === 'shot') fx += `<i class="wcslash"></i>${Array.from({ length: 9 }, (_, i) => `<i class="wcline" style="--y:${(10 + i * 10)}%;--t:${(0.08 + (i % 3) * 0.05).toFixed(2)}s"></i>`).join('')}`
+  if (kind === 'grab') fx += `<i class="wcrope"></i>`
+  if (kind === 'guard') fx += `<i class="wcshield"></i>`
+  return `<div class="wcut k-${kind}"><i class="wcbg"></i>${fx}<div class="wcpf">${face}<i></i></div><div class="wctx"><b>${esc(CUT_SHOUT[kind])}</b><span>${esc(name)} · ${esc(skill)}</span></div></div>`
+}
+
 /** 싸움터에 날아오르는 불티 — 낱낱이, 자리·크기·빠르기가 조금씩 다르게 (꾸밈이라 판의 시드와 상관없다) */
 const AIR_EMBERS = Array.from({ length: 16 }, (_, i) => {
   const f = (k: number): number => ((Math.sin(i * 12.9898 + k * 78.233) * 43758.5453) % 1 + 1) % 1
@@ -756,6 +778,48 @@ export const WAR_CSS = `
 .ap .wend .wwhy { font-size: 14.5px; color: #e8dcc0; }
 .ap .wr.fast .wrd.slow .wcmds, .ap .wr.fast .wrd.slow .wst, .ap .wr.fast .wrd.slow .wpush, .ap .wr.fast .wend, .ap .wr.fast .wnext { animation-delay: 0s !important; animation-duration: .01s !important; }
 .ap .wr.fast .wbar i.wgr, .ap .wr.fast .wn.swap > * { animation-delay: 0s !important; animation-duration: .01s !important; }
+/* 장수 기술 — 초상이 옆에서 튀어나와 한 마디 (일본식 컷인 띠·빛살 없이 · 기술 결마다 효과가 다르다) */
+.ap .wcut { position: absolute; inset: 0; z-index: 6; pointer-events: auto; cursor: pointer; overflow: hidden; animation: wcout 1.5s ease-in 1 forwards; }
+@keyframes wcout { 0%, 82% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+.ap .wcut .wcbg { position: absolute; left: -10%; right: -10%; top: 30%; height: 34%; background: linear-gradient(90deg, #0b0805f0, #2a1a0ce8 40%, #0b0805d0 80%, #0b080500);
+  transform: skewY(-4deg) scaleX(0); transform-origin: 0 50%; animation: wcband .35s cubic-bezier(.2, 1.2, .4, 1) both; box-shadow: 0 0 0 2px #c9a45a88; }
+@keyframes wcband { to { transform: skewY(-4deg) scaleX(1); } }
+.ap .wcut .wcpf { position: absolute; left: 6%; top: 50%; width: min(36vw, 200px); aspect-ratio: 1; transform: translateY(-50%); display: grid; place-items: center; animation: wcin .45s cubic-bezier(.2, 1.4, .4, 1) .05s both; }
+.ap .wcut .wcpf > i { position: absolute; inset: 0; background: url(__ART__ui/frame-portrait.png) center / 100% 100% no-repeat; filter: drop-shadow(0 6px 14px #000); }
+.ap .wcut .wcf { width: 66%; height: 66%; object-fit: cover; border-radius: 2px; } .ap .wcut .wcf.unit { object-fit: contain; }
+@keyframes wcin { from { opacity: 0; transform: translate(-70vw, -50%) scale(.9); } to { opacity: 1; transform: translate(0, -50%); } }
+.ap .wcut .wctx { position: absolute; left: calc(6% + min(36vw, 200px) + 14px); right: 4%; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 4px; animation: wrin .4s ease-out .25s both; }
+.ap .wcut .wctx b { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 8vw, 54px); color: #fff1c8; text-shadow: 0 0 14px #ffb04a, 0 3px 6px #000; letter-spacing: .04em; }
+.ap .wcut .wctx span { font-size: clamp(13px, 3.4vw, 16px); color: #f0dcb0; text-shadow: 0 1px 4px #000; }
+/* 격려·외침 — 금빛 고리가 퍼지고 불티가 오른다 */
+.ap .wcut .wcring { position: absolute; left: calc(6% + min(18vw, 100px)); top: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 3px solid #ffd27a;
+  box-shadow: 0 0 14px #ffd27a; opacity: 0; animation: wcring .9s ease-out var(--t) both; }
+@keyframes wcring { 0% { opacity: 0; transform: scale(.4); } 10% { opacity: .9; } 100% { opacity: 0; transform: scale(4); } }
+.ap .wcut.k-call .wcring { border-color: #f0f0ff; box-shadow: 0 0 14px #c8d8ff; }
+.ap .wcut .wcspark { position: absolute; bottom: 20%; left: var(--x); width: 6px; height: 6px; border-radius: 50%; background: radial-gradient(circle, #fff6d0, #ffc04a 60%, #0000); opacity: 0;
+  animation: wcspark 1s ease-out var(--t) both; }
+@keyframes wcspark { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(-40vh); } }
+/* 겨루기·돌진·한 발 — 흰 칼금이 비껴 지나가고 빠르기 줄이 흐른다, 화면이 한 번 흔들린다 */
+.ap .wcut.k-strike, .ap .wcut.k-shot { animation: wcout 1.5s ease-in 1 forwards, wcshake .4s ease-out .3s 1; }
+@keyframes wcshake { 0%, 100% { transform: none; } 25% { transform: translate(-8px, 4px); } 50% { transform: translate(7px, -4px); } 75% { transform: translate(-3px, 2px); } }
+.ap .wcut .wcslash { position: absolute; left: -20%; right: -20%; top: 48%; height: 6px; background: linear-gradient(90deg, #fff0, #ffffff, #fff0); box-shadow: 0 0 18px #fff;
+  transform: rotate(-14deg) scaleX(0); animation: wcslash .32s ease-out .28s both; }
+@keyframes wcslash { 0% { transform: rotate(-14deg) scaleX(0); opacity: 1; } 70% { transform: rotate(-14deg) scaleX(1); opacity: 1; } 100% { transform: rotate(-14deg) scaleX(1); opacity: 0; } }
+.ap .wcut.k-shot .wcslash { height: 3px; transform-origin: 0 50%; }
+.ap .wcut .wcline { position: absolute; left: 100%; top: var(--y); width: 40%; height: 2px; background: linear-gradient(90deg, #fff0, #ffffffaa); animation: wcline .5s linear var(--t) both; }
+@keyframes wcline { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-260%); opacity: 0; } }
+/* 사로잡기 — 고리가 좁혀 든다 */
+.ap .wcut .wcrope { position: absolute; right: 18%; top: 50%; width: 160px; height: 160px; margin-top: -80px; border-radius: 50%; border: 6px dashed #c8a060; opacity: 0;
+  animation: wcrope .8s ease-in .3s both; }
+@keyframes wcrope { 0% { opacity: 0; transform: scale(2) rotate(0); } 30% { opacity: 1; } 100% { opacity: 1; transform: scale(.5) rotate(200deg); } }
+/* 버텨라 — 방패 고리가 쾅 */
+.ap .wcut .wcshield { position: absolute; left: calc(6% + min(18vw, 100px)); top: 50%; width: 220px; height: 220px; margin: -110px 0 0 -110px; border-radius: 50%;
+  background: radial-gradient(circle, #9fd0f000 55%, #9fd0f066 62%, #9fd0f000 70%); opacity: 0; animation: wcshield .7s ease-out .3s both; }
+@keyframes wcshield { 0% { opacity: 0; transform: scale(.6); } 30% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0; transform: scale(1.2); } }
+/* 물러서라 — 초상이 들어왔다 뒤로 빠진다 */
+.ap .wcut.k-back .wcpf { animation: wcin .4s cubic-bezier(.2, 1.4, .4, 1) .05s both, wcbackout .5s ease-in .9s both; }
+@keyframes wcbackout { to { opacity: 0; transform: translate(-30vw, -50%); } }
+@media (prefers-reduced-motion: reduce) { .ap .wcut, .ap .wcut * { animation-duration: .01s !important; animation-delay: 0s !important; } .ap .wcut { animation: wcout 1.2s steps(1) forwards !important; } }
 /* 싸움이 열린다 — 판 전체: 싸움터 그림이 다가오고, 양쪽 깃발·장수가 밀려들고, 이름이 쾅 (형 10-23: "전투가 발생했다는 게 확 실감이 안 나는데")
    히어로즈·토탈워의 싸움 앞 화면처럼 — 누가 누구와 어디서, 세기는 막대로 */
 .ap .wopen { position: fixed; inset: 0; z-index: 70; overflow: hidden; background: #000; cursor: pointer; animation: woout 3.4s ease-in forwards; }
@@ -842,6 +906,9 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   if (t.line === null) return false
   /** 처음 우리 싸움 수 — 머리의 "몇 판" */
   let left = t.left
+  /** 이번 합에 고른 장수 기술 — 풀릴 때 초상 장면을 띄운다 */
+  let cutLead: Cmd | null = null
+  let cutSfx: string | null = null
   /** 이름 띠를 띄운 판 — 판마다 한 번 */
   let named: string | undefined
   // 배경·효과는 붙박이 층에, 글은 그 위 굴리는 층에 — 굴려도 배경이 안 움직이고, 깃발을 골라도 배경을 다시 깔지 않는다
@@ -958,7 +1025,30 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     ov.classList.toggle('slow', anim)
     ov.classList.remove('fast')
     paintNow(anim)
+    // 장수 기술 — 고른 합이면 그 장수가 튀어나온다
+    if (anim && cutLead !== null) {
+      const rd = (l.rounds ?? [])[shown - 1]
+      const weAtk = l.atkFaction === host.me
+      const ourS = weAtk ? 'a' : 'd'
+      const act = rd?.acts?.find((x) => x.g === 'lead' && x.s === ourS)
+      const c: Cmd = act?.c ?? cutLead
+      const ak = c === 'art' ? act?.art : undefined
+      const kind = ak !== undefined ? ART_CUT[ak] : CUT_OF[c]
+      const hero = l.start?.heroes[weAtk ? 0 : 1] ?? null
+      if (kind !== undefined && hero !== null) {
+        const name = prev.heroes[hero]?.name ?? t.after.heroes[hero]?.name ?? ''
+        const el = document.createElement('div')
+        el.innerHTML = cutHtml(host.art, hero, name, ak !== undefined ? ART_NAME[ak] : CMD_NAME[c], kind)
+        const cut = el.firstElementChild as HTMLElement
+        cut.addEventListener('animationend', (e) => { if (e.target === cut) cut.remove() })
+        cut.addEventListener('click', (e) => { e.stopPropagation(); cut.remove() })
+        ov.appendChild(cut)
+        cutSfx = kind === 'cheer' || kind === 'call' ? BATTLE_SFX.openDrum : BATTLE_SFX.duelWin
+      }
+    }
+    cutLead = null
     sound(anim ? (l.rounds ?? [])[shown - 1] : undefined, l.atkFaction === host.me, anim && l.pending === undefined ? l : null)
+    if (cutSfx !== null) { at(0.28, cutSfx, 0.45); cutSfx = null } // 장수 기술 소리 — sound() 가 앞의 것을 걷은 뒤에
     if (!anim) band(l)
     // 싸운다를 누르면 — 이번 합이 위 카드 바로 밑에 오게, 판이 끝났으면 결과가 다 풀린 뒤 결과로 (형 10-23: "싸운다 누르면 스크롤 맨 위로 가는 게 맞나?")
     ov.style.setProperty('--wtoph', `${(sc.querySelector<HTMLElement>('.wtop')?.offsetHeight ?? 170) + 8}px`) // 붙박이 위 카드에 가리지 않게
@@ -1023,6 +1113,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       }
       case 'go': {
         if (cur === null || cur.key !== l.key) cur = { key: l.key, cmds: [] }
+        cutLead = sel.lead ?? null // 고른 장수 기술 — 이 합이 풀릴 때 초상이 튀어나온다
         cur.cmds.push({ ...sel })
         sel = {}
         t = rehearse(prev, orders, done, cur, host.me)
