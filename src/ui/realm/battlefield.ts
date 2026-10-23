@@ -328,7 +328,7 @@ export function warName(r: Realm, l: BattleLine): string {
 
 /** 전장 한 판의 화면 — 보인 합(shown)까지. 마지막 합은 천천히 풀린다(anim). sel 은 지금 고르는 깃발 */
 /** 활을 쏘는 명령 — 그 합에 화살이 날아간다 */
-const SHOOT_CMD: ReadonlySet<string> = new Set(['volley', 'counter', 'open', 'height'])
+const SHOOT_CMD: ReadonlySet<string> = new Set(['volley', 'counter', 'open', 'height', 'fire'])
 /** 장수 기술의 결 — 초상이 튀어나오는 몸짓 */
 type CutKind = 'cheer' | 'strike' | 'grab' | 'back' | 'shot' | 'call' | 'guard'
 const CUT_OF: Readonly<Partial<Record<Cmd, CutKind>>> = { drum: 'cheer', duel: 'strike', capture: 'grab', retreat: 'back' }
@@ -357,6 +357,23 @@ const AIR_EMBERS = Array.from({ length: 16 }, (_, i) => {
   return `<i class="wember" style="--x:${(f(1) * 100).toFixed(1)}%;--s:${(3 + f(2) * 5).toFixed(1)}px;--d:${(6 + f(3) * 7).toFixed(1)}s;--t:${(-f(4) * 12).toFixed(1)}s;--w:${Math.round((f(5) - 0.5) * 120)}px"></i>`
 }).join('')
 
+/**
+ * 깃발 소리의 박자 — [연출이 시작한 뒤(초), 크기, 빠르기]. 화면의 연출과 같은 때에 맞춘다
+ * (방패가 쿵 내려앉는 때 · 통나무가 칠 때 · 바위가 닿을 때). 없는 깃발은 한 번만.
+ */
+const CMD_BEAT: Partial<Record<Cmd, ReadonlyArray<readonly [number, number, number]>>> = {
+  hold: [[0.38, 1, 1], [0.54, 0.8, 1.08], [0.7, 0.85, 0.94], [0.86, 0.7, 1.04]],
+  ford: [[0.38, 1, 1], [0.6, 0.8, 1.06], [0.82, 0.7, 0.95]],
+  guard: [[0.42, 1, 1], [0.6, 0.75, 1.1]],
+  open: [[0.1, 0.8, 1], [0.3, 0.6, 1.1]],
+  gate: [[0.3, 1, 1], [0.66, 0.9, 0.95], [1.02, 1, 0.9]],
+  ram: [[0.3, 1, 1], [0.66, 0.9, 0.95], [1.02, 1, 0.9]],
+  rocks: [[0.92, 1, 1], [1.06, 0.8, 0.9], [1.2, 0.9, 1.1], [1.34, 0.7, 0.95]],
+  charge: [[0.05, 0.8, 1], [0.25, 0.7, 1.1], [0.45, 0.6, 0.95]],
+  drum: [[0, 1, 1], [0.32, 0.9, 1], [0.64, 1, 1]],
+  duel: [[0.35, 1, 1], [0.5, 0.9, 1.1]],
+}
+
 /** 한 무리의 화살 수 */
 const VOLLEY_N = 14
 /** 화살비 소리 — [늦게(초), 크기, 빠르기] 여섯 발. 화면의 화살과 같은 결로 흩어진다 (꾸밈이라 판의 시드와 상관없다) */
@@ -375,6 +392,87 @@ function volleyHtml(art: string, dir: 'r' | 'l', at: number): string {
       + `<b style="background-image:url('${art}fx/arrow.png')"></b></i>`
   }
   return `<div class="wfx-volley ${dir}">${h}</div>`
+}
+
+/**
+ * 깃발마다 제 연출 (형 10-23: "화살 말고 다른 카드들도 돌격 방진 바위 굴리기 … 다 그만의 이펙트와 사운드 필요하지 않아?").
+ * 그림은 한 개짜리를 여럿으로 — 창끝·방패·바위·물보라·나무 조각·통나무·밧줄·말 탄 무사 (realm/fx · 제미나이 한 장을 잘랐다).
+ * dir r: 우리(왼쪽)가 · l: 적(오른쪽)이 — 통째로 뒤집는다. 꾸밈이라 판의 시드와 상관없는 고정 굴림.
+ */
+export function cmdFxHtml(art: string, c: Cmd, dir: 'r' | 'l', at: number): string {
+  let s = (dir === 'r' ? 5 : 17) + c.length * 31
+  const rnd = (): number => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff
+  const img = (f: string): string => `<b style="background-image:url('${art}fx/${f}.png')"></b>`
+  const many = (n: number, f: string, k: string, pos: (i: number) => string): string => {
+    let h = ''
+    for (let i = 0; i < n; i++) h += `<i class="${k}" style="${pos(i)}">${img(f)}</i>`
+    return h
+  }
+  const t = (x: number): string => `--t:${(at + x).toFixed(2)}s`
+  const z = (a: number, b: number): string => `--z:${(a + rnd() * b).toFixed(2)}`
+  let h = ''
+  switch (c) {
+    case 'charge': case 'punch':
+      // 창끝이 낱낱이 앞으로 쏟아진다 · 발밑에 흙먼지 (돌파는 말 탄 무사가 함께)
+      h += many(c === 'punch' ? 7 : 11, 'spear', 'sp', (i) => `--y:${(48 + rnd() * 30).toFixed(1)}%;--dx:${(38 + rnd() * 18).toFixed(1)}vw;${z(0.8, 0.5)};${t(i * 0.05 + rnd() * 0.1)}`)
+      h += many(5, 'smoke', 'pf', (i) => `--x:${(4 + i * 9 + rnd() * 5).toFixed(1)}%;--y:${(78 + rnd() * 8).toFixed(1)}%;${z(0.7, 0.5)};${t(0.15 + i * 0.08)}`)
+      if (c === 'punch') h += many(3, 'rider', 'rd', (i) => `--y:${(56 + i * 9).toFixed(1)}%;--dx:${(40 + rnd() * 12).toFixed(1)}vw;${z(0.85, 0.3)};${t(0.1 + i * 0.12)}`)
+      break
+    case 'flank': case 'pursue':
+      // 말 탄 무사들이 달린다 — 옆치기는 위에서 비스듬히, 추격은 길게
+      h += many(c === 'pursue' ? 6 : 5, 'rider', c === 'flank' ? 'rd fl' : 'rd', (i) => `--y:${(c === 'flank' ? 30 + i * 8 : 52 + rnd() * 26).toFixed(1)}%;--dx:${(c === 'pursue' ? 70 + rnd() * 20 : 42 + rnd() * 10).toFixed(1)}vw;${z(0.75, 0.4)};${t(i * 0.11 + rnd() * 0.08)}`)
+      h += many(4, 'smoke', 'pf', (i) => `--x:${(6 + i * 12 + rnd() * 5).toFixed(1)}%;--y:${((c === 'flank' ? 48 : 80) + rnd() * 6).toFixed(1)}%;${z(0.6, 0.5)};${t(0.25 + i * 0.1)}`)
+      break
+    case 'hold': case 'ford':
+      // 방패가 쿵 쿵 내려앉아 벽이 된다 (가야 방패) · 여울에서는 물보라
+      h += many(7, 'shield', 'sh', (i) => `--x:${(3 + i * 6.2).toFixed(1)}%;--y:${(58 + (i % 2) * 3).toFixed(1)}%;${z(0.85, 0.2)};${t(i * 0.08)}`)
+      if (c === 'ford') h += many(6, 'splash', 'pop', (i) => `--x:${(36 + rnd() * 30).toFixed(1)}%;--y:${(72 + rnd() * 12).toFixed(1)}%;${z(0.7, 0.6)};${t(0.5 + i * 0.09)}`)
+      break
+    case 'guard':
+      // 장수 곁에 방패 셋이 둘러선다
+      h += many(3, 'shield', 'sh gd', (i) => `--x:${(14 + i * 9).toFixed(1)}%;--y:${(20 + (i === 1 ? 6 : 0)).toFixed(1)}%;--z:0.8;${t(i * 0.1)}`)
+      break
+    case 'open':
+      // 앞줄 방패가 위아래로 벌어진다 (그 틈으로 화살비가 간다)
+      h += many(6, 'shield', 'sh op', (i) => `--x:${(18 + (i % 3) * 6).toFixed(1)}%;--y:${i < 3 ? 52 : 62}%;--dy:${i < 3 ? -12 : 12}vh;--z:0.8;${t((i % 3) * 0.06)}`)
+      break
+    case 'rocks':
+      // 바위가 비탈에서 굴러 내려와 적 앞줄에 부딪힌다 · 먼지
+      h += many(5, 'rock', 'rk', (i) => `--x:${(2 + i * 7 + rnd() * 4).toFixed(1)}%;--y:${(62 + rnd() * 16).toFixed(1)}%;--dx:${(40 + rnd() * 16).toFixed(1)}vw;${z(0.55, 0.5)};${t(i * 0.14)}`)
+      h += many(5, 'smoke', 'pf', (i) => `--x:${(50 + rnd() * 22).toFixed(1)}%;--y:${(72 + rnd() * 10).toFixed(1)}%;${z(0.8, 0.5)};${t(0.75 + i * 0.14)}`)
+      break
+    case 'gate': case 'ram':
+      // 통나무가 세 번 들이친다 — 칠 때마다 나무 조각이 튄다 (배 들이받기는 물보라까지)
+      h += `<i class="lg" style="--y:${c === 'ram' ? 66 : 56}%;${t(0)}">${img('ramlog')}</i>`
+      for (let k = 0; k < 3; k++) {
+        h += many(2, 'splinter', 'pop', () => `--x:${(44 + rnd() * 8).toFixed(1)}%;--y:${((c === 'ram' ? 62 : 52) + rnd() * 8).toFixed(1)}%;${z(0.6, 0.5)};${t(0.3 + k * 0.36)}`)
+        if (c === 'ram') h += many(2, 'splash', 'pop', () => `--x:${(40 + rnd() * 12).toFixed(1)}%;--y:${(74 + rnd() * 6).toFixed(1)}%;${z(0.8, 0.4)};${t(0.32 + k * 0.36)}`)
+      }
+      break
+    case 'fire':
+      // 불화살 — 적 앞줄에 불길이 솟는다
+      h += many(9, 'fire', 'pop fr', (i) => `--x:${(56 + rnd() * 30).toFixed(1)}%;--y:${(60 + rnd() * 18).toFixed(1)}%;${z(0.7, 0.6)};${t(0.75 + i * 0.07)}`)
+      break
+    case 'capture':
+      // 밧줄이 빙글 날아가 적장에게 걸린다
+      h += `<i class="rp" style="--y:22%;${t(0.1)}">${img('rope')}</i>`
+      break
+    case 'retreat':
+      // 먼지를 일으키며 뒤로 빠진다
+      h += many(5, 'smoke', 'pf bk', (i) => `--x:${(30 - i * 5).toFixed(1)}%;--y:${(70 + rnd() * 10).toFixed(1)}%;${z(0.7, 0.5)};${t(i * 0.09)}`)
+      break
+    case 'drum':
+      // 북소리 — 금빛 고리가 장수 둘레로 퍼진다
+      for (let k = 0; k < 3; k++) h += `<i class="rg" style="${t(k * 0.32)}"></i>`
+      break
+    case 'duel':
+      // 칼금 둘이 엇갈린다
+      h += `<i class="sl a" style="${t(0.35)}"></i><i class="sl b" style="${t(0.5)}"></i>`
+      break
+    default:
+      return ''
+  }
+  return `<div class="wfx-cmd ${dir}">${h}</div>`
 }
 
 export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: string, shown: number, anim: boolean, left: number, sel: RoundOrder = {}): string {
@@ -446,6 +544,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const usShoot = SHOOT_CMD.has(weAtk ? last.a : last.d), foeShoot = SHOOT_CMD.has(weAtk ? last.d : last.a)
     if (usShoot) h += volleyHtml(art, 'r', STAGE_S[1] - 0.5)
     if (foeShoot) h += volleyHtml(art, 'l', STAGE_S[1] - (usShoot ? 0.25 : 0.5))
+    h += cmdFxHtml(art, weAtk ? last.a : last.d, 'r', STAGE_S[1] - 0.55)
+    h += cmdFxHtml(art, weAtk ? last.d : last.a, 'l', STAGE_S[1] - 0.4)
   }
   h += `</div><div class="wrbox">`
   // 위 카드는 그 싸움터를 무대로 — 길·성문·물가·눈밭·밤 (형 10-23: "길에서 마주치거나 수성하거나 공성할 때는 그 위치에 맞게 배경")
@@ -699,6 +799,47 @@ export const WAR_CSS = `
 .ap .wfx-volley b::before { content: ''; position: absolute; right: 92%; top: 38%; height: 24%; width: 110%; border-radius: 2px; background: linear-gradient(to left, #ffffff99, #fff0); }
 @keyframes wvx { 0% { opacity: 0; transform: translateX(0); } 8% { opacity: 1; } 88% { opacity: 1; } 100% { opacity: 0; transform: translateX(var(--dx)); } }
 @keyframes wvy { 0% { transform: translateY(0) rotate(-28deg); animation-timing-function: ease-out; } 50% { transform: translateY(calc(var(--up) * -1)) rotate(0deg); animation-timing-function: ease-in; } 100% { transform: translateY(0) rotate(30deg); } }
+/* 깃발마다 제 연출 — 낱낱이 (cmdFxHtml) */
+.ap .wfx-cmd { position: absolute; inset: 0; } .ap .wfx-cmd.l { transform: scaleX(-1); }
+.ap .wfx-cmd i { position: absolute; left: var(--x, 0); top: var(--y); width: calc(var(--z, 1) * var(--w)); aspect-ratio: var(--ar); opacity: 0; animation: var(--an) var(--du) var(--ease, linear) var(--t) both; }
+.ap .wfx-cmd i b { position: absolute; inset: 0; background: center / contain no-repeat; }
+.ap .wfx-cmd .sp { --w: clamp(86px, 10vw, 160px); --ar: 256 / 65; --x: -4%; --an: wcsp; --du: .62s; --ease: cubic-bezier(.5, 0, .9, .6); }
+@keyframes wcsp { 0% { opacity: 0; transform: translateX(-12vw); } 15% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateX(var(--dx)); } }
+.ap .wfx-cmd .rd { --w: clamp(104px, 13vw, 210px); --ar: 256 / 235; --x: -6%; --an: wcrd; --du: 1.05s; --ease: cubic-bezier(.3, 0, .8, .7); }
+.ap .wfx-cmd .rd b { animation: wcbob .16s ease-in-out infinite alternate; }
+.ap .wfx-cmd .rd.fl { --an: wcfl; }
+@keyframes wcrd { 0% { opacity: 0; transform: translateX(-14vw); } 12% { opacity: .95; } 82% { opacity: .95; } 100% { opacity: 0; transform: translateX(var(--dx)); } }
+@keyframes wcfl { 0% { opacity: 0; transform: translate(-14vw, -6vh); } 12% { opacity: .95; } 82% { opacity: .95; } 100% { opacity: 0; transform: translate(var(--dx), 12vh); } }
+@keyframes wcbob { from { transform: translateY(0) rotate(-1.5deg); } to { transform: translateY(-5%) rotate(1.5deg); } }
+.ap .wfx-cmd .sh { --w: clamp(54px, 7vw, 112px); --ar: 165 / 256; --an: wcsh; --du: 1.7s; filter: drop-shadow(0 6px 6px #000a); }
+@keyframes wcsh { 0% { opacity: 0; transform: translateY(-34vh) rotate(-10deg) scale(1.1); animation-timing-function: cubic-bezier(.6, 0, 1, .6); }
+  22% { opacity: 1; transform: translateY(0) rotate(0) scale(1); } 28% { transform: translateY(-4%) scale(1.03, .97); } 34% { transform: translateY(0) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(0); } }
+.ap .wfx-cmd .sh.gd { --an: wcgd; }
+@keyframes wcgd { 0% { opacity: 0; transform: translateY(30%) scale(.6); } 25% { opacity: 1; transform: translateY(0) scale(1.05); } 35% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
+.ap .wfx-cmd .sh.op { --an: wcop; --du: 1.3s; }
+@keyframes wcop { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: 1; } 55% { opacity: 1; transform: translateY(var(--dy)); } 100% { opacity: 0; transform: translateY(var(--dy)); } }
+.ap .wfx-cmd .rk { --w: clamp(76px, 9.5vw, 150px); --ar: 256 / 220; --an: wcrk; --du: 1.15s; --ease: cubic-bezier(.45, 0, .85, .55); filter: drop-shadow(0 8px 6px #000b); }
+@keyframes wcrk { 0% { opacity: 0; transform: translate(-6vw, -30vh) rotate(0); } 12% { opacity: 1; } 70% { transform: translate(calc(var(--dx) * .8), 0) rotate(420deg); }
+  80% { transform: translate(calc(var(--dx) * .88), -3vh) rotate(480deg); } 90% { opacity: 1; transform: translate(var(--dx), 0) rotate(540deg); } 100% { opacity: 0; transform: translate(var(--dx), 0) rotate(560deg); } }
+.ap .wfx-cmd .lg { --w: clamp(180px, 24vw, 360px); --ar: 256 / 135; --x: -8%; --an: wclg; --du: 1.25s; filter: drop-shadow(0 8px 8px #000b); }
+@keyframes wclg { 0% { opacity: 0; transform: translateX(-30vw); } 10% { opacity: 1; } 24% { transform: translateX(24vw); } 34% { transform: translateX(16vw); }
+  53% { transform: translateX(25vw); } 63% { transform: translateX(16vw); } 82% { opacity: 1; transform: translateX(26vw); } 100% { opacity: 0; transform: translateX(22vw); } }
+.ap .wfx-cmd .pop { --w: clamp(80px, 10vw, 150px); --ar: 1; --an: wcpop; --du: .7s; --ease: ease-out; }
+.ap .wfx-cmd .pop.fr { --w: clamp(150px, 20vw, 300px); --ar: 1; --du: 1.2s; transform-origin: 50% 100%; filter: drop-shadow(0 0 10px #ff8a2a); }
+@keyframes wcpop { 0% { opacity: 0; transform: scale(.2) rotate(-8deg); } 25% { opacity: 1; transform: scale(1) rotate(0); } 100% { opacity: 0; transform: scale(1.25) rotate(6deg); } }
+.ap .wfx-cmd .pf { --w: 120px; --ar: 1; --an: wcpf; --du: 1.2s; --ease: ease-out; mix-blend-mode: screen; }
+.ap .wfx-cmd .pf.bk { --an: wcpb; }
+@keyframes wcpf { 0% { opacity: 0; transform: scale(.4) translateX(0); } 25% { opacity: .55; } 100% { opacity: 0; transform: scale(1.4) translateX(4vw); } }
+@keyframes wcpb { 0% { opacity: 0; transform: scale(.5) translateX(0); } 25% { opacity: .6; } 100% { opacity: 0; transform: scale(1.5) translateX(-10vw); } }
+.ap .wfx-cmd .rp { --w: clamp(110px, 12vw, 180px); --ar: 256 / 242; --x: 20%; --an: wcrp; --du: 1.1s; --ease: cubic-bezier(.3, .2, .6, 1); }
+@keyframes wcrp { 0% { opacity: 0; transform: translate(0, 0) rotate(0) scale(.6); } 15% { opacity: 1; } 75% { opacity: 1; transform: translate(46vw, -4vh) rotate(720deg) scale(1); }
+  88% { transform: translate(47vw, -4vh) rotate(720deg) scale(.82); } 100% { opacity: 0; transform: translate(47vw, -4vh) rotate(720deg) scale(.82); } }
+.ap .wfx-cmd .rg { --w: clamp(110px, 13vw, 200px); --ar: 1; --x: 14%; --y: 12%; --an: wcrg; --du: 1s; --ease: ease-out; border-radius: 50%; border: 3px solid #ffd27a; box-shadow: 0 0 18px #ffd27a99, inset 0 0 12px #ffd27a66; }
+@keyframes wcrg { 0% { opacity: 0; transform: scale(.3); } 20% { opacity: .9; } 100% { opacity: 0; transform: scale(2.2); } }
+.ap .wfx-cmd .sl { --w: 62vw; --ar: 40 / 1; --x: 19%; --y: 24%; --an: wcsl; --du: .5s; --ease: ease-out; background: linear-gradient(90deg, #fff0, #fffbe8 45%, #ffd27a 55%, #fff0); box-shadow: 0 0 14px #ffe9b0; }
+.ap .wfx-cmd .sl.a { rotate: 18deg; } .ap .wfx-cmd .sl.b { rotate: -18deg; }
+@keyframes wcsl { 0% { opacity: 0; transform: scaleX(0); } 30% { opacity: 1; transform: scaleX(1); } 100% { opacity: 0; transform: scaleX(1.05); } }
+@media (prefers-reduced-motion: reduce) { .ap .wfx-cmd { display: none; } }
 .ap .ws .wfx-hit { position: absolute; left: 50%; top: 42px; width: 150px; height: 150px; margin: -75px 0 0 -75px; z-index: 2; pointer-events: none; opacity: 0; animation: whitfx .55s ease-out var(--hd, 1.2s) both; }
 @keyframes whitfx { 0% { opacity: 0; transform: scale(.3) rotate(0); } 25% { opacity: 1; transform: scale(1.05) rotate(12deg); } 100% { opacity: 0; transform: scale(1.35) rotate(24deg); } }
 .ap .wend { position: relative; } .ap .wend > b { position: relative; }
@@ -950,8 +1091,16 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       else if (rd.beat === ourSide) buzz(STAGE_S[1], [25, 40, 25])
       else if (wePushed) buzz(STAGE_S[1], [15])
       const mine = weAtk ? rd.a : rd.d
-      if (mine === 'volley' || mine === 'counter' || mine === 'height') volley(STAGE_S[0], BATTLE_SFX[mine], 0.42)
-      else at(STAGE_S[0], BATTLE_SFX[mine], 0.45)
+      const theirs = weAtk ? rd.d : rd.a
+      // 깃발 소리 — 연출과 같은 박자로 (우리 것 크게, 적 것은 조금 작게)
+      const beat = (c: Cmd, s0: number, vol: number): void => {
+        if (c === 'volley' || c === 'counter' || c === 'height') { volley(STAGE_S[0], BATTLE_SFX[c], vol * 0.93); return }
+        const b = CMD_BEAT[c]
+        if (b === undefined) { at(s0, BATTLE_SFX[c], vol); return }
+        for (const [dt, v, rt] of b) at(s0 + dt, BATTLE_SFX[c], vol * v, rt)
+      }
+      beat(mine, STAGE_S[1] - 0.55, 0.45)
+      if (theirs !== mine) beat(theirs, STAGE_S[1] - 0.4, 0.28)
       // 우리가 달려드는 합엔 함성
       const ours = weAtk ? rd.a : rd.d
       if (ours === 'charge' || ours === 'pursue' || ours === 'flank') at(STAGE_S[0] + 0.15, BATTLE_SFX.cry, 0.26)
@@ -1006,7 +1155,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       bg.remove()
     }
     // 화살은 글판 위로 날아간다 — 흙먼지만 뒤에 (형 10-23: "배경이 막 화살 날아다니는 거 같은데 보드판 뒤로 밀려서 안 보임")
-    fxTop.replaceChildren(...tpl.content.querySelectorAll('.wfx-volley'))
+    fxTop.replaceChildren(...tpl.content.querySelectorAll('.wfx-volley, .wfx-cmd'))
     fxEl.replaceChildren(...tpl.content.querySelectorAll('.wfx'))
     sc.replaceChildren(tpl.content)
     // 싸움이 끝났다 — 이겼으면 「승리」가 쾅, 졌으면 「패배」가 내려앉는다 (형: "승리했다는 이펙트가 더 확실히")
