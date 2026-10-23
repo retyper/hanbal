@@ -367,6 +367,9 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       // 개척은 계절을 넘기면 바로 자리 잡는다 — 길 위에 머물지 않는다
       if (line.faction === viewer) return `${node(line.from)}의 백성 ${line.n}가구가 ${josa(node(line.to), '에', '에')} 자리 잡았다. 새 마을이 선다.`
       return `소문. ${josa(fname(line.faction), '이', '가')} ${josa(node(line.to), '에', '에')} 사람을 보냈다.`
+    case 'place':
+      if (line.faction !== viewer) return null
+      return `백성 ${line.n}가구를 새로 나누어 살게 했다. ${line.to.map(node).join('·')}에 사람이 늘었다. 옮긴 고을은 자리 잡느라 한동안 집이 늘지 않는다.`
     case 'migrate':
       // 남의 나라 집 옮기기는 들리지 않는다
       if (line.faction !== viewer) return null

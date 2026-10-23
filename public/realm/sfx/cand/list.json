@@ -1586,5 +1586,65 @@
   "license": "CC BY (저작자표시)",
   "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254593&menuNo=200020",
   "seconds": 2.7
+ },
+ {
+  "slot": "cmd_counter",
+  "id": "cmd_counter_6",
+  "file": "cmd_counter_6.ogg",
+  "title": "S27-05 Five arrows whoosh by.wav — 다섯 화살을 한꺼번에 겹침",
+  "author": "craigsmith",
+  "license": "CC0",
+  "url": "https://freesound.org/s/675821/",
+  "seconds": 1.0
+ },
+ {
+  "slot": "cmd_counter",
+  "id": "cmd_counter_7",
+  "file": "cmd_counter_7.ogg",
+  "title": "arrow whoosh.wav — 열한 번의 휙을 0.45초 안에 겹친 화살 떼",
+  "author": "saturdaysoundguy",
+  "license": "CC0",
+  "url": "https://freesound.org/s/388036/",
+  "seconds": 0.7
+ },
+ {
+  "slot": "cmd_counter",
+  "id": "cmd_counter_8",
+  "file": "cmd_counter_8.ogg",
+  "title": "Razorback Archery.wav — 활 아홉이 한꺼번에 놓는 소리",
+  "author": "arcandio",
+  "license": "CC0",
+  "url": "https://freesound.org/s/347884/",
+  "seconds": 0.7
+ },
+ {
+  "slot": "cmd_counter",
+  "id": "cmd_counter_9",
+  "file": "cmd_counter_9.ogg",
+  "title": "Razorback Archery + OWI_Bow string (542517·542559) + arrow whoosh + Five arrows whoosh by — 놓고 날아가는 한 벌",
+  "author": "arcandio · matthewHoldenSound · saturdaysoundguy · craigsmith",
+  "license": "CC0",
+  "url": "https://freesound.org/s/347884/",
+  "seconds": 1.7
+ },
+ {
+  "slot": "cmd_counter",
+  "id": "cmd_counter_10",
+  "file": "cmd_counter_10.ogg",
+  "title": "K드라마 효과음 (495) — 화살 일곱을 겹침",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13281778&menuNo=200020",
+  "seconds": 0.9
+ },
+ {
+  "slot": "cmd_counter",
+  "id": "cmd_counter_11",
+  "file": "cmd_counter_11.ogg",
+  "title": "Razorback Archery + arrow whoosh + Five arrows whoosh by + Arrow-015 + Arrow Flying 2 + ARCHERY flyby 2 — 길게 쏟아지는 화살비",
+  "author": "arcandio · saturdaysoundguy · craigsmith · kretopi · Ali_6868",
+  "license": "CC0",
+  "url": "https://freesound.org/s/347884/",
+  "seconds": 2.5
  }
 ]

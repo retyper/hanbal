@@ -685,6 +685,8 @@ export type Order =
   | { readonly kind: 'party'; readonly faction: string; readonly node: string; readonly edge?: string }
   /** 개척단을 길 하나로 보낸다 */
   | { readonly kind: 'partyGo'; readonly party: string; readonly edge: string }
+  /** 백성 배치(사민) — 고을마다 더하고 빼는 집 (합 0) */
+  | { readonly kind: 'place'; readonly faction: string; readonly delta: Readonly<Record<string, number>> }
   /** 개척단이 선 우리 고을에 눌러앉는다 — 이주 */
   | { readonly kind: 'partyJoin'; readonly party: string }
   /** 이주 — 제 고을 `from` 의 집 n 을 제 땅으로 이어진 제 고을 `to` 로 억지로 옮긴다. 곡식이 들고 두 고을은 한동안 집이 안 는다 (economy.migrateLimit) */
@@ -820,6 +822,7 @@ export type ReportLine =
   | { readonly kind: 'settle'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number }
   /** 집이 옮겨 갔다 — auto 면 붐비는 고을에서 저절로, 아니면 억지 이주 */
   | { readonly kind: 'migrate'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number; readonly auto?: boolean; readonly walk?: boolean }
+  | { readonly kind: 'place'; readonly faction: string; readonly n: number; readonly to: readonly string[] }
   | { readonly kind: 'hunger'; readonly faction: string }
   | { readonly kind: 'envoy'; readonly from: string; readonly to: string; readonly ask: EnvoyAsk; readonly accepted: boolean; readonly why?: Why; readonly about?: string; readonly hero?: string; readonly node?: string }
   /** 화친·동맹을 맺어 상대 땅으로 가던 군대가 발길을 돌렸다 — `node` 는 가려던 고을 */

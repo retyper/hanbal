@@ -16,7 +16,7 @@ import assert from 'node:assert/strict'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { canEscort, envoyTrueChance, pairKey, tradeOffer } from '../../src/realm/diplomacy.ts'
 import {
-  awayMen, buildCost, canBuild, draftLimit, goodOf, goodsWorth, isCoast, isWoody, nodeYield, upkeepOf,
+  awayMen, buildCost, canBuild, draftLimit, goodOf, goodsWorth, isCoast, isWoody, nodeYield, upkeepOf, workMul,
 } from '../../src/realm/economy.ts'
 import { postHero } from '../../src/realm/heroes.ts'
 import { PEOPLE_SCALE, migrate } from '../../src/realm/migrate.ts'
@@ -31,17 +31,17 @@ describe('땅마다 나는 것', () => {
     const r = fresh()
     assert.ok(isCoast(r, 'our-cap'))
     assert.ok(!isCoast(r, 'anya-cap'))
-    assert.equal(nodeYield(r, 'our-cap', 'spring').salt, P.realm.saltPerCoast)
+    assert.equal(nodeYield(r, 'our-cap', 'spring').salt, Math.round(P.realm.saltPerCoast * workMul(r.nodes['our-cap']!.hh)))
     assert.ok(goodOf(nodeYield(r, 'our-cap', 'summer'), 'grain') > 0)
     assert.equal(goodOf(nodeYield(r, 'our-cap', 'winter'), 'grain'), 0, '겨울엔 고기잡이를 못 한다')
     assert.ok(isWoody(r, 'anya-vil')) // 솔숲
-    assert.equal(nodeYield(r, 'guya-iron').iron, P.realm.ironPerMine)
+    assert.equal(nodeYield(r, 'guya-iron').iron, Math.round(P.realm.ironPerMine * workMul(r.nodes['guya-iron']!.hh)))
     const usIron = Object.values(r.nodes).filter((n) => n.owner === 'us').reduce((s, n) => s + goodOf(nodeYield(r, n.id), 'iron'), 0)
     assert.equal(usIron, 0, '갯마을엔 철이 안 난다')
     // 너른벌 — 사람이 살아야 말이 난다
     assert.equal(goodOf(nodeYield(r, 'wild-neoreun'), 'horse'), 0)
     r.nodes['wild-neoreun'] = { ...r.nodes['wild-neoreun']!, owner: 'guya', hh: 40 }
-    assert.equal(nodeYield(r, 'wild-neoreun').horse, P.realm.horsePerPasture)
+    assert.equal(nodeYield(r, 'wild-neoreun').horse, Math.round(P.realm.horsePerPasture * workMul(40)), '사람이 적으면 덜 난다')
   })
 
   it('한 계절이 지나면 창고에 든다', () => {

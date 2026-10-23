@@ -27,7 +27,7 @@ import {
 } from './diplomacy.ts'
 import {
   addGood, applyArm, applyBuild, applyGuard, draftCost, draftIronCost, draftLimit, draftNeeds, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepBuilds, stepEconomy,
-  migrateHouses, setMigrateAuto, stepMigration, stockOf,
+  migrateHouses, placeHouses, setMigrateAuto, stepMigration, stockOf,
 } from './economy.ts'
 import { blockedWhy, seasonOf } from './calendar.ts'
 import { applyBowUps, refreshSpies, resolvePlots } from './plots.ts'
@@ -530,6 +530,7 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
     else if (o.kind === 'partyGo') moveParty(r, o)
     else if (o.kind === 'partyJoin') joinParty(r, o, lines)
     else if (o.kind === 'migrate') migrateHouses(r, o, lines)
+    else if (o.kind === 'place') placeHouses(r, o, lines)
     else if (o.kind === 'migrateAuto') setMigrateAuto(r, o)
     else if (o.kind === 'guard') applyGuard(r, o, lines)
     else if (o.kind === 'arm') applyArm(r, o, lines)

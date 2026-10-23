@@ -15,8 +15,8 @@ import assert from 'node:assert/strict'
 import { roll } from '../../src/core/rng.ts'
 import { NATIONS } from '../../src/realm/data/nations.ts'
 import { NATION_IDS, byeonhanMini, startRealm } from '../../src/realm/data/regions/byeonhan-mini.ts'
-import { draftCost, draftLimit, goodOf, hhOf, menOf, militiaMen, nodeYield, upkeepOf } from '../../src/realm/economy.ts'
-import { harvestMul, militiaMul } from '../../src/realm/heroes.ts'
+import { draftCost, draftLimit, fieldMul, goodOf, hhOf, menOf, militiaMen, nodeYield, upkeepOf } from '../../src/realm/economy.ts'
+import { militiaMul } from '../../src/realm/heroes.ts'
 import { advance, otherEnd, planned, seenMarches } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Order, Realm, ReportLine } from '../../src/realm/types.ts'
@@ -67,10 +67,10 @@ describe('한 해의 살림', () => {
     return { next, lines: report.lines }
   }
 
-  it('가을 수확 = 봄에 심은 가호 × 군주·맡은 장수의 배수 × harvestPerHH', () => {
+  it('가을 수확 = 봄에 심은 가호 × 군주·맡은 장수의 배수 × 땅의 결 × harvestPerHH', () => {
     let r = byeonhanMini(1)
     r = pass(r).next // 봄이 끝나 여름
-    const sown = Object.values(r.nodes).filter((n) => n.owner === 'us').reduce((s, n) => s + n.sown * harvestMul(r, n.id), 0)
+    const sown = Object.values(r.nodes).filter((n) => n.owner === 'us').reduce((s, n) => s + n.sown * fieldMul(r, n.id), 0)
     const { lines, next } = pass(r) // 여름이 끝나 가을 — 가을 소식에 가을걷이
     assert.equal(next.season % 4, 2, '가을로 넘어가는 소식')
     assert.equal(harvestOf(lines, 'us'), Math.round(sown * P.realm.harvestPerHH))

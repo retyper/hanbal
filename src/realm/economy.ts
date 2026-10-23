@@ -119,6 +119,32 @@ export function isCoast(r: Realm, node: string): boolean {
   return Object.values(r.edges).some((e) => (e.a === node || e.b === node) && (e.kind === 'sea' || e.kind === 'mudflat'))
 }
 
+/** 강가 고을 — 여울·갈대 꼬리표가 있거나 나루(여울목)·갈대 길이 닿는다. 논이 좋아 쌀이 더 난다 */
+export function isRiverside(r: Realm, node: string): boolean {
+  const n = r.nodes[node]
+  if (n === undefined || n.kind === 'sodo') return false
+  if (n.tags.includes('reeds') || n.tags.includes('shallows')) return true
+  return Object.values(r.edges).some((e) => (e.a === node || e.b === node) && (e.kind === 'ford' || e.kind === 'reeds'))
+}
+
+/** 땅의 결 — 가을걷이 배수. 강가는 논이 좋고, 높은 터·산성은 밭이 척박하다 (둘 다면 강가가 이긴다) */
+export function landMul(r: Realm, node: string): number {
+  const n = r.nodes[node]
+  if (n === undefined) return 1
+  if (isRiverside(r, node)) return 1 + P.realm.riverRice
+  if (n.tags.includes('high') || n.kind === 'fort') return 1 - P.realm.hillRice
+  return 1
+}
+
+/** 가을걷이 배수 — 다스림(군장·맡은 장수) × 땅의 결 */
+export const fieldMul = (r: Realm, node: string): number => harvestMul(r, node) * landMul(r, node)
+
+/** 일손 배수 — 철·나무·소금·말은 사는 집이 많을수록 더 난다 (workMin ~ workMax) */
+export function workMul(hh: number): number {
+  const R = P.realm
+  return Math.min(R.workMax, Math.max(R.workMin, hh / R.workHH))
+}
+
 /** 나무가 나는 고을 — 솔숲·높은 터·산성이거나 숲길이 닿는다 */
 export function isWoody(r: Realm, node: string): boolean {
   const n = r.nodes[node]
@@ -148,14 +174,16 @@ export function nodeYield(r: Realm, node: string, season = seasonOf(r.season)): 
   const n = r.nodes[node]
   if (n === undefined || n.owner === null || n.kind === 'sodo' || (n.kind === 'wild' && n.hh <= 0)) return {}
   const out: Partial<Record<Good, number>> = {}
-  if (n.kind === 'ironMine') out.iron = R.ironPerMine
-  if (n.kind === 'port') out.iron = (out.iron ?? 0) + R.ironPerPort
+  // 일손 — 사람이 많을수록 더 캐고 더 벤다 (곡식·물고기는 원래 가호에 비례)
+  const w = workMul(n.hh)
+  if (n.kind === 'ironMine') out.iron = Math.round(R.ironPerMine * w)
+  if (n.kind === 'port') out.iron = (out.iron ?? 0) + Math.round(R.ironPerPort * w)
   if (isCoast(r, node)) {
-    out.salt = R.saltPerCoast
+    out.salt = Math.round(R.saltPerCoast * w)
     if (season !== 'winter') out.grain = Math.round(n.hh * R.fishPerHH)
   }
-  if (isWoody(r, node)) out.wood = R.woodPerNode
-  if (n.tags.includes('pasture')) out.horse = R.horsePerPasture
+  if (isWoody(r, node)) out.wood = Math.round(R.woodPerNode * w)
+  if (n.tags.includes('pasture')) out.horse = Math.round(R.horsePerPasture * w)
   return out
 }
 
@@ -168,7 +196,7 @@ export function nodeHarvest(r: Realm, node: string): number {
   if (n === undefined || n.owner === null || n.kind === 'sodo') return 0
   const season = seasonOf(r.season)
   const sown = season === 'autumn' || season === 'winter' ? n.hh : n.sown
-  return Math.round(sown * P.realm.harvestPerHH * harvestMul(r, node))
+  return Math.round(sown * P.realm.harvestPerHH * fieldMul(r, node))
 }
 
 /** 제 땅 밖에 나가 있는 군사 — 길 위이거나 남의 땅에 머문다 (절인 양식이 든다) */
@@ -406,6 +434,53 @@ export function migrateHouses(r: Realm, o: Extract<Order, { kind: 'migrate' }>, 
   a.uprooted = Math.max(a.uprooted ?? -1, until)
   b.uprooted = Math.max(b.uprooted ?? -1, until)
   lines.push({ kind: 'migrate', faction: o.faction, from: o.from, to: o.to, n: o.n })
+}
+
+/** 백성 배치 — 이번 계절 옮길 수 있는 집 (나라 전체 가호 × placeShare · 곡식으로도 막힌다) */
+export function placeLimit(r: Realm, faction: string): number {
+  const R = P.realm
+  const grain = R.migrateGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.migrateGrain) : Infinity
+  return Math.max(0, Math.min(Math.floor(hhOf(r, faction) * R.placeShare), grain))
+}
+
+/** 백성 배치에 넣을 수 있는 고을 — 우리 고을(소도 아님) 가운데 도읍과 우리 땅으로 이어진 곳 · 사람이 사는 빈땅도 */
+export function placeNodes(r: Realm, faction: string): string[] {
+  const cap = r.factions[faction]?.capital
+  return Object.values(r.nodes)
+    .filter((n) => n.owner === faction && n.kind !== 'sodo' && (n.id === cap || (cap !== undefined && migratePath(r, faction, cap, n.id) !== null)))
+    .filter((n) => n.kind !== 'wild' || n.hh > 0 || (n.room ?? 0) > 0)
+    .map((n) => n.id).sort()
+}
+
+/**
+ * 백성 배치 (사민) — 고을마다 더하고 빼는 몫. 합이 0 이어야 하고(모아 둔 백성이 남지 않게), 옮기는 집이 placeLimit 안,
+ * 고을마다 남는 집은 1 이상 · 받는 고을은 품(homeRoom)까지. 옮긴 만큼 곡식이 들고 손댄 고을은 한동안 집이 안 는다.
+ */
+export function placeHouses(r: Realm, o: Extract<Order, { kind: 'place' }>, lines: ReportLine[]): void {
+  const ok = new Set(placeNodes(r, o.faction))
+  const ids = Object.keys(o.delta).sort()
+  let sum = 0
+  let moved = 0
+  for (const id of ids) {
+    const d = o.delta[id]!
+    if (!Number.isInteger(d) || !ok.has(id)) return
+    const n = r.nodes[id]!
+    if (d < 0 && n.hh + d < 1) return
+    if (d > 0 && n.hh + d > homeRoom(n)) return
+    sum += d
+    if (d > 0) moved += d
+  }
+  if (sum !== 0 || moved === 0 || moved > placeLimit(r, o.faction)) return
+  const until = r.season + P.realm.migrateCalm
+  for (const id of ids) {
+    const d = o.delta[id]!
+    if (d === 0) continue
+    const n = r.nodes[id]!
+    n.hh += d
+    n.uprooted = Math.max(n.uprooted ?? -1, until)
+  }
+  stockOf(r, o.faction).grain -= migrateCost(moved).grain
+  lines.push({ kind: 'place', faction: o.faction, n: moved, to: ids.filter((id) => o.delta[id]! > 0) })
 }
 
 /** 자동 분배 켜기·끄기 */
@@ -675,7 +750,7 @@ export function hhGrowth(r: Realm, node: string): { per: number; why: string[] }
   // 굶나 — 이번 계절 끝의 가을걷이(여름이 끝날 때)를 더하고 군량을 뺀다
   let grain = stockOf(r, f).grain
   if (season === 'summer') {
-    for (const x of Object.values(r.nodes)) if (x.owner === f) grain += x.sown * R.harvestPerHH * harvestMul(r, x.id)
+    for (const x of Object.values(r.nodes)) if (x.owner === f) grain += x.sown * R.harvestPerHH * fieldMul(r, x.id)
   }
   const why: string[] = []
   const threat = Object.values(r.armies).some((a) => a.faction !== f && a.march !== null && a.march.to === node)
@@ -736,7 +811,7 @@ export function stepEconomy(r: Realm, season: number, fought: ReadonlySet<string
     // 가을걷이 — 여름이 끝나 가을로 들 때, 봄에 심은 만큼 거둔다 (가을 소식에 뜬다)
     if (season === 1) {
       let sown = 0
-      for (const n of nodes) sown += n.sown * harvestMul(r, n.id)
+      for (const n of nodes) sown += n.sown * fieldMul(r, n.id)
       // 난세 단계 — 이웃 나라는 단계만큼 더 거둔다 (tier.ts) · 그해의 사건(가뭄·풍년·메뚜기 — events.ts)
       const tm = tierMul(r.tier ?? 1)
       const base = Math.round(sown * R.harvestPerHH * (f !== r.player ? tm.income : tm.ours) * harvestModOf(r, f))
