@@ -29,8 +29,8 @@ export const PICK = {
   bgm_end_win: 'w5', bgm_end_lose: 'c6',
   // 깃발 소리 — 깃발마다 제 소리 (형 10-23: "돌격 방진 바위 굴리기 … 다 그만의 이펙트와 사운드") · 맞쏘기는 화살비 소리를 흩어 친다
   // 싸움이 열릴 때 — 종 「댕」 한 번 · 북 두 번 (형 10-23: "싸움 발생할 때 댕 하고 이상한 소리 · 소리 설정 웹페이지에서 바꿀 수 있게") — k1 은 옛 활터 소리
-  war_bell: 'k1', war_drum: 'k1',
-  march_go: 'c7', cmd_counter: 'c10', cmd_art: 'c2', cmd_capture: 'c1', cmd_charge: 'm1', cmd_drum: 'c1', cmd_duel: 'c1', cmd_fire: 'c3', cmd_ford: 'c5', cmd_gate: 'c4', cmd_guard: 'c3', cmd_height: 'c5', cmd_hold: 'c2', cmd_horse: 'c4', cmd_open: 'c3', cmd_ram: 'c3', cmd_retreat: 'c4', cmd_rocks: 'c1',
+  war_bell: 'c5', war_drum: 'c4', draft_go: 'c4', arm_go: 'c6',
+  march_go: 'c8', cmd_counter: 'c10', cmd_art: 'c2', cmd_capture: 'c1', cmd_charge: 'm1', cmd_drum: 'c1', cmd_duel: 'c1', cmd_fire: 'c3', cmd_ford: 'c5', cmd_gate: 'c4', cmd_guard: 'c3', cmd_height: 'c5', cmd_hold: 'c2', cmd_horse: 'c4', cmd_open: 'c3', cmd_ram: 'c3', cmd_retreat: 'c4', cmd_rocks: 'c1',
   tap_arms: 'g1', tap_coin: 'g1', tap_brush: 'g1', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'g1',
 } as const
 /** ogg 가 아닌 후보 — 형이 받아 온 것은 받은 꼴 그대로 · 공유마당 음악은 mp3 · 누르는 소리는 브라우저로 잘라 낸 wav */
@@ -46,7 +46,7 @@ export type Slot = keyof typeof PICK
 export const LATER: ReadonlySet<Slot> = new Set<Slot>([])
 /** 한 곡이 끝나면 다음 곡으로 넘어가는 자리 — 첫 글자가 PICK 이다 (형이 받은 평상시 음악 둘: bgm후보 · 배경음2) */
 // 형 10-23 소리 고르기 판: 지도 = 형의 두 곡 + 국악 BGM 다섯 · 싸움 = 사물놀이 둘
-export const ROTATE: Readonly<Partial<Record<Slot, readonly string[]>>> = { bgm_map: ['f', 'g', 'c2', 'c9', 'c3', 'c4', 'c10'], bgm_war: ['c7', 'c8'] }
+export const ROTATE: Readonly<Partial<Record<Slot, readonly string[]>>> = { bgm_map: ['f', 'c2', 'c9', 'c3', 'c4', 'c10'], bgm_war: ['c7', 'c8'] }
 /**
  * 곡마다 소리 크기 — 형이 가져온 지도 곡(-16dB 언저리)에 맞춘다 (형 10-23: "소리도 너무 커"). 1 보다 크게는 못 키운다.
  * 2026-10-23 잰 값: map c4 -12.0 · c9 -11.9 · war c7 -12.5 · title c6 -14.0 · 끝 이김 w5(Joy of Victory) -18.0 · 끝 짐 c6 -14.8

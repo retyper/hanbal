@@ -3308,8 +3308,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 군대를 보냈다 — 군사가 발맞춰 떠나는 소리 (형 10-23: "출정 보내기 완료될 때는 뭔가 군대를 부리는 소리가 필요함") */
   const marchSfx = (): void => { if (document.visibilityState === 'visible') ding(snd('march_go'), 0.4) }
   /** 군사를 뽑았다 · 쇠로 무장시켰다 (형 10-23: "군사 보내는 거랑 철로 무장시키는 거 그거도 sfx 필요해") — 고르기 판에서 고르기 전까지는 북·방패 쇠 소리 */
-  const draftSfx = (): void => { if (document.visibilityState === 'visible') ding(snd('war_drums'), 0.3) }
-  const armSfx = (): void => { if (document.visibilityState === 'visible') ding(snd('cmd_guard'), 0.4) }
+  const draftSfx = (): void => { if (document.visibilityState === 'visible') ding(snd('draft_go'), 0.4) }
+  const armSfx = (): void => { if (document.visibilityState === 'visible') ding(snd('arm_go'), 0.4) }
 
   /**
    * 판에 들어갈 때 가림막 — 지도가 쓰는 그림(조각·고을·안개·한지)을 다 받을 때까지. 막대는 받은 만큼 찬다.

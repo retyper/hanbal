@@ -162,3 +162,8 @@ cmd_charge_m1.ogg  돌격 = cmd_charge_c1(Freesound 350425 「Stampede」 · bev
 march_go_c7.ogg  공유마당 · 「갑옷 걷는」 + 「북 소리C」를 일곱 사람 발맞춤으로 겹쳐 섞음 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252709
 war_bell_k1.ogg  Kenney (https://kenney.nl) · 「Impact Sounds」 impactBell_heavy_001 · CC0 — 싸움이 열릴 때 종 (옛 활터 소리 · 고르기 판에서 바꾼다)
 war_drum_k1.ogg  Kenney (https://kenney.nl) · 「Impact Sounds」 impactWood_heavy_000 · CC0 — 싸움이 열릴 때 북 (옛 활터 소리)
+arm_go_c6.ogg  Freesound · "Anvil Hit 2" + "Lightmetal_armor" + "unsheath_sword" 섞음 · michorvath · mitchanary · Qat · CC0 · https://freesound.org/s/270588/
+draft_go_c4.ogg  Freesound · ID 621326 (https://freesound.org/s/621326/) · "Rowdy Group Hype Grunt, Boot Stomp and Shield Smash - WITH reverb" · WelvynZPorterSamples · CC0
+war_drum_c4.ogg  Freesound · ID 621326 (https://freesound.org/s/621326/) · "Rowdy Group Hype Grunt, Boot Stomp and Shield Smash - WITH reverb" · WelvynZPorterSamples · CC0
+march_go_c8.ogg  Freesound · ID 480675 (https://freesound.org/s/480675/) · "R27-40-March on Gravel Road" + war horn 섞음 · craigsmith · adharca · CC0
+war_bell_c5.ogg  공유마당 · 「징소리B」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254593
