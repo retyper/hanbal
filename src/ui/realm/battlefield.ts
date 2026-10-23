@@ -693,7 +693,7 @@ export const WAR_CSS = `
 .ap .wcmd.on { border-color: var(--gold); background: #3a3222; box-shadow: 0 0 0 2px #d9b36a66; }
 /* 깃발 카드 — 왼쪽에 깃발 한 폭, 고르면 깃발이 들려 나부낀다 */
 .ap .wcmd { flex-direction: row; align-items: flex-start; gap: 8px; padding: 7px 9px 7px 6px; }
-.ap .wcmd img.wflag { position: static; width: 44px; height: auto; flex: none; opacity: 1; filter: drop-shadow(0 2px 3px #000a); transform-origin: 18% 4%; transition: transform .25s; }
+.ap .wcmd img.wflag { position: static; width: 50px; height: auto; flex: none; opacity: 1; filter: drop-shadow(0 2px 3px #000a); transform-origin: 18% 4%; transition: transform .25s; }
 .ap .wcmd .wct { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
 .ap .wcmd.on img.wflag { transform: translateY(-3px) scale(1.08); filter: drop-shadow(0 0 7px #ffd27acc) drop-shadow(0 2px 3px #000a); animation: wflagwave 1.4s ease-in-out infinite alternate; }
 @keyframes wflagwave { from { transform: translateY(-3px) scale(1.08) rotate(-2deg) skewY(0deg); } to { transform: translateY(-3px) scale(1.08) rotate(1.5deg) skewY(-2deg); } }

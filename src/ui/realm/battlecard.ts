@@ -8,7 +8,7 @@
  */
 import { BATTLE_AMBUSH, BATTLE_APPROACH, BATTLE_CLASH, endStory, fieldName, josa, roundStory, storyCtx } from '../../realm/data/prose.ts'
 import { FACTION_ART, bustOf } from '../../realm/data/art.ts'
-import { CMD_ICON, CMD_NAME, actRows, reliefBanner, warName } from './battlefield.ts'
+import { CMD_NAME, actRows, flagSrc, reliefBanner, warName } from './battlefield.ts'
 import type { Army, Hero, Realm, ReportLine } from '../../realm/types.ts'
 
 type Battle = Extract<ReportLine, { kind: 'battle' }>
@@ -71,7 +71,7 @@ function battleSummary(after: Realm, l: Battle, weAtk: boolean, art: string, vie
     const them = weAtk ? rd.d : rd.a
     const won = rd.beat === (weAtk ? 'a' : 'd')
     const lost = rd.beat !== null && !won
-    h += `<span class="bkrd${won ? ' w' : lost ? ' l' : ''}"><img src="${art}icon/${CMD_ICON[us]}.png" alt="${CMD_NAME[us]}" title="${CMD_NAME[us]}"><i>${won ? '○' : lost ? '✕' : '·'}</i><img src="${art}icon/${CMD_ICON[them]}.png" alt="${CMD_NAME[them]}" title="${CMD_NAME[them]}"></span>`
+    h += `<span class="bkrd${won ? ' w' : lost ? ' l' : ''}"><img class="flg" src="${flagSrc(art, us)}" alt="${CMD_NAME[us]}" title="${CMD_NAME[us]}"><i>${won ? '○' : lost ? '✕' : '·'}</i><img class="flg" src="${flagSrc(art, them)}" alt="${CMD_NAME[them]}" title="${CMD_NAME[them]}"></span>`
   }
   h += `</div>`
   // 합마다 무슨 일이 있었나 — 전장의 이야기 그대로 (합마다 앞 두 줄) · 끝에 왜 무너졌나
@@ -202,7 +202,7 @@ export const BATTLE_CSS = `
 
 .ap .bk.sum .bkr3 { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin: 8px 0 4px; }
 .ap .bkrd { display: inline-flex; align-items: center; gap: 2px; padding: 2px 6px; border-radius: 10px; background: #ffffff0a; border: 1px solid #54412a; }
-.ap .bkrd img { width: 22px; height: 22px; } .ap .bkrd i { font-style: normal; font-weight: 800; width: 14px; text-align: center; color: var(--mute); }
+.ap .bkrd img { width: auto; height: 26px; object-fit: contain; } .ap .bkrd i { font-style: normal; font-weight: 800; width: 14px; text-align: center; color: var(--mute); }
 .ap .bkrd.w { border-color: #6a9a5a; } .ap .bkrd.w i { color: #9fd18b; } .ap .bkrd.l { border-color: #9a4a3a; } .ap .bkrd.l i { color: #ff8a70; }
 .ap .bk .now { opacity: 1; animation: none; }
 .ap .bk .bkst { font-size: 13.5px; line-height: 1.5; display: flex; gap: 6px; align-items: flex-start; } .ap .bk .bkst > div { flex: 1; min-width: 0; }
