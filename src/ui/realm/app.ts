@@ -461,6 +461,25 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let partySel = ''
   /** 백성 배치 판에서 고르는 중인 몫 — 고을 → 더하고 뺀 집 (모아 둔 백성 = −합) */
   let placeDraft: Record<string, number> = {}
+  /** 백성 배치 −/+ 한 번의 몫 — 뗄 때는 한 집은 남기고 한도 안에서, 부을 때는 모아 둔 만큼 · 품까지. 0 이면 못 누른다 */
+  function placeStepOf(id: string, add: boolean): number {
+    const base = realm!
+    const ids = placeNodes(base, me())
+    const dd = (x: string): number => placeDraft[x] ?? 0
+    const n = base.nodes[id]!
+    const now = n.hh + dd(id)
+    const step = P.realm.placeStep
+    if (add) {
+      const pool = -ids.reduce((s, x) => s + dd(x), 0)
+      return Math.max(0, Math.min(step, pool, homeRoom(n) - now))
+    }
+    const out = ids.reduce((s, x) => s + Math.max(0, -dd(x)), 0)
+    let k = Math.max(0, Math.min(step, now - 1))
+    // 이 고을이 받은 몫을 되돌리는 동안은 옮김이 늘지 않는다 — 넘는 만큼만 한도에 걸린다
+    const grow = (x: number): number => Math.max(0, -(dd(id) - x)) - Math.max(0, -dd(id))
+    while (k > 0 && out + grow(k) > placeLimit(base, me())) k--
+    return k
+  }
   /** 길 보기 펼침 */
   let roadOpen = false
   /** 지난 기록 — 걸러 보기 갈래 · 나라 (logbook.ts) */
@@ -1398,13 +1417,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const rice = Math.round(now * P.realm.harvestPerHH * fieldMul(base, id))
       const goods = (['iron', 'salt', 'wood', 'horse'] as const).filter((g) => (y[g] ?? 0) > 0)
       const yl = `${icon('good-rice', 'gic')}쌀 ${rice}${goods.map((g) => ` · ${icon(GOOD_ICON[g], 'gic')}${GOOD_NAME[g]} ${y[g]}`).join('')}`
-      const canSub = now - step >= 1 && out - Math.max(0, -d(id)) + Math.max(0, -(d(id) - step)) <= lim
-      const canAdd = pool > 0 && now < room
+      const kSub = placeStepOf(id, false)
+      const kAdd = placeStepOf(id, true)
       const dd = d(id)
       h += `<div class="plcard${dd !== 0 ? (dd > 0 ? ' up' : ' down') : ''}"><div class="plh"><b>${esc(n.name)}</b><span class="mute">${cap ? '도읍' : NODE_KIND_NAME[n.kind]}</span>${land}</div>`
-        + `<div class="plrow"><button class="btn sm" data-act="pl-sub" data-node="${id}" ${canSub ? '' : 'disabled'}>−${step}</button>`
+        + `<div class="plrow"><button class="btn sm" data-act="pl-sub" data-node="${id}" ${kSub > 0 ? '' : 'disabled'}>−${kSub > 0 ? kSub : step}</button>`
         + `<div class="plmid"><b>${now.toLocaleString('ko-KR')}가구${dd !== 0 ? ` <i>${dd > 0 ? '+' : ''}${dd}</i>` : ''}</b><span class="plbar"><i style="width:${Math.min(100, Math.round((now / Math.max(1, room)) * 100))}%"></i></span><small>품 ${room.toLocaleString('ko-KR')} · ${yl} <small>계절마다 · 쌀은 한 해</small></small></div>`
-        + `<button class="btn sm" data-act="pl-add" data-node="${id}" ${canAdd ? '' : 'disabled'}>+${Math.min(step, Math.max(pool, step))}</button></div></div>`
+        + `<button class="btn sm" data-act="pl-add" data-node="${id}" ${kAdd > 0 ? '' : 'disabled'}>+${kAdd > 0 ? kAdd : step}</button></div></div>`
     }
     const moved = ids.some((id) => d(id) !== 0)
     h += `<div class="btns plfoot"><button class="btn ghost" data-act="pl-reset" ${moved ? '' : 'disabled'}>처음대로</button>`
@@ -2652,7 +2671,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'harvest': case 'spoil': ic = 'good-rice'; break
       case 'market': ic = 'settle-market'; break
       case 'draft': ic = UNIT_ICON[l.unit]; break
-      case 'disband': case 'settle': case 'migrate': ic = 'settle-farm-village'; break
+      case 'disband': case 'settle': case 'migrate': case 'place': ic = 'settle-farm-village'; break
       case 'hunger': ic = 'status-famine'; break
       case 'envoy': case 'answered': case 'ask': ic = 'good-tribute-bell'; break
       case 'recall': ic = l.owner !== undefined ? 'unit-spear' : 'good-tribute-bell'; break
@@ -3379,20 +3398,18 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'pl-sub': case 'pl-add': {
         const id = d['node']!
-        const ids = placeNodes(realm!, me())
-        const pool = -ids.reduce((s, x) => s + (placeDraft[x] ?? 0), 0)
-        const k = d['act'] === 'pl-sub' ? -P.realm.placeStep : Math.min(P.realm.placeStep, pool)
-        const n = realm!.nodes[id]!
-        const v = (placeDraft[id] ?? 0) + k
-        if (d['act'] === 'pl-add' && n.hh + v > homeRoom(n)) placeDraft = { ...placeDraft, [id]: homeRoom(n) - n.hh }
-        else placeDraft = { ...placeDraft, [id]: v }
+        const add = d['act'] === 'pl-add'
+        const k = placeStepOf(id, add)
+        if (k <= 0) break
+        placeDraft = { ...placeDraft, [id]: (placeDraft[id] ?? 0) + (add ? k : -k) }
         if (placeDraft[id] === 0) { const { [id]: _, ...rest } = placeDraft; placeDraft = rest }
         break
       }
       case 'pl-reset': placeDraft = {}; break
       case 'pl-ok': {
         const delta = Object.fromEntries(Object.entries(placeDraft).filter(([, v]) => v !== 0))
-        settles = [...settles.filter((o) => o.kind !== 'place'), ...(Object.keys(delta).length > 0 ? [{ kind: 'place' as const, faction: me(), delta }] : [])]
+        // 맨 앞에 — 엔진이 계절 처음과 같은 판으로 본다 (뒤의 개척단 꾸리기·자리 잡기가 집·곡식을 바꿔도 버려지지 않게)
+        settles = [...(Object.keys(delta).length > 0 ? [{ kind: 'place' as const, faction: me(), delta }] : []), ...settles.filter((o) => o.kind !== 'place')]
         openSheet({ kind: 'people' }); return
       }
       case 'nat-plot':

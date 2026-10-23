@@ -66,6 +66,14 @@ describe('백성 배치', () => {
     }
     assert.equal(run(), run())
   })
+  it('배치가 맨 앞이면 같은 계절 개척단 꾸리기가 뒤에 와도 버려지지 않는다', () => {
+    const r = rich(byeonhanMini(1))
+    r.stock[r.player]!.wood = 500
+    const { from, to } = pair(r)
+    const lim = placeLimit(r, r.player)
+    const { report } = advance(r, [{ kind: 'place', faction: r.player, delta: { [from]: -lim, [to]: lim } }, { kind: 'party', faction: r.player, node: from }])
+    assert.ok(report.lines.some((l) => l.kind === 'place' && l.n === lim))
+  })
 })
 
 describe('땅의 결 · 일손', () => {

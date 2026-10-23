@@ -373,6 +373,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     case 'migrate':
       // 남의 나라 집 옮기기는 들리지 않는다
       if (line.faction !== viewer) return null
+      if (line.walk === true && line.from === line.to) return `개척단 ${line.n}가구가 ${josa(node(line.to), '으로', '로')} 돌아와 다시 자리 잡았다.`
       if (line.walk === true) return `${node(line.from)}의 백성 ${line.n}가구가 ${josa(node(line.to), '으로', '로')} 옮겨 와 자리 잡았다.`
       if (line.auto === true) return `${josa(node(line.from), '이', '가')} 붐벼 집 ${josa(String(line.n), '이', '가')} ${josa(node(line.to), '으로', '로')} 옮겨 갔다.`
       return `${node(line.from)}의 집 ${josa(String(line.n), '을', '를')} ${josa(node(line.to), '으로', '로')} 옮겼다. 두 고을은 자리 잡느라 한동안 집이 늘지 않는다.`

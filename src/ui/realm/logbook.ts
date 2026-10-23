@@ -21,7 +21,7 @@ const KINDS: Readonly<Record<Exclude<LogFilter, 'all'>, ReadonlySet<string>>> = 
   envoy: new Set(['envoy', 'ask', 'answered', 'recall', 'pledge', 'lent', 'envoyHeld']),
   war: new Set(['battle', 'take', 'sighted', 'blocked']),
   plot: new Set(['plot', 'mystery', 'confess', 'rumor']),
-  home: new Set(['harvest', 'draft', 'settle', 'migrate', 'disband', 'hunger', 'build', 'rite', 'arm', 'market', 'spoil', 'bowUp', 'wed', 'birth', 'recruit', 'persuade', 'exile', 'retake', 'expGo', 'expBack', 'card', 'omen']),
+  home: new Set(['harvest', 'draft', 'settle', 'migrate', 'place', 'disband', 'hunger', 'build', 'rite', 'arm', 'market', 'spoil', 'bowUp', 'wed', 'birth', 'recruit', 'persuade', 'exile', 'retake', 'expGo', 'expBack', 'card', 'omen']),
 }
 
 /** 줄에 적힌 나라들 — 문자열 값 가운데 나라 id (청은 안의 from·to) */
