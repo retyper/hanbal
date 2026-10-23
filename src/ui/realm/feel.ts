@@ -65,7 +65,15 @@ function chip(tiers: readonly Tier[], lo: number, hi: number): string {
 }
 
 export const fightFeel = (lo: number, hi: number): string => chip(FIGHT, lo, hi)
-export const envoyFeel = (lo: number, hi: number): string => chip(ENVOY, lo, hi)
+/** 조공 요구 — 내놓으라는 청이라 반기고 솔깃할 일이 아니다 (형 10-23: "조공 요구에 솔깃은 좀 아니지 않나") */
+const TRIBUTE: readonly Tier[] = [
+  { at: 0.7, word: '고개 숙인다', color: '#3f8f3a' },
+  { at: 0.45, word: '흔들린다', color: '#7aa83a' },
+  { at: 0.25, word: '버틴다', color: '#c9a23a' },
+  { at: 0.1, word: '거세게 버틴다', color: '#d0702f' },
+  { at: 0, word: '콧방귀', color: '#b83a2a' },
+]
+export const envoyFeel = (lo: number, hi: number, ask?: string): string => chip(ask === 'tribute' ? TRIBUTE : ENVOY, lo, hi)
 export const ambushFeel = (p: number): string => chip(AMBUSH, p, p)
 /** 호감 −100..100 — 숫자 없이 사이의 온도로 */
 const FAVOR: readonly Tier[] = [

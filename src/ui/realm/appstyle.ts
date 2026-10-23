@@ -216,6 +216,14 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .sentb { display: flex; align-items: center; gap: 8px; } .ap .sentb span { flex: 1; min-width: 0; }
 .ap .sentb .sface { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #8a7040; flex: none; }
 .ap .tr2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .ap .tr2 > span:first-child { width: 3.5em; color: var(--mute); font-size: 13px; }
+/* 주고받기 표 — 물건마다 한 줄: 준다 | 물건 | 받는다 */
+.ap .tgrid { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 6px 10px; margin: 8px 0; }
+.ap .tgrid.two { grid-template-columns: 1fr auto 1fr; }
+.ap .tgrid .th { font-size: 12px; color: var(--mute); text-align: center; } .ap .tgrid .th.give { color: #e0b0a0; } .ap .tgrid .th.take { color: #b9d9a6; }
+.ap .tgrid .tg { display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: 11.5px; color: #d8cfbd; } .ap .tgrid .tg i { font-style: normal; }
+.ap .tgrid .tg img { width: 26px; height: 26px; }
+.ap .tgrid .tc { display: flex; flex-direction: column; align-items: center; gap: 1px; } .ap .tgrid .tc small { font-size: 10.5px; color: var(--mute); }
+.ap .tgrid:not(.two) .tc { align-items: flex-start; }
 .ap .splitp { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; padding: 10px; border-radius: 12px; background: #1e160f; }
 .ap .row .dest, .ap .row .sub { min-width: 0; overflow: hidden; text-overflow: ellipsis; } .ap .row .win, .ap .row .em { flex: none; }
 .ap .acard > .ab > .splitp, .ap .acard > .ab > .rows { margin-left: -74px; } /* 얼굴 칸 밑까지 넓게 — 폰에서 단추가 접히지 않게 */
@@ -472,6 +480,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .settlec .gain .gic { width: 20px; height: 20px; vertical-align: middle; margin: 0 2px; }
 .ap .autobtn:disabled { background: #24301f; border-color: #5a7a44; color: #b8e09a; opacity: 1; cursor: default; }
 /* 아래 탭이 여섯 — 폰 세로에서 글이 넘치지 않게 */
+/* 「다음 계절」 전에 데려온 판의 맨 위 한 줄 */
+.ap .nudge { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; padding: 8px 10px; border-radius: 10px; background: #3a2a14; border: 1px solid #c9a45a88; font-size: 13px; color: #f3e2b8; }
+.ap .nudge span { flex: 1 1 200px; } .ap .nudge .btn { margin-left: auto; }
 .ap .tabs button { min-width: 0; } .ap .tabs button span { white-space: nowrap; }
 @media (max-width: 420px) { .ap .tabs button img.tic { width: 28px; height: 28px; } .ap .tabs button { font-size: 11.5px; } }
 `

@@ -292,11 +292,13 @@ function movePatrols(n: Night): void {
 const parts = newParts()
 
 /** 점이 형체의 어디에 들었나 */
+/** 판정은 그림보다 hitSlop 만큼 너그럽다 — 그림은 그대로 (형 10-23: "히트박스는 조금 너그럽게") */
 function zoneAt(f: Figure, x: number, y: number, rise: number): 'head' | 'body' | 'leg' | null {
   partsOf(f, parts, f.role === 'chief' ? rise : undefined)
-  if ((x - parts.hx) ** 2 + (y - parts.hy) ** 2 <= parts.hr * parts.hr) return 'head'
-  if (distSqPointSegment(x, y, parts.t0x, parts.t0y, parts.t1x, parts.t1y) <= parts.tr * parts.tr) return 'body'
-  if (distSqPointSegment(x, y, parts.l0x, parts.l0y, parts.l1x, parts.l1y) <= parts.lr * parts.lr) return 'leg'
+  const s = P.night.hitSlop
+  if ((x - parts.hx) ** 2 + (y - parts.hy) ** 2 <= (parts.hr + s) ** 2) return 'head'
+  if (distSqPointSegment(x, y, parts.t0x, parts.t0y, parts.t1x, parts.t1y) <= (parts.tr + s) ** 2) return 'body'
+  if (distSqPointSegment(x, y, parts.l0x, parts.l0y, parts.l1x, parts.l1y) <= (parts.lr + s) ** 2) return 'leg'
   return null
 }
 
@@ -342,7 +344,7 @@ function sweep(n: Night, ax: number, ay: number, bx: number, by: number, angle: 
       if (!l.lit || l.kind === 'candle') continue
       if (l.kind === 'fire') {
         // 모닥불 — 위에 매단 물동이를 맞히면 쏟아져 꺼진다. 불길에 든 살은 타 버리고 불똥만 튄다 (살로 불을 끄진 못한다)
-        if ((x - l.x) ** 2 + (y - (l.y + P.night.jarHeight)) ** 2 <= P.night.jarRadius ** 2) {
+        if ((x - l.x) ** 2 + (y - (l.y + P.night.jarHeight)) ** 2 <= (P.night.jarRadius + P.night.hitSlop) ** 2) {
           hitLight(n, l, x, y)
           return 'stop'
         }
@@ -351,7 +353,7 @@ function sweep(n: Night, ax: number, ay: number, bx: number, by: number, angle: 
         noise(n, P.night.noiseFire, x)
         return 'stop'
       }
-      if ((x - l.x) ** 2 + (y - l.y) ** 2 > LAMP_R * LAMP_R) continue
+      if ((x - l.x) ** 2 + (y - l.y) ** 2 > (LAMP_R + P.night.hitSlop) ** 2) continue
       hitLight(n, l, x, y)
       n.stuck.push({ x, y, angle, fig: -1 })
       return 'stop'

@@ -201,7 +201,7 @@ const BLUEPRINTS: readonly Blueprint[] = [
     ],
     lights: [
       { kind: 'torch', x: 16.6, y: 1.9 },
-      { kind: 'torch', x: 21.2, y: 2.4 },
+      // 마루 끝(21.2)에 매달았던 횃불은 뺐다 — 창호지로 가는 살이 거기 걸렸다 (형 10-23: "창호지 쏠 때 촛불 하나가 창호지 앞에서 걸려. 지워 버려")
       { kind: 'candle', x: 24.5, y: 1.4 },
     ],
     solids: [

@@ -345,6 +345,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let plots: Order[] = []
   /** 장수 명령 — 맡기기 · 이끌기 · 회유 · 떠돌이 들이기 (HEROES §3·§4) */
   let heroOrders: Order[] = []
+  /** 「다음 계절」 전에 한 번 물어본 계절 — 쉬는 장수·안 보낸 정찰이 있으면 그 판으로 데려가고, 한 번 더 누르면 넘긴다 (형 10-23) */
+  let nudgedAt = -1
   /** 회유를 맡길 장수 — 포로마다 */
   const persuadeBy: Record<string, string> = {}
   /** 고른 세기(난이도) — 판마다. 캠페인의 장은 판 고르기 화면에서 고른다 (없으면 보통 · 군장) */
@@ -476,6 +478,30 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     openArmy = ''
     note = ''
     compose = { ...NO_COMPOSE, give: noGoods(), take: noGoods() }
+  }
+
+  /** 이번 계절 아무 일도 안 맡은 우리 장수 — 군대·고을·사신·자객·원정·혼인 어디에도 없다 (군주·다친 이·떠나 있는 이 빼고) */
+  function restingHeroes(p: Realm): Hero[] {
+    const busy = new Set<string>()
+    for (const o of [...heroOrders, ...plots]) {
+      for (const k of ['hero', 'agent', 'by', 'a', 'b'] as const) { const v = (o as Record<string, unknown>)[k]; if (typeof v === 'string') busy.add(v) }
+    }
+    for (const e of Object.values(envoys)) if (e.hero !== undefined) busy.add(e.hero)
+    return sorted(Object.values(p.heroes)).filter((h) => h.faction === me() && h.status === 'free' && !isRuler(p, h.id) && h.at !== null && h.post == null
+      && !Object.values(p.armies).some((a) => a.hero === h.id) && !busy.has(h.id)
+      && !(h.awayUntil !== undefined && h.awayUntil >= p.season) && !(h.woundedUntil !== undefined && h.woundedUntil > p.season)
+      && !(p.expeditions ?? []).some((x) => x.hero === h.id))
+  }
+
+  /** 그 판 맨 위 — 왜 데려왔는지 한 줄 · 그냥 넘기기 */
+  function nudgeHtml(r: Realm, kind: 'heroes' | 'scout'): string {
+    if (nudgedAt !== r.season) return ''
+    const idle = kind === 'heroes' ? restingHeroes(plan()) : []
+    const msg = kind === 'heroes'
+      ? (idle.length > 0 ? `쉬는 장수 ${idle.length}명 — ${esc(idle.slice(0, 3).map((x) => x.name).join(' · '))}${idle.length > 3 ? ' …' : ''}. 군대·고을을 맡기거나 사신·자객으로 보낼 수 있다` : '')
+      : (scout === '' ? '이번 계절 정찰을 아직 안 보냈다 — 볼 곳을 하나 고른다' : '')
+    if (msg === '') return ''
+    return `<div class="nudge"><span>${msg}</span><button class="btn sm" data-act="next">그냥 넘긴다 ›</button></div>`
   }
 
   function ordersNow(): Order[] {
@@ -1466,7 +1492,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const c = envoyChanceFor(r, me(), to, ask, noGoods(), noGoods())
       const on = sel || (compose.to === to && compose.ask === ask)
       h += `<button class="btn${sm}${on ? ' on' : ''}${ask === 'break' ? ' ghost' : ''}" ${sel ? `data-act="unenvoy" data-key="${k}"` : `data-act="compose" data-to="${to}" data-ask="${ask}"`} ${clash || (!sel && handsFull(r)) ? 'disabled' : ''}>`
-      h += `${askLabel(r, to, ask)}${sel ? ' ✓' : sure ? '' : ` ${envoyFeel(c[0], c[1])}`}</button>`
+      h += `${askLabel(r, to, ask)}${sel ? ' ✓' : sure ? '' : ` ${envoyFeel(c[0], c[1], ask)}`}</button>`
     }
     h += `</div>`
     // 단추가 왜 꺼졌나 — 보낼 사람이 다 나갔다
@@ -1487,7 +1513,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const feel = (hero?: string): string => {
       if (sure) return ''
       const c = envoyChanceFor(r, me(), to, ask, compose.give, compose.take, hero)
-      return envoyFeel(c[0], c[1])
+      return envoyFeel(c[0], c[1], ask)
     }
     const leading = new Set(Object.values(r.armies).map((a) => a.hero).filter((x): x is string => x !== null))
     const ruler = r.factions[me()]?.ruler
@@ -1538,17 +1564,19 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += whoGoesHtml(r, to, ask)
     let ok = true
     if (need === 'goods') {
-      const sides = ask === 'trade' ? (['give', 'take'] as const) : ask === 'gift' ? (['give'] as const) : (['take'] as const)
-      for (const side of sides) {
-        h += `<div class="tr2"><span>${side === 'give' ? '준다' : '받는다'}</span>`
-        // 다섯 물건 (땅마다 나는 것 — 곡식·철·소금·나무·말)
-        for (const res of GOODS) {
-          h += `<span class="stepper sm">${icon(GOOD_ICON[res])}`
-          h += `<button data-act="cq" data-side="${side}" data-res="${res}" data-d="${-GOOD_STEP[res]}">−</button><b>${compose[side][res]}</b>`
-          h += `<button data-act="cq" data-side="${side}" data-res="${res}" data-d="${GOOD_STEP[res]}">+</button></span>`
-        }
-        h += `</div>`
+      // 물건마다 한 줄 — 왼쪽에 우리가 주는 것, 가운데 물건, 오른쪽에 받는 것 (형 10-23: "준다 받는다는 좌우로 · 행렬 맞추고")
+      const give = ask === 'trade' || ask === 'gift'
+      const take = ask !== 'gift'
+      const step = (side: 'give' | 'take', res: Good): string => `<span class="stepper sm"><button data-act="cq" data-side="${side}" data-res="${res}" data-d="${-GOOD_STEP[res]}">−</button>`
+        + `<b>${compose[side][res]}</b><button data-act="cq" data-side="${side}" data-res="${res}" data-d="${GOOD_STEP[res]}">+</button></span>`
+      h += `<div class="tgrid${give && take ? ' two' : ''}">`
+      h += `${give ? '<span class="th give">우리가 준다</span>' : ''}<span class="th"></span>${take ? '<span class="th take">받는다</span>' : ''}`
+      for (const res of GOODS) {
+        if (give) h += `<span class="tc give">${step('give', res)}<small>창고 ${Math.floor(goodOf(st, res))}</small></span>`
+        h += `<span class="tg">${icon(GOOD_ICON[res])}<i>${GOOD_NAME[res]}</i></span>`
+        if (take) h += `<span class="tc take">${step('take', res)}</span>`
       }
+      h += `</div>`
       ok = GOODS.every((g) => compose.give[g] <= goodOf(st, g)) && GOODS.some((g) => compose.give[g] + compose.take[g] > 0)
       // 저들 창고에 그만큼 없다 — 받아 줄 수가 없다 (형: "상대 자원이 부족해서 거래가 성립이 안되면 어떻게 해야함??")
       const theirs = r.stock[to]
@@ -1566,7 +1594,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     const sure = ask === 'gift' || ask === 'break'
     const c = envoyChanceFor(r, me(), to, ask, compose.give, compose.take, compose.hero || undefined)
-    h += `<button class="btn pri" data-act="envoy" data-to="${to}" data-ask="${ask}" ${ok ? '' : 'disabled'}>${ask === 'break' ? '정말 깬다' : '사신을 보낸다'}${sure ? '' : ` ${envoyFeel(c[0], c[1])}`}</button></div>`
+    h += `<button class="btn pri" data-act="envoy" data-to="${to}" data-ask="${ask}" ${ok ? '' : 'disabled'}>${ask === 'break' ? '정말 깬다' : '사신을 보낸다'}${sure ? '' : ` ${envoyFeel(c[0], c[1], ask)}`}</button></div>`
     return h
   }
 
@@ -2714,8 +2742,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         case 'draft': body = draftSheet(r); break
         case 'people': body = peopleSheet(r); break
         case 'diplo': body = diploSheet(r); break
-        case 'scout': body = scoutSheet(r); break
-        case 'heroes': body = heroesSheet(r); break
+        case 'scout': body = nudgeHtml(r, 'scout') + scoutSheet(r); break
+        case 'heroes': body = nudgeHtml(r, 'heroes') + heroesSheet(r); break
         case 'hero': body = heroSheet(r, sheet.id); break
         case 'nation': body = nationSheet(r); break
         case 'help': body = helpSheet(); break
@@ -2977,6 +3005,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'rep-close': showReport = false; paint(); return
       case 'next': {
         if (realm === null || (realm.outcome && !realm.endless)) return
+        // 문명의 "명령을 기다리는 유닛" — 쉬는 장수가 있거나 정찰을 안 보냈으면 한 번은 그 판으로 데려간다. 한 번 더 누르면 그냥 넘긴다
+        if (nudgedAt !== realm.season && realm.region !== 'tutorial') {
+          const idle = restingHeroes(plan())
+          const noScout = scout === ''
+          if (idle.length > 0 || noScout) {
+            nudgedAt = realm.season
+            openSheet(idle.length > 0 ? { kind: 'heroes' } : { kind: 'scout' })
+            return
+          }
+        }
         const orders = ordersNow()
         const ai = aiOrders(realm)
         const prev = realm
@@ -2988,7 +3026,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           endSeason(prev, [...orders, ...cmds], ai)
         }
         try {
-          if (openWar(root, prev, [...orders, ...ai], { art: ART, me: me(), ding, music: (k) => { if (k === 'war') music.war(); else music.result(k) }, done: finish })) { warOn = true; music.war(); return }
+          if (openWar(root, prev, [...orders, ...ai], { art: ART, me: me(), ding, music: (k) => { if (k === 'war') music.war(); else music.result(k) }, done: finish })) { warOn = true; music.war(); music.primeResults(); return }
         } catch (e) {
           failNote(e)
           return

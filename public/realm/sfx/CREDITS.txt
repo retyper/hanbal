@@ -108,3 +108,6 @@ bgm_lose_g1.mp3  공유마당 · 「국악 BGM #112 (비극적인 분위기)」 
 bgm_lose_g2.mp3  공유마당 · 「국악 BGM #250 (구슬픈 분위기)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386990
 bgm_lose_g3.mp3  공유마당 · 「국악 BGM #64 (비장한 분위기)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386804
 # 공공누리 제1유형 표시 문구: 이 게임의 위 소리 가운데 공공누리 표시가 있는 것은 (재)전주정보문화산업진흥원이 공공누리 제1유형으로 개방한 저작물을 이용하였으며, 공유마당(gongu.copyright.or.kr)에서 무료로 받을 수 있다.
+war_cry_g1.wav  공유마당 · 「battlefieldbackground01」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252054 · 앞 3초를 잘라 씀
+war_cry_g2.wav  공유마당 · 「battlefieldbackground02」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252055 · 앞 3초를 잘라 씀
+war_cry_g3.wav  공유마당 · 「돌격 나팔」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253190 · 앞 3초를 잘라 씀

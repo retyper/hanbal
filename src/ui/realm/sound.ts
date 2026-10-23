@@ -20,12 +20,15 @@ export const PICK = {
   // 첫 화면(로그인·이어 하기) 음악 — 웅장한 것 (형 10-23: "로그인 화면 메인은 웅장한 bgm 따로")
   bgm_title: 'g1',
   // 누를 때 나는 소리 — 누른 것의 바탕(쇠·엽전·붓·말굽·방울·북·바둑돌·딱따기)대로 (형 10-23: "탭할 때 나는 sfx 도 소재에 맞게 다양한 소리")
+  // 싸움의 함성 — 싸움이 열릴 때 · 돌격·추격 합에 (형 10-23: "전투라면 함성소리가 있어야")
+  war_cry: 'g1',
   tap_arms: 'g1', tap_coin: 'g1', tap_brush: 'g1', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'g1',
 } as const
 /** ogg 가 아닌 후보 — 형이 받아 온 것은 받은 꼴 그대로 · 공유마당 음악은 mp3 · 누르는 소리는 브라우저로 잘라 낸 wav */
 const EXT: Readonly<Partial<Record<string, string>>> = {
   bgm_map_f: 'mp3', bgm_map_g: 'mp3', bgm_win_a: 'mp3',
   ...Object.fromEntries(['bgm_title', 'bgm_war', 'bgm_lose'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'mp3']))),
+  war_cry_g1: 'wav', war_cry_g2: 'wav', war_cry_g3: 'wav',
   ...Object.fromEntries(['tap_arms', 'tap_coin', 'tap_brush', 'tap_move', 'tap_bell', 'tap_drum', 'tap_map', 'tap_cancel'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'wav']))),
 }
 export type Slot = keyof typeof PICK
@@ -116,18 +119,42 @@ function wire(el: HTMLAudioElement, vol: number): GainNode | null {
 }
 
 /** 한 번 울리는 소리 (ding) — 탭이 가려져 있으면 안 낸다 */
+/**
+ * 한 번 울리는 소리는 한 번 풀어(decode) 두고 다시 쓴다 — 예전엔 울릴 때마다 <audio> 와 노드를 새로 만들고 풀지 않아
+ * 오래 하면 쌓여 소리가 버벅였다 (형 10-23: "대패했을 때 음악 소리가 버벅거리는데 … 메모리 쓰고 있는지")
+ */
+const buffers = new Map<string, Promise<AudioBuffer | null>>()
+function bufferOf(c: AudioContext, url: string): Promise<AudioBuffer | null> {
+  let p = buffers.get(url)
+  if (p === undefined) {
+    p = fetch(url).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status))))).then((b) => c.decodeAudioData(b)).catch(() => null)
+    buffers.set(url, p)
+  }
+  return p
+}
+
 export function playOnce(url: string, vol: number): void {
   if (document.visibilityState !== 'visible') return
-  try {
-    const a = new Audio(url)
-    wire(a, vol)
-    void audio()?.resume().catch(() => {})
-    void a.play().catch(() => {})
-  } catch { /* 소리를 못 내는 곳 */ }
+  const c = audio()
+  if (c === null) {
+    try { const a = new Audio(url); a.volume = vol; void a.play().catch(() => {}) } catch { /* 소리를 못 내는 곳 */ }
+    return
+  }
+  void c.resume().catch(() => {})
+  void bufferOf(c, url).then((buf) => {
+    if (buf === null || document.visibilityState !== 'visible') return
+    const src = c.createBufferSource()
+    const gain = c.createGain()
+    gain.gain.value = vol
+    src.buffer = buf
+    src.connect(gain).connect(c.destination)
+    src.onended = () => { src.disconnect(); gain.disconnect() } // 다 울면 풀어 준다
+    src.start()
+  })
 }
 
 /** 한 줄로 도는 소리 하나 (음악 · 바람). 곡마다 요소를 하나씩 두고 다시 쓴다 — 싸움 뒤 지도 음악은 멈춘 자리에서 잇는다 */
-function track(base: string, vol: number): { want(slot: Slot | null): void; pause(): void; resume(): void } {
+function track(base: string, vol: number): { prime(slot: Slot): void; want(slot: Slot | null): void; pause(): void; resume(): void } {
   const els = new Map<Slot, { el: HTMLAudioElement; gain: GainNode | null }>()
   let cur: Slot | null = null
   /** 바로 앞에 틀던 곡 — 새 곡 파일이 없으면 이리로 돌아간다 */
@@ -138,6 +165,7 @@ function track(base: string, vol: number): { want(slot: Slot | null): void; paus
     let n = els.get(slot)
     if (n === undefined) {
       const el = new Audio(`${base}realm/sfx/${sndFile(slot)}`)
+      el.preload = 'auto'
       const list = ROTATE[slot]
       el.loop = list === undefined
       if (list !== undefined) {
@@ -173,6 +201,8 @@ function track(base: string, vol: number): { want(slot: Slot | null): void; paus
     if (n.gain !== null) n.gain.gain.value = 0
   }
   return {
+    /** 미리 받아 둔다 — 틀기 전에 다 받아 두어야 처음에 버벅이지 않는다 (싸움이 열리면 이긴·진 음악을) */
+    prime(slot) { if (!missing.has(slot)) node(slot).el.load() },
     want(slot) {
       if (slot !== null && missing.has(slot)) return // 없는 곡 — 듣던 것을 그대로
       if (slot === cur) { if (cur !== null && els.get(cur)?.el.paused !== false) start(); return }
@@ -192,6 +222,8 @@ export function makeMusic(base: string, muted: () => boolean, quiet: () => boole
   war(): void
   /** 첫 화면 — 판 음악을 끊고 첫 화면 음악 (아직 없으면 조용히) */
   title(): void
+  /** 싸움이 열렸다 — 이긴·진 음악을 미리 받아 둔다 */
+  primeResults(): void
   /** 이겼다 · 졌다 — 싸움 끝 · 판 끝 */
   result(kind: 'win' | 'lose'): void
   refresh(): void
@@ -223,6 +255,7 @@ export function makeMusic(base: string, muted: () => boolean, quiet: () => boole
     map(season) { mode = { bgm: 'bgm_map', amb: `amb_${season}` }; apply() },
     war() { mode = { bgm: 'bgm_war', amb: null }; apply() },
     title() { mode = { bgm: LATER.has('bgm_title') ? null : 'bgm_title', amb: null }; apply() },
+    primeResults() { bgm.prime('bgm_win'); bgm.prime('bgm_lose') },
     result(kind) { mode = { bgm: kind === 'win' ? 'bgm_win' : 'bgm_lose', amb: null }; apply() },
     refresh: apply,
   }

@@ -34,6 +34,11 @@
 // [칸 제목, 쓰는 곳 설명, [[파일, 설명, 길이]...]]
 const GROUPS = [
   ['⓪ 공유마당에서 새로 받은 것 (2026-10-23 · 출처 표시하면 상업 이용 가능)', [
+    ['war_cry', '싸움 함성 — 싸움이 열릴 때 · 돌격·추격 합', [
+      ["war_cry_g1", "battlefieldbackground01 · 김용배 · CC BY", "3초 잘라 냄", "wav"],
+      ["war_cry_g2", "battlefieldbackground02 · 김용배 · CC BY", "3초 잘라 냄", "wav"],
+      ["war_cry_g3", "돌격 나팔 · 김용배 · CC BY", "3초 잘라 냄", "wav"],
+    ]],
     ['tap_arms', '군사 명령을 누를 때 — 쇠·칼집·활시위', [
       ["tap_arms_g1", "칼 집에넣는 · 김용배 · CC BY", "잘라 냄", "wav"],
       ["tap_arms_g2", "국악 효과음 #361 (칼같이 쳐내는) · 주식회사 아이티앤 · CC BY", "잘라 냄", "wav"],
@@ -217,7 +222,7 @@ const GROUPS = [
 const PICK = { ui_order: 'b', ui_open: 'c', season_turn: 'a', war_drums: 'a', arrow_volley: 'a', horses: 'c',
   horn_victory: 'a', defeat: 'a', capture: 'b', dex_new: 'c', birth: 'c', feast: 'a', envoy: 'b', coins: 'c',
   amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b', bgm_map: 'f', bgm_war: 'g1', bgm_title: 'g1', bgm_lose: 'g1',
-  tap_arms: 'g1', tap_coin: 'g1', tap_brush: 'g1', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'g1' }
+  tap_arms: 'g1', tap_coin: 'g1', tap_brush: 'g1', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'g1', war_cry: 'g1' }
 let n = 0
 const out = []
 for (const [title, slots] of GROUPS) {

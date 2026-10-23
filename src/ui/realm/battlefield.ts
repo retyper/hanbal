@@ -122,8 +122,8 @@ export const BATTLE_SFX = {
   crit: 'impactPunch_heavy_000', clash: 'impactWood_heavy_000',
   /** 사로잡았다 · 장수 겨루기 · 마지막 일격(적이 무너졌다) · 이겼다 · 졌다 */
   caught: 'jingleUnlock', duelWin: 'impactMetal_medium_001', final: 'impactWood_heavy_001', win: snd('horn_victory'), lose: snd('defeat'),
-  /** 싸움이 열린다 — 북 두 번, 종 한 번 */
-  openDrum: 'impactWood_heavy_000', openBell: 'impactBell_heavy_001',
+  /** 싸움이 열린다 — 북 두 번, 종 한 번, 함성 */
+  openDrum: 'impactWood_heavy_000', openBell: 'impactBell_heavy_001', cry: snd('war_cry'),
 } as const
 
 /**
@@ -733,6 +733,9 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       else if (rd.beat === ourSide) buzz(STAGE_S[1], [25, 40, 25])
       else if (wePushed) buzz(STAGE_S[1], [15])
       at(STAGE_S[0], BATTLE_SFX[weAtk ? rd.a : rd.d], 0.45)
+      // 우리가 달려드는 합엔 함성
+      const ours = weAtk ? rd.a : rd.d
+      if (ours === 'charge' || ours === 'pursue' || ours === 'flank') at(STAGE_S[0] + 0.15, BATTLE_SFX.cry, 0.26)
       if (rd.ev === 'capture-ok') at(STAGE_S[1], rd.by === ourSide ? BATTLE_SFX.caught : BATTLE_SFX.lose, 0.5)
       else if (rd.ev === 'duel-win' || rd.ev === 'duel-lose') at(STAGE_S[1], BATTLE_SFX.duelWin, 0.45)
       else at(STAGE_S[1], rd.beat !== null ? BATTLE_SFX.crit : BATTLE_SFX.clash, rd.beat !== null ? 0.6 : 0.4)
@@ -766,6 +769,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       at(0, BATTLE_SFX.openDrum, 0.5)
       at(0.38, BATTLE_SFX.openDrum, 0.5)
       at(0.95, BATTLE_SFX.openBell, 0.4)
+      at(1.2, BATTLE_SFX.cry, 0.32)
     }
   }
 
