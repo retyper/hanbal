@@ -38,7 +38,7 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'dokro-1': 'w-10-pirate-captain', // 읍차 너울 — 왜와 경계를 맞댄 포구
   // 군주 — 장군과 따로 (형: "군주는 따로 있어야 하고 장군이랑 별개여야")
   'us-ruler': 'w-63-us-haesol', // 읍차 해솔 — 매혹
-  'guya-ruler': 'g-39-guya-soebo', // 진지렴 쇠보 — 쇠의 나라의 대장장이 군주
+  'guya-ruler': 'g-69-guya-soebo', // 진지렴 쇠보 — 쇠의 나라의 대장장이 군주
   'anya-ruler': 'g-40-anya-adan', // 신지 아단 — 신중
   'miri-ruler': 'w-64-miri-dallae', // 신지 달래 — 곡창의 여가장
   'goja-ruler': 'g-41-goja-bau', // 험측 바우 — 물길·장사
@@ -71,11 +71,11 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   // 배우는 판 — 온조 형제와 신하 (tutorial.ts)
   // 캠페인 2장 — 주몽과 세 벗 · 송양 · 대소 (jumong.ts)
   // 주몽 — 챗지피티로 받은 고구려 군주 얼굴을 다시 쓴다 (형 10-23: "전에 것이 챗지피티로 만들어 더 멋있었는데 · 지금 것은 제미나이라 별로 — 나중에 만들어"). 새 얼굴은 ART-QUEUE
-  'jm-jumong': 'g-28-goguryeo-damul', 'jm-oi': 'g-16-goguryeo-gaema-commander', 'jm-mari': 'g-49-goguryeo-sona', 'jm-hyeopbo': 'g-06-strategist',
-  'jm-songyang': 'g-51-biryuna-mulgyeol', 'jm-songbi': 'w-52-biryuna-songbi', 'jm-daeso': 'g-10-buyeo-horse-lord', 'jm-haedal': 'w-67-buyeo-haedal',
+  'jm-jumong': 'g-64-jumong', 'jm-oi': 'g-16-goguryeo-gaema-commander', 'jm-mari': 'g-49-goguryeo-sona', 'jm-hyeopbo': 'g-06-strategist',
+  'jm-songyang': 'g-51-biryuna-mulgyeol', 'jm-songbi': 'w-52-biryuna-songbi', 'jm-daeso': 'g-67-buyeo-daeso', 'jm-haedal': 'w-67-buyeo-haedal',
   'jm-haengin-ruler': 'g-33-jeoga-metdol', 'jm-haengin-1': 'w-71-yeonna-neoul', 'jm-okjeo-ruler': 'g-34-bukokjeo-duman', 'jm-okjeo-1': 'w-70-bukokjeo-mulbeom',
   'tut-onjo': 'g-02-goguryeo-archer-prince', 'tut-biryu': 'g-28-goguryeo-damul', 'tut-ogan': 'g-13-baekje-general', 'tut-maryeo': 'g-09-farmer-conscript', 'tut-haebi': 'w-30-guya-soebi',
-  'baekje-ruler': 'g-21-baekje-onnuri', 'mokji-ruler': 'w-27-mokji-jinha', 'michuhol-ruler': 'w-28-michuhol-bira',
+  'baekje-ruler': 'g-68-baekje-onnuri', 'mokji-ruler': 'w-27-mokji-jinha', 'michuhol-ruler': 'w-28-michuhol-bira',
   'ungcheon-ruler': 'g-22-ungcheon-gomnae', 'sangdang-ruler': 'g-23-sangdang-soedal', 'geonma-ruler': 'w-46-geonma-maru',
   'wansan-ruler': 'g-24-wansan-onsan', 'gosaburi-ruler': 'w-47-gosaburi-baram', 'balla-ruler': 'g-25-balla-keunmoe',
   'mujin-ruler': 'w-48-mujin-mudeung', 'gampyeong-ruler': 'g-26-gampyeong-gaetbeol', 'goryong-ruler': 'w-49-goryong-gureum',
@@ -83,10 +83,10 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'baekje-1': 'g-53-baekje-haeru', 'mokji-1': 'g-54-mokji-mahan', 'wansan-1': 'w-78-wansan-wan', 'balla-1': 'w-74-balla-dokmudeom',
   'maek-1': 'w-68-maek-beombal', 'haseulla-1': 'g-56-haseulla-gwahama', 'gampyeong-1': 'w-76-gampyeong-baetsagong',
   // 삼한과 북녘 판의 새 군주·장군 (data/regions/world.ts) — 있는 명치판을 나눠 쓴다. 새 얼굴은 그림 줄(ART-QUEUE 5c)
-  'goguryeo-ruler': 'g-28-goguryeo-damul', 'goguryeo-1': 'g-49-goguryeo-sona', 'goguryeo-2': 'w-65-goguryeo-hwalmi',
+  'goguryeo-ruler': 'g-65-goguryeo-damul', 'goguryeo-1': 'g-49-goguryeo-sona', 'goguryeo-2': 'w-65-goguryeo-hwalmi',
   'biryuna-ruler': 'w-52-biryuna-songbi', 'biryuna-1': 'g-51-biryuna-mulgyeol', 'yeonna-ruler': 'g-29-yeonna-myeongsol', 'yeonna-1': 'w-71-yeonna-neoul',
   'hwanna-ruler': 'w-53-hwanna-gabi', 'hwanna-1': 'g-43-hwanna-amnok', 'gwanna-ruler': 'g-30-gwanna-soemoe', 'gwanna-1': 'g-48-gwanna-musoe',
-  'buyeo-ruler': 'g-31-buyeo-geumha', 'buyeo-1': 'w-67-buyeo-haedal', 'maga-ruler': 'w-54-maga-dalli', 'maga-1': 'g-44-maga-malgup',
+  'buyeo-ruler': 'g-66-buyeo-geumha', 'buyeo-1': 'w-67-buyeo-haedal', 'maga-ruler': 'w-54-maga-dalli', 'maga-1': 'g-44-maga-malgup',
   'uga-ruler': 'g-32-uga-sodu', 'uga-1': 'g-46-uga-nureongso', 'jeoga-ruler': 'g-33-jeoga-metdol', 'jeoga-1': 'w-69-jeoga-eomni',
   'guga-ruler': 'w-55-guga-nuri', 'guga-1': 'g-47-guga-sanyanggae', 'dongokjeo-ruler': 'w-56-dongokjeo-sogeum', 'dongokjeo-1': 'g-05-mahan-chieftain',
   'bukokjeo-ruler': 'g-34-bukokjeo-duman', 'bukokjeo-1': 'w-70-bukokjeo-mulbeom', 'bullae-ruler': 'w-57-bullae-bakdal', 'bullae-1': 'g-50-bullae-gwaha',
