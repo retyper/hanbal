@@ -6,7 +6,7 @@
   "id": "hanbal-realm",
   "start_url": "./realm.html",
   "scope": "./",
-  "display": "standalone",
+  "display": "fullscreen",
   "orientation": "any",
   "background_color": "#14181e",
   "theme_color": "#0f1217",
