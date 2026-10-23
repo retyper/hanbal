@@ -118,7 +118,11 @@ export const HERO_CSS = `
 .ap .hcard .radar { margin: 2px auto; }
 .ap .tline { text-align: left; font-size: 13.5px; margin: 3px 0; color: #d8d0c0; } .ap .tline.bad { color: #f1b8a8; } .ap .tline.art b { color: #ffd27a; }
 .ap .hacts { display: flex; flex-direction: column; gap: 6px; width: 100%; margin-top: 8px; }
-.ap .exp { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 10px; border-radius: 12px; border: 1px solid #3a5a6a; background: #2a2218; }
+.ap .exp { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 12px; border-radius: 12px; border: 1px solid #3a5a6a;
+  background: linear-gradient(#14100ccc, #14100c88 40%, #14100cee), var(--expbg, none) center / cover no-repeat, #2a2218; transition: background-image .3s; }
+.ap .exp .mute, .ap .exp p { text-shadow: 0 1px 3px #000; }
+.ap .exp .expd button { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.2; }
+.ap .exp .expd button small { font-size: 10.5px; opacity: .8; } .ap .exp .expd button:disabled { opacity: .45; }
 .ap .exp > b { color: #9fd0f0; } .ap .exp .seg { flex-wrap: wrap; }
 .ap .odds { display: flex; flex-direction: column; gap: 3px; }
 .ap .od { position: relative; display: flex; align-items: center; gap: 8px; padding: 3px 8px; border-radius: 7px; background: #30281f; overflow: hidden; font-size: 12.5px; }

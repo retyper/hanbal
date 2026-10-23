@@ -1652,7 +1652,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   function plotSheet(r: Realm): string {
     const max = P.realm.plotsPerSeason
-    let h = `<p class="mute">몰래 하는 일. 한 계절에 ${max}개까지. 보낸 게 드러나면 그 나라와 사이가 한 칸 나빠진다 — 동맹은 화친으로, 화친은 중립으로, 중립은 전쟁으로 (암살은 두 칸). 지략 높은 장수가 있으면 잘 된다.</p>`
+    let h = `<p class="mute">몰래 하는 일. 보낼 사람만큼 벌인다(위의 「보낼 사람」). 보낸 게 드러나면 그 나라와 사이가 한 칸 나빠진다 — 동맹은 화친으로, 화친은 중립으로, 중립은 전쟁으로 (암살은 두 칸). 지략 높은 장수가 있으면 잘 된다.</p>`
     for (const [i, o] of plots.entries()) {
       if (o.kind !== 'plot') continue
       const where = o.node !== undefined ? r.nodes[o.node]?.name : o.other !== undefined ? `${r.factions[o.target]?.name} ↔ ${r.factions[o.other]?.name}` : r.factions[o.target]?.name
@@ -1948,22 +1948,26 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    */
   function expHtml(r: Realm, x: Hero): string {
     const away = onExpedition(r, x.id)
-    if (away !== undefined) return `<div class="exp"><b>원정 중</b><span class="mute">${esc(DESTS[away.dest].name)} · ${Math.max(1, away.back - r.season + 1)}계절 뒤 돌아온다. 무엇을 가져올지는 떠날 때 이미 정해졌다.</span></div>`
+    if (away !== undefined) return `<div class="exp" style="--expbg:url('${ART}exp/exp-${away.dest}.jpg')"><b>원정 중</b><span class="mute">${esc(DESTS[away.dest].name)} · ${Math.max(1, away.back - r.season + 1)}계절 뒤 돌아온다. 무엇을 가져올지는 떠날 때 이미 정해졌다.</span></div>`
     if (x.faction !== me() || x.status !== 'free' || isRuler(r, x.id)) return ''
     const sent = heroOrders.find((o): o is Extract<Order, { kind: 'expedition' }> => o.kind === 'expedition' && o.hero === x.id)
     if (sent !== undefined) return `<div class="banner good">이번 계절: ${esc(josa(DESTS[sent.dest].name, '으로', '로'))} 원정 · ${EXP_SEASONS[sent.len]}계절<button class="btn ghost sm" data-act="unexp" data-id="${x.id}">취소</button></div>`
-    // 닿는 먼 땅만 — 못 가는 곳은 고를 거리에 안 띄운다
+    // 먼 땅은 다 보이되 못 가는 곳은 흐린 단추로 — 왜 못 가는지는 단추 밑에 (형 10-23: "못 가면 버튼은 있지만 비활성화 · 보낼 수 있는지 없는지도 모르잖아")
     const dests = DEST_IDS.filter((d) => destReachable(r, me(), d))
-    if (dests.length === 0) return ''
-    const pick0 = expPick[x.id] ?? { dest: dests[0]!, len: 1 as 0 | 1 | 2 }
-    const pick = dests.includes(pick0.dest) ? pick0 : { ...pick0, dest: dests[0]! }
+    const farWhy = (d: ExpDest): string => (DESTS[d].from.includes(r.region ?? 'byeonhan-mini') ? '포구가 있어야' : '이 땅에선 멀다')
+    const pick0 = expPick[x.id] ?? { dest: dests[0] ?? DEST_IDS[0]!, len: 1 as 0 | 1 | 2 }
+    const pick = dests.includes(pick0.dest) || dests.length === 0 ? pick0 : { ...pick0, dest: dests[0]! }
     const word = (p: number): string => (p >= 0.3 ? '자주' : p >= 0.12 ? '가끔' : p > 0 ? '드물게' : '없다')
     const odds = expOdds(x, pick.dest, pick.len)
     // 쉬는 장수가 원정을 떠나면 사람 손이 하나 준다 — 이미 고른 공작·사신이 버려지지 않게 (형 10-23: "방화·소문 이미 보냈는데 원정을 중복해서 보낼 수 있는 건 말이 안 되지")
     const handsShort = idleHeroes(r, me()).includes(x.id) && handsUsed() > handsCap(r) - 1
     const block = expBlock(r, me(), x.id, pick.dest, pick.len) ?? (handsShort ? '이번 계절 사람 손이 다 찼다 — 공작·사신을 줄이면 보낼 수 있다' : null)
-    let h = `<div class="exp"><b>원정</b><span class="mute">먼 땅으로 보낸다. 좋은 장수일수록 좋은 것을 가져오지만, 그동안 판에 없다. 무엇을 가져올지는 떠날 때 정해진다.</span><div class="seg">`
-    for (const d of dests) h += `<button class="${d === pick.dest ? 'on' : ''}" data-act="exp-dest" data-id="${x.id}" data-v="${d}">${esc(DESTS[d].name)}</button>`
+    // 고른 먼 땅의 그림이 원정 칸 뒤에 깔린다 — 고르면 바뀐다
+    let h = `<div class="exp" style="--expbg:url('${ART}exp/exp-${pick.dest}.jpg')"><b>원정</b><span class="mute">먼 땅으로 보낸다. 좋은 장수일수록 좋은 것을 가져오지만, 그동안 판에 없다.</span><div class="seg expd">`
+    for (const d of DEST_IDS) {
+      const ok = dests.includes(d)
+      h += `<button class="${d === pick.dest ? 'on' : ''}" data-act="exp-dest" data-id="${x.id}" data-v="${d}" ${ok ? '' : 'disabled'}>${esc(DESTS[d].name)}${ok ? '' : `<small>${farWhy(d)}</small>`}</button>`
+    }
     h += `</div><p class="mute">${esc(DESTS[pick.dest].line)}${DESTS[pick.dest].sea ? ' (우리 포구에서 배를 띄운다)' : ''}</p><div class="seg">`
     for (const l of [0, 1, 2] as const) h += `<button class="${l === pick.len ? 'on' : ''}" data-act="exp-len" data-id="${x.id}" data-v="${l}">${['짧게', '보통', '길게'][l]} · ${EXP_SEASONS[l]}계절</button>`
     h += `</div><div class="odds">`

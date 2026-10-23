@@ -54,13 +54,20 @@ describe('공작 — 값과 규칙', () => {
     assert.equal(plain.next.stock['us']!.grain - a.next.stock['us']!.grain, plotCost('rumor').grain)
   })
 
-  it(`한 계절에 ${P.realm.plotsPerSeason}개까지 · 같은 대상에 같은 공작은 하나`, () => {
-    const r = byeonhanMini(3)
-    r.stock['us']!.grain = 1000
-    const o = [plot('rumor', 'guya'), plot('rumor', 'guya'), plot('rumor', 'anya'), plot('burn', 'miri')]
-    const ls = plotLines(advance(r, o).report.lines)
-    assert.equal(ls.length, P.realm.plotsPerSeason)
-    assert.deepEqual(ls.map((l) => `${l.op}:${l.target}`), ['rumor:guya', 'rumor:anya'])
+  it('한 계절의 천장(plotsPerSeason)까지 · 같은 대상에 같은 공작은 하나', () => {
+    const R = P.realm as { plotsPerSeason: number }
+    const keep = R.plotsPerSeason
+    R.plotsPerSeason = 2
+    try {
+      const r = byeonhanMini(3)
+      r.stock['us']!.grain = 1000
+      const o = [plot('rumor', 'guya'), plot('rumor', 'guya'), plot('rumor', 'anya'), plot('burn', 'miri')]
+      const ls = plotLines(advance(r, o).report.lines)
+      assert.equal(ls.length, 2)
+      assert.deepEqual(ls.map((l) => `${l.op}:${l.target}`), ['rumor:guya', 'rumor:anya'])
+    } finally {
+      R.plotsPerSeason = keep
+    }
   })
 
   it('규칙에 안 맞으면 아무 일도 없다 — 곡식 모자람 · 남의 고을이 아님 · 이간의 상대 없음 · 제 나라', () => {
