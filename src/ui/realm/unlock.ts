@@ -6,6 +6,7 @@
 import { josa } from '../../realm/data/prose.ts'
 import type { RegionId } from '../../realm/types.ts'
 import { CHAPTERS } from '../../realm/data/campaign.ts'
+import { TIER_MAX } from '../../realm/tier.ts'
 
 export const BOARD_ORDER: readonly RegionId[] = ['tutorial', 'byeonhan-mini', 'yeongnam', 'south', 'world']
 const KEY = 'hanbal.realm.unlock'
@@ -24,11 +25,12 @@ function load(): Rec {
     const v = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Partial<Rec> | null
     const won = Array.isArray(v?.won) ? v.won.filter((x) => BOARD_ORDER.includes(x) || CHAPTERS.some((c) => c.region === x)) : []
     const tiers: Partial<Record<RegionId, number>> = {}
-    for (const b of BOARD_ORDER) { const t = v?.tiers?.[b]; if (typeof t === 'number' && t >= 1) tiers[b] = Math.floor(t) }
+    // 단계가 열에서 일곱으로 줄었다 (10-23) — 옛 7~10 단계는 가장 높은 단계로 친다
+    for (const b of BOARD_ORDER) { const t = v?.tiers?.[b]; if (typeof t === 'number' && t >= 1) tiers[b] = Math.min(TIER_MAX, Math.floor(t)) }
     // 난세 단계가 생기기 전에 이긴 판은 1단계를 이긴 것으로 친다
     for (const b of won) tiers[b] ??= 1
     const nations: Record<string, number> = {}
-    for (const [key, t] of Object.entries(v?.nations ?? {})) if (typeof t === 'number' && t >= 1) nations[key] = Math.floor(t)
+    for (const [key, t] of Object.entries(v?.nations ?? {})) if (typeof t === 'number' && t >= 1) nations[key] = Math.min(TIER_MAX, Math.floor(t))
     return { won, tiers, nations, ...(v?.tutorial !== undefined ? { tutorial: v.tutorial } : {}) }
   } catch {
     return { won: [] }
@@ -67,14 +69,16 @@ export function unlockedFrom(won: readonly RegionId[], tutorialOver: boolean, pl
 
 export function markWon(region: RegionId, tier = 1, nation?: string): void {
   const r = load()
-  if (nation !== undefined && region !== 'tutorial') {
+  // 쉬움(촌장, 0)으로 이기면 다음 판은 열리지만 휘장과 다음 단계는 안 열린다 — 보통(군장)부터가 이긴 것
+  const t = Math.min(TIER_MAX, Math.floor(tier))
+  if (nation !== undefined && region !== 'tutorial' && t >= 1) {
     const ns = (r.nations ??= {})
     const key = `${region}/${nation}`
-    ns[key] = Math.max(ns[key] ?? 0, Math.max(1, Math.floor(tier)))
+    ns[key] = Math.max(ns[key] ?? 0, t)
   }
   if (!r.won.includes(region)) r.won.push(region)
   const tiers = (r.tiers ??= {})
-  tiers[region] = Math.max(tiers[region] ?? 0, Math.max(1, Math.floor(tier)))
+  if (t >= 1) tiers[region] = Math.max(tiers[region] ?? 0, t)
   if (region === 'tutorial') r.tutorial = 'done'
   save(r)
 }
@@ -85,10 +89,14 @@ export function markTutorialOver(how: 'done' | 'quit'): void {
   save(r)
 }
 
-/** 그 판에서 고를 수 있는 가장 높은 난세 단계 — 이긴 단계 + 1 (10 까지) */
+/**
+ * 그 판에서 고를 수 있는 가장 높은 단계 — 이긴 단계 + 1 (천손까지). 쉬움(촌장)과 보통(군장)은 처음부터.
+ * 캠페인의 장은 처음부터 다 열려 있다 — 이야기는 마음대로 고른 세기로 (형 10-23)
+ */
 export function tierOpen(region: RegionId): number {
   if (region === 'tutorial') return 1
-  return Math.min(10, (load().tiers?.[region] ?? 0) + 1)
+  if (CHAPTERS.some((c) => c.region === region)) return TIER_MAX
+  return Math.min(TIER_MAX, (load().tiers?.[region] ?? 0) + 1)
 }
 
 /** 그 나라로 이긴 가장 높은 난세 단계 (휘장) — 없으면 0 */
@@ -96,9 +104,9 @@ export function nationWon(region: RegionId, nation: string): number {
   return load().nations?.[`${region}/${nation}`] ?? 0
 }
 
-/** 휘장의 빛깔 — 단계가 오를수록 짙어진다: 구리 → 은 → 금 → 붉은 금 */
+/** 휘장의 빛깔 — 단계가 오를수록 짙어진다: 구리(군장) → 은(대가·왕) → 금(대왕·태왕) → 붉은 금(천손) */
 export function badgeRank(tier: number): 0 | 1 | 2 | 3 | 4 {
-  return tier <= 0 ? 0 : tier === 1 ? 1 : tier <= 3 ? 2 : tier <= 6 ? 3 : 4
+  return tier <= 0 ? 0 : tier === 1 ? 1 : tier <= 3 ? 2 : tier < TIER_MAX ? 3 : 4
 }
 
 /** 그 판에서 이긴 가장 높은 단계 — 없으면 0 */

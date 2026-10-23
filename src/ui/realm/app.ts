@@ -40,7 +40,7 @@ import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, type RouteSign, type MapMar
 import { LEGACY_CSS, carryHtml, retainHtml, syncRetain, toggleCarry, toggleKeep } from './legacy.ts'
 import { DEX_CSS, dexHtml, dexToastHtml, loadDex, recordDex, type DexBoard } from './dex.ts'
 import { dexCounts } from '../../realm/dex.ts'
-import { tierMul } from '../../realm/tier.ts'
+import { LEVEL_LINE, TIER_MAX, levelName } from '../../realm/tier.ts'
 import { GROW_CSS, HERO_CSS, TITLE_MEAN, bondChip, growthHtml, heroRadar, nameHtml, roleLine, splitTitle, traitChips, traitLines } from './heroview.ts'
 import { APP_CSS, CLOUD_CSS, SEASONP_CSS, UI_CSS } from './appstyle.ts'
 import { GOAL_CSS, goalBandHtml } from './goalband.ts'
@@ -334,8 +334,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let heroOrders: Order[] = []
   /** 회유를 맡길 장수 — 포로마다 */
   const persuadeBy: Record<string, string> = {}
-  /** 나라 자세히에서 고른 난세 단계 — 판마다 */
+  /** 고른 세기(난이도) — 판마다. 캠페인의 장은 판 고르기 화면에서 고른다 (없으면 보통 · 군장) */
   const tierPick: Partial<Record<RegionId, number>> = {}
+  /** 캠페인의 장에 쓸 세기 — 판 고르기 화면 맨 위 */
+  let chapTier = 1
   /** 원정 고르는 중 — 장수마다 갈 곳·길이 (명령이 되기 전) */
   const expPick: Record<string, { dest: ExpDest; len: 0 | 1 | 2 }> = {}
   /** 나라 카드에서 "있었던 일"을 다 펼친 나라 */
@@ -1927,7 +1929,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const need = winNeed(r.region ?? 'byeonhan-mini')
     const held = Object.values(r.factions).filter((x) => r.nodes[x.capital]?.owner === me()).length
     h += cardHtml(realm!) // 미리 적용한 판(r)에선 카드가 이미 답해져 사라졌다 — 실제 판으로
-    h += `<div class="goal">목표 · 도읍 ${need}곳을 차지한다 (우리 도읍 포함) <b>${held} / ${need}</b>${(r.tier ?? 1) > 1 ? ` <span class="tierc">난세 ${r.tier}단계</span>` : ''}</div>`
+    h += `<div class="goal">목표 · 도읍 ${need}곳을 차지한다 (우리 도읍 포함) <b>${held} / ${need}</b>${(r.tier ?? 1) !== 1 ? ` <span class="tierc">${levelName(r.tier ?? 1)}</span>` : ''}</div>`
     h += exileHtml(r)
     h += pathsHtml(r, held, need)
     h += `<div class="grid4"><div>${icon('settle-farm-village')}<b>${mine.length}</b><span>고을</span></div>`
@@ -2271,7 +2273,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       syncRetain(r) // 계승 가신 — 처음이면 솜씨 좋은 셋을 골라 둔다
       // 이겼으면 다음 난세 단계가 열렸다
       const t = r.tier ?? 1
-      const opened = r.outcome?.kind === 'win' && t < 10 ? `<p class="tierup">난세 <b>${t + 1}단계</b>가 열렸다 — 이웃이 처음부터 더 센 판</p>` : ''
+      const opened = r.outcome?.kind === 'win' && t >= 1 && t < TIER_MAX ? `<p class="tierup">「<b>${levelName(t + 1)}</b>」 세기가 열렸다 — 이웃이 처음부터 더 센 판</p>` : ''
       // 휘장 — 이 나라로 이겼다는 표가 나라 고르기에 붙는다 (META §2-①)
       const badge = r.outcome?.kind === 'win' && (r.region ?? 'byeonhan-mini') !== 'tutorial'
         ? `<p class="tierup">${esc(josa(r.factions[me()]?.name ?? '', '으로', '로'))} 이긴 <b>휘장</b>을 받았다 — 나라 고르기에 붙는다</p>` : ''
@@ -2458,12 +2460,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /**
    * 난세 단계 고르기 — 디아블로의 고통 단계 (tier.ts · 형의 메모: "최대한 빨리 보스를 잡을때까지 강해지려고함"). 이 판을 이긴 단계 + 1 까지 열린다
    */
-  function tierHtml(region: RegionId): string {
+  function tierHtml(region: RegionId, pick0?: number, act = 'tier-pick'): string {
     const open = tierOpen(region)
-    const pick = Math.min(tierPick[region] ?? open, open)
-    if (open <= 1) return `<p class="tierp mute">이 판을 이기면 <b>난세 2단계</b>가 열린다 — 이웃이 처음부터 더 세다.</p>`
-    let h = `<div class="tierp"><b>난세 ${pick}단계</b><span class="mute">${pick === 1 ? '처음 그대로' : `이웃의 첫 군대가 ${Math.round((tierMul(pick).army - 1) * 100)}% 크고 창고가 넉넉하다`}</span><div class="seg">`
-    for (let t = 1; t <= open; t++) h += `<button class="${t === pick ? 'on' : ''}" data-act="tier-pick" data-v="${t}">${t}</button>`
+    const pick = Math.min(pick0 ?? tierPick[region] ?? 1, open)
+    // 세기 — 문명의 개척자·왕·신처럼 칭호로 (형 10-23). 잠긴 칭호도 보인다 — 무엇을 향해 가는지
+    let h = `<div class="tierp"><b>세기 · ${esc(levelName(pick))}</b><span class="mute">${esc(LEVEL_LINE[pick] ?? '')}</span><div class="seg">`
+    for (let t = 0; t <= TIER_MAX; t++) {
+      h += t <= open
+        ? `<button class="${t === pick ? 'on' : ''}${t === TIER_MAX ? ' apex' : ''}" data-act="${act}" data-v="${t}">${esc(levelName(t))}</button>`
+        : `<button class="locked" disabled data-tip="앞 세기로 이기면 열린다">🔒 ${esc(levelName(t))}</button>`
+    }
     return h + `</div></div>`
   }
 
@@ -2478,7 +2484,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         return titleHtml(KIT, realm, host.savedAt(), acctLine() + links, realm === null && !tutorialOver(), dexBtn)
       }
       case 'dex': return dexHtml(DEX_KIT, f.board, f.sel, f.back === null ? '판으로' : '처음으로')
-      case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null), tierWon)
+      case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null), tierWon, tierHtml('jumong', chapTier, 'chap-tier'))
       case 'nations': return nationsHtml(KIT, f.region)
       case 'detail': return detailHtml(KIT, f.region, f.id, f.region === 'tutorial' ? '' : tierHtml(f.region) + carryHtml(DEX_KIT))
     }
@@ -2872,15 +2878,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'lobby': saveDraft(); front = { kind: 'title' }; sheet = null; armySel = []; paint(); return
       case 'fr-board':
         // 캠페인의 장은 나라를 고르지 않는다 — 배우는 판은 백제(온조), 2장은 고구려(주몽)
-        { const ch = chapterOfRegion(d['v'] as RegionId); if (ch !== undefined) { host.onNewGame(ch.nation, d['v'] as RegionId); return } }
+        { const ch = chapterOfRegion(d['v'] as RegionId); if (ch !== undefined) { host.onNewGame(ch.nation, d['v'] as RegionId, d['v'] === 'tutorial' ? 1 : chapTier); return } }
         front = { kind: 'nations', region: d['v'] as RegionId }; $('.mapwrap').scrollTop = 0; paint(); return
       case 'fr-tutorial': host.onNewGame('baekje', 'tutorial'); return
       case 'fr-locked': return
       case 'tut-end': markTutorialOver('done'); front = { kind: 'title' }; paint(); return
       case 'fr-nation': if (front !== null && front.kind === 'nations') front = { kind: 'detail', region: front.region, id: d['id']! }; $('.mapwrap').scrollTop = 0; paint(); return
-      case 'fr-start': if (front !== null && front.kind === 'detail') host.onNewGame(d['id']!, front.region, Math.min(tierPick[front.region] ?? tierOpen(front.region), tierOpen(front.region))); return
+      case 'fr-start': if (front !== null && front.kind === 'detail') host.onNewGame(d['id']!, front.region, Math.min(tierPick[front.region] ?? 1, tierOpen(front.region))); return
       case 'fr-again': if (realm !== null) { const rg = realm.region ?? 'byeonhan-mini'; host.onNewGame(realm.player, rg, Math.min(realm.tier ?? 1, tierOpen(rg))) } return
       case 'tier-pick': if (front !== null && front.kind === 'detail') tierPick[front.region] = Number(d['v']); paint(); return
+      case 'chap-tier': chapTier = Number(d['v']); paint(); return
       case 'fr-look': looking = true; paint(); return
       case 'keep': if (realm !== null) toggleKeep(realm, d['id']!); fastNext = true; paint(); return
       case 'carry-tog': toggleCarry(d['id']!); paint(); return

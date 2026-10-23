@@ -18,6 +18,7 @@ import { battleName, josa, seasonLabel } from '../../realm/data/prose.ts'
 import type { Realm, RegionId, ReportLine } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { winFxHtml } from './winfx.ts'
+import { levelName } from '../../realm/tier.ts'
 
 /** app.ts 가 넘기는 그림 손 */
 export interface FrontKit {
@@ -112,11 +113,11 @@ function agoText(iso: string): string {
  * 판 고르기 — 위에서부터 배우는 판 → 작은 판 → … 차례로 열린다 (unlock.ts). 잠긴 판은 자물쇠와 여는 길.
  * `unlocked` 가 없으면 다 열린 것으로 (시험)
  */
-export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<RegionId>, tierWon?: (r: RegionId) => number): string {
+export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<RegionId>, tierWon?: (r: RegionId) => number, chapLevel = ''): string {
   let h = `<div class="front boards"><div class="fhead"><button class="btn ghost" data-act="fr-back">‹ 처음으로</button><h2>어느 이야기로 시작할까</h2></div>`
   const names = Object.fromEntries(BOARDS.map((b) => [b.id, b.name])) as Partial<Record<RegionId, string>>
   // 캠페인 — 사료의 사건 하나가 한 장 (CAMPAIGN.md · 형: "문명처럼 … 특수한 승리조건"). 장은 배우는 차례로 열린다
-  h += `<h3 class="bsec"><b>캠페인</b><span>삼국의 새벽 — 사서에 남은 일을 그 사람이 되어</span></h3><div class="bcards chaps">`
+  h += `<h3 class="bsec"><b>캠페인</b><span>삼국의 새벽 — 사서에 남은 일을 그 사람이 되어</span></h3>${chapLevel}<div class="bcards chaps">`
   CHAPTERS.forEach((c, i) => {
     const prev = CHAPTERS[i - 1]
     const ready = c.region !== null
@@ -133,7 +134,8 @@ export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<
     const open = unlocked === undefined || unlocked.has(b.id)
     // 카드는 그림 · 때 · 제목만 — 이야기와 작은 표는 펼침(길게 누르기 · 마우스 올리기 — tips.ts)으로
     const goal = b.id === 'tutorial' ? '미추홀 도읍을 쥐면 끝' : `도읍 ${winNeed(b.id)}곳을 쥐면 이긴다`
-    const won = b.id !== 'tutorial' && (tierWon?.(b.id) ?? 0) > 0 ? `<i>난세 ${tierWon!(b.id)}단계까지 이겼다</i>` : ''
+    const lv = levelName(tierWon?.(b.id) ?? 1)
+    const won = b.id !== 'tutorial' && (tierWon?.(b.id) ?? 0) > 0 ? `<i>「${lv}」${josa(lv, '으로', '로').slice(lv.length)} 이겼다</i>` : ''
     const peek = `<span class="peek"><small>${k.esc(b.era)}</small><b>${k.esc(b.name)}</b><span class="ph">${k.esc(b.hook)}</span><span class="pp">${k.esc(b.play)}</span>`
       + `<span class="pm"><i>나라 ${k.nations(b.id).length}</i><i>${goal}</i><i>한 판이 ${b.length}</i>${won}</span></span>`
     h += `<button class="bcard${open ? '' : ' locked'}" data-act="${open ? 'fr-board' : 'fr-locked'}" data-v="${b.id}" data-peek><span class="bth" style="background-image:url('${k.art}${b.art}')">`
