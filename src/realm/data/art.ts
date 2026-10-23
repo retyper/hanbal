@@ -52,8 +52,8 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'wander-01': 'w-18-jinhan-salt-widow', 'wander-02': 'w-03-goguryeo-archer', 'wander-03': 'w-12-court-dancer',
   'wander-04': 'w-11-assassin', 'wander-05': 'w-83-gyeonji-beodeul', 'wander-06': 'w-06-buyeo-huntress',
   'wander-07': 'w-19-buyeo-fur-princess', 'wander-08': 'w-22-dongye-tiger-huntress', 'wander-09': 'w-05-baekje-queen',
-  'wander-10': 'w-21-baekje-court-dancer', 'wander-11': 'g-16-goguryeo-gaema-commander', 'wander-12': 'g-14-captive-general',
-  'wander-13': 'w-14-feast-spy', 'wander-14': 'g-10-buyeo-horse-lord', 'wander-15': 'w-09-byeonhan-smith',
+  'wander-10': 'w-21-baekje-court-dancer', 'wander-11': 'g-61-heomcheuk-bawi', 'wander-12': 'g-14-captive-general',
+  'wander-13': 'w-14-feast-spy', 'wander-14': 'g-60-eupcha-hangyeol', 'wander-15': 'w-09-byeonhan-smith',
   'wander-16': 'w-20-gaya-smith-daughter', 'wander-17': 'g-12-silla-youth', 'wander-18': 'w-01-silla-princess',
   'wander-19': 'g-15-shaman-man', 'wander-20': 'w-08-mahan-warrior',
   // 영남 판 (data/regions/yeongnam.ts) — 변한 판과 같은 나라는 같은 얼굴. 새 군주 열다섯은 있는 명치판을 나눠 쓴다 (여인이 많다)
