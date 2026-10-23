@@ -400,15 +400,16 @@ const VOLLEY_SHOTS: ReadonlyArray<readonly [number, number, number]> = [[0, 1, 1
  * 화살 한 무리 — 낱낱이 (형: "화살이 지금 이미지 통째로 날아가는데"). dir r: 우리(왼쪽)가 쏜다 · l: 적(오른쪽)이 쏜다.
  * 화살마다 떠나는 자리·높이·거리·때가 조금씩 다르다 (꾸밈이라 판의 시드와 상관없이 고정된 굴림)
  */
-function volleyHtml(art: string, dir: 'r' | 'l', at: number): string {
+function volleyHtml(art: string, dir: 'r' | 'l', at: number, end: number): string {
+  const K = (end - at + 0.11) / 1.3
   let s = dir === 'r' ? 3 : 11
   const rnd = (): number => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff
   let h = ''
   for (let i = 0; i < VOLLEY_N; i++) {
-    h += `<i style="--x:${(2 + rnd() * 14).toFixed(1)}%;--y:${(52 + rnd() * 24).toFixed(1)}%;--dx:${(56 + rnd() * 16).toFixed(1)}vw;--up:${(12 + rnd() * 16).toFixed(1)}vh;--t:${(at + rnd() * 0.35).toFixed(2)}s;--z:${(0.75 + rnd() * 0.4).toFixed(2)}">`
+    h += `<i style="--x:${(2 + rnd() * 14).toFixed(1)}%;--y:${(52 + rnd() * 24).toFixed(1)}%;--dx:${(56 + rnd() * 16).toFixed(1)}vw;--up:${(12 + rnd() * 16).toFixed(1)}vh;--t:${(at + rnd() * 0.35 * K).toFixed(2)}s;--z:${(0.75 + rnd() * 0.4).toFixed(2)}">`
       + `<b style="background-image:url('${art}fx/arrow.png')"></b></i>`
   }
-  return `<div class="wfx-volley ${dir}">${h}</div>`
+  return `<div class="wfx-volley ${dir}" style="--k:${K};--end:${end.toFixed(2)}s">${h}</div>`
 }
 
 /**
@@ -416,7 +417,8 @@ function volleyHtml(art: string, dir: 'r' | 'l', at: number): string {
  * 그림은 한 개짜리를 여럿으로 — 창끝·방패·바위·물보라·나무 조각·통나무·밧줄·말 탄 무사 (realm/fx · 제미나이 한 장을 잘랐다).
  * dir r: 우리(왼쪽)가 · l: 적(오른쪽)이 — 통째로 뒤집는다. 꾸밈이라 판의 시드와 상관없는 고정 굴림.
  */
-export function cmdFxHtml(art: string, c: Cmd, dir: 'r' | 'l', at: number): string {
+export function cmdFxHtml(art: string, c: Cmd, dir: 'r' | 'l', at: number, end: number = at + beatLen(c)): string {
+  const K = (end - at + 0.06) / (FX_SPAN[c] ?? 1) // 제 차례 안에 끝나게 — 사이 시각도 길이도 같은 배율로 줄인다
   let s = (dir === 'r' ? 5 : 17) + c.length * 31
   const rnd = (): number => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff
   const img = (f: string): string => `<b style="background-image:url('${art}fx/${f}.png')"></b>`
@@ -425,7 +427,7 @@ export function cmdFxHtml(art: string, c: Cmd, dir: 'r' | 'l', at: number): stri
     for (let i = 0; i < n; i++) h += `<i class="${k}" style="${pos(i)}">${img(f)}</i>`
     return h
   }
-  const t = (x: number): string => `--t:${(at + x).toFixed(2)}s`
+  const t = (x: number): string => `--t:${(at + x * K).toFixed(2)}s`
   const z = (a: number, b: number): string => `--z:${(a + rnd() * b).toFixed(2)}`
   let h = ''
   switch (c) {
@@ -489,7 +491,7 @@ export function cmdFxHtml(art: string, c: Cmd, dir: 'r' | 'l', at: number): stri
     default:
       return ''
   }
-  return `<div class="wfx-cmd ${dir}">${h}</div>`
+  return `<div class="wfx-cmd ${dir}" style="--k:${K};--end:${end.toFixed(2)}s">${h}</div>`
 }
 
 /**
@@ -497,7 +499,19 @@ export function cmdFxHtml(art: string, c: Cmd, dir: 'r' | 'l', at: number): stri
  * 깃발: 우리 것 먼저 그다음 적 것 · 쪽마다 warBeatMax 까지 (장수 기술은 장면이 맡아 빼고) → 맞부딪힘(clash) → 이야기(story) → 밀림·잃은 수·막대(result).
  * warHtml 의 CSS 지연과 openWar 의 소리가 둘 다 이것만 읽는다
  */
-type Beat = { c: Cmd; dir: 'r' | 'l'; at: number; ours: boolean }
+type Beat = { c: Cmd; dir: 'r' | 'l'; at: number; len: number; ours: boolean }
+/** 깃발 연출의 본디 길이(초) — 맨 마지막 조각이 사라질 때까지 (cmdFxHtml 의 사이 시각 + CSS --du) · 화살비는 volleyHtml */
+const FX_SPAN: Readonly<Partial<Record<Cmd, number>>> = {
+  volley: 1.3, counter: 1.3, open: 1.3, height: 1.3, fire: 1.3,
+  charge: 1.2, punch: 1.4, flank: 1.5, pursue: 1.6, hold: 1.4, ford: 1.6, guard: 1.3,
+  rocks: 1.9, gate: 1.8, ram: 1.8, capture: 1.2, retreat: 1.5, drum: 1.6, duel: 1.0,
+}
+/** 한 깃발의 차례 — 본디 길이를 warFxSquash 로 줄인 것 (warBeatMin ~ warBeatLong) */
+export function beatLen(c: Cmd): number {
+  const R = P.realm
+  const s = FX_SPAN[c]
+  return s === undefined ? R.warBeatStep : Math.min(R.warBeatLong, Math.max(R.warBeatMin, s * R.warFxSquash))
+}
 function roundPlan(rd: RoundLog, weAtk: boolean): { beats: Beat[]; clash: number; story: number; result: number } {
   const R = P.realm
   const ord = (o: RoundOrder | undefined, main: Cmd, art: boolean): Cmd[] => {
@@ -510,9 +524,11 @@ function roundPlan(rd: RoundLog, weAtk: boolean): { beats: Beat[]; clash: number
   const us = ord(weAtk ? rd.oa : rd.od, weAtk ? rd.a : rd.d, cut)
   const them = ord(weAtk ? rd.od : rd.oa, weAtk ? rd.d : rd.a, false)
   const t0 = cut ? R.warBeatCut : R.warBeat0
-  const beats: Beat[] = [...us.map((c) => ({ c, dir: 'r' as const, at: 0, ours: true })), ...them.map((c) => ({ c, dir: 'l' as const, at: 0, ours: false }))]
-    .map((b, i) => ({ ...b, at: t0 + i * R.warBeatStep }))
-  const clash = (beats[beats.length - 1]?.at ?? t0) + R.warClashGap
+  // 깃발은 하나씩 — 앞 깃발의 차례가 끝나야 다음 깃발 (형 10-24: "이펙트가 아직도 너무 한꺼번에 · 하나씩 해야지")
+  let at = t0
+  const beats: Beat[] = [...us.map((c) => ({ c, dir: 'r' as const, ours: true })), ...them.map((c) => ({ c, dir: 'l' as const, ours: false }))]
+    .map((b) => { const len = beatLen(b.c); const x = { ...b, at, len }; at += len; return x })
+  const clash = at + R.warClashGap
   return { beats, clash, story: clash + R.warStoryGap, result: clash + R.warResultGap }
 }
 
@@ -587,7 +603,11 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   // 싸움의 기운 — 흙먼지 둘이 바닥을 흐르고, 이 합에 활을 쏜 쪽에서 화살이 낱낱이 활꼴로 날아간다 (그림: realm/fx)
   h += `<div class="wfx"><img class="wfx-dust a" src="${art}fx/dust.png" alt=""><img class="wfx-dust b" src="${art}fx/dust.png" alt="">${AIR_EMBERS}`
   if (anim && last !== undefined) {
-    for (const b of roundPlan(last, weAtk).beats) h += SHOOT_CMD.has(b.c) ? volleyHtml(art, b.dir, b.at + 0.05) : cmdFxHtml(art, b.c, b.dir, b.at)
+    // 깃발마다 제 차례 — 차례가 끝나면 걷힌다 (다음 깃발과 겹치지 않게)
+    for (const b of roundPlan(last, weAtk).beats) {
+      const end = b.at + b.len - 0.06
+      h += SHOOT_CMD.has(b.c) ? volleyHtml(art, b.dir, b.at + 0.05, end) : cmdFxHtml(art, b.c, b.dir, b.at, end)
+    }
   }
   h += `</div><div class="wrbox">`
   // 위 카드는 그 싸움터를 무대로 — 길·성문·물가·눈밭·밤 (형 10-23: "길에서 마주치거나 수성하거나 공성할 때는 그 위치에 맞게 배경")
@@ -835,15 +855,16 @@ export const WAR_CSS = `
 .ap .wfx-dust.a { left: -20%; } .ap .wfx-dust.b { left: 45%; animation-duration: 34s; animation-direction: reverse; opacity: .22; }
 @keyframes wdust { 0% { transform: translateX(-6%) scale(1); } 50% { transform: translateX(6%) scale(1.08); } 100% { transform: translateX(-6%) scale(1); } }
 /* 화살 — 앞으로는 고르게(바깥 i), 위아래는 오르다 떨어지게(안쪽 b), 머리는 오를 때 들리고 떨어질 때 숙인다. 적이 쏘면 통째로 뒤집는다 */
-.ap .wfx-volley { position: absolute; inset: 0; } .ap .wfx-volley.l { transform: scaleX(-1); }
-.ap .wfx-volley i { position: absolute; left: var(--x); top: var(--y); width: calc(var(--z) * 96px); height: calc(var(--z) * 13px); opacity: 0; animation: wvx .95s linear var(--t) both; }
-.ap .wfx-volley b { position: absolute; inset: 0; background: center / 100% 100% no-repeat; animation: wvy .95s linear var(--t) both; }
+.ap .wfx-volley { position: absolute; inset: 0; animation: wfend .12s linear var(--end, 99s) forwards; } .ap .wfx-volley.l { transform: scaleX(-1); }
+@keyframes wfend { to { opacity: 0; visibility: hidden; } }
+.ap .wfx-volley i { position: absolute; left: var(--x); top: var(--y); width: calc(var(--z) * 96px); height: calc(var(--z) * 13px); opacity: 0; animation: wvx calc(.95s * var(--k, 1)) linear var(--t) both; }
+.ap .wfx-volley b { position: absolute; inset: 0; background: center / 100% 100% no-repeat; animation: wvy calc(.95s * var(--k, 1)) linear var(--t) both; }
 .ap .wfx-volley b::before { content: ''; position: absolute; right: 92%; top: 38%; height: 24%; width: 110%; border-radius: 2px; background: linear-gradient(to left, #ffffff99, #fff0); }
 @keyframes wvx { 0% { opacity: 0; transform: translateX(0); } 8% { opacity: 1; } 88% { opacity: 1; } 100% { opacity: 0; transform: translateX(var(--dx)); } }
 @keyframes wvy { 0% { transform: translateY(0) rotate(-28deg); animation-timing-function: ease-out; } 50% { transform: translateY(calc(var(--up) * -1)) rotate(0deg); animation-timing-function: ease-in; } 100% { transform: translateY(0) rotate(30deg); } }
 /* 깃발마다 제 연출 — 낱낱이 (cmdFxHtml) */
-.ap .wfx-cmd { position: absolute; inset: 0; } .ap .wfx-cmd.l { transform: scaleX(-1); }
-.ap .wfx-cmd i { position: absolute; left: var(--x, 0); top: var(--y); width: calc(var(--z, 1) * var(--w)); aspect-ratio: var(--ar); opacity: 0; animation: var(--an) var(--du) var(--ease, linear) var(--t) both; }
+.ap .wfx-cmd { position: absolute; inset: 0; animation: wfend .12s linear var(--end, 99s) forwards; } .ap .wfx-cmd.l { transform: scaleX(-1); }
+.ap .wfx-cmd i { position: absolute; left: var(--x, 0); top: var(--y); width: calc(var(--z, 1) * var(--w)); aspect-ratio: var(--ar); opacity: 0; animation: var(--an) calc(var(--du) * var(--k, 1)) var(--ease, linear) var(--t) both; }
 .ap .wfx-cmd i b { position: absolute; inset: 0; background: center / contain no-repeat; }
 .ap .wfx-cmd .sp { --w: clamp(86px, 10vw, 160px); --ar: 256 / 65; --x: -4%; --an: wcsp; --du: .62s; --ease: cubic-bezier(.5, 0, .9, .6); }
 @keyframes wcsp { 0% { opacity: 0; transform: translateX(-12vw); } 15% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateX(var(--dx)); } }
