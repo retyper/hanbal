@@ -580,6 +580,12 @@ export function stepHeroes(r: Realm, lines: ReportLine[]): void {
     if (pool.length > 0 && places.length > 0) {
       const who = pool[Math.floor(roll(r.seed, r.season, 'wanderer-who') * pool.length)]!
       const at = places[Math.floor(roll(r.seed, r.season, 'wanderer-at') * places.length)]!
+      // 장수가 넉넉한 나라엔 덜 머문다 — 고을에 견준 장수 수로 (떠돌이도 일할 자리를 찾아간다)
+      const f = at.owner!
+      const towns = places.filter((n) => n.owner === f).length
+      const heroes = Object.values(r.heroes).filter((h) => h.faction === f && h.status === 'free').length
+      const stay = Math.max(R.wandererNeedMin, Math.min(1, ((towns + 1) / (heroes + 1)) * R.wandererNeedMul))
+      if (roll(r.seed, r.season, 'wanderer-need') >= stay) { stepGrowth(r, lines); return }
       const until = r.season + R.wandererStay
       const price = poolPrice(who)
       ;(r.poolUsed ??= []).push(who.id)
