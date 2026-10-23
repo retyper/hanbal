@@ -495,6 +495,26 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     compose = { ...NO_COMPOSE, give: noGoods(), take: noGoods() }
   }
 
+  /**
+   * 우리 장수가 이번 계절 묶여 있는 까닭 — 원정 중 · 다침 · 자리를 비움 · 이번 계절 고른 일(자객·사신·원정·혼인·이끌기·맡기기). 쉬면 null.
+   * 묶인 장수는 판에서 흐리게 하고 할 일 단추를 숨긴다 — 누르면 사정은 보인다 (형 10-23: "원정 중이거나 뭐 하고 있어서 못 쓰는 턴에는 … 정보만 보여 주게")
+   */
+  function heroBusy(r: Realm, id: string): string | null {
+    const h = r.heroes[id]
+    if (h === undefined || h.faction !== me() || h.status !== 'free') return null
+    const ex = (r.expeditions ?? []).find((x) => x.hero === id)
+    if (ex !== undefined) return `원정 중 · ${Math.max(1, ex.back - r.season + 1)}계절 뒤 돌아온다`
+    if (h.woundedUntil !== undefined && h.woundedUntil > r.season) return `다쳐 누웠다 · ${h.woundedUntil - r.season}계절`
+    if (h.awayUntil !== undefined && h.awayUntil >= r.season) return '자리를 비웠다'
+    if (plots.some((o) => o.kind === 'plot' && o.agent === id)) return '이번 계절 자객으로 간다'
+    if (Object.values(envoys).some((e) => e.hero === id)) return '이번 계절 사신을 따라간다'
+    for (const o of heroOrders) {
+      if (o.kind === 'expedition' && o.hero === id) return '이번 계절 원정을 떠난다'
+      if (o.kind === 'wed' && (o.a === id || o.b === id)) return '이번 계절 혼인한다'
+    }
+    return null
+  }
+
   /** 이번 계절 아무 일도 안 맡은 우리 장수 — 군대·고을·사신·자객·원정·혼인 어디에도 없다 (군주·다친 이·떠나 있는 이 빼고) */
   function restingHeroes(p: Realm): Hero[] {
     const busy = new Set<string>()
@@ -1391,9 +1411,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   function diploSheet(r: Realm): string {
     let h = `<h3>외교</h3><div class="seg dseg"><button class="${diploMode === 'envoy' ? 'on' : ''}" data-act="dmode" data-v="envoy">사신</button><button class="${diploMode === 'plot' ? 'on' : ''}" data-act="dmode" data-v="plot">공작 ${plots.length > 0 ? plots.length : ''}</button><button class="${diploMode === 'scout' ? 'on' : ''}" data-act="dmode" data-v="scout">정찰${scout !== '' ? ' 1' : ''}</button></div>`
+    // 정찰은 사람 손을 안 쓴다 — 장수 얼굴 줄 대신 정찰꾼 그림 (형 10-23: "정찰에는 장수 얼굴을 보여 줄 필요 없으니 정찰꾼 그래픽")
+    if (diploMode === 'scout') return h + `<div class="scouthd">${icon('unit-scouts', 'scic')}<div><b>정찰꾼</b><span>한 계절에 한 곳 · 장수는 안 간다</span></div></div>` + scoutSheet(r)
     h += handsHtml(r)
     if (diploMode === 'plot') return h + plotSheet(r)
-    if (diploMode === 'scout') return h + scoutSheet(r) // 정찰 — 외교 판 안에 (형: "척후도 외교에 넣아야 겠는데")
     h += asksHtml()
     const out = Object.values(envoys)
     for (const e of out) h += sentBanner(r, e, true)
@@ -1756,7 +1777,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   // ───────── 장수 (docs/realm/HEROES.md §5)
   function heroRow(r: Realm, h: Hero, extra = ''): string {
     const seen = h.faction === me() || heroSeen(realm!, me(), h.id)
-    return `<button class="hrow${isRuler(r, h.id) ? ' ruler' : ''}" data-act="hero" data-id="${h.id}">${bust(h)}<span class="hb">`
+    const busy = heroBusy(r, h.id)
+    return `<button class="hrow${isRuler(r, h.id) ? ' ruler' : ''}${busy !== null ? ' busy' : ''}" data-act="hero" data-id="${h.id}">${bust(h)}${busy !== null ? `<i class="hbz" title="${esc(busy)}">⧗</i>` : ''}<span class="hb">`
       + `<b>${nameHtml(h.name)}${isRuler(r, h.id) ? ' <span class="mute">군주</span>' : ''}${seen ? '' : ' <span class="heard">이름만 들었다</span>'}</b><span class="mute">${esc(roleLine(r, h))}</span>`
       + `<span class="tr3">${h.faction === me() && h.status === 'free' ? bondChip(r, h) : ''}${traitChips(h, seen)}</span>${extra}</span></button>`
   }
@@ -1831,8 +1853,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const other = r.heroes[o.a === id ? o.b : o.a]
       h += `<div class="banner good">이번 계절: ${esc(josa(other?.name ?? '', '과', '와'))} 혼인한다 · 곡식 ${P.realm.wedGrain}<button class="btn ghost sm" data-act="unwed" data-id="${id}">취소</button></div>`
     }
-    if (ours && weds.length === 0 && x.spouse === undefined) h += wedHtml(r, x)
-    h += expHtml(r, x)
+    // 묶인 장수 — 사정만 보이고 할 일은 숨긴다
+    const busy = ours ? heroBusy(r, id) : null
+    if (busy !== null) h += `<div class="banner busyb">⧗ ${esc(busy)} — 이번 계절엔 다른 일을 못 한다</div>`
+    if (ours && busy === null && weds.length === 0 && x.spouse === undefined) h += wedHtml(r, x)
+    if (busy === null || (r.expeditions ?? []).some((e) => e.hero === id)) h += expHtml(r, x)
     const pending = heroOrders.filter((o) => (o.kind === 'assign' || o.kind === 'lead' || o.kind === 'persuade' || o.kind === 'hire') && o.hero === id)
     for (const o of pending) {
       const what = o.kind === 'assign' ? (o.node === null ? '맡은 일을 그만둔다' : `${josa(r.nodes[o.node]?.name ?? '', '을', '를')} 맡는다`) : o.kind === 'lead' ? '군대를 이끈다' : o.kind === 'hire' ? '우리 장수로 들였다' : '회유한다'
@@ -1931,7 +1956,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const pick = dests.includes(pick0.dest) ? pick0 : { ...pick0, dest: dests[0]! }
     const word = (p: number): string => (p >= 0.3 ? '자주' : p >= 0.12 ? '가끔' : p > 0 ? '드물게' : '없다')
     const odds = expOdds(x, pick.dest, pick.len)
-    const block = expBlock(r, me(), x.id, pick.dest, pick.len)
+    // 쉬는 장수가 원정을 떠나면 사람 손이 하나 준다 — 이미 고른 공작·사신이 버려지지 않게 (형 10-23: "방화·소문 이미 보냈는데 원정을 중복해서 보낼 수 있는 건 말이 안 되지")
+    const handsShort = idleHeroes(r, me()).includes(x.id) && handsUsed() > handsCap(r) - 1
+    const block = expBlock(r, me(), x.id, pick.dest, pick.len) ?? (handsShort ? '이번 계절 사람 손이 다 찼다 — 공작·사신을 줄이면 보낼 수 있다' : null)
     let h = `<div class="exp"><b>원정</b><span class="mute">먼 땅으로 보낸다. 좋은 장수일수록 좋은 것을 가져오지만, 그동안 판에 없다. 무엇을 가져올지는 떠날 때 정해진다.</span><div class="seg">`
     for (const d of dests) h += `<button class="${d === pick.dest ? 'on' : ''}" data-act="exp-dest" data-id="${x.id}" data-v="${d}">${esc(DESTS[d].name)}</button>`
     h += `</div><p class="mute">${esc(DESTS[pick.dest].line)}${DESTS[pick.dest].sea ? ' (우리 포구에서 배를 띄운다)' : ''}</p><div class="seg">`
