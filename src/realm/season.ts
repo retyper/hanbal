@@ -41,7 +41,7 @@ import { resolveCard, stepCards } from './events.ts'
 import { PEOPLE_SCALE, migrate } from './migrate.ts'
 import { spreadRumors } from './rumor.ts'
 import { addMen, giveMen, kitOf, scaleKinds, scaleMen, takeMen } from './kit.ts'
-import { formParty, moveParty, stepParties } from './parties.ts'
+import { formParty, joinParty, moveParty, stepParties } from './parties.ts'
 import {
   ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, ironhandAt, noteMet, releaseCaptives, stepHeroes, sweepHeroes,
 } from './heroes.ts'
@@ -528,6 +528,7 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
     else if (o.kind === 'settle') settleLand(r, o, lines)
     else if (o.kind === 'party') formParty(r, o, lines)
     else if (o.kind === 'partyGo') moveParty(r, o)
+    else if (o.kind === 'partyJoin') joinParty(r, o, lines)
     else if (o.kind === 'migrate') migrateHouses(r, o, lines)
     else if (o.kind === 'migrateAuto') setMigrateAuto(r, o)
     else if (o.kind === 'guard') applyGuard(r, o, lines)

@@ -10,7 +10,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
-import { partyCost, partyMoves, partySize, partiesOf } from '../../src/realm/parties.ts'
+import { joinable, partyCost, partyMoves, partySize, partiesOf } from '../../src/realm/parties.ts'
 import { advance } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Realm } from '../../src/realm/types.ts'
@@ -95,5 +95,26 @@ describe('개척단', () => {
       return JSON.stringify([r.parties, r.nodes])
     }
     assert.equal(run(), run())
+  })
+
+  it('우리 고을에 선 개척단은 「자리 잡기」로 그 고을 백성이 된다 (이주)', () => {
+    let r = rich(byeonhanMini(1))
+    const { from } = frontier(r)
+    r = advance(r, [{ kind: 'party', faction: r.player, node: from }]).next
+    const p = partiesOf(r, r.player)[0]!
+    assert.ok(joinable(r, p))
+    const hh0 = r.nodes[from]!.hh
+    const s = advance(r, [{ kind: 'partyJoin', party: p.id }])
+    assert.equal(partiesOf(s.next, r.player).length, 0)
+    assert.ok(s.report.lines.some((l) => l.kind === 'migrate' && l.walk === true && l.n === p.hh))
+    assert.ok(s.next.nodes[from]!.hh >= hh0 + p.hh - 1)
+  })
+
+  it('빈땅·남의 땅에서는 자리 잡기가 안 된다', () => {
+    const r = rich(byeonhanMini(1))
+    const { to } = frontier(r)
+    assert.equal(joinable(r, { id: 'x', faction: r.player, home: to, at: to, hh: 5, march: null }), false)
+    const foeNode = Object.values(r.nodes).find((n) => n.owner !== null && n.owner !== r.player && n.kind !== 'sodo')!
+    assert.equal(joinable(r, { id: 'y', faction: r.player, home: foeNode.id, at: foeNode.id, hh: 5, march: null }), false)
   })
 })

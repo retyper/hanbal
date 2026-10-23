@@ -33,9 +33,9 @@ import { advance, concealOf, draftable, forceOf, neighbors, newArmyId, otherEnd,
 import { PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bowUpCost, escapeChance, plotAgents, plotChance, plotCost, plotTargets } from '../../realm/plots.ts'
 import { allianceWhy, leaderOf, tookRecently, truceWhy, winningAgainst } from '../../realm/stance.ts'
 import { DESTS, DEST_IDS, EXP_SEASONS, destReachable, expAmount, expBlock, expOdds, onExpedition } from '../../realm/expedition.ts'
-import { foundable, partiesOf, partyCost, partyMoves, partySize } from '../../realm/parties.ts'
+import { foundable, joinable, partiesOf, partyCost, partyMoves, partySize } from '../../realm/parties.ts'
 import { canWed, heroSeen, honeyLeft, together, inheritOf, isRuler, persuadeDropOf, recruitChance, resistOf, wanderersFor } from '../../realm/heroes.ts'
-import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
+import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { LEGACY_CSS, carryHtml, retainHtml, syncRetain, toggleCarry, toggleKeep } from './legacy.ts'
@@ -259,7 +259,7 @@ const TABS = [
   { id: 'army', name: '군대', icon: 'unit-shield-wall', more: '우리 군대를 고르고 길을 정한다. 지도에서 군대를 눌러도 된다.' },
   { id: 'draft', name: '징병', icon: 'unit-spear', more: '마을 장정을 군사로 뽑는다. 뽑은 만큼 그 마을에서 농사지을 일손이 줄어든다.' },
   // 백성 — 개척·이주 (형: "군사징병이랑 개척 좀 확실히 구분필요함")
-  { id: 'people', name: '백성', icon: 'settle-farm-village', more: '백성을 맞닿은 빈땅으로 보내 새 마을을 개척하거나, 붐비는 고을에서 다른 고을로 이주시킨다. 붐비면 저절로도 옮겨 간다.' },
+  { id: 'people', name: '백성', icon: 'settle-farm-village', more: '개척단을 꾸려 빈땅에 새 마을을 열거나, 다른 우리 고을로 데려가 자리 잡게 한다(이주). 붐비면 저절로도 옮겨 간다.' },
   { id: 'diplo', name: '외교', icon: 'good-tribute-bell', more: '이웃 나라와 화친·동맹을 맺고, 사신의 청에 답하고, 몰래 공작(소문·암살…)을 보낸다.' },
   { id: 'heroes', name: '장수', icon: 'unit-general', more: '우리 장수와 사로잡은 장수. 군대를 맡기고, 혼인시키고, 원정을 보낸다.' },
   { id: 'nation', name: '나라', icon: 'settle-capital', more: '나라 살림 · 목표 · 이번 계절 사건 · 제사.' },
@@ -504,10 +504,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       return
     }
     const g = settles.find((o) => o.kind === 'partyGo' && o.party === id)
-    settles = settles.filter((x) => x !== g)
+    settles = settles.filter((x) => x !== g && !(x.kind === 'partyJoin' && x.party === id))
     if (g === undefined || (g.kind === 'partyGo' && g.edge !== edge)) settles = [...settles, { kind: 'partyGo', party: id, edge }]
   }
   const clearParty = (): void => { partySel = '' }
+  /** 이번 계절 지금 선 우리 고을에 눌러앉힐 수 있는 개척단 — 계절 처음 판 기준 (이번 계절 꾸린 것은 거두기로 한다) */
+  const joinHere = (node: string): Party[] => partiesOf(realm!, me()).filter((p) => p.at === node && joinable(realm!, p) && formOf(p.id) === undefined)
+  const joining = (id: string): boolean => settles.some((o) => o.kind === 'partyJoin' && o.party === id)
 
   /**
    * 이번 계절 고른 것을 다 치르고 남는 것 (형: "철이부족해도 강화 선택이 가능해져버려있고") — 징병·무장·목책·경계는 엔진과 같은 함수로
@@ -766,7 +769,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (p === undefined || realm!.parties?.[id]?.march != null) return []
     return partyMoves(r, me(), p.march?.from ?? p.at).map((m) => ({
       node: m.to, edge: m.edge, off: false, on: p.march?.edge === m.edge, act: 'ptgo',
-      chip: (m.found ? `<span class="tn newv">새 마을</span>` : `<span class="tn share">지나간다</span>`) + `<span class="tn when">${m.seasons}계절</span>`,
+      chip: (m.found ? `<span class="tn newv">새 마을</span>` : `<span class="tn share">우리 고을</span>`) + `<span class="tn when">${m.seasons}계절</span>`,
     }))
   }
 
@@ -903,8 +906,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     let h = `<div class="sbf">${icon('unit-porters', 'sbface ppface')}</div><div class="sbt"><b>${esc(r.nodes[p.home]?.name ?? '')} 개척단 · 백성 ${p.hh}가구</b>`
     if (was != null) h += `<span>${esc(josa(r.nodes[was.to]?.name ?? '', '으로', '로'))} 가는 중 · ${esc(arriveWhen(realm!.season, was.left))}</span>`
     else if (p.march !== null) h += `<span>→ ${esc(r.nodes[p.march.to]?.name ?? '')} · ${foundable(r, me(), p.march.to) ? '닿으면 새 마을' : '지나간다'} · ${esc(arriveWhen(realm!.season, p.march.left))}</span>`
-    else h += `<span>${partyTargets(r, p.id).length > 0 ? '갈 곳을 누른다 · 빈땅에 닿으면 마을이 선다' : '지금 갈 수 있는 길이 없다'}</span>`
+    else h += `<span>${partyTargets(r, p.id).length > 0 ? '빈땅에 닿으면 마을이 선다 · 우리 고을에서는 자리 잡을 수 있다' : '지금 갈 수 있는 길이 없다'}</span>`
     h += `</div>`
+    if (joinHere(p.at).some((x) => x.id === p.id)) h += `<button class="btn pri home sm" data-act="ptjoin" data-army="${p.id}">여기 자리 잡기</button>`
     if (formOf(p.id) !== undefined) h += `<button class="btn ghost sm" data-act="party-undo" data-node="${p.home}">꾸리기 거두기</button>`
     return h + close
   }
@@ -1340,7 +1344,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (note !== '') h += `<div class="banner bad">${tx(note)}</div>`
     const ps = partiesOf(r, me())
     h += `<h4 class="sech home">${icon('unit-porters')}개척단</h4>`
-    if (ps.length === 0) h += `<p class="mute">우리 고을을 누르고 「개척단 꾸리기」 — 지도에 개척단이 서면 군대처럼 빈땅으로 보낸다. 닿으면 마을이 선다.</p>`
+    if (ps.length === 0) h += `<p class="mute">우리 고을을 누르고 「개척단 꾸리기」 — 지도에 개척단이 서면 군대처럼 길을 고른다. 빈땅에 닿으면 새 마을이 서고, 다른 우리 고을에서 「여기 자리 잡기」를 누르면 그 고을로 이주한다.</p>`
+    for (const p of partiesOf(realm!, me()).filter((x) => joining(x.id))) {
+      h += `<div class="row mvq"><button class="pprow" data-act="ptjoin" data-army="${p.id}">${icon('unit-porters', 'gic')}<span class="nchip">${esc(r.nodes[p.home]?.name ?? '')} 개척단</span><span class="mute">백성 ${p.hh}가구 · ${esc(josa(r.nodes[p.at]?.name ?? '', '에', '에'))} 자리 잡는다 · 누르면 거둔다</span></button></div>`
+    }
     for (const p of ps) {
       const where = p.march !== null ? `${esc(josa(r.nodes[p.march.to]?.name ?? '', '으로', '로'))} 간다` : `${esc(r.nodes[p.at]?.name ?? '')}에 섰다 · 갈 곳을 고른다`
       h += `<div class="row mvq"><button class="pprow" data-act="ptok" data-army="${p.id}">${icon('unit-porters', 'gic')}<span class="nchip">${esc(r.nodes[p.home]?.name ?? '')} 개척단</span><span class="mute">백성 ${p.hh}가구 · ${where}</span></button></div>`
@@ -2241,6 +2248,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (n.kind === 'sodo') h += riteCard(r)
     if (n.kind === 'wild') {
       if (n.owner === null) h += `<p class="story">아무도 살지 않는 땅이다. 사람을 보내 일구면 마을이 된다. ${n.room ?? 0}집까지 들어선다.</p>`
+      else if (ours && n.hh <= 0) h += `<p class="story">깃발만 꽂은 빈땅이다. 사는 사람이 없어 아무것도 나지 않는다. 개척단이 와야 마을이 선다 — 붐비는 이웃 고을이 있으면 백성이 조금씩 저절로 넘어오기도 한다.</p>`
       if (n.owner === null || ours) {
         const can = foundLands(r).includes(id) || partiesOf(r, me()).some((p) => p.march?.to === id)
         h += can ? settleCard(r, id) : `<p class="mute">우리 고을과 길로 맞닿고, 그 길이 열려 있어야 개척단이 간다.</p>`
@@ -2259,13 +2267,18 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<h4 class="nsec">할 일</h4>`
       const guarded = guards.includes(id)
       // 개척단 꾸리기 — 지도에 개척단이 서고 군대처럼 빈땅으로 보낸다. 배우는 판에서는 빈땅 판의 단추로 한다
+      for (const p of n.kind !== 'wild' ? partiesOf(realm!, me()).filter((x) => x.at === id && (joining(x.id) || joinHere(id).includes(x))) : []) {
+        h += joining(p.id)
+          ? `<div class="btns"><button class="btn home wide on" data-act="ptjoin" data-army="${p.id}">${icon('unit-porters')}${esc(r.nodes[p.home]?.name ?? '')} 개척단 ${p.hh}가구가 여기 자리 잡는다 · 누르면 거둔다</button></div>`
+          : `<div class="btns"><button class="btn pri home wide" data-act="ptjoin" data-army="${p.id}">${icon('unit-porters')}${esc(r.nodes[p.home]?.name ?? '')} 개척단 ${p.hh}가구를 여기 자리 잡게 한다 · 이주</button></div>`
+      }
       if (r.region !== 'tutorial' && n.kind !== 'wild') {
         if (settles.some((o) => o.kind === 'party' && o.node === id)) h += `<div class="btns"><button class="btn home wide on" data-act="party-undo" data-node="${id}">개척단을 꾸렸다 · 누르면 거둔다</button></div>`
         else {
           const k = partySize(r, me(), id)
           const c = partyCost(k)
           h += `<div class="btns"><button class="btn pri home wide" data-act="party" data-node="${id}" ${k > 0 ? '' : 'disabled'}>${icon('unit-porters')}개척단 꾸리기${k > 0 ? ` · 백성 ${k}가구 ${costHtml({ grain: c.grain, wood: c.wood })}` : ''}</button></div>`
-          h += `<p class="mute">${k > 0 ? '지도에 개척단이 서고, 군대처럼 빈땅으로 보내면 마을이 선다.' : esc(partyWhy(r, id))}</p>`
+          h += `<p class="mute">${k > 0 ? '지도에 개척단이 선다. 빈땅으로 보내면 새 마을이 서고, 다른 우리 고을로 데려가 「여기 자리 잡기」를 누르면 그 고을로 이주한다.' : esc(partyWhy(r, id))}</p>`
         }
       }
       h += draftCard(r, id, true)
@@ -3274,6 +3287,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'ptok': armySel = []; partySel = partySel === d['army'] ? '' : d['army']!; sheet = null; break
       case 'pp-close': clearParty(); break
+      case 'ptjoin': {
+        const id = d['army']!
+        if (joining(id)) settles = settles.filter((o) => !(o.kind === 'partyJoin' && o.party === id))
+        else {
+          settles = [...settles.filter((o) => !(o.kind === 'partyGo' && o.party === id)), { kind: 'partyJoin', party: id }]
+          if (partySel === id) clearParty()
+        }
+        break
+      }
       case 'ptgo': if (partySel !== '') sendParty(partySel, d['edge']!); break
       case 'turnback': {
         const id = d['army']!

@@ -4,7 +4,8 @@
  * 우리 고을에서 개척단을 꾸리면 그 고을 백성 몇 가구가 곡식·나무를 지고 떠난다 — 지도에 말 하나가 선다.
  * 군대처럼 길을 하나씩 골라 옮기고, 빈땅(아무도 안 쥐었거나 우리가 일구는 중인 땅)에 닿으면 그 자리에 마을이 선다.
  * 우리 땅은 지나갈 수 있고 남의 땅으로는 못 간다. 적 군대가 머무는 곳에 서면 흩어진다(사람을 잃는다).
- * 고을끼리 백성을 옮기는 일은 손에서 뺐다 — 붐비면 저절로 이웃으로 넘친다 (economy.autoFlows).
+ * 이주도 같은 말로 한다 — 개척단을 다른 우리 고을로 데려가 「여기 자리 잡기」를 누르면 그 고을 백성이 된다 (형 10-23: "이주는 어떻게 하게 해야 하는 거지").
+ * 붐비면 저절로 이웃으로도 넘친다 (economy.autoFlows).
  *
  * AI 는 예전처럼 맞닿은 빈땅에 곧바로 보낸다 (settle 명령) — 판의 결정론은 이 모듈도 같은 길을 밟는다 (A1).
  */
@@ -84,6 +85,21 @@ export function formParty(r: Realm, o: Extract<Order, { kind: 'party' }>, lines:
   ps[id] = p
   if (o.edge !== undefined) startMarch(r, p, o.edge)
   lines.push({ kind: 'party', faction: o.faction, party: id, node: o.node, n })
+}
+
+/** 개척단이 지금 선 곳에 눌러앉을 수 있나 — 멈춰 선 채로 우리 고을(빈땅·소도 아닌)에 있다 */
+export function joinable(r: Realm, p: Party): boolean {
+  const n = r.nodes[p.at]
+  return p.march === null && n !== undefined && n.owner === p.faction && n.kind !== 'wild' && n.kind !== 'sodo'
+}
+
+/** 이주 — 개척단의 가구가 선 고을의 백성이 된다. 품을 넘으면 붐빔이 이웃으로 넘친다(autoFlows) */
+export function joinParty(r: Realm, o: Extract<Order, { kind: 'partyJoin' }>, lines: ReportLine[]): void {
+  const p = r.parties?.[o.party]
+  if (p === undefined || !joinable(r, p)) return
+  r.nodes[p.at]!.hh += p.hh
+  delete r.parties![o.party]
+  lines.push({ kind: 'migrate', faction: p.faction, from: p.home, to: p.at, n: p.hh, walk: true })
 }
 
 /** 개척단을 길 하나로 보낸다 — 멈춰 선 개척단만 */
