@@ -69,7 +69,8 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   // 삼한 남부 판의 새 군주·장군 (data/regions/south.ts) — 있는 명치판을 나눠 쓴다. 새 얼굴은 그림 줄(인물 — 챗지피티)
   // 배우는 판 — 온조 형제와 신하 (tutorial.ts)
   // 캠페인 2장 — 주몽과 세 벗 · 송양 · 대소 (jumong.ts)
-  'jm-jumong': 'g-02-goguryeo-archer-prince', 'jm-oi': 'g-16-goguryeo-gaema-commander', 'jm-mari': 'g-49-goguryeo-sona', 'jm-hyeopbo': 'g-06-strategist',
+  // 주몽 — 챗지피티로 받은 고구려 군주 얼굴을 다시 쓴다 (형 10-23: "전에 것이 챗지피티로 만들어 더 멋있었는데 · 지금 것은 제미나이라 별로 — 나중에 만들어"). 새 얼굴은 ART-QUEUE
+  'jm-jumong': 'g-28-goguryeo-damul', 'jm-oi': 'g-16-goguryeo-gaema-commander', 'jm-mari': 'g-49-goguryeo-sona', 'jm-hyeopbo': 'g-06-strategist',
   'jm-songyang': 'g-51-biryuna-mulgyeol', 'jm-songbi': 'w-52-biryuna-songbi', 'jm-daeso': 'g-10-buyeo-horse-lord', 'jm-haedal': 'w-67-buyeo-haedal',
   'jm-haengin-ruler': 'g-33-jeoga-metdol', 'jm-haengin-1': 'w-71-yeonna-neoul', 'jm-okjeo-ruler': 'g-34-bukokjeo-duman', 'jm-okjeo-1': 'w-70-bukokjeo-mulbeom',
   'tut-onjo': 'g-02-goguryeo-archer-prince', 'tut-biryu': 'g-28-goguryeo-damul', 'tut-ogan': 'g-13-baekje-general', 'tut-maryeo': 'g-09-farmer-conscript', 'tut-haebi': 'w-30-guya-soebi',

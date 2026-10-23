@@ -20,7 +20,7 @@ export const EDGE_NAME: Record<EdgeKind, string> = {
 }
 
 export const NODE_KIND_NAME: Record<NodeKind, string> = {
-  capital: '도읍', village: '마을', sodo: '소도', port: '항구', fort: '산성', ironMine: '철광', wild: '빈땅',
+  capital: '도읍', village: '마을', sodo: '소도 · 제사터', port: '항구', fort: '산성', ironMine: '철광', wild: '빈땅',
 }
 
 /** 빈땅을 일군 뒤의 이름 — kind 는 그대로 'wild' 지만 사람이 살면 새 마을이다 */
@@ -36,7 +36,7 @@ export const TAG_LINE: Record<Tag, string> = {
   moat: '울타리 앞에 물을 끌어 두었다.',
   fog: '새벽마다 골짜기에 안개가 찬다.',
   iron: '붉은 흙이 드러난 산이다.',
-  sodo: '큰 나무에 방울과 북을 달았다. 칼을 들고 들어가지 않는다.',
+  sodo: '하늘에 제사 지내는 성스러운 터 — 큰 나무에 방울과 북을 달았다. 칼을 들고 들어가지 않는다. (삼국지 동이전 마한조)',
   pasture: '풀이 너른 들이다. 사람이 살면 말을 칠 수 있다.',
 }
 

@@ -52,7 +52,7 @@ export const TUT_STEPS: readonly TutStep[] = [
     press: ['[data-act="draft"]', tab('draft')], done: (c) => has(c, 'draft'),
   },
   {
-    id: 'settle', text: '「백성」을 열고 빈땅 솔뫼의 「마을 세우기」를 누른다. 군사가 아니라 농사지을 집이 간다. 사람이 살면 새 마을이 된다.',
+    id: 'settle', text: '「백성」을 열고 빈땅 솔뫼의 「새 마을 개척」을 누른다. 군사가 아니라 농사지을 백성이 간다. 사람이 살면 새 마을이 된다.',
     press: ['.stlgo[data-node="tut-solmoe"]', tab('people')], done: (c) => has(c, 'settle') || has(c, 'migrate'),
   },
   {

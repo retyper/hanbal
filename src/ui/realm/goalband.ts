@@ -50,6 +50,8 @@ export const GOAL_CSS = `
 .ap .goalb { position: absolute; left: 12px; top: calc(var(--toph) + var(--legh) + 50px); z-index: 5; max-width: min(260px, 60vw);
   border: 10px solid transparent; border-image: url(__ART__ui/card.png?v=1) 24 fill / 10px stretch; padding: 0 4px 2px; filter: drop-shadow(0 4px 10px #000a); }
 .ap .goalb:empty { display: none; }
+/* 낱말 가운데서 끊지 않는다 (형 10-23: "목표 부분에 줄바꿈 제대로 안 돼서 텍스트가 이상하게 줄바꿈") */
+.ap .goalb { word-break: keep-all; overflow-wrap: anywhere; }
 .ap .goalb .gbh { display: flex; align-items: baseline; gap: 6px; margin: 0 0 3px; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; width: 100%; text-align: left; }
 .ap .goalb .gbh .gmk { color: #e8c070; font-size: 11px; letter-spacing: 1px; } .ap .goalb .gbh .gfold { margin-left: auto; font-style: normal; color: #c9b88e; font-size: 12px; }
 .ap .goalb.folded .gbh { margin: 0; }

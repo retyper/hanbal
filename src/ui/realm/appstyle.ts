@@ -64,6 +64,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .lg.war { border: 2px solid #e0503a; box-shadow: 0 0 8px #e0503a99; position: relative; }
 .ap .lg.war span { display: inline; }
 .ap .lg .lgwar { font-style: normal; font-size: 13px; color: #ffb09a; margin-left: 2px; }
+.ap .lg.ally { border: 2px solid #6ac06a; box-shadow: 0 0 8px #6ac06a99; }
+.ap .lg.ally span { display: inline; }
+.ap .lg .lgally { font-style: normal; font-size: 11px; color: #14200f; background: #8fd07a; border-radius: 6px; padding: 0 4px; margin-left: 2px; }
+.ap .lg.truce { border: 1.5px dashed #b8d0a0; }
 .ap.sheet-open .legend { opacity: .3; pointer-events: none; }
 @media (min-width: 700px) { .ap .lg span { display: inline; } }
 
@@ -331,6 +335,13 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .flow3 > i { align-self: center; font-style: normal; color: var(--gold); font-size: 13px; white-space: nowrap; }
 .ap .goer { margin: 8px 0; } .ap .gname { font-size: 14px; font-weight: 600; }
 .ap .story { color: #cfc6b4; font-style: italic; }
+/* 고을 판 — 형편 · 생산 · 할 일 (이름표 | 값) */
+.ap .nsec { margin: 14px 0 4px; font-size: 13px; color: var(--gold); letter-spacing: .06em; border-bottom: 1px solid #4a3a28; padding-bottom: 3px; }
+.ap .ntab { display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; align-items: baseline; font-size: 14.5px; }
+.ap .ntab > span { color: var(--mute); font-size: 13px; white-space: nowrap; }
+.ap .ntab > b { font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
+.ap .ntab small { font-weight: 400; font-size: 12px; color: var(--mute); }
+.ap .ntab .gic { width: 18px; height: 18px; vertical-align: -3px; }
 .ap .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0; }
 .ap .grid4 > div { display: flex; flex-direction: column; align-items: center; padding: 8px 2px; border-radius: 12px; background: var(--card); }
 .ap .grid4 b { font-size: 18px; } .ap .grid4 span { font-size: 12px; color: var(--mute); }
