@@ -72,6 +72,17 @@ const CMD_DOES: Record<Cmd, string> = {
   art: '그 장수만의 수 · 한 판에 한 번',
 }
 
+/**
+ * 깃발 카드에 쓰는 한 줄 — 길게 누르면 CMD_DOES 전부 (형 10-23: "카드들이 텍스트가 너무 긴데 · 적장 사로잡기는 10줄이 넘어")
+ */
+const CMD_SHORT: Record<Cmd, string> = {
+  charge: '길 튼 적을 뚫는다 · 방진에 꺾인다', hold: '돌격을 꺾는다 · 화살에 약하다', open: '화살비를 세게 · 돌격에 뚫린다',
+  ford: '건너오는 돌격을 크게 꺾는다', rocks: '맞붙기 전에 앞줄을 깎는다', gate: '방진에도 안 꺾이는 들이치기', ram: '물 위의 돌격',
+  volley: '앞줄에 화살비 · 방진에 잘 먹힌다', counter: '적 궁수를 누른다', fire: '불을 놓는다 · 바람이 돌면 위험', height: '내리쏜다 · 방진도 단단',
+  flank: '옆으로 돌아 궁수를 친다', punch: '앞줄과 함께 들이친다', pursue: '흔들리는 적을 크게 벤다', guard: '장수를 지킨다',
+  drum: '사기가 오른다', duel: '장수끼리 맞붙는다', capture: '적장을 잡으러 간다 · 놓치면 잃는다', retreat: '덜 잃고 물러난다', art: '그 장수만의 수',
+}
+
 /** 장수의 비기 — 이름 · 그림 · 하는 일 (heroes.heroArt · tactics 의 비기). 장수마다 다르니 깃발에 그 이름으로 뜬다 */
 export const ART_NAME: Readonly<Record<Art, string>> = {
   snipe: '명궁의 한 발', rite: '진중 굿', sway: '항복 권유', stand: '버텨라', ambush: '샛길 기습',
@@ -91,6 +102,11 @@ export const ART_DOES: Readonly<Record<Art, string>> = {
   feint: '물러나는 척 적의 돌격을 끌어들인다 — 적이 달려들면 꺾고, 안 달려들면 헛일 · 한 번',
   order: '흐트러진 진을 다잡는다 — 이 합 우리가 덜 잃는다 · 한 번',
   shout: '크게 외쳐 군사를 일으킨다 — 우리 사기가 오른다 · 한 번',
+}
+/** 비기 카드의 한 줄 */
+const ART_SHORT: Readonly<Record<Art, string>> = {
+  snipe: '적장을 몸소 쏜다', rite: '사기가 크게 오른다', sway: '흔들리는 적이 넘어온다', stand: '이 합 덜 잃는다', ambush: '샛길로 먼저 친다',
+  vanguard: '이 합 앞줄이 세다', feint: '물러나는 척 끌어들인다', order: '진을 다잡는다', shout: '사기가 오른다',
 }
 /** 겨뤄 본 적장의 버릇 — 앞줄이 즐겨 하는 것 */
 const HABIT_LINE: Partial<Record<Cmd, string>> = {
@@ -475,6 +491,25 @@ export function cmdFxHtml(art: string, c: Cmd, dir: 'r' | 'l', at: number): stri
   return `<div class="wfx-cmd ${dir}">${h}</div>`
 }
 
+/** 한 합의 깃발 연출 차례 — 무리마다 고른 깃발을 앞줄 → 활 → 말 → 장수 차례로, 우리와 적을 번갈아. 같은 쪽 같은 깃발은 한 번 */
+const BEAT_STEP = 0.35
+const BEAT_MAX = 6
+function roundBeats(rd: RoundLog, weAtk: boolean): Array<{ c: Cmd; dir: 'r' | 'l'; at: number; ours: boolean }> {
+  const ord = (o: RoundOrder | undefined, main: Cmd): Cmd[] => {
+    const cs = o === undefined ? [main] : (['front', 'bows', 'horse', 'lead'] as const).map((g) => o[g]).filter((c): c is Cmd => c !== undefined)
+    return [...new Set(cs.length > 0 ? cs : [main])]
+  }
+  const us = ord(weAtk ? rd.oa : rd.od, weAtk ? rd.a : rd.d)
+  const them = ord(weAtk ? rd.od : rd.oa, weAtk ? rd.d : rd.a)
+  const out: Array<{ c: Cmd; dir: 'r' | 'l'; at: number; ours: boolean }> = []
+  for (let i = 0; i < Math.max(us.length, them.length) && out.length < BEAT_MAX; i++) {
+    if (us[i] !== undefined) out.push({ c: us[i]!, dir: 'r', at: 0, ours: true })
+    if (them[i] !== undefined && out.length < BEAT_MAX) out.push({ c: them[i]!, dir: 'l', at: 0, ours: false })
+  }
+  const t0 = STAGE_S[1] - 0.55
+  return out.map((b, i) => ({ ...b, at: t0 + i * BEAT_STEP }))
+}
+
 export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: string, shown: number, anim: boolean, left: number, sel: RoundOrder = {}): string {
   const weAtk = l.atkFaction === me
   const st = l.start
@@ -541,11 +576,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   // 싸움의 기운 — 흙먼지 둘이 바닥을 흐르고, 이 합에 활을 쏜 쪽에서 화살이 낱낱이 활꼴로 날아간다 (그림: realm/fx)
   h += `<div class="wfx"><img class="wfx-dust a" src="${art}fx/dust.png" alt=""><img class="wfx-dust b" src="${art}fx/dust.png" alt="">${AIR_EMBERS}`
   if (anim && last !== undefined) {
-    const usShoot = SHOOT_CMD.has(weAtk ? last.a : last.d), foeShoot = SHOOT_CMD.has(weAtk ? last.d : last.a)
-    if (usShoot) h += volleyHtml(art, 'r', STAGE_S[1] - 0.5)
-    if (foeShoot) h += volleyHtml(art, 'l', STAGE_S[1] - (usShoot ? 0.25 : 0.5))
-    h += cmdFxHtml(art, weAtk ? last.a : last.d, 'r', STAGE_S[1] - 0.55)
-    h += cmdFxHtml(art, weAtk ? last.d : last.a, 'l', STAGE_S[1] - 0.4)
+    for (const b of roundBeats(last, weAtk)) h += SHOOT_CMD.has(b.c) ? volleyHtml(art, b.dir, b.at + 0.05) : cmdFxHtml(art, b.c, b.dir, b.at)
   }
   h += `</div><div class="wrbox">`
   // 위 카드는 그 싸움터를 무대로 — 길·성문·물가·눈밭·밤 (형 10-23: "길에서 마주치거나 수성하거나 공성할 때는 그 위치에 맞게 배경")
@@ -609,12 +640,12 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       let feel = ''
       if (c === 'capture') {
         const [w, cls] = captureWord(p.capture)
-        feel = `<span class="wf-${cls}">${w}</span><span class="wcap">날랜 무리 ${p.squad}명 · 적장 곁 호위 ${p.escort}명</span>`
+        feel = `<span class="wf-${cls}">${w}</span><span class="wcap">무리 ${p.squad} · 호위 ${p.escort}</span>`
       }
       // 장수의 비기 — 그 장수만의 이름·그림 (형: "아이콘과 함께 그거라는걸 알게 해줘야함")
       const ak = c === 'art' ? p.art : undefined
       if (ak !== undefined) tag = `<em class="art">비기</em>`
-      return `<button class="wcmd ${c}${on ? ' on' : ''}" data-war="pick" data-g="${g}" data-c="${c}"><img class="wflag" src="${flagSrc(art, c, ak)}" alt=""><span class="wct"><b>${ak !== undefined ? ART_NAME[ak] : CMD_NAME[c]}</b>${tag}${feel}<small>${esc(ak !== undefined ? ART_DOES[ak] : CMD_DOES[c])}</small></span></button>`
+      return `<button class="wcmd ${c}${on ? ' on' : ''}" data-war="pick" data-g="${g}" data-c="${c}" data-more="${esc(ak !== undefined ? ART_DOES[ak] : CMD_DOES[c])}"><img class="wflag" src="${flagSrc(art, c, ak)}" alt=""><span class="wct"><b>${ak !== undefined ? ART_NAME[ak] : CMD_NAME[c]}</b>${tag}${feel}<small>${esc(ak !== undefined ? ART_SHORT[ak] : CMD_SHORT[c])}</small></span></button>`
     }
     for (const gr of p.groups) {
       if (gr.options.length === 0) continue
@@ -889,7 +920,7 @@ export const WAR_CSS = `
 .ap .wfoe { margin: 0 0 8px; font-size: 13px; color: #e0b0a0; }
 .ap .wgrp { margin: 8px 0; }
 .ap .wgh { font-size: 13.5px; margin-bottom: 4px; } .ap .wgh b { color: var(--gold); margin-right: 4px; }
-.ap .wcmdgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.ap .wcmdgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(200px, 46%), 1fr)); gap: 6px; }
 .ap .wcmd { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 7px 9px; border-radius: 12px; border: 1px solid #6a5236;
   background: #2a1f16; color: var(--ink); font: inherit; text-align: left; cursor: pointer; position: relative; }
 .ap .wcmd.on { border-color: var(--gold); background: #3a3222; box-shadow: 0 0 0 2px #d9b36a66; }
@@ -1092,17 +1123,14 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       if (rd.ev === 'capture-ok' && rd.by === ourSide) buzz(STAGE_S[1], [30, 50, 30, 50, 70])
       else if (rd.beat === ourSide) buzz(STAGE_S[1], [25, 40, 25])
       else if (wePushed) buzz(STAGE_S[1], [15])
-      const mine = weAtk ? rd.a : rd.d
-      const theirs = weAtk ? rd.d : rd.a
-      // 깃발 소리 — 연출과 같은 박자로 (우리 것 크게, 적 것은 조금 작게)
+      // 깃발 소리 — 연출과 같은 차례·박자로 (우리 것 크게, 적 것은 조금 작게)
       const beat = (c: Cmd, s0: number, vol: number): void => {
-        if (c === 'volley') { volley(STAGE_S[0], BATTLE_SFX[c], vol * 0.93); return }
+        if (c === 'volley') { volley(s0, BATTLE_SFX[c], vol * 0.93); return }
         const b = CMD_BEAT[c]
         if (b === undefined) { at(s0, BATTLE_SFX[c], vol); return }
         for (const [dt, v, rt] of b) at(s0 + dt, BATTLE_SFX[c], vol * v, rt)
       }
-      beat(mine, STAGE_S[1] - 0.55, 0.45)
-      if (theirs !== mine) beat(theirs, STAGE_S[1] - 0.4, 0.28)
+      for (const b of roundBeats(rd, weAtk)) beat(b.c, b.at, b.ours ? 0.45 : 0.28)
       // 우리가 달려드는 합엔 함성
       const ours = weAtk ? rd.a : rd.d
       if (ours === 'pursue' || ours === 'flank') at(STAGE_S[0] + 0.15, BATTLE_SFX.cry, 0.26) // 돌격은 소리 안에 함성이 섞였다
