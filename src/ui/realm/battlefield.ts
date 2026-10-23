@@ -152,7 +152,7 @@ const ROUND_NAME = ['첫째', '둘째', '셋째', '넷째', '다섯째', '여섯
 export interface WarHost {
   readonly art: string
   readonly me: string
-  ding(name: string, vol?: number): void
+  ding(name: string, vol?: number, rate?: number): void
   /** 음악 — 싸움이 열리면 싸움 음악, 끝나면 이긴·진 음악 (비기면 그대로) */
   music?(kind: 'war' | 'win' | 'lose'): void
   /** 다 골랐다 — 이 명령들로 진짜 넘긴다 */
@@ -335,6 +335,8 @@ export function warName(r: Realm, l: BattleLine): string {
 const SHOOT_CMD: ReadonlySet<string> = new Set(['volley', 'counter', 'open', 'height'])
 /** 한 무리의 화살 수 */
 const VOLLEY_N = 14
+/** 화살비 소리 — [늦게(초), 크기, 빠르기] 여섯 발. 화면의 화살과 같은 결로 흩어진다 (꾸밈이라 판의 시드와 상관없다) */
+const VOLLEY_SHOTS: ReadonlyArray<readonly [number, number, number]> = [[0, 1, 1], [0.07, 0.7, 1.12], [0.13, 0.85, 0.9], [0.22, 0.6, 1.05], [0.3, 0.75, 0.95], [0.41, 0.5, 1.18]]
 
 /**
  * 화살 한 무리 — 낱낱이 (형: "화살이 지금 이미지 통째로 날아가는데"). dir r: 우리(왼쪽)가 쏜다 · l: 적(오른쪽)이 쏜다.
@@ -832,8 +834,12 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   root.classList.add('war-open')
   const timers: number[] = []
   const clearTimers = (): void => { for (const x of timers.splice(0)) clearTimeout(x) }
-  const at = (s: number, name: string, vol: number): void => {
-    timers.push(window.setTimeout(() => { if (document.visibilityState === 'visible') host.ding(name, vol) }, s * 1000))
+  const at = (s: number, name: string, vol: number, rate = 1): void => {
+    timers.push(window.setTimeout(() => { if (document.visibilityState === 'visible') host.ding(name, vol, rate) }, s * 1000))
+  }
+  /** 화살비 — 한 발 소리를 때·크기·높낮이를 조금씩 달리해 여러 번 (형 10-23: "한 2발 나가는 소리 같아 · 다양하게 발사되게") */
+  const volley = (s: number, name: string, vol: number): void => {
+    for (const [dt, v, rt] of VOLLEY_SHOTS) at(s + dt, name, vol * v, rt)
   }
 
   /** 폰 떨림 — 잘됐을 때만 (좋은 합 · 사로잡기 · 이김). 진 쪽 떨림은 헷갈려서 안 쓴다 (형: "공격하거나 잘됐을때로 긍정 피드백 시켜야 하나? 헷갈리니까??") */
@@ -851,7 +857,9 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       if (rd.ev === 'capture-ok' && rd.by === ourSide) buzz(STAGE_S[1], [30, 50, 30, 50, 70])
       else if (rd.beat === ourSide) buzz(STAGE_S[1], [25, 40, 25])
       else if (wePushed) buzz(STAGE_S[1], [15])
-      at(STAGE_S[0], BATTLE_SFX[weAtk ? rd.a : rd.d], 0.45)
+      const mine = weAtk ? rd.a : rd.d
+      if (mine === 'volley' || mine === 'counter' || mine === 'height') volley(STAGE_S[0], BATTLE_SFX[mine], 0.42)
+      else at(STAGE_S[0], BATTLE_SFX[mine], 0.45)
       // 우리가 달려드는 합엔 함성
       const ours = weAtk ? rd.a : rd.d
       if (ours === 'charge' || ours === 'pursue' || ours === 'flank') at(STAGE_S[0] + 0.15, BATTLE_SFX.cry, 0.26)

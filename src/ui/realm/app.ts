@@ -125,9 +125,9 @@ function goalFolded(): boolean {
 function muted(): boolean {
   try { return localStorage.getItem(MUTE_KEY) === '1' } catch { return false }
 }
-function ding(name: string, vol = 0.6): void {
+function ding(name: string, vol = 0.6, rate = 1): void {
   if (muted()) return
-  playOnce(`${name.includes('/') ? BASE : SFX}${name}${/.w+$/.test(name) ? '' : '.ogg'}`, vol) // 탭이 가려져 있으면 안 낸다 (규칙 4)
+  playOnce(`${name.includes('/') ? BASE : SFX}${name}${/.w+$/.test(name) ? '' : '.ogg'}`, vol, rate) // 탭이 가려져 있으면 안 낸다 (규칙 4)
 }
 const PRACTICE: string = (import.meta.env?.BASE_URL ?? '/') + 'night.html?practice=1'
 /** night.html 이 올라갔다 (f9e77aa) — 없는 쪽으로 보내지 않으려 둔 스위치 */

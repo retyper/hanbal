@@ -123,3 +123,9 @@ battle_crit_g2.mp3  공유마당 · 「battlefieldbackground05」 · 김용배 �
 battle_crit_g3.mp3  공유마당 · 「칼 부딪는1」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254778 · 잘라 겹쳐 씀(변경함)
 battle_crit_g3.mp3  공유마당 · 「칼싸움BG」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254793 · 잘라 겹쳐 씀(변경함)
 battle_crit_g3.mp3  공유마당 · 「battlefieldbackground04」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252057 · 잘라 겹쳐 씀(변경함)
+# 2026-10-23 형이 소리 고르기 판에서 고른 것
+bgm_title_c6.ogg  공유마당 · 「Kingdom (가야금,타악기,대금,스트링,브라스)」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13262857 · 앞부분을 잘라 씀(변경함)
+bgm_lose_c3.ogg  공유마당 · 「국악 효과음 #137 (무거운 마무리)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13379970
+war_cry_c1.ogg  Freesound · ID 563011 (https://freesound.org/s/563011/) · "People screaming in agony when charging into battle" · florianreichelt · CC0 · 3초 잘라 씀
+arrow_volley_c3.ogg  Freesound · ID 789389 (https://freesound.org/s/789389/) · "Arrow Flyby" · modusmogulus · CC0 · 여러 발로 겹쳐 울림
+season_turn_c1.ogg  Freesound · ID 121800 (https://freesound.org/s/121800/) · "gong.WAV" · BOSS MUSIC · CC0

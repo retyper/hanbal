@@ -7,8 +7,9 @@
 
 /** 자리 → 고른 후보 */
 export const PICK = {
-  ui_order: 'b', ui_open: 'c', season_turn: 'a',
-  war_drums: 'a', arrow_volley: 'a', horses: 'c',
+  // c1·c3·c6 … — 형이 소리 고르기 판(claude.ai 아티팩트)에서 고른 것 · 출처는 sfx/CREDITS.txt 끝 (10-23)
+  ui_order: 'b', ui_open: 'c', season_turn: 'c1',
+  war_drums: 'a', arrow_volley: 'c3', horses: 'c',
   horn_victory: 'a', defeat: 'a', capture: 'b',
   dex_new: 'c', birth: 'c', feast: 'a', envoy: 'b', coins: 'c',
   amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b',
@@ -16,12 +17,12 @@ export const PICK = {
   // 출처는 sfx/CREDITS.txt 끝 · 첫 화면의 「소리 출처」. 형이 sound-picker.html 에서 듣고 고르면 글자만 바꾼다
   bgm_map: 'f', bgm_war: 'g1',
   // 이기고 진 뒤의 음악 — 이김은 형이 받은 "즐겁게 추격하는 듯한 한국풍" (싸움 음악으로는 너무 신났다 — 형 10-23)
-  bgm_win: 'a', bgm_lose: 'g1',
+  bgm_win: 'a', bgm_lose: 'c3',
   // 첫 화면(로그인·이어 하기) 음악 — 웅장한 것 (형 10-23: "로그인 화면 메인은 웅장한 bgm 따로")
-  bgm_title: 'g1',
+  bgm_title: 'c6',
   // 누를 때 나는 소리 — 누른 것의 바탕(쇠·엽전·붓·말굽·방울·북·바둑돌·딱따기)대로 (형 10-23: "탭할 때 나는 sfx 도 소재에 맞게 다양한 소리")
   // 싸움의 함성 — 싸움이 열릴 때 · 돌격·추격 합에 (형 10-23: "전투라면 함성소리가 있어야")
-  war_cry: 'g1',
+  war_cry: 'c1',
   // 맞부딪힘 — 한 합마다 · 필살(상성에서 이긴 합)은 더 무겁게. 쇠 한 번 "팅"이 아니라 여럿이 칼·창·방패로 엉겨 붙는 소리 (형 10-23: "진짜 전투하는 효과음")
   battle_clash: 'g1', battle_crit: 'g1',
   tap_arms: 'g1', tap_coin: 'g1', tap_brush: 'g1', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'g1',
@@ -136,11 +137,12 @@ function bufferOf(c: AudioContext, url: string): Promise<AudioBuffer | null> {
   return p
 }
 
-export function playOnce(url: string, vol: number): void {
+/** rate — 빠르기(=높낮이). 같은 소리를 여러 번 겹칠 때 조금씩 달리 낸다 (화살비 여러 발) */
+export function playOnce(url: string, vol: number, rate = 1): void {
   if (document.visibilityState !== 'visible') return
   const c = audio()
   if (c === null) {
-    try { const a = new Audio(url); a.volume = vol; void a.play().catch(() => {}) } catch { /* 소리를 못 내는 곳 */ }
+    try { const a = new Audio(url); a.volume = vol; a.playbackRate = rate; void a.play().catch(() => {}) } catch { /* 소리를 못 내는 곳 */ }
     return
   }
   void c.resume().catch(() => {})
@@ -150,6 +152,7 @@ export function playOnce(url: string, vol: number): void {
     const gain = c.createGain()
     gain.gain.value = vol
     src.buffer = buf
+    src.playbackRate.value = rate
     src.connect(gain).connect(c.destination)
     src.onended = () => { src.disconnect(); gain.disconnect() } // 다 울면 풀어 준다
     src.start()
