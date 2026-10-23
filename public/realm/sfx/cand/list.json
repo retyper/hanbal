@@ -736,5 +736,855 @@
   "license": "CC BY (저작자표시)",
   "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386932&menuNo=200020",
   "seconds": 69.2
+ },
+ {
+  "slot": "cmd_charge",
+  "id": "cmd_charge_1",
+  "file": "cmd_charge_1.ogg",
+  "title": "Stampede",
+  "author": "bevibeldesign",
+  "license": "CC0",
+  "url": "https://freesound.org/s/350425/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_charge",
+  "id": "cmd_charge_2",
+  "file": "cmd_charge_2.ogg",
+  "title": "Climax Stampede Run",
+  "author": "qubodup",
+  "license": "CC0",
+  "url": "https://freesound.org/s/874338/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_charge",
+  "id": "cmd_charge_3",
+  "file": "cmd_charge_3.ogg",
+  "title": "Group running on dirt.mp3",
+  "author": "dlanders",
+  "license": "CC0",
+  "url": "https://freesound.org/s/508410/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_charge",
+  "id": "cmd_charge_4",
+  "file": "cmd_charge_4.ogg",
+  "title": "R27-46-Many Run By on Dirty Floor.wav",
+  "author": "craigsmith",
+  "license": "CC0",
+  "url": "https://freesound.org/s/480677/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_charge",
+  "id": "cmd_charge_5",
+  "file": "cmd_charge_5.ogg",
+  "title": "Group running in sync on concrete",
+  "author": "jhumbucker",
+  "license": "CC0",
+  "url": "https://freesound.org/s/250538/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_hold",
+  "id": "cmd_hold_1",
+  "file": "cmd_hold_1.ogg",
+  "title": "Fortificacion de escudo.wav",
+  "author": "Josethehedgehog",
+  "license": "CC0",
+  "url": "https://freesound.org/s/390373/",
+  "seconds": 1.8
+ },
+ {
+  "slot": "cmd_hold",
+  "id": "cmd_hold_2",
+  "file": "cmd_hold_2.ogg",
+  "title": "Rowdy Group Hype Grunt, Boot Stomp and Shield Smash - WITH reverb.wav",
+  "author": "WelvynZPorterSamples",
+  "license": "CC0",
+  "url": "https://freesound.org/s/621326/",
+  "seconds": 2
+ },
+ {
+  "slot": "cmd_hold",
+  "id": "cmd_hold_3",
+  "file": "cmd_hold_3.ogg",
+  "title": "나무망치로 말뚝박는",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253052&menuNo=200020",
+  "seconds": 0.4
+ },
+ {
+  "slot": "cmd_hold",
+  "id": "cmd_hold_4",
+  "file": "cmd_hold_4.ogg",
+  "title": "Stomp.wav",
+  "author": "000600",
+  "license": "CC0",
+  "url": "https://freesound.org/s/180015/",
+  "seconds": 2.1
+ },
+ {
+  "slot": "cmd_hold",
+  "id": "cmd_hold_5",
+  "file": "cmd_hold_5.ogg",
+  "title": "기와집_대문_나무_두드리다_나무막대_보통_01_MKH8060_ST_192",
+  "author": "(재)전주정보문화산업진흥원",
+  "license": "공공누리 제1유형",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287323&menuNo=200020",
+  "seconds": 1.8
+ },
+ {
+  "slot": "cmd_open",
+  "id": "cmd_open_1",
+  "file": "cmd_open_1.ogg",
+  "title": "갑옷 걷는",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252709&menuNo=200020",
+  "seconds": 3.3
+ },
+ {
+  "slot": "cmd_open",
+  "id": "cmd_open_2",
+  "file": "cmd_open_2.ogg",
+  "title": "Footsteps Knight team - Walk & run, castle hall",
+  "author": "Vrymaa",
+  "license": "CC0",
+  "url": "https://freesound.org/s/770083/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_open",
+  "id": "cmd_open_3",
+  "file": "cmd_open_3.ogg",
+  "title": "Lightmetal_armor",
+  "author": "mitchanary",
+  "license": "CC0",
+  "url": "https://freesound.org/s/506148/",
+  "seconds": 2.4
+ },
+ {
+  "slot": "cmd_open",
+  "id": "cmd_open_4",
+  "file": "cmd_open_4.ogg",
+  "title": "갑옷입고 1명걷는",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252711&menuNo=200020",
+  "seconds": 3.3
+ },
+ {
+  "slot": "cmd_open",
+  "id": "cmd_open_5",
+  "file": "cmd_open_5.ogg",
+  "title": "R27-41-Metal Gear Rattles on Army.wav",
+  "author": "craigsmith",
+  "license": "CC0",
+  "url": "https://freesound.org/s/481931/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_ford",
+  "id": "cmd_ford_1",
+  "file": "cmd_ford_1.ogg",
+  "title": "Wading in Shallow Water.wav",
+  "author": "ryansitz",
+  "license": "CC0",
+  "url": "https://freesound.org/s/342932/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_ford",
+  "id": "cmd_ford_2",
+  "file": "cmd_ford_2.ogg",
+  "title": "Wading in a shallow river",
+  "author": "macdaddyno1",
+  "license": "CC0",
+  "url": "https://freesound.org/s/321594/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_ford",
+  "id": "cmd_ford_3",
+  "file": "cmd_ford_3.ogg",
+  "title": "Splashing Footsteps Shallow Water",
+  "author": "ChristopherJngs",
+  "license": "CC0",
+  "url": "https://freesound.org/s/861369/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_ford",
+  "id": "cmd_ford_4",
+  "file": "cmd_ford_4.ogg",
+  "title": "Walking through water",
+  "author": "rosenberg3",
+  "license": "CC0",
+  "url": "https://freesound.org/s/627004/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_ford",
+  "id": "cmd_ford_5",
+  "file": "cmd_ford_5.ogg",
+  "title": "foleywatersplash01",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252339&menuNo=200020",
+  "seconds": 1.5
+ },
+ {
+  "slot": "cmd_rocks",
+  "id": "cmd_rocks_1",
+  "file": "cmd_rocks_1.ogg",
+  "title": "절벽에서 돌 떨어지는",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254528&menuNo=200020",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_rocks",
+  "id": "cmd_rocks_2",
+  "file": "cmd_rocks_2.ogg",
+  "title": "Rocks falling over rocks, over a steep hill, like a cliff.flac",
+  "author": "gfrog",
+  "license": "CC0",
+  "url": "https://freesound.org/s/190505/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_rocks",
+  "id": "cmd_rocks_3",
+  "file": "cmd_rocks_3.ogg",
+  "title": "Falling and rolling stones.wav",
+  "author": "Tumbleweed3288",
+  "license": "CC0",
+  "url": "https://freesound.org/s/381547/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_rocks",
+  "id": "cmd_rocks_4",
+  "file": "cmd_rocks_4.ogg",
+  "title": "Falling Rock.wav",
+  "author": "spookymodem",
+  "license": "CC0",
+  "url": "https://freesound.org/s/202098/",
+  "seconds": 3.3
+ },
+ {
+  "slot": "cmd_rocks",
+  "id": "cmd_rocks_5",
+  "file": "cmd_rocks_5.ogg",
+  "title": "Rockslide_1.wav",
+  "author": "NinjaSharkStudios",
+  "license": "CC0",
+  "url": "https://freesound.org/s/608957/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_gate",
+  "id": "cmd_gate_1",
+  "file": "cmd_gate_1.ogg",
+  "title": "S10-24 Battering ram hits castle door; big wooden hit.wav",
+  "author": "craigsmith",
+  "license": "CC0",
+  "url": "https://freesound.org/s/675970/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_gate",
+  "id": "cmd_gate_2",
+  "file": "cmd_gate_2.ogg",
+  "title": "S24-21 Battering ram an large heavy door.wav",
+  "author": "craigsmith",
+  "license": "CC0",
+  "url": "https://freesound.org/s/675827/",
+  "seconds": 2.8
+ },
+ {
+  "slot": "cmd_gate",
+  "id": "cmd_gate_3",
+  "file": "cmd_gate_3.ogg",
+  "title": "G26-01-Battering Ram.wav",
+  "author": "craigsmith",
+  "license": "CC0",
+  "url": "https://freesound.org/s/438318/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_gate",
+  "id": "cmd_gate_4",
+  "file": "cmd_gate_4.ogg",
+  "title": "나무문 박살내는",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253053&menuNo=200020",
+  "seconds": 1.9
+ },
+ {
+  "slot": "cmd_gate",
+  "id": "cmd_gate_5",
+  "file": "cmd_gate_5.ogg",
+  "title": "Kicking/Forcing/Breaking Wooden Door",
+  "author": "qubodup",
+  "license": "CC0",
+  "url": "https://freesound.org/s/160213/",
+  "seconds": 0.9
+ },
+ {
+  "slot": "cmd_ram",
+  "id": "cmd_ram_1",
+  "file": "cmd_ram_1.ogg",
+  "title": "Wooden Ship Break",
+  "author": "Kodack",
+  "license": "CC0",
+  "url": "https://freesound.org/s/257752/",
+  "seconds": 3.4
+ },
+ {
+  "slot": "cmd_ram",
+  "id": "cmd_ram_2",
+  "file": "cmd_ram_2.ogg",
+  "title": "SHIP DOCK IMPACT WOOD",
+  "author": "allsowill",
+  "license": "CC0",
+  "url": "https://freesound.org/s/865175/",
+  "seconds": 2.5
+ },
+ {
+  "slot": "cmd_ram",
+  "id": "cmd_ram_3",
+  "file": "cmd_ram_3.ogg",
+  "title": "Boat Violently Beaching onto Shore - NO reverb.wav",
+  "author": "WelvynZPorterSamples",
+  "license": "CC0",
+  "url": "https://freesound.org/s/621332/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_ram",
+  "id": "cmd_ram_4",
+  "file": "cmd_ram_4.ogg",
+  "title": "Big Water Splash",
+  "author": "qubodup",
+  "license": "CC0",
+  "url": "https://freesound.org/s/442773/",
+  "seconds": 2.2
+ },
+ {
+  "slot": "cmd_ram",
+  "id": "cmd_ram_5",
+  "file": "cmd_ram_5.ogg",
+  "title": "교통_통영마리나_선착장_오후_요트_삐그덕소리_Ambeo_ST_192",
+  "author": "(재)전주정보문화산업진흥원",
+  "license": "공공누리 제1유형",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287555&menuNo=200020",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_fire",
+  "id": "cmd_fire_1",
+  "file": "cmd_fire_1.ogg",
+  "title": "Burning arrow 05.wav",
+  "author": "Introspectral",
+  "license": "CC0",
+  "url": "https://freesound.org/s/262478/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_fire",
+  "id": "cmd_fire_2",
+  "file": "cmd_fire_2.ogg",
+  "title": "불 휙",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253638&menuNo=200020",
+  "seconds": 2
+ },
+ {
+  "slot": "cmd_fire",
+  "id": "cmd_fire_3",
+  "file": "cmd_fire_3.ogg",
+  "title": "불 붙는",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253636&menuNo=200020",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_fire",
+  "id": "cmd_fire_4",
+  "file": "cmd_fire_4.ogg",
+  "title": "Basic Fire whoosh",
+  "author": "LookIMadeAThing",
+  "license": "CC0",
+  "url": "https://freesound.org/s/260554/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_fire",
+  "id": "cmd_fire_5",
+  "file": "cmd_fire_5.ogg",
+  "title": "Fire Burst Flash",
+  "author": "Za-Games",
+  "license": "CC0",
+  "url": "https://freesound.org/s/539972/",
+  "seconds": 0.8
+ },
+ {
+  "slot": "cmd_counter",
+  "id": "cmd_counter_1",
+  "file": "cmd_counter_1.ogg",
+  "title": "Bow_release.wav",
+  "author": "PorkMuncher",
+  "license": "CC0",
+  "url": "https://freesound.org/s/263675/",
+  "seconds": 0.4
+ },
+ {
+  "slot": "cmd_counter",
+  "id": "cmd_counter_2",
+  "file": "cmd_counter_2.ogg",
+  "title": "Longbow Release 2.wav",
+  "author": "saturdaysoundguy",
+  "license": "CC0",
+  "url": "https://freesound.org/s/394179/",
+  "seconds": 0.3
+ },
+ {
+  "slot": "cmd_counter",
+  "id": "cmd_counter_3",
+  "file": "cmd_counter_3.ogg",
+  "title": "Bow Release (Bow and Arrow) 4",
+  "author": "Ali_6868",
+  "license": "CC0",
+  "url": "https://freesound.org/s/384917/",
+  "seconds": 0.2
+ },
+ {
+  "slot": "cmd_counter",
+  "id": "cmd_counter_4",
+  "file": "cmd_counter_4.ogg",
+  "title": "Arrow  Loose.wav",
+  "author": "saturdaysoundguy",
+  "license": "CC0",
+  "url": "https://freesound.org/s/394185/",
+  "seconds": 0.4
+ },
+ {
+  "slot": "cmd_counter",
+  "id": "cmd_counter_5",
+  "file": "cmd_counter_5.ogg",
+  "title": "40 Soltar Flecha.wav",
+  "author": "checholio",
+  "license": "CC0",
+  "url": "https://freesound.org/s/443819/",
+  "seconds": 0.5
+ },
+ {
+  "slot": "cmd_height",
+  "id": "cmd_height_1",
+  "file": "cmd_height_1.ogg",
+  "title": "Arrow Release and Hit.wav",
+  "author": "calvarychurchatlanta",
+  "license": "CC0",
+  "url": "https://freesound.org/s/179996/",
+  "seconds": 1.2
+ },
+ {
+  "slot": "cmd_height",
+  "id": "cmd_height_2",
+  "file": "cmd_height_2.ogg",
+  "title": "42 Disparar Flecha.wav",
+  "author": "checholio",
+  "license": "CC0",
+  "url": "https://freesound.org/s/443832/",
+  "seconds": 0.5
+ },
+ {
+  "slot": "cmd_height",
+  "id": "cmd_height_3",
+  "file": "cmd_height_3.ogg",
+  "title": "FX_bow&arrow.wav",
+  "author": "Lydmakeren",
+  "license": "CC0",
+  "url": "https://freesound.org/s/511490/",
+  "seconds": 0.4
+ },
+ {
+  "slot": "cmd_height",
+  "id": "cmd_height_4",
+  "file": "cmd_height_4.ogg",
+  "title": "Arrow.mp3",
+  "author": "thecrow_br",
+  "license": "CC0",
+  "url": "https://freesound.org/s/574044/",
+  "seconds": 1
+ },
+ {
+  "slot": "cmd_height",
+  "id": "cmd_height_5",
+  "file": "cmd_height_5.ogg",
+  "title": "화살 맞는2",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254995&menuNo=200020",
+  "seconds": 1.8
+ },
+ {
+  "slot": "cmd_horse",
+  "id": "cmd_horse_1",
+  "file": "cmd_horse_1.ogg",
+  "title": "말 여러마리 뛰는",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253321&menuNo=200020",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_horse",
+  "id": "cmd_horse_2",
+  "file": "cmd_horse_2.ogg",
+  "title": "말 2마리 통과",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253319&menuNo=200020",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_horse",
+  "id": "cmd_horse_3",
+  "file": "cmd_horse_3.ogg",
+  "title": "a_herd_of_horses.wav",
+  "author": "gurek",
+  "license": "CC0",
+  "url": "https://freesound.org/s/547967/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_horse",
+  "id": "cmd_horse_4",
+  "file": "cmd_horse_4.ogg",
+  "title": "6 horses gallop.wav",
+  "author": "bruno.auzet",
+  "license": "CC0",
+  "url": "https://freesound.org/s/527430/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_horse",
+  "id": "cmd_horse_5",
+  "file": "cmd_horse_5.ogg",
+  "title": "Horses running final.wav",
+  "author": "C-V",
+  "license": "CC0",
+  "url": "https://freesound.org/s/583261/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_guard",
+  "id": "cmd_guard_1",
+  "file": "cmd_guard_1.ogg",
+  "title": "MFXweaponsswordon shield01",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252531&menuNo=200020",
+  "seconds": 0.9
+ },
+ {
+  "slot": "cmd_guard",
+  "id": "cmd_guard_2",
+  "file": "cmd_guard_2.ogg",
+  "title": "MFXweaponsswordon shield02",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252532&menuNo=200020",
+  "seconds": 1.1
+ },
+ {
+  "slot": "cmd_guard",
+  "id": "cmd_guard_3",
+  "file": "cmd_guard_3.ogg",
+  "title": "shield guard",
+  "author": "nekoninja",
+  "license": "CC0",
+  "url": "https://freesound.org/s/370203/",
+  "seconds": 0.8
+ },
+ {
+  "slot": "cmd_guard",
+  "id": "cmd_guard_4",
+  "file": "cmd_guard_4.ogg",
+  "title": "Harness Armour straps - Baldric or military equipment",
+  "author": "Vrymaa",
+  "license": "CC0",
+  "url": "https://freesound.org/s/805470/",
+  "seconds": 3.3
+ },
+ {
+  "slot": "cmd_guard",
+  "id": "cmd_guard_5",
+  "file": "cmd_guard_5.ogg",
+  "title": "Punching Light Armour",
+  "author": "saint_leibowitz",
+  "license": "CC0",
+  "url": "https://freesound.org/s/205744/",
+  "seconds": 0.6
+ },
+ {
+  "slot": "cmd_drum",
+  "id": "cmd_drum_1",
+  "file": "cmd_drum_1.ogg",
+  "title": "전통악기_북_치다_빠른속도_MKH418_ST_192",
+  "author": "(재)전주정보문화산업진흥원",
+  "license": "공공누리 제1유형",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287483&menuNo=200020",
+  "seconds": 4.3
+ },
+ {
+  "slot": "cmd_drum",
+  "id": "cmd_drum_2",
+  "file": "cmd_drum_2.ogg",
+  "title": "전통악기_북_치다_느린속도_MKH418_ST_192",
+  "author": "(재)전주정보문화산업진흥원",
+  "license": "공공누리 제1유형",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287482&menuNo=200020",
+  "seconds": 4.3
+ },
+ {
+  "slot": "cmd_drum",
+  "id": "cmd_drum_3",
+  "file": "cmd_drum_3.ogg",
+  "title": "국악기_사물북5",
+  "author": "한국저작권위원회",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13265852&menuNo=200020",
+  "seconds": 4.2
+ },
+ {
+  "slot": "cmd_drum",
+  "id": "cmd_drum_4",
+  "file": "cmd_drum_4.ogg",
+  "title": "국악기_사물북4",
+  "author": "한국저작권위원회",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13265851&menuNo=200020",
+  "seconds": 4.4
+ },
+ {
+  "slot": "cmd_drum",
+  "id": "cmd_drum_5",
+  "file": "cmd_drum_5.ogg",
+  "title": "국악기_소리북1",
+  "author": "한국저작권위원회",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13265878&menuNo=200020",
+  "seconds": 3.6
+ },
+ {
+  "slot": "cmd_duel",
+  "id": "cmd_duel_1",
+  "file": "cmd_duel_1.ogg",
+  "title": "칼 뽑는1",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254783&menuNo=200020",
+  "seconds": 2.2
+ },
+ {
+  "slot": "cmd_duel",
+  "id": "cmd_duel_2",
+  "file": "cmd_duel_2.ogg",
+  "title": "칼 부딪는1",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254778&menuNo=200020",
+  "seconds": 3.1
+ },
+ {
+  "slot": "cmd_duel",
+  "id": "cmd_duel_3",
+  "file": "cmd_duel_3.ogg",
+  "title": "MFXweaponsswordon sword01",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252535&menuNo=200020",
+  "seconds": 1.9
+ },
+ {
+  "slot": "cmd_duel",
+  "id": "cmd_duel_4",
+  "file": "cmd_duel_4.ogg",
+  "title": "Unsheathed blade",
+  "author": "deleted_user_2906614",
+  "license": "CC0",
+  "url": "https://freesound.org/s/320521/",
+  "seconds": 1.9
+ },
+ {
+  "slot": "cmd_duel",
+  "id": "cmd_duel_5",
+  "file": "cmd_duel_5.ogg",
+  "title": "Swords Clash - High Quality #2",
+  "author": "Christopherderp",
+  "license": "CC0",
+  "url": "https://freesound.org/s/364530/",
+  "seconds": 1.2
+ },
+ {
+  "slot": "cmd_capture",
+  "id": "cmd_capture_1",
+  "file": "cmd_capture_1.ogg",
+  "title": "Lasso rope being spun, spinning through air then throw",
+  "author": "zapsplat.com",
+  "license": "CC0",
+  "url": "https://freesound.org/s/719638/",
+  "seconds": 1.9
+ },
+ {
+  "slot": "cmd_capture",
+  "id": "cmd_capture_2",
+  "file": "cmd_capture_2.ogg",
+  "title": "밧줄묶는1",
+  "author": "조상헌",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13242555&menuNo=200020",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_capture",
+  "id": "cmd_capture_3",
+  "file": "cmd_capture_3.ogg",
+  "title": "Rope Tightening.wav",
+  "author": "EugeneEverett",
+  "license": "CC0",
+  "url": "https://freesound.org/s/596513/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_capture",
+  "id": "cmd_capture_4",
+  "file": "cmd_capture_4.ogg",
+  "title": "싸우는37",
+  "author": "조상헌",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13243401&menuNo=200020",
+  "seconds": 0.3
+ },
+ {
+  "slot": "cmd_capture",
+  "id": "cmd_capture_5",
+  "file": "cmd_capture_5.ogg",
+  "title": "Tied up and struggling",
+  "author": "greenlinker",
+  "license": "CC0",
+  "url": "https://freesound.org/s/484995/",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_retreat",
+  "id": "cmd_retreat_1",
+  "file": "cmd_retreat_1.ogg",
+  "title": "소라 나팔",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253859&menuNo=200020",
+  "seconds": 4.8
+ },
+ {
+  "slot": "cmd_retreat",
+  "id": "cmd_retreat_2",
+  "file": "cmd_retreat_2.ogg",
+  "title": "뿔피리 신호",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253716&menuNo=200020",
+  "seconds": 2.3
+ },
+ {
+  "slot": "cmd_retreat",
+  "id": "cmd_retreat_3",
+  "file": "cmd_retreat_3.ogg",
+  "title": "국악기_징5",
+  "author": "한국저작권위원회",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13265872&menuNo=200020",
+  "seconds": 3.9
+ },
+ {
+  "slot": "cmd_retreat",
+  "id": "cmd_retreat_4",
+  "file": "cmd_retreat_4.ogg",
+  "title": "징소리A",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254592&menuNo=200020",
+  "seconds": 3.5
+ },
+ {
+  "slot": "cmd_retreat",
+  "id": "cmd_retreat_5",
+  "file": "cmd_retreat_5.ogg",
+  "title": "Conch.wav",
+  "author": "RoofDog",
+  "license": "CC0",
+  "url": "https://freesound.org/s/78974/",
+  "seconds": 4.6
+ },
+ {
+  "slot": "cmd_art",
+  "id": "cmd_art_1",
+  "file": "cmd_art_1.ogg",
+  "title": "국악 효과음 #705 (웅장한)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387695&menuNo=200020",
+  "seconds": 4.9
+ },
+ {
+  "slot": "cmd_art",
+  "id": "cmd_art_2",
+  "file": "cmd_art_2.ogg",
+  "title": "국악 효과음 #611 (웅장한)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387601&menuNo=200020",
+  "seconds": 4.9
+ },
+ {
+  "slot": "cmd_art",
+  "id": "cmd_art_3",
+  "file": "cmd_art_3.ogg",
+  "title": "국악 효과음 #355 (웅장한)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387345&menuNo=200020",
+  "seconds": 4.5
+ },
+ {
+  "slot": "cmd_art",
+  "id": "cmd_art_4",
+  "file": "cmd_art_4.ogg",
+  "title": "시작 징소리",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254044&menuNo=200020",
+  "seconds": 4.8
+ },
+ {
+  "slot": "cmd_art",
+  "id": "cmd_art_5",
+  "file": "cmd_art_5.ogg",
+  "title": "징소리B",
+  "author": "김용배",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254593&menuNo=200020",
+  "seconds": 2.7
  }
 ]
