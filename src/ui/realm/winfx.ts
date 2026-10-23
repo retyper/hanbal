@@ -24,7 +24,7 @@ const hash = (i: number, k: number): number => {
  *   패배 — 글자가 무겁게 내려앉고 화면 빛이 잿빛으로 식는다 · 재가 날린다
  *   대패 — 글자가 박히자마자 쩍 갈라지고, 붉고 어둡게 가라앉는다 · 재가 많이
  */
-export function winFxHtml(word: string, sub: string, delay: number, lose = false, brief = false, big = false): string {
+export function winFxHtml(word: string, sub: string, delay: number, lose = false, brief = false, big = false, logo = ''): string {
   let h = `<div class="winfx${lose ? ' lose' : ''}${big ? ' big' : ''}${brief ? ' brief' : ''}" style="--wd:${delay}s" aria-hidden="true"><i class="wf-flash"></i>`
   if (lose) {
     // 재 — 회색 낱알이 천천히 비껴 떨어진다
@@ -56,7 +56,9 @@ export function winFxHtml(word: string, sub: string, delay: number, lose = false
     }
     h += '</div>'
   }
-  return h + `<div class="wf-word"><b>${word}</b>${sub !== '' ? `<span>${sub}</span>` : ''}</div></div>`
+  // 「승리」 로고 그림이 있으면 글자 대신 — 금빛 붓글씨 + 청동 거울·맥궁 (형 10-23: "승리 로고 별도로")
+  const face = logo !== '' && word === '승리' ? `<img class="wf-logo" src="${logo}" alt="${word}">` : `<b>${word}</b>`
+  return h + `<div class="wf-word">${face}${sub !== '' ? `<span>${sub}</span>` : ''}</div></div>`
 }
 
 export const WINFX_CSS = `
@@ -87,6 +89,8 @@ export const WINFX_CSS = `
 @keyframes wfrain { 0% { opacity: 0; transform: translateY(0) rotate(0); } 10% { opacity: 1; } 100% { opacity: 0; transform: translateY(110vh) translateX(30px) rotate(540deg); } }
 /* 큰 글자 — 위에서 쾅 박히고 한 번 흔들린다 */
 .ap .winfx .wf-word { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; animation: wfslam .7s cubic-bezier(.2, 1.4, .35, 1) var(--wd) both; }
+.ap .winfx .wf-word .wf-logo { width: min(82vw, 620px); height: auto; filter: drop-shadow(0 8px 18px #000d) drop-shadow(0 0 26px #ffd27a77); }
+.ap .winfx.brief .wf-word .wf-logo { width: min(70vw, 480px); }
 .ap .winfx .wf-word b { font-family: 'East Sea Dokdo', var(--display); font-weight: 400; font-size: clamp(170px, 40vw, 380px); line-height: .8; letter-spacing: .06em;
   background: linear-gradient(#fffbe0 8%, #f6d27a 45%, #c08a30 78%, #7a4e18); -webkit-background-clip: text; background-clip: text; color: transparent;
   text-shadow: none; filter: drop-shadow(0 4px 0 #2a1606) drop-shadow(0 0 30px #f0c86acc) drop-shadow(0 10px 24px #000); }

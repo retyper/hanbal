@@ -377,7 +377,7 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): 
   })
   // 마지막 장 — 잔치(이김) · 가뭄(짐) 위로 제목
   h += `<figure class="cp last" style="--i:${shots.length}"><img src="${k.art}end/${lastArt}.jpg" alt=""><figcaption><b>${k.esc(title)}</b></figcaption></figure>`
-  h += winFxHtml(win ? '승리' : '패배', '', shots.length * (FILM_S - FILM_OVERLAP_S) + FILM_LEAD_S + 0.6, !win)
+  h += winFxHtml(win ? '승리' : '패배', '', shots.length * (FILM_S - FILM_OVERLAP_S) + FILM_LEAD_S + 0.6, !win, false, false, `${k.art}ui/win-logo.png`)
   h += `<span class="skip">누르면 넘긴다</span>`
   h += `<button class="fnav fprev" data-act="film-prev" aria-label="앞 장면">‹</button><button class="fnav fnext" data-act="film-next" aria-label="다음 장면">›</button></div>`
   h += `<div class="after" style="--n:${shots.length + 1}">`
