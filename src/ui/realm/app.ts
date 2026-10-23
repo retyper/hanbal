@@ -1197,7 +1197,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const lead = a.hero === null ? '장수가 없다' : p.parts.lead >= 1.15 ? '장수가 잘 이끈다' : '장수가 이끈다'
       const mor = p.parts.morale < 0.9 ? '사기가 낮다' : p.parts.morale > 1.05 ? '사기가 높다' : '사기 보통'
       h += `<div class="pow"><b>전투력 ${Math.round(p.total).toLocaleString('ko-KR')}</b><span class="pbar"><i style="width:${Math.max(4, (p.total / top) * 100)}%"></i></span>`
-      h += `<span class="mute">사람 ${p.parts.men} · ${gear} · ${lead} · ${mor}</span></div>`
+      h += `<span class="mute">군사 ${headcount(forceOf(r, a)).toLocaleString('ko-KR')}명 · ${gear} · ${lead} · ${mor}</span></div>`
     }
     const canArm = a.march === null && r.nodes[a.at]?.owner === me()
     const st = left()
@@ -2458,7 +2458,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (n.kind !== 'sodo' && n.owner !== null) {
       const lm = landMul(r, id)
       if (lm !== 1) h += `<span>땅</span><b>${lm > 1 ? `강가 논 — 쌀이 ${Math.round((lm - 1) * 100)}% 더 난다` : `높은 터 — 쌀이 ${Math.round((1 - lm) * 100)}% 덜 난다`}</b>`
-      if (goods.some((g) => g !== 'grain')) h += `<span>일손</span><b>×${workMul(n.hh).toFixed(1)} <small>사람이 많을수록 철·나무·소금·말이 더 난다 (최대 ×${P.realm.workMax})</small></b>`
+      // 소수는 안 보인다 — 말로 (형 10-23: "소수는 아무 데도 안 쓰고 있지 않냐")
+      if (goods.some((g) => g !== 'grain')) { const w = workMul(n.hh); h += `<span>일손</span><b>${w < 0.75 ? '모자라다' : w < 1.2 ? '알맞다' : '넉넉하다'} <small>사는 집이 많을수록 철·나무·소금·말이 더 난다</small></b>` }
     }
     // 바닷가 — 고기잡이는 겨울에 쉰다 (지도의 고기 표가 겨울엔 얼어 흐려진다)
     if (fish) h += `<span>고기잡이</span><b>${icon('good-dried-fish', 'gic')}${seasonOf(r.season) === 'winter' ? '겨울엔 쉰다 · 봄에 다시' : '곡식이 조금 · 겨울엔 쉰다'}</b>`
@@ -3529,7 +3530,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'mv': {
         const army = d['army']!
         if (d['edge'] === '') delete pick[army]
-        else pick[army] = { edge: d['edge']!, ambush: pick[army]?.edge === d['edge'] ? pick[army]!.ambush : false }
+        else {
+          if (pick[army]?.edge !== d['edge']) marchSfx() // 군대 판에서 보내도 떠나는 소리 (형 10-23)
+          pick[army] = { edge: d['edge']!, ambush: pick[army]?.edge === d['edge'] ? pick[army]!.ambush : false }
+        }
         break
       }
       case 'amb': {
