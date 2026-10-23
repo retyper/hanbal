@@ -106,6 +106,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .btn.ghost { background: transparent; color: var(--mute); } .ap .btn:disabled { opacity: .4; cursor: default; }
 .ap .btn.sm { padding: 3px 9px; font-size: 13px; margin-left: auto; } .ap .btn.wide { width: 100%; justify-content: center; margin-top: 10px; padding: 11px; }
 .ap .btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ap .btns.dis { justify-content: flex-end; margin-top: 14px; padding-top: 8px; border-top: 1px dashed #4a3a28; }
 .ap .menu3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; } .ap .menu3 .btn { margin: 0; display: flex; justify-content: center; align-items: center; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ap .banner { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin: 6px 0; border-radius: 10px; background: #30241a; font-size: 14px; }
 .ap .banner.good { background: #24331f; color: #cfeabf; } .ap .banner.bad { background: #3a2622; color: #f1c6b8; }

@@ -1027,7 +1027,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         continue
       }
       const open = openArmy === a.id
-      h += `<div class="btns"><button class="btn ${open ? 'on' : ''}" data-act="open" data-army="${a.id}">${pick[a.id] !== undefined ? '출정 고치기' : '출정'}</button>`
+      // 출정 판을 열면 출정은 아래 붙박이 띠가 맡는다 — 위 단추는 숨긴다 (형 10-23: "하단 고정 만들었으면 방패병 밑의 출정 버튼은 없애야")
+      h += `<div class="btns">${open ? '' : `<button class="btn" data-act="open" data-army="${a.id}">${pick[a.id] !== undefined ? '출정 고치기' : '출정'}</button>`}`
       for (const b of armies) {
         if (b.id !== a.id && b.at === a.at && b.march === null) h += `<button class="btn" data-act="merge" data-army="${a.id}" data-into="${b.id}">${esc(armyName(r, b))}에 합류</button>`
       }
@@ -1040,13 +1041,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
             : `<button class="btn" data-act="lead" data-id="${y.id}" data-army="${a.id}">${esc(josa(y.name, '이', '가'))} 이끈다</button>`
         }
       }
-      if (r.nodes[a.at]?.owner === me()) h += `<button class="btn ghost" data-act="disband" data-army="${a.id}">해산</button>`
       h += `</div>`
       if (pick[a.id] !== undefined && !open) {
         const ed = r.edges[pick[a.id]!.edge]
         if (ed !== undefined) h += `<div class="go">→ ${esc(r.nodes[otherEnd(ed, a.at)!]?.name ?? '')}${pick[a.id]!.ambush ? ' · 기습' : ''}</div>`
       }
       if (open) h += sortiePanel(r, a)
+      // 해산은 카드 맨 밑에 작게 — 잘못 누르기 쉬운 자리에서 뺀다 (형: "해산 버튼은 더 맨 밑에")
+      if (r.nodes[a.at]?.owner === me()) h += `<div class="btns dis"><button class="btn ghost sm" data-act="disband" data-army="${a.id}">해산</button></div>`
       h += `</div></div>`
     }
     if (armyOrders.length > 0) h += `<button class="btn ghost wide" data-act="undo-split">나누기·합류 되돌리기</button>`

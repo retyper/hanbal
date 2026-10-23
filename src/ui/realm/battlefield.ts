@@ -46,7 +46,7 @@ export const CMD_NAME: Record<Cmd, string> = {
   charge: '돌격', hold: '방진', open: '길 트기', ford: '여울 막기', rocks: '바위 굴리기', gate: '성문 깨기', ram: '배 들이받기',
   volley: '화살비', counter: '맞쏘기', fire: '불화살', height: '높은 곳',
   flank: '옆치기', punch: '돌파', pursue: '추격', guard: '호위',
-  drum: '북을 친다', duel: '장수 겨루기', capture: '적장 사로잡기', retreat: '물러난다', art: '장수의 비기',
+  drum: '격려', duel: '장수 겨루기', capture: '적장 사로잡기', retreat: '물러난다', art: '장수의 비기',
 }
 export const CMD_ICON: Record<Cmd, string> = {
   charge: UNIT_ICON.spear, hold: UNIT_ICON.shield, open: UNIT_ICON.pike, ford: 'unit-gaya-heavy', rocks: 'unit-slingers', gate: 'cmd-gate', ram: UNIT_ICON.boat,
@@ -71,7 +71,7 @@ const CMD_DOES: Record<Cmd, string> = {
   punch: '앞줄과 함께 들이친다 · 방진에 부딪히면 크게 다친다',
   pursue: '흔들리는 적을 쫓아 크게 벤다 · 안 흔들리면 헛걸음',
   guard: '장수 곁을 지킨다 — 사로잡기를 막고 옆치기를 받아 내고, 물러날 때 덜 잃는다',
-  drum: '북을 쳐 군사를 다잡는다 — 사기가 조금 오른다',
+  drum: '장수가 군사를 다잡는다 — 사기가 조금 오른다',
   duel: '장수끼리 나선다 · 이기면 적이 무너지고, 지면 우리 장수가 다치거나 쓰러진다 · 한 번',
   capture: '날랜 무리를 적장에게 보낸다 · 무리가 호위보다 크고 적이 흔들릴수록 잘 된다 · 놓치면 무리를 잃는다',
   retreat: '징을 쳐 물린다 · 덜 잃고 장수는 안 잡힌다',
@@ -453,7 +453,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   const ended = p === undefined
   if (p !== undefined && p.round === shown) {
     // 다음 합의 깃발을 든다 — 무리마다 하나, 장수 하나
-    h += `<div class="wnext"><div class="wrn">${ROUND_NAME[shown] ?? `${shown + 1}`} 합 — 무리마다 깃발을 든다</div>`
+    h += `<div class="wnext"><div class="wrn">${ROUND_NAME[shown] ?? `${shown + 1}`} 합 </div>`
     // 낌새는 본 것·들은 것에서만 (형: "직접본거나 주변정보여야지 짐작이머냐")
     const hl = p.hint !== null ? (p.hintSrc === 'habit' ? HABIT_LINE[p.hint] : HINT_LINE[p.hint]) : undefined
     if (p.hint !== null && hl !== undefined && p.hintSrc === 'habit') h += `<p class="whint"><b>적장의 버릇</b> ${esc(josa(foeName, '은', '는'))} 겨뤄 보니 ${esc(hl)} <span class="mute">— 이번 합에도 그럴지는 모른다</span></p>`
@@ -485,15 +485,17 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       h += `<div class="wcmdgrid">${gr.options.map((c) => opt(gr.g, c)).join('')}</div></div>`
     }
     if (p.lead.length > 0) {
-      h += `<div class="wgrp"><div class="wgh"><b>장수</b> ${esc(ourName)}${sel.lead === undefined ? '<span class="mute"> — 안 고르면 북을 친다</span>' : ''}</div>`
+      h += `<div class="wgrp"><div class="wgh"><b>장수</b> ${esc(ourName)}${sel.lead === undefined ? '<span class="mute"> — 안 고르면 격려</span>' : ''}</div>`
       h += `<div class="wcmdgrid">${p.lead.map((c) => opt('lead', c)).join('')}</div></div>`
     }
     // 맡기면 장수의 지략대로 — 그 장수의 얼굴·지략을 단추 옆에 (형: "장수의 지략?수치가 … 버튼주변에 뭔가보여지면")
     const ourH = ourHero !== null ? (prev.heroes[ourHero] ?? after.heroes[ourHero]) : undefined
     h += `<div class="wfoot"><div class="wauto">${ourH !== undefined ? face(ourHero, art, unitOf(ourI)) : ''}<span>${autoLine(ourH)}</span></div>`
-    h += `<button class="btn ghost" data-war="auto">이 싸움은 맡긴다</button>${left > 1 ? `<button class="btn ghost" data-war="autoall">남은 싸움 다 맡긴다</button>` : ''}`
-    // 고른 깃발로 이 합을 싸운다 (형: "전투 설정하고 시작하기가 북을울린다야?")
-    h += `<button class="btn pri" data-war="go">북을 울린다<small>고른 깃발로 이 합을 싸운다</small></button></div></div>`
+    // 누구에게 무엇을 맡기나 — 말로 (형 10-23: "'이 싸움은 맡긴다'는 뭔 소린지 모르겠잖아. 장수에게 전투를 전부 일임한다 이런 식으로")
+    const whom = ourHero !== null ? `${josa(ourName, '에게', '에게')} 이 싸움을 끝까지 맡긴다` : '이 싸움은 끝까지 알아서 싸운다'
+    h += `<button class="btn ghost" data-war="auto">${esc(whom)}</button>${left > 1 ? `<button class="btn ghost" data-war="autoall">남은 싸움도 모두 장수들에게</button>` : ''}`
+    // 이 합을 싸운다 — 장수의 「격려」와 헷갈리지 않게 북 말은 뺐다 (형 10-23: "북을 친다가 있는데 북을 울린다라고 하면 헷갈리잖아 · 설명이 쓸데없어")
+    h += `<button class="btn pri" data-war="go">싸운다</button></div></div>`
   } else if (ended) {
     const atkWon = l.outcome === 'rout' || l.outcome === 'win'
     const good = weAtk === atkWon && l.outcome !== 'draw'
