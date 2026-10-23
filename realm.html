@@ -40,6 +40,18 @@
     <!-- 칠십팔국 시험판 — 앱 화면 (docs/realm/FLOW.md §5). 활터는 index.html 그대로다. -->
     <div id="splash" aria-hidden="true"><img src="realm/logo/emblem.png" alt="" /><svg viewBox="0 0 300 22"><path d="M6 13 C60 4, 118 20, 176 11 S 262 6, 296 12" /></svg><i class="run"></i></div>
     <main id="realm"></main>
+    <script>
+      // 불러오는 동안에도 — 처음 손이 닿으면 바로 전체 화면 (폰만 · 끈 사람은 그대로 · app.ts goFull 과 같은 규칙)
+      (function () {
+        var go = function () {
+          try { if (localStorage.getItem('hanbal.realm.full') === '0') return } catch (e) {}
+          var d = document.documentElement
+          if (document.fullscreenElement || !d.requestFullscreen || !matchMedia('(pointer: coarse)').matches) return
+          d.requestFullscreen({ navigationUI: 'hide' }).catch(function () {})
+        }
+        ['pointerup', 'touchend', 'click'].forEach(function (k) { document.addEventListener(k, go, { capture: true, passive: true }) })
+      })()
+    </script>
     <script type="module" src="/src/realm-main.ts"></script>
   </body>
 </html>

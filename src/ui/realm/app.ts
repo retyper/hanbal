@@ -3203,8 +3203,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   })
 
   // ───────── 손짓 — 한 곳에서 받는다
+  // 전체 화면 — 처음 손이 닿는 그 순간에 (형 10-23: "게임 시작하자마자 되어야 하는 거 아님?").
+  // 브라우저는 손짓 없이는 못 켜게 막는다 — 첫 화면·불러오는 화면을 포함해 어디든 처음 누르면 켠다 (손을 뗄 때가 브라우저가 허락하는 때)
+  for (const k of ['pointerup', 'touchend', 'click', 'keydown'] as const) document.addEventListener(k, () => { if (wantFull()) goFull() }, { capture: true, passive: true })
   root.addEventListener('click', (ev) => {
-    if (wantFull()) goFull()
     const t = (ev.target as HTMLElement).closest<HTMLElement>('[data-act], .nd')
     if (t === null || !root.contains(t)) return
     if (zoom.dragged() && t.closest('.mapwrap') !== null) return // 지도를 끌다 놓은 것 — 누르기가 아니다
