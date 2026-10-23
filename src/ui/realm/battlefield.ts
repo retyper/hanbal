@@ -17,6 +17,7 @@ import { groupMen } from '../../realm/tactics.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
 import { seasonOf } from '../../realm/season.ts'
 import type { Act, Approach, Art, Cmd, Grp, Order, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
+import { P } from '../../tune/params.ts'
 import { snd } from './sound.ts'
 import { WIN_BUZZ, winFxHtml } from './winfx.ts'
 
@@ -391,7 +392,7 @@ const CMD_BEAT: Partial<Record<Cmd, ReadonlyArray<readonly [number, number, numb
 }
 
 /** 한 무리의 화살 수 */
-const VOLLEY_N = 14
+const VOLLEY_N = 9
 /** 화살비 소리 — [늦게(초), 크기, 빠르기] 여섯 발. 화면의 화살과 같은 결로 흩어진다 (꾸밈이라 판의 시드와 상관없다) */
 const VOLLEY_SHOTS: ReadonlyArray<readonly [number, number, number]> = [[0, 1, 1], [0.07, 0.7, 1.12], [0.13, 0.85, 0.9], [0.22, 0.6, 1.05], [0.3, 0.75, 0.95], [0.41, 0.5, 1.18]]
 
@@ -430,8 +431,8 @@ export function cmdFxHtml(art: string, c: Cmd, dir: 'r' | 'l', at: number): stri
   switch (c) {
     case 'charge': case 'punch':
       // 창끝이 낱낱이 앞으로 쏟아진다 · 발밑에 흙먼지 (돌파는 말 탄 무사가 함께)
-      h += many(c === 'punch' ? 7 : 11, 'spear', 'sp', (i) => `--y:${(48 + rnd() * 30).toFixed(1)}%;--dx:${(38 + rnd() * 18).toFixed(1)}vw;${z(0.8, 0.5)};${t(i * 0.05 + rnd() * 0.1)}`)
-      h += many(5, 'smoke', 'pf', (i) => `--x:${(4 + i * 9 + rnd() * 5).toFixed(1)}%;--y:${(78 + rnd() * 8).toFixed(1)}%;${z(0.7, 0.5)};${t(0.15 + i * 0.08)}`)
+      h += many(c === 'punch' ? 4 : 7, 'spear', 'sp', (i) => `--y:${(48 + rnd() * 30).toFixed(1)}%;--dx:${(38 + rnd() * 18).toFixed(1)}vw;${z(0.8, 0.5)};${t(i * 0.05 + rnd() * 0.1)}`)
+      h += many(3, 'smoke', 'pf', (i) => `--x:${(4 + i * 12 + rnd() * 5).toFixed(1)}%;--y:${(78 + rnd() * 8).toFixed(1)}%;${z(0.7, 0.5)};${t(0.15 + i * 0.08)}`)
       if (c === 'punch') h += many(3, 'rider', 'rd', (i) => `--y:${(56 + i * 9).toFixed(1)}%;--dx:${(40 + rnd() * 12).toFixed(1)}vw;${z(0.85, 0.3)};${t(0.1 + i * 0.12)}`)
       break
     case 'flank': case 'pursue':
@@ -441,7 +442,7 @@ export function cmdFxHtml(art: string, c: Cmd, dir: 'r' | 'l', at: number): stri
       break
     case 'hold': case 'ford':
       // 방패가 쿵 쿵 내려앉아 벽이 된다 (가야 방패) · 여울에서는 물보라
-      h += many(7, 'shield', 'sh', (i) => `--x:${(3 + i * 6.2).toFixed(1)}%;--y:${(58 + (i % 2) * 3).toFixed(1)}%;${z(0.85, 0.2)};${t(i * 0.08)}`)
+      h += many(5, 'shield', 'sh', (i) => `--x:${(3 + i * 8).toFixed(1)}%;--y:${(58 + (i % 2) * 3).toFixed(1)}%;${z(0.85, 0.2)};${t(i * 0.08)}`)
       if (c === 'ford') h += many(6, 'splash', 'pop', (i) => `--x:${(36 + rnd() * 30).toFixed(1)}%;--y:${(72 + rnd() * 12).toFixed(1)}%;${z(0.7, 0.6)};${t(0.5 + i * 0.09)}`)
       break
     case 'guard':
@@ -454,8 +455,8 @@ export function cmdFxHtml(art: string, c: Cmd, dir: 'r' | 'l', at: number): stri
       break
     case 'rocks':
       // 바위가 비탈에서 굴러 내려와 적 앞줄에 부딪힌다 · 먼지
-      h += many(5, 'rock', 'rk', (i) => `--x:${(2 + i * 7 + rnd() * 4).toFixed(1)}%;--y:${(62 + rnd() * 16).toFixed(1)}%;--dx:${(40 + rnd() * 16).toFixed(1)}vw;${z(0.55, 0.5)};${t(i * 0.14)}`)
-      h += many(5, 'smoke', 'pf', (i) => `--x:${(50 + rnd() * 22).toFixed(1)}%;--y:${(72 + rnd() * 10).toFixed(1)}%;${z(0.8, 0.5)};${t(0.75 + i * 0.14)}`)
+      h += many(3, 'rock', 'rk', (i) => `--x:${(2 + i * 7 + rnd() * 4).toFixed(1)}%;--y:${(62 + rnd() * 16).toFixed(1)}%;--dx:${(40 + rnd() * 16).toFixed(1)}vw;${z(0.55, 0.5)};${t(i * 0.14)}`)
+      h += many(3, 'smoke', 'pf', (i) => `--x:${(50 + rnd() * 22).toFixed(1)}%;--y:${(72 + rnd() * 10).toFixed(1)}%;${z(0.8, 0.5)};${t(0.75 + i * 0.14)}`)
       break
     case 'gate': case 'ram':
       // 통나무가 세 번 들이친다 — 칠 때마다 나무 조각이 튄다 (배 들이받기는 물보라까지)
@@ -467,7 +468,7 @@ export function cmdFxHtml(art: string, c: Cmd, dir: 'r' | 'l', at: number): stri
       break
     case 'fire':
       // 불화살 — 적 앞줄에 불길이 솟는다
-      h += many(9, 'fire', 'pop fr', (i) => `--x:${(56 + rnd() * 30).toFixed(1)}%;--y:${(60 + rnd() * 18).toFixed(1)}%;${z(0.7, 0.6)};${t(0.75 + i * 0.07)}`)
+      h += many(5, 'fire', 'pop fr', (i) => `--x:${(56 + rnd() * 30).toFixed(1)}%;--y:${(60 + rnd() * 18).toFixed(1)}%;${z(0.7, 0.6)};${t(0.75 + i * 0.07)}`)
       break
     case 'capture':
       // 밧줄이 빙글 날아가 적장에게 걸린다
@@ -491,25 +492,28 @@ export function cmdFxHtml(art: string, c: Cmd, dir: 'r' | 'l', at: number): stri
   return `<div class="wfx-cmd ${dir}">${h}</div>`
 }
 
-/** 한 합의 깃발 연출 차례 — 무리마다 고른 깃발을 앞줄 → 활 → 말 → 장수 차례로, 우리와 적을 번갈아. 같은 쪽 같은 깃발은 한 번 */
-const BEAT_STEP = 0.42
-/** 깃발 소리 한 번의 길이 — 앞부분만 짧게 끊어 다음 깃발과 안 겹치게 (적 깃발은 더 짧게) */
-const BEAT_DUR = 0.9
-const BEAT_MAX = 6
-function roundBeats(rd: RoundLog, weAtk: boolean): Array<{ c: Cmd; dir: 'r' | 'l'; at: number; ours: boolean }> {
-  const ord = (o: RoundOrder | undefined, main: Cmd): Cmd[] => {
-    const cs = o === undefined ? [main] : (['front', 'bows', 'horse', 'lead'] as const).map((g) => o[g]).filter((c): c is Cmd => c !== undefined)
-    return [...new Set(cs.length > 0 ? cs : [main])]
+/**
+ * 한 합의 시계 하나 (feel-lens 검토 10-24 — 전엔 그림·소리·결과가 시계 셋으로 따로 놀아 "맞는 순간"이 두 번이었다).
+ * 깃발: 우리 것 먼저 그다음 적 것 · 쪽마다 warBeatMax 까지 (장수 기술은 장면이 맡아 빼고) → 맞부딪힘(clash) → 이야기(story) → 밀림·잃은 수·막대(result).
+ * warHtml 의 CSS 지연과 openWar 의 소리가 둘 다 이것만 읽는다
+ */
+type Beat = { c: Cmd; dir: 'r' | 'l'; at: number; ours: boolean }
+function roundPlan(rd: RoundLog, weAtk: boolean): { beats: Beat[]; clash: number; story: number; result: number } {
+  const R = P.realm
+  const ord = (o: RoundOrder | undefined, main: Cmd, art: boolean): Cmd[] => {
+    const cs = o === undefined ? [main] : (['front', 'bows', 'horse', 'lead'] as const).filter((g) => !(art && g === 'lead')).map((g) => o[g]).filter((c): c is Cmd => c !== undefined && c !== 'art')
+    return [...new Set(cs.length > 0 ? cs : [main])].slice(0, R.warBeatMax)
   }
-  const us = ord(weAtk ? rd.oa : rd.od, weAtk ? rd.a : rd.d)
-  const them = ord(weAtk ? rd.od : rd.oa, weAtk ? rd.d : rd.a)
-  const out: Array<{ c: Cmd; dir: 'r' | 'l'; at: number; ours: boolean }> = []
-  for (let i = 0; i < Math.max(us.length, them.length) && out.length < BEAT_MAX; i++) {
-    if (us[i] !== undefined) out.push({ c: us[i]!, dir: 'r', at: 0, ours: true })
-    if (them[i] !== undefined && out.length < BEAT_MAX) out.push({ c: them[i]!, dir: 'l', at: 0, ours: false })
-  }
-  const t0 = STAGE_S[1] - 0.55
-  return out.map((b, i) => ({ ...b, at: t0 + i * BEAT_STEP }))
+  const ourS = weAtk ? 'a' : 'd'
+  const lead = (rd.acts ?? []).find((x) => x.g === 'lead' && x.s === ourS)?.c
+  const cut = lead !== undefined && (lead === 'art' || CUT_OF[lead] !== undefined)
+  const us = ord(weAtk ? rd.oa : rd.od, weAtk ? rd.a : rd.d, cut)
+  const them = ord(weAtk ? rd.od : rd.oa, weAtk ? rd.d : rd.a, false)
+  const t0 = cut ? R.warBeatCut : R.warBeat0
+  const beats: Beat[] = [...us.map((c) => ({ c, dir: 'r' as const, at: 0, ours: true })), ...them.map((c) => ({ c, dir: 'l' as const, at: 0, ours: false }))]
+    .map((b, i) => ({ ...b, at: t0 + i * R.warBeatStep }))
+  const clash = (beats[beats.length - 1]?.at ?? t0) + R.warClashGap
+  return { beats, clash, story: clash + R.warStoryGap, result: clash + R.warResultGap }
 }
 
 export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: string, shown: number, anim: boolean, left: number, sel: RoundOrder = {}): string {
@@ -528,6 +532,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   const ctx = storyCtx(prev, { start: st, atkFaction: atkF, defender: l.defender }, me)
   const rounds = (l.rounds ?? []).slice(0, shown)
   const last = rounds[rounds.length - 1]
+  const plan = anim && last !== undefined ? roundPlan(last, weAtk) : null
+  /** 시계의 세 때 — 0: 깃발 줄 · 1: 이야기 · 2: 밀림·잃은 수·막대 (시계가 없으면 옛 STAGE_S) */
+  const tAt = (k: 0 | 1 | 2): number => (plan === null ? STAGE_S[k] : k === 0 ? 0 : k === 1 ? plan.story : plan.result)
   const n = (i: 0 | 1): number => (last === undefined ? 1 : i === 0 ? last.na : last.nd)
   const m = (i: 0 | 1): number => (last === undefined ? (st?.morale[i] ?? 1) : i === 0 ? last.ma : last.md)
   const men0 = (i: 0 | 1): number => st?.men[i] ?? 0
@@ -557,6 +564,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     if (lost <= 0) return ''
     const j: 0 | 1 = i === 0 ? 1 : 0
     const other = Math.round(men0(j) * (n0(j) - n(j)))
+    // 흔들림은 한 합에 한 번 — 더 많이 잃은 쪽만 (같으면 적 쪽)
+    if (lost < other || (lost === other && i === ourI)) return ''
     return ` hit${lost > other * 1.3 ? ' hithard' : ''}`
   }
   const side = (i: 0 | 1, hero: string | null, f: string | undefined, name: string, cls: string): string => {
@@ -567,7 +576,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const num = old !== now ? `<span class="wn swap"><s>${old}명</s><u>${now}명</u></span>` : `<span class="wn">${now}명</span>`
     const hitFx = hitOf(i) !== '' ? `<img class="wfx-hit" src="${art}fx/impact.png" alt="">` : ''
     const em = f !== undefined ? FACTION_ART[f]?.emblem : undefined
-    return `<div class="ws ${cls}${hitOf(i)}" style="--hd:${STAGE_S[1] + 0.15}s">${hitFx}<span class="wpf">${face(hero, art, unitOf(i))}<i></i></span><b>${esc(name)}</b><span class="wnat">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
+    return `<div class="ws ${cls}${hitOf(i)}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s">${hitFx}<span class="wpf">${face(hero, art, unitOf(i))}<i></i></span><b>${esc(name)}</b><span class="wnat">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
       + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}</div>${num}`
       + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}</div><span class="wn">사기</span></div>`
   }
@@ -578,7 +587,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   // 싸움의 기운 — 흙먼지 둘이 바닥을 흐르고, 이 합에 활을 쏜 쪽에서 화살이 낱낱이 활꼴로 날아간다 (그림: realm/fx)
   h += `<div class="wfx"><img class="wfx-dust a" src="${art}fx/dust.png" alt=""><img class="wfx-dust b" src="${art}fx/dust.png" alt="">${AIR_EMBERS}`
   if (anim && last !== undefined) {
-    for (const b of roundBeats(last, weAtk)) h += SHOOT_CMD.has(b.c) ? volleyHtml(art, b.dir, b.at + 0.05) : cmdFxHtml(art, b.c, b.dir, b.at)
+    for (const b of roundPlan(last, weAtk).beats) h += SHOOT_CMD.has(b.c) ? volleyHtml(art, b.dir, b.at + 0.05) : cmdFxHtml(art, b.c, b.dir, b.at)
   }
   h += `</div><div class="wrbox">`
   // 위 카드는 그 싸움터를 무대로 — 길·성문·물가·눈밭·밤 (형 10-23: "길에서 마주치거나 수성하거나 공성할 때는 그 위치에 맞게 배경")
@@ -595,7 +604,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const lostFoe = Math.max(0, Math.round(men0(foeI) * ((prevN[foeI] ?? 1) - (foeI === 0 ? rd.na : rd.nd))))
     const [pw, pc] = pushWord(rd.push, weAtk, lostUs, lostFoe)
     const crit = rd.beat === ourS
-    const d = (k: number): string => (slow ? ` style="--d:${STAGE_S[k]}s"` : '')
+    const d = (k: 0 | 1 | 2): string => (slow ? ` style="--d:${tAt(k)}s"` : '')
     h += `<div class="wrd${slow ? ' slow' : ''}${crit ? ' crit' : ''}"><div class="wrn">${ROUND_NAME[i] ?? `${i + 1}`} 합</div>${reliefBanner(rd, ourS, art)}`
     const akOf = (sd: 'a' | 'd'): Art | undefined => (rd.acts ?? []).find((x) => x.c === 'art' && x.s === sd)?.art
     h += `<div class="wcmds"${d(0)}><span class="wc us">${flags(weAtk ? rd.oa : rd.od, weAtk ? rd.a : rd.d, art, akOf(ourS))}</span><i>×</i><span class="wc foe">${flags(weAtk ? rd.od : rd.oa, weAtk ? rd.d : rd.a, art, akOf(ourS === 'a' ? 'd' : 'a'))}</span></div>`
@@ -676,7 +685,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     else if (weAtk) res = atkWon ? `${josa(place, '을', '를')} 차지한다` : '물러난다'
     else res = atkWon ? `${josa(place, '을', '를')} 빼앗긴다` : `${josa(place, '을', '를')} 지켜 냈다`
     const big = l.outcome === 'rout' || l.outcome === 'routed' ? (good ? '대승 — ' : '대패 — ') : ''
-    const d = anim ? ` style="--d:${STAGE_S[2] + 0.8}s"` : ''
+    const d = anim ? ` style="--d:${tAt(2) + 0.5}s"` : ''
     const fall = l.field !== true && atkWon
     if (fall) h += `<div class="wfx burn"${d}><img class="wfx-smoke" src="${art}fx/smoke.png" alt="">${burnHtml(art, 'l')}${burnHtml(art, 'r')}</div>`
     h += `<div class="wend ${good ? 'good' : l.outcome === 'draw' ? '' : 'bad'}"${d}><b>${big}${esc(res)}</b>`
@@ -761,7 +770,7 @@ export const WAR_CSS = `
 @keyframes wbarflow { to { background-position: 34px 0; } }
 @keyframes wbarshine { 0% { left: -45%; } 55%, 100% { left: 110%; } }
 @media (prefers-reduced-motion: reduce) { .ap .wbar i::before, .ap .wbar i::after, .ap .ws.us .wpf > i, .ap .wbg, .ap .wember { animation: none !important; } }
-.ap .wbar i.wgr { animation-duration: 1s; animation-timing-function: ease-out; animation-delay: 2.4s; animation-fill-mode: both; }
+.ap .wbar i.wgr { animation-duration: .4s; animation-timing-function: ease-out; animation-delay: var(--bd, 2.4s); animation-fill-mode: both; }
 .ap .wn.swap { display: inline-grid; } .ap .wn.swap > * { grid-area: 1 / 1; text-decoration: none; }
 .ap .wn.swap s { animation: wout .3s ease-out 2.4s both; } .ap .wn.swap u { animation: wrin .3s ease-out 2.4s both; }
 @keyframes wout { to { opacity: 0; } }
@@ -844,7 +853,7 @@ export const WAR_CSS = `
 @keyframes wcrd { 0% { opacity: 0; transform: translateX(-14vw); } 12% { opacity: .95; } 82% { opacity: .95; } 100% { opacity: 0; transform: translateX(var(--dx)); } }
 @keyframes wcfl { 0% { opacity: 0; transform: translate(-14vw, -6vh); } 12% { opacity: .95; } 82% { opacity: .95; } 100% { opacity: 0; transform: translate(var(--dx), 12vh); } }
 @keyframes wcbob { from { transform: translateY(0) rotate(-1.5deg); } to { transform: translateY(-5%) rotate(1.5deg); } }
-.ap .wfx-cmd .sh { --w: clamp(54px, 7vw, 112px); --ar: 165 / 256; --an: wcsh; --du: 1.7s; filter: drop-shadow(0 6px 6px #000a); }
+.ap .wfx-cmd .sh { --w: clamp(54px, 7vw, 112px); --ar: 165 / 256; --an: wcsh; --du: 1.1s; filter: drop-shadow(0 6px 6px #000a); }
 @keyframes wcsh { 0% { opacity: 0; transform: translateY(-34vh) rotate(-10deg) scale(1.1); animation-timing-function: cubic-bezier(.6, 0, 1, .6); }
   22% { opacity: 1; transform: translateY(0) rotate(0) scale(1); } 28% { transform: translateY(-4%) scale(1.03, .97); } 34% { transform: translateY(0) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(0); } }
 .ap .wfx-cmd .sh.gd { --an: wcgd; }
@@ -953,9 +962,9 @@ export const WAR_CSS = `
 .ap .wend b { font-size: 21px; } .ap .wend.good b { color: var(--good); } .ap .wend.bad b { color: var(--bad); }
 .ap .wend .wwhy { font-size: 14.5px; color: #e8dcc0; }
 .ap .wr.fast .wrd.slow .wcmds, .ap .wr.fast .wrd.slow .wst, .ap .wr.fast .wrd.slow .wpush, .ap .wr.fast .wend, .ap .wr.fast .wnext { animation-delay: 0s !important; animation-duration: .01s !important; }
-.ap .wr.fast .wbar i.wgr, .ap .wr.fast .wn.swap > * { animation-delay: 0s !important; animation-duration: .01s !important; }
+.ap .wr.fast .wbar i.wgr, .ap .wr.fast .wn.swap > *, .ap .wr.fast .wrd.slow .wloss, .ap .wr.fast .ws.hit, .ap .wr.fast .ws.hit::after, .ap .wr.fast .wfx-hit { animation-delay: 0s !important; animation-duration: .01s !important; }
 /* 장수 기술 — 초상이 옆에서 튀어나와 한 마디 (일본식 컷인 띠·빛살 없이 · 기술 결마다 효과가 다르다) */
-.ap .wcut { position: absolute; inset: 0; z-index: 6; pointer-events: auto; cursor: pointer; overflow: hidden; animation: wcout 1.5s ease-in 1 forwards; }
+.ap .wcut { position: absolute; inset: 0; z-index: 6; pointer-events: auto; cursor: pointer; overflow: hidden; animation: wcout .9s ease-in 1 forwards; }
 @keyframes wcout { 0%, 82% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
 .ap .wcut .wcbg { position: absolute; left: -10%; right: -10%; top: 30%; height: 34%; background: linear-gradient(90deg, #0b0805f0, #2a1a0ce8 40%, #0b0805d0 80%, #0b080500);
   transform: skewY(-4deg) scaleX(0); transform-origin: 0 50%; animation: wcband .35s cubic-bezier(.2, 1.2, .4, 1) both; box-shadow: 0 0 0 2px #c9a45a88; }
@@ -976,7 +985,7 @@ export const WAR_CSS = `
   animation: wcspark 1s ease-out var(--t) both; }
 @keyframes wcspark { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(-40vh); } }
 /* 겨루기·돌진·한 발 — 흰 칼금이 비껴 지나가고 빠르기 줄이 흐른다, 화면이 한 번 흔들린다 */
-.ap .wcut.k-strike, .ap .wcut.k-shot { animation: wcout 1.5s ease-in 1 forwards, wcshake .4s ease-out .3s 1; }
+.ap .wcut.k-strike, .ap .wcut.k-shot { animation: wcout .9s ease-in 1 forwards; }
 @keyframes wcshake { 0%, 100% { transform: none; } 25% { transform: translate(-8px, 4px); } 50% { transform: translate(7px, -4px); } 75% { transform: translate(-3px, 2px); } }
 .ap .wcut .wcslash { position: absolute; left: -20%; right: -20%; top: 48%; height: 6px; background: linear-gradient(90deg, #fff0, #ffffff, #fff0); box-shadow: 0 0 18px #fff;
   transform: rotate(-14deg) scaleX(0); animation: wcslash .32s ease-out .28s both; }
@@ -1101,13 +1110,15 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   // 싸우는 동안 배우기 띠는 숨긴다 (형: "싸우는도중에 하단에 배우기 창 계속 떠있어서 짜증나")
   root.classList.add('war-open')
   const timers: number[] = []
-  const clearTimers = (): void => { for (const x of timers.splice(0)) clearTimeout(x) }
-  const at = (s: number, name: string, vol: number, rate = 1, dur = 0): void => {
+  const clearTimers = (): void => { for (const x of timers.splice(0)) clearTimeout(x); booked = [] }
+  /** 잡아 둔 소리의 [시작, 끝] — 한꺼번에 warSoundMax 를 넘지 않게 (feel-lens 검토 10-24: 한 합에 13개가 겹쳤다) */
+  let booked: Array<readonly [number, number]> = []
+  const room = (s: number, len: number): boolean => booked.filter(([a, b]) => a < s + len && b > s).length < P.realm.warSoundMax
+  const at = (s: number, name: string, vol: number, rate = 1, dur = 0, low = false): void => {
+    const len = dur > 0 ? dur : 1
+    if (low && !room(s, len)) return
+    booked.push([s, s + len])
     timers.push(window.setTimeout(() => { if (document.visibilityState === 'visible') host.ding(name, vol, rate, dur) }, s * 1000))
-  }
-  /** 화살비 — 한 발 소리를 때·크기·높낮이를 조금씩 달리해 여러 번 (형 10-23: "한 2발 나가는 소리 같아 · 다양하게 발사되게") */
-  const volley = (s: number, name: string, vol: number): void => {
-    for (const [dt, v, rt] of VOLLEY_SHOTS) at(s + dt, name, vol * v, rt)
   }
 
   /** 폰 떨림 — 잘됐을 때만 (좋은 합 · 사로잡기 · 이김). 진 쪽 떨림은 헷갈려서 안 쓴다 (형: "공격하거나 잘됐을때로 긍정 피드백 시켜야 하나? 헷갈리니까??") */
@@ -1122,36 +1133,37 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     if (rd !== undefined) {
       const ourSide = weAtk ? 'a' : 'd'
       const wePushed = weAtk ? rd.push > 0.55 : rd.push < 0.45
-      if (rd.ev === 'capture-ok' && rd.by === ourSide) buzz(STAGE_S[1], [30, 50, 30, 50, 70])
-      else if (rd.beat === ourSide) buzz(STAGE_S[1], [25, 40, 25])
-      else if (wePushed) buzz(STAGE_S[1], [15])
-      // 깃발 소리 — 연출과 같은 차례·박자로 (우리 것 크게, 적 것은 조금 작게)
-      // 깃발마다 앞부분만 짧게(BEAT_DUR) — 차례로 또렷하게 들리게 · 적 것은 더 짧고 작게
-      const beat = (c: Cmd, s0: number, vol: number, dur: number): void => {
-        if (c === 'volley') { volley(s0, BATTLE_SFX[c], vol * 0.93); return }
+      const plan = roundPlan(rd, weAtk)
+      // 맞는 순간 하나 — 맞부딪힘 소리 · 떨림 · 흔들림(그림) 이 같은 때 (plan.clash)
+      const clashAt = plan.clash
+      if (rd.ev === 'capture-ok' && rd.by === ourSide) buzz(clashAt, [30, 50, 30, 50, 70])
+      else if (rd.beat === ourSide) buzz(clashAt, [25, 40, 25])
+      else if (wePushed) buzz(clashAt, [15])
+      // 맞부딪힘 · 큰일 소리를 먼저 잡아 둔다 — 깃발 소리가 넘치면 깃발 쪽이 빠진다
+      if (rd.ev === 'capture-ok') at(clashAt, rd.by === ourSide ? BATTLE_SFX.caught : BATTLE_SFX.lose, 0.5, 1, 1)
+      else if (rd.ev === 'duel-win' || rd.ev === 'duel-lose') at(clashAt, BATTLE_SFX.duelWin, 0.45, 1, 1)
+      else at(clashAt, rd.beat !== null ? BATTLE_SFX.crit : BATTLE_SFX.clash, rd.beat !== null ? 0.6 : 0.42, 1, 0.9)
+      // 깃발 소리 — 그림과 같은 차례·박자로, 앞부분만 짧게 · 적 것은 더 짧고 작게, 자리가 없으면 버린다
+      const beat = (c: Cmd, s0: number, vol: number, dur: number, low: boolean): void => {
+        if (c === 'volley' || c === 'counter') { for (const [dt, v, rt] of VOLLEY_SHOTS.slice(0, 3)) at(s0 + dt, BATTLE_SFX[c], vol * v, rt, 0.4, low); return }
         const b = CMD_BEAT[c]
-        if (b === undefined) { at(s0, BATTLE_SFX[c], vol, 1, dur); return }
-        for (const [dt, v, rt] of b) at(s0 + dt, BATTLE_SFX[c], vol * v, rt, Math.max(0.35, dur - dt))
+        if (b === undefined) { at(s0, BATTLE_SFX[c], vol, 1, dur, low); return }
+        for (const [dt, v, rt] of b.slice(0, 2)) at(s0 + dt, BATTLE_SFX[c], vol * v, rt, Math.max(0.25, dur - dt), low)
       }
-      const beats = roundBeats(rd, weAtk)
-      for (const b of beats) beat(b.c, b.at, b.ours ? 0.5 : 0.3, b.ours ? BEAT_DUR : BEAT_DUR * 0.7)
-      // 맞부딪힘은 깃발 소리가 다 지나간 뒤에 한 번 — 겹치면 뭉개진다
-      const clashAt = Math.max(STAGE_S[1], (beats[beats.length - 1]?.at ?? 0) + BEAT_STEP)
-      // 우리가 달려드는 합엔 함성
+      for (const b of plan.beats) beat(b.c, b.at, b.ours ? 0.5 : 0.3, b.ours ? P.realm.warBeatDur : P.realm.warFoeBeatDur, !b.ours)
+      // 우리가 말로 달려드는 합엔 함성 (돌격은 소리 안에 함성이 섞였다)
       const ours = weAtk ? rd.a : rd.d
-      if (ours === 'pursue' || ours === 'flank') at(STAGE_S[0] + 0.15, BATTLE_SFX.cry, 0.26) // 돌격은 소리 안에 함성이 섞였다
-      if (rd.ev === 'capture-ok') at(STAGE_S[1], rd.by === ourSide ? BATTLE_SFX.caught : BATTLE_SFX.lose, 0.5)
-      else if (rd.ev === 'duel-win' || rd.ev === 'duel-lose') at(STAGE_S[1], BATTLE_SFX.duelWin, 0.45)
-      else at(clashAt, rd.beat !== null ? BATTLE_SFX.crit : BATTLE_SFX.clash, rd.beat !== null ? 0.6 : 0.4, 1, 1.2)
+      if (ours === 'pursue' || ours === 'flank') at((plan.beats[0]?.at ?? 0) + 0.1, BATTLE_SFX.cry, 0.26, 1, 0.8, true)
     }
     if (end !== null) {
       const atkWon = end.outcome === 'rout' || end.outcome === 'win'
       const good = (end.atkFaction === host.me) === atkWon && end.outcome !== 'draw'
-      if (end.outcome === 'rout' || end.outcome === 'routed') at(STAGE_S[2] + 0.4, BATTLE_SFX.final, 0.5)
-      at(STAGE_S[2] + 1, good ? BATTLE_SFX.win : BATTLE_SFX.lose, 0.45)
-      if (end.outcome !== 'draw') timers.push(window.setTimeout(() => host.music?.(good ? 'win' : 'lose'), (STAGE_S[2] + 1) * 1000))
+      // 판의 끝 — 결과 때에 승리·패배 소리 하나 · 음악은 그 소리가 가라앉은 뒤 (마지막 일격 소리는 맞부딪힘이 맡는다)
+      const endAt = (rd !== undefined ? roundPlan(rd, weAtk).result : STAGE_S[2]) + 0.5
+      at(endAt, good ? BATTLE_SFX.win : BATTLE_SFX.lose, 0.45)
+      if (end.outcome !== 'draw') timers.push(window.setTimeout(() => host.music?.(good ? 'win' : 'lose'), (endAt + 0.6) * 1000))
       // 이겼다 — 부우웅 크게 (듀오링고처럼)
-      if (good) buzz(STAGE_S[2] + 1, end.outcome === 'rout' ? [60, 40, 60, 40, 60, 40, 120, 60, 300] : [...WIN_BUZZ])
+      if (good) buzz(endAt, end.outcome === 'rout' ? [60, 40, 60, 40, 60, 40, 120, 60, 300] : [...WIN_BUZZ])
     }
   }
 
@@ -1279,6 +1291,9 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const b = (ev.target as HTMLElement).closest<HTMLElement>('[data-war]')
     if (b === null) {
       ov.classList.add('fast') // 아무 데나 누르면 이 합을 끝까지 바로
+      clearTimers()
+      fxTop.replaceChildren()
+      ov.querySelector('.wcut')?.remove()
       return
     }
     const l = t.line
