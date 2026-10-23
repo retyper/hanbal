@@ -42,6 +42,55 @@ export const CHAPTERS: readonly Chapter[] = [
     source: '『삼국사기』 고구려본기 — 송양이 나라를 들어 항복하니 그 땅을 다물도라 하였다.',
     scenario: { id: 'jumong', win: [{ kind: 'submit', factions: ['biryuna'], how: 'either' }, { kind: 'hold', nodes: ['jm-haengin-cap', 'jm-okjeo-cap'] }] },
   },
+  // 아래는 아직 판이 없는 장 — 카드는 "짓는 중"으로 보인다 (형 10-23: "캠페인 수 너무 적음"). 그림은 표지가 오기 전까지 사건 그림을 빌린다
+  {
+    id: 'seorabeol', n: 3, region: null, nation: 'saro', name: '서라벌 여섯 마을', era: '기원전 57년 · 경주', hero: '혁거세',
+    hook: '나정 곁 붉은 알에서 난 아이. 여섯 마을의 촌장들이 그를 임금으로 받들기로 한다 — 칼 대신 마음으로.',
+    goal: '여섯 마을이 모두 따르게 한다 (마을을 치면 다른 마을의 마음이 식는다)',
+    art: 'event/event-golden-egg.jpg',
+    source: '『삼국사기』 신라본기 — 여섯 마을 사람들이 혁거세를 받들어 임금으로 삼았다. 『삼국유사』 기이편.',
+    scenario: { id: 'seorabeol', win: [] },
+  },
+  {
+    id: 'gujibong', n: 4, region: null, nation: 'garak', name: '구지봉의 노래', era: '42년 · 김해', hero: '김수로',
+    hook: '「거북아 거북아 머리를 내어라」 — 하늘에서 내린 금빛 알. 바다 건너 탈해가 왕위를 내놓으라 한다.',
+    goal: '아홉 간이 모두 따르고, 철을 판 나라가 다섯을 넘는다',
+    art: 'event/event-egg-birth.jpg',
+    source: '『삼국유사』 가락국기 — 구지봉에서 아홉 간이 노래하니 금합에 알 여섯이 내려왔다.',
+    scenario: { id: 'gujibong', win: [] },
+  },
+  {
+    id: 'daemusin', n: 5, region: null, nation: 'goguryeo', name: '대무신왕, 부여를 치다', era: '22년 · 동부여', hero: '대무신왕',
+    hook: '할아버지 주몽을 쫓던 그 부여. 봄·여름이면 부여 도읍 앞 들은 말이 빠지는 수렁이 된다.',
+    goal: '동부여 도읍을 치고 대소왕을 쓰러뜨린다',
+    art: 'event/event-winter-ambush.jpg',
+    source: '『삼국사기』 고구려본기 대무신왕 5년 — 부여를 쳐서 괴유가 대소왕의 머리를 베었다.',
+    scenario: { id: 'daemusin', win: [] },
+  },
+  {
+    id: 'jamyeonggo', n: 6, region: null, nation: 'goguryeo', name: '자명고', era: '32년 · 낙랑', hero: '호동 왕자',
+    hook: '적이 오면 스스로 우는 북. 낙랑 공주의 칼끝이 북을 찢어야 기습이 먹힌다 — 대가가 따른다.',
+    goal: '낙랑 도읍을 기습으로 쥔다',
+    art: 'event/event-night-raid.jpg',
+    source: '『삼국사기』 고구려본기 대무신왕 15년 — 낙랑 공주가 무기고의 북과 뿔피리를 찢었다.',
+    scenario: { id: 'jamyeonggo', win: [] },
+  },
+  {
+    id: 'samseonghyeol', n: 7, region: null, nation: 'tamna', name: '삼성혈', era: '아득한 옛날 · 탐라', hero: '고을나',
+    hook: '한라산 북쪽 땅에서 솟아난 세 신인. 바다 건너 벽랑국의 세 공주가 상자를 타고 온다.',
+    goal: '섬의 마을을 다 모으고 벽랑국 공주와 혼인한다',
+    art: 'event/event-whale-hunt.jpg',
+    source: '『고려사』 지리지 탐라 — 고·양·부 세 신인이 땅에서 솟아나 활을 쏘아 살 곳을 정했다.',
+    scenario: { id: 'samseonghyeol', win: [] },
+  },
+  {
+    id: 'namusaja', n: 8, region: null, nation: 'saro', name: '나무 사자', era: '512년 · 우산국', hero: '이사부',
+    hook: '배마다 나무 사자를 싣고 간다. "항복하지 않으면 이 짐승을 풀어 밟아 죽이겠다."',
+    goal: '우산국이 싸우지 않고 항복한다',
+    art: 'event/event-eight-harbours.jpg',
+    source: '『삼국사기』 신라본기 지증왕 13년 — 이사부가 나무 사자로 우산국을 항복시켰다.',
+    scenario: { id: 'namusaja', win: [] },
+  },
 ]
 
 /** 장의 목표를 판에 얹을 꼴로 — 판마다 제 것을 가진다 (marks 가 판마다 쌓인다) */
