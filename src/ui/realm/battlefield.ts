@@ -406,7 +406,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const num = old !== now ? `<span class="wn swap"><s>${old}명</s><u>${now}명</u></span>` : `<span class="wn">${now}명</span>`
     const hitFx = hitOf(i) !== '' ? `<img class="wfx-hit" src="${art}fx/impact.png" alt="">` : ''
     const em = f !== undefined ? FACTION_ART[f]?.emblem : undefined
-    return `<div class="ws ${cls}${hitOf(i)}" style="--hd:${STAGE_S[1] + 0.15}s">${hitFx}${face(hero, art, unitOf(i))}<b>${esc(name)}</b><span class="wnat">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
+    return `<div class="ws ${cls}${hitOf(i)}" style="--hd:${STAGE_S[1] + 0.15}s">${hitFx}<span class="wpf">${face(hero, art, unitOf(i))}<i></i></span><b>${esc(name)}</b><span class="wnat">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
       + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}</div>${num}`
       + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}</div><span class="wn">사기</span></div>`
   }
@@ -424,7 +424,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   h += `</div><div class="wrbox">`
   // 위 카드는 그 싸움터를 무대로 — 길·성문·물가·눈밭·밤 (형 10-23: "길에서 마주치거나 수성하거나 공성할 때는 그 위치에 맞게 배경")
   h += `<div class="wtop" style="--wtbg:url('${warBg(art, ground)}')"><div class="wrh"><b>${esc(warName(after, l))}</b>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}</div>`
-  h += `<div class="wvs">${side(ourI, ourHero, ourF, ourName, 'us')}<i class="vs">VS</i>${side(foeI, foeHero, foeF, foeName, 'foe')}</div></div>`
+  h += `<div class="wvs">${side(ourI, ourHero, ourF, ourName, 'us')}<img class="vs" src="${art}ui/vs.png" alt="VS">${side(foeI, foeHero, foeF, foeName, 'foe')}</div></div>`
   if (keys !== '') h += `<style>${keys}</style>`
   h += `<p class="wintro">${esc(introLine(l, weAtk, fname(foeF)))}${l.militia > 0 && !weAtk ? ` 마을 장정 ${l.militia}명이 함께 선다.` : l.militia > 0 ? ` 마을 장정 ${l.militia}명이 막아선다.` : ''}</p>`
   // 지나간 합들 — 마지막 합만 천천히
@@ -552,7 +552,20 @@ export const WAR_CSS = `
 /* 위 카드 — 굴려도 늘 보인다 (포켓몬의 HP 창) */
 .ap .wtop { position: sticky; top: 0; z-index: 3; margin: 0 -14px; padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
   background: linear-gradient(#0d0f1388, #0d0f1311 35%, #0d0f1344 70%, #0d0f13f2), var(--wtbg) center 55% / cover no-repeat;
-  border-bottom: 1px solid #6a5236; border-radius: 0 0 16px 16px; box-shadow: 0 6px 18px #000a; }
+  border: 22px solid transparent; border-image: url(__ART__ui/frame-panel.png) 118 / 22px stretch; background-clip: padding-box; box-shadow: 0 6px 18px #000a; }
+@media (max-width: 520px) { .ap .wtop { border-width: 16px; border-image-width: 16px; } }
+/* 장수 초상 — 쇠 귀퉁이 청동 테 안에 얼굴 (테 그림이 얼굴 위에 얹힌다) */
+.ap .wpf { position: relative; display: grid; place-items: center; width: var(--pf, 108px); aspect-ratio: 1; flex: none; }
+.ap .wpf > i { position: absolute; inset: 0; background: url(__ART__ui/frame-portrait.png) center / 100% 100% no-repeat; pointer-events: none; z-index: 1; filter: drop-shadow(0 3px 6px #000c); }
+.ap .wpf .wf { width: 66%; height: 66%; border: 0; border-radius: 2px; box-shadow: none; }
+.ap .ws.foe .wpf > i { filter: drop-shadow(0 3px 6px #000c) sepia(.35) hue-rotate(-20deg) saturate(1.3); }
+@media (max-width: 520px) { .ap .wtop .wpf { --pf: 80px; } }
+.ap .wpf.big { --pf: clamp(120px, 34vw, 190px); }
+.ap .wosd .wpf .wf { width: 66%; height: 66%; border: 0; border-radius: 2px; box-shadow: none; }
+.ap .wvs img.vs { width: clamp(52px, 13vw, 78px); height: auto; align-self: center; filter: drop-shadow(0 3px 6px #000c); }
+.ap .wom img.wox { width: clamp(70px, 20vw, 130px); height: auto; filter: drop-shadow(0 0 14px #ff6a3a88) drop-shadow(0 3px 6px #000); animation: wostamp .5s cubic-bezier(.2, 1.6, .4, 1) .8s both; }
+/* 나라 이름 — 싸움터 그림 위에서도 읽히게 어두운 띠 */
+.ap .ws .wnat { background: #0b0a08c8; border: 1px solid #6a523688; border-radius: 999px; padding: 1px 9px 1px 4px; text-shadow: 0 1px 2px #000; }
 .ap .wtop .ws b, .ap .wtop .ws > span, .ap .wtop .wn, .ap .wrh { text-shadow: 0 1px 3px #000, 0 0 8px #000c; }
 .ap .wtop .wf { box-shadow: 0 4px 14px #000c; }
 @media (max-width: 520px) { .ap .wtop .wf { width: 58px; height: 58px; } .ap .wtop .wrh { font-size: 16px; margin-bottom: 4px; } }
@@ -690,6 +703,9 @@ export const WAR_CSS = `
 .ap .wcmd { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 7px 9px; border-radius: 12px; border: 1px solid #6a5236;
   background: #2a1f16; color: var(--ink); font: inherit; text-align: left; cursor: pointer; position: relative; }
 .ap .wcmd.on { border-color: var(--gold); background: #3a3222; box-shadow: 0 0 0 2px #d9b36a66; }
+/* 깃발 카드 — 같은 청동 테 (가늘게) · 고르면 금빛이 번진다 */
+.ap .wcmd { border: 12px solid transparent; border-image: url(__ART__ui/frame-panel.png) 118 / 12px stretch; background: #1d1610 padding-box; border-radius: 0; }
+.ap .wcmd.on { border-image: url(__ART__ui/frame-panel.png) 118 / 12px stretch; background: #3a2e1c padding-box; box-shadow: none; filter: drop-shadow(0 0 6px #ffd27aaa); }
 /* 깃발 카드 — 왼쪽에 깃발 한 폭, 고르면 깃발이 들려 나부낀다 */
 .ap .wcmd { flex-direction: row; align-items: flex-start; gap: 8px; padding: 7px 9px 7px 6px; }
 .ap .wcmd img.wflag { position: static; width: 50px; height: auto; flex: none; opacity: 1; filter: drop-shadow(0 2px 3px #000a); transform-origin: 18% 4%; transition: transform .25s; }
@@ -777,11 +793,11 @@ function openHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: str
     : `${josa(foe, '이', '가')} ${josa(place, '으로', '로')} 쳐들어왔다!`
   const ground = warGround(prev, l)
   const side = (cls: string, f: string | undefined, hero: string | null, n: number, fallback: string): string =>
-    `<div class="wosd ${cls}" style="--c:${color(f)}">${emb(f)}${face(hero, art, fallback)}<b>${esc(hname(hero, f))}</b><span>${esc(fname(f))} · ${n.toLocaleString('ko-KR')}명</span></div>`
+    `<div class="wosd ${cls}" style="--c:${color(f)}">${emb(f)}<span class="wpf big">${face(hero, art, fallback)}<i></i></span><b>${esc(hname(hero, f))}</b><span>${esc(fname(f))} · ${n.toLocaleString('ko-KR')}명</span></div>`
   const share = Math.round((us / Math.max(1, us + them)) * 100)
   return `<div class="wob" style="background-image:url('${warBg(art, ground)}')"></div><div class="wofl"></div>`
     + `<div class="wohead"><b>${esc(warName(after, l))}</b><span>${esc(sub)}</span></div>`
-    + `<div class="woin">${side('us', ourF, ourHero, us, UNIT_ICON.spear)}<div class="wom"><i class="wox">⚔</i></div>${side('foe', foeF, foeHero, them, UNIT_ICON.shield)}</div>`
+    + `<div class="woin">${side('us', ourF, ourHero, us, UNIT_ICON.spear)}<div class="wom"><img class="wox" src="${art}ui/vs.png" alt="VS"></div>${side('foe', foeF, foeHero, them, UNIT_ICON.shield)}</div>`
     + `<div class="wofoot"><div class="wobar"><i class="us" style="width:${share}%"></i><i class="foe" style="width:${100 - share}%"></i></div>`
     + `<em>⚔ ${esc(josa(foe, '과', '와'))} 싸우는 중</em><small>누르면 넘어간다</small></div>`
 }

@@ -287,7 +287,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = TIP_CSS + APP_CSS + LOG_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + CLOUD_CSS + WINFX_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
+  style.textContent = TIP_CSS + APP_CSS + LOG_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + CLOUD_CSS + WINFX_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
   installTips(root)
@@ -1877,7 +1877,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const busy = ours ? heroBusy(r, id) : null
     if (busy !== null) h += `<div class="banner busyb">⧗ ${esc(busy)} — 이번 계절엔 다른 일을 못 한다</div>`
     if (ours && busy === null && weds.length === 0 && x.spouse === undefined) h += wedHtml(r, x)
-    if (busy === null || (r.expeditions ?? []).some((e) => e.hero === id)) h += expHtml(r, x)
+    h += expHtml(r, x) // 묶인 장수도 원정 칸은 보인다 — 단추만 흐리게
     const pending = heroOrders.filter((o) => (o.kind === 'assign' || o.kind === 'lead' || o.kind === 'persuade' || o.kind === 'hire') && o.hero === id)
     for (const o of pending) {
       const what = o.kind === 'assign' ? (o.node === null ? '맡은 일을 그만둔다' : `${josa(r.nodes[o.node]?.name ?? '', '을', '를')} 맡는다`) : o.kind === 'lead' ? '군대를 이끈다' : o.kind === 'hire' ? '우리 장수로 들였다' : '회유한다'
@@ -1988,7 +1988,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const odds = expOdds(x, pick.dest, pick.len)
     // 쉬는 장수가 원정을 떠나면 사람 손이 하나 준다 — 이미 고른 공작·사신이 버려지지 않게 (형 10-23: "방화·소문 이미 보냈는데 원정을 중복해서 보낼 수 있는 건 말이 안 되지")
     const handsShort = idleHeroes(r, me()).includes(x.id) && handsUsed() > handsCap(r) - 1
-    const block = expBlock(r, me(), x.id, pick.dest, pick.len) ?? (handsShort ? '이번 계절 사람 손이 다 찼다 — 공작·사신을 줄이면 보낼 수 있다' : null)
+    const block = heroBusy(r, x.id) ?? expBlock(r, me(), x.id, pick.dest, pick.len) ?? (handsShort ? '이번 계절 사람 손이 다 찼다 — 공작·사신을 줄이면 보낼 수 있다' : null)
     // 고른 먼 땅의 그림이 원정 칸 뒤에 깔린다 — 고르면 바뀐다
     let h = `<div class="exp" style="--expbg:url('${ART}exp/exp-${pick.dest}.jpg')"><b>원정</b><span class="mute">먼 땅으로 보낸다. 좋은 장수일수록 좋은 것을 가져오지만, 그동안 판에 없다.</span><div class="seg expd">`
     for (const d of DEST_IDS) {
@@ -2004,8 +2004,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     ]
     for (const [k, label] of rows) h += `<span class="od ${k}"><i style="width:${Math.round(odds[k] * 100)}%"></i><b>${esc(label)}</b><em>${word(odds[k])}</em></span>`
     h += `</div>`
-    h += block !== null ? `<p class="mute">${esc(block)}</p>`
-      : `<button class="btn" data-act="exp-go" data-id="${x.id}">${esc(josa(DESTS[pick.dest].name, '으로', '로'))} 보낸다 · 길 양식 곡식 ${P.realm.expGrainPer * EXP_SEASONS[pick.len]}</button>`
+    // 못 보내도 단추는 그대로 — 흐리게 두고 까닭을 밑에 (형 10-23: "버튼은 두되 비활성화해 두라고")
+    h += `<button class="btn" data-act="exp-go" data-id="${x.id}" ${block !== null ? 'disabled' : ''}>${esc(josa(DESTS[pick.dest].name, '으로', '로'))} 보낸다 · 길 양식 곡식 ${P.realm.expGrainPer * EXP_SEASONS[pick.len]}</button>`
+    if (block !== null) h += `<p class="mute">${esc(block)}</p>`
     return h + `</div>`
   }
 
