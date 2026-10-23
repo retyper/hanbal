@@ -138,4 +138,4 @@ bgm_map_c10.ogg  공유마당 · 「국악 BGM #192 (한적하고 여유로운)�
 bgm_war_c7.ogg  공유마당 · 「국악 BGM #197 (사물놀이)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386937
 bgm_war_c8.ogg  공유마당 · 「LSMBG0704_사물놀이」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312616
 bgm_end_win_c5.ogg  공유마당 · 「국악 BGM #179 (벅차오르는)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386919
-bgm_end_lose_c4.ogg  공유마당 · 「국악 BGM #64 (비장한)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386804
+bgm_end_lose_c6.ogg  공유마당 · 「국악 BGM #228 (비극적인)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386968

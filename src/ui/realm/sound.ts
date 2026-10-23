@@ -26,7 +26,7 @@ export const PICK = {
   // 맞부딪힘 — 한 합마다 · 필살(상성에서 이긴 합)은 더 무겁게. 쇠 한 번 "팅"이 아니라 여럿이 칼·창·방패로 엉겨 붙는 소리 (형 10-23: "진짜 전투하는 효과음")
   battle_clash: 'c14', battle_crit: 'g1',
   // 판이 끝났을 때(이겼다·졌다 화면) — 싸움 하나 이긴·진 음악과 따로 (형 10-23: "게임 승리했을 때나 패배했을 때 사운드는 없어?")
-  bgm_end_win: 'c5', bgm_end_lose: 'c4',
+  bgm_end_win: 'c5', bgm_end_lose: 'c6',
   tap_arms: 'g1', tap_coin: 'g1', tap_brush: 'g1', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'g1',
 } as const
 /** ogg 가 아닌 후보 — 형이 받아 온 것은 받은 꼴 그대로 · 공유마당 음악은 mp3 · 누르는 소리는 브라우저로 잘라 낸 wav */
@@ -45,10 +45,10 @@ export const LATER: ReadonlySet<Slot> = new Set<Slot>([])
 export const ROTATE: Readonly<Partial<Record<Slot, readonly string[]>>> = { bgm_map: ['f', 'g', 'c2', 'c9', 'c3', 'c4', 'c10'], bgm_war: ['c7', 'c8'] }
 /**
  * 곡마다 소리 크기 — 형이 가져온 지도 곡(-16dB 언저리)에 맞춘다 (형 10-23: "소리도 너무 커"). 1 보다 크게는 못 키운다.
- * 2026-10-23 잰 값: map c4 -12.0 · c9 -11.9 · war c7 -12.5 · title c6 -14.0 · 끝 이김 c5 -11.7 · 끝 짐 c4 -16.0
+ * 2026-10-23 잰 값: map c4 -12.0 · c9 -11.9 · war c7 -12.5 · title c6 -14.0 · 끝 이김 c5 -11.7 · 끝 짐 c6 -14.8
  */
 const TRACK_GAIN: Readonly<Partial<Record<string, number>>> = {
-  bgm_map_c4: 0.56, bgm_map_c9: 0.56, bgm_war_c7: 0.6, bgm_title_c6: 0.72, bgm_end_win_c5: 0.54, bgm_end_lose_c4: 0.9,
+  bgm_map_c4: 0.56, bgm_map_c9: 0.56, bgm_war_c7: 0.6, bgm_title_c6: 0.72, bgm_end_win_c5: 0.54, bgm_end_lose_c6: 0.87,
 }
 const gainOf = (slot: Slot, pick: string = PICK[slot]): number => TRACK_GAIN[`${slot}_${pick}`] ?? 1
 
