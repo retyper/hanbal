@@ -23,22 +23,26 @@
         background: radial-gradient(ellipse at 50% 42%, #2a2218 0, #14110d 55%, #0a0907 100%); transition: opacity .7s ease, visibility .7s; }
       #splash.out { opacity: 0; visibility: hidden; }
       #splash img { width: min(38vw, 170px); aspect-ratio: 1; opacity: 0; animation: spin 1.2s ease-out .1s forwards, spglow 3s ease-in-out 1.3s infinite; }
-      #splash svg { width: min(60vw, 280px); height: 22px; overflow: visible; }
-      #splash path { fill: none; stroke: #c9a45a; stroke-width: 5; stroke-linecap: round; stroke-dasharray: 320; stroke-dashoffset: 320; opacity: .85; animation: sppath 2.6s cubic-bezier(.4, 0, .2, 1) .5s forwards; }
+      /* 받는 막대 — 옻칠 홈에 단청 띠가 차오른다 (realm/ui/dancheong-tile.jpg · 제미나이 · 형 10-23: "꼬부랑 꼬부랑 … 한국 전통을 살려서") */
+      .lbar { width: min(66vw, 340px); height: 20px; padding: 3px; box-sizing: content-box; border-radius: 3px; background: linear-gradient(#0b0806, #1a120c);
+        box-shadow: inset 0 1px 3px #000, 0 0 0 1px #c9a45a, 0 0 0 3px #2a1c0e, 0 0 0 4px #8a6a3a, 0 6px 16px #000a; }
+      .lbar i { display: block; height: 100%; width: 0; background: url(realm/ui/dancheong-tile.jpg) 0 50% / auto 100% repeat-x; box-shadow: 0 0 10px #ffd27a55, inset -2px 0 0 #fff4c8aa;
+        transition: width .4s cubic-bezier(.3, .8, .4, 1); animation: lbarpre 1.6s ease-out .2s forwards; }
+      @keyframes lbarpre { to { width: 28%; } }
+      .lbar.go i { animation: none; }
       /* 오른쪽 아래 — 말 탄 궁수 그림자가 달린다 (여섯 컷 · public/realm/fx/run-strip.png · 제미나이 실루엣) */
       #splash .run { position: absolute; right: 6vw; bottom: 8vh; width: min(34vw, 150px); aspect-ratio: 170 / 165; background: url(realm/fx/run-strip.png) 0 0 / 600% 100% no-repeat;
         opacity: .7; animation: sprun .56s steps(6) infinite, spbob .28s ease-in-out infinite alternate; }
       @keyframes spin { from { opacity: 0; transform: scale(.85); filter: brightness(.4); } to { opacity: 1; transform: none; filter: none; } }
       @keyframes spglow { 0%, 100% { filter: drop-shadow(0 0 10px #e8b85a33); } 50% { filter: drop-shadow(0 0 26px #f0c86a99); } }
-      @keyframes sppath { to { stroke-dashoffset: 0; } }
       @keyframes sprun { from { background-position-x: 0%; } to { background-position-x: 120%; } }
       @keyframes spbob { from { transform: translateY(0); } to { transform: translateY(-3px); } }
-      @media (prefers-reduced-motion: reduce) { #splash img, #splash path, #splash .run { animation: none; opacity: 1; stroke-dashoffset: 0; } }
+      @media (prefers-reduced-motion: reduce) { #splash img, #splash .run { animation: none; opacity: 1; } }
     </style>
   </head>
   <body>
     <!-- 칠십팔국 시험판 — 앱 화면 (docs/realm/FLOW.md §5). 활터는 index.html 그대로다. -->
-    <div id="splash" aria-hidden="true"><img src="realm/logo/emblem.png" alt="" /><svg viewBox="0 0 300 22"><path d="M6 13 C60 4, 118 20, 176 11 S 262 6, 296 12" /></svg><i class="run"></i></div>
+    <div id="splash" aria-hidden="true"><img src="realm/logo/emblem.png" alt="" /><div class="lbar"><i></i></div><i class="run"></i></div>
     <main id="realm"></main>
     <script>
       // 앱으로 설치 — 크롬이 권할 때를 받아 둔다 (설정의 「앱으로 설치」 · app.ts installPrompt). 브라우저 전체 화면은 쓰지 않는다

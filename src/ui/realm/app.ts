@@ -3214,6 +3214,43 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 군대를 보냈다 — 군사가 발맞춰 떠나는 소리 (형 10-23: "출정 보내기 완료될 때는 뭔가 군대를 부리는 소리가 필요함") */
   const marchSfx = (): void => { if (document.visibilityState === 'visible') ding(snd('march_go'), 0.4) }
 
+  /**
+   * 판에 들어갈 때 가림막 — 지도가 쓰는 그림(조각·고을·안개·한지)을 다 받을 때까지. 막대는 받은 만큼 찬다.
+   * 이미 받아 둔 그림은 곧바로 끝나고(캐시), 아무리 늦어도 COVER_MAX_MS 에 걷힌다
+   */
+  const COVER_MAX_MS = 8000
+  function coverMap(): void {
+    if (root.querySelector('.loadcov') !== null) return
+    const cov = document.createElement('div')
+    cov.className = 'loadcov'
+    cov.innerHTML = `<img src="${ART}logo/emblem.png" alt=""><div class="lbar go"><i></i></div>`
+    root.appendChild(cov)
+    const fill = cov.querySelector<HTMLElement>('.lbar i')!
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const urls = new Set<string>()
+      const wrap = root.querySelector('.mapwrap')
+      if (wrap !== null) {
+        for (const i of wrap.querySelectorAll('img')) if (i.src !== '') urls.add(i.src)
+        for (const i of wrap.querySelectorAll('image')) { const u = i.getAttribute('href'); if (u) urls.add(u) }
+        for (const e of [wrap as HTMLElement, ...wrap.querySelectorAll<HTMLElement>('[style*="url("]')]) {
+          for (const m of e.style.backgroundImage.matchAll(/url\(["']?([^"')]+)["']?\)/g)) urls.add(m[1]!)
+        }
+      }
+      const all = [...urls]
+      let n = 0
+      const t0 = performance.now()
+      const step = (): void => { n++; fill.style.width = `${Math.round(8 + (92 * n) / Math.max(1, all.length))}%` }
+      fill.style.width = '8%'
+      const load = all.map((u) => new Promise<void>((ok) => { const i = new Image(); i.onload = i.onerror = () => { step(); ok() }; i.src = u }))
+      const late = new Promise<void>((ok) => setTimeout(ok, COVER_MAX_MS))
+      void Promise.race([Promise.all(load), late]).then(() => {
+        fill.style.width = '100%'
+        // 너무 빨리 걷히면 번쩍이므로 잠깐은 보인다
+        setTimeout(() => { cov.classList.add('out'); cov.addEventListener('transitionend', () => cov.remove(), { once: true }) }, Math.max(250, 600 - (performance.now() - t0)))
+      })
+    }))
+  }
+
   // ───────── 손짓 — 한 곳에서 받는다
   // 전체 화면 — 처음 손이 닿는 그 순간에 (형 10-23: "게임 시작하자마자 되어야 하는 거 아님?").
   // 브라우저는 손짓 없이는 못 켜게 막는다 — 첫 화면·불러오는 화면을 포함해 어디든 처음 누르면 켠다 (손을 뗄 때가 브라우저가 허락하는 때)
@@ -3261,7 +3298,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     freshArmy = ''
     const r = realm !== null ? plan() : null
     switch (d['act']) {
-      case 'continue': front = null; paint(); return
+      case 'continue': front = null; paint(); coverMap(); return
       case 'fr-new': case 'newgame': front = { kind: 'boards' }; sheet = null; looking = false; paint(); return
       case 'fr-back': front = { kind: 'title' }; paint(); return
       case 'lobby': saveDraft(); front = { kind: 'title' }; sheet = null; armySel = []; clearParty(); paint(); return
@@ -3785,6 +3822,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (r !== null) recordDex(r) // 열 때 한 번 — 알림 없이 (이 판에서 이미 본 장수)
       sheet = null
       paint()
+      if (fresh && r !== null) coverMap() // 새 판 — 지도 그림을 다 받을 때까지 가린다
     },
   }
 }

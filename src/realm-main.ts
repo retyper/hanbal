@@ -208,9 +208,20 @@ function hideSplashWhenReady(): void {
   const el = document.getElementById('splash')
   if (el === null) return
   const t0 = performance.now()
-  const img = (src: string): Promise<void> => new Promise((ok) => { const i = new Image(); i.onload = i.onerror = () => ok(); i.src = src })
+  const bar = el.querySelector<HTMLElement>('.lbar')
+  const fill = bar?.querySelector<HTMLElement>('i') ?? null
+  let done = 0
+  const tick = (): void => {
+    done++
+    if (bar === null || fill === null) return
+    const now = getComputedStyle(fill).width
+    bar.classList.add('go')
+    fill.style.width = now
+    requestAnimationFrame(() => { fill.style.width = `${Math.round(28 + (72 * done) / 3)}%` })
+  }
+  const img = (src: string): Promise<void> => new Promise((ok) => { const i = new Image(); i.onload = i.onerror = () => { tick(); ok() }; i.src = src })
   const base = import.meta.env.BASE_URL
-  const ready = Promise.all([document.fonts.ready.then(() => undefined), img(`${base}realm/title/title-lobby.jpg`), img(`${base}realm/logo/emblem.png`)])
+  const ready = Promise.all([document.fonts.ready.then(() => { tick() }), img(`${base}realm/title/title-lobby.jpg`), img(`${base}realm/logo/emblem.png`)])
   const late = new Promise<void>((ok) => setTimeout(ok, SPLASH_MAX_MS))
   void Promise.race([ready, late]).then(() => {
     setTimeout(() => {

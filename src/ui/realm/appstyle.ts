@@ -557,6 +557,15 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cost .cgi { width: 16px; height: 16px; object-fit: contain; }
 .ap .btn.pri .cost .cg { background: #2a0e08e0; }
 .ap .hback { margin: 0 0 6px; }
+/* 판에 들어갈 때 가림막 — 첫 스플래시와 한 벌 (문장 · 단청 막대) */
+.ap .loadcov { position: fixed; inset: 0; z-index: 9998; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+  background: radial-gradient(ellipse at 50% 42%, #2a2218 0, #14110d 55%, #0a0907 100%); transition: opacity .5s ease, visibility .5s; }
+.ap .loadcov.out { opacity: 0; visibility: hidden; }
+.ap .loadcov > img { width: min(30vw, 130px); aspect-ratio: 1; filter: drop-shadow(0 0 18px #f0c86a77); }
+.ap .loadcov .lbar { width: min(66vw, 340px); height: 20px; padding: 3px; box-sizing: content-box; border-radius: 3px; background: linear-gradient(#0b0806, #1a120c);
+  box-shadow: inset 0 1px 3px #000, 0 0 0 1px #c9a45a, 0 0 0 3px #2a1c0e, 0 0 0 4px #8a6a3a, 0 6px 16px #000a; }
+.ap .loadcov .lbar i { display: block; height: 100%; width: 0; background: url(__ART__ui/dancheong-tile.jpg) 0 50% / auto 100% repeat-x;
+  box-shadow: 0 0 10px #ffd27a55, inset -2px 0 0 #fff4c8aa; transition: width .3s cubic-bezier(.3, .8, .4, 1); }
 /* 위 띠 수가 바뀔 때 — 늘면 위로 톡, 줄면 붉게 한 번 흔들 · 곁에 +/− 가 떠올랐다 사라진다 */
 .ap .top .stat { position: relative; }
 .ap .top .stat.bump b { animation: statbump .45s cubic-bezier(.3, 1.6, .5, 1); }
