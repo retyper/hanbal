@@ -124,9 +124,9 @@ function goalFolded(): boolean {
 function muted(): boolean {
   try { return localStorage.getItem(MUTE_KEY) === '1' } catch { return false }
 }
-function ding(name: string, vol = 0.6, rate = 1): void {
+function ding(name: string, vol = 0.6, rate = 1, dur = 0): void {
   if (muted()) return
-  playOnce(`${name.includes('/') ? BASE : SFX}${name}${/.w+$/.test(name) ? '' : '.ogg'}`, vol, rate) // 탭이 가려져 있으면 안 낸다 (규칙 4)
+  playOnce(`${name.includes('/') ? BASE : SFX}${name}${/.w+$/.test(name) ? '' : '.ogg'}`, vol, rate, dur) // 탭이 가려져 있으면 안 낸다 (규칙 4)
 }
 /** 판마다 「?」 단추로 여는 설명 — 판 위에는 고를 것만 두고, 읽을 거리는 여기로 (형 10-23: "설명서를 물음표 버튼 같은 거 하나 만들어서 필요할 때 읽어 볼 수 있게") */
 const GUIDE: Readonly<Record<string, { readonly title: string; readonly body: readonly string[] }>> = {
@@ -2478,6 +2478,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const parts = (Object.entries(sm.mix) as Array<[UnitKind, number]>).filter(([, v]) => v > 0).sort((x, y) => y[1] - x[1])
         h += `<p class="mute">병종 · ${parts.map(([k, v]) => `${UNIT_NAME[k]} ${Math.round(v * 10)}할`).join(' · ')}${sm.age > 0 ? ` (${sm.age}계절 전)` : ''}</p>`
       }
+      // 못 가는 곳도 단추는 두되 흐리게 — 왜 못 가는지 (형 10-23: "태백 기슭 마을에는 정찰 보내기 버튼이 왜 없")
+      if (!scoutable(r).includes(id)) h += `<div class="btns"><button class="btn" disabled>정찰꾼 보내기</button></div><p class="mute">정찰꾼은 우리 고을과 길로 맞닿은 곳에만 간다</p>`
       // 척후는 한 계절에 한 곳뿐 — 여러 곳을 누르면 다 가는 줄 알지 않게 (형: "매판 눌러줘야하고 누르면 전부다 정찰 가겠지? 할거라고")
       if (scoutable(r).includes(id)) {
         const there = scout !== '' && scout !== id ? (r.nodes[scout]?.name ?? '') : ''

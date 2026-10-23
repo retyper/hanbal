@@ -153,7 +153,8 @@ function bufferOf(c: AudioContext, url: string): Promise<AudioBuffer | null> {
 }
 
 /** rate — 빠르기(=높낮이). 같은 소리를 여러 번 겹칠 때 조금씩 달리 낸다 (화살비 여러 발) */
-export function playOnce(url: string, vol: number, rate = 1): void {
+/** 한 번 낸다 — dur 를 주면 앞부분만 그만큼 울리고 끝을 살짝 줄이며 끊는다 (싸움 깃발 소리가 겹쳐 뭉개지지 않게) */
+export function playOnce(url: string, vol: number, rate = 1, dur = 0): void {
   if (document.visibilityState !== 'visible') return
   const c = audio()
   if (c === null) {
@@ -171,6 +172,12 @@ export function playOnce(url: string, vol: number, rate = 1): void {
     src.connect(gain).connect(c.destination)
     src.onended = () => { src.disconnect(); gain.disconnect() } // 다 울면 풀어 준다
     src.start()
+    if (dur > 0 && dur < buf.duration / rate) {
+      const t = c.currentTime
+      gain.gain.setValueAtTime(vol, t + Math.max(0, dur - 0.18))
+      gain.gain.linearRampToValueAtTime(0, t + dur)
+      src.stop(t + dur + 0.02)
+    }
   })
 }
 

@@ -137,13 +137,13 @@ export const midOf = (p: readonly Pt[]): Pt => trimPolyline(p, 0.5, 0.5)[0]!
 /** 강을 또렷하게 — 굵기는 밑그림의 굵기를 그림 너비에 맞춘다 (낙동강이 가장 굵다) */
 export function riversSvg(region: RegionId, W: number, H: number): string {
   const g = worldGeoOf(region)
-  if (region !== 'yeongnam' && g === null) return ''
-  // 넓은 판은 고을 기호가 작다 — 강도 가늘게 (2026-10-19 화면으로 맞춤)
-  const k = g !== null ? (W / 1536) * 0.55 : W / 1536
+  // 그려 넣은 지도(map-world 조각)에는 강이 이미 그림 속에 있다 — 그 위에 또 그리면 그림과 어긋나 빈 데·끊긴 데에 파란 선이 뜬다 (형 10-23)
+  if (region !== 'yeongnam' || g !== null) return ''
+  const k = W / 1536
   let s = '<g class="rivers" fill="none" stroke-linecap="round" stroke-linejoin="round">'
-  for (const r of g !== null ? g.rivers : RIVERS) {
+  for (const r of RIVERS) {
     const pts = r.pts.map(([lon, lat]) => {
-      const [x, y] = g !== null ? g.pos(lon, lat) : yeongnamPos(lon, lat)
+      const [x, y] = yeongnamPos(lon, lat)
       return [x * W, y * H] as const
     })
     const d = smoothPath(pts)

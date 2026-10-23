@@ -163,7 +163,7 @@ const ROUND_NAME = ['첫째', '둘째', '셋째', '넷째', '다섯째', '여섯
 export interface WarHost {
   readonly art: string
   readonly me: string
-  ding(name: string, vol?: number, rate?: number): void
+  ding(name: string, vol?: number, rate?: number, dur?: number): void
   /** 음악 — 싸움이 열리면 싸움 음악, 끝나면 이긴·진 음악 (비기면 그대로) */
   music?(kind: 'war' | 'win' | 'lose'): void
   /** 다 골랐다 — 이 명령들로 진짜 넘긴다 */
@@ -492,7 +492,9 @@ export function cmdFxHtml(art: string, c: Cmd, dir: 'r' | 'l', at: number): stri
 }
 
 /** 한 합의 깃발 연출 차례 — 무리마다 고른 깃발을 앞줄 → 활 → 말 → 장수 차례로, 우리와 적을 번갈아. 같은 쪽 같은 깃발은 한 번 */
-const BEAT_STEP = 0.35
+const BEAT_STEP = 0.42
+/** 깃발 소리 한 번의 길이 — 앞부분만 짧게 끊어 다음 깃발과 안 겹치게 (적 깃발은 더 짧게) */
+const BEAT_DUR = 0.9
 const BEAT_MAX = 6
 function roundBeats(rd: RoundLog, weAtk: boolean): Array<{ c: Cmd; dir: 'r' | 'l'; at: number; ours: boolean }> {
   const ord = (o: RoundOrder | undefined, main: Cmd): Cmd[] => {
@@ -1100,8 +1102,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   root.classList.add('war-open')
   const timers: number[] = []
   const clearTimers = (): void => { for (const x of timers.splice(0)) clearTimeout(x) }
-  const at = (s: number, name: string, vol: number, rate = 1): void => {
-    timers.push(window.setTimeout(() => { if (document.visibilityState === 'visible') host.ding(name, vol, rate) }, s * 1000))
+  const at = (s: number, name: string, vol: number, rate = 1, dur = 0): void => {
+    timers.push(window.setTimeout(() => { if (document.visibilityState === 'visible') host.ding(name, vol, rate, dur) }, s * 1000))
   }
   /** 화살비 — 한 발 소리를 때·크기·높낮이를 조금씩 달리해 여러 번 (형 10-23: "한 2발 나가는 소리 같아 · 다양하게 발사되게") */
   const volley = (s: number, name: string, vol: number): void => {
@@ -1124,19 +1126,23 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       else if (rd.beat === ourSide) buzz(STAGE_S[1], [25, 40, 25])
       else if (wePushed) buzz(STAGE_S[1], [15])
       // 깃발 소리 — 연출과 같은 차례·박자로 (우리 것 크게, 적 것은 조금 작게)
-      const beat = (c: Cmd, s0: number, vol: number): void => {
+      // 깃발마다 앞부분만 짧게(BEAT_DUR) — 차례로 또렷하게 들리게 · 적 것은 더 짧고 작게
+      const beat = (c: Cmd, s0: number, vol: number, dur: number): void => {
         if (c === 'volley') { volley(s0, BATTLE_SFX[c], vol * 0.93); return }
         const b = CMD_BEAT[c]
-        if (b === undefined) { at(s0, BATTLE_SFX[c], vol); return }
-        for (const [dt, v, rt] of b) at(s0 + dt, BATTLE_SFX[c], vol * v, rt)
+        if (b === undefined) { at(s0, BATTLE_SFX[c], vol, 1, dur); return }
+        for (const [dt, v, rt] of b) at(s0 + dt, BATTLE_SFX[c], vol * v, rt, Math.max(0.35, dur - dt))
       }
-      for (const b of roundBeats(rd, weAtk)) beat(b.c, b.at, b.ours ? 0.45 : 0.28)
+      const beats = roundBeats(rd, weAtk)
+      for (const b of beats) beat(b.c, b.at, b.ours ? 0.5 : 0.3, b.ours ? BEAT_DUR : BEAT_DUR * 0.7)
+      // 맞부딪힘은 깃발 소리가 다 지나간 뒤에 한 번 — 겹치면 뭉개진다
+      const clashAt = Math.max(STAGE_S[1], (beats[beats.length - 1]?.at ?? 0) + BEAT_STEP)
       // 우리가 달려드는 합엔 함성
       const ours = weAtk ? rd.a : rd.d
       if (ours === 'pursue' || ours === 'flank') at(STAGE_S[0] + 0.15, BATTLE_SFX.cry, 0.26) // 돌격은 소리 안에 함성이 섞였다
       if (rd.ev === 'capture-ok') at(STAGE_S[1], rd.by === ourSide ? BATTLE_SFX.caught : BATTLE_SFX.lose, 0.5)
       else if (rd.ev === 'duel-win' || rd.ev === 'duel-lose') at(STAGE_S[1], BATTLE_SFX.duelWin, 0.45)
-      else at(STAGE_S[1], rd.beat !== null ? BATTLE_SFX.crit : BATTLE_SFX.clash, rd.beat !== null ? 0.6 : 0.4)
+      else at(clashAt, rd.beat !== null ? BATTLE_SFX.crit : BATTLE_SFX.clash, rd.beat !== null ? 0.6 : 0.4, 1, 1.2)
     }
     if (end !== null) {
       const atkWon = end.outcome === 'rout' || end.outcome === 'win'
