@@ -70,4 +70,4 @@ defeat_c.ogg  OpenGameArt · https://opengameart.org/content/medieval-defeat-the
 war_drums_c.ogg  OpenGameArt · https://opengameart.org/content/prehistoric-drum-loop · "Prehistoric Drum Loop" (select.ogg) · hornpipe2 · CC0
 bgm_map_f.mp3  형이 받아 온 평상시 음악 (assets_src/realm/sfx-in/bgm후보.mp3) · 출처·이용 조건 적을 것 (형에게 물음)
 bgm_map_g.mp3  형이 받아 온 평상시 음악 둘째 (assets_src/realm/sfx-in/배경음2.mp3 · 2026-10-23) · bgm_map_f 와 번갈아 돈다 (sound.ts ROTATE) · 출처·이용 조건 적을 것 (형에게 물음)
-bgm_war_e.mp3  형이 받아 온 싸움 음악 (assets_src/realm/sfx-in/뭔가 즐겁게 추격하는듯한 한국풍 음원.mp3 · 2026-10-23) · 출처·이용 조건 적을 것 (형에게 물음)
+bgm_win_a.mp3  형이 받아 온 이긴 뒤 음악(처음엔 싸움 음악이었으나 "너무 신나서" 10-23 옮김) (assets_src/realm/sfx-in/뭔가 즐겁게 추격하는듯한 한국풍 음원.mp3 · 2026-10-23) · 출처·이용 조건 적을 것 (형에게 물음)

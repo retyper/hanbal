@@ -17,6 +17,7 @@ import { seasonOf } from '../../realm/calendar.ts'
 import { battleName, josa, seasonLabel } from '../../realm/data/prose.ts'
 import type { Realm, RegionId, ReportLine } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
+import { winFxHtml } from './winfx.ts'
 
 /** app.ts 가 넘기는 그림 손 */
 export interface FrontKit {
@@ -259,6 +260,10 @@ const HEAD_ALL: Readonly<Record<RegionId, string>> = {
 
 /** 끝 화면 필름에 거는 장면 수 (마지막 제목 장 빼고) */
 const SHOTS = 6
+/** 필름 한 장이 머무는 때 (초) · 다음 장과 겹치는 때 · 첫 장이 뜨기까지 — FRONT_CSS 의 --film 과 같은 수 */
+const FILM_S = 4.2
+const FILM_OVERLAP_S = 0.9
+const FILM_LEAD_S = 0.5
 /** 도읍을 쥔 장면 — 차례로 돌려 쓴다 */
 const TAKE_ART = ['event-night-raid', 'event-eight-harbours', 'event-expedition-return', 'event-goguryeo-hunt'] as const
 
@@ -266,7 +271,9 @@ const TAKE_ART = ['event-night-raid', 'event-eight-harbours', 'event-expedition-
  * 끝 화면 — 그 판의 큰 장면들이 **영화 필름처럼** 어두운 화면에 한 장씩 떠올랐다 사라지고, 마지막에 잔치 그림 위로 제목이 뜬다
  * (형: "사진콜라주 좀 별로인거같고 너무빨라서 읽을수가 없음. 영화 필름처럼 어두운 배경에서 페이드인아웃").
  * 한 장에 글을 읽을 만큼 머문다. 누르면 마지막 장으로 바로 간다.
- * 이겼으면 "계속 둔다" — 남은 나라까지 (형: "이어서 진행해서 전부 점령하고 싶은 마음도 드네").
+ * 이겼으면 "계속하기 (무한 모드)" — 남은 나라까지 (형: "이어서 진행해서 전부 점령하고 싶은 마음도 드네").
+ * 화면 전체를 덮고, 마지막 장에서 「승리」가 쾅 박히며 불티가 튄다 (형 10-23: "창이 화면 전체로 · 승리면 승리라고 제대로").
+ * 다 돌고 나면 ‹ › 로 지나간 장면을 다시 넘겨 본다 (형: "방금 지나간 역사 슬라이드들도 버튼 눌러서 샥샥").
  */
 export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): string {
   const win = r.outcome?.kind === 'win'
@@ -340,7 +347,7 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): 
   const lastArt = win
     ? (path === 'suzerain' ? 'event-eight-harbours' : path === 'ironsea' ? 'event-iron-trade' : path === 'rite' ? 'event-yeonggo' : 'event-festival')
     : (path === 'suzerain' || path === 'ironsea' ? 'event-outside-envoy' : path === 'rite' ? 'event-divination' : 'event-sky-drought')
-  let h = `<div class="mcard end front-end" data-act="rep-fast"><div class="clg film${win ? '' : ' lose'}">`
+  let h = `<div class="mcard end front-end" data-act="rep-fast"><div class="clg film${win ? '' : ' lose'}" style="--n:${shots.length + 1}">`
   shots.forEach((e, i) => {
     // 홀수 장은 반대로 천천히 민다 (켄 번스)
     h += `<figure class="cp${i % 2 === 1 ? ' odd' : ''}" style="--i:${i}"><img src="${e.img}" alt="">`
@@ -348,14 +355,16 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): 
   })
   // 마지막 장 — 잔치(이김) · 가뭄(짐) 위로 제목
   h += `<figure class="cp last" style="--i:${shots.length}"><img src="${k.art}event/${lastArt}.jpg" alt=""><figcaption><b>${k.esc(title)}</b></figcaption></figure>`
-  h += `<span class="skip">누르면 넘긴다</span></div>`
+  h += winFxHtml(win ? '승리' : '패배', '', shots.length * (FILM_S - FILM_OVERLAP_S) + FILM_LEAD_S + 0.6, !win)
+  h += `<span class="skip">누르면 넘긴다</span>`
+  h += `<button class="fnav fprev" data-act="film-prev" aria-label="앞 장면">‹</button><button class="fnav fnext" data-act="film-next" aria-label="다음 장면">›</button></div>`
   h += `<div class="after" style="--n:${shots.length + 1}">`
   h += `<p class="mute">${k.emblem(me, 'cem')}${k.esc(name(me))} · ${k.esc(seasonLabel(r.outcome?.season ?? r.season))}${win ? '' : ' — 여기까지였다'}</p>`
   h += `<div class="stats"><span><b>${years}</b>해</span><span><b>${capsHeld(r, me)}</b>도읍</span><span><b>${won}</b>이긴 싸움</span><span><b>${lost}</b>진 싸움</span>`
   h += `${r.known !== undefined ? `<span><b>${found}</b>새로 안 나라</span>` : ''}<span><b>${heroes}</b>얻은 장수</span></div>`
   if (pickd.length > 0) h += `<div class="chron"><h4>연대기</h4>${pickd.map((e) => `<p class="${e.big ? 'big' : ''}"><i>${k.esc(seasonLabel(e.s))}</i>${k.esc(e.t)}</p>`).join('')}</div>`
   h += `${keep}<div class="btns">`
-  if (win && !all) h += `<button class="btn pri" data-act="fr-endless">계속 둔다 · 남은 나라까지</button>`
+  if (win && !all) h += `<button class="btn pri" data-act="fr-endless">계속하기 (무한 모드)<small>남은 나라까지 이어서 한다</small></button>`
   h += `<button class="btn${win && !all ? '' : ' pri'}" data-act="fr-again">${k.esc(josa(name(me), "으로", "로"))} 다시</button><button class="btn" data-act="fr-new">새 판</button>`
   return h + `<button class="btn ghost" data-act="fr-look">지도 둘러보기</button></div></div></div>`
 }
@@ -478,8 +487,25 @@ export const FRONT_CSS = `
 .ap .front-end .stats b { display: block; font-size: 20px; color: var(--gold); }
 .ap .front-end .chron { text-align: left; margin: 8px 0; } .ap .front-end .chron h4 { margin: 4px 0; color: var(--gold); }
 /* 끝 화면 필름 — 검은 바탕에 한 장씩 떠올랐다 사라진다. 한 장 --film 초 (형: "너무빨라서 읽을수가 없음") */
-.ap .front-end .clg.film { --film: 4.2s; position: relative; aspect-ratio: 16 / 11; margin: -4px -4px 6px; border-radius: 12px; overflow: hidden; background: #000;
-  box-shadow: inset 0 0 0 1px #2a2620; }
+/* 판 끝은 화면 전체 — 카드가 아니다 (형 10-23: "창이 화면 전체로 되어야 하는데 지금은 카드 팝업같이") */
+.ap .modal:has(.front-end) { padding: 0; background: #000; }
+.ap .mcard.front-end { width: 100%; max-width: none; height: 100%; max-height: none; border: 0; border-image: none; border-radius: 0; background: #0b0d10;
+  padding: 0 0 calc(24px + env(safe-area-inset-bottom)); }
+.ap .front-end .after { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+.ap .front-end .btns .btn small { display: block; font-size: 11px; font-weight: 500; opacity: .85; }
+.ap .front-end .clg.film { --film: ${FILM_S}s; position: relative; height: 74dvh; min-height: 300px; margin: 0 0 8px; overflow: hidden; background: #000; }
+@media (orientation: portrait) { .ap .front-end .clg.film { height: 62dvh; } }
+/* 다 돈 뒤에 ‹ › — 지나간 장면을 다시 넘긴다 */
+.ap .front-end .fnav { position: absolute; top: 50%; z-index: 6; width: 44px; height: 64px; margin-top: -32px; border: 1px solid #c9a45a88; border-radius: 12px; background: #0b0d10aa; color: #f3d48a;
+  font-size: 34px; line-height: 1; cursor: pointer; opacity: 0; pointer-events: none; animation: fnav .5s ease-out calc(var(--n, 7) * (var(--film) - ${FILM_OVERLAP_S}s) + 2.4s) forwards; }
+.ap .front-end .fnav.fprev { left: 10px; } .ap .front-end .fnav.fnext { right: 10px; }
+@keyframes fnav { to { opacity: 1; pointer-events: auto; } }
+.ap .modal.fast .front-end .fnav, .ap .front-end .clg.browse .fnav { animation: none; opacity: 1; pointer-events: auto; }
+.ap .front-end .clg.browse .cp, .ap .front-end .clg.browse .cp img { animation: none !important; display: block !important; }
+.ap .front-end .clg.browse .cp { opacity: 0; transition: opacity .35s ease; } .ap .front-end .clg.browse .cp.show { opacity: 1; z-index: 3; }
+.ap .front-end .clg.browse .winfx { display: none; }
+.ap .front-end .clg.browse .skip { display: block !important; top: 9%; right: 50%; transform: translateX(50%); color: #f3d48a; font-size: 13px; letter-spacing: .1em; }
+.ap .modal.fast .front-end .winfx { --wd: 0s !important; }
 .ap .front-end .clg.film::before, .ap .front-end .clg.film::after { content: ''; position: absolute; left: 0; right: 0; height: 7%; background: #000; z-index: 3; }
 .ap .front-end .clg.film::before { top: 0; } .ap .front-end .clg.film::after { bottom: 0; }
 .ap .front-end .clg.lose .cp img { filter: grayscale(.55) brightness(.8); }

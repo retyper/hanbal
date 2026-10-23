@@ -12,19 +12,22 @@ export const PICK = {
   horn_victory: 'a', defeat: 'a', capture: 'b',
   dex_new: 'c', birth: 'c', feast: 'a', envoy: 'b', coins: 'c',
   amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b',
-  bgm_map: 'f', bgm_war: 'e',
-  // 이기고 진 뒤의 음악 — 형이 받아 오면 public/realm/sfx/bgm_win_a.* · bgm_lose_a.* 로 둔다. 파일이 없으면 듣던 음악을 그대로 둔다
+  bgm_map: 'f', bgm_war: 'a',
+  // 이기고 진 뒤의 음악 — 이김은 형이 받은 "즐겁게 추격하는 듯한 한국풍" (싸움 음악으로는 너무 신났다 — 형 10-23).
+  // 짐은 형이 받아 오면 public/realm/sfx/bgm_lose_a.* 로 둔다. 파일이 없으면 듣던 음악을 그대로 둔다
   bgm_win: 'a', bgm_lose: 'a',
+  // 첫 화면(로그인·이어 하기) 음악 — 웅장한 것 (형 10-23: "로그인 화면 메인은 웅장한 bgm 따로"). 받기 전엔 조용히
+  bgm_title: 'a',
   // 누를 때 나는 소리 — 누른 것의 바탕(쇠·엽전·붓·말굽·방울·북·바둑돌)대로 (형 10-23: "탭할 때 나는 sfx 도 소재에 맞게 다양한 소리").
   // 형이 받아 오면 public/realm/sfx/<자리>_a.* 로 둔다. 그 전엔 TAP_STANDIN 의 소리로 (지도 고을은 소리 없이)
   tap_arms: 'a', tap_coin: 'a', tap_brush: 'a', tap_move: 'a', tap_bell: 'a', tap_drum: 'a', tap_map: 'a', tap_cancel: 'a',
 } as const
 /** ogg 가 아닌 후보 — 형이 받아 온 것은 받은 꼴 그대로 둔다 (assets_src/realm/sfx-in) */
-const EXT: Readonly<Partial<Record<string, string>>> = { bgm_map_f: 'mp3', bgm_map_g: 'mp3', bgm_war_e: 'mp3' }
+const EXT: Readonly<Partial<Record<string, string>>> = { bgm_map_f: 'mp3', bgm_map_g: 'mp3', bgm_win_a: 'mp3' }
 export type Slot = keyof typeof PICK
 /** 아직 파일을 안 받은 자리 — 없으면 소리 없이 듣던 음악을 둔다 (있으면 출처를 적는다) */
 export const LATER: ReadonlySet<Slot> = new Set<Slot>([
-  'bgm_win', 'bgm_lose',
+  'bgm_lose', 'bgm_title',
   'tap_arms', 'tap_coin', 'tap_brush', 'tap_move', 'tap_bell', 'tap_drum', 'tap_map', 'tap_cancel',
 ])
 /** 한 곡이 끝나면 다음 곡으로 넘어가는 자리 — 첫 글자가 PICK 이다 (형이 받은 평상시 음악 둘: bgm후보 · 배경음2) */
@@ -36,7 +39,7 @@ const TAP: ReadonlyArray<readonly [RegExp, TapSlot | 'ui_open']> = [
   // 닫기 · 물리기 · 되돌리기
   [/^(close|rep-close|selclose|dex-close|failclose|sortie-cancel|fr-back|turnback|undo-split|un[a-z]+)$/, 'tap_cancel'],
   // 책장 · 기록 · 도움말
-  [/-open$|^(help|tab|log-n|log-f|mig-n|layers|layer|deeds|jump|roadkey|hero)$/, 'ui_open'],
+  [/-open$|^film-|^(help|tab|log-n|log-f|mig-n|layers|layer|deeds|jump|roadkey|hero)$/, 'ui_open'],
   // 군사 — 뽑기 · 편성 · 진군 · 지키기 · 쏘기
   [/^(draft|dunit|diron|dn|assign|tok|sq|sqall|ap|mv|go|guard|arm|shoot|sortie-go|lead|merge|selmerge|disband|bowup|shero|sdest|sstay)$/, 'tap_arms'],
   // 곡식 · 쇠 · 교역 — 고용 · 짓기 · 군량 · 주고받기
@@ -186,13 +189,15 @@ function track(base: string, vol: number): { want(slot: Slot | null): void; paus
 export function makeMusic(base: string, muted: () => boolean, quiet: () => boolean): {
   map(season: 'spring' | 'summer' | 'autumn' | 'winter'): void
   war(): void
+  /** 첫 화면 — 판 음악을 끊고 첫 화면 음악 (아직 없으면 조용히) */
+  title(): void
   /** 이겼다 · 졌다 — 싸움 끝 · 판 끝 */
   result(kind: 'win' | 'lose'): void
   refresh(): void
 } {
   const bgm = track(base, BGM_VOL)
   const amb = track(base, AMB_VOL)
-  let mode: { bgm: Slot; amb: Slot | null } | null = null
+  let mode: { bgm: Slot | null; amb: Slot | null } | null = null
   const off = (): boolean => mode === null || muted() || quiet()
   const apply = (): void => {
     if (off()) { bgm.want(null); amb.want(null); return }
@@ -216,6 +221,7 @@ export function makeMusic(base: string, muted: () => boolean, quiet: () => boole
   return {
     map(season) { mode = { bgm: 'bgm_map', amb: `amb_${season}` }; apply() },
     war() { mode = { bgm: 'bgm_war', amb: null }; apply() },
+    title() { mode = { bgm: LATER.has('bgm_title') ? null : 'bgm_title', amb: null }; apply() },
     result(kind) { mode = { bgm: kind === 'win' ? 'bgm_win' : 'bgm_lose', amb: null }; apply() },
     refresh: apply,
   }

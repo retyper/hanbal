@@ -56,6 +56,7 @@ import { ironOf, riteOf } from '../../realm/paths.ts'
 import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
 import { FRONT_CSS, PROLOGUE_STEPS, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History } from './front.ts'
 import { SCENE_SOUND, makeMusic, playOnce, snd, tapSlot } from './sound.ts'
+import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
 import { FEEL_CSS, alertFeel, ambushFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
 
@@ -257,7 +258,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = TIP_CSS + APP_CSS + LOG_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + CLOUD_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
+  style.textContent = TIP_CSS + APP_CSS + LOG_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + CLOUD_CSS + WINFX_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
   installTips(root)
@@ -2579,7 +2580,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   function paint(): void {
     try {
-      if (!warOn && realm !== null) {
+      // 첫 화면이면 판 음악을 끊는다 (형 10-23: "게임 승리하고 메인으로 갔을 때 bgm 이 계속 이어짐")
+      if (!warOn && (front !== null || realm === null)) music.title()
+      else if (!warOn && realm !== null) {
         // 판이 끝났다 — 이긴·진 음악 (계속 두는 판은 지도 음악)
         if (realm.outcome && !realm.endless) music.result(realm.outcome.kind)
         else music.map(seasonOf(realm.season))
@@ -2700,6 +2703,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const keepScroll = box.querySelector('.mcard')?.scrollTop ?? 0
       box.innerHTML = modal
       box.dataset['html'] = modal
+      // 판을 이겼다 — 「승리」가 박힐 때 폰을 파바방 (그 때는 그림의 --wd)
+      const wfx = box.querySelector<HTMLElement>('.front-end .winfx:not(.lose)')
+      if (wfx !== null) window.setTimeout(() => buzz(WIN_BUZZ), fastNext ? 0 : Number.parseFloat(wfx.style.getPropertyValue('--wd')) * 1000)
       box.classList.toggle('fast', fastNext)
       // 새 계절의 보고는 계절 띠가 걷힌 뒤에 (형: "계절먼저 넘어가게 보이고 그다음에 천천히 다음꺼 띄워줘라")
       box.classList.toggle('late', !fastNext)
@@ -2715,6 +2721,20 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     $('.sheet').scrollTop = 0
     note = ''
     paint()
+  }
+
+  /** 끝 화면 필름을 한 장씩 넘긴다 — 처음 누르면 필름을 멈추고 마지막 장(제목)에서 시작한다 */
+  function filmStep(d: number): void {
+    const clg = root.querySelector<HTMLElement>('.front-end .clg.film')
+    if (clg === null) return
+    const cps = [...clg.querySelectorAll<HTMLElement>('.cp')]
+    const at = ((clg.classList.contains('browse') ? Number(clg.dataset['at']) : cps.length - 1) + d + cps.length) % cps.length
+    clg.dataset['at'] = String(at)
+    clg.classList.add('browse')
+    cps.forEach((c, i) => c.classList.toggle('show', i === at))
+    const sk = clg.querySelector('.skip')
+    if (sk !== null) sk.textContent = `${at + 1} / ${cps.length}`
+    ding(snd('ui_open'), 0.2)
   }
 
   /** 도감에 오른 장수 알림 — 오른쪽 위에 몇 초 (CSS 로 걷히고, 다 걷히면 치운다). 누르면 도감 */
@@ -2806,6 +2826,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (zoom.dragged() && t.closest('.mapwrap') !== null) return // 지도를 끌다 놓은 것 — 누르기가 아니다
     if (t.dataset['act'] === 'bk-fast' || t.dataset['act'] === 'rep-fast') {
       $('.modal').classList.add('fast') // 보고판을 한 번 누르면 끝까지 바로 — 다시 그리지 않는다
+      return
+    }
+    if (t.dataset['act'] === 'film-prev' || t.dataset['act'] === 'film-next') {
+      filmStep(t.dataset['act'] === 'film-next' ? 1 : -1) // 끝 화면 — 지나간 장면을 하나씩 (다시 그리지 않는다)
       return
     }
     if (t.dataset['act'] === 'zin' || t.dataset['act'] === 'zout') {

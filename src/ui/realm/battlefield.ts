@@ -18,6 +18,7 @@ import { rehearse, type BattleLine } from '../../realm/warroom.ts'
 import { seasonOf } from '../../realm/season.ts'
 import type { Act, Approach, Art, Cmd, Grp, Order, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
 import { snd } from './sound.ts'
+import { WIN_BUZZ, winFxHtml } from './winfx.ts'
 
 const esc = (s: string): string =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
@@ -48,7 +49,7 @@ export const CMD_NAME: Record<Cmd, string> = {
   drum: '북을 친다', duel: '장수 겨루기', capture: '적장 사로잡기', retreat: '물러난다', art: '장수의 비기',
 }
 export const CMD_ICON: Record<Cmd, string> = {
-  charge: UNIT_ICON.spear, hold: UNIT_ICON.shield, open: UNIT_ICON.pike, ford: 'unit-gaya-heavy', rocks: 'unit-slingers', gate: 'emblem-stonegate', ram: UNIT_ICON.boat,
+  charge: UNIT_ICON.spear, hold: UNIT_ICON.shield, open: UNIT_ICON.pike, ford: 'unit-gaya-heavy', rocks: 'unit-slingers', gate: 'cmd-gate', ram: UNIT_ICON.boat,
   volley: UNIT_ICON.bow, counter: UNIT_ICON.crossbow, fire: 'unit-fire-archers', height: 'unit-scouts',
   flank: UNIT_ICON.horse, punch: UNIT_ICON.horse, pursue: UNIT_ICON.horse, guard: 'unit-general',
   drum: 'unit-drummers', duel: 'unit-general', capture: 'unit-axemen', retreat: 'unit-porters', art: 'status-morale-up',
@@ -114,12 +115,13 @@ const TERRAIN_CMD: ReadonlySet<Cmd> = new Set<Cmd>(['ford', 'rocks', 'gate', 'ra
 export const BATTLE_SFX = {
   charge: 'swing_01', hold: 'parry_01', open: 'shot_longbow', ford: 'parry_02', rocks: 'crash_02', gate: 'impactWood_heavy_001', ram: 'impactPlank_medium_000',
   volley: snd('arrow_volley'), counter: 'shot_flecha', fire: 'crash_01', height: 'shot_longbow',
-  flank: 'roar_01', punch: 'roar_01', pursue: 'roar_01', guard: 'parry_02',
-  drum: 'impactWood_medium_000', duel: 'unsheath_01', capture: 'sheath_01', retreat: 'switch2', art: 'roar_01',
+  // 사람 고함·비명(roar · herodeath · bossdeath)은 걷었다 (형 10-23: "비명소리인지 사람 고함인지 너무 AI 가 만든 티") — 말발굽·쇠·북으로
+  flank: snd('horses'), punch: snd('horses'), pursue: snd('horses'), guard: 'parry_02',
+  drum: 'impactWood_medium_000', duel: 'unsheath_01', capture: 'sheath_01', retreat: 'switch2', art: 'impactBell_heavy_000',
   /** 맞부딪힘 — 상성에서 이겼다(필살) · 그냥 */
   crit: 'impactPunch_heavy_000', clash: 'impactWood_heavy_000',
   /** 사로잡았다 · 장수 겨루기 · 마지막 일격(적이 무너졌다) · 이겼다 · 졌다 */
-  caught: 'jingleUnlock', duelWin: 'herodeath_01', final: 'bossdeath_01', win: snd('horn_victory'), lose: snd('defeat'),
+  caught: 'jingleUnlock', duelWin: 'impactMetal_medium_001', final: 'impactWood_heavy_001', win: snd('horn_victory'), lose: snd('defeat'),
   /** 싸움이 열린다 — 북 두 번, 종 한 번 */
   openDrum: 'impactWood_heavy_000', openBell: 'impactBell_heavy_001',
 } as const
@@ -485,7 +487,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const d = anim ? ` style="--d:${STAGE_S[2] + 0.8}s"` : ''
     const fall = l.field !== true && atkWon
     if (fall) h += `<div class="wfx burn"${d}><img class="wfx-smoke" src="${art}fx/smoke.png" alt=""><img class="wfx-fire" src="${art}fx/fire.png" alt=""><img class="wfx-fire r" src="${art}fx/fire.png" alt=""></div>`
-    h += `<div class="wend ${good ? 'good' : l.outcome === 'draw' ? '' : 'bad'}"${d}>${good ? `<img class="wfx-gold" src="${art}fx/gold.png" alt="">` : ''}<b>${big}${esc(res)}</b>`
+    h += `<div class="wend ${good ? 'good' : l.outcome === 'draw' ? '' : 'bad'}"${d}><b>${big}${esc(res)}</b>`
     if (ctx !== null && (l.rounds ?? []).length > 0) h += `<p class="wwhy">${esc(endStory(l, ctx))}</p>`
     if (l.captured !== null) {
       const c = after.heroes[l.captured]
@@ -501,9 +503,12 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
 export const WAR_CSS = `
 .ap .tn.hard { color: #f0a08a; }
 .ap.war-open .tutband, .ap.war-open .tutbar { display: none; }
-.ap .wr { position: fixed; inset: 0; z-index: 60; background: #0d0f13; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.ap .wr { position: fixed; inset: 0; z-index: 60; background: #0d0f13; overflow: hidden; }
+.ap .wsc { position: absolute; inset: 0; z-index: 1; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.ap .wfxl { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.ap .wwin { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
 /* 싸움터 — 화면 뒤에 붙박이. 받아 둔 싸움터 그림이 없으면(stand) 장면 그림을 더 어둡고 흐리게 */
-.ap .wbg { position: fixed; inset: 0; z-index: 0; background: center / cover no-repeat; filter: brightness(.42) saturate(.85); }
+.ap .wbg { position: absolute; inset: 0; z-index: 0; background: center / cover no-repeat; filter: brightness(.42) saturate(.85); }
 .ap .wbg.stand { filter: brightness(.3) saturate(.7) blur(2px); transform: scale(1.04); }
 .ap .wbg.g-snow { filter: brightness(.45) saturate(.6) hue-rotate(-8deg); } .ap .wbg.g-night { filter: brightness(.3) saturate(.7); }
 .ap .wbg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(#0d0f1399, #0d0f1333 30%, #0d0f13cc 85%); }
@@ -578,7 +583,7 @@ export const WAR_CSS = `
 @keyframes wshakeh { 0%, 100% { transform: translateX(0) rotate(0); } 15% { transform: translateX(-9px) rotate(-2deg); } 35% { transform: translateX(8px) rotate(2deg); } 55% { transform: translateX(-6px) rotate(-1deg); } 75% { transform: translateX(3px); } }
 @keyframes wflash { 0% { opacity: 0; } 25% { opacity: 1; } 100% { opacity: 0; } }
 /* 그림 효과 (realm/fx — 제미나이, 검은 바탕을 밝기로 알파) */
-.ap .wfx { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.ap .wfx { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
 .ap .wfx-dust { position: absolute; bottom: -14%; width: 60vw; max-width: 640px; opacity: .3; animation: wdust 26s linear infinite; }
 .ap .wfx-dust.a { left: -20%; } .ap .wfx-dust.b { left: 45%; animation-duration: 34s; animation-direction: reverse; opacity: .22; }
 @keyframes wdust { 0% { transform: translateX(-6%) scale(1); } 50% { transform: translateX(6%) scale(1.08); } 100% { transform: translateX(-6%) scale(1); } }
@@ -592,8 +597,6 @@ export const WAR_CSS = `
 .ap .ws .wfx-hit { position: absolute; left: 50%; top: 42px; width: 150px; height: 150px; margin: -75px 0 0 -75px; z-index: 2; pointer-events: none; opacity: 0; animation: whitfx .55s ease-out var(--hd, 1.2s) both; }
 @keyframes whitfx { 0% { opacity: 0; transform: scale(.3) rotate(0); } 25% { opacity: 1; transform: scale(1.05) rotate(12deg); } 100% { opacity: 0; transform: scale(1.35) rotate(24deg); } }
 .ap .wend { position: relative; } .ap .wend > b { position: relative; }
-.ap .wend .wfx-gold { position: absolute; left: 50%; top: 2px; width: 240px; margin-left: -120px; pointer-events: none; opacity: 0; animation: wgold 1.6s ease-out calc(var(--d, 0s) + .25s) both; }
-@keyframes wgold { 0% { opacity: 0; transform: scale(.2) rotate(-20deg); } 30% { opacity: 1; transform: scale(1.1) rotate(0); } 100% { opacity: 0; transform: scale(1.5) rotate(15deg); } }
 .ap .wfx.burn { opacity: 0; animation: wrin 1.2s ease-out var(--d, 0s) both; }
 .ap .wfx-fire { position: absolute; bottom: 4%; left: 6%; width: min(30vw, 260px); animation: wflick 1.4s ease-in-out infinite alternate; transform-origin: 50% 100%; }
 .ap .wfx-fire.r { left: auto; right: 4%; width: min(24vw, 210px); animation-duration: 1.1s; }
@@ -609,7 +612,7 @@ export const WAR_CSS = `
 .ap .wend.good b { display: inline-block; animation: wwinb .9s cubic-bezier(.2, 1.6, .4, 1) calc(var(--d, 0s) + .3s) both; }
 @keyframes wwin { 0% { box-shadow: 0 0 0 0 #ffd27a00; } 30% { box-shadow: 0 0 0 6px #ffd27aaa, 0 0 40px 10px #ffd27a88; } 100% { box-shadow: 0 0 0 0 #ffd27a00, 0 0 18px 2px #ffd27a33; } }
 @keyframes wwinb { 0% { transform: scale(.4); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { .ap .ws.hit, .ap .ws.hit::after, .ap .wend.good, .ap .wend.good b, .ap .wfx-dust, .ap .wfx-fire, .ap .wfx-smoke { animation: none; } .ap .wfx-volley, .ap .ws .wfx-hit, .ap .wend .wfx-gold { display: none; } }
+@media (prefers-reduced-motion: reduce) { .ap .ws.hit, .ap .ws.hit::after, .ap .wend.good, .ap .wend.good b, .ap .wfx-dust, .ap .wfx-fire, .ap .wfx-smoke { animation: none; } .ap .wfx-volley, .ap .ws .wfx-hit { display: none; } }
 .ap .wrd.slow .wcmds, .ap .wrd.slow .wst, .ap .wrd.slow .wpush { opacity: 0; animation: wrin .45s ease-out var(--d, 0s) both; }
 .ap .wrd.slow .wcmds { animation-name: wrflip; }
 @keyframes wrin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
@@ -665,8 +668,15 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   let left = t.left
   /** 이름 띠를 띄운 판 — 판마다 한 번 */
   let named: string | undefined
+  // 배경·효과는 붙박이 층에, 글은 그 위 굴리는 층에 — 굴려도 배경이 안 움직이고, 깃발을 골라도 배경을 다시 깔지 않는다
+  // (형 10-23: "전투 스크롤할 때 뒷배경이 자꾸 움직임 · 전투할 때 뭔가 선택하면 깜빡임")
   const ov = document.createElement('div')
   ov.className = 'wr'
+  ov.innerHTML = '<div class="wbg"></div><div class="wfxl"></div><div class="wsc"></div><div class="wwin"></div>'
+  const bgEl = ov.querySelector<HTMLElement>('.wbg')!
+  const fxEl = ov.querySelector<HTMLElement>('.wfxl')!
+  const sc = ov.querySelector<HTMLElement>('.wsc')!
+  const winEl = ov.querySelector<HTMLElement>('.wwin')!
   root.appendChild(ov)
   // 싸우는 동안 배우기 띠는 숨긴다 (형: "싸우는도중에 하단에 배우기 창 계속 떠있어서 짜증나")
   root.classList.add('war-open')
@@ -703,7 +713,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       at(STAGE_S[2] + 1, good ? BATTLE_SFX.win : BATTLE_SFX.lose, 0.45)
       if (end.outcome !== 'draw') timers.push(window.setTimeout(() => host.music?.(good ? 'win' : 'lose'), (STAGE_S[2] + 1) * 1000))
       // 이겼다 — 부우웅 크게 (듀오링고처럼)
-      if (good) buzz(STAGE_S[2] + 1, end.outcome === 'rout' ? [60, 40, 60, 40, 60, 40, 120, 60, 300] : [50, 50, 50, 50, 200])
+      if (good) buzz(STAGE_S[2] + 1, end.outcome === 'rout' ? [60, 40, 60, 40, 60, 40, 120, 60, 300] : [...WIN_BUZZ])
     }
   }
 
@@ -731,7 +741,24 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   const paintNow = (anim: boolean): void => {
     const l = t.line!
     const shown = l.pending !== undefined ? l.pending.round : (l.rounds ?? []).length
-    ov.innerHTML = warHtml(prev, t.after, l, host.me, host.art, shown, anim, left, sel)
+    const tpl = document.createElement('template')
+    tpl.innerHTML = warHtml(prev, t.after, l, host.me, host.art, shown, anim, left, sel)
+    const bg = tpl.content.querySelector<HTMLElement>('.wbg')
+    if (bg !== null) {
+      if (bgEl.className !== bg.className) bgEl.className = bg.className
+      if (bgEl.style.backgroundImage !== bg.style.backgroundImage) bgEl.style.backgroundImage = bg.style.backgroundImage
+      bg.remove()
+    }
+    fxEl.replaceChildren(...tpl.content.querySelectorAll('.wfx'))
+    sc.replaceChildren(tpl.content)
+    // 싸움이 끝났다 — 이겼으면 「승리」가 쾅, 졌으면 「패배」가 내려앉는다 (형: "승리했다는 이펙트가 더 확실히")
+    winEl.replaceChildren()
+    if (anim && l.pending === undefined && l.outcome !== 'draw') {
+      const atkWon = l.outcome === 'rout' || l.outcome === 'win'
+      const good = (l.atkFaction === host.me) === atkWon
+      const word = good ? (l.outcome === 'rout' || l.outcome === 'routed' ? '대승' : '승리') : (l.outcome === 'rout' || l.outcome === 'routed' ? '대패' : '패배')
+      winEl.innerHTML = winFxHtml(word, '', STAGE_S[2] + 0.9, !good, true)
+    }
   }
 
   const draw = (anim: boolean): void => {
@@ -742,8 +769,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     paintNow(anim)
     sound(anim ? (l.rounds ?? [])[shown - 1] : undefined, l.atkFaction === host.me, anim && l.pending === undefined ? l : null)
     if (!anim) band(l)
-    if (anim) ov.querySelector('.wrd.slow')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-    else ov.scrollTop = 0
+    if (anim) sc.querySelector('.wrd.slow')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    else sc.scrollTop = 0
   }
 
   const finish = (): void => {
@@ -793,11 +820,9 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         const c = b.dataset['c'] as Cmd
         sel = { ...sel, [g]: sel[g] === c ? undefined : c }
         if (sel[g] === undefined) delete sel[g]
-        const y = ov.scrollTop
-        ov.classList.remove('slow')
-        ov.classList.add('fast')
-        paintNow(false)
-        ov.scrollTop = y
+        // 다시 그리지 않고 고른 표만 옮긴다 — 다시 그리면 배경·그림이 깜빡였다
+        for (const x of sc.querySelectorAll<HTMLElement>(`[data-war="pick"][data-g="${g}"]`)) x.classList.toggle('on', sel[g] === x.dataset['c'])
+        b.closest('.wgrp')?.querySelector<HTMLElement>('.wgh .mute')?.toggleAttribute('hidden', sel[g] !== undefined)
         return
       }
       case 'go': {
