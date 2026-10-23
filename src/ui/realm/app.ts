@@ -1204,8 +1204,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const gear = `${TIER_NAME[near]} 무장`
       const lead = a.hero === null ? '장수가 없다' : p.parts.lead >= 1.15 ? '장수가 잘 이끈다' : '장수가 이끈다'
       const mor = p.parts.morale < 0.9 ? '사기가 낮다' : p.parts.morale > 1.05 ? '사기가 높다' : '사기 보통'
+      // 글 대신 그림 칩 — 무엇이든 한눈에 (형 10-23: "군사 xxx명, 쇠날 무장, 장수가 잘 이끈다, 사기가 낮다 … 아이콘이나 뭔가로 이미지화")
+      const GEAR_IC: Record<Equip, string> = { stone: 'settle-stone-fortress', leather: 'settle-stone-fortress', bronze: 'treasure-bronze-mirror', ironTip: 'treasure-iron-helmet', iron: 'treasure-iron-helmet', ringSword: 'treasure-ring-sword' }
+      const hero = a.hero !== null ? r.heroes[a.hero] : undefined
+      const leadChip = hero !== undefined ? `<span class="pch ${p.parts.lead >= 1.15 ? 'good' : ''}" data-tip="${esc(lead)}">${bust(hero, 'pchf')}${p.parts.lead >= 1.15 ? '<i>★</i>' : ''}</span>` : `<span class="pch bad" data-tip="${esc(lead)}">${icon('unit-general', 'pchi')}<i>✕</i></span>`
+      const morCls = p.parts.morale < 0.9 ? 'bad' : p.parts.morale > 1.05 ? 'good' : ''
+      const chips = `<span class="pch" data-tip="군사 ${headcount(forceOf(r, a))}명">${icon(UNIT_ICON.spear, 'pchi')}<b>${headcount(forceOf(r, a)).toLocaleString('ko-KR')}</b></span>`
+        + `<span class="pch" data-tip="${esc(gear)}">${icon(GEAR_IC[near], 'pchi')}<b>${esc(TIER_NAME[near])}</b></span>`
+        + leadChip
+        + `<span class="pch ${morCls}" data-tip="${esc(mor)}">${icon(p.parts.morale < 0.9 ? 'status-morale-down' : 'status-morale-up', 'pchi')}<span class="pmb"><i style="width:${Math.round(Math.max(0.05, Math.min(1, p.parts.morale / 1.3)) * 100)}%"></i></span></span>`
       h += `<div class="pow"><b>전투력 ${Math.round(p.total).toLocaleString('ko-KR')}</b><span class="pbar"><i style="width:${Math.max(4, (p.total / top) * 100)}%"></i></span>`
-      h += `<span class="mute">군사 ${headcount(forceOf(r, a)).toLocaleString('ko-KR')}명 · ${gear} · ${lead} · ${mor}</span></div>`
+      h += `<span class="pchips">${chips}</span></div>`
     }
     const canArm = a.march === null && r.nodes[a.at]?.owner === me()
     const st = left()
@@ -1378,13 +1387,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 뽑은 만큼 일손이 빠진다 (season.draftArmy · draftHHPerMan) — 숫자 대신 색으로
       if (want > 0 && P.realm.draftHHPerMan > 0) h += `<p class="dloss"><span>집이 준다</span> · <span>가을걷이가 준다</span></p>`
       const nd = draftNeeds(unit, Math.max(1, want))
-      if (unit === 'horse') h += `<p class="mute">${lim > 0 ? `말 ${nd.horse}필이 든다.` : '말이 없다.'} 말은 목장(너른벌을 일구면)에서 나거나 바꿔 온다.</p>`
-      if (unit === 'boat') h += `<p class="mute">${lim > 0 ? `배 지을 나무 ${nd.wood}짐이 든다.` : '배 지을 나무가 없다.'} 나무는 솔숲·산·산성 땅에서 난다.</p>`
+      if (unit === 'horse') h += `<p class="mute">${lim > 0 ? costHtml({ horse: nd.horse }) : '말이 없다 — 목장(너른벌을 일구면)에서 나거나 바꿔 온다'}</p>`
+      if (unit === 'boat') h += `<p class="mute">${lim > 0 ? costHtml({ wood: nd.wood }) : '배 지을 나무가 없다 — 솔숲·산·산성 땅에서 난다'}</p>`
       // 철을 더 들이면 처음부터 한 단계 좋은 무기 (철의 쓰임)
       const ic = want > 0 ? draftIronCost(r, me(), want, unit) : null
       const base = r.factions[me()]?.equip
       if (ic !== null) {
-        h += `<label class="chk"><input type="checkbox" data-act="diron" data-node="${n.id}" ${draftIron[n.id] === true ? 'checked' : left().iron < ic.iron ? 'disabled' : ''}> 새로 뽑는 ${esc(UNIT_NAME[unit])} ${want}명에게 ${esc(josa(GEAR_NAME[unit]?.[ic.to] ?? TIER_NAME[ic.to], '을', '를'))} 들린다 · 철 ${ic.iron}</label>`
+        h += `<label class="chk"><input type="checkbox" data-act="diron" data-node="${n.id}" ${draftIron[n.id] === true ? 'checked' : left().iron < ic.iron ? 'disabled' : ''}> 새로 뽑는 ${esc(UNIT_NAME[unit])} ${want}명에게 ${esc(josa(GEAR_NAME[unit]?.[ic.to] ?? TIER_NAME[ic.to], '을', '를'))} 들린다 ${costHtml({ iron: ic.iron })}</label>`
         if (base !== undefined) h += `<p class="mute">철을 안 들이면 ${esc(josa(GEAR_NAME[unit]?.[base] ?? TIER_NAME[base], '을', '를'))} 든다.</p>`
       }
       // 고을 판 — 이 고을에서 이번 계절 뽑기로 한 것

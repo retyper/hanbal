@@ -557,6 +557,15 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cost .cgi { width: 16px; height: 16px; object-fit: contain; }
 .ap .btn.pri .cost .cg { background: #2a0e08e0; }
 .ap .hback { margin: 0 0 6px; }
+/* 군대의 힘 — 그림 칩 넷 (군사 · 무장 · 장수 · 사기) · 눌러 두면 말 (data-tip) */
+.ap .pchips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+.ap .pch { position: relative; display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px 1px 3px; border-radius: 999px; background: #2a2016; border: 1px solid #5a4630; font-size: 12.5px; color: #efe3c6; }
+.ap .pch .pchi { width: 20px; height: 20px; object-fit: contain; } .ap .pch b { font-variant-numeric: tabular-nums; }
+.ap .pch .pchf { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; border: 1px solid #c9a45a; }
+.ap .pch > i { font-style: normal; font-size: 11px; color: #ffd27a; } .ap .pch.bad > i { color: #ff8a6a; }
+.ap .pch.good { border-color: #9fd18b; background: #1e2a16; } .ap .pch.bad { border-color: #c8603a; background: #2e1a12; }
+.ap .pch .pmb { width: 34px; height: 6px; border-radius: 3px; background: #0e0b08; overflow: hidden; box-shadow: inset 0 1px 2px #000c; }
+.ap .pch .pmb i { display: block; height: 100%; background: linear-gradient(90deg, #a87a2a, #f6d27a); } .ap .pch.bad .pmb i { background: linear-gradient(90deg, #8a2a1a, #e0583c); } .ap .pch.good .pmb i { background: linear-gradient(90deg, #3f8f3a, #b6f09a); }
 /* 판에 들어갈 때 가림막 — 첫 스플래시와 한 벌 (문장 · 단청 막대) */
 .ap .loadcov { position: fixed; inset: 0; z-index: 9998; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
   background: radial-gradient(ellipse at 50% 42%, #2a2218 0, #14110d 55%, #0a0907 100%); transition: opacity .5s ease, visibility .5s; }
@@ -572,10 +581,14 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .top .stat.dent b { animation: statdent .4s ease-out; }
 @keyframes statbump { 0% { transform: scale(1); } 35% { transform: scale(1.22); color: #b6f09a; } 100% { transform: scale(1); } }
 @keyframes statdent { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); color: #ff8a6a; } 60% { transform: translateX(2px); color: #ff8a6a; } }
-.ap .top .dpop { position: absolute; left: 50%; top: 100%; font-style: normal; font-size: 12px; font-weight: 800; pointer-events: none; white-space: nowrap;
-  text-shadow: 0 1px 2px #000, 0 0 6px #000a; animation: dpop 1.1s ease-out both; z-index: 5; }
-.ap .top .dpop.up { color: #b6f09a; } .ap .top .dpop.down { color: #ff9a7a; }
-@keyframes dpop { 0% { opacity: 0; transform: translate(-50%, -4px); } 15% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, 14px); } }
+/* 줄면 붉은 수가 수 위에서 튕겨 나가고, 늘면 초록 수가 위에서 튀어 들어온다 (형 10-23: "감소 숫자가 너무 밑에서 발생하느라 없어져 버렸어") */
+.ap .top .tr { overflow-x: clip; overflow-y: visible; }
+.ap .top .dpop { position: absolute; left: 60%; top: 50%; font-style: normal; font-size: 13px; font-weight: 900; pointer-events: none; white-space: nowrap;
+  text-shadow: 0 1px 2px #000, 0 0 6px #000, 0 0 2px #000; z-index: 5; }
+.ap .top .dpop.down { color: #ff7a5a; animation: dpopout .9s cubic-bezier(.2, .7, .4, 1) both; }
+.ap .top .dpop.up { color: #9ff07a; animation: dpopin .9s cubic-bezier(.3, 1.4, .5, 1) both; }
+@keyframes dpopout { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1.35); } 30% { opacity: 1; transform: translate(-20%, -130%) rotate(10deg) scale(1.1); } 100% { opacity: 0; transform: translate(20%, -240%) rotate(18deg) scale(.9); } }
+@keyframes dpopin { 0% { opacity: 0; transform: translate(-50%, -260%) scale(.8); } 45% { opacity: 1; transform: translate(-50%, -50%) scale(1.35); } 75% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1); } }
 @media (prefers-reduced-motion: reduce) { .ap .top .stat b, .ap .top .dpop { animation: none !important; } }
 /* 백성 배치 — 모아 둔 백성 통 · 고을 카드마다 −/+ */
 .ap .plpool { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 6px 0 8px; padding: 10px 14px; border-radius: 10px;
