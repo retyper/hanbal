@@ -17,6 +17,13 @@ const PY0 = 765 / 2.0
 const urls = new Map<string, string>()
 const bases = new Map<RegionId, Promise<HTMLCanvasElement>>()
 const pending = new Set<string>()
+/** 판마다 마지막으로 다 만든 바탕 — 새 계절 것이 아직이면 이것을 깔아 둔다 (빈 바탕으로 깜빡이지 않게 · 형 10-23) */
+const lastByRegion = new Map<RegionId, string>()
+
+/** 새 계절 바탕이 아직 안 됐을 때 대신 깔 것 — 없으면 '' */
+export function worldMapFallback(region: RegionId): string {
+  return lastByRegion.get(region) ?? ''
+}
 
 /**
  * 계절 빛 — 픽셀 하나 [r,g,b] → [r,g,b]. 시험할 수 있게 따로 둔다.
@@ -134,11 +141,12 @@ export function worldMapUrl(art: string, season: SeasonOfYear, region: RegionId)
   if (geo === null) return ''
   const key = `${region}:${season}`
   const hit = urls.get(key)
-  if (hit !== undefined) return hit
+  if (hit !== undefined) { lastByRegion.set(region, hit); return hit }
   if (!pending.has(key)) {
     pending.add(key)
     void build(art, season, region, geo).then((u) => {
       urls.set(key, u)
+      lastByRegion.set(region, u)
       pending.delete(key)
       for (const el of document.querySelectorAll<HTMLElement>(`.map[data-region="${region}"][data-world="${season}"]`)) el.style.backgroundImage = `url('${u}')`
     }).catch(() => pending.delete(key))

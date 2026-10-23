@@ -36,7 +36,7 @@ import { DESTS, DEST_IDS, EXP_SEASONS, expAmount, expBlock, expOdds, onExpeditio
 import { canWed, heroSeen, inheritOf, isRuler, persuadeDropOf, recruitChance, resistOf, wanderersFor } from '../../realm/heroes.ts'
 import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
-import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
+import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { LEGACY_CSS, carryHtml, retainHtml, syncRetain, toggleCarry, toggleKeep } from './legacy.ts'
 import { DEX_CSS, dexHtml, dexToastHtml, loadDex, recordDex, type DexBoard } from './dex.ts'
 import { dexCounts } from '../../realm/dex.ts'
@@ -107,6 +107,11 @@ const SEEN_KEY = 'hanbal.realm.seen'
 const BASE: string = import.meta.env?.BASE_URL ?? '/'
 const SFX: string = BASE + 'sfx/'
 const MUTE_KEY = 'hanbal.realm.mute'
+/** 장의 목표 띠를 접어 두었나 — 이 기기에만 */
+const GOAL_FOLD_KEY = 'hanbal.realm.goalfold'
+function goalFolded(): boolean {
+  try { return localStorage.getItem(GOAL_FOLD_KEY) === '1' } catch { return false }
+}
 function muted(): boolean {
   try { return localStorage.getItem(MUTE_KEY) === '1' } catch { return false }
 }
@@ -122,6 +127,8 @@ const NIGHT: string = (import.meta.env?.BASE_URL ?? '/') + 'night.html'
 const LINE_S = 0.6
 /** 계절 종이 울린 뒤 그 계절 장면의 소리가 나기까지 (ms) */
 const SCENE_CUE_MS = 1400
+/** 판을 그린 뒤 다음 계절 지도 그림을 미리 받기까지 (ms) — 그리는 동안 끼어들지 않게 */
+const WARM_MS = 1200
 const FALL_S = 1.6
 /** 싸움 카드 하나가 다 풀리는 데 걸리는 때 — 카드 안 줄들의 가장 늦은 --d 에 한 박자 */
 const battleCardSeconds = (html: string): number => Math.max(0, ...[...html.matchAll(/--d:([\d.]+)s/g)].map((m) => Number(m[1]))) + 0.8
@@ -210,6 +217,11 @@ const bust = (h: Hero | undefined, cls = 'face'): string =>
   h !== undefined && bustOf(h.id) !== undefined ? `<img class="${cls}" src="${ART}bust/${bustOf(h.id)}.jpg" alt="">` : `<span class="${cls} noface"></span>`
 /** 우리 나라 — 깃발마다 금빛 후광을 두른다 (형 2026-10-20: "사용자의 나라는 로그에서 아이콘도 뭔가 후광이 있거나 특별하게 … 내나라가 어느나란지도 모르겠어서") */
 let MINE = ''
+/**
+ * 판 위에서는 나라 얼굴이 그 판의 진짜 군주 — 2장의 고구려는 주몽이지 넓은 판의 군주 그림이 아니다
+ * (형 10-23: "고구려는 군주 이미지가 따로 있는데 장수 중에 군주로 주몽이 또 있는 건 뭐냐"). 판 바깥(나라 고르기)에서는 비운다
+ */
+let LIVE_RULER: Readonly<Record<string, string>> = {}
 const emblem = (f: string | null, cls = 'em'): string => (f !== null && FACTION_ART[f] !== undefined ? icon(FACTION_ART[f].emblem, f === MINE ? `${cls} mine` : cls) : '')
 const sorted = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 
@@ -222,7 +234,7 @@ const nationsOf = (region: RegionId): readonly NationInfo[] => (region === 'yeon
     : region === 'jumong' ? [...WORLD_NATIONS.filter((n) => ['goguryeo', 'biryuna', 'buyeo', 'bukokjeo'].includes(n.id)), HAENGIN_NATION] : NATIONS)
 
 function nationFace(id: string, cls = 'nface'): string {
-  const hid = rulerId(id)
+  const hid = LIVE_RULER[id] ?? rulerId(id)
   const file = hid !== undefined ? bustOf(hid) : undefined
   return file !== undefined ? `<img class="${cls}" src="${ART}bust/${file}.jpg" alt="">` : ''
 }
@@ -972,8 +984,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       // 장수 없는 군대 — 이 고을에 혼자 있는 우리 장군이 바로 이끈다 (들인 떠돌이도)
       if (a.hero === null) {
-        for (const y of sorted(Object.values(r.heroes)).filter((x) => x.faction === me() && x.status === 'free' && x.at === a.at && !isRuler(r, x.id) && !Object.values(r.armies).some((b) => b.hero === x.id))) {
-          h += `<button class="btn" data-act="lead" data-id="${y.id}" data-army="${a.id}">${esc(josa(y.name, '이', '가'))} 이끈다</button>`
+        for (const y of sorted(Object.values(r.heroes)).filter((x) => x.faction === me() && x.status === 'free' && x.at === a.at && !Object.values(r.armies).some((b) => b.hero === x.id))) {
+          // 군주도 친히 이끈다(친정) — 도읍을 비우면 다스림이 준다
+          h += isRuler(r, y.id)
+            ? `<button class="btn" data-act="lead" data-id="${y.id}" data-army="${a.id}" data-tip="군주가 도읍을 비우는 동안 다스림(능력치가 나라에 거는 몫)이 반으로 준다 · 지면 사로잡힐 수 있다">${esc(josa(y.name, '이', '가'))} 친히 이끈다</button>`
+            : `<button class="btn" data-act="lead" data-id="${y.id}" data-army="${a.id}">${esc(josa(y.name, '이', '가'))} 이끈다</button>`
         }
       }
       if (r.nodes[a.at]?.owner === me()) h += `<button class="btn ghost" data-act="disband" data-army="${a.id}">해산</button>`
@@ -2041,8 +2056,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function helpSheet(): string {
     return `<h3>도움말</h3><div class="help">`
       + `<p><b>한 계절 = 한 턴.</b> 명령을 고르고 다음 계절을 누른다.</p>`
-      + `<p><b>봄</b> 씨를 뿌린다. 봄에 심은 집 수만큼 가을에 거둔다. <b>여름</b> 장마. 나루가 막히고 길이 느리다. `
-      + `<b>가을</b> 추수. 곡식이 들어온다. <b>겨울</b> 강이 언다. 언 강으로 기습하기 좋다. 고개가 막힌다. 군량이 더 든다.</p>`
+      + `<p><b>봄</b>에 심은 집 수만큼 가을에 거두니, 봄에 군사를 뽑으면 그만큼 가을걷이가 준다. <b>여름</b>엔 장마로 나루가 막히고 길이 느려진다. `
+      + `<b>가을</b>엔 곡식이 들어오고, <b>겨울</b>엔 강이 얼어 언 강을 건너 기습하기 좋지만 고개가 막히고 군량이 더 든다.</p>`
       + `<p><b>개척</b> 빈땅은 아무도 안 사는 땅이다. 그 땅을 누르거나 징병 탭 아래에서, 맞닿은 우리 고을 사람을 보낸다. 곡식이 들고, 일군 땅은 빨리 큰다. 군대로 먼저 깃발만 꽂아 둘 수도 있다.</p>`
       + `<p><b>집 · 장정 · 군사</b> 집은 농사짓고 곡식을 낸다. 집 한 채는 다섯 식구 남짓이다. 징병하면 집에서 사내를 뽑는다 — 군사 둘에 집 한 채 몫의 일손이 빠져 그만큼 덜 거둔다. 군사는 움직이고 쳐들어가지만 곡식을 먹는다. 곡식이 떨어지면 사기가 꺾인다. 장정은 뽑히지 않은 사내들로, 적이 오면 돌창·몽둥이를 들고 제 고을만 지킨다(집 둘에 하나꼴 · 수는 많아도 약하다). 해산하면 일손이 집으로 돌아간다.</p>`
       + `<p><b>지도</b> 땅 색과 깃발이 주인. 왼쪽 위 깃발을 누르면 그 나라 땅만 또렷하다. 초록 수는 우리 군사, 붉은 수는 정찰꾼이 본 적 군세, ?는 아직 못 본 곳. ✕는 이번 계절 막힌 길. 보랏빛 화살은 다가오는 적.</p>`
@@ -2614,6 +2629,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   function paintNow(): void {
     MINE = realm?.player ?? ''
+    LIVE_RULER = realm !== null && front === null
+      ? Object.fromEntries(Object.values(realm.factions).flatMap((f) => (f.ruler !== undefined ? [[f.id, f.ruler]] : [])))
+      : {}
     if (realm !== null) noteKids(Object.values(realm.heroes))
     saveDraft()
     if (realm === null && front === null) front = { kind: 'title' }
@@ -2654,6 +2672,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (mh !== lastMap || first) {
       wrap.innerHTML = mh
       lastMap = mh
+      // 다음 계절 바탕을 미리 — 계절이 넘어갈 때 새 그림을 그제야 받느라 깜빡였다 (형 10-23). 그린 뒤 한숨 돌리고
+      const rg = r.region ?? 'byeonhan-mini'
+      const next = seasonOf(r.season + 1)
+      window.setTimeout(() => warmNextSeason(ART, rg, next), WARM_MS)
     }
     zoom.apply()
     if (first) {
@@ -2675,7 +2697,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const waiting = openAsks(realm, me()).filter((a) => answers[a.id] === undefined).length
     $('.legend').innerHTML = legendHtml(r) + (waiting > 0 ? `<button class="askpill" data-act="tab" data-tab="diplo">${icon('good-tribute-bell')}사신 ${waiting}</button>` : '')
     $('.next').innerHTML = `다음 계절 <span>›</span>`
-    $('.goalb').innerHTML = goalBandHtml(r, esc) // 캠페인의 장이면 이 장의 목표
+    $('.goalb').innerHTML = goalBandHtml(r, esc, goalFolded()) // 캠페인의 장이면 이 장의 목표 — 접을 수 있다
+    $('.goalb').classList.toggle('folded', goalFolded())
     let tabs = ''
     for (const t of TABS) {
       const dot = dotKeys(r, t.id).some((k) => !seenKeys.has(k))
@@ -2893,6 +2916,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'fr-again': if (realm !== null) { const rg = realm.region ?? 'byeonhan-mini'; host.onNewGame(realm.player, rg, Math.min(realm.tier ?? 1, tierOpen(rg))) } return
       case 'tier-pick': if (front !== null && front.kind === 'detail') tierPick[front.region] = Number(d['v']); paint(); return
       case 'chap-tier': chapTier = Number(d['v']); paint(); return
+      case 'goal-fold': try { localStorage.setItem(GOAL_FOLD_KEY, goalFolded() ? '0' : '1') } catch { /* 저장 못 하는 곳 */ } paint(); return
       case 'fr-look': looking = true; paint(); return
       case 'keep': if (realm !== null) toggleKeep(realm, d['id']!); fastNext = true; paint(); return
       case 'carry-tog': toggleCarry(d['id']!); paint(); return

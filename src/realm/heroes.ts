@@ -31,6 +31,20 @@ export function isRuler(r: Realm, hero: string): boolean {
   return Object.values(r.factions).some((f) => f.ruler === hero)
 }
 
+/**
+ * 플레이어는 그 나라의 **군주**다 (형 10-23: "플레이어가 정확히 뭐여야 하는지 올바르게 정의해 봐" · HEROES.md §7).
+ * 군주는 도읍에서 다스린다 — 능력치가 나라 전체에 작게 걸리고, 도읍은 따로 맡긴 장수가 없으면 군주가 맡는다(맡은 고을 특성이 도읍에 걸린다).
+ * 군주도 친히 나선다 — 군대를 이끌고(친정) · 자객으로 간다. 도읍을 비우면 다스림이 rulerAwayMul 만큼으로 준다.
+ */
+/** 군주의 다스림이 걸리는 몫 — 도읍에 있으면 1, 친정·자객으로 비웠으면 rulerAwayMul */
+export function rulerReach(r: Realm, faction: string): number {
+  const h = rulerOf(r, faction)
+  if (h === null) return 0
+  const cap = r.factions[faction]?.capital
+  const home = h.at === cap && armyOfHero(r, h.id) === null && !(h.awayUntil !== undefined && h.awayUntil >= r.season)
+  return home ? 1 : P.realm.rulerAwayMul
+}
+
 /** 나라의 군주 — 살아서 제 나라에 있을 때만 (사로잡히면 효과가 없다) */
 export function rulerOf(r: Realm, faction: string): Hero | null {
   const id = r.factions[faction]?.ruler
@@ -55,7 +69,12 @@ export function postHero(r: Realm, node: string): Hero | null {
   const owner = r.nodes[node]?.owner
   if (owner === null || owner === undefined) return null
   // 사신을 따라 나간 계절에는 맡은 고을에 손이 안 간다
-  return firstById(Object.values(r.heroes), (h) => h.post === node && h.status === 'free' && h.faction === owner && !(h.awayUntil !== undefined && h.awayUntil >= r.season))
+  const posted = firstById(Object.values(r.heroes), (h) => h.post === node && h.status === 'free' && h.faction === owner && !(h.awayUntil !== undefined && h.awayUntil >= r.season))
+  if (posted !== null) return posted
+  // 도읍은 따로 맡긴 장수가 없으면 군주가 맡는다 — 군주의 맡은 고을 특성(농사꾼·대장장이·철의 손…)이 여기 걸린다
+  if (r.factions[owner]?.capital !== node) return null
+  const ruler = rulerOf(r, owner)
+  return ruler !== null && ruler.at === node && armyOfHero(r, ruler.id) === null && !(ruler.awayUntil !== undefined && ruler.awayUntil >= r.season) ? ruler : null
 }
 
 /** 그 고을에 혼자 머무는(군대를 안 이끄는) 제 나라 장수들 — id 순서 */
@@ -115,7 +134,7 @@ export function envoyBonus(r: Realm, from: string, ask: string, escort?: string)
   const R = P.realm
   let b = 0
   const ruler = rulerOf(r, from)
-  if (ruler !== null) b += R.rulerDeokEnvoy * (deokOf(ruler) - 5)
+  if (ruler !== null) b += R.rulerDeokEnvoy * (deokOf(ruler) - 5) * rulerReach(r, from)
   const h = escort !== undefined ? r.heroes[escort] : undefined
   const went = h !== undefined && h.faction === from && h.status === 'free' ? h : null
   if (went !== null) b += R.heroDeokEnvoy * (deokOf(went) - 5)
@@ -129,13 +148,13 @@ export function envoyBonus(r: Realm, from: string, ask: string, escort?: string)
 /** 공작 성공 확률 가산 — 군주 지략 */
 export function plotBonus(r: Realm, faction: string): number {
   const ruler = rulerOf(r, faction)
-  return ruler === null ? 0 : P.realm.rulerRyakPlot * (ruler.ryak - 5)
+  return ruler === null ? 0 : P.realm.rulerRyakPlot * (ruler.ryak - 5) * rulerReach(r, faction)
 }
 
 /** 나라 군사 상한 가산 — 군주 통솔 */
 export function draftCapBonus(r: Realm, faction: string): number {
   const ruler = rulerOf(r, faction)
-  return ruler === null ? 0 : P.realm.rulerTongDraft * (ruler.tong - 5)
+  return ruler === null ? 0 : P.realm.rulerTongDraft * (ruler.tong - 5) * rulerReach(r, faction)
 }
 
 /** 고을 수확 배수 — 맡은 장수 내정 · 농사꾼 · 군주 내정 */
@@ -145,7 +164,7 @@ export function harvestMul(r: Realm, node: string): number {
   const owner = r.nodes[node]?.owner
   if (owner !== null && owner !== undefined) {
     const ruler = rulerOf(r, owner)
-    if (ruler !== null) m += R.rulerChiHarvest * (ruler.chi - 5)
+    if (ruler !== null) m += R.rulerChiHarvest * (ruler.chi - 5) * rulerReach(r, owner)
   }
   const h = postHero(r, node)
   if (h !== null) {
@@ -251,7 +270,8 @@ function assignHero(r: Realm, o: Extract<Order, { kind: 'assign' }>): void {
 function leadArmy(r: Realm, o: Extract<Order, { kind: 'lead' }>): void {
   const h = r.heroes[o.hero]
   const a = r.armies[o.army]
-  if (h === undefined || a === undefined || h.status !== 'free' || isRuler(r, h.id)) return
+  // 군주도 친히 이끈다(친정) — 도읍을 비우는 동안 다스림이 준다 (rulerReach)
+  if (h === undefined || a === undefined || h.status !== 'free') return
   if (a.faction !== h.faction || a.hero !== null || a.march !== null) return
   if (armyOfHero(r, h.id) !== null || h.at !== a.at) return
   a.hero = h.id

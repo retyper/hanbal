@@ -17,7 +17,26 @@ import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
 import type { EdgeKind, NodeKind, Realm, REdge, RegionId, SeasonOfYear } from '../../realm/types.ts'
 import { separatedRoutes, ferryAt, landClipSvg, midOf, naturalLines, riversSvg, routePoints, smoothPath, tidyEnds, trimPolyline, type Pt } from './mapgeo.ts'
 import { territory, type Territory } from './territory.ts'
-import { worldMapUrl } from './worldmap.ts'
+import { worldMapFallback, worldMapUrl } from './worldmap.ts'
+
+/** 미리 받아 둔 다음 계절 지도 그림 — 붙잡아 두어야 브라우저가 풀어 둔 그림을 버리지 않는다 */
+const warm = new Map<string, HTMLImageElement>()
+
+/**
+ * 다음 계절 바탕을 미리 — 계절이 넘어갈 때 새 그림을 그제야 받거나(작은 판·영남) 만드느라(넓은 판) 지도가 깜빡였다
+ * (형 10-23: "계절 넘어갈 때 화면 로딩하느라 깜빡거리는 거"). 판을 그린 뒤 한숨 돌리고 부른다 — 탭이 가려져 있으면 하지 않는다 (규칙 4)
+ */
+export function warmNextSeason(art: string, region: RegionId, next: SeasonOfYear): void {
+  if (document.visibilityState !== 'visible') return
+  if (worldGeoOf(region) !== null) { worldMapUrl(art, next, region); return }
+  const RA = REGION_ART[region]
+  const url = `${art}${RA.dir}/${SEASON_MAP[next]}.${RA.ext}`
+  if (warm.has(url)) return
+  const im = new Image()
+  im.src = url
+  warm.set(url, im)
+  void im.decode().catch(() => warm.delete(url))
+}
 
 /** 변한 판 지도 바탕의 크기 (map/*.jpg) — CSS 의 기본 비율. 판마다의 크기는 REGION_ART (영남 판 1024×765) */
 const W = REGION_ART['byeonhan-mini'].w
@@ -510,7 +529,8 @@ export function mapHtml(
   }
   // 넓어지는 지도는 조각을 이은 한 장에 계절 빛을 입힌다 (worldmap.ts — 다 되면 바탕을 갈아 끼운다)
   const world = worldGeoOf(region) !== null
-  const bgUrl = world ? worldMapUrl(art, season, region) : `${art}${RA.dir}/${SEASON_MAP[season]}.${RA.ext}`
+  // 새 계절 바탕이 아직 안 됐으면 지난 계절 것을 그대로 — 빈 바탕으로 깜빡이지 않게 (다 되면 worldmap 이 갈아 끼운다)
+  const bgUrl = world ? (worldMapUrl(art, season, region) || worldMapFallback(region)) : `${art}${RA.dir}/${SEASON_MAP[season]}.${RA.ext}`
   const bg = bgUrl !== '' ? `background-image:url('${bgUrl}');` : ''
   // 밝혀진 땅의 테두리 (0~1) — 축소는 여기까지만 (zoom.ts · 형: "문명처럼 유저가 보이는 구역을 기반으로 최대 축소")
   const sp = [...vis].map((id) => pos(id)).filter((p): p is readonly [number, number] => p !== undefined)

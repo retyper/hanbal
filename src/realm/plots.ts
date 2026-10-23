@@ -229,10 +229,10 @@ export function plotTargets(r: Realm, faction: string, op: PlotOp): Array<{ targ
   return out
 }
 
-/** 자객으로 보낼 수 있는 우리 장수 — 군대 없이 혼자 머무는 이 (군주는 못 간다). 그 계절엔 아무것도 못 한다 */
+/** 자객으로 보낼 수 있는 우리 장수 — 군대 없이 혼자 머무는 이. 군주도 친히 간다(명궁 군주의 자리) — 들키면 호위가 빼내지만 다쳐 돌아온다. 그 계절엔 아무것도 못 한다 */
 export function plotAgents(r: Realm, faction: string): string[] {
   return Object.values(r.heroes)
-    .filter((h) => h.faction === faction && h.status === 'free' && h.at !== null && armyOfHero(r, h.id) === null && !isRuler(r, h.id))
+    .filter((h) => h.faction === faction && h.status === 'free' && h.at !== null && armyOfHero(r, h.id) === null)
     .map((h) => h.id)
     .sort()
 }
@@ -385,7 +385,11 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
         // 들켰다 — 고용 자객은 값만 잃는다. 우리 장수였으면 도망과 사로잡힘을 굴린다 (자객 기본 · 장수는 도박).
         // 누가 보냈는지 드러나면 그 나라와 두 칸 나빠진다 (아래 expose)
         const ag = o.agent !== undefined ? r.heroes[o.agent] : undefined
-        if (ag !== undefined && ag.status === 'free') {
+        if (ag !== undefined && ag.status === 'free' && isRuler(r, ag.id)) {
+          // 군주는 호위가 빼낸다 — 대신 다쳐 누워 다스림이 준다
+          ag.woundedUntil = r.season + P.realm.rulerAgentWound
+          agentFate = 'escaped'
+        } else if (ag !== undefined && ag.status === 'free') {
           if (roll(r.seed, r.season, `${key}:escape`) < escapeChance(r, ag.id)) agentFate = 'escaped'
           else {
             ag.status = 'captive'

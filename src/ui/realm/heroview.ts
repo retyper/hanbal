@@ -78,7 +78,11 @@ export function roleLine(r: Realm, h: Hero): string {
   const node = (id: string | null | undefined): string => (id != null ? (r.nodes[id]?.name ?? '?') : '?')
   if (h.status === 'dead') return '죽었다'
   if (h.status === 'captive') return `${r.factions[h.captor ?? '']?.name ?? '?'}에 사로잡혀 있다${h.persuade ? ` · 회유 중 · ${h.persuade.resist === undefined ? `${h.persuade.left}계절 남음` : h.persuade.resist > 0 ? '아직 마음을 닫았다' : `마음이 흔들린다${(h.persuade.tries ?? 0) > 0 ? ` · ${h.persuade.tries}번 고개를 저었다` : ''}`}` : ''}`
-  if (isRuler(r, h.id)) return `군주 · ${node(h.at)}에 있다`
+  if (isRuler(r, h.id)) {
+    const ra = armyOfHero(r, h.id)
+    if (ra !== null) return `군주 · 친정 — ${ra.march !== null ? `${josa(node(ra.march.to), '으로', '로')} 가는 중` : `${node(ra.at)}에서 군대를 이끈다`} · 도읍의 다스림이 준다`
+    return h.at === r.factions[h.faction]?.capital ? '군주 · 도읍을 다스린다' : `군주 · ${node(h.at)}에 있다 · 도읍의 다스림이 준다`
+  }
   const ex = (r.expeditions ?? []).find((x) => x.hero === h.id)
   if (ex !== undefined) return `원정 중 · ${Math.max(1, ex.back - r.season + 1)}계절 뒤 돌아온다`
   const hurt = h.woundedUntil !== undefined && h.woundedUntil > r.season ? ` · 다쳐 누웠다 (${h.woundedUntil - r.season}계절)` : ''

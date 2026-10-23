@@ -94,12 +94,15 @@ export function arriveWhen(season: number, k: number, short = false): string {
   return `${when}(${seasonLabel(season + n)})${short ? '' : '에 닿는다'}`
 }
 
-/** 계절이 넘어갈 때 뜨는 한 줄 (FLOW §1) */
+/**
+ * 계절이 넘어갈 때 뜨는 한 줄 (FLOW §1) — 그 계절에 걸리는 규칙만 짧게. 계절 이름은 위에 이미 있다
+ * (형 10-23: "거둔다. 싸움철이다. 이딴 AI 말투 쓰지 말라니까" — 마침표로 끊는 짧은 선언을 버렸다)
+ */
 export const SEASON_LINE: Record<SeasonOfYear, string> = {
-  spring: '봄. 씨를 뿌린다. 지금 뽑은 사람은 가을에 거두지 못한다.',
-  summer: '여름. 장마가 든다. 나루가 막히고 길이 늦다.',
-  autumn: '가을. 거둔다. 싸움철이다.',
-  winter: '겨울. 강이 언다. 고개가 막히고 군량이 더 든다.',
+  spring: '씨 뿌리는 철 · 지금 뽑는 군사만큼 가을걷이가 준다',
+  summer: '장마 · 나루가 막히고 행군이 느려진다',
+  autumn: '가을걷이 · 곳간이 찬다',
+  winter: '강이 얼고 고개가 막힌다 · 군량이 더 든다',
 }
 
 export const ASK_NAME: Record<EnvoyAsk, string> = {

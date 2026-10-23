@@ -16,7 +16,7 @@ import { roll } from '../../src/core/rng.ts'
 import { NATIONS } from '../../src/realm/data/nations.ts'
 import { NATION_IDS, byeonhanMini, startRealm } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { draftCost, draftLimit, goodOf, hhOf, menOf, militiaMen, nodeYield, upkeepOf } from '../../src/realm/economy.ts'
-import { harvestMul } from '../../src/realm/heroes.ts'
+import { harvestMul, militiaMul } from '../../src/realm/heroes.ts'
 import { advance, otherEnd, planned, seenMarches } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Order, Realm, ReportLine } from '../../src/realm/types.ts'
@@ -53,7 +53,8 @@ describe('나라 고르기', () => {
   it('장정은 가호에 비례하고 국읍·산성은 더 두껍다', () => {
     const r = byeonhanMini(1)
     assert.equal(militiaMen(r, 'our-north'), Math.round(r.nodes['our-north']!.hh * P.realm.militiaPerHH))
-    assert.equal(militiaMen(r, 'our-cap'), Math.round(r.nodes['our-cap']!.hh * P.realm.militiaPerHH * P.realm.militiaCapitalMul))
+    // 도읍은 군주가 맡는다 — 군주의 매력이 장정에 걸린다 (HEROES §7)
+    assert.equal(militiaMen(r, 'our-cap'), Math.round(r.nodes['our-cap']!.hh * P.realm.militiaPerHH * P.realm.militiaCapitalMul * militiaMul(r, 'our-cap')))
     assert.equal(militiaMen(r, 'anya-fort'), Math.round(r.nodes['anya-fort']!.hh * P.realm.militiaPerHH * P.realm.militiaFortMul))
     assert.equal(militiaMen(r, 'sodo'), 0)
   })

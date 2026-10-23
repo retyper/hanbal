@@ -126,6 +126,24 @@ export const BATTLE_SFX = {
   openDrum: 'impactWood_heavy_000', openBell: 'impactBell_heavy_001',
 } as const
 
+/**
+ * 타는 고을 — 불꽃 한 장을 늘였다 줄였다 하면 어색했다 (형 10-23: "불타는 이미지는 어색하지 않게"). 작은 불길 여럿이 저마다 솟았다 스러지고
+ * 불티가 낱낱이 날아오른다 (이펙트는 낱낱이 — 덩어리를 흔들지 않는다). 자리는 늘 같다(꾸밈이라 판정과 상관없다)
+ */
+const FLAMES = 11
+const EMBERS = 14
+export function burnHtml(art: string, side: 'l' | 'r'): string {
+  const h = (i: number, k: number): number => { const x = Math.sin(i * 12.9898 + k * 78.233 + (side === 'l' ? 0 : 17)) * 43758.5453; return x - Math.floor(x) }
+  let s = `<div class="wburn ${side}"><i class="bed"></i>`
+  for (let i = 0; i < FLAMES; i++) {
+    s += `<img src="${art}fx/fire.png" alt="" style="--x:${(h(i, 1) * 100).toFixed(0)}%;--s:${(0.55 + h(i, 2) * 0.7).toFixed(2)};--t:${(-h(i, 3) * 1.4).toFixed(2)}s;--d:${(1.0 + h(i, 4) * 0.7).toFixed(2)}s">`
+  }
+  for (let i = 0; i < EMBERS; i++) {
+    s += `<b style="--x:${(h(i, 5) * 100).toFixed(0)}%;--t:${(-h(i, 6) * 2.4).toFixed(2)}s;--d:${(1.6 + h(i, 7) * 1.4).toFixed(2)}s;--w:${Math.round(-30 + h(i, 8) * 60)}px"></b>`
+  }
+  return s + '</div>'
+}
+
 /** 한 합이 풀리는 사이 (초) — 깃발 → 이야기 → 사람 수 */
 const STAGE_S = [0, 1.1, 2.4] as const
 
@@ -486,7 +504,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const big = l.outcome === 'rout' || l.outcome === 'routed' ? (good ? '대승 — ' : '대패 — ') : ''
     const d = anim ? ` style="--d:${STAGE_S[2] + 0.8}s"` : ''
     const fall = l.field !== true && atkWon
-    if (fall) h += `<div class="wfx burn"${d}><img class="wfx-smoke" src="${art}fx/smoke.png" alt=""><img class="wfx-fire" src="${art}fx/fire.png" alt=""><img class="wfx-fire r" src="${art}fx/fire.png" alt=""></div>`
+    if (fall) h += `<div class="wfx burn"${d}><img class="wfx-smoke" src="${art}fx/smoke.png" alt="">${burnHtml(art, 'l')}${burnHtml(art, 'r')}</div>`
     h += `<div class="wend ${good ? 'good' : l.outcome === 'draw' ? '' : 'bad'}"${d}><b>${big}${esc(res)}</b>`
     if (ctx !== null && (l.rounds ?? []).length > 0) h += `<p class="wwhy">${esc(endStory(l, ctx))}</p>`
     if (l.captured !== null) {
@@ -600,10 +618,21 @@ export const WAR_CSS = `
 @keyframes whitfx { 0% { opacity: 0; transform: scale(.3) rotate(0); } 25% { opacity: 1; transform: scale(1.05) rotate(12deg); } 100% { opacity: 0; transform: scale(1.35) rotate(24deg); } }
 .ap .wend { position: relative; } .ap .wend > b { position: relative; }
 .ap .wfx.burn { opacity: 0; animation: wrin 1.2s ease-out var(--d, 0s) both; }
-.ap .wfx-fire { position: absolute; bottom: 4%; left: 6%; width: min(30vw, 260px); animation: wflick 1.4s ease-in-out infinite alternate; transform-origin: 50% 100%; }
-.ap .wfx-fire.r { left: auto; right: 4%; width: min(24vw, 210px); animation-duration: 1.1s; }
+/* 불 — 작은 불길 여럿이 바닥에서 솟아 스러진다 · 불티는 낱낱이 위로 · 밑에 붉은 숯불 기운 */
+.ap .wburn { position: absolute; bottom: 1%; width: min(46vw, 430px); height: min(40vw, 360px); }
+.ap .wburn.l { left: 1%; } .ap .wburn.r { right: 2%; width: min(36vw, 330px); height: min(32vw, 290px); }
+.ap .wburn .bed { position: absolute; left: 5%; right: 5%; bottom: 0; height: 22%; border-radius: 50%; background: radial-gradient(ellipse at 50% 70%, #ffb04acc, #ff6a1a66 45%, #0000 75%);
+  filter: blur(6px); animation: wbed 1.3s ease-in-out infinite alternate; }
+.ap .wburn img { position: absolute; bottom: 0; left: calc(var(--x) * .8); width: calc(52% * var(--s)); transform-origin: 50% 100%; mix-blend-mode: screen; opacity: 0;
+  animation: wtongue var(--d) ease-out var(--t) infinite; }
+.ap .wburn b { position: absolute; bottom: 12%; left: var(--x); width: 4px; height: 4px; border-radius: 50%; background: #ffd27a; box-shadow: 0 0 6px 2px #ff9a3a; opacity: 0;
+  animation: wember var(--d) linear var(--t) infinite; }
+@keyframes wtongue { 0% { opacity: 0; transform: translateY(8%) scale(.5, .6); } 18% { opacity: .95; transform: translateY(0) scale(1, 1); }
+  60% { opacity: .75; transform: translateY(-14%) scale(.85, 1.15); } 100% { opacity: 0; transform: translateY(-34%) scale(.35, .7); } }
+@keyframes wember { 0% { opacity: 0; transform: translate(0, 0); } 12% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--w), -220%) ; } }
+@keyframes wbed { from { opacity: .7; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ap .wburn img, .ap .wburn b { animation: none; opacity: .8; } }
 .ap .wfx-smoke { position: absolute; bottom: 18%; left: 2%; width: min(42vw, 380px); opacity: .7; animation: wsmoke 9s ease-in-out infinite alternate; }
-@keyframes wflick { from { transform: scaleY(.92) skewX(-2deg); } to { transform: scaleY(1.06) skewX(2deg); } }
 @keyframes wsmoke { from { transform: translateY(0) scale(1); } to { transform: translateY(-30px) scale(1.12); } }
 /* 맡기기 — 그 장수의 얼굴과 지략 */
 .ap .wauto { flex: 1 1 100%; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #d8cfbf; }
@@ -614,7 +643,7 @@ export const WAR_CSS = `
 .ap .wend.good b { display: inline-block; animation: wwinb .9s cubic-bezier(.2, 1.6, .4, 1) calc(var(--d, 0s) + .3s) both; }
 @keyframes wwin { 0% { box-shadow: 0 0 0 0 #ffd27a00; } 30% { box-shadow: 0 0 0 6px #ffd27aaa, 0 0 40px 10px #ffd27a88; } 100% { box-shadow: 0 0 0 0 #ffd27a00, 0 0 18px 2px #ffd27a33; } }
 @keyframes wwinb { 0% { transform: scale(.4); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { .ap .ws.hit, .ap .ws.hit::after, .ap .wend.good, .ap .wend.good b, .ap .wfx-dust, .ap .wfx-fire, .ap .wfx-smoke { animation: none; } .ap .wfx-volley, .ap .ws .wfx-hit { display: none; } }
+@media (prefers-reduced-motion: reduce) { .ap .ws.hit, .ap .ws.hit::after, .ap .wend.good, .ap .wend.good b, .ap .wfx-dust, .ap .wfx-smoke { animation: none; } .ap .wfx-volley, .ap .ws .wfx-hit { display: none; } }
 .ap .wrd.slow .wcmds, .ap .wrd.slow .wst, .ap .wrd.slow .wpush { opacity: 0; animation: wrin .45s ease-out var(--d, 0s) both; }
 .ap .wrd.slow .wcmds { animation-name: wrflip; }
 @keyframes wrin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }

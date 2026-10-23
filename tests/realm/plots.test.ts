@@ -156,6 +156,12 @@ describe('공작 — 들키면 (세 갈래)', () => {
   })
 
   it('들켰지만 누가 보냈는지 모르면 — 사이는 그대로, 그 나라 국읍 경계만 오른다', () => {
+    // 도읍은 군주가 맡아 경계 바닥이 있다(HEROES §7) — 바닥이 오른 몫을 가리지 않게 이 시험에서만 끈다
+    const keep = P.realm.postRyakAlert
+    P.realm.postRyakAlert = 0
+    try { checkUnknown() } finally { P.realm.postRyakAlert = keep }
+  })
+  function checkUnknown(): void {
     const { before, next, report } = find(plot('burn', 'anya'), { ok: false, caught: true, exposed: false })
     assert.equal(relationOf(next, 'us', 'anya').state, relationOf(before, 'us', 'anya').state)
     assert.equal(relationOf(next, 'us', 'anya').favor ?? 0, relationOf(before, 'us', 'anya').favor ?? 0)
@@ -166,7 +172,7 @@ describe('공작 — 들키면 (세 갈래)', () => {
     const text = reportText(before, next, l, 'anya')!
     assert.ok(text.includes('모른다') && !text.includes(next.factions['us']!.name), text)
     assert.ok(reportText(before, next, l, 'us')!.includes('누가 했는지는 모른다'))
-  })
+  }
 
   it('드러나면 그 나라를 아는 다른 나라들도 조금 등 돌린다', () => {
     const { before, next } = find(plot('rumor', 'guya'), { ok: true, caught: true, exposed: true })
