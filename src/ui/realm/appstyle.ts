@@ -543,6 +543,21 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap.ap :is(.acard.fresh) { box-shadow: none; filter: drop-shadow(0 0 6px #7aa83aaa); }
 .ap.ap .hrow.ruler { filter: drop-shadow(0 0 5px #c9a45a88); }
 @media (max-width: 420px) { .ap.ap :is(.acard, .ncard, .fcard, .hrow, .nacts, .askc, .trade, .splitp, .paths, .warc, .fall, .acct, .exp, .wed, .scouthd, .hands) { border-width: 9px; border-image-width: 9px; } }
+/* 드는 값 — 붉은 ▼ · 물건 그림 · 수 */
+.ap .cost { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; vertical-align: middle; flex-wrap: wrap; }
+.ap .cost small { font-size: 11px; color: var(--mute); margin-right: 1px; }
+.ap .cost .cg { display: inline-flex; align-items: center; gap: 1px; padding: 0 6px 0 3px; border-radius: 999px; background: #3a1410d0; border: 1px solid #c8503a99; color: #ffd0c0; font-size: 12.5px; font-weight: 700; line-height: 1.5; font-variant-numeric: tabular-nums; }
+.ap .cost .cg i { font-style: normal; font-size: 9px; color: #ff6a4a; margin-right: 1px; }
+.ap .cost .cgi { width: 16px; height: 16px; object-fit: contain; }
+.ap .btn.pri .cost .cg { background: #2a0e08e0; }
+.ap .hback { margin: 0 0 6px; }
+/* 이끌 장수 — 얼굴과 이름 (출정 단추 줄과 따로) */
+.ap .leadrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #4a3a28; }
+.ap .leadrow > .mute { flex: 1 1 100%; font-size: 12px; }
+.ap .btn.lead { gap: 6px; padding-left: 4px; }
+.ap .btn.lead .lf { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid #c9a45a; }
+.ap .btn.lead span { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2; } .ap .btn.lead small { font-size: 11px; opacity: .8; }
+.ap .banner .txw { flex: 1 1 auto; min-width: 0; }
 .ap .tabs button { min-width: 0; } .ap .tabs button span { white-space: nowrap; }
 @media (max-width: 420px) { .ap .tabs button img.tic { width: 28px; height: 28px; } .ap .tabs button { font-size: 11.5px; } }
 `

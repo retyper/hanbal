@@ -537,7 +537,8 @@ export function mapHtml(
       : ''
     // 붐빔 — 우리 고을이 품에 가까우면 노란 띠, 넘치면 붉은 「붐빈다」 (집이 더디게 는다)
     const cr = ours && n.kind !== 'sodo' ? crowdOf(n) : 0
-    const crowd = cr > 1 ? '<span class="crw full">붐빈다</span>' : cr > 0.8 ? '<span class="crw near"></span>' : ''
+    // 넘칠 때만 글자로 — 뜻 모를 노란 막대(곧 붐빔)는 걷었다 (형 10-23: "개마 들머리 마을 위에 노란색 바가 하나 생겼는데 이거 뭐임")
+    const crowd = cr > 1 ? '<span class="crw full" title="집이 품을 넘쳐 더디게 늘고, 남는 백성은 저절로 이웃 고을로 옮겨 간다">붐빈다</span>' : ''
     const spec = sp.length > 0 || fish !== '' ? `<span class="sp${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}">`).join('')}${fish}</span>` : ''
     // 계절따라 걸리는 규칙도 그림으로 — 봄·가을 안개(숨기 좋다) · 겨울 언 해자(못 막는다) (prose.tagNow 와 같은 것)
     const now = n.tags.map((t) => tagNow(t, season)).filter((x) => x !== null).join(' ')

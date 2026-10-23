@@ -134,7 +134,7 @@ export const LEGACY_CSS = `
 .ap .tierp .seg { flex-wrap: wrap; } .ap .tierp .seg button { min-width: 44px; }
 .ap .tierp .seg button.locked { opacity: .45; cursor: default; } .ap .tierp .seg button.apex:not(.locked) { color: #ffb08a; border-color: #c0603a; }
 .ap .front.boards .tierp { max-width: 980px; margin: 0 auto 8px; padding: 0 14px; }
-.ap .tierup { text-align: center; color: #f0a070; margin: 8px 0; } .ap .tierc { margin-left: 6px; padding: 0 7px; border-radius: 9px; border: 1px solid #a0603a; color: #f0a070; font-size: 12px; }
+.ap .tierup { text-align: center; color: #f0a070; margin: 8px 0; } .ap .tierc { display: inline-block; white-space: nowrap; margin-left: 6px; padding: 0 7px; border-radius: 9px; border: 1px solid #a0603a; color: #f0a070; font-size: 12px; }
 .ap .front .bmeta.tierw { color: #f0a070; }
 .ap .cardc { display: flex; gap: 10px; margin: 8px 0; padding: 10px; border-radius: 14px; border: 1px solid #6a5a3a; background: #201c16; text-align: left; flex-wrap: wrap; }
 .ap .cardc.bad { border-color: #7a4a3a; background: #221816; }
