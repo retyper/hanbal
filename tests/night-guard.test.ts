@@ -145,3 +145,52 @@ describe('밤 — 촛불 게이지', () => {
     assert.equal((n.result as Night['result'])?.result, 'fled')
   })
 })
+
+/**
+ * 판을 깰 길이 있나 (2026-10-23, 형: "암살활쏘기는 아직도 깰 수 없게 만들어져 있나? 어떻게 깨라는지 모르겠음. 안뜰이랑 사랑채")
+ *  - 안뜰: 왼쪽에 앉은 보초가 모닥불을 가려 지붕에서 불을 맞힐 각이 거의 없었다 → 불은 첫 화면부터 맞힐 수 있어야 한다
+ *  - 사랑채 앞: 기둥(살이 꽂히는 것)이 창호지 앞을 통째로 막아 적장에게 닿는 각이 하나도 없었다 → 그림자는 맞힐 수 있어야 한다
+ * 숨 참고 만작으로 놓으면 오차 0 (빨간 바 계약) — 사람이 겨눈 각 그대로 간다.
+ */
+describe('밤 — 판을 깰 길', () => {
+  const aim = (n: Night, ang: number, drawing: boolean): InputFrame => {
+    const a = n.w.archer
+    return { aimX: a.x + Math.cos(ang) * 10, aimY: a.y + Math.sin(ang) * 10, drawing, steady: true, parry: false }
+  }
+  /** 숨 참고 만작까지 당겨 이 각으로 놓고, 살이 끝날 때까지 */
+  const shootAt = (n: Night, ang: number): void => {
+    for (let i = 0; i < P.sim.hz && n.w.archer.phase !== 'full'; i++) stepNight(n, aim(n, ang, true))
+    stepNight(n, aim(n, ang, true))
+    stepNight(n, aim(n, ang, false))
+    for (let i = 0; i < P.sim.hz * 2 && n.w.arrows.some((x) => x.alive && x.outcome === 'flying'); i++) stepNight(n, aim(n, ang, false))
+  }
+
+  it('안뜰 — 지붕에서 모닥불을 맞힐 각이 첫 화면부터 있다 (시드 여럿)', () => {
+    for (const seed of [1, 2, 3, 5, 7, 11]) {
+      let found = false
+      // 등불 든 순찰이 불 앞을 지나갈 수 있다 — 조금 기다렸다 쏘는 것까지 본다
+      for (const wait of [0, 2, 4]) {
+        for (let ang = -0.34; ang <= -0.2 && !found; ang += 0.002) {
+          const n = createNight({ seed, practice: { stage: 1, alarm: true, infinite: true } })
+          run(n, wait)
+          shootAt(n, ang)
+          found = n.scene.lights.find((l) => l.kind === 'fire')!.hits > 0
+        }
+      }
+      assert.ok(found, `시드 ${seed} — 모닥불을 맞힐 각이 없다 (앉은 보초가 가린다)`)
+    }
+  })
+
+  it('사랑채 앞 — 호위가 다 쓰러지면 창호지 너머 그림자를 맞힐 수 있다', () => {
+    let got: string | undefined
+    for (let ang = -0.14; ang <= -0.02 && got === undefined; ang += 0.002) {
+      const n = createNight({ seed: 4, practice: { stage: 2, alarm: true, infinite: true } })
+      for (const f of n.scene.figures) if (f.role === 'guard') f.alive = false
+      run(n, P.night.chiefRise + 0.1)
+      assert.equal(n.phase, 'chief')
+      shootAt(n, ang)
+      if (n.result?.result === 'dead' || n.result?.result === 'wounded') got = n.result.result
+    }
+    assert.ok(got !== undefined, '그림자에 닿는 각이 하나도 없다 (기둥이 막는다)')
+  })
+})

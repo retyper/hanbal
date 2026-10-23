@@ -167,7 +167,9 @@ const BLUEPRINTS: readonly Blueprint[] = [
   {
     title: '안뜰',
     guards: [
-      { x: 15.4, pose: 'sit', holds: null, facing: 1 },
+      // 지붕 쪽(왼쪽) 보초는 불에서 3.4m 떨어져 앉는다 — 15.4 였을 때는 지붕에서 내려 쏘는 살이 이 보초의 머리·몸에 먼저 걸려
+      // 모닥불을 맞힐 각이 시드 20개 가운데 5개뿐(폭 1~8mrad)이었다. 지금은 20/20 (폭 16~40mrad) — 형: "안뜰에서는 뭐 통과할 방법이 없는데"
+      { x: 13.6, pose: 'sit', holds: null, facing: 1 },
       { x: 18.6, pose: 'sit', holds: 'spear', facing: -1, min: 1 },
       { x: 17, pose: 'walk', holds: 'lantern', facing: 1, patrol: { x0: 10.5, x1: 25 } },
       { x: 26.5, pose: 'stand', holds: 'spear', facing: -1 },
@@ -205,8 +207,8 @@ const BLUEPRINTS: readonly Blueprint[] = [
     solids: [
       { kind: 'wood', x0: 21, y0: 0, x1: 23.4, y1: 0.6 }, // 마루 앞
       { kind: 'wood', x0: 25.6, y0: 0, x1: 30, y1: 0.6 },
-      { kind: 'wood', x0: 21, y0: 0.6, x1: 21.3, y1: 3.3 }, // 기둥
-      { kind: 'wood', x0: 29.6, y0: 0.6, x1: 29.9, y1: 3.3 },
+      // 기둥은 살을 안 막는다 — 사랑채 앞면(벽·기둥·창호지)은 뒤 배경이다. 기둥이 막으면 창호지 뒤 적장에게 닿는 길이 하나도 없었다
+      // (형: "사랑채에서 촛불이 꺼져서 도망치는건 대체뭔데. 어떻게잡으라는겨" — 그림자를 아무리 쏴도 기둥에 꽂혔다)
       { kind: 'tile', x0: 20.3, y0: 3.3, x1: 30.6, y1: 4.3 }, // 사랑채 지붕
     ],
     door: { x0: 23.4, y0: 0.6, x1: 25.6, y1: 2.8 },

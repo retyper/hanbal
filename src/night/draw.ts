@@ -611,6 +611,59 @@ function drawDoor(ctx: CanvasRenderingContext2D, cam: Camera, n: Night): void {
 
 // ───────────────────────── 글자판 ─────────────────────────
 
+/**
+ * 이 판에서 할 일 — 판의 지금 모습을 읽어 다음 한 걸음을 알려 준다 (형: "어떻게 깨라는지 모르겠음. 안뜰이랑 사랑채").
+ * 낱말마다 ' · ' 로 끊는다 — 좁은 화면에선 거기서 줄을 바꾼다. 판이 돌 때만 (넘어가는 중·끝·그림자가 선 뒤엔 없다).
+ */
+export function goalLine(n: Night): string {
+  if (n.phase !== 'play') return ''
+  const sc = n.scene
+  const left = sc.figures.filter((f) => f.role === 'guard' && f.alive).length
+  switch (sc.index) {
+    case 0:
+      return '보초를 모두 쓰러뜨린다 · 머리를 맞히면 소리가 없다 · 횃불을 쏘면 꺼진다'
+    case 1: {
+      const fire = sc.lights.find((l) => l.kind === 'fire')
+      if (fire !== undefined && fire.lit) {
+        return `모닥불에 살 ${Math.max(1, P.night.fireHits - fire.hits)}발을 쏘면 꺼진다 · 불빛 안에 쓰러진 보초는 들킨다`
+      }
+      const lantern = sc.lights.some((l) => l.kind === 'lantern' && l.lit && sc.figures[l.carrier]?.alive === true)
+      if (lantern) return '등불 든 보초는 등불부터 쏜다 · 다시 붙이는 동안 쓰러뜨린다'
+      return '불 붙이러 나온 보초를 어둠 속에서 쓰러뜨린다'
+    }
+    case 2:
+      return left > 0 ? `호위 ${left}명을 쓰러뜨리면 창호지 뒤 적장이 일어선다 · 그때 창호지를 쏜다` : ''
+    default:
+      return ''
+  }
+}
+
+/** 할 일 줄 — 가운데 위 (발각 게이지 밑). 왼쪽 단추·오른쪽 화살 눈금 사이에 들어가게 ' · ' 에서 줄을 바꾼다 */
+function drawGoal(ctx: CanvasRenderingContext2D, cam: Camera, n: Night): void {
+  const text = goalLine(n)
+  if (text === '') return
+  ctx.font = '700 13px system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
+  const maxW = Math.max(180, cam.w - 2 * GOAL_SIDE)
+  const lines: string[] = []
+  for (const part of text.split(' · ')) {
+    const last = lines[lines.length - 1]
+    if (last !== undefined && ctx.measureText(`${last} · ${part}`).width <= maxW) lines[lines.length - 1] = `${last} · ${part}`
+    else lines.push(part)
+  }
+  const lh = 18
+  const w = Math.min(maxW, Math.max(...lines.map((l) => ctx.measureText(l).width))) + 20
+  const top = 50
+  ctx.fillStyle = 'rgba(20,24,30,0.72)'
+  ctx.fillRect(cam.w / 2 - w / 2, top, w, lines.length * lh + 8)
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = '#ffe2a8'
+  lines.forEach((l, i) => ctx.fillText(l, cam.w / 2, top + 4 + lh / 2 + i * lh))
+}
+
+/** 할 일 줄이 비켜 가는 양옆 폭 (CSS px) — 왼쪽 '그만'·'건너뛰기' 단추, 오른쪽 화살 눈금 */
+const GOAL_SIDE = 185
+
 function drawHud(ctx: CanvasRenderingContext2D, v: NightView, n: Night, now: number): void {
   const cam = v.cam
   const w = n.w
@@ -873,5 +926,6 @@ export function drawNight(ctx: CanvasRenderingContext2D, v: NightView, n: Night,
     ctx.fillRect(0, 0, cam.w, cam.h)
   }
   drawHud(ctx, v, n, now)
+  drawGoal(ctx, cam, n)
   if (pull !== undefined) drawPull(ctx, pull)
 }
