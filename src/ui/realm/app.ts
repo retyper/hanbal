@@ -3035,6 +3035,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     paintTut(r)
     const sb = selBarHtml(r)
     $('.selbar').innerHTML = sb
+    $('.selbar').classList.toggle('pp', partySel !== '' && armySel.length === 0) // 개척단 띠는 작게 — 가린 고을을 누를 수 있게
     root.classList.toggle('sel-open', sb !== '')
     $('.roadkey').innerHTML = roadKeyHtml()
     $('.layers').innerHTML = layersOpen ? layersHtml() : ''
@@ -3205,7 +3206,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   })
 
   /** 군대를 보냈다 — 군사가 발맞춰 떠나는 소리 (형 10-23: "출정 보내기 완료될 때는 뭔가 군대를 부리는 소리가 필요함") */
-  const marchSfx = (): void => { if (document.visibilityState === 'visible') ding(snd('war_drums'), 0.35) }
+  const marchSfx = (): void => { if (document.visibilityState === 'visible') ding(snd('march_go'), 0.4) }
 
   // ───────── 손짓 — 한 곳에서 받는다
   // 전체 화면 — 처음 손이 닿는 그 순간에 (형 10-23: "게임 시작하자마자 되어야 하는 거 아님?").

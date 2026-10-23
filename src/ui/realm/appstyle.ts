@@ -422,6 +422,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 /* 집 보내기 — 고른 고을 그림 · 집 막대 · 조금·알맞게·많이 */
 .ap .pprow { flex: 1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; padding: 0; }
 .ap .dloss { margin: 4px 0 0; font-size: 12.5px; font-weight: 700; } .ap .dloss span { color: #e8a08a; }
+/* 고른 말 띠는 글만큼만 — 화면 끝까지 늘이지 않는다 (형 10-23: "박스가 너무 크면 그거에 가려진 마을을 선택할 수가 없어") */
+.ap .selbar { right: auto; max-width: min(calc(100% - 78px), 520px); }
+.ap .selbar.pp { padding: 0 2px; gap: 4px; border-width: 9px; border-image-width: 9px; flex-wrap: nowrap; }
+.ap .selbar.pp .sbface { width: 28px; height: 28px; margin-right: -4px; }
+.ap .selbar.pp .sbt { min-width: 0; margin-left: 6px; } .ap .selbar.pp .sbt b { font-size: 13px; white-space: nowrap; } .ap .selbar.pp .sbt span { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap .selbar.pp .btn { padding: 1px 6px; font-size: 12.5px; white-space: nowrap; } .ap .selbar.pp .sbx { padding: 2px 4px; font-size: 16px; }
 .ap .selbar .ppface { object-fit: contain; border-color: #e0b070; background: #3a2c1e; padding: 2px; box-sizing: border-box; }
 .ap .selbar .sbt .ppbar { color: #e0b070; letter-spacing: 1px; }
 .ap .selbar .ppamt { flex: 0 1 auto; } .ap .selbar .ppamt button { padding: 6px 12px; white-space: nowrap; }
