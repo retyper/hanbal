@@ -6,7 +6,9 @@
  *   - **누르면 바로** — 눌러도 아무 일 없는 것(특성 칩·칭호·지도 그림·기분 얼굴…)의 `data-tip`/`title`
  *   - **누르고 있으면 조금 뒤** — 무엇이든(단추·고을 포함) `data-more` 가 있으면 그것을, 없으면 `data-tip`/`title`.
  *     길게 누른 뒤의 떼기는 누르기로 치지 않는다 (단추가 눌리지 않는다)
- * 짧은 말은 `data-tip`(없으면 `title`), 긴 말은 `data-more`. 컴퓨터에선 `title` 이 그대로 마우스에 뜬다.
+ * 짧은 말은 `data-tip`(없으면 `title`), 긴 말은 `data-more`.
+ * 컴퓨터에선 **올려 두면 조금 뒤** 같은 말풍선(짧은 말 + 긴 말)이 뜨고, 내리면 거둔다. `title` 은 올릴 때 `data-tip` 으로 옮겨
+ * 브라우저 기본 말풍선과 겹쳐 뜨지 않게 한다 (형: "마우스 올렸을 때 나오게 만들었는데 잘 구현한거 맞아?" — 전엔 `data-tip`·`data-more` 가 마우스에 안 떴다).
  *
  * **펼침**(`data-peek` + 안에 숨긴 `.peek`) — 카드처럼 그림만 보이고 설명은 따로 (형: "설명을 카드에 같이 넣지 말고
  * 탭 누르고 있거나 마우스 올려놓거나 하면 손가락 비켜서 옆에 설명이 나오게"). 마우스는 올리면 커서 옆에 따라다니고,
@@ -112,6 +114,35 @@ export function installTips(root: HTMLElement): void {
     const to = ev.relatedTarget as Node | null
     if (to === null || !peeking.contains(to)) unpeek()
   })
+  // 마우스 — 설명 달린 것에 올려 두면 조금 뒤 말풍선 (짧은 말 + 긴 말), 벗어나면 거둔다
+  let hovering: { el: HTMLElement; timer: number } | null = null
+  const unhover = (): void => {
+    if (hovering === null) return
+    window.clearTimeout(hovering.timer)
+    hovering = null
+    if (peeking === null) hide()
+  }
+  root.addEventListener('pointerover', (ev) => {
+    if (ev.pointerType !== 'mouse') return
+    const el = (ev.target as HTMLElement).closest<HTMLElement>(TIPS)
+    if (el === hovering?.el) return
+    unhover()
+    if (el === null || !root.contains(el) || el === bub || el.matches(PEEK)) return
+    const title = el.getAttribute('title')
+    if (title !== null) { if (el.dataset['tip'] === undefined) el.dataset['tip'] = title; el.removeAttribute('title') }
+    const timer = window.setTimeout(() => {
+      const more = el.dataset['more']
+      const short = shortOf(el)
+      show(el, more !== undefined ? `${short !== '' ? `<b>${esc(short)}</b>` : ''}<span>${esc(more)}</span>` : esc(short), more !== undefined)
+      window.clearTimeout(hideTimer) // 올려 둔 동안은 떠 있는다
+    }, P.realm.tipHover)
+    hovering = { el, timer }
+  })
+  root.addEventListener('pointerout', (ev) => {
+    if (ev.pointerType !== 'mouse' || hovering === null) return
+    const to = ev.relatedTarget as Node | null
+    if (to === null || !hovering.el.contains(to)) unhover()
+  })
 
   const cancelHold = (): void => {
     if (hold !== null) window.clearTimeout(hold.timer)
@@ -120,6 +151,7 @@ export function installTips(root: HTMLElement): void {
 
   root.addEventListener('pointerdown', (ev) => {
     if (!bub.contains(ev.target as Node)) hide()
+    if (ev.pointerType === 'mouse') { if (hovering !== null) window.clearTimeout(hovering.timer); return } // 마우스는 올리기로 본다 — 누르면 단추 일만
     cancelHold()
     swallow = false // 길게 누른 뒤 click 이 안 온 폰 — 다음 누르기를 삼키지 않게
     if (ev.pointerType === 'mouse' && ev.button !== 0) return
@@ -168,6 +200,7 @@ export function installTips(root: HTMLElement): void {
     const el = (ev.target as HTMLElement).closest<HTMLElement>(TIPS)
     if (el === null || !root.contains(el) || el === bub) return
     if (el.closest(ACTS) !== null || el.matches(PEEK)) return // 단추는 단추 일을 한다 — 설명은 길게 눌러서
+    if ((ev as PointerEvent).pointerType === 'mouse') return // 마우스는 이미 올려서 보았다
     if (bub.classList.contains('on') && performance.now() - hideAt < P.realm.tipHold * 2) return // 막 길게 눌러 띄운 것
     show(el, esc(shortOf(el)), false)
   }, true)

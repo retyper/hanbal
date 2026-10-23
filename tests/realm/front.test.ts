@@ -28,7 +28,7 @@ describe('판의 앞과 끝', () => {
     const r = startYeongnam(1, 'saro')
     const h = titleHtml(KIT, r, new Date().toISOString())
     assert.ok(h.includes('data-act="continue"') && h.includes('사로국') && h.includes('1년 봄') && h.includes(`도읍 1/${winNeed('yeongnam')}`))
-    assert.ok(h.includes('방금 저장됨'))
+    assert.ok(h.includes('최근 저장 · 방금'))
     assert.ok(!titleHtml(KIT, null, null).includes('continue'))
     r.outcome = { kind: 'lose', season: 3 }
     assert.ok(!titleHtml(KIT, r, null).includes('continue'))

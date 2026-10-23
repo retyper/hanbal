@@ -7,7 +7,7 @@
  * 카드를 누르면 바로 끝까지 보인다.
  */
 import { BATTLE_AMBUSH, BATTLE_APPROACH, BATTLE_CLASH, endStory, fieldName, josa, roundStory, storyCtx } from '../../realm/data/prose.ts'
-import { bustOf } from '../../realm/data/art.ts'
+import { FACTION_ART, bustOf } from '../../realm/data/art.ts'
 import { CMD_ICON, CMD_NAME, actRows, reliefBanner, warName } from './battlefield.ts'
 import type { Army, Hero, Realm, ReportLine } from '../../realm/types.ts'
 
@@ -35,9 +35,12 @@ function wobble(key: string): [number, number, number] {
   return [f(0), f(1), f(2)]
 }
 
-function face(h: Hero | null, art: string): string {
+/** 장수 얼굴 — 장수 없이 싸운 군대는 그 나라 깃발 (빈 상자로 두지 않는다) */
+function face(h: Hero | null, art: string, faction?: string): string {
   const file = h !== null ? bustOf(h.id) : undefined
-  return file !== undefined ? `<img class="bkf" src="${art}bust/${file}.jpg" alt="">` : `<span class="bkf noface"></span>`
+  if (file !== undefined) return `<img class="bkf" src="${art}bust/${file}.jpg" alt="">`
+  const em = faction !== undefined ? FACTION_ART[faction]?.emblem : undefined
+  return em !== undefined ? `<span class="bkf noface flag"><img src="${art}icon/${em}.png" alt=""></span>` : `<span class="bkf noface"></span>`
 }
 
 /**
@@ -54,12 +57,13 @@ function battleSummary(after: Realm, l: Battle, weAtk: boolean, art: string, vie
     const id = st.heroes[i] ?? null
     return id !== null ? (after.heroes[id] ?? null) : null
   }
+  const fac = (i: number): string => (i === 0 ? (l.atkFaction ?? '') : l.defender)
   const name = (i: number): string => heroOf(i)?.name ?? `${after.factions[i === 0 ? (l.atkFaction ?? '') : l.defender]?.name ?? ''} 군`
   const n0 = (i: number): number => st.men[i] ?? 0
   const n1 = (i: number): number => Math.round((st.men[i] ?? 0) * (fr[i] ?? 1))
   let h = `<div class="bk sum"><div class="bkh"><span class="bkp">${esc(warName(after, l))}</span></div>`
-  h += `<div class="bkv"><div class="bks">${face(heroOf(ui), art)}<b>${esc(name(ui))}</b><span>우리 ${n0(ui).toLocaleString('ko-KR')} → ${n1(ui).toLocaleString('ko-KR')}</span></div><i>VS</i>`
-  h += `<div class="bks">${face(heroOf(fi), art)}<b>${esc(name(fi))}</b><span>적 ${n0(fi).toLocaleString('ko-KR')} → ${n1(fi).toLocaleString('ko-KR')}</span></div></div>`
+  h += `<div class="bkv"><div class="bks">${face(heroOf(ui), art, fac(ui))}<b>${esc(name(ui))}</b><span>우리 ${n0(ui).toLocaleString('ko-KR')} → ${n1(ui).toLocaleString('ko-KR')}</span></div><i>VS</i>`
+  h += `<div class="bks">${face(heroOf(fi), art, fac(fi))}<b>${esc(name(fi))}</b><span>적 ${n0(fi).toLocaleString('ko-KR')} → ${n1(fi).toLocaleString('ko-KR')}</span></div></div>`
   // 합마다 — 우리 명령 × 적 명령, 상성을 이겼나(○)·졌나(✕)
   h += `<div class="bkr3">`
   for (const rd of rds) {
@@ -186,6 +190,7 @@ export const BATTLE_CSS = `
 .ap .bks { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; }
 .ap .bks b { font-size: 14px; margin-top: 4px; } .ap .bks span { font-size: 12px; color: var(--mute); }
 .ap .bkf { width: 74px; height: 74px; border-radius: 12px; object-fit: cover; border: 2px solid #6a5a3a; display: block; background: #3a2c1e; }
+.ap .bkf.flag { display: grid; place-items: center; } .ap .bkf.flag img { width: 70%; height: 70%; object-fit: contain; }
 .ap .bkbar { position: relative; height: 10px; margin: 10px 0 6px; border-radius: 5px; background: #8a3a2a; overflow: hidden; }
 .ap .bkbar i { position: absolute; left: 0; top: 0; bottom: 0; width: 50%; background: linear-gradient(90deg, #3f8f3a, #8fd07a); }
 .ap .bkl { margin: 4px 0; font-size: 14.5px; opacity: 0; animation: bkin .35s ease-out calc(var(--t0, 0s) + var(--t, 0s) + var(--d)) both; }

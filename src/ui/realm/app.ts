@@ -506,7 +506,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const nation = r.factions[me()]
     // 누르면 바로 뜨는 말 (tips.ts) — 폰엔 마우스를 올릴 일이 없다
     // 첫 화면으로 — 판은 그대로 남아 「이어 하기」로 돌아온다 (형: "로비로나갈방법이 없음")
-    return `<button class="lobby" data-act="lobby" data-tip="첫 화면으로 — 이 판은 그대로 남는다" aria-label="첫 화면">⌂</button><div class="tl" data-tip="${esc(SEASON_LINE[season])}">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r.season))}</b></div>`
+    return `<button class="lobby" data-act="lobby" data-tip="게임 종료 — 첫 화면으로. 이 판은 저장돼 있어 「이어 하기」로 돌아온다" aria-label="게임 종료">⌂</button><div class="tl" data-tip="${esc(SEASON_LINE[season])}">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r.season))}</b></div>`
       + `<div class="tr">${(['grain', 'iron', 'salt', 'wood', 'horse'] as const).filter((g) => g === 'grain' || g === 'iron' || goodOf(st, g) > 0).map((g) => goodStat(r, g, goodOf(st, g))).join('')}`
       + `<span class="stat" data-tip="군사 — 우리 군대를 다 합친 사람 수">${icon('unit-spear')}<b>${men}</b></span>`
       + `<button class="stat nat" data-act="tab" data-tab="nation">${bust(r.heroes[r.factions[me()]?.ruler ?? rulerId(me())], 'tface')}${emblem(me())}<b>${esc(nation?.name ?? '')}</b></button></div>`
@@ -698,7 +698,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const men = sel.reduce((s, a) => s + headcount(forceOf(r, a)), 0)
       const heroes = sel.filter((a) => a.hero !== null).length
       h += `<b>${sel.length}군 · ${men}명</b><span>갈 곳을 누르면 함께 간다</span>`
-      h += `</div><button class="btn on sm" data-act="selmerge" ${heroes > 1 ? 'disabled' : ''}>합치기</button>`
+      h += `</div><button class="btn pri sm" data-act="selmerge" ${heroes > 1 ? 'disabled' : ''}>합치기</button>`
       if (heroes > 1) h += `<span class="sbwhy">장수 둘은 한 군대를 함께 못 이끈다</span>`
       return h + `<button class="sbx" data-act="selclose" aria-label="고르기 풀기">✕</button>`
     }
@@ -853,7 +853,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const label = why !== null ? why : dest !== undefined
       ? `출정 — ${sent.toLocaleString('ko-KR')}명 · ${josa(dest, '으로', '로')}${m !== undefined ? ` · ${m.seasons}계절` : ''}`
       : `${sent.toLocaleString('ko-KR')}명을 떼어 둔다`
-    let h = `<div class="sortiebar"><button class="btn on wide go" data-act="sortie-go" data-army="${a.id}" ${why !== null ? 'disabled' : ''}>${esc(label)}</button>`
+    let h = `<div class="sortiebar"><button class="btn pri wide go" data-act="sortie-go" data-army="${a.id}" ${why !== null ? 'disabled' : ''}>${esc(label)}</button>`
     if (pick[a.id] !== undefined) h += `<button class="btn ghost" data-act="sortie-cancel" data-army="${a.id}">출정 거두기</button>`
     return h + `<button class="btn ghost" data-act="open" data-army="${a.id}">접기</button></div>`
   }
@@ -1043,7 +1043,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       h += `<div class="stepper"><button data-act="dn" data-node="${n.id}" data-d="${-step}">−</button><b>${want}</b>`
       h += `<button data-act="dn" data-node="${n.id}" data-d="${step}">+</button><span class="mute">명 · 최대 ${lim} · ${tx(`곡식 ${Math.ceil(draftCost(want).grain)}`)}</span>`
-      h += `<button class="btn on men" data-act="draft" data-node="${n.id}" ${want <= 0 ? 'disabled' : ''}>군사 ${want}명 뽑기</button></div>`
+      h += `<button class="btn pri men" data-act="draft" data-node="${n.id}" ${want <= 0 ? 'disabled' : ''}>군사 ${want}명 뽑기</button></div>`
       const nd = draftNeeds(unit, Math.max(1, want))
       if (unit === 'horse') h += `<p class="mute">${lim > 0 ? `말 ${nd.horse}필이 든다.` : '말이 없다.'} 말은 목장(너른벌을 일구면)에서 나거나 바꿔 온다.</p>`
       if (unit === 'boat') h += `<p class="mute">${lim > 0 ? `배 지을 나무 ${nd.wood}짐이 든다.` : '배 지을 나무가 없다.'} 나무는 솔숲·산·산성 땅에서 난다.</p>`
@@ -1119,7 +1119,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (!migOpen) return h
     h += autoMigOn()
       ? `<button class="btn wide autobtn" disabled data-more="붐비는(품을 넘긴) 고을의 집이 계절마다 길로 맞닿은 한산한 우리 고을로 저절로 옮겨 간다. 아래에서 직접 옮기면 꺼진다."><b>✓ 자동 분배 중</b><small>${tx(autoSub)}</small></button>`
-      : `<button class="btn on wide autobtn" data-act="mig-auto" data-v="1" data-more="누르면 붐비는 고을의 집을 계절마다 한산한 고을로 저절로 옮긴다. 이번 계절 직접 옮긴 것은 거둔다."><b>자동 분배 켜기</b><small>${tx('붐비는 고을을 저절로 나눈다')}</small></button>`
+      : `<button class="btn pri wide autobtn" data-act="mig-auto" data-v="1" data-more="누르면 붐비는 고을의 집을 계절마다 한산한 고을로 저절로 옮긴다. 이번 계절 직접 옮긴 것은 거둔다."><b>자동 분배 켜기</b><small>${tx('붐비는 고을을 저절로 나눈다')}</small></button>`
     return h + migrateSection(r)
   }
 
@@ -1190,7 +1190,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const why = lim === roomLeft ? `${n.name} 자리가 그만큼 남았다` : lim === share ? `한 계절에 보내는 고을 집 ${Math.floor(a.hh)} 가운데 ${share}까지` : '곡식이나 나무가 그만큼만 댄다'
     h += `<p class="mute">${tx(`한 번에 최대 ${lim}집 — ${why}. 곡식 ${settleCost(want).grain}`)}</p>`
     if (Object.values(r.factions).some((f) => f.capital === from)) h += `<p class="mute">${tx('도읍에서 빼면 도읍의 수확량과 뽑을 수 있는 군사가 줄어든다.')}</p>`
-    h += `<button class="btn on home wide" data-act="settle" data-node="${to}" data-from="${from}" ${want <= 0 ? 'disabled' : ''}>${want}집 옮기기 · ${esc(arriveWhen(r.season, 1, true))} 자리 잡는다</button></div>`
+    h += `<button class="btn pri home wide" data-act="settle" data-node="${to}" data-from="${from}" ${want <= 0 ? 'disabled' : ''}>${want}집 옮기기 · ${esc(arriveWhen(r.season, 1, true))} 자리 잡는다</button></div>`
     return h
   }
 
@@ -1238,7 +1238,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<button data-act="mig-n" data-d="${step}" data-lim="${lim}" data-cur="${want}">+</button></span><i class="mva">⟶</i><span class="mute">집</span></div>`
     h += `<div class="mvcol"><span class="mvr">받는 곳</span>${tos.map((n) => `<button class="mvpick${n.id === to ? ' on' : ''}" data-act="mig-to" data-node="${n.id}">${icon(nodeIcon(n), 'mvs')}${esc(n.name)}</button>`).join('')}</div></div>`
     // 옮기기 — 숫자 바로 밑에 (형: "이주에서 수치수정은 있는데 옮기기 확정버튼이없는데" — 맨 아래 묻혀 안 보였다)
-    h += `<button class="btn on move wide" data-act="migrate" data-from="${from}" data-to="${to}" data-n="${want}" ${want <= 0 ? 'disabled' : ''}>${want}집 옮기기 · ${esc(arriveWhen(r.season, 1, true))} 자리 잡는다</button>`
+    h += `<button class="btn pri move wide" data-act="migrate" data-from="${from}" data-to="${to}" data-n="${want}" ${want <= 0 ? 'disabled' : ''}>${want}집 옮기기 · ${esc(arriveWhen(r.season, 1, true))} 자리 잡는다</button>`
     h += `<div class="mv2">${moveSide(r, from, -want, '보내는 곳')}<div class="mvmid"><i class="mva">⟶</i></div>${moveSide(r, to, want, '받는 곳')}</div>`
     h += `<p class="mute">${tx(`한 번에 최대 ${lim}집 · 곡식 ${migrateCost(want).grain}. 억지로 옮기면 두 고을 모두 한 계절 동안 집이 늘지 않는다 — 사람들이 자리 잡는 동안이다.${on ? ' 직접 옮기면 자동 분배가 꺼진다.' : ''}`)}</p>`
     return h
@@ -1543,7 +1543,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     const sure = ask === 'gift' || ask === 'break'
     const c = envoyChanceFor(r, me(), to, ask, compose.give, compose.take, compose.hero || undefined)
-    h += `<button class="btn on" data-act="envoy" data-to="${to}" data-ask="${ask}" ${ok ? '' : 'disabled'}>${ask === 'break' ? '정말 깬다' : '사신을 보낸다'}${sure ? '' : ` ${envoyFeel(c[0], c[1])}`}</button></div>`
+    h += `<button class="btn pri" data-act="envoy" data-to="${to}" data-ask="${ask}" ${ok ? '' : 'disabled'}>${ask === 'break' ? '정말 깬다' : '사신을 보낸다'}${sure ? '' : ` ${envoyFeel(c[0], c[1])}`}</button></div>`
     return h
   }
 
@@ -1580,7 +1580,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 건너뛰기 — 자객 솜씨로 굴린다. 진짜 지붕을 보고 맡겼으면 조금 덜 산다 (plotSkipSeenMul)
     if (hand?.result === 'skip') return `<div class="banner">${HAND_NAME.skip} · 자객의 솜씨에 달렸다${hand.seen === true ? ' · 지붕을 보고 물러난 뒤라 적이 조금 더 깨어 있다' : ''}</div>`
     if (hand !== undefined) return `<div class="banner ${hand.result === 'dead' || hand.result === 'wounded' ? 'good' : 'bad'}">직접 쐈다 · ${HAND_NAME[hand.result]}${hand.alarm ? ' · 들켰다' : ''} · 이번 계절엔 다시 못 쏜다</div>`
-    return `<button class="btn on wide" data-act="shoot" data-i="${i}">${icon('unit-archer')} 직접 쏜다 · 밤 지붕 위로</button><p class="mute">들어가면 먼저 연습해 볼 수 있다. 진짜는 한 번만 쏜다. 안 쏘거나 건너뛰면 자객이 알아서 한다.</p>`
+    return `<button class="btn pri wide" data-act="shoot" data-i="${i}">${icon('unit-archer')} 직접 쏜다 · 밤 지붕 위로</button><p class="mute">들어가면 먼저 연습해 볼 수 있다. 진짜는 한 번만 쏜다. 안 쏘거나 건너뛰면 자객이 알아서 한다.</p>`
   }
 
   /** 맺은 나라를 노리는 공작 — 들키면 무엇이 깨지나 (형: "동맹한테 뭐 보내면 발각시 동맹 깨진다느니 그런거 있어야") */
@@ -1819,7 +1819,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         for (const y of bys.slice(0, 4)) h += `<button class="${y.id === by ? 'on' : ''}" data-act="pby" data-id="${id}" data-by="${y.id}">${esc(y.name)}</button>`
         h += `</div>`
       }
-      h += `<button class="btn on" data-act="persuade" data-id="${id}" data-by="${by ?? ''}">회유한다 · 계절마다 곡식 ${P.realm.persuadeGrain}</button>`
+      h += `<button class="btn pri" data-act="persuade" data-id="${id}" data-by="${by ?? ''}">회유한다 · 계절마다 곡식 ${P.realm.persuadeGrain}</button>`
       h += `<p class="mute">${tx(wooLine(realm!, id, by))}</p>`
     }
     return h + `</div></div>`
@@ -1936,9 +1936,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       for (const x of caps2) h += `<div class="cap">${bust(x, 'cface')}<b>${nameHtml(x.name)}</b><span class="mute">${STAT_NAME.mu} ${x.mu} · ${STAT_NAME.ryak} ${x.ryak} · ${STAT_NAME.chi} ${x.chi} · ${STAT_NAME.deok} ${x.deok}</span></div>`
       h += `</div>`
     }
-    h += `<div class="btns"><button class="btn" data-act="help">도움말</button><button class="btn" data-act="log-open">지난 기록</button><button class="btn" data-act="dex-open">도감</button><button class="btn ghost" data-act="lobby">첫 화면으로</button><button class="btn ghost" data-act="newgame">새 판</button><button class="btn ghost" data-act="mute">${muted() ? "소리 켜기" : "소리 끄기"}</button>`
-    h += `<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a>${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}</div>`
-    h += `<div class="btns"><button class="btn ghost" data-act="export">기록 내보내기 <span class="mute">${host.gameCount()}판</span></button></div>`
+    // 차림 — 세 칸 격자로 줄을 맞춘다: 보기 · 설정과 다른 놀이 · 판 (형: "버튼들이 너무 질서없이")
+    h += `<div class="menu3"><button class="btn" data-act="help">도움말</button><button class="btn" data-act="log-open">지난 기록</button><button class="btn" data-act="dex-open">도감</button>`
+    h += `<button class="btn ghost" data-act="mute">${muted() ? '소리 켜기' : '소리 끄기'}</button><button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>`
+    h += `<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}" data-tip="활쏘기 모드 (신궁)">활터</a>${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
+    h += `<button class="btn ghost" data-act="newgame" data-tip="판 고르기로 — 새 판을 시작하기 전까지 지금 판은 그대로다">새 판</button><button class="btn ghost" data-act="lobby" data-tip="첫 화면으로 — 이 판은 저장돼 있어 「이어 하기」로 돌아온다">게임 종료</button></div>`
     return h + acctHtml()
   }
 
@@ -1947,26 +1949,26 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let acctArmed = false
   function syncWord(s: SyncState): string {
     switch (s.kind) {
-      case 'off': return '맞추지 않는다'
-      case 'busy': return '맞추는 중…'
+      case 'off': return '클라우드 저장 꺼짐'
+      case 'busy': return '클라우드에 저장하는 중…'
       case 'choose': return '두 기기의 판이 갈라졌다 — 고를 것'
-      case 'error': return `못 맞췄다 — ${s.msg}`
-      case 'idle': return s.at !== null ? `맞췄다 · ${new Date(s.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}` : '맞출 준비'
+      case 'error': return `클라우드 저장 못 함 — ${s.msg}`
+      case 'idle': return s.at !== null ? `최근 클라우드 저장 ${new Date(s.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}` : '클라우드 저장 준비됨'
     }
   }
   function acctHtml(): string {
     const c = host.cloud
     if (c === undefined) return ''
     let h = `<h3>계정</h3><div class="acct">`
-    if (!c.available()) return h + `<p class="mute">이 브라우저에서는 계정 맞추기가 안 된다 (너무 옛 브라우저). 이 기기에서는 그대로 이어 한다.</p></div>`
+    if (!c.available()) return h + `<p class="mute">이 브라우저에서는 로그인·클라우드 저장이 안 된다 (너무 옛 브라우저). 이 기기에서는 그대로 이어 한다.</p></div>`
     const who = c.who()
     if (who === null) {
-      h += `<p class="mute">구글로 들어오면 폰·피시 어디서든 같은 판과 도감을 이어 한다. 안 들어와도 이 기기에서는 그대로 된다.</p>`
-      return h + `<div class="btns"><button class="btn on" data-act="acct-in">구글로 들어가기</button></div></div>`
+      h += `<p class="mute">구글로 로그인하면 판이 클라우드에 저장돼 폰·피시 어디서든 이어 한다. 로그인하지 않아도 이 기기에는 저장된다.</p>`
+      return h + `<div class="btns"><button class="btn pri" data-act="acct-in">구글 로그인</button></div></div>`
     }
     h += `<p><b>${esc(who.name !== '' ? who.name : who.email)}</b> <span class="mute">${esc(who.email)}</span></p><p class="mute">${esc(syncWord(c.state()))}</p>`
-    h += `<div class="btns"><button class="btn" data-act="acct-sync">지금 맞추기</button><button class="btn ghost" data-act="acct-out">나가기</button>`
-    h += `<button class="btn ghost danger" data-act="acct-del">${acctArmed ? '정말 지운다 — 서버의 판·도감·기록이 다 지워진다' : '계정 지우기'}</button></div></div>`
+    h += `<div class="btns"><button class="btn" data-act="acct-sync">지금 클라우드 저장</button><button class="btn ghost" data-act="acct-out">로그아웃</button>`
+    h += `<button class="btn ghost danger" data-act="acct-del">${acctArmed ? '한 번 더 누르면 삭제 — 클라우드의 판·도감·기록이 다 지워진다' : '계정 삭제'}</button></div></div>`
     return h
   }
   /** 첫 화면 한 줄 — 새 기기에서 판을 시작하기 전에 들어와야 저쪽 판을 받는다 */
@@ -1974,7 +1976,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const c = host.cloud
     if (c === undefined || !c.available()) return ''
     const who = c.who()
-    if (who === null) return `<p class="fine acctl"><button class="btn ghost" data-act="acct-in">구글로 이어 하기</button> <span class="mute">다른 기기의 판을 이어 한다</span></p>`
+    if (who === null) return `<p class="fine acctl"><button class="btn ghost" data-act="acct-in">구글 로그인</button> <span class="mute">다른 기기의 판을 이어 한다</span></p>`
     return `<p class="fine acctl mute">${esc(who.email)} · ${esc(syncWord(c.state()))}</p>`
   }
   /** 갈라진 판 고르기 — 카드 둘. 고르지 않은 쪽도 기기에 한 벌 남는다 (sync OTHER_KEY) */
@@ -2328,7 +2330,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     const tail = cardHtml(realm!) + asksHtml() + threatsHtml(r)
     if (tail !== '') h += `<div class="rv" style="--t:${(t + Math.max(1, lines.length) * LINE_S).toFixed(2)}s">${tail}</div>`
-    return h + `<button class="btn on wide" data-act="rep-close">확인</button></div>`
+    return h + `<button class="btn pri wide" data-act="rep-close">확인</button></div>`
   }
 
   /**
@@ -2572,12 +2574,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       root.appendChild(box)
     }
     box.innerHTML = `<b>여기서 막혔다.</b><span>${esc(msg.slice(0, 160))}</span>`
-      + `<div class="btns"><button class="btn on" data-act="export">기록 내보내기</button><button class="btn ghost" data-act="failclose">닫기</button></div>`
+      + `<div class="btns"><button class="btn pri" data-act="export">기록 내보내기</button><button class="btn ghost" data-act="failclose">닫기</button></div>`
   }
 
   function paint(): void {
     try {
-      if (!warOn && realm !== null) music.map(seasonOf(realm.season))
+      if (!warOn && realm !== null) {
+        // 판이 끝났다 — 이긴·진 음악 (계속 두는 판은 지도 음악)
+        if (realm.outcome && !realm.endless) music.result(realm.outcome.kind)
+        else music.map(seasonOf(realm.season))
+      }
       paintNow()
     } catch (e) {
       failNote(e)
@@ -2892,7 +2898,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (!acctArmed) { acctArmed = true; paint(); return }
         acctArmed = false
         void host.cloud?.remove().then((r) => {
-          if (r === 'relogin') failNote(new Error('서버의 판·기록은 지웠다. 계정까지 지우려면 「구글로 들어가기」로 다시 들어와 「계정 지우기」를 한 번 더 누른다'))
+          if (r === 'relogin') failNote(new Error('서버의 판·기록은 지웠다. 계정까지 지우려면 「구글 로그인」으로 다시 로그인해 「계정 삭제」를 한 번 더 누른다'))
           else if (r === 'error') failNote(new Error('계정을 못 지웠다 — 잠시 뒤 다시'))
           paint()
         })
@@ -2914,7 +2920,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           endSeason(prev, [...orders, ...cmds], ai)
         }
         try {
-          if (openWar(root, prev, [...orders, ...ai], { art: ART, me: me(), ding, done: finish })) { warOn = true; music.war(); return }
+          if (openWar(root, prev, [...orders, ...ai], { art: ART, me: me(), ding, music: (k) => { if (k === 'war') music.war(); else music.result(k) }, done: finish })) { warOn = true; music.war(); return }
         } catch (e) {
           failNote(e)
           return

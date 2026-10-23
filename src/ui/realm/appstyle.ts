@@ -94,10 +94,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 /* 판 안의 것들 */
 .ap .btn { display: inline-flex; align-items: center; gap: 4px; padding: 7px 12px; border-radius: 10px; border: 1px solid #6a5236; background: #3a2c1e;
   color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; text-decoration: none; }
-.ap .btn.on { background: linear-gradient(#a57a31, #7d5a22); border-color: #e0bd78; color: #fff4dc; }
+.ap .btn.pri { background: linear-gradient(#a57a31, #7d5a22); border-color: #e0bd78; color: #fff4dc; }
+.ap .btn.on { border-color: #e0bd78; color: #ffe2a0; box-shadow: 0 0 0 1px #e0bd78; }
 .ap .btn.ghost { background: transparent; color: var(--mute); } .ap .btn:disabled { opacity: .4; cursor: default; }
 .ap .btn.sm { padding: 3px 9px; font-size: 13px; margin-left: auto; } .ap .btn.wide { width: 100%; justify-content: center; margin-top: 10px; padding: 11px; }
 .ap .btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ap .menu3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; } .ap .menu3 .btn { margin: 0; display: flex; justify-content: center; align-items: center; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ap .banner { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin: 6px 0; border-radius: 10px; background: #30241a; font-size: 14px; }
 .ap .banner.good { background: #24331f; color: #cfeabf; } .ap .banner.bad { background: #3a2622; color: #f1c6b8; }
 .ap .acard, .ap .ncard, .ap .fcard { display: flex; gap: 10px; padding: 10px; margin: 8px 0; border-radius: 14px; background: var(--card); border: 1px solid var(--line); }
@@ -337,7 +339,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap.sheet-open .roadkey, .ap.choosing .roadkey { display: none; }
 /* 우리 땅으로 — 왼쪽 위, 깃발 줄 밑 (확대 단추와 떨어져) */
 .ap .homebtn { position: absolute; left: 12px; top: calc(var(--toph) + var(--legh) + 8px); z-index: 6; padding: 6px 12px; border-radius: 12px;
-  border: 1px solid #c8a050; background: #2a2418e6; color: #ffd27a; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 0 0 1px #0006; }
+  border: 1px solid #6a5236; background: #1f1710e6; color: var(--ink); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 0 0 1px #0006; }
 .ap.sheet-open .homebtn, .ap.choosing .homebtn { display: none; }
 .ap .roadkey > button { padding: 6px 10px; border-radius: 12px; border: 1px solid #6a5236; background: #1f1710e6; color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
 .ap .roadkey .rk { margin-top: 6px; padding: 10px 12px; border-radius: 14px; background: #1f1710f2; border: 1px solid #6a5236; width: min(78vw, 300px); box-sizing: border-box; }
@@ -359,7 +361,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .sech { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 10px; margin: 14px 0 6px; scroll-margin-top: 8px; }
 .ap .sech img { width: 22px; height: 22px; } .ap .sech.men { background: #3a1c18; color: #f0a090; } .ap .sech.home { background: #33281a; color: #e4b878; }
 .ap .ncard.draftc { border-left: 4px solid #b0503e; } .ap .ncard.settlec { border-left: 4px solid #a8804a; }
-.ap .btn.on.men { background: #9a3a2c; border-color: #c8604a; color: #fff2ec; } .ap .btn.on.home { background: #7a5a30; border-color: #b08850; color: #fff6e6; }
+.ap .btn.pri.men { background: #9a3a2c; border-color: #c8604a; color: #fff2ec; } .ap .btn.pri.home { background: #7a5a30; border-color: #b08850; color: #fff6e6; }
 /* 남의 고을 판 — 그 나라와 할 수 있는 것 (app.nationActs) */
 .ap .nacts { margin: 12px 0 6px; padding: 10px; border-radius: 14px; background: #1f1710; border: 1px solid #6a5236; }
 .ap .nacts .nah { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; } .ap .nacts .nah b { font-size: 16px; }
@@ -389,7 +391,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .warbar i { font-style: normal; color: #ff8a70; font-size: 16px; } .ap .warbar span { margin-left: 4px; }
 /* 이주 — 집 옮기기는 개척(갈색)과 갈라 누런 흙빛 */
 .ap .sec.move { background: #2e2a14; border: 1px solid #8a7a3a; } .ap .sech.move { background: #2e2a14; color: #e0cc80; }
-.ap .btn.on.move { background: #6a5a22; border-color: #a89048; color: #fff6dc; }
+.ap .btn.pri.move { background: #6a5a22; border-color: #a89048; color: #fff6dc; }
 .ap .crowd { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 10px; }
 .ap .crow { display: grid; grid-template-columns: 6.5em 1fr auto; align-items: center; gap: 8px; font-size: 13px; }
 .ap .crow .cn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -522,12 +524,15 @@ export const UI_CSS = `
   border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 9px 12px stretch; padding: 3px 6px; color: #efe3c6; text-shadow: 0 1px 2px #000c;
   transition: filter .12s, transform .06s; }
 .ap .btn:hover { filter: brightness(1.12); } .ap .btn:active { transform: translateY(1px); filter: brightness(.9); }
-.ap .btn.on { border-image-source: url(__ART__ui/btn-gold.png?v=2); border-image-slice: 30 35 fill; color: #2a1606; font-weight: 700; text-shadow: 0 1px 0 #f7dc9a; }
+/* 금빛 판은 「누르면 나아가는 단추」(go)에만 — 골라 둔 것(on)은 쇠판에 금테와 ✓ (형: "선택한 적 없는데 선택되어 있는 버튼") */
+.ap .btn.pri { border-image-source: url(__ART__ui/btn-gold.png?v=2); border-image-slice: 30 35 fill; color: #2a1606; font-weight: 700; text-shadow: 0 1px 0 #f7dc9a; }
+.ap .btn.on { box-shadow: 0 0 0 2px #e0bd78, 0 0 10px #e0bd7888; color: #ffe2a0; filter: none; }
+.ap .btn.on::before { content: '✓ '; color: #ffd27a; }
 .ap .btn.ghost { color: #c9bea6; filter: saturate(.7) brightness(.92); } .ap .btn.ghost:hover { filter: saturate(.8) brightness(1.05); }
 .ap .btn:disabled, .ap .btn:disabled:hover { filter: grayscale(.7) brightness(.7); opacity: .6; transform: none; }
 .ap .btn.sm { border-width: 7px 9px; border-image-width: 7px 9px; padding: 1px 4px; }
 .ap .btn.wide { padding: 7px 8px; } .ap .btn.big { padding: 7px 18px; }
-.ap .btn.on.men { filter: hue-rotate(-28deg) saturate(1.25); } .ap .btn.on.home, .ap .btn.on.move { filter: saturate(.85); }
+.ap .btn.pri.men { filter: hue-rotate(-28deg) saturate(1.25); } .ap .btn.pri.home, .ap .btn.pri.move { filter: saturate(.85); }
 /* 다음 계절 — 큰 금빛 판 */
 .ap .next { border-style: solid; border-color: transparent; border-width: 12px 16px; border-radius: 0; background: none; box-shadow: none;
   border-image: url(__ART__ui/btn-gold.png?v=2) 30 35 fill / 12px 16px stretch; padding: 4px 10px; color: #2a1606; text-shadow: 0 1px 0 #f7dc9a;
@@ -546,9 +551,9 @@ export const UI_CSS = `
 /* 글씨 — 판 위에서 또렷하게 (형: "버튼이 까매서 글씨도 까매가지고 안보이는경우 · 글씨가 너무 얇아서 안보이는경우도")
    쇠판 단추는 늘 밝은 글씨, 금빛 판은 늘 짙은 글씨 · 단추 글씨는 굵게 */
 .ap .btn, .ap .seg button, .ap .next { font-weight: 700; }
-.ap .btn:not(.on) .mute, .ap .btn:not(.on) small, .ap .seg button:not(.on) .mute { color: #cbbf9f; }
-.ap .btn.on .mute, .ap .btn.on small, .ap .seg button.on .mute { color: #4a2e10; }
-.ap .btn.on.men, .ap .btn.on.home, .ap .btn.on.move { color: #2a1606; }
+.ap .btn:not(.pri) .mute, .ap .btn:not(.pri) small, .ap .seg button:not(.on) .mute { color: #cbbf9f; }
+.ap .btn.pri .mute, .ap .btn.pri small, .ap .seg button.on .mute { color: #4a2e10; }
+.ap .btn.pri.men, .ap .btn.pri.home, .ap .btn.pri.move { color: #2a1606; }
 .ap .btn.danger { color: #ffb4a4; }
 .ap .btn:disabled { color: #c8bda8; }
 /* 얇은 글씨 — 흐린 말은 한 단 밝게 · 판 안 글씨는 그림자로 가장자리를 세우고, 작은 글씨는 획을 살짝 두껍게 */

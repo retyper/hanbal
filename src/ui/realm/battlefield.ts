@@ -133,6 +133,8 @@ export interface WarHost {
   readonly art: string
   readonly me: string
   ding(name: string, vol?: number): void
+  /** 음악 — 싸움이 열리면 싸움 음악, 끝나면 이긴·진 음악 (비기면 그대로) */
+  music?(kind: 'war' | 'win' | 'lose'): void
   /** 다 골랐다 — 이 명령들로 진짜 넘긴다 */
   done(tactics: Record<string, Tactic>): void
 }
@@ -469,7 +471,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     h += `<div class="wfoot"><div class="wauto">${ourH !== undefined ? face(ourHero, art, unitOf(ourI)) : ''}<span>${autoLine(ourH)}</span></div>`
     h += `<button class="btn ghost" data-war="auto">이 싸움은 맡긴다</button>${left > 1 ? `<button class="btn ghost" data-war="autoall">남은 싸움 다 맡긴다</button>` : ''}`
     // 고른 깃발로 이 합을 싸운다 (형: "전투 설정하고 시작하기가 북을울린다야?")
-    h += `<button class="btn on" data-war="go">북을 울린다<small>고른 깃발로 이 합을 싸운다</small></button></div></div>`
+    h += `<button class="btn pri" data-war="go">북을 울린다<small>고른 깃발로 이 합을 싸운다</small></button></div></div>`
   } else if (ended) {
     const atkWon = l.outcome === 'rout' || l.outcome === 'win'
     const good = weAtk === atkWon && l.outcome !== 'draw'
@@ -490,7 +492,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       h += c?.faction === me ? '<p>' + esc(josa(c.name, '이', '가')) + ' 사로잡혀 갔다.</p>' : '<p>' + esc(josa(c?.name ?? '?', '을', '를')) + ' 사로잡았다!</p>'
     }
     if (l.killed !== null) h += `<p>${esc(josa(after.heroes[l.killed]?.name ?? '?', '이', '가'))} 쓰러졌다.</p>`
-    h += `<button class="btn on wide" data-war="next">${left > 1 ? '다음 싸움으로' : '계절을 마무리한다'}</button></div>`
+    h += `<button class="btn pri wide" data-war="next">${left > 1 ? '다음 싸움으로' : '계절을 마무리한다'}</button></div>`
   }
   h += `</div>`
   return h
@@ -632,7 +634,7 @@ export const WAR_CSS = `
 .ap .wf-hi { color: var(--good); font-weight: 700; font-size: 13px; } .ap .wf-mid { color: var(--gold); font-size: 13px; }
 .ap .wf-lo { color: var(--bad); font-size: 13px; } .ap .wf-no { color: #8b8478; font-size: 13px; }
 .ap .wfoot { display: flex; gap: 8px; justify-content: flex-end; align-items: center; margin-top: 10px; flex-wrap: wrap; }
-.ap .wfoot .btn.on { font-size: 16px; padding: 8px 18px; }
+.ap .wfoot .btn.pri { font-size: 16px; padding: 8px 18px; }
 .ap .wend { margin-top: 14px; padding: 12px; border-radius: 14px; text-align: center; background: #1f1710; animation: wrin .5s ease-out var(--d, 0s) both; }
 .ap .wend b { font-size: 21px; } .ap .wend.good b { color: var(--good); } .ap .wend.bad b { color: var(--bad); }
 .ap .wend .wwhy { font-size: 14.5px; color: #e8dcc0; }
@@ -699,6 +701,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       const good = (end.atkFaction === host.me) === atkWon && end.outcome !== 'draw'
       if (end.outcome === 'rout' || end.outcome === 'routed') at(STAGE_S[2] + 0.4, BATTLE_SFX.final, 0.5)
       at(STAGE_S[2] + 1, good ? BATTLE_SFX.win : BATTLE_SFX.lose, 0.45)
+      if (end.outcome !== 'draw') timers.push(window.setTimeout(() => host.music?.(good ? 'win' : 'lose'), (STAGE_S[2] + 1) * 1000))
       // 이겼다 — 부우웅 크게 (듀오링고처럼)
       if (good) buzz(STAGE_S[2] + 1, end.outcome === 'rout' ? [60, 40, 60, 40, 60, 40, 120, 60, 300] : [50, 50, 50, 50, 200])
     }
@@ -708,6 +711,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   const band = (l: BattleLine): void => {
     if (named === l.key) return
     named = l.key
+    host.music?.('war')
     const weAtk = l.atkFaction === host.me
     const st = l.start
     const us = st !== undefined ? st.men[weAtk ? 0 : 1] : 0

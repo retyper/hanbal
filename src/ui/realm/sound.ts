@@ -13,10 +13,14 @@ export const PICK = {
   dex_new: 'c', birth: 'c', feast: 'a', envoy: 'b', coins: 'c',
   amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b',
   bgm_map: 'f', bgm_war: 'a',
+  // 이기고 진 뒤의 음악 — 형이 받아 오면 public/realm/sfx/bgm_win_a.* · bgm_lose_a.* 로 둔다. 파일이 없으면 듣던 음악을 그대로 둔다
+  bgm_win: 'a', bgm_lose: 'a',
 } as const
 /** ogg 가 아닌 후보 — 형이 받아 온 것은 받은 꼴 그대로 둔다 (assets_src/realm/sfx-in) */
 const EXT: Readonly<Partial<Record<string, string>>> = { bgm_map_f: 'mp3' }
 export type Slot = keyof typeof PICK
+/** 아직 파일을 안 받은 자리 — 없으면 소리 없이 듣던 음악을 둔다 (있으면 출처를 적는다) */
+export const LATER: ReadonlySet<Slot> = new Set<Slot>(['bgm_win', 'bgm_lose'])
 
 /** ding 에 넘기는 이름 — public 아래 길 (확장자 없음) */
 export const snd = (slot: Slot): string => `realm/sfx/${slot}_${PICK[slot]}`
@@ -80,11 +84,19 @@ export function playOnce(url: string, vol: number): void {
 function track(base: string, vol: number): { want(slot: Slot | null): void; pause(): void; resume(): void } {
   const els = new Map<Slot, { el: HTMLAudioElement; gain: GainNode | null }>()
   let cur: Slot | null = null
+  /** 바로 앞에 틀던 곡 — 새 곡 파일이 없으면 이리로 돌아간다 */
+  let prev: Slot | null = null
+  /** 파일이 없는 곡 (아직 안 받은 승리·패배 음악) */
+  const missing = new Set<Slot>()
   const node = (slot: Slot): { el: HTMLAudioElement; gain: GainNode | null } => {
     let n = els.get(slot)
     if (n === undefined) {
       const el = new Audio(`${base}realm/sfx/${sndFile(slot)}`)
       el.loop = true
+      el.addEventListener('error', () => {
+        missing.add(slot)
+        if (cur === slot) { cur = null; if (prev !== null && !missing.has(prev)) { cur = prev; start() } }
+      })
       n = { el, gain: wire(el, vol) }
       if (n.gain !== null) n.gain.gain.value = 0
       els.set(slot, n)
@@ -106,8 +118,10 @@ function track(base: string, vol: number): { want(slot: Slot | null): void; paus
   }
   return {
     want(slot) {
+      if (slot !== null && missing.has(slot)) return // 없는 곡 — 듣던 것을 그대로
       if (slot === cur) { if (cur !== null && els.get(cur)?.el.paused !== false) start(); return }
       stop(cur)
+      prev = cur
       cur = slot
       start()
     },
@@ -120,6 +134,8 @@ function track(base: string, vol: number): { want(slot: Slot | null): void; paus
 export function makeMusic(base: string, muted: () => boolean, quiet: () => boolean): {
   map(season: 'spring' | 'summer' | 'autumn' | 'winter'): void
   war(): void
+  /** 이겼다 · 졌다 — 싸움 끝 · 판 끝 */
+  result(kind: 'win' | 'lose'): void
   refresh(): void
 } {
   const bgm = track(base, BGM_VOL)
@@ -148,6 +164,7 @@ export function makeMusic(base: string, muted: () => boolean, quiet: () => boole
   return {
     map(season) { mode = { bgm: 'bgm_map', amb: `amb_${season}` }; apply() },
     war() { mode = { bgm: 'bgm_war', amb: null }; apply() },
+    result(kind) { mode = { bgm: kind === 'win' ? 'bgm_win' : 'bgm_lose', amb: null }; apply() },
     refresh: apply,
   }
 }

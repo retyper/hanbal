@@ -90,12 +90,12 @@ export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, 
     const name = r.factions[me]?.name ?? ''
     h += `<button class="cont" data-act="continue">${k.face(me, 'cface')}<span class="ct"><b>${k.emblem(me, 'cem')}${k.esc(name)} 이어 하기</b>`
     h += `<span>${k.esc(seasonLabel(r.season))} · 도읍 ${capsHeld(r, me)}/${winNeed(region)}${r.known !== undefined ? ` · 아는 나라 ${(r.known[me]?.length ?? 0) + 1}/${Object.keys(r.factions).length}` : ''}</span>`
-    h += `${savedAt !== null ? `<small>${k.esc(agoText(savedAt))} 저장됨</small>` : ''}</span></button>`
+    h += `${savedAt !== null ? `<small>최근 저장 · ${k.esc(agoText(savedAt))}</small>` : ''}</span></button>`
   }
   // 처음 켠 사람은 배우는 판으로 (형: "맨 위 첫번째 할 게임은 1:1수준으로 여러 기능 익혀가며 쉽게")
-  if (firstTime) h += `<button class="btn on big" data-act="fr-tutorial">처음이면 — 배우는 판부터</button><button class="btn big" data-act="fr-new">새 판</button>${more}</div>`
-  else h += `<button class="btn on big" data-act="fr-new">새 판</button>${more}</div>`
-  return h + `<p class="fine">판은 계절마다 저절로 저장된다.</p>${links}</div></div>`
+  if (firstTime) h += `<button class="btn pri big" data-act="fr-tutorial">처음이면 — 배우는 판부터</button><button class="btn big" data-act="fr-new">새 판</button>${more}</div>`
+  else h += `<button class="btn pri big" data-act="fr-new">새 판</button>${more}</div>`
+  return h + `<p class="fine">자동 저장 — 계절이 넘어갈 때마다 이 기기에 저장된다.</p>${links}</div></div>`
 }
 
 function agoText(iso: string): string {
@@ -176,7 +176,7 @@ export function detailHtml(k: FrontKit, region: RegionId, id: string, carry = ''
   h += `<div class="dcard">${k.face(id, 'dface')}<div class="db"><div class="dn">${k.emblem(id, 'dem')}<div><b>${k.esc(n.name)}</b><span>${k.esc(n.place)}</span></div></div>`
   h += `<p class="blurb">${k.esc(n.blurb)}</p>${barsHtml(n)}`
   h += `<p class="src">${k.esc(n.source)}</p>${n.hard ? '<p class="hard">어려운 나라다 — 처음이면 다른 나라를 권한다.</p>' : ''}`
-  h += `${carry}<button class="btn on big" data-act="fr-start" data-id="${id}">이 나라로 시작</button></div></div></div>`
+  h += `${carry}<button class="btn pri big" data-act="fr-start" data-id="${id}">이 나라로 시작</button></div></div></div>`
   return h
 }
 
@@ -235,7 +235,7 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
   const dots = Array.from({ length: PROLOGUE_STEPS }, (_, i) => `<i class="${i === step ? 'on' : ''}"></i>`).join('')
   const last = step >= PROLOGUE_STEPS - 1
   return `<div class="prologue s${step}"><div class="pin">${body}</div><div class="pnav"><span class="pdots">${dots}</span>`
-    + `<button class="btn ghost" data-act="pl-skip">넘기기</button><button class="btn on big" data-act="pl-next">${last ? '첫 봄을 연다' : '다음'}</button></div></div>`
+    + `<button class="btn ghost" data-act="pl-skip">넘기기</button><button class="btn pri big" data-act="pl-next">${last ? '첫 봄을 연다' : '다음'}</button></div></div>`
 }
 
 // ───────── 끝 — 연대기
@@ -355,8 +355,8 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): 
   h += `${r.known !== undefined ? `<span><b>${found}</b>새로 안 나라</span>` : ''}<span><b>${heroes}</b>얻은 장수</span></div>`
   if (pickd.length > 0) h += `<div class="chron"><h4>연대기</h4>${pickd.map((e) => `<p class="${e.big ? 'big' : ''}"><i>${k.esc(seasonLabel(e.s))}</i>${k.esc(e.t)}</p>`).join('')}</div>`
   h += `${keep}<div class="btns">`
-  if (win && !all) h += `<button class="btn on" data-act="fr-endless">계속 둔다 · 남은 나라까지</button>`
-  h += `<button class="btn${win && !all ? '' : ' on'}" data-act="fr-again">${k.esc(josa(name(me), "으로", "로"))} 다시</button><button class="btn" data-act="fr-new">새 판</button>`
+  if (win && !all) h += `<button class="btn pri" data-act="fr-endless">계속 둔다 · 남은 나라까지</button>`
+  h += `<button class="btn${win && !all ? '' : ' pri'}" data-act="fr-again">${k.esc(josa(name(me), "으로", "로"))} 다시</button><button class="btn" data-act="fr-new">새 판</button>`
   return h + `<button class="btn ghost" data-act="fr-look">지도 둘러보기</button></div></div></div>`
 }
 
@@ -371,6 +371,16 @@ export const FRONT_CSS = `
 .ap .front.title .kv { position: absolute; inset: 0; background: center 40% / cover no-repeat; animation: kv 18s ease-out both; }
 .ap .front.title .kv::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 55% at 50% 52%, #0b0d1066, #0000 70%), linear-gradient(to bottom, #0000 35%, #0b0d10b3 70%, #0b0d10 100%); }
 @keyframes kv { from { transform: scale(1.08); filter: brightness(.6); } 12% { filter: brightness(1); } to { transform: scale(1); } }
+/* 폰 세로 — 가로 그림을 세로로 잘라 쓰면 가운데 한 토막만 보인다. 그림을 제 비율대로 두고 왼쪽 끝에서 오른쪽 끝까지
+   천천히 흘렀다가 되돌아온다 (형: "좌에서 우로 흘러가듯 · 천천히 · 우측끝 도달하면 돌아오고"). 어둡게 깔기는 세로 띠로만 — 그림과 함께 움직여도 티가 안 난다 */
+@media (orientation: portrait) {
+  .ap .front.title .kv { right: auto; width: auto; height: 100%; aspect-ratio: 16 / 9; background-position: center; will-change: transform;
+    animation: kvlit 2.4s ease-out both, kvpan 75s ease-in-out infinite alternate; }
+  .ap .front.title .kv::after { background: linear-gradient(to bottom, #0b0d1040, #0000 25%, #0000 35%, #0b0d10b3 68%, #0b0d10 100%); }
+}
+@keyframes kvlit { from { filter: brightness(.6); } to { filter: brightness(1); } }
+@keyframes kvpan { from { transform: translateX(0); } to { transform: translateX(calc(100vw - 100%)); } }
+@media (orientation: portrait) and (prefers-reduced-motion: reduce) { .ap .front.title .kv { animation: kvlit 2.4s ease-out both; transform: translateX(calc((100vw - 100%) / 2)); } }
 .ap .front.title .tv { position: relative; text-align: center; padding: 0 18px calc(26px + env(safe-area-inset-bottom)); max-width: 640px; animation: tv 1.4s .3s ease-out both; }
 @keyframes tv { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 /* 로고 — 문장(청동 거울·맥궁) 위에 붓글씨 이름. 금빛 그러데이션 글자 + 어두운 테 · 문장은 숨 쉬듯 빛난다 */
