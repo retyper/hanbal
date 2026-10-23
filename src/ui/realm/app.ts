@@ -18,13 +18,14 @@ import { chapterOfRegion } from '../../realm/data/campaign.ts'
 import { knownOf, knows } from '../../realm/discovery.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
 import { CARDS } from '../../realm/data/cards.ts'
+import { blockedWhy } from '../../realm/calendar.ts'
 import {
   ASK_KIND_NAME, ASK_NAME, deedText, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, arriveWhen, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine, NODE_NOW, BUILD_NAME, BOW_NAME, CONCEAL_LINE, goodsLine, GOOD_NAME, GOOD_USE, tagNow,
 } from '../../realm/data/prose.ts'
 import { canEscort, envoyChanceFor, envoyClash, envoyOptions, favorOf, jointTargets, lentEta, openAsks, relationOf } from '../../realm/diplomacy.ts'
 import {
   GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeHarvest, nodeYield, nodeSpecials, upkeepOf, riteAllowed, riteCost,
-  settleCost, settleLimit, settleSource, settleTargets, autoFlows, crowdOf, homeRoom, migrateCost, migrateLimit, migratePath,
+  settleCost, settleLimit, settleSource, settleTargets, sendAmounts, type SendAmounts, autoFlows, crowdOf, homeRoom, migrateCost, migrateLimit, migratePath,
 } from '../../realm/economy.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
 import { kitLines } from '../../realm/kit.ts'
@@ -402,6 +403,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * (형: "같은지역군대들은 하나씩 탭한다면 둘이 동시선택할수있게하고 합치기 버튼이 떴으면")
    */
   let armySel: string[] = []
+  /**
+   * 「집 보내기」로 고른 우리 고을 — 보낼 수 있는 곳이 지도에 빛난다 (형: "백성 배치는 … 간편하면서도 직관적이게 · 군대처럼 터치로 옮길 수 있게").
+   * armySel 과 함께 켜지지 않는다. peopleTo 는 방금 보낸 곳 — 아래 띠가 그 짝의 양을 고친다
+   */
+  let peopleSel = ''
+  let peopleTo = ''
   /** 길 보기 펼침 */
   let roadOpen = false
   /** 지난 기록 — 걸러 보기 갈래 · 나라 (logbook.ts) */
@@ -438,7 +445,27 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     settles = settles.filter((o) => o.kind !== 'migrateAuto')
     if ((realm!.factions[me()]?.migrateOff !== true) !== want) settles = [...settles, { kind: 'migrateAuto', faction: me(), on: want }]
   }
-  const plan = (): Realm => planned(realm!, [...armyOrders, ...settles, ...heroOrders.filter((o) => o.kind === 'hire' || o.kind === 'assign' || o.kind === 'lead')])
+  const planWith = (ss: readonly Order[]): Realm => planned(realm!, [...armyOrders, ...ss, ...heroOrders.filter((o) => o.kind === 'hire' || o.kind === 'assign' || o.kind === 'lead')])
+  const plan = (): Realm => planWith(settles)
+
+  // ───────── 집 보내기 — 받는 곳이 빈땅이면 개척(settle), 우리 고을이면 이주(migrate). 낱말은 「새 마을」·「집 나누기」
+  type PeopleOrder = Extract<Order, { kind: 'settle' | 'migrate' }>
+  const peopleOrders = (): PeopleOrder[] => settles.filter((o): o is PeopleOrder => o.kind === 'settle' || o.kind === 'migrate')
+  const peopleOrderOf = (from: string, to: string): PeopleOrder | undefined => peopleOrders().find((o) => o.from === from && o.to === to)
+  /** 그 짝의 양 셋 — 그 짝을 뺀 판에서 센다 (고칠 때 제 몫을 빼고) */
+  function sendOf(from: string, to: string): SendAmounts | null {
+    const o = peopleOrderOf(from, to)
+    return sendAmounts(o === undefined ? plan() : planWith(settles.filter((x) => x !== o)), me(), from, to)
+  }
+  /** 짝 하나를 보낸다(고친다) — 뺀 뒤 맨 뒤에 다시 넣는다 (양을 센 판과 엔진이 치르는 차례가 같게) */
+  function sendPeople(from: string, to: string, amt: 'few' | 'fit' | 'many'): boolean {
+    const o = peopleOrderOf(from, to)
+    const rest = settles.filter((x) => x !== o)
+    const s = sendAmounts(planWith(rest), me(), from, to)
+    settles = s === null ? rest : [...rest, { kind: s.kind, faction: me(), from, to, n: s[amt] }]
+    return s !== null
+  }
+  const clearPeople = (): void => { peopleSel = ''; peopleTo = '' }
 
   /**
    * 이번 계절 고른 것을 다 치르고 남는 것 (형: "철이부족해도 강화 선택이 가능해져버려있고") — 징병·무장·목책·경계는 엔진과 같은 함수로
@@ -468,6 +495,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function resetTurn(): void {
     armyOrders = []
     armySel = [] // 지난 계절에 움직인 군대가 다음 계절에 골라진 채로 남지 않게 (형: "전계절에 이동시킨유닛이 자동선택되어있음")
+    clearPeople()
     musters = []
     settles = []
     for (const k of Object.keys(pick)) delete pick[k]
@@ -594,7 +622,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 우리를 지키러 오는 동맹 군대는 적이 아니다 — 초록 화살 「도우러」
     for (const a of seenMarches(r, me())) if (a.march !== null && a.lent?.to !== me()) marches.push({ from: a.march.from, to: a.march.to, left: a.march.left, foe: true })
     for (const a of lentToMe(r)) if (a.march !== null) marches.push({ from: a.march.from, to: a.march.to, left: a.march.left, ally: true })
-    const sel = sheet?.kind === 'node' ? sheet.id : scout
+    // 보내기로 한 집 — 흙빛 점선
+    for (const o of peopleOrders()) marches.push({ from: o.from, to: o.to, left: null, people: true })
+    const sel = peopleSel !== '' ? peopleSel : sheet?.kind === 'node' ? sheet.id : scout
     // 지도에서 바로 움직인다 (형: "다른게임에서는 지도에서 바로 배치 조절하는거 같은데") — 말을 누르고, 밝아진 고을을 누른다
     // 길 위의 군대도 말을 둔다 — 길 가운데쯤에 (형: "내 군대 번예연이 군대가 지도에서 안보임")
     const tokens: MapToken[] = [...sorted(Object.values(r.armies)).filter((a) => a.faction === me()), ...lentToMe(r)].map((a) => {
@@ -635,14 +665,48 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }))
     // 머물기도 지도에서 — 제 고을을 누르면 떠나기를 거둔다 (형: "머물기는 지도에서 선택을 못하고")
     if (a !== undefined && a.march === null) targets.push({ node: a.at, edge: '', off: false, on: armySel.every((id) => pick[id] === undefined), chip: `<span class="tn stay">머문다</span>` })
+    if (peopleSel !== '' && armySel.length === 0) targets.push(...peopleTargets(r, peopleSel))
     const fr = fresh
     if (!showReport) fresh = new Set() // 드러나는 것은 한 번만 — 계절 소식을 닫고 지도를 볼 때
     // 군대를 고르지 않았을 때만 — 개척할 수 있는 빈땅에 「＋마을」
-    const stl = armySel.length === 0 && r.region !== 'tutorial' ? new Set(settleTargets(r, me()).map((t) => t.to)) : new Set<string>()
+    const stl = armySel.length === 0 && peopleSel === '' && r.region !== 'tutorial' ? new Set(settleTargets(r, me()).map((t) => t.to)) : new Set<string>()
     // 지난 계절 싸움으로 주인이 바뀐 고을 (보고에 남은 것) — 지도에 불과 연기
     const burn = new Set<string>()
     for (const l of report?.lines ?? []) if (l.kind === 'battle' && l.field !== true && (l.outcome === 'win' || l.outcome === 'rout') && r.nodes[l.node]?.owner === l.atkFaction) burn.add(l.node)
     return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets, fr, stl, burn)
+  }
+
+  /**
+   * 「집 보내기」의 갈 곳 — 빈땅은 「새 마을」, 우리 고을은 「집 나누기」(붐비면 「붐빈다」). 이미 보낸 곳은 늘 보인다(다시 누르면 거둔다).
+   * `r` 은 이번 계절 고른 것이 든 판
+   */
+  function peopleTargets(r: Realm, from: string): MapTarget[] {
+    const cands = new Set<string>()
+    for (const t of settleTargets(r, me())) if (t.from === from) cands.add(t.to)
+    for (const n of Object.values(r.nodes)) if (n.owner === me() && n.kind !== 'sodo' && n.id !== from) cands.add(n.id)
+    for (const o of peopleOrders()) if (o.from === from) cands.add(o.to)
+    const out: MapTarget[] = []
+    for (const to of [...cands].sort()) {
+      const o = peopleOrderOf(from, to)
+      const kind = o !== undefined ? o.kind : sendAmounts(r, me(), from, to)?.kind
+      if (kind === undefined) continue
+      const n = r.nodes[to]!
+      const busy = kind === 'migrate' && crowdOf(n) > 1 ? `<span class="tn crowd">붐빈다</span>` : ''
+      out.push({ node: to, edge: '', off: false, on: o !== undefined, act: 'pgo', chip: (kind === 'settle' ? `<span class="tn newv">새 마을</span>` : `<span class="tn share">집 나누기</span>`) + busy })
+    }
+    return out
+  }
+
+  /** 「집 보내기」를 못 할 때 그 까닭 한 줄 — 보낼 곳이 있으면 null */
+  function peopleBlock(r: Realm, from: string): string | null {
+    if (peopleTargets(r, from).length > 0) return null
+    const R = P.realm
+    const grain = r.stock[me()]?.grain ?? 0
+    if (grain < Math.min(R.settleGrain, R.migrateGrain)) return '곡식이 모자란다'
+    const season = seasonOf(r.season)
+    const near = Object.values(r.edges).filter((e) => e.a === from || e.b === from)
+    if (near.length > 0 && near.every((e) => blockedWhy(e, season) !== null)) return '길이 막혔다'
+    return '보낼 곳이 없다'
   }
 
   /** 지도에서 켜고 끄는 겹 (형: "좌하단에는 확대축소말고 뭔가 보이기 안보이기 토글 필요할듯") — 끈 것은 .ap.hide-<id> */
@@ -738,7 +802,36 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return `<div class="btns"><button class="btn ${on ? 'on' : 'ghost'} sm" data-act="turnback" data-army="${a.id}">${on ? '회군한다 · 누르면 거둔다' : '회군 — 떠난 고을로 돌린다'}</button></div>`
   }
 
+  /**
+   * 「집 보내기」의 아래 띠 — 갈 곳을 고르기 전엔 한 줄, 보낸 뒤엔 그 짝의 양(조금·알맞게·많이)과 거두기. 숫자 대신 집 막대
+   */
+  function peopleBarHtml(r: Realm): string {
+    const from = r.nodes[peopleSel]
+    if (from === undefined) return ''
+    const close = `<button class="sbx" data-act="pp-close" aria-label="고르기 풀기">✕</button>`
+    let h = `<div class="sbf">${icon(nodeIcon(from), 'sbface ppface')}</div><div class="sbt">`
+    const o = peopleTo !== '' ? peopleOrderOf(peopleSel, peopleTo) : undefined
+    const s = o !== undefined ? sendOf(o.from, o.to) : null
+    if (o === undefined || s === null) {
+      const why = peopleBlock(r, peopleSel)
+      return h + `<b>${esc(from.name)}에서 집 보내기</b><span>${why !== null ? esc(why) : '갈 곳을 누른다'}</span></div>${close}`
+    }
+    const to = r.nodes[o.to]?.name ?? ''
+    const bars = Math.max(1, Math.min(3, Math.round((o.n / Math.max(1, s.many)) * 3)))
+    h += `<b>${esc(from.name)} → ${esc(to)} · ${o.kind === 'settle' ? '새 마을' : '집 나누기'} · 다음 계절</b><span class="ppbar">집 ${'▮'.repeat(bars)}${'▯'.repeat(3 - bars)}</span></div>`
+    h += `<div class="ppamt seg">`
+    if (s.few === s.many) h += `<button class="on" data-act="pp-amt" data-v="many">가득</button>`
+    else {
+      const cur = o.n === s.fit ? 'fit' : o.n === s.many ? 'many' : o.n === s.few ? 'few' : ''
+      const AMT: ReadonlyArray<readonly ['few' | 'fit' | 'many', string]> = [['few', '조금'], ['fit', '알맞게'], ['many', '많이']]
+      for (const [v, name] of AMT) h += `<button class="${cur === v ? 'on' : ''}" data-act="pp-amt" data-v="${v}"${v === 'many' && s.many === s.fit ? ' disabled' : ''}>${name}</button>`
+    }
+    h += `</div><button class="btn ghost sm" data-act="pp-undo">거둔다</button>`
+    return h + close
+  }
+
   function selBarHtml(r: Realm): string {
+    if (peopleSel !== '' && armySel.length === 0) return peopleBarHtml(r)
     const sel = armySel.map((id) => r.armies[id]).filter((a): a is Army => a !== undefined)
     if (sel.length === 0) return ''
     let h = `<div class="sbf">${sel.map((a) => bust(a.hero !== null ? r.heroes[a.hero] : undefined, 'sbface')).join('')}</div><div class="sbt">`
@@ -2168,6 +2261,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const g = hhGrowth(r, id)
       h += `<p class="mute">다음 계절 집 <b>${g.per >= 0 ? '+' : ''}${g.per}</b>${g.why.length > 0 ? ` · ${g.why.map((w) => GROWTH_WHY[w] ?? w).join(' · ')}` : ''}</p>`
       const guarded = guards.includes(id)
+      // 집 보내기 — 고르면 판이 닫히고 지도에서 갈 곳이 빛난다 (군대와 같은 문법). 배우는 판에서는 아직 숨긴다
+      if (r.region !== 'tutorial') {
+        const why = peopleBlock(r, id)
+        h += `<div class="btns"><button class="btn pri home wide" data-act="pp-pick" data-node="${id}" ${why !== null ? 'disabled' : ''}>${icon('unit-porters')}집 보내기</button></div>`
+        if (why !== null) h += `<p class="mute">${esc(why)}</p>`
+      }
       h += draftCard(r, id, true)
       h += `<div class="btns"><button class="btn" data-act="mig-here" data-node="${id}">여기로 모으기</button><button class="btn" data-act="mig-out" data-node="${id}">여기서 내보내기</button>`
       h += `<button class="btn ${guarded ? 'on' : ''}" data-act="guard" data-node="${id}" ${guarded || (canGuard(r, me(), id) && left().grain >= guardCost().grain) ? '' : 'disabled'}>경계 강화 · 곡식 ${guardCost().grain}</button></div>`
@@ -2950,6 +3049,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     else if (roadOpen) roadOpen = false
     else if (sheet !== null) sheet = null
     else if (armySel.length > 0) armySel = []
+    else if (peopleSel !== '') clearPeople()
     else front = { kind: 'title' } // 아무것도 안 열려 있으면 처음 화면으로
     paint()
     return true
@@ -2982,9 +3082,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       return
     }
     if (t.classList.contains('nd') && !t.dataset['act']) {
-      // 군대를 고른 채 갈 수 없는 곳을 누르면 고르기만 푼다
-      if (armySel.length > 0) {
+      // 군대를 고른 채(집을 보내는 중에) 갈 수 없는 곳을 누르면 고르기만 푼다
+      if (armySel.length > 0 || peopleSel !== '') {
         armySel = []
+        clearPeople()
         paint()
         return
       }
@@ -3011,7 +3112,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'continue': front = null; paint(); return
       case 'fr-new': case 'newgame': front = { kind: 'boards' }; sheet = null; looking = false; paint(); return
       case 'fr-back': front = { kind: 'title' }; paint(); return
-      case 'lobby': saveDraft(); front = { kind: 'title' }; sheet = null; armySel = []; paint(); return
+      case 'lobby': saveDraft(); front = { kind: 'title' }; sheet = null; armySel = []; clearPeople(); paint(); return
       case 'fr-board':
         // 캠페인의 장은 나라를 고르지 않는다 — 배우는 판은 백제(온조), 2장은 고구려(주몽)
         { const ch = chapterOfRegion(d['v'] as RegionId); if (ch !== undefined) { host.onNewGame(ch.nation, d['v'] as RegionId, d['v'] === 'tutorial' ? 1 : chapTier); return } }
@@ -3123,6 +3224,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const id = d['army']!
         const x = r?.armies[id]
         const sameNode = (y: string): boolean => r?.armies[y]?.at === x?.at && r?.armies[y]?.march === null && r?.armies[y]?.faction === me()
+        clearPeople() // 군대를 고르면 집 보내기는 풀린다 — 둘은 함께 켜지지 않는다
         if (armySel.includes(id)) armySel = armySel.filter((y) => y !== id)
         else if (x !== undefined && x.faction !== me()) armySel = [id] // 동맹 군대 — 보기만
         else if (x !== undefined && x.march === null && armySel.length > 0 && armySel.every(sameNode)) armySel = [...armySel, id]
@@ -3130,6 +3232,26 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         break
       }
       case 'selclose': armySel = []; break
+      case 'pp-pick': armySel = []; peopleSel = d['node']!; peopleTo = ''; sheet = null; break
+      case 'pp-close': clearPeople(); break
+      case 'pgo': {
+        // 빛나는 곳 — 처음 누르면 알맞게 보내고, 이미 보낸 곳을 다시 누르면 거둔다 (군대의 'go' 와 같다)
+        const to = d['node']!
+        if (peopleSel === '') break
+        const o = peopleOrderOf(peopleSel, to)
+        if (o !== undefined) {
+          settles = settles.filter((x) => x !== o)
+          if (peopleTo === to) peopleTo = ''
+        } else if (sendPeople(peopleSel, to, 'fit')) peopleTo = to
+        break
+      }
+      case 'pp-amt': if (peopleSel !== '' && peopleTo !== '') sendPeople(peopleSel, peopleTo, d['v'] as 'few' | 'fit' | 'many'); break
+      case 'pp-undo': {
+        const o = peopleOrderOf(peopleSel, peopleTo)
+        settles = settles.filter((x) => x !== o)
+        peopleTo = ''
+        break
+      }
       case 'turnback': {
         const id = d['army']!
         const has = armyOrders.some((o) => o.kind === 'turnBack' && o.army === id)
@@ -3377,7 +3499,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const n = Number(d['n'])
         if (n > 0) {
           settles = [...settles, { kind: 'migrate', faction: me(), from: d['from']!, to: d['to']!, n }]
-          setAutoMig(false) // 직접 나눴으면 자동 분배는 꺼진다 — 다시 누를 수 있다
         }
         migN = 0
         break

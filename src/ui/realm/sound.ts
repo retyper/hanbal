@@ -44,7 +44,7 @@ type TapSlot = Extract<Slot, `tap_${string}`>
 /** 누른 단추(data-act) → 그 바탕의 소리. 맞는 줄이 없으면 나무 딱(ui_order) */
 const TAP: ReadonlyArray<readonly [RegExp, TapSlot | 'ui_open']> = [
   // 닫기 · 물리기 · 되돌리기
-  [/^(close|rep-close|selclose|dex-close|failclose|sortie-cancel|fr-back|turnback|undo-split|un[a-z]+)$/, 'tap_cancel'],
+  [/^(close|rep-close|selclose|dex-close|failclose|sortie-cancel|fr-back|turnback|undo-split|pp-close|pp-undo|un[a-z]+)$/, 'tap_cancel'],
   // 책장 · 기록 · 도움말
   [/-open$|^film-|^(help|tab|log-n|log-f|mig-n|layers|layer|deeds|jump|roadkey|hero)$/, 'ui_open'],
   // 군사 — 뽑기 · 편성 · 진군 · 지키기 · 쏘기
@@ -54,7 +54,7 @@ const TAP: ReadonlyArray<readonly [RegExp, TapSlot | 'ui_open']> = [
   // 글 · 꾀 · 사신 — 붓과 도장
   [/^(compose|compose-go|ctarget|chero|plot|nat-plot|pagent|persuade|pby|answer|envoy|nat-diplo|dmode)$/, 'tap_brush'],
   // 사람이 움직인다 — 정찰 · 원정 · 옮겨 살기
-  [/^(scout|exp-go|exp-dest|exp-len|settle|sn|sfrom|migrate|mig-[a-z]+)$/, 'tap_move'],
+  [/^(scout|exp-go|exp-dest|exp-len|settle|sn|sfrom|migrate|mig-[a-z]+|pgo|pp-[a-z]+)$/, 'tap_move'],
   // 고르기 · 혼인 · 제사
   [/^(wed|rite|card-pick|tier-pick|dex-sel|keep|carry-tog|focus)$/, 'tap_bell'],
   // 지도의 고을을 누른다 — 바둑돌 놓듯

@@ -395,6 +395,11 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .selbar .sbt { flex: 1; min-width: 140px; margin-left: 10px; display: flex; flex-direction: column; } .ap .selbar .sbt b { font-size: 14.5px; } .ap .selbar .sbt span { font-size: 12.5px; color: var(--mute); }
 .ap .selbar .sbwhy { font-size: 12px; color: #e8a08a; width: 100%; text-align: right; }
 .ap .selbar .sbx { border: 0; background: none; color: var(--mute); font-size: 18px; padding: 4px 6px; cursor: pointer; }
+/* 집 보내기 — 고른 고을 그림 · 집 막대 · 조금·알맞게·많이 */
+.ap .selbar .ppface { object-fit: contain; border-color: #e0b070; background: #3a2c1e; padding: 2px; box-sizing: border-box; }
+.ap .selbar .sbt .ppbar { color: #e0b070; letter-spacing: 1px; }
+.ap .selbar .ppamt { flex: 0 1 auto; } .ap .selbar .ppamt button { padding: 6px 12px; white-space: nowrap; }
+.ap .selbar .ppamt button:disabled { opacity: .4; cursor: default; }
 /* 길 보기 — 선의 생김새가 무슨 길인지 */
 /* 단추는 늘 오른쪽 끝에 — 펼친 표가 넓어지면 단추가 왼쪽으로 밀려 「우리 땅」 밑에 숨어 못 접었다 (형 2026-10-20: "길 안내 책자 폈는데 접을수가 없음") */
 .ap .roadkey { position: absolute; right: 14px; top: calc(var(--toph) + var(--legh) + 8px); z-index: 6; display: flex; flex-direction: column; align-items: flex-end; }

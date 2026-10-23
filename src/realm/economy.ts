@@ -416,6 +416,46 @@ export function setMigrateAuto(r: Realm, o: Extract<Order, { kind: 'migrateAuto'
   else f.migrateOff = true
 }
 
+/** 이만큼 옮기면 두 고을 붐빔이 같다 — 보내는 고을 집 `a`·품 `ra`, 받는 고을 집 `b`·품 `rb` (자동 분배와 「집 보내기」의 알맞은 양) */
+export function evenShare(a: number, b: number, ra: number, rb: number): number {
+  return a - ((a + b) / (ra + rb)) * ra
+}
+
+/** 「집 보내기」 한 번의 양 — 조금 · 알맞게 · 많이. kind 는 엔진에 낼 명령 */
+export interface SendAmounts {
+  readonly kind: 'settle' | 'migrate'
+  readonly few: number
+  readonly fit: number
+  readonly many: number
+}
+
+/**
+ * 「집 보내기」 (형: "백성 배치는 … 간편하면서도 직관적이게 · 군대처럼 터치로 옮길 수 있게") — `from` 에서 `to` 로 보낼 양 셋.
+ * 받는 곳이 아무도 안 쥔 빈땅이면 개척(settle): 많이 = settleLimit, 알맞게 = 그 반, 조금 = 그 사분의 일.
+ * 우리 고을이면 이주(migrate): 많이 = migrateLimit, 알맞게 = 두 고을 붐빔을 같게 하는 몫의 반(1 아래면 많이의 반), 조금 = 알맞게의 삼분의 일.
+ * 많이가 3 이하면 셋을 하나(가득)로 접는다. 보낼 수 없으면 null. 굴림 없음 — 화면이 부른다.
+ */
+export function sendAmounts(r: Realm, faction: string, from: string, to: string): SendAmounts | null {
+  const a = r.nodes[from]
+  const b = r.nodes[to]
+  if (a === undefined || b === undefined || from === to) return null
+  const R = P.realm
+  const fold = (kind: SendAmounts['kind'], few: number, fit: number, many: number): SendAmounts =>
+    many <= R.sendFoldMax ? { kind, few: many, fit: many, many } : { kind, few, fit, many }
+  if (b.kind === 'wild' && b.owner === null) {
+    const many = settleLimit(r, faction, from, to)
+    if (many <= 0) return null
+    return fold('settle', Math.ceil(many / R.sendFewDiv), Math.ceil(many / R.sendFitDiv), many)
+  }
+  const many = migrateLimit(r, faction, from, to)
+  if (many <= 0) return null
+  const ra = homeRoom(a)
+  const rb = homeRoom(b)
+  const half = Math.min(many, Math.floor((ra + rb > 0 ? evenShare(a.hh, b.hh, ra, rb) : 0) / R.sendFitDiv))
+  const fit = half >= 1 ? half : Math.ceil(many / R.sendFitDiv)
+  return fold('migrate', Math.ceil(fit / R.sendFewOfFitDiv), fit, many)
+}
+
 /**
  * 이번 계절 저절로 옮겨 갈 집 — 붐비는(품을 넘긴) 제 고을에서 길로 맞닿은 한산한 제 고을로.
  * 받는 고을: 적이 안 오고 · 싸움이 안 났고 · 붐빔이 떠나는 고을보다 migrateAutoGap 넘게 낮다. 그 가운데 가장 한산한 곳 (같으면 id).
@@ -453,7 +493,7 @@ export function autoFlows(r: Realm, faction: string, fought: ReadonlySet<string>
     const rb = homeRoom(r.nodes[best]!)
     const a = hh.get(src.id)!
     const b = hh.get(best)!
-    const even = a - ((a + b) / (ra + rb)) * ra // 이만큼 옮기면 두 고을 붐빔이 같다
+    const even = evenShare(a, b, ra, rb)
     const n = Math.floor(Math.min(a * R.migrateAutoShare, even / 2))
     if (n < 1) continue
     hh.set(src.id, a - n)

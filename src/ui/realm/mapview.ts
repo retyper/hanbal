@@ -207,6 +207,12 @@ export const MAP_CSS = `
 .map .nd .tchip .tn.when { margin-left: 3px; } .map .nd .tchip .tn.pin { margin-left: 3px; background: #4a3a14ee; color: #ffe08a; box-shadow: 0 0 0 1px #ffd27a; }
 .map .nd .tchip .tn.hard + .tn.when, .map .nd .tchip .feel + .tn.when { margin-left: 3px; }
 .map .nd .tchip .tn.stay { background: #2a3a24e8; color: #c8e8a8; }
+/* 「집 보내기」의 갈 곳 — 흙빛 (군대의 금빛·붉은 고리와 갈린다) */
+.map .nd.tgt.pp .ring { border-color: #e0b070; box-shadow: 0 0 10px #e0b070; }
+.map .nd.tgt.pp.on .ring { border-color: #8a5a2b; box-shadow: 0 0 12px #c8904a; }
+.map .nd .tchip .tn.newv { background: #3f6a2ae6; color: #f4ffe8; box-shadow: 0 0 0 1px #b6e08f; }
+.map .nd .tchip .tn.share { background: #6b4a2ae6; color: #fbe8c8; box-shadow: 0 0 0 1px #e0b070; }
+.map .nd .tchip .tn.crowd { margin-left: 3px; background: #5a2418e8; color: #f0a08a; }
 .map .nd .tchip .tn { background: #201811e8; color: #f3e6c8; border-radius: 9px; padding: 1px 7px; font-size: clamp(10px, calc(1.8cqh / var(--z, 1) * var(--zs, 1)), 14px); font-weight: 700; }
 .map .toks { position: absolute; transform: translate(2px, -50%); display: flex; gap: 3px; z-index: 4; pointer-events: none; }
 .map .tok { pointer-events: auto; display: flex; flex-direction: column; align-items: center; padding: 0; border: 0; background: none; cursor: pointer;
@@ -264,6 +270,8 @@ export interface MapMarch {
   readonly ambush?: boolean
   /** 우리를 지키러 오는 동맹 군대 — 초록 점선 · "도우러 · n계절" */
   readonly ally?: boolean
+  /** 이번 계절 보내기로 한 집(새 마을 · 집 나누기) — 흙빛 점선 */
+  readonly people?: boolean
 }
 
 /**
@@ -324,6 +332,8 @@ export function mapHtml(
   svg += `<path d="M0 0L10 5L0 10z" fill="#c8402a"/></marker>`
   svg += `<marker id="rm-ah-foe" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">`
   svg += `<path d="M0 0L10 5L0 10z" fill="#3a2a5a"/></marker>`
+  svg += `<marker id="rm-ah-ppl" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">`
+  svg += `<path d="M0 0L10 5L0 10z" fill="#8a5a2b"/></marker>`
   for (const [f, a] of Object.entries(FACTION_ART).sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
     svg += `<radialGradient id="rm-t-${f}"><stop offset="0" stop-color="${a.color}" stop-opacity=".72"/>`
     svg += `<stop offset=".65" stop-color="${a.color}" stop-opacity=".45"/><stop offset="1" stop-color="${a.color}" stop-opacity="0"/></radialGradient>`
@@ -409,6 +419,11 @@ export function mapHtml(
     if (ed !== undefined && ed.a !== m.from) full = full.slice().reverse()
     const k = 0.22 // 고을 기호에 안 묻히게 끝을 당긴다
     const pts = tidyEnds(trimPolyline(full, k, 1 - k), 0.08)
+    // 보내기로 한 집 — 흙빛 점선 (군대의 붉은 화살과 갈린다)
+    if (m.people === true) {
+      svg += `<path class="pplarrow" d="${smoothPath(pts)}" fill="none" stroke="#8a5a2b" stroke-width="${7 * lw}" stroke-dasharray="${(12 * lw).toFixed(1)} ${(8 * lw).toFixed(1)}" stroke-linecap="round" marker-end="url(#rm-ah-ppl)" opacity=".92"/>`
+      continue
+    }
     // 기습은 밤길처럼 — 어두운 짧은 점선. 정면은 붉은 실선
     const amb = m.ambush === true && m.foe !== true
     const dash = amb ? ' stroke-dasharray="2 14" stroke-linecap="round"' : m.left === null ? '' : ' stroke-dasharray="14 8"'
@@ -469,15 +484,15 @@ export function mapHtml(
     const yl = (Object.entries(nodeYield(r, n.id, season)) as Array<[keyof typeof GOOD_NAME, number]>).filter(([, v]) => v > 0).map(([g, v]) => `${GOOD_NAME[g]} ${v}`)
     const hv = nodeHarvest(r, n.id)
     const more = owner === null ? '' : [yl.length > 0 ? `이번 계절 · ${yl.join(' · ')}` : '', hv > 0 ? `가을걷이 곡식 약 ${hv}` : ''].filter((x) => x !== '').join(' / ')
-    const far = ranging && !target.has(n.id) ? ' far' : ''
+    const far = ranging && !target.has(n.id) && selected !== n.id ? ' far' : ''
     const thr = threatened.has(n.id) ? ' threat' : ''
     const who = owner === null ? '주인 없음' : (r.factions[owner]?.name ?? '?')
     const fa = owner !== null ? FACTION_ART[owner] : undefined
     const emb = fa !== undefined ? `${art}icon/${fa.emblem}.png` : ''
     // 고른 군대가 갈 수 있는 곳 — 누르면 그리로 간다 (data-act="go")
     const tg = target.get(n.id)
-    const go = tg !== undefined && !tg.off ? ` data-act="go" data-edge="${tg.edge}"` : ''
-    const tcls = tg === undefined ? '' : tg.off ? ' tgt off' : tg.on ? ' tgt on' : ' tgt'
+    const go = tg !== undefined && !tg.off ? ` data-act="${tg.act ?? 'go'}" data-edge="${tg.edge}"` : ''
+    const tcls = (tg === undefined ? '' : tg.off ? ' tgt off' : tg.on ? ' tgt on' : ' tgt') + (tg?.act === 'pgo' ? ' pp' : '')
     labels.push({
       id: n.id, name: n.name, now: NODE_NOW[n.id], x: p[0], y: p[1], s: sizeOf(n.hh), cap: n.kind === 'capital' || cap, hh: n.hh,
       cls: `${kcls}${ours ? ' me' : ''}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${far}${fr}`,
@@ -568,6 +583,8 @@ export interface MapTarget {
   readonly off: boolean
   /** 이미 그리로 가기로 했다 */
   readonly on: boolean
+  /** 누르면 하는 일 — 기본 'go'(군대). 'pgo' 는 「집 보내기」의 갈 곳 */
+  readonly act?: string
 }
 
 // ───────── 이름 겹 (형: "글자가 이미지에 가려 안보이는 부분 생기는거 주의해" — 2026-10-19)
