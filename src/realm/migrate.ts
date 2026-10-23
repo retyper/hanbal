@@ -42,6 +42,14 @@ export function migrate(r: Realm): void {
   // 활 쏘는 장군의 이름이 '신궁'이던 옛 판 (형: "군장이 신궁이다는 설명 너무 짜치는디")
   const chief = r.heroes['chief']
   if (chief !== undefined && chief.name === '신궁') (chief as { name: string }).name = '살해 매눈'
+  // 요즘 이름이던 아이들 — 옛 느낌의 우리말로 (형 10-23: "번예 이든은 외국 이름 아냐?") · 칭호는 두고 끝 낱말만
+  const KID_OLD: Readonly<Record<string, string>> = { 다온: '솔매', 라온: '다물', 새롬: '달구', 은솔: '모루', 해랑: '부루', 이든: '소미', 온새: '별이', 푸름: '덕이', 가온: '가시' }
+  for (const h of Object.values(r.heroes)) {
+    if (!h.id.startsWith('kid-')) continue
+    const parts = h.name.split(' ')
+    const last = parts[parts.length - 1]!
+    if (KID_OLD[last] !== undefined) (h as { name: string }).name = [...parts.slice(0, -1), KID_OLD[last]].join(' ')
+  }
   // 자동 분배를 끄던 판 — 이제 자동은 늘 켜져 있다 (형: "백성 배치는 … 간편하면서도 직관적이게" · 끄고 켜는 단추를 지웠다)
   for (const f of Object.values(r.factions)) if (f.migrateOff !== undefined) delete f.migrateOff
   // 특성이 생기기 전의 판 — 장수마다 빈 특성 줄을 채운다 (없으면 정이 100에 닿는 계절에 막혔다)

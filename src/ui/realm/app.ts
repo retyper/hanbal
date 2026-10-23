@@ -2978,6 +2978,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 혼례: 두 사람이 양쪽에서 다가와 나란히 · 꽃잎. 아이: 금빛 속에서 얼굴이 떠오르고 물려받은 특성이 하나씩. 누르면 다음 장면
    */
   function ceremonyFx(r: Realm, rep: Report): void {
+    noteKids(Object.values(r.heroes)) // 갓 난 아이도 얼굴이 있게 — 화면이 판을 그리기 전에 장면이 먼저 뜬다
     const scenes: string[] = []
     for (const l of rep.lines) {
       if (l.kind === 'wed' && l.faction === me()) {
@@ -3248,6 +3249,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     host.onAdvance(res.next, res.report, all, mine)
     dexToast(recordDex(res.next))
     seasonFx(res.next.season)
+    noteKids(Object.values(res.next.heroes)) // 갓 난 아이 얼굴 — 보고·장면·장수 판 어디서나 (형 10-23: "하늬도 이미지가 없어 보이네 애기 태어날 때")
     ceremonyFx(res.next, res.report)
     // 우리가 낀 싸움이면 북, 아니면 이 계절 머리 장면의 소리 (혼인·아이·동맹…) — 종이 잦아든 뒤
     const ourWar = res.report.lines.some((l) => l.kind === 'battle' && (l.atkFaction === me() || l.defender === me()))
@@ -3911,7 +3913,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       resetTurn()
       restoreDraft()
       loadSeen()
-      if (r !== null) recordDex(r) // 열 때 한 번 — 알림 없이 (이 판에서 이미 본 장수)
+      if (r !== null) { noteKids(Object.values(r.heroes)); recordDex(r) } // 열 때 한 번 — 아이 얼굴을 먼저 짝짓고 · 알림 없이 (이 판에서 이미 본 장수)
       sheet = null
       paint()
       if (fresh && r !== null) coverMap() // 새 판 — 지도 그림을 다 받을 때까지 가린다
