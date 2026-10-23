@@ -684,9 +684,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const stl = armySel.length === 0 && partySel === '' && r.region !== 'tutorial' ? new Set(foundLands(r).filter((to) => !(r.nodes[to]?.owner === me() && (r.nodes[to]?.hh ?? 0) > 0))) : new Set<string>()
     // 지난 계절 싸움으로 주인이 바뀐 고을 (보고에 남은 것) — 지도에 불과 연기
     const burn = new Set<string>()
-    for (const l of report?.lines ?? []) if (l.kind === 'battle' && l.field !== true && (l.outcome === 'win' || l.outcome === 'rout') && r.nodes[l.node]?.owner === l.atkFaction) burn.add(l.node)
+    // 우리가 빼앗았으면 불 대신 우리 깃발 · 지켜 냈으면 방패 (형 10-23: "졌을 때는 불나는 게 맞는데 이겼을 땐 어떤 연출")
+    const taken = new Set<string>()
+    const held = new Set<string>()
+    for (const l of report?.lines ?? []) {
+      if (l.kind !== 'battle' || l.field === true) continue
+      const atkWon = l.outcome === 'win' || l.outcome === 'rout'
+      if (atkWon && r.nodes[l.node]?.owner === l.atkFaction) (l.atkFaction === me() ? taken : burn).add(l.node)
+      else if (!atkWon && l.defender === me() && r.nodes[l.node]?.owner === me()) held.add(l.node)
+    }
     if (armySel.length === 0 && partySel === '') for (const to of going) stl.add(to)
-    return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets, fr, stl, burn, going)
+    return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets, fr, stl, burn, going, taken, held)
   }
 
   /**

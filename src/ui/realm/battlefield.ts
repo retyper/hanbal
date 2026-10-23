@@ -561,10 +561,11 @@ export const WAR_CSS = `
 .ap .wvs { display: flex; align-items: flex-start; gap: 8px; }
 .ap .wvs .vs { font-style: normal; font-weight: 800; color: #c8402a; font-size: 20px; align-self: center; }
 .ap .ws { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; }
-.ap .ws b { font-size: 15px; margin-top: 4px; } .ap .ws > span { font-size: 12px; color: var(--mute); }
-.ap .ws .wnat { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: #e8dcc0; }
+/* 장수가 없는 쪽(병종 그림)도 같은 높이 — 그림 칸은 테두리까지 같은 크기, 이름은 한 줄 (형 10-23: "상대 장군이 없을 때 명 바·사기 바 높이가 서로 달라서 안 맞아") */
+.ap .ws b { font-size: 15px; margin-top: 4px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ap .ws > span { font-size: 12px; color: var(--mute); }
+.ap .ws .wnat { display: inline-flex; align-items: center; gap: 4px; min-height: 22px; font-size: 13px; color: #e8dcc0; }
 .ap .ws .wnat img { width: 20px; height: 20px; object-fit: contain; filter: drop-shadow(0 1px 2px #000); }
-.ap .wf { width: 84px; height: 84px; border-radius: 14px; object-fit: cover; border: 2px solid #6a5a3a; background: #3a2c1e; }
+.ap .wf { box-sizing: border-box; width: 84px; height: 84px; border-radius: 14px; object-fit: cover; border: 2px solid #6a5a3a; background: #3a2c1e; }
 .ap .wf.unit { object-fit: contain; padding: 6px; }
 .ap .ws.foe .wf { border-color: #7a3a2a; }
 .ap .wbar { width: 100%; height: 8px; border-radius: 4px; background: #30241a; overflow: hidden; margin-top: 6px; }
@@ -660,12 +661,9 @@ export const WAR_CSS = `
 .ap .wauto { flex: 1 1 100%; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #d8cfbf; }
 .ap .wauto .wf { width: 30px; height: 30px; border-radius: 50%; } .ap .wauto .wdots { color: var(--gold); letter-spacing: 1px; }
 .ap .wfoot .btn small { display: block; font-size: 11px; font-weight: 500; opacity: .85; }
-/* 이겼다 — 크게 (형: "이기면 … 막 지랄 발광") */
-.ap .wend.good { animation: wrin .5s ease-out var(--d, 0s) both, wwin 1.4s ease-out calc(var(--d, 0s) + .3s) both; }
-.ap .wend.good b { display: inline-block; animation: wwinb .9s cubic-bezier(.2, 1.6, .4, 1) calc(var(--d, 0s) + .3s) both; }
-@keyframes wwin { 0% { box-shadow: 0 0 0 0 #ffd27a00; } 30% { box-shadow: 0 0 0 6px #ffd27aaa, 0 0 40px 10px #ffd27a88; } 100% { box-shadow: 0 0 0 0 #ffd27a00, 0 0 18px 2px #ffd27a33; } }
-@keyframes wwinb { 0% { transform: scale(.4); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { .ap .ws.hit, .ap .ws.hit::after, .ap .wend.good, .ap .wend.good b, .ap .wfx-dust, .ap .wfx-smoke { animation: none; } .ap .wfx-volley, .ap .ws .wfx-hit { display: none; } }
+/* 이긴 결과 카드 — 조용히 떠오르고 금테만 (크게 터지는 것은 가운데 「승리·대승」이 맡는다 · 형 10-23: "대승 카드가 혼자만 깜빡거림") */
+.ap .wend.good { border: 1px solid #c9a45a; box-shadow: 0 0 14px #ffd27a33; }
+@media (prefers-reduced-motion: reduce) { .ap .ws.hit, .ap .ws.hit::after, .ap .wfx-dust, .ap .wfx-smoke { animation: none; } .ap .wfx-volley, .ap .ws .wfx-hit { display: none; } }
 .ap .wrd.slow .wcmds, .ap .wrd.slow .wst, .ap .wrd.slow .wpush { opacity: 0; animation: wrin .45s ease-out var(--d, 0s) both; }
 .ap .wrd.slow .wcmds { animation-name: wrflip; }
 @keyframes wrin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
@@ -740,7 +738,7 @@ export const WAR_CSS = `
 .ap .wohead { position: absolute; z-index: 3; left: 0; right: 0; top: 14%; text-align: center; padding: 0 16px; animation: wrin .5s ease-out .95s both; }
 .ap .wohead b { display: block; font-family: var(--display); font-weight: 400; font-size: clamp(30px, 8.5vw, 52px); color: #f6d8a0; letter-spacing: 3px; text-shadow: 0 0 14px #000, 0 3px 6px #000; }
 .ap .wohead span { display: block; margin-top: 4px; font-size: clamp(15px, 4vw, 19px); color: #fff; text-shadow: 0 1px 5px #000; }
-.ap .wofoot { position: absolute; z-index: 3; left: 50%; bottom: 14%; width: min(80vw, 460px); transform: translateX(-50%); text-align: center; animation: wrin .5s ease-out 1.15s both; }
+.ap .wofoot { position: absolute; z-index: 3; left: 0; right: 0; margin: 0 auto; bottom: 14%; width: min(80vw, 460px); text-align: center; animation: wrin .5s ease-out 1.15s both; } /* 가운데는 margin 으로 — transform 은 나타나는 애니메이션이 덮어써 폰에서 오른쪽으로 밀려 나갔다 (형 10-23) */
 .ap .wobar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; box-shadow: 0 0 0 2px #000a, 0 4px 14px #000c; }
 .ap .wobar i { display: block; height: 100%; } .ap .wobar i.us { background: linear-gradient(90deg, #3f8f3a, #8fd07a); } .ap .wobar i.foe { background: linear-gradient(90deg, #e08a74, #8a3a2a); }
 .ap .wofoot em { display: inline-block; margin-top: 10px; font-style: normal; font-size: 13.5px; color: #ffd6c8; background: #5a1a10cc; border: 1px solid #c8402a; border-radius: 999px; padding: 3px 12px; }

@@ -111,6 +111,24 @@ export const MAP_CSS = `
 @keyframes bflick { from { transform: scaleY(.9) skewX(-3deg); } to { transform: scaleY(1.08) skewX(3deg); } }
 @keyframes bsmoke { from { transform: translateY(0) scale(1); } to { transform: translateY(-14%) scale(1.15); } }
 @media (prefers-reduced-motion: reduce) { .map .nd .burnfx, .map .nd .burnsm { animation: none; } }
+/* 빼앗은 고을 — 위에서 우리 깃발이 꽂히고(통 튐) 천이 나부끼며, 금빛 테가 번지고 「점령」이 떴다 사라진다. 연기는 옅게 */
+.map .nd .burnsm.won { opacity: .35; }
+.map .nd .plant { position: absolute; left: 58%; bottom: 46%; width: 42%; aspect-ratio: 1 / 1.5; z-index: 3; pointer-events: none; transform-origin: 0 100%; animation: plantin .7s cubic-bezier(.3, 1.6, .5, 1) .4s both; }
+.map .nd .plant .pole { position: absolute; left: 0; bottom: 0; width: 7%; height: 100%; border-radius: 2px; background: linear-gradient(90deg, #3a2814, #8a6a40); box-shadow: 0 0 2px #000; }
+.map .nd .plant .cloth { position: absolute; left: 7%; top: 2%; width: 88%; height: 56%; border-radius: 0 3px 3px 0; background: var(--fc); border: 1.5px solid #2a1c0c; display: flex; align-items: center; justify-content: center;
+  transform-origin: 0 50%; animation: clothwave 1.6s ease-in-out 1.1s infinite alternate; box-shadow: 0 2px 4px #0008; }
+.map .nd .plant .cloth img { width: 70%; height: 70%; object-fit: contain; filter: drop-shadow(0 0 1px #000); }
+@keyframes plantin { 0% { opacity: 0; transform: translateY(-160%) scale(1.3); } 60% { opacity: 1; transform: translateY(6%) scale(1); } 100% { transform: none; } }
+@keyframes clothwave { from { transform: skewY(0deg) scaleX(1); } to { transform: skewY(-6deg) scaleX(.92); } }
+.map .nd .wonring { position: absolute; left: 50%; top: 50%; width: 100%; aspect-ratio: 1; border-radius: 50%; border: 3px solid #ffd27a; box-shadow: 0 0 12px #ffd27a; transform: translate(-50%, -50%) scale(.3); opacity: 0; pointer-events: none;
+  animation: wonring 1.6s ease-out .9s 2 both; }
+@keyframes wonring { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.3); } 10% { opacity: .9; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(2.4); } }
+.map .nd .wonchip, .map .nd .heldchip { position: absolute; left: 50%; bottom: 102%; transform: translateX(-50%); white-space: nowrap; pointer-events: none; z-index: 4; border-radius: 8px; padding: 0 6px;
+  font-size: clamp(10px, calc(1.5cqh / var(--z, 1) * var(--zs, 1)), 13px); font-weight: 700; }
+.map .nd .wonchip { background: #3a2a10; color: #ffe2a0; border: 1px solid #ffd27a; animation: wonchip 3.2s ease-out 1s both; }
+@keyframes wonchip { 0% { opacity: 0; transform: translate(-50%, 6px); } 12% { opacity: 1; transform: translate(-50%, 0); } 80% { opacity: 1; } 100% { opacity: 0; } }
+.map .nd .heldchip { background: #14243a; color: #cfe6ff; border: 1px solid #7ab0f0; box-shadow: 0 0 8px #7ab0f088; animation: wonchip 3.6s ease-out .6s both; }
+@media (prefers-reduced-motion: reduce) { .map .nd .plant, .map .nd .plant .cloth, .map .nd .wonring { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .map .nd .smk, .map .clsh { display: none; } .map .nd.k-port img.st { animation: none; } }
 .map .lbs { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
 /* 고을 배너 — 깃발·이름·군세가 한 덩어리 (문명 6 도시 배너 · Old World 의 위계 — docs/GAP.md M1) */
@@ -303,6 +321,9 @@ export function mapHtml(
   burning: ReadonlySet<string> = new Set(),
   /** 이번 계절 사람을 보내기로 한 빈땅 — 「＋마을」 대신 「사람 간다」 */
   settling: ReadonlySet<string> = new Set(),
+  /** 지난 계절 우리가 빼앗은 고을 — 우리 깃발이 꽂히고 금빛이 번진다 · 지켜 낸 고을 — 방패가 빛난다 (형 10-23: "졌을 때는 불나는 게 맞는데 이겼을 땐 어떤 연출") */
+  taken: ReadonlySet<string> = new Set(),
+  held: ReadonlySet<string> = new Set(),
 ): string {
   // 판마다 지도 그림·좌표계·기호 크기 (영남 판은 고을이 빽빽해 작게)
   const region = r.region ?? 'byeonhan-mini'
@@ -525,7 +546,7 @@ export function mapHtml(
     // 지은 것 — 목책 · 해자 작은 표 (왼쪽 위). 그림만으로는 도읍·포구의 울타리가 지은 것인지 알 수 없었다
     const dfs = (['palisade', 'moat'] as const).filter((t) => n.tags.includes(t))
     const def = dfs.length > 0 ? `<span class="df">${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${t === 'palisade' ? '목책' : '해자'}</i>`).join('')}</span>` : ''
-    nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${mist}${ice}${def}${spec}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : settleable.has(n.id) ? (settling.has(n.id) ? '<span class="stl go">백성이 가는 중</span>' : '<span class="stl">＋마을</span>') : crowd}</div>`
+    nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${taken.has(n.id) ? `<img class="burnsm won" src="${art}fx/smoke.png" alt=""><span class="plant"><i class="pole"></i><i class="cloth" style="--fc:${FACTION_ART[me]?.color ?? '#c9a45a'}"><img src="${art}icon/${FACTION_ART[me]?.emblem ?? 'emblem-shell'}.png" alt=""></i></span><i class="wonring"></i><span class="wonchip">점령</span>` : burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${held.has(n.id) ? '<span class="heldchip">⛨ 지켜 냈다</span>' : ''}${mist}${ice}${def}${spec}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : settleable.has(n.id) ? (settling.has(n.id) ? '<span class="stl go">백성이 가는 중</span>' : '<span class="stl">＋마을</span>') : crowd}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()
