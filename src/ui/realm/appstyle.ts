@@ -396,6 +396,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .selbar .sbwhy { font-size: 12px; color: #e8a08a; width: 100%; text-align: right; }
 .ap .selbar .sbx { border: 0; background: none; color: var(--mute); font-size: 18px; padding: 4px 6px; cursor: pointer; }
 /* 집 보내기 — 고른 고을 그림 · 집 막대 · 조금·알맞게·많이 */
+.ap .pprow { flex: 1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; padding: 0; }
+.ap .dloss { margin: 4px 0 0; font-size: 12.5px; font-weight: 700; } .ap .dloss span { color: #e8a08a; }
 .ap .selbar .ppface { object-fit: contain; border-color: #e0b070; background: #3a2c1e; padding: 2px; box-sizing: border-box; }
 .ap .selbar .sbt .ppbar { color: #e0b070; letter-spacing: 1px; }
 .ap .selbar .ppamt { flex: 0 1 auto; } .ap .selbar .ppamt button { padding: 6px 12px; white-space: nowrap; }
@@ -460,11 +462,6 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 /* 이주 — 집 옮기기는 개척(갈색)과 갈라 누런 흙빛 */
 .ap .sec.move { background: #2e2a14; border: 1px solid #8a7a3a; } .ap .sech.move { background: #2e2a14; color: #e0cc80; }
 .ap .btn.pri.move { background: #6a5a22; border-color: #a89048; color: #fff6dc; }
-.ap .crowd { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 10px; }
-.ap .crow { display: grid; grid-template-columns: 6.5em 1fr auto; align-items: center; gap: 8px; font-size: 13px; }
-.ap .crow .cn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ap .cbar { position: relative; height: 8px; border-radius: 4px; background: #3a2c1e; overflow: hidden; }
-.ap .cbar i { position: absolute; left: 0; top: 0; bottom: 0; background: #7aa86a; } .ap .cbar.near i { background: #d0a850; } .ap .cbar.full i { background: #d06a50; }
 .ap .seg.wrap { flex-wrap: wrap; } .ap .seg.wrap button { flex: 1 0 30%; }
 /* 외교의 손 — 보낼 사람 (VICTORY §2-2) */
 .ap .hands { display: flex; align-items: center; gap: 10px; margin: 6px 0 8px; padding: 8px 10px; border-radius: 12px; background: #1f1710; border: 1px solid #6a5236; }
@@ -498,17 +495,6 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .paths .flags { display: flex; gap: 2px; min-height: 18px; } .ap .paths .flags img { width: 18px; height: 18px; }
 .ap .paths .clock.rite i { border-color: #e0a0c8; } .ap .paths .clock.rite i.on { background: #e0a0c8; }
 /* 백성 — 보내는 곳 ⟶ 받는 곳을 좌우로 (형: "보낼곳 받을곳은 좌 우로 배치해야 직관적이지") */
-.ap .mv2 { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 6px; margin: 8px 0 6px; }
-.ap .mv3 { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; gap: 6px; margin: 8px 0 4px; }
-.ap .mvc { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 6px; border-radius: 12px; background: #2a2418; border: 1px solid #6a5434; text-align: center; min-width: 0; }
-.ap .mvc b { font-size: 14px; color: #f0d8b0; word-break: keep-all; } .ap .mvc .mute { font-size: 12px; }
-.ap .mvc img.mvi { width: 44px; height: 44px; } .ap .mvc .cbar { width: 90%; margin-top: 3px; }
-.ap .mvr { font-size: 11px; color: var(--mute); letter-spacing: .04em; }
-.ap .mvmid { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.ap .mvmid .mva { font-style: normal; font-size: 26px; line-height: 1; color: #e4b878; }
-.ap .mvcol { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.ap .mvpick { display: flex; align-items: center; gap: 4px; padding: 5px 6px; border-radius: 10px; border: 1px solid #3a3426; background: #1f1c16; color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; text-align: left; word-break: keep-all; }
-.ap .mvpick.on { border-color: #e4b878; background: #3a2e1c; color: #ffe8c0; } .ap .mvpick img.mvs { width: 22px; height: 22px; flex: none; }
 .ap .row.mvq { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; } .ap .row.mvq .ar { font-style: normal; color: #e4b878; }
 .ap .row.mvq .nchip, .ap .mvq .nchip { display: inline-flex; padding: 1px 7px; border-radius: 9px; background: #2a2418; color: #d9a86a; font-size: 12.5px; font-weight: 700; }
 /* 군량 — 계절치 스테퍼 */
@@ -517,25 +503,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .twoway { grid-template-columns: 1fr 1fr; } /* 백성 판은 개척·이주 두 칸 */
 /* 우리 나라 깃발 — 어디서든 금빛 후광 (기록 · 보고 · 깃발 줄 · 외교) */
 .ap img.mine { border-radius: 50%; background: radial-gradient(circle, #ffd27a55 0, #ffd27a00 70%); box-shadow: 0 0 0 1.5px #ffd27a, 0 0 7px 1px #ffd27acc; }
-/* 자동 분배 — 백성 판 맨 위 큰 단추. 켜져 있으면 잠겨 ✓ */
-.ap .autobtn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 14px; margin: 4px 0 8px; font-size: 16px; }
-.ap .autobtn small { font-size: 12px; font-weight: 500; opacity: .85; line-height: 1.35; white-space: normal; max-width: 100%; overflow-wrap: anywhere; text-align: center; }
-.ap .autobtn { white-space: normal; max-width: 100%; box-sizing: border-box; }
-.ap .todos { margin: 6px 0 10px; display: flex; flex-direction: column; gap: 6px; } .ap .todos h4 { margin: 2px 0; color: var(--gold); }
-.ap .todo { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; border-radius: 12px; border: 1px solid #5a7a44; background: #1f2a1a; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
-.ap .todo.move { border-color: #8a6a5a; background: #30221c; }
-.ap .todo img { width: 34px; height: 34px; } .ap .todo > span { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
-.ap .todo small { font-size: 12px; color: #b8b09c; white-space: normal; } .ap .todo i { font-style: normal; font-size: 22px; color: #8f8778; }
-/* 백성 판 — 새 마을 세우기 그림 한 줄 · 접힌 집 나누기 */
-.ap .stlhow { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; padding: 8px 10px; border-radius: 12px; background: #1f2a1a; border: 1px solid #4a6a3a; font-size: 13px; }
-.ap .stlhow .shi { width: 30px; height: 30px; } .ap .stlhow i { font-style: normal; color: #b6e08f; font-weight: 700; } .ap .stlhow b { color: #f4ffe8; }
-.ap .migfold { display: flex; align-items: center; gap: 10px; width: 100%; margin: 14px 0 6px; padding: 9px 12px; border-radius: 12px; border: 1px dashed #8a6a5a; background: #271d18; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
-.ap .migfold img { width: 30px; height: 30px; } .ap .migfold span { display: flex; flex-direction: column; flex: 1; min-width: 0; } .ap .migfold small { font-size: 12px; color: var(--mute); }
-.ap .migfold i { font-style: normal; font-size: 12px; color: #9fb0d0; } .ap .migfold.on { border-style: solid; }
 .ap .twoway .sec small { display: block; font-size: 11.5px; color: #a89c84; margin-top: 2px; } .ap .twoway .sec u { text-decoration: none; color: #f3d48a; }
 .ap .settlec .gain { margin: 4px 0 6px; padding: 6px 9px; border-radius: 9px; background: #24301f; color: #d8f0c0; font-size: 13px; }
 .ap .settlec .gain .gic { width: 20px; height: 20px; vertical-align: middle; margin: 0 2px; }
-.ap .autobtn:disabled { background: #24301f; border-color: #5a7a44; color: #b8e09a; opacity: 1; cursor: default; }
 /* 아래 탭이 여섯 — 폰 세로에서 글이 넘치지 않게 */
 /* 「다음 계절」 전에 데려온 판의 맨 위 한 줄 */
 .ap .nudge { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; padding: 8px 10px; border-radius: 10px; background: #3a2a14; border: 1px solid #c9a45a88; font-size: 13px; color: #f3e2b8; }

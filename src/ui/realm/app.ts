@@ -25,7 +25,7 @@ import {
 import { canEscort, envoyChanceFor, envoyClash, envoyOptions, favorOf, jointTargets, lentEta, openAsks, relationOf } from '../../realm/diplomacy.ts'
 import {
   GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeHarvest, nodeYield, nodeSpecials, upkeepOf, riteAllowed, riteCost,
-  settleCost, settleLimit, settleSource, settleTargets, sendAmounts, type SendAmounts, autoFlows, crowdOf, homeRoom, migrateCost, migrateLimit, migratePath,
+  settleSource, settleTargets, sendAmounts, type SendAmounts, autoFlows, crowdOf,
 } from '../../realm/economy.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
 import { kitLines } from '../../realm/kit.ts'
@@ -383,14 +383,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   const draftN: Record<string, number> = {}
   /** 징병에 철을 들여 한 단계 좋은 무기로 */
   const draftIron: Record<string, boolean> = {}
-  const settleN: Record<string, number> = {}
-  const settleFrom: Record<string, string> = {}
-  /** 억지 이주 — 보낼 고을 · 받을 고을 · 몇 집 (0 이면 한도와 20 가운데 작은 것) */
-  let migFrom = ''
-  let migTo = ''
-  let migN = 0
-  /** 고을끼리 집 나누기(이주) 칸을 펼쳤나 — 보통은 접어 둔다 (형: "개척이랑 이주 차이 아직도 모르겠음") */
-  let migOpen = false
   /** 사신을 꾸미는 중 — 누구에게 · 무엇을 · 얼마 · 어디 */
   let compose: { to: string; ask: Ask; give: Record<Good, number>; take: Record<Good, number>; target: string; hero: string } = { ...NO_COMPOSE, give: noGoods(), take: noGoods() }
   let note = ''
@@ -436,15 +428,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }))
   // 맡기기·이끌기는 나누기처럼 먼저 해 본 판에 든다 — 장수 카드가 바뀐 자리를 바로 보인다
   // 들이기도 든다 — 들인 떠돌이가 바로 우리 장수로 보이고 군대를 이끌 수 있게 (형: "들인다 했을때 바로 적용되어야 하고 군사배치에도 쓸수 있어야 함")
-  /** 이번 계절 끝에 자동 분배가 켜져 있나 — 고른 명령이 있으면 그것, 아니면 판 */
-  const autoMigOn = (): boolean => {
-    const o = settles.filter((x): x is Extract<Order, { kind: 'migrateAuto' }> => x.kind === 'migrateAuto').pop()
-    return o !== undefined ? o.on : realm?.factions[me()]?.migrateOff !== true
-  }
-  const setAutoMig = (want: boolean): void => {
-    settles = settles.filter((o) => o.kind !== 'migrateAuto')
-    if ((realm!.factions[me()]?.migrateOff !== true) !== want) settles = [...settles, { kind: 'migrateAuto', faction: me(), on: want }]
-  }
   const planWith = (ss: readonly Order[]): Realm => planned(realm!, [...armyOrders, ...ss, ...heroOrders.filter((o) => o.kind === 'hire' || o.kind === 'assign' || o.kind === 'lead')])
   const plan = (): Realm => planWith(settles)
 
@@ -673,7 +656,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 지난 계절 싸움으로 주인이 바뀐 고을 (보고에 남은 것) — 지도에 불과 연기
     const burn = new Set<string>()
     for (const l of report?.lines ?? []) if (l.kind === 'battle' && l.field !== true && (l.outcome === 'win' || l.outcome === 'rout') && r.nodes[l.node]?.owner === l.atkFaction) burn.add(l.node)
-    return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets, fr, stl, burn)
+    if (armySel.length === 0 && peopleSel === '') for (const o of settlePending()) stl.add(o.to)
+    return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets, fr, stl, burn, new Set(settlePending().map((o) => o.to)))
   }
 
   /**
@@ -1216,6 +1200,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<div class="stepper"><button data-act="dn" data-node="${n.id}" data-d="${-step}">−</button><b>${want}</b>`
       h += `<button data-act="dn" data-node="${n.id}" data-d="${step}">+</button><span class="mute">명 · 최대 ${lim} · ${tx(`곡식 ${Math.ceil(draftCost(want).grain)}`)}</span>`
       h += `<button class="btn pri men" data-act="draft" data-node="${n.id}" ${want <= 0 ? 'disabled' : ''}>군사 ${want}명 뽑기</button></div>`
+      // 뽑은 만큼 일손이 빠진다 (season.draftArmy · draftHHPerMan) — 숫자 대신 색으로
+      if (want > 0 && P.realm.draftHHPerMan > 0) h += `<p class="dloss"><span>집이 준다</span> · <span>가을걷이가 준다</span></p>`
       const nd = draftNeeds(unit, Math.max(1, want))
       if (unit === 'horse') h += `<p class="mute">${lim > 0 ? `말 ${nd.horse}필이 든다.` : '말이 없다.'} 말은 목장(너른벌을 일구면)에서 나거나 바꿔 온다.</p>`
       if (unit === 'boat') h += `<p class="mute">${lim > 0 ? `배 지을 나무 ${nd.wood}짐이 든다.` : '배 지을 나무가 없다.'} 나무는 솔숲·산·산성 땅에서 난다.</p>`
@@ -1235,185 +1221,56 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return h
   }
 
-  // ───────── 백성 — 개척 · 이주 (집을 옮긴다. 군사가 아니다)
-  /**
-   * 지금 할 만한 일 — 백성 판 맨 위 (형: "개척이랑 이주가 전혀 직관적이지가 않아… 어떻게 해야할지 더 고민해봐").
-   * 설명을 읽고 고르는 대신, 할 수 있는 일을 먼저 보이고 누르면 그 카드로 간다
-   */
-  function peopleTodo(r: Realm): string {
-    const items: string[] = []
-    const lands = [...new Set(settleTargets(r, me()).map((t) => t.to))].sort()
-    for (const id of lands.slice(0, 3)) {
-      const n = r.nodes[id]!
-      const gains = nodeSpecials(r, id).map((g) => GOOD_NAME[g])
-      // 이미 우리 마을로 일구는 중이면 "더 보낼 수 있다"
-      const growing = n.owner === me() && n.hh > 0
-      const head = growing ? `${esc(n.name)}에 집을 더 보낼 수 있다` : `${esc(n.name)}에 마을을 세울 수 있다`
-      const sub = growing ? `자리 ${Math.max(0, (n.room ?? 0) - Math.floor(n.hh))}집 남았다` : `집을 보내면 우리 땅이 된다 · ${n.room ?? 0}집까지${gains.length > 0 ? ` · ${gains.join('·')} 난다` : ''}`
-      items.push(`<button class="todo home" data-act="jump" data-to="stl-${id}">${icon('settle-hamlet')}<span><b>${head}</b><small>${tx(sub)}</small></span><i>›</i></button>`)
-    }
-    const full = sorted(Object.values(r.nodes)).filter((n) => n.owner === me() && n.kind !== 'sodo' && homeRoom(n) > 0 && crowdOf(n) > 1)
-    for (const n of full.slice(0, 2)) {
-      items.push(`<button class="todo move" data-act="mig-open" data-v="1">${icon('unit-porters')}<span><b>${esc(josa(n.name, '이', '가'))} 붐빈다</b><small>${tx(autoMigOn() ? '자동 분배가 계절마다 옆 고을로 나눈다 · 빈땅에 보내도 좋다' : '집이 더디게 늘어난다 — 옆 고을로 옮기거나 빈땅에 마을을 세운다')}</small></span><i>›</i></button>`)
-    }
-    if (items.length === 0) return `<div class="todos"><p class="mute">${tx('지금은 할 일이 없다. 고을이 다 품 안이고, 맞닿은 빈땅도 없다 — 군대로 땅을 넓히면 빈땅이 맞닿는다.')}</p></div>`
-    return `<div class="todos"><h4>지금 할 수 있는 일</h4>${items.join('')}</div>`
-  }
+  // ───────── 백성 — 이번 계절 사람 흐름 (집을 옮긴다. 군사가 아니다)
+  /** 짝 한 줄 — [보내는 고을] ⟶ [받는 고을] */
+  const flowPair = (r: Realm, from: string, to: string): string =>
+    `<span class="nchip">${esc(r.nodes[from]?.name ?? '')}</span><i class="ar">⟶</i><span class="nchip">${esc(r.nodes[to]?.name ?? '')}</span>`
 
   /**
-   * 백성 판 — 할 일은 하나, 새 마을 세우기(개척). 고을끼리 집 나누기(이주)는 보통 저절로 되니 맨 아래에 접어 둔다
-   * (형: "개척이랑 이주 차이 아직도 모르겠음" — 두 낱말을 나란히 두고 차이를 설명하는 대신, 고를 일을 하나로 줄인다)
+   * 백성 판 — 「이번 계절 사람 흐름」: 보낸 집 · 저절로 가는 집 · 마을을 세울 수 있는 빈땅.
+   * 줄을 누르면 그 고을이 「집 보내기」로 골라지고 지도로 간다 (형: "백성 배치는 … 간편하면서도 직관적이게")
    */
   function peopleSheet(r: Realm): string {
-    let h = `<h3 class="sech home">${icon('settle-farm-village')}백성 · 새 마을 세우기</h3>`
+    let h = `<h3 class="sech home">${icon('settle-farm-village')}이번 계절 사람 흐름</h3>`
     if (note !== '') h += `<div class="banner bad">${tx(note)}</div>`
-    // 그림 한 줄 — [우리 고을] 집 ⟶ [빈땅] = 우리 마을
-    h += `<div class="stlhow">${icon('settle-farm-village', 'shi')}<span>우리 고을</span><i>집 ⟶</i>${icon('settle-hamlet', 'shi')}<span>빈땅</span><i>=</i><b>새 우리 마을</b></div>`
-    h += `<p class="mute">${tx('우리 고을의 집(농사짓는 사람)을 길로 맞닿은 빈땅에 보내면, 다음 계절 그 땅이 우리 마을이 된다. 군대 없이 땅을 넓히는 길이다.')}</p>`
-    h += peopleTodo(r)
-    h += `<h4 id="sec-settle" class="sech home">${icon('settle-farm-village')}마을을 세울 수 있는 빈땅</h4>`
-    h += settleList(r)
-    h += migFold(r)
+    const mine = peopleOrders()
+    h += `<h4 class="sech home">${icon('unit-porters')}보낸 집</h4>`
+    if (mine.length === 0) h += `<p class="mute">고을을 누르고 「집 보내기」 — 지도에서 빛나는 곳을 누른다.</p>`
+    for (const o of mine) {
+      h += `<div class="row mvq"><button class="pprow" data-act="pp-pick" data-node="${o.from}">${flowPair(r, o.from, o.to)}<span class="mute">${o.kind === 'settle' ? '새 마을' : '집 나누기'} · 다음 계절</span></button>`
+      h += `<button class="btn ghost sm" data-act="unsettle" data-i="${settles.indexOf(o)}">거둔다</button></div>`
+    }
+    const auto = autoFlows(r, me())
+    if (auto.length > 0) {
+      h += `<h4 class="sech home">${icon('unit-porters')}저절로</h4>`
+      for (const x of auto) h += `<div class="row mvq"><button class="pprow" data-act="pp-pick" data-node="${x.from}">${flowPair(r, x.from, x.to)}<span class="mute">저절로 · 붐벼서</span></button></div>`
+    }
+    const lands = [...new Set([...settleTargets(r, me()).map((t) => t.to), ...settlePending().map((o) => o.to)])].sort()
+    if (lands.length > 0) {
+      h += `<h4 id="sec-settle" class="sech home">${icon('settle-hamlet')}마을을 세울 수 있는 빈땅</h4>`
+      h += lands.map((to) => settleCard(r, to)).join('')
+    }
     return h
   }
 
-  /** 고을끼리 집 나누기 — 접힌 줄 하나(지금 무엇이 저절로 되고 있나), 펼치면 자동 분배 단추와 직접 옮기기 */
-  function migFold(r: Realm): string {
-    // 자동 분배 — 맨 위 큰 단추. 누르면 켜지고(단추는 잠긴다), 직접 옮기면 꺼져서 다시 누를 수 있다
-    // (형 2026-10-20: "자동분배는 맨 위에 큰버튼으로 … 한번 누르면 비활성화. 본인이 직접 재분배 해서 숫자가 달라진경우에 다시활성화")
-    // 단추 밑 말은 짧게 — 지금 무엇을 하고 있나만 (형: "자동분배중 버튼밑 텍스트가 너무길어서 칸이 넘어가져버림 · 제대로 된거 맞음?").
-    // 자동 분배는 품을 넘긴(붐비는) 고을이 있을 때만 움직인다 — 다 품 안이면 할 일이 없다고 그대로 말한다
-    const flowsNow = autoMigOn() ? autoFlows(r, me()) : []
-    const fullNow = Object.values(r.nodes).filter((n) => n.owner === me() && n.kind !== 'sodo' && homeRoom(n) > 0 && crowdOf(n) > 1).length
-    const autoSub = flowsNow.length > 0 ? `이번 계절 집 ${flowsNow.reduce((s, x) => s + x.n, 0)}채가 옮겨 간다`
-      : fullNow > 0 ? '붐비는 고을 곁에 받을 고을이 없다' : '모든 고을이 품 안 — 옮길 일이 없다'
-    let h = `<button class="migfold${migOpen ? ' on' : ''}" data-act="mig-open">${icon('unit-porters')}<span><b>고을끼리 집 나누기</b><small>${tx(autoMigOn() ? `보통은 저절로 · ${autoSub}` : '자동 분배가 꺼져 있다 — 직접 나눈다')}</small></span><i>${migOpen ? '접기' : '펼치기'}</i></button>`
-    if (!migOpen) return h
-    h += autoMigOn()
-      ? `<button class="btn wide autobtn" disabled data-more="붐비는(품을 넘긴) 고을의 집이 계절마다 길로 맞닿은 한산한 우리 고을로 저절로 옮겨 간다. 아래에서 직접 옮기면 꺼진다."><b>✓ 자동 분배 중</b><small>${tx(autoSub)}</small></button>`
-      : `<button class="btn pri wide autobtn" data-act="mig-auto" data-v="1" data-more="누르면 붐비는 고을의 집을 계절마다 한산한 고을로 저절로 옮긴다. 이번 계절 직접 옮긴 것은 거둔다."><b>자동 분배 켜기</b><small>${tx('붐비는 고을을 저절로 나눈다')}</small></button>`
-    return h + migrateSection(r)
-  }
-
-  /** 마을을 세울 수 있는 빈땅 카드들 */
-  function settleList(r: Realm): string {
-    const lands = [...new Set([...settleTargets(r, me()).map((t) => t.to), ...settlePending().map((o) => o.to)])].sort()
-    // 빈땅은 아무 나라 땅도 아니다 — 사람이 가서 살면 그때 우리 마을이 된다 (형: "우리영토가 아닌데도 사람을보내서 살게하는거야? 그게맞나??")
-    if (lands.length === 0) return `<p class="mute">${tx('지금은 우리 고을과 맞닿은 빈땅이 없다. 남의 나라 땅에는 보낼 수 없다 — 군대로 땅을 넓히면 빈땅이 맞닿는다.')}</p>`
-    return lands.map((to) => settleCard(r, to)).join('')
-  }
-
-  /** 고을 하나 — 옮기기 판의 왼쪽(보내는 곳)·오른쪽(받는 곳) 카드. 집이 얼마에서 얼마로 */
-  function moveSide(r: Realm, id: string, d: number, role: string): string {
-    const n = r.nodes[id]!
-    const room = n.kind === 'wild' ? (n.room ?? 0) : homeRoom(n)
-    const after = Math.max(0, Math.floor(n.hh) + d)
-    return `<div class="mvc"><span class="mvr">${role}</span>${icon(nodeIcon(n), 'mvi')}<b>${esc(n.name)}</b>`
-      + `<span class="mute">${tx(`집 ${Math.floor(n.hh)} → ${after}`)}</span>`
-      + (room > 0 ? `<span class="cbar${after > room ? ' full' : after > room * 0.8 ? ' near' : ''}"><i style="width:${Math.min(100, (after / room) * 100).toFixed(0)}%"></i></span>` : '')
-      + `</div>`
-  }
-
-  // ───────── 개척
   function settlePending(): Array<Extract<Order, { kind: 'settle' }>> {
     return settles.filter((o): o is Extract<Order, { kind: 'settle' }> => o.kind === 'settle')
   }
 
-  /** 개척에서 보낼 고을 — 고른 것이 있으면 그것, 아니면 도읍이 아닌 가장 붐비는 맞닿은 고을 (economy.settleSource) */
-  function settleFromOf(r: Realm, to: string): string {
-    const froms = settleTargets(r, me()).filter((t) => t.to === to).map((t) => t.from)
-    return froms.includes(settleFrom[to] ?? '') ? settleFrom[to]! : (settleSource(r, me(), to) ?? '')
-  }
-
   /**
-   * 빈땅 하나의 개척 카드 — [보내는 고을] ⟶ [빈땅] 을 좌우로 (형: "보낼곳 받을곳은 좌 우로 배치해야 직관적이지").
-   * 보내는 고을의 기본은 도읍이 아닌 가장 붐비는 곳. 한 번에 보낼 수 있는 몫과 그 까닭 · 언제 자리 잡나. `r` 은 이미 보낸 개척이 든 판이다
+   * 빈땅 하나 — 큰 단추 「마을 세우기」 하나와 「○○에서 집이 간다」 한 줄. 보내는 고을은 도읍이 아닌 가장 붐비는 곳(economy.settleSource),
+   * 양은 알맞게. 이미 보냈으면 「사람 간다」 — 다시 누르면 거둔다. 다른 고을에서 보내려면 그 고을의 「집 보내기」로
    */
   function settleCard(r: Realm, to: string): string {
     const n = r.nodes[to]!
-    const froms = settleTargets(r, me()).filter((t) => t.to === to).map((t) => t.from)
-    const sent = settlePending().filter((o) => o.to === to)
-    const room = n.room ?? 0
-    let h = `<div class="ncard settlec" id="stl-${to}"><div class="an">${icon(nodeIcon(n), 'nic')}<b>${esc(n.name)}</b>`
-    h += `<span class="mute">${tx(`자리 ${room} 가운데 ${Math.floor(n.hh)} 찼다`)}</span></div>`
-    // 세우면 무엇을 얻나 — 먼저 (형: "개척이랑 이주가 전혀 직관적이지가 않아")
+    const sent = settlePending().find((o) => o.to === to)
     const gains = nodeSpecials(r, to).map((g) => `${icon(GOOD_ICON[g], 'gic')}${GOOD_NAME[g]}`)
-    if (!(n.owner === me() && n.hh > 0)) h += `<p class="gain">${tx(`마을이 서면 — 우리 땅 하나 더 · 집 ${room}채까지 늘어난다`)}${gains.length > 0 ? ` · ${gains.join(' ')} 난다` : ''}</p>`
-    for (const o of sent) {
-      h += `<div class="row mvq"><span class="nchip">${esc(r.nodes[o.from]?.name ?? '')}</span><i class="ar">⟶</i><span class="nchip">${esc(n.name)}</span>${tx(` 집 ${o.n} · ${arriveWhen(r.season, 1)}`)}<button class="btn ghost sm" data-act="unsettle" data-i="${settles.indexOf(o)}">취소</button></div>`
-    }
-    if (froms.length === 0) return h + `<div class="mute">${sent.length > 0 ? '이번 계절엔 더 못 보낸다' : tx('지금은 보낼 수 없다 — 맞닿은 우리 고을이 없거나 길이 막혔거나 자리가 찼다')}</div></div>`
-    const from = settleFromOf(r, to)
-    const a = r.nodes[from]!
-    const lim = settleLimit(r, me(), from, to)
-    const want = Math.min(lim, settleN[to] ?? Math.min(lim, 20))
-    const step = Math.max(1, Math.round(lim / 10))
-    h += `<div class="mv2">${moveSide(r, from, -want, '보내는 곳')}<div class="mvmid"><span class="stepper sm"><button data-act="sn" data-node="${to}" data-d="${-step}">−</button><b>${want}</b>`
-    h += `<button data-act="sn" data-node="${to}" data-d="${step}">+</button></span><i class="mva">⟶</i><span class="mute">집</span></div>${moveSide(r, to, want, '받는 곳')}</div>`
-    if (froms.length > 1) {
-      h += `<div class="mute">다른 고을에서 보내기</div><div class="seg wrap">`
-      for (const f of froms) h += `<button class="${f === from ? 'on' : ''}" data-act="sfrom" data-node="${to}" data-from="${f}">${esc(r.nodes[f]!.name)}</button>`
-      h += `</div>`
-    }
-    // 한 번에 보낼 수 있는 몫과 그 까닭
-    const R = P.realm
-    const share = Math.floor(a.hh * R.settleShare)
-    const roomLeft = Math.max(0, room - Math.floor(n.hh))
-    const why = lim === roomLeft ? `${n.name} 자리가 그만큼 남았다` : lim === share ? `한 계절에 보내는 고을 집 ${Math.floor(a.hh)} 가운데 ${share}까지` : '곡식이나 나무가 그만큼만 댄다'
-    h += `<p class="mute">${tx(`한 번에 최대 ${lim}집 — ${why}. 곡식 ${settleCost(want).grain}`)}</p>`
-    if (Object.values(r.factions).some((f) => f.capital === from)) h += `<p class="mute">${tx('도읍에서 빼면 도읍의 수확량과 뽑을 수 있는 군사가 줄어든다.')}</p>`
-    h += `<button class="btn pri home wide" data-act="settle" data-node="${to}" data-from="${from}" ${want <= 0 ? 'disabled' : ''}>${want}집 옮기기 · ${esc(arriveWhen(r.season, 1, true))} 자리 잡는다</button></div>`
-    return h
-  }
-
-  /**
-   * 이주 (형: "집 분배하는거 자동으로 분배하기 · 그게 디폴트이고 자동안하면 본인이 직접 이주 · 전방에 강제이주시키거나 수도에 집중") —
-   * 고을마다 붐빔 막대 · 자동 분배 켜고 끄기와 이번 계절 저절로 옮겨 갈 흐름 · 억지 이주([보낼 고을] ⟶ [받을 고을] 좌우로).
-   * `r` 은 이번 계절 고른 개척·이주가 든 판이다.
-   */
-  function migrateSection(r: Realm): string {
-    const on = autoMigOn()
-    const mine = sorted(Object.values(r.nodes)).filter((n) => n.owner === me() && n.kind !== 'sodo' && homeRoom(n) > 0)
-    let h = `<div id="sec-move"></div>`
-    h += `<p class="mute">${tx('땅은 그대로, 우리 고을끼리 집만 옮긴다. 고을마다 편히 품는 집이 있다. 넘치면 붐벼서 집이 더디게 늘어난다. 전방 고을에 집이 많으면 장정이 많아 지키기 좋고, 도읍에 모으면 그곳에서 더 뽑는다.')}</p>`
-    // 붐빔 막대 — 고을마다
-    h += `<div class="crowd">`
-    for (const n of mine) {
-      const c = crowdOf(n)
-      const cls = c > 1 ? 'full' : c > 0.8 ? 'near' : ''
-      h += `<div class="crow"><span class="cn">${esc(n.name)}</span><span class="cbar ${cls}"><i style="width:${Math.min(100, c * 100).toFixed(0)}%"></i></span><span class="mute">${tx(`집 ${Math.floor(n.hh)} / ${homeRoom(n)}`)}${c > 1 ? ' · 붐빈다' : ''}</span></div>`
-    }
-    h += `</div>`
-    // 자동 분배 — 켜기는 판 맨 위 큰 단추. 여기서는 이번 계절 저절로 옮겨 갈 것만 보인다
-    if (on) {
-      const fl = autoFlows(r, me())
-      h += fl.length === 0 ? `<p class="mute">${tx('이번 계절엔 붐비는 고을이 없다. 저절로 옮겨 갈 집이 없다.')}</p>`
-        : `<p class="mute">${tx(`이번 계절 저절로 옮겨 갈 집 — ${arriveWhen(r.season, 1)}`)}</p>${fl.map((x) => `<div class="row mvq"><span class="nchip">${esc(r.nodes[x.from]?.name ?? '')}</span><i class="ar">⟶</i><span class="nchip">${esc(r.nodes[x.to]?.name ?? '')}</span>${tx(` 집 ${x.n}`)}</div>`).join('')}`
-    } else h += `<p class="mute">${tx('자동 분배가 꺼져 있다 — 붐비는 고을이 있어도 집이 저절로 옮겨 가지 않는다. 아래에서 직접 옮긴다.')}</p>`
-    // 억지 이주 — 고른 것
-    for (const o of settles) {
-      if (o.kind !== 'migrate') continue
-      h += `<div class="row mvq"><span class="nchip">${esc(r.nodes[o.from]?.name ?? '')}</span><i class="ar">⟶</i><span class="nchip">${esc(r.nodes[o.to]?.name ?? '')}</span>${tx(` 집 ${o.n} · ${arriveWhen(r.season, 1)}`)}<button class="btn ghost sm" data-act="unsettle" data-i="${settles.indexOf(o)}">취소</button></div>`
-    }
-    const froms = mine.filter((n) => n.hh >= 1)
-    if (froms.length < 2) return h + `<p class="mute">${tx('옮길 고을이 둘은 있어야 한다.')}</p>`
-    const from = froms.some((n) => n.id === migFrom) ? migFrom : froms.slice().sort((a, b) => crowdOf(b) - crowdOf(a))[0]!.id
-    const tos = mine.filter((n) => n.id !== from && migratePath(r, me(), from, n.id) !== null)
-    if (tos.length === 0) return h + `<p class="mute">${tx('그 고을에서 우리 땅으로 이어진 다른 고을이 없다.')}</p>`
-    const to = tos.some((n) => n.id === migTo) ? migTo : tos.slice().sort((a, b) => crowdOf(a) - crowdOf(b))[0]!.id
-    const lim = migrateLimit(r, me(), from, to)
-    const want = Math.min(lim, migN > 0 ? migN : Math.min(lim, 20))
-    const step = Math.max(1, Math.round(lim / 10))
-    // 왼쪽 열은 보낼 고을, 오른쪽 열은 받을 고을 — 가운데 화살표 위에 집 수
-    h += `<div class="mv3"><div class="mvcol"><span class="mvr">보내는 곳</span>${froms.map((n) => `<button class="mvpick${n.id === from ? ' on' : ''}" data-act="mig-from" data-node="${n.id}">${icon(nodeIcon(n), 'mvs')}${esc(n.name)}</button>`).join('')}</div>`
-    h += `<div class="mvmid"><span class="stepper sm"><button data-act="mig-n" data-d="${-step}" data-lim="${lim}" data-cur="${want}">−</button><b>${want}</b>`
-    h += `<button data-act="mig-n" data-d="${step}" data-lim="${lim}" data-cur="${want}">+</button></span><i class="mva">⟶</i><span class="mute">집</span></div>`
-    h += `<div class="mvcol"><span class="mvr">받는 곳</span>${tos.map((n) => `<button class="mvpick${n.id === to ? ' on' : ''}" data-act="mig-to" data-node="${n.id}">${icon(nodeIcon(n), 'mvs')}${esc(n.name)}</button>`).join('')}</div></div>`
-    // 옮기기 — 숫자 바로 밑에 (형: "이주에서 수치수정은 있는데 옮기기 확정버튼이없는데" — 맨 아래 묻혀 안 보였다)
-    h += `<button class="btn pri move wide" data-act="migrate" data-from="${from}" data-to="${to}" data-n="${want}" ${want <= 0 ? 'disabled' : ''}>${want}집 옮기기 · ${esc(arriveWhen(r.season, 1, true))} 자리 잡는다</button>`
-    h += `<div class="mv2">${moveSide(r, from, -want, '보내는 곳')}<div class="mvmid"><i class="mva">⟶</i></div>${moveSide(r, to, want, '받는 곳')}</div>`
-    h += `<p class="mute">${tx(`한 번에 최대 ${lim}집 · 곡식 ${migrateCost(want).grain}. 억지로 옮기면 두 고을 모두 한 계절 동안 집이 늘지 않는다 — 사람들이 자리 잡는 동안이다.${on ? ' 직접 옮기면 자동 분배가 꺼진다.' : ''}`)}</p>`
-    return h
+    let h = `<div class="ncard settlec" id="stl-${to}"><div class="an">${icon(nodeIcon(n), 'nic')}<b>${esc(n.name)}</b></div>`
+    if (gains.length > 0) h += `<p class="gain">${gains.join(' ')} 난다</p>`
+    const from = sent?.from ?? settleSource(r, me(), to)
+    if (from === null) return h + `<p class="mute">지금은 보낼 수 없다 — 길이 막혔거나 자리가 찼다</p></div>`
+    h += `<button class="btn pri home wide stlgo${sent !== undefined ? ' on' : ''}" data-act="settle" data-node="${to}" data-from="${from}">${sent !== undefined ? '사람 간다 · 누르면 거둔다' : '마을 세우기'}</button>`
+    return h + `<p class="mute">${esc(r.nodes[from]?.name ?? '')}에서 집이 간다</p></div>`
   }
 
   /**
@@ -2268,8 +2125,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (why !== null) h += `<p class="mute">${esc(why)}</p>`
       }
       h += draftCard(r, id, true)
-      h += `<div class="btns"><button class="btn" data-act="mig-here" data-node="${id}">여기로 모으기</button><button class="btn" data-act="mig-out" data-node="${id}">여기서 내보내기</button>`
-      h += `<button class="btn ${guarded ? 'on' : ''}" data-act="guard" data-node="${id}" ${guarded || (canGuard(r, me(), id) && left().grain >= guardCost().grain) ? '' : 'disabled'}>경계 강화 · 곡식 ${guardCost().grain}</button></div>`
+      h += `<div class="btns"><button class="btn ${guarded ? 'on' : ''}" data-act="guard" data-node="${id}" ${guarded || (canGuard(r, me(), id) && left().grain >= guardCost().grain) ? '' : 'disabled'}>경계 강화 · 곡식 ${guardCost().grain}</button></div>`
       h += `<p class="mute">경계를 올리면 기습이 잘 들킨다. 한 계절 동안.</p>`
       // 목책·해자 — 나무로 짓는다 (땅마다 나는 것). 다음 계절에 선다
       const nb = nextBuild(r, id)
@@ -2700,7 +2556,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const rec = <T>(k: string): Record<string, T> => (typeof d![k] === 'object' && d![k] !== null ? (d![k] as Record<string, T>) : {})
     armyOrders = list('armyOrders')
     musters = list('musters')
-    settles = list('settles')
+    settles = list('settles').filter((o) => o.kind !== 'migrateAuto') // 자동 분배는 늘 켜짐 — 옛 초안의 켜고 끄기는 버린다
     plots = list('plots')
     heroOrders = list('heroOrders')
     guards = Array.isArray(d['guards']) ? (d['guards'] as string[]) : []
@@ -3296,11 +3152,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         }
         return
       }
-      case 'mig-open':
-        migOpen = d['v'] === '1' ? true : !migOpen
-        paint()
-        if (migOpen) requestAnimationFrame(() => $('.sheet').querySelector('.migfold')?.scrollIntoView({ block: 'start', behavior: 'smooth' }))
-        return
       case 'jump': $('.sheet').querySelector(`#${d['to']}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }); return
       case 'selmerge': {
         // 고른 군대를 하나로 — 장수가 이끄는 군대로 모은다
@@ -3467,53 +3318,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         break
       }
       case 'undraft': musters = musters.filter((_, i) => i !== Number(d['i'])); break
-      case 'sfrom': settleFrom[d['node']!] = d['from']!; delete settleN[d['node']!]; break
-      case 'sn': {
-        const to = d['node']!
-        const from = settleFromOf(r!, to)
-        const lim = settleLimit(r!, me(), from, to)
-        settleN[to] = Math.max(0, Math.min(lim, (settleN[to] ?? Math.min(lim, 20)) + Number(d['d'])))
-        break
-      }
       case 'settle': {
+        // 「마을 세우기」 — 알맞게 보낸다. 이미 보냈으면 거둔다
         const to = d['node']!
-        const from = d['from']!
-        const lim = settleLimit(r!, me(), from, to)
-        const n = Math.min(lim, settleN[to] ?? Math.min(lim, 20))
-        if (n > 0) settles = [...settles, { kind: 'settle', faction: me(), from, to, n }]
-        delete settleN[to]
+        const sent = settlePending().find((o) => o.to === to)
+        if (sent !== undefined) settles = settles.filter((x) => x !== sent)
+        else sendPeople(d['from']!, to, 'fit')
         break
       }
       case 'unsettle': settles = settles.filter((_, i) => i !== Number(d['i'])); break
-      case 'mig-auto': {
-        // 켜고 끄기는 명령 — 계절 처음의 판과 같아지면 명령을 거둔다. 켜면 이번 계절 직접 옮긴 것은 거둔다 (자동이 맡는다)
-        const want = d['v'] === '1'
-        if (want) settles = settles.filter((o) => o.kind !== 'migrate')
-        setAutoMig(want)
-        break
-      }
-      case 'mig-from': migFrom = d['node']!; migN = 0; break
-      case 'mig-to': migTo = d['node']!; migN = 0; break
-      case 'mig-n': migN = Math.max(0, Math.min(Number(d['lim']), Number(d['cur']) + Number(d['d']))); break
-      case 'migrate': {
-        const n = Number(d['n'])
-        if (n > 0) {
-          settles = [...settles, { kind: 'migrate', faction: me(), from: d['from']!, to: d['to']!, n }]
-        }
-        migN = 0
-        break
-      }
-      case 'mig-here': case 'mig-out': {
-        // 고을 판에서 — 이주 칸을 열고 그 고을을 받을(보낼) 곳으로 둔다
-        if (d['act'] === 'mig-here') migTo = d['node']!
-        else migFrom = d['node']!
-        migN = 0
-        migOpen = true
-        sheet = { kind: 'people' }
-        paint()
-        requestAnimationFrame(() => $('.sheet').querySelector('#sec-move')?.scrollIntoView({ block: 'start' }))
-        return
-      }
       case 'answer': answers[d['id']!] = d['yes'] === '1'; fastNext = true; break
       case 'guard': {
         const node = d['node']!

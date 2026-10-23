@@ -431,7 +431,7 @@ export interface SendAmounts {
 
 /**
  * 「집 보내기」 (형: "백성 배치는 … 간편하면서도 직관적이게 · 군대처럼 터치로 옮길 수 있게") — `from` 에서 `to` 로 보낼 양 셋.
- * 받는 곳이 아무도 안 쥔 빈땅이면 개척(settle): 많이 = settleLimit, 알맞게 = 그 반, 조금 = 그 사분의 일.
+ * 받는 곳이 길로 맞닿은 빈땅이면 개척(settle): 많이 = settleLimit, 알맞게 = 그 반, 조금 = 그 사분의 일.
  * 우리 고을이면 이주(migrate): 많이 = migrateLimit, 알맞게 = 두 고을 붐빔을 같게 하는 몫의 반(1 아래면 많이의 반), 조금 = 알맞게의 삼분의 일.
  * 많이가 3 이하면 셋을 하나(가득)로 접는다. 보낼 수 없으면 null. 굴림 없음 — 화면이 부른다.
  */
@@ -442,10 +442,11 @@ export function sendAmounts(r: Realm, faction: string, from: string, to: string)
   const R = P.realm
   const fold = (kind: SendAmounts['kind'], few: number, fit: number, many: number): SendAmounts =>
     many <= R.sendFoldMax ? { kind, few: many, fit: many, many } : { kind, few, fit, many }
-  if (b.kind === 'wild' && b.owner === null) {
+  // 빈땅(아직 품이 남은, 일구는 중인 우리 빈땅 포함)은 개척 — 아무도 안 쥔 빈땅이 안 되면 끝
+  if (b.kind === 'wild') {
     const many = settleLimit(r, faction, from, to)
-    if (many <= 0) return null
-    return fold('settle', Math.ceil(many / R.sendFewDiv), Math.ceil(many / R.sendFitDiv), many)
+    if (many > 0) return fold('settle', Math.ceil(many / R.sendFewDiv), Math.ceil(many / R.sendFitDiv), many)
+    if (b.owner === null) return null
   }
   const many = migrateLimit(r, faction, from, to)
   if (many <= 0) return null

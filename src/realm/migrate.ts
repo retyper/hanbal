@@ -42,6 +42,8 @@ export function migrate(r: Realm): void {
   // 활 쏘는 장군의 이름이 '신궁'이던 옛 판 (형: "군장이 신궁이다는 설명 너무 짜치는디")
   const chief = r.heroes['chief']
   if (chief !== undefined && chief.name === '신궁') (chief as { name: string }).name = '살해 매눈'
+  // 자동 분배를 끄던 판 — 이제 자동은 늘 켜져 있다 (형: "백성 배치는 … 간편하면서도 직관적이게" · 끄고 켜는 단추를 지웠다)
+  for (const f of Object.values(r.factions)) if (f.migrateOff !== undefined) delete f.migrateOff
   // 특성이 생기기 전의 판 — 장수마다 빈 특성 줄을 채운다 (없으면 정이 100에 닿는 계절에 막혔다)
   for (const h of Object.values(r.heroes)) if (!Array.isArray(h.traits)) (h as { traits: readonly string[] }).traits = []
   for (const w of r.wanderers ?? []) if (!Array.isArray(w.hero.traits)) (w.hero as { traits: readonly string[] }).traits = []

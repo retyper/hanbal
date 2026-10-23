@@ -52,8 +52,8 @@ export const TUT_STEPS: readonly TutStep[] = [
     press: ['[data-act="draft"]', tab('draft')], done: (c) => has(c, 'draft'),
   },
   {
-    id: 'settle', text: '「백성」을 열고 빈땅 솔뫼로 집을 보낸다. 군사가 아니라 농사지을 집이다. 사람이 살면 새 마을이 된다.',
-    press: ['[data-act="settle"][data-node="tut-solmoe"]', tab('people')], done: (c) => has(c, 'settle') || has(c, 'migrate'),
+    id: 'settle', text: '「백성」을 열고 빈땅 솔뫼의 「마을 세우기」를 누른다. 군사가 아니라 농사지을 집이 간다. 사람이 살면 새 마을이 된다.',
+    press: ['.stlgo[data-node="tut-solmoe"]', tab('people')], done: (c) => has(c, 'settle') || has(c, 'migrate'),
   },
   {
     id: 'scout', text: '오른쪽 갯골 마을을 누르고 「여기로 정찰을 보낸다」. 적 군세가 얼마인지 보인다. 정찰은 「외교」에서도 고른다.',

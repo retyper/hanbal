@@ -11,7 +11,7 @@ import { FACTION_ART, GOOD_ICON, REGION_ART, SEASON_MAP, nodeIcon, nodePos } fro
 import { EDGE_NAME, GOOD_NAME, NODE_KIND_NAME, NODE_NOW, tagNow } from '../../realm/data/prose.ts'
 import { worldGeoOf } from '../../realm/data/regions/index.ts'
 import { knows } from '../../realm/discovery.ts'
-import { isCoast, nodeHarvest, nodeSpecials, nodeYield } from '../../realm/economy.ts'
+import { crowdOf, isCoast, nodeHarvest, nodeSpecials, nodeYield } from '../../realm/economy.ts'
 import { visibleRange } from '../../realm/intel.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
 import type { EdgeKind, NodeKind, Realm, REdge, RegionId, SeasonOfYear } from '../../realm/types.ts'
@@ -235,6 +235,12 @@ export const MAP_CSS = `
   border-radius: 9px; padding: 0 6px; box-shadow: 0 1px 4px #0008; animation: stlp 1.6s ease-in-out infinite alternate; }
 @keyframes stlp { from { box-shadow: 0 0 0 #b6e08f00; } to { box-shadow: 0 0 10px #b6e08faa; } }
 @media (prefers-reduced-motion: reduce) { .map .nd .stl { animation: none; } }
+.map .nd .stl.go { background: #6b4a2ae6; border-color: #e0b070; color: #fbe8c8; animation: none; }
+/* 붐빔 — 우리 고을 그림 밑 (가까우면 노란 띠, 넘치면 붉은 글) */
+.map .nd .crw { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); pointer-events: none; z-index: 2; white-space: nowrap; }
+.map .nd .crw.near { width: 40%; height: 4px; border-radius: 2px; background: #e8c040; box-shadow: 0 0 0 1px #201811; }
+.map .nd .crw.full { font-size: clamp(9px, calc(1.5cqh / var(--z, 1) * var(--zs, 1)), 12px); font-weight: 700; color: #ffd8c8; background: #8a2a14e8;
+  border: 1px solid #f0a08a; border-radius: 8px; padding: 0 5px; }
 .map .toks.mv { transform: translate(-50%, -50%); } .map .toks.mv .tok img { border-style: dashed; border-color: #f3e6c8; }
 /* 길 위의 우리 군대 — 발맞춰 걷듯 들썩이고, 밑에 "이동 중 · 다음 계절 도착" (형: "언제도착하는지 글씨가 가려져서 안보이기도") */
 .map .toks.mv .tok { animation: mvbob .55s ease-in-out infinite alternate; }
@@ -294,6 +300,8 @@ export function mapHtml(
   settleable: ReadonlySet<string> = new Set(),
   /** 지난 계절 주인이 바뀐 고을 — 불타고 연기가 오른다 (그림 realm/fx) */
   burning: ReadonlySet<string> = new Set(),
+  /** 이번 계절 사람을 보내기로 한 빈땅 — 「＋마을」 대신 「사람 간다」 */
+  settling: ReadonlySet<string> = new Set(),
 ): string {
   // 판마다 지도 그림·좌표계·기호 크기 (영남 판은 고을이 빽빽해 작게)
   const region = r.region ?? 'byeonhan-mini'
@@ -505,6 +513,9 @@ export function mapHtml(
     const fish = n.kind !== 'sodo' && isCoast(r, n.id)
       ? `<img class="${season === 'winter' ? 'frz' : ''}" src="${art}icon/good-dried-fish.png" alt="고기" title="${season === 'winter' ? '겨울 — 바다가 거칠어 고기잡이를 쉰다' : '고기잡이 — 겨울 빼고 곡식이 조금 난다'}">`
       : ''
+    // 붐빔 — 우리 고을이 품에 가까우면 노란 띠, 넘치면 붉은 「붐빈다」 (집이 더디게 는다)
+    const cr = ours && n.kind !== 'sodo' ? crowdOf(n) : 0
+    const crowd = cr > 1 ? '<span class="crw full">붐빈다</span>' : cr > 0.8 ? '<span class="crw near"></span>' : ''
     const spec = sp.length > 0 || fish !== '' ? `<span class="sp${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}">`).join('')}${fish}</span>` : ''
     // 계절따라 걸리는 규칙도 그림으로 — 봄·가을 안개(숨기 좋다) · 겨울 언 해자(못 막는다) (prose.tagNow 와 같은 것)
     const now = n.tags.map((t) => tagNow(t, season)).filter((x) => x !== null).join(' ')
@@ -513,7 +524,7 @@ export function mapHtml(
     // 지은 것 — 목책 · 해자 작은 표 (왼쪽 위). 그림만으로는 도읍·포구의 울타리가 지은 것인지 알 수 없었다
     const dfs = (['palisade', 'moat'] as const).filter((t) => n.tags.includes(t))
     const def = dfs.length > 0 ? `<span class="df">${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${t === 'palisade' ? '목책' : '해자'}</i>`).join('')}</span>` : ''
-    nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${mist}${ice}${def}${spec}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : settleable.has(n.id) ? '<span class="stl">＋마을</span>' : ''}</div>`
+    nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${mist}${ice}${def}${spec}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : settleable.has(n.id) ? (settling.has(n.id) ? '<span class="stl go">사람 간다</span>' : '<span class="stl">＋마을</span>') : crowd}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()

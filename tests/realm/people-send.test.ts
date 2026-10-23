@@ -6,6 +6,7 @@
  *  - 보낼 수 없으면 null (그런 곳은 지도에서 빛나지 않는다)
  *  - evenShare 를 꺼냈어도 자동 분배는 그대로
  *  - 지도: 'pgo' 갈 곳은 data-act="pgo" · 보낸 집은 흙빛 점선(pplarrow)
+ *  - 자동 분배는 늘 켜짐 — 옛 판의 migrateOff 는 지운다 · 배우는 판의 개척 단계는 「마을 세우기」(.stlgo)
  */
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
@@ -13,7 +14,10 @@ import assert from 'node:assert/strict'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { startYeongnam } from '../../src/realm/data/regions/yeongnam.ts'
 import { autoFlows, evenShare, homeRoom, migrateLimit, sendAmounts, settleLimit, settleTargets } from '../../src/realm/economy.ts'
+import { migrate } from '../../src/realm/migrate.ts'
+import { startTutorial } from '../../src/realm/data/regions/tutorial.ts'
 import { mapHtml } from '../../src/ui/realm/mapview.ts'
+import { TUT_STEPS } from '../../src/ui/realm/tutorial.ts'
 import type { Realm } from '../../src/realm/types.ts'
 
 /** 길로 맞닿은 두 제 고을이 있는 나라 하나 — (나라, 고을 a, 고을 b) */
@@ -94,5 +98,27 @@ describe('집 보내기', () => {
     assert.ok(h.includes('class="pplarrow"'))
     // 고른 고을은 흐리지 않는다
     assert.ok(!new RegExp(`class="nd[^"]* far[^"]*"[^>]*data-node="${cap}"`).test(h))
+  })
+
+  it('자동 분배는 늘 켜짐 — 옛 판의 migrateOff 를 지운다', () => {
+    const r = byeonhanMini(3)
+    const [f, a, b] = pairOf(r)
+    r.nodes[a]!.hh = Math.round(homeRoom(r.nodes[a]!) * 1.6)
+    r.nodes[b]!.hh = Math.round(homeRoom(r.nodes[b]!) * 0.3)
+    r.factions[f]!.migrateOff = true
+    assert.deepEqual(autoFlows(r, f), [])
+    migrate(r)
+    assert.equal(r.factions[f]!.migrateOff, undefined)
+    assert.ok(autoFlows(r, f).length > 0)
+  })
+
+  it('배우는 판 — 개척 단계는 솔뫼의 「마을 세우기」를 가리킨다 · 솔뫼로 보낼 수 있다', () => {
+    const st = TUT_STEPS.find((s) => s.id === 'settle')!
+    assert.ok(st.press.includes('.stlgo[data-node="tut-solmoe"]'))
+    const r = startTutorial(1)
+    const t = settleTargets(r, r.player).find((x) => x.to === 'tut-solmoe')
+    assert.ok(t !== undefined)
+    const s = sendAmounts(r, r.player, t.from, t.to)
+    assert.ok(s !== null && s.kind === 'settle' && s.fit >= 1)
   })
 })
