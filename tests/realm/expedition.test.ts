@@ -27,20 +27,20 @@ describe('원정 — 보내기', () => {
     const r = byeonhanMini(4)
     r.stock[r.player]!.grain = 1000
     const ruler = r.factions[r.player]!.ruler!
-    assert.notEqual(expBlock(r, r.player, ruler, 'north', 0), null)
+    assert.notEqual(expBlock(r, r.player, ruler, 'hills', 0), null)
     const g = general(r)
-    assert.equal(expBlock(r, r.player, g, 'north', 0), null)
+    assert.equal(expBlock(r, r.player, g, 'hills', 0), null)
     const hasPort = Object.values(r.nodes).some((n) => n.owner === r.player && n.kind === 'port')
     assert.equal(expBlock(r, r.player, g, 'wa', 0) === null, hasPort)
     r.stock[r.player]!.grain = 0
-    assert.notEqual(expBlock(r, r.player, g, 'north', 0), null)
+    assert.notEqual(expBlock(r, r.player, g, 'hills', 0), null)
   })
 
   it('떠나면 판에 없다 — 군대에서 빠지고, 길 양식이 들고, 정해진 계절에 돌아온다', () => {
     let r = byeonhanMini(4)
     r.stock[r.player]!.grain = 1000
     const g = general(r)
-    const s = pass(r, [{ kind: 'expedition', faction: r.player, hero: g, dest: 'north', len: 1 }])
+    const s = pass(r, [{ kind: 'expedition', faction: r.player, hero: g, dest: 'hills', len: 1 }])
     r = s.next
     assert.ok(s.lines.some((l) => l.kind === 'expGo'))
     assert.ok(onExpedition(r, g) !== undefined)
@@ -67,8 +67,8 @@ describe('원정 — 보내기', () => {
     const r = byeonhanMini(4)
     r.stock[r.player]!.grain = 10_000
     const g = general(r)
-    r.expeditions = Array.from({ length: P.realm.expMax }, (_, i) => ({ hero: `x${i}`, faction: r.player, dest: 'north' as const, len: 0 as const, back: 99, got: { kind: 'none' as const } }))
-    assert.notEqual(expBlock(r, r.player, g, 'north', 0), null)
+    r.expeditions = Array.from({ length: P.realm.expMax }, (_, i) => ({ hero: `x${i}`, faction: r.player, dest: 'hills' as const, len: 0 as const, back: 99, got: { kind: 'none' as const } }))
+    assert.notEqual(expBlock(r, r.player, g, 'hills', 0), null)
   })
 })
 
@@ -76,7 +76,7 @@ describe('원정 — 몫', () => {
   it('합이 1 · 좋은 장수와 긴 길일수록 빈손이 준다', () => {
     const r = byeonhanMini(4)
     const h = r.heroes[general(r)]!
-    for (const d of ['wa', 'juho', 'neukdo', 'north'] as const) {
+    for (const d of ['wa', 'juho', 'neukdo', 'hills'] as const) {
       for (const len of [0, 1, 2] as const) {
         const o = expOdds(h, d, len)
         const sum = Object.values(o).reduce((a, b) => a + b, 0)
@@ -86,7 +86,7 @@ describe('원정 — 몫', () => {
     }
     const weak = { ...h, mu: 1, ryak: 1, deok: 1 }
     const strong = { ...h, mu: 10, ryak: 10, deok: 10 }
-    assert.ok(expOdds(strong, 'north', 1).none < expOdds(weak, 'north', 1).none)
+    assert.ok(expOdds(strong, 'hills', 1).none < expOdds(weak, 'hills', 1).none)
   })
 
   it('같은 판이면 같은 결과', () => {
@@ -94,7 +94,7 @@ describe('원정 — 몫', () => {
       const r = byeonhanMini(9)
       r.stock[r.player]!.grain = 1000
       const g = general(r)
-      return onExpedition(pass(r, [{ kind: 'expedition', faction: r.player, hero: g, dest: 'north', len: 2 }]).next, g)?.got
+      return onExpedition(pass(r, [{ kind: 'expedition', faction: r.player, hero: g, dest: 'hills', len: 2 }]).next, g)?.got
     }
     assert.deepEqual(go(), go())
   })

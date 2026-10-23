@@ -269,7 +269,7 @@ export interface Expedition {
   readonly back: number
   readonly got: ExpGot
 }
-export type ExpDest = 'wa' | 'juho' | 'neukdo' | 'north'
+export type ExpDest = 'wa' | 'juho' | 'neukdo' | 'north' | 'hills'
 /** 원정에서 얻은 것 — 철 · 곡식 · 떠돌이 장수 · 낯선 재주(특성) · 빈손 */
 export type ExpGot =
   | { readonly kind: 'iron' | 'grain'; readonly n: number }

@@ -55,6 +55,13 @@ export function expAmount(h: Hero, dest: ExpDest, len: 0 | 1 | 2, kind: 'iron' |
 /** 원정 중인가 */
 export const onExpedition = (r: Realm, hero: string): Expedition | undefined => (r.expeditions ?? []).find((x) => x.hero === hero)
 
+/** 땅으로 닿나 — 이 판에서 그 먼 땅에 길이 있고, 바닷길이면 우리 포구가 있다. 안 닿는 곳은 화면에 아예 안 띄운다 */
+export function destReachable(r: Realm, faction: string, dest: ExpDest): boolean {
+  const d = DESTS[dest]
+  if (!d.from.includes(r.region ?? 'byeonhan-mini')) return false
+  return !d.sea || Object.values(r.nodes).some((n) => n.owner === faction && n.kind === 'port')
+}
+
 /** 갈 수 있나 — 까닭이 있으면 그 글, 되면 null */
 export function expBlock(r: Realm, faction: string, hero: string, dest: ExpDest, len: 0 | 1 | 2): string | null {
   const h = r.heroes[hero]
@@ -67,6 +74,7 @@ export function expBlock(r: Realm, faction: string, hero: string, dest: ExpDest,
   const a = armyOfHero(r, hero)
   if (a !== null && a.march !== null) return '군대를 이끌고 가는 중이다'
   if ((r.expeditions ?? []).filter((x) => x.faction === faction).length >= P.realm.expMax) return `원정은 한꺼번에 ${P.realm.expMax}까지다`
+  if (!DESTS[dest].from.includes(r.region ?? 'byeonhan-mini')) return '이 땅에서는 닿지 않는다'
   if (DESTS[dest].sea && !Object.values(r.nodes).some((n) => n.owner === faction && n.kind === 'port')) return '바닷길은 포구가 있어야 간다'
   if ((r.stock[faction]?.grain ?? 0) < P.realm.expGrainPer * EXP_SEASONS[len]) return '길 양식이 모자란다'
   return null

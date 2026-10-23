@@ -46,7 +46,7 @@ describe('혈통 — 혼인', () => {
       assert.equal(honeyLeft(r, a), P.realm.wedHoney - i)
       assert.equal(canEscort(r, r.player, a), false)
       assert.ok(!plotAgents(r, r.player).includes(a))
-      assert.ok(expBlock(r, r.player, a, 'north', 0)?.startsWith('신혼'))
+      assert.ok(expBlock(r, r.player, a, 'hills', 0)?.startsWith('신혼'))
       r = pass(r).next
     }
     assert.equal(honeyLeft(r, a), 0)

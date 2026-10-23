@@ -32,7 +32,7 @@ import { alertRange, seenMix, visibleRange } from '../../realm/intel.ts'
 import { advance, concealOf, draftable, forceOf, neighbors, newArmyId, otherEnd, planned, rationCost, rationExtra, seasonOf, seenMarches } from '../../realm/season.ts'
 import { PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bowUpCost, escapeChance, plotAgents, plotChance, plotCost, plotTargets } from '../../realm/plots.ts'
 import { allianceWhy, leaderOf, tookRecently, truceWhy, winningAgainst } from '../../realm/stance.ts'
-import { DESTS, DEST_IDS, EXP_SEASONS, expAmount, expBlock, expOdds, onExpedition } from '../../realm/expedition.ts'
+import { DESTS, DEST_IDS, EXP_SEASONS, destReachable, expAmount, expBlock, expOdds, onExpedition } from '../../realm/expedition.ts'
 import { canWed, heroSeen, honeyLeft, inheritOf, isRuler, persuadeDropOf, recruitChance, resistOf, wanderersFor } from '../../realm/heroes.ts'
 import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
@@ -1545,7 +1545,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const c = envoyChanceFor(r, me(), to, ask, compose.give, compose.take, hero)
       return envoyFeel(c[0], c[1], ask)
     }
-    const leading = new Set(Object.values(r.armies).map((a) => a.hero).filter((x): x is string => x !== null))
     const ruler = r.factions[me()]?.ruler
     const mine = sorted(Object.values(r.heroes)).filter((x) => x.faction === me() && x.status === 'free' && x.id !== ruler)
     // 갈 수 있는 이 먼저
@@ -1553,12 +1552,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     mine.sort((a, b) => Number(can(b.id)) - Number(can(a.id)))
     let h = `<div class="who"><div class="nal">누가 가나</div><div class="wlist">`
     h += `<button class="wg${compose.hero === '' ? ' on' : ''}" data-act="chero" data-id="">${icon('unit-scouts', 'wfc')}<b>사자</b>${feel()}</button>`
-    for (const x of mine) {
-      const ok = can(x.id)
-      const why = ok ? '' : busy.has(x.id) ? '다른 일' : leading.has(x.id) ? '군대를 이끈다' : x.woundedUntil !== undefined && x.woundedUntil >= r.season ? '다쳤다' : honeyLeft(r, x.id) > 0 ? '신혼' : '나가 있다'
+    // 갈 수 있는 장수만 — 못 가는 이는 고를 거리에 안 띄운다 (형 10-23)
+    for (const x of mine.filter((y) => can(y.id))) {
       const tr = (x.traits ?? []).filter((t) => t === 'charm' || (ask === 'trade' && t === 'trader')).map((t) => TRAIT[t]?.name).filter((t) => t !== undefined)[0]
-      h += `<button class="wg${compose.hero === x.id ? ' on' : ''}" data-act="chero" data-id="${x.id}" ${ok ? '' : 'disabled'}>${bust(x, 'wfc')}<b>${esc(x.name)}</b>`
-      h += ok ? `${tr !== undefined ? `<i>${esc(tr)}</i>` : ''}${feel(x.id)}` : `<small>${why}</small>`
+      h += `<button class="wg${compose.hero === x.id ? ' on' : ''}" data-act="chero" data-id="${x.id}">${bust(x, 'wfc')}<b>${esc(x.name)}</b>`
+      h += `${tr !== undefined ? `<i>${esc(tr)}</i>` : ''}${feel(x.id)}`
       h += `</button>`
     }
     h += `</div>`
@@ -1970,13 +1968,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (x.faction !== me() || x.status !== 'free' || isRuler(r, x.id)) return ''
     const sent = heroOrders.find((o): o is Extract<Order, { kind: 'expedition' }> => o.kind === 'expedition' && o.hero === x.id)
     if (sent !== undefined) return `<div class="banner good">이번 계절: ${esc(josa(DESTS[sent.dest].name, '으로', '로'))} 원정 · ${EXP_SEASONS[sent.len]}계절<button class="btn ghost sm" data-act="unexp" data-id="${x.id}">취소</button></div>`
-    const pick = expPick[x.id] ?? { dest: 'wa' as ExpDest, len: 1 as 0 | 1 | 2 }
+    // 닿는 먼 땅만 — 못 가는 곳은 고를 거리에 안 띄운다
+    const dests = DEST_IDS.filter((d) => destReachable(r, me(), d))
+    if (dests.length === 0) return ''
+    const pick0 = expPick[x.id] ?? { dest: dests[0]!, len: 1 as 0 | 1 | 2 }
+    const pick = dests.includes(pick0.dest) ? pick0 : { ...pick0, dest: dests[0]! }
     const word = (p: number): string => (p >= 0.3 ? '자주' : p >= 0.12 ? '가끔' : p > 0 ? '드물게' : '없다')
     const odds = expOdds(x, pick.dest, pick.len)
     const block = expBlock(r, me(), x.id, pick.dest, pick.len)
     let h = `<div class="exp"><b>원정</b><span class="mute">먼 땅으로 보낸다. 좋은 장수일수록 좋은 것을 가져오지만, 그동안 판에 없다. 무엇을 가져올지는 떠날 때 정해진다.</span><div class="seg">`
-    for (const d of DEST_IDS) h += `<button class="${d === pick.dest ? 'on' : ''}" data-act="exp-dest" data-id="${x.id}" data-v="${d}">${esc(DESTS[d].name)}</button>`
-    h += `</div><p class="mute">${esc(DESTS[pick.dest].line)}${DESTS[pick.dest].sea ? ' (바닷길 — 포구가 있어야 간다)' : ''}</p><div class="seg">`
+    for (const d of dests) h += `<button class="${d === pick.dest ? 'on' : ''}" data-act="exp-dest" data-id="${x.id}" data-v="${d}">${esc(DESTS[d].name)}</button>`
+    h += `</div><p class="mute">${esc(DESTS[pick.dest].line)}${DESTS[pick.dest].sea ? ' (우리 포구에서 배를 띄운다)' : ''}</p><div class="seg">`
     for (const l of [0, 1, 2] as const) h += `<button class="${l === pick.len ? 'on' : ''}" data-act="exp-len" data-id="${x.id}" data-v="${l}">${['짧게', '보통', '길게'][l]} · ${EXP_SEASONS[l]}계절</button>`
     h += `</div><div class="odds">`
     const rows: Array<[keyof typeof odds, string]> = [
