@@ -367,10 +367,8 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): 
   const title = win
     ? (all ? HEAD_ALL[region] : (path !== undefined ? PATH_WIN[path] : undefined) ?? HEAD[region])
     : (path !== undefined ? PATH_LOSE[path] : undefined) ?? '도읍이 무너졌다'
-  // 마지막 장 그림 — 길마다
-  const lastArt = win
-    ? (path === 'suzerain' ? 'event-eight-harbours' : path === 'ironsea' ? 'event-iron-trade' : path === 'rite' ? 'event-yeonggo' : 'event-festival')
-    : (path === 'suzerain' || path === 'ironsea' ? 'event-outside-envoy' : path === 'rite' ? 'event-divination' : 'event-sky-drought')
+  // 마지막 장 그림 — 이긴 길마다 한 장 (맹주·쇠의 바다·큰 제사·통일) · 지면 무너진 목책 (realm/end · 10-24 제미나이 Argon — 아래 30% 는 제목 자리로 어둡게)
+  const lastArt = win ? `end-${path === 'suzerain' || path === 'ironsea' || path === 'rite' ? path : 'unify'}` : 'end-lose'
   let h = `<div class="mcard end front-end" data-act="rep-fast"><div class="clg film${win ? '' : ' lose'}" style="--n:${shots.length + 1}">`
   shots.forEach((e, i) => {
     // 홀수 장은 반대로 천천히 민다 (켄 번스)
@@ -378,7 +376,7 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): 
     h += `<figcaption>${e.em !== undefined ? k.emblem(e.em, 'cpem') : ''}<i>${k.esc(seasonLabel(e.s))}</i><span>${k.esc(e.t)}</span></figcaption></figure>`
   })
   // 마지막 장 — 잔치(이김) · 가뭄(짐) 위로 제목
-  h += `<figure class="cp last" style="--i:${shots.length}"><img src="${k.art}event/${lastArt}.jpg" alt=""><figcaption><b>${k.esc(title)}</b></figcaption></figure>`
+  h += `<figure class="cp last" style="--i:${shots.length}"><img src="${k.art}end/${lastArt}.jpg" alt=""><figcaption><b>${k.esc(title)}</b></figcaption></figure>`
   h += winFxHtml(win ? '승리' : '패배', '', shots.length * (FILM_S - FILM_OVERLAP_S) + FILM_LEAD_S + 0.6, !win)
   h += `<span class="skip">누르면 넘긴다</span>`
   h += `<button class="fnav fprev" data-act="film-prev" aria-label="앞 장면">‹</button><button class="fnav fnext" data-act="film-next" aria-label="다음 장면">›</button></div>`
