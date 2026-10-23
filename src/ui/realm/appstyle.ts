@@ -551,6 +551,17 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cost .cgi { width: 16px; height: 16px; object-fit: contain; }
 .ap .btn.pri .cost .cg { background: #2a0e08e0; }
 .ap .hback { margin: 0 0 6px; }
+/* 위 띠 수가 바뀔 때 — 늘면 위로 톡, 줄면 붉게 한 번 흔들 · 곁에 +/− 가 떠올랐다 사라진다 */
+.ap .top .stat { position: relative; }
+.ap .top .stat.bump b { animation: statbump .45s cubic-bezier(.3, 1.6, .5, 1); }
+.ap .top .stat.dent b { animation: statdent .4s ease-out; }
+@keyframes statbump { 0% { transform: scale(1); } 35% { transform: scale(1.22); color: #b6f09a; } 100% { transform: scale(1); } }
+@keyframes statdent { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); color: #ff8a6a; } 60% { transform: translateX(2px); color: #ff8a6a; } }
+.ap .top .dpop { position: absolute; left: 50%; top: 100%; font-style: normal; font-size: 12px; font-weight: 800; pointer-events: none; white-space: nowrap;
+  text-shadow: 0 1px 2px #000, 0 0 6px #000a; animation: dpop 1.1s ease-out both; z-index: 5; }
+.ap .top .dpop.up { color: #b6f09a; } .ap .top .dpop.down { color: #ff9a7a; }
+@keyframes dpop { 0% { opacity: 0; transform: translate(-50%, -4px); } 15% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, 14px); } }
+@media (prefers-reduced-motion: reduce) { .ap .top .stat b, .ap .top .dpop { animation: none !important; } }
 /* 백성 배치 — 모아 둔 백성 통 · 고을 카드마다 −/+ */
 .ap .plpool { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 6px 0 8px; padding: 10px 14px; border-radius: 10px;
   background: linear-gradient(#2a2216f2, #1c160ef2); border: 1px solid #6a5434; box-shadow: 0 4px 12px #0008; }
@@ -637,7 +648,8 @@ export const UI_CSS = `
 .ap .btn { border-style: solid; border-color: transparent; border-width: 9px 12px; border-radius: 0; background: none;
   border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 9px 12px stretch; padding: 3px 6px; color: #efe3c6; text-shadow: 0 1px 2px #000c;
   transition: filter .12s, transform .06s; }
-.ap .btn:hover { filter: brightness(1.12); } .ap .btn:active { transform: translateY(1px); filter: brightness(.9); }
+.ap .btn:hover { filter: brightness(1.12); } .ap .btn:active:not(:disabled) { transform: translateY(1px) scale(.96); filter: brightness(.9); transition-duration: .08s; }
+.ap .btn:not(:active) { transition: filter .12s, transform .16s cubic-bezier(.3, 1.8, .5, 1); }
 /* 금빛 판은 「누르면 나아가는 단추」(go)에만 — 골라 둔 것(on)은 쇠판에 금테와 ✓ (형: "선택한 적 없는데 선택되어 있는 버튼") */
 .ap .btn.pri { border-image-source: url(__ART__ui/btn-gold.png?v=2); border-image-slice: 30 35 fill; color: #2a1606; font-weight: 700; text-shadow: 0 1px 0 #f7dc9a; }
 .ap .btn.on { box-shadow: 0 0 0 2px #e0bd78, 0 0 10px #e0bd7888; color: #ffe2a0; filter: none; }

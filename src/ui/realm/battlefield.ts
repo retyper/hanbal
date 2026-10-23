@@ -895,7 +895,9 @@ export const WAR_CSS = `
 .ap .wcmd.on { border-color: var(--gold); background: #3a3222; box-shadow: 0 0 0 2px #d9b36a66; }
 /* 깃발 카드 — 같은 청동 테 (가늘게) · 고르면 금빛이 번진다 */
 .ap .wcmd { border: 12px solid transparent; border-image: url(__ART__ui/frame-panel.png) 118 / 12px stretch; background: #1d1610 padding-box; border-radius: 0; }
-.ap .wcmd.on { border-image: url(__ART__ui/frame-panel.png) 118 / 12px stretch; background: #3a2e1c padding-box; box-shadow: none; filter: drop-shadow(0 0 6px #ffd27aaa); }
+.ap .wcmd.on { border-image: url(__ART__ui/frame-panel.png) 118 / 12px stretch; background: #3a2e1c padding-box; box-shadow: none; filter: drop-shadow(0 0 6px #ffd27aaa); animation: wcmdland .18s cubic-bezier(.3, 1.6, .5, 1); }
+.ap .wcmd { transition: transform .12s ease-out, filter .12s; } .ap .wcmd:hover:not(.on) { transform: translateY(-4px); filter: drop-shadow(0 8px 8px #000a); } .ap .wcmd:active { transform: translateY(1px) scale(.97); transition-duration: .06s; }
+@keyframes wcmdland { 0% { transform: scale(1.08); } 100% { transform: scale(1); } }
 /* 깃발 카드 — 왼쪽에 깃발 한 폭, 고르면 깃발이 들려 나부낀다 */
 .ap .wcmd { flex-direction: row; align-items: flex-start; gap: 8px; padding: 7px 9px 7px 6px; }
 .ap .wcmd img.wflag { position: static; width: 50px; height: auto; flex: none; opacity: 1; filter: drop-shadow(0 2px 3px #000a); transform-origin: 18% 4%; transition: transform .25s; }

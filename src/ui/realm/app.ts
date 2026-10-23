@@ -694,7 +694,47 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       bits.push(`가을걷이 약 +${hv} (여름이 끝날 때)`)
       bits.push(`군량 −${upkeepOf(r, me(), season === 'winter')} (계절마다)`)
     }
-    return `<span class="stat" data-tip="${esc(GOOD_NAME[g])} — ${esc(GOOD_USE[g])}" data-more="${esc(bits.join(' / '))}">${icon(GOOD_ICON[g])}<b>${Math.floor(have)}</b></span>`
+    return `<span class="stat" data-g="${g}" data-tip="${esc(GOOD_NAME[g])} — ${esc(GOOD_USE[g])}" data-more="${esc(bits.join(' / '))}">${icon(GOOD_ICON[g])}<b>${Math.floor(have)}</b></span>`
+  }
+
+  /**
+   * 위 띠의 수가 굴러 바뀐다 — 계절을 넘기면 600ms, 이번 계절 고르는 동안은 250ms · 곁에 +/− 가 떠올랐다 사라진다
+   * (docs/realm/UX-JUICE.md 2-#2 · "작게 누르고 크게 돌려받는다"). 꾸밈이라 판과 상관없다
+   */
+  const lastTop = new Map<string, number>()
+  let lastTopSeason = -1
+  function rollTop(season: number): void {
+    const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
+    const turn = lastTopSeason !== -1 && season !== lastTopSeason
+    const fresh = lastTopSeason === -1 || Math.abs(season - lastTopSeason) > 1
+    lastTopSeason = season
+    for (const el of root.querySelectorAll<HTMLElement>('.top .stat[data-g]')) {
+      const g = el.dataset['g']!
+      const b = el.querySelector('b')
+      if (b === null) continue
+      const to = Number(b.textContent)
+      const from = lastTop.get(g)
+      lastTop.set(g, to)
+      if (from === undefined || from === to || fresh || still) continue
+      const d = to - from
+      const pop = document.createElement('i')
+      pop.className = `dpop ${d > 0 ? 'up' : 'down'}`
+      pop.textContent = `${d > 0 ? '+' : '−'}${Math.abs(d)}`
+      el.appendChild(pop)
+      pop.addEventListener('animationend', () => pop.remove())
+      el.classList.remove('bump', 'dent')
+      void el.offsetWidth
+      el.classList.add(d > 0 ? 'bump' : 'dent')
+      const dur = turn ? P.realm.uiRollMs : P.realm.uiRollPlanMs
+      const t0 = performance.now()
+      const step = (now: number): void => {
+        const k = Math.min(1, (now - t0) / dur)
+        const e = 1 - (1 - k) ** 3
+        b.textContent = String(Math.round(from + d * e))
+        if (k < 1 && b.isConnected) requestAnimationFrame(step)
+      }
+      requestAnimationFrame(step)
+    }
   }
 
   // ───────── 지도
@@ -2966,6 +3006,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     $('.seasonp').dataset['s'] = seasonOf(realm.season)
     const r = plan()
     $('.top').innerHTML = topHtml(r)
+    rollTop(realm.season)
     const wrap = $('.mapwrap')
     const keep = [wrap.scrollLeft, wrap.scrollTop] as const
     const first = wrap.querySelector('.map') === null
