@@ -2956,7 +2956,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const s = seasonOf(season)
     const el = document.createElement('div')
     el.className = `seasonfx ${s}`
-    el.innerHTML = `<i class="band" style="background-image:url('${ART}season/season-${s}.jpg')"></i><div>${icon(SEASON_ICON[s], 'sfx-ic')}<b>${esc(seasonLabel(season))}</b><span>${esc(SEASON_LINE[s])}</span></div>`
+    el.innerHTML = `<i class="band"><i class="bimg" style="background-image:url('${ART}season/season-${s}.jpg')"></i></i><div class="stxt"><i class="orn"></i>${icon(SEASON_ICON[s], 'sfx-ic')}<b>${esc(seasonLabel(season))}</b><span>${esc(SEASON_LINE[s])}</span><i class="orn"></i></div>`
     el.addEventListener('animationend', (e) => { if (e.target === el) el.remove() }) // 안쪽 글자의 애니메이션이 먼저 끝나도 띠를 걷지 않는다
     root.appendChild(el)
     ding(snd('season_turn'), 0.4)

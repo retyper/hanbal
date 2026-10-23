@@ -118,14 +118,23 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .ncard, .ap .fcard { flex-direction: column; gap: 6px; }
 .ap .acard .ab { flex: 1; min-width: 0; }
 .ap .seasonfx { position: absolute; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; pointer-events: none;
-  background: radial-gradient(circle, #0009 0, #0000 70%); animation: sfx 2.2s ease-out forwards; }
-.ap .seasonfx .band { position: absolute; left: 0; right: 0; top: 50%; height: min(52vh, 340px); transform: translateY(-50%);
-  background: #17110c center / cover no-repeat; -webkit-mask-image: linear-gradient(to bottom, #0000, #000 16%, #000 84%, #0000);
-  mask-image: linear-gradient(to bottom, #0000, #000 16%, #000 84%, #0000); animation: sfxband 2.2s ease-out forwards; }
-.ap .seasonfx > div { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 18px 34px; border-radius: 18px;
-  background: #17110ce8; border: 1px solid #8a7040; box-shadow: 0 8px 40px #000a; animation: sfxin 1.6s cubic-bezier(.2, 1.4, .4, 1) forwards; }
-.ap .seasonfx b { font-family: var(--display); font-weight: 400; font-size: 32px; color: var(--gold); letter-spacing: 2px; }
-.ap .seasonfx span { font-size: 13.5px; color: #d8d0c0; } .ap .seasonfx img.sfx-ic { width: 54px; height: 54px; }
+  background: #000a; animation: sfx 2.6s ease-out forwards; }
+/* 띠 — 그림이 띠 가득, 위아래 금선 테, 천천히 다가온다 */
+.ap .seasonfx .band { position: absolute; left: 0; right: 0; top: 50%; height: min(62vh, 440px); transform: translateY(-50%); overflow: hidden;
+  border-top: 2px solid #c9a45a; border-bottom: 2px solid #c9a45a; box-shadow: 0 0 0 1px #000, 0 -6px 0 -4px #8a6a3a, 0 6px 0 -4px #8a6a3a, 0 20px 50px #000c;
+  animation: sfxband 2.6s cubic-bezier(.2, .8, .3, 1) forwards; }
+.ap .seasonfx .bimg { position: absolute; inset: -4%; background: #17110c center / cover no-repeat; animation: sfxpan 2.6s ease-out forwards; }
+.ap .seasonfx .band::after { content: ''; position: absolute; inset: 0; background: linear-gradient(#0000 40%, #0008 72%, #000c); }
+@keyframes sfxpan { from { transform: scale(1.12) translateX(-1.5%); } to { transform: scale(1) translateX(1.5%); } }
+/* 글 — 상자 없이 그림 아래쪽 어둠 위에 · 금빛 붓글씨 · 위아래 장식 줄 */
+.ap .seasonfx > .stxt { position: absolute; left: 0; right: 0; bottom: calc(50% - min(31vh, 220px) + 16px); display: flex; flex-direction: column; align-items: center; gap: 2px;
+  text-align: center; animation: sfxin 1.8s cubic-bezier(.2, 1.3, .4, 1) forwards; }
+.ap .seasonfx b { font-family: var(--display); font-weight: 400; font-size: clamp(34px, 6vw, 56px); color: var(--gold); letter-spacing: 4px; line-height: 1.05;
+  text-shadow: 0 2px 0 #000, 0 0 18px #000, 0 0 30px #0009; }
+.ap .seasonfx span { font-size: clamp(13px, 2vw, 16px); color: #f3e8d2; text-shadow: 0 1px 3px #000, 0 0 10px #000; }
+.ap .seasonfx img.sfx-ic { width: 46px; height: 46px; filter: drop-shadow(0 2px 6px #000); }
+.ap .seasonfx .orn { display: block; width: min(56vw, 320px); height: 9px; background: linear-gradient(90deg, #0000, #c9a45a 30%, #f6d27a 50%, #c9a45a 70%, #0000) center / 100% 1px no-repeat;
+  position: relative; } .ap .seasonfx .orn::after { content: '◆'; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -52%); font-size: 9px; color: #f6d27a; text-shadow: 0 0 4px #000; }
 .ap .seasonfx.spring b { color: #f2b8c6; } .ap .seasonfx.summer b { color: #9fd18b; } .ap .seasonfx.autumn b { color: #f0b060; } .ap .seasonfx.winter b { color: #cfe3f5; }
 @keyframes sfx { 0% { opacity: 0; } 12% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
 /* 신방 — 붉은 등불 · 비단 휘장 · 은은히 일렁이는 불빛 */
