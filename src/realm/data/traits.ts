@@ -20,7 +20,7 @@ export const TRAITS: readonly TraitInfo[] = [
   { id: 'farmer', name: '농사꾼', grade: 'common', line: '맡은 고을의 가을 수확이 25% 늘어난다' },
   { id: 'mountain', name: '산사람', grade: 'common', line: '고갯길로 기습할 때 숨기 쉽다' },
   { id: 'river', name: '물길잡이', grade: 'common', line: '나루·뱃길로 기습할 때 숨기 쉽다' },
-  { id: 'glutton', name: '대식가', grade: 'common', bad: true, line: '이끄는 군대가 곡식을 20% 더 먹는다' },
+  { id: 'glutton', name: '잔치꾼', grade: 'common', bad: true, line: '군사들과 툭하면 술판을 벌인다 — 이끄는 군대가 곡식을 20% 더 쓴다' },
   { id: 'coward', name: '겁 많음', grade: 'common', bad: true, line: '지면 먼저 달아난다. 안 잡히지만 군대 사기가 더 꺾인다' },
   { id: 'smith', name: '대장장이', grade: 'good', line: '맡은 고을이 계절마다 철을 낸다' },
   { id: 'careful', name: '신중', grade: 'good', line: '맡은 고을의 경계가 늘 높다. 기습을 잘 막는다' },

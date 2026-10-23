@@ -203,7 +203,7 @@ export function alertFloor(r: Realm, node: string): number {
 /** 이 고을에서 뽑는 군사가 철검을 드나 — 철의 손 */
 export const ironhandAt = (r: Realm, node: string): boolean => hasTrait(postHero(r, node), 'ironhand')
 
-/** 군량 가산 — 대식가가 이끄는 군대의 사람 수 × traitGlutton */
+/** 군량 가산 — 잔치꾼이 이끄는 군대의 사람 수 × traitGlutton */
 export function gluttonMen(r: Realm, faction: string): number {
   let n = 0
   for (const a of Object.values(r.armies)) {
