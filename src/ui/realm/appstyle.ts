@@ -551,6 +551,25 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cost .cgi { width: 16px; height: 16px; object-fit: contain; }
 .ap .btn.pri .cost .cg { background: #2a0e08e0; }
 .ap .hback { margin: 0 0 6px; }
+/* 백성 배치 — 모아 둔 백성 통 · 고을 카드마다 −/+ */
+.ap .plpool { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 6px 0 8px; padding: 10px 14px; border-radius: 10px;
+  background: linear-gradient(#2a2216f2, #1c160ef2); border: 1px solid #6a5434; box-shadow: 0 4px 12px #0008; }
+.ap .plpool > span { color: var(--mute); font-size: 13px; } .ap .plpool > b { font-size: 22px; color: #e8dcc4; font-variant-numeric: tabular-nums; }
+.ap .plpool > small { flex: 1 1 100%; color: var(--mute); font-size: 12px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.ap .plpool.full { border-color: #e0b04a; box-shadow: 0 0 0 1px #e0b04a66, 0 0 16px #e0b04a44; } .ap .plpool.full > b { color: #ffd27a; animation: plpulse 1.2s ease-in-out infinite alternate; }
+@keyframes plpulse { from { opacity: .75; } to { opacity: 1; } }
+.ap .plcard { margin: 0 0 8px; padding: 9px 10px; border-radius: 10px; background: #1f1a14; border: 1px solid #3a3024; transition: border-color .2s, background .2s; }
+.ap .plcard.up { border-color: #6fae5a; background: #1c2416; } .ap .plcard.down { border-color: #b8784a; background: #261c14; }
+.ap .plh { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; } .ap .plh b { font-size: 15px; }
+.ap .pltag { font-size: 11.5px; padding: 1px 7px; border-radius: 999px; } .ap .pltag.rv { background: #183048; color: #a8d4ff; border: 1px solid #3a6a9a; } .ap .pltag.hl { background: #2e2618; color: #d8c090; border: 1px solid #6a5a3a; }
+.ap .plrow { display: flex; align-items: center; gap: 8px; } .ap .plrow > .btn { flex: none; min-width: 54px; font-variant-numeric: tabular-nums; }
+.ap .plmid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; } .ap .plmid > b { font-size: 15px; font-variant-numeric: tabular-nums; }
+.ap .plmid > b i { font-style: normal; font-size: 12.5px; color: #9fd18b; } .ap .plcard.down .plmid > b i { color: #f0a070; }
+.ap .plmid > small { font-size: 12px; color: var(--mute); display: flex; align-items: center; flex-wrap: wrap; gap: 2px; } .ap .plmid > small small { opacity: .7; font-size: 11px; }
+.ap .plmid .gic { width: 18px; height: 18px; object-fit: contain; vertical-align: -4px; margin: 0 1px; }
+.ap .plbar { display: block; height: 6px; border-radius: 3px; background: #0e0b08; box-shadow: inset 0 1px 2px #000c; overflow: hidden; }
+.ap .plbar i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #8a6a2a, #e0b04a); transition: width .2s; }
+.ap .plfoot { position: sticky; bottom: 0; padding: 8px 0; background: linear-gradient(#0000, var(--bg, #14110d) 30%); }
 /* 이끌 장수 — 얼굴과 이름 (출정 단추 줄과 따로) */
 .ap .leadrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #4a3a28; }
 .ap .leadrow > .mute { flex: 1 1 100%; font-size: 12px; }

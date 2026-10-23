@@ -68,7 +68,7 @@ const TAP: ReadonlyArray<readonly [RegExp, TapSlot | 'ui_open']> = [
   // 글 · 꾀 · 사신 — 붓과 도장
   [/^(compose|compose-go|ctarget|chero|plot|nat-plot|pagent|persuade|pby|answer|envoy|nat-diplo|dmode)$/, 'tap_brush'],
   // 사람이 움직인다 — 정찰 · 원정 · 옮겨 살기
-  [/^(scout|exp-go|exp-dest|exp-len|settle|sn|sfrom|migrate|mig-[a-z]+|pgo|pp-[a-z]+)$/, 'tap_move'],
+  [/^(scout|exp-go|exp-dest|exp-len|settle|sn|sfrom|migrate|mig-[a-z]+|pgo|pp-[a-z]+|pl-[a-z]+)$/, 'tap_move'],
   // 고르기 · 혼인 · 제사
   [/^(wed|rite|card-pick|tier-pick|dex-sel|keep|carry-tog|focus)$/, 'tap_bell'],
   // 지도의 고을을 누른다 — 바둑돌 놓듯
