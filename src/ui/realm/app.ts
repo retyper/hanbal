@@ -247,25 +247,8 @@ const REL_NOW = {
   truce: '서로 안 친다. 계절마다 장터가 서서 곡식이 오간다.',
   ally: '서로 안 치고 땅을 지나간다. 본 것을 나누고, 같은 적을 친다.',
 } as const
-/** 사신 넷이 하는 일 */
-const ASKS: ReadonlyArray<{ ask: Ask; does: string }> = [
-  { ask: 'truce', does: '8계절 서로 안 친다 · 장터가 서서 곡식이 들어온다' },
-  { ask: 'trade', does: '곡식과 철을 바꾼다' },
-  { ask: 'tribute', does: '바치라고 한다 · 거절하면 전쟁' },
-  { ask: 'alliance', does: '화친한 나라와만. 함께 치자 · 지원 요청 · 군대 빌리기가 열린다' },
-  { ask: 'gift', does: '곡식·철을 보내 호감을 산다. 늘 받는다' },
-]
 /** 자세한 것이 필요한 사신 — goods: 곡식·철 · place: 고을 · confirm: 다짐 */
 const ASK_NEEDS: Partial<Record<Ask, 'goods' | 'place' | 'confirm'>> = { trade: 'goods', gift: 'goods', aid: 'goods', tribute: 'goods', joint: 'place', troops: 'place', break: 'confirm' }
-const ASK_HINT: Partial<Record<Ask, string>> = {
-  trade: '무엇을 주고 무엇을 받을지 정한다. 저들 창고에 없는 것은 못 받는다.',
-  gift: '선물은 늘 받는다. 호감이 오른다.',
-  aid: '동맹에게 그냥 달라고 한다 — 아무것도 안 주는 교역과 같은 셈이다. 호감이 높고 저들 창고가 넉넉할수록 잘 준다.',
-  tribute: '바치라고 할 몫을 정한다. 거절하면 전쟁이 난다.',
-  joint: '동맹이 두 계절 안에 칠 곳을 고른다. 지키면 호감이 오르고, 못 지키면 내려간다.',
-  troops: '동맹 군대가 와서 몇 계절 지켜 줄 우리 고을을 고른다.',
-  break: '약조를 깨면 다른 나라들도 우리를 덜 믿는다.',
-}
 /** 집이 느는(주는) 까닭 — economy.hhGrowth 의 열쇠 */
 const GROWTH_WHY: Readonly<Record<string, string>> = {
   crowded: '붐벼서 집이 더디게 늘어난다', uprooted: '억지로 옮겨 와 자리 잡는 중이다',
@@ -1790,7 +1773,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const ask = compose.ask
     const need = ASK_NEEDS[ask]
     const st = r.stock[me()] ?? { grain: 0, iron: 0 }
-    let h = `<div class="trade"><div class="cmh"><b>${askLabel(r, to, ask)}</b><span class="mute">${esc(ask === 'break' ? breakHint(r, to) : (ASK_HINT[ask] ?? ASKS.find((x) => x.ask === ask)?.does ?? ''))}</span></div>`
+    // 갈래 설명은 ? 안에 (GUIDE.envoy · 형 10-23: "외교에 화친부터 선물까지 카드 … 설명도 다 물음표에") — 약조 깨기는 지금 형편이라 그대로
+    let h = `<div class="trade"><div class="cmh"><b>${askLabel(r, to, ask)} ${guideBtn('envoy')}</b>${ask === 'break' ? `<span class="mute">${esc(breakHint(r, to))}</span>` : ''}</div>`
     h += whoGoesHtml(r, to, ask)
     let ok = true
     if (need === 'goods') {
