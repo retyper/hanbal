@@ -129,3 +129,13 @@ bgm_lose_c3.ogg  공유마당 · 「국악 효과음 #137 (무거운 마무리)�
 war_cry_c1.ogg  Freesound · ID 563011 (https://freesound.org/s/563011/) · "People screaming in agony when charging into battle" · florianreichelt · CC0 · 3초 잘라 씀
 arrow_volley_c3.ogg  Freesound · ID 789389 (https://freesound.org/s/789389/) · "Arrow Flyby" · modusmogulus · CC0 · 여러 발로 겹쳐 울림
 season_turn_c1.ogg  Freesound · ID 121800 (https://freesound.org/s/121800/) · "gong.WAV" · BOSS MUSIC · CC0
+battle_clash_c14.ogg  공유마당 · 「칼싸움BG」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254793 · 2.6초 잘라 씀(변경함)
+bgm_map_c2.ogg  공유마당 · 「국악 BGM #34 (아련하고 차분한)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386774
+bgm_map_c3.ogg  공유마당 · 「국악 BGM #44 (느긋한 마을)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386784
+bgm_map_c4.ogg  공유마당 · 「국악 BGM #81 (평화로운 마을)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386821
+bgm_map_c9.ogg  공유마당 · 「국악 BGM #182 (마음을 진정시키는)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386922
+bgm_map_c10.ogg  공유마당 · 「국악 BGM #192 (한적하고 여유로운)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386932
+bgm_war_c7.ogg  공유마당 · 「국악 BGM #197 (사물놀이)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386937
+bgm_war_c8.ogg  공유마당 · 「LSMBG0704_사물놀이」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312616
+bgm_end_win_c5.ogg  공유마당 · 「국악 BGM #179 (벅차오르는)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386919
+bgm_end_lose_c4.ogg  공유마당 · 「국악 BGM #64 (비장한)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386804

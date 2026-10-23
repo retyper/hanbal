@@ -15,7 +15,7 @@ export const PICK = {
   amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b',
   // g1·g2·g3 — 공유마당(공공누리 제1유형 · CC BY)에서 받은 후보 (형 10-23: "공공누리에서 니가 싹 받아와서 쓸 수 있는 거면 다 해 · 출처표기 주의").
   // 출처는 sfx/CREDITS.txt 끝 · 첫 화면의 「소리 출처」. 형이 sound-picker.html 에서 듣고 고르면 글자만 바꾼다
-  bgm_map: 'f', bgm_war: 'g1',
+  bgm_map: 'f', bgm_war: 'c7',
   // 이기고 진 뒤의 음악 — 이김은 형이 받은 "즐겁게 추격하는 듯한 한국풍" (싸움 음악으로는 너무 신났다 — 형 10-23)
   bgm_win: 'a', bgm_lose: 'c3',
   // 첫 화면(로그인·이어 하기) 음악 — 웅장한 것 (형 10-23: "로그인 화면 메인은 웅장한 bgm 따로")
@@ -24,7 +24,9 @@ export const PICK = {
   // 싸움의 함성 — 싸움이 열릴 때 · 돌격·추격 합에 (형 10-23: "전투라면 함성소리가 있어야")
   war_cry: 'c1',
   // 맞부딪힘 — 한 합마다 · 필살(상성에서 이긴 합)은 더 무겁게. 쇠 한 번 "팅"이 아니라 여럿이 칼·창·방패로 엉겨 붙는 소리 (형 10-23: "진짜 전투하는 효과음")
-  battle_clash: 'g1', battle_crit: 'g1',
+  battle_clash: 'c14', battle_crit: 'g1',
+  // 판이 끝났을 때(이겼다·졌다 화면) — 싸움 하나 이긴·진 음악과 따로 (형 10-23: "게임 승리했을 때나 패배했을 때 사운드는 없어?")
+  bgm_end_win: 'c5', bgm_end_lose: 'c4',
   tap_arms: 'g1', tap_coin: 'g1', tap_brush: 'g1', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'g1',
 } as const
 /** ogg 가 아닌 후보 — 형이 받아 온 것은 받은 꼴 그대로 · 공유마당 음악은 mp3 · 누르는 소리는 브라우저로 잘라 낸 wav */
@@ -39,7 +41,16 @@ export type Slot = keyof typeof PICK
 /** 아직 파일을 안 받은 자리 — 없으면 소리 없이 듣던 음악을 둔다 (있으면 출처를 적는다) */
 export const LATER: ReadonlySet<Slot> = new Set<Slot>([])
 /** 한 곡이 끝나면 다음 곡으로 넘어가는 자리 — 첫 글자가 PICK 이다 (형이 받은 평상시 음악 둘: bgm후보 · 배경음2) */
-export const ROTATE: Readonly<Partial<Record<Slot, readonly string[]>>> = { bgm_map: ['f', 'g'] }
+// 형 10-23 소리 고르기 판: 지도 = 형의 두 곡 + 국악 BGM 다섯 · 싸움 = 사물놀이 둘
+export const ROTATE: Readonly<Partial<Record<Slot, readonly string[]>>> = { bgm_map: ['f', 'g', 'c2', 'c9', 'c3', 'c4', 'c10'], bgm_war: ['c7', 'c8'] }
+/**
+ * 곡마다 소리 크기 — 형이 가져온 지도 곡(-16dB 언저리)에 맞춘다 (형 10-23: "소리도 너무 커"). 1 보다 크게는 못 키운다.
+ * 2026-10-23 잰 값: map c4 -12.0 · c9 -11.9 · war c7 -12.5 · title c6 -14.0 · 끝 이김 c5 -11.7 · 끝 짐 c4 -16.0
+ */
+const TRACK_GAIN: Readonly<Partial<Record<string, number>>> = {
+  bgm_map_c4: 0.56, bgm_map_c9: 0.56, bgm_war_c7: 0.6, bgm_title_c6: 0.72, bgm_end_win_c5: 0.54, bgm_end_lose_c4: 0.9,
+}
+const gainOf = (slot: Slot, pick: string = PICK[slot]): number => TRACK_GAIN[`${slot}_${pick}`] ?? 1
 
 type TapSlot = Extract<Slot, `tap_${string}`>
 /** 누른 단추(data-act) → 그 바탕의 소리. 맞는 줄이 없으면 나무 딱(ui_order) */
@@ -172,6 +183,7 @@ function track(base: string, vol: number): { prime(slot: Slot): void; want(slot:
     if (n === undefined) {
       const el = new Audio(`${base}realm/sfx/${sndFile(slot)}`)
       el.preload = 'auto'
+      el.volume = gainOf(slot)
       const list = ROTATE[slot]
       el.loop = list === undefined
       if (list !== undefined) {
@@ -180,6 +192,7 @@ function track(base: string, vol: number): { prime(slot: Slot): void; want(slot:
         el.addEventListener('ended', () => {
           i = (i + 1) % list.length
           el.src = `${base}realm/sfx/${sndFile(slot, list[i])}`
+          el.volume = gainOf(slot, list[i])
           if (cur === slot) start()
         })
       }
@@ -232,6 +245,7 @@ export function makeMusic(base: string, muted: () => boolean, quiet: () => boole
   primeResults(): void
   /** 이겼다 · 졌다 — 싸움 끝 · 판 끝 */
   result(kind: 'win' | 'lose'): void
+  ending(kind: 'win' | 'lose'): void
   refresh(): void
 } {
   const bgm = track(base, BGM_VOL)
@@ -263,6 +277,8 @@ export function makeMusic(base: string, muted: () => boolean, quiet: () => boole
     title() { mode = { bgm: LATER.has('bgm_title') ? null : 'bgm_title', amb: null }; apply() },
     primeResults() { bgm.prime('bgm_win'); bgm.prime('bgm_lose') },
     result(kind) { mode = { bgm: kind === 'win' ? 'bgm_win' : 'bgm_lose', amb: null }; apply() },
+    /** 판이 끝났다 — 이겼다·졌다 화면의 음악 */
+    ending(kind) { mode = { bgm: kind === 'win' ? 'bgm_end_win' : 'bgm_end_lose', amb: null }; apply() },
     refresh: apply,
   }
 }

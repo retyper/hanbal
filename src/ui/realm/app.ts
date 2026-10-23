@@ -2831,7 +2831,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (!warOn && (front !== null || realm === null)) music.title()
       else if (!warOn && realm !== null) {
         // 판이 끝났다 — 이긴·진 음악 (계속 두는 판은 지도 음악)
-        if (realm.outcome && !realm.endless) music.result(realm.outcome.kind)
+        if (realm.outcome && !realm.endless) music.ending(realm.outcome.kind)
         else music.map(seasonOf(realm.season))
       }
       paintNow()
