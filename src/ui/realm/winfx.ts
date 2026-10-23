@@ -17,15 +17,29 @@ const hash = (i: number, k: number): number => {
 }
 
 /**
- * 큰 글자 한 벌 — word 는 '승리' · '대승' · '패배' …, sub 는 그 밑의 한 줄.
- * delay(초) 뒤에 터진다 (CSS 변수 --wd). lose 면 불티 없이 무겁게 내려앉는다.
+ * 큰 글자 한 벌 — word 는 '승리' · '대승' · '패배' · '대패', sub 는 그 밑의 한 줄.
+ * delay(초) 뒤에 터진다 (CSS 변수 --wd). 넷이 저마다 다르다 (형 10-23: "승리 패배 대승 대패 연출이 각각 다르겠지?"):
+ *   승리 — 금빛 글자가 박히고 불티가 한 번 · 테 하나 · 금박 조금
+ *   대승 — 화면이 쿵 흔들리고 불티가 세 번 · 테 둘 · 금박이 쏟아진다
+ *   패배 — 글자가 무겁게 내려앉고 화면 빛이 잿빛으로 식는다 · 재가 날린다
+ *   대패 — 글자가 박히자마자 쩍 갈라지고, 붉고 어둡게 가라앉는다 · 재가 많이
  */
-export function winFxHtml(word: string, sub: string, delay: number, lose = false, brief = false): string {
-  let h = `<div class="winfx${lose ? ' lose' : ''}${brief ? ' brief' : ''}" style="--wd:${delay}s" aria-hidden="true"><i class="wf-flash"></i>`
-  if (!lose) {
-    h += '<i class="wf-ring"></i><i class="wf-ring two"></i>'
-    // 두 번 — 가운데에서 크게, 조금 뒤 양옆에서 한 번 더 (폭죽처럼)
-    for (const [k, x, y, at] of [[0, 50, 50, 0], [1, 22, 38, 0.38], [2, 78, 40, 0.5]] as const) {
+export function winFxHtml(word: string, sub: string, delay: number, lose = false, brief = false, big = false): string {
+  let h = `<div class="winfx${lose ? ' lose' : ''}${big ? ' big' : ''}${brief ? ' brief' : ''}" style="--wd:${delay}s" aria-hidden="true"><i class="wf-flash"></i>`
+  if (lose) {
+    // 재 — 회색 낱알이 천천히 비껴 떨어진다
+    h += '<div class="wf-rain ash">'
+    for (let i = 0; i < (big ? FLAKES : FLAKES / 2); i++) {
+      h += `<s style="--x:${(hash(i, 15) * 100).toFixed(1)}%;--t:${(0.4 + hash(i, 16) * 2.2).toFixed(2)}s;--z:${(0.5 + hash(i, 17) * 0.8).toFixed(2)};--sp:${(4 + hash(i, 18) * 3).toFixed(2)}s"></s>`
+    }
+    h += '</div>'
+    // 대패 — 글자가 두 쪽으로 갈라진다 (같은 글자를 위아래로 잘라 어긋나게)
+    if (big) return h + `<div class="wf-word crack"><b class="cu">${word}</b><b class="cd">${word}</b>${sub !== '' ? `<span>${sub}</span>` : ''}</div></div>`
+  } else {
+    h += big ? '<i class="wf-ring"></i><i class="wf-ring two"></i>' : '<i class="wf-ring"></i>'
+    // 대승은 세 번 — 가운데에서 크게, 조금 뒤 양옆에서 한 번 더 (폭죽처럼). 승리는 가운데 한 번
+    const bursts = big ? [[0, 50, 50, 0], [1, 22, 38, 0.38], [2, 78, 40, 0.5]] as const : [[0, 50, 50, 0]] as const
+    for (const [k, x, y, at] of bursts) {
       h += `<div class="wf-burst" style="left:${x}%;top:${y}%">`
       const n = k === 0 ? SPARKS : SPARKS / 2
       for (let i = 0; i < n; i++) {
@@ -37,7 +51,7 @@ export function winFxHtml(word: string, sub: string, delay: number, lose = false
       h += '</div>'
     }
     h += '<div class="wf-rain">'
-    for (let i = 0; i < FLAKES; i++) {
+    for (let i = 0; i < (big ? FLAKES * 2 : FLAKES / 2); i++) {
       h += `<s style="--x:${(hash(i, 5) * 100).toFixed(1)}%;--t:${(0.3 + hash(i, 6) * 1.6).toFixed(2)}s;--z:${(0.6 + hash(i, 7) * 0.9).toFixed(2)};--sp:${(2.4 + hash(i, 8) * 2).toFixed(2)}s"></s>`
     }
     h += '</div>'
@@ -81,9 +95,32 @@ export const WINFX_CSS = `
 .ap .winfx.lose .wf-word b { background: linear-gradient(#e8e2d6, #9a9080 60%, #5a5248); -webkit-background-clip: text; background-clip: text; filter: drop-shadow(0 3px 0 #111) drop-shadow(0 8px 20px #000); }
 .ap .winfx.lose .wf-word { animation: wfsink 1.4s ease-out var(--wd) both; }
 @keyframes wfsink { 0% { opacity: 0; transform: translateY(-30px); } 100% { opacity: 1; transform: none; } }
+/* 대승 — 글자가 박힐 때 화면이 쿵 */
+.ap .winfx.big { animation: wfquake .6s ease-out calc(var(--wd) + .3s) both; }
+@keyframes wfquake { 0%, 100% { transform: none; } 15% { transform: translate(-10px, 6px); } 30% { transform: translate(9px, -7px); } 45% { transform: translate(-6px, 4px); } 60% { transform: translate(4px, -3px); } 80% { transform: translate(-2px, 1px); } }
+.ap .winfx.big:not(.lose) .wf-word b { font-size: clamp(190px, 46vw, 440px); }
+/* 패배 — 밑의 화면 빛이 잿빛으로 식는다 */
+.ap .winfx.lose::after { content: ''; position: absolute; inset: 0; z-index: -1; backdrop-filter: grayscale(.85) brightness(.75); -webkit-backdrop-filter: grayscale(.85) brightness(.75);
+  opacity: 0; animation: wfdim 1.6s ease-out var(--wd) both; }
+.ap .winfx.lose.big::before { background: radial-gradient(ellipse 75% 60% at 50% 50%, #1a0402ee, #3a0a0499 60%, #12020288 100%); }
+/* 재 */
+.ap .winfx .wf-rain.ash s { background: radial-gradient(circle, #cfc8bc, #6a645a); border-radius: 50%; width: calc(6px * var(--z)); height: calc(6px * var(--z));
+  animation-name: wfash; }
+@keyframes wfash { 0% { opacity: 0; transform: translate(0, 0); } 15% { opacity: .8; } 100% { opacity: 0; transform: translate(-60px, 105vh) rotate(200deg); } }
+/* 대패 — 박히고 나서 쩍 갈라진다 */
+.ap .winfx .wf-word.crack { display: grid; animation: wfslam .55s cubic-bezier(.2, 1.4, .35, 1) var(--wd) both; }
+.ap .winfx .wf-word.crack b { grid-area: 1 / 1; }
+.ap .winfx .wf-word.crack span { grid-area: 2 / 1; }
+.ap .winfx .wf-word.crack b.cu { clip-path: polygon(0 0, 100% 0, 100% 44%, 62% 50%, 38% 41%, 0 52%); animation: wfsplit1 1.2s ease-out calc(var(--wd) + .6s) both; }
+.ap .winfx .wf-word.crack b.cd { clip-path: polygon(0 52%, 38% 41%, 62% 50%, 100% 44%, 100% 100%, 0 100%); animation: wfsplit2 1.2s ease-out calc(var(--wd) + .6s) both; }
+.ap .winfx.lose .wf-word.crack b { background: linear-gradient(#e8d6d0, #9a6a60 55%, #4a2420); -webkit-background-clip: text; background-clip: text; }
+@keyframes wfsplit1 { 0% { transform: none; } 12% { transform: translate(-3px, -2px); } 100% { transform: translate(-12px, -10px) rotate(-2.5deg); } }
+@keyframes wfsplit2 { 0% { transform: none; } 12% { transform: translate(3px, 2px); } 100% { transform: translate(10px, 14px) rotate(2deg); opacity: .85; } }
+@media (prefers-reduced-motion: reduce) { .ap .winfx.big, .ap .winfx .wf-word.crack b { animation: none !important; } }
 /* 싸움 하나 — 잠깐 크게 보이고 걷힌다 (밑의 결과 글을 읽게) */
 .ap .winfx.brief { animation: wfout .6s ease-in calc(var(--wd) + 2.3s) forwards; }
 @keyframes wfout { to { opacity: 0; visibility: hidden; } }
+.ap .winfx.big.brief { animation: wfquake .6s ease-out calc(var(--wd) + .3s) both, wfout .6s ease-in calc(var(--wd) + 2.6s) forwards; }
 @media (prefers-reduced-motion: reduce) { .ap .winfx .wf-burst, .ap .winfx .wf-rain, .ap .winfx .wf-ring { display: none; } .ap .winfx .wf-word { animation-duration: .3s; } }
 `
 

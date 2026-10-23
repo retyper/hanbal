@@ -870,7 +870,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       const atkWon = l.outcome === 'rout' || l.outcome === 'win'
       const good = (l.atkFaction === host.me) === atkWon
       const word = good ? (l.outcome === 'rout' || l.outcome === 'routed' ? '대승' : '승리') : (l.outcome === 'rout' || l.outcome === 'routed' ? '대패' : '패배')
-      winEl.innerHTML = winFxHtml(word, '', STAGE_S[2] + 0.9, !good, true)
+      winEl.innerHTML = winFxHtml(word, '', STAGE_S[2] + 0.9, !good, true, l.outcome === 'rout' || l.outcome === 'routed')
     }
   }
 
