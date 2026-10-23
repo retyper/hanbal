@@ -485,6 +485,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let partySel = ''
   /** 장수 판의 「사신으로 보낸다」 — 다음에 꾸리는 사신에 이 장수를 미리 고른다 */
   let envoyPick = ''
+  /** 태몽을 이미 보여 준 짝 — 한 쌍에 한 번 (이 화면을 여는 동안) */
+  const dreamt = new Set<string>()
   /** 백성 배치 판에서 고르는 중인 몫 — 고을 → 더하고 뺀 집 (모아 둔 백성 = −합) */
   let placeDraft: Record<string, number> = {}
   /** 백성 배치 −/+ 한 번의 몫 — 뗄 때는 한 집은 남기고 한도 안에서, 부을 때는 모아 둔 만큼 · 품까지. 0 이면 못 누른다 */
@@ -2647,9 +2649,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         c = [big ? 0.92 : g.kind === 'none' ? 0.3 : 0.6, { ev: 'event-expedition-return', hero: g.kind === 'wanderer' ? after.heroes[g.hero] ?? null : after.heroes[l.hero] ?? null,
           line: `${DESTS[l.dest].name}에서 ${josa(after.heroes[l.hero]?.name ?? '', '이', '가')} 돌아왔다${g.kind === 'wanderer' ? ` · ${josa(after.heroes[g.hero]?.name ?? '', '이', '가')} 따라왔다` : g.kind === 'skill' ? ` · 「${TRAIT[g.trait]?.name ?? ''}」을 배웠다` : ''}` }]
       } else if (l.kind === 'wed' && l.faction === pl) {
-        c = [0.7, { ev: 'event-marriage', hero: after.heroes[l.a] ?? null, line: `${josa(after.heroes[l.a]?.name ?? '', '과', '와')} ${josa(after.heroes[l.b]?.name ?? '', '이', '가')} 혼인했다` }]
+        c = [0.7, { ev: 'event-wedding', hero: after.heroes[l.a] ?? null, line: `${josa(after.heroes[l.a]?.name ?? '', '과', '와')} ${josa(after.heroes[l.b]?.name ?? '', '이', '가')} 혼인했다` }]
       } else if (l.kind === 'birth' && l.faction === pl) {
-        c = [l.surprise !== undefined ? 0.95 : 0.8, { ev: 'event-egg-birth', hero: null, line: `${after.heroes[l.a]?.name ?? ''}·${after.heroes[l.b]?.name ?? ''}의 아이 ${josa(after.heroes[l.hero]?.name ?? '', '이', '가')} 나섰다` }]
+        c = [l.surprise !== undefined ? 0.95 : 0.8, { ev: 'event-newborn', hero: null, line: `${after.heroes[l.a]?.name ?? ''}·${after.heroes[l.b]?.name ?? ''}의 아이 ${josa(after.heroes[l.hero]?.name ?? '', '이', '가')} 나섰다` }]
       } else if (l.kind === 'hunger' && l.faction === pl) {
         c = [0.75, { ev: 'event-sky-drought', hero: null, line: '곡식이 바닥났다' }]
       } else if (l.kind === 'settle' && l.faction === pl) {
@@ -3026,7 +3028,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const a = r.heroes[l.a], b = r.heroes[l.b]
         let petals = ''
         for (let i = 0; i < 22; i++) petals += `<i style="--x:${(i * 37) % 100}%;--t:${((i * 0.29) % 2.4).toFixed(2)}s;--sp:${(3.6 + ((i * 0.53) % 2.2)).toFixed(2)}s"></i>`
-        scenes.push(`<div class="cere wed"><i class="cbg" style="background-image:url('${ART}event/event-marriage.jpg')"></i><div class="cpet">${petals}</div>`
+        scenes.push(`<div class="cere wed"><i class="cbg" style="background-image:url('${ART}event/event-wedding.jpg')"></i><div class="cpet">${petals}</div>`
           + `<div class="cpair"><div class="cl">${bust(a, 'cf')}<b>${esc(a?.name ?? '')}</b></div><div class="cr">${bust(b, 'cf')}<b>${esc(b?.name ?? '')}</b></div></div>`
           + `<div class="cw"><b>혼례</b><span>${esc(josa(a?.name ?? '', '과', '와'))} ${esc(josa(b?.name ?? '', '이', '가'))} 짝을 맺었다</span><small>신혼 ${P.realm.wedHoney}계절 — 함께 지내면 아이가 일찍 온다</small></div></div>`)
       } else if (l.kind === 'recruit' && l.faction === me()) {
@@ -3050,10 +3052,20 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       } else if (l.kind === 'birth' && l.faction === me()) {
         const kid = r.heroes[l.hero], a = r.heroes[l.a], b = r.heroes[l.b]
         const traits = (kid?.traits ?? []).map((t) => `<span class="ctr${t === l.surprise ? ' new' : ''}">${esc(TRAIT[t]?.name ?? t)}${t === l.surprise ? ' · 타고났다' : ''}</span>`).join('')
-        scenes.push(`<div class="cere birth"><i class="cbg" style="background-image:url('${ART}event/event-egg-birth.jpg')"></i><i class="cglow"></i>`
+        scenes.push(`<div class="cere birth"><i class="cbg" style="background-image:url('${ART}event/event-newborn.jpg')"></i><i class="cglow"></i>`
           + `<div class="ckid">${bust(kid, 'cf big')}<div class="cpar">${bust(a, 'cf sm')}${bust(b, 'cf sm')}</div></div>`
           + `<div class="cw"><b>탄생</b><span>${esc(a?.name ?? '')}·${esc(b?.name ?? '')}의 아이 ${esc(josa(kid?.name ?? '', '이', '가'))} 자라 나섰다</span>${traits !== '' ? `<div class="ctrs">${traits}</div>` : ''}</div></div>`)
       }
+    }
+    // 태몽 — 아이가 오기 한 계절 앞, 밤하늘에서 금빛 용이 구슬을 물고 지붕 위로 (그림 줄 ⑥ · 한 쌍에 한 번)
+    for (const b of r.births ?? []) {
+      const key = `${b.a}|${b.b}|${b.wed ?? 0}`
+      if (b.faction !== me() || b.due !== r.season + 1 || dreamt.has(key)) continue
+      dreamt.add(key)
+      const a = r.heroes[b.a], c = r.heroes[b.b]
+      scenes.push(`<div class="cere birth dream"><i class="cbg" style="background-image:url('${ART}event/event-dream.jpg')"></i><i class="cglow"></i>`
+        + `<div class="cpar">${bust(a, 'cf sm')}${bust(c, 'cf sm')}</div>`
+        + `<div class="cw"><b>태몽</b><span>${esc(a?.name ?? '')}·${esc(c?.name ?? '')}의 지붕 위로 금빛 용이 구슬을 물고 내려왔다</span><small>다음 계절에 아이가 온다</small></div></div>`)
     }
     if (scenes.length === 0) return
     const show = (i: number): void => {
