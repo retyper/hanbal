@@ -1443,7 +1443,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     let h = `<h3 class="sech home">${icon('settle-farm-village')}백성 ${guideBtn('people')}</h3>`
     if (note !== '') h += `<div class="banner bad">${tx(note)}</div>`
     const placed = settles.find((o) => o.kind === 'place')
-    h += `<div class="btns"><button class="btn pri home wide${placed !== undefined ? ' on' : ''}" data-act="pl-open">${icon('unit-porters')}백성 배치${placed !== undefined ? ' · 이번 계절 나누었다' : ''}</button></div>`
+    h += `<div class="btns"><button class="btn pri home wide${placed !== undefined ? ' on' : ''}" data-act="pl-open">${icon('unit-porters')}백성 배치${placed !== undefined ? ' · 이번 계절 나누었다' : ''}</button>${guideBtn('place')}</div>`
     const ps = partiesOf(r, me())
     h += `<h4 class="sech home">${icon('unit-porters')}개척단</h4>`
     if (ps.length === 0) h += `<p class="mute">우리 고을을 누르고 「개척단 보내기」</p>`
