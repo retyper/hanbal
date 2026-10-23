@@ -1977,7 +1977,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const c = host.cloud
     if (c === undefined || !c.available()) return ''
     const who = c.who()
-    if (who === null) return `<p class="fine acctl"><button class="btn ghost" data-act="acct-in">구글 로그인</button> <span class="mute">다른 기기의 판을 이어 한다</span></p>`
+    if (who === null) return `<p class="fine acctl"><button class="btn ghost" data-act="acct-in" data-tip="다른 기기의 판을 이어 한다">구글 로그인</button></p>`
     return `<p class="fine acctl mute">${esc(who.email)} · ${esc(syncWord(c.state()))}</p>`
   }
   /** 갈라진 판 고르기 — 카드 둘. 고르지 않은 쪽도 기기에 한 벌 남는다 (sync OTHER_KEY) */

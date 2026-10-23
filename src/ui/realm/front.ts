@@ -82,8 +82,8 @@ const capsHeld = (r: Realm, f: string): number => Object.values(r.factions).filt
 export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, links = '', firstTime = false, more = ''): string {
   // 로비 — 산마루에서 내려다본 일흔여덟 나라의 땅 · 로고는 청동 거울과 맥궁의 문장 + 붓글씨 (형: "게임 로고랑 파비콘, 로비 배경은 좀 제대로")
   let h = `<div class="front title"><div class="kv" style="background-image:url('${k.art}title/title-lobby.jpg')"></div><div class="tv">`
-  h += `<div class="logo"><img class="lemb" src="${k.art}logo/emblem.png" alt=""><h1>칠십팔국</h1></div><p class="sub">삼한의 일흔여덟 나라 · 고구려와 부여의 북녘</p>`
-  h += `<p class="hook">왕이 하나가 아니던 때. 한 읍락의 군장으로 시작해, 이웃을 알고 · 사귀고 · 쳐서 도읍을 하나씩 쥔다.</p>`
+  // 로고 밑엔 단추만 — 설명 글은 걷었다 (형 10-23: "로고 밑에 텍스트 설명 너무 많음. 다른 명작 게임들에서는 그런 거 없잖아")
+  h += `<div class="logo"><img class="lemb" src="${k.art}logo/emblem.png" alt=""><h1>칠십팔국</h1></div>`
   h += `<div class="fbtns">`
   if (r !== null && (!r.outcome || (r.endless === true && r.outcome.kind === 'win'))) {
     const me = r.player
@@ -96,7 +96,7 @@ export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, 
   // 처음 켠 사람은 배우는 판으로 (형: "맨 위 첫번째 할 게임은 1:1수준으로 여러 기능 익혀가며 쉽게")
   if (firstTime) h += `<button class="btn pri big" data-act="fr-tutorial">처음이면 — 배우는 판부터</button><button class="btn big" data-act="fr-new">새 판</button>${more}</div>`
   else h += `<button class="btn pri big" data-act="fr-new">새 판</button>${more}</div>`
-  return h + `<p class="fine">자동 저장 — 계절이 넘어갈 때마다 이 기기에 저장된다.</p>${links}</div></div>`
+  return h + `${links}</div></div>`
 }
 
 function agoText(iso: string): string {
@@ -454,8 +454,10 @@ export const FRONT_CSS = `
 .ap .front img.dem { width: 54px; height: 54px; } .ap .front .blurb { font-size: 14px; line-height: 1.6; }
 .ap .front .src { font-size: 12px; color: #8f8778; } .ap .front .hard { color: #e0a080; font-size: 13px; }
 /* 서막 */
+/* 서막은 검은 화면에서 시작한다 — 한지가 깔리기 전에 지도가 비치지 않게 (형 10-23: "맵이 잠깐 보였다가 페이드인") */
+.ap .plbox:has(> .prologue:not(.out))::before { content: ''; position: absolute; inset: 0; z-index: 69; background: #000; }
 .ap .prologue { position: absolute; inset: 0; z-index: 70; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px 18px;
-  background: #e9dfc6 url('__ART__map-world/hanji.webp') center / 520px; color: #2a1d10; animation: plin .6s ease-out both; }
+  background: #e9dfc6 url('__ART__map-world/hanji.webp') center / 520px; color: #2a1d10; animation: plin 1.4s ease-in .3s both; }
 /* 바탕은 첫 장에서만 서서히 — 다음 장은 바로 깔린다 (바꿀 때마다 판이 비쳐 보였다 — 형: "다음 누를때마다 자꾸 게임화면 잠깐 나옴"). 글자는 장마다 먹물처럼 번진다 */
 .ap .prologue:not(.s0) { animation: none; }
 .ap .prologue.out { animation: plout 1.1s ease-in forwards; pointer-events: none; }
