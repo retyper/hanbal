@@ -139,7 +139,7 @@ const GUIDE: Readonly<Record<string, { readonly title: string; readonly body: re
     '소문 — 다른 나라가 어느 길에 가까우면 아래에 붉게 뜬다. 그 길을 끊어야 한다.',
   ] },
   move: { title: '군대 옮기기', body: [
-    '군대 말을 누르고, 지도에서 빛나는 곳을 누르면 그리로 간다. 제 고을을 누르면 머문다.',
+    '군대 말을 누르고, 지도에서 군사를 보낼 곳(금빛으로 빛나는 고을)을 선택하면 그리로 간다. 제 고을을 누르면 머문다.',
     '칩의 숫자는 닿는 데 걸리는 계절이다. 초록은 이길 듯, 붉음은 질 듯.',
     '협공 — 다른 우리 군대와 같은 계절에 닿으면 한 판으로 함께 싸운다.',
     '같은 고을의 다른 말을 더 누르면 함께 골라진다. 합치기도 여기서.',
@@ -986,7 +986,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<b>${esc(armyName(r, first))}</b><span>${esc(josa(r.nodes[first.march.to]?.name ?? '', '으로', '로'))} 가는 중 · ${esc(arriveWhen(r.season, first.march.left))}</span>${turnBackBtn(first)}`
     } else if (sel.length === 1) {
       const more = Object.values(r.armies).filter((x) => x.faction === me() && x.id !== first.id && x.at === first.at && x.march === null).length
-      h += `<b>${esc(armyName(r, first))} · ${headcount(forceOf(r, first))}명 ${guideBtn('move')}</b><span>빛나는 곳을 누른다${more > 0 ? ' · 옆 말도 누르면 함께' : ''}</span>`
+      h += `<b>${esc(armyName(r, first))} · ${headcount(forceOf(r, first))}명 ${guideBtn('move')}</b><span>군사를 보낼 곳을 선택한다${more > 0 ? ' · 옆 말도 누르면 함께' : ''}</span>`
     } else {
       const men = sel.reduce((s, a) => s + headcount(forceOf(r, a)), 0)
       const heroes = sel.filter((a) => a.hero !== null).length
@@ -3203,6 +3203,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     } else history.back()
   })
 
+  /** 군대를 보냈다 — 군사가 발맞춰 떠나는 소리 (형 10-23: "출정 보내기 완료될 때는 뭔가 군대를 부리는 소리가 필요함") */
+  const marchSfx = (): void => { if (document.visibilityState === 'visible') ding(snd('war_drums'), 0.35) }
+
   // ───────── 손짓 — 한 곳에서 받는다
   // 전체 화면 — 처음 손이 닿는 그 순간에 (형 10-23: "게임 시작하자마자 되어야 하는 거 아님?").
   // 브라우저는 손짓 없이는 못 켜게 막는다 — 첫 화면·불러오는 화면을 포함해 어디든 처음 누르면 켠다 (손을 뗄 때가 브라우저가 허락하는 때)
@@ -3511,6 +3514,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         }
         for (const id of armySel) pick[id] = { edge, ambush: false }
         const m = movesOf(r, me(), r.armies[army]!).find((x) => x.edge.id === edge)
+        if (m?.hostile !== true) marchSfx() // 싸울 곳이면 출정 판의 「출정」에서 낸다
         if (m?.hostile === true) {
           openSortie(r.armies[army]!)
           armySel = []
@@ -3590,6 +3594,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const a = r!.armies[d['army']!]
         if (a === undefined) break
         const go = sortieD.edge !== null ? { edge: sortieD.edge, ambush: sortieD.approach !== 'road', approach: sortieD.approach, ...(sortieD.ration !== undefined ? { ration: sortieD.ration } : {}) } : null
+        if (go !== null) marchSfx()
         if (sortieAll(a)) {
           if (go === null) break
           pick[a.id] = go
