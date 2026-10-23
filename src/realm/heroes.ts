@@ -399,11 +399,13 @@ export function oneJobPerHero(r: Realm, orders: readonly Order[]): Order[] {
 
 /** 1 — 장수 명령. 규칙에 안 맞으면 아무 일도 없다 */
 export function applyHeroOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
+  // 들이기를 먼저 — 같은 계절에 들인 떠돌이와 혼인·맡기기를 해도 순서 때문에 버려지지 않게 (형 10-23: "혼인시켰는데 다음 계절에 또 혼인할 수 있게")
+  for (const o of orders) if (o.kind === 'hire') hire(r, o, lines)
   for (const o of orders) {
+    if (o.kind === 'hire') continue
     if (o.kind === 'assign') assignHero(r, o, lines)
     else if (o.kind === 'lead') leadArmy(r, o)
     else if (o.kind === 'persuade') startPersuade(r, o)
-    else if (o.kind === 'hire') hire(r, o, lines)
     else if (o.kind === 'wed') wed(r, o, lines)
   }
   placeOrphans(r)

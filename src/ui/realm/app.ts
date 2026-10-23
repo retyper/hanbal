@@ -2074,7 +2074,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 묶인 장수 — 사정만 보이고 할 일은 숨긴다
     const busy = ours ? heroBusy(r, id) : null
     if (busy !== null) h += `<div class="banner busyb">⧗ ${esc(busy)} — 이번 계절엔 다른 일을 못 한다</div>`
-    if (ours && busy === null && weds.length === 0 && x.spouse === undefined) h += wedHtml(r, x)
+    // 한 번 맺은 짝은 계속 — 지금 판·계절 처음 판 어느 쪽이든 짝이 있으면 혼인 칸을 안 띄운다
+    if (ours && busy === null && weds.length === 0 && x.spouse === undefined && realm!.heroes[id]?.spouse === undefined) h += wedHtml(r, x)
     h += expHtml(r, x) // 묶인 장수도 원정 칸은 보인다 — 단추만 흐리게
     const pending = heroOrders.filter((o) => (o.kind === 'assign' || o.kind === 'lead' || o.kind === 'persuade' || o.kind === 'hire') && o.hero === id)
     for (const o of pending) {
