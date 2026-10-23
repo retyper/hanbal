@@ -361,6 +361,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 나라 카드에서 "있었던 일"을 다 펼친 나라 */
   const deedsOpen = new Set<string>()
   let diploMode: 'envoy' | 'plot' | 'scout' = 'envoy'
+  /** 장수 판의 탭 — 우리 장수 · 옥에 가둔 적장 · 적장 (형 10-23: "한 페이지에 다 담지 말고 탭을 나눠야") */
+  let heroTab: 'mine' | 'jail' | 'foe' = 'mine'
   let plotOpen: PlotOp | null = null
   /** 암살에 보낼 자객 — 우리 장수 id, null 이면 고용 자객 */
   let plotAgent: string | null = null
@@ -1808,13 +1810,27 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function heroesSheet(r: Realm): string {
     const mine = sorted(Object.values(r.heroes)).filter((h) => h.faction === me() && h.status === 'free')
     const ruler = mine.filter((h) => isRuler(r, h.id))
-    let h = `<h3>장수</h3>`
+    const caps = sorted(Object.values(r.heroes)).filter((x) => x.status === 'captive' && x.captor === me())
+    const foes = sorted(Object.values(r.heroes)).filter((x) => x.faction !== me() && x.status === 'free' && heroSeen(realm!, me(), x.id))
+    const wand = wanderersFor(r, me()) // 들인 이는 벌써 위 장군 줄에 있다
+    const tab = (v: typeof heroTab, name: string, n: number): string => `<button class="${heroTab === v ? 'on' : ''}" data-act="htab" data-v="${v}">${name}${n > 0 ? ` <i>${n}</i>` : ''}</button>`
+    let h = `<h3>장수</h3><div class="seg dseg">${tab('mine', '우리 장수', mine.length + wand.length)}${tab('jail', '옥에 가둔 적장', caps.length)}${tab('foe', '적장', foes.length)}</div>`
+    if (heroTab === 'jail') {
+      if (caps.length === 0) return h + `<p class="mute">옥에 가둔 적장이 없다. 싸움에서 「적장 사로잡기」로 잡아 온다.</p>`
+      h += `<p class="mute">회유하면 우리 장수가 된다</p>`
+      for (const x of caps) h += heroRow(r, x)
+      return h
+    }
+    if (heroTab === 'foe') {
+      if (foes.length === 0) return h + `<p class="mute">아직 겨뤄 보거나 정찰로 본 적장이 없다.</p>`
+      for (const x of foes) h += heroRow(r, x)
+      return h
+    }
     for (const x of ruler) h += heroRow(r, x)
     h += `<h4>장군 · 누르면 능력치와 할 일</h4>`
     const hiredNow = new Set(heroOrders.flatMap((o) => (o.kind === 'hire' ? [o.hero] : [])))
     for (const x of mine.filter((y) => !isRuler(r, y.id))) h += heroRow(r, x, hiredNow.has(x.id) ? `<span class="newb">새로 들였다</span>` : '')
     // 떠돌이 인재 — 들일 수 있는 이
-    const wand = wanderersFor(r, me()) // 들인 이는 벌써 위 장군 줄에 있다
     if (wand.length > 0) {
       h += `<h4>떠돌이 인재가 우리 고을에 왔다</h4>`
       for (const w of wand) {
@@ -1822,16 +1838,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         h += `<div class="askc">${heroRow(r, w.hero, `<span class="mute">${esc(r.nodes[w.node]?.name ?? '')} · ${Math.max(0, w.until - r.season)}계절 안에 떠난다</span>`)}`
         h += `<div class="btns"><button class="btn ${hired ? 'on' : ''}" data-act="hire" data-id="${w.hero.id}" ${hired || left().grain >= w.price ? '' : 'disabled'}>${hired ? '들인다 · 취소' : `들인다 · 곡식 ${w.price}`}</button></div></div>`
       }
-    }
-    const caps = sorted(Object.values(r.heroes)).filter((x) => x.status === 'captive' && x.captor === me())
-    if (caps.length > 0) {
-      h += `<h4>사로잡은 장수 · 회유하면 우리 장수가 된다</h4>`
-      for (const x of caps) h += heroRow(r, x)
-    }
-    const foes = sorted(Object.values(r.heroes)).filter((x) => x.faction !== me() && x.status === 'free' && heroSeen(realm!, me(), x.id))
-    if (foes.length > 0) {
-      h += `<h4>겨뤄 본 적장</h4>`
-      for (const x of foes) h += heroRow(r, x)
     }
     return h
   }
@@ -3134,6 +3140,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'log-n': logNation = d['id'] ? d['id'] : null; break
       case 'layers': layersOpen = !layersOpen; break
       case 'layer': toggleLayer(d['v'] as LayerId); break
+      case 'htab': heroTab = d['v'] as typeof heroTab; break
       case 'nat-plot':
         diploMode = 'plot'
         sheet = { kind: 'diplo' }
