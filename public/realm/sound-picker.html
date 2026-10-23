@@ -22,7 +22,7 @@
 </style></head><body>
 
 <h1>칠십팔국 소리 고르기</h1>
-<p>전부 <b>CC0</b>(퍼블릭 도메인) — Freesound 와 OpenGameArt 에서 받아 <code>public/realm/sfx/</code> 에 넣어 둔 후보다.
+<p>맨 위 ⓪ 은 <b>공유마당</b>에서 받은 것(공공누리 제1유형·CC BY — 출처를 밝히고 쓴다). 그 아래는 <b>CC0</b>(퍼블릭 도메인) — Freesound 와 OpenGameArt 에서 받아 <code>public/realm/sfx/</code> 에 넣어 둔 후보다.
 <b class="pick">★ 지금 쓰는 것</b> 표시가 붙은 게 내가 먼저 골라 게임에 붙여 둔 것이다 (<code>src/ui/realm/sound.ts</code> 의 PICK). 들어 보고 <b>칸마다 번호만 말해 주면</b> 그걸로 바꾼다 (예: "3, 7, 12번").
 다 별로면 "OO 다시 찾아"라고 하면 된다.</p>
 <p>★ 나는 소리를 못 듣는다. 제목·길이·다운로드 수·설명만 보고 골랐다. 그래서 <span class="warn">일본·중국 느낌이 세게 나는 것</span>이
@@ -33,6 +33,63 @@
 <script>
 // [칸 제목, 쓰는 곳 설명, [[파일, 설명, 길이]...]]
 const GROUPS = [
+  ['⓪ 공유마당에서 새로 받은 것 (2026-10-23 · 출처 표시하면 상업 이용 가능)', [
+    ['tap_arms', '군사 명령을 누를 때 — 쇠·칼집·활시위', [
+      ["tap_arms_g1", "칼 집에넣는 · 김용배 · CC BY", "잘라 냄", "wav"],
+      ["tap_arms_g2", "국악 효과음 #361 (칼같이 쳐내는) · 주식회사 아이티앤 · CC BY", "잘라 냄", "wav"],
+      ["tap_arms_g3", "활시위당길때끼익1 · 김용배 · CC BY", "잘라 냄", "wav"],
+    ]],
+    ['tap_coin', '고용·짓기·교역 — 엽전', [
+      ["tap_coin_g1", "전통사물_엽전_찰랑이다_한주먹 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+      ["tap_coin_g2", "전통사물_엽전_떨어트리다_나무바닥_1개 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+      ["tap_coin_g3", "전통사물_엽전_올려놓다_상위에_천천히 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+    ]],
+    ['tap_brush', '사신·꾀·글 — 붓·종이', [
+      ["tap_brush_g1", "전통사물_붓_쓰다_글씨_천천히_ver.1 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+      ["tap_brush_g2", "전통사물_화선지_펼치다_천천히 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+      ["tap_brush_g3", "전통사물_고서_페이지_넘기다_중간 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+    ]],
+    ['tap_move', '정찰·원정·옮겨 살기 — 말굽·발걸음', [
+      ["tap_move_g1", "말 발굽 걷는1 · 김용배 · CC BY", "잘라 냄", "wav"],
+      ["tap_move_g2", "말 여러마리 뛰는 · 김용배 · CC BY", "잘라 냄", "wav"],
+      ["tap_move_g3", "전통사물_무명옷_옷소리_걷다 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+    ]],
+    ['tap_bell', '고르기·혼인·제사 — 방울·요령·풍경', [
+      ["tap_bell_g1", "국악기_방울1 · 한국저작권위원회 · CC BY", "잘라 냄", "wav"],
+      ["tap_bell_g2", "국악기_요령1 · 한국저작권위원회 · CC BY", "잘라 냄", "wav"],
+      ["tap_bell_g3", "근현대사물_풍경_치다_연속 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+    ]],
+    ['tap_drum', '판 시작·이어 하기 — 북·장구·징', [
+      ["tap_drum_g1", "전통악기_북_치다_느린속도 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+      ["tap_drum_g2", "전통악기_장구_치다_보통속도_Ver.1 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+      ["tap_drum_g3", "전통악기_징_열기_긴 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+    ]],
+    ['tap_map', '지도에서 고을 누르기 — 바둑알·장기알', [
+      ["tap_map_g1", "근현대사물_바둑알_두다_바둑판 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+      ["tap_map_g2", "전통사물_나무장기판_놓다_바닥_약하게 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+      ["tap_map_g3", "전통사물_장기알_장기알끼리_부딪히다_강하게 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+    ]],
+    ['tap_cancel', '닫기·물리기 — 딱따기·부채·목탁', [
+      ["tap_cancel_g1", "야경(딱딱이) · 김용배 · CC BY", "잘라 냄", "wav"],
+      ["tap_cancel_g2", "전통사물_부채_Ver.1_손에치다 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+      ["tap_cancel_g3", "전통사물_목탁_ver.2_치다_연속_중간 · (재)전주정보문화산업진흥원 · 공공누리 1유형", "잘라 냄", "wav"],
+    ]],
+    ['bgm_title', '첫 화면 음악 — 웅장한 것', [
+      ["bgm_title_g1", "국악 BGM #218 (웅장하게 준비를 하는 분위기) · 주식회사 아이티앤 · CC BY", "1분 남짓", "mp3"],
+      ["bgm_title_g2", "국악 BGM #179 (벅차오르는 분위기) · 주식회사 아이티앤 · CC BY", "1분 남짓", "mp3"],
+      ["bgm_title_g3", "국악 BGM #186 (세상을 헤쳐나가는 분위기) · 주식회사 아이티앤 · CC BY", "1분 남짓", "mp3"],
+    ]],
+    ['bgm_war', '싸움 음악 — 긴장되되 신나지 않게', [
+      ["bgm_war_g1", "국악 BGM #60 (결전 직전의 상황) · 주식회사 아이티앤 · CC BY", "1분 남짓", "mp3"],
+      ["bgm_war_g2", "국악 BGM #244 (배틀하는 분위기) · 주식회사 아이티앤 · CC BY", "1분 남짓", "mp3"],
+      ["bgm_war_g3", "국악 BGM #38 (긴박한 상황) · 주식회사 아이티앤 · CC BY", "1분 남짓", "mp3"],
+    ]],
+    ['bgm_lose', '졌을 때 음악', [
+      ["bgm_lose_g1", "국악 BGM #112 (비극적인 분위기) · 주식회사 아이티앤 · CC BY", "1분 남짓", "mp3"],
+      ["bgm_lose_g2", "국악 BGM #250 (구슬픈 분위기) · 주식회사 아이티앤 · CC BY", "1분 남짓", "mp3"],
+      ["bgm_lose_g3", "국악 BGM #64 (비장한 분위기) · 주식회사 아이티앤 · CC BY", "1분 남짓", "mp3"],
+    ]],
+  ]],
   ['① 화면 소리', [
     ['ui_open', '문서가 열릴 때 — 종이·두루마리 넘기는 소리', [
       ['ui_open_a', '책장 넘기기 · davidbain', '2.0초'],
@@ -159,18 +216,19 @@ const GROUPS = [
 /** 게임에 붙인 것 — src/ui/realm/sound.ts 의 PICK 과 같게 둔다 */
 const PICK = { ui_order: 'b', ui_open: 'c', season_turn: 'a', war_drums: 'a', arrow_volley: 'a', horses: 'c',
   horn_victory: 'a', defeat: 'a', capture: 'b', dex_new: 'c', birth: 'c', feast: 'a', envoy: 'b', coins: 'c',
-  amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b', bgm_map: 'f', bgm_war: 'a' }
+  amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b', bgm_map: 'f', bgm_war: 'g1', bgm_title: 'g1', bgm_lose: 'g1',
+  tap_arms: 'g1', tap_coin: 'g1', tap_brush: 'g1', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'g1' }
 let n = 0
 const out = []
 for (const [title, slots] of GROUPS) {
   out.push(`<h2>${title}</h2>`)
   for (const [slot, note, files] of slots) {
     out.push(`<h3>${note} <code>${slot}</code></h3>`)
-    for (const [file, desc, len] of files) {
+    for (const [file, desc, len, ext = 'ogg'] of files) {
       n++
-      out.push(`<div class="row"><b class="no">${n}</b><audio controls preload="none" src="sfx/${file}.ogg"></audio>`
+      out.push(`<div class="row"><b class="no">${n}</b><audio controls preload="none" src="sfx/${file}.${ext}"></audio>`
         + (PICK[slot] !== undefined && file === `${slot}_${PICK[slot]}` ? '<b class="pick">★ 지금 쓰는 것</b>' : '')
-        + `<span class="nm">${desc}</span><span class="dl">${len} · sfx/${file}.ogg</span></div>`)
+        + `<span class="nm">${desc}</span><span class="dl">${len} · sfx/${file}.${ext}</span></div>`)
     }
   }
 }

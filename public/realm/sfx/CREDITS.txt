@@ -71,3 +71,40 @@ war_drums_c.ogg  OpenGameArt · https://opengameart.org/content/prehistoric-drum
 bgm_map_f.mp3  형이 받아 온 평상시 음악 (assets_src/realm/sfx-in/bgm후보.mp3) · 출처·이용 조건 적을 것 (형에게 물음)
 bgm_map_g.mp3  형이 받아 온 평상시 음악 둘째 (assets_src/realm/sfx-in/배경음2.mp3 · 2026-10-23) · bgm_map_f 와 번갈아 돈다 (sound.ts ROTATE) · 출처·이용 조건 적을 것 (형에게 물음)
 bgm_win_a.mp3  형이 받아 온 이긴 뒤 음악(처음엔 싸움 음악이었으나 "너무 신나서" 10-23 옮김) (assets_src/realm/sfx-in/뭔가 즐겁게 추격하는듯한 한국풍 음원.mp3 · 2026-10-23) · 출처·이용 조건 적을 것 (형에게 물음)
+
+# ── 2026-10-23 공유마당(gongu.copyright.or.kr) — 공공누리 제1유형(출처표시) · CC BY(저작자 표시) 만. 둘 다 출처를 밝히면 상업적 이용·변경 가능 (형: "출처표기해야 상업적으로 사용가능하니까 주의")
+# 누르는 소리(tap_*)는 첫 소리부터 짧게 잘라 wav 로 (브라우저 · 소리 크기 맞춤) — 변경 허락 범위 안
+tap_arms_g1.wav  공유마당 · 「칼 집에넣는」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254785
+tap_arms_g2.wav  공유마당 · 「국악 효과음 #361 (칼같이 쳐내는)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13380194
+tap_arms_g3.wav  공유마당 · 「활시위당길때끼익1」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13255006
+tap_coin_g1.wav  공유마당 · 「전통사물_엽전_찰랑이다_한주먹」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287409
+tap_coin_g2.wav  공유마당 · 「전통사물_엽전_떨어트리다_나무바닥_1개」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287406
+tap_coin_g3.wav  공유마당 · 「전통사물_엽전_올려놓다_상위에_천천히」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287408
+tap_brush_g1.wav  공유마당 · 「전통사물_붓_쓰다_글씨_천천히_ver.1」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287388
+tap_brush_g2.wav  공유마당 · 「전통사물_화선지_펼치다_천천히」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287479
+tap_brush_g3.wav  공유마당 · 「전통사물_고서_페이지_넘기다_중간」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287360
+tap_move_g1.wav  공유마당 · 「말 발굽 걷는1」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253320
+tap_move_g2.wav  공유마당 · 「말 여러마리 뛰는」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253321
+tap_move_g3.wav  공유마당 · 「전통사물_무명옷_옷소리_걷다」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287378
+tap_bell_g1.wav  공유마당 · 「국악기_방울1」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13265908
+tap_bell_g2.wav  공유마당 · 「국악기_요령1」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13265913
+tap_bell_g3.wav  공유마당 · 「근현대사물_풍경_치다_연속」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287314
+tap_drum_g1.wav  공유마당 · 「전통악기_북_치다_느린속도」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287482
+tap_drum_g2.wav  공유마당 · 「전통악기_장구_치다_보통속도_Ver.1」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287485
+tap_drum_g3.wav  공유마당 · 「전통악기_징_열기_긴」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287487
+tap_map_g1.wav  공유마당 · 「근현대사물_바둑알_두다_바둑판」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287272
+tap_map_g2.wav  공유마당 · 「전통사물_나무장기판_놓다_바닥_약하게」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287372
+tap_map_g3.wav  공유마당 · 「전통사물_장기알_장기알끼리_부딪히다_강하게」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287421
+tap_cancel_g1.wav  공유마당 · 「야경(딱딱이)」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254155
+tap_cancel_g2.wav  공유마당 · 「전통사물_부채_Ver.1_손에치다」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287385
+tap_cancel_g3.wav  공유마당 · 「전통사물_목탁_ver.2_치다_연속_중간」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287376
+bgm_title_g1.mp3  공유마당 · 「국악 BGM #218 (웅장하게 준비를 하는 분위기)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386958
+bgm_title_g2.mp3  공유마당 · 「국악 BGM #179 (벅차오르는 분위기)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386919
+bgm_title_g3.mp3  공유마당 · 「국악 BGM #186 (세상을 헤쳐나가는 분위기)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386926
+bgm_war_g1.mp3  공유마당 · 「국악 BGM #60 (결전 직전의 상황)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386800
+bgm_war_g2.mp3  공유마당 · 「국악 BGM #244 (배틀하는 분위기)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386984
+bgm_war_g3.mp3  공유마당 · 「국악 BGM #38 (긴박한 상황)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386778
+bgm_lose_g1.mp3  공유마당 · 「국악 BGM #112 (비극적인 분위기)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386852
+bgm_lose_g2.mp3  공유마당 · 「국악 BGM #250 (구슬픈 분위기)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386990
+bgm_lose_g3.mp3  공유마당 · 「국악 BGM #64 (비장한 분위기)」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386804
+# 공공누리 제1유형 표시 문구: 이 게임의 위 소리 가운데 공공누리 표시가 있는 것은 (재)전주정보문화산업진흥원이 공공누리 제1유형으로 개방한 저작물을 이용하였으며, 공유마당(gongu.copyright.or.kr)에서 무료로 받을 수 있다.

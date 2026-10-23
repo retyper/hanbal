@@ -12,24 +12,25 @@ export const PICK = {
   horn_victory: 'a', defeat: 'a', capture: 'b',
   dex_new: 'c', birth: 'c', feast: 'a', envoy: 'b', coins: 'c',
   amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b',
-  bgm_map: 'f', bgm_war: 'a',
-  // 이기고 진 뒤의 음악 — 이김은 형이 받은 "즐겁게 추격하는 듯한 한국풍" (싸움 음악으로는 너무 신났다 — 형 10-23).
-  // 짐은 형이 받아 오면 public/realm/sfx/bgm_lose_a.* 로 둔다. 파일이 없으면 듣던 음악을 그대로 둔다
-  bgm_win: 'a', bgm_lose: 'a',
-  // 첫 화면(로그인·이어 하기) 음악 — 웅장한 것 (형 10-23: "로그인 화면 메인은 웅장한 bgm 따로"). 받기 전엔 조용히
-  bgm_title: 'a',
-  // 누를 때 나는 소리 — 누른 것의 바탕(쇠·엽전·붓·말굽·방울·북·바둑돌)대로 (형 10-23: "탭할 때 나는 sfx 도 소재에 맞게 다양한 소리").
-  // 형이 받아 오면 public/realm/sfx/<자리>_a.* 로 둔다. 그 전엔 TAP_STANDIN 의 소리로 (지도 고을은 소리 없이)
-  tap_arms: 'a', tap_coin: 'a', tap_brush: 'a', tap_move: 'a', tap_bell: 'a', tap_drum: 'a', tap_map: 'a', tap_cancel: 'a',
+  // g1·g2·g3 — 공유마당(공공누리 제1유형 · CC BY)에서 받은 후보 (형 10-23: "공공누리에서 니가 싹 받아와서 쓸 수 있는 거면 다 해 · 출처표기 주의").
+  // 출처는 sfx/CREDITS.txt 끝 · 첫 화면의 「소리 출처」. 형이 sound-picker.html 에서 듣고 고르면 글자만 바꾼다
+  bgm_map: 'f', bgm_war: 'g1',
+  // 이기고 진 뒤의 음악 — 이김은 형이 받은 "즐겁게 추격하는 듯한 한국풍" (싸움 음악으로는 너무 신났다 — 형 10-23)
+  bgm_win: 'a', bgm_lose: 'g1',
+  // 첫 화면(로그인·이어 하기) 음악 — 웅장한 것 (형 10-23: "로그인 화면 메인은 웅장한 bgm 따로")
+  bgm_title: 'g1',
+  // 누를 때 나는 소리 — 누른 것의 바탕(쇠·엽전·붓·말굽·방울·북·바둑돌·딱따기)대로 (형 10-23: "탭할 때 나는 sfx 도 소재에 맞게 다양한 소리")
+  tap_arms: 'g1', tap_coin: 'g1', tap_brush: 'g1', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'g1',
 } as const
-/** ogg 가 아닌 후보 — 형이 받아 온 것은 받은 꼴 그대로 둔다 (assets_src/realm/sfx-in) */
-const EXT: Readonly<Partial<Record<string, string>>> = { bgm_map_f: 'mp3', bgm_map_g: 'mp3', bgm_win_a: 'mp3' }
+/** ogg 가 아닌 후보 — 형이 받아 온 것은 받은 꼴 그대로 · 공유마당 음악은 mp3 · 누르는 소리는 브라우저로 잘라 낸 wav */
+const EXT: Readonly<Partial<Record<string, string>>> = {
+  bgm_map_f: 'mp3', bgm_map_g: 'mp3', bgm_win_a: 'mp3',
+  ...Object.fromEntries(['bgm_title', 'bgm_war', 'bgm_lose'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'mp3']))),
+  ...Object.fromEntries(['tap_arms', 'tap_coin', 'tap_brush', 'tap_move', 'tap_bell', 'tap_drum', 'tap_map', 'tap_cancel'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'wav']))),
+}
 export type Slot = keyof typeof PICK
 /** 아직 파일을 안 받은 자리 — 없으면 소리 없이 듣던 음악을 둔다 (있으면 출처를 적는다) */
-export const LATER: ReadonlySet<Slot> = new Set<Slot>([
-  'bgm_lose', 'bgm_title',
-  'tap_arms', 'tap_coin', 'tap_brush', 'tap_move', 'tap_bell', 'tap_drum', 'tap_map', 'tap_cancel',
-])
+export const LATER: ReadonlySet<Slot> = new Set<Slot>([])
 /** 한 곡이 끝나면 다음 곡으로 넘어가는 자리 — 첫 글자가 PICK 이다 (형이 받은 평상시 음악 둘: bgm후보 · 배경음2) */
 export const ROTATE: Readonly<Partial<Record<Slot, readonly string[]>>> = { bgm_map: ['f', 'g'] }
 

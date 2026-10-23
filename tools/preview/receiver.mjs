@@ -12,7 +12,7 @@ import { createServer } from 'node:http'
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, join, normalize } from 'node:path'
 
-const OK = /^(bg|sprites|realm\/map-[a-z]+)\/[a-z0-9-]+\.webp$|^realm\/(keyart|battle|title|event)\/[a-z0-9-]+\.jpg$/ // 영남 판의 계절 지도도 받는다 (2026-10-18) · 표지·싸움터·로비·사건 jpg 도 (2026-10-23)
+const OK = /^(bg|sprites|realm\/map-[a-z]+)\/[a-z0-9-]+\.webp$|^realm\/(keyart|battle|title|event)\/[a-z0-9-]+\.jpg$|^realm\/sfx\/[a-z0-9_]+\.wav$/ // 영남 판의 계절 지도도 받는다 (2026-10-18) · 표지·싸움터·로비·사건 jpg 도 · 브라우저로 잘라 낸 누르는 소리 wav 도 (2026-10-23)
 createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173')
   res.setHeader('Access-Control-Allow-Methods', 'PUT, OPTIONS')
@@ -26,8 +26,9 @@ createServer((req, res) => {
     const buf = Buffer.concat(chunks)
     const isWebp = buf.subarray(0, 4).toString('latin1') === 'RIFF' && buf.subarray(8, 12).toString('latin1') === 'WEBP'
     const isJpg = buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff
-    if (!(rel.endsWith('.webp') ? isWebp : isJpg)) {
-      res.writeHead(400).end('webp/jpg 가 아니다')
+    const isWav = buf.subarray(0, 4).toString('latin1') === 'RIFF' && buf.subarray(8, 12).toString('latin1') === 'WAVE'
+    if (!(rel.endsWith('.webp') ? isWebp : rel.endsWith('.wav') ? isWav : isJpg)) {
+      res.writeHead(400).end('webp/jpg/wav 가 아니다')
       return
     }
     const file = normalize(join('public', rel))

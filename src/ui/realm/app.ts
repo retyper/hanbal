@@ -2475,7 +2475,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   // ───────── 판 바깥 — 첫 화면 · 판 고르기 · 나라 고르기 (front.ts)
   function frontHtml(f: Front): string {
-    const links = `<p class="fine"><a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a> ${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}</p>`
+    const links = `<p class="fine"><a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a> ${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
+      // 소리의 출처 — 공공누리 제1유형·CC BY 는 출처를 밝혀야 쓸 수 있다 (형 10-23: "출처표기해야 상업적으로 사용가능하니까 주의")
+      + ` <a class="btn ghost" href="${BASE}realm/sfx/CREDITS.txt" target="_blank" rel="noopener">소리 출처</a></p>`
     switch (f.kind) {
       case 'title': {
         // 도감 — 판을 넘어 남는 것 (VISION §5-4). 만난 장수 수를 단추에
