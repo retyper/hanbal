@@ -147,7 +147,9 @@ export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<
       + `<span class="pp">${k.esc(c.hero)} — ${k.esc(c.goal)}</span></span>`
     h += `<button class="bcard chap${open ? '' : ' locked'}" ${open ? `data-act="fr-board" data-v="${c.region}"` : 'data-act="fr-locked"'} data-peek><span class="bth" style="background-image:url('${k.art}${c.art}')">`
     // 아직 지도가 없는 장은 자물쇠가 아니라 「짓는 중」 — 앞 장을 깨도 안 열려 자물쇠면 버그처럼 보인다 (형 10-24: "2장 깼는데 왜 3장 안 열리냐")
-    h += `<i class="bbadge">${c.n}장</i>${open ? '' : ready ? '<i class="lock">🔒</i>' : '<i class="lock wip">🛠 짓는 중</i>'}<span class="btitle"><small>${k.esc(c.era)} · ${k.esc(c.hero)}</small><b>${k.esc(c.name)}</b>${open ? '' : `<em>${k.esc(why)}</em>`}</span></span>${peek}</button>`
+    // 깬 장 — 금빛 도장 (형 10-24: "깬 캠페인은 깼다는 표시")
+    const cleared = ready && (tierWon?.(c.region!) ?? 0) > 0
+    h += `<i class="bbadge">${c.n}장</i>${cleared ? '<i class="cleared">✓ 깼다</i>' : ''}${open ? '' : ready ? '<i class="lock">🔒</i>' : '<i class="lock wip">🛠 짓는 중</i>'}<span class="btitle"><small>${k.esc(c.era)} · ${k.esc(c.hero)}</small><b>${k.esc(c.name)}</b>${open ? '' : `<em>${k.esc(why)}</em>`}</span></span>${peek}</button>`
   })
   h += `</div><h3 class="bsec"><b>자유 판</b><span>나라 하나를 골라 마음대로 — 정복 · 맹주 · 철과 뱃길 · 큰 제사</span></h3><div class="bcards">`
   for (const b of BOARDS) {
@@ -400,6 +402,8 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): 
 }
 
 export const FRONT_CSS = `
+/* 깬 장 */
+.ap .front .bcard .cleared { position: absolute; right: 8px; top: 8px; z-index: 2; font-style: normal; font-weight: 800; font-size: 13px; padding: 3px 10px; border-radius: 999px; background: #2c4a1ccc; border: 1px solid #9fd18b; color: #d8ffc8; box-shadow: 0 2px 6px #000a; }
 /* 칭호 도장 — 붉은 네모 낙관 */
 .ap .front .seal { display: flex; align-items: center; gap: 12px; margin: 8px auto 6px; max-width: 460px; }
 .ap .front .seal b { flex: none; display: grid; place-items: center; min-width: 64px; height: 64px; padding: 0 8px; border: 3px solid #c0392b; border-radius: 6px; color: #e04a3a; font-family: var(--display); font-size: 26px; transform: rotate(-4deg); box-shadow: inset 0 0 0 2px #c0392b55; background: #2a0f0a66; }
