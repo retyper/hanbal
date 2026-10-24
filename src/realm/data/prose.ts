@@ -1153,6 +1153,10 @@ export const NODE_NOW: Readonly<Record<string, string>> = {
   'y-w-gomgol': '양산 원동', 'y-w-gunwi': '군위', 'y-w-uiseong': '의성 단밀', 'y-w-cheongsong': '청송',
   'y-w-yeongdeok': '영덕', 'y-w-geoje': '거제', 'y-w-namhae': '남해',
   // 삼한 남부 판 (data/regions/south.ts)
+  // 2장 졸본 — 자리(jumong.ts JUMONG_PLACES 경위도)에 맞춘 짐작. 강·산 이름은 우리 말로
+  'jm-jolbon-cap': '랴오닝 환런 오녀산성', 'jm-heulgol': '환런 혼강 들', 'jm-eomri': '퉁화 남쪽 혼강 나루', 'jm-modun': '환런 동쪽 골짜기',
+  'jm-gungnae': '지린 지안(집안)', 'jm-biryu-cap': '퉁화 혼강 윗줄기', 'jm-biryu-v': '지린 류허', 'jm-buyeo-camp': '지린 후이난',
+  'jm-gaema': '자강도 강계', 'jm-haengin-cap': '백두산 서남 기슭', 'jm-haengin-v': '백두산 서쪽 기슭', 'jm-okjeo-cap': '함경북도 회령', 'jm-okjeo-port': '함경북도 어랑',
   'tut-wirye-cap': '서울 송파 풍납토성', 'tut-acha': '서울 광진 아차산', 'tut-galdae': '서울 마포', 'tut-sodo': '남양주', 'tut-solmoe': '성남 남한산', 'tut-gaetgol': '부천', 'tut-michuhol-cap': '인천 문학산',
   'm-baekje-cap': '서울 송파·하남', 'm-baekje-v': '서울 한강', 'm-michuhol-cap': '인천', 'n-maek-cap': '춘천',
   'm-mokji-cap': '천안 직산', 'm-mokji-v': '아산', 'm-ungcheon-cap': '공주', 'm-sangdang-cap': '청주', 'm-sangdang-iron': '충주',

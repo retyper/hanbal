@@ -394,14 +394,22 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): 
   h += `<div class="stats"><span><b>${years}</b>해</span><span><b>${capsHeld(r, me)}</b>도읍</span><span><b>${won}</b>이긴 싸움</span><span><b>${lost}</b>진 싸움</span>`
   h += `${r.known !== undefined ? `<span><b>${found}</b>새로 안 나라</span>` : ''}<span><b>${heroes}</b>얻은 장수</span></div>`
   if (pickd.length > 0) h += `<div class="chron"><h4>연대기</h4>${pickd.map((e) => `<p class="${e.big ? 'big' : ''}"><i>${k.esc(seasonLabel(e.s))}</i>${k.esc(e.t)}</p>`).join('')}</div>`
+  // 이야기 장을 이겼다 — 사서의 한 줄과 다음 장으로 가는 단추 (점검 10-25: 다음 장은 새 게임 → 판 고르기로만 갔다)
+  const ch = chapterOfRegion(region)
+  const nextCh = win && ch !== undefined ? CHAPTERS.find((c) => c.n === ch.n + 1 && c.region !== null) : undefined
+  if (win && ch !== undefined) h += `<blockquote class="srcline">${k.esc(ch.source)}</blockquote>`
   h += `${keep}<div class="btns">`
+  if (nextCh !== undefined) h += `<button class="btn pri nextch" data-act="fr-board" data-v="${nextCh.region}">다음 장 — ${nextCh.n}장 ${k.esc(nextCh.name)} ›</button>`
   // 새 게임이 맨 앞 — 무한 모드는 하고 싶은 사람만 고르는 곁길 (형 10-24: "무한모드를 1번 선택하게 되면 안 돼")
-  h += `<button class="btn pri" data-act="fr-new">새 게임</button><button class="btn" data-act="fr-again">${k.esc(josa(name(me), "으로", "로"))} 다시</button>`
+  h += `<button class="btn${nextCh !== undefined ? '' : ' pri'}" data-act="fr-new">새 게임</button><button class="btn" data-act="fr-again">${k.esc(josa(name(me), "으로", "로"))} 다시</button>`
   if (win && !all) h += `<button class="btn" data-act="fr-endless">계속하기 (무한 모드)<small>남은 나라까지 이어서 한다</small></button>`
   return h + `<button class="btn ghost" data-act="fr-look">지도 둘러보기</button></div></div></div>`
 }
 
 export const FRONT_CSS = `
+/* 장을 이긴 끝 화면 — 사서의 한 줄 · 다음 장 */
+.ap .front .srcline { max-width: 520px; margin: 10px auto 4px; padding: 8px 14px; border-left: 3px solid #c9a45a; color: #e8dcc0; font-family: var(--display); font-size: 15px; line-height: 1.6; background: #1a140ccc; border-radius: 0 10px 10px 0; text-align: left; }
+.ap .front .btn.nextch { font-size: 16px; padding: 10px 18px; }
 /* 깬 장 */
 .ap .front .bcard .cleared { position: absolute; right: 8px; top: 8px; z-index: 2; font-style: normal; font-weight: 800; font-size: 13px; padding: 3px 10px; border-radius: 999px; background: #2c4a1ccc; border: 1px solid #9fd18b; color: #d8ffc8; box-shadow: 0 2px 6px #000a; }
 /* 칭호 도장 — 붉은 네모 낙관 */

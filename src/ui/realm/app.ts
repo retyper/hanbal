@@ -13,7 +13,7 @@ import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../../realm/data/nations-yeongnam.ts'
 import { SOUTH_NATIONS } from '../../realm/data/nations-south.ts'
 import { WORLD_NATIONS } from '../../realm/data/nations-world.ts'
-import { HAENGIN_NATION } from '../../realm/data/regions/jumong.ts'
+import { HAENGIN_NATION, JUMONG_NATIONS } from '../../realm/data/regions/jumong.ts'
 import { chapterOfRegion } from '../../realm/data/campaign.ts'
 import { knownOf, knows } from '../../realm/discovery.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
@@ -357,7 +357,7 @@ const rulerId = (nation: string): string => `${nation}-ruler`
 /** 판마다 나라 고르기 글 — 변한 6국 축소판 · 영남 판 */
 const nationsOf = (region: RegionId): readonly NationInfo[] => (region === 'yeongnam' ? YEONGNAM_NATIONS : region === 'south' ? SOUTH_NATIONS : region === 'world' ? WORLD_NATIONS
   : region === 'tutorial' ? SOUTH_NATIONS.filter((n) => n.id === 'baekje' || n.id === 'michuhol')
-    : region === 'jumong' ? [...WORLD_NATIONS.filter((n) => ['goguryeo', 'biryuna', 'buyeo', 'bukokjeo'].includes(n.id)), HAENGIN_NATION] : NATIONS)
+    : region === 'jumong' ? [...JUMONG_NATIONS, HAENGIN_NATION] : NATIONS)
 
 /** 판마다 나라의 진짜 군주 — 나라 고르기·자세히 보기에서도 그 판의 얼굴로 (2장 고구려 = 젊은 궁수 주몽 · 형 10-24) */
 const BOARD_RULERS = new Map<RegionId, Readonly<Record<string, string>>>()

@@ -265,6 +265,9 @@ export function capKin(id: string): CapKin {
   if (id.startsWith('m-') || id.startsWith('tut-')) return 'mahan' // 배우는 판 — 한강 아래 백제·미추홀
   if (id.startsWith('g-') || id === 'y-yangmaek-cap') return 'goguryeo' // 양맥 — 압록 가의 맥족, 고구려와 같은 갈래
   if (id.startsWith('b-')) return 'buyeo'
+  // 2장 졸본 — 졸본·비류·행인은 맥족 고구려 갈래, 북옥저는 바닷가 읍락 (점검 10-25: 접두 jm- 를 몰라 변한 목책으로 그려졌다)
+  if (id === 'jm-okjeo-cap') return 'dongye'
+  if (id.startsWith('jm-')) return 'goguryeo'
   if (/^(n|o|d|t|u)-/.test(id)) return 'dongye'
   return 'jinbyeon'
 }

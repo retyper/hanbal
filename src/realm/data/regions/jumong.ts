@@ -134,6 +134,36 @@ const byId = <T extends { id: string }>(xs: readonly T[]): Record<string, T> => 
 export const JUMONG_NATION_IDS: readonly string[] = ['goguryeo']
 
 /** 이 장에만 있는 나라의 소개 — 고구려·비류국·동부여·북옥저는 넓은 판의 글을 쓴다 */
+/**
+ * 2장 나라 소개 — 그 시대(기원전 37년 졸본) 그대로. 넓은 판의 글(국내성·나부·길림)을 빌려 쓰면 시대가 어긋났다 (점검 10-25)
+ */
+export const JUMONG_NATIONS: readonly NationInfo[] = [
+  {
+    id: 'goguryeo', name: '고구려', place: '졸본 — 환런 오녀산성 (설)',
+    blurb: '동부여를 빠져나온 주몽이 막 세운 작은 나라. 활 잘 쏘는 무리와 오이·마리·협보뿐 — 땅도 사람도 적지만 산성이 높다.',
+    source: '『삼국사기』 고구려본기 — 주몽이 졸본천에 이르러 땅이 기름지고 산하가 험한 것을 보고 도읍하려 하였다. 나라 이름을 고구려라 하였다.',
+    bars: { army: 3, grain: 2, militia: 2, terrain: 4 },
+  },
+  {
+    id: 'biryuna', name: '비류국', place: '비류수(혼강) 윗줄기 (지음)',
+    blurb: '송양왕이 다스리는 비류수 가의 오랜 나라. 대대로 왕 노릇을 해 와 새로 온 주몽을 얕본다. 활 솜씨를 겨루자 한다.',
+    source: '『삼국사기』 고구려본기 — 송양이 "나는 여러 대에 걸쳐 왕 노릇을 하였다"며 겨루기를 청했으나 주몽을 당하지 못했다. 동명성왕 2년 나라를 들어 항복했다.',
+    bars: { army: 3, grain: 3, militia: 3, terrain: 3 },
+  },
+  {
+    id: 'buyeo', name: '동부여', place: '동부여의 추격 진영 (지음)',
+    blurb: '금와왕의 맏아들 대소가 이끄는 추격군. 말과 군사가 많고 주몽을 미워한다. 졸본까지는 멀다.',
+    source: '『삼국사기』 고구려본기 — 대소 등이 주몽을 해치려 하자 주몽은 오이·마리·협보와 달아났다. 추격하는 군사가 엄수에 이르렀다.',
+    bars: { army: 5, grain: 3, militia: 2, terrain: 2 },
+  },
+  {
+    id: 'bukokjeo', name: '북옥저', place: '두만강 아래 — 회령 쪽 (설)',
+    blurb: '두만강 가 바닷가 읍락들. 큰 군장 없이 어른들이 다스린다. 소금과 물고기가 나고, 싸움엔 약하다.',
+    source: '『삼국사기』 고구려본기 — 동명성왕 10년 부위염을 보내 북옥저를 쳐서 그 땅을 성읍으로 삼았다. 위서 동옥저전 [곁들임].',
+    bars: { army: 2, grain: 3, militia: 2, terrain: 3 },
+  },
+]
+
 export const HAENGIN_NATION: NationInfo = {
   id: 'haengin', name: '행인국', place: '태백산 동남 (설)',
   blurb: '태백산 기슭의 산사람들. 숲이 깊고 고개가 높아 치기 어렵다. 곡식은 모자란다.',
