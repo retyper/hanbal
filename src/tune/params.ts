@@ -1583,6 +1583,8 @@ export const SPEC = {
     hireCutMs: [100, 430, 760] as const,
     /** 돌아온 장수 알림이 머무는 시간(ms) — 큰 장면이 떠 있는 동안은 세지 않는다 */
     backToastMs: 7000,
+    /** 배우는 판 — 한 단계에 이만큼(ms) 머물면 「막혔으면 건너뛰기」가 뜬다 */
+    tutStuckMs: 25000,
     hirePopMs: 1120,
     bridalShotS: k(5, 2, 12, 0.5, '신방 장면: 한 장이 머무는 시간(초)'),
     warBeatMin: k(0.5, 0.2, 2, 0.05, '싸움: 깃발 차례 가장 짧게(초)'),

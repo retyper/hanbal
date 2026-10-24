@@ -87,7 +87,8 @@ export const TUT_STEPS: readonly TutStep[] = [
   },
   {
     id: 'persuade', text: '사로잡은 해비를 우리 장수로 만든다. 「장수」에서 그 얼굴을 누르고 「회유한다」.',
-    press: ['[data-act="persuade"]', `[data-act="hero"][data-id="${FOE_HERO}"]`, tab('heroes')],
+    // 사로잡은 장수는 장수 판의 「옥에 가둔 적장」 칸에 있다 — 그 칸을 먼저 열게 (형 10-24: "10/12 에서 장수 탭 눌러도 다음으로 안 가짐")
+    press: ['[data-act="persuade"]', `[data-act="hero"][data-id="${FOE_HERO}"]`, '[data-act="htab"][data-v="jail"]', tab('heroes')],
     done: (c) => c.orders.some((o) => o.kind === 'persuade') || c.r.heroes[FOE_HERO]?.persuade !== undefined || c.r.heroes[FOE_HERO]?.faction === c.r.player,
   },
   {
@@ -130,11 +131,12 @@ export function tutStyle(step: TutStep | undefined): string {
   return `.ap .wr ${pick}:not(.on), .ap .wr:has(${pick}.on) ${go} { outline: 3px solid #ffd27a; outline-offset: 3px; animation: tutglow .9s ease-in-out infinite alternate; border-radius: 10px; }`
 }
 
-export function tutBandHtml(i: number, esc: (s: string) => string): string {
+export function tutBandHtml(i: number, esc: (s: string) => string, stuck = false): string {
   if (i >= TUT_STEPS.length) {
     return `<div class="tutb done"><b>다 배웠다</b><span>이제 작은 판(변한 여섯 나라)이 열렸다. 처음 화면의 「새 게임」에서 고른다.</span><button class="btn sm on" data-act="tut-end">처음으로</button></div>`
   }
-  return `<div class="tutb"><i>${i + 1}/${TUT_STEPS.length}</i><span>${esc(TUT_STEPS[i]!.text)}</span></div>`
+  // 건너뛰기 — 한 단계에 오래 머물면(갇힌 듯하면) 그때만 뜬다. 평소엔 눌러야 할 것을 눌러야 넘어간다 (형 10-20) · 막히면 그대로 떠난다 (형 10-24)
+  return `<div class="tutb"><i>${i + 1}/${TUT_STEPS.length}</i><span>${esc(TUT_STEPS[i]!.text)}</span>${stuck ? '<button class="tutskip" data-act="tut-skip">막혔으면 건너뛰기 ›</button>' : ''}</div>`
 }
 
 // ───────── 스포트라이트 — 누를 곳만 밝고, 그곳만 눌린다
@@ -310,6 +312,7 @@ export const TUT_CSS = `
   background: #1f1710f8; border: 1px solid #e8c06a; box-shadow: 0 6px 24px #000d; color: #f3ead8; font-size: 15px; line-height: 1.5; }
 .tutb i { font-style: normal; color: #f3d48a; font-weight: 700; font-size: 12.5px; } .tutb > span { flex: 1 1 260px; }
 .tutb.done b { color: #9fd18b; }
+.tutb .tutskip { margin-left: auto; padding: 3px 9px; border-radius: 8px; border: 1px solid #6a5a3e; background: #0006; color: #c9b48a; font-size: 12px; cursor: pointer; }
 /* 먼저 닫을 것을 가리킬 때 — 띠 맨 위에 한 줄 */
 .tutband[data-pre="rep"] .tutb::before, .tutband[data-pre="grip"] .tutb::before { flex: 1 0 100%; color: #ffd27a; font-weight: 700; font-size: 13.5px; }
 .tutband[data-pre="rep"] .tutb::before { content: '먼저 소식을 읽고 「확인」을 누른다'; }

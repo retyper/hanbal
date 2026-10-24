@@ -490,6 +490,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let partySel = ''
   /** 장수 판의 「사신으로 보낸다」 — 다음에 꾸리는 사신에 이 장수를 미리 고른다 */
   let envoyPick = ''
+  /** 배우는 판 — 지금 단계와 그 단계에 들어선 때 (오래 머물면 「건너뛰기」) */
+  let tutStepAt: [number, number] = [-1, 0]
   /** 등용 단추를 누른 그 순간 장면을 보여 준 떠돌이 — 계절이 넘어갈 때 같은 장면을 또 띄우지 않는다 */
   const hireShown = new Set<string>()
   /** 태몽을 이미 보여 준 짝 — 한 쌍에 한 번 (이 화면을 여는 동안) */
@@ -1018,7 +1020,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       saveTut()
       if (i >= TUT_STEPS.length) markTutorialOver('done')
     }
-    band.innerHTML = tutBandHtml(i, esc)
+    if (i !== tutStepAt[0]) tutStepAt = [i, performance.now()]
+    band.innerHTML = tutBandHtml(i, esc, performance.now() - tutStepAt[1] > P.realm.tutStuckMs)
     tutSheet.textContent = tutStyle(TUT_STEPS[i])
     spot.set(TUT_STEPS[i], ctx)
   }
@@ -3571,6 +3574,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'fr-tutorial': host.onNewGame('baekje', 'tutorial'); return
       case 'fr-locked': return
       case 'tut-end': markTutorialOver('done'); front = { kind: 'title' }; paint(); return
+      case 'tut-skip': {
+        // 이 단계를 건너뛴다 — 다음 단계부터 (마지막이면 끝)
+        if (realm === null) return
+        loadTut()
+        tut.i = tutAt(tut.i, { r: plan(), orders: ordersNow(), report, acts: tut.acts }) + 1
+        saveTut()
+        if (tut.i >= TUT_STEPS.length) markTutorialOver('done')
+        paint()
+        return
+      }
       case 'fr-nation': if (front !== null && front.kind === 'nations') front = { kind: 'detail', region: front.region, id: d['id']! }; $('.mapwrap').scrollTop = 0; paint(); return
       case 'fr-start': if (front !== null && front.kind === 'detail') host.onNewGame(d['id']!, front.region, Math.min(tierPick[front.region] ?? 1, tierOpen(front.region))); return
       case 'fr-again': if (realm !== null) { const rg = realm.region ?? 'byeonhan-mini'; host.onNewGame(realm.player, rg, Math.min(realm.tier ?? 1, tierOpen(rg))) } return

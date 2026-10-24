@@ -113,3 +113,26 @@ describe('옛 배우는 판 저장 → 한강 아래 백제·미추홀', () => {
     assert.ok(Object.values(now.edges).every((e) => now.nodes[e.a] !== undefined && now.nodes[e.b] !== undefined))
   })
 })
+
+describe('배우는 판 — 갇히지 않는다', () => {
+  // 형 10-24: "튜토리얼 10/12 사로잡은 해비 — 장수 탭 눌러도 다음으로 안 가짐". 사로잡은 장수는 「옥에 가둔 적장」 칸에만 보인다
+  it('회유 단계 — 장수 판이 열렸는데 해비가 안 보이면 「옥에 가둔 적장」 칸을 가리킨다', async () => {
+    const { tutPick } = await import('../../src/ui/realm/tutorial.ts')
+    const step = TUT_STEPS.find((s) => s.id === 'persuade')!
+    const c = { r: startTutorial(1), orders: [], report: null, acts: new Set<string>() }
+    // 장수 판이 막 열린 화면: 탭 단추와 칸 단추는 보이고, 해비 줄·회유 단추는 아직 안 보인다
+    const onScreen = new Set(['[data-act="tab"][data-tab="heroes"]', '[data-act="htab"][data-v="jail"]'])
+    assert.equal(tutPick(step, c, (sel) => onScreen.has(sel)), '[data-act="htab"][data-v="jail"]')
+    // 칸을 열면 해비 줄
+    onScreen.add('[data-act="hero"][data-id="tut-haebi"]')
+    assert.equal(tutPick(step, c, (sel) => onScreen.has(sel)), '[data-act="hero"][data-id="tut-haebi"]')
+  })
+
+  it('오래 머문 단계엔 「건너뛰기」가 뜬다 (평소엔 없다)', async () => {
+    const { tutBandHtml } = await import('../../src/ui/realm/tutorial.ts')
+    for (let i = 0; i < TUT_STEPS.length; i++) {
+      assert.ok(!tutBandHtml(i, (s) => s).includes('tut-skip'))
+      assert.ok(tutBandHtml(i, (s) => s, true).includes('data-act="tut-skip"'))
+    }
+  })
+})
