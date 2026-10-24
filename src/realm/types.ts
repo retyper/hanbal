@@ -608,6 +608,11 @@ export interface Realm {
   /** 혼인의 열매 — due 계절에 자식 장수가 나선다 (heroes.stepHeroes). 옛 저장에는 없다 */
   /** 혼인의 열매 — due 계절에 아이가 나선다 · wed 혼인한 계절 · late 신혼에 떨어져 지내 늦어진 계절 (옛 저장엔 wed·late 가 없다) */
   births?: Array<{ a: string; b: string; faction: string; due: number; wed?: number; late?: number }>
+  /**
+   * 자라는 아이 — 태어나서 grown 계절까지는 장수가 아니다 (판의 장수 목록에 없다 · 일을 못 맡는다). 때가 되면 장수로 나선다
+   * (형 10-24: "태어난 아이는 장수로 바로 쓰지 않고 성장 중으로 · 4계절쯤 지나면 장수로")
+   */
+  growing?: Array<{ hero: Hero; grown: number }>
   /** 원정 — 지도 바깥 먼 땅으로 간 장수. 결과는 보낼 때 정해진다 (expedition.ts · SYSTEMS §15-4). 옛 저장에는 없다 */
   expeditions?: Expedition[]
   /** 길 위·고을에 선 개척단 (parties.ts) — 옛 저장에는 없다 */
@@ -935,6 +940,8 @@ export type ReportLine =
   | { readonly kind: 'wed'; readonly faction: string; readonly a: string; readonly b: string; readonly due: number }
   /** 혼인의 열매 — 자식 장수가 나섰다. surprise = 부모 누구에게도 없던 특성이 터졌다 */
   | { readonly kind: 'birth'; readonly faction: string; readonly hero: string; readonly a: string; readonly b: string; readonly surprise?: string }
+  /** 자라던 아이가 다 자라 장수로 나섰다 */
+  | { readonly kind: 'grown'; readonly faction: string; readonly hero: string }
   /** 떠돌이 인재가 그 고을에 나타났다 — 고을 주인이 until 계절까지 들일 수 있다 */
   | { readonly kind: 'wanderer'; readonly hero: string; readonly node: string; readonly until: number; readonly price: number }
   /** 맡긴 장수가 고을을 잃어 물러났다 · 사로잡혔다 */

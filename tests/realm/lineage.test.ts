@@ -137,6 +137,32 @@ describe('혈통 — 자식', () => {
     assert.equal(r.births?.length ?? 0, 0)
   })
 
+  it('태어나면 자라는 아이 — 장수가 아니다 · kidGrowSeasons 뒤에 장수로 나선다 (형 10-24)', () => {
+    const { lines } = grow(11)
+    const birth = lines.findIndex((l) => l.kind === 'birth')
+    const grown = lines.findIndex((l) => l.kind === 'grown')
+    assert.ok(birth >= 0 && grown > birth, '태어남 → 다 자람 차례')
+    // 태어난 바로 그 판에서는 장수 목록에 없다
+    let r = byeonhanMini(11)
+    const [a, b] = couple(r)
+    r.stock[r.player]!.grain = 5000
+    r = pass(r, [{ kind: 'wed', faction: r.player, a, b }]).next
+    let born = -1
+    for (let i = 0; i < P.realm.wedSeasons + 1; i++) {
+      r.stock[r.player]!.grain = 5000
+      const s = pass(r)
+      r = s.next
+      if (born < 0 && s.lines.some((l) => l.kind === 'birth')) {
+        born = r.season
+        assert.ok(!Object.keys(r.heroes).some((id) => id.startsWith('kid-')), '갓난아이는 장수가 아니다')
+        assert.equal(r.growing?.length, 1)
+      }
+    }
+    assert.ok(born >= 0)
+    assert.ok(Object.keys(r.heroes).some((id) => id.startsWith('kid-')), '다 자라면 장수')
+    assert.equal(r.growing?.length ?? 0, 0)
+  })
+
   it('같은 판이면 같은 아이', () => {
     const x = grow(5)
     const y = grow(5)

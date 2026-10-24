@@ -8,7 +8,7 @@
  */
 import { aiOrders } from '../../realm/ai.ts'
 import { headcount, type Equip, type UnitKind } from '../../realm/battle.ts'
-import { FACTION_ART, GOOD_ICON, SEASON_ICON, UNIT_ICON, bustOf, kidBust, nodeIcon, noteKids } from '../../realm/data/art.ts'
+import { FACTION_ART, GOOD_ICON, SEASON_ICON, UNIT_ICON, bustOf, kidBust, nodeIcon, noteGrowing, noteKids } from '../../realm/data/art.ts'
 import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../../realm/data/nations-yeongnam.ts'
 import { SOUTH_NATIONS } from '../../realm/data/nations-south.ts'
@@ -217,6 +217,14 @@ const SCENE_CUE_MS = 1400
 /** 혼례·탄생 장면 — 계절 띠가 걷힌 뒤 뜨고, 이만큼 머문다 (누르면 바로 넘긴다) */
 const CEREMONY_LEAD_MS = 2000
 const CEREMONY_MS = 6500
+/** 장수가 우리 편이 된 길 — 등용 장면의 한 줄 */
+type JoinHow = 'persuade' | 'wanderer' | 'expedition' | 'exile' | 'grown' | 'join'
+const JOIN_LINE: Readonly<Record<JoinHow, string>> = {
+  persuade: '마음을 돌려 우리 장수가 되었다', wanderer: '떠돌던 인재가 우리를 찾아왔다', expedition: '원정길에서 만나 우리를 따라왔다',
+  exile: '몸을 맡기러 우리를 찾아왔다', grown: '다 자라 장수로 나섰다', join: '우리 장수가 되었다',
+}
+/** 한 계절에 띄우는 등용 장면 수 — 넘치면 나머지는 계절 기록으로 */
+const JOIN_SCENES_MAX = 4
 /** 도감 알림이 아무리 늦어도 걷히는 때 (ms) — CSS 로는 5.5초에 걷힌다 */
 const DEX_TOAST_MAX_MS = 9000
 /** 세로 구도로 따로 그린 장면 그림 (public/realm/event-v) — 세로 화면에선 16:9 가운데 띠만 남아 용 허리만 보였다 (형 10-24) */
@@ -2122,6 +2130,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<h4>장군 · 누르면 능력치와 할 일</h4>`
     const hiredNow = new Set(heroOrders.flatMap((o) => (o.kind === 'hire' ? [o.hero] : [])))
     for (const x of mine.filter((y) => !isRuler(r, y.id))) h += heroRow(r, x, hiredNow.has(x.id) ? `<span class="newb">새로 들였다</span>` : '')
+    // 자라는 아이 — 아직 장수가 아니라 일을 못 맡는다 (형 10-24)
+    const kids = (r.growing ?? []).filter((g) => g.hero.faction === me())
+    if (kids.length > 0) {
+      h += `<h4>자라는 아이</h4>`
+      for (const g of kids) h += `<div class="hrow busy grow">${bust(g.hero)}<i class="hbz">⧗</i><span class="hb"><b>${nameHtml(g.hero.name)}</b><span class="hdo">⧗ 자라는 중 · ${Math.max(1, g.grown - r.season)}계절 뒤 장수로</span><span class="mute">${(g.hero.parents ?? []).map((p) => r.heroes[p]?.name ?? '').filter((s) => s !== '').join(' · ')}의 아이</span></span></div>`
+    }
     // 떠돌이 인재 — 들일 수 있는 이
     if (wand.length > 0) {
       h += `<h4>떠돌이 인재가 우리 고을에 왔다</h4>`
@@ -3130,9 +3144,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     el.addEventListener('click', (e) => { e.stopPropagation(); close() })
   }
 
-  function ceremonyFx(r: Realm, rep: Report): void {
-    noteKids(Object.values(r.heroes)) // 갓 난 아이도 얼굴이 있게 — 화면이 판을 그리기 전에 장면이 먼저 뜬다
+  function ceremonyFx(prev: Realm, r: Realm, rep: Report): void {
+    noteFaces(r) // 갓 난 아이도 얼굴이 있게 — 화면이 판을 그리기 전에 장면이 먼저 뜬다
     const scenes: string[] = []
+    /** 등용 장면을 이미 띄운(띄울) 장수 — 같은 장수가 두 번 뜨지 않게 */
+    const joinShown = new Set<string>()
     for (const l of rep.lines) {
       if (l.kind === 'wed' && l.faction === me()) {
         const a = r.heroes[l.a], b = r.heroes[l.b]
@@ -3143,20 +3159,35 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           + `<div class="cw"><b>혼례</b><span>${esc(josa(a?.name ?? '', '과', '와'))} ${esc(josa(b?.name ?? '', '이', '가'))} 짝을 맺었다</span><small>신혼 ${P.realm.wedHoney}계절 — 함께 지내면 아이가 일찍 온다</small></div></div>`)
       } else if (l.kind === 'recruit' && l.faction === me()) {
         // 떠돌이 등용은 단추를 누른 그 순간 이미 보여 줬다 (hireShown) — 계절 기록에만 남는다
+        joinShown.add(l.hero)
         if (l.how === 'wanderer' && hireShown.delete(l.hero)) continue
         const x = r.heroes[l.hero]
         if (x !== undefined) scenes.push(hireSceneHtml(x, l.how))
       } else if (l.kind === 'expBack' && l.faction === me() && l.got.kind === 'wanderer') {
         // 원정길에서 만나 따라온 장수 — 등용 기록 없이 바로 들어오니 여기서 연출 (형 10-24: "견지 버들 어느새 들어와 있는데 등용 이펙트 안 나왔음")
+        joinShown.add(l.got.hero)
         const x = r.heroes[l.got.hero]
         if (x !== undefined) scenes.push(hireSceneHtml(x, 'expedition'))
       } else if (l.kind === 'birth' && l.faction === me()) {
-        const kid = r.heroes[l.hero], a = r.heroes[l.a], b = r.heroes[l.b]
+        const grow = (r.growing ?? []).find((g) => g.hero.id === l.hero)
+        const kid = r.heroes[l.hero] ?? grow?.hero, a = r.heroes[l.a], b = r.heroes[l.b]
         const traits = (kid?.traits ?? []).map((t) => `<span class="ctr${t === l.surprise ? ' new' : ''}" data-tip="${esc(TRAIT[t]?.line ?? '')}">${esc(TRAIT[t]?.name ?? t)}${t === l.surprise ? ' · 타고났다' : ''}</span>`).join('')
         scenes.push(`<div class="cere birth"><i class="cbg" style="${sceneBg('event-newborn')}"></i><i class="cglow"></i>`
           + `<div class="ckid">${bust(kid, 'cf big')}<div class="cpar">${bust(a, 'cf sm')}${bust(b, 'cf sm')}</div></div>`
-          + `<div class="cw"><b>탄생</b><span>${esc(a?.name ?? '')}·${esc(b?.name ?? '')}의 아이 ${esc(josa(kid?.name ?? '', '이', '가'))} 자라 나섰다</span>${traits !== '' ? `<div class="ctrs">${traits}</div>` : ''}</div></div>`)
+          + `<div class="cw"><b>탄생</b><span>${esc(a?.name ?? '')}·${esc(b?.name ?? '')}의 아이 ${esc(josa(kid?.name ?? '', '이', '가'))} 태어났다</span>${grow !== undefined ? `<small>${grow.grown - r.season}계절 자라면 장수로 나선다</small>` : ''}${traits !== '' ? `<div class="ctrs">${traits}</div>` : ''}</div></div>`)
       }
+    }
+    // 어떤 길로든 새로 우리 편이 된 장수 — 망명 · 다 자람 · 나라가 들어옴 … 길마다 따로 챙기다 빠지지 않게 판을 견준다
+    // (형 10-24: "번예 새벽 망명자로 받아들였는데 등용 연출이 안 생겼다 · 언제 어디서 우리 장수가 되든 제대로")
+    const joinHow = (id: string): JoinHow => rep.lines.some((l) => l.kind === 'grown' && l.hero === id) ? 'grown'
+      : rep.lines.some((l) => l.kind === 'card' && l.faction === me() && l.card === 'exile' && l.pick === 0) ? 'exile' : 'join'
+    let joins = 0
+    for (const x of sorted(Object.values(r.heroes))) {
+      if (x.faction !== me() || x.status !== 'free' || joinShown.has(x.id) || hireShown.has(x.id)) continue
+      const before = prev.heroes[x.id]
+      if (before !== undefined && before.faction === me()) continue
+      joinShown.add(x.id)
+      if (joins++ < JOIN_SCENES_MAX) scenes.push(hireSceneHtml(x, joinHow(x.id)))
     }
     // 태몽 — 아이가 오기 한 계절 앞, 밤하늘에서 금빛 용이 구슬을 물고 지붕 위로 (그림 줄 ⑥ · 한 쌍에 한 번)
     for (const b of r.births ?? []) {
@@ -3176,7 +3207,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 등용 — 사선 칼금 셋이 얼굴의 다른 곳을 하나씩 보여 주고(촥·촥·촥) 펑, 큰 얼굴이 화면 절반으로 (형 10-24: "기대감을 증폭시키면서 이미지를 자세히 보게 · 촥,촥,촥, 펑~")
    * 빛은 그 장수의 가장 좋은 특성 빛 · 이름 · 「주군을 모시겠습니다」 · 특성이 하나씩
    */
-  function hireSceneHtml(x: Hero, how: 'persuade' | 'wanderer' | 'expedition'): string {
+  function hireSceneHtml(x: Hero, how: JoinHow): string {
     const RANK = { common: 0, good: 1, rare: 2, precious: 3, legend: 4 } as const
     const ts = (x.traits ?? []).map((t) => TRAIT[t]).filter((t): t is NonNullable<typeof t> => t !== undefined)
     const top = ts.filter((t) => t.bad !== true).sort((p, q) => RANK[q.grade] - RANK[p.grade])[0]
@@ -3192,12 +3223,18 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (let i = 0; i < 18; i++) motes += `<i style="--x:${(i * 41) % 100}%;--t:${((i * 0.37) % 2.2).toFixed(2)}s;--sp:${(2.6 + ((i * 0.61) % 1.8)).toFixed(2)}s"></i>`
     // 특성 칩 — 누르고 있거나 올려 두면 무슨 특성인지 (형 10-24: "배신의 상(→ 반골의 상)·매혹 … 터치하고 있으면 설명, 손 떼면 없애고")
     const chips = ts.map((t, i) => `<span class="ctr" data-tip="${esc(t.line)}" style="--g:${GRADE_COLOR[t.grade]};animation-delay:${(2.36 + i * 0.18).toFixed(2)}s">${esc(t.name)}</span>`).join('')
-    const line = how === 'persuade' ? '마음을 돌려 우리 장수가 되었다' : how === 'expedition' ? '원정길에서 만나 우리를 따라왔다' : '떠돌던 인재가 우리를 찾아왔다'
+    const line = JOIN_LINE[how]
     return `<div class="cere hire" style="--gc:${gc}"><i class="cglow"></i><div class="cmote">${motes}</div>`
       + `<div class="hframe">${face}<i class="hfr"></i></div>${cuts}<i class="cflash"></i>`
       + `<div class="cw"><b>등용</b><span class="hname">${esc(x.name)}</span><span>${line}</span><em>「${esc(HIRE_LINE[x.id] ?? HIRE_BY_TRAIT[x.traits?.[0] ?? ''] ?? HIRE_PLAIN)}」</em>${chips !== '' ? `<div class="ctrs">${chips}</div>` : ''}`
       // 확인 — 눌러서 판으로 돌아간다 (형 10-24: "등용되고 나서 확인 버튼 · 게임으로 돌아갈 수가 없어")
       + `<button class="btn pri cok">확인</button></div></div>`
+  }
+
+  /** 아이 얼굴 — 자라는 아이는 어린 얼굴, 다 자라 장수가 되면 어른 얼굴 */
+  function noteFaces(r: Realm): void {
+    noteGrowing((r.growing ?? []).map((g) => g.hero))
+    noteKids(Object.values(r.heroes))
   }
 
   /** 큰 장면을 차례로 — 누르면 다음 (혼례·등용·탄생·태몽) */
@@ -3266,7 +3303,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     LIVE_RULER = realm !== null && front === null
       ? Object.fromEntries(Object.values(realm.factions).flatMap((f) => (f.ruler !== undefined ? [[f.id, f.ruler]] : [])))
       : {}
-    if (realm !== null) noteKids(Object.values(realm.heroes))
+    if (realm !== null) noteFaces(realm)
     saveDraft()
     if (realm === null && front === null) front = { kind: 'title' }
     // 서막 — 같은 장이면 다시 깔지 않는다 (다시 깔면 글자가 처음부터 다시 번진다)
@@ -3505,8 +3542,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     dexToast(recordDex(res.next))
     backToast(backNotes(prev, res.next, mine))
     seasonFx(res.next.season)
-    noteKids(Object.values(res.next.heroes)) // 갓 난 아이 얼굴 — 보고·장면·장수 판 어디서나 (형 10-23: "하늬도 이미지가 없어 보이네 애기 태어날 때")
-    ceremonyFx(res.next, res.report)
+    noteFaces(res.next) // 갓 난 아이 얼굴 — 보고·장면·장수 판 어디서나 (형 10-23: "하늬도 이미지가 없어 보이네 애기 태어날 때")
+    ceremonyFx(prev, res.next, res.report)
     // 우리가 낀 싸움이면 북, 아니면 이 계절 머리 장면의 소리 (혼인·아이·동맹…) — 종이 잦아든 뒤
     const ourWar = res.report.lines.some((l) => l.kind === 'battle' && (l.atkFaction === me() || l.defender === me()))
     const ev = /event\/([\w-]+)\.jpg/.exec(sceneOf(prev, res.next, res.report))?.[1]
@@ -4191,7 +4228,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       resetTurn()
       restoreDraft()
       loadSeen()
-      if (r !== null) { noteKids(Object.values(r.heroes)); recordDex(r) } // 열 때 한 번 — 아이 얼굴을 먼저 짝짓고 · 알림 없이 (이 판에서 이미 본 장수)
+      if (r !== null) { noteFaces(r); recordDex(r) } // 열 때 한 번 — 아이 얼굴을 먼저 짝짓고 · 알림 없이 (이 판에서 이미 본 장수)
       sheet = null
       paint()
       if (fresh && r !== null) coverMap() // 새 판 — 지도 그림을 다 받을 때까지 가린다

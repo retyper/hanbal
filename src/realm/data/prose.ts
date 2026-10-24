@@ -590,7 +590,13 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       const a = after.heroes[line.a]?.name ?? '?'
       const b = after.heroes[line.b]?.name ?? '?'
       const s = line.surprise !== undefined ? ` 부모 누구에게도 없던 「${TRAIT[line.surprise]?.name ?? line.surprise}」의 피가 터졌다!` : ''
-      return `${josa(a, '과', '와')} ${b}의 아이 ${josa(k?.name ?? '?', '이', '가')} 자라 나섰다.${s}`
+      const kid = k ?? (after.growing ?? []).find((g) => g.hero.id === line.hero)?.hero
+      const grow = (after.growing ?? []).find((g) => g.hero.id === line.hero)
+      return `${josa(a, '과', '와')} ${b}의 아이 ${josa(kid?.name ?? '?', '이', '가')} 태어났다.${grow !== undefined ? ` ${grow.grown - after.season}계절 자라면 장수로 나선다.` : ''}${s}`
+    }
+    case 'grown': {
+      if (line.faction !== viewer) return null
+      return `${josa(after.heroes[line.hero]?.name ?? '?', '이', '가')} 다 자라 장수로 나섰다.`
     }
     case 'wanderer': {
       if (after.nodes[line.node]?.owner !== viewer) return null

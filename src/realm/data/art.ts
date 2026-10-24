@@ -105,11 +105,13 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'mujin-1': 'g-68-mujin-bitgoeul', 'goryong-1': 'g-69-goryong-yong', 'siljik-1': 'g-70-siljik-pado', 'byeokjin-1': 'w-81-byeokjin-byeolbit', 'ungcheon-1': 'w-82-ungcheon-gom',
 }
 
-/** 혼인에서 난 아이의 얼굴 — 젊은 명치판(그림 줄 K1)에서 성별(look)에 맞춰 id 로 하나 고른다 */
+/** 혼인에서 난 아이가 다 자란 얼굴 — 젊은 명치판(그림 줄 K1)에서 성별(look)에 맞춰 id 로 하나 고른다 (어려 보이는 둘은 뺐다 — 형 10-24) */
 export const KID_BUST: Readonly<Record<'g' | 'w', readonly string[]>> = {
-  g: ['y-g-01', 'y-g-02', 'y-g-03', 'y-g-04', 'y-g-05', 'y-g-06', 'y-g-07', 'y-g-08', 'y-g-09'],
-  w: ['y-w-01', 'y-w-02', 'y-w-03', 'y-w-04', 'y-w-05', 'y-w-06', 'y-w-07', 'y-w-08', 'y-w-09'],
+  g: ['y-g-01', 'y-g-02', 'y-g-03', 'y-g-04', 'y-g-05', 'y-g-06', 'y-g-07', 'y-g-09'],
+  w: ['y-w-01', 'y-w-02', 'y-w-03', 'y-w-04', 'y-w-05', 'y-w-06', 'y-w-07', 'y-w-09'],
 }
+/** 자라는 동안의 얼굴 — 장수로 쓰기엔 어려 보이는 명치판 (형 10-24: "아이 이미지가 너무 어린아이 · 성장 중으로 · 자라면 본래 모습으로 교체") */
+export const GROW_BUST: Readonly<Record<'g' | 'w', readonly string[]>> = { g: ['y-g-08'], w: ['y-w-08'] }
 
 export function kidBust(id: string, look: 'g' | 'w'): string | undefined {
   const pool = KID_BUST[look]
@@ -120,9 +122,21 @@ export function kidBust(id: string, look: 'g' | 'w'): string | undefined {
 
 /** 판의 아이들 — id 만 아는 곳(싸움 기록·고을 판의 말)도 얼굴을 찾게, 화면이 판을 그릴 때 적어 둔다 */
 const kidFace = new Map<string, string>()
+/** 지금 자라는 얼굴을 단 아이 — 다 자라 장수 목록에 오르면 어른 얼굴로 바꾼다 */
+const childFace = new Set<string>()
+export function noteGrowing(kids: Iterable<{ readonly id: string; readonly look: 'g' | 'w' }>): void {
+  for (const h of kids) {
+    if (kidFace.has(h.id)) continue
+    const pool = GROW_BUST[h.look]
+    let x = 0
+    for (const c of h.id) x = (x * 31 + c.charCodeAt(0)) >>> 0
+    if (pool.length > 0) { kidFace.set(h.id, pool[x % pool.length]!); childFace.add(h.id) }
+  }
+}
 export function noteKids(heroes: Iterable<{ readonly id: string; readonly look: 'g' | 'w'; readonly parents?: unknown }>): void {
   for (const h of heroes) {
-    if (h.parents === undefined || kidFace.has(h.id)) continue
+    if (h.parents === undefined || (kidFace.has(h.id) && !childFace.has(h.id))) continue
+    childFace.delete(h.id)
     const f = kidBust(h.id, h.look)
     if (f !== undefined) kidFace.set(h.id, f)
   }

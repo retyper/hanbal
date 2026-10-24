@@ -785,7 +785,8 @@ function wed(r: Realm, o: Extract<Order, { kind: 'wed' }>, lines: ReportLine[]):
   const [a, b] = o.a < o.b ? [o.a, o.b] : [o.b, o.a]
   r.heroes[a]!.spouse = b
   r.heroes[b]!.spouse = a
-  const due = r.season + P.realm.wedSeasons
+  // 태어나는 때 — 혼인에서 장수로 나서기까지(wedSeasons) 가운데 마지막 kidGrowSeasons 는 자라는 동안이다
+  const due = r.season + Math.max(1, P.realm.wedSeasons - P.realm.kidGrowSeasons)
   ;(r.births ??= []).push({ a, b, faction: o.faction, due, wed: r.season })
   lines.push({ kind: 'wed', faction: o.faction, a, b, due })
 }
@@ -818,7 +819,7 @@ function makeKid(r: Realm, v: { a: string; b: string; faction: string; due: numb
   const pb = r.heroes[v.b]
   if (pa === undefined || pb === undefined) return
   const id = `kid-${v.a}-${v.b}`
-  if (r.heroes[id] !== undefined) return
+  if (r.heroes[id] !== undefined || (r.growing ?? []).some((g) => g.hero.id === id)) return
   const home = homeOf(r, v.faction)
   if (home === null) return // 나라가 없어졌다 — 아이는 떠돌다 사라진다
   const k = (what: string): number => roll(r.seed, r.season, `kid:${id}:${what}`)
@@ -838,21 +839,39 @@ function makeKid(r: Realm, v: { a: string; b: string; faction: string; due: numb
     }
   }
   const title = (k('title') < 0.5 ? pa : pb).name.split(' ')
-  const used = new Set(Object.values(r.heroes).map((h) => h.name.split(' ').slice(-1)[0]))
+  const used = new Set([...Object.values(r.heroes), ...(r.growing ?? []).map((g) => g.hero)].map((h) => h.name.split(' ').slice(-1)[0]))
   const free = KID_NAMES.filter((n) => !used.has(n))
   const given = free.length > 0 ? free[Math.floor(k('name') * free.length)]! : KID_NAMES[Math.floor(k('name') * KID_NAMES.length)]!
   const name = title.length > 1 ? `${title[0]} ${given}` : given
-  r.heroes[id] = {
+  // 갓난아이는 아직 장수가 아니다 — 자라는 아이 칸에 두었다가 kidGrowSeasons 뒤에 장수로 (stepGrowing)
+  const kid: Hero = {
     id, name, faction: v.faction, look: k('look') < 0.5 ? 'g' : 'w',
     mu: stat(pa.mu, pb.mu, 'mu'), tong: stat(pa.tong, pb.tong, 'tong'), ryak: stat(pa.ryak, pb.ryak, 'ryak'),
     chi: stat(pa.chi, pb.chi, 'chi'), deok: stat(pa.deok, pb.deok, 'deok'), uiri: stat(pa.uiri, pb.uiri, 'uiri'),
     traits, status: 'free', captor: null, at: home, post: null, bond: R.wedBond, parents: [v.a, v.b],
   }
+  if (R.kidGrowSeasons > 0) (r.growing ??= []).push({ hero: kid, grown: r.season + R.kidGrowSeasons })
+  else r.heroes[id] = kid
   lines.push({ kind: 'birth', faction: v.faction, hero: id, a: v.a, b: v.b, ...(surprise !== undefined ? { surprise } : {}) })
+}
+
+/** 다 자란 아이가 장수로 나선다 — 그 나라가 없어졌으면 떠돌다 사라진다 */
+function stepGrowing(r: Realm, lines: ReportLine[]): void {
+  if (r.growing === undefined || r.growing.length === 0) return
+  const ready = r.growing.filter((g) => g.grown <= r.season)
+  if (ready.length === 0) return
+  r.growing = r.growing.filter((g) => g.grown > r.season)
+  for (const g of ready) {
+    const home = homeOf(r, g.hero.faction)
+    if (home === null || r.heroes[g.hero.id] !== undefined) continue
+    r.heroes[g.hero.id] = { ...g.hero, at: home }
+    lines.push({ kind: 'grown', faction: g.hero.faction, hero: g.hero.id })
+  }
 }
 
 /** 때가 된 혼인의 열매 — 계절마다 (stepHeroes) */
 function stepBirths(r: Realm, lines: ReportLine[]): void {
+  stepGrowing(r, lines) // 먼저 — 이번 계절에 난 아이가 곧장 나서지 않게
   if (r.births === undefined || r.births.length === 0) return
   // 신혼에 떨어져 지냈으면 아이가 한 계절 늦어진다
   for (const v of r.births) {
