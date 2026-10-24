@@ -1966,5 +1966,65 @@
   "license": "CC BY (저작자표시)",
   "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13379597&menuNo=200020",
   "seconds": 85.8
+ },
+ {
+  "slot": "wed",
+  "id": "wed_1",
+  "file": "wed_1.ogg",
+  "title": "국악 효과음 #458 (잔치 분위기)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387448&menuNo=200020",
+  "seconds": 5.2
+ },
+ {
+  "slot": "wed",
+  "id": "wed_2",
+  "file": "wed_2.ogg",
+  "title": "국악 효과음 #478 (축하하는)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387468&menuNo=200020",
+  "seconds": 5.1
+ },
+ {
+  "slot": "wed",
+  "id": "wed_3",
+  "file": "wed_3.ogg",
+  "title": "국악 효과음 #225 (축하해주는)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387215&menuNo=200020",
+  "seconds": 5.4
+ },
+ {
+  "slot": "wed",
+  "id": "wed_4",
+  "file": "wed_4.ogg",
+  "title": "국악 효과음 #503 (환영·축하)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13380336&menuNo=200020",
+  "seconds": 5.8
+ },
+ {
+  "slot": "wed",
+  "id": "wed_5",
+  "file": "wed_5.ogg",
+  "title": "국악기 태평소 능게1 (실제 태평소 가락)",
+  "author": "한국저작권위원회",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13265348&menuNo=200020",
+  "seconds": 5.4
+ },
+ {
+  "slot": "wed",
+  "id": "wed_6",
+  "file": "wed_6.ogg",
+  "title": "국악 효과음 #650 (흥겨운 분위기)",
+  "author": "주식회사 아이티앤",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13380483&menuNo=200020",
+  "seconds": 5.5
  }
 ]

@@ -2786,8 +2786,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const came = (l.rounds ?? []).find((x) => x.relief?.side === ourSide)?.relief
       const atkWon = l.outcome === 'rout' || l.outcome === 'win'
       if (came !== undefined && atkWon === weAtk && l.outcome !== 'draw') cands.push([3.5, { ev: came.horse ? 'event-relief-cavalry' : 'event-expedition-return', hero: null, line: `원군이 닿아 ${node} 싸움을 이겼다` }])
-      const lost = cap !== undefined && cap.faction === after.player ? cap : dead !== undefined && dead.faction === after.player ? dead : undefined
-      if (lost !== undefined) cands.push([1, { ev: 'event-sniped-commander', hero: lost, line: `${josa(lost.name, '을', '를')} 잃었다` }])
+      // 우리 장수가 사로잡혔다 — 쓰러짐과 따로, 붙잡혀 꿇은 그림으로 (형 10-24: "사로잡았거나 사로잡혔으면 계절 정리 카드에서 이미지 별도로")
+      if (cap !== undefined && cap.faction === after.player) cands.push([3.8, { ev: 'event-captured-ours', hero: cap, line: `${josa(cap.name, '이', '가')} 사로잡혔다` }])
+      else if (dead !== undefined && dead.faction === after.player) cands.push([1, { ev: 'event-sniped-commander', hero: dead, line: `${josa(dead.name, '을', '를')} 잃었다` }])
       for (const [k, p] of cands) if (k > rank) { rank = k; best = p }
     }
     // 싸움이 없어도 그 계절의 큰일 하나를 그림으로 (형: "보드게임 특성상 UX 부족한 부분들을 … 애니메이션 · 그림으로 채웠잖아")
@@ -3220,6 +3221,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           + `<div class="cw"><b>탄생</b><span>${esc(a?.name ?? '')}·${esc(b?.name ?? '')}의 아이 ${esc(josa(kid?.name ?? '', '이', '가'))} 태어났다</span>${grow !== undefined ? `<small>${grow.grown - r.season}계절 자라면 장수로 나선다</small>` : ''}${traits !== '' ? `<div class="ctrs">${traits}</div>` : ''}</div></div>`)
       }
     }
+    // 사로잡음 — 우리가 적장을 · 적이 우리 장수를. 등용처럼 크게 (형 10-24)
+    for (const l of rep.lines) {
+      if (l.kind !== 'battle' || l.captured === null) continue
+      const x = r.heroes[l.captured]
+      if (x === undefined || x.status !== 'captive') continue
+      if (x.captor === me()) scenes.push(captureSceneHtml(x, true, r.nodes[l.node]?.name ?? ''))
+      else if (x.faction === me()) scenes.push(captureSceneHtml(x, false, r.factions[x.captor ?? '']?.name ?? ''))
+    }
     // 어떤 길로든 새로 우리 편이 된 장수 — 망명 · 다 자람 · 나라가 들어옴 … 길마다 따로 챙기다 빠지지 않게 판을 견준다
     // (형 10-24: "번예 새벽 망명자로 받아들였는데 등용 연출이 안 생겼다 · 언제 어디서 우리 장수가 되든 제대로")
     const joinHow = (id: string): JoinHow => rep.lines.some((l) => l.kind === 'grown' && l.hero === id) ? 'grown'
@@ -3280,15 +3289,29 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     noteKids(Object.values(r.heroes))
   }
 
+  /** 사로잡음 장면 — 적장을 잡았다(옥에 가둔다 · 회유하면 우리 장수) / 우리 장수가 잡혔다(화친·그 나라 도읍을 치면 돌아온다) */
+  function captureSceneHtml(x: Hero, ours: boolean, where: string): string {
+    const bg = ours ? 'event-capture' : 'event-captured-ours'
+    const title = ours ? '사로잡았다' : '사로잡혔다'
+    const line = ours ? `${josa(where, '에서', '에서')} 적장을 붙잡아 옥에 가두었다` : `${josa(where, '에', '에')} 붙잡혀 갔다`
+    const how = ours ? '회유하면 우리 장수가 된다 — 장수 판의 「옥에 가둔 적장」' : '화친을 맺거나 그 나라의 도읍을 치면 풀려 돌아온다'
+    return `<div class="cere hire capt${ours ? '' : ' lost'}" style="--gc:${ours ? '#e0b860' : '#c0504a'}"><i class="cbg" style="${sceneBg(bg)}"></i><i class="cglow"></i>`
+      + `<div class="hframe">${bust(x, 'hbust')}<i class="hfr"></i><i class="crope"></i></div><i class="cflash"></i>`
+      + `<div class="cw"><b>${title}</b><span class="hname">${esc(x.name)}</span><span>${esc(line)}</span><em>${esc(how)}</em>`
+      + `<button class="btn pri cok">확인</button></div></div>`
+  }
+
   /** 큰 장면을 차례로 — 누르면 다음 (혼례·등용·탄생·태몽) */
   function playScenes(scenes: readonly string[], lead: number): void {
     const show = (i: number): void => {
       if (i >= scenes.length) return
       root.insertAdjacentHTML('beforeend', scenes[i]!)
       const el = root.lastElementChild as HTMLElement
-      const hire = el.classList.contains('hire')
+      const capt = el.classList.contains('capt')
+      const hire = el.classList.contains('hire') && !capt
       if (document.visibilityState === 'visible') {
-        if (hire) { for (const t of P.realm.hireCutMs) window.setTimeout(() => ding(snd('cmd_duel'), 0.32), t); window.setTimeout(() => ding(snd('dex_new'), 0.55), P.realm.hirePopMs) }
+        if (capt) ding(snd(el.classList.contains('lost') ? 'defeat' : 'capture'), 0.5)
+        else if (hire) { for (const t of P.realm.hireCutMs) window.setTimeout(() => ding(snd('cmd_duel'), 0.32), t); window.setTimeout(() => ding(snd('dex_new'), 0.55), P.realm.hirePopMs) }
         else ding(snd(el.classList.contains('wed') ? 'feast' : 'birth'), 0.5)
       }
       if (hire) window.setTimeout(() => buzz([20, 40, 20, 40, 60]), P.realm.hirePopMs)

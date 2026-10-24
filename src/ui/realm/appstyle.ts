@@ -248,6 +248,13 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cere .ctr.new { border-color: #ffd27a; color: #fff2c0; box-shadow: 0 0 14px #ffd27aaa; }
 /* 특성 칩 — 누르고 있거나 올려 두면 설명 (tips.ts) · 그동안 장면이 닫히지 않는다 */
 .ap .cere .ctr[data-tip] { cursor: help; -webkit-user-select: none; user-select: none; }
+/* 사로잡음 — 뒤 그림을 어둡게 깔고 액자 위에 밧줄 · 잡혔을 땐 붉고 흐리게 (형 10-24) */
+.ap .cere.capt .cbg { opacity: .42; filter: saturate(.8); }
+.ap .cere.capt.lost .cbg { filter: grayscale(.45) brightness(.8); }
+.ap .cere.capt.lost .hframe .hbust { filter: grayscale(.35); }
+.ap .cere.capt .crope { position: absolute; left: -6%; right: -6%; top: 46%; height: 9%; z-index: 2; background: repeating-linear-gradient(115deg, #8a6a3a 0 7px, #c9a46a 7px 12px, #6a4e28 12px 16px); border-radius: 6px; box-shadow: 0 3px 8px #000c;
+  transform: rotate(-8deg) scaleX(0); opacity: 0; animation: crope .35s cubic-bezier(.2, 1.2, .4, 1) 1.9s forwards; }
+@keyframes crope { to { transform: rotate(-8deg) scaleX(1); opacity: 1; } }
 /* 확인 — 글 맨 아래 · 얼굴이 다 드러난 뒤 나타난다 */
 .ap .cere .cok { position: relative; z-index: 8; margin-top: 6px; min-width: 140px; padding: 11px 28px; font-size: 16px; pointer-events: auto;
   opacity: 0; animation: cokin .4s ease-out 2.2s both; }
