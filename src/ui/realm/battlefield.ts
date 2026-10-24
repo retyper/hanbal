@@ -744,7 +744,12 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const hit = play ? `<i class="wf-hit"><img class="h1" src="${art}fx/impact.png" alt=""><img class="h2" src="${art}fx/dust.png" alt=""><img class="h3" src="${art}fx/dust.png" alt=""></i>`
       + (lost(ourI) > 0 ? `<b class="wf-loss us">−${lost(ourI)}</b>` : '') + (lost(foeI) > 0 ? `<b class="wf-loss foe">−${lost(foeI)}</b>` : '') : ''
     const enter = !anim && shown === 0 ? ' enter' : ''
-    return `<div class="wfield${play ? ' play' : ''}${enter}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s"><i class="wf-ground"></i>${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}<i class="wf-mid">⚔</i>${hit}${omen}</div>`
+    // 판의 끝 — 진 쪽은 무너져 등을 돌려 달아나고, 이긴 쪽은 한 발 나서며 장수 깃발을 높이 든다 (형 10-25: 승패가 전장에서 보이게)
+    const fin = l.pending === undefined && shown >= (l.rounds ?? []).length && l.outcome !== undefined && l.outcome !== 'draw'
+    const atkWon = l.outcome === 'win' || l.outcome === 'rout'
+    const usWon = weAtk === atkWon
+    const endCls = fin ? (usWon ? ' fin win-us' : ' fin win-foe') : ''
+    return `<div class="wfield${play ? ' play' : ''}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s"><i class="wf-ground"></i>${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}<i class="wf-mid">⚔</i>${hit}${omen}</div>`
   }
 
   // 싸움터 배경 (땅마다) · 위 카드는 굴려도 그 자리에 (형: "싸우는로그가 스크롤로 보이더라도 상단에 캐릭터랑 체력바 있는 그 카드는 고정")
@@ -1033,6 +1038,16 @@ export const WAR_CSS = `
 .ap .wfield .tk.tkf { animation: wtkfall .55s ease-in calc(var(--hd) + .2s + var(--j) * .05s) forwards !important; }
 @keyframes wtkfall { 0% { translate: 3cqw 0; } 100% { translate: 2cqw 0; rotate: -78deg; opacity: .16; filter: grayscale(1); } }
 .ap .wfield .wf-mid { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); font-style: normal; font-size: 22px; color: #f0d090; text-shadow: 0 0 8px #000; opacity: 0; z-index: 80; }
+/* 판의 끝 — 진 쪽은 등을 돌려(거울) 뒤로 달아나며 흩어지고, 이긴 쪽 장수 깃발이 솟는다. 맞부딪힘이 끝난 뒤(--hd + .9s) */
+.ap .wfield.fin.win-us .wf2s.foe .tk.tku, .ap .wfield.fin.win-foe .wf2s.us .tk.tku { animation: wflee 1.6s ease-in calc(var(--hd) + .9s + var(--j, 0) * .07s) forwards !important; }
+.ap .wfield.fin.win-us .wf2s.foe .tk.wsp.tku .spf, .ap .wfield.fin.win-foe .wf2s.us .tk.wsp.tku .spf { animation: spwalk .26s steps(1) calc(var(--hd) + .9s) infinite !important; }
+@keyframes wflee { 0% { translate: 0 0; scale: 1; } 12% { scale: -1 1; } 100% { scale: -1 1; translate: -32cqw calc((var(--j, 0) - 2.5) * 2cqw); opacity: 0; } }
+.ap .wfield.fin.win-us .wf2s.us .wgen, .ap .wfield.fin.win-foe .wf2s.foe .wgen { animation: wgenwin .7s cubic-bezier(.3, 1.6, .5, 1) calc(var(--hd) + 1.1s) both; }
+@keyframes wgenwin { from { translate: 0 0; scale: 1; } to { translate: 9cqw -2cqw; scale: 1.35; } }
+.ap .wfield.fin.win-us .wf2s.us .wpole, .ap .wfield.fin.win-foe .wf2s.foe .wpole { animation: wpoleup .6s ease-out calc(var(--hd) + 1.2s) both; }
+@keyframes wpoleup { from { height: 110%; } to { height: 190%; filter: drop-shadow(0 0 6px #ffd27a); } }
+/* 끝나면 진의 기세 표시(방패벽·화살 활꼴·기병 길·돌격 글자·격려 고리)를 걷는다 — 승패만 남게 */
+.ap .wfield.fin .wq { animation: wqoff .4s ease-out calc(var(--hd) + .9s) forwards !important; } @keyframes wqoff { to { opacity: 0; visibility: hidden; } }
 .ap .wfield.play .wf-mid { animation: wmid2 .6s ease-out var(--hd) both; } @keyframes wmid2 { 0% { opacity: 0; scale: .4; } 40% { opacity: 1; scale: 1.8; color: #fff; } 100% { opacity: 0; scale: 1.2; } }
 /* 숨 쉬는 병사 — 서 있는 말이 저마다 조금씩 들썩인다 */
 .ap .wf2s .tk.tku { animation: tkidle 1.8s ease-in-out calc(var(--j) * -.31s) infinite alternate; } @keyframes tkidle { to { translate: 0 -2px; } }
