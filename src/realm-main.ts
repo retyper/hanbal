@@ -277,6 +277,18 @@ const app = mountRealmApp(root, {
   gameCount: () => games.length,
   history: () => (game?.turns ?? []).map((t) => ({ s: t.s, lines: t.lines })),
   savedAt: () => state?.at ?? null,
+  async resetPlay() {
+    // 서버 것부터 — 이 기기만 지우면 다음 맞추기 때 서버의 도감·해금이 되살아난다. 서버를 못 지우면 이 기기 것도 그대로 둔다
+    if (account() !== null) {
+      try { await sync.wipe() } catch (e) { console.warn('[기록] 서버 기록을 못 지웠다:', e); return false }
+      sync.forget()
+    }
+    // 판·판 밖 기록만 — 소리·지도 층 같은 설정과 계정·기기 표시는 남긴다 (localStorage.clear() 는 쓰지 않는다)
+    const keep = new Set(['hanbal.realm.mute', 'hanbal.realm.layers'])
+    for (const k of Object.keys(localStorage)) if ((k.startsWith('hanbal.realm.') || k.startsWith('hanbal.night.')) && !keep.has(k)) localStorage.removeItem(k)
+    location.reload()
+    return true
+  },
   cloud: {
     available: canSync,
     who: () => account(),

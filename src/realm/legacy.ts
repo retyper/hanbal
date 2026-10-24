@@ -40,7 +40,8 @@ export function snapshot(h: Hero): Hero {
  */
 /** 이 난세 단계에서 데려갈 수 있는 동행 수 (회의 결정 — 촌장 3 · 군장·대가 2 · 왕·대왕 1 · 태왕·천손 0) */
 export function retainMaxOf(tier: number): number {
-  return Math.min(P.realm.retainMax, P.realm.retainByTier[Math.max(0, Math.min(P.realm.retainByTier.length - 1, tier - 1))] ?? 0)
+  // 단계는 0(촌장)부터 6(천손)까지 — 옛 판은 tier 가 없어 1(군장·보통)
+  return Math.min(P.realm.retainMax, P.realm.retainByTier[Math.max(0, Math.min(P.realm.retainByTier.length - 1, Math.floor(tier)))] ?? 0)
 }
 
 export function bringRetainers(r: Realm, list: readonly Hero[]): string[] {

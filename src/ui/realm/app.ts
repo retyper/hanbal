@@ -51,6 +51,7 @@ import { GOAL_CSS, goalBandHtml, goalRowsHtml } from './goalband.ts'
 import { installTips, TIP_CSS } from './tips.ts'
 import { UPDATE_CSS } from './update.ts'
 import { scrollInside } from './scroll.ts'
+import { retainMaxOf } from '../../realm/legacy.ts'
 import { morph } from './morph.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
 import { APPROACH_DOES, APPROACH_NAME, HARD_LINE, WAR_CSS, openWar } from './battlefield.ts'
@@ -71,6 +72,8 @@ import type { Side, SyncState } from '../../net/sync.ts'
 import { FEEL_CSS, alertFeel, ambushFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
 
 export interface AppHost {
+  /** 플레이 기록을 다 지운다(계정·설정은 남김) — 로그인했으면 서버 것부터. 못 지웠으면 false (형 10-24) */
+  resetPlay?(): Promise<boolean>
   /** 계절을 넘긴 뒤 — 저장은 바깥이 한다. `orders` 는 AI 것까지 전부, `mine` 은 플레이어 것 */
   onAdvance(next: Realm, report: Report, orders: readonly Order[], mine: readonly Order[]): void
   /** 나라를 골라 새 판 */
@@ -2453,12 +2456,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<button class="btn ghost" data-act="mute">${muted() ? '소리 켜기' : '소리 끄기'}</button><button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>`
     h += `<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}" data-tip="활쏘기 모드 (신궁)">활터</a>${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
     h += `<button class="btn ghost" data-act="newgame" data-tip="판 고르기로 — 새 게임을 시작하기 전까지 지금 판은 그대로다">새 게임</button><button class="btn ghost" data-act="lobby" data-tip="이 판은 저장돼 있어 「이어 하기」로 돌아온다">⌂ 첫 화면으로</button></div>`
-    return h + acctHtml()
+    return h + acctHtml() + resetHtml()
   }
 
   // ───────── 계정 (docs/realm/SERVER.md) — 나라 판 맨 아래 · 첫 화면 한 줄 · 갈라진 판 고르기
   /** 계정 지우기를 한 번 눌렀다 — 두 번째 누름에서 지운다 (브라우저 확인 창은 쓰지 않는다) */
   let acctArmed = false
+  /** 「플레이 기록 지우기」를 한 번 눌렀다 — 한 번 더 눌러야 지운다 */
+  let resetArmed = false
   function syncWord(s: SyncState): string {
     switch (s.kind) {
       case 'off': return '클라우드 저장 꺼짐'
@@ -2468,6 +2473,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'idle': return s.at !== null ? `최근 클라우드 저장 ${new Date(s.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}` : '클라우드 저장 준비됨'
     }
   }
+  /** 플레이 기록 지우기 — 계정과 설정은 남긴다. 두 번 눌러야 (형 10-24: "계정으로 플레이한 데이터 초기화하는 버튼") */
+  function resetHtml(): string {
+    if (host.resetPlay === undefined) return ''
+    const cloud = host.cloud?.who() != null
+    return `<h3>기록 지우기</h3><div class="acct"><p class="mute">지금 판 · 도감 · 해금한 판 · 연대기 · 데려갈 장수를 다 지우고 처음부터 한다.${cloud ? ' 계정에 저장된 같은 기록도 함께 지운다.' : ''} 계정과 소리 같은 설정은 남는다. 되돌릴 수 없다.</p>`
+      + `<div class="btns"><button class="btn ghost danger" data-act="reset-play">${resetArmed ? '한 번 더 누르면 지운다 — 되돌릴 수 없다' : '플레이 기록 모두 지우기'}</button></div></div>`
+  }
+
   function acctHtml(): string {
     const c = host.cloud
     if (c === undefined) return ''
@@ -3065,7 +3078,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const open = tierOpen(region)
     const pick = Math.min(pick0 ?? tierPick[region] ?? 1, open)
     // 세기 — 문명의 개척자·왕·신처럼 칭호로 (형 10-23). 잠긴 칭호도 보인다 — 무엇을 향해 가는지
-    let h = `<div class="tierp"><b>세기 · ${esc(levelName(pick))}</b><span class="mute">${esc(LEVEL_LINE[pick] ?? '')}</span><div class="seg">`
+    // 동행 수도 단계마다 다르다 — 고를 때 보이게 (형 10-24: "난이도에 따라 데려갈 장수 숫자가 변하면 선택할 때 알려 줘야")
+    const carry = retainMaxOf(pick)
+    let h = `<div class="tierp"><b>세기 · ${esc(levelName(pick))}</b><span class="mute">${esc(LEVEL_LINE[pick] ?? '')} · 지난 판의 장수를 ${carry > 0 ? `${carry}명까지 데려온다` : '데려오지 못한다'}</span><div class="seg">`
     for (let t = 0; t <= TIER_MAX; t++) {
       h += t <= open
         ? `<button class="${t === pick ? 'on' : ''}${t === TIER_MAX ? ' apex' : ''}" data-act="${act}" data-v="${t}">${esc(levelName(t))}</button>`
@@ -3843,6 +3858,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'acct-out': host.cloud?.signOut(); acctArmed = false; paint(); return
       case 'acct-sync': host.cloud?.syncNow(); return
       case 'acct-pick': host.cloud?.choose(d['v'] === 'there' ? 'there' : 'here'); return
+      case 'reset-play':
+        if (!resetArmed) { resetArmed = true; paint(); return }
+        resetArmed = false
+        void host.resetPlay?.().then((ok) => { if (!ok) { failNote(new Error('기록을 못 지웠다 — 잠시 뒤 다시 (서버에 닿지 않았다면 이 기기 것도 그대로 두었다)')); paint() } })
+        return
       case 'acct-del':
         if (!acctArmed) { acctArmed = true; paint(); return }
         acctArmed = false
