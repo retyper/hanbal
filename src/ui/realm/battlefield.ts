@@ -712,10 +712,12 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         return `<img class="tk r${r}${hl} ${s2}" src="${art}icon/sol-${SOL.has(k) ? k : 'spear'}.png" alt="" style="${pos}">`
       }
       const column = (ks: readonly string[], r: 0 | 1, x0: number): string => {
-        const lines = ks.length > 7 ? [ks.filter((_, j) => j % 2 === 0), ks.filter((_, j) => j % 2 === 1)] : [ks]
+        // 겹 — 한 겹에 다섯까지. 많으면 겹을 늘려 두꺼운 네모 진이 된다 (한 줄로 길게 늘어지면 진이 아니라 줄로 보였다 · 형 10-25)
+        const nl = Math.max(1, Math.ceil(ks.length / 5))
+        const lines = Array.from({ length: nl }, (_, li) => ks.filter((_, j) => j % nl === li))
         return lines.map((ln, li) => {
-          const sp = Math.min(12, 72 / Math.max(1, ln.length))
-          return ln.map((k, j) => tok(k, r, x0 - li * 5.5, (j - (ln.length - 1) / 2) * sp + li * sp * 0.5)).join('')
+          const sp = Math.min(9, 44 / Math.max(1, ln.length))
+          return ln.map((k, j) => tok(k, r, x0 - li * 4.5, (j - (ln.length - 1) / 2) * sp + (li % 2) * sp * 0.5)).join('')
         }).join('')
       }
       // 기병 — 위 옆구리에 가로로
@@ -1027,7 +1029,7 @@ export const WAR_CSS = `
 @keyframes wstep { from { translate: 0 0; } to { translate: 2cqw 0; } }
 @keyframes wclash { 0% { translate: 2cqw 0; } 50% { translate: calc(9cqw + var(--j, 0) * .3cqw) 0; } 100% { translate: calc(6.5cqw + var(--j, 0) * .4cqw) calc((var(--j, 0) - 2.5) * .4cqw); } }
 .ap .wfield.play .wf2s[data-h="flank"] .tk.r2:not(.tkd), .ap .wfield.play .wf2s[data-h="pursue"] .tk.r2:not(.tkd), .ap .wfield.play .wf2s[data-h="punch"] .tk.r2:not(.tkd) { animation: wride .9s ease-in var(--ha, 0s) both; }
-@keyframes wride { 0% { translate: 0 0; } 100% { translate: 12cqw 3cqw; } }
+@keyframes wride { 0% { translate: 0 0; } 70% { translate: 14cqw 9cqw; } 100% { translate: 12cqw 10cqw; } } /* 옆구리로 파고들어 적 진 가장자리에서 엉긴다 */
 .ap .wfield .tk.tkf { animation: wtkfall .55s ease-in calc(var(--hd) + .2s + var(--j) * .05s) forwards !important; }
 @keyframes wtkfall { 0% { translate: 3cqw 0; } 100% { translate: 2cqw 0; rotate: -78deg; opacity: .16; filter: grayscale(1); } }
 .ap .wfield .wf-mid { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); font-style: normal; font-size: 22px; color: #f0d090; text-shadow: 0 0 8px #000; opacity: 0; z-index: 80; }
@@ -1071,6 +1073,10 @@ export const WAR_CSS = `
 @keyframes spatk { 0% { background-position-x: 57.1429%; } 50% { background-position-x: 71.4286%; } }
 .ap .wfield.enter .tk.wsp .spf { animation: spwalk .42s steps(1) calc(var(--j) * -.1s) 4, spidle 1.5s steps(1) 1.9s infinite; }
 .ap .wfield.play .wf2s .tk.wsp.r0:not(.tkd) .spf { animation: spwalk .42s steps(1) var(--fa, 0s) 2, spatk calc(.3s + var(--j, 0) * .03s) steps(1) calc(var(--hd) - .32s + var(--j, 0) * .05s) 7, spidle 1.5s steps(1) calc(var(--hd) + 1.9s) infinite; }
+/* 도끼병 — 받은 그림엔 내려치는 컷이 없다(든 컷 4 뿐) → 든 컷을 앞으로 휘둘러 기울인다 (컷 5는 들기의 다른 자세라 안 쓴다) */
+.ap .wfield.play .wf2s .tk.wsp.k-axe.r0:not(.tkd) .spf { animation: spwalk .42s steps(1) var(--fa, 0s) 2, spaxe .3s steps(1) calc(var(--hd) - .32s + var(--j, 0) * .05s) 7, spidle 1.5s steps(1) calc(var(--hd) + 1.9s) infinite; }
+.ap .wfield.play .wf2s .tk.wsp.k-axe.r0:not(.tkd) .spf { transform-origin: 40% 90%; }
+@keyframes spaxe { 0% { background-position-x: 57.1429%; rotate: -8deg; } 50% { background-position-x: 57.1429%; rotate: 28deg; } }
 /* 궁수 — 쏘는 박자에 시위를 당겼다(4) 놓는다(5) · 기병 — 제 박자에 달린다(걷기 컷) */
 .ap .wfield.play .wf2s[data-b] .tk.wsp.r1:not(.tkd) .spf { animation: spdraw .75s steps(1) calc(var(--sa) - .45s) forwards, spidle 1.5s steps(1) calc(var(--sa) + .5s) infinite; }
 @keyframes spdraw { 0% { background-position-x: 57.1429%; } 60% { background-position-x: 71.4286%; } 100% { background-position-x: 71.4286%; } }
