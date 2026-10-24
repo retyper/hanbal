@@ -691,7 +691,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   const ended = p === undefined
   if (p !== undefined && p.round === shown) {
     // 다음 합의 깃발을 든다 — 무리마다 하나, 장수 하나
-    h += `<div class="wnext"><div class="wrn">${ROUND_NAME[shown] ?? `${shown + 1}`} 합 </div>`
+    h += `<div class="wnext"${anim ? ` style="--d:${(tAt(2) + 0.6).toFixed(2)}s"` : ''}><div class="wrn">${ROUND_NAME[shown] ?? `${shown + 1}`} 합 </div>`
     // 낌새는 본 것·들은 것에서만 (형: "직접본거나 주변정보여야지 짐작이머냐")
     const hl = p.hint !== null ? (p.hintSrc === 'habit' ? HABIT_LINE[p.hint] : HINT_LINE[p.hint]) : undefined
     // 고르기 전에 읽을 것 — 한 칸에 하나씩, 줄을 나눠 (형 10-23: "적 줄의 낌새나 전투 정보 같은 건 줄바꿈 해서 보고 생각해 본 뒤 고를 수 있게")
@@ -1019,7 +1019,7 @@ export const WAR_CSS = `
 @keyframes wrin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes wrflip { from { opacity: 0; transform: rotateX(90deg); } to { opacity: 1; transform: none; } }
 .ap .wnext { margin-top: 12px; padding: 10px; border-radius: 14px; background: #1f1710; border: 1px solid #4a4030; animation: wrin .4s ease-out both; }
-.ap .wr.slow .wnext { animation-delay: 3.1s; }
+.ap .wr.slow .wnext { animation-delay: var(--d, 3.1s); }
 .ap .whint { margin: 2px 0 6px; font-size: 14px; } .ap .whint b { color: var(--gold); margin-right: 4px; }
 .ap .wintel { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 12px; }
 .ap .wintel .wi { padding: 8px 10px; border-radius: 10px; background: #15100bcc; border-left: 3px solid var(--gold); }
@@ -1321,7 +1321,10 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       const atkWon = l.outcome === 'rout' || l.outcome === 'win'
       const good = (l.atkFaction === host.me) === atkWon
       const word = good ? (l.outcome === 'rout' || l.outcome === 'routed' ? '대승' : '승리') : (l.outcome === 'rout' || l.outcome === 'routed' ? '대패' : '패배')
-      winEl.innerHTML = winFxHtml(word, '', STAGE_S[2] + 0.9, !good, true, l.outcome === 'rout' || l.outcome === 'routed', `${host.art}ui/win-logo.png`)
+      // 마지막 합의 연출(장수 장면 · 깃발 하나씩 · 맞부딪힘 · 막대)이 다 끝난 뒤에 — 늘 3.3초에 떠서 싸우는 도중에 승패가 먼저 나왔다 (형 10-24)
+      const lr = (l.rounds ?? [])[shown - 1]
+      const endAt = (lr !== undefined ? roundPlan(lr, l.atkFaction === host.me).result : STAGE_S[2]) + 0.9
+      winEl.innerHTML = winFxHtml(word, '', endAt, !good, true, l.outcome === 'rout' || l.outcome === 'routed', `${host.art}ui/win-logo.png`)
     }
   }
 
@@ -1360,8 +1363,10 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     ov.style.setProperty('--wtoph', `${(sc.querySelector<HTMLElement>('.wtop')?.offsetHeight ?? 170) + 8}px`) // 붙박이 위 카드에 가리지 않게
     if (anim) {
       scrollInside(sc.querySelector('.wrd.slow'), 'start', true)
-      if (l.pending === undefined) timers.push(window.setTimeout(() => scrollInside(sc.querySelector('.wend'), 'center', true), (STAGE_S[2] + 0.4) * 1000))
-      else timers.push(window.setTimeout(() => scrollInside(sc.querySelector('.wnext'), 'start', true), (STAGE_S[2] + 0.6) * 1000))
+      const lr = (l.rounds ?? [])[shown - 1]
+      const res = lr !== undefined ? roundPlan(lr, l.atkFaction === host.me).result : STAGE_S[2]
+      if (l.pending === undefined) timers.push(window.setTimeout(() => scrollInside(sc.querySelector('.wend'), 'center', true), (res + 0.4) * 1000))
+      else timers.push(window.setTimeout(() => scrollInside(sc.querySelector('.wnext'), 'start', true), (res + 0.6) * 1000))
     } else sc.scrollTop = 0
   }
 
