@@ -5,7 +5,7 @@
  * 그림은 이미 받아 둔 사건 삽화 (public/realm/event/). 글은 쉬운 말로 (메모리 realm-plain-words).
  */
 
-export type CardKind = 'drought' | 'bounty' | 'locust' | 'plague' | 'halo' | 'quarrel' | 'waship' | 'pirates' | 'exile' | 'fugitive' | 'whale'
+export type CardKind = 'drought' | 'bounty' | 'locust' | 'plague' | 'halo' | 'quarrel' | 'waship' | 'pirates' | 'exile' | 'fugitive' | 'whale' | 'fishbridge' | 'gogak'
 
 export interface CardInfo {
   readonly name: string
@@ -23,6 +23,23 @@ export interface CardInfo {
 }
 
 export const CARDS: Readonly<Record<CardKind, CardInfo>> = {
+  // ── 2장 졸본만의 사건 (events.chapterCard) — 『삼국사기』 고구려본기 동명성왕
+  fishbridge: {
+    name: '엄리대수의 다리', kind: 'sky', bad: false, icon: 'status-good-omen', art: 'event-monsoon-ford',
+    line: '쫓기던 날 엄리대수 물가에서 "나는 하늘의 아들이요 하백의 외손이다" 외치자 물고기와 자라가 떠올라 다리를 놓았다. 그 다리가 아직 물 위에 떠 있다.',
+    opts: [
+      { name: '건넌 뒤 다리를 흩는다', does: '쫓아오던 동부여 군대의 사기가 크게 꺾인다' },
+      { name: '하늘의 뜻이라 널리 알린다', does: '우리 군대 사기와 장수들의 정이 오른다' },
+    ],
+  },
+  gogak: {
+    name: '비류국의 북과 뿔나팔', kind: 'outside', bad: false, icon: 'status-good-omen', art: 'event-yeonggo',
+    line: '송양은 나라의 위세를 북과 뿔나팔(고각)로 세운다. 부분노가 "몰래 가져올 수 있다"고 한다. 우리 나라엔 아직 그런 의장이 없다.',
+    opts: [
+      { name: '부분노를 보내 훔쳐 온다', does: '되면 비류국 군대의 기가 꺾인다 · 들키면 송양이 크게 노한다' },
+      { name: '두고 예를 갖춘다', does: '비류국의 마음이 조금 오른다' },
+    ],
+  },
   drought: {
     name: '가뭄', kind: 'sky', bad: true, icon: 'status-drought', art: 'event-sky-drought',
     line: '봄비가 오지 않는다. 논바닥이 갈라진다. 이대로면 가을 수확량이 크게 줄어든다.',

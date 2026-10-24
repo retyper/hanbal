@@ -66,10 +66,23 @@ function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w:
   return out
 }
 
+/**
+ * 2장 졸본만의 사건 — 정해진 계절에 반드시 온다 (점검 10-25: 장만의 이야기 사건이 없었다).
+ * 엄리대수의 다리는 추격 때(둘째 계절) · 비류국의 고각은 송양이 아직 안 따를 때(다섯째 계절)
+ */
+function chapterCard(r: Realm, season: number): Card | null {
+  if (r.scenario?.id !== 'jumong' || r.player !== 'goguryeo') return null
+  if (season === P.realm.cardFishSeason) return { kind: 'fishbridge', season }
+  if (season === P.realm.cardGogakSeason && r.factions['biryuna'] !== undefined) return { kind: 'gogak', season }
+  return null
+}
+
 /** 그 계절의 카드를 뽑는다 — 없을 수도 있다 (cardChance). 같은 판·같은 계절이면 같은 카드 */
 export function drawCard(r: Realm, season: number): Card | null {
   const f = r.player
   if (f === undefined || r.region === 'tutorial') return null
+  const ch = chapterCard(r, season)
+  if (ch !== null) return ch
   if (roll(r.seed, season, 'card') >= P.realm.cardChance) return null
   const c = candidates(r, f, season)
   const sum = c.reduce((s, x) => s + x.w, 0)
@@ -221,6 +234,17 @@ export function resolveCard(r: Realm, orders: readonly Order[], lines: ReportLin
     case 'whale':
       if (pick === 0) gain(Math.max(30, grainCost(r, f, 0.1)))
       else cheer()
+      break
+    case 'fishbridge':
+      // 다리를 흩는다 — 쫓던 동부여 군대의 기가 꺾인다 · 알린다 — 우리 기운이 오른다
+      if (pick === 0) { for (const a of Object.values(r.armies)) if (a.faction === 'buyeo') a.morale = Math.max(R.cardFishFloor, a.morale - R.cardFishMorale) } else cheer()
+      break
+    case 'gogak':
+      // 『삼국사기』 동명성왕 2년 — 부분노가 비류국의 고각을 가져와 송양이 감히 다투지 못했다 · 들키면 노한다
+      if (pick === 0) {
+        good = k('steal') < R.cardGogakOk
+        if (good) { for (const a of Object.values(r.armies)) if (a.faction === 'biryuna') a.morale = Math.max(R.cardFishFloor, a.morale - R.cardGogakMorale) } else addFavor(r, f, 'biryuna', -R.cardGogakAngry)
+      } else addFavor(r, f, 'biryuna', R.cardGogakFavor)
       break
   }
   lines.push({
