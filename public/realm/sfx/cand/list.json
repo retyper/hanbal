@@ -1906,5 +1906,65 @@
   "license": "CC BY (저작자표시)",
   "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13386927&menuNo=200020",
   "seconds": 83.3
+ },
+ {
+  "id": "bgm_bridal_7",
+  "slot": "bgm_bridal",
+  "file": "bgm_bridal_7.ogg",
+  "title": "국악연주곡_북천이맑다커늘 (수줍게 달아오르는)",
+  "author": "한국저작권위원회",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13262882&menuNo=200020",
+  "seconds": 89.4
+ },
+ {
+  "id": "bgm_bridal_8",
+  "slot": "bgm_bridal",
+  "file": "bgm_bridal_8.ogg",
+  "title": "국악연주곡_계면조 평롱 '북두칠성' 연주 1 (님 기다리는 애틋한)",
+  "author": "한국저작권위원회",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13263149&menuNo=200020",
+  "seconds": 77.2
+ },
+ {
+  "id": "bgm_bridal_9",
+  "slot": "bgm_bridal",
+  "file": "bgm_bridal_9.ogg",
+  "title": "국악연주곡_반우반계 반엽 '남하여' 연주 1 (나긋한)",
+  "author": "한국저작권위원회",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13263121&menuNo=200020",
+  "seconds": 63.8
+ },
+ {
+  "id": "bgm_bridal_10",
+  "slot": "bgm_bridal",
+  "file": "bgm_bridal_10.ogg",
+  "title": "Love Theme (낭만적인 현악)",
+  "author": "박규한",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13262711&menuNo=200020",
+  "seconds": 147.7
+ },
+ {
+  "id": "bgm_bridal_11",
+  "slot": "bgm_bridal",
+  "file": "bgm_bridal_11.ogg",
+  "title": "LSMBG0305_밤 연못 수련 필 적에 (고요한 밤)",
+  "author": "한국저작권위원회",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312592&menuNo=200020",
+  "seconds": 115.1
+ },
+ {
+  "id": "bgm_bridal_12",
+  "slot": "bgm_bridal",
+  "file": "bgm_bridal_12.ogg",
+  "title": "국악 배경음악 #14 (매혹적인)",
+  "author": "공유마당",
+  "license": "CC BY (저작자표시)",
+  "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13379597&menuNo=200020",
+  "seconds": 85.8
  }
 ]
