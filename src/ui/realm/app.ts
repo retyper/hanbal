@@ -25,6 +25,7 @@ import { canEscort, envoyChanceFor, envoyClash, envoyOptions, favorOf, friendly,
 import {
   GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeHarvest, nodeYield, nodeSpecials, upkeepOf, riteAllowed, riteCost,
   autoFlows, crowdOf, migratePath, fieldMul, homeRoom, isRiverside, landMul, placeLimit, placeNodes, workMul,
+  goodsWorth,
 } from '../../realm/economy.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
 import { kitLines } from '../../realm/kit.ts'
@@ -1942,6 +1943,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const take = ask !== 'gift'
       const step = (side: 'give' | 'take', res: Good): string => `<span class="stepper sm"><button data-act="cq" data-side="${side}" data-res="${res}" data-d="${-GOOD_STEP[res]}">−</button>`
         + `<b>${compose[side][res]}</b><button data-act="cq" data-side="${side}" data-res="${res}" data-d="${GOOD_STEP[res]}">+</button></span>`
+      // 누가 누구에게 — 큰 깃발 둘과 값이 더 가는 쪽 화살표 (형 10-24: "우리가 주는 게 더 많으면 화살표가 오른쪽 · 국기도 크게")
+      const gv = goodsWorth(compose.give, r, me()), tv = goodsWorth(compose.take, r, me())
+      const dir = gv === 0 && tv === 0 ? '' : gv > tv * 1.05 ? 'r' : tv > gv * 1.05 ? 'l' : 'eq'
+      h += `<div class="tflow"><span class="tfs">${emblem(me(), 'tfl')}<small>우리</small></span><span class="tfa ${dir}"><i>${dir === 'r' ? '➜' : dir === 'l' ? '⬅' : '⇄'}</i><small>${dir === 'r' ? '우리가 더 준다' : dir === 'l' ? '우리가 더 받는다' : dir === 'eq' ? '엇비슷하다' : '고르면 보인다'}</small></span><span class="tfs">${emblem(to, 'tfl')}<small>${esc(r.factions[to]?.name ?? '')}</small></span></div>`
       h += `<div class="tgrid${give && take ? ' two' : ''}">`
       h += `${give ? '<span class="th give">우리가 준다</span>' : ''}<span class="th"></span>${take ? '<span class="th take">받는다</span>' : ''}`
       for (const res of GOODS) {

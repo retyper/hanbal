@@ -720,6 +720,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .plpool.full { border-color: #e0b04a; box-shadow: 0 0 0 1px #e0b04a66, 0 0 16px #e0b04a44; } .ap .plpool.full > b { color: #ffd27a; animation: plpulse 1.2s ease-in-out infinite alternate; }
 @keyframes plpulse { from { opacity: .75; } to { opacity: 1; } }
 .ap .plcard { margin: 0 0 8px; padding: 9px 10px; border-radius: 10px; background: #1f1a14; border: 1px solid #3a3024; transition: border-color .2s, background .2s; }
+/* 교환 — 깃발 둘과 화살표 */
+.ap .tflow { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0 8px; }
+.ap .tflow .tfs { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 64px; } .ap .tflow .tfs small { font-size: 12px; color: var(--mute); }
+.ap .tflow .tfl { width: 48px; height: 48px; }
+.ap .tflow .tfa { flex: 1; display: flex; flex-direction: column; align-items: center; } .ap .tflow .tfa i { font-style: normal; font-size: 30px; line-height: 1; color: #f0d090; }
+.ap .tflow .tfa.r i { color: #ffb070; } .ap .tflow .tfa.l i { color: #9fd18b; } .ap .tflow .tfa small { font-size: 12px; color: #e8dcc0; }
 /* 정찰 칸 — 보내기와 고정을 떼어 놓는다 (형 10-24) */
 .ap .scoutbox { display: flex; flex-direction: column; gap: 10px; margin: 6px 0; } .ap .scoutbox .keepbtn { align-self: flex-start; margin-top: 4px; }
 .ap .plcard.off { opacity: .55; } .ap .plcard.off p { margin: 4px 0 0; font-size: 12.5px; }
