@@ -215,7 +215,7 @@ const SCENE_CUE_MS = 1400
 const CEREMONY_LEAD_MS = 2000
 const CEREMONY_MS = 6500
 /** 세로 구도로 따로 그린 장면 그림 (public/realm/event-v) — 세로 화면에선 16:9 가운데 띠만 남아 용 허리만 보였다 (형 10-24) */
-const SCENE_V: ReadonlySet<string> = new Set(['event-dream', 'event-wedding', 'event-newborn'])
+const SCENE_V: ReadonlySet<string> = new Set(['event-dream', 'event-newborn', 'event-marriage', 'event-bridal-a', 'event-bridal-b', 'event-bridal-c', 'event-bridal-d'])
 /** 큰 장면 바탕 — 가로 그림(--hbg) · 세로 화면이면 세로 그림(--vbg, 있으면) */
 const sceneBg = (name: string): string => `--hbg:url('${ART}event/${name}.jpg')${SCENE_V.has(name) ? `;--vbg:url('${ART}event-v/${name}.jpg')` : ''}`
 /** 신방 넉 장 — 휘장 너머 그림자 · 풀린 옷고름 · 이불 끝의 발 · 댓돌 위 포개진 신 (그림: realm/event/event-bridal-*) */
@@ -2698,7 +2698,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         c = [big ? 0.92 : g.kind === 'none' ? 0.3 : 0.6, { ev: 'event-expedition-return', hero: g.kind === 'wanderer' ? after.heroes[g.hero] ?? null : after.heroes[l.hero] ?? null,
           line: `${DESTS[l.dest].name}에서 ${josa(after.heroes[l.hero]?.name ?? '', '이', '가')} 돌아왔다${g.kind === 'wanderer' ? ` · ${josa(after.heroes[g.hero]?.name ?? '', '이', '가')} 따라왔다` : g.kind === 'skill' ? ` · 「${TRAIT[g.trait]?.name ?? ''}」을 배웠다` : ''}` }]
       } else if (l.kind === 'wed' && l.faction === pl) {
-        c = [0.7, { ev: 'event-wedding', hero: after.heroes[l.a] ?? null, line: `${josa(after.heroes[l.a]?.name ?? '', '과', '와')} ${josa(after.heroes[l.b]?.name ?? '', '이', '가')} 혼인했다` }]
+        c = [0.7, { ev: 'event-marriage', hero: after.heroes[l.a] ?? null, line: `${josa(after.heroes[l.a]?.name ?? '', '과', '와')} ${josa(after.heroes[l.b]?.name ?? '', '이', '가')} 혼인했다` }]
       } else if (l.kind === 'birth' && l.faction === pl) {
         c = [l.surprise !== undefined ? 0.95 : 0.8, { ev: 'event-newborn', hero: null, line: `${after.heroes[l.a]?.name ?? ''}·${after.heroes[l.b]?.name ?? ''}의 아이 ${josa(after.heroes[l.hero]?.name ?? '', '이', '가')} 나섰다` }]
       } else if (l.kind === 'hunger' && l.faction === pl) {
@@ -3052,7 +3052,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const sp = x?.spouse !== undefined ? r.heroes[x.spouse] : undefined
     if (x === undefined || sp === undefined || root.querySelector('.cere.bridal') !== null) return
     const S = P.realm.bridalShotS
-    const pics = BRIDAL_SHOTS.map(([f, line], i) => `<i class="bpic${i % 2 === 1 ? ' odd' : ''}" style="--i:${i};background-image:url('${ART}event/${f}.jpg')"></i><span class="bcap" style="--i:${i}">${esc(line)}</span>`).join('')
+    const pics = BRIDAL_SHOTS.map(([f, line], i) => `<i class="bpic${i % 2 === 1 ? ' odd' : ''}" style="--i:${i};${sceneBg(f)}"></i><span class="bcap" style="--i:${i}">${esc(line)}</span>`).join('')
     let motes = ''
     for (let i = 0; i < 14; i++) motes += `<i style="--x:${(i * 43) % 100}%;--t:${((i * 0.41) % 3).toFixed(2)}s;--sp:${(5 + ((i * 0.7) % 3)).toFixed(2)}s"></i>`
     root.insertAdjacentHTML('beforeend', `<div class="cere bridal" style="--s:${S}s;--n:${BRIDAL_SHOTS.length}">${pics}<i class="bveil"></i><div class="bmote">${motes}</div>`
@@ -3077,7 +3077,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const a = r.heroes[l.a], b = r.heroes[l.b]
         let petals = ''
         for (let i = 0; i < 22; i++) petals += `<i style="--x:${(i * 37) % 100}%;--t:${((i * 0.29) % 2.4).toFixed(2)}s;--sp:${(3.6 + ((i * 0.53) % 2.2)).toFixed(2)}s"></i>`
-        scenes.push(`<div class="cere wed"><i class="cbg" style="${sceneBg('event-wedding')}"></i><div class="cpet">${petals}</div>`
+        scenes.push(`<div class="cere wed"><i class="cbg" style="${sceneBg('event-marriage')}"></i><div class="cpet">${petals}</div>`
           + `<div class="cpair"><div class="cl">${bust(a, 'cf')}<b>${esc(a?.name ?? '')}</b></div><div class="cr">${bust(b, 'cf')}<b>${esc(b?.name ?? '')}</b></div></div>`
           + `<div class="cw"><b>혼례</b><span>${esc(josa(a?.name ?? '', '과', '와'))} ${esc(josa(b?.name ?? '', '이', '가'))} 짝을 맺었다</span><small>신혼 ${P.realm.wedHoney}계절 — 함께 지내면 아이가 일찍 온다</small></div></div>`)
       } else if (l.kind === 'recruit' && l.faction === me()) {

@@ -149,7 +149,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .honey .bridal-go { position: relative; margin: 4px 0 2px; border-color: #f0a0b0aa; color: #ffe0e6; background: linear-gradient(#5a2a3acc, #2a1218cc); box-shadow: 0 0 12px #ff8a9a55; }
 /* 신방을 살펴본다 — 넉 장이 천천히 밀리며 넘어간다 (켄 번스) · 등잔빛 너울 · 마지막 장은 남는다 */
 .ap .cere.bridal { background: #070405; justify-content: flex-start; padding-top: max(18px, env(safe-area-inset-top)); }
-.ap .cere.bridal .bpic { position: absolute; inset: -9%; background: center / cover no-repeat; opacity: 0; animation: bpin 1.4s ease-in-out calc(var(--i) * var(--s)) both, bkb calc(var(--s) + 1.6s) ease-out calc(var(--i) * var(--s)) both; }
+.ap .cere.bridal .bpic { position: absolute; inset: -9%; background: var(--hbg) center / cover no-repeat; opacity: 0; animation: bpin 1.4s ease-in-out calc(var(--i) * var(--s)) both, bkb calc(var(--s) + 1.6s) ease-out calc(var(--i) * var(--s)) both; }
+@media (orientation: portrait) { .ap .cere.bridal .bpic { background-image: var(--vbg, var(--hbg)); } }
 .ap .cere.bridal .bpic.odd { animation-name: bpin, bkb2; }
 .ap .cere.bridal .bpic:nth-of-type(4) { inset: -2% -4% 0; background-position: center 100%; transform-origin: 50% 100%; } /* 댓돌 위 신 — 그림 맨 아래가 잘리지 않게 */
 .ap .cere.bridal .bveil { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 70% 60% at 50% 42%, #0000 40%, #0a0406cc 100%), linear-gradient(#0a0406cc, #0000 30%, #0000 85%, #0a040699); }
