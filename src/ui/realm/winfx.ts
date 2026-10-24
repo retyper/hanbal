@@ -56,8 +56,10 @@ export function winFxHtml(word: string, sub: string, delay: number, lose = false
     }
     h += '</div>'
   }
-  // 「승리」 로고 그림이 있으면 글자 대신 — 금빛 붓글씨 + 청동 거울·맥궁 (형 10-23: "승리 로고 별도로")
-  const face = logo !== '' && word === '승리' ? `<img class="wf-logo" src="${logo}" alt="${word}">` : `<b>${word}</b>`
+  // 「승리」·「대승」 로고 그림이 있으면 글자 대신 — 금빛 붓글씨 + 청동 거울·맥궁 (형 10-23: "승리 로고 별도로")
+  // 대승은 한 단 위 — 금관·깃발·소나무 가지·곡옥 (형 10-24: "대승 이미지는 더 멋져야") · 같은 자리의 great-win-logo.png
+  const src = word === '대승' ? logo.replace('win-logo', 'great-win-logo') : logo
+  const face = logo !== '' && (word === '승리' || word === '대승') ? `<img class="wf-logo${word === '대승' ? ' great' : ''}" src="${src}" alt="${word}">` : `<b>${word}</b>`
   return h + `<div class="wf-word">${face}${sub !== '' ? `<span>${sub}</span>` : ''}</div></div>`
 }
 
@@ -91,6 +93,8 @@ export const WINFX_CSS = `
 .ap .winfx .wf-word { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; animation: wfslam .7s cubic-bezier(.2, 1.4, .35, 1) var(--wd) both; }
 .ap .winfx .wf-word .wf-logo { width: min(82vw, 620px); height: auto; filter: drop-shadow(0 8px 18px #000d) drop-shadow(0 0 26px #ffd27a77); }
 .ap .winfx.brief .wf-word .wf-logo { width: min(70vw, 480px); }
+.ap .winfx .wf-word .wf-logo.great { width: min(92vw, 760px); }
+.ap .winfx.brief .wf-word .wf-logo.great { width: min(84vw, 600px); }
 .ap .winfx .wf-word b { font-family: 'East Sea Dokdo', var(--display); font-weight: 400; font-size: clamp(170px, 40vw, 380px); line-height: .8; letter-spacing: .06em;
   background: linear-gradient(#fffbe0 8%, #f6d27a 45%, #c08a30 78%, #7a4e18); -webkit-background-clip: text; background-clip: text; color: transparent;
   text-shadow: none; filter: drop-shadow(0 4px 0 #2a1606) drop-shadow(0 0 30px #f0c86acc) drop-shadow(0 10px 24px #000); }
