@@ -126,6 +126,8 @@ const MUTE_KEY = 'hanbal.realm.mute'
  */
 type InstallPrompt = { prompt(): Promise<void> }
 const installPrompt = (): InstallPrompt | null => (window as unknown as { __bip?: InstallPrompt }).__bip ?? null
+/** 「앱으로 설치」 카드를 다시 보지 않기 — 이 기기에만 · 숨겨도 작은 단추는 남는다 */
+const INSTALL_HIDE_KEY = 'hanbal.installHide'
 const installed = (): boolean => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches
 /** 장의 목표 띠를 접어 두었나 — 이 기기에만 */
 const GOAL_FOLD_KEY = 'hanbal.realm.goalfold'
@@ -2478,6 +2480,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   // ───────── 계정 (docs/realm/SERVER.md) — 나라 판 맨 아래 · 첫 화면 한 줄 · 갈라진 판 고르기
   /** 계정 지우기를 한 번 눌렀다 — 두 번째 누름에서 지운다 (브라우저 확인 창은 쓰지 않는다) */
   let acctArmed = false
+  /** 이번에 띄운 동안 「확인」으로 닫았다 (다시 보지 않기를 안 골랐으면 다음에 켤 때 또 뜬다) */
+  let instClosed = false
   /** 「플레이 기록 지우기」를 한 번 눌렀다 — 한 번 더 눌러야 지운다 */
   let resetArmed = false
   function syncWord(s: SyncState): string {
@@ -2513,6 +2517,24 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return h
   }
   /** 첫 화면 한 줄 — 새 기기에서 판을 시작하기 전에 들어와야 저쪽 판을 받는다 */
+  /**
+   * 앱으로 설치 — 웹에서 하는 사람에게 권하는 카드 (형 10-24: "ios 에서도 PWA 로 받을 수 있지? · 제안하는 카드 · 다시 보지 않기 · 체크해도 웹이면 언제든 받을 수 있게").
+   * 아이폰 사파리는 설치 단추가 없다 — 공유 → 「홈 화면에 추가」를 글로. 안드로이드·피시 크롬은 설치 단추(있으면). 숨겨도 작은 단추는 늘 남는다.
+   */
+  function installCard(): string {
+    if (installed()) return ''
+    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    let hide = false
+    try { hide = localStorage.getItem(INSTALL_HIDE_KEY) === '1' } catch { hide = false }
+    if (hide || instClosed) return `<p class="fine"><button class="btn ghost sm" data-act="inst-show">📲 앱으로 설치</button></p>`
+    const how = ios
+      ? '사파리 아래 <b>공유</b> 단추(네모에 위 화살표) → <b>「홈 화면에 추가」</b>. 홈 화면의 칠십팔국 아이콘으로 열면 주소창 없이 꽉 찬 화면이다.'
+      : installPrompt() !== null ? '아래 단추를 누르면 바로 설치된다. 홈 화면·바탕화면의 아이콘으로 열면 주소창 없이 꽉 찬 화면이다.'
+        : '브라우저 메뉴(⋮) → <b>「앱 설치」</b> 또는 <b>「홈 화면에 추가」</b>. 아이콘으로 열면 주소창 없이 꽉 찬 화면이다.'
+    return `<div class="instc"><b>📲 앱으로 설치하면 더 편하다</b><p>${how}</p>`
+      + `<div class="instr">${!ios && installPrompt() !== null ? '<button class="btn pri sm" data-act="install">앱으로 설치</button>' : ''}<label class="chk"><input type="checkbox" class="insthide"> 다시 보지 않기</label><button class="btn sm" data-act="inst-ok">확인</button></div></div>`
+  }
+
   function acctLine(): string {
     const c = host.cloud
     if (c === undefined || !c.available()) return ''
@@ -3122,7 +3144,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         // 도감 — 판을 넘어 남는 것 (VISION §5-4). 만난 장수 수를 단추에
         const c = dexCounts(loadDex())
         const dexBtn = `<button class="btn big" data-act="dex-open">도감 <small class="mute">${c.met}/${c.total}</small></button>`
-        return titleHtml(KIT, realm, host.savedAt(), acctLine() + links, realm === null && !tutorialOver(), dexBtn)
+        return titleHtml(KIT, realm, host.savedAt(), installCard() + acctLine() + links, realm === null && !tutorialOver(), dexBtn)
       }
       case 'dex': return dexHtml(DEX_KIT, f.board, f.sel, f.back === null ? '판으로' : '처음으로')
       case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null), tierWon, tierHtml('jumong', chapTier, 'chap-tier') + carryChapterNote())
@@ -3894,6 +3916,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'acct-out': host.cloud?.signOut(); acctArmed = false; paint(); return
       case 'acct-sync': host.cloud?.syncNow(); return
       case 'acct-pick': host.cloud?.choose(d['v'] === 'there' ? 'there' : 'here'); return
+      case 'inst-ok': {
+        const hide = root.querySelector<HTMLInputElement>('.instc .insthide')?.checked === true
+        if (hide) { try { localStorage.setItem(INSTALL_HIDE_KEY, '1') } catch { /* 저장 못 하는 곳 */ } }
+        instClosed = true
+        break
+      }
+      case 'inst-show': { try { localStorage.removeItem(INSTALL_HIDE_KEY) } catch { /* 저장 못 하는 곳 */ } instClosed = false; break }
       case 'reset-play':
         if (!resetArmed) { resetArmed = true; paint(); return }
         resetArmed = false

@@ -726,6 +726,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .tflow .tfl { width: 48px; height: 48px; }
 .ap .tflow .tfa { flex: 1; display: flex; flex-direction: column; align-items: center; } .ap .tflow .tfa i { font-style: normal; font-size: 30px; line-height: 1; color: #f0d090; }
 .ap .tflow .tfa.r i { color: #ffb070; } .ap .tflow .tfa.l i { color: #9fd18b; } .ap .tflow .tfa small { font-size: 12px; color: #e8dcc0; }
+/* 앱으로 설치 카드 */
+.ap .instc { margin: 10px auto; max-width: 420px; padding: 10px 12px; border-radius: 12px; border: 1px solid #c9a45a; background: #1f1710ee; text-align: left; }
+.ap .instc > b { color: #f3d48a; } .ap .instc p { margin: 6px 0; font-size: 13.5px; line-height: 1.5; color: #e8dcc0; }
+.ap .instc .instr { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .ap .instc .chk { font-size: 13px; color: #cfc6b4; margin-right: auto; }
 /* 침략 알림 — 붉게 */
 .ap .cere.invade { background: radial-gradient(ellipse at 50% 45%, #5a1410cc, #0b0605 70%); }
 .ap .cere.invade .cbg { opacity: .35; filter: saturate(.7) sepia(.3) hue-rotate(-20deg); }
