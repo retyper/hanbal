@@ -3087,14 +3087,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const file = bustOf(x.id)
     const src = file !== undefined ? `${ART}bust/${file}.jpg` : ''
     const face = src !== '' ? `<img class="hbust" src="${src}" alt="">` : bust(x, 'hbust')
-    // 칼금 셋 — 왼쪽 · 오른쪽 · 얼굴 순 (얼굴을 마지막에)
-    const cuts = src !== '' ? [1, 2, 3].map((k) => `<i class="hcut c${k}" style="background-image:url('${src}')"></i><i class="hslash s${k}"></i>`).join('') : ''
+    // 컷인 셋 — 화면을 위아래로 가로지르는 사선 띠마다 그림의 한 곳을 크게 (손·무기 → 어깨·장신구 → 눈빛) (형 10-24: "사선 부위만 화면에 꽉 찰 정도로 확대")
+    // 크게 키우니 320px 카드로는 뭉개진다 — 큰 판(bust-hd · tools/bust-hd.ps1)을 위에, 없으면 아래 카드가 보인다
+    const hd = file !== undefined ? `url('${ART}bust-hd/${file}.jpg'), ` : ''
+    const cuts = src !== '' ? `<div class="hbands">${[1, 2, 3].map((k) => `<i class="hb b${k}"><i style="background-image:${hd}url('${src}')"></i></i>`).join('')}</div>` : ''
     let motes = ''
     for (let i = 0; i < 18; i++) motes += `<i style="--x:${(i * 41) % 100}%;--t:${((i * 0.37) % 2.2).toFixed(2)}s;--sp:${(2.6 + ((i * 0.61) % 1.8)).toFixed(2)}s"></i>`
     const chips = ts.map((t, i) => `<span class="ctr" style="--g:${GRADE_COLOR[t.grade]};animation-delay:${(2 + i * 0.18).toFixed(2)}s">${esc(t.name)}</span>`).join('')
     const line = how === 'persuade' ? '마음을 돌려 우리 장수가 되었다' : '떠돌던 인재가 우리를 찾아왔다'
     return `<div class="cere hire" style="--gc:${gc}"><i class="cglow"></i><div class="cmote">${motes}</div>`
-      + `<div class="hframe">${cuts}${face}<i class="hfr"></i></div><i class="cflash"></i>`
+      + `<div class="hframe">${face}<i class="hfr"></i></div>${cuts}<i class="cflash"></i>`
       + `<div class="cw"><b>등용</b><span class="hname">${esc(x.name)}</span><span>${line}</span><em>「주군을 모시겠습니다」</em>${chips !== '' ? `<div class="ctrs">${chips}</div>` : ''}</div></div>`
   }
 
