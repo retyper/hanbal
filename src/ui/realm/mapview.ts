@@ -502,7 +502,8 @@ export function mapHtml(
       const men = Object.values(r.armies).filter((a) => a.at === n.id && a.faction === me && a.march === null)
         .reduce((s, a) => s + headcount(forceOf(r, a)), 0)
       if (men > 0) badge = `<span class="men">${men}</span>`
-    } else {
+    } else if (!ours) {
+      // 정찰로 본 군세는 남의 고을에만 — 차지해 우리 군대가 들어앉은 고을에 옛 적 군세가 남지 않게 (형 10-24: "개마들머리 점령했는데 붉은 273~550 이 남아 있다")
       const f = known[n.id]?.force
       if (f) {
         const v = visibleRange({ f0: f.f0, src: f.src, u: f.u }, r.season - f.season)
