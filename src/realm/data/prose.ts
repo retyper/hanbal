@@ -678,6 +678,11 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (line.ask === 'break') return `${josa(fname(other), '이', '가')} 우리와의 약조를 깼다.${mind(other, whyLine(line.why, about))} 이제 언제든 쳐들어올 수 있다.`
       return `${fname(other)}에서 ${ASK_NAME[line.ask]} 사신이 왔다.`
     }
+    case 'stationed': {
+      if (line.faction === viewer) return `${josa(node(line.node), '에', '에')} 약속 없이 머무는 우리 군대를 ${fname(line.owner)}에서 언짢아한다 — 호감이 내려간다.`
+      if (line.owner === viewer) return `${fname(line.faction)} 군대가 약속 없이 ${josa(node(line.node), '에', '에')} 머문다.`
+      return null
+    }
     case 'recall': {
       if (line.faction === viewer && line.why === 'order') return `${josa(node(line.node), '으로', '로')} 가던 ${josa(nameArmy(line.army), '이', '가')} 발길을 돌린다 — 떠난 고을로 돌아간다.`
       if (line.faction === viewer && line.owner !== undefined) return `${josa(node(line.node), '이', '가')} 가는 사이 ${fname(line.owner)} 땅이 됐다 — 싸우지 않는 사이라 ${josa(nameArmy(line.army), '을', '를')} 돌린다.`

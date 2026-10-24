@@ -685,6 +685,21 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
  * 화친·동맹을 우리 쪽에서 깬다 — 중립이 되고, 깬 나라와의 호감이 크게 깎이고, **다른 나라들도 호감이 준다** (신의의 값).
  * 그 나라에 빌려준(빌린) 군대도 돌아간다 (stepLent).
  */
+/**
+ * 동맹·화친 땅에 약속 없이 머무는 군대 — 그 나라가 언짢아한다 (형 10-24: "아무 약속 없이 군사를 들이면 동맹도 안 좋아해야 하는 거 아닌가").
+ * 빌려준 군대(lent)는 약속이 있으니 빼고, 지나가며 이번 계절에 닿은 군대도 한 계절은 봐준다.
+ */
+export function stationFriction(r: Realm, lines: ReportLine[]): void {
+  for (const id of Object.keys(r.armies).sort()) {
+    const a = r.armies[id]!
+    if (a.march !== null || a.lent !== undefined || a.came === r.season) continue
+    const owner = r.nodes[a.at]?.owner ?? null
+    if (owner === null || owner === a.faction || !friendly(r, a.faction, owner)) continue
+    addFavor(r, a.faction, owner, -P.realm.favorStation)
+    lines.push({ kind: 'stationed', faction: a.faction, owner, node: a.at })
+  }
+}
+
 function breakPact(r: Realm, from: string, to: string, lines: ReportLine[]): void {
   const R = P.realm
   const s = relationOf(r, from, to).state

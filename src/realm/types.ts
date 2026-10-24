@@ -664,6 +664,8 @@ export interface Realm {
 /** 플레이어(또는 AI)가 한 계절에 내리는 명령 */
 export type Order =
   | { readonly kind: 'march'; readonly army: string; readonly edge: string; readonly ambush: boolean; readonly approach?: Approach; readonly ration?: Ration }
+  /** 서 있는 고을을 친다 — 동맹을 깨는 등으로 그 땅이 싸울 땅이 됐을 때, 길을 나서지 않고 그 자리에서 (형 10-24) */
+  | { readonly kind: 'assault'; readonly army: string }
   /** 전장에서 직접 내린 명령 — 그 판(key)의 라운드마다 (advance 가 tactics 로 받는다 · 판 기록에 남아 다시 돌려도 같다) */
   | { readonly kind: 'command'; readonly key: string; readonly cmds: readonly (Cmd | RoundOrder)[] }
   | { readonly kind: 'scout'; readonly faction: string; readonly node: string; readonly hero: string | null }
@@ -834,6 +836,8 @@ export type ReportLine =
   | { readonly kind: 'hunger'; readonly faction: string }
   | { readonly kind: 'envoy'; readonly from: string; readonly to: string; readonly ask: EnvoyAsk; readonly accepted: boolean; readonly why?: Why; readonly about?: string; readonly hero?: string; readonly node?: string }
   /** 화친·동맹을 맺어 상대 땅으로 가던 군대가 발길을 돌렸다 — `node` 는 가려던 고을 */
+  /** 동맹·화친 땅에 약속 없이 머무는 우리 군대를 그 나라가 언짢아한다 (호감 −) */
+  | { readonly kind: 'stationed'; readonly faction: string; readonly owner: string; readonly node: string }
   | { readonly kind: 'recall'; readonly faction: string; readonly army: string; readonly node: string; /** 왜 돌아섰나 — 없으면 화친·동맹을 맺어서, owner 면 가는 사이 그 나라 땅이 돼서, why 'order' 면 회군 명령 */ readonly owner?: string; readonly why?: 'order' }
   /** 함께 치자는 약속을 지켰나 저버렸나 — `from` 이 약속한 나라, `to` 가 약속받은 나라 */
   | { readonly kind: 'pledge'; readonly from: string; readonly to: string; readonly node: string; readonly kept: boolean }

@@ -21,7 +21,7 @@ import { CARDS } from '../../realm/data/cards.ts'
 import {
   ASK_KIND_NAME, ASK_NAME, deedText, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, arriveWhen, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine, NODE_NOW, BUILD_NAME, BOW_NAME, CONCEAL_LINE, GOOD_NAME, GOOD_USE, tagNow,
 } from '../../realm/data/prose.ts'
-import { canEscort, envoyChanceFor, envoyClash, envoyOptions, favorOf, jointTargets, lentEta, openAsks, relationOf } from '../../realm/diplomacy.ts'
+import { canEscort, envoyChanceFor, envoyClash, envoyOptions, favorOf, friendly, jointTargets, lentEta, openAsks, relationOf } from '../../realm/diplomacy.ts'
 import {
   GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeHarvest, nodeYield, nodeSpecials, upkeepOf, riteAllowed, riteCost,
   autoFlows, crowdOf, migratePath, fieldMul, homeRoom, isRiverside, landMul, placeLimit, placeNodes, workMul,
@@ -1061,6 +1061,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 지도에서 고른 말 — 아래에 띠로. 같은 고을에서 둘 넘게 고르면 합치기 단추, 길 위의 군대면 어디로 가는 중인지.
    */
   /** 회군 단추 — 길 위의 우리 군대 (형: "가는도중에 있는 군대는 회군할수 있게 해야하는거아님?"). 고른 판(plan)에는 이미 돌아선 길이 보인다 */
+  /** 서 있는 고을이 싸울 땅이 됐다(동맹을 깬 뒤 등) — 그 자리에서 친다 (형 10-24) */
+  function assaultBtn(r: Realm, a: Army): string {
+    const node = r.nodes[a.at]
+    if (a.lent !== undefined || a.march !== null || node === undefined || node.owner === null || node.owner === me() || node.kind === 'sodo' || friendly(r, me(), node.owner)) return ''
+    const on = armyOrders.some((o) => o.kind === 'assault' && o.army === a.id)
+    return `<div class="btns"><button class="btn ${on ? 'on' : 'pri'}" data-act="assault" data-army="${a.id}">${on ? `이번 계절 ${esc(josa(node.name, '을', '를'))} 친다 · 누르면 거둔다` : `⚔ 서 있는 ${esc(josa(node.name, '을', '를'))} 친다`}</button></div>`
+  }
+
   function turnBackBtn(a: Army): string {
     if (a.lent !== undefined) return ''
     const on = armyOrders.some((o) => o.kind === 'turnBack' && o.army === a.id)
@@ -1400,6 +1408,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         h += `<div class="mute">해산한다</div><div class="btns"><button class="btn ghost" data-act="undisband" data-army="${a.id}">해산 취소</button></div></div></div>`
         continue
       }
+      h += assaultBtn(r, a)
       const open = openArmy === a.id
       // 출정 판을 열면 출정은 아래 붙박이 띠가 맡는다 — 위 단추는 숨긴다 (형 10-23: "하단 고정 만들었으면 방패병 밑의 출정 버튼은 없애야")
       h += `<div class="btns">${open ? '' : `<button class="btn" data-act="open" data-army="${a.id}">${pick[a.id] !== undefined ? `${goWord(r, a, pick[a.id]!.edge)} 고치기` : '보내기 · 이동·출정'}</button>`}`
@@ -3877,6 +3886,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         break
       }
       case 'ptgo': if (partySel !== '') sendParty(partySel, d['edge']!); break
+      case 'assault': {
+        const id = d['army']!
+        const has = armyOrders.some((o) => o.kind === 'assault' && o.army === id)
+        armyOrders = has ? armyOrders.filter((o) => !(o.kind === 'assault' && o.army === id)) : [...armyOrders, { kind: 'assault', army: id }]
+        if (!has) delete pick[id] // 그 자리에서 치면 다른 길로 떠나지 않는다
+        break
+      }
       case 'turnback': {
         const id = d['army']!
         const has = armyOrders.some((o) => o.kind === 'turnBack' && o.army === id)

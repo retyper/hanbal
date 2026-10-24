@@ -23,7 +23,7 @@ import {
 import { fightRounds, groupOf, type FightResult, type Side, type Terrain } from './tactics.ts'
 import {
   checkPledges, driftFavor, expireRelations, friendly, holdMarkets, makeAsks, onHostile, relationOf, resolveAnswers, resolveEnvoys,
-  shareIntel, stepLent,
+  shareIntel, stationFriction, stepLent,
 } from './diplomacy.ts'
 import {
   addGood, applyArm, applyBuild, applyGuard, draftCost, draftIronCost, draftLimit, draftNeeds, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepBuilds, stepEconomy,
@@ -546,6 +546,17 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
 function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
   const season = seasonOf(r.season)
   applyArmyOrders(r, orders, lines)
+  // 서 있는 고을을 친다 — 그 고을이 남의 땅이고 싸울 사이(동맹·화친이 아님)일 때만. 들어온 길로 한 계절에 닿은 것으로 친다
+  for (const o of orders) {
+    if (o.kind !== 'assault') continue
+    const a = r.armies[o.army]
+    const node = a !== undefined ? r.nodes[a.at] : undefined
+    if (a === undefined || node === undefined || a.march !== null || node.owner === null || node.owner === a.faction || node.kind === 'sodo' || friendly(r, a.faction, node.owner)) continue
+    const ed = byId(Object.values(r.edges)).find((e) => e.a === a.at || e.b === a.at)
+    if (ed === undefined) continue
+    a.food = Math.max(a.food ?? 0, 1)
+    a.march = { from: a.at, to: a.at, edge: ed.id, left: 1, ambush: false, aim: node.owner }
+  }
   for (const o of orders) {
     if (o.kind !== 'march') continue
     const a = r.armies[o.army]
@@ -1322,6 +1333,7 @@ export function advance(
   driftFavor(r) // 9 — 같은 적과 싸우는 나라끼리 가까워진다
   checkPledges(r, lines) // 9 — 함께 치자는 약속을 지켰나
   stepLent(r, lines) // 9 — 빌려준 군대가 돌아갈 때
+  stationFriction(r, lines) // 9 — 동맹 땅에 약속 없이 머무는 군대 (형 10-24)
   shareIntel(r) // 9 — 동맹은 본 것을 나눈다
   stepBuilds(r, lines) // 9 — 다 지은 목책·해자가 선다
   refreshSpies(r) // 9 — 첩자가 본다
