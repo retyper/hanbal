@@ -388,6 +388,8 @@ export function warName(r: Realm, l: BattleLine): string {
 /** 전장 한 판의 화면 — 보인 합(shown)까지. 마지막 합은 천천히 풀린다(anim). sel 은 지금 고르는 깃발 */
 /** 활을 쏘는 명령 — 그 합에 화살이 날아간다 */
 const SHOOT_CMD: ReadonlySet<string> = new Set(['volley', 'counter', 'open', 'height', 'fire'])
+/** 전장의 진이 직접 보여 주는 무리 명령 — 위 겹의 큰 연출을 띄우지 않는다 */
+const FIELD_CMD: ReadonlySet<string> = new Set(['charge', 'hold', 'open', 'volley', 'counter', 'flank', 'punch', 'pursue', 'guard'])
 /** 장수 기술의 결 — 초상이 튀어나오는 몸짓 */
 type CutKind = 'lead' | 'cheer' | 'strike' | 'grab' | 'back' | 'shot' | 'call' | 'guard'
 const CUT_OF: Readonly<Partial<Record<Cmd, CutKind>>> = { drum: 'cheer', duel: 'strike', capture: 'grab', retreat: 'back' }
@@ -713,7 +715,12 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       // 뒷줄·옆을 먼저 세고 앞줄을 나중에 — 쓰러지는 것은 맞부딪는 앞줄부터
       const bows = column(rows[1]!, 1, 22)
       const front = column(rows[0]!, 0, 37)
-      return `<div class="wf2s ${cls}"${formAttrs(o)}>${gen}${cues}${bows}${horse}${front}</div>`
+      // 무리마다 제 깃발 박자 — 그 박자에 앞줄이 나서고 · 기병이 돌고 · 화살이 난다. 박자가 없으면(깃발 연출 수를 넘었으면) 맞부딪기 조금 앞
+      const beatOf = (c: Cmd | undefined): number => (c === undefined ? 0 : plan?.beats.find((x) => x.ours === (cls === 'us') && x.c === c)?.at ?? Math.max(0, (plan?.clash ?? 1) - 0.7))
+      const shoot = play && o?.bows !== undefined && rows[1]!.length > 0 ? beatOf(o.bows) : null
+      const tempo = play ? ` style="--fa:${beatOf(o?.front).toFixed(2)}s;--ha:${beatOf(o?.horse).toFixed(2)}s"` : ''
+      const arrows = shoot === null ? '' : `<i class="wf-arw" style="--sa:${shoot.toFixed(2)}s">${Array.from({ length: 8 }, (_, j) => `<i style="--k:${j};--ay:${-30 + j * 8}%"><img src="${art}fx/arrow.png" alt=""></i>`).join('')}</i>`
+      return `<div class="wf2s ${cls}"${formAttrs(o)}${tempo}>${gen}${cues}${bows}${horse}${front}${arrows}</div>`
     }
     // 이 합에 낸 명령 (풀릴 때) · 고르는 중엔 우리는 고른 것, 적은 낌새
     const ordUs: RoundOrder | undefined = play ? (weAtk ? last!.oa : last!.od) : pd !== undefined ? sel : undefined
@@ -722,7 +729,12 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const omen = pd === undefined || pd.round !== shown ? ''
       : pd.hint !== null ? `<div class="wf-omen${pd.hintSrc === 'habit' ? ' habit' : ''}"><img src="${flagSrc(art, pd.hint)}" alt=""><span><b>${OMEN_WORD[pd.hint] ?? CMD_NAME[pd.hint]}</b><small>${pd.hintSrc === 'habit' ? '적장의 버릇' : '적 앞줄의 낌새'}</small></span></div>`
         : '<div class="wf-omen none"><i>?</i><span><b>속을 모른다</b><small>정찰을 보내면 보인다</small></span></div>'
-    return `<div class="wfield${play ? ' play' : ''}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s"><i class="wf-ground"></i>${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}<i class="wf-mid">⚔</i>${omen}</div>`
+    // 맞부딪는 자리에 불꽃·흙먼지 · 양쪽이 잃은 수가 떠오른다 · 싸움이 처음 열리면 두 군대가 대열을 지어 들어온다
+    const lost = (i: 0 | 1): number => Math.max(0, Math.round(men0(i) * (n0(i) - n(i))))
+    const hit = play ? `<i class="wf-hit"><img class="h1" src="${art}fx/impact.png" alt=""><img class="h2" src="${art}fx/dust.png" alt=""><img class="h3" src="${art}fx/dust.png" alt=""></i>`
+      + (lost(ourI) > 0 ? `<b class="wf-loss us">−${lost(ourI)}</b>` : '') + (lost(foeI) > 0 ? `<b class="wf-loss foe">−${lost(foeI)}</b>` : '') : ''
+    const enter = !anim && shown === 0 ? ' enter' : ''
+    return `<div class="wfield${play ? ' play' : ''}${enter}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s"><i class="wf-ground"></i>${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}<i class="wf-mid">⚔</i>${hit}${omen}</div>`
   }
 
   // 싸움터 배경 (땅마다) · 위 카드는 굴려도 그 자리에 (형: "싸우는로그가 스크롤로 보이더라도 상단에 캐릭터랑 체력바 있는 그 카드는 고정")
@@ -734,6 +746,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     // 깃발마다 제 차례 — 차례가 끝나면 걷힌다 (다음 깃발과 겹치지 않게)
     for (const b of roundPlan(last, weAtk).beats) {
       const end = b.at + b.len - 0.06
+      // 무리 명령은 전장의 진이 제 박자에 직접 움직인다 — 화면을 가로지르던 큰 깃발·화살비는 진을 가렸다 (형 10-25). 장수 기술·땅의 수만 남긴다
+      if (FIELD_CMD.has(b.c)) continue
       h += SHOOT_CMD.has(b.c) ? volleyHtml(art, b.dir, b.at + 0.05, end) : cmdFxHtml(art, b.c, b.dir, b.at, end)
     }
   }
@@ -998,15 +1012,47 @@ export const WAR_CSS = `
 .ap .wf2s[data-l="capture"] .q-cap { opacity: 1; }
 .ap .wf2s .q-back { left: 16%; top: 30%; color: #c8d0e0; text-shadow: 0 1px 3px #000; } .ap .wf2s[data-l="retreat"] .q-back { opacity: 1; }
 /* 맞부딪힘 — 앞줄이 서로 달려들어 부딪고 조금 물러선다. 이번 합에 잃은 만큼 쓰러진다 */
-.ap .wfield.play .wf2s .tk.r0:not(.down) { animation: wclash .7s ease-in-out calc(var(--hd) - .35s) both; }
-@keyframes wclash { 0% { translate: 0 0; } 55% { translate: 9cqw 0; } 100% { translate: 3cqw 0; } }
-.ap .wfield.play .wf2s[data-h="flank"] .tk.r2:not(.down), .ap .wfield.play .wf2s[data-h="pursue"] .tk.r2:not(.down) { animation: wride .8s ease-in calc(var(--hd) - .45s) both; }
+.ap .wfield.play .wf2s .tk.r0:not(.down) { animation: wstep .5s ease-out var(--fa, 0s) both, wclash .7s ease-in-out calc(var(--hd) - .35s) forwards; }
+@keyframes wstep { from { translate: 0 0; } to { translate: 2cqw 0; } }
+@keyframes wclash { 0% { translate: 2cqw 0; } 55% { translate: 9cqw 0; } 100% { translate: 3cqw 0; } }
+.ap .wfield.play .wf2s[data-h="flank"] .tk.r2:not(.down), .ap .wfield.play .wf2s[data-h="pursue"] .tk.r2:not(.down), .ap .wfield.play .wf2s[data-h="punch"] .tk.r2:not(.down) { animation: wride .9s ease-in var(--ha, 0s) both; }
 @keyframes wride { 0% { translate: 0 0; } 100% { translate: 12cqw 3cqw; } }
 .ap .wfield .tk.fall { animation: wtkfall .55s ease-in calc(var(--hd) + .2s + var(--j) * .05s) forwards !important; }
 @keyframes wtkfall { 0% { translate: 3cqw 0; } 100% { translate: 2cqw 0; rotate: -78deg; opacity: .16; filter: grayscale(1); } }
 .ap .wfield .wf-mid { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); font-style: normal; font-size: 22px; color: #f0d090; text-shadow: 0 0 8px #000; opacity: 0; z-index: 80; }
 .ap .wfield.play .wf-mid { animation: wmid2 .6s ease-out var(--hd) both; } @keyframes wmid2 { 0% { opacity: 0; scale: .4; } 40% { opacity: 1; scale: 1.8; color: #fff; } 100% { opacity: 0; scale: 1.2; } }
-@media (prefers-reduced-motion: reduce) { .ap .wfield *, .ap .wfield .tk.fall { animation: none !important; transition: none !important; } }
+/* 숨 쉬는 병사 — 서 있는 말이 저마다 조금씩 들썩인다 */
+.ap .wf2s .tk.up { animation: tkidle 1.8s ease-in-out calc(var(--j) * -.31s) infinite alternate; } @keyframes tkidle { to { translate: 0 -2px; } }
+/* 들어오기 — 싸움이 처음 열리면 두 군대가 대열을 지어 걸어 들어온다 (적은 거울이라 오른쪽에서) */
+.ap .wfield.enter .tk, .ap .wfield.enter .wgen { animation: tkin .95s cubic-bezier(.2, .8, .3, 1) calc(.15s + var(--j, 0) * .06s) both; }
+@keyframes tkin { from { translate: -28cqw 0; opacity: 0; } 60% { opacity: 1; } to { translate: 0 0; opacity: 1; } }
+/* 돌격이면 앞줄이 더 깊이 달려든다 */
+/* 돌격 — 제 박자에 달려 나가 깊이 부딪친다 · 방진 — 제자리에서 받아 낸다 */
+.ap .wfield.play .wf2s[data-f="charge"] .tk.r0:not(.down) { animation-name: wstepc, wclashc; } @keyframes wstepc { from { translate: 0 0; } to { translate: 7cqw 0; } } @keyframes wclashc { 0% { translate: 7cqw 0; } 55% { translate: 13cqw 0; } 100% { translate: 5cqw 0; } }
+.ap .wfield.play .wf2s[data-f="hold"] .tk.r0:not(.down) { animation-name: wsteph, wclashh; } @keyframes wsteph { from { translate: 0 0; } to { translate: 0 0; scale: 1; } } @keyframes wclashh { 0% { translate: 0 0; } 55% { translate: 3cqw 0; } 100% { translate: 1cqw 0; } }
+/* 전장 안의 화살비 — 궁수 자리에서 적 앞줄까지 활꼴로 (밖 틀이 가로로 가고 안의 화살이 오르내린다) */
+.ap .wf-arw { position: absolute; left: 24%; top: 44%; z-index: 75; pointer-events: none; }
+.ap .wf-arw > i { position: absolute; left: 0; top: var(--ay); opacity: 0; animation: arwx .8s linear calc(var(--sa) + var(--k) * .05s) both; }
+.ap .wf-arw img { display: block; width: clamp(14px, 4.2cqw, 28px); filter: drop-shadow(0 1px 1px #000a); animation: arwy .8s calc(var(--sa) + var(--k) * .05s) both; }
+@keyframes arwx { 0% { opacity: 1; translate: 0 0; } 90% { opacity: 1; } 100% { opacity: 0; translate: 38cqw 0; } }
+@keyframes arwy { 0% { translate: 0 0; rotate: -38deg; animation-timing-function: ease-out; } 50% { translate: 0 -15cqw; rotate: 0deg; animation-timing-function: ease-in; } 100% { translate: 0 0; rotate: 38deg; } }
+/* 맞부딪힘 — 불꽃 · 흙먼지 · 흔들림 · 살짝 당겨 보기 */
+.ap .wfield.play { animation: wshake .5s ease-out var(--hd) both; }
+@keyframes wshake { 0% { translate: 0 0; scale: 1; } 15% { translate: -5px 2px; scale: 1.05; } 35% { translate: 4px -2px; } 55% { translate: -2px 1px; } 100% { translate: 0 0; scale: 1; } }
+.ap .wf-hit { position: absolute; left: 50%; top: 56%; z-index: 85; pointer-events: none; }
+.ap .wf-hit img { position: absolute; left: 0; top: 0; translate: -50% -50%; opacity: 0; }
+.ap .wf-hit .h1 { width: clamp(70px, 22cqw, 140px); animation: whit1 .45s ease-out var(--hd) both; mix-blend-mode: screen; }
+.ap .wf-hit .h2 { width: clamp(90px, 30cqw, 190px); animation: whit2 1.1s ease-out var(--hd) both; }
+.ap .wf-hit .h3 { width: clamp(70px, 24cqw, 150px); animation: whit3 1.2s ease-out calc(var(--hd) + .08s) both; }
+@keyframes whit1 { 0% { opacity: 0; scale: .3; } 25% { opacity: 1; scale: 1.1; } 100% { opacity: 0; scale: 1.5; } }
+@keyframes whit2 { 0% { opacity: 0; scale: .5; } 20% { opacity: .85; } 100% { opacity: 0; scale: 1.5; translate: -70% -60%; } }
+@keyframes whit3 { 0% { opacity: 0; scale: .5; } 20% { opacity: .7; } 100% { opacity: 0; scale: 1.4; translate: -30% -55%; } }
+/* 잃은 수 — 양쪽 위로 떠오른다 */
+.ap .wf-loss { position: absolute; top: 26%; z-index: 90; font-size: clamp(15px, 4.4cqw, 26px); font-weight: 900; color: #ff6a5a; text-shadow: 0 0 6px #000, 0 2px 3px #000; opacity: 0;
+  animation: wloss 1.6s ease-out calc(var(--hd) + .35s) both; }
+.ap .wf-loss.us { left: 26%; } .ap .wf-loss.foe { right: 26%; color: #ffd27a; }
+@keyframes wloss { 0% { opacity: 0; translate: 0 10px; scale: .6; } 15% { opacity: 1; translate: 0 0; scale: 1.15; } 70% { opacity: 1; scale: 1; } 100% { opacity: 0; translate: 0 -18px; } }
+@media (prefers-reduced-motion: reduce) { .ap .wfield *, .ap .wfield .tk.fall, .ap .wfield.play { animation: none !important; transition: none !important; } .ap .wf-loss { opacity: 1; } }
 .ap .wbar i { position: relative; display: block; height: 100%; border-radius: 6px; overflow: hidden; }
 .ap .wbar i::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, #ffffff00 0 9px, #ffffff2a 9px 15px); background-size: 34px 100%; animation: wbarflow 1.1s linear infinite; }
 .ap .wbar i::after { content: ''; position: absolute; top: 0; bottom: 0; left: -45%; width: 45%; background: linear-gradient(90deg, #fff0, #ffffffb0, #fff0); animation: wbarshine 3s ease-in-out infinite; }
