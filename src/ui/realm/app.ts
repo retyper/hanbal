@@ -1265,6 +1265,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   /** 출정 띠 — 판 맨 아래에 붙어 굴려도 보인다 (형: "설정을 싹 마치고 맨 아래 출정버튼 · 하단고정") */
+  /**
+   * 가는 곳이 싸울 곳이면 「출정」, 우리 땅·동맹 땅이면 「이동」 (형 10-24: "맨날 출정이 아니라 적국이면 공격하러 간다는 걸, 군사 이동이면 이동이라고")
+   */
+  function goWord(r: Realm, a: Army, edge: string | undefined): '출정' | '이동' {
+    if (edge === undefined) return '출정'
+    const m = movesOf(r, me(), a).find((x) => x.edge.id === edge)
+    return m !== undefined && !m.hostile ? '이동' : '출정'
+  }
+
   function sortieBar(r: Realm, a: Army): string {
     const all = sortieAll(a)
     const sent = Object.values(sortieD.take).reduce((s, n) => s + (n ?? 0), 0)
@@ -1274,10 +1283,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const m = ed !== undefined ? movesOf(r, me(), sortieProbe(a)).find((x) => x.edge.id === ed.id) : undefined
     const why = sent <= 0 ? '보낼 군사를 고른다' : !all ? splitBlocked(r, a, sent, total) : dest === undefined ? '갈 곳을 고른다' : null
     const label = why !== null ? why : dest !== undefined
-      ? `출정 — ${sent.toLocaleString('ko-KR')}명 · ${josa(dest, '으로', '로')}${m !== undefined ? ` · ${m.seasons}계절` : ''}`
+      ? `${m !== undefined && !m.hostile ? '이동' : '출정'} — ${sent.toLocaleString('ko-KR')}명 · ${josa(dest, '으로', '로')}${m !== undefined ? ` · ${m.seasons}계절` : ''}`
       : `${sent.toLocaleString('ko-KR')}명을 떼어 둔다`
     let h = `<div class="sortiebar"><button class="btn pri wide go" data-act="sortie-go" data-army="${a.id}" ${why !== null ? 'disabled' : ''}>${esc(label)}</button>`
-    if (pick[a.id] !== undefined) h += `<button class="btn ghost" data-act="sortie-cancel" data-army="${a.id}">출정 거두기</button>`
+    if (pick[a.id] !== undefined) h += `<button class="btn ghost" data-act="sortie-cancel" data-army="${a.id}">${goWord(r, a, pick[a.id]!.edge)} 거두기</button>`
     return h + `<button class="btn ghost" data-act="open" data-army="${a.id}">접기</button></div>`
   }
 
@@ -1377,7 +1386,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const hero = a.hero !== null ? r.heroes[a.hero] : undefined
       const disbanding = musters.some((o) => o.kind === 'disband' && o.army === a.id)
       const fresh = freshArmy === a.id
-      h += `<div class="acard${fresh ? ' fresh' : ''}">${bust(hero)}<div class="ab">${fresh ? `<div class="banner good">출정 — ${pick[a.id] !== undefined && r.edges[pick[a.id]!.edge] !== undefined ? `${esc(josa(r.nodes[otherEnd(r.edges[pick[a.id]!.edge]!, a.at)!]?.name ?? '', '으로', '로'))} 떠난다. 지도에 화살표가 생겼다.` : '여기 남는다.'}</div>` : ''}<div class="an"><b>${esc(armyName(r, a))}</b>`
+      h += `<div class="acard${fresh ? ' fresh' : ''}">${bust(hero)}<div class="ab">${fresh ? `<div class="banner good">${goWord(r, a, pick[a.id]?.edge)} — ${pick[a.id] !== undefined && r.edges[pick[a.id]!.edge] !== undefined ? `${esc(josa(r.nodes[otherEnd(r.edges[pick[a.id]!.edge]!, a.at)!]?.name ?? '', '으로', '로'))} 떠난다. 지도에 화살표가 생겼다.` : '여기 남는다.'}</div>` : ''}<div class="an"><b>${esc(armyName(r, a))}</b>`
       h += `<span class="mute">${esc(r.nodes[a.at]?.name ?? '')} · ${headcount(forceOf(r, a))}명</span></div><div class="units">`
       h += `</div>${gearBlock(r, a)}`
       if (realm!.armies[a.id] === undefined) h += `<div class="mute">이번 계절에 나눴다</div>`
@@ -1393,7 +1402,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       const open = openArmy === a.id
       // 출정 판을 열면 출정은 아래 붙박이 띠가 맡는다 — 위 단추는 숨긴다 (형 10-23: "하단 고정 만들었으면 방패병 밑의 출정 버튼은 없애야")
-      h += `<div class="btns">${open ? '' : `<button class="btn" data-act="open" data-army="${a.id}">${pick[a.id] !== undefined ? '출정 고치기' : '출정'}</button>`}`
+      h += `<div class="btns">${open ? '' : `<button class="btn" data-act="open" data-army="${a.id}">${pick[a.id] !== undefined ? `${goWord(r, a, pick[a.id]!.edge)} 고치기` : '보내기 · 이동·출정'}</button>`}`
       for (const b of armies) {
         if (b.id !== a.id && b.at === a.at && b.march === null) h += `<button class="btn" data-act="merge" data-army="${a.id}" data-into="${b.id}">${esc(armyName(r, b))}에 합류</button>`
       }
