@@ -145,7 +145,8 @@ export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<
     const peek = `<span class="peek"><small>${c.n}장 · ${k.esc(c.era)}</small><b>${k.esc(c.name)}</b><span class="ph">${k.esc(c.hook)}</span>`
       + `<span class="pp">${k.esc(c.hero)} — ${k.esc(c.goal)}</span></span>`
     h += `<button class="bcard chap${open ? '' : ' locked'}" ${open ? `data-act="fr-board" data-v="${c.region}"` : 'data-act="fr-locked"'} data-peek><span class="bth" style="background-image:url('${k.art}${c.art}')">`
-    h += `<i class="bbadge">${c.n}장</i>${open ? '' : '<i class="lock">🔒</i>'}<span class="btitle"><small>${k.esc(c.era)} · ${k.esc(c.hero)}</small><b>${k.esc(c.name)}</b>${open ? '' : `<em>${k.esc(why)}</em>`}</span></span>${peek}</button>`
+    // 아직 지도가 없는 장은 자물쇠가 아니라 「짓는 중」 — 앞 장을 깨도 안 열려 자물쇠면 버그처럼 보인다 (형 10-24: "2장 깼는데 왜 3장 안 열리냐")
+    h += `<i class="bbadge">${c.n}장</i>${open ? '' : ready ? '<i class="lock">🔒</i>' : '<i class="lock wip">🛠 짓는 중</i>'}<span class="btitle"><small>${k.esc(c.era)} · ${k.esc(c.hero)}</small><b>${k.esc(c.name)}</b>${open ? '' : `<em>${k.esc(why)}</em>`}</span></span>${peek}</button>`
   })
   h += `</div><h3 class="bsec"><b>자유 판</b><span>나라 하나를 골라 마음대로 — 정복 · 맹주 · 철과 뱃길 · 큰 제사</span></h3><div class="bcards">`
   for (const b of BOARDS) {
@@ -469,6 +470,7 @@ export const FRONT_CSS = `
 .ap .front .bcard.locked .btitle b { color: #c9bfae; } .ap .front .bcard.locked .btitle em { color: #f0d08a; font-size: 13px; }
 .ap .front .bcard.locked .lock, .ap .front .bbadge { z-index: 2; }
 .ap .front .bcard.locked .bth .lock { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-style: normal; font-size: 34px; }
+.ap .front .bcard.locked .bth .lock.wip { font-size: 15px; font-weight: 800; padding: 6px 12px; border-radius: 999px; background: #1a120ccc; border: 1px solid #c9a45a; color: #f0d090; white-space: nowrap; }
 .ap .front .bcard.locked .bb b { color: #8f8778; } .ap .front .bcard.locked .bmeta.lockwhy { color: #e8c070; }
 .ap .front .bcard.locked:hover, .ap .front .bcard.locked:active { border-color: var(--line); }
 /* 나라 고르기 — 옛 .choose 와 같은 카드 · 휘장(이 나라로 이겼다)은 단계따라 구리 → 은 → 금 → 붉은 금 */
