@@ -386,8 +386,9 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): 
   h += `${r.known !== undefined ? `<span><b>${found}</b>새로 안 나라</span>` : ''}<span><b>${heroes}</b>얻은 장수</span></div>`
   if (pickd.length > 0) h += `<div class="chron"><h4>연대기</h4>${pickd.map((e) => `<p class="${e.big ? 'big' : ''}"><i>${k.esc(seasonLabel(e.s))}</i>${k.esc(e.t)}</p>`).join('')}</div>`
   h += `${keep}<div class="btns">`
-  if (win && !all) h += `<button class="btn pri" data-act="fr-endless">계속하기 (무한 모드)<small>남은 나라까지 이어서 한다</small></button>`
-  h += `<button class="btn${win && !all ? '' : ' pri'}" data-act="fr-again">${k.esc(josa(name(me), "으로", "로"))} 다시</button><button class="btn" data-act="fr-new">새 게임</button>`
+  // 새 게임이 맨 앞 — 무한 모드는 하고 싶은 사람만 고르는 곁길 (형 10-24: "무한모드를 1번 선택하게 되면 안 돼")
+  h += `<button class="btn pri" data-act="fr-new">새 게임</button><button class="btn" data-act="fr-again">${k.esc(josa(name(me), "으로", "로"))} 다시</button>`
+  if (win && !all) h += `<button class="btn" data-act="fr-endless">계속하기 (무한 모드)<small>남은 나라까지 이어서 한다</small></button>`
   return h + `<button class="btn ghost" data-act="fr-look">지도 둘러보기</button></div></div></div>`
 }
 
