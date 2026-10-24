@@ -33,7 +33,7 @@ export interface TutStep {
   /** 누를 곳 — 나중에 누를 것부터 (보이는 첫 것을 가리킨다) */
   readonly press: readonly Press[]
   /** 전장 안에서 빛낼 곳 — 고를 것 · 고른 뒤 누를 것. 전장은 어둡게 막지 않고 빛만 낸다 (싸움은 제 손으로) */
-  readonly war?: { readonly pick: string; readonly go: string }
+  readonly war?: { readonly pick: string; readonly go: string; readonly tab?: string }
   readonly done: (c: TutCtx) => boolean
 }
 
@@ -82,7 +82,8 @@ export const TUT_STEPS: readonly TutStep[] = [
   },
   {
     id: 'battle', text: '「다음 계절」을 누르면 전장이 열린다. 합마다 명령을 하나 고른다. 여기선 「적장 사로잡기」를 골라 본다 — 이 판에선 반드시 잡힌다.',
-    press: ['.next'], war: { pick: '[data-war="pick"][data-c="capture"]', go: '[data-war="go"]' },
+    // 사로잡기는 「장수」 탭에 있다 · 「전투 개시」는 무리마다 다 고르면 켜진다 — 나머지는 ★ 권함으로 채운다
+    press: ['.next'], war: { pick: '[data-war="pick"][data-c="capture"]', go: '[data-war="go"]', tab: '[data-war="gtab"][data-g="lead"]' },
     done: (c) => c.r.heroes[FOE_HERO]?.status === 'captive' || c.r.heroes[FOE_HERO]?.faction === c.r.player,
   },
   {
@@ -126,9 +127,11 @@ export function tutPick(step: TutStep, c: TutCtx, ok: (sel: string) => boolean):
 /** 전장 안에서만 빛낼 곳 — <style> 하나로 (전장은 다시 그려져도 그대로 빛난다) */
 export function tutStyle(step: TutStep | undefined): string {
   if (step?.war === undefined) return ''
-  const { pick, go } = step.war
-  // 고르기 전엔 그 명령 카드, 고른 뒤엔 「북을 울린다」
-  return `.ap .wr ${pick}:not(.on), .ap .wr:has(${pick}.on) ${go} { outline: 3px solid #ffd27a; outline-offset: 3px; animation: tutglow .9s ease-in-out infinite alternate; border-radius: 10px; }`
+  const { pick, go, tab } = step.war
+  // 고르기 전엔 그 탭 · 그 명령 카드, 고른 뒤엔 (잠겨 있으면) 「★ 권함대로 채운다」, 켜지면 「전투 개시」
+  const sels = [`.ap .wr ${pick}:not(.on)`, `.ap .wr:has(${pick}.on) ${go}:not([disabled])`, `.ap .wr:has(${pick}.on):has(${go}[disabled]) [data-war="recall"]`]
+  if (tab !== undefined) sels.push(`.ap .wr:not(:has(${pick}.on)) ${tab}:not(.on)`)
+  return `${sels.join(', ')} { outline: 3px solid #ffd27a; outline-offset: 3px; animation: tutglow .9s ease-in-out infinite alternate; border-radius: 10px; }`
 }
 
 export function tutBandHtml(i: number, esc: (s: string) => string, stuck = false): string {
