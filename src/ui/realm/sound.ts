@@ -100,7 +100,7 @@ export const sndFile = (slot: Slot, pick: string = PICK[slot]): string => `${slo
 
 /** 장면 그림(event-*) → 그 장면의 소리. 없으면 소리 없이 */
 export const SCENE_SOUND: Readonly<Record<string, Slot>> = {
-  'event-marriage': 'feast', 'event-festival': 'feast', 'event-egg-birth': 'birth', 'event-wedding': 'feast', 'event-newborn': 'birth', 'event-dream': 'birth',
+  'event-marriage': 'feast', 'event-festival': 'feast', 'event-egg-birth': 'birth', 'event-newborn': 'birth', 'event-dream': 'birth',
   'event-alliance-oath': 'envoy', 'event-outside-envoy': 'envoy', 'event-iron-trade': 'coins',
   'event-relief-cavalry': 'horses', 'event-captive-persuade': 'capture', 'event-wanderer-arrives': 'horses',
 }
