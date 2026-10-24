@@ -37,4 +37,7 @@ export function scrollInside(el: Element | null | undefined, block: Block = 'nea
 export function pinPage(): void {
   const fix = (): void => { if (window.scrollY !== 0 || window.scrollX !== 0) window.scrollTo(0, 0) }
   window.addEventListener('scroll', fix, { passive: true })
+  // 아이폰 사파리는 확대 금지(user-scalable=no)를 무시하고 두 손가락으로 페이지 전체를 키운다 — 지도 확대는 zoom.ts 가 손가락(터치)으로 따로 한다
+  // (형 10-24: "ios 의 경우 화면이 지멋대로 확대되고 돌아오지 않는다")
+  for (const ev of ['gesturestart', 'gesturechange'] as const) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false })
 }
