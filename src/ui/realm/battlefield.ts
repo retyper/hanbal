@@ -154,6 +154,8 @@ export const BATTLE_SFX = {
   drum: snd('cmd_drum'), duel: snd('cmd_duel'), capture: snd('cmd_capture'), retreat: snd('cmd_retreat'), art: snd('cmd_art'),
   /** 맞부딪힘 — 상성에서 이겼다(필살) · 그냥 */
   crit: snd('battle_crit'), clash: snd('battle_clash'),
+  /** 엉긴 앞줄의 칼·창 — 찌르기 컷 박자에 작게 */
+  melee1: 'parry_01', melee2: 'impactMetal_medium_000', melee3: 'parry_02',
   /** 사로잡았다 · 장수 겨루기 · 마지막 일격(적이 무너졌다) · 이겼다 · 졌다 */
   caught: 'jingleUnlock', duelWin: 'impactMetal_medium_001', final: 'impactWood_heavy_001', win: snd('horn_victory'), lose: snd('defeat'),
   /** 싸움이 열린다 — 북 두 번, 종 한 번, 함성 */
@@ -1530,6 +1532,11 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         for (const [dt, v, rt] of b.slice(0, 2)) at(s0 + dt, BATTLE_SFX[c], vol * v, rt, Math.max(0.25, dur - dt), low)
       }
       for (const b of plan.beats) beat(b.c, b.at, b.ours ? 0.5 : 0.3, b.ours ? P.realm.warBeatDur : P.realm.warFoeBeatDur, !b.ours)
+      // 엉긴 앞줄 — 찌르기 컷의 박자에 쇠가 부딪는 소리를 몇 번 흩어 낸다(작게 · 자리가 없으면 버린다). 소리마다 높낮이를 조금씩 (형 10-25: 소리와 동작 박자)
+      if (rd.ev !== 'capture-ok' && rd.ev !== 'retreat') {
+        const hits = [BATTLE_SFX.melee1, BATTLE_SFX.melee2, BATTLE_SFX.melee3]
+        for (let k = 0; k < P.realm.warMeleeHits; k++) at(clashAt + 0.25 + k * P.realm.warMeleeGap, hits[k % hits.length]!, 0.2, 0.9 + (k % 3) * 0.08, 0.3, true)
+      }
       // 우리가 말로 달려드는 합엔 함성 (돌격은 소리 안에 함성이 섞였다)
       const ours = weAtk ? rd.a : rd.d
       if (ours === 'pursue' || ours === 'flank') at((plan.beats[0]?.at ?? 0) + 0.1, BATTLE_SFX.cry, 0.26, 1, 0.8, true)
