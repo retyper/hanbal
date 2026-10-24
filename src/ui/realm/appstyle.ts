@@ -726,6 +726,11 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .tflow .tfl { width: 48px; height: 48px; }
 .ap .tflow .tfa { flex: 1; display: flex; flex-direction: column; align-items: center; } .ap .tflow .tfa i { font-style: normal; font-size: 30px; line-height: 1; color: #f0d090; }
 .ap .tflow .tfa.r i { color: #ffb070; } .ap .tflow .tfa.l i { color: #9fd18b; } .ap .tflow .tfa small { font-size: 12px; color: #e8dcc0; }
+/* 침략 알림 — 붉게 */
+.ap .cere.invade { background: radial-gradient(ellipse at 50% 45%, #5a1410cc, #0b0605 70%); }
+.ap .cere.invade .cbg { opacity: .35; filter: saturate(.7) sepia(.3) hue-rotate(-20deg); }
+.ap .cere.invade .cw > b { color: #ffb4a4; text-shadow: 0 0 22px #e04a3a, 0 3px 6px #000; }
+.ap .cere.invade .iem { width: 40px; height: 40px; vertical-align: middle; margin-right: 6px; }
 /* 정찰 칸 — 보내기와 고정을 떼어 놓는다 (형 10-24) */
 .ap .scoutbox { display: flex; flex-direction: column; gap: 10px; margin: 6px 0; } .ap .scoutbox .keepbtn { align-self: flex-start; margin-top: 4px; }
 .ap .plcard.off { opacity: .55; } .ap .plcard.off p { margin: 4px 0 0; font-size: 12.5px; }

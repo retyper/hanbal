@@ -54,6 +54,7 @@ import { UPDATE_CSS } from './update.ts'
 import { scrollInside } from './scroll.ts'
 import { retainMaxOf } from '../../realm/legacy.ts'
 import { morph } from './morph.ts'
+import { rehearse, type BattleLine } from '../../realm/warroom.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
 import { APPROACH_DOES, APPROACH_NAME, HARD_LINE, WAR_CSS, openWar } from './battlefield.ts'
 import { attachZoom } from './zoom.ts'
@@ -3356,6 +3357,19 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + `<button class="btn pri cok">확인</button></div></div>`
   }
 
+  /** 침략 — 전장 앞에 한 장. 누가 · 어디로 · 얼마나. 「맞서 싸운다」를 눌러야 전장이 열린다 */
+  function invasionSplash(prev: Realm, l: BattleLine, go: () => void): void {
+    const who = prev.factions[l.atkFaction ?? '']?.name ?? '적'
+    const where = prev.nodes[l.node]?.name ?? ''
+    const men = [l.attacker, ...l.allies].reduce((s, id) => s + (prev.armies[id] !== undefined ? headcount(forceOf(prev, prev.armies[id]!)) : 0), 0)
+    root.insertAdjacentHTML('beforeend', `<div class="cere invade"><i class="cbg" style="${sceneBg('event-night-raid')}"></i>`
+      + `<div class="cw"><b>⚔ 침략</b><span class="hname">${emblem(l.atkFaction ?? null, 'iem')}${esc(josa(who, '이', '가'))} ${esc(josa(where, '으로', '로'))} 쳐들어왔다</span>`
+      + `<span>${men > 0 ? `적 군대 약 ${men.toLocaleString('ko-KR')}명 · ` : ''}우리가 지킨다</span><button class="btn pri cok">맞서 싸운다</button></div></div>`)
+    const el = root.lastElementChild as HTMLElement
+    ding(snd('war_bell'), 0.5)
+    el.querySelector('.cok')?.addEventListener('click', (e) => { e.stopPropagation(); el.remove(); go() })
+  }
+
   /** 큰 장면을 차례로 — 누르면 다음 (혼례·등용·탄생·태몽) */
   function playScenes(scenes: readonly string[], lead: number): void {
     const show = (i: number): void => {
@@ -3925,13 +3939,20 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           const cmds: Order[] = Object.entries(tactics).map(([key, t]) => ({ kind: 'command', key, cmds: t.cmds }))
           endSeason(prev, [...orders, ...cmds], ai)
         }
-        try {
-          if (openWar(root, prev, [...orders, ...ai], { art: ART, me: me(), ding, music: (k) => { if (k === 'war') music.war(); else music.result(k) }, done: finish })) { warOn = true; music.war(); music.primeResults(); return }
-        } catch (e) {
-          failNote(e)
-          return
+        const startWar = (): void => {
+          try {
+            if (openWar(root, prev, [...orders, ...ai], { art: ART, me: me(), ding, music: (k) => { if (k === 'war') music.war(); else music.result(k) }, done: finish })) { warOn = true; music.war(); music.primeResults(); return }
+          } catch (e) {
+            failNote(e)
+            return
+          }
+          endSeason(prev, orders, ai)
         }
-        endSeason(prev, orders, ai)
+        // 쳐들어왔으면 곧장 전장이 아니라 먼저 「어디에 누가 쳐들어왔다」 — 확인을 눌러야 싸움 (형 10-24)
+        let inv: BattleLine | null = null
+        try { const t = rehearse(prev, [...orders, ...ai], {}, null, me()).line; if (t !== null && t.defender === me() && t.atkFaction !== undefined && t.atkFaction !== me()) inv = t } catch { inv = null }
+        if (inv !== null) { invasionSplash(prev, inv, startWar); return }
+        startWar()
         return
       }
       case 'open':
