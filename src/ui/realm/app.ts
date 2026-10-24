@@ -2654,13 +2654,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function chiefHtml(r: Realm, id: string): string {
     const holder = Object.values(r.heroes).find((y) => y.post === id && y.faction === me() && y.status === 'free')
     const coming = heroOrders.find((o): o is Extract<Order, { kind: 'assign' }> => o.kind === 'assign' && o.node === id)
-    let h = `<h4 class="nsec">다스리는 장수</h4>`
+    let h = `<h4 class="nsec">성주</h4>`
     if (holder !== undefined) h += `<div class="cap">${bust(holder, 'cface')}<b>${nameHtml(holder.name)}</b><span class="mute">${STAT_NAME.chi} ${holder.chi} · ${STAT_NAME.ryak} ${holder.ryak} · ${STAT_NAME.deok} ${holder.deok}</span></div>`
     if (coming !== undefined) {
       const c = r.heroes[coming.hero]
-      return h + `<div class="banner good">이번 계절: ${esc(josa(c?.name ?? '', '이', '가'))} 다스리러 온다<button class="btn ghost sm" data-act="unhero" data-id="${coming.hero}">취소</button></div>`
+      return h + `<div class="banner good">이번 계절: ${esc(josa(c?.name ?? '', '이', '가'))} 성주로 온다<button class="btn ghost sm" data-act="unhero" data-id="${coming.hero}">취소</button></div>`
     }
-    if (holder === undefined) h += `<p class="mute">다스리는 장수가 없다. 앉히면 내정·지략·매력과 특성이 이 고을에 걸린다.</p>`
+    if (holder === undefined) h += `<p class="mute">성주가 없다. 장수를 성주로 앉히면 내정·지략·매력과 특성이 이 고을에 걸린다.</p>`
     const ordered = (hid: string): boolean => heroOrders.some((o) => (o.kind === 'assign' || o.kind === 'lead' || o.kind === 'persuade') && o.hero === hid)
     const reach = (x: Hero): 'here' | 'far' | null => {
       const army = Object.values(r.armies).find((a) => a.hero === x.id)

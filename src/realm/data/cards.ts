@@ -44,7 +44,7 @@ export const CARDS: Readonly<Record<CardKind, CardInfo>> = {
     line: '하늘이 누렇게 메뚜기 떼가 몰려온다.',
     opts: [
       { name: '불을 지른다', does: '밭을 조금 태운다 · 가을 수확량이 조금 줄어든다 (틀림없이)' },
-      { name: '지나가길 기다린다', does: '운이 좋으면 그대로, 나쁘면 가을걷이가 반으로' },
+      { name: '산천에 빈다', does: '곡식을 조금 바친다 · 흔히 메뚜기가 사라져 그대로, 안 되면 가을걷이가 반으로 (파사왕의 옛일)' },
     ],
   },
   plague: {

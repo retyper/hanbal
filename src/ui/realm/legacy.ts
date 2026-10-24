@@ -6,10 +6,9 @@
  *   새 판을 열 때 — 켜진 이를 들이고 기록을 비운다 (realm-main.fresh).
  * 고른 것은 이 기기에만 (판 저장·도감처럼).
  */
-import { retainable, snapshot } from '../../realm/legacy.ts'
+import { retainMaxOf, retainable, snapshot } from '../../realm/legacy.ts'
 import { chapterOfRegion } from '../../realm/data/campaign.ts'
 import type { Hero, Realm, RegionId } from '../../realm/types.ts'
-import { P } from '../../tune/params.ts'
 import { nameHtml } from './heroview.ts'
 
 const KEY = 'hanbal.realm.retain'
@@ -48,7 +47,7 @@ export function syncRetain(r: Realm): void {
   if (r.outcome == null || r.region === 'tutorial') return
   const can = retainable(r)
   const had = load()
-  const ids = had !== null && had.seed === r.seed ? had.pick.map((h) => h.id).filter((id) => can.some((h) => h.id === id)) : can.slice(0, P.realm.retainMax).map((h) => h.id)
+  const ids = had !== null && had.seed === r.seed ? had.pick.map((h) => h.id).filter((id) => can.some((h) => h.id === id)) : can.slice(0, retainMaxOf(r.tier ?? 1)).map((h) => h.id)
   const next: Rec = { seed: r.seed, from: { region: r.region ?? 'byeonhan-mini', nation: r.player }, pick: ids.map((id) => snapshot(r.heroes[id]!)), off: [] }
   if (JSON.stringify(next) !== JSON.stringify(had)) save(next)
 }
@@ -61,7 +60,7 @@ export function toggleKeep(r: Realm, id: string): void {
   if (had === null || h === undefined || !retainable(r).some((x) => x.id === id)) return
   const on = had.pick.some((x) => x.id === id)
   if (on) had.pick = had.pick.filter((x) => x.id !== id)
-  else if (had.pick.length < P.realm.retainMax) had.pick.push(snapshot(h))
+  else if (had.pick.length < retainMaxOf(r.tier ?? 1)) had.pick.push(snapshot(h))
   save(had)
 }
 
@@ -98,8 +97,8 @@ export function retainHtml(k: Kit, r: Realm): string {
   if (can.length === 0) return ''
   const had = load()
   const on = new Set(had !== null && had.seed === r.seed ? had.pick.map((h) => h.id) : [])
-  const max = P.realm.retainMax
-  let h = `<div class="retain"><h4>다음 판에 데려갈 장수 <small>${on.size}/${max}</small></h4><p class="mute">이겨도 져도 셋까지 따라온다. 자란 솜씨와 특성을 그대로 지니고 온다.</p><div class="rtl">`
+  const max = retainMaxOf(r.tier ?? 1)
+  let h = `<div class="retain"><h4>다음 판에 데려갈 장수 <small>${on.size}/${max}</small></h4><p class="mute">이겨도 져도 따라온다 — 난세가 깊을수록 적게. 자란 솜씨와 특성을 그대로 지니고 온다.</p><div class="rtl">`
   for (const x of can) {
     const sel = on.has(x.id)
     h += `<button class="rtc${sel ? ' on' : ''}${!sel && on.size >= max ? ' full' : ''}" data-act="keep" data-id="${x.id}">${face(k, x.id)}<b>${nameHtml(x.name)}</b><i>${sel ? '따라온다' : '남는다'}</i></button>`

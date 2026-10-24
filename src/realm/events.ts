@@ -155,7 +155,8 @@ export function resolveCard(r: Realm, orders: readonly Order[], lines: ReportLin
       break
     case 'locust':
       if (pick === 0) setHarvest(r, f, 0.85)
-      else { good = k('wait') < 0.5; setHarvest(r, f, good ? 1 : 0.5) }
+      // 산천에 빈다 — 『삼국사기』 파사이사금 30년 「王遍祭山川，以祈禳之，蝗滅」 · 곡식을 조금 바치고, 흔히 메뚜기가 사라진다 (형 10-24)
+      else { pay(grainCost(r, f, 0.03)); good = k('wait') < 0.65; setHarvest(r, f, good ? 1 : 0.5) }
       break
     case 'plague':
       if (pick === 0) { hurt(c.node!, 0.03); pay(grainCost(r, f, 0.03)) } else {
@@ -211,7 +212,7 @@ export function resolveCard(r: Realm, orders: readonly Order[], lines: ReportLin
     case 'fugitive':
       if (pick === 0) {
         for (const o2 of knownOf(r, f)) addFavor(r, f, o2, R.cardFavorUp)
-        for (const h of freeHeroes(r, f)) addBond(r, h, 3, lines)
+        for (const h of freeHeroes(r, f)) addBond(r, h, R.cardFugitiveBond, lines)
       } else {
         gain(grainCost(r, f, 0.06))
         for (const o2 of knownOf(r, f)) addFavor(r, f, o2, -R.cardFavorDown)

@@ -38,13 +38,18 @@ export function snapshot(h: Hero): Hero {
  * 새 판에 데려온 장수를 들인다 — 우리 도읍에 머문다. 들인 id 를 돌려준다 (판의 `retainers` 에도 적는다).
  * 배우는 판·셋 넘는 몫·그 판의 군주는 들이지 않는다.
  */
+/** 이 난세 단계에서 데려갈 수 있는 동행 수 (회의 결정 — 촌장 3 · 군장·대가 2 · 왕·대왕 1 · 태왕·천손 0) */
+export function retainMaxOf(tier: number): number {
+  return Math.min(P.realm.retainMax, P.realm.retainByTier[Math.max(0, Math.min(P.realm.retainByTier.length - 1, tier - 1))] ?? 0)
+}
+
 export function bringRetainers(r: Realm, list: readonly Hero[]): string[] {
   if (r.region === 'tutorial' || r.scenario !== undefined) return [] // 캠페인의 장은 사서의 사람들로만
   const me = r.player
   const cap = r.factions[me]?.capital ?? null
   const out: string[] = []
   for (const x of list) {
-    if (out.length >= P.realm.retainMax) break
+    if (out.length >= retainMaxOf(r.tier ?? 1)) break
     if (out.includes(x.id) || isRuler(r, x.id) || x.id.endsWith('-ruler')) continue
     // 그 판에서 남의 군대를 이끌던 사람이면 군대에서 빠진다
     for (const a of Object.values(r.armies)) if (a.hero === x.id) a.hero = null
