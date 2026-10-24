@@ -3321,12 +3321,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 특성 칩을 누르면(설명을 보려고) 장면이 닫히지 않는다 · 누르고 있는 동안은 저절로도 안 닫힌다
       let reading = false
       el.addEventListener('pointerdown', (e) => { reading = (e.target as HTMLElement).closest('.ctr[data-tip]') !== null })
-      el.addEventListener('click', (e) => { e.stopPropagation(); if ((e.target as HTMLElement).closest('.ctr[data-tip]') !== null) return; close() })
+      // 등용·사로잡음은 「확인」으로만 닫는다 — 저절로도, 아무 데나 눌러도 안 닫힌다 (형 10-24: "알아서 꺼지지 않고 확인 누르면 꺼지게")
+      const okOnly = el.querySelector('.cok') !== null
+      el.addEventListener('click', (e) => { e.stopPropagation(); if (okOnly || (e.target as HTMLElement).closest('.ctr[data-tip]') !== null) return; close() })
       // 확인 단추는 장면 밖 누르기와 상관없이 언제나 닫는다 (위에 무엇이 덮여 있어도)
       el.querySelector('.cok')?.addEventListener('click', (e) => { e.stopPropagation(); close() })
       const until = (): void => { if (reading) { window.setTimeout(until, 600); return } close() }
       for (const end of ['pointerup', 'pointercancel', 'pointerleave'] as const) el.addEventListener(end, () => { reading = false })
-      window.setTimeout(until, CEREMONY_MS)
+      if (!okOnly) window.setTimeout(until, CEREMONY_MS)
     }
     window.setTimeout(() => show(0), lead)
   }
