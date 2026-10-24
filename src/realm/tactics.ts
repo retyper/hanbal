@@ -37,6 +37,13 @@ export interface Terrain {
 }
 
 /** 한쪽의 싸움 입력 */
+/**
+ * 맡긴 싸움의 지휘 버릇 — 장수 특성에서 (형 10-24: "자동전투는 장수 특성에 따라 효과 나오게").
+ * 신중: 수를 더 잘 읽는다 · 명궁: 활을 앞세운다(앞줄이 길을 터 준다) · 산사람: 높은 데·돌을 놓치지 않는다 · 물길잡이: 나루를 놓치지 않는다 · 일편단심: 물러서지 않는다
+ */
+export type BattleStyle = 'careful' | 'archer' | 'mountain' | 'river' | 'steadfast'
+export const BATTLE_STYLES: readonly BattleStyle[] = ['careful', 'archer', 'mountain', 'river', 'steadfast']
+
 export interface Side {
   /** 처음 전투력 (자리·상성·진군 방식까지 곱한 값) */
   readonly F: number
@@ -45,7 +52,7 @@ export interface Side {
   readonly morale: number
   /** 싸움 앞의 사기 덤·감 (대로로 질서 있게 · 절벽에서 적이 뒤에 나타났다 …) */
   readonly moraleBonus?: number
-  readonly hero: { readonly id: string; readonly mu: number; readonly ryak: number; readonly coward: boolean; readonly art?: Art } | null
+  readonly hero: { readonly id: string; readonly mu: number; readonly ryak: number; readonly coward: boolean; readonly art?: Art; readonly style?: BattleStyle } | null
   /** 군량이 바닥이다 — 라운드마다 사기가 꺾인다 */
   readonly hungry: boolean
   /** 이 싸움에서 쓸 수 있는 한 번짜리 명령 (불화살 fire) — 그 밖의 땅의 수는 terrain */
@@ -346,23 +353,27 @@ function aiOrder(c: Ctx, me: Side, foe: Side, mine: 'a' | 'd', st: State, cap: n
   let lead: Cmd = 'drum'
   const lopts = leadOptions(me, foe, used, false)
   const coward = me.hero?.coward === true
+  const style = me.hero?.style
+  const stay = style === 'steadfast' // 일편단심 — 물러서지 않는다
   if (lopts.includes('capture') && cap >= R.tacAiCapture) lead = 'capture'
-  else if (atk && edge < (coward ? 0.35 : 0.22) && myN < 0.75) lead = 'retreat'
-  else if (!atk && edge < 0.12 && myN < 0.5) lead = 'retreat'
+  else if (!stay && atk && edge < (coward ? 0.35 : 0.22) && myN < 0.75) lead = 'retreat'
+  else if (!stay && !atk && edge < 0.12 && myN < 0.5) lead = 'retreat'
   else if (lopts.includes('duel') && me.hero !== null && foe.hero !== null && me.hero.mu >= foe.hero.mu + 1 && r('duel') < 0.4) lead = 'duel'
   else if (lopts.includes('art') && artNow(me.hero!.art!, foe, foeRatio, r)) lead = 'art'
   const out: { front?: Cmd; bows?: Cmd; horse?: Cmd; lead: Cmd } = { lead }
   if (groups.includes('front')) {
     const opts = groupOptions(me, foe, 'front', used)
     const terr = opts.find((x) => ONCE.has(x))
-    if (terr !== undefined && r('terr') < 0.6) out.front = terr
+    // 산사람은 돌을, 물길잡이는 나루를 놓치지 않는다
+    const landSure = (terr === 'rocks' && style === 'mountain') || (terr === 'ford' && style === 'river')
+    if (terr !== undefined && r('terr') < (landSure ? R.tacStyleLand : 0.6)) out.front = terr
     else if (foeRatio < R.tacHoldSteady && r('break') < 0.5 + 0.05 * (ryak - 5)) out.front = 'charge' // 흔들리는 적 — 들이칠 때다
     else {
       // 적 앞줄의 버릇을 읽고 그 맞수를 — 지략만큼. 치러 온 쪽은 버티기만 해서는 고을을 못 얻는다
       // 지난 합에 적 앞줄이 한 것을 기억한다 — 같은 수를 되풀이하는 적은 읽힌다
       const basicOf = (x: Cmd): Cmd => (HOLDS.has(x) ? 'hold' : CHARGES.has(x) ? 'charge' : x)
       const foeLikely = !foeGroups.includes('front') ? 'charge' : lastFoe !== undefined && r('memory') < 0.7 ? basicOf(lastFoe) : frontHabit(foe)
-      const pCounter = clamp(R.tacAiCounter + 0.05 * (ryak - 5), 0.1, 0.9)
+      const pCounter = clamp(R.tacAiCounter + 0.05 * (ryak - 5) + (style === 'careful' ? R.tacStyleRead : 0), 0.1, 0.95)
       const canOpen = groupsOf(me.mix).includes('bows')
       if (r('counter') < pCounter) {
         if (foeLikely === 'charge') out.front = 'hold'
@@ -371,7 +382,7 @@ function aiOrder(c: Ctx, me: Side, foe: Side, mine: 'a' | 'd', st: State, cap: n
       } else {
         const wc = Math.pow(frontQ(me, 'charge') * R.tacChargeMul, 3) * (atk ? 1.3 : 1)
         const wh = Math.pow(frontQ(me, 'hold') * R.tacHoldMul, 3)
-        const wo = canOpen ? Math.pow(0.6 + 0.8 * groupMen(me.mix).bows / Math.max(1, totalOf(groupMen(me.mix))), 3) : 0
+        const wo = canOpen ? Math.pow(0.6 + 0.8 * groupMen(me.mix).bows / Math.max(1, totalOf(groupMen(me.mix))), 3) * (style === 'archer' ? R.tacStyleBow : 1) : 0
         const x = r('front') * (wc + wh + wo)
         out.front = x < wc ? 'charge' : x < wc + wh ? 'hold' : 'open'
       }
@@ -380,8 +391,8 @@ function aiOrder(c: Ctx, me: Side, foe: Side, mine: 'a' | 'd', st: State, cap: n
   if (groups.includes('bows')) {
     const opts = groupOptions(me, foe, 'bows', used)
     if (opts.includes('fire') && r('fire') < 0.55) out.bows = 'fire'
-    else if (opts.includes('height') && r('height') < 0.6) out.bows = 'height'
-    else if (opts.includes('counter') && menNow(g0Foe, fFoe, 'bows') >= menNow(g0Me, fMe, 'bows') * 0.8 && r('counter-b') < 0.4) out.bows = 'counter'
+    else if (opts.includes('height') && r('height') < (style === 'mountain' ? R.tacStyleLand : 0.6)) out.bows = 'height'
+    else if (style !== 'archer' && opts.includes('counter') && menNow(g0Foe, fFoe, 'bows') >= menNow(g0Me, fMe, 'bows') * 0.8 && r('counter-b') < 0.4) out.bows = 'counter'
     else out.bows = 'volley'
   }
   if (groups.includes('horse')) {

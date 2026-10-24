@@ -20,7 +20,7 @@ import {
   OPEN_FIELD, ambushChance, ambushSizePenalty, headcount, power, strength, winChance,
   type Equip, type Force, type Kit, type UnitKind,
 } from './battle.ts'
-import { fightRounds, groupOf, type FightResult, type Side, type Terrain } from './tactics.ts'
+import { BATTLE_STYLES, fightRounds, groupOf, type BattleStyle, type FightResult, type Side, type Terrain } from './tactics.ts'
 import {
   checkPledges, driftFavor, expireRelations, friendly, holdMarkets, makeAsks, onHostile, relationOf, resolveAnswers, resolveEnvoys,
   shareIntel, stationFriction, stepLent,
@@ -758,6 +758,12 @@ function knewLead(r: Realm, faction: string, foes: readonly Army[]): boolean {
 }
 const knowFoe = (s: Side, knew: boolean): Side => (knew ? { ...s, knowsFoe: true } : s)
 
+/** 맡긴 싸움의 지휘 버릇 — 장수 특성 가운데 싸움에 걸리는 첫 것 (tactics.BattleStyle) */
+function styleOf(h: Hero): { style?: BattleStyle } {
+  const s = BATTLE_STYLES.find((x) => hasTrait(h, x))
+  return s !== undefined ? { style: s } : {}
+}
+
 function sideOf(
   r: Realm, armies: readonly Army[], f: Force, F: number, faction: string,
   o: { water: boolean; edge?: EdgeKind; fire: boolean; flank: boolean; seen: boolean; moraleBonus?: number; captureBonus?: number; terrain?: Terrain },
@@ -770,7 +776,7 @@ function sideOf(
   const boats = n > 0 && (f.mix.boat ?? 0) / n >= 0.15
   const terrain: Terrain = { ...(o.terrain ?? {}), ...(o.water && boats ? { ram: true } : {}), ...(o.flank ? { height: true } : {}) }
   return {
-    F, mix: f.mix, morale: f.morale, hero: h === null ? null : { id: h.id, mu: h.mu, ryak: h.ryak, coward: hasTrait(h, 'coward'), ...(heroArt(h) !== undefined ? { art: heroArt(h)! } : {}) },
+    F, mix: f.mix, morale: f.morale, hero: h === null ? null : { id: h.id, mu: h.mu, ryak: h.ryak, coward: hasTrait(h, 'coward'), ...(heroArt(h) !== undefined ? { art: heroArt(h)! } : {}), ...styleOf(h) },
     hungry: hungryOf(armies), specials, terrain, water: o.water, player: r.factions[faction]?.mind === 'player', seen: o.seen,
     ...(o.moraleBonus !== undefined ? { moraleBonus: o.moraleBonus } : {}),
     ...(o.captureBonus !== undefined && o.captureBonus > 0 ? { captureBonus: o.captureBonus } : {}),

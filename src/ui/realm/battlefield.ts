@@ -13,7 +13,7 @@
  */
 import { FACTION_ART, UNIT_ICON, bustOf } from '../../realm/data/art.ts'
 import { battleName, endStory, fieldName, groupLabel, josa, roundStory, storyCtx } from '../../realm/data/prose.ts'
-import { groupMen } from '../../realm/tactics.ts'
+import { BATTLE_STYLES, groupMen, type BattleStyle } from '../../realm/tactics.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
 import { seasonOf } from '../../realm/season.ts'
 import type { Act, Approach, Art, Cmd, Grp, Guess, Order, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
@@ -238,6 +238,25 @@ function groupLoss(before: Readonly<Partial<Record<Grp, number>>>, after: Readon
   return (['front', 'bows', 'horse'] as const).map((g) => [g, Math.max(0, Math.round((before[g] ?? 0) - (after[g] ?? 0)))] as [Grp, number]).filter(([, n]) => n > 0)
 }
 
+/** 맡긴 싸움의 지휘 버릇 — 이름과 한 줄 (tactics.aiOrder 가 실제로 그렇게 싸운다) */
+const STYLE_WORD: Readonly<Record<BattleStyle, readonly [string, string]>> = {
+  careful: ['신중한 지휘', '적의 수를 읽고 받아친다'],
+  archer: ['명궁의 지휘', '앞줄이 길을 트고 활을 앞세운다'],
+  mountain: ['산사람의 지휘', '높은 데와 돌을 놓치지 않는다'],
+  river: ['물길잡이의 지휘', '나루를 끼고 싸운다'],
+  steadfast: ['일편단심', '밀려도 물러서지 않는다'],
+}
+/** 맡기면 이 장수는 어떻게 싸우나 — 특성 → 겁 → 지략 → 무예 순으로 (형 10-24: "자동전투는 장수 특성에 따라 효과 나오게") */
+export function styleWord(h: { traits?: readonly string[]; ryak: number; mu: number } | undefined): readonly [string, string] {
+  if (h === undefined) return ['군대의 버릇', '무리마다 제 버릇대로 싸운다']
+  const s = BATTLE_STYLES.find((x) => h.traits?.includes(x) === true)
+  if (s !== undefined) return STYLE_WORD[s]
+  if (h.traits?.includes('coward') === true) return ['겁 많은 장수', '밀리면 먼저 물러난다']
+  if (h.ryak >= 7) return ['지략가의 지휘', '적의 수를 곧잘 읽는다']
+  if (h.mu >= 7) return ['맹장의 지휘', '적장과 겨루기를 마다하지 않는다']
+  return ['장수의 지휘', '무난하게 싸운다']
+}
+
 /** 맡겼을 때 — 장수의 지략이 무엇을 해 주나 (aiOrder: 지략만큼 적 앞줄의 버릇을 읽어 맞수를 둔다 · 흔들리는 적에 들이친다) */
 function autoLine(h: { name: string; ryak: number } | undefined): string {
   if (h === undefined) return '장수가 없다 — 무리마다 제 버릇대로 싸운다'
@@ -352,20 +371,20 @@ export function warName(r: Realm, l: BattleLine): string {
 /** 활을 쏘는 명령 — 그 합에 화살이 날아간다 */
 const SHOOT_CMD: ReadonlySet<string> = new Set(['volley', 'counter', 'open', 'height', 'fire'])
 /** 장수 기술의 결 — 초상이 튀어나오는 몸짓 */
-type CutKind = 'cheer' | 'strike' | 'grab' | 'back' | 'shot' | 'call' | 'guard'
+type CutKind = 'lead' | 'cheer' | 'strike' | 'grab' | 'back' | 'shot' | 'call' | 'guard'
 const CUT_OF: Readonly<Partial<Record<Cmd, CutKind>>> = { drum: 'cheer', duel: 'strike', capture: 'grab', retreat: 'back' }
 const ART_CUT: Readonly<Record<Art, CutKind>> = {
   snipe: 'shot', rite: 'cheer', sway: 'call', stand: 'guard', ambush: 'strike', vanguard: 'strike', feint: 'back', order: 'cheer', shout: 'call',
 }
 /** 기술 몸짓마다 한 마디 — 초상 옆에 크게 */
-const CUT_SHOUT: Readonly<Record<CutKind, string>> = { cheer: '힘을 내라!', strike: '나를 따르라!', grab: '사로잡아라!', back: '물러서라!', shot: '한 발로 끝낸다', call: '무기를 버려라!', guard: '버텨라!' }
+const CUT_SHOUT: Readonly<Record<CutKind, string>> = { lead: '내게 맡겨라!', cheer: '힘을 내라!', strike: '나를 따르라!', grab: '사로잡아라!', back: '물러서라!', shot: '한 발로 끝낸다', call: '무기를 버려라!', guard: '버텨라!' }
 
 /** 장수 기술이 나가는 장면 — 초상 · 이름 · 기술 이름 · 결마다 다른 효과 (2.2초쯤 · 누르면 바로 걷힌다) */
 function cutHtml(art: string, hero: string | null, name: string, skill: string, kind: CutKind): string {
   const file = hero !== null ? bustOf(hero) : undefined
   const face = file !== undefined ? `<img class="wcf" src="${art}bust/${file}.jpg" alt="">` : `<img class="wcf unit" src="${art}icon/unit-general.png" alt="">`
   let fx = ''
-  if (kind === 'cheer' || kind === 'call') for (let i = 0; i < 3; i++) fx += `<i class="wcring" style="--t:${(0.35 + i * 0.18).toFixed(2)}s"></i>`
+  if (kind === 'cheer' || kind === 'call' || kind === 'lead') for (let i = 0; i < 3; i++) fx += `<i class="wcring" style="--t:${(0.35 + i * 0.18).toFixed(2)}s"></i>`
   if (kind === 'cheer') for (let i = 0; i < 14; i++) fx += `<i class="wcspark" style="--x:${(8 + ((i * 37) % 84)).toFixed(0)}%;--t:${(0.3 + ((i * 0.11) % 0.7)).toFixed(2)}s"></i>`
   if (kind === 'strike' || kind === 'shot') fx += `<i class="wcslash"></i>${Array.from({ length: 9 }, (_, i) => `<i class="wcline" style="--y:${(10 + i * 10)}%;--t:${(0.08 + (i % 3) * 0.05).toFixed(2)}s"></i>`).join('')}`
   if (kind === 'grab') fx += `<i class="wcrope"></i>`
@@ -555,7 +574,7 @@ function guessHtml(gu: Guess | undefined, edge0: number): string {
     + `<span class="wgl"><span class="wgk">우리</span><i class="us" style="${loss(gu.us)}"></i><span class="wgk">적</span><i class="foe" style="${loss(gu.foe)}"></i></span></span>`
 }
 
-export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: string, shown: number, anim: boolean, left: number, sel: RoundOrder = {}, active?: Grp | 'lead'): string {
+export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: string, shown: number, anim: boolean, left: number, sel: RoundOrder = {}, active?: Grp | 'lead', more = false): string {
   const weAtk = l.atkFaction === me
   const st = l.start
   const fname = (f: string | undefined): string => (f !== undefined ? (after.factions[f]?.name ?? '?') : '?')
@@ -714,7 +733,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   h += `</div>`
 
   const p = l.pending
-  const ended = p === undefined
+  const ended = p === undefined && !more
   if (p !== undefined && p.round === shown) {
     // 다음 합의 깃발을 든다 — 무리마다 하나, 장수 하나
     h += `<div class="wnext"${anim ? ` style="--d:${(tAt(2) + 0.6).toFixed(2)}s"` : ''}><div class="wrn">${ROUND_NAME[shown] ?? `${shown + 1}`} 합 </div>`
@@ -787,7 +806,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const picked = panes.filter((x) => sel[x.g] !== undefined).length
     // 맡기면 장수의 지략대로 — 그 장수의 얼굴·지략을 단추 옆에 (형: "장수의 지략?수치가 … 버튼주변에 뭔가보여지면")
     const ourH = ourHero !== null ? (prev.heroes[ourHero] ?? after.heroes[ourHero]) : undefined
-    h += `<div class="wfoot"><div class="wauto">${ourH !== undefined ? face(ourHero, art, unitOf(ourI)) : ''}<span>${autoLine(ourH)}</span></div>`
+    const [sn, sl] = styleWord(ourH)
+    h += `<div class="wfoot"><div class="wauto">${ourH !== undefined ? face(ourHero, art, unitOf(ourI)) : ''}<span>${autoLine(ourH)}<br><b class="wsty">${esc(sn)}</b> ${esc(sl)}</span></div>`
     // 누구에게 무엇을 맡기나 — 말로 (형 10-23: "'이 싸움은 맡긴다'는 뭔 소린지 모르겠잖아. 장수에게 전투를 전부 일임한다 이런 식으로")
     const whom = ourHero !== null ? `${josa(ourName, '에게', '에게')} 이 싸움을 끝까지 맡긴다` : '이 싸움은 끝까지 알아서 싸운다'
     h += `<button class="btn ghost" data-war="auto">${esc(whom)}</button>${left > 1 ? `<button class="btn ghost" data-war="autoall">남은 싸움도 모두 장수들에게</button>` : ''}`
@@ -1046,7 +1066,7 @@ export const WAR_CSS = `
 @keyframes wsmoke { from { transform: translateY(0) scale(1); } to { transform: translateY(-30px) scale(1.12); } }
 /* 맡기기 — 그 장수의 얼굴과 지략 */
 .ap .wauto { flex: 1 1 100%; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #d8cfbf; }
-.ap .wauto .wf { width: 30px; height: 30px; border-radius: 50%; } .ap .wauto .wdots { color: var(--gold); letter-spacing: 1px; }
+.ap .wauto .wf { width: 30px; height: 30px; border-radius: 50%; } .ap .wauto .wdots { color: var(--gold); letter-spacing: 1px; } .ap .wauto .wsty { color: #ffd27a; }
 .ap .wfoot .btn small { display: block; font-size: 11px; font-weight: 500; opacity: .85; }
 /* 이긴 결과 카드 — 조용히 떠오르고 금테만 (크게 터지는 것은 가운데 「승리·대승」이 맡는다 · 형 10-23: "대승 카드가 혼자만 깜빡거림") */
 .ap .wend.good { border: 1px solid #c9a45a; box-shadow: 0 0 14px #ffd27a33; }
@@ -1278,6 +1298,11 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   let sel: { -readonly [K in keyof RoundOrder]: RoundOrder[K] } = {}
   /** 지금 펼친 무리 탭 — 합마다 처음엔 아직 안 고른 첫 무리 */
   let active: Grp | 'lead' | undefined
+  /** 맡긴 싸움을 합마다 풀어 보이는 중 — 여기까지만 보인다 (없으면 끝까지) */
+  let upto: number | undefined
+  /** 그 차례의 시계 (소리 시계와 따로 — 합마다 소리가 앞의 것을 걷는다) */
+  const chain: number[] = []
+  const stopChain = (): void => { for (const x of chain.splice(0)) clearTimeout(x) }
   let t = rehearse(prev, orders, done, null, host.me)
   if (t.line === null) return false
   /** 처음 우리 싸움 수 — 머리의 "몇 판" */
@@ -1384,9 +1409,10 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
 
   const paintNow = (anim: boolean): void => {
     const l = t.line!
-    const shown = l.pending !== undefined ? l.pending.round : (l.rounds ?? []).length
+    const shown = upto ?? (l.pending !== undefined ? l.pending.round : (l.rounds ?? []).length)
+    const more = l.pending === undefined && shown < (l.rounds ?? []).length
     const tpl = document.createElement('template')
-    tpl.innerHTML = warHtml(prev, t.after, l, host.me, host.art, shown, anim, left, sel, active)
+    tpl.innerHTML = warHtml(prev, t.after, l, host.me, host.art, shown, anim, left, sel, active, more)
     const bg = tpl.content.querySelector<HTMLElement>('.wbg')
     if (bg !== null) {
       if (bgEl.className !== bg.className) bgEl.className = bg.className
@@ -1399,7 +1425,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     sc.replaceChildren(tpl.content)
     // 싸움이 끝났다 — 이겼으면 「승리」가 쾅, 졌으면 「패배」가 내려앉는다 (형: "승리했다는 이펙트가 더 확실히")
     winEl.replaceChildren()
-    if (anim && l.pending === undefined && l.outcome !== 'draw') {
+    if (anim && !more && l.pending === undefined && l.outcome !== 'draw') {
       const atkWon = l.outcome === 'rout' || l.outcome === 'win'
       const good = (l.atkFaction === host.me) === atkWon
       const word = good ? (l.outcome === 'rout' || l.outcome === 'routed' ? '대승' : '승리') : (l.outcome === 'rout' || l.outcome === 'routed' ? '대패' : '패배')
@@ -1412,7 +1438,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
 
   const draw = (anim: boolean): void => {
     const l = t.line!
-    const shown = l.pending !== undefined ? l.pending.round : (l.rounds ?? []).length
+    const shown = upto ?? (l.pending !== undefined ? l.pending.round : (l.rounds ?? []).length)
+    const more = l.pending === undefined && shown < (l.rounds ?? []).length
     ov.classList.toggle('slow', anim)
     ov.classList.remove('fast')
     paintNow(anim)
@@ -1438,7 +1465,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       }
     }
     cutLead = null
-    sound(anim ? (l.rounds ?? [])[shown - 1] : undefined, l.atkFaction === host.me, anim && l.pending === undefined ? l : null)
+    sound(anim ? (l.rounds ?? [])[shown - 1] : undefined, l.atkFaction === host.me, anim && l.pending === undefined && !more ? l : null)
     if (cutSfx !== null) { at(0.28, cutSfx, 0.45); cutSfx = null } // 장수 기술 소리 — sound() 가 앞의 것을 걷은 뒤에
     if (!anim) band(l)
     // 싸운다를 누르면 — 이번 합이 위 카드 바로 밑에 오게, 판이 끝났으면 결과가 다 풀린 뒤 결과로 (형 10-23: "싸운다 누르면 스크롤 맨 위로 가는 게 맞나?")
@@ -1447,7 +1474,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       scrollInside(sc.querySelector('.wrd.slow'), 'start', true)
       const lr = (l.rounds ?? [])[shown - 1]
       const res = lr !== undefined ? roundPlan(lr, l.atkFaction === host.me).result : STAGE_S[2]
-      if (l.pending === undefined) timers.push(window.setTimeout(() => scrollInside(sc.querySelector('.wend'), 'center', true), (res + 0.4) * 1000))
+      if (more) { /* 다음 합이 곧 온다 */ } else if (l.pending === undefined) timers.push(window.setTimeout(() => scrollInside(sc.querySelector('.wend'), 'center', true), (res + 0.4) * 1000))
       else timers.push(window.setTimeout(() => scrollInside(sc.querySelector('.wnext'), 'start', true), (res + 0.6) * 1000))
     } else sc.scrollTop = 0
   }
@@ -1486,6 +1513,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
 
   const finish = (): void => {
     clearTimers()
+    stopChain()
     ov.remove()
     root.classList.remove('war-open')
     host.done({ ...done })
@@ -1503,6 +1531,54 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     else draw(true)
   }
 
+  /**
+   * 장수에게 맡긴다 — 그 장수의 지휘 버릇 장면 뒤 남은 합을 하나씩 풀어 보인다. 끝 합이 다 풀린 뒤에 승패
+   * (형 10-24: "자동전투는 장수 특성에 따라 효과 나오게" — 전엔 마지막 합만 보이고 끝났다). 아무 데나 누르면 끝까지 건너뛴다
+   */
+  const autoPlay = (): void => {
+    const l0 = t.line
+    const key = cur?.key ?? l0?.key
+    if (l0 === null || key === undefined) return
+    const from = l0.pending?.round ?? (l0.rounds ?? []).length
+    done[key] = { cmds: [...(cur?.key === key ? cur.cmds : [])] }
+    cur = null
+    sel = {}
+    active = undefined
+    t = rehearse(prev, orders, done, null, host.me, key)
+    const l = t.line
+    if (l === null) { advanceTo(); return }
+    const R = (l.rounds ?? []).length
+    stopChain()
+    if (R <= from) { upto = undefined; draw(true); return }
+    const weAtk = l.atkFaction === host.me
+    // 고르던 판은 걷고 지난 합까지만 — 장수 장면이 덮는 동안
+    upto = from
+    paintNow(false)
+    let t0 = 0
+    const hero = l.start?.heroes[weAtk ? 0 : 1] ?? null
+    if (hero !== null) {
+      const hh = prev.heroes[hero] ?? t.after.heroes[hero]
+      const [sn, sl] = styleWord(hh)
+      const box = document.createElement('div')
+      box.innerHTML = cutHtml(host.art, hero, hh?.name ?? '', `${sn} — ${sl}`, 'lead')
+      const cut = box.firstElementChild as HTMLElement
+      cut.addEventListener('animationend', (e) => { if (e.target === cut) cut.remove() })
+      cut.addEventListener('click', (e) => { e.stopPropagation(); cut.remove() })
+      ov.appendChild(cut)
+      at(0.28, BATTLE_SFX.openDrum, 0.45)
+      t0 = P.realm.warAutoCutS
+    }
+    const step = (k: number, after: number): void => {
+      chain.push(window.setTimeout(() => {
+        upto = k < R ? k : undefined
+        draw(true)
+        const rd = (l.rounds ?? [])[k - 1]
+        if (k < R && rd !== undefined) step(k + 1, roundPlan(rd, weAtk).result + P.realm.warAutoGapS)
+      }, after * 1000))
+    }
+    step(from + 1, t0)
+  }
+
   /** 다음 우리 싸움으로 — 없으면 마무리 */
   const advanceTo = (): void => {
     t = rehearse(prev, orders, done, null, host.me)
@@ -1518,6 +1594,12 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     ev.stopPropagation()
     const b = (ev.target as HTMLElement).closest<HTMLElement>('[data-war]')
     if (b === null) {
+      // 맡긴 싸움을 풀어 보이는 중이면 끝까지 건너뛴다
+      if (chain.length > 0) {
+        stopChain()
+        upto = undefined
+        draw(true)
+      }
       ov.classList.add('fast') // 아무 데나 누르면 이 합을 끝까지 바로
       clearTimers()
       fxTop.replaceChildren()
@@ -1586,7 +1668,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         draw(true)
         return
       }
-      case 'auto': settle(); return
+      case 'auto': autoPlay(); return
       case 'autoall': {
         if (cur !== null) done[cur.key] = { cmds: [...cur.cmds] }
         finish()
