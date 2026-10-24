@@ -595,8 +595,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const hitFx = hitOf(i) !== '' ? `<img class="wfx-hit" src="${art}fx/impact.png" alt="">` : ''
     const em = f !== undefined ? FACTION_ART[f]?.emblem : undefined
     return `<div class="ws ${cls}${hitOf(i)}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s">${hitFx}<span class="wpf">${face(hero, art, unitOf(i))}<i></i></span><b>${esc(name)}</b><span class="wnat">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
-      + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}</div>${num}`
-      + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}</div><span class="wn">사기</span></div>`
+      // 무너지는 금 — 이 밑으로 떨어지면 그 편이 무너져 진다 (tactics: 군사 tacBreakMen · 사기는 처음의 tacBreakMorale) (형 10-24: "사기가 어느 정도 떨어지면 패배한다가 가로바에 표시")
+      + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}<b class="brk" style="left:${Math.round(P.realm.tacBreakMen * 100)}%" data-tip="군사가 이 금 밑으로 줄면 무너져 진다"></b></div>${num}`
+      + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}<b class="brk" style="left:${Math.round(P.realm.tacBreakMorale * 83)}%" data-tip="사기가 이 금 밑으로 떨어지면 무너져 진다"></b></div><span class="wn">사기</span></div>`
   }
 
   // 싸움터 배경 (땅마다) · 위 카드는 굴려도 그 자리에 (형: "싸우는로그가 스크롤로 보이더라도 상단에 캐릭터랑 체력바 있는 그 카드는 고정")
@@ -784,6 +785,8 @@ export const WAR_CSS = `
 .ap .wf.unit { object-fit: contain; padding: 6px; }
 .ap .ws.foe .wf { border-color: #7a3a2a; }
 .ap .wbar { position: relative; width: 100%; height: 12px; border-radius: 6px; background: linear-gradient(#0c0805, #22180f); overflow: hidden; margin-top: 7px;
+/* 무너지는 금 — 붉은 세로 금 */
+.ap .wbar .brk { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; background: #ff3b2b; box-shadow: 0 0 5px #ff3b2b; z-index: 2; cursor: help; }
   box-shadow: inset 0 1px 3px #000e, 0 0 0 1px #8a6a3a, 0 0 0 2.5px #1a120c; }
 .ap .wbar i { position: relative; display: block; height: 100%; border-radius: 6px; overflow: hidden; }
 .ap .wbar i::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, #ffffff00 0 9px, #ffffff2a 9px 15px); background-size: 34px 100%; animation: wbarflow 1.1s linear infinite; }
