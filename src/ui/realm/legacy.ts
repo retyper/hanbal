@@ -98,7 +98,8 @@ export function retainHtml(k: Kit, r: Realm): string {
   const had = load()
   const on = new Set(had !== null && had.seed === r.seed ? had.pick.map((h) => h.id) : [])
   const max = retainMaxOf(r.tier ?? 1)
-  let h = `<div class="retain"><h4>다음 판에 데려갈 장수 <small>${on.size}/${max}</small></h4><p class="mute">이겨도 져도 따라온다 — 난세가 깊을수록 적게. 자란 솜씨와 특성을 그대로 지니고 온다.</p><div class="rtl">`
+  // 이야기 장(1장·2장…)은 사서의 사람들로만 — 고른 이는 다음 「자유 판」에서 따라온다 (형 10-24: "게임 시작하자마자 누구를 데려갈지 나와야 하는데 안 나와")
+  let h = `<div class="retain"><h4>다음 자유 판에 데려갈 장수 <small>${on.size}/${max}</small></h4><p class="mute">이겨도 져도 따라온다 — 난세가 깊을수록 적게. 처음 몸으로 온다. <b>자유 판</b>에서 나라를 고를 때 따라오고, 이야기 장(1장·2장…)은 사서의 사람들로만 한다.</p><div class="rtl">`
   for (const x of can) {
     const sel = on.has(x.id)
     h += `<button class="rtc${sel ? ' on' : ''}${!sel && on.size >= max ? ' full' : ''}" data-act="keep" data-id="${x.id}">${face(k, x.id)}<b>${nameHtml(x.name)}</b><i>${sel ? '따라온다' : '남는다'}</i></button>`
@@ -107,6 +108,13 @@ export function retainHtml(k: Kit, r: Realm): string {
 }
 
 /** 나라 고르기 자세히의 "따라올 장수" — 고른 게 없으면 빈 글 */
+/** 이야기 장을 열 때 — 고른 장수가 있으면 이 장엔 안 따라온다는 한 줄 (기록은 남겨 둔다) */
+export function carryChapterNote(): string {
+  const had = load()
+  if (had === null || had.pick.filter((h) => !had.off.includes(h.id)).length === 0) return ''
+  return `<p class="mute carrynote">고른 장수 ${had.pick.length}명은 이 장엔 따라오지 않는다 — 이야기 장은 사서의 사람들로만. 다음 <b>자유 판</b>에서 따라온다.</p>`
+}
+
 export function carryHtml(k: Kit): string {
   const had = load()
   if (had === null || had.pick.length === 0) return ''

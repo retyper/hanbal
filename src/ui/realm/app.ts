@@ -41,7 +41,7 @@ import { canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, together, inheritOf
 import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
-import { LEGACY_CSS, carryHtml, retainHtml, syncRetain, toggleCarry, toggleKeep } from './legacy.ts'
+import { LEGACY_CSS, carryChapterNote, carryHtml, retainHtml, syncRetain, toggleCarry, toggleKeep } from './legacy.ts'
 import { DEX_CSS, dexHtml, dexToastHtml, loadDex, recordDex, type DexBoard } from './dex.ts'
 import { dexCounts } from '../../realm/dex.ts'
 import { LEVEL_LINE, TIER_MAX, levelName } from '../../realm/tier.ts'
@@ -3115,7 +3115,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         return titleHtml(KIT, realm, host.savedAt(), acctLine() + links, realm === null && !tutorialOver(), dexBtn)
       }
       case 'dex': return dexHtml(DEX_KIT, f.board, f.sel, f.back === null ? '판으로' : '처음으로')
-      case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null), tierWon, tierHtml('jumong', chapTier, 'chap-tier'))
+      case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null), tierWon, tierHtml('jumong', chapTier, 'chap-tier') + carryChapterNote())
       case 'nations': return nationsHtml(KIT, f.region)
       case 'detail': return detailHtml(KIT, f.region, f.id, f.region === 'tutorial' ? '' : tierHtml(f.region) + carryHtml(DEX_KIT))
     }
