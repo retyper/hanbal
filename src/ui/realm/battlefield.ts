@@ -389,7 +389,7 @@ export function warName(r: Realm, l: BattleLine): string {
 /** 활을 쏘는 명령 — 그 합에 화살이 날아간다 */
 const SHOOT_CMD: ReadonlySet<string> = new Set(['volley', 'counter', 'open', 'height', 'fire'])
 /** 동작 그림(8컷 띠)이 있는 병종 — 0·1 서기 · 2·3 걷기 · 4·5 찌르기 · 6 맞음(안 씀) · 7 쓰러짐 */
-const ANIM_SOL: Readonly<Record<string, number>> = { spear: 167 / 160, shield: 165 / 160, bow: 139 / 160, horse: 157 / 160, boat: 164 / 160, crossbow: 152 / 160, pike: 162 / 160 } // 병종 → 띠 한 칸의 가로세로 비 (tools/strip-frames.mjs 가 찍어 준다)
+const ANIM_SOL: Readonly<Record<string, number>> = { spear: 167 / 160, shield: 165 / 160, bow: 139 / 160, horse: 157 / 160, boat: 164 / 160, crossbow: 152 / 160, pike: 162 / 160, axe: 144 / 160 } // 병종 → 띠 한 칸의 가로세로 비 (tools/strip-frames.mjs 가 찍어 준다)
 /** 전장의 진이 직접 보여 주는 무리 명령 — 위 겹의 큰 연출을 띄우지 않는다 */
 const FIELD_CMD: ReadonlySet<string> = new Set(['charge', 'hold', 'open', 'volley', 'counter', 'flank', 'punch', 'pursue', 'guard', 'drum', 'capture', 'duel', 'retreat'])
 /** 장수 기술의 결 — 초상이 튀어나오는 몸짓 */
