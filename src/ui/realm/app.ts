@@ -227,6 +227,8 @@ const SCENE_CUE_MS = 1400
 /** 혼례·탄생 장면 — 계절 띠가 걷힌 뒤 뜨고, 이만큼 머문다 (누르면 바로 넘긴다) */
 const CEREMONY_LEAD_MS = 2000
 const CEREMONY_MS = 6500
+/** 새로 열린 탭 알림이 머무는 시간 (ms) */
+const TAB_TOAST_MS = 7000
 /** 장수가 우리 편이 된 길 — 등용 장면의 한 줄 */
 type JoinHow = 'persuade' | 'wanderer' | 'expedition' | 'exile' | 'grown' | 'join'
 const JOIN_LINE: Readonly<Record<JoinHow, string>> = {
@@ -312,6 +314,19 @@ const TABS = [
   { id: 'heroes', name: '장수', icon: 'unit-general', more: '우리 장수와 사로잡은 장수. 군대를 맡기고, 혼인시키고, 원정을 보낸다.' },
   { id: 'nation', name: '나라', icon: 'settle-capital', more: '나라 살림 · 목표 · 이번 계절 사건 · 제사.' },
 ] as const
+
+/**
+ * 처음 하는 사람에게는 탭을 계절마다 하나씩 연다 — 첫 화면에 탭 여섯·장수·외교·사건이 한꺼번에 쏟아져 무엇부터 할지 몰랐다
+ * (형 10-24: 동료 플레이 "정보가 한 번에 많이 들어와서 뭐가 뭔지 전혀 이해가 안 됨" · 문명처럼 하나씩).
+ * 한 판이라도 이긴 사람(배우는 판 빼고)은 처음부터 다 열린다.
+ */
+const TAB_OPEN_AT: Readonly<Record<(typeof TABS)[number]['id'], number>> = { army: 0, draft: 0, nation: 0, heroes: 1, diplo: 2, people: 3 }
+const TAB_NEW_LINE: Readonly<Record<(typeof TABS)[number]['id'], string>> = {
+  army: '', draft: '', nation: '',
+  heroes: '우리 장수에게 고을·군대를 맡기고, 떠돌이 인재를 들인다',
+  diplo: '이웃 나라와 화친·교역·동맹을 맺고, 사신의 청에 답한다',
+  people: '개척단으로 빈땅에 마을을 열고, 백성을 옮긴다',
+}
 
 const esc = (s: string): string =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
@@ -405,7 +420,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 배경 음악 · 계절 바람 — 싸움 창이 열려 있으면 싸움 음악 */
   const music = makeMusic(BASE, muted, () => root.querySelector('.nightov') !== null) // 밤 판이 떠 있으면 조용히 — 밤 판은 제 소리를 낸다
   let warOn = false
-  root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="seasonp" aria-hidden="true">${seasonParticles()}</div><div class="legend"></div><div class="zbtns"><button data-act="layers" class="lyb" aria-label="보기">👁</button><button data-act="zin">＋</button><button data-act="zout">－</button></div><div class="layers"></div><button class="next" data-act="next"></button><div class="selbar"></div><div class="roadkey"></div><button class="homebtn" data-act="home">우리 땅</button><button class="logbtn" data-act="log-open">지난 기록</button><div class="tutband"></div><div class="goalb"></div>`
+  root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="seasonp" aria-hidden="true">${seasonParticles()}</div><div class="legend"></div><div class="zbtns"><button data-act="layers" class="lyb" aria-label="보기">👁</button><button data-act="zin">＋</button><button data-act="zout">－</button></div><div class="layers"></div><button class="next" data-act="next"></button><div class="todo"></div><div class="selbar"></div><div class="roadkey"></div><button class="homebtn" data-act="home">우리 땅</button><button class="logbtn" data-act="log-open">지난 기록</button><div class="tutband"></div><div class="goalb"></div>`
     + `<nav class="tabs"></nav><div class="back" data-act="close"></div><section class="sheet"></section><div class="modal"></div><div class="plbox"></div>`
   const $ = (sel: string): HTMLElement => root.querySelector<HTMLElement>(sel)!
   const zoom = attachZoom($('.mapwrap'))
@@ -2536,6 +2551,59 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + `<div class="instr">${!ios && installPrompt() !== null ? '<button class="btn pri sm" data-act="install">앱으로 설치</button>' : ''}<label class="chk"><input type="checkbox" class="insthide"> 다시 보지 않기</label><button class="btn sm" data-act="inst-ok">확인</button></div></div>`
   }
 
+  /**
+   * 이번 계절 할 일 하나 — 처음 하는 사람에게만, 「다음 계절」 위에. 누르면 그 판이 열린다
+   * (형 10-24: "한 화면에 할 일 하나" · 동료가 빨간불을 무시하고 다음 계절만 눌렀다)
+   */
+  function todoHtml(r: Realm): string {
+    if (r.region === 'tutorial' || !novice() || r.outcome || sheet !== null) return ''
+    const drafted = musters.some((o) => o.kind === 'draft')
+    const canDraft = Object.values(r.nodes).some((n) => n.owner === me() && draftLimit(r, me(), n.id) > 0)
+    const idle = tabWait(r, 'heroes') === 0 ? restingHeroes(r).length : 0
+    const asks = openAsks(r, me()).filter((a) => answers[a.id] === undefined).length
+    const armyIdle = Object.values(r.armies).some((a) => a.faction === me() && a.march === null && pick[a.id] === undefined)
+    const t = asks > 0 && tabWait(r, 'diplo') === 0 ? { tab: 'diplo', line: `사신이 왔다 — 외교에서 답한다` }
+      : !drafted && canDraft && r.season < 4 ? { tab: 'draft', line: '징병에서 군사를 뽑는다 (⚡ 알아서 뽑기)' }
+        : idle > 0 ? { tab: 'heroes', line: `쉬는 장수 ${idle}명 — 장수에서 일을 맡긴다` }
+          : armyIdle && r.season >= 1 ? { tab: 'army', line: '군대에서 갈 곳을 고른다 — 빈땅·약한 이웃' }
+            : null
+    return t === null ? '' : `<button class="todochip" data-act="tab" data-tab="${t.tab}">👉 이번 계절 · ${esc(t.line)}</button>`
+  }
+
+  /** 처음 하는 사람인가 — 배우는 판 말고 한 판이라도 이겼으면 아니다 */
+  function novice(): boolean {
+    return !(['jumong', 'byeonhan-mini', 'yeongnam', 'south', 'world'] as const).some((b) => tierWon(b) > 0)
+  }
+  /** 이 탭이 열리기까지 남은 계절 (0 이면 열림) */
+  function tabWait(r: Realm, id: (typeof TABS)[number]['id']): number {
+    if (r.region === 'tutorial' || !novice()) return 0
+    return Math.max(0, TAB_OPEN_AT[id] - r.season)
+  }
+  /** 이번에 막 열린 탭 — 반짝이고 한 줄 알림 (판마다 한 번) */
+  let newTab = ''
+  function noteNewTabs(r: Realm): void {
+    if (r.region === 'tutorial' || !novice()) return
+    const key = 'hanbal.realm.tabsOpen'
+    let seen: { seed: number; ids: string[] } = { seed: r.seed, ids: [] }
+    try { const v = JSON.parse(localStorage.getItem(key) ?? 'null') as typeof seen | null; if (v !== null && v.seed === r.seed) seen = v } catch { /* 처음 */ }
+    for (const t of TABS) {
+      if (tabWait(r, t.id) > 0 || seen.ids.includes(t.id)) continue
+      seen.ids.push(t.id)
+      // 바로 이번 계절에 열린 것만 알린다 — 옛 판을 열었을 때 한꺼번에 뜨지 않게
+      if (TAB_NEW_LINE[t.id] !== '' && TAB_OPEN_AT[t.id] > 0 && r.season === TAB_OPEN_AT[t.id]) { newTab = t.id; tabToast(t.name, TAB_NEW_LINE[t.id]) }
+    }
+    try { localStorage.setItem(key, JSON.stringify(seen)) } catch { /* 저장 못 하는 곳 */ }
+  }
+  /** 새로 열린 탭 알림 — 아래 탭 위에 한 줄, 7초면 걷히고 누르면 바로 걷힌다 */
+  function tabToast(name: string, line: string): void {
+    root.querySelector('.tabtoast')?.remove()
+    root.insertAdjacentHTML('beforeend', `<div class="tabtoast"><b>🔓 새로 열렸다 — ${esc(name)}</b><span>${esc(line)}</span></div>`)
+    const el = root.querySelector<HTMLElement>('.tabtoast')!
+    const gone = (): void => { el.remove(); if (newTab !== '') { newTab = ''; paint() } }
+    el.addEventListener('click', gone)
+    window.setTimeout(gone, TAB_TOAST_MS)
+  }
+
   function acctLine(): string {
     const c = host.cloud
     if (c === undefined || !c.available()) return ''
@@ -3483,6 +3551,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       $('.roadkey').innerHTML = ''
       $('.tutband').innerHTML = ''
       $('.goalb').innerHTML = ''
+      $('.todo').innerHTML = ''
       tutSheet.textContent = ''
       spot.set(undefined, null)
       $('.sheet').innerHTML = ''
@@ -3530,13 +3599,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const waiting = openAsks(realm, me()).filter((a) => answers[a.id] === undefined).length
     morph($('.legend'), legendHtml(r) + (waiting > 0 ? `<button class="askpill" data-act="tab" data-tab="diplo">${icon('good-tribute-bell')}사신 ${waiting}</button>` : ''))
     $('.next').innerHTML = `다음 계절 <span>›</span>`
+    morph($('.todo'), todoHtml(r))
     morph($('.goalb'), goalBandHtml(r, esc, goalFolded())) // 캠페인의 장이면 이 장의 목표 — 접을 수 있다
     $('.goalb').classList.toggle('folded', goalFolded())
     let tabs = ''
     for (const t of TABS) {
+      const wait = tabWait(r, t.id)
+      if (wait > 0) { tabs += `<button class="locked" disabled data-tip="${t.name} — ${wait}계절 뒤에 열린다">🔒<span>${t.name}</span></button>`; continue }
       const dot = dotKeys(r, t.id).some((k) => !seenKeys.has(k))
-      tabs += `<button class="${sheet?.kind === t.id ? 'on' : ''}" data-act="tab" data-tab="${t.id}" data-tip="${t.name}" data-more="${t.more}">${icon(t.icon, 'tic')}<span>${t.name}</span>${dot ? '<i class="dot"></i>' : ''}</button>`
+      tabs += `<button class="${sheet?.kind === t.id ? 'on' : ''}${newTab === t.id ? ' fresh' : ''}" data-act="tab" data-tab="${t.id}" data-tip="${t.name}" data-more="${t.more}">${icon(t.icon, 'tic')}<span>${t.name}</span>${dot ? '<i class="dot"></i>' : ''}</button>`
     }
+    noteNewTabs(r)
     morph($('.tabs'), tabs)
     const sh = $('.sheet')
     const keepSheet = sh.scrollTop
@@ -3951,7 +4024,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (realm === null || (realm.outcome && !realm.endless)) return
         // 문명의 "명령을 기다리는 유닛" — 쉬는 장수가 있거나 정찰을 안 보냈으면 한 번은 그 판으로 데려간다. 한 번 더 누르면 그냥 넘긴다
         if (nudgedAt !== realm.season && realm.region !== 'tutorial') {
-          const idle = restingHeroes(plan())
+          const idle = tabWait(realm, 'heroes') > 0 ? [] : restingHeroes(plan()) // 장수 탭이 아직 안 열렸으면 쉬는 장수로 붙잡지 않는다
           const noScout = scout === ''
           if (idle.length > 0 || noScout) {
             nudgedAt = realm.season

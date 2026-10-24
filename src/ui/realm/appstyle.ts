@@ -720,6 +720,17 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .plpool.full { border-color: #e0b04a; box-shadow: 0 0 0 1px #e0b04a66, 0 0 16px #e0b04a44; } .ap .plpool.full > b { color: #ffd27a; animation: plpulse 1.2s ease-in-out infinite alternate; }
 @keyframes plpulse { from { opacity: .75; } to { opacity: 1; } }
 .ap .plcard { margin: 0 0 8px; padding: 9px 10px; border-radius: 10px; background: #1f1a14; border: 1px solid #3a3024; transition: border-color .2s, background .2s; }
+/* 이번 계절 할 일 — 다음 계절 단추 위 */
+.ap .todo { position: absolute; right: 14px; bottom: calc(var(--tabh) + 78px); z-index: 6; max-width: min(78vw, 360px); }
+.ap .todo:empty { display: none; }
+.ap .todochip { padding: 8px 14px; border-radius: 999px; border: 1px solid #e0b860; background: #2a1f10f0; color: #ffe6b0; font: inherit; font-size: 13.5px; font-weight: 700; text-align: left; cursor: pointer; box-shadow: 0 4px 14px #000a; animation: todoglow 1.6s ease-in-out infinite alternate; }
+@keyframes todoglow { to { box-shadow: 0 0 16px #ffd27a99; } }
+/* 잠긴 탭 · 새로 열린 탭 */
+.ap .tabs button.locked { opacity: .38; filter: grayscale(1); cursor: default; }
+.ap .tabs button.fresh { animation: tabfresh 1s ease-in-out 4 alternate; } @keyframes tabfresh { to { box-shadow: 0 0 18px #ffd27a; background: #4a3a18; } }
+.ap .tabtoast { position: absolute; left: 50%; bottom: calc(76px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 60; display: flex; flex-direction: column; gap: 2px; max-width: min(92vw, 440px);
+  padding: 9px 14px; border-radius: 12px; background: #2a1f10f2; border: 1px solid #e0b860; box-shadow: 0 6px 20px #000a; cursor: pointer; animation: updin .35s ease-out both; }
+.ap .tabtoast b { color: #ffd27a; } .ap .tabtoast span { color: #e8dcc0; font-size: 13.5px; }
 /* 사신의 청 그림 */
 .ap img.aic { width: 26px; height: 26px; vertical-align: middle; margin-right: 4px; object-fit: contain; } .ap img.aic.big { width: 40px; height: 40px; }
 /* 교환 — 깃발 둘과 화살표 */
