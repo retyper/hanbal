@@ -52,7 +52,7 @@ export function goalRowsHtml(r: Realm, esc: (s: string) => string): string {
     h += `<div class="gbr${ok ? ' ok' : ''}"${tip}><span class="gck">${ok ? '✓' : '◇'}</span><span>${esc(goalLabel(r, g))}${bar}</span></div>`
   }
   const left = seasonsLeft({ ...r, scenario: sc })
-  if (left !== null && !done) h += `<div class="gbr gleft${left <= 2 ? ' warn' : ''}"><span class="gck">⧗</span><span>${left}계절 남았다</span></div>`
+  if (left !== null && !done) h += `<div class="gbr gleft${left <= 2 ? ' warn' : ''}"><span class="gck">⏳</span><span>${left}계절 남았다</span></div>`
   return h
 }
 

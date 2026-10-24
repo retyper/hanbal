@@ -17,6 +17,8 @@
     <title>칠십팔국</title>
     <style>
       html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; color: #e9e2d4; }
+      /* 아이폰 — 가로로 돌렸을 때 글자를 멋대로 키우지 않게 · 끌어당겨 튕기지 않게 (형 10-24: "ios 에서 화면 구겨지고") */
+      html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; overscroll-behavior: none; }
       /* 스플래시 — 스크립트보다 먼저 뜬다. 먹빛 바탕에 청동 거울 문장이 숨 쉬듯 빛나고, 붓 한 획이 그어지며 받는 동안 기다린다.
          그림·글꼴을 다 받으면 걷힌다 (형 10-23: "게임 시작할 때 이미지 로딩되는 게 고스란히 보이는데 스플래시 스크린은 아직인가?") */
       #splash { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;

@@ -20,6 +20,7 @@ import type { Act, Approach, Art, Cmd, Grp, Order, Realm, RoundLog, RoundOrder, 
 import { P } from '../../tune/params.ts'
 import { snd } from './sound.ts'
 import { WIN_BUZZ, winFxHtml } from './winfx.ts'
+import { scrollInside } from './scroll.ts'
 
 const esc = (s: string): string =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
@@ -1272,9 +1273,9 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     // 싸운다를 누르면 — 이번 합이 위 카드 바로 밑에 오게, 판이 끝났으면 결과가 다 풀린 뒤 결과로 (형 10-23: "싸운다 누르면 스크롤 맨 위로 가는 게 맞나?")
     ov.style.setProperty('--wtoph', `${(sc.querySelector<HTMLElement>('.wtop')?.offsetHeight ?? 170) + 8}px`) // 붙박이 위 카드에 가리지 않게
     if (anim) {
-      sc.querySelector('.wrd.slow')?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-      if (l.pending === undefined) timers.push(window.setTimeout(() => sc.querySelector('.wend')?.scrollIntoView({ block: 'center', behavior: 'smooth' }), (STAGE_S[2] + 0.4) * 1000))
-      else timers.push(window.setTimeout(() => sc.querySelector('.wnext')?.scrollIntoView({ block: 'start', behavior: 'smooth' }), (STAGE_S[2] + 0.6) * 1000))
+      scrollInside(sc.querySelector('.wrd.slow'), 'start', true)
+      if (l.pending === undefined) timers.push(window.setTimeout(() => scrollInside(sc.querySelector('.wend'), 'center', true), (STAGE_S[2] + 0.4) * 1000))
+      else timers.push(window.setTimeout(() => scrollInside(sc.querySelector('.wnext'), 'start', true), (STAGE_S[2] + 0.6) * 1000))
     } else sc.scrollTop = 0
   }
 
