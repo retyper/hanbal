@@ -639,6 +639,12 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     keys += `@keyframes ${k}{from{width:${w0}%}to{width:${w1}%}}`
     return `<i class="wgr" style="width:${w1}%;animation-name:${k}"></i>`
   }
+  /**
+   * 무너지는 금 — 그 밑은 패배가 정해진 구역(붉은 빗금)이고 금 위에 해골. 지금 값이 금에 가까우면 해골이 깜박인다
+   * (형 10-25: "사기랑 명수 이하로는 패배 확정이라는 건 해골 표시가 필요할 듯")
+   */
+  const brk = (at: number, now: number, tip: string): string =>
+    `<s class="wdz" style="width:${at}%"></s><b class="brk${now <= at + P.realm.warSkullNear ? ' near' : ''}" style="left:${at}%" data-tip="${tip}"></b>`
   // 마지막 합에 맞은 쪽은 흔들린다 (형: "피격당한쪽이 흔들리거나") — 우리는 붉게, 적은 금빛으로 번쩍
   const hitOf = (i: 0 | 1): string => {
     if (!anim) return ''
@@ -660,8 +666,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const em = f !== undefined ? FACTION_ART[f]?.emblem : undefined
     return `<div class="ws ${cls}${hitOf(i)}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s">${hitFx}<span class="wpf">${face(hero, art, unitOf(i))}<i></i></span><b>${esc(name)}</b><span class="wnat">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
       // 무너지는 금 — 이 밑으로 떨어지면 그 편이 무너져 진다 (tactics: 군사 tacBreakMen · 사기는 처음의 tacBreakMorale) (형 10-24: "사기가 어느 정도 떨어지면 패배한다가 가로바에 표시")
-      + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}<b class="brk" style="left:${Math.round(P.realm.tacBreakMen * 100)}%" data-tip="군사가 이 금 밑으로 줄면 무너져 진다"></b></div>${num}`
-      + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}<b class="brk" style="left:${Math.round(P.realm.tacBreakMorale * 83)}%" data-tip="사기가 이 금 밑으로 떨어지면 무너져 진다"></b></div><span class="wn">사기</span></div>`
+      + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}${brk(Math.round(P.realm.tacBreakMen * 100), Math.round(n(i) * 100), '군사가 이 금 밑으로 줄면 무너져 진다 — 패배')}</div>${num}`
+      + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}${brk(Math.round(P.realm.tacBreakMorale * 83), mr(m(i)), '사기가 이 금 밑으로 떨어지면 무너져 진다 — 패배')}</div><span class="wn">사기</span></div>`
   }
 
   /**
@@ -1008,6 +1014,14 @@ export const WAR_CSS = `
   box-shadow: inset 0 1px 3px #000e, 0 0 0 1px #8a6a3a, 0 0 0 2.5px #1a120c; }
 /* 무너지는 금 — 붉은 세로 금 */
 .ap .wbar .brk { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; background: #ff3b2b; box-shadow: 0 0 5px #ff3b2b; z-index: 2; cursor: help; }
+/* 해골 — 금 위에 · 금 밑 구역은 붉은 빗금(패배가 정해지는 곳) */
+.ap .wbar .brk::after { content: ''; position: absolute; left: 50%; top: 50%; width: clamp(15px, 3.4vw, 20px); aspect-ratio: 1; translate: -50% -50%;
+  background: url(__ART__icon/war-skull.png) center / contain no-repeat; filter: drop-shadow(0 0 2px #000) drop-shadow(0 0 3px #ff3b2b88); }
+.ap .wbar .brk.near::after { animation: wskull .7s ease-in-out infinite alternate; } @keyframes wskull { to { scale: 1.35; filter: drop-shadow(0 0 2px #000) drop-shadow(0 0 8px #ff3b2b); } }
+.ap .wbar .wdz { position: absolute; left: 0; top: 0; bottom: 0; z-index: 1; pointer-events: none; text-decoration: none;
+  background: repeating-linear-gradient(135deg, #ff3b2b38 0 3px, #0000 3px 6px); border-radius: 6px 0 0 6px; }
+.ap .wbar:has(.brk) { overflow: visible; } /* 해골이 막대 밖으로 나오게 (채움 i 는 제 둥근 테 안에서 잘린다) */
+@media (prefers-reduced-motion: reduce) { .ap .wbar .brk.near::after { animation: none; } }
 /* 전장 띠 — 병졸 말 */
 /* 전장 — 진을 갖춘 두 군대 (fieldHtml). 적은 통째로 거울 · 아래일수록 크고 앞에 */
 .ap .wfield { position: relative; height: clamp(150px, 22vw, 236px); margin: 6px 2px 2px; border-radius: 10px; overflow: hidden; container-type: inline-size;
