@@ -261,7 +261,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
   transform: rotate(-8deg) scaleX(0); opacity: 0; animation: crope .35s cubic-bezier(.2, 1.2, .4, 1) 1.9s forwards; }
 @keyframes crope { to { transform: rotate(-8deg) scaleX(1); opacity: 1; } }
 /* 확인 — 글 맨 아래 · 얼굴이 다 드러난 뒤 나타난다 */
-.ap .cere .cok { position: relative; z-index: 8; margin-top: 6px; min-width: 140px; padding: 11px 28px; font-size: 16px; pointer-events: auto;
+.ap .cere .cok { position: relative; z-index: 8; margin-top: 6px; min-width: 140px; padding: 11px 28px; font-size: 16px; pointer-events: auto; justify-content: center; text-align: center; line-height: 1.2; /* 글자가 왼쪽에 붙고 오른쪽이 비었다 (형 10-25) */
   opacity: 0; animation: cokin .4s ease-out 2.2s both; }
 @keyframes cokin { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .ap .cere *, .ap .cere { animation-duration: .01s !important; animation-delay: 0s !important; } }
