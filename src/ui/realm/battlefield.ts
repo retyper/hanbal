@@ -730,7 +730,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       const shoot = play && o?.bows !== undefined && rows[1]!.length > 0 ? beatOf(o.bows) : null
       const tempo = play ? ` style="--fa:${beatOf(o?.front).toFixed(2)}s;--ha:${beatOf(o?.horse).toFixed(2)}s;--sa:${(shoot ?? 0).toFixed(2)}s"` : ''
       const arrows = shoot === null ? '' : `<i class="wf-arw" style="--sa:${shoot.toFixed(2)}s">${Array.from({ length: 8 }, (_, j) => `<i style="--k:${j};--ay:${-30 + j * 8}%"><img src="${art}fx/arrow.png" alt=""></i>`).join('')}</i>`
-      return `<div class="wf2s ${cls}"${formAttrs(o)}${tempo}>${gen}${cues}${bows}${horse}${front}${arrows}</div>`
+      // 적이 흔들린다(사기가 꺾여 방진도 돌격을 못 받아 낼 지경) — 고를 때 적 진이 떨고 깃발이 기운다 (판세가 눈에 보이게)
+      const waver = !play && cls === 'foe' && pd !== undefined && pd.round === shown && pd.foeWaver ? ' waver' : ''
+      return `<div class="wf2s ${cls}${waver}"${formAttrs(o)}${tempo}>${gen}${cues}${bows}${horse}${front}${arrows}</div>`
     }
     // 이 합에 낸 명령 (풀릴 때) · 고르는 중엔 우리는 고른 것, 적은 낌새
     const ordUs: RoundOrder | undefined = play ? (weAtk ? last!.oa : last!.od) : pd !== undefined ? sel : undefined
@@ -1107,6 +1109,21 @@ export const WAR_CSS = `
 .ap .wfield .tk.wsp.r0.tkf .spf { animation: spatk .3s steps(1) calc(var(--hd) - .2s) 2, spdie .01s steps(1) calc(var(--hd) + .4s + var(--j) * .08s) forwards; }
 .ap .wf2s .tk.r0.tkd { translate: calc(7cqw + var(--j, 0) * .3cqw) .6cqw; }
 @keyframes spdie { to { background-position-x: 100%; } }
+/* 맞음 — 맞부딪는 순간 살아남은 앞줄 몇이 뒤로 휘청(맞음 컷 6) 했다가 다시 싸운다 */
+.ap .wfield.play .wf2s .tk.wsp.r0.tku:nth-child(3n) .spf { animation: spflinch .38s steps(1) calc(var(--hd) + .02s + var(--j, 0) * .04s) 1, spatk calc(.3s + var(--j, 0) * .03s) steps(1) calc(var(--hd) + .42s) 5, spidle 1.5s steps(1) calc(var(--hd) + 1.9s) infinite; }
+@keyframes spflinch { 0%, 100% { background-position-x: 85.7143%; } }
+/* 쓰러질 때 흙먼지 — 병사마다 발치에서 한 번 */
+.ap .wf2s .tk.wsp.tkf::after { content: ''; position: absolute; left: 50%; bottom: 0; width: 140%; height: 45%; translate: -50% 20%; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(ellipse, #c8a87acc 0, #a0805a88 40%, #0000 70%); opacity: 0; animation: wpuff .9s ease-out calc(var(--hd) + .55s + var(--j, 0) * .06s) both; }
+@keyframes wpuff { 0% { opacity: 0; scale: .3; } 25% { opacity: .9; } 100% { opacity: 0; scale: 1.4; translate: -50% 0; } }
+/* 카메라 — 맞부딪는 순간 전장을 크게 당겨 보였다가 돌아온다 (판 크기는 그대로, 안만) */
+.ap .wfield.play .wf2s, .ap .wfield.play .wf-ground { transform-origin: 50% 62%; animation: wpushin 1.5s cubic-bezier(.2, .7, .3, 1) calc(var(--hd) - .25s) both; }
+@keyframes wpushin { 0% { scale: 1; } 28% { scale: 1.16; } 60% { scale: 1.12; } 100% { scale: 1; } }
+/* 흔들리는 적 */
+.ap .wf2s.waver .tk.tku { animation: wwaver .32s ease-in-out calc(var(--j, 0) * -.07s) infinite alternate; filter: drop-shadow(0 0 2px #ff6a5a) drop-shadow(0 2px 2px #000c) sepia(.25) saturate(.7) brightness(.85); }
+@keyframes wwaver { from { translate: -1.5px 0; } to { translate: 1.5px .5px; } }
+.ap .wf2s.waver .wpole { rotate: 18deg; transform-origin: 50% 100%; transition: rotate .6s; }
+@media (prefers-reduced-motion: reduce) { .ap .wfield.play .wf2s, .ap .wfield.play .wf-ground, .ap .wf2s.waver .tk.tku { animation: none !important; } }
 @keyframes wtkfallsp { 0% { translate: 3cqw 0; } 100% { translate: 1cqw 0; opacity: .62; filter: grayscale(.5) brightness(.8); } }
 @media (prefers-reduced-motion: reduce) { .ap .wfield *, .ap .wfield .tk.tkf, .ap .wfield.play { animation: none !important; transition: none !important; } .ap .wf-loss { opacity: 1; } }
 .ap .wbar i { position: relative; display: block; height: 100%; border-radius: 6px; overflow: hidden; }
