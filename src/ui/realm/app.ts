@@ -2503,6 +2503,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         + `<span>지키는 힘</span><b>장정 ${militiaMen(r, id)} · 군사 ${men}</b>`
         + `<span>징병</span><b>${draftLimit(r, me(), id)}명 더 뽑을 수 있다</b></div>`
       h += nodeYieldHtml(r, id)
+      if (n.kind !== 'sodo' && n.hh > 0) h += chiefHtml(r, id)
       h += `<h4 class="nsec">할 일</h4>`
       const guarded = guards.includes(id)
       // 개척단 꾸리기 — 지도에 개척단이 서고 군대처럼 빈땅으로 보낸다. 배우는 판에서는 빈땅 판의 단추로 한다
@@ -2574,6 +2575,41 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       for (const a of goers) h += `<div class="goer"><span class="gname">${esc(armyName(r, a))} <span class="mute">${headcount(forceOf(r, a))}명</span></span>${moveRows(r, a, id)}</div>`
     }
     return h
+  }
+
+  /**
+   * 다스리는 장수 — 이 고을을 맡은 장수 (부르는 이름은 형이 고른다 · 「촌장」은 난이도 첫 단계라 안 씀). 장수 판까지 안 가고 고을 판에서 바로 앉히고 바꾼다
+   * (형 10-24: "마을 눌렀을 때 거기서도 통치하는 애 배치할 수 있게"). 앉힐 수 있는 이는 장수 판의 「맡는다」와 같다 —
+   * 여기 있거나 우리 땅으로 이어진 곳에 있는 한가한 장수 (멀면 정예를 거느리고 그 계절 길에 있다) · 군대를 이끄는 이는 그 군대가 여기 있을 때만
+   */
+  function chiefHtml(r: Realm, id: string): string {
+    const holder = Object.values(r.heroes).find((y) => y.post === id && y.faction === me() && y.status === 'free')
+    const coming = heroOrders.find((o): o is Extract<Order, { kind: 'assign' }> => o.kind === 'assign' && o.node === id)
+    let h = `<h4 class="nsec">다스리는 장수</h4>`
+    if (holder !== undefined) h += `<div class="cap">${bust(holder, 'cface')}<b>${nameHtml(holder.name)}</b><span class="mute">${STAT_NAME.chi} ${holder.chi} · ${STAT_NAME.ryak} ${holder.ryak} · ${STAT_NAME.deok} ${holder.deok}</span></div>`
+    if (coming !== undefined) {
+      const c = r.heroes[coming.hero]
+      return h + `<div class="banner good">이번 계절: ${esc(josa(c?.name ?? '', '이', '가'))} 다스리러 온다<button class="btn ghost sm" data-act="unhero" data-id="${coming.hero}">취소</button></div>`
+    }
+    if (holder === undefined) h += `<p class="mute">다스리는 장수가 없다. 앉히면 내정·지략·매력과 특성이 이 고을에 걸린다.</p>`
+    const ordered = (hid: string): boolean => heroOrders.some((o) => (o.kind === 'assign' || o.kind === 'lead' || o.kind === 'persuade') && o.hero === hid)
+    const reach = (x: Hero): 'here' | 'far' | null => {
+      const army = Object.values(r.armies).find((a) => a.hero === x.id)
+      if (army !== undefined) return army.march === null && army.at === id ? 'here' : null
+      if (x.at === null) return null
+      if (x.at === id) return 'here'
+      return migratePath(r, me(), x.at, id) !== null ? 'far' : null
+    }
+    const cands = sorted(Object.values(r.heroes))
+      .filter((x) => x.faction === me() && x.status === 'free' && x.id !== holder?.id && !isRuler(r, x.id) && heroBusy(r, x.id) === null && !handLocked(r, x.id) && !ordered(x.id) && reach(x) !== null)
+      .sort((a, b) => b.chi - a.chi)
+    if (cands.length === 0) return h + `<p class="mute">지금 보낼 수 있는 한가한 장수가 없다.</p>`
+    h += `<div class="mute">${holder !== undefined ? '바꿔 앉힐 장수' : '앉힐 장수'} · 내정 높은 순</div><div class="seg wrap farseg">`
+    for (const x of cands.slice(0, 8)) {
+      const far = reach(x) === 'far'
+      h += `<button data-act="assign" data-id="${x.id}" data-node="${id}" data-tip="${far ? `정예 ${P.realm.escortMen}명을 거느리고 온다 · 이번 계절은 길에 있다` : '여기 있어 바로 맡는다'}">${esc(x.name)}<small>${STAT_NAME.chi} ${x.chi}${far ? ' · 먼 길' : ''}</small></button>`
+    }
+    return h + `</div>`
   }
 
   /** 생산 — 「생산품 · 곡식 · 나무」 · 이번 계절 얼마 · 가을걷이 · 고기잡이 (형: "나무 난다 이런 말 말고 생산품: 나무") */
