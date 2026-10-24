@@ -628,12 +628,13 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       let idx = 0
       const tok = (k: string): string => {
         const st2 = idx < alive ? 'up' : idx < before ? 'fall' : 'down'
-        const ic = (UNIT_ICON as Record<string, string>)[k] ?? UNIT_ICON.spear
-        return `<img class="tk ${st2}" src="${art}icon/${ic}.png" alt="" style="--j:${idx++ % 5}">`
+        // 옆모습 병졸 그림 (icon/sol-*.png · 오른쪽을 본다 — 적은 뒤집는다)
+        const sol = ['spear', 'shield', 'bow', 'crossbow', 'horse', 'pike', 'boat', 'axe'].includes(k) ? k : 'spear'
+        return `<img class="tk ${st2}" src="${art}icon/sol-${sol}.png" alt="" style="--j:${idx++ % 5}">`
       }
       // 뒷줄·옆을 먼저 세고 앞줄을 나중에 — 쓰러지는 것은 맞부딪는 앞줄부터
       const back = rows[1]!.map(tok).join(''), flank = rows[2]!.map(tok).join(''), front = rows[0]!.map(tok).join('')
-      return `<div class="wf-side ${cls}"><div class="wf-row back">${back}${flank}</div><div class="wf-row front">${front}</div></div>`
+      return `<div class="wf-side ${cls}"><div class="wf-row wf-bk">${back}${flank}</div><div class="wf-row wf-fr">${front}</div></div>`
     }
     return `<div class="wfield" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s">${sideToks(ourI, 'us')}<i class="wf-mid">⚔</i>${sideToks(foeI, 'foe')}</div>`
   }
@@ -823,26 +824,29 @@ export const WAR_CSS = `
 .ap .wf.unit { object-fit: contain; padding: 6px; }
 .ap .ws.foe .wf { border-color: #7a3a2a; }
 .ap .wbar { position: relative; width: 100%; height: 12px; border-radius: 6px; background: linear-gradient(#0c0805, #22180f); overflow: hidden; margin-top: 7px;
+  box-shadow: inset 0 1px 3px #000e, 0 0 0 1px #8a6a3a, 0 0 0 2.5px #1a120c; }
 /* 무너지는 금 — 붉은 세로 금 */
+.ap .wbar .brk { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; background: #ff3b2b; box-shadow: 0 0 5px #ff3b2b; z-index: 2; cursor: help; }
 /* 전장 띠 — 병졸 말 */
 .ap .wfield { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 6px 4px 2px; padding: 6px 4px; border-radius: 10px; background: linear-gradient(#0000, #1a120a99 40%, #0000); }
 .ap .wfield .wf-side { flex: 1; display: flex; flex-direction: column; gap: 3px; }
 .ap .wfield .wf-side.us { align-items: flex-end; } .ap .wfield .wf-side.foe { align-items: flex-start; }
-.ap .wfield .wf-side.us .front { order: 2; } .ap .wfield .wf-side.foe .front { order: 0; } .ap .wfield .wf-side.foe .back { order: 1; }
+/* 줄 이름은 wf-fr·wf-bk — 'front' 는 첫 화면 판(.ap .front · 화면 전체를 덮는 검은 판)과 겹쳐 싸움 위 카드가 새까맣게 덮였다 */
+.ap .wfield .wf-side.us .wf-fr { order: 2; } .ap .wfield .wf-side.foe .wf-fr { order: 0; } .ap .wfield .wf-side.foe .wf-bk { order: 1; }
 .ap .wfield .wf-row { display: flex; flex-wrap: wrap; gap: 1px; max-width: 100%; }
 .ap .wfield .wf-side.us .wf-row { justify-content: flex-end; } .ap .wfield .wf-side.foe .wf-row { justify-content: flex-start; }
-.ap .wfield .tk { width: clamp(18px, 4.4vw, 28px); height: clamp(18px, 4.4vw, 28px); object-fit: contain; filter: drop-shadow(0 2px 2px #000c); }
-.ap .wfield .wf-side.foe .tk { transform: scaleX(-1); filter: drop-shadow(0 2px 2px #000c) sepia(.4) hue-rotate(-20deg) saturate(1.3); }
+.ap .wfield .tk { height: clamp(26px, 6vw, 40px); width: auto; margin: 0 -3px; filter: drop-shadow(0 2px 2px #000c); }
+/* 편 가르기 — 우리는 푸른빛 테, 적은 붉은빛 테 (적은 왼쪽을 보게 뒤집는다) */
+.ap .wfield .wf-side.us .tk { filter: drop-shadow(0 0 2px #7cc4ff) drop-shadow(0 2px 2px #000c); }
+.ap .wfield .wf-side.foe .tk { transform: scaleX(-1); filter: drop-shadow(0 0 2px #ff6a5a) drop-shadow(0 2px 2px #000c) sepia(.25) saturate(1.2); }
 .ap .wfield .tk.down { opacity: .18; filter: grayscale(1); }
 .ap .wfield .tk.fall { animation: tkfall .5s ease-in calc(var(--hd) + .2s + var(--j) * .04s) forwards; }
 @keyframes tkfall { to { opacity: .18; filter: grayscale(1); transform: translateY(4px) rotate(70deg); } }
-.ap .wfield .wf-side.us .front { animation: wpushr .55s ease-in-out var(--hd) both; } .ap .wfield .wf-side.foe .front { animation: wpushl .55s ease-in-out var(--hd) both; }
+.ap .wfield .wf-side.us .wf-fr { animation: wpushr .55s ease-in-out var(--hd) both; } .ap .wfield .wf-side.foe .wf-fr { animation: wpushl .55s ease-in-out var(--hd) both; }
 @keyframes wpushr { 0%, 100% { transform: none; } 45% { transform: translateX(14px); } }
 @keyframes wpushl { 0%, 100% { transform: none; } 45% { transform: translateX(-14px); } }
 .ap .wfield .wf-mid { font-style: normal; font-size: 18px; color: #f0d090; text-shadow: 0 0 8px #000; animation: wmid .5s ease-out var(--hd) both; } @keyframes wmid { 40% { transform: scale(1.6); color: #fff; } }
-@media (prefers-reduced-motion: reduce) { .ap .wfield .front, .ap .wfield .tk.fall, .ap .wfield .wf-mid { animation: none; } }
-.ap .wbar .brk { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; background: #ff3b2b; box-shadow: 0 0 5px #ff3b2b; z-index: 2; cursor: help; }
-  box-shadow: inset 0 1px 3px #000e, 0 0 0 1px #8a6a3a, 0 0 0 2.5px #1a120c; }
+@media (prefers-reduced-motion: reduce) { .ap .wfield .wf-fr, .ap .wfield .tk.fall, .ap .wfield .wf-mid { animation: none; } }
 .ap .wbar i { position: relative; display: block; height: 100%; border-radius: 6px; overflow: hidden; }
 .ap .wbar i::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, #ffffff00 0 9px, #ffffff2a 9px 15px); background-size: 34px 100%; animation: wbarflow 1.1s linear infinite; }
 .ap .wbar i::after { content: ''; position: absolute; top: 0; bottom: 0; left: -45%; width: 45%; background: linear-gradient(90deg, #fff0, #ffffffb0, #fff0); animation: wbarshine 3s ease-in-out infinite; }
