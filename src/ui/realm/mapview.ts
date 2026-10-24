@@ -180,19 +180,17 @@ export const MAP_CSS = `
 @media (prefers-reduced-motion: reduce) { .map .nd.sel .ring, .map .nd.threat .ring, .map svg .mvglow, .map svg .thrarrow { animation: none; } }
 /* 특산 — 고을 그림 오른쪽 위에 작은 둥근 표 (쇠·소금·나무·말). 아무도 안 사는 땅은 흐리게 — 일구면 난다 */
 /* 작게 겹쳐 쌓는다 — 넷이 나란히 서면 고을 그림과 길을 덮었다 (형: "자원들이랑 지도 길 이런거랑 좀안겹치게") */
-.map .nd .sp { position: absolute; right: -4%; top: -9%; display: flex; justify-content: flex-end; gap: 0; pointer-events: none; z-index: 1; width: 100%; }
-.map .nd .sp img { width: 17%; aspect-ratio: 1; object-fit: contain; border-radius: 50%; background: #f8eed6f0; padding: 1.6%; box-sizing: border-box;
-  box-shadow: 0 0 0 1px #6b4a2a, 0 1px 2px #0007; }
-.map .nd .sp img + img { margin-left: -4%; }
-.map .nd .sp.idle img { opacity: .6; filter: saturate(.5); }
+.map .lb .lbg { display: inline-flex; align-items: center; gap: .1em; margin-left: .3em; padding: .1em .32em; border-radius: .55em; background: linear-gradient(#3a2a18f0, #20160cf0);
+  box-shadow: inset 0 0 0 1px #c8a05099, 0 1px 2px #0006; }
+.map .lb .lbg img { width: 1.5em; height: 1.5em; margin: -.18em -.04em; object-fit: contain; border-radius: 50%; filter: drop-shadow(0 1px 1px #000c);
+  background: radial-gradient(circle, #fff3d4 0, #f0d9a0cc 38%, #f0d9a000 68%); }
+.map .lb .lbg.idle img { opacity: .55; filter: saturate(.4) drop-shadow(0 0 1px #000c); }
+.map .lb .lbg i { font-style: normal; font-size: .7em; font-weight: 700; color: #f3e3bd; padding-left: .35em; margin-left: .15em; border-left: 1px solid #c8a05066; }
+.map .lb .lbg i.moat { color: #bfe0ff; }
 /* 겨울 고기잡이 표 — 얼어 흐려진다 */
-.map .nd .sp img.frz { opacity: .55; filter: grayscale(1) brightness(1.15); background: #dff1ff; box-shadow: 0 0 0 1px #7fb6d8, 0 1px 2px #0007; }
+.map .lb .lbg img.frz { opacity: .5; filter: grayscale(1) brightness(1.25) drop-shadow(0 0 1px #7fb6d8); }
 /* 지은 것 — 목책·해자 (고을 왼쪽 위) */
 /* 글자 표 — 마을 그림으로 두면 또 하나의 마을처럼 보였다 (형: "도읍 좌상단에 마을이미지는 뭐지? 이거장터라는 얘긴가?") */
-.map .nd .df { position: absolute; left: -6%; top: -6%; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; pointer-events: none; z-index: 1; }
-.map .nd .df i { font-style: normal; font-size: clamp(8px, calc(1.5cqh / var(--z, 1) * var(--zs, 1)), 12px); line-height: 1.25; padding: 0 .45em; border-radius: .7em; white-space: nowrap;
-  color: #f3e3bd; background: #2a1d10e0; box-shadow: 0 0 0 1px #c8a050, 0 1px 2px #0007; }
-.map .nd .df i.moat { color: #d6ecff; background: #1d3346e0; box-shadow: 0 0 0 1px #7fb6d8, 0 1px 2px #0007; }
 /* 안개 — 고을 아랫도리를 덮는 흰 김과 구름무늬 하나 */
 .map .nd .mist { position: absolute; left: 50%; top: 66%; width: 170%; aspect-ratio: 2.2; transform: translate(-50%, -50%); pointer-events: none; z-index: 1;
   background: radial-gradient(ellipse at 50% 50%, #fffdf6d8 0, #fffdf690 38%, #fffdf600 70%); animation: mistb 5s ease-in-out infinite alternate; }
@@ -528,11 +526,6 @@ export function mapHtml(
     const tg = target.get(n.id)
     const go = tg !== undefined && !tg.off ? ` data-act="${tg.act ?? 'go'}" data-edge="${tg.edge}"` : ''
     const tcls = (tg === undefined ? '' : tg.off ? ' tgt off' : tg.on ? ' tgt on' : ' tgt') + (tg?.act === 'ptgo' ? ' pp' : '')
-    labels.push({
-      id: n.id, name: n.name, now: NODE_NOW[n.id], x: p[0], y: p[1], s: sizeOf(n.hh), cap: n.kind === 'capital' || cap, hh: n.hh,
-      cls: `${kcls}${ours ? ' me' : ''}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${far}${fr}`,
-      color: owner !== null ? color : '', emb, force,
-    })
     nodes += `<div class="nd${kcls}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${tcls}${far}${thr}${fr}"${go} data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color};--s:${sizeOf(n.hh).toFixed(2)};--d:${(-beat(n.id) * 7).toFixed(2)}s" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}"${more !== '' ? ` data-more="${more}"` : ''}>`
     // 특산 — 사람이 살면 나는 것 (쇠·소금·나무·말). 빈땅도 보여 "일구면 말이 난다"를 미리 안다
     const sp = nodeSpecials(r, n.id)
@@ -544,18 +537,26 @@ export function mapHtml(
     const cr = ours && n.kind !== 'sodo' ? crowdOf(n) : 0
     // 넘칠 때만 글자로 — 뜻 모를 노란 막대(곧 붐빔)는 걷었다 (형 10-23: "개마 들머리 마을 위에 노란색 바가 하나 생겼는데 이거 뭐임")
     const crowd = cr > 1 ? '<span class="crw full" title="집이 품을 넘쳐 더디게 늘고, 남는 백성은 저절로 이웃 고을로 옮겨 간다">붐빈다</span>' : ''
-    const spec = sp.length > 0 || fish !== '' ? `<span class="sp${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}">`).join('')}${fish}</span>` : ''
     // 계절따라 걸리는 규칙도 그림으로 — 봄·가을 안개(숨기 좋다) · 겨울 언 해자(못 막는다) (prose.tagNow 와 같은 것)
     const now = n.tags.map((t) => tagNow(t, season)).filter((x) => x !== null).join(' ')
     const mist = n.tags.includes('fog') && now !== '' ? `<span class="mist" title="${now}"><img src="${art}map-world/cloud-3.webp" alt=""></span>` : ''
     const ice = n.tags.includes('moat') && season === 'winter' ? `<i class="ice" title="${now}">❄</i>` : ''
     // 지은 것 — 목책 · 해자 작은 표 (왼쪽 위). 그림만으로는 도읍·포구의 울타리가 지은 것인지 알 수 없었다
     const dfs = (['palisade', 'moat'] as const).filter((t) => n.tags.includes(t))
-    const def = dfs.length > 0 ? `<span class="df">${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${t === 'palisade' ? '목책' : '해자'}</i>`).join('')}</span>` : ''
+    // 특산·지은 것은 이름표 옆 어두운 칸에 — 고을 그림 위에 흰 동그라미로 떠 있으면 이웃 고을 것인지 헷갈리고 지도가 어지럽다
+    // (형 10-24: "지역에서 생산되는 품목도 우상단 동그라미가 아니라 더 효과적이게" — 문명 6 도시 배너처럼 이름에 붙인다)
+    const tray = sp.length > 0 || fish !== '' || dfs.length > 0
+      ? `<span class="lbg${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}" title="${GOOD_NAME[g]} — 사람이 살면 난다">`).join('')}${fish}${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${t === 'palisade' ? '목책' : '해자'}</i>`).join('')}</span>`
+      : ''
+    labels.push({
+      id: n.id, name: n.name, now: NODE_NOW[n.id], x: p[0], y: p[1], s: sizeOf(n.hh), cap: n.kind === 'capital' || cap, hh: n.hh,
+      cls: `${kcls}${ours ? ' me' : ''}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${far}${fr}`,
+      color: owner !== null ? color : '', emb, force, tray, trayW: sp.length + (fish !== '' ? 1 : 0) + dfs.length * 1.6,
+    })
     // 맡은 장수 — 우리 고을이면 얼굴을 작게 (형 10-23: "마을에 장수 배치한 거 아직 맵에선 아무것도 안 보이던데")
     const gv = ours ? govOf.get(n.id) : undefined
     const gface = gv !== undefined && bustOf(gv.id) !== undefined ? `<img class="gov" src="${art}bust/${bustOf(gv.id)}.jpg" alt="" title="${gv.name} — 이 고을을 맡았다">` : ''
-    nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${taken.has(n.id) ? `<img class="burnsm won" src="${art}fx/smoke.png" alt=""><span class="plant"><i class="pole"></i><i class="cloth" style="--fc:${FACTION_ART[me]?.color ?? '#c9a45a'}"><img src="${art}icon/${FACTION_ART[me]?.emblem ?? 'emblem-shell'}.png" alt=""></i></span><i class="wonring"></i><span class="wonchip">점령</span>` : burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${held.has(n.id) ? '<span class="heldchip">🛡 지켜 냈다</span>' : ''}${mist}${ice}${def}${gface}${spec}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : settleable.has(n.id) ? (settling.has(n.id) ? '<span class="stl go">백성이 가는 중</span>' : '<span class="stl">＋마을</span>') : crowd}</div>`
+    nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${taken.has(n.id) ? `<img class="burnsm won" src="${art}fx/smoke.png" alt=""><span class="plant"><i class="pole"></i><i class="cloth" style="--fc:${FACTION_ART[me]?.color ?? '#c9a45a'}"><img src="${art}icon/${FACTION_ART[me]?.emblem ?? 'emblem-shell'}.png" alt=""></i></span><i class="wonring"></i><span class="wonchip">점령</span>` : burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${held.has(n.id) ? '<span class="heldchip">🛡 지켜 냈다</span>' : ''}${mist}${ice}${gface}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : settleable.has(n.id) ? (settling.has(n.id) ? '<span class="stl go">백성이 가는 중</span>' : '<span class="stl">＋마을</span>') : crowd}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()
@@ -656,6 +657,10 @@ interface LabelIn {
   readonly emb: string
   /** 척후가 본 군세 칩 html ('' 이면 없음) */
   readonly force: string
+  /** 특산·지은 것 칸 html ('' 이면 없음) */
+  readonly tray: string
+  /** 그 칸의 너비 (글자 수 어림) */
+  readonly trayW: number
 }
 
 interface Box { x0: number; y0: number; x1: number; y1: number }
@@ -689,7 +694,7 @@ function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly 
   const order = ls.slice().sort((a, b) => (a.cap !== b.cap ? (a.cap ? -1 : 1) : b.hh - a.hh || (a.id < b.id ? -1 : 1)))
   for (const l of order) {
     // 배너 — 깃발(1.4자) · 별 · 군세 칩도 자리를 먹는다
-    const chars = Math.max(l.name.length + (l.cap ? 1 : 0), (l.now ?? '').length * 0.78) + (l.emb !== '' ? 1.6 : 0) + (l.force !== '' ? 3.5 : 0) + 0.8
+    const chars = Math.max(l.name.length + (l.cap ? 1 : 0), (l.now ?? '').length * 0.78) + (l.emb !== '' ? 1.6 : 0) + (l.force !== '' ? 3.5 : 0) + (l.tray !== '' ? l.trayW * 1.2 + 0.9 : 0) + 0.8
     const w = (chars * em * 0.95 * H) / W + 0.004
     const h = em * (l.now !== undefined ? 2.05 : 1.25)
     const iw = ICON_W * ns * l.s
@@ -712,7 +717,7 @@ function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly 
     const [cx, cy] = best!.c
     placed.push({ x0: cx - w / 2, y0: cy, x1: cx + w / 2, y1: cy + h })
     out += `<span class="lb${l.cls}" data-n="${l.id}" style="left:${(cx * 100).toFixed(2)}%;top:${(cy * 100).toFixed(2)}%${l.color !== '' ? `;--c:${l.color}` : ''}">`
-      + `${l.emb !== '' ? `<img class="lbe" src="${l.emb}" alt="">` : ''}<span class="lbt"><span>${l.cap ? '<i class="star">★</i>' : ''}${l.name}</span>${l.now !== undefined ? `<small>${l.now}</small>` : ''}</span>${l.force}</span>`
+      + `${l.emb !== '' ? `<img class="lbe" src="${l.emb}" alt="">` : ''}<span class="lbt"><span>${l.cap ? '<i class="star">★</i>' : ''}${l.name}</span>${l.now !== undefined ? `<small>${l.now}</small>` : ''}</span>${l.tray}${l.force}</span>`
   }
   return out + '</div>'
 }
@@ -806,26 +811,30 @@ function provincesSvg(
     const o2 = e.j >= 0 ? nodes[e.j]!.owner : null
     if (o === null && o2 === null) continue
     const col = FACTION_ART[(o ?? o2)!]?.color ?? '#ccc'
-    if (o === o2) lines += `<path d="${e.d}" stroke="${col}" stroke-width="${(1 * k).toFixed(1)}" opacity="${dim(o) ? 0.08 : 0.4}" stroke-dasharray="${3 * k} ${4 * k}"/>`
+    // 같은 나라 고을 사이 — 또렷한 가는 실선 (형 10-24: "마을 테두리도 확실하고")
+    if (o === o2) lines += `<path d="${e.d}" stroke="color-mix(in srgb, ${col} 55%, #2a1d10)" stroke-width="${(1.5 * k).toFixed(1)}" opacity="${dim(o) ? 0.1 : 0.7}"/>`
     else {
       // 나라의 바깥 둘레 — 두 쪽 저마다 제 색 띠를 안쪽에 갖는다. 금 자체는 그 나라 색으로 또렷하게
       for (const x of [o, o2]) if (x !== null && own.has(x)) rim.set(x, (rim.get(x) ?? '') + e.d)
       if (e.j < 0) lines += `<path d="${e.d}" stroke="${col}" stroke-width="${(2.4 * k).toFixed(1)}" opacity="${dim(o) ? 0.1 : 0.85}"/>`
-      else lines += `<path d="${e.d}" stroke="#2a1d10" stroke-width="${(2.6 * k).toFixed(1)}" opacity=".7"/>`
+      else lines += `<path d="${e.d}" stroke="#1a120a" stroke-width="${(2 * k).toFixed(1)}" opacity=".85"/>`
     }
     // 우리 땅의 둘레 — 짙은 띠 위에 금빛
     if ((o === me) !== (o2 === me)) gold += e.d
   }
   let band = ''
+  let crisp = ''
   let cps = ''
   for (const [o, d] of [...rim].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
     const col = FACTION_ART[o]?.color ?? '#ccc'
     cps += `<clipPath id="rm-own-${o}"><path d="${own.get(o)!}"/></clipPath>`
-    band += `<path d="${d}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${(o === me ? 26 : 20) * k}" opacity="${o === me ? 0.5 : 0.42}"/>`
+    band += `<path d="${d}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${(o === me ? 30 : 24) * k}" opacity="${o === me ? 0.55 : 0.48}"/>`
+    // 둘레 안쪽의 또렷한 제 색 선 — 이웃 나라와 맞닿으면 두 색이 나란히 선다 (문명 6 국경)
+    crisp += `<path d="${d}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${(9 * k).toFixed(1)}" opacity=".95"/>`
   }
   const blurK = (3 * k).toFixed(1)
   let h = `<defs><filter id="rm-band" x="-2%" y="-2%" width="104%" height="104%"><feGaussianBlur stdDeviation="${blurK}"/></filter>${cps}</defs>`
-  h += `<g class="terr"${clip}>${fill}<g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#rm-band)">${band}</g>`
+  h += `<g class="terr"${clip}>${fill}<g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#rm-band)">${band}</g><g fill="none" stroke-linejoin="round">${crisp}</g>`
   // 우리 땅 — 옅은 금빛 (빗금은 비 같다고 해서 뺐다 · 형: "비오는줄알았다"). 금빛 경계가 천천히 숨 쉰다
   if (mine !== '') h += `<path d="${mine}" fill="#ffe7a8" opacity=".13"/>`
   h += `<g fill="none" stroke-linecap="round" stroke-linejoin="round">${lines}`

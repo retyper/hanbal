@@ -589,7 +589,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .layers .lyr b { font-size: 14px; } .ap .layers .lyr span { font-size: 11.5px; color: var(--mute); text-align: right; }
 .ap.hide-terr .map .terr { display: none; } .ap.hide-roads .map .ly-roads { display: none; } .ap.hide-marches .map .ly-marches { display: none; }
 .ap.hide-labels .map .lbs { display: none; } .ap.hide-flags .map .nd .flag { display: none; } .ap.hide-force .map .nd .foe { display: none; }
-.ap.hide-army .map .toks { display: none; } .ap.hide-goods .map .nd .sp { display: none; }
+.ap.hide-army .map .toks { display: none; } .ap.hide-goods .map .lb .lbg { display: none; }
 /* 전쟁을 걸어왔다 · 이웃끼리 전쟁 (app.warCard) */
 .ap .warc { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0 12px; padding: 12px; border-radius: 14px; background: linear-gradient(90deg, #3a1410, #1f1710); border: 1px solid #a0483a; position: relative; }
 .ap .warc .flord { width: 76px; height: 76px; flex: none; border-radius: 12px; object-fit: cover; border: 2px solid #c8604a; }
