@@ -196,14 +196,16 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cere.hire .hb { position: absolute; top: -12%; height: 124%; width: 44vw; min-width: 190px; overflow: hidden; transform: skewX(-16deg);
   border-left: 5px solid #fff; border-right: 5px solid #fff; box-shadow: 0 0 26px #fff9, 0 0 60px var(--gc); background: #000;
   opacity: 0; animation: hbin .26s cubic-bezier(.15, 1, .3, 1) var(--bd) both, hbout .2s cubic-bezier(.5, 0, .9, .4) var(--bo) forwards; }
-.ap .cere.hire .hb > i { position: absolute; inset: 0 -45%; background-repeat: no-repeat; background-size: auto var(--bz); background-position: var(--bx) var(--by);
+/* 띠 속 그림 — 그림의 한 점(--cx --cy, 0~1)을 띠 한가운데에, 크기 --s 로. % 위치로는 그림이 띠보다 조금만 커서 셋이 다 같은 데를 비췄다 (형 10-24) */
+.ap .cere.hire .hb > i { position: absolute; width: var(--s); height: var(--s); left: calc(50% - var(--cx) * var(--s)); top: calc(50% - var(--cy) * var(--s)); background-repeat: no-repeat; background-size: 100% 100%;
   transform: skewX(16deg); animation: hbpan 1.3s ease-out var(--bd) both; }
-/* 띠 하나 — 화면 자리(left) · 들어오는 쪽(--from) · 그림의 어디를(--bx --by) 얼마나 크게(--bz) */
+/* 띠 하나 — 화면 자리(left) · 들어오는 쪽(--from) · 그림의 어느 점을(--cx --cy) 얼마나 크게(--s) */
 .ap .cere.hire { animation-duration: .12s; }
 /* 띠마다 그림의 옆 소품(무기·손 쪽) → 반대 옆(머리·어깨 장신구) → 눈빛 */
-.ap .cere.hire .hb.b1 { --bd: .10s; --bo: .56s; left: 6vw; --from: -110%; --bx: 10%; --by: 62%; --bz: 150%; }
-.ap .cere.hire .hb.b2 { --bd: .56s; --bo: 1.02s; left: 50vw; --from: 110%; --bx: 88%; --by: 30%; --bz: 160%; }
-.ap .cere.hire .hb.b3 { --bd: 1.02s; --bo: 1.48s; left: 28vw; --from: -110%; --bx: 50%; --by: 24%; --bz: 210%; }
+/* 띠마다 다른 곳 — 손·무기(왼쪽 아래) → 어깨·장신구(오른쪽) → 마지막은 얼굴 */
+.ap .cere.hire .hb.b1 { --bd: .10s; --bo: .56s; left: 6vw; --from: -110%; --cx: .26; --cy: .80; --s: 190vh; }
+.ap .cere.hire .hb.b2 { --bd: .56s; --bo: 1.02s; left: 50vw; --from: 110%; --cx: .76; --cy: .60; --s: 190vh; }
+.ap .cere.hire .hb.b3 { --bd: 1.02s; --bo: 1.48s; left: 28vw; --from: -110%; --cx: .50; --cy: .30; --s: 250vh; }
 @keyframes hbin { 0% { opacity: 1; transform: skewX(-16deg) translateY(var(--from)); filter: brightness(3); } 70% { filter: brightness(1.4); } 100% { opacity: 1; transform: skewX(-16deg); filter: none; } }
 @keyframes hbout { to { opacity: 0; transform: skewX(-16deg) scale(1.6, 1.15); filter: brightness(2.5); } }
 @keyframes hbpan { from { transform: skewX(16deg) scale(1.12); } to { transform: skewX(16deg) scale(1); } }
