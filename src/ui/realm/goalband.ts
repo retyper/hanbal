@@ -6,6 +6,7 @@ import { chapterOfRegion } from '../../realm/data/campaign.ts'
 import { josa } from '../../realm/data/prose.ts'
 import { goalState, seasonsLeft } from '../../realm/scenario.ts'
 import type { Goal, Realm } from '../../realm/types.ts'
+import { P } from '../../tune/params.ts'
 
 function goalLabel(r: Realm, g: Goal): string {
   switch (g.kind) {
@@ -51,6 +52,8 @@ export function goalRowsHtml(r: Realm, esc: (s: string) => string): string {
     const tip = g.kind === 'submit' ? ' data-tip="외교에서 사신을 보내 화친 → 동맹을 맺거나, 싸워서 이긴 뒤 조공을 요구한다 — 그 나라를 빼앗지 않아도 된다"' : ''
     h += `<div class="gbr${ok ? ' ok' : ''}"${tip}><span class="gck">${ok ? '✓' : '◇'}</span><span>${esc(goalLabel(r, g))}${bar}</span></div>`
   }
+  // 2장 동부여 추격군 — 처음 몇 계절 (ai.pursuing)
+  if (sc.id === 'jumong' && !done && r.season < P.realm.pursuitSeasons) h += `<div class="gbr gleft warn" data-tip="대소의 추격대가 북쪽 동부여 진영에서 엄리 나루로 내려올 수 있다 — 나루를 지키거나 군대를 모아 둔다"><span class="gck">⚠</span><span>동부여 추격군 — ${P.realm.pursuitSeasons - r.season}계절 동안 쫓아온다</span></div>`
   const left = seasonsLeft({ ...r, scenario: sc })
   if (left !== null && !done) h += `<div class="gbr gleft${left <= 2 ? ' warn' : ''}"><span class="gck">⏳</span><span>${left}계절 남았다</span></div>`
   return h

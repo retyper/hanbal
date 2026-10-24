@@ -108,12 +108,19 @@ function march(a: Army, t: Move): Order {
  * 우리는 그 사이에 정찰하고 자리를 잡는다. **먼저 친 나라에는 유예가 없다** (realm.provoked).
  * 승률 문턱으로는 못 막는다 — 빈 읍락은 승률 100% 다 (봇 대전: 잃은 땅의 7할이 싸움 없이 빈 고을이었다).
  */
+/** 2장 동부여의 추격 — 이 계절에 대소의 군대가 주몽을 쫓고 있나 */
+export function pursuing(r: Realm, faction: string): boolean {
+  return r.scenario?.id === 'jumong' && faction === 'buyeo' && r.season < P.realm.pursuitSeasons
+}
+
 export function spared(r: Realm, faction: string, to: string): boolean {
   const owner = r.nodes[to]?.owner
   if (owner === null || owner === undefined || owner === faction) return false
   // 화친·동맹을 맺은 나라는 치지 않는다 (FLOW §4)
   if (friendly(r, faction, owner)) return true
   if (r.factions[owner]?.mind !== 'player' || r.season >= P.realm.aiGrace) return false
+  // 2장 동부여의 추격군 — 주몽을 쫓아 첫 몇 계절은 유예 없이 내려온다 (CAMPAIGN §1 · 점검 10-25)
+  if (pursuing(r, faction)) return false
   return !(r.provoked ?? []).includes(faction)
 }
 

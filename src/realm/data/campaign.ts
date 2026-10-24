@@ -40,7 +40,8 @@ export const CHAPTERS: readonly Chapter[] = [
     goal: '송양의 비류국과 동맹을 맺거나 조공을 받고, 행인국과 북옥저 도읍을 차지한다',
     art: 'keyart/jumong.jpg',
     source: '『삼국사기』 고구려본기 — 송양이 나라를 들어 항복하니 그 땅을 다물도라 하였다.',
-    scenario: { id: 'jumong', win: [{ kind: 'submit', factions: ['biryuna'], how: 'either' }, { kind: 'hold', nodes: ['jm-haengin-cap', 'jm-okjeo-cap'] }] },
+    // 기한 열두 해 — 손 놓고 있어도 끝이 온다 (점검 10-25: 기한이 없어 놀고 있어도 지지 않았다)
+    scenario: { id: 'jumong', win: [{ kind: 'submit', factions: ['biryuna'], how: 'either' }, { kind: 'hold', nodes: ['jm-haengin-cap', 'jm-okjeo-cap'] }], limit: 48 },
   },
   // 아래는 아직 판이 없는 장 — 카드는 "짓는 중"으로 보인다 (형 10-23: "캠페인 수 너무 적음"). 그림은 표지가 오기 전까지 사건 그림을 빌린다
   {
