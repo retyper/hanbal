@@ -214,7 +214,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cere.hire .ctr { border-color: var(--g); opacity: 0; animation: wrin .4s ease-out both; }
 @media (prefers-reduced-motion: reduce) { .ap .cere.hire .cflash, .ap .cere.hire .cmote, .ap .cere.hire .cglow, .ap .cere.hire .hbands { display: none; } }
 @keyframes cin { from { opacity: 0; } to { opacity: 1; } } @keyframes cout { to { opacity: 0; } }
-.ap .cere .cbg { position: absolute; inset: -3%; background: center / cover no-repeat; filter: brightness(.55); animation: cbgz 7s ease-out both; }
+.ap .cere .cbg { position: absolute; inset: -3%; background: var(--hbg) center / cover no-repeat; filter: brightness(.55); animation: cbgz 7s ease-out both; }
+@media (orientation: portrait) { .ap .cere .cbg { background-image: var(--vbg, var(--hbg)); } }
 @keyframes cbgz { from { transform: scale(1.12); } to { transform: scale(1); } }
 .ap .cere.wed .cbg { filter: brightness(.5) saturate(1.1) sepia(.15); }
 .ap .cere.wed::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, #ff8a9a22, #2a061088 75%); pointer-events: none; }
@@ -295,6 +296,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .bktoast .bkf { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1px solid #d9b36a; flex: none; }
 .ap .bktoast .bkmore { font-size: 12px; color: #c9b48a; }
 @keyframes bkin { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+.ap .row.mv .allyt { margin-left: auto; font-size: 12px; color: #9fd6a0; white-space: nowrap; }
 .ap .hdo.big { font-size: 15px; font-weight: 800; color: #f0d090; margin: 6px 0; }
 .ap .fpick button.on { border-color: var(--gold); box-shadow: 0 0 0 2px #d9b36a66, 0 0 14px #d9b36a55; opacity: 1; transform: scale(1.08); }
 .ap .fpick img.fp { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }

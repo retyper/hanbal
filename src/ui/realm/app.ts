@@ -213,6 +213,10 @@ const SCENE_CUE_MS = 1400
 /** 혼례·탄생 장면 — 계절 띠가 걷힌 뒤 뜨고, 이만큼 머문다 (누르면 바로 넘긴다) */
 const CEREMONY_LEAD_MS = 2000
 const CEREMONY_MS = 6500
+/** 세로 구도로 따로 그린 장면 그림 (public/realm/event-v) — 세로 화면에선 16:9 가운데 띠만 남아 용 허리만 보였다 (형 10-24) */
+const SCENE_V: ReadonlySet<string> = new Set(['event-dream', 'event-wedding', 'event-newborn'])
+/** 큰 장면 바탕 — 가로 그림(--hbg) · 세로 화면이면 세로 그림(--vbg, 있으면) */
+const sceneBg = (name: string): string => `--hbg:url('${ART}event/${name}.jpg')${SCENE_V.has(name) ? `;--vbg:url('${ART}event-v/${name}.jpg')` : ''}`
 /** 신방 넉 장 — 휘장 너머 그림자 · 풀린 옷고름 · 이불 끝의 발 · 댓돌 위 포개진 신 (그림: realm/event/event-bridal-*) */
 const BRIDAL_SHOTS: ReadonlyArray<readonly [string, string]> = [
   ['event-bridal-a', '등잔불이 낮게 흔들린다'],
@@ -1113,6 +1117,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const on = chosen?.edge === m.edge.id
       let right = ''
       if (m.hostile) right = `<span class="win">${m.win !== null ? fightFeel(m.win[0], m.win[1]) : unknownFeel()}</span>`
+      // 동맹의 땅 — 싸우지도 차지하지도 않고 머물거나 지나간다 (형 10-24: "점령한 거 같은데 왜 내 마을이 안 되지 · 아 동맹이어서 건너간 거구나")
+      else if (node.owner !== null && node.owner !== me() && relationOf(r, me(), node.owner).state === 'ally') right = `<span class="allyt">동맹 땅 · 차지 못 함</span>`
       h += `<button class="row mv ${on ? 'on' : ''}" data-act="mv" data-army="${a.id}" data-edge="${m.edge.id}">`
       h += `${emblem(node.owner)}<span class="dest">${esc(node.name)}</span><span class="sub">${EDGE_NAME[m.edge.kind]} · ${esc(arriveWhen(r.season, m.seasons, true))}</span>${right}</button>`
       // 막힌 길 — 갈 수는 있다. 무엇을 잃는지 미리
@@ -3070,7 +3076,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const a = r.heroes[l.a], b = r.heroes[l.b]
         let petals = ''
         for (let i = 0; i < 22; i++) petals += `<i style="--x:${(i * 37) % 100}%;--t:${((i * 0.29) % 2.4).toFixed(2)}s;--sp:${(3.6 + ((i * 0.53) % 2.2)).toFixed(2)}s"></i>`
-        scenes.push(`<div class="cere wed"><i class="cbg" style="background-image:url('${ART}event/event-wedding.jpg')"></i><div class="cpet">${petals}</div>`
+        scenes.push(`<div class="cere wed"><i class="cbg" style="${sceneBg('event-wedding')}"></i><div class="cpet">${petals}</div>`
           + `<div class="cpair"><div class="cl">${bust(a, 'cf')}<b>${esc(a?.name ?? '')}</b></div><div class="cr">${bust(b, 'cf')}<b>${esc(b?.name ?? '')}</b></div></div>`
           + `<div class="cw"><b>혼례</b><span>${esc(josa(a?.name ?? '', '과', '와'))} ${esc(josa(b?.name ?? '', '이', '가'))} 짝을 맺었다</span><small>신혼 ${P.realm.wedHoney}계절 — 함께 지내면 아이가 일찍 온다</small></div></div>`)
       } else if (l.kind === 'recruit' && l.faction === me()) {
@@ -3081,7 +3087,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       } else if (l.kind === 'birth' && l.faction === me()) {
         const kid = r.heroes[l.hero], a = r.heroes[l.a], b = r.heroes[l.b]
         const traits = (kid?.traits ?? []).map((t) => `<span class="ctr${t === l.surprise ? ' new' : ''}">${esc(TRAIT[t]?.name ?? t)}${t === l.surprise ? ' · 타고났다' : ''}</span>`).join('')
-        scenes.push(`<div class="cere birth"><i class="cbg" style="background-image:url('${ART}event/event-newborn.jpg')"></i><i class="cglow"></i>`
+        scenes.push(`<div class="cere birth"><i class="cbg" style="${sceneBg('event-newborn')}"></i><i class="cglow"></i>`
           + `<div class="ckid">${bust(kid, 'cf big')}<div class="cpar">${bust(a, 'cf sm')}${bust(b, 'cf sm')}</div></div>`
           + `<div class="cw"><b>탄생</b><span>${esc(a?.name ?? '')}·${esc(b?.name ?? '')}의 아이 ${esc(josa(kid?.name ?? '', '이', '가'))} 자라 나섰다</span>${traits !== '' ? `<div class="ctrs">${traits}</div>` : ''}</div></div>`)
       }
@@ -3092,7 +3098,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (b.faction !== me() || b.due !== r.season + 1 || dreamt.has(key)) continue
       dreamt.add(key)
       const a = r.heroes[b.a], c = r.heroes[b.b]
-      scenes.push(`<div class="cere birth dream"><i class="cbg" style="background-image:url('${ART}event/event-dream.jpg')"></i><i class="cglow"></i>`
+      scenes.push(`<div class="cere birth dream"><i class="cbg" style="${sceneBg('event-dream')}"></i><i class="cglow"></i>`
         + `<div class="cpar">${bust(a, 'cf sm')}${bust(c, 'cf sm')}</div>`
         + `<div class="cw"><b>태몽</b><span>${esc(a?.name ?? '')}·${esc(c?.name ?? '')}의 지붕 위로 금빛 용이 구슬을 물고 내려왔다</span><small>다음 계절에 아이가 온다</small></div></div>`)
     }
