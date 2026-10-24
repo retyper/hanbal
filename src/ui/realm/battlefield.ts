@@ -934,7 +934,9 @@ export const WAR_CSS = `
 .ap .wpf > i { position: absolute; inset: 0; background: url(__ART__ui/frame-portrait.png) center / 100% 100% no-repeat; pointer-events: none; z-index: 1; filter: drop-shadow(0 3px 6px #000c); }
 .ap .wpf .wf { width: 66%; height: 66%; border: 0; border-radius: 2px; box-shadow: none; }
 .ap .ws.foe .wpf > i { filter: drop-shadow(0 3px 6px #000c) sepia(.35) hue-rotate(-20deg) saturate(1.3); }
-@media (max-width: 520px) { .ap .wtop .wpf { --pf: min(128px, 33vw); } }
+@media (max-width: 520px) { .ap .wtop .wpf { --pf: min(92px, 24vw); } } /* 폰 — 초상을 줄여 전장에 자리를 (형 10-25: 초상이 화면 반을 먹고 병사가 작았다) */
+@media (max-width: 520px) { .ap .wtop .wfield { height: clamp(170px, 46vw, 220px); } .ap .wtop .wf2s .tk { height: clamp(30px, 8.6cqw, 44px); } .ap .wtop .wf2s .tk.wsp.k-horse, .ap .wtop .wf2s .tk.wsp.k-boat { height: clamp(40px, 11.5cqw, 60px); } }
+@media (max-width: 520px) { .ap .wnext .wgt .wgn b { white-space: normal; font-size: 13px; line-height: 1.15; } .ap .wnext .wgt { padding: 6px 7px; gap: 5px; } .ap .wnext .wgt .wgi { width: 28px; height: 28px; } }
 /* 우리 장수 테는 숨 쉬듯 빛난다 */
 .ap .ws.us .wpf > i { animation: wpfglow 2.6s ease-in-out infinite alternate; }
 @keyframes wpfglow { from { filter: drop-shadow(0 3px 6px #000c); } to { filter: drop-shadow(0 3px 6px #000c) drop-shadow(0 0 10px #9fd18b88); } }
