@@ -1463,6 +1463,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (season === 'spring') h += `<div class="banner bad">${tx('봄에 뽑으면 그해 가을 수확량이 줄어든다')}</div>`
     if (season === 'autumn' || season === 'winter') h += `<div class="banner good">${tx('거둔 뒤라 뽑기 좋은 때다')}</div>`
     const pending = musters.filter((o): o is Extract<Order, { kind: 'draft' }> => o.kind === 'draft')
+    // 알아서 뽑기 — 고을마다 뽑을 수 있는 만큼, 창병과 궁병을 섞어 곡식이 닿는 데까지 (형 10-24: "모든 고을에서 다 최대로 골고루")
+    h += `<div class="btns"><button class="btn pri men wide" data-act="auto-draft">⚡ 알아서 뽑기 — 고을마다 뽑을 수 있는 만큼 (창병·궁병 섞어)</button></div>`
     for (const n of sorted(Object.values(r.nodes)).filter((x) => x.owner === me())) h += draftCard(r, n.id, false)
     if (pending.length > 0) {
       h += `<h4>이번 계절 징병</h4>`
@@ -4239,6 +4241,29 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (draftIron[node] === true && !ironOk) note = '철이 모자라 쇠 무기 없이 뽑는다.'
         if (n > 0) { draftSfx(); musters = [...musters, { kind: 'draft', faction: me(), node, unit: draftUnit[node] ?? 'spear', n, ...(ironOk ? { iron: true as const } : {}) }] }
         delete draftN[node]
+        break
+      }
+      case 'auto-draft': {
+        // 고을마다 남은 한도를 창병 6 : 궁병 4 로 — 곡식이 모자라면 거기서 멈춘다 (군사 뽑기 값은 징병 판과 같다)
+        let grain = left().grain
+        let got = 0
+        for (const n of sorted(Object.values(plan().nodes)).filter((x) => x.owner === me())) {
+          const p = plan()
+          const lim = draftLimit(p, me(), n.id)
+          if (lim <= 0) continue
+          const bowOk = draftLimit(p, me(), n.id, 'bow') > 0
+          const parts: Array<[UnitKind, number]> = bowOk ? [['spear', Math.ceil(lim * 0.6)], ['bow', Math.floor(lim * 0.4)]] : [['spear', lim]]
+          for (const [unit, want] of parts) {
+            let k = Math.min(want, draftLimit(plan(), me(), n.id, unit))
+            while (k > 0 && draftCost(k).grain > grain) k = Math.floor(k * 0.8)
+            if (k <= 0) continue
+            grain -= draftCost(k).grain
+            musters = [...musters, { kind: 'draft', faction: me(), node: n.id, unit, n: k }]
+            got += k
+          }
+        }
+        if (got > 0) draftSfx()
+        else note = '더 뽑을 군사가 없거나 곡식이 모자란다.'
         break
       }
       case 'undraft': musters = musters.filter((_, i) => i !== Number(d['i'])); break
