@@ -58,6 +58,7 @@ describe('계승 가신', () => {
     const extra = { ...snapshot(foe), mu: 10 }
     const next = startRegion('yeongnam', 9, 'saro')
     const led = Object.values(next.armies).find((a) => a.hero === foe.id)
+    const baseMu = next.heroes[foe.id]?.mu
     const got = bringRetainers(next, [extra, ...mine, ...mine])
     assert.ok(got.length <= P.realm.retainMax)
     assert.equal(new Set(got).size, got.length)
@@ -67,7 +68,8 @@ describe('계승 가신', () => {
       assert.equal(next.heroes[id]!.faction, 'saro')
       assert.equal(next.heroes[id]!.at, cap)
     }
-    assert.equal(next.heroes[foe.id]!.mu, 10)
+    // 처음 몸으로 — 지난 판에서 자란 솜씨(mu 10)는 따라오지 않는다 (회의 결정 META §7-3)
+    if (got.includes(foe.id) && baseMu !== undefined) assert.equal(next.heroes[foe.id]!.mu, baseMu)
     if (led !== undefined) assert.equal(next.armies[led.id]!.hero, null)
   })
 

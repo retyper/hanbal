@@ -8,6 +8,7 @@
  * 순수한 셈만 한다 — 고른 것을 이 기기에 두는 일은 화면(ui/realm/legacy.ts)이 한다.
  */
 import { P } from '../tune/params.ts'
+import { HERO_POOL } from './data/heroes-pool.ts'
 import { isRuler } from './heroes.ts'
 import type { Hero, Realm } from './types.ts'
 
@@ -54,7 +55,11 @@ export function bringRetainers(r: Realm, list: readonly Hero[]): string[] {
     if (out.includes(x.id) || isRuler(r, x.id) || x.id.endsWith('-ruler')) continue
     // 그 판에서 남의 군대를 이끌던 사람이면 군대에서 빠진다
     for (const a of Object.values(r.armies)) if (a.hero === x.id) a.hero = null
-    r.heroes[x.id] = { ...snapshot(x), faction: me, at: cap }
+    // 처음 몸으로 — 지난 판에서 자란 솜씨는 데려오지 않는다 (회의 결정 META §7-3 · 형 10-24: "오버스펙으로 시작"). 몸은 이 판의 그 사람 · 떠돌이 명부 · 없으면(판에서 난 아이) 데려온 그대로
+    const base = r.heroes[x.id] ?? HERO_POOL.find((p) => p.id === x.id)
+    r.heroes[x.id] = base !== undefined
+      ? { ...structuredClone(base), faction: me, status: 'free', captor: null, at: cap, post: null, bond: P.realm.bondStart }
+      : { ...snapshot(x), faction: me, at: cap }
     out.push(x.id)
   }
   if (out.length > 0) r.retainers = out
