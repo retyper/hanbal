@@ -32,6 +32,8 @@ import { alertRange, seenMix, visibleRange } from '../../realm/intel.ts'
 import { advance, concealOf, draftable, forceOf, neighbors, newArmyId, otherEnd, planned, rationCost, rationExtra, seasonOf, seenMarches } from '../../realm/season.ts'
 import { PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bowUpCost, escapeChance, plotAgents, plotChance, plotCost, plotTargets } from '../../realm/plots.ts'
 import { allianceWhy, leaderOf, tookRecently, truceWhy, winningAgainst } from '../../realm/stance.ts'
+// 등용 대사 — 장수마다 한 마디 (형 10-24: "장수마다 각각 등용 대사 개성 있고 다양하고 독특하게")
+import { HIRE_BY_TRAIT, HIRE_LINE, HIRE_PLAIN } from '../../realm/data/hire-lines.ts'
 import { DESTS, DEST_IDS, EXP_SEASONS, destReachable, expAmount, expBlock, expOdds, onExpedition } from '../../realm/expedition.ts'
 import { foundable, joinable, partiesOf, partyCost, partyMoves, partySize } from '../../realm/parties.ts'
 import { canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, together, inheritOf, isRuler, persuadeDropOf, recruitChance, resistOf, wanderersFor } from '../../realm/heroes.ts'
@@ -3136,7 +3138,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (x !== undefined) scenes.push(hireSceneHtml(x, 'expedition'))
       } else if (l.kind === 'birth' && l.faction === me()) {
         const kid = r.heroes[l.hero], a = r.heroes[l.a], b = r.heroes[l.b]
-        const traits = (kid?.traits ?? []).map((t) => `<span class="ctr${t === l.surprise ? ' new' : ''}">${esc(TRAIT[t]?.name ?? t)}${t === l.surprise ? ' · 타고났다' : ''}</span>`).join('')
+        const traits = (kid?.traits ?? []).map((t) => `<span class="ctr${t === l.surprise ? ' new' : ''}" data-tip="${esc(TRAIT[t]?.line ?? '')}">${esc(TRAIT[t]?.name ?? t)}${t === l.surprise ? ' · 타고났다' : ''}</span>`).join('')
         scenes.push(`<div class="cere birth"><i class="cbg" style="${sceneBg('event-newborn')}"></i><i class="cglow"></i>`
           + `<div class="ckid">${bust(kid, 'cf big')}<div class="cpar">${bust(a, 'cf sm')}${bust(b, 'cf sm')}</div></div>`
           + `<div class="cw"><b>탄생</b><span>${esc(a?.name ?? '')}·${esc(b?.name ?? '')}의 아이 ${esc(josa(kid?.name ?? '', '이', '가'))} 자라 나섰다</span>${traits !== '' ? `<div class="ctrs">${traits}</div>` : ''}</div></div>`)
@@ -3174,11 +3176,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const cuts = src !== '' ? `<div class="hbands">${[1, 2, 3].map((k) => `<i class="hb b${k}"><i style="background-image:${hd}url('${src}')"></i></i>`).join('')}</div>` : ''
     let motes = ''
     for (let i = 0; i < 18; i++) motes += `<i style="--x:${(i * 41) % 100}%;--t:${((i * 0.37) % 2.2).toFixed(2)}s;--sp:${(2.6 + ((i * 0.61) % 1.8)).toFixed(2)}s"></i>`
-    const chips = ts.map((t, i) => `<span class="ctr" style="--g:${GRADE_COLOR[t.grade]};animation-delay:${(2 + i * 0.18).toFixed(2)}s">${esc(t.name)}</span>`).join('')
+    // 특성 칩 — 누르고 있거나 올려 두면 무슨 특성인지 (형 10-24: "배신의 상·매혹 … 터치하고 있으면 설명, 손 떼면 없애고")
+    const chips = ts.map((t, i) => `<span class="ctr" data-tip="${esc(t.line)}" style="--g:${GRADE_COLOR[t.grade]};animation-delay:${(2.36 + i * 0.18).toFixed(2)}s">${esc(t.name)}</span>`).join('')
     const line = how === 'persuade' ? '마음을 돌려 우리 장수가 되었다' : how === 'expedition' ? '원정길에서 만나 우리를 따라왔다' : '떠돌던 인재가 우리를 찾아왔다'
     return `<div class="cere hire" style="--gc:${gc}"><i class="cglow"></i><div class="cmote">${motes}</div>`
       + `<div class="hframe">${face}<i class="hfr"></i></div>${cuts}<i class="cflash"></i>`
-      + `<div class="cw"><b>등용</b><span class="hname">${esc(x.name)}</span><span>${line}</span><em>「주군을 모시겠습니다」</em>${chips !== '' ? `<div class="ctrs">${chips}</div>` : ''}</div></div>`
+      + `<div class="cw"><b>등용</b><span class="hname">${esc(x.name)}</span><span>${line}</span><em>「${esc(HIRE_LINE[x.id] ?? HIRE_BY_TRAIT[x.traits?.[0] ?? ''] ?? HIRE_PLAIN)}」</em>${chips !== '' ? `<div class="ctrs">${chips}</div>` : ''}`
+      // 확인 — 눌러서 판으로 돌아간다 (형 10-24: "등용되고 나서 확인 버튼 · 게임으로 돌아갈 수가 없어")
+      + `<button class="btn pri cok">확인</button></div></div>`
   }
 
   /** 큰 장면을 차례로 — 누르면 다음 (혼례·등용·탄생·태몽) */
@@ -3195,8 +3200,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (hire) window.setTimeout(() => buzz([20, 40, 20, 40, 60]), P.realm.hirePopMs)
       let gone = false
       const close = (): void => { if (gone) return; gone = true; el.classList.add('out'); window.setTimeout(() => { el.remove(); show(i + 1) }, 450) }
-      el.addEventListener('click', (e) => { e.stopPropagation(); close() })
-      window.setTimeout(close, CEREMONY_MS)
+      // 특성 칩을 누르면(설명을 보려고) 장면이 닫히지 않는다 · 누르고 있는 동안은 저절로도 안 닫힌다
+      let reading = false
+      el.addEventListener('pointerdown', (e) => { reading = (e.target as HTMLElement).closest('.ctr[data-tip]') !== null })
+      el.addEventListener('click', (e) => { e.stopPropagation(); if ((e.target as HTMLElement).closest('.ctr[data-tip]') !== null) return; close() })
+      // 확인 단추는 장면 밖 누르기와 상관없이 언제나 닫는다 (위에 무엇이 덮여 있어도)
+      el.querySelector('.cok')?.addEventListener('click', (e) => { e.stopPropagation(); close() })
+      const until = (): void => { if (reading) { window.setTimeout(until, 600); return } close() }
+      for (const end of ['pointerup', 'pointercancel', 'pointerleave'] as const) el.addEventListener(end, () => { reading = false })
+      window.setTimeout(until, CEREMONY_MS)
     }
     window.setTimeout(() => show(0), lead)
   }

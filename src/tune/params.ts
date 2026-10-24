@@ -1580,12 +1580,12 @@ export const SPEC = {
     // 깃발 하나에 제 차례 하나 — 다음 깃발은 앞 깃발 연출이 걷힌 뒤에 (형 10-24: "카드 공격들 이펙트가 아직도 너무 한꺼번에 · 하나씩")
     warBeatStep: k(0.75, 0.1, 2, 0.05, '싸움: 깃발 차례의 기본 길이(초) — 연출 길이를 모를 때'),
     /** 등용 장면 — 칼금 셋이 나는 때(ms) · 펑 하고 얼굴이 다 드러나는 때(ms) (CSS 의 hcut·hpop 지연과 같다) */
-    hireCutMs: [100, 430, 760] as const,
+    hireCutMs: [100, 560, 1020] as const,
     /** 돌아온 장수 알림이 머무는 시간(ms) — 큰 장면이 떠 있는 동안은 세지 않는다 */
     backToastMs: 7000,
     /** 배우는 판 — 한 단계에 이만큼(ms) 머물면 「막혔으면 건너뛰기」가 뜬다 */
     tutStuckMs: 25000,
-    hirePopMs: 1120,
+    hirePopMs: 1480,
     bridalShotS: k(5, 2, 12, 0.5, '신방 장면: 한 장이 머무는 시간(초)'),
     warBeatMin: k(0.5, 0.2, 2, 0.05, '싸움: 깃발 차례 가장 짧게(초)'),
     warBeatLong: k(1.25, 0.3, 3, 0.05, '싸움: 깃발 차례 가장 길게(초)'),
@@ -2352,9 +2352,11 @@ type Values<T> = { -readonly [K in keyof T]: T[K] extends Knob ? number : Values
 function materialize<T extends object>(spec: T): Values<T> {
   const out: Record<string, unknown> = {}
   for (const [key, val] of Object.entries(spec)) {
+    // 손잡이(k)는 값으로 · 맨 숫자·글·배열은 그대로 · 묶음만 안으로 — 배열·맨 숫자를 묶음으로 풀면 {} 가 된다
+    // (10-24: hireCutMs 가 「not iterable」로 등용 장면이 닫히지 않았고, tutStuckMs·backToastMs·hirePopMs 가 {} 였다)
     out[key] = val !== null && typeof val === 'object' && 'v' in val
       ? (val as Knob).v
-      : materialize(val as object)
+      : val === null || typeof val !== 'object' || Array.isArray(val) ? val : materialize(val as object)
   }
   return out as Values<T>
 }

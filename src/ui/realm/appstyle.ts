@@ -175,7 +175,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cere.out { animation: cout .45s ease-in forwards; }
 /* 등용 — 하얀 번쩍 → 특성 빛 → 큰 얼굴이 떠오른다 · 이름 · 「주군을 모시겠습니다」 · 특성이 하나씩 */
 .ap .cere.hire { background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--gc) 40%, #0000) 0, #0000 62%), #0b0907; }
-.ap .cere.hire .cflash { position: absolute; inset: 0; background: #fff; opacity: 0; animation: hflash .9s ease-out 1.12s forwards; z-index: 5; pointer-events: none; }
+.ap .cere.hire .cflash { position: absolute; inset: 0; background: #fff; opacity: 0; animation: hflash .9s ease-out 1.48s forwards; z-index: 5; pointer-events: none; }
 @keyframes hflash { 0% { opacity: 1; } 35% { opacity: .85; } 100% { opacity: 0; } }
 .ap .cere.hire .cglow { position: absolute; left: 50%; top: 40%; width: min(120vw, 900px); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%;
   background: radial-gradient(circle, color-mix(in srgb, var(--gc) 55%, #fff0) 0, #0000 60%); animation: hglow 3.2s ease-in-out infinite alternate; pointer-events: none; }
@@ -185,33 +185,33 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 @keyframes hmote { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: .9; } 100% { opacity: 0; transform: translateY(-80vh); } }
 /* 화면 절반쯤 — 컷인 띠 셋(촥·촥·촥) 뒤 1.12초에 펑 하고 액자 속 얼굴이 다 드러난다 */
 /* 액자 창(그림 자리)이 곧 .hframe — 액자(frame-hire.png 900×921, 창 193~707 × 222~736)는 그 둘레로 넘친다 */
-.ap .cere.hire .hframe { --hw: min(56vw, 38vh); --hin: 0%; position: relative; z-index: 1; width: var(--hw); aspect-ratio: 1; margin: calc(var(--hw) * .43) 0 calc(var(--hw) * .36); }
+.ap .cere.hire .hframe { --hw: min(52vw, 31vh); --hin: 0%; position: relative; z-index: 1; width: var(--hw); aspect-ratio: 1; margin: calc(var(--hw) * .43) 0 calc(var(--hw) * .36); }
 .ap .cere.hire .hframe .hbust { position: absolute; inset: var(--hin, 9%); width: calc(100% - 2 * var(--hin, 9%)); height: calc(100% - 2 * var(--hin, 9%)); object-fit: cover; border-radius: 4px;
-  box-shadow: 0 0 50px var(--gc), 0 14px 34px #000c; opacity: 0; animation: hpop .6s cubic-bezier(.2, 1.3, .35, 1) 1.12s both; }
+  box-shadow: 0 0 50px var(--gc), 0 14px 34px #000c; opacity: 0; animation: hpop .6s cubic-bezier(.2, 1.3, .35, 1) 1.48s both; }
 .ap .cere.hire .hframe .hfr { position: absolute; left: -37.5%; top: -43.2%; width: 175.1%; height: 179.2%; background: url(__ART__ui/frame-hire.png) center / 100% 100% no-repeat; filter: drop-shadow(0 6px 14px #000d) drop-shadow(0 0 18px color-mix(in srgb, var(--gc) 45%, #0000));
-  opacity: 0; animation: hpop .6s cubic-bezier(.2, 1.3, .35, 1) 1.12s both; }
-/* 컷인 — 화면을 위아래로 가로지르는 사선 띠 셋(0.10 · 0.43 · 0.76초). 띠마다 그림의 한 곳을 화면 가득 크게 · 하얀 테 · 들어오며 번쩍 · 안에서 천천히 밀린다.
-   1.12초에 띠들이 갈라져 날아가고 펑 — 액자 속 얼굴 */
+  opacity: 0; animation: hpop .6s cubic-bezier(.2, 1.3, .35, 1) 1.48s both; }
+/* 컷인 — 사선 띠 셋이 **하나씩 차례로**(0.10 · 0.56 · 1.02초): 띠 하나가 들어와 머물다, 다음 띠가 들어올 때 빠진다 (형 10-24: "셋이 동시에가 아니라 하나씩 보였다 바뀌었다").
+   띠마다 그림의 한 곳을 크게(너무 크지 않게 — 형 10-24: "너무 많이 확대") · 하얀 테 · 들어오며 번쩍 · 안에서 천천히 밀린다. 1.48초에 펑 — 액자 속 얼굴 */
 .ap .cere.hire .hbands { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }
-.ap .cere.hire .hb { position: absolute; top: -12%; height: 124%; width: 34vw; min-width: 150px; overflow: hidden; transform: skewX(-16deg);
+.ap .cere.hire .hb { position: absolute; top: -12%; height: 124%; width: 44vw; min-width: 190px; overflow: hidden; transform: skewX(-16deg);
   border-left: 5px solid #fff; border-right: 5px solid #fff; box-shadow: 0 0 26px #fff9, 0 0 60px var(--gc); background: #000;
-  opacity: 0; animation: hbin .26s cubic-bezier(.15, 1, .3, 1) var(--bd) both, hbout .3s cubic-bezier(.5, 0, .9, .4) 1.12s forwards; }
+  opacity: 0; animation: hbin .26s cubic-bezier(.15, 1, .3, 1) var(--bd) both, hbout .2s cubic-bezier(.5, 0, .9, .4) var(--bo) forwards; }
 .ap .cere.hire .hb > i { position: absolute; inset: 0 -45%; background-repeat: no-repeat; background-size: auto var(--bz); background-position: var(--bx) var(--by);
   transform: skewX(16deg); animation: hbpan 1.3s ease-out var(--bd) both; }
 /* 띠 하나 — 화면 자리(left) · 들어오는 쪽(--from) · 그림의 어디를(--bx --by) 얼마나 크게(--bz) */
 .ap .cere.hire { animation-duration: .12s; }
 /* 띠마다 그림의 옆 소품(무기·손 쪽) → 반대 옆(머리·어깨 장신구) → 눈빛 */
-.ap .cere.hire .hb.b1 { --bd: .10s; left: 2vw; --from: -110%; --bx: 10%; --by: 62%; --bz: 230%; }
-.ap .cere.hire .hb.b2 { --bd: .43s; left: 64vw; --from: 110%; --bx: 88%; --by: 30%; --bz: 240%; }
-.ap .cere.hire .hb.b3 { --bd: .76s; left: 33vw; --from: -110%; --bx: 50%; --by: 21%; --bz: 390%; z-index: 1; }
+.ap .cere.hire .hb.b1 { --bd: .10s; --bo: .56s; left: 6vw; --from: -110%; --bx: 10%; --by: 62%; --bz: 150%; }
+.ap .cere.hire .hb.b2 { --bd: .56s; --bo: 1.02s; left: 50vw; --from: 110%; --bx: 88%; --by: 30%; --bz: 160%; }
+.ap .cere.hire .hb.b3 { --bd: 1.02s; --bo: 1.48s; left: 28vw; --from: -110%; --bx: 50%; --by: 24%; --bz: 210%; }
 @keyframes hbin { 0% { opacity: 1; transform: skewX(-16deg) translateY(var(--from)); filter: brightness(3); } 70% { filter: brightness(1.4); } 100% { opacity: 1; transform: skewX(-16deg); filter: none; } }
 @keyframes hbout { to { opacity: 0; transform: skewX(-16deg) scale(1.6, 1.15); filter: brightness(2.5); } }
 @keyframes hbpan { from { transform: skewX(16deg) scale(1.12); } to { transform: skewX(16deg) scale(1); } }
 @keyframes hpop { 0% { opacity: 0; transform: scale(1.18); filter: brightness(2.6); } 45% { opacity: 1; } 100% { opacity: 1; transform: none; filter: none; } }
 @keyframes hrise { 0% { opacity: 0; transform: scale(.82) translateY(18px); filter: brightness(3) blur(10px); } 60% { opacity: 1; filter: brightness(1.2) blur(0); } 100% { opacity: 1; transform: none; filter: none; } }
-.ap .cere.hire .cw { animation-delay: 1.5s; } .ap .cere.hire .cw > b { color: #fff4d8; text-shadow: 0 0 22px var(--gc), 0 3px 6px #000; }
+.ap .cere.hire .cw { animation-delay: 1.86s; } .ap .cere.hire .cw > b { color: #fff4d8; text-shadow: 0 0 22px var(--gc), 0 3px 6px #000; }
 .ap .cere.hire .hname { font-size: clamp(22px, 6vw, 30px); font-weight: 800; color: #fff; text-shadow: 0 2px 8px #000; }
-.ap .cere.hire em { font-style: normal; font-family: var(--display); font-size: clamp(18px, 5vw, 24px); color: #ffe6b0; text-shadow: 0 2px 8px #000; opacity: 0; animation: wrin .6s ease-out 1.9s both; }
+.ap .cere.hire em { font-style: normal; font-family: var(--display); font-size: clamp(18px, 5vw, 24px); color: #ffe6b0; text-shadow: 0 2px 8px #000; opacity: 0; animation: wrin .6s ease-out 2.26s both; }
 .ap .cere.hire .ctr { border-color: var(--g); opacity: 0; animation: wrin .4s ease-out both; }
 @media (prefers-reduced-motion: reduce) { .ap .cere.hire .cflash, .ap .cere.hire .cmote, .ap .cere.hire .cglow, .ap .cere.hire .hbands { display: none; } }
 @keyframes cin { from { opacity: 0; } to { opacity: 1; } } @keyframes cout { to { opacity: 0; } }
@@ -246,6 +246,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cere .ctr { padding: 3px 10px; border-radius: 999px; background: #1a120ccc; border: 1px solid #c8a060; color: #f6e6c0; font-size: 13px; opacity: 0; animation: wrin .5s ease-out both; }
 .ap .cere .ctr:nth-child(1) { animation-delay: 1.5s; } .ap .cere .ctr:nth-child(2) { animation-delay: 1.8s; } .ap .cere .ctr:nth-child(3) { animation-delay: 2.1s; } .ap .cere .ctr:nth-child(4) { animation-delay: 2.4s; }
 .ap .cere .ctr.new { border-color: #ffd27a; color: #fff2c0; box-shadow: 0 0 14px #ffd27aaa; }
+/* 특성 칩 — 누르고 있거나 올려 두면 설명 (tips.ts) · 그동안 장면이 닫히지 않는다 */
+.ap .cere .ctr[data-tip] { cursor: help; -webkit-user-select: none; user-select: none; }
+/* 확인 — 글 맨 아래 · 얼굴이 다 드러난 뒤 나타난다 */
+.ap .cere .cok { position: relative; z-index: 8; margin-top: 6px; min-width: 140px; padding: 11px 28px; font-size: 16px; pointer-events: auto;
+  opacity: 0; animation: cokin .4s ease-out 2.2s both; }
+@keyframes cokin { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .ap .cere *, .ap .cere { animation-duration: .01s !important; animation-delay: 0s !important; } }
 @keyframes sfxband { 0% { transform: translateY(-50%) scale(1.06); } 100% { transform: translateY(-50%) scale(1); } }
 @keyframes sfxin { 0% { transform: scale(.7) translateY(16px); } 25% { transform: scale(1) translateY(0); } 100% { transform: scale(1.04); } }
