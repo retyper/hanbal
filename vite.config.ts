@@ -20,11 +20,22 @@ const stripTuneLabels = (): Plugin => ({
   },
 })
 
+/**
+ * 빌드 이름 — 번들 안(__BUILD_ID__)과 dist/version.txt 에 같은 것을 적는다. 켜 둔 판이 새 배포를 알아채게 (src/ui/realm/update.ts · 형 10-24)
+ */
+const BUILD_ID = (process.env.GITHUB_SHA ?? '').slice(0, 10) || String(Date.now())
+const buildStamp = (): Plugin => ({
+  name: 'hanbal-build-stamp',
+  apply: 'build',
+  generateBundle() { this.emitFile({ type: 'asset', fileName: 'version.txt', source: BUILD_ID }) },
+})
+
 // base는 GitHub Pages 서브경로 배포를 위해 빌드 시 주입한다.
 // 로컬 dev/preview는 '/' 로 동작.
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   base: process.env.PUBLIC_BASE ?? '/',
-  plugins: [stripTuneLabels()],
+  plugins: [stripTuneLabels(), buildStamp()],
+  define: { __BUILD_ID__: JSON.stringify(command === 'build' ? BUILD_ID : 'dev') },
   build: {
     target: 'es2022',
     // 칠십팔국 시험판(realm.html)은 활터와 번들을 나눈다 — 시험판이 활터의 첫 화면을 건드리지 않게
@@ -42,4 +53,4 @@ export default defineConfig({
     // 이 경고선을 넘으면 라이브러리를 추가한 게 아닌지 의심할 것.
     chunkSizeWarningLimit: 150,
   },
-})
+}))

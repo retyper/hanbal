@@ -21,6 +21,7 @@ import { account, deleteAccount, finishSignIn, signIn, signOut } from './net/aut
 import { canSync, makeSync } from './net/sync.ts'
 import { bringRetainers } from './realm/legacy.ts'
 import { applyTier } from './realm/tier.ts'
+import { watchUpdates } from './ui/realm/update.ts'
 
 const KEY = 'hanbal.realm.v2'
 /** 한 계절 앞의 저장 — 지금 것이 깨졌으면 이걸로 되살린다 */
@@ -301,6 +302,8 @@ void finishSignIn()
   .catch((e: unknown) => console.warn('[계정] 로그인 못 함:', e))
   .finally(() => { if (account() !== null) void sync.start(); app.cloudChanged() })
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sync.flush() })
+// 새 빌드가 올라왔으면 띠로 알린다 — 켜 둔 판이 옛 코드로 계속 돌지 않게 (형 10-24)
+watchUpdates(root, () => sync.flush())
 
 // 홈 화면에 앱으로 (형: "매번 웹페이지로 플레이해야돼?") — 활터와 같은 워커. https 에서만, 로드가 끝난 뒤에 (main.ts 와 같은 규칙)
 if (location.protocol === 'https:' && 'serviceWorker' in navigator) {

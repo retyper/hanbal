@@ -48,6 +48,7 @@ import { GROW_CSS, HERO_CSS, TITLE_MEAN, bondChip, growthHtml, heroRadar, nameHt
 import { APP_CSS, CLOUD_CSS, SEASONP_CSS, UI_CSS } from './appstyle.ts'
 import { GOAL_CSS, goalBandHtml, goalRowsHtml } from './goalband.ts'
 import { installTips, TIP_CSS } from './tips.ts'
+import { UPDATE_CSS } from './update.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
 import { APPROACH_DOES, APPROACH_NAME, HARD_LINE, WAR_CSS, openWar } from './battlefield.ts'
 import { attachZoom } from './zoom.ts'
@@ -366,7 +367,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = TIP_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + CLOUD_CSS + WINFX_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
+  style.textContent = TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + CLOUD_CSS + WINFX_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
   installTips(root)
