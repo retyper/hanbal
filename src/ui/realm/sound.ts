@@ -32,7 +32,7 @@ export const PICK = {
   // 깃발 소리 — 깃발마다 제 소리 (형 10-23: "돌격 방진 바위 굴리기 … 다 그만의 이펙트와 사운드") · 맞쏘기는 화살비 소리를 흩어 친다
   // 싸움이 열릴 때 — 종 「댕」 한 번 · 북 두 번 (형 10-23: "싸움 발생할 때 댕 하고 이상한 소리 · 소리 설정 웹페이지에서 바꿀 수 있게") — k1 은 옛 활터 소리
   war_bell: 'c5', war_drum: 'c4', draft_go: 'c4', arm_go: 'c6',
-  march_go: 'c8', cmd_counter: 'c10', cmd_art: 'c2', cmd_capture: 'c1', cmd_charge: 'm1', cmd_drum: 'c1', cmd_duel: 'c1', cmd_fire: 'c3', cmd_ford: 'c5', cmd_gate: 'c4', cmd_guard: 'c3', cmd_height: 'c5', cmd_hold: 'c2', cmd_horse: 'c4', cmd_open: 'c3', cmd_ram: 'c3', cmd_retreat: 'c4', cmd_rocks: 'c1',
+  march_go: 'c8', cmd_counter: 'c10', cmd_art: 'c2', cmd_capture: 'c1', cmd_charge: 'm1', cmd_drum: 'c1', cmd_duel: 'c1', cmd_fire: 'c3', cmd_ford: 'c5', cmd_gate: 'c4', cmd_guard: 'c3', cmd_height: 'c5', cmd_hold: 'h1', cmd_horse: 'c4', cmd_open: 'c3', cmd_ram: 'c3', cmd_retreat: 'c4', cmd_rocks: 'c1',
   tap_arms: 'g1', tap_coin: 'g1', tap_brush: 'g1', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'g1',
 } as const
 /** ogg 가 아닌 후보 — 형이 받아 온 것은 받은 꼴 그대로 · 공유마당 음악은 mp3 · 누르는 소리는 브라우저로 잘라 낸 wav */
@@ -40,6 +40,7 @@ const EXT: Readonly<Partial<Record<string, string>>> = {
   bgm_map_f: 'mp3', bgm_map_g: 'mp3', bgm_win_a: 'mp3',
   ...Object.fromEntries(['bgm_title', 'bgm_war', 'bgm_lose'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'mp3']))),
   war_cry_g1: 'wav', war_cry_g2: 'wav', war_cry_g3: 'wav',
+  cmd_hold_h1: 'mp3', // 방진 — 형이 받아 온 「탱탱」 쇠판 소리 (10-24)
   ...Object.fromEntries(['battle_clash', 'battle_crit'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'mp3']))),
   ...Object.fromEntries(['tap_arms', 'tap_coin', 'tap_brush', 'tap_move', 'tap_bell', 'tap_drum', 'tap_map', 'tap_cancel'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'wav']))),
 }

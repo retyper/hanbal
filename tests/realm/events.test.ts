@@ -116,3 +116,20 @@ describe('사건 — 답', () => {
     assert.ok(found, '제사를 한 번은 지내야 한다')
   })
 })
+
+describe('망명자 — 가만히 있으면 장수가 늘지 않는다 (형 10-24: "32년 넘기기만 했는데 장수가 17명")', () => {
+  it('답하지 않으면 돌려보낸다 · 받으면 장수가 하나 는다', () => {
+    const base = byeonhanMini(3)
+    base.stock[base.player]!.grain = 500
+    const n0 = Object.values(base.heroes).filter((h) => h.faction === base.player).length
+    const card: Card = { kind: 'exile', season: base.season }
+    const quiet = structuredClone(base)
+    quiet.card = card
+    resolveCard(quiet, [], lines())
+    assert.equal(Object.values(quiet.heroes).filter((h) => h.faction === quiet.player).length, n0)
+    const yes = structuredClone(base)
+    yes.card = card
+    resolveCard(yes, [{ kind: 'card', faction: yes.player, pick: 0 }], lines())
+    assert.equal(Object.values(yes.heroes).filter((h) => h.faction === yes.player).length, n0 + 1)
+  })
+})

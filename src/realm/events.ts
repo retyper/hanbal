@@ -56,7 +56,12 @@ function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w:
     add('pirates', 0.6, { node: port })
     if (y === 0 || y === 3) add('whale', 0.4, { node: port })
   }
-  if (poolFree(r).length > 0) add('exile', 0.4)
+  // 망명자 — 떠돌이처럼 장수가 모자란 나라로 (형 10-24: "32년 넘기기만 했는데 장수가 17명" — 늘어난 장수의 7할이 이 카드였다)
+  if (poolFree(r).length > 0) {
+    const towns = Object.values(r.nodes).filter((n) => n.owner === f && n.kind !== 'sodo').length
+    const need = Math.max(P.realm.wandererNeedMin, Math.min(1, ((towns + 1) / (heroes.length + 1)) * P.realm.wandererNeedMul))
+    add('exile', P.realm.cardExileW * need)
+  }
   if (Object.values(r.nodes).some((n) => n.kind === 'sodo')) add('fugitive', 0.5)
   return out
 }
@@ -109,7 +114,7 @@ function setHarvest(r: Realm, f: string, mul: number): void {
   ;(r.harvestMod ??= {})[f] = { year, mul: had !== undefined && had.year === year ? had.mul * mul : mul }
 }
 
-/** 1 — 이번 계절 카드의 답을 건다. 고르지 않았으면 첫째 */
+/** 1 — 이번 계절 카드의 답을 건다. 고르지 않았으면 첫째 (망명자만 둘째 — 돌려보낸다) */
 export function resolveCard(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
   const c = r.card
   const f = r.player
@@ -117,7 +122,8 @@ export function resolveCard(r: Realm, orders: readonly Order[], lines: ReportLin
   r.card = null
   if (c.season !== r.season || !cardValid(r, c)) return
   const o = orders.find((x): x is Extract<Order, { kind: 'card' }> => x.kind === 'card' && x.faction === f)
-  const pick: 0 | 1 = o?.pick === 1 ? 1 : 0
+  // 고르지 않으면 첫째 — 다만 망명자는 돌려보낸다 (가만히 있는데 장수가 느는 일이 없게 · 받으려면 눌러서)
+  const pick: 0 | 1 = o !== undefined ? (o.pick === 1 ? 1 : 0) : c.kind === 'exile' ? 1 : 0
   const R = P.realm
   const st = (r.stock[f] ??= { grain: 0, iron: 0 })
   const k = (what: string): number => roll(r.seed, r.season, `card-res:${c.kind}:${what}`)
@@ -196,7 +202,7 @@ export function resolveCard(r: Realm, orders: readonly Order[], lines: ReportLin
         const p = pool[Math.floor(k('who') * pool.length)]
         const at = homeOf(r, f)
         if (p !== undefined && at !== null) {
-          pay(grainCost(r, f, 0.04))
+          pay(grainCost(r, f, R.cardExileCost))
           r.heroes[p.id] = { ...structuredClone(p), faction: f, status: 'free', captor: null, at, post: null, bond: R.bondHired }
           hero = p.id
         }

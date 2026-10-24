@@ -168,3 +168,4 @@ war_drum_c4.ogg  Freesound · ID 621326 (https://freesound.org/s/621326/) · "Ro
 march_go_c8.ogg  Freesound · ID 480675 (https://freesound.org/s/480675/) · "R27-40-March on Gravel Road" + war horn 섞음 · craigsmith · adharca · CC0
 war_bell_c5.ogg  공유마당 · 「징소리B」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254593
 bgm_bridal_c9.ogg  공유마당 · 「국악연주곡_반우반계 반엽 '남하여' 연주 1」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13263121
+cmd_hold_h1.mp3  형이 직접 받아 옴 (10-24 · 방진 「탱탱」 쇠판 소리) · 출처·라이선스 형에게 확인 중 — 받은 곳을 적을 것

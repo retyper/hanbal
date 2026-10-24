@@ -1595,8 +1595,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const ans = answers[`card:${c.season}`]
     const pick = ans === undefined ? null : ans ? 0 : 1
     let h = `<div class="cardc${info.bad ? ' bad' : ''}"><img class="cimg" src="${ART}event/${info.art}.jpg" alt=""><div class="cb"><b>${icon(info.icon, 'cic')}사건 · ${esc(info.name)}</b><p>${esc(sub(info.line))}</p><div class="copts">`
+    // 고르지 않았을 때 걸리는 답 — 엔진(events.resolveCard)과 같게: 망명자만 둘째(돌려보낸다)
+    const fallback = c.kind === 'exile' ? 1 : 0
     info.opts.forEach((o, i) => {
-      h += `<button class="copt${pick === i ? ' on' : ''}" data-act="card-pick" data-v="${i}"><b>${esc(sub(o.name))}</b><span>${esc(sub(o.does))}</span>${i === 0 && pick === null ? '<i>고르지 않으면 이것</i>' : ''}</button>`
+      h += `<button class="copt${pick === i ? ' on' : ''}" data-act="card-pick" data-v="${i}"><b>${esc(sub(o.name))}</b><span>${esc(sub(o.does))}</span>${i === fallback && pick === null ? '<i>고르지 않으면 이것</i>' : ''}</button>`
     })
     return h + `</div></div></div>`
   }
