@@ -3313,7 +3313,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (document.visibilityState === 'visible') {
         if (capt) ding(snd(el.classList.contains('lost') ? 'defeat' : 'capture'), 0.5)
         else if (hire) { for (const t of P.realm.hireCutMs) window.setTimeout(() => ding(snd('cmd_duel'), 0.32), t); window.setTimeout(() => ding(snd('dex_new'), 0.55), P.realm.hirePopMs) }
-        else ding(snd(el.classList.contains('wed') ? 'feast' : 'birth'), 0.5)
+        else ding(snd(el.classList.contains('wed') ? 'wed' : 'birth'), 0.5) // 혼례는 형이 고른 국악 가락 (10-24 · 전엔 종 세 번)
       }
       if (hire) window.setTimeout(() => buzz([20, 40, 20, 40, 60]), P.realm.hirePopMs)
       let gone = false

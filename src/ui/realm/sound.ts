@@ -11,7 +11,7 @@ export const PICK = {
   ui_order: 'b', ui_open: 'c', season_turn: 'c1',
   war_drums: 'a', arrow_volley: 'c3', horses: 'c',
   horn_victory: 'a', defeat: 'a', capture: 'b',
-  dex_new: 'c', birth: 'c', feast: 'a', envoy: 'b', coins: 'c',
+  dex_new: 'c', birth: 'c', feast: 'a', wed: 'c4', envoy: 'b', coins: 'c',
   amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b',
   // g1·g2·g3 — 공유마당(공공누리 제1유형 · CC BY)에서 받은 후보 (형 10-23: "공공누리에서 니가 싹 받아와서 쓸 수 있는 거면 다 해 · 출처표기 주의").
   // 출처는 sfx/CREDITS.txt 끝 · 첫 화면의 「소리 출처」. 형이 sound-picker.html 에서 듣고 고르면 글자만 바꾼다
@@ -101,7 +101,7 @@ export const sndFile = (slot: Slot, pick: string = PICK[slot]): string => `${slo
 
 /** 장면 그림(event-*) → 그 장면의 소리. 없으면 소리 없이 */
 export const SCENE_SOUND: Readonly<Record<string, Slot>> = {
-  'event-marriage': 'feast', 'event-festival': 'feast', 'event-egg-birth': 'birth', 'event-newborn': 'birth', 'event-dream': 'birth',
+  'event-marriage': 'wed', 'event-festival': 'feast', 'event-egg-birth': 'birth', 'event-newborn': 'birth', 'event-dream': 'birth',
   'event-alliance-oath': 'envoy', 'event-outside-envoy': 'envoy', 'event-iron-trade': 'coins',
   'event-relief-cavalry': 'horses', 'event-captive-persuade': 'capture', 'event-wanderer-arrives': 'horses',
 }
