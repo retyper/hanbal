@@ -1599,6 +1599,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         + `<div class="plmid"><b>${now.toLocaleString('ko-KR')}가구${dd !== 0 ? ` <i>${dd > 0 ? '+' : ''}${dd}</i>` : ''}</b><span class="plbar"><i style="width:${Math.min(100, Math.round((now / Math.max(1, room)) * 100))}%"></i></span><small>품 ${room.toLocaleString('ko-KR')} · ${yl} <small>계절마다 · 쌀은 한 해</small></small></div>`
         + `<button class="btn sm" data-act="pl-add" data-node="${id}" ${kAdd > 0 ? '' : 'disabled'}>+${kAdd > 0 ? kAdd : step}</button></div></div>`
     }
+    // 우리 고을인데 못 옮기는 곳 — 말없이 빠지면 버그처럼 보인다. 흐리게 두고 까닭을 (형 10-24: "개마들머리 점령했는데 인구 이동에 없다")
+    const cap = base.factions[me()]?.capital
+    for (const n of sorted(Object.values(base.nodes)).filter((x) => x.owner === me() && x.kind !== 'sodo' && !ids.includes(x.id) && (x.kind !== 'wild' || x.hh > 0 || (x.room ?? 0) > 0))) {
+      const why = cap !== undefined && migratePath(base, me(), cap, n.id, true) !== null ? '고갯길·물길이 이 철엔 막혀 못 오간다' : '도읍에서 우리 땅만 밟고는 닿지 않는다 — 사이에 남의 땅이 있다'
+      h += `<div class="plcard off"><div class="plch"><b>${esc(n.name)}</b><span class="mute">${NODE_KIND_NAME[n.kind]}</span></div><p class="mute">${why}</p></div>`
+    }
     const moved = ids.some((id) => d(id) !== 0)
     h += `<div class="btns plfoot"><button class="btn ghost" data-act="pl-reset" ${moved ? '' : 'disabled'}>처음대로</button>`
       + `<button class="btn pri home" data-act="pl-ok" ${pool === 0 && out > 0 ? '' : 'disabled'}>${pool > 0 ? `모아 둔 백성 ${pool}가구를 먼저 나눈다` : '이대로 나눈다'}</button></div>`

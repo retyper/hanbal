@@ -378,7 +378,7 @@ function threatened(r: Realm, node: string, faction: string): boolean {
  * (2026-10-21 형: "빈 곰골에 군대를 투입해 내땅으로만들었는데 가구 이동을 못하네" — 곰골은 가지산 소도로만 우리 땅과 이어졌다).
  * 이어지면 지나는 고을들, 아니면 null.
  */
-export function migratePath(r: Realm, faction: string, from: string, to: string): string[] | null {
+export function migratePath(r: Realm, faction: string, from: string, to: string, anySeason = false): string[] | null {
   if (from === to) return null
   const season = seasonOf(r.season)
   const prev = new Map<string, string>([[from, '']])
@@ -392,7 +392,7 @@ export function migratePath(r: Realm, faction: string, from: string, to: string)
       if (nx === null || prev.has(nx)) continue
       const n = r.nodes[nx]
       if (n === undefined || (n.kind === 'sodo' ? nx === to : n.owner !== faction)) continue
-      if (blockedWhy(ed, season) !== null) continue
+      if (!anySeason && blockedWhy(ed, season) !== null) continue
       prev.set(nx, cur)
       q.push(nx)
     }
