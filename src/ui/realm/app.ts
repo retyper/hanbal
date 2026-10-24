@@ -614,26 +614,28 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 우리 장수가 이번 계절 묶여 있는 까닭 — 원정 중 · 다침 · 자리를 비움 · 이번 계절 고른 일(자객·사신·원정·혼인·이끌기·맡기기). 쉬면 null.
    * 묶인 장수는 판에서 흐리게 하고 할 일 단추를 숨긴다 — 누르면 사정은 보인다 (형 10-23: "원정 중이거나 뭐 하고 있어서 못 쓰는 턴에는 … 정보만 보여 주게")
    */
-  function heroBusy(r: Realm, id: string): string | null {
+  /** 이번 계절 이 장수가 묶인 일 — [긴 말, 「~하는 중」 짧은 말] · 없으면 null */
+  function heroJob(r: Realm, id: string): readonly [string, string] | null {
     const h = r.heroes[id]
     if (h === undefined || h.faction !== me() || h.status !== 'free') return null
     const ex = (r.expeditions ?? []).find((x) => x.hero === id)
-    if (ex !== undefined) return `원정 중 · ${Math.max(1, ex.back - r.season + 1)}계절 뒤 돌아온다`
-    if (h.woundedUntil !== undefined && h.woundedUntil > r.season) return `다쳐 누웠다 · ${h.woundedUntil - r.season}계절`
-    if (h.awayUntil !== undefined && h.awayUntil >= r.season) return '자리를 비웠다'
-    if (plots.some((o) => o.kind === 'plot' && o.agent === id)) return '이번 계절 자객으로 간다'
+    if (ex !== undefined) { const n = Math.max(1, ex.back - r.season + 1); return [`원정 중 · ${n}계절 뒤 돌아온다`, `원정 중 · ${n}계절 뒤`] }
+    if (h.woundedUntil !== undefined && h.woundedUntil > r.season) { const n = h.woundedUntil - r.season; return [`다쳐 누웠다 · ${n}계절`, `다쳐 쉬는 중 · ${n}계절`] }
+    if (h.awayUntil !== undefined && h.awayUntil >= r.season) return ['자리를 비웠다', '길에 있는 중']
+    if (plots.some((o) => o.kind === 'plot' && o.agent === id)) return ['이번 계절 자객으로 간다', '자객으로 가는 중']
     const ev = Object.values(envoys).find((e) => e.hero === id)
-    if (ev !== undefined) return `이번 계절 ${r.factions[ev.to]?.name ?? ''}에 사신으로 간다`
+    if (ev !== undefined) { const to = r.factions[ev.to]?.name ?? ''; return [`이번 계절 ${to}에 사신으로 간다`, `${to}에 사신 가는 중`] }
     for (const o of heroOrders) {
-      if (o.kind === 'expedition' && o.hero === id) return '이번 계절 원정을 떠난다'
-      if (o.kind === 'wed' && (o.a === id || o.b === id)) return '이번 계절 혼인한다'
-      if (o.kind === 'assign' && o.hero === id && o.node !== null) return `이번 계절 ${josa(r.nodes[o.node]?.name ?? '', '을', '를')} 맡는다`
-      if (o.kind === 'lead' && o.hero === id) return '이번 계절 군대를 이끈다'
-      if (o.kind === 'persuade' && o.by === id) return '이번 계절 포로를 달랜다'
-      if (o.kind === 'cohabit' && o.hero === id) return '이번 계절 짝에게 가서 함께 지낸다'
+      if (o.kind === 'expedition' && o.hero === id) return ['이번 계절 원정을 떠난다', '원정 떠나는 중']
+      if (o.kind === 'wed' && (o.a === id || o.b === id)) return ['이번 계절 혼인한다', '혼인하는 중']
+      if (o.kind === 'assign' && o.hero === id && o.node !== null) { const n = r.nodes[o.node]?.name ?? ''; return [`이번 계절 ${josa(n, '을', '를')} 맡는다`, `${n} 맡으러 가는 중`] }
+      if (o.kind === 'lead' && o.hero === id) return ['이번 계절 군대를 이끈다', '군대 이끌러 가는 중']
+      if (o.kind === 'persuade' && o.by === id) return ['이번 계절 포로를 달랜다', '포로 달래는 중']
+      if (o.kind === 'cohabit' && o.hero === id) return ['이번 계절 짝에게 가서 함께 지낸다', '짝에게 가는 중']
     }
     return null
   }
+  function heroBusy(r: Realm, id: string): string | null { return heroJob(r, id)?.[0] ?? null }
 
   /** 이번 계절 아무 일도 안 맡은 우리 장수 — 군대·고을·사신·자객·원정·혼인 어디에도 없다 (군주·다친 이·떠나 있는 이 빼고) */
   function restingHeroes(p: Realm): Hero[] {
@@ -2035,9 +2037,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   // ───────── 장수 (docs/realm/HEROES.md §5)
   function heroRow(r: Realm, h: Hero, extra = ''): string {
     const seen = h.faction === me() || heroSeen(realm!, me(), h.id)
-    const busy = heroBusy(r, h.id)
-    return `<button class="hrow${isRuler(r, h.id) ? ' ruler' : ''}${busy !== null ? ' busy' : ''}" data-act="hero" data-id="${h.id}">${bust(h)}${busy !== null ? `<i class="hbz" title="${esc(busy)}">⧗</i>` : ''}<span class="hb">`
-      + `<b>${nameHtml(h.name)}${isRuler(r, h.id) ? ' <span class="mute">군주</span>' : ''}${seen ? '' : ' <span class="heard">이름만 들었다</span>'}</b><span class="mute">${esc(roleLine(r, h))}</span>`
+    const job = heroJob(r, h.id)
+    return `<button class="hrow${isRuler(r, h.id) ? ' ruler' : ''}${job !== null ? ' busy' : ''}" data-act="hero" data-id="${h.id}">${bust(h)}${job !== null ? `<i class="hbz">⧗</i>` : ''}<span class="hb">`
+      + `<b>${nameHtml(h.name)}${isRuler(r, h.id) ? ' <span class="mute">군주</span>' : ''}${seen ? '' : ' <span class="heard">이름만 들었다</span>'}</b>`
+      + (job !== null ? `<span class="hdo">⧗ ${esc(job[1])}</span>` : `<span class="mute">${esc(roleLine(r, h))}</span>`)
       + `<span class="tr3">${h.faction === me() && h.status === 'free' ? bondChip(r, h) : ''}${traitChips(h, seen)}</span>${extra}</span></button>`
   }
 

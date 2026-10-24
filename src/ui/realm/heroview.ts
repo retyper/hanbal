@@ -104,8 +104,10 @@ export const HERO_CSS = `
 .ap .hrow .hb .mute { white-space: normal; } .ap .hrow .tr3 { display: flex; flex-wrap: wrap; gap: 3px; }
 .ap .hrow.ruler { border-color: #8a7040; background: #262116; }
 /* 이번 계절 묶인 장수 — 흐리게, 얼굴 위 모래시계가 천천히 돈다 (누르면 사정은 보인다) */
-.ap .hrow { position: relative; } .ap .hrow.busy { opacity: .62; filter: saturate(.55); }
-.ap .hrow .hbz { position: absolute; left: 44px; top: 4px; font-style: normal; font-size: 14px; color: #f0d090; text-shadow: 0 0 4px #000; animation: hbz 2.4s ease-in-out infinite; }
+.ap .hrow { position: relative; } .ap .hrow.busy { opacity: .55; filter: saturate(.35); background: #0004; }
+.ap .hrow.busy img { filter: grayscale(.7) brightness(.8); }
+.ap .hrow .hdo { display: block; font-size: 13px; font-weight: 700; color: #f0d090; }
+.ap .hrow .hbz { position: absolute; left: 40px; top: 2px; font-style: normal; font-size: 20px; color: #f0d090; text-shadow: 0 0 4px #000; animation: hbz 2.4s ease-in-out infinite; }
 @keyframes hbz { 0%, 40% { transform: rotate(0); } 50%, 90% { transform: rotate(180deg); } 100% { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .ap .hrow .hbz { animation: none; } }
 .ap .banner.busyb { background: #2a2418; border: 1px dashed #8a7040; color: #e8d8b0; }
