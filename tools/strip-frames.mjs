@@ -9,13 +9,16 @@
  *   - 옆 칸 그림의 창끝이 넘어와 있다 → 칸마다 이어진 덩어리를 세어, **칸 가장자리에 걸친 작은 조각**은 지운다
  *     (떨어진 창처럼 칸 안에 온전히 있는 것은 남긴다)
  *
- *   node tools/strip-frames.mjs <알파가 있는 그림.png> <가로칸> <세로칸> <out.png> [띠높이=160] [안쪽=0.02]
+ *   - 몸에서 멀리 떨어진 작은 덩어리(모델이 칸 구석에 그려 넣은 얼굴 따위)도 지운다 — 떨어뜨린 칼처럼 몸 곁에 있는 것은 남는다
+ *
+ *   node tools/strip-frames.mjs <알파가 있는 그림.png> <가로칸> <세로칸> <out.png> [띠높이=160] [안쪽=0.02] [컷=1,2,…]
+ *     컷: 띠의 컷마다 쓸 원본 칸 번호(1부터) — 망친 칸을 이웃 칸으로 바꿔 끼울 때 (예: 2,2,3,4,5,6,7,8)
  * 컷 순서는 왼→오, 위→아래. 알파는 tools/key-png.mjs 로 먼저 따낸다.
  */
 import { writeFileSync } from 'node:fs'
 import { decodePng, encodePng, boxResize } from './png.mjs'
 
-const [file, colsS, rowsS, out, hS = '160', insetS = '0.02'] = process.argv.slice(2)
+const [file, colsS, rowsS, out, hS = '160', insetS = '0.02', mapS = ''] = process.argv.slice(2)
 if (out === undefined) throw new Error('쓰는 법은 이 파일 머리말에 있다')
 const cols = Number(colsS)
 const rows = Number(rowsS)
@@ -35,7 +38,7 @@ function cellImage(x0, y0, w, h) {
   for (let i = 0; i < w * h; i++) {
     if (lab[i] >= 0 || px[i * 4 + 3] < 40) continue
     const id = comps.length
-    const c = { n: 0, edge: false, cells: [] }
+    const c = { n: 0, edge: false, cells: [], x0: w, x1: 0, y0: h, y1: 0 }
     lab[i] = id
     stack.push(i)
     while (stack.length > 0) {
@@ -44,16 +47,24 @@ function cellImage(x0, y0, w, h) {
       c.cells.push(p)
       const x = p % w, y = (p - x) / w
       if (x === 0 || x === w - 1) c.edge = true
+      if (x < c.x0) c.x0 = x
+      if (x > c.x1) c.x1 = x
+      if (y < c.y0) c.y0 = y
+      if (y > c.y1) c.y1 = y
       for (const q of [x > 0 ? p - 1 : -1, x < w - 1 ? p + 1 : -1, y > 0 ? p - w : -1, y < h - 1 ? p + w : -1]) {
         if (q >= 0 && lab[q] < 0 && px[q * 4 + 3] >= 40) { lab[q] = id; stack.push(q) }
       }
     }
     comps.push(c)
   }
-  const big = Math.max(...comps.map((c) => c.n))
+  const main = comps.reduce((a, b) => (b.n > a.n ? b : a))
+  const big = main.n
+  const far = Math.max(w, h) * 0.06
   for (const c of comps) {
-    // 옆 칸에서 넘어온 조각 — 가장자리에 걸치고 작다 · 티끌 — 아주 작다
-    if ((c.edge && c.n < big * 0.25) || c.n < big * 0.004) for (const p of c.cells) px[p * 4 + 3] = 0
+    if (c === main) continue
+    // 옆 칸에서 넘어온 조각 — 가장자리에 걸치고 작다 · 티끌 — 아주 작다 · 몸에서 멀리 떨어진 작은 것
+    const gap = Math.max(main.x0 - c.x1, c.x0 - main.x1, main.y0 - c.y1, c.y0 - main.y1, 0)
+    if ((c.edge && c.n < big * 0.25) || c.n < big * 0.004 || (gap > far && c.n < big * 0.3)) for (const p of c.cells) px[p * 4 + 3] = 0
   }
   // 반투명 가장자리(알파 < 40)는 덩어리에 안 들어갔다 — 둘레에 남은 것 중 지운 덩어리 곁의 것도 지운다
   for (let i = 0; i < w * h; i++) {
@@ -93,6 +104,12 @@ for (let r = 0; r < rows; r++) {
     if (sw === 0) throw new Error(`빈 칸: ${r},${c}`)
     cells.push({ img, bx0, bx1: bx1 + 1, by0, by1: by1 + 1, cx: sx / sw })
   }
+}
+// 컷 고르기 — 망친 칸을 이웃 칸으로
+if (mapS !== '') {
+  const pick = mapS.split(',').map((s) => cells[Number(s) - 1])
+  if (pick.some((k) => k === undefined)) throw new Error('컷 번호가 칸 밖이다')
+  cells.splice(0, cells.length, ...pick)
 }
 const tallest = Math.max(...cells.map((k) => k.by1 - k.by0))
 const scale = (H * 0.9) / tallest

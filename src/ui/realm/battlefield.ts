@@ -389,12 +389,12 @@ export function warName(r: Realm, l: BattleLine): string {
 /** 활을 쏘는 명령 — 그 합에 화살이 날아간다 */
 const SHOOT_CMD: ReadonlySet<string> = new Set(['volley', 'counter', 'open', 'height', 'fire'])
 /** 동작 그림(8컷 띠)이 있는 병종 — 0·1 서기 · 2·3 걷기 · 4·5 찌르기 · 6 맞음(안 씀) · 7 쓰러짐 */
-const ANIM_SOL: ReadonlySet<string> = new Set(['spear'])
+const ANIM_SOL: Readonly<Record<string, number>> = { spear: 167 / 160, shield: 165 / 160, bow: 139 / 160 } // 병종 → 띠 한 칸의 가로세로 비 (tools/strip-frames.mjs 가 찍어 준다)
 /** 전장의 진이 직접 보여 주는 무리 명령 — 위 겹의 큰 연출을 띄우지 않는다 */
 const FIELD_CMD: ReadonlySet<string> = new Set(['charge', 'hold', 'open', 'volley', 'counter', 'flank', 'punch', 'pursue', 'guard', 'drum', 'capture', 'duel', 'retreat'])
 /** 장수 기술의 결 — 초상이 튀어나오는 몸짓 */
 type CutKind = 'lead' | 'cheer' | 'strike' | 'grab' | 'back' | 'shot' | 'call' | 'guard'
-const CUT_OF: Readonly<Partial<Record<Cmd, CutKind>>> = { drum: 'cheer', duel: 'strike', capture: 'grab', retreat: 'back' }
+const CUT_OF: Readonly<Partial<Record<Cmd, CutKind>>> = { duel: 'strike', capture: 'grab', retreat: 'back' } // 격려는 흔해 장면을 띄우지 않는다 — 합마다 2초씩 전장을 가렸다 (형 10-25 · 전장의 격려 고리로 보인다)
 const ART_CUT: Readonly<Record<Art, CutKind>> = {
   snipe: 'shot', rite: 'cheer', sway: 'call', stand: 'guard', ambush: 'strike', vanguard: 'strike', feint: 'back', order: 'cheer', shout: 'call',
 }
@@ -705,7 +705,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         const sc = (0.8 + 0.4 * ((oy + 40) / 80)).toFixed(2)
         const pos = `--x:${(x + oy * 0.22).toFixed(1)}%;--oy:${oy.toFixed(1)}%;--sc:${sc};--j:${idx++ % 6};z-index:${10 + Math.round(oy + 40)}`
         // 동작 그림이 있는 병종은 컷으로 움직인다 (서기 · 걷기 · 찌르기 · 쓰러짐 — public/realm/anim · tools/strip-frames.mjs)
-        if (ANIM_SOL.has(k)) return `<i class="tk wsp r${r}${hl} ${s2}" style="${pos}"><b class="spf" style="background-image:url('${art}anim/${k}.png')"></b></i>`
+        const ar = ANIM_SOL[k]
+        if (ar !== undefined) return `<i class="tk wsp k-${k} r${r}${hl} ${s2}" style="${pos};--ar:${ar.toFixed(3)}"><b class="spf" style="background-image:url('${art}anim/${k}.png')"></b></i>`
         return `<img class="tk r${r}${hl} ${s2}" src="${art}icon/sol-${SOL.has(k) ? k : 'spear'}.png" alt="" style="${pos}">`
       }
       const column = (ks: readonly string[], r: 0 | 1, x0: number): string => {
@@ -723,7 +724,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       // 무리마다 제 깃발 박자 — 그 박자에 앞줄이 나서고 · 기병이 돌고 · 화살이 난다. 박자가 없으면(깃발 연출 수를 넘었으면) 맞부딪기 조금 앞
       const beatOf = (c: Cmd | undefined): number => (c === undefined ? 0 : plan?.beats.find((x) => x.ours === (cls === 'us') && x.c === c)?.at ?? Math.max(0, (plan?.clash ?? 1) - 0.7))
       const shoot = play && o?.bows !== undefined && rows[1]!.length > 0 ? beatOf(o.bows) : null
-      const tempo = play ? ` style="--fa:${beatOf(o?.front).toFixed(2)}s;--ha:${beatOf(o?.horse).toFixed(2)}s"` : ''
+      const tempo = play ? ` style="--fa:${beatOf(o?.front).toFixed(2)}s;--ha:${beatOf(o?.horse).toFixed(2)}s;--sa:${(shoot ?? 0).toFixed(2)}s"` : ''
       const arrows = shoot === null ? '' : `<i class="wf-arw" style="--sa:${shoot.toFixed(2)}s">${Array.from({ length: 8 }, (_, j) => `<i style="--k:${j};--ay:${-30 + j * 8}%"><img src="${art}fx/arrow.png" alt=""></i>`).join('')}</i>`
       return `<div class="wf2s ${cls}"${formAttrs(o)}${tempo}>${gen}${cues}${bows}${horse}${front}${arrows}</div>`
     }
@@ -1058,13 +1059,17 @@ export const WAR_CSS = `
 .ap .wf-loss.us { left: 26%; } .ap .wf-loss.foe { right: 26%; color: #ffd27a; }
 @keyframes wloss { 0% { opacity: 0; translate: 0 10px; scale: .6; } 15% { opacity: 1; translate: 0 0; scale: 1.15; } 70% { opacity: 1; scale: 1; } 100% { opacity: 0; translate: 0 -18px; } }
 /* 동작 그림 — 8컷 띠를 칸씩 넘긴다 (steps). 바깥(.tk)은 자리·밀기, 안(.spf)은 컷 */
-.ap .wf2s .tk.wsp { width: auto; aspect-ratio: 167 / 160; }
+.ap .wf2s .tk.wsp { width: auto; aspect-ratio: var(--ar, 1); }
 .ap .wf2s .tk.wsp .spf { position: absolute; inset: 0; background: 0 0 / 800% 100% no-repeat; animation: spidle 1.5s steps(1) calc(var(--j) * -.27s) infinite; }
 @keyframes spidle { 0% { background-position-x: 0%; } 50% { background-position-x: 14.2857%; } }
 @keyframes spwalk { 0% { background-position-x: 28.5714%; } 50% { background-position-x: 42.8571%; } }
 @keyframes spatk { 0% { background-position-x: 57.1429%; } 50% { background-position-x: 71.4286%; } }
 .ap .wfield.enter .tk.wsp .spf { animation: spwalk .42s steps(1) calc(var(--j) * -.1s) 4, spidle 1.5s steps(1) 1.9s infinite; }
 .ap .wfield.play .wf2s .tk.wsp.r0:not(.down) .spf { animation: spwalk .42s steps(1) var(--fa, 0s) 2, spatk .26s steps(1) calc(var(--hd) - .32s) 3, spidle 1.5s steps(1) calc(var(--hd) + .6s) infinite; }
+/* 궁수 — 쏘는 박자에 시위를 당겼다(4) 놓는다(5) · 기병 — 제 박자에 달린다(걷기 컷) */
+.ap .wfield.play .wf2s[data-b] .tk.wsp.r1:not(.down) .spf { animation: spdraw .75s steps(1) calc(var(--sa) - .45s) forwards, spidle 1.5s steps(1) calc(var(--sa) + .5s) infinite; }
+@keyframes spdraw { 0% { background-position-x: 57.1429%; } 60% { background-position-x: 71.4286%; } 100% { background-position-x: 71.4286%; } }
+.ap .wfield.play .wf2s[data-h] .tk.wsp.r2:not(.down) .spf { animation: spwalk .3s steps(1) var(--ha, 0s) 3, spatk .26s steps(1) calc(var(--hd) - .3s) 2, spidle 1.5s steps(1) calc(var(--hd) + .5s) infinite; }
 /* 쓰러짐 — 굴리지 않고 쓰러진 컷으로 땅에 남는다 */
 .ap .wf2s .tk.wsp.down { rotate: 0deg; opacity: .62; filter: grayscale(.5) brightness(.8) drop-shadow(0 2px 2px #000c); }
 .ap .wf2s .tk.wsp.down .spf { animation: none; background-position-x: 100%; }
