@@ -136,6 +136,9 @@ export const HERO_CSS = `
 .ap .wcand { display: flex; gap: 10px; align-items: center; padding: 6px 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
 .ap .wcand:disabled { opacity: .5; cursor: default; } .ap .wcand .face { width: 46px; height: 46px; flex: none; }
 .ap .wcand > span { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.ap .wcand .hdo { font-size: 12.5px; font-weight: 700; color: #f0d090; }
+/* 묶인 장수의 원정 칸 — 한 줄만, 흐리게 (형 10-24) */
+.ap .exp.off { opacity: .62; }
 `
 
 // ───────── 정과 성장 (HEROES §7, 형: "장수를 오래쓰면 친밀도? 호감도? 이런게 올라야 하지 않을까? 장수 키우는 맛도 있어야할듯")

@@ -645,6 +645,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (o.kind === 'lead' && o.hero === id) return ['이번 계절 군대를 이끈다', '군대 이끌러 가는 중']
       if (o.kind === 'persuade' && o.by === id) return ['이번 계절 포로를 달랜다', '포로 달래는 중']
       if (o.kind === 'cohabit' && o.hero === id) return ['이번 계절 짝에게 가서 함께 지낸다', '짝에게 가는 중']
+      // 짝을 맞는 쪽 — 오는 짝을 기다려야 하니 다른 일을 맡으면 안 된다 (형 10-24: "신방에 들이기 해 두면 자꾸 조작 가능하게 보인다")
+      if (o.kind === 'cohabit' && r.heroes[o.hero]?.spouse === id) return ['이번 계절 짝을 맞아 함께 지낸다', '짝 맞는 중']
     }
     return null
   }
@@ -2259,8 +2261,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    */
   function wedHtml(r: Realm, x: Hero): string {
     const busy = new Set(heroOrders.flatMap((o) => (o.kind === 'wed' ? [o.a, o.b] : [])))
-    const cands = sorted(Object.values(r.heroes)).filter((y) => y.id !== x.id && !busy.has(y.id) && canWed(r, me(), x.id, y.id))
-    if (cands.length === 0) return ''
+    const all = sorted(Object.values(r.heroes)).filter((y) => y.id !== x.id && !busy.has(y.id) && canWed(r, me(), x.id, y.id))
+    // 이미 일을 맡은 상대는 고를 수 없게 흐리게 · 무슨 일인지 (형 10-24)
+    const cands = all.filter((y) => heroBusy(r, y.id) === null)
+    const tied = all.filter((y) => heroBusy(r, y.id) !== null)
+    if (all.length === 0) return ''
     const grain = r.stock[me()]?.grain ?? 0
     let h = `<div class="wed"><b>혼인</b>${costHtml({ grain: P.realm.wedGrain }, '잔치')}<span class="mute">${P.realm.wedSeasons}계절쯤 뒤 아이가 자라 나선다. 부모 특성은 하나하나 반반으로 내려오고, 드물게(${Math.round(P.realm.wedSurprise * 100)}%) 둘 다 없던 한 등급 위 특성이 터진다.</span>`
     for (const y of cands) {
@@ -2270,6 +2275,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<button class="wcand" data-act="wed" data-id="${x.id}" data-with="${y.id}"${grain < P.realm.wedGrain ? ' disabled' : ''}>${bust(y, 'face')}<span><b>${nameHtml(y.name)}</b>`
       h += `<span class="tr3">${chips}<span class="trait" style="--g:${GRADE_COLOR[inh.surpriseGrade]}"><b>?</b><i>${GRADE_NAME[inh.surpriseGrade]} 이상 · 드묾</i></span></span></span></button>`
     }
+    for (const y of tied) h += `<button class="wcand busy" disabled>${bust(y, 'face')}<span><b>${nameHtml(y.name)}</b><span class="hdo">⧗ ${esc(heroJob(r, y.id)?.[1] ?? '')}</span></span></button>`
     if (grain < P.realm.wedGrain) h += `<p class="mute">곡식이 모자란다 (${Math.floor(grain)} / ${P.realm.wedGrain}).</p>`
     return h + `</div>`
   }
@@ -2284,6 +2290,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (x.faction !== me() || x.status !== 'free' || isRuler(r, x.id)) return ''
     const sent = heroOrders.find((o): o is Extract<Order, { kind: 'expedition' }> => o.kind === 'expedition' && o.hero === x.id)
     if (sent !== undefined) return `<div class="banner good">이번 계절: ${esc(josa(DESTS[sent.dest].name, '으로', '로'))} 원정 · ${EXP_SEASONS[sent.len]}계절<button class="btn ghost sm" data-act="unexp" data-id="${x.id}">취소</button></div>`
+    // 이번 계절 다른 일을 맡은 장수 — 땅·길이 단추까지 다 눌려 보이면 시킬 수 있는 줄 안다 (형 10-24). 한 줄로만
+    const tiedUp = heroBusy(r, x.id)
+    if (tiedUp !== null) return `<div class="exp off"><b>원정</b><span class="mute">⧗ ${esc(tiedUp)} — 이번 계절엔 못 보낸다</span></div>`
     // 먼 땅은 다 보이되 못 가는 곳은 흐린 단추로 — 왜 못 가는지는 단추 밑에 (형 10-23: "못 가면 버튼은 있지만 비활성화 · 보낼 수 있는지 없는지도 모르잖아")
     const dests = DEST_IDS.filter((d) => destReachable(r, me(), d))
     const farWhy = (d: ExpDest): string => (DESTS[d].from.includes(r.region ?? 'byeonhan-mini') ? '포구가 있어야' : '이 땅에선 멀다')
@@ -3176,7 +3185,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const cuts = src !== '' ? `<div class="hbands">${[1, 2, 3].map((k) => `<i class="hb b${k}"><i style="background-image:${hd}url('${src}')"></i></i>`).join('')}</div>` : ''
     let motes = ''
     for (let i = 0; i < 18; i++) motes += `<i style="--x:${(i * 41) % 100}%;--t:${((i * 0.37) % 2.2).toFixed(2)}s;--sp:${(2.6 + ((i * 0.61) % 1.8)).toFixed(2)}s"></i>`
-    // 특성 칩 — 누르고 있거나 올려 두면 무슨 특성인지 (형 10-24: "배신의 상·매혹 … 터치하고 있으면 설명, 손 떼면 없애고")
+    // 특성 칩 — 누르고 있거나 올려 두면 무슨 특성인지 (형 10-24: "배신의 상(→ 반골의 상)·매혹 … 터치하고 있으면 설명, 손 떼면 없애고")
     const chips = ts.map((t, i) => `<span class="ctr" data-tip="${esc(t.line)}" style="--g:${GRADE_COLOR[t.grade]};animation-delay:${(2.36 + i * 0.18).toFixed(2)}s">${esc(t.name)}</span>`).join('')
     const line = how === 'persuade' ? '마음을 돌려 우리 장수가 되었다' : how === 'expedition' ? '원정길에서 만나 우리를 따라왔다' : '떠돌던 인재가 우리를 찾아왔다'
     return `<div class="cere hire" style="--gc:${gc}"><i class="cglow"></i><div class="cmote">${motes}</div>`
