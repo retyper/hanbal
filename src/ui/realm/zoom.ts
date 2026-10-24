@@ -4,6 +4,9 @@
  * 배율 z 는 "지도 높이 = 칸 높이" 를 1 로 친다. 처음엔 칸을 가로로도 꽉 채우는 배율(cover)로 연다 — 가로 화면에서 옆이 비지 않게.
  * 손가락 둘로 벌리기 · 마우스 휠 · ＋/－ 단추로 키우고, 끌어서 옮긴다 (터치는 브라우저 스크롤, 마우스는 여기서).
  * 루프·타이머 없이 이벤트에서 바로 바꾼다 (절대 규칙 4). 지도 칸을 다시 그려도 `apply` 로 배율이 이어진다.
+ *
+ * 손을 움직이는 동안(휠·두 손가락)은 지도를 GPU 로만 늘린다(transform) — 높이를 바꾸면 고을·그림·물결 필터가 통째로 다시 배치돼 버벅인다
+ * (형 10-24: "맵 확대 축소할 때 버벅거리지 않게"). 손을 떼면(휠은 COMMIT_MS 쉬면) 한 번만 진짜 배율로 굳힌다.
  */
 
 import { declutterSoon } from './declutter.ts'
@@ -28,6 +31,8 @@ export interface MapZoom {
 
 /** 끈 뒤 이만큼 안의 click 만 끌기의 끝으로 본다 (ms) — 화면의 손짓이라 params 가 아니라 여기 */
 const DRAG_HOLD_MS = 500
+/** 휠이 이만큼 쉬면 늘린 그림을 진짜 배율로 굳힌다 (ms) */
+const COMMIT_MS = 160
 
 export function attachZoom(wrap: HTMLElement): MapZoom {
   let z = 0 // 0 = 아직 안 정함 — 처음 apply 때 cover 로
@@ -81,32 +86,78 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     wrap.scrollTop = sy
   }
 
+  /**
+   * 손짓 하나 — 시작한 점(cx0, cy0 · 칸 안)을 축으로 s 배 늘리고 (tx, ty) 만큼 옮겨 보인다. 높이·스크롤은 아직 그대로다
+   */
+  let live: { s: number; cx0: number; cy0: number; sl0: number; st0: number; tx: number; ty: number } | null = null
+  let commitTimer = 0
+  const liveStart = (cx: number, cy: number): void => {
+    if (live !== null) return
+    live = { s: 1, cx0: cx, cy0: cy, sl0: wrap.scrollLeft, st0: wrap.scrollTop, tx: 0, ty: 0 }
+    const m = map()
+    if (m !== null) { m.style.transformOrigin = `${live.sl0 + cx}px ${live.st0 + cy}px`; m.style.willChange = 'transform' }
+  }
+  const liveSet = (s: number, tx: number, ty: number): void => {
+    if (live === null) return
+    live.s = clamp(z * s) / z
+    live.tx = tx
+    live.ty = ty
+    const m = map()
+    if (m !== null) m.style.transform = `translate(${tx}px, ${ty}px) scale(${live.s})`
+  }
+  /** 늘린 그림을 진짜 배율로 — 축이던 땅이 손 밑에 그대로 남게 스크롤을 맞춘다 */
+  const commit = (): void => {
+    window.clearTimeout(commitTimer)
+    const g = live
+    live = null
+    const m = map()
+    if (m !== null) { m.style.transform = ''; m.style.transformOrigin = ''; m.style.willChange = '' }
+    if (g === null || g.s === 1) return
+    z = clamp(z * g.s)
+    paintZ()
+    wrap.scrollLeft = (g.sl0 + g.cx0) * g.s - (g.cx0 + g.tx)
+    wrap.scrollTop = (g.st0 + g.cy0) * g.s - (g.cy0 + g.ty)
+  }
+
   wrap.addEventListener('wheel', (ev) => {
     if (map() === null) return
     ev.preventDefault()
     const rect = wrap.getBoundingClientRect()
-    zoomAt(z * Math.exp(-ev.deltaY * 0.0015), ev.clientX - rect.left, ev.clientY - rect.top)
+    liveStart(ev.clientX - rect.left, ev.clientY - rect.top)
+    if (live !== null) liveSet(live.s * Math.exp(-ev.deltaY * 0.0015), 0, 0)
+    window.clearTimeout(commitTimer)
+    commitTimer = window.setTimeout(commit, COMMIT_MS)
   }, { passive: false })
 
-  // 손가락 둘 — 벌린 만큼
-  let pinch: { d: number; z: number } | null = null
+  // 손가락 둘 — 벌린 만큼 (손가락 사이 가운데가 움직이면 지도도 따라 옮긴다)
+  let pinch: { d: number } | null = null
   const dist = (t: TouchList): number => Math.hypot(t[0]!.clientX - t[1]!.clientX, t[0]!.clientY - t[1]!.clientY)
+  const mid = (t: TouchList): readonly [number, number] => {
+    const rect = wrap.getBoundingClientRect()
+    return [(t[0]!.clientX + t[1]!.clientX) / 2 - rect.left, (t[0]!.clientY + t[1]!.clientY) / 2 - rect.top]
+  }
   wrap.addEventListener('touchstart', (ev) => {
-    if (ev.touches.length === 2) pinch = { d: dist(ev.touches), z }
+    if (ev.touches.length !== 2) return
+    commit()
+    pinch = { d: dist(ev.touches) }
+    const [cx, cy] = mid(ev.touches)
+    liveStart(cx, cy)
   }, { passive: true })
   wrap.addEventListener('touchmove', (ev) => {
-    if (pinch === null || ev.touches.length !== 2) return
+    if (pinch === null || live === null || ev.touches.length !== 2) return
     ev.preventDefault()
-    const rect = wrap.getBoundingClientRect()
-    const cx = (ev.touches[0]!.clientX + ev.touches[1]!.clientX) / 2 - rect.left
-    const cy = (ev.touches[0]!.clientY + ev.touches[1]!.clientY) / 2 - rect.top
+    const [cx, cy] = mid(ev.touches)
     moved = true
     movedAt = performance.now()
-    zoomAt(pinch.z * (dist(ev.touches) / pinch.d), cx, cy)
+    liveSet(dist(ev.touches) / pinch.d, cx - live.cx0, cy - live.cy0)
   }, { passive: false })
-  wrap.addEventListener('touchend', (ev) => {
-    if (ev.touches.length < 2) pinch = null
-  }, { passive: true })
+  const pinchEnd = (ev: TouchEvent): void => {
+    if (ev.touches.length >= 2 || pinch === null) return
+    pinch = null
+    commit()
+  }
+  wrap.addEventListener('touchend', pinchEnd, { passive: true })
+  wrap.addEventListener('touchcancel', pinchEnd, { passive: true })
 
   // 마우스로 끌기 — 터치는 브라우저가 스크롤한다
   let drag: { x: number; y: number; sl: number; st: number } | null = null
@@ -135,6 +186,8 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
 
   return {
     apply() {
+      // 손짓 도중 지도를 다시 그렸으면 늘리던 것은 버린다 (새 지도엔 transform 이 없다)
+      if (live !== null) { window.clearTimeout(commitTimer); live = null }
       const region = map()?.dataset["region"] ?? ''
       if (z === 0 || region !== zFor) z = Math.max(cover(), minZ())
       zFor = region
@@ -142,6 +195,7 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
       paintZ()
     },
     step(dir) {
+      commit()
       zoomAt(dir > 0 ? z * STEP : z / STEP, wrap.clientWidth / 2, wrap.clientHeight / 2)
     },
     dragged: () => moved && performance.now() - movedAt < DRAG_HOLD_MS,
