@@ -56,7 +56,7 @@ export const TUT_STEPS: readonly TutStep[] = [
     press: ['.stlgo[data-node="tut-solmoe"]', tab('people')], done: (c) => has(c, 'party') || has(c, 'settle'),
   },
   {
-    id: 'scout', text: '오른쪽 갯골 마을을 누르고 「여기로 정찰을 보낸다」. 적 군세가 얼마인지 보인다. 정찰은 「외교」에서도 고른다.',
+    id: 'scout', text: '왼쪽(서쪽) 갯골 마을을 누르고 「여기로 정찰을 보낸다」. 적 군세가 얼마인지 보인다. 정찰은 「외교」에서도 고른다.',
     press: ['[data-act="scout"][data-node="tut-gaetgol"]', '.nd[data-node="tut-gaetgol"]'], done: (c) => has(c, 'scout'),
   },
   {
@@ -173,7 +173,9 @@ export function createSpot(root: HTMLElement): Spot {
   let target: HTMLElement | null = null
   /** 볼 곳 — 누를 곳을 품은 카드 */
   let view: HTMLElement | null = null
-  let scrolled: HTMLElement | null = null
+  /** 이 단계에서 이미 한 번 굴려 본 곳 — 두 번은 굴리지 않는다 (두 곳을 번갈아 굴리며 끝없이 오갔다 · 형 10-24 4/12) */
+  let scrolled = new WeakSet<HTMLElement>()
+  let scrolledStep = ''
   /** 지금 가리키는 것이 닫기 단추면 그 갈래 ('' 이면 단계의 누를 곳) */
   let pre = ''
   let raf = 0
@@ -214,6 +216,9 @@ export function createSpot(root: HTMLElement): Spot {
     // 가려졌거나(보고판 · 판) 못 찾았으면 — 닫는 단추가 보이면 그것부터
     for (const [d, k] of DISMISS) {
       const x = first(d)
+      // 누를 곳이 바로 그 판 안에 있으면 판을 닫으라 하지 않는다 — 닫으면 누를 곳도 사라지고, 굴리면 다시 닫으라 해서
+      // 「여기로 정찰을 보낸다」와 손잡이 두 곳을 끝없이 오갔다 (형 10-24: "4/12에 2개의 선택 박스 두고 무한으로 왔다갔다")
+      if (x !== null && el !== null && x.closest('.modal, .sheet')?.contains(el) === true) continue
       if (x !== null && onTop(x)) {
         pre = k
         return x
@@ -236,8 +241,12 @@ export function createSpot(root: HTMLElement): Spot {
     } else {
       view = target.closest<HTMLElement>('.mcard, .ncard') ?? target
       // 지도·판 안에서 다 안 보이면(반쯤 윗줄에 묻힌 고을도) 한 번만 굴려 가운데로 (그 뒤엔 지도를 끌어도 따라가기만)
-      if (scrolled !== target) {
-        scrolled = target
+      if (scrolledStep !== (step?.id ?? '')) {
+        scrolledStep = step?.id ?? ''
+        scrolled = new WeakSet()
+      }
+      if (!scrolled.has(target)) {
+        scrolled.add(target)
         if (target.closest('.mapwrap, .sheet') !== null && (scrolledOut(target) || !onTop(target))) target.scrollIntoView({ block: 'center', inline: 'center' }) // 윗줄·띠에 묻혀도
       }
       const r = target.getBoundingClientRect()
