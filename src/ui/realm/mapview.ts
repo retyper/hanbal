@@ -98,7 +98,8 @@ export const MAP_CSS = `
   animation: smk 5.5s ease-out infinite; animation-delay: var(--d, 0s); }
 .map .nd .smk::after { animation-delay: calc(var(--d, 0s) - 2.75s); left: 18%; }
 @keyframes smk { 0% { opacity: 0; transform: translate(0, 0) scale(.45); } 15% { opacity: .9; } 60% { opacity: .55; } 100% { opacity: 0; transform: translate(45%, -230%) scale(2); } }
-.map .nd.k-port img.st { animation: pbob 3.4s ease-in-out infinite alternate; animation-delay: var(--d, 0s); transform-origin: 50% 80%; }
+/* 배가 뜬 포구만 물결에 흔들린다 — 도읍인 항구(가락·거칠산)는 성이라 흔들리면 둥실거려 보였다 (형 10-24) */
+.map .nd.k-port:not(.k-cap) img.st { animation: pbob 3.4s ease-in-out infinite alternate; animation-delay: var(--d, 0s); transform-origin: 50% 80%; }
 @keyframes pbob { from { transform: translateY(0) rotate(-.6deg); } to { transform: translateY(-1.6%) rotate(.6deg); } }
 .map .clsh { position: absolute; inset: -12%; pointer-events: none; z-index: 0; opacity: .55;
   background: radial-gradient(ellipse 14% 9% at 20% 30%, #1a160e2e, #1a160e00), radial-gradient(ellipse 18% 11% at 62% 58%, #1a160e26, #1a160e00),
