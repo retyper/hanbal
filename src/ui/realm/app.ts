@@ -1483,6 +1483,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const pending = musters.filter((o): o is Extract<Order, { kind: 'draft' }> => o.kind === 'draft')
     // 알아서 뽑기 — 고을마다 뽑을 수 있는 만큼, 창병과 궁병을 섞어 곡식이 닿는 데까지 (형 10-24: "모든 고을에서 다 최대로 골고루")
     h += `<div class="btns"><button class="btn pri men wide" data-act="auto-draft">⚡ 알아서 뽑기 — 고을마다 뽑을 수 있는 만큼 (창병·궁병 섞어)</button></div>`
+    // 병종은 한 번에 하나 — 둘 다 고르는 게 아니다 (형 10-24: 동료 "창병 선택이랑 궁병 선택 따로 있는데 각각 선택해야 하는지 모르겠다")
+    h += `<p class="mute">고을마다 <b>병종 하나</b>를 골라 뽑는다. 창병과 궁병을 섞으려면 병종을 바꿔 한 번 더 뽑는다 — 앞줄(창·방패)이 받아 내고 뒷줄(활)이 쏜다.</p>`
     for (const n of sorted(Object.values(r.nodes)).filter((x) => x.owner === me())) h += draftCard(r, n.id, false)
     if (pending.length > 0) {
       h += `<h4>이번 계절 징병</h4>`

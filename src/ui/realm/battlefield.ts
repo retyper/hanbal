@@ -704,9 +704,27 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const foes = (Object.entries(p.foe) as [Grp, number][]).filter(([, v]) => v > 0)
     if (foes.length > 0) h += `<div class="wi foe"><b>맞은편</b><div class="wfoes">${foes.map(([g, v]) => `<span><img src="${art}icon/${GROUP_ICON[g]}.png" alt="">${esc(groupLabel(mixOf(foeI), g))} <i>${v}명</i></span>`).join('')}</div></div>`
     h += `</div>`
+    /**
+     * 권함 — 무리마다 판세로 하나 (형 10-24: 동료 "선택지마다 뭘 골라야 좋을지 몰라서"). 보이는 것만으로 셈한다(낌새 · 맞은편 수 · 사기 · 사로잡기 손)
+     */
+    const advise = (g: Grp | 'lead', options: readonly Cmd[]): Cmd | undefined => {
+      const has = (c: Cmd): Cmd | undefined => (options.includes(c) ? c : undefined)
+      const ours = (k: Grp): number => p.groups.find((x) => x.g === k)?.men ?? 0
+      if (g === 'front') {
+        if (p.hint !== null && FRONT_COUNTER[p.hint] !== undefined && has(FRONT_COUNTER[p.hint]!)) return FRONT_COUNTER[p.hint]
+        if (p.foeWaver && has('pursue')) return 'pursue'
+        return ours('front') >= (p.foe.front ?? 0) * 1.2 ? (has('charge') ?? options[0]) : (has('hold') ?? options[0])
+      }
+      if (g === 'bows') return (p.foe.bows ?? 0) > 0 && (p.foe.bows ?? 0) >= ours('bows') * 0.6 ? (has('counter') ?? options[0]) : (has('volley') ?? options[0])
+      if (g === 'horse') return (p.foeWaver ? has('pursue') : undefined) ?? options[0]
+      if (p.capture >= 0.3 && has('capture')) return 'capture'
+      if (m(ourI) < (st?.morale[ourI] ?? 1) * 0.8 && has('drum')) return 'drum'
+      return has('art') ?? has('drum') ?? options[0]
+    }
+    let recNow: Cmd | undefined
     const opt = (g: Grp | 'lead', c: Cmd): string => {
       const on = sel[g] === c
-      let tag = ''
+      let tag = recNow === c ? `<em class="rec">★ 권함</em>` : ''
       if (g === 'front' && p.hint !== null && FRONT_COUNTER[p.hint] === c) tag = `<em>낌새의 맞수</em>`
       else if (c === 'pursue' && p.foeWaver) tag = `<em>지금이다</em>`
       else if (TERRAIN_CMD.has(c)) tag = `<em class="land">이 땅에서만</em>`
@@ -723,10 +741,12 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     for (const gr of p.groups) {
       if (gr.options.length === 0) continue
       h += `<div class="wgrp"><div class="wgh"><b>${GROUP_NAME[gr.g]}</b> ${esc(groupLabel(mixOf(ourI), gr.g))} ${gr.men}명${sel[gr.g] === undefined ? '<span class="mute"> — 안 고르면 장수가 알아서</span>' : ''}</div>`
+      recNow = advise(gr.g, gr.options)
       h += `<div class="wcmdgrid">${gr.options.map((c) => opt(gr.g, c)).join('')}</div></div>`
     }
     if (p.lead.length > 0) {
       h += `<div class="wgrp"><div class="wgh"><b>장수</b> ${esc(ourName)}${sel.lead === undefined ? '<span class="mute"> — 안 고르면 격려</span>' : ''}</div>`
+      recNow = advise('lead', p.lead)
       h += `<div class="wcmdgrid">${p.lead.map((c) => opt('lead', c)).join('')}</div></div>`
     }
     // 맡기면 장수의 지략대로 — 그 장수의 얼굴·지략을 단추 옆에 (형: "장수의 지략?수치가 … 버튼주변에 뭔가보여지면")
@@ -1037,6 +1057,7 @@ export const WAR_CSS = `
 .ap .wcmd b { font-size: 15.5px; } .ap .wcmd small { font-size: 11.5px; color: var(--mute); line-height: 1.35; padding-right: 2px; }
 .ap .wcmd em { font-style: normal; font-size: 11px; color: #14161a; background: var(--gold); border-radius: 6px; padding: 0 5px; }
 .ap .wcmd em.land { background: #7fb07a; }
+.ap .wcmd em.rec { background: #9fd18b; color: #10200a; font-weight: 800; box-shadow: 0 0 8px #9fd18b88; }
 .ap .wcmd .wcap { font-size: 12px; color: var(--ink); }
 .ap .wcmd.capture { border-color: #8a6a2a; }
 /* 퇴각 — 지는 선택이라 붉게 */
