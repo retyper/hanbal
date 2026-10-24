@@ -296,7 +296,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .bktoast { position: absolute; left: 10px; top: calc(var(--toph) + 8px); z-index: 44; display: flex; flex-direction: column; gap: 4px; max-width: min(78vw, 360px);
   padding: 8px; border-radius: 12px; border: 1px solid #8a6a3a; background: linear-gradient(#2a1f14f0, #1a130cf0); box-shadow: 0 6px 18px #000a; animation: bkin .35s cubic-bezier(.2, 1.3, .4, 1) both; }
 .ap .bktoast.out { animation: cout .4s ease-in forwards; }
-.ap .bktoast .bkhd { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; color: #f0d090; }
+.ap .bktoast .bkhd { cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; color: #f0d090; }
 .ap .bktoast .bkic { width: 20px; height: 20px; }
 .ap .bktoast .bkrow { display: flex; align-items: center; gap: 8px; padding: 3px 4px; border: 0; border-radius: 8px; background: #0003; color: #f3e6c8; text-align: left; font-size: 13px; cursor: pointer; }
 .ap .bktoast .bkrow:hover { background: #fff1; }

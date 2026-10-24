@@ -216,6 +216,8 @@ const SCENE_CUE_MS = 1400
 /** 혼례·탄생 장면 — 계절 띠가 걷힌 뒤 뜨고, 이만큼 머문다 (누르면 바로 넘긴다) */
 const CEREMONY_LEAD_MS = 2000
 const CEREMONY_MS = 6500
+/** 도감 알림이 아무리 늦어도 걷히는 때 (ms) — CSS 로는 5.5초에 걷힌다 */
+const DEX_TOAST_MAX_MS = 9000
 /** 세로 구도로 따로 그린 장면 그림 (public/realm/event-v) — 세로 화면에선 16:9 가운데 띠만 남아 용 허리만 보였다 (형 10-24) */
 const SCENE_V: ReadonlySet<string> = new Set(['event-dream', 'event-newborn', 'event-marriage', 'event-bridal-a', 'event-bridal-b', 'event-bridal-c', 'event-bridal-d'])
 /** 큰 장면 바탕 — 가로 그림(--hbg) · 세로 화면이면 세로 그림(--vbg, 있으면) */
@@ -3415,6 +3417,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     ding(snd('dex_new'), 0.35)
     const el = root.querySelector('.dxtoast')
     el?.addEventListener('animationend', (e) => { if (e.target === el) el.remove() }) // 얼굴 뒤 금빛이 먼저 끝나도 알림은 그대로
+    // 애니메이션이 안 끝나는 일(멈춘 탭·움직임 줄이기)이 있어도 알림은 반드시 걷힌다 (형 10-24: "알림은 잘 없어지는 것도 빠지지 않고")
+    window.setTimeout(() => el?.remove(), DEX_TOAST_MAX_MS)
   }
 
   /**
@@ -3455,11 +3459,18 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const more = items.length > 5 ? `<span class="bkmore">그 밖에 ${items.length - 5}명</span>` : ''
     root.insertAdjacentHTML('beforeend', `<div class="bktoast"><span class="bkhd">${icon('unit-scouts', 'bkic')}돌아왔다</span>${rows}${more}</div>`)
     const el = root.querySelector<HTMLElement>('.bktoast')!
-    let left = P.realm.backToastMs
+    // 알림은 반드시 사라진다 (형 10-24: "사신 돌아왔다가 안 없어지고 남아 있다 · 알림 만들면 잘 없어지는 것도 빠지지 않고")
+    //  - 큰 장면이 떠 있는 동안은 세지 않되, 정한 시간의 세 배가 지나면 무조건 걷는다 (장면이 걸려 있어도)
+    //  - 시간 값이 숫자가 아니면(10-24 의 {} 사고) 바로 걷는다 · 머리를 누르면 바로 걷는다
+    const LIFE = P.realm.backToastMs
+    let left = LIFE
+    const born = performance.now()
+    const gone = (): void => { if (!el.isConnected || el.classList.contains('out')) return; el.classList.add('out'); window.setTimeout(() => el.remove(), 400) }
+    el.querySelector('.bkhd')?.addEventListener('click', gone)
     const tick = (): void => {
       if (!el.isConnected) return
       if (root.querySelector('.cere') === null) left -= 400
-      if (left <= 0) { el.classList.add('out'); window.setTimeout(() => el.remove(), 400); return }
+      if (!(left > 0) || performance.now() - born > LIFE * 3) { gone(); return }
       window.setTimeout(tick, 400)
     }
     window.setTimeout(tick, 400)
