@@ -221,6 +221,11 @@ export function createSpot(root: HTMLElement): Spot {
     const w0 = wrap.getBoundingClientRect()
     return r0.top < w0.top || r0.bottom > w0.bottom || r0.left < w0.left || r0.right > w0.right
   }
+  /** 화면(창) 밖에 통째로 있나 */
+  const offView = (el: HTMLElement): boolean => {
+    const r0 = el.getBoundingClientRect()
+    return r0.bottom <= 0 || r0.top >= innerHeight || r0.right <= 0 || r0.left >= innerWidth
+  }
   const war = (): boolean => root.classList.contains('war-open') || root.querySelector('.wr') !== null
   /** 큰 장면이 떠 있나 — 그동안은 고리도 막기도 쉰다 */
   const cere = (): boolean => root.querySelector('.cere') !== null
@@ -270,7 +275,11 @@ export function createSpot(root: HTMLElement): Spot {
     keptPre = pre
     const b = band()
     if (b !== null && (b.dataset['pre'] ?? '') !== pre) b.dataset['pre'] = pre
-    if (target === null) {
+    // 판이 아래에서 밀려 올라오는 동안엔 누를 곳이 아직 화면 밖이다 — 고리가 화면 아래로 날아갔다 오지 않게 그동안은 숨긴다 (10-25 재확인: 최대 1.2초)
+    // 판 안에서 굴러 나간 것(움직이는 중이 아님)은 숨기지 않는다 — 그건 아래에서 굴려 보인다
+    const sh = target?.closest<HTMLElement>('.sheet') ?? null
+    const sliding = target !== null && sh !== null && offView(target) && sh.getAnimations({ subtree: true }).some((a) => a.playState === 'running')
+    if (target === null || sliding) {
       view = null
       box.hidden = true
       hole.hidden = true
@@ -321,10 +330,13 @@ export function createSpot(root: HTMLElement): Spot {
   // 누를 곳(과 배우기 띠, 지도 확대·축소) 밖의 누르기는 먹지 않는다 — 앱이 듣기 전에 (잡기 단계)
   document.addEventListener('click', (ev) => {
     if (target === null || view === null || box.hidden || !target.isConnected) return
+    if (war()) return // 전장은 막지 않는다 (빛만)
     // 큰 장면(사로잡음·등용·혼례…)이 떠 있으면 막지 않는다 — 고리는 CSS 로 숨겼는데 누르기는 여기서 먹어 「확인」이 안 눌렸다 (형 10-24: "해비 사로잡았다 했는데 확인 눌러도 안 넘어가짐")
     if (cere()) return
     const t = ev.target as HTMLElement
     if (view.contains(t)) { tapped = true; return }
+    // 고리가 옮겨 가는 틈 — 새로 가리킬 곳을 누른 것도 받는다 (재검토 10-25: 그 틈의 누르기가 먹혔다)
+    if (cand !== null && cand.isConnected && (cand.closest<HTMLElement>('.mcard, .ncard') ?? cand).contains(t)) { tapped = true; return }
     if (t.closest('.tutband') !== null || t.closest('[data-act="zin"], [data-act="zout"]') !== null) return
     ev.preventDefault()
     ev.stopPropagation()
@@ -363,6 +375,7 @@ export const TUT_CSS = `
 .ap.war-open .tutband, .ap:has(.wr) .tutband { display: none; }
 /* 큰 장면(등용·사로잡음·혼례…)이 떠 있는 동안은 띠·고리를 숨긴다 — 고리가 장면 뒤를 가리켜 누를 수 없었다(10/12 막힘 · 형 10-24) */
 .ap:has(.cere) .tutband, .ap:has(.cere) .tutspot, .ap:has(.cere) .tutring { display: none !important; }
+.ap.war-open .tutspot, .ap.war-open .tutring, .ap:has(.wr) .tutspot, .ap:has(.wr) .tutring { display: none !important; }
 .tutb { pointer-events: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; max-width: 560px; padding: 10px 14px; border-radius: 14px;
   background: #1f1710f8; border: 1px solid #e8c06a; box-shadow: 0 6px 24px #000d; color: #f3ead8; font-size: 15px; line-height: 1.5; }
 .tutb i { font-style: normal; color: #f3d48a; font-weight: 700; font-size: 12.5px; } .tutb > span { flex: 1 1 260px; }

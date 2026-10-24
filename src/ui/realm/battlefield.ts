@@ -1296,7 +1296,7 @@ export const WAR_CSS = `
 .ap .wguess .wgbar { position: relative; height: 7px; border-radius: 4px; overflow: hidden; box-shadow: inset 0 0 0 1px #0008;
   background: linear-gradient(90deg, #3d8fe0 0 var(--lo), #3d8fe077 var(--lo) var(--hi), #c8503a var(--hi) 100%); }
 .ap .wguess .wgbar::after { content: ''; position: absolute; left: var(--e0); top: -1px; bottom: -1px; width: 2px; margin-left: -1px; background: #ffe7b0; box-shadow: 0 0 3px #000; }
-.ap .wguess > b { font-size: 11.5px; white-space: nowrap; }
+.ap .wcmd .wguess > b { font-size: 11.5px; white-space: nowrap; }
 .ap .wguess.g2 > b { color: #7fd8ff; } .ap .wguess.g1 > b { color: #a8d8f0; } .ap .wguess.g0 > b { color: #d8cfbf; } .ap .wguess.b1 > b { color: #f0b090; } .ap .wguess.b2 > b { color: #ff7a5a; }
 .ap .wguess .wgl { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr auto 1fr; align-items: center; gap: 4px; }
 .ap .wguess .wgl .wgk { font-size: 10.5px; color: var(--mute); }
@@ -1633,6 +1633,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const more = l.pending === undefined && shown < (l.rounds ?? []).length
     ov.classList.toggle('slow', anim)
     ov.classList.remove('fast')
+    animating = false // 앞 합의 「연출 중」이 남지 않게 — 이 합이 풀리면 아래에서 다시 건다
     paintNow(anim)
     // 장수 기술 — 고른 합이면 그 장수가 튀어나온다
     if (anim && cutLead !== null) {
@@ -1668,7 +1669,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       if (more) { /* 다음 합이 곧 온다 */ } else if (l.pending === undefined) timers.push(window.setTimeout(() => scrollInside(sc.querySelector('.wend'), 'center', true), (res + 0.4) * 1000))
       else {
         timers.push(window.setTimeout(() => scrollInside(sc.querySelector('.wnext'), 'start', true), (res + 0.6) * 1000))
-        timers.push(window.setTimeout(syncField, (res + 0.5) * 1000)) // 맞부딪힌 진을 거두고 다음 합을 고르는 진으로 (다음 합의 낌새도 그때 뜬다)
+        animating = true
+        timers.push(window.setTimeout(() => syncField(true), (res + 0.5) * 1000)) // 맞부딪힌 진을 거두고 다음 합을 고르는 진으로 (다음 합의 낌새도 그때 뜬다)
       }
     } else {
       sc.scrollTop = 0
@@ -1676,13 +1678,19 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     }
   }
 
+  /** 이번 합이 풀리는 중 — 다음 합을 고르는 판은 아직 투명하다. 그동안은 진을 되돌리지 않고 깃발 누르기도 받지 않는다 */
+  let animating = false
   /** 깃발에 손을 올린 동안 — 그 진을 미리 보인다 (마우스만) */
   let peek: { g: Grp | 'lead'; c: Cmd } | null = null
   /** 전장의 진을 고르는 것에 맞춘다 — 우리는 고른 것(손을 올렸으면 그것), 적은 낌새. 지금 고르는 무리가 진에서 빛난다 */
-  const syncField = (): void => {
+  const syncField = (force = false): void => {
+    // 합이 풀리는 동안엔 손대지 않는다 — 보이지 않는 깃발 위로 마우스가 지나가도 맞부딪힘이 중간에 끊겼다 (재검토 10-25)
+    if (animating && !force) return
+    animating = false
     const f = sc.querySelector<HTMLElement>('.wfield')
     if (f === null) return
     f.classList.remove('play')
+    active ??= sc.querySelector<HTMLElement>('.wgt.on[data-g]')?.dataset['g'] as Grp | 'lead' | undefined // 합 처음엔 펼친 탭의 무리가 빛나게
     if (f.dataset['act'] !== (active ?? '')) f.dataset['act'] = active ?? ''
     const us = f.querySelector<HTMLElement>('.wf2s.us')
     if (us !== null) setForm(us, peek !== null ? { ...sel, [peek.g]: peek.c } : sel)
@@ -1782,12 +1790,14 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       t0 = P.realm.warAutoCutS
     }
     const step = (k: number, after: number): void => {
-      chain.push(window.setTimeout(() => {
+      const id = window.setTimeout(() => {
+        chain.splice(chain.indexOf(id), 1) // 불린 것은 뺀다 — 남으면 끝난 뒤 첫 빈 곳 누르기가 마지막 합을 다시 틀었다 (재검토 10-25)
         upto = k < R ? k : undefined
         draw(true)
         const rd = (l.rounds ?? [])[k - 1]
         if (k < R && rd !== undefined) step(k + 1, roundPlan(rd, weAtk).result + P.realm.warAutoGapS)
-      }, after * 1000))
+      }, after * 1000)
+      chain.push(id)
     }
     step(from + 1, t0)
   }
@@ -1825,10 +1835,13 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       clearTimers()
       fxTop.replaceChildren()
       ov.querySelector('.wcut')?.remove()
+      // 진을 되돌리는 타이머도 걷혔다 — 다음 합을 고를 판이면 바로 고르는 진으로 (재검토 10-25: 연출 상태로 굳었다)
+      if (t.line?.pending !== undefined) syncField(true)
       return
     }
     const l = t.line
     if (l === null || l.key === undefined) return
+    if (animating && b.dataset['war'] !== 'auto' && b.dataset['war'] !== 'autoall' && b.dataset['war'] !== 'next') return
     host.ding('click1', 0.18)
     switch (b.dataset['war']) {
       case 'pick': {
