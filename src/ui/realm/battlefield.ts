@@ -1013,13 +1013,13 @@ export const WAR_CSS = `
 .ap .wbar { position: relative; width: 100%; height: 12px; border-radius: 6px; background: linear-gradient(#0c0805, #22180f); overflow: hidden; margin-top: 7px;
   box-shadow: inset 0 1px 3px #000e, 0 0 0 1px #8a6a3a, 0 0 0 2.5px #1a120c; }
 /* 무너지는 금 — 붉은 세로 금 */
-.ap .wbar .brk { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; background: #ff3b2b; box-shadow: 0 0 5px #ff3b2b; z-index: 2; cursor: help; }
+.ap .wbar .brk { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; background: #ff3b2b; box-shadow: 0 0 5px #ff3b2b; z-index: 2; cursor: help; overflow: visible; }
 /* 해골 — 금 위에 · 금 밑 구역은 붉은 빗금(패배가 정해지는 곳) */
-.ap .wbar .brk::after { content: ''; position: absolute; left: 50%; top: 50%; width: clamp(15px, 3.4vw, 20px); aspect-ratio: 1; translate: -50% -50%;
-  background: url(__ART__icon/war-skull.png) center / contain no-repeat; filter: drop-shadow(0 0 2px #000) drop-shadow(0 0 3px #ff3b2b88); }
+.ap .wbar .brk::after { content: ''; position: absolute; left: 50%; top: -11px; width: 20px; height: 20px; translate: -50% 0; border-radius: 50%;
+  background: url(__ART__icon/war-skull.png) center / 82% no-repeat, radial-gradient(#2a0c08 55%, #2a0c0800 72%); filter: drop-shadow(0 0 2px #000) drop-shadow(0 0 3px #ff3b2b88); }
 .ap .wbar .brk.near::after { animation: wskull .7s ease-in-out infinite alternate; } @keyframes wskull { to { scale: 1.35; filter: drop-shadow(0 0 2px #000) drop-shadow(0 0 8px #ff3b2b); } }
 .ap .wbar .wdz { position: absolute; left: 0; top: 0; bottom: 0; z-index: 1; pointer-events: none; text-decoration: none;
-  background: repeating-linear-gradient(135deg, #ff3b2b38 0 3px, #0000 3px 6px); border-radius: 6px 0 0 6px; }
+  background: repeating-linear-gradient(135deg, #3a0a06b0 0 3px, #ff3b2b55 3px 6px); border-radius: 6px 0 0 6px; }
 .ap .wbar:has(.brk) { overflow: visible; } /* 해골이 막대 밖으로 나오게 (채움 i 는 제 둥근 테 안에서 잘린다) */
 @media (prefers-reduced-motion: reduce) { .ap .wbar .brk.near::after { animation: none; } }
 /* 전장 띠 — 병졸 말 */
