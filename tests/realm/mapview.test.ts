@@ -79,7 +79,7 @@ describe('지도 겉모습', () => {
     assert.ok(mapHtml(r, 'saro', '/', [], '').includes('route-snowpass.png'))
   })
 
-  it('특산 — 고을마다 나는 것이 그림 표로 · 빈땅은 흐리게 (일구면 난다)', () => {
+  it('특산 — 고을마다 나는 것이 이름표 옆 칸에 그림으로 · 빈땅은 흐리게 (일구면 난다)', () => {
     const r = startYeongnam(1, 'saro')
     const h = mapHtml(r, 'saro', '/', [], '')
     // 영남 판은 처음엔 이웃만 보인다 — 보이는 고을 가운데서
@@ -87,9 +87,9 @@ describe('지도 겉모습', () => {
     for (const n of Object.values(r.nodes)) if (n.kind === 'ironMine' && !vis.has(n.id)) r.known!['saro']!.push(n.owner ?? '')
     const mine = Object.values(r.nodes).find((n) => n.kind === 'ironMine' && visibleNodes(r, 'saro').has(n.id))!
     assert.ok(nodeSpecials(r, mine.id).includes('iron'))
-    assert.ok(new RegExp(`data-node="${mine.id}"[^>]*>.*?<span class="sp[^"]*"><img src="/icon/treasure-iron-ingots.png"`).test(h))
+    assert.ok(new RegExp(`data-n="${mine.id}"[^>]*>.*?<span class="lbg[^"]*"><img src="/icon/treasure-iron-ingots.png"`).test(h))
     const wild = Object.values(r.nodes).find((n) => n.kind === 'wild' && n.owner === null && nodeSpecials(r, n.id).length > 0 && visibleNodes(r, 'saro').has(n.id))
-    if (wild !== undefined) assert.ok(new RegExp(`data-node="${wild.id}"[^>]*>.*?<span class="sp idle">`).test(h))
+    if (wild !== undefined) assert.ok(new RegExp(`data-n="${wild.id}"[^>]*>.*?<span class="lbg idle">`).test(h))
     assert.deepEqual(nodeSpecials(r, Object.values(r.nodes).find((n) => n.kind === 'sodo')?.id ?? ''), [])
   })
 
