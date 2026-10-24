@@ -11,6 +11,7 @@
  * 찾지 못하면 어둡게 하지도 막지도 않는다 (갇히지 않게).
  */
 import type { Order, Realm, Report } from '../../realm/types.ts'
+import { P } from '../../tune/params.ts'
 
 export interface TutCtx {
   /** 지금 판 (이번 계절 고른 것을 먼저 해 본 판) */
@@ -181,6 +182,17 @@ export function createSpot(root: HTMLElement): Spot {
   let scrolledStep = ''
   /** 지금 가리키는 것이 닫기 단추면 그 갈래 ('' 이면 단계의 누를 곳) */
   let pre = ''
+  /**
+   * 고리를 옮길 새 후보 — 몇 프레임 내리 같은 것이어야 옮긴다. 옮긴 뒤엔 잠깐 그대로.
+   * 무엇 때문이든 두 곳이 번갈아 뽑히면 고리가 끝없이 오갔다 (형 10-24: 4/12 · 5/12 "엄청 왔다갔다") — 이제는 한 곳에 머문다.
+   * 지금 가리키는 것이 사라지거나 안 보이면 바로 옮긴다
+   */
+  let cand: HTMLElement | null = null
+  /** 지금 고리의 갈래 — 후보를 기다리는 동안 띠 말이 바뀌지 않게 */
+  let keptPre = ''
+  let candPre = ''
+  let candN = 0
+  let movedAt = 0
   let raf = 0
   let last = ''
 
@@ -232,7 +244,25 @@ export function createSpot(root: HTMLElement): Spot {
 
   function frame(): void {
     raf = 0
-    target = pick()
+    const want = pick()
+    const wantPre = pre
+    if (want !== target) {
+      const alive = target !== null && target.isConnected && shown(target)
+      if (want === cand && wantPre === candPre) candN++
+      else { cand = want; candPre = wantPre; candN = 1 }
+      const now = performance.now()
+      if (!alive || (candN >= P.realm.tutSwitchFrames && now - movedAt >= P.realm.tutSwitchMs)) {
+        target = want
+        pre = wantPre
+        movedAt = now
+        cand = null
+        candN = 0
+      } else pre = keptPre
+    } else {
+      cand = null
+      candN = 0
+    }
+    keptPre = pre
     const b = band()
     if (b !== null && (b.dataset['pre'] ?? '') !== pre) b.dataset['pre'] = pre
     if (target === null) {
@@ -298,6 +328,7 @@ export function createSpot(root: HTMLElement): Spot {
 
   return {
     set(s, c) {
+      if (s?.id !== step?.id) { target = null; cand = null; candN = 0 } // 단계가 바뀌면 옛 곳을 붙잡지 않는다
       step = s
       ctx = c
       if (s === undefined) {
