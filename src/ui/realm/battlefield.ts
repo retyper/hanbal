@@ -679,6 +679,35 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const SOL = new Set(['spear', 'shield', 'bow', 'crossbow', 'horse', 'pike', 'boat', 'axe'])
     const pd = l.pending
     const play = anim && last !== undefined
+    /**
+     * 싸움터의 땅 — 규칙이 전장에 보이게 (형: 규칙은 지도에 보이게 · 10-25 전장에도).
+     * 지키는 쪽 진 앞: 목책(도읍·산성은 성문) · 해자 물 · 고갯길이면 옆구리 돌무더기. 공격이 이기면 목책이 부서져 있다.
+     * 화살이 오간 뒤엔 그 앞줄 곁에 꽂힌 화살이 남는다. 두 진 사이: 나루·갈대·갯벌이면 강물과 갈대
+     */
+    const node = prev.nodes[l.node]
+    const defCls: 'us' | 'foe' = weAtk ? 'foe' : 'us'
+    const shot = (sd: 'a' | 'd'): boolean => rounds.some((rd) => (sd === 'a' ? rd.oa : rd.od)?.bows !== undefined)
+    const tp = (k: string, x: number, oy: number, sc: number, flat = false): string =>
+      `<img class="tp${flat ? ' flat' : ''}" src="${art}fx/field/${k}.png" alt="" style="--x:${(x + oy * 0.22).toFixed(1)}%;--oy:${oy}%;--sc:${sc};z-index:${(flat ? 2 : 10) + Math.round(oy + 40)}">`
+    const terrainProps = (cls: 'us' | 'foe'): string => {
+      let h = ''
+      if (cls === defCls && l.field !== true && node !== undefined) {
+        const breached = l.pending === undefined && shown >= (l.rounds ?? []).length && (l.outcome === 'win' || l.outcome === 'rout')
+        if (node.tags.includes('moat')) for (const oy of [-32, -16, 0, 16, 32]) h += tp('moat', 54, oy, 1.3, true)
+        if (node.tags.includes('palisade') || node.kind === 'fort' || node.kind === 'capital') {
+          const gate = node.kind === 'fort' || node.kind === 'capital'
+          // 이어진 울타리 — 토막을 겹쳐 세운다(한가운데 성문)
+          const ys = [-36, -27, -18, -9, 0, 9, 18, 27, 36]
+          for (const [j, oy] of ys.entries()) h += tp(breached ? (j % 3 === 1 ? 'palisade' : 'broken') : gate && j === 4 ? 'gate' : 'palisade', 47.5, oy, 1.25)
+        }
+      }
+      if (cls === defCls && l.via === 'pass') { h += tp('rocks', 30, -36, 0.9); h += tp('rocks', 24, 32, 1.1) }
+      // 꽂힌 화살 — 맞은편이 쏜 적이 있으면 이쪽 앞줄 곁에
+      if (shot(cls === 'us' ? (weAtk ? 'd' : 'a') : (weAtk ? 'a' : 'd'))) for (const oy of [-14, 4, 22]) h += tp('arrows', 41, oy, 0.55)
+      return h
+    }
+    const ford = l.via === 'ford' || l.via === 'reeds' || l.via === 'mudflat'
+    const midTerr = ford ? `<div class="wf-mid-terr">${[-30, -14, 2, 18, 34].map((oy) => tp('river', 50, oy, 1.25, true)).join('')}${tp('reeds', 47, -34, 0.8)}${tp('reeds', 53, 30, 0.9)}</div>` : ''
     const side = (i: 0 | 1, cls: 'us' | 'foe', o: RoundOrder | undefined, hero: string | null, f: string | undefined): string => {
       const mix = mixOf(i)
       const all = Object.entries(mix).filter(([, v]) => (v ?? 0) > 0) as Array<[string, number]>
@@ -687,7 +716,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       const em = f !== undefined ? FACTION_ART[f]?.emblem : undefined
       const gen = `<span class="wgen" style="--fc:${fc}"><i class="wpole">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}</i>${face(hero, art, 'unit-general')}</span>`
       const cues = '<i class="wq q-charge"><b>돌격</b></i><i class="wq q-hold"></i><i class="wq q-shoot"></i><i class="wq q-ride"></i><i class="wq q-drum"></i><i class="wq q-cap"><b>사로잡으러</b></i><i class="wq q-back"><b>물러난다</b></i>'
-      if (men <= 0) return `<div class="wf2s ${cls}"${formAttrs(o)}>${gen}${cues}</div>`
+      if (men <= 0) return `<div class="wf2s ${cls}"${formAttrs(o)}>${terrainProps(cls)}${gen}${cues}</div>`
       const T = Math.max(6, Math.min(18, Math.round(6 + 12 * (st.men[i] / big))))
       // 병종마다 몫 — 줄마다 모은다
       const rows: string[][] = [[], [], []]
@@ -730,9 +759,10 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       const shoot = play && o?.bows !== undefined && rows[1]!.length > 0 ? beatOf(o.bows) : null
       const tempo = play ? ` style="--fa:${beatOf(o?.front).toFixed(2)}s;--ha:${beatOf(o?.horse).toFixed(2)}s;--sa:${(shoot ?? 0).toFixed(2)}s"` : ''
       const arrows = shoot === null ? '' : `<i class="wf-arw" style="--sa:${shoot.toFixed(2)}s">${Array.from({ length: 8 }, (_, j) => `<i style="--k:${j};--ay:${-30 + j * 8}%"><img src="${art}fx/arrow.png" alt=""></i>`).join('')}</i>`
+      const terr = terrainProps(cls)
       // 적이 흔들린다(사기가 꺾여 방진도 돌격을 못 받아 낼 지경) — 고를 때 적 진이 떨고 깃발이 기운다 (판세가 눈에 보이게)
       const waver = !play && cls === 'foe' && pd !== undefined && pd.round === shown && pd.foeWaver ? ' waver' : ''
-      return `<div class="wf2s ${cls}${waver}"${formAttrs(o)}${tempo}>${gen}${cues}${bows}${horse}${front}${arrows}</div>`
+      return `<div class="wf2s ${cls}${waver}"${formAttrs(o)}${tempo}>${terr}${gen}${cues}${bows}${horse}${front}${arrows}</div>`
     }
     // 이 합에 낸 명령 (풀릴 때) · 고르는 중엔 우리는 고른 것, 적은 낌새
     const ordUs: RoundOrder | undefined = play ? (weAtk ? last!.oa : last!.od) : pd !== undefined ? sel : undefined
@@ -751,7 +781,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const atkWon = l.outcome === 'win' || l.outcome === 'rout'
     const usWon = weAtk === atkWon
     const endCls = fin ? (usWon ? ' fin win-us' : ' fin win-foe') : ''
-    return `<div class="wfield${play ? ' play' : ''}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s"><i class="wf-ground"></i>${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}<i class="wf-mid">⚔</i>${hit}${omen}</div>`
+    return `<div class="wfield${play ? ' play' : ''}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s"><i class="wf-ground"></i>${midTerr}${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}<i class="wf-mid">⚔</i>${hit}${omen}</div>`
   }
 
   // 싸움터 배경 (땅마다) · 위 카드는 굴려도 그 자리에 (형: "싸우는로그가 스크롤로 보이더라도 상단에 캐릭터랑 체력바 있는 그 카드는 고정")
@@ -984,6 +1014,11 @@ export const WAR_CSS = `
   background: radial-gradient(ellipse 60% 40% at 50% 78%, #6a4e2a55, #0000 70%), linear-gradient(#0000 20%, #1a120a99); }
 .ap .wfield .wf-ground { position: absolute; left: 0; right: 0; top: 40%; bottom: 0; background: radial-gradient(ellipse 70% 60% at 50% 70%, #3a2a1666, #0000 75%); }
 .ap .wf2s { position: absolute; inset: 0; } .ap .wf2s.foe { transform: scaleX(-1); }
+/* 땅 조각 — 병사와 같은 자리 셈(원근으로 비스듬히 · 아래일수록 앞) */
+.ap .wfield .tp { position: absolute; left: var(--x); top: calc(60% + var(--oy)); height: clamp(26px, 7cqw, 46px); width: auto; transform: translate(-50%, -100%) scale(var(--sc, 1)); transform-origin: 50% 100%; pointer-events: none; filter: drop-shadow(0 2px 2px #000a); }
+.ap .wfield .tp.flat { height: clamp(18px, 5cqw, 32px); transform: translate(-50%, -60%) scale(var(--sc, 1)); filter: none; opacity: .92; }
+.ap .wfield .wf-mid-terr { position: absolute; inset: 0; }
+.ap .wfield.play .wf-mid-terr { transform-origin: 50% 62%; animation: wpushin 1.5s cubic-bezier(.2, .7, .3, 1) calc(var(--hd) - .25s) both; }
 .ap .wf2s .tk { position: absolute; left: calc(var(--x) + var(--dx, 0%)); top: calc(60% + var(--oy) * var(--sy, 1) + var(--dy, 0%)); height: clamp(28px, 7.4cqw, 50px); width: auto;
   transform: translate(-50%, -100%) scale(var(--sc, 1)); transform-origin: 50% 100%; rotate: var(--rot, 0deg);
   transition: left .5s cubic-bezier(.3, 1.25, .5, 1), top .5s cubic-bezier(.3, 1.25, .5, 1), rotate .35s ease-out, filter .3s; filter: drop-shadow(0 0 2px #7cc4ff) drop-shadow(0 2px 2px #000c); }
