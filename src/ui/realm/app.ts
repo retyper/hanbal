@@ -2336,6 +2336,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 원정 — 먼 땅 넷 · 길이 셋 · 무엇이 자주·가끔·드물게 나오나 (숫자 대신 말 — 메모리 realm-no-numbers). 결과는 보낼 때 정해진다
    * (형의 메모: "팰월드에선 … 매 지대에서 확인 … 발견도 도박" — 팰 파견 자리)
    */
+  /**
+   * 이 장수의 원정 고르기 — 화면이 보여 주는 것과 「보낸다」가 보내는 것이 같아야 한다.
+   * (형 10-24: "원정 보냈는데 다음 계절에 계속 활성화된 상태" — 땅을 안 누르고 보내면 화면은 갈 수 있는 첫 땅을 보이는데
+   *  명령은 「왜의 포구」로 나가, 2장처럼 왜에 못 닿는 판에서는 계절을 넘길 때 원정이 빠졌다)
+   */
+  function expPickOf(r: Realm, id: string): { dest: ExpDest; len: 0 | 1 | 2 } {
+    const dests = DEST_IDS.filter((d) => destReachable(r, me(), d))
+    const pick0 = expPick[id] ?? { dest: dests[0] ?? DEST_IDS[0]!, len: 1 as 0 | 1 | 2 }
+    return dests.includes(pick0.dest) || dests.length === 0 ? pick0 : { ...pick0, dest: dests[0]! }
+  }
+
   function expHtml(r: Realm, x: Hero): string {
     const away = onExpedition(r, x.id)
     if (away !== undefined) return `<div class="exp" style="--expbg:url('${ART}exp/exp-${away.dest}.jpg')"><b>원정 중</b><span class="mute">${esc(DESTS[away.dest].name)} · ${Math.max(1, away.back - r.season + 1)}계절 뒤 돌아온다. 무엇을 가져올지는 떠날 때 이미 정해졌다.</span></div>`
@@ -2347,9 +2358,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (tiedUp !== null) return `<div class="exp off"><b>원정</b><span class="mute">⏳ ${esc(tiedUp)} — 이번 계절엔 못 보낸다</span></div>`
     // 먼 땅은 다 보이되 못 가는 곳은 흐린 단추로 — 왜 못 가는지는 단추 밑에 (형 10-23: "못 가면 버튼은 있지만 비활성화 · 보낼 수 있는지 없는지도 모르잖아")
     const dests = DEST_IDS.filter((d) => destReachable(r, me(), d))
+    const pick = expPickOf(r, x.id)
     const farWhy = (d: ExpDest): string => (DESTS[d].from.includes(r.region ?? 'byeonhan-mini') ? '포구가 있어야' : '이 땅에선 멀다')
-    const pick0 = expPick[x.id] ?? { dest: dests[0] ?? DEST_IDS[0]!, len: 1 as 0 | 1 | 2 }
-    const pick = dests.includes(pick0.dest) || dests.length === 0 ? pick0 : { ...pick0, dest: dests[0]! }
     const word = (p: number): string => (p >= 0.3 ? '자주' : p >= 0.12 ? '가끔' : p > 0 ? '드물게' : '없다')
     const odds = expOdds(x, pick.dest, pick.len)
     // 쉬는 장수가 원정을 떠나면 사람 손이 하나 준다 — 이미 고른 공작·사신이 버려지지 않게 (형 10-23: "방화·소문 이미 보냈는데 원정을 중복해서 보낼 수 있는 건 말이 안 되지")
@@ -3789,7 +3799,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'exp-dest': expPick[d['id']!] = { dest: d['v'] as ExpDest, len: expPick[d['id']!]?.len ?? 1 }; break
       case 'exp-len': expPick[d['id']!] = { dest: expPick[d['id']!]?.dest ?? 'wa', len: Number(d['v']) as 0 | 1 | 2 }; break
       case 'exp-go': {
-        const pk = expPick[d['id']!] ?? { dest: 'wa' as ExpDest, len: 1 as 0 | 1 | 2 }
+        const pk = expPickOf(plan(), d['id']!) // 화면이 보여 준 그 땅·길이로
         heroOrders = [...heroOrders.filter((o) => !(o.kind === 'expedition' && o.hero === d['id'])), { kind: 'expedition', faction: me(), hero: d['id']!, dest: pk.dest, len: pk.len }]
         break
       }
