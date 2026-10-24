@@ -388,8 +388,10 @@ export function warName(r: Realm, l: BattleLine): string {
 /** 전장 한 판의 화면 — 보인 합(shown)까지. 마지막 합은 천천히 풀린다(anim). sel 은 지금 고르는 깃발 */
 /** 활을 쏘는 명령 — 그 합에 화살이 날아간다 */
 const SHOOT_CMD: ReadonlySet<string> = new Set(['volley', 'counter', 'open', 'height', 'fire'])
+/** 동작 그림(8컷 띠)이 있는 병종 — 0·1 서기 · 2·3 걷기 · 4·5 찌르기 · 6 맞음(안 씀) · 7 쓰러짐 */
+const ANIM_SOL: ReadonlySet<string> = new Set(['spear'])
 /** 전장의 진이 직접 보여 주는 무리 명령 — 위 겹의 큰 연출을 띄우지 않는다 */
-const FIELD_CMD: ReadonlySet<string> = new Set(['charge', 'hold', 'open', 'volley', 'counter', 'flank', 'punch', 'pursue', 'guard'])
+const FIELD_CMD: ReadonlySet<string> = new Set(['charge', 'hold', 'open', 'volley', 'counter', 'flank', 'punch', 'pursue', 'guard', 'drum', 'capture', 'duel', 'retreat'])
 /** 장수 기술의 결 — 초상이 튀어나오는 몸짓 */
 type CutKind = 'lead' | 'cheer' | 'strike' | 'grab' | 'back' | 'shot' | 'call' | 'guard'
 const CUT_OF: Readonly<Partial<Record<Cmd, CutKind>>> = { drum: 'cheer', duel: 'strike', capture: 'grab', retreat: 'back' }
@@ -701,7 +703,10 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         const s2 = idx < alive ? 'up' : idx < before ? 'fall' : 'down'
         const hl = oy < -0.5 ? ' hi' : oy > 0.5 ? ' lo' : ''
         const sc = (0.8 + 0.4 * ((oy + 40) / 80)).toFixed(2)
-        return `<img class="tk r${r}${hl} ${s2}" src="${art}icon/sol-${SOL.has(k) ? k : 'spear'}.png" alt="" style="--x:${(x + oy * 0.22).toFixed(1)}%;--oy:${oy.toFixed(1)}%;--sc:${sc};--j:${idx++ % 6};z-index:${10 + Math.round(oy + 40)}">`
+        const pos = `--x:${(x + oy * 0.22).toFixed(1)}%;--oy:${oy.toFixed(1)}%;--sc:${sc};--j:${idx++ % 6};z-index:${10 + Math.round(oy + 40)}`
+        // 동작 그림이 있는 병종은 컷으로 움직인다 (서기 · 걷기 · 찌르기 · 쓰러짐 — public/realm/anim · tools/strip-frames.mjs)
+        if (ANIM_SOL.has(k)) return `<i class="tk wsp r${r}${hl} ${s2}" style="${pos}"><b class="spf" style="background-image:url('${art}anim/${k}.png')"></b></i>`
+        return `<img class="tk r${r}${hl} ${s2}" src="${art}icon/sol-${SOL.has(k) ? k : 'spear'}.png" alt="" style="${pos}">`
       }
       const column = (ks: readonly string[], r: 0 | 1, x0: number): string => {
         const lines = ks.length > 7 ? [ks.filter((_, j) => j % 2 === 0), ks.filter((_, j) => j % 2 === 1)] : [ks]
@@ -1052,6 +1057,21 @@ export const WAR_CSS = `
   animation: wloss 1.6s ease-out calc(var(--hd) + .35s) both; }
 .ap .wf-loss.us { left: 26%; } .ap .wf-loss.foe { right: 26%; color: #ffd27a; }
 @keyframes wloss { 0% { opacity: 0; translate: 0 10px; scale: .6; } 15% { opacity: 1; translate: 0 0; scale: 1.15; } 70% { opacity: 1; scale: 1; } 100% { opacity: 0; translate: 0 -18px; } }
+/* 동작 그림 — 8컷 띠를 칸씩 넘긴다 (steps). 바깥(.tk)은 자리·밀기, 안(.spf)은 컷 */
+.ap .wf2s .tk.wsp { width: auto; aspect-ratio: 167 / 160; }
+.ap .wf2s .tk.wsp .spf { position: absolute; inset: 0; background: 0 0 / 800% 100% no-repeat; animation: spidle 1.5s steps(1) calc(var(--j) * -.27s) infinite; }
+@keyframes spidle { 0% { background-position-x: 0%; } 50% { background-position-x: 14.2857%; } }
+@keyframes spwalk { 0% { background-position-x: 28.5714%; } 50% { background-position-x: 42.8571%; } }
+@keyframes spatk { 0% { background-position-x: 57.1429%; } 50% { background-position-x: 71.4286%; } }
+.ap .wfield.enter .tk.wsp .spf { animation: spwalk .42s steps(1) calc(var(--j) * -.1s) 4, spidle 1.5s steps(1) 1.9s infinite; }
+.ap .wfield.play .wf2s .tk.wsp.r0:not(.down) .spf { animation: spwalk .42s steps(1) var(--fa, 0s) 2, spatk .26s steps(1) calc(var(--hd) - .32s) 3, spidle 1.5s steps(1) calc(var(--hd) + .6s) infinite; }
+/* 쓰러짐 — 굴리지 않고 쓰러진 컷으로 땅에 남는다 */
+.ap .wf2s .tk.wsp.down { rotate: 0deg; opacity: .62; filter: grayscale(.5) brightness(.8) drop-shadow(0 2px 2px #000c); }
+.ap .wf2s .tk.wsp.down .spf { animation: none; background-position-x: 100%; }
+.ap .wfield .tk.wsp.fall { animation: wtkfallsp .5s ease-out calc(var(--hd) + .2s + var(--j) * .05s) forwards !important; }
+.ap .wfield .tk.wsp.fall .spf { animation: spidle 1.5s steps(1) infinite, spdie .01s steps(1) calc(var(--hd) + .2s + var(--j) * .05s) forwards; }
+@keyframes spdie { to { background-position-x: 100%; } }
+@keyframes wtkfallsp { 0% { translate: 3cqw 0; } 100% { translate: 1cqw 0; opacity: .62; filter: grayscale(.5) brightness(.8); } }
 @media (prefers-reduced-motion: reduce) { .ap .wfield *, .ap .wfield .tk.fall, .ap .wfield.play { animation: none !important; transition: none !important; } .ap .wf-loss { opacity: 1; } }
 .ap .wbar i { position: relative; display: block; height: 100%; border-radius: 6px; overflow: hidden; }
 .ap .wbar i::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, #ffffff00 0 9px, #ffffff2a 9px 15px); background-size: 34px 100%; animation: wbarflow 1.1s linear infinite; }
