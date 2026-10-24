@@ -7,7 +7,7 @@
  * 루프·타이머가 없다 — 누르면 다시 그린다 (절대 규칙 4). 글은 FLOW §6: 짧게, AI 말투 금지.
  */
 import { aiOrders } from '../../realm/ai.ts'
-import { headcount, type Equip, type UnitKind } from '../../realm/battle.ts'
+import { headcount, strength, type Equip, type UnitKind } from '../../realm/battle.ts'
 import { FACTION_ART, GOOD_ICON, SEASON_ICON, UNIT_ICON, bustOf, kidBust, nodeIcon, noteGrowing, noteKids } from '../../realm/data/art.ts'
 import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../../realm/data/nations-yeongnam.ts'
@@ -2568,7 +2568,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<h4 class="nsec">고을 형편</h4><div class="ntab">`
         + `<span>백성</span><b>${Math.floor(n.hh).toLocaleString('ko-KR')}가구 <small>약 ${Math.round(n.hh * P.realm.peoplePerHH).toLocaleString('ko-KR')}명</small></b>`
         + `<span>늘어남</span><b>다음 계절 ${g.per >= 0 ? '+' : ''}${g.per}가구${g.why.length > 0 ? ` <small>${esc(g.why.map((w) => GROWTH_WHY[w] ?? w).join(' · '))}</small>` : ''}</b>`
-        + `<span>지키는 힘</span><b>장정 ${militiaMen(r, id)} · 군사 ${men}</b>`
+        + `<span>지키는 힘</span><b>장정 ${militiaMen(r, id)}${militiaMen(r, id) > 0 ? ` <small>군사 약 ${militiaWorth(r, militiaMen(r, id))}명 몫</small>` : ''} · 군사 ${men}</b>`
         + `<span>징병</span><b>${draftLimit(r, me(), id)}명 더 뽑을 수 있다</b></div>`
       h += nodeYieldHtml(r, id)
       if (n.kind !== 'sodo' && n.hh > 0) h += chiefHtml(r, id)
@@ -2678,6 +2678,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<button data-act="assign" data-id="${x.id}" data-node="${id}" data-tip="${far ? `정예 ${P.realm.escortMen}명을 거느리고 온다 · 이번 계절은 길에 있다` : '여기 있어 바로 맡는다'}">${esc(x.name)}<small>${STAT_NAME.chi} ${x.chi}${far ? ' · 먼 길' : ''}</small></button>`
     }
     return h + `</div>`
+  }
+
+  /**
+   * 장정 N 명이 우리 군사 몇 명 몫인가 — 돌창에 갑옷·진형이 없어 한 사람이 군사의 4~6분의 1 (militiaMorale)
+   * (형 10-24: "수성할 때 장정들의 전투력이랑 군사들의 전투력은 차등을 둬야" — 이미 다르다, 머릿수만 보여 몰랐다)
+   */
+  function militiaWorth(r: Realm, n: number): number {
+    const eq = r.factions[me()]?.equip ?? 'bronze'
+    const one = strength({ mix: { spear: 100 }, equip: eq, mu: 1, morale: 1 })
+    const mil = strength({ mix: { spear: 100 }, equip: 'stone', mu: 1, morale: P.realm.militiaMorale })
+    return Math.round((n * mil) / Math.max(1e-9, one))
   }
 
   /** 생산 — 「생산품 · 곡식 · 나무」 · 이번 계절 얼마 · 가을걷이 · 고기잡이 (형: "나무 난다 이런 말 말고 생산품: 나무") */
