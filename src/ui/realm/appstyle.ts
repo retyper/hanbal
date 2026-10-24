@@ -29,8 +29,6 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .top { position: absolute; left: 0; right: 0; top: 0; height: var(--toph); padding: env(safe-area-inset-top) 10px 0; box-sizing: border-box;
   display: flex; align-items: center; justify-content: space-between; gap: 8px; z-index: 5;
   background: linear-gradient(#120d09f0, #120d09c0); border-bottom: 1px solid #3a2c1e; }
-.ap .top .lobby + .tl { margin-right: auto; }
-.ap .top .lobby { flex: none; width: 34px; height: 34px; margin-right: 6px; border-radius: 10px; border: 1px solid #5a5040; background: #27201c; color: #e8d9b0; font-size: 19px; line-height: 1; cursor: pointer; }
 .ap .top .tl { display: flex; align-items: center; gap: 6px; font-size: 16px; white-space: nowrap; }
 .ap .top img.sic { width: 30px; height: 30px; }
 .ap .top .tr { display: flex; align-items: center; gap: 10px; overflow: hidden; }
@@ -280,6 +278,20 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .fpick { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0; }
 .ap .fpick button { width: 54px; height: 54px; padding: 0; border-radius: 50%; overflow: hidden; border: 2px solid var(--line); background: #1e160f; color: var(--mute);
   font: inherit; font-size: 18px; cursor: pointer; opacity: .72; transition: transform .12s, opacity .12s; }
+.ap .fpick button.busy, .ap .seg button.busy { opacity: .42; filter: grayscale(.85); cursor: default; position: relative; }
+.ap .fpick button .fbz { position: absolute; right: 2px; bottom: 0; font-style: normal; font-size: 18px; color: #f0d090; text-shadow: 0 0 4px #000; }
+/* 돌아온 장수 알림 — 위 왼쪽(도감 알림은 오른쪽) · 얼굴과 한 줄 */
+.ap .bktoast { position: absolute; left: 10px; top: calc(var(--toph) + 8px); z-index: 44; display: flex; flex-direction: column; gap: 4px; max-width: min(78vw, 360px);
+  padding: 8px; border-radius: 12px; border: 1px solid #8a6a3a; background: linear-gradient(#2a1f14f0, #1a130cf0); box-shadow: 0 6px 18px #000a; animation: bkin .35s cubic-bezier(.2, 1.3, .4, 1) both; }
+.ap .bktoast.out { animation: cout .4s ease-in forwards; }
+.ap .bktoast .bkhd { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; color: #f0d090; }
+.ap .bktoast .bkic { width: 20px; height: 20px; }
+.ap .bktoast .bkrow { display: flex; align-items: center; gap: 8px; padding: 3px 4px; border: 0; border-radius: 8px; background: #0003; color: #f3e6c8; text-align: left; font-size: 13px; cursor: pointer; }
+.ap .bktoast .bkrow:hover { background: #fff1; }
+.ap .bktoast .bkf { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1px solid #d9b36a; flex: none; }
+.ap .bktoast .bkmore { font-size: 12px; color: #c9b48a; }
+@keyframes bkin { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+.ap .hdo.big { font-size: 15px; font-weight: 800; color: #f0d090; margin: 6px 0; }
 .ap .fpick button.on { border-color: var(--gold); box-shadow: 0 0 0 2px #d9b36a66, 0 0 14px #d9b36a55; opacity: 1; transform: scale(1.08); }
 .ap .fpick img.fp { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
 .ap .stepper { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
