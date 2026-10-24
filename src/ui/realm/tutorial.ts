@@ -159,6 +159,8 @@ export interface Spot {
 export function createSpot(root: HTMLElement): Spot {
   const hole = document.createElement('div')
   hole.className = 'tutspot'
+  // 구멍 둘레를 판 넷으로 덮는다 — 큰 그림자(200vmax)로 덮으면 어떤 폰은 구멍 안까지 칠해 누를 곳이 밤색으로 가렸다 (형 10-24: "선택 영역창 전부 밤색 · 핫픽스")
+  hole.innerHTML = '<i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i>'
   hole.hidden = true
   const box = document.createElement('div')
   box.className = 'tutring'
@@ -250,7 +252,7 @@ export function createSpot(root: HTMLElement): Spot {
         const below = r.top + r.height / 2 < innerHeight * 0.55 // 누를 곳이 위쪽이면 손은 그 밑에
         box.style.cssText = at(r, pad)
         box.classList.toggle('up', !below)
-        hole.style.cssText = at(v, view === target ? pad : 2)
+        { const p = view === target ? pad : 2; hole.style.cssText = `--x:${v.left - p}px;--y:${v.top - p}px;--w:${v.width + p * 2}px;--h:${v.height + p * 2}px` }
         if (b !== null) {
           // 띠는 볼 곳을 가리지 않게 — 볼 곳 밑(또는 위)에, 누를 곳의 손 그림 틈만큼 띄워
           // 자리가 없으면(보고판처럼 큰 카드) 누를 곳의 반대쪽 화면 끝에
@@ -277,9 +279,9 @@ export function createSpot(root: HTMLElement): Spot {
     ev.preventDefault()
     ev.stopPropagation()
     // 엉뚱한 데를 누르면 고리가 한 번 크게 뛴다 — 여기를 누르라고
-    box.classList.remove('nudge')
+    box.classList.remove('tnudge')
     void box.offsetWidth
-    box.classList.add('nudge')
+    box.classList.add('tnudge') // 'nudge' 는 쉬는 장수 띠(밤색 바탕)와 이름이 겹쳐 고리 안이 밤색으로 칠해졌다 (형 10-24 핫픽스)
   }, true)
 
   return {
@@ -308,6 +310,8 @@ export const TUT_CSS = `
 .ap .tutband:empty { display: none; }
 /* 전장이 열린 동안은 띠를 숨긴다 — 싸움에 집중 (전투 쪽이 다는 war-open, 아니면 전장 DOM 으로) */
 .ap.war-open .tutband, .ap:has(.wr) .tutband { display: none; }
+/* 큰 장면(등용·사로잡음·혼례…)이 떠 있는 동안은 띠·고리를 숨긴다 — 고리가 장면 뒤를 가리켜 누를 수 없었다(10/12 막힘 · 형 10-24) */
+.ap:has(.cere) .tutband, .ap:has(.cere) .tutspot, .ap:has(.cere) .tutring { display: none !important; }
 .tutb { pointer-events: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; max-width: 560px; padding: 10px 14px; border-radius: 14px;
   background: #1f1710f8; border: 1px solid #e8c06a; box-shadow: 0 6px 24px #000d; color: #f3ead8; font-size: 15px; line-height: 1.5; }
 .tutb i { font-style: normal; color: #f3d48a; font-weight: 700; font-size: 12.5px; } .tutb > span { flex: 1 1 260px; }
@@ -320,7 +324,12 @@ export const TUT_CSS = `
 @keyframes tutglow { from { box-shadow: 0 0 4px #ffd27a66; } to { box-shadow: 0 0 18px #ffd27a; } }
 /* 스포트라이트 — 구멍 밖은 어둡다. 구멍은 누를 곳 크기, 둘레에 숨 쉬는 금빛 고리, 그 밑(또는 위)에서 손이 콕콕 가리킨다 */
 /* 자리는 미끄러지지 않고 바로 붙는다 — 판이 굴러갈 때 고리가 뒤처지면 엉뚱한 데를 누르게 된다 */
-.ap .tutspot { position: fixed; z-index: 95; pointer-events: none; border-radius: var(--rad, 14px); box-shadow: 0 0 0 200vmax #000000a8; }
+.ap .tutspot { position: fixed; inset: 0; z-index: 95; pointer-events: none; }
+.ap .tutspot i { position: absolute; background: #000000a8; }
+.ap .tutspot .t { left: 0; right: 0; top: 0; height: max(0px, var(--y)); }
+.ap .tutspot .b { left: 0; right: 0; top: calc(var(--y) + var(--h)); bottom: 0; }
+.ap .tutspot .l { left: 0; width: max(0px, var(--x)); top: var(--y); height: var(--h); }
+.ap .tutspot .r { left: calc(var(--x) + var(--w)); right: 0; top: var(--y); height: var(--h); }
 .ap .tutring { position: fixed; z-index: 95; pointer-events: none; border-radius: var(--rad, 14px); }
 .ap .tutspot[hidden], .ap .tutring[hidden] { display: none; }
 .ap .tutring .ring { position: absolute; inset: -3px; border-radius: inherit; border: 3px solid #ffd27a; box-shadow: 0 0 16px #ffd27a, inset 0 0 10px #ffd27a88;
@@ -331,7 +340,7 @@ export const TUT_CSS = `
 .ap .tutring .hand::before { content: '👆'; }
 .ap .tutring.up .hand { top: auto; bottom: 100%; margin: 0 0 8px -20px; } .ap .tutring.up .hand::before { content: '👇'; }
 .ap .tutring.up .hand { animation-name: tuthandup; }
-.ap .tutring.nudge .ring { animation: tutnudge .45s ease-out; }
+.ap .tutring.tnudge .ring { animation: tutnudge .45s ease-out; }
 @keyframes tutring { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.06); opacity: .8; } }
 @keyframes tutwave { from { transform: scale(1); opacity: .9; } to { transform: scale(1.35); opacity: 0; } }
 @keyframes tuthand { from { transform: translateY(6px); } to { transform: translateY(-4px); } }

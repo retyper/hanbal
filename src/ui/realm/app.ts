@@ -1655,6 +1655,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   // ───────── 남의 나라가 걸어온 청 · 다가오는 적 (형: "적이 뭔가 거래를 걸어온다거나 동맹요구하거나 · 기습에 대비하거나 경계를 강화하거나")
+  /** 이번 계절 아직 안 고른 것 — 사건 카드 · 답하지 않은 사신의 청 */
+  function repTodo(): number {
+    const r = realm!
+    const c = r.card
+    const card = c !== undefined && c !== null && c.season === r.season && !r.outcome && answers[`card:${c.season}`] === undefined ? 1 : 0
+    return card + openAsks(r, me()).filter((a) => answers[a.id] === undefined).length
+  }
+
   function asksHtml(): string {
     const asks = openAsks(realm!, me())
     if (asks.length === 0) return ''
@@ -2908,6 +2916,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // (형: "한번에 왕창 텍스트 똭 놓지말고 하나씩 올라와서 쌓이게 · 너무빠르게말고 · 한번탭하면 바로 다나오게")
     let t = 0
     let h = `<div class="mcard" data-act="rep-fast"><div class="mt">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r.season))}</b><span>${esc(SEASON_LINE[season])}</span></div>`
+    // 이번 계절 정할 것(사건 카드 · 사신의 청)은 맨 위에 — 맨 아래 묻혀 있으면 고를 게 있는 줄 몰랐다 (형 10-24: 동료 플레이 "이벤트 선택지를 고르지도 않고 넘어감")
+    const todo = repTodo()
+    const decide = cardHtml(realm!) + asksHtml()
+    if (decide !== '') h += `<div class="rdecide"><h4 class="rdh">이번 계절 정할 것${todo > 0 ? ` <b>${todo}</b>` : ' · 다 골랐다'}</h4>${decide}</div>`
     for (const l of onUs) {
       h += warCard(r, l, t)
       t += FALL_S
@@ -2943,9 +2955,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<div class="lines">${going.map((a, i) => `<div class="rrow rv" style="--t:${(t + (lines.length + i) * LINE_S).toFixed(2)}s">${icon('unit-spear', 'ri')}<span class="rflow"><span class="nchip">${esc(r.nodes[a.march!.from]?.name ?? '')}</span><i class="ar">➜</i><span class="nchip">${esc(r.nodes[a.march!.to]?.name ?? '')}</span></span>`
         + `<span class="rtx">${tx(`${josa(armyName(r, a), '이', '가')} 가는 중 — ${arriveWhen(r.season, a.march!.left)}`)}</span></div>`).join('')}</div>`
     }
-    const tail = cardHtml(realm!) + asksHtml() + threatsHtml(r)
+    const tail = threatsHtml(r)
     if (tail !== '') h += `<div class="rv" style="--t:${(t + Math.max(1, lines.length) * LINE_S).toFixed(2)}s">${tail}</div>`
-    return h + `<button class="btn pri wide" data-act="rep-close">확인</button></div>`
+    // 확인은 늘 보이게(카드 아래 붙박이) · 정할 것을 다 골라야 눌린다
+    return h + `<div class="repfoot"><button class="btn pri wide" data-act="rep-close" ${todo > 0 ? 'disabled' : ''}>${todo > 0 ? `정할 것 ${todo}개를 먼저 고른다` : '확인'}</button></div></div>`
   }
 
   /**

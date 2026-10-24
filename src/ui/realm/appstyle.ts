@@ -508,6 +508,11 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .modal.late { animation: mlate .45s ease-out 1.9s both; }
 @keyframes mlate { from { opacity: 0; visibility: hidden; } to { opacity: 1; visibility: visible; } }
 .ap .modal.late .mcard { --t0: .35s; }
+/* 정할 것 — 소식 카드 맨 위 · 확인은 카드 아래에 늘 붙어 있다 (형 10-24) */
+.ap .mcard .rdecide { margin: 4px 0 10px; padding: 8px 10px; border-radius: 12px; border: 1px solid #e0b860; background: #2a1f10cc; }
+.ap .mcard .rdecide .rdh { margin: 0 0 6px; color: #ffd27a; } .ap .mcard .rdecide .rdh b { display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 11px; background: #c0392b; color: #fff; font-size: 13px; }
+.ap .mcard .repfoot { position: sticky; bottom: -4px; margin: 8px -4px -4px; padding: 8px 4px 4px; background: linear-gradient(#1a130c00, #1a130cf0 35%); z-index: 2; }
+.ap .mcard .repfoot .btn:disabled { opacity: .75; }
 .ap .rv { animation: bkin .45s ease-out calc(var(--t0, 0s) + var(--t, 0s)) both; }
 .ap .modal.fast { animation: none; } .ap .modal.fast .rv { animation-delay: 0s !important; animation-duration: .01s !important; }
 @media (prefers-reduced-motion: reduce) { .ap .rv { animation-duration: .01s !important; animation-delay: 0s !important; } .ap .modal.late { animation-delay: .6s; } }
