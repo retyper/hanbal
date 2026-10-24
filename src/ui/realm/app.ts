@@ -51,6 +51,7 @@ import { GOAL_CSS, goalBandHtml, goalRowsHtml } from './goalband.ts'
 import { installTips, TIP_CSS } from './tips.ts'
 import { UPDATE_CSS } from './update.ts'
 import { scrollInside } from './scroll.ts'
+import { morph } from './morph.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
 import { APPROACH_DOES, APPROACH_NAME, HARD_LINE, WAR_CSS, openWar } from './battlefield.ts'
 import { attachZoom } from './zoom.ts'
@@ -3419,7 +3420,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     root.classList.remove('choosing')
     $('.seasonp').dataset['s'] = seasonOf(realm.season)
     const r = plan()
-    $('.top').innerHTML = topHtml(r)
+    morph($('.top'), topHtml(r)) // 바뀐 곳만 — 통째로 갈면 그림이 깜빡인다 (형 10-24)
     rollTop(realm.season)
     const wrap = $('.mapwrap')
     const keep = [wrap.scrollLeft, wrap.scrollTop] as const
@@ -3446,23 +3447,23 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     } else [wrap.scrollLeft, wrap.scrollTop] = keep
     paintTut(r)
     const sb = selBarHtml(r)
-    $('.selbar').innerHTML = sb
+    morph($('.selbar'), sb)
     $('.selbar').classList.toggle('pp', partySel !== '' && armySel.length === 0) // 개척단 띠는 작게 — 가린 고을을 누를 수 있게
     root.classList.toggle('sel-open', sb !== '')
-    $('.roadkey').innerHTML = roadKeyHtml()
+    morph($('.roadkey'), roadKeyHtml())
     $('.layers').innerHTML = layersOpen ? layersHtml() : ''
     // 답할 청이 남았으면 깃발 줄 끝에 사신 알림 — 누르면 외교 판
     const waiting = openAsks(realm, me()).filter((a) => answers[a.id] === undefined).length
-    $('.legend').innerHTML = legendHtml(r) + (waiting > 0 ? `<button class="askpill" data-act="tab" data-tab="diplo">${icon('good-tribute-bell')}사신 ${waiting}</button>` : '')
+    morph($('.legend'), legendHtml(r) + (waiting > 0 ? `<button class="askpill" data-act="tab" data-tab="diplo">${icon('good-tribute-bell')}사신 ${waiting}</button>` : ''))
     $('.next').innerHTML = `다음 계절 <span>›</span>`
-    $('.goalb').innerHTML = goalBandHtml(r, esc, goalFolded()) // 캠페인의 장이면 이 장의 목표 — 접을 수 있다
+    morph($('.goalb'), goalBandHtml(r, esc, goalFolded())) // 캠페인의 장이면 이 장의 목표 — 접을 수 있다
     $('.goalb').classList.toggle('folded', goalFolded())
     let tabs = ''
     for (const t of TABS) {
       const dot = dotKeys(r, t.id).some((k) => !seenKeys.has(k))
       tabs += `<button class="${sheet?.kind === t.id ? 'on' : ''}" data-act="tab" data-tab="${t.id}" data-tip="${t.name}" data-more="${t.more}">${icon(t.icon, 'tic')}<span>${t.name}</span>${dot ? '<i class="dot"></i>' : ''}</button>`
     }
-    $('.tabs').innerHTML = tabs
+    morph($('.tabs'), tabs)
     const sh = $('.sheet')
     const keepSheet = sh.scrollTop
     let body = ''
@@ -3485,9 +3486,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 판을 새로 열 때만 카드가 한 장씩 펼쳐진다 (형: "하스스톤은 … 촤라락 하고 별개의 오브젝트가 서로다른 시간순서로 펴지고") —
     // 같은 판을 다시 그릴 때(숫자 ± 따위)는 펼치지 않는다
     const sk = sheet === null ? '' : sheet.kind === 'node' || sheet.kind === 'hero' ? `${sheet.kind}:${sheet.id}` : sheet.kind
-    sh.classList.toggle('deal', sk !== '' && sk !== lastSheet)
+    const newSheet = sk !== lastSheet
+    sh.classList.toggle('deal', sk !== '' && newSheet)
     lastSheet = sk
-    sh.innerHTML = sheet !== null ? `<div class="grip" data-act="close"></div>${body}` : ''
+    // 새 판을 열 때만 통째로(카드가 펼쳐진다) · 같은 판 안에서 누를 때는 바뀐 곳만 — 그림이 깜빡이지 않게 (형 10-24: 교환할 때 깜빡)
+    const sheetHtml = sheet !== null ? `<div class="grip" data-act="close"></div>${body}` : ''
+    if (newSheet) sh.innerHTML = sheetHtml
+    else morph(sh, sheetHtml)
     sh.scrollTop = keepSheet
     // 방금 나눈 무리를 눈앞에 (형: "유저가 뭔가를 하면 항상 바로바로 적용돼야함")
     if (freshArmy !== '') scrollInside(sh.querySelector<HTMLElement>('.acard.fresh'), 'nearest')
