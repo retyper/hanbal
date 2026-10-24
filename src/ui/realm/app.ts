@@ -3047,11 +3047,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 차례 — 나라가 무너졌으면 그것부터, 그다음 싸움 카드, 그다음 소식이 한 줄씩 올라와 쌓인다
     // (형: "한번에 왕창 텍스트 똭 놓지말고 하나씩 올라와서 쌓이게 · 너무빠르게말고 · 한번탭하면 바로 다나오게")
     let t = 0
-    let h = `<div class="mcard" data-act="rep-fast"><div class="mt">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r.season))}</b><span>${esc(SEASON_LINE[season])}</span></div>`
-    // 이번 계절 정할 것(사건 카드 · 사신의 청)은 맨 위에 — 맨 아래 묻혀 있으면 고를 게 있는 줄 몰랐다 (형 10-24: 동료 플레이 "이벤트 선택지를 고르지도 않고 넘어감")
+    // 이번 계절 정할 것(사건 카드 · 사신의 청) — 아직 안 골랐으면 소식보다 먼저 화면 가득, 다 골라야 소식이 열린다
+    // (형 10-24: 동료 플레이 "이벤트 선택지를 고르지도 않고 넘어감" · 10-25: "선택해야 하는 이벤트가 뜰 경우에는 화면 전체로 하고 무조건 선택하게")
     const todo = repTodo()
     const decide = cardHtml(realm!) + asksHtml()
-    if (decide !== '') h += `<div class="rdecide"><h4 class="rdh">이번 계절 정할 것${todo > 0 ? ` <b>${todo}</b>` : ' · 다 골랐다'}</h4>${decide}</div>`
+    if (todo > 0) {
+      return `<div class="mcard fulld"><div class="mt">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r.season))}</b><span>정할 것 <b class="rdn">${todo}</b></span></div>`
+        + `<div class="rdecide full">${decide}</div><p class="fdnote">다 고르면 이 계절의 소식이 이어진다</p></div>`
+    }
+    let h = `<div class="mcard" data-act="rep-fast"><div class="mt">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r.season))}</b><span>${esc(SEASON_LINE[season])}</span></div>`
+    if (decide !== '') h += `<div class="rdecide"><h4 class="rdh">이번 계절 정할 것 · 다 골랐다</h4>${decide}</div>`
     for (const l of onUs) {
       h += warCard(r, l, t)
       t += FALL_S

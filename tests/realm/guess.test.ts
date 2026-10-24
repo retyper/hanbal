@@ -3,7 +3,7 @@
  *
  *  - 시험 돌림의 pending 에 깃발마다 이번 합의 짐작이 붙는다 — 우리·적이 잃을 몫, 합 뒤 판세
  *  - 낌새가 있으면 「낌새대로 오면」 하나(폭 없음), 없으면 적 앞줄의 수마다라 폭이 생긴다
- *  - 낌새의 맞수가 낌새에 지는 수보다 판세가 낫다 (많은 판에서)
+ *  - 낌새를 받아치는 수가 낌새에 지는 수보다 판세가 낫다 (많은 판에서)
  *  - 사로잡기·물러나기·겨루기는 짐작하지 않는다 · 같은 판이면 같은 짐작 (A1)
  */
 import { describe, it } from 'node:test'
@@ -47,7 +47,7 @@ describe('고르기 전 짐작', () => {
     assert.ok(Object.values(blind.guess!.opts.front!).some((x) => x!.edge[1] > x!.edge[0]))
   })
 
-  it('낌새의 맞수가 낌새에 지는 수보다 낫다 (많은 판)', () => {
+  it('낌새를 받아치는 수가 낌새에 지는 수보다 낫다 (많은 판)', () => {
     const COUNTER: Record<string, string> = { charge: 'hold', hold: 'open', open: 'charge' }
     const LOSER: Record<string, string> = { charge: 'open', hold: 'charge', open: 'hold' }
     let better = 0

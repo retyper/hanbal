@@ -510,6 +510,17 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .modal.late .mcard { --t0: .35s; }
 /* 정할 것 — 소식 카드 맨 위 · 확인은 카드 아래에 늘 붙어 있다 (형 10-24) */
 .ap .mcard .rdecide { margin: 4px 0 10px; padding: 8px 10px; border-radius: 12px; border: 1px solid #e0b860; background: #2a1f10cc; }
+/* 정할 것이 남은 보고판 — 화면 가득, 「확인」 없음 (app.reportHtml) */
+.ap .modal:has(.mcard.fulld) { padding: 0; align-items: stretch; }
+.ap.ap .mcard.fulld { width: 100%; max-width: none; max-height: none; height: 100%; border: 0; border-image: none; border-radius: 0; padding: max(12px, env(safe-area-inset-top)) 14px 18px; background: radial-gradient(ellipse at 50% 0%, #3a2a16, #17110c 70%); display: flex; flex-direction: column; overflow-y: auto; }
+.ap .mcard.fulld .mt { margin-bottom: 8px; } .ap .mcard.fulld .mt .rdn { display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 11px; background: #c0392b; color: #fff; font-size: 13px; margin-left: 4px; }
+.ap .mcard.fulld .rdecide.full { flex: 1; margin: 0; padding: 0; border: 0; background: none; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+.ap .mcard.fulld .cardc { flex-direction: column; gap: 10px; margin: 0; padding: 12px; border-color: #e0b860; box-shadow: 0 0 0 1px #e0b86033 inset, 0 10px 30px #000a; }
+.ap .mcard.fulld .cardc .cimg { width: 100%; aspect-ratio: 16 / 9; max-height: 34vh; }
+.ap .mcard.fulld .cardc .cb { flex: 1; } .ap .mcard.fulld .cardc .cb > b { font-size: 18px; } .ap .mcard.fulld .cardc .cb > p { font-size: 15.5px; line-height: 1.45; }
+.ap .mcard.fulld .cardc .copt { padding: 12px 14px; font-size: 16px; border-width: 1.5px; } .ap .mcard.fulld .cardc .copt > span { font-size: 13.5px; }
+.ap .mcard.fulld .askc { margin: 0; padding: 12px; } .ap .mcard.fulld .askc .btns .btn { padding: 11px 16px; font-size: 15.5px; }
+.ap .mcard.fulld .fdnote { margin: 12px 0 0; text-align: center; color: var(--mute); font-size: 13px; }
 .ap .mcard .rdecide .rdh { margin: 0 0 6px; color: #ffd27a; } .ap .mcard .rdecide .rdh b { display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 11px; background: #c0392b; color: #fff; font-size: 13px; }
 .ap .mcard .repfoot { position: sticky; bottom: -4px; margin: 8px -4px -4px; padding: 8px 4px 4px; background: linear-gradient(#1a130c00, #1a130cf0 35%); z-index: 2; }
 .ap .mcard .repfoot .btn:disabled { opacity: .75; }

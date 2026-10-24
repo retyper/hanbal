@@ -145,8 +145,8 @@ export function tutBandHtml(i: number, esc: (s: string) => string, stuck = false
 
 // ───────── 스포트라이트 — 누를 곳만 밝고, 그곳만 눌린다
 
-/** 가려졌을 때 먼저 닫을 것 — 보고판의 「확인」 · 열린 판의 손잡이. 띠 위에 그 말이 한 줄 붙는다 (TUT_CSS 의 data-pre) */
-const DISMISS: ReadonlyArray<readonly [string, string]> = [['.modal [data-act="rep-close"]', 'rep'], ['.sheet .grip', 'grip']]
+/** 가려졌을 때 먼저 닫을 것 — [덮는 것, 그 안의 닫기 단추, 갈래]: 보고판의 「확인」 · 열린 판의 손잡이. 띠 위에 그 말이 한 줄 붙는다 (TUT_CSS 의 data-pre) */
+const DISMISS: ReadonlyArray<readonly [string, string, string]> = [['.modal', '[data-act="rep-close"]', 'rep'], ['.sheet', '.grip', 'grip']]
 
 export interface Spot {
   /** 지금 단계와 판 — 없으면 끈다 */
@@ -191,10 +191,12 @@ export function createSpot(root: HTMLElement): Spot {
   /** 지금 고리의 갈래 — 후보를 기다리는 동안 띠 말이 바뀌지 않게 */
   let keptPre = ''
   let candPre = ''
-  let candN = 0
+  /** 후보가 처음 뽑힌 때 — 프레임 수가 아니라 시간으로 센다 (가려진 탭·느린 폰에선 프레임이 1초에 하나라 8프레임이 8초였다 · 10-25) */
+  let candAt = 0
   let movedAt = 0
-  /** 방금 누를 곳을 눌렀다 — 다음 곳으로는 바로 옮긴다 (기다리면 고리가 옛 곳에 남아 다시 누르면 방금 연 판이 닫혔다) */
-  let tapped = false
+  /** 방금 누를 곳을 누른 때 — 다음 곳으로는 바로 옮긴다 (기다리면 고리가 옛 곳에 남아 다시 누르면 방금 연 판이 닫혔다). 오래되면 안 친다 */
+  let tappedAt = -1e9
+  const TAP_FRESH_MS = 1500
   let raf = 0
   let last = ''
 
@@ -230,48 +232,64 @@ export function createSpot(root: HTMLElement): Spot {
   /** 큰 장면이 떠 있나 — 그동안은 고리도 막기도 쉰다 */
   const cere = (): boolean => root.querySelector('.cere') !== null
 
+  /**
+   * 누를 곳을 덮고 있는 보고판·판 — 자리(좌표)로 본다. 화면 맨 위 요소를 찍어 보던 것(elementFromPoint)은 고리·어둠·판이 미끄러지는
+   * 틈·지도 굴림에 흔들려 「닫아라」와 누를 곳 두 곳을 끝없이 오갔다 (형 10-24·10-25: 4/12 · 5/12 · 9/12 "무한순환").
+   * 보고판은 떠 있으면 다 덮는다 · 판은 열려 있고 누를 곳의 한가운데가 판 자리 안이면 덮는다. 누를 곳이 그 안에 있으면 덮은 게 아니다
+   */
+  const coverOf = (el: HTMLElement | null): HTMLElement | null => {
+    for (const [c] of DISMISS) {
+      const x = root.querySelector<HTMLElement>(c)
+      if (x === null || !shown(x) || (c === '.sheet' && !root.classList.contains('sheet-open'))) continue
+      if (el === null) return x
+      if (x.contains(el)) continue
+      if (c === '.modal') return x
+      const a = el.getBoundingClientRect()
+      // 판은 밀려 올라오는 중이어도 다 올라온 자리로 본다 (transform 을 뺀 배치 자리) — 미끄러지는 틈에 「아직 안 덮였다」고 보고 그 밑을 가리켰다
+      const rr = root.getBoundingClientRect()
+      const s = { left: rr.left + x.offsetLeft, top: rr.top + x.offsetTop, right: rr.left + x.offsetLeft + x.offsetWidth, bottom: rr.top + x.offsetTop + x.offsetHeight }
+      const cx = a.left + a.width / 2
+      const cy = a.top + a.height / 2
+      if (cx >= s.left && cx <= s.right && cy >= s.top && cy <= s.bottom) return x
+    }
+    return null
+  }
+
   function pick(): HTMLElement | null {
     if (step === undefined || ctx === null || war() || cere()) return null
     const sel = tutPick(step, ctx, (s) => first(s) !== null)
     const el = sel !== null ? first(sel) : null
     pre = ''
-    // 판·지도 안에서 굴러 나가 안 보이는 것은 가린 게 아니다 — 굴려 보인다 (frame). 닫으라고 하면 폰에서 열고 닫기를 되풀이했다
-    if (el !== null && (onTop(el) || scrolledOut(el))) return el
-    // 가려졌거나(보고판 · 판) 못 찾았으면 — 닫는 단추가 보이면 그것부터
-    for (const [d, k] of DISMISS) {
-      const x = first(d)
-      // 누를 곳이 바로 그 판 안에 있으면 판을 닫으라 하지 않는다 — 닫으면 누를 곳도 사라지고, 굴리면 다시 닫으라 해서
-      // 「여기로 정찰을 보낸다」와 손잡이 두 곳을 끝없이 오갔다 (형 10-24: "4/12에 2개의 선택 박스 두고 무한으로 왔다갔다")
-      if (x !== null && el !== null && x.closest('.modal, .sheet')?.contains(el) === true) continue
-      if (x !== null && onTop(x)) {
-        pre = k
-        return x
-      }
-    }
-    return el
+    const cover = coverOf(el)
+    if (cover === null) return el
+    // 덮은 것의 닫기 단추가 있으면 그것부터 — 없는 판(출정 판 같은)은 제 손으로 닫게 두고 누를 곳을 그대로 가리킨다
+    const d = DISMISS.find(([c]) => cover.matches(c))
+    const x = d !== undefined ? ([...cover.querySelectorAll<HTMLElement>(d[1])].find(shown) ?? null) : null
+    if (x === null) return el
+    pre = d![2]
+    return x
   }
 
   function frame(): void {
     raf = 0
-    const want = pick()
-    const wantPre = pre
+    let want = pick()
+    let wantPre = pre
+    const now = performance.now()
+    const alive = target !== null && target.isConnected && shown(target)
+    // 「먼저 닫아라」를 가리키기 시작했으면 그 판이 닫힐 때까지 붙잡는다 — 판이 미끄러지거나 지도가 굴러 누를 곳이 잠깐 드러나도 오가지 않게.
+    // 누를 곳이 그 판 안에 나타나면(판이 바뀌어) 놓는다
+    if (alive && keptPre !== '' && want !== target && want !== null && target!.closest('.modal, .sheet')?.contains(want) !== true) { want = target; wantPre = keptPre }
     if (want !== target) {
-      const alive = target !== null && target.isConnected && shown(target)
-      if (want === cand && wantPre === candPre) candN++
-      else { cand = want; candPre = wantPre; candN = 1 }
-      const now = performance.now()
-      if (!alive || tapped || (candN >= P.realm.tutSwitchFrames && now - movedAt >= P.realm.tutSwitchMs)) {
-        tapped = false
+      if (want !== cand || wantPre !== candPre) { cand = want; candPre = wantPre; candAt = now }
+      const tapped = now - tappedAt < TAP_FRESH_MS
+      if (!alive || tapped || (now - candAt >= P.realm.tutSwitchMs && now - movedAt >= P.realm.tutSwitchMs)) {
+        tappedAt = -1e9
         target = want
         pre = wantPre
         movedAt = now
         cand = null
-        candN = 0
       } else pre = keptPre
-    } else {
-      cand = null
-      candN = 0
-    }
+    } else cand = null
     keptPre = pre
     const b = band()
     if (b !== null && (b.dataset['pre'] ?? '') !== pre) b.dataset['pre'] = pre
@@ -334,9 +352,9 @@ export function createSpot(root: HTMLElement): Spot {
     // 큰 장면(사로잡음·등용·혼례…)이 떠 있으면 막지 않는다 — 고리는 CSS 로 숨겼는데 누르기는 여기서 먹어 「확인」이 안 눌렸다 (형 10-24: "해비 사로잡았다 했는데 확인 눌러도 안 넘어가짐")
     if (cere()) return
     const t = ev.target as HTMLElement
-    if (view.contains(t)) { tapped = true; return }
+    if (view.contains(t)) { tappedAt = performance.now(); return }
     // 고리가 옮겨 가는 틈 — 새로 가리킬 곳을 누른 것도 받는다 (재검토 10-25: 그 틈의 누르기가 먹혔다)
-    if (cand !== null && cand.isConnected && (cand.closest<HTMLElement>('.mcard, .ncard') ?? cand).contains(t)) { tapped = true; return }
+    if (cand !== null && cand.isConnected && (cand.closest<HTMLElement>('.mcard, .ncard') ?? cand).contains(t)) { tappedAt = performance.now(); return }
     if (t.closest('.tutband') !== null || t.closest('[data-act="zin"], [data-act="zout"]') !== null) return
     ev.preventDefault()
     ev.stopPropagation()
@@ -348,7 +366,7 @@ export function createSpot(root: HTMLElement): Spot {
 
   return {
     set(s, c) {
-      if (s?.id !== step?.id) { target = null; cand = null; candN = 0 } // 단계가 바뀌면 옛 곳을 붙잡지 않는다
+      if (s?.id !== step?.id) { target = null; cand = null; keptPre = '' } // 단계가 바뀌면 옛 곳을 붙잡지 않는다
       step = s
       ctx = c
       if (s === undefined) {

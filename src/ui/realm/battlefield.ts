@@ -787,7 +787,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const atkWon = l.outcome === 'win' || l.outcome === 'rout'
     const usWon = weAtk === atkWon
     const endCls = fin ? (usWon ? ' fin win-us' : ' fin win-foe') : ''
-    return `<div class="wfield${play ? ' play' : ''}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s"><i class="wf-ground"></i>${midTerr}${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}<i class="wf-mid">⚔</i>${hit}${omen}</div>`
+    return `<div class="wfield${play ? ' play' : ''}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s"><i class="wf-ground"></i>${midTerr}${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}<i class="wf-mid">⚔</i><b class="wf-who us">우리 ${esc(ourName)}</b><b class="wf-who foe">적 ${esc(foeName)}</b>${hit}${omen}</div>`
   }
 
   // 싸움터 배경 (땅마다) · 위 카드는 굴려도 그 자리에 (형: "싸우는로그가 스크롤로 보이더라도 상단에 캐릭터랑 체력바 있는 그 카드는 고정")
@@ -822,7 +822,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const d = (k: 0 | 1 | 2): string => (slow ? ` style="--d:${tAt(k)}s"` : '')
     h += `<div class="wrd${slow ? ' slow' : ''}${crit ? ' crit' : ''}"><div class="wrn">${ROUND_NAME[i] ?? `${i + 1}`} 합</div>${reliefBanner(rd, ourS, art)}`
     const akOf = (sd: 'a' | 'd'): Art | undefined => (rd.acts ?? []).find((x) => x.c === 'art' && x.s === sd)?.art
-    h += `<div class="wcmds"${d(0)}><span class="wc us">${flags(weAtk ? rd.oa : rd.od, weAtk ? rd.a : rd.d, art, akOf(ourS))}</span><i>×</i><span class="wc foe">${flags(weAtk ? rd.od : rd.oa, weAtk ? rd.d : rd.a, art, akOf(ourS === 'a' ? 'd' : 'a'))}</span></div>`
+    h += `<div class="wcmds"${d(0)}><span class="wc us"><em class="wck">우리</em>${flags(weAtk ? rd.oa : rd.od, weAtk ? rd.a : rd.d, art, akOf(ourS))}</span><i>×</i><span class="wc foe"><em class="wck">적</em>${flags(weAtk ? rd.od : rd.oa, weAtk ? rd.d : rd.a, art, akOf(ourS === 'a' ? 'd' : 'a'))}</span></div>`
     const story = ctx !== null ? roundStory(rd, rounds[i - 1], ctx) : []
     // 누가 누구를 · 됐나 — 그림 줄이 먼저, 글 이야기는 그 밑에 작게
     const rows = actRows(rd.acts, ourS, art, mixOf(0), mixOf(1))
@@ -878,7 +878,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const opt = (g: Grp | 'lead', c: Cmd): string => {
       const on = sel[g] === c
       let tag = recNow === c ? `<em class="rec">★ 권함</em>` : ''
-      if (g === 'front' && p.hint !== null && FRONT_COUNTER[p.hint] === c) tag = `<em>낌새의 맞수</em>`
+      if (g === 'front' && p.hint !== null && FRONT_COUNTER[p.hint] === c) tag = `<em>적 낌새를 받아친다</em>`
       else if (c === 'pursue' && p.foeWaver) tag = `<em>지금이다</em>`
       else if (TERRAIN_CMD.has(c)) tag = `<em class="land">이 땅에서만</em>`
       let feel = ''
@@ -1130,6 +1130,8 @@ export const WAR_CSS = `
 .ap .wf-loss { position: absolute; top: 26%; z-index: 90; font-size: clamp(15px, 4.4cqw, 26px); font-weight: 900; color: #ff6a5a; text-shadow: 0 0 6px #000, 0 2px 3px #000; opacity: 0;
   animation: wloss 1.6s ease-out calc(var(--hd) + .35s) both; }
 .ap .wf-loss.us { left: 26%; } .ap .wf-loss.foe { right: 26%; color: #ffd27a; }
+.ap .wf-who { position: absolute; bottom: 6px; z-index: 80; font-size: clamp(10px, 2.6cqw, 13px); font-weight: 800; padding: 2px 8px; border-radius: 9px; background: #3f8f3acc; color: #eaffe0; text-shadow: 0 1px 2px #000; pointer-events: none; max-width: 42%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ap .wf-who.us { left: 6px; } .ap .wf-who.foe { right: 6px; background: #8a3a2acc; color: #ffe3dc; }
 @keyframes wloss { 0% { opacity: 0; translate: 0 10px; scale: .6; } 15% { opacity: 1; translate: 0 0; scale: 1.15; } 70% { opacity: 1; scale: 1; } 100% { opacity: 0; translate: 0 -18px; } }
 /* 동작 그림 — 8컷 띠를 칸씩 넘긴다 (steps). 바깥(.tk)은 자리·밀기, 안(.spf)은 컷 */
 .ap .wf2s .tk.wsp { width: auto; aspect-ratio: var(--ar, 1); } .ap .wf2s .tk.wsp.k-horse, .ap .wf2s .tk.wsp.k-boat { height: clamp(38px, 10cqw, 68px); } /* 말 탄 이는 걷는 이보다 크다 */
@@ -1202,6 +1204,7 @@ export const WAR_CSS = `
 .ap .wcmds { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; }
 .ap .wc { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 3px; padding: 3px 6px; border-radius: 12px; background: #2a1f16; flex: 1; min-width: 0; }
 .ap .wc.foe { background: #2d1f1d; }
+.ap .wc .wck { font-style: normal; font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 8px; background: #3f8f3a; color: #eaffe0; margin-right: 2px; } .ap .wc.foe .wck { background: #8a3a2a; color: #ffe3dc; }
 .ap .wfl { display: inline-flex; align-items: center; gap: 2px; font-size: 12.5px; white-space: nowrap; padding: 0 3px; }
 .ap .wfl img { width: 22px; height: 22px; object-fit: contain; }
 .ap .wcmds > i { font-style: normal; color: #c8402a; }
