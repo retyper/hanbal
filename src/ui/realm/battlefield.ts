@@ -600,6 +600,44 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}<b class="brk" style="left:${Math.round(P.realm.tacBreakMorale * 83)}%" data-tip="사기가 이 금 밑으로 떨어지면 무너져 진다"></b></div><span class="wn">사기</span></div>`
   }
 
+  /**
+   * 전장 띠 — 병졸 말이 병종대로 마주 선다 (창·방패는 앞줄, 활·쇠뇌는 뒷줄, 말은 옆). 부딪히는 때 앞줄이 서로 밀고 들어가고,
+   * 이번 합에 잃은 만큼 말이 쓰러진다 (형 10-24: "전투가 너무 텍스트 중심 · 문명처럼 병졸이 있고 그걸 움직이는 느낌").
+   * 말 수는 군사 수에 맞춰 4~16 — 숫자 대신 줄의 두께로 보인다.
+   */
+  const fieldHtml = (): string => {
+    if (st === undefined) return ''
+    const big = Math.max(1, st.men[0], st.men[1])
+    const RANK: Readonly<Record<string, 0 | 1 | 2>> = { spear: 0, pike: 0, shield: 0, boat: 0, axe: 0, bow: 1, crossbow: 1, horse: 2 }
+    const sideToks = (i: 0 | 1, cls: string): string => {
+      const mix = mixOf(i)
+      const all = Object.entries(mix).filter(([, v]) => (v ?? 0) > 0) as Array<[string, number]>
+      const men = all.reduce((s, [, v]) => s + v, 0)
+      if (men <= 0) return `<div class="wf-side ${cls}"></div>`
+      const T = Math.max(4, Math.min(16, Math.round(4 + 12 * (st.men[i] / big))))
+      // 병종마다 몫 — 줄마다 모은다
+      const rows: string[][] = [[], [], []]
+      let given = 0
+      const order = all.sort((a, b) => (RANK[a[0]] ?? 0) - (RANK[b[0]] ?? 0) || b[1] - a[1])
+      order.forEach(([k, v], j) => {
+        const c = j === order.length - 1 ? T - given : Math.max(1, Math.round((T * v) / men))
+        given += c
+        for (let x = 0; x < c; x++) rows[RANK[k] ?? 0]!.push(k)
+      })
+      const alive = Math.round(T * n(i)), before = Math.round(T * n0(i))
+      let idx = 0
+      const tok = (k: string): string => {
+        const st2 = idx < alive ? 'up' : idx < before ? 'fall' : 'down'
+        const ic = (UNIT_ICON as Record<string, string>)[k] ?? UNIT_ICON.spear
+        return `<img class="tk ${st2}" src="${art}icon/${ic}.png" alt="" style="--j:${idx++ % 5}">`
+      }
+      // 뒷줄·옆을 먼저 세고 앞줄을 나중에 — 쓰러지는 것은 맞부딪는 앞줄부터
+      const back = rows[1]!.map(tok).join(''), flank = rows[2]!.map(tok).join(''), front = rows[0]!.map(tok).join('')
+      return `<div class="wf-side ${cls}"><div class="wf-row back">${back}${flank}</div><div class="wf-row front">${front}</div></div>`
+    }
+    return `<div class="wfield" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s">${sideToks(ourI, 'us')}<i class="wf-mid">⚔</i>${sideToks(foeI, 'foe')}</div>`
+  }
+
   // 싸움터 배경 (땅마다) · 위 카드는 굴려도 그 자리에 (형: "싸우는로그가 스크롤로 보이더라도 상단에 캐릭터랑 체력바 있는 그 카드는 고정")
   const ground = warGround(prev, l)
   let h = `<div class="wbg g-${ground}${WAR_BG_READY.has(ground) ? '' : ' stand'}" style="background-image:url('${warBg(art, ground, !weAtk)}')"></div>`
@@ -615,7 +653,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   h += `</div><div class="wrbox">`
   // 위 카드는 그 싸움터를 무대로 — 길·성문·물가·눈밭·밤 (형 10-23: "길에서 마주치거나 수성하거나 공성할 때는 그 위치에 맞게 배경")
   h += `<div class="wtop" style="--wtbg:url('${warBg(art, ground, !weAtk)}')"><div class="wrh"><b>${esc(warName(after, l))}</b>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}</div>`
-  h += `<div class="wvs">${side(ourI, ourHero, ourF, ourName, 'us')}<img class="vs" src="${art}ui/vs.png" alt="VS">${side(foeI, foeHero, foeF, foeName, 'foe')}</div></div>`
+  h += `<div class="wvs">${side(ourI, ourHero, ourF, ourName, 'us')}<img class="vs" src="${art}ui/vs.png" alt="VS">${side(foeI, foeHero, foeF, foeName, 'foe')}</div>${fieldHtml()}</div>`
   if (keys !== '') h += `<style>${keys}</style>`
   h += `<p class="wintro">${esc(introLine(l, weAtk, fname(foeF)))}${l.militia > 0 && !weAtk ? ` 마을 장정 ${l.militia}명이 함께 선다.` : l.militia > 0 ? ` 마을 장정 ${l.militia}명이 막아선다.` : ''}</p>`
   // 지나간 합들 — 마지막 합만 천천히
@@ -786,6 +824,23 @@ export const WAR_CSS = `
 .ap .ws.foe .wf { border-color: #7a3a2a; }
 .ap .wbar { position: relative; width: 100%; height: 12px; border-radius: 6px; background: linear-gradient(#0c0805, #22180f); overflow: hidden; margin-top: 7px;
 /* 무너지는 금 — 붉은 세로 금 */
+/* 전장 띠 — 병졸 말 */
+.ap .wfield { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 6px 4px 2px; padding: 6px 4px; border-radius: 10px; background: linear-gradient(#0000, #1a120a99 40%, #0000); }
+.ap .wfield .wf-side { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.ap .wfield .wf-side.us { align-items: flex-end; } .ap .wfield .wf-side.foe { align-items: flex-start; }
+.ap .wfield .wf-side.us .front { order: 2; } .ap .wfield .wf-side.foe .front { order: 0; } .ap .wfield .wf-side.foe .back { order: 1; }
+.ap .wfield .wf-row { display: flex; flex-wrap: wrap; gap: 1px; max-width: 100%; }
+.ap .wfield .wf-side.us .wf-row { justify-content: flex-end; } .ap .wfield .wf-side.foe .wf-row { justify-content: flex-start; }
+.ap .wfield .tk { width: clamp(18px, 4.4vw, 28px); height: clamp(18px, 4.4vw, 28px); object-fit: contain; filter: drop-shadow(0 2px 2px #000c); }
+.ap .wfield .wf-side.foe .tk { transform: scaleX(-1); filter: drop-shadow(0 2px 2px #000c) sepia(.4) hue-rotate(-20deg) saturate(1.3); }
+.ap .wfield .tk.down { opacity: .18; filter: grayscale(1); }
+.ap .wfield .tk.fall { animation: tkfall .5s ease-in calc(var(--hd) + .2s + var(--j) * .04s) forwards; }
+@keyframes tkfall { to { opacity: .18; filter: grayscale(1); transform: translateY(4px) rotate(70deg); } }
+.ap .wfield .wf-side.us .front { animation: wpushr .55s ease-in-out var(--hd) both; } .ap .wfield .wf-side.foe .front { animation: wpushl .55s ease-in-out var(--hd) both; }
+@keyframes wpushr { 0%, 100% { transform: none; } 45% { transform: translateX(14px); } }
+@keyframes wpushl { 0%, 100% { transform: none; } 45% { transform: translateX(-14px); } }
+.ap .wfield .wf-mid { font-style: normal; font-size: 18px; color: #f0d090; text-shadow: 0 0 8px #000; animation: wmid .5s ease-out var(--hd) both; } @keyframes wmid { 40% { transform: scale(1.6); color: #fff; } }
+@media (prefers-reduced-motion: reduce) { .ap .wfield .front, .ap .wfield .tk.fall, .ap .wfield .wf-mid { animation: none; } }
 .ap .wbar .brk { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; background: #ff3b2b; box-shadow: 0 0 5px #ff3b2b; z-index: 2; cursor: help; }
   box-shadow: inset 0 1px 3px #000e, 0 0 0 1px #8a6a3a, 0 0 0 2.5px #1a120c; }
 .ap .wbar i { position: relative; display: block; height: 100%; border-radius: 6px; overflow: hidden; }

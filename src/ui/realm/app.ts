@@ -1679,6 +1679,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 이번 계절 아직 안 고른 것 — 사건 카드 · 답하지 않은 사신의 청 */
   function repTodo(): number {
     const r = realm!
+    // 배우는 판은 잠그지 않는다 — 띠·고리가 「확인」을 가리키는데 잠겨 9/12 에서 막혔다 (답하지 않으면 거절 그대로)
+    if (r.region === 'tutorial') return 0
     const c = r.card
     const card = c !== undefined && c !== null && c.season === r.season && !r.outcome && answers[`card:${c.season}`] === undefined ? 1 : 0
     return card + openAsks(r, me()).filter((a) => answers[a.id] === undefined).length
