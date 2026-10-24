@@ -222,7 +222,7 @@ const sceneBg = (name: string): string => `--hbg:url('${ART}event/${name}.jpg')$
 const BRIDAL_SHOTS: ReadonlyArray<readonly [string, string]> = [
   ['event-bridal-a', '등잔불이 낮게 흔들린다'],
   ['event-bridal-b', '옷고름이 풀렸다'],
-  ['event-bridal-c', '이불 끝으로 두 발이 얽혔다'],
+  ['event-bridal-c', '화촉 두 자루가 함께 꺼졌다'],
   ['event-bridal-d', '댓돌 위 신 두 켤레가 포개졌다'],
 ]
 /** 판을 그린 뒤 다음 계절 지도 그림을 미리 받기까지 (ms) — 그리는 동안 끼어들지 않게 */
