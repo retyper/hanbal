@@ -1867,7 +1867,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const c = envoyChanceFor(r, me(), to, ask, noGoods(), noGoods())
       const on = sel || (compose.to === to && compose.ask === ask)
       h += `<button class="btn${sm}${on ? ' on' : ''}${ask === 'break' ? ' ghost' : ''}" ${sel ? `data-act="unenvoy" data-key="${k}"` : `data-act="compose" data-to="${to}" data-ask="${ask}"`} ${clash || (!sel && handsFull(r)) ? 'disabled' : ''}>`
-      h += `${askLabel(r, to, ask)}${sel ? ' ✓' : sure ? '' : ` ${envoyFeel(c[0], c[1], ask)}`}</button>`
+      // 청마다 그림 — 화친·교역·선물·조공 요구… (형 10-24: "이것들도 다 아이콘 만들어 와 · 직관화")
+      h += `${icon(`ask-${ask}`, 'aic')}${askLabel(r, to, ask)}${sel ? ' ✓' : sure ? '' : ` ${envoyFeel(c[0], c[1], ask)}`}</button>`
     }
     h += `</div>`
     // 단추가 왜 꺼졌나 — 보낼 사람이 다 나갔다
@@ -1939,7 +1940,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const need = ASK_NEEDS[ask]
     const st = r.stock[me()] ?? { grain: 0, iron: 0 }
     // 갈래 설명은 ? 안에 (GUIDE.envoy · 형 10-23: "외교에 화친부터 선물까지 카드 … 설명도 다 물음표에") — 약조 깨기는 지금 형편이라 그대로
-    let h = `<div class="trade"><div class="cmh"><b>${askLabel(r, to, ask)} ${guideBtn('envoy')}</b>${ask === 'break' ? `<span class="mute">${esc(breakHint(r, to))}</span>` : ''}</div>`
+    let h = `<div class="trade"><div class="cmh"><b>${icon(`ask-${ask}`, 'aic big')}${askLabel(r, to, ask)} ${guideBtn('envoy')}</b>${ask === 'break' ? `<span class="mute">${esc(breakHint(r, to))}</span>` : ''}</div>`
     h += whoGoesHtml(r, to, ask)
     let ok = true
     if (need === 'goods') {
