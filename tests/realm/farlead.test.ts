@@ -44,3 +44,15 @@ describe('멀리 가서 이끈다', () => {
     assert.equal(r.armies[army]!.hero, null)
   })
 })
+
+describe('대기 — 자리를 내려놓는다', () => {
+  it('맡기 그만두기(node null)는 이끌던 군대에서도 내린다 · 군대는 그 자리에 남는다', () => {
+    const r = byeonhanMini(1)
+    const a = r.armies['a-us']!
+    const id = a.hero!
+    applyHeroOrders(r, [{ kind: 'assign', hero: id, node: null }], [])
+    assert.equal(r.armies['a-us']!.hero, null)
+    assert.equal(r.heroes[id]!.at, a.at)
+    assert.equal(r.heroes[id]!.post, null)
+  })
+})

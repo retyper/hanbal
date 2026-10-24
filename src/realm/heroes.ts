@@ -250,11 +250,16 @@ export function heroSeen(r: Realm, faction: string, hero: string): boolean {
 
 function assignHero(r: Realm, o: Extract<Order, { kind: 'assign' }>, lines: ReportLine[]): void {
   const h = r.heroes[o.hero]
-  if (h === undefined || h.status !== 'free' || isRuler(r, h.id)) return
+  if (h === undefined || h.status !== 'free') return
+  // 자리를 내려놓는다 — 맡은 고을도, 이끌던 군대도(멈춰 선 군대만 · 군대는 그 자리에 남는다). 군주도 친정에서 물러날 수 있다
+  // (형 10-24: "고을 맡고 있거나 군대 맡고 있고 … 대기 상태로 만드는 버튼")
   if (o.node === null) {
     h.post = null
+    const a = armyOfHero(r, h.id)
+    if (a !== null && a.march === null) { a.hero = null; h.at = a.at }
     return
   }
+  if (isRuler(r, h.id)) return
   const node = r.nodes[o.node]
   if (node === undefined || node.owner !== h.faction || node.kind === 'sodo') return
   const a = armyOfHero(r, h.id)

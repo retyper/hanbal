@@ -34,7 +34,7 @@ import { PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bow
 import { allianceWhy, leaderOf, tookRecently, truceWhy, winningAgainst } from '../../realm/stance.ts'
 import { DESTS, DEST_IDS, EXP_SEASONS, destReachable, expAmount, expBlock, expOdds, onExpedition } from '../../realm/expedition.ts'
 import { foundable, joinable, partiesOf, partyCost, partyMoves, partySize } from '../../realm/parties.ts'
-import { canCohabit, canWed, heroSeen, honeyLeft, together, inheritOf, isRuler, persuadeDropOf, recruitChance, resistOf, wanderersFor } from '../../realm/heroes.ts'
+import { canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, together, inheritOf, isRuler, persuadeDropOf, recruitChance, resistOf, wanderersFor } from '../../realm/heroes.ts'
 import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
@@ -638,6 +638,32 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return null
   }
   function heroBusy(r: Realm, id: string): string | null { return heroJob(r, id)?.[0] ?? null }
+
+  /**
+   * 대기시킬 수 있나 — 연락이 닿고(원정 중·먼 길 위·사로잡힘이 아니고) 내려놓을 것이 있다(맡은 고을 · 이끄는 군대 · 이번 계절 시킨 일)
+   * (형 10-24: "사신 보내 두거나 원정 보내 사실상 연락할 수 없는 상태가 아니면 대기 상태로 만드는 버튼")
+   */
+  function canStandBy(r: Realm, id: string): boolean {
+    const h = r.heroes[id]
+    if (h === undefined || h.faction !== me() || h.status !== 'free') return false
+    if ((r.expeditions ?? []).some((x) => x.hero === id) || (h.awayUntil !== undefined && h.awayUntil >= r.season)) return false
+    const army = Object.values(r.armies).find((a) => a.hero === id)
+    if (army !== undefined && army.march !== null) return false // 싸우러 가는 길 — 연락이 안 닿는다
+    const job = heroOrders.some((o) => heroJobOf(o) === id || (o.kind === 'assign' && o.hero === id))
+      || Object.values(envoys).some((e) => e.hero === id) || plots.some((p) => p.kind === 'plot' && p.agent === id)
+    return job || h.post != null || army !== undefined
+  }
+
+  /** 대기 — 이번 계절 시킨 일을 거두고(사신은 사자만 간다 · 그 장수의 자객 공작은 거둔다) 맡은 자리·군대를 내려놓는 명령을 넣는다 */
+  function standBy(id: string): void {
+    if (realm === null || !canStandBy(realm, id)) return
+    heroOrders = heroOrders.filter((o) => heroJobOf(o) !== id && !(o.kind === 'assign' && o.hero === id))
+    for (const [k, e] of Object.entries(envoys)) if (e.hero === id) { const { hero: _drop, ...rest } = e; envoys[k] = rest }
+    plots = plots.filter((p) => !(p.kind === 'plot' && p.agent === id))
+    delete hands[id]
+    const h = realm.heroes[id]!
+    if (h.post != null || Object.values(realm.armies).some((a) => a.hero === id)) heroOrders = [...heroOrders, { kind: 'assign', hero: id, node: null }]
+  }
 
   /** 이번 계절 아무 일도 안 맡은 우리 장수 — 군대·고을·사신·자객·원정·혼인 어디에도 없다 (군주·다친 이·떠나 있는 이 빼고) */
   function restingHeroes(p: Realm): Hero[] {
@@ -2130,6 +2156,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 묶인 장수 — 사정만 보이고 할 일은 숨긴다
     const busy = ours ? heroBusy(r, id) : null
     if (busy !== null) h += `<div class="banner busyb">⧗ ${esc(busy)} — 이번 계절엔 다른 일을 못 한다</div>`
+    if (ours && canStandBy(r, id)) h += `<button class="btn ghost standby" data-act="standby" data-id="${id}" data-tip="맡은 고을·이끌던 군대·이번 계절 시킨 일을 다 내려놓고 쉰다">⏸ 대기 — 다 내려놓고 쉰다</button>`
     // 한 번 맺은 짝은 계속 — 지금 판·계절 처음 판 어느 쪽이든 짝이 있으면 혼인 칸을 안 띄운다
     if (ours && busy === null && weds.length === 0 && x.spouse === undefined && realm!.heroes[id]?.spouse === undefined) h += wedHtml(r, x)
     h += expHtml(r, x) // 묶인 장수도 원정 칸은 보인다 — 단추만 흐리게
@@ -2166,9 +2193,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         }
       }
       // 사신·자객 — 다른 탭으로 가서 고르지 않게, 이 장수를 고른 채로 그 판을 연다
-      const nowJob = heroJob(r, id)
-      if (nowJob !== null) h += `<p class="hdo big">⧗ ${esc(nowJob[1])}</p>`
-      if (nowJob === null && !handLocked(r, id) && !handsFull(r)) h += `<div class="btns jobs"><button class="btn" data-act="hero-envoy" data-id="${id}">${icon('good-tribute-bell')}사신으로 보낸다</button><button class="btn" data-act="hero-agent" data-id="${id}">${icon('status-spy')}자객으로 보낸다</button></div>`
+      if (!handLocked(r, id) && !handsFull(r)) h += `<div class="btns jobs"><button class="btn" data-act="hero-envoy" data-id="${id}">${icon('good-tribute-bell')}사신으로 보낸다</button><button class="btn" data-act="hero-agent" data-id="${id}">${icon('status-spy')}자객으로 보낸다</button></div>`
       h += `<p class="mute">맡기기·이끌기·사신·자객·원정 — 한 계절에 하나 ${guideBtn('post')}</p>`
     }
     // 회유 — 우리가 사로잡은 장수
@@ -4025,6 +4050,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'lead': heroOrders = [...heroOrders, { kind: 'lead', hero: d['id']!, army: d['army']! }]; break
       case 'pby': persuadeBy[d['id']!] = d['by']!; break
       case 'persuade': heroOrders = [...heroOrders, { kind: 'persuade', hero: d['id']!, by: d['by'] ? d['by'] : null }]; break
+      case 'standby': standBy(d['id']!); break
       case 'unhero': heroOrders = heroOrders.filter((o) => !((o.kind === 'assign' || o.kind === 'lead' || o.kind === 'persuade' || o.kind === 'hire') && o.hero === d['id'])); break
       case 'hire': {
         const id = d['id']!
