@@ -20,7 +20,7 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import type { Outcome, UnitKind } from './battle.ts'
-import type { Act, Art, Cmd, EndWhy, Grp, Pending, RoundLog, RoundOrder, Tactic } from './types.ts'
+import type { Act, Art, Cmd, EndWhy, Grp, Guess, Guesses, Pending, RoundLog, RoundOrder, Tactic } from './types.ts'
 
 /** 땅이 주는 한 번짜리 수 — season 이 그 싸움 자리를 보고 정한다 */
 export interface Terrain {
@@ -545,6 +545,7 @@ export function fightRounds(atk: Side, def: Side, key: string, seed: number, sea
         const ff = mine === 'a' ? st.fd : st.fa
         const foeNow: Partial<Record<Grp, number>> = {}
         for (const g of groupsOf(foe.mix)) foeNow[g] = Math.round(menNow(g0f, ff, g))
+        const seenHint = hintOf(me, foe, foeAi.front, `${key}:t${i}`, seed, season)
         memo.pending = {
           round: i,
           groups: groupsOf(me.mix).map((g) => ({ g, men: Math.round(menNow(g0m, fm, g)), options: groupOptions(me, foe, g, used) })),
@@ -552,8 +553,9 @@ export function fightRounds(atk: Side, def: Side, key: string, seed: number, sea
           foe: foeNow,
           foeWaver: (mine === 'a' ? st.md / Math.max(0.05, def.morale) : st.ma / Math.max(0.05, atk.morale)) < P.realm.tacHoldSteady,
           capture: cap.p, squad: cap.squad, escort: cap.escort,
-          ...hintFields(hintOf(me, foe, foeAi.front, `${key}:t${i}`, seed, season)),
+          ...hintFields(seenHint),
           weAtk: mine === 'a', seen: me.seen,
+          guess: guessOf(c, st, mine, ai, i, rk, capOf, gone, seenHint?.cmd ?? null),
           ...(me.hero?.art !== undefined ? { art: me.hero.art } : {}),
         }
       }
@@ -616,6 +618,76 @@ export function fightRounds(atk: Side, def: Side, key: string, seed: number, sea
     captured, broke, duel, rounds, led: memo.led, endWhy,
     ...(memo.pending !== undefined ? { pending: memo.pending } : {}),
   }
+}
+
+/** 짐작에서 빼는 장수 명령 — 굴림 하나가 판을 가르니 막대로 보일 것이 아니다 */
+const NO_GUESS: ReadonlySet<Cmd> = new Set(['capture', 'retreat', 'duel'])
+
+/**
+ * 고르기 전 짐작 (형 10-24: "어떤걸 선택하면 어떤 결과 예상되는지 문명처럼") — 깃발마다 이번 합만 따로 굴려 본다.
+ * 우리 다른 무리는 장수가 고를 것, 장수는 격려. 적은 낌새가 있으면 그 앞줄 수(본 것·들은 것 — 틀릴 수 있다), 없으면 앞줄이 낼 수 있는 수마다.
+ * 적의 실제 선택은 쓰지 않는다 — 짐작이 답을 흘리면 수 읽기가 사라진다. 판은 복사해 굴리고 버린다 (결정론 그대로).
+ */
+function guessOf(
+  c: Ctx, st: State, mine: 'a' | 'd', ai: RoundOrder, i: number, rk: (i: number, k: string) => number,
+  capOf: (mine: 'a' | 'd', guard: boolean) => { p: number; squad: number; escort: number }, gone: boolean, hint: Cmd | null,
+): Guesses {
+  const me = mine === 'a' ? c.atk : c.def
+  const foe = mine === 'a' ? c.def : c.atk
+  const usedMe = mine === 'a' ? st.usedA : st.usedD
+  const usedFoe = mine === 'a' ? st.usedD : st.usedA
+  const ours = (s: number): number => (mine === 'a' ? s : 1 - s)
+  const g0m = mine === 'a' ? c.g0a : c.g0d
+  const g0f = mine === 'a' ? c.g0d : c.g0a
+  // 적 앞줄의 수 — 낌새대로, 없으면 낼 수 있는 기본 수마다. 적의 활·말·장수는 흔한 것으로 (실제 선택을 흘리지 않게)
+  const fronts: Array<Cmd | undefined> = !groupsOf(foe.mix).includes('front') ? [undefined]
+    : hint !== null ? [hint]
+      : groupOptions(foe, me, 'front', usedFoe).filter((x) => x === 'charge' || x === 'hold' || x === 'open')
+  if (fronts.length === 0) fronts.push(undefined)
+  const foeOrders = fronts.map((f) => settle(foe, me, { ...(f !== undefined ? { front: f } : {}), bows: 'volley', horse: 'flank', lead: 'drum' }, { front: 'hold', bows: 'volley', horse: 'flank', lead: 'drum' }, usedFoe, false))
+  const base: RoundOrder = { ...ai, lead: 'drum' }
+  const run = (o: RoundOrder): Guess | undefined => {
+    const mo = settle(me, foe, o, base, usedMe, gone)
+    const us: [number, number] = [1, 0]
+    const fo: [number, number] = [1, 0]
+    const ed: [number, number] = [1, 0]
+    for (const fx of foeOrders) {
+      const s2: State = {
+        fa: { ...st.fa }, fd: { ...st.fd }, ma: st.ma, md: st.md, usedA: new Set(st.usedA), usedD: new Set(st.usedD),
+        lostA: st.lostA, lostD: st.lostD, hurtA: st.hurtA, hurtD: st.hurtD,
+      }
+      const fm = (): Record<Grp, number> => (mine === 'a' ? s2.fa : s2.fd)
+      const ff = (): Record<Grp, number> => (mine === 'a' ? s2.fd : s2.fa)
+      const m0 = aliveShare(g0m, fm())
+      const f0 = aliveShare(g0f, ff())
+      const res = mine === 'a' ? resolveRound(c, s2, mo, fx, i, rk, capOf) : resolveRound(c, s2, fx, mo, i, rk, capOf)
+      if (res.captured !== null || res.retreat !== null) return undefined
+      const lu = m0 > 0 ? (m0 - aliveShare(g0m, fm())) / m0 : 0
+      const lf = f0 > 0 ? (f0 - aliveShare(g0f, ff())) / f0 : 0
+      const e = ours(shareOf(c, s2))
+      us[0] = Math.min(us[0], lu); us[1] = Math.max(us[1], lu)
+      fo[0] = Math.min(fo[0], lf); fo[1] = Math.max(fo[1], lf)
+      ed[0] = Math.min(ed[0], e); ed[1] = Math.max(ed[1], e)
+    }
+    return { us, foe: fo, edge: ed }
+  }
+  const opts: Partial<Record<Grp | 'lead', Partial<Record<Cmd, Guess>>>> = {}
+  for (const g of groupsOf(me.mix)) {
+    const row: Partial<Record<Cmd, Guess>> = {}
+    for (const x of groupOptions(me, foe, g, usedMe)) {
+      const v = run({ ...base, [g]: x })
+      if (v !== undefined) row[x] = v
+    }
+    opts[g] = row
+  }
+  const lead: Partial<Record<Cmd, Guess>> = {}
+  for (const x of leadOptions(me, foe, usedMe, gone)) {
+    if (NO_GUESS.has(x)) continue
+    const v = run({ ...base, lead: x })
+    if (v !== undefined) lead[x] = v
+  }
+  opts.lead = lead
+  return { by: hint !== null ? 'hint' : 'all', edge0: ours(shareOf(c, st)), opts }
 }
 
 /** 한 합 — 장수의 명령(물러나기 · 겨루기 · 사로잡기) → 앞줄 맞붙음 → 활 → 말 → 손실 · 사기 */

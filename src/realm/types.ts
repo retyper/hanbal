@@ -444,6 +444,27 @@ export interface Pending {
   readonly seen: boolean
   /** 우리 장수의 비기 — 장수의 명령에 'art' 가 있으면 그것 */
   readonly art?: Art
+  /** 고르기 전 짐작 — 깃발마다 이번 합이 어떻게 될지 (tactics.guessOf · 문명의 싸움 예상처럼) */
+  readonly guess?: Guesses
+}
+
+/** 깃발 하나를 들면 — 이번 합의 짐작. 낌새가 있으면 「적이 낌새대로 오면」 하나, 없으면 적 앞줄이 낼 수 있는 수마다라 폭이 생긴다 */
+export interface Guess {
+  /** 우리가 잃을 몫 (이 합 처음 사람 대비) [적을 때, 많을 때] */
+  readonly us: readonly [number, number]
+  /** 적이 잃을 몫 [적을 때, 많을 때] */
+  readonly foe: readonly [number, number]
+  /** 이 합 뒤 판세 — 우리 쪽 0..1, 0.5 가 팽팽 [나쁠 때, 좋을 때] */
+  readonly edge: readonly [number, number]
+}
+
+export interface Guesses {
+  /** 무엇을 놓고 셈했나 — hint: 낌새대로 오면 · all: 적이 어떻게 나오든 */
+  readonly by: 'hint' | 'all'
+  /** 지금 판세 (우리 쪽) */
+  readonly edge0: number
+  /** 무리(와 장수)마다 깃발마다 — 사로잡기·물러나기·겨루기는 굴림 하나가 판을 갈라 짐작하지 않는다 */
+  readonly opts: Readonly<Partial<Record<Grp | 'lead', Readonly<Partial<Record<Cmd, Guess>>>>>>
 }
 
 /** 싸움이 시작될 때 — 사람 수 · 사기 · 이끄는 장수 (공격, 지킴). 전장 화면이 막대의 처음으로 쓴다 */
