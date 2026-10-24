@@ -10,6 +10,7 @@
  *
  * 글을 만들기만 한다 — 상태는 app.ts 가 쥐고, 누름은 data-act 로 app.ts 가 받는다.
  */
+import { titleOf } from '../../realm/title.ts'
 import type { NationInfo } from '../../realm/data/nations.ts'
 import { badgeRank, lockWhy } from './unlock.ts'
 import { CHAPTERS, chapterOfRegion } from '../../realm/data/campaign.ts'
@@ -385,6 +386,9 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): 
   h += `<button class="fnav fprev" data-act="film-prev" aria-label="앞 장면">‹</button><button class="fnav fnext" data-act="film-next" aria-label="다음 장면">›</button></div>`
   h += `<div class="after" style="--n:${shots.length + 1}">`
   h += `<p class="mute">${k.emblem(me, 'cem')}${k.esc(name(me))} · ${k.esc(seasonLabel(r.outcome?.season ?? r.season))}${win ? '' : ' — 여기까지였다'}</p>`
+  // 칭호 도장 — 이긴 길마다 옛 임금 하나, 진 판은 비류 (회의 결정 META §7-1). 네모난 붉은 도장 — 둥근 것은 쓰지 않는다
+  const tt = titleOf(r)
+  if (tt !== null) h += `<div class="seal${win ? '' : ' lost'}"><b>${k.esc(tt.name)}</b><span>${k.esc(tt.line)}</span></div>`
   h += `<div class="stats"><span><b>${years}</b>해</span><span><b>${capsHeld(r, me)}</b>도읍</span><span><b>${won}</b>이긴 싸움</span><span><b>${lost}</b>진 싸움</span>`
   h += `${r.known !== undefined ? `<span><b>${found}</b>새로 안 나라</span>` : ''}<span><b>${heroes}</b>얻은 장수</span></div>`
   if (pickd.length > 0) h += `<div class="chron"><h4>연대기</h4>${pickd.map((e) => `<p class="${e.big ? 'big' : ''}"><i>${k.esc(seasonLabel(e.s))}</i>${k.esc(e.t)}</p>`).join('')}</div>`
@@ -396,6 +400,11 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): 
 }
 
 export const FRONT_CSS = `
+/* 칭호 도장 — 붉은 네모 낙관 */
+.ap .front .seal { display: flex; align-items: center; gap: 12px; margin: 8px auto 6px; max-width: 460px; }
+.ap .front .seal b { flex: none; display: grid; place-items: center; min-width: 64px; height: 64px; padding: 0 8px; border: 3px solid #c0392b; border-radius: 6px; color: #e04a3a; font-family: var(--display); font-size: 26px; transform: rotate(-4deg); box-shadow: inset 0 0 0 2px #c0392b55; background: #2a0f0a66; }
+.ap .front .seal.lost b { filter: grayscale(.5); opacity: .85; }
+.ap .front .seal span { color: #e8dcc0; font-size: 13.5px; line-height: 1.5; text-align: left; }
 .ap .front { position: absolute; inset: 0; overflow-y: auto; z-index: 5; background: #101318; color: var(--ink); }
 .ap .front .fhead { display: flex; align-items: center; gap: 10px; padding: calc(12px + env(safe-area-inset-top)) 14px 4px; max-width: 980px; margin: 0 auto; }
 .ap .front .fhead h2 { margin: 0; font-family: 'Gowun Batang', serif; color: var(--gold); font-size: 20px; }
