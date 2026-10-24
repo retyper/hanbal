@@ -33,6 +33,7 @@ import { advance, concealOf, draftable, forceOf, neighbors, newArmyId, otherEnd,
 import { PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bowUpCost, escapeChance, plotAgents, plotChance, plotCost, plotTargets } from '../../realm/plots.ts'
 import { allianceWhy, leaderOf, tookRecently, truceWhy, winningAgainst } from '../../realm/stance.ts'
 // 등용 대사 — 장수마다 한 마디 (형 10-24: "장수마다 각각 등용 대사 개성 있고 다양하고 독특하게")
+import { startRegion } from '../../realm/data/regions/index.ts'
 import { HIRE_BY_TRAIT, HIRE_LINE, HIRE_PLAIN } from '../../realm/data/hire-lines.ts'
 import { DESTS, DEST_IDS, EXP_SEASONS, destReachable, expAmount, expBlock, expOdds, onExpedition } from '../../realm/expedition.ts'
 import { foundable, joinable, partiesOf, partyCost, partyMoves, partySize } from '../../realm/parties.ts'
@@ -334,8 +335,21 @@ const nationsOf = (region: RegionId): readonly NationInfo[] => (region === 'yeon
   : region === 'tutorial' ? SOUTH_NATIONS.filter((n) => n.id === 'baekje' || n.id === 'michuhol')
     : region === 'jumong' ? [...WORLD_NATIONS.filter((n) => ['goguryeo', 'biryuna', 'buyeo', 'bukokjeo'].includes(n.id)), HAENGIN_NATION] : NATIONS)
 
-function nationFace(id: string, cls = 'nface'): string {
-  const hid = LIVE_RULER[id] ?? rulerId(id)
+/** 판마다 나라의 진짜 군주 — 나라 고르기·자세히 보기에서도 그 판의 얼굴로 (2장 고구려 = 젊은 궁수 주몽 · 형 10-24) */
+const BOARD_RULERS = new Map<RegionId, Readonly<Record<string, string>>>()
+function boardRuler(region: RegionId, nation: string): string | undefined {
+  let m = BOARD_RULERS.get(region)
+  if (m === undefined) {
+    const r = startRegion(region, 1, nation)
+    m = Object.fromEntries(Object.values(r.factions).flatMap((f) => (f.ruler !== undefined ? [[f.id, f.ruler]] : [])))
+    BOARD_RULERS.set(region, m)
+  }
+  return m[nation]
+}
+
+function nationFace(id: string, cls = 'nface', ruler?: string): string {
+  // ruler — 저장된 판의 진짜 군주 (첫 화면 「이어 하기」: 2장 고구려는 젊은 궁수 주몽 — 형 10-24)
+  const hid = ruler ?? LIVE_RULER[id] ?? rulerId(id)
   const file = hid !== undefined ? bustOf(hid) : undefined
   return file !== undefined ? `<img class="${cls}" src="${ART}bust/${file}.jpg" alt="">` : ''
 }
@@ -349,7 +363,7 @@ const DEX_KIT = {
 
 /** 판의 앞과 끝(front.ts)이 쓰는 그림 손 */
 const KIT: FrontKit = {
-  art: ART, esc, icon, nations: nationsOf, face: nationFace,
+  art: ART, esc, icon, nations: nationsOf, face: nationFace, boardRuler,
   emblem: (f, cls) => emblem(f, cls),
   bust: (id) => (bustOf(id) !== undefined ? `${ART}bust/${bustOf(id)}.jpg` : null),
   won: nationWon,

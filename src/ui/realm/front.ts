@@ -44,7 +44,9 @@ export interface FrontKit {
   readonly icon: (name: string, cls?: string) => string
   readonly emblem: (nation: string, cls?: string) => string
   /** 나라의 군장 얼굴 (명치판) */
-  readonly face: (nation: string, cls?: string) => string
+  readonly face: (nation: string, cls?: string, ruler?: string) => string
+  /** 그 판에서 그 나라의 군주 id (판마다 다르다 — 2장 고구려는 주몽) */
+  readonly boardRuler?: (region: RegionId, nation: string) => string | undefined
   readonly nations: (region: RegionId) => readonly NationInfo[]
   /** 장수 명치판 그림의 주소 — 없으면 null (끝 화면의 콜라주) */
   readonly bust?: (hero: string) => string | null
@@ -107,7 +109,7 @@ export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, 
     const me = r.player
     const region = r.region ?? 'byeonhan-mini'
     const name = r.factions[me]?.name ?? ''
-    h += `<button class="cont" data-act="continue">${k.face(me, 'cface')}<span class="ct"><b>${k.emblem(me, 'cem')}${k.esc(name)} 이어 하기</b>`
+    h += `<button class="cont" data-act="continue">${k.face(me, 'cface', r.factions[me]?.ruler ?? undefined)}<span class="ct"><b>${k.emblem(me, 'cem')}${k.esc(name)} 이어 하기</b>`
     h += `<span>${k.esc(seasonLabel(r.season))} · 도읍 ${capsHeld(r, me)}/${winNeed(region)}${r.known !== undefined ? ` · 아는 나라 ${(r.known[me]?.length ?? 0) + 1}/${Object.keys(r.factions).length}` : ''}</span>`
     h += `${savedAt !== null ? `<small>최근 저장 · ${k.esc(agoText(savedAt))}</small>` : ''}</span></button>`
   }
@@ -173,7 +175,7 @@ export function nationsHtml(k: FrontKit, region: RegionId): string {
   h += `</div><div class="ncards">`
   for (const n of all) {
     const w = k.won?.(region, n.id) ?? 0
-    h += `<button class="ncard pick" data-act="fr-nation" data-id="${n.id}">${k.face(n.id, 'nface')}<div class="nb">`
+    h += `<button class="ncard pick" data-act="fr-nation" data-id="${n.id}">${k.face(n.id, 'nface', k.boardRuler?.(region, n.id))}<div class="nb">`
     h += `<div class="an">${k.emblem(n.id)}<b>${k.esc(n.name)}</b><span class="mute">${k.esc(n.place)}</span>${n.hard ? '<span class="hard">어려움</span>' : ''}${w > 0 ? `<span class="wonb r${badgeRank(w)}">휘장 · 난세 ${w}</span>` : ''}</div>`
     h += `<p>${k.esc(n.blurb)}</p>${barsHtml(n)}</div></button>`
   }
@@ -193,7 +195,7 @@ export function detailHtml(k: FrontKit, region: RegionId, id: string, carry = ''
   const n = k.nations(region).find((x) => x.id === id)
   if (n === undefined) return nationsHtml(k, region)
   let h = `<div class="front detail"><div class="fhead"><button class="btn ghost" data-act="fr-board" data-v="${region}">‹ 다른 나라</button></div>`
-  h += `<div class="dcard">${k.face(id, 'dface')}<div class="db"><div class="dn">${k.emblem(id, 'dem')}<div><b>${k.esc(n.name)}</b><span>${k.esc(n.place)}</span></div></div>`
+  h += `<div class="dcard">${k.face(id, 'dface', k.boardRuler?.(region, id))}<div class="db"><div class="dn">${k.emblem(id, 'dem')}<div><b>${k.esc(n.name)}</b><span>${k.esc(n.place)}</span></div></div>`
   h += `<p class="blurb">${k.esc(n.blurb)}</p>${customsHtml(k, id)}${barsHtml(n)}`
   h += `<p class="src">${k.esc(n.source)}</p>${n.hard ? '<p class="hard">어려운 나라다 — 처음이면 다른 나라를 권한다.</p>' : ''}`
   h += `${carry}<button class="btn pri big" data-act="fr-start" data-id="${id}">이 나라로 시작</button></div></div></div>`
