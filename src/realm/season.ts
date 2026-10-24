@@ -14,7 +14,7 @@
  * 맞닿지 않은 길로 들어온 증원은 여전히 못 본다 — 그건 정찰의 몫이다.
  */
 import { roll } from '../core/rng.ts'
-import { scenarioOutcome } from './scenario.ts'
+import { resolveContests, scenarioOutcome } from './scenario.ts'
 import { P } from '../tune/params.ts'
 import {
   OPEN_FIELD, ambushChance, ambushSizePenalty, headcount, power, strength, winChance,
@@ -1322,6 +1322,7 @@ export function advance(
   applyBowUps(r, orders, lines) // 2 — 자객의 활을 올린다 (이번 계절 공작부터 든다)
   resolvePlots(r, handed, lines) // 2 — 공작
   resolveRites(r, orders, lines) // 2 — 소도 제사
+  resolveContests(r, orders, lines) // 장의 겨루기 (2장 송양의 활쏘기)
   // 전장에서 내린 명령은 명령 줄로도 온다 (판 기록에 남는다) — 따로 받은 tactics 가 먼저 (시험 돌림)
   const led: Record<string, Tactic> = { ...tactics }
   for (const o of orders) if (o.kind === 'command' && led[o.key] === undefined) led[o.key] = { cmds: o.cmds }

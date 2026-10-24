@@ -49,6 +49,7 @@ import { LEVEL_LINE, TIER_MAX, levelName } from '../../realm/tier.ts'
 import { GROW_CSS, HERO_CSS, TITLE_MEAN, bondChip, growthHtml, heroRadar, nameHtml, roleLine, splitTitle, traitChips, traitLines } from './heroview.ts'
 import { APP_CSS, CLOUD_CSS, SEASONP_CSS, UI_CSS } from './appstyle.ts'
 import { GOAL_CSS, goalBandHtml, goalRowsHtml } from './goalband.ts'
+import { contestOpen } from '../../realm/scenario.ts'
 import { installTips, TIP_CSS } from './tips.ts'
 import { UPDATE_CSS } from './update.ts'
 import { scrollInside } from './scroll.ts'
@@ -768,7 +769,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (rite) out.push({ kind: 'rite', faction: me() })
     // 사건 카드의 답은 answers 의 'card:<계절>' 칸에 (참 = 첫째 · 거짓 = 둘째) — 초안 저장·계절 초기화를 청의 답과 함께 탄다
     for (const [ask, yes] of Object.entries(answers)) {
-      if (ask.startsWith('card:')) { if (ask === `card:${realm?.season ?? -1}`) out.push({ kind: 'card', faction: me(), pick: yes ? 0 : 1 }) } else out.push({ kind: 'answer', ask, yes })
+      if (ask === 'contest:archery') out.push({ kind: 'contest', faction: me(), id: 'archery', won: yes })
+      else if (ask.startsWith('card:')) { if (ask === `card:${realm?.season ?? -1}`) out.push({ kind: 'card', faction: me(), pick: yes ? 0 : 1 }) } else out.push({ kind: 'answer', ask, yes })
     }
     for (const node of guards) out.push({ kind: 'guard', faction: me(), node })
     for (const to of Object.keys(envoys).sort()) out.push(envoys[to]!)
@@ -2142,6 +2144,23 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     openFrame(`${PRACTICE}&bow=${bow}&back=about:blank`, '궁술 연습장')
   }
 
+  /**
+   * 2장 송양의 활쏘기 겨루기 — 목표 띠 밑에 단추. 밤 판에서 직접 쏘고, 맞혔는지가 이 계절의 답(초안과 같이 탄다)이 되어
+   * 계절이 넘어갈 때 엔진에 간다 (scenario.resolveContests · 점검 10-25: 장 소개가 약속하고 안 지키던 것)
+   */
+  function contestHtml(r: Realm): string {
+    if (!contestOpen(r, me())) return ''
+    const got = answers['contest:archery']
+    if (got !== undefined) return `<div class="gcontest done${got ? ' won' : ''}">🏹 ${got ? '과녁을 맞혔다' : '빗맞혔다'}<small>계절이 넘어가면 송양이 안다</small></div>`
+    return `<button class="gcontest" data-act="contest">🏹 송양이 활 솜씨를 겨루자 한다<small>직접 쏜다 — 이기면 송양의 마음이 크게 기운다</small></button>`
+  }
+  function openContest(): void {
+    if (realm === null) return
+    const bow = assassinBow(realm, me())
+    const seed = (realm.seed ^ 0x51a7) >>> 0 // 한 판에 한 과녁 — 다시 열어도 같은 밤
+    openFrame(`${NIGHT}?seed=${seed}&arrows=${P.realm.contestArrows}&bow=${bow}&guard=0&kind=contest&id=contest-archery&back=about:blank`, '송양과의 활쏘기 겨루기')
+  }
+
   function openFrame(src: string, title: string): void {
     const ov = document.createElement('div')
     ov.className = 'nightov'
@@ -2165,6 +2184,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (ev.origin !== location.origin) return
     // 밤 판의 결과 — 연습은 결과를 안 보낸다 (night-main.ts). skip 은 건너뛰기, seen 이면 진짜 지붕을 본 뒤다
     const m = ev.data as { type?: string; id?: string; result?: Hand['result'] | 'cleared'; alarm?: boolean; seen?: boolean }
+    // 송양과의 겨루기 — 맞히면(쓰러뜨리거나 다치게) 이긴다. 건너뛰면 안 겨룬 것
+    if (m?.type === 'hanbal.night.result' && m.id === 'contest-archery' && m.result !== undefined && m.result !== 'cleared') {
+      if (m.result !== 'skip') answers['contest:archery'] = m.result === 'dead' || m.result === 'wounded'
+      else root.querySelector('.nightov')?.remove()
+      saveDraft()
+      paint()
+      return
+    }
     if (m?.type !== 'hanbal.night.result' || typeof m.id !== 'string' || !m.id.startsWith('plot-') || m.result === undefined || m.result === 'cleared') return
     const i = Number(m.id.slice(5))
     const o = plots[i]
@@ -3604,7 +3631,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     morph($('.legend'), legendHtml(r) + (waiting > 0 ? `<button class="askpill" data-act="tab" data-tab="diplo">${icon('good-tribute-bell')}사신 ${waiting}</button>` : ''))
     $('.next').innerHTML = `다음 계절 <span>›</span>`
     morph($('.todo'), todoHtml(r))
-    morph($('.goalb'), goalBandHtml(r, esc, goalFolded())) // 캠페인의 장이면 이 장의 목표 — 접을 수 있다
+    morph($('.goalb'), goalBandHtml(r, esc, goalFolded()) + contestHtml(r)) // 캠페인의 장이면 이 장의 목표 — 접을 수 있다
     $('.goalb').classList.toggle('folded', goalFolded())
     let tabs = ''
     for (const t of TABS) {
@@ -3968,6 +3995,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'unexp': heroOrders = heroOrders.filter((o) => !(o.kind === 'expedition' && o.hero === d['id'])); break
       case 'card-pick': if (realm?.card) { answers[`card:${realm.card.season}`] = d['v'] === '0'; fastNext = true } break
       case 'practice-open': openPractice(); break
+      case 'contest': openContest(); break
       case 'unwed': heroOrders = heroOrders.filter((o) => !(o.kind === 'wed' && (o.a === d['id'] || o.b === d['id']))); break
       case 'dex-open': root.querySelector('.dxtoast')?.remove(); front = { kind: 'dex', board: 'all', sel: null, back: front }; sheet = null; paint(); return
       case 'dex-close': if (front !== null && front.kind === 'dex') front = front.back; paint(); return

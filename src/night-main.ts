@@ -44,6 +44,8 @@ const ctx = canvas.getContext('2d')!
 const params = new URLSearchParams(location.search)
 const practiceMode = params.get('practice') === '1'
 const missionId = params.get('id') ?? ''
+/** 장의 겨루기 (2장 송양의 활쏘기) — 같은 밤 판을 쏘되 글이 겨루기다. 자객에게 맡기기는 없다 */
+const contest = params.get('kind') === 'contest'
 const back = params.get('back') ?? 'realm.html'
 
 // 여자 자객의 몸 (public/sprites/night-assassin.png) — 활터 주인공의 그림 자리에 바꿔 끼운다. 팔은 남색 소매 · 살색 손
@@ -204,6 +206,14 @@ function showPractice(): void {
 function showMissionIntro(): void {
   night = null
   rehearsal = false
+  if (contest) {
+    ui.innerHTML = `<div class="card"><h1>송양과의 활쏘기 겨루기</h1><p>송양이 비류수 가 언덕에 과녁을 세웠다. 화살 ${missionArrows}발.</p>`
+      + `<p class="mute">"나는 여러 대에 걸쳐 왕 노릇을 하였다 — 그대의 활 솜씨를 보자." 등불 아래 선 허수아비들을 먼저 다 맞히고, 셋째 판 창호지 뒤의 과녁 그림자를 쏜다. 빗나간 살은 구경꾼을 웅성이게 한다.</p>`
+      + `<p class="mute">아무 데나 누르고 뒤로 끈다 — 끈 쪽의 반대로 겨눈다 · 놓으면 쏜다. 오른쪽 아래 「숨 참기」를 누르고 있으면 떨림이 멎는다.</p>`
+      + `<div class="btns"><button data-act="rehearse">연습 먼저</button><button class="on" data-act="go">겨룬다</button></div>`
+      + `<p class="mute">연습은 다른 언덕에서 같은 활로 쏜다. 몇 번이든 되고, 남지 않는다. 이기면 송양의 마음이 크게 기운다.</p></div>`
+    return
+  }
   ui.innerHTML = `<div class="card"><h1>밤의 암살</h1><p>기와지붕 위에 엎드렸다. 화살 ${missionArrows}발.</p>`
     + `<p>경비 · <b>${GUARD_NAME[missionGuard]}</b> — ${GUARD_LINE[missionGuard]}</p>`
     + `<p class="mute">보초를 다 쓰러뜨리고 셋째 판의 창호지 뒤 그림자를 쏜다. 빗나간 살은 소리를 낸다. 시체가 불빛 아래 있으면 들킨다.</p>`
@@ -219,7 +229,7 @@ function hud(): void {
   ui.innerHTML = `<button class="steady" data-act="steady"><span>숨 참기<i>누르고 있는다</i></span></button><button class="quit" data-act="quit">그만</button>`
     + (rehearsal ? `<div class="tag">연습</div>` : '')
     // 진짜 임무에서 첫 살을 쏘기 전까지만 건너뛸 수 있다 — 쏘고 나서 맡기는 길은 없다
-    + (!practiceMode && !rehearsal && (night?.shots ?? 0) === 0 ? `<button class="skip" data-act="skip">건너뛰기</button>` : '')
+    + (!practiceMode && !rehearsal && !contest && (night?.shots ?? 0) === 0 ? `<button class="skip" data-act="skip">건너뛰기</button>` : '')
     // 세로 폰 — 눕혀 그리는 중이면 '세로로 보기', 아니면 '가로로 눕히기' (회전 잠금을 켠 폰도 가로로 쏠 수 있게)
     + (portraitScreen() ? `<button class="turn" data-act="turn">${rotatePref() ? '폰을 옆으로 눕혀 쏜다 · 세로로 보기' : '작게 보인다 · 가로로 눕히기'}</button>` : '')
   breathBtn = ui.querySelector<HTMLElement>('.steady')
@@ -260,7 +270,8 @@ const LINES: Record<NightResult['result'], (r: NightResult) => string> = {
 function showResult(n: Night): void {
   const r = n.result!
   const good = r.result === 'dead' || r.result === 'wounded' || r.result === 'cleared'
-  let h = `<div class="card">${rehearsal ? '<p class="mute">연습 — 남지 않는다</p>' : ''}<h1 style="color:${good ? '#8fd07a' : '#e08a74'}">${esc(LINES[r.result](r))}</h1>`
+  const line = contest ? (r.result === 'dead' ? '과녁 한가운데를 꿰뚫었다 — 겨루기를 이겼다!' : r.result === 'wounded' ? '과녁을 맞혔다 — 겨루기를 이겼다.' : '빗맞혔다 — 겨루기를 졌다.') : LINES[r.result](r)
+  let h = `<div class="card">${rehearsal ? '<p class="mute">연습 — 남지 않는다</p>' : ''}<h1 style="color:${good ? '#8fd07a' : '#e08a74'}">${esc(line)}</h1>`
   h += `<p class="mute">쏜 ${n.shots} · 맞힘 ${n.hits} · 머리 ${n.heads}${n.practice === null ? ` · 남은 화살 ${r.arrowsLeft}` : ''}</p>`
   // 촛불로 놓쳤으면 어떻게 잡는지 (형: "촛불이 꺼져서 도망치는건 대체뭔데. 어떻게잡으라는겨")
   if (r.result === 'fled' && !r.alarm && n.chiefUp >= 0) h += `<p class="mute">그림자가 서면 창호지 위 촛불 게이지가 닳는다. 다 닳기 전에 그림자의 머리나 몸을 쏴야 한다. 빗나가면 게이지가 뭉텅 준다.</p>`
@@ -268,7 +279,7 @@ function showResult(n: Night): void {
   if (rehearsal) {
     // 연습 — 칠십팔국으로 안 보낸다. 다시 연습하거나 진짜로 들어간다
     h += `<button data-act="rehearse">다시 연습</button><button class="on" data-act="go">진짜로 쏜다</button></div>`
-    h += `<div class="btns"><button data-act="skip0">건너뛰기 · 자객에게 맡긴다</button>`
+    h += `<div class="btns">${contest ? '' : '<button data-act="skip0">건너뛰기 · 자객에게 맡긴다</button>'}`
   } else if (n.practice !== null) {
     saveRun({ at: new Date().toISOString(), stage: n.stage, alarm: n.practice.alarm, shots: n.shots, hits: n.hits, heads: n.heads, result: r.result })
     h += `<button class="on" data-act="go">다시</button><button data-act="menu">판 고르기</button>`

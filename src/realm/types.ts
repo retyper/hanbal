@@ -723,6 +723,8 @@ export type Order =
   | { readonly kind: 'migrateAuto'; readonly faction: string; readonly on: boolean }
   /** 소도 제사 — 봄·가을에, 소도와 길로 맞닿은 고을을 쥔 나라만. 곡식이 든다 (economy.riteAllowed · riteCost) */
   | { readonly kind: 'rite'; readonly faction: string }
+  /** 장의 겨루기 — 밤 판에서 손으로 쏜 결과 (2장 송양의 활쏘기 · scenario.resolveContests) */
+  | { readonly kind: 'contest'; readonly faction: string; readonly id: 'archery'; readonly won: boolean }
   /** 청에 답한다 — 받기(yes) · 거절. 답하지 않은 청은 거절로 친다 */
   | { readonly kind: 'answer'; readonly ask: string; readonly yes: boolean }
   /** 경계 강화 — 곡식을 내고 그 고을 경계를 올린다 (economy.canGuard · guardCost). 한 고을 한 계절 한 번 */
@@ -845,6 +847,8 @@ export type ReportLine =
   | { readonly kind: 'harvest'; readonly faction: string; readonly grain: number; readonly blessed?: number }
   /** 소도 제사 — 봄은 그해 수확, 가을은 군대 사기 */
   | { readonly kind: 'rite'; readonly faction: string; readonly season: 'spring' | 'autumn' }
+  /** 장의 겨루기 결과 — with 는 겨룬 나라 */
+  | { readonly kind: 'contest'; readonly faction: string; readonly with: string; readonly won: boolean }
   /** 장터 — 화친·동맹인 두 나라가 이번 계절 곡식을 얻었다 (둘 다 grain 씩) */
   | { readonly kind: 'market'; readonly a: string; readonly b: string; readonly grain: number }
   | { readonly kind: 'draft'; readonly faction: string; readonly node: string; readonly unit: UnitKind; readonly n: number; readonly army: string }

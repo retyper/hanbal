@@ -380,6 +380,11 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (line.walk === true) return `${node(line.from)}의 백성 ${line.n}가구가 ${josa(node(line.to), '으로', '로')} 옮겨 와 자리 잡았다.`
       if (line.auto === true) return `${josa(node(line.from), '이', '가')} 붐벼 집 ${josa(String(line.n), '이', '가')} ${josa(node(line.to), '으로', '로')} 옮겨 갔다.`
       return `${node(line.from)}의 집 ${josa(String(line.n), '을', '를')} ${josa(node(line.to), '으로', '로')} 옮겼다. 두 고을은 자리 잡느라 한동안 집이 늘지 않는다.`
+    case 'contest':
+      if (line.faction !== viewer) return null
+      return line.won
+        ? `${josa(fname(line.with), '의', '의')} 송양과 활 솜씨를 겨뤄 이겼다. 송양이 "그대는 하늘이 낸 사람이로다" 하며 마음이 크게 기울었다.`
+        : `${josa(fname(line.with), '의', '의')} 송양과 활 솜씨를 겨뤘으나 졌다. 송양이 우리를 얕보기 시작했다.`
     case 'rite':
       if (line.faction === viewer) {
         return line.season === 'spring'

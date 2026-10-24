@@ -57,6 +57,12 @@ export function goalRowsHtml(r: Realm, esc: (s: string) => string): string {
 }
 
 export const GOAL_CSS = `
+/* 장의 겨루기 단추 (app.contestHtml) — 목표 띠 밑 */
+.ap .goalb .gcontest { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; width: 100%; margin-top: 6px; padding: 7px 10px; border-radius: 10px; border: 1.5px solid #ffd27a; background: linear-gradient(#5a3a14, #2a1a0a); color: #ffe7b0; font: inherit; font-weight: 800; font-size: 13.5px; text-align: left; cursor: pointer; box-shadow: 0 0 12px #ffd27a66; animation: gcpulse 1.4s ease-in-out infinite alternate; }
+.ap .goalb .gcontest small { font-weight: 500; font-size: 11px; color: #e8d4a8; }
+.ap .goalb .gcontest.done { cursor: default; animation: none; box-shadow: none; border-color: #8a7050; background: #2a1d10; } .ap .goalb .gcontest.done.won { border-color: #9fd18b; color: #d8ffc8; }
+@keyframes gcpulse { to { box-shadow: 0 0 22px #ffd27acc; } }
+@media (prefers-reduced-motion: reduce) { .ap .goalb .gcontest { animation: none; } }
 .ap .goalb { position: absolute; left: 12px; top: calc(var(--toph) + var(--legh) + 50px); z-index: 5; max-width: min(260px, 60vw);
   border: 10px solid transparent; border-image: url(__ART__ui/card.png?v=1) 24 fill / 10px stretch; padding: 0 4px 2px; filter: drop-shadow(0 4px 10px #000a); }
 .ap .goalb:empty { display: none; }

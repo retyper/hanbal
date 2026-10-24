@@ -5,8 +5,9 @@
  * 맹주 · 철과 뱃길 · 큰 제사로 끝나는 길은 장에서는 닫힌다 — 장의 이김은 그 장의 목표 하나뿐.
  * 셈은 판만 읽는다 (결정론 A1).
  */
-import { pairKey } from './diplomacy.ts'
-import type { Goal, Realm } from './types.ts'
+import { addFavor, pairKey } from './diplomacy.ts'
+import { P } from '../tune/params.ts'
+import type { Goal, Order, Realm, ReportLine } from './types.ts'
 
 /** 목표 하나가 어디까지 왔나 — 화면의 막대 (숫자 대신 감: have/need 는 막대 길이로만 쓴다) */
 export interface GoalState {
@@ -64,6 +65,25 @@ export function scenarioOutcome(r: Realm): 'win' | 'lose' | null {
 export function seasonsLeft(r: Realm): number | null {
   const lim = r.scenario?.limit
   return lim === undefined ? null : Math.max(0, lim - r.season)
+}
+
+/**
+ * 2장 송양의 활쏘기 겨루기 (CAMPAIGN §1 · 형 10-25 "활성화된 캠페인 완성도") — 한 판에 한 번, 첫 해 안에만.
+ * 이기면 비류국의 마음이 크게 기울고(송양 항복이 이 장의 승리 조건), 지면 조금 식는다. 결과는 밤 판에서 손으로 쏜 것
+ */
+export function contestOpen(r: Realm, faction: string): boolean {
+  const sc = r.scenario
+  return sc?.id === 'jumong' && r.factions[faction]?.id === 'goguryeo' && !(sc.marks ?? []).includes('archery-done') && r.season < P.realm.contestSeasons
+    && r.factions['biryuna'] !== undefined && r.outcome == null
+}
+export function resolveContests(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
+  for (const o of orders) {
+    if (o.kind !== 'contest' || o.id !== 'archery' || !contestOpen(r, o.faction)) continue
+    addFavor(r, o.faction, 'biryuna', o.won ? P.realm.contestFavorWin : -P.realm.contestFavorLose)
+    if (o.won) markEvent(r, 'archery')
+    markEvent(r, 'archery-done')
+    lines.push({ kind: 'contest', faction: o.faction, with: 'biryuna', won: o.won })
+  }
 }
 
 /** 장의 사건을 이뤘다고 적는다 (활쏘기 겨루기 이김 · 북 찢기 …) — 같은 것은 한 번만 */
