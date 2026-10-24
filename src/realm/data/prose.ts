@@ -562,6 +562,10 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (line.faction !== viewer) return null
       return `${josa(after.heroes[line.hero]?.name ?? '?', '이', '가')} ${josa(DESTS[line.dest].name, '으로', '로')} 원정을 떠났다. ${line.back - after.season + 1}계절 뒤 돌아온다.`
     }
+    case 'expStay': {
+      if (line.faction !== viewer) return null
+      return `${josa(after.heroes[line.hero]?.name ?? '?', '은', '는')} ${josa(DESTS[line.dest].name, '으로', '로')} 떠나지 못했다 — ${line.why}.`
+    }
     case 'expBack': {
       if (line.faction !== viewer) return null
       const who = after.heroes[line.hero]?.name ?? '?'

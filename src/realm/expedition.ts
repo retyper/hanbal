@@ -109,7 +109,12 @@ function decide(r: Realm, h: Hero, dest: ExpDest, len: 0 | 1 | 2): ExpGot {
 export function sendExpeditions(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
   for (const o of orders) {
     if (o.kind !== 'expedition') continue
-    if (expBlock(r, o.faction, o.hero, o.dest, o.len) !== null) continue
+    const why = expBlock(r, o.faction, o.hero, o.dest, o.len)
+    if (why !== null) {
+      // 말없이 빠지면 「보낸 것 같은데 쉬고 있다」가 된다 (형 10-24) — 우리 장수면 까닭을 남긴다
+      if (r.heroes[o.hero]?.faction === o.faction) lines.push({ kind: 'expStay', faction: o.faction, hero: o.hero, dest: o.dest, why })
+      continue
+    }
     const h = r.heroes[o.hero]!
     const a = armyOfHero(r, o.hero)
     if (a !== null) a.hero = null // 이끌던 군대는 그 자리에 남는다

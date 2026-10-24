@@ -36,6 +36,17 @@ describe('원정 — 보내기', () => {
     assert.notEqual(expBlock(r, r.player, g, 'hills', 0), null)
   })
 
+  it('계절을 넘길 때 막히면 말없이 빠지지 않는다 — 「떠나지 못했다」 한 줄 (형 10-24)', () => {
+    const r = byeonhanMini(4)
+    r.stock[r.player]!.grain = 0
+    const g = general(r)
+    const s = pass(r, [{ kind: 'expedition', faction: r.player, hero: g, dest: 'hills', len: 1 }])
+    assert.ok(!s.lines.some((l) => l.kind === 'expGo'))
+    const stay = s.lines.find((l) => l.kind === 'expStay')
+    assert.ok(stay !== undefined && stay.kind === 'expStay' && stay.hero === g && stay.why.includes('양식'))
+    assert.equal(onExpedition(s.next, g), undefined)
+  })
+
   it('떠나면 판에 없다 — 군대에서 빠지고, 길 양식이 들고, 정해진 계절에 돌아온다', () => {
     let r = byeonhanMini(4)
     r.stock[r.player]!.grain = 1000

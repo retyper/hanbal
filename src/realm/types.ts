@@ -929,6 +929,8 @@ export type ReportLine =
   /** 원정을 떠났다 · 돌아왔다 (got 을 풀었다) */
   | { readonly kind: 'expGo'; readonly faction: string; readonly hero: string; readonly dest: ExpDest; readonly back: number }
   | { readonly kind: 'expBack'; readonly faction: string; readonly hero: string; readonly dest: ExpDest; readonly got: ExpGot }
+  /** 원정 명령이 계절을 넘길 때 막혔다 (곡식이 다른 데 먼저 쓰였거나 원정 수가 찼다) — 말없이 빠지지 않게 */
+  | { readonly kind: 'expStay'; readonly faction: string; readonly hero: string; readonly dest: ExpDest; readonly why: string }
   /** 혼인했다 — due 계절에 아이가 나선다 */
   | { readonly kind: 'wed'; readonly faction: string; readonly a: string; readonly b: string; readonly due: number }
   /** 혼인의 열매 — 자식 장수가 나섰다. surprise = 부모 누구에게도 없던 특성이 터졌다 */

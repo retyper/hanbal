@@ -591,6 +591,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const o of plots) if (o.kind === 'plot') pay(plotCost(o.op, o.agent ?? null))
     if (musters.some((o) => o.kind === 'bowUp')) pay(bowUpCost(realm!, me()))
     for (const e of Object.values(envoys)) for (const g of GOODS) st[g] -= e.give[g] ?? 0
+    // 원정 길 양식 — 계절을 넘길 때 징병·등용 뒤에 치른다. 여기서 안 빼면 「보낼 수 있다」고 해 놓고 말없이 빠진다 (형 10-24)
+    for (const o of heroOrders) if (o.kind === 'expedition') st.grain -= P.realm.expGrainPer * EXP_SEASONS[o.len]
     leftCache = { key, st }
     return st
   }
@@ -2289,7 +2291,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const odds = expOdds(x, pick.dest, pick.len)
     // 쉬는 장수가 원정을 떠나면 사람 손이 하나 준다 — 이미 고른 공작·사신이 버려지지 않게 (형 10-23: "방화·소문 이미 보냈는데 원정을 중복해서 보낼 수 있는 건 말이 안 되지")
     const handsShort = idleHeroes(r, me()).includes(x.id) && handsUsed() > handsCap(r) - 1
-    const block = heroBusy(r, x.id) ?? expBlock(r, me(), x.id, pick.dest, pick.len) ?? (handsShort ? '이번 계절 사람 손이 다 찼다 — 공작·사신을 줄이면 보낼 수 있다' : null)
+    // 같은 계절에 고른 다른 원정과, 다른 데 쓰기로 한 곡식까지 센다 — 계절을 넘길 때 막혀 말없이 빠지지 않게 (형 10-24: "원정 보낸 것 같은데 다음 계절 또 쉬는 장수")
+    const sending = heroOrders.filter((o) => o.kind === 'expedition').length
+    const busyNow = (realm!.expeditions ?? []).filter((e) => e.faction === me()).length
+    const queued = busyNow + sending >= P.realm.expMax ? `원정은 한꺼번에 ${P.realm.expMax}까지다` : left().grain < P.realm.expGrainPer * EXP_SEASONS[pick.len] ? '길 양식이 모자란다 — 이번 계절 다른 데 쓰기로 한 곡식을 빼면' : null
+    const block = heroBusy(r, x.id) ?? expBlock(r, me(), x.id, pick.dest, pick.len) ?? queued ?? (handsShort ? '이번 계절 사람 손이 다 찼다 — 공작·사신을 줄이면 보낼 수 있다' : null)
     // 고른 먼 땅의 그림이 원정 칸 뒤에 깔린다 — 고르면 바뀐다
     let h = `<div class="exp" style="--expbg:url('${ART}exp/exp-${pick.dest}.jpg')"><b>원정</b><span class="mute">먼 땅으로 보낸다. 좋은 장수일수록 좋은 것을 가져오지만, 그동안 판에 없다.</span><div class="seg expd">`
     for (const d of DEST_IDS) {
@@ -2909,7 +2915,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'retake': ic = 'settle-capital'; break
       case 'card': ic = CARDS[l.card].icon; break
       case 'omen': ic = 'status-good-omen'; break
-      case 'expGo': case 'expBack': ic = 'settle-port-town'; break
+      case 'expGo': case 'expStay': case 'expBack': ic = 'settle-port-town'; break
       case 'birth': ic = 'status-good-omen'; break
       default: ic = ''
     }
@@ -3124,6 +3130,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (l.how === 'wanderer' && hireShown.delete(l.hero)) continue
         const x = r.heroes[l.hero]
         if (x !== undefined) scenes.push(hireSceneHtml(x, l.how))
+      } else if (l.kind === 'expBack' && l.faction === me() && l.got.kind === 'wanderer') {
+        // 원정길에서 만나 따라온 장수 — 등용 기록 없이 바로 들어오니 여기서 연출 (형 10-24: "견지 버들 어느새 들어와 있는데 등용 이펙트 안 나왔음")
+        const x = r.heroes[l.got.hero]
+        if (x !== undefined) scenes.push(hireSceneHtml(x, 'expedition'))
       } else if (l.kind === 'birth' && l.faction === me()) {
         const kid = r.heroes[l.hero], a = r.heroes[l.a], b = r.heroes[l.b]
         const traits = (kid?.traits ?? []).map((t) => `<span class="ctr${t === l.surprise ? ' new' : ''}">${esc(TRAIT[t]?.name ?? t)}${t === l.surprise ? ' · 타고났다' : ''}</span>`).join('')
@@ -3150,7 +3160,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 등용 — 사선 칼금 셋이 얼굴의 다른 곳을 하나씩 보여 주고(촥·촥·촥) 펑, 큰 얼굴이 화면 절반으로 (형 10-24: "기대감을 증폭시키면서 이미지를 자세히 보게 · 촥,촥,촥, 펑~")
    * 빛은 그 장수의 가장 좋은 특성 빛 · 이름 · 「주군을 모시겠습니다」 · 특성이 하나씩
    */
-  function hireSceneHtml(x: Hero, how: 'persuade' | 'wanderer'): string {
+  function hireSceneHtml(x: Hero, how: 'persuade' | 'wanderer' | 'expedition'): string {
     const RANK = { common: 0, good: 1, rare: 2, precious: 3, legend: 4 } as const
     const ts = (x.traits ?? []).map((t) => TRAIT[t]).filter((t): t is NonNullable<typeof t> => t !== undefined)
     const top = ts.filter((t) => t.bad !== true).sort((p, q) => RANK[q.grade] - RANK[p.grade])[0]
@@ -3165,7 +3175,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     let motes = ''
     for (let i = 0; i < 18; i++) motes += `<i style="--x:${(i * 41) % 100}%;--t:${((i * 0.37) % 2.2).toFixed(2)}s;--sp:${(2.6 + ((i * 0.61) % 1.8)).toFixed(2)}s"></i>`
     const chips = ts.map((t, i) => `<span class="ctr" style="--g:${GRADE_COLOR[t.grade]};animation-delay:${(2 + i * 0.18).toFixed(2)}s">${esc(t.name)}</span>`).join('')
-    const line = how === 'persuade' ? '마음을 돌려 우리 장수가 되었다' : '떠돌던 인재가 우리를 찾아왔다'
+    const line = how === 'persuade' ? '마음을 돌려 우리 장수가 되었다' : how === 'expedition' ? '원정길에서 만나 우리를 따라왔다' : '떠돌던 인재가 우리를 찾아왔다'
     return `<div class="cere hire" style="--gc:${gc}"><i class="cglow"></i><div class="cmote">${motes}</div>`
       + `<div class="hframe">${face}<i class="hfr"></i></div>${cuts}<i class="cflash"></i>`
       + `<div class="cw"><b>등용</b><span class="hname">${esc(x.name)}</span><span>${line}</span><em>「주군을 모시겠습니다」</em>${chips !== '' ? `<div class="ctrs">${chips}</div>` : ''}</div></div>`
@@ -4112,6 +4122,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const id = d['id']!
         const had = heroOrders.some((o) => o.kind === 'hire' && o.hero === id)
         heroOrders = had ? heroOrders.filter((o) => !(o.kind === 'hire' && o.hero === id)) : [...heroOrders, { kind: 'hire', faction: me(), hero: id }]
+        if (had) hireShown.delete(id) // 거뒀다 다시 들이면 연출이 또 나오게 — 안 그러면 계절 끝에도 건너뛰어 영영 안 나온다
         // 등용은 그 순간 연출 — 계절 기록은 계절이 넘어갈 때 (형 10-24: "등용 연출이 한 계절 늦어 · 그 순간 바로 연출 떠야 함")
         if (!had && !hireShown.has(id)) {
           const w = (realm?.wanderers ?? []).find((v) => v.hero.id === id)
