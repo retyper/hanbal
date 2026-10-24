@@ -48,7 +48,7 @@ export const CMD_NAME: Record<Cmd, string> = {
   charge: '돌격', hold: '방진', open: '길 트기', ford: '여울 막기', rocks: '바위 굴리기', gate: '성문 깨기', ram: '배 들이받기',
   volley: '화살비', counter: '맞쏘기', fire: '불화살', height: '높은 곳',
   flank: '옆치기', punch: '돌파', pursue: '추격', guard: '호위',
-  drum: '격려', duel: '장수 겨루기', capture: '적장 사로잡기', retreat: '물러난다', art: '장수의 비기',
+  drum: '격려', duel: '장수 겨루기', capture: '적장 사로잡기', retreat: '퇴각한다', art: '장수의 비기',
 }
 /** 깃발 한 줄 — 무엇을 이기고 무엇에 지나 */
 const CMD_DOES: Record<Cmd, string> = {
@@ -70,7 +70,8 @@ const CMD_DOES: Record<Cmd, string> = {
   drum: '장수가 군사를 다잡는다 — 사기가 조금 오른다',
   duel: '장수끼리 나선다 · 이기면 적이 무너지고, 지면 우리 장수가 다치거나 쓰러진다 · 한 번',
   capture: '날랜 무리를 적장에게 보낸다 · 무리가 호위보다 크고 적이 흔들릴수록 잘 된다 · 놓치면 무리를 잃는다',
-  retreat: '징을 쳐 물린다 · 덜 잃고 장수는 안 잡힌다',
+  // 퇴각 — 사실상 이 싸움을 지는 것 (형 10-24: "물러난다는 사실상 패배 확정 · 퇴각한다 · 붉게 · 설명 확실히")
+  retreat: '이 싸움을 접고 퇴각한다 — 이 싸움은 진다. 대신 군사를 덜 잃고 장수는 안 잡힌다',
   art: '그 장수만의 수 · 한 판에 한 번',
 }
 
@@ -82,7 +83,7 @@ const CMD_SHORT: Record<Cmd, string> = {
   ford: '건너오는 돌격을 크게 꺾는다', rocks: '맞붙기 전에 앞줄을 깎는다', gate: '방진에도 안 꺾이는 들이치기', ram: '물 위의 돌격',
   volley: '앞줄에 화살비 · 방진에 잘 먹힌다', counter: '적 궁수를 누른다', fire: '불을 놓는다 · 바람이 돌면 위험', height: '내리쏜다 · 방진도 단단',
   flank: '옆으로 돌아 궁수를 친다', punch: '앞줄과 함께 들이친다', pursue: '흔들리는 적을 크게 벤다', guard: '장수를 지킨다',
-  drum: '사기가 오른다', duel: '장수끼리 맞붙는다', capture: '적장을 잡으러 간다 · 놓치면 잃는다', retreat: '덜 잃고 물러난다', art: '그 장수만의 수',
+  drum: '사기가 오른다', duel: '장수끼리 맞붙는다', capture: '적장을 잡으러 간다 · 놓치면 잃는다', retreat: '싸움을 접는다 · 진다 · 덜 잃는다', art: '그 장수만의 수',
 }
 
 /** 장수의 비기 — 이름 · 그림 · 하는 일 (heroes.heroArt · tactics 의 비기). 장수마다 다르니 깃발에 그 이름으로 뜬다 */
@@ -975,7 +976,9 @@ export const WAR_CSS = `
 .ap .wcmd em { font-style: normal; font-size: 11px; color: #14161a; background: var(--gold); border-radius: 6px; padding: 0 5px; }
 .ap .wcmd em.land { background: #7fb07a; }
 .ap .wcmd .wcap { font-size: 12px; color: var(--ink); }
-.ap .wcmd.capture { border-color: #8a6a2a; } .ap .wcmd.retreat { background: #221d1a; }
+.ap .wcmd.capture { border-color: #8a6a2a; }
+/* 퇴각 — 지는 선택이라 붉게 */
+.ap .wcmd.retreat { background: linear-gradient(#5a1a14, #3a100c) padding-box; } .ap .wcmd.retreat b { color: #ffb4a4; } .ap .wcmd.retreat.on { box-shadow: 0 0 14px #e04a3a; }
 .ap .wf-hi { color: var(--good); font-weight: 700; font-size: 13px; } .ap .wf-mid { color: var(--gold); font-size: 13px; }
 .ap .wf-lo { color: var(--bad); font-size: 13px; } .ap .wf-no { color: #8b8478; font-size: 13px; }
 .ap .wfoot { display: flex; gap: 8px; justify-content: flex-end; align-items: center; margin-top: 10px; flex-wrap: wrap; }
