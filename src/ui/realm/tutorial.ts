@@ -193,6 +193,8 @@ export function createSpot(root: HTMLElement): Spot {
   let candPre = ''
   let candN = 0
   let movedAt = 0
+  /** 방금 누를 곳을 눌렀다 — 다음 곳으로는 바로 옮긴다 (기다리면 고리가 옛 곳에 남아 다시 누르면 방금 연 판이 닫혔다) */
+  let tapped = false
   let raf = 0
   let last = ''
 
@@ -220,9 +222,11 @@ export function createSpot(root: HTMLElement): Spot {
     return r0.top < w0.top || r0.bottom > w0.bottom || r0.left < w0.left || r0.right > w0.right
   }
   const war = (): boolean => root.classList.contains('war-open') || root.querySelector('.wr') !== null
+  /** 큰 장면이 떠 있나 — 그동안은 고리도 막기도 쉰다 */
+  const cere = (): boolean => root.querySelector('.cere') !== null
 
   function pick(): HTMLElement | null {
-    if (step === undefined || ctx === null || war()) return null
+    if (step === undefined || ctx === null || war() || cere()) return null
     const sel = tutPick(step, ctx, (s) => first(s) !== null)
     const el = sel !== null ? first(sel) : null
     pre = ''
@@ -251,7 +255,8 @@ export function createSpot(root: HTMLElement): Spot {
       if (want === cand && wantPre === candPre) candN++
       else { cand = want; candPre = wantPre; candN = 1 }
       const now = performance.now()
-      if (!alive || (candN >= P.realm.tutSwitchFrames && now - movedAt >= P.realm.tutSwitchMs)) {
+      if (!alive || tapped || (candN >= P.realm.tutSwitchFrames && now - movedAt >= P.realm.tutSwitchMs)) {
+        tapped = false
         target = want
         pre = wantPre
         movedAt = now
@@ -316,8 +321,11 @@ export function createSpot(root: HTMLElement): Spot {
   // 누를 곳(과 배우기 띠, 지도 확대·축소) 밖의 누르기는 먹지 않는다 — 앱이 듣기 전에 (잡기 단계)
   document.addEventListener('click', (ev) => {
     if (target === null || view === null || box.hidden || !target.isConnected) return
+    // 큰 장면(사로잡음·등용·혼례…)이 떠 있으면 막지 않는다 — 고리는 CSS 로 숨겼는데 누르기는 여기서 먹어 「확인」이 안 눌렸다 (형 10-24: "해비 사로잡았다 했는데 확인 눌러도 안 넘어가짐")
+    if (cere()) return
     const t = ev.target as HTMLElement
-    if (view.contains(t) || t.closest('.tutband') !== null || t.closest('[data-act="zin"], [data-act="zout"]') !== null) return
+    if (view.contains(t)) { tapped = true; return }
+    if (t.closest('.tutband') !== null || t.closest('[data-act="zin"], [data-act="zout"]') !== null) return
     ev.preventDefault()
     ev.stopPropagation()
     // 엉뚱한 데를 누르면 고리가 한 번 크게 뛴다 — 여기를 누르라고
