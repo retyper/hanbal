@@ -3854,7 +3854,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const line = ours ? `${josa(where, '에서', '에서')} 적장을 붙잡아 옥에 가두었다` : `${josa(where, '에', '에')} 붙잡혀 갔다`
     const how = ours ? '회유하면 우리 장수가 된다 — 장수 판의 「옥에 가둔 적장」' : '화친을 맺거나 그 나라의 도읍을 치면 풀려 돌아온다'
     // 옥 — 금 액자·밧줄 대신 쇠 테, 얼굴이 드러난 뒤 쇠창살이 위에서 철컹 내려와 닫힌다 (형 10-25: "포로인데 금액자 · 감옥 같은 액자 · 쇠창살이 위에서 아래로 철컹")
-    const bars = `<i class="jbars">${'<b></b>'.repeat(7)}<s class="t"></s><s class="m"></s></i>`
+    const bars = `<i class="jbars"><b></b></i>`
     return `<div class="cere hire capt${ours ? '' : ' lost'}" style="--gc:${ours ? '#9aa3ad' : '#c0504a'}"><i class="cbg" style="${sceneBg(bg)}"></i><i class="cglow"></i>`
       + `<div class="hframe">${bust(x, 'hbust')}<i class="jail"></i>${bars}</div><i class="cflash"></i>`
       + `<div class="cw"><b>${title}</b><span class="hname">${esc(x.name)}</span><span>${esc(line)}</span><em>${esc(how)}</em>`
