@@ -158,10 +158,10 @@ export const BATTLE_SFX = {
   feast: snd('tap_coin'),
   /** 맞부딪힘 — 상성에서 이겼다(필살) · 그냥 */
   crit: snd('battle_crit'), clash: snd('battle_clash'),
-  /** 엉긴 앞줄의 칼·창 — 찌르기 컷 박자에 작게 */
-  melee1: 'parry_01', melee2: 'impactMetal_medium_000', melee3: 'parry_02',
+  /** 마지막 일격 · 장수 겨루기 이김 — 형이 싸움 소리 고르기 판에서 고른 것 (10-25) */
+  final: 'realm/sfx/battle_final_c1.ogg', duelWin: 'realm/sfx/battle_duelwin_c2.ogg',
   /** 사로잡았다 · 장수 겨루기 · 마지막 일격(적이 무너졌다) · 이겼다 · 졌다 */
-  caught: 'jingleUnlock', duelWin: 'impactMetal_medium_001', final: 'impactWood_heavy_001', win: snd('horn_victory'), lose: snd('defeat'),
+  caught: 'jingleUnlock', win: snd('horn_victory'), lose: snd('defeat'),
   /** 싸움이 열린다 — 북 두 번, 종 한 번, 함성 */
   openDrum: snd('war_drum'), openBell: snd('war_bell'), cry: snd('war_cry'),
 } as const
@@ -672,6 +672,22 @@ const AIR_EMBERS = Array.from({ length: 16 }, (_, i) => {
  */
 /** 자르지 않고 끝까지 울리는 깃발 소리 — 그 깃발의 얼굴 같은 소리 (방진의 쇠판 「탱탱」) */
 const RING_FULL: ReadonlySet<Cmd> = new Set<Cmd>(['hold'])
+
+/**
+ * 엉긴 앞줄의 칼·창 — 여섯을 돌려 가며 (형 10-25: "6개를 섞어서 조합해서 쓰면 될 듯 · impactMetal_medium_000 은 쓰지 마").
+ * c1 은 앞 1초가 비어 있어 0.95초부터
+ */
+const MELEE: readonly string[] = ['realm/sfx/battle_melee_c1.ogg#t=0.95', ...[2, 3, 4, 5, 6].map((n) => `realm/sfx/battle_melee_c${n}.ogg`)]
+
+/**
+ * 여러 겹으로 내는 깃발 — [파일, 늦게 낼 초] (형 10-25)
+ *   불화살 — 다섯을 다 겹친다. 저마다 앞의 빈 데를 건너뛰어 크게 터지는 자리를 맞춘다
+ *   여울 막기 — 텀벙(c5)을 셋, 고르지 않은 틈으로
+ */
+const LAYERS: Partial<Record<Cmd, ReadonlyArray<readonly [string, number]>>> = {
+  fire: [['realm/sfx/cmd_fire_c1.ogg', 0], ['realm/sfx/cmd_fire_c2.ogg#t=0.2', 0], ['realm/sfx/cmd_fire_c3.ogg#t=0.28', 0], ['realm/sfx/cmd_fire_c4.ogg#t=0.06', 0], ['realm/sfx/cmd_fire_c5.ogg', 0]],
+  ford: [['realm/sfx/cmd_ford_c5.ogg', 0], ['realm/sfx/cmd_ford_c5.ogg', 0.17], ['realm/sfx/cmd_ford_c5.ogg', 0.43]],
+}
 const CMD_BEAT: Partial<Record<Cmd, ReadonlyArray<readonly [number, number, number]>>> = {
   hold: [[0.3, 1, 1]],
   ford: [[0.38, 1, 1], [0.82, 0.75, 0.95]],
@@ -2111,6 +2127,13 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       // 깃발 소리 — 그림과 같은 차례·박자로, 앞부분만 짧게 · 적 것은 더 짧고 작게, 자리가 없으면 버린다
       const beat = (c: Cmd, s0: number, vol: number, dur: number, low: boolean): void => {
         if (c === 'volley' || c === 'counter') { for (const [dt, v, rt] of VOLLEY_SHOTS.slice(0, 3)) at(s0 + dt, BATTLE_SFX[c], vol * v, rt, 0.4, low); return }
+        // 여러 겹 — 우리 것은 다 겹치고(겹친 만큼 작게), 적 것은 첫 겹만 (자리가 없으면 버린다)
+        const ly = LAYERS[c]
+        if (ly !== undefined) {
+          const ks = low ? ly.slice(0, 1) : ly
+          for (const [f, dt] of ks) at(s0 + dt, f, (vol / Math.sqrt(ks.length)) * 1.3, 1, dur + 0.3, low)
+          return
+        }
         const b = CMD_BEAT[c]
         if (b === undefined) { at(s0, BATTLE_SFX[c], vol, 1, dur, low); return }
         // 방진의 「탱탱」은 끝까지 울린다 — 0.5초에 자르며 0.32초부터 줄였더니 소리가 가장 큰 곳(0.25~0.45초)이 깎여 안 들렸다 (형 10-25)
@@ -2120,8 +2143,9 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       for (const b of plan.beats) beat(b.c, b.at, b.ours ? 0.5 : 0.3, b.ours ? P.realm.warBeatDur : P.realm.warFoeBeatDur, !b.ours)
       // 엉긴 앞줄 — 찌르기 컷의 박자에 쇠가 부딪는 소리를 몇 번 흩어 낸다(작게 · 자리가 없으면 버린다). 소리마다 높낮이를 조금씩 (형 10-25: 소리와 동작 박자)
       if (rd.ev !== 'capture-ok' && rd.ev !== 'retreat') {
-        const hits = [BATTLE_SFX.melee1, BATTLE_SFX.melee2, BATTLE_SFX.melee3]
-        for (let k = 0; k < P.realm.warMeleeHits; k++) at(clashAt + 0.25 + k * P.realm.warMeleeGap, hits[k % hits.length]!, 0.2, 0.9 + (k % 3) * 0.08, 0.3, true)
+        // 여섯을 합마다 다른 자리에서 돌려 — 같은 소리가 줄지어 나지 않게
+        const r0 = (rd.na * 97 + rd.nd * 53) | 0
+        for (let k = 0; k < P.realm.warMeleeHits; k++) at(clashAt + 0.25 + k * P.realm.warMeleeGap, MELEE[(r0 + k * 2) % MELEE.length]!, 0.22, 0.92 + (k % 3) * 0.06, 0.45, true)
       }
       // 우리가 말로 달려드는 합엔 함성 (돌격은 소리 안에 함성이 섞였다)
       const ours = weAtk ? rd.a : rd.d
@@ -2130,6 +2154,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     if (end !== null) {
       const good = endGood(end)
       markEnd(end)
+      // 마지막 일격 — 한쪽이 무너지거나 사로잡혀 끝난 판의 마지막 합 (전엔 이름만 있고 안 냈다)
+      if (rd !== undefined && (end.outcome === 'rout' || end.outcome === 'routed')) at(roundPlan(rd, weAtk).clash + 0.12, BATTLE_SFX.final, 0.6, 1, 1.6)
       // 판의 끝 — 결과 때에 승리·패배 소리 하나 · 음악은 그 소리가 가라앉은 뒤 (마지막 일격 소리는 맞부딪힘이 맡는다)
       const endAt = (rd !== undefined ? roundPlan(rd, weAtk).result : STAGE_S[2]) + 0.5
       if (!endSeen.horn) timers.push(window.setTimeout(() => { if (document.visibilityState === 'visible') { endSeen.horn = true; host.ding(good ? BATTLE_SFX.win : BATTLE_SFX.lose, 0.45) } }, endAt * 1000))

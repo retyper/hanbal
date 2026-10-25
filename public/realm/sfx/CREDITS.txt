@@ -170,3 +170,19 @@ war_bell_c5.ogg  공유마당 · 「징소리B」 · 김용배 · CC BY(저작�
 bgm_bridal_c9.ogg  공유마당 · 「국악연주곡_반우반계 반엽 '남하여' 연주 1」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13263121
 cmd_hold_h1.mp3  형이 직접 받아 옴 (10-24 · 방진 「탱탱」 쇠판 소리) · 출처·라이선스 형에게 확인 중 — 받은 곳을 적을 것
 wed_c4.ogg  공유마당 · 「국악 효과음 #503」(환영해주는 축하해주는) · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13380336&menuNo=200020 · 7.4초를 5.8초로 자르고 끝을 줄임 · 혼례 소리 (형 10-24 고름)
+
+# 2026-10-25 싸움 소리 고르기 판에서 형이 고른 것
+cmd_retreat_c1.ogg  소라 나팔 · 김용배 · CC BY (저작자표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253859&menuNo=200020 (sfx/cand/cmd_retreat_1.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+cmd_rocks_c5.ogg  Rockslide_1.wav · NinjaSharkStudios · CC0 · https://freesound.org/s/608957/ (sfx/cand/cmd_rocks_5.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+battle_final_c1.ogg  BODY FALL - V HVY - DIRT · leonelmail · CC0 · https://freesound.org/s/504626/ (sfx/cand/battle_final_1.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+battle_duelwin_c2.ogg  Sword Contact (with swipe) · ultraaxvii · CC0 · https://freesound.org/s/591155/ (sfx/cand/battle_duelwin_2.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+battle_melee_c1.ogg  Sword clash 1.wav · spycrah · CC0 · https://freesound.org/s/471095/ (sfx/cand/battle_melee_1.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+battle_melee_c2.ogg  Sword Clash.wav · Bird_man · CC0 · https://freesound.org/s/275159/ (sfx/cand/battle_melee_2.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+battle_melee_c3.ogg  Sword Clash · loudernoises · CC0 · https://freesound.org/s/334169/ (sfx/cand/battle_melee_3.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+battle_melee_c4.ogg  Sword_Clash (7).wav · JohnBuhr · CC0 · https://freesound.org/s/326868/ (sfx/cand/battle_melee_4.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+battle_melee_c5.ogg  Swords Clash - High Quality #2 · Christopherderp · CC0 · https://freesound.org/s/364530/ (sfx/cand/battle_melee_5.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+battle_melee_c6.ogg  shield guard · nekoninja · CC0 · https://freesound.org/s/370203/ (sfx/cand/battle_melee_6.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+cmd_fire_c1.ogg  Burning arrow 05.wav · Introspectral · CC0 · https://freesound.org/s/262478/ (sfx/cand/cmd_fire_1.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+cmd_fire_c2.ogg  불 휙 · 김용배 · CC BY (저작자표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253638&menuNo=200020 (sfx/cand/cmd_fire_2.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+cmd_fire_c4.ogg  Basic Fire whoosh · LookIMadeAThing · CC0 · https://freesound.org/s/260554/ (sfx/cand/cmd_fire_4.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+cmd_fire_c5.ogg  Fire Burst Flash · Za-Games · CC0 · https://freesound.org/s/539972/ (sfx/cand/cmd_fire_5.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)

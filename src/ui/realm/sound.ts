@@ -10,7 +10,7 @@ export const PICK = {
   // c1·c3·c6 … — 형이 소리 고르기 판(claude.ai 아티팩트)에서 고른 것 · 출처는 sfx/CREDITS.txt 끝 (10-23)
   ui_order: 'b', ui_open: 'c', season_turn: 'c1',
   war_drums: 'a', arrow_volley: 'c3', horses: 'c',
-  horn_victory: 'a', defeat: 'a', capture: 'b',
+  horn_victory: 'a', defeat: 'b', capture: 'b',
   dex_new: 'c', birth: 'c', feast: 'a', wed: 'c4', envoy: 'b', coins: 'c',
   amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b',
   // g1·g2·g3 — 공유마당(공공누리 제1유형 · CC BY)에서 받은 후보 (형 10-23: "공공누리에서 니가 싹 받아와서 쓸 수 있는 거면 다 해 · 출처표기 주의").
@@ -24,7 +24,7 @@ export const PICK = {
   // 싸움의 함성 — 싸움이 열릴 때 · 돌격·추격 합에 (형 10-23: "전투라면 함성소리가 있어야")
   war_cry: 'c1',
   // 맞부딪힘 — 한 합마다 · 필살(상성에서 이긴 합)은 더 무겁게. 쇠 한 번 "팅"이 아니라 여럿이 칼·창·방패로 엉겨 붙는 소리 (형 10-23: "진짜 전투하는 효과음")
-  battle_clash: 'c14', battle_crit: 'g1',
+  battle_clash: 'c14', battle_crit: 'g3',
   // 판이 끝났을 때(이겼다·졌다 화면) — 싸움 하나 이긴·진 음악과 따로 (형 10-23: "게임 승리했을 때나 패배했을 때 사운드는 없어?")
   bgm_end_win: 'w5', bgm_end_lose: 'c6',
   // 신방 — 장수 판의 「신방을 살펴본다」 장면 (형 10-24) · c9 = 국악연주곡 반우반계 반엽 「남하여」(한국저작권위원회 · 형이 소리 고르기 판에서 고름 10-24)
@@ -32,7 +32,7 @@ export const PICK = {
   // 깃발 소리 — 깃발마다 제 소리 (형 10-23: "돌격 방진 바위 굴리기 … 다 그만의 이펙트와 사운드") · 맞쏘기는 화살비 소리를 흩어 친다
   // 싸움이 열릴 때 — 종 「댕」 한 번 · 북 두 번 (형 10-23: "싸움 발생할 때 댕 하고 이상한 소리 · 소리 설정 웹페이지에서 바꿀 수 있게") — k1 은 옛 활터 소리
   war_bell: 'c5', war_drum: 'c4', draft_go: 'c4', arm_go: 'c6',
-  march_go: 'c8', cmd_counter: 'c10', cmd_art: 'c2', cmd_capture: 'c1', cmd_charge: 'm1', cmd_drum: 'c1', cmd_duel: 'c1', cmd_fire: 'c3', cmd_ford: 'c5', cmd_gate: 'c4', cmd_guard: 'c3', cmd_height: 'c5', cmd_hold: 'h1', cmd_horse: 'c4', cmd_open: 'c3', cmd_ram: 'c3', cmd_retreat: 'c4', cmd_rocks: 'c1',
+  march_go: 'c8', cmd_counter: 'c10', cmd_art: 'c2', cmd_capture: 'c1', cmd_charge: 'm1', cmd_drum: 'c1', cmd_duel: 'c1', cmd_fire: 'c3', cmd_ford: 'c5', cmd_gate: 'c4', cmd_guard: 'c3', cmd_height: 'c5', cmd_hold: 'h1', cmd_horse: 'c4', cmd_open: 'c3', cmd_ram: 'c3', cmd_retreat: 'c1', cmd_rocks: 'c5',
   tap_arms: 'g1', tap_coin: 'g1', tap_brush: 'g1', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'g1',
 } as const
 /** ogg 가 아닌 후보 — 형이 받아 온 것은 받은 꼴 그대로 · 공유마당 음악은 mp3 · 누르는 소리는 브라우저로 잘라 낸 wav */
@@ -158,11 +158,15 @@ function bufferOf(c: AudioContext, url: string): Promise<AudioBuffer | null> {
 
 /** rate — 빠르기(=높낮이). 같은 소리를 여러 번 겹칠 때 조금씩 달리 낸다 (화살비 여러 발) */
 /** 한 번 낸다 — dur 를 주면 앞부분만 그만큼 울리고 끝을 살짝 줄이며 끊는다 (싸움 깃발 소리가 겹쳐 뭉개지지 않게) */
-export function playOnce(url: string, vol: number, rate = 1, dur = 0): void {
+export function playOnce(url0: string, vol: number, rate = 1, dur = 0): void {
   if (document.visibilityState !== 'visible') return
+  // 「#t=초」 — 파일 앞의 빈 데를 건너뛰고 그 자리부터 (형 10-25: "c1 이 앞부분에 무음 부분이 조금 길긴 하지만")
+  const m = /#t=([\d.]+)$/.exec(url0)
+  const from = m !== null ? Number(m[1]) : 0
+  const url = m !== null ? url0.slice(0, m.index) : url0
   const c = audio()
   if (c === null) {
-    try { const a = new Audio(url); a.volume = vol; a.playbackRate = rate; void a.play().catch(() => {}) } catch { /* 소리를 못 내는 곳 */ }
+    try { const a = new Audio(url); a.volume = vol; a.playbackRate = rate; a.currentTime = from; void a.play().catch(() => {}) } catch { /* 소리를 못 내는 곳 */ }
     return
   }
   void c.resume().catch(() => {})
@@ -175,8 +179,8 @@ export function playOnce(url: string, vol: number, rate = 1, dur = 0): void {
     src.playbackRate.value = rate
     src.connect(gain).connect(c.destination)
     src.onended = () => { src.disconnect(); gain.disconnect() } // 다 울면 풀어 준다
-    src.start()
-    if (dur > 0 && dur < buf.duration / rate) {
+    src.start(0, Math.min(from, Math.max(0, buf.duration - 0.05)))
+    if (dur > 0 && dur < (buf.duration - from) / rate) {
       const t = c.currentTime
       gain.gain.setValueAtTime(vol, t + Math.max(0, dur - 0.18))
       gain.gain.linearRampToValueAtTime(0, t + dur)

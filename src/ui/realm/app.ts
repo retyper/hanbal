@@ -154,7 +154,7 @@ function muted(): boolean {
 function ding(name: string, vol = 0.6, rate = 1, dur = 0): void {
   if (muted()) return
   // 확장자가 이미 붙은 이름(snd() 의 'realm/sfx/x.ogg')엔 또 붙이지 않는다 — 전엔 /.w+$/ 라 「.ogg.ogg」로 받아 깃발·징병·출정 소리가 안 났다 (형 10-24)
-  playOnce(`${name.includes('/') ? BASE : SFX}${name}${/\.\w+$/.test(name) ? '' : '.ogg'}`, vol, rate, dur) // 탭이 가려져 있으면 안 낸다 (규칙 4)
+  playOnce(`${name.includes('/') ? BASE : SFX}${name}${/\.\w+(#t=[\d.]+)?$/.test(name) ? '' : '.ogg'}`, vol, rate, dur) // 탭이 가려져 있으면 안 낸다 (규칙 4)
 }
 /** 판마다 「?」 단추로 여는 설명 — 판 위에는 고를 것만 두고, 읽을 거리는 여기로 (형 10-23: "설명서를 물음표 버튼 같은 거 하나 만들어서 필요할 때 읽어 볼 수 있게") */
 const GUIDE: Readonly<Record<string, { readonly title: string; readonly body: readonly string[] }>> = {
