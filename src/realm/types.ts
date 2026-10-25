@@ -687,6 +687,12 @@ export interface Realm {
   /** 나라마다 능력치를 본 남의 장수 — 싸워 봤거나 정찰·첩자로 봤다 (heroes.heroSeen) */
   met?: Record<string, string[]>
   /**
+   * 재상 — 쉬는 장수는 계절 끝에 재상이 일을 맡긴다 (heroes.idleHeroOrders · 형 10-26: "왕이 신하한테 하나하나 할 일 매 턴 알려주는 게 이상하잖아").
+   * autoIdle 이 false 면 재상이 손을 놓는다 (없으면 켜짐). manual[나라] — 그 나라 군주가 직접 부리는 장수 id (재상이 안 건드린다). 옛 저장에는 없다
+   */
+  autoIdle?: boolean
+  manual?: Record<string, string[]>
+  /**
    * 사람의 눈금 (형: "가구수랑 징병량이 … 실제로 이 시대에 이 수준이었나?" — 위서 동이전: 변진 큰 나라 4~5천 가).
    * 이 판의 가호·군사가 옛 판의 몇 배인가 — 옛 저장(없음 = 1)은 migrate.ts 가 키운다
    */
@@ -762,9 +768,10 @@ export type Order =
       readonly hand?: Hand
     }
   /** 장수를 고을에 맡긴다 (HEROES §3) — 장수가 그 고을에 있어야 한다. node null 이면 맡은 자리를 떠난다 (그 고을에 혼자 머문다) */
-  | { readonly kind: 'assign'; readonly hero: string; readonly node: string | null }
+  /** by 'chancellor' — 재상이 쉬는 장수에게 맡긴 일 (계절 보고에 「재상이 …」로 남는다) */
+  | { readonly kind: 'assign'; readonly hero: string; readonly node: string | null; readonly by?: 'chancellor' }
   /** 혼자 머무는 장수가 같은 고을의 장수 없는 군대를 이끈다 */
-  | { readonly kind: 'lead'; readonly hero: string; readonly army: string }
+  | { readonly kind: 'lead'; readonly hero: string; readonly army: string; readonly by?: 'chancellor' }
   /** 짝에게 가서 함께 지낸다 — 신방에 들었는데 떨어져 있을 때 (형 10-23: "버튼 하나 눌러서 같이 지내게") */
   | { readonly kind: 'cohabit'; readonly hero: string }
   /** 포로 회유를 시작한다 — 다 될 때까지 계절마다 곡식이 든다. by = 설득을 맡은 우리 장수 (매력·매혹이 빠르기를 정한다) */
@@ -930,6 +937,8 @@ export type ReportLine =
   | { readonly kind: 'freed'; readonly hero: string; readonly faction: string; readonly from: string; readonly why: 'peace' | 'take' }
   /** 장수가 정예 호위를 거느리고 맡을 고을로 떠났다 (멀리 맡기기) */
   | { readonly kind: 'heroGo'; readonly faction: string; readonly hero: string; readonly from: string; readonly to: string }
+  /** 재상이 쉬는 장수에게 일을 맡겼다 — 고을지기(node · far 면 정예를 거느리고 갔다) 또는 군대(army) */
+  | { readonly kind: 'chancellor'; readonly faction: string; readonly hero: string; readonly node?: string; readonly far?: boolean; readonly army?: string }
   /** 개척단이 떠났다 · 흩어졌다 */
   | { readonly kind: 'party'; readonly faction: string; readonly party: string; readonly node: string; readonly n: number }
   | { readonly kind: 'partyLost'; readonly faction: string; readonly party: string; readonly node: string; readonly n: number }
