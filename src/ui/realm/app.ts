@@ -427,7 +427,8 @@ function fxHtml(r: Realm, fx: CardFx): string {
   }
   if (fx.foe !== undefined) h += fxChip(true, 'war-broken-banner', `${r.factions[fx.foe.faction]?.name ?? ''} 사기 -${Math.round(fx.foe.d * 100)}%`)
   if (fx.join !== undefined) h += fxChip(true, 'unit-general', '새 장수')
-  return h === '' ? `<small class="cnone">아무 탈 없다</small>` : h
+  // 아무 일 없음 — 글 대신 「곡식 0」 그림 칩 (형 10-26: "아무 일 없는 건 텍스트로 하지 말고 0 으로 이미지화")
+  return h === '' ? `<span class="cnone"><b class="gz" title="오가는 것 없음">${icon(GOOD_ICON.grain, 'cgi')}0</b></span>` : h
 }
 /** 큰 얼굴 — 900px 판이 있으면 그것 (알현처럼 화면 가득일 때) */
 const bustHd = (h: Hero | undefined, cls: string): string =>
