@@ -47,27 +47,57 @@ const H = REGION_ART['byeonhan-mini'].h
 
 
 /**
- * 길의 생김새 — 테두리 두른 관 대신 밟아 다진 흙길처럼 (형: "길같지가 않고 오브젝트같아").
- *   어깨(sh) — 길가의 닳은 풀·흙, 넓고 옅게 두 겹 · 바닥(bed) — 길 자체 · 가운데(mid) — 바퀴 자국·디딤돌·물살
+ * 길의 생김새 — 테두리 두른 관 대신 밟아 다진 흙길처럼 (형: "길같지가 않고 오브젝트같아" · 10-26: "길은 길답게").
+ * 같은 줄을 겹겹이 긋는다 (그림 한 장 없이, 한 번 그리면 끝 — 밀 때 다시 셈하지 않는다):
+ *   어깨(sh) — 길가의 닳은 풀·흙, 넓고 옅게 두 겹 · 가장자리(edge) — 바닥보다 조금 넓은 짙은 흙선이라 붓으로 그은 길 테가 된다
+ *   바닥(bed) — 길 자체 · 바퀴 자국(rut) — 바닥 빛으로 가운데를 다시 덮어 남는 두 가는 줄 · 결(tex) — 돌·판자·나무 그늘을 끊긴 줄로
+ *   가운데(mid) — 밟혀 밝게 닳은 자리 · 물살
  */
+interface RoadTex {
+  readonly c: string
+  /** 굵기 (바닥과 같은 눈금) */
+  readonly w: number
+  readonly dash: string
+  readonly op: number
+  readonly off?: number
+  /** 끝 모양 — 판돌·판자는 모난 끝(butt), 그 밖엔 둥글게 */
+  readonly cap?: 'butt'
+}
 interface RoadLook {
   readonly sh: string
   readonly shW: number
+  readonly edge?: string
   readonly bed: string
   readonly bedW: number
   readonly bedDash?: string
+  readonly rut?: string
+  readonly tex?: readonly RoadTex[]
   readonly mid?: string
   readonly midW?: number
   readonly midDash?: string
+  readonly midOp?: number
 }
 const ROAD_LOOK: Readonly<Record<EdgeKind, RoadLook>> = {
-  field: { sh: '#ead6a0', shW: 15, bed: '#8a6238', bedW: 6.5, mid: '#d9b97c', midW: 1.6, midDash: '7 6' }, // 수레바퀴 자국
-  pass: { sh: '#d4c4a2', shW: 13, bed: '#5a4636', bedW: 5, mid: '#f1e5c8', midW: 3, midDash: '0.1 8' }, // 디딤돌
-  forest: { sh: '#8aa562', shW: 15, bed: '#5e4a2c', bedW: 5, bedDash: '13 5' }, // 나무 그늘에 끊긴다
-  reeds: { sh: '#d2ca82', shW: 14, bed: '#7a7a3a', bedW: 5, bedDash: '10 6' },
-  ford: { sh: '#d4ebf6', shW: 14, bed: '#3d7fa8', bedW: 6, mid: '#eef8ff', midW: 1.8, midDash: '5 9' }, // 물살
+  // 들길 — 넓은 흙길에 수레바퀴 두 줄, 가운데는 밟혀 밝다
+  field: { sh: '#ead6a0', shW: 15, edge: '#4a321c', bed: '#9a6e40', bedW: 7, rut: '#5e3e20', mid: '#e6cc96', midW: 1.1, midOp: 0.55 },
+  // 고갯길 — 좁은 돌길: 크기가 들쭉날쭉한 돌을 엇갈려 깐다 (가장자리 두 줄과 가운데 줄의 이음매가 어긋난다 — 한 줄로 맞추면 철길 같았다).
+  // 돌 틈은 바닥보다 조금 짙을 뿐 (예전엔 고르게 찍힌 흰 점이라 사슬·구슬 꿴 줄 같았다)
+  pass: { sh: '#d4c4a2', shW: 12, edge: '#2a2016', bed: '#56493a', bedW: 4.6, tex: [
+    { c: '#857560', w: 4, dash: '2.2 0.5 1.6 0.5 2.7 0.5 1.9 0.5', op: 1, cap: 'butt' },
+    { c: '#94846c', w: 1.7, dash: '1.3 0.5 2.4 0.5 1.7 0.5 2.1 0.5', op: 1, off: 1.1, cap: 'butt' },
+    { c: '#3a2e22', w: 1.1, dash: '0.1 7 0.1 11 0.1 5', op: 0.45, off: 2 },
+  ] },
+  // 숲길 — 좁은 오솔길에 나무 그늘이 띄엄띄엄 가로지른다
+  forest: { sh: '#8aa562', shW: 14, edge: '#2c2a16', bed: '#6a5232', bedW: 4.6, mid: '#a88a5a', midW: 0.9, midDash: '4 7', midOp: 0.6, tex: [
+    { c: '#24381a', w: 8, dash: '7 13 4 19', op: 0.4 },
+  ] },
+  // 갈대밭 — 판자를 깐 둑길
+  reeds: { sh: '#d2ca82', shW: 14, edge: '#3a3418', bed: '#9a8a56', bedW: 5, tex: [{ c: '#5a4a26', w: 5, dash: '1.1 2.3', op: 0.7, cap: 'butt' }] },
+  // 나루 — 물을 건너는 자리 (물살)
+  ford: { sh: '#d4ebf6', shW: 14, edge: '#1d4a6a', bed: '#3d7fa8', bedW: 6, mid: '#eef8ff', midW: 1.8, midDash: '5 9' },
   sea: { sh: '#e4f6ff', shW: 13, bed: '#22608f', bedW: 4.5, bedDash: '8 8' }, // 뱃길 — 멀리 건너오는 길이라 또렷하게
-  mudflat: { sh: '#dcd1ba', shW: 14, bed: '#7d7466', bedW: 5, bedDash: '2 8' },
+  // 갯벌 — 질척한 바닥에 발자국
+  mudflat: { sh: '#dcd1ba', shW: 14, edge: '#3a342a', bed: '#857a68', bedW: 5, tex: [{ c: '#4a4236', w: 1.6, dash: '1.4 4.2', op: 0.6 }] },
 }
 
 /** 길 한 줄의 SVG — 지도와 길 보기(범례)가 같은 것을 쓴다. k 굵기 배율 · op 흐림(막힌 길) */
@@ -75,10 +105,15 @@ export function roadSvg(d: string, kind: EdgeKind, k: number, op = 1, title = ''
   const L = ROAD_LOOK[kind]
   const w = (x: number): string => (x * k).toFixed(1)
   const dash = (x: string | undefined): string => (x === undefined ? '' : ` stroke-dasharray="${x.split(' ').map((v) => w(Number(v))).join(' ')}"`)
-  let s = `<path d="${d}" fill="none" stroke="${L.sh}" stroke-width="${w(L.shW * 1.55)}" stroke-linecap="round" stroke-linejoin="round" opacity="${(0.2 * op).toFixed(2)}"/>`
-  s += `<path d="${d}" fill="none" stroke="${L.sh}" stroke-width="${w(L.shW)}" stroke-linecap="round" stroke-linejoin="round" opacity="${(0.42 * op).toFixed(2)}"/>`
-  s += `<path d="${d}" fill="none" stroke="${L.bed}" stroke-width="${w(L.bedW)}"${dash(L.bedDash)} stroke-linecap="round" stroke-linejoin="round" opacity="${(0.9 * op).toFixed(2)}">${title !== '' ? `<title>${title}</title>` : ''}</path>`
-  if (L.mid !== undefined) s += `<path d="${d}" fill="none" stroke="${L.mid}" stroke-width="${w(L.midW ?? 1.5)}"${dash(L.midDash)} stroke-linecap="round" opacity="${(0.85 * op).toFixed(2)}"/>`
+  const o = (x: number): string => (x * op).toFixed(2)
+  const line = (c: string, wd: number, a: number, extra = '', cap = 'round'): string =>
+    `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w(wd)}" stroke-linecap="${cap}" stroke-linejoin="round" opacity="${o(a)}"${extra}/>`
+  let s = line(L.sh, L.shW * 1.55, 0.2) + line(L.sh, L.shW, 0.36)
+  if (L.edge !== undefined) s += line(L.edge, L.bedW + 2.2, 0.75, dash(L.bedDash))
+  s += `<path d="${d}" fill="none" stroke="${L.bed}" stroke-width="${w(L.bedW)}"${dash(L.bedDash)} stroke-linecap="round" stroke-linejoin="round" opacity="${o(0.95)}">${title !== '' ? `<title>${title}</title>` : ''}</path>`
+  if (L.rut !== undefined) s += line(L.rut, L.bedW * 0.78, 0.65) + line(L.bed, L.bedW * 0.5, 1)
+  for (const t of L.tex ?? []) s += line(t.c, t.w, t.op, `${dash(t.dash)}${t.off !== undefined ? ` stroke-dashoffset="${w(t.off)}"` : ''}`, t.cap ?? 'round')
+  if (L.mid !== undefined) s += line(L.mid, L.midW ?? 1.5, L.midOp ?? 0.85, dash(L.midDash))
   return s
 }
 
@@ -95,8 +130,11 @@ export const MAP_CSS = `
 .map .nd { position: absolute; transform: translate(-50%, -62%); width: calc(8.5% * var(--s, 1) * var(--ns, 1) * var(--cs, 1)); text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 /* 나라가 많은 판 — 당기면 고을 그림이 지도만큼 커지지 않아 서로 벌어진다 (형 10-25: "낙동강 스물한 나라는 마을 이미지가 너무 커서 텍스트가 밀려난다") */
 .map[data-region="yeongnam"] .nd, .map[data-region="south"] .nd, .map[data-region="world"] .nd { width: calc(8.5% * var(--s, 1) * var(--ns, 1) * var(--cs, 1) / var(--z, 1) * var(--zs, 1)); }
-.map .nd img.st { width: 100%; filter: drop-shadow(0 2px 2px rgba(0,0,0,.55)); }
-.mapwrap.panning .map .nd, .mapwrap.panning .map .nd * { animation-play-state: paused !important; } .mapwrap.panning .map .nd img.st { filter: none; } /* 미는 동안 (zoom.ts) */
+/* 고을 그림엔 거르개(drop-shadow)를 걸지 않는다 — 그림자는 밑의 받침(.base)이 늘 들고 있다. 거르개는 밀 때 무거워 껐다 켜야 했고,
+   그래서 지도를 밀면 그림자가 사라졌다가 멈추면 돋았다 (형 10-26: "맵을 움직일 때 마을 그림자가 없어졌다가 … 깜빡임 버그").
+   relative 는 받침 위에 그림이 오게 (받침·그림·고리가 문서 순서대로 쌓인다) */
+.map .nd img.st { position: relative; width: 100%; }
+.mapwrap.panning .map .nd, .mapwrap.panning .map .nd * { animation-play-state: paused !important; } /* 미는 동안 (zoom.ts) — 멈출 뿐 모습은 그대로 */
 /* 살아 있는 지도 — CSS 만 (규칙 4: 숨은 탭에선 그리지 않는다). 밥 짓는 연기 · 포구의 배 · 구름 그림자 */
 .map .nd .smk { position: absolute; left: 46%; top: 10%; width: 30%; aspect-ratio: 1; pointer-events: none; z-index: 1; }
 .map .nd .smk::before, .map .nd .smk::after { content: ''; position: absolute; inset: 0; border-radius: 50%;
@@ -175,14 +213,18 @@ export const MAP_CSS = `
 .map[data-zl="far"] .lb small { display: none; } .map[data-zl="far"] .lb small.nowi, .map .lb small.nowi { display: inline; }
 .map .lb small { display: block; font-size: .74em; font-weight: 500; color: var(--ink, #5a4a36); opacity: .78; margin-top: -2px; }
 .map .lb.k-free small { color: #5a4a36; }
-/* 받침 — 주인 색이 땅에 번진 둥근 자리 (고을이 땅 위에 앉아 보이게). 도읍은 크고 금빛 테 */
-.map .nd .base { position: absolute; left: 50%; top: 80%; width: 118%; aspect-ratio: 2.6; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; z-index: -1;
-  background: radial-gradient(ellipse at 50% 45%, color-mix(in srgb, var(--c) 70%, transparent) 0, color-mix(in srgb, var(--c) 35%, transparent) 45%, transparent 72%); }
+/* 받침 — 주인 빛으로 칠한 흙판에 짙은 테, 그 위에 고을이 드리운 그림자 (고을이 떠 있지 않고 땅에 앉게 · 형 10-26: "마을 이미지 고도화").
+   길·땅빛(SVG) 위, 고을 그림 밑. 그림자도 여기 그라데이션이라 지도를 밀 때 아무것도 껐다 켜지 않는다. 도읍은 크고 금빛 겹테 */
+.map .nd .base { position: absolute; left: 50%; top: 80%; width: 112%; aspect-ratio: 2.7; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; opacity: .88;
+  background: radial-gradient(ellipse 50% 50% at 50% 44%, color-mix(in srgb, var(--c) 52%, #efe2c4) 0, color-mix(in srgb, var(--c) 48%, #efe2c400) 64%, color-mix(in srgb, var(--c) 45%, #1a120a80) 100%);
+  box-shadow: inset 0 0 0 1.5px #2a1d10b8, inset 0 -2px 3px #1a120a4d, 0 1px 2px #1a120a66; }
+.map .nd .base::before { content: ''; position: absolute; left: 13%; right: 13%; top: 6%; bottom: 16%; border-radius: 50%;
+  background: radial-gradient(closest-side, #1a120a99 0, #1a120a66 45%, #1a120a00 100%); }
 /* 도읍은 크게 — 군장이 있는 곳 (형: "도읍은 별표가 있기는 하지만 이미지도 좀 달라야") */
 .map .nd.k-cap { --cs: 1.45; z-index: 2; }
-.map .nd.k-cap .base { width: 140%; box-shadow: inset 0 0 0 2px #e8c06a99; }
+.map .nd.k-cap .base { width: 128%; box-shadow: inset 0 0 0 1.5px #2a1d10c0, inset 0 0 0 3.5px #e8c06acc, inset 0 -2px 3px #1a120a4d, 0 1px 3px #1a120a73; }
 .map .nd.k-free .base { opacity: .4; }
-/* 고리 — 평소엔 없다. 고를 때 · 갈 곳 · 위협받을 때만 */
+/* 고리 — 평소엔 없다. 고를 때 · 갈 곳 · 위협받을 때만. 그림 뒤에 두어 그림 위에 걸린다 */
 .map .nd .ring { position: absolute; left: 50%; top: 42%; width: 82%; aspect-ratio: 1; transform: translate(-50%, -50%);
   border-radius: 50%; border: 3px solid var(--c); box-shadow: 0 0 6px var(--c); pointer-events: none; display: none; }
 .map .nd.sel .ring, .map .nd.tgt .ring, .map .nd.threat .ring { display: block; }
@@ -585,7 +627,7 @@ export function mapHtml(
     const lordHere = gv !== undefined && n.id === capOf
     const gface = gv !== undefined && bustOf(gv.id) !== undefined
       ? `<img class="gov${lordHere ? ' lord' : ''}${lordHere && lordAway ? ' away' : ''}" src="${art}bust/${bustOf(gv.id)}.jpg" alt="" title="${gv.name} — ${lordHere ? (lordAway ? '군주가 도읍을 비웠다' : '군주가 몸소 다스린다') : '이 고을을 맡았다'}">` : ''
-    nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${taken.has(n.id) ? `<img class="burnsm won" src="${art}fx/smoke.png" alt=""><span class="plant"><i class="pole"></i><i class="cloth" style="--fc:${FACTION_ART[me]?.color ?? '#c9a45a'}"><img src="${art}icon/${FACTION_ART[me]?.emblem ?? 'emblem-shell'}.png" alt=""></i></span><i class="wonring"></i><span class="wonchip">점령</span>` : burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${held.has(n.id) ? '<span class="heldchip">🛡 지켜 냈다</span>' : ''}${mist}${ice}${gface}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : settleable.has(n.id) ? (settling.has(n.id) ? '<span class="stl go">백성이 가는 중</span>' : '<span class="stl">＋마을</span>') : crowd}</div>`
+    nodes += `<span class="base"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt=""><span class="ring"></span>${taken.has(n.id) ? `<img class="burnsm won" src="${art}fx/smoke.png" alt=""><span class="plant"><i class="pole"></i><i class="cloth" style="--fc:${FACTION_ART[me]?.color ?? '#c9a45a'}"><img src="${art}icon/${FACTION_ART[me]?.emblem ?? 'emblem-shell'}.png" alt=""></i></span><i class="wonring"></i><span class="wonchip">점령</span>` : burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${held.has(n.id) ? '<span class="heldchip">🛡 지켜 냈다</span>' : ''}${mist}${ice}${gface}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : settleable.has(n.id) ? (settling.has(n.id) ? '<span class="stl go">백성이 가는 중</span>' : '<span class="stl">＋마을</span>') : crowd}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()
@@ -870,13 +912,16 @@ function provincesSvg(
     const o2 = e.j >= 0 ? nodes[e.j]!.owner : null
     if (o === null && o2 === null) continue
     const col = FACTION_ART[(o ?? o2)!]?.color ?? '#ccc'
-    // 같은 나라 고을 사이 — 또렷한 가는 실선 (형 10-24: "마을 테두리도 확실하고")
-    if (o === o2) lines += `<path d="${e.d}" stroke="color-mix(in srgb, ${col} 55%, #2a1d10)" stroke-width="${(1.5 * k).toFixed(1)}" opacity="${dim(o) ? 0.1 : 0.7}"/>`
-    else {
-      // 나라의 바깥 둘레 — 두 쪽 저마다 제 색 띠를 안쪽에 갖는다. 금 자체는 그 나라 색으로 또렷하게
+    // 같은 나라 고을 사이 — 옛 지도의 고을 금처럼 긴 점·짧은 점이 번갈아 (형 10-24: "마을 테두리도 확실하고" · 10-26: "마을들 테두리 고도화").
+    // 밑에 한지 빛 가는 띠를 깔아 짙은 땅 위에서도 끊긴 금이 보인다. 나라 둘레의 굵은 띠보다는 한참 낮은 위계
+    if (o === o2) {
+      const a = dim(o) ? 0.1 : 1
+      lines += `<path d="${e.d}" stroke="#f3e6c8" stroke-width="${(3 * k).toFixed(1)}" opacity="${(0.28 * a).toFixed(2)}"/>`
+      lines += `<path d="${e.d}" stroke="color-mix(in srgb, ${col} 45%, #2a1d10)" stroke-width="${(1.6 * k).toFixed(1)}" stroke-dasharray="${(7 * k).toFixed(1)} ${(3.5 * k).toFixed(1)} ${(1.2 * k).toFixed(1)} ${(3.5 * k).toFixed(1)}" opacity="${(0.8 * a).toFixed(2)}"/>`
+    } else {
+      // 나라의 바깥 둘레 — 두 쪽 저마다 제 색 띠를 안쪽에 갖는다. 금 자체는 짙은 먹선으로 또렷하게 (붓으로 그은 띠의 바깥 테)
       for (const x of [o, o2]) if (x !== null && own.has(x)) rim.set(x, (rim.get(x) ?? '') + e.d)
-      if (e.j < 0) lines += `<path d="${e.d}" stroke="${col}" stroke-width="${(2.4 * k).toFixed(1)}" opacity="${dim(o) ? 0.1 : 0.85}"/>`
-      else lines += `<path d="${e.d}" stroke="#1a120a" stroke-width="${(2 * k).toFixed(1)}" opacity=".85"/>`
+      lines += `<path d="${e.d}" stroke="#1a120a" stroke-width="${((e.j < 0 ? 2.2 : 2.4) * k).toFixed(1)}" opacity="${e.j < 0 && dim(o) ? 0.1 : 0.85}"/>`
     }
     // 우리 땅의 둘레 — 짙은 띠 위에 금빛
     if ((o === me) !== (o2 === me)) gold += e.d
@@ -890,7 +935,9 @@ function provincesSvg(
     band += `<path d="${d}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${(o === me ? 30 : 24) * k}" opacity="${o === me ? 0.55 : 0.48}"/>`
     // 둘레 안쪽의 또렷한 제 색 선 — 이웃 나라와 맞닿으면 두 색이 나란히 선다 (문명 6 국경).
     // 그 안쪽에 둘째 빛 가는 띠 — 바탕 빛이 비슷한 이웃과도 국경에서 갈린다 (kitcolor.ts)
-    crisp += `<path d="${d}" clip-path="url(#rm-own-${o})" stroke="${c2}" stroke-width="${(13 * k).toFixed(1)}" opacity=".85"/>`
+    // 맨 안쪽엔 먹빛 머리카락 선 하나 — 띠가 땅빛에 번지지 않고 칠한 띠로 끝난다
+    crisp += `<path d="${d}" clip-path="url(#rm-own-${o})" stroke="#1a120a" stroke-width="${(15 * k).toFixed(1)}" opacity=".5"/>`
+    crisp += `<path d="${d}" clip-path="url(#rm-own-${o})" stroke="${c2}" stroke-width="${(13 * k).toFixed(1)}" opacity=".9"/>`
     crisp += `<path d="${d}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${(9 * k).toFixed(1)}" opacity=".95"/>`
   }
   const blurK = (3 * k).toFixed(1)
