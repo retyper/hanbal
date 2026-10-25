@@ -14,7 +14,7 @@
  * 맞닿지 않은 길로 들어온 증원은 여전히 못 본다 — 그건 정찰의 몫이다.
  */
 import { roll } from '../core/rng.ts'
-import { resolveContests, scenarioOutcome } from './scenario.ts'
+import { fewerSwords, resolveContests, scenarioOutcome } from './scenario.ts'
 import { P } from '../tune/params.ts'
 import {
   OPEN_FIELD, ambushChance, ambushSizePenalty, headcount, power, strength, winChance,
@@ -278,6 +278,7 @@ function retreatTo(r: Realm, a: Army, from: string, prefer: string | null): stri
  */
 function provoke(r: Realm, attacker: string, victim: string | null, lines: ReportLine[]): void {
   onHostile(r, attacker, victim, lines)
+  fewerSwords(r, attacker, victim) // 3장 — 마을을 치면 다른 마을들의 마음이 식는다
   if (victim === null || victim === attacker || r.factions[attacker]?.mind !== 'player') return
   const p = (r.provoked ??= [])
   if (!p.includes(victim)) {

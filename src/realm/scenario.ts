@@ -86,6 +86,18 @@ export function resolveContests(r: Realm, orders: readonly Order[], lines: Repor
   }
 }
 
+/**
+ * 3장 서라벌 — 칼을 덜 뽑는 장 (CAMPAIGN §1). 우리가 마을 하나를 칠 때마다(싸움이든 걸어 들어가든) 다른 다섯 마을의 마음이 식는다.
+ * season.provoke 가 부른다
+ */
+export function fewerSwords(r: Realm, attacker: string, victim: string | null): void {
+  const sc = r.scenario
+  if (sc?.id !== 'seorabeol' || victim === null || attacker !== r.player) return
+  const goal = sc.win.find((g) => g.kind === 'submit')
+  if (goal === undefined || goal.kind !== 'submit' || !goal.factions.includes(victim)) return
+  for (const f of goal.factions) if (f !== victim) addFavor(r, attacker, f, -P.realm.seoraStrikeFavor)
+}
+
 /** 장의 사건을 이뤘다고 적는다 (활쏘기 겨루기 이김 · 북 찢기 …) — 같은 것은 한 번만 */
 export function markEvent(r: Realm, id: string): void {
   const sc = r.scenario

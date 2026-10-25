@@ -18,7 +18,7 @@ export interface DestInfo {
   readonly from: readonly RegionId[]
 }
 
-const SOUTH: readonly RegionId[] = ['mahan', 'byeonhan-mini', 'yeongnam', 'south', 'world']
+const SOUTH: readonly RegionId[] = ['mahan', 'seorabeol', 'byeonhan-mini', 'yeongnam', 'south', 'world']
 const NORTH: readonly RegionId[] = ['jumong', 'world']
 
 export const DESTS: Readonly<Record<ExpDest, DestInfo>> = {

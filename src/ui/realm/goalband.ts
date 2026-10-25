@@ -53,6 +53,8 @@ export function goalRowsHtml(r: Realm, esc: (s: string) => string): string {
     h += `<div class="gbr${ok ? ' ok' : ''}"${tip}><span class="gck">${ok ? '✓' : '◇'}</span><span>${esc(goalLabel(r, g))}${bar}</span></div>`
   }
   // 2장 동부여 추격군 — 처음 몇 계절 (ai.pursuing)
+  // 3장 — 칼을 덜 뽑는 장. 규칙은 늘 보이게 (메모리: 규칙은 지도에 보이게)
+  if (sc.id === 'seorabeol' && !done) h += `<div class="gbr gleft warn" data-tip="마을 하나를 칠 때마다 다른 다섯 마을이 우리를 덜 믿는다 — 사신·선물로 모으고, 왜인을 막아 주면 마음이 기운다"><span class="gck">⚔</span><span>마을을 치면 다른 마을들의 마음이 식는다</span></div>`
   if (sc.id === 'jumong' && !done && r.season < P.realm.pursuitSeasons) h += `<div class="gbr gleft warn" data-tip="대소의 추격대가 북쪽 동부여 진영에서 엄리 나루로 내려올 수 있다 — 나루를 지키거나 군대를 모아 둔다"><span class="gck">⚠</span><span>동부여 추격군 — ${P.realm.pursuitSeasons - r.season}계절 동안 쫓아온다</span></div>`
   const left = seasonsLeft({ ...r, scenario: sc })
   if (left !== null && !done) h += `<div class="gbr gleft${left <= 2 ? ' warn' : ''}"><span class="gck">⏳</span><span>${left}계절 남았다</span></div>`

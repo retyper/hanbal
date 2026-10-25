@@ -85,12 +85,45 @@ const ANNALS: Readonly<Record<string, Annal>> = {
       '왕이 된 뒤에도 고구려를 여러 번 넘보다가, 대무신왕 5년 고구려 군사와 싸우던 중 장수 괴유에게 목숨을 잃었다.',
     ],
   },
+  hyeokgeose: {
+    name: '혁거세 (거서간)', book: '『삼국사기』 신라본기 시조 혁거세 거서간 · 『삼국유사』 기이편',
+    lines: [
+      '고허촌장 소벌공이 양산 기슭 나정 곁 숲에서 말이 꿇어앉아 우는 것을 보고 가 보니, 말은 사라지고 큰 알만 있었다. 알을 가르니 아이가 나왔다.',
+      '여섯 마을 사람들이 그 태어남을 신이하게 여겨 받들어 길렀고, 열세 살에 임금으로 세웠다(기원전 57년). 나라 이름을 서나벌이라 하였다.',
+      '8년에 왜인이 변경을 넘보다가 그에게 신덕이 있다는 말을 듣고 돌아갔다.',
+    ],
+  },
+  aryeong: {
+    name: '알영', book: '『삼국사기』 신라본기 혁거세 5년 · 『삼국유사』 기이편',
+    lines: [
+      '알영 우물가에 계룡이 나타나 왼쪽 옆구리로 여자아이를 낳았다. 한 할머니가 데려다 기르고 우물 이름을 따 알영이라 하였다.',
+      '입술이 닭의 부리 같았는데 북천에 씻기니 부리가 떨어졌다(『삼국유사』). 자라서 덕이 있어 혁거세의 왕비가 되니, 사람들이 두 성인이라 불렀다.',
+    ],
+  },
+  hogong: {
+    name: '호공', book: '『삼국사기』 신라본기 혁거세 38년',
+    lines: [
+      '본래 왜 사람으로, 처음 박을 허리에 차고 바다를 건너와 호공이라 불렸다.',
+      '혁거세 38년 마한에 사신으로 갔다. 마한 왕이 조공을 하지 않는다고 꾸짖자, 두 임금이 서로 예를 갖추어야 한다며 물러서지 않았다.',
+    ],
+  },
+  alpyeong: { name: '알평', book: '『삼국유사』 기이편 신라시조 혁거세왕', lines: ['알천 양산촌의 촌장. 처음 표암봉에 내려왔다고 한다. 급량부 이씨의 조상이 되었다.'] },
+  sobeol: {
+    name: '소벌도리 (소벌공)', book: '『삼국유사』 기이편 신라시조 혁거세왕 · 『삼국사기』 신라본기',
+    lines: ['돌산 고허촌의 촌장. 처음 형산에 내려왔다고 한다. 사량부 정씨의 조상이 되었다.', '나정 곁에서 알에서 난 혁거세를 거두어 길렀다.'],
+  },
+  jibaekho: { name: '지백호', book: '『삼국유사』 기이편 신라시조 혁거세왕', lines: ['자산 진지촌의 촌장. 처음 화산에 내려왔다고 한다. 본피부 최씨의 조상이 되었다.'] },
+  guryema: { name: '구례마', book: '『삼국유사』 기이편 신라시조 혁거세왕', lines: ['무산 대수촌의 촌장. 처음 이산에 내려왔다고 한다. 모량부 손씨의 조상이 되었다.'] },
+  jita: { name: '지타', book: '『삼국유사』 기이편 신라시조 혁거세왕', lines: ['금산 가리촌의 촌장. 처음 명활산에 내려왔다고 한다. 한기부 배씨의 조상이 되었다.'] },
+  hojin: { name: '호진', book: '『삼국유사』 기이편 신라시조 혁거세왕', lines: ['명활산 고야촌의 촌장. 처음 금강산에 내려왔다고 한다. 습비부 설씨의 조상이 되었다.'] },
 }
 
 /** 장수 id → 사서의 사람 */
 const ANNAL_OF: Readonly<Record<string, string>> = {
   'tut-onjo': 'onjo', 'mh-onjo': 'onjo', 'tut-biryu': 'biryu', 'tut-ogan': 'ogan', 'mh-ogan': 'ogan', 'tut-maryeo': 'maryeo',
   'mh-eureum': 'eureum', 'mh-soseono': 'soseono',
+  'sr-hyeokgeose': 'hyeokgeose', 'sr-aryeong': 'aryeong', 'sr-hogong': 'hogong', 'sr-alpyeong': 'alpyeong', 'sr-sobeol': 'sobeol',
+  'sr-jibaekho': 'jibaekho', 'sr-guryema': 'guryema', 'sr-jita': 'jita', 'sr-hojin': 'hojin',
   'jm-jumong': 'jumong', 'jm-oi': 'oi', 'jm-mari': 'mari', 'jm-hyeopbo': 'hyeopbo', 'jm-songyang': 'songyang', 'jm-daeso': 'daeso',
 }
 

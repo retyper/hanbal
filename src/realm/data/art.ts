@@ -18,6 +18,8 @@ export const REGION_ART: Readonly<Record<RegionId, { dir: string; ext: string; w
   // 배우는 판 — 한강 아래 (삼한 남부 판의 조각을 좁게 · tutorial-geo.ts). 경도 1.4° × 위도 0.95° 를 조각 눈금의 두 배로
   tutorial: { dir: 'map-world', ext: 'webp', w: 989, h: 727, nodeScale: 0.5, labelScale: 0.85, zmax: 2.5, terrR: 100, terrBand: 60 },
   // 캠페인 2장 — 혼강에서 두만강까지 (삼한과 북녘 판의 조각을 좁게 · jumong-geo.ts). 경도 5.3° × 위도 2.25° 를 조각 눈금 그대로
+  // 캠페인 3장 — 경주 골짜기 (seorabeol-geo.ts). 경도 0.8° × 위도 0.65° 를 조각 눈금의 두 배 반으로
+  seorabeol: { dir: 'map-world', ext: 'webp', w: 706, h: 622, nodeScale: 0.5, labelScale: 0.8, zmax: 2.5, terrR: 80, terrBand: 48 },
   // 캠페인 1장 — 한강 아래에서 차령까지 (mahan-geo.ts). 경도 1.3° × 위도 1.35° 를 조각 눈금의 두 배로
   mahan: { dir: 'map-world', ext: 'webp', w: 918, h: 1033, nodeScale: 0.45, labelScale: 0.8, zmax: 3, terrR: 90, terrBand: 54 },
   jumong: { dir: 'map-world', ext: 'webp', w: 1871, h: 861, nodeScale: 0.32, labelScale: 0.75, zmax: 5, terrR: 60, terrBand: 34 },
@@ -77,8 +79,13 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'jm-songyang': 'g-51-biryuna-mulgyeol', 'jm-songbi': 'w-52-biryuna-songbi', 'jm-daeso': 'g-67-buyeo-daeso', 'jm-haedal': 'w-67-buyeo-haedal',
   'jm-haengin-ruler': 'g-33-jeoga-metdol', 'jm-haengin-1': 'w-71-yeonna-neoul', 'jm-okjeo-ruler': 'g-34-bukokjeo-duman', 'jm-okjeo-1': 'w-70-bukokjeo-mulbeom',
   // 캠페인 1장 — 온조와 신하들 · 마한의 진왕과 장수 (mahan.ts). 있는 명치판을 나눠 쓴다
-  'mh-onjo': 'g-02-goguryeo-archer-prince', 'mh-eureum': 'g-06-strategist', 'mh-ogan': 'g-13-baekje-general', 'mh-soseono': 'w-05-baekje-queen',
+  'mh-onjo': 'g-02-goguryeo-archer-prince', 'mh-eureum': 'g-06-strategist', 'mh-ogan': 'g-13-baekje-general', 'mh-soseono': 'l-L2-soseono',
   'mh-jinwang': 'w-27-mokji-jinha', 'mh-mahan-1': 'g-54-mokji-mahan', 'mh-mahan-2': 'w-08-mahan-warrior', 'mh-mahan-3': 'g-05-mahan-chieftain',
+  // 캠페인 3장 — 혁거세·알영·호공 · 여섯 촌장 · 왜인 (seorabeol.ts). 알영은 전설 명치판
+  'sr-hyeokgeose': 'g-12-silla-youth', 'sr-aryeong': 'l-L7-aryeong', 'sr-hogong': 'g-03-sea-trader', 'sr-danbi': 'w-13-young-archer',
+  'sr-alpyeong': 'g-60-eupcha-hangyeol', 'sr-sobeol': 'g-15-shaman-man', 'sr-jibaekho': 'g-04-jinhan-giant', 'sr-guryema': 'g-08-veteran',
+  'sr-jita': 'g-61-heomcheuk-bawi', 'sr-hojin': 'g-62-beonye-hanul', 'sr-yangsan-1': 'w-17-mahan-pearl-diver', 'sr-goya-1': 'w-03-goguryeo-archer',
+  'sr-jinji-1': 'w-22-dongye-tiger-huntress', 'sr-wae-ruler': 'g-07-drunk-warrior',
   'tut-onjo': 'g-02-goguryeo-archer-prince', 'tut-biryu': 'g-28-goguryeo-damul', 'tut-ogan': 'g-13-baekje-general', 'tut-maryeo': 'g-09-farmer-conscript', 'tut-haebi': 'w-30-guya-soebi',
   'baekje-ruler': 'g-68-baekje-onnuri', 'mokji-ruler': 'w-27-mokji-jinha', 'michuhol-ruler': 'w-28-michuhol-bira',
   'ungcheon-ruler': 'g-22-ungcheon-gomnae', 'sangdang-ruler': 'g-23-sangdang-soedal', 'geonma-ruler': 'w-46-geonma-maru',
@@ -177,6 +184,11 @@ export const FACTION_ART: Readonly<Record<string, { emblem: string; color: strin
   // 삼한 남부 판의 새 나라 열다섯 — 백제 매(매사냥) · 목지 팔주령 · 상당 세형동검 · 무진 고인돌 · 발라 독무덤 · 하슬라 물범(반어피)
   baekje: { emblem: 'emblem-falcon', color: '#c9504a' },
   mokji: { emblem: 'emblem-bells', color: '#d4a03a' },
+  // 3장 여섯 마을 · 왜인 (seorabeol.ts) — 깃발에 해 동그라미는 쓰지 않는다
+  'sr-yangsan': { emblem: 'emblem-reeds', color: '#6aa8c8' }, 'sr-goheo': { emblem: 'emblem-dolmen', color: '#c8a050' },
+  'sr-jinji': { emblem: 'emblem-pine', color: '#4f8a5a' }, 'sr-daesu': { emblem: 'emblem-deer', color: '#a0703a' },
+  'sr-gari': { emblem: 'emblem-grain', color: '#d8c060' }, 'sr-goya': { emblem: 'emblem-mountain', color: '#8a6ab0' },
+  'sr-wae': { emblem: 'emblem-wave', color: '#5a5f6a' },
   michuhol: { emblem: 'emblem-wave', color: '#4a9fd0' },
   ungcheon: { emblem: 'emblem-bear', color: '#8d7a5a' },
   sangdang: { emblem: 'emblem-dagger', color: '#6a8aa0' },

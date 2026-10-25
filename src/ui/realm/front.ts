@@ -241,6 +241,7 @@ export function detailHtml(k: FrontKit, region: RegionId, id: string, carry = ''
 const ERA: Readonly<Record<RegionId, string>> = {
   tutorial: '한강 아래. 졸본에서 내려온 형제 가운데 형 비류는 바닷가 미추홀에, 아우 온조는 하남 위례성에 자리 잡았다 — 형제의 두 나라에서 군장의 일을 하나씩 배운다.',
   mahan: '한강에서 차령까지. 위례에 선 백제는 아직 작고, 남쪽 목지국의 진왕은 쉰 남짓 마한 나라를 거느린다 — 그러나 마한의 위아래 마음은 갈라졌다.',
+  seorabeol: '경주 골짜기. 진한 땅 여섯 마을의 촌장들이 알천 언덕에 모여 임금을 찾는다 — 나정 곁 숲에서 흰 말이 울었다.',
   jumong: '혼강 골짜기. 동부여를 빠져나온 주몽이 엄리대수를 건너 졸본에 나라를 세웠다 — 이웃 비류국의 송양은 제가 먼저 왕이었다고 한다.',
   'byeonhan-mini': '변한의 남쪽 바닷가. 쇠를 캐고 배를 띄우는 여섯 나라가 서로를 엿본다.',
   yeongnam: '낙동강 물길을 따라 스물한 나라. 훗날 신라가 될 사로도, 가야가 될 가락과 대가야도 아직은 이웃 읍락과 키를 잰다.',
@@ -259,6 +260,7 @@ const OLDMAP_NAME: Readonly<Record<RegionId, string>> = {
   tutorial: '한강 아래 — 미추홀 · 위례',
   mahan: '한강에서 차령까지 — 위례 · 목지',
   jumong: '혼강 골짜기 — 졸본',
+  seorabeol: '경주 골짜기 — 서라벌',
   'byeonhan-mini': '변한의 바닷가',
   yeongnam: '낙동강 물길',
   south: '삼한의 남쪽',
@@ -337,6 +339,7 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
     // 배우는 판은 백제가 서던 해 — 『삼국사기』 온조왕 원년 (기원전 18)
     const [when, age] = region === 'tutorial' ? ['기원전 18년.', '옛 조선이 무너진 지 아흔 해, 주몽이 졸본에 고구려를 세운 무렵.']
       : region === 'mahan' ? ['서기 8년.', '온조가 위례에 나라를 세운 지 스물여섯 해, 마한의 진왕이 아직 쉰 나라의 우두머리이던 때.']
+      : region === 'seorabeol' ? ['기원전 57년.', '옛 조선의 유민이 진한 골짜기마다 마을을 이루어 살던 때.']
       : region === 'jumong' ? ['기원전 37년.', '옛 조선이 무너진 지 일흔 해, 동부여의 왕자들이 활 잘 쏘는 사내를 시기하던 때.']
         : ['기원 2세기.', '옛 조선이 무너진 지 삼백 년, 왕이 하나가 아니던 때.']
     body = `<div class="pl pera">${oldMapHtml(k, r, region)}<p class="l1">${when}</p><p class="l2">${age}</p>`
@@ -348,16 +351,18 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
       + `<p>${k.esc(n?.blurb ?? '')}</p>${carriedHtml(k, r)}</div></div>`
   } else {
     const need = winNeed(region)
-    const ways: Array<[string, string, string]> = [
-      ['unit-spear', '군대', '징병해 군대를 세우고, 이웃 고을을 쳐서 쥔다'],
-      ['good-tribute-bell', '사신', '화친·동맹·교역 — 적의 적은 벗이 된다'],
-      [r.known !== undefined ? 'unit-scouts' : 'status-spy', r.known !== undefined ? '정찰' : '첩자', r.known !== undefined ? '정찰꾼과 군대가 다닌 만큼 지도가 밝아진다' : '적의 군세와 속셈을 엿본다'],
+    // 세 갈래 — 갈래마다 할 수 있는 일을 게임 속 그림과 함께 (형 10-25: "첩자가 아니라 공작 · 화친 동맹 교역 첩자 … 아이콘들과 함께 설명")
+    const ways: Array<[string, string, string, ReadonlyArray<readonly [string, string]>]> = [
+      ['unit-spear', '군대', '장정을 뽑아 군대를 세우고, 이웃 고을을 쳐서 쥔다', [['unit-spear', '징병'], ['route-column', '출정'], ['war-surrender', '사로잡기']]],
+      ['good-tribute-bell', '사신', '적의 적은 벗이 된다', [['ask-truce', '화친'], ['ask-alliance', '동맹'], ['ask-trade', '교역'], ['ask-gift', '선물']]],
+      ['status-spy', '공작', '몰래 적을 흔든다', [['status-spy', '첩자'], ['status-morale-down', '소문'], ['unit-archer', '암살'], ['status-famine', '방화'],
+        ...(r.known !== undefined ? [['unit-scouts', '정찰'] as const] : [])]],
     ]
     // 캠페인의 장이면 그 장의 목표를 (CAMPAIGN.md)
     const ch = chapterOfRegion(region)
     const head = ch !== undefined ? `<small class="gch">${ch.n}장 · ${k.esc(ch.name)}</small>${k.esc(ch.goal)}.` : `도읍 <b>${need}</b>곳을 쥐면 이긴다.`
     body = `<div class="pl pgoal"><p class="gl">${head}<br><small>우리 도읍을 잃으면 진다.</small></p><div class="ways">`
-      + ways.map(([ic, t, d]) => `<div class="way">${k.icon(ic, 'wic')}<b>${t}</b><span>${d}</span></div>`).join('')
+      + ways.map(([ic, t, d, subs]) => `<div class="way">${k.icon(ic, 'wic')}<b>${t}</b><span>${d}<span class="wsub">${subs.map(([si, sn]) => `<i>${k.icon(si, 'wsi')}${sn}</i>`).join('')}</span></span></div>`).join('')
       + `</div><p class="ptip">한 계절에 명령을 정하고 <b>다음 계절</b>을 누른다. 모든 나라가 한꺼번에 움직인다.</p></div>`
   }
   const dots = Array.from({ length: PROLOGUE_STEPS }, (_, i) => `<i class="${i === step ? 'on' : ''}"></i>`).join('')
@@ -372,6 +377,7 @@ const HEAD: Readonly<Record<RegionId, string>> = {
   tutorial: '미추홀 도읍을 쥐었다 — 군장의 일을 다 배웠다',
   mahan: '목지와 원산·금현이 항복했다 — 마한이 백제에 아울러졌다',
   jumong: '송양이 따르고 행인·북옥저를 거느렸다 — 고구려가 섰다',
+  seorabeol: '여섯 마을이 모두 따른다 — 서라벌이 섰다',
   'byeonhan-mini': '변한의 바닷가를 차지했다',
   yeongnam: '낙동강의 나라들을 거느렸다',
   south: '삼한의 남쪽에 이름을 떨쳤다',
@@ -383,6 +389,7 @@ const HEAD_ALL: Readonly<Record<RegionId, string>> = {
   tutorial: '두 나라가 한 나라가 됐다',
   mahan: '한강에서 차령까지 하나가 됐다',
   jumong: '졸본에서 두만강까지 하나가 됐다',
+  seorabeol: '경주 골짜기가 한 나라가 됐다',
   'byeonhan-mini': '변한의 바닷가가 한 나라가 됐다',
   yeongnam: '낙동강의 나라들이 하나가 됐다',
   south: '삼한의 남쪽이 하나가 됐다',
@@ -646,7 +653,7 @@ export const FRONT_CSS = `
 .ap .front.title .slotx { flex: none; padding: 0 10px; border-radius: 10px; border: 1px solid #5a4630; background: #1c1610c0; color: #b8a888; font: inherit; font-size: 12px; cursor: pointer; }
 .ap .front.title .slotx.armed { background: #5a1a12; border-color: #c05040; color: #ffd8c8; }
 .ap .prologue .pmap { position: relative; width: min(100%, calc(42vh * 1.6)); aspect-ratio: 16 / 10; margin: 0 auto 16px; overflow: hidden; border-radius: 6px; box-shadow: 0 0 0 1px #6a4a2a88, 0 10px 30px #2a1d1066; background: #c8b088; animation: ink 1s ease-out both; }
-.ap .prologue .pmw { position: absolute; left: 0; top: 0; width: 100%; transform-origin: 0 0; animation: 7s cubic-bezier(.45, 0, .25, 1) .4s both; }
+.ap .prologue .pmw { position: absolute; left: 0; top: 0; width: 100%; aspect-ratio: 1600 / 1559; transform-origin: 0 0; animation: 7s cubic-bezier(.45, 0, .25, 1) .4s both; }
 .ap .prologue .pmw img { display: block; width: 100%; height: auto; filter: sepia(.6) saturate(.75) contrast(1.05) brightness(.97); }
 .ap .prologue .pmap::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 50%, #0000 45%, #3a2410aa 100%), url(__ART__map-world/hanji.webp) center / cover; mix-blend-mode: multiply; opacity: .85; }
 .ap .prologue .pold { position: absolute; transform: translate(-50%, -50%); font-family: var(--display); font-weight: 400; font-size: 2.4vw; letter-spacing: .5em; color: #5a2a10aa; text-shadow: 0 0 6px #f0e0c0; white-space: nowrap; pointer-events: none; }
@@ -665,6 +672,9 @@ export const FRONT_CSS = `
 .ap .prologue .way { display: grid; grid-template-columns: 48px 56px 1fr; align-items: center; gap: 8px; opacity: 0; animation: ink 1s ease-out forwards; font-size: clamp(14px, 1.8vw, 17px); }
 .ap .prologue .way:nth-child(1) { animation-delay: .6s; } .ap .prologue .way:nth-child(2) { animation-delay: 1.2s; } .ap .prologue .way:nth-child(3) { animation-delay: 1.8s; }
 .ap .prologue .wic { width: 40px; height: 40px; } .ap .prologue .way b { font-size: 16px; }
+.ap .prologue .wsub { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 4px; }
+.ap .prologue .wsub i { display: inline-flex; align-items: center; gap: 4px; font-style: normal; font-size: 14px; color: #5a3a1a; }
+.ap .prologue .wsi { width: 28px; height: 28px; }
 .ap .prologue .ptip { font-size: 14px; text-align: center; animation-delay: 2.4s; color: #4a3a28; }
 .ap .prologue .pnav { display: flex; align-items: center; gap: 10px; margin-top: 18px; }
 .ap .prologue .pdots i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #2a1d1033; margin: 0 3px; } .ap .prologue .pdots i.on { background: #7a1f10; }
