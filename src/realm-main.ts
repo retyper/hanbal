@@ -23,11 +23,20 @@ import { bringRetainers } from './realm/legacy.ts'
 import { applyTier } from './realm/tier.ts'
 import { watchUpdates } from './ui/realm/update.ts'
 import { pinPage } from './ui/realm/scroll.ts'
+import type { SlotInfo } from './ui/realm/front.ts'
 
 const KEY = 'hanbal.realm.v2'
 /** 한 계절 앞의 저장 — 지금 것이 깨졌으면 이걸로 되살린다 */
 const PREV = 'hanbal.realm.v2.prev'
 const GAMES = 'hanbal.realm.games'
+/**
+ * 다른 판 — 새 판을 열거나 다른 판으로 옮기면 하던 판(안 끝난 것)이 여기 남는다 (형 10-25: "본인이 하던 게임 저장된 거는 골라서 플레이할 수 있어야 ·
+ * 마지막 자동저장이 맨 위에 있는 게 맞지만"). 판마다 열쇠 하나(시드) + 목록 하나. 이 기기에만 — 계정 맞추기는 지금 판만 간다
+ */
+const SLOTS = 'hanbal.realm.slots'
+const slotKey = (seed: number): string => `hanbal.realm.slot.${seed}`
+/** 남겨 두는 판 수 — 넘치면 가장 오래 안 한 판부터 뺀다 */
+const SLOT_MAX = 6
 /** 판 기록이 이보다 커지면 오래된 판부터 누른 것을 덜고, 그래도 크면 판을 덜어 낸다 (localStorage 는 5MB 안팎) */
 const GAMES_MAX_CHARS = 3_000_000
 
@@ -110,6 +119,52 @@ function save(s: Saved): Saved {
   return out
 }
 
+function loadSlots(): SlotInfo[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(SLOTS) ?? '[]') as SlotInfo[]
+    return Array.isArray(v) ? v.filter((x) => typeof x?.seed === 'number') : []
+  } catch {
+    return []
+  }
+}
+
+function writeSlots(xs: readonly SlotInfo[]): void {
+  try { localStorage.setItem(SLOTS, JSON.stringify(xs)) } catch { /* 목록을 못 쓰면 다음에 다시 */ }
+}
+
+/**
+ * 하던 판을 선반에 — 끝난 판은 안 남긴다(첫 화면이 이어 하지 않는 판). 자리가 모자라면 가장 오래된 판부터 빼고 다시 쓴다.
+ * 써졌는지 다시 읽어 확인한다 — 못 썼으면 false (부르는 쪽은 지금 판을 덮지 않는다)
+ */
+function shelve(s: Saved | null): boolean {
+  if (s === null) return true
+  const r = s.realm
+  if (r.outcome && !(r.endless === true && r.outcome.kind === 'win')) return true
+  let xs = loadSlots().filter((x) => x.seed !== s.seed)
+  const json = JSON.stringify(s)
+  for (;;) {
+    try {
+      localStorage.setItem(slotKey(s.seed), json)
+      break
+    } catch {
+      const old = [...xs].sort((a, b) => (a.at < b.at ? -1 : 1))[0]
+      if (old === undefined) return false
+      try { localStorage.removeItem(slotKey(old.seed)) } catch { /* 그대로 */ }
+      xs = xs.filter((x) => x.seed !== old.seed)
+    }
+  }
+  let ok = false
+  try { ok = localStorage.getItem(slotKey(s.seed)) === json } catch { ok = false }
+  if (!ok) return false
+  xs = [{ seed: s.seed, nation: s.nation, name: r.factions[r.player]?.name ?? '', region: r.region ?? 'byeonhan-mini', season: r.season, at: s.at ?? new Date().toISOString() }, ...xs]
+  while (xs.length > SLOT_MAX) {
+    const drop = xs.pop()!
+    try { localStorage.removeItem(slotKey(drop.seed)) } catch { /* 그대로 */ }
+  }
+  writeSlots(xs)
+  return true
+}
+
 function loadGames(): GameRecord[] {
   try {
     const raw = localStorage.getItem(GAMES)
@@ -185,7 +240,10 @@ const sync = makeSync({
   local: () => state,
   record: () => game,
   adopt(saveJson, recordJson) {
-    // 서버 판으로 바꾼다 — 기기에 쓰고 판을 새로 연다 (불러오기·migrate 는 여느 때처럼 load 가 한다)
+    // 서버 판으로 바꾼다 — 기기에 쓰고 판을 새로 연다 (불러오기·migrate 는 여느 때처럼 load 가 한다). 기기의 하던 판은 선반에
+    let there = Number.NaN
+    try { there = (JSON.parse(saveJson) as Partial<Saved>).seed ?? Number.NaN } catch { /* 깨진 판이면 아래 load 가 거른다 */ }
+    if (state !== null && state.seed !== there) shelve(state)
     try { localStorage.setItem(KEY, saveJson) } catch { return false }
     if (recordJson !== null) {
       try {
@@ -251,7 +309,8 @@ const app = mountRealmApp(root, {
     sync.dirty(next.outcome != null) // 판이 끝났으면 바로, 아니면 2분 묶음
   },
   onNewGame(nation, region, tier) {
-    if (game !== null && game.end === null) game.end = { kind: 'quit', season: state?.realm.season ?? 0, at: new Date().toISOString() }
+    // 하던 판은 선반에 — 첫 화면 「다른 판」에서 다시 이어 한다 (못 남겨도 새 판은 연다 · 한 계절 앞 저장 PREV 도 남아 있다)
+    shelve(state)
     state = save(fresh(nation, region, tier ?? 1))
     game = recordFor(state)
     turnStart = Date.now()
@@ -259,6 +318,26 @@ const app = mountRealmApp(root, {
     saveGames(games)
     sync.dirty(true)
     app.show(state.realm, null, null, true) // 새 판 — 서막부터
+  },
+  slots: () => loadSlots().filter((x) => x.seed !== state?.seed),
+  onResume(seed) {
+    // 고른 판을 먼저 읽고(없으면 멈춤), 하던 판을 선반에 확실히 올린 뒤에야 지금 판을 바꾼다 — 판을 날리지 않게 (메모리: localStorage 되돌리기)
+    const pick = loadFrom(slotKey(seed))
+    if (pick === null) return false
+    if (!shelve(state)) return false
+    state = save(pick)
+    try { localStorage.removeItem(slotKey(seed)) } catch { /* 남아도 목록에서 빠지면 안 보인다 */ }
+    writeSlots(loadSlots().filter((x) => x.seed !== seed))
+    game = recordFor(state)
+    turnStart = Date.now()
+    taps = []
+    sync.dirty(true)
+    app.show(state.realm, state.before, state.report)
+    return true
+  },
+  onDropSlot(seed) {
+    try { localStorage.removeItem(slotKey(seed)) } catch { /* 그대로 */ }
+    writeSlots(loadSlots().filter((x) => x.seed !== seed))
   },
   onTap(act, arg) {
     if (taps.length < 400) taps.push([Date.now() - turnStart, act, arg])

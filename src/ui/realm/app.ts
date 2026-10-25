@@ -70,7 +70,7 @@ import { pactOf } from '../../realm/suzerain.ts'
 import { ironOf, riteOf } from '../../realm/paths.ts'
 import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
 import { customsOf } from '../../realm/data/customs.ts'
-import { FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History } from './front.ts'
+import { FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
 import { SCENE_SOUND, makeMusic, playOnce, snd, tapSlot } from './sound.ts'
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
@@ -94,6 +94,12 @@ export interface AppHost {
   history(): History
   /** 마지막으로 저장한 때 (ISO) — 첫 화면의 "이어 하기" */
   savedAt(): string | null
+  /** 선반에 남은 다른 판들 (형 10-25: 하던 판을 골라서) — 없으면 칸을 안 그린다 */
+  slots?(): readonly SlotInfo[]
+  /** 그 판으로 옮긴다 — 하던 판은 선반에. 못 옮기면 false (지금 판은 그대로) */
+  onResume?(seed: number): boolean
+  /** 선반의 판 하나를 지운다 */
+  onDropSlot?(seed: number): void
   /** 계정·서버 맞추기 (docs/realm/SERVER.md) — 없으면 계정 칸을 안 그린다 */
   cloud?: CloudHost
 }
@@ -523,6 +529,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let heroTab: 'cmd' | 'mine' | 'jail' | 'foe' = 'cmd'
   /** 「명령」에서 연 일 창 — null 이면 일 카드 여섯 · cmdHero 는 그 창에서 고른 장수 ('' 이면 그 일에 가장 맞는 이) */
   let cmdJob: CmdJob | null = null
+  /** 첫 화면 「다른 판」에서 ✕ 를 한 번 누른 판 — 한 번 더 누르면 지운다 */
+  let slotArmed: number | null = null
   let cmdHero = ''
   let plotOpen: PlotOp | null = null
   /** 암살에 보낼 자객 — 우리 장수 id, null 이면 고용 자객 */
@@ -3419,7 +3427,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'title': {
         // 영웅전(도감) — 판을 넘어 남는 것 (VISION §5-4)
         const dexBtn = `<button class="btn big" data-act="dex-open">영웅전</button>` // 형 10-25: 도감보다 즐거운 이름 · 숫자는 들어가면 보인다
-        return titleHtml(KIT, realm, host.savedAt(), installCard() + acctLine() + links, realm === null && !tutorialOver(), dexBtn)
+        return titleHtml(KIT, realm, host.savedAt(), installCard() + acctLine() + links, realm === null && !tutorialOver(), dexBtn, host.slots?.() ?? [], slotArmed)
       }
       case 'dex': return dexHtml(DEX_KIT, f.board, f.sel, f.back === null ? '판으로' : '처음으로')
       case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null), tierWon, tierHtml('jumong', chapTier, 'chap-tier') + carryChapterNote())
@@ -4141,6 +4149,23 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const r = realm !== null ? plan() : null
     switch (d['act']) {
       case 'continue': front = null; paint(); coverMap(); return
+      case 'slot-go': {
+        // 고른 판으로 — 하던 판은 선반에 (realm-main.onResume). 옮겼으면 바로 그 판으로 들어간다
+        slotArmed = null
+        if (host.onResume?.(Number(d['v'])) !== true) { paint(); return }
+        front = null
+        paint()
+        coverMap()
+        return
+      }
+      case 'slot-drop': {
+        const seed = Number(d['v'])
+        if (slotArmed !== seed) { slotArmed = seed; paint(); return }
+        slotArmed = null
+        host.onDropSlot?.(seed)
+        paint()
+        return
+      }
       case 'fr-new': case 'newgame': front = { kind: 'boards' }; sheet = null; looking = false; paint(); return
       case 'fr-back': front = { kind: 'title' }; paint(); return
       case 'lobby': saveDraft(); front = { kind: 'title' }; sheet = null; armySel = []; clearParty(); paint(); return
