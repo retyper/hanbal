@@ -58,7 +58,7 @@ export const CHAPTERS: readonly Chapter[] = [
     id: 'seorabeol', n: 3, region: 'seorabeol', nation: 'saro', name: '서라벌 여섯 마을', era: '기원전 57년 · 경주', hero: '혁거세',
     hook: '나정 곁 붉은 알에서 난 아이. 여섯 마을의 촌장들이 그를 임금으로 받들기로 한다 — 칼 대신 마음으로.',
     goal: '여섯 마을이 모두 따르게 한다 — 동맹이든 조공이든 (마을을 치면 다른 마을의 마음이 식는다)',
-    art: 'event/event-golden-egg.jpg',
+    art: 'keyart/seorabeol.jpg',
     source: '『삼국사기』 신라본기 — 여섯 마을 사람들이 혁거세를 받들어 임금으로 삼았다. 『삼국유사』 기이편.',
     // 칼을 덜 뽑는 장 — 마을을 치면 다른 마을들의 마음이 식는다 (scenario.fewerSwords) · 기한 열 해
     scenario: { id: 'seorabeol', win: [{ kind: 'submit', factions: ['sr-yangsan', 'sr-goheo', 'sr-jinji', 'sr-daesu', 'sr-gari', 'sr-goya'], how: 'either' }], limit: 40 },
