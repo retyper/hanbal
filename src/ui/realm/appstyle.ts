@@ -794,8 +794,33 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .instc > b { color: #f3d48a; } .ap .instc p { margin: 6px 0; font-size: 13.5px; line-height: 1.5; color: #e8dcc0; }
 .ap .instc .instr { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .ap .instc .chk { font-size: 13px; color: #cfc6b4; margin-right: auto; }
 /* 침략 알림 — 붉게 */
-.ap .cere.invade { background: radial-gradient(ellipse at 50% 45%, #5a1410cc, #0b0605 70%); }
-.ap .cere.invade .cbg { opacity: .35; filter: saturate(.7) sepia(.3) hue-rotate(-20deg); }
+.ap .cere.invade { background: #0b0605; }
+/* 그림은 또렷하게 — 글자 자리만 아래를 어둡게 (형 10-25: "정말 침략당하는 이미지로") */
+.ap .cere.invade .cbg { opacity: .92; filter: saturate(1.05) contrast(1.05); }
+.ap .cere.invade::after { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(#0000 35%, #0b0605cc 72%, #0b0605f0); }
+.ap .cere.invade .cw { position: relative; z-index: 2; }
+.ap .cere.invade .ifx { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+/* 침략 — 불티가 피어오른다 */
+.ap .cere.invade .emb { position: absolute; left: var(--x); bottom: -10px; width: var(--s); height: var(--s); border-radius: 50%; background: #ffb050; box-shadow: 0 0 8px #ff7a20, 0 0 16px #ff5a10; animation: iemb var(--d) linear var(--t) infinite; }
+@keyframes iemb { 0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: 1; } 100% { transform: translate(var(--w), -95vh); opacity: 0; } }
+/* 공성 — 화살이 성벽 쪽으로 쏟아진다 · 처음 한 번 흔들린다 */
+.ap .cere.invade.k-siege { animation: ishake .5s ease-out .15s both; }
+@keyframes ishake { 0%, 100% { transform: none; } 20% { transform: translate(-6px, 3px); } 40% { transform: translate(5px, -4px); } 60% { transform: translate(-3px, 2px); } 80% { transform: translate(2px, -1px); } }
+.ap .cere.invade .iarw { position: absolute; left: var(--x); top: -12%; width: 46px; transform: rotate(118deg); opacity: 0; animation: iarw var(--d) ease-in var(--t) 3 both; }
+@keyframes iarw { 0% { transform: translate(0, 0) rotate(118deg); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(-30vw, 70vh) rotate(118deg); opacity: 0; } }
+.ap .cere.invade .idust { position: absolute; left: 50%; bottom: 18%; width: 60%; transform: translateX(-50%); opacity: 0; animation: idust 1.4s ease-out .9s both; }
+.ap .cere.invade .idust.c { bottom: 40%; width: 46%; animation-delay: .75s; }
+@keyframes idust { 0% { opacity: 0; transform: translateX(-50%) scale(.6); } 30% { opacity: .75; } 100% { opacity: 0; transform: translateX(-50%) scale(1.3); } }
+/* 조우 — 우리 깃발과 적 깃발이 양쪽에서 달려와 맞부딪힌다 */
+.ap .cere.invade .iflag { position: absolute; top: 26%; width: 92px; height: 120px; background: var(--fc); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%); display: flex; align-items: flex-start; justify-content: center; padding-top: 18px; box-sizing: border-box; box-shadow: inset 0 0 0 3px #0005; }
+.ap .cere.invade .iflag img { width: 52px; height: 52px; filter: drop-shadow(0 2px 3px #000a); }
+.ap .cere.invade .iflag.l { left: 50%; animation: iflagl .8s cubic-bezier(.3, 1.4, .5, 1) .15s both; } .ap .cere.invade .iflag.r { right: 50%; animation: iflagr .8s cubic-bezier(.3, 1.4, .5, 1) .15s both; }
+@keyframes iflagl { 0% { transform: translateX(-60vw) rotate(-8deg); } 100% { transform: translateX(-112%) rotate(-4deg); } }
+@keyframes iflagr { 0% { transform: translateX(60vw) rotate(8deg); } 100% { transform: translateX(112%) rotate(4deg); } }
+/* 기습 — 어둠이 가장자리에서 조여 온다 */
+.ap .cere.invade .idark { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, #0000 30%, #000c 80%); animation: idark 2.4s ease-in-out infinite alternate; }
+@keyframes idark { from { opacity: .55; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ap .cere.invade, .ap .cere.invade .emb, .ap .cere.invade .iarw, .ap .cere.invade .iflag, .ap .cere.invade .idark, .ap .cere.invade .idust { animation: none !important; } .ap .cere.invade .emb, .ap .cere.invade .iarw, .ap .cere.invade .idust { display: none; } }
 .ap .cere.invade .cw > b { color: #ffb4a4; text-shadow: 0 0 22px #e04a3a, 0 3px 6px #000; }
 .ap .cere.invade .iem { width: 40px; height: 40px; vertical-align: middle; margin-right: 6px; }
 /* 정찰 칸 — 보내기와 고정을 떼어 놓는다 (형 10-24) */

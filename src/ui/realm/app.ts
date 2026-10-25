@@ -3711,18 +3711,46 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + `<button class="btn pri cok">확인</button></div></div>`
   }
 
-  /** 침략 — 전장 앞에 한 장. 누가 · 어디로 · 얼마나. 「맞서 싸운다」를 눌러야 전장이 열린다 */
+  /**
+   * 침략 — 전장 앞에 한 장. 누가 · 어디로 · 얼마나. 단추를 눌러야 전장이 열린다.
+   * 넷으로 가른다 (형 10-25: "적의 침략은 정말 침략당하는 이미지로 · 길에서 마주친 거랑 우리 성이 공성당하는 거랑 다르니까 이미지랑 연출 다시") —
+   *   기습(밤에 숨어 닿았다) · 조우(길에서 맞닥뜨림) · 공성(우리 도읍·성·목책 고을을 에워쌈) · 침략(마을로 쳐들어옴)
+   * 그림 · 제목 · 소리 · 움직임이 저마다 다르다
+   */
   function invasionSplash(prev: Realm, l: BattleLine, go: () => void): void {
     const who = prev.factions[l.atkFaction ?? '']?.name ?? '적'
-    const where = prev.nodes[l.node]?.name ?? ''
+    const n = prev.nodes[l.node]
+    const where = n?.name ?? ''
     const men = [l.attacker, ...l.allies].reduce((s, id) => s + (prev.armies[id] !== undefined ? headcount(forceOf(prev, prev.armies[id]!)) : 0), 0)
-    root.insertAdjacentHTML('beforeend', `<div class="cere invade"><i class="cbg" style="${sceneBg('event-night-raid')}"></i>`
-      // 누가 치는지 제목에 — 「침략」만 있으면 우리가 치는 것과 헷갈렸다 (형 10-25: "적의 침략이라던가 기습이면 적의 기습이라던가")
-      + `<div class="cw"><b>⚔ ${l.ambush === 'none' ? '적의 침략' : '적의 기습'}</b><span class="hname">${emblem(l.atkFaction ?? null, 'iem')}${esc(josa(who, '이', '가'))} ${esc(josa(where, '으로', '로'))} ${l.ambush === 'none' ? '쳐들어왔다' : '숨어 쳐들어왔다'}</span>`
-      + `<span>${l.ambush === 'caught' ? '숨어 오던 것을 먼저 알아챘다 · ' : l.ambush === 'success' ? '미처 채비를 못 했다 · ' : ''}${men > 0 ? `적 군대 약 ${men.toLocaleString('ko-KR')}명 · ` : ''}우리가 지킨다</span><button class="btn pri cok">맞서 싸운다</button></div></div>`)
+    const walled = n !== undefined && (n.kind === 'capital' || n.kind === 'fort' || n.tags.includes('palisade') || n.tags.includes('moat'))
+    const kind: 'ambush' | 'field' | 'siege' | 'raid' = l.ambush === 'success' ? 'ambush' : l.field === true ? 'field' : walled ? 'siege' : 'raid'
+    const S = {
+      ambush: { bg: 'event-night-raid', title: '적의 기습', line: `${josa(who, '이', '가')} 어둠을 타고 ${josa(where, '으로', '로')} 숨어 들었다`, sub: '미처 채비를 못 했다', btn: '맞서 싸운다' },
+      field: { bg: 'event-invade-field', title: '길에서 맞닥뜨렸다', line: `${where} 가는 길에서 ${who} 군대와 마주쳤다`, sub: '들판에서 맞붙는다', btn: '맞붙는다' },
+      siege: { bg: 'event-invade-siege', title: '적의 공성', line: `${josa(who, '이', '가')} ${josa(where, '을', '를')} 에워쌌다`, sub: '성벽 위에서 막는다', btn: '성을 지킨다' },
+      raid: { bg: 'event-invade-raid', title: '적의 침략', line: `${josa(who, '이', '가')} ${josa(where, '으로', '로')} 쳐들어왔다`, sub: '마을을 지킨다', btn: '맞서 싸운다' },
+    }[kind]
+    const caught = l.ambush === 'caught' ? '숨어 오던 것을 먼저 알아챘다 · ' : ''
+    root.insertAdjacentHTML('beforeend', `<div class="cere invade k-${kind}"><i class="cbg" style="${sceneBg(S.bg)}"></i><div class="ifx">${invadeFx(kind, l.atkFaction ?? '')}</div>`
+      + `<div class="cw"><b>⚔ ${S.title}</b><span class="hname">${emblem(l.atkFaction ?? null, 'iem')}${esc(S.line)}</span>`
+      + `<span>${caught}${men > 0 ? `적 군대 약 ${men.toLocaleString('ko-KR')}명 · ` : ''}${S.sub}</span><button class="btn pri cok">${S.btn}</button></div></div>`)
     const el = root.lastElementChild as HTMLElement
-    ding(snd('war_bell'), 0.5)
+    // 소리도 저마다 — 침략은 경종과 함성 · 공성은 북과 화살비 · 조우는 말발굽과 함성 · 기습은 낮은 경종
+    const cue: ReadonlyArray<readonly [number, Parameters<typeof snd>[0], number]> = kind === 'siege' ? [[0, 'war_drum', 0.55], [550, 'arrow_volley', 0.45]]
+      : kind === 'field' ? [[0, 'horses', 0.5], [700, 'war_cry', 0.4]]
+        : kind === 'raid' ? [[0, 'war_bell', 0.5], [600, 'war_cry', 0.35]] : [[0, 'war_bell', 0.35]]
+    for (const [ms, s, v] of cue) window.setTimeout(() => { if (el.isConnected) ding(snd(s), v) }, ms)
+    if (kind === 'siege') buzz([40, 60, 40])
     el.querySelector('.cok')?.addEventListener('click', (e) => { e.stopPropagation(); el.remove(); go() })
+  }
+
+  /** 침략 장면의 움직임 — 불티(침략) · 쏟아지는 화살(공성) · 양쪽 깃발이 맞부딪힘(조우) · 어둠이 조여 옴(기습). 낱낱이 (메모리: 이펙트는 낱낱이) */
+  function invadeFx(kind: 'ambush' | 'field' | 'siege' | 'raid', foe: string): string {
+    const f = (i: number, k: number): number => ((i * 37 + k * 61) % 100) / 100
+    if (kind === 'raid') return Array.from({ length: 18 }, (_, i) => `<i class="emb" style="--x:${(f(i, 1) * 100).toFixed(0)}%;--d:${(2.6 + f(i, 2) * 2.4).toFixed(2)}s;--t:${(-f(i, 3) * 4).toFixed(2)}s;--s:${(3 + f(i, 4) * 5).toFixed(1)}px;--w:${Math.round((f(i, 5) - 0.5) * 80)}px"></i>`).join('')
+    if (kind === 'siege') return Array.from({ length: 12 }, (_, i) => `<img class="iarw" src="${ART}fx/arrow.png" alt="" style="--x:${(30 + f(i, 1) * 70).toFixed(0)}%;--t:${(f(i, 2) * 1.6).toFixed(2)}s;--d:${(0.7 + f(i, 3) * 0.4).toFixed(2)}s">`).join('') + `<img class="idust" src="${ART}fx/dust.png" alt="">`
+    if (kind === 'field') return `<i class="iflag l" style="--fc:${FACTION_ART[me()]?.color ?? '#c9a45a'}"><img src="${ART}icon/${FACTION_ART[me()]?.emblem ?? 'emblem-shell'}.png" alt=""></i><i class="iflag r" style="--fc:${FACTION_ART[foe]?.color ?? '#a03a2a'}"><img src="${ART}icon/${FACTION_ART[foe]?.emblem ?? 'emblem-shell'}.png" alt=""></i><img class="idust c" src="${ART}fx/dust.png" alt="">`
+    return '<i class="idark"></i>'
   }
 
   /** 큰 장면을 차례로 — 누르면 다음 (혼례·등용·탄생·태몽) */

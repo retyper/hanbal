@@ -925,7 +925,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
    * 적은 같은 배치를 거울로 (.wf2s.foe 가 통째로 뒤집힌다). 아래에 선 말일수록 크고 앞에 선다 (깊이).
    * 깃발(data-f·b·h·l)대로 진이 움직인다 — 돌격은 앞줄이 기울며 나서고, 방진은 촘촘히 방패벽, 길 트기는 앞줄이 갈라져 궁수가 나온다 ….
    * 고르는 동안은 고른 것(openWar.syncField) · 적은 낌새 · 합이 풀릴 때는 그 합에 실제로 낸 명령으로 맞부딪친다 (play).
-   * 말 수는 군사 수에 맞춰 6~18 — 숫자 대신 진의 두께로 보인다.
+   * 말 수는 군사 수에 비례 — 큰 쪽이 판 크기(warTokMin~warTokMax), 작은 쪽은 그 몫만큼. 숫자 대신 진의 두께로 보인다.
    */
   /** 공격·수비 (형 10-25: "공성하는쪽이랑 수성하는쪽이 어딘지 모르겠고") — 길에서 맞닥뜨린 싸움엔 없다 */
   const roleChip = (atk: boolean): string => (l.field === true ? '' : `<em class="wrole ${atk ? 'atk' : 'def'}">${atk ? '공격' : '수비'}</em>`)
@@ -993,7 +993,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       const gen = `<span class="wgen" style="--fc:${fc}"><i class="wpole">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}</i>${face(hero, art, 'unit-general')}</span>`
       const cues = '<i class="wq q-charge"><b>돌격</b></i><i class="wq q-hold"></i><i class="wq q-shoot"></i><i class="wq q-ride"></i><i class="wq q-drum"></i><i class="wq q-cap"><b>사로잡으러</b></i><i class="wq q-back"><b>물러난다</b></i>'
       if (men <= 0) return `<div class="wf2s ${cls}"${formAttrs(o)}>${terrainProps(cls)}${gen}${cues}</div>`
-      const T = Math.max(6, Math.min(18, Math.round(6 + 12 * (st.men[i] / big))))
+      // 말 수는 군사 수에 비례 — 큰 쪽이 판의 크기(백 명 8 · 천 명 13 · 만 명 18), 작은 쪽은 그 몫만큼. 전엔 6~18 에 눌려 230 대 640 이 10 대 18 로 보였다 (형 10-25: "군사 숫자에 비례해서 유닛 개수도")
+      const tMax = Math.max(P.realm.warTokMin, Math.min(P.realm.warTokMax, Math.round(8 + 5 * Math.log10(big / 100))))
+      const T = Math.max(2, Math.round((tMax * st.men[i]) / big))
       // 병종마다 몫 — 줄마다 모은다
       const rows: string[][] = [[], [], []]
       let given = 0
