@@ -17,9 +17,9 @@ import { goalBandHtml } from '../../src/ui/realm/goalband.ts'
 const esc = (s: string): string => s
 
 describe('캠페인의 장', () => {
-  it('1장 형제의 강 — 배우는 판에 얹히고, 미추홀 도읍을 쥐면 이긴다', () => {
+  it('0장 형제의 강 — 배우는 판에 얹히고, 미추홀 도읍을 쥐면 이긴다', () => {
     assert.equal(CHAPTERS[0]!.id, 'brothers')
-    assert.equal(chapterOfRegion('tutorial')?.n, 1)
+    assert.equal(chapterOfRegion('tutorial')?.n, 0)
     const r = startTutorial(1)
     assert.equal(r.scenario?.id, 'brothers')
     assert.equal(checkOutcome(r), null)

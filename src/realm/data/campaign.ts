@@ -27,12 +27,22 @@ export interface Chapter {
 
 export const CHAPTERS: readonly Chapter[] = [
   {
-    id: 'brothers', n: 1, region: 'tutorial', nation: 'baekje', name: '형제의 강', era: '기원전 18년 · 한강', hero: '온조',
+    id: 'brothers', n: 0, region: 'tutorial', nation: 'baekje', name: '형제의 강', era: '기원전 18년 · 한강', hero: '온조',
     hook: '졸본을 떠나온 두 형제. 형은 바다로, 아우는 강으로 — 한강의 주인은 하나다.',
     goal: '형 비류의 미추홀 도읍을 쥔다',
     art: 'keyart/tutorial.jpg',
     source: '『삼국사기』 백제본기 — 온조는 하남 위례성에 도읍하고, 비류는 미추홀에 가 살았다.',
     scenario: { id: 'brothers', win: [{ kind: 'hold', nodes: ['tut-michuhol-cap'] }] },
+  },
+  // 1장 — 배우는 판 다음, 손을 놓고 1:1 로 제대로 붙는다 (형 10-25: "튜토리얼은 0장으로 두고 1장은 1:1로 제대로 싸워보게")
+  {
+    id: 'mahan', n: 1, region: 'mahan', nation: 'baekje', name: '온조, 마한을 아우르다', era: '8년 · 한강에서 차령까지', hero: '온조',
+    hook: '위례에 선 지 스물여섯 해. 남쪽의 큰 나라 마한은 백제를 아직 제 울타리 안 작은 나라로 본다. 온조는 사냥을 간다며 군사를 일으킨다.',
+    goal: '마한의 목지 도읍과 원산성·금현성을 쥔다',
+    art: 'event/event-goguryeo-hunt.jpg',
+    source: '『삼국사기』 백제본기 온조왕 26·27년 — 왕이 사냥한다 하고 마한을 습격해 그 국읍을 아울렀다. 원산·금현 두 성만이 굳게 지키다 이듬해 항복했다.',
+    // 기한 열 해 — 마한은 먼저 치고, 버티기만 해서는 이기지 못한다
+    scenario: { id: 'mahan', win: [{ kind: 'hold', nodes: ['mh-mokji-cap', 'mh-wonsan', 'mh-geumhyeon'] }], limit: 40 },
   },
   {
     id: 'jumong', n: 2, region: 'jumong', nation: 'goguryeo', name: '주몽, 졸본에 서다', era: '기원전 37년 · 졸본', hero: '주몽',

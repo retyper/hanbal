@@ -39,10 +39,10 @@ describe('캠페인 2장 — 주몽', () => {
     for (const f of Object.keys(r.factions)) assert.ok(FACTION_ART[f] !== undefined, `${f} 깃발 없음`)
   })
 
-  it('1장을 끝내면 2장이 열린다', () => {
+  it('1장(마한)을 이기면 2장이 열린다', () => {
     assert.ok(!unlockedFrom([], false, null).has('jumong'))
-    assert.ok(unlockedFrom([], true, null).has('jumong'))
-    assert.ok(unlockedFrom(['tutorial'], false, null).has('jumong'))
+    assert.ok(unlockedFrom(['mahan'], true, null).has('jumong'))
+    assert.ok(unlockedFrom(['tutorial', 'mahan'], false, null).has('jumong'))
     assert.ok(unlockedFrom([], false, 'jumong').has('jumong'))
   })
 

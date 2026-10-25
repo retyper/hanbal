@@ -62,7 +62,8 @@ export function unlockedFrom(won: readonly RegionId[], tutorialOver: boolean, pl
     const c = CHAPTERS[i]!
     const prev = CHAPTERS[i - 1]!.region
     if (c.region === null || prev === null) continue
-    if (won.includes(prev) || (prev === 'tutorial' && tutorialOver) || playing === c.region) out.add(c.region)
+    // 이미 깬 장은 앞에 장이 끼어들어도 그대로 열려 있다 (10-25 1장 마한이 0장과 주몽 사이에 들어왔다)
+    if (won.includes(prev) || (prev === 'tutorial' && tutorialOver) || playing === c.region || won.includes(c.region)) out.add(c.region)
   }
   return out
 }

@@ -210,6 +210,7 @@ export function detailHtml(k: FrontKit, region: RegionId, id: string, carry = ''
 
 const ERA: Readonly<Record<RegionId, string>> = {
   tutorial: '한강 아래. 졸본에서 내려온 형제 가운데 형 비류는 바닷가 미추홀에, 아우 온조는 하남 위례성에 자리 잡았다 — 형제의 두 나라에서 군장의 일을 하나씩 배운다.',
+  mahan: '한강에서 차령까지. 위례에 선 백제는 아직 작고, 남쪽 목지국의 진왕은 쉰 남짓 마한 나라를 거느린다 — 그러나 마한의 위아래 마음은 갈라졌다.',
   jumong: '혼강 골짜기. 동부여를 빠져나온 주몽이 엄리대수를 건너 졸본에 나라를 세웠다 — 이웃 비류국의 송양은 제가 먼저 왕이었다고 한다.',
   'byeonhan-mini': '변한의 남쪽 바닷가. 쇠를 캐고 배를 띄우는 여섯 나라가 서로를 엿본다.',
   yeongnam: '낙동강 물길을 따라 스물한 나라. 훗날 신라가 될 사로도, 가야가 될 가락과 대가야도 아직은 이웃 읍락과 키를 잰다.',
@@ -226,6 +227,7 @@ export const PROLOGUE_STEPS = 3
  */
 const OLDMAP: Readonly<Record<RegionId, { fx: number; fy: number; z: number; name: string }>> = {
   tutorial: { fx: 0.53, fy: 0.585, z: 2.8, name: '한강 아래 — 미추홀 · 위례' },
+  mahan: { fx: 0.535, fy: 0.61, z: 2.5, name: '한강에서 차령까지 — 위례 · 목지' },
   jumong: { fx: 0.465, fy: 0.335, z: 2.4, name: '혼강 골짜기 — 졸본' },
   'byeonhan-mini': { fx: 0.715, fy: 0.81, z: 3, name: '변한의 바닷가' },
   yeongnam: { fx: 0.7, fy: 0.745, z: 2.3, name: '낙동강 물길' },
@@ -262,6 +264,7 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
   if (step === 0) {
     // 배우는 판은 백제가 서던 해 — 『삼국사기』 온조왕 원년 (기원전 18)
     const [when, age] = region === 'tutorial' ? ['기원전 18년.', '옛 조선이 무너진 지 아흔 해, 주몽이 졸본에 고구려를 세운 무렵.']
+      : region === 'mahan' ? ['서기 8년.', '온조가 위례에 나라를 세운 지 스물여섯 해, 마한의 진왕이 아직 쉰 나라의 우두머리이던 때.']
       : region === 'jumong' ? ['기원전 37년.', '옛 조선이 무너진 지 일흔 해, 동부여의 왕자들이 활 잘 쏘는 사내를 시기하던 때.']
         : ['기원 2세기.', '옛 조선이 무너진 지 삼백 년, 왕이 하나가 아니던 때.']
     body = `<div class="pl pera">${oldMapHtml(k, region)}<p class="l1">${when}</p><p class="l2">${age}</p>`
@@ -295,6 +298,7 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
 
 const HEAD: Readonly<Record<RegionId, string>> = {
   tutorial: '미추홀 도읍을 쥐었다 — 군장의 일을 다 배웠다',
+  mahan: '목지와 원산·금현이 항복했다 — 마한이 백제에 아울러졌다',
   jumong: '송양이 따르고 행인·북옥저를 거느렸다 — 고구려가 섰다',
   'byeonhan-mini': '변한의 바닷가를 차지했다',
   yeongnam: '낙동강의 나라들을 거느렸다',
@@ -305,6 +309,7 @@ const HEAD: Readonly<Record<RegionId, string>> = {
 /** 이긴 뒤 계속 둬서 도읍을 모두 쥐었을 때 */
 const HEAD_ALL: Readonly<Record<RegionId, string>> = {
   tutorial: '두 나라가 한 나라가 됐다',
+  mahan: '한강에서 차령까지 하나가 됐다',
   jumong: '졸본에서 두만강까지 하나가 됐다',
   'byeonhan-mini': '변한의 바닷가가 한 나라가 됐다',
   yeongnam: '낙동강의 나라들이 하나가 됐다',
