@@ -786,8 +786,8 @@ function guessHtml(gu: Guess | undefined, edge0: number): string {
   const [lu, lcu] = lossWord(gu.us)
   const [lf, lcf] = lossWord(gu.foe)
   // 판세 막대 — 왼쪽 끝이 우리, 오른쪽 끝이 적. 파랑이 우리 몫, 옅은 데가 짐작의 폭, 금빛 금이 지금 판세
-  return `<span class="wguess ${cls}"><span class="wgt">판세</span><span class="wgk us">우리</span><span class="wgbar" style="--lo:${pc(gu.edge[0])};--hi:${pc(gu.edge[1])};--e0:${pc(edge0)}"></span><span class="wgk foe">적</span><b>${w}</b>`
-    + `<span class="wgl"><span class="wgt">잃을 군사</span><span>우리 <b class="${lcu}">${lu}</b></span><span>적 <b class="${lcf}">${lf}</b></span></span></span>`
+  return `<span class="wguess ${cls}"><span class="wgq">판세</span><span class="wgk us">우리</span><span class="wgbar" style="--lo:${pc(gu.edge[0])};--hi:${pc(gu.edge[1])};--e0:${pc(edge0)}"></span><span class="wgk foe">적</span><b>${w}</b>`
+    + `<span class="wgl"><span class="wgq">잃을 군사</span><span>우리 <b class="${lcu}">${lu}</b></span><span>적 <b class="${lcf}">${lf}</b></span></span></span>`
 }
 
 export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: string, shown: number, anim: boolean, left: number, sel: RoundOrder = {}, active?: Grp | 'lead', more = false): string {
@@ -1229,6 +1229,30 @@ export const WAR_CSS = `
 .ap .wfield .tp { position: absolute; left: var(--x); top: calc(60% + var(--oy)); height: clamp(26px, 7cqw, 46px); width: auto; transform: translate(-50%, -100%) scale(var(--sc, 1)); transform-origin: 50% 100%; pointer-events: none; filter: drop-shadow(0 2px 2px #000a); }
 .ap .wfield .tp.flat { height: clamp(18px, 5cqw, 32px); transform: translate(-50%, -60%) scale(var(--sc, 1)); filter: none; opacity: .92; }
 .ap .wfield .wf-mid-terr { position: absolute; inset: 0; }
+/* ── 폰 전투 머리띠 — 초상 옆에 이름·나라, 막대는 밑 (형 10-25: "싸구려웹게임같음" — 초상 카드가 화면 반을 먹어 전장이 작았다) ── */
+@media (max-width: 520px) {
+  .ap .wtop .wvs { align-items: flex-start; gap: 4px; }
+  .ap .wtop .wvs img.vs { width: 34px; align-self: flex-start; margin-top: 14px; }
+  .ap .wtop .ws { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 6px; align-items: center; text-align: left; }
+  .ap .wtop .ws .wpf { --pf: 60px; grid-row: 1 / span 2; grid-column: 1; }
+  .ap .wtop .ws > b { grid-column: 2; grid-row: 1; margin: 0; font-size: 14px; align-self: end; }
+  .ap .wtop .ws .wnat { grid-column: 2; grid-row: 2; justify-self: start; align-self: start; font-size: 11.5px; min-height: 18px; padding: 0 7px 0 3px; max-width: 100%; overflow: hidden; white-space: nowrap; }
+  .ap .wtop .ws .wnat img { width: 16px; height: 16px; }
+  .ap .wtop .ws .wbar, .ap .wtop .ws .wn { grid-column: 1 / -1; }
+  .ap .wtop .ws .wbar { margin-top: 6px; height: 10px; }
+  .ap .wtop .ws .wn { font-size: 11px; line-height: 1.2; text-align: center; }
+  .ap .wtop .ws.foe { grid-template-columns: minmax(0, 1fr) auto; text-align: right; }
+  .ap .wtop .ws.foe .wpf { grid-column: 2; }
+  .ap .wtop .ws.foe > b, .ap .wtop .ws.foe .wnat { grid-column: 1; justify-self: end; }
+  .ap .wtop .wfield { height: clamp(230px, 62vw, 290px); }
+  .ap .wtop .wf2s .tk { height: clamp(34px, 10cqw, 50px) !important; } .ap .wtop .wf2s .tk.wsp.k-horse, .ap .wtop .wf2s .tk.wsp.k-boat { height: clamp(44px, 13cqw, 66px) !important; }
+}
+/* 병사 발밑 그림자 — 땅에 서 있게 */
+.ap .wf2s .tk.wsp::before { content: ''; position: absolute; left: 18%; right: 18%; bottom: -4%; height: 12%; border-radius: 50%; background: radial-gradient(closest-side, #000b, #0000); z-index: -1; pointer-events: none; }
+.ap .wf2s .tk.wsp.tkd::before { opacity: .4; }
+/* 땅 — 지평선 아래로 짙어져 병사가 떠 보이지 않게 */
+.ap .wfield .wf-ground { top: 30% !important; background: linear-gradient(#0000, #1c140c66 25%, #120c07b0 100%), radial-gradient(ellipse 70% 55% at 50% 72%, #4a361e55, #0000 75%) !important; }
+.ap .wfield::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 90; box-shadow: inset 0 0 40px #000c, inset 0 -18px 30px -10px #000a; border-radius: inherit; }
 .ap .wfield .wf-mid-terr.mud .tp { filter: sepia(1) saturate(.65) brightness(.72) hue-rotate(-12deg); opacity: 1; }
 /* 땅 이름표 (tlab) — 소품 곁 · 누구에게 유리한지 색 */
 .ap .wf-tl { position: absolute; left: var(--x); top: calc(60% + var(--oy)); transform: translate(-50%, -50%); z-index: 75; display: flex; flex-direction: column; align-items: center; padding: 1px 6px 2px; border-radius: 7px; background: #120d09d8; border: 1px solid #6a5a48; font-size: clamp(9.5px, 2.5cqw, 12px); font-weight: 800; line-height: 1.15; color: #f6d8a0; white-space: nowrap; pointer-events: none; box-shadow: 0 2px 6px #000a; }
@@ -1575,14 +1599,14 @@ export const WAR_CSS = `
 .ap .wgby { margin: 2px 2px 4px; font-size: 12px; color: var(--mute); } .ap .wgby b { color: #e8d4a8; }
 /* 짐작 — 판세 막대(우리 푸른빛 · 적 붉은빛 · 폭은 옅게 · 지금에 금) · 말 · 잃을 몫 */
 .ap .wguess { display: grid; grid-template-columns: auto auto 1fr auto auto; align-items: center; gap: 3px 4px; width: 100%; margin-top: 4px; }
-.ap .wguess .wgt { font-size: 10.5px; color: var(--mute); white-space: nowrap; } .ap .wguess > .wgk { font-size: 10.5px; font-weight: 700; } .ap .wguess > .wgk.us { color: #7fb8f0; } .ap .wguess > .wgk.foe { color: #f09080; }
+.ap .wguess .wgq { font-size: 10.5px; color: var(--mute); white-space: nowrap; } /* wgt 는 무리 탭 — 이름이 겹쳐 단추 모양이 됐다 */ .ap .wguess > .wgk { font-size: 10.5px; font-weight: 700; } .ap .wguess > .wgk.us { color: #7fb8f0; } .ap .wguess > .wgk.foe { color: #f09080; }
 .ap .wguess .wgbar { position: relative; height: 7px; border-radius: 4px; overflow: hidden; box-shadow: inset 0 0 0 1px #0008;
   background: linear-gradient(90deg, #3d8fe0 0 var(--lo), #3d8fe077 var(--lo) var(--hi), #c8503a var(--hi) 100%); }
 .ap .wguess .wgbar::after { content: ''; position: absolute; left: var(--e0); top: -1px; bottom: -1px; width: 2px; margin-left: -1px; background: #ffe7b0; box-shadow: 0 0 3px #000; }
 .ap .wcmd .wguess > b { font-size: 11.5px; white-space: nowrap; }
 .ap .wguess.g2 > b { color: #7fd8ff; } .ap .wguess.g1 > b { color: #a8d8f0; } .ap .wguess.g0 > b { color: #d8cfbf; } .ap .wguess.b1 > b { color: #f0b090; } .ap .wguess.b2 > b { color: #ff7a5a; }
 .ap .wguess .wgl { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: #d8cfbf; }
-.ap .wguess .wgl b.l1 { color: #9fe08a; } .ap .wguess .wgl b.l2 { color: #f0d080; } .ap .wguess .wgl b.l3 { color: #ff8a6a; }
+.ap .wguess .wgl b { font-size: 12px; } .ap .wguess .wgl b.l1 { color: #9fe08a; } .ap .wguess .wgl b.l2 { color: #f0d080; } .ap .wguess .wgl b.l3 { color: #ff8a6a; }
 .ap .wguess .wgl .wgk { font-size: 10.5px; color: var(--mute); }
 .ap .wguess .wgl i { height: 4px; border-radius: 2px; background: #0006; box-shadow: inset 0 0 0 1px #0006; }
 .ap .wguess .wgl i.us { background: linear-gradient(90deg, #e0604a 0 var(--a), #e0604a66 var(--a) var(--b), #0006 var(--b)); }
