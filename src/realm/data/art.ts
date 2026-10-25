@@ -162,70 +162,75 @@ function clanFace(id: string): string | undefined {
   return look === 'g' || look === 'w' ? kidBust(rest.join('-'), look) : undefined
 }
 
-/** 나라 id → 깃발 (icon/emblem-*.png) · 지도의 테두리 색 */
-export const FACTION_ART: Readonly<Record<string, { emblem: string; color: string }>> = {
-  us: { emblem: 'emblem-shell', color: '#9fd18b' },
-  guya: { emblem: 'emblem-twinfish', color: '#e0b64a' }, // 쌍어 — 김해
-  anya: { emblem: 'emblem-mountain', color: '#d0674f' },
-  miri: { emblem: 'emblem-grain', color: '#6fa8dc' },
-  goja: { emblem: 'emblem-pine', color: '#4fc1b0' },
-  dokro: { emblem: 'emblem-boar', color: '#b48ad8' },
+/**
+ * 나라 id → 깃발 (icon/emblem-*.png) · 두 빛 — 축구팀 유니폼처럼 바탕 빛(color: 이름표의 몸 · 땅빛)과 둘째 빛(color2: 이름표의 띠)
+ * (형 10-26: "적국 수가 막 7개 넘어가면 어느 나라가 어느 나라인지 전혀 구분이 안 가 … 비슷한 나라들에 색이 겹치면 두 번째 컬러")
+ * 한 판에 같이 서는 두 나라는 바탕이 멀거나, 바탕이 가까우면 둘째 빛이 멀어야 한다 — tests/realm/kit-color.test.ts 가 지킨다.
+ * 새 나라를 넣으면 `node --experimental-strip-types tools/kit-colors.ts` 가 겹치는 짝과 둘째 빛 후보를 말한다.
+ */
+export const FACTION_ART: Readonly<Record<string, { emblem: string; color: string; color2: string }>> = {
+  us: { emblem: 'emblem-shell', color: '#9fd18b', color2: '#6a2a7a' },
+  guya: { emblem: 'emblem-twinfish', color: '#e0b64a', color2: '#b0202a' }, // 쌍어 — 김해
+  anya: { emblem: 'emblem-mountain', color: '#d0674f', color2: '#6cc8f0' },
+  miri: { emblem: 'emblem-grain', color: '#6fa8dc', color2: '#f08ab0' },
+  goja: { emblem: 'emblem-pine', color: '#4fc1b0', color2: '#f08ab0' },
+  dokro: { emblem: 'emblem-boar', color: '#b48ad8', color2: '#1e1a16' },
   // 영남 판의 새 나라 열다섯 — 깃발은 나눠 쓰고 색으로 가른다
-  saro: { emblem: 'emblem-rooster', color: '#f0d050' },
-  daegaya: { emblem: 'emblem-crown', color: '#e88a3c' },
-  dabeol: { emblem: 'emblem-cauldron', color: '#8a6a4a' },
-  sabeol: { emblem: 'emblem-horse', color: '#5f9ea0' },
-  usisan: { emblem: 'emblem-whale', color: '#7f8fa6' },
-  bihwa: { emblem: 'emblem-mirror', color: '#c7d36f' },
-  jomun: { emblem: 'emblem-ox', color: '#d9a066' },
-  golbeol: { emblem: 'emblem-axe', color: '#a05050' },
-  apdok: { emblem: 'emblem-toad', color: '#4f8a5f' },
-  iseo: { emblem: 'emblem-bow', color: '#9fb7e0' },
-  byeokjin: { emblem: 'emblem-stars', color: '#c08bb0' },
-  gammun: { emblem: 'emblem-kiln', color: '#6c7f3a' },
-  samul: { emblem: 'emblem-sailboat', color: '#3f86c6' },
-  eumjeup: { emblem: 'emblem-antler', color: '#e5a3b8' },
-  chopal: { emblem: 'emblem-reeds', color: '#b8a0d0' },
+  saro: { emblem: 'emblem-rooster', color: '#f0d050', color2: '#1f3f8f' },
+  daegaya: { emblem: 'emblem-crown', color: '#e88a3c', color2: '#b0202a' },
+  dabeol: { emblem: 'emblem-cauldron', color: '#8a6a4a', color2: '#6a2a7a' },
+  sabeol: { emblem: 'emblem-horse', color: '#5f9ea0', color2: '#1e1a16' },
+  usisan: { emblem: 'emblem-whale', color: '#7f8fa6', color2: '#f6f1e4' },
+  bihwa: { emblem: 'emblem-mirror', color: '#c7d36f', color2: '#e86a1a' },
+  jomun: { emblem: 'emblem-ox', color: '#d9a066', color2: '#2f8a3a' },
+  golbeol: { emblem: 'emblem-axe', color: '#a05050', color2: '#2f8a3a' },
+  apdok: { emblem: 'emblem-toad', color: '#4f8a5f', color2: '#f08ab0' },
+  iseo: { emblem: 'emblem-bow', color: '#9fb7e0', color2: '#1e1a16' },
+  byeokjin: { emblem: 'emblem-stars', color: '#c08bb0', color2: '#2f8a3a' },
+  gammun: { emblem: 'emblem-kiln', color: '#6c7f3a', color2: '#1f3f8f' },
+  samul: { emblem: 'emblem-sailboat', color: '#3f86c6', color2: '#f2c230' },
+  eumjeup: { emblem: 'emblem-antler', color: '#e5a3b8', color2: '#1f3f8f' },
+  chopal: { emblem: 'emblem-reeds', color: '#b8a0d0', color2: '#e86a1a' },
   // 삼한 남부 판의 새 나라 열다섯 — 백제 매(매사냥) · 목지 팔주령 · 상당 세형동검 · 무진 고인돌 · 발라 독무덤 · 하슬라 물범(반어피)
-  baekje: { emblem: 'emblem-falcon', color: '#c9504a' },
-  mokji: { emblem: 'emblem-bells', color: '#d4a03a' },
+  baekje: { emblem: 'emblem-falcon', color: '#c9504a', color2: '#f2c230' },
+  mokji: { emblem: 'emblem-bells', color: '#d4a03a', color2: '#b8e04a' },
   // 3장 여섯 마을 · 왜인 (seorabeol.ts) — 깃발에 해 동그라미는 쓰지 않는다
-  'sr-yangsan': { emblem: 'emblem-reeds', color: '#6aa8c8' }, 'sr-goheo': { emblem: 'emblem-dolmen', color: '#c8a050' },
-  'sr-jinji': { emblem: 'emblem-pine', color: '#4f8a5a' }, 'sr-daesu': { emblem: 'emblem-deer', color: '#a0703a' },
-  'sr-gari': { emblem: 'emblem-grain', color: '#d8c060' }, 'sr-goya': { emblem: 'emblem-mountain', color: '#8a6ab0' },
-  'sr-wae': { emblem: 'emblem-wave', color: '#5a5f6a' },
-  michuhol: { emblem: 'emblem-wave', color: '#4a9fd0' },
-  ungcheon: { emblem: 'emblem-bear', color: '#8d7a5a' },
-  sangdang: { emblem: 'emblem-dagger', color: '#6a8aa0' },
-  geonma: { emblem: 'emblem-plough', color: '#b8784a' },
-  wansan: { emblem: 'emblem-ginkgo', color: '#7a9a4a' },
-  gosaburi: { emblem: 'emblem-egret', color: '#a6a05a' },
-  balla: { emblem: 'emblem-jars', color: '#9a4a6a' },
-  mujin: { emblem: 'emblem-dolmen', color: '#5a6ab0' },
-  gampyeong: { emblem: 'emblem-crab', color: '#3aa08a' },
-  goryong: { emblem: 'emblem-snake', color: '#7a5aa0' },
-  maek: { emblem: 'emblem-tiger', color: '#a0703a' },
-  siljik: { emblem: 'emblem-fish', color: '#5aa0b8' },
-  haseulla: { emblem: 'emblem-seal', color: '#c06a8a' },
+  'sr-yangsan': { emblem: 'emblem-reeds', color: '#6aa8c8', color2: '#e86a1a' }, 'sr-goheo': { emblem: 'emblem-dolmen', color: '#c8a050', color2: '#1f3f8f' },
+  'sr-jinji': { emblem: 'emblem-pine', color: '#4f8a5a', color2: '#6a2a7a' }, 'sr-daesu': { emblem: 'emblem-deer', color: '#a0703a', color2: '#b8e04a' },
+  'sr-gari': { emblem: 'emblem-grain', color: '#d8c060', color2: '#b0202a' }, 'sr-goya': { emblem: 'emblem-mountain', color: '#8a6ab0', color2: '#b8e04a' },
+  'sr-wae': { emblem: 'emblem-wave', color: '#5a5f6a', color2: '#b8e04a' },
+  michuhol: { emblem: 'emblem-wave', color: '#4a9fd0', color2: '#2f8a3a' },
+  ungcheon: { emblem: 'emblem-bear', color: '#8d7a5a', color2: '#b8e04a' },
+  sangdang: { emblem: 'emblem-dagger', color: '#6a8aa0', color2: '#e86a1a' },
+  geonma: { emblem: 'emblem-plough', color: '#b8784a', color2: '#b8e04a' },
+  wansan: { emblem: 'emblem-ginkgo', color: '#7a9a4a', color2: '#f6f1e4' },
+  gosaburi: { emblem: 'emblem-egret', color: '#a6a05a', color2: '#b0202a' },
+  balla: { emblem: 'emblem-jars', color: '#9a4a6a', color2: '#1f3f8f' },
+  mujin: { emblem: 'emblem-dolmen', color: '#5a6ab0', color2: '#1e1a16' },
+  gampyeong: { emblem: 'emblem-crab', color: '#3aa08a', color2: '#e86a1a' },
+  goryong: { emblem: 'emblem-snake', color: '#7a5aa0', color2: '#e86a1a' },
+  maek: { emblem: 'emblem-tiger', color: '#a0703a', color2: '#b0202a' },
+  siljik: { emblem: 'emblem-fish', color: '#5aa0b8', color2: '#b8e04a' },
+  haseulla: { emblem: 'emblem-seal', color: '#c06a8a', color2: '#e86a1a' },
   // 삼한과 북녘 판 — 고구려 삼족오 · 비류나 말 탄 궁수 · 연나 돌성문 · 환나 현무 · 관나 까마귀 · 부여 사슴 · 구가 개 · 동옥저 작살
   // 마가·우가·저가(말·소·돼지)와 북옥저·불내·탐라는 제 깃발이 아직 없다 — 그림 줄 4c
-  goguryeo: { emblem: 'emblem-samjogo', color: '#c43c2c' },
-  yangmaek: { emblem: 'emblem-bow', color: '#7a8a3a' }, // 맥궁 — 맥 사람의 활 (요동 태자하)
-  usan: { emblem: 'emblem-usan', color: '#2f7fa0' }, // 강치 — 독도 바위 위의 바다사자 (2026-10-20 제미나이)
-  biryuna: { emblem: 'emblem-horsearcher', color: '#8a5a9a' },
-  yeonna: { emblem: 'emblem-stonegate', color: '#6a7a8a' },
-  hwanna: { emblem: 'emblem-tortoise', color: '#3a7a6a' },
-  gwanna: { emblem: 'emblem-crow', color: '#4a4a5a' },
-  buyeo: { emblem: 'emblem-deer', color: '#e8e0c8' },
-  maga: { emblem: 'emblem-maga', color: '#b07a3a' },
-  uga: { emblem: 'emblem-uga', color: '#7a8a3a' },
-  jeoga: { emblem: 'emblem-jeoga', color: '#8a5a3a' },
-  guga: { emblem: 'emblem-dog', color: '#c0a060' },
-  dongokjeo: { emblem: 'emblem-harpoon', color: '#3a8ab0' },
-  bukokjeo: { emblem: 'emblem-bukokjeo', color: '#2a6a8a' },
-  bullae: { emblem: 'emblem-bullae', color: '#d08a3a' },
-  tamna: { emblem: 'emblem-tamna', color: '#5ab0a0' },
-  haengin: { emblem: 'emblem-moon', color: '#6a8a5a' }, // 캠페인 2장 — 태백산 기슭의 행인국 (초승달)
+  goguryeo: { emblem: 'emblem-samjogo', color: '#c43c2c', color2: '#1e1a16' },
+  yangmaek: { emblem: 'emblem-bow', color: '#7a8a3a', color2: '#1e1a16' }, // 맥궁 — 맥 사람의 활 (요동 태자하)
+  usan: { emblem: 'emblem-usan', color: '#2f7fa0', color2: '#6a2a7a' }, // 강치 — 독도 바위 위의 바다사자 (2026-10-20 제미나이)
+  biryuna: { emblem: 'emblem-horsearcher', color: '#8a5a9a', color2: '#b8e04a' },
+  yeonna: { emblem: 'emblem-stonegate', color: '#6a7a8a', color2: '#2f8a3a' },
+  hwanna: { emblem: 'emblem-tortoise', color: '#3a7a6a', color2: '#1f3f8f' },
+  gwanna: { emblem: 'emblem-crow', color: '#4a4a5a', color2: '#f2c230' },
+  buyeo: { emblem: 'emblem-deer', color: '#e8e0c8', color2: '#1f3f8f' },
+  maga: { emblem: 'emblem-maga', color: '#b07a3a', color2: '#1e1a16' },
+  uga: { emblem: 'emblem-uga', color: '#7a8a3a', color2: '#f2c230' },
+  jeoga: { emblem: 'emblem-jeoga', color: '#8a5a3a', color2: '#6cc8f0' },
+  guga: { emblem: 'emblem-dog', color: '#c0a060', color2: '#6cc8f0' },
+  dongokjeo: { emblem: 'emblem-harpoon', color: '#3a8ab0', color2: '#1e1a16' },
+  bukokjeo: { emblem: 'emblem-bukokjeo', color: '#2a6a8a', color2: '#f08ab0' },
+  bullae: { emblem: 'emblem-bullae', color: '#d08a3a', color2: '#1f3f8f' },
+  tamna: { emblem: 'emblem-tamna', color: '#5ab0a0', color2: '#b8e04a' },
+  haengin: { emblem: 'emblem-moon', color: '#6a8a5a', color2: '#6a2a7a' }, // 캠페인 2장 — 태백산 기슭의 행인국 (초승달)
 }
 
 /** 물건의 그림 — 창고 · 사신 · 지도의 특산 표가 함께 쓴다. 나무는 장작 짐 (형: '주고받을 거래에 이상한 소나무국기있음') */
