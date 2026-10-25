@@ -174,7 +174,8 @@ function clanFace(id: string): string | undefined {
  * `emblem` 은 문양 이름(굽는 틀이 읽는다) — 화면에는 이 깃발을 쓴다.
  */
 export function flagIcon(f: string | null | undefined): string | undefined {
-  return f != null && FACTION_ART[f] !== undefined ? `nflag-${f}` : undefined
+  // 10-26 구운 납작한 깃발(nflag-*)은 질이 떨어지고 싸움판 줄을 흔들어 걷었다 — 새 깃발이 오기 전까지 옛 그림
+  return f != null ? FACTION_ART[f]?.emblem : undefined
 }
 
 export const FACTION_ART: Readonly<Record<string, { emblem: string; color: string; color2: string }>> = {
