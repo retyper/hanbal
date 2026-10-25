@@ -219,6 +219,30 @@ const ERA: Readonly<Record<RegionId, string>> = {
 
 export const PROLOGUE_STEPS = 3
 
+/**
+ * 서막 첫 장의 옛 지도 — 게임 지도의 실제 지형 틀(assets_src/realm/map-frame · 반도와 만주가 실제 모양)을 한지 빛으로 깔고,
+ * 온 땅에서 이 판의 땅으로 천천히 다가가 고리로 짚는다 (형 10-25: "스토리는 텍스트만주지말고 이미지도 … 고조선 옛지도를 보여주던지").
+ * fx·fy 는 그 그림에서의 비율 자리, z 는 다가간 배율, name 은 고리 곁 이름
+ */
+const OLDMAP: Readonly<Record<RegionId, { fx: number; fy: number; z: number; name: string }>> = {
+  tutorial: { fx: 0.53, fy: 0.585, z: 2.8, name: '한강 아래 — 미추홀 · 위례' },
+  jumong: { fx: 0.465, fy: 0.335, z: 2.4, name: '혼강 골짜기 — 졸본' },
+  'byeonhan-mini': { fx: 0.715, fy: 0.81, z: 3, name: '변한의 바닷가' },
+  yeongnam: { fx: 0.7, fy: 0.745, z: 2.3, name: '낙동강 물길' },
+  south: { fx: 0.635, fy: 0.715, z: 1.7, name: '삼한의 남쪽' },
+  world: { fx: 0.54, fy: 0.5, z: 1.05, name: '삼한과 북녘' },
+}
+/** 옛 지도 한 칸 — 상자는 16:10, 그림은 가로를 꽉 채운 1600×1559 (세로 비 0.974) */
+function oldMapHtml(k: FrontKit, region: RegionId): string {
+  const m = OLDMAP[region]
+  // 상자 가운데에 (fx, fy) 가 오게 — 왼쪽 위 기준으로 키운 뒤 옮긴다 (상자 높이의 반 = 그림 높이의 32.08%)
+  const at = (fx: number, fy: number, z: number): string => `translate(${(50 - fx * z * 100).toFixed(2)}%, ${(32.08 - fy * z * 100).toFixed(2)}%) scale(${z})`
+  const key = `pmz-${region.replace(/[^a-z]/g, '')}`
+  return `<style>@keyframes ${key}{0%,18%{transform:${at(0.5, 0.5, 1)}}100%{transform:${at(m.fx, m.fy, m.z)}}}</style>`
+    + `<div class="pmap"><div class="pmw" style="animation-name:${key}"><img src="${k.art}map/oldmap.jpg" alt=""><b class="pold" style="left:40%;top:36%">옛 조선</b></div>`
+    + `<i class="pring"></i><b class="pmname">${k.esc(m.name)}</b></div>`
+}
+
 /** 지난 판에서 따라온 장수 (계승 가신 — legacy.ts) */
 function carriedHtml(k: FrontKit, r: Realm): string {
   const ids = r.retainers ?? []
@@ -240,7 +264,7 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
     const [when, age] = region === 'tutorial' ? ['기원전 18년.', '옛 조선이 무너진 지 아흔 해, 주몽이 졸본에 고구려를 세운 무렵.']
       : region === 'jumong' ? ['기원전 37년.', '옛 조선이 무너진 지 일흔 해, 동부여의 왕자들이 활 잘 쏘는 사내를 시기하던 때.']
         : ['기원 2세기.', '옛 조선이 무너진 지 삼백 년, 왕이 하나가 아니던 때.']
-    body = `<div class="pl pera"><p class="l1">${when}</p><p class="l2">${age}</p>`
+    body = `<div class="pl pera">${oldMapHtml(k, region)}<p class="l1">${when}</p><p class="l2">${age}</p>`
       + `<p class="l3">${k.esc(ERA[region])}</p>`
       + `<p class="l4">${r.known !== undefined ? '그러나 너는 아직 이웃밖에 모른다. 지도는 빈 한지다.' : '저마다 제 도읍을 지키며, 남의 도읍을 넘본다.'}</p></div>`
   } else if (step === 1) {
@@ -532,6 +556,16 @@ export const FRONT_CSS = `
 .ap .prologue p { margin: 0 0 14px; line-height: 1.75; font-size: clamp(16px, 2.1vw, 21px); opacity: 0; animation: ink 1.2s ease-out forwards; }
 .ap .prologue .pera .l1 { font-size: clamp(26px, 3.6vw, 40px); font-weight: 700; } .ap .prologue .pera .l2 { animation-delay: .9s; } .ap .prologue .pera .l3 { animation-delay: 2s; } .ap .prologue .pera .l4 { animation-delay: 3.4s; color: #7a1f10; }
 @keyframes ink { from { opacity: 0; filter: blur(3px); transform: translateY(6px); } to { opacity: 1; filter: none; transform: none; } }
+/* 서막 옛 지도 (oldMapHtml) — 한지 빛 · 가장자리 어둠 · 온 땅에서 이 판의 땅으로 */
+.ap .prologue .pmap { position: relative; width: min(100%, calc(42vh * 1.6)); aspect-ratio: 16 / 10; margin: 0 auto 16px; overflow: hidden; border-radius: 6px; box-shadow: 0 0 0 1px #6a4a2a88, 0 10px 30px #2a1d1066; background: #c8b088; animation: ink 1s ease-out both; }
+.ap .prologue .pmw { position: absolute; left: 0; top: 0; width: 100%; transform-origin: 0 0; animation: 7s cubic-bezier(.45, 0, .25, 1) .4s both; }
+.ap .prologue .pmw img { display: block; width: 100%; height: auto; filter: sepia(.6) saturate(.75) contrast(1.05) brightness(.97); }
+.ap .prologue .pmap::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 50%, #0000 45%, #3a2410aa 100%), url(__ART__map-world/hanji.webp) center / cover; mix-blend-mode: multiply; opacity: .85; }
+.ap .prologue .pold { position: absolute; transform: translate(-50%, -50%); font-family: var(--display); font-weight: 400; font-size: 2.4vw; letter-spacing: .5em; color: #5a2a10aa; text-shadow: 0 0 6px #f0e0c0; white-space: nowrap; pointer-events: none; }
+.ap .prologue .pring { position: absolute; left: 50%; top: 50%; width: 22%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; border: 3px solid #b0281a; box-shadow: 0 0 0 2px #f0d8a088, 0 0 22px #b0281a99; opacity: 0; animation: pring 1.2s ease-out 6.6s both; z-index: 2; }
+@keyframes pring { from { opacity: 0; scale: 1.8; } to { opacity: 1; scale: 1; } }
+.ap .prologue .pmname { position: absolute; left: 50%; top: calc(50% + 13%); transform: translateX(-50%); z-index: 2; padding: 2px 12px; border-radius: 4px; background: #f3e6c8e8; border: 1px solid #7a4a20; color: #4a1f0a; font-family: var(--display); font-weight: 400; font-size: clamp(14px, 2.2vw, 19px); white-space: nowrap; opacity: 0; animation: ink .8s ease-out 7s both; }
+@media (prefers-reduced-motion: reduce) { .ap .prologue .pmw { animation-duration: .01s; animation-delay: 0s; } .ap .prologue .pring, .ap .prologue .pmname { animation-delay: 0s; } }
 .ap .prologue .pyou { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; justify-content: center; }
 .ap .prologue .pface { width: min(220px, 56vw); aspect-ratio: 1; object-fit: cover; object-position: top; border-radius: 50%; border: 3px solid #2a1d10; box-shadow: 0 6px 30px #2a1d1055; animation: ink 1s ease-out both; }
 .ap .prologue .pt { flex: 1; min-width: 220px; } .ap .prologue .pt > b { font-size: 30px; display: inline-block; vertical-align: middle; margin-left: 6px; }
