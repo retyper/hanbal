@@ -3443,7 +3443,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     // 고을을 쥐었거나 잃었다 — 어디인지 큰 그림과 함께 하나씩, 확인만 누르고 넘어간다 (형 10-25)
     const lands = (r.region ?? 'byeonhan-mini') === 'tutorial' ? [] : landChanges(before, r).filter((x) => !landSeen.has(x.key))
-    if (lands.length > 0) return landCardHtml(r, lands[0]!, lands.length - 1)
+    // 우리 공작이 먹혔다 — 갈래마다 제 그림으로 크게 (형 10-25: "공작이 성공한 것도 각각 이미지 · 전체화면 연출 · 확인 버튼")
+    const wins = (r.region ?? 'byeonhan-mini') === 'tutorial' ? [] : plotWins(r, report).filter((x) => !landSeen.has(x.key))
+    const bigs = [...lands.map((x) => landBig(r, x)), ...wins]
+    if (bigs.length > 0) return bigCardHtml(r, bigs[0]!, bigs.length - 1)
     let h = `<div class="mcard" data-act="rep-fast"><div class="mt">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r.season))}</b><span>${esc(SEASON_LINE[season])}</span></div>`
     if (decide !== '') h += `<div class="rdecide"><h4 class="rdh">이번 계절 정할 것 · 다 골랐다</h4>${decide}</div>`
     for (const l of onUs) {
@@ -3607,18 +3610,56 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return out
   }
 
-  /** 땅의 바뀜 한 장 — 큰 그림 · 어디 · 누구에게서/누구에게 · 확인 하나 */
-  function landCardHtml(r: Realm, x: { key: string; node: string; won: boolean; other: string | null }, rest: number): string {
+  /** 큰 화면 한 장 — 그림 · 깃발 · 제목 · 한두 줄 · 확인 하나 (땅의 바뀜 · 공작이 먹혔다) */
+  interface Big { key: string; art: string; good: boolean; flags: string; title: string; sub: string; small: string; sfx: string }
+
+  /** 땅의 바뀜 — 어디 · 누구에게서/누구에게 */
+  function landBig(r: Realm, x: { key: string; node: string; won: boolean; other: string | null }): Big {
     const n = r.nodes[x.node]!
     const isCap = Object.values(r.factions).some((f) => f.capital === x.node) || n.kind === 'capital'
     const kind = isCap ? '도읍' : NODE_KIND_NAME[n.kind]
     const who = x.other !== null ? (r.factions[x.other]?.name ?? '') : ''
-    const title = x.won ? `${josa(n.name, '을', '를')} 차지했다` : `${josa(n.name, '을', '를')} 빼앗겼다`
-    const sub = x.won ? (who !== '' ? `${who}의 ${josa(kind, '이었다', '였다')}` : '') : (who !== '' ? `${josa(who, '이', '가')} 쥐었다` : '우리 손을 떠났다')
-    const art = x.won ? 'event-take-town' : 'event-invade-raid'
-    return `<div class="mcard fulld landc ${x.won ? 'won' : 'lost'}"><div class="mt">${icon(SEASON_ICON[seasonOf(r.season)], 'sic')}<b>${esc(seasonLabel(r.season))}</b></div>`
-      + `<div class="landv"><img class="landi" src="${ART}event/${art}.jpg" alt=""><div class="landt">${emblem(x.won ? me() : x.other, 'fem')}<b>${esc(title)}</b>${sub !== '' ? `<span>${esc(sub)}</span>` : ''}<small>${esc(kind)} · 백성 ${Math.floor(n.hh).toLocaleString('ko-KR')}가구</small></div></div>`
-      + `<button class="btn pri wide landok" data-act="land-ok" data-k="${x.key}">확인</button>${rest > 0 ? `<p class="fdnote">이어서 ${rest}곳 더</p>` : ''}</div>`
+    return {
+      key: x.key, good: x.won, art: x.won ? 'event-take-town' : 'event-invade-raid', flags: emblem(x.won ? me() : x.other, 'fem'),
+      title: x.won ? `${josa(n.name, '을', '를')} 차지했다` : `${josa(n.name, '을', '를')} 빼앗겼다`,
+      sub: x.won ? (who !== '' ? `${who}의 ${josa(kind, '이었다', '였다')}` : '') : (who !== '' ? `${josa(who, '이', '가')} 쥐었다` : '우리 손을 떠났다'),
+      small: `${kind} · 백성 ${Math.floor(n.hh).toLocaleString('ko-KR')}가구`,
+      sfx: x.won ? snd('horn_victory') : snd('defeat'),
+    }
+  }
+
+  /** 이번 계절 먹힌 우리 공작 — 갈래마다 제 그림 · 제 말 · 제 소리 */
+  function plotWins(r: Realm, rep: Report): Big[] {
+    const out: Big[] = []
+    for (const l of rep.lines) {
+      if (l.kind !== 'plot' || l.faction !== me() || !l.ok) continue
+      const key = `${r.season}:plot:${l.op}:${l.target}:${l.node ?? ''}:${l.other ?? ''}:${l.hero ?? ''}`
+      const fn = r.factions[l.target]?.name ?? ''
+      const nn = l.node !== undefined ? (r.nodes[l.node]?.name ?? '') : ''
+      const on = l.other !== undefined ? (r.factions[l.other]?.name ?? '') : ''
+      const hn = l.hero !== undefined ? (r.heroes[l.hero]?.name ?? '') : ''
+      const flag = emblem(l.target, 'fem')
+      const b = { key, art: `event-plot-${l.op}`, good: true, flags: flag }
+      switch (l.op) {
+        case 'rumor': out.push({ ...b, title: `${fn}에 흉흉한 소문이 돈다`, sub: '군사들이 수군대며 기운이 꺾였다', small: PLOT_NAME.rumor, sfx: snd('war_drum') }); break
+        case 'sow': out.push({ ...b, flags: `<span class="sowf big">${emblem(l.target, 'fem')}<i>⇄</i>${emblem(l.other ?? null, 'fem')}</span>`, title: `${josa(fn, '과', '와')} ${josa(on, '이', '가')} 등을 돌렸다`, sub: '두 나라 사이가 틀어졌다 — 싸움이 붙을 수도 있다', small: PLOT_NAME.sow, sfx: snd('tap_brush') }); break
+        case 'bribe': out.push({ ...b, title: `${nn} 장정들을 매수했다`, sub: '두 계절 동안 싸우러 나오지 않는다', small: `${PLOT_NAME.bribe} · ${fn}`, sfx: snd('tap_coin') }); break
+        case 'burn': out.push({ ...b, title: `${fn}의 창고가 불탄다`, sub: '쌓아 둔 곡식이 잿더미가 됐다', small: PLOT_NAME.burn, sfx: 'realm/sfx/cmd_fire_c1.ogg' }); break
+        case 'spy': out.push({ ...b, title: `${nn}에 첩자를 심었다`, sub: '네 계절 동안 그곳 군세가 훤히 보인다', small: `${PLOT_NAME.spy} · ${fn}`, sfx: snd('tap_move') }); break
+        case 'assassin': out.push({ ...b, title: l.result === 'kill' ? `${josa(hn, '이', '가')} 쓰러졌다` : `${josa(hn, '이', '가')} 화살을 맞았다`, sub: l.result === 'kill' ? `${fn}의 장수 하나가 사라졌다` : '몇 계절 동안 군대를 이끌지 못한다', small: `${PLOT_NAME.assassin} · ${fn}`, sfx: 'realm/sfx/battle_final_c1.ogg' }); break
+      }
+    }
+    return out
+  }
+
+  /** 소리는 그 장이 처음 뜰 때 한 번 */
+  const bigSounded = new Set<string>()
+  /** 큰 화면 — 번쩍 → 그림이 밀려 들어오고 → 제목이 내려꽂힌다 → 소리 (형 10-25: "유저가 퍽 하면 게임은 으아아아 — 오버액션을 연쇄로") */
+  function bigCardHtml(r: Realm, x: Big, rest: number): string {
+    if (!bigSounded.has(x.key)) { bigSounded.add(x.key); window.setTimeout(() => ding(x.sfx, 0.55), 220) }
+    return `<div class="mcard fulld landc ${x.good ? 'won' : 'lost'}"><i class="bigflash"></i><div class="mt">${icon(SEASON_ICON[seasonOf(r.season)], 'sic')}<b>${esc(seasonLabel(r.season))}</b></div>`
+      + `<div class="landv"><img class="landi" src="${ART}event/${x.art}.jpg" alt=""><div class="landt">${x.flags}<b>${esc(x.title)}</b>${x.sub !== '' ? `<span>${esc(x.sub)}</span>` : ''}<small>${esc(x.small)}</small></div></div>`
+      + `<button class="btn pri wide landok" data-act="land-ok" data-k="${x.key}">확인</button>${rest > 0 ? `<p class="fdnote">이어서 ${rest}가지 더</p>` : ''}</div>`
   }
 
   function fallen(b: Realm, after: Realm): string[] {
@@ -3935,7 +3976,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const S = {
       ambush: { bg: 'event-night-raid', title: '적의 기습', line: `${josa(who, '이', '가')} 어둠을 타고 ${josa(where, '으로', '로')} 숨어 들었다`, sub: '미처 채비를 못 했다', btn: '맞서 싸운다' },
       field: { bg: 'event-invade-field', title: '길에서 맞닥뜨렸다', line: `${where} 가는 길에서 ${who} 군대와 마주쳤다`, sub: '들판에서 맞붙는다', btn: '맞붙는다' },
-      siege: { bg: 'event-invade-siege', title: '적의 공성', line: `${josa(who, '이', '가')} ${josa(where, '을', '를')} 에워쌌다`, sub: '성벽 위에서 막는다', btn: '성을 지킨다' },
+      siege: { bg: 'event-invade-siege', title: '적의 침공', line: `${josa(who, '이', '가')} ${josa(where, '을', '를')} 치러 몰려온다`, sub: '성벽 위에서 막는다', btn: '성을 지킨다' },
       raid: { bg: 'event-invade-raid', title: '적의 침략', line: `${josa(who, '이', '가')} ${josa(where, '으로', '로')} 쳐들어왔다`, sub: '마을을 지킨다', btn: '맞서 싸운다' },
     }[kind]
     const caught = l.ambush === 'caught' ? '숨어 오던 것을 먼저 알아챘다 · ' : ''

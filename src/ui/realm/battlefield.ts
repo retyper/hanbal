@@ -1817,6 +1817,13 @@ export const WAR_CSS = `
 .ap .wtip .wtl { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; } .ap .wtip .wtl span { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px 1px 2px; border-radius: 8px; background: #2d1f1d; font-size: 12px; }
 .ap .wtip .wtl img { width: 20px; height: 20px; object-fit: contain; } .ap .wtip .wtl i { font-style: normal; color: #ffb8a0; }
 /* 무리 곁의 깃발 판 (openPop) */
+.ap .wsure { position: fixed; inset: 0; z-index: 96; display: grid; place-items: center; padding: 16px; background: #000a; }
+.ap .wsure[hidden] { display: none; }
+.ap .wsurec { width: min(420px, 100%); padding: 20px 18px 16px; border-radius: 16px; background: #1c100c; border: 1.5px solid #e04a3a; box-shadow: 0 0 24px #e04a3a66, 0 14px 40px #000d; text-align: center; animation: wfpin .16s ease-out; }
+.ap .wsurec b { display: block; font-size: 20px; color: #ffb4a4; }
+.ap .wsurec p { margin: 10px 0 16px; font-size: 14px; color: #e6d8c6; }
+.ap .wsureb { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ap .wsureb .wsurey { background: linear-gradient(#a8291c, #6e150c); border-color: #e04a3a; color: #fff; }
 .ap .wfpop { position: fixed; z-index: 94; width: min(330px, calc(100vw - 16px)); padding: 8px; border-radius: 14px; background: #17110cf6; border: 1.5px solid #ffd27a; box-shadow: 0 0 0 1px #000, 0 12px 34px #000d, 0 0 18px #ffd27a44; animation: wfpin .16s ease-out; }
 @keyframes wfpin { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
 .ap .wfpop[hidden] { display: none; }
@@ -2552,6 +2559,32 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     pop.style.left = `${Math.round(left)}px`
     pop.style.top = `${Math.round(top)}px`
   }
+  /** 이 합을 고른 대로 싸운다 */
+  const fight = (key: string): void => {
+    active = undefined
+    if (cur === null || cur.key !== key) cur = { key, cmds: [] }
+    cutLead = sel.lead ?? null // 고른 장수 기술 — 이 합이 풀릴 때 초상이 튀어나온다
+    cur.cmds.push({ ...sel })
+    sel = {}
+    t = rehearse(prev, orders, done, cur, host.me)
+    if (t.line === null || t.line.key !== cur.key) {
+      // 그 합으로 판이 끝났다 — 굳히고 결과를 보인다
+      settle()
+      return
+    }
+    if (t.line.pending === undefined) {
+      done[cur.key] = { cmds: [...cur.cmds] }
+      cur = null
+    }
+    draw(true)
+  }
+  /** 정말 물러나나 — 묻는 판 (예면 그 자리에서 퇴각) */
+  const sure = document.createElement('div')
+  sure.className = 'wsure'
+  sure.hidden = true
+  sure.innerHTML = `<div class="wsurec"><b>정말 퇴각하시겠습니까?</b><p>${esc(CMD_DOES.retreat)}</p><div class="wsureb"><button class="btn ghost" data-war="retreat-no">계속 싸운다</button><button class="btn pri wsurey" data-war="retreat-yes">퇴각한다</button></div></div>`
+  ov.appendChild(sure)
+  const askRetreat = (): void => { sure.hidden = false }
   let press: { x: number; y: number; timer: number; held: boolean } | null = null
   /** 꾹 눌러 정보창을 띄웠다 — 이어지는 click 하나를 삼킨다 (무리를 고르지 않는다) */
   let swallow = false
@@ -2650,6 +2683,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         // 무리마다 깃발 하나 — 같은 것을 또 누르면 내린다(맡긴다). 다시 그리되 자리는 그대로
         const g = b.dataset['g'] as Grp | 'lead'
         const c = b.dataset['c'] as Cmd
+        // 퇴각은 묻고 바로 — 다른 무리를 고르고 「전투 개시」까지 누를 까닭이 없다 (형 10-25: "정말 퇴각하시겠습니까? 가 뜨고 그냥 퇴각되어야")
+        if (c === 'retreat') { closePop(); hideTip(); askRetreat(); return }
         sel = { ...sel, [g]: sel[g] === c ? undefined : c }
         if (sel[g] === undefined) delete sel[g]
         // 다시 그리지 않고 고른 표만 옮긴다 — 다시 그리면 배경·그림이 깜빡였다
@@ -2692,24 +2727,16 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       }
       case 'go': {
         if ((b as HTMLButtonElement).disabled) return
-        active = undefined
-        if (cur === null || cur.key !== l.key) cur = { key: l.key, cmds: [] }
-        cutLead = sel.lead ?? null // 고른 장수 기술 — 이 합이 풀릴 때 초상이 튀어나온다
-        cur.cmds.push({ ...sel })
-        sel = {}
-        t = rehearse(prev, orders, done, cur, host.me)
-        if (t.line === null || t.line.key !== cur.key) {
-          // 그 합으로 판이 끝났다 — 굳히고 결과를 보인다
-          settle()
-          return
-        }
-        if (t.line.pending === undefined) {
-          done[cur.key] = { cmds: [...cur.cmds] }
-          cur = null
-        }
-        draw(true)
+        fight(l.key)
         return
       }
+      case 'retreat-yes': {
+        sure.hidden = true
+        sel = { lead: 'retreat' }
+        fight(l.key)
+        return
+      }
+      case 'retreat-no': sure.hidden = true; return
       case 'auto': autoPlay(); return
       case 'next': {
         if (cur !== null) done[cur.key] = { cmds: [...cur.cmds] }

@@ -74,6 +74,18 @@ describe('속셈', () => {
     assert.fail('400 시드 안에 화친 청이 한 번도 없었다')
   })
 
+  it('우리가 모르는 나라는 청을 걸지 않는다 — 저쪽만 우리를 알아도 (형 10-25: "알지도 못하는 나라에서 어떻게 화친이 와")', () => {
+    for (let seed = 1; seed < 400; seed++) {
+      const r = fresh(seed)
+      const fs = ['us', 'guya', 'anya', 'miri', 'goja', 'dokro']
+      for (const x of fs) for (const y of fs) if (x < y) r.relations[pairKey(x, y)] = { state: 'war', until: null }
+      r.known = Object.fromEntries(fs.map((x) => [x, fs.filter((y) => y !== x && !(x === 'us' && y !== 'guya'))]))
+      const lines: ReportLine[] = []
+      makeAsks(r, lines)
+      for (const a of r.asks ?? []) assert.equal(a.from, 'guya', `모르는 ${a.from} 가 청을 걸었다`)
+    }
+  })
+
   it('도읍 둘을 쥔 나라는 앞서가는 나라 — 그와 맺은 약조를 깰 까닭이 생긴다', () => {
     const r = fresh()
     r.nodes['goja-cap']!.owner = 'guya'

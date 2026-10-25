@@ -593,7 +593,17 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .landc .landv { position: relative; align-self: center; width: min(100%, calc(62vh * 16 / 9)); border-radius: 16px; overflow: hidden; box-shadow: 0 14px 40px #000c; animation: landin .6s cubic-bezier(.2, 1.1, .4, 1) both; }
 .ap .landc .landi { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
 .ap .landc .landt { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 40px 16px 16px; background: linear-gradient(#0000, #000c 45%); text-align: center; }
-.ap .landc .landt b { font-size: clamp(22px, 4.2vw, 34px); letter-spacing: .04em; text-shadow: 0 2px 8px #000; }
+.ap .landc .landt b { font-size: clamp(22px, 4.2vw, 34px); letter-spacing: .04em; text-shadow: 0 2px 8px #000; animation: bigslam .55s cubic-bezier(.3, 1.6, .5, 1) .35s both; }
+.ap .landc .landt span, .ap .landc .landt small { animation: bigup .4s ease-out .8s both; }
+.ap .landc .landi { animation: bigzoom 1.6s ease-out both; }
+.ap .landc .bigflash { position: absolute; inset: 0; z-index: 3; pointer-events: none; background: radial-gradient(circle, #fff 0, #fff8 40%, #0000 75%); animation: bigflash .5s ease-out both; }
+.ap .landc.lost .bigflash { background: radial-gradient(circle, #ff6a4a 0, #c0392b88 40%, #0000 75%); }
+.ap .landc { position: relative; } .ap .landc .landt .sowf.big .fem { width: 40px; height: 40px; } .ap .landc .landt .sowf.big i { font-size: 22px; }
+@keyframes bigflash { from { opacity: 1; } to { opacity: 0; } }
+@keyframes bigslam { 0% { transform: scale(2.2) translateY(-20px); opacity: 0; } 60% { transform: scale(.94); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes bigup { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes bigzoom { from { transform: scale(1.18); } to { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .ap .landc .landt b, .ap .landc .landi, .ap .landc .bigflash, .ap .landc .landt span, .ap .landc .landt small { animation: none; } }
 .ap .landc.won .landt b { color: #ffd77a; } .ap .landc.lost .landt b { color: #ff8a70; }
 .ap .landc .landt span { font-size: 16px; color: #efe6d2; } .ap .landc .landt small { font-size: 13px; color: #cfc6b4; }
 .ap .landc .landt .fem { width: 40px; height: 40px; }

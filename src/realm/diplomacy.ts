@@ -822,7 +822,7 @@ export function makeAsks(r: Realm, lines: ReportLine[]): void {
   let made = 0
   for (const f of Object.keys(r.factions).sort()) {
     if (made >= R.askMaxPerSeason) break
-    if (f === me || r.factions[f]!.mind === 'player' || !alive(f) || !knows(r, f, me)) continue // 모르는 나라에는 청을 못 건다 (발견)
+    if (f === me || r.factions[f]!.mind === 'player' || !alive(f) || !knows(r, f, me) || !knows(r, me, f)) continue // 서로 아는 사이만 청을 건다 — 우리가 모르는 나라가 화친을 청해 왔다 (형 10-25 비화가야 · 감문국)
     if (roll(r.seed, r.season, `ask:${f}`) >= R.aiAskChance) continue
     const ask = pickAsk(r, f, me)
     if (ask === null) continue
