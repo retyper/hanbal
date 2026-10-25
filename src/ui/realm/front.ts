@@ -14,6 +14,7 @@ import { titleOf } from '../../realm/title.ts'
 import type { NationInfo } from '../../realm/data/nations.ts'
 import { badgeRank, lockWhy } from './unlock.ts'
 import { CHAPTERS, chapterOfRegion } from '../../realm/data/campaign.ts'
+import { placeOf } from '../../realm/data/regions/index.ts'
 import { seasonOf } from '../../realm/calendar.ts'
 import { battleName, josa, seasonLabel } from '../../realm/data/prose.ts'
 import type { Realm, RegionId, ReportLine } from '../../realm/types.ts'
@@ -225,24 +226,66 @@ export const PROLOGUE_STEPS = 3
  * 온 땅에서 이 판의 땅으로 천천히 다가가 고리로 짚는다 (형 10-25: "스토리는 텍스트만주지말고 이미지도 … 고조선 옛지도를 보여주던지").
  * fx·fy 는 그 그림에서의 비율 자리, z 는 다가간 배율, name 은 고리 곁 이름
  */
-const OLDMAP: Readonly<Record<RegionId, { fx: number; fy: number; z: number; name: string }>> = {
-  tutorial: { fx: 0.53, fy: 0.585, z: 2.8, name: '한강 아래 — 미추홀 · 위례' },
-  mahan: { fx: 0.535, fy: 0.61, z: 2.5, name: '한강에서 차령까지 — 위례 · 목지' },
-  jumong: { fx: 0.465, fy: 0.335, z: 2.4, name: '혼강 골짜기 — 졸본' },
-  'byeonhan-mini': { fx: 0.715, fy: 0.81, z: 3, name: '변한의 바닷가' },
-  yeongnam: { fx: 0.7, fy: 0.745, z: 2.3, name: '낙동강 물길' },
-  south: { fx: 0.635, fy: 0.715, z: 1.7, name: '삼한의 남쪽' },
-  world: { fx: 0.54, fy: 0.5, z: 1.05, name: '삼한과 북녘' },
+const OLDMAP_NAME: Readonly<Record<RegionId, string>> = {
+  tutorial: '한강 아래 — 미추홀 · 위례',
+  mahan: '한강에서 차령까지 — 위례 · 목지',
+  jumong: '혼강 골짜기 — 졸본',
+  'byeonhan-mini': '변한의 바닷가',
+  yeongnam: '낙동강 물길',
+  south: '삼한의 남쪽',
+  world: '삼한과 북녘',
 }
-/** 옛 지도 한 칸 — 상자는 16:10, 그림은 가로를 꽉 채운 1600×1559 (세로 비 0.974) */
-function oldMapHtml(k: FrontKit, region: RegionId): string {
-  const m = OLDMAP[region]
+/**
+ * 옛 지도 그림의 틀 — 삼한과 북녘 판과 같은 경위도(world-geo.ts WORLD_PROJ · 같은 높이 자료로 그렸다). 경위도가 그림 위 비율로 곧장 간다
+ * (형 10-25: "게임마다 정확한 위치대로 확대 · 원 쳐지고 강조") — 손으로 짚던 자리는 한강이 4% 어긋나 있었다
+ */
+const OLD_PROJ = { lon0: 119.0, lon1: 132.9, lat0: 32.8, lat1: 45.3 } as const
+/** 그림의 세로 ÷ 가로 (1600×1559) */
+const OLD_HW = 1559 / 1600
+/** 고을 자리가 따로 없는 판의 땅 [서, 남, 동, 북] — 큰 판은 고을 자리보다 손으로 잡은 틀이 낫다 */
+const OLD_BOX: Partial<Record<RegionId, readonly [number, number, number, number]>> = {
+  'byeonhan-mini': [127.9, 34.8, 129.1, 35.5],
+  yeongnam: [127.8, 34.8, 129.6, 36.6],
+  south: [125.9, 34.3, 129.6, 38.1],
+  world: [119.5, 33.0, 132.5, 45.0],
+}
+/** 이 판의 땅 [서, 남, 동, 북] — 고을 자리(경위도)가 있는 판은 고을들을 두른 틀 */
+function regionBox(r: Realm, region: RegionId): readonly [number, number, number, number] {
+  const fixed = OLD_BOX[region]
+  if (fixed !== undefined) return fixed
+  const ll = Object.keys(r.nodes).map((id) => placeOf(region, id)).filter((x): x is readonly [number, number] => x !== undefined)
+  if (ll.length === 0) return OLD_BOX.world!
+  return [Math.min(...ll.map((x) => x[0])), Math.min(...ll.map((x) => x[1])), Math.max(...ll.map((x) => x[0])), Math.max(...ll.map((x) => x[1]))]
+}
+/** 옛 지도 한 칸 — 상자는 16:10, 그림은 가로를 꽉 채운 1600×1559. 판의 땅 가운데로 다가가 땅을 두르는 고리를 친다 */
+function oldMapHtml(k: FrontKit, r: Realm, region: RegionId): string {
+  const [w, s, e, n] = regionBox(r, region)
+  const P = OLD_PROJ
+  const fx = ((w + e) / 2 - P.lon0) / (P.lon1 - P.lon0)
+  const fy = (P.lat1 - (s + n) / 2) / (P.lat1 - P.lat0)
+  // 땅의 너비·높이를 그림 가로 몫으로 — 고리는 그 대각선을 조금 넉넉히 두른다
+  const dx = (e - w) / (P.lon1 - P.lon0)
+  const dy = ((n - s) / (P.lat1 - P.lat0)) * OLD_HW
+  const diag = Math.max(Math.hypot(dx, dy), 0.02)
+  // 땅이 상자 가로의 4할쯤 되게 다가간다 — 그림이 뭉개지지 않게 넷까지, 판이 넓으면 다가가지 않는다
+  const z = Math.min(4, Math.max(1, 0.4 / (diag * 1.1)))
+  // 고리 지름(상자 가로의 몫) — 상자 높이(0.625)를 넘지 않게
+  const ring = Math.min(0.58, Math.max(0.12, diag * z * 1.1))
+  // 그림이 상자를 늘 다 덮게 가운데를 그림 안쪽으로 당기고, 당긴 만큼 고리를 옮긴다 (넓은 판에서 그림 끝이 비어 보였다)
+  const hx = 0.5 / z
+  const hy = 0.3125 / (OLD_HW * z)
+  const cx = Math.min(Math.max(fx, hx), 1 - hx)
+  const cy = Math.min(Math.max(fy, hy), 1 - hy)
+  const rl = 50 + (fx - cx) * z * 100
+  const rt = 50 + ((fy - cy) * OLD_HW * z * 100) / 0.625
   // 상자 가운데에 (fx, fy) 가 오게 — 왼쪽 위 기준으로 키운 뒤 옮긴다 (상자 높이의 반 = 그림 높이의 32.08%)
-  const at = (fx: number, fy: number, z: number): string => `translate(${(50 - fx * z * 100).toFixed(2)}%, ${(32.08 - fy * z * 100).toFixed(2)}%) scale(${z})`
+  const at = (x: number, y: number, zz: number): string => `translate(${(50 - x * zz * 100).toFixed(2)}%, ${(32.08 - y * zz * 100).toFixed(2)}%) scale(${zz})`
   const key = `pmz-${region.replace(/[^a-z]/g, '')}`
-  return `<style>@keyframes ${key}{0%,18%{transform:${at(0.5, 0.5, 1)}}100%{transform:${at(m.fx, m.fy, m.z)}}}</style>`
+  // 이름표는 고리 바로 아래 — 고리 반지름을 상자 높이 몫으로
+  const below = Math.min(44, ((ring / 0.625) * 100) / 2 + 2) + (rt - 50)
+  return `<style>@keyframes ${key}{0%,18%{transform:${at(0.5, 0.5, 1)}}100%{transform:${at(cx, cy, z)}}}</style>`
     + `<div class="pmap"><div class="pmw" style="animation-name:${key}"><img src="${k.art}map/oldmap.jpg" alt=""><b class="pold" style="left:40%;top:36%">옛 조선</b></div>`
-    + `<i class="pring"></i><b class="pmname">${k.esc(m.name)}</b></div>`
+    + `<i class="pring" style="width:${(ring * 100).toFixed(1)}%;left:${rl.toFixed(1)}%;top:${rt.toFixed(1)}%"></i><b class="pmname" style="left:${rl.toFixed(1)}%;top:calc(50% + ${Math.min(92, below).toFixed(1)}%)">${k.esc(OLDMAP_NAME[region])}</b></div>`
 }
 
 /** 지난 판에서 따라온 장수 (계승 가신 — legacy.ts) */
@@ -267,7 +310,7 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
       : region === 'mahan' ? ['서기 8년.', '온조가 위례에 나라를 세운 지 스물여섯 해, 마한의 진왕이 아직 쉰 나라의 우두머리이던 때.']
       : region === 'jumong' ? ['기원전 37년.', '옛 조선이 무너진 지 일흔 해, 동부여의 왕자들이 활 잘 쏘는 사내를 시기하던 때.']
         : ['기원 2세기.', '옛 조선이 무너진 지 삼백 년, 왕이 하나가 아니던 때.']
-    body = `<div class="pl pera">${oldMapHtml(k, region)}<p class="l1">${when}</p><p class="l2">${age}</p>`
+    body = `<div class="pl pera">${oldMapHtml(k, r, region)}<p class="l1">${when}</p><p class="l2">${age}</p>`
       + `<p class="l3">${k.esc(ERA[region])}</p>`
       + `<p class="l4">${r.known !== undefined ? '그러나 너는 아직 이웃밖에 모른다. 지도는 빈 한지다.' : '저마다 제 도읍을 지키며, 남의 도읍을 넘본다.'}</p></div>`
   } else if (step === 1) {
@@ -569,7 +612,8 @@ export const FRONT_CSS = `
 .ap .prologue .pmw img { display: block; width: 100%; height: auto; filter: sepia(.6) saturate(.75) contrast(1.05) brightness(.97); }
 .ap .prologue .pmap::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 50%, #0000 45%, #3a2410aa 100%), url(__ART__map-world/hanji.webp) center / cover; mix-blend-mode: multiply; opacity: .85; }
 .ap .prologue .pold { position: absolute; transform: translate(-50%, -50%); font-family: var(--display); font-weight: 400; font-size: 2.4vw; letter-spacing: .5em; color: #5a2a10aa; text-shadow: 0 0 6px #f0e0c0; white-space: nowrap; pointer-events: none; }
-.ap .prologue .pring { position: absolute; left: 50%; top: 50%; width: 22%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; border: 3px solid #b0281a; box-shadow: 0 0 0 2px #f0d8a088, 0 0 22px #b0281a99; opacity: 0; animation: pring 1.2s ease-out 6.6s both; z-index: 2; }
+.ap .prologue .pring { position: absolute; left: 50%; top: 50%; width: 22%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; border: 3px solid #b0281a; box-shadow: 0 0 0 2px #f0d8a088, 0 0 22px #b0281a99, inset 0 0 18px #f0d8a055; opacity: 0; animation: pring 1.2s ease-out 6.6s both, pglow 2.4s ease-in-out 7.8s infinite; z-index: 2; }
+@keyframes pglow { 50% { box-shadow: 0 0 0 3px #f0d8a0aa, 0 0 34px #d0402acc, inset 0 0 24px #f0d8a077; } }
 @keyframes pring { from { opacity: 0; scale: 1.8; } to { opacity: 1; scale: 1; } }
 .ap .prologue .pmname { position: absolute; left: 50%; top: calc(50% + 13%); transform: translateX(-50%); z-index: 2; padding: 2px 12px; border-radius: 4px; background: #f3e6c8e8; border: 1px solid #7a4a20; color: #4a1f0a; font-family: var(--display); font-weight: 400; font-size: clamp(14px, 2.2vw, 19px); white-space: nowrap; opacity: 0; animation: ink .8s ease-out 7s both; }
 @media (prefers-reduced-motion: reduce) { .ap .prologue .pmw { animation-duration: .01s; animation-delay: 0s; } .ap .prologue .pring, .ap .prologue .pmname { animation-delay: 0s; } }
