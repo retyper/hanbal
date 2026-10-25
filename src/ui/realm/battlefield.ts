@@ -1226,10 +1226,12 @@ export const WAR_CSS = `
 .ap .wf2s .wq { position: absolute; opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 70; }
 .ap .wf2s.foe .wq b { display: inline-block; transform: scaleX(-1); }
 .ap .wf2s .wq b { font-size: clamp(10px, 2.4cqw, 13px); font-weight: 800; letter-spacing: .04em; }
-.ap .wf2s .q-charge { left: 46%; top: 30%; color: #ff8a6a; text-shadow: 0 0 8px #ff4a2a, 0 1px 2px #000; font-size: clamp(16px, 4cqw, 26px); font-weight: 900; }
+/* 돌격 글자는 제 앞줄 위에 — 한가운데(46%)에 두면 적 것(거울 54%)과 반쯤 겹쳐 「돌돌격」으로 읽혔다 (형 10-25) */
+.ap .wf2s .q-charge { left: 33%; top: 12%; transform: translateX(-50%); white-space: nowrap; text-align: center; color: #ff8a6a; text-shadow: 0 0 8px #ff4a2a, 0 1px 2px #000; font-size: clamp(16px, 4cqw, 26px); font-weight: 900; }
 .ap .wf2s .q-charge::before { content: '›››'; display: block; letter-spacing: -2px; animation: wqgo .7s ease-in-out infinite; }
 @keyframes wqgo { 0% { transform: translateX(-6px); opacity: .4; } 60% { opacity: 1; } 100% { transform: translateX(6px); opacity: .2; } }
 .ap .wf2s[data-f="charge"] .q-charge { opacity: 1; }
+.ap .wf2s .q-charge b { font-size: clamp(12px, 3cqw, 15px); }
 .ap .wf2s .q-hold { left: 41%; top: 22%; width: 5px; height: 52%; border-radius: 3px; background: linear-gradient(#ffd27a00, #ffd27a, #ffd27a00); box-shadow: 0 0 12px #ffd27a, 0 0 4px #fff3c8; }
 .ap .wf2s[data-f="hold"] .q-hold { opacity: .9; animation: wqhold 1.2s ease-in-out infinite alternate; } @keyframes wqhold { to { box-shadow: 0 0 22px #ffd27a, 0 0 6px #fff3c8; } }
 .ap .wf2s .q-shoot { left: 22%; top: 12%; width: 44%; height: 50%; border-top: 2px dashed #ffe7a8; border-radius: 50% 50% 0 0; filter: drop-shadow(0 0 3px #ffd27a); }
@@ -1239,7 +1241,7 @@ export const WAR_CSS = `
 .ap .wf2s .q-drum { left: 7%; top: 47%; width: clamp(40px, 11cqw, 64px); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; border: 2px solid #ffd27a; }
 .ap .wf2s[data-l="drum"] .q-drum, .ap .wf2s[data-l="art"] .q-drum { opacity: 1; animation: wqdrum 1s ease-out infinite; } @keyframes wqdrum { from { scale: .6; opacity: 1; } to { scale: 1.5; opacity: 0; } }
 .ap .wf2s[data-l="art"] .q-drum { border-color: #ff9ad8; }
-.ap .wf2s .q-cap { left: 11%; top: 38%; width: 80%; border-top: 2px dashed #ffb070; text-align: center; color: #ffb070; }
+.ap .wf2s .q-cap { left: 11%; top: 38%; width: 80%; border-top: 2px dashed #ffb070; text-align: left; padding-left: 14%; box-sizing: border-box; white-space: nowrap; color: #ffb070; } /* 글자는 제 쪽에 — 가운데 두면 양쪽이 같이 낼 때 겹친다 */
 .ap .wf2s .q-cap b { position: relative; top: -16px; text-shadow: 0 1px 3px #000; }
 .ap .wf2s[data-l="capture"] .q-cap { opacity: 1; }
 .ap .wf2s .q-back { left: 16%; top: 30%; color: #c8d0e0; text-shadow: 0 1px 3px #000; } .ap .wf2s[data-l="retreat"] .q-back { opacity: 1; }
@@ -1718,6 +1720,7 @@ export const WAR_CSS = `
 .ap .wobar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; box-shadow: 0 0 0 2px #000a, 0 4px 14px #000c; }
 .ap .wobar i { display: block; height: 100%; } .ap .wobar i.us { background: linear-gradient(90deg, #3f8f3a, #8fd07a); } .ap .wobar i.foe { background: linear-gradient(90deg, #e08a74, #8a3a2a); }
 .ap .wofoot em { display: inline-block; margin-top: 10px; font-style: normal; font-size: 13.5px; color: #ffd6c8; background: #5a1a10cc; border: 1px solid #c8402a; border-radius: 999px; padding: 3px 12px; }
+.ap .wofoot > em.us { color: #e4ffd8; background: #1f4a1ccc; border-color: #5fae55; }
 .ap .wofoot small { display: block; margin-top: 8px; font-size: 11.5px; color: #e0d0c0aa; }
 @media (prefers-reduced-motion: reduce) { .ap .wopen, .ap .wopen * { animation-duration: .01s !important; animation-delay: 0s !important; } .ap .wopen { animation: woout 2.2s steps(1) forwards !important; } }
 /* 싸움이 열린다 — 계절 띠처럼 가운데 이름 (북 · 종) */
@@ -1761,6 +1764,9 @@ function openHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: str
     `<div class="wosd ${cls}" style="--c:${color(f)}">${emb(f)}<span class="wpf big">${face(hero, art, fallback)}<i></i></span><b>${esc(hname(hero, f))}</b><span>${esc(fname(f))} · ${n.toLocaleString('ko-KR')}명</span>${mixHtml(i)}</div>`
   const share = Math.round((us / Math.max(1, us + them)) * 100)
   // 땅 — 그림 칩으로 (형 10-25: "지형정보라던가 이런것도 이미지나 아이콘으로") · 진군 이야기는 맨 아래 마지막으로 (형: "대로로 당당히 다가섰다 이거는 vs 화면 하단에 마지막 오브젝트로")
+  // 누가 치나 — 우리의 공격·기습 / 적의 침략·기습 / 길 위에서 맞닥뜨림 (형 10-25: "침략은 내가 공격하는것도 있잖아")
+  const sneak = l.ambush !== 'none'
+  const kindWord = l.field === true ? '길에서 맞닥뜨렸다' : weAtk ? (sneak ? '우리의 기습' : '우리의 공격') : (sneak ? '적의 기습' : '적의 침략')
   const chips = terrChips(prev, l, me, foe)
   const ap = chips.find((c) => c.k === 'ap')
   const land = chips.filter((c) => c.k !== 'ap')
@@ -1773,7 +1779,7 @@ function openHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: str
     + `<div class="wohead"><b>${esc(warName(after, l))}</b><span>${esc(sub)}</span></div>`
     + `<div class="woin">${side('us', ourF, ourHero, us, UNIT_ICON.spear, 0)}<div class="wom"><img class="wox" src="${art}ui/vs.png" alt="VS"></div>${side('foe', foeF, foeHero, them, UNIT_ICON.shield, 1)}</div>`
     + `<div class="wofoot"><div class="wobar"><i class="us" style="width:${share}%"></i><i class="foe" style="width:${100 - share}%"></i></div>`
-    + `<em>⚔ ${esc(josa(foe, '과', '와'))} 싸우는 중</em>${terr}`
+    + `<em class="${weAtk ? 'us' : 'foe'}">⚔ ${esc(kindWord)} · ${esc(josa(foe, '과', '와'))} 싸운다</em>${terr}`
     + (intro !== '' ? `<div class="wointro${ap !== undefined && ap.who !== '' ? ` ${ap.who}` : ''}" style="--d:${lastAt.toFixed(2)}s">${ap !== undefined ? `<img src="${art}icon/${ap.icon}.png" alt="">` : ''}<p>${esc(intro)}</p></div>` : '')
     + `<small style="--d:${(lastAt + 0.3).toFixed(2)}s">누르면 넘어간다</small></div></div>`
 }

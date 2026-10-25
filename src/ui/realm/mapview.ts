@@ -468,7 +468,7 @@ export function mapHtml(
     svg += `<path${flow} d="${smoothPath(pts)}" fill="none" stroke="${col}" stroke-width="${(amb ? 11 : onUs ? 10 : 9) * lw}"${dash} marker-end="url(#${head})" opacity=".9"/>`
     // 언제 닿나 — 우리 행군은 말 밑 꼬리표가 말한다(가려지지 않게). 적 행군은 길 위 글씨로 "다음 계절 닿음"
     const when = m.left !== null ? (m.left <= 1 ? '다음 계절' : `${m.left}계절 뒤`) : ''
-    const label = label0 !== '' ? label0 : m.foe === true ? `적 · ${when} 닿음` : m.left !== null ? '' : amb ? '기습' : ''
+    const label = label0 !== '' ? label0 : m.foe === true ? `적 · ${when} 닿음` : m.left !== null ? '' : amb ? '우리 기습' : ''
     // 보인 적의 행군 — 창을 멘 줄 그림 (무엇이 오는지 한눈에)
     // 보인 적의 행군 — 창을 멘 줄 그림을 길 한가운데 바로 위에 얹고, 글씨는 그 밑에 (형 10-23: "보인 적의 행군 이미지가 제대로 된 위치가 아닌 이상한 곳에")
     const cs = signW * 1.2

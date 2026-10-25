@@ -3490,8 +3490,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const where = prev.nodes[l.node]?.name ?? ''
     const men = [l.attacker, ...l.allies].reduce((s, id) => s + (prev.armies[id] !== undefined ? headcount(forceOf(prev, prev.armies[id]!)) : 0), 0)
     root.insertAdjacentHTML('beforeend', `<div class="cere invade"><i class="cbg" style="${sceneBg('event-night-raid')}"></i>`
-      + `<div class="cw"><b>⚔ 침략</b><span class="hname">${emblem(l.atkFaction ?? null, 'iem')}${esc(josa(who, '이', '가'))} ${esc(josa(where, '으로', '로'))} 쳐들어왔다</span>`
-      + `<span>${men > 0 ? `적 군대 약 ${men.toLocaleString('ko-KR')}명 · ` : ''}우리가 지킨다</span><button class="btn pri cok">맞서 싸운다</button></div></div>`)
+      // 누가 치는지 제목에 — 「침략」만 있으면 우리가 치는 것과 헷갈렸다 (형 10-25: "적의 침략이라던가 기습이면 적의 기습이라던가")
+      + `<div class="cw"><b>⚔ ${l.ambush === 'none' ? '적의 침략' : '적의 기습'}</b><span class="hname">${emblem(l.atkFaction ?? null, 'iem')}${esc(josa(who, '이', '가'))} ${esc(josa(where, '으로', '로'))} ${l.ambush === 'none' ? '쳐들어왔다' : '숨어 쳐들어왔다'}</span>`
+      + `<span>${l.ambush === 'caught' ? '숨어 오던 것을 먼저 알아챘다 · ' : l.ambush === 'success' ? '미처 채비를 못 했다 · ' : ''}${men > 0 ? `적 군대 약 ${men.toLocaleString('ko-KR')}명 · ` : ''}우리가 지킨다</span><button class="btn pri cok">맞서 싸운다</button></div></div>`)
     const el = root.lastElementChild as HTMLElement
     ding(snd('war_bell'), 0.5)
     el.querySelector('.cok')?.addEventListener('click', (e) => { e.stopPropagation(); el.remove(); go() })
