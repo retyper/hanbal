@@ -1020,6 +1020,12 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
       if (r.nodes[nb]?.owner === defFaction) r.watch[nb]!.alert = Math.min(R.alertMax, r.watch[nb]!.alert + R.alertOnAmbushed)
     }
   }
+  // 지킬 사람이 아무도 없다 — 군대 없는 고을에 몰래 닿아 장정도 못 모였다. 싸움 없이 들어가 쥔다
+  // (형 10-25: "적이 0명인데 내 군사가 왜 줄어들지? 기습하면 전투도 사실 필요 없는거 아님?" — 0명을 상대로 합을 치르며 우리만 잃었다)
+  if (standing.reduce((s, d) => s + headcount(forceOf(r, d)), 0) < 1) {
+    walkIn(r, atks, node, lines)
+    return
+  }
   // 잠든 적을 친다 — 맞붙기 전에 자다 깬 쪽이 먼저 잃는다 (밤길·여울·절벽이 먹혔을 때)
   if (overWall) for (const d of defenders) scaleMix(d, 1 - R.ambushFirstStrike)
   // 들킨 군대는 기다리던 적에게 걸렸다 — 맞붙기 전에 잃고 사기가 꺾인다. 여울은 물 한가운데서 더, 절벽은 떨어져서
@@ -1147,6 +1153,30 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   })
 }
 
+/** 싸움 없이 들어간다 — 군대가 고을에 닿고, 남의 땅이면 쥔다 (동맹의 땅은 지나갈 뿐) */
+function walkIn(r: Realm, live: readonly Army[], node: RNode, lines: ReportLine[]): void {
+  const lead = live[0]!
+  for (const a of live) {
+    a.march = null
+    a.at = node.id
+    a.came = r.season
+    lines.push({ kind: 'arrive', army: a.id, node: node.id })
+  }
+  if (node.owner !== lead.faction && node.kind !== 'sodo' && !allied(r, lead.faction, node.owner)) {
+    provoke(r, lead.faction, node.owner, lines)
+    noteTake(r, lead.faction, node.owner, node.id)
+    if (node.owner !== null) onTake(r, node.id)
+    freeAtCapital(r, node.id, node.owner, lead.faction, lines)
+    node.owner = lead.faction
+    lines.push({ kind: 'take', faction: lead.faction, node: node.id })
+    revealAround(r, lead.faction, node.id)
+    for (const known of Object.values(r.intel)) {
+      const k = known[node.id]
+      if (k !== undefined) k.force = null
+    }
+  }
+}
+
 /** 3·4·5 — 행군: 남은 계절을 줄이고, 닿은 군대를 무리(협공)로 처리한다. 싸움이 난 고을을 `fought` 에 적는다 */
 function resolveMarches(
   r: Realm, snipes: Readonly<Record<string, SnipeZone>>, tactics: Readonly<Record<string, Tactic>>, lines: ReportLine[], fought: Set<string>,
@@ -1179,26 +1209,7 @@ function resolveMarches(
       fight(r, live, snipes, tactics, lines)
       continue
     }
-    for (const a of live) {
-      a.march = null
-      a.at = node.id
-      a.came = r.season
-      lines.push({ kind: 'arrive', army: a.id, node: node.id })
-    }
-    // 동맹의 땅은 지나갈 뿐 쥐지 않는다
-    if (node.owner !== lead.faction && node.kind !== 'sodo' && !allied(r, lead.faction, node.owner)) {
-      provoke(r, lead.faction, node.owner, lines)
-      noteTake(r, lead.faction, node.owner, node.id)
-      if (node.owner !== null) onTake(r, node.id)
-      freeAtCapital(r, node.id, node.owner, lead.faction, lines)
-      node.owner = lead.faction
-      lines.push({ kind: 'take', faction: lead.faction, node: node.id })
-      revealAround(r, lead.faction, node.id)
-      for (const known of Object.values(r.intel)) {
-        const k = known[node.id]
-        if (k !== undefined) k.force = null
-      }
-    }
+    walkIn(r, live, node, lines)
   }
   // 병력이 바닥난 군대는 흩어진다
   for (const a of Object.values(r.armies)) if (headcount(forceOf(r, a)) < 1) delete r.armies[a.id]

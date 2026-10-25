@@ -185,12 +185,25 @@ export function burnHtml(art: string, side: 'l' | 'r'): string {
  * 전장 한가운데 물 한 줄기 (SVG · 상자 비율대로 늘어난다) — 나루·갈대 물가는 강, 갯벌은 젖은 진흙과 물웅덩이.
  * 위(지평선 쪽)는 좁고 흐리게, 아래는 넓게 — 진의 원근과 맞춘다. 물결 줄은 천천히 흘러내린다 (CSS wrvflow)
  */
-function waterSvg(mud: boolean): string {
-  // 왼둑·오른둑 — 아래로 갈수록 벌어진다 (0~100 상자 비율)
-  const left = 'M47 18 C46 32, 45.5 40, 44 52 S41.5 74, 40.5 100'
-  const right = 'L59.5 100 C58.6 86, 57.5 72, 56.5 60 S54.2 34, 53 18 Z'
-  const band = `${left} ${right}`
-  const bank = 'M45.6 18 C44.4 32, 43.6 40, 42 52 S39 74, 37.6 100 L62.4 100 C61.2 86, 60 72, 58.8 60 S55.8 34, 54.4 18 Z'
+/** 물길의 가운데 · 반폭 (상자 세로 y% 에서) — 굽이치며(사인) 아래로 갈수록 넓어진다 (원근) */
+const rvC = (y: number): number => 50 + 3.4 * Math.sin((y - 18) * 0.078) - (y - 18) * 0.018
+const rvW = (y: number): number => 1.1 + (y - 18) * 0.072
+/** 둑 선 하나 — 위(18)에서 아래(100)로, 가운데에서 side·(반폭+더) 만큼 */
+const rvEdge = (side: -1 | 1, more: number): Array<[number, number]> => {
+  const out: Array<[number, number]> = []
+  for (let y = 18; y <= 100; y += 2) out.push([rvC(y) + side * (rvW(y) + more * (0.4 + (y - 18) / 82)), y])
+  return out
+}
+const rvPoly = (more: number): string => {
+  const l = rvEdge(-1, more)
+  const rr = rvEdge(1, more).reverse()
+  return `M${[...l, ...rr].map(([x, y]) => `${x.toFixed(2)} ${y}`).join(' L')} Z`
+}
+const rvLine = (side: -1 | 1): string => `M${rvEdge(side, 0).map(([x, y]) => `${x.toFixed(2)} ${y}`).join(' L')}`
+
+export function waterSvg(mud: boolean): string {
+  const band = rvPoly(0)
+  const bank = rvPoly(1.8)
   if (mud) {
     const pools = [[49.5, 46, 2.6, 1.1], [51.8, 62, 3.6, 1.4], [48, 78, 4.4, 1.7], [53, 91, 5, 1.8]]
       .map(([x, y, rx, ry]) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#wrvP)"/>`).join('')
@@ -201,23 +214,24 @@ function waterSvg(mud: boolean): string {
       + `<path d="M50 24 C49 40, 52 52, 50.5 66 S48 86, 50 100" fill="none" stroke="#9fb6bd" stroke-width=".6" opacity=".55"/>${pools}`
       + `<path class="wrv-gloss" d="M48.5 50 Q50 49, 51.5 50 M47 70 Q50 69, 53 70 M46 88 Q50 87, 54 88" fill="none" stroke="#e8f2f4" stroke-width=".35"/></svg>`
   }
-  const ripples = [30, 42, 54, 66, 78, 90].map((y, i) => {
-    const w = 2 + y * 0.06
-    const x = 50 + (i % 2 === 0 ? -1 : 1) * 0.8
-    return `<path class="wrv-rip" style="--i:${i}" d="M${(x - w).toFixed(1)} ${y} Q${x.toFixed(1)} ${y - 0.8}, ${(x + w).toFixed(1)} ${y}" fill="none" stroke="#e8f6f8" stroke-width=".35"/>`
+  // 물결 — 물길 가운데를 따라 짧은 반짝임이 천천히 흘러내린다
+  const ripples = [28, 37, 46, 55, 64, 73, 82, 91].map((y, i) => {
+    const w = rvW(y) * 0.5
+    const x = rvC(y) + (i % 2 === 0 ? -1 : 1) * rvW(y) * 0.3
+    return `<path class="wrv-rip" style="--i:${i}" d="M${(x - w).toFixed(2)} ${y} Q${x.toFixed(2)} ${(y - 0.7).toFixed(1)}, ${(x + w).toFixed(2)} ${y}" fill="none" stroke="#e8f6f8" stroke-width=".3"/>`
   }).join('')
   return `<svg class="wrv" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs>`
-    + `<linearGradient id="wrvW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fb3c4" stop-opacity="0"/><stop offset=".22" stop-color="#5f9fb3" stop-opacity=".85"/><stop offset=".6" stop-color="#2f6f86"/><stop offset="1" stop-color="#1f4f66"/></linearGradient>`
-    + `<linearGradient id="wrvS" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0d2a36" stop-opacity=".45"/><stop offset=".25" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#d8f0f6" stop-opacity=".22"/><stop offset=".75" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#0d2a36" stop-opacity=".45"/></linearGradient></defs>`
-    + `<path d="${bank}" fill="#8a7a52" opacity=".5"/><path d="${band}" fill="url(#wrvW)"/><path d="${band}" fill="url(#wrvS)"/>`
-    + `<path d="${left}" fill="none" stroke="#e8f2e8" stroke-width=".45" opacity=".55"/><path d="M53 18 C54.2 34, 56.5 60, 56.5 60 S58.6 86, 59.5 100" fill="none" stroke="#e8f2e8" stroke-width=".45" opacity=".55"/>`
+    + `<linearGradient id="wrvW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fbccb" stop-opacity="0"/><stop offset=".2" stop-color="#6aa5b6" stop-opacity=".55"/><stop offset=".55" stop-color="#3b7c90" stop-opacity=".72"/><stop offset="1" stop-color="#245a70" stop-opacity=".8"/></linearGradient>`
+    + `<linearGradient id="wrvB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a7a52" stop-opacity="0"/><stop offset=".25" stop-color="#7d6c48" stop-opacity=".35"/><stop offset="1" stop-color="#5e4e32" stop-opacity=".55"/></linearGradient></defs>`
+    + `<path d="${bank}" fill="url(#wrvB)"/><path d="${band}" fill="url(#wrvW)"/>`
+    + `<path d="${rvLine(-1)}" fill="none" stroke="#eef6ee" stroke-width=".4" stroke-dasharray="2 1.4" opacity=".5"/><path d="${rvLine(1)}" fill="none" stroke="#eef6ee" stroke-width=".4" stroke-dasharray="1.6 1.8" opacity=".45"/>`
     + `${ripples}</svg>`
 }
 
-/** 강둑의 갈대 — [상자 가로 %, 진의 세로 oy, 크기]. waterSvg 의 둑 선에 맞췄다 (tp 의 원근 기울기는 빼고 넣는다) */
+/** 강둑의 갈대 — [상자 가로 %, 진의 세로 oy, 크기]. waterSvg 의 둑 선을 따라 (tp 의 원근 기울기는 빼고 넣는다) */
 const REEDS_AT: ReadonlyArray<readonly [number, number, number]> = [
-  [46, -30, 0.7], [44, -8, 0.85], [41, 16, 1], [40, 34, 1.1],
-  [54.5, -26, 0.65], [56.6, -2, 0.8], [58.6, 22, 0.95], [60, 38, 1.05],
+  ...[-30, -8, 16, 34].map((oy, i): readonly [number, number, number] => [rvC(60 + oy) - rvW(60 + oy) - 1.2, oy, 0.7 + i * 0.13]),
+  ...[-26, -2, 22, 38].map((oy, i): readonly [number, number, number] => [rvC(60 + oy) + rvW(60 + oy) + 1.2, oy, 0.65 + i * 0.13]),
 ]
 
 /** 한 합이 풀리는 사이 (초) — 깃발 → 이야기 → 사람 수 */

@@ -47,14 +47,24 @@ function guarded(r: Realm): void {
 }
 
 describe('기습이 먹히면', () => {
-  it('장정이 모이지 못한다 — 군대 없는 읍락은 그대로 쥔다', () => {
-    const s = seedWhere('success')
-    const front = hit(byeonhanMini(s), false)
-    const amb = hit(byeonhanMini(s), true)
+  it('장정이 모이지 못한다 — 군대 없는 읍락은 싸움 없이 쥔다 (0명과 싸우며 우리만 잃지 않는다)', () => {
+    // 정면이면 장정과 싸운다
+    const front = hit(byeonhanMini(1), false)
     assert.ok(front.militia > 0)
-    assert.equal(amb.militia, 0)
-    assert.equal(amb.p, 1)
-    assert.ok(front.p < 1)
+    // 기습이 먹힌 시드 — 싸움 줄이 없고 그대로 쥔다 (형 10-25: "적이 0명인데 내 군사가 왜 줄어들지?")
+    let found = false
+    for (let s = 1; s < 500 && !found; s++) {
+      const r = byeonhanMini(s)
+      const me = r.armies['a-us']!.faction
+      const men0 = Object.values(r.armies['a-us']!.mix).reduce((x: number, v) => x + (v ?? 0), 0)
+      const { next, report } = advance(r, [{ kind: 'march', army: 'a-us', edge: 'e03', ambush: true }])
+      if (report.lines.some((l) => l.kind === 'battle')) continue // 들켰다 — 장정과 싸운다
+      assert.ok(report.lines.some((l) => l.kind === 'take' && l.faction === me))
+      const men1 = Object.values(next.armies['a-us']?.mix ?? {}).reduce((x: number, v) => x + (v ?? 0), 0)
+      assert.ok(men1 >= men0 - 1, `싸움 없이 들어갔는데 군사가 줄었다 ${men0} → ${men1}`)
+      found = true
+    }
+    assert.ok(found)
   })
 
   it('성·지형을 안 받는다 — 울타리·높은 터가 있어도 없어도 같은 승산', () => {

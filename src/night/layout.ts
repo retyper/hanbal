@@ -20,6 +20,8 @@ export interface Light {
   readonly carrier: number
   /** 모닥불에 꽂힌 살 — fireHits 에 닿으면 사그라든다 (다시 붙이면 0) */
   hits: number
+  /** 살이 지나간다 — 창호지로 가는 살길 위의 불 (사랑채 앞) */
+  readonly pass?: boolean
 }
 
 /**
@@ -131,7 +133,7 @@ interface Blueprint {
     readonly patrol?: { readonly x0: number; readonly x1: number }
     readonly min?: Guard
   }>
-  readonly lights: ReadonlyArray<{ readonly kind: LightKind; readonly x: number; readonly y: number; readonly min?: Guard }>
+  readonly lights: ReadonlyArray<{ readonly kind: LightKind; readonly x: number; readonly y: number; readonly min?: Guard; readonly pass?: boolean }>
   readonly solids: ReadonlyArray<Omit<Solid, never>>
   readonly door?: Door
   readonly chief?: { readonly x: number; readonly y: number }
@@ -200,7 +202,9 @@ const BLUEPRINTS: readonly Blueprint[] = [
       { x: 12.5, pose: 'walk', holds: 'lantern', facing: 1, patrol: { x0: 10.5, x1: 15 }, min: 2 },
     ],
     lights: [
-      { kind: 'torch', x: 16.6, y: 1.9 },
+      // 마당 등대의 횃불 — 창호지(23.4~25.6)로 가는 살길 위라 살이 지나간다. 막았더니 머리를 겨눈 살이 보이지 않는 불에 걸린 듯 멈췄다
+      // (형 10-25: "창호지 머리 쏘는데 촛불 오브젝트 … 이거에 막혀버려서 암살실패했어. 왜 안 없애냐")
+      { kind: 'torch', x: 16.6, y: 1.9, pass: true },
       // 마루 끝(21.2)에 매달았던 횃불은 뺐다 — 창호지로 가는 살이 거기 걸렸다 (형 10-23: "창호지 쏠 때 촛불 하나가 창호지 앞에서 걸려. 지워 버려")
       { kind: 'candle', x: 24.5, y: 1.4 },
     ],
@@ -269,7 +273,7 @@ export function bakeScene(seed: number, index: number, guard: Guard = 1): Scene 
     })
     if (s.holds === 'lantern') lights.push({ id: lights.length, kind: 'lantern', x: s.x + dx, y: g + 1.05, lit: true, carrier: id, hits: 0 })
   })
-  for (const l of bp.lights) if ((l.min ?? 0) <= guard) lights.push({ id: lights.length, kind: l.kind, x: l.x, y: g + l.y, lit: true, carrier: -1, hits: 0 })
+  for (const l of bp.lights) if ((l.min ?? 0) <= guard) lights.push({ id: lights.length, kind: l.kind, x: l.x, y: g + l.y, lit: true, carrier: -1, hits: 0, ...(l.pass === true ? { pass: true } : {}) })
   if (bp.chief !== undefined) {
     figures.push({
       id: figures.length, role: 'chief', x: bp.chief.x, y: g + bp.chief.y, pose: 'stand', holds: null, facing: -1, patrol: null,

@@ -341,7 +341,7 @@ function sweep(n: Night, ax: number, ay: number, bx: number, by: number, angle: 
     }
     // 불 — 맞히면 꺼진다 (창호지 뒤 촛불은 문 너머라 안 닿는다)
     for (const l of sc.lights) {
-      if (!l.lit || l.kind === 'candle') continue
+      if (!l.lit || l.kind === 'candle' || l.pass === true) continue
       if (l.kind === 'fire') {
         // 모닥불 — 위에 매단 물동이를 맞히면 쏟아져 꺼진다. 불길에 든 살은 타 버리고 불똥만 튄다 (살로 불을 끄진 못한다)
         if ((x - l.x) ** 2 + (y - (l.y + P.night.jarHeight)) ** 2 <= (P.night.jarRadius + P.night.hitSlop) ** 2) {
