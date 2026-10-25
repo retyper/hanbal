@@ -1684,8 +1684,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 이번 계절 아직 안 고른 것 — 사건 카드 · 답하지 않은 사신의 청 */
   function repTodo(): number {
     const r = realm!
-    // 배우는 판은 잠그지 않는다 — 띠·고리가 「확인」을 가리키는데 잠겨 9/12 에서 막혔다 (답하지 않으면 거절 그대로)
-    if (r.region === 'tutorial') return 0
+    // 배우는 판도 화면 가득 — 고리는 고를 단추를 가리킨다 (tutorial DISMISS) (형 10-25: "조공요구도 해적도 거래요청도 다 화면의 대빵 크게")
     const c = r.card
     const card = c !== undefined && c !== null && c.season === r.season && !r.outcome && answers[`card:${c.season}`] === undefined ? 1 : 0
     return card + openAsks(r, me()).filter((a) => answers[a.id] === undefined).length
@@ -1698,8 +1697,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const a of asks) {
       const lead = realm!.heroes[realm!.factions[a.from]?.ruler ?? rulerId(a.from)]
       const ans = answers[a.id]
-      h += `<div class="askc ${a.kind === 'demand' ? 'threat' : ''}"><div class="an">${bust(lead, 'rface')}<div class="fn"><b>${emblem(a.from, 'fem')}${esc(realm!.factions[a.from]?.name ?? '')}</b>`
-      h += `<span class="mute">${ASK_KIND_NAME[a.kind]}</span></div></div><p>${esc(askLine(a, realm!.factions[a.from]?.name ?? '', a.node !== undefined ? (realm!.nodes[a.node]?.name ?? '') : ''))}</p>`
+      // 청마다 그림 — 화면 가득일 때 크게 (무슨 청인지 그림 · 누가 보냈는지 얼굴)
+      h += `<div class="askc ${a.kind === 'demand' ? 'threat' : ''}"><div class="aqh">${icon(`ask-${a.kind === 'demand' ? 'tribute' : a.kind}`, 'aqi')}<b>사신의 청 · ${esc(ASK_KIND_NAME[a.kind])}</b></div><div class="an">${bust(lead, 'rface')}<div class="fn"><b>${emblem(a.from, 'fem')}${esc(realm!.factions[a.from]?.name ?? '')}</b>`
+      h += `<span class="mute">${esc(lead?.name ?? '')}</span></div></div><p>${esc(askLine(a, realm!.factions[a.from]?.name ?? '', a.node !== undefined ? (realm!.nodes[a.node]?.name ?? '') : ''))}</p>`
       if (a.why !== undefined && readsMind(realm!, a.from)) h += heardHtml(realm!, a.from, `저들이 이 청을 낸 까닭은 이렇습니다 — ${whyLine(a.why, a.about !== undefined ? (realm!.factions[a.about]?.name ?? '') : '')}`)
       h += `<div class="btns"><button class="btn ${ans === true ? 'on' : ''}" data-act="answer" data-id="${a.id}" data-yes="1">받는다</button>`
       h += `<button class="btn ${ans === false ? 'on' : ''}" data-act="answer" data-id="${a.id}" data-yes="0">거절한다</button>`

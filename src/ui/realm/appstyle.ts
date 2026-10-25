@@ -534,7 +534,14 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .mcard.fulld .cardc .cimg { width: 100%; aspect-ratio: 16 / 9; max-height: 34vh; }
 .ap .mcard.fulld .cardc .cb { flex: 1; } .ap .mcard.fulld .cardc .cb > b { font-size: 18px; } .ap .mcard.fulld .cardc .cb > p { font-size: 15.5px; line-height: 1.45; }
 .ap .mcard.fulld .cardc .copt { padding: 12px 14px; font-size: 16px; border-width: 1.5px; } .ap .mcard.fulld .cardc .copt > span { font-size: 13.5px; }
-.ap .mcard.fulld .askc { margin: 0; padding: 12px; } .ap .mcard.fulld .askc .btns .btn { padding: 11px 16px; font-size: 15.5px; }
+.ap .askc .aqh { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; } .ap .askc .aqh b { color: var(--gold); font-size: 13.5px; } .ap .askc .aqh .aqi { width: 26px; height: 26px; object-fit: contain; }
+/* 화면 가득 — 사신의 청을 사건 카드만큼 크게 (형 10-25: "어린애도 알지") */
+.ap .mcard.fulld .askc { margin: 0; padding: 14px; border-color: #e0b860; box-shadow: 0 0 0 1px #e0b86033 inset, 0 10px 30px #000a; }
+.ap .mcard.fulld .askc.threat { border-color: #e06a4a; box-shadow: 0 0 0 1px #e06a4a55 inset, 0 0 24px #c0392b55; }
+.ap .mcard.fulld .askc .aqh { flex-direction: column; gap: 4px; margin-bottom: 8px; } .ap .mcard.fulld .askc .aqh .aqi { width: min(34vw, 150px); height: auto; aspect-ratio: 1; filter: drop-shadow(0 6px 12px #000a); } .ap .mcard.fulld .askc .aqh b { font-size: 20px; }
+.ap .mcard.fulld .askc .an { justify-content: center; } .ap .mcard.fulld .askc .an .rface { width: 64px; height: 64px; } .ap .mcard.fulld .askc .an .fn b { font-size: 16px; }
+.ap .mcard.fulld .askc > p { font-size: 16px; line-height: 1.5; text-align: center; }
+.ap .mcard.fulld .askc .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; } .ap .mcard.fulld .askc .btns .btn { justify-content: center; padding: 14px 16px; font-size: 17px; } .ap .mcard.fulld .askc .btns > .mute { grid-column: 1 / -1; text-align: center; }
 .ap .mcard.fulld .fdnote { margin: 12px 0 0; text-align: center; color: var(--mute); font-size: 13px; }
 .ap .mcard .rdecide .rdh { margin: 0 0 6px; color: #ffd27a; } .ap .mcard .rdecide .rdh b { display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 11px; background: #c0392b; color: #fff; font-size: 13px; }
 .ap .mcard .repfoot { position: sticky; bottom: -4px; margin: 8px -4px -4px; padding: 8px 4px 4px; background: linear-gradient(#1a130c00, #1a130cf0 35%); z-index: 2; }

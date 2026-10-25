@@ -146,7 +146,8 @@ export function tutBandHtml(i: number, esc: (s: string) => string, stuck = false
 // ───────── 스포트라이트 — 누를 곳만 밝고, 그곳만 눌린다
 
 /** 가려졌을 때 먼저 닫을 것 — [덮는 것, 그 안의 닫기 단추, 갈래]: 보고판의 「확인」 · 열린 판의 손잡이. 띠 위에 그 말이 한 줄 붙는다 (TUT_CSS 의 data-pre) */
-const DISMISS: ReadonlyArray<readonly [string, string, string]> = [['.modal', '[data-act="rep-close"]', 'rep'], ['.sheet', '.grip', 'grip']]
+// 보고판이 화면 가득(정할 것이 남음)이면 「확인」이 없다 — 고를 단추(사건 카드 · 사신의 청 거절)를 가리킨다
+const DISMISS: ReadonlyArray<readonly [string, string, string]> = [['.modal', '[data-act="rep-close"], .fulld [data-act="card-pick"], .fulld [data-act="answer"]', 'rep'], ['.sheet', '.grip', 'grip']]
 
 export interface Spot {
   /** 지금 단계와 판 — 없으면 끈다 */
