@@ -68,6 +68,11 @@ export function toggleBring(id: string, max: number): void {
   else if (ids.length < max) saveBring([...ids, id])
 }
 
+/** 「혼자 간다」 — 고름을 비운다 (다음 판에 다시 고른다) */
+export function clearBring(): void {
+  saveBring([])
+}
+
 /** 새 판을 열 때 — 고른 이의 처음 몸. 배우는 판이면 아무도 (몸은 영웅전 명부에서) */
 export function takeRetainers(region: RegionId, tier: number, bodyOf: (id: string) => Hero | undefined): Hero[] {
   if (region === 'tutorial') return []
@@ -100,6 +105,13 @@ export const LEGACY_CSS = `
 .ap .retain .rtc.on { opacity: 1; border-color: #e0b860; background: linear-gradient(#2c2618, #1f1710); } .ap .retain .rtc.on i { color: #f0c860; }
 .ap .retain .rtc.full { cursor: default; opacity: .4; }
 .ap .front .retain.carry { margin: 8px 0 14px; }
+/* 판을 열기 전 「데려갈 장수」 팝업 */
+.ap .bringov { position: absolute; inset: 0; z-index: 92; display: flex; align-items: center; justify-content: center; padding: 16px; background: #000b; }
+.ap .bringov .bringbox { position: relative; width: min(560px, 100%); max-height: 90%; overflow-y: auto; padding: 16px 16px 14px; border-radius: 16px; border: 1px solid #c9a45a; background: #1f1710f8; box-shadow: 0 10px 40px #000c; }
+.ap .bringov .retain { margin: 0; } .ap .bringov .retain h4 { font-size: 18px; } .ap .bringov .retain .rtl { justify-content: center; }
+.ap .bringov .retain .rtc { width: 92px; } .ap .bringov .retain .rtc img, .ap .bringov .retain .rtc .nof { width: 64px; height: 64px; }
+.ap .bringov .bx { position: absolute; right: 10px; top: 8px; border: 0; background: none; color: #cbbf9f; font-size: 18px; cursor: pointer; }
+.ap .bringov .bringgo { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
 .ap .tierp { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 10px; } .ap .tierp > b { color: #f0a070; } .ap .tierp b { color: #f0a070; }
 .ap .tierp .seg { flex-wrap: wrap; } .ap .tierp .seg button { min-width: 44px; }
 .ap .tierp .seg button.locked { opacity: .45; cursor: default; } .ap .tierp .seg button.apex:not(.locked) { color: #ffb08a; border-color: #c0603a; }

@@ -44,7 +44,7 @@ import { canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, together, inheritOf
 import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
-import { LEGACY_CSS, bringHtml, toggleBring } from './legacy.ts'
+import { LEGACY_CSS, bringHtml, clearBring, toggleBring } from './legacy.ts'
 import { DEX_CSS, dexHtml, dexToastHtml, loadDex, recordDex, type DexBoard } from './dex.ts'
 import { DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
 import { LEVEL_LINE, TIER_MAX, levelName } from '../../realm/tier.ts'
@@ -534,6 +534,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let heroTab: 'cmd' | 'mine' | 'jail' | 'foe' = 'cmd'
   /** 「명령」에서 연 일 창 — null 이면 일 카드 여섯 · cmdHero 는 그 창에서 고른 장수 ('' 이면 그 일에 가장 맞는 이) */
   let cmdJob: CmdJob | null = null
+  /** 판을 열기 전 「데려갈 장수」 팝업 — 고른 판 (형 10-25: "게임 시작할 때 데려갈 장수가 팝업으로 · 영웅전 내 기록의 장수만 · 가능한 수대로 체크") */
+  let bringAsk: { nation: string; region: RegionId; tier: number } | null = null
   /** 첫 화면 「다른 판」에서 ✕ 를 한 번 누른 판 — 한 번 더 누르면 지운다 */
   let slotArmed: number | null = null
   let cmdHero = ''
@@ -2805,6 +2807,23 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return t === null ? '' : `<button class="todochip" data-act="tab" data-tab="${t.tab}">👉 이번 계절 · ${esc(t.line)}</button>`
   }
 
+  /** 판을 연다 — 데려갈 수 있는 장수가 있으면 먼저 「데려갈 장수」 팝업 (배우는 판·동행이 없는 난세·영웅전에 거느린 이가 없으면 곧장) */
+  function startWithBring(nation: string, region: RegionId, tier: number): void {
+    if (region === 'tutorial' || retainMaxOf(tier) === 0 || servedHeroes().length === 0) { host.onNewGame(nation, region, tier); return }
+    bringAsk = { nation, region, tier }
+    bringPopup()
+  }
+  /** 「데려갈 장수」 팝업을 (다시) 그린다 — 영웅전에서 거느려 본 장수만 · 난세가 허락하는 수까지 체크 */
+  function bringPopup(): void {
+    if (bringAsk === null) return
+    const max = retainMaxOf(bringAsk.tier)
+    const body = `<div class="bringbox" role="dialog" aria-label="데려갈 장수"><button class="bx" data-act="bring-x" aria-label="닫기">✕</button>${bringHtml(DEX_KIT, servedHeroes(), max)}`
+      + `<div class="bringgo"><button class="btn ghost" data-act="bring-none">혼자 간다</button><button class="btn pri" data-act="bring-go">이대로 떠난다</button></div></div>`
+    let ov = root.querySelector<HTMLElement>('.bringov')
+    if (ov === null) { root.insertAdjacentHTML('beforeend', `<div class="bringov"></div>`); ov = root.querySelector<HTMLElement>('.bringov')! }
+    ov.innerHTML = body
+  }
+
   /** 영웅전에 「거느림」으로 오른 장수 — 판을 열 때 데려갈 수 있는 이 (군주는 빼고) */
   function servedHeroes(): ReadonlyArray<{ id: string; name: string }> {
     const dex = loadDex()
@@ -3465,9 +3484,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         return titleHtml(KIT, realm, host.savedAt(), installCard() + acctLine() + links, realm === null && !tutorialOver(), dexBtn, host.slots?.() ?? [], slotArmed)
       }
       case 'dex': return dexHtml(DEX_KIT, f.board, f.sel, f.back === null ? '판으로' : '처음으로')
-      case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null), tierWon, tierHtml('jumong', chapTier, 'chap-tier') + bringHtml(DEX_KIT, servedHeroes(), retainMaxOf(chapTier)))
+      case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null), tierWon, tierHtml('jumong', chapTier, 'chap-tier'))
       case 'nations': return nationsHtml(KIT, f.region)
-      case 'detail': return detailHtml(KIT, f.region, f.id, f.region === 'tutorial' ? '' : tierHtml(f.region) + bringHtml(DEX_KIT, servedHeroes(), retainMaxOf(Math.min(tierPick[f.region] ?? 1, tierOpen(f.region)))))
+      case 'detail': return detailHtml(KIT, f.region, f.id, f.region === 'tutorial' ? '' : tierHtml(f.region))
     }
   }
 
@@ -3705,8 +3724,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const title = ours ? '사로잡았다' : '사로잡혔다'
     const line = ours ? `${josa(where, '에서', '에서')} 적장을 붙잡아 옥에 가두었다` : `${josa(where, '에', '에')} 붙잡혀 갔다`
     const how = ours ? '회유하면 우리 장수가 된다 — 장수 판의 「옥에 가둔 적장」' : '화친을 맺거나 그 나라의 도읍을 치면 풀려 돌아온다'
-    return `<div class="cere hire capt${ours ? '' : ' lost'}" style="--gc:${ours ? '#e0b860' : '#c0504a'}"><i class="cbg" style="${sceneBg(bg)}"></i><i class="cglow"></i>`
-      + `<div class="hframe">${bust(x, 'hbust')}<i class="hfr"></i><i class="crope"></i></div><i class="cflash"></i>`
+    // 옥 — 금 액자·밧줄 대신 쇠 테, 얼굴이 드러난 뒤 쇠창살이 위에서 철컹 내려와 닫힌다 (형 10-25: "포로인데 금액자 · 감옥 같은 액자 · 쇠창살이 위에서 아래로 철컹")
+    const bars = `<i class="jbars">${'<b></b>'.repeat(7)}<s class="t"></s><s class="m"></s></i>`
+    return `<div class="cere hire capt${ours ? '' : ' lost'}" style="--gc:${ours ? '#9aa3ad' : '#c0504a'}"><i class="cbg" style="${sceneBg(bg)}"></i><i class="cglow"></i>`
+      + `<div class="hframe">${bust(x, 'hbust')}<i class="jail"></i>${bars}</div><i class="cflash"></i>`
       + `<div class="cw"><b>${title}</b><span class="hname">${esc(x.name)}</span><span>${esc(line)}</span><em>${esc(how)}</em>`
       + `<button class="btn pri cok">확인</button></div></div>`
   }
@@ -3762,7 +3783,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const capt = el.classList.contains('capt')
       const hire = el.classList.contains('hire') && !capt
       if (document.visibilityState === 'visible') {
-        if (capt) ding(snd(el.classList.contains('lost') ? 'defeat' : 'capture'), 0.5)
+        if (capt) {
+          ding(snd(el.classList.contains('lost') ? 'defeat' : 'capture'), 0.5)
+          // 쇠창살이 닫히는 그 때 — 쇠판 소리와 떨림
+          window.setTimeout(() => { if (el.isConnected) { ding(snd('cmd_hold'), 0.75, 0.9); buzz([50, 30, 80]) } }, P.realm.captSlamMs)
+        }
         else if (hire) { for (const t of P.realm.hireCutMs) window.setTimeout(() => ding(snd('cmd_duel'), 0.32), t); window.setTimeout(() => ding(snd('dex_new'), 0.55), P.realm.hirePopMs) }
         else ding(snd(el.classList.contains('wed') ? 'wed' : 'birth'), 0.5) // 혼례는 형이 고른 국악 가락 (10-24 · 전엔 종 세 번)
       }
@@ -4240,7 +4265,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'lobby': saveDraft(); front = { kind: 'title' }; sheet = null; armySel = []; clearParty(); paint(); return
       case 'fr-board':
         // 캠페인의 장은 나라를 고르지 않는다 — 배우는 판은 백제(온조), 2장은 고구려(주몽)
-        { const ch = chapterOfRegion(d['v'] as RegionId); if (ch !== undefined) { host.onNewGame(ch.nation, d['v'] as RegionId, d['v'] === 'tutorial' ? 1 : chapTier); return } }
+        { const ch = chapterOfRegion(d['v'] as RegionId); if (ch !== undefined) { startWithBring(ch.nation, d['v'] as RegionId, d['v'] === 'tutorial' ? 1 : chapTier); return } }
         front = { kind: 'nations', region: d['v'] as RegionId }; $('.mapwrap').scrollTop = 0; paint(); return
       case 'fr-tutorial': host.onNewGame('baekje', 'tutorial'); return
       case 'fr-locked': return
@@ -4256,13 +4281,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         return
       }
       case 'fr-nation': if (front !== null && front.kind === 'nations') front = { kind: 'detail', region: front.region, id: d['id']! }; $('.mapwrap').scrollTop = 0; paint(); return
-      case 'fr-start': if (front !== null && front.kind === 'detail') host.onNewGame(d['id']!, front.region, Math.min(tierPick[front.region] ?? 1, tierOpen(front.region))); return
+      case 'fr-start': if (front !== null && front.kind === 'detail') startWithBring(d['id']!, front.region, Math.min(tierPick[front.region] ?? 1, tierOpen(front.region))); return
+      case 'bring-go': { const b = bringAsk; bringAsk = null; root.querySelector('.bringov')?.remove(); if (b !== null) host.onNewGame(b.nation, b.region, b.tier); return }
+      case 'bring-none': { const b = bringAsk; bringAsk = null; root.querySelector('.bringov')?.remove(); clearBring(); if (b !== null) host.onNewGame(b.nation, b.region, b.tier); return }
+      case 'bring-x': bringAsk = null; root.querySelector('.bringov')?.remove(); return
       case 'fr-again': if (realm !== null) { const rg = realm.region ?? 'byeonhan-mini'; host.onNewGame(realm.player, rg, Math.min(realm.tier ?? 1, tierOpen(rg))) } return
       case 'tier-pick': if (front !== null && front.kind === 'detail') tierPick[front.region] = Number(d['v']); paint(); return
       case 'chap-tier': chapTier = Number(d['v']); paint(); return
       case 'goal-fold': try { localStorage.setItem(GOAL_FOLD_KEY, goalFolded() ? '0' : '1') } catch { /* 저장 못 하는 곳 */ } paint(); return
       case 'fr-look': looking = true; paint(); return
-      case 'bring': toggleBring(d['id']!, Number(d['max'] ?? 0)); paint(); return
+      case 'bring': toggleBring(d['id']!, Number(d['max'] ?? 0)); if (bringAsk !== null) bringPopup(); else paint(); return
       case 'wed': {
         const a = d['id']!
         const b = d['with']!

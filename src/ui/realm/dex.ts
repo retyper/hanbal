@@ -98,7 +98,7 @@ export type DexBoard = RegionId | 'wander' | 'all' | 'clan'
 const BOARD_NAME: Readonly<Record<RegionId | 'wander', string>> = {
   tutorial: '배우는 판', mahan: '온조 장', jumong: '주몽 장', seorabeol: '혁거세 장', 'byeonhan-mini': '작은 판', yeongnam: '큰 판', south: '삼한 남부', world: '삼한과 북녘', wander: '떠돌이',
 }
-const TABS: readonly Exclude<DexBoard, 'clan'>[] = ['all', 'byeonhan-mini', 'yeongnam', 'south', 'world', 'wander']
+const TABS: readonly Exclude<DexBoard, 'clan'>[] = ['all', 'mahan', 'jumong', 'seorabeol', 'byeonhan-mini', 'yeongnam', 'south', 'world', 'wander']
 export const LV_NAME = ['모른다', '들음', '만남', '사로잡음', '거느림'] as const
 
 interface DexKit {

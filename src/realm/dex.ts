@@ -17,6 +17,9 @@ import { MINI_DATA } from './data/regions/byeonhan-mini.ts'
 import { YEONGNAM_DATA } from './data/regions/yeongnam.ts'
 import { SOUTH_DATA } from './data/regions/south.ts'
 import { WORLD_DATA } from './data/regions/world.ts'
+import { startMahan } from './data/regions/mahan.ts'
+import { startJumong } from './data/regions/jumong.ts'
+import { startSeorabeol } from './data/regions/seorabeol.ts'
 import { knows } from './discovery.ts'
 import { heroSeen, wanderersFor } from './heroes.ts'
 import type { Hero, Realm, RegionId } from './types.ts'
@@ -64,11 +67,20 @@ export function dexCatalog(): readonly DexHero[] {
   if (CATALOG !== null) return CATALOG
   const out: DexHero[] = []
   const had = new Set<string>()
-  const boards: ReadonlyArray<{ board: RegionId; starts: readonly { faction: { id: string; name: string } }[]; heroes: readonly Hero[] }> = [
+  // 캠페인의 장 — 그 장의 사람들도 영웅전에 오른다 (형 10-25: 장만 하던 사람은 거느린 장수가 하나도 안 남아 데려갈 이가 없었다). 군주는 장의 판에서 읽는다
+  const chapter = (r: Realm): { starts: Array<{ faction: { id: string; name: string } }>; heroes: Hero[]; rulers: Set<string> } => ({
+    starts: Object.values(r.factions).map((f) => ({ faction: { id: f.id, name: f.name } })),
+    heroes: Object.values(r.heroes),
+    rulers: new Set(Object.values(r.factions).flatMap((f) => (f.ruler !== undefined ? [f.ruler] : []))),
+  })
+  const boards: ReadonlyArray<{ board: RegionId; starts: readonly { faction: { id: string; name: string } }[]; heroes: readonly Hero[]; rulers?: ReadonlySet<string> }> = [
     { board: 'byeonhan-mini', starts: MINI_DATA.NATION_STARTS, heroes: MINI_DATA.HEROES },
     { board: 'yeongnam', starts: YEONGNAM_DATA.NATION_STARTS, heroes: YEONGNAM_DATA.HEROES },
     { board: 'south', starts: SOUTH_DATA.STARTS, heroes: SOUTH_DATA.HEROES },
     { board: 'world', starts: WORLD_DATA.STARTS, heroes: WORLD_DATA.HEROES },
+    { board: 'mahan', ...chapter(startMahan(1)) },
+    { board: 'jumong', ...chapter(startJumong(1)) },
+    { board: 'seorabeol', ...chapter(startSeorabeol(1)) },
   ]
   for (const b of boards) {
     const names = new Map(b.starts.map((s) => [s.faction.id, s.faction.name]))
@@ -78,7 +90,7 @@ export function dexCatalog(): readonly DexHero[] {
       (order.get(x.faction) ?? 999) - (order.get(y.faction) ?? 999) || Number(y.id.endsWith('-ruler')) - Number(x.id.endsWith('-ruler')) || (x.id < y.id ? -1 : 1))
     for (const h of list) {
       had.add(h.id)
-      out.push({ id: h.id, name: h.name, look: h.look, board: b.board, nation: h.faction, nationName: names.get(h.faction) ?? '', ruler: h.id.endsWith('-ruler'), grade: heroGrade(h), hero: h })
+      out.push({ id: h.id, name: h.name, look: h.look, board: b.board, nation: h.faction, nationName: names.get(h.faction) ?? '', ruler: h.id.endsWith('-ruler') || b.rulers?.has(h.id) === true, grade: heroGrade(h), hero: h })
     }
   }
   for (const h of HERO_POOL) {

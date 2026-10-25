@@ -257,9 +257,23 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cere.capt .cbg { opacity: .42; filter: saturate(.8); }
 .ap .cere.capt.lost .cbg { filter: grayscale(.45) brightness(.8); }
 .ap .cere.capt.lost .hframe .hbust { filter: grayscale(.35); }
-.ap .cere.capt .crope { position: absolute; left: -6%; right: -6%; top: 46%; height: 9%; z-index: 2; background: repeating-linear-gradient(115deg, #8a6a3a 0 7px, #c9a46a 7px 12px, #6a4e28 12px 16px); border-radius: 6px; box-shadow: 0 3px 8px #000c;
-  transform: rotate(-8deg) scaleX(0); opacity: 0; animation: crope .35s cubic-bezier(.2, 1.2, .4, 1) 1.9s forwards; }
-@keyframes crope { to { transform: rotate(-8deg) scaleX(1); opacity: 1; } }
+/* 옥 — 쇠 테(못이 박힌 검은 쇠) · 얼굴이 드러나면 쇠창살이 위에서 내려와 철컹 닫힌다 (captSlamMs 와 같은 때 · 형 10-25) */
+.ap .cere.capt .hframe .hbust { box-shadow: 0 0 30px #000, 0 14px 34px #000c; border-radius: 2px; }
+.ap .cere.capt .jail { position: absolute; inset: -6%; z-index: 2; pointer-events: none; border: calc(var(--hw) * .055) solid #2a2d33; border-radius: 3px;
+  box-shadow: inset 0 0 0 2px #6a707a, inset 0 0 18px #000c, 0 0 0 2px #121417, 0 12px 30px #000d;
+  background: radial-gradient(circle, #b8bec8 0 30%, #3a3e45 40%, #0000 46%) 0 0 / calc(var(--hw) * .11) calc(var(--hw) * .11) no-repeat,
+    radial-gradient(circle, #b8bec8 0 30%, #3a3e45 40%, #0000 46%) 100% 0 / calc(var(--hw) * .11) calc(var(--hw) * .11) no-repeat,
+    radial-gradient(circle, #b8bec8 0 30%, #3a3e45 40%, #0000 46%) 0 100% / calc(var(--hw) * .11) calc(var(--hw) * .11) no-repeat,
+    radial-gradient(circle, #b8bec8 0 30%, #3a3e45 40%, #0000 46%) 100% 100% / calc(var(--hw) * .11) calc(var(--hw) * .11) no-repeat;
+  opacity: 0; animation: hpop .5s ease-out 1.48s both; }
+.ap .cere.capt .jbars { position: absolute; inset: -1%; z-index: 3; pointer-events: none; overflow: hidden; display: flex; justify-content: space-evenly; }
+.ap .cere.capt .jbars b, .ap .cere.capt .jbars s { transform: translateY(-112%); animation: jdrop .34s cubic-bezier(.55, 0, .9, .45) 2.18s forwards, jbounce .3s ease-out 2.52s; }
+.ap .cere.capt .jbars b { width: 5.2%; height: 100%; background: linear-gradient(90deg, #1c1e22, #a3a9b3 38%, #5a5f68 66%, #18191c); box-shadow: 3px 0 5px #000b; border-radius: 2px; }
+.ap .cere.capt .jbars s { position: absolute; left: 0; right: 0; height: 4.5%; background: linear-gradient(#b0b6c0, #4a4e56 60%, #1c1e22); box-shadow: 0 3px 6px #000b; }
+.ap .cere.capt .jbars s.t { top: 16%; } .ap .cere.capt .jbars s.m { top: 72%; }
+@keyframes jdrop { to { transform: translateY(0); } }
+@keyframes jbounce { 0% { transform: translateY(0); } 35% { transform: translateY(-5%); } 65% { transform: translateY(0); } 82% { transform: translateY(-1.5%); } 100% { transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .ap .cere.capt .jbars b, .ap .cere.capt .jbars s { animation: none; transform: none; } }
 /* 확인 — 글 맨 아래 · 얼굴이 다 드러난 뒤 나타난다 */
 .ap .cere .cok { position: relative; z-index: 8; margin-top: 6px; min-width: 140px; padding: 11px 28px; font-size: 16px; pointer-events: auto; justify-content: center; text-align: center; line-height: 1.2; /* 글자가 왼쪽에 붙고 오른쪽이 비었다 (형 10-25) */
   opacity: 0; animation: cokin .4s ease-out 2.2s both; }
