@@ -266,26 +266,32 @@ function moatSvg(): string {
  * 목책 — 말뚝 하나하나 (tp 와 같은 비스듬함: x = 47.5 + oy·0.22). 굵기·높이·기울기가 저마다 다르고, 말뚝마다 두 줄 새끼줄로 묶었다.
  * 도읍·산성(gate)은 가운데에 망루 둘과 성문. 깨졌으면(broken) 말뚝이 꺾이고·쓰러지고·빠지고, 가로대가 끊기고, 그을린다
  */
-function stakes(broken: boolean, gate: boolean): string {
+function stakes(art: string, broken: boolean, gate: boolean): string {
+  // 말뚝 그림 — 제미나이 Argon 한 장에서 덩어리마다 떼어 냈다 (tools/cut-sprites.py · fx/field/stake-NN):
+  //   01~03 키 큰 통나무(망루 기둥) · 04~09 성한 말뚝 여섯 · 10~13 꺾인 것 · 14~17 그을린 것 (형 10-26: "목책 될 만한 나무 하나 이미지들을 여러 개 받아서")
+  const img = (k: number, cls: string, x: number, oy: number, hk: number, r: number, z: number): string =>
+    `<img class="${cls}" src="${art}fx/field/stake-${String(k).padStart(2, '0')}.png" alt="" style="--x:${x.toFixed(2)}%;--oy:${oy.toFixed(1)}%;--p:${(1 + oy / 140).toFixed(3)};--hk:${hk.toFixed(2)};--r:${r.toFixed(1)}deg;z-index:${z}">`
   let h = '<span class="wf-pal' + (broken ? ' broken' : '') + '">'
-  const N = 26
+  const N = 24
   for (let i = 0; i < N; i++) {
     const oy = -40 + (80 * i) / (N - 1)
-    if (gate && Math.abs(oy) < 5.5) continue // 성문 자리
-    const tall = 0.85 + jit(i, 1) * 0.3
-    let lean = (jit(i, 2) - 0.5) * 5
-    let cls = 'stk'
+    if (gate && Math.abs(oy) < 6.5) continue // 성문 자리
+    const x = 47.5 + oy * 0.22 + (jit(i, 7) - 0.5) * 0.6
+    let k = 4 + Math.floor(jit(i, 1) * 6)
+    let r = (jit(i, 2) - 0.5) * 6
+    let hk = 0.9 + jit(i, 3) * 0.22
     if (broken) {
-      const r = jit(i, 3)
-      if (r < 0.22) continue // 빠진 말뚝
-      if (r < 0.55) { cls += ' down'; lean = (jit(i, 4) < 0.5 ? -1 : 1) * (35 + jit(i, 5) * 40) }
-      else if (r < 0.75) cls += ' snap'
-      cls += ' burnt'
+      const q = jit(i, 4)
+      if (q < 0.18) continue // 빠진 말뚝
+      if (q < 0.45) { k = 10 + Math.floor(jit(i, 5) * 4); r = (jit(i, 6) - 0.5) * 30 } // 꺾였다
+      else if (q < 0.8) k = 14 + Math.floor(jit(i, 5) * 4) // 그을렸다
+      else { r = (jit(i, 6) < 0.5 ? -1 : 1) * (40 + jit(i, 5) * 30); hk *= 0.9 } // 넘어간다
     }
-    h += `<i class="${cls}" style="--x:${(47.5 + oy * 0.22).toFixed(2)}%;--oy:${oy.toFixed(1)}%;--p:${(1 + oy / 140).toFixed(3)};--t:${tall.toFixed(2)};--w:${(0.8 + jit(i, 6) * 0.45).toFixed(2)};--r:${lean.toFixed(1)}deg;z-index:${10 + Math.round(oy + 40)}"></i>`
+    h += img(k, 'stk', x, oy, hk, r, 10 + Math.round(oy + 40))
   }
   if (gate) {
-    h += `<i class="tower" style="--x:${(47.5 - 6 * 0.22).toFixed(2)}%;--oy:-6%;z-index:44"></i><i class="tower" style="--x:${(47.5 + 6 * 0.22).toFixed(2)}%;--oy:6%;z-index:56"></i>`
+    // 성문 — 키 큰 통나무 둘씩 망루 기둥 · 사이에 널문
+    for (const [oy, k] of [[-8, 1], [-6.5, 3], [6.5, 2], [8, 1]] as const) h += img(k, 'stk tall', 47.5 + oy * 0.22, oy, 1, broken && oy > 0 ? 18 : 0, 10 + Math.round(oy + 40))
     h += `<i class="gatedoor${broken ? ' smashed' : ''}" style="--x:47.5%;--oy:0%;z-index:50"></i>`
   }
   return h + '</span>'
@@ -1059,7 +1065,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
           h += late ? wall(false, ' wf-pre') + wall(true, ' wf-post') : wall(breached)
           // 목책 — 깎은 통나무 말뚝을 하나하나 세운다(굵기·높이·기울기가 저마다) · 가로대·새끼줄 · 도읍·산성은 망루 둘 사이 성문.
           // 깨지면 말뚝이 꺾이고 쓰러지고 그을린다 (형 10-26: "목책 더 잘 구현해야" · 메모리: 이펙트는 낱낱이)
-          h += late ? `<i class="wf-pre">${stakes(false, gate)}</i><i class="wf-post">${stakes(true, gate)}</i>` : stakes(breached, gate)
+          h += late ? `<i class="wf-pre">${stakes(art, false, gate)}</i><i class="wf-post">${stakes(art, true, gate)}</i>` : stakes(art, breached, gate)
         }
       }
       if (cls === defCls && l.via === 'pass') { h += tp('rocks', 30, -36, 0.9); h += tp('rocks', 24, 32, 1.1); h += tlab('pass', 26, 46) }
@@ -1459,16 +1465,9 @@ export const WAR_CSS = `
 /* 해자 · 목책 (말뚝 하나하나) — 10-26 */
 .ap .wf2s .wf-moat { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; }
 .ap .wf2s .wf-pal { position: absolute; inset: 0; pointer-events: none; }
-.ap .wf2s .wf-pal .stk { position: absolute; left: var(--x); top: calc(60% + var(--oy)); --hh: calc(clamp(30px, 9cqw, 64px) * var(--t) * var(--p, 1)); height: var(--hh); width: calc(var(--hh) * .16 * var(--w));
-  transform: translate(-50%, -100%) rotate(var(--r)); transform-origin: 50% 100%;
-  background: linear-gradient(90deg, #3a2614 0, #7a5530 28%, #a37645 48%, #6b4826 72%, #2e1d0e 100%);
-  clip-path: polygon(0 14%, 50% 0, 100% 14%, 100% 100%, 0 100%); filter: drop-shadow(1px 2px 1px #000a); }
-.ap .wf2s .wf-pal .stk::after { content: ''; position: absolute; left: -10%; right: -10%; top: 38%; height: 5%; background: #c8a86a; box-shadow: 0 calc(var(--hh) * .34) 0 #c8a86a; opacity: .75; }
-.ap .wf2s .wf-pal .stk.snap { clip-path: polygon(0 52%, 30% 44%, 55% 56%, 80% 46%, 100% 54%, 100% 100%, 0 100%); }
-.ap .wf2s .wf-pal .stk.down { transform: translate(-50%, -100%) rotate(var(--r)); opacity: .85; }
-.ap .wf2s .wf-pal .stk.burnt { background: linear-gradient(90deg, #120a05 0, #3a2414 30%, #5a3a1e 50%, #2a170a 75%, #0c0603 100%); }
-.ap .wf2s .wf-pal .tower { position: absolute; left: var(--x); top: calc(60% + var(--oy)); width: clamp(16px, 4cqw, 30px); height: clamp(60px, 15cqw, 110px); transform: translate(-50%, -100%);
-  background: linear-gradient(90deg, #3a2614, #8a6034 40%, #5a3a1e 70%, #2e1d0e); clip-path: polygon(10% 18%, 50% 0, 90% 18%, 85% 22%, 85% 100%, 15% 100%, 15% 22%); filter: drop-shadow(1px 3px 2px #000b); }
+.ap .wf2s .wf-pal .stk { position: absolute; left: var(--x); top: calc(60% + var(--oy)); height: calc(clamp(30px, 8.5cqw, 62px) * var(--hk) * var(--p, 1)); width: auto;
+  transform: translate(-50%, -100%) rotate(var(--r)); transform-origin: 50% 100%; filter: drop-shadow(1px 3px 2px #000a); }
+.ap .wf2s .wf-pal .stk.tall { height: calc(clamp(60px, 17cqw, 124px) * var(--p, 1)); }
 .ap .wf2s .wf-pal .gatedoor { position: absolute; left: var(--x); top: calc(60% + var(--oy)); width: clamp(20px, 5cqw, 38px); height: clamp(36px, 9cqw, 66px); transform: translate(-50%, -100%) skewY(-12deg);
   background: repeating-linear-gradient(90deg, #5a3a1e 0 22%, #3a2614 22% 25%); border: 2px solid #2a1a0c; filter: drop-shadow(1px 2px 2px #000a); }
 .ap .wf2s .wf-pal .gatedoor.smashed { clip-path: polygon(0 0, 40% 0, 30% 40%, 55% 55%, 35% 100%, 0 100%); filter: brightness(.6) drop-shadow(1px 2px 2px #000a); }
