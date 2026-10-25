@@ -3945,25 +3945,56 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   /** 이번 계절 먹힌 우리 공작 — 갈래마다 제 그림 · 제 말 · 제 소리 */
+  /**
+   * 이번 계절 우리 공작 — 먹혔든 어긋났든 한 장씩 크게: 누가(보낸 장수 얼굴) · 어디에 · 무엇을 걸었나 · 성공/실패 도장 · 그 뒤 일(들킴 · 드러남 · 자객의 끝)
+   * (형 10-26: "공작은 내 어떤 장수가 어디에다 뭘 걸었고 실패/성공 전체화면 연출로 띄워 달라니까")
+   */
   function plotWins(r: Realm, rep: Report): Big[] {
     const out: Big[] = []
     for (const l of rep.lines) {
-      if (l.kind !== 'plot' || l.faction !== me() || !l.ok) continue
-      const key = `${r.season}:plot:${l.op}:${l.target}:${l.node ?? ''}:${l.other ?? ''}:${l.hero ?? ''}`
+      if (l.kind !== 'plot' || l.faction !== me()) continue
+      const key = `${r.season}:plot:${l.op}:${l.target}:${l.node ?? ''}:${l.other ?? ''}:${l.hero ?? ''}:${l.ok ? 1 : 0}`
       const fn = r.factions[l.target]?.name ?? ''
       const nn = l.node !== undefined ? (r.nodes[l.node]?.name ?? '') : ''
       const on = l.other !== undefined ? (r.factions[l.other]?.name ?? '') : ''
       const hn = l.hero !== undefined ? (r.heroes[l.hero]?.name ?? '') : ''
-      const flag = emblem(l.target, 'fem')
-      const b = { key, art: `event-plot-${l.op}`, good: true, flags: flag }
-      switch (l.op) {
-        case 'rumor': out.push({ ...b, title: `${fn}에 흉흉한 소문이 돈다`, sub: '군사들이 수군대며 기운이 꺾였다', small: PLOT_NAME.rumor, sfx: snd('war_drum') }); break
-        case 'sow': out.push({ ...b, flags: `<span class="sowf big">${emblem(l.target, 'fem')}<i>⇄</i>${emblem(l.other ?? null, 'fem')}</span>`, title: `${josa(fn, '과', '와')} ${josa(on, '이', '가')} 등을 돌렸다`, sub: '두 나라 사이가 틀어졌다 — 싸움이 붙을 수도 있다', small: PLOT_NAME.sow, sfx: snd('tap_brush') }); break
-        case 'bribe': out.push({ ...b, title: `${nn} 장정들을 매수했다`, sub: '두 계절 동안 싸우러 나오지 않는다', small: `${PLOT_NAME.bribe} · ${fn}`, sfx: snd('tap_coin') }); break
-        case 'burn': out.push({ ...b, title: `${fn}의 창고가 불탄다`, sub: '쌓아 둔 곡식이 잿더미가 됐다', small: PLOT_NAME.burn, sfx: 'realm/sfx/cmd_fire_c1.ogg' }); break
-        case 'spy': out.push({ ...b, title: `${nn}에 첩자를 심었다`, sub: '네 계절 동안 그곳 군세가 훤히 보인다', small: `${PLOT_NAME.spy} · ${fn}`, sfx: snd('tap_move') }); break
-        case 'assassin': out.push({ ...b, title: l.result === 'kill' ? `${josa(hn, '이', '가')} 쓰러졌다` : `${josa(hn, '이', '가')} 화살을 맞았다`, sub: l.result === 'kill' ? `${fn}의 장수 하나가 사라졌다` : '몇 계절 동안 군대를 이끌지 못한다', small: `${PLOT_NAME.assassin} · ${fn}`, sfx: 'realm/sfx/battle_final_c1.ogg' }); break
+      const ag = l.agent !== undefined ? r.heroes[l.agent] : undefined
+      const who = ag?.name ?? (l.op === 'assassin' ? '고용 자객' : '우리 밀정')
+      const town = nn !== '' ? `${fn} ${nn}` : fn
+      const deed: Readonly<Record<PlotOp, string>> = {
+        rumor: `${fn}에 흉흉한 소문을 퍼뜨렸다`, sow: `${josa(fn, '과', '와')} ${on} 사이를 갈라놓으려 했다`, bribe: `${town}의 장정들을 매수하러 갔다`,
+        burn: `${fn}의 곳간에 불을 놓으러 갔다`, spy: `${town}에 첩자를 심으러 갔다`, assassin: `${fn}의 ${josa(hn, '을', '를')} 어둠 속에서 노렸다`,
       }
+      const act = `${josa(who, '이', '가')} ${deed[l.op]}`
+      // 먹혔으면 무엇이 됐나 · 어긋났으면 왜
+      let title: string, sub: string, sfx: string
+      if (l.ok) {
+        switch (l.op) {
+          case 'rumor': title = `${fn}에 흉흉한 소문이 돈다`; sub = '군사들이 수군대며 기운이 꺾였다'; sfx = snd('war_drum'); break
+          case 'sow': title = `${josa(fn, '과', '와')} ${josa(on, '이', '가')} 등을 돌렸다`; sub = '두 나라 사이가 틀어졌다 — 싸움이 붙을 수도 있다'; sfx = snd('tap_brush'); break
+          case 'bribe': title = `${nn} 장정들을 매수했다`; sub = '두 계절 동안 싸우러 나오지 않는다'; sfx = snd('tap_coin'); break
+          case 'burn': title = `${fn}의 곳간이 불탄다`; sub = '쌓아 둔 곡식이 잿더미가 됐다'; sfx = 'realm/sfx/cmd_fire_c1.ogg'; break
+          case 'spy': title = `${nn}에 첩자를 심었다`; sub = '네 계절 동안 그곳 군세가 훤히 보인다'; sfx = snd('tap_move'); break
+          default: title = l.result === 'kill' ? `${josa(hn, '이', '가')} 쓰러졌다` : `${josa(hn, '이', '가')} 화살을 맞았다`; sub = l.result === 'kill' ? `${fn}의 장수 하나가 사라졌다` : '몇 계절 동안 군대를 이끌지 못한다'; sfx = 'realm/sfx/battle_final_c1.ogg'
+        }
+      } else {
+        title = `${PLOT_NAME[l.op]} — 어긋났다`
+        sub = l.op === 'assassin' ? `${josa(hn, '은', '는')} 살아남았다` : l.op === 'sow' ? '두 나라는 그대로다' : '먹히지 않았다'
+        sfx = snd('defeat')
+      }
+      // 그 뒤 일 — 들켰나 · 누가 보냈는지 드러났나 · 자객은
+      const after: string[] = []
+      if (l.agentFate === 'captured' && ag !== undefined) after.push(`${josa(ag.name, '이', '가')} 사로잡혔다`)
+      else if (l.agentFate === 'escaped' && ag !== undefined) after.push(`${josa(ag.name, '이', '가')} 몸만 빠져나왔다`)
+      if (l.exposed === true) after.push('누가 보냈는지 드러났다 — 사이가 나빠졌다')
+      else if (l.caught) after.push('들켰다 — 그쪽이 경계를 올렸다 · 누가 했는지는 모른다')
+      const face = ag !== undefined ? (bustHd(ag, 'plf') || bust(ag, 'plf')) : icon(l.op === 'assassin' ? 'unit-archer' : 'status-spy', 'plf ic')
+      const flags = l.op === 'sow' ? `<span class="sowf big">${emblem(l.target, 'fem')}<i>⇄</i>${emblem(l.other ?? null, 'fem')}</span>` : emblem(l.target, 'fem')
+      const stage = `<div class="plotv${l.ok ? ' ok' : ' fail'}"><img class="pbg" src="${ART}event/event-plot-${l.op}.jpg" alt=""><i class="pred"></i>`
+        + `<div class="pagent">${face}<b>${esc(who)}</b><small>${esc(PLOT_NAME[l.op])}</small></div>`
+        + `<i class="pstamp">${l.ok ? '성공' : '실패'}</i>`
+        + `<div class="pinfo">${flags}<span class="pact2">${esc(act)}</span>${after.map((x) => `<span class="paft">${esc(x)}</span>`).join('')}</div></div>`
+      out.push({ key, art: `event-plot-${l.op}`, good: l.ok, flags: '', title, sub, small: PLOT_NAME[l.op], sfx, stage })
     }
     return out
   }

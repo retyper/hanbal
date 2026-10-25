@@ -137,6 +137,25 @@ export const AUD_CSS = `
 .ap .landc .pactt { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
 .ap .landc .pactt b { font-size: clamp(22px, 4.2vw, 32px); color: #ffd77a; text-shadow: 0 2px 8px #000; animation: bigslam .55s cubic-bezier(.3, 1.6, .5, 1) .35s both; }
 .ap .landc.lost .pactt b { color: #ff8a70; } .ap .landc .pactt span { font-size: 15px; color: #efe6d2; animation: audup .4s ease-out .8s both; }
+/* 공작 큰 화면 — 누가 · 어디에 · 무엇을 · 성공/실패 도장 (형 10-26) */
+.ap .plotv { position: relative; aspect-ratio: 16 / 9; width: min(100%, calc(62vh * 16 / 9)); align-self: center; border-radius: 16px; overflow: hidden; box-shadow: 0 14px 40px #000c; }
+.ap .plotv .pbg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: audbg 2.4s ease-out both; }
+.ap .plotv.fail .pbg { filter: grayscale(.65) brightness(.55) sepia(.2); }
+.ap .plotv .pred { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(transparent 45%, #000c); }
+.ap .plotv.fail .pred { background: radial-gradient(circle at 50% 45%, #b3261e44, #3a0a06cc 75%), linear-gradient(transparent 45%, #000d); }
+.ap .plotv .pagent { position: absolute; left: 3%; bottom: 5%; display: flex; flex-direction: column; align-items: center; gap: 2px; z-index: 2; animation: audup .4s ease-out .3s both; }
+.ap .plotv .pagent .plf { width: clamp(84px, 18vw, 170px); aspect-ratio: 1; border-radius: 50%; object-fit: cover; object-position: top; border: 3px solid #e0b04a; box-shadow: 0 0 0 2px #000, 0 6px 20px #000c; background: #1c2129; }
+.ap .plotv.fail .pagent .plf { border-color: #c8503a; filter: saturate(.7); }
+.ap .plotv .pagent .plf.ic { padding: 14px; box-sizing: border-box; object-fit: contain; }
+.ap .plotv .pagent b { font-size: clamp(15px, 2.4vw, 20px); color: #fff; text-shadow: 0 2px 6px #000; }
+.ap .plotv .pagent small { font-size: 12px; color: #e8dcc0; text-shadow: 0 1px 4px #000; }
+.ap .plotv .pstamp { position: absolute; right: 6%; top: 8%; z-index: 3; font-style: normal; font-weight: 900; font-size: clamp(30px, 7vw, 64px); letter-spacing: .12em; padding: .05em .35em; border: .09em solid currentColor; border-radius: .18em; transform: rotate(-12deg); text-shadow: 0 2px 10px #000a; animation: pstamp .5s cubic-bezier(.3, 1.6, .5, 1) .6s both; }
+.ap .plotv.ok .pstamp { color: #ffd77a; background: #3a2a1088; } .ap .plotv.fail .pstamp { color: #ff6a4a; background: #3a0a0688; }
+.ap .plotv .pinfo { position: absolute; left: calc(3% + clamp(84px, 18vw, 170px) + 18px); right: 4%; bottom: 6%; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; animation: audup .4s ease-out .9s both; }
+.ap .plotv .pinfo .fem { width: 34px; height: 34px; } .ap .plotv .pinfo .sowf.big .fem { width: 32px; height: 32px; }
+.ap .plotv .pinfo .pact2 { font-size: clamp(14px, 2.2vw, 19px); font-weight: 700; color: #fff; text-shadow: 0 2px 6px #000; }
+.ap .plotv .pinfo .paft { font-size: 13px; color: #ffd0c0; background: #3a0a06b0; border: 1px solid #c8503a88; border-radius: 8px; padding: 1px 8px; }
+@keyframes pstamp { 0% { transform: rotate(-12deg) scale(2.6); opacity: 0; } 60% { transform: rotate(-12deg) scale(.92); opacity: 1; } 100% { transform: rotate(-12deg) scale(1); } }
 @media (max-width: 640px) { .ap .aud .audlord { opacity: .55; right: -10%; } .ap .aud .audsay, .ap .aud .audwhat { max-width: none; } .ap .pact .psay { width: 86%; } }
 @media (prefers-reduced-motion: reduce) { .ap .aud *, .ap .pact * { animation: none !important; opacity: 1 !important; } }
 `
