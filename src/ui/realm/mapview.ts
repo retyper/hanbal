@@ -155,6 +155,9 @@ export const MAP_CSS = `
   font-size: clamp(10px, calc(1.9cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 16px); line-height: 1.2; color: var(--ink, #2a1d10); font-weight: 700;
   background: linear-gradient(color-mix(in srgb, var(--c, #f6ecd4) 82%, #fff), var(--c, #efe2c4)); border: .13em solid var(--c2, #8a7a5a);
   border-left: .55em solid var(--c2, #8a7a5a); border-radius: .2em .55em .55em .2em; padding: 0 .35em 0 .22em; box-shadow: 0 0 0 1px #1a120ad0, 0 1px 3px #0006; }
+/* 나라 많은 판 — 이름표를 작게 (한 줄 · 글씨 작게 · 깃발·특산 칸도 작게) */
+.map[data-region="yeongnam"] .lb, .map[data-region="south"] .lb, .map[data-region="world"] .lb { font-size: clamp(8px, calc(1.9cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 12.5px); border-left-width: .45em; padding: 0 .28em 0 .16em; }
+.map[data-region="yeongnam"] .lb .lbg img, .map[data-region="south"] .lb .lbg img, .map[data-region="world"] .lb .lbg img { width: 1.25em; height: 1.25em; }
 .map .lb .lbe { width: 1.1em; height: 1.1em; object-fit: contain; flex: none; filter: drop-shadow(0 0 1px #fff); }
 .map .lb .lbt { display: flex; flex-direction: column; align-items: flex-start; }
 .map .lb .lbf { margin-left: .25em; padding: 0 .35em; border-radius: .6em; background: #2a1414; color: #f0b8a0; font-size: .82em; font-weight: 800; }
@@ -571,7 +574,8 @@ export function mapHtml(
       ? `<span class="lbg${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}" title="${GOOD_NAME[g]} — 사람이 살면 난다">`).join('')}${fish}${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${t === 'palisade' ? '목책' : '해자'}</i>`).join('')}</span>`
       : ''
     labels.push({
-      id: n.id, name: n.name, now: NODE_NOW[n.id], x: p[0], y: p[1], s: sizeOf(n.hh), cap: n.kind === 'capital' || cap, hh: n.hh,
+      // 나라 많은 판은 지금 지명 줄을 빼 이름표를 한 줄로 — 작아야 제 고을 곁에 붙는다 (형 10-26: "마을 텍스트 바가 너무 큼 · 줄여서 제대로 그 마을의 텍스트라는 게 보이게")
+      id: n.id, name: n.name, now: CROWDED.has(region) ? undefined : NODE_NOW[n.id], x: p[0], y: p[1], s: sizeOf(n.hh), cap: n.kind === 'capital' || cap, hh: n.hh,
       cls: `${kcls}${ours ? ' me' : ''}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${far}${fr}`,
       kit: owner !== null ? kitVars(owner) : '', emb, rel: relChip(r, me, owner), force, tray, trayW: sp.length + (fish !== '' ? 1 : 0) + dfs.length * 1.6,
     })
@@ -671,6 +675,9 @@ export interface MapTarget {
 const ICON_W = 0.085
 /** 이름 글자 크기 — 지도 높이의 몫 (CSS 2.1cqh 와 같은 값) */
 const LABEL_EM = 0.021
+
+/** 나라가 많아 이름표가 엉키는 판 */
+const CROWDED: ReadonlySet<RegionId> = new Set<RegionId>(['yeongnam', 'south', 'world'])
 
 /**
  * 우리와 그 나라의 사이 — 이름표 깃발 곁에 (형 10-26: "어떤 국가랑 전쟁 중인지 동맹 중인지가 마을 이름표에서도 바로 보이게")

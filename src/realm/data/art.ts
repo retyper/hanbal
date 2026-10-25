@@ -23,7 +23,7 @@ export const REGION_ART: Readonly<Record<RegionId, { dir: string; ext: string; w
   // 캠페인 1장 — 한강 아래에서 차령까지 (mahan-geo.ts). 경도 1.3° × 위도 1.35° 를 조각 눈금의 두 배로
   mahan: { dir: 'map-world', ext: 'webp', w: 918, h: 1033, nodeScale: 0.45, labelScale: 0.8, zmax: 3, terrR: 90, terrBand: 54 },
   jumong: { dir: 'map-world', ext: 'webp', w: 1871, h: 861, nodeScale: 0.32, labelScale: 0.75, zmax: 5, terrR: 60, terrBand: 34 },
-  yeongnam: { dir: 'map-yeongnam', ext: 'webp', w: 1024, h: 765, nodeScale: 0.24, labelScale: 0.7, zmax: 4, terrR: 50, terrBand: 28 },
+  yeongnam: { dir: 'map-yeongnam', ext: 'webp', w: 1024, h: 765, nodeScale: 0.24, labelScale: 0.55, zmax: 4, terrR: 50, terrBand: 28 },
   // 삼한 남부 — 조각 넷을 이은 그림(ui/realm/worldmap.ts 가 합친다). 크기는 조각 눈금(1024px = 경도 2.9° · 765px = 위도 2.0°)으로 경도 5.5° × 위도 3.75°
   south: { dir: 'map-world', ext: 'webp', w: 1942, h: 1434, nodeScale: 0.2, labelScale: 0.6, zmax: 6, terrR: 52, terrBand: 28 },
   // 삼한과 북녘 — 조각 스물다섯. 같은 눈금으로 경도 13.9° × 위도 12.5° (요동·요서·연해주까지 — 2026-10-20). 기호는 경도 5.5° 판일 때와 같은 크기가 되게 줄인다
