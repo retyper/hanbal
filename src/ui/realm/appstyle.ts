@@ -720,6 +720,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .paths .clock i.on { background: #8fc0e0; } .ap .paths .path.rival span { color: #e8a08a; }
 /* 보고 한 줄 — 그림 · 누가→누구 · 글 (app.reportRow) */
 .ap .lines .rrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0; padding: 6px 8px; border-radius: 10px; background: #ffffff08; border-left: 3px solid #4a4030; }
+/* 계절 소식 — 갈래마다 머리 (형 10-25) */
+.ap .lines .rgrp { margin: 10px 0 4px; }
+.ap .lines .rgh { display: flex; align-items: center; gap: 6px; margin: 0 0 2px; padding: 2px 4px; font-size: 14px; color: var(--gold); border-bottom: 1px solid #5a4a30; }
+.ap .lines .rgh img.rgi { width: 22px; height: 22px; } .ap .lines .rgh b { margin-left: auto; font-size: 12px; color: #cfc6b4; background: #ffffff14; border-radius: 9px; padding: 0 7px; }
+.ap .lines .rmore summary { cursor: pointer; padding: 4px 8px; font-size: 13px; color: #cfc6b4; list-style: none; } .ap .lines .rmore summary::before { content: '▸ '; } .ap .lines .rmore[open] summary::before { content: '▾ '; }
+.ap .lines .rmore .rrow { opacity: 1; animation: none; }
 .ap .lines .rrow.mute { opacity: .75; border-left-color: #40352f; }
 .ap .lines .rrow img.ri { width: 30px; height: 30px; flex: none; filter: drop-shadow(0 1px 2px #0008); }
 .ap .lines .rrow i.ri.dot { width: 8px; height: 8px; border-radius: 50%; background: #6a5a3a; margin: 0 11px; }

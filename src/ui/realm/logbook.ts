@@ -24,6 +24,16 @@ const KINDS: Readonly<Record<Exclude<LogFilter, 'all'>, ReadonlySet<string>>> = 
   home: new Set(['harvest', 'draft', 'settle', 'migrate', 'place', 'disband', 'hunger', 'build', 'rite', 'arm', 'market', 'spoil', 'bowUp', 'wed', 'birth', 'grown', 'recruit', 'persuade', 'exile', 'retake', 'expGo', 'expStay', 'expBack', 'card', 'omen']),
 }
 
+/** 계절 소식의 갈래 묶음 — 보고판에서 갈래마다 머리를 달아 묶는다 (형 10-25: "계절 지나서 생기는 로그는 너무 복잡하고 많은데 카테고리별로 묶어야") */
+export type LogGroup = Exclude<LogFilter, 'all'> | 'etc'
+export const LOG_GROUPS: ReadonlyArray<readonly [LogGroup, string, string]> = [
+  ['war', '싸움', 'unit-spear'], ['rel', '전쟁·화친', 'status-alliance'], ['envoy', '사신', 'ask-truce'], ['plot', '공작', 'status-spy'], ['home', '우리 살림', 'settle-farm-village'], ['etc', '그 밖', 'settle-beacon'],
+]
+export function logGroup(l: ReportLine): LogGroup {
+  for (const [g, set] of Object.entries(KINDS) as Array<[Exclude<LogFilter, 'all'>, ReadonlySet<string>]>) if (set.has(l.kind)) return g
+  return 'etc'
+}
+
 /** 줄에 적힌 나라들 — 문자열 값 가운데 나라 id (청은 안의 from·to) */
 export function lineNations(r: Realm, l: ReportLine): string[] {
   const out = new Set<string>()

@@ -65,7 +65,7 @@ import { BATTLE_CSS, battleCard } from './battlecard.ts'
 import { APPROACH_DOES, APPROACH_NAME, HARD_LINE, WAR_CSS, openWar } from './battlefield.ts'
 import { attachZoom } from './zoom.ts'
 import { TUT_CSS, TUT_STEPS, createSpot, tutAt, tutBandHtml, tutStyle } from './tutorial.ts'
-import { LOG_CSS, logNations, logRows, logbookHtml, type LogFilter } from './logbook.ts'
+import { LOG_CSS, LOG_GROUPS, lineNations, logGroup, logNations, logRows, logbookHtml, type LogFilter } from './logbook.ts'
 import { markTutorialOver, markWon, nationWon, tutorialOver, unlockedBoards, tierOpen, tierWon } from './unlock.ts'
 import { TINT_CSS, tint } from './tint.ts'
 import { handsOf, idleHeroes } from '../../realm/hands.ts'
@@ -3477,7 +3477,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         t += LINE_S
       }
     }
-    h += `<div class="lines">${lines.length === 0 ? `<p class="mute rv" style="--t:${t}s">조용한 계절이었다.</p>` : lines.map((y, i) => reportRow(r, y.l, y.x, t + i * LINE_S)).join('')}</div>`
+    h += `<div class="lines">${lines.length === 0 ? `<p class="mute rv" style="--t:${t}s">조용한 계절이었다.</p>` : groupedRows(r, lines, t)}</div>`
     // 아직 길 위의 우리 군대 — 언제 닿나 (형: "그 턴이 다음턴인지 그다음인지 몰라가지고 헷갈림. 왜안오는거야")
     const going = sorted(Object.values(r.armies)).filter((a) => a.faction === me() && a.march !== null)
     if (going.length > 0) {
@@ -3488,6 +3488,29 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (tail !== '') h += `<div class="rv" style="--t:${(t + Math.max(1, lines.length) * LINE_S).toFixed(2)}s">${tail}</div>`
     // 확인은 늘 보이게(카드 아래 붙박이) · 정할 것을 다 골라야 눌린다
     return h + `<div class="repfoot"><button class="btn pri wide" data-act="rep-close" ${todo > 0 ? 'disabled' : ''}>${todo > 0 ? `정할 것 ${todo}개를 먼저 고른다` : '확인'}</button></div></div>`
+  }
+
+  /**
+   * 계절 소식을 갈래마다 묶는다 — 머리(그림 · 이름 · 몇 줄) 아래 우리 일이 먼저, 남의 일은 뒤.
+   * 한 갈래가 길면 앞의 몇 줄만 펴 두고 나머지는 접는다 (형 10-25: "로그는 너무 복잡하고 많은데 카테고리별로 묶어야")
+   */
+  function groupedRows(r: Realm, lines: ReadonlyArray<{ l: ReportLine; x: string }>, t0: number): string {
+    const ours = (l: ReportLine): boolean => lineNations(r, l).includes(me())
+    let i = 0
+    let h = ''
+    for (const [g, name, ic] of LOG_GROUPS) {
+      const rows = lines.filter((y) => logGroup(y.l) === g)
+      if (rows.length === 0) continue
+      const sorted = [...rows.filter((y) => ours(y.l)), ...rows.filter((y) => !ours(y.l))]
+      const show = sorted.length > P.realm.repGroupOpen + 1 ? P.realm.repGroupOpen : sorted.length
+      h += `<div class="rgrp"><h4 class="rgh rv" style="--t:${(t0 + i * LINE_S).toFixed(2)}s">${icon(ic, 'rgi')}<span>${esc(name)}</span><b>${sorted.length}</b></h4>`
+      for (const y of sorted.slice(0, show)) h += reportRow(r, y.l, y.x, t0 + i++ * LINE_S)
+      if (sorted.length > show) {
+        h += `<details class="rmore rv" style="--t:${(t0 + i++ * LINE_S).toFixed(2)}s"><summary>${sorted.length - show}줄 더 보기</summary>${sorted.slice(show).map((y) => reportRow(r, y.l, y.x, 0)).join('')}</details>`
+      }
+      h += `</div>`
+    }
+    return h
   }
 
   /**
