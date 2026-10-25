@@ -1666,13 +1666,18 @@ export const WAR_CSS = `
 .ap .wfpop[hidden] { display: none; }
 .ap .wfph { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; } .ap .wfph .wgi { width: 26px; height: 26px; flex: none; } .ap .wfph b { font-size: 14.5px; color: #fff; } .ap .wfph small { font-size: 11.5px; color: var(--mute); }
 .ap .wfpx { margin-left: auto; width: 30px; height: 30px; border-radius: 15px; border: 1px solid #6a5a48; background: #2a221a; color: #e8dcc4; font-size: 14px; cursor: pointer; flex: none; }
-.ap .wfpg { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
-.ap .wfpop .wcmd.mini { min-height: 48px; padding: 5px 6px 5px 4px; flex-direction: row; align-items: center; gap: 4px; text-align: left; border: 1px solid #6a5236; border-image: none; border-radius: 10px; background: #241b12; filter: none; }
+.ap .wfpg { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; }
+.ap .wfpop .wcmd.mini { min-width: 0; overflow: hidden; min-height: 44px; padding: 5px 6px 5px 4px; flex-direction: row; align-items: center; gap: 4px; text-align: left; border: 1px solid #6a5236; border-image: none; border-radius: 10px; background: #241b12; filter: none; }
 .ap .wfpop .wcmd.mini.on { border-color: var(--gold); background: #3a2e1c; box-shadow: 0 0 0 2px #d9b36a66; }
 .ap .wfpop .wcmd.mini .wflag { width: 30px; height: auto; flex: none; }
 .ap .wfpop .wcmd.mini .wct { gap: 1px; } .ap .wfpop .wcmd.mini .wct > b { font-size: 13.5px; }
-.ap .wfpop .wcmd.mini .wct > small, .ap .wfpop .wcmd.mini .wgl, .ap .wfpop .wcmd.mini .wgbar, .ap .wfpop .wcmd.mini .wcap { display: none; }
-.ap .wfpop .wcmd.mini .wct > em { font-size: 9.5px; line-height: 1.3; padding: 0 4px; } .ap .wfpop .wcmd.mini .wguess b { font-size: 11px; }
+/* 전장의 깃발 판엔 그림과 이름만 — 꼬리표·짐작 글이 자리를 넘쳐 튀어나오고 줄이 바뀌었다 (형 10-25) · 권함은 별 하나로 */
+.ap .wfpop .wcmd.mini .wct > :not(b):not(em.rec) { display: none !important; }
+.ap .wfpop .wcmd.mini .wct { flex-direction: row; align-items: center; gap: 3px; min-width: 0; }
+.ap .wfpop .wcmd.mini .wct > b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.ap .wfpop .wcmd.mini .wct > em.rec { font-size: 0; padding: 0 3px; } .ap .wfpop .wcmd.mini .wct > em.rec::before { content: '★'; font-size: 11px; }
+.ap .wfph b, .ap .wfph small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
 .ap .wgh { font-size: 13.5px; margin-bottom: 4px; } .ap .wgh b { color: var(--gold); margin-right: 4px; }
 .ap .wcmdgrid { display: grid; grid-template-columns: 1fr; gap: 6px; } /* 한 열 (형 10-25) */
 .ap .wnext .wgtabs .wgt { flex: 1 1 0; min-width: 0; flex-direction: column; align-items: center; gap: 2px; padding: 6px 3px 5px; text-align: center; }
@@ -2341,7 +2346,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     if (pane === null || tab === null || q === null) { closePop(); return }
     const name = tab.querySelector('.wgn b')?.textContent ?? ''
     const sub = tab.querySelector('.wgn small')?.textContent ?? ''
-    pop.innerHTML = `<div class="wfph">${tab.querySelector('.wgi')?.outerHTML ?? ''}<b>${esc(name)}</b><small>${esc(sub)} · 깃발 선택</small><button class="wfpx" data-war="popx" aria-label="닫기">✕</button></div><div class="wfpg"></div>`
+    pop.innerHTML = `<div class="wfph">${tab.querySelector('.wgi')?.outerHTML ?? ''}<b>${esc(name)}</b><small>${esc(sub)}</small><button class="wfpx" data-war="popx" aria-label="닫기">✕</button></div><div class="wfpg"></div>`
     const grid = pop.querySelector<HTMLElement>('.wfpg')!
     for (const b of pane.querySelectorAll<HTMLElement>('[data-war="pick"]')) {
       const c = b.cloneNode(true) as HTMLElement
