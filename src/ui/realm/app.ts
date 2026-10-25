@@ -44,9 +44,10 @@ import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Ord
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { LEGACY_CSS, carryChapterNote, carryHtml, retainHtml, syncRetain, toggleCarry, toggleKeep } from './legacy.ts'
-import { DEX_CSS, dexHtml, dexToastHtml, loadDex, recordDex, type DexBoard } from './dex.ts'
-import { dexCounts } from '../../realm/dex.ts'
+import { DEX_CSS, dexHtml, dexToastHtml, recordDex, type DexBoard } from './dex.ts'
 import { LEVEL_LINE, TIER_MAX, levelName } from '../../realm/tier.ts'
+import { FIT_CSS, fitLabels } from './fit.ts'
+import { annalOf } from '../../realm/data/annals.ts'
 import { GROW_CSS, HERO_CSS, TITLE_MEAN, bondChip, growthHtml, heroRadar, nameHtml, roleLine, splitTitle, traitChips, traitLines } from './heroview.ts'
 import { APP_CSS, CLOUD_CSS, SEASONP_CSS, UI_CSS } from './appstyle.ts'
 import { GOAL_CSS, goalBandHtml, goalRowsHtml } from './goalband.ts'
@@ -430,7 +431,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + CLOUD_CSS + WINFX_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
+  style.textContent = FIT_CSS + TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + CLOUD_CSS + WINFX_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
   installTips(root)
@@ -2451,8 +2452,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const ours = x.faction === me() && x.status === 'free'
     const seen = x.faction === me() || heroSeen(realm!, me(), x.id) || (realm!.wanderers ?? []).some((w) => w.hero.id === id)
     const file = bustOf(x.id)
-    let h = `<button class="btn ghost sm hback" data-act="hero-back">‹ 장수 목록</button><div class="hcard">${file !== undefined ? `<img class="big" src="${ART}bust/${file}.jpg" alt="">` : bust(x, 'face')}`
-    h += `<div class="hn">${nameHtml(x.name)}</div><div class="mute">${emblem(x.faction)}${esc(r.factions[x.faction]?.name ?? '떠돌이')}${isRuler(r, x.id) ? ' 군주' : ''} · ${esc(roleLine(r, x))}</div>`
+    let h = `<button class="btn ghost sm hback" data-act="hero-back">‹ 장수 목록</button><div class="hcard">${file !== undefined ? `<img class="big" src="${ART}bust/${file}.jpg" alt="" data-act="bust-view" data-src="${ART}bust/${file}.jpg">` : bust(x, 'face')}`
+    // 사서에 남은 사람 — 「?」를 누르면 사서의 이야기 (형 10-25)
+    const annal = annalOf(x.id)
+    h += `<div class="hn">${nameHtml(x.name)}${annal !== undefined ? `<button class="annb" data-act="annal" data-id="${x.id}" data-tip="${esc(annal.book)}">📜 사서 <b>?</b></button>` : ''}</div><div class="mute">${emblem(x.faction)}${esc(r.factions[x.faction]?.name ?? '떠돌이')}${isRuler(r, x.id) ? ' 군주' : ''} · ${esc(roleLine(r, x))}</div>`
     h += heroRadar(x, seen, ours)
     h += `<div class="tr3">${traitChips(x, seen)}</div>${traitLines(x, seen)}`
     if (ours) h += growthHtml(r, x)
@@ -2679,7 +2682,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `</div>`
     }
     // 차림 — 세 칸 격자로 줄을 맞춘다: 보기 · 설정과 다른 놀이 · 판 (형: "버튼들이 너무 질서없이")
-    h += `<div class="menu3"><button class="btn" data-act="help">도움말</button><button class="btn" data-act="log-open">지난 기록</button><button class="btn" data-act="dex-open">도감</button>`
+    h += `<div class="menu3"><button class="btn" data-act="help">도움말</button><button class="btn" data-act="log-open">지난 기록</button><button class="btn" data-act="dex-open">영웅전</button>`
     if (!installed() && installPrompt() !== null) h += `<button class="btn ghost" data-act="install">앱으로 설치 — 바 없는 전체 화면</button>`
     h += `<button class="btn ghost" data-act="mute">${muted() ? '소리 켜기' : '소리 끄기'}</button><button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>`
     h += `<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}" data-tip="활쏘기 모드 (신궁)">활터</a>${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
@@ -2707,7 +2710,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function resetHtml(): string {
     if (host.resetPlay === undefined) return ''
     const cloud = host.cloud?.who() != null
-    return `<h3>기록 지우기</h3><div class="acct"><p class="mute">지금 판 · 도감 · 해금한 판 · 연대기 · 데려갈 장수를 다 지우고 처음부터 한다.${cloud ? ' 계정에 저장된 같은 기록도 함께 지운다.' : ''} 계정과 소리 같은 설정은 남는다. 되돌릴 수 없다.</p>`
+    return `<h3>기록 지우기</h3><div class="acct"><p class="mute">지금 판 · 영웅전 · 해금한 판 · 연대기 · 데려갈 장수를 다 지우고 처음부터 한다.${cloud ? ' 계정에 저장된 같은 기록도 함께 지운다.' : ''} 계정과 소리 같은 설정은 남는다. 되돌릴 수 없다.</p>`
       + `<div class="btns"><button class="btn ghost danger" data-act="reset-play">${resetArmed ? '한 번 더 누르면 지운다 — 되돌릴 수 없다' : '플레이 기록 모두 지우기'}</button></div></div>`
   }
 
@@ -2723,7 +2726,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     h += `<p><b>${esc(who.name !== '' ? who.name : who.email)}</b> <span class="mute">${esc(who.email)}</span></p><p class="mute">${esc(syncWord(c.state()))}</p>`
     h += `<div class="btns"><button class="btn" data-act="acct-sync">지금 클라우드 저장</button><button class="btn ghost" data-act="acct-out">로그아웃</button>`
-    h += `<button class="btn ghost danger" data-act="acct-del">${acctArmed ? '한 번 더 누르면 삭제 — 클라우드의 판·도감·기록이 다 지워진다' : '계정 삭제'}</button></div></div>`
+    h += `<button class="btn ghost danger" data-act="acct-del">${acctArmed ? '한 번 더 누르면 삭제 — 클라우드의 판·영웅전·기록이 다 지워진다' : '계정 삭제'}</button></div></div>`
     return h
   }
   /** 첫 화면 한 줄 — 새 기기에서 판을 시작하기 전에 들어와야 저쪽 판을 받는다 */
@@ -3414,9 +3417,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + ` <a class="btn ghost" href="${BASE}realm/credits.html">소리 출처</a></p>`
     switch (f.kind) {
       case 'title': {
-        // 도감 — 판을 넘어 남는 것 (VISION §5-4). 만난 장수 수를 단추에
-        const c = dexCounts(loadDex())
-        const dexBtn = `<button class="btn big" data-act="dex-open">도감 <small class="mute">${c.met}/${c.total}</small></button>`
+        // 영웅전(도감) — 판을 넘어 남는 것 (VISION §5-4)
+        const dexBtn = `<button class="btn big" data-act="dex-open">영웅전</button>` // 형 10-25: 도감보다 즐거운 이름 · 숫자는 들어가면 보인다
         return titleHtml(KIT, realm, host.savedAt(), installCard() + acctLine() + links, realm === null && !tutorialOver(), dexBtn)
       }
       case 'dex': return dexHtml(DEX_KIT, f.board, f.sel, f.back === null ? '판으로' : '처음으로')
@@ -3636,6 +3638,18 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + `<button class="btn pri cok">확인</button></div></div>`
   }
 
+  /**
+   * 장수 그림을 화면 가득 (형 10-25: "이미지 클릭하면 왕크게 구경할 수 있게 · 유저들이 이미지 구경하고 싶잖아").
+   * 큰 판(bust-hd 900px)을 먼저, 없으면 카드 그림. 아무 데나 누르면 닫힌다
+   */
+  function openBust(src: string): void {
+    root.querySelector('.bview')?.remove()
+    root.insertAdjacentHTML('beforeend', `<div class="bview" data-act="bust-close" role="dialog" aria-label="장수 그림 크게"><img alt=""><small>누르면 닫힌다</small></div>`)
+    const img = root.querySelector<HTMLImageElement>('.bview img')!
+    img.addEventListener('error', () => { if (img.src !== new URL(src, location.href).href) img.src = src }, { once: true })
+    img.src = src.replace('/bust/', '/bust-hd/')
+  }
+
   /** 아이 얼굴 — 자라는 아이는 어린 얼굴, 다 자라 장수가 되면 어른 얼굴 */
   function noteFaces(r: Realm): void {
     noteGrowing((r.growing ?? []).map((g) => g.hero))
@@ -3723,6 +3737,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         else music.map(seasonOf(realm.season))
       }
       paintNow()
+      fitLabels(root) // 단추 글이 넘치면 줄바꿈 대신 글씨를 줄인다 (형 10-25)
     } catch (e) {
       failNote(e)
     }
@@ -4359,6 +4374,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         return
       }
       case 'guide-close': root.querySelector('.guidebox')?.remove(); return
+      case 'annal': {
+        const a = annalOf(d['id']!)
+        if (a === undefined) return
+        root.querySelector('.guidebox')?.remove()
+        root.insertAdjacentHTML('beforeend', `<div class="guidebox" data-act="guide-close"><div class="gbx annal" role="dialog" aria-label="${esc(a.name)}"><b>📜 ${esc(a.name)}</b><small>${esc(a.book)}</small>${a.lines.map((p) => `<p>${esc(p)}</p>`).join('')}<button class="btn sm" data-act="guide-close">닫기</button></div></div>`)
+        return
+      }
       case 'hero-back': openSheet({ kind: 'heroes' }); return
       case 'bridal-look': if (realm !== null) bridalLook(realm, d['id']!); return
       case 'hero-envoy': envoyPick = d['id']!; diploMode = 'envoy'; openSheet({ kind: 'diplo' }); return
@@ -4702,6 +4724,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'fold': { const k = d['k']!; if (foldOpen.has(k)) foldOpen.delete(k); else foldOpen.add(k); break }
       case 'bowup': musters = musters.some((o) => o.kind === 'bowUp') ? musters.filter((o) => o.kind !== 'bowUp') : [...musters, { kind: 'bowUp', faction: me() }]; break
       case 'hero': openSheet({ kind: 'hero', id: d['id']! }); return
+      case 'bust-view': openBust(d['src']!); return
+      case 'bust-close': root.querySelector('.bview')?.remove(); return
       case 'assign':
         heroOrders = [...heroOrders, { kind: 'assign', hero: d['id']!, node: d['node'] ? d['node'] : null }]
         break

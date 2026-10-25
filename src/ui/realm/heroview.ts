@@ -139,6 +139,19 @@ export const HERO_CSS = `
 .ap .wcand .hdo { font-size: 12.5px; font-weight: 700; color: #f0d090; }
 /* 묶인 장수의 원정 칸 — 한 줄만, 흐리게 (형 10-24) */
 .ap .exp.off { opacity: .62; }
+/* 사서에 남은 사람 — 이름 곁 「📜 사서 ?」 */
+.ap .annb { margin-left: 8px; vertical-align: middle; padding: 2px 8px; border-radius: 10px; border: 1px solid #a08050; background: #2a2016; color: #e8d4a8;
+  font: inherit; font-size: 12px; cursor: pointer; }
+.ap .annb b { color: #ffd27a; }
+.ap .gbx.annal small { display: block; color: #c9a86a; font-size: 12px; margin: 2px 0 6px; }
+/* 장수 그림 크게 보기 — 누르면 화면 가득, 아무 데나 누르면 닫힌다 */
+.ap img.big[data-act], .ap img.dxbig[data-act] { cursor: zoom-in; }
+.ap .bview { position: absolute; inset: 0; z-index: 95; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  background: #000e; cursor: zoom-out; animation: bvin .2s ease-out; }
+.ap .bview img { max-width: min(96vw, 900px); max-height: 88dvh; object-fit: contain; border-radius: 14px; box-shadow: 0 0 40px #000; border: 2px solid #6a5a3a; }
+.ap .bview small { color: #cbbf9f; font-size: 12px; }
+@keyframes bvin { from { opacity: 0; transform: scale(.94); } }
+@media (prefers-reduced-motion: reduce) { .ap .bview { animation: none; } }
 /* 명령 — 일 카드 여섯 (그림 깔린 판) · 일 창 · 장수 고르기 · 갈 곳 (형 10-25: "혼인·원정처럼 제대로 된 창으로") */
 .ap .cmdg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
 .ap .cmdc, .ap .cmdw, .ap .cmdm button { position: relative; overflow: hidden; color: var(--ink); font: inherit; text-align: left; border-radius: 12px; border: 1px solid #6a5a3a;

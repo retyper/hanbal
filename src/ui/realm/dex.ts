@@ -130,7 +130,7 @@ function detail(k: DexKit, x: DexHero, f: number): string {
   const lv = dexLevel(f)
   let h = `<div class="dxsel"><button class="x" data-act="dex-sel" aria-label="닫기">✕</button>`
   const src = k.bust(x.id)
-  h += `<div class="dxtop">${lv > 0 && src !== null ? `<img class="dxbig" src="${src}" alt="">` : '<span class="dxbig none">?</span>'}<div>`
+  h += `<div class="dxtop">${lv > 0 && src !== null ? `<img class="dxbig" src="${src}" alt="" data-act="bust-view" data-src="${src}">` : '<span class="dxbig none">?</span>'}<div>`
   h += `<b class="dxname">${lv > 0 ? nameHtml(x.name) : '???'}</b>`
   h += `<span class="mute">${k.esc(whereHint(x))}</span>`
   if (lv >= 2) h += `<span class="grade" style="--g:${GRADE_COLOR[x.grade]}">${GRADE_NAME[x.grade]}</span>`
@@ -147,7 +147,7 @@ export function dexHtml(k: DexKit, board: DexBoard, sel: string | null, back: st
   const dex = loadDex()
   const all = dexCatalog()
   const c = dexCounts(dex)
-  let h = `<div class="front dexp"><div class="fhead"><button class="btn ghost" data-act="dex-close">‹ ${k.esc(back)}</button><h2>도감</h2></div>`
+  let h = `<div class="front dexp"><div class="fhead"><button class="btn ghost" data-act="dex-close">‹ ${k.esc(back)}</button><h2>영웅전</h2></div>`
   h += `<div class="dxsum"><div class="dxbar"><i class="s" style="width:${(c.served / c.total) * 100}%"></i><i class="c" style="width:${(c.caught / c.total) * 100}%"></i><i class="m" style="width:${(c.met / c.total) * 100}%"></i><i class="h" style="width:${(c.heard / c.total) * 100}%"></i></div>`
   h += `<p><span><b>${c.served}</b>거느림</span><span><b>${c.caught}</b>사로잡음</span><span><b>${c.met}</b>만남</span><span><b>${c.heard}</b>들음</span><span class="mute">모두 ${c.total}</span></p>`
   h += `<p class="mute">판이 끝나도, 져도 남는다. 사로잡고 거느린 장수가 쌓인다.</p></div>`
@@ -178,7 +178,7 @@ export function dexToastHtml(k: DexKit, items: ReadonlyArray<{ id: string; lv: 2
     const x = cat.get(it.id)
     if (x === undefined) continue
     const src = k.bust(x.id)
-    h += `<div class="dxt lv${it.lv}">${src !== null ? `<img src="${src}" alt="">` : ''}<span><small>도감 · ${LV_NAME[it.lv]}</small><b>${nameHtml(x.name)}</b></span></div>`
+    h += `<div class="dxt lv${it.lv}">${src !== null ? `<img src="${src}" alt="">` : ''}<span><small>영웅전 · ${LV_NAME[it.lv]}</small><b>${nameHtml(x.name)}</b></span></div>`
   }
   if (items.length > top.length) h += `<div class="dxt more">그 밖에 ${items.length - top.length}명</div>`
   return h + `</div>`
