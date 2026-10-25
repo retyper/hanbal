@@ -169,13 +169,12 @@ function clanFace(id: string): string | undefined {
  * 새 나라를 넣으면 `node --experimental-strip-types tools/kit-colors.ts` 가 겹치는 짝과 둘째 빛 후보를 말한다.
  */
 /**
- * 나라 깃발 그림 — 문양 실루엣에 그 나라 두 빛을 입혀 구운 것 (tools/bake-flags.py → icon/nflag-<나라>.png).
- * 문자만큼 작게 줄여도 두 빛과 문양 덩어리로 갈린다 (형 10-26: "국기들을 새로 · 색이 다 어두워 구분할 수가 없음 · 문자만큼 작아도 다 구분 가능하게").
- * `emblem` 은 문양 이름(굽는 틀이 읽는다) — 화면에는 이 깃발을 쓴다.
+ * 나라 깃발 그림 — 나라마다 한 장 (제미나이 Argon 4×4 넷 → tools/cut-flags.py → icon/nflag-<나라>.png · 옛 깃발과 같은 틀).
+ * 토템 문양이 곧 그 나라 — 문양을 아주 진한 빛으로 꽉 채우고(빨간 돼지 · 파란 고래) 천은 다른 빛 · 무구 하나씩 (형 10-26: "중앙색이 다 구분되어야 · 빨간 돼지 파란 고래 이런 식으로 · 시뻘겋거나 새파래도 됨").
+ * `emblem` 은 옛 깃발 그림(icon/emblem-*) — 화면에는 이 깃발을 쓴다.
  */
 export function flagIcon(f: string | null | undefined): string | undefined {
-  // 10-26 구운 납작한 깃발(nflag-*)은 질이 떨어지고 싸움판 줄을 흔들어 걷었다 — 새 깃발이 오기 전까지 옛 그림
-  return f != null ? FACTION_ART[f]?.emblem : undefined
+  return f != null && FACTION_ART[f] !== undefined ? `nflag-${f}` : undefined
 }
 
 export const FACTION_ART: Readonly<Record<string, { emblem: string; color: string; color2: string }>> = {
