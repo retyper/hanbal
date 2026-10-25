@@ -40,7 +40,7 @@ import { startRegion } from '../../realm/data/regions/index.ts'
 import { HIRE_BY_TRAIT, HIRE_LINE, HIRE_PLAIN } from '../../realm/data/hire-lines.ts'
 import { DESTS, DEST_IDS, EXP_SEASONS, destReachable, expAmount, expBlock, expOdds, onExpedition } from '../../realm/expedition.ts'
 import { foundable, joinable, partiesOf, partyCost, partyMoves, partySize } from '../../realm/parties.ts'
-import { canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, together, inheritOf, isRuler, persuadeDropOf, recruitChance, resistOf, wanderersFor } from '../../realm/heroes.ts'
+import { canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, together, inheritOf, isRuler, persuadeDropOf, postHero, recruitChance, resistOf, wanderersFor } from '../../realm/heroes.ts'
 import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
@@ -2410,6 +2410,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (x.spouse !== undefined || realm!.heroes[x.id]?.spouse !== undefined) return '짝이 있다'
       return wedHtml(r, x) === '' ? '짝이 될 장수가 없다' : null
     }
+    // 장군은 군대를 떠나지 않는다 — 사신·자객으로 못 간다 (엔진 canEscort·plotAgents 와 같게 · 형 10-25: "군사를 맡은 장군은 사신으로 못 보내야")
+    if ((job === 'envoy' || job === 'plot') && Object.values(r.armies).some((a) => a.hero === x.id)) return '군대를 이끈다'
     if (job === 'exp') return null // 원정 칸이 제 사정(길 양식·한꺼번에 몇)을 말한다
     if (handLocked(r, x.id)) return '사신·공작을 나르는 손'
     if (job === 'post') return postTargets(r, x) === '' ? '맡을 고을이 없다' : null
@@ -2485,8 +2487,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     switch (job) {
       case 'post': return h + `<h4>어느 고을을</h4>` + postTargets(r, x)
       case 'lead': return h + `<h4>어느 군대를</h4>` + leadTargets(r, x)
-      case 'envoy': return h + `<button class="btn pri cmdgo" data-act="hero-envoy" data-id="${x.id}">${icon('good-tribute-bell')}${esc(josa(x.name, '을', '를'))} 보낼 나라를 고른다 ›</button>`
-      case 'exp': return h + expHtml(r, x)
+      // 맡은 자리가 어떻게 되는지 미리 (한 사람 한 가지 일 · 형 10-25)
+      case 'envoy': return h + (x.post != null ? `<p class="mute">따라 나간 계절엔 ${esc(josa(r.nodes[x.post]?.name ?? '', '이', '가'))} 빈다</p>` : '')
+        + `<button class="btn pri cmdgo" data-act="hero-envoy" data-id="${x.id}">${icon('good-tribute-bell')}${esc(josa(x.name, '을', '를'))} 보낼 나라를 고른다 ›</button>`
+      case 'exp': return h + (Object.values(r.armies).some((a) => a.hero === x.id) ? `<p class="mute">이끌던 군대는 그 자리에 두고 떠난다</p>` : x.post != null ? `<p class="mute">맡은 ${esc(josa(r.nodes[x.post]?.name ?? '', '을', '를'))} 내려놓고 떠난다</p>` : '') + expHtml(r, x)
       case 'wed': return h + wedHtml(r, x)
     }
   }
@@ -3009,6 +3013,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const isCap = Object.values(r.factions).some((f) => f.capital === id)
     const kind = n.kind === 'wild' && n.hh > 0 ? SETTLED_NAME : isCap ? (n.kind === 'port' ? '도읍 · 항구' : '도읍') : NODE_KIND_NAME[n.kind]
     let h = `<div class="an big">${icon(nodeIcon(n), 'nic')}<div><h3>${esc(n.name)}${NODE_NOW[id] !== undefined ? ` <small class="mute">지금의 ${esc(NODE_NOW[id]!)}</small>` : ""}</h3><span class="mute">${emblem(n.owner)}${esc(who)} · ${kind}</span></div></div>`
+    // 고을지기 자리 — 맨 위에. 비었으면 실루엣과 물음표 (형 10-25: "자리가 비어 있단 걸 확실히") · 누르면 앉힐 장수
+    if (ours && n.kind !== 'sodo' && n.hh > 0) h += chiefSlot(r, id) + (foldOpen.has('chief') ? `<div class="nfb">${chiefHtml(r, id)}</div>` : '')
     if (ours || known?.land) {
       const lines = n.tags.map((t) => TAG_LINE[t]).join(' ')
       const now = n.tags.map((t) => tagNow(t, seasonOf(r.season))).filter((x) => x !== null).join(' ')
@@ -3035,7 +3041,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 고을 형편 · 나는 것 · 고을지기는 접어 둔다 — 제목 줄에 한 줄 요약
       h += fold('stat', `고을 형편 <small class="mute">백성 ${Math.floor(n.hh).toLocaleString('ko-KR')}가구 · 장정 ${militiaMen(r, id)} · 군사 ${men}</small>`, status)
       h += fold('yield', '이 땅에서 나는 것', nodeYieldHtml(r, id))
-      if (n.kind !== 'sodo' && n.hh > 0) h += fold('chief', '고을지기', chiefHtml(r, id))
       h += `<h4 class="nsec">할 일</h4>`
       const guarded = guards.includes(id)
       // 개척단 꾸리기 — 지도에 개척단이 서고 군대처럼 빈땅으로 보낸다. 배우는 판에서는 빈땅 판의 단추로 한다
@@ -3116,16 +3121,31 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * (형 10-24: "마을 눌렀을 때 거기서도 통치하는 애 배치할 수 있게"). 앉힐 수 있는 이는 장수 판의 「맡는다」와 같다 —
    * 여기 있거나 우리 땅으로 이어진 곳에 있는 한가한 장수 (멀면 정예를 거느리고 그 계절 길에 있다) · 군대를 이끄는 이는 그 군대가 여기 있을 때만
    */
+  /** 고을지기 자리 한 칸 — 앉은 이(얼굴·이름) · 자리를 비운 이(흐리게) · 빈자리(실루엣과 ?) · 이번 계절 오는 이 */
+  function chiefSlot(r: Realm, id: string): string {
+    const posted = Object.values(r.heroes).find((y) => y.post === id && y.faction === me() && y.status === 'free')
+    const acting = postHero(r, id) // 도읍은 따로 앉힌 이가 없으면 군주가 맡는다 · 자리를 비운 계절엔 없다
+    const coming = heroOrders.find((o): o is Extract<Order, { kind: 'assign' }> => o.kind === 'assign' && o.node === id)
+    const cx = coming !== undefined ? r.heroes[coming.hero] : undefined
+    const sil = `<span class="chsil"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="14" r="7.5"/><path d="M5 40c0-10 6.5-15 15-15s15 5 15 15z"/></svg><b>?</b></span>`
+    const open = foldOpen.has('chief') ? '▴' : '▾'
+    let face: string, name: string, sub: string, cls: string
+    if (cx !== undefined) { face = bust(cx, 'cface'); name = cx.name; sub = '이번 계절 온다'; cls = 'come' }
+    else if (acting !== null) { face = bust(acting, 'cface'); name = acting.name; sub = isRuler(r, acting.id) && posted === undefined ? '군주가 몸소 맡는다' : `${STAT_NAME.chi} ${acting.chi} · ${STAT_NAME.ryak} ${acting.ryak} · ${STAT_NAME.deok} ${acting.deok}`; cls = '' }
+    else if (posted !== undefined) { face = bust(posted, 'cface'); name = posted.name; sub = '이번 계절 자리를 비웠다'; cls = 'away' }
+    else { face = sil; name = '비었다'; sub = '앉히면 내정·특성이 이 고을에 걸린다'; cls = 'empty' }
+    return `<button class="chslot ${cls}" data-act="fold" data-k="chief">${face}<span class="chst"><small>고을지기</small><b>${nameHtml(name)}</b><i>${esc(sub)}</i></span><i class="chgo">${cls === 'empty' ? '앉힌다' : '바꾼다'} ${open}</i></button>`
+  }
+
   function chiefHtml(r: Realm, id: string): string {
     const holder = Object.values(r.heroes).find((y) => y.post === id && y.faction === me() && y.status === 'free')
     const coming = heroOrders.find((o): o is Extract<Order, { kind: 'assign' }> => o.kind === 'assign' && o.node === id)
-    let h = `<h4 class="nsec">성주</h4>`
-    if (holder !== undefined) h += `<div class="cap">${bust(holder, 'cface')}<b>${nameHtml(holder.name)}</b><span class="mute">${STAT_NAME.chi} ${holder.chi} · ${STAT_NAME.ryak} ${holder.ryak} · ${STAT_NAME.deok} ${holder.deok}</span></div>`
+    // 앉은 이는 위의 자리 칸(chiefSlot)이 보인다 — 여기는 앉힐 장수만
+    let h = ''
     if (coming !== undefined) {
       const c = r.heroes[coming.hero]
-      return h + `<div class="banner good">이번 계절: ${esc(josa(c?.name ?? '', '이', '가'))} 성주로 온다<button class="btn ghost sm" data-act="unhero" data-id="${coming.hero}">취소</button></div>`
+      return h + `<div class="banner good">이번 계절: ${esc(josa(c?.name ?? '', '이', '가'))} 고을지기로 온다<button class="btn ghost sm" data-act="unhero" data-id="${coming.hero}">취소</button></div>`
     }
-    if (holder === undefined) h += `<p class="mute">성주가 없다. 장수를 성주로 앉히면 내정·지략·매력과 특성이 이 고을에 걸린다.</p>`
     const ordered = (hid: string): boolean => heroOrders.some((o) => (o.kind === 'assign' || o.kind === 'lead' || o.kind === 'persuade') && o.hero === hid)
     const reach = (x: Hero): 'here' | 'far' | null => {
       const army = Object.values(r.armies).find((a) => a.hero === x.id)

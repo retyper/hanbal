@@ -575,6 +575,18 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .mcard.fulld .askc .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; } .ap .mcard.fulld .askc .btns .btn { justify-content: center; padding: 14px 16px; font-size: 17px; } .ap .mcard.fulld .askc .btns > .mute { grid-column: 1 / -1; text-align: center; }
 .ap .mcard.fulld .rdecide.full > .cardc, .ap .mcard.fulld .rdecide.full > .askc { width: min(100%, 760px); align-self: center; }
 .ap .mcard.fulld .cardc .copt { justify-content: center; min-height: 64px; } .ap .mcard.fulld .cardc .copt .cof { width: 72px; height: 72px; }
+/* 고을지기 자리 — 고을 판 맨 위 (비면 붉은 점선 · 실루엣과 ?) */
+.ap .chslot { display: flex; align-items: center; gap: 10px; width: 100%; margin: 6px 0 8px; padding: 8px 12px; border-radius: 12px; border: 1px solid #6a5a3a; background: #2a2118; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.ap .chslot .cface, .ap .chslot .chsil { width: 54px; height: 54px; flex: none; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #8a7040; }
+.ap .chslot .chsil { position: relative; display: grid; place-items: center; background: #3a3029; border: 2px dashed #9a8a6a; overflow: hidden; }
+.ap .chslot .chsil svg { position: absolute; inset: 12% 10% 0; width: 80%; height: 88%; fill: #8a7a66; opacity: .85; }
+.ap .chslot .chsil b { position: relative; font-size: 24px; font-weight: 800; color: #f0d890; text-shadow: 0 1px 4px #000; }
+.ap .chslot .chst { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ap .chslot .chst small { font-size: 11.5px; color: var(--mute); } .ap .chslot .chst b { font-size: 16px; } .ap .chslot .chst i { font-style: normal; font-size: 12.5px; color: #cfc6b4; }
+.ap .chslot .chgo { font-style: normal; font-size: 13px; color: var(--gold); white-space: nowrap; }
+.ap .chslot.empty { border: 1.5px dashed #c0504a; background: #2a1a16; } .ap .chslot.empty .chst b { color: #e88a7a; }
+.ap .chslot.away .cface { filter: grayscale(1) brightness(.6); } .ap .chslot.away .chst i { color: #e0a060; }
+.ap .chslot.come { border-color: #6aa060; }
 .ap .wandc .wtr { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 6px; } .ap .mcard.fulld .wandc .wtr { justify-content: center; }
 .ap .mcard.fulld .fdnote { margin: 12px 0 0; text-align: center; color: var(--mute); font-size: 13px; }
 .ap .mcard .rdecide .rdh { margin: 0 0 6px; color: #ffd27a; } .ap .mcard .rdecide .rdh b { display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 11px; background: #c0392b; color: #fff; font-size: 13px; }
