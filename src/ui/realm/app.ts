@@ -2023,10 +2023,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return `<span class="said">${face ?? bust(h, 'sface')}<span><i>${esc(who ?? (h !== undefined ? `${h.name}의 짐작` : '신하의 짐작'))}</i><q>${tx(text)}</q></span></span>`
   }
   /** 그 나라 속을 들은 말 — 첩자가 전했나, 동맹이 귀띔했나 (readsMind 일 때만) */
+  // 말하는 이는 늘 우리 장수(꾀가 가장 높은 이) — 그 나라 군장이 제 속을 「저들이」라며 귀띔하는 꼴이었다 (형 10-25: "귀띔은 요청한 국가에서 직접 주는게 말이 되나? 우리 장수중하나여야")
   function heardHtml(r: Realm, f: string, text: string): string {
     const ally = relationOf(r, me(), f).state === 'ally'
-    const lord = r.heroes[r.factions[f]?.ruler ?? rulerId(f)]
-    return `<div class="why">${ally ? said(lord, text, `동맹 ${r.factions[f]?.name ?? ''}의 귀띔`) : said(undefined, text, '심어 둔 첩자가 전한 말', icon('status-spy', 'sface'))}</div>`
+    const adv = advisor(r)
+    const src = ally ? `동맹 ${r.factions[f]?.name ?? ''} 쪽에서 들은 말` : '심어 둔 첩자가 전한 말'
+    return `<div class="why">${said(adv, text, adv !== undefined ? `${adv.name} — ${src}` : src, adv !== undefined ? undefined : icon('status-spy', 'sface'))}</div>`
   }
 
   /** 그 나라 속을 읽나 — 그 나라 땅에 우리 첩자가 있거나 동맹이다. 아니면 속셈은 안 보인다 */
