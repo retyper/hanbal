@@ -167,19 +167,58 @@ export const BATTLE_SFX = {
  * 타는 고을 — 불꽃 한 장을 늘였다 줄였다 하면 어색했다 (형 10-23: "불타는 이미지는 어색하지 않게"). 작은 불길 여럿이 저마다 솟았다 스러지고
  * 불티가 낱낱이 날아오른다 (이펙트는 낱낱이 — 덩어리를 흔들지 않는다). 자리는 늘 같다(꾸밈이라 판정과 상관없다)
  */
-const FLAMES = 11
-const EMBERS = 14
+const FLAMES = 6
+const EMBERS = 8
 export function burnHtml(art: string, side: 'l' | 'r'): string {
   const h = (i: number, k: number): number => { const x = Math.sin(i * 12.9898 + k * 78.233 + (side === 'l' ? 0 : 17)) * 43758.5453; return x - Math.floor(x) }
   let s = `<div class="wburn ${side}"><i class="bed"></i>`
   for (let i = 0; i < FLAMES; i++) {
-    s += `<img src="${art}fx/fire.png" alt="" style="--x:${(h(i, 1) * 100).toFixed(0)}%;--s:${(0.55 + h(i, 2) * 0.7).toFixed(2)};--t:${(-h(i, 3) * 1.4).toFixed(2)}s;--d:${(1.0 + h(i, 4) * 0.7).toFixed(2)}s">`
+    s += `<img src="${art}fx/fire.png" alt="" style="--x:${(h(i, 1) * 100).toFixed(0)}%;--s:${(0.55 + h(i, 2) * 0.7).toFixed(2)};--t:${(-h(i, 3) * 2).toFixed(2)}s;--d:${(1.6 + h(i, 4) * 1.2).toFixed(2)}s">`
   }
   for (let i = 0; i < EMBERS; i++) {
     s += `<b style="--x:${(h(i, 5) * 100).toFixed(0)}%;--t:${(-h(i, 6) * 2.4).toFixed(2)}s;--d:${(1.6 + h(i, 7) * 1.4).toFixed(2)}s;--w:${Math.round(-30 + h(i, 8) * 60)}px"></b>`
   }
   return s + '</div>'
 }
+
+/**
+ * 전장 한가운데 물 한 줄기 (SVG · 상자 비율대로 늘어난다) — 나루·갈대 물가는 강, 갯벌은 젖은 진흙과 물웅덩이.
+ * 위(지평선 쪽)는 좁고 흐리게, 아래는 넓게 — 진의 원근과 맞춘다. 물결 줄은 천천히 흘러내린다 (CSS wrvflow)
+ */
+function waterSvg(mud: boolean): string {
+  // 왼둑·오른둑 — 아래로 갈수록 벌어진다 (0~100 상자 비율)
+  const left = 'M47 18 C46 32, 45.5 40, 44 52 S41.5 74, 40.5 100'
+  const right = 'L59.5 100 C58.6 86, 57.5 72, 56.5 60 S54.2 34, 53 18 Z'
+  const band = `${left} ${right}`
+  const bank = 'M45.6 18 C44.4 32, 43.6 40, 42 52 S39 74, 37.6 100 L62.4 100 C61.2 86, 60 72, 58.8 60 S55.8 34, 54.4 18 Z'
+  if (mud) {
+    const pools = [[49.5, 46, 2.6, 1.1], [51.8, 62, 3.6, 1.4], [48, 78, 4.4, 1.7], [53, 91, 5, 1.8]]
+      .map(([x, y, rx, ry]) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#wrvP)"/>`).join('')
+    return `<svg class="wrv mud" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs>`
+      + `<linearGradient id="wrvM" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b5a44" stop-opacity="0"/><stop offset=".22" stop-color="#5e4c36" stop-opacity=".85"/><stop offset="1" stop-color="#3e2f20"/></linearGradient>`
+      + `<radialGradient id="wrvP"><stop offset="0" stop-color="#b8cfd6" stop-opacity=".85"/><stop offset=".7" stop-color="#7f9aa2" stop-opacity=".6"/><stop offset="1" stop-color="#4a5a5e" stop-opacity="0"/></radialGradient></defs>`
+      + `<path d="${bank}" fill="#7a6648" opacity=".55"/><path d="${band}" fill="url(#wrvM)"/>`
+      + `<path d="M50 24 C49 40, 52 52, 50.5 66 S48 86, 50 100" fill="none" stroke="#9fb6bd" stroke-width=".6" opacity=".55"/>${pools}`
+      + `<path class="wrv-gloss" d="M48.5 50 Q50 49, 51.5 50 M47 70 Q50 69, 53 70 M46 88 Q50 87, 54 88" fill="none" stroke="#e8f2f4" stroke-width=".35"/></svg>`
+  }
+  const ripples = [30, 42, 54, 66, 78, 90].map((y, i) => {
+    const w = 2 + y * 0.06
+    const x = 50 + (i % 2 === 0 ? -1 : 1) * 0.8
+    return `<path class="wrv-rip" style="--i:${i}" d="M${(x - w).toFixed(1)} ${y} Q${x.toFixed(1)} ${y - 0.8}, ${(x + w).toFixed(1)} ${y}" fill="none" stroke="#e8f6f8" stroke-width=".35"/>`
+  }).join('')
+  return `<svg class="wrv" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs>`
+    + `<linearGradient id="wrvW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fb3c4" stop-opacity="0"/><stop offset=".22" stop-color="#5f9fb3" stop-opacity=".85"/><stop offset=".6" stop-color="#2f6f86"/><stop offset="1" stop-color="#1f4f66"/></linearGradient>`
+    + `<linearGradient id="wrvS" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0d2a36" stop-opacity=".45"/><stop offset=".25" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#d8f0f6" stop-opacity=".22"/><stop offset=".75" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#0d2a36" stop-opacity=".45"/></linearGradient></defs>`
+    + `<path d="${bank}" fill="#8a7a52" opacity=".5"/><path d="${band}" fill="url(#wrvW)"/><path d="${band}" fill="url(#wrvS)"/>`
+    + `<path d="${left}" fill="none" stroke="#e8f2e8" stroke-width=".45" opacity=".55"/><path d="M53 18 C54.2 34, 56.5 60, 56.5 60 S58.6 86, 59.5 100" fill="none" stroke="#e8f2e8" stroke-width=".45" opacity=".55"/>`
+    + `${ripples}</svg>`
+}
+
+/** 강둑의 갈대 — [상자 가로 %, 진의 세로 oy, 크기]. waterSvg 의 둑 선에 맞췄다 (tp 의 원근 기울기는 빼고 넣는다) */
+const REEDS_AT: ReadonlyArray<readonly [number, number, number]> = [
+  [46, -30, 0.7], [44, -8, 0.85], [41, 16, 1], [40, 34, 1.1],
+  [54.5, -26, 0.65], [56.6, -2, 0.8], [58.6, 22, 0.95], [60, 38, 1.05],
+]
 
 /** 한 합이 풀리는 사이 (초) — 깃발 → 이야기 → 사람 수 */
 const STAGE_S = [0, 1.1, 2.4] as const
@@ -924,7 +963,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const ford = l.via === 'ford' || l.via === 'reeds' || l.via === 'mudflat'
     // 물가 — 나루·갈대는 강물과 갈대, 갯벌은 진흙 빛 (강물 그림을 진흙 빛으로)
     const mud = l.via === 'mudflat'
-    const midTerr = ford ? `<div class="wf-mid-terr${mud ? ' mud' : ''}">${[-30, -14, 2, 18, 34].map((oy) => tp('river', 50, oy, 1.25, true)).join('')}${mud ? '' : tp('reeds', 47, -34, 0.8) + tp('reeds', 53, 30, 0.9)}${tlab('ford', 50, -48)}</div>` : ''
+    // 두 진 사이의 물 — 강물 그림 다섯 장을 겹쳐 붙였더니 물가로 안 보였다 (형 10-25: "불가 이미지 5개 대충 붙여넣으면 그게 물가냐").
+    // 이제 한 줄기로 그린다: 지평선에서 내려오며 넓어지는 강(원근) · 강둑 · 천천히 흐르는 물결 · 둑의 갈대. 갯벌은 젖은 진흙 · 물웅덩이 · 갯골
+    const midTerr = ford ? `<div class="wf-mid-terr${mud ? ' mud' : ''}">${waterSvg(mud)}${mud ? '' : REEDS_AT.map(([x, oy, s]) => tp('reeds', x - oy * 0.22, oy, s)).join('')}${tlab('ford', 50, -48)}</div>` : ''
     const side = (i: 0 | 1, cls: 'us' | 'foe', o: RoundOrder | undefined, hero: string | null, f: string | undefined): string => {
       const mix = mixOf(i)
       const all = Object.entries(mix).filter(([, v]) => (v ?? 0) > 0) as Array<[string, number]>
@@ -1266,7 +1307,12 @@ export const WAR_CSS = `
 .ap .wfield .wf-pre { animation: wfpre .5s ease-out var(--rv, 0s) forwards; } @keyframes wfpre { to { opacity: 0; visibility: hidden; } }
 .ap .wfield .wf-post { animation: wfpost .5s ease-out var(--rv, 0s) both; } @keyframes wfpost { from { opacity: 0; } to { opacity: 1; } }
 .ap .wr.fast .wfield { --rv: 0s !important; }
-.ap .wfield .wf-mid-terr.mud .tp { filter: sepia(1) saturate(.65) brightness(.72) hue-rotate(-12deg); opacity: 1; }
+/* 물 한 줄기 (waterSvg) — 땅 위 · 병사 밑. 위쪽은 지평선으로 스러진다 */
+.ap .wfield .wrv { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; filter: drop-shadow(0 0 3px #0006); }
+.ap .wfield .wrv-rip { opacity: 0; animation: wrvflow 3.6s linear calc(var(--i) * -.6s) infinite; }
+@keyframes wrvflow { 0% { opacity: 0; transform: translateY(-3px); } 30% { opacity: .7; } 100% { opacity: 0; transform: translateY(6px); } }
+.ap .wfield .wrv-gloss { opacity: .6; }
+@media (prefers-reduced-motion: reduce) { .ap .wfield .wrv-rip { animation: none; opacity: .5; } }
 /* 땅 이름표 (tlab) — 소품 곁 · 누구에게 유리한지 색 */
 .ap .wf-tl { position: absolute; left: var(--x); top: calc(60% + var(--oy)); transform: translate(-50%, -50%); z-index: 75; display: flex; flex-direction: column; align-items: center; padding: 1px 6px 2px; border-radius: 7px; background: #120d09d8; border: 1px solid #6a5a48; font-size: clamp(9.5px, 2.5cqw, 12px); font-weight: 800; line-height: 1.15; color: #f6d8a0; white-space: nowrap; pointer-events: none; box-shadow: 0 2px 6px #000a; }
 .ap .wf-tl small { font-size: .82em; font-weight: 700; color: #c8bca8; }
@@ -1556,9 +1602,11 @@ export const WAR_CSS = `
 .ap .wburn { position: absolute; bottom: 1%; width: min(46vw, 430px); height: min(40vw, 360px); }
 .ap .wburn.l { left: 1%; } .ap .wburn.r { right: 2%; width: min(36vw, 330px); height: min(32vw, 290px); }
 .ap .wburn .bed { position: absolute; left: 5%; right: 5%; bottom: 0; height: 22%; border-radius: 50%; background: radial-gradient(ellipse at 50% 70%, #ffb04acc, #ff6a1a66 45%, #0000 75%);
-  filter: blur(6px); animation: wbed 1.3s ease-in-out infinite alternate; }
-.ap .wburn img { position: absolute; bottom: 0; left: calc(var(--x) * .8); width: calc(52% * var(--s)); transform-origin: 50% 100%; mix-blend-mode: screen; opacity: 0;
-  animation: wtongue var(--d) ease-out var(--t) infinite; }
+  filter: blur(6px); opacity: .85; }
+/* 불길은 늘 보이는 채로 천천히 흔들린다 — 0↔0.95 로 켜졌다 꺼지고 화면 섞기(screen)까지 걸려 폰에서 끝 화면 그림 전체가 깜빡였다 (형 10-25: "승리던 패배던 전투 끝날때 이미지들이 엄청 깜빡") */
+.ap .wburn img { position: absolute; bottom: 0; left: calc(var(--x) * .8); width: calc(52% * var(--s)); transform-origin: 50% 100%; opacity: .88;
+  animation: wsway var(--d) ease-in-out var(--t) infinite alternate; }
+@keyframes wsway { from { transform: scale(1, 1) skewX(-2deg); } to { transform: scale(.94, 1.08) skewX(3deg); } }
 .ap .wburn b { position: absolute; bottom: 12%; left: var(--x); width: 4px; height: 4px; border-radius: 50%; background: #ffd27a; box-shadow: 0 0 6px 2px #ff9a3a; opacity: 0;
   animation: wember var(--d) linear var(--t) infinite; }
 @keyframes wtongue { 0% { opacity: 0; transform: translateY(8%) scale(.5, .6); } 18% { opacity: .95; transform: translateY(0) scale(1, 1); }
