@@ -1,7 +1,9 @@
 /**
- * 확률을 숫자 대신 색과 말로 (형: "숫자나오면 재미없잖아" — 2026-10-18)
+ * 확률을 색과 말로 — 그리고 숫자를 곁에 (형: "숫자나오면 재미없잖아" — 2026-10-18 → 10-25 위원회 docs/realm/ODDS.md:
+ * "우리 것은 숫자, 남의 속은 범위, 하늘은 말" · 말 칩은 버리지 않는다 — `승산 있다 55%` 처럼 함께).
  *
- * 판정은 그대로 확률이고, 화면만 감으로 보인다. 아는 만큼만 또렷하다: 범위가 넓으면 칩이 두 색으로 번지고 "?" 가 붙는다.
+ * 판정은 그대로 확률이다. 아는 만큼만 또렷하다: 범위가 넓으면 칩이 두 색으로 번지고, 숫자도 `35~60%` 처럼 범위로 보인다.
+ * 숫자는 5% 단위, 0%·100% 는 참일 때만. 「확실」은 1.0 일 때만 (열에 셋 지는 것을 확실이라 하면 XCOM 의 95% 빗나감 분노다).
  * 단계 경계는 화면의 말일 뿐이라 params 가 아니라 여기 둔다 (규칙 3 은 판의 수치).
  * 말은 "~할 듯" 꼴을 버리고 한눈에 읽히는 낱말로 (형 10-23: "거의 된다 · 될 듯 · 안 될 듯 … 어휘 표현 좀 적절한 거 없나").
  */
@@ -34,9 +36,10 @@ const AMBUSH: readonly Tier[] = [
   { at: 0, word: '빤히 보인다', color: '#b83a2a' },
 ]
 
-/** 공작 — 먹힐 확률 */
+/** 공작 — 먹힐 확률 (사건 카드의 굴리는 답도 이 말을 쓴다) */
 const PLOT: readonly Tier[] = [
-  { at: 0.7, word: '확실', color: '#3f8f3a' },
+  { at: 1, word: '확실', color: '#2f7f2a' },
+  { at: 0.7, word: '십중팔구', color: '#3f8f3a' },
   { at: 0.45, word: '승산 있다', color: '#7aa83a' },
   { at: 0.25, word: '해볼 만', color: '#c9a23a' },
   { at: 0.1, word: '어렵다', color: '#d0702f' },
@@ -55,13 +58,27 @@ const WIDE = 0.3
 
 const tierOf = (tiers: readonly Tier[], p: number): Tier => tiers.find((t) => p >= t.at) ?? tiers[tiers.length - 1]!
 
-function chip(tiers: readonly Tier[], lo: number, hi: number): string {
+/** 5% 단위로 — 0% 와 100% 는 참일 때만 (0.98 을 100% 라 하면 거짓말이다) */
+export function pct5(p: number): number {
+  const v = Math.round(p * 20) * 5
+  return p < 1 && v >= 100 ? 95 : p > 0 && v <= 0 ? 5 : v
+}
+/** `55%` · 범위면 `35~60%` */
+export function pctText(lo: number, hi: number): string {
+  const a = pct5(lo)
+  const b = pct5(hi)
+  return a === b ? `${a}%` : `${a}~${b}%`
+}
+
+/** pct — 말 곁에 숫자도 (범위가 곧 "가늠이 덜 됐다" 라 "?" 는 뗀다) */
+function chip(tiers: readonly Tier[], lo: number, hi: number, pct = false): string {
   const mid = tierOf(tiers, (lo + hi) / 2)
   const a = tierOf(tiers, lo).color
   const b = tierOf(tiers, hi).color
   const wide = hi - lo > WIDE
   const bg = a === b ? a : `linear-gradient(90deg, ${a}, ${b})`
-  return `<span class="feel${wide ? ' wide' : ''}" style="background:${bg}">${mid.word}${wide ? ' ?' : ''}</span>`
+  const tail = pct ? ` <b class="pc">${pctText(lo, hi)}</b>` : wide ? ' ?' : ''
+  return `<span class="feel${wide ? ' wide' : ''}" style="background:${bg}">${mid.word}${tail}</span>`
 }
 
 export const fightFeel = (lo: number, hi: number): string => chip(FIGHT, lo, hi)
@@ -73,7 +90,8 @@ const TRIBUTE: readonly Tier[] = [
   { at: 0.1, word: '거세게 버틴다', color: '#d0702f' },
   { at: 0, word: '콧방귀', color: '#b83a2a' },
 ]
-export const envoyFeel = (lo: number, hi: number, ask?: string): string => chip(ask === 'tribute' ? TRIBUTE : ENVOY, lo, hi)
+/** 사신 — 남의 속이 섞여 범위 % (ODDS: 흥정 손잡이 · 몫을 바꾸면 바로 다시 셈) */
+export const envoyFeel = (lo: number, hi: number, ask?: string): string => chip(ask === 'tribute' ? TRIBUTE : ENVOY, lo, hi, true)
 export const ambushFeel = (p: number): string => chip(AMBUSH, p, p)
 /** 호감 −100..100 — 숫자 없이 사이의 온도로 */
 const FAVOR: readonly Tier[] = [
@@ -84,7 +102,10 @@ const FAVOR: readonly Tier[] = [
   { at: -Infinity, word: '원수 같다', color: '#b83a2a' },
 ]
 export const favorFeel = (v: number): string => `<span class="feel" style="background:${tierOf(FAVOR, v).color}">호감 · ${tierOf(FAVOR, v).word}</span>`
-export const plotFeel =(lo: number, hi: number): string => chip(PLOT, lo, hi)
+/** 공작 — 적 지략을 모르니 범위 % (ODDS · 첩자가 폭을 줄인다). pct=false 는 말만 — 들킴·탈출은 아직 적의 참 경계를 읽어서 (ODDS 고칠 것) */
+export const plotFeel = (lo: number, hi: number, pct = true): string => chip(PLOT, lo, hi, pct)
+/** 사건 카드의 굴리는 답 — 입력을 다 아는 한 번의 도박이라 % 하나 (ODDS) */
+export const chanceFeel = (p: number): string => chip(PLOT, p, p, true)
 export const alertFeel =(lo: number, hi: number): string => chip(ALERT, lo, hi)
 /** 모르는 싸움 — 본 적 없는 곳 */
 export const unknownFeel = (): string => `<span class="feel unknown">모른다</span>`
@@ -93,5 +114,6 @@ export const FEEL_CSS = `
 .ap .feel { display: inline-block; padding: 2px 9px; border-radius: 11px; color: #fff; font-size: 12.5px; font-weight: 700; line-height: 1.5;
   text-shadow: 0 1px 1px #0008; white-space: nowrap; vertical-align: middle; }
 .ap .feel.wide { opacity: .85; border: 1px dashed #fff8; }
+.ap .feel .pc { font-weight: 800; font-variant-numeric: tabular-nums; margin-left: 1px; }
 .ap .feel.unknown { background: #54412a; color: #c8c0b0; }
 `

@@ -132,6 +132,12 @@ export const LEGACY_CSS = `
 .ap .cardc .copt .cot { display: flex; flex-direction: column; gap: 1px; font-size: inherit; color: inherit; min-width: 0; }
 .ap .cardc .copt { display: flex; flex-direction: column; gap: 4px; padding: 7px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; text-align: center; align-items: center; justify-content: flex-start; cursor: pointer; } .ap .cardc .copt .cot { align-items: center; } .ap .cardc .copt:disabled { opacity: .55; cursor: default; }
 .ap .cardc .copt.on { border-color: var(--gold); background: #2c2618; } .ap .cardc .copt span { font-size: 12.5px; color: #cfc6b4; } .ap .cardc .copt i { font-style: normal; font-size: 11px; color: var(--mute); }
+/* 답마다 얻고 잃는 것 — 아이콘·숫자 칩 · 굴리는 답이면 % 와 「이루면 · 어긋나면」 (형 10-25 · ODDS 원칙 3) */
+.ap .cardc .copt .cfx { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 3px; }
+.ap .cardc .copt .cfx .cost, .ap .cardc .copt .cfx .gain { margin-left: 0; }
+.ap .cardc .copt .cfx small { font-size: 11px; color: var(--mute); margin-right: 2px; } .ap .cardc .copt .cfx .cnone { color: #9fd18b; }
+.ap .cardc .copt .cg i { font-size: 9px; color: #ff6a4a; } .ap .cardc .copt .gg i { font-size: 9px; color: #5aff8a; }
+.ap .cardc .copt .feel { color: #fff; font-size: 12.5px; }
 .ap .prologue .carried { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 15px; animation-delay: .9s; }
 .ap .prologue .carried img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #2a1d10; }
 `

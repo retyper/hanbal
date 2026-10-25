@@ -115,16 +115,142 @@ const clampMorale = (v: number): number => Math.min(P.realm.moraleMax, v)
  * 곡식 몫 — 창고에 비례하되 바닥이 있고, 사건마다 크기가 들쭉날쭉하다
  * (형: "적게요구하거나 약탈을 조금만 해가는놈들일수도 있겠지만 그것도 어느정도 크기가 다이나믹 했음")
  */
-const grainCost = (r: Realm, f: string, share: number): number => {
+const grainCost = (r: Realm, have: number, share: number): number => {
   const R = P.realm
   const swing = R.cardSwingLo + (R.cardSwingHi - R.cardSwingLo) * roll(r.seed, r.season, 'card-amt')
-  return Math.max(R.cardGrainMin, Math.round((r.stock[f]?.grain ?? 0) * share * swing))
+  return Math.max(R.cardGrainMin, Math.round(have * share * swing))
 }
 
 function setHarvest(r: Realm, f: string, mul: number): void {
   const year = Math.floor(r.season / 4)
   const had = r.harvestMod?.[f]
   ;(r.harvestMod ??= {})[f] = { year, mul: had !== undefined && had.year === year ? had.mul * mul : mul }
+}
+
+/**
+ * 사건 답 하나가 하는 일 — 엔진(resolveCard)이 거는 것과 화면이 보이는 것이 **같은 셈**이다
+ * (형 10-25: "이벤트들 발생할 때는 확률이랑 얻게 되거나 잃게 되는 거 이미지랑 숫자로 확실하게 보여줘야겠는데?" · ODDS.md 원칙 3).
+ * 곡식·쇠는 + 들어온다 · − 나간다 (나갈 때는 창고에 있는 만큼만)
+ */
+export interface CardFx {
+  readonly grain?: number
+  readonly iron?: number
+  /** 그해 가을걷이 배수 (0.85 = 15% 덜 거둔다) */
+  readonly harvest?: number
+  /** 우리 군대 사기 + */
+  readonly morale?: number
+  /** 우리 장수 모두의 정 ± */
+  readonly bond?: number
+  /** 장수 하나하나의 정 — 다툼 */
+  readonly bonds?: ReadonlyArray<readonly [hero: string, d: number]>
+  /** 고을마다 잃는 집 */
+  readonly hurt?: ReadonlyArray<readonly [node: string, hh: number]>
+  /** 우리 고을마다 경계 + */
+  readonly watch?: number
+  /** 그 나라들의 호감 ± */
+  readonly favor?: { readonly to: readonly string[]; readonly d: number }
+  /** 그 나라 군대의 사기가 꺾인다 */
+  readonly foe?: { readonly faction: string; readonly d: number }
+  /** 새로 오는 장수 */
+  readonly join?: string
+}
+
+export interface CardPlan {
+  /** 틀림없이 일어나는 것 */
+  readonly sure: CardFx
+  /** 굴리는 답이면 이룰 확률 — 판정은 roll(card-res:{kind}:{die}) < chance. 굴리지 않으면 없다 */
+  readonly chance?: number
+  readonly die?: string
+  readonly win?: CardFx
+  readonly lose?: CardFx
+  /** 보고 줄에 남길 장수 — 다툼에서 편든 이 · 들어온 망명자 */
+  readonly hero?: string
+}
+
+/**
+ * 이 답을 고르면 무엇이 되나 — 화면은 이것을 아이콘·숫자로, 엔진은 이것을 그대로 건다 (어긋날 수 없게 한 셈).
+ * have — 카드가 걸릴 때의 창고 (화면은 이번 계절 명령을 뺀 남은 것을 넘긴다 · 카드는 명령 뒤에 걸린다)
+ */
+export function cardPreview(r: Realm, c: Card, pick: 0 | 1, have?: { readonly grain: number; readonly iron: number }): CardPlan | null {
+  const f = r.player
+  if (f === undefined) return null
+  const R = P.realm
+  const st = have ?? r.stock[f] ?? { grain: 0, iron: 0 }
+  const cost = (share: number): number => -Math.min(st.grain, grainCost(r, st.grain, share))
+  const earn = (share: number): number => grainCost(r, st.grain, share)
+  const hurt = (nodes: readonly string[], share: number): Array<readonly [string, number]> =>
+    nodes.flatMap((id) => (r.nodes[id] !== undefined ? [[id, Math.round(r.nodes[id]!.hh * share)] as const] : []))
+  const cheer: CardFx = { morale: R.cardMorale, bond: R.cardBond }
+  switch (c.kind) {
+    case 'drought':
+      return { sure: pick === 0 ? { grain: cost(R.cardDroughtPray), harvest: R.cardDroughtPrayMul } : { grain: cost(R.cardDroughtDam), harvest: R.cardDroughtDamMul } }
+    case 'bounty':
+      return { sure: pick === 0 ? { harvest: R.cardBountyMul } : { grain: cost(R.cardFeastGrain), ...cheer } }
+    case 'locust':
+      if (pick === 0) return { sure: { harvest: R.cardLocustBurnMul } }
+      // 산천에 빈다 — 『삼국사기』 파사이사금 30년 「王遍祭山川，以祈禳之，蝗滅」 · 곡식을 조금 바치고, 흔히 메뚜기가 사라진다 (형 10-24)
+      return { sure: { grain: cost(R.cardLocustPray) }, chance: R.cardLocustOk, die: 'wait', win: {}, lose: { harvest: R.cardLocustFailMul } }
+    case 'plague':
+      if (pick === 0) return { sure: { hurt: hurt([c.node!], R.cardPlagueShut), grain: cost(R.cardPlagueShutGrain) } }
+      return { sure: {}, chance: R.cardPlagueOk, die: 'spread', win: {}, lose: { hurt: hurt(bigNodes(r, f).slice(0, 2), R.cardPlagueHit) } }
+    case 'halo':
+      return { sure: pick === 0 ? { morale: R.cardMorale } : { watch: R.cardHaloWatch } }
+    case 'quarrel': {
+      const [win, lose] = pick === 0 ? [c.hero!, c.hero2!] : [c.hero2!, c.hero!]
+      return { sure: { bonds: [[win, R.cardQuarrel], [lose, -R.cardQuarrel]] }, hero: win }
+    }
+    case 'waship':
+      if (pick === 0) {
+        const n = Math.min(Math.floor(st.iron), Math.max(R.cardIronSellMin, Math.round(st.iron * R.cardIronSellShare)))
+        return { sure: { iron: -n, grain: n * R.cardIronSell } }
+      } else {
+        const g = -cost(R.cardIronBuyShare)
+        return { sure: { grain: -g, iron: Math.round(g / R.cardIronBuy) } }
+      }
+    case 'pirates':
+      if (pick === 0) return { sure: { grain: cost(R.cardPirateRansom) } }
+      return { sure: {}, chance: R.cardPirateOk, die: 'fight', win: { iron: R.cardPirateIron }, lose: { hurt: hurt([c.node!], R.cardPirateHit), grain: cost(R.cardPirateLoss) } }
+    case 'exile': {
+      if (pick === 1) return { sure: {} }
+      const pool = poolFree(r)
+      const p = pool[Math.floor(roll(r.seed, r.season, `card-res:${c.kind}:who`) * pool.length)]
+      return p !== undefined && homeOf(r, f) !== null ? { sure: { grain: cost(R.cardExileCost), join: p.id }, hero: p.id } : { sure: {} }
+    }
+    case 'fugitive':
+      return pick === 0
+        ? { sure: { favor: { to: knownOf(r, f), d: R.cardFavorUp }, bond: R.cardFugitiveBond } }
+        : { sure: { grain: earn(R.cardFugitiveGrain), favor: { to: knownOf(r, f), d: -R.cardFavorDown } } }
+    case 'whale':
+      return { sure: pick === 0 ? { grain: Math.max(R.cardWhaleMin, earn(R.cardWhaleShare)) } : cheer }
+    case 'fishbridge':
+      // 다리를 흩는다 — 쫓던 동부여 군대의 기가 꺾인다 · 알린다 — 우리 기운이 오른다
+      return { sure: pick === 0 ? { foe: { faction: 'buyeo', d: R.cardFishMorale } } : cheer }
+    case 'gogak':
+      // 『삼국사기』 동명성왕 2년 — 부분노가 비류국의 고각을 가져와 송양이 감히 다투지 못했다 · 들키면 노한다
+      if (pick === 1) return { sure: { favor: { to: ['biryuna'], d: R.cardGogakFavor } } }
+      return { sure: {}, chance: R.cardGogakOk, die: 'steal', win: { foe: { faction: 'biryuna', d: R.cardGogakMorale } }, lose: { favor: { to: ['biryuna'], d: -R.cardGogakAngry } } }
+  }
+}
+
+/** 한 갈래의 일을 판에 건다 — 실제로 오간 곡식·쇠·집을 tally 에 */
+function applyFx(r: Realm, f: string, fx: CardFx, tally: { grain: number; iron: number; hh: number }, lines: ReportLine[]): void {
+  const R = P.realm
+  const st = (r.stock[f] ??= { grain: 0, iron: 0 })
+  if (fx.grain !== undefined) { const d = Math.max(-st.grain, fx.grain); st.grain += d; tally.grain += d }
+  if (fx.iron !== undefined) { const d = Math.max(-st.iron, fx.iron); st.iron += d; tally.iron += d }
+  for (const [id, d] of fx.hurt ?? []) { const n = r.nodes[id]; if (n !== undefined) { n.hh -= d; tally.hh -= d } }
+  if (fx.harvest !== undefined) setHarvest(r, f, fx.harvest)
+  if (fx.morale !== undefined) for (const a of Object.values(r.armies)) if (a.faction === f) a.morale = clampMorale(a.morale + fx.morale)
+  if (fx.bond !== undefined) for (const h of freeHeroes(r, f)) addBond(r, h, fx.bond, lines)
+  for (const [id, d] of fx.bonds ?? []) { const h = r.heroes[id]; if (h !== undefined) addBond(r, h, d, lines) }
+  if (fx.watch !== undefined) for (const n of Object.values(r.nodes)) if (n.owner === f) { const w = (r.watch[n.id] ??= { alert: 0, lull: 0 }); w.alert = Math.min(1, w.alert + fx.watch) }
+  if (fx.favor !== undefined) for (const o of fx.favor.to) addFavor(r, f, o, fx.favor.d)
+  if (fx.foe !== undefined) for (const a of Object.values(r.armies)) if (a.faction === fx.foe.faction) a.morale = Math.max(R.cardFishFloor, a.morale - fx.foe.d)
+  if (fx.join !== undefined) {
+    const p = HERO_POOL.find((h) => h.id === fx.join)
+    const at = homeOf(r, f)
+    if (p !== undefined && at !== null) r.heroes[p.id] = { ...structuredClone(p), faction: f, status: 'free', captor: null, at, post: null, bond: R.bondHired }
+  }
 }
 
 /** 1 — 이번 계절 카드의 답을 건다. 고르지 않았으면 첫째 (망명자만 둘째 — 돌려보낸다) */
@@ -137,116 +263,17 @@ export function resolveCard(r: Realm, orders: readonly Order[], lines: ReportLin
   const o = orders.find((x): x is Extract<Order, { kind: 'card' }> => x.kind === 'card' && x.faction === f)
   // 고르지 않으면 첫째 — 다만 망명자는 돌려보낸다 (가만히 있는데 장수가 느는 일이 없게 · 받으려면 눌러서)
   const pick: 0 | 1 = o !== undefined ? (o.pick === 1 ? 1 : 0) : c.kind === 'exile' ? 1 : 0
-  const R = P.realm
-  const st = (r.stock[f] ??= { grain: 0, iron: 0 })
-  const k = (what: string): number => roll(r.seed, r.season, `card-res:${c.kind}:${what}`)
-  let grain = 0
-  let iron = 0
-  let hh = 0
+  const plan = cardPreview(r, c, pick)!
+  const tally = { grain: 0, iron: 0, hh: 0 }
+  applyFx(r, f, plan.sure, tally, lines)
   let good: boolean | undefined
-  let hero: string | undefined
-  const pay = (n: number): void => { const t = Math.min(st.grain, n); st.grain -= t; grain -= t }
-  const gain = (n: number): void => { st.grain += n; grain += n }
-  const cheer = (): void => {
-    for (const a of Object.values(r.armies)) if (a.faction === f) a.morale = clampMorale(a.morale + R.cardMorale)
-    for (const h of freeHeroes(r, f)) addBond(r, h, R.cardBond, lines)
+  if (plan.chance !== undefined) {
+    good = roll(r.seed, r.season, `card-res:${c.kind}:${plan.die}`) < plan.chance
+    const fx = good ? plan.win : plan.lose
+    if (fx !== undefined) applyFx(r, f, fx, tally, lines)
   }
-  const hurt = (node: string, share: number): void => {
-    const n = r.nodes[node]
-    if (n === undefined) return
-    const d = Math.round(n.hh * share)
-    n.hh -= d
-    hh -= d
-  }
-  switch (c.kind) {
-    case 'drought':
-      if (pick === 0) { pay(grainCost(r, f, 0.05)); setHarvest(r, f, 0.85) } else { pay(grainCost(r, f, 0.12)); setHarvest(r, f, 0.97) }
-      break
-    case 'bounty':
-      if (pick === 0) setHarvest(r, f, 1.25)
-      else { pay(grainCost(r, f, 0.05)); cheer() }
-      break
-    case 'locust':
-      if (pick === 0) setHarvest(r, f, 0.85)
-      // 산천에 빈다 — 『삼국사기』 파사이사금 30년 「王遍祭山川，以祈禳之，蝗滅」 · 곡식을 조금 바치고, 흔히 메뚜기가 사라진다 (형 10-24)
-      else { pay(grainCost(r, f, 0.03)); good = k('wait') < 0.65; setHarvest(r, f, good ? 1 : 0.5) }
-      break
-    case 'plague':
-      if (pick === 0) { hurt(c.node!, 0.03); pay(grainCost(r, f, 0.03)) } else {
-        good = k('spread') < 0.55
-        if (!good) for (const n of bigNodes(r, f).slice(0, 2)) hurt(n, 0.12)
-      }
-      break
-    case 'halo':
-      if (pick === 0) { for (const a of Object.values(r.armies)) if (a.faction === f) a.morale = clampMorale(a.morale + R.cardMorale) } else {
-        for (const n of Object.values(r.nodes)) if (n.owner === f) { const w = (r.watch[n.id] ??= { alert: 0, lull: 0 }); w.alert = Math.min(1, w.alert + 0.2) }
-      }
-      break
-    case 'quarrel': {
-      const [win, lose] = pick === 0 ? [c.hero!, c.hero2!] : [c.hero2!, c.hero!]
-      addBond(r, r.heroes[win]!, R.cardQuarrel, lines)
-      addBond(r, r.heroes[lose]!, -R.cardQuarrel, lines)
-      hero = win
-      break
-    }
-    case 'waship':
-      if (pick === 0) {
-        const n = Math.min(Math.floor(st.iron), Math.max(5, Math.round(st.iron * 0.3)))
-        st.iron -= n
-        iron -= n
-        gain(n * R.cardIronSell)
-      } else {
-        const g = Math.min(st.grain, grainCost(r, f, 0.08))
-        pay(g)
-        const n = Math.round(g / R.cardIronBuy)
-        st.iron += n
-        iron += n
-      }
-      break
-    case 'pirates':
-      if (pick === 0) pay(grainCost(r, f, 0.08))
-      else {
-        good = k('fight') < 0.55
-        if (good) { st.iron += R.cardPirateIron; iron += R.cardPirateIron } else { hurt(c.node!, 0.06); pay(grainCost(r, f, 0.1)) }
-      }
-      break
-    case 'exile':
-      if (pick === 0) {
-        const pool = poolFree(r)
-        const p = pool[Math.floor(k('who') * pool.length)]
-        const at = homeOf(r, f)
-        if (p !== undefined && at !== null) {
-          pay(grainCost(r, f, R.cardExileCost))
-          r.heroes[p.id] = { ...structuredClone(p), faction: f, status: 'free', captor: null, at, post: null, bond: R.bondHired }
-          hero = p.id
-        }
-      }
-      break
-    case 'fugitive':
-      if (pick === 0) {
-        for (const o2 of knownOf(r, f)) addFavor(r, f, o2, R.cardFavorUp)
-        for (const h of freeHeroes(r, f)) addBond(r, h, R.cardFugitiveBond, lines)
-      } else {
-        gain(grainCost(r, f, 0.06))
-        for (const o2 of knownOf(r, f)) addFavor(r, f, o2, -R.cardFavorDown)
-      }
-      break
-    case 'whale':
-      if (pick === 0) gain(Math.max(30, grainCost(r, f, 0.1)))
-      else cheer()
-      break
-    case 'fishbridge':
-      // 다리를 흩는다 — 쫓던 동부여 군대의 기가 꺾인다 · 알린다 — 우리 기운이 오른다
-      if (pick === 0) { for (const a of Object.values(r.armies)) if (a.faction === 'buyeo') a.morale = Math.max(R.cardFishFloor, a.morale - R.cardFishMorale) } else cheer()
-      break
-    case 'gogak':
-      // 『삼국사기』 동명성왕 2년 — 부분노가 비류국의 고각을 가져와 송양이 감히 다투지 못했다 · 들키면 노한다
-      if (pick === 0) {
-        good = k('steal') < R.cardGogakOk
-        if (good) { for (const a of Object.values(r.armies)) if (a.faction === 'biryuna') a.morale = Math.max(R.cardFishFloor, a.morale - R.cardGogakMorale) } else addFavor(r, f, 'biryuna', -R.cardGogakAngry)
-      } else addFavor(r, f, 'biryuna', R.cardGogakFavor)
-      break
-  }
+  const { grain, iron, hh } = tally
+  const hero = plan.hero
   lines.push({
     kind: 'card', faction: f, card: c.kind, pick,
     ...(grain !== 0 ? { grain } : {}), ...(iron !== 0 ? { iron } : {}), ...(hh !== 0 ? { hh } : {}),
