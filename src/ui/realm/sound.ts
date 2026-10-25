@@ -72,13 +72,13 @@ const TAP: ReadonlyArray<readonly [RegExp, TapSlot | 'ui_open']> = [
   // 곡식 · 쇠 · 교역 — 고용 · 짓기 · 군량 · 주고받기
   [/^(hire|build|ration|cq)$/, 'tap_coin'],
   // 글 · 꾀 · 사신 — 붓과 도장
-  [/^(compose|compose-go|ctarget|chero|plot|nat-plot|pagent|persuade|pby|answer|envoy|nat-diplo|dmode)$/, 'tap_brush'],
+  [/^(compose|compose-go|ctarget|chero|plot|nat-plot|pagent|persuade|pby|answer|envoy|nat-diplo|dmode|dex-sel)$/, 'tap_brush'],
   // 사람이 움직인다 — 정찰 · 원정 · 옮겨 살기
   [/^(scout|exp-go|exp-dest|exp-len|settle|sn|sfrom|migrate|mig-[a-z]+|pgo|pp-[a-z]+|pl-[a-z]+)$/, 'tap_move'],
-  // 고르기 · 혼인 · 제사
-  [/^(wed|rite|card-pick|tier-pick|dex-sel|keep|carry-tog|focus)$/, 'tap_bell'],
-  // 지도의 고을을 누른다 — 바둑돌 놓듯
-  [/^node$/, 'tap_map'],
+  // 방울은 혼인·제사에만 — 영웅전 장수 보기 · 사건 고르기 · 나라 비추기에도 울려 거슬렸다 (형 10-25: "방울 소리가 이상한 데서 계속 · 영웅전에서 장수 볼 때도")
+  [/^(wed|rite)$/, 'tap_bell'],
+  // 지도의 고을을 누른다 — 바둑돌 놓듯 · 나라 비추기도 지도 위의 일
+  [/^(node|focus)$/, 'tap_map'],
   // 판을 연다
   [/^(fr-start|fr-board|fr-nation|fr-again|fr-endless|fr-tutorial|fr-new|newgame|continue)$/, 'tap_drum'],
 ]
