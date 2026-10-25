@@ -2,6 +2,8 @@
 
 > 형 (2026-10-19): *"챗지피티를 중요한 이미지 생성에 항상 다음 만들거 목록화해두고 크레딧 생길때마다 생성시켜야지 뭐하냐"*
 
+**★ 2026-10-25 밤 형: "온조도 챗지피티로 만들어주면 안될까?"** — 챗지피티 한도가 풀리면(10-26 오후 2:55 뒤) **맨 먼저**: 온조 명치판 g-71-baekje-onjo 를 챗지피티로 다시 (지금 것은 제미나이 · 뻣뻣하다). 주몽(g-64, 뜨거운 젊은 궁수)과 다른 멋 — 차분하고 기품 있는 젊은 건국 군주. 보낸 프롬프트(한 줄로): `Create a square 1:1 image. Semi-realistic painterly game character portrait, upper body, plain dark slate-blue studio background, dramatic soft rim light, high detail, like a premium Korean historical strategy game hero card. Subject: Onjo, the young founding king of Baekje, about 25 years old, strikingly handsome with a calm, noble, quietly confident gaze, sharp jawline, clean-shaven, long black hair partly tied in a topknot with loose strands. He wears a gilt-bronze crown with flame and lotus openwork and small dangling gold leaves, a deep indigo silk robe with red and gold collar trim, over it lamellar iron armor with gold-riveted edges, and a dark fur-lined cloak over one shoulder. Both hands rest on the pommel of a ring-pommel sword planted point-down in front of him. Elegant and regal rather than fierce; cool blue and gold palette. No text, no watermark, no sun symbol, no Japanese or Chinese style armor.` → public/realm/bust/g-71-baekje-onjo.jpg (320) · bust-hd (900) · 출처.txt
+
 **★ 2026-10-25 캠페인 새 장 표지 (챗지피티 · 0장 표지를 IMAGE 1 로 "EXACTLY the same painting style" · 16:9 · 아래 25% 어둡게)** —
 ~~1장 온조, 마한을 아우르다~~ (10-25 받음 keyart/mahan.jpg — 멀리 마을 지붕이 기와 전각처럼 보이면 "thatched roofs only" 로 다시)
 ~~3장 서라벌 여섯 마을~~ (10-25 받음 keyart/seorabeol.jpg) → keyart/seorabeol.jpg: 양산 기슭 나정 곁 숲, 꿇어앉아 우는 흰 말과 자줏빛 큰 알 · 알천 언덕에 모인 여섯 촌장(삼베·새 깃털·곡옥) · 새벽 안개 · 초가 마을 여섯 · 신라 금관은 아직 없다
