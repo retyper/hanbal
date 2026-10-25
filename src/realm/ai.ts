@@ -20,7 +20,7 @@ import {
   armCost, buildCost, canBuild, canGuard, draftCost, draftLimit, goodsWorth, guardCost, hhOf, menOf, nextBuild, riteAllowed, riteCost, settleLimit, settleTargets, stockOf, upkeepOf,
 } from './economy.ts'
 import { ambushWorth, jointWin, movesOf, type Move } from './estimate.ts'
-import { armyOfHero, hasTrait, isRuler, persuadeSeasons, postHero, wanderersFor } from './heroes.ts'
+import { hasTrait, idleHeroOrders, persuadeSeasons, wanderersFor } from './heroes.ts'
 import { limitHands } from './hands.ts'
 import { armiesAt, extendPlan, fortMul, neighbors, newArmyId, planned, seasonOf, seenMarches } from './season.ts'
 import { memoFor, withMemo } from './memo.ts'
@@ -572,17 +572,9 @@ function answers(r: Realm, faction: string): Order[] {
  */
 function heroCare(r: Realm, faction: string): Order[] {
   const R = P.realm
-  const out: Order[] = []
+  // 플레이어의 재상과 같은 셈 (heroes.idleHeroOrders) — 둘이 따로 놀지 않게
+  const out: Order[] = idleHeroOrders(r, faction)
   const mine = sorted(Object.values(r.heroes)).filter((h) => h.faction === faction && h.status === 'free')
-  const taken = new Set<string>()
-  for (const h of mine) {
-    if (h.at === null || isRuler(r, h.id) || armyOfHero(r, h.id) !== null) continue
-    const leaderless = sorted(Object.values(r.armies)).find((a) => a.faction === faction && a.at === h.at && a.march === null && a.hero === null && !taken.has(a.id))
-    if (leaderless !== undefined && h.mu + h.tong >= h.chi + h.deok) {
-      taken.add(leaderless.id)
-      out.push({ kind: 'lead', hero: h.id, army: leaderless.id })
-    } else if (h.post !== h.at && r.factions[faction]?.capital !== h.at && postHero(r, h.at)?.id === undefined) out.push({ kind: 'assign', hero: h.id, node: h.at })
-  }
   let spare = stockOf(r, faction).grain - R.aiHireReserve * upkeepOf(r, faction, true)
   const by = [...mine].sort((a, b) => b.deok - a.deok || (a.id < b.id ? -1 : 1))[0]?.id ?? null
   for (const h of sorted(Object.values(r.heroes))) {

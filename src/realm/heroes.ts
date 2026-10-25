@@ -10,7 +10,7 @@ import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { HERO_POOL } from './data/heroes-pool.ts'
 import { TRAITS, TRAIT, type TraitGrade } from './data/traits.ts'
-import type { Art, EdgeKind, GrowStat, Hero, Order, Realm, ReportLine } from './types.ts'
+import type { Art, EdgeKind, GrowStat, Hero, Order, Realm, ReportLine, RNode } from './types.ts'
 import { migratePath } from './economy.ts'
 
 const byId = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
@@ -273,16 +273,18 @@ function assignHero(r: Realm, o: Extract<Order, { kind: 'assign' }>, lines: Repo
     // 멀리 맡기기 — 우리 땅으로 이어져 있으면 정예 호위를 거느리고 그 고을로 간다. 그 계절은 길에 있다
     // (형 10-23: "군사랑 같이 이동시켜야 다른 마을로 가서 맡길 수 있는 거야? … 장수들이 어딜 가면 항상 혼자 안 가잖아")
     if (h.at === null || (h.awayUntil !== undefined && h.awayUntil >= r.season) || migratePath(r, h.faction, h.at, o.node) === null) return
-    lines.push({ kind: 'heroGo', faction: h.faction, hero: h.id, from: h.at, to: o.node })
+    // 재상이 보낸 것이면 재상의 한 줄이 길 떠난 것까지 말한다
+    if (o.by !== 'chancellor') lines.push({ kind: 'heroGo', faction: h.faction, hero: h.id, from: h.at, to: o.node })
     h.awayUntil = r.season
   }
+  if (o.by === 'chancellor') lines.push({ kind: 'chancellor', faction: h.faction, hero: h.id, node: o.node, ...(a === null && h.at !== o.node ? { far: true } : {}) })
   // 한 고을에 맡은 장수는 하나 — 먼저 있던 장수는 자리만 내놓고 그 고을에 남는다
   for (const x of Object.values(r.heroes)) if (x.id !== h.id && x.post === o.node && x.faction === h.faction) x.post = null
   h.at = o.node
   h.post = o.node
 }
 
-function leadArmy(r: Realm, o: Extract<Order, { kind: 'lead' }>): void {
+function leadArmy(r: Realm, o: Extract<Order, { kind: 'lead' }>, lines: ReportLine[]): void {
   const h = r.heroes[o.hero]
   const a = r.armies[o.army]
   // 군주도 친히 이끈다(친정) — 도읍을 비우는 동안 다스림이 준다 (rulerReach)
@@ -294,9 +296,86 @@ function leadArmy(r: Realm, o: Extract<Order, { kind: 'lead' }>): void {
     if ((h.awayUntil !== undefined && h.awayUntil >= r.season) || r.nodes[a.at]?.owner !== h.faction || migratePath(r, h.faction, h.at, a.at) === null) return
     h.awayUntil = r.season
   }
+  if (o.by === 'chancellor') lines.push({ kind: 'chancellor', faction: h.faction, hero: h.id, army: a.id })
   a.hero = h.id
   h.at = null
   h.post = null
+}
+
+// ───────── 쉬는 장수에게 일 맡기기 — AI 와 플레이어의 재상이 같은 셈을 쓴다
+
+/** 특성이 그 고을과 맞나 — 농사꾼은 마을, 대장장이는 철광, 신중은 산성 */
+const TRAIT_FIT: ReadonlyArray<readonly [string, ReadonlyArray<RNode['kind']>]> = [
+  ['farmer', ['village', 'wild']], ['smith', ['ironMine']], ['careful', ['fort']],
+]
+
+/**
+ * 쉬는 장수에게 맡길 일 (HEROES §3·§4) — 순수 함수 · id 순서라 같은 판이면 같은 답이다.
+ *
+ * 혼자 머무는 장수는 같은 고을의 장수 없는 군대를 이끌거나(싸움꾼: 무예+통솔 ≥ 내정+매력) 그 고을을 맡는다 (AI 의 셈 그대로).
+ * `far` (플레이어의 재상 · 형 10-26: "쉬는 장수들 일일이 뭐 시키기가 너무 귀찮은데") — 제자리에 맡을 것이 없으면 더 멀리 본다:
+ *   1. 싸움꾼은 같은 고을의 장수 없는 군대를 이끈다
+ *   2. 남은 싸움꾼은 우리 땅으로 이어진 다른 고을의 장수 없는 군대에 간다 (무예+통솔이 높은 이부터)
+ *   3. 남은 장수는 고을지기가 없는 우리 고을에 앉는다 — 내정 + 특성이 맞는 몫 + 이미 거기 있는 몫이 가장 큰 짝부터.
+ *      도읍은 군주의 자리라 안 간다
+ *   4. 그래도 남은 장수는 남은 장수 없는 군대를 이끈다 (아무 장수라도 없는 것보다 낫다)
+ * `skip` 의 장수는 건드리지 않는다 (직접 부리는 장수 · 이번 계절 벌써 일을 받은 장수).
+ */
+export function idleHeroOrders(r: Realm, faction: string, skip: ReadonlySet<string> = new Set(), far = false): Order[] {
+  const out: Order[] = []
+  const taken = new Set<string>()
+  const cap = r.factions[faction]?.capital
+  const leaderless = byId(Object.values(r.armies)).filter((a) => a.faction === faction && a.march === null && a.hero === null)
+  const rest: Hero[] = []
+  for (const h of byId(Object.values(r.heroes))) {
+    if (h.faction !== faction || h.status !== 'free' || skip.has(h.id)) continue
+    if (h.at === null || isRuler(r, h.id) || armyOfHero(r, h.id) !== null) continue
+    if (far && ((h.awayUntil !== undefined && h.awayUntil >= r.season) || (h.woundedUntil !== undefined && h.woundedUntil > r.season) || h.post != null)) continue
+    const army = leaderless.find((a) => a.at === h.at && !taken.has(a.id))
+    if (army !== undefined && h.mu + h.tong >= h.chi + h.deok) {
+      taken.add(army.id)
+      out.push({ kind: 'lead', hero: h.id, army: army.id })
+    } else if (far) rest.push(h)
+    else if (h.post !== h.at && cap !== h.at && postHero(r, h.at)?.id === undefined) out.push({ kind: 'assign', hero: h.id, node: h.at })
+  }
+  if (!far) return out
+  const R = P.realm
+  const reach = (h: Hero, to: string): boolean => h.at === to || migratePath(r, faction, h.at!, to) !== null
+  const lead = (h: Hero, armyId: string): void => {
+    taken.add(armyId)
+    rest.splice(rest.indexOf(h), 1)
+    out.push({ kind: 'lead', hero: h.id, army: armyId })
+  }
+  // 2 — 다른 고을의 장수 없는 군대 (우리 땅에 선 것만 — 남의 땅으로는 못 간다)
+  for (const a of leaderless) {
+    if (taken.has(a.id) || r.nodes[a.at]?.owner !== faction) continue
+    const h = rest.filter((x) => x.mu + x.tong >= x.chi + x.deok && reach(x, a.at))
+      .sort((x, y) => y.mu + y.tong - (x.mu + x.tong) || (x.id < y.id ? -1 : 1))[0]
+    if (h !== undefined) lead(h, a.id)
+  }
+  // 3 — 고을지기가 없는 우리 고을
+  const open = byId(Object.values(r.nodes)).filter((n) => n.owner === faction && n.kind !== 'sodo' && n.id !== cap && postHero(r, n.id) === null)
+  const fit = (h: Hero, n: RNode): number => h.chi + (TRAIT_FIT.some(([t, ks]) => hasTrait(h, t) && ks.includes(n.kind)) ? R.chancellorTraitFit : 0) + (h.at === n.id ? R.chancellorHere : 0)
+  const pairs: Array<{ h: Hero; n: RNode; s: number }> = []
+  for (const h of rest) for (const n of open) if (reach(h, n.id)) pairs.push({ h, n, s: fit(h, n) })
+  // 가장 맞는 짝부터 — 같으면 큰 고을 · 장수 id · 고을 id
+  pairs.sort((x, y) => y.s - x.s || y.n.hh - x.n.hh || (x.h.id < y.h.id ? -1 : x.h.id > y.h.id ? 1 : x.n.id < y.n.id ? -1 : 1))
+  const usedH = new Set<string>()
+  const usedN = new Set<string>()
+  for (const p of pairs) {
+    if (usedH.has(p.h.id) || usedN.has(p.n.id)) continue
+    usedH.add(p.h.id)
+    usedN.add(p.n.id)
+    out.push({ kind: 'assign', hero: p.h.id, node: p.n.id })
+  }
+  for (let i = rest.length - 1; i >= 0; i--) if (usedH.has(rest[i]!.id)) rest.splice(i, 1)
+  // 4 — 남은 장수 없는 군대
+  for (const a of leaderless) {
+    if (taken.has(a.id) || r.nodes[a.at]?.owner !== faction) continue
+    const h = rest.find((x) => reach(x, a.at))
+    if (h !== undefined) lead(h, a.id)
+  }
+  return out
 }
 
 /**
@@ -417,7 +496,7 @@ export function applyHeroOrders(r: Realm, orders: readonly Order[], lines: Repor
   for (const o of orders) {
     if (o.kind === 'hire') continue
     if (o.kind === 'assign') assignHero(r, o, lines)
-    else if (o.kind === 'lead') leadArmy(r, o)
+    else if (o.kind === 'lead') leadArmy(r, o, lines)
     else if (o.kind === 'persuade') startPersuade(r, o)
     else if (o.kind === 'wed') wed(r, o, lines)
     else if (o.kind === 'cohabit') cohabit(r, o, lines)

@@ -113,6 +113,14 @@ export const HERO_CSS = `
 @keyframes hbz { 0%, 40% { transform: rotate(0); } 50%, 90% { transform: rotate(180deg); } 100% { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .ap .hrow .hbz { animation: none; } }
 .ap .banner.busyb { background: #2a2418; border: 1px dashed #8a7040; color: #e8d8b0; }
+/* 재상 — 쉬는 장수는 재상이 맡긴다 (형 10-26) · 장수 탭 맨 위 띠 · 장수 판의 맡김/직접 · 줄의 「재상이 맡긴다」·「직접」 */
+.ap .jsbar { margin: 8px 0 10px; display: flex; flex-direction: column; gap: 6px; }
+.ap .jsbar .seg button { min-height: 34px; white-space: normal; line-height: 1.2; }
+.ap .jsbar .jsl { margin: 0; padding: 7px 10px; border-radius: 10px; background: #2a2418; border: 1px solid #8a7040; display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: #e8d8b0; }
+.ap .jsbar .jsl b { color: #f0d090; }
+.ap .jsone { margin: 8px 0; display: flex; flex-direction: column; gap: 4px; } .ap .jsone small { font-size: 12.5px; color: #cfc6b4; }
+.ap .hrow .jsd { display: block; font-size: 12.5px; font-weight: 700; color: #b8d89a; }
+.ap .jsm { display: inline-block; padding: 0 5px; border-radius: 6px; border: 1px solid #8a7040; font-size: 11px; font-weight: 700; color: #f0d090; vertical-align: 1px; }
 .ap .trait { display: inline-flex; align-items: baseline; gap: 3px; padding: 1px 7px; border-radius: 10px; border: 1.5px solid var(--g); background: #17110c;
   font-size: 12px; white-space: nowrap; } .ap .trait i { font-style: normal; font-size: 10px; color: var(--mute); }
 .ap .trait.bad { border-style: dashed; color: #f1b8a8; }
