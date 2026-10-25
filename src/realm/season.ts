@@ -866,7 +866,10 @@ function battleFates(
   if (res.broke !== null) {
     // 무너진 쪽의 그때 총대장 (지휘가 넘어갔으면 넘겨받은 이)
     const h = r.heroes[(res.broke === 'a' ? res.chiefA : res.chiefD) ?? '']
-    if (h !== undefined && h.status === 'free' && fallen.length === 0) {
+    // 이 판에 이미 장수를 잃은 쪽(사로잡힘·쓰러짐)이 무너지면 지휘를 넘겨받은 이는 패잔병을 거두어 빠져나간다 — 또 쓰러지지 않는다
+    // (형 10-26: "장수 둘이 한 고을을 치다 적장 잡기에 걸리니 둘 다 잃었다")
+    const lostHere = res.taken.some((t) => t.side === res.broke) || res.fell.some((f) => f.side === res.broke)
+    if (h !== undefined && h.status === 'free' && fallen.length === 0 && !lostHere) {
       const armies = res.broke === 'a' ? atkArmies : defArmies
       if (hasTrait(h, 'coward')) {
         // 겁 많음 — 먼저 달아나 안 쓰러지지만, 그 군대 사기가 더 꺾인다 (HEROES §2)

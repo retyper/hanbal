@@ -101,3 +101,35 @@ describe('원군', () => {
     assert.ok(found, '뒤따른 원군 싸움이 한 번은 나야 한다')
   })
 })
+
+describe('장수 둘이 한 고을을 칠 때 (형 10-26)', () => {
+  it('적장 사로잡기는 한 판에 한 번 — 약한 장수 둘이 져도 둘 다 잃지는 않는다', () => {
+    let both = 0
+    let fought = 0
+    for (let seed = 1; seed <= 80; seed++) {
+      const r = structuredClone(byeonhanMini(seed))
+      r.armies['a-us']!.at = 'our-north'
+      r.heroes['chief']!.at = null
+      const a2 = structuredClone(r.armies['a-us']!) as unknown as { id: string; at: string; hero: string }
+      a2.id = 'a-us2'
+      a2.at = 'our-east'
+      a2.hero = 'us-1'
+      ;(r.armies as Record<string, unknown>)['a-us2'] = a2
+      r.heroes['us-1']!.at = null
+      const mh = r.heroes['miri-1'] as unknown as Record<string, number>
+      mh['mu'] = 10; mh['tong'] = 10; mh['ryak'] = 10
+      for (const id of ['chief', 'us-1']) { const h = r.heroes[id] as unknown as Record<string, number>; h['mu'] = 1; h['tong'] = 1; h['ryak'] = 1 }
+      r.armies['a-us']!.morale = 30
+      r.armies['a-us2']!.morale = 30
+      let res = advance(r, [{ kind: 'march', army: 'a-us', edge: 'e06', ambush: false }, { kind: 'march', army: 'a-us2', edge: 'e08', ambush: false }])
+      for (let i = 0; i < 3 && !res.report.lines.some((l) => l.kind === 'battle' && l.node === 'miri-vil'); i++) res = advance(res.next, [])
+      const b = res.report.lines.find((l) => l.kind === 'battle' && l.node === 'miri-vil')
+      if (b === undefined) continue
+      fought++
+      assert.deepEqual(b.kind === 'battle' ? b.allies : [], ['a-us2'], '두 군대가 한 싸움에 함께 선다')
+      if (['chief', 'us-1'].every((id) => res.next.heroes[id]!.status !== 'free')) both++
+    }
+    assert.ok(fought > 40)
+    assert.equal(both, 0)
+  })
+})

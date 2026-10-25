@@ -352,7 +352,9 @@ export function leadOptions(me: Side, foe: Side, used: ReadonlySet<Cmd>, foeHero
   // 장수의 비기 — 장수마다 한 번 (명궁의 한 발은 쏠 적장이 있어야)
   if (artActor(me, foe, undefined, arts, foeHeroGone) !== undefined) out.push('art')
   if (foe.hero !== null && !foeHeroGone && heroesOf(me).some((h) => h.mu >= P.realm.tacDuelMu) && !used.has('duel')) out.push('duel')
-  if (foe.hero !== null && !foeHeroGone && me.capture !== 'never') out.push('capture')
+  // 적장 사로잡기는 한 판에 한 번 먹힌다 — 하나를 잡은 뒤엔 남은 장수가 경계해 다시 못 파고든다
+  // (형 10-26: "적이 적장잡기 성공하니까 장수 둘 다 잡혀서 끝나 버림")
+  if (foe.hero !== null && !foeHeroGone && me.capture !== 'never' && !used.has('capture')) out.push('capture')
   out.push('retreat')
   return out
 }
@@ -678,8 +680,10 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
     if (wasShakenD) st.shakenD = false
     // 잃은 장수 — 사로잡혔거나 겨루기에서 쓰러졌다. 그 쪽에 다른 장수가 남았으면 싸움은 이어지고, 총대장이었으면 맨 앞 부장이 넘겨받는다
     for (const L of res.lost) {
-      if (L.how === 'taken') taken.push({ side: L.side, hero: L.hero })
-      else fell.push({ side: L.side, hero: L.hero, kill: L.kill })
+      if (L.how === 'taken') {
+        taken.push({ side: L.side, hero: L.hero })
+        ;(L.side === 'a' ? st.usedD : st.usedA).add('capture') // 사로잡기는 한 판에 한 번
+      } else fell.push({ side: L.side, hero: L.hero, kill: L.kill })
       const s = L.side === 'a' ? atk : def
       if (heroesOf(s).length <= 1) continue // 홀로 선 장수 — 옛 길 (사로잡히면 끝 · 겨루기에서 지면 장수 잃은 군대)
       const wasChief = s.hero?.id === L.hero
