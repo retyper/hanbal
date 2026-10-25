@@ -83,8 +83,8 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'mh-jinwang': 'g-76-mokji-jinha', 'mh-mahan-1': 'g-54-mokji-mahan', 'mh-mahan-2': 'w-08-mahan-warrior', 'mh-mahan-3': 'g-05-mahan-chieftain',
   // 캠페인 3장 — 혁거세·알영·호공 · 여섯 촌장 · 왜인 (seorabeol.ts). 알영은 전설 명치판
   'sr-hyeokgeose': 'g-74-saro-hyeokgeose', 'sr-aryeong': 'l-L7-aryeong', 'sr-hogong': 'g-75-saro-hogong', 'sr-danbi': 'w-13-young-archer',
-  'sr-alpyeong': 'g-60-eupcha-hangyeol', 'sr-sobeol': 'g-15-shaman-man', 'sr-jibaekho': 'g-04-jinhan-giant', 'sr-guryema': 'g-08-veteran',
-  'sr-jita': 'g-61-heomcheuk-bawi', 'sr-hojin': 'g-62-beonye-hanul', 'sr-yangsan-1': 'w-17-mahan-pearl-diver', 'sr-goya-1': 'w-03-goguryeo-archer',
+  'sr-alpyeong': 'g-78-saro-alpyeong', 'sr-sobeol': 'g-77-saro-sobeol', 'sr-jibaekho': 'g-79-saro-jibaekho', 'sr-guryema': 'g-80-saro-guryema',
+  'sr-jita': 'g-81-saro-jita', 'sr-hojin': 'g-82-saro-hojin', 'sr-yangsan-1': 'w-17-mahan-pearl-diver', 'sr-goya-1': 'w-03-goguryeo-archer',
   'sr-jinji-1': 'w-22-dongye-tiger-huntress', 'sr-wae-ruler': 'g-07-drunk-warrior',
   'tut-onjo': 'g-71-baekje-onjo', 'tut-biryu': 'g-28-goguryeo-damul', 'tut-ogan': 'g-13-baekje-general', 'tut-maryeo': 'g-09-farmer-conscript', 'tut-haebi': 'w-30-guya-soebi',
   'baekje-ruler': 'g-68-baekje-onnuri', 'mokji-ruler': 'w-27-mokji-jinha', 'michuhol-ruler': 'w-28-michuhol-bira',
