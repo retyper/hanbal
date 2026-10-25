@@ -395,6 +395,14 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .row .dest, .ap .row .sub { min-width: 0; overflow: hidden; text-overflow: ellipsis; } .ap .row .win, .ap .row .em { flex: none; }
 /* 맺은 나라에 공작 — 이름 밑 둘째 줄 (pactWarn) */
 .ap .row .dest:has(.pwarn) { flex: 1; }
+/* 고을 판 공작 — 누른 줄 밑 「누가 가나」 (plotWhoHtml) */
+.ap .row.open { border-color: #e0bd78; background: #3a2e1c; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.ap .pwhos { margin: -2px 0 6px; padding: 8px; border: 1px solid #e0bd78; border-top: 0; border-radius: 0 0 10px 10px; background: #241b12; }
+.ap .pwhos > .mute { display: block; font-size: 12px; margin-bottom: 6px; }
+.ap .pwl { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+.ap .pwho { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 10px; border: 1px solid var(--line); background: #2a2016; color: var(--ink); font: inherit; cursor: pointer; text-align: center; min-width: 0; }
+.ap .pwho:active { border-color: var(--gold); } .ap .pwho .fp { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
+.ap .pwho b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; } .ap .pwho small { font-size: 10.5px; color: var(--mute); line-height: 1.25; }
 .ap .row .dest .pwarn { display: block; margin-top: 1px; font-size: 11.5px; font-weight: 600; line-height: 1.3; color: #ff9a80; white-space: normal; }
 /* 사신 단추 — 한 열 · 가로 길게 · 낌새는 오른쪽 끝 (askButtons · 형 10-25) */
 .ap .btns.askl { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }

@@ -65,6 +65,14 @@ function bestRyak(r: Realm, faction: string): number {
   return best
 }
 
+/**
+ * 암살 말고 공작의 우리 꾀 — 보낸 장수가 있으면 그이의 지략, 없으면 우리 나라에서 가장 지략 높은 이 (형 10-25: "누구 보낼지 선택도 … 지금은 무작위로 아무나 보내는건가")
+ */
+function ourRyak(r: Realm, faction: string, agent: string | null | undefined): number {
+  const a = agent !== null && agent !== undefined ? r.heroes[agent] : undefined
+  return a !== undefined && a.faction === faction ? a.ryak : bestRyak(r, faction)
+}
+
 const clamp = (p: number): number => Math.min(P.realm.plotMax, Math.max(P.realm.plotMin, p))
 
 /**
@@ -162,7 +170,7 @@ export function plotTrueChance(
   const R = P.realm
   let p = base(op) + plotBonus(r, faction)
   // 암살은 자객 대 그 장수, 나머지는 우리 꾀 대 그 나라 꾀
-  p += op === 'assassin' ? assassinTerm(r, faction, hero, agent) : R.plotPerRyak * (bestRyak(r, faction) - bestRyak(r, target))
+  p += op === 'assassin' ? assassinTerm(r, faction, hero, agent) : R.plotPerRyak * (ourRyak(r, faction, agent) - bestRyak(r, target))
   if (ON_NODE.has(op) && node !== undefined) p -= R.plotAlertWeight * (r.watch[node]?.alert ?? 0)
   return clamp(p)
 }
@@ -175,7 +183,7 @@ export function plotChance(
   r: Realm, faction: string, op: PlotOp, _target: string, node?: string, hero?: string, agent?: string | null,
 ): readonly [number, number] {
   const R = P.realm
-  const ours = bestRyak(r, faction)
+  const ours = ourRyak(r, faction, agent)
   let lo = base(op) + plotBonus(r, faction)
   let hi = lo
   if (op === 'assassin') {
@@ -247,6 +255,8 @@ function valid(r: Realm, o: Plot): boolean {
     const c = plotCost('assassin', o.agent ?? null)
     return stockOf(r, o.faction).grain >= c.grain
   }
+  // 보낸 장수 — 군대를 안 이끌고 쉬는 우리 장수만
+  if (o.agent !== undefined && !plotAgents(r, o.faction).includes(o.agent)) return false
   if (o.op === 'sow') {
     if (o.other === undefined || o.other === o.target || o.other === o.faction || r.factions[o.other] === undefined) return false
   }

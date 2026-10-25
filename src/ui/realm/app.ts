@@ -507,6 +507,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let plotOpen: PlotOp | null = null
   /** 암살에 보낼 자객 — 우리 장수 id, null 이면 고용 자객 */
   let plotAgent: string | null = null
+  /** 고을 판에서 누른 공작 줄 — 그 바로 밑에 「누가 가나」를 펼친다 (op|target|node|hero) */
+  let plotPick = ''
   /** 시트 안의 손 상태 */
   let openArmy = ''
   /** 출정을 꾸리는 군대의 판 (형: "다 같이 간다 말고 … 출정? 일부만 출정?") — 군사는 처음엔 전부, 줄이면 나머지가 남아 지킨다 */
@@ -2052,6 +2054,35 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return `<span class="pwarn">⚠ 들키면 ${josa(REL_NAME[s], '이', '가')} 깨져 ${josa(to, '으로', '로')}${op === 'assassin' ? ' (두 칸)' : ''}</span>`
   }
 
+  /** 공작에 간 이 — 장수 이름, 없으면 고용 자객(암살) · 알아서(나머지) */
+  function plotWho(r: Realm, o: Order): string {
+    if (o.kind !== 'plot') return ''
+    if (o.agent !== undefined) return r.heroes[o.agent]?.name ?? ''
+    return o.op === 'assassin' ? '고용 자객' : '알아서'
+  }
+  /**
+   * 누가 가나 — 고을 판의 공작 줄 바로 밑 (형 10-25: "누구 보낼지 선택도 그거 바로 아래 떠야").
+   * 암살: 고용 자객 또는 쉬는 장수 · 나머지: 「알아서」(우리 나라 지략 가장 높은 이의 솜씨) 또는 쉬는 장수 — 그 장수의 지략으로 셈한다 (plots.ourRyak)
+   */
+  function plotWhoHtml(r: Realm, op: PlotOp, t: { target: string; node?: string; hero?: string }): string {
+    const busy = new Set<string>()
+    for (const e of Object.values(envoys)) if (e.hero !== undefined) busy.add(e.hero)
+    for (const p of plots) if (p.kind === 'plot' && p.agent !== undefined) busy.add(p.agent)
+    const ids = plotAgents(realm!, me()).filter((id) => !busy.has(id) && heroBusy(realm!, id) === null)
+    const btn = (agent: string, face: string, name: string, sub: string): string => {
+      const c = plotChance(realm!, me(), op, t.target, t.node, t.hero, agent === '' ? (op === 'assassin' ? null : undefined) : agent)
+      return `<button class="pwho" data-act="plot" data-op="${op}" data-target="${t.target}" data-node="${t.node ?? ''}" data-other="" data-hero="${t.hero ?? ''}" data-agent="${agent}">${face}<b>${esc(name)}</b><small>${esc(sub)}</small>${plotFeel(c[0], c[1])}</button>`
+    }
+    let h = '<div class="pwhos"><span class="mute">누가 가나</span><div class="pwl">'
+    h += op === 'assassin' ? btn('', icon('unit-archer', 'fp'), '고용 자객', '잡혀도 값만 잃는다') : btn('', icon('status-spy', 'fp'), '알아서', '꾀가 가장 높은 이의 솜씨로')
+    for (const id of ids.slice(0, 6)) {
+      const hh = r.heroes[id]
+      if (hh === undefined) continue
+      h += btn(id, bust(hh, 'fp'), hh.name, `지략 ${hh.ryak}${op === 'assassin' ? ' · 들키면 몸을 빼야 한다' : ''}`)
+    }
+    return h + '</div></div>'
+  }
+
   function plotSheet(r: Realm): string {
     const max = P.realm.plotsPerSeason
     let h = ''
@@ -2924,9 +2955,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const hero = t.hero !== undefined ? r.heroes[t.hero] : undefined
         const c = plotChance(realm!, me(), op, t.target, t.node, t.hero, null)
         const can = dup || (plots.length < max && !handsFull(r) && st.grain >= cost.grain && st.iron >= cost.iron)
-        rows.push(`<button class="row ${dup ? 'on' : ''}" data-act="plot" data-op="${op}" data-target="${t.target}" data-node="${t.node ?? ''}" data-other="" data-hero="${t.hero ?? ''}" data-agent="" ${can ? '' : 'disabled'}>`
-          + `${hero !== undefined ? bust(hero, 'rface sm') : icon(PLOT_ICON[op], 'nic')}<span class="dest">${PLOT_NAME[op]}${hero !== undefined ? ` · ${esc(hero.name)}` : ''}${pactWarn(r, t.target, op)}</span>`
+        // 누르면 바로 밑에 「누가 가나」 — 보낸 뒤(dup)엔 누르면 거둔다
+        const pk = `${op}|${t.target}|${t.node ?? ''}|${t.hero ?? ''}`
+        const open = !dup && plotPick === pk
+        const sent = dup ? plots.find((p) => p.kind === 'plot' && p.op === op && p.target === t.target && p.node === t.node && p.hero === t.hero) : undefined
+        rows.push(`<button class="row ${dup ? 'on' : ''}${open ? ' open' : ''}" ${dup ? `data-act="plot" data-op="${op}" data-target="${t.target}" data-node="${t.node ?? ''}" data-other="" data-hero="${t.hero ?? ''}" data-agent=""` : `data-act="ppick" data-k="${pk}"`} ${can ? '' : 'disabled'}>`
+          + `${hero !== undefined ? bust(hero, 'rface sm') : icon(PLOT_ICON[op], 'nic')}<span class="dest">${PLOT_NAME[op]}${hero !== undefined ? ` · ${esc(hero.name)}` : ''}${sent !== undefined ? ` · ${esc(plotWho(r, sent))}` : ''}${pactWarn(r, t.target, op)}</span>`
           + `<span class="sub">${costHtml({ grain: cost.grain, iron: cost.iron })}</span><span class="win">${plotFeel(c[0], c[1])}</span></button>`)
+        if (open) rows.push(plotWhoHtml(r, op, t))
       }
     }
     h += `<div class="nal">공작 <span class="mute">한 계절에 ${max}가지 · 지금 ${plots.length}</span></div>`
@@ -4507,6 +4543,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const same = (p: Order): boolean => p.kind === 'plot' && p.op === op && p.target === o.target && p.node === k.node && p.other === k.other && p.hero === k.hero
         if (plots.some(same)) plots = plots.filter((p) => !same(p))
         else if (plots.length < P.realm.plotsPerSeason) { plots = [...plots, k.hero !== undefined && hands[k.hero] !== undefined ? { ...o, hand: hands[k.hero]! } as Order : o]; if (op === 'assassin') plotAgent = null }
+        plotPick = ''
         break
       }
       case 'unplot': plots = plots.filter((_, i) => i !== Number(d['i'])); break
@@ -4517,6 +4554,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         return
       }
       case 'pagent': plotAgent = d['id'] ? d['id'] : null; break
+      case 'ppick': plotPick = plotPick === d['k'] ? '' : d['k']!; break
       case 'bowup': musters = musters.some((o) => o.kind === 'bowUp') ? musters.filter((o) => o.kind !== 'bowUp') : [...musters, { kind: 'bowUp', faction: me() }]; break
       case 'hero': openSheet({ kind: 'hero', id: d['id']! }); return
       case 'assign':
