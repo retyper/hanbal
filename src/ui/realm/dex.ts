@@ -8,7 +8,7 @@
 import { DEX_CAUGHT, DEX_HEARD, DEX_MET, DEX_SERVED, dexCatalog, dexCounts, dexLevel, scanDex, type Dex, type DexHero } from '../../realm/dex.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
 import { josa } from '../../realm/data/prose.ts'
-import type { Realm, RegionId } from '../../realm/types.ts'
+import type { Hero, Realm, RegionId } from '../../realm/types.ts'
 import { heroRadar, nameHtml, traitChips } from './heroview.ts'
 
 const KEY = 'hanbal.realm.dex'
@@ -79,6 +79,22 @@ function recordClan(r: Realm): void {
     changed = true
   }
   if (changed) try { localStorage.setItem(CLAN_KEY, JSON.stringify(had)) } catch { /* 저장 못 하는 곳 */ }
+}
+
+/**
+ * 가문의 아이를 다음 판에 데려갈 몸으로 (형 10-25: "데려갈 장수에 내가 혼인시켜서 낳은 장수들은 왜 없지?").
+ * id 는 `clan-<생김>-<시드>-<판의 id>` — 얼굴은 판에서와 같은 그림 (art.bustOf 가 이 꼴을 읽는다)
+ */
+export function clanHeroes(): Array<{ id: string; name: string; hero: Hero }> {
+  return Object.entries(loadClan()).map(([key, x]) => {
+    const id = `clan-${x.look}-${key.replace(':', '-')}`
+    const [mu, tong, ryak, chi, deok, uiri] = x.stats
+    const hero: Hero = {
+      id, name: x.name, faction: '', mu: mu ?? 3, tong: tong ?? 3, ryak: ryak ?? 3, chi: chi ?? 3, deok: deok ?? 3, uiri: uiri ?? 5,
+      traits: [...x.traits], look: x.look, status: 'free', captor: null, at: null, post: null,
+    }
+    return { id, name: x.name, hero }
+  })
 }
 
 function clanHtml(k: DexKit): string {

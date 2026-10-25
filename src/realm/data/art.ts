@@ -154,8 +154,13 @@ export function noteKids(heroes: Iterable<{ readonly id: string; readonly look: 
   }
 }
 
-/** 장수 id → 명치판 이름 (아이도) */
-export const bustOf = (id: string): string | undefined => HERO_BUST[id] ?? kidFace.get(id)
+/** 장수 id → 명치판 이름 (아이도) · 다음 판에 데려온 가문의 아이(`clan-<생김>-<시드>-<판의 id>`)는 난 판의 얼굴 그대로 */
+export const bustOf = (id: string): string | undefined => HERO_BUST[id] ?? kidFace.get(id) ?? clanFace(id)
+function clanFace(id: string): string | undefined {
+  if (!id.startsWith('clan-')) return undefined
+  const [, look, , ...rest] = id.split('-')
+  return look === 'g' || look === 'w' ? kidBust(rest.join('-'), look) : undefined
+}
 
 /** 나라 id → 깃발 (icon/emblem-*.png) · 지도의 테두리 색 */
 export const FACTION_ART: Readonly<Record<string, { emblem: string; color: string }>> = {

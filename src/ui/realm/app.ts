@@ -46,7 +46,7 @@ import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Ord
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { LEGACY_CSS, bringHtml, clearBring, toggleBring } from './legacy.ts'
-import { DEX_CSS, dexHtml, dexToastHtml, loadDex, recordDex, type DexBoard } from './dex.ts'
+import { DEX_CSS, clanHeroes, dexHtml, dexToastHtml, loadDex, recordDex, type DexBoard } from './dex.ts'
 import { DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
 import { LEVEL_LINE, TIER_MAX, levelName } from '../../realm/tier.ts'
 import { FIT_CSS, fitLabels } from './fit.ts'
@@ -2931,7 +2931,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 영웅전에 「거느림」으로 오른 장수 — 판을 열 때 데려갈 수 있는 이 (군주는 빼고) */
   function servedHeroes(): ReadonlyArray<{ id: string; name: string }> {
     const dex = loadDex()
-    return dexCatalog().filter((x) => !x.ruler && ((dex[x.id]?.f ?? 0) & DEX_SERVED) !== 0).map((x) => ({ id: x.id, name: x.name }))
+    // 가문 — 혼인해서 난 아이도 데려간다 (형 10-25)
+    return [...dexCatalog().filter((x) => !x.ruler && ((dex[x.id]?.f ?? 0) & DEX_SERVED) !== 0).map((x) => ({ id: x.id, name: x.name })), ...clanHeroes().map((x) => ({ id: x.id, name: x.name }))]
   }
 
   /** 처음 하는 사람인가 — 배우는 판 말고 한 판이라도 이겼으면 아니다 */
