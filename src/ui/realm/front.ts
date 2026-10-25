@@ -360,9 +360,9 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): 
           const big = l.outcome === 'rout' || l.outcome === 'routed' || caught !== undefined
           const sneak = l.atkFaction === me && l.ambush === 'success'
           const img = caught !== undefined ? `${k.art}event/event-capture.jpg`
-            : sneak && l.approach === 'night' ? `${k.art}event/event-night-raid.jpg`
-            : l.via === 'ford' || l.via === 'reeds' ? `${k.art}event/event-monsoon-ford.jpg`
-            : seasonOf(s) === 'winter' ? `${k.art}event/event-winter-ambush.jpg`
+            : sneak && l.approach === 'night' ? FILM(k, 'film-win-night')
+            : l.via === 'ford' || l.via === 'reeds' || l.via === 'mudflat' ? FILM(k, 'film-win-ford')
+            : seasonOf(s) === 'winter' ? FILM(k, 'film-win-winter')
             : l.defender === me ? FILM(k, 'film-win-defend')
             : l.outcome === 'rout' || l.outcome === 'routed' ? FILM(k, 'film-win-rout')
             : FILM(k, 'film-win-field')
@@ -372,7 +372,8 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): 
         }
       } else if (l.kind === 'take' && l.faction === me) {
         const was = capOf.get(l.node)
-        const img = FILM(k, 'film-take-capital')
+        // 도읍이면 큰 성문으로 들어가는 군대, 여느 고을이면 깃발을 꽂고 마을 사람들이 따르는 장면
+        const img = FILM(k, was !== undefined ? 'film-take-capital' : 'film-take-town')
         takes++
         events.push({ s, t: `${josa(node(l.node), "을", "를")} 쥐었다`, big: was !== undefined, img, ...(was !== undefined && was !== me ? { em: was } : {}) })
       } else if (l.kind === 'relation' && (l.a === me || l.b === me) && (l.state === 'ally' || l.state === 'truce')) {
