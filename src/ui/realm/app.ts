@@ -312,9 +312,24 @@ const TABS = [
   // 백성 — 개척·이주 (형: "군사징병이랑 개척 좀 확실히 구분필요함")
   { id: 'people', name: '백성', icon: 'settle-farm-village', more: '개척단을 꾸려 빈땅에 새 마을을 열거나, 다른 우리 고을로 데려가 자리 잡게 한다(이주). 붐비면 저절로도 옮겨 간다.' },
   { id: 'diplo', name: '외교', icon: 'good-tribute-bell', more: '이웃 나라와 화친·동맹을 맺고, 사신의 청에 답하고, 몰래 공작(소문·암살…)을 보낸다.' },
-  { id: 'heroes', name: '장수', icon: 'unit-general', more: '우리 장수와 사로잡은 장수. 군대를 맡기고, 혼인시키고, 원정을 보낸다.' },
+  // 장수에게 시키는 일을 한곳에 (형 10-25: "장수 일들을 「명령」 탭 하나로") — 탭 id 는 그대로 heroes (배우는 판·점이 이 id 를 본다)
+  { id: 'heroes', name: '명령', icon: 'unit-general', more: '장수에게 일을 맡긴다 — 고을·군대·사신·자객·원정·혼인. 우리 장수·사로잡은 장수 명부도 여기.' },
   { id: 'nation', name: '나라', icon: 'settle-capital', more: '나라 살림 · 목표 · 이번 계절 사건 · 제사.' },
 ] as const
+
+/**
+ * 「명령」 탭의 일 여섯 — 고르면 그림 깔린 창에서 장수와 갈 곳을 고른다 (형 10-25: "성주 배치·군사 지휘·사신·자객도 혼인·원정처럼 제대로 된 창으로").
+ * stat 은 그 일에 먹히는 능력치 — 장수 고르는 칸에 보이고, 가장 높은 이를 먼저 골라 둔다. ruler — 군주도 할 수 있는 일
+ */
+type CmdJob = 'post' | 'lead' | 'envoy' | 'agent' | 'exp' | 'wed'
+const CMD_JOBS: ReadonlyArray<{ id: CmdJob; name: string; icon: string; art: string; line: string; stat: ReadonlyArray<'mu' | 'tong' | 'ryak' | 'chi' | 'deok'>; ruler: boolean }> = [
+  { id: 'post', name: '고을 맡기', icon: 'settle-capital', art: 'event-festival', line: '맡은 고을에 솜씨가 걸린다', stat: ['chi', 'ryak', 'deok'], ruler: false },
+  { id: 'lead', name: '군대 이끌기', icon: 'unit-general', art: 'event-relief-cavalry', line: '장수 없는 군대를 맡아 싸운다', stat: ['mu', 'tong'], ruler: false },
+  { id: 'envoy', name: '사신', icon: 'good-tribute-bell', art: 'event-outside-envoy', line: '이웃 나라에 말을 전한다', stat: ['deok'], ruler: false },
+  { id: 'agent', name: '자객', icon: 'status-spy', art: 'event-assassin-archer', line: '밤에 적장을 노린다 — 직접 쏜다', stat: ['ryak', 'mu'], ruler: false },
+  { id: 'exp', name: '원정', icon: 'route-searoute', art: 'event-expedition-return', line: '먼 땅에서 좋은 것을 가져온다', stat: ['mu', 'ryak', 'deok'], ruler: true },
+  { id: 'wed', name: '혼인', icon: 'status-alliance', art: 'event-marriage', line: '짝을 지어 아이를 얻는다', stat: [], ruler: true },
+]
 
 /**
  * 처음 하는 사람에게는 탭을 계절마다 하나씩 연다 — 첫 화면에 탭 여섯·장수·외교·사건이 한꺼번에 쏟아져 무엇부터 할지 몰랐다
@@ -503,7 +518,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   const deedsOpen = new Set<string>()
   let diploMode: 'envoy' | 'plot' | 'scout' = 'envoy'
   /** 장수 판의 탭 — 우리 장수 · 옥에 가둔 적장 · 적장 (형 10-23: "한 페이지에 다 담지 말고 탭을 나눠야") */
-  let heroTab: 'mine' | 'jail' | 'foe' = 'mine'
+  let heroTab: 'cmd' | 'mine' | 'jail' | 'foe' = 'cmd'
+  /** 「명령」에서 연 일 창 — null 이면 일 카드 여섯 · cmdHero 는 그 창에서 고른 장수 ('' 이면 그 일에 가장 맞는 이) */
+  let cmdJob: CmdJob | null = null
+  let cmdHero = ''
   let plotOpen: PlotOp | null = null
   /** 암살에 보낼 자객 — 우리 장수 id, null 이면 고용 자객 */
   let plotAgent: string | null = null
@@ -2269,7 +2287,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const foes = sorted(Object.values(r.heroes)).filter((x) => x.faction !== me() && x.status === 'free' && heroSeen(realm!, me(), x.id))
     const wand = wanderersFor(r, me()) // 들인 이는 벌써 위 장군 줄에 있다
     const tab = (v: typeof heroTab, name: string, n: number): string => `<button class="${heroTab === v ? 'on' : ''}" data-act="htab" data-v="${v}">${name}${n > 0 ? ` <i>${n}</i>` : ''}</button>`
-    let h = `<h3>장수</h3><div class="seg dseg">${tab('mine', '우리 장수', mine.length + wand.length)}${tab('jail', '옥에 가둔 적장', caps.length)}${tab('foe', '적장', foes.length)}</div>`
+    let h = `<div class="seg dseg">${tab('cmd', '명령', 0)}${tab('mine', '우리 장수', mine.length + wand.length)}${tab('jail', '옥에 가둔 적장', caps.length)}${tab('foe', '적장', foes.length)}</div>`
+    if (heroTab === 'cmd') return h + (cmdJob === null ? cmdGridHtml(r) : cmdWinHtml(r, cmdJob))
     if (heroTab === 'jail') {
       if (caps.length === 0) return h + `<p class="mute">옥에 가둔 적장이 없다. 싸움에서 「적장 사로잡기」로 잡아 온다.</p>`
       h += `<p class="mute">회유하면 우리 장수가 된다 ${guideBtn('jail')}</p>`
@@ -2301,6 +2320,128 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
     }
     return h
+  }
+
+  /** 그 일에 먹히는 능력치의 합 — 가장 맞는 장수를 먼저 */
+  function cmdScore(x: Hero, job: CmdJob): number {
+    return (CMD_JOBS.find((j) => j.id === job)?.stat ?? []).reduce((n, k) => n + x[k], 0)
+  }
+
+  /** 이 장수가 이 일을 지금 못 하는 까닭 — 할 수 있으면 null */
+  function cmdWhy(r: Realm, job: CmdJob, x: Hero): string | null {
+    const tied = heroJob(r, x.id)
+    if (tied !== null) return tied[1]
+    if (heroOrders.some((o) => (o.kind === 'assign' || o.kind === 'lead' || o.kind === 'persuade') && o.hero === x.id)) return '이번 계절 자리를 내려놓는다'
+    if (job === 'wed') {
+      if (x.spouse !== undefined || realm!.heroes[x.id]?.spouse !== undefined) return '짝이 있다'
+      return wedHtml(r, x) === '' ? '짝이 될 장수가 없다' : null
+    }
+    if (job === 'exp') return null // 원정 칸이 제 사정(길 양식·한꺼번에 몇)을 말한다
+    if (handLocked(r, x.id)) return '사신·공작을 나르는 손'
+    if (job === 'post') return postTargets(r, x) === '' ? '맡을 고을이 없다' : null
+    if (job === 'lead') return Object.values(r.armies).some((a) => a.hero === x.id) ? '벌써 군대를 이끈다' : leadTargets(r, x) === '' ? '이끌 군대가 없다' : null
+    return handsFull(r) ? '이번 계절 보낼 손이 다 찼다' : null
+  }
+
+  /** 이 일을 맡을 수 있는 우리 장수 — 할 수 있는 이 먼저, 그 일에 맞는 순 */
+  function cmdHeroes(r: Realm, job: CmdJob): Array<{ x: Hero; why: string | null }> {
+    const def = CMD_JOBS.find((j) => j.id === job)!
+    return sorted(Object.values(r.heroes)).filter((x) => x.faction === me() && x.status === 'free' && (def.ruler || !isRuler(r, x.id)))
+      .map((x) => ({ x, why: cmdWhy(r, job, x) }))
+      .sort((a, b) => (a.why === null ? 0 : 1) - (b.why === null ? 0 : 1) || cmdScore(b.x, job) - cmdScore(a.x, job))
+  }
+
+  /** 이번 계절 이 일에 정한 것 — [말, 취소 단추] */
+  function cmdNow(r: Realm, job: CmdJob): Array<[string, string]> {
+    const nm = (id: string): string => r.heroes[id]?.name ?? ''
+    const undo = (act: string, id: string): string => `<button class="btn ghost sm" data-act="${act}" data-id="${id}">취소</button>`
+    const out: Array<[string, string]> = []
+    for (const o of heroOrders) {
+      if (job === 'post' && o.kind === 'assign' && o.node !== null) out.push([`${nm(o.hero)} → ${r.nodes[o.node]?.name ?? ''}`, undo('unhero', o.hero)])
+      if (job === 'lead' && o.kind === 'lead') out.push([`${nm(o.hero)} → ${r.armies[o.army] !== undefined ? armyName(r, r.armies[o.army]!) : ''}`, undo('unhero', o.hero)])
+      if (job === 'exp' && o.kind === 'expedition') out.push([`${nm(o.hero)} → ${DESTS[o.dest].name}`, undo('unexp', o.hero)])
+      if (job === 'wed' && o.kind === 'wed') out.push([`${nm(o.a)} · ${nm(o.b)}`, undo('unwed', o.a)])
+    }
+    if (job === 'envoy') for (const e of Object.values(envoys)) if (e.hero !== undefined) out.push([`${nm(e.hero)} → ${r.factions[e.to]?.name ?? ''} ${ASK_NAME[e.ask as Ask] ?? ''}`, ''])
+    if (job === 'agent') for (const o of plots) if (o.kind === 'plot' && o.op === 'assassin' && o.agent !== undefined) out.push([`${nm(o.agent)} → ${nm(o.hero ?? '')}`, ''])
+    return out
+  }
+
+  /** 명령 — 일 카드 여섯. 카드마다 이번 계절 정한 것 · 아니면 맡길 수 있는 장수 수 */
+  function cmdGridHtml(r: Realm): string {
+    let h = `<div class="cmdg">`
+    for (const j of CMD_JOBS) {
+      const now = cmdNow(r, j.id)
+      const can = cmdHeroes(r, j.id).filter((c) => c.why === null).length
+      const sub = now.length > 0 ? now.map(([t]) => esc(t)).join('<br>') : can > 0 ? `맡길 장수 ${can}` : '지금은 맡길 장수가 없다'
+      h += `<button class="cmdc${now.length > 0 ? ' set' : ''}${now.length === 0 && can === 0 ? ' off' : ''}" data-act="cmd" data-job="${j.id}" style="--cbg:url('${ART}event/${j.art}.jpg')">`
+        + `<b>${icon(j.icon)}${j.name}</b><span>${j.line}</span><small>${sub}</small></button>`
+    }
+    return h + `</div>`
+  }
+
+  /** 일 창 — 그림 · 이번 계절 정한 것 · 누구를 · 어디로 */
+  function cmdWinHtml(r: Realm, job: CmdJob): string {
+    const def = CMD_JOBS.find((j) => j.id === job)!
+    let h = `<button class="btn ghost sm hback" data-act="cmd-back">‹ 명령</button>`
+    h += `<div class="cmdw" style="--cbg:url('${ART}event/${def.art}.jpg')"><b>${icon(def.icon)}${def.name}</b><span>${def.line}</span>`
+    for (const [t, b] of cmdNow(r, job)) h += `<div class="banner good">이번 계절: ${esc(t)}${b}</div>`
+    h += `</div>`
+    const list = cmdHeroes(r, job)
+    if (list.length === 0) return h + `<p class="mute">맡길 장수가 없다.</p>`
+    const free = list.filter((c) => c.why === null)
+    const pickId = free.some((c) => c.x.id === cmdHero) ? cmdHero : free[0]?.x.id ?? ''
+    h += `<h4>누가 가나</h4><div class="cmdp">`
+    for (const { x, why } of list) {
+      const st = def.stat.map((k) => `<i>${STAT_NAME[k]} ${x[k]}</i>`).join('')
+      h += why !== null
+        ? `<button class="busy" aria-disabled="true" data-tip="${esc(why)}">${bust(x, 'face')}<b>${nameHtml(x.name)}</b><small>⏳ ${esc(why)}</small></button>`
+        : `<button class="${x.id === pickId ? 'on' : ''}" data-act="cmd-hero" data-id="${x.id}">${bust(x, 'face')}<b>${nameHtml(x.name)}</b><small>${st}</small></button>`
+    }
+    h += `</div>`
+    const x = r.heroes[pickId]
+    if (x === undefined) return h + `<p class="mute">이번 계절엔 맡길 장수가 없다.</p>`
+    switch (job) {
+      case 'post': return h + `<h4>어느 고을을</h4>` + postTargets(r, x)
+      case 'lead': return h + `<h4>어느 군대를</h4>` + leadTargets(r, x)
+      case 'envoy': return h + `<button class="btn pri cmdgo" data-act="hero-envoy" data-id="${x.id}">${icon('good-tribute-bell')}${esc(josa(x.name, '을', '를'))} 보낼 나라를 고른다 ›</button>`
+      case 'agent': return h + `<p class="mute">우리 장수가 가면 화살이 ${assassinArrows(realm!, x.id) - P.night.arrows}발 더 있다.</p><button class="btn pri cmdgo" data-act="hero-agent" data-id="${x.id}">${icon('status-spy')}노릴 적장을 고른다 ›</button>`
+      case 'exp': return h + expHtml(r, x)
+      case 'wed': return h + wedHtml(r, x)
+    }
+  }
+
+  /** 고을 맡기의 갈 곳 — 이끌던 군대에서 빠져 이 고을 · 지금 있는 고을 · 우리 땅으로 이어진 다른 고을(정예가 따라가고 한 계절 길에 있다) */
+  function postTargets(r: Realm, x: Hero): string {
+    const army = Object.values(r.armies).find((a) => a.hero === x.id)
+    const at = army?.at ?? x.at ?? null
+    if (at === null) return ''
+    const holderOf = (n: string): Hero | undefined => Object.values(r.heroes).find((y) => y.post === n && y.faction === me() && y.id !== x.id)
+    const card = (n: string, sub: string): string => {
+      const hd = holderOf(n)
+      return `<button class="cmdt" data-act="assign" data-id="${x.id}" data-node="${n}"><b>${esc(r.nodes[n]?.name ?? '')}</b><small>${sub}${hd !== undefined ? ` · ${esc(hd.name)} 대신` : ''}</small></button>`
+    }
+    let h = ''
+    if (army !== undefined) {
+      if (army.march === null && r.nodes[at]?.owner === me()) h += card(at, '군대에서 빠져 맡는다')
+    } else {
+      if (x.post !== at && r.nodes[at]?.owner === me()) h += card(at, '지금 있는 고을')
+      const far = sorted(Object.values(r.nodes)).filter((n) => n.owner === me() && n.id !== at && n.kind !== 'sodo' && n.hh > 0 && migratePath(r, me(), at, n.id) !== null)
+      for (const n of far) h += card(n.id, `정예 ${P.realm.escortMen}명과 한 계절 길`)
+    }
+    if (h === '') return ''
+    return `<div class="cmdts">${h}</div>` + (x.post != null ? `<button class="btn ghost" data-act="assign" data-id="${x.id}" data-node="">맡은 고을을 내려놓는다</button>` : '')
+  }
+
+  /** 군대 이끌기의 갈 곳 — 장수 없는 우리 군대 (여기 있으면 바로 · 우리 땅으로 이어진 곳이면 가서) */
+  function leadTargets(r: Realm, x: Hero): string {
+    const at = x.at
+    if (at === null || Object.values(r.armies).some((a) => a.hero === x.id)) return ''
+    let h = ''
+    for (const a of sorted(Object.values(r.armies)).filter((b) => b.faction === me() && b.march === null && b.hero === null && (b.at === at || (r.nodes[b.at]?.owner === me() && migratePath(r, me(), at, b.at) !== null)))) {
+      h += `<button class="cmdt" data-act="lead" data-id="${x.id}" data-army="${a.id}"><b>${esc(armyName(r, a))}</b><small>${headcount(forceOf(r, a))}명 · ${a.at === at ? '여기 있다' : `${esc(r.nodes[a.at]?.name ?? '')}에 가서`}</small></button>`
+    }
+    return h === '' ? '' : `<div class="cmdts">${h}</div>`
   }
 
   function heroSheet(r: Realm, id: string): string {
@@ -2348,8 +2489,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (busy !== null) h += `<div class="banner busyb">⏳ ${esc(busy)} — 이번 계절엔 다른 일을 못 한다</div>`
     if (ours && canStandBy(r, id)) h += `<button class="btn ghost standby" data-act="standby" data-id="${id}" data-tip="맡은 고을·이끌던 군대·이번 계절 시킨 일을 다 내려놓고 쉰다">⏸ 대기 — 다 내려놓고 쉰다</button>`
     // 한 번 맺은 짝은 계속 — 지금 판·계절 처음 판 어느 쪽이든 짝이 있으면 혼인 칸을 안 띄운다
-    if (ours && busy === null && weds.length === 0 && x.spouse === undefined && realm!.heroes[id]?.spouse === undefined) h += wedHtml(r, x)
-    h += expHtml(r, x) // 묶인 장수도 원정 칸은 보인다 — 단추만 흐리게
     const pending = heroOrders.filter((o) => (o.kind === 'assign' || o.kind === 'lead' || o.kind === 'persuade' || o.kind === 'hire') && o.hero === id)
     for (const o of pending) {
       const what = o.kind === 'assign' ? (o.node === null ? '맡은 일을 그만둔다' : `${josa(r.nodes[o.node]?.name ?? '', '을', '를')} 맡는다`) : o.kind === 'lead' ? '군대를 이끈다' : o.kind === 'hire' ? '우리 장수로 들였다' : '회유한다'
@@ -2357,34 +2496,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     const locked = ours && busy === null && pending.length === 0 && handLocked(r, id)
     if (locked) h += `<div class="banner busyb">⏳ 이번 계절 사신·공작을 나르는 손이다 — 사신·공작을 하나 거두면 이 장수에게 일을 줄 수 있다</div>`
-    if (ours && !isRuler(r, id) && pending.every((o) => o.kind === 'hire') && busy === null && !locked) {
-      const army = Object.values(r.armies).find((a) => a.hero === id)
-      const at = army?.at ?? x.at ?? null
-      const atName = at !== null ? (r.nodes[at]?.name ?? '') : ''
-      if (army !== undefined && army.march === null && at !== null && r.nodes[at]?.owner === me()) {
-        h += `<button class="btn" data-act="assign" data-id="${id}" data-node="${at}">군대에서 빠져 ${esc(josa(atName, '을', '를'))} 맡는다</button>`
-      }
-      if (army === undefined && at !== null) {
-        if (x.post !== at && r.nodes[at]?.owner === me()) h += `<button class="btn" data-act="assign" data-id="${id}" data-node="${at}">${esc(josa(atName, '을', '를'))} 맡는다</button>`
-        if (x.post != null) h += `<button class="btn ghost" data-act="assign" data-id="${id}" data-node="">맡은 일을 그만둔다</button>`
-        // 장수 없는 우리 군대 — 여기 있으면 바로, 멀리 있으면 가서 이끈다 (우리 땅으로 이어진 곳)
-        for (const a of sorted(Object.values(r.armies)).filter((b) => b.faction === me() && b.march === null && b.hero === null && (b.at === at || (r.nodes[b.at]?.owner === me() && migratePath(r, me(), at, b.at) !== null)))) {
-          h += `<button class="btn" data-act="lead" data-id="${id}" data-army="${a.id}">${esc(josa(armyName(r, a), '을', '를'))} ${a.at === at ? '이끈다' : `${esc(josa(r.nodes[a.at]?.name ?? '', '에', '에'))} 가서 이끈다`} <small>${headcount(forceOf(r, a))}명</small></button>`
-        }
-        // 다른 고을 맡기 — 우리 땅으로 이어진 곳이면 정예 호위를 거느리고 간다 (그 계절은 길에 있다)
-        const far = sorted(Object.values(r.nodes)).filter((n) => n.owner === me() && n.id !== at && n.kind !== 'sodo' && n.hh > 0 && migratePath(r, me(), at, n.id) !== null)
-        if (far.length > 0 && heroBusy(r, id) === null) {
-          h += `<div class="farh"><b>다른 고을을 맡으러 간다</b><span class="mute">정예 ${P.realm.escortMen}명이 따라간다 · 이번 계절은 길에 있다</span></div><div class="seg wrap farseg">`
-          for (const n of far) {
-            const holder = Object.values(r.heroes).find((y) => y.post === n.id && y.faction === me())
-            h += `<button data-act="assign" data-id="${id}" data-node="${n.id}">${esc(n.name)}${holder !== undefined ? `<small>${esc(holder.name)} 대신</small>` : ''}</button>`
-          }
-          h += `</div>`
-        }
-      }
-      // 사신·자객 — 다른 탭으로 가서 고르지 않게, 이 장수를 고른 채로 그 판을 연다
-      if (!handLocked(r, id) && !handsFull(r)) h += `<div class="btns jobs"><button class="btn" data-act="hero-envoy" data-id="${id}">${icon('good-tribute-bell')}사신으로 보낸다</button><button class="btn" data-act="hero-agent" data-id="${id}">${icon('status-spy')}자객으로 보낸다</button></div>`
-      h += `<p class="mute">맡기기·이끌기·사신·자객·원정 — 한 계절에 하나 ${guideBtn('post')}</p>`
+    // 할 일 — 일마다 그림 깔린 창으로 간다 (명령 탭의 그 창에 이 장수를 골라 둔 채로)
+    if (ours && pending.every((o) => o.kind === 'hire') && busy === null && !locked) {
+      const jobs = CMD_JOBS.filter((j) => (j.ruler || !isRuler(r, id)) && cmdWhy(r, j.id, x) === null)
+      if (jobs.length > 0) h += `<div class="cmdm">${jobs.map((j) => `<button data-act="cmd" data-job="${j.id}" data-id="${id}" style="--cbg:url('${ART}event/${j.art}.jpg')">${icon(j.icon)}<b>${j.name}</b></button>`).join('')}</div><p class="mute">한 계절에 한 가지 ${guideBtn('post')}</p>`
     }
     // 회유 — 우리가 사로잡은 장수
     if (x.status === 'captive' && x.captor === me() && x.persuade === undefined && pending.length === 0) {
@@ -2642,7 +2757,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const armyIdle = Object.values(r.armies).some((a) => a.faction === me() && a.march === null && pick[a.id] === undefined)
     const t = asks > 0 && tabWait(r, 'diplo') === 0 ? { tab: 'diplo', line: `사신이 왔다 — 외교에서 답한다` }
       : !drafted && canDraft && r.season < 4 ? { tab: 'draft', line: '징병에서 군사를 뽑는다 (⚡ 알아서 뽑기)' }
-        : idle > 0 ? { tab: 'heroes', line: `쉬는 장수 ${idle}명 — 장수에서 일을 맡긴다` }
+        : idle > 0 ? { tab: 'heroes', line: `쉬는 장수 ${idle}명 — 명령에서 일을 맡긴다` }
           : armyIdle && r.season >= 1 ? { tab: 'army', line: '군대에서 갈 곳을 고른다 — 빈땅·약한 이웃' }
             : null
     return t === null ? '' : `<button class="todochip" data-act="tab" data-tab="${t.tab}">👉 이번 계절 · ${esc(t.line)}</button>`
@@ -4075,7 +4190,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         return
       }
       case 'close': sheet = null; paint(); return
-      case 'tab': markSeen(d['tab']!); openSheet({ kind: d['tab'] as 'army' }); return
+      case 'tab': markSeen(d['tab']!); if (d['tab'] === 'heroes') cmdJob = null; openSheet({ kind: d['tab'] as 'army' }); return
       case 'help': openSheet({ kind: 'help' }); return
       case 'export': host.onExport(); return
       case 'acct-in': host.cloud?.signIn(); return
@@ -4221,7 +4336,20 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'log-n': logNation = d['id'] ? d['id'] : null; break
       case 'layers': layersOpen = !layersOpen; break
       case 'layer': toggleLayer(d['v'] as LayerId); break
-      case 'htab': heroTab = d['v'] as typeof heroTab; break
+      case 'htab': heroTab = d['v'] as typeof heroTab; if (heroTab === 'cmd') cmdJob = null; break
+      case 'cmd': {
+        // 일 카드 — 명령 탭의 그 일 창으로 (장수 판에서 누르면 그 장수를 골라 둔 채로)
+        heroTab = 'cmd'
+        cmdJob = d['job'] as CmdJob
+        cmdHero = d['id'] ?? ''
+        if (sheet?.kind === 'heroes') break
+        sheet = { kind: 'heroes' }
+        $('.sheet').scrollTop = 0
+        paint()
+        return
+      }
+      case 'cmd-back': cmdJob = null; break
+      case 'cmd-hero': cmdHero = d['id']!; break
       case 'guide': {
         const g = GUIDE[d['k'] ?? '']
         if (g === undefined) return

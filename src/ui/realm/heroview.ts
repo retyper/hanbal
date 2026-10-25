@@ -139,6 +139,32 @@ export const HERO_CSS = `
 .ap .wcand .hdo { font-size: 12.5px; font-weight: 700; color: #f0d090; }
 /* 묶인 장수의 원정 칸 — 한 줄만, 흐리게 (형 10-24) */
 .ap .exp.off { opacity: .62; }
+/* 명령 — 일 카드 여섯 (그림 깔린 판) · 일 창 · 장수 고르기 · 갈 곳 (형 10-25: "혼인·원정처럼 제대로 된 창으로") */
+.ap .cmdg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.ap .cmdc, .ap .cmdw, .ap .cmdm button { position: relative; overflow: hidden; color: var(--ink); font: inherit; text-align: left; border-radius: 12px; border: 1px solid #6a5a3a;
+  background: linear-gradient(#14100c55, #14100cdd 70%), var(--cbg, none) center / cover no-repeat, #2a2218; text-shadow: 0 1px 3px #000; }
+.ap .cmdc { display: flex; flex-direction: column; gap: 3px; min-height: 104px; padding: 10px; cursor: pointer; justify-content: flex-end; }
+.ap .cmdc b, .ap .cmdw > b { display: flex; align-items: center; gap: 5px; color: #ffd27a; font-size: 15px; }
+.ap .cmdc b img, .ap .cmdw > b img, .ap .cmdm img { width: 22px; height: 22px; }
+.ap .cmdc span { font-size: 12px; color: #d8ccb0; } .ap .cmdc small { font-size: 12px; font-weight: 700; color: #f0d090; }
+.ap .cmdc.set { border-color: #e0bd78; box-shadow: 0 0 0 1px #e0bd7866; } .ap .cmdc.off { filter: saturate(.4) brightness(.75); }
+.ap .cmdw { display: flex; flex-direction: column; gap: 6px; padding: 14px 12px 10px; min-height: 92px; justify-content: flex-end; margin: 6px 0 4px; }
+.ap .cmdw > span { font-size: 13px; color: #d8ccb0; }
+.ap .cmdp { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 6px; }
+.ap .cmdp button { flex: none; width: 84px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; cursor: pointer; }
+.ap .cmdp button .face { width: 52px; height: 52px; } .ap .cmdp button b { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.ap .cmdp button small { display: flex; flex-direction: column; align-items: center; font-size: 11px; color: var(--mute); line-height: 1.25; }
+.ap .cmdp button small i { font-style: normal; }
+.ap .cmdp button.on { border-color: #e0bd78; box-shadow: 0 0 0 2px #e0bd78, 0 0 10px #e0bd7866; } .ap .cmdp button.on small { color: #ffe2a0; }
+.ap .cmdp button.busy { opacity: .5; filter: saturate(.35); cursor: default; } .ap .cmdp button.busy small { color: #f0d090; }
+.ap .cmdts { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; margin: 4px 0 8px; }
+.ap .cmdt { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 10px; border: 1px solid #6a5a3a; background: #2a2218; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.ap .cmdt b { color: #f0e0b8; } .ap .cmdt small { font-size: 11.5px; color: var(--mute); }
+.ap .cmdgo { width: 100%; justify-content: center; margin-top: 6px; }
+.ap .cmdm { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; }
+.ap .cmdm button { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; min-height: 64px; padding: 6px 4px; cursor: pointer; }
+.ap .cmdm button b { font-size: 13px; color: #ffd27a; }
 `
 
 // ───────── 정과 성장 (HEROES §7, 형: "장수를 오래쓰면 친밀도? 호감도? 이런게 올라야 하지 않을까? 장수 키우는 맛도 있어야할듯")
