@@ -129,8 +129,8 @@ export function tutPick(step: TutStep, c: TutCtx, ok: (sel: string) => boolean):
 export function tutStyle(step: TutStep | undefined): string {
   if (step?.war === undefined) return ''
   const { pick, go, tab } = step.war
-  // 고르기 전엔 그 탭 · 그 명령 카드, 고른 뒤엔 (잠겨 있으면) 「★ 권함대로 채운다」, 켜지면 「전투 개시」
-  const sels = [`.ap .wr ${pick}:not(.on)`, `.ap .wr:has(${pick}.on) ${go}:not([disabled])`, `.ap .wr:has(${pick}.on):has(${go}[disabled]) [data-war="recall"]`]
+  // 고르기 전엔 그 탭 · 그 명령 카드, 고른 뒤엔 (잠겨 있으면) 아직 안 고른 무리 탭, 켜지면 「전투 개시」 (「★ 권함대로 채운다」는 뺐다 — 형 10-25)
+  const sels = [`.ap .wr ${pick}:not(.on)`, `.ap .wr:has(${pick}.on) ${go}:not([disabled])`, `.ap .wr:has(${pick}.on):has(${go}[disabled]) .wgt[data-g]:not(.done)`]
   if (tab !== undefined) sels.push(`.ap .wr:not(:has(${pick}.on)) ${tab}:not(.on)`)
   return `${sels.join(', ')} { outline: 3px solid #ffd27a; outline-offset: 3px; animation: tutglow .9s ease-in-out infinite alternate; border-radius: 10px; }`
 }
