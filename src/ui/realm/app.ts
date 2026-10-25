@@ -20,6 +20,7 @@ import { chapterOfRegion } from '../../realm/data/campaign.ts'
 import { knownOf, knows } from '../../realm/discovery.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
 import { CARDS } from '../../realm/data/cards.ts'
+import { cardPreview, type CardFx } from '../../realm/events.ts'
 import {
   ASK_KIND_NAME, ASK_NAME, deedText, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, arriveWhen, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine, NODE_NOW, BUILD_NAME, BOW_NAME, CONCEAL_LINE, GOOD_NAME, GOOD_USE, tagNow,
 } from '../../realm/data/prose.ts'
@@ -78,7 +79,7 @@ import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, det
 import { SCENE_SOUND, makeMusic, playOnce, snd, tapSlot } from './sound.ts'
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
-import { FEEL_CSS, alertFeel, ambushFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
+import { FEEL_CSS, alertFeel, ambushFeel, chanceFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
 
 export interface AppHost {
   /** 플레이 기록을 다 지운다(계정·설정은 남김) — 로그인했으면 서버 것부터. 못 지웠으면 false (형 10-24) */
@@ -380,6 +381,33 @@ function gainHtml(g: Partial<Record<'grain' | 'iron' | 'wood' | 'salt' | 'horse'
   const parts = (['grain', 'iron', 'wood', 'salt', 'horse'] as const).filter((k) => (g[k] ?? 0) > 0)
     .map((k) => `<b class="gg" title="${NAME[k]} ${g[k]}"><i>▲</i>${icon(GOOD_ICON[k], 'cgi')}${g[k]}</b>`)
   return parts.length === 0 ? '' : `<span class="gain">${parts.join('')}</span>`
+}
+/** 물건 아닌 것 — 수확·사기·정·집·경계·호감·장수. 좋으면 ▲ 푸르게 · 나쁘면 ▼ 붉게 (costHtml·gainHtml 과 같은 꼴) */
+const fxChip = (good: boolean, ic: string, text: string): string =>
+  `<span class="${good ? 'gain' : 'cost'}"><b class="${good ? 'gg' : 'cg'}" title="${esc(text)}"><i>${good ? '▲' : '▼'}</i>${icon(ic, 'cgi')}${esc(text)}</b></span>`
+const signed = (n: number): string => (n > 0 ? `+${n}` : `${n}`)
+/** 사건 답 한 갈래가 하는 일 — 아이콘과 숫자로 (형 10-25: "얻게 되거나 잃게 되는 거 이미지랑 숫자로 확실하게" · ODDS 원칙 3) */
+function fxHtml(r: Realm, fx: CardFx): string {
+  const g = fx.grain ?? 0
+  const n = fx.iron ?? 0
+  let h = gainHtml({ grain: Math.max(0, g), iron: Math.max(0, n) }) + costHtml({ grain: Math.max(0, -g), iron: Math.max(0, -n) })
+  if (fx.harvest !== undefined && fx.harvest !== 1) {
+    const d = Math.round((fx.harvest - 1) * 100)
+    h += fxChip(d > 0, 'status-autumn', `수확 ${signed(d)}%`)
+  }
+  if (fx.morale !== undefined) h += fxChip(fx.morale > 0, fx.morale > 0 ? 'status-morale-up' : 'status-morale-down', `사기 ${signed(Math.round(fx.morale * 100))}%`)
+  if (fx.bond !== undefined) h += fxChip(fx.bond > 0, fx.bond > 0 ? 'mood-warm' : 'mood-angry', `장수들 정 ${signed(fx.bond)}`)
+  for (const [id, d] of fx.bonds ?? []) h += fxChip(d > 0, d > 0 ? 'mood-warm' : 'mood-angry', `${r.heroes[id]?.name ?? ''} 정 ${signed(d)}`)
+  const hh = (fx.hurt ?? []).reduce((a, [, d]) => a + d, 0)
+  if (hh > 0) h += fxChip(false, 'settle-hamlet', `집 -${hh}`)
+  if (fx.watch !== undefined) h += fxChip(true, 'settle-beacon', `경계 +${Math.round(fx.watch * 100)}%`)
+  if (fx.favor !== undefined && fx.favor.to.length > 0) {
+    const who = fx.favor.to.length === 1 ? r.factions[fx.favor.to[0]!]?.name ?? '' : '이웃 나라'
+    h += fxChip(fx.favor.d > 0, fx.favor.d > 0 ? 'mood-joy' : 'mood-angry', `${who} 호감 ${signed(fx.favor.d)}`)
+  }
+  if (fx.foe !== undefined) h += fxChip(true, 'war-broken-banner', `${r.factions[fx.foe.faction]?.name ?? ''} 사기 -${Math.round(fx.foe.d * 100)}%`)
+  if (fx.join !== undefined) h += fxChip(true, 'unit-general', '새 장수')
+  return h === '' ? `<small class="cnone">아무 탈 없다</small>` : h
 }
 /** 큰 얼굴 — 900px 판이 있으면 그것 (알현처럼 화면 가득일 때) */
 const bustHd = (h: Hero | undefined, cls: string): string =>
@@ -1810,7 +1838,19 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const ib = o.name.indexOf('{b}')
       const who = ia >= 0 && (ib < 0 || ia < ib) ? c.hero : ib >= 0 ? c.hero2 : undefined
       const face = who != null && r.heroes[who] !== undefined ? bust(r.heroes[who], 'cof') : ''
-      h += `<button class="copt${pick === i ? ' on' : ''}${face !== '' ? ' hasf' : ''}" data-act="card-pick" data-v="${i}">${face}<span class="cot"><b>${esc(sub(o.name))}</b><span>${esc(sub(o.does))}</span>${i === fallback && pick === null ? '<i>고르지 않으면 이것</i>' : ''}</span></button>`
+      // 얻고 잃는 것 — 아이콘·숫자로. 굴리는 답이면 % 와 「이루면 · 어긋나면」 (ODDS: 사건 카드의 답은 % + 갈래마다 아이콘·숫자)
+      const pv = cardPreview(r, c, i === 0 ? 0 : 1, left())
+      let fx = ''
+      if (pv !== null) {
+        const sure = fxHtml(r, pv.sure)
+        if (pv.chance === undefined) fx = `<span class="cfx">${sure}</span>`
+        else {
+          if (!sure.includes('cnone')) fx += `<span class="cfx">${sure}</span>`
+          fx += `<span class="codd">${chanceFeel(pv.chance)}</span>`
+          fx += `<span class="cfx"><small>이루면</small>${fxHtml(r, pv.win ?? {})}</span><span class="cfx"><small>어긋나면</small>${fxHtml(r, pv.lose ?? {})}</span>`
+        }
+      }
+      h += `<button class="copt${pick === i ? ' on' : ''}${face !== '' ? ' hasf' : ''}" data-act="card-pick" data-v="${i}">${face}<span class="cot"><b>${esc(sub(o.name))}</b><span>${esc(sub(o.does))}</span>${fx}${i === fallback && pick === null ? '<i>고르지 않으면 이것</i>' : ''}</span></button>`
     })
     return h + `</div></div></div>`
   }
@@ -2298,7 +2338,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         // 들키면 누가 보냈는지 드러날 수 있다 — 드러나면 그 나라와 크게 틀어지고 다른 나라도 우리를 덜 믿는다
         if (targets[0] !== undefined) {
           const ex = exposeChance(realm!, me(), targets[0].target, targets[0].node, op === 'assassin' ? agent : undefined)
-          h += `<div class="mute">들켜도 누가 보냈는지 숨길 길 ${plotFeel(1 - ex, 1 - ex)} · 드러나면 그 나라와 크게 틀어지고 다른 나라들도 우리를 덜 믿는다.</div>`
+          h += `<div class="mute">들켜도 누가 보냈는지 숨길 길 ${plotFeel(1 - ex, 1 - ex, false)} · 드러나면 그 나라와 크게 틀어지고 다른 나라들도 우리를 덜 믿는다.</div>`
         }
         if (op === 'assassin') {
           h += `<img class="plimg" src="${ART}event/event-assassin-archer.jpg" alt="">`
@@ -2312,7 +2352,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           h += `</div>`
           // 누가 가느냐가 곧 무엇을 걸었느냐다 (형이 고름: "자객 기본 · 장수는 도박")
           if (agent === null) h += `<div class="mute">고용 자객 — 들켜 잡혀도 값만 잃는다. 장수는 안 잃는다.</div>`
-          else h += `<div class="mute">${esc(josa(r.heroes[agent]?.name ?? '', '이', '가'))} 가면 화살이 ${assassinArrows(realm!, agent) - P.night.arrows}발 더 있다. 들키면 몸을 빼야 한다. 빠져나올 길 ${plotFeel(escapeChance(realm!, agent), escapeChance(realm!, agent))} · 못 빠지면 잡힌다.</div>`
+          else h += `<div class="mute">${esc(josa(r.heroes[agent]?.name ?? '', '이', '가'))} 가면 화살이 ${assassinArrows(realm!, agent) - P.night.arrows}발 더 있다. 들키면 몸을 빼야 한다. 빠져나올 길 ${plotFeel(escapeChance(realm!, agent), escapeChance(realm!, agent), false)} · 못 빠지면 잡힌다.</div>`
           if (agents.length === 0) h += `<div class="mute">보낼 장수가 없다. 군대를 안 이끌고 쉬는 장수만 자객이 된다.</div>`
           // 자객의 활 — 계단으로 오른다 (형: "완만한 성장이 아니라 계단적 성장")
           const bt = assassinBow(realm!, me())
