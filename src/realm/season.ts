@@ -789,11 +789,14 @@ function sideOf(
   const n = headcount(f)
   const boats = n > 0 && (f.mix.boat ?? 0) / n >= 0.15
   const terrain: Terrain = { ...(o.terrain ?? {}), ...(o.water && boats ? { ram: true } : {}), ...(o.flank ? { height: true } : {}) }
+  // 쉬움(촌장) — 판 내내 우리 쪽이 세다 (형 10-26: "촌장급은 진짜 뭘 해도 승리할 정도로")
+  const easy = (r.tier ?? 1) < 1 && r.region !== 'tutorial' && r.factions[faction]?.mind === 'player'
+  const mb = (o.moraleBonus ?? 0) + (easy ? P.realm.easyMorale : 0)
   return {
-    F, mix: f.mix, morale: f.morale, hero: h === null ? null : asSide(h),
+    F: easy ? F * P.realm.easyPower : F, mix: f.mix, morale: f.morale, hero: h === null ? null : asSide(h),
     ...(hs.length > 1 ? { aides: hs.slice(1).map(asSide) } : {}),
     hungry: hungryOf(armies), specials, terrain, water: o.water, player: r.factions[faction]?.mind === 'player', seen: o.seen,
-    ...(o.moraleBonus !== undefined ? { moraleBonus: o.moraleBonus } : {}),
+    ...(o.moraleBonus !== undefined || easy ? { moraleBonus: mb } : {}),
     ...(o.captureBonus !== undefined && o.captureBonus > 0 ? { captureBonus: o.captureBonus } : {}),
     // 배우는 판 — 우리 쪽 사로잡기는 반드시 되고, 상대는 우리 장수를 잡지 않는다 (형: "튜토리얼급이니 100% 성공하도록")
     ...(r.region === 'tutorial' ? { capture: r.factions[faction]?.mind === 'player' ? 'sure' as const : 'never' as const } : {}),

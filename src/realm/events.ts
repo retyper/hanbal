@@ -37,7 +37,7 @@ function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w:
   const port = portOf(r, f)
   const big = bigNodes(r, f)
   const heroes = freeHeroes(r, f)
-  const badMul = 1 + P.realm.cardTierBad * (Math.max(1, r.tier ?? 1) - 1)
+  const badMul = (r.tier ?? 1) < 1 ? P.realm.easyBad : 1 + P.realm.cardTierBad * (Math.max(1, r.tier ?? 1) - 1)
   const add = (kind: CardKind, w: number, more: Partial<Card> = {}): void => {
     out.push({ card: { kind, season, ...more }, w: w * (CARDS[kind].bad ? badMul : 1) })
   }

@@ -66,7 +66,7 @@ function focus(r: Realm, faction: string, to: string): number {
   const owner = r.nodes[to]?.owner ?? null
   const lead = owner !== null && owner !== faction && leaderFor(r, faction) === owner ? P.realm.aiLeaderFocus : 0
   // 난세 단계 — 높을수록 이웃이 우리를 노린다 (이웃만 세지면 이웃끼리 부숴 오히려 쉬워졌다 — BALANCE)
-  const tier = owner !== null && owner === r.player && (r.tier ?? 1) > 1 ? P.realm.tierFocus * ((r.tier ?? 1) - 1) : 0
+  const tier = owner !== null && owner === r.player ? ((r.tier ?? 1) > 1 ? P.realm.tierFocus * ((r.tier ?? 1) - 1) : (r.tier ?? 1) < 1 ? -P.realm.easyFocus : 0) : 0
   return pledged + lead + tier + (allyFoe(r, faction, owner) ? P.realm.aiAllyFocus : 0)
 }
 
