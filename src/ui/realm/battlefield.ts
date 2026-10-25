@@ -11,7 +11,7 @@
  * 움직임은 CSS 애니메이션의 지연뿐이고, 소리만 타이머로 — 탭이 보일 때만 (절대 규칙 4).
  * 확률은 숫자로 안 보인다 — 사로잡기는 말과 색으로, 대신 사람 수(날랜 무리 · 호위)는 보인다 (realm-no-numbers).
  */
-import { FACTION_ART, UNIT_ICON, bustOf } from '../../realm/data/art.ts'
+import { FACTION_ART, UNIT_ICON, bustOf, flagIcon } from '../../realm/data/art.ts'
 import { battleName, endStory, fieldName, groupLabel, josa, roundStory, storyCtx, UNIT_NAME } from '../../realm/data/prose.ts'
 import { BATTLE_STYLES, groupMen, groupOf, type BattleStyle } from '../../realm/tactics.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
@@ -935,7 +935,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const fNow = mr(m(i))
     const fTo = mr(Math.min(base, m(i) + P.realm.tacFeastMorale))
     const feastPv = i === ourI && l.pending?.feast !== undefined && fTo > fNow ? `<u class="wfpv" style="left:${fNow}%;width:${fTo - fNow}%"></u>` : ''
-    const em = f !== undefined ? FACTION_ART[f]?.emblem : undefined
+    const em = flagIcon(f)
     // 부장 — 함께 선 장수들 (형 10-25) · 잃은 이는 흐리게
     const lostIds = new Set(rounds.flatMap((x) => (x.lostHero !== undefined ? [x.lostHero.hero] : [])))
     const aides = (st?.aides?.[i] ?? []).map((id) => `<span class="waide${lostIds.has(id) ? ' gone' : ''}" title="${esc(prev.heroes[id]?.name ?? after.heroes[id]?.name ?? '')}">${face(id, art, unitOf(i))}</span>`).join('')
@@ -1015,7 +1015,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       const all = Object.entries(mix).filter(([, v]) => (v ?? 0) > 0) as Array<[string, number]>
       const men = all.reduce((s, [, v]) => s + v, 0)
       const fc = f !== undefined ? (FACTION_ART[f]?.color ?? '#888') : '#888'
-      const em = f !== undefined ? FACTION_ART[f]?.emblem : undefined
+      const em = flagIcon(f)
       const gen = `<span class="wgen" style="--fc:${fc}"><i class="wpole">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}</i>${face(hero, art, 'unit-general')}</span>`
       const cues = '<i class="wq q-charge"><b>돌격</b></i><i class="wq q-hold"></i><i class="wq q-shoot"></i><i class="wq q-ride"></i><i class="wq q-drum"></i><i class="wq q-cap"><b>사로잡으러</b></i><i class="wq q-back"><b>물러난다</b></i>'
       if (men <= 0) return `<div class="wf2s ${cls}"${formAttrs(o)}>${terrainProps(cls)}${gen}${cues}</div>`
@@ -2001,7 +2001,7 @@ function openHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: str
   const hname = (id: string | null, f: string | undefined): string => (id !== null ? (prev.heroes[id]?.name ?? after.heroes[id]?.name ?? '?') : `${fname(f)} 군`)
   const color = (f: string | undefined): string => (f !== undefined ? (FACTION_ART[f]?.color ?? '#ccc') : '#ccc')
   const emb = (f: string | undefined): string => {
-    const e = f !== undefined ? FACTION_ART[f]?.emblem : undefined
+    const e = flagIcon(f)
     return e !== undefined ? `<img class="woe" src="${art}icon/${e}.png" alt="">` : ''
   }
   const place = after.nodes[l.node]?.name ?? prev.nodes[l.node]?.name ?? ''

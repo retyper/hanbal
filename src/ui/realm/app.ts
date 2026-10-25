@@ -8,7 +8,7 @@
  */
 import { aiOrders } from '../../realm/ai.ts'
 import { headcount, strength, type Equip, type UnitKind } from '../../realm/battle.ts'
-import { FACTION_ART, GOOD_ICON, SEASON_ICON, UNIT_ICON, bustOf, kidBust, nodeIcon, noteGrowing, noteKids } from '../../realm/data/art.ts'
+import { FACTION_ART, GOOD_ICON, SEASON_ICON, UNIT_ICON, bustOf, flagIcon, kidBust, nodeIcon, noteGrowing, noteKids } from '../../realm/data/art.ts'
 import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../../realm/data/nations-yeongnam.ts'
 import { SOUTH_NATIONS } from '../../realm/data/nations-south.ts'
@@ -422,7 +422,7 @@ let MINE = ''
  * (형 10-23: "고구려는 군주 이미지가 따로 있는데 장수 중에 군주로 주몽이 또 있는 건 뭐냐"). 판 바깥(나라 고르기)에서는 비운다
  */
 let LIVE_RULER: Readonly<Record<string, string>> = {}
-const emblem = (f: string | null, cls = 'em'): string => (f !== null && FACTION_ART[f] !== undefined ? icon(FACTION_ART[f].emblem, f === MINE ? `${cls} mine` : cls) : '')
+const emblem = (f: string | null, cls = 'em'): string => (f !== null && FACTION_ART[f] !== undefined ? icon(flagIcon(f)!, f === MINE ? `${cls} mine` : cls) : '')
 const sorted = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 
 /** 나라마다 얼굴 하나 — 그 나라의 군주 (판의 Faction.ruler 와 같은 id — 나라 고르기 화면엔 판이 없어 이름 규칙으로) */
@@ -4152,7 +4152,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const f = (i: number, k: number): number => ((i * 37 + k * 61) % 100) / 100
     if (kind === 'raid') return Array.from({ length: 18 }, (_, i) => `<i class="emb" style="--x:${(f(i, 1) * 100).toFixed(0)}%;--d:${(2.6 + f(i, 2) * 2.4).toFixed(2)}s;--t:${(-f(i, 3) * 4).toFixed(2)}s;--s:${(3 + f(i, 4) * 5).toFixed(1)}px;--w:${Math.round((f(i, 5) - 0.5) * 80)}px"></i>`).join('')
     if (kind === 'siege') return Array.from({ length: 12 }, (_, i) => `<img class="iarw" src="${ART}fx/arrow.png" alt="" style="--x:${(30 + f(i, 1) * 70).toFixed(0)}%;--t:${(f(i, 2) * 1.6).toFixed(2)}s;--d:${(0.7 + f(i, 3) * 0.4).toFixed(2)}s">`).join('') + `<img class="idust" src="${ART}fx/dust.png" alt="">`
-    if (kind === 'field') return `<i class="iflag l" style="--fc:${FACTION_ART[me()]?.color ?? '#c9a45a'}"><img src="${ART}icon/${FACTION_ART[me()]?.emblem ?? 'emblem-shell'}.png" alt=""></i><i class="iflag r" style="--fc:${FACTION_ART[foe]?.color ?? '#a03a2a'}"><img src="${ART}icon/${FACTION_ART[foe]?.emblem ?? 'emblem-shell'}.png" alt=""></i><img class="idust c" src="${ART}fx/dust.png" alt="">`
+    if (kind === 'field') return `<i class="iflag l" style="--fc:${FACTION_ART[me()]?.color ?? '#c9a45a'}"><img src="${ART}icon/${flagIcon(me()) ?? 'emblem-shell'}.png" alt=""></i><i class="iflag r" style="--fc:${FACTION_ART[foe]?.color ?? '#a03a2a'}"><img src="${ART}icon/${flagIcon(foe) ?? 'emblem-shell'}.png" alt=""></i><img class="idust c" src="${ART}fx/dust.png" alt="">`
     return '<i class="idark"></i>'
   }
 

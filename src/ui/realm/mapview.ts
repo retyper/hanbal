@@ -7,7 +7,7 @@
  * 자리·그림 이름은 realm/data/art.ts.
  */
 import { headcount } from '../../realm/battle.ts'
-import { FACTION_ART, GOOD_ICON, REGION_ART, SEASON_MAP, bustOf, nodeIcon, nodePos } from '../../realm/data/art.ts'
+import { FACTION_ART, GOOD_ICON, REGION_ART, SEASON_MAP, bustOf, flagIcon, nodeIcon, nodePos } from '../../realm/data/art.ts'
 import { EDGE_NAME, GOOD_NAME, NODE_KIND_NAME, NODE_NOW, tagNow } from '../../realm/data/prose.ts'
 import { worldGeoOf } from '../../realm/data/regions/index.ts'
 import { knows } from '../../realm/discovery.ts'
@@ -535,7 +535,7 @@ export function mapHtml(
     const thr = threatened.has(n.id) ? ' threat' : ''
     const who = owner === null ? '주인 없음' : (r.factions[owner]?.name ?? '?')
     const fa = owner !== null ? FACTION_ART[owner] : undefined
-    const emb = fa !== undefined ? `${art}icon/${fa.emblem}.png` : ''
+    const emb = fa !== undefined ? `${art}icon/${flagIcon(owner)}.png` : ''
     // 고른 군대가 갈 수 있는 곳 — 누르면 그리로 간다 (data-act="go")
     const tg = target.get(n.id)
     const go = tg !== undefined && !tg.off ? ` data-act="${tg.act ?? 'go'}" data-edge="${tg.edge}"${tg.goal !== undefined ? ` data-goal="${tg.goal}"` : ''}` : ''

@@ -168,6 +168,15 @@ function clanFace(id: string): string | undefined {
  * 한 판에 같이 서는 두 나라는 바탕이 멀거나, 바탕이 가까우면 둘째 빛이 멀어야 한다 — tests/realm/kit-color.test.ts 가 지킨다.
  * 새 나라를 넣으면 `node --experimental-strip-types tools/kit-colors.ts` 가 겹치는 짝과 둘째 빛 후보를 말한다.
  */
+/**
+ * 나라 깃발 그림 — 문양 실루엣에 그 나라 두 빛을 입혀 구운 것 (tools/bake-flags.py → icon/nflag-<나라>.png).
+ * 문자만큼 작게 줄여도 두 빛과 문양 덩어리로 갈린다 (형 10-26: "국기들을 새로 · 색이 다 어두워 구분할 수가 없음 · 문자만큼 작아도 다 구분 가능하게").
+ * `emblem` 은 문양 이름(굽는 틀이 읽는다) — 화면에는 이 깃발을 쓴다.
+ */
+export function flagIcon(f: string | null | undefined): string | undefined {
+  return f != null && FACTION_ART[f] !== undefined ? `nflag-${f}` : undefined
+}
+
 export const FACTION_ART: Readonly<Record<string, { emblem: string; color: string; color2: string }>> = {
   us: { emblem: 'emblem-shell', color: '#9fd18b', color2: '#6a2a7a' },
   guya: { emblem: 'emblem-twinfish', color: '#e0b64a', color2: '#b0202a' }, // 쌍어 — 김해
