@@ -231,6 +231,66 @@ export function waterSvg(mud: boolean): string {
     + `${ripples}</svg>`
 }
 
+/** 0..1 — 같은 자리 같은 값 (말뚝마다의 생김새) */
+const jit = (i: number, k: number): number => (((i * 73 + k * 151) % 97) + 0.5) / 97
+
+/**
+ * 해자 — 지키는 쪽 진 앞의 한 줄기 물길 (tp 와 같은 비스듬함: x = 54 + oy·0.22, 위가 멀다).
+ * 바깥 둑 · 물 · 안쪽 거친 둑 · 천천히 흘러내리는 반짝임 — 한 장으로 이어진다
+ */
+function moatSvg(): string {
+  const pts = (off: number): string => {
+    const L: string[] = []
+    for (let y = 18; y <= 100; y += 4) {
+      const oy = y - 60
+      const w = 1.6 + (y - 18) * 0.045 // 가까울수록 넓다
+      L.push(`${(54 + oy * 0.22 + off * w).toFixed(2)} ${y}`)
+    }
+    return L.join(' L')
+  }
+  const band = `M${pts(-1)} L${pts(1).split(' L').reverse().join(' L')} Z`
+  const bank = `M${pts(-1.6)} L${pts(1.5).split(' L').reverse().join(' L')} Z`
+  const rip = [30, 42, 54, 66, 78, 90].map((y, i) => {
+    const x = 54 + (y - 60) * 0.22
+    const w = 0.8 + (y - 18) * 0.02
+    return `<path class="wrv-rip" style="--i:${i}" d="M${(x - w).toFixed(2)} ${y} Q${x.toFixed(2)} ${y - 0.6}, ${(x + w).toFixed(2)} ${y}" fill="none" stroke="#e8f6f8" stroke-width=".25"/>`
+  }).join('')
+  return `<svg class="wf-moat" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs>`
+    + `<linearGradient id="wmtW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5f8f98" stop-opacity=".35"/><stop offset=".4" stop-color="#3f6f7c" stop-opacity=".8"/><stop offset="1" stop-color="#284f5c" stop-opacity=".92"/></linearGradient>`
+    + `<linearGradient id="wmtB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6e5e40" stop-opacity=".25"/><stop offset="1" stop-color="#4e3e28" stop-opacity=".7"/></linearGradient></defs>`
+    + `<path d="${bank}" fill="url(#wmtB)"/><path d="${band}" fill="url(#wmtW)"/>`
+    + `<path d="M${pts(-1)}" fill="none" stroke="#2a2016" stroke-width=".35" opacity=".6"/><path d="M${pts(1)}" fill="none" stroke="#2a2016" stroke-width=".35" opacity=".6"/>${rip}</svg>`
+}
+
+/**
+ * 목책 — 말뚝 하나하나 (tp 와 같은 비스듬함: x = 47.5 + oy·0.22). 굵기·높이·기울기가 저마다 다르고, 말뚝마다 두 줄 새끼줄로 묶었다.
+ * 도읍·산성(gate)은 가운데에 망루 둘과 성문. 깨졌으면(broken) 말뚝이 꺾이고·쓰러지고·빠지고, 가로대가 끊기고, 그을린다
+ */
+function stakes(broken: boolean, gate: boolean): string {
+  let h = '<span class="wf-pal' + (broken ? ' broken' : '') + '">'
+  const N = 26
+  for (let i = 0; i < N; i++) {
+    const oy = -40 + (80 * i) / (N - 1)
+    if (gate && Math.abs(oy) < 5.5) continue // 성문 자리
+    const tall = 0.85 + jit(i, 1) * 0.3
+    let lean = (jit(i, 2) - 0.5) * 5
+    let cls = 'stk'
+    if (broken) {
+      const r = jit(i, 3)
+      if (r < 0.22) continue // 빠진 말뚝
+      if (r < 0.55) { cls += ' down'; lean = (jit(i, 4) < 0.5 ? -1 : 1) * (35 + jit(i, 5) * 40) }
+      else if (r < 0.75) cls += ' snap'
+      cls += ' burnt'
+    }
+    h += `<i class="${cls}" style="--x:${(47.5 + oy * 0.22).toFixed(2)}%;--oy:${oy.toFixed(1)}%;--p:${(1 + oy / 140).toFixed(3)};--t:${tall.toFixed(2)};--w:${(0.8 + jit(i, 6) * 0.45).toFixed(2)};--r:${lean.toFixed(1)}deg;z-index:${10 + Math.round(oy + 40)}"></i>`
+  }
+  if (gate) {
+    h += `<i class="tower" style="--x:${(47.5 - 6 * 0.22).toFixed(2)}%;--oy:-6%;z-index:44"></i><i class="tower" style="--x:${(47.5 + 6 * 0.22).toFixed(2)}%;--oy:6%;z-index:56"></i>`
+    h += `<i class="gatedoor${broken ? ' smashed' : ''}" style="--x:47.5%;--oy:0%;z-index:50"></i>`
+  }
+  return h + '</span>'
+}
+
 /** 강둑의 갈대 — [상자 가로 %, 진의 세로 oy, 크기]. waterSvg 의 둑 선을 따라 (tp 의 원근 기울기는 빼고 넣는다) */
 const REEDS_AT: ReadonlyArray<readonly [number, number, number]> = [
   ...[-30, -8, 16, 34].map((oy, i): readonly [number, number, number] => [rvC(60 + oy) - rvW(60 + oy) - 1.2, oy, 0.7 + i * 0.13]),
@@ -987,7 +1047,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         const breached = l.pending === undefined && shown >= (l.rounds ?? []).length && (l.outcome === 'win' || l.outcome === 'rout')
         // 끝 합이 풀리는 중이면 「승리·패배」가 뜨는 때(--rv)에 바꾼다 — 그 전엔 멀쩡한 성 (형 10-25: "결과 나오기 전엔 이런 승패를 연출로 힌트줘선 안돼")
         const late = breached && play
-        if (node.tags.includes('moat')) { for (const oy of [-32, -16, 0, 16, 32]) h += tp('moat', 54, oy, 1.3, true); h += tlab('moat', 58, 42) }
+        // 해자 — 그림 다섯 장을 겹쳐 붙이던 것을 한 줄기 물길로 (형 10-26: "녹색물 이미지 아직도 5개 통째로 복붙") · 진 앞을 비스듬히 따라 내려오며 넓어진다
+        if (node.tags.includes('moat')) { h += moatSvg(); h += tlab('moat', 58, 42) }
         // 성벽·목책은 판정에 있는 것만 그린다 (season.fortMul — 목책 꼬리표 · 산성) · 그냥 도읍에 울타리를 그리면 없는 수비 덤을 있는 것처럼 보였다
         if (node.tags.includes('palisade') || node.kind === 'fort') {
           const gate = node.kind === 'fort' || node.kind === 'capital'
@@ -995,10 +1056,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
           // 지키는 쪽 뒤에 성 — 흙 성벽·목책·망루 (공격이 이기면 부서져 불탄다) · 어느 쪽이 성을 지키는지 한눈에 (형 10-25: "공성하는쪽이랑 수성하는쪽이 어딘지 모르겠고")
           const wall = (b: boolean, cls = ''): string => `<img class="wf-wall${cls}" data-tk="${node.kind === 'fort' ? 'fort' : 'palisade'}" src="${art}fx/field/wall-${b ? 'breach' : 'whole'}.png" alt="">`
           h += late ? wall(false, ' wf-pre') + wall(true, ' wf-post') : wall(breached)
-          // 이어진 울타리 — 토막을 겹쳐 세운다(한가운데 성문)
-          const ys = [-36, -27, -18, -9, 0, 9, 18, 27, 36]
-          const row = (b: boolean): string => ys.map((oy, j) => tp(b ? (j % 3 === 1 ? 'palisade' : 'broken') : gate && j === 4 ? 'gate' : 'palisade', 47.5, oy, 1.25)).join('')
-          h += late ? `<i class="wf-pre">${row(false)}</i><i class="wf-post">${row(true)}</i>` : row(breached)
+          // 목책 — 깎은 통나무 말뚝을 하나하나 세운다(굵기·높이·기울기가 저마다) · 가로대·새끼줄 · 도읍·산성은 망루 둘 사이 성문.
+          // 깨지면 말뚝이 꺾이고 쓰러지고 그을린다 (형 10-26: "목책 더 잘 구현해야" · 메모리: 이펙트는 낱낱이)
+          h += late ? `<i class="wf-pre">${stakes(false, gate)}</i><i class="wf-post">${stakes(true, gate)}</i>` : stakes(breached, gate)
         }
       }
       if (cls === defCls && l.via === 'pass') { h += tp('rocks', 30, -36, 0.9); h += tp('rocks', 24, 32, 1.1); h += tlab('pass', 26, 46) }
@@ -1395,6 +1455,22 @@ export const WAR_CSS = `
 /* 땅 — 지평선 아래로 짙어져 병사가 떠 보이지 않게 */
 .ap .wfield .wf-ground { display: none; }
 /* 지키는 쪽 뒤의 성 (그림은 바깥이 왼쪽 — 우리 쪽이면 뒤집고, 거울인 적 쪽에선 한 번 더 뒤집어 바깥이 공격 쪽을 본다) */
+/* 해자 · 목책 (말뚝 하나하나) — 10-26 */
+.ap .wf2s .wf-moat { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; }
+.ap .wf2s .wf-pal { position: absolute; inset: 0; pointer-events: none; }
+.ap .wf2s .wf-pal .stk { position: absolute; left: var(--x); top: calc(60% + var(--oy)); --hh: calc(clamp(30px, 9cqw, 64px) * var(--t) * var(--p, 1)); height: var(--hh); width: calc(var(--hh) * .16 * var(--w));
+  transform: translate(-50%, -100%) rotate(var(--r)); transform-origin: 50% 100%;
+  background: linear-gradient(90deg, #3a2614 0, #7a5530 28%, #a37645 48%, #6b4826 72%, #2e1d0e 100%);
+  clip-path: polygon(0 14%, 50% 0, 100% 14%, 100% 100%, 0 100%); filter: drop-shadow(1px 2px 1px #000a); }
+.ap .wf2s .wf-pal .stk::after { content: ''; position: absolute; left: -10%; right: -10%; top: 38%; height: 5%; background: #c8a86a; box-shadow: 0 calc(var(--hh) * .34) 0 #c8a86a; opacity: .75; }
+.ap .wf2s .wf-pal .stk.snap { clip-path: polygon(0 52%, 30% 44%, 55% 56%, 80% 46%, 100% 54%, 100% 100%, 0 100%); }
+.ap .wf2s .wf-pal .stk.down { transform: translate(-50%, -100%) rotate(var(--r)); opacity: .85; }
+.ap .wf2s .wf-pal .stk.burnt { background: linear-gradient(90deg, #120a05 0, #3a2414 30%, #5a3a1e 50%, #2a170a 75%, #0c0603 100%); }
+.ap .wf2s .wf-pal .tower { position: absolute; left: var(--x); top: calc(60% + var(--oy)); width: clamp(16px, 4cqw, 30px); height: clamp(60px, 15cqw, 110px); transform: translate(-50%, -100%);
+  background: linear-gradient(90deg, #3a2614, #8a6034 40%, #5a3a1e 70%, #2e1d0e); clip-path: polygon(10% 18%, 50% 0, 90% 18%, 85% 22%, 85% 100%, 15% 100%, 15% 22%); filter: drop-shadow(1px 3px 2px #000b); }
+.ap .wf2s .wf-pal .gatedoor { position: absolute; left: var(--x); top: calc(60% + var(--oy)); width: clamp(20px, 5cqw, 38px); height: clamp(36px, 9cqw, 66px); transform: translate(-50%, -100%) skewY(-12deg);
+  background: repeating-linear-gradient(90deg, #5a3a1e 0 22%, #3a2614 22% 25%); border: 2px solid #2a1a0c; filter: drop-shadow(1px 2px 2px #000a); }
+.ap .wf2s .wf-pal .gatedoor.smashed { clip-path: polygon(0 0, 40% 0, 30% 40%, 55% 55%, 35% 100%, 0 100%); filter: brightness(.6) drop-shadow(1px 2px 2px #000a); }
 .ap .wf2s .wf-wall { position: absolute; left: -4%; bottom: 4%; height: 90%; width: auto; transform: scaleX(-1); z-index: 1; pointer-events: none; filter: brightness(.8) saturate(.9) drop-shadow(0 4px 8px #000b); }
 .ap .wfield i.wf-pre, .ap .wfield i.wf-post { position: absolute; inset: 0; pointer-events: none; }
 .ap .wfield .wf-pre { animation: wfpre .5s ease-out var(--rv, 0s) forwards; } @keyframes wfpre { to { opacity: 0; visibility: hidden; } }
