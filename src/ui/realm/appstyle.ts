@@ -573,6 +573,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .mcard.fulld .askc .an { justify-content: center; } .ap .mcard.fulld .askc .an .rface { width: 64px; height: 64px; } .ap .mcard.fulld .askc .an .fn b { font-size: 16px; }
 .ap .mcard.fulld .askc > p { font-size: 16px; line-height: 1.5; text-align: center; }
 .ap .mcard.fulld .askc .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; } .ap .mcard.fulld .askc .btns .btn { justify-content: center; padding: 14px 16px; font-size: 17px; } .ap .mcard.fulld .askc .btns > .mute { grid-column: 1 / -1; text-align: center; }
+.ap .mcard.fulld .rdecide.full > .cardc, .ap .mcard.fulld .rdecide.full > .askc { width: min(100%, 760px); align-self: center; }
+.ap .mcard.fulld .cardc .copt { justify-content: center; min-height: 64px; } .ap .mcard.fulld .cardc .copt .cof { width: 72px; height: 72px; }
+.ap .wandc .wtr { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 6px; } .ap .mcard.fulld .wandc .wtr { justify-content: center; }
 .ap .mcard.fulld .fdnote { margin: 12px 0 0; text-align: center; color: var(--mute); font-size: 13px; }
 .ap .mcard .rdecide .rdh { margin: 0 0 6px; color: #ffd27a; } .ap .mcard .rdecide .rdh b { display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 11px; background: #c0392b; color: #fff; font-size: 13px; }
 .ap .mcard .repfoot { position: sticky; bottom: -4px; margin: 8px -4px -4px; padding: 8px 4px 4px; background: linear-gradient(#1a130c00, #1a130cf0 35%); z-index: 2; }

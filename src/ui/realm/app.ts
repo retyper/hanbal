@@ -1764,26 +1764,48 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 배우는 판도 화면 가득 — 고리는 고를 단추를 가리킨다 (tutorial DISMISS) (형 10-25: "조공요구도 해적도 거래요청도 다 화면의 대빵 크게")
     const c = r.card
     const card = c !== undefined && c !== null && c.season === r.season && !r.outcome && answers[`card:${c.season}`] === undefined ? 1 : 0
-    return card + openAsks(r, me()).filter((a) => answers[a.id] === undefined).length
+    return card + openAsks(r, me()).filter((a) => answers[a.id] === undefined).length + wandArrivals().filter((w) => answers[wandKey(w.hero.id)] === undefined).length
+  }
+
+  /** 이번 계절 우리 고을에 막 닿은 떠돌이 — 들일지 정할 것 (형 10-25: "빨간 불은 들어오는데 방랑 장수 이벤트가 안 생기네") */
+  function wandArrivals(): Array<{ hero: Hero; node: string; until: number; price: number }> {
+    const r = realm!
+    if (report === null || r.outcome) return []
+    const came = new Set(report.lines.flatMap((l) => (l.kind === 'wanderer' ? [l.hero] : [])))
+    return wanderersFor(r, me()).filter((w) => came.has(w.hero.id))
+  }
+  const wandKey = (id: string): string => `wand:${id}:${realm!.season}`
+
+  /** 떠돌이 한 사람 — 들인다 · 나중에 (사건 카드 꼴 · 화면 가득일 때 크게) */
+  function wandCard(w: { hero: Hero; node: string; until: number; price: number }): string {
+    const r = realm!
+    const ans = answers[wandKey(w.hero.id)]
+    const can = left().grain >= w.price || heroOrders.some((o) => o.kind === 'hire' && o.hero === w.hero.id)
+    const stay = Math.max(0, w.until - r.season)
+    return `<div class="cardc wandc"><img class="cimg" src="${ART}event/event-wanderer-arrives.jpg" alt=""><div class="cb"><b>떠돌이 인재가 왔다</b>`
+      + `<p>${esc(`${josa(w.hero.name, '이', '가')} ${r.nodes[w.node]?.name ?? ''}에 머문다`)}</p><div class="wtr">${traitChips(w.hero, true)}</div><div class="copts">`
+      + `<button class="copt hasf${ans === true ? ' on' : ''}" data-act="wand-pick" data-id="${w.hero.id}" data-v="1" ${can ? '' : 'disabled'}>${bust(w.hero, 'cof')}<span class="cot"><b>들인다</b><span>${can ? costHtml({ grain: w.price }) : `곡식이 모자란다 ${costHtml({ grain: w.price })}`}</span></span></button>`
+      + `<button class="copt${ans === false ? ' on' : ''}" data-act="wand-pick" data-id="${w.hero.id}" data-v="0"><span class="cot"><b>나중에 정한다</b><span>${stay}계절 안에 떠난다 · 장수 탭에서 들일 수 있다</span></span></button>`
+      + `</div></div></div>`
+  }
+
+  function askCard(a: ReturnType<typeof openAsks>[number]): string {
+    const lead = realm!.heroes[realm!.factions[a.from]?.ruler ?? rulerId(a.from)]
+    const ans = answers[a.id]
+    // 청마다 그림 — 화면 가득일 때 크게 (무슨 청인지 그림 · 누가 보냈는지 얼굴)
+    let h = `<div class="askc ${a.kind === 'demand' ? 'threat' : ''}"><div class="aqh">${icon(`ask-${a.kind === 'demand' ? 'tribute' : a.kind}`, 'aqi')}<b>사신의 청 · ${esc(ASK_KIND_NAME[a.kind])}</b></div><div class="an">${bust(lead, 'rface')}<div class="fn"><b>${emblem(a.from, 'fem')}${esc(realm!.factions[a.from]?.name ?? '')}</b>`
+    h += `<span class="mute">${esc(lead?.name ?? '')}</span></div></div><p>${esc(askLine(a, realm!.factions[a.from]?.name ?? '', a.node !== undefined ? (realm!.nodes[a.node]?.name ?? '') : ''))}</p>`
+    if (a.why !== undefined && readsMind(realm!, a.from)) h += heardHtml(realm!, a.from, `저들이 이 청을 낸 까닭은 이렇습니다 — ${whyLine(a.why, a.about !== undefined ? (realm!.factions[a.about]?.name ?? '') : '')}`)
+    h += `<div class="btns"><button class="btn ${ans === true ? 'on' : ''}" data-act="answer" data-id="${a.id}" data-yes="1">받는다</button>`
+    h += `<button class="btn ${ans === false ? 'on' : ''}" data-act="answer" data-id="${a.id}" data-yes="0">거절한다</button>`
+    if (ans === undefined) h += `<span class="mute">답하지 않으면 거절</span>`
+    return h + `</div></div>`
   }
 
   function asksHtml(): string {
     const asks = openAsks(realm!, me())
     if (asks.length === 0) return ''
-    let h = `<h4>사신이 왔다 · 이번 계절 안에 답한다</h4>`
-    for (const a of asks) {
-      const lead = realm!.heroes[realm!.factions[a.from]?.ruler ?? rulerId(a.from)]
-      const ans = answers[a.id]
-      // 청마다 그림 — 화면 가득일 때 크게 (무슨 청인지 그림 · 누가 보냈는지 얼굴)
-      h += `<div class="askc ${a.kind === 'demand' ? 'threat' : ''}"><div class="aqh">${icon(`ask-${a.kind === 'demand' ? 'tribute' : a.kind}`, 'aqi')}<b>사신의 청 · ${esc(ASK_KIND_NAME[a.kind])}</b></div><div class="an">${bust(lead, 'rface')}<div class="fn"><b>${emblem(a.from, 'fem')}${esc(realm!.factions[a.from]?.name ?? '')}</b>`
-      h += `<span class="mute">${esc(lead?.name ?? '')}</span></div></div><p>${esc(askLine(a, realm!.factions[a.from]?.name ?? '', a.node !== undefined ? (realm!.nodes[a.node]?.name ?? '') : ''))}</p>`
-      if (a.why !== undefined && readsMind(realm!, a.from)) h += heardHtml(realm!, a.from, `저들이 이 청을 낸 까닭은 이렇습니다 — ${whyLine(a.why, a.about !== undefined ? (realm!.factions[a.about]?.name ?? '') : '')}`)
-      h += `<div class="btns"><button class="btn ${ans === true ? 'on' : ''}" data-act="answer" data-id="${a.id}" data-yes="1">받는다</button>`
-      h += `<button class="btn ${ans === false ? 'on' : ''}" data-act="answer" data-id="${a.id}" data-yes="0">거절한다</button>`
-      if (ans === undefined) h += `<span class="mute">답하지 않으면 거절</span>`
-      h += `</div></div>`
-    }
-    return h
+    return `<h4>사신이 왔다 · 이번 계절 안에 답한다</h4>` + asks.map(askCard).join('')
   }
 
   /** 우리 고을로 오는 적 — 보인 행군마다 경계 강화 단추 */
@@ -3326,10 +3348,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 이번 계절 정할 것(사건 카드 · 사신의 청) — 아직 안 골랐으면 소식보다 먼저 화면 가득, 다 골라야 소식이 열린다
     // (형 10-24: 동료 플레이 "이벤트 선택지를 고르지도 않고 넘어감" · 10-25: "선택해야 하는 이벤트가 뜰 경우에는 화면 전체로 하고 무조건 선택하게")
     const todo = repTodo()
-    const decide = cardHtml(realm!) + asksHtml()
+    const decide = cardHtml(realm!) + asksHtml() + wandArrivals().map(wandCard).join('')
     if (todo > 0) {
+      // 하나씩 — 둘을 한 화면에 주면 헷갈린다 (형 10-25). 사건 카드 → 사신의 청 → 떠돌이
+      const rc = realm!.card
+      const first = rc != null && rc.season === realm!.season && answers[`card:${rc.season}`] === undefined ? cardHtml(realm!)
+        : openAsks(realm!, me()).filter((a) => answers[a.id] === undefined).map(askCard)[0]
+          ?? wandArrivals().filter((w) => answers[wandKey(w.hero.id)] === undefined).map(wandCard)[0] ?? ''
       return `<div class="mcard fulld"><div class="mt">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r.season))}</b><span>정할 것 <b class="rdn">${todo}</b></span></div>`
-        + `<div class="rdecide full">${decide}</div><p class="fdnote">다 고르면 이 계절의 소식이 이어진다</p></div>`
+        + `<div class="rdecide full">${first}</div><p class="fdnote">${todo > 1 ? `고르면 다음 것이 이어진다 · 남은 ${todo - 1}` : '고르면 이 계절의 소식이 이어진다'}</p></div>`
     }
     let h = `<div class="mcard" data-act="rep-fast"><div class="mt">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r.season))}</b><span>${esc(SEASON_LINE[season])}</span></div>`
     if (decide !== '') h += `<div class="rdecide"><h4 class="rdh">이번 계절 정할 것 · 다 골랐다</h4>${decide}</div>`
@@ -4373,7 +4400,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         return
       }
       case 'close': sheet = null; paint(); return
-      case 'tab': markSeen(d['tab']!); if (d['tab'] === 'heroes') cmdJob = null; openSheet({ kind: d['tab'] as 'army' }); return
+      case 'tab': {
+        if (d['tab'] === 'heroes' && realm !== null) {
+          cmdJob = null
+          // 빨간 점이 켜진 까닭이 있는 칸으로 (형 10-25: 떠돌이가 와서 불은 켜졌는데 명령 칸이 열려 안 보였다)
+          const fresh = dotKeys(plan(), 'heroes').filter((k) => !seenKeys.has(k))
+          if (fresh.some((k) => k.startsWith('w:'))) heroTab = 'mine'
+          else if (fresh.some((k) => k.startsWith('c:'))) heroTab = 'jail'
+        }
+        markSeen(d['tab']!); openSheet({ kind: d['tab'] as 'army' }); return
+      }
       case 'help': openSheet({ kind: 'help' }); return
       case 'export': host.onExport(); return
       case 'acct-in': host.cloud?.signIn(); return
@@ -4823,6 +4859,19 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'undraft': musters = musters.filter((_, i) => i !== Number(d['i'])); break
       case 'answer': answers[d['id']!] = d['yes'] === '1'; fastNext = true; break
+      case 'wand-pick': {
+        const id = d['id']!
+        const yes = d['v'] === '1'
+        answers[wandKey(id)] = yes
+        const had = heroOrders.some((o) => o.kind === 'hire' && o.hero === id)
+        if (yes && !had) {
+          heroOrders = [...heroOrders, { kind: 'hire', faction: me(), hero: id }]
+          const w = (realm?.wanderers ?? []).find((v) => v.hero.id === id)
+          if (w !== undefined && !hireShown.has(id)) { hireShown.add(id); playScenes([hireSceneHtml(w.hero, 'wanderer')], 0) }
+        } else if (!yes && had) { heroOrders = heroOrders.filter((o) => !(o.kind === 'hire' && o.hero === id)); hireShown.delete(id) }
+        fastNext = true
+        break
+      }
       case 'guard': {
         const node = d['node']!
         guards = guards.includes(node) ? guards.filter((x) => x !== node) : [...guards, node]

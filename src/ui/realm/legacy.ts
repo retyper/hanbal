@@ -121,15 +121,16 @@ export const LEGACY_CSS = `
 .ap .cardc { display: flex; gap: 10px; margin: 8px 0; padding: 10px; border-radius: 14px; border: 1px solid #6a5a3a; background: #201c16; text-align: left; flex-wrap: wrap; }
 .ap .cardc.bad { border-color: #7a4a3a; background: #221816; }
 .ap .cardc .cimg { width: min(180px, 100%); aspect-ratio: 3 / 2; object-fit: cover; border-radius: 10px; flex: none; }
-.ap .cardc .cb { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 4px; } .ap .cardc .cb > b { color: var(--gold); display: flex; align-items: center; gap: 6px; }
+.ap .cardc .cb { flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 4px; } .ap .cardc .cb > b { color: var(--gold); display: flex; align-items: center; gap: 6px; }
 .ap .cardc .cic { width: 22px; height: 22px; } .ap .cardc p { margin: 0; font-size: 13.5px; }
-.ap .cardc .copts { display: flex; flex-direction: column; gap: 6px; }
+/* 고를 것은 한 줄에 나란히 (형 10-25: "1열 n행 말고 1행 n열") */
+.ap .cardc .copts { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
 /* 장수 쪽을 고르는 답 — 얼굴이 곁에 */
-.ap .cardc .copt.hasf { flex-direction: row; align-items: center; gap: 10px; }
-.ap .cardc .copt .cof { width: 52px; height: 52px; flex: none; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #8a7040; }
+.ap .cardc .copt.hasf { gap: 6px; }
+.ap .cardc .copt .cof { width: 44px; height: 44px; flex: none; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #8a7040; }
 .ap .cardc .copt.on .cof { border-color: var(--gold); }
 .ap .cardc .copt .cot { display: flex; flex-direction: column; gap: 1px; font-size: inherit; color: inherit; min-width: 0; }
-.ap .cardc .copt { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 7px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.ap .cardc .copt { display: flex; flex-direction: column; gap: 4px; padding: 7px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; text-align: center; align-items: center; justify-content: flex-start; cursor: pointer; } .ap .cardc .copt .cot { align-items: center; } .ap .cardc .copt:disabled { opacity: .55; cursor: default; }
 .ap .cardc .copt.on { border-color: var(--gold); background: #2c2618; } .ap .cardc .copt span { font-size: 12.5px; color: #cfc6b4; } .ap .cardc .copt i { font-style: normal; font-size: 11px; color: var(--mute); }
 .ap .prologue .carried { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 15px; animation-delay: .9s; }
 .ap .prologue .carried img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #2a1d10; }
