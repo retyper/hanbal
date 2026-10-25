@@ -13,7 +13,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { captureChance, captureOdds, fightRounds, groupOptions, might, optionsOf, type Side } from '../../src/realm/tactics.ts'
+import { captureChance, captureOdds, feastCost, fightRounds, groupOptions, might, optionsOf, type Side } from '../../src/realm/tactics.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { advance, approachOptions } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
@@ -346,5 +346,32 @@ describe('장수의 비기', () => {
     const shot = fightRounds(withArt('snipe'), side(100, EVEN), 'art-s', 3, 0, t)
     const plain = fightRounds(side(100, EVEN, true), side(100, EVEN), 'art-s', 3, 0, { cmds: [{ lead: 'drum' }], open: true })
     assert.ok((shot.pending?.capture ?? 0) > (plain.pending?.capture ?? 0))
+  })
+})
+
+describe('호궤 — 곳간의 곡식을 풀어 사기를 (형 10-25: "군량 소모해서 사기 회복시키는 건 어때?")', () => {
+  it('곳간에 곡식이 있을 때만(Side.feast) 장수의 명령에 뜨고 · 한 판에 한 번 · 했는지가 결과에 남는다', () => {
+    const plain = fightRounds(side(80, EVEN, true), side(100, EVEN), 'fe-o', 1, 0, { cmds: [], open: true })
+    assert.ok(!(plain.pending?.lead ?? []).includes('feast'))
+    const fed = side(80, EVEN, true, { feast: feastCost(80) })
+    const first = fightRounds(fed, side(100, EVEN), 'fe-o', 1, 0, { cmds: [], open: true })
+    assert.ok(first.pending?.lead.includes('feast'))
+    assert.equal(first.pending?.feast, feastCost(80))
+    const after = fightRounds(fed, side(100, EVEN), 'fe-o', 1, 0, { cmds: [{ lead: 'feast' }], open: true })
+    if (after.pending !== undefined) assert.ok(!after.pending.lead.includes('feast'), '두 번은 못 한다')
+    assert.equal(after.fedA, true)
+    assert.equal(plain.fedA, false)
+  })
+
+  it('밀린 합에 북보다 사기가 크게 오른다 (처음 사기를 넘지는 않는다)', () => {
+    let more = 0
+    for (let k = 0; k < 20; k++) {
+      const me = side(70, EVEN, true, { feast: 10 })
+      const drum = fightRounds(me, side(100, EVEN), `fe-${k}`, k + 1, 0, { cmds: [{ front: 'hold', bows: 'volley', lead: 'drum' }] }).rounds[0]!
+      const feast = fightRounds(me, side(100, EVEN), `fe-${k}`, k + 1, 0, { cmds: [{ front: 'hold', bows: 'volley', lead: 'feast' }] }).rounds[0]!
+      assert.ok(feast.ma >= drum.ma - 1e-9 && feast.ma <= Math.max(1, drum.ma) + 1e-9) // 호궤로는 처음 사기까지만 (이긴 합의 밀림은 따로)
+      if (feast.ma > drum.ma + 1e-9) more++
+    }
+    assert.ok(more > 0)
   })
 })

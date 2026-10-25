@@ -49,7 +49,7 @@ export const CMD_NAME: Record<Cmd, string> = {
   charge: '돌격', hold: '방진', open: '길 트기', ford: '여울 막기', rocks: '바위 굴리기', gate: '성문 깨기', ram: '배 들이받기',
   volley: '화살비', counter: '맞쏘기', fire: '불화살', height: '높은 곳',
   flank: '옆치기', punch: '돌파', pursue: '추격', guard: '호위',
-  drum: '격려', duel: '장수 겨루기', capture: '적장 사로잡기', retreat: '퇴각한다', art: '장수의 비기',
+  drum: '격려', duel: '장수 겨루기', capture: '적장 사로잡기', retreat: '퇴각한다', art: '장수의 비기', feast: '호궤',
 }
 /** 깃발 한 줄 — 무엇을 이기고 무엇에 지나 */
 const CMD_DOES: Record<Cmd, string> = {
@@ -69,6 +69,7 @@ const CMD_DOES: Record<Cmd, string> = {
   pursue: '흔들리는 적을 쫓아 크게 벤다 · 안 흔들리면 헛걸음',
   guard: '장수 곁을 지킨다 — 사로잡기를 막고 옆치기를 받아 내고, 물러날 때 덜 잃는다',
   drum: '장수가 군사를 다잡는다 — 사기가 조금 오른다',
+  feast: '곳간의 곡식을 풀어 군사를 먹인다 — 사기가 크게 오른다 (처음 사기까지) · 한 판에 한 번',
   duel: '장수끼리 나선다 · 이기면 적이 무너지고, 지면 우리 장수가 다치거나 쓰러진다 · 한 번',
   capture: '날랜 무리를 적장에게 보낸다 · 무리가 호위보다 크고 적이 흔들릴수록 잘 된다 · 놓치면 무리를 잃는다',
   // 퇴각 — 사실상 이 싸움을 지는 것 (형 10-24: "물러난다는 사실상 패배 확정 · 퇴각한다 · 붉게 · 설명 확실히")
@@ -84,7 +85,7 @@ const CMD_SHORT: Record<Cmd, string> = {
   ford: '건너오는 돌격을 크게 꺾는다', rocks: '맞붙기 전에 앞줄을 깎는다', gate: '방진에도 안 꺾이는 들이치기', ram: '물 위의 돌격',
   volley: '앞줄에 화살비 · 방진에 잘 먹힌다', counter: '적 궁수를 누른다', fire: '불을 놓는다 · 바람이 돌면 위험', height: '내리쏜다 · 방진도 단단',
   flank: '옆으로 돌아 궁수를 친다', punch: '앞줄과 함께 들이친다', pursue: '흔들리는 적을 크게 벤다', guard: '장수를 지킨다',
-  drum: '사기가 오른다', duel: '장수끼리 맞붙는다', capture: '적장을 잡으러 간다 · 놓치면 잃는다', retreat: '싸움을 접는다 · 진다 · 덜 잃는다', art: '그 장수만의 수',
+  drum: '사기가 오른다', duel: '장수끼리 맞붙는다', capture: '적장을 잡으러 간다 · 놓치면 잃는다', retreat: '싸움을 접는다 · 진다 · 덜 잃는다', art: '그 장수만의 수', feast: '곡식을 풀어 사기를 크게',
 }
 
 /** 장수의 비기 — 이름 · 그림 · 하는 일 (heroes.heroArt · tactics 의 비기). 장수마다 다르니 깃발에 그 이름으로 뜬다 */
@@ -153,6 +154,8 @@ export const BATTLE_SFX = {
   // 사람 고함·비명(roar · herodeath · bossdeath)은 걷었다 (형 10-23: "비명소리인지 사람 고함인지 너무 AI 가 만든 티") — 말발굽·쇠·북으로
   flank: snd('cmd_horse'), punch: snd('cmd_horse'), pursue: snd('cmd_horse'), guard: snd('cmd_guard'),
   drum: snd('cmd_drum'), duel: snd('cmd_duel'), capture: snd('cmd_capture'), retreat: snd('cmd_retreat'), art: snd('cmd_art'),
+  /** 호궤 — 엽전 대신 곡식이 풀리는 소리 자리 (싸움 소리 고르기 판에서 바꾼다) */
+  feast: snd('tap_coin'),
   /** 맞부딪힘 — 상성에서 이겼다(필살) · 그냥 */
   crit: snd('battle_crit'), clash: snd('battle_clash'),
   /** 엉긴 앞줄의 칼·창 — 찌르기 컷 박자에 작게 */
@@ -912,11 +915,15 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const mr = (x: number): number => Math.round(Math.max(0, Math.min(1.2, x / base)) * 83)
     const num = old !== now ? `<span class="wn swap"><s>${old}명</s><u>${now}명</u></span>` : `<span class="wn">${now}명</span>`
     const hitFx = hitOf(i) !== '' ? `<img class="wfx-hit" src="${art}fx/impact.png" alt="">` : ''
+    // 호궤를 고를 수 있으면 — 그 깃발에 마우스를 올리거나 누르고 있거나 골라 두면 사기 막대에 오를 몫이 깜박인다 (형 10-25)
+    const fNow = mr(m(i))
+    const fTo = mr(Math.min(base, m(i) + P.realm.tacFeastMorale))
+    const feastPv = i === ourI && l.pending?.feast !== undefined && fTo > fNow ? `<u class="wfpv" style="left:${fNow}%;width:${fTo - fNow}%"></u>` : ''
     const em = f !== undefined ? FACTION_ART[f]?.emblem : undefined
     return `<div class="ws ${cls}${hitOf(i)}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s"><span class="wpf">${face(hero, art, unitOf(i))}<i></i></span><b>${esc(name)}</b><span class="wnat">${roleChip((cls === 'us') === weAtk)}${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
       // 무너지는 금 — 이 밑으로 떨어지면 그 편이 무너져 진다 (tactics: 군사 tacBreakMen · 사기는 처음의 tacBreakMorale) (형 10-24: "사기가 어느 정도 떨어지면 패배한다가 가로바에 표시")
       + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}${brk(Math.round(P.realm.tacBreakMen * 100), Math.round(n(i) * 100), '군사가 이 금 밑으로 줄면 무너져 진다 — 패배')}</div>${num}`
-      + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}${brk(Math.round(P.realm.tacBreakMorale * 83), mr(m(i)), '사기가 이 금 밑으로 떨어지면 무너져 진다 — 패배')}</div><span class="wn">사기</span>${hitFx}</div>` // 맞은 불꽃은 맨 뒤에 — 앞에 끼면 초상이 새로 만들어져 깜빡였다 (paintNow 의 바뀐 곳만 고치기)
+      + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}${feastPv}${brk(Math.round(P.realm.tacBreakMorale * 83), mr(m(i)), '사기가 이 금 밑으로 떨어지면 무너져 진다 — 패배')}</div><span class="wn">사기</span>${hitFx}</div>` // 맞은 불꽃은 맨 뒤에 — 앞에 끼면 초상이 새로 만들어져 깜빡였다 (paintNow 의 바뀐 곳만 고치기)
   }
 
   /**
@@ -1153,6 +1160,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         const [w, cls] = captureWord(p.capture)
         feel = `<span class="wf-${cls}">${w}</span><span class="wcap">무리 ${p.squad} · 호위 ${p.escort}</span>`
       }
+      if (c === 'feast' && p.feast !== undefined) feel = `<span class="wfcost">곡식 ${p.feast}</span>`
       // 장수의 비기 — 그 장수만의 이름·그림 (형: "아이콘과 함께 그거라는걸 알게 해줘야함")
       const ak = c === 'art' ? p.art : undefined
       if (ak !== undefined) tag = `<em class="art">비기</em>`
@@ -1503,6 +1511,11 @@ export const WAR_CSS = `
 @keyframes wout { to { opacity: 0; } }
 .ap .wbar.men i { background: linear-gradient(90deg, #2f7a2a, #6fc05a 60%, #b6f09a); box-shadow: 0 0 10px #6fc05a99; }
 .ap .ws.foe .wbar.men i { background: linear-gradient(90deg, #f0a088, #d0583c 40%, #7a2618); box-shadow: 0 0 10px #d0583c99; }
+/* 호궤 미리 보기 — 오를 몫이 깜박인다 (깃발에 올리거나 · 누르고 있거나 · 골라 두면) */
+.ap .wbar u.wfpv { position: absolute; top: 0; bottom: 0; display: none; border-radius: 0 6px 6px 0; background: linear-gradient(90deg, #fff2c0, #9be07a); box-shadow: 0 0 10px #c8f09a; }
+.ap .wr:has(.wcmd.feast:hover) .wbar u.wfpv, .ap .wr:has(.wcmd.feast:active) .wbar u.wfpv, .ap .wr:has(.wcmd.feast.on) .wbar u.wfpv { display: block; animation: wfpv .7s ease-in-out infinite alternate; }
+@keyframes wfpv { from { opacity: .25; } to { opacity: 1; } }
+.ap .wcmd .wfcost { display: inline-block; margin: 1px 0; padding: 0 6px; border-radius: 8px; background: #3a2a10; border: 1px solid #c9a45a; color: #f6d27a; font-size: 11.5px; font-style: normal; }
 .ap .wbar.mor { height: 8px; } .ap .wbar.mor i { background: linear-gradient(90deg, #a87a2a, #f6d27a 70%, #fff2c0); box-shadow: 0 0 8px #f6d27a88; }
 .ap .ws .wn { font-size: 12px; color: var(--ink); }
 .ap .wintro { margin: 12px 0 6px; padding: 8px 10px; border-radius: 10px; background: #1e160fe6; font-size: 14.5px; }

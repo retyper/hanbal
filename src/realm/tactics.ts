@@ -70,6 +70,11 @@ export interface Side {
   readonly captureBonus?: number
   /** 배우는 판 — sure 면 이쪽 사로잡기는 반드시 되고, never 면 아예 못 한다 */
   readonly capture?: 'sure' | 'never'
+  /**
+   * 호궤 — 곳간의 곡식을 풀어 군사를 먹일 수 있다. 값은 드는 곡식(곳간에 그만큼 있을 때만 · 없으면 못 한다).
+   * 한 판에 한 번 · 사기가 크게 오른다 (형 10-25: "군량 소모해서 사기 회복시키는 건 어때?")
+   */
+  readonly feast?: number
   /** 원군 — mix 가운데 이만큼(병종별)은 처음엔 없고 at 합 처음에 닿는다 (P.realm.relief*) */
   readonly relief?: { readonly mix: Readonly<Partial<Record<UnitKind, number>>>; readonly at: number }
 }
@@ -95,6 +100,9 @@ export interface FightResult {
   readonly pending?: Pending
   /** 플레이어가 명령을 하나라도 냈나 */
   readonly led: boolean
+  /** 호궤를 했나 — 부른 쪽이 곳간에서 곡식(Side.feast)을 뺀다 */
+  readonly fedA: boolean
+  readonly fedD: boolean
   /** 끝난 까닭 */
   readonly endWhy: EndWhy
 }
@@ -111,7 +119,10 @@ export const COUNTER: Readonly<Partial<Record<Cmd, Cmd>>> = { volley: 'charge', 
 const HOLDS: ReadonlySet<Cmd> = new Set(['hold', 'ford', 'rocks'])
 const CHARGES: ReadonlySet<Cmd> = new Set(['charge', 'gate', 'ram'])
 /** 한 번만 쓰는 명령 */
-const ONCE: ReadonlySet<Cmd> = new Set(['ford', 'rocks', 'gate', 'ram', 'fire', 'height', 'duel', 'art'])
+const ONCE: ReadonlySet<Cmd> = new Set(['ford', 'rocks', 'gate', 'ram', 'fire', 'height', 'duel', 'art', 'feast'])
+
+/** 호궤에 드는 곡식 — 군사 수에 비례 (부르는 쪽이 곳간과 견준다) */
+export const feastCost = (men: number): number => Math.max(1, Math.ceil(men * P.realm.tacFeastGrainPer))
 
 function clamp(x: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, x))
@@ -293,6 +304,7 @@ export function groupOptions(me: Side, foe: Side, g: Grp, used: ReadonlySet<Cmd>
 /** 장수의 명령 */
 export function leadOptions(me: Side, foe: Side, used: ReadonlySet<Cmd>, foeHeroGone: boolean): Cmd[] {
   const out: Cmd[] = ['drum']
+  if (me.feast !== undefined && !used.has('feast')) out.push('feast')
   // 장수의 비기 — 한 판에 한 번 (명궁의 한 발은 쏠 적장이 있어야)
   const art = me.hero?.art
   if (art !== undefined && !used.has('art') && (art !== 'snipe' || (foe.hero !== null && !foeHeroGone))) out.push('art')
@@ -361,6 +373,8 @@ function aiOrder(c: Ctx, me: Side, foe: Side, mine: 'a' | 'd', st: State, cap: n
     : atk ? edge < (coward ? 0.35 : 0.22) && myN < 0.75 : edge < 0.12 && myN < 0.5
   if (lopts.includes('capture') && cap >= R.tacAiCapture) lead = 'capture'
   else if (!stay && giveUp) lead = 'retreat'
+  // 맡긴 싸움 — 사기가 흔들리면 곳간을 푼다 (호궤)
+  else if (lopts.includes('feast') && (mine === 'a' ? st.ma : st.md) / Math.max(0.05, me.morale + (me.moraleBonus ?? 0)) < R.tacAiFeast) lead = 'feast'
   else if (lopts.includes('duel') && me.hero !== null && foe.hero !== null && me.hero.mu >= foe.hero.mu + 1 && r('duel') < 0.4) lead = 'duel'
   else if (lopts.includes('art') && artNow(me.hero!.art!, foe, foeRatio, r)) lead = 'art'
   const out: { front?: Cmd; bows?: Cmd; horse?: Cmd; lead: Cmd } = { lead }
@@ -571,6 +585,7 @@ export function fightRounds(atk: Side, def: Side, key: string, seed: number, sea
           weAtk: mine === 'a', seen: me.seen,
           guess: guessOf(c, st, mine, ai, i, rk, capOf, gone, seenHint?.cmd ?? null),
           ...(me.hero?.art !== undefined ? { art: me.hero.art } : {}),
+          ...(me.feast !== undefined ? { feast: me.feast } : {}),
         }
       }
       return settle(me, foe, {}, ai, used, gone)
@@ -629,7 +644,7 @@ export function fightRounds(atk: Side, def: Side, key: string, seed: number, sea
     outcome, na: aliveShare(g0a, st.fa), nd: aliveShare(g0d, st.fd), ga: { ...st.fa }, gd: { ...st.fd },
     // 싸움 앞의 덤·감(moraleBonus)은 그 판에만 — 남는 것은 라운드에서 오간 몫
     dma: st.ma - atk.morale - (atk.moraleBonus ?? 0), dmd: st.md - def.morale - (def.moraleBonus ?? 0),
-    captured, broke, duel, rounds, led: memo.led, endWhy,
+    captured, broke, duel, rounds, led: memo.led, endWhy, fedA: st.usedA.has('feast'), fedD: st.usedD.has('feast'),
     ...(memo.pending !== undefined ? { pending: memo.pending } : {}),
   }
 }
@@ -1066,6 +1081,9 @@ function resolveRound(
   const top = (s: Side): number => s.morale + (s.moraleBonus ?? 0)
   if (oa.lead === 'drum' && st.ma < top(atk)) st.ma = Math.min(top(atk), st.ma + R.tacDrumMorale)
   if (od.lead === 'drum' && st.md < top(def)) st.md = Math.min(top(def), st.md + R.tacDrumMorale)
+  // 호궤 — 곡식을 풀어 먹인다. 북보다 훨씬 크게, 처음 사기까지
+  if (oa.lead === 'feast' && st.ma < top(atk)) st.ma = Math.min(top(atk), st.ma + R.tacFeastMorale)
+  if (od.lead === 'feast' && st.md < top(def)) st.md = Math.min(top(def), st.md + R.tacFeastMorale)
   if (atk.hungry) st.ma -= R.tacHungry
   if (def.hungry) st.md -= R.tacHungry
   st.ma = clamp(st.ma, 0.1, 1.6)

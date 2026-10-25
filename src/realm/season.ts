@@ -20,7 +20,7 @@ import {
   OPEN_FIELD, ambushChance, ambushSizePenalty, headcount, power, strength, winChance,
   type Equip, type Force, type Kit, type UnitKind,
 } from './battle.ts'
-import { BATTLE_STYLES, fightRounds, groupOf, type BattleStyle, type FightResult, type Side, type Terrain } from './tactics.ts'
+import { BATTLE_STYLES, feastCost, fightRounds, groupOf, type BattleStyle, type FightResult, type Side, type Terrain } from './tactics.ts'
 import {
   checkPledges, driftFavor, expireRelations, friendly, holdMarkets, makeAsks, onHostile, relationOf, resolveAnswers, resolveEnvoys,
   shareIntel, stationFriction, stepLent,
@@ -783,7 +783,16 @@ function sideOf(
     ...(o.captureBonus !== undefined && o.captureBonus > 0 ? { captureBonus: o.captureBonus } : {}),
     // 배우는 판 — 우리 쪽 사로잡기는 반드시 되고, 상대는 우리 장수를 잡지 않는다 (형: "튜토리얼급이니 100% 성공하도록")
     ...(r.region === 'tutorial' ? { capture: r.factions[faction]?.mind === 'player' ? 'sure' as const : 'never' as const } : {}),
+    // 호궤 — 플레이어 쪽만, 곳간에 그만큼 있을 때 (곡식은 싸움이 끝나고 payFeast 가 뺀다)
+    ...(r.factions[faction]?.mind === 'player' && (r.stock[faction]?.grain ?? 0) >= feastCost(n) ? { feast: feastCost(n) } : {}),
   }
+}
+
+/** 호궤를 했으면 곳간에서 곡식을 뺀다 */
+function payFeast(r: Realm, s: Side, fed: boolean, faction: string): void {
+  if (!fed || s.feast === undefined) return
+  const st = r.stock[faction]
+  if (st !== undefined) st.grain = Math.max(0, st.grain - s.feast)
 }
 
 /** 싸움이 시작될 때의 사람 · 사기 · 장수 — 전장 화면의 막대 */
@@ -921,6 +930,8 @@ function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines
       const sa = knowFoe(sideOf(r, atks, atkF, fa, lead.faction, { ...common, seen: true }), knewA)
       const sd = knowFoe(sideOf(r, defs, defF, fd, defs[0]!.faction, { ...common, seen: true, terrain: defTerrain }), knewD)
       const res = fightRounds(sa, sd, key, r.seed, r.season, tacticFor(tactics, key))
+      payFeast(r, sa, res.fedA, lead.faction)
+      payFeast(r, sd, res.fedD, defs[0]!.faction)
       const outcome = res.outcome
       for (const x of atks) scaleByGroups(x, res.ga)
       for (const x of defs) scaleByGroups(x, res.gd)
@@ -1093,6 +1104,8 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
     captureBonus: playerIsAtk ? 0 : capShot, terrain: defTerrain,
   }), ...reliefD }, knewD)
   const res = fightRounds(sa, sd, key, r.seed, r.season, tacticFor(tactics, key))
+  payFeast(r, sa, res.fedA, a.faction)
+  payFeast(r, sd, res.fedD, defFaction)
   const outcome = res.outcome
 
   // 손실 · 사기 — 장정은 판정에만 선다 (r.armies 에 없다)

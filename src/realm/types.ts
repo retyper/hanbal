@@ -337,8 +337,8 @@ export type Cmd =
   | 'volley' | 'counter' | 'fire' | 'height'
   // 말 — 옆치기 · 돌파 · 추격 · 호위
   | 'flank' | 'punch' | 'pursue' | 'guard'
-  // 장수 — 북을 친다(그냥 지휘) · 장수 겨루기 · 적장 사로잡기 · 물러나기 · 그 장수만의 비기(한 판에 한 번 — Art)
-  | 'drum' | 'duel' | 'capture' | 'retreat' | 'art'
+  // 장수 — 북을 친다(그냥 지휘) · 장수 겨루기 · 적장 사로잡기 · 물러나기 · 그 장수만의 비기(한 판에 한 번 — Art) · 호궤(곳간의 곡식을 풀어 먹인다 — 한 판에 한 번)
+  | 'drum' | 'duel' | 'capture' | 'retreat' | 'art' | 'feast'
 
 /**
  * 장수의 비기 — 장수마다 하나, 한 판에 한 번 (형 2026-10-20: "장수스킬 장수가 있건없건 똑같나?? 싸우는 장수의 특별한 액티브 스킬이 있다면
@@ -444,6 +444,8 @@ export interface Pending {
   readonly seen: boolean
   /** 우리 장수의 비기 — 장수의 명령에 'art' 가 있으면 그것 */
   readonly art?: Art
+  /** 호궤에 드는 곡식 — 장수의 명령에 'feast' 가 있으면 그 값 */
+  readonly feast?: number
   /** 고르기 전 짐작 — 깃발마다 이번 합이 어떻게 될지 (tactics.guessOf · 문명의 싸움 예상처럼) */
   readonly guess?: Guesses
 }
