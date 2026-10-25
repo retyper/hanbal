@@ -1728,7 +1728,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 고르지 않았을 때 걸리는 답 — 엔진(events.resolveCard)과 같게: 망명자만 둘째(돌려보낸다)
     const fallback = c.kind === 'exile' ? 1 : 0
     info.opts.forEach((o, i) => {
-      h += `<button class="copt${pick === i ? ' on' : ''}" data-act="card-pick" data-v="${i}"><b>${esc(sub(o.name))}</b><span>${esc(sub(o.does))}</span>${i === fallback && pick === null ? '<i>고르지 않으면 이것</i>' : ''}</button>`
+      // 그 답이 어느 장수 쪽인지 — 답 이름에 먼저 나오는 장수의 얼굴을 곁에 (형 10-25: "누구 편 든다 할 때 장수들 얼굴 이미지도 있어야")
+      const ia = o.name.indexOf('{a}')
+      const ib = o.name.indexOf('{b}')
+      const who = ia >= 0 && (ib < 0 || ia < ib) ? c.hero : ib >= 0 ? c.hero2 : undefined
+      const face = who != null && r.heroes[who] !== undefined ? bust(r.heroes[who], 'cof') : ''
+      h += `<button class="copt${pick === i ? ' on' : ''}${face !== '' ? ' hasf' : ''}" data-act="card-pick" data-v="${i}">${face}<span class="cot"><b>${esc(sub(o.name))}</b><span>${esc(sub(o.does))}</span>${i === fallback && pick === null ? '<i>고르지 않으면 이것</i>' : ''}</span></button>`
     })
     return h + `</div></div></div>`
   }
@@ -3914,6 +3919,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 판을 이겼다 — 「승리」가 박힐 때 폰을 파바방 (그 때는 그림의 --wd)
       const wfx = box.querySelector<HTMLElement>('.front-end .winfx:not(.lose)')
       if (wfx !== null) window.setTimeout(() => buzz(WIN_BUZZ), fastNext ? 0 : Number.parseFloat(wfx.style.getPropertyValue('--wd')) * 1000)
+      // 「승리」·「패배」가 박히는 그 순간에 뿔나팔·패배 소리 — 전엔 끝 음악(조용한 곡)이 서서히 올라올 뿐이라 이긴 줄 몰랐다 (형 10-25: "승리했을 때 소리가 제대로 나오는지 의문")
+      const endFx = box.querySelector<HTMLElement>('.front-end .winfx')
+      if (endFx !== null && !fastNext) {
+        const lose = endFx.classList.contains('lose')
+        window.setTimeout(() => ding(snd(lose ? 'defeat' : 'horn_victory'), lose ? 0.7 : 0.9), Number.parseFloat(endFx.style.getPropertyValue('--wd')) * 1000)
+      }
       box.classList.toggle('fast', fastNext)
       // 새 계절의 보고는 계절 띠가 걷힌 뒤에 (형: "계절먼저 넘어가게 보이고 그다음에 천천히 다음꺼 띄워줘라")
       box.classList.toggle('late', !fastNext)

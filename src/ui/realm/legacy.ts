@@ -112,6 +112,11 @@ export const LEGACY_CSS = `
 .ap .cardc .cb { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 4px; } .ap .cardc .cb > b { color: var(--gold); display: flex; align-items: center; gap: 6px; }
 .ap .cardc .cic { width: 22px; height: 22px; } .ap .cardc p { margin: 0; font-size: 13.5px; }
 .ap .cardc .copts { display: flex; flex-direction: column; gap: 6px; }
+/* 장수 쪽을 고르는 답 — 얼굴이 곁에 */
+.ap .cardc .copt.hasf { flex-direction: row; align-items: center; gap: 10px; }
+.ap .cardc .copt .cof { width: 52px; height: 52px; flex: none; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #8a7040; }
+.ap .cardc .copt.on .cof { border-color: var(--gold); }
+.ap .cardc .copt .cot { display: flex; flex-direction: column; gap: 1px; font-size: inherit; color: inherit; min-width: 0; }
 .ap .cardc .copt { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 7px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
 .ap .cardc .copt.on { border-color: var(--gold); background: #2c2618; } .ap .cardc .copt span { font-size: 12.5px; color: #cfc6b4; } .ap .cardc .copt i { font-style: normal; font-size: 11px; color: var(--mute); }
 .ap .prologue .carried { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 15px; animation-delay: .9s; }

@@ -550,7 +550,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 /* 넓은 창(PC 앱)에서 가로만 꽉 차고 높이가 34vh 에 막혀 그림 가운데 가슴께만 남았다 (형 10-25 해무리) — 그림 비율(3:2)을 지키며 폭을 줄이고 얼굴 쪽을 남긴다 */
 .ap .mcard.fulld .cardc .cimg { width: min(100%, calc(40vh * 1.5)); aspect-ratio: 3 / 2; max-height: none; align-self: center; object-position: center 30%; }
 .ap .mcard.fulld .cardc .cb { flex: 1; } .ap .mcard.fulld .cardc .cb > b { font-size: 18px; } .ap .mcard.fulld .cardc .cb > p { font-size: 15.5px; line-height: 1.45; }
-.ap .mcard.fulld .cardc .copt { padding: 12px 14px; font-size: 16px; border-width: 1.5px; } .ap .mcard.fulld .cardc .copt > span { font-size: 13.5px; }
+.ap .mcard.fulld .cardc .copt { padding: 12px 14px; font-size: 16px; border-width: 1.5px; } .ap .mcard.fulld .cardc .copt .cot > span { font-size: 13.5px; }
 .ap .askc .aqh { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; } .ap .askc .aqh b { color: var(--gold); font-size: 13.5px; } .ap .askc .aqh .aqi { width: 26px; height: 26px; object-fit: contain; }
 /* 화면 가득 — 사신의 청을 사건 카드만큼 크게 (형 10-25: "어린애도 알지") */
 .ap .mcard.fulld .askc { margin: 0; padding: 14px; border-color: #e0b860; box-shadow: 0 0 0 1px #e0b86033 inset, 0 10px 30px #000a; }
