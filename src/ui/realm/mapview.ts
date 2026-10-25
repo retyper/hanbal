@@ -158,6 +158,7 @@ export const MAP_CSS = `
 /* 나라 많은 판 — 이름표를 작게 (한 줄 · 글씨 작게 · 깃발·특산 칸도 작게) */
 .map[data-region="yeongnam"] .lb, .map[data-region="south"] .lb, .map[data-region="world"] .lb { font-size: clamp(8px, calc(1.9cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 12.5px); border-left-width: .45em; padding: 0 .28em 0 .16em; }
 .map[data-region="yeongnam"] .lb .lbg img, .map[data-region="south"] .lb .lbg img, .map[data-region="world"] .lb .lbg img { width: 1.25em; height: 1.25em; }
+.map .lb small.nowi { display: inline; font-size: .68em; font-weight: 500; margin: 0 0 0 .3em; opacity: .75; }
 .map .lb .lbe { width: 1.1em; height: 1.1em; object-fit: contain; flex: none; filter: drop-shadow(0 0 1px #fff); }
 .map .lb .lbt { display: flex; flex-direction: column; align-items: flex-start; }
 .map .lb .lbf { margin-left: .25em; padding: 0 .35em; border-radius: .6em; background: #2a1414; color: #f0b8a0; font-size: .82em; font-weight: 800; }
@@ -171,7 +172,7 @@ export const MAP_CSS = `
 .ap.hide-flags .map .lb .lbe { display: none; } .ap.hide-force .map .lb .lbf { display: none; }
 .map .lb .star { font-style: normal; color: #b8860b; margin-right: 2px; text-shadow: 0 0 2px #fff8d0, 0 0 3px #fff8d0; } /* 도읍 (형: "수도같은건 별표해야하지 않나?") */
 /* 지금 땅이름 줄은 가까이 볼 때만 (멀리서는 배너가 한 줄로 작게) */
-.map[data-zl="far"] .lb small { display: none; }
+.map[data-zl="far"] .lb small { display: none; } .map[data-zl="far"] .lb small.nowi, .map .lb small.nowi { display: inline; }
 .map .lb small { display: block; font-size: .74em; font-weight: 500; color: var(--ink, #5a4a36); opacity: .78; margin-top: -2px; }
 .map .lb.k-free small { color: #5a4a36; }
 /* 받침 — 주인 색이 땅에 번진 둥근 자리 (고을이 땅 위에 앉아 보이게). 도읍은 크고 금빛 테 */
@@ -575,7 +576,7 @@ export function mapHtml(
       : ''
     labels.push({
       // 나라 많은 판은 지금 지명 줄을 빼 이름표를 한 줄로 — 작아야 제 고을 곁에 붙는다 (형 10-26: "마을 텍스트 바가 너무 큼 · 줄여서 제대로 그 마을의 텍스트라는 게 보이게")
-      id: n.id, name: n.name, now: CROWDED.has(region) ? undefined : NODE_NOW[n.id], x: p[0], y: p[1], s: sizeOf(n.hh), cap: n.kind === 'capital' || cap, hh: n.hh,
+      id: n.id, name: n.name, now: NODE_NOW[n.id], inl: CROWDED.has(region), x: p[0], y: p[1], s: sizeOf(n.hh), cap: n.kind === 'capital' || cap, hh: n.hh,
       cls: `${kcls}${ours ? ' me' : ''}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${far}${fr}`,
       kit: owner !== null ? kitVars(owner) : '', emb, rel: relChip(r, me, owner), force, tray, trayW: sp.length + (fish !== '' ? 1 : 0) + dfs.length * 1.6,
     })
@@ -711,6 +712,8 @@ interface LabelIn {
   readonly emb: string
   /** 우리와의 사이 칩 html — 전쟁·동맹·화친·조공 ('' 이면 없음) */
   readonly rel: string
+  /** 지금 지명을 이름 뒤에 작게 한 줄로 (나라 많은 판 · 형 10-26: "창녕 청도 대구 이런 거 작게라도") */
+  readonly inl?: boolean
   /** 척후가 본 군세 칩 html ('' 이면 없음) */
   readonly force: string
   /** 특산·지은 것 칸 html ('' 이면 없음) */
@@ -750,7 +753,7 @@ function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly 
   const order = ls.slice().sort((a, b) => (a.cap !== b.cap ? (a.cap ? -1 : 1) : b.hh - a.hh || (a.id < b.id ? -1 : 1)))
   for (const l of order) {
     // 배너 — 깃발(1.4자) · 별 · 군세 칩도 자리를 먹는다
-    const chars = Math.max(l.name.length + (l.cap ? 1 : 0), (l.now ?? '').length * 0.78) + (l.emb !== '' ? 1.6 : 0) + (l.rel !== '' ? 2.4 : 0) + (l.force !== '' ? 3.5 : 0) + (l.tray !== '' ? l.trayW * 1.2 + 0.9 : 0) + 0.8
+    const chars = (l.inl === true ? l.name.length + (l.cap ? 1 : 0) + (l.now ?? '').length * 0.62 + 0.3 : Math.max(l.name.length + (l.cap ? 1 : 0), (l.now ?? '').length * 0.78)) + (l.emb !== '' ? 1.6 : 0) + (l.rel !== '' ? 2.4 : 0) + (l.force !== '' ? 3.5 : 0) + (l.tray !== '' ? l.trayW * 1.2 + 0.9 : 0) + 0.8
     const w = (chars * em * 0.95 * H) / W + 0.004
     const h = em * (l.now !== undefined ? 2.05 : 1.25)
     const iw = ICON_W * ns * l.s
@@ -773,7 +776,7 @@ function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly 
     const [cx, cy] = best!.c
     placed.push({ x0: cx - w / 2, y0: cy, x1: cx + w / 2, y1: cy + h })
     out += `<span class="lb${l.cls}" data-n="${l.id}" style="left:${(cx * 100).toFixed(2)}%;top:${(cy * 100).toFixed(2)}%${l.kit !== '' ? `;${l.kit}` : ''}">`
-      + `${l.emb !== '' ? `<img class="lbe" src="${l.emb}" alt="">` : ''}${l.rel}<span class="lbt"><span>${l.cap ? '<i class="star">★</i>' : ''}${l.name}</span>${l.now !== undefined ? `<small>${l.now}</small>` : ''}</span>${l.tray}${l.force}</span>`
+      + `${l.emb !== '' ? `<img class="lbe" src="${l.emb}" alt="">` : ''}${l.rel}<span class="lbt"><span>${l.cap ? '<i class="star">★</i>' : ''}${l.name}${l.inl === true && l.now !== undefined ? `<small class="nowi">${l.now}</small>` : ''}</span>${l.inl !== true && l.now !== undefined ? `<small>${l.now}</small>` : ''}</span>${l.tray}${l.force}</span>`
   }
   return out + '</div>'
 }
