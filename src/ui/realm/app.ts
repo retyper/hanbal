@@ -509,6 +509,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let plotAgent: string | null = null
   /** 고을 판에서 누른 공작 줄 — 그 바로 밑에 「누가 가나」를 펼친다 (op|target|node|hero) */
   let plotPick = ''
+  /** 고을 판에서 펼쳐 둔 칸 (땅 이야기 · 고을 형편 · 나는 것 …) — 처음엔 다 접혀 있다 (형 10-25: "마을마다 있는 상세한 정보 너무 길게 … 접어두거나") */
+  const foldOpen = new Set<string>()
+  /** 접는 칸 하나 — 제목 줄(누르면 펼침/접음)과 몸. 몸이 비면 아무것도 안 그린다 */
+  const fold = (k: string, title: string, body: string): string =>
+    body === '' ? '' : `<button class="nfh${foldOpen.has(k) ? ' on' : ''}" data-act="fold" data-k="${k}"><span>${title}</span><i>${foldOpen.has(k) ? '▴' : '▾'}</i></button>${foldOpen.has(k) ? `<div class="nfb">${body}</div>` : ''}`
   /** 시트 안의 손 상태 */
   let openArmy = ''
   /** 출정을 꾸리는 군대의 판 (형: "다 같이 간다 말고 … 출정? 일부만 출정?") — 군사는 처음엔 전부, 줄이면 나머지가 남아 지킨다 */
@@ -2754,9 +2759,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     let h = `<div class="an big">${icon(nodeIcon(n), 'nic')}<div><h3>${esc(n.name)}${NODE_NOW[id] !== undefined ? ` <small class="mute">지금의 ${esc(NODE_NOW[id]!)}</small>` : ""}</h3><span class="mute">${emblem(n.owner)}${esc(who)} · ${kind}</span></div></div>`
     if (ours || known?.land) {
       const lines = n.tags.map((t) => TAG_LINE[t]).join(' ')
-      if (lines !== '') h += `<p class="story">${esc(lines)}</p>`
       const now = n.tags.map((t) => tagNow(t, seasonOf(r.season))).filter((x) => x !== null).join(' ')
-      if (now !== '') h += `<p class="mute">${esc(now)}</p>`
+      h += fold('land', '이 땅 이야기', `${lines !== '' ? `<p class="story">${esc(lines)}</p>` : ''}${now !== '' ? `<p class="mute">${esc(now)}</p>` : ''}`)
     }
     if (n.kind === 'sodo') h += riteCard(r)
     if (n.kind === 'wild') {
@@ -2771,13 +2775,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const men = Object.values(r.armies).filter((a) => a.at === id && a.faction === me() && a.march === null).reduce((s, a) => s + headcount(forceOf(r, a)), 0)
       for (const a of lentToMe(r).filter((x) => x.lent!.node === id)) h += `<p class="story">${emblem(a.faction)} ${esc(r.factions[a.faction]?.name ?? '')} 군대 ${headcount(forceOf(r, a))}명 — ${esc(lentLine(r, a))}</p>`
       const g = hhGrowth(r, id)
-      h += `<h4 class="nsec">고을 형편</h4><div class="ntab">`
+      const status = `<div class="ntab">`
         + `<span>백성</span><b>${Math.floor(n.hh).toLocaleString('ko-KR')}가구 <small>약 ${Math.round(n.hh * P.realm.peoplePerHH).toLocaleString('ko-KR')}명</small></b>`
         + `<span>늘어남</span><b>다음 계절 ${g.per >= 0 ? '+' : ''}${g.per}가구${g.why.length > 0 ? ` <small>${esc(g.why.map((w) => GROWTH_WHY[w] ?? w).join(' · '))}</small>` : ''}</b>`
         + `<span>지키는 힘</span><b>장정 ${militiaMen(r, id)}${militiaMen(r, id) > 0 ? ` <small>군사 약 ${militiaWorth(r, militiaMen(r, id))}명 몫</small>` : ''} · 군사 ${men}</b>`
         + `<span>징병</span><b>${draftLimit(r, me(), id)}명 더 뽑을 수 있다</b></div>`
-      h += nodeYieldHtml(r, id)
-      if (n.kind !== 'sodo' && n.hh > 0) h += chiefHtml(r, id)
+      // 고을 형편 · 나는 것 · 고을지기는 접어 둔다 — 제목 줄에 한 줄 요약
+      h += fold('stat', `고을 형편 <small class="mute">백성 ${Math.floor(n.hh).toLocaleString('ko-KR')}가구 · 장정 ${militiaMen(r, id)} · 군사 ${men}</small>`, status)
+      h += fold('yield', '이 땅에서 나는 것', nodeYieldHtml(r, id))
+      if (n.kind !== 'sodo' && n.hh > 0) h += fold('chief', '고을지기', chiefHtml(r, id))
       h += `<h4 class="nsec">할 일</h4>`
       const guarded = guards.includes(id)
       // 개척단 꾸리기 — 지도에 개척단이 서고 군대처럼 빈땅으로 보낸다. 배우는 판에서는 빈땅 판의 단추로 한다
@@ -2806,11 +2812,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const bc = buildCost(nb)
         const ok = queued || (canBuild(r, me(), id, nb) && left().wood >= bc.wood && left().grain >= bc.grain)
         h += `<div class="btns"><button class="btn ${queued ? 'on' : ''}" data-act="build" data-node="${id}" data-what="${nb}" ${ok ? '' : 'disabled'}>${queued ? `${BUILD_NAME[nb]} 짓는 중` : `${josa(BUILD_NAME[nb], '을', '를')} 두른다 ${costHtml({ wood: bc.wood, grain: bc.grain })}`}</button></div>`
-        h += `<p class="mute">${nb === 'palisade' ? '목책을 두르면 지키는 쪽이 세진다.' : '해자를 파면 목책 앞에서 한 번 더 막는다. 겨울엔 얼어 못 막는다.'} 다음 계절에 서고, 한 번 지으면 계속 선다 — 고을을 빼앗기면 빼앗은 나라 것이 된다.</p>`
+        h += `<p class="mute">${nb === 'palisade' ? '지키는 쪽이 세진다.' : '목책 앞에서 한 번 더 막는다 · 겨울엔 언다.'} 다음 계절에 선다.</p>`
       }
     }
     // 이 땅에서 나는 것 — 남의 고을·빈땅도 보인다 (칠 까닭 · 바꿀 까닭). 우리 고을은 위 「고을 형편」 밑에 이미 있다
-    if (!ours) h += nodeYieldHtml(r, id)
+    if (!ours) h += fold('yield', '이 땅에서 나는 것', nodeYieldHtml(r, id))
     if (!ours && n.kind !== 'sodo' && !(n.kind === 'wild' && n.owner === null && known?.force == null)) {
       const f = known?.force
       let force = '못 봤다'
@@ -2835,7 +2841,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 척후는 한 계절에 한 곳뿐 — 여러 곳을 누르면 다 가는 줄 알지 않게 (형: "매판 눌러줘야하고 누르면 전부다 정찰 가겠지? 할거라고")
       if (scoutable(r).includes(id)) {
         const there = scout !== '' && scout !== id ? (r.nodes[scout]?.name ?? '') : ''
-        h += `<div class="scoutbox"><div class="mute">정찰꾼은 한 계절에 <b>한 곳</b>만 간다. 보내면 이번 계절 이곳의 군세·병종·경계가 보인다.</div>`
+        h += `<div class="scoutbox"><div class="mute">정찰은 한 계절에 <b>한 곳</b> · 군세·병종·경계가 보인다</div>`
         h += `<button class="btn ${scout === id ? 'on' : ''}" data-act="scout" data-node="${id}">${scout === id ? '정찰꾼이 여기로 간다 · 누르면 거둔다' : there !== '' ? `정찰꾼을 ${esc(there)}에서 여기로 돌린다` : '여기로 정찰을 보낸다'}</button>`
         // 고정 풀기는 따로 떼어 아래에 — 붙어 있으면 잘못 누른다 (형 10-24)
         if (scout === id || scoutKeep === id) h += `<button class="btn sm ${scoutKeep === id ? 'on' : 'ghost'} keepbtn" data-act="scout-keep" data-node="${id}">${scoutKeep === id ? '📌 매 계절 여기로 고정됨 · 누르면 푼다' : '📌 매 계절 여기로 고정'}</button>`
@@ -4559,6 +4565,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'pagent': plotAgent = d['id'] ? d['id'] : null; break
       case 'ppick': plotPick = plotPick === d['k'] ? '' : d['k']!; break
+      case 'fold': { const k = d['k']!; if (foldOpen.has(k)) foldOpen.delete(k); else foldOpen.add(k); break }
       case 'bowup': musters = musters.some((o) => o.kind === 'bowUp') ? musters.filter((o) => o.kind !== 'bowUp') : [...musters, { kind: 'bowUp', faction: me() }]; break
       case 'hero': openSheet({ kind: 'hero', id: d['id']! }); return
       case 'assign':

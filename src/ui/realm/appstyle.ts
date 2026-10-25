@@ -478,6 +478,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 /* 고을 판 — 형편 · 생산 · 할 일 (이름표 | 값) */
 .ap .nsec { margin: 14px 0 4px; font-size: 13px; color: var(--gold); letter-spacing: .06em; border-bottom: 1px solid #4a3a28; padding-bottom: 3px; }
 .ap .ntab { display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; align-items: baseline; font-size: 14.5px; }
+/* 고을 판의 접는 칸 (app.fold) — 제목 한 줄, 누르면 펼친다 */
+.ap .nfh { display: flex; align-items: center; gap: 6px; width: 100%; margin: 6px 0 0; padding: 8px 10px; border: 1px solid #4a3a28; border-radius: 10px; background: #221a12; color: var(--gold); font: inherit; font-size: 13.5px; text-align: left; cursor: pointer; }
+.ap .nfh > span { flex: 1; min-width: 0; } .ap .nfh small { font-size: 12px; margin-left: 4px; } .ap .nfh > i { font-style: normal; color: var(--mute); }
+.ap .nfh.on { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-color: #8a6a3a; }
+.ap .nfb { padding: 8px 10px; border: 1px solid #8a6a3a; border-top: 0; border-radius: 0 0 10px 10px; background: #1a140e; }
+.ap .nfb > :first-child { margin-top: 0; }
 .ap .ntab > span { color: var(--mute); font-size: 13px; white-space: nowrap; }
 .ap .ntab > b { font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
 .ap .ntab small { font-weight: 400; font-size: 12px; color: var(--mute); }
