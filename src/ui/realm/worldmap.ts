@@ -63,6 +63,14 @@ function buildBase(art: string, region: RegionId, geo: WorldGeo): Promise<HTMLCa
     const W = Math.round((PROJ.lon1 - PROJ.lon0) * PX)
     const H = Math.round((PROJ.lat1 - PROJ.lat0) * PY)
     const c = document.createElement('canvas')
+    // 판만의 그림 한 장 — 그 그림의 해상도 그대로 (틀에 맞춰 그려 왔다)
+    if (geo.base !== undefined) {
+      const im = await load(`${art}${geo.base}`)
+      c.width = im.width
+      c.height = im.height
+      c.getContext('2d')!.drawImage(im, 0, 0)
+      return c
+    }
     c.width = W
     c.height = H
     const g = c.getContext('2d')!

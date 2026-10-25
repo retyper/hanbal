@@ -34,6 +34,11 @@ export interface WorldGeo {
   readonly rivers: readonly WorldRiver[]
   /** 바탕 캔버스의 배율 — 조각 눈금(1024px = 경도 2.9°)의 몇 배로 잇나. 큰 판은 폰 메모리를 위해 줄인다 */
   readonly scale: number
+  /**
+   * 이 판만의 그림 한 장 (public/realm 아래 길) — 있으면 조각을 잇지 않고 이 그림을 틀(proj)에 꽉 차게 깐다.
+   * 좁은 판은 조각을 크게 늘려 흐릿했다 (형 10-25: "서라벌 여섯 마을 맵 배경 이미지가 너무 허접 · 해상도 최악")
+   */
+  readonly base?: string
   /** 경위도 → 판 위 비율 */
   pos(lon: number, lat: number): readonly [number, number]
   /** 이 경위도가 뭍(또는 섬) 위인가 */
