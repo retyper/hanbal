@@ -569,8 +569,15 @@ export function warTip(prev: Realm, after: Realm, l: BattleLine, me: string, art
 /** 활을 쏘는 명령 — 그 합에 화살이 날아간다 */
 const SHOOT_CMD: ReadonlySet<string> = new Set(['volley', 'counter', 'open', 'height', 'fire'])
 /** 동작 그림(8컷 띠)이 있는 병종 — 0·1 서기 · 2·3 걷기 · 4·5 찌르기 · 6 맞음(안 씀) · 7 쓰러짐 */
-const ANIM_SOL: Readonly<Record<string, number>> = { spear: 167 / 160, shield: 165 / 160, bow: 139 / 160, horse: 157 / 160, boat: 164 / 160, crossbow: 152 / 160, pike: 162 / 160, axe: 144 / 160 } // 병종 → 띠 한 칸의 가로세로 비 (tools/strip-frames.mjs 가 찍어 준다)
+const ANIM_SOL: Readonly<Record<string, number>> = { spear: 167 / 160, shield: 165 / 160, bow: 139 / 160, horse: 157 / 160, boat: 164 / 160, crossbow: 152 / 160, pike: 162 / 160, axe: 144 / 160, marine: 155 / 160 } // 병종 → 띠 한 칸의 가로세로 비 (tools/strip-frames.mjs 가 찍어 준다)
 /** 전장의 진이 직접 보여 주는 무리 명령 — 위 겹의 큰 연출을 띄우지 않는다 */
+/**
+ * 수군의 그림 — 배를 탄 수군은 물 위 싸움(바닷길·포구)에서만. 땅에서는 걸어서 싸우는 수군(두건·갈고리창·둥근 방패)
+ * (형 10-25: "수군이미지는 배태우지말고 … 오직 수상전투 할때만 배탄 수군")
+ */
+function solArt(k: string, sea: boolean): string {
+  return k === 'boat' && !sea ? 'marine' : k
+}
 const FIELD_CMD: ReadonlySet<string> = new Set(['charge', 'hold', 'open', 'volley', 'counter', 'flank', 'punch', 'pursue', 'guard', 'drum', 'capture', 'duel', 'retreat'])
 /** 장수 기술의 결 — 초상이 튀어나오는 몸짓 */
 type CutKind = 'lead' | 'cheer' | 'strike' | 'grab' | 'back' | 'shot' | 'call' | 'guard'
@@ -860,7 +867,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     if (st === undefined) return ''
     const big = Math.max(1, st.men[0], st.men[1])
     const RANK: Readonly<Record<string, 0 | 1 | 2>> = { spear: 0, pike: 0, shield: 0, boat: 0, axe: 0, bow: 1, crossbow: 1, horse: 2 }
-    const SOL = new Set(['spear', 'shield', 'bow', 'crossbow', 'horse', 'pike', 'boat', 'axe'])
+    const SOL = new Set(['spear', 'shield', 'bow', 'crossbow', 'horse', 'pike', 'boat', 'axe', 'marine'])
+    const sea = warGround(prev, l) === 'sea'
     const pd = l.pending
     const play = anim && last !== undefined
     /**
@@ -912,7 +920,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       const alive = Math.round(T * n(i)), before = Math.round(T * n0(i))
       let idx = 0
       // 한 줄(세로) — 가운데에서 위아래로 고르게. 많으면 두 겹(앞 겹·뒤 겹이 엇갈린다)
-      const tok = (k: string, r: 0 | 1 | 2, x: number, oy: number): string => {
+      const tok = (k0: string, r: 0 | 1 | 2, x: number, oy: number): string => {
+        const k = solArt(k0, sea)
         const s2 = idx < alive ? 'tku' : idx < before ? 'tkf' : 'tkd' // 'fall' 은 군주가 무너진 판(.ap .fall — 액자 테)과 이름이 겹쳐 말이 큰 액자로 그려졌다 (10-25)
         const hl = oy < -0.5 ? ' hi' : oy > 0.5 ? ' lo' : ''
         const sc = (0.8 + 0.4 * ((oy + 40) / 80)).toFixed(2)
@@ -1772,10 +1781,11 @@ function openHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: str
     : weAtk ? `${josa(place, '을', '를')} 친다`
     : `${josa(foe, '이', '가')} ${josa(place, '으로', '로')} 쳐들어왔다!`
   const ground = warGround(prev, l)
-  const SOLS = new Set(['spear', 'shield', 'bow', 'crossbow', 'horse', 'pike', 'boat', 'axe'])
+  const SOLS = new Set(['spear', 'shield', 'bow', 'crossbow', 'horse', 'pike', 'boat', 'axe', 'marine'])
+  const seaWar = warGround(prev, l) === 'sea'
   const mixHtml = (i: 0 | 1): string => {
     const mx = Object.entries(st?.mix?.[i] ?? {}).filter(([, v]) => (v ?? 0) > 0).sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0))
-    return mx.length > 0 ? `<div class="womix">${mx.map(([k, v]) => `<span><img src="${art}icon/sol-${SOLS.has(k) ? k : 'spear'}.png" alt=""><b>${esc(UNIT_NAME[k as keyof typeof UNIT_NAME] ?? k)}</b>${(v ?? 0).toLocaleString('ko-KR')}</span>`).join('')}</div>` : ''
+    return mx.length > 0 ? `<div class="womix">${mx.map(([k, v]) => `<span><img src="${art}icon/sol-${SOLS.has(solArt(k, seaWar)) ? solArt(k, seaWar) : 'spear'}.png" alt=""><b>${esc(UNIT_NAME[k as keyof typeof UNIT_NAME] ?? k)}</b>${(v ?? 0).toLocaleString('ko-KR')}</span>`).join('')}</div>` : ''
   }
   const side = (cls: string, f: string | undefined, hero: string | null, n: number, fallback: string, i: 0 | 1): string =>
     `<div class="wosd ${cls}" style="--c:${color(f)}">${emb(f)}<span class="wpf big">${face(hero, art, fallback)}<i></i></span><b>${esc(hname(hero, f))}</b><span>${esc(fname(f))} · ${n.toLocaleString('ko-KR')}명</span>${mixHtml(i)}</div>`

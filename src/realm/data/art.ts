@@ -327,7 +327,7 @@ export const SEASON_MAP = { spring: 'spring', summer: 'summer', autumn: 'autumn'
 /** 병종 → 아이콘 */
 export const UNIT_ICON = {
   spear: 'unit-spear', bow: 'unit-archer', pike: 'unit-pike', shield: 'unit-shield-wall',
-  horse: 'unit-buyeo-cavalry', crossbow: 'unit-han-crossbow', boat: 'unit-boatmen',
+  horse: 'unit-buyeo-cavalry', crossbow: 'unit-han-crossbow', boat: 'unit-marine', // 수군은 걸어서 싸우는 그림 — 배 탄 그림(unit-boatmen)은 물 위 싸움에서만 (형 10-25)
 } as const
 
 /** 계절 → 아이콘 */
