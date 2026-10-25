@@ -2238,7 +2238,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (o.kind !== 'plot') continue
       const where = o.node !== undefined ? r.nodes[o.node]?.name : o.other !== undefined ? `${r.factions[o.target]?.name} ↔ ${r.factions[o.other]?.name}` : r.factions[o.target]?.name
       const target = o.hero !== undefined ? r.heroes[o.hero]?.name : where
-      h += `<div class="banner good">${PLOT_NAME[o.op]} · ${esc(target ?? '')}<button class="btn ghost sm" data-act="unplot" data-i="${i}">거둔다</button></div>`
+      const sowF = o.other !== undefined ? `<span class="sowf">${emblem(o.target)}<i>⇄</i>${emblem(o.other)}</span>` : ''
+      h += `<div class="banner good">${sowF}${PLOT_NAME[o.op]} · ${esc(target ?? '')}<button class="btn ghost sm" data-act="unplot" data-i="${i}">거둔다</button></div>`
       // 암살은 직접 쏠 수 있다 — 밤 판 (SNIPE §0). 안 쏘면 굴림. 암살 칸을 펼쳤으면 고른 적장 바로 밑에 띄운다
       if (o.op === 'assassin' && plotOpen !== 'assassin') h += shootHtml(i, o)
     }
@@ -2291,7 +2292,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           const c = plotChance(realm!, me(), op, t.target, t.node, t.hero, agent)
           const dup = plots.some((p) => p.kind === 'plot' && p.op === op && p.target === t.target && p.node === t.node && p.other === t.other && p.hero === t.hero)
           h += `<button class="row ${dup ? 'on' : ''}" data-act="plot" data-op="${op}" data-target="${t.target}" data-node="${t.node ?? ''}" data-other="${t.other ?? ''}" data-hero="${t.hero ?? ''}" data-agent="${agent ?? ''}" ${(full && !dup) || !afford ? 'disabled' : ''}>`
-          h += `${hero !== undefined ? bust(hero, 'rface sm') : emblem(t.target)}<span class="dest">${esc(label)}${pactWarn(r, t.target, op)}</span><span class="win">${plotFeel(c[0], c[1])}</span></button>`
+          // 이간은 두 나라 깃발을 다 (형 10-25: "이간할 때 두 나라 국기 아이콘 다 나와야")
+          const flags = hero !== undefined ? bust(hero, 'rface sm') : t.other !== undefined ? `<span class="sowf">${emblem(t.target)}<i>⇄</i>${emblem(t.other)}</span>` : emblem(t.target)
+          h += `${flags}<span class="dest">${esc(label)}${pactWarn(r, t.target, op)}</span><span class="win">${plotFeel(c[0], c[1])}</span></button>`
           // 고른 적장 바로 밑에 "직접 쏜다" (형: "직접쏜다버튼이 너무 위에있어서 적군눌러도 반응없는줄 알았음")
           if (dup && op === 'assassin') {
             const i = plots.findIndex((p) => p.kind === 'plot' && p.op === 'assassin' && p.hero === t.hero)

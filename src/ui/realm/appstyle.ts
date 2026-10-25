@@ -379,6 +379,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .trade { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 10px; background: #1e160f; }
 /* 사신 꾸미기 — 무엇을 · 누가 가나 (얼굴 줄) */
 .ap .trade .cmh { display: flex; flex-direction: column; gap: 2px; } .ap .trade .cmh b { color: var(--gold); font-size: 15px; }
+/* 이간 — 두 나라 깃발 */
+.ap .sowf { display: inline-flex; align-items: center; gap: 2px; flex: none; margin-right: 4px; } .ap .sowf i { font-style: normal; font-size: 12px; color: #e8a07a; }
 /* 고을 판의 공작 격자 — 펼친 갈래 · 보낸 갈래 · 여기서 못 거는 갈래(외교로) */
 .ap .nplots { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); } .ap .nplots .cmdt.on { border-color: var(--gold); background: #3a2c16; } .ap .nplots .cmdt.sent { border-color: #7fbf6a; } .ap .nplots .cmdt.away { opacity: .62; }
 /* 누가 가나 — 한 줄로 밀던 것을 공작처럼 격자로 (형 10-25: "1행이라서 보기 힘듦 · 공작처럼") */

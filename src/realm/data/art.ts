@@ -60,7 +60,7 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'wander-13': 'w-14-feast-spy', 'wander-14': 'g-60-eupcha-hangyeol', 'wander-15': 'w-09-byeonhan-smith',
   'wander-16': 'w-20-gaya-smith-daughter', 'wander-17': 'g-12-silla-youth', 'wander-18': 'w-01-silla-princess',
   'wander-19': 'g-15-shaman-man', 'wander-20': 'w-08-mahan-warrior',
-  'wander-21': 'w-84-salhae-dallae', 'wander-22': 'w-85-sinji-neoul', 'wander-23': 'g-62-beonye-hanul', 'wander-24': 'g-63-heomcheuk-beogeum',
+  'wander-21': 'w-84-salhae-dallae', 'wander-22': 'w-85-sinji-neoul', 'wander-23': 'g-62-beonye-hanul', 'wander-24': 'g-63-heomcheuk-beogeum', 'wander-25': 'g-84-wander-seoneul', 'wander-26': 'g-85-wander-ure',
   // 영남 판 (data/regions/yeongnam.ts) — 변한 판과 같은 나라는 같은 얼굴. 새 군주 열다섯은 있는 명치판을 나눠 쓴다 (여인이 많다)
   // 영남 판을 위해 새로 받은 여덟 (2026-10-18): 사로 이사금 · 대가야 왕 · 사벌 노장 · 사물 바다 군장 · 우시산 고래잡이 여군장 · 압독 여왕 · 비화가야 무녀 군주 · 이서 여장수
   'saro-ruler': 'g-17-saro-isageum', 'daegaya-ruler': 'g-18-daegaya-king', 'dabeol-ruler': 'g-35-dabeol-dalgu',
@@ -80,7 +80,7 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'jm-haengin-ruler': 'g-33-jeoga-metdol', 'jm-haengin-1': 'w-71-yeonna-neoul', 'jm-okjeo-ruler': 'g-34-bukokjeo-duman', 'jm-okjeo-1': 'w-70-bukokjeo-mulbeom',
   // 캠페인 1장 — 온조와 신하들 · 마한의 진왕과 장수 (mahan.ts). 있는 명치판을 나눠 쓴다
   'mh-onjo': 'g-71-baekje-onjo', 'mh-eureum': 'g-73-baekje-eureum', 'mh-ogan': 'g-13-baekje-general', 'mh-soseono': 'l-L2-soseono',
-  'mh-jinwang': 'g-76-mokji-jinha', 'mh-mahan-1': 'g-54-mokji-mahan', 'mh-mahan-2': 'w-08-mahan-warrior', 'mh-mahan-3': 'g-05-mahan-chieftain',
+  'mh-jinwang': 'g-76-mokji-jinha', 'mh-mahan-1': 'g-83-mokji-keundol', 'mh-mahan-2': 'w-08-mahan-warrior', 'mh-mahan-3': 'g-05-mahan-chieftain',
   // 캠페인 3장 — 혁거세·알영·호공 · 여섯 촌장 · 왜인 (seorabeol.ts). 알영은 전설 명치판
   'sr-hyeokgeose': 'g-74-saro-hyeokgeose', 'sr-aryeong': 'l-L7-aryeong', 'sr-hogong': 'g-75-saro-hogong', 'sr-danbi': 'w-90-saro-danbi',
   'sr-alpyeong': 'g-78-saro-alpyeong', 'sr-sobeol': 'g-77-saro-sobeol', 'sr-jibaekho': 'g-79-saro-jibaekho', 'sr-guryema': 'g-80-saro-guryema',

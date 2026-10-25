@@ -39,4 +39,7 @@ export const HERO_POOL: readonly Hero[] = [
   w('wander-22', '신지 너울', 'w', [5, 4, 6, 4, 7, 5], ['river']),
   w('wander-23', '번예 한울', 'g', [7, 4, 4, 3, 7, 4], ['archer', 'charm']),
   w('wander-24', '험측 버금', 'g', [8, 5, 3, 3, 5, 6], ['steadfast']),
+  // 10-25 형: "아이돌 같은 느낌의 남캐 · 선이 뚜렷한 섹시 남캐도 필요할 듯" — 여우 눈매의 젊은 칼잡이 · 선 굵은 사내
+  w('wander-25', '견지 서늘', 'g', [7, 4, 6, 3, 8, 4], ['charm', 'nighteye']),
+  w('wander-26', '읍차 우레', 'g', [6, 6, 4, 3, 8, 6], ['charm', 'steadfast']),
 ]
