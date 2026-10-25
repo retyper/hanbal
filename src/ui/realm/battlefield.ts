@@ -1048,7 +1048,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         // 끝 합이 풀리는 중이면 「승리·패배」가 뜨는 때(--rv)에 바꾼다 — 그 전엔 멀쩡한 성 (형 10-25: "결과 나오기 전엔 이런 승패를 연출로 힌트줘선 안돼")
         const late = breached && play
         // 해자 — 그림 다섯 장을 겹쳐 붙이던 것을 한 줄기 물길로 (형 10-26: "녹색물 이미지 아직도 5개 통째로 복붙") · 진 앞을 비스듬히 따라 내려오며 넓어진다
-        if (node.tags.includes('moat')) { h += moatSvg(); h += tlab('moat', 58, 42) }
+        // 물가(나루·갈대·갯벌)에서 싸우면 그 강이 해자 노릇 — 따로 그리면 겹친다 (형 10-26: "해자랑 물가랑 겹쳐 버리는 듯")
+        if (node.tags.includes('moat') && l.via !== 'ford' && l.via !== 'reeds' && l.via !== 'mudflat') { h += moatSvg(); h += tlab('moat', 58, 42) }
         // 성벽·목책은 판정에 있는 것만 그린다 (season.fortMul — 목책 꼬리표 · 산성) · 그냥 도읍에 울타리를 그리면 없는 수비 덤을 있는 것처럼 보였다
         if (node.tags.includes('palisade') || node.kind === 'fort') {
           const gate = node.kind === 'fort' || node.kind === 'capital'
@@ -1426,11 +1427,11 @@ export const WAR_CSS = `
 .ap .wfield { position: relative; height: clamp(150px, 22vw, 236px); margin: 6px 2px 2px; border-radius: 10px; overflow: hidden; container-type: inline-size;
   background: none; }
 .ap .wfield .wf-ground { position: absolute; left: 0; right: 0; top: 40%; bottom: 0; background: radial-gradient(ellipse 70% 60% at 50% 70%, #3a2a1666, #0000 75%); }
-.ap .wf2s { position: absolute; inset: 0; } .ap .wf2s.foe { transform: scaleX(-1); }
+.ap .wf2s { position: absolute; inset: 0; z-index: 2; } .ap .wf2s.foe { transform: scaleX(-1); }
 /* 땅 조각 — 병사와 같은 자리 셈(원근으로 비스듬히 · 아래일수록 앞) */
 .ap .wfield .tp { position: absolute; left: var(--x); top: calc(60% + var(--oy)); height: clamp(26px, 7cqw, 46px); width: auto; transform: translate(-50%, -100%) scale(var(--sc, 1)); transform-origin: 50% 100%; pointer-events: none; filter: drop-shadow(0 2px 2px #000a); }
 .ap .wfield .tp.flat { height: clamp(18px, 5cqw, 32px); transform: translate(-50%, -60%) scale(var(--sc, 1)); filter: none; opacity: .92; }
-.ap .wfield .wf-mid-terr { position: absolute; inset: 0; }
+.ap .wfield .wf-mid-terr { position: absolute; inset: 0; z-index: 1; } /* 물은 늘 군사 밑 — 적 진(뒤집힌 층)이 강 뒤로 숨던 것 (형 10-26) */
 /* ── 폰 전투 머리띠 — 초상 옆에 이름·나라, 막대는 밑 (형 10-25: "싸구려웹게임같음" — 초상 카드가 화면 반을 먹어 전장이 작았다) ── */
 @media (max-width: 520px) {
   .ap .wtop .wvs { align-items: flex-start; gap: 4px; }
