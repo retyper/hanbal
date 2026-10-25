@@ -1178,8 +1178,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const [sn, sl] = styleWord(ourH)
     h += `<div class="wfoot"><div class="wauto">${ourH !== undefined ? face(ourHero, art, unitOf(ourI)) : ''}<span>${autoLine(ourH)}<br><b class="wsty">${esc(sn)}</b> ${esc(sl)}</span></div>`
     // 누구에게 무엇을 맡기나 — 말로 (형 10-23: "'이 싸움은 맡긴다'는 뭔 소린지 모르겠잖아. 장수에게 전투를 전부 일임한다 이런 식으로")
-    const whom = ourHero !== null ? `${josa(ourName, '에게', '에게')} 이 싸움을 끝까지 맡긴다` : '이 싸움은 끝까지 알아서 싸운다'
-    h += `<button class="btn ghost" data-war="auto">${esc(whom)}</button>${left > 1 ? `<button class="btn ghost" data-war="autoall">남은 싸움도 모두 장수들에게</button>` : ''}`
+    // 「○○에게 일임한다 (자동전투)」 · 남은 싸움을 한꺼번에 넘기는 단추는 뺐다 — 싸움은 하나씩 (형 10-25)
+    const whom = ourHero !== null ? `${josa(ourName, '에게', '에게')} 일임한다 (자동전투)` : '알아서 싸운다 (자동전투)'
+    h += `<button class="btn ghost" data-war="auto">${esc(whom)}</button>`
     // 이 합을 싸운다 — 장수의 「격려」와 헷갈리지 않게 북 말은 뺐다 (형 10-23: "북을 친다가 있는데 북을 울린다라고 하면 헷갈리잖아 · 설명이 쓸데없어")
     h += `<button class="btn pri wgo" data-war="go" data-n="${panes.length}"${picked < panes.length ? ' disabled' : ''}>${goWord(picked, panes.length)}</button></div></div>`
   } else if (ended) {
@@ -2000,6 +2001,23 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     timers.push(window.setTimeout(() => { if (document.visibilityState === 'visible') host.ding(name, vol, rate, dur) }, s * 1000))
   }
 
+  /**
+   * 판 끝의 뿔나팔·이김 음악을 이 싸움에서 이미 냈나 — 누르면(건너뛰기·맡긴 싸움 풀기) 걸어 둔 소리가 다 걷혀 대승 음악이 안 나왔다 (형 10-25).
+   * 건너뛰어 끝에 닿았으면 못 낸 것만 바로 낸다 (flushEnd)
+   */
+  let endSeen: { key: string; horn: boolean; music: boolean } = { key: '', horn: false, music: false }
+  const endGood = (l: BattleLine): boolean => (l.atkFaction === host.me) === (l.outcome === 'rout' || l.outcome === 'win') && l.outcome !== 'draw'
+  const markEnd = (l: BattleLine): void => { if (endSeen.key !== (l.key ?? '')) endSeen = { key: l.key ?? '', horn: false, music: l.outcome === 'draw' } }
+  const flushEnd = (): void => {
+    const l = t.line
+    if (l === null || l.pending !== undefined || document.visibilityState !== 'visible') return
+    if ((upto ?? (l.rounds ?? []).length) < (l.rounds ?? []).length) return // 아직 끝이 아니다
+    markEnd(l)
+    const good = endGood(l)
+    if (!endSeen.horn) { endSeen.horn = true; host.ding(good ? BATTLE_SFX.win : BATTLE_SFX.lose, 0.45) }
+    if (!endSeen.music) { endSeen.music = true; host.music?.(good ? 'win' : 'lose') }
+  }
+
   /** 폰 떨림 — 잘됐을 때만 (좋은 합 · 사로잡기 · 이김). 진 쪽 떨림은 헷갈려서 안 쓴다 (형: "공격하거나 잘됐을때로 긍정 피드백 시켜야 하나? 헷갈리니까??") */
   const buzz = (s: number, pattern: number[]): void => {
     if (typeof navigator.vibrate !== 'function') return
@@ -2040,12 +2058,12 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       if (ours === 'pursue' || ours === 'flank') at((plan.beats[0]?.at ?? 0) + 0.1, BATTLE_SFX.cry, 0.26, 1, 0.8, true)
     }
     if (end !== null) {
-      const atkWon = end.outcome === 'rout' || end.outcome === 'win'
-      const good = (end.atkFaction === host.me) === atkWon && end.outcome !== 'draw'
+      const good = endGood(end)
+      markEnd(end)
       // 판의 끝 — 결과 때에 승리·패배 소리 하나 · 음악은 그 소리가 가라앉은 뒤 (마지막 일격 소리는 맞부딪힘이 맡는다)
       const endAt = (rd !== undefined ? roundPlan(rd, weAtk).result : STAGE_S[2]) + 0.5
-      at(endAt, good ? BATTLE_SFX.win : BATTLE_SFX.lose, 0.45)
-      if (end.outcome !== 'draw') timers.push(window.setTimeout(() => host.music?.(good ? 'win' : 'lose'), (endAt + 0.6) * 1000))
+      if (!endSeen.horn) timers.push(window.setTimeout(() => { if (document.visibilityState === 'visible') { endSeen.horn = true; host.ding(good ? BATTLE_SFX.win : BATTLE_SFX.lose, 0.45) } }, endAt * 1000))
+      if (!endSeen.music) timers.push(window.setTimeout(() => { endSeen.music = true; host.music?.(good ? 'win' : 'lose') }, (endAt + 0.6) * 1000))
       // 이겼다 — 부우웅 크게 (듀오링고처럼)
       if (good) buzz(endAt, end.outcome === 'rout' ? [60, 40, 60, 40, 60, 40, 120, 60, 300] : [...WIN_BUZZ])
     }
@@ -2520,6 +2538,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       }
       ov.classList.add('fast') // 아무 데나 누르면 이 합을 끝까지 바로
       clearTimers()
+      flushEnd() // 끝에 닿았으면 걷힌 뿔나팔·대승 음악을 바로
       fxTop.replaceChildren()
       ov.querySelector('.wcut')?.remove()
       // 진을 되돌리는 타이머도 걷혔다 — 다음 합을 고를 판이면 바로 고르는 진으로 (재검토 10-25: 연출 상태로 굳었다)
@@ -2528,7 +2547,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     }
     const l = t.line
     if (l === null || l.key === undefined) return
-    if (animating && b.dataset['war'] !== 'auto' && b.dataset['war'] !== 'autoall' && b.dataset['war'] !== 'next' && b.dataset['war'] !== 'help') return
+    if (animating && b.dataset['war'] !== 'auto' && b.dataset['war'] !== 'next' && b.dataset['war'] !== 'help') return
     host.ding('click1', 0.18)
     switch (b.dataset['war']) {
       case 'pick': {
@@ -2587,11 +2606,6 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         return
       }
       case 'auto': autoPlay(); return
-      case 'autoall': {
-        if (cur !== null) done[cur.key] = { cmds: [...cur.cmds] }
-        finish()
-        return
-      }
       case 'next': {
         if (cur !== null) done[cur.key] = { cmds: [...cur.cmds] }
         cur = null

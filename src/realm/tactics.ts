@@ -355,9 +355,12 @@ function aiOrder(c: Ctx, me: Side, foe: Side, mine: 'a' | 'd', st: State, cap: n
   const coward = me.hero?.coward === true
   const style = me.hero?.style
   const stay = style === 'steadfast' // 일편단심 — 물러서지 않는다
+  // 맡긴 우리 쪽은 거의 끝까지 싸운다 — 물러서면 그 싸움은 진다. 다 무너질 판일 때만 (형 10-25: "잘 싸우는 애가 퇴각한다로 자동전투 하는 건 대체 뭐임")
+  const giveUp = me.player
+    ? edge < R.tacAiRetreatMineEdge && myN < R.tacAiRetreatMineMen
+    : atk ? edge < (coward ? 0.35 : 0.22) && myN < 0.75 : edge < 0.12 && myN < 0.5
   if (lopts.includes('capture') && cap >= R.tacAiCapture) lead = 'capture'
-  else if (!stay && atk && edge < (coward ? 0.35 : 0.22) && myN < 0.75) lead = 'retreat'
-  else if (!stay && !atk && edge < 0.12 && myN < 0.5) lead = 'retreat'
+  else if (!stay && giveUp) lead = 'retreat'
   else if (lopts.includes('duel') && me.hero !== null && foe.hero !== null && me.hero.mu >= foe.hero.mu + 1 && r('duel') < 0.4) lead = 'duel'
   else if (lopts.includes('art') && artNow(me.hero!.art!, foe, foeRatio, r)) lead = 'art'
   const out: { front?: Cmd; bows?: Cmd; horse?: Cmd; lead: Cmd } = { lead }
