@@ -17,6 +17,7 @@ import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
 import type { EdgeKind, NodeKind, Realm, REdge, RegionId, SeasonOfYear } from '../../realm/types.ts'
 import { separatedRoutes, ferryAt, landClipSvg, midOf, naturalLines, riversSvg, routePoints, smoothPath, tidyEnds, trimPolyline, type Pt } from './mapgeo.ts'
 import { territory, type Territory } from './territory.ts'
+import { kitVars, nationKit } from './kitcolor.ts'
 import { worldMapFallback, worldMapUrl } from './worldmap.ts'
 
 /** 미리 받아 둔 다음 계절 지도 그림 — 붙잡아 두어야 브라우저가 풀어 둔 그림을 버리지 않는다 */
@@ -137,27 +138,28 @@ export const MAP_CSS = `
 @media (prefers-reduced-motion: reduce) { .map .nd .plant, .map .nd .plant .cloth, .map .nd .wonring { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .map .nd .smk, .map .clsh { display: none; } .map .nd.k-port img.st { animation: none; } }
 .map .lbs { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
-/* 고을 배너 — 깃발·이름·군세가 한 덩어리 (문명 6 도시 배너 · Old World 의 위계 — docs/GAP.md M1) */
+/* 고을 배너 — 깃발·이름·군세가 한 덩어리 (문명 6 도시 배너 · Old World 의 위계 — docs/GAP.md M1)
+   주인 나라의 두 빛을 입는다 — 몸은 바탕 빛(--c), 굵은 왼 띠와 테는 둘째 빛(--c2), 글씨는 바탕에 맞춘 먹빛·흰빛(--ink) (kitcolor.ts · 형 10-26: "축구팀 유니폼 2가지 색") */
 .map .lb { position: absolute; transform: translateX(-50%); text-align: center; white-space: nowrap; display: flex; align-items: center; gap: .18em;
-  font-size: clamp(10px, calc(1.9cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 16px); line-height: 1.2; color: #2a1d10; font-weight: 700;
-  background: linear-gradient(#fbf4e3f2, #efe2c4f2); border: 1px solid color-mix(in srgb, var(--c, #8a7a5a) 65%, #2a1d10);
-  border-left: .32em solid var(--c, #8a7a5a); border-radius: .2em .55em .55em .2em; padding: 0 .35em 0 .2em; box-shadow: 0 1px 3px #0006; }
+  font-size: clamp(10px, calc(1.9cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 16px); line-height: 1.2; color: var(--ink, #2a1d10); font-weight: 700;
+  background: linear-gradient(color-mix(in srgb, var(--c, #f6ecd4) 82%, #fff), var(--c, #efe2c4)); border: .13em solid var(--c2, #8a7a5a);
+  border-left: .55em solid var(--c2, #8a7a5a); border-radius: .2em .55em .55em .2em; padding: 0 .35em 0 .22em; box-shadow: 0 0 0 1px #1a120ad0, 0 1px 3px #0006; }
 .map .lb .lbe { width: 1.1em; height: 1.1em; object-fit: contain; flex: none; filter: drop-shadow(0 0 1px #fff); }
 .map .lb .lbt { display: flex; flex-direction: column; align-items: flex-start; }
 .map .lb .lbf { margin-left: .25em; padding: 0 .35em; border-radius: .6em; background: #2a1414; color: #f0b8a0; font-size: .82em; font-weight: 800; }
 .map .lb .lbf.old { opacity: .6; }
 /* 도읍 — 크고 두껍게, 금빛 별 */
-.map .lb.k-cap { font-size: clamp(11px, calc(2.2cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 18px); border-width: 2px; border-left-width: .38em;
-  background: linear-gradient(#fff8e6f5, #f0dfb8f5); }
+.map .lb.k-cap { font-size: clamp(11px, calc(2.2cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 18px); border-width: .17em; border-left-width: .62em; }
 /* 빈땅·소도 — 주인 없는 땅은 띠 없이 옅게 (위계가 낮다) */
-.map .lb.k-free { background: #f3e6c8b0; border-color: transparent; border-left-color: transparent; box-shadow: none; font-weight: 600; font-style: italic; color: #4a3a28; }
-/* 우리 고을 — 금빛 테 */
-.map .lb.me { box-shadow: 0 0 0 1.5px #ffd27a, 0 1px 4px #0007; }
+.map .lb.k-free { background: #f3e6c8b0; border-color: transparent; border-left-color: transparent; border-left-width: .2em; box-shadow: none; font-weight: 600; font-style: italic; color: #4a3a28; }
+/* 우리 고을 — 두 빛 바깥에 금빛 테 (남의 나라 옷과 섞여도 우리 것이 먼저 보인다) */
+.map .lb.me { box-shadow: 0 0 0 1px #1a120a, 0 0 0 2.6px #ffd27a, 0 0 7px #ffd27acc; }
 .ap.hide-flags .map .lb .lbe { display: none; } .ap.hide-force .map .lb .lbf { display: none; }
 .map .lb .star { font-style: normal; color: #b8860b; margin-right: 2px; text-shadow: 0 0 2px #fff8d0, 0 0 3px #fff8d0; } /* 도읍 (형: "수도같은건 별표해야하지 않나?") */
 /* 지금 땅이름 줄은 가까이 볼 때만 (멀리서는 배너가 한 줄로 작게) */
 .map[data-zl="far"] .lb small { display: none; }
-.map .lb small { display: block; font-size: .74em; font-weight: 500; color: #5a4a36; margin-top: -2px; }
+.map .lb small { display: block; font-size: .74em; font-weight: 500; color: var(--ink, #5a4a36); opacity: .78; margin-top: -2px; }
+.map .lb.k-free small { color: #5a4a36; }
 /* 받침 — 주인 색이 땅에 번진 둥근 자리 (고을이 땅 위에 앉아 보이게). 도읍은 크고 금빛 테 */
 .map .nd .base { position: absolute; left: 50%; top: 80%; width: 118%; aspect-ratio: 2.6; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; z-index: -1;
   background: radial-gradient(ellipse at 50% 45%, color-mix(in srgb, var(--c) 70%, transparent) 0, color-mix(in srgb, var(--c) 35%, transparent) 45%, transparent 72%); }
@@ -241,7 +243,7 @@ export const MAP_CSS = `
 .map .tok { pointer-events: auto; display: flex; flex-direction: column; align-items: center; padding: 0; border: 0; background: none; cursor: pointer;
   -webkit-tap-highlight-color: transparent; width: clamp(26px, calc(4.2cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 46px); }
 .map .tok { position: relative; }
-.map .tok img { width: 100%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 2.5px solid var(--tc, #9fd18b); background: #201811; box-shadow: 0 0 0 1.5px #201811, 0 2px 4px #0008; }
+.map .tok img { width: 100%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 2.5px solid var(--tc, #9fd18b); background: #201811; box-shadow: 0 0 0 2.5px var(--tc2, #201811), 0 0 0 3.5px #201811, 0 2px 4px #0008; }
 .map .tok .hp { position: absolute; left: 12%; right: 12%; top: calc(100% - 1.05em); height: 4px; border-radius: 2px; background: #201811; overflow: hidden; z-index: 1; }
 .map .tok .hp::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--p, 1) * 100%); background: linear-gradient(90deg, #6aa84f, #b6e08f); }
 .map .tok .dir { position: absolute; left: 50%; top: 50%; width: 150%; height: 150%; transform: translate(-50%, -50%) rotate(var(--a, 0deg)); pointer-events: none; }
@@ -274,7 +276,7 @@ export const MAP_CSS = `
 .map svg .mvflow { animation: mvf .9s linear infinite; } @keyframes mvf { to { stroke-dashoffset: -22; } }
 @media (prefers-reduced-motion: reduce) { .map .toks.mv .tok, .map svg .mvflow { animation: none; } }
 .map .lb.crowd { visibility: hidden; } /* 겹쳐 자리가 없는 작은 고을 이름 — declutter */
-.map .lb.sel { color: #7a1f10; } .map .lb.dim { opacity: 0; } /* 한 나라만 볼 때 다른 나라 글씨는 감춘다 (형: "다른나라들은 글자정돈 완전 투명하게") */ .map .nd.sel img.st { filter: drop-shadow(0 0 7px #ffd27a) drop-shadow(0 0 3px #ffd27a); }
+.map .lb.sel { box-shadow: 0 0 0 1px #1a120a, 0 0 0 3px #fff6d8, 0 0 10px #ffd27a; z-index: 1; } .map .lb.dim { opacity: 0; } /* 한 나라만 볼 때 다른 나라 글씨는 감춘다 (형: "다른나라들은 글자정돈 완전 투명하게") */ .map .nd.sel img.st { filter: drop-shadow(0 0 7px #ffd27a) drop-shadow(0 0 3px #ffd27a); }
 .map[data-world] { background-color: #cdb98e; }
 .map .nd.fresh, .map .lb.fresh, .map svg .fresh { animation: rv 2.2s ease-out both; }
 @keyframes rv { from { opacity: 0; } to { opacity: 1; } }
@@ -555,7 +557,7 @@ export function mapHtml(
     labels.push({
       id: n.id, name: n.name, now: NODE_NOW[n.id], x: p[0], y: p[1], s: sizeOf(n.hh), cap: n.kind === 'capital' || cap, hh: n.hh,
       cls: `${kcls}${ours ? ' me' : ''}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${far}${fr}`,
-      color: owner !== null ? color : '', emb, force, tray, trayW: sp.length + (fish !== '' ? 1 : 0) + dfs.length * 1.6,
+      kit: owner !== null ? kitVars(owner) : '', emb, force, tray, trayW: sp.length + (fish !== '' ? 1 : 0) + dfs.length * 1.6,
     })
     // 맡은 장수 — 우리 고을이면 얼굴을 작게 (형 10-23: "마을에 장수 배치한 거 아직 맵에선 아무것도 안 보이던데")
     const gv = ours ? govOf.get(n.id) : undefined
@@ -565,10 +567,15 @@ export function mapHtml(
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()
   for (const t of tokens) if (t.march === undefined) byNode.set(t.node, [...(byNode.get(t.node) ?? []), t])
-  const myColor = FACTION_ART[me]?.color ?? '#9fd18b'
   const topMen = Math.max(1, ...tokens.map((t) => t.men))
+  // 말의 테도 그 나라의 두 빛 — 안쪽 테는 바탕 빛, 바깥 고리는 둘째 빛 (개척단은 흙빛)
+  const tokKit = (t: MapToken): string => {
+    if (t.party === true) return '--tc:#c8a070'
+    const k = nationKit(t.ally ?? me)
+    return `--tc:${k.c};--tc2:${k.c2}`
+  }
   const tokBtn = (t: MapToken, ang?: number): string =>
-    `<button class="tok${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}${t.ally !== undefined ? ' ally' : ''}${t.party === true ? ' party' : ''}" data-act="${t.party === true ? 'ptok' : 'tok'}" data-army="${t.army}" style="--tc:${t.party === true ? '#c8a070' : t.ally ?? myColor}">`
+    `<button class="tok${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}${t.ally !== undefined ? ' ally' : ''}${t.party === true ? ' party' : ''}" data-act="${t.party === true ? 'ptok' : 'tok'}" data-army="${t.army}" style="${tokKit(t)}">`
     + `${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}<img src="${t.img}" alt=""><i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i><b>${t.ally !== undefined ? '도움 ' : t.party === true ? '개척 ' : ''}${t.men}</b></button>`
   let toks = ''
   // 길 위의 우리 군대 — 떠난 쪽에서 삼분의 일쯤 (가운데의 "n계절" 글씨를 안 가린다)
@@ -617,7 +624,7 @@ export interface MapToken {
   readonly going: boolean
   /** 길 위에 있다 — 그 길 가운데에 둔다 · left 남은 계절 */
   readonly march?: { readonly from: string; readonly to: string; readonly left: number }
-  /** 동맹이 빌려준 군대 — 그 나라 색 테와 「도움」 (형: "지켜주는 군대를 요청하면 언제 어디로 오는지 … 안보이는데?") */
+  /** 동맹이 빌려준 군대 — 그 나라 id. 그 나라 두 빛 테와 「도움」 (형: "지켜주는 군대를 요청하면 언제 어디로 오는지 … 안보이는데?") */
   readonly ally?: string
   /** 개척단 — 흙빛 테 · 누르면 'ptok' · 수는 가구 (parties.ts) */
   readonly party?: boolean
@@ -657,8 +664,8 @@ interface LabelIn {
   readonly cap: boolean
   readonly hh: number
   readonly cls: string
-  /** 주인 나라 색 — 배너의 띠 (주인이 없으면 '') */
-  readonly color: string
+  /** 주인 나라의 두 빛 — 배너의 몸·띠·글씨 CSS 변수 (kitcolor.kitVars · 주인이 없으면 '') */
+  readonly kit: string
   /** 주인 나라 깃발 그림 주소 ('' 이면 없음) */
   readonly emb: string
   /** 척후가 본 군세 칩 html ('' 이면 없음) */
@@ -722,7 +729,7 @@ function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly 
     }
     const [cx, cy] = best!.c
     placed.push({ x0: cx - w / 2, y0: cy, x1: cx + w / 2, y1: cy + h })
-    out += `<span class="lb${l.cls}" data-n="${l.id}" style="left:${(cx * 100).toFixed(2)}%;top:${(cy * 100).toFixed(2)}%${l.color !== '' ? `;--c:${l.color}` : ''}">`
+    out += `<span class="lb${l.cls}" data-n="${l.id}" style="left:${(cx * 100).toFixed(2)}%;top:${(cy * 100).toFixed(2)}%${l.kit !== '' ? `;${l.kit}` : ''}">`
       + `${l.emb !== '' ? `<img class="lbe" src="${l.emb}" alt="">` : ''}<span class="lbt"><span>${l.cap ? '<i class="star">★</i>' : ''}${l.name}</span>${l.now !== undefined ? `<small>${l.now}</small>` : ''}</span>${l.tray}${l.force}</span>`
   }
   return out + '</div>'
@@ -832,10 +839,12 @@ function provincesSvg(
   let crisp = ''
   let cps = ''
   for (const [o, d] of [...rim].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
-    const col = FACTION_ART[o]?.color ?? '#ccc'
+    const { c: col, c2 } = nationKit(o)
     cps += `<clipPath id="rm-own-${o}"><path d="${own.get(o)!}"/></clipPath>`
     band += `<path d="${d}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${(o === me ? 30 : 24) * k}" opacity="${o === me ? 0.55 : 0.48}"/>`
-    // 둘레 안쪽의 또렷한 제 색 선 — 이웃 나라와 맞닿으면 두 색이 나란히 선다 (문명 6 국경)
+    // 둘레 안쪽의 또렷한 제 색 선 — 이웃 나라와 맞닿으면 두 색이 나란히 선다 (문명 6 국경).
+    // 그 안쪽에 둘째 빛 가는 띠 — 바탕 빛이 비슷한 이웃과도 국경에서 갈린다 (kitcolor.ts)
+    crisp += `<path d="${d}" clip-path="url(#rm-own-${o})" stroke="${c2}" stroke-width="${(13 * k).toFixed(1)}" opacity=".85"/>`
     crisp += `<path d="${d}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${(9 * k).toFixed(1)}" opacity=".95"/>`
   }
   const blurK = (3 * k).toFixed(1)

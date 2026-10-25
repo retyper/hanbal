@@ -51,12 +51,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .legend { position: absolute; left: 0; right: 0; top: var(--toph); height: var(--legh); box-sizing: border-box; z-index: 4; display: flex;
   align-items: center; gap: 4px; padding: 0 8px; overflow-x: auto; scrollbar-width: none; background: #120d09; border-bottom: 1px solid #3a2c1e; }
 .ap .legend::-webkit-scrollbar { display: none; } .ap .legend .lg { pointer-events: auto; flex: none; }
-.ap .lg { display: flex; align-items: center; gap: 4px; padding: 2px 8px 2px 3px; border-radius: 16px; border: 1px solid #0006;
-  background: color-mix(in srgb, var(--c) 30%, #17110ce0); color: #fff; font: inherit; font-size: 12px; cursor: pointer;
+.ap .lg { display: flex; align-items: center; gap: 4px; padding: 2px 8px 2px 7px; border-radius: 16px; border: 1px solid #0006;
+  background: linear-gradient(90deg, var(--c2, transparent) 0 4px, transparent 4px), color-mix(in srgb, var(--c) 30%, #17110ce0); color: #fff; font: inherit; font-size: 12px; cursor: pointer;
   box-shadow: 0 2px 6px #0007; border-left: 5px solid var(--c); }
 .ap .lg img.lem { width: 22px; height: 22px; } .ap .lg b { font-size: 14px; min-width: 1em; }
 .ap .lg span { display: none; } .ap .lg.on span, .ap .lg.me span { display: inline; }
-.ap .lg.on { border-color: #fff; background: color-mix(in srgb, var(--c) 55%, #17110c); }
+.ap .lg.on { border-color: #fff; background: linear-gradient(90deg, var(--c2, transparent) 0 4px, transparent 4px), color-mix(in srgb, var(--c) 55%, #17110c); }
 .ap .lg.gone { opacity: .45; }
 /* 우리와 싸우는 나라 — 붉은 테 · 칼 · 이름도 늘 보인다 */
 .ap .lg.war { border: 2px solid #e0503a; box-shadow: 0 0 8px #e0503a99; position: relative; }

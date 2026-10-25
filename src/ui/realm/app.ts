@@ -69,6 +69,7 @@ import { TUT_CSS, TUT_STEPS, createSpot, tutAt, tutBandHtml, tutStyle } from './
 import { LOG_CSS, LOG_GROUPS, lineNations, logGroup, logNations, logRows, logbookHtml, type LogFilter } from './logbook.ts'
 import { markTutorialOver, markWon, nationWon, tutorialOver, unlockedBoards, tierOpen, tierWon } from './unlock.ts'
 import { TINT_CSS, tint } from './tint.ts'
+import { nationKit } from './kitcolor.ts'
 import { handsOf, idleHeroes } from '../../realm/hands.ts'
 import { pactOf } from '../../realm/suzerain.ts'
 import { ironOf, riteOf } from '../../realm/paths.ts'
@@ -1022,7 +1023,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         army: a.id, node: a.at, men: headcount(forceOf(r, a)), sel: armySel.includes(a.id), going: pick[a.id] !== undefined,
         img: file !== undefined ? `${ART}bust/${file}.jpg` : `${ART}icon/${UNIT_ICON[top]}.png`,
         ...(a.march !== null ? { march: { from: a.march.from, to: a.march.to, left: a.march.left } } : {}),
-        ...(a.faction !== me() ? { ally: FACTION_ART[a.faction]?.color ?? '#9fd18b' } : {}),
+        ...(a.faction !== me() ? { ally: a.faction } : {}),
       }
     })
     // 개척단의 말 — 군대 말처럼 누르면 고르고 갈 곳이 빛난다 (지난 계절부터 길 위에 있으면 길 가운데)
@@ -1312,14 +1313,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const fs = sorted(Object.values(r.factions)).filter((f) => knows(r, me(), f.id)).map((f) => ({ f, n: count(f.id) })).sort((a, b) => b.n - a.n)
     let h = ''
     for (const { f, n } of fs) {
-      const c = FACTION_ART[f.id]?.color ?? '#ccc'
+      const kit = nationKit(f.id)
       const rel = f.id !== me() && n > 0 ? relationOf(r, me(), f.id).state : null
       const atWar = rel === 'war'
       // 동맹은 초록 테, 화친은 옅은 점선 테 (형 10-23: "전쟁 중인 나라는 빨간 테두리 쳐 놨는데 동맹국은 아직 아무 표시 없는 듯")
       const cls = `${focus === f.id ? ' on' : ''}${f.id === me() ? ' me' : ''}${n === 0 ? ' gone' : ''}${atWar ? ' war' : rel === 'ally' ? ' ally' : rel === 'truce' ? ' truce' : ''}`
       // 남의 나라는 군장 얼굴(탈)을 함께 — 깃발 줄만 봐도 누가 우리를 어떻게 보는지 (mood.ts)
       const mood = f.id !== me() && n > 0 ? moodImg(ART, moodOf(r, me(), f.id).mood, 'mood sm') : ''
-      h += `<button class="lg${cls}" data-act="focus" data-id="${f.id}" style="--c:${c}"${atWar ? ` title="${esc(josa(f.name, '과', '와'))} 싸우는 중"` : ''}>${atWar ? '<i class="lgwar">⚔</i>' : rel === 'ally' ? '<i class="lgally">동맹</i>' : ''}${emblem(f.id, 'lem')}<b>${n}</b><span>${esc(f.name)}</span>${mood}</button>`
+      h += `<button class="lg${cls}" data-act="focus" data-id="${f.id}" style="--c:${kit.c};--c2:${kit.c2}"${atWar ? ` title="${esc(josa(f.name, '과', '와'))} 싸우는 중"` : ''}>${atWar ? '<i class="lgwar">⚔</i>' : rel === 'ally' ? '<i class="lgally">동맹</i>' : ''}${emblem(f.id, 'lem')}<b>${n}</b><span>${esc(f.name)}</span>${mood}</button>`
     }
     return h
   }
