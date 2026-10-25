@@ -90,6 +90,8 @@ export const MAP_CSS = `
   overflow: clip; }
 .map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .map .nd { position: absolute; transform: translate(-50%, -62%); width: calc(8.5% * var(--s, 1) * var(--ns, 1) * var(--cs, 1)); text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+/* 나라가 많은 판 — 당기면 고을 그림이 지도만큼 커지지 않아 서로 벌어진다 (형 10-25: "낙동강 스물한 나라는 마을 이미지가 너무 커서 텍스트가 밀려난다") */
+.map[data-region="yeongnam"] .nd, .map[data-region="south"] .nd, .map[data-region="world"] .nd { width: calc(8.5% * var(--s, 1) * var(--ns, 1) * var(--cs, 1) / var(--z, 1) * var(--zs, 1)); }
 .map .nd img.st { width: 100%; filter: drop-shadow(0 2px 2px rgba(0,0,0,.55)); }
 .mapwrap.panning .map .nd, .mapwrap.panning .map .nd * { animation-play-state: paused !important; } .mapwrap.panning .map .nd img.st { filter: none; } /* 미는 동안 (zoom.ts) */
 /* 살아 있는 지도 — CSS 만 (규칙 4: 숨은 탭에선 그리지 않는다). 밥 짓는 연기 · 포구의 배 · 구름 그림자 */
