@@ -39,7 +39,7 @@ export const CHAPTERS: readonly Chapter[] = [
     id: 'mahan', n: 1, region: 'mahan', nation: 'baekje', name: '온조, 마한을 아우르다', era: '8년 · 한강에서 차령까지', hero: '온조',
     hook: '위례에 선 지 스물여섯 해. 남쪽의 큰 나라 마한은 백제를 아직 제 울타리 안 작은 나라로 본다. 온조는 사냥을 간다며 군사를 일으킨다.',
     goal: '마한의 목지 도읍과 원산성·금현성을 쥔다',
-    art: 'event/event-goguryeo-hunt.jpg',
+    art: 'keyart/mahan.jpg',
     source: '『삼국사기』 백제본기 온조왕 26·27년 — 왕이 사냥한다 하고 마한을 습격해 그 국읍을 아울렀다. 원산·금현 두 성만이 굳게 지키다 이듬해 항복했다.',
     // 기한 열 해 — 마한은 먼저 치고, 버티기만 해서는 이기지 못한다
     scenario: { id: 'mahan', win: [{ kind: 'hold', nodes: ['mh-mokji-cap', 'mh-wonsan', 'mh-geumhyeon'] }], limit: 40 },
