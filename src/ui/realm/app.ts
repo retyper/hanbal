@@ -4123,11 +4123,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     if (t.classList.contains('nd') && !t.dataset['act']) {
       // 군대를 고른 채(집을 보내는 중에) 갈 수 없는 곳을 누르면 고르기만 푼다
+      // 배우는 판에서는 풀고 그 고을도 연다 — 개척단을 보낸 뒤(3/12) 개척단이 골라진 채라 4/12 「갯골 마을 누르기」의 첫 누름이 먹히기만 했다 (형 10-25)
       if (armySel.length > 0 || partySel !== '') {
         armySel = []
         clearParty()
-        paint()
-        return
+        if (realm?.region !== 'tutorial') { paint(); return }
       }
       host.onTap('node', t.dataset['node']!)
       const tap = tapSlot('node')

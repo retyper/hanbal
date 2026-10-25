@@ -147,7 +147,8 @@ export function tutBandHtml(i: number, esc: (s: string) => string, stuck = false
 
 /** 가려졌을 때 먼저 닫을 것 — [덮는 것, 그 안의 닫기 단추, 갈래]: 보고판의 「확인」 · 열린 판의 손잡이. 띠 위에 그 말이 한 줄 붙는다 (TUT_CSS 의 data-pre) */
 // 보고판이 화면 가득(정할 것이 남음)이면 「확인」이 없다 — 고를 단추(사건 카드 · 사신의 청 거절)를 가리킨다
-const DISMISS: ReadonlyArray<readonly [string, string, string]> = [['.modal', '[data-act="rep-close"], .fulld [data-act="card-pick"], .fulld [data-act="answer"]', 'rep'], ['.sheet', '.grip', 'grip']]
+// 고른 군대·개척단 띠도 — 폰에선 띠가 서쪽 고을(갯골)을 덮어 누를 수 없었다 (형 10-25 4/12)
+const DISMISS: ReadonlyArray<readonly [string, string, string]> = [['.modal', '[data-act="rep-close"], .fulld [data-act="card-pick"], .fulld [data-act="answer"]', 'rep'], ['.sheet', '.grip', 'grip'], ['.selbar', '[data-act="selclose"], [data-act="pp-close"]', 'sel']]
 
 export interface Spot {
   /** 지금 단계와 판 — 없으면 끈다 */
@@ -242,6 +243,8 @@ export function createSpot(root: HTMLElement): Spot {
     for (const [c] of DISMISS) {
       const x = root.querySelector<HTMLElement>(c)
       if (x === null || !shown(x) || (c === '.sheet' && !root.classList.contains('sheet-open'))) continue
+      // 고른 띠는 덮었을 때만 — 가리킬 곳이 없을 때나, 고른 채 눌러야 하는 곳(갈 곳)일 때는 풀게 하지 않는다 (풀면 행군 단계가 되돌아간다)
+      if (c === '.selbar' && (el === null || el.matches('[data-act="go"], [data-act="ptgo"]'))) continue
       if (el === null) return x
       if (x.contains(el)) continue
       if (c === '.modal') return x
@@ -404,6 +407,7 @@ export const TUT_CSS = `
 .tutband[data-pre="rep"] .tutb::before, .tutband[data-pre="grip"] .tutb::before { flex: 1 0 100%; color: #ffd27a; font-weight: 700; font-size: 13.5px; }
 .tutband[data-pre="rep"] .tutb::before { content: '먼저 소식을 읽고 「확인」을 누른다'; }
 .tutband[data-pre="grip"] .tutb::before { content: '먼저 열린 판을 닫는다 — 위의 손잡이를 누른다'; }
+.tutband[data-pre="sel"] .tutb::before { flex: 1 0 100%; color: #ffd27a; font-weight: 700; font-size: 13.5px; content: '먼저 고른 것을 푼다 — ✕ 를 누른다'; }
 @keyframes tutglow { from { box-shadow: 0 0 4px #ffd27a66; } to { box-shadow: 0 0 18px #ffd27a; } }
 /* 스포트라이트 — 구멍 밖은 어둡다. 구멍은 누를 곳 크기, 둘레에 숨 쉬는 금빛 고리, 그 밑(또는 위)에서 손이 콕콕 가리킨다 */
 /* 자리는 미끄러지지 않고 바로 붙는다 — 판이 굴러갈 때 고리가 뒤처지면 엉뚱한 데를 누르게 된다 */
