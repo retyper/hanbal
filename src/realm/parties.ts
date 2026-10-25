@@ -109,19 +109,36 @@ export function moveParty(r: Realm, o: Extract<Order, { kind: 'partyGo' }>): voi
   startMarch(r, p, o.edge)
 }
 
-/** 계절마다 — 길 위의 개척단이 한 계절 간다. 빈땅에 닿으면 마을이 서고, 적 군대 곁이면 흩어진다 */
+/**
+ * 계절마다 — 길 위의 개척단이 한 계절 간다. 빈땅에 닿으면 마을이 서고, 적 군대 곁이면 흩어진다.
+ * 같은 계절 같은 빈땅에 둘이 닿으면 **우리(플레이어) 개척단이 먼저** 자리 잡는다 — 남은 나라끼리는 개척단 id 차례 (결정론 A1).
+ * 가는 사이 남이 먼저 일궜으면 흩어지지 않고 떠나온 곳으로 돌아와 멈춰 선다 (가구는 그대로 · 형 10-25: "내가 우선순위 있는 거 아님? · 이동 중에 적이 먼저 개척하면?")
+ */
 export function stepParties(r: Realm, lines: ReportLine[]): void {
   const ps = r.parties
   if (ps === undefined) return
-  for (const id of Object.keys(ps).sort()) {
+  const order = Object.keys(ps).sort((a, b) => Number(ps[b]!.faction === r.player) - Number(ps[a]!.faction === r.player) || (a < b ? -1 : a > b ? 1 : 0))
+  for (const id of order) {
     const p = ps[id]!
+    let from: string | null = null
     if (p.march !== null) {
       p.march.left -= 1
       if (p.march.left > 0) continue
+      from = p.march.from
       p.at = p.march.to
       p.march = null
     }
-    if (hostileHere(r, p.faction, p.at) || (r.nodes[p.at]?.owner !== null && r.nodes[p.at]?.owner !== p.faction)) {
+    const owner = r.nodes[p.at]?.owner ?? null
+    // 남이 먼저 일군 땅 — 적 군대가 없으면 떠나온 곳으로 돌아간다 (그곳도 남의 땅이 됐거나 적이 있으면 흩어진다)
+    if (!hostileHere(r, p.faction, p.at) && owner !== null && owner !== p.faction && from !== null) {
+      const back = r.nodes[from]
+      if (back !== undefined && (back.owner === null || back.owner === p.faction) && !hostileHere(r, p.faction, from)) {
+        lines.push({ kind: 'partyBack', faction: p.faction, party: id, node: p.at, by: owner, back: from, n: p.hh })
+        p.at = from
+        continue
+      }
+    }
+    if (hostileHere(r, p.faction, p.at) || (owner !== null && owner !== p.faction)) {
       lines.push({ kind: 'partyLost', faction: p.faction, party: id, node: p.at, n: p.hh })
       delete ps[id]
       continue

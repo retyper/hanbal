@@ -906,6 +906,8 @@ export type ReportLine =
   /** 개척단이 떠났다 · 흩어졌다 */
   | { readonly kind: 'party'; readonly faction: string; readonly party: string; readonly node: string; readonly n: number }
   | { readonly kind: 'partyLost'; readonly faction: string; readonly party: string; readonly node: string; readonly n: number }
+  /** 가는 빈땅을 `by` 가 먼저 일궜다 — 개척단이 떠나온 곳(back)으로 돌아와 멈춰 선다 (가구는 그대로) */
+  | { readonly kind: 'partyBack'; readonly faction: string; readonly party: string; readonly node: string; readonly by: string; readonly back: string; readonly n: number }
   /** 짓기 — 시작했다(done false) · 섰다(done true) */
   | { readonly kind: 'build'; readonly faction: string; readonly node: string; readonly what: BuildWhat; readonly done: boolean }
   /** 겨울에 소금이 모자라 곡식이 썩었다 */

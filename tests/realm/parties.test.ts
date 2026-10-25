@@ -10,7 +10,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
-import { joinable, partyCost, partyMoves, partySize, partiesOf } from '../../src/realm/parties.ts'
+import { joinable, partyCost, partyMoves, partySize, partiesOf, stepParties } from '../../src/realm/parties.ts'
 import { advance } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Realm } from '../../src/realm/types.ts'
@@ -116,5 +116,49 @@ describe('개척단', () => {
     assert.equal(joinable(r, { id: 'x', faction: r.player, home: to, at: to, hh: 5, march: null }), false)
     const foeNode = Object.values(r.nodes).find((n) => n.owner !== null && n.owner !== r.player && n.kind !== 'sodo')!
     assert.equal(joinable(r, { id: 'y', faction: r.player, home: foeNode.id, at: foeNode.id, hh: 5, march: null }), false)
+  })
+})
+
+/** 같은 빈땅으로 한 계절 뒤 닿는 우리 개척단 하나와 남의 개척단 하나 (형 10-25: 겹치면 누가 · 가는 사이 먼저 일구면) */
+function race(): { r: Realm; to: string; ours: string; theirs: string; foe: string; foeHome: string; from: string } {
+  const r = rich(byeonhanMini(1))
+  const { from, edge, to } = frontier(r)
+  const foe = Object.keys(r.factions).sort().find((f) => f !== r.player)!
+  const foeHome = r.factions[foe]!.capital
+  // 남의 것이 id 로는 앞선다 — 그래도 우리가 먼저여야 한다
+  r.parties = {
+    'party-0-aaa': { id: 'party-0-aaa', faction: foe, home: foeHome, at: foeHome, hh: 40, march: { from: foeHome, to, edge, left: 1 } },
+    'party-0-zzz': { id: 'party-0-zzz', faction: r.player, home: from, at: from, hh: 50, march: { from, to, edge, left: 1 } },
+  }
+  return { r, to, ours: 'party-0-zzz', theirs: 'party-0-aaa', foe, foeHome, from }
+}
+
+describe('개척단 — 겹치거나 먼저 일궈졌을 때', () => {
+  it('같은 계절 같은 빈땅에 닿으면 우리가 먼저 자리 잡고, 남의 개척단은 흩어지지 않고 돌아간다', () => {
+    const { r, to, theirs, foe, foeHome } = race()
+    const lines: Parameters<typeof stepParties>[1] = []
+    stepParties(r, lines)
+    assert.equal(r.nodes[to]!.owner, r.player)
+    assert.ok(lines.some((l) => l.kind === 'settle' && l.faction === r.player && l.to === to))
+    const back = r.parties?.[theirs]
+    assert.ok(back !== undefined, '남의 개척단도 흩어지지 않는다')
+    assert.equal(back!.at, foeHome)
+    assert.equal(back!.hh, 40)
+    assert.ok(lines.some((l) => l.kind === 'partyBack' && l.faction === foe && l.by === r.player))
+  })
+
+  it('가는 사이 남이 먼저 일궜으면 떠나온 곳으로 돌아와 멈춰 선다 · 가구는 그대로', () => {
+    const { r, to, ours, theirs, foe, from } = race()
+    delete r.parties![theirs]
+    r.nodes[to]!.owner = foe
+    const lines: Parameters<typeof stepParties>[1] = []
+    stepParties(r, lines)
+    const p = r.parties?.[ours]
+    assert.ok(p !== undefined)
+    assert.equal(p!.at, from)
+    assert.equal(p!.march, null)
+    assert.equal(p!.hh, 50)
+    assert.ok(lines.some((l) => l.kind === 'partyBack' && l.faction === r.player && l.by === foe && l.back === from))
+    assert.ok(!lines.some((l) => l.kind === 'partyLost'))
   })
 })
