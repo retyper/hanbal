@@ -360,6 +360,7 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): 
           const big = l.outcome === 'rout' || l.outcome === 'routed' || caught !== undefined
           const sneak = l.atkFaction === me && l.ambush === 'success'
           const img = caught !== undefined ? `${k.art}event/event-capture.jpg`
+            : l.via === 'sea' || r.nodes[l.node]?.kind === 'port' ? FILM(k, 'film-win-sea')
             : sneak && l.approach === 'night' ? FILM(k, 'film-win-night')
             : l.via === 'ford' || l.via === 'reeds' || l.via === 'mudflat' ? FILM(k, 'film-win-ford')
             : seasonOf(s) === 'winter' ? FILM(k, 'film-win-winter')
@@ -373,12 +374,12 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): 
       } else if (l.kind === 'take' && l.faction === me) {
         const was = capOf.get(l.node)
         // 도읍이면 큰 성문으로 들어가는 군대, 여느 고을이면 깃발을 꽂고 마을 사람들이 따르는 장면
-        const img = FILM(k, was !== undefined ? 'film-take-capital' : 'film-take-town')
+        const img = FILM(k, was !== undefined ? 'film-take-capital' : r.nodes[l.node]?.kind === 'port' ? 'film-take-port' : 'film-take-town')
         takes++
         events.push({ s, t: `${josa(node(l.node), "을", "를")} 쥐었다`, big: was !== undefined, img, ...(was !== undefined && was !== me ? { em: was } : {}) })
       } else if (l.kind === 'relation' && (l.a === me || l.b === me) && (l.state === 'ally' || l.state === 'truce')) {
         const other = l.a === me ? l.b : l.a
-        const img = `${k.art}event/${l.state === 'ally' ? 'event-alliance-oath' : 'event-outside-envoy'}.jpg`
+        const img = FILM(k, l.state === 'ally' ? 'film-ally' : 'film-truce')
         events.push({ s, t: `${josa(name(other), '과', '와')} ${l.state === 'ally' ? '동맹을 맺었다' : '화친했다'}`, big: l.state === 'ally', img, em: other })
       } else if (l.kind === 'recruit' && l.faction === me) {
         heroes++
