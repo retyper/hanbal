@@ -330,7 +330,7 @@ export const NODE_POS: Readonly<Record<string, readonly [number, number]>> = {
   'guya-vil': [0.74, 0.43],
   'guya-cap': [0.77, 0.66],
   'guya-iron': [0.8, 0.24],
-  'dokro-cap': [0.92, 0.6],
+  'dokro-cap': [0.86, 0.53], // 새 바탕(10-25)에선 0.92 가 바다 — 바닷가 산기슭으로
   // 빈땅 (2026-10-18, 형: "빈땅도 좀 있고 개척도 좀 해야하고") — 산기슭·강가·바닷가·섬
   'wild-galmae': [0.13, 0.22],
   'wild-beodeul': [0.46, 0.15],
