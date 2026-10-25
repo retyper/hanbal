@@ -2026,5 +2026,176 @@
   "license": "CC BY (저작자표시)",
   "url": "https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13380483&menuNo=200020",
   "seconds": 5.5
+ },
+ {
+  "slot": "battle_melee",
+  "id": "battle_melee_1",
+  "file": "battle_melee_1.ogg",
+  "title": "Sword clash 1.wav",
+  "author": "spycrah",
+  "license": "CC0",
+  "url": "https://freesound.org/s/471095/"
+ },
+ {
+  "slot": "battle_melee",
+  "id": "battle_melee_2",
+  "file": "battle_melee_2.ogg",
+  "title": "Sword Clash.wav",
+  "author": "Bird_man",
+  "license": "CC0",
+  "url": "https://freesound.org/s/275159/"
+ },
+ {
+  "slot": "battle_melee",
+  "id": "battle_melee_3",
+  "file": "battle_melee_3.ogg",
+  "title": "Sword Clash",
+  "author": "loudernoises",
+  "license": "CC0",
+  "url": "https://freesound.org/s/334169/"
+ },
+ {
+  "slot": "battle_melee",
+  "id": "battle_melee_4",
+  "file": "battle_melee_4.ogg",
+  "title": "Sword_Clash (7).wav",
+  "author": "JohnBuhr",
+  "license": "CC0",
+  "url": "https://freesound.org/s/326868/"
+ },
+ {
+  "slot": "battle_melee",
+  "id": "battle_melee_5",
+  "file": "battle_melee_5.ogg",
+  "title": "Swords Clash - High Quality #2",
+  "author": "Christopherderp",
+  "license": "CC0",
+  "url": "https://freesound.org/s/364530/"
+ },
+ {
+  "slot": "battle_melee",
+  "id": "battle_melee_6",
+  "file": "battle_melee_6.ogg",
+  "title": "shield guard",
+  "author": "nekoninja",
+  "license": "CC0",
+  "url": "https://freesound.org/s/370203/"
+ },
+ {
+  "slot": "battle_final",
+  "id": "battle_final_1",
+  "file": "battle_final_1.ogg",
+  "title": "BODY FALL - V HVY - DIRT",
+  "author": "leonelmail",
+  "license": "CC0",
+  "url": "https://freesound.org/s/504626/"
+ },
+ {
+  "slot": "battle_final",
+  "id": "battle_final_2",
+  "file": "battle_final_2.ogg",
+  "title": "Body fall.wav",
+  "author": "DylanTheFish",
+  "license": "CC0",
+  "url": "https://freesound.org/s/417994/"
+ },
+ {
+  "slot": "battle_final",
+  "id": "battle_final_3",
+  "file": "battle_final_3.ogg",
+  "title": "Iron Hits.wav",
+  "author": "Mrthenoronha",
+  "license": "CC0",
+  "url": "https://freesound.org/s/371353/"
+ },
+ {
+  "slot": "battle_final",
+  "id": "battle_final_4",
+  "file": "battle_final_4.ogg",
+  "title": "Impact on metal",
+  "author": "JoMungus",
+  "license": "CC0",
+  "url": "https://freesound.org/s/726486/"
+ },
+ {
+  "slot": "battle_final",
+  "id": "battle_final_5",
+  "file": "battle_final_5.ogg",
+  "title": "Very low frequency impact.wav",
+  "author": "AudioPapkin",
+  "license": "CC0",
+  "url": "https://freesound.org/s/541029/"
+ },
+ {
+  "slot": "battle_duelwin",
+  "id": "battle_duelwin_1",
+  "file": "battle_duelwin_1.ogg",
+  "title": "Unsheathed blade",
+  "author": "deleted_user_2906614",
+  "license": "CC0",
+  "url": "https://freesound.org/s/320521/"
+ },
+ {
+  "slot": "battle_duelwin",
+  "id": "battle_duelwin_2",
+  "file": "battle_duelwin_2.ogg",
+  "title": "Sword Contact (with swipe)",
+  "author": "ultraaxvii",
+  "license": "CC0",
+  "url": "https://freesound.org/s/591155/"
+ },
+ {
+  "slot": "battle_duelwin",
+  "id": "battle_duelwin_3",
+  "file": "battle_duelwin_3.ogg",
+  "title": "LightRingingClang.mp3",
+  "author": "wilhellboy",
+  "license": "CC0",
+  "url": "https://freesound.org/s/351372/"
+ },
+ {
+  "slot": "battle_duelwin",
+  "id": "battle_duelwin_4",
+  "file": "battle_duelwin_4.ogg",
+  "title": "Quick Sword Draw.mp3",
+  "author": "FunWithSound",
+  "license": "CC0",
+  "url": "https://freesound.org/s/417035/"
+ },
+ {
+  "slot": "battle_caught",
+  "id": "battle_caught_1",
+  "file": "battle_caught_1.ogg",
+  "title": "Chains Rattling",
+  "author": "evantheblonde",
+  "license": "CC0",
+  "url": "https://freesound.org/s/368995/"
+ },
+ {
+  "slot": "battle_caught",
+  "id": "battle_caught_2",
+  "file": "battle_caught_2.ogg",
+  "title": "Chain rattling",
+  "author": "georgesavic",
+  "license": "CC0",
+  "url": "https://freesound.org/s/593458/"
+ },
+ {
+  "slot": "battle_caught",
+  "id": "battle_caught_3",
+  "file": "battle_caught_3.ogg",
+  "title": "Chain.ogg",
+  "author": "egomassive",
+  "license": "CC0",
+  "url": "https://freesound.org/s/536737/"
+ },
+ {
+  "slot": "battle_caught",
+  "id": "battle_caught_4",
+  "file": "battle_caught_4.ogg",
+  "title": "chaindrop 1",
+  "author": "Logicogonist",
+  "license": "CC0",
+  "url": "https://freesound.org/s/799421/"
  }
 ]
