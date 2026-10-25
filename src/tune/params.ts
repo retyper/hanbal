@@ -2449,6 +2449,11 @@ export const SPEC = {
     riteSpringShare: k(0.12, 0, 0.5, 0.01, '봄 제사 — 올가을 거둘 것(지금 가호 × 수확)의 몫'),
     riteAutumnGrain: k(30, 0, 300, 5, '가을 제사 — 곡식'),
     riteAutumnIron: k(5, 0, 50, 1, '가을 제사 — 철기 제물'),
+
+    /** 손으로 하는 저장 · 불러오기 (형 10-26: "림월드랑 문명에도 있듯이 수동 저장이랑 불러오기도") — ui/realm/saves.ts */
+    saveSlots: k(6, 1, 12, 1, '저장 칸 수 (나라 판 「저장 · 불러오기」)'),
+    saveNameMax: k(24, 8, 60, 1, '저장 이름 글자 수 한도'),
+    saveFileMaxMB: k(20, 1, 100, 1, '「파일에서 불러오기」가 받는 파일 크기 한도', 'MB'),
   },
 } as const
 

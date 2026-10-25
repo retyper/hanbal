@@ -69,6 +69,8 @@ import { TUT_CSS, TUT_STEPS, createSpot, tutAt, tutBandHtml, tutStyle } from './
 import { LOG_CSS, LOG_GROUPS, lineNations, logGroup, logNations, logRows, logbookHtml, type LogFilter } from './logbook.ts'
 import { markTutorialOver, markWon, nationWon, tutorialOver, unlockedBoards, tierOpen, tierWon } from './unlock.ts'
 import { TINT_CSS, tint } from './tint.ts'
+import { SAVE_CSS, saveBoxHtml, type SaveAsk } from './savebox.ts'
+import { defaultLabel, type SaveMeta } from './saves.ts'
 import { nationKit } from './kitcolor.ts'
 import { handsOf, idleHeroes } from '../../realm/hands.ts'
 import { pactOf } from '../../realm/suzerain.ts'
@@ -110,6 +112,23 @@ export interface AppHost {
   onDropSlot?(seed: number): void
   /** 계정·서버 맞추기 (docs/realm/SERVER.md) — 없으면 계정 칸을 안 그린다 */
   cloud?: CloudHost
+  /** 손으로 하는 저장 · 불러오기 (ui/realm/saves.ts) — 없으면 단추를 안 그린다 */
+  saves?: SaveHost
+}
+
+/** 저장 칸 · 파일 — realm-main 이 잇는다. 모두 못 했으면 까닭(쉬운 말), 됐으면 null */
+export interface SaveHost {
+  /** 칸 N개 — 빈 칸은 null */
+  list(): ReadonlyArray<SaveMeta | null>
+  /** 지금 판을 칸 n 에 (이름이 비면 「3년 겨울 · 비화가야」) — 못 쓰면 아무것도 안 바뀐다 */
+  save(n: number, label: string): string | null
+  /** 칸 n 의 판을 연다 — 하던 판은 선반(「다른 판」)에 먼저 올린다 */
+  load(n: number): string | null
+  drop(n: number): string | null
+  /** 지금 판을 .json 파일로 */
+  download(label: string): string | null
+  /** 파일 글을 읽어 연다 — 모양이 틀리면 아무것도 안 바뀐다 */
+  loadFile(text: string): string | null
 }
 
 /** 계정 — realm-main 이 net/auth · net/sync 를 이어 준다 */
@@ -502,7 +521,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + CLOUD_CSS + WINFX_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
+  style.textContent = FIT_CSS + TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
   installTips(root)
@@ -602,6 +621,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let bringAsk: { nation: string; region: RegionId; tier: number } | null = null
   /** 첫 화면 「다른 판」에서 ✕ 를 한 번 누른 판 — 한 번 더 누르면 지운다 */
   let slotArmed: number | null = null
+  /** 「저장 · 불러오기」 창 — 열려 있으면 (game: 판 안 · title: 첫 화면의 불러오기만) */
+  let saveBox: { mode: 'game' | 'title'; name: string; ask: SaveAsk | null; msg: { text: string; bad: boolean } | null } | null = null
   let cmdHero = ''
   let plotOpen: PlotOp | null = null
   /** 암살에 보낼 자객 — 우리 장수 id, null 이면 고용 자객 */
@@ -2981,6 +3002,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 차림 — 세 칸 격자로 줄을 맞춘다: 보기 · 설정과 다른 놀이 · 판 (형: "버튼들이 너무 질서없이")
     h += `<div class="menu3"><button class="btn" data-act="help">도움말</button><button class="btn" data-act="log-open">지난 기록</button><button class="btn" data-act="dex-open">영웅전</button>`
     if (!installed() && installPrompt() !== null) h += `<button class="btn ghost" data-act="install">앱으로 설치 — 바 없는 전체 화면</button>`
+    if (host.saves !== undefined) h += `<button class="btn" data-act="save-open" data-tip="판을 저장 칸에 남기거나 불러온다 · 파일로 내려받기">저장 · 불러오기</button>`
     h += `<button class="btn ghost" data-act="mute">${muted() ? '소리 켜기' : '소리 끄기'}</button><button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>`
     h += `<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}" data-tip="활쏘기 모드 (신궁)">활터</a>${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
     h += `<button class="btn ghost" data-act="newgame" data-tip="판 고르기로 — 새 게임을 시작하기 전까지 지금 판은 그대로다">새 게임</button><button class="btn ghost" data-act="lobby" data-tip="이 판은 저장돼 있어 「이어 하기」로 돌아온다">⌂ 첫 화면으로</button></div>`
@@ -3007,7 +3029,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function resetHtml(): string {
     if (host.resetPlay === undefined) return ''
     const cloud = host.cloud?.who() != null
-    return `<h3>기록 지우기</h3><div class="acct"><p class="mute">지금 판 · 영웅전 · 해금한 판 · 연대기 · 데려갈 장수를 다 지우고 처음부터 한다.${cloud ? ' 계정에 저장된 같은 기록도 함께 지운다.' : ''} 계정과 소리 같은 설정은 남는다. 되돌릴 수 없다.</p>`
+    return `<h3>기록 지우기</h3><div class="acct"><p class="mute">지금 판 · 저장 칸 · 영웅전 · 해금한 판 · 연대기 · 데려갈 장수를 다 지우고 처음부터 한다.${cloud ? ' 계정에 저장된 같은 기록도 함께 지운다.' : ''} 계정과 소리 같은 설정은 남는다. 되돌릴 수 없다.</p>`
       + `<div class="btns"><button class="btn ghost danger" data-act="reset-play">${resetArmed ? '한 번 더 누르면 지운다 — 되돌릴 수 없다' : '플레이 기록 모두 지우기'}</button></div></div>`
   }
 
@@ -3109,6 +3131,58 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     let ov = root.querySelector<HTMLElement>('.bringov')
     if (ov === null) { root.insertAdjacentHTML('beforeend', `<div class="bringov"></div>`); ov = root.querySelector<HTMLElement>('.bringov')! }
     ov.innerHTML = body
+  }
+
+  /** 「저장 · 불러오기」 창을 (다시) 그린다 — 닫혀 있으면 걷는다 */
+  function savePaint(): void {
+    let ov = root.querySelector<HTMLElement>('.saveov')
+    if (saveBox === null || host.saves === undefined) { ov?.remove(); return }
+    if (ov === null) {
+      root.insertAdjacentHTML('beforeend', `<div class="saveov"></div>`)
+      ov = root.querySelector<HTMLElement>('.saveov')!
+      // 이름은 다시 그려도 남게 · 파일 고르기는 고른 뒤에 읽는다 (창이 열려 있는 동안만 — 창과 함께 사라진다)
+      ov.addEventListener('input', (e) => { const t = e.target as HTMLInputElement; if (saveBox !== null && t.classList.contains('svname')) saveBox.name = t.value })
+      ov.addEventListener('change', (e) => {
+        const t = e.target as HTMLInputElement
+        const f = t.classList.contains('svpick') ? t.files?.[0] : undefined
+        if (f === undefined) return
+        t.value = ''
+        if (f.size > P.realm.saveFileMaxMB * 1024 * 1024) { saveSay('파일이 너무 크다 — 칠십팔국 판으로 읽을 수 없다', true); return }
+        void f.text().then((text) => saveOpened(host.saves?.loadFile(text) ?? null), () => saveSay('파일을 읽지 못했다', true))
+      })
+    }
+    const live = realm !== null && (!realm.outcome || (realm.endless === true && realm.outcome.kind === 'win'))
+    ov.innerHTML = saveBoxHtml({ esc, emblem: (f, cls) => emblem(f, cls) }, {
+      mode: saveBox.mode, slots: host.saves.list(), name: saveBox.name, placeholder: realm !== null ? defaultLabel(realm) : '',
+      nameMax: Math.round(P.realm.saveNameMax), hasGame: live, ask: saveBox.ask, msg: saveBox.msg,
+    })
+  }
+  function saveSay(text: string, bad: boolean): void {
+    if (saveBox === null) return
+    saveBox.msg = { text, bad }
+    saveBox.ask = null
+    savePaint()
+  }
+  /** 불러오기(칸·파일)의 끝 — 됐으면 창을 걷고 그 판으로 들어간다 (realm-main 이 app.show 로 판을 갈아 끼웠다) */
+  function saveOpened(why: string | null): void {
+    if (why !== null) { saveSay(why, true); return }
+    saveBox = null
+    savePaint()
+    front = null
+    paint()
+    coverMap()
+  }
+  /** 물어본 것을 한다 (덮어쓰기 · 비우기 · 불러오기) — 또는 빈 칸 저장 */
+  function saveDo(n: number, act: SaveAsk['act'] | 'save'): void {
+    const sv = host.saves
+    if (sv === undefined || saveBox === null) return
+    const label = sv.list()[n]?.label ?? ''
+    if (act === 'load') { saveOpened(sv.load(n)); return }
+    if (act === 'drop') { const why = sv.drop(n); saveSay(why ?? `${n + 1}번 칸을 비웠다`, why !== null); return }
+    saveDraft() // 이번 계절에 정해 둔 명령까지 담기게
+    const why = sv.save(n, saveBox.name)
+    if (why === null) saveBox.name = '' // 다음 저장은 다시 그때의 계절 · 나라 이름으로
+    saveSay(why ?? `${n + 1}번 칸에 저장했다${act === 'over' && label !== '' ? ` (옛 「${label}」 대신)` : ''}`, why !== null)
   }
 
   /** 영웅전에 「거느림」으로 오른 장수 — 판을 열 때 데려갈 수 있는 이 (군주는 빼고) */
@@ -3946,7 +4020,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         // 영웅전(도감) — 판을 넘어 남는 것 (VISION §5-4)
         const dexBtn = `<button class="btn big" data-act="dex-open">영웅전</button>` // 형 10-25: 도감보다 즐거운 이름 · 숫자는 들어가면 보인다
           + ((host.pastGames?.() ?? []).length > 0 ? `<button class="btn big" data-act="annals-open">나의 역사</button>` : '')
-        return titleHtml(KIT, realm, host.savedAt(), installCard() + acctLine() + links, realm === null && !tutorialOver(), dexBtn, host.slots?.() ?? [], slotArmed)
+        const loadBtn = host.saves !== undefined ? `<button class="btn big" data-act="save-open-title">불러오기</button>` : ''
+        return titleHtml(KIT, realm, host.savedAt(), installCard() + acctLine() + links, realm === null && !tutorialOver(), loadBtn + dexBtn, host.slots?.() ?? [], slotArmed)
       }
       case 'dex': return dexHtml(DEX_KIT, f.board, f.sel, f.back === null ? '판으로' : '처음으로')
       case 'annals': return annalsHtml()
@@ -4724,6 +4799,34 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         coverMap()
         return
       }
+      case 'save-open': case 'save-open-title':
+        if (host.saves === undefined) return
+        saveDraft()
+        saveBox = { mode: d['act'] === 'save-open' && realm !== null ? 'game' : 'title', name: '', ask: null, msg: null }
+        savePaint()
+        return
+      case 'sv-x': saveBox = null; savePaint(); return
+      case 'sv-no': if (saveBox !== null) { saveBox.ask = null; savePaint() } return
+      case 'sv-save': case 'sv-load': case 'sv-drop': {
+        if (saveBox === null || host.saves === undefined) return
+        const n = Number(d['n'])
+        const filled = host.saves.list()[n] != null
+        const act = d['act'] === 'sv-load' ? 'load' : d['act'] === 'sv-drop' ? 'drop' : 'over'
+        if (act === 'over' && !filled) { saveDo(n, 'save'); return } // 빈 칸 — 묻지 않고 저장
+        saveBox.ask = { n, act }
+        saveBox.msg = null
+        savePaint()
+        return
+      }
+      case 'sv-yes': { const a = saveBox?.ask; if (a == null) return; saveDo(a.n, a.act); return }
+      case 'sv-down': {
+        if (saveBox === null || host.saves === undefined) return
+        saveDraft()
+        const why = host.saves.download(saveBox.name)
+        saveSay(why ?? '파일을 내려받았다 — 브라우저의 다운로드 폴더에 있다', why !== null)
+        return
+      }
+      case 'sv-file': root.querySelector<HTMLInputElement>('.saveov .svpick')?.click(); return
       case 'slot-drop': {
         const seed = Number(d['v'])
         if (slotArmed !== seed) { slotArmed = seed; paint(); return }

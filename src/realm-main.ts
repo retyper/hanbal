@@ -14,7 +14,7 @@ import { startRegion } from './realm/data/regions/index.ts'
 import { headcount } from './realm/battle.ts'
 import { forceOf } from './realm/season.ts'
 import { isOldTutorial, migrate, remapOldTutorial, remapOldTutorialJson } from './realm/migrate.ts'
-import type { Order, Realm, RegionId, Report, ReportLine } from './realm/types.ts'
+import type { Order, Realm, RegionId, ReportLine } from './realm/types.ts'
 import { mountRealmApp } from './ui/realm/app.ts'
 import { takeRetainers } from './ui/realm/legacy.ts'
 import { clanHeroes } from './ui/realm/dex.ts'
@@ -26,6 +26,8 @@ import { applyTier } from './realm/tier.ts'
 import { watchUpdates } from './ui/realm/update.ts'
 import { pinPage } from './ui/realm/scroll.ts'
 import type { SlotInfo } from './ui/realm/front.ts'
+import { defaultLabel, dropSave, listSaves, makeSaveFile, parseSaveFile, readSave, saveFileName, writeSave, type KV, type Saved, type SaveFile } from './ui/realm/saves.ts'
+import { P } from './tune/params.ts'
 
 const KEY = 'hanbal.realm.v2'
 /** 한 계절 앞의 저장 — 지금 것이 깨졌으면 이걸로 되살린다 */
@@ -42,17 +44,8 @@ const SLOT_MAX = 6
 /** 판 기록이 이보다 커지면 오래된 판부터 누른 것을 덜고, 그래도 크면 판을 덜어 낸다 (localStorage 는 5MB 안팎) */
 const GAMES_MAX_CHARS = 3_000_000
 
-interface Saved {
-  readonly v: 2
-  readonly nation: string
-  readonly seed: number
-  readonly log: Order[][]
-  readonly realm: Realm
-  readonly before: Realm | null
-  readonly report: Report | null
-  /** 저장한 때 (ISO) — 첫 화면의 "○분 전 저장됨" */
-  readonly at?: string
-}
+/** 이번 계절에 정해 둔 명령 (app.ts 의 DRAFT_KEY) — 손 저장에 함께 담는다 */
+const DRAFT = 'hanbal.realm.draft'
 
 /** 한 계절의 기록 */
 interface Turn {
@@ -93,8 +86,18 @@ function loadFrom(key: string): Saved | null {
   try {
     const raw = localStorage.getItem(key)
     if (raw === null) return null
-    let s = JSON.parse(raw) as Saved
+    const s = JSON.parse(raw) as Saved
     if (s.v !== 2) return null
+    return normalize(s)
+  } catch {
+    return null
+  }
+}
+
+/** 옛 판을 지금 모양으로 — 자동 저장·선반·손 저장·파일 모두 이 길로 연다 */
+function normalize(s0: Saved): Saved | null {
+  try {
+    let s = s0
     // 옛 배우는 판(골포·가락) → 한강 아래 백제·미추홀 — 하던 자리 그대로 잇는다 (migrate.remapOldTutorial)
     if (isOldTutorial(s.realm)) {
       const fresh = startRegion('tutorial', s.seed, 'baekje')
@@ -139,18 +142,30 @@ function writeSlots(xs: readonly SlotInfo[]): void {
 }
 
 /**
+ * 하던 판을 올릴 선반 자리 — 보통은 그 판의 시드. 옮겨 갈 판이 같은 판(같은 시드)의 다른 때면(손 저장을 불러올 때) 새 자리를 낸다:
+ * 시드 자리에 두면 「다른 판」 목록이 지금 판과 같은 시드라 가리고, 그 판을 다시 선반에 올릴 때 덮어쓴다
+ */
+function shelfIdFor(pick: Saved): number {
+  if (state === null || state.seed !== pick.seed) return state?.seed ?? 0
+  const used = new Set(loadSlots().map((x) => x.seed))
+  let id = Date.now() % 0x7fffffff
+  while (used.has(id) || id === pick.seed) id = (id + 1) % 0x7fffffff
+  return id
+}
+
+/**
  * 하던 판을 선반에 — 끝난 판은 안 남긴다(첫 화면이 이어 하지 않는 판). 자리가 모자라면 가장 오래된 판부터 빼고 다시 쓴다.
  * 써졌는지 다시 읽어 확인한다 — 못 썼으면 false (부르는 쪽은 지금 판을 덮지 않는다)
  */
-function shelve(s: Saved | null): boolean {
+function shelve(s: Saved | null, id = s?.seed ?? 0): boolean {
   if (s === null) return true
   const r = s.realm
   if (r.outcome && !(r.endless === true && r.outcome.kind === 'win')) return true
-  let xs = loadSlots().filter((x) => x.seed !== s.seed)
+  let xs = loadSlots().filter((x) => x.seed !== id)
   const json = JSON.stringify(s)
   for (;;) {
     try {
-      localStorage.setItem(slotKey(s.seed), json)
+      localStorage.setItem(slotKey(id), json)
       break
     } catch {
       const old = [...xs].sort((a, b) => (a.at < b.at ? -1 : 1))[0]
@@ -160,15 +175,72 @@ function shelve(s: Saved | null): boolean {
     }
   }
   let ok = false
-  try { ok = localStorage.getItem(slotKey(s.seed)) === json } catch { ok = false }
+  try { ok = localStorage.getItem(slotKey(id)) === json } catch { ok = false }
   if (!ok) return false
-  xs = [{ seed: s.seed, nation: s.nation, name: r.factions[r.player]?.name ?? '', region: r.region ?? 'byeonhan-mini', season: r.season, at: s.at ?? new Date().toISOString() }, ...xs]
+  xs = [{ seed: id, nation: s.nation, name: r.factions[r.player]?.name ?? '', region: r.region ?? 'byeonhan-mini', season: r.season, at: s.at ?? new Date().toISOString() }, ...xs]
   while (xs.length > SLOT_MAX) {
     const drop = xs.pop()!
     try { localStorage.removeItem(slotKey(drop.seed)) } catch { /* 그대로 */ }
   }
   writeSlots(xs)
   return true
+}
+
+/**
+ * 고른 판을 지금 판으로 — 하던 판을 선반에 확실히 올린 뒤, 고른 판을 KEY 에 써 보고 써졌을 때만 바꾼다.
+ * 어디서든 막히면 지금 판·자동 저장은 그대로 두고 까닭을 돌려준다 (메모리: localStorage 되돌리기)
+ */
+function switchTo(pick: Saved): string | null {
+  if (!shelve(state, shelfIdFor(pick))) return '지금 판을 「다른 판」에 남길 자리가 모자라다 — 판을 바꾸지 않았다. 「파일로 내려받기」로 지금 판을 남겨 두자.'
+  const out: Saved = { ...pick, at: new Date().toISOString() }
+  const json = JSON.stringify(out)
+  let old: string | null = null
+  try { old = localStorage.getItem(KEY) } catch { old = null }
+  let ok = false
+  try { localStorage.setItem(KEY, json); ok = localStorage.getItem(KEY) === json } catch { ok = false }
+  if (!ok) {
+    if (old !== null) { try { localStorage.setItem(KEY, old) } catch { /* 쓰기 전과 같은 것 — 들어간다 */ } }
+    return '고른 판을 쓸 자리가 모자라다 — 판을 바꾸지 않았다. 지금 판은 그대로다.'
+  }
+  if (old !== null) { try { localStorage.setItem(PREV, old) } catch { /* 한 계절 앞 저장은 못 옮겨도 된다 · 지금 판은 선반에 있다 */ } }
+  state = out
+  game = recordFor(state)
+  turnStart = Date.now()
+  taps = []
+  sync.dirty(true)
+  return null
+}
+
+/** 저장소 손잡이 — 손 저장 칸 (ui/realm/saves.ts) */
+const kv: KV = {
+  getItem: (k) => localStorage.getItem(k),
+  setItem: (k, v) => localStorage.setItem(k, v),
+  removeItem: (k) => localStorage.removeItem(k),
+}
+
+/** 이번 계절에 정해 둔 명령 — 손 저장·파일에 함께 */
+function draftNow(): unknown {
+  try { return JSON.parse(localStorage.getItem(DRAFT) ?? 'null') as unknown } catch { return null }
+}
+
+/** 손 저장(칸·파일) 하나를 연다 — 판을 바꾼 뒤 그때 정해 둔 명령을 되살린다 (app.show 의 restoreDraft 가 읽는다) */
+function openSave(f: SaveFile): string | null {
+  const pick = normalize(f.game)
+  if (pick === null) return '판이 깨져 있다 — 불러오지 않았다'
+  const why = switchTo(pick)
+  if (why !== null) return why
+  try { localStorage.setItem(DRAFT, JSON.stringify(f.draft ?? null)) } catch { /* 명령 없이 그 계절 처음부터 */ }
+  app.show(state!.realm, state!.before, state!.report)
+  return null
+}
+
+/** 파일로 내려받는다 — 「기록 내보내기」와 같은 길 (Blob + a.download) */
+function download(name: string, body: string): void {
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(new Blob([body], { type: 'application/json' }))
+  a.download = name
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000) // 바로 거두면 받기가 끊기는 브라우저가 있다 — 한 번만 도는 정리
 }
 
 function loadGames(): GameRecord[] {
@@ -330,16 +402,38 @@ const app = mountRealmApp(root, {
     // 고른 판을 먼저 읽고(없으면 멈춤), 하던 판을 선반에 확실히 올린 뒤에야 지금 판을 바꾼다 — 판을 날리지 않게 (메모리: localStorage 되돌리기)
     const pick = loadFrom(slotKey(seed))
     if (pick === null) return false
-    if (!shelve(state)) return false
-    state = save(pick)
+    if (switchTo(pick) !== null) return false
     try { localStorage.removeItem(slotKey(seed)) } catch { /* 남아도 목록에서 빠지면 안 보인다 */ }
     writeSlots(loadSlots().filter((x) => x.seed !== seed))
-    game = recordFor(state)
-    turnStart = Date.now()
-    taps = []
-    sync.dirty(true)
-    app.show(state.realm, state.before, state.report)
+    app.show(state!.realm, state!.before, state!.report)
     return true
+  },
+  saves: {
+    list: () => listSaves(kv),
+    save(n, label) {
+      if (state === null) return '저장할 판이 없다'
+      const w = writeSave(kv, n, makeSaveFile(state, draftNow(), label, new Date().toISOString()))
+      if (w.ok) return null
+      return w.why === 'full' ? '저장할 자리가 모자라다 — 아무것도 바꾸지 않았다. 「파일로 내려받기」로 이 판을 파일에 남겨 두자.' : '없는 칸이다'
+    },
+    load(n) {
+      const p = readSave(kv, n)
+      return p.ok ? openSave(p.file) : p.why
+    },
+    drop(n) {
+      return dropSave(kv, n) ? null : '칸을 비우지 못했다 — 그대로 두었다'
+    },
+    download(label) {
+      if (state === null) return '내려받을 판이 없다'
+      const f = makeSaveFile(state, draftNow(), label.trim() === '' ? defaultLabel(state.realm) : label, new Date().toISOString())
+      try { download(saveFileName(f), JSON.stringify(f)) } catch { return '파일을 만들지 못했다' }
+      return null
+    },
+    loadFile(text) {
+      if (text.length > P.realm.saveFileMaxMB * 1024 * 1024) return '파일이 너무 크다 — 칠십팔국 판으로 읽을 수 없다'
+      const p = parseSaveFile(text)
+      return p.ok ? openSave(p.file) : p.why
+    },
   },
   onDropSlot(seed) {
     try { localStorage.removeItem(slotKey(seed)) } catch { /* 그대로 */ }
@@ -350,14 +444,8 @@ const app = mountRealmApp(root, {
   },
   onExport() {
     // 그 계절에 정해 둔 명령도 담는다 — 막힌 판을 그대로 다시 돌려 보려고 (형: "9년 가을에서 다음으로 안넘어가져")
-    let draft: unknown = null
-    try { draft = JSON.parse(localStorage.getItem('hanbal.realm.draft') ?? 'null') } catch { draft = null }
-    const body = JSON.stringify({ exported: new Date().toISOString(), games, save: state, draft }, null, 1)
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(new Blob([body], { type: 'application/json' }))
-    a.download = `78guk-records-${new Date().toISOString().slice(0, 10)}.json`
-    a.click()
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000) // 바로 거두면 받기가 끊기는 브라우저가 있다 — 한 번만 도는 정리
+    const body = JSON.stringify({ exported: new Date().toISOString(), games, save: state, draft: draftNow() }, null, 1)
+    download(`78guk-records-${new Date().toISOString().slice(0, 10)}.json`, body)
   },
   gameCount: () => games.length,
   pastGames: () => [...games].reverse().map((g) => ({
