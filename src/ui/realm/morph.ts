@@ -9,6 +9,11 @@ export function morph(el: Element, html: string): void {
   children(el, tpl.content)
 }
 
+/** 만들어 둔 조각(template.content 등)으로 — 문자열을 다시 읽지 않고 */
+export function morphInto(el: Element, frag: Node): void {
+  children(el, frag)
+}
+
 function children(a: Node, b: Node): void {
   const an = [...a.childNodes]
   const bn = [...b.childNodes]
