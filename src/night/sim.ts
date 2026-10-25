@@ -88,7 +88,7 @@ export interface NightFrame extends InputFrame {
 }
 
 /** 한 단계마다 한꺼번에 붙는 몫 — 완만하지 않게, 계단으로 */
-function tierBow(t: number): BowMods {
+export function tierBow(t: number): BowMods {
   const N = P.night
   return {
     speedMul: 1 + N.tierSpeed * t,
@@ -102,7 +102,7 @@ function tierBow(t: number): BowMods {
   }
 }
 
-const tierOf = (x: number | undefined): number => Math.max(0, Math.min(BOW_TIERS - 1, Math.floor(x ?? 0)))
+export const tierOf = (x: number | undefined): number => Math.max(0, Math.min(BOW_TIERS - 1, Math.floor(x ?? 0)))
 
 export interface Night {
   readonly seed: number

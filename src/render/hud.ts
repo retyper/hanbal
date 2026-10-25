@@ -640,7 +640,7 @@ export function drawHud(
     cache.stageId = w.stage.id
     const no = stageNoOf(w.stage.id)
     // 쌍은 id 그 자체다 ('5-3'). 규칙 밖 id면 그것대로 띄운다 — 거짓말은 안 한다.
-    cache.pair = w.stage.id
+    cache.pair = w.stage.pair ?? w.stage.id
     cache.stageNo = no > 0 ? `${no}판` : ''
     cache.pos = no > 0 ? (no - 1) % 10 : -1
   }

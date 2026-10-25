@@ -233,6 +233,8 @@ const PRACTICE: string = (import.meta.env?.BASE_URL ?? '/') + 'night.html?practi
 /** night.html 이 올라갔다 (f9e77aa) — 없는 쪽으로 보내지 않으려 둔 스위치 */
 const PRACTICE_READY = true
 const NIGHT: string = (import.meta.env?.BASE_URL ?? '/') + 'night.html'
+/** 2장 송양의 활쏘기 겨루기 — 낮의 과녁판 (형 10-25: "암살 스테이지면 안 되는 거 아님??") */
+const CONTEST: string = (import.meta.env?.BASE_URL ?? '/') + 'contest.html'
 /** 보고판이 쌓이는 빠르기 (초) — 소식 한 줄 · 무너진 나라 한 장. 계절 띠(seasonFx)가 걷힌 뒤 시작한다 (CSS .modal.late) */
 const LINE_S = 0.6
 /** 계절 종이 울린 뒤 그 계절 장면의 소리가 나기까지 (ms) */
@@ -2291,8 +2293,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function openContest(): void {
     if (realm === null) return
     const bow = assassinBow(realm, me())
-    const seed = (realm.seed ^ 0x51a7) >>> 0 // 한 판에 한 과녁 — 다시 열어도 같은 밤
-    openFrame(`${NIGHT}?seed=${seed}&arrows=${P.realm.contestArrows}&bow=${bow}&guard=0&kind=contest&id=contest-archery&back=about:blank`, '송양과의 활쏘기 겨루기')
+    const seed = (realm.seed ^ 0x51a7) >>> 0 // 한 판에 한 과녁 — 다시 열어도 같은 언덕
+    openFrame(`${CONTEST}?seed=${seed}&bow=${bow}&id=contest-archery&back=about:blank`, '송양과의 활쏘기 겨루기')
   }
 
   function openFrame(src: string, title: string): void {

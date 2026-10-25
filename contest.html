@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#1a1712" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2" />
+    <link rel="stylesheet" href="fonts/fonts.css" />
+    <title>활쏘기 겨루기</title>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #1a1712; color: #e9e2d4; overscroll-behavior: none; }
+      /* #stage 는 세로 폰이면 night-main.ts 가 옆으로 눕힌다 — 눕힌 상자 안에서 fixed 는 그 상자를 기준으로 한다 */
+      #stage { position: fixed; left: 0; top: 0; width: 100%; height: 100%; transform-origin: 0 0; overflow: hidden; }
+      #night { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+    </style>
+  </head>
+  <body>
+    <!-- 2장 송양과의 활쏘기 겨루기 — 활터의 낮 과녁판 (src/contest-main.ts) -->
+    <div id="stage">
+      <canvas id="night"></canvas>
+      <div id="night-ui"></div>
+    </div>
+    <script type="module" src="/src/contest-main.ts"></script>
+  </body>
+</html>
