@@ -1199,10 +1199,13 @@ function resolveRound(
   const rd = c.n0d > 0 ? ld / c.n0d : 0
   const pr = ra + rd > 0 ? rd / (ra + rd) : 0.5
   const dm = (pr - 0.5) * R.tacMoraleSwing
-  st.ma += dm
-  st.md -= dm
-  if (beat === 'a') st.md -= R.tacTriMorale
-  if (beat === 'd') st.ma -= R.tacTriMorale
+  // 호궤한 쪽은 배불리 먹어 이 합에 덜 꺾인다 — 크게 밀린 합에서 곡식을 풀고도 사기가 뚝 떨어지던 것 (형 10-26: "호궤 썼는데도 사기 너무 많이 떨어짐")
+  const fedA = oa.lead === 'feast' ? R.tacFeastGuard : 1
+  const fedD = od.lead === 'feast' ? R.tacFeastGuard : 1
+  st.ma += dm < 0 ? dm * fedA : dm
+  st.md -= dm > 0 ? dm * fedD : dm
+  if (beat === 'a') st.md -= R.tacTriMorale * fedD
+  if (beat === 'd') st.ma -= R.tacTriMorale * fedA
   // 북 — 흔들린 군사를 다잡는다 (처음 사기까지만 — 북으로 처음보다 세지지는 않는다)
   const top = (s: Side): number => s.morale + (s.moraleBonus ?? 0)
   if (oa.lead === 'drum' && st.ma < top(atk)) st.ma = Math.min(top(atk), st.ma + R.tacDrumMorale)
