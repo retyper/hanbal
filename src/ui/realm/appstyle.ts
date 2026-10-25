@@ -387,6 +387,13 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .tgrid:not(.two) .tc { align-items: flex-start; }
 .ap .splitp { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; padding: 10px; border-radius: 12px; background: #1e160f; }
 .ap .row .dest, .ap .row .sub { min-width: 0; overflow: hidden; text-overflow: ellipsis; } .ap .row .win, .ap .row .em { flex: none; }
+/* 맺은 나라에 공작 — 이름 밑 둘째 줄 (pactWarn) */
+.ap .row .dest:has(.pwarn) { flex: 1; }
+.ap .row .dest .pwarn { display: block; margin-top: 1px; font-size: 11.5px; font-weight: 600; line-height: 1.3; color: #ff9a80; white-space: normal; }
+/* 사신 단추 — 한 열 · 가로 길게 · 낌새는 오른쪽 끝 (askButtons · 형 10-25) */
+.ap .btns.askl { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+.ap .btns.askl > .btn { width: 100%; justify-content: flex-start; gap: 8px; padding: 8px 10px; text-align: left; white-space: normal; }
+.ap .btns.askl > .btn .al { flex: 1; min-width: 0; } .ap .btns.askl > .btn .feel { flex: none; margin-left: auto; }
 .ap .acard > .ab > .splitp, .ap .acard > .ab > .rows { margin-left: -74px; } /* 얼굴 칸 밑까지 넓게 — 폰에서 단추가 접히지 않게 */
 .ap .sprow { display: flex; align-items: center; gap: 8px; } .ap .sprow .stepper { flex-wrap: nowrap; } .ap .sprow .spn { width: 4em; font-size: 14px; }
 .ap .spsum { font-size: 14px; color: #cfc6b4; } .ap .spsum b { color: var(--gold); }

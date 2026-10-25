@@ -1879,7 +1879,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 보낸 것과 부딪히는 것·보낼 사람이 없으면 꺼진다. sm — 고을 판의 작은 단추
    */
   function askButtons(r: Realm, to: string, sm: string): string {
-    let h = `<div class="btns">`
+    let h = `<div class="btns askl">`
     for (const ask of envoyOptions(r, me(), to)) {
       const k = ekey(to, ask)
       const sel = envoys[k] !== undefined
@@ -1889,7 +1889,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const on = sel || (compose.to === to && compose.ask === ask)
       h += `<button class="btn${sm}${on ? ' on' : ''}${ask === 'break' ? ' ghost' : ''}" ${sel ? `data-act="unenvoy" data-key="${k}"` : `data-act="compose" data-to="${to}" data-ask="${ask}"`} ${clash || (!sel && handsFull(r)) ? 'disabled' : ''}>`
       // 청마다 그림 — 화친·교역·선물·조공 요구… (형 10-24: "이것들도 다 아이콘 만들어 와 · 직관화")
-      h += `${icon(`ask-${ask}`, 'aic')}${askLabel(r, to, ask)}${sel ? ' ✓' : sure ? '' : ` ${envoyFeel(c[0], c[1], ask)}`}</button>`
+      h += `${icon(`ask-${ask}`, 'aic')}<span class="al">${askLabel(r, to, ask)}${sel ? ' ✓' : ''}</span>${sel || sure ? '' : envoyFeel(c[0], c[1], ask)}</button>`
     }
     h += `</div>`
     // 단추가 왜 꺼졌나 — 보낼 사람이 다 나갔다
@@ -2045,7 +2045,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (s !== 'ally' && s !== 'truce') return ''
     const steps = op === 'assassin' ? 2 : 1
     const to = s === 'ally' ? (steps === 2 ? '중립' : '화친') : (steps === 2 ? '전쟁' : '중립')
-    return ` <span class="pwarn">${REL_NAME[s]} — 보낸 게 드러나면 ${to}으로${op === 'assassin' ? '(두 칸)' : ''}</span>`
+    // 이름 밑 둘째 줄에 — 이름 바로 뒤에 붙어 「소문 동맹」「방화 동맹」으로 읽히고 긴 말은 잘렸다 (형 10-25)
+    return `<span class="pwarn">⚠ 들키면 ${josa(REL_NAME[s], '이', '가')} 깨져 ${josa(to, '으로', '로')}${op === 'assassin' ? ' (두 칸)' : ''}</span>`
   }
 
   function plotSheet(r: Realm): string {
