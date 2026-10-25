@@ -80,7 +80,7 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'jm-haengin-ruler': 'g-33-jeoga-metdol', 'jm-haengin-1': 'w-71-yeonna-neoul', 'jm-okjeo-ruler': 'g-34-bukokjeo-duman', 'jm-okjeo-1': 'w-70-bukokjeo-mulbeom',
   // 캠페인 1장 — 온조와 신하들 · 마한의 진왕과 장수 (mahan.ts). 있는 명치판을 나눠 쓴다
   'mh-onjo': 'g-71-baekje-onjo', 'mh-eureum': 'g-73-baekje-eureum', 'mh-ogan': 'g-13-baekje-general', 'mh-soseono': 'l-L2-soseono',
-  'mh-jinwang': 'g-76-mokji-jinha', 'mh-mahan-1': 'g-83-mokji-keundol', 'mh-mahan-2': 'w-08-mahan-warrior', 'mh-mahan-3': 'g-05-mahan-chieftain',
+  'mh-jinwang': 'g-76-mokji-jinha', 'mh-mahan-1': 'g-83-mokji-keundol', 'mh-mahan-2': 'w-94-mokji-dallae', 'mh-mahan-3': 'g-05-mahan-chieftain',
   // 캠페인 3장 — 혁거세·알영·호공 · 여섯 촌장 · 왜인 (seorabeol.ts). 알영은 전설 명치판
   'sr-hyeokgeose': 'g-74-saro-hyeokgeose', 'sr-aryeong': 'l-L7-aryeong', 'sr-hogong': 'g-75-saro-hogong', 'sr-danbi': 'w-90-saro-danbi',
   'sr-alpyeong': 'g-78-saro-alpyeong', 'sr-sobeol': 'g-77-saro-sobeol', 'sr-jibaekho': 'g-79-saro-jibaekho', 'sr-guryema': 'g-80-saro-guryema',
