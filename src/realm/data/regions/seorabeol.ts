@@ -35,7 +35,9 @@ export const SEORA_PLACES: Readonly<Record<string, readonly [number, number]>> =
   'sr-aryeong': [129.2, 35.77], // 알영 우물 — 사량리 [설]
   'sr-toham': [129.4, 35.8], // 토함산 소도
   'sr-hyeongsan': [129.33, 36.02], // 형산강 하구 들
-  'sr-wae-camp': [129.44, 35.76], // 동해 바닷가 왜인 진 (지음)
+  // 왜인은 뭍에 진을 치지 않는다 — 앞바다 작은 섬에 머물며 배로 건너와 노략한다 (형 10-25: "본토 말고 가까운 섬에 진치고 있다는 설정") (지음)
+  'sr-wae-camp': [129.58, 35.8], // 동해 앞바다 작은 섬 (바탕 그림의 섬 자리)
+  'sr-shore': [129.45, 35.75], // 토함산 동남쪽 바닷가 — 왜인 배가 닿는 곳
 }
 
 const NODES: RNode[] = [
@@ -52,8 +54,9 @@ const NODES: RNode[] = [
   wild('sr-aryeong', '알영 우물 들', 120),
   node('sr-toham', '토함산 소도', 'sodo', ['sodo'], null, 0),
   wild('sr-hyeongsan', '형산강 들', 140),
-  // 바다 건너 온 왜인 — 마을들을 넘본다
-  node('sr-wae-camp', '바닷가 왜인 진', 'fort', ['palisade'], 'sr-wae', 90),
+  wild('sr-shore', '동해 바닷가', 80),
+  // 바다 건너 온 왜인 — 앞바다 섬에 머물며 배로 건너와 마을들을 넘본다
+  node('sr-wae-camp', '앞바다 왜인 섬', 'fort', ['palisade'], 'sr-wae', 90),
 ]
 
 const e = (id: string, a: string, b: string, kind: REdge['kind'], tags: REdge['tags'] = []): REdge => ({ id, a, b, kind, tags })
@@ -71,8 +74,9 @@ const EDGES: REdge[] = [
   e('r11', 'sr-goheo-cap', 'sr-jinji-cap', 'pass'), // 남산을 돌아
   e('r12', 'sr-daesu-cap', 'sr-goheo-cap', 'forest'),
   e('r13', 'sr-daesu-cap', 'sr-gari-cap', 'pass'),
-  e('r14', 'sr-jinji-cap', 'sr-wae-camp', 'pass'), // 토함산 동쪽 고개 너머 바닷가
-  e('r15', 'sr-toham', 'sr-wae-camp', 'forest'),
+  e('r14', 'sr-jinji-cap', 'sr-shore', 'pass'), // 토함산 동쪽 고개 너머 바닷가
+  e('r15', 'sr-toham', 'sr-shore', 'forest'),
+  e('r16', 'sr-shore', 'sr-wae-camp', 'sea'), // 왜인의 배가 오가는 뱃길
 ]
 
 const FACTIONS: Faction[] = [
@@ -134,7 +138,7 @@ const ARMIES: Army[] = [
   a('a-sr-daesu', 'sr-daesu', null, 'sr-daesu-cap', { spear: 25, bow: 15 }, 'bronze'),
   a('a-sr-gari', 'sr-gari', null, 'sr-gari-cap', { spear: 25, bow: 15 }, 'bronze'),
   a('a-sr-goya', 'sr-goya', 'sr-goya-1', 'sr-goya-cap', { spear: 30, bow: 20 }, 'bronze'),
-  // 왜인 — 바닷가에서 마을을 넘본다. 마을들을 지켜 주면 마음이 기운다
+  // 왜인 — 앞바다 섬에서 배로 건너와 마을을 넘본다. 마을들을 지켜 주면 마음이 기운다
   a('a-sr-wae', 'sr-wae', 'sr-wae-ruler', 'sr-wae-camp', { spear: 45, bow: 25 }, 'ironTip'),
 ]
 
@@ -157,9 +161,9 @@ export const SEORA_NATIONS: readonly NationInfo[] = [
     bars: { army: 2, grain: 3, militia: 2, terrain: 3 },
   },
   {
-    id: 'sr-wae', name: '왜인', place: '동해 바닷가 (지음)',
-    blurb: '바다 건너 온 무리. 쇠촉이 있고 마을들을 넘본다. 마을을 지켜 주면 마을의 마음이 서라벌로 기운다.',
-    source: '『삼국사기』 신라본기 — 혁거세 8년 왜인이 군사를 일으켜 변경을 침범하려다, 시조에게 신덕이 있다는 말을 듣고 돌아갔다.',
+    id: 'sr-wae', name: '왜인', place: '동해 앞바다 작은 섬 (지음)',
+    blurb: '바다 건너 와 앞바다 섬에 머무는 무리. 쇠촉이 있고 배로 건너와 바닷가 마을을 넘본다. 마을을 지켜 주면 마을의 마음이 서라벌로 기운다.',
+    source: '『삼국사기』 신라본기 — 혁거세 8년 왜인이 군사를 일으켜 변경을 침범하려다, 시조에게 신덕이 있다는 말을 듣고 돌아갔다. 남해 11년 왜인이 병선 100여 척으로 바닷가 민가를 노략했다.',
     bars: { army: 3, grain: 2, militia: 1, terrain: 2 },
   },
 ]

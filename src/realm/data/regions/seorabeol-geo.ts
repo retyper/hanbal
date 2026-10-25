@@ -12,7 +12,8 @@ export const SEORA_PROJ = { lon0: 128.85, lon1: 129.65, lat0: 35.5, lat1: 36.15 
 export const SEORA_WORLD: WorldGeo = makeWorldGeo({
   proj: SEORA_PROJ,
   tiles: SOUTH_TILES.filter((t) => t.lon1 > SEORA_PROJ.lon0 && t.lon0 < SEORA_PROJ.lon1 && t.lat1 > SEORA_PROJ.lat0 && t.lat0 < SEORA_PROJ.lat1),
-  lands: SOUTH_LANDS, isles: SOUTH_ISLES, rivers: SOUTH_RIVERS,
+  // 앞바다 작은 섬 — 왜인이 머무는 곳 (지음 · 바탕 그림에도 그려 넣었다)
+  lands: SOUTH_LANDS, isles: [...SOUTH_ISLES, [[129.555, 35.825], [129.605, 35.825], [129.605, 35.775], [129.555, 35.775]]], rivers: SOUTH_RIVERS,
   scale: 2.5,
   // 판만의 그림 — 조각을 두 배 반으로 늘리면 흐릿했다 (형 10-25) · 같은 틀을 제미나이가 또렷하게 다시 그렸다(2048×1804)
   base: 'map-seorabeol/base.webp',
