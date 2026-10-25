@@ -27,7 +27,7 @@ const KINDS: Readonly<Record<Exclude<LogFilter, 'all'>, ReadonlySet<string>>> = 
 /** 계절 소식의 갈래 묶음 — 보고판에서 갈래마다 머리를 달아 묶는다 (형 10-25: "계절 지나서 생기는 로그는 너무 복잡하고 많은데 카테고리별로 묶어야") */
 export type LogGroup = Exclude<LogFilter, 'all'> | 'etc'
 export const LOG_GROUPS: ReadonlyArray<readonly [LogGroup, string, string]> = [
-  ['war', '싸움', 'unit-spear'], ['rel', '전쟁·화친', 'status-alliance'], ['envoy', '사신', 'ask-truce'], ['plot', '공작', 'status-spy'], ['home', '우리 살림', 'settle-farm-village'], ['etc', '그 밖', 'settle-beacon'],
+  ['war', '싸움', 'unit-spear'], ['rel', '전쟁·화친', 'status-alliance'], ['envoy', '사신', 'ask-truce'], ['plot', '공작', 'plot-schemes'], ['home', '우리 살림', 'settle-farm-village'], ['etc', '그 밖', 'settle-beacon'],
 ]
 export function logGroup(l: ReportLine): LogGroup {
   for (const [g, set] of Object.entries(KINDS) as Array<[Exclude<LogFilter, 'all'>, ReadonlySet<string>]>) if (set.has(l.kind)) return g

@@ -342,7 +342,8 @@ const NO_COMPOSE = { to: '', ask: 'truce' as Ask, give: noGoods(), take: noGoods
 const ekey = (to: string, ask: Ask): string => `${to}:${ask}`
 /** 공작 다섯의 그림 */
 const PLOT_ICON: Readonly<Record<PlotOp, string>> = {
-  rumor: 'status-morale-down', sow: 'status-betrayal', bribe: 'good-cowries', burn: 'status-famine', spy: 'status-spy', assassin: 'unit-archer',
+  // 공작마다 제 그림 (형 10-26: "공작 아이콘이 지금 첩자 아이콘으로 되어 있는데 · 없으면 새로 만들어" · 제미나이 Argon) — 암살은 궁수 그대로(새 판은 복면이라 버림)
+  rumor: 'plot-rumor', sow: 'plot-sow', bribe: 'plot-bribe', burn: 'plot-burn', spy: 'plot-spy', assassin: 'unit-archer',
 }
 /** 아래 탭 — more 는 길게 누르면 뜨는 말 (tips.ts) */
 const TABS = [
@@ -366,7 +367,7 @@ const CMD_JOBS: ReadonlyArray<{ id: CmdJob; name: string; icon: string; art: str
   { id: 'lead', name: '군대 이끌기', icon: 'unit-general', art: 'event-relief-cavalry', line: '장수 없는 군대를 맡아 싸운다', stat: ['mu', 'tong'], ruler: false },
   { id: 'envoy', name: '사신', icon: 'good-tribute-bell', art: 'event-outside-envoy', line: '이웃 나라에 말을 전한다', stat: ['deok'], ruler: false },
   // 공작 — 소문·이간·매수·방화·첩자·암살 (형 10-25: "자객이 아니라 공작 · 공작 속에 여러 가지가 있다")
-  { id: 'plot', name: '공작', icon: 'status-spy', art: 'event-spy-rumor', line: '몰래 적을 흔든다 — 여섯 가지', stat: ['ryak'], ruler: false },
+  { id: 'plot', name: '공작', icon: 'plot-schemes', art: 'event-spy-rumor', line: '몰래 적을 흔든다 — 여섯 가지', stat: ['ryak'], ruler: false },
   { id: 'exp', name: '원정', icon: 'route-searoute', art: 'event-expedition-return', line: '먼 땅에서 좋은 것을 가져온다', stat: ['mu', 'ryak', 'deok'], ruler: true },
   { id: 'wed', name: '혼인', icon: 'status-alliance', art: 'event-marriage', line: '짝을 지어 아이를 얻는다', stat: [], ruler: true },
 ]
@@ -3819,10 +3820,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'recall': ic = l.owner !== undefined ? 'unit-spear' : 'good-tribute-bell'; break
       // 전쟁 줄의 그림은 까닭대로 — 배신만 등 뒤의 칼, 이간·공작은 그 공작 그림, 나머지는 환두대도 (형: "이간도 안했는데 이간 칼 이미지가 뜸")
       case 'relation': ic = l.state === 'war'
-        ? (l.why === 'betray' || l.why === 'distrust' ? 'status-betrayal' : l.why === 'sow' ? PLOT_ICON.sow : l.why === 'plot' ? 'status-spy' : 'treasure-ring-sword')
+        ? (l.why === 'betray' || l.why === 'distrust' ? 'status-betrayal' : l.why === 'sow' ? PLOT_ICON.sow : l.why === 'plot' ? 'plot-schemes' : 'treasure-ring-sword')
         : l.state === 'ally' ? 'status-alliance' : 'good-tribute-bell'; break
       case 'plot': ic = PLOT_ICON[l.op]; break
-      case 'mystery': case 'rumor': case 'confess': ic = 'status-spy'; break
+      case 'mystery': case 'rumor': case 'confess': ic = 'plot-schemes'; break
       case 'build': ic = 'settle-palisade'; break
       case 'rite': ic = 'status-good-omen'; break
       case 'blocked': ic = 'settle-pass'; break
@@ -3988,7 +3989,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       else if (l.agentFate === 'escaped' && ag !== undefined) after.push(`${josa(ag.name, '이', '가')} 몸만 빠져나왔다`)
       if (l.exposed === true) after.push('누가 보냈는지 드러났다 — 사이가 나빠졌다')
       else if (l.caught) after.push('들켰다 — 그쪽이 경계를 올렸다 · 누가 했는지는 모른다')
-      const face = ag !== undefined ? (bustHd(ag, 'plf') || bust(ag, 'plf')) : icon(l.op === 'assassin' ? 'unit-archer' : 'status-spy', 'plf ic')
+      const face = ag !== undefined ? (bustHd(ag, 'plf') || bust(ag, 'plf')) : icon(PLOT_ICON[l.op], 'plf ic')
       const flags = l.op === 'sow' ? `<span class="sowf big">${emblem(l.target, 'fem')}<i>⇄</i>${emblem(l.other ?? null, 'fem')}</span>` : emblem(l.target, 'fem')
       const stage = `<div class="plotv${l.ok ? ' ok' : ' fail'}"><img class="pbg" src="${ART}event/event-plot-${l.op}.jpg" alt=""><i class="pred"></i>`
         + `<div class="pagent">${face}<b>${esc(who)}</b><small>${esc(PLOT_NAME[l.op])}</small></div>`
