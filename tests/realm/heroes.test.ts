@@ -130,6 +130,20 @@ describe('맡기기 · 이끌기', () => {
   })
 })
 
+describe('적국 군주 회유 (형 10-26)', () => {
+  it('나라가 살아 있으면 사로잡은 군주는 회유를 받지 않고, 나라가 무너지면 받는다', () => {
+    const r = structuredClone(byeonhanMini(1))
+    const lord = rulerOf(r, 'dokro')!
+    lord.status = 'captive'
+    lord.captor = 'us'
+    for (const a of Object.values(r.armies)) if (a.hero === lord.id) a.hero = null
+    r.stock['us']!.grain = 1000
+    assert.equal(planned(r, [{ kind: 'persuade', hero: lord.id, by: 'us-ruler' }]).heroes[lord.id]!.persuade, undefined)
+    for (const n of Object.values(r.nodes)) if (n.owner === 'dokro') n.owner = 'guya'
+    assert.notEqual(planned(r, [{ kind: 'persuade', hero: lord.id, by: 'us-ruler' }]).heroes[lord.id]!.persuade, undefined)
+  })
+})
+
 describe('회유 · 떠돌이', () => {
   it('포로를 회유하면 계절마다 곡식이 들고, 다 되면 우리 장수가 된다', () => {
     let r = structuredClone(byeonhanMini(1))

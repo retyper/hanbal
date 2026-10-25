@@ -27,9 +27,21 @@ export const hasTrait = (h: Hero | null | undefined, t: string): boolean => h?.t
 /** 매력 — 술꾼은 +1 (HEROES §2) */
 export const deokOf = (h: Hero): number => Math.min(10, h.deok + (hasTrait(h, 'drinker') ? 1 : 0))
 
+/**
+ * 사로잡은 이를 회유할 수 있나 — 나라가 살아 있는 동안 그 군주는 꺾이지 않는다. 나라가 무너지면(땅이 하나도 없으면) 옛 군주도 달랠 수 있다 — 벽은 아주 높다(resistRuler)
+ * (형 10-26: "적국 군주는 장수로 회유 못 하는 거임?" · 금관가야 구형왕이 신라에 항복해 귀족이 된 꼴)
+ */
+export function wooable(r: Realm, hero: string): boolean {
+  const h = r.heroes[hero]
+  if (h === undefined) return false
+  if (!isRuler(r, hero)) return true
+  return !Object.values(r.nodes).some((n) => n.owner === h.faction)
+}
+
 /** 이 장수가 어느 나라의 군주인가 */
 export function isRuler(r: Realm, hero: string): boolean {
-  return Object.values(r.factions).some((f) => f.ruler === hero)
+  // 회유해 데려온 옛 군주는 이제 우리 장수다 — 그 나라 사람일 때만 군주
+  return Object.values(r.factions).some((f) => f.ruler === hero && (r.heroes[hero]?.faction ?? f.id) === f.id)
 }
 
 /**
@@ -438,7 +450,7 @@ export function releaseCaptives(r: Realm, captor: string, of: string, why: 'peac
 function startPersuade(r: Realm, o: Extract<Order, { kind: 'persuade' }>): void {
   const h = r.heroes[o.hero]
   if (h === undefined || h.status !== 'captive' || h.captor === null) return
-  if (isRuler(r, h.id)) return // 군주는 꺾이지 않는다 — 회유를 받지 않는다
+  if (!wooable(r, h.id)) return // 나라가 살아 있는 동안 군주는 꺾이지 않는다
   const by = o.by !== null ? r.heroes[o.by] : undefined
   if (o.by !== null && (by === undefined || by.status !== 'free' || by.faction !== h.captor)) return
   const left = persuadeSeasons(r, h.id, o.by)

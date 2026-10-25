@@ -42,7 +42,7 @@ import { startRegion } from '../../realm/data/regions/index.ts'
 import { HIRE_BY_TRAIT, HIRE_LINE, HIRE_PLAIN } from '../../realm/data/hire-lines.ts'
 import { DESTS, DEST_IDS, EXP_SEASONS, destReachable, expAmount, expBlock, expOdds, onExpedition } from '../../realm/expedition.ts'
 import { foundable, joinable, partiesOf, partyCost, partyMoves, partySize } from '../../realm/parties.ts'
-import { canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, idleHeroOrders, together, inheritOf, isRuler, persuadeDropOf, postHero, recruitChance, resistOf, rulerOf, wanderersFor } from '../../realm/heroes.ts'
+import { canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, idleHeroOrders, together, inheritOf, isRuler, persuadeDropOf, postHero, recruitChance, resistOf, rulerOf, wanderersFor, wooable } from '../../realm/heroes.ts'
 import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
@@ -2824,7 +2824,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (jobs.length > 0) h += `<div class="cmdm">${jobs.map((j) => `<button data-act="cmd" data-job="${j.id}" data-id="${id}" style="--cbg:url('${ART}event/${j.art}.jpg')">${icon(j.icon)}<b>${j.name}</b></button>`).join('')}</div><p class="mute">한 계절에 한 가지 ${guideBtn('post')}</p>`
     }
     // 회유 — 우리가 사로잡은 장수
-    if (x.status === 'captive' && x.captor === me() && x.persuade === undefined && pending.length === 0) {
+    if (x.status === 'captive' && x.captor === me() && x.persuade === undefined && pending.length === 0 && !wooable(r, id)) {
+      h += `<p class="mute">${esc(`${r.factions[x.faction]?.name ?? ''}의 군주 — 나라가 남아 있는 동안은 꺾이지 않는다. 그 나라를 무너뜨리면 회유할 수 있다.`)}</p>`
+    }
+    if (x.status === 'captive' && x.captor === me() && x.persuade === undefined && pending.length === 0 && wooable(r, id)) {
       const allBys = sorted(Object.values(r.heroes)).filter((y) => y.faction === me() && y.status === 'free')
       const bys = allBys.filter((y) => heroBusy(r, y.id) === null)
       const best = [...bys].sort((a, b) => b.deok - a.deok)[0]
