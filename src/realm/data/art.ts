@@ -79,10 +79,10 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'jm-songyang': 'g-51-biryuna-mulgyeol', 'jm-songbi': 'w-52-biryuna-songbi', 'jm-daeso': 'g-67-buyeo-daeso', 'jm-haedal': 'w-67-buyeo-haedal',
   'jm-haengin-ruler': 'g-33-jeoga-metdol', 'jm-haengin-1': 'w-71-yeonna-neoul', 'jm-okjeo-ruler': 'g-34-bukokjeo-duman', 'jm-okjeo-1': 'w-70-bukokjeo-mulbeom',
   // 캠페인 1장 — 온조와 신하들 · 마한의 진왕과 장수 (mahan.ts). 있는 명치판을 나눠 쓴다
-  'mh-onjo': 'g-71-baekje-onjo', 'mh-eureum': 'g-06-strategist', 'mh-ogan': 'g-13-baekje-general', 'mh-soseono': 'l-L2-soseono',
+  'mh-onjo': 'g-71-baekje-onjo', 'mh-eureum': 'g-73-baekje-eureum', 'mh-ogan': 'g-13-baekje-general', 'mh-soseono': 'l-L2-soseono',
   'mh-jinwang': 'w-27-mokji-jinha', 'mh-mahan-1': 'g-54-mokji-mahan', 'mh-mahan-2': 'w-08-mahan-warrior', 'mh-mahan-3': 'g-05-mahan-chieftain',
   // 캠페인 3장 — 혁거세·알영·호공 · 여섯 촌장 · 왜인 (seorabeol.ts). 알영은 전설 명치판
-  'sr-hyeokgeose': 'g-12-silla-youth', 'sr-aryeong': 'l-L7-aryeong', 'sr-hogong': 'g-03-sea-trader', 'sr-danbi': 'w-13-young-archer',
+  'sr-hyeokgeose': 'g-74-saro-hyeokgeose', 'sr-aryeong': 'l-L7-aryeong', 'sr-hogong': 'g-03-sea-trader', 'sr-danbi': 'w-13-young-archer',
   'sr-alpyeong': 'g-60-eupcha-hangyeol', 'sr-sobeol': 'g-15-shaman-man', 'sr-jibaekho': 'g-04-jinhan-giant', 'sr-guryema': 'g-08-veteran',
   'sr-jita': 'g-61-heomcheuk-bawi', 'sr-hojin': 'g-62-beonye-hanul', 'sr-yangsan-1': 'w-17-mahan-pearl-diver', 'sr-goya-1': 'w-03-goguryeo-archer',
   'sr-jinji-1': 'w-22-dongye-tiger-huntress', 'sr-wae-ruler': 'g-07-drunk-warrior',
