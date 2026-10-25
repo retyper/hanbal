@@ -72,6 +72,7 @@ import { handsOf, idleHeroes } from '../../realm/hands.ts'
 import { pactOf } from '../../realm/suzerain.ts'
 import { ironOf, riteOf } from '../../realm/paths.ts'
 import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
+import { AUD_CSS, askSay, pactSay, typed, type PactKind } from './audience.ts'
 import { customsOf } from '../../realm/data/customs.ts'
 import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
 import { SCENE_SOUND, makeMusic, playOnce, snd, tapSlot } from './sound.ts'
@@ -373,6 +374,16 @@ function costHtml(g: Partial<Record<'grain' | 'iron' | 'wood' | 'salt' | 'horse'
     .map((k) => `<b class="cg" title="${NAME[k]} ${g[k]}"><i>▼</i>${icon(GOOD_ICON[k], 'cgi')}${g[k]}</b>`)
   return parts.length === 0 ? '' : `<span class="cost">${per !== '' ? `<small>${per}</small>` : ''}${parts.join('')}</span>`
 }
+/** 얻는 것 — 비용(▼ 붉게)의 짝 (▲ 푸르게) · ODDS.md 원칙 3 "무엇을은 늘 또렷하게" */
+function gainHtml(g: Partial<Record<'grain' | 'iron' | 'wood' | 'salt' | 'horse', number>>): string {
+  const NAME = { grain: '곡식', iron: '철', wood: '나무', salt: '소금', horse: '말' } as const
+  const parts = (['grain', 'iron', 'wood', 'salt', 'horse'] as const).filter((k) => (g[k] ?? 0) > 0)
+    .map((k) => `<b class="gg" title="${NAME[k]} ${g[k]}"><i>▲</i>${icon(GOOD_ICON[k], 'cgi')}${g[k]}</b>`)
+  return parts.length === 0 ? '' : `<span class="gain">${parts.join('')}</span>`
+}
+/** 큰 얼굴 — 900px 판이 있으면 그것 (알현처럼 화면 가득일 때) */
+const bustHd = (h: Hero | undefined, cls: string): string =>
+  h !== undefined && bustOf(h.id) !== undefined ? `<img class="${cls}" src="${ART}bust-hd/${bustOf(h.id)}.jpg" alt="">` : ''
 const bust = (h: Hero | undefined, cls = 'face'): string =>
   h !== undefined && bustOf(h.id) !== undefined ? `<img class="${cls}" src="${ART}bust/${bustOf(h.id)}.jpg" alt="">` : `<span class="${cls} noface"></span>`
 /** 우리 나라 — 깃발마다 금빛 후광을 두른다 (형 2026-10-20: "사용자의 나라는 로그에서 아이콘도 뭔가 후광이 있거나 특별하게 … 내나라가 어느나란지도 모르겠어서") */
@@ -462,7 +473,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + CLOUD_CSS + WINFX_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
+  style.textContent = FIT_CSS + TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + CLOUD_CSS + WINFX_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
   installTips(root)
@@ -1847,6 +1858,33 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<button class="btn ${ans === false ? 'on' : ''}" data-act="answer" data-id="${a.id}" data-yes="0">거절한다</button>`
     if (ans === undefined) h += `<span class="mute">답하지 않으면 거절</span>`
     return h + `</div></div>`
+  }
+
+  /**
+   * 알현 — 청을 건 나라의 군장이 화면 가득 들어와 제 입으로 말한다 (형 10-25: "동맹·화친·조공 때 문명에서는 애니메이션이나 대사가 다이나믹하게 오거든")
+   * 대청 배경 → 군장이 미끄러져 들어오고 → 이름·탈(마음) → 말이 한 자씩 → 무엇을 청하나 → 받는다·거절한다(얻고 잃는 것은 아이콘+숫자)
+   */
+  function audienceHtml(a: ReturnType<typeof openAsks>[number]): string {
+    const r = realm!
+    const f = r.factions[a.from]
+    const lead = r.heroes[f?.ruler ?? rulerId(a.from)]
+    const ans = answers[a.id]
+    const threat = a.kind === 'demand'
+    const md = moodOf(r, me(), a.from)
+    if (!bigSounded.has(`aud:${a.id}`)) { bigSounded.add(`aud:${a.id}`); window.setTimeout(() => ding(snd(threat ? 'war_drum' : 'envoy'), 0.5), 200) }
+    const face = bustHd(lead, 'audlord') || bust(lead, 'audlord')
+    const what = askLine(a, f?.name ?? '', a.node !== undefined ? (r.nodes[a.node]?.name ?? '') : '')
+    const why = a.why !== undefined && readsMind(r, a.from) ? ` · <span class="mute">${esc(`속셈: ${whyLine(a.why, a.about !== undefined ? (r.factions[a.about]?.name ?? '') : '')}`)}</span>` : ''
+    // 받으면 오가는 것 — 저쪽이 주는 것은 ▲, 우리가 내는 것은 ▼
+    const swap = `${gainHtml(a.give)}${costHtml(a.take)}`
+    let h = `<div class="aud${threat ? ' threat' : ''}"><i class="audbg" style="background-image:url('${ART}event/event-court-hall.jpg')"></i>${face}`
+    h += `<div class="audtop">${icon(`ask-${threat ? 'tribute' : a.kind}`, 'aqi')}<b>사신의 청 · ${esc(ASK_KIND_NAME[a.kind])}</b></div>`
+    h += `<div class="audname">${emblem(a.from, 'fem')}<b>${esc(f?.name ?? '')}</b><span>${esc(lead?.name ?? '')}</span>${moodImg(ART, md.mood)}</div>`
+    h += `<div class="audsay">${typed(askSay(a.kind, f?.mind, a.id), esc)}</div>`
+    h += `<div class="audwhat">${esc(what)}${why}</div>`
+    h += `<div class="audbtns"><button class="btn${ans === true ? ' on' : ''}" data-act="answer" data-id="${a.id}" data-yes="1"><b>받는다</b>${swap !== '' ? `<small>${swap}</small>` : ''}</button>`
+    h += `<button class="btn ghost${ans === false ? ' on' : ''}" data-act="answer" data-id="${a.id}" data-yes="0"><b>거절한다</b><small>${threat ? '전쟁이 된다' : '사이가 조금 식는다'}</small></button></div></div>`
+    return h
   }
 
   function asksHtml(): string {
@@ -3436,7 +3474,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 하나씩 — 둘을 한 화면에 주면 헷갈린다 (형 10-25). 사건 카드 → 사신의 청 → 떠돌이
       const rc = realm!.card
       const first = rc != null && rc.season === realm!.season && answers[`card:${rc.season}`] === undefined ? cardHtml(realm!)
-        : openAsks(realm!, me()).filter((a) => answers[a.id] === undefined).map(askCard)[0]
+        : openAsks(realm!, me()).filter((a) => answers[a.id] === undefined).map((a) => audienceHtml(a))[0]
           ?? wandArrivals().filter((w) => answers[wandKey(w.hero.id)] === undefined).map(wandCard)[0] ?? ''
       return `<div class="mcard fulld"><div class="mt">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r.season))}</b><span>정할 것 <b class="rdn">${todo}</b></span></div>`
         + `<div class="rdecide full">${first}</div><p class="fdnote">${todo > 1 ? `고르면 다음 것이 이어진다 · 남은 ${todo - 1}` : '고르면 이 계절의 소식이 이어진다'}</p></div>`
@@ -3445,7 +3483,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const lands = (r.region ?? 'byeonhan-mini') === 'tutorial' ? [] : landChanges(before, r).filter((x) => !landSeen.has(x.key))
     // 우리 공작이 먹혔다 — 갈래마다 제 그림으로 크게 (형 10-25: "공작이 성공한 것도 각각 이미지 · 전체화면 연출 · 확인 버튼")
     const wins = (r.region ?? 'byeonhan-mini') === 'tutorial' ? [] : plotWins(r, report).filter((x) => !landSeen.has(x.key))
-    const bigs = [...lands.map((x) => landBig(r, x)), ...wins]
+    const pacts = (r.region ?? 'byeonhan-mini') === 'tutorial' ? [] : pactBigs(r, report).filter((x) => !landSeen.has(x.key))
+    const bigs = [...lands.map((x) => landBig(r, x)), ...pacts, ...wins]
     if (bigs.length > 0) return bigCardHtml(r, bigs[0]!, bigs.length - 1)
     let h = `<div class="mcard" data-act="rep-fast"><div class="mt">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r.season))}</b><span>${esc(SEASON_LINE[season])}</span></div>`
     if (decide !== '') h += `<div class="rdecide"><h4 class="rdh">이번 계절 정할 것 · 다 골랐다</h4>${decide}</div>`
@@ -3634,7 +3673,48 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   /** 큰 화면 한 장 — 그림 · 깃발 · 제목 · 한두 줄 · 확인 하나 (땅의 바뀜 · 공작이 먹혔다) */
-  interface Big { key: string; art: string; good: boolean; flags: string; title: string; sub: string; small: string; sfx: string }
+  interface Big { key: string; art: string; good: boolean; flags: string; title: string; sub: string; small: string; sfx: string; stage?: string }
+
+  /**
+   * 맺었다 · 틀어졌다 — 두 군장이 마주 보고 깃발이 부딪힌 뒤 저쪽 군장이 한마디 (형 10-25: 문명처럼)
+   * 나라마다 한 장 — 조공 > 동맹 > 화친 > 선물 > 거절
+   */
+  function pactBigs(r: Realm, rep: Report): Big[] {
+    const best = new Map<string, PactKind>()
+    const rank: Readonly<Record<PactKind, number>> = { vassal: 5, ally: 4, truce: 3, gift: 2, refused: 1 }
+    const put = (f: string, k: PactKind): void => { const was = best.get(f); if (was === undefined || rank[was] < rank[k]) best.set(f, k) }
+    for (const l of rep.lines) {
+      if (l.kind === 'relation' && (l.a === me() || l.b === me()) && (l.state === 'truce' || l.state === 'ally')) put(l.a === me() ? l.b : l.a, l.state === 'ally' ? 'ally' : 'truce')
+      else if (l.kind === 'answered' && l.yes && l.askKind === 'tribute') put(l.from, 'vassal')
+      else if (l.kind === 'envoy' && l.from === me()) {
+        if (l.accepted && l.ask === 'tribute') put(l.to, 'vassal')
+        else if (l.accepted && l.ask === 'gift') put(l.to, 'gift')
+        else if (!l.accepted && (l.ask === 'truce' || l.ask === 'alliance' || l.ask === 'tribute' || l.ask === 'trade')) put(l.to, 'refused')
+      }
+    }
+    const out: Big[] = []
+    const mine = r.heroes[r.factions[me()]?.ruler ?? rulerId(me())]
+    for (const [f, k] of [...best.entries()].sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
+      const fac = r.factions[f]
+      if (fac === undefined) continue
+      const lord = r.heroes[fac.ruler ?? rulerId(f)]
+      const key = `${r.season}:pact:${f}:${k}`
+      const bad = k === 'refused'
+      const T: Readonly<Record<PactKind, readonly [string, string, string, string]>> = {
+        truce: [`${josa(fac.name, '과', '와')} 화친을 맺었다`, '서로 치지 않고 장터를 연다', 'event-truce-pact', snd('feast')],
+        ally: [`${josa(fac.name, '과', '와')} 동맹을 맺었다`, '같은 적을 함께 친다', 'event-alliance-oath', snd('horn_victory')],
+        vassal: [`${josa(fac.name, '이', '가')} 우리를 섬긴다`, '해마다 바칠 것을 바친다', 'event-tribute-bow', snd('coins')],
+        gift: [`${josa(fac.name, '이', '가')} 선물을 반겼다`, '사이가 한 뼘 가까워졌다', 'event-court-hall', snd('coins')],
+        refused: [`${josa(fac.name, '이', '가')} 우리 청을 물리쳤다`, '사신이 빈손으로 돌아왔다', 'event-court-hall', snd('war_drum')],
+      }
+      const [title, sub, bg, sfx] = T[k]
+      const say = pactSay(k, fac.mind, key)
+      const stage = `<div class="pact${bad ? ' bad' : ''}"><img class="pactbg" src="${ART}event/${bg}.jpg" alt="">${bustHd(mine, 'pl a')}${bustHd(lord, 'pl b')}`
+        + `<div class="pflags">${emblem(me(), 'fem')}<i>${bad ? '✕' : '⇄'}</i>${emblem(f, 'fem')}</div><div class="psay">${typed(say, esc, 1.1)}</div></div>`
+      out.push({ key, art: bg, good: !bad, flags: '', title, sub, small: lord?.name ?? '', sfx, stage })
+    }
+    return out
+  }
 
   /** 땅의 바뀜 — 어디 · 누구에게서/누구에게 */
   function landBig(r: Realm, x: { key: string; node: string; won: boolean; other: string | null }): Big {
@@ -3681,7 +3761,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function bigCardHtml(r: Realm, x: Big, rest: number): string {
     if (!bigSounded.has(x.key)) { bigSounded.add(x.key); window.setTimeout(() => ding(x.sfx, 0.55), 220) }
     return `<div class="mcard fulld landc ${x.good ? 'won' : 'lost'}"><i class="bigflash"></i><div class="mt">${icon(SEASON_ICON[seasonOf(r.season)], 'sic')}<b>${esc(seasonLabel(r.season))}</b></div>`
-      + `<div class="landv"><img class="landi" src="${ART}event/${x.art}.jpg" alt=""><div class="landt">${x.flags}<b>${esc(x.title)}</b>${x.sub !== '' ? `<span>${esc(x.sub)}</span>` : ''}<small>${esc(x.small)}</small></div></div>`
+      + (x.stage !== undefined
+        ? `${x.stage}<div class="pactt"><b>${esc(x.title)}</b>${x.sub !== '' ? `<span>${esc(x.sub)}</span>` : ''}</div>`
+        : `<div class="landv"><img class="landi" src="${ART}event/${x.art}.jpg" alt=""><div class="landt">${x.flags}<b>${esc(x.title)}</b>${x.sub !== '' ? `<span>${esc(x.sub)}</span>` : ''}<small>${esc(x.small)}</small></div></div>`)
       + `<button class="btn pri wide landok" data-act="land-ok" data-k="${x.key}">확인</button>${rest > 0 ? `<p class="fdnote">이어서 ${rest}가지 더</p>` : ''}</div>`
   }
 
