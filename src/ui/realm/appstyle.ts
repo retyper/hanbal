@@ -586,6 +586,17 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .chslot.away .cface { filter: grayscale(1) brightness(.6); } .ap .chslot.away .chst i { color: #e0a060; }
 .ap .chslot.come { border-color: #6aa060; }
 .ap .wandc .wtr { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 6px; } .ap .mcard.fulld .wandc .wtr { justify-content: center; }
+/* 고을을 쥐었다 · 잃었다 — 큰 그림 한 장 (형 10-25) */
+.ap .mcard.fulld.landc { justify-content: center; gap: 14px; }
+.ap .landc .landv { position: relative; align-self: center; width: min(100%, calc(62vh * 16 / 9)); border-radius: 16px; overflow: hidden; box-shadow: 0 14px 40px #000c; animation: landin .6s cubic-bezier(.2, 1.1, .4, 1) both; }
+.ap .landc .landi { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.ap .landc .landt { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 40px 16px 16px; background: linear-gradient(#0000, #000c 45%); text-align: center; }
+.ap .landc .landt b { font-size: clamp(22px, 4.2vw, 34px); letter-spacing: .04em; text-shadow: 0 2px 8px #000; }
+.ap .landc.won .landt b { color: #ffd77a; } .ap .landc.lost .landt b { color: #ff8a70; }
+.ap .landc .landt span { font-size: 16px; color: #efe6d2; } .ap .landc .landt small { font-size: 13px; color: #cfc6b4; }
+.ap .landc .landt .fem { width: 40px; height: 40px; }
+.ap .landc .landok { align-self: center; width: min(100%, 360px); font-size: 18px; padding: 14px; }
+@keyframes landin { from { transform: scale(.94); opacity: 0; } to { transform: none; opacity: 1; } }
 .ap .mcard.fulld .fdnote { margin: 12px 0 0; text-align: center; color: var(--mute); font-size: 13px; }
 .ap .mcard .rdecide .rdh { margin: 0 0 6px; color: #ffd27a; } .ap .mcard .rdecide .rdh b { display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 11px; background: #c0392b; color: #fff; font-size: 13px; }
 .ap .mcard .repfoot { position: sticky; bottom: -4px; margin: 8px -4px -4px; padding: 8px 4px 4px; background: linear-gradient(#1a130c00, #1a130cf0 35%); z-index: 2; }

@@ -518,6 +518,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   const pick: Record<string, { edge: string; ambush: boolean; approach?: Approach; ration?: Ration; goal?: string; follow?: boolean } | undefined> = {}
   /** 먼 갈 곳을 거둔 군대 — 이번 계절 「머문다」를 눌렀다 (형 10-25 · goal.ts) */
   let goalStop: string[] = []
+  /** 이번 계절 큰 화면으로 본 땅의 바뀜 — `계절:고을` (확인을 눌렀다) */
+  const landSeen = new Set<string>()
   let scout = ''
   /** 정찰 고정 — 매 계절 저절로 그곳으로 (형 10-23: "정찰을 매 턴 보내야 하는데 지속 정찰로 고정 버튼") · 이 기기에 */
   const KEEP_KEY = 'hanbal.realm.scoutKeep'
@@ -3436,6 +3438,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       return `<div class="mcard fulld"><div class="mt">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r.season))}</b><span>정할 것 <b class="rdn">${todo}</b></span></div>`
         + `<div class="rdecide full">${first}</div><p class="fdnote">${todo > 1 ? `고르면 다음 것이 이어진다 · 남은 ${todo - 1}` : '고르면 이 계절의 소식이 이어진다'}</p></div>`
     }
+    // 고을을 쥐었거나 잃었다 — 어디인지 큰 그림과 함께 하나씩, 확인만 누르고 넘어간다 (형 10-25)
+    const lands = (r.region ?? 'byeonhan-mini') === 'tutorial' ? [] : landChanges(before, r).filter((x) => !landSeen.has(x.key))
+    if (lands.length > 0) return landCardHtml(r, lands[0]!, lands.length - 1)
     let h = `<div class="mcard" data-act="rep-fast"><div class="mt">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r.season))}</b><span>${esc(SEASON_LINE[season])}</span></div>`
     if (decide !== '') h += `<div class="rdecide"><h4 class="rdh">이번 계절 정할 것 · 다 골랐다</h4>${decide}</div>`
     for (const l of onUs) {
@@ -3586,6 +3591,33 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   /** 이번 계절에 무너진 나라 — 지난 판엔 땅이 있었는데 이제 없다. 우리가 아는 나라만 */
+  /** 이번 계절 우리가 쥔 고을(남의 땅이던 곳) · 잃은 고을 — 고을 id 순 */
+  function landChanges(b: Realm, a: Realm): Array<{ key: string; node: string; won: boolean; other: string | null }> {
+    const out: Array<{ key: string; node: string; won: boolean; other: string | null }> = []
+    for (const id of Object.keys(a.nodes).sort()) {
+      const n = a.nodes[id]!
+      if (n.kind === 'sodo') continue
+      const was = b.nodes[id]?.owner ?? null
+      if (was !== me() && was !== null && n.owner === me()) out.push({ key: `${a.season}:${id}`, node: id, won: true, other: was })
+      else if (was === me() && n.owner !== me()) out.push({ key: `${a.season}:${id}`, node: id, won: false, other: n.owner })
+    }
+    return out
+  }
+
+  /** 땅의 바뀜 한 장 — 큰 그림 · 어디 · 누구에게서/누구에게 · 확인 하나 */
+  function landCardHtml(r: Realm, x: { key: string; node: string; won: boolean; other: string | null }, rest: number): string {
+    const n = r.nodes[x.node]!
+    const isCap = Object.values(r.factions).some((f) => f.capital === x.node) || n.kind === 'capital'
+    const kind = isCap ? '도읍' : NODE_KIND_NAME[n.kind]
+    const who = x.other !== null ? (r.factions[x.other]?.name ?? '') : ''
+    const title = x.won ? `${josa(n.name, '을', '를')} 차지했다` : `${josa(n.name, '을', '를')} 빼앗겼다`
+    const sub = x.won ? (who !== '' ? `${who}의 ${josa(kind, '이었다', '였다')}` : '') : (who !== '' ? `${josa(who, '이', '가')} 쥐었다` : '우리 손을 떠났다')
+    const art = x.won ? 'event-take-town' : 'event-invade-raid'
+    return `<div class="mcard fulld landc ${x.won ? 'won' : 'lost'}"><div class="mt">${icon(SEASON_ICON[seasonOf(r.season)], 'sic')}<b>${esc(seasonLabel(r.season))}</b></div>`
+      + `<div class="landv"><img class="landi" src="${ART}event/${art}.jpg" alt=""><div class="landt">${emblem(x.won ? me() : x.other, 'fem')}<b>${esc(title)}</b>${sub !== '' ? `<span>${esc(sub)}</span>` : ''}<small>${esc(kind)} · 백성 ${Math.floor(n.hh).toLocaleString('ko-KR')}가구</small></div></div>`
+      + `<button class="btn pri wide landok" data-act="land-ok" data-k="${x.key}">확인</button>${rest > 0 ? `<p class="fdnote">이어서 ${rest}곳 더</p>` : ''}</div>`
+  }
+
   function fallen(b: Realm, after: Realm): string[] {
     const has = (x: Realm, f: string): boolean => Object.values(x.nodes).some((n) => n.owner === f)
     return Object.keys(b.factions).sort().filter((f) => f !== after.player && has(b, f) && !has(after, f) && knows(after, me(), f))
@@ -3648,7 +3680,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function saveDraft(): void {
     if (realm === null) return
     // hireShown — 등용 장면을 이미 띄운 떠돌이. 초안과 함께 남겨야 앱이 다시 열려도(새 빌드 · 껐다 켬) 계절 끝에 또 뜨지 않는다 (형 10-25: "마파람 등용 한번 떴었는데 왜 또 뜨지")
-    const d = { seed: realm.seed, season: realm.season, player: realm.player, armyOrders, musters, settles, pick, goalStop, scout, rite, answers, guards, envoys, plots, heroOrders, persuadeBy, hands, hireShown: [...hireShown] }
+    const d = { seed: realm.seed, season: realm.season, player: realm.player, armyOrders, musters, settles, pick, goalStop, landSeen: [...landSeen], scout, rite, answers, guards, envoys, plots, heroOrders, persuadeBy, hands, hireShown: [...hireShown] }
     try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)) } catch { /* 저장 못 하는 곳 */ }
   }
 
@@ -3672,6 +3704,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     Object.assign(answers, rec<boolean>('answers'))
     if (Array.isArray(d['hireShown'])) for (const id of d['hireShown'] as unknown[]) if (typeof id === 'string') hireShown.add(id)
     if (Array.isArray(d['goalStop'])) goalStop = (d['goalStop'] as unknown[]).filter((x): x is string => typeof x === 'string')
+    if (Array.isArray(d['landSeen'])) for (const k of d['landSeen'] as unknown[]) if (typeof k === 'string') landSeen.add(k)
     // 옛 초안은 나라 열쇠 — 새 열쇠로 다시 단다
     for (const e of Object.values(rec<Envoy>('envoys'))) if (e !== null && typeof e === 'object' && typeof e.to === 'string') envoys[ekey(e.to, e.ask)] = e
     Object.assign(persuadeBy, rec<string>('persuadeBy'))
@@ -4952,6 +4985,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'undraft': musters = musters.filter((_, i) => i !== Number(d['i'])); break
       case 'answer': answers[d['id']!] = d['yes'] === '1'; fastNext = true; break
+      case 'land-ok': landSeen.add(d['k']!); fastNext = true; break
       case 'wand-pick': {
         const id = d['id']!
         const yes = d['v'] === '1'
