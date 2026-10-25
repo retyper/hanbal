@@ -422,6 +422,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .nightov { position: absolute; inset: 0; z-index: 40; background: #000; }
 .ap .nightov iframe { width: 100%; height: 100%; border: 0; display: block; }
 .ap .nightov [data-close] { position: absolute; right: 10px; top: 10px; z-index: 1; font-size: 13px; padding: 4px 10px; }
+/* 눕힌 밤 판의 위는 화면 오른쪽 — 판의 오른쪽 위 = 화면 오른쪽 아래. 단추를 아래 오른쪽 모서리를 축으로 90° 돌려 그 자리에 */
+.ap .nightov.rot [data-close] { top: auto; bottom: 10px; transform-origin: 100% 100%; transform: rotate(90deg) translateY(100%); }
 .ap .frow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } .ap .frow .mute { flex: 1 1 12em; } .ap .why { font-size: 13px; color: #d8c89a; margin: 4px 0 2px; } .ap .askc .why { margin: 2px 0 4px; }
 /* 나라 카드 — 우리 사이에 있었던 일 (때 · 무엇). 그쪽이 잘한 일은 초록, 잘못한 일은 붉게, 우리가 한 일은 금빛 */
 .ap .deeds { border-top: 1px dashed var(--line); padding-top: 6px; } .ap .deeds h5 { margin: 0 0 4px; font-size: 12px; color: var(--mute); font-weight: 600; }

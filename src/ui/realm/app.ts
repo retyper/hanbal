@@ -2225,7 +2225,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   window.addEventListener('message', (ev) => {
     if (ev.origin !== location.origin) return
     // 밤 판의 결과 — 연습은 결과를 안 보낸다 (night-main.ts). skip 은 건너뛰기, seen 이면 진짜 지붕을 본 뒤다
-    const m = ev.data as { type?: string; id?: string; result?: Hand['result'] | 'cleared'; alarm?: boolean; seen?: boolean }
+    const m = ev.data as { type?: string; id?: string; result?: Hand['result'] | 'cleared'; alarm?: boolean; seen?: boolean; rot?: boolean }
+    // 세로 폰에서 밤 판이 통째로 눕는다 — 바깥 「닫기」도 같이 눕혀 판의 오른쪽 위에 둔다 (night-main.ts layoutStage)
+    if (m?.type === 'hanbal.night.rotated') {
+      root.querySelector('.nightov')?.classList.toggle('rot', m.rot === true)
+      return
+    }
     // 송양과의 겨루기 — 맞히면(쓰러뜨리거나 다치게) 이긴다. 건너뛰면 안 겨룬 것
     if (m?.type === 'hanbal.night.result' && m.id === 'contest-archery' && m.result !== undefined && m.result !== 'cleared') {
       if (m.result !== 'skip') answers['contest:archery'] = m.result === 'dead' || m.result === 'wounded'

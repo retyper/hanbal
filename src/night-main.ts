@@ -30,6 +30,8 @@ import { GUARD_NAME, guardOf, PRACTICE_STAGES, stageTitle, type Guard } from './
 import { rehearsalSeed, reportsResult, type NightMode } from './night/mission.ts'
 
 const RESULT_KEY = 'hanbal.night.result'
+/** 틀 안의 판이 눕혔는지 — 칠십팔국이 「닫기」를 같이 눕힌다 */
+const ROTATED_MSG = 'hanbal.night.rotated'
 const PRACTICE_KEY = 'hanbal.night.practice'
 /** 연습 기록은 이만큼만 남긴다 (오래된 것부터 버린다) */
 const PRACTICE_KEEP = 200
@@ -433,6 +435,9 @@ function layoutStage(): void {
     rotatedNow = rot
     input.setRotated(rot)
   }
+  // 틀 안이면 칠십팔국에 알린다 — 바깥의 「닫기」도 판과 같이 눕는다 (형 10-25: 닫기 단추가 세로로 누워 있다)
+  // 틀 안에서 연습장으로 옮겨 가면 새 판이 다시 알리니, 바뀔 때만이 아니라 늘 보낸다
+  if (window.parent !== window) window.parent.postMessage({ type: ROTATED_MSG, rot }, location.origin)
 }
 
 // ───────────────────────── 돌림 ─────────────────────────
