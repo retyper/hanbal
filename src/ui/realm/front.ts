@@ -113,7 +113,7 @@ export interface SlotInfo {
 }
 
 /** 판 이름 — 캠페인의 장이면 「n장 이름」 */
-function boardLabel(region: RegionId): string {
+export function boardLabel(region: RegionId): string {
   const ch = chapterOfRegion(region)
   return ch !== undefined ? `${ch.n}장 ${ch.name}` : BOARDS.find((b) => b.id === region)?.name ?? ''
 }

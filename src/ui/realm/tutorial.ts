@@ -251,7 +251,7 @@ export function createSpot(root: HTMLElement): Spot {
   }
   const war = (): boolean => root.classList.contains('war-open') || root.querySelector('.wr') !== null
   /** 큰 장면이 떠 있나 — 그동안은 고리도 막기도 쉰다 */
-  const cere = (): boolean => root.querySelector('.cere') !== null
+  const cere = (): boolean => root.querySelector('.cere, .saveov') !== null // 「저장 · 불러오기」 창도 막지 않는다
 
   /**
    * 누를 곳을 덮고 있는 보고판·판 — 자리(좌표)로 본다. 화면 맨 위 요소를 찍어 보던 것(elementFromPoint)은 고리·어둠·판이 미끄러지는
