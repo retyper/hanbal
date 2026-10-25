@@ -10,6 +10,7 @@
  */
 
 import { declutterSoon } from './declutter.ts'
+import { P } from '../../tune/params.ts'
 
 /** 지도 바탕 그림의 가로:세로 (mapview 의 W / H) */
 const ASPECT = 1264 / 848
@@ -118,6 +119,15 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     wrap.scrollLeft = (g.sl0 + g.cx0) * g.s - (g.cx0 + g.tx)
     wrap.scrollTop = (g.st0 + g.cy0) * g.s - (g.cy0 + g.ty)
   }
+
+  // 미는 동안 — 고을 그림의 그림자 필터·늘 도는 애니메이션을 잠깐 멈춘다. 폰에서 지도를 밀면 그릴 조각이 늦어 마을이 비어 보였다
+  // (형 10-25: "게임 맵을 슬라이드 하다보면 마을들이 눈에 안보이는 버그") · 멈추고 조금 뒤 되돌린다
+  let panT = 0
+  wrap.addEventListener('scroll', () => {
+    wrap.classList.add('panning')
+    window.clearTimeout(panT)
+    panT = window.setTimeout(() => wrap.classList.remove('panning'), P.realm.mapPanRestMs)
+  }, { passive: true })
 
   wrap.addEventListener('wheel', (ev) => {
     if (map() === null) return

@@ -294,8 +294,11 @@ const SHOTS = 6
 const FILM_S = 4.2
 const FILM_OVERLAP_S = 0.9
 const FILM_LEAD_S = 0.5
-/** 도읍을 쥔 장면 — 차례로 돌려 쓴다 */
-const TAKE_ART = ['event-night-raid', 'event-eight-harbours', 'event-expedition-return', 'event-goguryeo-hunt'] as const
+/**
+ * 끝 화면 필름 장면 (public/realm/film · 1280×720 — 제미나이 2×2 장을 잘랐다, assets_src/realm/film).
+ * 전엔 504px 사건 그림을 화면 가득 늘려 흐렸고, 「크게 이겼다」에 해변 원정 귀환 · 「도읍을 쥐었다」에 사냥 그림이 걸렸다 (형 10-25: "어색함 · 이상하고")
+ */
+const FILM = (k: FrontKit, name: string): string => `${k.art}film/${name}.jpg`
 
 /**
  * 끝 화면 — 그 판의 큰 장면들이 **영화 필름처럼** 어두운 화면에 한 장씩 떠올랐다 사라지고, 마지막에 잔치 그림 위로 제목이 뜬다
@@ -331,14 +334,22 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): 
         if (ourWin && r.nodes[l.node] !== undefined) {
           const caught = l.captured !== null ? r.heroes[l.captured] : undefined
           const big = l.outcome === 'rout' || l.outcome === 'routed' || caught !== undefined
-          const art = caught !== undefined ? 'event-capture' : l.approach === 'night' ? 'event-night-raid' : l.via === 'ford' || l.via === 'reeds' ? 'event-monsoon-ford' : seasonOf(s) === 'winter' ? 'event-winter-ambush' : 'event-expedition-return'
+          const sneak = l.atkFaction === me && l.ambush === 'success'
+          const img = caught !== undefined ? `${k.art}event/event-capture.jpg`
+            : sneak && l.approach === 'night' ? `${k.art}event/event-night-raid.jpg`
+            : l.via === 'ford' || l.via === 'reeds' ? `${k.art}event/event-monsoon-ford.jpg`
+            : seasonOf(s) === 'winter' ? `${k.art}event/event-winter-ambush.jpg`
+            : l.defender === me ? FILM(k, 'film-win-defend')
+            : l.outcome === 'rout' || l.outcome === 'routed' ? FILM(k, 'film-win-rout')
+            : FILM(k, 'film-win-field')
           const t = `${battleName(r, l)} — ${big ? '크게 이겼다' : '이겼다'}${caught !== undefined ? ` · ${josa(caught.name, '을', '를')} 사로잡았다` : ''}`
           const foe = l.atkFaction === me ? l.defender : l.atkFaction
-          events.push({ s, t, big, img: `${k.art}event/${art}.jpg`, ...(foe !== undefined ? { em: foe } : {}) })
+          events.push({ s, t, big, img, ...(foe !== undefined ? { em: foe } : {}) })
         }
       } else if (l.kind === 'take' && l.faction === me) {
         const was = capOf.get(l.node)
-        const img = `${k.art}event/${TAKE_ART[takes++ % TAKE_ART.length]}.jpg`
+        const img = FILM(k, 'film-take-capital')
+        takes++
         events.push({ s, t: `${josa(node(l.node), "을", "를")} 쥐었다`, big: was !== undefined, img, ...(was !== undefined && was !== me ? { em: was } : {}) })
       } else if (l.kind === 'relation' && (l.a === me || l.b === me) && (l.state === 'ally' || l.state === 'truce')) {
         const other = l.a === me ? l.b : l.a

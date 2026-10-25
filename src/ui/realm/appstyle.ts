@@ -399,7 +399,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 /* 사신 단추 — 한 열 · 가로 길게 · 낌새는 오른쪽 끝 (askButtons · 형 10-25) */
 .ap .btns.askl { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
 .ap .btns.askl > .btn { width: 100%; justify-content: flex-start; gap: 8px; padding: 8px 10px; text-align: left; white-space: normal; }
-.ap .btns.askl > .btn .al { flex: 1; min-width: 0; } .ap .btns.askl > .btn .feel { flex: none; margin-left: auto; }
+.ap .btns.askl > .btn .al { flex: 1; min-width: 0; }
+.ap .btns.askl > .btn.open { border-color: #e0bd78; background: #4a3822; box-shadow: 0 0 0 1px #e0bd78; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.ap .btns.askl > .btn.open + * { margin-top: -6px; border-top: 1px solid #e0bd78; border-top-left-radius: 0; border-top-right-radius: 0; } .ap .btns.askl > .btn .feel { flex: none; margin-left: auto; }
 .ap .acard > .ab > .splitp, .ap .acard > .ab > .rows { margin-left: -74px; } /* 얼굴 칸 밑까지 넓게 — 폰에서 단추가 접히지 않게 */
 .ap .sprow { display: flex; align-items: center; gap: 8px; } .ap .sprow .stepper { flex-wrap: nowrap; } .ap .sprow .spn { width: 4em; font-size: 14px; }
 .ap .spsum { font-size: 14px; color: #cfc6b4; } .ap .spsum b { color: var(--gold); }

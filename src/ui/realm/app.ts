@@ -1860,7 +1860,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       // 사이에 따라 보낼 수 있는 사신이 다르다 (형: "동맹 되고나서도 동맹버튼이 아직도 활성이면 뭘 의미하는거고")
       h += askButtons(r, f.id, '')
-      if (compose.to === f.id && envoys[ekey(f.id, compose.ask)] === undefined) h += composeHtml(r, f.id)
       h += `</div>`
     }
     if (gone.length > 0) h += `<h4>무너진 나라</h4><p class="mute">${gone.map((f) => `${emblem(f.id, 'fem')}${esc(f.name)}`).join(' · ')}</p>`
@@ -1887,10 +1886,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const clash = !sel && sentTo(to).some((e) => envoyClash(e.ask, ask))
       const sure = ask === 'gift' || ask === 'break'
       const c = envoyChanceFor(r, me(), to, ask, noGoods(), noGoods())
-      const on = sel || (compose.to === to && compose.ask === ask)
-      h += `<button class="btn${sm}${on ? ' on' : ''}${ask === 'break' ? ' ghost' : ''}" ${sel ? `data-act="unenvoy" data-key="${k}"` : `data-act="compose" data-to="${to}" data-ask="${ask}"`} ${clash || (!sel && handsFull(r)) ? 'disabled' : ''}>`
+      // ✓(on)는 보냈을 때만 — 꾸미는 중(open)에도 ✓가 붙어 보낸 줄 알았다 (형 10-25)
+      const open = !sel && compose.to === to && compose.ask === ask
+      h += `<button class="btn${sm}${sel ? ' on' : ''}${open ? ' open' : ''}${ask === 'break' ? ' ghost' : ''}" ${sel ? `data-act="unenvoy" data-key="${k}"` : `data-act="compose" data-to="${to}" data-ask="${ask}"`} ${clash || (!sel && handsFull(r)) ? 'disabled' : ''}>`
       // 청마다 그림 — 화친·교역·선물·조공 요구… (형 10-24: "이것들도 다 아이콘 만들어 와 · 직관화")
-      h += `${icon(`ask-${ask}`, 'aic')}<span class="al">${askLabel(r, to, ask)}${sel ? ' ✓' : ''}</span>${sel || sure ? '' : envoyFeel(c[0], c[1], ask)}</button>`
+      h += `${icon(`ask-${ask}`, 'aic')}<span class="al">${askLabel(r, to, ask)}${sel ? ' · 보낸다' : ''}</span>${sel || sure ? '' : envoyFeel(c[0], c[1], ask)}</button>`
+      // 꾸미는 칸은 누른 단추 바로 밑에 (형 10-25: "누르면 바로밑에 열려야 하는데 너무 멀리 조공요구 밑에서 열림")
+      if (open) h += composeHtml(r, to)
     }
     h += `</div>`
     // 단추가 왜 꺼졌나 — 보낼 사람이 다 나갔다
@@ -2908,7 +2910,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<div class="nal">사신</div>`
     for (const e of sentTo(f)) h += sentBanner(r, e, false)
     h += askButtons(r, f, ' sm')
-    if (compose.to === f && envoys[ekey(f, compose.ask)] === undefined) h += composeHtml(r, f)
     h += `<div class="btns"><button class="btn ghost sm" data-act="nat-diplo" data-to="${f}">사신 자세히 · 그 나라와 있었던 일</button></div>`
     // 공작 — 이 고을·이 나라를 노리는 것만
     const max = P.realm.plotsPerSeason
