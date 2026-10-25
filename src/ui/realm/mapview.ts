@@ -224,7 +224,8 @@ export const MAP_CSS = `
 .map .nd .tchip .tn.hide { margin-left: 3px; background: #2a3a24e8; color: #c8e8a8; }
 .map .nd .tchip .feel { font-size: clamp(10px, calc(1.8cqh / var(--z, 1) * var(--zs, 1)), 14px); padding: 1px 6px; }
 .map .nd .tchip .tn.big { margin-left: 3px; background: #3a2a24e8; color: #e8b8a0; }
-.map .nd .tchip .tn.when { margin-left: 3px; } .map .nd .tchip .tn.pin { margin-left: 3px; background: #4a3a14ee; color: #ffe08a; box-shadow: 0 0 0 1px #ffd27a; }
+.map .nd .tchip .tn.when { margin-left: 3px; } .map .nd .tchip .tn.far { margin-left: 3px; background: #2a3a4aee; color: #bfe0ff; }
+.map .nd.tgt.farg { opacity: .82; } .map .nd.tgt.farg:hover { opacity: 1; } .map .nd .tchip .tn.pin { margin-left: 3px; background: #4a3a14ee; color: #ffe08a; box-shadow: 0 0 0 1px #ffd27a; }
 .map .nd .tchip .tn.hard + .tn.when, .map .nd .tchip .feel + .tn.when { margin-left: 3px; }
 .map .nd .tchip .tn.stay { background: #2a3a24e8; color: #c8e8a8; }
 /* 「집 보내기」의 갈 곳 — 흙빛 (군대의 금빛·붉은 고리와 갈린다) */
@@ -525,8 +526,8 @@ export function mapHtml(
     const emb = fa !== undefined ? `${art}icon/${fa.emblem}.png` : ''
     // 고른 군대가 갈 수 있는 곳 — 누르면 그리로 간다 (data-act="go")
     const tg = target.get(n.id)
-    const go = tg !== undefined && !tg.off ? ` data-act="${tg.act ?? 'go'}" data-edge="${tg.edge}"` : ''
-    const tcls = (tg === undefined ? '' : tg.off ? ' tgt off' : tg.on ? ' tgt on' : ' tgt') + (tg?.act === 'ptgo' ? ' pp' : '')
+    const go = tg !== undefined && !tg.off ? ` data-act="${tg.act ?? 'go'}" data-edge="${tg.edge}"${tg.goal !== undefined ? ` data-goal="${tg.goal}"` : ''}` : ''
+    const tcls = (tg === undefined ? '' : tg.off ? ' tgt off' : tg.on ? ' tgt on' : ' tgt') + (tg?.act === 'ptgo' ? ' pp' : '') + (tg?.goal !== undefined ? ' farg' : '')
     nodes += `<div class="nd${kcls}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${tcls}${far}${thr}${fr}"${go} data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color};--s:${sizeOf(n.hh).toFixed(2)};--d:${(-beat(n.id) * 7).toFixed(2)}s" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}"${more !== '' ? ` data-more="${more}"` : ''}>`
     // 특산 — 사람이 살면 나는 것 (쇠·소금·나무·말). 빈땅도 보여 "일구면 말이 난다"를 미리 안다
     const sp = nodeSpecials(r, n.id)
@@ -631,6 +632,8 @@ export interface MapTarget {
   readonly on: boolean
   /** 누르면 하는 일 — 기본 'go'(군대). 'pgo' 는 「집 보내기」의 갈 곳 */
   readonly act?: string
+  /** 먼 갈 곳 — 옆 고을이 아니면 그곳 (첫 걸음은 edge) */
+  readonly goal?: string
 }
 
 // ───────── 이름 겹 (형: "글자가 이미지에 가려 안보이는 부분 생기는거 주의해" — 2026-10-19)

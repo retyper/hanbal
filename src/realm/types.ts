@@ -512,6 +512,8 @@ export interface Army {
   came?: number
   /** 동맹에게 빌려준 군대 — `to` 나라의 `node` 고을로 가서 `until` 계절까지 머물며 지킨다 (diplomacy troops). 그동안 AI 가 마음대로 안 움직인다 */
   lent?: { readonly to: string; readonly node: string; readonly until: number; readonly arrived?: boolean }
+  /** 먼 갈 곳 — 닿을 때까지 계절마다 한 걸음씩 저절로 간다 (goal.ts). 없으면 그냥 선다 */
+  goal?: string
 }
 
 /** 한 세력이 한 고을에 대해 아는 것 (SYSTEMS §2-1 세 겹 가운데 땅·군세) */
@@ -687,6 +689,8 @@ export interface Realm {
 /** 플레이어(또는 AI)가 한 계절에 내리는 명령 */
 export type Order =
   | { readonly kind: 'march'; readonly army: string; readonly edge: string; readonly ambush: boolean; readonly approach?: Approach; readonly ration?: Ration }
+  /** 먼 갈 곳을 둔다(node) · 지운다(null) — 그 계절의 첫 걸음은 함께 낸 march 가 간다 (goal.ts) */
+  | { readonly kind: 'goal'; readonly army: string; readonly node: string | null }
   /** 서 있는 고을을 친다 — 동맹을 깨는 등으로 그 땅이 싸울 땅이 됐을 때, 길을 나서지 않고 그 자리에서 (형 10-24) */
   | { readonly kind: 'assault'; readonly army: string }
   /** 전장에서 직접 내린 명령 — 그 판(key)의 라운드마다 (advance 가 tactics 로 받는다 · 판 기록에 남아 다시 돌려도 같다) */

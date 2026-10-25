@@ -37,6 +37,7 @@ import { limitHands } from './hands.ts'
 import { stepSuzerain, suzerainEnd } from './suzerain.ts'
 import { pathsEnd, stepPaths } from './paths.ts'
 import { sendExpeditions, stepExpeditions } from './expedition.ts'
+import { goalSteps } from './goal.ts'
 import { resolveCard, stepCards } from './events.ts'
 import { PEOPLE_SCALE, migrate } from './migrate.ts'
 import { spreadRumors } from './rumor.ts'
@@ -558,7 +559,8 @@ function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): v
     a.food = Math.max(a.food ?? 0, 1)
     a.march = { from: a.at, to: a.at, edge: ed.id, left: 1, ambush: false, aim: node.owner }
   }
-  for (const o of orders) {
+  // 먼 갈 곳이 있는 군대 — 이번 걸음을 명령으로 (goal.ts)
+  for (const o of [...orders, ...goalSteps(r, orders)]) {
     if (o.kind !== 'march') continue
     const a = r.armies[o.army]
     const ed = r.edges[o.edge]

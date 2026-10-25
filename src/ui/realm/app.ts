@@ -29,6 +29,7 @@ import {
   autoFlows, crowdOf, migratePath, fieldMul, homeRoom, isRiverside, landMul, placeLimit, placeNodes, workMul,
   goodsWorth,
 } from '../../realm/economy.ts'
+import { goalReach, goalRoute } from '../../realm/goal.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
 import { kitLines } from '../../realm/kit.ts'
 import { alertRange, seenMix, visibleRange } from '../../realm/intel.ts'
@@ -514,7 +515,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let armyOrders: Order[] = [] // 나누기·모으기 — 화면은 이걸 먼저 해 본 판을 보인다
   let musters: Order[] = [] // 징병·해산
   let settles: Order[] = [] // 개척 — 나누기처럼 먼저 해 본 판에 든다 (그래야 남은 몫·곡식이 맞게 보인다)
-  const pick: Record<string, { edge: string; ambush: boolean; approach?: Approach; ration?: Ration } | undefined> = {}
+  const pick: Record<string, { edge: string; ambush: boolean; approach?: Approach; ration?: Ration; goal?: string } | undefined> = {}
+  /** 먼 갈 곳을 거둔 군대 — 이번 계절 「머문다」를 눌렀다 (형 10-25 · goal.ts) */
+  let goalStop: string[] = []
   let scout = ''
   /** 정찰 고정 — 매 계절 저절로 그곳으로 (형 10-23: "정찰을 매 턴 보내야 하는데 지속 정찰로 고정 버튼") · 이 기기에 */
   const KEEP_KEY = 'hanbal.realm.scoutKeep'
@@ -717,6 +720,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     musters = []
     settles = []
     for (const k of Object.keys(pick)) delete pick[k]
+    goalStop = []
     // 고정해 둔 곳을 우리가 차지했거나(없어졌거나) 하면 고정은 저절로 풀린다 — 우리 땅은 정찰할 것이 없다
     if (scoutKeep !== '' && realm !== null && (realm.nodes[scoutKeep] === undefined || realm.nodes[scoutKeep]?.owner === me())) setKeep('')
     // 고정해 둔 곳이 아직 맞닿아 있으면 그리로 — 아니면 이번 계절은 쉰다(고정은 남는다)
@@ -819,13 +823,23 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return `<div class="nudge"><span>${msg}</span>${faces !== '' ? `<div class="ndgs">${faces}</div>` : ''}<button class="btn sm" data-act="next">그냥 넘긴다 ›</button></div>`
   }
 
+  /** 이 군대의 먼 갈 곳 — 이번 계절 고른 것이 먼저, 거뒀으면 없음, 아니면 판에 있는 것 */
+  function goalOf(a: Army): string | undefined {
+    if (goalStop.includes(a.id)) return undefined
+    const c = pick[a.id]
+    if (c !== undefined) return c.goal
+    return realm?.armies[a.id]?.goal
+  }
+
   function ordersNow(): Order[] {
     const p = plan()
     const out: Order[] = [...armyOrders, ...settles, ...heroOrders, ...musters]
     for (const [army, c] of Object.entries(pick)) {
       const a = p.armies[army]
       if (c !== undefined && a !== undefined && a.march === null) out.push({ kind: 'march', army, edge: c.edge, ambush: c.ambush, ...(c.approach !== undefined ? { approach: c.approach } : {}), ...(c.ration !== undefined ? { ration: c.ration } : {}) })
+      if (c?.goal !== undefined && a !== undefined && a.march === null) out.push({ kind: 'goal', army, node: c.goal })
     }
+    for (const army of goalStop) out.push({ kind: 'goal', army, node: null })
     if (scout !== '') out.push({ kind: 'scout', faction: me(), node: scout, hero: null })
     if (rite) out.push({ kind: 'rite', faction: me() })
     // 사건 카드의 답은 answers 의 'card:<계절>' 칸에 (참 = 첫째 · 거짓 = 둘째) — 초안 저장·계절 초기화를 청의 답과 함께 탄다
@@ -941,6 +955,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const c = pick[a.id]
       const ed = c !== undefined && a.march === null ? r.edges[c.edge] : undefined
       if (ed !== undefined) marches.push({ from: a.at, to: otherEnd(ed, a.at)!, left: null, ambush: c!.ambush })
+      // 먼 갈 곳 — 거기까지의 길을 화살로 이어 (이번 계절 고른 첫 걸음은 위에서 그렸다 · 길 위의 군대는 닿는 고을부터)
+      const g = goalOf(a)
+      if (g !== undefined) {
+        const start = a.march !== null ? a.march.to : ed !== undefined ? otherEnd(ed, a.at)! : a.at
+        for (const [x, y] of goalRoute(r, me(), start, g)) marches.push({ from: x, to: y, left: null, ambush: false })
+      }
     }
     // 우리를 지키러 오는 동맹 군대는 적이 아니다 — 초록 화살 「도우러」
     for (const a of seenMarches(r, me())) if (a.march !== null && a.lent?.to !== me()) marches.push({ from: a.march.from, to: a.march.to, left: a.march.left, foe: true })
@@ -993,6 +1013,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         : m.hostile ? `${m.win !== null ? fightFeel(m.win[0], m.win[1]) : unknownFeel()}${m.conceal === "good" ? `<span class="tn hide">숨기 좋은 길</span>` : m.bigArmy ? `<span class="tn big">무리가 커 들킨다</span>` : ""}` : '')
         + `<span class="tn when">${m.seasons}계절</span>${pincerChip(m.to, m.seasons, m.hostile)}`,
     }))
+    // 먼 곳 — 옆 고을이 아니어도 누르면 계절마다 한 걸음씩 간다 (우리·친한 나라·빈땅을 지나서) (형 10-25: "매번 옆 고을을 선택해 줘야 하는 게 귀찮어")
+    if (a !== undefined && a.march === null && armySel.length === 1) {
+      const near = new Set(targets.map((t) => t.node))
+      for (const [to, x] of goalReach(r, me(), a.at)) {
+        if (near.has(to) || x.hops < 2) continue
+        const n = r.nodes[to]!
+        const hostile = n.owner !== null && n.owner !== me() && n.kind !== 'sodo'
+        targets.push({ node: to, edge: x.edge, goal: to, off: false, on: goalOf(a) === to,
+          chip: `${hostile ? `<span class="tn hard">적 고을</span>` : ''}<span class="tn when">${x.seasons}계절</span><span class="tn far">멀리</span>` })
+      }
+    }
     // 머물기도 지도에서 — 제 고을을 누르면 떠나기를 거둔다 (형: "머물기는 지도에서 선택을 못하고")
     if (a !== undefined && a.march === null) targets.push({ node: a.at, edge: '', off: false, on: armySel.every((id) => pick[id] === undefined), chip: `<span class="tn stay">머문다</span>` })
     if (partySel !== '' && armySel.length === 0) targets.push(...partyTargets(r, partySel))
@@ -1537,6 +1568,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const ed = r.edges[pick[a.id]!.edge]
         if (ed !== undefined) h += `<div class="go">→ ${esc(r.nodes[otherEnd(ed, a.at)!]?.name ?? '')}${pick[a.id]!.ambush ? ' · 기습' : ''}</div>`
       }
+      const g = goalOf(a)
+      if (g !== undefined && !open) h += `<div class="go">⇢ ${esc(r.nodes[g]?.name ?? '')}까지 계절마다 한 걸음씩 간다 · 「머문다」로 거둔다</div>`
       if (open) h += sortiePanel(r, a)
       // 해산은 카드 맨 밑에 작게 — 잘못 누르기 쉬운 자리에서 뺀다 (형: "해산 버튼은 더 맨 밑에")
       if (r.nodes[a.at]?.owner === me()) h += `<div class="btns dis"><button class="btn ghost sm" data-act="disband" data-army="${a.id}">해산</button></div>`
@@ -2843,7 +2876,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const canDraft = Object.values(r.nodes).some((n) => n.owner === me() && draftLimit(r, me(), n.id) > 0)
     const idle = tabWait(r, 'heroes') === 0 ? restingHeroes(r).length : 0
     const asks = openAsks(r, me()).filter((a) => answers[a.id] === undefined).length
-    const armyIdle = Object.values(r.armies).some((a) => a.faction === me() && a.march === null && pick[a.id] === undefined)
+    const armyIdle = Object.values(r.armies).some((a) => a.faction === me() && a.march === null && pick[a.id] === undefined && goalOf(a) === undefined)
     const t = asks > 0 && tabWait(r, 'diplo') === 0 ? { tab: 'diplo', line: `사신이 왔다 — 외교에서 답한다` }
       : !drafted && canDraft && r.season < 4 ? { tab: 'draft', line: '징병에서 군사를 뽑는다 (⚡ 알아서 뽑기)' }
         : idle > 0 ? { tab: 'heroes', line: `쉬는 장수 ${idle}명 — 장수에서 일을 맡긴다` }
@@ -3592,7 +3625,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function saveDraft(): void {
     if (realm === null) return
     // hireShown — 등용 장면을 이미 띄운 떠돌이. 초안과 함께 남겨야 앱이 다시 열려도(새 빌드 · 껐다 켬) 계절 끝에 또 뜨지 않는다 (형 10-25: "마파람 등용 한번 떴었는데 왜 또 뜨지")
-    const d = { seed: realm.seed, season: realm.season, player: realm.player, armyOrders, musters, settles, pick, scout, rite, answers, guards, envoys, plots, heroOrders, persuadeBy, hands, hireShown: [...hireShown] }
+    const d = { seed: realm.seed, season: realm.season, player: realm.player, armyOrders, musters, settles, pick, goalStop, scout, rite, answers, guards, envoys, plots, heroOrders, persuadeBy, hands, hireShown: [...hireShown] }
     try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)) } catch { /* 저장 못 하는 곳 */ }
   }
 
@@ -3615,6 +3648,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const p of Object.values(pick)) if (p !== undefined && typeof p.ration === 'string') p.ration = rationExtra(p.ration) ?? P.realm.rationReserve
     Object.assign(answers, rec<boolean>('answers'))
     if (Array.isArray(d['hireShown'])) for (const id of d['hireShown'] as unknown[]) if (typeof id === 'string') hireShown.add(id)
+    if (Array.isArray(d['goalStop'])) goalStop = (d['goalStop'] as unknown[]).filter((x): x is string => typeof x === 'string')
     // 옛 초안은 나라 열쇠 — 새 열쇠로 다시 단다
     for (const e of Object.values(rec<Envoy>('envoys'))) if (e !== null && typeof e === 'object' && typeof e.to === 'string') envoys[ekey(e.to, e.ask)] = e
     Object.assign(persuadeBy, rec<string>('persuadeBy'))
@@ -4692,8 +4726,21 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const edge = d['edge'] ?? ''
         if (armySel.length === 0 || r === null) break
         const army = armySel[0]!
-        if (edge === '' || armySel.every((id) => pick[id]?.edge === edge)) {
-          for (const id of armySel) delete pick[id]
+        const goal = d['goal']
+        if (edge === '' || (goal === undefined && armySel.every((id) => pick[id]?.edge === edge && pick[id]?.goal === undefined)) || (goal !== undefined && armySel.every((id) => pick[id]?.goal === goal))) {
+          for (const id of armySel) {
+            delete pick[id]
+            // 먼 갈 곳도 거둔다 — 다음 계절부터 저절로 가지 않는다
+            if (edge === '' && r.armies[id]?.goal !== undefined && !goalStop.includes(id)) goalStop = [...goalStop, id]
+          }
+          armySel = []
+          break
+        }
+        goalStop = goalStop.filter((id) => !armySel.includes(id))
+        // 먼 곳 — 첫 걸음과 갈 곳을 같이. 적 고을이면 닿는 걸음이 곧 출정이다
+        if (goal !== undefined) {
+          for (const id of armySel) pick[id] = { edge, ambush: false, goal }
+          marchSfx()
           armySel = []
           break
         }
