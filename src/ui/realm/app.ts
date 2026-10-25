@@ -44,8 +44,9 @@ import { canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, together, inheritOf
 import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
-import { LEGACY_CSS, carryChapterNote, carryHtml, retainHtml, syncRetain, toggleCarry, toggleKeep } from './legacy.ts'
-import { DEX_CSS, dexHtml, dexToastHtml, recordDex, type DexBoard } from './dex.ts'
+import { LEGACY_CSS, bringHtml, toggleBring } from './legacy.ts'
+import { DEX_CSS, dexHtml, dexToastHtml, loadDex, recordDex, type DexBoard } from './dex.ts'
+import { DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
 import { LEVEL_LINE, TIER_MAX, levelName } from '../../realm/tier.ts'
 import { FIT_CSS, fitLabels } from './fit.ts'
 import { annalOf } from '../../realm/data/annals.ts'
@@ -2776,6 +2777,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return t === null ? '' : `<button class="todochip" data-act="tab" data-tab="${t.tab}">👉 이번 계절 · ${esc(t.line)}</button>`
   }
 
+  /** 영웅전에 「거느림」으로 오른 장수 — 판을 열 때 데려갈 수 있는 이 (군주는 빼고) */
+  function servedHeroes(): ReadonlyArray<{ id: string; name: string }> {
+    const dex = loadDex()
+    return dexCatalog().filter((x) => !x.ruler && ((dex[x.id]?.f ?? 0) & DEX_SERVED) !== 0).map((x) => ({ id: x.id, name: x.name }))
+  }
+
   /** 처음 하는 사람인가 — 배우는 판 말고 한 판이라도 이겼으면 아니다 */
   function novice(): boolean {
     return !(['mahan', 'jumong', 'seorabeol', 'byeonhan-mini', 'yeongnam', 'south', 'world'] as const).some((b) => tierWon(b) > 0)
@@ -3199,14 +3206,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const endNow = r.outcome && (!r.endless || (r.unified !== undefined && r.unified === r.season - 1))
     if (endNow) {
       if (looking) return ''
-      syncRetain(r) // 계승 가신 — 처음이면 솜씨 좋은 셋을 골라 둔다
       // 이겼으면 다음 난세 단계가 열렸다
       const t = r.tier ?? 1
       const opened = r.outcome?.kind === 'win' && t >= 1 && t < TIER_MAX ? `<p class="tierup">「<b>${levelName(t + 1)}</b>」 세기가 열렸다 — 이웃이 처음부터 더 센 판</p>` : ''
       // 휘장 — 이 나라로 이겼다는 표가 나라 고르기에 붙는다 (META §2-①)
       const badge = r.outcome?.kind === 'win' && (r.region ?? 'byeonhan-mini') !== 'tutorial'
         ? `<p class="tierup">${esc(josa(r.factions[me()]?.name ?? '', '으로', '로'))} 이긴 <b>휘장</b>을 받았다 — 나라 고르기에 붙는다</p>` : ''
-      return endingHtml(KIT, r, host.history(), opened + badge + retainHtml(DEX_KIT, r))
+      return endingHtml(KIT, r, host.history(), opened + badge + `<p class="mute retainnote">우리 장수로 부린 이는 영웅전에 남는다 — 다음 판을 열 때 영웅전에서 골라 데려간다.</p>`)
     }
     if (!showReport || before === null || report === null) return ''
     const season = seasonOf(r.season)
@@ -3410,7 +3416,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 세기 — 문명의 개척자·왕·신처럼 칭호로 (형 10-23). 잠긴 칭호도 보인다 — 무엇을 향해 가는지
     // 동행 수도 단계마다 다르다 — 고를 때 보이게 (형 10-24: "난이도에 따라 데려갈 장수 숫자가 변하면 선택할 때 알려 줘야")
     const carry = retainMaxOf(pick)
-    let h = `<div class="tierp"><b>세기 · ${esc(levelName(pick))}</b><span class="mute">${esc(LEVEL_LINE[pick] ?? '')} · 지난 판의 장수를 ${carry > 0 ? `${carry}명까지 데려온다` : '데려오지 못한다'}</span><div class="seg">`
+    let h = `<div class="tierp"><b>세기 · ${esc(levelName(pick))}</b><span class="mute">${esc(LEVEL_LINE[pick] ?? '')} · 영웅전의 장수를 ${carry > 0 ? `${carry}명까지 데려간다` : '데려가지 못한다'}</span><div class="seg">`
     for (let t = 0; t <= TIER_MAX; t++) {
       h += t <= open
         ? `<button class="${t === pick ? 'on' : ''}${t === TIER_MAX ? ' apex' : ''}" data-act="${act}" data-v="${t}">${esc(levelName(t))}</button>`
@@ -3431,9 +3437,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         return titleHtml(KIT, realm, host.savedAt(), installCard() + acctLine() + links, realm === null && !tutorialOver(), dexBtn, host.slots?.() ?? [], slotArmed)
       }
       case 'dex': return dexHtml(DEX_KIT, f.board, f.sel, f.back === null ? '판으로' : '처음으로')
-      case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null), tierWon, tierHtml('jumong', chapTier, 'chap-tier') + carryChapterNote())
+      case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null), tierWon, tierHtml('jumong', chapTier, 'chap-tier') + bringHtml(DEX_KIT, servedHeroes(), retainMaxOf(chapTier)))
       case 'nations': return nationsHtml(KIT, f.region)
-      case 'detail': return detailHtml(KIT, f.region, f.id, f.region === 'tutorial' ? '' : tierHtml(f.region) + carryHtml(DEX_KIT))
+      case 'detail': return detailHtml(KIT, f.region, f.id, f.region === 'tutorial' ? '' : tierHtml(f.region) + bringHtml(DEX_KIT, servedHeroes(), retainMaxOf(Math.min(tierPick[f.region] ?? 1, tierOpen(f.region)))))
     }
   }
 
@@ -4194,8 +4200,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'chap-tier': chapTier = Number(d['v']); paint(); return
       case 'goal-fold': try { localStorage.setItem(GOAL_FOLD_KEY, goalFolded() ? '0' : '1') } catch { /* 저장 못 하는 곳 */ } paint(); return
       case 'fr-look': looking = true; paint(); return
-      case 'keep': if (realm !== null) toggleKeep(realm, d['id']!); fastNext = true; paint(); return
-      case 'carry-tog': toggleCarry(d['id']!); paint(); return
+      case 'bring': toggleBring(d['id']!, Number(d['max'] ?? 0)); paint(); return
       case 'wed': {
         const a = d['id']!
         const b = d['with']!

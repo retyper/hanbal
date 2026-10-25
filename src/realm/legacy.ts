@@ -46,7 +46,7 @@ export function retainMaxOf(tier: number): number {
 }
 
 export function bringRetainers(r: Realm, list: readonly Hero[]): string[] {
-  if (r.region === 'tutorial' || r.scenario !== undefined) return [] // 캠페인의 장은 사서의 사람들로만
+  if (r.region === 'tutorial') return [] // 이야기 장에도 영웅전의 동행이 따라온다 (형 10-25) — 배우는 판만 빼고
   const me = r.player
   const cap = r.factions[me]?.capital ?? null
   const out: string[] = []

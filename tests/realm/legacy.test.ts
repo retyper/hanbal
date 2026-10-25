@@ -82,4 +82,14 @@ describe('계승 가신', () => {
     const tut = startRegion('tutorial', 1, 'us')
     assert.deepEqual(bringRetainers(tut, retainable(old).map(snapshot)), [])
   })
+
+  it('이야기 장에도 영웅전의 동행이 따라온다 — 배우는 판만 빼고 (형 10-25)', () => {
+    const old = byeonhanMini(5)
+    const picks = retainable(old).slice(0, 1).map(snapshot)
+    const ch = startRegion('mahan', 3, 'baekje')
+    const got = bringRetainers(ch, picks)
+    assert.equal(got.length, 1)
+    assert.equal(ch.heroes[got[0]!]!.faction, 'baekje')
+    assert.equal(ch.heroes[got[0]!]!.at, 'mh-wirye-cap')
+  })
 })

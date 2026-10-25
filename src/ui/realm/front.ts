@@ -325,7 +325,7 @@ function carriedHtml(k: FrontKit, r: Realm): string {
   if (ids.length === 0) return ''
   const faces = ids.map((id) => { const src = k.bust?.(id) ?? null; return src !== null ? `<img src="${src}" alt="">` : '' }).join('')
   const names = ids.map((id) => r.heroes[id]?.name ?? '').filter((x) => x !== '')
-  return `<p class="carried">${faces}<span>지난 판에서 <b>${k.esc(josa(names.join(' · '), '이', '가'))}</b> 따라왔다</span></p>`
+  return `<p class="carried">${faces}<span>영웅전에서 <b>${k.esc(josa(names.join(' · '), '이', '가'))}</b> 따라왔다</span></p>`
 }
 
 export function prologueHtml(k: FrontKit, r: Realm, step: number): string {

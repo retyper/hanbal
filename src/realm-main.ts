@@ -20,6 +20,7 @@ import { takeRetainers } from './ui/realm/legacy.ts'
 import { account, deleteAccount, finishSignIn, signIn, signOut } from './net/auth.ts'
 import { canSync, makeSync } from './net/sync.ts'
 import { bringRetainers } from './realm/legacy.ts'
+import { dexCatalog } from './realm/dex.ts'
 import { applyTier } from './realm/tier.ts'
 import { watchUpdates } from './ui/realm/update.ts'
 import { pinPage } from './ui/realm/scroll.ts'
@@ -198,7 +199,7 @@ function fresh(nation: string, region: RegionId, tier = 1): Saved {
   const seed = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0
   const realm = startRegion(region, seed, nation)
   applyTier(realm, tier) // 난세 단계 — 이웃이 처음부터 세다 (tier.ts)
-  bringRetainers(realm, takeRetainers(region)) // 계승 가신 — 지난 판에서 고른 셋이 우리 도읍에 (VISION §5-4)
+  bringRetainers(realm, takeRetainers(region, tier, (id) => dexCatalog().find((x) => x.id === id)?.hero)) // 동행 — 영웅전에서 고른 이가 우리 도읍에 (VISION §5-4 · 형 10-25)
   return { v: 2, nation, seed, log: [], realm, before: null, report: null }
 }
 

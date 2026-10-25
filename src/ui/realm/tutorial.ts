@@ -230,6 +230,21 @@ export function createSpot(root: HTMLElement): Spot {
     const r0 = el.getBoundingClientRect()
     return r0.bottom <= 0 || r0.top >= innerHeight || r0.right <= 0 || r0.left >= innerWidth
   }
+  /**
+   * 누를 곳의 자리 — 고을이면 그 이름표까지 (이름표는 지도 위 따로 깔린 글이라 눌러도 고을이 아니었다 · 형 10-25 4/12 갯골 · 6/12 소도).
+   * 손가락은 그림보다 이름을 누른다
+   */
+  const zoneOf = (el: HTMLElement): { left: number; top: number; right: number; bottom: number } => {
+    const a = el.getBoundingClientRect()
+    const z = { left: a.left, top: a.top, right: a.right, bottom: a.bottom }
+    const node = el.dataset['node']
+    const lb = node !== undefined && el.classList.contains('nd') ? root.querySelector<HTMLElement>(`.lb[data-n="${node}"]`) : null
+    if (lb !== null) {
+      const b = lb.getBoundingClientRect()
+      if (b.width > 1) { z.left = Math.min(z.left, b.left); z.top = Math.min(z.top, b.top); z.right = Math.max(z.right, b.right); z.bottom = Math.max(z.bottom, b.bottom) }
+    }
+    return z
+  }
   const war = (): boolean => root.classList.contains('war-open') || root.querySelector('.wr') !== null
   /** 큰 장면이 떠 있나 — 그동안은 고리도 막기도 쉰다 */
   const cere = (): boolean => root.querySelector('.cere') !== null
@@ -332,17 +347,19 @@ export function createSpot(root: HTMLElement): Spot {
         box.classList.toggle('up', !below)
         { const p = view === target ? pad : 2; hole.style.cssText = `--x:${v.left - p}px;--y:${v.top - p}px;--w:${v.width + p * 2}px;--h:${v.height + p * 2}px` }
         if (b !== null) {
-          // 띠는 볼 곳을 가리지 않게 — 볼 곳 밑(또는 위)에, 누를 곳의 손 그림 틈만큼 띄워
-          // 자리가 없으면(보고판처럼 큰 카드) 누를 곳의 반대쪽 화면 끝에
-          const gap = view === target ? 58 : 14
-          const need = 110
-          const roomBelow = innerHeight - v.bottom - pad - gap
-          const roomAbove = v.top - pad - gap
-          const prefBelow = v.top + v.height / 2 < innerHeight * 0.55
-          b.style.cssText = prefBelow && roomBelow >= need ? `top:${v.bottom + pad + gap}px;bottom:auto`
-            : roomAbove >= need ? `top:auto;bottom:${innerHeight - v.top + pad + gap}px`
-              : roomBelow >= need ? `top:${v.bottom + pad + gap}px;bottom:auto`
-                : below ? `top:auto;bottom:12px` : `top:12px;bottom:auto`
+          // 띠는 볼 곳과 누를 곳(고을이면 이름표까지)을 가리지 않게 — 그 밑(또는 위)에, 손 그림 틈만큼 띄워.
+          // 실제 띠 높이로 재고, 어디에도 안 들어가면 덜 겹치는 화면 끝에 (형 10-25: 폰에서 띠가 소도 이름표를 덮어 누를 수 없었다)
+          const z = zoneOf(target)
+          const top = Math.min(v.top, z.top) - pad
+          const bot = Math.max(v.bottom, z.bottom) + pad
+          const gap = view === target ? 52 : 12
+          const bh = Math.max(40, (b.firstElementChild as HTMLElement | null)?.offsetHeight ?? 110)
+          const prefBelow = (top + bot) / 2 < innerHeight * 0.55
+          const at = [prefBelow ? bot + gap : top - gap - bh, prefBelow ? top - gap - bh : bot + gap, bot + 4, top - 4 - bh, 8, innerHeight - 8 - bh]
+          const fits = (y: number): boolean => y >= 4 && y + bh <= innerHeight - 4 && (y >= bot || y + bh <= top)
+          const overlap = (y: number): number => Math.max(0, Math.min(y + bh, bot) - Math.max(y, top))
+          const y = at.find(fits) ?? [8, innerHeight - 8 - bh].sort((p, q) => overlap(p) - overlap(q))[0]!
+          b.style.cssText = `top:${Math.round(y)}px;bottom:auto`
         }
       }
     }
@@ -357,6 +374,18 @@ export function createSpot(root: HTMLElement): Spot {
     if (cere()) return
     const t = ev.target as HTMLElement
     if (view.contains(t)) { tappedAt = performance.now(); return }
+    // 누를 곳 둘레(이름표·손가락 너비) — 그것을 누른 것으로 넘겨 준다. 띠의 단추(건너뛰기)는 그대로
+    if (t.closest('.tutb button') === null && ev.isTrusted) {
+      const z = zoneOf(target)
+      const s = P.realm.tutTapSlop
+      if (ev.clientX >= z.left - s && ev.clientX <= z.right + s && ev.clientY >= z.top - s && ev.clientY <= z.bottom + s) {
+        ev.preventDefault()
+        ev.stopPropagation()
+        tappedAt = performance.now()
+        target.click()
+        return
+      }
+    }
     // 고리가 옮겨 가는 틈 — 새로 가리킬 곳을 누른 것도 받는다 (재검토 10-25: 그 틈의 누르기가 먹혔다)
     if (cand !== null && cand.isConnected && (cand.closest<HTMLElement>('.mcard, .ncard') ?? cand).contains(t)) { tappedAt = performance.now(); return }
     if (t.closest('.tutband') !== null || t.closest('[data-act="zin"], [data-act="zout"]') !== null) return
