@@ -778,9 +778,16 @@ function guessHtml(gu: Guess | undefined, edge0: number): string {
   const d = (gu.edge[0] + gu.edge[1]) / 2 - edge0
   const [w, cls] = d > 0.07 ? ['크게 밀어붙인다', 'g2'] : d > 0.02 ? ['밀어붙인다', 'g1'] : d > -0.02 ? ['맞선다', 'g0'] : d > -0.07 ? ['밀린다', 'b1'] : ['크게 밀린다', 'b2']
   const pc = (x: number): string => `${Math.round(Math.max(0, Math.min(1, x)) * 100)}%`
-  const loss = (x: readonly [number, number]): string => `--a:${pc(x[0] / 0.16)};--b:${pc(x[1] / 0.16)}`
-  return `<span class="wguess ${cls}"><span class="wgbar" style="--lo:${pc(gu.edge[0])};--hi:${pc(gu.edge[1])};--e0:${pc(edge0)}"></span><b>${w}</b>`
-    + `<span class="wgl"><span class="wgk">우리</span><i class="us" style="${loss(gu.us)}"></i><span class="wgk">적</span><i class="foe" style="${loss(gu.foe)}"></i></span></span>`
+  // 잃을 군사는 막대 대신 말로 (형 10-25: "맞선다 바랑 우리 바 적 바 이건 뭘 의미하는거임") — 한 합 손실 0.16 을 끝으로 셋으로 나눈다
+  const lossWord = (x: readonly [number, number]): [string, string] => {
+    const m = (x[0] + x[1]) / 2 / 0.16
+    return m < 0.3 ? ['조금', 'l1'] : m < 0.6 ? ['꽤', 'l2'] : ['많이', 'l3']
+  }
+  const [lu, lcu] = lossWord(gu.us)
+  const [lf, lcf] = lossWord(gu.foe)
+  // 판세 막대 — 왼쪽 끝이 우리, 오른쪽 끝이 적. 파랑이 우리 몫, 옅은 데가 짐작의 폭, 금빛 금이 지금 판세
+  return `<span class="wguess ${cls}"><span class="wgt">판세</span><span class="wgk us">우리</span><span class="wgbar" style="--lo:${pc(gu.edge[0])};--hi:${pc(gu.edge[1])};--e0:${pc(edge0)}"></span><span class="wgk foe">적</span><b>${w}</b>`
+    + `<span class="wgl"><span class="wgt">잃을 군사</span><span>우리 <b class="${lcu}">${lu}</b></span><span>적 <b class="${lcf}">${lf}</b></span></span></span>`
 }
 
 export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: string, shown: number, anim: boolean, left: number, sel: RoundOrder = {}, active?: Grp | 'lead', more = false): string {
@@ -849,7 +856,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const num = old !== now ? `<span class="wn swap"><s>${old}명</s><u>${now}명</u></span>` : `<span class="wn">${now}명</span>`
     const hitFx = hitOf(i) !== '' ? `<img class="wfx-hit" src="${art}fx/impact.png" alt="">` : ''
     const em = f !== undefined ? FACTION_ART[f]?.emblem : undefined
-    return `<div class="ws ${cls}${hitOf(i)}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s"><span class="wpf">${face(hero, art, unitOf(i))}<i></i></span><b>${esc(name)}</b><span class="wnat">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
+    return `<div class="ws ${cls}${hitOf(i)}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s"><span class="wpf">${face(hero, art, unitOf(i))}<i></i></span><b>${esc(name)}</b><span class="wnat">${roleChip((cls === 'us') === weAtk)}${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
       // 무너지는 금 — 이 밑으로 떨어지면 그 편이 무너져 진다 (tactics: 군사 tacBreakMen · 사기는 처음의 tacBreakMorale) (형 10-24: "사기가 어느 정도 떨어지면 패배한다가 가로바에 표시")
       + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}${brk(Math.round(P.realm.tacBreakMen * 100), Math.round(n(i) * 100), '군사가 이 금 밑으로 줄면 무너져 진다 — 패배')}</div>${num}`
       + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}${brk(Math.round(P.realm.tacBreakMorale * 83), mr(m(i)), '사기가 이 금 밑으로 떨어지면 무너져 진다 — 패배')}</div><span class="wn">사기</span>${hitFx}</div>` // 맞은 불꽃은 맨 뒤에 — 앞에 끼면 초상이 새로 만들어져 깜빡였다 (paintNow 의 바뀐 곳만 고치기)
@@ -863,6 +870,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
    * 고르는 동안은 고른 것(openWar.syncField) · 적은 낌새 · 합이 풀릴 때는 그 합에 실제로 낸 명령으로 맞부딪친다 (play).
    * 말 수는 군사 수에 맞춰 6~18 — 숫자 대신 진의 두께로 보인다.
    */
+  /** 공격·수비 (형 10-25: "공성하는쪽이랑 수성하는쪽이 어딘지 모르겠고") — 길에서 맞닥뜨린 싸움엔 없다 */
+  const roleChip = (atk: boolean): string => (l.field === true ? '' : `<em class="wrole ${atk ? 'atk' : 'def'}">${atk ? '공격' : '수비'}</em>`)
   const fieldHtml = (): string => {
     if (st === undefined) return ''
     const big = Math.max(1, st.men[0], st.men[1])
@@ -881,23 +890,35 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const shot = (sd: 'a' | 'd'): boolean => rounds.some((rd) => (sd === 'a' ? rd.oa : rd.od)?.bows !== undefined)
     const tp = (k: string, x: number, oy: number, sc: number, flat = false): string =>
       `<img class="tp${flat ? ' flat' : ''}" src="${art}fx/field/${k}.png" alt="" style="--x:${(x + oy * 0.22).toFixed(1)}%;--oy:${oy}%;--sc:${sc};z-index:${(flat ? 2 : 10) + Math.round(oy + 40)}">`
+    // 땅 이름표 — 그 소품 바로 곁에 「해자 · 적에게 유리」 (형 10-25: "해자 갯벌 이게 정확히 어디있는지 누구에게 유리하고 불리한지 전혀 모르겠으며")
+    const tchips = terrChips(prev, l, me, fname(foeF))
+    const tlab = (k: string, x: number, oy: number): string => {
+      const c = tchips.find((y) => y.k === k)
+      if (c === undefined) return ''
+      const w = c.who === 'us' ? '우리에게 유리' : c.who === 'foe' ? '적에게 유리' : '양쪽 같다'
+      return `<b class="wf-tl ${c.who === '' ? 'n' : c.who}" data-tk="${c.k}" style="--x:${x}%;--oy:${oy}%">${esc(c.name)}<small>${w}</small></b>`
+    }
     const terrainProps = (cls: 'us' | 'foe'): string => {
       let h = ''
       if (cls === defCls && l.field !== true && node !== undefined) {
         const breached = l.pending === undefined && shown >= (l.rounds ?? []).length && (l.outcome === 'win' || l.outcome === 'rout')
-        if (node.tags.includes('moat')) for (const oy of [-32, -16, 0, 16, 32]) h += tp('moat', 54, oy, 1.3, true)
-        if (node.tags.includes('palisade') || node.kind === 'fort' || node.kind === 'capital') {
+        if (node.tags.includes('moat')) { for (const oy of [-32, -16, 0, 16, 32]) h += tp('moat', 54, oy, 1.3, true); h += tlab('moat', 58, 42) }
+        // 성벽·목책은 판정에 있는 것만 그린다 (season.fortMul — 목책 꼬리표 · 산성) · 그냥 도읍에 울타리를 그리면 없는 수비 덤을 있는 것처럼 보였다
+        if (node.tags.includes('palisade') || node.kind === 'fort') {
           const gate = node.kind === 'fort' || node.kind === 'capital'
+          h += tlab(node.kind === 'fort' ? 'fort' : 'palisade', 47.5, -47)
           // 이어진 울타리 — 토막을 겹쳐 세운다(한가운데 성문)
           const ys = [-36, -27, -18, -9, 0, 9, 18, 27, 36]
           for (const [j, oy] of ys.entries()) h += tp(breached ? (j % 3 === 1 ? 'palisade' : 'broken') : gate && j === 4 ? 'gate' : 'palisade', 47.5, oy, 1.25)
         }
       }
-      if (cls === defCls && l.via === 'pass') { h += tp('rocks', 30, -36, 0.9); h += tp('rocks', 24, 32, 1.1) }
+      if (cls === defCls && l.via === 'pass') { h += tp('rocks', 30, -36, 0.9); h += tp('rocks', 24, 32, 1.1); h += tlab('pass', 26, 46) }
       return h
     }
     const ford = l.via === 'ford' || l.via === 'reeds' || l.via === 'mudflat'
-    const midTerr = ford ? `<div class="wf-mid-terr">${[-30, -14, 2, 18, 34].map((oy) => tp('river', 50, oy, 1.25, true)).join('')}${tp('reeds', 47, -34, 0.8)}${tp('reeds', 53, 30, 0.9)}</div>` : ''
+    // 물가 — 나루·갈대는 강물과 갈대, 갯벌은 진흙 빛 (강물 그림을 진흙 빛으로)
+    const mud = l.via === 'mudflat'
+    const midTerr = ford ? `<div class="wf-mid-terr${mud ? ' mud' : ''}">${[-30, -14, 2, 18, 34].map((oy) => tp('river', 50, oy, 1.25, true)).join('')}${mud ? '' : tp('reeds', 47, -34, 0.8) + tp('reeds', 53, 30, 0.9)}${tlab('ford', 50, -48)}</div>` : ''
     const side = (i: 0 | 1, cls: 'us' | 'foe', o: RoundOrder | undefined, hero: string | null, f: string | undefined): string => {
       const mix = mixOf(i)
       const all = Object.entries(mix).filter(([, v]) => (v ?? 0) > 0) as Array<[string, number]>
@@ -974,7 +995,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const atkWon = l.outcome === 'win' || l.outcome === 'rout'
     const usWon = weAtk === atkWon
     const endCls = fin ? (usWon ? ' fin win-us' : ' fin win-foe') : ''
-    return `<div class="wfield${play ? ' play' : ''}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s"><i class="wf-ground"></i>${midTerr}${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}<i class="wf-mid">⚔</i><b class="wf-who us">우리 ${esc(ourName)}</b><b class="wf-who foe">적 ${esc(foeName)}</b>${hit}${omen}<div class="wf-terr">${terrChips(prev, l, me, fname(foeF)).map((c) => terrChipHtml(art, c, 'wtc')).join('')}</div></div>`
+    return `<div class="wfield${play ? ' play' : ''}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s"><i class="wf-ground"></i>${midTerr}${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}<i class="wf-mid">⚔</i><b class="wf-who us">${roleChip(weAtk)}우리 ${esc(ourName)}</b><b class="wf-who foe">${roleChip(!weAtk)}적 ${esc(foeName)}</b>${hit}${omen}<div class="wf-terr">${terrChips(prev, l, me, fname(foeF)).map((c) => terrChipHtml(art, c, 'wtc')).join('')}</div></div>`
   }
 
   // 싸움터 배경 (땅마다) · 위 카드는 굴려도 그 자리에 (형: "싸우는로그가 스크롤로 보이더라도 상단에 캐릭터랑 체력바 있는 그 카드는 고정")
@@ -1083,7 +1104,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       h += `<button class="wgt${x === act ? ' on' : ''}${c !== undefined ? ' done' : ''}" data-war="gtab" data-g="${x.g}">${x.icon}<span class="wgn"><b>${esc(x.name)}</b><small>${esc(x.sub)}</small></span>${chip}</button>`
     }
     h += `</div>`
-    if (p.guess !== undefined) h += `<p class="wgby">${p.guess.by === 'hint' ? '깃발 밑의 막대는 짐작 — <b>적이 낌새대로 오면</b> 이번 합이 이렇게 된다' : '깃발 밑의 막대는 짐작 — 적의 속을 몰라 <b>폭</b>이 있다 (옅은 데가 그 폭)'}</p>`
+    if (p.guess !== undefined) h += `<p class="wgby">${p.guess.by === 'hint' ? '깃발마다 이번 합의 짐작 — <b>적이 낌새대로 오면</b>' : '깃발마다 이번 합의 짐작 — 적의 속을 몰라 <b>폭</b>이 있다 (막대의 옅은 데)'} · <b>판세</b> 막대는 왼쪽 끝이 우리, 오른쪽 끝이 적 — 파랑이 그 깃발을 들었을 때 우리 몫, 금빛 금이 지금 · <b>잃을 군사</b>는 이번 합에 양쪽이 잃을 만큼</p>`
     for (const x of panes) {
       recNow = advise(x.g, x.options)
       h += `<div class="wgrp" data-g="${x.g}"${recNow !== undefined ? ` data-rec="${recNow}"` : ''}${x === act ? '' : ' hidden'}><div class="wcmdgrid">${x.options.map((c) => opt(x.g, c)).join('')}</div></div>`
@@ -1208,6 +1229,16 @@ export const WAR_CSS = `
 .ap .wfield .tp { position: absolute; left: var(--x); top: calc(60% + var(--oy)); height: clamp(26px, 7cqw, 46px); width: auto; transform: translate(-50%, -100%) scale(var(--sc, 1)); transform-origin: 50% 100%; pointer-events: none; filter: drop-shadow(0 2px 2px #000a); }
 .ap .wfield .tp.flat { height: clamp(18px, 5cqw, 32px); transform: translate(-50%, -60%) scale(var(--sc, 1)); filter: none; opacity: .92; }
 .ap .wfield .wf-mid-terr { position: absolute; inset: 0; }
+.ap .wfield .wf-mid-terr.mud .tp { filter: sepia(1) saturate(.65) brightness(.72) hue-rotate(-12deg); opacity: 1; }
+/* 땅 이름표 (tlab) — 소품 곁 · 누구에게 유리한지 색 */
+.ap .wf-tl { position: absolute; left: var(--x); top: calc(60% + var(--oy)); transform: translate(-50%, -50%); z-index: 75; display: flex; flex-direction: column; align-items: center; padding: 1px 6px 2px; border-radius: 7px; background: #120d09d8; border: 1px solid #6a5a48; font-size: clamp(9.5px, 2.5cqw, 12px); font-weight: 800; line-height: 1.15; color: #f6d8a0; white-space: nowrap; pointer-events: none; box-shadow: 0 2px 6px #000a; }
+.ap .wf-tl small { font-size: .82em; font-weight: 700; color: #c8bca8; }
+.ap .wf-tl.us { border-color: #5fae55; } .ap .wf-tl.us small { color: #9fe08a; } .ap .wf-tl.foe { border-color: #c8604a; } .ap .wf-tl.foe small { color: #ff9a80; }
+.ap .wf2s.foe .wf-tl { transform: translate(-50%, -50%) scaleX(-1); }
+.ap .wfield.play .wf-tl { opacity: .3; transition: opacity .3s; }
+/* 공격·수비 꼬리 */
+.ap .wrole { display: inline-block; font-style: normal; font-size: .82em; font-weight: 900; padding: 0 5px; margin-right: 4px; border-radius: 6px; vertical-align: 1px; letter-spacing: .04em; }
+.ap .wrole.atk { background: #c8402a; color: #fff; } .ap .wrole.def { background: #3a6ab0; color: #fff; }
 .ap .wfield.play .wf-mid-terr { transform-origin: 50% 62%; animation: wpushin 1.5s cubic-bezier(.2, .7, .3, 1) calc(var(--hd) - .25s) both; }
 .ap .wf2s .tk { position: absolute; left: calc(var(--x) + var(--dx, 0%)); top: calc(60% + var(--oy) * var(--sy, 1) + var(--dy, 0%)); height: clamp(28px, 7.4cqw, 50px); width: auto;
   transform: translate(-50%, -100%) scale(var(--sc, 1)); transform-origin: 50% 100%; rotate: var(--rot, 0deg);
@@ -1543,13 +1574,15 @@ export const WAR_CSS = `
 .ap .wgt:not(.on):not(.done) { animation: wgtwait 1.6s ease-in-out infinite alternate; } @keyframes wgtwait { to { border-color: #a07a48; } }
 .ap .wgby { margin: 2px 2px 4px; font-size: 12px; color: var(--mute); } .ap .wgby b { color: #e8d4a8; }
 /* 짐작 — 판세 막대(우리 푸른빛 · 적 붉은빛 · 폭은 옅게 · 지금에 금) · 말 · 잃을 몫 */
-.ap .wguess { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 3px 6px; width: 100%; margin-top: 4px; }
+.ap .wguess { display: grid; grid-template-columns: auto auto 1fr auto auto; align-items: center; gap: 3px 4px; width: 100%; margin-top: 4px; }
+.ap .wguess .wgt { font-size: 10.5px; color: var(--mute); white-space: nowrap; } .ap .wguess > .wgk { font-size: 10.5px; font-weight: 700; } .ap .wguess > .wgk.us { color: #7fb8f0; } .ap .wguess > .wgk.foe { color: #f09080; }
 .ap .wguess .wgbar { position: relative; height: 7px; border-radius: 4px; overflow: hidden; box-shadow: inset 0 0 0 1px #0008;
   background: linear-gradient(90deg, #3d8fe0 0 var(--lo), #3d8fe077 var(--lo) var(--hi), #c8503a var(--hi) 100%); }
 .ap .wguess .wgbar::after { content: ''; position: absolute; left: var(--e0); top: -1px; bottom: -1px; width: 2px; margin-left: -1px; background: #ffe7b0; box-shadow: 0 0 3px #000; }
 .ap .wcmd .wguess > b { font-size: 11.5px; white-space: nowrap; }
 .ap .wguess.g2 > b { color: #7fd8ff; } .ap .wguess.g1 > b { color: #a8d8f0; } .ap .wguess.g0 > b { color: #d8cfbf; } .ap .wguess.b1 > b { color: #f0b090; } .ap .wguess.b2 > b { color: #ff7a5a; }
-.ap .wguess .wgl { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr auto 1fr; align-items: center; gap: 4px; }
+.ap .wguess .wgl { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: #d8cfbf; }
+.ap .wguess .wgl b.l1 { color: #9fe08a; } .ap .wguess .wgl b.l2 { color: #f0d080; } .ap .wguess .wgl b.l3 { color: #ff8a6a; }
 .ap .wguess .wgl .wgk { font-size: 10.5px; color: var(--mute); }
 .ap .wguess .wgl i { height: 4px; border-radius: 2px; background: #0006; box-shadow: inset 0 0 0 1px #0006; }
 .ap .wguess .wgl i.us { background: linear-gradient(90deg, #e0604a 0 var(--a), #e0604a66 var(--a) var(--b), #0006 var(--b)); }
@@ -2243,7 +2276,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     if (!inR(f.getBoundingClientRect())) return null
     const om = f.querySelector<HTMLElement>('.wf-omen')
     if (om !== null && om.offsetParent !== null && inR(om.getBoundingClientRect())) return { key: 'omen' }
-    for (const c of f.querySelectorAll<HTMLElement>('.wtc[data-tk]')) if (inR(c.getBoundingClientRect())) return { key: `terr:${c.dataset['tk']}` }
+    for (const c of f.querySelectorAll<HTMLElement>('.wtc[data-tk], .wf-tl[data-tk]')) if (inR(c.getBoundingClientRect())) return { key: `terr:${c.dataset['tk']}` }
     let best: { key: string; side: 'us' | 'foe'; g: Grp | 'lead' } | null = null
     let area = Infinity
     for (const side of ['us', 'foe'] as const) {
