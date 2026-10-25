@@ -69,13 +69,15 @@ export function heroAt(r: Realm, hero: string): string | null {
 export function postHero(r: Realm, node: string): Hero | null {
   const owner = r.nodes[node]?.owner
   if (owner === null || owner === undefined) return null
+  // 도읍은 늘 군주가 다스린다 — 다른 장수는 앉지 못한다 (형 10-26: "내 나라 도읍은 항상 군주가 성주인 거 맞지? … 다른 장수들이 성주 못 하게 해야")
+  // 군주가 친정·사신으로 자리를 비운 계절에는 도읍을 맡은 이가 없다 (rulerReach 가 다스림을 깎는다)
+  if (r.factions[owner]?.capital === node) {
+    const ruler = rulerOf(r, owner)
+    return ruler !== null && ruler.at === node && armyOfHero(r, ruler.id) === null && !(ruler.awayUntil !== undefined && ruler.awayUntil >= r.season) ? ruler : null
+  }
   // 사신을 따라 나간 계절에는 맡은 고을에 손이 안 간다
   const posted = firstById(Object.values(r.heroes), (h) => h.post === node && h.status === 'free' && h.faction === owner && !(h.awayUntil !== undefined && h.awayUntil >= r.season))
-  if (posted !== null) return posted
-  // 도읍은 따로 맡긴 장수가 없으면 군주가 맡는다 — 군주의 맡은 고을 특성(농사꾼·대장장이·철의 손…)이 여기 걸린다
-  if (r.factions[owner]?.capital !== node) return null
-  const ruler = rulerOf(r, owner)
-  return ruler !== null && ruler.at === node && armyOfHero(r, ruler.id) === null && !(ruler.awayUntil !== undefined && ruler.awayUntil >= r.season) ? ruler : null
+  return posted
 }
 
 /** 그 고을에 혼자 머무는(군대를 안 이끄는) 제 나라 장수들 — id 순서 */
@@ -260,6 +262,7 @@ function assignHero(r: Realm, o: Extract<Order, { kind: 'assign' }>, lines: Repo
     return
   }
   if (isRuler(r, h.id)) return
+  if (r.factions[h.faction]?.capital === o.node) return // 도읍은 군주의 자리
   const node = r.nodes[o.node]
   if (node === undefined || node.owner !== h.faction || node.kind === 'sodo') return
   const a = armyOfHero(r, h.id)
@@ -419,6 +422,8 @@ export function applyHeroOrders(r: Realm, orders: readonly Order[], lines: Repor
     else if (o.kind === 'wed') wed(r, o, lines)
     else if (o.kind === 'cohabit') cohabit(r, o, lines)
   }
+  // 예전 판에서 도읍에 앉혀 둔 장수 — 자리만 내놓고 도읍에 남는다
+  for (const h of Object.values(r.heroes)) if (h.post != null && r.factions[h.faction]?.capital === h.post) h.post = null
   placeOrphans(r)
 }
 

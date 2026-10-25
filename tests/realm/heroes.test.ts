@@ -15,7 +15,7 @@ import { fightHead } from '../../src/realm/battle.ts'
 import { TRAIT } from '../../src/realm/data/traits.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import {
-  addBond, alertFloor, armyOfHero, harvestMul, heroSeen, persuadeSeasons, rulerOf, sweepHeroes, wanderersFor,
+  addBond, alertFloor, armyOfHero, harvestMul, heroSeen, persuadeSeasons, postHero, rulerOf, sweepHeroes, wanderersFor,
 } from '../../src/realm/heroes.ts'
 import { advance, forceOf, planned } from '../../src/realm/season.ts'
 import { migrate } from '../../src/realm/migrate.ts'
@@ -58,10 +58,12 @@ describe('장수 — 판의 처음', () => {
 describe('맡기기 · 이끌기', () => {
   it('고을에 혼자 있는 장수를 그 고을에 맡긴다 — 농사꾼이면 수확이 는다 · 우리 땅으로 이어진 다른 고을은 호위를 거느리고 가서 맡는다 · 군주는 안 된다', () => {
     const r = byeonhanMini(1)
-    const before = harvestMul(r, 'our-cap')
-    const p = planned(r, [{ kind: 'assign', hero: 'us-1', node: 'our-cap' }])
-    assert.equal(p.heroes['us-1']!.post, 'our-cap')
-    assert.ok(harvestMul(p, 'our-cap') > before)
+    const here = structuredClone(r)
+    here.heroes['us-1']!.at = 'our-north'
+    const before = harvestMul(here, 'our-north')
+    const p = planned(here, [{ kind: 'assign', hero: 'us-1', node: 'our-north' }])
+    assert.equal(p.heroes['us-1']!.post, 'our-north')
+    assert.ok(harvestMul(p, 'our-north') > before)
     const far = planned(r, [{ kind: 'assign', hero: 'us-1', node: 'our-north' }]).heroes['us-1']!
     assert.equal(far.post, 'our-north')
     assert.equal(far.at, 'our-north')
@@ -71,22 +73,37 @@ describe('맡기기 · 이끌기', () => {
     assert.equal(planned(r, [{ kind: 'assign', hero: 'us-ruler', node: 'our-cap' }]).heroes['us-ruler']!.post, null)
   })
 
-  it('군대를 이끌던 장수를 맡기면 그 군대는 장수가 없어진다 · 혼자 있는 장수가 장수 없는 군대를 이끈다', () => {
+  it('도읍은 늘 군주가 다스린다 — 다른 장수는 앉지 못하고, 예전 판에 앉아 있던 장수도 자리를 내놓는다 (형 10-26)', () => {
     const r = byeonhanMini(1)
-    const p = planned(r, [{ kind: 'assign', hero: 'chief', node: 'our-cap' }])
+    const p = planned(r, [{ kind: 'assign', hero: 'us-1', node: 'our-cap' }])
+    assert.equal(p.heroes['us-1']!.post, null)
+    assert.equal(postHero(p, 'our-cap')?.id, rulerOf(p, 'us')?.id)
+    // 예전 판 — 도읍에 장수가 앉아 있었다
+    const old = structuredClone(r)
+    old.heroes['us-1']!.post = 'our-cap'
+    old.heroes['us-1']!.at = 'our-cap'
+    assert.equal(postHero(old, 'our-cap')?.id, rulerOf(old, 'us')?.id)
+    assert.equal(planned(old, []).heroes['us-1']!.post, null)
+  })
+
+  it('군대를 이끌던 장수를 맡기면 그 군대는 장수가 없어진다 · 혼자 있는 장수가 장수 없는 군대를 이끈다', () => {
+    const r = structuredClone(byeonhanMini(1))
+    r.armies['a-us']!.at = 'our-north'
+    const p = planned(r, [{ kind: 'assign', hero: 'chief', node: 'our-north' }])
     assert.equal(p.armies['a-us']!.hero, null)
-    assert.equal(p.heroes['chief']!.post, 'our-cap')
+    assert.equal(p.heroes['chief']!.post, 'our-north')
     const q = planned(p, [{ kind: 'lead', hero: 'us-1', army: 'a-us' }])
     assert.equal(q.armies['a-us']!.hero, 'us-1')
     assert.equal(q.heroes['us-1']!.at, null)
   })
 
   it('맡은 장수의 지략·신중이 그 고을 경계를 받친다', () => {
-    const r = byeonhanMini(1)
-    const p = planned(r, [{ kind: 'assign', hero: 'dokro-2', node: 'dokro-cap' }])
-    assert.ok(alertFloor(p, 'dokro-cap') > alertFloor(r, 'dokro-cap'))
-    const { next } = pass(r, [{ kind: 'assign', hero: 'dokro-2', node: 'dokro-cap' }])
-    assert.ok(next.watch['dokro-cap']!.alert >= alertFloor(next, 'dokro-cap') - 1e-9)
+    const r = structuredClone(byeonhanMini(1))
+    r.heroes['us-1']!.at = 'our-north'
+    const p = planned(r, [{ kind: 'assign', hero: 'us-1', node: 'our-north' }])
+    assert.ok(alertFloor(p, 'our-north') > alertFloor(r, 'our-north'))
+    const { next } = pass(r, [{ kind: 'assign', hero: 'us-1', node: 'our-north' }])
+    assert.ok(next.watch['our-north']!.alert >= alertFloor(next, 'our-north') - 1e-9)
   })
 
   it('해산하면 장수는 그 고을에 혼자 남는다', () => {

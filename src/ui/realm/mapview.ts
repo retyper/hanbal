@@ -11,6 +11,7 @@ import { FACTION_ART, GOOD_ICON, REGION_ART, SEASON_MAP, bustOf, nodeIcon, nodeP
 import { EDGE_NAME, GOOD_NAME, NODE_KIND_NAME, NODE_NOW, tagNow } from '../../realm/data/prose.ts'
 import { worldGeoOf } from '../../realm/data/regions/index.ts'
 import { knows } from '../../realm/discovery.ts'
+import { postHero, rulerOf } from '../../realm/heroes.ts'
 import { crowdOf, isCoast, nodeHarvest, nodeSpecials, nodeYield } from '../../realm/economy.ts'
 import { visibleRange } from '../../realm/intel.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
@@ -119,6 +120,8 @@ export const MAP_CSS = `
 /* 빼앗은 고을 — 위에서 우리 깃발이 꽂히고(통 튐) 천이 나부끼며, 금빛 테가 번지고 「점령」이 떴다 사라진다. 연기는 옅게 */
 .map .nd .burnsm.won { opacity: .35; }
 /* 맡은 장수 — 고을 기호 오른쪽 위에 작은 얼굴 (금테) */
+.map .nd .gov.lord { width: 40%; border-color: #ffd77a; box-shadow: 0 0 0 1px #000, 0 0 10px #ffd77acc, 0 2px 6px #000c; }
+.map .nd .gov.lord.away { filter: grayscale(.8) brightness(.7); box-shadow: 0 0 0 1px #000, 0 2px 6px #000c; }
 .map .nd .gov { position: absolute; right: -6%; top: -4%; width: 34%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 2px solid #e0b04a; box-shadow: 0 0 0 1px #000, 0 2px 6px #000c; z-index: 4; pointer-events: none; background: #2a2016; }
 .map .nd .plant { position: absolute; left: 58%; bottom: 46%; width: 42%; aspect-ratio: 1 / 1.5; z-index: 3; pointer-events: none; transform-origin: 0 100%; animation: plantin .7s cubic-bezier(.3, 1.6, .5, 1) .4s both; }
 .map .nd .plant .pole { position: absolute; left: 0; bottom: 0; width: 7%; height: 100%; border-radius: 2px; background: linear-gradient(90deg, #3a2814, #8a6a40); box-shadow: 0 0 2px #000; }
@@ -492,7 +495,12 @@ export function mapHtml(
 
   let nodes = ''
   const labels: LabelIn[] = []
-  const govOf = new Map(Object.values(r.heroes).filter((h) => h.faction === me && h.status === 'free' && h.post != null && h.at === h.post).map((h) => [h.post!, h] as const))
+  const capOf = r.factions[me]?.capital
+  const govOf = new Map(Object.values(r.heroes).filter((h) => h.faction === me && h.status === 'free' && h.post != null && h.at === h.post && h.post !== capOf).map((h) => [h.post!, h] as const))
+  // 도읍은 늘 군주 — 자리를 비운 계절(친정·사신)엔 흐리게 (형 10-26: "도읍은 항상 군주가 성주인 거 맞지? 그건 왜 맵에서 안 보이지?")
+  const lord = rulerOf(r, me)
+  if (capOf != null && lord !== null) govOf.set(capOf, lord)
+  const lordAway = capOf != null && lord !== null && postHero(r, capOf)?.id !== lord.id
   for (const n of Object.values(r.nodes).sort((x, y) => (x.id < y.id ? -1 : 1))) {
     if (!seen(n.id)) continue
     const p = pos(n.id)
@@ -561,7 +569,9 @@ export function mapHtml(
     })
     // 맡은 장수 — 우리 고을이면 얼굴을 작게 (형 10-23: "마을에 장수 배치한 거 아직 맵에선 아무것도 안 보이던데")
     const gv = ours ? govOf.get(n.id) : undefined
-    const gface = gv !== undefined && bustOf(gv.id) !== undefined ? `<img class="gov" src="${art}bust/${bustOf(gv.id)}.jpg" alt="" title="${gv.name} — 이 고을을 맡았다">` : ''
+    const lordHere = gv !== undefined && n.id === capOf
+    const gface = gv !== undefined && bustOf(gv.id) !== undefined
+      ? `<img class="gov${lordHere ? ' lord' : ''}${lordHere && lordAway ? ' away' : ''}" src="${art}bust/${bustOf(gv.id)}.jpg" alt="" title="${gv.name} — ${lordHere ? (lordAway ? '군주가 도읍을 비웠다' : '군주가 몸소 다스린다') : '이 고을을 맡았다'}">` : ''
     nodes += `<span class="base"></span><span class="ring"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${taken.has(n.id) ? `<img class="burnsm won" src="${art}fx/smoke.png" alt=""><span class="plant"><i class="pole"></i><i class="cloth" style="--fc:${FACTION_ART[me]?.color ?? '#c9a45a'}"><img src="${art}icon/${FACTION_ART[me]?.emblem ?? 'emblem-shell'}.png" alt=""></i></span><i class="wonring"></i><span class="wonchip">점령</span>` : burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${held.has(n.id) ? '<span class="heldchip">🛡 지켜 냈다</span>' : ''}${mist}${ice}${gface}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? `<span class="tchip">${tg.chip}</span>` : settleable.has(n.id) ? (settling.has(n.id) ? '<span class="stl go">백성이 가는 중</span>' : '<span class="stl">＋마을</span>') : crowd}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다

@@ -581,7 +581,7 @@ function heroCare(r: Realm, faction: string): Order[] {
     if (leaderless !== undefined && h.mu + h.tong >= h.chi + h.deok) {
       taken.add(leaderless.id)
       out.push({ kind: 'lead', hero: h.id, army: leaderless.id })
-    } else if (h.post !== h.at && postHero(r, h.at)?.id === undefined) out.push({ kind: 'assign', hero: h.id, node: h.at })
+    } else if (h.post !== h.at && r.factions[faction]?.capital !== h.at && postHero(r, h.at)?.id === undefined) out.push({ kind: 'assign', hero: h.id, node: h.at })
   }
   let spare = stockOf(r, faction).grain - R.aiHireReserve * upkeepOf(r, faction, true)
   const by = [...mine].sort((a, b) => b.deok - a.deok || (a.id < b.id ? -1 : 1))[0]?.id ?? null

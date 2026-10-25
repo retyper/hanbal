@@ -42,7 +42,7 @@ import { startRegion } from '../../realm/data/regions/index.ts'
 import { HIRE_BY_TRAIT, HIRE_LINE, HIRE_PLAIN } from '../../realm/data/hire-lines.ts'
 import { DESTS, DEST_IDS, EXP_SEASONS, destReachable, expAmount, expBlock, expOdds, onExpedition } from '../../realm/expedition.ts'
 import { foundable, joinable, partiesOf, partyCost, partyMoves, partySize } from '../../realm/parties.ts'
-import { canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, together, inheritOf, isRuler, persuadeDropOf, postHero, recruitChance, resistOf, wanderersFor } from '../../realm/heroes.ts'
+import { canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, together, inheritOf, isRuler, persuadeDropOf, postHero, recruitChance, resistOf, rulerOf, wanderersFor } from '../../realm/heroes.ts'
 import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
@@ -2638,10 +2638,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     let h = ''
     if (army !== undefined) {
-      if (army.march === null && r.nodes[at]?.owner === me()) h += card(at, '군대에서 빠져 맡는다')
+      if (army.march === null && r.nodes[at]?.owner === me() && at !== r.factions[me()]?.capital) h += card(at, '군대에서 빠져 맡는다')
     } else {
-      if (x.post !== at && r.nodes[at]?.owner === me()) h += card(at, '지금 있는 고을')
-      const far = sorted(Object.values(r.nodes)).filter((n) => n.owner === me() && n.id !== at && n.kind !== 'sodo' && n.hh > 0 && migratePath(r, me(), at, n.id) !== null)
+      const cap = r.factions[me()]?.capital
+      if (x.post !== at && r.nodes[at]?.owner === me() && at !== cap) h += card(at, '지금 있는 고을')
+      const far = sorted(Object.values(r.nodes)).filter((n) => n.owner === me() && n.id !== at && n.id !== cap && n.kind !== 'sodo' && n.hh > 0 && migratePath(r, me(), at, n.id) !== null)
       for (const n of far) h += card(n.id, `정예 ${P.realm.escortMen}명과 한 계절 길`)
     }
     if (h === '') return ''
@@ -3256,7 +3257,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 고을지기 자리 한 칸 — 앉은 이(얼굴·이름) · 자리를 비운 이(흐리게) · 빈자리(실루엣과 ?) · 이번 계절 오는 이 */
   function chiefSlot(r: Realm, id: string): string {
     const posted = Object.values(r.heroes).find((y) => y.post === id && y.faction === me() && y.status === 'free')
-    const acting = postHero(r, id) // 도읍은 따로 앉힌 이가 없으면 군주가 맡는다 · 자리를 비운 계절엔 없다
+    const acting = postHero(r, id) // 도읍은 늘 군주가 맡는다 · 자리를 비운 계절엔 없다
+    // 도읍 — 군주의 자리 · 바꿀 수 없다 (형 10-26)
+    if (r.factions[me()]?.capital === id) {
+      const lord = rulerOf(r, me())
+      const away = acting === null
+      return `<div class="chslot${away ? ' away' : ''}">${lord !== null ? bust(lord, 'cface') : ''}<span class="chst"><small>고을지기 · 도읍</small><b>${nameHtml(lord?.name ?? '')}</b><i>${away ? '군주가 도읍을 비웠다 — 돌아오면 다시 다스린다' : '군주가 몸소 다스린다'}</i></span></div>`
+    }
     const coming = heroOrders.find((o): o is Extract<Order, { kind: 'assign' }> => o.kind === 'assign' && o.node === id)
     const cx = coming !== undefined ? r.heroes[coming.hero] : undefined
     const sil = `<span class="chsil"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="14" r="7.5"/><path d="M5 40c0-10 6.5-15 15-15s15 5 15 15z"/></svg><b>?</b></span>`
@@ -3270,6 +3277,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   function chiefHtml(r: Realm, id: string): string {
+    if (r.factions[me()]?.capital === id) return '' // 도읍은 군주의 자리 — 앉힐 장수가 없다
     const holder = Object.values(r.heroes).find((y) => y.post === id && y.faction === me() && y.status === 'free')
     const coming = heroOrders.find((o): o is Extract<Order, { kind: 'assign' }> => o.kind === 'assign' && o.node === id)
     // 앉은 이는 위의 자리 칸(chiefSlot)이 보인다 — 여기는 앉힐 장수만
