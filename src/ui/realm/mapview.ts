@@ -10,6 +10,7 @@ import { headcount } from '../../realm/battle.ts'
 import { FACTION_ART, GOOD_ICON, REGION_ART, SEASON_MAP, bustOf, flagIcon, nodeIcon, nodePos } from '../../realm/data/art.ts'
 import { EDGE_NAME, GOOD_NAME, NODE_KIND_NAME, NODE_NOW, tagNow } from '../../realm/data/prose.ts'
 import { worldGeoOf } from '../../realm/data/regions/index.ts'
+import { relationOf } from '../../realm/diplomacy.ts'
 import { knows } from '../../realm/discovery.ts'
 import { postHero, rulerOf } from '../../realm/heroes.ts'
 import { crowdOf, isCoast, nodeHarvest, nodeSpecials, nodeYield } from '../../realm/economy.ts'
@@ -120,6 +121,13 @@ export const MAP_CSS = `
 /* 빼앗은 고을 — 위에서 우리 깃발이 꽂히고(통 튐) 천이 나부끼며, 금빛 테가 번지고 「점령」이 떴다 사라진다. 연기는 옅게 */
 .map .nd .burnsm.won { opacity: .35; }
 /* 맡은 장수 — 고을 기호 오른쪽 위에 작은 얼굴 (금테) */
+/* 우리와의 사이 칩 — 이름표 깃발 곁 */
+.map .lb .lbr { flex: none; font-style: normal; font-weight: 800; font-size: .78em; line-height: 1; padding: .18em .38em; border-radius: .5em; margin-right: .25em; border: 1px solid #0008; box-shadow: 0 1px 2px #0006; }
+.map .lb .lbr.war { background: #b3261e; color: #fff; animation: lbrwar 1.4s ease-in-out infinite alternate; }
+.map .lb .lbr.ally { background: #2e7d32; color: #fff; } .map .lb .lbr.tru { background: #4a90b8; color: #fff; }
+.map .lb .lbr.tri { background: #d4a72c; color: #1c140a; } .map .lb .lbr.srv { background: #6b6358; color: #fff; }
+@keyframes lbrwar { from { box-shadow: 0 1px 2px #0006; } to { box-shadow: 0 0 6px #ff4a3a; } }
+@media (prefers-reduced-motion: reduce) { .map .lb .lbr.war { animation: none; } }
 .map .nd .gov.lord { width: 40%; border-color: #ffd77a; box-shadow: 0 0 0 1px #000, 0 0 10px #ffd77acc, 0 2px 6px #000c; }
 .map .nd .gov.lord.away { filter: grayscale(.8) brightness(.7); box-shadow: 0 0 0 1px #000, 0 2px 6px #000c; }
 .map .nd .gov { position: absolute; right: -6%; top: -4%; width: 34%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 2px solid #e0b04a; box-shadow: 0 0 0 1px #000, 0 2px 6px #000c; z-index: 4; pointer-events: none; background: #2a2016; }
@@ -565,7 +573,7 @@ export function mapHtml(
     labels.push({
       id: n.id, name: n.name, now: NODE_NOW[n.id], x: p[0], y: p[1], s: sizeOf(n.hh), cap: n.kind === 'capital' || cap, hh: n.hh,
       cls: `${kcls}${ours ? ' me' : ''}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${far}${fr}`,
-      kit: owner !== null ? kitVars(owner) : '', emb, force, tray, trayW: sp.length + (fish !== '' ? 1 : 0) + dfs.length * 1.6,
+      kit: owner !== null ? kitVars(owner) : '', emb, rel: relChip(r, me, owner), force, tray, trayW: sp.length + (fish !== '' ? 1 : 0) + dfs.length * 1.6,
     })
     // 맡은 장수 — 우리 고을이면 얼굴을 작게 (형 10-23: "마을에 장수 배치한 거 아직 맵에선 아무것도 안 보이던데")
     const gv = ours ? govOf.get(n.id) : undefined
@@ -664,6 +672,22 @@ const ICON_W = 0.085
 /** 이름 글자 크기 — 지도 높이의 몫 (CSS 2.1cqh 와 같은 값) */
 const LABEL_EM = 0.021
 
+/**
+ * 우리와 그 나라의 사이 — 이름표 깃발 곁에 (형 10-26: "어떤 국가랑 전쟁 중인지 동맹 중인지가 마을 이름표에서도 바로 보이게")
+ * 전쟁 붉게(깜빡) · 동맹 초록 · 화친 하늘 · 조공(우리에게 바친다) 금빛 · 섬김(우리가 바친다) 잿빛. 중립·모르는 나라·우리 땅은 없음
+ */
+function relChip(r: Realm, me: string, owner: string | null): string {
+  if (owner === null || owner === me || r.factions[owner] === undefined || !knows(r, me, owner)) return ''
+  const rel = relationOf(r, me, owner)
+  const v = rel.vassal !== undefined && rel.vassal.until >= r.season ? rel.vassal.lord : null
+  if (rel.state === 'war') return '<i class="lbr war" title="전쟁 중">전쟁</i>'
+  if (v === me) return '<i class="lbr tri" title="우리에게 바치는 나라">조공</i>'
+  if (v === owner) return '<i class="lbr srv" title="우리가 바치는 나라">섬김</i>'
+  if (rel.state === 'ally') return '<i class="lbr ally" title="동맹">동맹</i>'
+  if (rel.state === 'truce') return '<i class="lbr tru" title="화친">화친</i>'
+  return ''
+}
+
 interface LabelIn {
   readonly id: string
   readonly name: string
@@ -678,6 +702,8 @@ interface LabelIn {
   readonly kit: string
   /** 주인 나라 깃발 그림 주소 ('' 이면 없음) */
   readonly emb: string
+  /** 우리와의 사이 칩 html — 전쟁·동맹·화친·조공 ('' 이면 없음) */
+  readonly rel: string
   /** 척후가 본 군세 칩 html ('' 이면 없음) */
   readonly force: string
   /** 특산·지은 것 칸 html ('' 이면 없음) */
@@ -717,7 +743,7 @@ function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly 
   const order = ls.slice().sort((a, b) => (a.cap !== b.cap ? (a.cap ? -1 : 1) : b.hh - a.hh || (a.id < b.id ? -1 : 1)))
   for (const l of order) {
     // 배너 — 깃발(1.4자) · 별 · 군세 칩도 자리를 먹는다
-    const chars = Math.max(l.name.length + (l.cap ? 1 : 0), (l.now ?? '').length * 0.78) + (l.emb !== '' ? 1.6 : 0) + (l.force !== '' ? 3.5 : 0) + (l.tray !== '' ? l.trayW * 1.2 + 0.9 : 0) + 0.8
+    const chars = Math.max(l.name.length + (l.cap ? 1 : 0), (l.now ?? '').length * 0.78) + (l.emb !== '' ? 1.6 : 0) + (l.rel !== '' ? 2.4 : 0) + (l.force !== '' ? 3.5 : 0) + (l.tray !== '' ? l.trayW * 1.2 + 0.9 : 0) + 0.8
     const w = (chars * em * 0.95 * H) / W + 0.004
     const h = em * (l.now !== undefined ? 2.05 : 1.25)
     const iw = ICON_W * ns * l.s
@@ -740,7 +766,7 @@ function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly 
     const [cx, cy] = best!.c
     placed.push({ x0: cx - w / 2, y0: cy, x1: cx + w / 2, y1: cy + h })
     out += `<span class="lb${l.cls}" data-n="${l.id}" style="left:${(cx * 100).toFixed(2)}%;top:${(cy * 100).toFixed(2)}%${l.kit !== '' ? `;${l.kit}` : ''}">`
-      + `${l.emb !== '' ? `<img class="lbe" src="${l.emb}" alt="">` : ''}<span class="lbt"><span>${l.cap ? '<i class="star">★</i>' : ''}${l.name}</span>${l.now !== undefined ? `<small>${l.now}</small>` : ''}</span>${l.tray}${l.force}</span>`
+      + `${l.emb !== '' ? `<img class="lbe" src="${l.emb}" alt="">` : ''}${l.rel}<span class="lbt"><span>${l.cap ? '<i class="star">★</i>' : ''}${l.name}</span>${l.now !== undefined ? `<small>${l.now}</small>` : ''}</span>${l.tray}${l.force}</span>`
   }
   return out + '</div>'
 }
