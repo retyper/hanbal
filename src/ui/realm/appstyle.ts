@@ -379,8 +379,11 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .trade { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 10px; background: #1e160f; }
 /* 사신 꾸미기 — 무엇을 · 누가 가나 (얼굴 줄) */
 .ap .trade .cmh { display: flex; flex-direction: column; gap: 2px; } .ap .trade .cmh b { color: var(--gold); font-size: 15px; }
-.ap .who .wlist { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 6px; -webkit-overflow-scrolling: touch; }
-.ap .who .wg { flex: none; width: 70px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; border-radius: 12px;
+/* 고을 판의 공작 격자 — 펼친 갈래 · 보낸 갈래 · 여기서 못 거는 갈래(외교로) */
+.ap .nplots { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); } .ap .nplots .cmdt.on { border-color: var(--gold); background: #3a2c16; } .ap .nplots .cmdt.sent { border-color: #7fbf6a; } .ap .nplots .cmdt.away { opacity: .62; }
+/* 누가 가나 — 한 줄로 밀던 것을 공작처럼 격자로 (형 10-25: "1행이라서 보기 힘듦 · 공작처럼") */
+.ap .who .wlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; padding: 2px 2px 6px; }
+.ap .who .wg { flex: none; width: auto; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; border-radius: 12px;
   border: 1px solid var(--line); background: #201914; color: var(--ink); font: inherit; cursor: pointer; }
 .ap .who .wg .wfc { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #6a5236; background: #3a2c1e; display: block; }
 .ap .who .wg b { font-size: 12px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

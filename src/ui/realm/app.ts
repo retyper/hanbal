@@ -565,6 +565,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 암살에 보낼 자객 — 우리 장수 id, null 이면 고용 자객 */
   let plotAgent: string | null = null
   /** 고을 판에서 누른 공작 줄 — 그 바로 밑에 「누가 가나」를 펼친다 (op|target|node|hero) */
+  /** 고을 판의 공작 격자에서 펼친 갈래 ('' = 접힘) */
+  let natPlotOp: PlotOp | '' = ''
   let plotPick = ''
   /** 고을 판에서 펼쳐 둔 칸 (땅 이야기 · 고을 형편 · 나는 것 …) — 처음엔 다 접혀 있다 (형 10-25: "마을마다 있는 상세한 정보 너무 길게 … 접어두거나") */
   const foldOpen = new Set<string>()
@@ -2065,9 +2067,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     let h = `<div class="who"><div class="nal">누가 가나</div><div class="wlist">`
     h += `<button class="wg${compose.hero === '' ? ' on' : ''}" data-act="chero" data-id="">${icon('unit-scouts', 'wfc')}<b>사자</b>${feel()}</button>`
     // 갈 수 있는 장수 — 이미 다른 일을 맡은 이는 흐리게 남기고 무슨 일인지 (형 10-23: "이미 다른 일 하고 있는데 … 뭘 일 시켰고 뭘 안 시켰는지 모르잖아")
-    for (const x of mine.filter((y) => !can(y.id) && canEscort(r, me(), y.id))) {
+    // 군대를 이끄는 장군도 흐리게 — 왜 못 가는지 보이게 (한 사람 한 가지 일 · 형 10-25: "군사를 맡은 장군은 사신으로 못 보내야")
+    for (const x of mine.filter((y) => !can(y.id))) {
       const e = Object.values(envoys).find((v) => v.hero === x.id)
-      const why = e !== undefined ? `${r.factions[e.to]?.name ?? ''} 사신` : plots.some((p) => p.kind === 'plot' && p.agent === x.id) ? '자객' : (heroBusy(r, x.id) ?? '다른 일').replace(/^이번 계절 /, '')
+      const leads = Object.values(r.armies).some((a) => a.hero === x.id)
+      const why = leads ? '군대를 이끈다' : e !== undefined ? `${r.factions[e.to]?.name ?? ''} 사신` : plots.some((p) => p.kind === 'plot' && p.agent === x.id) ? '자객' : (heroBusy(r, x.id) ?? '다른 일').replace(/^이번 계절 /, '')
       h += `<button class="wg off" disabled>${bust(x, 'wfc')}<b>${esc(x.name)}</b><i class="busyw">${esc(why)}</i></button>`
     }
     for (const x of mine.filter((y) => can(y.id))) {
@@ -3266,13 +3270,23 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const e of sentTo(f)) h += sentBanner(r, e, false)
     h += askButtons(r, f, ' sm')
     h += `<div class="btns"><button class="btn ghost sm" data-act="nat-diplo" data-to="${f}">사신 자세히 · 그 나라와 있었던 일</button></div>`
-    // 공작 — 이 고을·이 나라를 노리는 것만
+    // 공작 — 여섯 갈래를 외교의 공작 칸과 같은 그림 격자로 (형 10-25: "외교 공작탭은 6개 다 있는데 마을 눌러서 나오는 공작은 왜 4개밖에 없음")
+    // 이 고을·이 나라에 바로 걸 수 있는 갈래는 누르면 밑에 펼치고, 여기서 못 거는 갈래(두 나라 갈라놓기 · 이 고을에 없는 적장 암살)는 외교의 공작 칸으로
     const max = P.realm.plotsPerSeason
     const st = left()
     const rows: string[] = []
+    const targetsHere = (op: PlotOp): ReturnType<typeof plotTargets> => (op === 'sow' ? [] : plotTargets(realm!, me(), op).filter((t) => t.target === f && (t.node === undefined || t.node === node)))
+    let grid = `<div class="cmdts nplots">`
     for (const op of PLOT_OPS) {
-      if (op === 'sow') continue // 두 나라를 갈라놓는 것은 외교 판에서
-      const ts = plotTargets(realm!, me(), op).filter((t) => t.target === f && (t.node === undefined || t.node === node))
+      const here = targetsHere(op).length > 0
+      const sentN = plots.filter((p) => p.kind === 'plot' && p.op === op && p.target === f).length
+      const why = op === 'sow' ? '두 나라 사이 — 외교에서' : op === 'assassin' && !here ? '이 고을엔 적장이 없다 — 외교에서' : !here ? '외교에서' : sentN > 0 ? '보낸다' : PLOT_DOES[op]
+      grid += `<button class="cmdt plotop${natPlotOp === op ? ' on' : ''}${sentN > 0 ? ' sent' : ''}${here ? '' : ' away'}" data-act="${here ? 'npop' : 'cmd-plot'}" data-op="${op}">${icon(PLOT_ICON[op], 'poic')}<b>${PLOT_NAME[op]}</b><small>${esc(why)}</small></button>`
+    }
+    grid += `</div>`
+    for (const op of PLOT_OPS) {
+      if (op !== natPlotOp) continue
+      const ts = targetsHere(op)
       for (const t of ts) {
         const cost = plotCost(op, null)
         const dup = plots.some((p) => p.kind === 'plot' && p.op === op && p.target === t.target && p.node === t.node && p.hero === t.hero)
@@ -3289,7 +3303,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (open) rows.push(plotWhoHtml(r, op, t))
       }
     }
-    h += `<div class="nal">공작 <span class="mute">한 계절에 ${max}가지 · 지금 ${plots.length}</span></div>`
+    h += `<div class="nal">공작 <span class="mute">한 계절에 ${max}가지 · 지금 ${plots.length}</span></div>` + grid
     if (rows.length > 0) h += `<div class="rows">${rows.join('')}</div>`
     // 외교 판의 공작 칸 — 공작 밑에 (형: "외교에서 자세히 누르면 공작으로는 안넘어가네")
     h += `<div class="btns"><button class="btn ghost sm" data-act="nat-plot" data-to="${f}">공작 자세히</button></div></div>`
@@ -5027,6 +5041,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'pagent': plotAgent = d['id'] ? d['id'] : null; break
       case 'ppick': plotPick = plotPick === d['k'] ? '' : d['k']!; break
+      case 'npop': natPlotOp = natPlotOp === d['op'] ? '' : d['op'] as PlotOp; plotPick = ''; break
       case 'fold': { const k = d['k']!; if (foldOpen.has(k)) foldOpen.delete(k); else foldOpen.add(k); break }
       case 'bowup': musters = musters.some((o) => o.kind === 'bowUp') ? musters.filter((o) => o.kind !== 'bowUp') : [...musters, { kind: 'bowUp', faction: me() }]; break
       case 'hero': openSheet({ kind: 'hero', id: d['id']! }); return
