@@ -77,7 +77,7 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   // 주몽 — 챗지피티로 받은 고구려 군주 얼굴을 다시 쓴다 (형 10-23: "전에 것이 챗지피티로 만들어 더 멋있었는데 · 지금 것은 제미나이라 별로 — 나중에 만들어"). 새 얼굴은 ART-QUEUE
   'jm-jumong': 'g-64-jumong', 'jm-oi': 'g-16-goguryeo-gaema-commander', 'jm-mari': 'g-49-goguryeo-sona', 'jm-hyeopbo': 'g-06-strategist',
   'jm-songyang': 'g-51-biryuna-mulgyeol', 'jm-songbi': 'w-52-biryuna-songbi', 'jm-daeso': 'g-67-buyeo-daeso', 'jm-haedal': 'w-67-buyeo-haedal',
-  'jm-haengin-ruler': 'g-90-haengin-gomok', 'jm-haengin-1': 'w-71-yeonna-neoul', 'jm-okjeo-ruler': 'g-34-bukokjeo-duman', 'jm-okjeo-1': 'w-70-bukokjeo-mulbeom',
+  'jm-haengin-ruler': 'g-90-haengin-gomok', 'jm-haengin-1': 'w-96-haengin-neoul', 'jm-okjeo-ruler': 'g-34-bukokjeo-duman', 'jm-okjeo-1': 'w-70-bukokjeo-mulbeom',
   // 캠페인 1장 — 온조와 신하들 · 마한의 진왕과 장수 (mahan.ts). 있는 명치판을 나눠 쓴다
   'mh-onjo': 'g-71-baekje-onjo', 'mh-eureum': 'g-73-baekje-eureum', 'mh-ogan': 'g-13-baekje-general', 'mh-soseono': 'l-L2-soseono',
   'mh-jinwang': 'g-76-mokji-jinha', 'mh-mahan-1': 'g-83-mokji-keundol', 'mh-mahan-2': 'w-94-mokji-dallae', 'mh-mahan-3': 'g-86-mokji-geumbawi',
