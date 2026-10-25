@@ -91,7 +91,7 @@ export const TUT_STEPS: readonly TutStep[] = [
     done: (c) => c.r.heroes[FOE_HERO]?.status === 'captive' || c.r.heroes[FOE_HERO]?.faction === c.r.player,
   },
   {
-    id: 'persuade', name: '회유', what: '사로잡은 적장을 우리 장수로 만든다', text: '사로잡은 해비를 우리 장수로 만든다. 「명령」의 「옥에 가둔 적장」에서 그 얼굴을 누르고 「회유한다」.',
+    id: 'persuade', name: '회유', what: '사로잡은 적장을 우리 장수로 만든다', text: '사로잡은 해비를 우리 장수로 만든다. 「장수」의 「옥에 가둔 적장」에서 그 얼굴을 누르고 「회유한다」.',
     // 사로잡은 장수는 장수 판의 「옥에 가둔 적장」 칸에 있다 — 그 칸을 먼저 열게 (형 10-24: "10/12 에서 장수 탭 눌러도 다음으로 안 가짐")
     press: ['[data-act="persuade"]', `[data-act="hero"][data-id="${FOE_HERO}"]`, '[data-act="htab"][data-v="jail"]', tab('heroes')],
     done: (c) => c.orders.some((o) => o.kind === 'persuade') || c.r.heroes[FOE_HERO]?.persuade !== undefined || c.r.heroes[FOE_HERO]?.faction === c.r.player,

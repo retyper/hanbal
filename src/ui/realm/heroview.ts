@@ -7,7 +7,7 @@
 import { STAT_NAME, josa } from '../../realm/data/prose.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
 import { armyOfHero, bondOf, bondTier, growNeed, heroArt, honeyLeft, isRuler } from '../../realm/heroes.ts'
-import { ART_DOES, ART_NAME } from './battlefield.ts'
+import { ART_DOES, ART_ICON, ART_NAME } from './battlefield.ts'
 import type { GrowStat, Hero, Realm } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { radarSvg } from './radar.ts'
@@ -60,17 +60,19 @@ export function traitChips(h: Hero, seen: boolean): string {
   return ts.map((id) => {
     const t = TRAIT[id]
     if (t === undefined) return ''
-    return `<span class="trait${t.bad === true ? ' bad' : ''}" style="--g:${GRADE_COLOR[t.grade]}" title="${esc(t.line)}"><b>${esc(t.name)}</b><i>${GRADE_NAME[t.grade]}</i></span>`
+    // 설명은 칩에 쓰지 않는다 — 누르고 있는 동안·마우스를 올렸을 때 손가락·커서 곁에 (형 10-25: "신중 특성 텍스트는 그대로 쓰여 있지 말고")
+    return `<span class="trait${t.bad === true ? ' bad' : ''}" style="--g:${GRADE_COLOR[t.grade]}" data-peek><b>${esc(t.name)}</b><i>${GRADE_NAME[t.grade]}</i><span class="peek"><b>${esc(t.name)} · ${GRADE_NAME[t.grade]}</b><span>${esc(t.line)}</span></span></span>`
   }).join('')
 }
 
-/** 특성 설명 줄 — 카드 안에서 칩 밑에. 끝에 그 장수의 비기 (싸움에서 장수 깃발로 한 번 — tactics) */
-export function traitLines(h: Hero, seen: boolean): string {
-  if (!seen) return ''
-  const art = heroArt(h)
-  return (h.traits ?? []).map((id) => TRAIT[id]).filter((t) => t !== undefined)
-    .map((t) => `<p class="tline${t!.bad === true ? ' bad' : ''}"><b>${esc(t!.name)}</b> ${esc(t!.line)}</p>`).join('')
-    + (art !== undefined ? `<p class="tline art"><b>비기 · ${esc(ART_NAME[art])}</b> ${esc(ART_DOES[art])}</p>` : '<p class="tline mute">비기 없음 — 싸움에선 북을 쳐 지휘한다</p>')
+/**
+ * 비기 — 싸움에서 장수 깃발로 한 번 쓰는 그 장수만의 수 (tactics). 싸움의 깃발 카드와 같은 그림으로 칩 하나, 설명은 펼침으로
+ * (형 10-25: "비기도 너무 텍스트인데 적절하게 이미지화 · 깃발로 썼었나")
+ */
+export function artChip(h: Hero, seen: boolean, icon: (name: string, cls: string) => string): string {
+  const art = seen ? heroArt(h) : undefined
+  if (art === undefined) return ''
+  return `<span class="trait artc" data-peek>${icon(ART_ICON[art], 'tric')}<b>${esc(ART_NAME[art])}</b><i>비기</i><span class="peek"><b>비기 · ${esc(ART_NAME[art])}</b><span>${esc(ART_DOES[art])}</span></span></span>`
 }
 
 /** 지금 하는 일 한 줄 */
@@ -116,6 +118,12 @@ export const HERO_CSS = `
 .ap .trait.bad { border-style: dashed; color: #f1b8a8; }
 .ap .hcard { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
 .ap .hcard img.big { width: 150px; height: 150px; border-radius: 16px; object-fit: cover; border: 2px solid #6a5a3a; }
+/* 얼굴 — 이름은 바로 밑 가운데, 사서의 「?」는 얼굴 모서리에 작게 */
+.ap .hcard .hpic { position: relative; display: inline-block; }
+.ap .hcard .annb { position: absolute; right: -8px; top: -8px; display: flex; align-items: center; gap: 1px; padding: 3px 7px; border-radius: 14px;
+  border: 1px solid #c0a060; background: #2a2016f0; color: #ffd27a; font: inherit; font-size: 14px; cursor: pointer; box-shadow: 0 2px 6px #000a; }
+.ap .hcard .annb b { font-size: 13px; }
+.ap .trait.artc { border-color: #e0bd78; background: #2a2016; align-items: center; } .ap .trait .tric { width: 18px; height: 18px; }
 .ap .hcard .hn { font-size: 20px; color: var(--gold); font-family: 'Gowun Batang', serif; }
 .ap .hcard .radar { margin: 2px auto; }
 .ap .tline { text-align: left; font-size: 13.5px; margin: 3px 0; color: #d8d0c0; } .ap .tline.bad { color: #f1b8a8; } .ap .tline.art b { color: #ffd27a; }
@@ -145,7 +153,8 @@ export const HERO_CSS = `
 .ap .annb b { color: #ffd27a; }
 .ap .gbx.annal small { display: block; color: #c9a86a; font-size: 12px; margin: 2px 0 6px; }
 /* 장수 그림 크게 보기 — 누르면 화면 가득, 아무 데나 누르면 닫힌다 */
-.ap img.big[data-act], .ap img.dxbig[data-act] { cursor: zoom-in; }
+/* .ap img 는 늘 pointer-events: none (끌기 막기) — 크게 보는 얼굴만 눌린다 (그래서 안 눌렸다 · 형 10-25) */
+.ap img.big[data-act], .ap img.dxbig[data-act] { cursor: zoom-in; pointer-events: auto; -webkit-user-drag: none; }
 .ap .bview { position: absolute; inset: 0; z-index: 95; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
   background: #000e; cursor: zoom-out; animation: bvin .2s ease-out; }
 .ap .bview img { max-width: min(96vw, 900px); max-height: 88dvh; object-fit: contain; border-radius: 14px; box-shadow: 0 0 40px #000; border: 2px solid #6a5a3a; }
@@ -175,6 +184,8 @@ export const HERO_CSS = `
 .ap .cmdt { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 10px; border: 1px solid #6a5a3a; background: #2a2218; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
 .ap .cmdt b { color: #f0e0b8; } .ap .cmdt small { font-size: 11.5px; color: var(--mute); }
 .ap .cmdgo { width: 100%; justify-content: center; margin-top: 6px; }
+.ap .cmdt.plotop { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 2px 6px; } .ap .cmdt.plotop small { flex: 1 0 100%; } .ap .cmdt .poic { width: 26px; height: 26px; }
+.ap .cmdt:disabled { opacity: .45; cursor: default; }
 .ap .cmdm { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; }
 .ap .cmdm button { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; min-height: 64px; padding: 6px 4px; cursor: pointer; }
 .ap .cmdm button b { font-size: 13px; color: #ffd27a; }

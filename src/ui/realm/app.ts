@@ -50,7 +50,7 @@ import { DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
 import { LEVEL_LINE, TIER_MAX, levelName } from '../../realm/tier.ts'
 import { FIT_CSS, fitLabels } from './fit.ts'
 import { annalOf } from '../../realm/data/annals.ts'
-import { GROW_CSS, HERO_CSS, TITLE_MEAN, bondChip, growthHtml, heroRadar, nameHtml, roleLine, splitTitle, traitChips, traitLines } from './heroview.ts'
+import { GROW_CSS, HERO_CSS, TITLE_MEAN, artChip, bondChip, growthHtml, heroRadar, nameHtml, roleLine, splitTitle, traitChips } from './heroview.ts'
 import { APP_CSS, CLOUD_CSS, SEASONP_CSS, UI_CSS } from './appstyle.ts'
 import { GOAL_CSS, goalBandHtml, goalRowsHtml } from './goalband.ts'
 import { contestOpen } from '../../realm/scenario.ts'
@@ -324,8 +324,8 @@ const TABS = [
   // 백성 — 개척·이주 (형: "군사징병이랑 개척 좀 확실히 구분필요함")
   { id: 'people', name: '백성', icon: 'settle-farm-village', more: '개척단을 꾸려 빈땅에 새 마을을 열거나, 다른 우리 고을로 데려가 자리 잡게 한다(이주). 붐비면 저절로도 옮겨 간다.' },
   { id: 'diplo', name: '외교', icon: 'good-tribute-bell', more: '이웃 나라와 화친·동맹을 맺고, 사신의 청에 답하고, 몰래 공작(소문·암살…)을 보낸다.' },
-  // 장수에게 시키는 일을 한곳에 (형 10-25: "장수 일들을 「명령」 탭 하나로") — 탭 id 는 그대로 heroes (배우는 판·점이 이 id 를 본다)
-  { id: 'heroes', name: '명령', icon: 'unit-general', more: '장수에게 일을 맡긴다 — 고을·군대·사신·자객·원정·혼인. 우리 장수·사로잡은 장수 명부도 여기.' },
+  // 장수 탭 — 첫 칸 「명령」에 장수에게 시키는 일을 모았다 (형 10-25: "명령 탭은 장수 탭이어야 하는 거 아님?")
+  { id: 'heroes', name: '장수', icon: 'unit-general', more: '장수에게 일을 맡긴다(명령) — 고을·군대·사신·공작·원정·혼인. 우리 장수·사로잡은 장수 명부도 여기.' },
   { id: 'nation', name: '나라', icon: 'settle-capital', more: '나라 살림 · 목표 · 이번 계절 사건 · 제사.' },
 ] as const
 
@@ -333,12 +333,13 @@ const TABS = [
  * 「명령」 탭의 일 여섯 — 고르면 그림 깔린 창에서 장수와 갈 곳을 고른다 (형 10-25: "성주 배치·군사 지휘·사신·자객도 혼인·원정처럼 제대로 된 창으로").
  * stat 은 그 일에 먹히는 능력치 — 장수 고르는 칸에 보이고, 가장 높은 이를 먼저 골라 둔다. ruler — 군주도 할 수 있는 일
  */
-type CmdJob = 'post' | 'lead' | 'envoy' | 'agent' | 'exp' | 'wed'
+type CmdJob = 'post' | 'lead' | 'envoy' | 'plot' | 'exp' | 'wed'
 const CMD_JOBS: ReadonlyArray<{ id: CmdJob; name: string; icon: string; art: string; line: string; stat: ReadonlyArray<'mu' | 'tong' | 'ryak' | 'chi' | 'deok'>; ruler: boolean }> = [
   { id: 'post', name: '고을 맡기', icon: 'settle-capital', art: 'event-festival', line: '맡은 고을에 솜씨가 걸린다', stat: ['chi', 'ryak', 'deok'], ruler: false },
   { id: 'lead', name: '군대 이끌기', icon: 'unit-general', art: 'event-relief-cavalry', line: '장수 없는 군대를 맡아 싸운다', stat: ['mu', 'tong'], ruler: false },
   { id: 'envoy', name: '사신', icon: 'good-tribute-bell', art: 'event-outside-envoy', line: '이웃 나라에 말을 전한다', stat: ['deok'], ruler: false },
-  { id: 'agent', name: '자객', icon: 'status-spy', art: 'event-assassin-archer', line: '밤에 적장을 노린다 — 직접 쏜다', stat: ['ryak', 'mu'], ruler: false },
+  // 공작 — 소문·이간·매수·방화·첩자·암살 (형 10-25: "자객이 아니라 공작 · 공작 속에 여러 가지가 있다")
+  { id: 'plot', name: '공작', icon: 'status-spy', art: 'event-spy-rumor', line: '몰래 적을 흔든다 — 여섯 가지', stat: ['ryak'], ruler: false },
   { id: 'exp', name: '원정', icon: 'route-searoute', art: 'event-expedition-return', line: '먼 땅에서 좋은 것을 가져온다', stat: ['mu', 'ryak', 'deok'], ruler: true },
   { id: 'wed', name: '혼인', icon: 'status-alliance', art: 'event-marriage', line: '짝을 지어 아이를 얻는다', stat: [], ruler: true },
 ]
@@ -2390,7 +2391,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (job === 'wed' && o.kind === 'wed') out.push([`${nm(o.a)} · ${nm(o.b)}`, undo('unwed', o.a)])
     }
     if (job === 'envoy') for (const e of Object.values(envoys)) if (e.hero !== undefined) out.push([`${nm(e.hero)} → ${r.factions[e.to]?.name ?? ''} ${ASK_NAME[e.ask as Ask] ?? ''}`, ''])
-    if (job === 'agent') for (const o of plots) if (o.kind === 'plot' && o.op === 'assassin' && o.agent !== undefined) out.push([`${nm(o.agent)} → ${nm(o.hero ?? '')}`, ''])
+    if (job === 'plot') for (const o of plots) if (o.kind === 'plot') out.push([`${PLOT_NAME[o.op]} → ${o.op === 'assassin' ? nm(o.hero ?? '') : r.factions[o.target]?.name ?? ''}${o.agent !== undefined ? ` · ${nm(o.agent)}` : ''}`, ''])
     return out
   }
 
@@ -2414,6 +2415,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<div class="cmdw" style="--cbg:url('${ART}event/${def.art}.jpg')"><b>${icon(def.icon)}${def.name}</b><span>${def.line}</span>`
     for (const [t, b] of cmdNow(r, job)) h += `<div class="banner good">이번 계절: ${esc(t)}${b}</div>`
     h += `</div>`
+    // 공작은 갈래부터 — 여섯 가지를 그림으로. 암살만 우리 장수가 몸소 가고(장수 판에서 왔으면 그 장수), 나머지는 나라의 꾀로 한다
+    if (job === 'plot') {
+      const full = handsFull(r)
+      h += `<h4>어떤 공작을</h4><div class="cmdts">`
+      for (const op of PLOT_OPS) h += `<button class="cmdt plotop" data-act="cmd-plot" data-op="${op}"${full ? ' disabled' : ''}>${icon(PLOT_ICON[op], 'poic')}<b>${PLOT_NAME[op]}</b><small>${esc(PLOT_DOES[op])}</small></button>`
+      return h + `</div>${full ? '<p class="mute">이번 계절 보낼 손이 다 찼다.</p>' : ''}`
+    }
     const list = cmdHeroes(r, job)
     if (list.length === 0) return h + `<p class="mute">맡길 장수가 없다.</p>`
     const free = list.filter((c) => c.why === null)
@@ -2432,7 +2440,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'post': return h + `<h4>어느 고을을</h4>` + postTargets(r, x)
       case 'lead': return h + `<h4>어느 군대를</h4>` + leadTargets(r, x)
       case 'envoy': return h + `<button class="btn pri cmdgo" data-act="hero-envoy" data-id="${x.id}">${icon('good-tribute-bell')}${esc(josa(x.name, '을', '를'))} 보낼 나라를 고른다 ›</button>`
-      case 'agent': return h + `<p class="mute">우리 장수가 가면 화살이 ${assassinArrows(realm!, x.id) - P.night.arrows}발 더 있다.</p><button class="btn pri cmdgo" data-act="hero-agent" data-id="${x.id}">${icon('status-spy')}노릴 적장을 고른다 ›</button>`
       case 'exp': return h + expHtml(r, x)
       case 'wed': return h + wedHtml(r, x)
     }
@@ -2477,12 +2484,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const ours = x.faction === me() && x.status === 'free'
     const seen = x.faction === me() || heroSeen(realm!, me(), x.id) || (realm!.wanderers ?? []).some((w) => w.hero.id === id)
     const file = bustOf(x.id)
-    let h = `<button class="btn ghost sm hback" data-act="hero-back">‹ 장수 목록</button><div class="hcard">${file !== undefined ? `<img class="big" src="${ART}bust/${file}.jpg" alt="" data-act="bust-view" data-src="${ART}bust/${file}.jpg">` : bust(x, 'face')}`
-    // 사서에 남은 사람 — 「?」를 누르면 사서의 이야기 (형 10-25)
+    let h = `<button class="btn ghost sm hback" data-act="hero-back">‹ 장수 목록</button><div class="hcard">`
+    // 사서에 남은 사람 — 얼굴 모서리의 「📜?」를 누르면 사서의 이야기 (형 10-25: 이름 줄에 붙이면 특성처럼 보였다 · 그림과 물음표만)
     const annal = annalOf(x.id)
-    h += `<div class="hn">${nameHtml(x.name)}${annal !== undefined ? `<button class="annb" data-act="annal" data-id="${x.id}" data-tip="${esc(annal.book)}">📜 사서 <b>?</b></button>` : ''}</div><div class="mute">${emblem(x.faction)}${esc(r.factions[x.faction]?.name ?? '떠돌이')}${isRuler(r, x.id) ? ' 군주' : ''} · ${esc(roleLine(r, x))}</div>`
+    h += `<div class="hpic">${file !== undefined ? `<img class="big" src="${ART}bust/${file}.jpg" alt="" data-act="bust-view" data-src="${ART}bust/${file}.jpg">` : bust(x, 'face')}${annal !== undefined ? `<button class="annb" data-act="annal" data-id="${x.id}" aria-label="사서에 남은 이야기">📜<b>?</b></button>` : ''}</div>`
+    h += `<div class="hn">${nameHtml(x.name)}</div><div class="mute">${emblem(x.faction)}${esc(r.factions[x.faction]?.name ?? '떠돌이')}${isRuler(r, x.id) ? ' 군주' : ''} · ${esc(roleLine(r, x))}</div>`
     h += heroRadar(x, seen, ours)
-    h += `<div class="tr3">${traitChips(x, seen)}</div>${traitLines(x, seen)}`
+    h += `<div class="tr3">${traitChips(x, seen)}${artChip(x, seen, icon)}</div>`
     if (ours) h += growthHtml(r, x)
     // 아는 만큼 — 우리 장수 · 싸워 봤거나 정찰·첩자로 본 장수 · 이름만 들은 장수 (형: "이름 들어본 군주나 적장이랑 싸워본 적장이랑은 구분해야")
     if (!seen) h += `<p class="heardp">이름만 들었다 — 싸워 보거나 정찰하면 능력치와 특성이 보인다.</p>`
@@ -2786,7 +2794,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const armyIdle = Object.values(r.armies).some((a) => a.faction === me() && a.march === null && pick[a.id] === undefined)
     const t = asks > 0 && tabWait(r, 'diplo') === 0 ? { tab: 'diplo', line: `사신이 왔다 — 외교에서 답한다` }
       : !drafted && canDraft && r.season < 4 ? { tab: 'draft', line: '징병에서 군사를 뽑는다 (⚡ 알아서 뽑기)' }
-        : idle > 0 ? { tab: 'heroes', line: `쉬는 장수 ${idle}명 — 명령에서 일을 맡긴다` }
+        : idle > 0 ? { tab: 'heroes', line: `쉬는 장수 ${idle}명 — 장수에서 일을 맡긴다` }
           : armyIdle && r.season >= 1 ? { tab: 'army', line: '군대에서 갈 곳을 고른다 — 빈땅·약한 이웃' }
             : null
     return t === null ? '' : `<button class="todochip" data-act="tab" data-tab="${t.tab}">👉 이번 계절 · ${esc(t.line)}</button>`
@@ -4412,6 +4420,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'cmd-back': cmdJob = null; break
       case 'cmd-hero': cmdHero = d['id']!; break
+      case 'cmd-plot': {
+        // 공작 갈래 하나 — 외교의 공작 판을 그 갈래가 펼쳐진 채로. 암살이면 장수 판에서 고른 장수를 자객으로
+        const op = d['op'] as PlotOp
+        diploMode = 'plot'
+        plotOpen = op
+        if (op === 'assassin' && cmdHero !== '' && realm !== null && plotAgents(realm, me()).includes(cmdHero)) plotAgent = cmdHero
+        sheet = { kind: 'diplo' }
+        $('.sheet').scrollTop = 0
+        paint()
+        return
+      }
       case 'guide': {
         const g = GUIDE[d['k'] ?? '']
         if (g === undefined) return
