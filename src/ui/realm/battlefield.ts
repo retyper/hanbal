@@ -291,6 +291,8 @@ export function actRows(acts: readonly Act[] | undefined, ourS: 'a' | 'd', art: 
     h += `<span class="res">${badge} ${word}</span>`
     if ((x.tl ?? 0) > 0) h += `<span class="loss">${us ? '적' : '우리'} −${x.tl}</span>`
     if ((x.sl ?? 0) > 0) h += `<span class="loss own">${us ? '우리' : '적'} −${x.sl}</span>`
+    // 물러나기 — 잃은 수만 있으면 「−21」을 남은 수로 읽었다 (형 10-25: "330명이 21명 됐음 · 21명이 죽은 거 아닌가?") — 빠져나간 수를 곁에
+    if (x.c === 'retreat' && x.n !== undefined) h += `<span class="kept">${x.n}명 빠져나갔다</span>`
     h += '</div>'
   }
   return h + '</div>'
@@ -665,6 +667,8 @@ const AIR_EMBERS = Array.from({ length: 16 }, (_, i) => {
  * (방패가 쿵 내려앉는 때 · 통나무가 칠 때 · 바위가 닿을 때). 형이 고른 소리는 제 안에 박자가 있는 긴 것이 많아
  * (북 빠른 가락 · 칼 세 번 · 말발굽) 한 번만 친다 — 짧은 것만 겹쳐 친다. 없는 깃발은 시작에 한 번.
  */
+/** 자르지 않고 끝까지 울리는 깃발 소리 — 그 깃발의 얼굴 같은 소리 (방진의 쇠판 「탱탱」) */
+const RING_FULL: ReadonlySet<Cmd> = new Set<Cmd>(['hold'])
 const CMD_BEAT: Partial<Record<Cmd, ReadonlyArray<readonly [number, number, number]>>> = {
   hold: [[0.3, 1, 1]],
   ford: [[0.38, 1, 1], [0.82, 0.75, 0.95]],
@@ -1605,6 +1609,7 @@ export const WAR_CSS = `
   88% { transform: translate(47vw, -4vh) rotate(720deg) scale(.82); } 100% { opacity: 0; transform: translate(47vw, -4vh) rotate(720deg) scale(.82); } }
 .ap .wfx-cmd .rg { --w: clamp(110px, 13vw, 200px); --ar: 1; --x: 14%; --y: 12%; --an: wcrg; --du: 1s; --ease: ease-out; border-radius: 50%; border: 3px solid #ffd27a; box-shadow: 0 0 18px #ffd27a99, inset 0 0 12px #ffd27a66; }
 @keyframes wcrg { 0% { opacity: 0; transform: scale(.3); } 20% { opacity: .9; } 100% { opacity: 0; transform: scale(2.2); } }
+.ap .wact .kept { font-size: 12px; color: #cfe3b8; margin-left: 4px; }
 .ap .wfx-cmd .sl { --w: 62vw; --ar: 40 / 1; --x: 19%; --y: 24%; --an: wcsl; --du: .5s; --ease: ease-out; background: linear-gradient(90deg, #fff0, #fffbe8 45%, #ffd27a 55%, #fff0); box-shadow: 0 0 14px #ffe9b0; }
 .ap .wfx-cmd .sl.a { rotate: 18deg; } .ap .wfx-cmd .sl.b { rotate: -18deg; }
 @keyframes wcsl { 0% { opacity: 0; transform: scaleX(0); } 30% { opacity: 1; transform: scaleX(1); } 100% { opacity: 0; transform: scaleX(1.05); } }
@@ -2045,7 +2050,9 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         if (c === 'volley' || c === 'counter') { for (const [dt, v, rt] of VOLLEY_SHOTS.slice(0, 3)) at(s0 + dt, BATTLE_SFX[c], vol * v, rt, 0.4, low); return }
         const b = CMD_BEAT[c]
         if (b === undefined) { at(s0, BATTLE_SFX[c], vol, 1, dur, low); return }
-        for (const [dt, v, rt] of b.slice(0, 2)) at(s0 + dt, BATTLE_SFX[c], vol * v, rt, Math.max(0.25, dur - dt), low)
+        // 방진의 「탱탱」은 끝까지 울린다 — 0.5초에 자르며 0.32초부터 줄였더니 소리가 가장 큰 곳(0.25~0.45초)이 깎여 안 들렸다 (형 10-25)
+        const ring = RING_FULL.has(c)
+        for (const [dt, v, rt] of b.slice(0, 2)) at(s0 + dt, BATTLE_SFX[c], vol * v * (ring ? P.realm.warRingBoost : 1), rt, ring ? 0 : Math.max(0.25, dur - dt), low)
       }
       for (const b of plan.beats) beat(b.c, b.at, b.ours ? 0.5 : 0.3, b.ours ? P.realm.warBeatDur : P.realm.warFoeBeatDur, !b.ours)
       // 엉긴 앞줄 — 찌르기 컷의 박자에 쇠가 부딪는 소리를 몇 번 흩어 낸다(작게 · 자리가 없으면 버린다). 소리마다 높낮이를 조금씩 (형 10-25: 소리와 동작 박자)
