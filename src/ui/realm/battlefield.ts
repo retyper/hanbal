@@ -907,6 +907,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         if (node.tags.includes('palisade') || node.kind === 'fort') {
           const gate = node.kind === 'fort' || node.kind === 'capital'
           h += tlab(node.kind === 'fort' ? 'fort' : 'palisade', 47.5, -47)
+          // 지키는 쪽 뒤에 성 — 흙 성벽·목책·망루 (공격이 이기면 부서져 불탄다) · 어느 쪽이 성을 지키는지 한눈에 (형 10-25: "공성하는쪽이랑 수성하는쪽이 어딘지 모르겠고")
+          h += `<img class="wf-wall" data-tk="${node.kind === 'fort' ? 'fort' : 'palisade'}" src="${art}fx/field/wall-${breached ? 'breach' : 'whole'}.png" alt="">`
           // 이어진 울타리 — 토막을 겹쳐 세운다(한가운데 성문)
           const ys = [-36, -27, -18, -9, 0, 9, 18, 27, 36]
           for (const [j, oy] of ys.entries()) h += tp(breached ? (j % 3 === 1 ? 'palisade' : 'broken') : gate && j === 4 ? 'gate' : 'palisade', 47.5, oy, 1.25)
@@ -1253,6 +1255,8 @@ export const WAR_CSS = `
 /* 땅 — 지평선 아래로 짙어져 병사가 떠 보이지 않게 */
 .ap .wfield .wf-ground { top: 30% !important; background: linear-gradient(#0000, #1c140c66 25%, #120c07b0 100%), radial-gradient(ellipse 70% 55% at 50% 72%, #4a361e55, #0000 75%) !important; }
 .ap .wfield::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 90; box-shadow: inset 0 0 40px #000c, inset 0 -18px 30px -10px #000a; border-radius: inherit; }
+/* 지키는 쪽 뒤의 성 (그림은 바깥이 왼쪽 — 우리 쪽이면 뒤집고, 거울인 적 쪽에선 한 번 더 뒤집어 바깥이 공격 쪽을 본다) */
+.ap .wf2s .wf-wall { position: absolute; left: -4%; bottom: 4%; height: 90%; width: auto; transform: scaleX(-1); z-index: 1; pointer-events: none; filter: brightness(.8) saturate(.9) drop-shadow(0 4px 8px #000b); }
 .ap .wfield .wf-mid-terr.mud .tp { filter: sepia(1) saturate(.65) brightness(.72) hue-rotate(-12deg); opacity: 1; }
 /* 땅 이름표 (tlab) — 소품 곁 · 누구에게 유리한지 색 */
 .ap .wf-tl { position: absolute; left: var(--x); top: calc(60% + var(--oy)); transform: translate(-50%, -50%); z-index: 75; display: flex; flex-direction: column; align-items: center; padding: 1px 6px 2px; border-radius: 7px; background: #120d09d8; border: 1px solid #6a5a48; font-size: clamp(9.5px, 2.5cqw, 12px); font-weight: 800; line-height: 1.15; color: #f6d8a0; white-space: nowrap; pointer-events: none; box-shadow: 0 2px 6px #000a; }
@@ -2312,6 +2316,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       }
     }
     if (best !== null) return best
+    for (const im of f.querySelectorAll<HTMLElement>('.wf-wall[data-tk]')) if (inR(im.getBoundingClientRect())) return { key: `terr:${im.dataset['tk']}` }
     for (const im of f.querySelectorAll<HTMLImageElement>('img.tp')) {
       if (!inR(im.getBoundingClientRect())) continue
       const k = /field\/(\w+)\.png/.exec(im.src)?.[1]
