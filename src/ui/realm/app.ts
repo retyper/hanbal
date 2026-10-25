@@ -72,7 +72,7 @@ import { pactOf } from '../../realm/suzerain.ts'
 import { ironOf, riteOf } from '../../realm/paths.ts'
 import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
 import { customsOf } from '../../realm/data/customs.ts'
-import { FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
+import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
 import { SCENE_SOUND, makeMusic, playOnce, snd, tapSlot } from './sound.ts'
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
@@ -92,6 +92,8 @@ export interface AppHost {
   onExport(): void
   /** 남아 있는 판 기록 수 */
   gameCount(): number
+  /** 「나의 역사」 — 둔 판들, 최근 것부터 (형 10-25: "완료한 게임들 기록은 어디서 보냐 · 나의 역사 기록") */
+  pastGames?(): ReadonlyArray<PastGame>
   /** 이 판의 지난 계절 보고들 — 끝 화면의 연대기 */
   history(): History
   /** 마지막으로 저장한 때 (ISO) — 첫 화면의 "이어 하기" */
@@ -387,6 +389,9 @@ const rulerId = (nation: string): string => `${nation}-ruler`
 const nationsOf = (region: RegionId): readonly NationInfo[] => (region === 'yeongnam' ? YEONGNAM_NATIONS : region === 'south' ? SOUTH_NATIONS : region === 'world' ? WORLD_NATIONS
   : region === 'tutorial' ? SOUTH_NATIONS.filter((n) => n.id === 'baekje' || n.id === 'michuhol')
     : region === 'jumong' ? [...JUMONG_NATIONS, HAENGIN_NATION] : region === 'mahan' ? MAHAN_NATIONS : region === 'seorabeol' ? SEORA_NATIONS : NATIONS)
+/** 「나의 역사」의 판 이름 · 옛 기록의 나라 이름 (판마다 같은 id 면 앞 것) */
+const BOARD_NAME_OF: Readonly<Record<string, string>> = Object.fromEntries(BOARDS.map((b) => [b.id, b.name]))
+const FACTION_NAME_OF: Readonly<Record<string, string>> = Object.fromEntries((['byeonhan-mini', 'yeongnam', 'south', 'world', 'tutorial', 'mahan', 'jumong', 'seorabeol'] as const).flatMap((rg) => nationsOf(rg).map((n) => [n.id, n.name] as const)).reverse())
 
 /** 판마다 나라의 진짜 군주 — 나라 고르기·자세히 보기에서도 그 판의 얼굴로 (2장 고구려 = 젊은 궁수 주몽 · 형 10-24) */
 const BOARD_RULERS = new Map<RegionId, Readonly<Record<string, string>>>()
@@ -436,7 +441,19 @@ function seasonParticles(): string {
 }
 
 /** 첫 화면 · 판 고르기 · 나라 고르기 · 자세히 — null 이면 판 위 */
-type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region: RegionId } | { kind: 'detail'; region: RegionId; id: string }
+/** 「나의 역사」 한 줄 — realm-main 의 판 기록에서 */
+export interface PastGame {
+  readonly nation: string
+  readonly name: string
+  readonly region: string | null
+  readonly tier: number | null
+  readonly started: string
+  readonly end: { readonly kind: 'win' | 'lose' | 'quit'; readonly season: number; readonly at: string } | null
+  readonly seasons: number
+  readonly current: boolean
+}
+
+type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region: RegionId } | { kind: 'detail'; region: RegionId; id: string } | { kind: 'annals' }
   /** 도감 — back: 돌아갈 판 바깥 화면 (null 이면 판으로) */
   | { kind: 'dex'; board: DexBoard; sel: string | null; back: Front | null }
 
@@ -2807,6 +2824,32 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return t === null ? '' : `<button class="todochip" data-act="tab" data-tab="${t.tab}">👉 이번 계절 · ${esc(t.line)}</button>`
   }
 
+  /**
+   * 나의 역사 — 둔 판들을 최근 것부터 (형 10-25). 나라 깃발 · 판(장이면 「n장 이름」) · 이김/짐/그만둠/하는 중 · 몇 계절 · 시작한 날.
+   * 옛 기록엔 판 이름이 없어 나라만 보인다
+   */
+  function annalsHtml(): string {
+    // 열자마자 그만둔 판(한 계절도 안 넘긴 것)은 빼고 — 기록이 그것들로 뒤덮였다
+    const xs = (host.pastGames?.() ?? []).filter((g) => g.current || g.seasons > 0 || g.end?.kind === 'win')
+    const won = xs.filter((g) => g.end?.kind === 'win').length
+    const boardOf = (rg: string | null): string => {
+      if (rg === null) return ''
+      const ch = chapterOfRegion(rg as RegionId)
+      return ch !== undefined ? `${ch.n}장 ${ch.name}` : (BOARD_NAME_OF[rg] ?? '')
+    }
+    let h = `<div class="front annals"><div class="fhead"><button class="btn ghost" data-act="fr-back">‹ 처음으로</button><h2>나의 역사</h2></div>`
+    h += `<p class="ansum">둔 판 ${xs.length} · 이긴 판 ${won}</p><div class="anl">`
+    for (const g of xs) {
+      // 끝이 없으면 하는 중(지금 판) · 멈춘 판(선반에 올려 둔 판 — 첫 화면 「다른 판」에서 잇는다)
+      const [cls, word] = g.end === null ? (g.current ? ['now', '하는 중'] : ['quit', '멈춘 판']) : g.end.kind === 'win' ? ['win', '이겼다'] : g.end.kind === 'lose' ? ['lose', '졌다'] : ['quit', '그만뒀다']
+      const d = new Date(g.started)
+      const date = Number.isFinite(d.getTime()) ? `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}` : ''
+      h += `<div class="anr ${cls}">${emblem(g.nation, 'anem')}<span class="ant"><b>${esc(g.name !== '' ? g.name : (FACTION_NAME_OF[g.nation] ?? g.nation))}</b><small>${esc(boardOf(g.region))}${g.tier !== null && g.region !== 'tutorial' ? ` · ${esc(levelName(g.tier))}` : ''}</small></span>`
+        + `<span class="anx"><i class="anres">${word}</i><small>${g.end !== null ? esc(seasonLabel(g.end.season)) : `${g.seasons}계절째`} · ${date}</small></span></div>`
+    }
+    return h + `</div></div>`
+  }
+
   /** 판을 연다 — 데려갈 수 있는 장수가 있으면 먼저 「데려갈 장수」 팝업 (배우는 판·동행이 없는 난세·영웅전에 거느린 이가 없으면 곧장) */
   function startWithBring(nation: string, region: RegionId, tier: number): void {
     if (region === 'tutorial' || retainMaxOf(tier) === 0 || servedHeroes().length === 0) { host.onNewGame(nation, region, tier); return }
@@ -3481,9 +3524,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'title': {
         // 영웅전(도감) — 판을 넘어 남는 것 (VISION §5-4)
         const dexBtn = `<button class="btn big" data-act="dex-open">영웅전</button>` // 형 10-25: 도감보다 즐거운 이름 · 숫자는 들어가면 보인다
+          + ((host.pastGames?.() ?? []).length > 0 ? `<button class="btn big" data-act="annals-open">나의 역사</button>` : '')
         return titleHtml(KIT, realm, host.savedAt(), installCard() + acctLine() + links, realm === null && !tutorialOver(), dexBtn, host.slots?.() ?? [], slotArmed)
       }
       case 'dex': return dexHtml(DEX_KIT, f.board, f.sel, f.back === null ? '판으로' : '처음으로')
+      case 'annals': return annalsHtml()
       case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null), tierWon, tierHtml('jumong', chapTier, 'chap-tier'))
       case 'nations': return nationsHtml(KIT, f.region)
       case 'detail': return detailHtml(KIT, f.region, f.id, f.region === 'tutorial' ? '' : tierHtml(f.region))
@@ -4243,6 +4288,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const r = realm !== null ? plan() : null
     switch (d['act']) {
       case 'continue': front = null; paint(); coverMap(); return
+      case 'annals-open': front = { kind: 'annals' }; paint(); return
       case 'slot-go': {
         // 고른 판으로 — 하던 판은 선반에 (realm-main.onResume). 옮겼으면 바로 그 판으로 들어간다
         slotArmed = null

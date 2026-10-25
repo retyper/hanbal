@@ -73,6 +73,10 @@ interface Turn {
 interface GameRecord {
   readonly v: 1
   readonly nation: string
+  /** 판 · 나라 이름 · 난세 단계 — 「나의 역사」에 (10-25 부터 적는다 · 옛 기록엔 없다) */
+  readonly region?: string
+  readonly name?: string
+  readonly tier?: number
   readonly seed: number
   readonly started: string
   readonly screen: string
@@ -227,7 +231,7 @@ function recordFor(s: Saved): GameRecord {
   const had = games.find((g) => g.seed === s.seed && g.nation === s.nation)
   if (had !== undefined) return had
   const g: GameRecord = {
-    v: 1, nation: s.nation, seed: s.seed, started: new Date().toISOString(),
+    v: 1, nation: s.nation, region: s.realm.region ?? 'byeonhan-mini', name: s.realm.factions[s.realm.player]?.name ?? '', tier: s.realm.tier ?? 1, seed: s.seed, started: new Date().toISOString(),
     screen: `${window.innerWidth}x${window.innerHeight}`, turns: [], end: null,
   }
   games.push(g)
@@ -355,6 +359,10 @@ const app = mountRealmApp(root, {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000) // 바로 거두면 받기가 끊기는 브라우저가 있다 — 한 번만 도는 정리
   },
   gameCount: () => games.length,
+  pastGames: () => [...games].reverse().map((g) => ({
+    nation: g.nation, name: g.name ?? '', region: g.region ?? null, tier: g.tier ?? null, started: g.started,
+    end: g.end, seasons: g.turns.length, current: g.seed === state?.seed,
+  })),
   history: () => (game?.turns ?? []).map((t) => ({ s: t.s, lines: t.lines })),
   savedAt: () => state?.at ?? null,
   async resetPlay() {

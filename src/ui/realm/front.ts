@@ -541,6 +541,15 @@ export const FRONT_CSS = `
 .ap .front { position: absolute; inset: 0; overflow-y: auto; z-index: 5; background: #101318; color: var(--ink); }
 .ap .front .fhead { display: flex; align-items: center; gap: 10px; padding: calc(12px + env(safe-area-inset-top)) 14px 4px; max-width: 980px; margin: 0 auto; }
 .ap .front .fhead h2 { margin: 0; font-family: 'Gowun Batang', serif; color: var(--gold); font-size: 20px; }
+/* 나의 역사 — 둔 판들 (형 10-25) */
+.ap .front.annals .ansum { max-width: 720px; margin: 4px auto 8px; padding: 0 14px; color: #cbbf9f; font-size: 13px; }
+.ap .front.annals .anl { display: flex; flex-direction: column; gap: 6px; max-width: 720px; margin: 0 auto; padding: 0 14px 24px; }
+.ap .front.annals .anr { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--line); background: #1c1610; border-left-width: 4px; }
+.ap .front.annals .anr.win { border-left-color: #e0bd78; } .ap .front.annals .anr.lose { border-left-color: #b04a3a; } .ap .front.annals .anr.quit { border-left-color: #5a5048; opacity: .8; } .ap .front.annals .anr.now { border-left-color: #6aa8c8; }
+.ap .front.annals .anem { width: 34px; height: 34px; flex: none; }
+.ap .front.annals .ant { flex: 1; min-width: 0; display: flex; flex-direction: column; } .ap .front.annals .ant b { color: #f0e2c0; } .ap .front.annals .ant small, .ap .front.annals .anx small { color: #a89c84; font-size: 12px; }
+.ap .front.annals .anx { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.ap .front.annals .anres { font-style: normal; font-weight: 700; } .ap .front.annals .win .anres { color: #ffd27a; } .ap .front.annals .lose .anres { color: #f08a7a; } .ap .front.annals .quit .anres { color: #a89c84; } .ap .front.annals .now .anres { color: #9fd0f0; }
 .ap .front .fine { text-align: center; font-size: 12px; color: #8f8778; margin: 10px 16px 20px; }
 .ap .front .btn.big { padding: 12px 26px; font-size: 16px; }
 /* 첫 화면 */
