@@ -13,7 +13,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { captureChance, captureOdds, feastCost, fightRounds, groupOptions, might, optionsOf, type Side } from '../../src/realm/tactics.ts'
+import { captureChance, captureOdds, feastCost, fightRounds, groupOptions, leadOptions, might, optionsOf, type Side } from '../../src/realm/tactics.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { advance, approachOptions } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
@@ -316,7 +316,7 @@ describe('장수의 비기', () => {
   it('비기가 있는 장수만 장수 깃발에 「비기」가 뜨고, 한 판에 한 번', () => {
     assert.ok(optionsOf(withArt('vanguard'), side(100, EVEN), new Set(), false).includes('art'))
     assert.ok(!optionsOf(side(100, EVEN, true), side(100, EVEN), new Set(), false).includes('art'), '비기 없는 장수')
-    assert.ok(!optionsOf(withArt('vanguard'), side(100, EVEN), new Set<Cmd>(['art']), false).includes('art'), '쓴 뒤엔 없다')
+    assert.ok(!leadOptions(withArt('vanguard'), side(100, EVEN), new Set(), false, new Set(['me'])).includes('art'), '쓴 뒤엔 없다 (장수마다 한 번)')
     assert.ok(!optionsOf(withArt('snipe'), side(100, EVEN, false, { hero: null }), new Set(), false).includes('art'), '쏠 적장이 없으면 명궁의 한 발도 없다')
   })
 
@@ -373,5 +373,59 @@ describe('호궤 — 곳간의 곡식을 풀어 사기를 (형 10-25: "군량 �
       if (feast.ma > drum.ma + 1e-9) more++
     }
     assert.ok(more > 0)
+  })
+})
+
+// 형 10-25: "장수 3 분대를 동시에 보내면 장수가 한 명만 나오는데 · 비기를 하나밖에 못 쓰잖아 · 한 명 잡히면 바로 지는 건 말이 안 되는데"
+describe('총대장과 부장', () => {
+  const H = (id: string, mu = 5, art?: NonNullable<NonNullable<Side['hero']>['art']>): NonNullable<Side['hero']> => ({ id, mu, ryak: 5, coward: false, ...(art !== undefined ? { art } : {}) })
+  // 적장들은 무예가 낮아 겨루기를 걸지 않는다 — 사로잡기만 본다
+  const three = (over: Partial<Side> = {}): Side => side(100, EVEN, false, { hero: H('f-chief', 3), aides: [H('f-aide1', 3), H('f-aide2', 2)], ...over })
+
+  it('비기는 장수마다 한 번 — 총대장이 썼어도 부장의 비기가 남는다', () => {
+    const me = side(100, EVEN, true, { hero: H('me', 5, 'shout'), aides: [H('me2', 5, 'vanguard')] })
+    assert.ok(leadOptions(me, side(100, EVEN), new Set(), false, new Set(['me'])).includes('art'))
+    assert.ok(!leadOptions(me, side(100, EVEN), new Set(), false, new Set(['me', 'me2'])).includes('art'))
+    const res = fightRounds(me, side(100, EVEN), 'gen-art', 3, 0, { cmds: [{ lead: 'art' }, { lead: 'art' }], open: true })
+    const used = res.rounds.slice(0, 2).flatMap((r) => (r.acts ?? []).filter((a) => a.c === 'art' && a.s === 'a').map((a) => a.hero))
+    assert.deepEqual(used, ['me', 'me2'])
+  })
+
+  it('부장을 사로잡으면 그 장수만 잡히고 싸움은 이어진다', () => {
+    const me = side(100, EVEN, true, { capture: 'sure' })
+    const res = fightRounds(me, three(), 'gen-cap-aide', 5, 0, { cmds: [{ lead: 'capture', target: 'f-aide1' }], open: true })
+    assert.deepEqual(res.taken[0], { side: 'd', hero: 'f-aide1' })
+    assert.ok(res.rounds.length > 1, '첫 합에 끝나지 않는다')
+    assert.equal(res.rounds[0]!.lostHero?.hero, 'f-aide1')
+    assert.equal(res.rounds[0]!.lostHero?.chief, undefined, '총대장은 그대로')
+    assert.ok(res.pending !== undefined, '다음 합을 고른다')
+    assert.ok(!(res.pending.foeHeroes ?? []).some((h) => h.id === 'f-aide1'))
+  })
+
+  it('총대장을 사로잡으면 맨 앞 부장이 지휘를 넘겨받고, 그 쪽은 다음 합에 북과 물러나기뿐', () => {
+    const me = side(100, EVEN, true, { capture: 'sure' })
+    const res = fightRounds(me, three(), 'gen-cap-chief', 5, 0, { cmds: [{ lead: 'capture' }] })
+    assert.equal(res.taken[0]?.hero, 'f-chief')
+    assert.equal(res.rounds[0]!.lostHero?.chief, 'f-aide1')
+    const r1 = res.rounds[1]
+    if (r1 !== undefined) assert.ok(r1.od?.lead === 'drum' || r1.od?.lead === 'retreat', `흔들린 합 — ${r1.od?.lead}`)
+    // 뒤집어 — 우리 총대장이 잡히면 우리가 흔들린다
+    const us = side(100, EVEN, true, { hero: H('me'), aides: [H('me2')] })
+    const foe = side(100, EVEN, false, { capture: 'sure' })
+    const t = fightRounds(foe, us, 'gen-cap-us', 9, 0, { cmds: [{ front: 'hold', bows: 'volley', lead: 'drum' }], open: true })
+    assert.equal(t.rounds[0]!.lostHero?.hero, 'me', '첫 합에 우리 총대장이 잡혔다')
+    assert.equal(t.pending?.shaken, true)
+    assert.deepEqual([...t.pending!.lead].sort(), ['drum', 'retreat'])
+  })
+
+  it('홀로 선 장수가 잡히면 예전처럼 그 판이 끝난다', () => {
+    const res = fightRounds(side(100, EVEN, true, { capture: 'sure' }), side(100, EVEN), 'gen-solo', 5, 0, { cmds: [{ lead: 'capture' }] })
+    assert.equal(res.captured, 'd')
+    assert.equal(res.rounds.length, 1)
+  })
+
+  it('같은 판이면 같은 결과 (A1)', () => {
+    const go = (): unknown => fightRounds(side(120, EVEN, true, { hero: H('me', 6, 'rite'), aides: [H('me2', 7, 'shout')] }), three(), 'gen-det', 11, 0, { cmds: [{ lead: 'duel' }, { lead: 'art' }] })
+    assert.deepEqual(go(), go())
   })
 })

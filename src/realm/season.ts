@@ -590,7 +590,7 @@ function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): v
     const extra = rationFor(r, a, o.ration, left)
     if (extra > 0) stockOf(r, a.faction).grain -= rationCost(r, a, left, extra)
     a.food = left + extra
-    a.march = { from: a.at, to, edge: ed.id, left, ambush: approach !== 'road', ...(approach !== 'road' && approach !== 'night' ? { approach } : {}), ...(why !== null ? { hard: why } : {}), aim: owner }
+    a.march = { from: a.at, to, edge: ed.id, left, ambush: approach !== 'road', ...(approach !== 'road' && approach !== 'night' ? { approach } : {}), ...(why !== null ? { hard: why } : {}), ...(o.follow === true ? { follow: true } : {}), aim: owner }
   }
 }
 
@@ -733,13 +733,22 @@ function meetHostile(r: Realm, a: Army, b: Army): boolean {
   return r.nodes[a.march!.to]?.owner === b.faction || r.nodes[b.march!.to]?.owner === a.faction
 }
 
-/** 싸움 한쪽의 장수 — 이끄는 군대 가운데 첫 장수 (다친 장수는 못 이끈다) */
-function leadHero(r: Realm, armies: readonly Army[]): Hero | null {
+/**
+ * 싸움 한쪽의 장수들 — 함께 친 군대마다의 장수 (다친 장수는 못 이끈다). 통솔이 가장 높은 이가 총대장, 나머지는 부장
+ * (형 10-25: "장수 3 분대를 동시에 치러 보내면 장수가 한 명만 나오는데")
+ */
+function sideHeroes(r: Realm, armies: readonly Army[]): Hero[] {
+  const out: Hero[] = []
   for (const a of armies) {
     const h = heroOf(r, a)
-    if (h !== null) return h
+    if (h !== null && !out.some((x) => x.id === h.id)) out.push(h)
   }
-  return null
+  return out.sort((x, y) => y.tong - x.tong || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0))
+}
+
+/** 싸움 한쪽의 총대장 */
+function leadHero(r: Realm, armies: readonly Army[]): Hero | null {
+  return sideHeroes(r, armies)[0] ?? null
 }
 
 /** 군량이 바닥인 채로 싸우나 — 한 군대라도 */
@@ -771,7 +780,9 @@ function sideOf(
   r: Realm, armies: readonly Army[], f: Force, F: number, faction: string,
   o: { water: boolean; edge?: EdgeKind; fire: boolean; flank: boolean; seen: boolean; moraleBonus?: number; captureBonus?: number; terrain?: Terrain },
 ): Side {
-  const h = leadHero(r, armies)
+  const hs = sideHeroes(r, armies)
+  const h = hs[0] ?? null
+  const asSide = (x: Hero): NonNullable<Side['hero']> => ({ id: x.id, mu: x.mu, ryak: x.ryak, coward: hasTrait(x, 'coward'), ...(heroArt(x) !== undefined ? { art: heroArt(x)! } : {}), ...styleOf(x) })
   const specials: Cmd[] = []
   if (o.fire) specials.push('fire')
   // 땅의 수 — 배 들이받기는 수군이 넉넉한 쪽만 (전체의 15%)
@@ -779,7 +790,8 @@ function sideOf(
   const boats = n > 0 && (f.mix.boat ?? 0) / n >= 0.15
   const terrain: Terrain = { ...(o.terrain ?? {}), ...(o.water && boats ? { ram: true } : {}), ...(o.flank ? { height: true } : {}) }
   return {
-    F, mix: f.mix, morale: f.morale, hero: h === null ? null : { id: h.id, mu: h.mu, ryak: h.ryak, coward: hasTrait(h, 'coward'), ...(heroArt(h) !== undefined ? { art: heroArt(h)! } : {}), ...styleOf(h) },
+    F, mix: f.mix, morale: f.morale, hero: h === null ? null : asSide(h),
+    ...(hs.length > 1 ? { aides: hs.slice(1).map(asSide) } : {}),
     hungry: hungryOf(armies), specials, terrain, water: o.water, player: r.factions[faction]?.mind === 'player', seen: o.seen,
     ...(o.moraleBonus !== undefined ? { moraleBonus: o.moraleBonus } : {}),
     ...(o.captureBonus !== undefined && o.captureBonus > 0 ? { captureBonus: o.captureBonus } : {}),
@@ -803,6 +815,7 @@ function startOf(a: Side, d: Side, af: Force, df: Force): BattleStart {
     men: [headcount(af), headcount(df)],
     morale: [a.morale + (a.moraleBonus ?? 0), d.morale + (d.moraleBonus ?? 0)],
     heroes: [a.hero?.id ?? null, d.hero?.id ?? null],
+    ...((a.aides ?? []).length + (d.aides ?? []).length > 0 ? { aides: [(a.aides ?? []).map((x) => x.id), (d.aides ?? []).map((x) => x.id)] as const } : {}),
     mix: [{ ...af.mix }, { ...df.mix }],
   }
 }
@@ -823,37 +836,37 @@ function shiftMorale(armies: readonly Army[], d: number): void {
  * 장수 겨루기에서 진 장수는 쓰러지거나 다친다. 무너진 쪽 장수는 난전에 쓰러질 수 있다 (무예가 높으면 빠져나온다, 겁 많으면 먼저 달아난다).
  */
 function battleFates(
-  r: Realm, res: FightResult, a: Side, d: Side, atkArmies: readonly Army[], defArmies: readonly Army[], atkFaction: string, defFaction: string, key: string,
-): { captured: string | null; killed: string | null } {
+  r: Realm, res: FightResult, _a: Side, _d: Side, atkArmies: readonly Army[], defArmies: readonly Army[], atkFaction: string, defFaction: string, key: string,
+): { captured: string | null; killed: string | null; captives: string[]; fallen: string[] } {
   const R = P.realm
-  let captured: string | null = null
-  let killed: string | null = null
+  const captives: string[] = []
+  const fallen: string[] = []
   const out = (id: string): void => {
     for (const x of [...atkArmies, ...defArmies]) if (x.hero === id) x.hero = null
   }
-  if (res.captured !== null) {
-    const h = r.heroes[(res.captured === 'a' ? a.hero : d.hero)?.id ?? '']
-    if (h !== undefined && h.status === 'free') {
-      h.status = 'captive'
-      h.captor = res.captured === 'a' ? defFaction : atkFaction
-      captured = h.id
-      out(h.id)
-    }
+  // 사로잡힌 장수 — 싸움이 이어졌어도 (장수가 여럿이었다)
+  for (const t of res.taken) {
+    const h = r.heroes[t.hero]
+    if (h === undefined || h.status !== 'free') continue
+    h.status = 'captive'
+    h.captor = t.side === 'a' ? defFaction : atkFaction
+    captives.push(h.id)
+    out(h.id)
   }
-  if (res.duel !== null) {
-    const h = r.heroes[(res.duel.loser === 'a' ? a.hero : d.hero)?.id ?? '']
-    if (h !== undefined && h.status === 'free') {
-      if (res.duel.kill) {
-        h.status = 'dead'
-        killed = h.id
-        out(h.id)
-      } else h.woundedUntil = Math.max(h.woundedUntil ?? -1, r.season + 1)
-    }
+  // 겨루기에서 진 장수 — 쓰러졌거나 다쳤다
+  for (const f of res.fell) {
+    const h = r.heroes[f.hero]
+    if (h === undefined || h.status !== 'free') continue
+    if (f.kill) {
+      h.status = 'dead'
+      fallen.push(h.id)
+      out(h.id)
+    } else h.woundedUntil = Math.max(h.woundedUntil ?? -1, r.season + 1)
   }
   if (res.broke !== null) {
-    const side = res.broke === 'a' ? a : d
-    const h = r.heroes[side.hero?.id ?? '']
-    if (h !== undefined && h.status === 'free' && killed === null) {
+    // 무너진 쪽의 그때 총대장 (지휘가 넘어갔으면 넘겨받은 이)
+    const h = r.heroes[(res.broke === 'a' ? res.chiefA : res.chiefD) ?? '']
+    if (h !== undefined && h.status === 'free' && fallen.length === 0) {
       const armies = res.broke === 'a' ? atkArmies : defArmies
       if (hasTrait(h, 'coward')) {
         // 겁 많음 — 먼저 달아나 안 쓰러지지만, 그 군대 사기가 더 꺾인다 (HEROES §2)
@@ -862,13 +875,13 @@ function battleFates(
         const p = R.tacDeathRout * Math.min(1.5, Math.max(0.3, 1 - escapeOf(h)))
         if (roll(r.seed, r.season, `${key}:fall`) < p) {
           h.status = 'dead'
-          killed = h.id
+          fallen.push(h.id)
           out(h.id)
         }
       }
     }
   }
-  return { captured, killed }
+  return { captured: captives[0] ?? null, killed: fallen[0] ?? null, captives, fallen }
 }
 
 /**
@@ -963,6 +976,7 @@ function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines
       lines.push({
         kind: 'battle', node: target, attacker: lead.id, allies: atks.slice(1).map((x) => x.id), pincer: false,
         defender: defs[0]!.faction, ambush: 'none', p, outcome, captured: fateOf.captured, killed: fateOf.killed,
+        ...(fateOf.captives.length > 1 ? { captives: fateOf.captives } : {}), ...(fateOf.fallen.length > 1 ? { fallen: fateOf.fallen } : {}),
         militia: 0, field: true, edge: eid, atkFaction: lead.faction, rounds: res.rounds, key, start: startOf(sa, sd, atkF, defF), via: ed.kind, endWhy: res.endWhy,
         ...(res.pending !== undefined ? { pending: res.pending } : {}), ...(res.led ? { led: true } : {}),
       })
@@ -1093,7 +1107,9 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const byEdge = new Map<string, Army[]>()
   for (const l of legs) byEdge.set(l.edge.id, [...(byEdge.get(l.edge.id) ?? []), l.army])
   const mainEdge = [...byEdge.entries()].sort((x, y) => menOf(y[1]) - menOf(x[1]) || (x[0] < y[0] ? -1 : 1))[0]![0]
-  const lateA = legs.filter((l) => l.edge.id !== mainEdge).map((l) => l.army)
+  // 늦게 붙는 군대 — 다른 길로 온 군대 · 「뒤따른다」로 보낸 군대 (형 10-25: "원군으로도 안 오고 그냥 한 번에 합산"). 다 뒤따르면 뒤따름은 없는 셈
+  const follows = legs.filter((l) => l.edge.id !== mainEdge || l.army.march?.follow === true)
+  const lateA = (follows.length < legs.length ? follows : legs.filter((l) => l.edge.id !== mainEdge)).map((l) => l.army)
   const lateD = defenders.filter((d) => d.came === r.season)
   const reliefA = lateA.length > 0 ? { relief: { mix: mergeForces(r, lateA).mix, at: R.reliefRound } } : {}
   const reliefD = lateD.length > 0 && standing.length > lateD.length ? { relief: { mix: mergeForces(r, lateD).mix, at: R.reliefRound } } : {}
@@ -1121,7 +1137,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const atkLost = outcome === 'lose' || outcome === 'routed'
   const atkHeroes = atks.map((x) => x.hero)
   const defHeroes = defenders.map((x) => x.hero)
-  const { captured, killed } = battleFates(r, res, sa, sd, atks, defenders, a.faction, defFaction, key)
+  const { captured, killed, captives, fallen } = battleFates(r, res, sa, sd, atks, defenders, a.faction, defFaction, key)
   // 이끈 장수가 자란다 (HEROES §6) — 사로잡히거나 죽은 이는 빠진다
   if (atkWon) battleGrowth(r, atkHeroes, defHeroes, [], lines)
   else if (atkLost) battleGrowth(r, defHeroes, atkHeroes, [], lines)
@@ -1163,6 +1179,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   lines.push({
     kind: 'battle', node: node.id, attacker: a.id, allies: atks.slice(1).map((x) => x.id),
     pincer: new Set(legs.map((x) => x.edge.id)).size >= 2, defender: defFaction, ambush, p, outcome, captured, killed,
+    ...(captives.length > 1 ? { captives } : {}), ...(fallen.length > 1 ? { fallen } : {}),
     militia: militiaN, field: false, atkFaction: a.faction, rounds: res.rounds, key, approach: approachOf(lead), start: startOf(sa, sd, atkF, defF),
     via: edgeKind, endWhy: res.endWhy,
     ...(fell ? { fell: true } : {}), ...(res.pending !== undefined ? { pending: res.pending } : {}), ...(res.led ? { led: true } : {}),

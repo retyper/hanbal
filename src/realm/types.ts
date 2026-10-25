@@ -300,6 +300,8 @@ export interface March {
   readonly approach?: Approach
   /** 계절에 막힌 길을 억지로 간다 — 눈 덮인 고개 · 불어난 나루 (사람·사기를 잃었다) */
   readonly hard?: 'winterPass' | 'summerFord'
+  /** 뒤따른다 — 같은 고을을 치는 다른 우리 군대 뒤에서 원군으로 몇 합 늦게 들이친다 (형 10-25) */
+  readonly follow?: boolean
   /**
    * 떠날 때 그 고을의 주인 (null = 빈땅). 가는 사이 싸우지 않는 다른 나라 땅이 됐으면 들어가지 않고 돌아선다 —
    * 빈땅을 일구러 갔다가 남이 먼저 쥔 땅에 "우리가 군대를 들였다"가 되던 것 (형: "전쟁시도하지 않았는데 왜"). 없으면 옛 판 — 그대로 들어간다
@@ -359,6 +361,10 @@ export interface RoundOrder {
   readonly bows?: Cmd
   readonly horse?: Cmd
   readonly lead?: Cmd
+  /** 장수의 명령을 낼 우리 장수 — 비기·겨루기 (없으면 총대장, 비기는 아직 안 쓴 장수부터) */
+  readonly who?: string
+  /** 사로잡을 적장 (없으면 적의 총대장) */
+  readonly target?: string
 }
 
 /**
@@ -378,6 +384,8 @@ export interface Act {
   readonly guard?: number
   /** 장수의 비기 — c 가 'art' 일 때 무엇 */
   readonly art?: Art
+  /** 나선 장수 (비기 · 겨루기 · 사로잡힌 이) */
+  readonly hero?: string
 }
 
 /** 라운드 하나의 기록 — 화면이 그대로 풀어 보인다. n 은 처음 사람의 몫 0~1, m 은 사기 */
@@ -407,6 +415,8 @@ export interface RoundLog {
   /** 합이 끝났을 때 무리별 남은 사람 (공격 쪽 · 지킴 쪽) */
   readonly ga?: Readonly<Partial<Record<Grp, number>>>
   readonly gd?: Readonly<Partial<Record<Grp, number>>>
+  /** 이 합에 장수를 잃었는데 싸움은 이어진다 — 사로잡힌(taken) · 겨루기에서 쓰러진(fell) 장수 · 지휘를 넘겨받은 장수(chief) */
+  readonly lostHero?: { readonly side: 'a' | 'd'; readonly hero: string; readonly how: 'taken' | 'fell'; readonly chief?: string }
 }
 
 /**
@@ -444,6 +454,12 @@ export interface Pending {
   readonly seen: boolean
   /** 우리 장수의 비기 — 장수의 명령에 'art' 가 있으면 그것 */
   readonly art?: Art
+  /** 이 싸움의 우리 장수들 — 총대장이 먼저 · 비기 · 썼나 (장수가 여럿이면 누가 나설지 고른다) */
+  readonly heroes?: ReadonlyArray<{ readonly id: string; readonly chief: boolean; readonly mu: number; readonly art?: Art; readonly artUsed: boolean }>
+  /** 적장들 — 사로잡을 수 있는 몫 (총대장은 호위가 두껍다) */
+  readonly foeHeroes?: ReadonlyArray<{ readonly id: string; readonly chief: boolean; readonly p: number }>
+  /** 총대장을 잃어 지휘가 흔들린다 — 이 합엔 북과 물러나기뿐 */
+  readonly shaken?: boolean
   /** 호궤에 드는 곡식 — 장수의 명령에 'feast' 가 있으면 그 값 */
   readonly feast?: number
   /** 고르기 전 짐작 — 깃발마다 이번 합이 어떻게 될지 (tactics.guessOf · 문명의 싸움 예상처럼) */
@@ -474,6 +490,8 @@ export interface BattleStart {
   readonly men: readonly [number, number]
   readonly morale: readonly [number, number]
   readonly heroes: readonly [string | null, string | null]
+  /** 부장 — 총대장 말고 이 싸움에 함께 선 장수 (공격 쪽 · 지킴 쪽) */
+  readonly aides?: readonly [readonly string[], readonly string[]]
   /** 병종 — 싸움 이야기가 무리 이름(창병·방패병 …)을 짓는다 */
   readonly mix?: readonly [Readonly<Partial<Record<UnitKind, number>>>, Readonly<Partial<Record<UnitKind, number>>>]
 }
@@ -688,7 +706,7 @@ export interface Realm {
 
 /** 플레이어(또는 AI)가 한 계절에 내리는 명령 */
 export type Order =
-  | { readonly kind: 'march'; readonly army: string; readonly edge: string; readonly ambush: boolean; readonly approach?: Approach; readonly ration?: Ration }
+  | { readonly kind: 'march'; readonly army: string; readonly edge: string; readonly ambush: boolean; readonly approach?: Approach; readonly ration?: Ration; readonly follow?: boolean }
   /** 먼 갈 곳을 둔다(node) · 지운다(null) — 그 계절의 첫 걸음은 함께 낸 march 가 간다 (goal.ts) */
   | { readonly kind: 'goal'; readonly army: string; readonly node: string | null }
   /** 서 있는 고을을 친다 — 동맹을 깨는 등으로 그 땅이 싸울 땅이 됐을 때, 길을 나서지 않고 그 자리에서 (형 10-24) */
@@ -822,6 +840,9 @@ export type ReportLine =
       readonly outcome: Outcome
       readonly captured: string | null
       readonly killed: string | null
+      /** 이 싸움에서 사로잡히거나 쓰러진 장수 모두 (장수가 여럿이면 하나가 아닐 수 있다) */
+      readonly captives?: readonly string[]
+      readonly fallen?: readonly string[]
       /** 판정에 선 장정 수 — 기습이 먹히면 0 (모이지 못했다) */
       readonly militia: number
       /** 친 나라 — 군대가 흩어져도 남는다 (약속 셈 · diplomacy.checkPledges). 옛 보고에는 없다 */

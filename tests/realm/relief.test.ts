@@ -72,4 +72,32 @@ describe('원군', () => {
     }
     assert.ok(found, '협공 싸움이 한 번은 나야 한다')
   })
+
+  it('같은 길이어도 「뒤따른다」로 보내면 원군으로 늦게 붙는다 (형 10-25: "원군으로도 안 오고 그냥 한 번에 합산")', () => {
+    let found = false
+    for (let seed = 1; seed <= 30 && !found; seed++) {
+      const r: Realm = byeonhanMini(seed)
+      const cap = 'anya-cap'
+      const way = Object.values(r.edges).find((e) => otherEnd(e, cap) !== null && marchSeasons(e.kind, seasonOf(r.season)) === 1)
+      if (way === undefined) continue
+      const main = Object.values(r.armies).find((a) => a.faction === r.player)
+      if (main === undefined) continue
+      main.at = otherEnd(way, cap)!
+      main.mix = { spear: 500 * S }
+      main.march = null
+      r.armies['a-late'] = { ...structuredClone(main), id: 'a-late', hero: null, mix: { horse: 150 * S } }
+      for (const a of Object.values(r.armies)) if (a.id !== main.id && a.id !== 'a-late' && a.at === main.at) a.at = cap
+      r.nodes[main.at]!.owner = r.player
+      const { report } = advance(r, [
+        { kind: 'march', army: main.id, edge: way.id, ambush: false },
+        { kind: 'march', army: 'a-late', edge: way.id, ambush: false, follow: true },
+      ])
+      const b = report.lines.find((l): l is Extract<ReportLine, { kind: 'battle' }> => l.kind === 'battle' && l.node === cap)
+      if (b === undefined || (b.rounds ?? []).length <= P.realm.reliefRound) continue
+      const rel = b.rounds!.find((x) => x.relief !== undefined)?.relief
+      assert.ok(rel !== undefined && rel.side === 'a' && rel.horse, JSON.stringify(rel))
+      found = true
+    }
+    assert.ok(found, '뒤따른 원군 싸움이 한 번은 나야 한다')
+  })
 })

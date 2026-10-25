@@ -515,7 +515,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let armyOrders: Order[] = [] // 나누기·모으기 — 화면은 이걸 먼저 해 본 판을 보인다
   let musters: Order[] = [] // 징병·해산
   let settles: Order[] = [] // 개척 — 나누기처럼 먼저 해 본 판에 든다 (그래야 남은 몫·곡식이 맞게 보인다)
-  const pick: Record<string, { edge: string; ambush: boolean; approach?: Approach; ration?: Ration; goal?: string } | undefined> = {}
+  const pick: Record<string, { edge: string; ambush: boolean; approach?: Approach; ration?: Ration; goal?: string; follow?: boolean } | undefined> = {}
   /** 먼 갈 곳을 거둔 군대 — 이번 계절 「머문다」를 눌렀다 (형 10-25 · goal.ts) */
   let goalStop: string[] = []
   let scout = ''
@@ -574,14 +574,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 시트 안의 손 상태 */
   let openArmy = ''
   /** 출정을 꾸리는 군대의 판 (형: "다 같이 간다 말고 … 출정? 일부만 출정?") — 군사는 처음엔 전부, 줄이면 나머지가 남아 지킨다 */
-  let sortieD: { take: Partial<Record<UnitKind, number>>; hero: boolean; edge: string | null; approach: Approach; ration: Ration | undefined } = { take: {}, hero: true, edge: null, approach: 'road', ration: undefined }
+  let sortieD: { take: Partial<Record<UnitKind, number>>; hero: boolean; edge: string | null; approach: Approach; ration: Ration | undefined; follow?: boolean } = { take: {}, hero: true, edge: null, approach: 'road', ration: undefined }
   /** 출정 판의 진군 방식·군량 단추가 가리키는 이름 (군대 id 대신) */
   const SORTIE = '~sortie'
   /** 출정 판을 연다 — 이미 정한 출정이 있으면 그대로 불러온다 */
   function openSortie(a: Army): void {
     const p = pick[a.id]
     openArmy = a.id
-    sortieD = { take: { ...a.mix }, hero: true, edge: p?.edge ?? null, approach: p?.approach ?? (p?.ambush === true ? 'night' : 'road'), ration: p?.ration }
+    sortieD = { take: { ...a.mix }, hero: true, edge: p?.edge ?? null, approach: p?.approach ?? (p?.ambush === true ? 'night' : 'road'), ration: p?.ration, ...(p?.follow === true ? { follow: true } : {}) }
   }
   const draftUnit: Record<string, UnitKind> = {}
   const draftN: Record<string, number> = {}
@@ -836,7 +836,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const out: Order[] = [...armyOrders, ...settles, ...heroOrders, ...musters]
     for (const [army, c] of Object.entries(pick)) {
       const a = p.armies[army]
-      if (c !== undefined && a !== undefined && a.march === null) out.push({ kind: 'march', army, edge: c.edge, ambush: c.ambush, ...(c.approach !== undefined ? { approach: c.approach } : {}), ...(c.ration !== undefined ? { ration: c.ration } : {}) })
+      if (c !== undefined && a !== undefined && a.march === null) out.push({ kind: 'march', army, edge: c.edge, ambush: c.ambush, ...(c.approach !== undefined ? { approach: c.approach } : {}), ...(c.ration !== undefined ? { ration: c.ration } : {}), ...(c.follow === true ? { follow: true } : {}) })
       if (c?.goal !== undefined && a !== undefined && a.march === null) out.push({ kind: 'goal', army, node: c.goal })
     }
     for (const army of goalStop) out.push({ kind: 'goal', army, node: null })
@@ -1399,6 +1399,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<div class="sth">④ 어떻게</div>`
       if (m.blocked !== null) h += `<div class="banner bad">${esc(HARD_LINE[m.blocked])}</div>`
       h += marchChoice(r, probe, m, { approach: sortieD.approach, ambush: sortieD.approach !== 'road', ...(sortieD.ration !== undefined ? { ration: sortieD.ration } : {}) }, SORTIE)
+      // ⑤ 같은 고을을 치는 다른 우리 군대가 있으면 — 다 같이 들이칠까, 뒤따라 원군으로 들이칠까 (형 10-25: "원군으로도 안 오고 그냥 한 번에 합산")
+      const mates = m.hostile ? Object.values(r.armies).filter((o) => o.faction === me() && o.id !== a.id
+        && ((o.march !== null && o.march.to === m.to) || (pick[o.id] !== undefined && o.march === null && r.edges[pick[o.id]!.edge] !== undefined && otherEnd(r.edges[pick[o.id]!.edge]!, o.at) === m.to))) : []
+      if (mates.length > 0) {
+        const f = sortieD.follow === true
+        h += `<div class="sth">⑤ ${esc(mates.map((o) => armyName(r, o)).join(' · '))}도 그리로 간다</div><div class="seg"><button class="${f ? '' : 'on'}" data-act="sfollow" data-v="0">다 같이 들이친다</button>`
+          + `<button class="${f ? 'on' : ''}" data-act="sfollow" data-v="1" data-tip="처음엔 빠져 있다가 몇 합 뒤에 원군으로 들이친다 — 지친 적이 흔들리고 우리 사기가 오른다">뒤따른다 · 원군으로</button></div>`
+      }
     }
     return h + `</div>`
   }
@@ -4825,11 +4833,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'sdest': sortieD.edge = sortieD.edge === d['edge'] ? null : d['edge']!; break
       case 'sstay': sortieD.edge = null; break
       case 'sortie-cancel': delete pick[d['army']!]; openArmy = ''; break
+      case 'sfollow': sortieD.follow = d['v'] === '1'; break
       case 'sortie-go': {
         // 전부면 그 군대가 떠나고, 일부면 떼어 낸 무리가 떠난다 — 나머지(와 기본은 장수)는 남아 지킨다
         const a = r!.armies[d['army']!]
         if (a === undefined) break
-        const go = sortieD.edge !== null ? { edge: sortieD.edge, ambush: sortieD.approach !== 'road', approach: sortieD.approach, ...(sortieD.ration !== undefined ? { ration: sortieD.ration } : {}) } : null
+        const go = sortieD.edge !== null ? { edge: sortieD.edge, ambush: sortieD.approach !== 'road', approach: sortieD.approach, ...(sortieD.ration !== undefined ? { ration: sortieD.ration } : {}), ...(sortieD.follow === true ? { follow: true } : {}) } : null
         if (go !== null) marchSfx()
         if (sortieAll(a)) {
           if (go === null) break

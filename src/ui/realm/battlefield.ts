@@ -920,7 +920,10 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const fTo = mr(Math.min(base, m(i) + P.realm.tacFeastMorale))
     const feastPv = i === ourI && l.pending?.feast !== undefined && fTo > fNow ? `<u class="wfpv" style="left:${fNow}%;width:${fTo - fNow}%"></u>` : ''
     const em = f !== undefined ? FACTION_ART[f]?.emblem : undefined
-    return `<div class="ws ${cls}${hitOf(i)}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s"><span class="wpf">${face(hero, art, unitOf(i))}<i></i></span><b>${esc(name)}</b><span class="wnat">${roleChip((cls === 'us') === weAtk)}${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
+    // 부장 — 함께 선 장수들 (형 10-25) · 잃은 이는 흐리게
+    const lostIds = new Set(rounds.flatMap((x) => (x.lostHero !== undefined ? [x.lostHero.hero] : [])))
+    const aides = (st?.aides?.[i] ?? []).map((id) => `<span class="waide${lostIds.has(id) ? ' gone' : ''}" title="${esc(prev.heroes[id]?.name ?? after.heroes[id]?.name ?? '')}">${face(id, art, unitOf(i))}</span>`).join('')
+    return `<div class="ws ${cls}${hitOf(i)}${hero !== null && lostIds.has(hero) ? ' chiefgone' : ''}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s"><span class="wpf">${face(hero, art, unitOf(i))}<i></i></span>${aides !== '' ? `<span class="waides">${aides}</span>` : ''}<b>${esc(name)}</b><span class="wnat">${roleChip((cls === 'us') === weAtk)}${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
       // 무너지는 금 — 이 밑으로 떨어지면 그 편이 무너져 진다 (tactics: 군사 tacBreakMen · 사기는 처음의 tacBreakMorale) (형 10-24: "사기가 어느 정도 떨어지면 패배한다가 가로바에 표시")
       + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}${brk(Math.round(P.realm.tacBreakMen * 100), Math.round(n(i) * 100), '군사가 이 금 밑으로 줄면 무너져 진다 — 패배')}</div>${num}`
       + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}${feastPv}${brk(Math.round(P.realm.tacBreakMorale * 83), mr(m(i)), '사기가 이 금 밑으로 떨어지면 무너져 진다 — 패배')}</div><span class="wn">사기</span>${hitFx}</div>` // 맞은 불꽃은 맨 뒤에 — 앞에 끼면 초상이 새로 만들어져 깜빡였다 (paintNow 의 바뀐 곳만 고치기)
@@ -1131,6 +1134,16 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     // 적진의 속·맞은편·땅은 전장에서 누르고 있거나 마우스를 올리면 (openWar 의 정보창 · warTip) — 여기엔 어떻게 보는지만
     h += '<p class="wfhint">전장에서 <b>우리 무리</b>를 누르면 깃발 선택 · 적·낌새·땅은 <b>누르고 있으면</b>(마우스는 올리면) 자세히 보인다</p>'
     if (p.foeWaver) h += `<div class="wintel"><div class="wi warn"><b>적이 흔들린다</b><p>깃발이 기울고 대열이 성기다</p><small>방진도 돌격을 못 받아 낸다 — 쫓을 때다</small></div></div>`
+    // 지난 합에 장수를 잃었다 — 누가 · 누가 지휘를 넘겨받았나 (형 10-25: "한 명 잡히면 바로 지는 건 말이 안 되는데")
+    const lh = rounds[rounds.length - 1]?.lostHero
+    if (lh !== undefined) {
+      const ours = (lh.side === 'a') === weAtk
+      const nm = (id: string): string => prev.heroes[id]?.name ?? after.heroes[id]?.name ?? '?'
+      const what = lh.how === 'taken' ? '사로잡혔다' : '쓰러졌다'
+      const next = lh.chief !== undefined ? ` — ${josa(nm(lh.chief), '이', '가')} 지휘를 넘겨받는다` : ''
+      h += `<div class="wintel"><div class="wi ${ours ? 'warn' : 'good'}"><b>${esc(`${ours ? '우리' : '적의'} ${lh.chief !== undefined ? '총대장' : '부장'} ${josa(nm(lh.hero), '이', '가')} ${what}`)}</b><p>${esc(`싸움은 이어진다${next}`)}</p></div></div>`
+    }
+    if (p.shaken === true) h += `<div class="wintel"><div class="wi warn"><b>지휘가 흔들린다</b><p>총대장을 잃었다 — 이번 합은 북과 물러나기뿐</p></div></div>`
     /**
      * 권함 — 무리마다 판세로 하나 (형 10-24: 동료 "선택지마다 뭘 골라야 좋을지 몰라서"). 보이는 것만으로 셈한다(낌새 · 맞은편 수 · 사기 · 사로잡기 손)
      */
@@ -1147,6 +1160,29 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       if (p.capture >= 0.3 && has('capture')) return 'capture'
       if (m(ourI) < (st?.morale[ourI] ?? 1) * 0.8 && has('drum')) return 'drum'
       return has('art') ?? has('drum') ?? options[0]
+    }
+    /**
+     * 장수가 여럿이면 — 비기·겨루기에 누가 나서나 · 사로잡기에 누구를 잡나 (형 10-25). 그 깃발을 골랐을 때만 보인다 (CSS :has)
+     * 안 고르면 비기는 아직 안 쓴 장수부터, 겨루기는 무예가 가장 높은 이, 사로잡기는 적의 총대장
+     */
+    const whoRows = (): string => {
+      const nm = (id: string): string => prev.heroes[id]?.name ?? after.heroes[id]?.name ?? '?'
+      const hs = p.heroes ?? []
+      let s = ''
+      if (hs.length > 1) {
+        const arts = hs.filter((x) => x.art !== undefined && !x.artUsed)
+        const artPick = sel.who !== undefined && arts.some((x) => x.id === sel.who) ? sel.who : arts[0]?.id
+        if (arts.length > 1) s += `<div class="wwho mine art"><span>누가 비기를 쓰나</span>${arts.map((x) => `<button class="wfc${x.id === artPick ? ' on' : ''}" data-war="who" data-id="${x.id}">${face(x.id, art, unitOf(ourI))}<b>${esc(nm(x.id))}</b><small>${esc(ART_NAME[x.art!])}</small></button>`).join('')}</div>`
+        const best = [...hs].sort((x, y) => y.mu - x.mu)[0]?.id
+        const duelPick = sel.who !== undefined && hs.some((x) => x.id === sel.who) ? sel.who : best
+        s += `<div class="wwho mine duel"><span>누가 나서 겨루나</span>${hs.map((x) => `<button class="wfc${x.id === duelPick ? ' on' : ''}" data-war="who" data-id="${x.id}">${face(x.id, art, unitOf(ourI))}<b>${esc(nm(x.id))}</b><small>무예 ${x.mu}${x.chief ? ' · 총대장' : ''}</small></button>`).join('')}</div>`
+      }
+      const fs = p.foeHeroes ?? []
+      if (fs.length > 1) {
+        const tPick = sel.target ?? fs.find((x) => x.chief)?.id
+        s += `<div class="wwho foe capture"><span>누구를 잡나</span>${fs.map((x) => { const [w, cls] = captureWord(x.p); return `<button class="wfc${x.id === tPick ? ' on' : ''}" data-war="target" data-id="${x.id}">${face(x.id, art, unitOf(foeI))}<b>${esc(nm(x.id))}</b><small class="wf-${cls}">${x.chief ? '총대장 · ' : '부장 · '}${w}</small></button>` }).join('')}</div>`
+      }
+      return s
     }
     let recNow: Cmd | undefined
     const opt = (g: Grp | 'lead', c: Cmd): string => {
@@ -1184,7 +1220,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     if (p.guess !== undefined) h += `<p class="wgby">${p.guess.by === 'hint' ? '깃발마다 이번 합의 짐작 — <b>적이 낌새대로 오면</b>' : '깃발마다 이번 합의 짐작 — 적의 속을 몰라 <b>폭</b>이 있다 (막대의 옅은 데)'} · <b>판세</b> 막대는 왼쪽 끝이 우리, 오른쪽 끝이 적 — 파랑이 그 깃발을 들었을 때 우리 몫, 금빛 금이 지금 · <b>잃을 군사</b>는 이번 합에 양쪽이 잃을 만큼</p>`
     for (const x of panes) {
       recNow = advise(x.g, x.options)
-      h += `<div class="wgrp" data-g="${x.g}"${recNow !== undefined ? ` data-rec="${recNow}"` : ''}${x === act ? '' : ' hidden'}><div class="wcmdgrid">${x.options.map((c) => opt(x.g, c)).join('')}</div></div>`
+      h += `<div class="wgrp" data-g="${x.g}"${recNow !== undefined ? ` data-rec="${recNow}"` : ''}${x === act ? '' : ' hidden'}><div class="wcmdgrid">${x.options.map((c) => opt(x.g, c)).join('')}</div>${x.g === 'lead' ? whoRows() : ''}</div>`
     }
     const picked = panes.filter((x) => sel[x.g] !== undefined).length
     // 맡기면 장수의 지략대로 — 그 장수의 얼굴·지략을 단추 옆에 (형: "장수의 지략?수치가 … 버튼주변에 뭔가보여지면")
@@ -1212,11 +1248,12 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     if (fall) h += `<div class="wfx burn"${d}><img class="wfx-smoke" src="${art}fx/smoke.png" alt="">${burnHtml(art, 'l')}${burnHtml(art, 'r')}</div>`
     h += `<div class="wend ${good ? 'good' : l.outcome === 'draw' ? '' : 'bad'}"${d}><b>${big}${esc(res)}</b>`
     if (ctx !== null && (l.rounds ?? []).length > 0) h += `<p class="wwhy">${esc(endStory(l, ctx))}</p>`
-    if (l.captured !== null) {
-      const c = after.heroes[l.captured]
+    // 잡힌 이 · 쓰러진 이 — 장수가 여럿이면 하나가 아닐 수 있다
+    for (const id of l.captives ?? (l.captured !== null ? [l.captured] : [])) {
+      const c = after.heroes[id]
       h += c?.faction === me ? '<p>' + esc(josa(c.name, '이', '가')) + ' 사로잡혀 갔다.</p>' : '<p>' + esc(josa(c?.name ?? '?', '을', '를')) + ' 사로잡았다!</p>'
     }
-    if (l.killed !== null) h += `<p>${esc(josa(after.heroes[l.killed]?.name ?? '?', '이', '가'))} 쓰러졌다.</p>`
+    for (const id of l.fallen ?? (l.killed !== null ? [l.killed] : [])) h += `<p>${esc(josa(after.heroes[id]?.name ?? '?', '이', '가'))} 쓰러졌다.</p>`
     h += `<button class="btn pri wide" data-war="next">${left > 1 ? '다음 싸움으로' : '계절을 마무리한다'}</button></div>`
   }
   h += `</div>`
@@ -1225,6 +1262,17 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
 
 export const WAR_CSS = `
 .ap .tn.hard { color: #f0a08a; }
+/* 장수가 여럿 — 누가 나서나 · 누구를 잡나 (그 깃발을 골랐을 때만) */
+.ap .ws .waides { display: flex; gap: 2px; justify-content: center; margin: 2px 0 0; } .ap .ws .waide .wf { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; object-position: top; border: 1px solid #c9a45a; }
+.ap .ws .waide.gone .wf { filter: grayscale(1) brightness(.5); border-color: #6a3a2a; } .ap .ws.chiefgone .wpf .wf { filter: grayscale(1) brightness(.55); }
+.ap .wwho { display: none; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 2px; padding: 8px; border-radius: 12px; background: #1a140ecc; border: 1px solid #5a4a2a; }
+.ap .wwho > span { flex-basis: 100%; font-size: 12.5px; color: var(--gold); }
+.ap .wgrp:has(.wcmd.art.on) .wwho.art, .ap .wgrp:has(.wcmd.duel.on) .wwho.duel, .ap .wgrp:has(.wcmd.capture.on) .wwho.capture { display: flex; }
+.ap .wwho .wfc { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 84px; padding: 6px 2px; border-radius: 10px; border: 1.5px solid #5a4a2a; background: #241b12; color: var(--ink); font: inherit; cursor: pointer; opacity: .7; }
+.ap .wwho .wfc .wf { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; object-position: top; }
+.ap .wwho .wfc b { font-size: 12px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ap .wwho .wfc small { font-size: 10.5px; color: var(--mute); }
+.ap .wwho .wfc.on { opacity: 1; border-color: #e0b860; box-shadow: 0 0 10px #e0b86055; }
+.ap .wwho.foe .wfc.on { border-color: #e06a4a; box-shadow: 0 0 10px #e06a4a55; }
 .ap.war-open .tutband, .ap.war-open .tutbar { display: none; }
 .ap .wr { position: fixed; inset: 0; z-index: 60; background: #0d0f13; overflow: hidden; }
 /* 위아래로만 굴린다 — 옆으로 밀리던 것 (형 10-23: "전투 화면에서 불필요하게 x축 스크롤") */
@@ -2599,6 +2647,15 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       case 'gtab': {
         active = b.dataset['g'] as Grp | 'lead'
         syncCmd()
+        return
+      }
+      case 'who': case 'target': {
+        // 장수가 여럿 — 누가 나서나 · 누구를 잡나. 다시 그리지 않고 고른 표만 옮긴다
+        const id = b.dataset['id']!
+        if (b.dataset['war'] === 'who') sel = { ...sel, who: id }
+        else sel = { ...sel, target: id }
+        const row = b.closest('.wwho')
+        if (row !== null) for (const x of row.querySelectorAll<HTMLElement>('.wfc')) x.classList.toggle('on', x === b)
         return
       }
       case 'popx': closePop(); return

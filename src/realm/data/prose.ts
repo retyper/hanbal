@@ -892,6 +892,8 @@ export interface StoryCtx {
   /** 처음 사기 · 처음 사람 */
   readonly m0: readonly [number, number]
   readonly men0: readonly [number, number]
+  /** 장수 id → 이름 — 장수가 여럿인 싸움에서 나선 이·잡힌 이를 부른다 */
+  readonly names?: Readonly<Record<string, string>>
 }
 
 /** 그 판의 이야기 틀 — 보는 나라가 낀 쪽이 '우리', 맞은편이 '적' (안 꼈으면 나라 이름). 판 기록(start)이 없으면 null */
@@ -903,6 +905,7 @@ export function storyCtx(r: Realm, l: { readonly start?: Battle['start'] | undef
   const hn = (id: string | null): string | null => (id !== null ? (r.heroes[id]?.name ?? null) : null)
   return {
     side, hero: [hn(st.heroes[0]), hn(st.heroes[1])], mix: st.mix ?? [{}, {}], m0: [st.morale[0], st.morale[1]], men0: [st.men[0], st.men[1]],
+    names: Object.fromEntries([st.heroes[0], st.heroes[1], ...(st.aides?.[0] ?? []), ...(st.aides?.[1] ?? [])].flatMap((id) => (id !== null && r.heroes[id] !== undefined ? [[id, r.heroes[id]!.name]] : []))),
   }
 }
 
@@ -920,6 +923,8 @@ export function roundStory(rd: RoundLog, prev: RoundLog | undefined, c: StoryCtx
   const who = (s: 'a' | 'd'): string => c.side[ix(s)]
   const grp = (s: 'a' | 'd', g: Grp | 'lead' | undefined): string => (g === undefined || g === 'lead' ? '장수' : groupLabel(c.mix[ix(s)], g))
   const heroOf = (s: 'a' | 'd'): string => c.hero[ix(s)] ?? `${who(s)} 장수`
+  /** 나선 이 · 잡힌 이 — 그 이름이 있으면 (장수가 여럿인 싸움) */
+  const named = (id: string | undefined, s: 'a' | 'd'): string => (id !== undefined ? c.names?.[id] : undefined) ?? heroOf(s)
   const orderOf = (s: 'a' | 'd'): RoundOrder | undefined => (s === 'a' ? rd.oa : rd.od)
   const out: string[] = []
 
@@ -930,7 +935,7 @@ export function roundStory(rd: RoundLog, prev: RoundLog | undefined, c: StoryCtx
     const y = opp(x)
     if (a.c === 'art' && a.art !== undefined) {
       // 장수의 비기 — 그 장수의 이름으로 (형: "싸우는 장수의 특별한 액티브 스킬")
-      const hx = heroOf(x)
+      const hx = named(a.hero, x)
       const hy = heroOf(y)
       const line: Record<Art, string> = {
         snipe: `${josa(hx, '이', '가')} 몸소 활을 당겨 ${josa(hy, '을', '를')} 맞혔다 — ${who(y)} 진이 술렁인다.`,
@@ -947,14 +952,15 @@ export function roundStory(rd: RoundLog, prev: RoundLog | undefined, c: StoryCtx
     } else if (a.c === 'retreat') {
       out.push(`${josa(who(x), '이', '가')} 징을 쳐 군사를 물렸다 — 물러나며 ${josa(ppl(a.sl ?? 0), '을', '를')} 잃었다.`)
     } else if (a.c === 'duel') {
-      out.push(`${josa(heroOf(x), '이', '가')} 앞으로 나서 ${josa(heroOf(y), '과', '와')} 겨뤘다 — `
-        + (a.res === 'won' ? `${josa(heroOf(y), '이', '가')} 말에서 떨어졌다. ${who(y)} 군사들이 술렁인다.` : `${josa(heroOf(x), '이', '가')} 밀려 다쳤다. ${who(x)} 군사들이 술렁인다.`))
+      const hx = named(a.hero, x)
+      out.push(`${josa(hx, '이', '가')} 앞으로 나서 ${josa(heroOf(y), '과', '와')} 겨뤘다 — `
+        + (a.res === 'won' ? `${josa(heroOf(y), '이', '가')} 말에서 떨어졌다. ${who(y)} 군사들이 술렁인다.` : `${josa(hx, '이', '가')} 밀려 다쳤다. ${who(x)} 군사들이 술렁인다.`))
     } else if (a.c === 'capture') {
       const yo = orderOf(y)
       const where = (c.mix[ix(x)].horse ?? 0) > 0 ? '말을 달려 적진 옆을 돌아' : yo?.front === 'open' ? '벌어진 앞줄 틈으로' : '앞줄 틈을 비집고'
       const guard = yo?.horse === 'guard' ? `기병이 둘러싼 호위 ${ppl(a.guard ?? 0)}` : `장수 곁 호위 ${ppl(a.guard ?? 0)}`
       out.push(a.res === 'ok'
-        ? `${who(x)} 날랜 무리 ${josa(ppl(a.n), '이', '가')} ${where} 파고들어 ${josa(guard, '을', '를')} 뚫고 ${josa(heroOf(y), '을', '를')} 사로잡았다!`
+        ? `${who(x)} 날랜 무리 ${josa(ppl(a.n), '이', '가')} ${where} 파고들어 ${josa(guard, '을', '를')} 뚫고 ${josa(named(a.hero, y), '을', '를')} 사로잡았다!`
         : `${who(x)} 날랜 무리 ${josa(ppl(a.n), '이', '가')} ${where} 파고들었으나 ${guard}에 막혔다 — ${josa(ppl(a.sl ?? 0), '을', '를')} 잃고 돌아섰다.`)
     }
   }
