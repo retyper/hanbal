@@ -1484,7 +1484,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (season === 'autumn' || season === 'winter') h += `<div class="banner good">${tx('거둔 뒤라 뽑기 좋은 때다')}</div>`
     const pending = musters.filter((o): o is Extract<Order, { kind: 'draft' }> => o.kind === 'draft')
     // 알아서 뽑기 — 고을마다 뽑을 수 있는 만큼, 창병과 궁병을 섞어 곡식이 닿는 데까지 (형 10-24: "모든 고을에서 다 최대로 골고루")
-    h += `<div class="btns"><button class="btn pri men wide" data-act="auto-draft">⚡ 알아서 뽑기 — 고을마다 뽑을 수 있는 만큼 (창병·궁병 섞어)</button></div>`
+    h += `<div class="btns"><button class="btn pri men wide" data-act="auto-draft">⚡ 알아서 뽑기 — 고을마다 뽑을 수 있는 병종을 골고루</button></div>`
     // 병종은 한 번에 하나 — 둘 다 고르는 게 아니다 (형 10-24: 동료 "창병 선택이랑 궁병 선택 따로 있는데 각각 선택해야 하는지 모르겠다")
     h += `<p class="mute">고을마다 <b>병종 하나</b>를 골라 뽑는다. 창병과 궁병을 섞으려면 병종을 바꿔 한 번 더 뽑는다 — 앞줄(창·방패)이 받아 내고 뒷줄(활)이 쏜다.</p>`
     for (const n of sorted(Object.values(r.nodes)).filter((x) => x.owner === me())) h += draftCard(r, n.id, false)
@@ -1515,11 +1515,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const want = Math.min(lim, draftN[n.id] ?? Math.min(lim, 20))
       h += `<div class="ncard draftc${big ? ' big' : ''}"><div class="an">${big ? `<b>여기서 군사 뽑기</b>` : `${icon(nodeIcon(n), 'nic')}<b>${esc(n.name)}</b>`}`
       h += `<span class="mute">${tx(`집 ${Math.floor(n.hh)} · 장정 ${militiaMen(r, n.id)}${done > 0 ? ` · 뽑는 중 군사 ${done}` : ''}`)}</span></div>`
+      // 고을 판 — 이 고을에서 이번 계절 뽑기로 한 것 (다 뽑아 한도가 찼어도 보이고 취소할 수 있게)
+      const mine = (): string => (big ? pending.filter((o) => o.node === n.id).map((o) => `<div class="row">${icon(UNIT_ICON[o.unit])}${UNIT_NAME[o.unit]} ${o.n}명 뽑는다<button class="btn ghost sm" data-act="undraft" data-i="${musters.indexOf(o)}">취소</button></div>`).join('') : '')
       if (limAll <= 0) {
-        h += `<div class="mute">이번 계절엔 더 못 뽑는다</div></div>`
+        h += `<div class="mute">이번 계절엔 더 못 뽑는다</div>${mine()}</div>`
         return h
       }
       if (big) {
+        // 알아서 — 이 고을에서 뽑을 수 있는 병종 모두를 골고루 (형 10-25: "고을 눌렀을때 나오는 그마을 군사뽑기도 자동버튼")
+        h += `<div class="btns"><button class="btn pri men wide" data-act="auto-draft" data-node="${n.id}">⚡ 알아서 뽑기 · 병종 골고루 ${limAll}명</button></div>`
         // 병종 — 큰 그림 타일 (누르면 그 병종으로)
         h += `<div class="dbig">`
         for (const u of draftable(n)) {
@@ -1547,10 +1551,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         h += `<label class="chk"><input type="checkbox" data-act="diron" data-node="${n.id}" ${draftIron[n.id] === true ? 'checked' : left().iron < ic.iron ? 'disabled' : ''}> 새로 뽑는 ${esc(UNIT_NAME[unit])} ${want}명에게 ${esc(josa(GEAR_NAME[unit]?.[ic.to] ?? TIER_NAME[ic.to], '을', '를'))} 들린다 ${costHtml({ iron: ic.iron })}</label>`
         if (base !== undefined) h += `<p class="mute">철을 안 들이면 ${esc(josa(GEAR_NAME[unit]?.[base] ?? TIER_NAME[base], '을', '를'))} 든다.</p>`
       }
-      // 고을 판 — 이 고을에서 이번 계절 뽑기로 한 것
-      if (big) pending.filter((o) => o.node === n.id).forEach((o) => {
-        h += `<div class="row">${icon(UNIT_ICON[o.unit])}${UNIT_NAME[o.unit]} ${o.n}명 뽑는다<button class="btn ghost sm" data-act="undraft" data-i="${musters.indexOf(o)}">취소</button></div>`
-      })
+      h += mine()
       h += `</div>`
     }
     return h
@@ -4407,23 +4408,33 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         break
       }
       case 'auto-draft': {
-        // 고을마다 남은 한도를 창병 6 : 궁병 4 로 — 곡식이 모자라면 거기서 멈춘다 (군사 뽑기 값은 징병 판과 같다)
+        // 고을마다(고을 판에서 누르면 그 고을만) 남은 한도를 뽑을 수 있는 병종 모두에 몫대로 — 곡식이 모자라면 거기서 멈춘다
+        // (형 10-25: "창병궁병만 뽑지말고 뽑을수 있는 모든 군대를 자동으로 분배해서" · 말·나무가 모자란 병종은 그만큼만, 남은 몫은 창병으로)
         let grain = left().grain
         let got = 0
-        for (const n of sorted(Object.values(plan().nodes)).filter((x) => x.owner === me())) {
-          const p = plan()
-          const lim = draftLimit(p, me(), n.id)
+        const only = d['node']
+        for (const n of sorted(Object.values(plan().nodes)).filter((x) => x.owner === me() && (only === undefined || only === '' || x.id === only))) {
+          const done = (): number => musters.reduce((s, o) => s + (o.kind === 'draft' && o.node === n.id ? o.n : 0), 0)
+          const room = (u?: UnitKind): number => Math.max(0, draftLimit(plan(), me(), n.id, u) - done())
+          const lim = room()
           if (lim <= 0) continue
-          const bowOk = draftLimit(p, me(), n.id, 'bow') > 0
-          const parts: Array<[UnitKind, number]> = bowOk ? [['spear', Math.ceil(lim * 0.6)], ['bow', Math.floor(lim * 0.4)]] : [['spear', lim]]
-          for (const [unit, want] of parts) {
-            let k = Math.min(want, draftLimit(plan(), me(), n.id, unit))
+          const units = draftable(n).filter((u) => room(u) > 0)
+          const MIX: Partial<Record<UnitKind, number>> = { spear: P.realm.draftMixSpear, bow: P.realm.draftMixBow, shield: P.realm.draftMixShield, horse: P.realm.draftMixHorse, boat: P.realm.draftMixBoat }
+          const w = (u: UnitKind): number => MIX[u] ?? 0
+          const sum = units.reduce((s, u) => s + w(u), 0)
+          const take = (unit: UnitKind, want: number): void => {
+            let k = Math.min(want, room(unit), room())
             while (k > 0 && draftCost(k).grain > grain) k = Math.floor(k * 0.8)
-            if (k <= 0) continue
+            if (k <= 0) return
             grain -= draftCost(k).grain
-            musters = [...musters, { kind: 'draft', faction: me(), node: n.id, unit, n: k }]
+            const same = musters.findIndex((o) => o.kind === 'draft' && o.node === n.id && o.unit === unit && o.iron !== true)
+            const prevN = same >= 0 ? (musters[same] as Extract<Order, { kind: 'draft' }>).n : 0
+            musters = same >= 0 ? musters.map((o, i) => (i === same ? { ...(o as Extract<Order, { kind: 'draft' }>), n: prevN + k } : o)) : [...musters, { kind: 'draft', faction: me(), node: n.id, unit, n: k }]
             got += k
           }
+          if (sum > 0) for (const u of [...units].sort((a, b) => w(b) - w(a))) take(u, Math.floor((lim * w(u)) / sum))
+          // 나눗셈에 남은 몇 명 · 말·나무에 막혀 못 채운 몫 — 창병부터 채운다
+          for (const u of ['spear', 'shield', 'bow'] as const) if (units.includes(u)) take(u, room())
         }
         if (got > 0) draftSfx()
         else note = '더 뽑을 군사가 없거나 곡식이 모자란다.'

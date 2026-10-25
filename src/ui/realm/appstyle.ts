@@ -330,6 +330,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .draftc.big .dbig button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 12px; border: 1px solid var(--line); background: #221b16; color: var(--ink); font: inherit; cursor: pointer; }
 .ap .draftc.big .dbig img { width: 56px; height: 56px; object-fit: contain; filter: drop-shadow(0 2px 2px #0008); }
 .ap .draftc.big .dbig b { font-size: 13px; } .ap .draftc.big .dbig small { font-size: 11px; color: var(--mute); }
+/* 병종 이름은 줄을 바꾸지 않고 글자만 작아진다 (형 10-25) */
+.ap .draftc .dbig button, .ap .draftc .seg button { container-type: inline-size; min-width: 0; }
+.ap .draftc .dbig b, .ap .draftc .dbig small, .ap .draftc .seg button { white-space: nowrap; }
+.ap .draftc.big .dbig b { font-size: min(13px, 19cqw); } .ap .draftc.big .dbig small { font-size: min(11px, 15cqw); }
+.ap .draftc .seg button { display: inline-flex; align-items: center; justify-content: center; gap: 2px; font-size: min(13px, 18cqw); }
+.ap .draftc .seg button .ic { width: min(22px, 26cqw); height: min(22px, 26cqw); flex: none; }
 .ap .draftc.big .dbig button.on { border-color: var(--gold); background: #2a2416; box-shadow: 0 0 0 2px #d9b36a55; } .ap .draftc.big .dbig button:disabled { opacity: .4; }
 .ap .yield { display: flex; flex-direction: column; gap: 2px; margin: 6px 0; padding: 7px 10px; border-radius: 10px; background: #1f2418; border: 1px solid #4f5a3a; font-size: 13px; }
 .ap .yield b { color: var(--gold); font-size: 13.5px; } .ap .yield span { color: #d8dcc8; display: flex; align-items: center; gap: 4px; } .ap .yield .ic { width: 18px; height: 18px; }
