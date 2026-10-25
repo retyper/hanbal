@@ -902,16 +902,20 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       let h = ''
       if (cls === defCls && l.field !== true && node !== undefined) {
         const breached = l.pending === undefined && shown >= (l.rounds ?? []).length && (l.outcome === 'win' || l.outcome === 'rout')
+        // 끝 합이 풀리는 중이면 「승리·패배」가 뜨는 때(--rv)에 바꾼다 — 그 전엔 멀쩡한 성 (형 10-25: "결과 나오기 전엔 이런 승패를 연출로 힌트줘선 안돼")
+        const late = breached && play
         if (node.tags.includes('moat')) { for (const oy of [-32, -16, 0, 16, 32]) h += tp('moat', 54, oy, 1.3, true); h += tlab('moat', 58, 42) }
         // 성벽·목책은 판정에 있는 것만 그린다 (season.fortMul — 목책 꼬리표 · 산성) · 그냥 도읍에 울타리를 그리면 없는 수비 덤을 있는 것처럼 보였다
         if (node.tags.includes('palisade') || node.kind === 'fort') {
           const gate = node.kind === 'fort' || node.kind === 'capital'
           h += tlab(node.kind === 'fort' ? 'fort' : 'palisade', 47.5, -47)
           // 지키는 쪽 뒤에 성 — 흙 성벽·목책·망루 (공격이 이기면 부서져 불탄다) · 어느 쪽이 성을 지키는지 한눈에 (형 10-25: "공성하는쪽이랑 수성하는쪽이 어딘지 모르겠고")
-          h += `<img class="wf-wall" data-tk="${node.kind === 'fort' ? 'fort' : 'palisade'}" src="${art}fx/field/wall-${breached ? 'breach' : 'whole'}.png" alt="">`
+          const wall = (b: boolean, cls = ''): string => `<img class="wf-wall${cls}" data-tk="${node.kind === 'fort' ? 'fort' : 'palisade'}" src="${art}fx/field/wall-${b ? 'breach' : 'whole'}.png" alt="">`
+          h += late ? wall(false, ' wf-pre') + wall(true, ' wf-post') : wall(breached)
           // 이어진 울타리 — 토막을 겹쳐 세운다(한가운데 성문)
           const ys = [-36, -27, -18, -9, 0, 9, 18, 27, 36]
-          for (const [j, oy] of ys.entries()) h += tp(breached ? (j % 3 === 1 ? 'palisade' : 'broken') : gate && j === 4 ? 'gate' : 'palisade', 47.5, oy, 1.25)
+          const row = (b: boolean): string => ys.map((oy, j) => tp(b ? (j % 3 === 1 ? 'palisade' : 'broken') : gate && j === 4 ? 'gate' : 'palisade', 47.5, oy, 1.25)).join('')
+          h += late ? `<i class="wf-pre">${row(false)}</i><i class="wf-post">${row(true)}</i>` : row(breached)
         }
       }
       if (cls === defCls && l.via === 'pass') { h += tp('rocks', 30, -36, 0.9); h += tp('rocks', 24, 32, 1.1); h += tlab('pass', 26, 46) }
@@ -997,7 +1001,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const atkWon = l.outcome === 'win' || l.outcome === 'rout'
     const usWon = weAtk === atkWon
     const endCls = fin ? (usWon ? ' fin win-us' : ' fin win-foe') : ''
-    return `<div class="wfield${play ? ' play' : ''}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s"><i class="wf-ground"></i>${midTerr}${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}<i class="wf-mid">⚔</i><b class="wf-who us">${roleChip(weAtk)}우리 ${esc(ourName)}</b><b class="wf-who foe">${roleChip(!weAtk)}적 ${esc(foeName)}</b>${hit}${omen}<div class="wf-terr">${terrChips(prev, l, me, fname(foeF)).map((c) => terrChipHtml(art, c, 'wtc')).join('')}</div></div>`
+    // 승패가 드러나는 때 — 「승리·패배」 글자와 같은 때(paintNow 의 endAt). 다시 그린 끝 판(연출 없음)이면 처음부터
+    const rv = fin && play ? roundPlan(last!, weAtk).result + 0.9 : 0
+    return `<div class="wfield${play ? ' play' : ''}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--rv:${rv.toFixed(2)}s"><i class="wf-ground"></i>${midTerr}${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}<i class="wf-mid">⚔</i><b class="wf-who us">${roleChip(weAtk)}우리 ${esc(ourName)}</b><b class="wf-who foe">${roleChip(!weAtk)}적 ${esc(foeName)}</b>${hit}${omen}<div class="wf-terr">${terrChips(prev, l, me, fname(foeF)).map((c) => terrChipHtml(art, c, 'wtc')).join('')}</div></div>`
   }
 
   // 싸움터 배경 (땅마다) · 위 카드는 굴려도 그 자리에 (형: "싸우는로그가 스크롤로 보이더라도 상단에 캐릭터랑 체력바 있는 그 카드는 고정")
@@ -1224,7 +1230,7 @@ export const WAR_CSS = `
 /* 전장 띠 — 병졸 말 */
 /* 전장 — 진을 갖춘 두 군대 (fieldHtml). 적은 통째로 거울 · 아래일수록 크고 앞에 */
 .ap .wfield { position: relative; height: clamp(150px, 22vw, 236px); margin: 6px 2px 2px; border-radius: 10px; overflow: hidden; container-type: inline-size;
-  background: radial-gradient(ellipse 60% 40% at 50% 78%, #6a4e2a55, #0000 70%), linear-gradient(#0000 20%, #1a120a99); }
+  background: none; }
 .ap .wfield .wf-ground { position: absolute; left: 0; right: 0; top: 40%; bottom: 0; background: radial-gradient(ellipse 70% 60% at 50% 70%, #3a2a1666, #0000 75%); }
 .ap .wf2s { position: absolute; inset: 0; } .ap .wf2s.foe { transform: scaleX(-1); }
 /* 땅 조각 — 병사와 같은 자리 셈(원근으로 비스듬히 · 아래일수록 앞) */
@@ -1253,10 +1259,13 @@ export const WAR_CSS = `
 .ap .wf2s .tk.wsp::before { content: ''; position: absolute; left: 18%; right: 18%; bottom: -4%; height: 12%; border-radius: 50%; background: radial-gradient(closest-side, #000b, #0000); z-index: -1; pointer-events: none; }
 .ap .wf2s .tk.wsp.tkd::before { opacity: .4; }
 /* 땅 — 지평선 아래로 짙어져 병사가 떠 보이지 않게 */
-.ap .wfield .wf-ground { top: 30% !important; background: linear-gradient(#0000, #1c140c66 25%, #120c07b0 100%), radial-gradient(ellipse 70% 55% at 50% 72%, #4a361e55, #0000 75%) !important; }
-.ap .wfield::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 90; box-shadow: inset 0 0 40px #000c, inset 0 -18px 30px -10px #000a; border-radius: inherit; }
+.ap .wfield .wf-ground { display: none; }
 /* 지키는 쪽 뒤의 성 (그림은 바깥이 왼쪽 — 우리 쪽이면 뒤집고, 거울인 적 쪽에선 한 번 더 뒤집어 바깥이 공격 쪽을 본다) */
 .ap .wf2s .wf-wall { position: absolute; left: -4%; bottom: 4%; height: 90%; width: auto; transform: scaleX(-1); z-index: 1; pointer-events: none; filter: brightness(.8) saturate(.9) drop-shadow(0 4px 8px #000b); }
+.ap .wfield i.wf-pre, .ap .wfield i.wf-post { position: absolute; inset: 0; pointer-events: none; }
+.ap .wfield .wf-pre { animation: wfpre .5s ease-out var(--rv, 0s) forwards; } @keyframes wfpre { to { opacity: 0; visibility: hidden; } }
+.ap .wfield .wf-post { animation: wfpost .5s ease-out var(--rv, 0s) both; } @keyframes wfpost { from { opacity: 0; } to { opacity: 1; } }
+.ap .wr.fast .wfield { --rv: 0s !important; }
 .ap .wfield .wf-mid-terr.mud .tp { filter: sepia(1) saturate(.65) brightness(.72) hue-rotate(-12deg); opacity: 1; }
 /* 땅 이름표 (tlab) — 소품 곁 · 누구에게 유리한지 색 */
 .ap .wf-tl { position: absolute; left: var(--x); top: calc(60% + var(--oy)); transform: translate(-50%, -50%); z-index: 75; display: flex; flex-direction: column; align-items: center; padding: 1px 6px 2px; border-radius: 7px; background: #120d09d8; border: 1px solid #6a5a48; font-size: clamp(9.5px, 2.5cqw, 12px); font-weight: 800; line-height: 1.15; color: #f6d8a0; white-space: nowrap; pointer-events: none; box-shadow: 0 2px 6px #000a; }
@@ -1327,15 +1336,15 @@ export const WAR_CSS = `
 @keyframes wtkfall { 0% { translate: 3cqw 0; } 100% { translate: 2cqw 0; rotate: -78deg; opacity: .16; filter: grayscale(1); } }
 .ap .wfield .wf-mid { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); font-style: normal; font-size: 22px; color: #f0d090; text-shadow: 0 0 8px #000; opacity: 0; z-index: 80; }
 /* 판의 끝 — 진 쪽은 등을 돌려(거울) 뒤로 달아나며 흩어지고, 이긴 쪽 장수 깃발이 솟는다. 맞부딪힘이 끝난 뒤(--hd + .9s) */
-.ap .wfield.fin.win-us .wf2s.foe .tk.tku, .ap .wfield.fin.win-foe .wf2s.us .tk.tku { animation: wflee 1.6s ease-in calc(var(--hd) + .9s + var(--j, 0) * .07s) forwards !important; }
-.ap .wfield.fin.win-us .wf2s.foe .tk.wsp.tku .spf, .ap .wfield.fin.win-foe .wf2s.us .tk.wsp.tku .spf { animation: spwalk .26s steps(1) calc(var(--hd) + .9s) infinite !important; }
+.ap .wfield.fin.win-us .wf2s.foe .tk.tku, .ap .wfield.fin.win-foe .wf2s.us .tk.tku { animation: wflee 1.6s ease-in calc(var(--rv, 0s) + var(--j, 0) * .07s) forwards !important; }
+.ap .wfield.fin.win-us .wf2s.foe .tk.wsp.tku .spf, .ap .wfield.fin.win-foe .wf2s.us .tk.wsp.tku .spf { animation: spwalk .26s steps(1) var(--rv, 0s) infinite !important; }
 @keyframes wflee { 0% { translate: 0 0; scale: 1; } 12% { scale: -1 1; } 100% { scale: -1 1; translate: -32cqw calc((var(--j, 0) - 2.5) * 2cqw); opacity: 0; } }
-.ap .wfield.fin.win-us .wf2s.us .wgen, .ap .wfield.fin.win-foe .wf2s.foe .wgen { animation: wgenwin .7s cubic-bezier(.3, 1.6, .5, 1) calc(var(--hd) + 1.1s) both; }
+.ap .wfield.fin.win-us .wf2s.us .wgen, .ap .wfield.fin.win-foe .wf2s.foe .wgen { animation: wgenwin .7s cubic-bezier(.3, 1.6, .5, 1) calc(var(--rv, 0s) + .2s) both; }
 @keyframes wgenwin { from { translate: 0 0; scale: 1; } to { translate: 9cqw -2cqw; scale: 1.35; } }
-.ap .wfield.fin.win-us .wf2s.us .wpole, .ap .wfield.fin.win-foe .wf2s.foe .wpole { animation: wpoleup .6s ease-out calc(var(--hd) + 1.2s) both; }
+.ap .wfield.fin.win-us .wf2s.us .wpole, .ap .wfield.fin.win-foe .wf2s.foe .wpole { animation: wpoleup .6s ease-out calc(var(--rv, 0s) + .3s) both; }
 @keyframes wpoleup { from { height: 110%; } to { height: 190%; filter: drop-shadow(0 0 6px #ffd27a); } }
 /* 끝나면 진의 기세 표시(방패벽·화살 활꼴·기병 길·돌격 글자·격려 고리)를 걷는다 — 승패만 남게 */
-.ap .wfield.fin .wq { animation: wqoff .4s ease-out calc(var(--hd) + .9s) forwards !important; } @keyframes wqoff { to { opacity: 0; visibility: hidden; } }
+.ap .wfield.fin .wq { animation: wqoff .4s ease-out var(--rv, 0s) forwards !important; } @keyframes wqoff { to { opacity: 0; visibility: hidden; } }
 .ap .wfield.play .wf-mid { animation: wmid2 .6s ease-out var(--hd) both; } @keyframes wmid2 { 0% { opacity: 0; scale: .4; } 40% { opacity: 1; scale: 1.8; color: #fff; } 100% { opacity: 0; scale: 1.2; } }
 /* 숨 쉬는 병사 — 서 있는 말이 저마다 조금씩 들썩인다 */
 .ap .wf2s .tk.tku { animation: tkidle 1.8s ease-in-out calc(var(--j) * -.31s) infinite alternate; } @keyframes tkidle { to { translate: 0 -2px; } }
