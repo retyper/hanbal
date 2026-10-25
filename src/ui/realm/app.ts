@@ -248,6 +248,8 @@ const JOIN_LINE: Readonly<Record<JoinHow, string>> = {
 }
 /** 한 계절에 띄우는 등용 장면 수 — 넘치면 나머지는 계절 기록으로 */
 const JOIN_SCENES_MAX = 4
+/** 배우는 판의 단계 이름 — CSS 로는 2.4초에 걷힌다. 애니메이션이 안 끝나도 이때는 걷힌다 (ms) */
+const TUT_CAP_MAX_MS = 3000
 /** 도감 알림이 아무리 늦어도 걷히는 때 (ms) — CSS 로는 5.5초에 걷힌다 */
 const DEX_TOAST_MAX_MS = 9000
 /** 세로 구도로 따로 그린 장면 그림 (public/realm/event-v) — 세로 화면에선 16:9 가운데 띠만 남아 용 허리만 보였다 (형 10-24) */
@@ -1114,7 +1116,20 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       saveTut()
       if (i >= TUT_STEPS.length) markTutorialOver('done')
     }
-    if (i !== tutStepAt[0]) tutStepAt = [i, performance.now()]
+    if (i !== tutStepAt[0]) {
+      // 새 단계 — 배우는 일의 이름을 화면 가운데 크게 (스스로 걷히고, 누르기는 막지 않는다 · 메모리: 알림은 반드시 걷힌다)
+      if (tutStepAt[0] !== -1 || i === 0) {
+        const st = TUT_STEPS[i]
+        root.querySelector('.tutcap')?.remove()
+        if (st !== undefined) {
+          root.insertAdjacentHTML('beforeend', `<div class="tutcap"><b>${esc(st.name)}</b><span>${esc(st.what)}</span></div>`)
+          const el = root.querySelector('.tutcap')
+          el?.addEventListener('animationend', () => el.remove())
+          window.setTimeout(() => el?.remove(), TUT_CAP_MAX_MS)
+        }
+      }
+      tutStepAt = [i, performance.now()]
+    }
     band.innerHTML = tutBandHtml(i, esc, performance.now() - tutStepAt[1] > P.realm.tutStuckMs)
     tutSheet.textContent = tutStyle(TUT_STEPS[i])
     spot.set(TUT_STEPS[i], ctx)
