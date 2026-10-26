@@ -14,6 +14,7 @@
   audio { height:34px; max-width:100%; }
   code { background:#232a33; padding:1px 5px; border-radius:3px; color:#ffd88f; }
 </style></head><body>
+<div id="hire"></div>
 <h1>칠십팔국 목소리 고르기 — 장수를 누르면 나오는 대답</h1>
 <p>우리 장수 얼굴을 누르거나 장수가 이끄는 군대를 지도에서 고르면 그 장수가 곧바로 대답한다. 장수마다 아홉 결 가운데 하나 — 생김·특성·능력치로 고른다 (<code>src/ui/realm/voice.ts</code>).
 결마다 대답 셋을 돌려 쓴다. 구글 AI 스튜디오 Gemini TTS(무료 목소리 + 사극 말투 지시)로 뽑았다.</p>
@@ -49,5 +50,18 @@ for (const [title, k] of GROUPS) {
   })
 }
 document.getElementById('list').innerHTML = h
+// 등용 첫마디 — 장수마다 하나 (voice/hire/<장수 id>.ogg · 대사는 src/realm/data/hire-lines.ts · 목록은 tools/hire-voice-list.ts --write)
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
+fetch('voice/hire/lines.json').then((r) => r.json()).then((rows) => {
+  let g = `<h1>등용 첫마디 — 내 사람이 되는 순간 (${rows.length}명)</h1><p>등용 장면에서 얼굴이 다 드러나면 그 장수가 이름 아래 「」 대사를 그대로 말한다. 결마다 묶어 한 번에 뽑고 빈 소리·글자 수로 잘랐다.</p>`
+    + `<p>★ 어색한 줄은 "○○(장수 id) 다시"라고 말해 주면 그 장수 것만 다시 뽑는다 · 대사를 고치면 글과 소리를 함께 바꾼다.</p>`
+  for (const [title, k] of GROUPS) {
+    const mine = rows.filter((x) => x.kind === k)
+    if (mine.length === 0) continue
+    g += `<h2>${title} — ${mine.length}명</h2>`
+    for (const x of mine) g += `<div class="row"><span class="no" style="min-width:96px;font-size:13px">${esc(x.name)}</span><span class="nm">${esc(x.text)} <code>${esc(x.id)}</code></span><audio controls preload="none" src="voice/hire/${encodeURIComponent(x.id)}.ogg"></audio></div>`
+  }
+  document.getElementById('hire').innerHTML = g + '<hr style="border:0;border-top:1px solid #2c333d;margin:40px 0 20px">'
+}).catch(() => {})
 </script>
 </body></html>
