@@ -19,7 +19,7 @@ export const LOG_FILTERS: ReadonlyArray<readonly [LogFilter, string]> = [
 const KINDS: Readonly<Record<Exclude<LogFilter, 'all'>, ReadonlySet<string>>> = {
   rel: new Set(['relation', 'suzerain', 'end']),
   envoy: new Set(['envoy', 'ask', 'answered', 'recall', 'pledge', 'lent', 'envoyHeld']),
-  war: new Set(['battle', 'take', 'sighted', 'blocked']),
+  war: new Set(['battle', 'take', 'sighted', 'blocked', 'relicSave']),
   plot: new Set(['plot', 'mystery', 'confess', 'rumor']),
   home: new Set(['harvest', 'draft', 'settle', 'migrate', 'place', 'disband', 'hunger', 'build', 'rite', 'arm', 'market', 'spoil', 'bowUp', 'wed', 'birth', 'grown', 'recruit', 'persuade', 'exile', 'retake', 'expGo', 'expStay', 'expBack', 'card', 'omen']),
 }

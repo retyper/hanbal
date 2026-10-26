@@ -26,6 +26,7 @@ import { knows } from './discovery.ts'
 import { stockOf } from './economy.ts'
 import { armyOfHero, gainXp, hasTrait, heroAt, heroSeen, homeOf, isRuler, plotBonus } from './heroes.ts'
 import { alertRange } from './intel.ts'
+import { relicMul } from './relics.ts'
 import { nodeStrength, seenShares } from './season.ts'
 import type { Order, PlotOp, Realm, ReportLine } from './types.ts'
 
@@ -439,7 +440,7 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
       : roll(r.seed, r.season, key) < plotTrueChance(r, o.faction, o.op, o.target, at, o.hero, o.agent ?? null) * skipMul
     const caught = hand !== undefined
       ? hand.alarm || (o.op === 'rescue' && hand.result === 'fled')
-      : roll(r.seed, r.season, `${key}:caught`) < (ok ? R.plotCaughtOnSuccess : R.plotCaughtOnFail)
+      : roll(r.seed, r.season, `${key}:caught`) < (ok ? R.plotCaughtOnSuccess : R.plotCaughtOnFail) * relicMul(o.agent != null ? r.heroes[o.agent] : null, 'stealth') // 금동신발 (relics.ts)
     let mystery: Extract<ReportLine, { kind: 'mystery' }>['what'] | null = null
     let result: 'wound' | 'kill' | undefined
     let agentFate: 'escaped' | 'captured' | undefined

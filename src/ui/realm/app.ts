@@ -3992,6 +3992,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'build': ic = 'settle-palisade'; break
       case 'rite': ic = 'status-good-omen'; break
       case 'blocked': ic = 'settle-pass'; break
+      case 'relicSave': ic = 'status-good-omen'; break
       case 'discover': ic = 'settle-beacon'; break
       case 'arm': ic = 'treasure-iron-ingots'; break
       case 'bowUp': ic = 'unit-archer'; break

@@ -262,6 +262,8 @@ export interface Hero {
   relics?: readonly string[]
   /** 능력치 유물이 판을 열 때 더해 준 몫 (10 에 막혀 덜 든 것은 뺀 값) */
   relicAdd?: Partial<Record<GrowStat, number>>
+  /** 이 판에 이미 쓴 판마다 몇 번짜리 유물 효과 — 오리모양 토기 escape · 진묘수 ward (relics.spendRelic) */
+  relicSpent?: Partial<Record<'escape' | 'ward', number>>
 }
 
 /** 사건 카드 한 장 (events.ts · data/cards.ts) — season 계절에 답한다. hero·hero2·node 는 카드에 붙은 사람·고을 */
@@ -952,6 +954,11 @@ export type ReportLine =
   | { readonly kind: 'answered'; readonly ask: string; readonly yes: boolean; readonly from: string; readonly askKind: AskKind }
   /** 경계 강화 */
   | { readonly kind: 'guard'; readonly faction: string; readonly node: string }
+  /**
+   * 지닌 유물이 장수·고을을 살렸다 — 오리모양 토기: 싸움에서 잡히거나 쓰러질 장수가 다친 몸으로 빠져나왔다 (node 없음) ·
+   * 진묘수: 그 장수가 맡은 고을(node)에 쳐들어온 나라(foe)의 군대가 싸움 없이 돌아갔다
+   */
+  | { readonly kind: 'relicSave'; readonly faction: string; readonly hero: string; readonly relic: string; readonly node?: string; readonly foe?: string }
   /** 사로잡혔던 장수가 풀려나 돌아왔다 — 화친(peace) · 잡아 둔 나라의 도읍이 떨어져서(take) */
   | { readonly kind: 'freed'; readonly hero: string; readonly faction: string; readonly from: string; readonly why: 'peace' | 'take' }
   /** 장수가 정예 호위를 거느리고 맡을 고을로 떠났다 (멀리 맡기기) */

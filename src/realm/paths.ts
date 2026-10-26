@@ -15,6 +15,7 @@
  */
 import { P } from '../tune/params.ts'
 import { hhOf } from './economy.ts'
+import { relicBest } from './relics.ts'
 import type { Realm, ReportLine } from './types.ts'
 
 export type WinPath = 'conquest' | 'suzerain' | 'ironsea' | 'rite'
@@ -59,7 +60,9 @@ export function riteOf(r: Realm, f: string): { chain: number; need: number; hh: 
   // 판의 모든 집에 대한 몫 — 나라가 많은 판은 몫을 √ 로 줄인다 (스물한 나라 판에서 열에 넷을 쥐면 그건 정복이다)
   const total = Object.values(r.nodes).reduce((s, n) => s + (n.owner !== null ? n.hh : 0), 0)
   const hhNeed = Math.round((R.riteHHShare * total) / Math.sqrt(Math.max(1, nations(r) / 6)))
-  return { chain: r.riteChain?.[f] ?? 0, need: R.riteChainNeed, hh: Math.floor(hhOf(r, f)), hhNeed }
+  // 금동대향로 — 지닌 장수가 있는 나라는 내리 지낼 제사가 적다 (relics.ts · 적어도 한 번)
+  const need = Math.max(1, R.riteChainNeed - relicBest(r, f, 'altar'))
+  return { chain: r.riteChain?.[f] ?? 0, need, hh: Math.floor(hhOf(r, f)), hhNeed }
 }
 
 /**

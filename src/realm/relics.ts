@@ -10,7 +10,7 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
-import { RELIC, RELICS, poolOf, type RelicDef, type RelicFx, type RelicTier } from './data/relics.ts'
+import { RELIC, RELICS, poolOf, type RelicDef, type RelicFx, type RelicNumKind, type RelicTier } from './data/relics.ts'
 import type { GrowStat, Hero, Realm, RegionId } from './types.ts'
 
 // ───────── 판 안 — 지닌 유물의 효과
@@ -22,7 +22,7 @@ export function relicDefs(h: Pick<Hero, 'relics'> | null | undefined): RelicDef[
   return out
 }
 
-type NumKind = Exclude<RelicFx['kind'], 'soon' | 'stat' | 'room'>
+type NumKind = RelicNumKind
 
 /** 그 효과의 숫자들 — 지닌 유물마다 */
 function knobs(h: Pick<Hero, 'relics'> | null | undefined, kind: NumKind): number[] {
@@ -39,6 +39,39 @@ export function relicSum(h: Pick<Hero, 'relics'> | null | undefined, kind: NumKi
 /** 곱하는 효과의 곱 (기병 힘 · 정) — 없으면 1 */
 export function relicMul(h: Pick<Hero, 'relics'> | null | undefined, kind: NumKind): number {
   return knobs(h, kind).reduce((a, b) => a * b, 1)
+}
+
+/** 그 효과를 지닌 유물이 있나 (손잡이 값과 상관없이) */
+export function relicHas(h: Pick<Hero, 'relics'> | null | undefined, kind: NumKind): boolean {
+  return relicDefs(h).some((d) => d.fx.some((f) => f.kind === kind))
+}
+
+/** 그 효과를 지닌 첫 유물의 id — 보고에 이름을 적으려고 */
+export function relicWith(h: Pick<Hero, 'relics'> | null | undefined, kind: NumKind): string {
+  return relicDefs(h).find((d) => d.fx.some((f) => f.kind === kind))?.id ?? ''
+}
+
+/** 판마다 몇 번 쓰는 효과(오리모양 토기 escape · 진묘수 ward)의 남은 횟수 */
+export function relicLeft(h: Pick<Hero, 'relics' | 'relicSpent'> | null | undefined, kind: 'escape' | 'ward'): number {
+  return Math.max(0, Math.floor(relicSum(h, kind)) - (h?.relicSpent?.[kind] ?? 0))
+}
+
+/** 판마다 몇 번 쓰는 효과를 한 번 쓴다 — 판 안의 장수에 적는다 (다음 판은 새 몸이라 다시 찬다) */
+export function spendRelic(h: Hero, kind: 'escape' | 'ward'): void {
+  h.relicSpent = { ...(h.relicSpent ?? {}), [kind]: (h.relicSpent?.[kind] ?? 0) + 1 }
+}
+
+/**
+ * 나라에 걸리는 효과 — 그 나라의 쉬는(잡히지 않은) 장수 가운데 가장 큰 것. 금동대향로의 제사 배수(blessing · 없으면 1)와 큰 제사 길(altar · 없으면 0).
+ * 하나는 한 사람만 지니니 겹치지 않는다
+ */
+export function relicBest(r: Realm, faction: string, kind: 'blessing' | 'altar'): number {
+  let best = kind === 'blessing' ? 1 : 0
+  for (const h of Object.values(r.heroes)) {
+    if (h.faction !== faction || h.status !== 'free' || h.relics === undefined) continue
+    best = Math.max(best, kind === 'blessing' ? relicMul(h, kind) : relicSum(h, kind))
+  }
+  return best
 }
 
 /** 간두령 — 이끄는 군대 사기 덤 */
@@ -226,9 +259,8 @@ export function unequip(store: RelicStore, hero: string, slot: number): RelicSto
 const STAT_WORD: Readonly<Record<GrowStat, string>> = { mu: '무예', tong: '통솔', ryak: '지략', chi: '내정', deok: '매력' }
 const pct = (v: number): string => `${Math.round(v * 100)}%`
 
-/** 효과 한 조각의 글 — soon 은 그 글 그대로 */
+/** 효과 한 조각의 글 — 판이 하는 그대로 */
 export function fxText(f: RelicFx): string {
-  if (f.kind === 'soon') return f.text
   const v = P.realm[f.by]
   switch (f.kind) {
     case 'stat': return `${STAT_WORD[f.stat]} +${v}`
@@ -241,15 +273,22 @@ export function fxText(f: RelicFx): string {
     case 'crown': return `군주가 지니면 나라 수확 +${pct(v)}`
     case 'envoy': return `따라간 사신이 받아들여질 몫 +${pct(v)}`
     case 'duel': return `겨루기 무예 +${v}`
+    case 'chant': return `비기가 진중 굿이 된다 · 굿의 사기 +${pct(v - 1)}`
+    case 'steady': return `함께 싸우는 군사가 지는 합에서 사기가 ${pct(1 - v)} 덜 꺾인다`
+    case 'escape': return `싸움에서 잡히거나 쓰러질 때 다친 몸으로 빠져나온다 (판마다 ${v}번)`
+    case 'march': return `이끄는 군대가 길에서 ${v}계절 덜 걸린다 (적어도 한 계절)`
+    case 'feast': return `호궤에 드는 곡식 −${pct(1 - v)}`
+    case 'woo': return `회유할 때 마음의 벽이 ${v}배 빨리 깎인다`
+    case 'blessing': return `나라 제사 효과 ${v}배 (무당 핏줄과 같다)`
+    case 'altar': return `큰 제사 길에 내리 지낼 제사 −${v}`
+    case 'ward': return `맡은 고을에 쳐들어온 적을 싸움 없이 돌려보낸다 (판마다 ${v}번)`
+    case 'stealth': return `자객·구출로 보내면 들킬 몫 −${pct(1 - v)}`
   }
 }
 
-/** 유물 하나의 효과 한 줄 — 「곧 쓰인다」가 붙는 것은 아직 판에 안 걸렸다 */
+/** 유물 하나의 효과 한 줄 */
 export function relicLine(id: string): string {
   const d = RELIC[id]
   if (d === undefined) return ''
-  return d.fx.map((f) => (f.kind === 'soon' ? `${f.text} (곧 쓰인다)` : fxText(f))).join(' · ')
+  return d.fx.map(fxText).join(' · ')
 }
-
-/** 판에 걸린 효과가 하나라도 있나 */
-export const relicLive = (id: string): boolean => (RELIC[id]?.fx ?? []).some((f) => f.kind !== 'soon')

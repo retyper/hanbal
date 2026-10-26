@@ -8,7 +8,7 @@
 import { josa } from '../../realm/data/prose.ts'
 import { RELIC, RELICS, TIER_CHEST, TIER_NAME, poolOf } from '../../realm/data/relics.ts'
 import {
-  drawChests, emptyRelics, equip, holderOf, openTomb, pickTomb, relicLine, relicLive, slotsFor, tombKey, unequip, type RelicOwn, type RelicStore, type RelicTomb,
+  drawChests, emptyRelics, equip, holderOf, openTomb, pickTomb, relicLine, slotsFor, tombKey, unequip, type RelicOwn, type RelicStore, type RelicTomb,
 } from '../../realm/relics.ts'
 import type { Realm, RegionId } from '../../realm/types.ts'
 
@@ -188,7 +188,7 @@ export function pickerHtml(k: RelicKit, hero: string, slot: number): string {
     const here = who === hero
     const by = who !== null && !here ? `<i class="rlwho">${k.esc(josa(k.nameOf(who), '이', '가'))} 지녔다 — 옮긴다</i>` : here ? '<i class="rlwho me">이 장수가 지녔다</i>' : ''
     h += `<button class="rlopt t-${d.tier}${id === cur ? ' cur' : ''}" data-act="rl-put" data-id="${k.esc(hero)}" data-i="${slot}" data-r="${k.esc(id)}"${id === cur ? ' disabled' : ''}>`
-      + `<img src="${img(k, id)}" alt=""><span><b>${k.esc(d.name)}</b><small>${TIER_NAME[d.tier]} · ${k.esc(d.era)}</small><em${relicLive(id) ? '' : ' class="soon"'}>${k.esc(relicLine(id))}</em>${by}</span></button>`
+      + `<img src="${img(k, id)}" alt=""><span><b>${k.esc(d.name)}</b><small>${TIER_NAME[d.tier]} · ${k.esc(d.era)}</small><em>${k.esc(relicLine(id))}</em>${by}</span></button>`
   }
   h += `</div>`
   if (cur !== undefined) h += `<button class="btn ghost sm rloff" data-act="rl-off" data-id="${k.esc(hero)}" data-i="${slot}">이 칸 비우기</button>`
@@ -244,7 +244,7 @@ export const RELIC_CSS = `
 .ap .rlopt { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 10px; border: 1px solid #4a3e2a; background: #1d160e; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .ap .rlopt img { width: 44px; height: 44px; object-fit: contain; flex: none; }
 .ap .rlopt span { display: flex; flex-direction: column; min-width: 0; } .ap .rlopt b { color: #f0e2c0; } .ap .rlopt small { color: #a89c84; font-size: 11px; }
-.ap .rlopt em { font-style: normal; color: #9fd07a; font-size: 12px; } .ap .rlopt em.soon { color: #a89c84; }
+.ap .rlopt em { font-style: normal; color: #9fd07a; font-size: 12px; }
 .ap .rlopt .rlwho { font-style: normal; color: #e0b070; font-size: 11px; } .ap .rlopt .rlwho.me { color: #9fd07a; }
 .ap .rlopt.cur { border-color: #9fd07a; cursor: default; }
 .ap .rlopt.t-rare { border-color: #6a8aa0; } .ap .rlopt.t-legend { border-color: #c9a23a; background: linear-gradient(90deg, #2c2412, #1d160e); }
