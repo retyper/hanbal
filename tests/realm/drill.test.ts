@@ -173,20 +173,30 @@ describe('단련 — 단련터', () => {
     return { ...emptyDrill(), h: { h: { points, level, add, runs: 1 } } }
   }
 
-  it('값 — 단련 n → n+1 은 n + 2', () => {
-    assert.deepEqual([0, 1, 2, 5, 9].map(spendCost), [2, 3, 4, 7, 11])
-    // 단련 5 까지 모두: 2+3+4+5+6 = 20 · 단련 7 까지: 20+7+8 = 35
-    assert.equal([0, 1, 2, 3, 4].reduce((s, n) => s + spendCost(n), 0), 20)
+  it('값 — 단련 n → n+1 은 2n + 2', () => {
+    assert.deepEqual([0, 1, 2, 5, 9].map(spendCost), [2, 4, 6, 12, 20])
+    // 단련 5 까지 모두: 2+4+6+8+10 = 30
+    assert.equal([0, 1, 2, 3, 4].reduce((s, n) => s + spendCost(n), 0), 30)
+  })
+
+  it('한 판의 공 — 30 까지는 다, 넘는 몫은 ¼ (이기면 그다음에 곱한다)', () => {
+    const r = ended('lose', {})
+    const a = ourHeroes(r)[0]!
+    r.merit = { [a.id]: 20 }
+    assert.equal(earnedOf(r, a.id, false), 20)
+    r.merit = { [a.id]: 70 }
+    assert.equal(earnedOf(r, a.id, false), 40)
+    assert.equal(earnedOf(r, a.id, true), 60)
   })
 
   it('올리기 — 공을 내고 한 칸 · 단계가 오른다', () => {
-    let s = store(5)
+    let s = store(6)
     assert.ok(canRaise(s, body, 'mu'))
     s = raise(s, 'h', 'mu', body)
-    assert.equal(s.h.h!.points, 3)
+    assert.equal(s.h.h!.points, 4)
     assert.equal(s.h.h!.level, 1)
     assert.equal(s.h.h!.add.mu, 1)
-    assert.equal(raiseState(s, 'h', 'mu', body), 'ok') // 3 ≥ 3
+    assert.equal(raiseState(s, 'h', 'mu', body), 'ok') // 4 ≥ 4
     s = raise(s, 'h', 'tong', body)
     assert.equal(s.h.h!.points, 0)
     assert.equal(raiseState(s, 'h', 'chi', body), 'poor')

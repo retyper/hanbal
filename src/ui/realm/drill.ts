@@ -117,7 +117,7 @@ export function yardHtml(k: DrillKit, o: YardOpts): string {
   const ids = (o.ids ?? Object.keys(store.h)).filter((id) => store.h[id] !== undefined || (o.from === 'end' && k.bodyOf(id) !== undefined))
   const list = [...new Set(ids)].sort((a, b) => (o.gain[b] ?? 0) - (o.gain[a] ?? 0) || ent(b).level - ent(a).level || ent(b).points - ent(a).points || (a < b ? -1 : 1))
   let h = `<div class="front dyard"><div class="fhead">${o.from === 'title' ? `<button class="btn ghost" data-act="dy-next">‹ 처음으로</button>` : ''}<h2>단련터</h2></div>`
-  h += `<p class="dylead">판에서 쌓은 공으로 장수를 단련한다 — 져도 공은 남는다. 단련 한 단계마다 능력치 하나가 +1, 값은 단련 단계 + ${spendCost(0)}.</p>`
+  h += `<p class="dylead">판에서 쌓은 공으로 장수를 단련한다 — 져도 공은 남는다. 단련 한 단계마다 능력치 하나가 +1, 값은 ${spendCost(0)}에서 시작해 단계마다 ${spendCost(1) - spendCost(0)}씩 오른다.</p>`
   if (list.length === 0) h += `<p class="mute dylead">아직 공을 새긴 장수가 없다. 판에서 싸우고 고을을 맡으면 공이 쌓이고, 판이 끝나면 여기서 쓴다.</p>`
   h += `<div class="dyl">`
   for (const id of list) {

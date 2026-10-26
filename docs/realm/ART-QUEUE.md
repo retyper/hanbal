@@ -1,5 +1,17 @@
 # 그림 줄 — 다음에 구울 것 (늘 채워 둔다)
 
+## ★ 챗지피티 계정 한도 장부 — 한도 문구를 볼 때마다 그 자리에서 이 표를 고친다
+
+형 10-26: "4계정 한도 기록 똑바로 안 하는 거 같아. 뭐가 언제 풀리는지 계속 틀리는데?" — 그래서 여기 한 곳에만 적는다 (다른 줄의 옛 시각은 믿지 말 것). Jay 계정은 쓰지 않는다. 무료 플랜은 하루 다섯 장쯤, 막힌 시각에서 하루 뒤 풀린다.
+
+| 계정 (화면에 뜨는 이름) | 풀리는 때 | 본 때 |
+|---|---|---|
+| YunCheol (edu · 'YunCheol Shin') | 10-27 AM 12:05 | 10-26 23:29 한도 문구 |
+| retyper92 ('Muffin Goodbye') | 10-27 오후 (시각 못 적음 — 다음에 볼 때 적는다) | 10-26 오후 |
+| roqkfeke12 ('윤철 신') | 10-27 PM 6:11 | 10-26 저녁 한도 문구 |
+| retyper (hephaestosian · 'retyper') | 10-27 PM 10:15 | 10-26 23:20 한도 문구 |
+
+
 > 형 (2026-10-19): *"챗지피티를 중요한 이미지 생성에 항상 다음 만들거 목록화해두고 크레딧 생길때마다 생성시켜야지 뭐하냐"*
 
 ~~**★ 2026-10-26 새벽 — 맨 먼저: 해비 · 고목 · 너울 명치판 다시 (챗지피티)**~~ ✔ 10-26 오후 셋 다 받음 (retyper92) — — 10-25 밤에 풍경 배경으로 받아 다른 명치판과 결이 어긋났다 (형 10-26: "요즘 만들어지는 장수 이미지는 다 뒷배경이 있는 거지? 지금 있는 것들은 대부분 심플 배경"). 달래·금바위·왜인·쇠울·마려는 10-26 새벽 다시 받았다. 머리말은 아래 온조 줄의 영어 그대로 + "upper-body bust framed from just above the head down to the solar plexus … Plain very dark slate-blue studio background (#1c2129) with a soft warm glow behind the head … No scenery". 생김새는 scratchpad 가 아니라 여기: 해비(tut-haebi → w-95-michuhol-haebi) 미추홀 바닷가 젊은 여인 · 붉은 끈으로 높이 묶은 머리 · 소매 없는 쪽빛 저고리 · 쇠 팔찌 · 막 두드린 쇠도끼 · 조개·곡옥 목걸이 / 고목(jm-haengin-ruler → g-90-haengin-gomok) 행인국 50대 군장 · 늙은 나무 같은 주름 · 희끗한 긴 수염 · 곰 이빨 상투 장식 · 담비 털 망토 · 청동 방울 목걸이 · 옹이 지팡이 / 너울(jm-haengin-1 → w-96-haengin-neoul) 행인국 산지기 20대 여인 · 밤눈(은빛 눈동자) · 가늘게 여러 갈래 땋은 머리 · 이마에 은 구슬 끈 · 흰 여우 털 · 짙은 녹색 가죽 저고리 · 맥궁. 제미나이 Argon 으로 해비를 시험해 보니 어리고 만화 같아 버렸다(assets_src/realm/bust/w-95-michuhol-haebi-gem.png). 해비·고목·너울 10-26 낮 챗지피티로 받음. 한도: retyper92(이름이 YunCheol Shin 으로 뜬다) 10-26 PM 2:55 · roqkfeke12 10-26 PM 5:50 · retyper(hepastosian) 10-26 PM 10:13 · YunCheol(edu) 10-27 AM 12:05

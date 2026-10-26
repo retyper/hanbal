@@ -130,7 +130,11 @@ export function gainOf(store: DrillStore, r: Realm, won = r.outcome?.kind === 'w
 /** 이 판이 그 장수에게 준 단련 공 모두 (이미 새긴 몫까지) — 끝 화면의 「+공」 */
 export function earnedOf(r: Realm, id: string, won = r.outcome?.kind === 'win'): number {
   if (r.region === 'tutorial') return 0
-  return Math.round(meritOf(r, id) * (won ? P.realm.drillWinMul : 1))
+  // 한 판에 한 장수 — drillRunFull 까지는 다, 넘는 몫은 조금만 (한 장수로 밀어도 한 판에 그릇이 차지 않게)
+  const m = meritOf(r, id)
+  const F = P.realm.drillRunFull
+  const kept = m <= F ? m : F + (m - F) * P.realm.drillRunOver
+  return Math.round(kept * (won ? P.realm.drillWinMul : 1))
 }
 
 /** 판에서 본 몸에서 처음 몸을 거꾸로 — 판 안에서 자란 몫 · 들고 온 단련 · 지닌 유물이 더한 몫을 뺀다 */
@@ -172,7 +176,7 @@ export function engrave(store: DrillStore, r: Realm, won: boolean): DrillStore {
 
 /** 단련 n 에서 n+1 로 — 처음은 빨리, 뒤로 갈수록 천천히 */
 export function spendCost(level: number): number {
-  return Math.max(0, Math.floor(level)) + P.realm.drillCostBase
+  return Math.max(0, Math.floor(level)) * P.realm.drillCostMul + P.realm.drillCostBase
 }
 
 /** 그 능력치의 그릇 — 타고난 값 + drillRoom (+ 지닌 유물이 넓힌 몫 room — relics.relicRoom), 10 까지 */
