@@ -20,7 +20,7 @@ import { seasonOf } from './calendar.ts'
 import { allianceWhy, truceWhy, winningAgainst, type Motive } from './stance.ts'
 import { knows } from './discovery.ts'
 import { noteIron } from './paths.ts'
-import { hasCustom } from './data/customs.ts'
+import { hasCustom, noteCustom, noteOnce } from './data/customs.ts'
 import type { Ask, AskKind, EnvoyAsk, Good, Goods, Order, Deed, Pledge, Realm, Relation, RelationWhy, ReportLine } from './types.ts'
 
 export function pairKey(a: string, b: string): string {
@@ -57,6 +57,49 @@ function setRelation(r: Realm, a: string, b: string, state: Relation['state'], u
     releaseCaptives(r, a, b, 'peace', lines)
     releaseCaptives(r, b, a, 'peace', lines)
   }
+}
+
+/** 싸움을 정한다 — `by` 가 `to` 와 전쟁을 연다 (사로 여섯 마을의 뜻 · 이서 도읍 에우기의 구원군 · 다시 일어남 — data/customs.ts) */
+export function declareWar(r: Realm, by: string, to: string, lines: ReportLine[], why: RelationWhy): void {
+  if (by === to || r.factions[by] === undefined || r.factions[to] === undefined || relationOf(r, by, to).state === 'war') return
+  setRelation(r, by, to, 'war', null, lines, { by, why })
+}
+
+/** 판을 열 때 화친으로 시작한다 (바닷가 여덟 나라 — hooks.startCustoms). 보고 없이 · 화친은 truceSeasons 뒤에 끝난다 */
+export function makeTruce(r: Realm, a: string, b: string): void {
+  if (a === b || r.factions[a] === undefined || r.factions[b] === undefined) return
+  setRelation(r, a, b, 'truce', r.season + P.realm.truceSeasons, [])
+}
+
+/**
+ * 가장 센 두 나라 — `f` 를 빼고, 고을이 있는 나라 가운데 (참값 · 줄타기의 셈). 같으면 id 순서
+ */
+export function bigTwo(r: Realm, f: string): string[] {
+  return Object.keys(r.factions).filter((x) => x !== f && Object.values(r.nodes).some((n) => n.owner === x))
+    .sort((a, b) => nationPower(r, b) - nationPower(r, a) || (a < b ? -1 : 1)).slice(0, 2)
+}
+
+/** 판결해 줄 큰 나라 — 가락(수로왕)이 있으면 가락, 없으면 둘 말고 가장 센 나라. 없으면 null */
+export function judgeOf(r: Realm, from: string, to: string): string | null {
+  const alive = (x: string): boolean => r.factions[x] !== undefined && Object.values(r.nodes).some((n) => n.owner === x)
+  if (from !== 'guya' && to !== 'guya' && alive('guya')) return 'guya'
+  return Object.keys(r.factions).filter((x) => x !== from && x !== to && alive(x))
+    .sort((a, b) => nationPower(r, b) - nationPower(r, a) || (a < b ? -1 : 1))[0] ?? null
+}
+
+/**
+ * 풍습이 거는 받아들일 확률 덤 (data/customs.ts) — 길 비켜 주기 · 수로왕의 판결 · 줄타기 · 바닷가 여덟 나라.
+ * 화면의 범위(envoyChance)와 판정(envoyTrueChance)이 같은 셈을 지난다 (chanceAt)
+ */
+function customsChance(r: Realm, from: string, to: string, ask: EnvoyAsk): number {
+  const R = P.realm
+  let p = 0
+  // 교역과 지원 요청은 같은 셈이라 둘 다 (형: "교역으로 쌀 120 달라고 할때랑 지원요청으로 달라고 할때랑 확률이 같아야")
+  if ((ask === 'truce' || ask === 'alliance' || ask === 'trade' || ask === 'aid') && hasCustom(r, from, 'girbikyeo')) p += R.girbiEnvoy
+  if (ask === 'truce' && relationOf(r, from, to).state === 'war' && hasCustom(r, from, 'judge') && judgeOf(r, from, to) !== null) p += R.judgeTruce
+  if ((ask === 'truce' || ask === 'alliance') && hasCustom(r, from, 'julta') && bigTwo(r, from).includes(to)) p += R.jultaPact
+  if ((ask === 'truce' || ask === 'alliance' || ask === 'joint') && hasCustom(r, from, 'posang') && hasCustom(r, to, 'posang')) p += R.posangPact
+  return p
 }
 
 /**
@@ -493,6 +536,7 @@ function chanceAt(
   }
   p += envoyBonus(r, from, ask, hero) // 군주 매력 + 따라간 장수의 매력 · 매혹 · 장사꾼 (heroes.ts)
   p += R.envoyFavor * favorOf(r, from, to) // 호감
+  p += customsChance(r, from, to, ask) // 풍습 (data/customs.ts)
   if (rel === 'war') p += R.envoyWar
   else if (rel === 'truce' || rel === 'ally') p += R.envoyFriend
   return Math.min(R.envoyMax, Math.max(R.envoyMin, p))
@@ -629,14 +673,19 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
       continue
     }
     pay(r, o.from, o.to, give)
+    const wasWar = relationOf(r, o.from, o.to).state === 'war'
+    if ((o.ask === 'truce' || o.ask === 'alliance' || o.ask === 'trade') && hasCustom(r, o.from, 'girbikyeo')) noteOnce(r, lines, o.from, 'girbikyeo', { other: o.to })
     switch (o.ask) {
       case 'truce':
         setRelation(r, o.from, o.to, 'truce', r.season + R.truceSeasons, lines)
         addFavor(r, o.from, o.to, R.favorAccept)
+        if (wasWar) judgeFee(r, o.from, o.to, lines)
+        swayBig(r, o.from, o.to, lines)
         break
       case 'alliance':
         setRelation(r, o.from, o.to, 'ally', null, lines)
         addFavor(r, o.from, o.to, R.favorAccept)
+        swayBig(r, o.from, o.to, lines)
         break
       case 'trade':
         pay(r, o.to, o.from, take)
@@ -698,6 +747,29 @@ export function stationFriction(r: Realm, lines: ReportLine[]): void {
     addFavor(r, a.faction, owner, -P.realm.favorStation)
     lines.push({ kind: 'stationed', faction: a.faction, owner, node: a.at })
   }
+}
+
+/** 수로왕의 판결(음즙벌) — 싸움을 멈춘 화친에 판결해 준 큰 나라가 곡식을 받고, 그 나라와 가까워진다 */
+function judgeFee(r: Realm, from: string, to: string, lines: ReportLine[]): void {
+  if (!hasCustom(r, from, 'judge')) return
+  const judge = judgeOf(r, from, to)
+  if (judge === null) return
+  const R = P.realm
+  const s = stockOf(r, from)
+  const fee = Math.max(0, Math.min(Math.floor(s.grain), Math.max(R.judgeFeeMin, Math.ceil(s.grain * R.judgeFeeShare))))
+  if (fee > 0) payGoods(r, from, judge, { grain: fee })
+  addFavor(r, from, judge, R.favorAccept)
+  noteCustom(r, lines, from, 'judge', { other: judge, with: to, n: fee })
+}
+
+/** 줄타기(사벌) — 가장 센 두 나라 가운데 하나와 손잡으면 다른 하나가 언짢아한다 */
+function swayBig(r: Realm, from: string, to: string, lines: ReportLine[]): void {
+  if (!hasCustom(r, from, 'julta')) return
+  const big = bigTwo(r, from)
+  if (!big.includes(to)) return
+  const other = big.find((x) => x !== to)
+  if (other !== undefined) addFavor(r, from, other, -P.realm.jultaFavor)
+  noteCustom(r, lines, from, 'julta', { other: to, ...(other !== undefined ? { with: other } : {}) })
 }
 
 function breakPact(r: Realm, from: string, to: string, lines: ReportLine[]): void {

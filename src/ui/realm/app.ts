@@ -8,7 +8,7 @@
  */
 import { aiOrders } from '../../realm/ai.ts'
 import { headcount, strength, type Equip, type UnitKind } from '../../realm/battle.ts'
-import { FACTION_ART, GOOD_ICON, SEASON_ICON, UNIT_ICON, bustOf, flagIcon, kidBust, nodeIcon, noteGrowing, noteKids } from '../../realm/data/art.ts'
+import { CUSTOM_ICON, FACTION_ART, GOOD_ICON, SEASON_ICON, UNIT_ICON, bustOf, flagIcon, kidBust, nodeIcon, noteGrowing, noteKids } from '../../realm/data/art.ts'
 import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../../realm/data/nations-yeongnam.ts'
 import { SOUTH_NATIONS } from '../../realm/data/nations-south.ts'
@@ -26,7 +26,7 @@ import {
 } from '../../realm/data/prose.ts'
 import { canEscort, envoyChanceFor, envoyClash, envoyOptions, favorOf, friendly, jointTargets, lentEta, openAsks, relationOf } from '../../realm/diplomacy.ts'
 import {
-  GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeHarvest, nodeYield, nodeSpecials, upkeepOf, riteAllowed, riteCost,
+  GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, draftPay, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeHarvest, nodeYield, nodeSpecials, upkeepOf, riteAllowed, riteCost,
   autoFlows, crowdOf, migratePath, fieldMul, homeRoom, isRiverside, landMul, placeLimit, placeNodes, workMul,
   goodsWorth,
 } from '../../realm/economy.ts'
@@ -81,7 +81,7 @@ import { pactOf } from '../../realm/suzerain.ts'
 import { ironOf, riteOf } from '../../realm/paths.ts'
 import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
 import { AUD_CSS, askSay, pactSay, typed, type PactKind } from './audience.ts'
-import { customsOf } from '../../realm/data/customs.ts'
+import { customDef, customsOf } from '../../realm/data/customs.ts'
 import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
 import { SCENE_SOUND, makeMusic, playOnce, snd, tapSlot } from './sound.ts'
 import { hireVoicePath, voiceGate, voiceKind, voicePath, type VoiceLine } from './voice.ts'
@@ -1990,17 +1990,20 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         h += `<div class="btns"><button class="btn pri men wide" data-act="auto-draft" data-node="${n.id}">⚡ 알아서 뽑기 · ${limAll}명</button></div>`
         // 병종 — 큰 그림 타일 (누르면 그 병종으로)
         h += `<div class="dbig">`
-        for (const u of draftable(n)) {
+        for (const u of draftable(n, r, me())) {
           const ul = Math.max(0, Math.min(limAll, draftLimit(r, me(), n.id, u) - done))
-          h += `<button class="${u === unit ? 'on' : ''}" data-act="dunit" data-node="${n.id}" data-unit="${u}" ${ul <= 0 ? 'disabled' : ''}><img src="${ART}icon/${UNIT_ICON[u]}.png" alt=""><b>${UNIT_NAME[u]}</b><small>${ul > 0 ? `${ul}명까지` : u === 'horse' ? '말이 없다' : u === 'boat' ? '나무가 없다' : '못 뽑는다'}</small></button>`
+          h += `<button class="${u === unit ? 'on' : ''}" data-act="dunit" data-node="${n.id}" data-unit="${u}" ${ul <= 0 ? 'disabled' : ''}><img src="${ART}icon/${UNIT_ICON[u]}.png" alt=""><b>${UNIT_NAME[u]}</b><small>${ul > 0 ? `${ul}명까지` : u === 'horse' ? '말이 없다' : u === 'boat' ? '나무가 없다' : u === 'crossbow' ? '틀이 찼다' : '못 뽑는다'}</small></button>`
         }
         h += `</div>`
       } else {
         h += `<div class="seg">`
-        for (const u of draftable(n)) h += `<button class="${u === unit ? 'on' : ''}" data-act="dunit" data-node="${n.id}" data-unit="${u}">${icon(UNIT_ICON[u])}${UNIT_NAME[u]}</button>`
+        for (const u of draftable(n, r, me())) h += `<button class="${u === unit ? 'on' : ''}" data-act="dunit" data-node="${n.id}" data-unit="${u}">${icon(UNIT_ICON[u])}${UNIT_NAME[u]}</button>`
         h += `</div>`
       }
-      const nd = draftNeeds(unit, Math.max(1, want))
+      // 채비 값 — 덩이쇠(변한)는 쌓인 쇠·모자란 곡식 몫을 쇠로 낸다 (economy.draftPay · 계획판 위에서) · 쇠는 값 칩에 보인다
+      const dp = draftPay(plan(), me(), Math.max(0, want))
+      const nd = draftNeeds(unit, Math.max(1, want), r, me())
+      if (unit === 'crossbow') h += `<p class="mute">${lim > 0 ? `${costHtml({ iron: nd.iron })} ${tx('쇠뇌 틀만큼만')}` : tx('쇠뇌 틀이 다 찼거나 쇠가 없다')}</p>`
       if (unit === 'horse') h += `<p class="mute">${lim > 0 ? costHtml({ horse: nd.horse }) : '말이 없다 — 목장(너른벌을 일구면)에서 나거나 바꿔 온다'}</p>`
       if (unit === 'boat') h += `<p class="mute">${lim > 0 ? costHtml({ wood: nd.wood }) : '배 지을 나무가 없다 — 솔숲·산·산성 땅에서 난다'}</p>`
       // 철을 더 들이면 처음부터 한 단계 좋은 무기 — 「쇠날창 장착」 한 마디 (형 10-27: "텍스트 너무 길지 않냐 · 쇠날창 장착 이런 식으로")
@@ -2009,7 +2012,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 뽑은 만큼 일손이 빠진다 (season.draftArmy · draftHHPerMan) — 글 대신 집 ▼ 칩 (가을걷이는 봄 띠가 이미 말한다)
       const hhLoss = Math.round(want * P.realm.draftHHPerMan)
       h += `<div class="stepper"><button data-act="dn" data-node="${n.id}" data-d="${-step}">−</button><b>${want}</b>`
-      h += `<button data-act="dn" data-node="${n.id}" data-d="${step}">+</button><span class="mute">명 · 최대 ${lim}</span>${costHtml({ grain: Math.ceil(draftCost(want).grain) })}`
+      h += `<button data-act="dn" data-node="${n.id}" data-d="${step}">+</button><span class="mute">명 · 최대 ${lim}</span>${costHtml({ grain: Math.ceil(dp.grain), ...(dp.iron > 0 ? { iron: dp.iron } : {}) })}`
       h += `${hhLoss > 0 ? `<span class="cost"><b class="cg" title="집 ${hhLoss}"><i>▼</i>${icon('settle-farm-village', 'cgi')}${hhLoss}</b></span>` : ''}</div>`
       // 뽑기 단추는 숫자 줄 밑에 크게 한 줄 — 이게 뽑는 단추라고 바로 알게 (형 10-27)
       h += `<div class="btns"><button class="btn pri men wide" data-act="draft" data-node="${n.id}" ${want <= 0 ? 'disabled' : ''}>군사 ${want}명 뽑기</button></div>`
@@ -3313,7 +3316,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const by = r.factions[rh.captor]?.name ?? ''
       h += `<div class="banner bad">${tx(`⛓ 군주 ${josa(rh.name, '이', '가')} ${by}에 사로잡혀 있다 — ${josa(by, '과', '와')} 화친을 맺거나 ${by}의 도읍을 빼앗으면 돌아온다. 그동안 군주의 다스림이 걸리지 않는다.`)}</div>`
     }
-    h += customsHtml({ esc }, me(), customsOf(r, me()))
+    h += customsHtml({ esc, icon }, me(), customsOf(r, me()))
     const need = winNeed(r.region ?? 'byeonhan-mini')
     const held = Object.values(r.factions).filter((x) => r.nodes[x.capital]?.owner === me()).length
     h += cardHtml(realm!) // 미리 적용한 판(r)에선 카드가 이미 답해져 사라졌다 — 실제 판으로
@@ -3697,7 +3700,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const nb = nextBuild(r, id)
       const queued = musters.some((o) => o.kind === 'build' && o.node === id) || (r.builds ?? []).some((b) => b.node === id)
       if (nb !== null) {
-        const bc = buildCost(nb)
+        const bc = buildCost(nb, r, me())
         const ok = queued || (canBuild(r, me(), id, nb) && left().wood >= bc.wood && left().grain >= bc.grain)
         h += `<div class="btns"><button class="btn ${queued ? 'on' : ''}" data-act="build" data-node="${id}" data-what="${nb}" ${ok ? '' : 'disabled'}>${queued ? `${BUILD_NAME[nb]} 짓는 중` : `${josa(BUILD_NAME[nb], '을', '를')} 두른다 ${costHtml({ wood: bc.wood, grain: bc.grain })}`}</button></div>`
         h += `<p class="mute">${nb === 'palisade' ? '지키는 쪽이 세진다.' : '목책 앞에서 한 번 더 막는다 · 겨울엔 언다.'} 다음 계절에 선다.</p>`
@@ -4158,6 +4161,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'omen': ic = 'status-good-omen'; break
       case 'expGo': case 'expStay': case 'expBack': ic = 'settle-port-town'; break
       case 'birth': ic = 'status-good-omen'; break
+      case 'custom': ic = CUSTOM_ICON[l.id] ?? 'status-good-omen'; break
       default: ic = ''
     }
     // 장수 얼굴이 주인공인 줄 — 들임·떠돌이·자람
@@ -4608,8 +4612,22 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         + `<div class="cpar">${bust(a, 'cf sm')}${bust(c, 'cf sm')}</div>`
         + `<div class="cw"><b>태몽</b><span>${esc(a?.name ?? '')}·${esc(c?.name ?? '')}의 지붕 위로 금빛 용이 구슬을 물고 내려왔다</span><small>다음 계절에 아이가 온다</small></div></div>`)
     }
+    // 풍습·나라 고리·땅 한 수가 우리 나라에 처음 걸렸다 — 도장이 쾅 · 사서 한 줄 · 북과 종 (CUSTOMS §8-1 지킬 것 4 · WWE 오버액션)
+    for (const l of rep.lines) if (l.kind === 'custom' && l.first === true && l.faction === me()) scenes.push(customSceneHtml(prev, r, l))
     if (scenes.length === 0) return
     playScenes(scenes, CEREMONY_LEAD_MS)
+  }
+
+  /** 처음 걸린 풍습의 장면 — 그림이 도장처럼 내려찍히고 불티가 튄다. 층 · 이번에 무슨 일이 났나 · 사서 한 줄 · 동사 한 문장 */
+  function customSceneHtml(prev: Realm, r: Realm, l: Extract<ReportLine, { kind: 'custom' }>): string {
+    const c = customDef(l.id)
+    const said = reportText(prev, r, l, me()) ?? c.does
+    const tier = c.tier === 'nation' ? '나라 고리' : c.tier === 'land' ? '땅이 준 한 수' : '결 풍습'
+    let sparks = ''
+    for (let i = 0; i < 16; i++) sparks += `<i style="--a:${(i * 22.5).toFixed(1)}deg;--d:${(0.45 + (i % 4) * 0.12).toFixed(2)}s"></i>`
+    return `<div class="cere custom t-${c.tier}"><i class="cglow"></i>`
+      + `<div class="cstamp">${icon(CUSTOM_ICON[l.id] ?? 'status-good-omen', 'csi')}<b>${esc(c.name)}</b><span class="cspk">${sparks}</span></div>`
+      + `<div class="cw"><b>${tier}</b><span>${tx(said)}</span><em>${esc(c.source)}</em>${c.verb !== '' ? `<small>${esc(c.verb)}</small>` : ''}<button class="btn pri cok">확인</button></div></div>`
   }
 
   /**
@@ -4729,6 +4747,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           window.setTimeout(() => { if (el.isConnected) { ding(snd('cmd_hold'), 0.75, 0.9); buzz([50, 30, 80]) } }, P.realm.captSlamMs)
         }
         else if (hire) { for (const t of P.realm.hireCutMs) window.setTimeout(() => ding(snd('cmd_duel'), 0.32), t); window.setTimeout(() => ding(snd('dex_new'), 0.55), P.realm.hirePopMs) }
+        else if (el.classList.contains('custom')) {
+          // 풍습이 처음 걸렸다 — 북이 울리고, 도장이 내려찍히는 때 종과 떨림
+          ding(snd('war_drum'), 0.6)
+          window.setTimeout(() => { if (el.isConnected) { ding(snd('war_bell'), 0.45); buzz([30, 40, 70]) } }, P.realm.customStampMs)
+        }
         else ding(snd(el.classList.contains('wed') ? 'wed' : 'birth'), 0.5) // 혼례는 형이 고른 국악 가락 (10-24 · 전엔 종 세 번)
       }
       if (hire) window.setTimeout(() => buzz([20, 40, 20, 40, 60]), P.realm.hirePopMs)
@@ -5858,8 +5881,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           const room = (u?: UnitKind): number => Math.max(0, draftLimit(plan(), me(), n.id, u) - done())
           const lim = room()
           if (lim <= 0) continue
-          const units = draftable(n).filter((u) => room(u) > 0)
-          const MIX: Partial<Record<UnitKind, number>> = { spear: P.realm.draftMixSpear, bow: P.realm.draftMixBow, shield: P.realm.draftMixShield, horse: P.realm.draftMixHorse, boat: P.realm.draftMixBoat }
+          const units = draftable(n, plan(), me()).filter((u) => room(u) > 0)
+          const MIX: Partial<Record<UnitKind, number>> = { spear: P.realm.draftMixSpear, bow: P.realm.draftMixBow, shield: P.realm.draftMixShield, horse: P.realm.draftMixHorse, boat: P.realm.draftMixBoat, crossbow: P.realm.draftMixBow }
           const w = (u: UnitKind): number => MIX[u] ?? 0
           const sum = units.reduce((s, u) => s + w(u), 0)
           const take = (unit: UnitKind, want: number): void => {

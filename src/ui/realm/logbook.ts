@@ -21,7 +21,7 @@ const KINDS: Readonly<Record<Exclude<LogFilter, 'all'>, ReadonlySet<string>>> = 
   envoy: new Set(['envoy', 'ask', 'answered', 'recall', 'pledge', 'lent', 'envoyHeld']),
   war: new Set(['battle', 'take', 'sighted', 'blocked', 'relicSave']),
   plot: new Set(['plot', 'mystery', 'confess', 'rumor']),
-  home: new Set(['harvest', 'draft', 'settle', 'migrate', 'place', 'disband', 'hunger', 'build', 'rite', 'arm', 'market', 'spoil', 'bowUp', 'wed', 'birth', 'grown', 'recruit', 'persuade', 'exile', 'retake', 'expGo', 'expStay', 'expBack', 'card', 'omen']),
+  home: new Set(['custom', 'harvest', 'draft', 'settle', 'migrate', 'place', 'disband', 'hunger', 'build', 'rite', 'arm', 'market', 'spoil', 'bowUp', 'wed', 'birth', 'grown', 'recruit', 'persuade', 'exile', 'retake', 'expGo', 'expStay', 'expBack', 'card', 'omen']),
 }
 
 /** 계절 소식의 갈래 묶음 — 보고판에서 갈래마다 머리를 달아 묶는다 (형 10-25: "계절 지나서 생기는 로그는 너무 복잡하고 많은데 카테고리별로 묶어야") */

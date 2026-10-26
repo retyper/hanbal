@@ -14,6 +14,7 @@ import { alertRange, seenMix, visibleRange } from './intel.ts'
 import {
   approachConceal, approachOptions, blockedWhy, cliffChance, conceal, concealOf, forceOf, fortMul, marchCut, marchSeasons, otherEnd, seasonOf, seenMarches,
 } from './season.ts'
+import { concealBonus, passExtra, siegeFort } from './hooks.ts'
 import type { Approach, Army, EdgeKind, Realm, REdge } from './types.ts'
 
 export interface Move {
@@ -66,7 +67,8 @@ function winVs(
   const age = r.season - k.force.season
   const range = visibleRange({ f0: k.force.f0, src: k.force.src, u: k.force.u }, age)
   if (range === null) return { ...none, age }
-  const t = fortMul(node, seasonOf(r.season))
+  // 도읍 에우기(이서) — 남의 도읍은 성의 덤을 덜 받는다 (판정 season.fight 와 같은 셈)
+  const t = siegeFort(r, faction, node, fortMul(node, seasonOf(r.season)))
   // 병종의 쓰임 — 우리 쪽은 안다(길·공수). 저쪽 구성은 정찰로 본 몫이 있을 때만 넣는다 (판정의 battle.power 와 같은 셈 · 정찰의 보상)
   const seen = seenMix(r, faction, to)?.mix
   const foe: Force | null = seen !== undefined ? { mix: seen, equip: 'bronze', mu: 1, morale: 1 } : null
@@ -156,9 +158,11 @@ export function movesOf(r: Realm, faction: string, a: Army): Move[] {
     const k = known[to]
     const v = winVs(r, faction, to, myF, { force: forceOf(r, a), edge: ed.kind })
     const al = k?.alert ? alertRange(k.alert.v, r.season - k.alert.season) : null
-    const ambushP = ambushChance(conceal(ed, node, season), myRyak, R.aiAssumeRyak, size + ambushTraitOf(a.hero !== null ? (r.heroes[a.hero] ?? null) : null, ed.kind), 0, al === null ? R.aiAssumeAlert : al[1])
+    const ambushP = ambushChance(conceal(ed, node, season) + concealBonus(r, faction, ed.kind), myRyak, R.aiAssumeRyak, size + ambushTraitOf(a.hero !== null ? (r.heroes[a.hero] ?? null) : null, ed.kind), 0, al === null ? R.aiAssumeAlert : al[1])
+    // 풍습 — 고갯목은 고갯길 한 계절 더 (hooks.passExtra · 판정 season.applyOrders 와 같다)
+    const shut = blockedWhy(ed, season)
     out.push({
-      edge: ed, to, seasons: Math.max(1, marchSeasons(ed.kind, season) + (blockedWhy(ed, season) !== null ? R.hardExtra : 0) - marchCut(r, a)), blocked: blockedWhy(ed, season), hostile,
+      edge: ed, to, seasons: Math.max(1, marchSeasons(ed.kind, season) + passExtra(r, faction, ed.kind) + (shut !== null ? R.hardExtra : 0) - marchCut(r, a)), blocked: shut, hostile,
       win: v.win, winAmbush: v.ambush, winCaught: v.caught, age: v.age, ambushP,
       ...concealBits(concealOf(r, ed.id, headcount(forceOf(r, a)), to)), walled: fortMul(node, season) > 1,
     })
@@ -200,7 +204,7 @@ export function approachMoves(r: Realm, faction: string, a: Army, m: Move): Appr
     }
     const p = ap === 'cliff'
       ? cliffChance(r, a)
-      : ambushChance(conceal(m.edge, node, season) + approachConceal(ap), myRyak, R.aiAssumeRyak, size, 0, al === null ? R.aiAssumeAlert : al[1])
+      : ambushChance(conceal(m.edge, node, season) + approachConceal(ap) + concealBonus(r, faction, m.edge.kind), myRyak, R.aiAssumeRyak, size, 0, al === null ? R.aiAssumeAlert : al[1])
     const hit = ap === 'ridge' ? mid(m.win, m.winAmbush) : m.winAmbush
     out.push({ ap, p, hit, miss: m.winCaught, seasons })
   }

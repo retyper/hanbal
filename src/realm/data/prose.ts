@@ -39,6 +39,7 @@ export const TAG_LINE: Record<Tag, string> = {
   iron: '붉은 흙이 드러난 산이다.',
   sodo: '하늘에 제사 지내는 성스러운 터 — 큰 나무에 방울과 북을 달았다. 칼을 들고 들어가지 않는다. (삼국지 동이전 마한조)',
   pasture: '풀이 너른 들이다. 사람이 살면 말을 칠 수 있다.',
+  earthwall: '흙을 다져 높은 성을 쌓았다. 목책보다 훨씬 굳다.',
 }
 
 /**
@@ -61,7 +62,7 @@ export function goodsLine(g: Partial<Record<Good, number>>): string {
 }
 
 /** 지을 것의 이름 */
-export const BUILD_NAME: Record<BuildWhat, string> = { palisade: '목책', moat: '해자' }
+export const BUILD_NAME: Record<BuildWhat, string> = { palisade: '목책', moat: '해자', earthwall: '흙성' }
 
 export const UNIT_NAME: Record<UnitKind, string> = {
   spear: '창병', bow: '궁수', pike: '장창병', shield: '방패병', horse: '기병', crossbow: '쇠뇌병', boat: '수군',
@@ -216,6 +217,7 @@ export function whyLine(why: Why | undefined, about = '', them = '우리'): stri
     case 'ally': return '동맹이라 기댄다.'
     case 'tooBig': return `${josa(them, '이', '가')} 너무 커졌다고 본다. 이대로 두면 ${them === '우리' ? '우리가' : '그쪽이'} 이긴다고 여긴다.`
     case 'prey': return `${josa(them, '을', '를')} 만만하게 본다.`
+    case 'between': return '두 큰 나라 사이에서 줄을 탄다.'
   }
 }
 
@@ -245,6 +247,10 @@ export function deedText(r: Realm, viewer: string, other: string, d: Deed): { te
       if (st === 'ally') return { text: `${josa(o, '과', '와')} 동맹을 맺었다`, tone: 'good' }
       if (d.why === 'sow') return { text: `누군가의 이간으로 ${josa(o, '과', '와')} 틀어졌다 — ${RELATION_NAME[st]}`, tone: 'plain' }
       if (st === 'war') {
+        if (we && d.why === 'council') return { text: `우리가 여섯 마을에 묻고 ${josa(o, '과', '와')} 싸우기로 했다`, tone: 'us' }
+        if (we && d.why === 'rescue') return { text: `우리가 동맹을 구하러 ${o}에 칼을 뽑았다`, tone: 'us' }
+        if (d.by === other && d.why === 'council') return { text: `${josa(o, '이', '가')} 여섯 마을에 묻고 우리와 싸우기로 했다`, tone: 'bad' }
+        if (d.by === other && d.why === 'rescue') return { text: `${josa(o, '이', '가')} 동맹을 구하러 우리에게 칼을 뽑았다`, tone: 'bad' }
         if (we) return { text: d.why === 'betray' ? `우리가 약조를 깨고 ${josa(o, '을', '를')} 쳤다` : d.why === 'tribute' || d.why === 'demand' ? `${josa(o, '이', '가')} 우리 요구를 거절해 전쟁이 됐다` : `우리가 ${o} 땅에 군대를 들여 전쟁이 됐다`, tone: 'us' }
         if (d.by === other) return { text: d.why === 'betray' ? `${josa(o, '이', '가')} 약조를 깨고 쳐들어왔다` : d.why === 'attack' ? `${josa(o, '이', '가')} 우리 땅에 쳐들어왔다` : d.why === 'tribute' || d.why === 'demand' ? `우리가 그 요구를 거절하자 ${josa(o, '이', '가')} 칼을 뽑았다` : d.why === 'plot' ? `우리 공작이 드러나 ${josa(o, '이', '가')} 칼을 뽑았다` : `${josa(o, '이', '가')} 전쟁을 걸어왔다`, tone: 'bad' }
         return { text: `${josa(o, '과', '와')} 전쟁이 났다`, tone: 'plain' }
@@ -267,6 +273,84 @@ export function deedText(r: Realm, viewer: string, other: string, d: Deed): { te
  * 보고의 한 줄을 글로 — 보는 나라(viewer)의 눈으로. 남의 나라끼리의 일은 소문처럼 짧게.
  * `before` 는 넘기기 전 판 (사라진 군대의 이름을 찾으려고).
  */
+/**
+ * 풍습·나라 고리·땅 한 수가 걸린 줄 (data/customs.ts · hooks.ts) — 우리 것은 무엇이 됐고 무엇을 냈는지, 당한 쪽은 무엇을 겪었는지,
+ * 남의 나라끼리는 소문 한 줄 (큰일만)
+ */
+function customText(line: Extract<ReportLine, { kind: 'custom' }>, viewer: string, fname: (id: string) => string, node: (id: string) => string): string | null {
+  const ours = line.faction === viewer
+  const f = fname(line.faction)
+  const o = line.other !== undefined ? fname(line.other) : ''
+  const w = line.with !== undefined ? fname(line.with) : ''
+  const at = line.node !== undefined ? node(line.node) : ''
+  const n = line.n ?? 0
+  const m = line.m ?? 0
+  switch (line.id) {
+    case 'yeoseotmaeul':
+      if (ours) return `여섯 마을에 물었다 — ${josa(o, '과', '와')} 싸우기로 뜻을 모았다. 군대는 다음 계절에 떠난다.`
+      if (line.other === viewer) return `${josa(f, '이', '가')} 여섯 마을에 묻고 우리와 싸우기로 했다 — 다음 계절에 쳐들어온다.`
+      return `소문. ${josa(f, '이', '가')} 여섯 마을에 묻고 ${josa(o, '과', '와')} 싸우기로 했다.`
+    case 'judge':
+      if (ours) return `수로왕의 판결 — ${o}의 판결로 ${josa(w, '과', '와')} 싸움을 멈췄다. 판결 값으로 곡식 ${n}섬을 바쳤다.`
+      if (line.other === viewer) return `${josa(f, '이', '가')} 판결을 청해 왔다 — 판결 값으로 곡식 ${n}섬을 받았다.`
+      if (line.with === viewer) return `${o}의 판결이 붙어 ${josa(f, '과', '와')} 싸움을 멈췄다.`
+      return null
+    case 'dalcheon':
+      return ours ? '달천 철광에서 쇠돌을 캔다 — 쇠가 곱으로 난다. 광부는 군사로 뽑지 않는다.' : null
+    case 'sonoe':
+      return ours ? `${at}에서 쇠뇌병 ${n}명을 세웠다 — 쇠뇌가 방패를 뚫는다.` : null
+    case 'ireoseom':
+      if (ours) return `${at} 사람들이 들고일어나 ${josa(o, '을', '를')} 몰아냈다! 도읍을 되찾았다 — 다만 집이 크게 줄었다.`
+      if (line.other === viewer) return `${at}에서 ${f} 사람들이 들고일어나 우리 지킴이를 몰아냈다 — 도읍을 비워 둔 탓이다.`
+      return `소문. ${at}에서 ${f} 사람들이 들고일어나 도읍을 되찾았다.`
+    case 'dalbeol':
+      return ours ? `${at}에 달벌 흙성이 섰다 — 들 한가운데 굳은 성이다.` : null
+    case 'geumseong':
+      if (ours) return `${josa(at, '을', '를')} 곧장 에웠다.${n > 0 ? ` ${josa(o, '과', '와')} 손잡은 나라 ${n}곳이 구하러 나섰다.` : ''}`
+      if (line.other === viewer) return `${josa(f, '이', '가')} 우리 도읍 ${josa(at, '을', '를')} 곧장 에웠다.`
+      return null
+    case 'julta':
+      if (ours) return `${josa(o, '과', '와')} 손을 잡았다 — 두 큰 나라 사이의 줄타기다.${w !== '' ? ` ${josa(w, '이', '가')} 언짢아한다.` : ''}`
+      if (line.with === viewer) return `${josa(f, '이', '가')} ${josa(o, '과', '와')} 손을 잡았다 — 우리를 두고 줄을 탄다.`
+      return null
+    case 'soebae':
+      return ours ? `쇠 실은 배가 떴다 — 쇠 ${n}덩이를 내고 곡식 ${m}섬을 사 왔다.` : null
+    case 'posang':
+      return ours ? `바닷가 여덟 나라 — ${josa(o, '과', '와')} 손잡고 시작한다. 가락이 우리를 미워한다.` : null
+    case 'chaekhwa':
+      if (ours) return `${at}에 쳐들어온 ${josa(o, '이', '가')} 책화를 물어야 한다 — 첫 합에 기세가 꺾였다.`
+      if (line.other === viewer) return `${f} 땅을 밟았다 — 책화를 물어야 해서 우리 군대의 기세가 꺾였다.`
+      return null
+    case 'maljangrye':
+      if (!ours) return null
+      return n > 0 ? `가을 장례 — 소와 말 ${n}필을 바쳐 크게 묻었다. 장수들의 정이 깊어졌다.` : '가을 장례 — 소를 바쳐 크게 묻었다. 장수들의 정이 깊어졌다.'
+    case 'deongisoe':
+      return ours ? `쇠 ${n}덩이로 징병값을 냈다 — 쇠가 곧 돈이다.` : null
+    case 'girbikyeo':
+      return ours ? `길 비켜 주기 — 우리 사신이 막힘없이 오가 ${josa(o, '이', '가')} 청을 받아 주었다.` : null
+    case 'landIron':
+      return ours ? '쇠 나는 땅 — 무장을 올리는 데 쇠가 덜 들었다.' : null
+    case 'landPort':
+      if (!ours) return null
+      return m > 0 ? `뱃길로 숨어 ${at}에 닿았다 — 돛을 내리고 물결에 섞였다.` : `뱃길 — ${at}에서 수군을 나무 반만 들여 뽑았다.`
+    case 'landReeds':
+      if (!ours) return null
+      return m > 0 ? `갈대밭에 숨어 ${josa(at, '으로', '로')} 다가갔다.` : `여름 큰물 — 강가 고을에서 집 ${n}채가 떠내려갔다.`
+    case 'landHigh':
+      if (ours && m > 0) return `고갯목 — ${josa(at, '을', '를')} 반값에 둘렀다. 고개 나라는 막는 데 익숙하다.`
+      if (ours) return `${at} 고갯목에서 바위를 굴려 ${o}의 기세를 꺾었다.`
+      if (line.other === viewer) return `${at}의 고갯목에서 바위가 굴러 우리 군대의 기세가 꺾였다.`
+      return null
+    case 'landPasture':
+      return ours ? `너른 들에서 말 ${n}필을 쳤다 — 말 먹이로 곡식 ${m}섬이 들었다.` : null
+    case 'landSodo':
+      if (!ours) return null
+      return n > 0 ? '소도 곁 — 제사를 반값에 지냈다.' : '봄 제사를 걸렀다 — 소도 곁이라 그해 가을걷이가 준다.'
+    default:
+      return null
+  }
+}
+
 /** 들킨 공작이 누가 보냈는지까지 드러났나 — 옛 줄(exposed 없음)은 들킴이 곧 드러남이었다 */
 const exposedOf = (l: { readonly caught: boolean; readonly exposed?: boolean }): boolean => l.caught && (l.exposed ?? true)
 
@@ -726,6 +810,8 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (line.ask === 'break') return `${josa(fname(other), '이', '가')} 우리와의 약조를 깼다.${mind(other, whyLine(line.why, about))} 이제 언제든 쳐들어올 수 있다.`
       return `${fname(other)}에서 ${ASK_NAME[line.ask]} 사신이 왔다.`
     }
+    case 'custom':
+      return customText(line, viewer, fname, node)
     case 'stationed': {
       if (line.faction === viewer) return `${josa(node(line.node), '에', '에')} 약속 없이 머무는 우리 군대를 ${fname(line.owner)}에서 언짢아한다 — 호감이 내려간다.`
       if (line.owner === viewer) return `${fname(line.faction)} 군대가 약속 없이 ${josa(node(line.node), '에', '에')} 머문다.`
@@ -746,7 +832,8 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (line.a !== viewer && line.b !== viewer) {
         const [x, y] = by === line.b ? [line.b, line.a] : [line.a, line.b]
         if (line.state === 'war') {
-          const how = why === 'betray' ? '약조를 깨고 쳐들어갔다' : why === 'tribute' ? '조공을 거절당하자 칼을 뽑았다' : why === 'sow' ? '이간에 넘어가 등을 돌렸다' : why === 'plot' ? '공작이 드러나 칼을 뽑았다' : '군대를 들였다'
+          const how = why === 'betray' ? '약조를 깨고 쳐들어갔다' : why === 'tribute' ? '조공을 거절당하자 칼을 뽑았다' : why === 'sow' ? '이간에 넘어가 등을 돌렸다' : why === 'plot' ? '공작이 드러나 칼을 뽑았다'
+            : why === 'council' ? '여섯 마을에 묻고 싸우기로 했다' : why === 'rescue' ? '동맹을 구하러 칼을 뽑았다' : '군대를 들였다'
           return by !== undefined ? `${josa(fname(x), '이', '가')} ${josa(fname(y), '과', '와')} 전쟁을 벌였다 — ${how}.` : `${josa(fname(x), '과', '와')} ${fname(y)} 사이에 전쟁이 났다.`
         }
         if (line.state === 'ally') return `${josa(fname(x), '과', '와')} ${josa(fname(y), '이', '가')} 동맹을 맺었다.`
@@ -757,13 +844,16 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       switch (line.state) {
         case 'war':
           if (by === viewer) {
+            if (why === 'council') return null // 풍습 줄(여섯 마을에 물었다)이 말한다
+            if (why === 'rescue') return `${josa(o, '이', '가')} 우리 동맹의 도읍을 에웠다. 구하러 칼을 뽑는다 — ${josa(o, '과', '와')} 전쟁이다.`
             if (why === 'tribute' || why === 'demand') return `${josa(o, '이', '가')} 우리 요구를 거절했다. ${josa(o, '과', '와')} 전쟁이다.`
             return why === 'betray' ? `우리가 약조를 깨고 ${josa(o, '을', '를')} 쳤다. 전쟁이다. 다른 나라들도 우리를 덜 믿는다.` : `우리가 ${o} 땅에 군대를 들였다. ${josa(o, '과', '와')} 전쟁이다.`
           }
           if (by === other) {
             const how = why === 'betray' ? '약조를 깨고 쳐들어왔다' : why === 'attack' ? '우리 땅에 군대를 들였다'
               : why === 'tribute' ? '바치라는 요구를 우리가 거절하자 칼을 뽑았다' : why === 'demand' ? '우리가 그 요구를 거절하자 칼을 뽑았다'
-                : why === 'plot' ? '우리가 보낸 공작이 드러나 노했다' : '칼을 뽑았다'
+                : why === 'plot' ? '우리가 보낸 공작이 드러나 노했다' : why === 'council' ? '여섯 마을에 묻고 싸우기로 뜻을 모았다 · 다음 계절에 쳐들어온다'
+                  : why === 'rescue' ? '우리가 그 동맹의 도읍을 에우자 구하러 나섰다' : '칼을 뽑았다'
             return `${josa(o, '이', '가')} 우리에게 전쟁을 걸어왔다 — ${how}.`
           }
           return why === 'sow' ? `누군가의 이간으로 ${josa(o, '과', '와')} 틀어져 전쟁이 됐다.` : `${josa(o, '과', '와')} 전쟁이다.`

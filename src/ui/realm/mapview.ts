@@ -15,6 +15,7 @@ import { knows } from '../../realm/discovery.ts'
 import { postHero, rulerOf } from '../../realm/heroes.ts'
 import { crowdOf, isCoast, nodeHarvest, nodeSpecials, nodeYield } from '../../realm/economy.ts'
 import { visibleRange } from '../../realm/intel.ts'
+import { customMarks } from '../../realm/hooks.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
 import type { EdgeKind, NodeKind, Realm, REdge, RegionId, SeasonOfYear } from '../../realm/types.ts'
 import { ferryAt, landClipSvg, midOf, riversSvg, smoothPath, tidyEnds, trimPolyline, type Pt } from './mapgeo.ts'
@@ -262,7 +263,10 @@ export const MAP_CSS = `
   background: radial-gradient(circle, #fff3d4 0, #f0d9a0cc 38%, #f0d9a000 68%); }
 .map .lb .lbg.idle img { opacity: .55; filter: saturate(.4) drop-shadow(0 0 1px #000c); }
 .map .lb .lbg i { font-style: normal; font-size: .7em; font-weight: 700; color: #f3e3bd; padding-left: .35em; margin-left: .15em; border-left: 1px solid #c8a05066; }
-.map .lb .lbg i.moat { color: #bfe0ff; }
+.map .lb .lbg i.moat { color: #bfe0ff; } .map .lb .lbg i.earthwall { color: #f0c890; }
+.map .lb .lbg i.cmk { color: #ffd2a0; } .map .lb .lbg i.cmk.hot { color: #fff1c8; text-shadow: 0 0 6px #ff9a4a; animation: cmkhot 1.6s ease-in-out infinite; }
+@keyframes cmkhot { 50% { text-shadow: 0 0 12px #ffb060, 0 0 2px #fff; } }
+@media (prefers-reduced-motion: reduce) { .map .lb .lbg i.cmk.hot { animation: none; } }
 /* 겨울 고기잡이 표 — 얼어 흐려진다 */
 .map .lb .lbg img.frz { opacity: .5; filter: grayscale(1) brightness(1.25) drop-shadow(0 0 1px #7fb6d8); }
 /* 지은 것 — 목책·해자 (고을 왼쪽 위) */
@@ -632,17 +636,20 @@ export function mapHtml(
     const mist = n.tags.includes('fog') && now !== '' ? `<span class="mist" title="${now}"><img src="${art}map-world/cloud-3.webp" alt=""></span>` : ''
     const ice = n.tags.includes('moat') && season === 'winter' ? `<i class="ice" title="${now}">❄</i>` : ''
     // 지은 것 — 목책 · 해자 작은 표 (왼쪽 위). 그림만으로는 도읍·포구의 울타리가 지은 것인지 알 수 없었다
-    const dfs = (['palisade', 'moat'] as const).filter((t) => n.tags.includes(t))
+    const dfs = (['palisade', 'moat', 'earthwall'] as const).filter((t) => n.tags.includes(t))
+    // 풍습이 이 고을에 걸려 있다 — 쇠 곱 · 쇠뇌 틀 · 불씨 · 고갯목 … (규칙은 지도에 보이게 · GAP §11 · hooks.customMarks)
+    const cms = customMarks(r, n.id, me)
     // 특산·지은 것은 이름표 옆 어두운 칸에 — 고을 그림 위에 흰 동그라미로 떠 있으면 이웃 고을 것인지 헷갈리고 지도가 어지럽다
     // (형 10-24: "지역에서 생산되는 품목도 우상단 동그라미가 아니라 더 효과적이게" — 문명 6 도시 배너처럼 이름에 붙인다)
-    const tray = sp.length > 0 || fish !== '' || dfs.length > 0
-      ? `<span class="lbg${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}" title="${GOOD_NAME[g]} — 사람이 살면 난다">`).join('')}${fish}${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${t === 'palisade' ? '목책' : '해자'}</i>`).join('')}</span>`
+    const tray = sp.length > 0 || fish !== '' || dfs.length > 0 || cms.length > 0
+      ? `<span class="lbg${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}" title="${GOOD_NAME[g]} — 사람이 살면 난다">`).join('')}${fish}${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${DEF_NAME[t]}</i>`).join('')}`
+        + `${cms.map((m) => `<i class="cmk${m.hot === true ? ' hot' : ''}" title="${m.tip}">${m.label}</i>`).join('')}</span>`
       : ''
     labels.push({
       // 나라 많은 판은 지금 지명 줄을 빼 이름표를 한 줄로 — 작아야 제 고을 곁에 붙는다 (형 10-26: "마을 텍스트 바가 너무 큼 · 줄여서 제대로 그 마을의 텍스트라는 게 보이게")
       id: n.id, name: n.name, now: NODE_NOW[n.id], inl: CROWDED.has(region), x: p[0], y: p[1], s: sizeOf(n.hh), cap: n.kind === 'capital' || cap, hh: n.hh,
       cls: `${kcls}${ours ? ' me' : ''}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${far}${fr}`,
-      kit: owner !== null ? kitVars(owner) : '', emb, rel: relChip(r, me, owner), force, tray, trayW: sp.length + (fish !== '' ? 1 : 0) + dfs.length * 1.6,
+      kit: owner !== null ? kitVars(owner) : '', emb, rel: relChip(r, me, owner), force, tray, trayW: sp.length + (fish !== '' ? 1 : 0) + dfs.length * 1.6 + cms.reduce((s, m) => s + 0.6 + m.label.length * 0.62, 0),
     })
     // 맡은 장수 — 우리 고을이면 얼굴을 작게 (형 10-23: "마을에 장수 배치한 거 아직 맵에선 아무것도 안 보이던데")
     const gv = ours ? govOf.get(n.id) : undefined
@@ -849,7 +856,8 @@ function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly 
 
 /** 땅 조각의 크기 배수 — 고을 꼴로 정한다 (집 수는 판마다 바뀌어도 땅 모양은 그대로 두려고) */
 /** 지은 것의 말 — 고을 왼쪽 위 작은 표 */
-const DEF_TITLE = { palisade: '목책 — 한 번 지으면 계속 선다. 지키는 쪽이 세다', moat: '해자 — 목책 앞에서 한 번 더 막는다. 겨울엔 언다' } as const
+const DEF_TITLE = { palisade: '목책 — 한 번 지으면 계속 선다. 지키는 쪽이 세다', moat: '해자 — 목책 앞에서 한 번 더 막는다. 겨울엔 언다', earthwall: '흙성 — 흙을 다져 쌓은 성. 목책보다 훨씬 굳다 (달벌 흙성)' } as const
+const DEF_NAME = { palisade: '목책', moat: '해자', earthwall: '흙성' } as const
 
 // ───────── 길 기호 (public/realm/icon/route-* · 2026-10-20 그림 열여섯)
 

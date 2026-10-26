@@ -9,7 +9,7 @@
  *        [--drop guseul]                    B 판에서 맡은 나라의 풍습을 뺀다
  *
  * --set · --give · --drop 가 하나도 없으면 A 만 돈다.
- * 나라 하나 — 지표마다 A · B · Δ 한 줄씩 (이김 · 짐 · 출정 · 싸움 · 뽑은 병종 비 · 군대 병종 비 · 사신 · 맺음 · 선물 · 제사 · 공작 · 개척).
+ * 나라 하나 — 지표마다 A · B · Δ 한 줄씩 (이김 · 짐 · 출정 · 싸움 · 뽑은 병종 비 · 군대 병종 비 · 사신 · 맺음 · 선물 · 제사 · 공작 · 개척 · 무장 · 지음 · 풍습 줄 · 끝 쇠·곡식).
  * 나라 여럿(--all 은 판의 모든 나라) — 나라마다 한 줄: 결 · 이김 · 짐 · 출정 · 뽑은 병종 비 · 군대 병종 비 (B 가 있으면 B 와 Δ 도).
  * 「뽑은 비」는 처음부터 있던 군대(창·활 많음)를 메우느라 목표보다 기운다 — 결의 비는 「군대 비」(계절마다 서 있는 군대를 더한 것)로 본다.
  * 봇은 플레이어 자리에 앉은 같은 AI(ai.decide) — 뽑는 병종 비는 결·나라마다 (data/armymix.ts · aiKyeolMix).
@@ -81,17 +81,26 @@ interface Run {
   plots: number
   settles: number
   nodes: number
+  /** 무장 올리기 · 다 지은 목책·해자·흙성 · 이 나라에 걸린 풍습 줄 (data/customs.ts) · 끝 창고의 쇠·곡식 */
+  arms: number
+  builds: number
+  hooks: number
+  iron: number
+  grain: number
+  /** 끝에 우리 장수들(군주 빼고)의 정 평균 */
+  bond: number
 }
 
 function play(as: string, seed: number, b: boolean): Run {
   useParams(b)
-  let r: Realm = startRegion(REGION, seed, as)
+  // 풍습을 더하고 빼는 것은 판을 열기 전에 — 판을 열 때 걸리는 것(바닷가 여덟 나라의 동맹)까지 함께 바뀌게
+  const edit = b && (GIVE.length > 0 || DROP.length > 0) ? (q: Realm): void => {
+    const f = q.factions[as]
+    if (f !== undefined) f.customs = [...new Set([...customsOf(q, as), ...GIVE])].filter((c) => !DROP.includes(c))
+  } : undefined
+  let r: Realm = startRegion(REGION, seed, as, edit)
   applyTier(r, TIER)
-  if (b && (GIVE.length > 0 || DROP.length > 0)) {
-    const f = r.factions[as]
-    if (f !== undefined) f.customs = [...new Set([...customsOf(r, as), ...GIVE])].filter((c) => !DROP.includes(c))
-  }
-  const run: Run = { win: 0, lose: 0, marches: 0, battles: 0, wins: 0, drafted: {}, standing: {}, envoys: 0, envoysOk: 0, pacts: 0, gifts: 0, rites: 0, plots: 0, settles: 0, nodes: 0 }
+  const run: Run = { win: 0, lose: 0, marches: 0, battles: 0, wins: 0, drafted: {}, standing: {}, envoys: 0, envoysOk: 0, pacts: 0, gifts: 0, rites: 0, plots: 0, settles: 0, nodes: 0, arms: 0, builds: 0, hooks: 0, iron: 0, grain: 0, bond: 0 }
   for (let s = 0; s < SEASONS; s++) {
     const mine = decide(r, as, BOT)
     run.marches += mine.filter((o) => o.kind === 'march').length
@@ -106,6 +115,9 @@ function play(as: string, seed: number, b: boolean): Run {
       else if (l.kind === 'rite' && l.faction === as) run.rites++
       else if (l.kind === 'plot' && l.faction === as) run.plots++
       else if (l.kind === 'settle' && l.faction === as) run.settles++
+      else if (l.kind === 'arm' && l.faction === as) run.arms++
+      else if (l.kind === 'build' && l.faction === as && l.done) run.builds++
+      else if (l.kind === 'custom' && l.faction === as) run.hooks++
       else if (l.kind === 'battle') {
         const weAttack = r.armies[l.attacker]?.faction === as
         if (!weAttack && l.defender !== as) continue
@@ -124,6 +136,10 @@ function play(as: string, seed: number, b: boolean): Run {
   run.win = r.outcome?.kind === 'win' ? 1 : 0
   run.lose = r.outcome?.kind === 'lose' ? 1 : 0
   run.nodes = Object.values(r.nodes).filter((n) => n.owner === as).length
+  run.iron = r.stock[as]?.iron ?? 0
+  run.grain = r.stock[as]?.grain ?? 0
+  const hs = Object.values(r.heroes).filter((h) => h.faction === as && h.status === 'free' && r.factions[as]?.ruler !== h.id)
+  run.bond = hs.length > 0 ? hs.reduce((a, h) => a + (h.bond ?? P.realm.bondStart), 0) / hs.length : 0
   return run
 }
 
@@ -185,6 +201,12 @@ if (AS.length === 1) {
   row('제사/판', (s) => s.get('rites'), n2, (v) => sgn(v))
   row('공작/판', (s) => s.get('plots'), n2, (v) => sgn(v))
   row('개척/판', (s) => s.get('settles'), n2, (v) => sgn(v))
+  row('무장/판', (s) => s.get('arms'), n2, (v) => sgn(v))
+  row('지음/판', (s) => s.get('builds'), n2, (v) => sgn(v))
+  row('풍습 줄/판', (s) => s.get('hooks'), n2, (v) => sgn(v))
+  row('끝 쇠', (s) => s.get('iron'), (v) => v.toFixed(0), (v) => sgn(v, 0))
+  row('끝 곡식', (s) => s.get('grain'), (v) => v.toFixed(0), (v) => sgn(v, 0))
+  row('끝 정', (s) => s.get('bond'), (v) => v.toFixed(1), (v) => sgn(v, 1))
 } else {
   console.log(`\n${'나라'.padEnd(10)} ${'결'.padEnd(9)} ${'이김'.padStart(6)} ${'짐'.padStart(6)} ${'출정'.padStart(5)} ${'군사'.padStart(5)}  ${'뽑은 병종 비'.padEnd(17)} ${'군대 병종 비'.padEnd(17)}${HAS_B ? '│ B 이김     Δ이김   B 출정  B 뽑은 비               B 군대 비' : ''}`)
   for (const as of AS) {

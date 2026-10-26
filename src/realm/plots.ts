@@ -24,6 +24,7 @@ import { P } from '../tune/params.ts'
 import { addFavor, noteDeed, relationOf, worsen } from './diplomacy.ts'
 import { knows } from './discovery.ts'
 import { stockOf } from './economy.ts'
+import { hasCustom } from './data/customs.ts'
 import { armyOfHero, gainXp, hasTrait, heroAt, heroSeen, homeOf, isRuler, plotBonus } from './heroes.ts'
 import { alertRange } from './intel.ts'
 import { relicMul } from './relics.ts'
@@ -213,12 +214,17 @@ export function escapeChance(r: Realm, agent: string): number {
   return Math.min(R.escapeMax, Math.max(0, p))
 }
 
+/** 길 비켜 주기(변한) — 길을 막지 않는 나라에는 남의 공작도 잘 든다 (data/customs.ts) */
+function openRoads(r: Realm, target: string): number {
+  return hasCustom(r, target, 'girbikyeo') ? P.realm.girbiPlot : 0
+}
+
 /** 참값의 한 점 — 판정에 쓴다 (plotChance 의 범위 안에 든다) */
 export function plotTrueChance(
   r: Realm, faction: string, op: PlotOp, target: string, node?: string, hero?: string, agent?: string | null,
 ): number {
   const R = P.realm
-  let p = base(op) + plotBonus(r, faction)
+  let p = base(op) + plotBonus(r, faction) + openRoads(r, target)
   // 암살은 자객 대 그 장수, 구출은 보낸 이 대 옥, 나머지는 우리 꾀 대 그 나라 꾀
   p += NIGHT_OPS.has(op) ? nightTerm(r, faction, op, node, hero, agent) : R.plotPerRyak * (ourRyak(r, faction, agent) - bestRyak(r, target))
   if (ON_NODE.has(op) && node !== undefined) p -= R.plotAlertWeight * (r.watch[node]?.alert ?? 0)
@@ -234,7 +240,7 @@ export function plotChance(
 ): readonly [number, number] {
   const R = P.realm
   const ours = ourRyak(r, faction, agent)
-  let lo = base(op) + plotBonus(r, faction)
+  let lo = base(op) + plotBonus(r, faction) + openRoads(r, _target)
   let hi = lo
   if (NIGHT_OPS.has(op)) {
     const t = nightTerm(r, faction, op, node, hero, agent)

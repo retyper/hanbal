@@ -16,26 +16,45 @@ import { badgeRank, lockWhy } from './unlock.ts'
 import { CHAPTERS, chapterOfRegion } from '../../realm/data/campaign.ts'
 import { placeOf } from '../../realm/data/regions/index.ts'
 import { seasonOf } from '../../realm/calendar.ts'
-import { battleName, josa, seasonLabel } from '../../realm/data/prose.ts'
+import { UNIT_NAME, battleName, josa, seasonLabel } from '../../realm/data/prose.ts'
 import type { Realm, RegionId, ReportLine } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { winFxHtml } from './winfx.ts'
 import { levelName } from '../../realm/tier.ts'
-import { KYEOL_INFO, customDef, kyeolOf, nativeCustoms, type CustomId } from '../../realm/data/customs.ts'
+import { KYEOL_INFO, customDef, kyeolOf, nativeCustoms, type CustomId, type CustomTier } from '../../realm/data/customs.ts'
+import { KYEOL_ARMY, KYEOL_MIX, NATION_MIX, mixOf } from '../../realm/data/armymix.ts'
+import { CUSTOM_ICON } from '../../realm/data/art.ts'
+
+/** 층의 이름 (CUSTOMS §8-1) — 결에 속한 모두 · 그 나라 이야기 · 그 나라 땅 */
+const TIER_LABEL: Readonly<Record<CustomTier, string>> = { kyeol: '결 풍습', nation: '나라 고리', land: '땅이 준 한 수' }
 
 /**
- * 나라의 결과 풍습 카드 (CUSTOMS.md §7) — 결의 사서 한 문장(동사로) · 걸린 풍습마다 하는 일과 내주는 것 · 사서 한 줄.
- * 나라 고르기와 나라 판이 함께 쓴다. ids 를 주지 않으면 제 결의 풍습
+ * 나라의 개성 카드 (CUSTOMS.md §7 · §8-1 층 셋) — 결의 사서 한 문장(동사로) · 걸린 풍습마다 무엇이 되나(+)와 무엇을 내주나(−),
+ * 층(결 풍습 · 나라 고리 · 땅이 준 한 수)과 확신 표기(문헌 · 고고학 · 전승 · 땅) · 군대의 결(armymix — 병종 비).
+ * 사서 한 줄은 누르면 뜬다(data-tip). 나라 고르기 · 서막 둘째 장 · 나라 판이 이 하나를 함께 쓴다. ids 를 주지 않으면 제 것(nativeCustoms)
  */
-export function customsHtml(k: Pick<FrontKit, 'esc'>, nation: string, ids?: readonly CustomId[]): string {
-  const ky = KYEOL_INFO[kyeolOf(nation)]
-  if (ky.name === '') return ''
-  const list = ids ?? nativeCustoms(nation)
-  let h = `<div class="kyeol"><p class="kl"><b>${k.esc(ky.name)}</b> ${k.esc(ky.line)}</p>`
+export function customsHtml(k: Pick<FrontKit, 'esc'> & Partial<Pick<FrontKit, 'icon'>>, nation: string, ids?: readonly CustomId[]): string {
+  const kyeol = kyeolOf(nation)
+  const ky = KYEOL_INFO[kyeol]
+  const list = [...(ids ?? nativeCustoms(nation))].filter((id) => customDef(id).live)
+  // 결 풍습 → 나라 고리 → 땅 한 수 차례로
+  const order: Readonly<Record<CustomTier, number>> = { kyeol: 0, nation: 1, land: 2 }
+  list.sort((a, b) => order[customDef(a).tier] - order[customDef(b).tier])
+  const mix = mixOf(nation, (id) => list.includes(id))
+  const army = KYEOL_ARMY[kyeol]
+  if (ky.name === '' && list.length === 0 && army === '') return ''
+  let h = `<div class="kyeol">${ky.name !== '' ? `<p class="kl"><b>${k.esc(ky.name)}</b> ${k.esc(ky.line)}</p>` : ''}`
   for (const id of list) {
     const c = customDef(id)
-    h += `<div class="cust" data-tip="${k.esc(c.source)}"><b>${k.esc(c.name)}</b><span class="do">${k.esc(c.does)}</span><span class="co">${k.esc(c.cost)}</span></div>`
+    const tip = c.verb !== '' ? `${c.source} — ${c.verb}` : c.source
+    const ic = CUSTOM_ICON[id] !== undefined && k.icon !== undefined ? k.icon(CUSTOM_ICON[id]!, 'cuic') : ''
+    h += `<div class="cust t-${c.tier}" data-tip="${k.esc(tip)}"><b>${ic}${k.esc(c.name)}</b><span class="do">${k.esc(c.does)}</span><span class="co">${k.esc(c.cost)}</span>`
+      + `<span class="ctag"><i>${TIER_LABEL[c.tier]}</i><i class="s">${c.sure}</i></span></div>`
   }
+  // 군대의 결 — 무엇을 많이 뽑나 (남의 나라도 이 비로 뽑는다)
+  const src = NATION_MIX[nation]?.source ?? KYEOL_MIX[kyeol].source
+  const shares = mix.filter(([, w]) => w > 0).map(([u, w]) => `<i>${k.esc(UNIT_NAME[u])} ${Math.round(w * 100)}%</i>`).join('')
+  if (shares !== '') h += `<div class="carmy"${src !== '' ? ` data-tip="${k.esc(src)}"` : ''}><b>군대</b>${army !== '' ? `<span>${k.esc(army)}</span>` : ''}<span class="cmix">${shares}</span></div>`
   return h + '</div>'
 }
 
@@ -697,7 +716,17 @@ export const FRONT_CSS = `
 .ap .kyeol { margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
 .ap .kyeol .kl { margin: 0; font-size: 13px; color: #d8cfbd; } .ap .kyeol .kl b { color: var(--gold); margin-right: 4px; }
 .ap .cust { display: grid; grid-template-columns: auto 1fr; gap: 1px 8px; padding: 6px 9px; border-radius: 10px; background: #2a201599; border-left: 3px solid #c9a45a; font-size: 12.5px; }
-.ap .cust b { grid-row: span 2; align-self: center; color: #f3d48a; font-size: 14px; min-width: 52px; }
+.ap .cust b { grid-row: span 3; align-self: center; color: #f3d48a; font-size: 14px; min-width: 52px; max-width: 6.5em; word-break: keep-all; }
+.ap .cust b .cuic { display: block; width: 30px; height: 30px; margin: 0 auto 2px; }
+.ap .cust.t-nation { border-left-color: #e0763a; background: #3a1f1299; } .ap .cust.t-nation b { color: #ffc28a; }
+.ap .cust.t-land { border-left-color: #7fa86a; background: #1f2a1a99; } .ap .cust.t-land b { color: #cfe6a8; }
+.ap .cust .ctag { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; } .ap .cust .ctag i { font-style: normal; font-size: 10.5px; padding: 0 6px; border-radius: 8px; background: #ffffff14; color: #b8ab92; }
+.ap .cust .ctag i.s { color: #e6d3a8; background: #c9a45a2e; }
+.ap .carmy { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; padding: 5px 9px; border-radius: 10px; background: #1a1d2299; border-left: 3px solid #8a96a8; font-size: 12px; color: #c9cfd8; }
+/* 서막 둘째 장은 밝은 한지 위 — 결의 한 줄은 먹빛으로, 카드는 짙게 */
+.ap .prologue .kyeol .kl { color: #4a3826; } .ap .prologue .kyeol .kl b { color: #7a1f10; }
+.ap .prologue .cust, .ap .prologue .carmy { background-color: #2a2015ee; text-align: left; } .ap .prologue .cust.t-nation { background-color: #3a1f12ee; } .ap .prologue .cust.t-land { background-color: #1f2a1aee; } .ap .prologue .carmy { background-color: #1a1d22ee; }
+.ap .carmy b { color: #dfe6f0; font-size: 13px; } .ap .carmy .cmix { display: flex; flex-wrap: wrap; gap: 4px; } .ap .carmy .cmix i { font-style: normal; padding: 0 6px; border-radius: 8px; background: #ffffff12; }
 .ap .cust .do { color: #d8e6c8; } .ap .cust .co { color: #e0b0a0; }
 .ap .cust .do::before { content: '+ '; color: #9fd18b; } .ap .cust .co::before { content: '− '; color: #e08a74; }
 .ap .front-end .stats { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 8px 0; }

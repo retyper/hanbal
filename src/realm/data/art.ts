@@ -6,6 +6,7 @@
  * 지도 위 자리는 map/spring.jpg (1264×848) 위의 비율 0~1 — 변한 축소판의 [상상 배치]를 낙동강·남강 그림에 얹었다.
  */
 import type { Good, NodeKind, RegionId, RNode } from '../types.ts'
+import type { CustomId } from './customs.ts'
 import { GEO as YEONGNAM_GEO, yeongnamPos } from './regions/yeongnam.ts'
 import { placeOf, worldGeoOf } from './regions/index.ts'
 
@@ -361,6 +362,16 @@ export const NODE_POS: Readonly<Record<string, readonly [number, number]>> = {
 export const SEASON_MAP = { spring: 'spring', summer: 'summer', autumn: 'autumn', winter: 'winter' } as const
 
 /** 병종 → 아이콘 */
+/** 풍습·나라 고리·땅 한 수의 그림 (data/customs.ts) — 카드 · 보고 줄 · 처음 터지는 장면 */
+export const CUSTOM_ICON: Readonly<Partial<Record<CustomId, string>>> = {
+  chaekhwa: 'good-ox', maljangrye: 'settle-tumuli',
+  guseul: 'treasure-glass-beads', deongisoe: 'treasure-iron-ingots', girbikyeo: 'route-caravan',
+  yeoseotmaeul: 'settle-hamlet', judge: 'emblem-seal', dalcheon: 'settle-iron-town', sonoe: 'good-crossbow-trigger',
+  ireoseom: 'settle-beacon', dalbeol: 'settle-stone-fortress', geumseong: 'settle-besieged', julta: 'ask-truce',
+  soebae: 'settle-shipyard', posang: 'emblem-sailboat',
+  landIron: 'settle-forge', landPort: 'route-searoute', landReeds: 'settle-reed-ambush', landHigh: 'settle-pass', landPasture: 'settle-horse-ranch', landSodo: 'route-sotdae',
+}
+
 export const UNIT_ICON = {
   spear: 'unit-spear', bow: 'unit-archer', pike: 'unit-pike', shield: 'unit-shield-wall',
   horse: 'unit-buyeo-cavalry', crossbow: 'unit-han-crossbow', boat: 'unit-marine', // 수군은 걸어서 싸우는 그림 — 배 탄 그림(unit-boatmen)은 물 위 싸움에서만 (형 10-25)
