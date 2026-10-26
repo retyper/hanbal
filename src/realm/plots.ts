@@ -76,11 +76,12 @@ function bestRyak(r: Realm, faction: string): number {
 }
 
 /**
- * 암살 말고 공작의 우리 꾀 — 보낸 장수가 있으면 그이의 지략, 없으면 우리 나라에서 가장 지략 높은 이 (형 10-25: "누구 보낼지 선택도 … 지금은 무작위로 아무나 보내는건가")
+ * 암살 말고 공작의 우리 꾀 — 보낸 장수가 있으면 그이의 지략, 없으면 고용 밀정(plotHiredRyak)
+ * (형 10-27: "왜 사신은 사자가 있고 공작은 알아서 최선의 공작가를 골라 주는 거임?" — 사신의 사자와 같은 결: 장수를 안 보내면 보통 솜씨)
  */
 function ourRyak(r: Realm, faction: string, agent: string | null | undefined): number {
   const a = agent !== null && agent !== undefined ? r.heroes[agent] : undefined
-  return a !== undefined && a.faction === faction ? a.ryak : bestRyak(r, faction)
+  return a !== undefined && a.faction === faction ? a.ryak : P.realm.plotHiredRyak
 }
 
 const clamp = (p: number): number => Math.min(P.realm.plotMax, Math.max(P.realm.plotMin, p))
@@ -351,15 +352,15 @@ function spyLook(r: Realm, faction: string, node: string): void {
 }
 
 /**
- * 들킨 공작에서 누가 보냈는지까지 드러날 확률 (형: "어디서보낸 첩자인지 알기도 모르기도 하고").
- *   바탕 − 보낸 이의 지략 (자객 장수 · 고용 자객은 plotHiredRyak 에 고용 감산 · 그 밖의 공작은 그 나라 최고 략)
+ * 들킨 공작에서 누가 보냈는지까지 드러날 확률 (형: "어디서보낸 첩자인지 알기도 모르기도 하고") · 장수를 안 보냈으면 고용 밀정의 지략.
+ *   바탕 − 보낸 이의 지략 (보낸 장수 · 없으면 plotHiredRyak · 고용 자객은 고용 감산)
  *   + 그 고을(없으면 표적 나라 국읍)의 경계 × 계수 + 얼굴이 알려진 우리 장수가 붙잡혔으면 가산 → [최소, 최대]
  * `agent` — 암살이면 자객 장수 id 또는 null(고용 자객), 다른 공작이면 undefined.
  */
-export function exposeChance(r: Realm, faction: string, target: string, node: string | undefined, agent: string | null | undefined, agentCaptured = false): number {
+export function exposeChance(r: Realm, _faction: string, target: string, node: string | undefined, agent: string | null | undefined, agentCaptured = false): number {
   const R = P.realm
   const a = agent !== null && agent !== undefined ? r.heroes[agent] : undefined
-  const ryak = agent === undefined ? bestRyak(r, faction) : (a?.ryak ?? R.plotHiredRyak)
+  const ryak = a?.ryak ?? R.plotHiredRyak
   const at = node ?? r.factions[target]?.capital
   const alert = at !== undefined ? (r.watch[at]?.alert ?? 0) : 0
   const p = R.plotExposeBase - R.plotExposePerRyak * (ryak - 5) - (agent === null ? R.plotExposeHired : 0)

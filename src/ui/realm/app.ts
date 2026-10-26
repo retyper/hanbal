@@ -445,6 +445,12 @@ function fxHtml(r: Realm, fx: CardFx): string {
   // 아무 일 없음 — 글 대신 「곡식 0」 그림 칩 (형 10-26: "아무 일 없는 건 텍스트로 하지 말고 0 으로 이미지화")
   return h === '' ? `<span class="cnone"><b class="gz" title="오가는 것 없음">${icon(GOOD_ICON.grain, 'cgi')}0</b></span>` : h
 }
+/** 가장 큰 값의 자리 (같으면 앞 것 · 모두 음수면 -1) — 「누가 가나」 금테 */
+const bestOf = (xs: readonly number[]): number => {
+  let at = -1
+  for (const [i, x] of xs.entries()) if (x >= 0 && (at < 0 || x > xs[at]!)) at = i
+  return at
+}
 /** 큰 얼굴 — 900px 판이 있으면 그것 (알현처럼 화면 가득일 때) · 900px 판이 없는 얼굴(아이 · 몇 군주)은 320px 판으로 갈아 낀다
  *  (형 10-27: "우리 밀정 누가 갔는지 얼굴이 안 보이는데 — 찌그러진 빈 타원 동그라미밖에 없음" — 없는 bust-hd 를 불러 빈 그림이 떴다) */
 const bustHd = (h: Hero | undefined, cls: string): string =>
@@ -2450,12 +2456,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const can = (id: string): boolean => canEscort(r, me(), id) && !busy.has(id) && heroBusy(r, id) === null && handFor(r, id)
     mine.sort((a, b) => Number(can(b.id)) - Number(can(a.id)))
     const anon = !handsFull(r)
+    // 지금 가장 잘 먹힐 이에 금테 — 공작과 같은 결 (형 10-27) · 받아들일 게 뻔한 청(선물·끊기)은 안 단다
+    const goers = mine.filter((y) => can(y.id))
+    const score = (hero?: string): number => { const c = envoyChanceFor(r, me(), to, ask, compose.give, compose.take, hero); return c[0] + c[1] }
+    const best = sure ? -1 : bestOf([anon ? score() : -1, ...goers.map((y) => score(y.id))])
     let h = `<div class="who"><div class="nal">누가 가나</div><div class="wlist">`
     // 사자·쉬는 장수가 다 나갔으면 사자는 흐리게 — 고을을 맡은 장수는 몸소 간다
-    h += `<button class="wg${anon ? (compose.hero === '' ? ' on' : '') : ' off'}" data-act="chero" data-id="" ${anon ? '' : 'disabled'}>${icon('unit-scouts', 'wfc')}<b>사자</b>${anon ? feel() : '<i class="busyw">다 나갔다</i>'}</button>`
-    for (const x of mine.filter((y) => can(y.id))) {
+    h += `<button class="wg${anon ? (compose.hero === '' ? ' on' : '') : ' off'}${best === 0 ? ' bestp' : ''}" data-act="chero" data-id="" ${anon ? '' : 'disabled'}>${icon('unit-scouts', 'wfc')}<b>사자</b>${anon ? feel() : '<i class="busyw">다 나갔다</i>'}</button>`
+    for (const [gi, x] of goers.entries()) {
       const tr = (x.traits ?? []).filter((t) => t === 'charm' || (ask === 'trade' && t === 'trader')).map((t) => TRAIT[t]?.name).filter((t) => t !== undefined)[0]
-      h += `<button class="wg${compose.hero === x.id ? ' on' : ''}" data-act="chero" data-id="${x.id}">${bust(x, 'wfc')}<b>${esc(x.name)}</b>`
+      h += `<button class="wg${compose.hero === x.id ? ' on' : ''}${best === gi + 1 ? ' bestp' : ''}" data-act="chero" data-id="${x.id}">${bust(x, 'wfc')}<b>${esc(x.name)}</b>`
       h += `${x.post != null ? '<i class="gvtag">고을 맡음</i>' : ''}${tr !== undefined ? `<i>${esc(tr)}</i>` : ''}${feel(x.id)}`
       h += `</button>`
     }
@@ -2601,7 +2611,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function plotWho(r: Realm, o: Order): string {
     if (o.kind !== 'plot') return ''
     if (o.agent !== undefined) return r.heroes[o.agent]?.name ?? ''
-    return NIGHT_OPS.has(o.op) ? '고용 자객' : '알아서'
+    return NIGHT_OPS.has(o.op) ? '고용 자객' : '고용 밀정'
   }
   /** 공작 한 줄(갈래 · 노릴 곳)의 열쇠와 같은 것 — 누른 줄 바로 밑에 「누가 가나」를 펼친다 */
   type PlotTarget = ReturnType<typeof plotTargets>[number]
@@ -2622,19 +2632,26 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 장수 판에서 「공작」으로 데려온 장수가 맨 앞 · 그다음 지략 높은 순
     const ids = plotAgents(r, me()).filter((id) => !busy.has(id) && heroBusy(r, id) === null)
       .sort((a, b) => Number(b === plotAgent) - Number(a === plotAgent) || (r.heroes[b]?.ryak ?? 0) - (r.heroes[a]?.ryak ?? 0) || (a < b ? -1 : 1))
-    const btn = (agent: string, face: string, name: string, sub: string, tag = ''): string => {
-      const c = plotChance(r, me(), op, t.target, t.node, t.hero, agent === '' ? (night ? null : undefined) : agent)
-      const cost = plotCost(op, agent === '' ? null : agent)
-      const ok = handFor(r, agent) && st.grain >= cost.grain && st.iron >= cost.iron
-      return `<button class="pwho${agent !== '' && agent === plotAgent ? ' on' : ''}" data-act="plot" data-op="${op}" data-target="${t.target}" data-node="${t.node ?? ''}" data-other="${t.other ?? ''}" data-hero="${t.hero ?? ''}" data-agent="${agent}" ${ok ? '' : 'disabled'}>`
-        + `${face}<b>${esc(name)}</b>${tag}<small>${esc(sub)}</small>${plotFeel(c[0], c[1])}${costHtml({ grain: cost.grain, iron: cost.iron })}</button>`
-    }
-    let h = '<div class="pwhos"><div class="pwl">'
-    h += night ? btn('', icon('unit-archer', 'fp'), '고용 자객', '잡혀도 값만 잃는다') : btn('', icon('status-spy', 'fp'), '알아서', '꾀가 가장 높은 이의 솜씨로')
+    // 사신의 「사자」와 같은 결 — 고용 밀정(고용 자객)은 늘 있고, 우리 장수는 고른다. 지금 가장 잘 먹힐 이에 금테 (형 10-27: "둘 다 지금 가장 높은 확률의 장수가 누군지 테두리 강조해서")
+    const opts: Array<{ agent: string; face: string; name: string; sub: string; tag: string }> = [
+      night ? { agent: '', face: icon('unit-archer', 'fp'), name: '고용 자객', sub: '잡혀도 값만 잃는다', tag: '' }
+        : { agent: '', face: icon('status-spy', 'fp'), name: '고용 밀정', sub: `지략 ${P.realm.plotHiredRyak}`, tag: '' },
+    ]
     for (const id of ids.slice(0, 8)) {
       const x = r.heroes[id]
       if (x === undefined) continue
-      h += btn(id, bust(x, 'fp'), x.name, night ? `지략 ${x.ryak} · 빠져나올 길 ${Math.round(escapeChance(r, id) * 100)}%` : `지략 ${x.ryak}`, x.post != null ? '<i class="gvtag">고을 맡음</i>' : '')
+      opts.push({ agent: id, face: bust(x, 'fp'), name: x.name, sub: night ? `지략 ${x.ryak} · 빠져나올 길 ${Math.round(escapeChance(r, id) * 100)}%` : `지략 ${x.ryak}`, tag: x.post != null ? '<i class="gvtag">고을 맡음</i>' : '' })
+    }
+    const rows = opts.map((o) => {
+      const c = plotChance(r, me(), op, t.target, t.node, t.hero, o.agent === '' ? null : o.agent)
+      const cost = plotCost(op, o.agent === '' ? null : o.agent)
+      return { ...o, c, cost, ok: handFor(r, o.agent) && st.grain >= cost.grain && st.iron >= cost.iron }
+    })
+    const best = bestOf(rows.map((x) => (x.ok ? x.c[0] + x.c[1] : -1)))
+    let h = '<div class="pwhos"><div class="pwl">'
+    for (const [i, x] of rows.entries()) {
+      h += `<button class="pwho${x.agent !== '' && x.agent === plotAgent ? ' on' : ''}${i === best ? ' bestp' : ''}" data-act="plot" data-op="${op}" data-target="${t.target}" data-node="${t.node ?? ''}" data-other="${t.other ?? ''}" data-hero="${t.hero ?? ''}" data-agent="${x.agent}" ${x.ok ? '' : 'disabled'}>`
+        + `${x.face}<b>${esc(x.name)}</b>${x.tag}<small>${esc(x.sub)}</small>${plotFeel(x.c[0], x.c[1])}${costHtml({ grain: x.cost.grain, iron: x.cost.iron })}</button>`
     }
     h += '</div>'
     // 들키면 누가 보냈는지 드러날 수 있다 — 드러나면 그 나라와 크게 틀어지고 다른 나라도 우리를 덜 믿는다

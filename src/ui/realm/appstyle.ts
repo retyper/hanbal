@@ -439,7 +439,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .pwho:active { border-color: var(--gold); } .ap .pwho .fp { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
 .ap .pwho b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; } .ap .pwho small { font-size: 10.5px; color: var(--mute); line-height: 1.25; }
 /* 한 번 누르면 간다 — 장수 판에서 데려온 장수(on) · 못 가는 이(손이 다 찼다 · 값이 모자라다) · 값은 단추마다 */
-.ap .pwho.on { border-color: var(--gold); box-shadow: 0 0 0 2px #d9b36a55; } .ap .pwho:disabled { opacity: .42; cursor: default; }
+.ap .pwho.on { border-color: var(--gold); box-shadow: 0 0 0 2px #d9b36a55; }
+/* 지금 가장 잘 먹힐 이 — 금테와 별 (공작 · 사신 같은 결 · 형 10-27) */
+.ap .pwho.bestp, .ap .who .wg.bestp { position: relative; border: 2px solid #ffd27a; box-shadow: 0 0 0 1px #000, 0 0 12px #ffd27a77; }
+.ap .pwho.bestp::after, .ap .who .wg.bestp::after { content: '★'; position: absolute; top: -7px; right: -5px; width: 18px; height: 18px; border-radius: 50%; background: #ffd27a; color: #3a2a08; font-size: 11px; line-height: 18px; text-align: center; box-shadow: 0 1px 3px #000a; } .ap .pwho:disabled { opacity: .42; cursor: default; }
 .ap .pwho .cost b { font-size: 11px; } .ap .pwho .feel { max-width: 100%; white-space: normal; padding: 1px 6px; font-size: 10.5px; line-height: 1.3; text-align: center; } .ap .pwhos > p.mute { margin: 6px 0 0; font-size: 11.5px; }
 .ap .row .dest .pwarn { display: block; margin-top: 1px; font-size: 11.5px; font-weight: 600; line-height: 1.3; color: #ff9a80; white-space: normal; }
 /* 사신 단추 — 한 열 · 가로 길게 · 낌새는 오른쪽 끝 (askButtons · 형 10-25) */
