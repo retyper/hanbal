@@ -1120,11 +1120,40 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return n
   }
 
+  /** 승리 조건 넷이 얼마나 찼나 (0~1) — 우리 쪽 · 판의 길 판(pathsHtml)과 같은 셈 */
+  function pathShares(r: Realm): Array<[string, number]> {
+    if (r.region === 'tutorial' || r.scenario !== undefined) return []
+    const need = winNeed(r.region ?? 'byeonhan-mini')
+    const held = Object.values(r.factions).filter((x) => r.nodes[x.capital]?.owner === me()).length
+    const pact = pactOf(r, me())
+    const streak = r.suzerain?.[me()]?.streak ?? 0
+    const S = Math.max(1, P.realm.suzerainSeasons)
+    const io = ironOf(r, me())
+    const ri = riteOf(r, me())
+    const cl = (x: number): number => Math.max(0, Math.min(1, x))
+    return [
+      ['정복', cl(held / Math.max(1, need))],
+      // 맹주 — 손잡은 나라를 채우는 데 반, 맹약을 네 계절 버티는 데 반
+      ['맹주', pact.have.length < pact.need ? cl(pact.have.length / Math.max(1, pact.need)) * 0.5 : 0.5 + cl(streak / S) * 0.5],
+      ['철과 뱃길', io.gate ? cl(Math.min(io.score / Math.max(1, io.need), io.partners.length / Math.max(1, io.minPartners))) : 0],
+      ['큰 제사', cl(Math.min(ri.chain / Math.max(1, ri.need), ri.hh / Math.max(1, ri.hhNeed)))],
+    ]
+  }
+  /** 승리가 가깝다 — 넷 가운데 하나가 이번 계절에 문턱(pathAlertShare)을 넘으면 크게 한 번 (형 10-26: "승리 목표 달성의 80%가 되면 한번 알림") */
+  function nearWinToast(prev: Realm, next: Realm): void {
+    if (next.outcome != null) return
+    const was = new Map(pathShares(prev))
+    const T = P.realm.pathAlertShare
+    const hit = pathShares(next).filter(([k, v]) => v >= T && v < 1 && (was.get(k) ?? 0) < T)
+    if (hit.length === 0) return
+    goToast(`<span class="gtk">승리가 가깝다</span>${hit.map(([k, v]) => `<b>${k}</b> ${Math.floor(v * 100)}%`).join(' · ')} — 이대로면 곧 이긴다`, 'big')
+  }
+
   /** 잠깐 떴다 스스로 걷히는 한 줄 — 누르면 바로 닫힌다 (메모리 notices-must-dismiss · 걷힘은 CSS 애니메이션 끝에서 · 타이머 없음) */
-  function goToast(html: string): void {
+  function goToast(html: string, cls = ''): void {
     root.querySelector('.gotoast')?.remove()
     const el = document.createElement('div')
-    el.className = 'gotoast'
+    el.className = `gotoast${cls !== '' ? ` ${cls}` : ''}`
     el.innerHTML = html
     el.addEventListener('animationend', () => el.remove())
     el.addEventListener('click', () => el.remove())
@@ -4918,6 +4947,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     dexToast(recordDex(res.next))
     engraveNow(res.next) // 판이 끝났다 — 이기든 지든 장수마다 공을 판 밖 단련 공으로 (drill.ts)
     backToast(backNotes(prev, res.next, mine))
+    nearWinToast(prev, res.next)
     seasonFx(res.next.season)
     noteFaces(res.next) // 갓 난 아이 얼굴 — 보고·장면·장수 판 어디서나 (형 10-23: "하늬도 이미지가 없어 보이네 애기 태어날 때")
     ceremonyFx(prev, res.next, res.report)

@@ -174,6 +174,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .gotoast { position: absolute; left: 50%; top: calc(var(--toph) + var(--legh) + 14px); z-index: 80; transform: translateX(-50%); max-width: min(92vw, 520px); padding: 9px 16px; border-radius: 12px;
   background: #1f1710f2; border: 1px solid #c9a45a; color: #f0e2c0; font-size: 14px; text-align: center; box-shadow: 0 6px 18px #000a; cursor: pointer; animation: gotoast 2.8s ease-in-out both; }
 .ap .gotoast b { color: #ffd27a; }
+/* 승리가 가깝다 — 더 크고 오래 (5초) · 금빛 테 */
+.ap .gotoast.big { top: calc(var(--toph) + var(--legh) + 40px); padding: 14px 22px; font-size: 16px; border: 2px solid #ffd27a; background: radial-gradient(ellipse at top, #4a3612f5, #1f1710f5); box-shadow: 0 0 28px #ffd27a66, 0 8px 22px #000b; animation-duration: 5.2s; }
+.ap .gotoast .gtk { display: block; margin-bottom: 4px; font-family: var(--display); font-size: 22px; color: #ffe08a; letter-spacing: 2px; text-shadow: 0 2px 0 #000; }
 @keyframes gotoast { 0% { opacity: 0; translate: 0 -10px; } 10%, 82% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: 0 -6px; } }
 .ap .cere { position: absolute; inset: 0; z-index: 75; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; cursor: pointer;
   background: #000; animation: cin .6s ease-out both; }
