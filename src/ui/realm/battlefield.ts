@@ -19,6 +19,7 @@ import { seasonOf } from '../../realm/season.ts'
 import type { Act, Approach, Art, Cmd, Grp, Guess, Order, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { snd } from './sound.ts'
+import { artVoicePath } from './voice.ts'
 import { WIN_BUZZ, winFxHtml } from './winfx.ts'
 import { scrollInside } from './scroll.ts'
 import { morphInto } from './morph.ts'
@@ -2374,6 +2375,12 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         cut.addEventListener('click', (e) => { e.stopPropagation(); cut.remove() })
         ov.appendChild(cut)
         cutSfx = kind === 'cheer' || kind === 'call' ? BATTLE_SFX.openDrum : BATTLE_SFX.duelWin
+        // 기술이면 그 장수가 외친다 — 장수의 목소리 결로 (voice.ts)
+        const hh = prev.heroes[hero] ?? t.after.heroes[hero]
+        if (ak !== undefined && hh !== undefined) {
+          const ruler = Object.values(prev.factions).some((f) => f.ruler === hh.id)
+          timers.push(window.setTimeout(() => { if (document.visibilityState === 'visible') host.ding(artVoicePath(hh, ak, ruler), 0.95) }, 180))
+        }
       }
     }
     cutLead = null

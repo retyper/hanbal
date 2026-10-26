@@ -6,11 +6,12 @@
  *   남: 젊은 무사 young · 거친 노장 gruff · 꾀 많은 책사 sage · 늙은 장수·군주 elder · 매혹 charm
  *   여: 당찬 젊은 무사 bright · 의젓한 장수 cool · 요염한 꾀 sly · 무녀 shaman
  * 결마다 짧은 대답 셋(tap-<결>-1..3) — 탭할 때마다 돌려 가며 하나 (같은 것이 연달아 안 나오게).
+ * 결마다 장수 기술 외침 아홉(art-<결>-<기술>) — 싸움에서 그 기술을 쓰면 컷과 함께 (형 10-26: "특수기술 대사들도 · 가성 말고 힘줘서 · 애니나 게임 성우").
  * 구글 AI 스튜디오 Gemini TTS 무료 목소리에 사극 말투 지시로 뽑았다 (Enzo · Daro · Cruz · Arlo · Neno · Cleo · Kira · Lumi · Hali) —
  * 한 번에 세 줄을 뽑아 tools/split-voice.py 로 잘랐다. 들어 보는 판 realm/voice-picker.html.
  */
 import { hasTrait } from '../../realm/heroes.ts'
-import type { Hero } from '../../realm/types.ts'
+import type { Art, Hero } from '../../realm/types.ts'
 
 export type VoiceKind = 'm-young' | 'm-gruff' | 'm-sage' | 'm-elder' | 'm-charm' | 'w-bright' | 'w-cool' | 'w-sly' | 'w-shaman'
 export type VoiceLine = 'tap'
@@ -58,6 +59,11 @@ export function voicePath(h: Hero, line: VoiceLine, ruler = false): string {
   if (n > 1 && t === prev) t = (t % n) + 1
   lastTake.set(key, t)
   return `realm/voice/${key}-${t}.ogg`
+}
+
+/** 장수 기술 외침 — 그 장수의 결로 */
+export function artVoicePath(h: Hero, art: Art, ruler = false): string {
+  return `realm/voice/art-${voiceKind(h, ruler)}-${art}.ogg`
 }
 
 /** 이번에 소리를 내도 되나 — 너무 잦으면 거른다 (now 는 화면 쪽 시계) */

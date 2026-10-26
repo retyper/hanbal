@@ -38,6 +38,16 @@ for (const [title, k, lines] of GROUPS) {
     h += `<div class="row"><span class="no">${i + 1}</span><span class="nm">${t}</span><audio controls preload="none" src="voice/tap-${k}-${i + 1}.ogg"></audio></div>`
   })
 }
+const ARTS = [['snipe', '명궁의 한 발', '이 화살을 받아라!'], ['rite', '진중 굿', '천지신명이시여 굽어살피소서!'], ['sway', '항복 권유', '칼을 거두고 우리 편에 서라!'],
+  ['stand', '버텨라', '한 걸음도 물러서지 마라!'], ['ambush', '샛길 기습', '지금이다 샛길로 쳐라!'], ['vanguard', '선봉에 선다', '나를 따르라!'],
+  ['feint', '거짓 퇴각', '물러나는 척하라!'], ['order', '진을 다잡는다', '진을 갖춰라!'], ['shout', '큰 외침', '두려워 마라 우리가 이긴다!']]
+h += `<h1 style="margin-top:40px">싸움 기술 외침 — 장수가 기술을 쓰면 컷과 함께</h1><p>애니·게임 성우처럼 · 가성 없이 가슴소리로 힘주어 (형 10-26). 결마다 아홉.</p>`
+for (const [title, k] of GROUPS) {
+  h += `<h2>${title}</h2>`
+  ARTS.forEach(([a, nm, t], i) => {
+    h += `<div class="row"><span class="no">${i + 1}</span><span class="nm">${nm} — ${t}</span><audio controls preload="none" src="voice/art-${k}-${a}.ogg"></audio></div>`
+  })
+}
 document.getElementById('list').innerHTML = h
 </script>
 </body></html>
