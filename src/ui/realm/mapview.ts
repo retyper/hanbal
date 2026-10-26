@@ -210,6 +210,13 @@ export const MAP_CSS = `
 .ap.hide-flags .map .lb .lbe { display: none; } .ap.hide-force .map .lb .lbf { display: none; }
 .map .lb .star { font-style: normal; color: #b8860b; margin-right: 2px; text-shadow: 0 0 2px #fff8d0, 0 0 3px #fff8d0; } /* 도읍 (형: "수도같은건 별표해야하지 않나?") */
 /* 지금 땅이름 줄은 가까이 볼 때만 (멀리서는 배너가 한 줄로 작게) */
+/* 빽빽한 판을 멀리 볼 때 — 이름표의 꾸밈 칩(목책·특산)과 같은 나라 고을 사이 점선은 가까이 볼 때만 (형 10-26: "이미지랑 마을 이름 텍스트 서로 자리 차지") */
+.map[data-zl="far"][data-region="yeongnam"] .lb .lbg, .map[data-zl="far"][data-region="south"] .lb .lbg, .map[data-zl="far"][data-region="world"] .lb .lbg { display: none; }
+.map[data-zl="far"][data-region="yeongnam"] svg .tw, .map[data-zl="far"][data-region="south"] svg .tw, .map[data-zl="far"][data-region="world"] svg .tw { display: none; }
+/* 빽빽한 판을 멀리 볼 때 — 길은 옅게, 길 기호(소달구지·돌다리…)와 남의 군세 어림 칩은 가까이 볼 때만. 막힌 길의 ✕ 는 남는다 */
+.map[data-zl="far"][data-region="yeongnam"] .ly-roads, .map[data-zl="far"][data-region="south"] .ly-roads, .map[data-zl="far"][data-region="world"] .ly-roads { opacity: .62; }
+.map[data-zl="far"][data-region="yeongnam"] svg .rsign, .map[data-zl="far"][data-region="south"] svg .rsign, .map[data-zl="far"][data-region="world"] svg .rsign { display: none; }
+.map[data-zl="far"][data-region="yeongnam"] .lb .lbf, .map[data-zl="far"][data-region="south"] .lb .lbf, .map[data-zl="far"][data-region="world"] .lb .lbf { display: none; }
 .map[data-zl="far"] .lb small { display: none; } .map[data-zl="far"] .lb small.nowi, .map .lb small.nowi { display: inline; }
 .map .lb small { display: block; font-size: .74em; font-weight: 500; color: var(--ink, #5a4a36); opacity: .78; margin-top: -2px; }
 .map .lb.k-free small { color: #5a4a36; }
@@ -914,14 +921,15 @@ function provincesSvg(
     const col = FACTION_ART[(o ?? o2)!]?.color ?? '#ccc'
     // 같은 나라 고을 사이 — 옛 지도의 고을 금처럼 긴 점·짧은 점이 번갈아 (형 10-24: "마을 테두리도 확실하고" · 10-26: "마을들 테두리 고도화").
     // 밑에 한지 빛 가는 띠를 깔아 짙은 땅 위에서도 끊긴 금이 보인다. 나라 둘레의 굵은 띠보다는 한참 낮은 위계
+    // 금은 덜 긋는다 — 줄이 몇 겹씩 돌아 지도가 어지러웠다 (형 10-26: "국경 영역도 너무 몇 줄씩 테두리 두르고 있어서 너무 복잡")
     if (o === o2) {
+      // 같은 나라 고을 사이 — 가는 점선 하나만 (밑 띠는 걷었다 · 빽빽한 판을 멀리 볼 땐 숨는다 .tw)
       const a = dim(o) ? 0.1 : 1
-      lines += `<path d="${e.d}" stroke="#f3e6c8" stroke-width="${(3 * k).toFixed(1)}" opacity="${(0.28 * a).toFixed(2)}"/>`
-      lines += `<path d="${e.d}" stroke="color-mix(in srgb, ${col} 45%, #2a1d10)" stroke-width="${(1.6 * k).toFixed(1)}" stroke-dasharray="${(7 * k).toFixed(1)} ${(3.5 * k).toFixed(1)} ${(1.2 * k).toFixed(1)} ${(3.5 * k).toFixed(1)}" opacity="${(0.8 * a).toFixed(2)}"/>`
+      lines += `<path class="tw" d="${e.d}" stroke="color-mix(in srgb, ${col} 45%, #2a1d10)" stroke-width="${(1.2 * k).toFixed(1)}" stroke-dasharray="${(5 * k).toFixed(1)} ${(4 * k).toFixed(1)}" opacity="${(0.5 * a).toFixed(2)}"/>`
     } else {
-      // 나라의 바깥 둘레 — 두 쪽 저마다 제 색 띠를 안쪽에 갖는다. 금 자체는 짙은 먹선으로 또렷하게 (붓으로 그은 띠의 바깥 테)
+      // 나라의 바깥 둘레 — 두 쪽 저마다 제 색 선을 안쪽에 갖는다. 금 자체는 가는 먹선 하나
       for (const x of [o, o2]) if (x !== null && own.has(x)) rim.set(x, (rim.get(x) ?? '') + e.d)
-      lines += `<path d="${e.d}" stroke="#1a120a" stroke-width="${((e.j < 0 ? 2.2 : 2.4) * k).toFixed(1)}" opacity="${e.j < 0 && dim(o) ? 0.1 : 0.85}"/>`
+      lines += `<path d="${e.d}" stroke="#1a120a" stroke-width="${(1.3 * k).toFixed(1)}" opacity="${e.j < 0 && dim(o) ? 0.1 : 0.7}"/>`
     }
     // 우리 땅의 둘레 — 짙은 띠 위에 금빛
     if ((o === me) !== (o2 === me)) gold += e.d
@@ -930,15 +938,12 @@ function provincesSvg(
   let crisp = ''
   let cps = ''
   for (const [o, d] of [...rim].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
-    const { c: col, c2 } = nationKit(o)
+    const { c: col } = nationKit(o)
     cps += `<clipPath id="rm-own-${o}"><path d="${own.get(o)!}"/></clipPath>`
-    band += `<path d="${d}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${(o === me ? 30 : 24) * k}" opacity="${o === me ? 0.55 : 0.48}"/>`
-    // 둘레 안쪽의 또렷한 제 색 선 — 이웃 나라와 맞닿으면 두 색이 나란히 선다 (문명 6 국경).
-    // 그 안쪽에 둘째 빛 가는 띠 — 바탕 빛이 비슷한 이웃과도 국경에서 갈린다 (kitcolor.ts)
-    // 맨 안쪽엔 먹빛 머리카락 선 하나 — 띠가 땅빛에 번지지 않고 칠한 띠로 끝난다
-    crisp += `<path d="${d}" clip-path="url(#rm-own-${o})" stroke="#1a120a" stroke-width="${(15 * k).toFixed(1)}" opacity=".5"/>`
-    crisp += `<path d="${d}" clip-path="url(#rm-own-${o})" stroke="${c2}" stroke-width="${(13 * k).toFixed(1)}" opacity=".9"/>`
-    crisp += `<path d="${d}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${(9 * k).toFixed(1)}" opacity=".95"/>`
+    // 둘레 안쪽의 번진 제 색 띠 하나 + 또렷한 제 색 선 하나 — 이웃과 맞닿으면 두 색이 나란히 선다 (문명 6 국경).
+    // 둘째 빛 띠·먹빛 테는 걷었다 — 비슷한 빛의 이웃은 이름표의 두 색(kitcolor)으로 가른다 (형 10-26: "몇 줄씩 테두리")
+    band += `<path d="${d}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${(o === me ? 24 : 18) * k}" opacity="${o === me ? 0.45 : 0.36}"/>`
+    crisp += `<path d="${d}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${(6 * k).toFixed(1)}" opacity=".9"/>`
   }
   const blurK = (3 * k).toFixed(1)
   let h = `<defs><filter id="rm-band" x="-2%" y="-2%" width="104%" height="104%"><feGaussianBlur stdDeviation="${blurK}"/></filter>${cps}</defs>`
@@ -946,7 +951,7 @@ function provincesSvg(
   // 우리 땅 — 옅은 금빛 (빗금은 비 같다고 해서 뺐다 · 형: "비오는줄알았다"). 금빛 경계가 천천히 숨 쉰다
   if (mine !== '') h += `<path d="${mine}" fill="#ffe7a8" opacity=".13"/>`
   h += `<g fill="none" stroke-linecap="round" stroke-linejoin="round">${lines}`
-  if (gold !== '') h += `<path d="${gold}" stroke="#2a1d10" stroke-width="${(6.5 * k).toFixed(1)}" opacity=".55"/><path class="mine-edge" d="${gold}" stroke="#ffd27a" stroke-width="${(3.2 * k).toFixed(1)}"/>`
+  if (gold !== '') h += `<path class="mine-edge" d="${gold}" stroke="#ffd27a" stroke-width="${(3 * k).toFixed(1)}"/>`
   return h + `</g></g>`
 }
 
