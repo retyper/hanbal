@@ -2247,7 +2247,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const to = a.march!.to
       const on = guards.includes(to)
       const can = on || (canGuard(r, me(), to) && left().grain >= guardCost().grain)
-      h += `<div class="row">${emblem(a.faction)}<span>${esc(realm!.factions[a.faction]?.name ?? '')} → <b>${esc(realm!.nodes[to]?.name ?? '')}</b> · ${a.march!.left}계절${suspect.has(a.id) ? ' · <span class="sus">몰래 오는 낌새</span>' : ''}</span>`
+      h += `<div class="row foerow">${emblem(a.faction)}<span class="fet">${esc(realm!.factions[a.faction]?.name ?? '')} → <b>${esc(realm!.nodes[to]?.name ?? '')}</b> · ${a.march!.left}계절${suspect.has(a.id) ? ' · <span class="sus">몰래 오는 낌새</span>' : ''}</span>`
       h += `<button class="btn sm ${on ? 'on' : ''}" data-act="guard" data-node="${to}" ${can ? '' : 'disabled'}>경계 강화 ${costHtml({ grain: guardCost().grain })}</button></div>`
     }
     return h

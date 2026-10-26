@@ -312,6 +312,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .units { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 4px; font-size: 14px; }
 .ap .go { margin-top: 6px; color: var(--bad); font-weight: 600; }
 .ap .rows { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+/* 다가오는 적 — 폰에서 「경계 강화」가 화면 밖으로 나가 가로 밀림이 생겼다 (형 10-27): 글은 줄어들고 단추는 다음 줄로 */
+.ap .foerow { flex-wrap: wrap; } .ap .foerow .fet { flex: 1 1 10em; min-width: 0; overflow-wrap: anywhere; } .ap .foerow .btn.sm { flex: none; margin-left: auto; }
 .ap .row { display: flex; align-items: center; gap: 6px; width: 100%; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--line);
   background: #241a12; color: var(--ink); font: inherit; font-size: 14px; text-align: left; cursor: pointer; box-sizing: border-box; margin: 3px 0; }
 .ap .row.on { border-color: #e0bd78; background: #3a3020; } .ap .row:disabled { opacity: .45; cursor: default; }
