@@ -856,7 +856,9 @@ export function hhGrowth(r: Realm, node: string): { per: number; why: string[] }
 /** 이 계절에 나라가 군대를 먹이는 데 드는 곡식 */
 export function upkeepOf(r: Realm, faction: string, winter: boolean): number {
   // 제 땅 밖에 나간 군사는 더 먹는다 — 절인 양식(소금)이 있으면 그대로
-  const away = goodOf(stockOf(r, faction), 'salt') >= awaySalt(r, faction) ? 0 : awayMen(r, faction) * (P.realm.awayRation - 1)
+  const away = (goodOf(stockOf(r, faction), 'salt') >= awaySalt(r, faction) ? 0 : awayMen(r, faction) * (P.realm.awayRation - 1))
+    // 책화(동예) — 남의 땅을 밟으면 물어내야 한다: 밖에 나간 군사는 군량이 곱으로 든다 (data/customs.ts)
+    + (hasCustom(r, faction, 'chaekhwa') ? awayMen(r, faction) * P.realm.chaekhwaAway : 0)
   return Math.ceil((menOf(r, faction) + gluttonMen(r, faction) + away) * P.realm.rationPerSoldier * (winter ? P.realm.winterRation : 1))
 }
 

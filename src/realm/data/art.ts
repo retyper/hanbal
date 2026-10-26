@@ -364,6 +364,7 @@ export const SEASON_MAP = { spring: 'spring', summer: 'summer', autumn: 'autumn'
 /** 병종 → 아이콘 */
 /** 풍습·나라 고리·땅 한 수의 그림 (data/customs.ts) — 카드 · 보고 줄 · 처음 터지는 장면 */
 export const CUSTOM_ICON: Readonly<Partial<Record<CustomId, string>>> = {
+  chaekhwa: 'good-ox', maljangrye: 'settle-tumuli',
   guseul: 'treasure-glass-beads', deongisoe: 'treasure-iron-ingots', girbikyeo: 'route-caravan',
   yeoseotmaeul: 'settle-hamlet', judge: 'emblem-seal', dalcheon: 'settle-iron-town', sonoe: 'good-crossbow-trigger',
   ireoseom: 'settle-beacon', dalbeol: 'settle-stone-fortress', geumseong: 'settle-besieged', julta: 'ask-truce',

@@ -317,6 +317,13 @@ function customText(line: Extract<ReportLine, { kind: 'custom' }>, viewer: strin
       return ours ? `쇠 실은 배가 떴다 — 쇠 ${n}덩이를 내고 곡식 ${m}섬을 사 왔다.` : null
     case 'posang':
       return ours ? `바닷가 여덟 나라 — ${josa(o, '과', '와')} 손잡고 시작한다. 가락이 우리를 미워한다.` : null
+    case 'chaekhwa':
+      if (ours) return `${at}에 쳐들어온 ${josa(o, '이', '가')} 책화를 물어야 한다 — 첫 합에 기세가 꺾였다.`
+      if (line.other === viewer) return `${f} 땅을 밟았다 — 책화를 물어야 해서 우리 군대의 기세가 꺾였다.`
+      return null
+    case 'maljangrye':
+      if (!ours) return null
+      return n > 0 ? `가을 장례 — 소와 말 ${n}필을 바쳐 크게 묻었다. 장수들의 정이 깊어졌다.` : '가을 장례 — 소를 바쳐 크게 묻었다. 장수들의 정이 깊어졌다.'
     case 'deongisoe':
       return ours ? `쇠 ${n}덩이로 징병값을 냈다 — 쇠가 곧 돈이다.` : null
     case 'girbikyeo':

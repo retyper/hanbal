@@ -16,7 +16,7 @@ import { YEONGNAM_NATIONS } from '../../src/realm/data/nations-yeongnam.ts'
 import { startRegion } from '../../src/realm/data/regions/index.ts'
 import { YEONGNAM_NATION_IDS, startYeongnam } from '../../src/realm/data/regions/yeongnam.ts'
 import { bigTwo, envoyTrueChance, favorOf, judgeOf, pairKey, relationOf } from '../../src/realm/diplomacy.ts'
-import { armCost, canBuild, draftLimit, draftNeeds, draftPay, militiaMen, nextBuild, nodeYield, riteCost, sonoeRoom, stockOf } from '../../src/realm/economy.ts'
+import { armCost, canBuild, draftLimit, draftNeeds, draftPay, militiaMen, nextBuild, nodeYield, riteCost, sonoeRoom, stockOf, upkeepOf } from '../../src/realm/economy.ts'
 import { concealBonus, customMarks, passExtra, riseState, siegeFort } from '../../src/realm/hooks.ts'
 import { advance, checkOutcome, draftable, fortMul } from '../../src/realm/season.ts'
 import { reportText } from '../../src/realm/data/prose.ts'
@@ -357,5 +357,36 @@ describe('나라 고르기 · 서막 둘째 장의 카드', () => {
     }
     // 골벌은 쇠뇌가 군대 비에 든다
     assert.ok(mixOf('golbeol', (id) => nativeCustoms('golbeol').includes(id)).some(([u]) => u === 'crossbow'))
+  })
+})
+
+describe('남부 판 대비 셋 (S3)', () => {
+  it('책화(동예) — 우리 땅에 쳐들어온 적은 첫 합 사기가 깎이고, 밖에 나간 우리 군사는 군량이 곱으로 든다', () => {
+    const r = startRegion('south', 1, 'mokji')
+    assert.ok(hasCustom(r, 'maek', 'chaekhwa') && hasCustom(r, 'siljik', 'chaekhwa') && !hasCustom(r, 'mokji', 'chaekhwa'))
+    // 맥국 군대를 남의 땅에 세워 본다 — 군량(upkeep)이 책화 없는 판보다 크다
+    const a = Object.values(r.armies).find((x) => x.faction === 'maek')!
+    const foreign = Object.values(r.nodes).find((n) => n.owner !== null && n.owner !== 'maek' && n.kind !== 'sodo')!
+    a.at = foreign.id
+    assert.ok(upkeepOf(r, 'maek', false) > upkeepOf(without(r, 'maek', 'chaekhwa'), 'maek', false))
+    assert.ok(customMarks(r, Object.values(r.nodes).find((n) => n.owner === 'maek' && Object.values(r.edges).some((e) => (e.a === n.id || e.b === n.id) && r.nodes[e.a === n.id ? e.b : e.a]?.owner !== 'maek'))!.id, 'maek').some((m) => m.id === 'chaekhwa'))
+  })
+
+  it('말 장례(마한) — 기병을 못 뽑고, 가을마다 장례로 장수들의 정이 오른다', () => {
+    let r = startRegion('south', 1, 'mokji')
+    const cap = r.nodes[r.factions['mokji']!.capital]!
+    assert.ok(!draftable(cap, r, 'mokji').includes('horse'))
+    assert.ok(draftable(cap, r, 'maek').includes('horse'))
+    while (r.season % 4 !== 2) r = advance(r, []).next // 가을
+    stockOf(r, 'mokji').grain = 1000
+    stockOf(r, 'mokji').horse = 3
+    const h = Object.values(r.heroes).find((x) => x.faction === 'mokji' && x.status === 'free' && r.factions['mokji']!.ruler !== x.id)!
+    const b0 = h.bond ?? P.realm.bondStart
+    const { next, report } = advance(r, [])
+    const l = customLines(report.lines, 'maljangrye').filter((x) => x.faction === 'mokji')
+    assert.equal(l.length, 1)
+    assert.equal(l[0]!.n, 3)
+    assert.ok((next.heroes[h.id]!.bond ?? 0) >= b0 + P.realm.maljangBond)
+    assert.equal(next.stock['mokji']!.horse ?? 0, 0)
   })
 })

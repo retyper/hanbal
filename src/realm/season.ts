@@ -472,7 +472,10 @@ export function extendPlan(p: Realm, orders: readonly Order[]): void {
 /** 쇠뇌(골벌) — 쇠뇌 틀이 있는 나라는 쇠뇌병도 (`r`·`faction` 을 주면 그 나라 풍습까지 · data/customs.ts) */
 export function draftable(node: RNode, r?: Realm, faction?: string): readonly UnitKind[] {
   const base: readonly UnitKind[] = node.kind === 'port' ? ['spear', 'bow', 'shield', 'horse', 'boat'] : ['spear', 'bow', 'shield', 'horse']
-  return r !== undefined && faction !== undefined && hasCustom(r, faction, 'sonoe') ? [...base, 'crossbow'] : base
+  if (r === undefined || faction === undefined) return base
+  // 말 장례(마한) — 말을 타지 않는다: 기병을 뽑지 못한다
+  const walk = hasCustom(r, faction, 'maljangrye') ? base.filter((u) => u !== 'horse') : base
+  return hasCustom(r, faction, 'sonoe') ? [...walk, 'crossbow'] : walk
 }
 
 /** 징병 (FLOW §2) — 규칙에 안 맞으면 아무 일도 없다. 그 고을에 쉬는 제 군대가 있으면 거기 든다 */
@@ -1212,7 +1215,10 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   // 풍습의 사기 — 여섯 마을의 뜻(사로)은 치는 쪽 + · 고갯목(땅)은 고갯길·높은 터로 쳐들어온 쪽 − (잠든 채 들이쳐졌으면 없다)
   const rocks = !surprised && (edgeKind === 'pass' || highGround) && hasCustom(r, defFaction, 'landHigh')
   if (rocks) noteCustom(r, lines, defFaction, 'landHigh', { node: node.id, other: a.faction })
-  const atkCustom = (hasCustom(r, a.faction, 'yeoseotmaeul') ? R.saroMorale : 0) - (rocks ? R.landHighMorale : 0)
+  // 책화(동예) — 우리 땅을 밟은 적은 물어내야 한다: 첫 합의 사기가 깎인다 (그 고을이 지키는 나라의 땅일 때)
+  const fine = node.owner === defFaction && hasCustom(r, defFaction, 'chaekhwa')
+  if (fine) noteCustom(r, lines, defFaction, 'chaekhwa', { node: node.id, other: a.faction })
+  const atkCustom = (hasCustom(r, a.faction, 'yeoseotmaeul') ? R.saroMorale : 0) - (rocks ? R.landHighMorale : 0) - (fine ? R.chaekhwaMorale : 0)
   const defTerrain: Terrain = surprised ? {} : {
     ...(edgeKind === 'ford' || edgeKind === 'reeds' ? { ford: true } : {}),
     ...(edgeKind === 'pass' || highGround ? { rocks: true } : {}),

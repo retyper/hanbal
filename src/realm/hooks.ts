@@ -11,6 +11,7 @@ import { seasonOf } from './calendar.ts'
 import { customDef, hasCustom, holders, noteCustom, noteOnce, type CustomId } from './data/customs.ts'
 import { addGood, framesOf, goodOf, harvestModOf, isRiverside, sodoNeighbors, stockOf } from './economy.ts'
 import { addFavor, declareWar, makeTruce, relationOf } from './diplomacy.ts'
+import { addBond } from './heroes.ts'
 import type { Army, EdgeKind, Realm, ReportLine } from './types.ts'
 
 const menIn = (a: Army): number => Object.values(a.mix).reduce((s, v) => s + (v ?? 0), 0)
@@ -104,6 +105,7 @@ export function stepCustoms(r: Realm, lines: ReportLine[]): void {
     if (mate !== undefined) noteOnce(r, lines, f, 'posang', { other: mate })
   }
   stepRise(r, lines)
+  stepFuneral(r, lines)
   stepIronShip(r, lines)
   stepPasture(r, lines)
   stepSodoSkip(r, lines)
@@ -182,6 +184,26 @@ function stepRise(r: Realm, lines: ReportLine[]): void {
     }
     lines.push({ kind: 'take', faction: f, node: cap })
     noteCustom(r, lines, f, 'ireoseom', { node: cap, other: holder, n: men })
+  }
+}
+
+/**
+ * 말 장례(마한) — 가을마다 곡식(소)과 가진 말을 장례에 바쳐 크게 묻는다. 군주 말고 우리 장수마다 정이 오른다
+ * (「牛馬盡於送死」 — 소와 말은 장례에 다 쓴다). 곡식이 모자라면 그해는 거른다
+ */
+function stepFuneral(r: Realm, lines: ReportLine[]): void {
+  const R = P.realm
+  if (seasonOf(r.season) !== 'autumn') return
+  for (const f of holders(r, 'maljangrye')) {
+    const s = stockOf(r, f)
+    if (s.grain < R.maljangGrain) continue
+    const horses = Math.max(0, Math.floor(goodOf(s, 'horse')))
+    s.grain -= R.maljangGrain
+    if (horses > 0) addGood(r, f, 'horse', -horses)
+    const d = R.maljangBond + Math.min(R.maljangBond, horses * R.maljangHorseBond)
+    const heroes = Object.values(r.heroes).filter((h) => h.faction === f && h.status === 'free').sort((a, b) => (a.id < b.id ? -1 : 1))
+    for (const h of heroes) addBond(r, h, d, lines)
+    noteCustom(r, lines, f, 'maljangrye', { n: horses, m: Math.round(d) })
   }
 }
 
@@ -276,6 +298,9 @@ export function customMarks(r: Realm, nodeId: string, viewer: string): CustomMar
   if (owner !== viewer || owner === null) return out
   const has = (id: CustomId): boolean => hasCustom(r, owner, id)
   const cap = r.factions[owner]?.capital === nodeId
+  // 책화 — 남의 땅과 맞닿은 우리 고을 (경계): 들어온 적은 물어내야 한다
+  if (has('chaekhwa') && nextTo(r, nodeId).some((x) => { const o = r.nodes[x]?.owner; return o != null && o !== owner && r.nodes[x]?.kind !== 'sodo' })) out.push({ id: 'chaekhwa', label: '책화', tip: '경계 — 이리로 쳐들어온 적은 물어내야 해서 첫 합에 기세가 꺾인다' })
+  if (cap && has('maljangrye')) out.push({ id: 'maljangrye', label: '말 장례', tip: '가을마다 소·말을 장례에 바쳐 장수들의 정이 오른다 · 기병은 못 뽑는다', hot: season === 'autumn' })
   if (n.kind === 'ironMine' && has('dalcheon')) out.push({ id: 'dalcheon', label: '쇠 곱', tip: `${customDef('dalcheon').name} — 쇠가 곱으로 난다 · 여기서는 군사를 못 뽑는다` })
   if (n.kind === 'ironMine' && has('landIron')) out.push({ id: 'landIron', label: '쇠 다루기', tip: '무장을 올리는 데 쇠가 적게 든다 — 이웃이 이 철광을 노린다' })
   if (cap && has('sonoe')) out.push({ id: 'sonoe', label: `쇠뇌 ${framesOf(r, owner)}틀`, tip: '쇠뇌 틀 — 틀마다 쇠뇌병을 세운다 · 방패를 뚫는다' })

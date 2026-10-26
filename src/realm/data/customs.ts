@@ -81,9 +81,10 @@ const def = (d: Def): CustomDef => ({ tier: 'kyeol', sure: '문헌', verb: '', .
 
 export const CUSTOMS: readonly CustomDef[] = [
   def({
-    id: 'chaekhwa', kyeol: 'ye', name: '책화', layer: 'rule', seed: '경계', pack: 'base', wave: 1, live: false,
-    does: '우리 땅에 쳐들어온 적군은 첫 합에서 사기가 깎인다',
-    cost: '우리 군대가 남의 땅으로 나가면 군량이 더 든다',
+    id: 'chaekhwa', kyeol: 'ye', name: '책화', layer: 'rule', seed: '경계', pack: 'base', wave: 1, live: true,
+    does: '남의 땅을 밟으면 물어내야 한다 — 이웃이 우리 땅을 덜 넘보고, 쳐들어온 적군은 첫 합에서 사기가 깎인다',
+    cost: '우리 군대가 남의 땅에 나가 있으면 군량이 곱으로 든다',
+    verb: '동예로 하면 멀리 치러 나가지 못해서(남의 땅에선 군량이 곱으로 든다), 우리 땅에 들어온 적에게 물어내게 한다',
     source: '『삼국지』 위서 예전 — 읍락이 서로 침범하면 사람·소·말로 물어내게 하니, 이를 책화라 한다',
   }),
   def({
@@ -112,9 +113,10 @@ export const CUSTOMS: readonly CustomDef[] = [
     source: '『삼국지』 위서 한전 — 구슬을 재보로 여기고, 금·은·비단은 보배로 여기지 않는다',
   }),
   def({
-    id: 'maljangrye', kyeol: 'mahan', name: '말 장례', layer: 'family', seed: '무덤', pack: 'base', wave: 1, live: false,
-    does: '장수가 죽으면 장례에 소·말을 바쳐 집안 장수의 정이 크게 오른다',
-    cost: '말을 타지 않아 기병을 뽑지 못한다 — 이 풍습을 버려야 기병이 열린다',
+    id: 'maljangrye', kyeol: 'mahan', name: '말 장례', layer: 'family', seed: '무덤', pack: 'base', wave: 1, live: true,
+    does: '가을마다 소·말을 장례에 바쳐 크게 묻는다 — 장수들의 정이 오른다 (믿는 장수는 군대의 사기를 올린다)',
+    cost: '말을 타지 않아 기병을 뽑지 못한다 · 장례에 곡식과 말이 든다',
+    verb: '마한으로 하면 기병을 뽑지 못해서, 장례로 묶인 장수들의 정으로 싸운다',
     source: '『삼국지』 위서 한전 — 소와 말을 탈 줄 모르고, 소와 말은 장례에 다 쓴다',
   }),
   def({

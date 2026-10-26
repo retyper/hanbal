@@ -70,6 +70,8 @@ function focus(r: Realm, faction: string, to: string): number {
     : (hasCustom(r, tn.owner, 'deongisoe') && goodOf(stockOf(r, tn.owner), 'iron') >= P.realm.deongiCovet ? P.realm.deongiFocus : 0)
       + (tn.kind === 'ironMine' && hasCustom(r, tn.owner, 'landIron') ? P.realm.landIronFocus : 0)
       + (r.factions[tn.owner]?.capital === to && hasCustom(r, faction, 'geumseong') ? P.realm.siegeFocus : 0)
+      // 책화(동예) — 그 땅을 밟으면 물어내야 한다: 이웃이 덜 쳐 볼 만하게 본다
+      - (hasCustom(r, tn.owner, 'chaekhwa') ? P.realm.chaekhwaDeter : 0)
   // 힘의 균형 — 앞서가는 나라(도읍 둘 또는 힘 3할)는 모두가 막으려 한다 (stance.leaderOf, 제 정보로 본다)
   const owner = r.nodes[to]?.owner ?? null
   const lead = owner !== null && owner !== faction && leaderFor(r, faction) === owner ? P.realm.aiLeaderFocus : 0

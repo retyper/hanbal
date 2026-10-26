@@ -87,6 +87,8 @@ interface Run {
   hooks: number
   iron: number
   grain: number
+  /** 끝에 우리 장수들(군주 빼고)의 정 평균 */
+  bond: number
 }
 
 function play(as: string, seed: number, b: boolean): Run {
@@ -98,7 +100,7 @@ function play(as: string, seed: number, b: boolean): Run {
   } : undefined
   let r: Realm = startRegion(REGION, seed, as, edit)
   applyTier(r, TIER)
-  const run: Run = { win: 0, lose: 0, marches: 0, battles: 0, wins: 0, drafted: {}, standing: {}, envoys: 0, envoysOk: 0, pacts: 0, gifts: 0, rites: 0, plots: 0, settles: 0, nodes: 0, arms: 0, builds: 0, hooks: 0, iron: 0, grain: 0 }
+  const run: Run = { win: 0, lose: 0, marches: 0, battles: 0, wins: 0, drafted: {}, standing: {}, envoys: 0, envoysOk: 0, pacts: 0, gifts: 0, rites: 0, plots: 0, settles: 0, nodes: 0, arms: 0, builds: 0, hooks: 0, iron: 0, grain: 0, bond: 0 }
   for (let s = 0; s < SEASONS; s++) {
     const mine = decide(r, as, BOT)
     run.marches += mine.filter((o) => o.kind === 'march').length
@@ -136,6 +138,8 @@ function play(as: string, seed: number, b: boolean): Run {
   run.nodes = Object.values(r.nodes).filter((n) => n.owner === as).length
   run.iron = r.stock[as]?.iron ?? 0
   run.grain = r.stock[as]?.grain ?? 0
+  const hs = Object.values(r.heroes).filter((h) => h.faction === as && h.status === 'free' && r.factions[as]?.ruler !== h.id)
+  run.bond = hs.length > 0 ? hs.reduce((a, h) => a + (h.bond ?? P.realm.bondStart), 0) / hs.length : 0
   return run
 }
 
@@ -202,6 +206,7 @@ if (AS.length === 1) {
   row('풍습 줄/판', (s) => s.get('hooks'), n2, (v) => sgn(v))
   row('끝 쇠', (s) => s.get('iron'), (v) => v.toFixed(0), (v) => sgn(v, 0))
   row('끝 곡식', (s) => s.get('grain'), (v) => v.toFixed(0), (v) => sgn(v, 0))
+  row('끝 정', (s) => s.get('bond'), (v) => v.toFixed(1), (v) => sgn(v, 1))
 } else {
   console.log(`\n${'나라'.padEnd(10)} ${'결'.padEnd(9)} ${'이김'.padStart(6)} ${'짐'.padStart(6)} ${'출정'.padStart(5)} ${'군사'.padStart(5)}  ${'뽑은 병종 비'.padEnd(17)} ${'군대 병종 비'.padEnd(17)}${HAS_B ? '│ B 이김     Δ이김   B 출정  B 뽑은 비               B 군대 비' : ''}`)
   for (const as of AS) {
