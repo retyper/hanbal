@@ -346,8 +346,8 @@ const NO_COMPOSE = { to: '', ask: 'truce' as Ask, give: noGoods(), take: noGoods
 const ekey = (to: string, ask: Ask): string => `${to}:${ask}`
 /** 공작 다섯의 그림 */
 const PLOT_ICON: Readonly<Record<PlotOp, string>> = {
-  // 공작마다 제 그림 (형 10-26: "공작 아이콘이 지금 첩자 아이콘으로 되어 있는데 · 없으면 새로 만들어" · 제미나이 Argon) — 암살은 궁수 그대로(새 판은 복면이라 버림)
-  rumor: 'plot-rumor', sow: 'plot-sow', bribe: 'plot-bribe', burn: 'plot-burn', spy: 'plot-spy', assassin: 'unit-archer',
+  // 공작 하나하나는 옛 그림 그대로 — 새로 바꾼 것은 공작 메뉴의 아이콘(plot-schemes)뿐 (형 10-26: "왜 의미 없이 공작 아이콘들 새로 만들었어")
+  rumor: 'status-morale-down', sow: 'status-betrayal', bribe: 'good-cowries', burn: 'status-famine', spy: 'status-spy', assassin: 'unit-archer',
   // 구출 — 제 그림(plot-rescue)이 오기 전까지 문(옥문) 그림을 빌린다 (ART-QUEUE)
   rescue: 'cmd-gate',
 }

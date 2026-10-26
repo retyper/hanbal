@@ -355,7 +355,7 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
     const ways: Array<[string, string, string, ReadonlyArray<readonly [string, string]>]> = [
       ['unit-spear', '군대', '장정을 뽑아 군대를 세우고, 이웃 고을을 쳐서 쥔다', [['unit-spear', '징병'], ['route-column', '출정'], ['war-surrender', '사로잡기']]],
       ['good-tribute-bell', '사신', '적의 적은 벗이 된다', [['ask-truce', '화친'], ['ask-alliance', '동맹'], ['ask-trade', '교역'], ['ask-gift', '선물']]],
-      ['plot-schemes', '공작', '몰래 적을 흔든다', [['plot-spy', '첩자'], ['plot-rumor', '소문'], ['unit-archer', '암살'], ['plot-burn', '방화'],
+      ['plot-schemes', '공작', '몰래 적을 흔든다', [['status-spy', '첩자'], ['status-morale-down', '소문'], ['unit-archer', '암살'], ['status-famine', '방화'],
         ...(r.known !== undefined ? [['unit-scouts', '정찰'] as const] : [])]],
     ]
     // 캠페인의 장이면 그 장의 목표를 (CAMPAIGN.md)
