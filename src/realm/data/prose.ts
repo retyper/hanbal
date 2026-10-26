@@ -447,7 +447,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       const where = line.node !== undefined ? node(line.node) : target
       if (line.faction === viewer) {
         const did = PLOT_DONE[line.op](target, where, line.other !== undefined ? fname(line.other) : '')
-        if (line.op === 'assassin' && line.hero !== undefined) {
+        if ((line.op === 'assassin' || line.op === 'rescue') && line.hero !== undefined) {
           const who = after.heroes[line.hero]?.name ?? '?'
           // 들켰을 때 — 고용 자객은 값만 잃고, 우리 장수는 빠져나오거나 붙잡힌다 (자객 기본 · 장수는 도박)
           const agent = line.agent !== undefined ? (after.heroes[line.agent]?.name ?? '자객') : '고용 자객'
@@ -459,6 +459,11 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
             ? ` ${josa(target, '이', '가')} 우리가 보낸 줄 안다. 사이가 크게 틀어졌다.`
             : line.agentFate === 'captured' ? ` 아직 입을 다물고 있다 — ${josa(target, '은', '는')} 누가 보냈는지 모른다.`
               : ` ${josa(target, '은', '는')} 누가 보냈는지 모른다.`
+          // 구출 — 잡혀간 우리 장수를 옥에서 빼낸다 (형 10-26)
+          if (line.op === 'rescue') {
+            if (line.ok) return `${target} 옥에서 ${josa(who, '을', '를')} 구해 냈다. 우리 땅으로 돌아온다.${fateLine}${whoKnows}`
+            return `구출이 틀어졌다. ${josa(who, '은', '는')} 아직 ${target}에 갇혀 있다.${line.caught ? fateLine + whoKnows : ` ${josa(agent, '은', '는')} 어둠 속으로 물러났다.`}`
+          }
           if (line.ok) return `자객의 화살이 ${josa(who, '을', '를')} 꿰뚫었다. ${line.result === 'kill' ? `${josa(who, '이', '가')} 죽었다.` : `${josa(who, '은', '는')} 두 계절 동안 일어나지 못한다.`}${fateLine}${whoKnows}`
           return `암살이 틀어졌다.${line.caught ? fateLine + whoKnows : ` ${josa(agent, '은', '는')} 어둠 속으로 물러났다.`}`
         }
@@ -479,6 +484,14 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
           const catchLine = caughtAgent ? ' 자객을 붙잡았다.' : ' 자객은 지붕을 타고 달아났다.'
           if (from !== null) return `${hit}${catchLine} ${josa(from, '이', '가')} 보낸 자객이다.`
           return `${hit}${catchLine} ${caughtAgent ? '입을 열지 않는다 — 어디서 왔는지 모른다.' : '어디서 왔는지 모른다.'}`
+        }
+        if (line.op === 'rescue' && line.target === viewer) {
+          // 우리 옥을 누가 깨려 했다 — 빼 갔나 막았나
+          const v = line.hero !== undefined ? (after.heroes[line.hero]?.name ?? '포로') : '포로'
+          const what = line.ok ? `옥에 가둔 ${josa(v, '을', '를')} 누군가 밤에 빼내 갔다.` : `옥을 깨려던 자들을 막아 냈다. ${josa(v, '은', '는')} 그대로 갇혀 있다.`
+          const caughtAgent = line.agent === undefined || line.agentFate === 'captured'
+          const catchLine = caughtAgent ? ' 숨어든 자를 붙잡았다.' : ' 숨어든 자는 달아났다.'
+          return from !== null ? `${what}${catchLine} ${josa(from, '이', '가')} 보낸 자들이다.` : `${what}${catchLine}`
         }
         if (from !== null) return `${from}의 ${PLOT_NAME[line.op]} 공작을 잡아냈다.${line.ok ? ' 그래도 일은 벌어졌다.' : ''}`
         if (line.other === viewer && line.target !== viewer) return null // 이간의 다른 쪽은 누가 했는지 모르면 알 길이 없다
@@ -1094,7 +1107,7 @@ export const STAT_NAME = {
 
 /** 공작 다섯 (plots.ts) — 화면의 이름 · 한 줄 · 먹혔을 때 보고 */
 export const PLOT_NAME: Record<PlotOp, string> = {
-  rumor: '소문', sow: '이간', bribe: '매수', burn: '방화', spy: '첩자', assassin: '암살',
+  rumor: '소문', sow: '이간', bribe: '매수', burn: '방화', spy: '첩자', assassin: '암살', rescue: '구출',
 }
 
 export const PLOT_DOES: Record<PlotOp, string> = {
@@ -1104,6 +1117,7 @@ export const PLOT_DOES: Record<PlotOp, string> = {
   burn: '그 나라 창고에 불을 놓아 곡식을 태운다',
   spy: '그 마을에 첩자를 심는다. 네 계절 동안 군세가 늘 보인다',
   assassin: '밤에 자객을 보내 적장을 쏜다. 군주는 도읍 깊이 있어 못 노린다. 맞히면 다치거나 죽는다. 들키면 자객이 잡힌다',
+  rescue: '잡혀간 우리 장수를 밤에 옥에서 빼낸다. 보초를 다 쓰러뜨리면 데려 나온다. 들키면 보낸 이도 잡힐 수 있다',
 }
 
 /** 공작이 안 됐을 때 — 무엇을 하려다 왜 안 됐는지 한 문장 (형 2026-10-20: "\"공작이 틀어졌다. 첩자.\" 이게 뭔말이야. 알아들을수있게 써라좀") */
@@ -1114,6 +1128,7 @@ const PLOT_FAIL: Record<PlotOp, (target: string, where: string, other: string) =
   burn: (t) => `${t} 창고에 불을 놓으려 했지만 지키는 눈이 많아 다가가지 못했다.`,
   spy: (_t, w) => `${w}에 첩자를 심으려 했지만 마을에 섞여 들지 못했다. 군세는 여전히 안 보인다.`,
   assassin: (t) => `${t} 진중으로 자객을 보냈지만 활을 겨눌 틈이 없었다.`,
+  rescue: (t) => `${t} 옥으로 사람을 보냈지만 보초를 뚫지 못했다.`,
 }
 
 const PLOT_DONE: Record<PlotOp, (target: string, where: string, other: string) => string> = {
@@ -1123,6 +1138,7 @@ const PLOT_DONE: Record<PlotOp, (target: string, where: string, other: string) =
   burn: (t) => `${t} 창고가 불탔다.`,
   spy: (_t, w) => `${w}에 첩자를 심었다. 네 계절 동안 군세가 보인다.`,
   assassin: (t) => `${t} 진중에 자객의 화살이 날아들었다.`,
+  rescue: (t) => `${t} 옥에서 우리 장수를 빼냈다.`,
 }
 
 /**

@@ -183,10 +183,11 @@ export type EnvoyAsk = 'truce' | 'trade' | 'tribute' | 'alliance' | 'gift' | 'jo
 
 /**
  * 밤 판의 손 — 직접 쏜 결과(dead·wounded·fled·withdrew) 또는 건너뛰기(skip: 자객 솜씨로 굴린다).
+ * 구출(rescue)은 보초를 다 쓰러뜨려 묶인 장수를 데려 나오면 cleared 다.
  * 건너뛰기의 `seen` 은 진짜 지붕을 본 뒤에 맡겼나 — 그러면 굴림이 plotSkipSeenMul 만큼 준다 (보고 고르는 맛을 막는다)
  */
 export interface Hand {
-  readonly result: 'dead' | 'wounded' | 'fled' | 'withdrew' | 'skip'
+  readonly result: 'dead' | 'wounded' | 'fled' | 'withdrew' | 'cleared' | 'skip'
   readonly alarm: boolean
   readonly seen?: boolean
 }
@@ -556,9 +557,9 @@ export interface Watch {
 
 /**
  * 공작 — 몰래 하는 일 (형: "다양한 외교나 공작이 가능 해야하는거 아님?" — 2026-10-18, plots.ts)
- *   rumor 소문 · sow 이간 · bribe 매수 · burn 방화 · spy 첩자
+ *   rumor 소문 · sow 이간 · bribe 매수 · burn 방화 · spy 첩자 · assassin 암살 · rescue 구출(잡혀간 우리 장수를 빼낸다)
  */
-export type PlotOp = 'rumor' | 'sow' | 'bribe' | 'burn' | 'spy' | 'assassin'
+export type PlotOp = 'rumor' | 'sow' | 'bribe' | 'burn' | 'spy' | 'assassin' | 'rescue'
 
 /** 심어 둔 첩자 — `until` 계절까지 그 고을 군세를 계절마다 새로 안다 */
 export interface Spy {
@@ -763,8 +764,9 @@ export type Order =
   | {
       readonly kind: 'plot'; readonly faction: string; readonly op: PlotOp; readonly target: string; readonly node?: string; readonly other?: string
       /** 암살(assassin) — 노릴 장수 · 보낼 자객(우리 장수, 혼자 머무는 이). 자객이 없으면 고용 자객 (곡식 더) */
+      /** 구출(rescue) — hero 는 잡혀간 우리 장수, node 는 잡은 나라의 도읍 */
       readonly hero?: string; readonly agent?: string
-      /** 밤 판(night.html)에서 손으로 쏜 암살의 결과 — 있으면 굴림 대신 이것 (SNIPE §0-3). 값은 똑같이 든다 */
+      /** 밤 판(night.html)에서 손으로 쏜 암살·구출의 결과 — 있으면 굴림 대신 이것 (SNIPE §0-3). 값은 똑같이 든다 */
       readonly hand?: Hand
     }
   /** 장수를 고을에 맡긴다 (HEROES §3) — 장수가 그 고을에 있어야 한다. node null 이면 맡은 자리를 떠난다 (그 고을에 혼자 머문다) */
@@ -968,7 +970,7 @@ export type ReportLine =
        * 옛 줄에는 없다 — 그때는 들킴이 곧 드러남이었다 (caught 와 같다고 본다)
        */
       readonly exposed?: boolean
-      /** 암살 — 노린 장수 · 보낸 자객(없으면 고용 자객) · 먹혔으면 다쳤나 죽었나 */
+      /** 암살 — 노린 장수 · 보낸 자객(없으면 고용 자객) · 먹혔으면 다쳤나 죽었나. 구출 — hero 는 빼내려던 우리 장수 */
       readonly hero?: string
       readonly agent?: string
       readonly result?: 'wound' | 'kill'

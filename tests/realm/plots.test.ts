@@ -89,7 +89,7 @@ describe('공작 — 값과 규칙', () => {
     for (const op of PLOT_OPS) {
       const ts = plotTargets(r, 'us', op)
       assert.deepEqual(ts, plotTargets(r, 'us', op))
-      assert.ok(op === 'assassin' || ts.length > 0, op) // 암살은 본 장수가 있어야 — 판의 처음엔 없다
+      assert.ok(op === 'assassin' || op === 'rescue' || ts.length > 0, op) // 암살은 본 장수가, 구출은 잡혀간 우리 장수가 있어야 — 판의 처음엔 없다
       for (const t of ts) {
         const [lo, hi] = plotChance(r, 'us', op, t.target, t.node, t.hero)
         const p = plotTrueChance(r, 'us', op, t.target, t.node, t.hero)

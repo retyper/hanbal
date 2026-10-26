@@ -60,9 +60,17 @@ export interface Patrol {
   readonly phase: number
 }
 
+/**
+ * 밤 판의 갈래 — 암살(셋째 판 창호지 뒤 적장) · 구출(셋째 판 마루에 묶인 우리 장수 — 보초를 다 쓰러뜨리면 데려 나온다).
+ * 칠십팔국이 `kind=rescue` 로 넘긴다 (형 10-26: "구출작전은 암살이랑 비슷하게 활쏘기겜으로 가서 적물리치면될듯")
+ */
+export type NightKind = 'assassin' | 'rescue'
+export const kindOf = (x: unknown): NightKind => (x === 'rescue' ? 'rescue' : 'assassin')
+
 export interface Figure {
   readonly id: number
-  readonly role: 'guard' | 'chief'
+  /** guard 보초 · chief 적장(암살) · captive 묶인 우리 장수(구출 — 살이 비켜 간다) */
+  readonly role: 'guard' | 'chief' | 'captive'
   x: number
   /** 발이 닿은 높이 */
   readonly y: number
@@ -137,6 +145,8 @@ interface Blueprint {
   readonly solids: ReadonlyArray<Omit<Solid, never>>
   readonly door?: Door
   readonly chief?: { readonly x: number; readonly y: number }
+  /** 구출이면 적장 대신 여기 묶인 우리 장수가 앉아 있다 */
+  readonly captive?: { readonly x: number; readonly y: number }
   readonly decor: readonly Decor[]
 }
 
@@ -217,6 +227,8 @@ const BLUEPRINTS: readonly Blueprint[] = [
     ],
     door: { x0: 23.4, y0: 0.6, x1: 25.6, y1: 2.8 },
     chief: { x: 24.5, y: 0.6 },
+    // 구출 — 사랑채 마루 끝 기둥에 묶여 앉은 우리 장수 (창호지 앞, 호위들 뒤)
+    captive: { x: 22.3, y: 0.6 },
     decor: [
       { kind: 'sarangchae', x: 20.3, w: 10.3, h: 4.3 },
       { kind: 'stand', x: 16.6, w: 0.2, h: 1.9 },
@@ -250,8 +262,11 @@ export const STAGE_COUNT = 3
 export const PRACTICE_STAGES = BLUEPRINTS.length
 export const stageTitle = (i: number): string => BLUEPRINTS[i]?.title ?? ''
 
-/** 판 하나를 굽는다 — 같은 시드·같은 판·같은 경비 = 같은 배치 (경비를 안 주면 보통) */
-export function bakeScene(seed: number, index: number, guard: Guard = 1): Scene {
+/**
+ * 판 하나를 굽는다 — 같은 시드·같은 판·같은 경비·같은 갈래 = 같은 배치 (경비를 안 주면 보통, 갈래를 안 주면 암살).
+ * 구출이면 적장을 빼고 묶인 장수를 앉힌다 — 보초 배치·흔들림은 암살과 똑같다
+ */
+export function bakeScene(seed: number, index: number, guard: Guard = 1, kind: NightKind = 'assassin'): Scene {
   const bp = BLUEPRINTS[Math.max(0, Math.min(BLUEPRINTS.length - 1, index))]!
   const g = -P.night.roofHeight
   const shake = (key: string): number => (roll(seed, index, key) - 0.5) * 2 * P.night.jitter
@@ -274,10 +289,16 @@ export function bakeScene(seed: number, index: number, guard: Guard = 1): Scene 
     if (s.holds === 'lantern') lights.push({ id: lights.length, kind: 'lantern', x: s.x + dx, y: g + 1.05, lit: true, carrier: id, hits: 0 })
   })
   for (const l of bp.lights) if ((l.min ?? 0) <= guard) lights.push({ id: lights.length, kind: l.kind, x: l.x, y: g + l.y, lit: true, carrier: -1, hits: 0, ...(l.pass === true ? { pass: true } : {}) })
-  if (bp.chief !== undefined) {
+  if (kind === 'assassin' && bp.chief !== undefined) {
     figures.push({
       id: figures.length, role: 'chief', x: bp.chief.x, y: g + bp.chief.y, pose: 'stand', holds: null, facing: -1, patrol: null,
       size: 1.05, alive: true, downAt: -1, hitZone: null, watching: 0, pu: 0, task: null,
+    })
+  }
+  if (kind === 'rescue' && bp.captive !== undefined) {
+    figures.push({
+      id: figures.length, role: 'captive', x: bp.captive.x, y: g + bp.captive.y, pose: 'sit', holds: null, facing: -1, patrol: null,
+      size: 1, alive: true, downAt: -1, hitZone: null, watching: 0, pu: 0, task: null,
     })
   }
   const lift = (s: Solid): Solid => ({ kind: s.kind, x0: s.x0, y0: g + s.y0, x1: s.x1, y1: g + s.y1 })

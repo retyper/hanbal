@@ -35,7 +35,7 @@ import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } 
 import { kitLines } from '../../realm/kit.ts'
 import { alertRange, seenMix, visibleRange } from '../../realm/intel.ts'
 import { advance, concealOf, draftable, forceOf, neighbors, newArmyId, otherEnd, planned, rationCost, rationExtra, seasonOf, seenMarches } from '../../realm/season.ts'
-import { PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bowUpCost, escapeChance, plotAgents, plotChance, plotCost, plotTargets } from '../../realm/plots.ts'
+import { NIGHT_OPS, PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bowUpCost, escapeChance, plotAgents, plotChance, plotCost, plotTargets, rescueGuard } from '../../realm/plots.ts'
 import { allianceWhy, leaderOf, tookRecently, truceWhy, winningAgainst } from '../../realm/stance.ts'
 // 등용 대사 — 장수마다 한 마디 (형 10-24: "장수마다 각각 등용 대사 개성 있고 다양하고 독특하게")
 import { startRegion } from '../../realm/data/regions/index.ts'
@@ -308,7 +308,11 @@ const LAYERS = [
 ] as const
 type LayerId = (typeof LAYERS)[number]['id']
 const LAYER_KEY = 'hanbal.realm.layers'
-const HAND_NAME = { dead: '적장이 쓰러졌다', wounded: '적장이 다쳤다', fled: '적장이 달아났다', withdrew: '조용히 물러났다', skip: '자객에게 맡겼다' } as const
+const HAND_NAME = { dead: '적장이 쓰러졌다', wounded: '적장이 다쳤다', fled: '적장이 달아났다', withdrew: '조용히 물러났다', cleared: '다 쓰러뜨렸다', skip: '자객에게 맡겼다' } as const
+/** 구출의 손 — 데려 나왔나 · 북이 울렸나 (형 10-26) */
+const RESCUE_HAND_NAME = { dead: '', wounded: '', fled: '북이 울려 달아났다', withdrew: '조용히 물러났다', cleared: '옥에서 데려 나왔다', skip: '보낸 이에게 맡겼다' } as const
+/** 공작 결과 큰 화면의 그림 — 구출은 제 그림이 아직 없어 밤 기습 그림을 빌린다 (ART-QUEUE: event-plot-rescue.jpg 가 오면 바꾼다) */
+const plotArt = (op: PlotOp): string => (op === 'rescue' ? 'event-night-raid' : `event-plot-${op}`)
 
 type Ask = EnvoyAsk
 type Envoy = Extract<Order, { kind: 'envoy' }>
@@ -344,6 +348,8 @@ const ekey = (to: string, ask: Ask): string => `${to}:${ask}`
 const PLOT_ICON: Readonly<Record<PlotOp, string>> = {
   // 공작마다 제 그림 (형 10-26: "공작 아이콘이 지금 첩자 아이콘으로 되어 있는데 · 없으면 새로 만들어" · 제미나이 Argon) — 암살은 궁수 그대로(새 판은 복면이라 버림)
   rumor: 'plot-rumor', sow: 'plot-sow', bribe: 'plot-bribe', burn: 'plot-burn', spy: 'plot-spy', assassin: 'unit-archer',
+  // 구출 — 제 그림(plot-rescue)이 오기 전까지 문(옥문) 그림을 빌린다 (ART-QUEUE)
+  rescue: 'cmd-gate',
 }
 /** 아래 탭 — more 는 길게 누르면 뜨는 말 (tips.ts) */
 const TABS = [
@@ -2356,9 +2362,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 직접 쏘기 — 한 계절에 한 적장은 한 번만 쏜다 (거뒀다 다시 걸어도 쏜 결과가 남는다) */
   function shootHtml(i: number, o: Extract<Order, { kind: 'plot' }>): string {
     const hand = o.hand ?? (o.hero !== undefined ? hands[o.hero] : undefined)
+    const rescue = o.op === 'rescue'
+    const names = rescue ? RESCUE_HAND_NAME : HAND_NAME
     // 건너뛰기 — 자객 솜씨로 굴린다. 진짜 지붕을 보고 맡겼으면 조금 덜 산다 (plotSkipSeenMul)
-    if (hand?.result === 'skip') return `<div class="banner">${HAND_NAME.skip} · 자객의 솜씨에 달렸다${hand.seen === true ? ' · 지붕을 보고 물러난 뒤라 적이 조금 더 깨어 있다' : ''}</div>`
-    if (hand !== undefined) return `<div class="banner ${hand.result === 'dead' || hand.result === 'wounded' ? 'good' : 'bad'}">직접 쐈다 · ${HAND_NAME[hand.result]}${hand.alarm ? ' · 들켰다' : ''} · 이번 계절엔 다시 못 쏜다</div>`
+    if (hand?.result === 'skip') return `<div class="banner">${names.skip} · ${rescue ? '보낸 이' : '자객'}의 솜씨에 달렸다${hand.seen === true ? ' · 지붕을 보고 물러난 뒤라 적이 조금 더 깨어 있다' : ''}</div>`
+    if (hand !== undefined) {
+      const good = rescue ? hand.result === 'cleared' : hand.result === 'dead' || hand.result === 'wounded'
+      return `<div class="banner ${good ? 'good' : 'bad'}">직접 쐈다 · ${names[hand.result]}${hand.alarm ? ' · 들켰다' : ''} · 이번 계절엔 다시 못 쏜다</div>`
+    }
+    // 구출 — 보초를 다 쓰러뜨리면 묶인 장수를 데려 나온다 (형 10-26: "구출작전은 암살이랑 비슷하게 활쏘기겜으로")
+    if (rescue) return `<button class="btn pri wide" data-act="shoot" data-i="${i}">${icon('unit-archer')} 직접 구한다 · 밤 지붕 위로</button><p class="mute">보초를 다 쓰러뜨리면 묶인 장수를 데려 나온다. 들어가면 먼저 연습해 볼 수 있다. 안 가거나 건너뛰면 보낸 이가 알아서 한다.</p>`
     return `<button class="btn pri wide" data-act="shoot" data-i="${i}">${icon('unit-archer')} 직접 쏜다 · 밤 지붕 위로</button><p class="mute">들어가면 먼저 연습해 볼 수 있다. 진짜는 한 번만 쏜다. 안 쏘거나 건너뛰면 자객이 알아서 한다.</p>`
   }
 
@@ -2376,7 +2389,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function plotWho(r: Realm, o: Order): string {
     if (o.kind !== 'plot') return ''
     if (o.agent !== undefined) return r.heroes[o.agent]?.name ?? ''
-    return o.op === 'assassin' ? '고용 자객' : '알아서'
+    return NIGHT_OPS.has(o.op) ? '고용 자객' : '알아서'
   }
   /**
    * 누가 가나 — 고을 판의 공작 줄 바로 밑 (형 10-25: "누구 보낼지 선택도 그거 바로 아래 떠야").
@@ -2388,15 +2401,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const p of plots) if (p.kind === 'plot' && p.agent !== undefined) busy.add(p.agent)
     const ids = plotAgents(realm!, me()).filter((id) => !busy.has(id) && heroBusy(realm!, id) === null)
     const btn = (agent: string, face: string, name: string, sub: string): string => {
-      const c = plotChance(realm!, me(), op, t.target, t.node, t.hero, agent === '' ? (op === 'assassin' ? null : undefined) : agent)
+      const c = plotChance(realm!, me(), op, t.target, t.node, t.hero, agent === '' ? (NIGHT_OPS.has(op) ? null : undefined) : agent)
       return `<button class="pwho" data-act="plot" data-op="${op}" data-target="${t.target}" data-node="${t.node ?? ''}" data-other="" data-hero="${t.hero ?? ''}" data-agent="${agent}">${face}<b>${esc(name)}</b><small>${esc(sub)}</small>${plotFeel(c[0], c[1])}</button>`
     }
     let h = '<div class="pwhos"><span class="mute">누가 가나</span><div class="pwl">'
-    h += op === 'assassin' ? btn('', icon('unit-archer', 'fp'), '고용 자객', '잡혀도 값만 잃는다') : btn('', icon('status-spy', 'fp'), '알아서', '꾀가 가장 높은 이의 솜씨로')
+    h += NIGHT_OPS.has(op) ? btn('', icon('unit-archer', 'fp'), '고용 자객', '잡혀도 값만 잃는다') : btn('', icon('status-spy', 'fp'), '알아서', '꾀가 가장 높은 이의 솜씨로')
     for (const id of ids.slice(0, 6)) {
       const hh = r.heroes[id]
       if (hh === undefined) continue
-      h += btn(id, bust(hh, 'fp'), hh.name, `지략 ${hh.ryak}${op === 'assassin' ? ' · 들키면 몸을 빼야 한다' : ''}`)
+      h += btn(id, bust(hh, 'fp'), hh.name, `지략 ${hh.ryak}${NIGHT_OPS.has(op) ? ' · 들키면 몸을 빼야 한다' : ''}`)
     }
     return h + '</div></div>'
   }
@@ -2410,30 +2423,34 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const target = o.hero !== undefined ? r.heroes[o.hero]?.name : where
       const sowF = o.other !== undefined ? `<span class="sowf">${emblem(o.target)}<i>⇄</i>${emblem(o.other)}</span>` : ''
       h += `<div class="banner good">${sowF}${PLOT_NAME[o.op]} · ${esc(target ?? '')}<button class="btn ghost sm" data-act="unplot" data-i="${i}">거둔다</button></div>`
-      // 암살은 직접 쏠 수 있다 — 밤 판 (SNIPE §0). 안 쏘면 굴림. 암살 칸을 펼쳤으면 고른 적장 바로 밑에 띄운다
-      if (o.op === 'assassin' && plotOpen !== 'assassin') h += shootHtml(i, o)
+      // 암살·구출은 직접 쏠 수 있다 — 밤 판 (SNIPE §0). 안 쏘면 굴림. 그 칸을 펼쳤으면 고른 장수 바로 밑에 띄운다
+      if (NIGHT_OPS.has(o.op) && plotOpen !== o.op) h += shootHtml(i, o)
     }
     const full = plots.length >= max || handsFull(r)
     const st = left()
     for (const op of PLOT_OPS) {
-      // 암살은 자객을 고른다 — 우리 장수(혼자 머무는 이) 또는 고용 자객
-      const allAgents = op === 'assassin' ? plotAgents(realm!, me()) : []
+      // 암살·구출은 자객을 고른다 — 우리 장수(혼자 머무는 이) 또는 고용 자객
+      const night = NIGHT_OPS.has(op)
+      const allAgents = night ? plotAgents(realm!, me()) : []
       const agents = allAgents.filter((id) => heroBusy(realm!, id) === null)
-      const agent = op === 'assassin' && plotAgent !== null && agents.includes(plotAgent) ? plotAgent : null
+      const agent = night && plotAgent !== null && agents.includes(plotAgent) ? plotAgent : null
       const cost = plotCost(op, agent)
       const open = plotOpen === op
-      h += `<div class="ncard"><button class="plh" data-act="plot-open" data-op="${op}">${icon(PLOT_ICON[op], 'nic')}<span><b>${PLOT_NAME[op]}</b><span class="mute">${PLOT_DOES[op]}</span></span>`
+      // 구출 — 잡혀간 우리 장수가 없으면 흐리게 닫아 둔다 (형 10-26: "잡혀간 우리 장수가있는나라의 경우 구출 이 활성화되면")
+      const none = op === 'rescue' && plotTargets(realm!, me(), op).length === 0
+      h += `<div class="ncard"><button class="plh" data-act="plot-open" data-op="${op}"${none ? ' disabled' : ''}>${icon(PLOT_ICON[op], 'nic')}<span><b>${PLOT_NAME[op]}</b><span class="mute">${none ? '잡혀간 우리 장수가 없다' : PLOT_DOES[op]}</span></span>`
       h += `${costHtml({ grain: cost.grain, iron: cost.iron })}</button>`
-      if (open) {
+      if (open && !none) {
         const afford = st.grain >= cost.grain && st.iron >= cost.iron
         const targets = plotTargets(realm!, me(), op).filter((t) => knows(realm!, me(), t.target)) // 아는 나라에만 (발견)
         // 들키면 누가 보냈는지 드러날 수 있다 — 드러나면 그 나라와 크게 틀어지고 다른 나라도 우리를 덜 믿는다
         if (targets[0] !== undefined) {
-          const ex = exposeChance(realm!, me(), targets[0].target, targets[0].node, op === 'assassin' ? agent : undefined)
+          const ex = exposeChance(realm!, me(), targets[0].target, targets[0].node, night ? agent : undefined)
           h += `<div class="mute">들켜도 누가 보냈는지 숨길 길 ${plotFeel(1 - ex, 1 - ex, false)} · 드러나면 그 나라와 크게 틀어지고 다른 나라들도 우리를 덜 믿는다.</div>`
         }
-        if (op === 'assassin') {
-          h += `<img class="plimg" src="${ART}event/event-assassin-archer.jpg" alt="">`
+        if (night) {
+          // 구출은 갇힌 우리 장수 그림 (제 그림 event-plot-rescue 는 ART-QUEUE)
+          h += `<img class="plimg" src="${ART}event/${op === 'rescue' ? 'event-captured-ours' : 'event-assassin-archer'}.jpg" alt="">`
           h += `<div class="mute">누구를 보내나</div><div class="fpick"><button class="${agent === null ? 'on' : ''}" data-act="pagent" data-id="" aria-label="고용 자객">${icon('unit-archer', 'fp')}</button>`
           for (const id of allAgents.slice(0, 6)) {
             const job = heroJob(r, id)
@@ -2454,11 +2471,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           if (bu !== null) h += `<button class="btn sm ${buying ? 'ghost' : ''}" data-act="bowup" ${buying || (st.grain >= bu.grain && st.iron >= bu.iron) ? '' : 'disabled'}>${buying ? '올리는 중 · 취소' : `${esc(josa(BOW_NAME[bu.to] ?? '', '으로', '로'))} ${costHtml({ grain: bu.grain, iron: bu.iron })}`}</button>`
           h += `</div>`
         }
-        if (targets.length === 0) h += `<div class="mute">지금은 노릴 데가 없다.${op === 'bribe' || op === 'spy' ? ' 아는 마을이어야 한다. 정찰부터.' : op === 'assassin' ? ' 겨뤄 본 적장만 노릴 수 있다.' : ''}</div>`
+        if (targets.length === 0) h += op === 'rescue' ? `<div class="mute">잡혀간 우리 장수가 없다.</div>` : `<div class="mute">지금은 노릴 데가 없다.${op === 'bribe' || op === 'spy' ? ' 아는 마을이어야 한다. 정찰부터.' : op === 'assassin' ? ' 겨뤄 본 적장만 노릴 수 있다.' : ''}</div>`
         h += `<div class="rows">`
         for (const t of targets) {
           const hero = t.hero !== undefined ? r.heroes[t.hero] : undefined
-          const label = hero !== undefined ? `${hero.name} · ${r.factions[t.target]?.name}` : t.node !== undefined ? `${r.nodes[t.node]?.name} · ${r.factions[t.target]?.name}` : t.other !== undefined ? `${r.factions[t.target]?.name} ↔ ${r.factions[t.other]?.name}` : (r.factions[t.target]?.name ?? '')
+          const label = hero !== undefined ? (op === 'rescue' ? `${hero.name} · ${r.factions[t.target]?.name} ${r.nodes[t.node ?? '']?.name ?? ''}에 갇힘` : `${hero.name} · ${r.factions[t.target]?.name}`) : t.node !== undefined ? `${r.nodes[t.node]?.name} · ${r.factions[t.target]?.name}` : t.other !== undefined ? `${r.factions[t.target]?.name} ↔ ${r.factions[t.other]?.name}` : (r.factions[t.target]?.name ?? '')
           const c = plotChance(realm!, me(), op, t.target, t.node, t.hero, agent)
           const dup = plots.some((p) => p.kind === 'plot' && p.op === op && p.target === t.target && p.node === t.node && p.other === t.other && p.hero === t.hero)
           h += `<button class="row ${dup ? 'on' : ''}" data-act="plot" data-op="${op}" data-target="${t.target}" data-node="${t.node ?? ''}" data-other="${t.other ?? ''}" data-hero="${t.hero ?? ''}" data-agent="${agent ?? ''}" ${(full && !dup) || !afford ? 'disabled' : ''}>`
@@ -2466,8 +2483,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           const flags = hero !== undefined ? bust(hero, 'rface sm') : t.other !== undefined ? `<span class="sowf">${emblem(t.target)}<i>⇄</i>${emblem(t.other)}</span>` : emblem(t.target)
           h += `${flags}<span class="dest">${esc(label)}${pactWarn(r, t.target, op)}</span><span class="win">${plotFeel(c[0], c[1])}</span></button>`
           // 고른 적장 바로 밑에 "직접 쏜다" (형: "직접쏜다버튼이 너무 위에있어서 적군눌러도 반응없는줄 알았음")
-          if (dup && op === 'assassin') {
-            const i = plots.findIndex((p) => p.kind === 'plot' && p.op === 'assassin' && p.hero === t.hero)
+          if (dup && night) {
+            const i = plots.findIndex((p) => p.kind === 'plot' && p.op === op && p.hero === t.hero)
             if (i >= 0) h += shootHtml(i, plots[i] as Extract<Order, { kind: 'plot' }>)
           }
         }
@@ -2484,11 +2501,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (o === undefined || o.kind !== 'plot' || realm === null) return
     const arrows = assassinArrows(realm, o.agent)
     const bow = assassinBow(realm, me())
-    const guard = o.hero !== undefined ? assassinGuard(realm, o.hero) : 1
+    // 구출 — 옥이 있는 고을의 경비 · 셋째 판에 적장 대신 묶인 우리 장수 (kind=rescue · who=이름)
+    const rescue = o.op === 'rescue'
+    const guard = rescue ? rescueGuard(realm, o.node ?? null) : o.hero !== undefined ? assassinGuard(realm, o.hero) : 1
     // 판의 배치는 판 시드·계절·대상으로 — 같은 계절 같은 대상이면 같은 밤
     let seed = (realm.seed ^ Math.imul(realm.season + 1, 2654435761)) >>> 0
     for (const ch of o.hero ?? o.target) seed = Math.imul(seed ^ ch.charCodeAt(0), 16777619) >>> 0
-    openFrame(`${NIGHT}?seed=${seed}&arrows=${arrows}&bow=${bow}&guard=${guard}&id=plot-${i}&back=about:blank`, '밤의 암살')
+    const kind = rescue ? `&kind=rescue&who=${encodeURIComponent(realm.heroes[o.hero ?? '']?.name ?? '')}` : ''
+    openFrame(`${NIGHT}?seed=${seed}&arrows=${arrows}&bow=${bow}&guard=${guard}${kind}&id=plot-${i}&back=about:blank`, rescue ? '밤의 구출' : '밤의 암살')
   }
 
   /**
@@ -2539,7 +2559,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   window.addEventListener('message', (ev) => {
     if (ev.origin !== location.origin) return
     // 밤 판의 결과 — 연습은 결과를 안 보낸다 (night-main.ts). skip 은 건너뛰기, seen 이면 진짜 지붕을 본 뒤다
-    const m = ev.data as { type?: string; id?: string; result?: Hand['result'] | 'cleared'; alarm?: boolean; seen?: boolean; rot?: boolean }
+    const m = ev.data as { type?: string; id?: string; result?: Hand['result']; alarm?: boolean; seen?: boolean; rot?: boolean }
     // 세로 폰에서 밤 판이 통째로 눕는다 — 바깥 「닫기」도 같이 눕혀 판의 오른쪽 위에 둔다 (night-main.ts layoutStage)
     if (m?.type === 'hanbal.night.rotated') {
       root.querySelector('.nightov')?.classList.toggle('rot', m.rot === true)
@@ -2553,10 +2573,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       paint()
       return
     }
-    if (m?.type !== 'hanbal.night.result' || typeof m.id !== 'string' || !m.id.startsWith('plot-') || m.result === undefined || m.result === 'cleared') return
+    if (m?.type !== 'hanbal.night.result' || typeof m.id !== 'string' || !m.id.startsWith('plot-') || m.result === undefined) return
     const i = Number(m.id.slice(5))
     const o = plots[i]
-    if (o === undefined || o.kind !== 'plot' || o.op !== 'assassin') return
+    if (o === undefined || o.kind !== 'plot' || !NIGHT_OPS.has(o.op)) return
+    // 암살은 cleared 가 없고(셋째 판에 적장이 있다), 구출은 적장을 쏠 일이 없다 — 판과 어긋난 결과는 버린다
+    if (o.op === 'assassin' ? m.result === 'cleared' : m.result === 'dead' || m.result === 'wounded') return
     const hand: Hand = m.result === 'skip' ? { result: 'skip', alarm: false, seen: m.seen === true } : { result: m.result, alarm: m.alarm === true }
     plots = plots.map((p, j) => (j === i ? { ...o, hand } : p))
     if (o.hero !== undefined) hands[o.hero] = hand
@@ -2668,7 +2690,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (job === 'wed' && o.kind === 'wed') out.push([`${nm(o.a)} · ${nm(o.b)}`, undo('unwed', o.a)])
     }
     if (job === 'envoy') for (const e of Object.values(envoys)) if (e.hero !== undefined) out.push([`${nm(e.hero)} → ${r.factions[e.to]?.name ?? ''} ${ASK_NAME[e.ask as Ask] ?? ''}`, ''])
-    if (job === 'plot') for (const o of plots) if (o.kind === 'plot') out.push([`${PLOT_NAME[o.op]} → ${o.op === 'assassin' ? nm(o.hero ?? '') : r.factions[o.target]?.name ?? ''}${o.agent !== undefined ? ` · ${nm(o.agent)}` : ''}`, ''])
+    if (job === 'plot') for (const o of plots) if (o.kind === 'plot') out.push([`${PLOT_NAME[o.op]} → ${NIGHT_OPS.has(o.op) ? nm(o.hero ?? '') : r.factions[o.target]?.name ?? ''}${o.agent !== undefined ? ` · ${nm(o.agent)}` : ''}`, ''])
     return out
   }
 
@@ -2696,7 +2718,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (job === 'plot') {
       const full = handsFull(r)
       h += `<h4>어떤 공작을</h4><div class="cmdts">`
-      for (const op of PLOT_OPS) h += `<button class="cmdt plotop" data-act="cmd-plot" data-op="${op}"${full ? ' disabled' : ''}>${icon(PLOT_ICON[op], 'poic')}<b>${PLOT_NAME[op]}</b><small>${esc(PLOT_DOES[op])}</small></button>`
+      for (const op of PLOT_OPS) {
+        // 구출 — 잡혀간 우리 장수가 있을 때만
+        const none = op === 'rescue' && plotTargets(r, me(), op).length === 0
+        h += `<button class="cmdt plotop" data-act="cmd-plot" data-op="${op}"${full || none ? ' disabled' : ''}>${icon(PLOT_ICON[op], 'poic')}<b>${PLOT_NAME[op]}</b><small>${esc(none ? '잡혀간 우리 장수가 없다' : PLOT_DOES[op])}</small></button>`
+      }
       return h + `</div>${full ? '<p class="mute">이번 계절 보낼 손이 다 찼다.</p>' : ''}`
     }
     const list = cmdHeroes(r, job)
@@ -3537,7 +3563,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const op of PLOT_OPS) {
       const here = targetsHere(op).length > 0
       const sentN = plots.filter((p) => p.kind === 'plot' && p.op === op && p.target === f).length
-      const why = op === 'sow' ? '두 나라 사이 — 외교에서' : op === 'assassin' && !here ? '이 고을엔 적장이 없다 — 외교에서' : !here ? '외교에서' : sentN > 0 ? '보낸다' : PLOT_DOES[op]
+      const why = op === 'sow' ? '두 나라 사이 — 외교에서' : op === 'assassin' && !here ? '이 고을엔 적장이 없다 — 외교에서' : op === 'rescue' && !here ? '여기 갇힌 우리 장수가 없다' : !here ? '외교에서' : sentN > 0 ? '보낸다' : PLOT_DOES[op]
       grid += `<button class="cmdt plotop${natPlotOp === op ? ' on' : ''}${sentN > 0 ? ' sent' : ''}${here ? '' : ' away'}" data-act="${here ? 'npop' : 'cmd-plot'}" data-op="${op}">${icon(PLOT_ICON[op], 'poic')}<b>${PLOT_NAME[op]}</b><small>${esc(why)}</small></button>`
     }
     grid += `</div>`
@@ -3960,11 +3986,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const on = l.other !== undefined ? (r.factions[l.other]?.name ?? '') : ''
       const hn = l.hero !== undefined ? (r.heroes[l.hero]?.name ?? '') : ''
       const ag = l.agent !== undefined ? r.heroes[l.agent] : undefined
-      const who = ag?.name ?? (l.op === 'assassin' ? '고용 자객' : '우리 밀정')
+      const who = ag?.name ?? (NIGHT_OPS.has(l.op) ? '고용 자객' : '우리 밀정')
       const town = nn !== '' ? `${fn} ${nn}` : fn
       const deed: Readonly<Record<PlotOp, string>> = {
         rumor: `${fn}에 흉흉한 소문을 퍼뜨렸다`, sow: `${josa(fn, '과', '와')} ${on} 사이를 갈라놓으려 했다`, bribe: `${town}의 장정들을 매수하러 갔다`,
         burn: `${fn}의 곳간에 불을 놓으러 갔다`, spy: `${town}에 첩자를 심으러 갔다`, assassin: `${fn}의 ${josa(hn, '을', '를')} 어둠 속에서 노렸다`,
+        rescue: `${fn}에 잡혀 있는 ${josa(hn, '을', '를')} 구하러 갔다`,
       }
       const act = `${josa(who, '이', '가')} ${deed[l.op]}`
       // 먹혔으면 무엇이 됐나 · 어긋났으면 왜
@@ -3976,11 +4003,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           case 'bribe': title = `${nn} 장정들을 매수했다`; sub = '두 계절 동안 싸우러 나오지 않는다'; sfx = snd('tap_coin'); break
           case 'burn': title = `${fn}의 곳간이 불탄다`; sub = '쌓아 둔 곡식이 잿더미가 됐다'; sfx = 'realm/sfx/cmd_fire_c1.ogg'; break
           case 'spy': title = `${nn}에 첩자를 심었다`; sub = '네 계절 동안 그곳 군세가 훤히 보인다'; sfx = snd('tap_move'); break
+          case 'rescue': title = `${josa(hn, '을', '를')} 구해 냈다`; sub = '옥을 깨고 우리 도읍으로 돌아왔다'; sfx = snd('horn_victory'); break
           default: title = l.result === 'kill' ? `${josa(hn, '이', '가')} 쓰러졌다` : `${josa(hn, '이', '가')} 화살을 맞았다`; sub = l.result === 'kill' ? `${fn}의 장수 하나가 사라졌다` : '몇 계절 동안 군대를 이끌지 못한다'; sfx = 'realm/sfx/battle_final_c1.ogg'
         }
       } else {
         title = `${PLOT_NAME[l.op]} — 어긋났다`
-        sub = l.op === 'assassin' ? `${josa(hn, '은', '는')} 살아남았다` : l.op === 'sow' ? '두 나라는 그대로다' : '먹히지 않았다'
+        sub = l.op === 'assassin' ? `${josa(hn, '은', '는')} 살아남았다` : l.op === 'rescue' ? `${josa(hn, '은', '는')} 아직 ${fn}에 갇혀 있다` : l.op === 'sow' ? '두 나라는 그대로다' : '먹히지 않았다'
         sfx = snd('defeat')
       }
       // 그 뒤 일 — 들켰나 · 누가 보냈는지 드러났나 · 자객은
@@ -3991,11 +4019,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       else if (l.caught) after.push('들켰다 — 그쪽이 경계를 올렸다 · 누가 했는지는 모른다')
       const face = ag !== undefined ? (bustHd(ag, 'plf') || bust(ag, 'plf')) : icon(PLOT_ICON[l.op], 'plf ic')
       const flags = l.op === 'sow' ? `<span class="sowf big">${emblem(l.target, 'fem')}<i>⇄</i>${emblem(l.other ?? null, 'fem')}</span>` : emblem(l.target, 'fem')
-      const stage = `<div class="plotv${l.ok ? ' ok' : ' fail'}"><img class="pbg" src="${ART}event/event-plot-${l.op}.jpg" alt=""><i class="pred"></i>`
+      const stage = `<div class="plotv${l.ok ? ' ok' : ' fail'}"><img class="pbg" src="${ART}event/${plotArt(l.op)}.jpg" alt=""><i class="pred"></i>`
         + `<div class="pagent">${face}<b>${esc(who)}</b><small>${esc(PLOT_NAME[l.op])}</small></div>`
         + `<i class="pstamp">${l.ok ? '성공' : '실패'}</i>`
         + `<div class="pinfo">${flags}<span class="pact2">${esc(act)}</span>${after.map((x) => `<span class="paft">${esc(x)}</span>`).join('')}</div></div>`
-      out.push({ key, art: `event-plot-${l.op}`, good: l.ok, flags: '', title, sub, small: PLOT_NAME[l.op], sfx, stage })
+      out.push({ key, art: plotArt(l.op), good: l.ok, flags: '', title, sub, small: PLOT_NAME[l.op], sfx, stage })
     }
     return out
   }
@@ -5114,7 +5142,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const op = d['op'] as PlotOp
         diploMode = 'plot'
         plotOpen = op
-        if (op === 'assassin' && cmdHero !== '' && realm !== null && plotAgents(realm, me()).includes(cmdHero)) plotAgent = cmdHero
+        if (NIGHT_OPS.has(op) && cmdHero !== '' && realm !== null && plotAgents(realm, me()).includes(cmdHero)) plotAgent = cmdHero
         sheet = { kind: 'diplo' }
         $('.sheet').scrollTop = 0
         paint()
@@ -5490,7 +5518,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const k = o as { node?: string; other?: string; hero?: string }
         const same = (p: Order): boolean => p.kind === 'plot' && p.op === op && p.target === o.target && p.node === k.node && p.other === k.other && p.hero === k.hero
         if (plots.some(same)) plots = plots.filter((p) => !same(p))
-        else if (plots.length < P.realm.plotsPerSeason) { plots = [...plots, k.hero !== undefined && hands[k.hero] !== undefined ? { ...o, hand: hands[k.hero]! } as Order : o]; if (op === 'assassin') plotAgent = null }
+        else if (plots.length < P.realm.plotsPerSeason) { plots = [...plots, k.hero !== undefined && hands[k.hero] !== undefined ? { ...o, hand: hands[k.hero]! } as Order : o]; if (NIGHT_OPS.has(op)) plotAgent = null }
         plotPick = ''
         break
       }
