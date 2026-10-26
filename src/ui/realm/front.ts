@@ -348,7 +348,8 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
   } else if (step === 1) {
     body = `<div class="pl pyou">${k.face(me, 'pface')}<div class="pt">${k.emblem(me, 'pem')}<b>${k.esc(f?.name ?? '')}</b>`
       + `<span>${k.esc(n?.place ?? '')}</span>${ruler !== undefined ? `<p class="who">군장 <b>${k.esc(ruler.name)}</b></p>` : ''}`
-      + `<p>${k.esc(n?.blurb ?? '')}</p>${carriedHtml(k, r)}</div></div>`
+      // 나라의 결과 풍습 — 고르기 판과 같은 카드 (형 10-26: "게임시작할때 2페이지에 그나라 군주나올때 국가 개성 정보들 다 알려줘야할듯")
+      + `<p>${k.esc(n?.blurb ?? '')}</p>${customsHtml(k, me, f?.customs)}${carriedHtml(k, r)}</div></div>`
   } else {
     const need = winNeed(region)
     // 세 갈래 — 갈래마다 할 수 있는 일을 게임 속 그림과 함께 (형 10-25: "첩자가 아니라 공작 · 화친 동맹 교역 첩자 … 아이콘들과 함께 설명")
