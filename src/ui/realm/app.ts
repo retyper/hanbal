@@ -3908,7 +3908,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 휘장 — 이 나라로 이겼다는 표가 나라 고르기에 붙는다 (META §2-①)
       const badge = r.outcome?.kind === 'win' && (r.region ?? 'byeonhan-mini') !== 'tutorial'
         ? `<p class="tierup">${esc(josa(r.factions[me()]?.name ?? '', '으로', '로'))} 이긴 <b>휘장</b>을 받았다 — 나라 고르기에 붙는다</p>` : ''
-      return endingHtml(KIT, r, host.history(), opened + badge + tombStripHtml(RELIC_KIT, r) + drillStrip(r) +`<p class="mute retainnote">우리 장수로 부린 이는 영웅전에 남는다 — 다음 판을 열 때 영웅전에서 골라 데려간다.</p>`)
+      return endingHtml(KIT, r, host.history(), opened + badge + tombStripHtml(RELIC_KIT, r) + drillStrip(r) +`<p class="mute retainnote">우리 장수로 부린 이는 영웅전에 남는다 — 다음 판을 열 때 영웅전에서 골라 데려간다.</p><p class="retainnote"><button class="btn ghost sm" data-act="export">기록 내보내기</button></p>`)
     }
     if (!showReport || before === null || report === null) return ''
     const season = seasonOf(r.season)
@@ -4308,7 +4308,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function frontHtml(f: Front): string {
     const links = `<p class="fine"><a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a> ${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
       // 소리의 출처 — 공공누리 제1유형·CC BY 는 출처를 밝혀야 쓸 수 있다 (형 10-23: "출처표기해야 상업적으로 사용가능하니까 주의")
-      + ` <a class="btn ghost" href="${BASE}realm/credits.html">소리 출처</a></p>`
+      + ` <a class="btn ghost" href="${BASE}realm/credits.html">소리 출처</a>`
+      // 판 기록 — 판 밖(첫 화면 · 끝 화면)에서도 받는다. 아래 「나라」 탭은 판 안에서만 보여 찾기 어려웠다 (형 10-26: "나라 탭이 어딨음??")
+      + (host.gameCount() > 0 ? ` <button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>` : '') + `</p>`
     switch (f.kind) {
       case 'title': {
         // 영웅전(도감) — 판을 넘어 남는 것 (VISION §5-4)
