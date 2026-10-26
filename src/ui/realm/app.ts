@@ -445,9 +445,12 @@ function fxHtml(r: Realm, fx: CardFx): string {
   // 아무 일 없음 — 글 대신 「곡식 0」 그림 칩 (형 10-26: "아무 일 없는 건 텍스트로 하지 말고 0 으로 이미지화")
   return h === '' ? `<span class="cnone"><b class="gz" title="오가는 것 없음">${icon(GOOD_ICON.grain, 'cgi')}0</b></span>` : h
 }
-/** 큰 얼굴 — 900px 판이 있으면 그것 (알현처럼 화면 가득일 때) */
+/** 큰 얼굴 — 900px 판이 있으면 그것 (알현처럼 화면 가득일 때) · 900px 판이 없는 얼굴(아이 · 몇 군주)은 320px 판으로 갈아 낀다
+ *  (형 10-27: "우리 밀정 누가 갔는지 얼굴이 안 보이는데 — 찌그러진 빈 타원 동그라미밖에 없음" — 없는 bust-hd 를 불러 빈 그림이 떴다) */
 const bustHd = (h: Hero | undefined, cls: string): string =>
-  h !== undefined && bustOf(h.id) !== undefined ? `<img class="${cls}" src="${ART}bust-hd/${bustOf(h.id)}.jpg" alt="">` : ''
+  h !== undefined && bustOf(h.id) !== undefined
+    ? `<img class="${cls}" src="${ART}bust-hd/${bustOf(h.id)}.jpg" onerror="this.onerror=null;this.src='${ART}bust/${bustOf(h.id)}.jpg'" alt="">`
+    : ''
 const bust = (h: Hero | undefined, cls = 'face'): string =>
   h !== undefined && bustOf(h.id) !== undefined ? `<img class="${cls}" src="${ART}bust/${bustOf(h.id)}.jpg" alt="">` : `<span class="${cls} noface"></span>`
 /** 우리 나라 — 깃발마다 금빛 후광을 두른다 (형 2026-10-20: "사용자의 나라는 로그에서 아이콘도 뭔가 후광이 있거나 특별하게 … 내나라가 어느나란지도 모르겠어서") */
@@ -4242,7 +4245,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       else if (l.agentFate === 'escaped' && ag !== undefined) after.push(`${josa(ag.name, '이', '가')} 몸만 빠져나왔다`)
       if (l.exposed === true) after.push('누가 보냈는지 드러났다 — 사이가 나빠졌다')
       else if (l.caught) after.push('들켰다 — 그쪽이 경계를 올렸다 · 누가 했는지는 모른다')
-      const face = ag !== undefined ? (bustHd(ag, 'plf') || bust(ag, 'plf')) : icon(PLOT_ICON[l.op], 'plf ic')
+      // 얼굴 그림이 없는 장수면 빈 테 대신 공작 그림
+      const face = (ag !== undefined ? bustHd(ag, 'plf') : '') || icon(PLOT_ICON[l.op], 'plf ic')
       const flags = l.op === 'sow' ? `<span class="sowf big">${emblem(l.target, 'fem')}<i>⇄</i>${emblem(l.other ?? null, 'fem')}</span>` : emblem(l.target, 'fem')
       const stage = `<div class="plotv${l.ok ? ' ok' : ' fail'}"><img class="pbg" src="${ART}event/${plotArt(l.op)}.jpg" alt=""><i class="pred"></i>`
         + `<div class="pagent">${face}<b>${esc(who)}</b><small>${esc(PLOT_NAME[l.op])}</small></div>`

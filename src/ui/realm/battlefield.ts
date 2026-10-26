@@ -1059,14 +1059,12 @@ function lookHtml(lk: Look | undefined, k: string): string {
   // 나쁜 숫자는 붉게 · 좋은 숫자는 녹색으로, 클수록 짙게 · 0 은 회색 (형 10-26: "돌격을 선택하면 붉은 숫자가 방진보다 많으니 나쁘다고 알고")
   const c = lookCells(n)
   const num = (x: LookCell, unit: string): string => `<b style="color:${cellColor(x)}${x.k > 0.6 ? ';font-weight:900' : ''}">${signed(x.v)}<small>${unit}</small></b>`
-  const pair = (x: [LookCell, LookCell], unit: string): string => (x[0].v === x[1].v
-    ? `<b class="wgx3" style="color:${cellColor(x[0])}">${signed(x[0].v)}<small>${unit}</small></b>`
-    : `${num(x[0], unit)}<i>~</i>${num(x[1], unit)}`)
+  // 폭이 없는 확정값도 최악 · 최선 두 칸에 같은 숫자로 (형 10-27: "범위가 없고 확정이면 중앙에 −60 이렇게만 나오던데 그냥 최악 최선 값을 똑같이")
+  const pair = (x: [LookCell, LookCell], unit: string): string => `${num(x[0], unit)}<i>~</i>${num(x[1], unit)}`
   const table = `<span class="wgx"><i></i><span class="wgk us">우리${n.cap !== undefined ? '<small> 놓치면</small>' : ''}</span><span class="wgk foe">적</span>`
     + `<span class="wgk">피해</span>${pair(c.usMen, '명')}${pair(c.foeMen, '명')}`
     + `<span class="wgk">사기</span>${pair(c.usMor, '')}${pair(c.foeMor, '')}`
-    // 폭이 있을 때만 「최악 · 최선」 밑줄 (물러난다처럼 한 값뿐이면 뺀다)
-    + ([c.usMen, c.foeMen, c.usMor, c.foeMor].some((x) => x[0].v !== x[1].v) ? `<span class="wgxn"><span>최악</span><span>최선</span><span>최악</span><span>최선</span></span>` : '') + '</span>'
+    + `<span class="wgxn"><span>최악</span><span>최선</span><span>최악</span><span>최선</span></span></span>`
   const cap = n.cap !== undefined ? `<span class="wgl wgc"><span class="wgk">잡을 가망</span><b>${pctText(n.cap)}</b></span>` : ''
   // 무너지는 선 — 이 깃발이면 이번 합에 무너질 수 있다 (우리 붉게 깜박 · 적은 금빛) · 해시계와 함께 (형 10-26)
   const warn = (lk.fall ?? 0) >= P.realm.tacLookFall ? `<span class="wgl wgff us"><span class="wgk">⚠</span>우리가 무너질 수 있다 <b>${oneChance(lk.fall!)}%</b></span>` : ''
@@ -2036,7 +2034,6 @@ export const WAR_CSS = `
 .ap .wguess .wgx > i { font-style: normal; text-align: center; color: #6a645a; font-size: 11px; }
 .ap .wguess .wgx > b { text-align: center; font-variant-numeric: tabular-nums; text-shadow: 0 1px 0 #000; }
 .ap .wguess .wgx > b small { font-size: .78em; font-weight: 600; margin-left: 1px; opacity: .8; }
-.ap .wguess .wgx > b.wgx3 { grid-column: span 3; }
 .ap .wguess .wgx > .wgxn { grid-column: 2 / -1; display: grid; grid-template-columns: subgrid; font-size: 9.5px; color: #6a645a; text-align: center; }
 .ap .wguess .wgx > .wgxn > span:nth-child(1) { grid-column: 1; } .ap .wguess .wgx > .wgxn > span:nth-child(2) { grid-column: 3; }
 .ap .wguess .wgx > .wgxn > span:nth-child(3) { grid-column: 4; } .ap .wguess .wgx > .wgxn > span:nth-child(4) { grid-column: 6; }
@@ -2552,9 +2549,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     if (named === l.key) return
     named = l.key
     host.music?.('war')
-    // 우리 장수가 한마디 — 여는 북 뒤에 (걷히는 소리 시계와 따로: 셈을 눌러 넘겨도 남는다)
-    const lead = ourLead(l)
-    if (lead !== null) window.setTimeout(() => bark(lead), P.realm.warVoiceOpenMs)
+    // 여는 화면엔 장수 대답(「네」)을 내지 않는다 — 부른 적 없는데 대답하는 꼴 (형 10-27: "전투 개시할 때 시작 화면에서 「네」 소리 — 필요 없지 않나") · 기술 외침은 그대로
     const weAtk = l.atkFaction === host.me
     const st = l.start
     const us = st !== undefined ? st.men[weAtk ? 0 : 1] : 0
