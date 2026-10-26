@@ -250,6 +250,11 @@ export interface Hero {
   spouse?: string
   /** 부모 — 혼인에서 난 자식 장수 */
   parents?: readonly [string, string]
+  /**
+   * 판 밖 단련을 들고 왔다 (drill.applyDrill) — lv 단련 단계 · add 판을 열 때 더해 준 몫 (10 에 막혀 덜 든 것은 뺀 값).
+   * 옛 저장 · 남의 나라 장수 · 단련 없는 장수에는 없다
+   */
+  drill?: { readonly lv: number; readonly add: Partial<Record<GrowStat, number>> }
 }
 
 /** 사건 카드 한 장 (events.ts · data/cards.ts) — season 계절에 답한다. hero·hero2·node 는 카드에 붙은 사람·고을 */
@@ -642,6 +647,11 @@ export interface Realm {
   unified?: number
   /** 지난 판에서 따라온 장수 (계승 가신 — legacy.ts · VISION §5-4). 판을 열 때 한 번 정해진다. 옛 저장에는 없다 */
   retainers?: string[]
+  /**
+   * 단련 공 — 이 판에서 우리 장수마다 쌓인 공 (drill.ts · HERO-GROWTH ★ §A). 판이 끝나면 판 밖 단련 공으로 새긴다.
+   * 쓰러지거나 사로잡혀도 지우지 않는다 — 다음 판엔 돌아온다. 옛 저장에는 없다 (없으면 0)
+   */
+  merit?: Record<string, number>
   /** 난세 단계 1~10 (tier.ts) — 판을 열 때 정해진다. 없으면 1 */
   tier?: number
   /** 그해 가을걷이 배수 — 사건이 건다 (events.ts · economy.harvestModOf). year = Math.floor(season / 4). 옛 저장에는 없다 */

@@ -2,12 +2,13 @@
  * 동행 화면 (src/realm/legacy.ts 의 셈 · VISION §5-4 · PLAY §5).
  *
  *   판 고르기(이야기 장 · 자유 판 나라 자세히) — 영웅전에서 거느려 본 장수 가운데 데려갈 이를 고른다.
- *   새 판을 열 때 — 고른 이를 처음 몸으로 들인다 (realm-main.fresh). 고름은 판을 넘어 남는다.
+ *   새 판을 열 때 — 고른 이를 처음 몸 + 판 밖 단련으로 들인다 (realm-main.fresh · drill.drillRealm). 고름은 판을 넘어 남는다.
  * 고른 것은 이 기기에만 (판 저장·영웅전처럼). 옛 끝 화면 고름(hanbal.realm.retain)은 처음 한 번 읽어 이어 쓴다.
  */
 import { retainMaxOf, snapshot } from '../../realm/legacy.ts'
 import type { Hero, RegionId } from '../../realm/types.ts'
 import { nameHtml } from './heroview.ts'
+import { STAT_NAME } from '../../realm/data/prose.ts'
 
 interface Kit {
   readonly esc: (s: string) => string
@@ -43,7 +44,7 @@ function load(): Rec | null {
 /**
  * 동행 — 영웅전에서 고른다 (형 10-25: "캠페인에서 장수 데려갈 때도 지난 판에서 데려가는 게 아니라 영웅전에서 데려가는 거 아님?").
  * 영웅전에 「거느림」으로 오른 장수(우리 장수로 부린 적이 있다) 가운데 난세 단계가 허락하는 만큼 — 이야기 장이든 자유 판이든 판을 열 때 고른다.
- * 고른 것은 판을 넘어 남는다 (다음 판에 다시 고르지 않아도 된다). 몸은 처음 나올 때의 몸이다 (legacy.bringRetainers)
+ * 고른 것은 판을 넘어 남는다 (다음 판에 다시 고르지 않아도 된다). 몸은 처음 나올 때의 몸 + 단련터에서 올린 단련이다 (legacy.bringRetainers → drill.drillRealm)
  */
 const BRING = 'hanbal.realm.bring'
 
@@ -79,17 +80,27 @@ export function takeRetainers(region: RegionId, tier: number, bodyOf: (id: strin
   return loadBring().slice(0, retainMaxOf(tier)).map((id) => bodyOf(id)).filter((h): h is Hero => h !== undefined).map(snapshot)
 }
 
-/** 판 고르기의 「데려갈 장수」 — 영웅전에서 거느려 본 장수들. max 는 고른 난세 단계의 동행 수 */
-export function bringHtml(k: Kit, served: ReadonlyArray<{ id: string; name: string }>, max: number): string {
+/** 단련한 몸의 다섯 능력치 — 「무7 통6 …」 (카드가 좁아 첫 글자만) */
+const drillLine = (h: Hero): string =>
+  `<small class="rtst">${(['mu', 'tong', 'ryak', 'chi', 'deok'] as const).map((s) => `${STAT_NAME[s].slice(0, 1)}${h[s]}`).join(' ')}</small>`
+
+/**
+ * 판 고르기의 「데려갈 장수」 — 영웅전에서 거느려 본 장수들. max 는 고른 난세 단계의 동행 수.
+ * drilled — 단련터에서 단련한 이의 단련 몸 (없으면 null · 처음 몸으로 온다)
+ */
+export function bringHtml(k: Kit, served: ReadonlyArray<{ id: string; name: string }>, max: number, drilled: (id: string) => Hero | null = () => null): string {
   const ids = loadBring().filter((id) => served.some((x) => x.id === id))
   const on = new Set(ids.slice(0, max))
   let h = `<div class="retain carry"><h4>데려갈 장수 <small>${on.size}/${max}</small></h4>`
   if (max === 0) return h + `<p class="mute">이 난세에서는 혼자 간다.</p></div>`
   if (served.length === 0) return h + `<p class="mute">우리 장수로 부린 이가 영웅전에 오르면 여기서 데려간다.</p></div>`
-  h += `<p class="mute">영웅전에서 거느려 본 장수 · 처음 몸으로 온다.</p><div class="rtl">`
+  h += `<p class="mute">영웅전에서 거느려 본 장수 · 단련터에서 단련한 몸으로 온다.</p><div class="rtl">`
   for (const x of served) {
     const sel = on.has(x.id)
-    h += `<button class="rtc${sel ? ' on' : ''}${!sel && on.size >= max ? ' full' : ''}" data-act="bring" data-id="${x.id}" data-max="${max}">${face(k, x.id)}<b>${nameHtml(x.name)}</b><i>${sel ? '데려간다' : '남는다'}</i></button>`
+    const d = drilled(x.id)
+    const lv = d?.drill?.lv ?? 0
+    h += `<button class="rtc${sel ? ' on' : ''}${!sel && on.size >= max ? ' full' : ''}" data-act="bring" data-id="${x.id}" data-max="${max}">${face(k, x.id)}<b>${nameHtml(x.name)}</b>`
+      + `${d !== null && lv > 0 ? `<span class="dlv">단련 ${lv}</span>${drillLine(d)}` : ''}<i>${sel ? '데려간다' : '남는다'}</i></button>`
   }
   return h + `</div></div>`
 }
@@ -104,6 +115,7 @@ export const LEGACY_CSS = `
 .ap .retain .rtc i { font-style: normal; font-size: 10.5px; color: var(--mute); }
 .ap .retain .rtc.on { opacity: 1; border-color: #e0b860; background: linear-gradient(#2c2618, #1f1710); } .ap .retain .rtc.on i { color: #f0c860; }
 .ap .retain .rtc.full { cursor: default; opacity: .4; }
+.ap .retain .rtc .dlv { align-self: center; font-size: 10.5px; padding: 0 6px; } .ap .retain .rtc .rtst { font-size: 9.5px; color: #e8d8a8; letter-spacing: -.2px; white-space: nowrap; }
 .ap .front .retain.carry { margin: 8px 0 14px; }
 /* 판을 열기 전 「데려갈 장수」 팝업 */
 .ap .bringov { position: absolute; inset: 0; z-index: 92; display: flex; align-items: center; justify-content: center; padding: 16px; background: #000b; }

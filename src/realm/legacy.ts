@@ -2,7 +2,7 @@
  * 계승 가신 — 판이 끝날 때 우리 장수 셋을 골라 다음 판에 데려간다 (docs/realm/VISION §5-4 · PLAY §5 · BUILD §8 Q5).
  *
  * 디아블로의 창고 자리. 이겨도 져도 고른다 (VISION M7 — 져도 다음 판이 하고 싶다). 단 셋 — 첫 계단의 긴장을 지키는 상한.
- * 자란 능력치·특성(눈뜬 것 포함)·공은 그대로 따라온다. 정은 새로 쌓는다 (새 나라, 새 주인).
+ * 몸은 처음 몸 + 판 밖 단련(drill.ts — 단련터에서 올린 능력치)이다. 판 안에서 자란 몫·정은 내려놓고 새로 쌓는다 (새 나라, 새 주인).
  * 다음 판에 같은 사람이 남의 장수로 있으면 그 사람이 우리를 따라온 것이다 — 그 나라에서 빠진다. 군주는 데려가지 못한다.
  *
  * 순수한 셈만 한다 — 고른 것을 이 기기에 두는 일은 화면(ui/realm/legacy.ts)이 한다.
@@ -55,7 +55,8 @@ export function bringRetainers(r: Realm, list: readonly Hero[]): string[] {
     if (out.includes(x.id) || isRuler(r, x.id) || x.id.endsWith('-ruler')) continue
     // 그 판에서 남의 군대를 이끌던 사람이면 군대에서 빠진다
     for (const a of Object.values(r.armies)) if (a.hero === x.id) a.hero = null
-    // 처음 몸으로 — 지난 판에서 자란 솜씨는 데려오지 않는다 (회의 결정 META §7-3 · 형 10-24: "오버스펙으로 시작"). 몸은 이 판의 그 사람 · 떠돌이 명부 · 없으면(판에서 난 아이) 데려온 그대로
+    // 처음 몸으로 들인다 — 지난 판 안에서 자란 솜씨(grown)는 내려놓는다 (META §7-3 · 형 10-24: "오버스펙으로 시작"). 몸은 이 판의 그 사람 · 떠돌이 명부 · 없으면(판에서 난 아이) 데려온 그대로.
+    // 판 밖에서 키운 몫은 단련터의 단련으로만 온다 — 들인 뒤 drill.drillRealm 이 우리 장수 모두에 입힌다 (HERO-GROWTH ★ 둘째 판 · 형 10-26: "난이도 상관없이 키운 걸 가져와야")
     const base = r.heroes[x.id] ?? HERO_POOL.find((p) => p.id === x.id)
     r.heroes[x.id] = base !== undefined
       ? { ...structuredClone(base), faction: me, status: 'free', captor: null, at: cap, post: null, bond: P.realm.bondStart }
