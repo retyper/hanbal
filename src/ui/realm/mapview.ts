@@ -122,7 +122,8 @@ export function roadSvg(d: string, kind: EdgeKind, k: number, op = 1, title = ''
  * 글씨·기호 크기는 지도 높이(cqh)를 따른다.
  */
 export const MAP_CSS = `
-.map { position: relative; height: 100%; aspect-ratio: ${W} / ${H}; margin: 0 auto; background: #2a261f center / cover no-repeat;
+/* --aw: 출정 화살 굵기 — 지도 배율(--z)만큼 부풀지 않고 배율의 제곱근만큼만 (고을 그림·글씨와 같은 결 · 형 10-26: "가까이볼때 군사화살표가 너무 확대") */
+.map { --aw: calc(var(--zs, 1) / var(--z, 1)); position: relative; height: 100%; aspect-ratio: ${W} / ${H}; margin: 0 auto; background: #2a261f center / cover no-repeat;
   user-select: none; -webkit-user-select: none; container-type: size;
   /* 가장자리 고을 이름·말이 밖으로 삐져나가 굴릴 자리를 늘리지 않게 — 지도 바깥 빈 바탕까지 끌려 나갔다 (형 10-23: "맵에서 지도 바깥으로 막 나가지지 않게") */
   overflow: clip; }
@@ -343,7 +344,7 @@ export const MAP_CSS = `
 @keyframes mvbob { from { transform: translateY(0) rotate(-3deg); } to { transform: translateY(-12%) rotate(3deg); } }
 .map .toks.mv .mvtag { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 2px; white-space: nowrap; z-index: 3; pointer-events: none;
   font-size: clamp(10px, calc(1.6cqh / var(--z, 1) * var(--zs, 1)), 13px); font-weight: 700; color: #fff4dc; background: #7a1f10e6; border-radius: 8px; padding: 1px 6px; box-shadow: 0 1px 3px #0008; }
-.map svg .mvflow { animation: mvf .9s linear infinite; } @keyframes mvf { to { stroke-dashoffset: -22; } }
+.map svg .mvflow { animation: mvf .9s linear infinite; } @keyframes mvf { to { stroke-dashoffset: calc(-22px * var(--aw, 1)); } }
 @media (prefers-reduced-motion: reduce) { .map .toks.mv .tok, .map svg .mvflow { animation: none; } }
 .map .lb.crowd { visibility: hidden; } /* 겹쳐 자리가 없는 작은 고을 이름 — declutter */
 .map .lb.sel { box-shadow: 0 0 0 1px #1a120a, 0 0 0 3px #fff6d8, 0 0 10px #ffd27a; z-index: 1; } .map .lb.dim { opacity: 0; } /* 한 나라만 볼 때 다른 나라 글씨는 감춘다 (형: "다른나라들은 글자정돈 완전 투명하게") */ .map .nd.sel img.st { filter: drop-shadow(0 0 7px #ffd27a) drop-shadow(0 0 3px #ffd27a); }
@@ -518,6 +519,8 @@ export function mapHtml(
   }
   svg += `</g><g class="ly-marches">` // 출정 화살
   // 출정 화살 — 그 길의 모양을 따라 간다. 고른 것은 굵은 실선, 길 위의 것은 점선 + 남은 계절
+  // 굵기·점선은 style 로 --aw 를 곱한다 — 가까이 볼수록 지도처럼 커지지 않게 (머리는 marker 라 굵기를 따라간다)
+  const aw = (n: number): string => `calc(${n.toFixed(1)}px * var(--aw, 1))`
   const edgeOf = (a: string, b: string): REdge | undefined => Object.values(r.edges).find((e) => (e.a === a && e.b === b) || (e.a === b && e.b === a))
   for (const m of marches) {
     if (!seen(m.from) || !seen(m.to)) continue
@@ -528,20 +531,20 @@ export function mapHtml(
     const pts = tidyEnds(trimPolyline(full, k, 1 - k), 0.08)
     // 보내기로 한 집 — 흙빛 점선 (군대의 붉은 화살과 갈린다)
     if (m.people === true) {
-      svg += `<path class="pplarrow" d="${smoothPath(pts)}" fill="none" stroke="#8a5a2b" stroke-width="${7 * lw}" stroke-dasharray="${(12 * lw).toFixed(1)} ${(8 * lw).toFixed(1)}" stroke-linecap="round" marker-end="url(#rm-ah-ppl)" opacity=".92"/>`
+      svg += `<path class="pplarrow" d="${smoothPath(pts)}" fill="none" stroke="#8a5a2b" style="stroke-width:${aw(7 * lw)};stroke-dasharray:${aw(12 * lw)} ${aw(8 * lw)}" stroke-linecap="round" marker-end="url(#rm-ah-ppl)" opacity=".92"/>`
       continue
     }
     // 기습은 밤길처럼 — 어두운 짧은 점선. 정면은 붉은 실선
     const amb = m.ambush === true && m.foe !== true
-    const dash = amb ? ' stroke-dasharray="2 14" stroke-linecap="round"' : m.left === null ? '' : ' stroke-dasharray="14 8"'
+    const dash = amb ? `;stroke-dasharray:${aw(2)} ${aw(14)}" stroke-linecap="round` : m.left === null ? '' : `;stroke-dasharray:${aw(14)} ${aw(8)}`
     const onUs = m.foe === true && threatened.has(m.to)
     const col = m.ally === true ? '#3f7a3a' : onUs ? '#b0281a' : m.foe === true || amb ? '#3a2a5a' : '#c8402a'
     const head = onUs ? 'rm-ah' : m.foe === true || amb ? 'rm-ah-foe' : 'rm-ah'
-    if (onUs) svg += `<path d="${smoothPath(pts)}" fill="none" stroke="#ffb09a" stroke-width="${18 * lw}" stroke-linecap="round" opacity=".35"/>`
+    if (onUs) svg += `<path d="${smoothPath(pts)}" fill="none" stroke="#ffb09a" style="stroke-width:${aw(18 * lw)}" stroke-linecap="round" opacity=".35"/>`
     // 길 위의 우리 행군은 점선이 가는 쪽으로 흐른다 (형: "이동중이면 … 애니메이션이 뭔가 있음 좋겠음")
     const flow = m.left !== null && m.foe !== true && !amb ? ' class="mvflow"' : onUs ? ' class="thrarrow"' : ''
     const label0 = m.ally === true && m.left !== null ? `도우러 · ${m.left <= 1 ? '다음 계절' : `${m.left}계절 뒤`}` : ''
-    svg += `<path${flow} d="${smoothPath(pts)}" fill="none" stroke="${col}" stroke-width="${(amb ? 11 : onUs ? 10 : 9) * lw}"${dash} marker-end="url(#${head})" opacity=".9"/>`
+    svg += `<path${flow} d="${smoothPath(pts)}" fill="none" stroke="${col}" style="stroke-width:${aw((amb ? 11 : onUs ? 10 : 9) * lw)}${dash}" marker-end="url(#${head})" opacity=".9"/>`
     // 언제 닿나 — 우리 행군은 말 밑 꼬리표가 말한다(가려지지 않게). 적 행군은 길 위 글씨로 "다음 계절 닿음"
     const when = m.left !== null ? (m.left <= 1 ? '다음 계절' : `${m.left}계절 뒤`) : ''
     const label = label0 !== '' ? label0 : m.foe === true ? `적 · ${when} 닿음` : m.left !== null ? '' : amb ? '우리 기습' : ''

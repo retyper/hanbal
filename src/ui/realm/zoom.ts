@@ -58,16 +58,22 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     const bw = Math.min(1, (b[2]! - b[0]!) + 2 * SEEN_PAD)
     const bh = Math.min(1, (b[3]! - b[1]!) + 2 * SEEN_PAD)
     const fit = Math.min(wrap.clientWidth / (bw * wrap.clientHeight * aspect()), 1 / bh)
-    // 칸보다 작게는 안 줄인다 (옆이 까맣게 비지 않게)
-    return Math.max(cover(), Math.min(fit, cover() * maxOver() * 0.8))
+    // 밝혀진 땅이 한눈에 다 들어올 때까지 줄인다 — 칸보다 작아지면 판이 가운데 놓이고 둘레는 어둡게 (형 10-26: "멀리볼때 맵이 한눈에 들어오는지").
+    // 예전엔 칸을 꽉 채우는 데서 멈춰, 넓은 화면은 위아래가 · 폰은 옆이 잘린 채 더 못 줄였다
+    return Math.min(fit, cover() * maxOver() * 0.8)
   }
   const clamp = (v: number): number => Math.min(cover() * maxOver(), Math.max(minZ(), v))
   const map = (): HTMLElement | null => wrap.querySelector<HTMLElement>('.map')
+
+  /** 판의 왼쪽 위가 칸 안에서 놓인 자리 — 칸보다 작으면 가운데 놓이므로 0 이 아니다 */
+  const off = (): [number, number] => { const m = map(); return m === null ? [0, 0] : [m.offsetLeft, m.offsetTop] }
 
   function paintZ(): void {
     const m = map()
     if (m === null) return
     m.style.height = `${z * 100}%`
+    // 칸보다 낮으면 위아래 가운데로 (옆은 .map 의 margin auto 가 맞춘다)
+    m.style.marginTop = z < 1 ? `${((1 - z) / 2) * wrap.clientHeight}px` : ''
     // 글씨는 배율의 제곱근만큼 — 크게 보면 조금 커지되 고을 그림만큼 부풀지 않게
     m.style.setProperty('--z', String(z))
     m.style.setProperty('--zs', String(Math.sqrt(z)))
@@ -81,25 +87,28 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     const n = clamp(next)
     if (n === z) return
     const k = n / z
-    const sx = (wrap.scrollLeft + cx) * k - cx
-    const sy = (wrap.scrollTop + cy) * k - cy
+    const [ox, oy] = off()
+    const px = (wrap.scrollLeft + cx - ox) * k
+    const py = (wrap.scrollTop + cy - oy) * k
     z = n
     paintZ()
-    wrap.scrollLeft = sx
-    wrap.scrollTop = sy
+    const [ox1, oy1] = off()
+    wrap.scrollLeft = px + ox1 - cx
+    wrap.scrollTop = py + oy1 - cy
   }
 
   /**
    * 손짓 하나 — 시작한 점(cx0, cy0 · 칸 안)을 축으로 s 배 늘리고 (tx, ty) 만큼 옮겨 보인다. 높이·스크롤은 아직 그대로다
    */
-  let live: { s: number; cx0: number; cy0: number; sl0: number; st0: number; tx: number; ty: number } | null = null
+  let live: { s: number; cx0: number; cy0: number; sl0: number; st0: number; ox0: number; oy0: number; tx: number; ty: number } | null = null
   let commitTimer = 0
   let panT = 0
   const liveStart = (cx: number, cy: number): void => {
     if (live !== null) return
-    live = { s: 1, cx0: cx, cy0: cy, sl0: wrap.scrollLeft, st0: wrap.scrollTop, tx: 0, ty: 0 }
+    const [ox0, oy0] = off()
+    live = { s: 1, cx0: cx, cy0: cy, sl0: wrap.scrollLeft, st0: wrap.scrollTop, ox0, oy0, tx: 0, ty: 0 }
     const m = map()
-    if (m !== null) { m.style.transformOrigin = `${live.sl0 + cx}px ${live.st0 + cy}px`; m.style.willChange = 'transform' }
+    if (m !== null) { m.style.transformOrigin = `${live.sl0 + cx - ox0}px ${live.st0 + cy - oy0}px`; m.style.willChange = 'transform' }
     // 늘리는 동안 고을의 늘 도는 움직임을 멈춘다 — 미는 동안과 같다 (모습은 그대로, 그릴 일만 준다)
     wrap.classList.add('panning')
   }
@@ -123,8 +132,9 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     if (g === null || g.s === 1) return
     z = clamp(z * g.s)
     paintZ()
-    wrap.scrollLeft = (g.sl0 + g.cx0) * g.s - (g.cx0 + g.tx)
-    wrap.scrollTop = (g.st0 + g.cy0) * g.s - (g.cy0 + g.ty)
+    const [ox1, oy1] = off()
+    wrap.scrollLeft = (g.sl0 + g.cx0 - g.ox0) * g.s + ox1 - (g.cx0 + g.tx)
+    wrap.scrollTop = (g.st0 + g.cy0 - g.oy0) * g.s + oy1 - (g.cy0 + g.ty)
   }
 
   // 미는 동안 — 고을 그림의 그림자 필터·늘 도는 애니메이션을 잠깐 멈춘다. 폰에서 지도를 밀면 그릴 조각이 늦어 마을이 비어 보였다
