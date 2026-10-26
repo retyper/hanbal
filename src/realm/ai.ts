@@ -17,17 +17,18 @@ import {
   allyFoe, canEscort, envoyOptions, favorOf, friendly, jointTargets, lentStep, nationPower, openAsks, pledgedNodes, powerRange, relationOf, tradeOffer,
 } from './diplomacy.ts'
 import {
-  armCost, buildCost, canBuild, canGuard, draftCost, draftLimit, goodsWorth, guardCost, hhOf, menOf, nextBuild, riteAllowed, riteCost, settleLimit, settleTargets, stockOf, upkeepOf,
+  armCost, buildCost, canBuild, canGuard, draftCost, draftLimit, draftNeeds, goodOf, goodsWorth, guardCost, hhOf, menOf, nextBuild, riteAllowed, riteCost, settleLimit, settleTargets, stockOf, upkeepOf,
 } from './economy.ts'
 import { ambushWorth, jointWin, movesOf, type Move } from './estimate.ts'
 import { hasTrait, idleHeroOrders, persuadeSeasons, wanderersFor } from './heroes.ts'
 import { limitHands } from './hands.ts'
-import { armiesAt, extendPlan, fortMul, neighbors, newArmyId, planned, seasonOf, seenMarches } from './season.ts'
+import { armiesAt, draftable, extendPlan, fortMul, neighbors, newArmyId, planned, seasonOf, seenMarches } from './season.ts'
 import { memoFor, withMemo } from './memo.ts'
 import type { UnitKind } from './battle.ts'
 import { bowUpCost, plotAgents, plotCost, plotTargets } from './plots.ts'
 import { allianceWhy, borders, breakWhy, leaderOf, truceWhy } from './stance.ts'
 import { knows } from './discovery.ts'
+import { BASE_MIX, mixOf } from './data/armymix.ts'
 import type { Army, EnvoyAsk, Hero, Order, PlotOp, Realm, Why } from './types.ts'
 
 export type Brain = 'greedy' | 'cautious' | 'reckless' | 'random' | 'planner'
@@ -124,11 +125,11 @@ export function spared(r: Realm, faction: string, to: string): boolean {
   return !(r.provoked ?? []).includes(faction)
 }
 
-const MIX_GOAL: ReadonlyArray<readonly [UnitKind, number]> = [['spear', 0.6], ['bow', 0.3], ['shield', 0.1]]
-
 /**
  * 징병 (FLOW §2) — 가을·겨울에만 (봄 징병은 농사를 깎는다). 곡식은 aiDraftReserve 계절치 군량을 남긴다.
- * 국읍과 제 군대가 쉬는 고을에서, 나라 군사의 병종 비가 MIX_GOAL 에서 가장 모자란 쪽을 뽑는다.
+ * 국읍과 제 군대가 쉬는 고을에서, 나라 군사의 병종 비가 **제 결의 비**(data/armymix.ts · CUSTOMS §8-3 S0)에서 가장 모자란 쪽을 뽑는다.
+ * 그 고을에서 못 뽑는 병종(수군은 포구에서만)은 건너뛴다. 말·배가 모자라 기병·수군을 조금만 뽑을 수 있으면
+ * 그만큼만(aiDraftGoodsMin 이상일 때) 뽑고 나머지는 다음으로 모자란 병종으로 채운다 — 말 없는 기병은 없다.
  * 봇도 같은 셈으로 뽑는다 — 봇 대전이 공정하려고.
  */
 function drafts(r: Realm, faction: string): Order[] {
@@ -137,8 +138,14 @@ function drafts(r: Realm, faction: string): Order[] {
   if (s !== 'autumn' && s !== 'winter') return []
   const fac = r.factions[faction]
   if (fac === undefined) return []
+  const goal = R.aiKyeolMix >= 0.5 ? mixOf(faction) : BASE_MIX
   const men = menOf(r, faction)
   let spare = stockOf(r, faction).grain - R.aiDraftReserve * upkeepOf(r, faction, true)
+  // 말과 배 나무 — 이번 계절에 뽑은 만큼 줄여 가며 (draftNeeds)
+  let horses = goodOf(stockOf(r, faction), 'horse')
+  let wood = goodOf(stockOf(r, faction), 'wood')
+  const goodsCap = (k: UnitKind): number =>
+    k === 'horse' && R.horsePerRider > 0 ? Math.floor(horses / R.horsePerRider) : k === 'boat' && R.boatWood > 0 ? Math.floor(wood / R.boatWood) : Infinity
   const have: Partial<Record<UnitKind, number>> = {}
   for (const a of Object.values(r.armies)) {
     if (a.faction !== faction) continue
@@ -150,18 +157,33 @@ function drafts(r: Realm, faction: string): Order[] {
   let room = Math.floor(R.draftCap * (hhOf(r, faction) + men)) - men
   let took = 0
   for (const node of [...new Set(places)]) {
-    if (r.nodes[node]?.owner !== faction) continue
+    const nd = r.nodes[node]
+    if (nd?.owner !== faction) continue
     const n = Math.min(draftLimit(r, faction, node), room, Math.floor(spare / Math.max(1e-9, R.draftGrain)))
     if (n < R.splitMin) continue
     const total = men + took
-    const unit = MIX_GOAL.reduce((best, [k, w]) =>
-      w * (total + n) - (have[k] ?? 0) > best[1] ? [k, w * (total + n) - (have[k] ?? 0)] as [UnitKind, number] : best,
-    ['spear', -Infinity] as [UnitKind, number])[0]
-    out.push({ kind: 'draft', faction, node, unit, n })
-    have[unit] = (have[unit] ?? 0) + n
-    spare -= draftCost(n).grain
-    room -= n
-    took += n
+    const kinds = draftable(nd)
+    // 여기서 뽑을 수 있는 병종만 — 말·배가 모자라 못 뽑는 몫은 남은 병종에 비대로 나눈다 (아니면 가장 작은 몫이 넘친다)
+    const ok = goal.filter(([k]) => kinds.includes(k) && Math.min(n, goodsCap(k)) >= Math.min(n, R.aiDraftGoodsMin))
+    const W = ok.reduce((a, [, w]) => a + w, 0)
+    // 모자란 차례 — 같으면 비 표의 차례 (sort 는 안정적이다)
+    const want = ok.map(([k, w]) => ({ k, need: (w / W) * (total + n) - (have[k] ?? 0) })).sort((a, b) => b.need - a.need)
+    let left = n
+    for (const { k } of want) {
+      const m = Math.min(left, goodsCap(k))
+      // 말·배가 모자라 일부만 — 너무 적으면 건너뛴다. 나머지는 같은 군대에 든다 (뒤 징병의 고을 몫이 1 모자랄 수 있어 하나 덜)
+      if (m < left && m < R.aiDraftGoodsMin) continue
+      out.push({ kind: 'draft', faction, node, unit: k, n: m })
+      have[k] = (have[k] ?? 0) + m
+      const need = draftNeeds(k, m)
+      horses -= need.horse
+      wood -= need.wood
+      spare -= draftCost(m).grain
+      room -= m
+      took += m
+      left = m < left ? left - m - 1 : 0
+      if (left < 1) break
+    }
   }
   return out
 }
