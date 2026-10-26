@@ -116,6 +116,11 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .banner.good { background: #24331f; color: #cfeabf; } .ap .banner.bad { background: #3a2622; color: #f1c6b8; }
 .ap .acard, .ap .ncard, .ap .fcard { display: flex; gap: 10px; padding: 10px; margin: 8px 0; border-radius: 14px; background: var(--card); border: 1px solid var(--line); }
 .ap .ncard, .ap .fcard { flex-direction: column; gap: 6px; }
+/* 외교 — 나라마다 접고 편다 (형 10-27) · 머리 줄: 얼굴 · 깃발·이름 · 군주 · 탈 · 사이 · ▸ */
+.ap .fcard .fhd { cursor: pointer; align-items: center; } .ap .fcard .fhd .fn { flex: 1; min-width: 0; }
+.ap .fcard .fhd .fmood { width: 34px; height: 34px; flex: none; object-fit: contain; }
+.ap .fcard .fchev { flex: none; width: 18px; text-align: center; color: var(--gold); font-style: normal; }
+.ap .fcard.shut { gap: 0; }
 .ap .acard .ab { flex: 1; min-width: 0; }
 .ap .seasonfx { position: absolute; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; pointer-events: none;
   background: #000a; animation: sfx 2.6s ease-out forwards; }
@@ -442,6 +447,15 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .pwho b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; } .ap .pwho small { font-size: 10.5px; color: var(--mute); line-height: 1.25; }
 /* 한 번 누르면 간다 — 장수 판에서 데려온 장수(on) · 못 가는 이(손이 다 찼다 · 값이 모자라다) · 값은 단추마다 */
 .ap .pwho.on { border-color: var(--gold); box-shadow: 0 0 0 2px #d9b36a55; }
+/* 이간 — 두 빈칸 · 깃발 줄 (형 10-27) */
+.ap .sowpick { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 8px 0 6px; }
+.ap .sowpick .sows { width: 96px; height: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 12px; border: 2px dashed #8a7048; background: #1d160f; color: var(--ink); font: inherit; cursor: pointer; }
+.ap .sowpick .sows.on { border-style: solid; border-color: var(--gold); background: #2a2016; } .ap .sowpick .sows i { font-style: normal; font-size: 26px; color: #8a7048; }
+.ap .sowpick .sows .fem { width: 38px; height: 38px; } .ap .sowpick .sows b { font-size: 12.5px; }
+.ap .sowpick .sowx { font-style: normal; font-size: 22px; color: #e0705a; }
+.ap .sowflags { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin-bottom: 6px; }
+.ap .sowflags button { padding: 3px; border-radius: 8px; border: 1px solid var(--line); background: #2a2016; cursor: pointer; } .ap .sowflags button.on { border-color: var(--gold); box-shadow: 0 0 0 2px #d9b36a55; }
+.ap .sowflags .fem { width: 30px; height: 30px; display: block; }
 .ap .pwho .cost b { font-size: 11px; } .ap .pwho .feel { max-width: 100%; white-space: normal; padding: 1px 6px; font-size: 10.5px; line-height: 1.3; text-align: center; } .ap .pwhos > p.mute { margin: 6px 0 0; font-size: 11.5px; }
 .ap .row .dest .pwarn { display: block; margin-top: 1px; font-size: 11.5px; font-weight: 600; line-height: 1.3; color: #ff9a80; white-space: normal; }
 /* 사신 단추 — 한 열 · 가로 길게 · 낌새는 오른쪽 끝 (askButtons · 형 10-25) */

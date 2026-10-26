@@ -16,6 +16,7 @@ import { battleName, endStory, fieldName, groupLabel, josa, roundStory, storyCtx
 import { BATTLE_STYLES, groupMen, groupOf, lookRound, nightAt, type BattleStyle, type RoundAt } from '../../realm/tactics.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
 import { seasonOf } from '../../realm/season.ts'
+import { heroArt } from '../../realm/heroes.ts'
 import type { Act, Approach, Art, Clock, Cmd, Dusk, DuskAsk, DuskLog, Grp, Hero, Look, Order, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { snd } from './sound.ts'
@@ -2461,8 +2462,6 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const hh = heroById(id)
     if (hh !== undefined) say(voicePath(hh, 'tap', isRulerHero(hh)))
   }
-  /** 우리 총대장 — 지금 판의 */
-  const ourLead = (l: BattleLine | null): string | null => (l === null ? null : l.start?.heroes[l.atkFaction === host.me ? 0 : 1] ?? null)
 
   /**
    * 판 끝의 뿔나팔·이김 음악을 이 싸움에서 이미 냈나 — 누르면(건너뛰기·맡긴 싸움 풀기) 걸어 둔 소리가 다 걷혀 대승 음악이 안 나왔다 (형 10-25).
@@ -2642,7 +2641,9 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       const ourS = weAtk ? 'a' : 'd'
       const act = rd?.acts?.find((x) => x.g === 'lead' && x.s === ourS)
       const c: Cmd = act?.c ?? cutLead
-      const ak = c === 'art' ? act?.art : undefined
+      // 비기면 그 합의 행동에 적힌 비기 — 없으면 나선 장수의 비기 (전엔 비어 짧은 대답 「어머」가 나왔다 · 형 10-27)
+      const leadH = heroById(act?.hero ?? l.start?.heroes[weAtk ? 0 : 1] ?? null)
+      const ak = c === 'art' ? (act?.art ?? (leadH !== undefined ? heroArt(leadH) : undefined)) : undefined
       const kind = ak !== undefined ? ART_CUT[ak] : CUT_OF[c]
       const hero = l.start?.heroes[weAtk ? 0 : 1] ?? null
       if (kind !== undefined && hero !== null) {
@@ -3122,8 +3123,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         for (const x of sc.querySelectorAll<HTMLElement>(`[data-war="pick"][data-g="${g}"]`)) x.classList.toggle('on', sel[g] === x.dataset['c'])
         active = g
         syncCmd()
-        // 장수 깃발을 들면 그 장수가 대답한다 (형 10-26)
-        if (g === 'lead' && sel[g] !== undefined) bark(sel.who ?? ourLead(l))
+        // 장수 깃발(비기·격려…)을 들 때는 말하지 않는다 — 「무엇이든 말씀만 하셔요」는 명을 고르는 자리에 안 맞았다 (형 10-27). 외침은 그 수가 풀릴 때
         // 골랐으면 아직 안 고른 다음 무리로 — 깃발이 내려앉는 것을 잠깐 보고 (전장의 깃발 판에서 골랐으면 그 판도 다음 무리 곁으로)
         const fromPop = popG !== undefined
         closePop()

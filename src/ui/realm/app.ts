@@ -653,6 +653,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   const expPick: Record<string, { dest: ExpDest; len: 0 | 1 | 2 }> = {}
   /** 나라 카드에서 "있었던 일"을 다 펼친 나라 */
   const deedsOpen = new Set<string>()
+  /** 외교 판에서 펼친 나라 — 접으면 군주 얼굴 · 깃발 · 이름 · 군주 · 탈 · 사이만 (형 10-27: "나라마다 열고 닫을 수 있게") */
+  const diploOpen = new Set<string>()
   let diploMode: 'envoy' | 'plot' | 'scout' = 'envoy'
   /** 장수 판의 탭 — 우리 장수 · 옥에 가둔 적장 · 적장 (형 10-23: "한 페이지에 다 담지 말고 탭을 나눠야") */
   let heroTab: 'cmd' | 'mine' | 'jail' | 'foe' = 'cmd'
@@ -687,6 +689,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let plotAgent: string | null = null
   /** 펼친 갈래에서 누른 노릴 곳 줄 — 그 바로 밑에 「누가 가나」를 펼친다 (plotKey) */
   let plotPick = ''
+  /** 이간 — 왼쪽 · 오른쪽 칸에 고른 나라 (형 10-27: "리스트를 쫙 두지 말고 왼쪽에 하나 오른쪽에 하나 나라 빈칸 · 국기로 선택") */
+  let sowA = ''
+  let sowB = ''
   /** 고을 판에서 펼쳐 둔 칸 (땅 이야기 · 고을 형편 · 나는 것 …) — 처음엔 다 접혀 있다 (형 10-25: "마을마다 있는 상세한 정보 너무 길게 … 접어두거나") */
   const foldOpen = new Set<string>()
   /** 접는 칸 하나 — 제목 줄(누르면 펼침/접음)과 몸. 몸이 비면 아무것도 안 그린다 */
@@ -2371,8 +2376,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const rel = relationOf(r, me(), f.id)
       const left = rel.until !== null ? ` ${Math.max(0, rel.until - r.season)}계절` : ''
       const lead = r.heroes[f.ruler ?? rulerId(f.id)]
-      h += `<div class="fcard"><div class="an">${lead !== undefined ? `<button class="fbtn" data-act="hero" data-id="${lead.id}">${bust(lead, 'rface')}</button>` : ''}<div class="fn"><b>${emblem(f.id, 'fem')}${esc(f.name)}</b><span class="mute">${lead !== undefined ? `군주 ${nameHtml(lead.name)}${lead.status === 'captive' ? ' · 사로잡힘' : lead.status === 'dead' ? ' · 죽음' : ''}` : ''}</span></div><span class="rel ${rel.state}">${REL_NAME[rel.state]}${left}</span></div>`
       const md = moodOf(r, me(), f.id)
+      // 꾸미는 중이거나 보낸 사신이 있는 나라는 펼친 채로
+      const fo = diploOpen.has(f.id) || compose.to === f.id
+      h += `<div class="fcard${fo ? ' open' : ' shut'}"><div class="an fhd" data-act="fopen" data-to="${f.id}">${lead !== undefined ? `<button class="fbtn" data-act="hero" data-id="${lead.id}">${bust(lead, 'rface')}</button>` : ''}<div class="fn"><b>${emblem(f.id, 'fem')}${esc(f.name)}</b><span class="mute">${lead !== undefined ? `군주 ${nameHtml(lead.name)}${lead.status === 'captive' ? ' · 사로잡힘' : lead.status === 'dead' ? ' · 죽음' : ''}` : ''}</span></div>${moodImg(ART, md.mood, 'mood fmood')}<span class="rel ${rel.state}">${REL_NAME[rel.state]}${left}</span><i class="fchev">${fo ? '▾' : '▸'}</i></div>`
+      if (!fo) { h += `</div>`; continue }
       h += `<div class="moodl ${md.mood}">${moodImg(ART, md.mood)}<div><b>${esc(MOOD_WORD[md.mood])}</b>${said(advisor(r), md.say)}</div></div>`
       h += `<div class="frow"><span class="mute">${REL_NOW[rel.state]}</span>${favorFeel(favorOf(r, me(), f.id))}</div>`
       // 우리 사이에 있었던 일 — 언제 누가 무엇을 (형: "이나라가 나한테 잘못한일 잘한일 이런거를 언제 그랬는지와 함께")
@@ -2669,7 +2677,33 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   /** 공작 한 갈래를 펼친 칸 — 노릴 곳 줄(하나뿐이면 바로 「누가 가나」) · 보낸 줄은 누가 갔나와 거두기 · 밤 공작은 직접 쏘기·자객의 활 */
+  /** 이간 칸 — 두 빈칸에 깃발을 하나씩 넣으면 그 둘 사이를 노린다. 보낸 이간은 위에 줄로 (거두기) */
+  function sowPanel(r: Realm, ts: PlotTarget[], full: boolean): string {
+    let h = `<div class="rows">`
+    for (const [i, o] of plots.entries()) {
+      if (o.kind !== 'plot' || o.op !== 'sow') continue
+      h += `<button class="row on" data-act="unplot" data-i="${i}"><span class="sowf">${emblem(o.target)}<i>⇄</i>${emblem(o.other ?? null)}</span><span class="dest">${esc(`${r.factions[o.target]?.name ?? ''} ↔ ${r.factions[o.other ?? '']?.name ?? ''}`)}<span class="pwent">${esc(plotWho(r, o))} 간다</span></span><span class="win">거둔다</span></button>`
+    }
+    h += `</div>`
+    if (full) return h
+    const ns = [...new Set(ts.flatMap((t) => [t.target, t.other ?? '']))].filter((f) => f !== '').sort((a, b) => ((r.factions[a]?.name ?? '') < (r.factions[b]?.name ?? '') ? -1 : 1))
+    const slot = (f: string, side: 'a' | 'b'): string => (f !== ''
+      ? `<button class="sows on" data-act="sowslot" data-side="${side}">${emblem(f, 'fem')}<b>${esc(r.factions[f]?.name ?? '')}</b></button>`
+      : `<button class="sows" data-act="sowslot" data-side="${side}"><i>?</i></button>`)
+    h += `<div class="sowpick">${slot(sowA, 'a')}<i class="sowx">⇄</i>${slot(sowB, 'b')}</div>`
+    h += `<div class="sowflags">${ns.map((f) => `<button class="${f === sowA || f === sowB ? 'on' : ''}" data-act="sowflag" data-f="${f}" data-tip="${esc(r.factions[f]?.name ?? '')}">${emblem(f, 'fem')}</button>`).join('')}</div>`
+    if (sowA !== '' && sowB !== '') {
+      const [x, y] = sowA < sowB ? [sowA, sowB] : [sowB, sowA]
+      const t = ts.find((p) => p.target === x && p.other === y)
+      if (t === undefined) h += `<p class="mute">이 둘은 갈라놓을 수 없다</p>`
+      else if (plots.some(plotSame('sow', t))) h += `<p class="mute">이미 보냈다</p>`
+      else h += plotWhoHtml(r, 'sow', t)
+    }
+    return h
+  }
+
   function plotPanel(r: Realm, op: PlotOp, ts: PlotTarget[], full: boolean): string {
+    if (op === 'sow' && ts.length > 0) return sowPanel(r, ts, full)
     const night = NIGHT_OPS.has(op)
     if (ts.length === 0) return `<p class="mute">${op === 'rescue' ? '잡혀간 우리 장수가 없다.' : `지금은 노릴 데가 없다.${op === 'bribe' || op === 'spy' ? ' 아는 마을이어야 한다. 정찰부터.' : op === 'assassin' ? ' 겨뤄 본 적장만 노릴 수 있다.' : ''}`}</p>`
     let h = `<div class="rows">`
@@ -3974,7 +4008,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 우리 공작이 먹혔다 — 갈래마다 제 그림으로 크게 (형 10-25: "공작이 성공한 것도 각각 이미지 · 전체화면 연출 · 확인 버튼")
     const wins = (r.region ?? 'byeonhan-mini') === 'tutorial' ? [] : plotWins(r, report).filter((x) => !landSeen.has(x.key))
     const pacts = (r.region ?? 'byeonhan-mini') === 'tutorial' ? [] : pactBigs(r, report).filter((x) => !landSeen.has(x.key))
-    const bigs = [...lands.map((x) => landBig(r, x)), ...pacts, ...wins]
+    const backs = (r.region ?? 'byeonhan-mini') === 'tutorial' ? [] : freedBigs(r, report).filter((x) => !landSeen.has(x.key))
+    const bigs = [...lands.map((x) => landBig(r, x)), ...pacts, ...wins, ...backs]
     if (bigs.length > 0) return bigCardHtml(r, bigs[0]!, bigs.length - 1)
     let h = `<div class="mcard" data-act="rep-fast"><div class="mt">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r.season))}</b><span>${esc(SEASON_LINE[season])}</span></div>`
     if (decide !== '') h += `<div class="rdecide"><h4 class="rdh">이번 계절 정할 것 · 다 골랐다</h4>${decide}</div>`
@@ -4204,6 +4239,26 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const stage = `<div class="pact${bad ? ' bad' : ''}"><img class="pactbg" src="${ART}event/${bg}.jpg" alt="">${bustHd(mine, 'pl a')}${bustHd(lord, 'pl b')}`
         + `<div class="pflags">${emblem(me(), 'fem')}<i>${bad ? '✕' : '⇄'}</i>${emblem(f, 'fem')}</div><div class="psay">${typed(say, esc, 1.1)}</div></div>`
       out.push({ key, art: bg, good: !bad, ...(k === 'gift' ? { tone: 'plain' as const } : {}), flags: '', title, sub, small: lord?.name ?? '', sfx, stage })
+    }
+    return out
+  }
+
+  /**
+   * 잡혀갔던 우리 장수가 돌아왔다 — 화친으로 풀려났거나 잡아 둔 나라의 도읍이 떨어져 옥에서 나왔다 (heroes.releaseCaptives).
+   * (형 10-27: "견지 쇠비 잡혀갔었는데 갑자기 장수 활성화되어 있음 … 돌아왔다는 전체화면 연출 있어야") · 구출은 공작 판(plotWins)이 따로 띄운다
+   */
+  function freedBigs(r: Realm, rep: Report): Big[] {
+    const out: Big[] = []
+    for (const l of rep.lines) {
+      if (l.kind !== 'freed' || l.faction !== me()) continue
+      const h = r.heroes[l.hero]
+      if (h === undefined) continue
+      const from = r.factions[l.from]?.name ?? ''
+      const key = `${r.season}:freed:${l.hero}`
+      const sub = l.why === 'peace' ? `${josa(from, '과', '와')} 화친하며 풀려났다` : `${from} 도읍이 떨어져 옥에서 나왔다`
+      const stage = `<div class="pact"><img class="pactbg" src="${ART}event/event-expedition-return.jpg" alt="">${bustHd(h, 'pl a')}`
+        + `<div class="pflags">${emblem(l.from, 'fem')}<i>➜</i>${emblem(me(), 'fem')}</div></div>`
+      out.push({ key, art: 'event-expedition-return', good: true, flags: '', title: `${josa(h.name, '이', '가')} 돌아왔다`, sub, small: h.name, sfx: snd('horn_victory'), stage })
     }
     return out
   }
@@ -5877,6 +5932,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'unenvoy': delete envoys[d['key']!]; break
       case 'chero': compose.hero = d['id'] ?? ''; envoyPick = ''; bark(d['id']); break
       case 'deeds': { const t = d['to']!; if (deedsOpen.has(t)) deedsOpen.delete(t); else deedsOpen.add(t); break }
+      case 'fopen': { const t = d['to']!; if (diploOpen.has(t) || compose.to === t) { diploOpen.delete(t); if (compose.to === t) compose.to = '' } else diploOpen.add(t); break }
       case 'build': {
         const node = d['node']!
         const same = (o: Order): boolean => o.kind === 'build' && o.node === node
@@ -5911,6 +5967,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         openNight(Number(d['i']))
         return
       }
+      case 'sowflag': { const f = d['f']!; if (sowA === f) sowA = ''; else if (sowB === f) sowB = ''; else if (sowA === '') sowA = f; else sowB = f; break }
+      case 'sowslot': if (d['side'] === 'a') sowA = ''; else sowB = ''; break
       case 'ppick':
         plotPick = plotPick === d['k'] ? '' : d['k']!
         if (plotPick !== '') requestAnimationFrame(() => scrollInside(root.querySelector<HTMLElement>('.popan .pwhos'), 'nearest'))
