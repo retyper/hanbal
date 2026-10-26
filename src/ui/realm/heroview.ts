@@ -120,6 +120,16 @@ export const HERO_CSS = `
 .ap .jsbar .jsl b { color: #f0d090; }
 .ap .jsone { margin: 8px 0; display: flex; flex-direction: column; gap: 4px; } .ap .jsone small { font-size: 12.5px; color: #cfc6b4; }
 .ap .hrow .jsd { display: block; font-size: 12.5px; font-weight: 700; color: #b8d89a; }
+/* 알아서 찾은 일 한 줄 — 얼굴 · 이름 › 일 아이콘 · 어디 · 군사 · 무엇 (형 10-26) */
+.ap .jrow { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; font-size: 13px; color: #e8d8b0; padding: 2px 0; }
+.ap .jrow .jrf { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; object-position: top; border: 1.5px solid #c8a050; background: #1c2129; flex: none; }
+.ap .jrow b { color: #f6e6c0; font-weight: 800; }
+.ap .jrow .jarr { font-style: normal; color: #c8a050; font-weight: 900; }
+.ap .jrow .jri { width: 20px; height: 20px; object-fit: contain; flex: none; }
+.ap .jrow .jpl { font-weight: 700; color: #b8d89a; }
+.ap .jrow .jmen { display: inline-flex; align-items: center; gap: 1px; font-size: 12px; color: #cfe0b8; }
+.ap .jrow small { font-size: 11.5px; color: #a8a090; }
+.ap .todochip .tci { width: 18px; height: 18px; vertical-align: -4px; margin-right: 3px; }
 .ap .jsm { display: inline-block; padding: 0 5px; border-radius: 6px; border: 1px solid #8a7040; font-size: 11px; font-weight: 700; color: #f0d090; vertical-align: 1px; }
 .ap .trait { display: inline-flex; align-items: baseline; gap: 3px; padding: 1px 7px; border-radius: 10px; border: 1.5px solid var(--g); background: #17110c;
   font-size: 12px; white-space: nowrap; } .ap .trait i { font-style: normal; font-size: 10px; color: var(--mute); }

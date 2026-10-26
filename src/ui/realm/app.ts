@@ -981,7 +981,28 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     chanCache = { key, os }
     return os
   }
-  /** 재상이 이 장수에게 맡길 일 — 한 줄 (「안개골 마을 고을지기」 · 「갈대울 마을의 군사 120명」) */
+  /**
+   * 쉬는 장수가 알아서 찾은 일 — 그림 한 줄: 얼굴 · 이름 → 일 아이콘 · 어디 · 무엇 (형 10-26: "재상이 맡긴다가 아니라 알아서 할 일을 찾아 한다 · 텍스트만 주지 말고 아이콘도 · 누가 어디에 뭘 하러 가는지")
+   */
+  function chanJobHtml(id: string): string {
+    const o = chancellorOrders().find((x) => (x.kind === 'assign' || x.kind === 'lead') && x.hero === id)
+    if (o === undefined || realm === null) return ''
+    const p = plan()
+    const h = p.heroes[id]
+    if (h === undefined) return ''
+    const far = h.at
+    let place = '', what = '', ic = '', men = ''
+    if (o.kind === 'assign' && o.node !== null) { place = p.nodes[o.node]?.name ?? ''; what = '고을을 맡으러'; ic = 'settle-capital' }
+    else if (o.kind === 'lead') {
+      const a = p.armies[o.army]
+      if (a === undefined) return ''
+      place = p.nodes[a.at]?.name ?? ''; what = '군대를 이끌러'; ic = 'unit-general'
+      men = `<span class="jmen">${icon('unit-spear', 'jri')}${headcount(forceOf(p, a)).toLocaleString('ko-KR')}</span>`
+    } else return ''
+    const away = (o.kind === 'assign' ? o.node : p.armies[(o as { army: string }).army]?.at) !== far
+    return `<span class="jrow">${bust(h, 'jrf')}<b>${esc(h.name)}</b><i class="jarr">›</i>${icon(ic, 'jri')}<span class="jpl">${esc(place)}</span>${men}<small>${what}${away ? ' · 먼 길' : ''}</small></span>`
+  }
+  /** 쉬는 장수가 알아서 찾은 일 — 글 한 줄 (「안개골 마을 고을지기」 · 「갈대울 마을의 군사 120명」) */
   function chanJob(id: string): string | null {
     const o = chancellorOrders().find((x) => (x.kind === 'assign' || x.kind === 'lead') && x.hero === id)
     if (o === undefined || realm === null) return null
@@ -1005,13 +1026,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function chancellorBar(): string {
     if (realm === null) return ''
     const on = autoIdle(realm)
-    let h = `<div class="jsbar"><div class="seg"><button class="${on ? 'on' : ''}" data-act="js-all" data-v="1">쉬는 장수는 재상이 맡긴다</button><button class="${on ? '' : 'on'}" data-act="js-all" data-v="0">내가 하나하나 맡긴다</button></div>`
+    let h = `<div class="jsbar"><div class="seg"><button class="${on ? 'on' : ''}" data-act="js-all" data-v="1">쉬는 장수는 알아서 할 일을 찾는다</button><button class="${on ? '' : 'on'}" data-act="js-all" data-v="0">내가 하나하나 맡긴다</button></div>`
     if (on) {
-      const p = plan()
       const jobs = chancellorOrders().flatMap((o) => (o.kind === 'assign' || o.kind === 'lead' ? [o.hero] : []))
       h += jobs.length > 0
-        ? `<p class="jsl"><b>쉬는 장수 ${jobs.length}명 — 재상이 맡긴다</b>${jobs.map((id) => `<span>${esc(p.heroes[id]?.name ?? '')} → ${esc(chanJob(id) ?? '')}</span>`).join('')}</p>`
-        : `<p class="mute">계절이 끝날 때 쉬는 장수에게 재상이 일을 맡긴다. 손수 부릴 장수는 그 장수 판에서 「직접 부린다」를 고른다.</p>`
+        ? `<div class="jsl"><b>쉬는 장수 ${jobs.length}명 — 알아서 할 일을 찾아 간다</b>${jobs.map((id) => chanJobHtml(id)).join('')}</div>`
+        : `<p class="mute">계절이 끝날 때 쉬는 장수는 알아서 할 일을 찾아 간다. 손수 부릴 장수는 그 장수 판에서 「직접 부린다」를 고른다.</p>`
     }
     return h + `</div>`
   }
@@ -2689,7 +2709,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return `<button class="hrow${isRuler(r, h.id) ? ' ruler' : ''}${job !== null ? ' busy' : ''}" data-act="hero" data-id="${h.id}">${bust(h)}${job !== null ? `<i class="hbz">⏳</i>` : ''}<span class="hb">`
       + `<b>${nameHtml(h.name)}${isRuler(r, h.id) ? ' <span class="mute">군주</span>' : ''}${mine ? ' <span class="jsm">직접</span>' : ''}${seen ? '' : ' <span class="heard">이름만 들었다</span>'}</b>`
       + (job !== null ? `<span class="hdo">⏳ ${esc(job[1])}</span>` : `<span class="mute">${esc(roleLine(r, h))}</span>`)
-      + (chan !== null ? `<span class="jsd">📜 재상이 맡긴다 · ${esc(chan)}</span>` : '')
+      + (chan !== null ? `<span class="jsd">${chanJobHtml(h.id)}</span>` : '')
       + `<span class="tr3">${h.faction === me() && h.status === 'free' ? bondChip(r, h) : ''}${traitChips(h, seen)}</span>${extra}</span></button>`
   }
 
@@ -2926,8 +2946,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (ours && !isRuler(r, id) && realm !== null && autoIdle(realm)) {
       const self = manualOf(realm).has(id)
       const chan = busy === null ? chanJob(id) : null
-      h += `<div class="jsone"><div class="seg"><button class="${self ? '' : 'on'}" data-act="js-one" data-id="${id}" data-v="auto">재상에게 맡김</button><button class="${self ? 'on' : ''}" data-act="js-one" data-id="${id}" data-v="self">직접 부린다</button></div>`
-        + `<small>${self ? '쉬어도 재상이 일을 주지 않는다 — 손수 맡긴다' : chan !== null ? `계절이 끝나면 재상이 맡긴다 · ${esc(chan)}` : '쉬게 되면 계절이 끝날 때 재상이 일을 맡긴다'}</small></div>`
+      h += `<div class="jsone"><div class="seg"><button class="${self ? '' : 'on'}" data-act="js-one" data-id="${id}" data-v="auto">알아서</button><button class="${self ? 'on' : ''}" data-act="js-one" data-id="${id}" data-v="self">직접 부린다</button></div>`
+        + (self ? `<small>쉬어도 스스로 일을 찾지 않는다 — 손수 맡긴다</small>` : chan !== null ? `<small>계절이 끝나면 알아서 간다</small>${chanJobHtml(id)}` : `<small>쉬게 되면 계절이 끝날 때 알아서 할 일을 찾아 간다</small>`) + `</div>`
     }
     // 한 번 맺은 짝은 계속 — 지금 판·계절 처음 판 어느 쪽이든 짝이 있으면 혼인 칸을 안 띄운다
     const pending = heroOrders.filter((o) => (o.kind === 'assign' || o.kind === 'lead' || o.kind === 'persuade' || o.kind === 'hire') && o.hero === id)
@@ -3197,7 +3217,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (r.region === 'tutorial' || r.outcome || sheet !== null) return ''
     // 재상이 맡길 쉬는 장수 — 할 일이 아니라 알림 한 줄 (누르면 장수 판 맨 위에 누가 어디로 가는지)
     const chan = realm !== null && autoIdle(realm) && tabWait(r, 'heroes') === 0 ? chancellorOrders().length : 0
-    const chanChip = chan > 0 ? `<button class="todochip" data-act="tab" data-tab="heroes">📜 쉬는 장수 ${chan}명 — 재상이 맡긴다</button>` : ''
+    const chanChip = chan > 0 ? `<button class="todochip" data-act="tab" data-tab="heroes">${icon('unit-general', 'tci')} 쉬는 장수 ${chan}명 — 알아서 할 일을 찾아 간다</button>` : ''
     if (!novice()) return chanChip
     const drafted = musters.some((o) => o.kind === 'draft')
     const canDraft = Object.values(r.nodes).some((n) => n.owner === me() && draftLimit(r, me(), n.id) > 0)
