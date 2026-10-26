@@ -2707,7 +2707,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const chan = ours && job === null ? chanJob(h.id) : null
     const mine = ours && realm !== null && autoIdle(realm) && manualOf(realm).has(h.id)
     return `<button class="hrow${isRuler(r, h.id) ? ' ruler' : ''}${job !== null ? ' busy' : ''}" data-act="hero" data-id="${h.id}">${bust(h)}${job !== null ? `<i class="hbz">⏳</i>` : ''}<span class="hb">`
-      + `<b>${nameHtml(h.name)}${isRuler(r, h.id) ? ' <span class="mute">군주</span>' : ''}${mine ? ' <span class="jsm">직접</span>' : ''}${seen ? '' : ' <span class="heard">이름만 들었다</span>'}</b>`
+      + `<b>${nameHtml(h.name)}${isRuler(r, h.id) ? ' <span class="mute">군주</span>' : ''}${h.drill !== undefined && h.drill.lv > 0 && h.faction === me() ? ` <span class="dlv">단련 ${h.drill.lv}</span>` : ''}${mine ? ' <span class="jsm">직접</span>' : ''}${seen ? '' : ' <span class="heard">이름만 들었다</span>'}</b>`
       + (job !== null ? `<span class="hdo">⏳ ${esc(job[1])}</span>` : `<span class="mute">${esc(roleLine(r, h))}</span>`)
       + (chan !== null ? `<span class="jsd">${chanJobHtml(h.id)}</span>` : '')
       + `<span class="tr3">${h.faction === me() && h.status === 'free' ? bondChip(r, h) : ''}${traitChips(h, seen)}</span>${extra}</span></button>`
