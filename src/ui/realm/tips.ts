@@ -3,9 +3,9 @@
  * 디테일 필요한것들은 누르고 있으면 조금있다 나오고").
  *
  * 폰엔 마우스를 올리는 일이 없어서 `title` 이 안 보인다. 그래서 한 곳(.ap 뿌리)에서 받는다:
- *   - **누르는 동안만** — 하스스톤 카드 설명처럼 (형 10-23: "누르고 있는 동안엔 나오고 손 떼면 안 나오고").
- *     눌러도 아무 일 없는 것은 바로, 단추·고을은 빠른 탭에 번쩍이지 않게 tipPress 뒤. 손을 떼면 거둔다.
- *     tipHold 넘게 누른 뒤의 떼기는 누르기로 치지 않는다 (읽으려던 것 — 단추가 눌리지 않는다)
+ *   - **닿자마자 바로** (형 10-26: "누르고 있어야 나오는 게 아니라 터치하자마자 즉각적으로 나타나야 해").
+ *     눌러도 아무 일 없는 것(칩·특성·숫자)은 손을 떼도 남아 읽히고(tipLong 뒤 또는 다른 데를 누르면 걷힌다),
+ *     단추·고을은 그 일이 일어나니 손을 떼면 거둔다. tipHold 넘게 누른 뒤의 떼기는 누르기로 치지 않는다 (읽으려던 것 — 단추가 눌리지 않는다)
  * 짧은 말은 `data-tip`(없으면 `title`), 긴 말은 `data-more`.
  * 컴퓨터에선 **올려 두면 조금 뒤** 같은 말풍선(짧은 말 + 긴 말)이 뜨고, 내리면 거둔다. `title` 은 올릴 때 `data-tip` 으로 옮겨
  * 브라우저 기본 말풍선과 겹쳐 뜨지 않게 한다 (형: "마우스 올렸을 때 나오게 만들었는데 잘 구현한거 맞아?" — 전엔 `data-tip`·`data-more` 가 마우스에 안 떴다).
@@ -40,7 +40,7 @@ export function installTips(root: HTMLElement): void {
   bub.setAttribute('role', 'tooltip')
   root.appendChild(bub)
   let hideTimer = 0
-  let hold: { el: HTMLElement; x: number; y: number; timer: number; openTimer: number } | null = null
+  let hold: { el: HTMLElement; x: number; y: number; timer: number; act: boolean } | null = null
   /** 길게 눌러 말풍선을 띄웠다 — 이어지는 click 하나를 삼킨다 */
   let swallow = false
 
@@ -156,7 +156,7 @@ export function installTips(root: HTMLElement): void {
     if (ev.pointerType === 'mouse' && ev.button !== 0) return
     const el = (ev.target as HTMLElement).closest<HTMLElement>(TIPS)
     if (el === null || !root.contains(el) || el === bub) return
-    // 누르는 동안 바로 — 단추·고을처럼 눌러서 일하는 것은 빠른 탭에 번쩍이지 않게 아주 잠깐(tipPress) 뒤
+    // 닿자마자 바로 뜬다 — 단추·고을도 기다리지 않는다 (형 10-26)
     const x = ev.clientX, y = ev.clientY
     const open = (): void => {
       if (el.matches(PEEK)) { peekAt(el, x, y, true); return }
@@ -167,27 +167,34 @@ export function installTips(root: HTMLElement): void {
       window.clearTimeout(hideTimer) // 누르는 동안은 떠 있는다
     }
     const act = el.closest(ACTS) !== null && el.closest(INSTANT) === null
-    const openTimer = window.setTimeout(open, act ? P.realm.tipPress : 0)
+    open()
     // 오래 누르면 읽으려는 것 — 떼도 단추가 눌리지 않게
     const timer = window.setTimeout(() => {
       if (hold === null) return
       swallow = act
       navigator.vibrate?.(8)
     }, P.realm.tipHold)
-    hold = { el, x, y, timer, openTimer }
+    hold = { el, x, y, timer, act }
   })
-  // 손을 떼면 거둔다 · 끌면(스크롤) 접는다
+  // 손을 떼면 — 일하는 것(단추·고을)은 거두고, 읽을 것(칩·특성)은 남겨 둔다(tipLong 뒤 저절로 · 다른 데를 누르면 걷힘)
   const release = (): void => {
-    if (hold !== null) window.clearTimeout(hold.openTimer)
+    const keep = hold !== null && (!hold.act || swallow) && bub.classList.contains('on')
     cancelHold()
+    if (keep) {
+      window.clearTimeout(hideTimer)
+      hideTimer = window.setTimeout(() => { unpeek(); hide() }, P.realm.tipLong)
+      return
+    }
     unpeek()
     hide()
   }
+  // 끌면(스크롤) 바로 접는다
+  const drop = (): void => { cancelHold(); unpeek(); hide() }
   root.addEventListener('pointermove', (ev) => {
-    if (hold !== null && Math.hypot(ev.clientX - hold.x, ev.clientY - hold.y) > SLOP) release()
+    if (hold !== null && Math.hypot(ev.clientX - hold.x, ev.clientY - hold.y) > SLOP) drop()
   })
   root.addEventListener('pointerup', (ev) => { if (ev.pointerType !== 'mouse') release(); else cancelHold() })
-  root.addEventListener('pointercancel', release)
+  root.addEventListener('pointercancel', drop)
   // 길게 누르면 폰이 띄우는 메뉴(복사·저장) — 설명을 띄운 자리에선 막는다
   root.addEventListener('contextmenu', (ev) => {
     if ((ev.target as HTMLElement).closest(TIPS) !== null) ev.preventDefault()
