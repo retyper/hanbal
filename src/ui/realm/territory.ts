@@ -8,8 +8,13 @@
  *   - 고을마다 퍼질 수 있는 끝(큰 고을이 조금 멀리) — 빈 들·먼 바다로 끝없이 번지지 않게
  * 칸의 테두리를 이어 고을마다의 고리로 만들고, 이웃이 같은 구간마다 줄여(더글러스-포이커) 매끈하게(차이킨) 다듬는다.
  * 맞닿은 두 고을은 같은 구간을 똑같이 다듬어 쓰므로 땅빛과 금이 꼭 맞물린다. 판·고을 자리마다 한 번만 셈한다.
+ *
+ * 길은 제 두 고을의 땅으로 미리 묶는다 (형 10-27: "국경이랑 길이 … 서로 꼬이지 않게") — 길 둘레 몇 칸을 가운데 금까지는 앞 고을,
+ * 그 너머는 뒤 고을 땅으로 정해 두고 퍼지기 시작한다. 그래서 길은 남의 고을 땅을 지나지 않고, 두 고을 사이 금을 한 번만 건넌다.
+ * 가운데 금은 두 끝에서 같은 걸음(산·강 값까지 셈한)이 되는 자리 — 길이 강을 건너면 대개 그 강에서 갈린다.
  */
-import type { Pt } from './mapgeo.ts'
+import { P as TUNE } from '../../tune/params.ts'
+import { segCross, type Pt } from './mapgeo.ts'
 
 export interface TerritoryIn {
   /** 고을 자리(그림 좌표) · 크기 배수 */
@@ -20,6 +25,8 @@ export interface TerritoryIn {
   readonly rough: readonly (readonly [number, number, number, number])[]
   /** 뭍 다각형들 (그림 좌표) — 없으면 온 판이 뭍 */
   readonly land: readonly (readonly Pt[])[] | null
+  /** 두 끝 고을(seeds 번호)을 잇는 길 — 그려지는 곡선 위의 촘촘한 점들. 뱃길은 넣지 않는다 (바다는 땅이 아니다) */
+  readonly roads?: ReadonlyArray<{ readonly a: number; readonly b: number; readonly pts: readonly Pt[] }>
 }
 
 export interface Territory {
@@ -157,6 +164,84 @@ export function territory(key: string, W: number, H: number, R: number, inp: Ter
       push(c)
     }
   })
+  // 길 둘레를 두 끝 고을 땅으로 묶는다 — 묶인 칸은 남이 못 가져간다
+  const locked = new Uint8Array(N)
+  if (inp.roads !== undefined && inp.roads.length > 0) {
+    const rad = cs * TUNE.realm.roadCorridor
+    const ri = Math.ceil(rad / cs)
+    // 남의 고을 자리 둘레는 묶지 않는다 — 길이 남의 고을 곁을 스쳐도 그 고을 땅은 제 자리에서 난다
+    const near = new Int16Array(N).fill(-1)
+    const nearD = new Float32Array(N).fill(Infinity)
+    const keep = rad * 1.5
+    const ki = Math.ceil(keep / cs)
+    inp.seeds.forEach((s, i) => {
+      const sx = Math.floor(s.x / cs)
+      const sy = Math.floor(s.y / cs)
+      for (let y = Math.max(0, sy - ki); y <= Math.min(rows - 1, sy + ki); y++) {
+        for (let x = Math.max(0, sx - ki); x <= Math.min(cols - 1, sx + ki); x++) {
+          const d = Math.hypot((x + 0.5) * cs - s.x, (y + 0.5) * cs - s.y)
+          const c = idx(x, y)
+          if (d <= keep && d < nearD[c]!) { nearD[c] = d; near[c] = i }
+        }
+      }
+    })
+    const lockD = new Float32Array(N).fill(Infinity)
+    const lockO = new Int16Array(N).fill(-1)
+    const lockS = new Float32Array(N)
+    const cellOf = (q: Pt): number => idx(Math.min(cols - 1, Math.max(0, Math.floor(q[0] / cs))), Math.min(rows - 1, Math.max(0, Math.floor(q[1] / cs))))
+    for (const rd of inp.roads) {
+      // 반 칸씩 다시 찍고, 걸음 값(산 속은 무겁고 강을 건너면 더한다)을 쌓는다
+      const q: Pt[] = [rd.pts[0]!]
+      for (let k = 1; k < rd.pts.length; k++) {
+        const [ax, ay] = rd.pts[k - 1]!
+        const [bx, by] = rd.pts[k]!
+        const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / (cs * 0.5)))
+        for (let s = 1; s <= n; s++) q.push([ax + ((bx - ax) * s) / n, ay + ((by - ay) * s) / n])
+      }
+      const cum: number[] = [0]
+      for (let k = 1; k < q.length; k++) {
+        const c = cellOf(q[k]!)
+        let step = Math.hypot(q[k]![0] - q[k - 1]![0], q[k]![1] - q[k - 1]![1]) * (1 + (ROUGH_MUL - 1) * rough[c]!)
+        if (river[c] === 1 && river[cellOf(q[k - 1]!)] === 0) step += R * RIVER_COST
+        cum.push(cum[k - 1]! + step)
+      }
+      const total = cum[cum.length - 1]!
+      const offA = -R * 0.3 * (inp.seeds[rd.a]!.size - 1)
+      const offB = -R * 0.3 * (inp.seeds[rd.b]!.size - 1)
+      // 두 끝에서 같은 걸음이 되는 자리 — 너무 한쪽으로 쏠리지 않게
+      const split = Math.min(total * 0.8, Math.max(total * 0.2, (total + offB - offA) / 2))
+      for (let k = 0; k < q.length; k++) {
+        const [px, py] = q[k]!
+        const toA = cum[k]! <= split
+        const o = toA ? rd.a : rd.b
+        const s0 = toA ? offA + cum[k]! : offB + total - cum[k]!
+        const cx = Math.floor(px / cs)
+        const cy = Math.floor(py / cs)
+        for (let y = Math.max(0, cy - ri); y <= Math.min(rows - 1, cy + ri); y++) {
+          for (let x = Math.max(0, cx - ri); x <= Math.min(cols - 1, cx + ri); x++) {
+            const c = idx(x, y)
+            if (land[c] === 0) continue
+            if (near[c]! >= 0 && near[c] !== rd.a && near[c] !== rd.b) continue
+            const d = Math.hypot((x + 0.5) * cs - px, (y + 0.5) * cs - py)
+            if (d > rad || d >= lockD[c]!) continue
+            lockD[c] = d
+            lockO[c] = o
+            // 먼 길은 퍼지는 끝에 걸려 가는 띠만 남지 않게, 묶인 칸의 걸음을 끝의 몫까지만 센다
+            lockS[c] = Math.min(s0, reach[o]! * TUNE.realm.roadCorridorReach)
+          }
+        }
+      }
+    }
+    const seedCell = new Set(inp.seeds.map((s) => cellOf([s.x, s.y])))
+    for (let c = 0; c < N; c++) {
+      const o = lockO[c]!
+      if (o < 0 || seedCell.has(c)) continue // 고을 자리 칸은 그 고을 것
+      locked[c] = 1
+      dist[c] = lockS[c]!
+      owner[c] = o
+      push(c)
+    }
+  }
   // 열여섯 방향 — 여덟 방향만 쓰면 거리가 팔각형이 되어 두 고을의 경계가 가로·세로·대각 곧은 금으로 나온다
   const S5 = Math.sqrt(5)
   const D8: ReadonlyArray<readonly [number, number, number]> = [
@@ -176,7 +261,7 @@ export function territory(key: string, W: number, H: number, R: number, inp: Ter
       const y = cy + dy
       if (x < 0 || y < 0 || x >= cols || y >= rows) continue
       const n = idx(x, y)
-      if (done[n] === 1 || land[n] === 0) continue
+      if (done[n] === 1 || land[n] === 0 || locked[n] === 1) continue
       // 말 뜀(2칸)은 건너뛰는 칸도 본다 — 강·바다를 뛰어넘지 않게
       const mid = len > 2 ? idx(cx + Math.trunc(dx / 2), cy + Math.trunc(dy / 2)) : n
       if (land[mid] === 0) continue
@@ -222,39 +307,41 @@ export function territory(key: string, W: number, H: number, R: number, inp: Ter
   const P = (v: number): [number, number] => [(v % V) * cs, Math.floor(v / V) * cs]
 
   // 이웃이 같은 구간 하나를 다듬는다 — 두 고을이 같은 구간을 같게 쓰도록 바른 방향(작은 꼭짓점 번호에서)으로 셈해 둔다
-  const runCache = new Map<string, Pt[]>()
-  const smoothRun = (vs: number[], a: number, b: number, closed: boolean): Pt[] => {
+  type Run = { canon: Pt[]; closed: boolean; tol: number; pts: Pt[] }
+  const runs = new Map<string, Run>()
+  const smooth = (r: Run): Pt[] => chaikin(r.tol > 0 ? simplify(r.canon, r.tol, r.closed) : r.canon, TUNE.realm.borderSmooth, r.closed)
+  /** 구간을 적어 두고 그 열쇠와 이 고을이 그은 쪽(뒤집혔나)을 돌려준다 */
+  const runOf = (vs: number[], a: number, b: number, closed: boolean): { key: string; rev: boolean } => {
     let key: string
-    let rev = false
+    let rev: boolean
+    let canon: number[]
     if (closed) {
       // 고리 — 가장 작은 꼭짓점에서 시작해 정한 쪽으로
       let mi = 0
       for (let k = 1; k < vs.length; k++) if (vs[k]! < vs[mi]!) mi = k
       const rot = [...vs.slice(mi), ...vs.slice(0, mi)]
       rev = rot.length > 2 && rot[1]! > rot[rot.length - 1]!
-      const canon = rev ? [rot[0]!, ...rot.slice(1).reverse()] : rot
+      canon = rev ? [rot[0]!, ...rot.slice(1).reverse()] : rot
       key = `c:${Math.min(a, b)}:${Math.max(a, b)}:${canon[0]}:${canon[1]}`
-      const got = runCache.get(key)
-      const pts = got ?? chaikin(simplify(canon.map(P), cs * 0.85, true), 1, true)
-      if (got === undefined) runCache.set(key, pts)
-      // 돌려 놓기 — 이 고을이 그은 쪽으로
-      return rev ? [pts[0]!, ...pts.slice(1).reverse()] : pts
+    } else {
+      rev = vs[0]! > vs[vs.length - 1]!
+      canon = rev ? vs.slice().reverse() : vs
+      key = `o:${Math.min(a, b)}:${Math.max(a, b)}:${canon[0]}:${canon[canon.length - 1]}:${canon.length}`
     }
-    rev = vs[0]! > vs[vs.length - 1]!
-    const canon = rev ? vs.slice().reverse() : vs
-    key = `o:${Math.min(a, b)}:${Math.max(a, b)}:${canon[0]}:${canon[canon.length - 1]}:${canon.length}`
-    let pts = runCache.get(key)
-    if (pts === undefined) {
-      pts = chaikin(simplify(canon.map(P), cs * 0.85, false), 1, false)
-      runCache.set(key, pts)
-    }
-    return rev ? pts.slice().reverse() : pts
+    if (!runs.has(key)) runs.set(key, { canon: canon.map(P), closed, tol: cs * TUNE.realm.borderSimplify, pts: [] })
+    return { key, rev }
+  }
+  /** 이 고을이 그은 쪽으로 돌려 놓은 다듬은 구간 */
+  const ptsOf = (key: string, rev: boolean): Pt[] => {
+    const r = runs.get(key)!
+    if (!rev) return r.pts
+    return r.closed ? [r.pts[0]!, ...r.pts.slice(1).reverse()] : r.pts.slice().reverse()
   }
 
-  const fills: string[] = []
-  const edges: Array<{ i: number; j: number; d: string }> = []
+  // 1) 고을마다 고리를 잇고 이웃이 바뀌는 자리에서 구간으로 자른다
+  type Ring = Array<{ tag: number; key: string; rev: boolean; one: boolean }>
+  const rings: Ring[][] = inp.seeds.map(() => [])
   for (let i = 0; i < inp.seeds.length; i++) {
-    let fill = ''
     for (const [, list] of byNode[i]!) {
       for (const start of list) {
         if (start.used) continue
@@ -273,21 +360,72 @@ export function territory(key: string, W: number, H: number, R: number, inp: Ter
         const one = s0 === -1
         if (one) s0 = 0
         const rot = [...loop.slice(s0), ...loop.slice(0, s0)]
-        const runs: Array<{ tag: number; vs: number[] }> = []
+        const segs: Array<{ tag: number; vs: number[] }> = []
         for (const x of rot) {
-          const last = runs[runs.length - 1]
+          const last = segs[segs.length - 1]
           if (last !== undefined && last.tag === x.tag) last.vs.push(x.to)
-          else runs.push({ tag: x.tag, vs: [x.from, x.to] })
+          else segs.push({ tag: x.tag, vs: [x.from, x.to] })
         }
-        let d = ''
-        for (const run of runs) {
-          const pts = smoothRun(one ? run.vs.slice(0, -1) : run.vs, i, run.tag, one)
-          if (run.tag === -1 || i < run.tag) edges.push({ i, j: run.tag, d: path(pts, one) })
-          d += d === '' ? `M${f1(pts[0]![0])} ${f1(pts[0]![1])}` : ''
-          for (let k = 1; k < pts.length; k++) d += `L${f1(pts[k]![0])} ${f1(pts[k]![1])}`
-        }
-        fill += `${d}Z`
+        rings[i]!.push(segs.map((s) => ({ tag: s.tag, one, ...runOf(one ? s.vs.slice(0, -1) : s.vs, i, s.tag, one) })))
       }
+    }
+  }
+  // 2) 구간마다 줄이고 깎는다
+  for (const r of runs.values()) r.pts = smooth(r)
+  // 3) 줄이다가 금끼리 엇갈리게 된 구간은 덜 줄인다 (좁은 땅에서 이웃 금을 가로질러 버린다) — 칸 금 그대로면 안 엇갈린다
+  const closedPts = (r: Run): Pt[] => (r.closed && r.pts.length > 0 ? [...r.pts, r.pts[0]!] : r.pts)
+  for (let round = 0; round < 4; round++) {
+    const list = [...runs.values()].filter((r) => r.tol > 0)
+    if (list.length === 0) break
+    const all = [...runs.values()]
+    const box = all.map((r) => {
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity
+      for (const [x, y] of r.pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y) }
+      return [x0, y0, x1, y1] as const
+    })
+    const bad = new Set<Run>()
+    for (let a = 0; a < all.length; a++) {
+      const pa = closedPts(all[a]!)
+      // 한 구간 안에서 — 이웃하지 않은 마디끼리
+      for (let s = 1; s < pa.length && !bad.has(all[a]!); s++) {
+        for (let t = s + 2; t < pa.length; t++) {
+          if (s === 1 && t === pa.length - 1 && all[a]!.closed) continue
+          if (segCross(pa[s - 1]!, pa[s]!, pa[t - 1]!, pa[t]!) !== null) { bad.add(all[a]!); break }
+        }
+      }
+      for (let b = a + 1; b < all.length; b++) {
+        const A = box[a]!
+        const B = box[b]!
+        if (A[0] > B[2] || B[0] > A[2] || A[1] > B[3] || B[1] > A[3]) continue
+        const pb = closedPts(all[b]!)
+        let hit = false
+        for (let s = 1; s < pa.length && !hit; s++) for (let t = 1; t < pb.length; t++) {
+          if (segCross(pa[s - 1]!, pa[s]!, pb[t - 1]!, pb[t]!) !== null) { hit = true; break }
+        }
+        if (hit) { bad.add(all[a]!); bad.add(all[b]!) }
+      }
+    }
+    if (bad.size === 0) break
+    for (const r of bad) {
+      r.tol = r.tol > cs * 0.3 ? r.tol * 0.5 : 0
+      r.pts = smooth(r)
+    }
+  }
+
+  // 4) 땅빛과 금
+  const fills: string[] = []
+  const edges: Array<{ i: number; j: number; d: string }> = []
+  for (let i = 0; i < inp.seeds.length; i++) {
+    let fill = ''
+    for (const ring of rings[i]!) {
+      let d = ''
+      for (const run of ring) {
+        const pts = ptsOf(run.key, run.rev)
+        if (run.tag === -1 || i < run.tag) edges.push({ i, j: run.tag, d: path(pts, run.one) })
+        d += d === '' ? `M${f1(pts[0]![0])} ${f1(pts[0]![1])}` : ''
+        for (let k = 1; k < pts.length; k++) d += `L${f1(pts[k]![0])} ${f1(pts[k]![1])}`
+      }
+      fill += `${d}Z`
     }
     fills.push(fill)
   }

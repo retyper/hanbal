@@ -88,6 +88,46 @@ export function smoothPath(p: readonly Pt[]): string {
   return d
 }
 
+/** smoothPath 가 그리는 곡선 위의 점들 — 구간마다 n 등분 (길이 서로·금과 엇갈리는지 잴 때 · roadlayout · tools/realm-tangle.ts) */
+export function curvePts(p: readonly Pt[], n = 6): Pt[] {
+  if (p.length <= 2) return p.slice()
+  const out: Pt[] = [p[0]!]
+  for (let i = 0; i < p.length - 1; i++) {
+    const p0 = p[Math.max(0, i - 1)]!
+    const p1 = p[i]!
+    const p2 = p[i + 1]!
+    const p3 = p[Math.min(p.length - 1, i + 2)]!
+    const c1: Pt = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6]
+    const c2: Pt = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6]
+    for (let k = 1; k <= n; k++) {
+      const t = k / n
+      const u = 1 - t
+      const a = u * u * u
+      const b = 3 * u * u * t
+      const c = 3 * u * t * t
+      const d = t * t * t
+      out.push([a * p1[0] + b * c1[0] + c * c2[0] + d * p2[0], a * p1[1] + b * c1[1] + c * c2[1] + d * p2[1]])
+    }
+  }
+  return out
+}
+
+/** 두 선분 ab · cd 가 엇갈리는 자리 (끝끼리 닿는 것은 빼고) — 없으면 null */
+export function segCross(a: Pt, b: Pt, c: Pt, d: Pt): Pt | null {
+  const rx = b[0] - a[0]
+  const ry = b[1] - a[1]
+  const sx = d[0] - c[0]
+  const sy = d[1] - c[1]
+  const den = rx * sy - ry * sx
+  if (Math.abs(den) < 1e-9) return null
+  const qx = c[0] - a[0]
+  const qy = c[1] - a[1]
+  const t = (qx * sy - qy * sx) / den
+  const u = (qx * ry - qy * rx) / den
+  if (t <= 1e-6 || t >= 1 - 1e-6 || u <= 1e-6 || u >= 1 - 1e-6) return null
+  return [a[0] + rx * t, a[1] + ry * t]
+}
+
 /** 꺾은선의 길이 몫 t0..t1 만 (화살이 고을 기호에 안 묻히게 끝을 당긴다) */
 export function trimPolyline(p: readonly Pt[], t0: number, t1: number): Pt[] {
   const seg: number[] = []
