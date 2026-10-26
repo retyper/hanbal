@@ -59,7 +59,7 @@
 | 진묘수 (무덤 지킴이) | 백제 · 무령왕릉 | 보배 | 이 장수가 지키는 고을은 첫 공격을 한 번 막는다 |
 | 금동신발 | 백제·마한 · 나주 정촌 | 귀함 | 공작 들킬 몫 −30% |
 
-그림 (10-26 받음 · 제미나이 Argon · `public/realm/relic/<id>.png` 160 칸 투명): mirror 잔무늬거울 · eightbell 팔주령 · polebell 간두령 · farmplaque 농경문 청동기 · gogok 굽은옥 · beads 유리구슬 목걸이 · ingots 덩이쇠 · duck 오리모양 토기 · wheelcup 수레바퀴모양 토기 · rider 기마인물형 토기 · horncup 말머리 뿔잔 · cheonma 천마도 말다래 · crown 신라 금관 · goldbelt 금제 허리띠 · earring 굵은고리 금귀걸이 · dagger 계림로 보검 · houbowl 호우명 그릇 · incense 금동대향로 · crownflame 무령왕 관꾸미개 · guardian 진묘수 · shoes 금동신발 · bipa 비파형동검(고조선) · sehyeong 세형동검 · brush 창원 다호리 붓 · 상자 chest-common · chest-rare · chest-legend · loot 쌓인 껴묻거리. 10-26 오후 형: "한 번에 만들지 말고 하나씩 · 중국풍 묻거나 왜곡되면 엄청난 미움" → 유물마다 새 대화로 실물 생김을 적어 다시 받았다. 더 손볼 것: 계림로 보검(실물의 휘감는 석류석 무늬·귀 모양 손잡이가 덜 산다) · 비파형동검(가운데 볼록 마디와 양날 돌기가 약하다) · 농경문 청동기(실물 꼴과 다르다) · 잔무늬거울(삼각 잔무늬 대신 동심원).
+그림 (10-26 받음 · 제미나이 Argon · `public/realm/relic/<id>.png` 160 칸 투명): mirror 잔무늬거울 · eightbell 팔주령 · polebell 간두령 · farmplaque 농경문 청동기 · gogok 굽은옥 · beads 유리구슬 목걸이 · ingots 덩이쇠 · duck 오리모양 토기 · wheelcup 수레바퀴모양 토기 · rider 기마인물형 토기 · horncup 말머리 뿔잔 · cheonma 천마도 말다래 · crown 신라 금관 · goldbelt 금제 허리띠 · earring 굵은고리 금귀걸이 · dagger 계림로 보검 · houbowl 호우명 그릇 · incense 금동대향로 · crownflame 무령왕 관꾸미개 · guardian 진묘수 · shoes 금동신발 · bipa 비파형동검(고조선) · sehyeong 세형동검 · brush 창원 다호리 붓 · 상자 chest-common · chest-rare · chest-legend · loot 쌓인 껴묻거리. 10-26 오후 형: "한 번에 만들지 말고 하나씩 · 중국풍 묻거나 왜곡되면 엄청난 미움" → 유물마다 새 대화로 실물 생김을 적어 다시 받았다. 덜 닮았던 넷(계림로 보검 · 비파형동검 · 농경문 청동기 · 잔무늬거울)은 생김을 더 자세히 적어 다시 받았다.
 
 ### C. 판과 판 사이 — 단련터 (프린세스메이커 자리)
 
