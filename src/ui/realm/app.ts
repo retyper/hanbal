@@ -351,8 +351,8 @@ const ekey = (to: string, ask: Ask): string => `${to}:${ask}`
 const PLOT_ICON: Readonly<Record<PlotOp, string>> = {
   // 공작 하나하나는 옛 그림 그대로 — 새로 바꾼 것은 공작 메뉴의 아이콘(plot-schemes)뿐 (형 10-26: "왜 의미 없이 공작 아이콘들 새로 만들었어")
   rumor: 'status-morale-down', sow: 'status-betrayal', bribe: 'good-cowries', burn: 'status-famine', spy: 'status-spy', assassin: 'unit-archer',
-  // 구출 — 제 그림(plot-rescue)이 오기 전까지 문(옥문) 그림을 빌린다 (ART-QUEUE)
-  rescue: 'cmd-gate',
+  // 구출 — 끊긴 밧줄과 열린 옥문 (10-26 제미나이 Argon)
+  rescue: 'plot-rescue',
 }
 /** 아래 탭 — more 는 길게 누르면 뜨는 말 (tips.ts) */
 const TABS = [
