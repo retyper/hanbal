@@ -778,16 +778,16 @@ const VOLLEY_SHOTS: ReadonlyArray<readonly [number, number, number]> = [[0, 1, 1
  * 화살 한 무리 — 낱낱이 (형: "화살이 지금 이미지 통째로 날아가는데"). dir r: 우리(왼쪽)가 쏜다 · l: 적(오른쪽)이 쏜다.
  * 화살마다 떠나는 자리·높이·거리·때가 조금씩 다르다 (꾸밈이라 판의 시드와 상관없이 고정된 굴림)
  */
-function volleyHtml(art: string, dir: 'r' | 'l', at: number, end: number): string {
+function volleyHtml(art: string, dir: 'r' | 'l', at: number, end: number, fire = false): string {
   const K = (end - at + 0.11) / 1.3
   let s = dir === 'r' ? 3 : 11
   const rnd = (): number => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff
   let h = ''
   for (let i = 0; i < VOLLEY_N; i++) {
     h += `<i style="--x:${(2 + rnd() * 14).toFixed(1)}%;--y:${(52 + rnd() * 24).toFixed(1)}%;--dx:${(56 + rnd() * 16).toFixed(1)}vw;--up:${(12 + rnd() * 16).toFixed(1)}vh;--t:${(at + rnd() * 0.35 * K).toFixed(2)}s;--z:${(0.75 + rnd() * 0.4).toFixed(2)}">`
-      + `<b style="background-image:url('${art}fx/arrow.png')"></b></i>`
+      + `<b style="background-image:url('${art}fx/${fire ? 'fire-arrow' : 'arrow'}.png')"></b></i>`
   }
-  return `<div class="wfx-volley ${dir}" style="--k:${K};--end:${end.toFixed(2)}s">${h}</div>`
+  return `<div class="wfx-volley ${dir}${fire ? ' fire' : ''}" style="--k:${K};--end:${end.toFixed(2)}s">${h}</div>`
 }
 
 /**
@@ -1208,7 +1208,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       const end = b.at + b.len - 0.06
       // 무리 명령은 전장의 진이 제 박자에 직접 움직인다 — 화면을 가로지르던 큰 깃발·화살비는 진을 가렸다 (형 10-25). 장수 기술·땅의 수만 남긴다
       if (FIELD_CMD.has(b.c)) continue
-      h += SHOOT_CMD.has(b.c) ? volleyHtml(art, b.dir, b.at + 0.05, end) : cmdFxHtml(art, b.c, b.dir, b.at, end)
+      // 불화살 — 불붙은 화살이 날아가고(fx/fire-arrow · 한 개짜리를 여럿으로) 적 앞줄에 불길이 솟는다 (형 10-26: "불화살은 별도로 이미지가 없었지")
+      h += SHOOT_CMD.has(b.c) ? volleyHtml(art, b.dir, b.at + 0.05, end, b.c === 'fire') + (b.c === 'fire' ? cmdFxHtml(art, 'fire', b.dir, b.at, end) : '') : cmdFxHtml(art, b.c, b.dir, b.at, end)
     }
   }
   h += `</div><div class="wrbox">`
@@ -1768,6 +1769,8 @@ export const WAR_CSS = `
 .ap .wfx-volley i { position: absolute; left: var(--x); top: var(--y); width: calc(var(--z) * 96px); height: calc(var(--z) * 13px); opacity: 0; animation: wvx calc(.95s * var(--k, 1)) linear var(--t) both; }
 .ap .wfx-volley b { position: absolute; inset: 0; background: center / 100% 100% no-repeat; animation: wvy calc(.95s * var(--k, 1)) linear var(--t) both; }
 .ap .wfx-volley b::before { content: ''; position: absolute; right: 92%; top: 38%; height: 24%; width: 110%; border-radius: 2px; background: linear-gradient(to left, #ffffff99, #fff0); }
+.ap .wfx-volley.fire i { height: calc(var(--z) * 16.5px); } .ap .wfx-volley.fire b { filter: drop-shadow(0 0 4px #ff7a1a); }
+.ap .wfx-volley.fire b::before { top: 52%; height: 18%; background: linear-gradient(to left, #ff9a3aaa, #ff5a1a00); }
 @keyframes wvx { 0% { opacity: 0; transform: translateX(0); } 8% { opacity: 1; } 88% { opacity: 1; } 100% { opacity: 0; transform: translateX(var(--dx)); } }
 @keyframes wvy { 0% { transform: translateY(0) rotate(-28deg); animation-timing-function: ease-out; } 50% { transform: translateY(calc(var(--up) * -1)) rotate(0deg); animation-timing-function: ease-in; } 100% { transform: translateY(0) rotate(30deg); } }
 /* 깃발마다 제 연출 — 낱낱이 (cmdFxHtml) */
