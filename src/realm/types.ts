@@ -9,6 +9,7 @@
  */
 import type { Equip, Kit, Outcome, UnitKind } from './battle.ts'
 import type { Source } from './intel.ts'
+import type { RoundAt } from './tactics.ts'
 
 /** 계절 번호 0 = 첫해 봄. 계절 = 번호 % 4 */
 import type { CardKind } from './data/cards.ts'
@@ -477,27 +478,30 @@ export interface Pending {
   readonly shaken?: boolean
   /** 호궤에 드는 곡식 — 장수의 명령에 'feast' 가 있으면 그 값 */
   readonly feast?: number
-  /** 고르기 전 짐작 — 깃발마다 이번 합이 어떻게 될지 (tactics.guessOf · 문명의 싸움 예상처럼) */
-  readonly guess?: Guesses
+  /** 고르기 전 짐작의 판 — 화면이 깃발마다 tactics.lookRound 로 이번 합을 짐작한다 (문명의 싸움 예상처럼 · 형 10-26) */
+  readonly look?: RoundAt
 }
 
-/** 깃발 하나를 들면 — 이번 합의 짐작. 낌새가 있으면 「적이 낌새대로 오면」 하나, 없으면 적 앞줄이 낼 수 있는 수마다라 폭이 생긴다 */
-export interface Guess {
-  /** 우리가 잃을 몫 (이 합 처음 사람 대비) [적을 때, 많을 때] */
+/**
+ * 깃발을 들면 이번 합이 어떻게 될까 (tactics.lookRound · 형 10-26: "어느정도가 +- 범위이고 어느정도가 확률인지").
+ * 값마다 [아래, 위] — 적이 낼 만한 수와 우리 운을 여러 번 굴린 판들의 가운데 (위아래로 tacLookBand 몫씩 뗐다)
+ */
+export interface Look {
+  /** 본 귀띔으로 좁혔나 — saw: 귀띔이 나올 법한 만큼 무게를 줬다 · all: 적이 어떻게 나오든 */
+  readonly by: 'saw' | 'all'
+  /** 우리가 잃을 사람 */
   readonly us: readonly [number, number]
-  /** 적이 잃을 몫 [적을 때, 많을 때] */
+  /** 적이 잃을 사람 */
   readonly foe: readonly [number, number]
-  /** 이 합 뒤 판세 — 우리 쪽 0..1, 0.5 가 팽팽 [나쁠 때, 좋을 때] */
+  /** 사기의 바뀜 — 처음 사기(덤 포함)를 100 으로 [나쁠 때, 좋을 때] */
+  readonly usMor: readonly [number, number]
+  readonly foeMor: readonly [number, number]
+  /** 이 합 뒤 판세 — 우리 쪽 0..1, 0.5 가 팽팽 */
   readonly edge: readonly [number, number]
-}
-
-export interface Guesses {
-  /** 무엇을 놓고 셈했나 — hint: 낌새대로 오면 · all: 적이 어떻게 나오든 */
-  readonly by: 'hint' | 'all'
-  /** 지금 판세 (우리 쪽) */
+  /** 지금 판세 */
   readonly edge0: number
-  /** 무리(와 장수)마다 깃발마다 — 사로잡기·물러나기·겨루기는 굴림 하나가 판을 갈라 짐작하지 않는다 */
-  readonly opts: Readonly<Partial<Record<Grp | 'lead', Readonly<Partial<Record<Cmd, Guess>>>>>>
+  /** 사로잡기를 들면 — 잡을 확률 [아래, 위]. 이때 잃을 사람·사기는 놓쳤을 때다 (잡으면 그 자리에서 판이 끝난다) */
+  readonly capture?: readonly [number, number]
 }
 
 /** 싸움이 시작될 때 — 사람 수 · 사기 · 이끄는 장수 (공격, 지킴). 전장 화면이 막대의 처음으로 쓴다 */

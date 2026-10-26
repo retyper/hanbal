@@ -20,7 +20,7 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import type { Outcome, UnitKind } from './battle.ts'
-import type { Act, Art, Cmd, EndWhy, Grp, Guess, Guesses, Pending, RoundLog, RoundOrder, Tactic } from './types.ts'
+import type { Act, Art, Cmd, EndWhy, Grp, Look, Pending, RoundLog, RoundOrder, Tactic } from './types.ts'
 
 /** 땅이 주는 한 번짜리 수 — season 이 그 싸움 자리를 보고 정한다 */
 export interface Terrain {
@@ -240,7 +240,8 @@ function frontQ(side: Side, cmd: Cmd): number {
   return 0.6 + 0.8 * (g('shield') + g('pike') * 0.5 + boat * 0.2) / front
 }
 
-interface State {
+/** 싸움 한 판의 흐르는 값 — 깃발 짐작(RoundAt)이 한 합 앞의 것을 복사해 싣는다 */
+export interface State {
   /** 무리마다 남은 몫 */
   fa: Record<Grp, number>
   fd: Record<Grp, number>
@@ -262,7 +263,7 @@ interface State {
   shakenD: boolean
 }
 
-interface Ctx {
+export interface Ctx {
   readonly atk: Side
   readonly def: Side
   readonly g0a: Record<Grp, number>
@@ -388,6 +389,9 @@ export function asOrder(x: Cmd | RoundOrder): RoundOrder {
   }
 }
 
+/** 버티기·들이치기의 땅 수는 기본 수로 */
+const basicCmd = (x: Cmd): Cmd => (HOLDS.has(x) ? 'hold' : CHARGES.has(x) ? 'charge' : x)
+
 /** 적 앞줄이 즐겨 낼 명령 — 그 앞줄의 생김새로 (창이 많으면 돌격, 방패가 많으면 방진) */
 function frontHabit(foe: Side): Cmd {
   const g = groupMen(foe.mix)
@@ -444,8 +448,7 @@ function aiOrder(c: Ctx, me: Side, foe: Side, mine: 'a' | 'd', st: State, cap: n
     else {
       // 적 앞줄의 버릇을 읽고 그 맞수를 — 지략만큼. 치러 온 쪽은 버티기만 해서는 고을을 못 얻는다
       // 지난 합에 적 앞줄이 한 것을 기억한다 — 같은 수를 되풀이하는 적은 읽힌다
-      const basicOf = (x: Cmd): Cmd => (HOLDS.has(x) ? 'hold' : CHARGES.has(x) ? 'charge' : x)
-      const foeLikely = !foeGroups.includes('front') ? 'charge' : lastFoe !== undefined && r('memory') < 0.7 ? basicOf(lastFoe) : frontHabit(foe)
+      const foeLikely = !foeGroups.includes('front') ? 'charge' : lastFoe !== undefined && r('memory') < 0.7 ? basicCmd(lastFoe) : frontHabit(foe)
       const pCounter = clamp(R.tacAiCounter + 0.05 * (ryak - 5) + (style === 'careful' ? R.tacStyleRead : 0), 0.1, 0.95)
       const canOpen = groupsOf(me.mix).includes('bows')
       if (r('counter') < pCounter) {
@@ -493,17 +496,17 @@ const hintFields = (h: { cmd: Cmd; src: 'saw' | 'habit' } | null): { hint: Cmd |
  *  - habit: 그 적장과 겨뤄 본 적이 있다 — 그 앞줄이 즐겨 내는 명령을 안다. 이번 합에 꼭 그러진 않는다
  */
 function hintOf(me: Side, foe: Side, foeFront: Cmd | undefined, key: string, seed: number, season: number): { cmd: Cmd; src: 'saw' | 'habit' } | null {
-  const R = P.realm
   if (foeFront === undefined) return null
-  const basic = (x: Cmd): Cmd => (HOLDS.has(x) ? 'hold' : CHARGES.has(x) ? 'charge' : x)
   if (me.seen) {
-    const acc = Math.min(0.95, R.tacHintScout + R.tacHintPerRyak * Math.max(0, (me.hero?.ryak ?? 1) - 5))
-    if (roll(seed, season, `${key}:hint`) < acc) return { cmd: basic(foeFront), src: 'saw' }
-    return { cmd: basic(foeFront) === 'charge' ? 'hold' : 'charge', src: 'saw' }
+    if (roll(seed, season, `${key}:hint`) < hintAcc(me)) return { cmd: basicCmd(foeFront), src: 'saw' }
+    return { cmd: basicCmd(foeFront) === 'charge' ? 'hold' : 'charge', src: 'saw' }
   }
   if (me.knowsFoe === true && foe.hero !== null) return { cmd: frontHabit(foe), src: 'habit' }
   return null
 }
+
+/** 본 귀띔이 맞을 확률 — 지략이 높으면 더 */
+const hintAcc = (me: Side): number => Math.min(0.95, P.realm.tacHintScout + P.realm.tacHintPerRyak * Math.max(0, (me.hero?.ryak ?? 1) - 5))
 
 /** 무리별 명령을 다듬는다 — 없는 무리는 빼고, 못 고르는 명령이면 AI 것을 쓴다 */
 function settle(me: Side, foe: Side, given: RoundOrder, ai: RoundOrder, used: ReadonlySet<Cmd>, foeHeroGone: boolean, arts: ReadonlySet<string> = NO_ARTS, shaken = false): Required<Pick<RoundOrder, 'lead'>> & RoundOrder {
@@ -519,6 +522,42 @@ function settle(me: Side, foe: Side, given: RoundOrder, ai: RoundOrder, used: Re
   const who = given.who ?? ai.who
   const target = given.target ?? ai.target
   return { ...out, ...(who !== undefined ? { who } : {}), ...(target !== undefined ? { target } : {}) }
+}
+
+/** 사로잡기 확률을 지금 판으로 셈하는 손 — mine 쪽이 적장을 잡으러 갈 때 (guard: 적 말이 장수를 지킨다) */
+type CapOf = (mine: 'a' | 'd', guard: boolean, target?: SideHero) => { p: number; squad: number; escort: number }
+function capFor(c: Ctx, st: State, goneA: boolean, goneD: boolean): CapOf {
+  return (mine, guard, target) => {
+    const me = mine === 'a' ? c.atk : c.def
+    const foe = mine === 'a' ? c.def : c.atk
+    const g0m = mine === 'a' ? c.g0a : c.g0d
+    const fm = mine === 'a' ? st.fa : st.fd
+    const g0f = mine === 'a' ? c.g0d : c.g0a
+    const ff = mine === 'a' ? st.fd : st.fa
+    if (mine === 'a' ? goneD : goneA) return { p: 0, squad: 0, escort: 0 }
+    const myMen = GRPS.reduce((s, g) => s + menNow(g0m, fm, g), 0)
+    const foeMen = GRPS.reduce((s, g) => s + menNow(g0f, ff, g), 0)
+    return captureOdds(me, foe, myMen, menNow(g0m, fm, 'horse'), foeMen, mine === 'a' ? st.md : st.ma, mine === 'a' ? st.hurtD : st.hurtA, guard, target)
+  }
+}
+
+const cloneState = (st: State): State => ({
+  fa: { ...st.fa }, fd: { ...st.fd }, ma: st.ma, md: st.md, usedA: new Set(st.usedA), usedD: new Set(st.usedD),
+  lostA: st.lostA, lostD: st.lostD, hurtA: st.hurtA, hurtD: st.hurtD,
+  artsA: new Set(st.artsA), artsD: new Set(st.artsD), shakenA: st.shakenA, shakenD: st.shakenD,
+})
+
+/** 고른 것을 맞춘다 — 비기는 아직 안 쓴 장수가(쓴 이는 arts 에 적는다) · 겨루기는 고른 이(없으면 무예 높은 이)가 · 사로잡기는 겨눈 적장(없으면 총대장)을 */
+function normOrder(o: RoundOrder & { lead: Cmd }, me: Side, foe: Side, arts: Set<string>, foeGone: boolean): RoundOrder & { lead: Cmd } {
+  if (o.lead === 'art') {
+    const h = artActor(me, foe, o.who, arts, foeGone)
+    if (h === undefined) return { ...o, lead: 'drum' }
+    arts.add(h.id)
+    return { ...o, who: h.id }
+  }
+  if (o.lead === 'duel') { const h = duelist(me, o.who); return h !== undefined ? { ...o, who: h.id } : { ...o, lead: 'drum' } }
+  if (o.lead === 'capture') { const t = heroesOf(foe).find((h) => h.id === o.target) ?? foe.hero; return t !== null ? { ...o, target: t.id } : { ...o, lead: 'drum' } }
+  return o
 }
 
 /**
@@ -603,19 +642,7 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
     const edge = shareOf(c, st)
     const goneD = st.lostD && duel?.kill === true && duel.loser === 'd'
     const goneA = st.lostA && duel?.kill === true && duel.loser === 'a'
-    const capOf = (mine: 'a' | 'd', guard: boolean, target?: SideHero): { p: number; squad: number; escort: number } => {
-      const me = mine === 'a' ? atk : def
-      const foe = mine === 'a' ? def : atk
-      const g0m = mine === 'a' ? g0a : g0d
-      const fm = mine === 'a' ? st.fa : st.fd
-      const g0f = mine === 'a' ? g0d : g0a
-      const ff = mine === 'a' ? st.fd : st.fa
-      const gone = mine === 'a' ? goneD : goneA
-      if (gone) return { p: 0, squad: 0, escort: 0 }
-      const myMen = GRPS.reduce((s, g) => s + menNow(g0m, fm, g), 0)
-      const foeMen = GRPS.reduce((s, g) => s + menNow(g0f, ff, g), 0)
-      return captureOdds(me, foe, myMen, menNow(g0m, fm, 'horse'), foeMen, mine === 'a' ? st.md : st.ma, mine === 'a' ? st.hurtD : st.hurtA, guard, target)
-    }
+    const capOf = capFor(c, st, goneA, goneD)
     // 낌새·AI 는 호위를 모르고 본다 (적의 이번 선택은 모른다)
     const capA0 = capOf('a', false)
     const capD0 = capOf('d', false)
@@ -650,7 +677,8 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
           capture: cap.p, squad: cap.squad, escort: cap.escort,
           ...hintFields(seenHint),
           weAtk: mine === 'a', seen: me.seen,
-          guess: guessOf(c, st, mine, ai, i, rk, capOf, gone, seenHint?.cmd ?? null),
+          // 깃발 짐작의 판 — 화면이 깃발마다 lookRound 로 (적이 이번에 낼 수는 싣지 않는다)
+          look: lookAt(c, st, mine, ai, i, key, seed, season, goneA, goneD, capOf(mine === 'a' ? 'd' : 'a', false).p, mine === 'a' ? 1 - edge : edge, (mine === 'a' ? prev?.oa : prev?.od)?.front, seenHint),
           // 깃발 그림의 비기 — 다음에 낼 장수의 것, 다 썼으면 총대장의 것
           ...((artActor(me, foe, undefined, arts, gone) ?? me.hero)?.art !== undefined ? { art: (artActor(me, foe, undefined, arts, gone) ?? me.hero)!.art! } : {}),
           ...(me.feast !== undefined ? { feast: me.feast } : {}),
@@ -663,18 +691,8 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
       return settle(me, foe, {}, ai, used, gone, arts, shaken)
     }
     // 고른 것을 맞춘다 — 비기는 아직 안 쓴 장수가 · 겨루기는 고른 이(없으면 무예 높은 이)가 · 사로잡기는 겨눈 적장(없으면 총대장)을
-    const norm = (o: RoundOrder & { lead: Cmd }, me: Side, foe: Side, mine: 'a' | 'd'): RoundOrder & { lead: Cmd } => {
-      const arts = mine === 'a' ? st.artsA : st.artsD
-      if (o.lead === 'art') {
-        const h = artActor(me, foe, o.who, arts, mine === 'a' ? goneD : goneA)
-        if (h === undefined) return { ...o, lead: 'drum' }
-        arts.add(h.id)
-        return { ...o, who: h.id }
-      }
-      if (o.lead === 'duel') { const h = duelist(me, o.who); return h !== undefined ? { ...o, who: h.id } : { ...o, lead: 'drum' } }
-      if (o.lead === 'capture') { const t = heroesOf(foe).find((h) => h.id === o.target) ?? foe.hero; return t !== null ? { ...o, target: t.id } : { ...o, lead: 'drum' } }
-      return o
-    }
+    const norm = (o: RoundOrder & { lead: Cmd }, me: Side, foe: Side, mine: 'a' | 'd'): RoundOrder & { lead: Cmd } =>
+      normOrder(o, me, foe, mine === 'a' ? st.artsA : st.artsD, mine === 'a' ? goneD : goneA)
     const oa = norm(pick(atk, def, 'a', aiA, aiD, capA0) as RoundOrder & { lead: Cmd }, atk, def, 'a')
     const od = norm(pick(def, atk, 'd', aiD, aiA, capD0) as RoundOrder & { lead: Cmd }, def, atk, 'd')
     const wasShakenA = st.shakenA
@@ -755,85 +773,128 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
   }
 }
 
-/** 짐작에서 빼는 장수 명령 — 굴림 하나가 판을 가르니 막대로 보일 것이 아니다 */
-const NO_GUESS: ReadonlySet<Cmd> = new Set(['capture', 'retreat', 'duel'])
+/** 굴린 판들의 가운데 — 무게를 단 값들에서 위아래로 q 몫씩 떼고 남은 [아래, 위] */
+function bandOf(rows: ReadonlyArray<{ readonly w: number; readonly x: number }>, q: number): [number, number] {
+  const xs = [...rows].sort((p, r) => p.x - r.x)
+  const cut = clamp(q, 0, 0.49) * xs.reduce((s, r) => s + r.w, 0)
+  const end = (ys: typeof xs): number => {
+    let acc = 0
+    for (const r of ys) { acc += r.w; if (acc > cut) return r.x }
+    return ys[ys.length - 1]?.x ?? 0
+  }
+  return [end(xs), end([...xs].reverse())]
+}
+
+/** 한 합 앞의 판 — 시험 돌림이 pending.look 에 싣는다 (lookAt). 화면은 들여다보지 않고 lookRound 에 넘기기만 한다 */
+export interface RoundAt {
+  readonly c: Ctx
+  readonly st: State
+  readonly mine: 'a' | 'd'
+  readonly i: number
+  readonly key: string
+  readonly seed: number
+  readonly season: number
+  /** 우리 장수가 고를 것 — 안 고른 무리는 이것으로 */
+  readonly ai: RoundOrder
+  readonly goneA: boolean
+  readonly goneD: boolean
+  /** 적이 낼 만한 수와 그 무게 (귀띔이 이렇게 나올 법함) */
+  readonly foes: ReadonlyArray<{ readonly o: RoundOrder & { lead: Cmd }; readonly w: number }>
+  /** 본 귀띔으로 좁혔나 */
+  readonly by: 'saw' | 'all'
+}
 
 /**
- * 고르기 전 짐작 (형 10-24: "어떤걸 선택하면 어떤 결과 예상되는지 문명처럼") — 깃발마다 이번 합만 따로 굴려 본다.
- * 우리 다른 무리는 장수가 고를 것, 장수는 격려. 적은 낌새가 있으면 그 앞줄 수(본 것·들은 것 — 틀릴 수 있다), 없으면 앞줄이 낼 수 있는 수마다.
- * 적의 실제 선택은 쓰지 않는다 — 짐작이 답을 흘리면 수 읽기가 사라진다. 판은 복사해 굴리고 버린다 (결정론 그대로).
+ * 한 합 앞의 판을 담는다 (형 10-26: "어느정도가 +- 범위이고 어느정도가 확률인지 알게") — 시험 돌림이 pending 에 싣고, 전장 화면이 깃발마다 lookRound 로 짐작한다.
+ * 적이 낼 수는 적 장수의 버릇(aiOrder) 그대로를 다른 굴림으로 tacLookSamples 번 뽑는다 — 이번에 실제로 낼 수는 읽지 않는다.
+ * 본 귀띔(saw)이 있으면 그 귀띔이 나올 법한 만큼 무게를 준다 — 맞게 봤거나(hintAcc) 돌격·방진을 거꾸로 봤거나. 틀릴 수 있으니 폭이 0 이 되지는 않는다.
+ * 들은 귀띔(habit)은 적 장수의 버릇 그 자체라 더 좁히지 않는다.
  */
-function guessOf(
-  c: Ctx, st: State, mine: 'a' | 'd', ai: RoundOrder, i: number, rk: (i: number, k: string) => number,
-  capOf: (mine: 'a' | 'd', guard: boolean, target?: SideHero) => { p: number; squad: number; escort: number }, gone: boolean, hint: Cmd | null,
-): Guesses {
+function lookAt(
+  c: Ctx, st: State, mine: 'a' | 'd', ai: RoundOrder, i: number, key: string, seed: number, season: number, goneA: boolean, goneD: boolean,
+  capFoe: number, edgeFoe: number, lastFront: Cmd | undefined, hint: { cmd: Cmd; src: 'saw' | 'habit' } | null,
+): RoundAt {
+  const fm: 'a' | 'd' = mine === 'a' ? 'd' : 'a'
   const me = mine === 'a' ? c.atk : c.def
   const foe = mine === 'a' ? c.def : c.atk
-  const usedMe = mine === 'a' ? st.usedA : st.usedD
-  const usedFoe = mine === 'a' ? st.usedD : st.usedA
+  const used = fm === 'a' ? st.usedA : st.usedD
+  const arts = fm === 'a' ? st.artsA : st.artsD
+  const shaken = fm === 'a' ? st.shakenA : st.shakenD
+  const gone = fm === 'a' ? goneD : goneA
+  const acc = hint?.src === 'saw' ? hintAcc(me) : null
+  const n = Math.max(1, Math.round(P.realm.tacLookSamples))
+  const foes: Array<{ o: RoundOrder & { lead: Cmd }; w: number }> = []
+  for (let j = 0; j < n; j++) {
+    const x = aiOrder(c, foe, me, fm, st, capFoe, edgeFoe, `${key}:t${i}:${fm}~${j}`, seed, season, lastFront)
+    const o = normOrder(settle(foe, me, {}, x, used, gone, arts, shaken), foe, me, new Set(arts), gone)
+    let w = 1
+    if (acc !== null && hint !== null) {
+      const f = o.front !== undefined ? basicCmd(o.front) : undefined
+      w = f === undefined ? 0 : (f === hint.cmd ? acc : 0) + ((f === 'charge' ? 'hold' : 'charge') === hint.cmd ? 1 - acc : 0)
+    }
+    foes.push({ o, w })
+  }
+  const saw = acc !== null && foes.some((x) => x.w > 0)
+  return { c, st: cloneState(st), mine, i, key, seed, season, ai, goneA, goneD, foes: saw ? foes : foes.map((x) => ({ ...x, w: 1 })), by: saw ? 'saw' : 'all' }
+}
+
+/**
+ * 깃발을 이렇게 들면 이번 합이 어떻게 될까 — 엔진의 한 합(resolveRound)을 적이 낼 만한 수마다, 우리 운(굴림)을 바꿔 가며 그대로 돌려 본다.
+ * 실제 이번 합의 굴림은 쓰지 않는다 (불화살이 붙을지 미리 새지 않게). 판은 복사해 굴리고 버린다 (결정론 그대로).
+ * 사로잡기는 잡을 확률을 따로 내고, 잃을 사람·사기는 놓쳤을 때로 셈한다 — 잡으면 그 자리에서 판이 끝난다.
+ */
+export function lookRound(at: RoundAt, given: RoundOrder): Look {
+  const { c, mine, i } = at
+  const me = mine === 'a' ? c.atk : c.def
+  const foe = mine === 'a' ? c.def : c.atk
+  const st0 = at.st
+  const goneFoe = mine === 'a' ? at.goneD : at.goneA
+  const artsMe = mine === 'a' ? st0.artsA : st0.artsD
+  const mo = normOrder(
+    settle(me, foe, given, { ...at.ai, lead: 'drum' }, mine === 'a' ? st0.usedA : st0.usedD, goneFoe, artsMe, mine === 'a' ? st0.shakenA : st0.shakenD),
+    me, foe, new Set(artsMe), goneFoe,
+  )
   const ours = (s: number): number => (mine === 'a' ? s : 1 - s)
+  const top = (s: Side): number => Math.max(0.05, s.morale + (s.moraleBonus ?? 0))
   const g0m = mine === 'a' ? c.g0a : c.g0d
   const g0f = mine === 'a' ? c.g0d : c.g0a
-  // 적 앞줄의 수 — 낌새대로, 없으면 낼 수 있는 기본 수마다. 적의 활·말·장수는 흔한 것으로 (실제 선택을 흘리지 않게)
-  const fronts: Array<Cmd | undefined> = !groupsOf(foe.mix).includes('front') ? [undefined]
-    : hint !== null ? [hint]
-      : groupOptions(foe, me, 'front', usedFoe).filter((x) => x === 'charge' || x === 'hold' || x === 'open')
-  if (fronts.length === 0) fronts.push(undefined)
-  const foeOrders = fronts.map((f) => settle(foe, me, { ...(f !== undefined ? { front: f } : {}), bows: 'volley', horse: 'flank', lead: 'drum' }, { front: 'hold', bows: 'volley', horse: 'flank', lead: 'drum' }, usedFoe, false))
-  const base: RoundOrder = { ...ai, lead: 'drum' }
-  const artsMe = mine === 'a' ? st.artsA : st.artsD
-  const shakenMe = mine === 'a' ? st.shakenA : st.shakenD
-  const run = (o: RoundOrder): Guess | undefined => {
-    const mo0 = settle(me, foe, o, base, usedMe, gone, artsMe, shakenMe)
-    const actorId = mo0.lead === 'art' ? artActor(me, foe, mo0.who, artsMe, gone)?.id : undefined
-    const mo = actorId !== undefined ? { ...mo0, who: actorId } : mo0
-    const us: [number, number] = [1, 0]
-    const fo: [number, number] = [1, 0]
-    const ed: [number, number] = [1, 0]
-    for (const fx of foeOrders) {
-      const s2: State = {
-        fa: { ...st.fa }, fd: { ...st.fd }, ma: st.ma, md: st.md, usedA: new Set(st.usedA), usedD: new Set(st.usedD),
-        lostA: st.lostA, lostD: st.lostD, hurtA: st.hurtA, hurtD: st.hurtD,
-        artsA: new Set(st.artsA), artsD: new Set(st.artsD), shakenA: st.shakenA, shakenD: st.shakenD,
-      }
-      const fm = (): Record<Grp, number> => (mine === 'a' ? s2.fa : s2.fd)
-      const ff = (): Record<Grp, number> => (mine === 'a' ? s2.fd : s2.fa)
-      const m0 = aliveShare(g0m, fm())
-      const f0 = aliveShare(g0f, ff())
-      const res = mine === 'a' ? resolveRound(c, s2, mo, fx, i, rk, capOf) : resolveRound(c, s2, fx, mo, i, rk, capOf)
-      if (res.captured !== null || res.retreat !== null) return undefined
-      const lu = m0 > 0 ? (m0 - aliveShare(g0m, fm())) / m0 : 0
-      const lf = f0 > 0 ? (f0 - aliveShare(g0f, ff())) / f0 : 0
-      const e = ours(shareOf(c, s2))
-      us[0] = Math.min(us[0], lu); us[1] = Math.max(us[1], lu)
-      fo[0] = Math.min(fo[0], lf); fo[1] = Math.max(fo[1], lf)
-      ed[0] = Math.min(ed[0], e); ed[1] = Math.max(ed[1], e)
-    }
-    return { us, foe: fo, edge: ed }
+  const menOf = (g0: Record<Grp, number>, f: Record<Grp, number>): number => GRPS.reduce((s, g) => s + g0[g] * f[g], 0)
+  const capture = mo.lead === 'capture'
+  const cols: Array<Array<{ w: number; x: number }>> = [[], [], [], [], [], []]
+  for (let j = 0; j < at.foes.length; j++) {
+    const fx = at.foes[j]!
+    if (fx.w <= 0) continue
+    const s2 = cloneState(st0)
+    const fMe = mine === 'a' ? s2.fa : s2.fd
+    const fFoe = mine === 'a' ? s2.fd : s2.fa
+    const u0 = menOf(g0m, fMe)
+    const f0 = menOf(g0f, fFoe)
+    const um0 = mine === 'a' ? s2.ma : s2.md
+    const fm0 = mine === 'a' ? s2.md : s2.ma
+    // 사로잡기 — 놓친 판으로 (확실히 잡는 장수만 잡힌다)
+    const rk = (ii: number, k: string): number => (capture && k === `cap-${mine}` ? 1 - 1e-9 : roll(at.seed, at.season, `${at.key}:t${ii}~${j}:${k}`))
+    const note: Partial<Record<'a' | 'd', number>> = {}
+    resolveRound(c, s2, mine === 'a' ? mo : fx.o, mine === 'a' ? fx.o : mo, i, rk, capFor(c, s2, at.goneA, at.goneD), note)
+    const vs = [
+      u0 - menOf(g0m, fMe), f0 - menOf(g0f, fFoe),
+      ((mine === 'a' ? s2.ma : s2.md) - um0) / top(me) * 100, ((mine === 'a' ? s2.md : s2.ma) - fm0) / top(foe) * 100,
+      ours(shareOf(c, s2)), note[mine] ?? 0,
+    ]
+    vs.forEach((x, k) => cols[k]!.push({ w: fx.w, x }))
   }
-  const opts: Partial<Record<Grp | 'lead', Partial<Record<Cmd, Guess>>>> = {}
-  for (const g of groupsOf(me.mix)) {
-    const row: Partial<Record<Cmd, Guess>> = {}
-    for (const x of groupOptions(me, foe, g, usedMe)) {
-      const v = run({ ...base, [g]: x })
-      if (v !== undefined) row[x] = v
-    }
-    opts[g] = row
+  const q = P.realm.tacLookBand
+  return {
+    by: at.by, us: bandOf(cols[0]!, q), foe: bandOf(cols[1]!, q), usMor: bandOf(cols[2]!, q), foeMor: bandOf(cols[3]!, q),
+    edge: bandOf(cols[4]!, q), edge0: ours(shareOf(c, st0)), ...(capture ? { capture: bandOf(cols[5]!, q) } : {}),
   }
-  const lead: Partial<Record<Cmd, Guess>> = {}
-  for (const x of leadOptions(me, foe, usedMe, gone, artsMe, shakenMe)) {
-    if (NO_GUESS.has(x)) continue
-    const v = run({ ...base, lead: x })
-    if (v !== undefined) lead[x] = v
-  }
-  opts.lead = lead
-  return { by: hint !== null ? 'hint' : 'all', edge0: ours(shareOf(c, st)), opts }
 }
 
 /** 한 합 — 장수의 명령(물러나기 · 겨루기 · 사로잡기) → 앞줄 맞붙음 → 활 → 말 → 손실 · 사기 */
 function resolveRound(
   c: Ctx, st: State, oa: RoundOrder & { lead: Cmd }, od: RoundOrder & { lead: Cmd }, i: number,
-  rk: (i: number, k: string) => number, capOf: (mine: 'a' | 'd', guard: boolean, target?: SideHero) => { p: number; squad: number; escort: number },
+  rk: (i: number, k: string) => number, capOf: CapOf,
+  /** 사로잡기를 건 쪽마다 그때의 확률을 적어 둔다 (깃발 짐작이 읽는다) */
+  note?: Partial<Record<'a' | 'd', number>>,
 ): {
   log: RoundLog; captured: 'a' | 'd' | null; retreat: 'a' | 'd' | 'both' | null; duel: { loser: 'a' | 'd'; kill: boolean; winner?: string } | null
   /** 이 합에 잃은 장수 — 사로잡힘 · 겨루기에서 쓰러지거나 다쳐 물러남 */
@@ -940,6 +1001,7 @@ function resolveRound(
     const tgt = heroesOf(foeS).find((h) => h.id === side(x).o.target) ?? foeS.hero
     if (tgt === null || lost.some((l) => l.hero === tgt.id)) continue
     const cap = capOf(x, foeGuard, tgt)
+    if (note !== undefined) note[x] = cap.p
     by = x
     draw[x] = R.tacCapDraw
     if (rk(i, `cap-${x}`) < cap.p) {
