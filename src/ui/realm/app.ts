@@ -84,7 +84,7 @@ import { AUD_CSS, askSay, pactSay, typed, type PactKind } from './audience.ts'
 import { customsOf } from '../../realm/data/customs.ts'
 import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
 import { SCENE_SOUND, makeMusic, playOnce, snd, tapSlot } from './sound.ts'
-import { voiceGate, voicePath } from './voice.ts'
+import { hireVoicePath, voiceGate, voicePath } from './voice.ts'
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
 import { FEEL_CSS, alertFeel, ambushFeel, chanceFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
@@ -4538,7 +4538,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 특성 칩 — 누르고 있거나 올려 두면 무슨 특성인지 (형 10-24: "배신의 상(→ 반골의 상)·매혹 … 터치하고 있으면 설명, 손 떼면 없애고")
     const chips = ts.map((t, i) => `<span class="ctr" data-tip="${esc(t.line)}" style="--g:${GRADE_COLOR[t.grade]};animation-delay:${(2.36 + i * 0.18).toFixed(2)}s">${esc(t.name)}</span>`).join('')
     const line = JOIN_LINE[how]
-    return `<div class="cere hire" style="--gc:${gc}"><i class="cglow"></i><div class="cmote">${motes}</div>`
+    return `<div class="cere hire" data-hid="${esc(x.id)}" style="--gc:${gc}"><i class="cglow"></i><div class="cmote">${motes}</div>`
       + `<div class="hframe">${face}<i class="hfr"></i></div>${cuts}<i class="cflash"></i>`
       + `<div class="cw"><b>등용</b><span class="hname">${esc(x.name)}</span><span>${line}</span><em>「${esc(HIRE_LINE[x.id] ?? HIRE_BY_TRAIT[x.traits?.[0] ?? ''] ?? HIRE_PLAIN)}」</em>${chips !== '' ? `<div class="ctrs">${chips}</div>` : ''}`
       // 확인 — 눌러서 판으로 돌아간다 (형 10-24: "등용되고 나서 확인 버튼 · 게임으로 돌아갈 수가 없어")
@@ -4637,6 +4637,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         else ding(snd(el.classList.contains('wed') ? 'wed' : 'birth'), 0.5) // 혼례는 형이 고른 국악 가락 (10-24 · 전엔 종 세 번)
       }
       if (hire) window.setTimeout(() => buzz([20, 40, 20, 40, 60]), P.realm.hirePopMs)
+      // 얼굴이 다 드러나면 그 장수가 첫마디를 한다 — 이름 아래 「」 대사 그대로 (voice.ts · 소리를 못 받으면 조용히)
+      const voiced = hire ? realm?.heroes[el.dataset['hid'] ?? ''] : undefined
+      if (voiced !== undefined) window.setTimeout(() => {
+        if (el.isConnected && realm !== null && voiceGate(performance.now())) ding(hireVoicePath(voiced, isRuler(realm, voiced.id)), P.realm.voiceVol)
+      }, P.realm.hireVoiceMs)
       let gone = false
       const close = (): void => { if (gone) return; gone = true; el.classList.add('out'); window.setTimeout(() => { el.remove(); show(i + 1) }, 450) }
       // 특성 칩을 누르면(설명을 보려고) 장면이 닫히지 않는다 · 누르고 있는 동안은 저절로도 안 닫힌다

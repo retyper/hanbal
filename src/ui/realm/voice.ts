@@ -6,11 +6,14 @@
  *   남: 젊은 무사 young · 거친 노장 gruff · 꾀 많은 책사 sage · 늙은 장수·군주 elder · 매혹 charm
  *   여: 당찬 젊은 무사 bright · 의젓한 장수 cool · 요염한 꾀 sly · 무녀 shaman
  * 결마다 짧은 대답 셋(tap-<결>-1..3) — 탭할 때마다 돌려 가며 하나 (같은 것이 연달아 안 나오게).
+ * 장수마다 등용 첫마디 하나(hire/<장수 id>) — 내 사람이 되는 장면에서 (형 10-26: "내 사람이 된 사람들의 첫 대사를 들으면 반갑고 흥분될 거 같아").
+ *   대사는 hire-lines.ts · 한 줄을 고치면 그 장수 것만 다시 녹음한다 (tools/hire-voice-list.ts 가 결을 알려 준다).
  * 결마다 장수 기술 외침 아홉(art-<결>-<기술>) — 싸움에서 그 기술을 쓰면 컷과 함께 (형 10-26: "특수기술 대사들도 · 가성 말고 힘줘서 · 애니나 게임 성우").
  * 구글 AI 스튜디오 Gemini TTS 무료 목소리에 사극 말투 지시로 뽑았다 (Enzo · Daro · Cruz · Arlo · Neno · Cleo · Kira · Lumi · Hali) —
  * 한 번에 세 줄을 뽑아 tools/split-voice.py 로 잘랐다. 들어 보는 판 realm/voice-picker.html.
  */
 import { bustOf } from '../../realm/data/art.ts'
+import { HIRE_LINE } from '../../realm/data/hire-lines.ts'
 import { hasTrait } from '../../realm/heroes.ts'
 import type { Art, Hero } from '../../realm/types.ts'
 
@@ -90,6 +93,11 @@ export function voicePath(h: Hero, line: VoiceLine, ruler = false): string {
 /** 장수 기술 외침 — 그 장수의 결로 */
 export function artVoicePath(h: Hero, art: Art, ruler = false): string {
   return `realm/voice/art-${voiceKind(h, ruler)}-${art}.ogg`
+}
+
+/** 등용 첫마디 — 그 장수가 녹음한 대사 · 대사가 없는 장수(판에서 난 아이 등)는 그 결의 짧은 대답으로 */
+export function hireVoicePath(h: Hero, ruler = false): string {
+  return HIRE_LINE[h.id] !== undefined ? `realm/voice/hire/${h.id}.ogg` : voicePath(h, 'tap', ruler)
 }
 
 /** 이번에 소리를 내도 되나 — 너무 잦으면 거른다 (now 는 화면 쪽 시계) */
