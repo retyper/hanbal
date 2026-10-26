@@ -1,7 +1,7 @@
 /**
  * 맞추기의 셈 — 순수 함수만 (docs/realm/SERVER.md §3). 기기·서버·시계를 모른다.
  *
- *  - mergeProgress: 판 밖에 쌓인 것(도감 · 혈통 · 해금·휘장 · 계승 가신)을 합친다 — 늘기만 하는 것은 잃지 않는다 (S3)
+ *  - mergeProgress: 판 밖에 쌓인 것(도감 · 혈통 · 해금·휘장 · 단련 · 유물)을 합친다 — 늘기만 하는 것은 잃지 않는다 (S3)
  *  - plan: 이 기기 판과 서버 판, 마지막으로 맞춘 자리를 보고 올릴지·받을지·사람에게 물을지 (S2 — 몰래 덮지 않는다)
  */
 
@@ -10,11 +10,32 @@ export interface DexEntry { f: number; b?: string }
 /** 해금 (ui/realm/unlock.ts 의 Rec 와 같은 꼴) */
 export interface UnlockRec { won: string[]; tutorial?: 'done' | 'quit'; tiers?: Record<string, number>; nations?: Record<string, number> }
 
+/** 단련 (ui/realm/drill.ts · hanbal.realm.drill) — 여기는 합칠 때 보는 칸만 안다. 나머지는 기기가 읽을 때 걸러 낸다 */
+export interface DrillLike {
+  v?: number
+  h?: Record<string, { level?: number; points?: number } & Record<string, unknown>>
+  paid?: Record<string, Record<string, number>>
+  order?: string[]
+}
+/** 유물 (ui/realm/relics.ts · hanbal.realm.relics) — wearAt: 끼운 것을 마지막으로 바꾼 때 (기기 시계 ms) */
+export interface RelicsLike {
+  v?: number
+  own?: Record<string, { n?: number } & Record<string, unknown>>
+  wear?: Record<string, string[]>
+  wearAt?: number
+  tombs?: Record<string, { ids?: string[]; pick?: string | null }>
+  order?: string[]
+}
+
 export interface Progress {
   dex: Record<string, DexEntry>
   /** 혈통 — 열쇠 `seed:hero` (ui/realm/dex.ts ClanKid) */
   clan: Record<string, unknown>
   unlock: UnlockRec
+  /** 단련 — 판을 져도 남는 장수의 성장 (HERO-GROWTH ★). 없던 옛 기록이면 비어 있다 */
+  drill?: DrillLike
+  /** 유물 — 무덤에서 얻은 것 · 장수가 끼운 것 */
+  relics?: RelicsLike
 }
 
 export const EMPTY: Progress = { dex: {}, clan: {}, unlock: { won: [] } }
@@ -46,7 +67,66 @@ export function mergeProgress(a: Progress, b: Progress): Progress {
   const tiers = maxRec(a.unlock.tiers, b.unlock.tiers)
   const nations = maxRec(a.unlock.nations, b.unlock.nations)
   const unlock: UnlockRec = { won, ...(tut !== undefined ? { tutorial: tut } : {}), ...(tiers !== undefined ? { tiers } : {}), ...(nations !== undefined ? { nations } : {}) }
-  return { dex, clan, unlock }
+  const drill = mergeDrill(a.drill, b.drill)
+  const relics = mergeRelics(a.relics, b.relics)
+  return { dex, clan, unlock, ...(drill !== undefined ? { drill } : {}), ...(relics !== undefined ? { relics } : {}) }
+}
+
+/** 판 차례 둘을 하나로 — 서버 쪽 차례 먼저, 이 기기에만 있는 것은 뒤에 */
+const joinOrder = (a: string[] | undefined, b: string[] | undefined): string[] => [...new Set([...(b ?? []), ...(a ?? [])])]
+
+/**
+ * 단련 — 장수마다 더 나아간 쪽 (단련 단계가 높은 쪽, 같으면 공이 많은 쪽, 그것도 같으면 서버).
+ * 두 기기에서 따로 번 공을 더하지는 않는다 — 판마다 치른 장부(paid)는 합쳐서, 같은 판의 공을 두 번 받지 않게 한다.
+ * 한 기기의 성장이 다른 기기 것보다 뒤로 가는 일은 없다
+ */
+export function mergeDrill(a: DrillLike | undefined, b: DrillLike | undefined): DrillLike | undefined {
+  if (a === undefined) return b
+  if (b === undefined) return a
+  const h: NonNullable<DrillLike['h']> = {}
+  for (const id of new Set([...Object.keys(b.h ?? {}), ...Object.keys(a.h ?? {})])) {
+    const ea = a.h?.[id], eb = b.h?.[id]
+    if (ea === undefined || eb === undefined) { h[id] = (ea ?? eb)!; continue }
+    const la = ea.level ?? 0, lb = eb.level ?? 0
+    h[id] = la > lb || (la === lb && (ea.points ?? 0) > (eb.points ?? 0)) ? ea : eb
+  }
+  const paid: Record<string, Record<string, number>> = {}
+  for (const k of new Set([...Object.keys(b.paid ?? {}), ...Object.keys(a.paid ?? {})])) {
+    const o: Record<string, number> = { ...(b.paid?.[k] ?? {}) }
+    for (const [hid, n] of Object.entries(a.paid?.[k] ?? {})) o[hid] = Math.max(o[hid] ?? 0, n)
+    paid[k] = o
+  }
+  return { v: 1, h, paid, order: joinOrder(a.order, b.order) }
+}
+
+/**
+ * 유물 — 얻은 것은 합집합 (고른 횟수는 큰 쪽) · 연 무덤도 합집합 (고른 쪽이 있으면 그쪽).
+ * 끼운 것은 나중에 바꾼 기기를 따른다(wearAt) — 같으면 서버. 그 뒤 없는 유물 · 둘이 같이 낀 유물을 걷어 낸다
+ */
+export function mergeRelics(a: RelicsLike | undefined, b: RelicsLike | undefined): RelicsLike | undefined {
+  if (a === undefined) return b
+  if (b === undefined) return a
+  const own: NonNullable<RelicsLike['own']> = {}
+  for (const id of new Set([...Object.keys(b.own ?? {}), ...Object.keys(a.own ?? {})])) {
+    const oa = a.own?.[id], ob = b.own?.[id]
+    own[id] = oa !== undefined && ob !== undefined ? { ...ob, n: Math.max(oa.n ?? 1, ob.n ?? 1) } : (ob ?? oa)!
+  }
+  const tombs: NonNullable<RelicsLike['tombs']> = {}
+  for (const k of new Set([...Object.keys(b.tombs ?? {}), ...Object.keys(a.tombs ?? {})])) {
+    const ta = a.tombs?.[k], tb = b.tombs?.[k]
+    tombs[k] = (tb !== undefined && (typeof tb.pick === 'string' || ta === undefined || typeof ta.pick !== 'string') ? tb : ta)!
+  }
+  const atA = a.wearAt ?? 0, atB = b.wearAt ?? 0
+  const pick = atA > atB ? a.wear : b.wear
+  const wear: Record<string, string[]> = {}
+  const taken = new Set<string>()
+  for (const hid of Object.keys(pick ?? {}).sort()) {
+    const keep = (pick?.[hid] ?? []).filter((id) => own[id] !== undefined && !taken.has(id))
+    for (const id of keep) taken.add(id)
+    if (keep.length > 0) wear[hid] = keep
+  }
+  const wearAt = Math.max(atA, atB)
+  return { v: 1, own, wear, ...(wearAt > 0 ? { wearAt } : {}), tombs, order: joinOrder(a.order, b.order) }
 }
 
 /** 같은가 — 합친 것이 서버와 다를 때만 올린다 (쓰기를 아낀다, S6) */

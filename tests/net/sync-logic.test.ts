@@ -89,3 +89,42 @@ describe('판 맞추기 결정표', () => {
     assert.equal(lineage([...log(3), ['x']], log(6)), 'choose')
   })
 })
+
+describe('단련 · 유물 맞추기 (HERO-GROWTH ★ — 기기를 바꿔도 키운 장수가 따라온다)', () => {
+  const P0: Progress = EMPTY
+  it('한쪽에만 있으면 그대로 따라오고, 옛 기록(단련 칸 없음)과 합쳐도 사라지지 않는다', () => {
+    const here: Progress = { ...P0, drill: { v: 1, h: { onjo: { level: 2, points: 3 } }, paid: {}, order: [] } }
+    assert.deepEqual(mergeProgress(here, P0).drill, here.drill)
+    assert.deepEqual(mergeProgress(P0, here).drill, here.drill)
+    assert.equal(mergeProgress(P0, P0).drill, undefined)
+  })
+  it('단련 — 장수마다 더 나아간 쪽 · 판 장부는 합친다 · 뒤로 가지 않는다', () => {
+    const a: Progress = { ...P0, drill: { v: 1, h: { onjo: { level: 3, points: 0 }, biryu: { level: 1, points: 2 } }, paid: { s1: { onjo: 4 } }, order: ['s1'] } }
+    const b: Progress = { ...P0, drill: { v: 1, h: { onjo: { level: 2, points: 6 }, biryu: { level: 1, points: 5 }, ogan: { level: 0, points: 1 } }, paid: { s1: { onjo: 2, biryu: 1 }, s2: { ogan: 1 } }, order: ['s2'] } }
+    const m = mergeProgress(a, b).drill!
+    assert.equal(m.h!['onjo']!.level, 3) // 단계가 높은 쪽 (공을 써서 올렸다)
+    assert.equal(m.h!['biryu']!.points, 5) // 같은 단계면 공이 많은 쪽
+    assert.equal(m.h!['ogan']!.points, 1)
+    assert.deepEqual(m.paid, { s1: { onjo: 4, biryu: 1 }, s2: { ogan: 1 } })
+    assert.deepEqual(m.order, ['s2', 's1'])
+    // 어느 기기에서 다시 합쳐도 같다 — 핑퐁 없이 멈춘다
+    assert.ok(sameProgress(mergeProgress(mergeProgress(a, b), b), mergeProgress(a, b)))
+  })
+  it('유물 — 얻은 것 · 연 무덤은 합집합, 끼운 것은 나중에 바꾼 기기를 따른다', () => {
+    const a: Progress = { ...P0, relics: { v: 1, own: { bipa: { n: 1, seed: 7 } }, wear: { onjo: ['bipa'] }, wearAt: 200, tombs: { '7': { ids: ['bipa', 'duck', 'mirror'], pick: 'bipa' } }, order: ['7'] } }
+    const b: Progress = { ...P0, relics: { v: 1, own: { duck: { n: 2, seed: 9 }, bipa: { n: 3, seed: 7 } }, wear: { biryu: ['duck'] }, wearAt: 100, tombs: { '9': { ids: ['duck'], pick: 'duck' }, '7': { ids: ['bipa', 'duck', 'mirror'], pick: null } }, order: ['9'] } }
+    const m = mergeProgress(a, b).relics!
+    assert.deepEqual(Object.keys(m.own!).sort(), ['bipa', 'duck'])
+    assert.equal(m.own!['bipa']!.n, 3)
+    assert.equal(m.tombs!['7']!.pick, 'bipa') // 이 기기에서 고른 무덤은 골랐던 대로
+    assert.deepEqual(m.wear, { onjo: ['bipa'] }) // a 가 나중에 바꿨다
+    assert.equal(m.wearAt, 200)
+    const later = mergeProgress({ ...a, relics: { ...a.relics!, wearAt: 50 } }, b).relics!
+    assert.deepEqual(later.wear, { biryu: ['duck'] })
+  })
+  it('유물 — 없는 것 · 둘이 같이 낀 것은 걷어 낸다', () => {
+    const a: Progress = { ...P0, relics: { v: 1, own: { bipa: { n: 1 } }, wear: { onjo: ['bipa', 'ghost'], biryu: ['bipa'] }, wearAt: 9, tombs: {}, order: [] } }
+    const m = mergeProgress(a, { ...P0, relics: { v: 1, own: {}, wear: {}, tombs: {}, order: [] } }).relics!
+    assert.deepEqual(m.wear, { biryu: ['bipa'] })
+  })
+})

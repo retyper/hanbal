@@ -159,6 +159,8 @@ export interface RelicStore {
   tombs: Record<string, RelicTomb>
   /** tombs 의 판 차례 — 오래된 것부터 덜어 낸다 */
   order: string[]
+  /** 끼운 것을 마지막으로 바꾼 때 (기기 시계 ms · 판에는 안 쓴다) — 두 기기를 맞출 때 나중 것을 따른다 (net/bundle mergeRelics) */
+  wearAt?: number
 }
 
 export function emptyRelics(): RelicStore {

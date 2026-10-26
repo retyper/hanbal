@@ -38,7 +38,7 @@ export function loadRelics(): RelicStore {
       tombs[k] = { ids: strs(t.ids).filter((id) => RELIC[id] !== undefined), pick: typeof t.pick === 'string' ? t.pick : null }
     }
     const order = strs(v.order).filter((k) => tombs[k] !== undefined)
-    return { v: 1, own, wear, tombs, order }
+    return { v: 1, own, wear, tombs, order, ...(typeof v.wearAt === 'number' ? { wearAt: v.wearAt } : {}) }
   } catch {
     return emptyRelics()
   }
@@ -80,7 +80,7 @@ export function putRelic(hero: string, slot: number, relic: string, level: numbe
   const s = loadRelics()
   const n = equip(s, hero, slot, relic, level)
   if (n === s) return false
-  saveRelics(n)
+  saveRelics({ ...n, wearAt: Date.now() }) // 기기를 맞출 때 나중에 바꾼 쪽을 따른다
   return true
 }
 
@@ -89,7 +89,7 @@ export function takeOffRelic(hero: string, slot: number): boolean {
   const s = loadRelics()
   const n = unequip(s, hero, slot)
   if (n === s) return false
-  saveRelics(n)
+  saveRelics({ ...n, wearAt: Date.now() })
   return true
 }
 

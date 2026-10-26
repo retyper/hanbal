@@ -20,7 +20,7 @@ const DEVICE_KEY = 'hanbal.device'
 /** 고르기에서 버린 쪽 한 벌 */
 const OTHER_KEY = 'hanbal.realm.v2.other'
 /** 계승 가신(hanbal.realm.retain)은 맞추지 않는다 — 새 판이 데려가면 지워지는 칸이라, 합치면 서버의 옛 것이 되살아나 같은 셋이 또 따라온다 */
-const PROGRESS_KEYS = { dex: 'hanbal.realm.dex', clan: 'hanbal.realm.clan', unlock: 'hanbal.realm.unlock' } as const
+const PROGRESS_KEYS = { dex: 'hanbal.realm.dex', clan: 'hanbal.realm.clan', unlock: 'hanbal.realm.unlock', drill: 'hanbal.realm.drill', relics: 'hanbal.realm.relics' } as const
 
 /** 판 한 벌 — realm-main 의 Saved (여기는 쓰는 칸만 안다) */
 export interface SaveLike {
@@ -70,10 +70,18 @@ function writeJson(key: string, v: unknown): void {
   try { if (v === null) localStorage.removeItem(key); else localStorage.setItem(key, JSON.stringify(v)) } catch { /* 저장 못 하는 곳 */ }
 }
 function localProgress(): Progress {
-  return { dex: readJson(PROGRESS_KEYS.dex, {}), clan: readJson(PROGRESS_KEYS.clan, {}), unlock: { ...readJson(PROGRESS_KEYS.unlock, { won: [] as string[] }) } }
+  // 단련 · 유물은 있을 때만 — 없던 기기가 빈 칸을 올려 서버 것을 비우지 않게 (합칠 때 없는 쪽은 다른 쪽을 그대로 따른다)
+  const drill = readJson<Progress['drill'] | null>(PROGRESS_KEYS.drill, null)
+  const relics = readJson<Progress['relics'] | null>(PROGRESS_KEYS.relics, null)
+  return {
+    dex: readJson(PROGRESS_KEYS.dex, {}), clan: readJson(PROGRESS_KEYS.clan, {}), unlock: { ...readJson(PROGRESS_KEYS.unlock, { won: [] as string[] }) },
+    ...(drill !== null && typeof drill === 'object' ? { drill } : {}), ...(relics !== null && typeof relics === 'object' ? { relics } : {}),
+  }
 }
 function writeProgress(p: Progress): void {
   writeJson(PROGRESS_KEYS.dex, p.dex); writeJson(PROGRESS_KEYS.clan, p.clan); writeJson(PROGRESS_KEYS.unlock, p.unlock)
+  if (p.drill !== undefined) writeJson(PROGRESS_KEYS.drill, p.drill)
+  if (p.relics !== undefined) writeJson(PROGRESS_KEYS.relics, p.relics)
 }
 function deviceId(): string {
   let id = ''
