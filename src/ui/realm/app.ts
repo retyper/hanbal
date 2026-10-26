@@ -80,6 +80,7 @@ import { AUD_CSS, askSay, pactSay, typed, type PactKind } from './audience.ts'
 import { customsOf } from '../../realm/data/customs.ts'
 import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
 import { SCENE_SOUND, makeMusic, playOnce, snd, tapSlot } from './sound.ts'
+import { voiceGate, voicePath } from './voice.ts'
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
 import { FEEL_CSS, alertFeel, ambushFeel, chanceFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
@@ -5540,7 +5541,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'npop': natPlotOp = natPlotOp === d['op'] ? '' : d['op'] as PlotOp; plotPick = ''; break
       case 'fold': { const k = d['k']!; if (foldOpen.has(k)) foldOpen.delete(k); else foldOpen.add(k); break }
       case 'bowup': musters = musters.some((o) => o.kind === 'bowUp') ? musters.filter((o) => o.kind !== 'bowUp') : [...musters, { kind: 'bowUp', faction: me() }]; break
-      case 'hero': openSheet({ kind: 'hero', id: d['id']! }); return
+      case 'hero': {
+        // 우리 장수를 부르면 대답한다 — 「네, 부르셨습니까」 (voice.ts)
+        const h = realm?.heroes[d['id']!]
+        const v = h !== undefined && h.faction === me() && h.status === 'free' ? voicePath(h, 'call') : null
+        if (v !== null && voiceGate(performance.now())) ding(v, 0.9)
+        openSheet({ kind: 'hero', id: d['id']! }); return
+      }
       case 'bust-view': openBust(d['src']!); return
       case 'bust-close': root.querySelector('.bview')?.remove(); return
       case 'assign':
