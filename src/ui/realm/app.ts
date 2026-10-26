@@ -314,8 +314,8 @@ const LAYER_KEY = 'hanbal.realm.layers'
 const HAND_NAME = { dead: '적장이 쓰러졌다', wounded: '적장이 다쳤다', fled: '적장이 달아났다', withdrew: '조용히 물러났다', cleared: '다 쓰러뜨렸다', skip: '자객에게 맡겼다' } as const
 /** 구출의 손 — 데려 나왔나 · 북이 울렸나 (형 10-26) */
 const RESCUE_HAND_NAME = { dead: '', wounded: '', fled: '북이 울려 달아났다', withdrew: '조용히 물러났다', cleared: '옥에서 데려 나왔다', skip: '보낸 이에게 맡겼다' } as const
-/** 공작 결과 큰 화면의 그림 — 구출은 제 그림이 아직 없어 밤 기습 그림을 빌린다 (ART-QUEUE: event-plot-rescue.jpg 가 오면 바꾼다) */
-const plotArt = (op: PlotOp): string => (op === 'rescue' ? 'event-night-raid' : `event-plot-${op}`)
+/** 공작 결과 큰 화면의 그림 — 공작마다 제 그림 (구출은 10-26 제미나이 Argon) */
+const plotArt = (op: PlotOp): string => `event-plot-${op}`
 
 type Ask = EnvoyAsk
 type Envoy = Extract<Order, { kind: 'envoy' }>
@@ -2540,7 +2540,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         }
         if (night) {
           // 구출은 갇힌 우리 장수 그림 (제 그림 event-plot-rescue 는 ART-QUEUE)
-          h += `<img class="plimg" src="${ART}event/${op === 'rescue' ? 'event-captured-ours' : 'event-assassin-archer'}.jpg" alt="">`
+          h += `<img class="plimg" src="${ART}event/${op === 'rescue' ? 'event-plot-rescue' : 'event-assassin-archer'}.jpg" alt="">`
           h += `<div class="mute">누구를 보내나</div><div class="fpick"><button class="${agent === null ? 'on' : ''}" data-act="pagent" data-id="" aria-label="고용 자객">${icon('unit-archer', 'fp')}</button>`
           for (const id of allAgents.slice(0, 6)) {
             const job = heroJob(r, id)
