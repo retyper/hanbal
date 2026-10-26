@@ -338,7 +338,7 @@ export const RELIC_CSS = `
 .ap .tbrv { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 16px; background: radial-gradient(ellipse at 50% 42%, #22190efc, #070504fc 70%); cursor: pointer; overflow: hidden; animation: tbrvin .25s ease-out both; }
 .ap .tbrv.t-legend { animation: tbrvin .25s ease-out both, tbquake .55s .1s ease-out both; }
 @keyframes tbrvin { from { opacity: 0; } to { opacity: 1; } }
-@keyframes tbquake { 0%, 100% { translate: 0 0; } 20% { translate: -9px 5px; } 40% { translate: 8px -6px; } 60% { translate: -5px 3px; } 80% { translate: 3px -2px; } }
+/* 화면 가득 흔들 때는 먼저 6% 키운 채로 흔든다 — 그냥 밀면 가장자리가 안으로 들어와 뒤의 지도가 비친다 (형 10-26) */ @keyframes tbquake { 0%, 100% { translate: 0 0; scale: 1; } 8%, 92% { translate: 0 0; scale: 1.06; } 25% { translate: -9px 5px; scale: 1.06; } 42% { translate: 8px -6px; scale: 1.06; } 60% { translate: -5px 3px; scale: 1.06; } 78% { translate: 3px -2px; scale: 1.06; } }
 .ap .tbrv .tbfl { position: absolute; inset: 0; pointer-events: none; background: #fff3d8; animation: tbflash .55s ease-out both; }
 .ap .tbrv.t-rare .tbfl { background: #dff0ff; } .ap .tbrv.t-legend .tbfl { background: #fff6c8; animation-duration: .8s; }
 @keyframes tbflash { from { opacity: .95; } to { opacity: 0; } }

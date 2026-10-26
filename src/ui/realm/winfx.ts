@@ -105,7 +105,7 @@ export const WINFX_CSS = `
 @keyframes wfsink { 0% { opacity: 0; transform: translateY(-30px); } 100% { opacity: 1; transform: none; } }
 /* 대승 — 글자가 박힐 때 화면이 쿵 */
 .ap .winfx.big { animation: wfquake .6s ease-out calc(var(--wd) + .3s) both; }
-@keyframes wfquake { 0%, 100% { transform: none; } 15% { transform: translate(-10px, 6px); } 30% { transform: translate(9px, -7px); } 45% { transform: translate(-6px, 4px); } 60% { transform: translate(4px, -3px); } 80% { transform: translate(-2px, 1px); } }
+/* 화면 가득 흔들 때는 먼저 6% 키운 채로 흔든다 — 그냥 밀면 가장자리가 안으로 들어와 뒤의 지도가 비친다 (형 10-26) */ @keyframes wfquake { 0%, 100% { transform: none; } 6%, 92% { transform: scale(1.06); } 18% { transform: scale(1.06) translate(-10px, 6px); } 32% { transform: scale(1.06) translate(9px, -7px); } 46% { transform: scale(1.06) translate(-6px, 4px); } 62% { transform: scale(1.06) translate(4px, -3px); } 80% { transform: scale(1.06) translate(-2px, 1px); } }
 .ap .winfx.big:not(.lose) .wf-word b { font-size: clamp(190px, 46vw, 440px); }
 /* 패배 — 밑의 화면 빛이 잿빛으로 식는다 */
 .ap .winfx.lose::after { content: ''; position: absolute; inset: -60px; z-index: -1; backdrop-filter: grayscale(.85) brightness(.75); -webkit-backdrop-filter: grayscale(.85) brightness(.75);

@@ -886,7 +886,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 @keyframes iemb { 0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: 1; } 100% { transform: translate(var(--w), -95vh); opacity: 0; } }
 /* 공성 — 화살이 성벽 쪽으로 쏟아진다 · 처음 한 번 흔들린다 */
 .ap .cere.invade.k-siege { animation: ishake .5s ease-out .15s both; }
-@keyframes ishake { 0%, 100% { transform: none; } 20% { transform: translate(-6px, 3px); } 40% { transform: translate(5px, -4px); } 60% { transform: translate(-3px, 2px); } 80% { transform: translate(2px, -1px); } }
+/* 화면 가득 흔들 때는 먼저 6% 키운 채로 흔든다 — 그냥 밀면 가장자리가 안으로 들어와 뒤의 지도가 비친다 (형 10-26) */ @keyframes ishake { 0%, 100% { transform: none; } 8%, 92% { transform: scale(1.06); } 25% { transform: scale(1.06) translate(-6px, 3px); } 42% { transform: scale(1.06) translate(5px, -4px); } 60% { transform: scale(1.06) translate(-3px, 2px); } 78% { transform: scale(1.06) translate(2px, -1px); } }
 .ap .cere.invade .iarw { position: absolute; left: var(--x); top: -12%; width: 46px; transform: rotate(118deg); opacity: 0; animation: iarw var(--d) ease-in var(--t) 3 both; }
 @keyframes iarw { 0% { transform: translate(0, 0) rotate(118deg); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(-30vw, 70vh) rotate(118deg); opacity: 0; } }
 .ap .cere.invade .idust { position: absolute; left: 50%; bottom: 18%; width: 60%; transform: translateX(-50%); opacity: 0; animation: idust 1.4s ease-out .9s both; }
