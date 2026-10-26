@@ -51,6 +51,7 @@ import { DEX_CSS, clanHeroes, dexHtml, dexToastHtml, loadDex, recordDex, type De
 import { DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
 import { DRILL_CSS, engraveRun, hasDrill, loadDrill, raiseHero, yardHtml, yardStripHtml, type DrillKit } from './drill.ts'
 import { applyDrill, earnedOf } from '../../realm/drill.ts'
+import { RELIC_CSS, openRunTomb, pickRunRelic, putRelic, relicChips, takeOffRelic, tombHtml, tombRun, tombStripHtml, type RelicKit } from './relics.ts'
 import { LEVEL_LINE, TIER_MAX, levelName } from '../../realm/tier.ts'
 import { FIT_CSS, fitLabels } from './fit.ts'
 import { annalOf } from '../../realm/data/annals.ts'
@@ -496,11 +497,14 @@ const DEX_KIT = {
 
 /** 처음 몸 — 영웅전 명부 · 가문의 아이 (단련터 · 동행 고르기의 단련 몸) */
 const drillBody = (id: string): Hero | undefined => dexCatalog().find((x) => x.id === id)?.hero ?? clanHeroes().find((x) => x.id === id)?.hero
+/** 유물(relics.ts)이 쓰는 그림 손 — 장수 이름은 명부 · 단련 기록에서 */
+const RELIC_KIT: RelicKit = { art: ART, esc, nameOf: (id: string): string => drillBody(id)?.name ?? loadDrill().h[id]?.name ?? id }
 /** 단련터(drill.ts)가 쓰는 그림 손 */
 const DRILL_KIT: DrillKit = {
   esc,
   bust: (id: string): string | null => (bustOf(id) !== undefined ? `${ART}bust/${bustOf(id)}.jpg` : null),
   bodyOf: drillBody,
+  relic: RELIC_KIT,
 }
 
 /** 판의 앞과 끝(front.ts)이 쓰는 그림 손 */
@@ -541,11 +545,13 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
   /** 도감 — back: 돌아갈 판 바깥 화면 (null 이면 판으로) */
   | { kind: 'dex'; board: DexBoard; sel: string | null; back: Front | null }
   /** 단련터 — 끝 화면(end)에서 오면 그 판의 우리 장수, 첫 화면(title)에서 오면 단련 기록이 있는 모두 (drill.ts · HERO-GROWTH ★ §C) */
-  | { kind: 'drill'; from: 'end' | 'title'; ids: string[] | null; gain: Record<string, number>; fell: string[]; anim: boolean; last: string | null }
+  | { kind: 'drill'; from: 'end' | 'title'; ids: string[] | null; gain: Record<string, number>; fell: string[]; anim: boolean; last: string | null; slot?: { id: string; i: number } | null }
+  /** 옛 무덤 — 이긴 판의 상자 셋 (relics.ts · HERO-GROWTH ★ §B). fresh 면 방금 연 상자가 터진다 */
+  | { kind: 'tomb'; fresh: boolean }
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
+  style.textContent = FIT_CSS + TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS + RELIC_CSS + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
   installTips(root)
@@ -2707,7 +2713,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const chan = ours && job === null ? chanJob(h.id) : null
     const mine = ours && realm !== null && autoIdle(realm) && manualOf(realm).has(h.id)
     return `<button class="hrow${isRuler(r, h.id) ? ' ruler' : ''}${job !== null ? ' busy' : ''}" data-act="hero" data-id="${h.id}">${bust(h)}${job !== null ? `<i class="hbz">⏳</i>` : ''}<span class="hb">`
-      + `<b>${nameHtml(h.name)}${isRuler(r, h.id) ? ' <span class="mute">군주</span>' : ''}${h.drill !== undefined && h.drill.lv > 0 && h.faction === me() ? ` <span class="dlv">단련 ${h.drill.lv}</span>` : ''}${mine ? ' <span class="jsm">직접</span>' : ''}${seen ? '' : ' <span class="heard">이름만 들었다</span>'}</b>`
+      + `<b>${nameHtml(h.name)}${isRuler(r, h.id) ? ' <span class="mute">군주</span>' : ''}${h.drill !== undefined && h.drill.lv > 0 && h.faction === me() ? ` <span class="dlv">단련 ${h.drill.lv}</span>` : ''}${h.faction === me() ? relicChips(ART, esc, h.relics) : ''}${mine ? ' <span class="jsm">직접</span>' : ''}${seen ? '' : ' <span class="heard">이름만 들었다</span>'}</b>`
       + (job !== null ? `<span class="hdo">⏳ ${esc(job[1])}</span>` : `<span class="mute">${esc(roleLine(r, h))}</span>`)
       + (chan !== null ? `<span class="jsd">${chanJobHtml(h.id)}</span>` : '')
       + `<span class="tr3">${h.faction === me() && h.status === 'free' ? bondChip(r, h) : ''}${traitChips(h, seen)}</span>${extra}</span></button>`
@@ -2905,7 +2911,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const annal = annalOf(x.id)
     h += `<div class="hpic">${file !== undefined ? `<img class="big" src="${ART}bust/${file}.jpg" alt="" data-act="bust-view" data-src="${ART}bust/${file}.jpg">` : bust(x, 'face')}${annal !== undefined ? `<button class="annb" data-act="annal" data-id="${x.id}" aria-label="사서에 남은 이야기">📜<b>?</b></button>` : ''}</div>`
     // 판 밖 단련을 들고 온 장수 — 「단련 n」 (HERO-GROWTH ★ §A)
-    h += `<div class="hn">${nameHtml(x.name)}${x.drill !== undefined && x.drill.lv > 0 && x.faction === me() ? ` <span class="dlv">단련 ${x.drill.lv}</span>` : ''}</div><div class="mute">${emblem(x.faction)}${esc(r.factions[x.faction]?.name ?? '떠돌이')}${isRuler(r, x.id) ? ' 군주' : ''} · ${esc(roleLine(r, x))}</div>`
+    h += `<div class="hn">${nameHtml(x.name)}${x.drill !== undefined && x.drill.lv > 0 && x.faction === me() ? ` <span class="dlv">단련 ${x.drill.lv}</span>` : ''}${x.faction === me() ? relicChips(ART, esc, x.relics) : ''}</div><div class="mute">${emblem(x.faction)}${esc(r.factions[x.faction]?.name ?? '떠돌이')}${isRuler(r, x.id) ? ' 군주' : ''} · ${esc(roleLine(r, x))}</div>`
     h += heroRadar(x, seen, ours)
     h += `<div class="tr3">${traitChips(x, seen)}${artChip(x, seen, icon)}</div>`
     if (ours) h += growthHtml(r, x)
@@ -3818,7 +3824,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 휘장 — 이 나라로 이겼다는 표가 나라 고르기에 붙는다 (META §2-①)
       const badge = r.outcome?.kind === 'win' && (r.region ?? 'byeonhan-mini') !== 'tutorial'
         ? `<p class="tierup">${esc(josa(r.factions[me()]?.name ?? '', '으로', '로'))} 이긴 <b>휘장</b>을 받았다 — 나라 고르기에 붙는다</p>` : ''
-      return endingHtml(KIT, r, host.history(), opened + badge + drillStrip(r) + `<p class="mute retainnote">우리 장수로 부린 이는 영웅전에 남는다 — 다음 판을 열 때 영웅전에서 골라 데려간다.</p>`)
+      return endingHtml(KIT, r, host.history(), opened + badge + tombStripHtml(RELIC_KIT, r) + drillStrip(r) +`<p class="mute retainnote">우리 장수로 부린 이는 영웅전에 남는다 — 다음 판을 열 때 영웅전에서 골라 데려간다.</p>`)
     }
     if (!showReport || before === null || report === null) return ''
     const season = seasonOf(r.season)
@@ -4229,6 +4235,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'dex': return dexHtml(DEX_KIT, f.board, f.sel, f.back === null ? '판으로' : '처음으로')
       case 'drill': return yardHtml(DRILL_KIT, f)
+      case 'tomb': return tombRun(realm) ? tombHtml(RELIC_KIT, realm, f.fresh) : ''
       case 'annals': return annalsHtml()
       case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null), tierWon, tierHtml('jumong', chapTier, 'chap-tier'))
       case 'nations': return nationsHtml(KIT, f.region)
@@ -4878,6 +4885,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (front.sel !== null) front = { ...front, sel: null }
         else front = front.back
       } else if (front.kind === 'drill') { yardLeave(); return true }
+      else if (front.kind === 'tomb') { front = null; fastNext = true }
       else if (front.kind === 'detail') front = { kind: 'nations', region: front.region }
       else if (front.kind === 'nations') front = { kind: 'boards' }
       else if (front.kind === 'boards') front = { kind: 'title' }
@@ -5109,6 +5117,41 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         paint()
         return
       }
+      // 옛 무덤 — 이긴 판의 상자 셋에서 하나 (relics.ts · HERO-GROWTH ★ §B)
+      case 'tomb-open': if (tombRun(realm)) { openRunTomb(realm); front = { kind: 'tomb', fresh: false }; sheet = null; $('.mapwrap').scrollTop = 0 } paint(); return
+      case 'tomb-pick': {
+        if (!tombRun(realm) || !pickRunRelic(realm, d['id']!)) return
+        ding(snd('dex_new'), 0.6) // 상자가 열린다
+        window.setTimeout(() => { if (document.visibilityState === 'visible') ding(snd('coins'), 0.45) }, 450) // 껴묻거리가 쏟아진다
+        front = { kind: 'tomb', fresh: true }
+        paint()
+        return
+      }
+      case 'tomb-back': front = null; fastNext = true; paint(); return
+      // 단련터의 유물 칸 — 누르면 고르기가 펼쳐지고, 고르면 끼운다 (다른 장수가 지녔으면 옮긴다)
+      case 'rl-slot': {
+        if (front === null || front.kind !== 'drill') return
+        const id = d['id']!
+        const i = Number(d['i'] ?? 0)
+        front = { ...front, anim: false, gain: {}, last: null, slot: front.slot?.id === id && front.slot.i === i ? null : { id, i } }
+        paint()
+        return
+      }
+      case 'rl-put': {
+        if (front === null || front.kind !== 'drill') return
+        if (putRelic(d['id']!, Number(d['i'] ?? 0), d['r']!, loadDrill().h[d['id']!]?.level ?? 0)) ding(snd('tap_coin'), 0.5)
+        front = { ...front, anim: false, gain: {}, last: null, slot: null }
+        paint()
+        return
+      }
+      case 'rl-off': {
+        if (front === null || front.kind !== 'drill') return
+        takeOffRelic(d['id']!, Number(d['i'] ?? 0))
+        front = { ...front, anim: false, gain: {}, last: null, slot: null }
+        paint()
+        return
+      }
+      case 'rl-close': if (front !== null && front.kind === 'drill') front = { ...front, anim: false, gain: {}, slot: null }; paint(); return
       case 'dex-close': if (front !== null && front.kind === 'dex') front = front.back; paint(); return
       case 'dex-board': if (front !== null && front.kind === 'dex') { front = { ...front, board: d['v'] as DexBoard, sel: null }; root.querySelector('.front.dexp')?.scrollTo(0, 0) } paint(); return
       case 'dex-sel': if (front !== null && front.kind === 'dex') front = { ...front, sel: d['id'] === undefined || d['id'] === front.sel ? null : d['id'] }; paint(); return

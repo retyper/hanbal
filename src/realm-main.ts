@@ -23,6 +23,8 @@ import { canSync, makeSync } from './net/sync.ts'
 import { bringRetainers } from './realm/legacy.ts'
 import { drillRealm } from './realm/drill.ts'
 import { loadDrill } from './ui/realm/drill.ts'
+import { relicRealm } from './realm/relics.ts'
+import { loadRelics } from './ui/realm/relics.ts'
 import { dexCatalog } from './realm/dex.ts'
 import { applyTier } from './realm/tier.ts'
 import { watchUpdates } from './ui/realm/update.ts'
@@ -280,6 +282,7 @@ function fresh(nation: string, region: RegionId, tier = 1): Saved {
   applyTier(realm, tier) // 난세 단계 — 이웃이 처음부터 세다 (tier.ts)
   bringRetainers(realm, takeRetainers(region, tier, (id) => dexCatalog().find((x) => x.id === id)?.hero ?? clanHeroes().find((x) => x.id === id)?.hero)) // 동행 — 영웅전에서 고른 이가 우리 도읍에 (VISION §5-4 · 형 10-25)
   drillRealm(realm, loadDrill()) // 단련 — 우리 장수(처음 장수 · 군주 · 동행)가 단련터에서 키운 몸으로 (HERO-GROWTH ★ 둘째 판 · 난세 단계와 상관없이)
+  relicRealm(realm, loadRelics().wear) // 유물 — 단련터에서 끼운 껴묻거리를 지니고 온다 (HERO-GROWTH ★ §B · 칸 수는 단련 단계로)
   return { v: 2, nation, seed, log: [], realm, before: null, report: null }
 }
 

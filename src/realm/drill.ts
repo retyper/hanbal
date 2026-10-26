@@ -133,10 +133,10 @@ export function earnedOf(r: Realm, id: string, won = r.outcome?.kind === 'win'):
   return Math.round(meritOf(r, id) * (won ? P.realm.drillWinMul : 1))
 }
 
-/** 판에서 본 몸에서 처음 몸을 거꾸로 — 판 안에서 자란 몫 · 들고 온 단련을 뺀다 */
+/** 판에서 본 몸에서 처음 몸을 거꾸로 — 판 안에서 자란 몫 · 들고 온 단련 · 지닌 유물이 더한 몫을 뺀다 */
 export function bornFrom(h: Hero): Partial<Record<GrowStat, number>> {
   const out: Partial<Record<GrowStat, number>> = {}
-  for (const s of DRILL_STATS) out[s] = Math.max(1, h[s] - (h.grown?.[s] ?? 0) - (h.drill?.add[s] ?? 0))
+  for (const s of DRILL_STATS) out[s] = Math.max(1, h[s] - (h.grown?.[s] ?? 0) - (h.drill?.add[s] ?? 0) - (h.relicAdd?.[s] ?? 0))
   return out
 }
 
@@ -175,9 +175,9 @@ export function spendCost(level: number): number {
   return Math.max(0, Math.floor(level)) + P.realm.drillCostBase
 }
 
-/** 그 능력치의 그릇 — 타고난 값 + drillRoom, 10 까지 */
-export function capOf(born: Pick<Hero, GrowStat>, stat: GrowStat): number {
-  return Math.min(10, born[stat] + P.realm.drillRoom)
+/** 그 능력치의 그릇 — 타고난 값 + drillRoom (+ 지닌 유물이 넓힌 몫 room — relics.relicRoom), 10 까지 */
+export function capOf(born: Pick<Hero, GrowStat>, stat: GrowStat, room: Partial<Record<GrowStat, number>> = {}): number {
+  return Math.min(10, born[stat] + P.realm.drillRoom + (room[stat] ?? 0))
 }
 
 /** 처음 몸 — 넘겨받은 몸이 없으면 새길 때 적어 둔 몸 */
@@ -188,13 +188,13 @@ function bornBody(e: DrillEntry, born?: Pick<Hero, GrowStat>): Pick<Hero, GrowSt
   return { mu: b.mu ?? 1, tong: b.tong ?? 1, ryak: b.ryak ?? 1, chi: b.chi ?? 1, deok: b.deok ?? 1 }
 }
 
-/** 올릴 수 있나 — 'ok' · 그릇이 찼다 'cap' · 공이 모자라다 'poor' · 단련 기록이 없다 'none' */
-export function raiseState(store: DrillStore, id: string, stat: GrowStat, born?: Pick<Hero, GrowStat>): 'ok' | 'cap' | 'poor' | 'none' {
+/** 올릴 수 있나 — 'ok' · 그릇이 찼다 'cap' · 공이 모자라다 'poor' · 단련 기록이 없다 'none'. room 은 지닌 유물이 넓힌 그릇 */
+export function raiseState(store: DrillStore, id: string, stat: GrowStat, born?: Pick<Hero, GrowStat>, room?: Partial<Record<GrowStat, number>>): 'ok' | 'cap' | 'poor' | 'none' {
   const e = store.h[id]
   if (e === undefined || !DRILL_STATS.includes(stat)) return 'none'
   const b = bornBody(e, born)
   if (b === null) return 'none'
-  if (b[stat] + (e.add[stat] ?? 0) >= capOf(b, stat)) return 'cap'
+  if (b[stat] + (e.add[stat] ?? 0) >= capOf(b, stat, room)) return 'cap'
   return e.points >= spendCost(e.level) ? 'ok' : 'poor'
 }
 
@@ -204,8 +204,8 @@ export function canRaise(store: DrillStore, hero: Pick<Hero, 'id' | GrowStat>, s
 }
 
 /** 한 단계 올린 새 기록 — 못 올리면 받은 그대로 */
-export function raise(store: DrillStore, id: string, stat: GrowStat, born?: Pick<Hero, GrowStat>): DrillStore {
-  if (raiseState(store, id, stat, born) !== 'ok') return store
+export function raise(store: DrillStore, id: string, stat: GrowStat, born?: Pick<Hero, GrowStat>, room?: Partial<Record<GrowStat, number>>): DrillStore {
+  if (raiseState(store, id, stat, born, room) !== 'ok') return store
   const e = store.h[id]!
   const n: DrillEntry = { ...e, add: { ...e.add, [stat]: (e.add[stat] ?? 0) + 1 }, points: e.points - spendCost(e.level), level: e.level + 1 }
   return { ...store, h: { ...store.h, [id]: n } }

@@ -44,6 +44,7 @@ import { spreadRumors } from './rumor.ts'
 import { addMen, giveMen, kitOf, scaleKinds, scaleMen, takeMen } from './kit.ts'
 import { formParty, joinParty, moveParty, stepParties } from './parties.ts'
 import { battleMerit, seasonMerit } from './drill.ts'
+import { relicHorseMulOf, relicMoraleOf, relicSum } from './relics.ts'
 import {
   ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, ironhandAt, noteMet, oneJobPerHero, postHero, releaseCaptives, stepHeroes, sweepHeroes,
 } from './heroes.ts'
@@ -158,7 +159,9 @@ function heroOf(r: Realm, a: Army) {
 
 export function forceOf(r: Realm, a: Army): Force {
   const h = heroOf(r, a)
-  return { mix: a.mix, kit: kitOf(a), equip: a.equip, mu: commandOf(h), bowMul: bowMulOf(h), morale: a.morale + bondMoraleOf(r, h) }
+  // 지닌 유물 — 간두령 사기 · 천마도 말다래 기병 힘 (relics.ts)
+  const horseMul = relicHorseMulOf(h)
+  return { mix: a.mix, kit: kitOf(a), equip: a.equip, mu: commandOf(h), bowMul: bowMulOf(h), ...(horseMul !== 1 ? { horseMul } : {}), morale: a.morale + bondMoraleOf(r, h) + relicMoraleOf(h) }
 }
 
 /** 여러 군대를 한 판정 입력으로 — 병력과 병종마다 무장은 더하고, 지휘는 가장 센 장수의 것 */
@@ -168,6 +171,7 @@ function mergeForces(r: Realm, armies: readonly Army[]): Force {
   let biggest: Army | null = null
   let mu = 1
   let bowMul = 1
+  let horseMul = 1
   let moraleSum = 0
   let n = 0
   for (const a of armies) {
@@ -180,10 +184,11 @@ function mergeForces(r: Realm, armies: readonly Army[]): Force {
     if (biggest === null || c > headcount(forceOf(r, biggest))) biggest = a
     mu = Math.max(mu, commandOf(heroOf(r, a)))
     bowMul = Math.max(bowMul, bowMulOf(heroOf(r, a)))
-    moraleSum += (a.morale + bondMoraleOf(r, heroOf(r, a))) * c // 믿는 장수의 덤 (HEROES §6)
+    horseMul = Math.max(horseMul, relicHorseMulOf(heroOf(r, a)))
+    moraleSum += (a.morale + bondMoraleOf(r, heroOf(r, a)) + relicMoraleOf(heroOf(r, a))) * c // 믿는 장수의 덤 (HEROES §6) · 간두령 (relics.ts)
     n += c
   }
-  return { mix, kit, equip: biggest?.equip ?? 'stone', mu, bowMul, morale: n > 0 ? moraleSum / n : 1 }
+  return { mix, kit, equip: biggest?.equip ?? 'stone', mu, bowMul, ...(horseMul !== 1 ? { horseMul } : {}), morale: n > 0 ? moraleSum / n : 1 }
 }
 
 /** 고을에 머무는(행군 중이 아닌) 군대 — id 순서로 (결정론) */
@@ -796,7 +801,10 @@ function sideOf(
 ): Side {
   const hs = sideHeroes(r, armies)
   const h = hs[0] ?? null
-  const asSide = (x: Hero): NonNullable<Side['hero']> => ({ id: x.id, mu: x.mu, ryak: x.ryak, coward: hasTrait(x, 'coward'), ...(heroArt(x) !== undefined ? { art: heroArt(x)! } : {}), ...styleOf(x) })
+  const asSide = (x: Hero): NonNullable<Side['hero']> => {
+    const duel = relicSum(x, 'duel') // 계림로 보검 · 비파형동검 — 겨루기에서만 (relics.ts)
+    return { id: x.id, mu: x.mu, ryak: x.ryak, coward: hasTrait(x, 'coward'), ...(heroArt(x) !== undefined ? { art: heroArt(x)! } : {}), ...styleOf(x), ...(duel > 0 ? { duel } : {}) }
+  }
   const specials: Cmd[] = []
   if (o.fire) specials.push('fire')
   // 땅의 수 — 배 들이받기는 수군이 넉넉한 쪽만 (전체의 15%)

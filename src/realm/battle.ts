@@ -34,6 +34,8 @@ export interface Force {
   readonly mu: number
   /** 궁수의 힘 배수 — 장수의 궁술·명궁 (heroes.bowMulOf). 없으면 1 */
   readonly bowMul?: number
+  /** 기병의 힘 배수 — 이끄는 장수가 지닌 유물 (천마도 말다래 · 기마인물형 토기 — relics.ts). 없으면 1 */
+  readonly horseMul?: number
   /** 사기 0.5 ~ 1.2 */
   readonly morale: number
 }
@@ -176,9 +178,9 @@ export function counterMul(me: Force, foe: Force): number {
 }
 
 /** 지휘 L = 바탕 + 무 × 계수 */
-/** 싸우는 머릿수 — 궁수는 이끄는 장수의 궁술·명궁(bowMul)만큼 더 센다 (HEROES §1 · §2) */
+/** 싸우는 머릿수 — 궁수는 이끄는 장수의 궁술·명궁(bowMul)만큼, 기병은 지닌 유물(horseMul)만큼 더 센다 (HEROES §1 · §2 · HERO-GROWTH ★ §B) */
 export function fightHead(f: Force): number {
-  return headcount(f) + ((f.bowMul ?? 1) - 1) * (f.mix.bow ?? 0)
+  return headcount(f) + ((f.bowMul ?? 1) - 1) * (f.mix.bow ?? 0) + ((f.horseMul ?? 1) - 1) * (f.mix.horse ?? 0)
 }
 
 export function leadMul(mu: number): number {
