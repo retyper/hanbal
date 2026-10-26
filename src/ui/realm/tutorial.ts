@@ -98,7 +98,7 @@ export const TUT_STEPS: readonly TutStep[] = [
   },
   {
     id: 'plot', name: '공작', what: '몰래 적을 흔든다 — 소문·방화·암살', text: '「외교」의 「공작」에서 미추홀에 소문을 퍼뜨린다. 적 군사의 사기가 꺾인다.',
-    press: ['[data-act="plot"][data-op="rumor"]', '[data-act="plot-open"][data-op="rumor"]', '[data-act="dmode"][data-v="plot"]', tab('diplo')],
+    press: ['[data-act="plot"][data-op="rumor"]', '[data-act="ppick"][data-op="rumor"]', '[data-act="plot-open"][data-op="rumor"]', '[data-act="dmode"][data-v="plot"]', tab('diplo')],
     done: (c) => c.orders.some((o) => o.kind === 'plot'),
   },
   {

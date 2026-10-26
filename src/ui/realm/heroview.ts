@@ -131,6 +131,9 @@ export const HERO_CSS = `
 .ap .jrow small { font-size: 11.5px; color: #a8a090; }
 .ap .todochip .tci { width: 18px; height: 18px; vertical-align: -4px; margin-right: 3px; }
 .ap .jsm { display: inline-block; padding: 0 5px; border-radius: 6px; border: 1px solid #8a7040; font-size: 11px; font-weight: 700; color: #f0d090; vertical-align: 1px; }
+/* 이번 계절 무엇을 — 📜 내가 시킨 일 · ⚙ 알아서 하는 일 (heroRow · 형 10-26: "림월드·팰월드처럼") */
+.ap .hwk { display: inline-block; padding: 0 5px; border-radius: 6px; font-style: normal; font-size: 11px; font-weight: 700; vertical-align: 1px; white-space: nowrap; }
+.ap .hwk.me { background: #4a3418; border: 1px solid #e0a850; color: #ffd890; } .ap .hwk.au { background: #22301e; border: 1px solid #6a9a50; color: #b8e09a; }
 .ap .trait { display: inline-flex; align-items: baseline; gap: 3px; padding: 1px 7px; border-radius: 10px; border: 1.5px solid var(--g); background: #17110c;
   font-size: 12px; white-space: nowrap; } .ap .trait i { font-style: normal; font-size: 10px; color: var(--mute); }
 .ap .trait.bad { border-style: dashed; color: #f1b8a8; }
@@ -202,7 +205,6 @@ export const HERO_CSS = `
 .ap .cmdt { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 10px; border: 1px solid #6a5a3a; background: #2a2218; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
 .ap .cmdt b { color: #f0e0b8; } .ap .cmdt small { font-size: 11.5px; color: var(--mute); }
 .ap .cmdgo { width: 100%; justify-content: center; margin-top: 6px; }
-.ap .cmdt.plotop { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 2px 6px; } .ap .cmdt.plotop small { flex: 1 0 100%; } .ap .cmdt .poic { width: 26px; height: 26px; }
 .ap .cmdt:disabled { opacity: .45; cursor: default; }
 .ap .cmdm { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; }
 .ap .cmdm button { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; min-height: 64px; padding: 6px 4px; cursor: pointer; }

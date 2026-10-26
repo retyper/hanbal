@@ -384,8 +384,18 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .trade .cmh { display: flex; flex-direction: column; gap: 2px; } .ap .trade .cmh b { color: var(--gold); font-size: 15px; }
 /* 이간 — 두 나라 깃발 */
 .ap .sowf { display: inline-flex; align-items: center; gap: 2px; flex: none; margin-right: 4px; } .ap .sowf i { font-style: normal; font-size: 12px; color: #e8a07a; }
-/* 고을 판의 공작 격자 — 펼친 갈래 · 보낸 갈래 · 여기서 못 거는 갈래(외교로) */
-.ap .nplots { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); } .ap .nplots .cmdt.on { border-color: var(--gold); background: #3a2c16; } .ap .nplots .cmdt.sent { border-color: #7fbf6a; } .ap .nplots .cmdt.away { opacity: .62; }
+/* 공작 칩 격자 — 그림과 이름만(설명은 말풍선) · 펼친 칸(popan)은 누른 칩이 든 줄 바로 밑 — dense 라 뒤 칩이 그 줄 빈 칸을 먼저 채운다 (plotGrid · 형 10-26) */
+.ap .pogrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); grid-auto-flow: row dense; gap: 6px; margin: 4px 0 8px; }
+.ap .pochip { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; padding: 6px 2px 5px; border-radius: 10px; border: 1px solid #6a5a3a; background: #2a2218; color: var(--ink); font: inherit; cursor: pointer; }
+.ap .pochip .poic { width: 30px; height: 30px; } .ap .pochip b { font-size: 13px; color: #f0e0b8; white-space: nowrap; }
+.ap .pochip.on { border-color: #e0bd78; background: #4a3822; box-shadow: 0 0 0 1px #e0bd78; } .ap .pochip.sent { border-color: #7fbf6a; }
+.ap .pochip.away { opacity: .6; } .ap .pochip:disabled { opacity: .4; cursor: default; }
+.ap .pochip .ponum { position: absolute; top: 3px; right: 4px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 8px; background: #3f7a35; color: #fff; font-style: normal; font-size: 11px; font-weight: 700; line-height: 16px; text-align: center; }
+.ap .popan { grid-column: 1 / -1; min-width: 0; padding: 8px; border: 1px solid #e0bd78; border-radius: 10px; background: #241b12; }
+.ap .popan > .rows { margin: 0; } .ap .popan > .mute { margin: 4px 0 0; font-size: 12px; }
+.ap .row .dest .pwent { display: block; font-size: 11.5px; color: #9fd18b; }
+/* 고을을 맡은 장수 — 보낼 수 있다 · 그 계절엔 고을을 비운다 (hands.ownHand) */
+.ap i.gvtag, .ap .who .wg i.gvtag { display: inline-block; font-style: normal; font-size: 10px; line-height: 1.5; padding: 0 5px; border-radius: 6px; background: #34482a; color: #cfe6b0; white-space: nowrap; }
 /* 누가 가나 — 한 줄로 밀던 것을 공작처럼 격자로 (형 10-25: "1행이라서 보기 힘듦 · 공작처럼") */
 .ap .who .wlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; padding: 2px 2px 6px; }
 .ap .who .wg { flex: none; width: auto; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; border-radius: 12px;
@@ -420,6 +430,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .pwho { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 10px; border: 1px solid var(--line); background: #2a2016; color: var(--ink); font: inherit; cursor: pointer; text-align: center; min-width: 0; }
 .ap .pwho:active { border-color: var(--gold); } .ap .pwho .fp { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
 .ap .pwho b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; } .ap .pwho small { font-size: 10.5px; color: var(--mute); line-height: 1.25; }
+/* 한 번 누르면 간다 — 장수 판에서 데려온 장수(on) · 못 가는 이(손이 다 찼다 · 값이 모자라다) · 값은 단추마다 */
+.ap .pwho.on { border-color: var(--gold); box-shadow: 0 0 0 2px #d9b36a55; } .ap .pwho:disabled { opacity: .42; cursor: default; }
+.ap .pwho .cost b { font-size: 11px; } .ap .pwho .feel { max-width: 100%; white-space: normal; padding: 1px 6px; font-size: 10.5px; line-height: 1.3; text-align: center; } .ap .pwhos > p.mute { margin: 6px 0 0; font-size: 11.5px; }
 .ap .row .dest .pwarn { display: block; margin-top: 1px; font-size: 11.5px; font-weight: 600; line-height: 1.3; color: #ff9a80; white-space: normal; }
 /* 사신 단추 — 한 열 · 가로 길게 · 낌새는 오른쪽 끝 (askButtons · 형 10-25) */
 .ap .btns.askl { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
@@ -452,7 +465,6 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .heard { font-size: 11px; color: #c9b98f; border: 1px solid #5a5040; border-radius: 8px; padding: 0 6px; margin-left: 4px; font-weight: 500; white-space: nowrap; }
 .ap .heardp { font-size: 13px; color: #d8c89a; background: #2a2a22; border-left: 3px solid #8a7a50; padding: 6px 8px; border-radius: 6px; }
 .ap .fbtn { border: 0; padding: 0; background: none; cursor: pointer; border-radius: 50%; }
-.ap .plimg { display: block; width: 100%; border-radius: 10px; margin: 6px 0; }
 .ap .rface.sm { width: 34px; height: 34px; border-width: 1px; }
 .ap .farh { margin: 10px 0 4px; } .ap .farh b { display: block; font-size: 13.5px; color: var(--gold); } .ap .farh span { font-size: 12px; }
 .ap .farseg button { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.2; } .ap .farseg small { font-size: 10.5px; opacity: .8; }
@@ -467,10 +479,6 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .guidebox .gbx p { margin: 6px 0; font-size: 14.5px; line-height: 1.6; color: #ece2cf; }
 .ap .guidebox .gbx .btn { display: block; margin: 12px 0 0 auto; }
 .ap .dseg { margin-bottom: 8px; } .ap .dseg button { font-size: 15px; padding: 8px; }
-.ap .plh { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; padding: 0; }
-.ap .plh > span:nth-child(2) { flex: 1; min-width: 0; display: flex; flex-direction: column; } .ap .plh .mute { white-space: normal; }
-.ap .plh .cost { flex: none; white-space: nowrap; }
-.ap .plh:disabled { opacity: .45; cursor: default; }
 .ap .askc { padding: 10px; margin: 8px 0; border-radius: 14px; background: #2f2520; border: 1px solid #5a4a2a; }
 .ap .askc.threat { border-color: #8a3a2a; background: #2a1f1f; } .ap .askc p { margin: 6px 0 2px; font-size: 14.5px; }
 .ap .sus { color: #f1a08a; font-weight: 700; }

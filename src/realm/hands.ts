@@ -8,6 +8,10 @@
  * 강한 나라가 더 많이 하는 것은 장수가 많아서다. 장수를 외교에 쓰면 그 계절 전선·고을이 빈다 — 저절로 견제된다.
  * 넘치는 명령은 주문 차례대로 버린다 (결정론). 이름 붙은 장수(함께 가는 장수·자객 장수)는 한 계절에 한 번만 — 두 번째부터는
  * 사신은 사자 몫으로 가고(장수를 떼어 낸다), 공작은 그대로 둔다(자객 장수의 옳고 그름은 plots 가 본다).
+ *
+ * 고을을 맡은 장수를 이름으로 보내면(사신에 따라가는 장수 · 공작의 장수) 그 장수가 제 손이다 — 보낼 사람 수를 안 깎는다 (ownHand).
+ * 그 계절엔 자리를 비우고(awayUntil · 고을지기 몫이 빈다) 자리는 그대로 둔다 — 다음 계절 돌아와 다시 맡는다
+ * (형 10-26: "사신이나 공작으로 보낼때에는 마을 맡고있는 애들도 내가 보낼수가 있어서 안보낸 경우에만 알아서 고을 맡기를 하는거임")
  */
 import { P } from '../tune/params.ts'
 import type { Order, Realm } from './types.ts'
@@ -34,6 +38,31 @@ const ownerOf = (o: HandOrder): string => (o.kind === 'envoy' ? o.from : o.facti
 /** 이름 붙은 사람 — 함께 가는 장수 · 자객 장수(암살·구출) */
 const namedOf = (o: HandOrder): string | undefined => (o.kind === 'envoy' ? o.hero : o.op === 'assassin' || o.op === 'rescue' ? o.agent : undefined)
 
+/** 몸소 가는 장수 — 사신에 따라가는 장수 · 공작의 장수(어느 공작이든) */
+const bodyOf = (o: HandOrder): string | undefined => (o.kind === 'envoy' ? o.hero : o.agent)
+
+/**
+ * 제 몸이 손인 장수 — 고을을 맡은 우리 장수(군주·군대를 이끄는 이·다친 이·나가 있는 이 빼고).
+ * 이름으로 보내면 보낼 사람 수를 안 깎는다 (쉬는 장수가 아니라 handsOf 에 안 들어 있다)
+ */
+export function ownHand(r: Realm, faction: string, hero: string): boolean {
+  const h = r.heroes[hero]
+  if (h === undefined || h.faction !== faction || h.status !== 'free' || h.post === null || h.post === undefined) return false
+  if (r.factions[faction]?.ruler === hero || Object.values(r.armies).some((a) => a.hero === hero)) return false
+  return !(h.woundedUntil !== undefined && h.woundedUntil >= r.season) && !(h.awayUntil !== undefined && h.awayUntil >= r.season)
+}
+
+/** 이 명령들 가운데 제 몸이 손인 장수가 나르는 것의 수 — 장수마다 한 번 (화면: 보낼 사람 n/m 에서 빼고 센다) */
+export function ownHandsIn(r: Realm, orders: readonly Order[], faction: string): number {
+  const seen = new Set<string>()
+  for (const o of orders) {
+    if (!usesHand(o) || ownerOf(o) !== faction) continue
+    const b = bodyOf(o)
+    if (b !== undefined && ownHand(r, faction, b)) seen.add(b)
+  }
+  return seen.size
+}
+
 /** 사람을 쓰는 명령 수 — 나라마다 (화면: "보낼 사람 n/m") */
 export function handsUsed(orders: readonly Order[], faction: string): number {
   return orders.filter((o) => usesHand(o) && ownerOf(o) === faction).length
@@ -47,6 +76,7 @@ export function limitHands(r: Realm, orders: readonly Order[]): Order[] {
   const cap = new Map<string, number>()
   const used = new Map<string, number>()
   const named = new Set<string>()
+  const bodies = new Set<string>()
   const out: Order[] = []
   for (const o of orders) {
     if (!usesHand(o)) {
@@ -54,6 +84,14 @@ export function limitHands(r: Realm, orders: readonly Order[]): Order[] {
       continue
     }
     const f = ownerOf(o)
+    // 고을지기를 이름으로 — 제 몸이 손이라 보낼 사람 수를 안 쓴다 (장수마다 한 번)
+    const b = bodyOf(o)
+    if (b !== undefined && !named.has(b) && !bodies.has(b) && ownHand(r, f, b)) {
+      bodies.add(b)
+      if (namedOf(o) !== undefined) named.add(b)
+      out.push(o)
+      continue
+    }
     if (!cap.has(f)) cap.set(f, handsOf(r, f))
     const n = used.get(f) ?? 0
     if (n >= cap.get(f)!) continue

@@ -368,20 +368,20 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (line.faction !== viewer) return null
       return `${josa(after.heroes[line.hero]?.name ?? '', '이', '가')} 정예 ${P.realm.escortMen}명을 거느리고 ${josa(node(line.to), '으로', '로')} 가서 그곳을 맡았다.`
     case 'chancellor': {
-      // 재상이 쉬는 장수에게 맡긴 일 (heroes.idleHeroOrders · 형 10-26)
+      // 쉬는 장수가 알아서 찾아 맡은 일 (heroes.idleHeroOrders · 형 10-26: "재상이 지시하는식으로 하는게 아니라 원래 자동으로 다 알아서")
       if (line.faction !== viewer) return null
-      const who = after.heroes[line.hero]?.name ?? ''
+      const who = josa(after.heroes[line.hero]?.name ?? '', '이', '가')
       if (line.army !== undefined) {
         const a = before.armies[line.army] ?? after.armies[line.army]
         if (a === undefined) return null
         let n = 0
         for (const v of Object.values(a.mix)) n += v ?? 0
-        return `재상이 ${who}에게 ${node(a.at)}의 군사 ${n}명을 맡겼다.`
+        return `${who} 알아서 ${node(a.at)}의 군사 ${n}명을 맡았다.`
       }
       if (line.node === undefined) return null
       return line.far === true
-        ? `재상이 ${josa(who, '을', '를')} ${node(line.node)} 고을지기로 보냈다. 정예 ${P.realm.escortMen}명을 거느리고 간다.`
-        : `재상이 ${josa(who, '을', '를')} ${node(line.node)} 고을지기로 앉혔다.`
+        ? `${who} 알아서 ${node(line.node)} 고을지기로 간다. 정예 ${P.realm.escortMen}명을 거느리고 간다.`
+        : `${who} 알아서 ${node(line.node)} 고을지기를 맡았다.`
     }
     case 'party':
       if (line.faction !== viewer) return null

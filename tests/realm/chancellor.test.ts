@@ -117,7 +117,7 @@ describe('AI 의 장수 셈은 나누기 전과 같다', () => {
 })
 
 describe('재상 — 계절 보고와 저장', () => {
-  it('재상이 맡긴 일은 보고에 「재상이 …」로 남는다 (멀리 보낸 것도)', () => {
+  it('알아서 맡은 일은 보고에 「○○이 알아서 …」로 남는다 (멀리 간 것도)', () => {
     const before = mini()
     const { next, report } = advance(before, [
       { kind: 'assign', hero: 'us-1', node: 'our-east', by: 'chancellor' },
@@ -128,8 +128,8 @@ describe('재상 — 계절 보고와 저장', () => {
     assert.equal(next.heroes['us-1']!.post, 'our-east')
     assert.equal(report.lines.filter((l) => l.kind === 'heroGo').length, 0, '길 떠난 줄은 재상의 줄이 함께 말한다')
     const text = reportText(before, next, ls[0]!, 'us')!
-    assert.ok(text.startsWith('재상이 '), text)
-    assert.ok(text.includes('갈대울 마을 고을지기로 보냈다'), text)
+    assert.ok(text.startsWith('험측 돌개가 알아서 '), text)
+    assert.ok(text.includes('갈대울 마을 고을지기로 간다'), text)
     assert.equal(reportText(before, next, ls[0]!, 'guya'), null)
   })
 
@@ -140,7 +140,7 @@ describe('재상 — 계절 보고와 저장', () => {
     const { next, report } = advance(before, [{ kind: 'lead', hero: 'chief', army: 'a-us', by: 'chancellor' }])
     const l = report.lines.find((x) => x.kind === 'chancellor')!
     const text = reportText(before, next, l, 'us')!
-    assert.ok(text.startsWith('재상이 살해 매눈에게 골포 도읍의 군사 '), text)
+    assert.ok(text.startsWith('살해 매눈이 알아서 골포 도읍의 군사 '), text)
   })
 
   it('재상 설정은 판에 실려 계절을 넘기고, JSON 으로 저장·불러오기 된다', () => {

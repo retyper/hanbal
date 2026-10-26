@@ -424,6 +424,9 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
     const st = stockOf(r, o.faction)
     st.grain -= c.grain
     st.iron -= c.iron
+    // 몸소 가는 장수는 이 계절 자리를 비운다 — 사신에 따라간 장수와 같다 (맡은 고을은 그대로 · 이 계절만 고을지기 몫이 빈다 · hands.ownHand)
+    const body = o.agent !== undefined ? r.heroes[o.agent] : undefined
+    if (body !== undefined && body.status === 'free' && !isRuler(r, body.id)) body.awayUntil = Math.max(body.awayUntil ?? r.season, r.season)
 
     const key = `plot:${dup}`
     // 암살은 그 장수가 지금 있는 고을의 경계를 받는다 (구출은 옥이 있는 고을 — node)
