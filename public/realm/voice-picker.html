@@ -14,21 +14,28 @@
   audio { height:34px; max-width:100%; }
   code { background:#232a33; padding:1px 5px; border-radius:3px; color:#ffd88f; }
 </style></head><body>
-<h1>칠십팔국 목소리 고르기 — 「네, 부르셨습니까」</h1>
-<p>우리 장수 얼굴을 눌러 장수 판을 열 때 나오는 대답이다. 구글 AI 스튜디오 Gemini TTS(무료 목소리 + 사극 말투 지시)로 뽑았다.
-<b class="pick">★ 지금 쓰는 것</b>이 게임에 붙어 있다. 들어 보고 <b>남·여 번호만 말해 주면</b> 바꾼다 (예: "남 2, 여 3"). 다 별로면 "다시"라고 하면 다른 목소리로 뽑는다.</p>
-<p>★ 나는 소리를 못 듣는다 — 길이·빈 소리만 재서 잘랐다. 발음이 틀리거나 어색하면 바로 말해 줘.</p>
+<h1>칠십팔국 목소리 고르기 — 장수를 누르면 나오는 대답</h1>
+<p>우리 장수 얼굴을 누르거나 장수가 이끄는 군대를 지도에서 고르면 그 장수가 곧바로 대답한다. 장수마다 아홉 결 가운데 하나 — 생김·특성·능력치로 고른다 (<code>src/ui/realm/voice.ts</code>).
+결마다 대답 셋을 돌려 쓴다. 구글 AI 스튜디오 Gemini TTS(무료 목소리 + 사극 말투 지시)로 뽑았다.</p>
+<p>★ 나는 소리를 못 듣는다 — 빈 소리로 잘랐다. 어색한 결·대사는 "○○ 다시"라고 말해 주면 그 결만 다시 뽑는다.</p>
 <div id="list"></div>
 <script>
 const GROUPS = [
-  ['남자 장수 — Arlo (낮고 단단하게 · 사극 신하 말투)', [['call-m1'], ['call-m2'], ['call-m3', true]]],
-  ['여자 장수 — Kira (맑고 의젓하게 · 사극 말투)', [['call-w1'], ['call-w2', true], ['call-w3']]],
+  ['남 · 젊은 무사 (Enzo) — 특성 없는 젊은 장수 · 겁 많음', 'm-young', ['네!', '부르셨습니까!', '명만 내리십시오!']],
+  ['남 · 거친 노장 (Daro) — 무예 높음 · 술꾼 · 잔치꾼 · 대장장이 · 철의 손', 'm-gruff', ['예이!', '무슨 일이오!', '싸울 일이오?']],
+  ['남 · 꾀 많은 책사 (Cruz) — 지략·내정 높음 · 신중 · 무당 핏줄', 'm-sage', ['예.', '부르셨습니까.', '생각해 둔 바가 있사옵니다.']],
+  ['남 · 늙은 장수·군주 (Arlo) — 군주 · 일편단심·백 사람의 이름', 'm-elder', ['음.', '부르셨사옵니까.', '늙은 몸이나마 받들겠사옵니다.']],
+  ['남 · 매혹 (Neno) — 매혹', 'm-charm', ['음?', '저를 부르셨습니까.', '분부대로 하지요.']],
+  ['여 · 당찬 젊은 무사 (Cleo) — 특성 없는 젊은 여장수', 'w-bright', ['네!', '부르셨사옵니까?', '분부만 내리소서!']],
+  ['여 · 의젓한 장수 (Kira) — 여군주 · 무예·통솔 높음', 'w-cool', ['예.', '말씀하시지요.', '이 몸, 듣고 있사옵니다.']],
+  ['여 · 요염한 꾀 (Lumi) — 매혹 · 반골 · 지략 높음 · 장사꾼', 'w-sly', ['어머.', '저를 찾으셨사옵니까?', '무엇이든 말씀만 하시어요.']],
+  ['여 · 무녀 (Hali) — 무당 핏줄', 'w-shaman', ['하늘이 이르기를…', '부르셨사옵니까.', '신령께서 지켜보시옵니다.']],
 ]
 let h = ''
-for (const [title, items] of GROUPS) {
+for (const [title, k, lines] of GROUPS) {
   h += `<h2>${title}</h2>`
-  items.forEach(([f, on], i) => {
-    h += `<div class="row"><span class="no">${i + 1}</span><span class="nm">${f}${on ? ' <b class="pick">★ 지금 쓰는 것</b>' : ''}</span><audio controls preload="none" src="voice/cand/${f}.ogg"></audio></div>`
+  lines.forEach((t, i) => {
+    h += `<div class="row"><span class="no">${i + 1}</span><span class="nm">${t}</span><audio controls preload="none" src="voice/tap-${k}-${i + 1}.ogg"></audio></div>`
   })
 }
 document.getElementById('list').innerHTML = h

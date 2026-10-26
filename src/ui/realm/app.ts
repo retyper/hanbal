@@ -5073,6 +5073,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         else if (x !== undefined && x.faction !== me()) armySel = [id] // 동맹 군대 — 보기만
         else if (x !== undefined && x.march === null && armySel.length > 0 && armySel.every(sameNode)) armySel = [...armySel, id]
         else armySel = [id]
+        // 우리 장수가 이끄는 군대를 고르면 그 장수가 곧바로 대답한다 (RTS 의 대답처럼 · voice.ts)
+        const hh = x !== undefined && x.faction === me() && x.hero !== null && armySel.includes(id) ? r?.heroes[x.hero] : undefined
+        if (hh !== undefined && hh.status === 'free' && voiceGate(performance.now())) ding(voicePath(hh, 'tap', isRuler(r!, hh.id)), 0.9)
         break
       }
       case 'selclose': armySel = []; break
@@ -5542,10 +5545,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'fold': { const k = d['k']!; if (foldOpen.has(k)) foldOpen.delete(k); else foldOpen.add(k); break }
       case 'bowup': musters = musters.some((o) => o.kind === 'bowUp') ? musters.filter((o) => o.kind !== 'bowUp') : [...musters, { kind: 'bowUp', faction: me() }]; break
       case 'hero': {
-        // 우리 장수를 부르면 대답한다 — 「네, 부르셨습니까」 (voice.ts)
+        // 우리 장수를 부르면 곧바로 대답한다 — 결마다 「네?」 「부르셨습니까」… (voice.ts)
         const h = realm?.heroes[d['id']!]
-        const v = h !== undefined && h.faction === me() && h.status === 'free' ? voicePath(h, 'call') : null
-        if (v !== null && voiceGate(performance.now())) ding(v, 0.9)
+        if (h !== undefined && h.faction === me() && h.status === 'free' && voiceGate(performance.now())) ding(voicePath(h, 'tap', isRuler(realm!, h.id)), 0.9)
         openSheet({ kind: 'hero', id: d['id']! }); return
       }
       case 'bust-view': openBust(d['src']!); return
