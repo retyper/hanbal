@@ -16,10 +16,10 @@ import { battleName, endStory, fieldName, groupLabel, josa, roundStory, storyCtx
 import { BATTLE_STYLES, groupMen, groupOf, lookRound, nightAt, type BattleStyle, type RoundAt } from '../../realm/tactics.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
 import { seasonOf } from '../../realm/season.ts'
-import type { Act, Approach, Art, Clock, Cmd, Dusk, DuskAsk, DuskLog, Grp, Look, Order, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
+import type { Act, Approach, Art, Clock, Cmd, Dusk, DuskAsk, DuskLog, Grp, Hero, Look, Order, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { snd } from './sound.ts'
-import { artVoicePath } from './voice.ts'
+import { artVoicePath, voiceGate, voicePath } from './voice.ts'
 import { WIN_BUZZ, winFxHtml } from './winfx.ts'
 import { scrollInside } from './scroll.ts'
 import { morphInto } from './morph.ts'
@@ -683,9 +683,10 @@ export function terrChips(r: Realm, l: BattleLine, me: string, foe: string): Ter
   return out
 }
 
-/** 땅 칩 하나 — 그림과 이름 (누구에게 이로운지 테두리 색) */
+/** 땅 칩 하나 — 그림과 이름 · 밑에 누구에게 유리한지 (테두리·글 색) */
 function terrChipHtml(art: string, c: TerrChip, cls: string): string {
-  return `<i class="${cls}${c.who !== '' ? ` ${c.who}` : ''}" data-tk="${c.k}"><img src="${art}icon/${c.icon}.png" alt=""><b>${esc(c.name)}</b></i>`
+  const w = c.who === 'us' ? '우리에게 유리' : c.who === 'foe' ? '적에게 유리' : '양쪽 같다'
+  return `<i class="${cls}${c.who !== '' ? ` ${c.who}` : ''}" data-tk="${c.k}"><img src="${art}icon/${c.icon}.png" alt=""><span><b>${esc(c.name)}</b><small>${w}</small></span></i>`
 }
 
 /** 전장 그림 소품(public/realm/fx/field) → 땅 칩 */
@@ -1053,15 +1054,18 @@ function lookHtml(lk: Look | undefined, k: string): string {
   const pc = (x: number): string => `${Math.round(Math.max(0, Math.min(1, x)) * 100)}%`
   const n = lookNums(lk)
   const tag = lk.by === 'saw' ? '<i class="wgtag">귀띔</i>' : ''
-  const row = (who: string, c: string, men: readonly [number, number], mor: readonly [number, number]): string =>
-    `<span class="wgl"><span class="wgk">${who}</span><b class="${c}">${menText(men)}</b><span class="wgm">사기 <b class="${mor[0] + mor[1] >= 0 ? 'up' : 'dn'}">${morText(mor)}</b></span></span>`
+  // 위 카드와 같은 자리 — 왼쪽 우리 · 오른쪽 적, 윗줄 명 · 아랫줄 사기 (형 10-26: "상단에서 보여지는게 우리명 적명 / 우리사기 적사기 · 깃발에서도 그런배치로")
+  const mor = (x: readonly [number, number]): string => `<b class="${x[0] + x[1] >= 0 ? 'up' : 'dn'}">${morText(x)}</b>`
+  const table = `<span class="wgx"><i></i><span class="wgk us">우리${n.cap !== undefined ? '<small> 놓치면</small>' : ''}</span><span class="wgk foe">적</span>`
+    + `<span class="wgk">명</span><b class="us">${menText(n.us)}</b><b class="foe">${menText(n.foe)}</b>`
+    + `<span class="wgk">사기</span>${mor(n.usMor)}${mor(n.foeMor)}</span>`
   const cap = n.cap !== undefined ? `<span class="wgl wgc"><span class="wgk">잡을 가망</span><b>${pctText(n.cap)}</b></span>` : ''
   // 무너지는 선 — 이 깃발이면 이번 합에 무너질 수 있다 (우리 붉게 깜박 · 적은 금빛) · 해시계와 함께 (형 10-26)
   const warn = (lk.fall ?? 0) >= P.realm.tacLookFall ? `<span class="wgl wgff us"><span class="wgk">⚠</span>우리가 무너질 수 있다 <b>${oneChance(lk.fall!)}%</b></span>` : ''
   const chance = (lk.foeFall ?? 0) >= P.realm.tacLookFall ? `<span class="wgl wgff foe"><span class="wgk">★</span>적이 무너질 수 있다 <b>${oneChance(lk.foeFall!)}%</b></span>` : ''
   // 판세 막대 — 왼쪽 끝이 우리, 오른쪽 끝이 적. 파랑이 우리 몫, 옅은 데가 짐작의 폭, 금빛 금이 지금 판세
   return `<span class="wguess ${cls}" data-k="${esc(k)}"><span class="wgq">판세${tag}</span><span class="wgk us">우리</span><span class="wgbar" style="--lo:${pc(lk.edge[0])};--hi:${pc(lk.edge[1])};--e0:${pc(lk.edge0)}"></span><span class="wgk foe">적</span><b>${w}</b>`
-    + `${cap}${row(n.cap !== undefined ? '놓치면 우리' : '우리', 'us', n.us, n.usMor)}${row('적', 'foe', n.foe, n.foeMor)}${warn}${chance}</span>`
+    + `${cap}${table}${warn}${chance}</span>`
 }
 
 /** 「이대로 싸우면」 — 무리마다 다 골랐을 때 그 명령 그대로의 짐작 (전투 개시 단추 위) */
@@ -1142,10 +1146,10 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const fTo = mr(Math.min(base, m(i) + P.realm.tacFeastMorale))
     const feastPv = i === ourI && l.pending?.feast !== undefined && fTo > fNow ? `<u class="wfpv" style="left:${fNow}%;width:${fTo - fNow}%"></u>` : ''
     const em = flagIcon(f)
-    // 부장 — 함께 선 장수들 (형 10-25) · 잃은 이는 흐리게
+    // 부장 — 함께 선 장수들 (형 10-25) · 잃은 이는 흐리게. 초상 안 밑에 얹는다 — 줄을 따로 먹으면 장수가 많은 쪽의 막대가 밀려 내려갔다 (형 10-26)
     const lostIds = new Set(rounds.flatMap((x) => (x.lostHero !== undefined ? [x.lostHero.hero] : [])))
     const aides = (st?.aides?.[i] ?? []).map((id) => `<span class="waide${lostIds.has(id) ? ' gone' : ''}" title="${esc(prev.heroes[id]?.name ?? after.heroes[id]?.name ?? '')}">${face(id, art, unitOf(i))}</span>`).join('')
-    return `<div class="ws ${cls}${hitOf(i)}${hero !== null && lostIds.has(hero) ? ' chiefgone' : ''}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s"><span class="wpf">${face(hero, art, unitOf(i))}<i></i></span>${aides !== '' ? `<span class="waides">${aides}</span>` : ''}<b>${esc(name)}</b><span class="wnat">${roleChip((cls === 'us') === weAtk)}${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
+    return `<div class="ws ${cls}${hitOf(i)}${hero !== null && lostIds.has(hero) ? ' chiefgone' : ''}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s"><span class="wpf">${face(hero, art, unitOf(i))}<i></i>${aides !== '' ? `<span class="waides">${aides}</span>` : ''}</span><b>${esc(name)}</b><span class="wnat">${roleChip((cls === 'us') === weAtk)}${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
       // 무너지는 금 — 이 밑으로 떨어지면 그 편이 무너져 진다 (tactics: 군사 tacBreakMen · 사기는 처음의 tacBreakMorale) (형 10-24: "사기가 어느 정도 떨어지면 패배한다가 가로바에 표시")
       + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}${brk(Math.round(P.realm.tacBreakMen * 100), Math.round(n(i) * 100), '군사가 이 금 밑으로 줄면 무너져 진다 — 패배')}</div>${num}`
       + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}${feastPv}${brk(st?.brk !== undefined ? mr(st.brk[i]) : Math.round(P.realm.tacBreakMorale * 83), mr(m(i)), '사기가 이 금 밑으로 떨어지면 무너져 진다 — 패배')}</div><span class="wn">사기 ${Math.round((m(i) / base) * 100)}<small class="brkl"> · 무너지는 선 ${Math.round(((st?.brk?.[i] ?? P.realm.tacBreakMorale * base) / base) * 100)}</small></span>${hitFx}</div>` // 맞은 불꽃은 맨 뒤에 — 앞에 끼면 초상이 새로 만들어져 깜빡였다 (paintNow 의 바뀐 곳만 고치기)
@@ -1179,14 +1183,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const shot = (sd: 'a' | 'd'): boolean => rounds.some((rd) => (sd === 'a' ? rd.oa : rd.od)?.bows !== undefined)
     const tp = (k: string, x: number, oy: number, sc: number, flat = false): string =>
       `<img class="tp${flat ? ' flat' : ''}" src="${art}fx/field/${k}.png" alt="" style="--x:${(x + oy * 0.22).toFixed(1)}%;--oy:${oy}%;--sc:${sc};z-index:${(flat ? 2 : 10) + Math.round(oy + 40)}">`
-    // 땅 이름표 — 그 소품 바로 곁에 「해자 · 적에게 유리」 (형 10-25: "해자 갯벌 이게 정확히 어디있는지 누구에게 유리하고 불리한지 전혀 모르겠으며")
-    const tchips = terrChips(prev, l, me, fname(foeF))
-    const tlab = (k: string, x: number, oy: number): string => {
-      const c = tchips.find((y) => y.k === k)
-      if (c === undefined) return ''
-      const w = c.who === 'us' ? '우리에게 유리' : c.who === 'foe' ? '적에게 유리' : '양쪽 같다'
-      return `<b class="wf-tl ${c.who === '' ? 'n' : c.who}" data-tk="${c.k}" style="--x:${x}%;--oy:${oy}%">${esc(c.name)}<small>${w}</small></b>`
-    }
+    // 땅 이름표(「목책 · 적에게 유리」)는 전장 위 띠(.wterr)에 모은다 — 소품 곁에 띄우면 목책·나루 이름표가 가운데서 서로·병사와 겹쳤다 (형 10-26).
+    // 소품 자체(성·말뚝·물)를 누르고 있거나 마우스를 올리면 그 땅의 설명이 뜬다 (fieldHit 의 data-tk)
     // 해자 — 물가(나루·갈대·갯벌)에서 싸우면 그 강이 해자 노릇이라 따로 안 그린다 (형 10-26: "해자랑 물가랑 겹쳐 버리는 듯")
     const hasMoat = l.field !== true && node !== undefined && node.tags.includes('moat') && l.via !== 'ford' && l.via !== 'reeds' && l.via !== 'mudflat'
     const terrainProps = (cls: 'us' | 'foe'): string => {
@@ -1197,12 +1195,10 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         const late = breached && play
         // 해자 — 그림 다섯 장을 겹쳐 붙이던 것을 한 줄기 물길로 (형 10-26: "녹색물 이미지 아직도 5개 통째로 복붙") · 진 앞을 비스듬히 따라 내려오며 넓어진다
         // 물가(나루·갈대·갯벌)에서 싸우면 그 강이 해자 노릇 — 따로 그리면 겹친다 (형 10-26: "해자랑 물가랑 겹쳐 버리는 듯")
-        // 물길 그림은 진 층이 아니라 땅 층(lowTerr)에 깐다 — 여기는 이름표만 (형 10-26: "강과 해자는 늘 다른 것보다 뒤")
-        if (hasMoat) h += tlab('moat', 58, 42)
+        // 물길 그림은 진 층이 아니라 땅 층(lowTerr)에 깐다 (형 10-26: "강과 해자는 늘 다른 것보다 뒤")
         // 성벽·목책은 판정에 있는 것만 그린다 (season.fortMul — 목책 꼬리표 · 산성) · 그냥 도읍에 울타리를 그리면 없는 수비 덤을 있는 것처럼 보였다
         if (node.tags.includes('palisade') || node.kind === 'fort') {
           const gate = node.kind === 'fort' || node.kind === 'capital'
-          h += tlab(node.kind === 'fort' ? 'fort' : 'palisade', 47.5, -47)
           // 지키는 쪽 뒤에 성 — 흙 성벽·목책·망루 (공격이 이기면 부서져 불탄다) · 어느 쪽이 성을 지키는지 한눈에 (형 10-25: "공성하는쪽이랑 수성하는쪽이 어딘지 모르겠고")
           const wall = (b: boolean, cls = ''): string => `<img class="wf-wall${cls}" data-tk="${node.kind === 'fort' ? 'fort' : 'palisade'}" src="${art}fx/field/wall-${b ? 'breach' : 'whole'}.png" alt="">`
           h += late ? wall(false, ' wf-pre') + wall(true, ' wf-post') : wall(breached)
@@ -1211,7 +1207,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
           h += late ? `<i class="wf-pre">${stakes(art, false, gate)}</i><i class="wf-post">${stakes(art, true, gate)}</i>` : stakes(art, breached, gate)
         }
       }
-      if (cls === defCls && l.via === 'pass') { h += tp('rocks', 30, -36, 0.9); h += tp('rocks', 24, 32, 1.1); h += tlab('pass', 26, 46) }
+      if (cls === defCls && l.via === 'pass') { h += tp('rocks', 30, -36, 0.9); h += tp('rocks', 24, 32, 1.1) }
       return h
     }
     const ford = l.via === 'ford' || l.via === 'reeds' || l.via === 'mudflat'
@@ -1226,7 +1222,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     // 해자는 지키는 쪽 진 앞이라 적이 지키면 거울로 뒤집는다
     const moatLow = hasMoat ? moatSvg(defCls === 'foe') : ''
     const midTerr = ford || moatLow !== ''
-      ? `<div class="wf-mid-terr${mud ? ' mud' : ''}">${moatLow}${ford ? `${waterSvg(mud, rvShift)}${mud ? '' : REEDS_AT.map(([x, oy, s]) => tp('reeds', x + rvShift - oy * 0.22, oy, s)).join('')}${tlab('ford', 50 + rvShift, -48)}` : ''}</div>`
+      ? `<div class="wf-mid-terr${mud ? ' mud' : ''}">${moatLow}${ford ? `${waterSvg(mud, rvShift)}${mud ? '' : REEDS_AT.map(([x, oy, s]) => tp('reeds', x + rvShift - oy * 0.22, oy, s)).join('')}` : ''}</div>`
       : ''
     const side = (i: 0 | 1, cls: 'us' | 'foe', o: RoundOrder | undefined, hero: string | null, f: string | undefined): string => {
       const mix = mixOf(i)
@@ -1308,7 +1304,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const endCls = fin ? (usWon ? ' fin win-us' : ' fin win-foe') : ''
     // 승패가 드러나는 때 — 「승리·패배」 글자와 같은 때(paintNow 의 endAt). 다시 그린 끝 판(연출 없음)이면 처음부터
     const rv = fin && play ? roundPlan(last!, weAtk).result + 0.9 : 0
-    return `<div class="wfield${play ? ' play' : ''}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--rv:${rv.toFixed(2)}s"><i class="wf-ground"></i>${midTerr}${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}<i class="wf-mid">⚔</i><b class="wf-who us">${roleChip(weAtk)}우리 ${esc(ourName)}</b><b class="wf-who foe">${roleChip(!weAtk)}적 ${esc(foeName)}</b>${hit}${omen}<div class="wf-terr">${terrChips(prev, l, me, fname(foeF)).map((c) => terrChipHtml(art, c, 'wtc')).join('')}</div></div>`
+    return `<div class="wfield${play ? ' play' : ''}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--rv:${rv.toFixed(2)}s"><i class="wf-ground"></i>${midTerr}${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}<i class="wf-mid">⚔</i><b class="wf-who us">${roleChip(weAtk)}우리 ${esc(ourName)}</b><b class="wf-who foe">${roleChip(!weAtk)}적 ${esc(foeName)}</b>${hit}${omen}</div>`
   }
 
   // 싸움터 배경 (땅마다) · 위 카드는 굴려도 그 자리에 (형: "싸우는로그가 스크롤로 보이더라도 상단에 캐릭터랑 체력바 있는 그 카드는 고정")
@@ -1335,7 +1331,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   // 머리 카드도 같은 하늘 — 그림 위에 한 겹 (어둠 · 노을 · 새벽빛)
   const skyLayer = sky === ' dk-night' ? 'linear-gradient(#0a1440aa, #05081add), ' : sky === ' dk-dusk' ? 'linear-gradient(#ff7a2a77, #a0302a44 50%, #1a0a0a88), ' : sky === ' dk-dawn' ? 'linear-gradient(#ffd8a866, #8aa0d044 50%, #0d0f1366), ' : ''
   h += `<div class="wtop" style="--wtbg:${skyLayer}url('${warBg(art, ground, !weAtk)}')"><div class="wrh"><b>${esc(warName(after, l))}</b>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}<button class="whelp" data-war="help" aria-label="설명 보기">?</button></div>${clockHtml(l, shown)}`
-  h += `<div class="wvs">${side(ourI, ourHero, ourF, ourName, 'us')}<img class="vs" src="${art}ui/vs.png" alt="VS">${side(foeI, foeHero, foeF, foeName, 'foe')}</div>${fieldHtml()}</div>`
+  // 땅 띠 — 전장 바로 위 제 자리에 (형 10-26: "목책이랑 나루 둘다 가운데 설명 '우리에게 유리' 이게 다른거랑 겹쳐짐")
+  const terr = terrChips(prev, l, me, fname(foeF)).map((c) => terrChipHtml(art, c, 'wtc')).join('')
+  h += `<div class="wvs">${side(ourI, ourHero, ourF, ourName, 'us')}<img class="vs" src="${art}ui/vs.png" alt="VS">${side(foeI, foeHero, foeF, foeName, 'foe')}</div>${terr !== '' ? `<div class="wterr">${terr}</div>` : ''}${fieldHtml()}</div>`
   if (keys !== '') h += `<style>${keys}</style>`
   // 지나간 합들 — 마지막 합만 천천히
   h += `<div class="wlog">`
@@ -1514,7 +1512,10 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
 export const WAR_CSS = `
 .ap .tn.hard { color: #f0a08a; }
 /* 장수가 여럿 — 누가 나서나 · 누구를 잡나 (그 깃발을 골랐을 때만) */
-.ap .ws .waides { display: flex; gap: 2px; justify-content: center; margin: 2px 0 0; } .ap .ws .waide .wf { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; object-position: top; border: 1px solid #c9a45a; }
+.ap .ws .wpf .waides { position: absolute; left: 0; right: 0; bottom: 5%; z-index: 2; display: flex; gap: 2px; justify-content: center; margin: 0; pointer-events: none; }
+.ap .ws .waide .wf { box-shadow: 0 1px 4px #000c; } .ap .wtop .ws .waide .wf { width: 28px; height: 28px; border-width: 1.5px; }
+@media (max-width: 520px) { .ap .wtop .ws .wpf .waides { bottom: -3px; } .ap .wtop .ws .waide .wf { width: 17px; height: 17px; } }
+.ap .ws .waide .wf { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; object-position: top; border: 1px solid #c9a45a; }
 .ap .ws .waide.gone .wf { filter: grayscale(1) brightness(.5); border-color: #6a3a2a; } .ap .ws.chiefgone .wpf .wf { filter: grayscale(1) brightness(.55); }
 .ap .wwho { display: none; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 2px; padding: 8px; border-radius: 12px; background: #1a140ecc; border: 1px solid #5a4a2a; }
 .ap .wwho > span { flex-basis: 100%; font-size: 12.5px; color: var(--gold); }
@@ -1620,8 +1621,8 @@ export const WAR_CSS = `
   .ap .wtop .ws .wnat { grid-column: 2; grid-row: 2; justify-self: start; align-self: start; font-size: 11.5px; min-height: 18px; padding: 0 7px 0 3px; max-width: 100%; overflow: hidden; white-space: nowrap; }
   .ap .wtop .ws .wnat img { width: 16px; height: 16px; }
   .ap .wtop .ws .wbar, .ap .wtop .ws .wn { grid-column: 1 / -1; }
-  .ap .wtop .ws .wbar { margin-top: 6px; height: 10px; }
-  .ap .wtop .ws .wn { font-size: 11px; line-height: 1.2; text-align: center; }
+  .ap .wtop .ws .wbar { margin-top: 14px; height: 10px; }
+  .ap .wtop .ws .wn { font-size: 11px; line-height: 1.25; text-align: center; justify-self: center; padding: 0 6px; }
   .ap .wtop .ws.foe { grid-template-columns: minmax(0, 1fr) auto; text-align: right; }
   .ap .wtop .ws.foe .wpf { grid-column: 2; }
   .ap .wtop .ws.foe > b, .ap .wtop .ws.foe .wnat { grid-column: 1; justify-self: end; }
@@ -1643,7 +1644,8 @@ export const WAR_CSS = `
 .ap .wf2s .wf-pal .gatedoor { position: absolute; left: var(--x); top: calc(60% + var(--oy)); width: clamp(20px, 5cqw, 38px); height: clamp(36px, 9cqw, 66px); transform: translate(-50%, -100%) skewY(-12deg);
   background: repeating-linear-gradient(90deg, #5a3a1e 0 22%, #3a2614 22% 25%); border: 2px solid #2a1a0c; filter: drop-shadow(1px 2px 2px #000a); }
 .ap .wf2s .wf-pal .gatedoor.smashed { clip-path: polygon(0 0, 40% 0, 30% 40%, 55% 55%, 35% 100%, 0 100%); filter: brightness(.6) drop-shadow(1px 2px 2px #000a); }
-.ap .wf2s .wf-wall { position: absolute; left: -4%; bottom: 4%; height: 90%; width: auto; transform: scaleX(-1); z-index: 1; pointer-events: none; filter: brightness(.8) saturate(.9) drop-shadow(0 4px 8px #000b); }
+/* 성은 판 바닥까지 — 바닥 이름표(「수비 · 적 …」)의 중간에서 끊겨 떠 보였다 (형 10-26: "더 밑에까지 내려야해") */
+.ap .wf2s .wf-wall { position: absolute; left: -4%; bottom: -3%; height: 95%; width: auto; transform: scaleX(-1); z-index: 1; pointer-events: none; filter: brightness(.8) saturate(.9) drop-shadow(0 4px 8px #000b); }
 .ap .wfield i.wf-pre, .ap .wfield i.wf-post { position: absolute; inset: 0; pointer-events: none; }
 .ap .wfield .wf-pre { animation: wfpre .5s ease-out var(--rv, 0s) forwards; } @keyframes wfpre { to { opacity: 0; visibility: hidden; } }
 .ap .wfield .wf-post { animation: wfpost .5s ease-out var(--rv, 0s) both; } @keyframes wfpost { from { opacity: 0; } to { opacity: 1; } }
@@ -1654,12 +1656,6 @@ export const WAR_CSS = `
 @keyframes wrvflow { 0% { opacity: 0; transform: translateY(-3px); } 30% { opacity: .7; } 100% { opacity: 0; transform: translateY(6px); } }
 .ap .wfield .wrv-gloss { opacity: .6; }
 @media (prefers-reduced-motion: reduce) { .ap .wfield .wrv-rip { animation: none; opacity: .5; } }
-/* 땅 이름표 (tlab) — 소품 곁 · 누구에게 유리한지 색 */
-.ap .wf-tl { position: absolute; left: var(--x); top: calc(60% + var(--oy)); transform: translate(-50%, -50%); z-index: 75; display: flex; flex-direction: column; align-items: center; padding: 1px 6px 2px; border-radius: 7px; background: #120d09d8; border: 1px solid #6a5a48; font-size: clamp(9.5px, 2.5cqw, 12px); font-weight: 800; line-height: 1.15; color: #f6d8a0; white-space: nowrap; pointer-events: none; box-shadow: 0 2px 6px #000a; }
-.ap .wf-tl small { font-size: .82em; font-weight: 700; color: #c8bca8; }
-.ap .wf-tl.us { border-color: #5fae55; } .ap .wf-tl.us small { color: #9fe08a; } .ap .wf-tl.foe { border-color: #c8604a; } .ap .wf-tl.foe small { color: #ff9a80; }
-.ap .wf2s.foe .wf-tl { transform: translate(-50%, -50%) scaleX(-1); }
-.ap .wfield.play .wf-tl { opacity: .3; transition: opacity .3s; }
 /* 공격·수비 꼬리 */
 .ap .wrole { display: inline-block; font-style: normal; font-size: .82em; font-weight: 900; padding: 0 5px; margin-right: 4px; border-radius: 6px; vertical-align: 1px; letter-spacing: .04em; }
 .ap .wrole.atk { background: #c8402a; color: #fff; } .ap .wrole.def { background: #3a6ab0; color: #fff; }
@@ -1830,6 +1826,10 @@ export const WAR_CSS = `
 .ap .wcmd .wfcost { display: inline-block; margin: 1px 0; padding: 0 6px; border-radius: 8px; background: #3a2a10; border: 1px solid #c9a45a; color: #f6d27a; font-size: 11.5px; font-style: normal; }
 .ap .wbar.mor { height: 8px; } .ap .wbar.mor i { background: linear-gradient(90deg, #a87a2a, #f6d27a 70%, #fff2c0); box-shadow: 0 0 8px #f6d27a88; }
 .ap .ws .wn { font-size: 12px; color: var(--ink); }
+/* 명·사기 수 — 막대에 닿지 않게 띄우고(위 막대의 해골도 비켜), 어떤 싸움터 그림 위에서도 읽히게 진하게 · 어두운 받침 (형 10-26: "바랑 살짝 겹쳐 · 잘 안보이니 진하게") */
+.ap .ws .wbar { margin-top: 15px; }
+.ap .ws .wn { margin-top: 4px; padding: 1px 8px; border-radius: 8px; background: #0b0a08c4; box-shadow: 0 0 0 1px #6a523666; color: #fff6e0; font-weight: 800; line-height: 1.3; text-shadow: 0 1px 2px #000, 0 0 4px #000; }
+.ap .ws .wn s, .ap .ws .wn u { color: inherit; }
 .ap .wintro { margin: 12px 0 6px; padding: 8px 10px; border-radius: 10px; background: #1e160fe6; font-size: 14.5px; }
 .ap .wlog { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
 .ap .wrd, .ap .wnext, .ap .wend { scroll-margin-top: var(--wtoph, 170px); }
@@ -2021,6 +2021,14 @@ export const WAR_CSS = `
 .ap .wguess .wgl b { font-size: 12.5px; white-space: nowrap; } .ap .wguess .wgl b.us { color: #ff9a7a; } .ap .wguess .wgl b.foe { color: #f0d080; }
 .ap .wguess .wgl .wgm { white-space: nowrap; color: var(--mute); font-size: 11px; } .ap .wguess .wgl .wgm b { font-size: 11.5px; } .ap .wguess .wgl .wgm b.up { color: #9fe08a; } .ap .wguess .wgl .wgm b.dn { color: #f0a08a; }
 .ap .wguess .wgl.wgc b { color: #7fd8ff; font-size: 13.5px; }
+/* 짐작 표 — 위 카드의 막대와 같은 자리: 왼쪽 우리(초록 막대) · 오른쪽 적(붉은 막대) · 윗줄 명 · 아랫줄 사기 */
+.ap .wguess .wgx { grid-column: 1 / -1; display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); align-items: baseline; gap: 1px 8px; padding: 3px 6px; border-radius: 8px; background: #0b0a0866; }
+.ap .wguess .wgx > .wgk { font-size: 10.5px; color: var(--mute); white-space: nowrap; }
+.ap .wguess .wgx > .wgk.us, .ap .wguess .wgx > .wgk.foe { font-weight: 800; padding-bottom: 1px; border-bottom: 2px solid; }
+.ap .wguess .wgx > .wgk.us { color: #9fe08a; border-color: #4f9a44; } .ap .wguess .wgx > .wgk.foe { color: #ff9a80; border-color: #b0482e; }
+.ap .wguess .wgx > .wgk small { font-size: .9em; font-weight: 600; color: var(--mute); }
+.ap .wguess .wgx > b { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap .wguess .wgx > b.us { color: #ff9a7a; } .ap .wguess .wgx > b.foe { color: #f0d080; } .ap .wguess .wgx > b.up { color: #9fe08a; } .ap .wguess .wgx > b.dn { color: #f0a08a; }
 .ap .wguess .wgtag { margin-left: 3px; padding: 0 4px; border-radius: 5px; background: #2e4a3a; color: #b6e8c8; font-size: 10px; font-style: normal; }
 .ap .wguess.wait { display: none; }
 /* 이대로 싸우면 — 다 골랐을 때 전투 개시 위 */
@@ -2049,12 +2057,15 @@ export const WAR_CSS = `
 /* 전장을 만진다 — 꾹 누름에 글이 잡히거나 메뉴가 뜨지 않게 · 무리를 누를 수 있다는 손 모양 */
 .ap .wfield { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; cursor: pointer; }
 .ap .wf-omen { cursor: help; }
-/* 전장 왼쪽 위 땅 칩 (terrChips) — 그림과 이름, 누구에게 이로운지 테두리 */
-.ap .wf-terr { position: absolute; left: 5px; top: 5px; z-index: 85; display: flex; gap: 4px; max-width: 58%; flex-wrap: wrap; }
-.ap .wtc { display: flex; flex-direction: column; align-items: center; width: clamp(34px, 9.5cqw, 46px); padding: 2px 1px 1px; border-radius: 8px; background: #120d09c8; border: 1px solid #6a5a48; font-style: normal; cursor: help; box-shadow: 0 2px 6px #0008; }
+/* 땅 띠 (terrChips) — 전장 바로 위 제 줄. 그림 · 이름 · 누구에게 유리한지(테두리·글 색). 전장 위에 띄우지 않아 병사·깃발과 안 겹친다 (형 10-26) */
+.ap .wterr { position: relative; z-index: 3; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 5px; margin: 8px 0 0; }
+.ap .wtc { display: flex; align-items: center; gap: 4px; padding: 2px 8px 2px 3px; border-radius: 9px; background: #120d09e0; border: 1px solid #6a5a48; font-style: normal; cursor: help; box-shadow: 0 2px 6px #0008; }
 .ap .wtc.us { border-color: #5fae55; } .ap .wtc.foe { border-color: #c8604a; }
-.ap .wtc img { width: 86%; aspect-ratio: 1; object-fit: contain; } .ap .wtc b { font-size: clamp(8.5px, 2.2cqw, 10.5px); font-weight: 700; color: #f0dcb4; white-space: nowrap; overflow: hidden; max-width: 100%; text-overflow: clip; line-height: 1.2; }
-.ap .wfield.play .wf-terr { opacity: .55; }
+.ap .wtc img { width: 24px; height: 24px; object-fit: contain; flex: none; }
+.ap .wtc span { display: flex; flex-direction: column; line-height: 1.12; white-space: nowrap; }
+.ap .wtc b { font-size: 12px; font-weight: 800; color: #f6e2b8; text-shadow: 0 1px 2px #000; }
+.ap .wtc small { font-size: 10.5px; font-weight: 700; color: #c8bca8; } .ap .wtc.us small { color: #9fe08a; } .ap .wtc.foe small { color: #ff9a80; }
+@media (max-width: 520px) { .ap .wterr { gap: 3px; margin-top: 6px; } .ap .wtc { padding: 1px 6px 1px 2px; gap: 3px; } .ap .wtc img { width: 20px; height: 20px; } .ap .wtc b { font-size: 11px; } .ap .wtc small { font-size: 9.5px; } }
 .ap .wfhint { margin: 2px 2px 8px; font-size: 12.5px; color: var(--mute); line-height: 1.45; } .ap .wfhint b { color: #e8d4a8; font-weight: 700; }
 /* 정보창 — 손가락·커서 곁 */
 .ap .wtip { position: fixed; z-index: 95; box-sizing: border-box; width: min(270px, calc(100vw - 24px)); padding: 9px 11px; border-radius: 12px; background: #17110cf4; border: 1px solid #a0802a; box-shadow: 0 10px 30px #000c; color: #f3e8d2; font-size: 13px; line-height: 1.45; pointer-events: none; opacity: 0; visibility: hidden; transform: scale(.96); transition: opacity .12s, transform .12s, visibility 0s .12s; }
@@ -2307,7 +2318,7 @@ export const WAR_CSS = `
 .ap .wguess .wgl.wgff.foe { color: #ffd27a; } .ap .wguess .wgl.wgff.foe b { color: #ffe7a8; }
 @keyframes wgff { to { text-shadow: 0 0 8px #ff5a3a; } }
 /* 사기 막대의 무너지는 선 — 이름표 */
-.ap .ws .wn .brkl { font-size: .92em; color: #ff9a7a; white-space: nowrap; }
+.ap .ws .wn .brkl { font-size: .92em; font-weight: 800; color: #ffa486; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .ap .wclk li.ck-now, .ap .wclk.last > b, .ap .wdusk .wdk-sky i, .ap .wguess .wgl.wgff.us { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .ap .wr *, .ap .warfx, .ap .warfx * { animation-duration: .01s !important; animation-delay: 0s !important; transition: none !important; } }
 `
@@ -2390,6 +2401,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   /** 이번 합에 고른 장수 기술 — 풀릴 때 초상 장면을 띄운다 */
   let cutLead: Cmd | null = null
   let cutSfx: string | null = null
+  /** 그 장면의 외침 — sound() 가 소리 시계를 걷은 뒤에 건다 */
+  let cutVoice: string | null = null
   /** 이름 띠를 띄운 판 — 판마다 한 번 */
   let named: string | undefined
   // 배경·효과는 붙박이 층에, 글은 그 위 굴리는 층에 — 굴려도 배경이 안 움직이고, 깃발을 골라도 배경을 다시 깔지 않는다
@@ -2418,6 +2431,24 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     booked.push([s, s + len])
     timers.push(window.setTimeout(() => { if (document.visibilityState === 'visible') host.ding(name, vol, rate, dur) }, s * 1000))
   }
+
+  /**
+   * 장수 목소리 (voice.ts) — 판이 열릴 때 · 장수 깃발을 고를 때 · 장수 장면이 튀어나올 때 (형 10-26: "다른 데에서는 아무데서도 장수목소리가 안들리는데. 전투할때도").
+   * 너무 잦으면 voiceGate 가 거르고, 탭이 가려져 있으면 안 낸다 (규칙 4)
+   */
+  const heroById = (id: string | null | undefined): Hero | undefined => (id == null ? undefined : prev.heroes[id] ?? t.after.heroes[id])
+  const isRulerHero = (h: Hero): boolean => Object.values(prev.factions).some((f) => f.ruler === h.id)
+  const say = (path: string): void => {
+    if (document.visibilityState !== 'visible' || !ov.isConnected || !voiceGate(performance.now())) return
+    host.ding(path, P.realm.voiceVol)
+  }
+  /** 짧은 대답(「네?」 「부르셨습니까?」) */
+  const bark = (id: string | null | undefined): void => {
+    const hh = heroById(id)
+    if (hh !== undefined) say(voicePath(hh, 'tap', isRulerHero(hh)))
+  }
+  /** 우리 총대장 — 지금 판의 */
+  const ourLead = (l: BattleLine | null): string | null => (l === null ? null : l.start?.heroes[l.atkFaction === host.me ? 0 : 1] ?? null)
 
   /**
    * 판 끝의 뿔나팔·이김 음악을 이 싸움에서 이미 냈나 — 누르면(건너뛰기·맡긴 싸움 풀기) 걸어 둔 소리가 다 걷혀 대승 음악이 안 나왔다 (형 10-25).
@@ -2504,6 +2535,9 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     if (named === l.key) return
     named = l.key
     host.music?.('war')
+    // 우리 장수가 한마디 — 여는 북 뒤에 (걷히는 소리 시계와 따로: 셈을 눌러 넘겨도 남는다)
+    const lead = ourLead(l)
+    if (lead !== null) window.setTimeout(() => bark(lead), P.realm.warVoiceOpenMs)
     const weAtk = l.atkFaction === host.me
     const st = l.start
     const us = st !== undefined ? st.men[weAtk ? 0 : 1] : 0
@@ -2608,17 +2642,16 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         cut.addEventListener('click', (e) => { e.stopPropagation(); cut.remove() })
         ov.appendChild(cut)
         cutSfx = kind === 'cheer' || kind === 'call' ? BATTLE_SFX.openDrum : BATTLE_SFX.duelWin
-        // 기술이면 그 장수가 외친다 — 장수의 목소리 결로 (voice.ts)
-        const hh = prev.heroes[hero] ?? t.after.heroes[hero]
-        if (ak !== undefined && hh !== undefined) {
-          const ruler = Object.values(prev.factions).some((f) => f.ruler === hh.id)
-          timers.push(window.setTimeout(() => { if (document.visibilityState === 'visible') host.ding(artVoicePath(hh, ak, ruler), 0.95) }, 180))
-        }
+        // 나선 장수가 외친다 — 기술이면 그 기술 외침, 북·겨루기·사로잡기면 짧은 대답 (voice.ts · 장수의 목소리 결로)
+        const hh = heroById(act?.hero ?? hero)
+        if (hh !== undefined) cutVoice = ak !== undefined ? artVoicePath(hh, ak, isRulerHero(hh)) : voicePath(hh, 'tap', isRulerHero(hh))
       }
     }
     cutLead = null
     sound(anim ? (l.rounds ?? [])[shown - 1] : undefined, l.atkFaction === host.me, (anim || endNow) && l.pending === undefined && !more ? l : null)
     if (cutSfx !== null) { at(0.28, cutSfx, 0.45); cutSfx = null } // 장수 기술 소리 — sound() 가 앞의 것을 걷은 뒤에
+    // 외침도 sound() 뒤에 건다 — 전엔 앞에 걸어 sound() 의 clearTimers 가 바로 걷어 싸움에서 목소리가 한 번도 안 났다 (형 10-26: "전투할때도")
+    if (cutVoice !== null) { const v = cutVoice; timers.push(window.setTimeout(() => say(v), P.realm.warVoiceArtS * 1000)); cutVoice = null }
     if (!anim && !endNow) band(l)
     // 싸운다를 누르면 — 이번 합이 위 카드 바로 밑에 오게, 판이 끝났으면 결과가 다 풀린 뒤 결과로 (형 10-23: "싸운다 누르면 스크롤 맨 위로 가는 게 맞나?")
     ov.style.setProperty('--wtoph', `${(sc.querySelector<HTMLElement>('.wtop')?.offsetHeight ?? 170) + 8}px`) // 붙박이 위 카드에 가리지 않게
@@ -2864,10 +2897,11 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const f = sc.querySelector<HTMLElement>('.wfield')
     if (f === null) return null
     const inR = (q: DOMRect, pad = 0): boolean => x >= q.left - pad && x <= q.right + pad && y >= q.top - pad && y <= q.bottom + pad
+    // 전장 위 땅 띠의 칩 — 전장 밖이지만 같은 정보창
+    for (const c of sc.querySelectorAll<HTMLElement>('.wterr .wtc[data-tk]')) if (inR(c.getBoundingClientRect())) return { key: `terr:${c.dataset['tk']}` }
     if (!inR(f.getBoundingClientRect())) return null
     const om = f.querySelector<HTMLElement>('.wf-omen')
     if (om !== null && om.offsetParent !== null && inR(om.getBoundingClientRect())) return { key: 'omen' }
-    for (const c of f.querySelectorAll<HTMLElement>('.wtc[data-tk], .wf-tl[data-tk]')) if (inR(c.getBoundingClientRect())) return { key: `terr:${c.dataset['tk']}` }
     let best: { key: string; side: 'us' | 'foe'; g: Grp | 'lead' } | null = null
     let area = Infinity
     for (const side of ['us', 'foe'] as const) {
@@ -2976,7 +3010,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   let hoverT = 0
   ov.addEventListener('pointerdown', (ev) => {
     swallow = false // 꾹 누름 뒤 click 이 안 오는 폰도 있다 — 남은 삼킴이 다음 누름을 먹지 않게
-    if (ev.pointerType === 'mouse' || (ev.target as HTMLElement).closest('.wfield') === null) return
+    if (ev.pointerType === 'mouse' || (ev.target as HTMLElement).closest('.wfield, .wterr') === null) return
     const x = ev.clientX
     const y = ev.clientY
     const p0 = { x, y, held: false, timer: 0 }
@@ -3029,7 +3063,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     if (swallow) { swallow = false; return }
     const tg = ev.target as HTMLElement
     if (!pop.hidden && tg.closest('.wfpop') === null) closePop()
-    if (tg.closest('.wfield') !== null && tg.closest('[data-war]') === null && choosing()) {
+    if (tg.closest('.wfield, .wterr') !== null && tg.closest('[data-war]') === null && choosing()) {
       const h = fieldHit(ev.clientX, ev.clientY)
       const touch = (ev as PointerEvent).pointerType !== 'mouse'
       if (h !== null && h.side === 'us' && h.g !== undefined && sc.querySelector(`.wgt[data-g="${h.g}"]`) !== null) {
@@ -3076,6 +3110,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         for (const x of sc.querySelectorAll<HTMLElement>(`[data-war="pick"][data-g="${g}"]`)) x.classList.toggle('on', sel[g] === x.dataset['c'])
         active = g
         syncCmd()
+        // 장수 깃발을 들면 그 장수가 대답한다 (형 10-26)
+        if (g === 'lead' && sel[g] !== undefined) bark(sel.who ?? ourLead(l))
         // 골랐으면 아직 안 고른 다음 무리로 — 깃발이 내려앉는 것을 잠깐 보고 (전장의 깃발 판에서 골랐으면 그 판도 다음 무리 곁으로)
         const fromPop = popG !== undefined
         closePop()
@@ -3098,7 +3134,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       case 'who': case 'target': {
         // 장수가 여럿 — 누가 나서나 · 누구를 잡나. 다시 그리지 않고 고른 표만 옮긴다
         const id = b.dataset['id']!
-        if (b.dataset['war'] === 'who') sel = { ...sel, who: id }
+        if (b.dataset['war'] === 'who') { sel = { ...sel, who: id }; bark(id) } // 나설 장수를 고르면 그 장수가 대답한다
         else sel = { ...sel, target: id }
         const row = b.closest('.wwho')
         if (row !== null) for (const x of row.querySelectorAll<HTMLElement>('.wfc')) x.classList.toggle('on', x === b)
