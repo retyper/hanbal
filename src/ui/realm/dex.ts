@@ -123,6 +123,8 @@ interface DexKit {
   readonly bust: (hero: string) => string | null
   /** 아이의 얼굴 (판 밖 가문 칸 — 판의 장수 id 와 성별로) */
   readonly kid: (hero: string, look: 'g' | 'w') => string | null
+  /** 판 밖에서 키운 것 — 단련 단계 · 지닌 유물 (단련터 · drill.ts · relics.ts). 없으면 0 · [] */
+  readonly grow: (hero: string) => { lv: number; relics: string }
 }
 
 /** 모르는 장수의 귀띔 — 어디 가면 만나나 */
@@ -138,7 +140,9 @@ function card(k: DexKit, x: DexHero, f: number, sel: boolean): string {
   const name = lv === 0 ? '<b class="dxn">???</b>' : `<b class="dxn">${nameHtml(x.name)}</b>`
   const pips = [DEX_HEARD, DEX_MET, DEX_CAUGHT, DEX_SERVED].map((b, i) => `<i class="${f & b ? 'on' : ''}" title="${LV_NAME[i + 1]}"></i>`).join('')
   const g = lv >= 2 ? ` style="--g:${GRADE_COLOR[x.grade]}"` : ''
-  return `<button class="dxc lv${lv}${lv >= 2 ? ' graded' : ''}${sel ? ' sel' : ''}" data-act="dex-sel" data-id="${x.id}"${g}>${face}${f & DEX_CAUGHT ? '<span class="rope" title="사로잡은 적이 있다"></span>' : ''}${name}<span class="dxm">${k.esc(x.board === 'wander' ? '떠돌이' : x.nationName)}</span><span class="pips">${pips}</span></button>`
+  const gr = k.grow(x.id)
+  const grow = gr.lv > 0 || gr.relics !== '' ? `<span class="dxgr">${gr.lv > 0 ? `<b>단련 ${gr.lv}</b>` : ''}${gr.relics}</span>` : ''
+  return `<button class="dxc lv${lv}${lv >= 2 ? ' graded' : ''}${sel ? ' sel' : ''}" data-act="dex-sel" data-id="${x.id}"${g}>${face}${grow}${f & DEX_CAUGHT ? '<span class="rope" title="사로잡은 적이 있다"></span>' : ''}${name}<span class="dxm">${k.esc(x.board === 'wander' ? '떠돌이' : x.nationName)}</span><span class="pips">${pips}</span></button>`
 }
 
 /** 고른 장수 — 아래에 붙는 판 */
@@ -151,7 +155,9 @@ function detail(k: DexKit, x: DexHero, f: number): string {
   h += `<span class="mute">${k.esc(whereHint(x))}</span>`
   if (lv >= 2) h += `<span class="grade" style="--g:${GRADE_COLOR[x.grade]}">${GRADE_NAME[x.grade]}</span>`
   h += `<span class="lvs">${[DEX_HEARD, DEX_MET, DEX_CAUGHT, DEX_SERVED].map((b, i) => `<i class="${f & b ? 'on' : ''}">${LV_NAME[i + 1]}</i>`).join('')}</span></div></div>`
-  if (lv >= 2) h += `<div class="dxstat">${heroRadar(x.hero, true, (f & DEX_SERVED) !== 0, 150)}<div class="dxtr">${traitChips(x.hero, true)}<p class="mute">처음 나올 때의 솜씨다. 판에서 부리면 자란다.</p></div></div>`
+  const gr = k.grow(x.id)
+  const grown = gr.lv > 0 || gr.relics !== '' ? `<p class="dxgrl">${gr.lv > 0 ? `<b>단련 ${gr.lv}</b> 단련터에서 키운 몸으로 다음 판에 온다` : ''}${gr.relics !== '' ? `<span>지닌 유물 ${gr.relics}</span>` : ''}</p>` : ''
+  if (lv >= 2) h += `<div class="dxstat">${heroRadar(x.hero, true, (f & DEX_SERVED) !== 0, 150)}<div class="dxtr">${traitChips(x.hero, true)}<p class="mute">처음 나올 때의 솜씨다. 판에서 부리면 자란다.</p>${grown}</div></div>`
   else if (lv === 1) h += `<p class="mute">이름만 들었다. 싸워 보거나 정찰·첩자로 보면 솜씨가 적힌다.</p>`
   else h += `<p class="mute">아직 모른다. ${k.esc(x.board === 'wander' ? '떠돌이는 봄마다 한 명쯤 우리 땅에 나타난다.' : `${josa(x.nationName, '을', '를')} 알게 되면 이름이 들린다.`)}</p>`
   if (lv >= 2 && (f & DEX_CAUGHT) === 0 && (f & DEX_SERVED) === 0) h += `<p class="mute">싸움에서 이기고 사로잡으면 포승줄 칸이 켜진다. 회유하면 거느린다.</p>`
@@ -216,6 +222,12 @@ export const DEX_CSS = `
   border: 1.5px solid var(--line); background: var(--card); color: var(--ink); font: inherit; cursor: pointer; min-width: 0; }
 .ap .dexp .dxc.graded { border-color: var(--g); } .ap .dexp .dxc.lv4 { background: linear-gradient(#2c2618, var(--card)); box-shadow: 0 0 0 1px #e0b86055 inset; }
 .ap .dexp .dxc.sel { outline: 2px solid var(--gold); outline-offset: 1px; }
+/* 판 밖에서 키운 것 — 얼굴 위 왼쪽에 단련 단계 · 지닌 유물 (형 10-26: 영웅전 카드에도 「단련 n」) */
+.ap .dexp .dxc .dxgr { position: absolute; top: 3px; left: 3px; z-index: 2; display: flex; align-items: center; gap: 1px; pointer-events: none; }
+.ap .dexp .dxc .dxgr b { padding: 1px 5px; border-radius: 8px; background: #1a120acc; border: 1px solid #e0b860; color: #ffe08a; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.ap .dexp .dxc .dxgr .rlchip { width: 18px; height: 18px; margin-left: 1px; } .ap .dexp .dxc .dxgr .rlchip img { width: 15px; height: 15px; }
+.ap .dexp .dxgrl { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 6px 0 0; font-size: 12.5px; color: #cbbf9f; }
+.ap .dexp .dxgrl b { color: #ffe08a; margin-right: 4px; }
 .ap .dexp .dxf { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; object-position: top; }
 .ap .dexp .dxc.lv1 .dxf { filter: grayscale(.85) brightness(.75); }
 .ap .dexp .dxf.none { display: grid; place-items: center; background: #17110c; color: #60524a; font-size: 28px; font-weight: 700; border: 1px dashed #54412a; box-sizing: border-box; }

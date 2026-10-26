@@ -49,9 +49,9 @@ import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, warmNextSeason, type RouteS
 import { LEGACY_CSS, bringHtml, clearBring, toggleBring } from './legacy.ts'
 import { DEX_CSS, clanHeroes, dexHtml, dexToastHtml, loadDex, recordDex, type DexBoard } from './dex.ts'
 import { DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
-import { DRILL_CSS, engraveRun, hasDrill, loadDrill, raiseHero, yardHtml, yardStripHtml, type DrillKit } from './drill.ts'
+import { DRILL_CSS, drillLevel, engraveRun, hasDrill, loadDrill, raiseHero, yardHtml, yardStripHtml, type DrillKit } from './drill.ts'
 import { applyDrill, earnedOf } from '../../realm/drill.ts'
-import { RELIC_CSS, openRunTomb, pickRunRelic, putRelic, relicChips, takeOffRelic, tombHtml, tombRun, tombStripHtml, type RelicKit } from './relics.ts'
+import { RELIC_CSS, openRunTomb, pickRunRelic, putRelic, relicChips, takeOffRelic, tombHtml, tombRun, tombStripHtml, wornBy, type RelicKit } from './relics.ts'
 import { RELIC } from '../../realm/data/relics.ts'
 import { LEVEL_LINE, TIER_MAX, levelName } from '../../realm/tier.ts'
 import { FIT_CSS, fitLabels } from './fit.ts'
@@ -494,6 +494,7 @@ const DEX_KIT = {
   esc,
   bust: (id: string): string | null => (bustOf(id) !== undefined ? `${ART}bust/${bustOf(id)}.jpg` : null),
   kid: (key: string, look: 'g' | 'w'): string | null => { const f = kidBust(key, look); return f !== undefined ? `${ART}bust/${f}.jpg` : null },
+  grow: (id: string): { lv: number; relics: string } => ({ lv: drillLevel(id), relics: relicChips(ART, esc, wornBy(id)) }),
 }
 
 /** 처음 몸 — 영웅전 명부 · 가문의 아이 (단련터 · 동행 고르기의 단련 몸) */
