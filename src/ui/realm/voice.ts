@@ -10,6 +10,7 @@
  * 구글 AI 스튜디오 Gemini TTS 무료 목소리에 사극 말투 지시로 뽑았다 (Enzo · Daro · Cruz · Arlo · Neno · Cleo · Kira · Lumi · Hali) —
  * 한 번에 세 줄을 뽑아 tools/split-voice.py 로 잘랐다. 들어 보는 판 realm/voice-picker.html.
  */
+import { bustOf } from '../../realm/data/art.ts'
 import { hasTrait } from '../../realm/heroes.ts'
 import type { Art, Hero } from '../../realm/types.ts'
 
@@ -22,6 +23,28 @@ const TAKES: Readonly<Record<VoiceLine, number>> = { tap: 3 }
 /** 손으로 박은 목소리 — 그림과 이야기가 뚜렷한 장수 (없으면 voiceKind 가 고른다) */
 const VOICE_OF: Readonly<Record<string, VoiceKind>> = {}
 
+/**
+ * 얼굴이 고르는 목소리 — 명치판 그림을 보고 박았다. 특성·능력치보다 먼저 (형 10-26: "험측 하늘 이미지는 나이든 무속인인데 젊은 장수 목소리임").
+ * 군주라고 다 늙은 목소리가 아니다 — 주몽·온조·혁거세는 젊다. 그림을 바꾸면 여기도 본다
+ */
+const VOICE_OF_FACE: Readonly<Record<string, VoiceKind>> = {
+  // 늙은 얼굴 — 흰 수염 · 주름 · 쉰 넘은 군장
+  'g-01-master-smith': 'm-elder', 'g-05-mahan-chieftain': 'm-elder', 'g-15-shaman-man': 'm-elder', 'g-18-daegaya-king': 'm-elder',
+  'g-19-sabeol-veteran': 'm-elder', 'g-29-yeonna-myeongsol': 'm-elder', 'g-50-bullae-gwaha': 'm-elder', 'g-54-mokji-mahan': 'm-elder',
+  'g-69-goryong-yong': 'm-elder', 'g-77-saro-sobeol': 'm-elder', 'g-90-haengin-gomok': 'm-elder',
+  // 젊은 얼굴 — 군주여도 젊은 소리
+  'g-02-goguryeo-archer-prince': 'm-young', 'g-12-silla-youth': 'm-young', 'g-43-hwanna-amnok': 'm-young', 'g-56-haseulla-gwahama': 'm-young',
+  'g-64-jumong': 'm-young', 'g-71-baekje-onjo': 'm-young', 'g-28-goguryeo-damul': 'm-young',
+  // 고운 얼굴 — 매혹
+  'g-24-wansan-onsan': 'm-charm', 'g-51-biryuna-mulgyeol': 'm-charm', 'g-62-beonye-hanul': 'm-charm', 'g-74-saro-hyeokgeose': 'm-charm',
+  'g-84-wander-seoneul': 'm-charm', 'g-67-buyeo-daeso': 'm-charm',
+  // 거친 얼굴 — 장사 · 술꾼 · 덩치
+  'g-04-jinhan-giant': 'm-gruff', 'g-07-drunk-warrior': 'm-gruff', 'g-33-jeoga-metdol': 'm-gruff', 'g-45-dabeol-deulgae': 'm-gruff',
+  'g-61-heomcheuk-bawi': 'm-gruff', 'g-63-heomcheuk-beogeum': 'm-gruff',
+  // 책사 · 무당 얼굴 — 차분한 소리
+  'g-06-strategist': 'm-sage', 'g-73-baekje-eureum': 'm-sage', 'g-75-saro-hogong': 'm-sage', 'g-36-gammun-gamdol': 'm-sage',
+}
+
 /** 같은 소리가 겹쳐 나오지 않게 — 이만큼(ms) 안에 또 누르면 조용히 */
 const GAP_MS = 450
 let lastAt = -Infinity
@@ -31,6 +54,9 @@ const lastTake = new Map<string, number>()
 export function voiceKind(h: Hero, ruler = false): VoiceKind {
   const fixed = VOICE_OF[h.id]
   if (fixed !== undefined) return fixed
+  const face = bustOf(h.id)
+  const byFace = face !== undefined ? VOICE_OF_FACE[face] : undefined
+  if (byFace !== undefined) return byFace
   if (h.look === 'w') {
     if (hasTrait(h, 'shaman')) return 'w-shaman'
     if (hasTrait(h, 'charm') || hasTrait(h, 'traitor')) return 'w-sly'

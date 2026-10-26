@@ -956,7 +956,8 @@ function provincesSvg(
   }
   const blurK = (3 * k).toFixed(1)
   let h = `<defs><filter id="rm-band" x="-2%" y="-2%" width="104%" height="104%"><feGaussianBlur stdDeviation="${blurK}"/></filter>${cps}</defs>`
-  h += `<g class="terr"${clip}>${fill}<g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#rm-band)">${band}</g><g fill="none" stroke-linejoin="round">${crisp}</g>`
+  // 둘레는 고을 사이 금(조각)을 이어 그린다 — 끝을 둥글게 해야 꺾인 모서리에서 제 색 선이 끊기지 않는다 (형 10-26: "가까이서 보면 각진 곳에 국경 색이 끊어져 있음")
+  h += `<g class="terr"${clip}>${fill}<g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#rm-band)">${band}</g><g fill="none" stroke-linecap="round" stroke-linejoin="round">${crisp}</g>`
   // 우리 땅 — 옅은 금빛 (빗금은 비 같다고 해서 뺐다 · 형: "비오는줄알았다"). 금빛 경계가 천천히 숨 쉰다
   if (mine !== '') h += `<path d="${mine}" fill="#ffe7a8" opacity=".13"/>`
   h += `<g fill="none" stroke-linecap="round" stroke-linejoin="round">${lines}`
