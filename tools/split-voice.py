@@ -49,8 +49,11 @@ def main(ff: str, src: str, out: str, names: list[str]) -> None:
     os.makedirs(out, exist_ok=True)
     for (a, b), name in zip(segs, names):
         t0, t1 = max(0.0, a - 0.04), b + 0.12
-        subprocess.run([ff, '-hide_banner', '-loglevel', 'error', '-y', '-i', src, '-ss', f'{t0:.3f}', '-to', f'{t1:.3f}',
-                        '-af', 'afade=t=out:st=%.3f:d=0.05,loudnorm=I=-16:TP=-1.5:LRA=7' % (t1 - t0 - 0.05),
+        # 자르기를 필터 안에서 먼저 하고 시각을 0 으로 되돌린 뒤 끝을 줄인다 — 출력 쪽 -ss 로 자르면 필터는 원본 처음부터 돌아
+        # 끝 줄임이 원본 시각에 걸려 둘째 대사부터 끊기거나 무음이 됐다 (형 10-26: "소리들이 중간에 끊기고 대부분은 아예 들리지도 않는데")
+        af = 'atrim=start=%.3f:end=%.3f,asetpts=PTS-STARTPTS,afade=t=out:st=%.3f:d=0.05,loudnorm=I=-16:TP=-1.5:LRA=7' % (t0, t1, t1 - t0 - 0.05)
+        subprocess.run([ff, '-hide_banner', '-loglevel', 'error', '-y', '-i', src,
+                        '-af', af,
                         '-ar', '48000', '-ac', '1', '-c:a', 'libvorbis', '-q:a', '6', os.path.join(out, name + '.ogg')], check=True)
         print('ok', name, round(b - a, 2))
 
