@@ -69,7 +69,7 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'iseo-ruler': 'w-61-iseo-sinae', 'byeokjin-ruler': 'w-62-byeokjin-byeol', 'gammun-ruler': 'g-36-gammun-gamdol',
   'samul-ruler': 'g-20-samul-sea-lord', 'eumjeup-ruler': 'g-37-eumjeup-jeup', 'chopal-ruler': 'g-38-chopal-palmae',
   'saro-1': 'g-55-saro-bakdal', 'saro-2': 'w-66-saro-noeul', 'daegaya-1': 'w-75-daegaya-soemoe', 'sabeol-1': 'w-77-sabeol-malgalgi',
-  'dabeol-1': 'g-45-dabeol-deulgae', 'usisan-1': 'g-01-master-smith', 'jomun-1': 'g-13-baekje-general', 'iseo-1': 'w-26-iseo-tomboy-general',
+  'dabeol-1': 'g-45-dabeol-deulgae', 'usisan-1': 'g-01-master-smith', 'jomun-1': 'g-93-jomun-solgae', 'iseo-1': 'w-26-iseo-tomboy-general',
   'samul-1': 'w-73-samul-sagong', 'bihwa-1': 'g-57-bihwa-neup', 'eumjeup-1': 'w-72-eumjeup-beol',
   // 삼한 남부 판의 새 군주·장군 (data/regions/south.ts) — 있는 명치판을 나눠 쓴다. 새 얼굴은 그림 줄(인물 — 챗지피티)
   // 배우는 판 — 온조 형제와 신하 (tutorial.ts)
