@@ -20,7 +20,7 @@ import { heroArt } from '../../realm/heroes.ts'
 import type { Act, Approach, Art, Clock, Cmd, Dusk, DuskAsk, DuskLog, Grp, Hero, Look, Order, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { snd } from './sound.ts'
-import { artVoicePath, voiceGate, voicePath } from './voice.ts'
+import { artVoicePath, autoVoicePath, voiceGate, voicePath } from './voice.ts'
 import { WIN_BUZZ, winFxHtml } from './winfx.ts'
 import { scrollInside } from './scroll.ts'
 import { morphInto } from './morph.ts'
@@ -2478,6 +2478,16 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const good = endGood(l)
     if (!endSeen.horn) { endSeen.horn = true; host.ding(good ? BATTLE_SFX.win : BATTLE_SFX.lose, 0.45) }
     if (!endSeen.music) { endSeen.music = true; host.music?.(good ? 'win' : 'lose') }
+    sayAutoEnd() // 맡긴 싸움을 건너뛰어 끝에 닿았어도 맡은 장수의 끝말은 한다
+  }
+
+  /** 맡긴 싸움 — 맡은 장수가 끝에 한마디 (이김 · 짐 · 비기면 조용히) · 판마다 한 번 */
+  let autoEnd: { key: string; hero: Hero; said: boolean } | null = null
+  const sayAutoEnd = (): void => {
+    const l = t.line
+    if (autoEnd === null || autoEnd.said || l === null || (l.key ?? '') !== autoEnd.key || l.outcome === 'draw') return
+    autoEnd.said = true
+    say(autoVoicePath(autoEnd.hero, endGood(l) ? 'win' : 'lose', isRulerHero(autoEnd.hero)))
   }
 
   /** 폰 떨림 — 잘됐을 때만 (좋은 합 · 사로잡기 · 이김). 진 쪽 떨림은 헷갈려서 안 쓴다 (형: "공격하거나 잘됐을때로 긍정 피드백 시켜야 하나? 헷갈리니까??") */
@@ -2827,6 +2837,11 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       ov.appendChild(cut)
       at(0.28, BATTLE_SFX.openDrum, 0.45)
       t0 = P.realm.warAutoCutS
+      // 맡은 장수가 「싸움은 제게 맡기시오!」 — 장면이 튀어나올 때 · 끝나면 이김·짐 한마디 (형 10-27)
+      if (hh !== undefined) {
+        autoEnd = { key: l.key ?? '', hero: hh, said: false }
+        window.setTimeout(() => say(autoVoicePath(hh, 'go', isRulerHero(hh))), P.realm.warVoiceArtS * 1000)
+      }
     }
     const step = (k: number, after: number): void => {
       const id = window.setTimeout(() => {
@@ -2835,6 +2850,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         draw(true)
         const rd = (l.rounds ?? [])[k - 1]
         if (k < R && rd !== undefined) step(k + 1, roundPlan(rd, weAtk).result + P.realm.warAutoGapS)
+        else if (rd !== undefined) timers.push(window.setTimeout(sayAutoEnd, (roundPlan(rd, weAtk).result + P.realm.warAutoEndVoiceS) * 1000))
       }, after * 1000)
       chain.push(id)
     }

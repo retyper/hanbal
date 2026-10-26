@@ -14,6 +14,7 @@
   audio { height:34px; max-width:100%; }
   code { background:#232a33; padding:1px 5px; border-radius:3px; color:#ffd88f; }
 </style></head><body>
+<div id="chief"></div>
 <div id="hire"></div>
 <h1>칠십팔국 목소리 고르기 — 장수를 누르면 나오는 대답</h1>
 <p>우리 장수 얼굴을 누르거나 장수가 이끄는 군대를 지도에서 고르면 그 장수가 곧바로 대답한다. 장수마다 아홉 결 가운데 하나 — 생김·특성·능력치로 고른다 (<code>src/ui/realm/voice.ts</code>).
@@ -58,6 +59,26 @@ for (const [title, k] of GROUPS) {
     h += `<div class="row"><span class="no">${i + 1}</span><span class="nm">${t}</span><audio controls preload="none" src="voice/obey-${k}-${i + 1}.ogg"></audio></div>`
   })
 }
+// 싸움 맡김 — 우리 장수가 싸움을 맡아 들 때 셋 · 맡긴 싸움이 끝나면 이김 · 짐 (voice/auto-<결>-1..3 · win · lose · 대사는 src/ui/realm/voice.ts AUTO_LINE · 형 10-27)
+const AUTO = {
+  'm-young': ["싸움은 제게 맡기시오!", "단숨에 깨뜨리고 오겠소!", "지켜보기만 하시오!", "이겼소! 보셨소?", "면목 없소… 다음엔 꼭!"],
+  'm-gruff': ["크하하, 이 싸움 내가 맡소!", "한바탕 쓸어 버리고 오리다!", "술상이나 차려 두시오!", "크하하! 싱겁구먼!", "크윽, 이번엔 내가 졌소."],
+  'm-sage': ["판은 이미 읽었습니다. 맡겨 주십시오.", "수를 두듯 이겨 보이겠습니다.", "서두르지 않고 이기겠습니다.", "헤아린 대로 되었습니다.", "수를 잘못 읽었습니다."],
+  'm-elder': ["허허, 늙은 칼이라도 날은 서 있소.", "이 싸움, 내가 거두리다.", "조상께 부끄럽지 않게 싸우겠소.", "허허, 아직 쓸 만하지요.", "허허… 늙은 몸이 부끄럽소."],
+  'm-charm': ["멋지게 이기고 오리다.", "그대는 웃으며 기다리시오.", "이 싸움, 내 몫으로 하지요.", "약속대로 이겼소.", "이런, 체면이 말이 아니군."],
+  'w-bright': ["제가 다 이기고 올게요!", "맡겨 주세요, 금방이에요!", "보고만 계세요!", "이겼어요! 봤죠?", "분해요… 다음엔 꼭 이길게요!"],
+  'w-cool': ["맡겨 주십시오. 이기고 오겠습니다.", "싸움은 제가 끝냅니다.", "물러서지 않겠습니다.", "이겼습니다.", "…송구합니다."],
+  'w-sly': ["후후, 재미있게 놀다 올게요.", "저들, 금방 울게 될 거예요.", "제게 맡겨 두세요.", "후후, 너무 쉬웠네요.", "흥, 오늘은 봐준 거예요."],
+  'w-shaman': ["하늘이 우리 편이에요. 맡겨 주세요.", "방울이 이길 길을 일러 줘요.", "별이 이긴다고 말하네요.", "하늘이 웃어요.", "하늘이 등을 돌렸어요…"],
+}
+h += `<h1 style="margin-top:40px">싸움 맡김 — 장수에게 싸움을 맡길 때 · 끝났을 때</h1><p>싸움 화면에서 「장수에게 맡긴다」를 누르면 총대장이 셋 가운데 하나를 말하고, 맡긴 싸움이 끝나면 이김·짐 한마디를 한다 (비기면 조용히).</p>`
+for (const [title, k] of GROUPS) {
+  h += `<h2>${title}</h2>`
+  AUTO[k].forEach((t, i) => {
+    const f = i < 3 ? String(i + 1) : i === 3 ? 'win' : 'lose'
+    h += `<div class="row"><span class="no">${i < 3 ? i + 1 : i === 3 ? '이김' : '짐'}</span><span class="nm">${t}</span><audio controls preload="none" src="voice/auto-${k}-${f}.ogg"></audio></div>`
+  })
+}
 const ARTS = [['snipe', '명궁의 한 발', '이 화살을 받아라!'], ['rite', '진중 굿', '천지신명이시여 굽어살피소서!'], ['sway', '항복 권유', '칼을 거두고 우리 편에 서라!'],
   ['stand', '버텨라', '한 걸음도 물러서지 마라!'], ['ambush', '샛길 기습', '지금이다 샛길로 쳐라!'], ['vanguard', '선봉에 선다', '나를 따르라!'],
   ['feint', '거짓 퇴각', '물러나는 척하라!'], ['order', '진을 다잡는다', '진을 갖춰라!'], ['shout', '큰 외침', '두려워 마라 우리가 이긴다!']]
@@ -81,6 +102,22 @@ fetch('voice/hire/lines.json').then((r) => r.json()).then((rows) => {
     for (const x of mine) g += `<div class="row"><span class="no" style="min-width:96px;font-size:13px">${esc(x.name)}</span><span class="nm">${esc(x.text)} <code>${esc(x.id)}</code></span><audio controls preload="none" src="voice/hire/${encodeURIComponent(x.id)}.ogg"></audio></div>`
   }
   document.getElementById('hire').innerHTML = g + '<hr style="border:0;border-top:1px solid #2c333d;margin:40px 0 20px">'
+}).catch(() => {})
+// 군장 말 — 남의 나라 군장이 알현·맺음 화면에서 하는 말 (voice/chief/<결>-<상황>-<a|p>.ogg · 대사는 src/ui/realm/chief-lines.ts · 목록은 tools/chief-voice-list.ts --write)
+fetch('voice/chief/lines.json').then((r) => r.json()).then((rows) => {
+  const got = rows.filter((x) => x.has).length
+  let g = `<h1>군장 말 — 남의 나라 군장이 청을 걸고 · 맺고 · 물리칠 때 (${got}/${rows.length})</h1><p>사신의 청이 화면 가득 뜨거나 화친·동맹·조공·선물·거절을 맺은 화면에서 저쪽 군장이 말풍선 글 그대로 말한다. 군장 얼굴의 목소리 결 × 나라 성향 — 욕심 많은 나라는 적극, 조심스런 나라는 소극 (형 10-26).</p>`
+    + `<p>★ 어색한 줄은 "○○ 결 △△ 적극 다시"라고 말해 주면 그 줄만 다시 뽑는다 · 대사를 고치면 글과 소리를 함께 바꾼다.</p>`
+  for (const [title, k] of GROUPS) {
+    const mine = rows.filter((x) => x.kind === k)
+    if (mine.length === 0) continue
+    g += `<h2>${title}</h2>`
+    for (const x of mine) {
+      const au = x.has ? `<audio controls preload="none" src="voice/chief/${x.file}.ogg"></audio>` : '<span class="pick" style="color:#95a1ae">아직 없음</span>'
+      g += `<div class="row"><span class="no" style="min-width:120px;font-size:13px">${esc(x.sitName)} · ${x.mood === 'a' ? '적극' : '소극'}</span><span class="nm">${esc(x.text)}</span>${au}</div>`
+    }
+  }
+  document.getElementById('chief').innerHTML = g + '<hr style="border:0;border-top:1px solid #2c333d;margin:40px 0 20px">'
 }).catch(() => {})
 </script>
 </body></html>
