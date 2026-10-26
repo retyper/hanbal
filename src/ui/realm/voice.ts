@@ -22,6 +22,22 @@ import type { Art, Hero } from '../../realm/types.ts'
 export type VoiceKind = 'm-young' | 'm-gruff' | 'm-sage' | 'm-elder' | 'm-charm' | 'w-bright' | 'w-cool' | 'w-sly' | 'w-shaman'
 export type VoiceLine = 'tap' | 'obey'
 
+/**
+ * 싸움 맡김 — 우리 장수가 싸움을 맡아 들 때 셋(돌려 쓴다) · 맡긴 싸움이 끝나면 이김 · 짐 (auto-<결>-1..3 · win · lose)
+ * 대사는 docs/realm/VOICE-LINES.md 「싸움 맡김」 · 녹음은 군장 말 묶음에 붙여 함께 뽑았다
+ */
+export const AUTO_LINE: Readonly<Record<VoiceKind, readonly [string, string, string, string, string]>> = {
+  'm-young': ['싸움은 제게 맡기시오!', '단숨에 깨뜨리고 오겠소!', '지켜보기만 하시오!', '이겼소! 보셨소?', '면목 없소… 다음엔 꼭!'],
+  'm-gruff': ['크하하, 이 싸움 내가 맡소!', '한바탕 쓸어 버리고 오리다!', '술상이나 차려 두시오!', '크하하! 싱겁구먼!', '크윽, 이번엔 내가 졌소.'],
+  'm-sage': ['판은 이미 읽었습니다. 맡겨 주십시오.', '수를 두듯 이겨 보이겠습니다.', '서두르지 않고 이기겠습니다.', '헤아린 대로 되었습니다.', '수를 잘못 읽었습니다.'],
+  'm-elder': ['허허, 늙은 칼이라도 날은 서 있소.', '이 싸움, 내가 거두리다.', '조상께 부끄럽지 않게 싸우겠소.', '허허, 아직 쓸 만하지요.', '허허… 늙은 몸이 부끄럽소.'],
+  'm-charm': ['멋지게 이기고 오리다.', '그대는 웃으며 기다리시오.', '이 싸움, 내 몫으로 하지요.', '약속대로 이겼소.', '이런, 체면이 말이 아니군.'],
+  'w-bright': ['제가 다 이기고 올게요!', '맡겨 주세요, 금방이에요!', '보고만 계세요!', '이겼어요! 봤죠?', '분해요… 다음엔 꼭 이길게요!'],
+  'w-cool': ['맡겨 주십시오. 이기고 오겠습니다.', '싸움은 제가 끝냅니다.', '물러서지 않겠습니다.', '이겼습니다.', '…송구합니다.'],
+  'w-sly': ['후후, 재미있게 놀다 올게요.', '저들, 금방 울게 될 거예요.', '제게 맡겨 두세요.', '후후, 너무 쉬웠네요.', '흥, 오늘은 봐준 거예요.'],
+  'w-shaman': ['하늘이 우리 편이에요. 맡겨 주세요.', '방울이 이길 길을 일러 줘요.', '별이 이긴다고 말하네요.', '하늘이 웃어요.', '하늘이 등을 돌렸어요…'],
+}
+
 /** 결마다 받아 둔 대답 수 — public/realm/voice/<줄>-<결>-<n>.ogg */
 const TAKES: Readonly<Record<VoiceLine, number>> = { tap: 3, obey: 3 }
 
@@ -99,6 +115,18 @@ export function voicePath(h: Hero, want: VoiceLine, ruler = false): string {
 /** 장수 기술 외침 — 그 장수의 결로 */
 export function artVoicePath(h: Hero, art: Art, ruler = false): string {
   return `realm/voice/art-${voiceKind(h, ruler)}-${art}.ogg`
+}
+
+/** 싸움 맡김 — 맡아 들 때(go · 셋을 돌려 가며) · 맡긴 싸움이 끝나면 이김(win) · 짐(lose) */
+export function autoVoicePath(h: Hero, want: 'go' | 'win' | 'lose', ruler = false): string {
+  const k = voiceKind(h, ruler)
+  if (want !== 'go') return `realm/voice/auto-${k}-${want}.ogg`
+  const key = `auto-${k}`
+  const prev = lastTake.get(key) ?? 0
+  let t = 1 + Math.floor(Math.random() * 3)
+  if (t === prev) t = (t % 3) + 1
+  lastTake.set(key, t)
+  return `realm/voice/${key}-${t}.ogg`
 }
 
 /** 등용 첫마디 — 그 장수가 녹음한 대사 · 대사가 없는 장수(판에서 난 아이 등)는 그 결의 짧은 대답으로 */
