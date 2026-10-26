@@ -23,7 +23,7 @@ import { artVoicePath, voiceGate, voicePath } from './voice.ts'
 import { WIN_BUZZ, winFxHtml } from './winfx.ts'
 import { scrollInside } from './scroll.ts'
 import { morphInto } from './morph.ts'
-import { lookNums, menText, morText, oneChance, pctText } from './lookword.ts'
+import { cellColor, lookCells, lookNums, oneChance, pctText, signed, type LookCell } from './lookword.ts'
 
 const esc = (s: string): string =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
@@ -1054,11 +1054,19 @@ function lookHtml(lk: Look | undefined, k: string): string {
   const pc = (x: number): string => `${Math.round(Math.max(0, Math.min(1, x)) * 100)}%`
   const n = lookNums(lk)
   const tag = lk.by === 'saw' ? '<i class="wgtag">귀띔</i>' : ''
-  // 위 카드와 같은 자리 — 왼쪽 우리 · 오른쪽 적, 윗줄 명 · 아랫줄 사기 (형 10-26: "상단에서 보여지는게 우리명 적명 / 우리사기 적사기 · 깃발에서도 그런배치로")
-  const mor = (x: readonly [number, number]): string => `<b class="${x[0] + x[1] >= 0 ? 'up' : 'dn'}">${morText(x)}</b>`
+  // 위 카드와 같은 자리 — 왼쪽 우리 · 오른쪽 적, 윗줄 피해 · 아랫줄 사기 (형 10-26: "상단에서 보여지는게 우리명 적명 / 우리사기 적사기 · 깃발에서도 그런배치로").
+  // 칸은 일곱 — 이름 | 우리 최악 ~ 최선 | 적 최악 ~ 최선. 왼쪽이 플레이어에게 가장 나쁠 때 · 오른쪽이 가장 좋을 때.
+  // 나쁜 숫자는 붉게 · 좋은 숫자는 녹색으로, 클수록 짙게 · 0 은 회색 (형 10-26: "돌격을 선택하면 붉은 숫자가 방진보다 많으니 나쁘다고 알고")
+  const c = lookCells(n)
+  const num = (x: LookCell, unit: string): string => `<b style="color:${cellColor(x)}${x.k > 0.6 ? ';font-weight:900' : ''}">${signed(x.v)}<small>${unit}</small></b>`
+  const pair = (x: [LookCell, LookCell], unit: string): string => (x[0].v === x[1].v
+    ? `<b class="wgx3" style="color:${cellColor(x[0])}">${signed(x[0].v)}<small>${unit}</small></b>`
+    : `${num(x[0], unit)}<i>~</i>${num(x[1], unit)}`)
   const table = `<span class="wgx"><i></i><span class="wgk us">우리${n.cap !== undefined ? '<small> 놓치면</small>' : ''}</span><span class="wgk foe">적</span>`
-    + `<span class="wgk">명</span><b class="us">${menText(n.us)}</b><b class="foe">${menText(n.foe)}</b>`
-    + `<span class="wgk">사기</span>${mor(n.usMor)}${mor(n.foeMor)}</span>`
+    + `<span class="wgk">피해</span>${pair(c.usMen, '명')}${pair(c.foeMen, '명')}`
+    + `<span class="wgk">사기</span>${pair(c.usMor, '')}${pair(c.foeMor, '')}`
+    // 폭이 있을 때만 「최악 · 최선」 밑줄 (물러난다처럼 한 값뿐이면 뺀다)
+    + ([c.usMen, c.foeMen, c.usMor, c.foeMor].some((x) => x[0].v !== x[1].v) ? `<span class="wgxn"><span>최악</span><span>최선</span><span>최악</span><span>최선</span></span>` : '') + '</span>'
   const cap = n.cap !== undefined ? `<span class="wgl wgc"><span class="wgk">잡을 가망</span><b>${pctText(n.cap)}</b></span>` : ''
   // 무너지는 선 — 이 깃발이면 이번 합에 무너질 수 있다 (우리 붉게 깜박 · 적은 금빛) · 해시계와 함께 (형 10-26)
   const warn = (lk.fall ?? 0) >= P.realm.tacLookFall ? `<span class="wgl wgff us"><span class="wgk">⚠</span>우리가 무너질 수 있다 <b>${oneChance(lk.fall!)}%</b></span>` : ''
@@ -2022,13 +2030,22 @@ export const WAR_CSS = `
 .ap .wguess .wgl .wgm { white-space: nowrap; color: var(--mute); font-size: 11px; } .ap .wguess .wgl .wgm b { font-size: 11.5px; } .ap .wguess .wgl .wgm b.up { color: #9fe08a; } .ap .wguess .wgl .wgm b.dn { color: #f0a08a; }
 .ap .wguess .wgl.wgc b { color: #7fd8ff; font-size: 13.5px; }
 /* 짐작 표 — 위 카드의 막대와 같은 자리: 왼쪽 우리(초록 막대) · 오른쪽 적(붉은 막대) · 윗줄 명 · 아랫줄 사기 */
-.ap .wguess .wgx { grid-column: 1 / -1; display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); align-items: baseline; gap: 1px 8px; padding: 3px 6px; border-radius: 8px; background: #0b0a0866; }
+/* 짐작 표 — 일곱 칸: 이름 | 우리 최악 ~ 최선 | 적 최악 ~ 최선 · 숫자는 칸 가운데 (형 10-26) */
+.ap .wguess .wgx { grid-column: 1 / -1; display: grid; grid-template-columns: auto minmax(0, 1fr) 10px minmax(0, 1fr) minmax(0, 1fr) 10px minmax(0, 1fr); align-items: baseline; gap: 2px 3px; padding: 4px 6px; border-radius: 8px; background: #0b0a0899; }
+.ap .wguess .wgx > .wgk.us, .ap .wguess .wgx > .wgk.foe { grid-column: span 3; text-align: center; }
+.ap .wguess .wgx > i { font-style: normal; text-align: center; color: #6a645a; font-size: 11px; }
+.ap .wguess .wgx > b { text-align: center; font-variant-numeric: tabular-nums; text-shadow: 0 1px 0 #000; }
+.ap .wguess .wgx > b small { font-size: .78em; font-weight: 600; margin-left: 1px; opacity: .8; }
+.ap .wguess .wgx > b.wgx3 { grid-column: span 3; }
+.ap .wguess .wgx > .wgxn { grid-column: 2 / -1; display: grid; grid-template-columns: subgrid; font-size: 9.5px; color: #6a645a; text-align: center; }
+.ap .wguess .wgx > .wgxn > span:nth-child(1) { grid-column: 1; } .ap .wguess .wgx > .wgxn > span:nth-child(2) { grid-column: 3; }
+.ap .wguess .wgx > .wgxn > span:nth-child(3) { grid-column: 4; } .ap .wguess .wgx > .wgxn > span:nth-child(4) { grid-column: 6; }
 .ap .wguess .wgx > .wgk { font-size: 10.5px; color: var(--mute); white-space: nowrap; }
 .ap .wguess .wgx > .wgk.us, .ap .wguess .wgx > .wgk.foe { font-weight: 800; padding-bottom: 1px; border-bottom: 2px solid; }
 .ap .wguess .wgx > .wgk.us { color: #9fe08a; border-color: #4f9a44; } .ap .wguess .wgx > .wgk.foe { color: #ff9a80; border-color: #b0482e; }
 .ap .wguess .wgx > .wgk small { font-size: .9em; font-weight: 600; color: var(--mute); }
 .ap .wguess .wgx > b { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ap .wguess .wgx > b.us { color: #ff9a7a; } .ap .wguess .wgx > b.foe { color: #f0d080; } .ap .wguess .wgx > b.up { color: #9fe08a; } .ap .wguess .wgx > b.dn { color: #f0a08a; }
+
 .ap .wguess .wgtag { margin-left: 3px; padding: 0 4px; border-radius: 5px; background: #2e4a3a; color: #b6e8c8; font-size: 10px; font-style: normal; }
 .ap .wguess.wait { display: none; }
 /* 이대로 싸우면 — 다 골랐을 때 전투 개시 위 */

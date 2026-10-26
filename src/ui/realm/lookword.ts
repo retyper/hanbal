@@ -57,6 +57,40 @@ export function lookNums(lk: Look): LookNums {
   }
 }
 
+/**
+ * 짐작 표의 한 줄 — 플레이어에게 [가장 나쁠 때, 가장 좋을 때] 와 그 좋고 나쁨 (형 10-26: "왼쪽 게 최악 오른쪽 게 최선(유저 입장) ·
+ * 나쁜 경우면 붉은색이 진해지고 좋은 경우는 녹색이 진해지게 · 0 은 회색"). good: 이 값이 플레이어에게 좋은가 · k: 짙기 0~1
+ */
+export interface LookCell { readonly v: number; readonly good: boolean | null; readonly k: number }
+const cell = (v: number, goodIfPositive: boolean, ref: number): LookCell => ({
+  v, good: v === 0 ? null : (v > 0) === goodIfPositive, k: v === 0 ? 0 : Math.min(1, Math.log10(1 + Math.abs(v)) / Math.log10(1 + ref)),
+})
+/** 우리·적의 군사 바뀜 · 사기 바뀜 — 각 [최악, 최선] (플레이어 쪽에서) */
+export function lookCells(n: LookNums): { usMen: [LookCell, LookCell]; foeMen: [LookCell, LookCell]; usMor: [LookCell, LookCell]; foeMor: [LookCell, LookCell] } {
+  const M = P.realm.warLookColorMen
+  const S = P.realm.warLookColorMor
+  return {
+    // 우리가 잃는 군사 — 많이 잃을 때가 최악
+    usMen: [cell(-n.us[1], true, M), cell(-n.us[0], true, M)],
+    // 적이 잃는 군사 — 적게 잃을 때가 최악 (적이 잃는 건 우리에게 좋다)
+    foeMen: [cell(-n.foe[0], false, M), cell(-n.foe[1], false, M)],
+    // 우리 사기 — 낮을 때가 최악
+    usMor: [cell(n.usMor[0], true, S), cell(n.usMor[1], true, S)],
+    // 적 사기 — 오를 때가 최악 (적 사기가 오르는 건 우리에게 나쁘다)
+    foeMor: [cell(n.foeMor[1], false, S), cell(n.foeMor[0], false, S)],
+  }
+}
+/** 표의 숫자 한 칸 — 「−100」 · 「+16」 · 「0」 */
+export const signed = (v: number): string => (v > 0 ? `+${v}` : v < 0 ? `−${-v}` : '0')
+/** 붉은빛·녹빛 — 짙기 k 만큼 옅은 빛에서 짙은 빛으로 (0 은 회색) */
+export function cellColor(c: LookCell): string {
+  if (c.good === null) return '#9a948a'
+  const [a, b] = c.good ? [[184, 200, 172], [74, 230, 96]] : [[214, 180, 170], [255, 66, 48]]
+  const t = 0.25 + 0.75 * c.k
+  const m = a.map((x, i) => Math.round(x + (b[i]! - x) * t))
+  return `rgb(${m[0]}, ${m[1]}, ${m[2]})`
+}
+
 /** 잃을 사람 — 「−40~−70명」 · 「0명」 */
 export function menText(x: readonly [number, number]): string {
   const t = (v: number): string => (v === 0 ? '0' : `−${v}`)
