@@ -24,7 +24,7 @@ export type NodeKind = 'capital' | 'village' | 'sodo' | 'port' | 'fort' | 'ironM
  * 지형 꼬리표 (SYSTEMS §1-2) — 화면에는 숫자가 아니라 문장으로 나간다 (data/prose).
  * 규칙에 걸리는 것만 둔다; 늘릴 때는 SYSTEMS §1-2 표에 먼저 적는다.
  */
-export type Tag = 'reeds' | 'shallows' | 'pines' | 'high' | 'palisade' | 'moat' | 'fog' | 'iron' | 'sodo' | 'pasture'
+export type Tag = 'reeds' | 'shallows' | 'pines' | 'high' | 'palisade' | 'moat' | 'fog' | 'iron' | 'sodo' | 'pasture' | 'earthwall'
 
 /** 길 종류 (SYSTEMS §1-1) */
 export type EdgeKind = 'field' | 'pass' | 'forest' | 'reeds' | 'ford' | 'sea' | 'mudflat'
@@ -127,6 +127,8 @@ export interface Deed {
 export type Why =
   | 'losing' | 'fronts' | 'hungry' | 'leader' | 'commonFoe' | 'favor'
   | 'weak' | 'strong' | 'surplus' | 'ally' | 'tooBig' | 'prey'
+  /** 두 큰 나라 사이에서 줄을 탄다 (사벌 「줄타기」 — data/customs.ts) */
+  | 'between'
 
 /** 동맹의 약속 하나 — 지키면 호감 +, 저버리면 호감 크게 − */
 export interface Pledge {
@@ -158,7 +160,8 @@ export type Good = 'grain' | 'iron' | 'salt' | 'wood' | 'horse'
  * 사이가 바뀐 까닭 — attack 땅에 군대를 들였다 · betray 화친·동맹을 깨고 쳤다 · distrust 남의 배신을 보고 등 돌렸다 ·
  * plot 공작이 드러났다 · sow 이간에 넘어갔다 · tribute 조공 요구를 거절당했다 · demand 요구를 거절당했다 · break 약조를 깼다 · expire 기한이 끝났다 · envoy 사신이 맺었다
  */
-export type RelationWhy = 'attack' | 'betray' | 'distrust' | 'plot' | 'sow' | 'tribute' | 'demand' | 'break' | 'expire' | 'envoy'
+/** council — 여섯 마을에 묻고 싸움을 정했다(사로) · rescue — 손잡은 나라의 도읍을 에워 구하러 왔다(이서 도읍 에우기) (data/customs.ts) */
+export type RelationWhy = 'attack' | 'betray' | 'distrust' | 'plot' | 'sow' | 'tribute' | 'demand' | 'break' | 'expire' | 'envoy' | 'council' | 'rescue'
 
 /** 판 — 변한 6국 축소판 · 영남 판 (형: "사료대로 키우고 땅도 넓힘" — 2026-10-18) */
 /** 판 — tutorial 은 배우는 1:1 판 (변한 축소판의 지도를 빌린다) */
@@ -782,6 +785,12 @@ export interface Realm {
   known?: Record<string, string[]>
   /** 캠페인의 장 (scenario.ts) — 있으면 이 장의 목표로 이긴다. 자유 판 · 옛 저장에는 없다 */
   scenario?: Scenario
+  /** 나라마다 처음 걸린 풍습·나라 고리 — 처음 터지는 순간만 크게 (customs-rules.ts · 「custom」 보고의 first). 옛 저장에는 없다 */
+  customSeen?: Record<string, CustomId[]>
+  /** 다시 일어남(압독·실직) — 도읍을 빼앗긴 계절, 또는 들고일어나 다 쓴 것('done'). 옛 저장에는 없다 */
+  rise?: Record<string, number | 'done'>
+  /** 쇠뇌 틀 — 나라마다 (골벌 「쇠뇌」). 없으면 처음 틀 수 (P.realm.sonoeFrames). 옛 저장에는 없다 */
+  frames?: Record<string, number>
 }
 
 /** 플레이어(또는 AI)가 한 계절에 내리는 명령 */
@@ -886,7 +895,8 @@ export type Order =
   | { readonly kind: 'bowUp'; readonly faction: string }
 
 /** 지을 수 있는 것 — 그 고을 꼬리표가 된다 */
-export type BuildWhat = 'palisade' | 'moat'
+/** earthwall — 흙성 (다벌의 나라 고리 「달벌 흙성」만 · data/customs.ts) */
+export type BuildWhat = 'palisade' | 'moat' | 'earthwall'
 
 /**
  * 첩보 (형: "속셈은 … 간접정보로 전달받아야함. 첩보로 뭔가 철광이 새로 생겼다거나 그런거") — 첩자가 그 나라에서 듣고 본 것.
@@ -1075,6 +1085,11 @@ export type ReportLine =
   | { readonly kind: 'bond'; readonly hero: string; readonly tier: 'trust' }
   /** 정이 다 차서 특성 하나에 눈떴다 */
   | { readonly kind: 'awaken'; readonly hero: string; readonly trait: string }
+  /**
+   * 풍습·나라 고리·땅 한 수가 걸렸다 (data/customs.ts · customs-rules.ts) — 누가 · 무엇이 · 어디서 · 누구와 · 얼마나.
+   * first — 이 나라에 처음 걸렸다 (화면이 크게: 도장 · 사서 한 줄 · 북)
+   */
+  | { readonly kind: 'custom'; readonly faction: string; readonly id: CustomId; readonly node?: string; readonly other?: string; readonly with?: string; readonly n?: number; readonly m?: number; readonly first?: boolean }
   /** 사건 카드의 결과 — 무엇이 얼마나 오갔나 · good 은 운에 맡긴 쪽이 잘됐나 */
   | {
       readonly kind: 'card'; readonly faction: string; readonly card: CardKind; readonly pick: 0 | 1

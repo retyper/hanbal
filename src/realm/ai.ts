@@ -14,11 +14,12 @@
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import {
-  allyFoe, canEscort, envoyOptions, favorOf, friendly, jointTargets, lentStep, nationPower, openAsks, pledgedNodes, powerRange, relationOf, tradeOffer,
+  allyFoe, bigTwo, canEscort, envoyOptions, favorOf, friendly, jointTargets, lentStep, nationPower, openAsks, pledgedNodes, powerRange, relationOf, tradeOffer,
 } from './diplomacy.ts'
 import {
-  armCost, buildCost, canBuild, canGuard, draftCost, draftLimit, draftNeeds, goodOf, goodsWorth, guardCost, hhOf, menOf, nextBuild, riteAllowed, riteCost, settleLimit, settleTargets, stockOf, upkeepOf,
+  armCost, buildCost, canBuild, canGuard, deongiMen, deongiSplit, draftCost, draftLimit, draftNeeds, goodOf, goodsWorth, guardCost, hhOf, menOf, nextBuild, riteAllowed, riteCost, settleLimit, settleTargets, sonoeRoom, stockOf, upkeepOf,
 } from './economy.ts'
+import { hasCustom } from './data/customs.ts'
 import { ambushWorth, jointWin, movesOf, type Move } from './estimate.ts'
 import { hasTrait, idleHeroOrders, persuadeSeasons, wanderersFor } from './heroes.ts'
 import { limitHands } from './hands.ts'
@@ -63,12 +64,18 @@ function focus(r: Realm, faction: string, to: string): number {
     m?.set(faction, mine)
   }
   const pledged = mine.has(to) ? P.realm.aiPledgeFocus : 0
+  // 풍습 — 쌓인 덩이쇠를 탐낸다(변한) · 쇠 나는 고을을 노린다(쇠 다루기 · 땅) (data/customs.ts)
+  const tn = r.nodes[to]
+  const lure = tn?.owner == null || tn.owner === faction ? 0
+    : (hasCustom(r, tn.owner, 'deongisoe') && goodOf(stockOf(r, tn.owner), 'iron') >= P.realm.deongiCovet ? P.realm.deongiFocus : 0)
+      + (tn.kind === 'ironMine' && hasCustom(r, tn.owner, 'landIron') ? P.realm.landIronFocus : 0)
+      + (r.factions[tn.owner]?.capital === to && hasCustom(r, faction, 'geumseong') ? P.realm.siegeFocus : 0)
   // 힘의 균형 — 앞서가는 나라(도읍 둘 또는 힘 3할)는 모두가 막으려 한다 (stance.leaderOf, 제 정보로 본다)
   const owner = r.nodes[to]?.owner ?? null
   const lead = owner !== null && owner !== faction && leaderFor(r, faction) === owner ? P.realm.aiLeaderFocus : 0
   // 난세 단계 — 높을수록 이웃이 우리를 노린다 (이웃만 세지면 이웃끼리 부숴 오히려 쉬워졌다 — BALANCE)
   const tier = owner !== null && owner === r.player ? ((r.tier ?? 1) > 1 ? P.realm.tierFocus * ((r.tier ?? 1) - 1) : (r.tier ?? 1) < 1 ? -P.realm.easyFocus : 0) : 0
-  return pledged + lead + tier + (allyFoe(r, faction, owner) ? P.realm.aiAllyFocus : 0)
+  return pledged + lead + tier + lure + (allyFoe(r, faction, owner) ? P.realm.aiAllyFocus : 0)
 }
 
 /** 소도 제사 — 허락되고 군량 aiDraftReserve 계절치를 남기고도 제사 곡식이 남으면 */
@@ -138,14 +145,26 @@ function drafts(r: Realm, faction: string): Order[] {
   if (s !== 'autumn' && s !== 'winter') return []
   const fac = r.factions[faction]
   if (fac === undefined) return []
-  const goal = R.aiKyeolMix >= 0.5 ? mixOf(faction) : BASE_MIX
+  // 풍습이 바꾸는 비 — 쇠뇌(골벌) · 뱃길(땅) (data/armymix.ts)
+  const goal = R.aiKyeolMix >= 0.5 ? mixOf(faction, (id) => hasCustom(r, faction, id)) : BASE_MIX
   const men = menOf(r, faction)
   let spare = stockOf(r, faction).grain - R.aiDraftReserve * upkeepOf(r, faction, true)
-  // 말과 배 나무 — 이번 계절에 뽑은 만큼 줄여 가며 (draftNeeds)
+  // 덩이쇠(변한) — 곡식이 모자라면 쇠로 낸다. 무장 몫(aiIronKeep)을 남긴 쇠만 (economy.deongiMen 과 같은 값)
+  // 덩이쇠(변한) — 징병값의 몫을 쇠로 낸다. 판정과 같은 나눔(economy.deongiSplit)으로 창고를 따라가며, 무장 몫(aiIronKeep) 위의 쇠만 사람으로 친다
+  const deongi = hasCustom(r, faction, 'deongisoe') && R.deongiIron > 0
+  let gStock = Math.max(0, stockOf(r, faction).grain)
+  let iStock = Math.max(0, stockOf(r, faction).iron)
+  const ironMen = (): number => (deongi ? Math.min(deongiMen(r, faction), Math.floor(Math.max(0, iStock - R.aiIronKeep) / R.deongiIron)) : 0)
+  // 말과 배 나무 · 쇠뇌 틀과 쇠 — 이번 계절에 뽑은 만큼 줄여 가며 (draftNeeds)
   let horses = goodOf(stockOf(r, faction), 'horse')
   let wood = goodOf(stockOf(r, faction), 'wood')
+  let bolts = sonoeRoom(r, faction)
+  let iron = stockOf(r, faction).iron - R.aiIronKeep
+  // 뱃길(땅) — 배 나무가 덜 든다 (economy.draftNeeds 와 같은 배수)
+  const boatPer = R.boatWood * (hasCustom(r, faction, 'landPort') ? R.landPortBoat : 1)
   const goodsCap = (k: UnitKind): number =>
-    k === 'horse' && R.horsePerRider > 0 ? Math.floor(horses / R.horsePerRider) : k === 'boat' && R.boatWood > 0 ? Math.floor(wood / R.boatWood) : Infinity
+    k === 'horse' && R.horsePerRider > 0 ? Math.floor(horses / R.horsePerRider) : k === 'boat' && boatPer > 0 ? Math.floor(wood / boatPer)
+      : k === 'crossbow' ? Math.max(0, Math.min(bolts, R.sonoeIron > 0 ? Math.floor(iron / R.sonoeIron) : Infinity)) : Infinity
   const have: Partial<Record<UnitKind, number>> = {}
   for (const a of Object.values(r.armies)) {
     if (a.faction !== faction) continue
@@ -159,12 +178,16 @@ function drafts(r: Realm, faction: string): Order[] {
   for (const node of [...new Set(places)]) {
     const nd = r.nodes[node]
     if (nd?.owner !== faction) continue
-    const n = Math.min(draftLimit(r, faction, node), room, Math.floor(spare / Math.max(1e-9, R.draftGrain)))
+    const grainMen = Math.floor(spare / Math.max(1e-9, R.draftGrain))
+    const n = Math.min(draftLimit(r, faction, node), room, grainMen + ironMen())
     if (n < R.splitMin) continue
     const total = men + took
-    const kinds = draftable(nd)
+    const kinds = draftable(nd, r, faction)
     // 여기서 뽑을 수 있는 병종만 — 말·배가 모자라 못 뽑는 몫은 남은 병종에 비대로 나눈다 (아니면 가장 작은 몫이 넘친다)
-    const ok = goal.filter(([k]) => kinds.includes(k) && Math.min(n, goodsCap(k)) >= Math.min(n, R.aiDraftGoodsMin))
+    let ok = goal.filter(([k]) => kinds.includes(k) && Math.min(n, goodsCap(k)) >= Math.min(n, R.aiDraftGoodsMin))
+    // 쇠뇌 틀이 다 찼으면 쇠뇌 몫은 활로 돌린다 (쇠뇌는 활 몫에서 떼어 온 것 — armymix.mixOf)
+    const xb = goal.find(([k]) => k === 'crossbow')
+    if (xb !== undefined && !ok.some(([k]) => k === 'crossbow')) ok = ok.map(([k, w]) => [k, k === 'bow' ? w + xb[1] : w] as const)
     const W = ok.reduce((a, [, w]) => a + w, 0)
     // 모자란 차례 — 같으면 비 표의 차례 (sort 는 안정적이다)
     const want = ok.map(([k, w]) => ({ k, need: (w / W) * (total + n) - (have[k] ?? 0) })).sort((a, b) => b.need - a.need)
@@ -175,10 +198,21 @@ function drafts(r: Realm, faction: string): Order[] {
       if (m < left && m < R.aiDraftGoodsMin) continue
       out.push({ kind: 'draft', faction, node, unit: k, n: m })
       have[k] = (have[k] ?? 0) + m
-      const need = draftNeeds(k, m)
+      const need = draftNeeds(k, m, r, faction)
       horses -= need.horse
       wood -= need.wood
-      spare -= draftCost(m).grain
+      if (k === 'crossbow') bolts -= m
+      iron -= need.iron
+      iStock -= need.iron
+      // 곡식으로 못 낸 몫은 덩이쇠로 (economy.draftPay)
+      if (deongi) {
+        const sp = deongiSplit(gStock, iStock, m)
+        const g = draftCost(sp.grainMen).grain
+        gStock -= g
+        iStock -= sp.ironMen * R.deongiIron
+        iron -= sp.ironMen * R.deongiIron
+        spare -= g
+      } else spare -= draftCost(m).grain
       room -= m
       took += m
       left = m < left ? left - m - 1 : 0
@@ -416,6 +450,8 @@ function envoys(r: Realm, faction: string): Order[] {
       const ts = jointTargets(r, faction, f.id).filter((n) => relationOf(r, faction, r.nodes[n]!.owner!).state === 'war')
       if (ts.length > 0) c = { ask: 'joint', w: 1.2, target: ts[0]!, why: 'commonFoe', about: r.nodes[ts[0]!]!.owner! }
     }
+    // 줄타기(사벌) — 까닭이 없어도 가장 센 두 나라에는 손을 내민다: 싸우면 화친, 중립이면 화친, 화친이면 동맹 (data/customs.ts)
+    if (c === null && hasCustom(r, faction, 'julta') && rel !== 'ally' && bigTwo(r, faction).includes(f.id)) c = { ask: rel === 'truce' ? 'alliance' : 'truce', w: 1.4, why: 'between' }
     if (c !== null && !envoyOptions(r, faction, f.id).includes(c.ask)) c = null
     if (c !== null && (best === null || c.w > best.w)) best = { to: f.id, ...c }
   }
@@ -469,7 +505,7 @@ function builds(r: Realm, faction: string): Order[] {
     .sort((a, b) => (front(b.id) ? 1 : 0) - (front(a.id) ? 1 : 0) || b.hh - a.hh || (a.id < b.id ? -1 : 1))
   for (const n of mine) {
     const what = nextBuild(r, n.id)
-    if (what === null || !canBuild(r, faction, n.id, what) || buildCost(what).grain > spare) continue
+    if (what === null || !canBuild(r, faction, n.id, what) || buildCost(what, r, faction).grain > spare) continue
     return [{ kind: 'build', faction, node: n.id, what }]
   }
   return []

@@ -10,7 +10,8 @@
  * 비의 합은 1. 결의 차이를 또렷하게 하되 한 병종만으로 된 군대는 없게 (가장 큰 몫 0.7).
  */
 import type { UnitKind } from '../battle.ts'
-import { kyeolOf, type Kyeol } from './customs.ts'
+import { P } from '../../tune/params.ts'
+import { kyeolOf, type CustomId, type Kyeol } from './customs.ts'
 
 export type ArmyMix = ReadonlyArray<readonly [UnitKind, number]>
 
@@ -75,7 +76,41 @@ export const NATION_MIX: Readonly<Record<string, MixDef>> = {
   },
 }
 
-/** 그 나라가 맞춰 가는 병종 비 — 나라 줄 › 결 줄 › 바탕 */
-export function mixOf(nation: string): ArmyMix {
-  return NATION_MIX[nation]?.mix ?? KYEOL_MIX[kyeolOf(nation)].mix
+/**
+ * 그 나라가 맞춰 가는 병종 비 — 나라 줄 › 결 줄 › 바탕. `has` 를 주면 그 나라 풍습이 비를 바꾼다:
+ * 쇠뇌(골벌)는 활 몫에서 sonoeMix 를 쇠뇌로 · 뱃길(땅)은 창 몫에서 landPortMix 를 수군으로 (data/customs.ts)
+ */
+export function mixOf(nation: string, has?: (id: CustomId) => boolean): ArmyMix {
+  const base = NATION_MIX[nation]?.mix ?? KYEOL_MIX[kyeolOf(nation)].mix
+  if (has === undefined) return base
+  let m = base
+  if (has('sonoe')) m = shift(m, 'bow', 'crossbow', P.realm.sonoeMix)
+  if (has('landPort')) m = shift(m, 'spear', 'boat', P.realm.landPortMix)
+  return m
+}
+
+/** 비의 한 몫을 다른 병종으로 옮긴다 — 옮길 몫이 모자라면 있는 만큼 (합은 그대로) */
+function shift(m: ArmyMix, from: UnitKind, to: UnitKind, x: number): ArmyMix {
+  const have = m.find(([k]) => k === from)?.[1] ?? 0
+  const d = Math.min(have, x)
+  if (d <= 0) return m
+  const out: Array<readonly [UnitKind, number]> = m.map(([k, w]) => [k, k === from ? w - d : w] as const)
+  const at = out.findIndex(([k]) => k === to)
+  if (at >= 0) out[at] = [to, out[at]![1] + d]
+  else out.push([to, d])
+  return out.filter(([, w]) => w > 0)
+}
+
+/** 군대의 결 — 나라 고르기·나라 판의 「군대」 한 줄 (KYEOL_MIX 의 쉬운 말) */
+export const KYEOL_ARMY: Readonly<Record<Kyeol, string>> = {
+  goguryeo: '작은 말과 활 — 산길을 잘 탄다',
+  buyeo: '이름난 말 — 기병이 두껍다',
+  okjeo: '말이 적어 창을 들고 걸어서 싸운다',
+  ye: '긴 창을 여럿이 함께 들고 걸어서 싸운다',
+  mahan: '활과 큰 방패, 창 — 말은 타지 않는다',
+  byeonhan: '쇠 창을 들고 걸어서 싸운다',
+  jinhan: '창과 활에 소·말을 부린다',
+  baekje: '창과 활에 북에서 온 말이 조금',
+  juho: '배를 타고 오가며 싸운다',
+  other: '',
 }

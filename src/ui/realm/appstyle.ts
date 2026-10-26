@@ -255,6 +255,21 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
   background: radial-gradient(circle, #fff4c8cc, #f6d27a55 35%, #0000 70%); animation: cglow 2.4s ease-out both, cpulse 2.6s ease-in-out 2.4s infinite alternate; }
 @keyframes cglow { from { opacity: 0; transform: scale(.2); } to { opacity: 1; transform: none; } } @keyframes cpulse { to { opacity: .7; transform: scale(.94); } }
 .ap .cere .ckid { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; animation: ckid 1.4s cubic-bezier(.2, 1.3, .4, 1) .5s both; }
+/* 풍습이 처음 걸렸다 (CUSTOMS §8-1 지킬 것 4) — 그림과 이름이 도장처럼 크게 내려찍히고 불티가 튄다 · 층마다 빛이 다르다 */
+.ap .cere.custom { --gc: #c9a45a; background: radial-gradient(ellipse at 50% 38%, color-mix(in srgb, var(--gc) 38%, #0000) 0, #0000 60%), #0b0907; }
+.ap .cere.custom.t-nation { --gc: #e0763a; } .ap .cere.custom.t-land { --gc: #8fbf6a; }
+.ap .cere.custom .cglow { background: radial-gradient(circle, color-mix(in srgb, var(--gc) 55%, #0000), #0000 70%); }
+.ap .cere.custom .cstamp { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 26px 14px; border: 4px solid var(--gc); border-radius: 18px;
+  background: #1a120ccc; box-shadow: 0 0 40px color-mix(in srgb, var(--gc) 60%, #0000), inset 0 0 18px #000a; transform: rotate(-4deg); animation: cstamp .62s cubic-bezier(.2, 1.5, .4, 1) .1s both; }
+.ap .cere.custom .cstamp .csi { width: clamp(84px, 26vw, 130px); height: auto; aspect-ratio: 1; filter: drop-shadow(0 4px 10px #000); }
+.ap .cere.custom .cstamp b { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 9vw, 52px); letter-spacing: 4px; color: #fff4d8; text-shadow: 0 0 18px var(--gc), 0 3px 6px #000; white-space: nowrap; }
+.ap .cere.custom .cspk { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
+.ap .cere.custom .cspk i { position: absolute; width: 7px; height: 7px; margin: -3.5px; border-radius: 50%; background: radial-gradient(circle, #fff8e0, var(--gc) 60%, #0000 72%); opacity: 0; transform: rotate(var(--a)); animation: cspk var(--d) ease-out .66s both; }
+.ap .cere.custom .cw { animation-delay: 1s; } .ap .cere.custom .cw > b { font-size: clamp(22px, 6vw, 30px); letter-spacing: 3px; color: #fff4d8; text-shadow: 0 0 18px var(--gc), 0 3px 6px #000; }
+.ap .cere.custom em { font-style: normal; max-width: 34em; font-size: 13px; color: #e8d6b0; opacity: .9; } .ap .cere.custom .cw small { max-width: 30em; color: #ffe0b8; font-size: 14px; }
+@keyframes cstamp { 0% { opacity: 0; transform: scale(3.2) rotate(-14deg); filter: blur(4px); } 70% { opacity: 1; transform: scale(.92) rotate(-3deg); filter: none; } 100% { opacity: 1; transform: scale(1) rotate(-4deg); } }
+@keyframes cspk { 0% { opacity: 1; transform: rotate(var(--a)) translateX(0); } 100% { opacity: 0; transform: rotate(var(--a)) translateX(min(42vw, 260px)); } }
+@media (prefers-reduced-motion: reduce) { .ap .cere.custom .cstamp { animation: none; } .ap .cere.custom .cspk { display: none; } }
 @keyframes ckid { from { opacity: 0; transform: scale(.4); filter: brightness(3); } to { opacity: 1; transform: none; filter: none; } }
 .ap .cere .cf.big { width: clamp(130px, 38vw, 210px); border-color: #f6d27a; box-shadow: 0 0 30px #f6d27acc, 0 10px 30px #000c; }
 .ap .cere .cpar { display: flex; gap: 8px; margin-top: -18px; } .ap .cere .cf.sm { width: 46px; border-width: 2px; }

@@ -22,13 +22,15 @@ import {
 } from './battle.ts'
 import { BATTLE_STYLES, feastCost, fightRounds, groupOf, type BattleStyle, type FightResult, type Side, type Terrain } from './tactics.ts'
 import {
-  checkPledges, driftFavor, expireRelations, friendly, holdMarkets, makeAsks, onHostile, relationOf, resolveAnswers, resolveEnvoys,
+  checkPledges, declareWar, driftFavor, expireRelations, friendly, holdMarkets, makeAsks, onHostile, relationOf, resolveAnswers, resolveEnvoys,
   shareIntel, stationFriction, stepLent,
 } from './diplomacy.ts'
 import {
-  addGood, applyArm, applyBuild, applyGuard, draftCost, draftIronCost, draftLimit, draftNeeds, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepBuilds, stepEconomy,
+  addGood, applyArm, applyBuild, applyGuard, draftIronCost, draftLimit, draftNeeds, draftPay, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepBuilds, stepEconomy,
   migrateHouses, placeHouses, setMigrateAuto, stepMigration, stockOf,
 } from './economy.ts'
+import { hasCustom, noteCustom, noteOnce } from './data/customs.ts'
+import { concealBonus, passExtra, rescueCapital, riseState, siegeFort, stepCustoms } from './hooks.ts'
 import { blockedWhy, seasonOf } from './calendar.ts'
 import { applyBowUps, refreshSpies, resolvePlots } from './plots.ts'
 import { noteTake } from './stance.ts'
@@ -147,6 +149,7 @@ export function fortMul(node: RNode, season: SeasonOfYear): number {
   if (node.tags.includes('palisade')) t *= R.fortPalisade
   if (node.tags.includes('high')) t *= R.fortHigh
   if (node.tags.includes('moat') && season !== 'winter') t *= R.fortMoat
+  if (node.tags.includes('earthwall')) t *= R.fortEarth // 달벌 흙성 (다벌 — data/customs.ts)
   return t
 }
 
@@ -466,8 +469,10 @@ export function extendPlan(p: Realm, orders: readonly Order[]): void {
 
 /** 뽑을 수 있는 병종 — 창병·궁수·방패병, 포구에서는 수군도 (FLOW §2) */
 /** 뽑을 수 있는 병종 — 기병은 어디서나 (말이 있어야 한다 — economy.draftLimit), 수군은 포구에서 (배를 지을 나무가 든다) */
-export function draftable(node: RNode): readonly UnitKind[] {
-  return node.kind === 'port' ? ['spear', 'bow', 'shield', 'horse', 'boat'] : ['spear', 'bow', 'shield', 'horse']
+/** 쇠뇌(골벌) — 쇠뇌 틀이 있는 나라는 쇠뇌병도 (`r`·`faction` 을 주면 그 나라 풍습까지 · data/customs.ts) */
+export function draftable(node: RNode, r?: Realm, faction?: string): readonly UnitKind[] {
+  const base: readonly UnitKind[] = node.kind === 'port' ? ['spear', 'bow', 'shield', 'horse', 'boat'] : ['spear', 'bow', 'shield', 'horse']
+  return r !== undefined && faction !== undefined && hasCustom(r, faction, 'sonoe') ? [...base, 'crossbow'] : base
 }
 
 /** 징병 (FLOW §2) — 규칙에 안 맞으면 아무 일도 없다. 그 고을에 쉬는 제 군대가 있으면 거기 든다 */
@@ -475,11 +480,17 @@ function draftArmy(r: Realm, o: Extract<Order, { kind: 'draft' }>, lines: Report
   const node = r.nodes[o.node]
   if (node === undefined || node.owner !== o.faction || r.factions[o.faction] === undefined) return
   if (!Number.isInteger(o.n) || o.n < 1 || o.n > draftLimit(r, o.faction, o.node, o.unit)) return
-  if (!draftable(node).includes(o.unit)) return
+  if (!draftable(node, r, o.faction).includes(o.unit)) return
+  const need = draftNeeds(o.unit, o.n, r, o.faction) // 배의 나무 · 기병의 말 · 쇠뇌의 쇠
+  if (need.iron > stockOf(r, o.faction).iron) return
   // 쇠 들려 징병 — 철을 들이면 **뽑힌 그 사람들만** 한 단계 위 무장을 든다 (철이 모자라면 그냥 뽑는다).
   // 쇠 다루는 장수가 맡은 고을에서는 모두 온 쇠 (heroes.ironhandAt)
   const ic = o.iron === true ? draftIronCost(r, o.faction, o.n, o.unit) : null
-  const up = ic !== null && !ironhandAt(r, node.id) && stockOf(r, o.faction).iron >= ic.iron ? ic : null
+  const up = ic !== null && !ironhandAt(r, node.id) && stockOf(r, o.faction).iron - need.iron >= ic.iron ? ic : null
+  // 채비 값 — 곡식, 덩이쇠(변한)는 몫을 쇠로 (쇠뇌·쇠 들리기에 쓸 쇠는 먼저 떼어 둔다 · data/customs.ts)
+  const pay = draftPay(r, o.faction, o.n, need.iron + (up?.iron ?? 0))
+  const ironFixed = pay.iron + need.iron
+  if (ironFixed + (up?.iron ?? 0) > stockOf(r, o.faction).iron || pay.grain > Math.max(0, stockOf(r, o.faction).grain)) return
   const tier: Equip = ironhandAt(r, node.id) ? 'iron' : (up?.to ?? r.factions[o.faction]!.equip)
   let army = armiesAt(r, node.id).find((a) => a.faction === o.faction && a.lent === undefined)
   if (army === undefined) {
@@ -493,11 +504,14 @@ function draftArmy(r: Realm, o: Extract<Order, { kind: 'draft' }>, lines: Report
   addMen(army, o.unit, o.n, tier)
   army.morale = (army.morale * had + o.n) / (had + o.n) // 새로 든 사람은 사기 1
   node.hh -= Math.round(o.n * P.realm.draftHHPerMan) // 집이 사라지는 게 아니라 일손이 빠진다
-  stockOf(r, o.faction).grain -= draftCost(o.n).grain
-  const need = draftNeeds(o.unit, o.n) // 배의 나무 · 기병의 말
+  stockOf(r, o.faction).grain -= pay.grain
   if (need.wood > 0) addGood(r, o.faction, 'wood', -need.wood)
   if (need.horse > 0) addGood(r, o.faction, 'horse', -need.horse)
+  if (ironFixed > 0) stockOf(r, o.faction).iron -= ironFixed
   lines.push({ kind: 'draft', faction: o.faction, node: node.id, unit: o.unit, n: o.n, army: army.id })
+  if (pay.iron > 0) noteOnce(r, lines, o.faction, 'deongisoe', { node: node.id, n: pay.iron, m: o.n })
+  if (o.unit === 'crossbow') noteCustom(r, lines, o.faction, 'sonoe', { node: node.id, n: o.n })
+  if (o.unit === 'boat' && hasCustom(r, o.faction, 'landPort')) noteOnce(r, lines, o.faction, 'landPort', { node: node.id, n: o.n })
 }
 
 /** 해산 — 제 땅에 쉬는 군대를 집으로. 사람은 그 고을 가호로 돌아간다. 장수는 남는다 */
@@ -596,6 +610,8 @@ function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): v
     a.food = Math.max(a.food ?? 0, 1)
     a.march = { from: a.at, to: a.at, edge: ed.id, left: 1, ambush: false, aim: node.owner }
   }
+  // 여섯 마을의 뜻(사로) — 이번 계절에 물은 나라: 같은 계절의 다른 군대도 그 나라로는 떠나지 않는다
+  const asked = new Set<string>()
   // 먼 갈 곳이 있는 군대 — 이번 걸음을 명령으로 (goal.ts)
   for (const o of [...orders, ...goalSteps(r, orders)]) {
     if (o.kind !== 'march') continue
@@ -607,12 +623,22 @@ function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): v
     // AI 의 명령은 계절 처음의 판으로 짰다 — 이번 계절 1 에서 화친을 맺은 나라 땅으로는 가지 않는다 (깨는 것은 플레이어만 고른다)
     const owner = r.nodes[to]?.owner ?? null
     if (r.factions[a.faction]?.mind !== 'player' && owner !== null && relationOf(r, a.faction, owner).state === 'truce') continue
+    // 여섯 마을의 뜻(사로) — 사이가 무던한(중립) 나라는 불시에 치지 못한다. 이번 계절엔 묻고(싸움을 정하고) 다음 계절에 떠난다
+    if (owner !== null && owner !== a.faction && (asked.has(owner) || (relationOf(r, a.faction, owner).state === 'neutral' && r.nodes[to]!.kind !== 'sodo' && hasCustom(r, a.faction, 'yeoseotmaeul')))) {
+      if (!asked.has(owner)) {
+        asked.add(owner)
+        declareWar(r, a.faction, owner, lines, 'council')
+        noteCustom(r, lines, a.faction, 'yeoseotmaeul', { node: to, other: owner })
+      }
+      continue
+    }
     // 진군 방식 — 그 길·고을에 맞지 않으면 대로/밤길로 (옛 명령은 ambush 하나뿐이다)
     const opts = approachOptions(r, ed, to)
     // 옛 명령 · AI 의 기습 — 강 있는 길이면 여울로 건넌다 (갈대에 더 숨는다)
     const want = o.approach ?? (o.ambush ? (opts.includes('ford') ? 'ford' : 'night') : 'road')
     const approach: Approach = opts.includes(want) ? want : o.ambush && opts.includes('night') ? 'night' : 'road'
-    let left = marchSeasons(ed.kind, season)
+    // 고갯목(땅) — 그 나라 군대는 고갯길이 한 계절 더 (hooks.passExtra)
+    let left = marchSeasons(ed.kind, season) + passExtra(r, a.faction, ed.kind)
     if (approach === 'ridge') left += P.realm.apRidgeExtra
     // 계절에 막힌 길 (형: "불가능하게 만들지 말고 패널티") — 더 걸리고, 얼거나 떠내려가 사람을 잃는다
     const why = blockedWhy(ed, season)
@@ -720,7 +746,9 @@ function resolveScouts(r: Realm, orders: readonly Order[], lines: ReportLine[]):
     const scout = o.hero !== null ? r.heroes[o.hero] : undefined
     const ourRyak = scout !== undefined && scout.status === 'free' ? scout.ryak : R.scoutRyak
     const theirRyak = bestRyak(r, armiesAt(r, node.id).filter((a) => a.faction !== o.faction))
-    const pDetect = Math.min(1, Math.max(0, R.scoutDetectBase + R.scoutDetectPerRyak * (theirRyak - ourRyak)))
+    // 길 비켜 주기(변한) — 길을 막지 않는 나라는 남의 척후도 잘 못 알아챈다 (data/customs.ts)
+    const open = node.owner !== null && node.owner !== o.faction && hasCustom(r, node.owner, 'girbikyeo') ? 1 - R.girbiSpy : 1
+    const pDetect = Math.min(1, Math.max(0, (R.scoutDetectBase + R.scoutDetectPerRyak * (theirRyak - ourRyak)) * open))
     const detected = roll(r.seed, r.season, `scout:${o.faction}:${node.id}`) < pDetect
     const w = r.watch[node.id]!
     if (detected) w.alert = Math.min(R.alertMax, w.alert + R.alertOnDetect)
@@ -1094,6 +1122,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const defFaction = node.owner !== null && !allied(r, a.faction, node.owner) ? node.owner : defenders[0]!.faction
   const w = r.watch[node.id]!
   provoke(r, a.faction, defFaction, lines)
+  rescueCapital(r, a.faction, node.id, defFaction, lines) // 도읍 에우기(이서) — 그 나라와 손잡은 나라들이 구하러 온다
   const knewA = knewLead(r, a.faction, defenders)
   const knewD = knewLead(r, defFaction, atks)
   meet(r, [...atks, ...defenders, ...heroesAtNode(r, node.id).map((h) => ({ hero: h }))])
@@ -1107,12 +1136,15 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
     if (ap === 'cliff') amb = roll(r.seed, r.season, `cliff:${ed.id}:${x.id}`) < cliffChance(r, x) ? 'success' : 'caught'
     else if (ap !== 'road') {
       const size = -ambushSizePenalty(headcount(forceOf(r, x))) + ambushTraitOf(heroOf(r, x), ed.kind)
-      const p = ambushChance(conceal(ed, node, season) + approachConceal(ap), heroOf(r, x)?.ryak ?? 1, bestRyak(r, defenders), size, w.lull, w.alert)
+      const p = ambushChance(conceal(ed, node, season) + approachConceal(ap) + concealBonus(r, x.faction, ed.kind), heroOf(r, x)?.ryak ?? 1, bestRyak(r, defenders), size, w.lull, w.alert)
       amb = roll(r.seed, r.season, `ambush:${ed.id}:${x.id}`) < p ? 'success' : 'caught'
     }
     return { army: x, edge: ed, ambush: amb, ap }
   })
   const won = legs.filter((x) => x.ambush === 'success')
+  // 갈대밭·뱃길(땅) — 숨기 덤을 받고 먹힌 기습 (hooks.concealBonus)
+  const hid = won.find((x) => concealBonus(r, x.army.faction, x.edge.kind) > 0)
+  if (hid !== undefined) noteCustom(r, lines, hid.army.faction, hid.edge.kind === 'sea' ? 'landPort' : 'landReeds', { node: node.id, m: 1 })
   const ambush = won.length > 0 ? 'success' : legs.some((x) => x.ambush === 'caught') ? 'caught' : 'none'
   // 성문이 닫히기 전에 들이쳤나 — 밤길·여울·절벽이 먹히면 성을 건너뛴다. 산기슭만 먹혔으면 성을 반쯤 비켜 뒤를 친다
   const overWall = won.some((x) => x.ap !== 'ridge')
@@ -1152,7 +1184,8 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const capShot = zone === 'leg' ? R.captureLegShot : zone === 'body' ? R.captureBodyShot : 0
   const atkF = mergeForces(r, atks)
   const defF = mergeForces(r, standing)
-  const fort0 = fortMul(node, season)
+  // 도읍 에우기(이서) — 남의 도읍을 칠 때 성의 덤을 덜 받는다 (hooks.siegeFort)
+  const fort0 = siegeFort(r, a.faction, node, fortMul(node, season))
   const fort = overWall ? 1 : won.length > 0 ? Math.pow(fort0, R.apRidgeFort) : fort0
   // 북은 방어측만 (SYSTEMS §4-2)
   const snipeAtk = playerIsAtk || zone === 'drum' ? 1 : xMul
@@ -1176,6 +1209,10 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const surprised = ambush === 'success'
   const atkTerrain: Terrain = fort0 > 1.02 && !overWall ? { gate: true } : {}
   const highGround = node.kind === 'fort' || node.tags.includes('high')
+  // 풍습의 사기 — 여섯 마을의 뜻(사로)은 치는 쪽 + · 고갯목(땅)은 고갯길·높은 터로 쳐들어온 쪽 − (잠든 채 들이쳐졌으면 없다)
+  const rocks = !surprised && (edgeKind === 'pass' || highGround) && hasCustom(r, defFaction, 'landHigh')
+  if (rocks) noteCustom(r, lines, defFaction, 'landHigh', { node: node.id, other: a.faction })
+  const atkCustom = (hasCustom(r, a.faction, 'yeoseotmaeul') ? R.saroMorale : 0) - (rocks ? R.landHighMorale : 0)
   const defTerrain: Terrain = surprised ? {} : {
     ...(edgeKind === 'ford' || edgeKind === 'reeds' ? { ford: true } : {}),
     ...(edgeKind === 'pass' || highGround ? { rocks: true } : {}),
@@ -1194,7 +1231,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const reliefA = lateA.length > 0 ? { relief: { mix: mergeForces(r, lateA).mix, at: R.reliefRound } } : {}
   const reliefD = lateD.length > 0 && standing.length > lateD.length ? { relief: { mix: mergeForces(r, lateD).mix, at: R.reliefRound } } : {}
   const sa = knowFoe({ ...sideOf(r, atks, atkF, fa, a.faction, {
-    water, edge: edgeKind, fire, flank: flankWon, seen: freshSight(r, a.faction, node.id), moraleBonus: atkBonus,
+    water, edge: edgeKind, fire, flank: flankWon, seen: freshSight(r, a.faction, node.id), moraleBonus: atkBonus + atkCustom,
     captureBonus: playerIsAtk ? capShot : 0, terrain: atkTerrain,
   }), ...reliefA }, knewA)
   const sd = knowFoe({ ...sideOf(r, standing, defF, fd, defFaction, {
@@ -1424,6 +1461,8 @@ export function checkOutcome(r: Realm): 'win' | 'lose' | null {
   const capital = r.factions[me]?.capital
   if (capital === undefined) return null
   if (r.nodes[capital]?.owner !== me) {
+    // 다시 일어남(압독·실직) — 빼앗긴 도읍에 불씨가 살아 있으면 아직 안 졌다 (hooks.riseState)
+    if (riseState(r, me) !== null) return null
     // 피한 조정이 버틸 고을이 있고 기한이 남았으면 아직 안 졌다
     const ex = r.factions[me]?.exile
     const any = Object.values(r.nodes).some((n) => n.owner === me && n.kind !== 'sodo')
@@ -1482,6 +1521,7 @@ export function advance(
   stationFriction(r, lines) // 9 — 동맹 땅에 약속 없이 머무는 군대 (형 10-24)
   shareIntel(r) // 9 — 동맹은 본 것을 나눈다
   stepBuilds(r, lines) // 9 — 다 지은 목책·해자가 선다
+  stepCustoms(r, lines) // 9 — 풍습의 걸음: 다시 일어남 · 쇠 실은 배 · 말 치는 들 · 거른 봄 제사 (hooks.ts)
   refreshSpies(r) // 9 — 첩자가 본다
   for (const [f, spies] of Object.entries(r.spies ?? {})) for (const s of spies) noteMet(r, f, heroesAtNode(r, s.node))
   spreadRumors(r, lines) // 9 — 첩자가 들은 것 (간접 정보)

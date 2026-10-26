@@ -19,6 +19,7 @@ import { MAHAN_WORLD, mahanGeo } from './mahan-geo.ts'
 import { SEORA_NATION_IDS, startSeorabeol } from './seorabeol.ts'
 import { SEORA_WORLD, seoraGeo } from './seorabeol-geo.ts'
 import { JUMONG_WORLD, jumongGeo } from './jumong-geo.ts'
+import { startCustoms } from '../../hooks.ts'
 
 export const REGION_IDS: readonly RegionId[] = ['tutorial', 'mahan', 'jumong', 'seorabeol', 'byeonhan-mini', 'yeongnam', 'south', 'world']
 
@@ -37,16 +38,19 @@ export function regionNations(region: RegionId): readonly string[] {
 }
 
 /** 판을 연다 */
-export function startRegion(region: RegionId, seed: number, player: string): Realm {
+export function startRegion(region: RegionId, seed: number, player: string, edit?: (r: Realm) => void): Realm {
+  // 자유 판은 판을 열 때 풍습의 처음 것을 건다 (바닷가 여덟 나라 — hooks.startCustoms). 장(캠페인)은 짜인 대로.
+  // edit — 그 앞에 판을 고친다 (짝 씨앗 도구가 나라의 풍습을 더하고 뺀다 · tools/realm-customs.ts)
+  const free = (r: Realm): Realm => { edit?.(r); startCustoms(r); return r }
   switch (region) {
-    case 'yeongnam': return startYeongnam(seed, player)
-    case 'south': return startSouth(seed, player)
-    case 'world': return startWorld(seed, player)
+    case 'yeongnam': return free(startYeongnam(seed, player))
+    case 'south': return free(startSouth(seed, player))
+    case 'world': return free(startWorld(seed, player))
     case 'tutorial': return startTutorial(seed)
     case 'jumong': return startJumong(seed)
     case 'mahan': return startMahan(seed)
     case 'seorabeol': return startSeorabeol(seed)
-    default: return startRealm(seed, player)
+    default: return free(startRealm(seed, player))
   }
 }
 
