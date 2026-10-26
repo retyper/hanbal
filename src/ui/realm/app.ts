@@ -84,7 +84,7 @@ import { AUD_CSS, askSay, pactSay, typed, type PactKind } from './audience.ts'
 import { customsOf } from '../../realm/data/customs.ts'
 import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
 import { SCENE_SOUND, makeMusic, playOnce, snd, tapSlot } from './sound.ts'
-import { hireVoicePath, voiceGate, voicePath } from './voice.ts'
+import { hireVoicePath, voiceGate, voicePath, type VoiceLine } from './voice.ts'
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
 import { FEEL_CSS, alertFeel, ambushFeel, chanceFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
@@ -940,11 +940,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 우리 장수에게 일을 맡기면 그 장수가 곧바로 대답한다 — 「네?」 「부르셨습니까?」 (voice.ts · 형 10-26: "다른 데에서는 아무데서도 장수목소리가 안들리는데").
    * 너무 잦으면 voiceGate 가 거른다
    */
-  function bark(id: string | undefined): void {
+  function bark(id: string | undefined, line: VoiceLine = 'tap'): void {
     const h = id !== undefined && id !== '' ? realm?.heroes[id] : undefined
     if (h === undefined || realm === null || h.faction !== me() || !voiceGate(performance.now())) return
-    ding(voicePath(h, 'tap', isRuler(realm, h.id)), P.realm.voiceVol)
+    ding(voicePath(h, line, isRuler(realm, h.id)), P.realm.voiceVol)
   }
+
+  /**
+   * 일을 확정하면 그 장수가 분부를 받든다 — 「분부대로 하겠습니다」 (고를 때는 bark 의 짧은 대답 · 형 10-27).
+   * 우리 장수만 — 이름 없는 사자 · 고용 밀정 · 고용 자객은 장수가 아니라 소리가 없다
+   */
+  function obey(id: string | undefined): void { bark(id, 'obey') }
 
   /**
    * 지도 띠에서 이 군대의 장수를 바꾼다 — 고른 장수가 이끌고(lead) 이끌던 장수는 그 고을에 남는다(assign null · 대기와 같은 명령).
@@ -5208,7 +5214,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'exp-go': {
         const pk = expPickOf(plan(), d['id']!) // 화면이 보여 준 그 땅·길이로
         heroOrders = [...heroOrders.filter((o) => !(o.kind === 'expedition' && o.hero === d['id'])), { kind: 'expedition', faction: me(), hero: d['id']!, dest: pk.dest, len: pk.len }]
-        bark(d['id'])
+        obey(d['id'])
         break
       }
       case 'unexp': heroOrders = heroOrders.filter((o) => !(o.kind === 'expedition' && o.hero === d['id'])); break
@@ -5421,8 +5427,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const id = d['id'] ?? ''
         pickLeader(d['army']!, id)
         leadPop = ''
-        const hh = id !== '' ? realm?.heroes[id] : undefined
-        if (hh !== undefined && voiceGate(performance.now())) ding(voicePath(hh, 'tap', isRuler(realm!, hh.id)), 0.9)
+        obey(id) // 고르면 곧 이끈다 — 확정이라 분부를 받든다 (형 10-27)
         break
       }
       // 개척단 — 꾸리면 판이 닫히고 그 개척단이 골라진다 (지도에서 갈 곳이 빛난다)
@@ -5863,7 +5868,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
             ...(detailed && compose.hero !== '' ? { hero: compose.hero } : {}),
             ...(detailed && compose.target !== '' ? { target: compose.target } : {}),
           }
-          if (detailed) bark(compose.hero) // 사신으로 가는 장수가 대답한다
+          if (detailed) obey(compose.hero) // 사신으로 가는 장수가 분부를 받든다
         }
         compose = { ...NO_COMPOSE, give: noGoods(), take: noGoods() }
         break
@@ -5894,7 +5899,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const k = o as { node?: string; other?: string; hero?: string }
         const same = (p: Order): boolean => p.kind === 'plot' && p.op === op && p.target === o.target && p.node === k.node && p.other === k.other && p.hero === k.hero
         if (plots.some(same)) plots = plots.filter((p) => !same(p))
-        else if (plots.length < P.realm.plotsPerSeason) { plots = [...plots, k.hero !== undefined && hands[k.hero] !== undefined ? { ...o, hand: hands[k.hero]! } as Order : o]; plotAgent = null; bark(d['agent']) }
+        else if (plots.length < P.realm.plotsPerSeason) { plots = [...plots, k.hero !== undefined && hands[k.hero] !== undefined ? { ...o, hand: hands[k.hero]! } as Order : o]; plotAgent = null; obey(d['agent']) }
         plotPick = ''
         break
       }
@@ -5921,11 +5926,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'bust-close': root.querySelector('.bview')?.remove(); return
       case 'assign':
         heroOrders = [...heroOrders, { kind: 'assign', hero: d['id']!, node: d['node'] ? d['node'] : null }]
-        bark(d['id'])
+        obey(d['id'])
         break
-      case 'lead': heroOrders = [...heroOrders, { kind: 'lead', hero: d['id']!, army: d['army']! }]; bark(d['id']); break
+      case 'lead': heroOrders = [...heroOrders, { kind: 'lead', hero: d['id']!, army: d['army']! }]; obey(d['id']); break
       case 'pby': persuadeBy[d['id']!] = d['by']!; break
-      case 'persuade': heroOrders = [...heroOrders, { kind: 'persuade', hero: d['id']!, by: d['by'] ? d['by'] : null }]; bark(d['by']); break
+      case 'persuade': heroOrders = [...heroOrders, { kind: 'persuade', hero: d['id']!, by: d['by'] ? d['by'] : null }]; obey(d['by']); break
       case 'standby': standBy(d['id']!); break
       // 재상 — 쉬는 장수 모두 · 장수 하나 (형 10-26)
       case 'js-all': if (realm !== null) realm.autoIdle = d['v'] === '1'; break

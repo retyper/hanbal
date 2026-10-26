@@ -6,6 +6,8 @@
  *   남: 젊은 무사 young · 거친 노장 gruff · 꾀 많은 책사 sage · 늙은 장수·군주 elder · 매혹 charm
  *   여: 당찬 젊은 무사 bright · 의젓한 장수 cool · 요염한 꾀 sly · 무녀 shaman
  * 결마다 짧은 대답 셋(tap-<결>-1..3) — 탭할 때마다 돌려 가며 하나 (같은 것이 연달아 안 나오게).
+ * 결마다 분부 받듦 셋(obey-<결>-1..3) — 일을 확정할 때(사신 · 공작 · 원정 · 맡기기 · 이끌기 · 설득) 「분부대로 하겠습니다」
+ *   (형 10-27: "선택하면 소리 나는 건 좋은데, 확정 버튼 눌렀을 땐 「절 찾으셨습니까」가 아니라 「분부대로 하겠습니다」"). 대사는 docs/realm/VOICE-LINES.md.
  * 장수마다 등용 첫마디 하나(hire/<장수 id>) — 내 사람이 되는 장면에서 (형 10-26: "내 사람이 된 사람들의 첫 대사를 들으면 반갑고 흥분될 거 같아").
  *   대사는 hire-lines.ts · 한 줄을 고치면 그 장수 것만 다시 녹음한다 (tools/hire-voice-list.ts 가 결을 알려 준다).
  * 결마다 장수 기술 외침 아홉(art-<결>-<기술>) — 싸움에서 그 기술을 쓰면 컷과 함께 (형 10-26: "특수기술 대사들도 · 가성 말고 힘줘서 · 애니나 게임 성우").
@@ -18,10 +20,13 @@ import { hasTrait } from '../../realm/heroes.ts'
 import type { Art, Hero } from '../../realm/types.ts'
 
 export type VoiceKind = 'm-young' | 'm-gruff' | 'm-sage' | 'm-elder' | 'm-charm' | 'w-bright' | 'w-cool' | 'w-sly' | 'w-shaman'
-export type VoiceLine = 'tap'
+export type VoiceLine = 'tap' | 'obey'
 
 /** 결마다 받아 둔 대답 수 — public/realm/voice/<줄>-<결>-<n>.ogg */
-const TAKES: Readonly<Record<VoiceLine, number>> = { tap: 3 }
+const TAKES: Readonly<Record<VoiceLine, number>> = { tap: 3, obey: 3 }
+
+/** 분부 받듦을 녹음해 둔 결 — 없는 결은 짧은 대답(tap)으로 */
+const OBEY_KINDS: ReadonlySet<VoiceKind> = new Set<VoiceKind>(['m-young', 'm-gruff', 'm-sage', 'm-elder', 'm-charm', 'w-bright', 'w-cool', 'w-sly', 'w-shaman'])
 
 /** 손으로 박은 목소리 — 그림과 이야기가 뚜렷한 장수 (없으면 voiceKind 가 고른다) */
 const VOICE_OF: Readonly<Record<string, VoiceKind>> = {}
@@ -79,8 +84,9 @@ export function voiceKind(h: Hero, ruler = false): VoiceKind {
 }
 
 /** 그 장수의 그 줄 — 탭할 때마다 돌려 가며 하나 (화면 쪽 무작위 — 판의 결정론과 무관) */
-export function voicePath(h: Hero, line: VoiceLine, ruler = false): string {
+export function voicePath(h: Hero, want: VoiceLine, ruler = false): string {
   const k = voiceKind(h, ruler)
+  const line: VoiceLine = want === 'obey' && !OBEY_KINDS.has(k) ? 'tap' : want
   const n = TAKES[line]
   const key = `${line}-${k}`
   const prev = lastTake.get(key) ?? 0
