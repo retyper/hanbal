@@ -351,8 +351,9 @@ const NO_COMPOSE = { to: '', ask: 'truce' as Ask, give: noGoods(), take: noGoods
 const ekey = (to: string, ask: Ask): string => `${to}:${ask}`
 /** 공작 다섯의 그림 */
 const PLOT_ICON: Readonly<Record<PlotOp, string>> = {
-  // 공작 하나하나는 옛 그림 그대로 — 새로 바꾼 것은 공작 메뉴의 아이콘(plot-schemes)뿐 (형 10-26: "왜 의미 없이 공작 아이콘들 새로 만들었어")
-  rumor: 'status-morale-down', sow: 'status-betrayal', bribe: 'good-cowries', burn: 'status-famine', spy: 'status-spy', assassin: 'unit-archer',
+  // 공작 칩 그림 — 공작만 쓰는 새 그림 여섯 (형 10-26: "공작 아이콘에 누끼가 제대로 안 따짐. 새로 만드는 게 낫겠음" · 제미나이 · 초록 바탕을 잘랐다).
+  // 옛 그림(status-* · good-cowries · unit-archer)은 다른 화면이 쓰니 그대로 둔다
+  rumor: 'plot-rumor', sow: 'plot-sow', bribe: 'plot-bribe', burn: 'plot-burn', spy: 'plot-spy', assassin: 'plot-assassin',
   // 구출 — 끊긴 밧줄과 열린 옥문 (10-26 제미나이 Argon)
   rescue: 'plot-rescue',
 }
