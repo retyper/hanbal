@@ -1395,6 +1395,10 @@ export const WAR_CSS = `
 .ap .wtop::after { content: ''; position: absolute; inset: 0; border: 22px solid transparent; border-image: url(__ART__ui/frame-panel.png?v=3) 118 / 22px stretch; pointer-events: none; z-index: 2; }
 .ap .wtop.def { background: linear-gradient(#0d0f1388, #0d0f1311 35%, #0d0f1344 70%, #0d0f13f2), var(--wtbg) center 55% / cover no-repeat; }
 @media (max-width: 520px) { .ap .wtop { padding: calc(12px + env(safe-area-inset-top)) 22px 18px; } .ap .wtop::after { border-width: 16px; border-image-width: 16px; } }
+/* 위 카드 안의 싸움판은 테 안쪽 선에 딱 붙인다 — 모서리 없이, 테 밑으로 2px 숨겨 틈이 안 보이게 (형 10-26: "판 테두리 이미지에서 살짝 이격 · 성 이미지가 옆 아래 잘려 · 코너도 주지 말고")
+   테의 안쪽 선은 22px(폰 16px) — 좌우는 안쪽 여백(30·22)에서 그만큼 빼고, 아래는 여백(22·18)에서 뺀다. isolation 으로 판 속 높은 z(장수 깃발)가 테 위로 못 올라온다 */
+.ap .wtop .wfield { margin: 6px -10px -2px; border-radius: 0; isolation: isolate; }
+@media (max-width: 520px) { .ap .wtop .wfield { margin: 6px -8px -4px; } }
 /* 장수 초상 — 쇠 귀퉁이 청동 테 안에 얼굴 (테 그림이 얼굴 위에 얹힌다) */
 .ap .wpf { position: relative; display: grid; place-items: center; width: var(--pf, 172px); aspect-ratio: 1; flex: none; }
 .ap .wpf > i { position: absolute; inset: 0; background: url(__ART__ui/frame-portrait.png) center / 100% 100% no-repeat; pointer-events: none; z-index: 1; filter: drop-shadow(0 3px 6px #000c); }
