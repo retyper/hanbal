@@ -62,8 +62,9 @@ export function lookNums(lk: Look): LookNums {
  * 나쁜 경우면 붉은색이 진해지고 좋은 경우는 녹색이 진해지게 · 0 은 회색"). good: 이 값이 플레이어에게 좋은가 · k: 짙기 0~1
  */
 export interface LookCell { readonly v: number; readonly good: boolean | null; readonly k: number }
+// 짙기는 제곱근 눈금 — 로그 눈금은 −20 과 −200 이 거의 같은 빛이었다 (형 10-27: "나쁠수록 더 빨갛고 좋을수록 더 녹색 되게라고 해 놨는데 다 같은 색인 거 같다")
 const cell = (v: number, goodIfPositive: boolean, ref: number): LookCell => ({
-  v, good: v === 0 ? null : (v > 0) === goodIfPositive, k: v === 0 ? 0 : Math.min(1, Math.log10(1 + Math.abs(v)) / Math.log10(1 + ref)),
+  v, good: v === 0 ? null : (v > 0) === goodIfPositive, k: v === 0 ? 0 : Math.min(1, Math.sqrt(Math.abs(v) / ref)),
 })
 /** 우리·적의 군사 바뀜 · 사기 바뀜 — 각 [최악, 최선] (플레이어 쪽에서) */
 export function lookCells(n: LookNums): { usMen: [LookCell, LookCell]; foeMen: [LookCell, LookCell]; usMor: [LookCell, LookCell]; foeMor: [LookCell, LookCell] } {
@@ -86,7 +87,7 @@ export const signed = (v: number): string => (v > 0 ? `+${v}` : v < 0 ? `−${-v
 export function cellColor(c: LookCell): string {
   if (c.good === null) return '#9a948a'
   const [a, b] = c.good ? [[184, 200, 172], [74, 230, 96]] : [[214, 180, 170], [255, 66, 48]]
-  const t = 0.25 + 0.75 * c.k
+  const t = 0.08 + 0.92 * c.k
   const m = a.map((x, i) => Math.round(x + (b[i]! - x) * t))
   return `rgb(${m[0]}, ${m[1]}, ${m[2]})`
 }

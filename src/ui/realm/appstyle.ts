@@ -108,6 +108,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .btn.ghost { background: transparent; color: var(--mute); } .ap .btn:disabled { opacity: .4; cursor: default; }
 .ap .btn.sm { padding: 3px 9px; font-size: 13px; margin-left: auto; } .ap .btn.wide { width: 100%; justify-content: center; margin-top: 10px; padding: 11px; }
 .ap .btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+/* 넓은 단추 옆 ? — 한 줄에 (형 10-27: "개척단 옆에 물음표가 아니라 위에 뜬금없이 물음표") */
+.ap .btnq { flex-wrap: nowrap; align-items: center; } .ap .btnq > .btn.wide { flex: 1; width: auto; margin-top: 0; }
 .ap .btns.dis { justify-content: flex-end; margin-top: 14px; padding-top: 8px; border-top: 1px dashed #4a3a28; }
 .ap .menu3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; } .ap .menu3 .btn { margin: 0; display: flex; justify-content: center; align-items: center; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ap .banner { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin: 6px 0; border-radius: 10px; background: #30241a; font-size: 14px; }
@@ -294,8 +296,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .pow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 4px 0 2px; } .ap .pow b { color: var(--gold); font-size: 14px; }
 .ap .pbar { flex: 1 1 80px; height: 8px; border-radius: 4px; background: #30241a; overflow: hidden; } .ap .pbar i { display: block; height: 100%; background: linear-gradient(90deg, #8a6a3a, #e0a050); }
 .ap .pow .mute { flex-basis: 100%; font-size: 12.5px; }
-.ap .kitrow { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin: 3px 0; font-size: 13px; } .ap .kitrow img.ic { width: 20px; height: 20px; }
-.ap .kitrow .kt { color: #c8c0b0; font-size: 12.5px; flex: 1 1 10em; } .ap .kitrow .btn.sm { margin-left: auto; }
+.ap .kitrow { display: flex; flex-wrap: nowrap; align-items: center; gap: 2px 6px; margin: 3px 0; font-size: 13px; } .ap .kitrow img.ic { width: 20px; height: 20px; }
+.ap .kitrow .kt { color: #c8c0b0; font-size: 12.5px; flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ap .kitrow > b { white-space: nowrap; } .ap .kitrow .btn.sm { flex: none; white-space: nowrap; } .ap .kitrow .btn.sm { margin-left: auto; }
 .ap .hints { margin: 4px 0 6px; padding-left: 18px; font-size: 13px; color: #d8c89a; } .ap .hints li { margin: 1px 0; }
 .ap .acard.fresh { border-color: #7aa83a; box-shadow: 0 0 0 2px #7aa83a55; animation: fresh 1.2s ease-out 1; } @keyframes fresh { from { background: #2f3d24; } }
 .ap .face { flex: none; width: 64px; height: 64px; border-radius: 12px; object-fit: cover; border: 1px solid #6a5236; background: #3a2c1e; display: block; }
@@ -440,9 +442,6 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .pwho b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; } .ap .pwho small { font-size: 10.5px; color: var(--mute); line-height: 1.25; }
 /* 한 번 누르면 간다 — 장수 판에서 데려온 장수(on) · 못 가는 이(손이 다 찼다 · 값이 모자라다) · 값은 단추마다 */
 .ap .pwho.on { border-color: var(--gold); box-shadow: 0 0 0 2px #d9b36a55; }
-/* 지금 가장 잘 먹힐 이 — 금테와 별 (공작 · 사신 같은 결 · 형 10-27) */
-.ap .pwho.bestp, .ap .who .wg.bestp { position: relative; border: 2px solid #ffd27a; box-shadow: 0 0 0 1px #000, 0 0 12px #ffd27a77; }
-.ap .pwho.bestp::after, .ap .who .wg.bestp::after { content: '★'; position: absolute; top: -7px; right: -5px; width: 18px; height: 18px; border-radius: 50%; background: #ffd27a; color: #3a2a08; font-size: 11px; line-height: 18px; text-align: center; box-shadow: 0 1px 3px #000a; } .ap .pwho:disabled { opacity: .42; cursor: default; }
 .ap .pwho .cost b { font-size: 11px; } .ap .pwho .feel { max-width: 100%; white-space: normal; padding: 1px 6px; font-size: 10.5px; line-height: 1.3; text-align: center; } .ap .pwhos > p.mute { margin: 6px 0 0; font-size: 11.5px; }
 .ap .row .dest .pwarn { display: block; margin-top: 1px; font-size: 11.5px; font-weight: 600; line-height: 1.3; color: #ff9a80; white-space: normal; }
 /* 사신 단추 — 한 열 · 가로 길게 · 낌새는 오른쪽 끝 (askButtons · 형 10-25) */
@@ -667,7 +666,6 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .selbar .ldpk > b { font-size: 13px; color: #e0bd78; } .ap .selbar .ldpk .mute { margin: 0; font-size: 12.5px; } .ap .selbar .ldpk > .btn { align-self: flex-start; }
 /* 집 보내기 — 고른 고을 그림 · 집 막대 · 조금·알맞게·많이 */
 .ap .pprow { flex: 1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; padding: 0; }
-.ap .dloss { margin: 4px 0 0; font-size: 12.5px; font-weight: 700; } .ap .dloss span { color: #e8a08a; }
 /* 고른 말 띠는 글만큼만 — 화면 끝까지 늘이지 않는다 (형 10-23: "박스가 너무 크면 그거에 가려진 마을을 선택할 수가 없어") */
 .ap .selbar { right: auto; max-width: min(calc(100% - 78px), 520px); }
 .ap .selbar.pp { padding: 0 2px; gap: 4px; border-width: 9px; border-image-width: 9px; flex-wrap: nowrap; }

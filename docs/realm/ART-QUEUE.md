@@ -6,8 +6,8 @@
 
 | 계정 (화면에 뜨는 이름) | 풀리는 때 | 본 때 |
 |---|---|---|
-| YunCheol (edu · 'YunCheol Shin') | 10-27 AM 12:05 | 10-26 23:29 한도 문구 |
-| retyper92 ('Muffin Goodbye') | 10-27 오후 (시각 못 적음 — 다음에 볼 때 적는다) | 10-26 오후 |
+| YunCheol (edu · 'YunCheol Shin') | 10-28 AM 12:06 | 10-27 01:20 한도 문구 (그 사이 다섯 장) |
+| retyper92 (계정 고르기에 'YunCheol Shin · retyper92@gmail' 로 뜬다) | 10-27 PM 2:58 | 10-27 01:30 한도 문구 (0장 — 이미 차 있었다) |
 | roqkfeke12 ('윤철 신') | 10-27 PM 6:11 | 10-26 저녁 한도 문구 |
 | retyper (hephaestosian · 'retyper') | 10-27 PM 10:15 | 10-26 23:20 한도 문구 |
 
