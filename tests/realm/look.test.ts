@@ -6,13 +6,15 @@
  *  - 엔진이 셈한 폭(Look) — 값마다 85% 넘게 든다
  *  - 화면에 보인 폭(lookNums — 바깥으로 둥글린 것) — 그보다 덜 들지 않는다
  *  - 사로잡기 — 보인 확률의 폭 안에서 실제로 잡힌다 (많은 판의 비율)
+ *  - 해시계 — 셋에 한 판은 밤 싸움(반은 먹힌 야습), 마지막 때엔 한 합 더 — 밤 규칙이 짐작에도 걸린다
+ *  - 무너지는 선 — 짐작한 「무너질 몫」의 평균만큼 실제로 무너진다 (많은 합의 비율)
  */
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { roll } from '../../src/core/rng.ts'
 import { fightRounds, lookRound, type Side } from '../../src/realm/tactics.ts'
-import type { Grp, Look, Pending, RoundLog, RoundOrder } from '../../src/realm/types.ts'
+import type { Dusk, Grp, Look, Pending, RoundLog, RoundOrder } from '../../src/realm/types.ts'
 import { lookNums } from '../../src/ui/realm/lookword.ts'
 
 const MIXES: Array<Side['mix']> = [
@@ -48,9 +50,12 @@ function choose(p: Pending, s: number): RoundOrder {
 interface Tally { n: number; raw: number[]; shown: number[] }
 const KEYS = ['우리 군사', '적 군사', '우리 사기', '적 사기'] as const
 
-function play(battles: number): { t: Tally; caps: Array<{ lo: number; hi: number; ok: boolean }> } {
+interface Falls { n: number; want: number; got: number; foeWant: number; foeGot: number; night: number }
+
+function play(battles: number): { t: Tally; caps: Array<{ lo: number; hi: number; ok: boolean }>; falls: Falls } {
   const t: Tally = { n: 0, raw: [0, 0, 0, 0], shown: [0, 0, 0, 0] }
   const caps: Array<{ lo: number; hi: number; ok: boolean }> = []
+  const falls: Falls = { n: 0, want: 0, got: 0, foeWant: 0, foeGot: 0, night: 0 }
   for (let s = 0; s < battles; s++) {
     const weAtk = s % 2 === 0
     const us = sideOf(s, 'us', true)
@@ -58,12 +63,20 @@ function play(battles: number): { t: Tally; caps: Array<{ lo: number; hi: number
     const [A, D] = weAtk ? [us, foe] : [foe, us]
     const key = `look-${s}`
     const cmds: RoundOrder[] = []
+    // 셋에 한 판은 밤 싸움 — 그 가운데 반은 먹힌 야습 (치는 쪽이 첫 때에 세다)
+    const clock = s % 3 === 0 ? { night: true, edge: s % 2 === 0 } : {}
+    const dusk: Dusk[] = []
     for (let i = 0; i < 6; i++) {
-      const p = fightRounds(A, D, key, s, 0, { cmds, open: true }).pending
+      let p = fightRounds(A, D, key, s, 0, { cmds, dusk, open: true }, clock).pending
+      // 마지막 때 — 한 합 더 (어둠 속 한 합 · 밤 싸움이면 날이 밝은 뒤)
+      if (p?.dusk !== undefined) {
+        dusk.push('press')
+        p = fightRounds(A, D, key, s, 0, { cmds, dusk, open: true }, clock).pending
+      }
       if (p === undefined || p.round !== cmds.length || p.look === undefined) break
       const o = choose(p, s)
       const lk: Look = lookRound(p.look, o)
-      const res = fightRounds(A, D, key, s, 0, { cmds: [...cmds, o], open: true })
+      const res = fightRounds(A, D, key, s, 0, { cmds: [...cmds, o], dusk, open: true }, clock)
       const rd: RoundLog | undefined = res.rounds[i]
       if (rd === undefined) break
       const prev = res.rounds[i - 1]
@@ -76,6 +89,17 @@ function play(battles: number): { t: Tally; caps: Array<{ lo: number; hi: number
       const nOf = (x: 'a' | 'd'): number => (x === 'a' ? rd.na : rd.nd)
       const mOf = (x: 'a' | 'd'): number => (x === 'a' ? rd.ma : rd.md)
       const caught = rd.ev === 'capture-ok' && rd.by === me
+      if (rd.night === true) falls.night++
+      // 무너지는 선 — 이 합으로 판이 무너져 끝났나 (사로잡힘·물러남이 아니고)
+      if (rd.ev !== 'capture-ok' && res.rounds.length === i + 1 && (res.endWhy === 'men' || res.endWhy === 'morale')) {
+        if (res.broke === me) falls.got++
+        if (res.broke === them) falls.foeGot++
+      }
+      if (rd.ev !== 'capture-ok') {
+        falls.n++
+        falls.want += lk.fall ?? 0
+        falls.foeWant += lk.foeFall ?? 0
+      }
       if (o.lead === 'capture' && lk.capture !== undefined) caps.push({ lo: lk.capture[0], hi: lk.capture[1], ok: caught })
       if (!caught) {
         // 사로잡기는 놓쳤을 때의 폭을 보인다 — 잡았으면 견줄 것이 아니다
@@ -96,11 +120,11 @@ function play(battles: number): { t: Tally; caps: Array<{ lo: number; hi: number
       if (res.pending === undefined) break
     }
   }
-  return { t, caps }
+  return { t, caps, falls }
 }
 
 describe('깃발 짐작 — 보인 폭에 실제 결과가 든다', () => {
-  const { t, caps } = play(160)
+  const { t, caps, falls } = play(160)
 
   it('여러 판 · 여러 합 — 엔진이 셈한 폭에 값마다 85% 넘게 든다', () => {
     assert.ok(t.n >= 300, `합 ${t.n}`)
@@ -119,5 +143,19 @@ describe('깃발 짐작 — 보인 폭에 실제 결과가 든다', () => {
     const hi = caps.reduce((s, c) => s + c.hi, 0) / n
     const tol = 3 * Math.sqrt(Math.max(0.01, ((lo + hi) / 2) * (1 - (lo + hi) / 2)) / n)
     assert.ok(ok >= lo - tol && ok <= hi + tol, `잡힘 ${ok.toFixed(3)} · 보임 ${lo.toFixed(3)}~${hi.toFixed(3)} (±${tol.toFixed(3)})`)
+  })
+
+  it('밤의 합도 짐작한다 (밤 싸움 · 해가 진 뒤 한 합 더)', () => {
+    assert.ok(falls.night >= 60, `어둠 속 합 ${falls.night}`)
+  })
+
+  it('무너지는 선 — 짐작한 무너질 몫만큼 실제로 무너진다 (우리 · 적)', () => {
+    const tol = (p: number): number => 3 * Math.sqrt(Math.max(0.01, p * (1 - p)) / falls.n) + 0.02
+    const want = falls.want / falls.n
+    const got = falls.got / falls.n
+    const fw = falls.foeWant / falls.n
+    const fg = falls.foeGot / falls.n
+    assert.ok(Math.abs(got - want) <= tol(want), `우리 — 무너짐 ${got.toFixed(3)} · 짐작 ${want.toFixed(3)}`)
+    assert.ok(Math.abs(fg - fw) <= tol(fw), `적 — 무너짐 ${fg.toFixed(3)} · 짐작 ${fw.toFixed(3)}`)
   })
 })

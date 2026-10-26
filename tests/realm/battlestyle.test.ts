@@ -1,7 +1,8 @@
 /**
  * 맡긴 싸움의 지휘 버릇 (tactics.BattleStyle · 형 10-24: "자동전투는 장수 특성에 따라 효과 나오게")
  *
- *  - 신중한 장수는 상대 앞줄의 맞수를 더 자주 골라 같은 판에서 더 자주 이긴다 (많은 판)
+ *  - 신중한 장수는 상대 앞줄의 맞수를 더 자주 골라 같은 판에서 더 자주 이긴다 (많은 판 · 이김에서 짐을 뺀 몫 —
+ *    해시계 뒤로 해질녘에 진을 쳐 비기는 판이 생겨, 이김만 세면 몇 판 차이로 흔들린다)
  *  - 일편단심은 물러서지 않는다 — 밀려도 물러나기로 끝나지 않는다
  *  - 명궁은 활을 앞세운다 — 앞줄이 길을 트는 합이 늘어난다
  */
@@ -21,11 +22,12 @@ describe('맡긴 싸움의 지휘 버릇', () => {
   it('신중한 장수가 더 자주 이긴다', () => {
     let plain = 0
     let careful = 0
+    const net = (o: string): number => (won(o) ? 1 : o === 'lose' || o === 'routed' ? -1 : 0)
     for (let s = 0; s < N; s++) {
-      if (won(fightRounds(side(100), side(100), `c${s}`, s, 0).outcome)) plain++
-      if (won(fightRounds(side(100, 'careful'), side(100), `c${s}`, s, 0).outcome)) careful++
+      plain += net(fightRounds(side(100), side(100), `c${s}`, s, 0).outcome)
+      careful += net(fightRounds(side(100, 'careful'), side(100), `c${s}`, s, 0).outcome)
     }
-    assert.ok(careful > plain, `신중 ${careful} · 보통 ${plain}`)
+    assert.ok(careful > plain, `신중 ${careful} · 보통 ${plain} (이김 − 짐)`)
   })
 
   it('일편단심은 물러나지 않는다', () => {

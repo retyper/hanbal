@@ -1072,12 +1072,18 @@ export function roundStory(rd: RoundLog, prev: RoundLog | undefined, c: StoryCtx
 }
 
 /** 싸움이 끝난 까닭 — 진 쪽이 왜 무너졌나 (한 줄) */
-export function endStory(l: Pick<Battle, 'outcome' | 'endWhy' | 'rounds'>, c: StoryCtx): string {
+export function endStory(l: Pick<Battle, 'outcome' | 'endWhy' | 'rounds'> & Partial<Pick<Battle, 'clock' | 'dusk'>>, c: StoryCtx): string {
   const rds = l.rounds ?? []
   const last = rds[rds.length - 1]
   const atkLost = l.outcome === 'lose' || l.outcome === 'routed'
   let loser: 'a' | 'd' = atkLost ? 'a' : 'd'
   if (l.endWhy === 'retreat' && last?.by !== undefined) loser = last.by
+  // 해시계 — 낮 싸움은 해가 지며, 밤 싸움(기습·야습)은 날이 밝으며 끝난다. 한 합 더 싸웠으면 그 너머
+  const night = l.clock?.night === true
+  const over = l.clock !== undefined && rds.length > l.clock.slots
+  const dusk = l.dusk?.[l.dusk.length - 1]
+  if (l.endWhy === 'withdraw' && dusk !== undefined && (dusk.a === 'retreat') !== (dusk.d === 'retreat')) loser = dusk.a === 'retreat' ? 'a' : 'd'
+  const when = night ? (over ? '해가 높이 뜨자' : '날이 밝자') : over ? '밤이 깊자' : '해가 지자'
   const w = opp(loser)
   const L = c.side[ix(loser)]
   const now = (s: 'a' | 'd'): number => Math.round(c.men0[ix(s)] * (last === undefined ? 1 : s === 'a' ? last.na : last.nd))
@@ -1101,8 +1107,13 @@ export function endStory(l: Pick<Battle, 'outcome' | 'endWhy' | 'rounds'>, c: St
       return `${L} ${g}기세가 무너져 군사들이 등을 보이고 달아났다.`
     }
     case 'retreat': return `${josa(L, '이', '가')} 더 잃기 전에 징을 쳐 물러났다.`
-    case 'draw': return '어느 쪽도 무너지지 않아 날이 저물자 서로 물러났다.'
-    default: return l.outcome === 'draw' ? '어느 쪽도 무너지지 않아 날이 저물자 서로 물러났다.' : `끝까지 맞붙은 끝에 ${c.side[ix(w)]} 쪽이 더 많이 남아 싸움터를 차지했다.`
+    case 'withdraw':
+      if (l.outcome === 'draw') return `${when} 두 쪽 다 진을 거두고 물러났다.`
+      return night ? `${when} ${josa(L, '은', '는')} 더 버티지 않고 진을 거두어 물러났다.` : `${when} ${josa(L, '은', '는')} 어둠을 틈타 진을 거두어 물러났다.`
+    case 'draw': return l.clock === undefined ? '어느 쪽도 무너지지 않아 날이 저물자 서로 물러났다.' : `어느 쪽도 무너지지 않은 채 ${when} 두 쪽 다 진을 쳤다 — 승부가 나지 않았다.`
+    default:
+      if (l.outcome === 'draw') return l.clock === undefined ? '어느 쪽도 무너지지 않아 날이 저물자 서로 물러났다.' : `어느 쪽도 무너지지 않은 채 ${when} 두 쪽 다 진을 쳤다 — 승부가 나지 않았다.`
+      return `${l.clock === undefined ? '끝까지' : night ? (over ? '아침 해가 높이 뜰 때까지' : '날이 밝을 때까지') : over ? '밤늦게까지' : '해가 질 때까지'} 맞붙은 끝에 ${c.side[ix(w)]} 쪽이 더 많이 남아 싸움터를 차지했다.`
   }
 }
 
