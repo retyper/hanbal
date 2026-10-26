@@ -170,6 +170,11 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 @keyframes bflick { from { opacity: .92; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .ap .cere.bridal .bpic { animation: bpin .01s calc(var(--i) * var(--s)) both; } .ap .cere.bridal .bveil, .ap .cere.bridal .bmote { animation: none; } }
 /* 혼례 · 탄생 — 한 장면씩 판 전체 */
+/* 먼 곳으로 보낸 군대 — 잠깐 한 줄 (app.ts goToast) */
+.ap .gotoast { position: absolute; left: 50%; top: calc(var(--toph) + var(--legh) + 14px); z-index: 80; transform: translateX(-50%); max-width: min(92vw, 520px); padding: 9px 16px; border-radius: 12px;
+  background: #1f1710f2; border: 1px solid #c9a45a; color: #f0e2c0; font-size: 14px; text-align: center; box-shadow: 0 6px 18px #000a; cursor: pointer; animation: gotoast 2.8s ease-in-out both; }
+.ap .gotoast b { color: #ffd27a; }
+@keyframes gotoast { 0% { opacity: 0; translate: 0 -10px; } 10%, 82% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: 0 -6px; } }
 .ap .cere { position: absolute; inset: 0; z-index: 75; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; cursor: pointer;
   background: #000; animation: cin .6s ease-out both; }
 .ap .cere.out { animation: cout .45s ease-in forwards; }

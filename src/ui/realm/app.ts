@@ -1120,6 +1120,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return n
   }
 
+  /** 잠깐 떴다 스스로 걷히는 한 줄 — 누르면 바로 닫힌다 (메모리 notices-must-dismiss · 걷힘은 CSS 애니메이션 끝에서 · 타이머 없음) */
+  function goToast(html: string): void {
+    root.querySelector('.gotoast')?.remove()
+    const el = document.createElement('div')
+    el.className = 'gotoast'
+    el.innerHTML = html
+    el.addEventListener('animationend', () => el.remove())
+    el.addEventListener('click', () => el.remove())
+    root.append(el)
+  }
+
   function armyName(r: Realm, a: Army): string {
     const h = a.hero !== null ? r.heroes[a.hero] : undefined
     return h !== undefined && h.status === 'free' ? h.name : `별동대 ${headcount(forceOf(r, a))}`
@@ -1277,8 +1288,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (near.has(to) || x.hops < 2) continue
         const n = r.nodes[to]!
         const hostile = n.owner !== null && n.owner !== me() && n.kind !== 'sodo'
-        targets.push({ node: to, edge: x.edge, goal: to, off: false, on: goalOf(a) === to,
-          chip: `${hostile ? `<span class="tn hard">적 고을</span>` : ''}<span class="tn when">${x.seasons}계절</span><span class="tn far">멀리</span>` })
+        // 먼 곳은 칩을 달지 않는다 — 판 가득 「몇 계절 · 멀리」가 붙어 어지럽고 버벅였다. 고른 곳 하나만 (형 10-26: "가까운 것들만 보여주고 나머지는 멀리 보내면 알아서 계산된 대로만 이동하게")
+        const on = goalOf(a) === to
+        targets.push({ node: to, edge: x.edge, goal: to, off: false, on,
+          chip: on ? `${hostile ? `<span class="tn hard">적 고을</span>` : ''}<span class="tn when">${x.seasons}계절</span><span class="tn far">멀리</span>` : '' })
       }
     }
     // 머물기도 지도에서 — 제 고을을 누르면 떠나기를 거둔다 (형: "머물기는 지도에서 선택을 못하고")
@@ -5542,6 +5555,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (goal !== undefined) {
           for (const id of armySel) pick[id] = { edge, ambush: false, goal }
           marchSfx()
+          // 먼 곳 — 칩 대신 잠깐 한 줄로 알린다: 누가 어디로 · 몇 계절 (형 10-26: "멀리 보내면 ~가 어디로 출정했고 몇 개월 걸린다를 화면에 잠깐 띄웠다 없애")
+          const ar = r.armies[army]
+          const to = r.nodes[goal]
+          const k = ar !== undefined ? goalReach(r, me(), ar.at).get(goal)?.seasons : undefined
+          if (ar !== undefined && to !== undefined && k !== undefined) {
+            const foe = to.owner !== null && to.owner !== me() && to.kind !== 'sodo'
+            goToast(`${esc(josa(armyName(r, ar), '이', '가'))} <b>${esc(josa(to.name, '으로', '로'))}</b> ${foe ? '출정했다' : '떠났다'} · <b>${k}계절</b> 뒤 닿는다`)
+          }
           armySel = []
           break
         }
