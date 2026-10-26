@@ -97,6 +97,23 @@ describe('맡기기 · 이끌기', () => {
     assert.equal(q.heroes['us-1']!.at, null)
   })
 
+  it('지도 띠에서 장수 바꾸기 — 이끌던 장수를 내려놓고(assign null) 같은 고을의 장수가 이끈다 · 내려놓지 않으면 안 바뀐다 (형 10-26)', () => {
+    const r = structuredClone(byeonhanMini(1))
+    const at = r.armies['a-us']!.at
+    r.heroes['us-1']!.at = at
+    r.heroes['us-1']!.post = null
+    // 장수가 있는 군대에 이끌기만 넣으면 그대로다
+    assert.equal(planned(r, [{ kind: 'lead', hero: 'us-1', army: 'a-us' }]).armies['a-us']!.hero, 'chief')
+    const swap: Order[] = [{ kind: 'assign', hero: 'chief', node: null }, { kind: 'lead', hero: 'us-1', army: 'a-us' }]
+    const p = planned(r, swap)
+    assert.equal(p.armies['a-us']!.hero, 'us-1')
+    assert.equal(p.heroes['chief']!.at, at) // 이끌던 장수는 그 고을에 남는다
+    assert.equal(armyOfHero(p, 'chief'), null)
+    // 계절을 넘겨도 같다 — 내려놓기는 일이 아니라 한 장수 한 가지 일에 안 걸린다
+    const { next } = pass(r, swap)
+    assert.equal(next.armies['a-us']?.hero, 'us-1')
+  })
+
   it('맡은 장수의 지략·신중이 그 고을 경계를 받친다', () => {
     const r = structuredClone(byeonhanMini(1))
     r.heroes['us-1']!.at = 'our-north'

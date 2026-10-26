@@ -640,6 +640,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .selbar .sbt { flex: 1; min-width: 140px; margin-left: 10px; display: flex; flex-direction: column; } .ap .selbar .sbt b { font-size: 14.5px; } .ap .selbar .sbt span { font-size: 12.5px; color: var(--mute); }
 .ap .selbar .sbwhy { font-size: 12px; color: #e8a08a; width: 100%; text-align: right; }
 .ap .selbar .sbx { border: 0; background: none; color: var(--mute); font-size: 18px; padding: 4px 6px; cursor: pointer; }
+/* 장수 얼굴을 눌러 이끌 장수 고르기 — 얼굴 모서리의 ⇄ · 펼치면 띠 아래 한 줄 (형 10-26) */
+.ap .selbar .sbfb { position: relative; border: 0; background: none; padding: 0 8px 0 0; margin: 0; cursor: pointer; color: inherit; font: inherit; }
+.ap .selbar .sbsw { position: absolute; right: 0; bottom: -3px; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; background: #ffd27a; color: #2a1d10; font-size: 12px; font-style: normal; font-weight: 700; line-height: 1; box-shadow: 0 1px 3px #000a; }
+.ap .selbar .sbfb.on .sbface { box-shadow: 0 0 0 2px #ffd27a, 0 0 10px #ffd27a; }
+.ap .selbar .ldpk { flex-basis: 100%; min-width: 0; display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--line); padding-top: 6px; }
+.ap .selbar .ldpk > b { font-size: 13px; color: #e0bd78; } .ap .selbar .ldpk .mute { margin: 0; font-size: 12.5px; } .ap .selbar .ldpk > .btn { align-self: flex-start; }
 /* 집 보내기 — 고른 고을 그림 · 집 막대 · 조금·알맞게·많이 */
 .ap .pprow { flex: 1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; padding: 0; }
 .ap .dloss { margin: 4px 0 0; font-size: 12.5px; font-weight: 700; } .ap .dloss span { color: #e8a08a; }
