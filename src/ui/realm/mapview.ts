@@ -508,11 +508,18 @@ export function mapHtml(
     }
   }
   if (ranging) {
+    // 고른 군대가 선 고을 — 갈 수 있는 길들이 모두 거기서 나간다(가장 많이 겹치는 끝). 먼 곳도 첫 길은 거기서 떠난다
+    const ends = new Map<string, number>()
+    for (const t of targets) { const e = r.edges[t.edge]; if (e !== undefined && !t.off) for (const x of [e.a, e.b]) ends.set(x, (ends.get(x) ?? 0) + 1) }
+    const src = targets.length === 1 ? selected : [...ends.entries()].sort((x, y) => y[1] - x[1] || (x[0] < y[0] ? -1 : 1))[0]?.[0] ?? selected
     for (const t of targets) {
       if (t.edge === '' || t.off) continue
       const ed = r.edges[t.edge]
       if (ed === undefined || !seen(ed.a) || !seen(ed.b)) continue
-      const d = smoothPath(route(ed))
+      // 흐름은 늘 지금 고을에서 바깥으로 — 길은 a→b 로 그려져 있어 b 에 서 있으면 뒤집는다 (형 10-27: "애니메이션이 항상 지금 고을에서 바깥쪽으로 흐르게")
+      const pts = route(ed)
+      const inward = ed.b === src || (ed.a !== src && t.node === ed.a)
+      const d = smoothPath(inward ? [...pts].reverse() : pts)
       svg += `<path d="${d}" fill="none" stroke="#ffd27a" stroke-width="${(16 * sw).toFixed(1)}" stroke-linecap="round" opacity=".28"/>`
       svg += `<path class="mvglow" d="${d}" fill="none" stroke="#fff3c8" stroke-width="${(4 * sw).toFixed(1)}" stroke-dasharray="${(10 * sw).toFixed(1)} ${(10 * sw).toFixed(1)}" stroke-linecap="round" opacity=".95"/>`
     }
