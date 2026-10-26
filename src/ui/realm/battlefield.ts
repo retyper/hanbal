@@ -204,13 +204,15 @@ const rvPoly = (more: number): string => {
 }
 const rvLine = (side: -1 | 1): string => `M${rvEdge(side, 0).map(([x, y]) => `${x.toFixed(2)} ${y}`).join(' L')}`
 
-export function waterSvg(mud: boolean): string {
+export function waterSvg(mud: boolean, shift = 0): string {
+  // shift — 상자 가로 % 만큼 옆으로 비켜 흐른다 (고을 싸움에서 치는 쪽 앞으로)
+  const at = shift !== 0 ? ` style="transform:translateX(${shift}%)"` : ''
   const band = rvPoly(0)
   const bank = rvPoly(1.8)
   if (mud) {
     const pools = [[49.5, 46, 2.6, 1.1], [51.8, 62, 3.6, 1.4], [48, 78, 4.4, 1.7], [53, 91, 5, 1.8]]
       .map(([x, y, rx, ry]) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#wrvP)"/>`).join('')
-    return `<svg class="wrv mud" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs>`
+    return `<svg class="wrv mud"${at} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs>`
       + `<linearGradient id="wrvM" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b5a44" stop-opacity="0"/><stop offset=".22" stop-color="#5e4c36" stop-opacity=".85"/><stop offset="1" stop-color="#3e2f20"/></linearGradient>`
       + `<radialGradient id="wrvP"><stop offset="0" stop-color="#b8cfd6" stop-opacity=".85"/><stop offset=".7" stop-color="#7f9aa2" stop-opacity=".6"/><stop offset="1" stop-color="#4a5a5e" stop-opacity="0"/></radialGradient></defs>`
       + `<path d="${bank}" fill="#7a6648" opacity=".55"/><path d="${band}" fill="url(#wrvM)"/>`
@@ -223,7 +225,7 @@ export function waterSvg(mud: boolean): string {
     const x = rvC(y) + (i % 2 === 0 ? -1 : 1) * rvW(y) * 0.3
     return `<path class="wrv-rip" style="--i:${i}" d="M${(x - w).toFixed(2)} ${y} Q${x.toFixed(2)} ${(y - 0.7).toFixed(1)}, ${(x + w).toFixed(2)} ${y}" fill="none" stroke="#e8f6f8" stroke-width=".3"/>`
   }).join('')
-  return `<svg class="wrv" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs>`
+  return `<svg class="wrv"${at} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs>`
     + `<linearGradient id="wrvW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fbccb" stop-opacity="0"/><stop offset=".2" stop-color="#6aa5b6" stop-opacity=".55"/><stop offset=".55" stop-color="#3b7c90" stop-opacity=".72"/><stop offset="1" stop-color="#245a70" stop-opacity=".8"/></linearGradient>`
     + `<linearGradient id="wrvB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a7a52" stop-opacity="0"/><stop offset=".25" stop-color="#7d6c48" stop-opacity=".35"/><stop offset="1" stop-color="#5e4e32" stop-opacity=".55"/></linearGradient></defs>`
     + `<path d="${bank}" fill="url(#wrvB)"/><path d="${band}" fill="url(#wrvW)"/>`
@@ -238,7 +240,7 @@ const jit = (i: number, k: number): number => (((i * 73 + k * 151) % 97) + 0.5) 
  * 해자 — 지키는 쪽 진 앞의 한 줄기 물길 (tp 와 같은 비스듬함: x = 54 + oy·0.22, 위가 멀다).
  * 바깥 둑 · 물 · 안쪽 거친 둑 · 천천히 흘러내리는 반짝임 — 한 장으로 이어진다
  */
-function moatSvg(): string {
+function moatSvg(mirror: boolean): string {
   const pts = (off: number): string => {
     const L: string[] = []
     for (let y = 18; y <= 100; y += 4) {
@@ -255,7 +257,7 @@ function moatSvg(): string {
     const w = 0.8 + (y - 18) * 0.02
     return `<path class="wrv-rip" style="--i:${i}" d="M${(x - w).toFixed(2)} ${y} Q${x.toFixed(2)} ${y - 0.6}, ${(x + w).toFixed(2)} ${y}" fill="none" stroke="#e8f6f8" stroke-width=".25"/>`
   }).join('')
-  return `<svg class="wf-moat" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs>`
+  return `<svg class="wf-moat${mirror ? ' mir' : ''}" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs>`
     + `<linearGradient id="wmtW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5f8f98" stop-opacity=".35"/><stop offset=".4" stop-color="#3f6f7c" stop-opacity=".8"/><stop offset="1" stop-color="#284f5c" stop-opacity=".92"/></linearGradient>`
     + `<linearGradient id="wmtB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6e5e40" stop-opacity=".25"/><stop offset="1" stop-color="#4e3e28" stop-opacity=".7"/></linearGradient></defs>`
     + `<path d="${bank}" fill="url(#wmtB)"/><path d="${band}" fill="url(#wmtW)"/>`
@@ -1047,6 +1049,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       const w = c.who === 'us' ? '우리에게 유리' : c.who === 'foe' ? '적에게 유리' : '양쪽 같다'
       return `<b class="wf-tl ${c.who === '' ? 'n' : c.who}" data-tk="${c.k}" style="--x:${x}%;--oy:${oy}%">${esc(c.name)}<small>${w}</small></b>`
     }
+    // 해자 — 물가(나루·갈대·갯벌)에서 싸우면 그 강이 해자 노릇이라 따로 안 그린다 (형 10-26: "해자랑 물가랑 겹쳐 버리는 듯")
+    const hasMoat = l.field !== true && node !== undefined && node.tags.includes('moat') && l.via !== 'ford' && l.via !== 'reeds' && l.via !== 'mudflat'
     const terrainProps = (cls: 'us' | 'foe'): string => {
       let h = ''
       if (cls === defCls && l.field !== true && node !== undefined) {
@@ -1055,7 +1059,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         const late = breached && play
         // 해자 — 그림 다섯 장을 겹쳐 붙이던 것을 한 줄기 물길로 (형 10-26: "녹색물 이미지 아직도 5개 통째로 복붙") · 진 앞을 비스듬히 따라 내려오며 넓어진다
         // 물가(나루·갈대·갯벌)에서 싸우면 그 강이 해자 노릇 — 따로 그리면 겹친다 (형 10-26: "해자랑 물가랑 겹쳐 버리는 듯")
-        if (node.tags.includes('moat') && l.via !== 'ford' && l.via !== 'reeds' && l.via !== 'mudflat') { h += moatSvg(); h += tlab('moat', 58, 42) }
+        // 물길 그림은 진 층이 아니라 땅 층(lowTerr)에 깐다 — 여기는 이름표만 (형 10-26: "강과 해자는 늘 다른 것보다 뒤")
+        if (hasMoat) h += tlab('moat', 58, 42)
         // 성벽·목책은 판정에 있는 것만 그린다 (season.fortMul — 목책 꼬리표 · 산성) · 그냥 도읍에 울타리를 그리면 없는 수비 덤을 있는 것처럼 보였다
         if (node.tags.includes('palisade') || node.kind === 'fort') {
           const gate = node.kind === 'fort' || node.kind === 'capital'
@@ -1074,9 +1079,17 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const ford = l.via === 'ford' || l.via === 'reeds' || l.via === 'mudflat'
     // 물가 — 나루·갈대는 강물과 갈대, 갯벌은 진흙 빛 (강물 그림을 진흙 빛으로)
     const mud = l.via === 'mudflat'
+    // 고을을 치는 싸움의 물가는 건너오는 쪽(치는 쪽) 앞으로 비켜 흐른다 — 지키는 쪽 목책·해자와 겹치지 않게 (형 10-26: "개울이나 물가는 불리한 쪽에 아예 이동해 있어야")
+    const siege = l.field !== true && node !== undefined
+    const rvShift = ford && siege ? (defCls === 'us' ? 1 : -1) * P.realm.warFordShift : 0
     // 두 진 사이의 물 — 강물 그림 다섯 장을 겹쳐 붙였더니 물가로 안 보였다 (형 10-25: "불가 이미지 5개 대충 붙여넣으면 그게 물가냐").
     // 이제 한 줄기로 그린다: 지평선에서 내려오며 넓어지는 강(원근) · 강둑 · 천천히 흐르는 물결 · 둑의 갈대. 갯벌은 젖은 진흙 · 물웅덩이 · 갯골
-    const midTerr = ford ? `<div class="wf-mid-terr${mud ? ' mud' : ''}">${waterSvg(mud)}${mud ? '' : REEDS_AT.map(([x, oy, s]) => tp('reeds', x - oy * 0.22, oy, s)).join('')}${tlab('ford', 50, -48)}</div>` : ''
+    // 땅 층 — 강·갯벌·해자는 늘 군사와 목책 밑 (형 10-26: "창병 유닛들이 해자 뒤에 그려지고 있음 · 목책도 물 뒤에 그려지는데")
+    // 해자는 지키는 쪽 진 앞이라 적이 지키면 거울로 뒤집는다
+    const moatLow = hasMoat ? moatSvg(defCls === 'foe') : ''
+    const midTerr = ford || moatLow !== ''
+      ? `<div class="wf-mid-terr${mud ? ' mud' : ''}">${moatLow}${ford ? `${waterSvg(mud, rvShift)}${mud ? '' : REEDS_AT.map(([x, oy, s]) => tp('reeds', x + rvShift - oy * 0.22, oy, s)).join('')}${tlab('ford', 50 + rvShift, -48)}` : ''}</div>`
+      : ''
     const side = (i: 0 | 1, cls: 'us' | 'foe', o: RoundOrder | undefined, hero: string | null, f: string | undefined): string => {
       const mix = mixOf(i)
       const all = Object.entries(mix).filter(([, v]) => (v ?? 0) > 0) as Array<[string, number]>
@@ -1463,7 +1476,7 @@ export const WAR_CSS = `
 .ap .wfield .wf-ground { display: none; }
 /* 지키는 쪽 뒤의 성 (그림은 바깥이 왼쪽 — 우리 쪽이면 뒤집고, 거울인 적 쪽에선 한 번 더 뒤집어 바깥이 공격 쪽을 본다) */
 /* 해자 · 목책 (말뚝 하나하나) — 10-26 */
-.ap .wf2s .wf-moat { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; }
+.ap .wfield .wf-moat { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; } .ap .wfield .wf-moat.mir { transform: scaleX(-1); }
 .ap .wf2s .wf-pal { position: absolute; inset: 0; pointer-events: none; }
 .ap .wf2s .wf-pal .stk { position: absolute; left: var(--x); top: calc(60% + var(--oy)); height: calc(clamp(30px, 8.5cqw, 62px) * var(--hk) * var(--p, 1)); width: auto;
   transform: translate(-50%, -100%) rotate(var(--r)); transform-origin: 50% 100%; filter: drop-shadow(1px 3px 2px #000a); }
