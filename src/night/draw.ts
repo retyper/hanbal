@@ -62,6 +62,9 @@ const COL = {
   hudDim: '#95a1ae',
   alarm: '#e0503a',
   good: '#8fd07a',
+  /** 구출 — 묶인 장수의 기둥 · 밧줄 */
+  post: '#2a1d12',
+  rope: '#c9a46a',
 } as const
 
 const parts: Parts = newParts()
@@ -345,12 +348,14 @@ function figurePath(ctx: CanvasRenderingContext2D, cam: Camera, n: Night, f: Fig
   ctx.moveTo(X(cam, parts.t0x), Y(cam, parts.t0y))
   ctx.lineTo(X(cam, parts.t1x), Y(cam, parts.t1y))
   stroke(parts.tr * 2 * s + extra)
-  // 팔 — 창이나 등불을 든 쪽은 앞으로
+  // 팔 — 창이나 등불을 든 쪽은 앞으로. 묶인 장수는 팔이 뒤로 묶여 안 보인다
   const shY = parts.t1y + parts.tr * 0.5
-  ctx.beginPath()
-  ctx.moveTo(X(cam, f.x), Y(cam, shY))
-  ctx.lineTo(X(cam, f.x + 0.28 * f.facing * f.size), Y(cam, shY - 0.42 * f.size))
-  stroke(0.09 * s + extra)
+  if (f.role !== 'captive') {
+    ctx.beginPath()
+    ctx.moveTo(X(cam, f.x), Y(cam, shY))
+    ctx.lineTo(X(cam, f.x + 0.28 * f.facing * f.size), Y(cam, shY - 0.42 * f.size))
+    stroke(0.09 * s + extra)
+  }
   // 머리 + 상투
   ctx.beginPath()
   ctx.arc(X(cam, parts.hx), Y(cam, parts.hy), parts.hr * s + extra / 2, 0, Math.PI * 2)
@@ -371,6 +376,39 @@ function figurePath(ctx: CanvasRenderingContext2D, cam: Camera, n: Night, f: Fig
   }
   ctx.restore()
   ctx.globalAlpha = 1
+}
+
+/**
+ * 구출 — 묶인 우리 장수의 기둥과 밧줄 (몸은 figurePath 가 앉은 꼴로 그린다). 기둥은 등 뒤, 밧줄은 가슴과 허리를 두 번 감는다.
+ * 기둥은 몸보다 먼저(뒤에), 밧줄은 빛 테까지 그린 뒤(앞에) 그린다. 보초가 다 쓰러져 끝나면 밧줄이 풀린다
+ */
+function drawBound(ctx: CanvasRenderingContext2D, cam: Camera, n: Night, f: Figure, part: 'post' | 'rope'): void {
+  partsOf(f, parts)
+  const s = cam.scale
+  const back = -f.facing
+  const px = f.x + 0.2 * back * f.size
+  ctx.save()
+  ctx.lineCap = 'round'
+  if (part === 'post') {
+    ctx.strokeStyle = COL.post
+    ctx.lineWidth = Math.max(2, 0.1 * s)
+    ctx.beginPath()
+    ctx.moveTo(X(cam, px), Y(cam, f.y))
+    ctx.lineTo(X(cam, px), Y(cam, f.y + 1.9 * f.size))
+    ctx.stroke()
+  } else if (n.result?.result !== 'cleared') {
+    // 어둠 속에선 흐릿하게 — 불빛 안이면 또렷
+    ctx.globalAlpha = Math.min(1, 0.35 + lightAt(n.scene, f.x, f.y + 1, n.tick))
+    ctx.strokeStyle = COL.rope
+    ctx.lineWidth = Math.max(1, 0.035 * s)
+    for (const y of [parts.t1y - 0.02, parts.t0y + 0.12]) {
+      ctx.beginPath()
+      ctx.moveTo(X(cam, f.x - (parts.tr + 0.02) * back), Y(cam, y - 0.03))
+      ctx.lineTo(X(cam, px), Y(cam, y + 0.03))
+      ctx.stroke()
+    }
+  }
+  ctx.restore()
 }
 
 /**
@@ -697,6 +735,8 @@ export function goalLine(n: Night): string {
       return '불 붙이러 나온 보초를 어둠 속에서 쓰러뜨린다'
     }
     case 2:
+      // 구출 — 마루 기둥에 묶인 우리 장수 (살이 비켜 간다)
+      if (n.kind === 'rescue') return left > 0 ? `옥지기 ${left}명을 다 쓰러뜨리면 묶인 우리 장수를 데려 나온다 · 묶인 이는 살이 비켜 간다` : ''
       return left > 0 ? `호위 ${left}명을 쓰러뜨리면 창호지 뒤 적장이 일어선다 · 그때 창호지를 쏜다` : ''
     default:
       return ''
@@ -1027,6 +1067,7 @@ export function drawNight(ctx: CanvasRenderingContext2D, v: NightView, n: Night,
   for (const d of sc.decor) drawDecor(ctx, cam, d, g)
   drawGroundAndRoof(ctx, cam, g)
   const rise = chiefRise(n)
+  for (const f of sc.figures) if (f.role === 'captive') drawBound(ctx, cam, n, f, 'post')
   for (const f of sc.figures) if (f.role !== 'chief') figurePath(ctx, cam, n, f, 1, 'fill', 0, COL.body)
   drawStuck(ctx, cam, n)
 
@@ -1046,6 +1087,7 @@ export function drawNight(ctx: CanvasRenderingContext2D, v: NightView, n: Night,
       ctx.restore()
     } else figurePath(ctx, cam, n, f, 1, 'rim', 0.13, COL.rimCool)
   }
+  for (const f of sc.figures) if (f.role === 'captive') drawBound(ctx, cam, n, f, 'rope')
   drawSight(ctx, cam, n)
   drawExposed(ctx, cam, n, now)
   for (const l of sc.lights) drawFlame(ctx, cam, l, n.tick)

@@ -31,8 +31,8 @@ export function handsOf(r: Realm, faction: string): number {
 type HandOrder = Extract<Order, { kind: 'envoy' }> | Extract<Order, { kind: 'plot' }>
 const usesHand = (o: Order): o is HandOrder => o.kind === 'envoy' || o.kind === 'plot'
 const ownerOf = (o: HandOrder): string => (o.kind === 'envoy' ? o.from : o.faction)
-/** 이름 붙은 사람 — 함께 가는 장수 · 자객 장수 */
-const namedOf = (o: HandOrder): string | undefined => (o.kind === 'envoy' ? o.hero : o.op === 'assassin' ? o.agent : undefined)
+/** 이름 붙은 사람 — 함께 가는 장수 · 자객 장수(암살·구출) */
+const namedOf = (o: HandOrder): string | undefined => (o.kind === 'envoy' ? o.hero : o.op === 'assassin' || o.op === 'rescue' ? o.agent : undefined)
 
 /** 사람을 쓰는 명령 수 — 나라마다 (화면: "보낼 사람 n/m") */
 export function handsUsed(orders: readonly Order[], faction: string): number {

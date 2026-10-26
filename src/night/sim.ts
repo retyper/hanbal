@@ -15,7 +15,7 @@ import { effectiveStats, stepArcher } from '../sim/bow.ts'
 import { flowDrawMul } from '../sim/flow.ts'
 import { cancelDraw, createWorld } from '../sim/world.ts'
 import type { BowMods, InputFrame, StageDef, World } from '../sim/types.ts'
-import { bakeScene, guardOf, STAGE_COUNT, type Figure, type Guard, type Light, type Scene } from './layout.ts'
+import { bakeScene, guardOf, kindOf, STAGE_COUNT, type Figure, type Guard, type Light, type NightKind, type Scene } from './layout.ts'
 
 export type Phase = 'play' | 'move' | 'rise' | 'chief' | 'alarm' | 'end'
 
@@ -47,6 +47,7 @@ export interface NightEvent {
   readonly y: number
 }
 
+/** 끝 — 구출이면 cleared 가 곧 데려 나왔다, fled 는 북이 울려 달아났다 */
 export interface NightResult {
   readonly result: 'dead' | 'wounded' | 'fled' | 'withdrew' | 'cleared'
   readonly alarm: boolean
@@ -70,6 +71,8 @@ export interface NightOpts {
   readonly bowTier?: number
   /** 경비 0 느슨 · 1 보통 · 2 삼엄 (layout.ts Guard) — 없으면 보통 */
   readonly guard?: number
+  /** 갈래 — 암살(없으면) · 구출 (layout.ts NightKind) */
+  readonly kind?: NightKind
 }
 
 /** 활의 단계 이름 — 화면에 그대로 */
@@ -111,6 +114,8 @@ export interface Night {
   readonly bowTier: number
   /** 경비 (GUARD_NAME) */
   readonly guard: Guard
+  /** 갈래 — 암살은 셋째 판에 적장, 구출은 묶인 우리 장수 (보초를 다 쓰러뜨리면 cleared) */
+  readonly kind: NightKind
   readonly w: World
   scene: Scene
   stage: number
@@ -158,8 +163,10 @@ export function createNight(o: NightOpts): Night {
   const w = createWorld(stageDef(o.seed, arrows), { str: lv, steady: lv, stamina: lv, focus: lv }, 'basic', tierBow(tier))
   const stage = practice !== null ? practice.stage : 0
   const guard = guardOf(o.guard ?? 1)
+  // 연습장은 늘 암살 판이다
+  const kind: NightKind = practice !== null ? 'assassin' : kindOf(o.kind)
   return {
-    seed: o.seed, practice, bowTier: tier, guard, w, scene: bakeScene(o.seed, stage, guard), stage, phase: 'play', phaseAt: 0, tick: 0,
+    seed: o.seed, practice, bowTier: tier, guard, kind, w, scene: bakeScene(o.seed, stage, guard, kind), stage, phase: 'play', phaseAt: 0, tick: 0,
     alarm: 0, stuck: [], events: [], result: null, chiefUp: -1, chiefLeft: P.night.chiefPatience, shots: 0, hits: 0, heads: 0, tore: new Set(),
   }
 }
@@ -316,6 +323,7 @@ function sweep(n: Night, ax: number, ay: number, bx: number, by: number, angle: 
     for (const f of sc.figures) {
       if (!f.alive) continue
       if (f.role === 'chief' && !chiefShown) continue
+      if (f.role === 'captive') continue // 묶인 우리 장수 — 살이 비켜 간다
       const z = zoneAt(f, x, y, rise)
       if (z === null) continue
       f.alive = false
@@ -550,7 +558,7 @@ const missSet = new Set<number>()
 /** 다음 판으로 — 화살 잔량과 게이지(조금 가라앉힌 채)는 따라간다 */
 function nextStage(n: Night): void {
   n.stage++
-  n.scene = bakeScene(n.seed, n.stage, n.guard)
+  n.scene = bakeScene(n.seed, n.stage, n.guard, n.kind)
   n.stuck = []
   n.alarm *= P.night.alarmCarry
   for (const a of n.w.arrows) a.alive = false
@@ -667,6 +675,7 @@ export function stepNight(n: Night, input: NightFrame): void {
           n.events.push({ t: 'rise', x: 0, y: 0 })
           setPhase(n, 'rise')
         } else if (n.practice !== null || n.stage >= STAGE_COUNT - 1) {
+          // 연습장 · 구출의 셋째 판 — 보초가 다 쓰러지면 끝 (구출이면 묶인 장수를 데려 나온다)
           if (!anyFlying(w)) finish(n, 'cleared')
         } else {
           setPhase(n, 'move')

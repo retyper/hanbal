@@ -6,6 +6,9 @@
  *   bribe 매수 — 그 고을 장정이 몇 계절 서지 않는다
  *   burn  방화 — 그 나라 국읍 창고의 곡식을 태운다
  *   spy   첩자 — 그 고을 군세를 몇 계절 동안 계절마다 새로 안다
+ *   assassin 암살 — 본 적장을 밤에 쏜다 (밤 판으로도 간다)
+ *   rescue 구출 — 잡혀간 우리 장수를 잡은 나라 도읍의 옥에서 빼낸다 (형 10-26: "잡혀간 우리 장수가있는나라의 경우 구출 이 활성화되면 좋겠어.
+ *          구출작전은 암살이랑 비슷하게 활쏘기겜으로 가서 적물리치면될듯") — 보낼 이·값·밤 판은 암살과 같은 결, 셋째 판에 적장 대신 묶인 장수가 있다
  *
  * 한 나라는 한 계절에 plotsPerSeason 까지, 같은 대상에 같은 공작은 하나. 2단계(정찰·사신 자리)에서 처리한다.
  * 먹힐 확률 = 바탕 + 략 차이 × 계수 − 고을 경계(매수·첩자) → [plotMin, plotMax]. 굴림 `plot:<나라>:<op>:<대상>:<고을|상대>`.
@@ -21,17 +24,20 @@ import { P } from '../tune/params.ts'
 import { addFavor, noteDeed, relationOf, worsen } from './diplomacy.ts'
 import { knows } from './discovery.ts'
 import { stockOf } from './economy.ts'
-import { armyOfHero, gainXp, hasTrait, heroAt, heroSeen, isRuler, plotBonus } from './heroes.ts'
+import { armyOfHero, gainXp, hasTrait, heroAt, heroSeen, homeOf, isRuler, plotBonus } from './heroes.ts'
 import { alertRange } from './intel.ts'
 import { nodeStrength, seenShares } from './season.ts'
 import type { Order, PlotOp, Realm, ReportLine } from './types.ts'
 
 type Plot = Extract<Order, { kind: 'plot' }>
 
-export const PLOT_OPS: readonly PlotOp[] = ['rumor', 'sow', 'bribe', 'burn', 'spy', 'assassin']
+export const PLOT_OPS: readonly PlotOp[] = ['rumor', 'sow', 'bribe', 'burn', 'spy', 'assassin', 'rescue']
 
 /** 고을을 겨누는 공작 — 대상 나라의 그 고을 (`node`) */
-const ON_NODE: ReadonlySet<PlotOp> = new Set(['bribe', 'spy', 'assassin'])
+const ON_NODE: ReadonlySet<PlotOp> = new Set(['bribe', 'spy', 'assassin', 'rescue'])
+
+/** 밤 판으로 가는 공작 — 장수 하나를 겨누고, 자객(우리 장수 · 고용 자객)을 보내며, 손으로 쏜 결과(hand)를 받는다 */
+export const NIGHT_OPS: ReadonlySet<PlotOp> = new Set(['assassin', 'rescue'])
 
 export function plotCost(op: PlotOp, agent: string | null = null): { grain: number; iron: number } {
   const R = P.realm
@@ -43,6 +49,8 @@ export function plotCost(op: PlotOp, agent: string | null = null): { grain: numb
     case 'spy': return { grain: R.plotSpyGrain, iron: 0 }
     // 암살 — 우리 장수를 자객으로 보내지 않으면 고용 자객 값이 더 든다
     case 'assassin': return { grain: R.plotAssassinGrain + (agent === null ? R.plotHiredGrain : 0), iron: 0 }
+    // 구출 — 암살과 같은 결: 고용 자객이면 더 든다
+    case 'rescue': return { grain: R.plotRescueGrain + (agent === null ? R.plotHiredGrain : 0), iron: 0 }
   }
 }
 
@@ -55,6 +63,7 @@ function base(op: PlotOp): number {
     case 'burn': return R.plotBaseBurn
     case 'spy': return R.plotBaseSpy
     case 'assassin': return R.plotBaseAssassin
+    case 'rescue': return R.plotBaseRescue
   }
 }
 
@@ -85,6 +94,32 @@ function assassinTerm(r: Realm, faction: string, hero: string | undefined, agent
   const v = hero !== undefined ? r.heroes[hero] : undefined
   return R.plotPerRyak * (a?.ryak ?? R.plotHiredRyak) + (hasTrait(a, 'archer') ? R.traitArcherAssassin : 0) - R.plotAssassinPerMu * (v?.mu ?? 5)
     + R.plotBowStep * assassinBow(r, faction)
+}
+
+/**
+ * 구출의 몫 — 보낸 이의 지략(고용 자객은 plotHiredRyak) · 명궁 · 활 단계 − 갇힌 곳이 도읍이면 plotRescueCapital.
+ * 고을 경계는 다른 고을 공작처럼 따로 깎는다 (ON_NODE)
+ */
+function rescueTerm(r: Realm, faction: string, node: string | undefined, agent: string | null | undefined): number {
+  const R = P.realm
+  const a = agent !== null && agent !== undefined ? r.heroes[agent] : undefined
+  const deep = isSeat(r, node) ? R.plotRescueCapital : 0
+  return R.plotPerRyak * (a?.ryak ?? R.plotHiredRyak) + (hasTrait(a, 'archer') ? R.traitArcherAssassin : 0) + R.plotBowStep * assassinBow(r, faction) - deep
+}
+
+/** 밤 판 공작의 몫 — 암살은 자객 대 그 장수, 구출은 보낸 이 대 옥 */
+function nightTerm(r: Realm, faction: string, op: PlotOp, node: string | undefined, hero: string | undefined, agent: string | null | undefined): number {
+  return op === 'rescue' ? rescueTerm(r, faction, node, agent) : assassinTerm(r, faction, hero, agent)
+}
+
+/**
+ * 구출할 곳 — 잡은 나라의 도읍. 도읍을 잃었으면 그 나라의 남은 고을 가운데 id 가 가장 앞선 곳 (결정론). 나라가 없으면 null
+ */
+export function rescueNode(r: Realm, captor: string): string | null {
+  const cap = r.factions[captor]?.capital
+  if (cap !== undefined && r.nodes[cap]?.owner === captor) return cap
+  const own = Object.values(r.nodes).filter((n) => n.owner === captor).map((n) => n.id).sort()
+  return own[0] ?? null
 }
 
 // ───────── 자객 기본 · 장수는 도박 (형이 고름 — 2026-10-18)
@@ -145,11 +180,24 @@ export function assassinArrows(r: Realm, agent: string | null | undefined): numb
  * 그 장수가 있는 고을의 경계 + 도읍이면 더 + 군주면 더. 판의 사람·불 수와 불을 다시 붙이는 빠르기가 달라진다
  */
 export function assassinGuard(r: Realm, hero: string): 0 | 1 | 2 {
+  const at = r.heroes[hero]?.at ?? null
+  return guardAt(r, at, at !== null && r.nodes[at]?.kind === 'capital', hero.endsWith('-ruler'))
+}
+
+/** 구출의 밤 판 경비 — 옥이 있는 고을의 경계 + 그 나라 도읍이면 더 (항구 도읍도 도읍이다 · 군주 몫은 없다) */
+export function rescueGuard(r: Realm, node: string | null): 0 | 1 | 2 {
+  return guardAt(r, node, isSeat(r, node ?? undefined), false)
+}
+
+/** 이 고을이 주인 나라의 도읍인가 — 고을 꼴(kind)이 항구·산성이어도 도읍일 수 있다 */
+function isSeat(r: Realm, node: string | undefined): boolean {
+  const owner = node !== undefined ? r.nodes[node]?.owner : undefined
+  return owner !== undefined && owner !== null && r.factions[owner]?.capital === node
+}
+
+function guardAt(r: Realm, at: string | null, capital: boolean, ruler: boolean): 0 | 1 | 2 {
   const R = P.realm
-  const h = r.heroes[hero]
-  const at = h?.at ?? null
-  const node = at !== null ? r.nodes[at] : undefined
-  const v = (at !== null ? (r.watch[at]?.alert ?? 0) : 0) + (node?.kind === 'capital' ? R.guardCapital : 0) + (hero.endsWith('-ruler') ? R.guardRuler : 0)
+  const v = (at !== null ? (r.watch[at]?.alert ?? 0) : 0) + (capital ? R.guardCapital : 0) + (ruler ? R.guardRuler : 0)
   return v >= R.guardHigh ? 2 : v >= R.guardMid ? 1 : 0
 }
 
@@ -169,8 +217,8 @@ export function plotTrueChance(
 ): number {
   const R = P.realm
   let p = base(op) + plotBonus(r, faction)
-  // 암살은 자객 대 그 장수, 나머지는 우리 꾀 대 그 나라 꾀
-  p += op === 'assassin' ? assassinTerm(r, faction, hero, agent) : R.plotPerRyak * (ourRyak(r, faction, agent) - bestRyak(r, target))
+  // 암살은 자객 대 그 장수, 구출은 보낸 이 대 옥, 나머지는 우리 꾀 대 그 나라 꾀
+  p += NIGHT_OPS.has(op) ? nightTerm(r, faction, op, node, hero, agent) : R.plotPerRyak * (ourRyak(r, faction, agent) - bestRyak(r, target))
   if (ON_NODE.has(op) && node !== undefined) p -= R.plotAlertWeight * (r.watch[node]?.alert ?? 0)
   return clamp(p)
 }
@@ -186,9 +234,10 @@ export function plotChance(
   const ours = ourRyak(r, faction, agent)
   let lo = base(op) + plotBonus(r, faction)
   let hi = lo
-  if (op === 'assassin') {
-    lo += assassinTerm(r, faction, hero, agent)
-    hi += assassinTerm(r, faction, hero, agent)
+  if (NIGHT_OPS.has(op)) {
+    const t = nightTerm(r, faction, op, node, hero, agent)
+    lo += t
+    hi += t
   } else {
     lo += R.plotPerRyak * (ours - R.plotGuessRyakHi)
     hi += R.plotPerRyak * (ours - R.plotGuessRyakLo)
@@ -215,6 +264,16 @@ export function plotTargets(r: Realm, faction: string, op: PlotOp): Array<{ targ
       if (h.status !== 'free' || h.faction === faction || !others.includes(h.faction) || isRuler(r, h.id) || !heroSeen(r, faction, h.id)) continue
       const at = heroAt(r, h.id)
       if (at !== null) out.push({ target: h.faction, node: at, hero: h.id })
+    }
+    return out
+  }
+  if (op === 'rescue') {
+    // 잡혀간 우리 장수 — 잡은 나라가 살아 있고 우리가 아는 나라여야 한다. 그 나라 도읍의 옥으로 간다
+    const out: Array<{ target: string; node: string; hero: string }> = []
+    for (const h of Object.values(r.heroes).sort((a, b) => (a.id < b.id ? -1 : 1))) {
+      if (h.status !== 'captive' || h.faction !== faction || h.captor === null || !others.includes(h.captor)) continue
+      const at = rescueNode(r, h.captor)
+      if (at !== null) out.push({ target: h.captor, node: at, hero: h.id })
     }
     return out
   }
@@ -253,6 +312,14 @@ function valid(r: Realm, o: Plot): boolean {
     if (v === undefined || v.status !== 'free' || v.faction !== o.target || isRuler(r, v.id) || !heroSeen(r, o.faction, v.id)) return false
     if (o.agent !== undefined && !plotAgents(r, o.faction).includes(o.agent)) return false
     const c = plotCost('assassin', o.agent ?? null)
+    return stockOf(r, o.faction).grain >= c.grain
+  }
+  if (o.op === 'rescue') {
+    const h = o.hero !== undefined ? r.heroes[o.hero] : undefined
+    if (h === undefined || h.status !== 'captive' || h.faction !== o.faction || h.captor !== o.target) return false
+    if (o.node === undefined || o.node !== rescueNode(r, o.target)) return false
+    if (o.agent !== undefined && !plotAgents(r, o.faction).includes(o.agent)) return false
+    const c = plotCost('rescue', o.agent ?? null)
     return stockOf(r, o.faction).grain >= c.grain
   }
   // 보낸 장수 — 군대를 안 이끌고 쉬는 우리 장수만
@@ -344,7 +411,7 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
   for (const o of orders) {
     if (o.kind !== 'plot') continue
     if ((count.get(o.faction) ?? 0) >= R.plotsPerSeason) continue
-    const aim = o.op === 'assassin' ? (o.hero ?? '') : ON_NODE.has(o.op) ? (o.node ?? '') : o.op === 'sow' ? (o.other ?? '') : ''
+    const aim = NIGHT_OPS.has(o.op) ? (o.hero ?? '') : ON_NODE.has(o.op) ? (o.node ?? '') : o.op === 'sow' ? (o.other ?? '') : ''
     const dup = `${o.faction}:${o.op}:${o.target}:${aim}`
     if (done.has(dup) || !valid(r, o)) continue
     // 자객 하나는 한 계절에 한 번만 간다
@@ -358,25 +425,37 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
     st.iron -= c.iron
 
     const key = `plot:${dup}`
-    // 암살은 그 장수가 지금 있는 고을의 경계를 받는다
+    // 암살은 그 장수가 지금 있는 고을의 경계를 받는다 (구출은 옥이 있는 고을 — node)
     const at = o.op === 'assassin' ? (heroAt(r, o.hero!) ?? undefined) : o.node
-    // 밤 판에서 손으로 쏜 암살이면 굴림 대신 그 결과 (SNIPE §0-3) — dead·wounded 먹힘 · fled 실패(경보면 들킴) · withdrew 실패·안 들킴
+    const night = NIGHT_OPS.has(o.op)
+    // 밤 판에서 손으로 쏜 암살·구출이면 굴림 대신 그 결과 (SNIPE §0-3) — 암살은 dead·wounded 먹힘, 구출은 cleared(보초를 다 쓰러뜨려 데려 나왔다) 먹힘 ·
+    // fled 실패(경보면 들킴 — 구출의 fled 는 늘 경보다) · withdrew 실패·안 들킴
     // 건너뛰기(skip)는 손이 아니다 — 굴린다. 진짜 지붕을 보고 맡겼으면 굴림이 준다 (plotSkipSeenMul)
-    const given = o.op === 'assassin' ? o.hand : undefined
+    const given = night ? o.hand : undefined
     const hand = given !== undefined && given.result !== 'skip' ? given : undefined
     const skipMul = given?.result === 'skip' && given.seen === true ? R.plotSkipSeenMul : 1
     const ok = hand !== undefined
-      ? hand.result === 'dead' || hand.result === 'wounded'
+      ? (o.op === 'rescue' ? hand.result === 'cleared' : hand.result === 'dead' || hand.result === 'wounded')
       : roll(r.seed, r.season, key) < plotTrueChance(r, o.faction, o.op, o.target, at, o.hero, o.agent ?? null) * skipMul
     const caught = hand !== undefined
-      ? hand.alarm
+      ? hand.alarm || (o.op === 'rescue' && hand.result === 'fled')
       : roll(r.seed, r.season, `${key}:caught`) < (ok ? R.plotCaughtOnSuccess : R.plotCaughtOnFail)
     let mystery: Extract<ReportLine, { kind: 'mystery' }>['what'] | null = null
     let result: 'wound' | 'kill' | undefined
     let agentFate: 'escaped' | 'captured' | undefined
-    if (o.op === 'assassin') {
+    if (o.op === 'rescue' && ok) {
+      // 빼냈다 — 풀려난 장수는 우리 도읍(없으면 첫 고을)으로 돌아온다. 회유는 끊기고 실토 걱정도 없다 (heroes.releaseCaptives 와 같은 꼴)
       const v = r.heroes[o.hero!]!
-      if (ok) {
+      v.status = 'free'
+      v.captor = null
+      v.post = null
+      delete v.persuade
+      v.at = homeOf(r, o.faction)
+      if (r.hiddenAgents?.[v.id] !== undefined) delete r.hiddenAgents[v.id]
+    }
+    if (night) {
+      const v = r.heroes[o.hero!]!
+      if (ok && o.op === 'assassin') {
         // 먹혔다 — 낮은 확률로 죽고, 아니면 다쳐서 몇 계절 군대를 못 이끈다 (R2 에 활 저격판으로 이어진다)
         if (hand !== undefined ? hand.result === 'dead' : roll(r.seed, r.season, `${key}:kill`) < R.plotAssassinKill) {
           v.status = 'dead'
@@ -393,7 +472,7 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
       }
       if (caught) {
         // 들켰다 — 고용 자객은 값만 잃는다. 우리 장수였으면 도망과 사로잡힘을 굴린다 (자객 기본 · 장수는 도박).
-        // 누가 보냈는지 드러나면 그 나라와 두 칸 나빠진다 (아래 expose)
+        // 누가 보냈는지 드러나면 그 나라와 두 칸(구출은 한 칸) 나빠진다 (아래 expose)
         const ag = o.agent !== undefined ? r.heroes[o.agent] : undefined
         if (ag !== undefined && ag.status === 'free' && isRuler(r, ag.id)) {
           // 군주는 호위가 빼낸다 — 대신 다쳐 누워 다스림이 준다
@@ -415,7 +494,7 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
       const ag = o.agent !== undefined ? r.heroes[o.agent] : undefined
       if (ok && ag !== undefined && ag.status === 'free') gainXp(ag, 'ryak', R.xpPlot, lines)
     }
-    if (ok && o.op !== 'assassin') {
+    if (ok && !night) {
       switch (o.op) {
         case 'rumor':
           for (const a of Object.values(r.armies)) if (a.faction === o.target) a.morale = Math.max(R.moraleFloor, a.morale - R.plotRumorMorale)
@@ -451,7 +530,7 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
     // 들킴 세 갈래 — 들켰으면 누가 보냈는지까지 드러났나를 따로 굴린다 (`<키>:exposed`)
     let exposed = false
     if (caught) {
-      const agent = o.op === 'assassin' ? (o.agent ?? null) : undefined
+      const agent = night ? (o.agent ?? null) : undefined
       exposed = roll(r.seed, r.season, `${key}:exposed`) < exposeChance(r, o.faction, o.target, at, agent, agentFate === 'captured')
       // 누가 했는지 몰라도 그 고을(소문·이간·방화는 국읍)은 경계를 올린다
       const hot = at ?? r.factions[o.target]?.capital
@@ -464,7 +543,7 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
       kind: 'plot', faction: o.faction, op: o.op, target: o.target,
       ...(at !== undefined && ON_NODE.has(o.op) ? { node: at } : {}),
       ...(o.op === 'sow' ? { other: o.other! } : {}),
-      ...(o.op === 'assassin' ? { hero: o.hero! } : {}),
+      ...(night ? { hero: o.hero! } : {}),
       ...(o.agent !== undefined ? { agent: o.agent } : {}),
       ...(result !== undefined ? { result } : {}),
       ...(agentFate !== undefined ? { agentFate } : {}),

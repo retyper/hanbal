@@ -470,6 +470,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .plh { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; padding: 0; }
 .ap .plh > span:nth-child(2) { flex: 1; min-width: 0; display: flex; flex-direction: column; } .ap .plh .mute { white-space: normal; }
 .ap .plh .cost { flex: none; white-space: nowrap; }
+.ap .plh:disabled { opacity: .45; cursor: default; }
 .ap .askc { padding: 10px; margin: 8px 0; border-radius: 14px; background: #2f2520; border: 1px solid #5a4a2a; }
 .ap .askc.threat { border-color: #8a3a2a; background: #2a1f1f; } .ap .askc p { margin: 6px 0 2px; font-size: 14.5px; }
 .ap .sus { color: #f1a08a; font-weight: 700; }
