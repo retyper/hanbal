@@ -8,7 +8,9 @@
 import { STAT_NAME, josa } from '../../realm/data/prose.ts'
 import { DRILL_STATS, capOf, emptyDrill, engrave, gainOf, raise, raiseState, spendCost, type DrillEntry, type DrillStore } from '../../realm/drill.ts'
 import type { GrowStat, Hero, Realm } from '../../realm/types.ts'
+import { relicRoom } from '../../realm/relics.ts'
 import { nameHtml } from './heroview.ts'
+import { pickerHtml, relicDexHtml, slotsHtml, wornBy, type RelicKit } from './relics.ts'
 import { radarSvg } from './radar.ts'
 
 const KEY = 'hanbal.realm.drill'
@@ -59,7 +61,7 @@ export function engraveRun(r: Realm): Record<string, number> {
 /** 단련터의 + — 올렸으면 true */
 export function raiseHero(id: string, stat: GrowStat, born: Pick<Hero, GrowStat> | undefined): boolean {
   const s = loadDrill()
-  const n = raise(s, id, stat, born)
+  const n = raise(s, id, stat, born, relicRoom(wornBy(id))) // 지닌 유물이 넓힌 그릇까지 (relics.ts)
   if (n === s) return false
   saveDrill(n)
   return true
@@ -80,6 +82,8 @@ export interface DrillKit {
   readonly bust: (id: string) => string | null
   /** 처음 몸 — 영웅전 명부 · 가문의 아이 (없으면 새길 때 적어 둔 몸) */
   readonly bodyOf: (id: string) => Hero | undefined
+  /** 유물 칸 · 도감 (ui/realm/relics.ts) */
+  readonly relic: RelicKit
 }
 
 /** 단련터에 세울 사람 — 끝 화면에서 오면 그 판의 우리 장수, 첫 화면이면 null(단련 기록이 있는 모두) */
@@ -94,6 +98,8 @@ export interface YardOpts {
   /** 방금 올린 칸 — `id:stat` */
   readonly last: string | null
   readonly from: 'end' | 'title'
+  /** 열어 둔 유물 칸 — 그 장수 카드 밑에 고르기가 펼쳐진다 */
+  readonly slot?: { readonly id: string; readonly i: number } | null
 }
 
 const bodyFor = (k: DrillKit, id: string, e: DrillEntry): (Pick<Hero, GrowStat> & { uiri: number }) | null => {
@@ -134,9 +140,10 @@ export function yardHtml(k: DrillKit, o: YardOpts): string {
       const axes = (['mu', 'tong', 'ryak', 'chi', 'deok'] as const).map((s) => ({ label: STAT_NAME[s], value: Math.min(10, now[s]) as number | null }))
       h += `<div class="dyr">${radarSvg([...axes, { label: STAT_NAME.uiri, value: born.uiri }], '#d9b36a', 150, [born.mu, born.tong, born.ryak, born.chi, born.deok, born.uiri])}`
       h += `<div class="dys">`
+      const room = relicRoom(wornBy(id)) // 지닌 유물이 넓힌 그릇 (천마도 말다래 · 비파형동검)
       for (const s of DRILL_STATS) {
-        const cap = capOf(born, s)
-        const st = raiseState(store, id, s, born)
+        const cap = capOf(born, s, room)
+        const st = raiseState(store, id, s, born, room)
         const add = e.add[s] ?? 0
         const why = st === 'cap' ? '그릇이 찼다' : st === 'poor' ? `공 ${josa(String(cost), '이', '가')} 든다` : `공 ${josa(String(cost), '을', '를')} 써서 ${STAT_NAME[s]} +1`
         h += `<div class="dyst${o.last === `${id}:${s}` ? ' up' : ''}"><span class="dysn">${STAT_NAME[s]}</span><b>${Math.min(10, born[s] + add)}</b>${add > 0 ? `<i>+${add}</i>` : '<i></i>'}<small>/${cap}</small>`
@@ -144,10 +151,14 @@ export function yardHtml(k: DrillKit, o: YardOpts): string {
       }
       h += `</div></div>`
     }
+    // 유물 칸 — 누르면 가진 유물 고르기 (HERO-GROWTH ★ §B · §C)
+    const sel = o.slot?.id === id ? o.slot.i : null
+    h += slotsHtml(k.relic, id, e.level, sel)
+    if (sel !== null) h += pickerHtml(k.relic, id, sel)
     h += `</div>`
   }
-  h += `</div><div class="dygo"><button class="btn pri big" data-act="dy-next">${o.from === 'end' ? '다음으로 ›' : '처음으로'}</button></div>`
-  return h + `<p class="fine">점선은 처음 몸, 금빛은 단련한 몸 — 다음 판을 열 때 우리 장수와 데려간 장수가 이 몸으로 온다.</p></div>`
+  h += `</div>${relicDexHtml(k.relic)}<div class="dygo"><button class="btn pri big" data-act="dy-next">${o.from === 'end' ? '다음으로 ›' : '처음으로'}</button></div>`
+  return h + `<p class="fine">점선은 처음 몸, 금빛은 단련한 몸 — 다음 판을 열 때 우리 장수와 데려간 장수가 이 몸으로, 끼운 유물을 지니고 온다.</p></div>`
 }
 
 /** 끝 화면의 단련 한 줄 — 이번 판에 공을 번 장수 얼굴과 「+공」, 그리고 단련터로 */

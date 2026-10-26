@@ -85,7 +85,11 @@ export interface Side {
 }
 
 /** 싸움에 선 장수 하나 */
-export interface SideHero { readonly id: string; readonly mu: number; readonly ryak: number; readonly coward: boolean; readonly art?: Art; readonly style?: BattleStyle }
+export interface SideHero {
+  readonly id: string; readonly mu: number; readonly ryak: number; readonly coward: boolean; readonly art?: Art; readonly style?: BattleStyle
+  /** 겨루기에서만 더하는 무예 — 지닌 유물 (계림로 보검 · 비파형동검 — relics.ts) */
+  readonly duel?: number
+}
 
 /** 그 쪽의 장수 — 총대장이 먼저 */
 export const heroesOf = (s: Side): SideHero[] => [...(s.hero !== null ? [s.hero] : []), ...(s.aides ?? [])]
@@ -903,7 +907,8 @@ function resolveRound(
     // 나선 장수 — 겨루기를 건 쪽은 고른 이, 받는 쪽은 무예가 가장 높은 이가 나온다
     const dA = duelist(atk, oa.lead === 'duel' ? oa.who : undefined)
     const dD = duelist(def, od.lead === 'duel' ? od.who : undefined)
-    const pA = clamp(0.5 + R.tacDuelPerMu * ((dA?.mu ?? 1) - (dD?.mu ?? 1)), 0.1, 0.9)
+    const duelMu = (h: SideHero | undefined): number => (h?.mu ?? 1) + (h?.duel ?? 0) // 지닌 유물의 겨루기 무예 (relics.ts)
+    const pA = clamp(0.5 + R.tacDuelPerMu * (duelMu(dA) - duelMu(dD)), 0.1, 0.9)
     const aWins = rk(i, 'duel') < pA
     const loser: 'a' | 'd' = aWins ? 'd' : 'a'
     const kill = rk(i, 'duel-kill') < R.tacDuelKill

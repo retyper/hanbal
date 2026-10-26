@@ -12,6 +12,7 @@ import { HERO_POOL } from './data/heroes-pool.ts'
 import { TRAITS, TRAIT, type TraitGrade } from './data/traits.ts'
 import type { Art, EdgeKind, GrowStat, Hero, Order, Realm, ReportLine, RNode } from './types.ts'
 import { migratePath } from './economy.ts'
+import { relicMul, relicSum } from './relics.ts'
 
 const byId = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 
@@ -152,7 +153,7 @@ export function envoyBonus(r: Realm, from: string, ask: string, escort?: string)
   if (ruler !== null) b += R.rulerDeokEnvoy * (deokOf(ruler) - 5) * rulerReach(r, from)
   const h = escort !== undefined ? r.heroes[escort] : undefined
   const went = h !== undefined && h.faction === from && h.status === 'free' ? h : null
-  if (went !== null) b += R.heroDeokEnvoy * (deokOf(went) - 5)
+  if (went !== null) b += R.heroDeokEnvoy * (deokOf(went) - 5) + relicSum(went, 'envoy') // 호우명 그릇 · 다호리 붓 (relics.ts)
   // 특성은 군주 것과 따라간 장수 것 — 같은 특성은 한 번만
   const has = (t: string): boolean => (ruler !== null && hasTrait(ruler, t)) || (went !== null && hasTrait(went, t))
   if (has('charm')) b += R.traitCharm
@@ -179,12 +180,13 @@ export function harvestMul(r: Realm, node: string): number {
   const owner = r.nodes[node]?.owner
   if (owner !== null && owner !== undefined) {
     const ruler = rulerOf(r, owner)
-    if (ruler !== null) m += R.rulerChiHarvest * (ruler.chi - 5) * rulerReach(r, owner)
+    if (ruler !== null) m += R.rulerChiHarvest * (ruler.chi - 5) * rulerReach(r, owner) + relicSum(ruler, 'crown') // 신라 금관 — 군주가 지니면 나라 모든 고을 (relics.ts)
   }
   const h = postHero(r, node)
   if (h !== null) {
     m += R.postChiHarvest * (h.chi - 5)
     if (hasTrait(h, 'farmer')) m += R.traitFarmer
+    m += relicSum(h, 'farm') // 농경문 청동기 (relics.ts)
   }
   return Math.max(0.5, m)
 }
@@ -752,6 +754,7 @@ export function growNeed(h: Hero, stat: GrowStat): number {
 export function addBond(r: Realm, h: Hero, d: number, lines: ReportLine[]): void {
   const was = bondOf(r, h)
   if (was === null || d === 0 || h.status !== 'free') return
+  if (d > 0) d *= relicMul(h, 'bond') // 굽은옥 — 정이 빨리 찬다 (relics.ts · 깎일 때는 그대로)
   const now = Math.max(0, Math.min(100, was + d))
   h.bond = now
   if (was < P.realm.bondTrust && now >= P.realm.bondTrust) lines.push({ kind: 'bond', hero: h.id, tier: 'trust' })

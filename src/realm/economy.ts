@@ -16,7 +16,8 @@ import { P } from '../tune/params.ts'
 import { blockedWhy, seasonOf } from './calendar.ts'
 import { tierMul } from './tier.ts'
 import { hasCustom } from './data/customs.ts'
-import { draftCapBonus, gluttonMen, growMul, harvestMul, militiaMul, riteMul } from './heroes.ts'
+import { draftCapBonus, gluttonMen, growMul, harvestMul, militiaMul, postHero, riteMul } from './heroes.ts'
+import { relicSum } from './relics.ts'
 import type { Equip, UnitKind } from './battle.ts'
 import { TIERS, kitOf, lowestTier, nextTier, upgradeKind } from './kit.ts'
 import type { Army, BuildWhat, Good, Goods, Order, ReportLine, Realm, RNode, Stock } from './types.ts'
@@ -178,6 +179,9 @@ export function nodeYield(r: Realm, node: string, season = seasonOf(r.season)): 
   const w = workMul(n.hh)
   if (n.kind === 'ironMine') out.iron = Math.round(R.ironPerMine * w)
   if (n.kind === 'port') out.iron = (out.iron ?? 0) + Math.round(R.ironPerPort * w)
+  // 덩이쇠 묶음 — 지닌 장수가 맡은 고을은 철이 더 난다 (relics.ts · 유물은 우리 장수만 지니니 우리 고을만 본다)
+  const ingot = n.owner === r.player ? relicSum(postHero(r, node), 'iron') : 0
+  if (ingot > 0) out.iron = (out.iron ?? 0) + ingot
   if (isCoast(r, node)) {
     out.salt = Math.round(R.saltPerCoast * w)
     if (season !== 'winter') out.grain = Math.round(n.hh * R.fishPerHH)

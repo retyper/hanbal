@@ -255,6 +255,13 @@ export interface Hero {
    * 옛 저장 · 남의 나라 장수 · 단련 없는 장수에는 없다
    */
   drill?: { readonly lv: number; readonly add: Partial<Record<GrowStat, number>> }
+  /**
+   * 지닌 유물 (relics.applyRelics · data/relics.ts) — 이긴 판의 껴묻거리를 단련터에서 끼워 들고 왔다. 판이 그 효과를 읽는다.
+   * 옛 저장 · 남의 나라 장수 · 유물 없는 장수에는 없다
+   */
+  relics?: readonly string[]
+  /** 능력치 유물이 판을 열 때 더해 준 몫 (10 에 막혀 덜 든 것은 뺀 값) */
+  relicAdd?: Partial<Record<GrowStat, number>>
 }
 
 /** 사건 카드 한 장 (events.ts · data/cards.ts) — season 계절에 답한다. hero·hero2·node 는 카드에 붙은 사람·고을 */
