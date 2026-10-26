@@ -121,7 +121,7 @@ export interface FightResult {
   /** 무너진 쪽 — 그 쪽 장수가 난전에 쓰러질 수 있다 */
   readonly broke: 'a' | 'd' | null
   /** 장수 겨루기에서 진 장수 — 쓰러졌나 다쳤나 */
-  readonly duel: { readonly loser: 'a' | 'd'; readonly kill: boolean } | null
+  readonly duel: { readonly loser: 'a' | 'd'; readonly kill: boolean; /** 겨루기를 이긴 장수 (단련 공 · drill.ts) */ readonly winner?: string } | null
   readonly rounds: readonly RoundLog[]
   readonly pending?: Pending
   /** 플레이어가 명령을 하나라도 냈나 */
@@ -575,7 +575,7 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
   let captured: 'a' | 'd' | null = null
   let broke: 'a' | 'd' | null = null
   let retreat: 'a' | 'd' | 'both' | null = null
-  let duel: { loser: 'a' | 'd'; kill: boolean } | null = null
+  let duel: { loser: 'a' | 'd'; kill: boolean; winner?: string } | null = null
   let brokeBy: 'men' | 'morale' | null = null
   const rk = (i: number, k: string): number => roll(seed, season, `${key}:t${i}:${k}`)
   const max = Math.max(1, Math.round(R.tacRoundsMax))
@@ -827,7 +827,7 @@ function resolveRound(
   c: Ctx, st: State, oa: RoundOrder & { lead: Cmd }, od: RoundOrder & { lead: Cmd }, i: number,
   rk: (i: number, k: string) => number, capOf: (mine: 'a' | 'd', guard: boolean, target?: SideHero) => { p: number; squad: number; escort: number },
 ): {
-  log: RoundLog; captured: 'a' | 'd' | null; retreat: 'a' | 'd' | 'both' | null; duel: { loser: 'a' | 'd'; kill: boolean } | null
+  log: RoundLog; captured: 'a' | 'd' | null; retreat: 'a' | 'd' | 'both' | null; duel: { loser: 'a' | 'd'; kill: boolean; winner?: string } | null
   /** 이 합에 잃은 장수 — 사로잡힘 · 겨루기에서 쓰러지거나 다쳐 물러남 */
   lost: Array<{ side: 'a' | 'd'; hero: string; how: 'taken' | 'fell'; kill: boolean }>
 } {
@@ -858,7 +858,7 @@ function resolveRound(
   let ev: RoundLog['ev']
   let by: 'a' | 'd' | undefined
   let lossScale = 1
-  let duelRes: { loser: 'a' | 'd'; kill: boolean } | null = null
+  let duelRes: { loser: 'a' | 'd'; kill: boolean; winner?: string } | null = null
   const draw: Record<'a' | 'd', number> = { a: 1, d: 1 }
   const front = (x: 'a' | 'd'): Cmd | undefined => side(x).o.front
   const chipOf = (o: RoundOrder & { lead: Cmd }): Cmd => (o.lead !== 'drum' ? o.lead : o.front ?? o.bows ?? o.horse ?? 'drum')
@@ -907,7 +907,8 @@ function resolveRound(
     const aWins = rk(i, 'duel') < pA
     const loser: 'a' | 'd' = aWins ? 'd' : 'a'
     const kill = rk(i, 'duel-kill') < R.tacDuelKill
-    duelRes = { loser, kill }
+    const wh = aWins ? dA : dD
+    duelRes = { loser, kill, ...(wh !== undefined ? { winner: wh.id } : {}) }
     const lh = loser === 'a' ? dA : dD
     // 홀로 선 장수가 졌으면 옛 길 — 장수 잃은 군대로 싸운다. 장수가 여럿이면 그 장수만 물러나고 다른 장수가 이끈다 (fightRounds)
     if (heroesOf(loser === 'a' ? atk : def).length <= 1) { if (loser === 'a') { st.lostA = true; st.hurtA = !kill } else { st.lostD = true; st.hurtD = !kill } }

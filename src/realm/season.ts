@@ -43,6 +43,7 @@ import { PEOPLE_SCALE, migrate } from './migrate.ts'
 import { spreadRumors } from './rumor.ts'
 import { addMen, giveMen, kitOf, scaleKinds, scaleMen, takeMen } from './kit.ts'
 import { formParty, joinParty, moveParty, stepParties } from './parties.ts'
+import { battleMerit, seasonMerit } from './drill.ts'
 import {
   ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, ironhandAt, noteMet, oneJobPerHero, postHero, releaseCaptives, stepHeroes, sweepHeroes,
 } from './heroes.ts'
@@ -980,6 +981,7 @@ function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines
       if (atkWon) battleGrowth(r, atkHeroes, defHeroes, [], lines)
       else if (atkLost) battleGrowth(r, defHeroes, atkHeroes, [], lines)
       else battleGrowth(r, [], [], [...atkHeroes, ...defHeroes], lines)
+      battleMerit(r, atkHeroes, defHeroes, atkWon ? 'a' : atkLost ? 'd' : null, res.duel?.winner, fateOf.captives) // 단련 공 (drill.ts)
       // 진 쪽(교착이면 둘 다)은 떠난 고을로 — 그새 남이 쥐었으면 이웃의 제 땅, 없으면 흩어진다
       const back = (g: Army[]): void => {
         for (const x of g) {
@@ -1161,6 +1163,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   if (atkWon) battleGrowth(r, atkHeroes, defHeroes, [], lines)
   else if (atkLost) battleGrowth(r, defHeroes, atkHeroes, [], lines)
   else battleGrowth(r, [], [], [...atkHeroes, ...defHeroes], lines)
+  battleMerit(r, atkHeroes, defHeroes, atkWon ? 'a' : atkLost ? 'd' : null, res.duel?.winner, captives) // 단련 공 (drill.ts)
 
   // 자리 — 이기면 다 함께 들어가 고을을 쥐고, 지거나 교착이면 저마다 떠난 고을로 돌아간다
   const from = new Map(atks.map((x) => [x.id, x.march!.from]))
@@ -1439,6 +1442,7 @@ export function advance(
     }
     makeAsks(r, lines) // 9 — 남의 나라가 다음 계절에 답할 청을 건다
   }
+  seasonMerit(r, lines) // 9 끝 — 단련 공: 맡은 고을 · 이끈 군대 · 먹힌 공작 · 받아들여진 청 (drill.ts)
   const report: Report = { season: r.season, lines }
   r.season += 1 // 11
   stepCards(r, lines) // 11 끝 — 새 계절의 사건 카드를 펴고 다음 카드를 뽑아 둔다 · 점괘 (events.ts)

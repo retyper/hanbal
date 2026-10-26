@@ -49,6 +49,8 @@ import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, warmNextSeason, type RouteS
 import { LEGACY_CSS, bringHtml, clearBring, toggleBring } from './legacy.ts'
 import { DEX_CSS, clanHeroes, dexHtml, dexToastHtml, loadDex, recordDex, type DexBoard } from './dex.ts'
 import { DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
+import { DRILL_CSS, engraveRun, hasDrill, loadDrill, raiseHero, yardHtml, yardStripHtml, type DrillKit } from './drill.ts'
+import { applyDrill, earnedOf } from '../../realm/drill.ts'
 import { LEVEL_LINE, TIER_MAX, levelName } from '../../realm/tier.ts'
 import { FIT_CSS, fitLabels } from './fit.ts'
 import { annalOf } from '../../realm/data/annals.ts'
@@ -492,6 +494,15 @@ const DEX_KIT = {
   kid: (key: string, look: 'g' | 'w'): string | null => { const f = kidBust(key, look); return f !== undefined ? `${ART}bust/${f}.jpg` : null },
 }
 
+/** 처음 몸 — 영웅전 명부 · 가문의 아이 (단련터 · 동행 고르기의 단련 몸) */
+const drillBody = (id: string): Hero | undefined => dexCatalog().find((x) => x.id === id)?.hero ?? clanHeroes().find((x) => x.id === id)?.hero
+/** 단련터(drill.ts)가 쓰는 그림 손 */
+const DRILL_KIT: DrillKit = {
+  esc,
+  bust: (id: string): string | null => (bustOf(id) !== undefined ? `${ART}bust/${bustOf(id)}.jpg` : null),
+  bodyOf: drillBody,
+}
+
 /** 판의 앞과 끝(front.ts)이 쓰는 그림 손 */
 const KIT: FrontKit = {
   art: ART, esc, icon, nations: nationsOf, face: nationFace, boardRuler,
@@ -529,10 +540,12 @@ export interface PastGame {
 type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region: RegionId } | { kind: 'detail'; region: RegionId; id: string } | { kind: 'annals' }
   /** 도감 — back: 돌아갈 판 바깥 화면 (null 이면 판으로) */
   | { kind: 'dex'; board: DexBoard; sel: string | null; back: Front | null }
+  /** 단련터 — 끝 화면(end)에서 오면 그 판의 우리 장수, 첫 화면(title)에서 오면 단련 기록이 있는 모두 (drill.ts · HERO-GROWTH ★ §C) */
+  | { kind: 'drill'; from: 'end' | 'title'; ids: string[] | null; gain: Record<string, number>; fell: string[]; anim: boolean; last: string | null }
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
+  style.textContent = FIT_CSS + TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS + MAP_CSS + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
   installTips(root)
@@ -630,6 +643,22 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let cmdJob: CmdJob | null = null
   /** 판을 열기 전 「데려갈 장수」 팝업 — 고른 판 (형 10-25: "게임 시작할 때 데려갈 장수가 팝업으로 · 영웅전 내 기록의 장수만 · 가능한 수대로 체크") */
   let bringAsk: { nation: string; region: RegionId; tier: number } | null = null
+  /** 이번에 새로 새긴 단련 공 — 끝 화면이 처음 그려질 때 (drill.engraveRun). 단련터의 막대가 이만큼 차오른다 */
+  let drillGain: Record<string, number> = {}
+  /** 판이 끝났으면 공을 새긴다 — 몇 번 불러도 한 번만 든다 (무한 모드로 이어 둔 몫만 더) */
+  const engraveNow = (r: Realm | null): void => {
+    if (r === null || r.outcome == null) return
+    const g = engraveRun(r)
+    if (Object.keys(g).length > 0) drillGain = g
+  }
+  /** 단련터를 나선다 — 끝 화면에서 왔으면 끝 화면으로(필름은 건너뛰고 단추부터), 첫 화면에서 왔으면 첫 화면으로 */
+  const yardLeave = (): void => {
+    const end = front?.kind === 'drill' && front.from === 'end' && realm?.outcome != null
+    drillGain = {}
+    front = end ? null : { kind: 'title' }
+    fastNext = end
+    paint()
+  }
   /** 첫 화면 「다른 판」에서 ✕ 를 한 번 누른 판 — 한 번 더 누르면 지운다 */
   let slotArmed: number | null = null
   /** 「저장 · 불러오기」 창 — 열려 있으면 (game: 판 안 · title: 첫 화면의 불러오기만) */
@@ -2855,7 +2884,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 사서에 남은 사람 — 얼굴 모서리의 「📜?」를 누르면 사서의 이야기 (형 10-25: 이름 줄에 붙이면 특성처럼 보였다 · 그림과 물음표만)
     const annal = annalOf(x.id)
     h += `<div class="hpic">${file !== undefined ? `<img class="big" src="${ART}bust/${file}.jpg" alt="" data-act="bust-view" data-src="${ART}bust/${file}.jpg">` : bust(x, 'face')}${annal !== undefined ? `<button class="annb" data-act="annal" data-id="${x.id}" aria-label="사서에 남은 이야기">📜<b>?</b></button>` : ''}</div>`
-    h += `<div class="hn">${nameHtml(x.name)}</div><div class="mute">${emblem(x.faction)}${esc(r.factions[x.faction]?.name ?? '떠돌이')}${isRuler(r, x.id) ? ' 군주' : ''} · ${esc(roleLine(r, x))}</div>`
+    // 판 밖 단련을 들고 온 장수 — 「단련 n」 (HERO-GROWTH ★ §A)
+    h += `<div class="hn">${nameHtml(x.name)}${x.drill !== undefined && x.drill.lv > 0 && x.faction === me() ? ` <span class="dlv">단련 ${x.drill.lv}</span>` : ''}</div><div class="mute">${emblem(x.faction)}${esc(r.factions[x.faction]?.name ?? '떠돌이')}${isRuler(r, x.id) ? ' 군주' : ''} · ${esc(roleLine(r, x))}</div>`
     h += heroRadar(x, seen, ours)
     h += `<div class="tr3">${traitChips(x, seen)}${artChip(x, seen, icon)}</div>`
     if (ours) h += growthHtml(r, x)
@@ -3218,7 +3248,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function bringPopup(): void {
     if (bringAsk === null) return
     const max = retainMaxOf(bringAsk.tier)
-    const body = `<div class="bringbox" role="dialog" aria-label="데려갈 장수"><button class="bx" data-act="bring-x" aria-label="닫기">✕</button>${bringHtml(DEX_KIT, servedHeroes(), max)}`
+    // 단련한 몸으로 온다 — 카드에 「단련 n」과 그 몸의 능력치 (HERO-GROWTH ★ §A)
+    const drill = loadDrill()
+    const drilled = (id: string): Hero | null => {
+      const b = drillBody(id)
+      const e = drill.h[id]
+      return b !== undefined && e !== undefined && e.level > 0 ? applyDrill(b, e) : null
+    }
+    const body = `<div class="bringbox" role="dialog" aria-label="데려갈 장수"><button class="bx" data-act="bring-x" aria-label="닫기">✕</button>${bringHtml(DEX_KIT, servedHeroes(), max, drilled)}`
       + `<div class="bringgo"><button class="btn ghost" data-act="bring-none">혼자 간다</button><button class="btn pri" data-act="bring-go">이대로 떠난다</button></div></div>`
     let ov = root.querySelector<HTMLElement>('.bringov')
     if (ov === null) { root.insertAdjacentHTML('beforeend', `<div class="bringov"></div>`); ov = root.querySelector<HTMLElement>('.bringov')! }
@@ -3735,6 +3772,21 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return `<div class="scene"><img class="ev" src="${ART}event/${best.ev}.jpg" alt="">${best.hero !== null ? bust(best.hero, 'who') : ''}<div class="brag">${esc(best.line)}</div></div>`
   }
 
+  /** 끝 화면의 단련 한 줄 — 이번 판에 공을 번 장수와 단련터 단추 (HERO-GROWTH ★ §C) */
+  function drillStrip(r: Realm): string {
+    const ids = Object.keys(r.merit ?? {}).filter((id) => earnedOf(r, id) > 0)
+    const rows = ids.map((id) => ({ id, name: r.heroes[id]?.name ?? id, earned: earnedOf(r, id) })).sort((a, b) => b.earned - a.earned || (a.id < b.id ? -1 : 1))
+    const store = loadDrill()
+    return yardStripHtml(DRILL_KIT, rows, ids.reduce((s, id) => s + (store.h[id]?.points ?? 0), 0))
+  }
+  /** 끝 화면에서 단련터로 — 그 판의 우리 장수(쓰러진 이 · 공을 번 이) */
+  function yardFromEnd(r: Realm): Front {
+    const ours = Object.values(r.heroes).filter((h) => h.faction === me()).map((h) => h.id)
+    const ids = [...new Set([...Object.keys(r.merit ?? {}), ...ours])]
+    const fell = ids.filter((id) => r.heroes[id]?.status === 'dead')
+    return { kind: 'drill', from: 'end', ids, gain: drillGain, fell, anim: true, last: null }
+  }
+
   function modalHtml(r: Realm): string {
     // 이겼어도 계속 두는 판이면 보고가 이어진다 — 도읍을 모두 쥔 계절에 한 번 더 끝 화면
     const endNow = r.outcome && (!r.endless || (r.unified !== undefined && r.unified === r.season - 1))
@@ -3746,7 +3798,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 휘장 — 이 나라로 이겼다는 표가 나라 고르기에 붙는다 (META §2-①)
       const badge = r.outcome?.kind === 'win' && (r.region ?? 'byeonhan-mini') !== 'tutorial'
         ? `<p class="tierup">${esc(josa(r.factions[me()]?.name ?? '', '으로', '로'))} 이긴 <b>휘장</b>을 받았다 — 나라 고르기에 붙는다</p>` : ''
-      return endingHtml(KIT, r, host.history(), opened + badge + `<p class="mute retainnote">우리 장수로 부린 이는 영웅전에 남는다 — 다음 판을 열 때 영웅전에서 골라 데려간다.</p>`)
+      return endingHtml(KIT, r, host.history(), opened + badge + drillStrip(r) + `<p class="mute retainnote">우리 장수로 부린 이는 영웅전에 남는다 — 다음 판을 열 때 영웅전에서 골라 데려간다.</p>`)
     }
     if (!showReport || before === null || report === null) return ''
     const season = seasonOf(r.season)
@@ -4150,11 +4202,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'title': {
         // 영웅전(도감) — 판을 넘어 남는 것 (VISION §5-4)
         const dexBtn = `<button class="btn big" data-act="dex-open">영웅전</button>` // 형 10-25: 도감보다 즐거운 이름 · 숫자는 들어가면 보인다
+          + (hasDrill() ? `<button class="btn big" data-act="dy-title">단련터</button>` : '') // 남은 단련 공은 아무 때나 쓴다 (HERO-GROWTH ★ §C)
           + ((host.pastGames?.() ?? []).length > 0 ? `<button class="btn big" data-act="annals-open">나의 역사</button>` : '')
         const loadBtn = host.saves !== undefined ? `<button class="btn big" data-act="save-open-title">불러오기</button>` : ''
         return titleHtml(KIT, realm, host.savedAt(), installCard() + acctLine() + links, realm === null && !tutorialOver(), loadBtn + dexBtn, host.slots?.() ?? [], slotArmed)
       }
       case 'dex': return dexHtml(DEX_KIT, f.board, f.sel, f.back === null ? '판으로' : '처음으로')
+      case 'drill': return yardHtml(DRILL_KIT, f)
       case 'annals': return annalsHtml()
       case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null), tierWon, tierHtml('jumong', chapTier, 'chap-tier'))
       case 'nations': return nationsHtml(KIT, f.region)
@@ -4536,9 +4590,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       root.classList.add('choosing')
       lastMap = ''
       // 도감은 장수를 누를 때마다 다시 그린다 — 내려 본 자리를 지킨다
-      const keepFront = front?.kind === 'dex' ? (root.querySelector('.front.dexp')?.scrollTop ?? 0) : 0
+      const keepSel = front?.kind === 'dex' ? '.front.dexp' : front?.kind === 'drill' && !front.anim ? '.front.dyard' : null
+      const keepFront = keepSel !== null ? (root.querySelector(keepSel)?.scrollTop ?? 0) : 0
       $('.mapwrap').innerHTML = frontHtml(front!)
-      if (keepFront > 0) { const fe = root.querySelector('.front.dexp'); if (fe !== null) fe.scrollTop = keepFront }
+      if (keepSel !== null && keepFront > 0) { const fe = root.querySelector(keepSel); if (fe !== null) fe.scrollTop = keepFront }
       $('.top').innerHTML = ''
       $('.tabs').innerHTML = ''
       $('.legend').innerHTML = ''
@@ -4778,6 +4833,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (res.next.outcome?.kind === 'win' && prev.outcome == null) markWon(res.next.region ?? 'byeonhan-mini', res.next.tier ?? 1, me())
     host.onAdvance(res.next, res.report, all, mine)
     dexToast(recordDex(res.next))
+    engraveNow(res.next) // 판이 끝났다 — 이기든 지든 장수마다 공을 판 밖 단련 공으로 (drill.ts)
     backToast(backNotes(prev, res.next, mine))
     seasonFx(res.next.season)
     noteFaces(res.next) // 갓 난 아이 얼굴 — 보고·장면·장수 판 어디서나 (형 10-23: "하늬도 이미지가 없어 보이네 애기 태어날 때")
@@ -4801,7 +4857,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (front.kind === 'dex') {
         if (front.sel !== null) front = { ...front, sel: null }
         else front = front.back
-      } else if (front.kind === 'detail') front = { kind: 'nations', region: front.region }
+      } else if (front.kind === 'drill') { yardLeave(); return true }
+      else if (front.kind === 'detail') front = { kind: 'nations', region: front.region }
       else if (front.kind === 'nations') front = { kind: 'boards' }
       else if (front.kind === 'boards') front = { kind: 'title' }
       else return false // 처음 화면 — 떠난다
@@ -5017,6 +5074,21 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'contest': openContest(); break
       case 'unwed': heroOrders = heroOrders.filter((o) => !(o.kind === 'wed' && (o.a === d['id'] || o.b === d['id']))); break
       case 'dex-open': root.querySelector('.dxtoast')?.remove(); front = { kind: 'dex', board: 'all', sel: null, back: front }; sheet = null; paint(); return
+      // 단련터 — 끝 화면에서 · 첫 화면에서 (HERO-GROWTH ★ §C)
+      case 'dy-open': if (realm !== null) { engraveNow(realm); front = yardFromEnd(realm); sheet = null; $('.mapwrap').scrollTop = 0 } paint(); return
+      case 'dy-title': front = { kind: 'drill', from: 'title', ids: null, gain: {}, fell: [], anim: true, last: null }; sheet = null; paint(); return
+      case 'dy-next': yardLeave(); return
+      case 'dy-up': {
+        if (front === null || front.kind !== 'drill') return
+        const id = d['id']!
+        const s = d['s'] as 'mu' | 'tong' | 'ryak' | 'chi' | 'deok'
+        if (raiseHero(id, s, drillBody(id))) {
+          ding(snd('tap_coin'), 0.5)
+          front = { ...front, anim: false, last: `${id}:${s}`, gain: {} }
+        }
+        paint()
+        return
+      }
       case 'dex-close': if (front !== null && front.kind === 'dex') front = front.back; paint(); return
       case 'dex-board': if (front !== null && front.kind === 'dex') { front = { ...front, board: d['v'] as DexBoard, sel: null }; root.querySelector('.front.dexp')?.scrollTo(0, 0) } paint(); return
       case 'dex-sel': if (front !== null && front.kind === 'dex') front = { ...front, sel: d['id'] === undefined || d['id'] === front.sel ? null : d['id'] }; paint(); return
@@ -5675,6 +5747,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       restoreDraft()
       loadSeen()
       if (r !== null) { noteFaces(r); recordDex(r) } // 열 때 한 번 — 아이 얼굴을 먼저 짝짓고 · 알림 없이 (이 판에서 이미 본 장수)
+      engraveNow(r) // 끝난 판을 열었다 — 아직 안 새긴 공이 있으면 (새기기 전에 창을 닫았거나 옛 빌드였다)
       sheet = null
       paint()
       if (fresh && r !== null) coverMap() // 새 판 — 지도 그림을 다 받을 때까지 가린다

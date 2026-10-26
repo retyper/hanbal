@@ -13,7 +13,8 @@ export interface RadarAxis {
   readonly value: number | null
 }
 
-export function radarSvg(axes: readonly RadarAxis[], color: string, size = 180): string {
+/** ghost — 겹쳐 그릴 다른 몸 (점선 테만 · 단련터의 처음 몸) */
+export function radarSvg(axes: readonly RadarAxis[], color: string, size = 180, ghost?: readonly number[]): string {
   const n = axes.length
   const c = size / 2
   const r = size * 0.3
@@ -28,6 +29,10 @@ export function radarSvg(axes: readonly RadarAxis[], color: string, size = 180):
     const [x, y] = at(i, 1)
     s += `<line x1="${c}" y1="${c}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#54412a" stroke-width="1"/>`
   })
+  if (ghost !== undefined && ghost.length === n) {
+    const gp = ghost.map((v, i) => at(i, Math.max(0.05, v / MAX)).map((x) => x.toFixed(1)).join(',')).join(' ')
+    s += `<polygon points="${gp}" fill="none" stroke="#cfc6b4" stroke-opacity=".7" stroke-width="1.5" stroke-dasharray="4 3"/>`
+  }
   if (axes.every((a) => a.value !== null)) {
     const pts = axes.map((a, i) => at(i, Math.max(0.05, a.value! / MAX)).map((v) => v.toFixed(1)).join(',')).join(' ')
     s += `<polygon points="${pts}" fill="${color}" fill-opacity=".35" stroke="${color}" stroke-width="2"/>`
