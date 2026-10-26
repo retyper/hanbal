@@ -1499,7 +1499,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<b>${esc(armyName(r, first))} · ${headcount(forceOf(r, first))}명 ${guideBtn('move')}</b><span>군사를 보낼 곳을 선택한다${more > 0 ? ' · 옆 말도 누르면 함께' : ''}</span>`
     } else {
       const men = sel.reduce((s, a) => s + headcount(forceOf(r, a)), 0)
-      const heroes = sel.filter((a) => a.hero !== null).length
+      // 이번 계절 장수 명령을 넣은 모습으로 센다 — 장수를 빼낸 군대는 장수 없는 군대 (형 10-26: "한 장수를 빼고 … 합치기가 안 됨")
+      const pl = plan()
+      const heroes = sel.filter((a) => (pl.armies[a.id]?.hero ?? null) !== null).length
       h += `<b>${sel.length}군 · ${men}명</b><span>갈 곳을 누르면 함께 간다</span>`
       h += `</div><button class="btn pri sm" data-act="selmerge" ${heroes > 1 ? 'disabled' : ''}>합치기</button>`
       if (heroes > 1) h += `<span class="sbwhy">장수 둘은 한 군대를 함께 못 이끈다</span>`
@@ -5511,7 +5513,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'selmerge': {
         // 고른 군대를 하나로 — 장수가 이끄는 군대로 모은다
         if (r === null) break
-        const into = armySel.find((id) => r.armies[id]?.hero != null) ?? armySel[0]!
+        const pl = plan()
+        const into = armySel.find((id) => pl.armies[id]?.hero != null) ?? armySel[0]!
         const os: Order[] = armySel.filter((id) => id !== into).map((id) => ({ kind: 'merge', army: id, into }))
         if (os.length === 0) break
         armyOrders = [...armyOrders, ...os]

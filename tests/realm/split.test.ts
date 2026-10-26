@@ -82,6 +82,17 @@ describe('나누기 · 모으기', () => {
     assert.ok(after.armies['a-guya-2'] !== undefined)
   })
 
+  it('장수를 빼낸 군대는 같은 계절에 합칠 수 있다 (형 10-26: "한 장수를 빼고 … 두 부대 합치기가 안 됨")', () => {
+    const g = planned(byeonhanMini(1), [])
+    g.armies['a-guya-2']!.at = 'guya-cap'
+    const out = g.armies['a-guya-2']!.hero!
+    const orders: Order[] = [{ kind: 'assign', hero: out, node: null }, { kind: 'merge', army: 'a-guya-2', into: 'a-guya-1' }]
+    const after = advance(g, orders).next
+    assert.equal(after.armies['a-guya-2'], undefined)
+    assert.equal(after.armies['a-guya-1']!.hero, g.armies['a-guya-1']!.hero)
+    assert.deepEqual(advance(g, orders).next.armies, after.armies) // 같은 판 같은 결과
+  })
+
   it('떼어 낸 별동대는 그 계절에 바로 떠난다 · planned 는 advance 의 1단계와 같다', () => {
     const r = byeonhanMini(1)
     const id = newArmyId(r, 'us')

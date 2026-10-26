@@ -391,12 +391,13 @@ function splitArmy(r: Realm, o: Extract<Order, { kind: 'split' }>, lines: Report
 }
 
 /** 모으기 — 장수는 받는 쪽, 없으면 들어오는 쪽. 둘 다 장수가 있으면 안 모은다 (부장 자리는 R3) */
-function mergeArmy(r: Realm, o: Extract<Order, { kind: 'merge' }>, lines: ReportLine[]): void {
+/** 합치기 — 장수 둘이 걸려 못 합친 것은 false (장수 명령 뒤에 한 번 더 해 본다) */
+function mergeArmy(r: Realm, o: Extract<Order, { kind: 'merge' }>, lines: ReportLine[]): boolean {
   const a = r.armies[o.army]
   const b = r.armies[o.into]
-  if (a === undefined || b === undefined || a.id === b.id) return
-  if (a.faction !== b.faction || a.at !== b.at || a.march !== null || b.march !== null) return
-  if (heroOf(r, a) !== null && heroOf(r, b) !== null) return
+  if (a === undefined || b === undefined || a.id === b.id) return true
+  if (a.faction !== b.faction || a.at !== b.at || a.march !== null || b.march !== null) return true
+  if (heroOf(r, a) !== null && heroOf(r, b) !== null) return false
   const na = headcount(forceOf(r, a))
   const nb = headcount(forceOf(r, b))
   giveMen(b, { mix: a.mix, kit: kitOf(a) }) // 병종마다 무장째 더한다
@@ -404,6 +405,7 @@ function mergeArmy(r: Realm, o: Extract<Order, { kind: 'merge' }>, lines: Report
   if (heroOf(r, b) === null) b.hero = a.hero
   delete r.armies[a.id]
   lines.push({ kind: 'merge', army: a.id, into: b.id })
+  return true
 }
 
 /**
@@ -554,9 +556,10 @@ function revealAround(r: Realm, faction: string, node: string): void {
 }
 
 function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
+  const later: Array<Extract<Order, { kind: 'merge' }>> = []
   for (const o of orders) {
     if (o.kind === 'split') splitArmy(r, o, lines)
-    else if (o.kind === 'merge') mergeArmy(r, o, lines)
+    else if (o.kind === 'merge') { if (!mergeArmy(r, o, lines)) later.push(o) }
     else if (o.kind === 'draft') draftArmy(r, o, lines)
     else if (o.kind === 'disband') disbandArmy(r, o, lines)
     else if (o.kind === 'turnBack') turnBack(r, o, lines)
@@ -572,6 +575,8 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
     else if (o.kind === 'build') applyBuild(r, o, lines)
   }
   applyHeroOrders(r, orders, lines) // 맡기기·이끌기·회유·들이기 — 나누기·해산 뒤 (떼어 낸 군대를 이끌 수 있게)
+  // 장수를 빼낸 군대와 합치기 — 장수가 아직 이끄는 채라 못 합친 것을 장수 명령 뒤에 한 번 더 (형 10-26: "한 장수를 빼고 … 두 부대 합치기가 안 됨")
+  for (const o of later) mergeArmy(r, o, lines)
   sendExpeditions(r, orders, lines) // 원정 — 장수 명령 뒤 (군대에서 빠진 장수도 보낼 수 있게)
   resolveCard(r, orders, lines) // 사건 카드의 답 — 가을걷이(7) 전에 (가뭄·풍년이 그해 배수를 건다)
 }
