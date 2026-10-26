@@ -217,6 +217,12 @@ export const MAP_CSS = `
 .map[data-zl="far"][data-region="yeongnam"] .ly-roads, .map[data-zl="far"][data-region="south"] .ly-roads, .map[data-zl="far"][data-region="world"] .ly-roads { opacity: .62; }
 .map[data-zl="far"][data-region="yeongnam"] svg .rsign, .map[data-zl="far"][data-region="south"] svg .rsign, .map[data-zl="far"][data-region="world"] svg .rsign { display: none; }
 .map[data-zl="far"][data-region="yeongnam"] .lb .lbf, .map[data-zl="far"][data-region="south"] .lb .lbf, .map[data-zl="far"][data-region="world"] .lb .lbf { display: none; }
+/* 빽빽한 판을 멀리 볼 때 — 이름표는 깃발 · 별 · 이름만 (지금 땅 이름은 숨기고), 나라 사이(전쟁·동맹…)는 글 대신 색 점 하나, 나라 둘레는 굵고 짙게
+   (형 10-26: "멀리 볼 때는 마을 수십 개 — 이름표 바가 더 단순하게 · 국경들도 명확하고 · 가까울 때 더 많은 정보는 잘했어") */
+.map[data-zl="far"][data-region="yeongnam"] .lb small, .map[data-zl="far"][data-region="south"] .lb small, .map[data-zl="far"][data-region="world"] .lb small { display: none !important; }
+.map[data-zl="far"][data-region="yeongnam"] .lb .lbr, .map[data-zl="far"][data-region="south"] .lb .lbr, .map[data-zl="far"][data-region="world"] .lb .lbr { font-size: 0; width: .62em; height: .62em; padding: 0; border-radius: 50%; margin-right: .3em; animation: none; box-shadow: 0 0 0 1.5px #1a120a; }
+.map[data-zl="far"][data-region="yeongnam"] svg .nb, .map[data-zl="far"][data-region="south"] svg .nb, .map[data-zl="far"][data-region="world"] svg .nb { stroke-width: 20; opacity: 1; }
+.map[data-zl="far"][data-region="yeongnam"] svg .nbd, .map[data-zl="far"][data-region="south"] svg .nbd, .map[data-zl="far"][data-region="world"] svg .nbd { opacity: .55; }
 .map[data-zl="far"] .lb small { display: none; } .map[data-zl="far"] .lb small.nowi, .map .lb small.nowi { display: inline; }
 .map .lb small { display: block; font-size: .74em; font-weight: 500; color: var(--ink, #5a4a36); opacity: .78; margin-top: -2px; }
 .map .lb.k-free small { color: #5a4a36; }
@@ -942,8 +948,8 @@ function provincesSvg(
     cps += `<clipPath id="rm-own-${o}"><path d="${own.get(o)!}"/></clipPath>`
     // 둘레 안쪽의 번진 제 색 띠 하나 + 또렷한 제 색 선 하나 — 이웃과 맞닿으면 두 색이 나란히 선다 (문명 6 국경).
     // 둘째 빛 띠·먹빛 테는 걷었다 — 비슷한 빛의 이웃은 이름표의 두 색(kitcolor)으로 가른다 (형 10-26: "몇 줄씩 테두리")
-    band += `<path d="${d}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${(o === me ? 24 : 18) * k}" opacity="${o === me ? 0.45 : 0.36}"/>`
-    crisp += `<path d="${d}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${(6 * k).toFixed(1)}" opacity=".9"/>`
+    band += `<path class="nbd" d="${d}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${(o === me ? 24 : 18) * k}" opacity="${o === me ? 0.45 : 0.36}"/>`
+    crisp += `<path class="nb" d="${d}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${(6 * k).toFixed(1)}" opacity=".9"/>`
   }
   const blurK = (3 * k).toFixed(1)
   let h = `<defs><filter id="rm-band" x="-2%" y="-2%" width="104%" height="104%"><feGaussianBlur stdDeviation="${blurK}"/></filter>${cps}</defs>`

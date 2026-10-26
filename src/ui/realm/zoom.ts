@@ -33,7 +33,9 @@ export interface MapZoom {
 /** 끈 뒤 이만큼 안의 click 만 끌기의 끝으로 본다 (ms) — 화면의 손짓이라 params 가 아니라 여기 */
 const DRAG_HOLD_MS = 500
 /** 휠이 이만큼 쉬면 늘린 그림을 진짜 배율로 굳힌다 (ms) */
-const COMMIT_MS = 160
+const COMMIT_MS = 220
+/** ＋/－ 단추의 부드러운 늘림 (ms) — 한 번에 툭 바뀌던 것을 GPU 늘림으로 잇는다 (형 10-26: "확대 축소할 땐 너무 버벅거리지 않게 자연스럽게") */
+const STEP_MS = 200
 
 export function attachZoom(wrap: HTMLElement): MapZoom {
   let z = 0 // 0 = 아직 안 정함 — 처음 apply 때 cover 로
@@ -92,11 +94,14 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
    */
   let live: { s: number; cx0: number; cy0: number; sl0: number; st0: number; tx: number; ty: number } | null = null
   let commitTimer = 0
+  let panT = 0
   const liveStart = (cx: number, cy: number): void => {
     if (live !== null) return
     live = { s: 1, cx0: cx, cy0: cy, sl0: wrap.scrollLeft, st0: wrap.scrollTop, tx: 0, ty: 0 }
     const m = map()
     if (m !== null) { m.style.transformOrigin = `${live.sl0 + cx}px ${live.st0 + cy}px`; m.style.willChange = 'transform' }
+    // 늘리는 동안 고을의 늘 도는 움직임을 멈춘다 — 미는 동안과 같다 (모습은 그대로, 그릴 일만 준다)
+    wrap.classList.add('panning')
   }
   const liveSet = (s: number, tx: number, ty: number): void => {
     if (live === null) return
@@ -113,6 +118,8 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     live = null
     const m = map()
     if (m !== null) { m.style.transform = ''; m.style.transformOrigin = ''; m.style.willChange = '' }
+    window.clearTimeout(panT)
+    panT = window.setTimeout(() => wrap.classList.remove('panning'), P.realm.mapPanRestMs)
     if (g === null || g.s === 1) return
     z = clamp(z * g.s)
     paintZ()
@@ -122,7 +129,6 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
 
   // 미는 동안 — 고을 그림의 그림자 필터·늘 도는 애니메이션을 잠깐 멈춘다. 폰에서 지도를 밀면 그릴 조각이 늦어 마을이 비어 보였다
   // (형 10-25: "게임 맵을 슬라이드 하다보면 마을들이 눈에 안보이는 버그") · 멈추고 조금 뒤 되돌린다
-  let panT = 0
   wrap.addEventListener('scroll', () => {
     wrap.classList.add('panning')
     window.clearTimeout(panT)
@@ -206,7 +212,21 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     },
     step(dir) {
       commit()
-      zoomAt(dir > 0 ? z * STEP : z / STEP, wrap.clientWidth / 2, wrap.clientHeight / 2)
+      // 칸 가운데를 축으로 STEP_MS 동안 GPU 로 늘린 뒤 한 번 굳힌다 (숨은 탭이면 바로 굳힌다 — 규칙 4)
+      const to = clamp(dir > 0 ? z * STEP : z / STEP) / z
+      if (to === 1) return
+      if (document.hidden) { zoomAt(z * to, wrap.clientWidth / 2, wrap.clientHeight / 2); return }
+      liveStart(wrap.clientWidth / 2, wrap.clientHeight / 2)
+      const t0 = performance.now()
+      const tick = (now: number): void => {
+        if (live === null) return
+        const k = Math.min(1, (now - t0) / STEP_MS)
+        const e = 1 - (1 - k) * (1 - k) * (1 - k)
+        liveSet(1 + (to - 1) * e, 0, 0)
+        if (k < 1 && !document.hidden) requestAnimationFrame(tick)
+        else commit()
+      }
+      requestAnimationFrame(tick)
     },
     dragged: () => moved && performance.now() - movedAt < DRAG_HOLD_MS,
   }
