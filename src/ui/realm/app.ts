@@ -927,6 +927,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   /**
+   * 우리 장수에게 일을 맡기면 그 장수가 곧바로 대답한다 — 「네?」 「부르셨습니까?」 (voice.ts · 형 10-26: "다른 데에서는 아무데서도 장수목소리가 안들리는데").
+   * 너무 잦으면 voiceGate 가 거른다
+   */
+  function bark(id: string | undefined): void {
+    const h = id !== undefined && id !== '' ? realm?.heroes[id] : undefined
+    if (h === undefined || realm === null || h.faction !== me() || !voiceGate(performance.now())) return
+    ding(voicePath(h, 'tap', isRuler(realm, h.id)), P.realm.voiceVol)
+  }
+
+  /**
    * 지도 띠에서 이 군대의 장수를 바꾼다 — 고른 장수가 이끌고(lead) 이끌던 장수는 그 고을에 남는다(assign null · 대기와 같은 명령).
    * 이번 계절 이 군대에 먼저 고른 장수는 거두고 다시 정한다. 계절 처음의 장수를 다시 고르면 그대로 둔다. id '' 는 장수 없이(대기)
    * (형 10-26: "하단 장수아이콘 탭하면 … 맡기기 가능한 장수골라서 · 이미 장수가 이끄는 군대라면 다른 가능한장수로 교체")
@@ -5124,6 +5134,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'exp-go': {
         const pk = expPickOf(plan(), d['id']!) // 화면이 보여 준 그 땅·길이로
         heroOrders = [...heroOrders.filter((o) => !(o.kind === 'expedition' && o.hero === d['id'])), { kind: 'expedition', faction: me(), hero: d['id']!, dest: pk.dest, len: pk.len }]
+        bark(d['id'])
         break
       }
       case 'unexp': heroOrders = heroOrders.filter((o) => !(o.kind === 'expedition' && o.hero === d['id'])); break
@@ -5407,7 +5418,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         return
       }
       case 'cmd-back': cmdJob = null; break
-      case 'cmd-hero': cmdHero = d['id']!; break
+      case 'cmd-hero': cmdHero = d['id']!; bark(d['id']); break
       case 'cmd-plot': {
         // 공작 갈래 하나 — 외교의 공작 판을 그 갈래가 펼쳐진 채로. 장수 판에서 왔으면 그 장수를 「누가 가나」 맨 앞에
         const op = d['op'] as PlotOp
@@ -5439,8 +5450,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'hero-back': openSheet({ kind: 'heroes' }); return
       case 'bridal-look': if (realm !== null) bridalLook(realm, d['id']!); return
-      case 'hero-envoy': envoyPick = d['id']!; diploMode = 'envoy'; openSheet({ kind: 'diplo' }); return
-      case 'hero-agent': plotAgent = d['id']!; diploMode = 'plot'; openSheet({ kind: 'diplo' }); return
+      case 'hero-envoy': envoyPick = d['id']!; diploMode = 'envoy'; bark(d['id']); openSheet({ kind: 'diplo' }); return
+      case 'hero-agent': plotAgent = d['id']!; diploMode = 'plot'; bark(d['id']); openSheet({ kind: 'diplo' }); return
       case 'cohabit': heroOrders = [...heroOrders.filter((o) => !(o.kind === 'cohabit' && o.hero === d['id'])), { kind: 'cohabit', hero: d['id']! }]; break
       case 'uncohabit': { const sp = realm!.heroes[d['id']!]?.spouse; heroOrders = heroOrders.filter((o) => !(o.kind === 'cohabit' && (o.hero === d['id'] || o.hero === sp))); break }
       case 'pl-open': {
@@ -5769,12 +5780,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
             ...(detailed && compose.hero !== '' ? { hero: compose.hero } : {}),
             ...(detailed && compose.target !== '' ? { target: compose.target } : {}),
           }
+          if (detailed) bark(compose.hero) // 사신으로 가는 장수가 대답한다
         }
         compose = { ...NO_COMPOSE, give: noGoods(), take: noGoods() }
         break
       }
       case 'unenvoy': delete envoys[d['key']!]; break
-      case 'chero': compose.hero = d['id'] ?? ''; envoyPick = ''; break
+      case 'chero': compose.hero = d['id'] ?? ''; envoyPick = ''; bark(d['id']); break
       case 'deeds': { const t = d['to']!; if (deedsOpen.has(t)) deedsOpen.delete(t); else deedsOpen.add(t); break }
       case 'build': {
         const node = d['node']!
@@ -5799,7 +5811,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const k = o as { node?: string; other?: string; hero?: string }
         const same = (p: Order): boolean => p.kind === 'plot' && p.op === op && p.target === o.target && p.node === k.node && p.other === k.other && p.hero === k.hero
         if (plots.some(same)) plots = plots.filter((p) => !same(p))
-        else if (plots.length < P.realm.plotsPerSeason) { plots = [...plots, k.hero !== undefined && hands[k.hero] !== undefined ? { ...o, hand: hands[k.hero]! } as Order : o]; plotAgent = null }
+        else if (plots.length < P.realm.plotsPerSeason) { plots = [...plots, k.hero !== undefined && hands[k.hero] !== undefined ? { ...o, hand: hands[k.hero]! } as Order : o]; plotAgent = null; bark(d['agent']) }
         plotPick = ''
         break
       }
@@ -5826,10 +5838,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'bust-close': root.querySelector('.bview')?.remove(); return
       case 'assign':
         heroOrders = [...heroOrders, { kind: 'assign', hero: d['id']!, node: d['node'] ? d['node'] : null }]
+        bark(d['id'])
         break
-      case 'lead': heroOrders = [...heroOrders, { kind: 'lead', hero: d['id']!, army: d['army']! }]; break
+      case 'lead': heroOrders = [...heroOrders, { kind: 'lead', hero: d['id']!, army: d['army']! }]; bark(d['id']); break
       case 'pby': persuadeBy[d['id']!] = d['by']!; break
-      case 'persuade': heroOrders = [...heroOrders, { kind: 'persuade', hero: d['id']!, by: d['by'] ? d['by'] : null }]; break
+      case 'persuade': heroOrders = [...heroOrders, { kind: 'persuade', hero: d['id']!, by: d['by'] ? d['by'] : null }]; bark(d['by']); break
       case 'standby': standBy(d['id']!); break
       // 재상 — 쉬는 장수 모두 · 장수 하나 (형 10-26)
       case 'js-all': if (realm !== null) realm.autoIdle = d['v'] === '1'; break
