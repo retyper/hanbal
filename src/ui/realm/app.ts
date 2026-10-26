@@ -378,6 +378,8 @@ const CMD_JOBS: ReadonlyArray<{ id: CmdJob; name: string; icon: string; art: str
   { id: 'exp', name: '원정', icon: 'route-searoute', art: 'event-expedition-return', line: '먼 땅에서 좋은 것을 가져온다', stat: ['mu', 'ryak', 'deok'], ruler: true },
   { id: 'wed', name: '혼인', icon: 'status-alliance', art: 'event-marriage', line: '짝을 지어 아이를 얻는다', stat: [], ruler: true },
 ]
+/** 군주가 친히 이끌 때(친정) 거는 것 — 군대 판·지도 띠의 장수 고르기가 같은 말 */
+const RULER_LEAD_TIP = '군주가 도읍을 비우는 동안 다스림(능력치가 나라에 거는 몫)이 반으로 준다 · 지면 사로잡힐 수 있다'
 
 /**
  * 처음 하는 사람에게는 탭을 계절마다 하나씩 연다 — 첫 화면에 탭 여섯·장수·외교·사건이 한꺼번에 쏟아져 무엇부터 할지 몰랐다
@@ -673,6 +675,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * (형: "같은지역군대들은 하나씩 탭한다면 둘이 동시선택할수있게하고 합치기 버튼이 떴으면")
    */
   let armySel: string[] = []
+  /** 아래 띠에서 장수 얼굴을 눌러 연 「이끌 장수」 고르기 — 그 군대 id (고른 군대가 바뀌면 저절로 닫힌다) */
+  let leadPop = ''
   /**
    * 고른 개척단 — 계획 판(plan)의 개척단 id. 이번 계절 꾸리기로 한 것도 계획 판에는 벌써 서 있다.
    * (형 10-23: "백성 배치 … 아직도 이해가 안 돼" → 문명의 개척자처럼 지도에 말 하나). armySel 과 함께 켜지지 않는다
@@ -789,6 +793,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   function resetTurn(): void {
     armyOrders = []
+    leadPop = ''
     armySel = [] // 지난 계절에 움직인 군대가 다음 계절에 골라진 채로 남지 않게 (형: "전계절에 이동시킨유닛이 자동선택되어있음")
     clearParty()
     musters = []
@@ -867,6 +872,36 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (h.post != null || Object.values(realm.armies).some((a) => a.hero === id)) heroOrders = [...heroOrders, { kind: 'assign', hero: id, node: null }]
     // 손수 쉬게 한 장수 — 재상이 다음 계절에 도로 일을 주지 않게 직접 부리는 장수로 (장수 판에서 다시 「재상에게 맡김」으로 돌린다)
     setManual(id, true)
+  }
+
+  /**
+   * 이 군대를 지금 이끌 수 있는 우리 장수 — 같은 고을에 혼자 있고 이번 계절 묶인 일이 없다(다침·길 위·원정·다른 일은 heroBusy).
+   * 군주도 든다(친정). 군대 판의 「이끌 장수」와 지도 띠의 장수 고르기가 같은 셈을 쓴다
+   */
+  function leadCands(r: Realm, a: Army): Hero[] {
+    return sorted(Object.values(r.heroes)).filter((x) => x.faction === me() && x.status === 'free' && x.at === a.at && !Object.values(r.armies).some((b) => b.hero === x.id) && heroBusy(r, x.id) === null && !handLocked(r, x.id))
+  }
+
+  /**
+   * 지도 띠에서 이 군대의 장수를 바꾼다 — 고른 장수가 이끌고(lead) 이끌던 장수는 그 고을에 남는다(assign null · 대기와 같은 명령).
+   * 이번 계절 이 군대에 먼저 고른 장수는 거두고 다시 정한다. 계절 처음의 장수를 다시 고르면 그대로 둔다. id '' 는 장수 없이(대기)
+   * (형 10-26: "하단 장수아이콘 탭하면 … 맡기기 가능한 장수골라서 · 이미 장수가 이끄는 군대라면 다른 가능한장수로 교체")
+   */
+  function pickLeader(armyId: string, id: string): void {
+    if (realm === null) return
+    heroOrders = heroOrders.filter((o) => !(o.kind === 'lead' && o.army === armyId))
+    const was = realm.armies[armyId]?.hero ?? null
+    if (was !== null && was === id) {
+      heroOrders = heroOrders.filter((o) => !(o.kind === 'assign' && o.hero === was && o.node === null))
+      return
+    }
+    const cur = plan().armies[armyId]?.hero ?? null
+    if (id === '') {
+      if (cur !== null) standBy(cur)
+      return
+    }
+    if (cur !== null) heroOrders = [...heroOrders, { kind: 'assign', hero: cur, node: null }]
+    heroOrders = [...heroOrders, { kind: 'lead', hero: id, army: armyId }]
   }
 
   /** 이 장수를 직접 부리나 — 판에 적는다 (계절을 넘기면 판과 함께 저장된다 · 그 전엔 초안에) */
@@ -1368,8 +1403,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (partySel !== '' && armySel.length === 0) return partyBarHtml(r)
     const sel = armySel.map((id) => r.armies[id]).filter((a): a is Army => a !== undefined)
     if (sel.length === 0) return ''
-    let h = `<div class="sbf">${sel.map((a) => bust(a.hero !== null ? r.heroes[a.hero] : undefined, 'sbface')).join('')}</div><div class="sbt">`
     const first = sel[0]!
+    // 우리 군대 하나가 서 있으면 장수 얼굴을 눌러 이끌 장수를 고르거나 바꾼다 (형 10-26)
+    const swap = sel.length === 1 && first.faction === me() && first.march === null
+    const faces = sel.map((a) => bust(a.hero !== null ? r.heroes[a.hero] : undefined, 'sbface')).join('')
+    let h = swap
+      ? `<button class="sbf sbfb${leadPop === first.id ? ' on' : ''}" data-act="ldpop" data-army="${first.id}" aria-label="이끌 장수 고르기">${faces}<i class="sbsw">⇄</i></button><div class="sbt">`
+      : `<div class="sbf">${faces}</div><div class="sbt">`
     if (first.faction !== me()) {
       h += `<b>${esc(r.factions[first.faction]?.name ?? '')} 군대 · ${headcount(forceOf(r, first))}명</b><span>${esc(lentLine(r, first))}</span>`
     } else if (first.march !== null) {
@@ -1385,7 +1425,27 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (heroes > 1) h += `<span class="sbwhy">장수 둘은 한 군대를 함께 못 이끈다</span>`
       return h + `<button class="sbx" data-act="selclose" aria-label="고르기 풀기">✕</button>`
     }
-    return h + `</div><button class="sbx" data-act="selclose" aria-label="고르기 풀기">✕</button>`
+    return h + `</div><button class="sbx" data-act="selclose" aria-label="고르기 풀기">✕</button>` + (swap && leadPop === first.id ? leadPickHtml(r, first) : '')
+  }
+
+  /** 아래 띠의 「누가 이끄나」 — 지금 장수(빛남) · 이 고을에서 이끌 수 있는 장수(무예·통솔) · 장수 없이 */
+  function leadPickHtml(r: Realm, a: Army): string {
+    const stat = CMD_JOBS.find((j) => j.id === 'lead')!.stat
+    const st = (x: Hero): string => stat.map((k) => `<i>${STAT_NAME[k]} ${x[k]}</i>`).join('')
+    const cur = a.hero !== null ? r.heroes[a.hero] : undefined
+    const cands = leadCands(r, a)
+    let h = `<div class="ldpk"><b>누가 이끄나</b>`
+    if (cur === undefined && cands.length === 0) return h + `<p class="mute">이 고을에 맡길 장수가 없다</p></div>`
+    h += `<div class="cmdp">`
+    if (cur !== undefined) h += `<button class="on" data-act="ldpop" data-army="${a.id}">${bust(cur, 'face')}<b>${nameHtml(cur.name)}</b><small><i>이끄는 중</i>${st(cur)}</small></button>`
+    for (const x of cands) {
+      const ruler = isRuler(r, x.id)
+      h += `<button data-act="ldpick" data-army="${a.id}" data-id="${x.id}"${ruler ? ` data-tip="${RULER_LEAD_TIP}"` : ''}>${bust(x, 'face')}<b>${nameHtml(x.name)}</b><small>${ruler ? '<i>친히 이끈다</i>' : ''}${st(x)}</small></button>`
+    }
+    h += `</div>`
+    if (cands.length === 0) h += `<p class="mute">이 고을에 바꿀 장수가 없다</p>`
+    if (cur !== undefined) h += `<button class="btn ghost sm" data-act="ldpick" data-army="${a.id}" data-id="">장수 없이</button>`
+    return h + `</div>`
   }
 
   /** 동맹이 빌려준, 우리를 지키는 군대 (diplomacy troops) */
@@ -1700,13 +1760,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `</div>`
       // 장수 없는 군대 — 이끌 장수를 얼굴로 (출정 단추와 줄을 나눈다 · 형 10-23: "출정 버튼이랑 장수 이끌게 하기 버튼 구분 · 장수 얼굴 이미지도")
       if (a.hero === null) {
-        const can = sorted(Object.values(r.heroes)).filter((x) => x.faction === me() && x.status === 'free' && x.at === a.at && !Object.values(r.armies).some((b) => b.hero === x.id) && heroBusy(r, x.id) === null && !handLocked(r, x.id))
+        const can = leadCands(r, a)
         if (can.length > 0) {
           h += `<div class="leadrow"><span class="mute">이끌 장수</span>`
           for (const y of can) {
             // 군주도 친히 이끈다(친정) — 도읍을 비우면 다스림이 준다
             h += isRuler(r, y.id)
-              ? `<button class="btn lead" data-act="lead" data-id="${y.id}" data-army="${a.id}" data-tip="군주가 도읍을 비우는 동안 다스림(능력치가 나라에 거는 몫)이 반으로 준다 · 지면 사로잡힐 수 있다">${bust(y, 'lf')}<span>${esc(y.name)}<small>친히 이끈다</small></span></button>`
+              ? `<button class="btn lead" data-act="lead" data-id="${y.id}" data-army="${a.id}" data-tip="${RULER_LEAD_TIP}">${bust(y, 'lf')}<span>${esc(y.name)}<small>친히 이끈다</small></span></button>`
               : `<button class="btn lead" data-act="lead" data-id="${y.id}" data-army="${a.id}">${bust(y, 'lf')}<span>${esc(y.name)}<small>이끈다</small></span></button>`
           }
           h += `</div>`
@@ -4753,6 +4813,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     else if (layersOpen) layersOpen = false
     else if (roadOpen) roadOpen = false
     else if (sheet !== null) sheet = null
+    else if (leadPop !== '' && armySel.includes(leadPop)) leadPop = ''
     else if (armySel.length > 0) armySel = []
     else if (partySel !== '') clearParty()
     else front = { kind: 'title' } // 아무것도 안 열려 있으면 처음 화면으로
@@ -5069,6 +5130,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const x = r?.armies[id]
         const sameNode = (y: string): boolean => r?.armies[y]?.at === x?.at && r?.armies[y]?.march === null && r?.armies[y]?.faction === me()
         clearParty() // 군대를 고르면 개척단 고르기는 풀린다 — 둘은 함께 켜지지 않는다
+        leadPop = ''
         if (armySel.includes(id)) armySel = armySel.filter((y) => y !== id)
         else if (x !== undefined && x.faction !== me()) armySel = [id] // 동맹 군대 — 보기만
         else if (x !== undefined && x.march === null && armySel.length > 0 && armySel.every(sameNode)) armySel = [...armySel, id]
@@ -5078,7 +5140,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (hh !== undefined && hh.status === 'free' && voiceGate(performance.now())) ding(voicePath(hh, 'tap', isRuler(r!, hh.id)), 0.9)
         break
       }
-      case 'selclose': armySel = []; break
+      case 'selclose': armySel = []; leadPop = ''; break
+      // 아래 띠의 장수 얼굴 — 이끌 장수 고르기를 열고 닫는다 · 고르면 군대는 골라진 채로 남고 새 장수가 대답한다 (형 10-26)
+      case 'ldpop': leadPop = leadPop === d['army'] ? '' : d['army']!; break
+      case 'ldpick': {
+        const id = d['id'] ?? ''
+        pickLeader(d['army']!, id)
+        leadPop = ''
+        const hh = id !== '' ? realm?.heroes[id] : undefined
+        if (hh !== undefined && voiceGate(performance.now())) ding(voicePath(hh, 'tap', isRuler(realm!, hh.id)), 0.9)
+        break
+      }
       // 개척단 — 꾸리면 판이 닫히고 그 개척단이 골라진다 (지도에서 갈 곳이 빛난다)
       case 'party': {
         const node = d['node']!
