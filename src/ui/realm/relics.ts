@@ -11,6 +11,7 @@ import {
   drawChests, emptyRelics, equip, holderOf, openTomb, pickTomb, relicLine, slotsFor, tombKey, unequip, type RelicOwn, type RelicStore, type RelicTomb,
 } from '../../realm/relics.ts'
 import type { Realm, RegionId } from '../../realm/types.ts'
+import { P } from '../../tune/params.ts'
 
 const KEY = 'hanbal.realm.relics'
 
@@ -145,7 +146,32 @@ export function tombHtml(k: RelicKit, r: Realm, fresh: boolean): string {
   h += `</div>`
   if (t.pick !== null) h += `<div class="tbgo"><button class="btn pri big" data-act="dy-open">단련터에서 끼운다 ›</button><button class="btn ghost" data-act="tomb-back">끝 화면으로</button></div>`
   else h += `<div class="tbgo"><button class="btn ghost" data-act="tomb-back">‹ 끝 화면으로 (나중에 고른다)</button></div>`
+  if (t.pick !== null && fresh) h += revealHtml(k, t.pick)
   return h + `</div>`
+}
+
+/**
+ * 방금 연 상자 — 화면을 덮고 크게 (형: "유저가 퍽 하면 게임은 으아아아" · 메모리 wwe-overreaction-ux).
+ * 번쩍 → 상자가 터지며 흙먼지 → 유물이 솟아 낱알 금빛이 흩어지고 → 이름이 도장처럼 박힌다. 누르면 상자 셋 화면으로.
+ * 금빛 낱알은 한 개짜리 그림(fx/gold)을 N개로 흩는다 — 덩어리 그림을 통째로 움직이지 않는다
+ */
+function revealHtml(k: RelicKit, id: string): string {
+  const d = RELIC[id]!
+  let fx = ''
+  const dusts = P.realm.relicDusts
+  for (let i = 0; i < dusts; i++) fx += `<img class="tbdu" src="${k.art}fx/dust.png" alt="" style="--a:${((i * 360) / Math.max(1, dusts) + 20).toFixed(0)}deg;--t:${(i % 3) * 0.05}s">`
+  const sparks = P.realm.relicSparks
+  for (let i = 0; i < sparks; i++) {
+    // 해바라기 씨 배치(137.5°)로 고르게 · 거리·크기·늦음은 번호로 엇갈린다 (그리기만 — 판 상태는 안 건드린다)
+    const a = (i * 137.5) % 360
+    const r = 120 + ((i * 53) % 170)
+    const s = 12 + ((i * 29) % 26)
+    fx += `<img class="tbsp" src="${k.art}fx/gold.png" alt="" style="--a:${a.toFixed(1)}deg;--r:${r}px;--s:${s}px;--t:${(0.55 + (i % 8) * 0.05).toFixed(2)}s">`
+  }
+  return `<div class="tbrv t-${d.tier}" data-act="tomb-seen"><div class="tbfl"></div><div class="tbglow"></div>`
+    + `<div class="tbst">${fx}<img class="tbrc" src="${chestImg(k, id)}" alt=""><img class="tbrr" src="${img(k, id)}" alt=""></div>`
+    + `<div class="tbrt"><span class="tbtier">${TIER_NAME[d.tier]}</span><b>${k.esc(d.name)}</b><small>${k.esc(d.era)}</small><span class="tbrfx">${k.esc(relicLine(id))}</span></div>`
+    + `<div class="tbgo"><button class="btn pri big" data-act="dy-open">단련터에서 끼운다 ›</button><button class="btn ghost" data-act="tomb-seen">상자 셋 보기</button></div></div>`
 }
 
 // ───────── 단련터 — 유물 칸 · 고르기 · 도감
@@ -298,4 +324,46 @@ export const RELIC_CSS = `
 @keyframes tbrise { from { opacity: 0; transform: translate(-50%, 90px) scale(.4); } to { opacity: 1; transform: translateX(-50%); } }
 @keyframes tbfade { from { opacity: 0; } to { opacity: .55; } }
 .ap .front.tomb .tbgo { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin: 14px 0 4px; }
+/* 고른 상자가 북소리에 떨리고, 다른 둘은 물러난다 (app.ts tomb-pick — 터지기 전 relicShakeMs) */
+.ap .tbrow.shaking button.tbx { pointer-events: none; }
+.ap .tbrow.shaking .tbx.go { z-index: 2; animation: tbgo .2s ease-out both; }
+.ap .tbrow.shaking .tbx.go .tbc { animation: tbrumble .12s linear infinite, tbswell var(--ms) ease-in both; }
+.ap .tbrow.shaking .tbx.go.t-common { box-shadow: 0 0 34px #e0a85a88; } .ap .tbrow.shaking .tbx.go.t-rare { box-shadow: 0 0 40px #7ac0ffaa; } .ap .tbrow.shaking .tbx.go.t-legend { box-shadow: 0 0 56px #ffd27acc; }
+.ap .tbrow.shaking .tbx:not(.go) { animation: tbaway .45s ease-in both; }
+@keyframes tbgo { to { transform: translateY(-8px) scale(1.06); } }
+@keyframes tbrumble { 0%, 100% { translate: 0 0; rotate: 0deg; } 25% { translate: -3px 1px; rotate: -3deg; } 50% { translate: 2px -2px; rotate: 2deg; } 75% { translate: 3px 1px; rotate: 4deg; } }
+@keyframes tbswell { from { scale: 1; filter: drop-shadow(0 6px 6px #000c) brightness(1); } to { scale: 1.14; filter: drop-shadow(0 0 22px #ffe3a0) brightness(1.5); } }
+@keyframes tbaway { to { opacity: .2; transform: translateY(16px) scale(.9); filter: grayscale(.8); } }
+/* 열린 상자 — 화면을 덮는다 */
+.ap .tbrv { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 16px; background: radial-gradient(ellipse at 50% 42%, #22190efc, #070504fc 70%); cursor: pointer; overflow: hidden; animation: tbrvin .25s ease-out both; }
+.ap .tbrv.t-legend { animation: tbrvin .25s ease-out both, tbquake .55s .1s ease-out both; }
+@keyframes tbrvin { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tbquake { 0%, 100% { translate: 0 0; } 20% { translate: -9px 5px; } 40% { translate: 8px -6px; } 60% { translate: -5px 3px; } 80% { translate: 3px -2px; } }
+.ap .tbrv .tbfl { position: absolute; inset: 0; pointer-events: none; background: #fff3d8; animation: tbflash .55s ease-out both; }
+.ap .tbrv.t-rare .tbfl { background: #dff0ff; } .ap .tbrv.t-legend .tbfl { background: #fff6c8; animation-duration: .8s; }
+@keyframes tbflash { from { opacity: .95; } to { opacity: 0; } }
+.ap .tbrv .tbglow { position: absolute; left: 50%; top: 40%; width: min(92vw, 620px); height: min(70vh, 460px); transform: translate(-50%, -50%); pointer-events: none; border-radius: 50%; background: radial-gradient(ellipse, #e0a85a55, #0000 68%); animation: tbglow 2.6s .3s ease-in-out infinite alternate both; }
+.ap .tbrv.t-rare .tbglow { background: radial-gradient(ellipse, #7ac0ff55, #0000 68%); } .ap .tbrv.t-legend .tbglow { background: radial-gradient(ellipse, #ffd27a88, #0000 68%); }
+@keyframes tbglow { from { opacity: .55; scale: .9; } to { opacity: 1; scale: 1.08; } }
+.ap .tbrv .tbst { position: relative; width: 300px; height: 300px; flex: none; }
+.ap .tbrv .tbrc { position: absolute; left: 50%; bottom: 0; width: 200px; height: 200px; object-fit: contain; transform: translateX(-50%); animation: tbcrack .9s ease-out both; }
+@keyframes tbcrack { 0% { opacity: 1; transform: translateX(-50%) scale(1.25); } 18% { transform: translateX(-50%) scale(1.4) rotate(-5deg); } 100% { opacity: .28; transform: translateX(-50%) translateY(40px) scale(.75); } }
+.ap .tbrv .tbdu { position: absolute; left: 50%; bottom: 40px; width: 120px; height: 120px; margin-left: -60px; object-fit: contain; pointer-events: none; opacity: 0; animation: tbdust 1.3s var(--t) ease-out both; }
+@keyframes tbdust { 0% { opacity: .9; transform: rotate(var(--a)) translateY(0) scale(.4); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(-150px) scale(1.4); } }
+.ap .tbrv .tbsp { position: absolute; left: 50%; top: 45%; width: var(--s); height: var(--s); margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2); pointer-events: none; opacity: 0; animation: tbspark 1.5s var(--t) cubic-bezier(.15,.8,.3,1) both; }
+@keyframes tbspark { 0% { opacity: 0; transform: rotate(var(--a)) translateY(0) scale(.3); } 15% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--a)) translateY(calc(var(--r) * -1)) scale(1); } }
+.ap .tbrv .tbrr { position: absolute; left: 50%; top: 4px; width: 240px; height: 240px; object-fit: contain; transform: translateX(-50%); filter: drop-shadow(0 0 22px #ffd27acc); animation: tbup 1.1s .35s cubic-bezier(.2,.9,.25,1.25) both, tbhover 3s 1.5s ease-in-out infinite; }
+.ap .tbrv.t-rare .tbrr { filter: drop-shadow(0 0 22px #8ac8ffcc); } .ap .tbrv.t-legend .tbrr { filter: drop-shadow(0 0 30px #ffd27a) drop-shadow(0 0 8px #fff3c0); }
+@keyframes tbup { from { opacity: 0; transform: translate(-50%, 120px) scale(.3); } to { opacity: 1; transform: translateX(-50%); } }
+@keyframes tbhover { 0%, 100% { translate: 0 0; } 50% { translate: 0 -8px; } }
+.ap .tbrv .tbrt { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; max-width: 560px; }
+.ap .tbrv .tbtier { font-size: 13px; font-weight: 800; letter-spacing: .3em; padding: 2px 12px; border-radius: 99px; color: #f0e2c0; border: 1px solid #c9a45a88; background: #00000066; animation: tbin .4s 1.05s ease-out both; }
+.ap .tbrv.t-rare .tbtier { color: #bfe0ff; border-color: #7ac0ff88; } .ap .tbrv.t-legend .tbtier { color: #ffe08a; border-color: #ffd27a; box-shadow: 0 0 14px #ffd27a88; }
+.ap .tbrv .tbrt b { font-size: clamp(30px, 7vw, 46px); line-height: 1.15; color: #ffe8b0; text-shadow: 0 3px 0 #000, 0 0 18px #ffb84a88; animation: tbstamp .5s 1.2s cubic-bezier(.3,1.6,.5,1) both; }
+@keyframes tbstamp { from { opacity: 0; transform: scale(2.4); } to { opacity: 1; transform: scale(1); } }
+.ap .tbrv .tbrt small { color: #b8aa88; font-size: 13px; animation: tbin .4s 1.5s ease-out both; }
+.ap .tbrv .tbrfx { margin-top: 4px; color: #b8ff9a; font-size: 16px; font-weight: 800; text-shadow: 0 2px 0 #000; animation: tbin .4s 1.65s ease-out both; }
+.ap .tbrv .tbgo { position: relative; animation: tbin .4s 1.9s ease-out both; }
+@media (max-width: 560px) { .ap .tbrv .tbst { width: 240px; height: 240px; } .ap .tbrv .tbrr { width: 190px; height: 190px; } .ap .tbrv .tbrc { width: 160px; height: 160px; } }
+@media (prefers-reduced-motion: reduce) { .ap .tbrv, .ap .tbrv *, .ap .tbrow.shaking .tbx, .ap .tbrow.shaking .tbx .tbc { animation-duration: .01s !important; animation-iteration-count: 1 !important; } }
 `

@@ -52,6 +52,7 @@ import { DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
 import { DRILL_CSS, engraveRun, hasDrill, loadDrill, raiseHero, yardHtml, yardStripHtml, type DrillKit } from './drill.ts'
 import { applyDrill, earnedOf } from '../../realm/drill.ts'
 import { RELIC_CSS, openRunTomb, pickRunRelic, putRelic, relicChips, takeOffRelic, tombHtml, tombRun, tombStripHtml, type RelicKit } from './relics.ts'
+import { RELIC } from '../../realm/data/relics.ts'
 import { LEVEL_LINE, TIER_MAX, levelName } from '../../realm/tier.ts'
 import { FIT_CSS, fitLabels } from './fit.ts'
 import { annalOf } from '../../realm/data/annals.ts'
@@ -595,6 +596,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let showReport = false
   /** 판 바깥의 화면 — 처음엔 첫 화면 */
   let front: Front | null = { kind: 'title' }
+  /** 옛 무덤 — 고른 상자가 떨리는 중 (그동안 다른 누름은 먹지 않는다) */
+  let tombShaking = false
   /** 새 판의 서막 몇째 장 — null 이면 없음 */
   let prologue: number | null = null
   /** 끝난 판의 지도를 둘러보는 중 */
@@ -5121,13 +5124,37 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 옛 무덤 — 이긴 판의 상자 셋에서 하나 (relics.ts · HERO-GROWTH ★ §B)
       case 'tomb-open': if (tombRun(realm)) { openRunTomb(realm); front = { kind: 'tomb', fresh: false }; sheet = null; $('.mapwrap').scrollTop = 0 } paint(); return
       case 'tomb-pick': {
-        if (!tombRun(realm) || !pickRunRelic(realm, d['id']!)) return
-        ding(snd('dex_new'), 0.6) // 상자가 열린다
-        window.setTimeout(() => { if (document.visibilityState === 'visible') ding(snd('coins'), 0.45) }, 450) // 껴묻거리가 쏟아진다
-        front = { kind: 'tomb', fresh: true }
-        paint()
+        if (!tombRun(realm) || tombShaking) return
+        const id = d['id']!
+        const seen = (): boolean => document.visibilityState === 'visible'
+        // 터진다 — 고른 것을 적고 화면을 덮는 큰 열림으로 (relics.revealHtml). 소리는 귀함에 따라 커진다
+        const burst = (): void => {
+          tombShaking = false
+          if (realm === null || !tombRun(realm) || !pickRunRelic(realm, id)) { paint(); return }
+          ding(snd('dex_new'), 0.7)
+          const tier = RELIC[id]?.tier ?? 'common'
+          window.setTimeout(() => {
+            if (!seen()) return
+            if (tier === 'legend') { ding(snd('horn_victory'), 0.6); ding(snd('war_bell'), 0.45) }
+            else if (tier === 'rare') ding(snd('war_bell'), 0.5)
+            else ding(snd('coins'), 0.5)
+          }, 380)
+          front = { kind: 'tomb', fresh: true }
+          paint()
+        }
+        const ms = P.realm.relicShakeMs
+        const row = t.closest('.tbrow')
+        if (ms <= 0 || !seen() || row === null) { burst(); return }
+        // 떨린다 — 고른 상자가 북소리에 맞춰 부풀고, 다른 둘은 물러난다 (형: "유저가 퍽 하면 게임은 으아아아")
+        tombShaking = true
+        row.classList.add('shaking')
+        ;(row as HTMLElement).style.setProperty('--ms', `${ms}ms`)
+        t.classList.add('go')
+        for (const at of [0, 0.38, 0.7]) window.setTimeout(() => { if (seen()) ding(snd(at < 0.6 ? 'tap_drum' : 'war_drum'), 0.55) }, at * ms)
+        window.setTimeout(burst, ms)
         return
       }
+      case 'tomb-seen': front = { kind: 'tomb', fresh: false }; paint(); return
       case 'tomb-back': front = null; fastNext = true; paint(); return
       // 단련터의 유물 칸 — 누르면 고르기가 펼쳐지고, 고르면 끼운다 (다른 장수가 지녔으면 옮긴다)
       case 'rl-slot': {
