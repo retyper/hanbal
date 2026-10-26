@@ -44,7 +44,7 @@ import { spreadRumors } from './rumor.ts'
 import { addMen, giveMen, kitOf, scaleKinds, scaleMen, takeMen } from './kit.ts'
 import { formParty, joinParty, moveParty, stepParties } from './parties.ts'
 import {
-  ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, ironhandAt, noteMet, oneJobPerHero, releaseCaptives, stepHeroes, sweepHeroes,
+  ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, ironhandAt, noteMet, oneJobPerHero, postHero, releaseCaptives, stepHeroes, sweepHeroes,
 } from './heroes.ts'
 import type {
   Approach, Army, BattleStart, Cmd, EdgeKind, Hero, Order, Ration, Realm, REdge, Report, ReportLine, RNode, SeasonOfYear, SnipeZone, Tactic,
@@ -195,13 +195,26 @@ export function armiesAt(r: Realm, node: string): Army[] {
 /**
  * 장정 (SYSTEMS §4-6 · FLOW §2) — 남의 땅인 고을은 군대가 없어도 그 고을 사람들이 지킨다. 가호에 비례한다 (economy.militiaMen).
  * 판정에만 끼는 군대 꼴이다 — r.armies 에 들지 않고, 손실·퇴각·생포를 받지 않는다. 지면 흩어졌다 다음 계절에 다시 선다.
+ * 장수가 이끄는 제 군대가 없으면 성주(도읍은 군주)가 장정을 이끌고 나선다 — 겨루기·사로잡기도 받는다
+ * (형 10-26: "장군이 없는 마을에 성주가 있다면 성주가 자동적으로 장군으로서 싸웠으면 · 장정이랑 같이 성주 장수랑 싸우면 되잖아")
  */
 export function militiaOf(r: Realm, node: string): Army | null {
   const n = r.nodes[node]
   const men = militiaMen(r, node)
   if (n === undefined || n.owner === null || men <= 0) return null
   // 농사꾼이 돌창·몽둥이로 나와 막는다 — 수는 많아도 약하다 (militiaMorale)
-  return { id: `~militia:${node}`, faction: n.owner, hero: null, mix: { spear: men }, equip: 'stone', morale: P.realm.militiaMorale, at: node, march: null }
+  return { id: `~militia:${node}`, faction: n.owner, hero: governorLeads(r, node, n.owner), mix: { spear: men }, equip: 'stone', morale: P.realm.militiaMorale, at: node, march: null }
+}
+
+/** 장정을 이끌 성주 — 그 고을에 머물고, 다치지 않았고, 장수가 이끄는 제 나라 군대가 그 고을에 없을 때만 */
+function governorLeads(r: Realm, node: string, owner: string): string | null {
+  const g = postHero(r, node)
+  if (g === null || g.at !== node || (g.woundedUntil ?? -1) >= r.season) return null
+  for (const a of Object.values(r.armies)) {
+    if (a.hero === g.id) return null
+    if (a.at === node && a.march === null && a.faction === owner && heroOf(r, a) !== null) return null
+  }
+  return g.id
 }
 
 /** 동맹의 땅은 지나간다 (FLOW §4) — 그 고을의 주인과 머무는 군대가 전부 제 편이거나 동맹이면 싸움이 아니다 */
