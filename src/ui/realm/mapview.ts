@@ -17,8 +17,8 @@ import { crowdOf, isCoast, nodeHarvest, nodeSpecials, nodeYield } from '../../re
 import { visibleRange } from '../../realm/intel.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
 import type { EdgeKind, NodeKind, Realm, REdge, RegionId, SeasonOfYear } from '../../realm/types.ts'
-import { separatedRoutes, ferryAt, landClipSvg, midOf, naturalLines, riversSvg, routePoints, smoothPath, tidyEnds, trimPolyline, type Pt } from './mapgeo.ts'
-import { territory, type Territory } from './territory.ts'
+import { ferryAt, landClipSvg, midOf, riversSvg, smoothPath, tidyEnds, trimPolyline, type Pt } from './mapgeo.ts'
+import { boardRoutes, boardTerritory } from './roadlayout.ts'
 import { kitVars, nationKit } from './kitcolor.ts'
 import { worldMapFallback, worldMapUrl } from './worldmap.ts'
 
@@ -446,25 +446,24 @@ export function mapHtml(
     svg += `<radialGradient id="rm-t-${f}"><stop offset="0" stop-color="${a.color}" stop-opacity=".72"/>`
     svg += `<stop offset=".65" stop-color="${a.color}" stop-opacity=".45"/><stop offset="1" stop-color="${a.color}" stop-opacity="0"/></radialGradient>`
   }
+  // 길 모양 — 골짜기를 따르는 물길을 서로 밀어 두고, 엇갈리거나 남의 고을 땅을 지나는 길은 단순한 모양으로 편다 (roadlayout.ts — 판마다 한 번)
+  const routes = boardRoutes(r)
+  const route = (ed: REdge): Pt[] => routes.get(ed.id) ?? [px(ed.a), px(ed.b)]
   // 두 끝을 다 본 길은 그 길을 따라 띠로 밝다 (누가 걸어 본 길)
   const corridors = r.known === undefined ? [] : Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))
     .filter((ed) => seen(ed.a) && seen(ed.b))
-    .map((ed) => smoothPath(routePoints(region, ed, px(ed.a), px(ed.b), W, H)))
+    .map((ed) => smoothPath(route(ed)))
   const fog = r.known !== undefined ? fogSvg(r, me, region, W, H, TERRITORY_R, vis, isFresh, corridors, art) : null
   const landClip = landClipSvg(region, W, H)
   svg += `${landClip}${fog?.defs ?? ''}</defs>`
   // 땅빛 — 고을마다의 땅을 산·강을 따라 가르고(territory.ts) 주인 색으로
-  svg += provincesSvg(r, region, W, H, TERRITORY_R, dim, focus, seen, me, landClip !== '')
+  svg += provincesSvg(r, W, dim, focus, seen, me, landClip !== '')
   // 강 — 또렷하게 (영남 판)
   svg += riversSvg(region, W, H)
   // 모르는 땅 — 강·땅빛 위, 길 밑 (아는 고을 사이의 길은 늘 보인다)
   svg += fog?.body ?? ''
   // 길 — 골짜기·바닷가를 따라 휜다 (형: "직선경로만 있는게 이상하지 않냐?"). 막힌 길은 흐리고 가운데 ✕
   const sw = RA.nodeScale < 1 ? 0.6 : 1
-  // 같은 골짜기를 따라가는 길이 한 줄로 포개지지 않게 서로 밀어 둔다 (mapgeo.separatedRoutes — 판마다 한 번)
-  const allEdges = Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))
-  const sep = separatedRoutes(`${region}:${W}x${H}:${allEdges.length}`, allEdges.map((ed) => [ed.id, routePoints(region, ed, px(ed.a), px(ed.b), W, H)] as const), 14 * sw, RA.terrR * 0.15)
-  const route = (ed: REdge): Pt[] => sep.get(ed.id) ?? routePoints(region, ed, px(ed.a), px(ed.b), W, H)
   /** 길 기호의 크기 — 고을 그림의 절반 남짓 */
   const signW = ICON_W * RA.nodeScale * W * 0.6
   /** 고을 그림의 반 너비 (지도 좌표) — 그 밑에 묻힌 길은 안 보인다 */
@@ -849,8 +848,6 @@ function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly 
 // ───────── 고을마다의 땅 (형: "개활지 같은데 직선경로만" — 점이 아니라 땅을 나눠 가진 나라로 보이게, 2026-10-19)
 
 /** 땅 조각의 크기 배수 — 고을 꼴로 정한다 (집 수는 판마다 바뀌어도 땅 모양은 그대로 두려고) */
-const CELL_SIZE: Readonly<Record<NodeKind, number>> = { capital: 1.3, port: 1.1, fort: 0.95, village: 1, ironMine: 0.9, wild: 0.85, sodo: 0.7 }
-
 /** 지은 것의 말 — 고을 왼쪽 위 작은 표 */
 const DEF_TITLE = { palisade: '목책 — 한 번 지으면 계속 선다. 지키는 쪽이 세다', moat: '해자 — 목책 앞에서 한 번 더 막는다. 겨울엔 언다' } as const
 
@@ -907,10 +904,10 @@ const lenOf = (p: readonly Pt[]): number => p.reduce((s, q, i) => (i === 0 ? 0 :
  * 땅 모양은 판마다 한 번만 셈하고(territory.ts) 여기서는 색만 칠한다. 뭍이 있는 판은 뭍 밖을 잘라 낸다.
  */
 function provincesSvg(
-  r: Realm, region: RegionId, W: number, H: number, terrR: number,
+  r: Realm, W: number,
   dim: (owner: string | null) => boolean, focus: string | null, seen: (id: string) => boolean, me: string, clipped: boolean,
 ): string {
-  const { nodes, t } = terrOf(r, region, W, H, terrR)
+  const { nodes, t } = boardTerritory(r)
   const clip = clipped ? ' clip-path="url(#rm-land)"' : ''
   const k = Math.max(1, W / 1100) // 굵기 — 그림 폭에 맞춘다
   let fill = ''
@@ -972,20 +969,6 @@ function provincesSvg(
   return h + `</g></g>`
 }
 
-/**
- * 판의 고을(id 순)과 그 땅 — 산·강·뭍을 따라 가른다 (territory.ts). 고을 자리는 안 바뀌니 판마다 한 번만 셈한다.
- * 뭍 자료가 없는 판(변한 축소판)은 바다로 번지지 않게 퍼지는 끝을 줄인다.
- */
-function terrOf(r: Realm, region: RegionId, W: number, H: number, terrR: number): { nodes: Realm['nodes'][string][]; t: Territory } {
-  const nodes = Object.values(r.nodes).sort((x, y) => (x.id < y.id ? -1 : 1))
-  const nat = naturalLines(region, W, H)
-  const seeds = nodes.map((n) => {
-    const p = nodePos(region, n.id) ?? [0.5, 0.5]
-    return { x: p[0] * W, y: p[1] * H, size: CELL_SIZE[n.kind] }
-  })
-  return { nodes, t: territory(`${region}:${W}x${H}:${nodes.length}`, W, H, terrR * (nat.land === null ? 1.15 : 1.5), { seeds, ...nat }) }
-}
-
 // ───────── 넓어지는 지도 — 모르는 땅 (발견, docs/realm/WORLD-MAP.md §2 · 2026-10-19)
 
 /**
@@ -1020,7 +1003,7 @@ function fogSvg(
   r: Realm, me: string, region: RegionId, W: number, H: number, terrR: number, vis: ReadonlySet<string>, fresh: (id: string) => boolean,
   corridors: readonly string[], art: string,
 ): { defs: string; body: string; words: string } {
-  const { nodes, t } = terrOf(r, region, W, H, terrR)
+  const { nodes, t } = boardTerritory(r)
   const blur = Math.round(terrR * 0.3)
   let holes = ''
   for (const [i, d] of t.fills.entries()) {
