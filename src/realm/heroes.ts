@@ -12,7 +12,7 @@ import { HERO_POOL } from './data/heroes-pool.ts'
 import { TRAITS, TRAIT, type TraitGrade } from './data/traits.ts'
 import type { Art, EdgeKind, GrowStat, Hero, Order, Realm, ReportLine, RNode } from './types.ts'
 import { migratePath } from './economy.ts'
-import { relicMul, relicSum } from './relics.ts'
+import { relicBest, relicMul, relicSum } from './relics.ts'
 
 const byId = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 
@@ -229,9 +229,10 @@ export function gluttonMen(r: Realm, faction: string): number {
   return n * P.realm.traitGlutton
 }
 
-/** 제사의 효과 배수 — 그 나라에 무당 핏줄이 있으면 두 배 */
+/** 제사의 효과 배수 — 그 나라에 무당 핏줄이 있으면 두 배 · 금동대향로를 지닌 장수가 있어도 같다 (겹치지 않는다 · relics.ts) */
 export function riteMul(r: Realm, faction: string): number {
-  return Object.values(r.heroes).some((h) => h.faction === faction && h.status === 'free' && hasTrait(h, 'shaman')) ? 2 : 1
+  const shaman = Object.values(r.heroes).some((h) => h.faction === faction && h.status === 'free' && hasTrait(h, 'shaman')) ? 2 : 1
+  return Math.max(shaman, relicBest(r, faction, 'blessing'))
 }
 
 // ───────── 본 장수 (정보의 계약, HEROES §5)
@@ -410,7 +411,8 @@ export function persuadeDropOf(r: Realm, by: string | null): number {
   const R = P.realm
   const b = by !== null ? r.heroes[by] : undefined
   const d = b !== undefined ? deokOf(b) : 3
-  return Math.max(0.2, R.persuadeDrop * (1 + (d - 5) * R.persuadeDropPerDeok) * (hasTrait(b, 'charm') ? R.persuadeCharm : 1))
+  // 굵은고리 금귀걸이 — 지닌 이가 회유하면 벽이 빨리 깎인다 (relics.ts)
+  return Math.max(0.2, R.persuadeDrop * (1 + (d - 5) * R.persuadeDropPerDeok) * (hasTrait(b, 'charm') ? R.persuadeCharm : 1) * relicMul(b, 'woo'))
 }
 
 /** 벽이 무너진 뒤 계절마다 넘어올 확률 */

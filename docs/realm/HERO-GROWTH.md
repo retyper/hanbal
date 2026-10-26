@@ -89,14 +89,24 @@
   그릇 +1 (천마도 무예 · 비파형동검 통솔 — 단련터 `capOf(born, s, room)`) · 간두령 사기 +0.05 (`forceOf` · `mergeForces`) · 굽은옥 정 ×1.5 (`addBond`, 깎일 때는 그대로) ·
   덩이쇠 맡은 고을 철 +1 (`nodeYield`) · 천마도 기병 ×1.25 · 기마인물형 토기 ×1.2 (`Force.horseMul` → `fightHead`) · 농경문 청동기 맡은 고을 수확 +15% · 신라 금관 군주가 지니면 나라 수확 +10% (`harvestMul`) ·
   호우명 그릇 +10% · 다호리 붓 +5% 사신 (`envoyBonus`) · 계림로 보검 +2 · 비파형동검 +1 겨루기 무예 (`SideHero.duel` → 겨루기 굴림에만).
-  **곧 쓰인다 (글만 · 끼울 수는 있다)**: 잔무늬거울 · 팔주령 · 오리모양 토기 · 수레바퀴모양 토기 · 말머리 뿔잔 · 굵은고리 금귀걸이 · 금동대향로 · 진묘수 · 금동신발.
+  **뒤에 건 아홉 (10-26 · 「곧 쓰인다」였던 것 — 이제 스물넷 모두 판에 걸린다)**:
+  잔무늬거울 — 비기가 진중 굿이 되고(명궁이어도) 굿의 사기 ×1.5 `relicMirrorChant` (`sideOf` 의 `SideHero.art`·`chant` → tactics 비기 'rite') ·
+  팔주령 — 그 쪽 장수가 지녔으면 지는 합에서 꺾이는 사기 ×0.7 `relicBellSteady` (`SideHero.steady` → tactics 사기 셈, 호궤의 덜 꺾임과 곱) ·
+  오리모양 토기 — 싸움에서 잡히거나(사로잡기) 쓰러질(겨루기·난전) 장수가 판마다 1번 다친 몸으로 빠져나와 군대를 그대로 이끈다 `relicDuckSaves` (`season.battleFates` · `Hero.relicSpent` · 보고 `relicSave`) ·
+  수레바퀴모양 토기 — 이끄는 군대의 길이 1계절 짧다(적어도 한 계절) `relicWheelMarch` (`season.marchCut` → 행군 명령 · `estimate.movesOf`) ·
+  말머리 뿔잔 — 지닌 장수가 있는 쪽 호궤 곡식 ×0.5 `relicHornFeast` (`sideOf` 의 `Side.feast`) ·
+  굵은고리 금귀걸이 — 지닌 이가 회유하면 계절마다 깎는 벽 ×1.5 `relicEarringWoo` (`persuadeDropOf` — 회유 어림 계절도 같이 준다) ·
+  금동대향로 — 지닌 장수(잡히지 않은)가 있는 나라는 제사 효과 ×2(무당 핏줄과 같고 겹치지 않는다 · `riteMul`) · 큰 제사 길에 내리 지낼 제사 −1 (`paths.riteOf` need · 적어도 1) `relicIncenseRite` `relicIncenseStep` ·
+  진묘수 — 지닌 장수가 맡은 고을(`postHero`)에 쳐들어온 군대가 싸움 없이 떠난 고을로 돌아선다 · 판마다 1번 `relicGuardianWards` (`resolveMarches` 닿는 자리 · `preview` 도 저격 판을 안 연다 · 보고 `relicSave`) ·
+  금동신발 — 자객·구출로 보낸 장수가 들킬 몫 ×0.7 `relicShoesCaught` (`resolvePlots` 의 굴림 — 밤 판을 손으로 하면 손 결과 그대로).
+  판마다 쓰는 횟수는 판 안의 장수(`Hero.relicSpent`)에 적는다 — 다음 판은 새 몸이라 다시 찬다. 옛 저장엔 없다.
 - 판 밖 기록 `hanbal.realm.relics` `{v:1, own:{[id]:{n, seed, region}}, wear:{[장수]:[유물…]}, tombs:{[시드]:{ids, pick}}, order}` — 같은 판은 한 번만 고른다(무덤 `relicKeepRuns` 30).
   한 장수 `relicSlots` 1 칸 · 단련 `relicTwoAt` 10 이면 `relicSlotsHigh` 2 칸. 하나는 한 사람만 지닌다(다른 장수에게서 옮긴다). 유물은 잃지 않는다.
 - 이긴 판 → 끝 화면에 「옛 무덤을 열었다」(상자 셋이 둥실 · 겉빛이 귀함) → 「상자를 고르러 ›」 → 덧널 셋. 상자는 `drawChests(시드, 땅, 가진 것)` — 아직 없는 것부터 · 무게 흔함 6 · 귀함 3 · 보배 1. 연 무덤은 기록에 남아 다시 열어도 같은 셋.
   하나를 누르면 상자가 흔들리며 터지고(loot) 유물이 떠오른다 · 이름 · 시대·출토 · 효과 · 소리(dex_new → coins). 남은 둘도 흐리게 보인다(「남겨 둔 것 — 다음 무덤에서」). → 「단련터에서 끼운다 ›」.
 - 단련터: 장수 카드 밑에 유물 칸(빈 칸 「＋ 유물 끼우기」) → 누르면 가진 유물 고르기(효과 · 지닌 이 「○○가 지녔다 — 옮긴다」 · 비우기). 맨 아래 **유물 도감** n/24 — 가진 것은 빛깔, 못 찾은 것은 검은 그림자와 ?(어느 판에서 나는지 귀띔).
 - 다음 판: `realm-main.fresh` 가 `drillRealm` 뒤에 `relicRealm` — 우리 장수만 `Hero.relics` (칸 수는 단련 단계로). 장수 줄 · 장수 판의 「단련 n」 곁에 유물 그림(대면 이름 · 효과).
-- 아직: 「곧 쓰인다」 아홉 · 서버 맞추기에 유물 기록 안 실음 · 밸런스 시뮬(유물 낀 판의 이김 몫)은 아직 안 쟀다 · 그림 손볼 것은 위 §B.
+- 아직: 서버 맞추기에 유물 기록 안 실음 · 밸런스 시뮬(유물 낀 판의 이김 몫)은 아직 안 쟀다 · 그림 손볼 것은 위 §B.
 
 ---
 

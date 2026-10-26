@@ -10,6 +10,7 @@ import type { Art, Ask, BuildWhat, Deed, Cmd, DiscoverHow, EdgeKind, Good, Grp, 
 import { groupOf } from '../tactics.ts'
 import type { ConcealWhy } from '../season.ts'
 import { TRAIT } from './traits.ts'
+import { RELIC } from './relics.ts'
 
 export const SEASON_NAME: Record<SeasonOfYear, string> = {
   spring: '봄', summer: '여름', autumn: '가을', winter: '겨울',
@@ -348,6 +349,15 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       const a = before.armies[line.army]
       if (a?.faction !== viewer) return null
       return `${josa(nameArmy(line.army), '을', '를')} 집으로 돌려보냈다. ${node(line.node)}에 ${line.n}집이 돌아왔다.`
+    }
+    case 'relicSave': {
+      // 지닌 유물이 살렸다 — 오리모양 토기(장수) · 진묘수(고을)
+      const who = after.heroes[line.hero]?.name ?? ''
+      const thing = RELIC[line.relic]?.name ?? '유물'
+      if (line.node === undefined) return line.faction === viewer ? `${josa(who, '이', '가')} 쓰러질 뻔했으나 품에 지닌 ${thing} 덕에 다친 몸으로 빠져나왔다.` : null
+      if (line.faction === viewer) return `${josa(fname(line.foe ?? ''), '이', '가')} ${josa(node(line.node), '을', '를')} 치러 왔으나 ${who}의 ${josa(thing, '이', '가')} 성문을 지켰다 — 적이 싸우지도 못하고 돌아간다.`
+      if (line.foe === viewer) return `${josa(node(line.node), '을', '를')} 치러 갔으나 ${thing}의 기운에 군사들이 질려 발길을 돌린다.`
+      return null
     }
     case 'freed':
       if (line.faction !== viewer) return null

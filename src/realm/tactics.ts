@@ -89,6 +89,10 @@ export interface SideHero {
   readonly id: string; readonly mu: number; readonly ryak: number; readonly coward: boolean; readonly art?: Art; readonly style?: BattleStyle
   /** 겨루기에서만 더하는 무예 — 지닌 유물 (계림로 보검 · 비파형동검 — relics.ts) */
   readonly duel?: number
+  /** 진중 굿으로 오르는 사기에 곱한다 — 잔무늬거울 (relics.ts · 지니면 비기가 굿이 된다) */
+  readonly chant?: number
+  /** 그 쪽이 지는 합에서 꺾이는 사기에 곱한다 — 팔주령 (relics.ts) */
+  readonly steady?: number
 }
 
 /** 그 쪽의 장수 — 총대장이 먼저 */
@@ -983,7 +987,7 @@ function resolveRound(
         break
       }
       case 'rite': case 'shout':
-        addMorale(x, R.tacArtRally * (art === 'rite' ? 1.5 : 1))
+        addMorale(x, R.tacArtRally * (art === 'rite' ? 1.5 * (actor.chant ?? 1) : 1))
         acts.push({ s: x, g: 'lead', c: 'art', art, hero, n: 1, res: 'ok' })
         break
       case 'sway': {
@@ -1206,8 +1210,10 @@ function resolveRound(
   const pr = ra + rd > 0 ? rd / (ra + rd) : 0.5
   const dm = (pr - 0.5) * R.tacMoraleSwing
   // 호궤한 쪽은 배불리 먹어 이 합에 덜 꺾인다 — 크게 밀린 합에서 곡식을 풀고도 사기가 뚝 떨어지던 것 (형 10-26: "호궤 썼는데도 사기 너무 많이 떨어짐")
-  const fedA = oa.lead === 'feast' ? R.tacFeastGuard : 1
-  const fedD = od.lead === 'feast' ? R.tacFeastGuard : 1
+  // 팔주령 — 그 쪽 장수가 지녔으면 지는 합에서 덜 꺾인다 (relics.ts)
+  const steadyOf = (s: Side): number => Math.min(1, ...heroesOf(s).map((h) => h.steady ?? 1))
+  const fedA = (oa.lead === 'feast' ? R.tacFeastGuard : 1) * steadyOf(atk)
+  const fedD = (od.lead === 'feast' ? R.tacFeastGuard : 1) * steadyOf(def)
   st.ma += dm < 0 ? dm * fedA : dm
   st.md -= dm > 0 ? dm * fedD : dm
   if (beat === 'a') st.md -= R.tacTriMorale * fedD

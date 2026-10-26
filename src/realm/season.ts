@@ -44,7 +44,7 @@ import { spreadRumors } from './rumor.ts'
 import { addMen, giveMen, kitOf, scaleKinds, scaleMen, takeMen } from './kit.ts'
 import { formParty, joinParty, moveParty, stepParties } from './parties.ts'
 import { battleMerit, seasonMerit } from './drill.ts'
-import { relicHorseMulOf, relicMoraleOf, relicSum } from './relics.ts'
+import { relicHas, relicHorseMulOf, relicLeft, relicMoraleOf, relicMul, relicSum, relicWith, spendRelic } from './relics.ts'
 import {
   ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, ironhandAt, noteMet, oneJobPerHero, postHero, releaseCaptives, stepHeroes, sweepHeroes,
 } from './heroes.ts'
@@ -162,6 +162,19 @@ export function forceOf(r: Realm, a: Army): Force {
   // 지닌 유물 — 간두령 사기 · 천마도 말다래 기병 힘 (relics.ts)
   const horseMul = relicHorseMulOf(h)
   return { mix: a.mix, kit: kitOf(a), equip: a.equip, mu: commandOf(h), bowMul: bowMulOf(h), ...(horseMul !== 1 ? { horseMul } : {}), morale: a.morale + bondMoraleOf(r, h) + relicMoraleOf(h) }
+}
+
+/** 수레바퀴모양 토기 — 이 군대를 이끄는 장수가 지녔으면 길이 이만큼 짧다 (relics.ts · 행군 명령과 길 고르기 화면이 함께 쓴다) */
+export function marchCut(r: Realm, a: Army): number {
+  return relicSum(heroOf(r, a), 'march')
+}
+
+/** 진묘수 — 이 나라(faction)가 그 고을에 쳐들어가면 싸움 없이 돌려보낼 고을지기 (남은 횟수가 있을 때 · relics.ts) */
+function wardOf(r: Realm, node: string, faction: string): Hero | null {
+  const owner = r.nodes[node]?.owner ?? null
+  if (owner === null || allied(r, faction, owner)) return null
+  const h = postHero(r, node)
+  return h !== null && relicLeft(h, 'ward') > 0 ? h : null
 }
 
 /** 여러 군대를 한 판정 입력으로 — 병력과 병종마다 무장은 더하고, 지휘는 가장 센 장수의 것 */
@@ -341,7 +354,7 @@ export function preview(realm: Realm, orders: readonly Order[]): string[] {
   for (const g of arrivalGroups(arriving)) {
     const lead = g[0]!
     const to = lead.march!.to
-    if (contested(r, to, lead.faction)) keys.push(battleKey(to, lead.id))
+    if (contested(r, to, lead.faction) && wardOf(r, to, lead.faction) === null) keys.push(battleKey(to, lead.id))
   }
   return keys
 }
@@ -605,6 +618,7 @@ function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): v
       left += P.realm.hardExtra
       lines.push({ kind: 'blocked', army: a.id, edge: ed.id, why, lost: Math.max(0, before - headcount(forceOf(r, a))) })
     }
+    left = Math.max(1, left - marchCut(r, a)) // 수레바퀴모양 토기 (relics.ts)
     // 군량 — 길 계절에 더해 몇 계절치를 챙기나. 더 챙길수록 곡식이 들고, 0 이면 닿자마자 바닥이다
     const extra = rationFor(r, a, o.ration, left)
     if (extra > 0) stockOf(r, a.faction).grain -= rationCost(r, a, left, extra)
@@ -795,7 +809,7 @@ function styleOf(h: Hero): { style?: BattleStyle } {
   return s !== undefined ? { style: s } : {}
 }
 
-function sideOf(
+export function sideOf(
   r: Realm, armies: readonly Army[], f: Force, F: number, faction: string,
   o: { water: boolean; edge?: EdgeKind; fire: boolean; flank: boolean; seen: boolean; moraleBonus?: number; captureBonus?: number; terrain?: Terrain },
 ): Side {
@@ -803,7 +817,14 @@ function sideOf(
   const h = hs[0] ?? null
   const asSide = (x: Hero): NonNullable<Side['hero']> => {
     const duel = relicSum(x, 'duel') // 계림로 보검 · 비파형동검 — 겨루기에서만 (relics.ts)
-    return { id: x.id, mu: x.mu, ryak: x.ryak, coward: hasTrait(x, 'coward'), ...(heroArt(x) !== undefined ? { art: heroArt(x)! } : {}), ...styleOf(x), ...(duel > 0 ? { duel } : {}) }
+    // 잔무늬거울 — 비기가 진중 굿이 되고 굿의 사기가 오른다 · 팔주령 — 지는 합에서 사기가 덜 꺾인다 (relics.ts)
+    const chant = relicHas(x, 'chant')
+    const art = chant ? 'rite' : heroArt(x)
+    const steady = relicMul(x, 'steady')
+    return {
+      id: x.id, mu: x.mu, ryak: x.ryak, coward: hasTrait(x, 'coward'), ...(art !== undefined ? { art } : {}), ...styleOf(x), ...(duel > 0 ? { duel } : {}),
+      ...(chant ? { chant: relicMul(x, 'chant') } : {}), ...(steady !== 1 ? { steady } : {}),
+    }
   }
   const specials: Cmd[] = []
   if (o.fire) specials.push('fire')
@@ -814,6 +835,8 @@ function sideOf(
   // 쉬움(촌장) — 판 내내 우리 쪽이 세다 (형 10-26: "촌장급은 진짜 뭘 해도 승리할 정도로")
   const easy = (r.tier ?? 1) < 1 && r.region !== 'tutorial' && r.factions[faction]?.mind === 'player'
   const mb = (o.moraleBonus ?? 0) + (easy ? P.realm.easyMorale : 0)
+  // 말머리 뿔잔 — 지닌 장수가 있는 쪽은 호궤 곡식이 덜 든다 (relics.ts)
+  const feast = Math.max(1, Math.round(feastCost(n) * Math.min(1, ...hs.map((x) => relicMul(x, 'feast')))))
   return {
     F: easy ? F * P.realm.easyPower : F, mix: f.mix, morale: f.morale, hero: h === null ? null : asSide(h),
     ...(hs.length > 1 ? { aides: hs.slice(1).map(asSide) } : {}),
@@ -823,7 +846,7 @@ function sideOf(
     // 배우는 판 — 우리 쪽 사로잡기는 반드시 되고, 상대는 우리 장수를 잡지 않는다 (형: "튜토리얼급이니 100% 성공하도록")
     ...(r.region === 'tutorial' ? { capture: r.factions[faction]?.mind === 'player' ? 'sure' as const : 'never' as const } : {}),
     // 호궤 — 플레이어 쪽만, 곳간에 그만큼 있을 때 (곡식은 싸움이 끝나고 payFeast 가 뺀다)
-    ...(r.factions[faction]?.mind === 'player' && (r.stock[faction]?.grain ?? 0) >= feastCost(n) ? { feast: feastCost(n) } : {}),
+    ...(r.factions[faction]?.mind === 'player' && (r.stock[faction]?.grain ?? 0) >= feast ? { feast } : {}),
   }
 }
 
@@ -860,8 +883,8 @@ function shiftMorale(armies: readonly Army[], d: number): void {
  * 5 — 장수의 운명 (형: "그냥 싸우다가 운좋게 잡히는게 아니라") — 사로잡기는 라운드의 명령으로만 된다.
  * 장수 겨루기에서 진 장수는 쓰러지거나 다친다. 무너진 쪽 장수는 난전에 쓰러질 수 있다 (무예가 높으면 빠져나온다, 겁 많으면 먼저 달아난다).
  */
-function battleFates(
-  r: Realm, res: FightResult, _a: Side, _d: Side, atkArmies: readonly Army[], defArmies: readonly Army[], atkFaction: string, defFaction: string, key: string,
+export function battleFates(
+  r: Realm, res: FightResult, _a: Side, _d: Side, atkArmies: readonly Army[], defArmies: readonly Army[], atkFaction: string, defFaction: string, key: string, lines: ReportLine[],
 ): { captured: string | null; killed: string | null; captives: string[]; fallen: string[] } {
   const R = P.realm
   const captives: string[] = []
@@ -869,10 +892,19 @@ function battleFates(
   const out = (id: string): void => {
     for (const x of [...atkArmies, ...defArmies]) if (x.hero === id) x.hero = null
   }
+  // 오리모양 토기 — 잡히거나 쓰러질 장수가 다친 몸으로 빠져나온다 (판마다 relicDuckSaves 번 · relics.ts). 군대는 그대로 이끈다
+  const slip = (h: Hero): boolean => {
+    if (relicLeft(h, 'escape') <= 0) return false
+    spendRelic(h, 'escape')
+    h.woundedUntil = Math.max(h.woundedUntil ?? -1, r.season + 1)
+    lines.push({ kind: 'relicSave', faction: h.faction, hero: h.id, relic: relicWith(h, 'escape') })
+    return true
+  }
   // 사로잡힌 장수 — 싸움이 이어졌어도 (장수가 여럿이었다)
   for (const t of res.taken) {
     const h = r.heroes[t.hero]
     if (h === undefined || h.status !== 'free') continue
+    if (slip(h)) continue
     h.status = 'captive'
     h.captor = t.side === 'a' ? defFaction : atkFaction
     captives.push(h.id)
@@ -882,7 +914,7 @@ function battleFates(
   for (const f of res.fell) {
     const h = r.heroes[f.hero]
     if (h === undefined || h.status !== 'free') continue
-    if (f.kill) {
+    if (f.kill && !slip(h)) {
       h.status = 'dead'
       fallen.push(h.id)
       out(h.id)
@@ -901,7 +933,7 @@ function battleFates(
         for (const x of armies) if (x.hero === h.id) x.morale = Math.max(R.moraleFloor, x.morale - R.traitCowardMorale)
       } else {
         const p = R.tacDeathRout * Math.min(1.5, Math.max(0.3, 1 - escapeOf(h)))
-        if (roll(r.seed, r.season, `${key}:fall`) < p) {
+        if (roll(r.seed, r.season, `${key}:fall`) < p && !slip(h)) {
           h.status = 'dead'
           fallen.push(h.id)
           out(h.id)
@@ -984,7 +1016,7 @@ function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines
       const atkLost = outcome === 'lose' || outcome === 'routed'
       const atkHeroes = atks.map((x) => x.hero)
       const defHeroes = defs.map((x) => x.hero)
-      const fateOf = battleFates(r, res, sa, sd, atks, defs, lead.faction, defs[0]!.faction, key)
+      const fateOf = battleFates(r, res, sa, sd, atks, defs, lead.faction, defs[0]!.faction, key, lines)
       // 이끈 장수가 자란다 (HEROES §6) — 사로잡히거나 죽은 이는 빠진다
       if (atkWon) battleGrowth(r, atkHeroes, defHeroes, [], lines)
       else if (atkLost) battleGrowth(r, defHeroes, atkHeroes, [], lines)
@@ -1166,7 +1198,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const atkLost = outcome === 'lose' || outcome === 'routed'
   const atkHeroes = atks.map((x) => x.hero)
   const defHeroes = defenders.map((x) => x.hero)
-  const { captured, killed, captives, fallen } = battleFates(r, res, sa, sd, atks, defenders, a.faction, defFaction, key)
+  const { captured, killed, captives, fallen } = battleFates(r, res, sa, sd, atks, defenders, a.faction, defFaction, key, lines)
   // 이끈 장수가 자란다 (HEROES §6) — 사로잡히거나 죽은 이는 빠진다
   if (atkWon) battleGrowth(r, atkHeroes, defHeroes, [], lines)
   else if (atkLost) battleGrowth(r, defHeroes, atkHeroes, [], lines)
@@ -1265,6 +1297,17 @@ function resolveMarches(
         a.march = { from: m.to, to: m.from, edge: m.edge, left: 1, ambush: false, aim: r.nodes[m.from]?.owner ?? null }
         lines.push({ kind: 'recall', faction: a.faction, army: a.id, node: m.to, owner: now })
       }
+      continue
+    }
+    // 진묘수 — 그 고을을 맡은 장수가 지녔으면 쳐들어온 군대가 싸움 없이 떠난 고을로 돌아선다 (판마다 relicGuardianWards 번 · relics.ts)
+    const ward = contested(r, node.id, lead.faction) ? wardOf(r, node.id, lead.faction) : null
+    if (ward !== null) {
+      spendRelic(ward, 'ward')
+      for (const a of live) {
+        const m = a.march!
+        a.march = { from: m.to, to: m.from, edge: m.edge, left: 1, ambush: false, aim: r.nodes[m.from]?.owner ?? null }
+      }
+      lines.push({ kind: 'relicSave', faction: ward.faction, hero: ward.id, relic: relicWith(ward, 'ward'), node: node.id, foe: lead.faction })
       continue
     }
     if (contested(r, node.id, lead.faction)) {

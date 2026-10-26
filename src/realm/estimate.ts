@@ -12,7 +12,7 @@ import { militiaMen } from './economy.ts'
 import { ambushTraitOf } from './heroes.ts'
 import { alertRange, seenMix, visibleRange } from './intel.ts'
 import {
-  approachConceal, approachOptions, blockedWhy, cliffChance, conceal, concealOf, forceOf, fortMul, marchSeasons, otherEnd, seasonOf, seenMarches,
+  approachConceal, approachOptions, blockedWhy, cliffChance, conceal, concealOf, forceOf, fortMul, marchCut, marchSeasons, otherEnd, seasonOf, seenMarches,
 } from './season.ts'
 import type { Approach, Army, EdgeKind, Realm, REdge } from './types.ts'
 
@@ -158,7 +158,7 @@ export function movesOf(r: Realm, faction: string, a: Army): Move[] {
     const al = k?.alert ? alertRange(k.alert.v, r.season - k.alert.season) : null
     const ambushP = ambushChance(conceal(ed, node, season), myRyak, R.aiAssumeRyak, size + ambushTraitOf(a.hero !== null ? (r.heroes[a.hero] ?? null) : null, ed.kind), 0, al === null ? R.aiAssumeAlert : al[1])
     out.push({
-      edge: ed, to, seasons: marchSeasons(ed.kind, season) + (blockedWhy(ed, season) !== null ? R.hardExtra : 0), blocked: blockedWhy(ed, season), hostile,
+      edge: ed, to, seasons: Math.max(1, marchSeasons(ed.kind, season) + (blockedWhy(ed, season) !== null ? R.hardExtra : 0) - marchCut(r, a)), blocked: blockedWhy(ed, season), hostile,
       win: v.win, winAmbush: v.ambush, winCaught: v.caught, age: v.age, ambushP,
       ...concealBits(concealOf(r, ed.id, headcount(forceOf(r, a)), to)), walled: fortMul(node, season) > 1,
     })
