@@ -84,7 +84,7 @@ import { AUD_CSS, askSay, pactSay, typed, type PactKind } from './audience.ts'
 import { customsOf } from '../../realm/data/customs.ts'
 import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
 import { SCENE_SOUND, makeMusic, playOnce, snd, tapSlot } from './sound.ts'
-import { hireVoicePath, voiceGate, voicePath, type VoiceLine } from './voice.ts'
+import { hireVoicePath, voiceGate, voiceKind, voicePath, type VoiceLine } from './voice.ts'
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
 import { FEEL_CSS, alertFeel, ambushFeel, chanceFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
@@ -2209,7 +2209,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const ans = answers[a.id]
     const threat = a.kind === 'demand'
     const md = moodOf(r, me(), a.from)
-    if (!bigSounded.has(`aud:${a.id}`)) { bigSounded.add(`aud:${a.id}`); window.setTimeout(() => ding(snd(threat ? 'war_drum' : 'envoy'), 0.5), 200) }
+    // 군장의 말 — 그 군장 목소리 결 × 나라 성향 (chief-lines.ts) · 말이 찍히기 시작할 때 제 목소리로 (형 10-26)
+    const say = askSay(a.kind, f?.mind, lead !== undefined ? voiceKind(lead, true) : 'm-elder')
+    if (!bigSounded.has(`aud:${a.id}`)) {
+      bigSounded.add(`aud:${a.id}`)
+      window.setTimeout(() => ding(snd(threat ? 'war_drum' : 'envoy'), 0.5), 200)
+      if (lead !== undefined) window.setTimeout(() => { if (document.querySelector('.ap .aud') !== null && voiceGate(performance.now())) ding(say.voice, P.realm.voiceVol) }, P.realm.chiefVoiceMs)
+    }
     const face = bustHd(lead, 'audlord') || bust(lead, 'audlord')
     const what = askLine(a, f?.name ?? '', a.node !== undefined ? (r.nodes[a.node]?.name ?? '') : '')
     const why = a.why !== undefined && readsMind(r, a.from) ? ` · <span class="mute">${esc(`속셈: ${whyLine(a.why, a.about !== undefined ? (r.factions[a.about]?.name ?? '') : '')}`)}</span>` : ''
@@ -2218,7 +2224,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     let h = `<div class="aud${threat ? ' threat' : ''}"><i class="audbg" style="background-image:url('${ART}event/event-court-hall.jpg')"></i>${face}`
     h += `<div class="audtop">${icon(`ask-${threat ? 'tribute' : a.kind}`, 'aqi')}<b>사신의 청 · ${esc(ASK_KIND_NAME[a.kind])}</b></div>`
     h += `<div class="audname">${emblem(a.from, 'fem')}<b>${esc(f?.name ?? '')}</b><span>${esc(lead?.name ?? '')}</span>${moodImg(ART, md.mood)}</div>`
-    h += `<div class="audsay">${typed(askSay(a.kind, f?.mind, a.id), esc)}</div>`
+    h += `<div class="audsay">${typed(say.text, esc)}</div>`
     h += `<div class="audwhat">${esc(what)}${why}</div>`
     h += `<div class="audbtns"><button class="btn${ans === true ? ' on' : ''}" data-act="answer" data-id="${a.id}" data-yes="1"><b>받는다</b>${swap !== '' ? `<small>${swap}</small>` : ''}</button>`
     h += `<button class="btn ghost${ans === false ? ' on' : ''}" data-act="answer" data-id="${a.id}" data-yes="0"><b>거절한다</b><small>${threat ? '전쟁이 된다' : '사이가 조금 식는다'}</small></button></div></div>`
@@ -4164,7 +4170,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   /** 큰 화면 한 장 — 그림 · 깃발 · 제목 · 한두 줄 · 확인 하나 (땅의 바뀜 · 공작이 먹혔다) */
   /** tone — 시작 연출: good 흰 번쩍 · bad 어둠에서 밝아진다 · plain 그냥 보인다 (없으면 good 으로 가른다 · 형 10-26: "다 똑같이 흰 화면 반짝이면서 시작하면 안 됨") */
-  interface Big { key: string; art: string; good: boolean; tone?: 'good' | 'bad' | 'plain'; flags: string; title: string; sub: string; small: string; sfx: string; stage?: string }
+  interface Big { key: string; art: string; good: boolean; tone?: 'good' | 'bad' | 'plain'; flags: string; title: string; sub: string; small: string; sfx: string; stage?: string; voice?: string }
 
   /**
    * 맺었다 · 틀어졌다 — 두 군장이 마주 보고 깃발이 부딪힌 뒤 저쪽 군장이 한마디 (형 10-25: 문명처럼)
@@ -4199,10 +4205,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         refused: [`${josa(fac.name, '이', '가')} 우리 청을 물리쳤다`, '사신이 빈손으로 돌아왔다', 'event-court-hall', snd('war_drum')],
       }
       const [title, sub, bg, sfx] = T[k]
-      const say = pactSay(k, fac.mind, key)
+      const say = pactSay(k, fac.mind, lord !== undefined ? voiceKind(lord, true) : 'm-elder')
       const stage = `<div class="pact${bad ? ' bad' : ''}"><img class="pactbg" src="${ART}event/${bg}.jpg" alt="">${bustHd(mine, 'pl a')}${bustHd(lord, 'pl b')}`
-        + `<div class="pflags">${emblem(me(), 'fem')}<i>${bad ? '✕' : '⇄'}</i>${emblem(f, 'fem')}</div><div class="psay">${typed(say, esc, 1.1)}</div></div>`
-      out.push({ key, art: bg, good: !bad, ...(k === 'gift' ? { tone: 'plain' as const } : {}), flags: '', title, sub, small: lord?.name ?? '', sfx, stage })
+        + `<div class="pflags">${emblem(me(), 'fem')}<i>${bad ? '✕' : '⇄'}</i>${emblem(f, 'fem')}</div><div class="psay">${typed(say.text, esc, 1.1)}</div></div>`
+      out.push({ key, art: bg, good: !bad, ...(k === 'gift' ? { tone: 'plain' as const } : {}), flags: '', title, sub, small: lord?.name ?? '', sfx, stage, ...(lord !== undefined ? { voice: say.voice } : {}) })
     }
     return out
   }
@@ -4287,7 +4293,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 시작은 결에 따라: 득이면 흰 번쩍 · 나쁘면 어둠에서 천천히 · 중립이면 그냥 (형 10-26)
    */
   function bigCardHtml(r: Realm, x: Big, rest: number): string {
-    if (!bigSounded.has(x.key)) { bigSounded.add(x.key); window.setTimeout(() => ding(x.sfx, 0.55), 220) }
+    if (!bigSounded.has(x.key)) {
+      bigSounded.add(x.key)
+      window.setTimeout(() => ding(x.sfx, 0.55), 220)
+      // 맺었다·틀어졌다 — 저쪽 군장이 한마디를 제 목소리로 (말이 찍히기 시작할 때)
+      const v = x.voice
+      if (v !== undefined) window.setTimeout(() => { if (document.querySelector('.ap .pact') !== null && voiceGate(performance.now())) ding(v, P.realm.voiceVol) }, P.realm.pactVoiceMs)
+    }
     const tone = x.tone ?? (x.good ? 'good' : 'bad')
     const open = tone === 'good' ? '<i class="bigflash"></i>' : tone === 'bad' ? '<i class="bigdark"></i>' : ''
     return `<div class="mcard fulld landc ${x.good ? 'won' : 'lost'} t-${tone}">${open}<div class="mt">${icon(SEASON_ICON[seasonOf(r.season)], 'sic')}<b>${esc(seasonLabel(r.season))}</b></div>`
