@@ -149,8 +149,9 @@ export const AUD_CSS = `
 .ap .plotv .pagent .plf.ic { padding: 14px; box-sizing: border-box; object-fit: contain; }
 .ap .plotv .pagent b { font-size: clamp(15px, 2.4vw, 20px); color: #fff; text-shadow: 0 2px 6px #000; }
 .ap .plotv .pagent small { font-size: 12px; color: #e8dcc0; text-shadow: 0 1px 4px #000; }
-.ap .plotv .pstamp { position: absolute; right: 6%; top: 8%; z-index: 3; font-style: normal; font-weight: 900; font-size: clamp(30px, 7vw, 64px); letter-spacing: .12em; padding: .05em .35em; border: .09em solid currentColor; border-radius: .18em; transform: rotate(-12deg); text-shadow: 0 2px 10px #000a; animation: pstamp .5s cubic-bezier(.3, 1.6, .5, 1) .6s both; }
-.ap .plotv.ok .pstamp { color: #ffd77a; background: #3a2a1088; } .ap .plotv.fail .pstamp { color: #ff6a4a; background: #3a0a0688; }
+.ap .plotv .pstamp { position: absolute; right: 5%; top: 7%; z-index: 3; width: clamp(120px, 26%, 260px); height: auto; transform: rotate(-12deg); filter: drop-shadow(0 3px 8px #000a); animation: pstamp .5s cubic-bezier(.3, 1.6, .5, 1) .6s both; }
+.ap .plotv.fail .pstamp { transform: rotate(8deg); animation-name: pstampf; filter: drop-shadow(0 3px 8px #000c) brightness(1.15); }
+@keyframes pstampf { 0% { transform: rotate(8deg) scale(2.6); opacity: 0; } 60% { transform: rotate(8deg) scale(.92); opacity: 1; } 100% { transform: rotate(8deg) scale(1); } }
 .ap .plotv .pinfo { position: absolute; left: calc(3% + clamp(84px, 18vw, 170px) + 18px); right: 4%; bottom: 6%; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; animation: audup .4s ease-out .9s both; }
 .ap .plotv .pinfo .fem { width: 34px; height: 34px; } .ap .plotv .pinfo .sowf.big .fem { width: 32px; height: 32px; }
 .ap .plotv .pinfo .pact2 { font-size: clamp(14px, 2.2vw, 19px); font-weight: 700; color: #fff; text-shadow: 0 2px 6px #000; }

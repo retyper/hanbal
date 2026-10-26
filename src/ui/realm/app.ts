@@ -3887,7 +3887,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   /** 큰 화면 한 장 — 그림 · 깃발 · 제목 · 한두 줄 · 확인 하나 (땅의 바뀜 · 공작이 먹혔다) */
-  interface Big { key: string; art: string; good: boolean; flags: string; title: string; sub: string; small: string; sfx: string; stage?: string }
+  /** tone — 시작 연출: good 흰 번쩍 · bad 어둠에서 밝아진다 · plain 그냥 보인다 (없으면 good 으로 가른다 · 형 10-26: "다 똑같이 흰 화면 반짝이면서 시작하면 안 됨") */
+  interface Big { key: string; art: string; good: boolean; tone?: 'good' | 'bad' | 'plain'; flags: string; title: string; sub: string; small: string; sfx: string; stage?: string }
 
   /**
    * 맺었다 · 틀어졌다 — 두 군장이 마주 보고 깃발이 부딪힌 뒤 저쪽 군장이 한마디 (형 10-25: 문명처럼)
@@ -3925,7 +3926,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const say = pactSay(k, fac.mind, key)
       const stage = `<div class="pact${bad ? ' bad' : ''}"><img class="pactbg" src="${ART}event/${bg}.jpg" alt="">${bustHd(mine, 'pl a')}${bustHd(lord, 'pl b')}`
         + `<div class="pflags">${emblem(me(), 'fem')}<i>${bad ? '✕' : '⇄'}</i>${emblem(f, 'fem')}</div><div class="psay">${typed(say, esc, 1.1)}</div></div>`
-      out.push({ key, art: bg, good: !bad, flags: '', title, sub, small: lord?.name ?? '', sfx, stage })
+      out.push({ key, art: bg, good: !bad, ...(k === 'gift' ? { tone: 'plain' as const } : {}), flags: '', title, sub, small: lord?.name ?? '', sfx, stage })
     }
     return out
   }
@@ -3993,7 +3994,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const flags = l.op === 'sow' ? `<span class="sowf big">${emblem(l.target, 'fem')}<i>⇄</i>${emblem(l.other ?? null, 'fem')}</span>` : emblem(l.target, 'fem')
       const stage = `<div class="plotv${l.ok ? ' ok' : ' fail'}"><img class="pbg" src="${ART}event/event-plot-${l.op}.jpg" alt=""><i class="pred"></i>`
         + `<div class="pagent">${face}<b>${esc(who)}</b><small>${esc(PLOT_NAME[l.op])}</small></div>`
-        + `<i class="pstamp">${l.ok ? '성공' : '실패'}</i>`
+        + `<img class="pstamp" src="${ART}fx/stamp-${l.ok ? 'ok' : 'fail'}.png" alt="${l.ok ? '성공' : '실패'}">`
         + `<div class="pinfo">${flags}<span class="pact2">${esc(act)}</span>${after.map((x) => `<span class="paft">${esc(x)}</span>`).join('')}</div></div>`
       out.push({ key, art: `event-plot-${l.op}`, good: l.ok, flags: '', title, sub, small: PLOT_NAME[l.op], sfx, stage })
     }
@@ -4002,10 +4003,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   /** 소리는 그 장이 처음 뜰 때 한 번 */
   const bigSounded = new Set<string>()
-  /** 큰 화면 — 번쩍 → 그림이 밀려 들어오고 → 제목이 내려꽂힌다 → 소리 (형 10-25: "유저가 퍽 하면 게임은 으아아아 — 오버액션을 연쇄로") */
+  /**
+   * 큰 화면 — 시작 → 그림이 밀려 들어오고 → 제목이 내려꽂힌다 → 소리 (형 10-25: "유저가 퍽 하면 게임은 으아아아 — 오버액션을 연쇄로")
+   * 시작은 결에 따라: 득이면 흰 번쩍 · 나쁘면 어둠에서 천천히 · 중립이면 그냥 (형 10-26)
+   */
   function bigCardHtml(r: Realm, x: Big, rest: number): string {
     if (!bigSounded.has(x.key)) { bigSounded.add(x.key); window.setTimeout(() => ding(x.sfx, 0.55), 220) }
-    return `<div class="mcard fulld landc ${x.good ? 'won' : 'lost'}"><i class="bigflash"></i><div class="mt">${icon(SEASON_ICON[seasonOf(r.season)], 'sic')}<b>${esc(seasonLabel(r.season))}</b></div>`
+    const tone = x.tone ?? (x.good ? 'good' : 'bad')
+    const open = tone === 'good' ? '<i class="bigflash"></i>' : tone === 'bad' ? '<i class="bigdark"></i>' : ''
+    return `<div class="mcard fulld landc ${x.good ? 'won' : 'lost'} t-${tone}">${open}<div class="mt">${icon(SEASON_ICON[seasonOf(r.season)], 'sic')}<b>${esc(seasonLabel(r.season))}</b></div>`
       + (x.stage !== undefined
         ? `${x.stage}<div class="pactt"><b>${esc(x.title)}</b>${x.sub !== '' ? `<span>${esc(x.sub)}</span>` : ''}</div>`
         : `<div class="landv"><img class="landi" src="${ART}event/${x.art}.jpg" alt=""><div class="landt">${x.flags}<b>${esc(x.title)}</b>${x.sub !== '' ? `<span>${esc(x.sub)}</span>` : ''}<small>${esc(x.small)}</small></div></div>`)

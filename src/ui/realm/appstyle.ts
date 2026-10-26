@@ -176,6 +176,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 /* 등용 — 하얀 번쩍 → 특성 빛 → 큰 얼굴이 떠오른다 · 이름 · 「주군을 모시겠습니다」 · 특성이 하나씩 */
 .ap .cere.hire { background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--gc) 40%, #0000) 0, #0000 62%), #0b0907; }
 .ap .cere.hire .cflash { position: absolute; inset: 0; background: #fff; opacity: 0; animation: hflash .9s ease-out 1.48s forwards; z-index: 5; pointer-events: none; }
+/* 우리 장수가 잡혔다 — 흰 번쩍 대신 어둠이 덮였다 걷힌다 (형 10-26: 나쁜 건 어둡게 시작) */
+.ap .cere.capt.lost .cflash { background: #000; opacity: 1; animation: hdark 1.6s ease-in .1s both; }
+@keyframes hdark { 0% { opacity: 1; } 40% { opacity: .85; } 100% { opacity: 0; } }
 @keyframes hflash { 0% { opacity: 1; } 35% { opacity: .85; } 100% { opacity: 0; } }
 .ap .cere.hire .cglow { position: absolute; left: 50%; top: 40%; width: min(120vw, 900px); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%;
   background: radial-gradient(circle, color-mix(in srgb, var(--gc) 55%, #fff0) 0, #0000 60%); animation: hglow 3.2s ease-in-out infinite alternate; pointer-events: none; }
@@ -597,13 +600,20 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .landc .landt span, .ap .landc .landt small { animation: bigup .4s ease-out .8s both; }
 .ap .landc .landi { animation: bigzoom 1.6s ease-out both; }
 .ap .landc .bigflash { position: absolute; inset: 0; z-index: 3; pointer-events: none; background: radial-gradient(circle, #fff 0, #fff8 40%, #0000 75%); animation: bigflash .5s ease-out both; }
-.ap .landc.lost .bigflash { background: radial-gradient(circle, #ff6a4a 0, #c0392b88 40%, #0000 75%); }
+/* 나쁜 일은 어둠에서 — 검은 막이 천천히 걷히고 그림은 어둡게 가라앉아 들어온다 · 중립은 번쩍 없이 그냥 (형 10-26) */
+.ap .landc .bigdark { position: absolute; inset: 0; z-index: 3; pointer-events: none; background: radial-gradient(ellipse at 50% 45%, #000a, #000 80%); animation: bigdark 1.5s ease-in both; }
+@keyframes bigdark { 0% { opacity: 1; } 35% { opacity: .9; } 100% { opacity: 0; } }
+.ap .landc.t-bad .landi, .ap .landc.t-bad .pbg, .ap .landc.t-bad .pactbg { animation: bigsink 2.4s ease-out both; }
+@keyframes bigsink { from { transform: scale(1.04); filter: brightness(.15) saturate(.4); } to { transform: none; filter: none; } }
+.ap .landc.t-bad .landt b { animation: bigsag .8s ease-out .7s both; }
+@keyframes bigsag { from { transform: translateY(-10px); opacity: 0; letter-spacing: .3em; } to { transform: none; opacity: 1; } }
+.ap .landc.t-plain .landv, .ap .landc.t-plain .landi, .ap .landc.t-plain .landt b { animation: bigup .45s ease-out both; }
 .ap .landc { position: relative; } .ap .landc .landt .sowf.big .fem { width: 40px; height: 40px; } .ap .landc .landt .sowf.big i { font-size: 22px; }
 @keyframes bigflash { from { opacity: 1; } to { opacity: 0; } }
 @keyframes bigslam { 0% { transform: scale(2.2) translateY(-20px); opacity: 0; } 60% { transform: scale(.94); opacity: 1; } 100% { transform: scale(1); } }
 @keyframes bigup { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes bigzoom { from { transform: scale(1.18); } to { transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { .ap .landc .landt b, .ap .landc .landi, .ap .landc .bigflash, .ap .landc .landt span, .ap .landc .landt small { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ap .landc .landt b, .ap .landc .landi, .ap .landc .bigflash, .ap .landc .bigdark, .ap .landc .landt span, .ap .landc .landt small { animation: none; } }
 .ap .landc.won .landt b { color: #ffd77a; } .ap .landc.lost .landt b { color: #ff8a70; }
 .ap .landc .landt span { font-size: 16px; color: #efe6d2; } .ap .landc .landt small { font-size: 13px; color: #cfc6b4; }
 .ap .landc .landt .fem { width: 40px; height: 40px; }
