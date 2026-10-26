@@ -5,7 +5,8 @@
  *  - 무리마다 따로 깃발 — 앞줄 · 활 · 기병 · 장수. 기병 명령은 기병이 있을 때만, 땅의 수는 그 땅에서만 (한 번)
  *  - 앞줄의 세모: 방진 > 돌격 > 길 트기 > 방진 · 흔들리는 방진은 돌격에 뚫린다
  *  - 사로잡기는 날랜 무리와 적장 곁 호위를 견준다 — 28 대 570 은 거의 안 된다
- *  - 셋째 합 뒤로는 팽팽할 때만 다섯째 합까지 · 한쪽이 무너지면 일찍 끝난다
+ *  - 해시계 — 낮이면 아침~해질녘, 기습·야습이면 한밤~새벽 넷 때 · 마지막 때 뒤엔 진을 친다 · 한 합 더 · 물러난다 · 한쪽이 무너지면 일찍 끝난다
+ *  - 밤 — 화살이 덜 맞고 불화살이 더 무섭고 밀린 쪽 사기가 크게 흔들린다 · 먹힌 야습은 첫 때에 치는 쪽이 세다
  *  - 같은 판 같은 명령이면 같은 결과 (A1) · 맡기면 AI 가 고른다 · 시험 돌림(open)은 다음 고를 것을 낸다
  *  - 잘 읽으면 열세를 뒤집고, 한 수만 되풀이하면 우세에도 진다 (많은 판의 평균)
  *  - 진군 방식 · 군량 · 막힌 길 (season.ts)
@@ -13,11 +14,11 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { captureChance, captureOdds, feastCost, fightRounds, groupOptions, leadOptions, might, optionsOf, type Side } from '../../src/realm/tactics.ts'
+import { captureChance, captureOdds, feastCost, fightRounds, groupOptions, leadOptions, lookRound, might, nightAt, optionsOf, pressCost, slotsFor, type Side } from '../../src/realm/tactics.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { advance, approachOptions } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
-import type { Cmd, Order, Pending, RoundOrder, Tactic } from '../../src/realm/types.ts'
+import type { Cmd, Order, Pending, RoundLog, RoundOrder, Tactic } from '../../src/realm/types.ts'
 import { anyOurs, rehearse } from '../../src/realm/warroom.ts'
 
 const side = (F: number, mix: Side['mix'], player = false, over: Partial<Side> = {}): Side => ({
@@ -178,15 +179,168 @@ describe('직접 지휘하는 싸움 — 전투 2판', () => {
     assert.ok(r.na > 1 - P.realm.tacRoundLoss)
   })
 
-  it('셋째 합까지는 간다 · 팽팽하면 다섯째 합까지 · 무너지면 일찍 끝난다', () => {
+  it('해시계 — 마지막 때까지는 간다 · 거기서 두 쪽이 고른다 · 한 합 더면 그 너머로 · 무너지면 일찍 끝난다', () => {
     let long = 0
+    let dusk = 0
     for (let s = 0; s < 120; s++) {
-      const r = fightRounds(side(300, MIXES[s % 4]!), side(300, MIXES[(s + 1) % 4]!), `len${s}`, s, 0)
+      const g = { grain: 1000 }
+      const r = fightRounds(side(300, MIXES[s % 4]!, false, g), side(300, MIXES[(s + 1) % 4]!, false, g), `len${s}`, s, 0)
+      assert.equal(r.clock.slots, P.realm.tacClock)
       assert.ok(r.rounds.length <= P.realm.tacRoundsMax)
-      if (r.endWhy === 'share' || r.endWhy === 'draw') assert.ok(r.rounds.length >= P.realm.tacRoundsMin, `판 ${s} 합 ${r.rounds.length}`)
-      if (r.rounds.length > P.realm.tacRoundsMin) long++
+      // 진을 쳐서 판세로 정해진 판은 마지막 때까지 갔고, 거기서 고른 것이 남는다
+      if (r.endWhy === 'share' || r.endWhy === 'draw') {
+        assert.ok(r.rounds.length >= r.clock.slots, `판 ${s} 합 ${r.rounds.length}`)
+        const last = r.dusk[r.dusk.length - 1]
+        // 많아도 tacRoundsMax — 거기 닿으면 더 묻지 않는다
+        assert.ok(last !== undefined && ((last.a !== 'press' && last.d !== 'press') || r.rounds.length === P.realm.tacRoundsMax), `판 ${s} — 마지막 고름이 남는다`)
+      }
+      // 마지막 때 너머의 합은 누군가 밀어붙였다 — 해가 진 뒤라 어둠 속이다
+      r.rounds.forEach((rd, i) => {
+        assert.equal(rd.night === true, i >= r.clock.slots, `판 ${s} 합 ${i}`)
+        if (i >= r.clock.slots) assert.ok(r.dusk.some((d) => d.at === i && (d.a === 'press' || d.d === 'press')))
+      })
+      if (r.dusk.length > 0) dusk++
+      if (r.rounds.length > r.clock.slots) long++
     }
-    assert.ok(long > 0, '팽팽한 판은 넷째 합으로 간다')
+    assert.ok(dusk > 0, '해질녘까지 가는 판이 있다')
+    assert.ok(long > 0, '밀어붙여 한 합 더 가는 판이 있다')
+  })
+
+  it('작은 싸움은 늦게 붙는다 — 때가 하나 준다', () => {
+    assert.equal(slotsFor(50, 50), P.realm.tacClock - P.realm.tacClockSmall)
+    assert.equal(slotsFor(300, 300), P.realm.tacClock)
+  })
+
+  it('밤 싸움 — 한밤~새벽은 어둠 속 · 날이 밝은 뒤 한 합 더는 낮', () => {
+    const c = { clock: { night: true, edge: false, slots: 4 } }
+    assert.deepEqual([0, 1, 2, 3, 4].map((i) => nightAt(c, i)), [true, true, true, true, false])
+    assert.deepEqual([0, 1, 2, 3, 4].map((i) => nightAt({ clock: { night: false, edge: false, slots: 4 } }, i)), [false, false, false, false, true])
+    const r = fightRounds(side(300, EVEN), side(300, EVEN), 'night', 3, 0, undefined, { night: true })
+    assert.equal(r.clock.night, true)
+    r.rounds.forEach((rd, i) => assert.equal(rd.night === true, i < r.clock.slots))
+  })
+
+  it('밤에는 화살이 덜 맞는다 · 불화살은 더 무섭다', () => {
+    let day = 0
+    let dark = 0
+    let fireDay = 0
+    let fireDark = 0
+    const tl = (acts: RoundLog['acts'], f: (x: NonNullable<RoundLog['acts']>[number]) => boolean): number => (acts ?? []).filter(f).reduce((a, x) => a + (x.tl ?? 0), 0)
+    for (let s = 0; s < 40; s++) {
+      const t: Tactic = { cmds: [{ front: 'hold', bows: 'volley' }] }
+      const d = fightRounds(side(100, BOW, true), side(100, SHIELD), `nb${s}`, s, 0, t)
+      const n = fightRounds(side(100, BOW, true), side(100, SHIELD), `nb${s}`, s, 0, t, { night: true })
+      day += tl(d.rounds[0]!.acts, (x) => x.s === 'a' && x.g === 'bows')
+      dark += tl(n.rounds[0]!.acts, (x) => x.s === 'a' && x.g === 'bows')
+      const f: Tactic = { cmds: [{ front: 'hold', bows: 'fire' }] }
+      const fd = fightRounds(side(100, BOW, true, { specials: ['fire'] }), side(100, SHIELD), `nf${s}`, s, 0, f)
+      const fn = fightRounds(side(100, BOW, true, { specials: ['fire'] }), side(100, SHIELD), `nf${s}`, s, 0, f, { night: true })
+      fireDay += tl(fd.rounds[0]!.acts, (x) => x.c === 'fire' && x.s === 'a')
+      fireDark += tl(fn.rounds[0]!.acts, (x) => x.c === 'fire' && x.s === 'a')
+    }
+    assert.ok(dark < day * 0.8, `화살비 낮 ${day} · 밤 ${dark}`)
+    assert.ok(fireDark > fireDay * 1.15, `불화살 낮 ${fireDay} · 밤 ${fireDark}`)
+  })
+
+  it('먹힌 야습 — 첫 때에 치는 쪽이 세다', () => {
+    let plain = 0
+    let edge = 0
+    for (let s = 0; s < 60; s++) {
+      const t: Tactic = { cmds: [{ front: 'charge' }] }
+      const a = fightRounds(side(100, EVEN, true), side(100, EVEN), `ne${s}`, s, 0, t, { night: true })
+      const b = fightRounds(side(100, EVEN, true), side(100, EVEN), `ne${s}`, s, 0, t, { night: true, edge: true })
+      plain += 1 - a.rounds[0]!.nd
+      edge += 1 - b.rounds[0]!.nd
+    }
+    assert.ok(edge > plain * 1.05, `덤 없이 ${plain.toFixed(2)} · 덤 ${edge.toFixed(2)}`)
+  })
+
+  it('마지막 때 — 우리가 고른다: 진을 친다 · 한 합 더(곡식과 사기) · 물러난다 (판 기록의 dusk 로 다시 돌려도 같다)', () => {
+    // 팽팽한 판을 찾아 — 우리가 끝까지 방진
+    const hold: RoundOrder = { front: 'hold', bows: 'volley', lead: 'drum' }
+    let found = 0
+    for (let s = 0; s < 200 && found < 6; s++) {
+      const me = side(300, EVEN, true, { grain: 500 })
+      const foe = side(300, EVEN, false, { grain: 500 })
+      const key = `dusk${s}`
+      const cmds: RoundOrder[] = []
+      let t = fightRounds(me, foe, key, s, 0, { cmds, open: true })
+      for (let g = 0; g < 8 && t.pending !== undefined && t.pending.dusk === undefined; g++) {
+        cmds.push(hold)
+        t = fightRounds(me, foe, key, s, 0, { cmds, open: true })
+      }
+      const ask = t.pending?.dusk
+      if (ask === undefined) continue
+      found++
+      const lastNa = t.rounds[P.realm.tacClock - 1]!.na // 묻는 판은 맡긴 셈으로 끝까지 돌았다 — 해질녘의 값
+      assert.equal(t.pending!.round, P.realm.tacClock)
+      assert.deepEqual([...ask.options], ['camp', 'press', 'retreat'])
+      assert.equal(ask.grain, pressCost(100 * lastNa)) // EVEN 은 100명
+      assert.ok(ask.hasGrain)
+      // 진을 친다 — 적이 밀어붙이지 않으면 그 자리에서 판세로
+      const camp = fightRounds(me, foe, key, s, 0, { cmds, dusk: ['camp'], open: true })
+      if (camp.dusk[0]!.d !== 'press') {
+        assert.equal(camp.rounds.length, P.realm.tacClock)
+        assert.equal(camp.pending, undefined)
+        assert.equal(camp.pressA, 0)
+      }
+      // 물러난다 — 진다 · 조금 잃는다 · 장수는 안 잡힌다
+      const back = fightRounds(me, foe, key, s, 0, { cmds, dusk: ['retreat'], open: true })
+      assert.equal(back.endWhy, 'withdraw')
+      assert.ok(back.outcome === 'lose' || back.outcome === 'routed')
+      assert.equal(back.captured, null)
+      assert.ok(back.na < lastNa && back.na > lastNa - P.realm.tacRoundLoss)
+      // 한 합 더 — 곡식을 내고, 다음 합(밤)을 고르는 판이 열린다
+      const go = fightRounds(me, foe, key, s, 0, { cmds, dusk: ['press'], open: true })
+      assert.equal(go.dusk[0]!.a, 'press')
+      assert.equal(go.dusk[0]!.grain?.a, ask.grain)
+      assert.equal(go.pressA, ask.grain)
+      assert.equal(go.pending?.round, P.realm.tacClock)
+      assert.equal(go.pending?.dusk, undefined)
+      const end = fightRounds(me, foe, key, s, 0, { cmds: [...cmds, hold], dusk: ['press'] })
+      assert.ok(end.rounds.length > P.realm.tacClock)
+      assert.equal(end.rounds[P.realm.tacClock]!.night, true)
+      // 판 기록 — 같은 고름이면 같은 판 (A1)
+      assert.deepEqual(end, fightRounds(me, foe, key, s, 0, { cmds: [...cmds, hold], dusk: ['press'] }))
+      // 옛 기록 — 마지막 때 너머의 명령이 있으면 밀어붙인 것으로 본다
+      assert.equal(fightRounds(me, foe, key, s, 0, { cmds: [...cmds, hold] }).dusk[0]!.a, 'press')
+    }
+    assert.ok(found >= 3, `마지막 때까지 간 판 ${found}`)
+  })
+
+  it('한 합 더 — 곳간이 비면 굶은 채 싸워 사기가 더 꺾인다', () => {
+    const hold: RoundOrder = { front: 'hold', bows: 'volley', lead: 'drum' }
+    for (let s = 0; s < 200; s++) {
+      const key = `hun${s}`
+      const foe = side(300, EVEN, false)
+      const cmds = [hold, hold, hold, hold]
+      const full = fightRounds(side(300, EVEN, true, { grain: 500 }), foe, key, s, 0, { cmds, dusk: ['press'] })
+      const empty = fightRounds(side(300, EVEN, true, { grain: 0 }), foe, key, s, 0, { cmds, dusk: ['press'] })
+      if (full.dusk.length === 0) continue
+      assert.equal(empty.pressA, 0)
+      assert.equal(empty.dusk[0]!.hungry?.a, true)
+      assert.ok(full.pressA > 0)
+      // 묻는 판이 미리 알린다 — 곡식이 없으면 사기가 더 깎인다
+      const askFull = fightRounds(side(300, EVEN, true, { grain: 500 }), foe, key, s, 0, { cmds, open: true }).pending?.dusk
+      const askEmpty = fightRounds(side(300, EVEN, true, { grain: 0 }), foe, key, s, 0, { cmds, open: true }).pending?.dusk
+      assert.ok(askFull !== undefined && askEmpty !== undefined)
+      assert.equal(askFull.hasGrain, true)
+      assert.equal(askEmpty.hasGrain, false)
+      assert.ok(askEmpty.morale > askFull.morale, `곡식 ${askFull.morale} · 굶음 ${askEmpty.morale}`)
+      return
+    }
+    assert.fail('마지막 때까지 간 판이 없다')
+  })
+
+  it('깃발 짐작은 밤 규칙을 탄다 · 무너질 판의 몫을 낸다', () => {
+    const p = fightRounds(side(300, BOW, true), side(300, SHIELD), 'lk', 1, 0, { cmds: [], open: true }, { night: true }).pending!
+    const q = fightRounds(side(300, BOW, true), side(300, SHIELD), 'lk', 1, 0, { cmds: [], open: true }).pending!
+    const o: RoundOrder = { front: 'hold', bows: 'volley', lead: 'drum' }
+    const dark = lookRound(p.look!, o)
+    const day = lookRound(q.look!, o)
+    assert.ok(dark.foe[1] < day.foe[1], `밤 ${dark.foe} · 낮 ${day.foe}`)
+    assert.ok(dark.fall !== undefined && dark.fall >= 0 && dark.fall <= 1)
+    assert.ok(dark.foeFall !== undefined && dark.foeFall >= 0 && dark.foeFall <= 1)
   })
 
   it('같은 판 같은 명령이면 같은 결과', () => {

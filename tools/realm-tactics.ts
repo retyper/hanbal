@@ -9,7 +9,7 @@
  */
 import { bins, winChance } from '../src/realm/battle.ts'
 import { captureOdds, fightRounds, type Side } from '../src/realm/tactics.ts'
-import type { Cmd, Pending, RoundOrder } from '../src/realm/types.ts'
+import type { Cmd, Dusk, Pending, RoundOrder } from '../src/realm/types.ts'
 import { P } from '../src/tune/params.ts'
 
 const arg = (k: string, d: number): number => {
@@ -27,6 +27,7 @@ if (set > 0) {
 
 const side = (F: number, mix: Side['mix'], player: boolean, mu = 5): Side => ({
   F, mix, morale: 1, hero: { id: player ? 'me' : 'foe', mu, ryak: 5, coward: false }, hungry: false, specials: [], water: false, player, seen: true,
+  grain: 1000, // 곳간 — 해시계의 「한 합 더」를 낼 곡식 (게임에서는 나라 곳간)
 })
 
 /**
@@ -47,14 +48,20 @@ function still(): RoundOrder {
   return { front: 'hold', bows: 'volley', horse: 'flank', lead: 'drum' }
 }
 
-function play(me: Side, foe: Side, key: string, seed: number, who: (p: Pending) => RoundOrder): ReturnType<typeof fightRounds> {
+/** 마지막 때 — 잘 읽는 사람은 앞서 있으면(또는 팽팽한데 치러 왔으면) 한 합 더, 아니면 진을 친다. 나머지는 늘 진을 친다 */
+const goodDusk = (p: Pending): Dusk => (p.dusk !== undefined && (p.dusk.edge >= 0.55 || (p.weAtk && p.dusk.edge >= 0.45)) ? 'press' : 'camp')
+const campDusk = (): Dusk => 'camp'
+
+function play(me: Side, foe: Side, key: string, seed: number, who: (p: Pending) => RoundOrder, atDusk: (p: Pending) => Dusk = campDusk): ReturnType<typeof fightRounds> {
   const cmds: RoundOrder[] = []
-  for (let g = 0; g < 10; g++) {
-    const t = fightRounds(me, foe, key, seed, 0, { cmds, open: true })
+  const dusk: Dusk[] = []
+  for (let g = 0; g < 12; g++) {
+    const t = fightRounds(me, foe, key, seed, 0, { cmds, dusk, open: true })
     if (t.pending === undefined) return t
-    cmds.push(who(t.pending))
+    if (t.pending.dusk !== undefined) dusk.push(atDusk(t.pending))
+    else cmds.push(who(t.pending))
   }
-  return fightRounds(me, foe, key, seed, 0, { cmds })
+  return fightRounds(me, foe, key, seed, 0, { cmds, dusk })
 }
 
 const MIXES: Array<[string, Side['mix']]> = [
@@ -81,7 +88,7 @@ for (const ratio of [0.6, 0.8, 1, 1.25, 1.6, 2.2]) {
     w.rounds += au.rounds.length
     w.la += 1 - au.na
     w.ld += 1 - au.nd
-    const g = play(side(100 * ratio, ma, true), d, key, s, good)
+    const g = play(side(100 * ratio, ma, true), d, key, s, good, goodDusk)
     w.good += won(g.outcome) ? 1 : 0
     w.cap += g.captured === 'd' ? 1 : 0
     w.bad += won(play(side(100 * ratio, ma, true), d, key, s, bad).outcome) ? 1 : 0

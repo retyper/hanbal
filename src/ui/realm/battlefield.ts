@@ -13,17 +13,17 @@
  */
 import { FACTION_ART, UNIT_ICON, bustOf, flagIcon } from '../../realm/data/art.ts'
 import { battleName, endStory, fieldName, groupLabel, josa, roundStory, storyCtx, UNIT_NAME } from '../../realm/data/prose.ts'
-import { BATTLE_STYLES, groupMen, groupOf, lookRound, type BattleStyle, type RoundAt } from '../../realm/tactics.ts'
+import { BATTLE_STYLES, groupMen, groupOf, lookRound, nightAt, type BattleStyle, type RoundAt } from '../../realm/tactics.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
 import { seasonOf } from '../../realm/season.ts'
-import type { Act, Approach, Art, Cmd, Grp, Look, Order, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
+import type { Act, Approach, Art, Clock, Cmd, Dusk, DuskAsk, DuskLog, Grp, Look, Order, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { snd } from './sound.ts'
 import { artVoicePath } from './voice.ts'
 import { WIN_BUZZ, winFxHtml } from './winfx.ts'
 import { scrollInside } from './scroll.ts'
 import { morphInto } from './morph.ts'
-import { lookNums, menText, morText, pctText } from './lookword.ts'
+import { lookNums, menText, morText, oneChance, pctText } from './lookword.ts'
 
 const esc = (s: string): string =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
@@ -313,6 +313,117 @@ const STAGE_S = [0, 1.1, 2.4] as const
 /** 「?」 설명 펼침 — 이 기기에서만 기억 */
 const HELP_KEY = 'hanbal.realm.warHelp'
 const ROUND_NAME = ['첫째', '둘째', '셋째', '넷째', '다섯째', '여섯째']
+
+/**
+ * 해시계 (형 10-26: "유저는 언제 전투가 끝나는지도 모르고 갑자기 끝나버려서 당황스러울거같은데" · "야습이나 야간전투 같은건 어떻게함?") —
+ * 낮 싸움은 아침 → 한낮 → 해거름 → 해질녘, 기습·야습은 한밤 → 깊은 밤 → 동틀 녘 → 새벽. 한 때가 한 합. 작은 싸움은 늦게 붙어 앞 때가 빠진다.
+ * 마지막 때 너머(한 합 더)는 낮 싸움이면 밤, 밤 싸움이면 아침.
+ */
+const DAY_SLOT = ['아침', '한낮', '해거름', '해질녘'] as const
+const NIGHT_SLOT = ['한밤', '깊은 밤', '동틀 녘', '새벽'] as const
+export function slotName(ck: Clock, i: number): string {
+  if (i >= ck.slots) return ck.night ? '아침' : '밤'
+  const names = ck.night ? NIGHT_SLOT : DAY_SLOT
+  return names[Math.max(0, names.length - ck.slots + i)] ?? names[0]
+}
+const COUNT_WORD = ['', '한', '두', '세', '네', '다섯']
+/** 마지막 때의 고름 — 이름 */
+export function duskName(d: Dusk, night: boolean): string {
+  return d === 'camp' ? '진을 친다' : d === 'retreat' ? '물러난다' : night ? '날이 밝아도 밀어붙인다' : '밤싸움 — 한 합 더'
+}
+
+/**
+ * 해시계 줄 — 전장 머리에 늘 보인다. 지난 때는 흐리게, 지금 때는 빛나고, 남은 합을 말로 (「해 지기까지 두 합」 · 「새벽까지 한 합」).
+ * 마지막 때는 붉게 「오늘 마지막 합」 — 끝이 오는 것이 미리 보인다
+ */
+export function clockHtml(l: BattleLine, shown: number): string {
+  const ck = l.clock
+  if (ck === undefined) return ''
+  const p = l.pending
+  const rounds = l.rounds ?? []
+  const ended = p === undefined && shown >= rounds.length
+  const now = p !== undefined && p.round === shown ? p.round : Math.max(0, shown - 1)
+  // 보이는 데까지만 — 시험 돌림은 고를 자리 뒤를 맡긴 셈으로 끝까지 돌려 두었다 (그 합들은 아직 안 일어났다)
+  const over = Math.max(shown, p !== undefined && p.round === shown && p.dusk === undefined ? p.round + 1 : 0)
+  const n = Math.max(ck.slots, over)
+  let pips = ''
+  for (let i = 0; i < n; i++) {
+    // 칸 이름은 ck- 로 — .ap .next 는 「다음 계절」 단추라 겹쳤다 (메모리: CSS 이름 겹침)
+    const cls = i < now || (ended && i === now) ? 'ck-past' : i === now ? 'ck-now' : 'ck-next'
+    const dark = nightAt({ clock: { ...ck, edge: false } }, i)
+    pips += `<li class="${cls}${dark ? ' ck-dark' : ''}${i >= ck.slots ? ' ck-over' : ''}">${slotName(ck, i)}</li>`
+  }
+  let left: string
+  let cls = ''
+  if (p !== undefined && p.dusk !== undefined && p.round === shown) {
+    left = ck.night ? '날이 밝는다 — 어떻게 하나' : '해가 진다 — 어떻게 하나'
+    cls = ' ask'
+  } else if (p !== undefined && p.round === shown) {
+    const k = ck.slots - p.round
+    if (k <= 0) left = ck.night ? '날이 밝았다 — 한 합 더' : '횃불을 밝혔다 — 밤싸움 한 합'
+    else if (k === 1) { left = ck.night ? '새벽 — 밤싸움 마지막 합' : '해질녘 — 오늘 마지막 합'; cls = ' last' }
+    else left = `${ck.night ? '새벽까지' : '해 지기까지'} ${COUNT_WORD[k] ?? k} 합`
+  } else if (ended) left = '싸움이 끝났다'
+  else left = `${slotName(ck, now)}의 합`
+  const mark = ck.night ? '<em class="wclk-m">밤</em>' : ''
+  return `<div class="wclk${ck.night ? ' night' : ''}${cls}">${mark}<ol>${pips}</ol><b>${esc(left)}</b></div>`
+}
+
+/** 마지막 때의 고름 한 줄 — 지난 합들 사이에 (해질녘 — 우리: 진을 친다 · 적: 한 합 더) */
+function duskRow(d: DuskLog, ck: Clock, ourS: 'a' | 'd'): string {
+  const foeS: 'a' | 'd' = ourS === 'a' ? 'd' : 'a'
+  const pick = (x: 'a' | 'd'): Dusk => (x === 'a' ? d.a : d.d)
+  const who = (x: 'a' | 'd'): string => (x === ourS ? '우리' : '적')
+  const cost = (x: 'a' | 'd'): string => {
+    const g = d.grain?.[x]
+    if (g !== undefined) return ` <small class="wdkc">곡식 −${g}</small>`
+    if (d.hungry?.[x] === true) return ' <small class="wdkc bad">곳간이 비어 굶은 채</small>'
+    return ''
+  }
+  const line = (x: 'a' | 'd'): string => `<span class="wdkp ${x === ourS ? 'us' : 'foe'} ${pick(x)}"><em>${who(x)}</em>${esc(duskName(pick(x), ck.night))}${pick(x) === 'press' ? cost(x) : ''}</span>`
+  let res: string
+  const back = (['a', 'd'] as const).filter((x) => pick(x) === 'retreat')
+  if (back.length === 2) res = ck.night ? '날이 밝자 두 쪽 다 진을 거두었다' : '해가 지자 두 쪽 다 어둠을 틈타 물러났다'
+  else if (back.length === 1) res = `${josa(who(back[0]!), '은', '는')} ${ck.night ? '날이 밝자 진을 거두어' : '어둠을 틈타'} 물러났다`
+  else if (pick('a') === 'press' || pick('d') === 'press') {
+    const by = (['a', 'd'] as const).filter((x) => pick(x) === 'press')
+    const who2 = by.length === 2 ? '두 쪽 다' : josa(who(by[0]!), '이', '가')
+    res = ck.night ? `${who2} 밀어붙인다 — 날이 밝아도 싸움은 이어진다` : `${who2} 밀어붙인다 — 횃불을 밝혀 한 합 더`
+  } else res = '두 쪽 다 진을 쳤다 — 싸움이 거기서 그친다'
+  const when = d.at >= ck.slots + 1 ? (ck.night ? '아침' : '밤') : ck.night ? '새벽' : '해질녘'
+  return `<div class="wrd wdkrow${ck.night ? ' night' : ''}"><div class="wrn">${when} — 마지막 때</div><div class="wdkps">${line(ourS)}${line(foeS)}</div><p class="wpush">${esc(res)}</p></div>`
+}
+
+/** 진을 치면 어떻게 정해지나 — 우리 눈의 말 (고을을 치는 쪽 · 지키는 쪽 · 들판) */
+function campWord(l: BattleLine, weAtk: boolean, camp: DuskAsk['camp']): string {
+  if (l.field === true) return camp === 'win' ? '이긴다' : camp === 'lose' ? '진다' : '비긴다'
+  if (weAtk) return camp === 'win' ? '고을을 차지한다' : camp === 'lose' ? '져서 돌아간다' : '비겨 돌아간다'
+  return camp === 'lose' ? '고을을 빼앗긴다' : '고을을 지켜 낸다'
+}
+
+/**
+ * 마지막 때의 큰 판 — 해가 진다(밤 싸움이면 날이 밝는다). 깃발 대신 셋을 묻는다 (WWE: 하늘이 바뀌고 종이 울린다).
+ * 진을 친다 — 지금 판세로 정해진다 · 한 합 더 — 곡식과 사기가 든다 · 물러난다 — 이 싸움은 진다
+ */
+function duskHtml(l: BattleLine, a: DuskAsk, weAtk: boolean, art: string, anim: boolean, delay: number): string {
+  const pc = Math.round(Math.max(0, Math.min(1, a.edge)) * 100)
+  const sky = a.night ? 'dawn' : 'dusk'
+  const press = a.night ? '날이 밝아도 밀어붙인다' : '밤싸움 — 한 합 더'
+  const pressDoes = a.night ? '날이 밝아 기습의 덤은 없다 · 화살이 다시 잘 맞는다' : '횃불을 밝혀 한 번 더 붙는다 · 어둠 속이라 화살이 덜 맞고 밀린 쪽 사기가 크게 흔들린다'
+  const cost = a.hasGrain ? `<span class="wfcost">곡식 −${a.grain}</span><span class="wfcost">사기 −${a.morale}</span>` : `<span class="wfcost bad">곳간이 비었다 — 굶은 채 사기 −${a.morale}</span>`
+  const back = l.field === true ? '이 싸움은 진다' : weAtk ? '이 싸움은 진다 — 돌아간다' : '고을을 내준다'
+  const btn = (d: Dusk, name: string, does: string, extra: string, img: Cmd): string =>
+    `<button class="wdkb ${d}" data-war="dusk" data-c="${d}"><img class="wflag" src="${flagSrc(art, img)}" alt=""><span class="wct"><b>${esc(name)}</b>${extra}<small>${esc(does)}</small></span></button>`
+  let h = `<div class="wnext wdusk ${sky}"${anim ? ` style="--d:${delay.toFixed(2)}s"` : ''}><div class="wdk-sky"><i></i></div>`
+  h += `<b class="wdk-h">${a.night ? '날이 밝는다' : '해가 진다'}</b><p class="wdk-s">아무도 무너지지 않았다 — 어떻게 하나</p>`
+  h += `<p class="wdk-now">지금 판세 <b class="us">우리 ${pc}</b> : <b class="foe">${100 - pc} 적</b> — 이대로 진을 치면 <b class="wdk-${a.camp}">${esc(campWord(l, weAtk, a.camp))}</b></p>`
+  h += `<div class="wdkg">`
+  h += btn('camp', '진을 친다', '여기서 멈춘다 · 지금 판세로 정해진다', `<em class="wdk-${a.camp}">${esc(campWord(l, weAtk, a.camp))}</em>`, 'hold')
+  h += btn('press', press, pressDoes, cost, a.night ? 'charge' : 'fire')
+  h += btn('retreat', '물러난다', `${a.night ? '날이 밝자 진을 거둔다' : '어둠을 틈타 진을 거둔다'} · ${back}`, `<span class="wfcost">군사 −${a.retreatLoss}명</span>`, 'retreat')
+  h += `</div><p class="wdk-n">적도 고른다 — 적이 밀어붙이면 우리가 진을 쳐도 한 합 더 싸운다</p></div>`
+  return h
+}
 
 export interface WarHost {
   readonly art: string
@@ -945,9 +1056,12 @@ function lookHtml(lk: Look | undefined, k: string): string {
   const row = (who: string, c: string, men: readonly [number, number], mor: readonly [number, number]): string =>
     `<span class="wgl"><span class="wgk">${who}</span><b class="${c}">${menText(men)}</b><span class="wgm">사기 <b class="${mor[0] + mor[1] >= 0 ? 'up' : 'dn'}">${morText(mor)}</b></span></span>`
   const cap = n.cap !== undefined ? `<span class="wgl wgc"><span class="wgk">잡을 가망</span><b>${pctText(n.cap)}</b></span>` : ''
+  // 무너지는 선 — 이 깃발이면 이번 합에 무너질 수 있다 (우리 붉게 깜박 · 적은 금빛) · 해시계와 함께 (형 10-26)
+  const warn = (lk.fall ?? 0) >= P.realm.tacLookFall ? `<span class="wgl wgff us"><span class="wgk">⚠</span>우리가 무너질 수 있다 <b>${oneChance(lk.fall!)}%</b></span>` : ''
+  const chance = (lk.foeFall ?? 0) >= P.realm.tacLookFall ? `<span class="wgl wgff foe"><span class="wgk">★</span>적이 무너질 수 있다 <b>${oneChance(lk.foeFall!)}%</b></span>` : ''
   // 판세 막대 — 왼쪽 끝이 우리, 오른쪽 끝이 적. 파랑이 우리 몫, 옅은 데가 짐작의 폭, 금빛 금이 지금 판세
   return `<span class="wguess ${cls}" data-k="${esc(k)}"><span class="wgq">판세${tag}</span><span class="wgk us">우리</span><span class="wgbar" style="--lo:${pc(lk.edge[0])};--hi:${pc(lk.edge[1])};--e0:${pc(lk.edge0)}"></span><span class="wgk foe">적</span><b>${w}</b>`
-    + `${cap}${row(n.cap !== undefined ? '놓치면 우리' : '우리', 'us', n.us, n.usMor)}${row('적', 'foe', n.foe, n.foeMor)}</span>`
+    + `${cap}${row(n.cap !== undefined ? '놓치면 우리' : '우리', 'us', n.us, n.usMor)}${row('적', 'foe', n.foe, n.foeMor)}${warn}${chance}</span>`
 }
 
 /** 「이대로 싸우면」 — 무리마다 다 골랐을 때 그 명령 그대로의 짐작 (전투 개시 단추 위) */
@@ -1034,7 +1148,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     return `<div class="ws ${cls}${hitOf(i)}${hero !== null && lostIds.has(hero) ? ' chiefgone' : ''}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s"><span class="wpf">${face(hero, art, unitOf(i))}<i></i></span>${aides !== '' ? `<span class="waides">${aides}</span>` : ''}<b>${esc(name)}</b><span class="wnat">${roleChip((cls === 'us') === weAtk)}${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
       // 무너지는 금 — 이 밑으로 떨어지면 그 편이 무너져 진다 (tactics: 군사 tacBreakMen · 사기는 처음의 tacBreakMorale) (형 10-24: "사기가 어느 정도 떨어지면 패배한다가 가로바에 표시")
       + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}${brk(Math.round(P.realm.tacBreakMen * 100), Math.round(n(i) * 100), '군사가 이 금 밑으로 줄면 무너져 진다 — 패배')}</div>${num}`
-      + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}${feastPv}${brk(Math.round(P.realm.tacBreakMorale * 83), mr(m(i)), '사기가 이 금 밑으로 떨어지면 무너져 진다 — 패배')}</div><span class="wn">사기 ${Math.round((m(i) / base) * 100)}</span>${hitFx}</div>` // 맞은 불꽃은 맨 뒤에 — 앞에 끼면 초상이 새로 만들어져 깜빡였다 (paintNow 의 바뀐 곳만 고치기)
+      + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}${feastPv}${brk(st?.brk !== undefined ? mr(st.brk[i]) : Math.round(P.realm.tacBreakMorale * 83), mr(m(i)), '사기가 이 금 밑으로 떨어지면 무너져 진다 — 패배')}</div><span class="wn">사기 ${Math.round((m(i) / base) * 100)}<small class="brkl"> · 무너지는 선 ${Math.round(((st?.brk?.[i] ?? P.realm.tacBreakMorale * base) / base) * 100)}</small></span>${hitFx}</div>` // 맞은 불꽃은 맨 뒤에 — 앞에 끼면 초상이 새로 만들어져 깜빡였다 (paintNow 의 바뀐 곳만 고치기)
   }
 
   /**
@@ -1199,7 +1313,11 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
 
   // 싸움터 배경 (땅마다) · 위 카드는 굴려도 그 자리에 (형: "싸우는로그가 스크롤로 보이더라도 상단에 캐릭터랑 체력바 있는 그 카드는 고정")
   const ground = warGround(prev, l)
-  let h = `<div class="wbg g-${ground}${WAR_BG_READY.has(ground) ? '' : ' stand'}" style="background-image:url('${warBg(art, ground, !weAtk)}')"></div>`
+  // 해시계의 하늘 — 지금 때가 어둠 속이면 어둡게, 마지막 때를 묻는 중이면 노을(밤 싸움이면 새벽빛) (그림은 읽기만 한다)
+  const ck = l.clock
+  const nowI = l.pending !== undefined && l.pending.round === shown ? l.pending.round : shown - 1
+  const sky = ck === undefined ? '' : l.pending?.dusk !== undefined && l.pending.round === shown ? (ck.night ? ' dk-dawn' : ' dk-dusk') : nowI >= 0 && nightAt({ clock: { ...ck, edge: false } }, nowI) ? ' dk-night' : ''
+  let h = `<div class="wbg g-${ground}${WAR_BG_READY.has(ground) ? '' : ' stand'}${sky}" style="background-image:url('${warBg(art, ground, !weAtk)}')"></div>`
   // 싸움의 기운 — 흙먼지 둘이 바닥을 흐르고, 이 합에 활을 쏜 쪽에서 화살이 낱낱이 활꼴로 날아간다 (그림: realm/fx)
   h += `<div class="wfx"><img class="wfx-dust a" src="${art}fx/dust.png" alt=""><img class="wfx-dust b" src="${art}fx/dust.png" alt="">${AIR_EMBERS}`
   if (anim && last !== undefined) {
@@ -1214,20 +1332,26 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   }
   h += `</div><div class="wrbox">`
   // 위 카드는 그 싸움터를 무대로 — 길·성문·물가·눈밭·밤 (형 10-23: "길에서 마주치거나 수성하거나 공성할 때는 그 위치에 맞게 배경")
-  h += `<div class="wtop" style="--wtbg:url('${warBg(art, ground, !weAtk)}')"><div class="wrh"><b>${esc(warName(after, l))}</b>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}<button class="whelp" data-war="help" aria-label="설명 보기">?</button></div>`
+  // 머리 카드도 같은 하늘 — 그림 위에 한 겹 (어둠 · 노을 · 새벽빛)
+  const skyLayer = sky === ' dk-night' ? 'linear-gradient(#0a1440aa, #05081add), ' : sky === ' dk-dusk' ? 'linear-gradient(#ff7a2a77, #a0302a44 50%, #1a0a0a88), ' : sky === ' dk-dawn' ? 'linear-gradient(#ffd8a866, #8aa0d044 50%, #0d0f1366), ' : ''
+  h += `<div class="wtop" style="--wtbg:${skyLayer}url('${warBg(art, ground, !weAtk)}')"><div class="wrh"><b>${esc(warName(after, l))}</b>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}<button class="whelp" data-war="help" aria-label="설명 보기">?</button></div>${clockHtml(l, shown)}`
   h += `<div class="wvs">${side(ourI, ourHero, ourF, ourName, 'us')}<img class="vs" src="${art}ui/vs.png" alt="VS">${side(foeI, foeHero, foeF, foeName, 'foe')}</div>${fieldHtml()}</div>`
   if (keys !== '') h += `<style>${keys}</style>`
   // 지나간 합들 — 마지막 합만 천천히
   h += `<div class="wlog">`
+  // 마지막 때의 고름 — 묻는 중이면 그 자리부터는 아직 안 고른 것(맡긴 셈)이라 빼고
+  const askK = l.pending?.dusk !== undefined && l.pending.round === shown ? l.pending.dusk.k : Infinity
+  const dusks = (l.dusk ?? []).filter((_, j) => j < askK)
   rounds.forEach((rd, i) => {
     const slow = anim && i === rounds.length - 1
+    for (const dk of dusks) if (dk.at === i && ck !== undefined) h += duskRow(dk, ck, ourS)
     const prevN = i === 0 ? [1, 1] : [rounds[i - 1]!.na, rounds[i - 1]!.nd]
     const lostUs = Math.max(0, Math.round(men0(ourI) * ((prevN[ourI] ?? 1) - (ourI === 0 ? rd.na : rd.nd))))
     const lostFoe = Math.max(0, Math.round(men0(foeI) * ((prevN[foeI] ?? 1) - (foeI === 0 ? rd.na : rd.nd))))
     const [pw, pc] = pushWord(rd.push, weAtk, lostUs, lostFoe)
     const crit = rd.beat === ourS
     const d = (k: 0 | 1 | 2): string => (slow ? ` style="--d:${tAt(k)}s"` : '')
-    h += `<div class="wrd${slow ? ' slow' : ''}${crit ? ' crit' : ''}"><div class="wrn">${ROUND_NAME[i] ?? `${i + 1}`} 합</div>${reliefBanner(rd, ourS, art)}`
+    h += `<div class="wrd${slow ? ' slow' : ''}${crit ? ' crit' : ''}${rd.night === true ? ' night' : ''}"><div class="wrn">${ck !== undefined ? `${slotName(ck, i)} · ` : ''}${ROUND_NAME[i] ?? `${i + 1}`} 합</div>${reliefBanner(rd, ourS, art)}`
     const akOf = (sd: 'a' | 'd'): Art | undefined => (rd.acts ?? []).find((x) => x.c === 'art' && x.s === sd)?.art
     h += `<div class="wcmds"${d(0)}><span class="wc us"><em class="wck">우리</em>${flags(weAtk ? rd.oa : rd.od, weAtk ? rd.a : rd.d, art, akOf(ourS))}</span><i>×</i><span class="wc foe"><em class="wck">적</em>${flags(weAtk ? rd.od : rd.oa, weAtk ? rd.d : rd.a, art, akOf(ourS === 'a' ? 'd' : 'a'))}</span></div>`
     const story = ctx !== null ? roundStory(rd, rounds[i - 1], ctx) : []
@@ -1245,11 +1369,15 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       h += `<p class="wpush ${pc}"${d(2)}>${pw}</p><p class="wloss"${d(2)}><span class="us">우리 ${cu !== '' ? cu : `−${lostUs}`}</span><span class="foe">적 ${cf !== '' ? cf : `−${lostFoe}`}</span></p></div>`
     }
   })
+  // 마지막 때에 판이 끝났다 (진을 쳤다 · 물러났다) — 그 고름을 맨 끝에
+  if (ck !== undefined) for (const dk of dusks) if (dk.at === rounds.length) h += duskRow(dk, ck, ourS)
   h += `</div>`
 
   const p = l.pending
   const ended = p === undefined && !more
-  if (p !== undefined && p.round === shown) {
+  if (p !== undefined && p.round === shown && p.dusk !== undefined) {
+    h += duskHtml(l, p.dusk, weAtk, art, anim, tAt(2) + 0.6)
+  } else if (p !== undefined && p.round === shown) {
     // 다음 합의 깃발을 든다 — 무리마다 하나, 장수 하나
     h += `<div class="wnext"${anim ? ` style="--d:${(tAt(2) + 0.6).toFixed(2)}s"` : ''}><div class="wrn">${ROUND_NAME[shown] ?? `${shown + 1}`} 합 </div>`
     // 적진의 속·맞은편·땅은 전장에서 누르고 있거나 마우스를 올리면 (openWar 의 정보창 · warTip) — 여기엔 어떻게 보는지만
@@ -2113,6 +2241,74 @@ export const WAR_CSS = `
   border: 1px solid #a0502a; box-shadow: 0 8px 40px #000c; animation: sfxin 1.6s cubic-bezier(.2, 1.4, .4, 1) forwards; }
 .ap .warfx b { font-family: var(--display); font-weight: 400; font-size: 32px; color: #f0c080; letter-spacing: 2px; }
 .ap .warfx span { font-size: 13.5px; color: #e0d0c0; }
+/* 해시계 (형 10-26) — 머리 밑 때 줄: 지난 때 흐리게 · 지금 때 빛나게 · 남은 합을 말로 · 마지막 때는 붉게 */
+.ap .wclk { position: relative; z-index: 3; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 8px; margin: 0 0 6px; }
+.ap .wclk ol { display: flex; gap: 3px; margin: 0; padding: 0; list-style: none; }
+.ap .wclk li { padding: 1px 8px; border-radius: 10px; font-size: 11.5px; line-height: 1.5; color: #d8cfbf; background: #241a10cc; border: 1px solid #6a5236; text-shadow: 0 1px 2px #000; white-space: nowrap; }
+.ap .wclk li.ck-past { opacity: .45; }
+.ap .wclk li.ck-now { color: #1a1206; background: linear-gradient(#ffe7a8, #e8b860); border-color: #fff3c8; font-weight: 800; box-shadow: 0 0 10px #ffd27acc; animation: wclknow 1.2s ease-in-out infinite alternate; }
+.ap .wclk li.ck-dark { background: #141a2ccc; border-color: #4a5a8a; color: #c8d4f0; }
+.ap .wclk li.ck-dark.ck-now { color: #0c1020; background: linear-gradient(#e0e8ff, #9fb4f0); border-color: #f0f4ff; box-shadow: 0 0 10px #9fb4f0cc; }
+.ap .wclk li.ck-over { border-style: dashed; }
+.ap .wclk > b { font-size: 13px; color: #ffe7b0; text-shadow: 0 1px 3px #000, 0 0 8px #000c; white-space: nowrap; }
+.ap .wclk.last > b { color: #ff8a6a; animation: wclklast .8s ease-in-out infinite alternate; }
+.ap .wclk.ask > b { color: #ffd27a; font-size: 15px; }
+.ap .wclk .wclk-m { font-style: normal; font-size: 11px; font-weight: 800; padding: 0 6px; border-radius: 8px; color: #e0e8ff; background: #223060; border: 1px solid #8fa4e0; }
+@keyframes wclknow { to { box-shadow: 0 0 16px #ffd27a; } }
+@keyframes wclklast { to { text-shadow: 0 1px 3px #000, 0 0 12px #ff5a3a; transform: scale(1.06); } }
+@media (max-width: 520px) { .ap .wclk li { padding: 0 6px; font-size: 10.5px; } .ap .wclk > b { font-size: 12px; } }
+/* 해시계의 하늘 — 어둠 속 합 · 해질녘 노을 · 새벽빛 (그림은 읽기만) */
+.ap .wbg.dk-night { filter: brightness(.3) saturate(.55) hue-rotate(12deg); }
+.ap .wbg.dk-night::after { background: radial-gradient(ellipse at 50% 20%, #1a2a5a55, #05081acc 75%); }
+.ap .wbg.dk-dusk { filter: brightness(.55) saturate(1.2) sepia(.35); }
+.ap .wbg.dk-dusk::after { background: linear-gradient(#ff8a3a55, #a0302a33 40%, #0d0f13cc 85%); }
+.ap .wbg.dk-dawn { filter: brightness(.6) saturate(.8); }
+.ap .wbg.dk-dawn::after { background: linear-gradient(#ffd8a855, #8aa0d033 40%, #0d0f13cc 85%); }
+.ap .wrd.night { background: #141a26e6; border-color: #3a4a6a; }
+/* 마지막 때의 큰 판 — 하늘이 바뀌고 해가 진다(새벽이면 뜬다) */
+.ap .wdusk { position: relative; overflow: hidden; text-align: center; border-color: #a0602a; background: linear-gradient(#3a1c10, #1f1710 60%); }
+.ap .wdusk.dawn { border-color: #8aa0d0; background: linear-gradient(#20304a, #1f1710 60%); }
+.ap .wdusk .wdk-sky { position: absolute; left: 0; right: 0; top: 0; height: 70px; pointer-events: none; }
+.ap .wdusk .wdk-sky i { position: absolute; left: 50%; top: 18px; width: 54px; height: 54px; margin-left: -27px; border-radius: 50%;
+  background: radial-gradient(circle, #fff1c0, #ffb050 55%, #ff7a3a00 72%); animation: wdksun 2.4s ease-in forwards; }
+.ap .wdusk.dawn .wdk-sky i { background: radial-gradient(circle, #fffbe8, #ffe0a0 55%, #ffd08000 72%); animation-name: wdkrise; }
+@keyframes wdksun { from { transform: translateY(-14px); opacity: 1; } to { transform: translateY(34px); opacity: .55; } }
+@keyframes wdkrise { from { transform: translateY(34px); opacity: .4; } to { transform: translateY(-6px); opacity: 1; } }
+.ap .wdusk > * { position: relative; }
+.ap .wdusk .wdk-h { display: block; margin-top: 30px; font-family: 'Gowun Batang', serif; font-size: 30px; letter-spacing: 3px; color: #ffd27a;
+  text-shadow: 0 2px 8px #000, 0 0 18px #ff8a3a; animation: wdkh .7s cubic-bezier(.2, 1.6, .4, 1) both; }
+.ap .wdusk.dawn .wdk-h { color: #fff1c8; text-shadow: 0 2px 8px #000, 0 0 18px #9fb4f0; }
+@keyframes wdkh { from { transform: scale(1.8); opacity: 0; } to { transform: none; opacity: 1; } }
+.ap .wdusk .wdk-s { margin: 2px 0 6px; font-size: 13px; color: #e0d0c0; }
+.ap .wdusk .wdk-now { margin: 0 0 8px; font-size: 13.5px; } .ap .wdusk .wdk-now b.us { color: #7fb8f0; } .ap .wdusk .wdk-now b.foe { color: #f09080; }
+.ap .wdusk .wdk-win { color: #9fe08a; } .ap .wdusk .wdk-lose { color: #ff8a6a; } .ap .wdusk .wdk-draw { color: #ffe7b0; }
+.ap .wdusk .wdkg { display: grid; grid-template-columns: 1fr; gap: 6px; text-align: left; }
+.ap .wdkb { display: flex; align-items: flex-start; gap: 8px; padding: 7px 9px 7px 6px; color: var(--ink); font: inherit; text-align: left; cursor: pointer;
+  border: 12px solid transparent; border-image: url(__ART__ui/frame-panel.png?v=3) 118 / 12px stretch; background: #1d1610 padding-box; transition: transform .12s ease-out, filter .12s; }
+.ap .wdkb:hover { transform: translateY(-4px); filter: drop-shadow(0 8px 8px #000a); } .ap .wdkb:active { transform: translateY(1px) scale(.97); transition-duration: .06s; }
+.ap .wdkb img.wflag { width: 50px; height: auto; flex: none; filter: drop-shadow(0 2px 3px #000a); }
+.ap .wdkb .wct { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }
+.ap .wdkb b { font-size: 16px; } .ap .wdkb small { font-size: 11.5px; color: var(--mute); line-height: 1.35; }
+.ap .wdkb em { font-style: normal; font-size: 12px; font-weight: 800; }
+.ap .wdkb .wfcost { display: inline-block; margin: 0 4px 0 0; padding: 0 6px; border-radius: 8px; background: #3a2a10; border: 1px solid #c9a45a; color: #f6d27a; font-size: 11.5px; }
+.ap .wdkb .wfcost.bad { background: #3a1410; border-color: #c95a4a; color: #ffb0a0; }
+.ap .wdkb.press { background: #2a1a10 padding-box; } .ap .wdusk.dawn .wdkb.press { background: #1a2030 padding-box; }
+.ap .wdusk .wdk-n { margin: 8px 0 0; font-size: 11.5px; color: var(--mute); }
+/* 지난 합 사이의 마지막 때 줄 */
+.ap .wdkrow { border-color: #a0602a; background: #2a1a10e6; } .ap .wdkrow.night { border-color: #6a7aa0; background: #1a2030e6; }
+.ap .wdkrow .wdkps { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; }
+.ap .wdkrow .wdkp em { font-style: normal; font-size: 11px; margin-right: 4px; padding: 0 5px; border-radius: 6px; background: #ffffff1a; }
+.ap .wdkrow .wdkp.us em { color: #7fb8f0; } .ap .wdkrow .wdkp.foe em { color: #f09080; }
+.ap .wdkrow .wdkp.press { color: #ffd27a; } .ap .wdkrow .wdkp.retreat { color: #ff9a7a; }
+.ap .wdkrow .wdkc { margin-left: 4px; font-size: 11px; color: #f6d27a; } .ap .wdkrow .wdkc.bad { color: #ffb0a0; }
+/* 깃발 짐작 — 무너지는 선 경고 (우리 붉게 깜박 · 적 금빛) */
+.ap .wguess .wgl.wgff { font-weight: 700; } .ap .wguess .wgl.wgff .wgk { min-width: 1.2em; }
+.ap .wguess .wgl.wgff.us { color: #ff8a6a; animation: wgff .8s ease-in-out infinite alternate; } .ap .wguess .wgl.wgff.us b { color: #ff6a4a; }
+.ap .wguess .wgl.wgff.foe { color: #ffd27a; } .ap .wguess .wgl.wgff.foe b { color: #ffe7a8; }
+@keyframes wgff { to { text-shadow: 0 0 8px #ff5a3a; } }
+/* 사기 막대의 무너지는 선 — 이름표 */
+.ap .ws .wn .brkl { font-size: .92em; color: #ff9a7a; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .ap .wclk li.ck-now, .ap .wclk.last > b, .ap .wdusk .wdk-sky i, .ap .wguess .wgl.wgff.us { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .ap .wr *, .ap .warfx, .ap .warfx * { animation-duration: .01s !important; animation-delay: 0s !important; transition: none !important; } }
 `
 
@@ -2174,7 +2370,10 @@ function openHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: str
  */
 export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[], host: WarHost): boolean {
   const done: Record<string, Tactic> = {}
-  let cur: { key: string; cmds: (Cmd | RoundOrder)[] } | null = null
+  /** 지금 고르는 판 — 합마다의 깃발 · 마지막 때마다의 고름 (해시계) */
+  let cur: { key: string; cmds: (Cmd | RoundOrder)[]; dusk: Dusk[] } | null = null
+  /** 그 판에 고른 것을 굳힌다 — 판 기록(명령 줄)에 남는 꼴 */
+  const tacOf = (key: string): Tactic => (cur?.key === key ? { cmds: [...cur.cmds], ...(cur.dusk.length > 0 ? { dusk: [...cur.dusk] } : {}) } : { cmds: [] })
   /** 지금 고르는 합의 깃발 — 무리마다 */
   let sel: { -readonly [K in keyof RoundOrder]: RoundOrder[K] } = {}
   /** 지금 펼친 무리 탭 — 합마다 처음엔 아직 안 고른 첫 무리 */
@@ -2343,7 +2542,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     }
   }
 
-  const paintNow = (anim: boolean): void => {
+  const paintNow = (anim: boolean, endNow = false): void => {
     const l = t.line!
     const shown = upto ?? (l.pending !== undefined ? l.pending.round : (l.rounds ?? []).length)
     const more = l.pending === undefined && shown < (l.rounds ?? []).length
@@ -2369,18 +2568,18 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     for (const e of again) e.classList.remove('wrs')
     // 싸움이 끝났다 — 이겼으면 「승리」가 쾅, 졌으면 「패배」가 내려앉는다 (형: "승리했다는 이펙트가 더 확실히")
     winEl.replaceChildren()
-    if (anim && !more && l.pending === undefined && l.outcome !== 'draw') {
+    if ((anim || endNow) && !more && l.pending === undefined && l.outcome !== 'draw') {
       const atkWon = l.outcome === 'rout' || l.outcome === 'win'
       const good = (l.atkFaction === host.me) === atkWon
       const word = good ? (l.outcome === 'rout' || l.outcome === 'routed' ? '대승' : '승리') : (l.outcome === 'rout' || l.outcome === 'routed' ? '대패' : '패배')
       // 마지막 합의 연출(장수 장면 · 깃발 하나씩 · 맞부딪힘 · 막대)이 다 끝난 뒤에 — 늘 3.3초에 떠서 싸우는 도중에 승패가 먼저 나왔다 (형 10-24)
-      const lr = (l.rounds ?? [])[shown - 1]
-      const endAt = (lr !== undefined ? roundPlan(lr, l.atkFaction === host.me).result : STAGE_S[2]) + 0.9
+      const lr = anim ? (l.rounds ?? [])[shown - 1] : undefined
+      const endAt = (lr !== undefined ? roundPlan(lr, l.atkFaction === host.me).result : endNow ? 0 : STAGE_S[2]) + 0.9
       winEl.innerHTML = winFxHtml(word, '', endAt, !good, true, l.outcome === 'rout' || l.outcome === 'routed', `${host.art}ui/win-logo.png`)
     }
   }
 
-  const draw = (anim: boolean): void => {
+  const draw = (anim: boolean, endNow = false): void => {
     const l = t.line!
     const shown = upto ?? (l.pending !== undefined ? l.pending.round : (l.rounds ?? []).length)
     const more = l.pending === undefined && shown < (l.rounds ?? []).length
@@ -2389,7 +2588,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     closePop()
     hideTip()
     animating = false // 앞 합의 「연출 중」이 남지 않게 — 이 합이 풀리면 아래에서 다시 건다
-    paintNow(anim)
+    paintNow(anim, endNow)
     // 장수 기술 — 고른 합이면 그 장수가 튀어나온다
     if (anim && cutLead !== null) {
       const rd = (l.rounds ?? [])[shown - 1]
@@ -2418,9 +2617,9 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       }
     }
     cutLead = null
-    sound(anim ? (l.rounds ?? [])[shown - 1] : undefined, l.atkFaction === host.me, anim && l.pending === undefined && !more ? l : null)
+    sound(anim ? (l.rounds ?? [])[shown - 1] : undefined, l.atkFaction === host.me, (anim || endNow) && l.pending === undefined && !more ? l : null)
     if (cutSfx !== null) { at(0.28, cutSfx, 0.45); cutSfx = null } // 장수 기술 소리 — sound() 가 앞의 것을 걷은 뒤에
-    if (!anim) band(l)
+    if (!anim && !endNow) band(l)
     // 싸운다를 누르면 — 이번 합이 위 카드 바로 밑에 오게, 판이 끝났으면 결과가 다 풀린 뒤 결과로 (형 10-23: "싸운다 누르면 스크롤 맨 위로 가는 게 맞나?")
     ov.style.setProperty('--wtoph', `${(sc.querySelector<HTMLElement>('.wtop')?.offsetHeight ?? 170) + 8}px`) // 붙박이 위 카드에 가리지 않게
     if (anim) {
@@ -2430,9 +2629,14 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       if (more) { /* 다음 합이 곧 온다 */ } else if (l.pending === undefined) timers.push(window.setTimeout(() => scrollInside(sc.querySelector('.wend'), 'center', true), (res + 0.4) * 1000))
       else {
         timers.push(window.setTimeout(() => scrollInside(sc.querySelector('.wnext'), 'start', true), (res + 0.6) * 1000))
+        // 해가 진다 — 마지막 때를 묻는 판이 뜨는 때에 종 (밤 싸움이면 새벽)
+        if (l.pending.dusk !== undefined) { at(res + 0.6, BATTLE_SFX.openBell, 0.5); buzz(res + 0.6, [20, 40, 20]) }
         animating = true
         timers.push(window.setTimeout(() => syncField(true), (res + 0.5) * 1000)) // 맞부딪힌 진을 거두고 다음 합을 고르는 진으로 (다음 합의 낌새도 그때 뜬다)
       }
+    } else if (endNow) {
+      // 마지막 때에 판이 끝났다 — 결과로
+      timers.push(window.setTimeout(() => scrollInside(sc.querySelector('.wend'), 'center', true), 400))
     } else {
       sc.scrollTop = 0
       syncField()
@@ -2530,15 +2734,15 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   }
 
   /** 지금 판을 다 골랐다 — 그 명령으로 굳히고 결과를 보인다 (남은 합은 맡긴다) */
-  const settle = (): void => {
+  const settle = (endNow = false): void => {
     const key = cur?.key ?? t.line?.key
     if (key === undefined) return
-    done[key] = { cmds: [...(cur?.key === key ? cur.cmds : [])] }
+    done[key] = tacOf(key)
     cur = null
     sel = {}
     t = rehearse(prev, orders, done, null, host.me, key)
     if (t.line === null) advanceTo()
-    else draw(true)
+    else draw(!endNow, endNow)
   }
 
   /**
@@ -2550,7 +2754,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const key = cur?.key ?? l0?.key
     if (l0 === null || key === undefined) return
     const from = l0.pending?.round ?? (l0.rounds ?? []).length
-    done[key] = { cmds: [...(cur?.key === key ? cur.cmds : [])] }
+    done[key] = tacOf(key)
     cur = null
     sel = {}
     active = undefined
@@ -2724,7 +2928,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   /** 이 합을 고른 대로 싸운다 */
   const fight = (key: string): void => {
     active = undefined
-    if (cur === null || cur.key !== key) cur = { key, cmds: [] }
+    if (cur === null || cur.key !== key) cur = { key, cmds: [], dusk: [] }
     cutLead = sel.lead ?? null // 고른 장수 기술 — 이 합이 풀릴 때 초상이 튀어나온다
     cur.cmds.push({ ...sel })
     sel = {}
@@ -2735,10 +2939,29 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       return
     }
     if (t.line.pending === undefined) {
-      done[cur.key] = { cmds: [...cur.cmds] }
+      done[cur.key] = tacOf(cur.key)
       cur = null
     }
     draw(true)
+  }
+  /**
+   * 마지막 때의 고름 — 진을 친다 · 한 합 더 · 물러난다 (해시계 · 형 10-26). 새 합이 없으면 그 자리에서 판이 끝나 결과가 쾅,
+   * 한 합 더면 다음 합(어둠 속 · 밤 싸움이면 날이 밝은 뒤)의 깃발을 고르는 판으로
+   */
+  const duskPick = (key: string, d: Dusk): void => {
+    active = undefined
+    if (cur === null || cur.key !== key) cur = { key, cmds: [], dusk: [] }
+    cur.dusk.push(d)
+    sel = {}
+    t = rehearse(prev, orders, done, cur, host.me)
+    if (t.line === null || t.line.key !== cur.key || t.line.pending === undefined) {
+      settle(true)
+      return
+    }
+    // 한 합 더 — 북을 울려 다시 붙는다
+    draw(false)
+    if (document.visibilityState === 'visible') { at(0, BATTLE_SFX.openDrum, 0.5); at(0.38, BATTLE_SFX.openDrum, 0.5); at(0.5, BATTLE_SFX.cry, 0.35) }
+    scrollInside(sc.querySelector('.wnext'), 'start', true)
   }
   /** 정말 물러나나 — 묻는 판 (예면 그 자리에서 퇴각) */
   const sure = document.createElement('div')
@@ -2901,8 +3124,9 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       }
       case 'retreat-no': sure.hidden = true; return
       case 'auto': autoPlay(); return
+      case 'dusk': duskPick(l.key, b.dataset['c'] as Dusk); return
       case 'next': {
-        if (cur !== null) done[cur.key] = { cmds: [...cur.cmds] }
+        if (cur !== null) done[cur.key] = tacOf(cur.key)
         cur = null
         sel = {}
         active = undefined

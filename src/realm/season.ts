@@ -847,6 +847,8 @@ export function sideOf(
     ...(r.region === 'tutorial' ? { capture: r.factions[faction]?.mind === 'player' ? 'sure' as const : 'never' as const } : {}),
     // 호궤 — 플레이어 쪽만, 곳간에 그만큼 있을 때 (곡식은 싸움이 끝나고 payFeast 가 뺀다)
     ...(r.factions[faction]?.mind === 'player' && (r.stock[faction]?.grain ?? 0) >= feast ? { feast } : {}),
+    // 곳간 — 마지막 때에 「한 합 더」를 고르면 여기서 낸다 (호궤를 했으면 그만큼 뺀 뒤 · payPress)
+    grain: Math.max(0, r.stock[faction]?.grain ?? 0),
   }
 }
 
@@ -857,11 +859,20 @@ function payFeast(r: Realm, s: Side, fed: boolean, faction: string): void {
   if (st !== undefined) st.grain = Math.max(0, st.grain - s.feast)
 }
 
+/** 한 합 더(밤싸움 · 날이 밝아도 밀어붙인다)에 낸 곡식을 곳간에서 뺀다 (해시계 · tactics.fightRounds) */
+function payPress(r: Realm, grain: number, faction: string): void {
+  if (grain <= 0) return
+  const st = r.stock[faction]
+  if (st !== undefined) st.grain = Math.max(0, st.grain - grain)
+}
+
 /** 싸움이 시작될 때의 사람 · 사기 · 장수 — 전장 화면의 막대 */
 function startOf(a: Side, d: Side, af: Force, df: Force): BattleStart {
   return {
     men: [headcount(af), headcount(df)],
     morale: [a.morale + (a.moraleBonus ?? 0), d.morale + (d.moraleBonus ?? 0)],
+    // 무너지는 선 — 처음 사기(덤은 빼고) × tacBreakMorale (tactics.downOf 와 같은 셈)
+    brk: [a.morale * P.realm.tacBreakMorale, d.morale * P.realm.tacBreakMorale],
     heroes: [a.hero?.id ?? null, d.hero?.id ?? null],
     ...((a.aides ?? []).length + (d.aides ?? []).length > 0 ? { aides: [(a.aides ?? []).map((x) => x.id), (d.aides ?? []).map((x) => x.id)] as const } : {}),
     mix: [{ ...af.mix }, { ...df.mix }],
@@ -1007,6 +1018,8 @@ function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines
       const res = fightRounds(sa, sd, key, r.seed, r.season, tacticFor(tactics, key))
       payFeast(r, sa, res.fedA, lead.faction)
       payFeast(r, sd, res.fedD, defs[0]!.faction)
+      payPress(r, res.pressA, lead.faction)
+      payPress(r, res.pressD, defs[0]!.faction)
       const outcome = res.outcome
       for (const x of atks) scaleByGroups(x, res.ga)
       for (const x of defs) scaleByGroups(x, res.gd)
@@ -1039,6 +1052,7 @@ function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines
         defender: defs[0]!.faction, ambush: 'none', p, outcome, captured: fateOf.captured, killed: fateOf.killed,
         ...(fateOf.captives.length > 1 ? { captives: fateOf.captives } : {}), ...(fateOf.fallen.length > 1 ? { fallen: fateOf.fallen } : {}),
         militia: 0, field: true, edge: eid, atkFaction: lead.faction, rounds: res.rounds, key, start: startOf(sa, sd, atkF, defF), via: ed.kind, endWhy: res.endWhy,
+        clock: res.clock, ...(res.dusk.length > 0 ? { dusk: res.dusk } : {}),
         ...(res.pending !== undefined ? { pending: res.pending } : {}), ...(res.led ? { led: true } : {}),
       })
     }
@@ -1182,9 +1196,12 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
     water, edge: edgeKind, fire, flank: false, seen: ambush !== 'success', moraleBonus: defBonus,
     captureBonus: playerIsAtk ? 0 : capShot, terrain: defTerrain,
   }), ...reliefD }, knewD)
-  const res = fightRounds(sa, sd, key, r.seed, r.season, tacticFor(tactics, key))
+  // 해시계 — 기습·야습으로 닿았으면 밤 싸움 (한밤 → 새벽). 먹힌 기습이면 치는 쪽이 첫 때에 세다 (형 10-26: "야습이나 야간전투 같은건 어떻게함?")
+  const res = fightRounds(sa, sd, key, r.seed, r.season, tacticFor(tactics, key), { night: ambush !== 'none', edge: ambush === 'success' })
   payFeast(r, sa, res.fedA, a.faction)
   payFeast(r, sd, res.fedD, defFaction)
+  payPress(r, res.pressA, a.faction)
+  payPress(r, res.pressD, defFaction)
   const outcome = res.outcome
 
   // 손실 · 사기 — 장정은 판정에만 선다 (r.armies 에 없다)
@@ -1243,7 +1260,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
     pincer: new Set(legs.map((x) => x.edge.id)).size >= 2, defender: defFaction, ambush, p, outcome, captured, killed,
     ...(captives.length > 1 ? { captives } : {}), ...(fallen.length > 1 ? { fallen } : {}),
     militia: militiaN, field: false, atkFaction: a.faction, rounds: res.rounds, key, approach: approachOf(lead), start: startOf(sa, sd, atkF, defF),
-    via: edgeKind, endWhy: res.endWhy,
+    via: edgeKind, endWhy: res.endWhy, clock: res.clock, ...(res.dusk.length > 0 ? { dusk: res.dusk } : {}),
     ...(fell ? { fell: true } : {}), ...(res.pending !== undefined ? { pending: res.pending } : {}), ...(res.led ? { led: true } : {}),
   })
 }
@@ -1442,7 +1459,7 @@ export function advance(
   resolveContests(r, orders, lines) // 장의 겨루기 (2장 송양의 활쏘기)
   // 전장에서 내린 명령은 명령 줄로도 온다 (판 기록에 남는다) — 따로 받은 tactics 가 먼저 (시험 돌림)
   const led: Record<string, Tactic> = { ...tactics }
-  for (const o of orders) if (o.kind === 'command' && led[o.key] === undefined) led[o.key] = { cmds: o.cmds }
+  for (const o of orders) if (o.kind === 'command' && led[o.key] === undefined) led[o.key] = { cmds: o.cmds, ...(o.dusk !== undefined ? { dusk: o.dusk } : {}) }
   resolveMarches(r, snipes, led, lines, fought) // 3 · 4 · 5
   stepParties(r, lines) // 5 — 개척단이 한 계절 간다 · 빈땅에 닿으면 마을 · 적 곁이면 흩어진다
   stepFood(r, lines) // 5 끝 — 남의 땅에 머무는 군대가 군량을 먹는다

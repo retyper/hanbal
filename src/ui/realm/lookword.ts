@@ -69,6 +69,13 @@ export function morText(x: readonly [number, number]): string {
   return x[0] === x[1] ? t(x[0]) : `${t(x[0])}~${t(x[1])}`
 }
 
+/** 한 확률 — 굴린 판 가운데 그리된 몫 (무너질 몫 · warLookPctStep 단위). 굴려 본 판이라 다 그랬어도 100% 라 하지 않는다 (ODDS: 「확실」은 참일 때만) */
+export function oneChance(p: number): number {
+  const st = P.realm.warLookPctStep
+  if (p <= 0) return 0
+  return Math.round(Math.min(1 - st, Math.max(st, Math.round(p / st) * st)) * 100)
+}
+
 /** 확률 — 「25~40%」 · 「30%」 */
 export function pctText(x: readonly [number, number]): string {
   return x[0] === x[1] ? `${x[0]}%` : `${x[0]}~${x[1]}%`

@@ -433,6 +433,8 @@ export interface RoundLog {
   readonly gd?: Readonly<Partial<Record<Grp, number>>>
   /** 이 합에 장수를 잃었는데 싸움은 이어진다 — 사로잡힌(taken) · 겨루기에서 쓰러진(fell) 장수 · 지휘를 넘겨받은 장수(chief) */
   readonly lostHero?: { readonly side: 'a' | 'd'; readonly hero: string; readonly how: 'taken' | 'fell'; readonly chief?: string }
+  /** 어둠 속의 합 — 밤 싸움의 때, 또는 해가 진 뒤 한 합 더 (tactics 의 밤 규칙이 걸렸다) */
+  readonly night?: boolean
 }
 
 /**
@@ -443,6 +445,47 @@ export interface RoundLog {
 export interface Tactic {
   readonly cmds: readonly (Cmd | RoundOrder)[]
   readonly open?: boolean
+  /**
+   * 마지막 때마다 고른 것 (해시계 — docs/realm/BATTLE.md §해시계). dusk[k] 가 k 번째 「해질녘(밤 싸움이면 새벽)」의 고름.
+   * 없으면 — 그 합의 명령(cmds)이 이미 있으면 밀어붙인 것으로 본다(옛 기록), 아니면 장수가 고른다(맡김 · AI 와 같은 셈)
+   */
+  readonly dusk?: readonly Dusk[]
+}
+
+/** 마지막 때의 고름 — 진을 친다(여기서 멈춘다) · 한 합 더(밤싸움 · 날이 밝아도 밀어붙인다) · 물러난다 */
+export type Dusk = 'camp' | 'press' | 'retreat'
+
+/** 싸움의 해시계 — 밤 싸움(기습·야습)이면 한밤→새벽, 아니면 아침→해질녘. slots 가 때(합)의 수 */
+export interface Clock {
+  readonly night: boolean
+  readonly slots: number
+}
+
+/** 마지막 때에 두 쪽이 고른 것 — at 은 그 다음 합의 번호 (한 합 더면 그 합이 at) · 밀어붙인 쪽이 낸 곡식(굶었으면 hungry) */
+export interface DuskLog {
+  readonly at: number
+  readonly a: Dusk
+  readonly d: Dusk
+  readonly grain?: Readonly<Partial<Record<'a' | 'd', number>>>
+  readonly hungry?: Readonly<Partial<Record<'a' | 'd', boolean>>>
+}
+
+/** 마지막 때에 우리가 고를 것 — 전장 화면이 큰 판으로 묻는다 */
+export interface DuskAsk {
+  /** 몇 번째 마지막 때인가 (0 이 해질녘 · 밤 싸움이면 새벽) */
+  readonly k: number
+  /** 밤 싸움의 끝(새벽)인가 */
+  readonly night: boolean
+  readonly options: readonly Dusk[]
+  /** 한 합 더 — 드는 곡식 · 곳간에 있나 · 깎일 사기(처음을 100) */
+  readonly grain: number
+  readonly hasGrain: boolean
+  readonly morale: number
+  /** 지금 판세 (우리 몫 0..1) · 진을 치면 어떻게 정해지나 (우리 눈) */
+  readonly edge: number
+  readonly camp: 'win' | 'draw' | 'lose'
+  /** 물러나면 잃을 군사 (짐작이 아니라 셈 — 굴림이 없다) */
+  readonly retreatLoss: number
 }
 
 /** 전장 화면이 다음 라운드를 고를 때 보는 것 — 시험 돌림(open)에서만 나온다 */
@@ -480,6 +523,8 @@ export interface Pending {
   readonly feast?: number
   /** 고르기 전 짐작의 판 — 화면이 깃발마다 tactics.lookRound 로 이번 합을 짐작한다 (문명의 싸움 예상처럼 · 형 10-26) */
   readonly look?: RoundAt
+  /** 마지막 때다 — 깃발 대신 진을 친다 · 한 합 더 · 물러난다를 묻는다 (해시계 · 형 10-26) */
+  readonly dusk?: DuskAsk
 }
 
 /**
@@ -502,6 +547,9 @@ export interface Look {
   readonly edge0: number
   /** 사로잡기를 들면 — 잡을 확률 [아래, 위]. 이때 잃을 사람·사기는 놓쳤을 때다 (잡으면 그 자리에서 판이 끝난다) */
   readonly capture?: readonly [number, number]
+  /** 이 합 뒤 무너지는 선 밑으로 떨어질 몫 — 우리 · 적 (굴린 판 가운데 무너진 판의 몫) */
+  readonly fall?: number
+  readonly foeFall?: number
 }
 
 /** 싸움이 시작될 때 — 사람 수 · 사기 · 이끄는 장수 (공격, 지킴). 전장 화면이 막대의 처음으로 쓴다 */
@@ -513,10 +561,12 @@ export interface BattleStart {
   readonly aides?: readonly [readonly string[], readonly string[]]
   /** 병종 — 싸움 이야기가 무리 이름(창병·방패병 …)을 짓는다 */
   readonly mix?: readonly [Readonly<Partial<Record<UnitKind, number>>>, Readonly<Partial<Record<UnitKind, number>>>]
+  /** 무너지는 선의 사기 (공격, 지킴) — 사기가 이 밑이면 그 쪽이 무너진다 (tactics: 처음 사기 × tacBreakMorale · 덤은 빼고). 옛 보고에는 없다 */
+  readonly brk?: readonly [number, number]
 }
 
-/** 싸움이 끝난 까닭 — 이야기의 마지막 줄 */
-export type EndWhy = 'captured' | 'men' | 'morale' | 'retreat' | 'share' | 'draw'
+/** 싸움이 끝난 까닭 — 이야기의 마지막 줄 (withdraw: 마지막 때에 물러났다) */
+export type EndWhy = 'captured' | 'men' | 'morale' | 'retreat' | 'share' | 'draw' | 'withdraw'
 
 /** 개척단 — 고을에서 떠난 백성 몇 가구. 빈땅에 닿으면 마을이 선다 (parties.ts) */
 export interface Party {
@@ -742,7 +792,7 @@ export type Order =
   /** 서 있는 고을을 친다 — 동맹을 깨는 등으로 그 땅이 싸울 땅이 됐을 때, 길을 나서지 않고 그 자리에서 (형 10-24) */
   | { readonly kind: 'assault'; readonly army: string }
   /** 전장에서 직접 내린 명령 — 그 판(key)의 라운드마다 (advance 가 tactics 로 받는다 · 판 기록에 남아 다시 돌려도 같다) */
-  | { readonly kind: 'command'; readonly key: string; readonly cmds: readonly (Cmd | RoundOrder)[] }
+  | { readonly kind: 'command'; readonly key: string; readonly cmds: readonly (Cmd | RoundOrder)[]; /** 마지막 때마다 고른 것 (Tactic.dusk) — 옛 기록에는 없다 */ readonly dusk?: readonly Dusk[] }
   | { readonly kind: 'scout'; readonly faction: string; readonly node: string; readonly hero: string | null }
   /** 나누기 (SYSTEMS §4-5) — `id` 는 새 군대의 이름 (season.newArmyId). `hero` 면 장수가 별동대를 이끈다 */
   | {
@@ -901,6 +951,10 @@ export type ReportLine =
       readonly via?: EdgeKind
       /** 싸움이 끝난 까닭 */
       readonly endWhy?: EndWhy
+      /** 해시계 — 낮 싸움인가 밤 싸움인가 · 때의 수 (옛 보고에는 없다) */
+      readonly clock?: Clock
+      /** 마지막 때마다 두 쪽이 고른 것 */
+      readonly dusk?: readonly DuskLog[]
     }
   /** 가을 수확 — `blessed` 는 그 가운데 봄 제사로 더 든 몫 */
   | { readonly kind: 'harvest'; readonly faction: string; readonly grain: number; readonly blessed?: number }

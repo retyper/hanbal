@@ -5265,7 +5265,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         // 우리가 낄 싸움이 있으면 전장이 먼저 열린다 — 합마다 직접 지휘하고, 그 명령으로 넘긴다 (battlefield.ts)
         const finish = (tactics: Record<string, Tactic>): void => {
           warOn = false
-          const cmds: Order[] = Object.entries(tactics).map(([key, t]) => ({ kind: 'command', key, cmds: t.cmds }))
+          const cmds: Order[] = Object.entries(tactics).map(([key, t]) => ({ kind: 'command', key, cmds: t.cmds, ...(t.dusk !== undefined && t.dusk.length > 0 ? { dusk: t.dusk } : {}) }))
           endSeason(prev, [...orders, ...cmds], ai)
         }
         const startWar = (): void => {
