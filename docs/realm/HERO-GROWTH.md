@@ -59,6 +59,8 @@
 | 진묘수 (무덤 지킴이) | 백제 · 무령왕릉 | 보배 | 이 장수가 지키는 고을은 첫 공격을 한 번 막는다 |
 | 금동신발 | 백제·마한 · 나주 정촌 | 귀함 | 공작 들킬 몫 −30% |
 
+그림 (10-26 받음 · 제미나이 Argon · `public/realm/relic/<id>.png` 160 칸 투명): mirror 잔무늬거울 · eightbell 팔주령 · polebell 간두령 · farmplaque 농경문 청동기 · gogok 굽은옥 · beads 유리구슬 목걸이 · ingots 덩이쇠 · duck 오리모양 토기 · wheelcup 수레바퀴모양 토기 · rider 기마인물형 토기 · horncup 말머리 뿔잔 · cheonma 천마도 말다래 · crown 신라 금관 · goldbelt 금제 허리띠 · earring 굵은고리 금귀걸이 · dagger 계림로 보검 · houbowl 호우명 그릇 · incense 금동대향로 · crownflame 무령왕 관꾸미개(관 모양으로 나왔다 — 거슬리면 다시) · guardian 진묘수 · shoes 금동신발 · 상자 chest-common · chest-rare · chest-legend · loot 쌓인 껴묻거리.
+
 ### C. 판과 판 사이 — 단련터 (프린세스메이커 자리)
 
 판이 끝나면(이기든 지든): ① 이겼으면 상자 셋 → 유물 하나 ② **단련터** — 장수마다 이번 판 공 막대가 차오르고, 공을 써 능력치를 한 칸씩 올린다(육각형이 커지는 게 보인다), 유물을 끼운다, 장수가 한마디 한다(목소리 결) ③ 다음 판 동행 고르기. 판 밖 시계(실제 시간 기다림)는 두지 않는다.
