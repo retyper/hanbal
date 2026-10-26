@@ -112,14 +112,16 @@ const bodyFor = (k: DrillKit, id: string, e: DrillEntry): (Pick<Hero, GrowStat> 
 /** 단련터 화면 */
 export function yardHtml(k: DrillKit, o: YardOpts): string {
   const store = loadDrill()
-  const ids = (o.ids ?? Object.keys(store.h)).filter((id) => store.h[id] !== undefined)
-  const list = [...new Set(ids)].sort((a, b) => (o.gain[b] ?? 0) - (o.gain[a] ?? 0) || store.h[b]!.level - store.h[a]!.level || store.h[b]!.points - store.h[a]!.points || (a < b ? -1 : 1))
+  // 끝 화면에서 왔으면 공을 못 번 우리 장수도 — 무덤에서 얻은 유물을 끼울 몸이 있어야 한다 (빈 기록으로 보인다)
+  const ent = (id: string): DrillEntry => store.h[id] ?? { points: 0, level: 0, add: {}, runs: 0 }
+  const ids = (o.ids ?? Object.keys(store.h)).filter((id) => store.h[id] !== undefined || (o.from === 'end' && k.bodyOf(id) !== undefined))
+  const list = [...new Set(ids)].sort((a, b) => (o.gain[b] ?? 0) - (o.gain[a] ?? 0) || ent(b).level - ent(a).level || ent(b).points - ent(a).points || (a < b ? -1 : 1))
   let h = `<div class="front dyard"><div class="fhead">${o.from === 'title' ? `<button class="btn ghost" data-act="dy-next">‹ 처음으로</button>` : ''}<h2>단련터</h2></div>`
   h += `<p class="dylead">판에서 쌓은 공으로 장수를 단련한다 — 져도 공은 남는다. 단련 한 단계마다 능력치 하나가 +1, 값은 단련 단계 + ${spendCost(0)}.</p>`
   if (list.length === 0) h += `<p class="mute dylead">아직 공을 새긴 장수가 없다. 판에서 싸우고 고을을 맡으면 공이 쌓이고, 판이 끝나면 여기서 쓴다.</p>`
   h += `<div class="dyl">`
   for (const id of list) {
-    const e = store.h[id]!
+    const e = ent(id)
     const born = bodyFor(k, id, e)
     const name = k.bodyOf(id)?.name ?? e.name ?? id
     const src = k.bust(id)
