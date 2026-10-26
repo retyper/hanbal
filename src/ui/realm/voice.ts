@@ -12,7 +12,8 @@ export type VoiceLine = 'call'
 type Kind = 'm' | 'w'
 
 /** 받아 둔 목소리 — public/realm/voice/<줄>-<갈래>.ogg */
-const READY: ReadonlySet<string> = new Set<string>([])
+// 구글 AI 스튜디오 Gemini TTS — 남 Arlo · 여 Kira 에 사극 말투 지시 (후보는 voice/cand · 고르기 판 realm/voice-picker.html)
+const READY: ReadonlySet<string> = new Set<string>(['call-m', 'call-w'])
 
 /** 같은 소리가 겹쳐 나오지 않게 — 이만큼(ms) 안에 또 누르면 조용히 */
 const GAP_MS = 900
