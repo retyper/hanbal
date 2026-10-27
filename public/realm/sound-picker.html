@@ -152,6 +152,7 @@ const GROUPS = [
       ['war_drums_a', '전쟁북 되풀이 · PearceWilsonKing', '7.4초'],
       ['war_drums_b', '부족 북 되풀이 · PearceWilsonKing', '8.3초'],
       ['war_drums_c', '원시 북 되풀이 (OpenGameArt) · hornpipe2', '5.7초'],
+          ['war_drums_b2', '② 를 2초로 자르고 끝을 빠르게 줄임 (10-27)', '2초', 'wav'],
     ]],
     ['battle_clash', '맞붙을 때 — 여럿이 칼 부딪는 소리', [
       ['battle_clash_a', '칼 여러 번 부딪힘 · Sam300Productions', '10초'],
@@ -159,24 +160,24 @@ const GROUPS = [
       ['battle_clash_c', '함성 지르며 돌격 (말소리 없는 비명·고함) · florianreichelt', '18초'],
     ]],
     ['arrow_volley', '화살 비 — 여러 대가 한꺼번에', [
-      ['arrow_volley_a', '화살 일제 사격 · mcaseydesign', '2.7초'],
       ['arrow_volley_b', '화살이 스쳐 날아감 · DigPro120', '4.5초'],
       ['arrow_volley_c', '화살이 날아와 꽂힘 · craigsmith', '4.5초'],
+          ['arrow_volley_c3', '지금 쓰는 것 (10-23 고름)', '—'],
     ]],
     ['horses', '기병 — 말 달리는 소리', [
       ['horses_a', '말 여러 마리 달림 · C-V', '11초'],
       ['horses_b', '말 질주 (폴리) · StephenSaldanha', '12초'],
       ['horses_c', '말 질주 (다운로드 1.5만 회) · Max_Headroom', '5.8초'],
+          ['horses_m', '셋을 시차를 두고 겹친 말 떼 (10-27)', '4초', 'wav'],
     ]],
     ['horn_victory', '이겼을 때 — 뿔나팔', [
       ['horn_victory_a', '전쟁 뿔나팔 · adharca', '4.4초'],
-      ['horn_victory_b', '뿔나팔 · freefire66', '4.5초'],
-      ['horn_victory_c', '승리 팡파르 (관현악, 서양풍일 수 있다 · OpenGameArt) · cynicmusic', '12초'],
     ]],
     ['defeat', '졌을 때 — 무겁게 가라앉는 소리', [
       ['defeat_a', '낮은 징 울림 · Yin_Yang_Jake007', '6.4초'],
       ['defeat_b', '징 세게 친 뒤 울림 · hiddenpersuader', '7.8초'],
       ['defeat_c', '패배 음악 (중세풍, 서양풍일 수 있다 · OpenGameArt) · RandomMind', '45초'],
+          ['defeat_a3', '① 을 3초로 줄임 (10-27)', '3초', 'wav'],
     ]],
   ]],
   ['④ 외교·살림', [
@@ -189,11 +190,6 @@ const GROUPS = [
       ['envoy_a', '말이 걸어감 · MrFizzywig', '8.7초'],
       ['envoy_b', '말 울음 (짧게) · shadoWisp', '1.5초'],
       ['envoy_c', '버마 종 (방울 대신) · LozKaye', '5.9초'],
-    ]],
-    ['feast', '혼인·잔치 — 흥겨운 북', [
-      ['feast_a', '동아시아 타악기 ③ · LilMati', '12초'],
-      ['feast_b', '동아시아 타악기 ② · LilMati', '8초'],
-      ['feast_c', '미얀마 축제 북 · ManDaKi', '6.2초'],
     ]],
     ['birth', '아이가 태어날 때 — 맑고 조용한 울림', [
       ['birth_a', '작은 종 · steffcaffrey', '1.9초'],
@@ -214,6 +210,17 @@ const GROUPS = [
       ['dex_new_g2', '공유마당 국악 효과음 #603 (반짝이는) 앞 2초 · 아이티앤', '2초', 'wav'],
       ['dex_new_g3', '공유마당 국악 효과음 #328 (신비로운) 앞 2초 · 아이티앤', '2초', 'wav'],
     ]],
+    ['wed', '혼인 — 가야금 (형 10-27: 가야금 아르페지오 같은 걸로) · 한국저작권위원회 CC BY · 앞 4초', [
+      ['wed_g1', '청명한 18현가야금 효과음 002', '4초', 'wav'],
+      ['wed_g2', '새초롬한 산조가야금 효과음 001', '4초', 'wav'],
+      ['wed_g3', '새초롬한 산조가야금 효과음 014', '4초', 'wav'],
+      ['wed_c4', '옛것 — 국악 효과음 #503 (아이티앤)', '5.8초'],
+    ]],
+    ['tap_rite', '제사를 지낼 때 — 굿 (형 10-27) · 한국저작권위원회 CC BY · 앞 2.5초', [
+      ['tap_rite_g1', '국악기_동해안장구2 (별신굿 장구)', '2.5초', 'wav'],
+      ['tap_rite_g2', '국악기_바라2 (굿 바라)', '2.5초', 'wav'],
+      ['tap_rite_g3', '무당_호흡_굿_02', '2.5초', 'wav'],
+    ]],
     ['hire_go', '장수를 들일 때 — 새 사람이 온다 (형 10-27: "음악 새로운 거")', [
       ['hire_go_g1', '공유마당 국악 효과음 #117 (등장하는) · 아이티앤', '6.6초', 'mp3'],
       ['hire_go_g2', '공유마당 국악 효과음 #107 (등장하는) · 아이티앤', '6.8초', 'mp3'],
@@ -223,7 +230,6 @@ const GROUPS = [
       ['relic_open_g1', '공유마당 「짧은 축하 효과음」', '5초', 'mp3'],
       ['relic_open_g2', '공유마당 「승리의 군악대 효과음」', '8.4초', 'mp3'],
       ['relic_open_g3', '공유마당 국악 효과음 #478 (축하해주는) · 아이티앤', '5.5초', 'mp3'],
-      ['horn_victory_c', 'OpenGameArt 「Victory Fanfare Short」 (서양 금관)', '짧음'],
     ]],
   ]],
   ['⑤ 바탕 음악', [
@@ -244,11 +250,11 @@ const GROUPS = [
 ]
 
 /** 게임에 붙인 것 — src/ui/realm/sound.ts 의 PICK 과 같게 둔다 */
-const PICK = { ui_order: 'b', ui_open: 'c', season_turn: 'a', war_drums: 'a', arrow_volley: 'a', horses: 'c',
-  horn_victory: 'a', defeat: 'a', capture: 'b', dex_new: 'c3', birth: 'c', feast: 'a', envoy: 'b', coins: 'c', hire_go: 'g1', relic_open: 'g1',
+const PICK = { ui_order: 'b', ui_open: 'c', season_turn: 'a', war_drums: 'b2', arrow_volley: 'c3', horses: 'm',
+  horn_victory: 'a', defeat: 'a3', capture: 'b', dex_new: 'c3', birth: 'c', envoy: 'b', coins: 'c', hire_go: 'g3', relic_open: 'g3', wed: 'g1', tap_rite: 'g1',
   amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b', bgm_map: 'f', bgm_war: 'g1', bgm_title: 'g1', bgm_lose: 'g1',
-  tap_arms: 'g1', tap_coin: 'g1', tap_brush: 'g1', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'g1', war_cry: 'g1',
-  battle_clash: 'g1', battle_crit: 'g1' }
+  tap_arms: 'g1', tap_coin: 'g2', tap_brush: 'g2', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'c', war_cry: 'g1',
+  battle_clash: 'g3', battle_crit: 'g3' }
 let n = 0
 const out = []
 for (const [title, slots] of GROUPS) {

@@ -28,14 +28,12 @@ war_drums_b.ogg  Freesound · ID 342465 (https://freesound.org/s/342465/) · "Tr
 battle_clash_a.ogg  Freesound · ID 611765 (https://freesound.org/s/611765/) · "Swords Clashing" · Sam300Productions · CC0
 battle_clash_b.ogg  Freesound · ID 518992 (https://freesound.org/s/518992/) · "SwordClash.wav" · Amaiguri · CC0
 battle_clash_c.ogg  Freesound · ID 563011 (https://freesound.org/s/563011/) · "People screaming in agony when charging into battle" · florianreichelt · CC0
-arrow_volley_a.ogg  Freesound · ID 474121 (https://freesound.org/s/474121/) · "volley of arrows01.wav" · mcaseydesign · CC0
 arrow_volley_b.ogg  Freesound · ID 394004 (https://freesound.org/s/394004/) · "Arrows Fly By.mp3" · DigPro120 · CC0
 arrow_volley_c.ogg  Freesound · ID 675820 (https://freesound.org/s/675820/) · "S23-22 Arrows fly & hit; indoors.wav" · craigsmith · CC0
 horses_a.ogg  Freesound · ID 583261 (https://freesound.org/s/583261/) · "Horses running final.wav" · C-V · CC0
 horses_b.ogg  Freesound · ID 165532 (https://freesound.org/s/165532/) · "SRS_Foley_Horse_Galloping.wav" · StephenSaldanha · CC0
 horses_c.ogg  Freesound · ID 175356 (https://freesound.org/s/175356/) · "Horse Galloping.wav" · Max_Headroom · CC0
 horn_victory_a.ogg  Freesound · ID 539956 (https://freesound.org/s/539956/) · "war horn.wav" · adharca · CC0
-horn_victory_b.ogg  Freesound · ID 175946 (https://freesound.org/s/175946/) · "Horn002.wav" · freefire66 · CC0
 defeat_a.ogg  Freesound · ID 415200 (https://freesound.org/s/415200/) · "Deep Gong Tolling.mp3" · Yin_Yang_Jake007 · CC0
 defeat_b.ogg  Freesound · ID 155461 (https://freesound.org/s/155461/) · "gong bash resonance" · hiddenpersuader · CC0
 coins_a.ogg  Freesound · ID 338260 (https://freesound.org/s/338260/) · "Money Bag" · PhilSavlem · CC0
@@ -44,9 +42,6 @@ coins_c.ogg  Freesound · ID 443334 (https://freesound.org/s/443334/) · "MONEY_
 envoy_a.ogg  Freesound · ID 581833 (https://freesound.org/s/581833/) · "SFX - Horse - Walk.wav" · MrFizzywig · CC0
 envoy_b.ogg  Freesound · ID 269571 (https://freesound.org/s/269571/) · "horse neigh shortened.wav" · shadoWisp · CC0
 envoy_c.ogg  Freesound · ID 94024 (https://freesound.org/s/94024/) · "BurmaBell.aif" · LozKaye · CC0
-feast_a.ogg  Freesound · ID 460107 (https://freesound.org/s/460107/) · "Traditional Asian Percussion 03.wav" · LilMati · CC0
-feast_b.ogg  Freesound · ID 460039 (https://freesound.org/s/460039/) · "Traditional Asian Percussion 02.wav" · LilMati · CC0
-feast_c.ogg  Freesound · ID 697381 (https://freesound.org/s/697381/) · "Thingyan Doe(Myanmar )" · ManDaKi · CC0
 birth_a.ogg  Freesound · ID 452379 (https://freesound.org/s/452379/) · "Small Bell #2" · steffcaffrey · CC0
 birth_b.ogg  Freesound · ID 271370 (https://freesound.org/s/271370/) · "singing bowl strike sound" · inoshirodesign · CC0
 birth_c.ogg  Freesound · ID 94934 (https://freesound.org/s/94934/) · "Taegum-1.aif" · bletort · CC0
@@ -66,7 +61,6 @@ bgm_map_d.ogg  OpenGameArt · https://opengameart.org/content/orien · "Orien" �
 bgm_map_e.ogg  OpenGameArt · https://opengameart.org/content/mysterious-sparrow-lake · "Mysterious Sparrow Lake" · Tozan · CC0
 bgm_war_a.ogg  OpenGameArt · https://opengameart.org/content/prepare-your-swords · "Prepare your swords" · bojidar-bg · CC0
 bgm_war_b.ogg  OpenGameArt · https://opengameart.org/content/call-to-war · "Call to War" (사이트 미리듣기 ogg) · Umplix · CC0
-horn_victory_c.ogg  OpenGameArt · https://opengameart.org/content/victory-fanfare-short · "Victory Fanfare Short" (사이트 미리듣기 ogg) · cynicmusic · CC0
 defeat_c.ogg  OpenGameArt · https://opengameart.org/content/medieval-defeat-theme · "Medieval: Defeat Theme" (사이트 미리듣기 ogg) · RandomMind · CC0
 war_drums_c.ogg  OpenGameArt · https://opengameart.org/content/prehistoric-drum-loop · "Prehistoric Drum Loop" (select.ogg) · hornpipe2 · CC0
 bgm_map_f.mp3  형이 받아 온 평상시 음악 (assets_src/realm/sfx-in/bgm후보.mp3) · 출처·이용 조건 적을 것 (형에게 물음)
@@ -196,3 +190,13 @@ hire_go_g3.mp3  공유마당 · 「국악 효과음 #355」 · 주식회사 아�
 dex_new_g1.wav  공유마당 · 「국악 효과음 #159」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387149 · 앞 2초를 잘라 1.1초부터 줄임
 dex_new_g2.wav  공유마당 · 「국악 효과음 #603」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387593 · 앞 2초를 잘라 1.1초부터 줄임
 dex_new_g3.wav  공유마당 · 「국악 효과음 #328」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387318 · 앞 2초를 잘라 1.1초부터 줄임
+wed_g1.wav  공유마당 · 「142.청명한 18현가야금 효과음 002」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290163 · 앞 4초
+wed_g2.wav  공유마당 · 「01.새초롬한 산조가야금 효과음 001」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290042 · 앞 4초
+wed_g3.wav  공유마당 · 「14.새초롬한 산조가야금 효과음 014」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290055 · 앞 4초
+tap_rite_g1.wav  공유마당 · 「국악기_동해안장구2」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13265839 · 앞 2.5초
+tap_rite_g2.wav  공유마당 · 「국악기_바라2」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13265899 · 앞 2.5초
+tap_rite_g3.wav  공유마당 · 「무당_호흡_굿_02」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13264077 · 앞 2.5초
+war_drums_b2.wav  위 war_drums_b 를 2초로 자르고 끝을 줄임 (10-27)
+defeat_a3.wav  위 defeat_a 를 3초로 줄임 (10-27)
+horses_m.wav  위 horses_a·b·c 를 시차를 두고 겹침 (10-27)
+tap_cancel_c.ogg  위 ui_cancel_c 와 같은 파일 (닫기 · 10-27 형 고름)
