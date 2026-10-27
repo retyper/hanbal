@@ -147,6 +147,7 @@ export function stepParties(r: Realm, lines: ReportLine[]): void {
       const n = r.nodes[p.at]!
       n.hh += p.hh
       n.owner = p.faction
+      n.takenAt = r.season
       lines.push({ kind: 'settle', faction: p.faction, from: p.home, to: p.at, n: p.hh })
       delete ps[id]
     }

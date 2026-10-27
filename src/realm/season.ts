@@ -559,6 +559,7 @@ function settleLand(r: Realm, o: Extract<Order, { kind: 'settle' }>, lines: Repo
   from.hh -= o.n
   to.hh += o.n
   to.owner = o.faction
+  to.takenAt = r.season
   stockOf(r, o.faction).grain -= settleCost(o.n).grain
   addGood(r, o.faction, 'wood', -settleCost(o.n).wood)
   revealAround(r, o.faction, o.to)
@@ -1286,6 +1287,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
       onTake(r, node.id)
       freeAtCapital(r, node.id, node.owner, a.faction, lines)
       node.owner = a.faction
+      node.takenAt = r.season
       lines.push({ kind: 'take', faction: a.faction, node: node.id })
       revealAround(r, a.faction, node.id)
     }
@@ -1328,6 +1330,7 @@ function walkIn(r: Realm, live: readonly Army[], node: RNode, lines: ReportLine[
     if (node.owner !== null) onTake(r, node.id)
     freeAtCapital(r, node.id, node.owner, lead.faction, lines)
     node.owner = lead.faction
+    node.takenAt = r.season
     lines.push({ kind: 'take', faction: lead.faction, node: node.id })
     revealAround(r, lead.faction, node.id)
     for (const known of Object.values(r.intel)) {

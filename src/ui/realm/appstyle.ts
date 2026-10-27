@@ -464,6 +464,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .pwho b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; } .ap .pwho small { font-size: 10.5px; color: var(--mute); line-height: 1.25; }
 /* 한 번 누르면 간다 — 장수 판에서 데려온 장수(on) · 못 가는 이(손이 다 찼다 · 값이 모자라다) · 값은 단추마다 */
 .ap .pwho.on { border-color: var(--gold); box-shadow: 0 0 0 2px #d9b36a55; }
+.ap .cmdp .cdo { color: #d9c69a; font-size: 10.5px; } /* 명령 — 누가 가나의 지금 하는 일 */
 /* 이간 — 두 빈칸 · 깃발 줄 (형 10-27) */
 .ap .sowpick { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 8px 0 6px; }
 .ap .sowpick .sows { width: 96px; height: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 12px; border: 2px dashed #8a7048; background: #1d160f; color: var(--ink); font: inherit; cursor: pointer; }

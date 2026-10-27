@@ -1182,6 +1182,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return h !== undefined && h.status === 'free' ? h.name : `별동대 ${headcount(forceOf(r, a))}`
   }
 
+  /** 우리 고을 — 가장 최근에 차지한 것이 맨 위 (형 10-27: "내 마을 점점 많아지면 뭐가 뭔지 모르니까") · 처음부터 쥔 고을은 그 밑에 이름 순 */
+  function myTowns(r: Realm): Array<Realm['nodes'][string]> {
+    return sorted(Object.values(r.nodes)).filter((n) => n.owner === me()).sort((a, b) => (b.takenAt ?? -1) - (a.takenAt ?? -1))
+  }
+
   function scoutable(r: Realm): string[] {
     const mine = Object.values(r.nodes).filter((n) => n.owner === me())
     return [...new Set(mine.flatMap((n) => neighbors(r, n.id)))].filter((id) => r.nodes[id]?.owner !== me()).sort()
@@ -1951,7 +1956,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 알아서 뽑기 — 고을마다 뽑을 수 있는 만큼, 창병과 궁병을 섞어 곡식이 닿는 데까지 (형 10-24: "모든 고을에서 다 최대로 골고루")
     // 설명은 ? 안으로 (형 10-27: "물음표가 분명히 존재하는데 아직도 징병 탭에 텍스트가 너무 많음")
     h += `<div class="btns"><button class="btn pri men wide" data-act="auto-draft">⚡ 알아서 뽑기</button></div>`
-    for (const n of sorted(Object.values(r.nodes)).filter((x) => x.owner === me())) h += draftCard(r, n.id, false)
+    for (const n of myTowns(r)) h += draftCard(r, n.id, false)
     if (pending.length > 0) {
       h += `<h4>이번 계절 징병</h4>`
       pending.forEach((o) => {
@@ -2974,6 +2979,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   /** 이 일을 맡을 수 있는 우리 장수 — 할 수 있는 이 먼저, 그 일에 맞는 순 */
+  /** 장수가 지금 하는 일 — 한 마디 (형 10-27: "장수 일 시킬 때 항상 뭐 하고 있는지 · 도읍 맡고 있으면 맡고 있다고") */
+  function doingShort(r: Realm, x: Hero): string {
+    if (x.post != null) return `${r.nodes[x.post]?.name ?? ''} 맡음`
+    const a = Object.values(r.armies).find((y) => y.hero === x.id)
+    if (a !== undefined) return a.march !== null ? `${josa(r.nodes[a.march.to]?.name ?? '', '으로', '로')} 행군` : `${r.nodes[a.at]?.name ?? ''} 군대 이끎`
+    return '쉰다'
+  }
+
   function cmdHeroes(r: Realm, job: CmdJob): Array<{ x: Hero; why: string | null }> {
     const def = CMD_JOBS.find((j) => j.id === job)!
     return sorted(Object.values(r.heroes)).filter((x) => x.faction === me() && x.status === 'free' && (def.ruler || !isRuler(r, x.id)))
@@ -3038,7 +3051,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const st = def.stat.map((k) => `<i>${STAT_NAME[k]} ${x[k]}</i>`).join('')
       h += why !== null
         ? `<button class="busy" aria-disabled="true" data-tip="${esc(why)}">${bust(x, 'face')}<b>${nameHtml(x.name)}</b><small>⏳ ${esc(why)}</small></button>`
-        : `<button class="${x.id === pickId ? 'on' : ''}" data-act="cmd-hero" data-id="${x.id}">${bust(x, 'face')}<b>${nameHtml(x.name)}</b><small>${st}</small></button>`
+        : `<button class="${x.id === pickId ? 'on' : ''}" data-act="cmd-hero" data-id="${x.id}">${bust(x, 'face')}<b>${nameHtml(x.name)}</b><small>${st}</small><small class="cdo">${esc(doingShort(r, x))}</small></button>`
     }
     h += `</div>`
     const x = r.heroes[pickId]
@@ -3070,7 +3083,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     } else {
       const cap = r.factions[me()]?.capital
       if (x.post !== at && r.nodes[at]?.owner === me() && at !== cap) h += card(at, '지금 있는 고을')
-      const far = sorted(Object.values(r.nodes)).filter((n) => n.owner === me() && n.id !== at && n.id !== cap && n.kind !== 'sodo' && n.hh > 0 && migratePath(r, me(), at, n.id) !== null)
+      const far = myTowns(r).filter((n) => n.id !== at && n.id !== cap && n.kind !== 'sodo' && n.hh > 0 && migratePath(r, me(), at, n.id) !== null)
       for (const n of far) h += card(n.id, `정예 ${P.realm.escortMen}명과 한 계절 길`)
     }
     if (h === '') return ''

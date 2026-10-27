@@ -168,6 +168,7 @@ function stepRise(r: Realm, lines: ReportLine[]): void {
     }
     const men = Math.round(node.hh * R.riseMen)
     node.owner = f
+    node.takenAt = r.season
     node.hh = Math.max(0, Math.round(node.hh * (1 - R.riseHH)))
     node.sown = Math.min(node.sown, node.hh)
     if (men > 0) {
