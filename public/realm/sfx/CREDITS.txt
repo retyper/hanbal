@@ -194,9 +194,7 @@ war_drums_b2.wav  위 war_drums_b 를 2초로 자르고 끝을 줄임 (10-27)
 defeat_a3.wav  위 defeat_a 를 3초로 줄임 (10-27)
 horses_m.wav  위 horses_a·b·c 를 시차를 두고 겹침 (10-27)
 tap_cancel_c.ogg  위 ui_cancel_c 와 같은 파일 (닫기 · 10-27 형 고름)
-wed_g4.wav  공유마당 · 「370.흥겨운 산조대금 효과음 040」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290411 · 2초 전부
-wed_g5.wav  공유마당 · 「국악 효과음 #1」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13379834 · 앞 4초
-wed_g6.wav  공유마당 · 「국악 효과음 #112」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387102 · 앞 4초
 tap_rite_g4.wav  공유마당 · 「471.기묘한 종묘대금 효과음 001」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290512 · 앞 3초
 tap_rite_g5.wav  공유마당 · 「381.애절한 시나위대금 효과음 001」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290422 · 소리가 나는 데부터 3초
 tap_rite_g6.wav  공유마당 · 「국악 효과음 #505」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387495 · 앞 3초
+wed_g7.wav  국립국악원 디지털 이음 · 국악 선율 「꼭두각시 01」(경기민요 꼭두각시 · 가야금 · 제1~4장단 · s1-911-001) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 10초 전부
