@@ -15,7 +15,7 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
-import type { DiscoverHow, Realm, ReportLine } from './types.ts'
+import type { DiscoverHow, NodeIntel, Realm, ReportLine } from './types.ts'
 
 /** `a` 가 `b` 를 아나 — 발견이 없는 판이면 늘 안다 */
 export function knows(r: Realm, a: string, b: string): boolean {
@@ -35,6 +35,33 @@ export function initialKnown(r: Realm): Record<string, string[]> {
   const out: Record<string, string[]> = {}
   for (const f of Object.keys(r.factions).sort()) out[f] = [...neighboursOf(r, f)].sort()
   return out
+}
+
+/**
+ * 판을 열 때 안개를 건다 — 저마다 제 땅과 길로 맞닿은 고을만 보고, 맞닿은 이웃과 처음부터 얽힌 나라(싸움·화친·동맹)만 안다.
+ * 형 10-27: "1장 시작할 때 너무 맵이 다 보이잖아. 모든 게임은 시작할 때 기본적으로 자기 지도랑 길로 연결된 곳만 보이게".
+ * 이미 안개가 있는 판(영남·삼한·넓어지는 지도)은 그대로 둔다.
+ */
+export function fogStart(r: Realm): void {
+  if (r.known !== undefined) return
+  for (const f of Object.keys(r.factions).sort()) {
+    const known: Record<string, NodeIntel> = {}
+    const see = (id: string): void => { known[id] = r.intel[f]?.[id] ?? { land: true, force: null, alert: null } }
+    for (const n of Object.values(r.nodes)) if (n.owner === f) see(n.id)
+    for (const ed of Object.values(r.edges)) {
+      if (r.nodes[ed.a]?.owner === f) see(ed.b)
+      if (r.nodes[ed.b]?.owner === f) see(ed.a)
+    }
+    for (const a of Object.values(r.armies)) if (a.faction === f) see(a.at)
+    r.intel[f] = known
+  }
+  const k = initialKnown(r)
+  for (const key of Object.keys(r.relations).sort()) {
+    const [a, b] = key.split('|') as [string, string]
+    if (k[a] !== undefined && !k[a].includes(b)) k[a] = [...k[a], b].sort()
+    if (k[b] !== undefined && !k[b].includes(a)) k[b] = [...k[b], a].sort()
+  }
+  r.known = k
 }
 
 function neighboursOf(r: Realm, f: string): Set<string> {
