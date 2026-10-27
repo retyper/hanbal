@@ -12,6 +12,7 @@
 import { createWorld, isSettled, step } from './sim/world.ts'
 import type { StageDef, World } from './sim/types.ts'
 import { createInput } from './input/pointer.ts'
+import { setAlwaysPreview } from './render/stickman.ts'
 import { createRenderer, getCamera, getHitStopMs } from './render/scene.ts'
 import type { HudState } from './render/hud.ts'
 import { createSfx, pumpSfx, unlockSfx, updateSfx } from './audio/sfx.ts'
@@ -20,6 +21,7 @@ import { P } from './tune/params.ts'
 
 const canvas = document.getElementById('night') as HTMLCanvasElement
 const ui = document.getElementById('night-ui') as HTMLDivElement
+setAlwaysPreview(true) // 겨루기 — 숨 참기 없이 당기는 동안 늘 사선 (형 10-27)
 const params = new URLSearchParams(location.search)
 const missionId = params.get('id') ?? 'contest-archery'
 const back = params.get('back') ?? 'realm.html'
@@ -89,12 +91,12 @@ function showIntro(): void {
   live = false
   card(`<h1>송양과의 활쏘기 겨루기</h1><p>비류수 가 언덕, 아침 안개가 걷힌다. 활은 ${BOW_NAME[tier]}.</p>`
     + `<p class="mute">첫 판은 백 보 과녁, 둘째 판은 매단 옥가락지다. 판마다 화살 ${roundDef(0).arrows}발. 둘 다 맞히면 이긴다.</p>`
-    + `<p class="mute">누르고 있으면 당기고, 놓으면 쏜다. 「숨 참기」를 누르고 있으면 떨림이 멎는다.</p>`
+    + `<p class="mute">누르고 있으면 당기고, 놓으면 쏜다. 당기는 동안 점선이 화살이 날아갈 길을 보여 준다.</p>`
     + `<div class="btns"><button data-act="back">물러난다</button><button class="on" data-act="go">겨룬다</button></div>`)
 }
 
 function playHud(): void {
-  ui.innerHTML = `<div class="tag">${round + 1}판 · ${ROUNDS[round]!.title}</div><button class="quit" data-act="quit">그만</button><button class="steady" data-act="steady">숨 참기</button>`
+  ui.innerHTML = `<div class="tag">${round + 1}판 · ${ROUNDS[round]!.title}</div><button class="quit" data-act="quit">그만</button>` // 숨 참기 단추는 뺐다 — 당기는 동안 늘 사선 (형 10-27)
 }
 
 function startRound(i: number): void {

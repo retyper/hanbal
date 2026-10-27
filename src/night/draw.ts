@@ -9,7 +9,7 @@
  */
 import { TAU, clamp, clamp01, damp, lerp, valueNoise } from '../core/math.ts'
 import { P } from '../tune/params.ts'
-import { drawArcher } from '../render/stickman.ts'
+import { drawArcher, previewBlend } from '../render/stickman.ts'
 import { THEME, worldToScreenX, worldToScreenY, type Camera } from '../render/camera.ts'
 import { createFx, drawFx, type Fx } from '../render/effects.ts'
 import { drawArrowArt } from '../render/foeart.ts'
@@ -1022,7 +1022,8 @@ function drawPull(ctx: CanvasRenderingContext2D, p: Pull): void {
  */
 function drawPreview(ctx: CanvasRenderingContext2D, cam: Camera, w: World, ground: number): void {
   const a = w.archer
-  if (a.steadyBlend <= 0.02 || (a.phase !== 'drawing' && a.phase !== 'full')) return
+  const pb = previewBlend(a.steadyBlend)
+  if (pb <= 0.02 || (a.phase !== 'drawing' && a.phase !== 'full')) return
   const spd = lerp(P.bow.minSpeed, P.bow.maxSpeed, Math.pow(clamp(a.draw, 0, 1), P.bow.drawCurve))
     * effectiveStats(w.stats).speedMul * w.fx.speedMul * w.bow.speedMul
   const ang = a.aimAngle + a.tremorOffset
@@ -1033,7 +1034,7 @@ function drawPreview(ctx: CanvasRenderingContext2D, cam: Camera, w: World, groun
   const dtp = 1 / 60
   const steps = Math.floor(P.steady.previewTime / dtp)
   ctx.fillStyle = THEME.target2
-  ctx.globalAlpha = 0.5 * a.steadyBlend
+  ctx.globalAlpha = 0.5 * pb
   let distSinceDot = P.steady.previewDotGap
   for (let i = 1; i <= steps; i++) {
     const rvx = vx - w.wind * w.bow.windMul

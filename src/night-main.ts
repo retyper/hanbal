@@ -18,6 +18,7 @@
  * 숨은 탭에서는 프레임을 예약하지 않는다 (절대 규칙 4).
  */
 import { createNightInput } from './night/input.ts'
+import { setAlwaysPreview } from './render/stickman.ts'
 import { createCamera, resizeCamera } from './render/camera.ts'
 import { setHeroSkin } from './render/foeart.ts'
 import { sprite } from './render/sprites.ts'
@@ -40,6 +41,7 @@ const PRACTICE_KEEP = 200
 
 const canvas = document.getElementById('night') as HTMLCanvasElement
 const ui = document.getElementById('night-ui') as HTMLDivElement
+setAlwaysPreview(true) // 칠십팔국의 밤 판 — 숨 참기 없이 당기는 동안 늘 사선 (형 10-27)
 /** 판 전체(캔버스 + 글자판) — 세로 폰이면 통째로 옆으로 눕힌다 (layoutStage) */
 const stage = document.getElementById('stage') as HTMLDivElement
 /** 세로 폰에서 눕혀 그릴지 — 이 기기에만 기억한다 (기본 눕힘) */
@@ -227,14 +229,15 @@ function showMissionIntro(): void {
     + (rescue
       ? `<p class="mute">북이 울리면 ${who}의 옥문이 잠긴다 — 들키지 않게 하나씩.</p>`
       : `<p class="mute">그림자가 일어서면 창호지 위 촛불 게이지가 닳는다. 다 닳으면 촛불을 끄고 달아난다. 빗나가면 더 빨리 닳는다.</p>`)
-    + `<p class="mute">아무 데나 누르고 뒤로 끈다 — 끈 쪽의 반대로 겨눈다 · 놓으면 쏜다 · 누른 자리로 돌아와 놓으면 그만둔다. 오른쪽 아래 「숨 참기」를 누르고 있으면 떨림이 멎는다.</p>`
+    + `<p class="mute">아무 데나 누르고 뒤로 끈다 — 끈 쪽의 반대로 겨눈다 · 놓으면 쏜다 · 누른 자리로 돌아와 놓으면 그만둔다. 당기는 동안 점선이 화살이 날아갈 길을 보여 준다.</p>`
     + `<div class="btns"><button data-act="rehearse">연습 먼저</button><button class="on" data-act="go">들어간다</button></div>`
     + `<p class="mute">연습은 다른 지붕에서 같은 활·같은 화살로 쏜다. 몇 번이든 되고, 결과는 남지 않는다.</p>`
     + `<div class="btns"><button data-act="skip0">${SKIP_LABEL}</button></div></div>`
 }
 
 function hud(): void {
-  ui.innerHTML = `<button class="steady" data-act="steady"><span>숨 참기<i>누르고 있는다</i></span></button><button class="quit" data-act="quit">그만</button>`
+  // 숨 참기 단추는 뺐다 — 당기는 동안 늘 사선이 보인다 (형 10-27: "숨참기 버튼 없애고 쏠 때마다 가이드라인")
+  ui.innerHTML = `<button class="quit" data-act="quit">그만</button>`
     + (rehearsal ? `<div class="tag">연습</div>` : '')
     // 진짜 임무에서 첫 살을 쏘기 전까지만 건너뛸 수 있다 — 쏘고 나서 맡기는 길은 없다
     + (!practiceMode && !rehearsal && (night?.shots ?? 0) === 0 ? `<button class="skip" data-act="skip">건너뛰기</button>` : '')

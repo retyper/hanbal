@@ -667,6 +667,16 @@ function spine(
   ctx.stroke()
 }
 
+/**
+ * 사선을 늘 보인다 — 칠십팔국의 활 미니게임(겨루기·밤 판)은 숨 참기 없이 당기는 동안 늘 점선이 나온다
+ * (형 10-27: "활쏘기에는 숨참기 버튼 없애고 쏠 때마다 가이드라인 나오도록 쉽게"). 활터는 그대로(숨을 참아야 보인다).
+ * 판의 상태가 아니라 그리는 방식이라 렌더러에 둔다 (규칙 2 — 상태는 읽기만).
+ */
+let alwaysPreview = false
+export function setAlwaysPreview(on: boolean): void { alwaysPreview = on }
+/** 사선의 짙기 0~1 — 숨을 참은 만큼, 늘 보이기면 1 */
+export const previewBlend = (steadyBlend: number): number => (alwaysPreview ? 1 : steadyBlend)
+
 export function drawArcher(
   ctx: CanvasRenderingContext2D, cam: Camera, w: World, _alpha: number,
 ): void {
@@ -1404,7 +1414,8 @@ export function drawArcher(
     // ── 호흡정지 사선 (P.steady.previewTime) — 숨을 참으면 화살이 갈 길이 보인다 ──
     // 지금 이 순간 놓으면 나갈 각(조준각 + 떨림)을 그대로 적분한다. 산포가 0이 된 세상이라
     // 이 점선은 거짓말을 하지 않는다. steadyBlend로 스며들고 스며 나간다 (즉발 금지, sim과 동일).
-    if (a.steadyBlend > 0.02 && (a.phase === 'drawing' || a.phase === 'full')) {
+    const pb = previewBlend(a.steadyBlend)
+    if (pb > 0.02 && (a.phase === 'drawing' || a.phase === 'full')) {
       const d2 = effectiveStats(w.stats)
       const pw = a.draw
       const spd = lerp(P.bow.minSpeed, P.bow.maxSpeed, Math.pow(clamp(pw, 0, 1), P.bow.drawCurve))
@@ -1417,7 +1428,7 @@ export function drawArcher(
       const dtp = 1 / 60
       const steps = Math.floor(P.steady.previewTime / dtp)
       ctx.fillStyle = THEME.target2
-      ctx.globalAlpha = 0.5 * a.steadyBlend
+      ctx.globalAlpha = 0.5 * pb
       // 점은 물리 스텝이 아니라 **거리**로 찍는다 — 스텝으로 찍으면 화살이 빠를수록
       // 점 사이 실제 거리가 넓어져 가까운 과녁 앞에서는 점이 거의 안 보였다.
       let distSinceDot = P.steady.previewDotGap
