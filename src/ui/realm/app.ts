@@ -630,6 +630,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let rite = false
   /** 남의 나라가 걸어온 청에 대한 답 — 답이 없으면 거절로 친다 */
   const answers: Record<string, boolean> = {}
+  /** 사건 카드의 자막 몇째 장 — 열쇠는 card:계절 (화면의 일 · 판은 모른다) */
+  const cardBeat: Record<string, number> = {}
   /** 경계를 강화할 우리 고을 */
   let guards: string[] = []
   /** 보고 카드에서 답·경계를 누른 뒤 다시 그릴 때는 싸움 카드를 다시 돌리지 않는다 */
@@ -2142,7 +2144,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const sub = (s: string): string => s.replaceAll('{a}', r.heroes[c.hero ?? '']?.name ?? '').replaceAll('{b}', r.heroes[c.hero2 ?? '']?.name ?? '').replaceAll('{n}', r.nodes[c.node ?? '']?.name ?? '')
     const ans = answers[`card:${c.season}`]
     const pick = ans === undefined ? null : ans ? 0 : 1
-    let h = `<div class="cardc${info.bad ? ' bad' : ''}"><img class="cimg" src="${ART}event/${info.art}.jpg" alt=""><div class="cb"><b>${icon(info.icon, 'cic')}사건 · ${esc(info.name)}</b><p>${esc(sub(info.line))}</p><div class="copts">`
+    // 자막처럼 — 두 줄씩, 누르면 다음 장. 다 보면 한 줄 물음과 짧은 답 둘 (형 10-27 지인: "성세천하처럼 자막 두 줄 · 질문 한 줄 · 선택지 세 마디")
+    const beats = info.beats.map(sub)
+    const at = pick !== null ? beats.length : Math.min(cardBeat[`card:${c.season}`] ?? 0, beats.length)
+    if (at < beats.length) {
+      return `<div class="cardc story${info.bad ? ' bad' : ''}" data-act="card-beat"><img class="cimg" src="${ART}event/${info.art}.jpg" alt=""><div class="cb"><b>${icon(info.icon, 'cic')}${esc(info.name)}</b>`
+        + `<p class="csub" aria-live="polite">${esc(beats[at]!)}</p><div class="cnav"><small>${at + 1}/${beats.length} · 누르면 다음 ›</small><button class="cskip" data-act="card-skip">건너뛰기 »</button></div></div></div>`
+    }
+    let h = `<div class="cardc${info.bad ? ' bad' : ''}"><img class="cimg" src="${ART}event/${info.art}.jpg" alt=""><div class="cb"><b>${icon(info.icon, 'cic')}${esc(info.name)}</b><p class="cask">${esc(sub(info.ask))}</p><div class="copts">`
     // 고르지 않았을 때 걸리는 답 — 엔진(events.resolveCard)과 같게: 망명자만 둘째(돌려보낸다)
     const fallback = c.kind === 'exile' ? 1 : 0
     info.opts.forEach((o, i) => {
@@ -2163,7 +2172,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           fx += `<span class="cfx"><small>이루면</small>${fxHtml(r, pv.win ?? {})}</span><span class="cfx"><small>어긋나면</small>${fxHtml(r, pv.lose ?? {})}</span>`
         }
       }
-      h += `<button class="copt${pick === i ? ' on' : ''}${face !== '' ? ' hasf' : ''}" data-act="card-pick" data-v="${i}">${face}<span class="cot"><b>${esc(sub(o.name))}</b><span>${esc(sub(o.does))}</span>${fx}${i === fallback && pick === null ? '<i>고르지 않으면 이것</i>' : ''}</span></button>`
+      // 답은 이름 한 마디 + 얻고 잃는 그림 — 긴 뜻은 길게 누르면 (data-tip)
+      h += `<button class="copt${pick === i ? ' on' : ''}${face !== '' ? ' hasf' : ''}" data-act="card-pick" data-v="${i}" data-tip="${esc(sub(o.does))}">${face}<span class="cot"><b>${esc(sub(o.name))}</b>${fx}${i === fallback && pick === null ? '<i>고르지 않으면 이것</i>' : ''}</span></button>`
     })
     return h + `</div></div></div>`
   }
@@ -2200,12 +2210,24 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + `</div></div></div>`
   }
 
+  /** 우리와 그 나라의 사이 한 칩 — 전쟁 · 속국(우리를 섬김) · 섬김(우리가 바침) · 동맹 · 화친 · 아무 사이 아님 (형 10-27: "타국이 말 거는 이벤트 뜰 때 이 나라랑 관계도 탈 옆에") */
+  function relChipHtml(r: Realm, f: string): string {
+    const rel = relationOf(r, me(), f)
+    const v = rel.vassal !== undefined && rel.vassal.until >= r.season ? rel.vassal.lord : null
+    if (rel.state === 'war') return '<span class="rel war">전쟁</span>'
+    if (v === me()) return '<span class="rel ally">속국</span>'
+    if (v === f) return '<span class="rel truce">섬김</span>'
+    if (rel.state === 'ally') return '<span class="rel ally">동맹</span>'
+    if (rel.state === 'truce') return '<span class="rel truce">화친</span>'
+    return '<span class="rel neutral">아무 사이 아님</span>'
+  }
+
   function askCard(a: ReturnType<typeof openAsks>[number]): string {
     const lead = realm!.heroes[realm!.factions[a.from]?.ruler ?? rulerId(a.from)]
     const ans = answers[a.id]
     // 청마다 그림 — 화면 가득일 때 크게 (무슨 청인지 그림 · 누가 보냈는지 얼굴)
     let h = `<div class="askc ${a.kind === 'demand' ? 'threat' : ''}"><div class="aqh">${icon(`ask-${a.kind === 'demand' ? 'tribute' : a.kind}`, 'aqi')}<b>사신의 청 · ${esc(ASK_KIND_NAME[a.kind])}</b></div><div class="an">${bust(lead, 'rface')}<div class="fn"><b>${emblem(a.from, 'fem')}${esc(realm!.factions[a.from]?.name ?? '')}</b>`
-    h += `<span class="mute">${esc(lead?.name ?? '')}</span></div></div><p>${esc(askLine(a, realm!.factions[a.from]?.name ?? '', a.node !== undefined ? (realm!.nodes[a.node]?.name ?? '') : ''))}</p>`
+    h += `<span class="mute">${esc(lead?.name ?? '')}</span></div>${moodImg(ART, moodOf(realm!, me(), a.from).mood, 'mood fmood')}${relChipHtml(realm!, a.from)}</div><p>${esc(askLine(a, realm!.factions[a.from]?.name ?? '', a.node !== undefined ? (realm!.nodes[a.node]?.name ?? '') : ''))}</p>`
     if (a.why !== undefined && readsMind(realm!, a.from)) h += heardHtml(realm!, a.from, `저들이 이 청을 낸 까닭은 이렇습니다 — ${whyLine(a.why, a.about !== undefined ? (realm!.factions[a.about]?.name ?? '') : '')}`)
     h += `<div class="btns"><button class="btn ${ans === true ? 'on' : ''}" data-act="answer" data-id="${a.id}" data-yes="1">받는다</button>`
     h += `<button class="btn ${ans === false ? 'on' : ''}" data-act="answer" data-id="${a.id}" data-yes="0">거절한다</button>`
@@ -2238,7 +2260,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const swap = `${gainHtml(a.give)}${costHtml(a.take)}`
     let h = `<div class="aud${threat ? ' threat' : ''}"><i class="audbg" style="background-image:url('${ART}event/event-court-hall.jpg')"></i>${face}`
     h += `<div class="audtop">${icon(`ask-${threat ? 'tribute' : a.kind}`, 'aqi')}<b>사신의 청 · ${esc(ASK_KIND_NAME[a.kind])}</b></div>`
-    h += `<div class="audname">${emblem(a.from, 'fem')}<b>${esc(f?.name ?? '')}</b><span>${esc(lead?.name ?? '')}</span>${moodImg(ART, md.mood)}</div>`
+    h += `<div class="audname">${emblem(a.from, 'fem')}<b>${esc(f?.name ?? '')}</b><span>${esc(lead?.name ?? '')}</span>${moodImg(ART, md.mood)}${relChipHtml(r, a.from)}</div>`
     h += `<div class="audsay">${typed(say.text, esc)}</div>`
     h += `<div class="audwhat">${esc(what)}${why}</div>`
     h += `<div class="audbtns"><button class="btn${ans === true ? ' on' : ''}" data-act="answer" data-id="${a.id}" data-yes="1"><b>받는다</b>${swap !== '' ? `<small>${swap}</small>` : ''}</button>`
@@ -5326,6 +5348,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'unexp': heroOrders = heroOrders.filter((o) => !(o.kind === 'expedition' && o.hero === d['id'])); break
       case 'card-pick': if (realm?.card) { answers[`card:${realm.card.season}`] = d['v'] === '0'; fastNext = true } break
+      case 'card-beat': if (realm?.card) { const k = `card:${realm.card.season}`; cardBeat[k] = (cardBeat[k] ?? 0) + 1 } break
+      case 'card-skip': if (realm?.card) cardBeat[`card:${realm.card.season}`] = 99; break
       case 'practice-open': openPractice(); break
       case 'contest': openContest(); break
       case 'unwed': heroOrders = heroOrders.filter((o) => !(o.kind === 'wed' && (o.a === d['id'] || o.b === d['id']))); break

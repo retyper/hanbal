@@ -52,6 +52,8 @@ export const AUD_CSS = `
 .ap .aud .audtop .aqi { width: 34px; height: 34px; } .ap .aud .audtop b { font-size: 15px; color: var(--gold); letter-spacing: .04em; text-shadow: 0 1px 4px #000; }
 .ap .aud .audname { position: relative; z-index: 2; display: flex; align-items: center; gap: 8px; margin: 0 16px 6px; animation: audup .4s ease-out .45s both; }
 .ap .aud .audname .fem { width: 38px; height: 38px; } .ap .aud .audname b { font-size: clamp(20px, 3.4vw, 28px); text-shadow: 0 2px 8px #000; } .ap .aud .audname span { color: #d9ccb4; font-size: 14px; text-shadow: 0 1px 4px #000; }
+.ap .aud .audname span.rel { margin-left: 0; padding: 3px 10px; font-size: 13px; text-shadow: none; color: #e6d8c6; background: #3a2c1ecc; } /* 우리와의 사이 — 탈 옆 (형 10-27) */
+.ap .aud .audname span.rel.war { background: #4a2420ee; color: #f1b8a8; } .ap .aud .audname span.rel.truce { background: #23331fee; color: #cfeabf; } .ap .aud .audname span.rel.ally { background: #1f2c40ee; color: #b8d4f4; }
 .ap .aud .audname img.mood { width: 40px; height: 40px; animation: audpop .5s cubic-bezier(.3, 1.6, .5, 1) .9s both; }
 .ap .aud .audsay { position: relative; z-index: 2; margin: 0 16px 10px; max-width: min(640px, 70%); padding: 12px 16px; border-radius: 14px 14px 14px 4px; background: #f3ead6; color: #2a1d10; font-size: clamp(15px, 2.2vw, 19px); line-height: 1.5; box-shadow: 0 6px 20px #000a; animation: audup .35s ease-out .5s both; }
 .ap .aud.threat .audsay { background: #2a0e0a; color: #ffd8cc; border: 1.5px solid #c8503a; }

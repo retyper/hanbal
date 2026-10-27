@@ -629,6 +629,14 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .mcard.fulld .askc .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; } .ap .mcard.fulld .askc .btns .btn { justify-content: center; padding: 14px 16px; font-size: 17px; } .ap .mcard.fulld .askc .btns > .mute { grid-column: 1 / -1; text-align: center; }
 .ap .mcard.fulld .rdecide.full > .cardc, .ap .mcard.fulld .rdecide.full > .askc { width: min(100%, 760px); align-self: center; }
 .ap .mcard.fulld .cardc .copt { justify-content: center; min-height: 64px; } .ap .mcard.fulld .cardc .copt .cof { width: 72px; height: 72px; }
+/* 사건 카드 — 자막 두 줄씩 (누르면 다음) · 다 보면 물음 한 줄 */
+.ap .cardc.story { cursor: pointer; }
+.ap .cardc .csub { margin: 8px 0 4px; padding: 12px 14px; min-height: calc(2 * 1.5em + 24px); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 16.5px; line-height: 1.5; color: #fff4dc; background: #0008; border-radius: 10px; animation: csubin .25s ease-out; }
+@keyframes csubin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.ap .cardc .cnav { display: flex; align-items: center; justify-content: space-between; gap: 8px; } .ap .cardc .cnav small { color: var(--mute); font-size: 12px; }
+.ap .cardc .cskip { border: 0; background: none; color: #cbbf9f; font-size: 12.5px; cursor: pointer; padding: 4px 6px; }
+.ap .cardc .cask { margin: 8px 0 8px; text-align: center; font-size: 17.5px; font-weight: 800; color: #ffe2a0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (prefers-reduced-motion: reduce) { .ap .cardc .csub { animation: none; } }
 /* 고을지기 자리 — 고을 판 맨 위 (비면 붉은 점선 · 실루엣과 ?) */
 .ap .chslot { display: flex; align-items: center; gap: 10px; width: 100%; margin: 6px 0 8px; padding: 8px 12px; border-radius: 12px; border: 1px solid #6a5a3a; background: #2a2118; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
 .ap .chslot .cface, .ap .chslot .chsil { width: 54px; height: 54px; flex: none; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #8a7040; }
