@@ -13,7 +13,7 @@ import { readFileSync } from 'node:fs'
 
 import { aiOrders, decide } from '../../src/realm/ai.ts'
 import {
-  addMerit, applyDrill, battleMerit, canRaise, capOf, drillRealm, earnedOf, emptyDrill, engrave, gainOf, meritOf, raise, raiseState, seasonMerit, spendCost, type DrillStore,
+  addMerit, addVow, applyDrill, battleMerit, canRaise, capOf, drillRealm, earnedOf, emptyDrill, engrave, engraveVows, gainOf, meritOf, raise, raiseState, seasonMerit, spendCost, uiriWith, vowDelta, type DrillStore,
 } from '../../src/realm/drill.ts'
 import { startRegion } from '../../src/realm/data/regions/index.ts'
 import { advance } from '../../src/realm/season.ts'
@@ -267,5 +267,38 @@ describe('단련 — 다음 판', () => {
       return JSON.stringify(x)
     }
     assert.equal(go(), go())
+  })
+})
+
+describe('의리 — 공으로 사지 않고 겪은 일로 (docs/realm/UIRI.md)', () => {
+  it('좋은 일 하나면 +1 · 넘어가면 −1 · 둘 다면 0', () => {
+    assert.equal(vowDelta(undefined), 0)
+    assert.equal(vowDelta(['hold']), 1)
+    assert.equal(vowDelta(['hold', 'rescue', 'heart']), 1)
+    assert.equal(vowDelta(['turned']), -1)
+    assert.equal(vowDelta(['turned', 'rescue']), 0)
+  })
+  it('끝 — 타고난 값 + uiriRoom · 10 · 바닥 uiriMin', () => {
+    assert.equal(uiriWith(5, 9), 5 + R.uiriRoom)
+    assert.equal(uiriWith(9, 3), 10)
+    assert.equal(uiriWith(2, -5), R.uiriMin)
+  })
+  it('판 끝에 한 번만 새기고, 다음 판 우리 장수 몸에 입힌다 · 군주는 안 센다', () => {
+    const r = bihwa()
+    const h = ourHeroes(r).find((x) => !Object.values(r.factions).some((f) => f.ruler === x.id))!
+    addVow(r, h.id, 'hold')
+    const ruler = r.factions[r.player]!.ruler
+    if (ruler !== undefined) addVow(r, ruler, 'heart')
+    r.outcome = { kind: 'lose', season: 30 }
+    const s1 = engraveVows(emptyDrill(), r)
+    assert.equal(s1.h[h.id]!.uiri, 1)
+    if (ruler !== undefined) assert.equal(s1.h[ruler], undefined)
+    // 같은 판을 다시 새겨도 그대로
+    assert.equal(engraveVows(s1, r), s1)
+    const r2 = bihwa(8)
+    const before = r2.heroes[h.id]!.uiri
+    drillRealm(r2, s1)
+    assert.equal(r2.heroes[h.id]!.uiri, uiriWith(before, 1))
+    assert.equal(applyDrill(r2.heroes[h.id]!, undefined), r2.heroes[h.id])
   })
 })

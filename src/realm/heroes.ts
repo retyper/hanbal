@@ -7,6 +7,7 @@
  * 숫자는 P.realm.hero* · post* · trait* · ruler* · persuade* · wanderer*.
  */
 import { roll } from '../core/rng.ts'
+import { addVow } from './drill.ts'
 import { P } from '../tune/params.ts'
 import { HERO_POOL } from './data/heroes-pool.ts'
 import { TRAITS, TRAIT, type TraitGrade } from './data/traits.ts'
@@ -442,6 +443,7 @@ export function persuadeSeasons(r: Realm, hero: string, by: string | null): numb
 export function releaseCaptives(r: Realm, captor: string, of: string, why: 'peace' | 'take', lines: ReportLine[]): void {
   for (const h of byId(Object.values(r.heroes))) {
     if (h.status !== 'captive' || h.captor !== captor || h.faction !== of) continue
+    if (of === r.player) addVow(r, h.id, 'hold') // 잡혀서도 넘어가지 않고 돌아왔다 — 의리가 오른다 (UIRI)
     h.status = 'free'
     h.captor = null
     h.post = null
@@ -659,6 +661,7 @@ export function stepHeroes(r: Realm, lines: ReportLine[]): void {
     const to = h.captor
     const by = h.persuade.by
     delete h.persuade
+    if (h.faction === r.player) addVow(r, h.id, 'turned') // 우리 장수가 넘어갔다 — 의리가 내린다 (UIRI)
     h.faction = to
     h.status = 'free'
     h.captor = null
@@ -761,6 +764,7 @@ export function addBond(r: Realm, h: Hero, d: number, lines: ReportLine[]): void
   const now = Math.max(0, Math.min(100, was + d))
   h.bond = now
   if (was < P.realm.bondTrust && now >= P.realm.bondTrust) lines.push({ kind: 'bond', hero: h.id, tier: 'trust' })
+  if (was < 100 && now >= 100 && h.faction === r.player) addVow(r, h.id, 'heart') // 정이 가득 — 의리가 오른다 (UIRI)
   // 옛 판의 장수는 특성 줄이 없다 (형의 9년 가을 막힘 — "reading 'length'") — 없으면 빈 줄로 친다
   const traits = h.traits ?? []
   if (now >= 100 && h.awoken === undefined && traits.length < 3) {

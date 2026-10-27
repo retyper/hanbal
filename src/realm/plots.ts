@@ -20,6 +20,7 @@
  * 화면은 확률을 숫자로 안 쓴다 — plotChance 의 범위를 감으로 보인다 (정보의 계약: 모르는 장수·경계는 범위).
  */
 import { roll } from '../core/rng.ts'
+import { addVow } from './drill.ts'
 import { P } from '../tune/params.ts'
 import { addFavor, noteDeed, relationOf, worsen } from './diplomacy.ts'
 import { knows } from './discovery.ts'
@@ -457,6 +458,7 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
     if (o.op === 'rescue' && ok) {
       // 빼냈다 — 풀려난 장수는 우리 도읍(없으면 첫 고을)으로 돌아온다. 회유는 끊기고 실토 걱정도 없다 (heroes.releaseCaptives 와 같은 꼴)
       const v = r.heroes[o.hero!]!
+      if (o.faction === r.player && v.faction === r.player) addVow(r, v.id, 'rescue') // 구해 왔다 — 의리가 오른다 (UIRI)
       v.status = 'free'
       v.captor = null
       v.post = null

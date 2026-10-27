@@ -13,7 +13,7 @@
  * 순수한 셈만 한다 — 판 밖 기록(hanbal.realm.drill)을 이 기기에 두는 일은 화면(ui/realm/drill.ts)이 한다. 굴림이 없다 (A1).
  */
 import { P } from '../tune/params.ts'
-import type { GrowStat, Hero, Realm, ReportLine } from './types.ts'
+import type { GrowStat, Hero, Realm, ReportLine, Vow } from './types.ts'
 
 /** 단련으로 오르는 다섯 — 의리는 타고난다 */
 export const DRILL_STATS: readonly GrowStat[] = ['mu', 'tong', 'ryak', 'chi', 'deok']
@@ -34,6 +34,10 @@ export interface DrillEntry {
   name?: string
   look?: 'g' | 'w'
   born?: Partial<Record<GrowStat, number>>
+  /** 판 밖에서 움직인 의리 — 타고난 값에 더한다 (−·+ · 위로는 uiriRoom 까지) · 그 까닭 (가장 최근이 끝) · 마지막으로 새긴 판 */
+  uiri?: number
+  tales?: Vow[]
+  uiriSeed?: number
 }
 
 /** 판 밖 단련 기록 — `paid` 판(시드)마다 이미 새긴 공 (같은 판을 두 번 새기지 않게 · 무한 모드로 이어 둔 몫만 더 새긴다) */
@@ -108,6 +112,56 @@ export function seasonMerit(r: Realm, lines: readonly ReportLine[]): void {
     if (l.kind === 'plot' && l.faction === me && l.ok) addMerit(r, l.agent, R.drillMeritPlot)
     else if (l.kind === 'envoy' && l.from === me && l.accepted) addMerit(r, l.hero, R.drillMeritEnvoy)
   }
+}
+
+// ───────── 의리 — 겪은 일로 (docs/realm/UIRI.md)
+
+/** 의리가 움직일 일을 적는다 — 우리 장수만, 군주는 빼고. 배우는 판은 안 센다 */
+export function addVow(r: Realm, id: string, v: Vow): void {
+  if (r.region === 'tutorial') return
+  const h = r.heroes[id]
+  if (h === undefined) return
+  if (Object.values(r.factions).some((f) => f.ruler === id)) return
+  const m = (r.vows ??= {})
+  const list = (m[id] ??= [])
+  if (!list.includes(v)) list.push(v)
+}
+
+/** 이 판이 그 장수의 의리를 얼마나 움직였나 — 좋은 일이 하나라도 있으면 +1, 넘어갔으면 −1 (둘 다면 0) */
+export function vowDelta(vs: readonly Vow[] | undefined): number {
+  if (vs === undefined) return 0
+  return (vs.some((v) => v !== 'turned') ? 1 : 0) - (vs.includes('turned') ? 1 : 0)
+}
+
+/** 판 밖 의리를 입힌 값 — 타고난 값 + 움직인 몫, [uiriMin, 타고난 값 + uiriRoom] · 10 까지 */
+export function uiriWith(born: number, shift: number | undefined): number {
+  const R = P.realm
+  return Math.max(R.uiriMin, Math.min(10, born + R.uiriRoom, born + (shift ?? 0)))
+}
+
+/** 판이 끝났다 — 의리를 새긴 새 기록. 같은 판은 한 번만 */
+export function engraveVows(store: DrillStore, r: Realm): DrillStore {
+  if (r.region === 'tutorial' || r.vows === undefined) return store
+  let h: Record<string, DrillEntry> | null = null
+  for (const id of Object.keys(r.vows).sort()) {
+    const d = vowDelta(r.vows[id])
+    const was = store.h[id]
+    if (was?.uiriSeed === r.seed) continue
+    const body = r.heroes[id]
+    const e: DrillEntry = was !== undefined ? { ...was, add: { ...was.add } } : { points: 0, level: 0, add: {}, runs: 0 }
+    if (body !== undefined) {
+      e.name ??= body.name
+      e.look ??= body.look
+      e.born ??= bornFrom(body)
+    }
+    const base = body !== undefined ? body.uiri - (body.drill?.uiri ?? 0) : 5
+    const now = uiriWith(base, (e.uiri ?? 0) + d) - base
+    e.uiri = now
+    e.tales = [...(e.tales ?? []), ...r.vows[id]!].slice(-6)
+    e.uiriSeed = r.seed
+    ;(h ??= { ...store.h })[id] = e
+  }
+  return h === null ? store : { ...store, h }
 }
 
 // ───────── 판 끝 — 새기기
@@ -219,8 +273,9 @@ export function raise(store: DrillStore, id: string, stat: GrowStat, born?: Pick
 
 /** 단련을 입힌 몸 — 10 에 막혀 덜 든 몫은 add 에서 뺀다. 단련이 없으면 받은 그대로 */
 export function applyDrill(hero: Hero, entry: DrillEntry | undefined): Hero {
-  if (entry === undefined || entry.level <= 0) return hero
-  const out: Hero = { ...hero }
+  if (entry === undefined || (entry.level <= 0 && (entry.uiri ?? 0) === 0)) return hero
+  const uiri = uiriWith(hero.uiri, entry.uiri)
+  const out: Hero = { ...hero, uiri }
   const add: Partial<Record<GrowStat, number>> = {}
   for (const s of DRILL_STATS) {
     const want = Math.max(0, entry.add[s] ?? 0)
@@ -229,7 +284,7 @@ export function applyDrill(hero: Hero, entry: DrillEntry | undefined): Hero {
     if (v > hero[s]) add[s] = v - hero[s]
     out[s] = v
   }
-  out.drill = { lv: entry.level, add }
+  out.drill = { lv: entry.level, add, ...(uiri !== hero.uiri ? { uiri: uiri - hero.uiri } : {}) }
   return out
 }
 
@@ -244,7 +299,7 @@ export function drillRealm(r: Realm, store: DrillStore): string[] {
     const h = r.heroes[id]!
     if (h.faction !== r.player || h.drill !== undefined) continue
     const e = store.h[id]
-    if (e === undefined || e.level <= 0) continue
+    if (e === undefined || (e.level <= 0 && (e.uiri ?? 0) === 0)) continue
     r.heroes[id] = applyDrill(h, e)
     out.push(id)
   }

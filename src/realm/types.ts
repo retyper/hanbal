@@ -198,6 +198,8 @@ export interface Hand {
   readonly seen?: boolean
 }
 
+export type Vow = 'hold' | 'rescue' | 'heart' | 'turned'
+
 export type HeroStatus = 'free' | 'captive' | 'dead'
 
 export interface Hero {
@@ -260,7 +262,7 @@ export interface Hero {
    * 판 밖 단련을 들고 왔다 (drill.applyDrill) — lv 단련 단계 · add 판을 열 때 더해 준 몫 (10 에 막혀 덜 든 것은 뺀 값).
    * 옛 저장 · 남의 나라 장수 · 단련 없는 장수에는 없다
    */
-  drill?: { readonly lv: number; readonly add: Partial<Record<GrowStat, number>> }
+  drill?: { readonly lv: number; readonly add: Partial<Record<GrowStat, number>>; readonly uiri?: number }
   /**
    * 지닌 유물 (relics.applyRelics · data/relics.ts) — 이긴 판의 껴묻거리를 단련터에서 끼워 들고 왔다. 판이 그 효과를 읽는다.
    * 옛 저장 · 남의 나라 장수 · 유물 없는 장수에는 없다
@@ -728,6 +730,11 @@ export interface Realm {
    * 쓰러지거나 사로잡혀도 지우지 않는다 — 다음 판엔 돌아온다. 옛 저장에는 없다 (없으면 0)
    */
   merit?: Record<string, number>
+  /**
+   * 의리가 움직일 일 — 이 판에서 우리 장수가 겪은 것 (drill.addVow · docs/realm/UIRI.md). 판이 끝나면 판 밖 의리로 새긴다.
+   * hold 잡혔다가 끝내 버티고 돌아옴 · rescue 구출로 빠져나옴 · heart 정이 100 · turned 회유에 넘어감. 옛 저장에는 없다
+   */
+  vows?: Record<string, Vow[]>
   /** 난세 단계 1~10 (tier.ts) — 판을 열 때 정해진다. 없으면 1 */
   tier?: number
   /** 그해 가을걷이 배수 — 사건이 건다 (events.ts · economy.harvestModOf). year = Math.floor(season / 4). 옛 저장에는 없다 */

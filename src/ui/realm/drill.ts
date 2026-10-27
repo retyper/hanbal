@@ -6,8 +6,9 @@
  * 기록은 이 기기에만 (`hanbal.realm.drill` · 영웅전·해금처럼). 못 읽으면 빈 기록 — 지우지는 않는다.
  */
 import { STAT_NAME, josa } from '../../realm/data/prose.ts'
-import { DRILL_STATS, capOf, emptyDrill, engrave, gainOf, raise, raiseState, spendCost, type DrillEntry, type DrillStore } from '../../realm/drill.ts'
-import type { GrowStat, Hero, Realm } from '../../realm/types.ts'
+import { DRILL_STATS, capOf, emptyDrill, engrave, engraveVows, gainOf, raise, raiseState, spendCost, uiriWith, type DrillEntry, type DrillStore } from '../../realm/drill.ts'
+import type { GrowStat, Hero, Realm, Vow } from '../../realm/types.ts'
+import { P } from '../../tune/params.ts'
 import { relicRoom } from '../../realm/relics.ts'
 import { nameHtml } from './heroview.ts'
 import { pickerHtml, relicDexHtml, slotsHtml, wornBy, type RelicKit } from './relics.ts'
@@ -33,6 +34,10 @@ export function loadDrill(): DrillStore {
         ...(typeof e.name === 'string' ? { name: e.name } : {}),
         ...(e.look === 'g' || e.look === 'w' ? { look: e.look } : {}),
         ...(e.born !== undefined && typeof e.born === 'object' ? { born: e.born } : {}),
+        // 의리 — 판 밖에서 움직인 몫 · 까닭 · 새긴 판 (UIRI)
+        ...(typeof e.uiri === 'number' && Number.isFinite(e.uiri) && e.uiri !== 0 ? { uiri: Math.round(e.uiri) } : {}),
+        ...(Array.isArray(e.tales) ? { tales: e.tales.filter((x): x is Vow => x === 'hold' || x === 'rescue' || x === 'heart' || x === 'turned').slice(-6) } : {}),
+        ...(typeof e.uiriSeed === 'number' ? { uiriSeed: e.uiriSeed } : {}),
       }
     }
     const paid = typeof v.paid === 'object' && v.paid !== null ? v.paid : {}
@@ -53,8 +58,10 @@ export function engraveRun(r: Realm): Record<string, number> {
   const s = loadDrill()
   const won = r.outcome.kind === 'win'
   const g = gainOf(s, r, won)
-  if (Object.keys(g).length === 0) return {}
-  saveDrill(engrave(s, r, won))
+  // 의리 — 공이 없어도 겪은 일은 새긴다 (같은 판은 한 번만 · drill.engraveVows)
+  const v = engraveVows(s, r)
+  if (Object.keys(g).length === 0) { if (v !== s) saveDrill(v); return {} }
+  saveDrill(engrave(v, r, won))
   return g
 }
 
@@ -102,6 +109,11 @@ export interface YardOpts {
   readonly slot?: { readonly id: string; readonly i: number } | null
 }
 
+/** 의리가 움직인 까닭 — 쉬운 말로 */
+const TALE: Readonly<Record<Vow, string>> = {
+  hold: '잡혀서도 넘어가지 않고 돌아왔다', rescue: '우리가 구해 왔다', heart: '정이 가득 찼다', turned: '적에게 넘어갔다',
+}
+
 const bodyFor = (k: DrillKit, id: string, e: DrillEntry): (Pick<Hero, GrowStat> & { uiri: number }) | null => {
   const h = k.bodyOf(id)
   if (h !== undefined) return h
@@ -140,17 +152,26 @@ export function yardHtml(k: DrillKit, o: YardOpts): string {
     if (born !== null) {
       const now = { mu: born.mu + (e.add.mu ?? 0), tong: born.tong + (e.add.tong ?? 0), ryak: born.ryak + (e.add.ryak ?? 0), chi: born.chi + (e.add.chi ?? 0), deok: born.deok + (e.add.deok ?? 0) }
       const axes = (['mu', 'tong', 'ryak', 'chi', 'deok'] as const).map((s) => ({ label: STAT_NAME[s], value: Math.min(10, now[s]) as number | null }))
-      h += `<div class="dyr">${radarSvg([...axes, { label: STAT_NAME.uiri, value: born.uiri }], '#d9b36a', 150, [born.mu, born.tong, born.ryak, born.chi, born.deok, born.uiri])}`
+      const shift = e.uiri ?? 0
+      const uv = uiriWith(born.uiri, shift)
+      h += `<div class="dyr">${radarSvg([...axes, { label: STAT_NAME.uiri, value: uv }], '#d9b36a', 150, [born.mu, born.tong, born.ryak, born.chi, born.deok, born.uiri])}`
       h += `<div class="dys">`
       const room = relicRoom(wornBy(id)) // 지닌 유물이 넓힌 그릇 (천마도 말다래 · 비파형동검)
       for (const s of DRILL_STATS) {
         const cap = capOf(born, s, room)
         const st = raiseState(store, id, s, born, room)
         const add = e.add[s] ?? 0
-        const why = st === 'cap' ? '그릇이 찼다' : st === 'poor' ? `공 ${josa(String(cost), '이', '가')} 든다` : `공 ${josa(String(cost), '을', '를')} 써서 ${STAT_NAME[s]} +1`
+        const why = st === 'cap' ? `더 못 올린다 — 타고난 값에서 ${cap - born[s]}칸까지` : st === 'poor' ? `공 ${josa(String(cost), '이', '가')} 든다` : `공 ${josa(String(cost), '을', '를')} 써서 ${STAT_NAME[s]} +1`
         h += `<div class="dyst${o.last === `${id}:${s}` ? ' up' : ''}"><span class="dysn">${STAT_NAME[s]}</span><b>${Math.min(10, born[s] + add)}</b>${add > 0 ? `<i>+${add}</i>` : '<i></i>'}<small>/${cap}</small>`
         h += `<button class="dyplus" data-act="dy-up" data-id="${k.esc(id)}" data-s="${s}"${st === 'ok' ? '' : ' disabled'} data-tip="${k.esc(why)}">${st === 'cap' ? '끝' : `+<small>${cost}</small>`}</button></div>`
       }
+      // 의리 — 공으로는 못 올린다. + 자리에 「?」를 두고, 누르면 그 자리에서 어떻게 오르는지 (형 10-27: "유저가 '이건 왜 못 올리지?' 하는 의문만 제때 풀리게")
+      const top = Math.min(10, born.uiri + P.realm.uiriRoom)
+      h += `<details class="dyst dyui"><summary><span class="dysn">${STAT_NAME.uiri}</span><b>${uv}</b>${shift !== 0 ? `<i${shift < 0 ? ' class="dn"' : ''}>${shift > 0 ? '+' : ''}${shift}</i>` : '<i></i>'}<small>/${top}</small><span class="dyq">?</span></summary>`
+      h += `<p>의리는 공으로 못 올린다. 판에서 <b>잡혀서도 넘어가지 않고 돌아오거나</b>, <b>우리가 구해 오거나</b>, <b>정이 가득 차면</b> 판이 끝날 때 1 오른다 (한 판에 1 · 최대 ${top}). 적에게 넘어가면 1 내린다.</p>`
+      const last = e.tales?.[e.tales.length - 1]
+      if (last !== undefined) h += `<p class="dyut">지난번: ${TALE[last]}</p>`
+      h += `</details>`
       h += `</div></div>`
     }
     // 유물 칸 — 누르면 가진 유물 고르기 (HERO-GROWTH ★ §B · §C)
@@ -201,6 +222,13 @@ export const DRILL_CSS = `
 .ap .dyst b { color: #f0e2c0; text-align: right; } .ap .dyst i { font-style: normal; color: #9fd07a; font-size: 11.5px; } .ap .dyst small { color: var(--mute); font-size: 11px; }
 .ap .dyst.up b { animation: dyup .8s ease-out both; color: #ffe08a; }
 @keyframes dyup { 0% { transform: scale(2); } 100% { transform: none; } }
+.ap .dyst.dyui { display: block; } .ap .dyui summary { display: grid; grid-template-columns: 2.6em 1.4em 1.8em 1.8em 1fr; align-items: center; gap: 2px; cursor: pointer; list-style: none; }
+.ap .dyui summary::-webkit-details-marker { display: none; }
+.ap .dyui .dyq { box-sizing: border-box; justify-self: end; min-width: 46px; text-align: center; padding: 3px 8px; border-radius: 9px; border: 1px solid #8a7a5a; color: #d8c8a0; font-weight: 800; }
+.ap .dyui[open] .dyq { background: #3a2c14; border-color: #c9a23a; color: #ffe08a; }
+.ap .dyui p { margin: 4px 0 2px; padding: 6px 8px; border-radius: 8px; background: #2a2016; color: #e0d4b8; font-size: 12px; line-height: 1.5; }
+.ap .dyui p b { color: #ffe08a; font-weight: 700; } .ap .dyui p.dyut { background: none; padding: 0 8px; color: var(--mute); }
+.ap .dyst i.dn { color: #e08a7a; }
 .ap .dyplus { justify-self: end; min-width: 46px; padding: 3px 8px; border-radius: 9px; border: 1px solid #c9a23a; background: #3a2c14; color: #ffe08a; font: inherit; font-weight: 800; cursor: pointer; }
 .ap .dyplus small { font-weight: 400; font-size: 10.5px; color: #e8d8a8; margin-left: 2px; }
 .ap .dyplus:disabled { border-color: #4a3e2a; background: none; color: #6a604e; cursor: default; } .ap .dyplus:disabled small { color: #6a604e; }
