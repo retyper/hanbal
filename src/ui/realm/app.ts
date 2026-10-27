@@ -83,7 +83,7 @@ import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
 import { AUD_CSS, askSay, pactSay, typed, type PactKind } from './audience.ts'
 import { customDef, customsOf } from '../../realm/data/customs.ts'
 import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
-import { SCENE_SOUND, makeMusic, playOnce, snd, tapSlot } from './sound.ts'
+import { SCENE_SOUND, makeMusic, playOnce, snd, sndFile, tapSlot } from './sound.ts'
 import { hireVoicePath, voiceGate, voiceKind, voicePath, type VoiceLine } from './voice.ts'
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
@@ -638,6 +638,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let rite = false
   /** 남의 나라가 걸어온 청에 대한 답 — 답이 없으면 거절로 친다 */
   const answers: Record<string, boolean> = {}
+  /** 군대 말을 한 번이라도 눌러 봤나 — 그 전까지만 「명령?」 말풍선 (배운 뒤엔 시끄럽다) */
+  const TOK_KEY = 'hanbal.realm.tokTapped'
+  let tokTapped = ((): boolean => { try { return localStorage.getItem(TOK_KEY) === '1' } catch { return false } })()
   /** 사건 카드의 자막 몇째 장 — 열쇠는 card:계절 (화면의 일 · 판은 모른다) */
   const cardBeat: Record<string, number> = {}
   /** 경계를 강화할 우리 고을 */
@@ -1311,6 +1314,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         img: file !== undefined ? `${ART}bust/${file}.jpg` : `${ART}icon/${UNIT_ICON[top]}.png`,
         ...(a.march !== null ? { march: { from: a.march.from, to: a.march.to, left: a.march.left } } : {}),
         ...(a.faction !== me() ? { ally: a.faction } : {}),
+        // 이번 계절 시킨 일이 없는 우리 군대 — 「명령?」 (길 위 · 떠나기로 함 · 남이 빌려준 군대는 빼고)
+        ...(!tokTapped && a.faction === me() && a.march === null && pick[a.id] === undefined ? { wait: true } : {}),
       }
     })
     // 보인 적의 군대 — 길 위에 그 나라 빛 테의 말로 (형 10-27: "대로로 오는 적군이나 기습이 예견된 적군은 텍스트 말고 동맹군 오듯이 유닛들이 맵에")
@@ -3345,10 +3350,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const f = known[id]?.force
       const age = f ? r.season - f.season : null
       const v = f ? visibleRange({ f0: f.f0, src: f.src, u: f.u }, age!) : null
-      h += `<div class="srow"><button class="row ${scout === id ? 'on' : ''}" data-act="scout" data-node="${id}">${emblem(n.owner)}<span class="dest">${esc(n.name)}</span>`
+      h += `<div class="srow"><button class="row ${scout === id ? 'prs' : ''}" data-act="scout" data-node="${id}">${emblem(n.owner)}<span class="dest">${esc(n.name)}</span>`
       h += `<span class="sub">${v !== null ? `${span(v[0], v[1], (x) => String(Math.round(x)))} · ${age === 0 ? '이번 계절' : `${age}계절 전`}` : '못 봤다'}</span></button>`
       // 📌 고정 — 매 계절 저절로 여기로
-      h += `<button class="pin${scoutKeep === id ? ' on' : ''}" data-act="scout-keep" data-node="${id}" data-tip="${scoutKeep === id ? '매 계절 여기로 정찰 — 누르면 고정을 푼다' : '매 계절 여기로 정찰 고정'}" aria-label="정찰 고정">📌</button></div>`
+      h += `<button class="pin${scoutKeep === id ? ' prs' : ''}" data-act="scout-keep" data-node="${id}" data-tip="${scoutKeep === id ? '매 계절 여기로 정찰 — 누르면 고정을 푼다' : '매 계절 여기로 정찰 고정'}" aria-label="정찰 고정">📌</button></div>`
     }
     if (scoutKeep !== '' && !scoutable(r).includes(scoutKeep)) h += `<p class="mute">📌 고정한 ${esc(josa(r.nodes[scoutKeep]?.name ?? '', '은', '는'))} 지금 맞닿지 않아 쉰다</p>`
     return h
@@ -3784,9 +3789,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (scoutable(r).includes(id)) {
         const there = scout !== '' && scout !== id ? (r.nodes[scout]?.name ?? '') : ''
         h += `<div class="scoutbox"><div class="mute">정찰은 한 계절에 <b>한 곳</b> · 군세·병종·경계가 보인다</div>`
-        h += `<button class="btn ${scout === id ? 'on' : ''}" data-act="scout" data-node="${id}">${scout === id ? '정찰꾼이 여기로 간다 · 누르면 거둔다' : there !== '' ? `정찰꾼을 ${esc(there)}에서 여기로 돌린다` : '여기로 정찰을 보낸다'}</button>`
+        // 보낸 뒤엔 금빛 테 대신 눌려 들어간 단추 (형 10-27: "황금 테두리가 아니라 눌려 있는 버튼 연출로")
+        h += `<button class="btn ${scout === id ? 'prs' : ''}" data-act="scout" data-node="${id}">${scout === id ? '정찰꾼이 여기로 간다 · 누르면 거둔다' : there !== '' ? `정찰꾼을 ${esc(there)}에서 여기로 돌린다` : '여기로 정찰을 보낸다'}</button>`
         // 고정 풀기는 따로 떼어 아래에 — 붙어 있으면 잘못 누른다 (형 10-24)
-        if (scout === id || scoutKeep === id) h += `<button class="btn sm ${scoutKeep === id ? 'on' : 'ghost'} keepbtn" data-act="scout-keep" data-node="${id}">${scoutKeep === id ? '📌 매 계절 여기로 고정됨 · 누르면 푼다' : '📌 매 계절 여기로 고정'}</button>`
+        if (scout === id || scoutKeep === id) h += `<button class="btn sm ${scoutKeep === id ? 'prs' : 'ghost'} keepbtn" data-act="scout-keep" data-node="${id}">${scoutKeep === id ? '📌 매 계절 여기로 고정됨 · 누르면 푼다' : '📌 매 계절 여기로 고정'}</button>`
         h += `</div>`
       }
     }
@@ -4291,7 +4297,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const key = `${r.season}:pact:${f}:${k}`
       const bad = k === 'refused'
       const T: Readonly<Record<PactKind, readonly [string, string, string, string]>> = {
-        truce: [`${josa(fac.name, '과', '와')} 화친을 맺었다`, '서로 치지 않고 장터를 연다', 'event-truce-pact', snd('tap_bell')],
+        truce: [`${josa(fac.name, '과', '와')} 화친을 맺었다`, '서로 치지 않고 장터를 연다', 'event-truce-pact', `realm/sfx/${sndFile('tap_bell', 'g2')}`], // 방울 둘째 — 옛 feast_a(12초 「뎅뎅뎅」)는 안 쓴다 (형 10-27)
         ally: [`${josa(fac.name, '과', '와')} 동맹을 맺었다`, '같은 적을 함께 친다', 'event-alliance-oath', snd('horn_victory')],
         vassal: [`${josa(fac.name, '이', '가')} 우리를 섬긴다`, '해마다 바칠 것을 바친다', 'event-tribute-bow', snd('coins')],
         gift: [`${josa(fac.name, '이', '가')} 선물을 반겼다`, '사이가 한 뼘 가까워졌다', 'event-court-hall', snd('coins')],
@@ -5553,6 +5559,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         else { const a = r?.armies[d['army']!]; if (a !== undefined) openSortie(a) }
         break
       case 'tok': {
+        if (!tokTapped) { tokTapped = true; try { localStorage.setItem(TOK_KEY, '1') } catch { /* 이번 판만 */ } }
         // 같은 고을에 머무는 말을 더 누르면 함께 골라진다. 다른 고을·길 위의 말이면 그것만
         const id = d['army']!
         const x = r?.armies[id]

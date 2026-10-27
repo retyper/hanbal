@@ -332,6 +332,15 @@ export const MAP_CSS = `
 .map .tok { pointer-events: auto; display: flex; flex-direction: column; align-items: center; padding: 0; border: 0; background: none; cursor: pointer;
   -webkit-tap-highlight-color: transparent; width: clamp(26px, calc(4.2cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 46px); }
 .map .tok { position: relative; }
+/* 살아 있는 말 — 쉬는 군대는 들썩이고 · 군기가 펄럭이고 · 명령이 없으면 「명령?」 */
+.map .tok.idle { animation: tokidle 2.2s ease-in-out infinite alternate; } .map .toks .tok.idle:nth-child(2) { animation-delay: -.8s; } .map .toks .tok.idle:nth-child(3) { animation-delay: -1.5s; }
+@keyframes tokidle { from { transform: translateY(0); } to { transform: translateY(-14%); } }
+.map .tok .flag { position: absolute; left: 4%; top: -34%; width: 6%; height: 70%; background: #5a3a1a; border-radius: 2px; z-index: -1; }
+.map .tok .flag::after { content: ''; position: absolute; left: 100%; top: 0; width: 520%; height: 34%; min-height: 6px; background: linear-gradient(90deg, var(--tc, #c8402a), var(--tc2, var(--tc, #c8402a))); clip-path: polygon(0 0, 100% 0, 80% 50%, 100% 100%, 0 100%); transform-origin: left center; animation: tokflag 1.1s ease-in-out infinite alternate; }
+@keyframes tokflag { from { transform: skewY(0deg) scaleX(1); } to { transform: skewY(-10deg) scaleX(.86); } }
+.map .tok .ask { position: absolute; left: 64%; top: -30%; z-index: 3; padding: 0 5px; border-radius: 8px 8px 8px 2px; background: #fff3d6; color: #3a2a10; font-size: clamp(9px, calc(1.5cqh / var(--z, 1) * var(--zs, 1)), 12px); font-weight: 800; font-style: normal; white-space: nowrap; box-shadow: 0 1px 3px #0009; transform-origin: left bottom; animation: tokask 3.4s ease-in-out infinite; }
+@keyframes tokask { 0%, 72%, 100% { transform: scale(1) rotate(0); } 80% { transform: scale(1.18) rotate(-4deg); } 88% { transform: scale(1) rotate(3deg); } }
+@media (prefers-reduced-motion: reduce) { .map .tok.idle, .map .tok .flag::after, .map .tok .ask { animation: none; } }
 .map .tok img { width: 100%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 2.5px solid var(--tc, #9fd18b); background: #201811; box-shadow: 0 0 0 2.5px var(--tc2, #201811), 0 0 0 3.5px #201811, 0 2px 4px #0008; }
 .map .tok .hp { position: absolute; left: 12%; right: 12%; top: calc(100% - 1.05em); height: 4px; border-radius: 2px; background: #201811; overflow: hidden; z-index: 1; }
 .map .tok .hp::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--p, 1) * 100%); background: linear-gradient(90deg, #6aa84f, #b6e08f); }
@@ -684,9 +693,11 @@ export function mapHtml(
     const k = nationKit(t.foe ?? t.ally ?? me)
     return `--tc:${k.c};--tc2:${k.c2}`
   }
+  // 우리 군대의 말은 살아 있다 — 군기가 펄럭이고, 쉬는 군대는 숨 쉬듯 들썩인다 (형 10-27 지인: "유닛을 전혀 안 누르더라 · 누르고 싶은 모습으로 · idle 모션")
+  const ours = (t: MapToken): boolean => t.foe === undefined && t.ally === undefined && t.party !== true
   const tokBtn = (t: MapToken, ang?: number): string =>
-    `<button class="tok${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}${t.ally !== undefined ? ' ally' : ''}${t.party === true ? ' party' : ''}${t.foe !== undefined ? ` foe${t.sneak === true ? ' sneak' : ''}` : ''}" data-act="${t.foe !== undefined ? 'foetok' : t.party === true ? 'ptok' : 'tok'}" data-army="${t.army}" style="${tokKit(t)}">`
-    + `${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}<img src="${t.img}" alt="">${t.foe !== undefined ? '' : `<i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i>`}<b>${t.foe !== undefined ? '적' : `${t.ally !== undefined ? '도움 ' : t.party === true ? '개척 ' : ''}${t.men}`}</b></button>`
+    `<button class="tok${ours(t) && t.march === undefined && !t.going ? ' idle' : ''}${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}${t.ally !== undefined ? ' ally' : ''}${t.party === true ? ' party' : ''}${t.foe !== undefined ? ` foe${t.sneak === true ? ' sneak' : ''}` : ''}" data-act="${t.foe !== undefined ? 'foetok' : t.party === true ? 'ptok' : 'tok'}" data-army="${t.army}" style="${tokKit(t)}">`
+    + `${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}${ours(t) ? '<i class="flag"></i>' : ''}${t.wait === true ? '<i class="ask">명령?</i>' : ''}<img src="${t.img}" alt="">${t.foe !== undefined ? '' : `<i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i>`}<b>${t.foe !== undefined ? '적' : `${t.ally !== undefined ? '도움 ' : t.party === true ? '개척 ' : ''}${t.men}`}</b></button>`
   let toks = ''
   // 길 위의 우리 군대 — 떠난 쪽에서 삼분의 일쯤 (가운데의 "n계절" 글씨를 안 가린다)
   for (const t of tokens) {
@@ -743,6 +754,8 @@ export interface MapToken {
   readonly foe?: string
   /** 몰래 오는 낌새 — 어둡게 · 「기습 낌새」 */
   readonly sneak?: boolean
+  /** 이번 계절 아직 명령이 없는 우리 군대 — 「명령?」 말풍선 (문명의 "유닛 명령 필요") */
+  readonly wait?: boolean
 }
 
 /** 고른 군대가 갈 수 있는 고을 — 칩은 판세(싸울 곳) 또는 걸리는 계절 */

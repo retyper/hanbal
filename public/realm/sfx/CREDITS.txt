@@ -56,6 +56,7 @@ capture_c.ogg  Freesound · ID 799421 (https://freesound.org/s/799421/) · "chai
 dex_new_a.ogg  Freesound · ID 456965 (https://freesound.org/s/456965/) · "Short Success Sound Glockenspiel Treasure Video Game.mp3" · FunWithSound · CC0
 dex_new_b.ogg  Freesound · ID 715067 (https://freesound.org/s/715067/) · "achievement-sparkle" · SkySpeira · CC0
 dex_new_c.ogg  Freesound · ID 24551 (https://freesound.org/s/24551/) · "kayageum1_A2.wav" · spt3125 · CC0
+dex_new_c3.wav  위 dex_new_c 를 3초로 자르고 2초부터 줄임 (10-27) · CC0
 bgm_map_a.ogg  Freesound · ID 521367 (https://freesound.org/s/521367/) · "blossom valley in paradise" · neolein · CC0
 bgm_map_b.ogg  Freesound · ID 664200 (https://freesound.org/s/664200/) · "Karst mountains" · neolein · CC0
 bgm_map_c.ogg  Freesound · ID 472707 (https://freesound.org/s/472707/) · "guzheng solo" · neolein · CC0

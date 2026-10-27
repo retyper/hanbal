@@ -1041,6 +1041,9 @@ export const UI_CSS = `
 .ap .btn.pri { border-image-source: url(__ART__ui/btn-gold.png?v=2); border-image-slice: 30 35 fill; color: #2a1606; font-weight: 700; text-shadow: 1px 1px 0 #f7dc9a; }
 .ap .btn.on { box-shadow: 0 0 0 2px #e0bd78, 0 0 10px #e0bd7888; color: #ffe2a0; filter: none; }
 .ap .btn.on::before { content: '✓ '; color: #ffd27a; }
+/* 눌려 들어간 단추 — 이미 시킨 일 (정찰 · 고정). 금빛 테는 「여기 눌러」처럼 보였다 (형 10-27) */
+.ap .btn.prs, .ap .row.prs, .ap .srow .pin.prs { background: linear-gradient(#140f0a, #241a12); border-color: #4a3a28; color: #cfe8b8; box-shadow: inset 0 3px 7px #000d, inset 0 -1px 0 #ffffff12; transform: translateY(1px); filter: none; }
+.ap .btn.prs::before { content: '✓ '; color: #9fd18b; }
 .ap .btn.ghost { color: #c9bea6; filter: saturate(.7) brightness(.92); } .ap .btn.ghost:hover { filter: saturate(.8) brightness(1.05); }
 .ap .btn:disabled, .ap .btn:disabled:hover { filter: grayscale(.7) brightness(.7); opacity: .6; transform: none; }
 .ap .btn.sm { border-width: 7px 9px; border-image-width: 7px 9px; padding: 1px 4px; }

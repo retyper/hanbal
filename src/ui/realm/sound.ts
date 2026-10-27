@@ -11,7 +11,7 @@ export const PICK = {
   ui_order: 'b', ui_open: 'c', season_turn: 'c1',
   war_drums: 'a', arrow_volley: 'c3', horses: 'c',
   horn_victory: 'a', defeat: 'b', capture: 'b',
-  dex_new: 'c', birth: 'c', feast: 'a', wed: 'c4', envoy: 'b', coins: 'c',
+  dex_new: 'c3', birth: 'c', feast: 'a', wed: 'c4', envoy: 'b', coins: 'c',
   amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b',
   // g1·g2·g3 — 공유마당(공공누리 제1유형 · CC BY)에서 받은 후보 (형 10-23: "공공누리에서 니가 싹 받아와서 쓸 수 있는 거면 다 해 · 출처표기 주의").
   // 출처는 sfx/CREDITS.txt 끝 · 첫 화면의 「소리 출처」. 형이 sound-picker.html 에서 듣고 고르면 글자만 바꾼다
@@ -38,6 +38,8 @@ export const PICK = {
 /** ogg 가 아닌 후보 — 형이 받아 온 것은 받은 꼴 그대로 · 공유마당 음악은 mp3 · 누르는 소리는 브라우저로 잘라 낸 wav */
 const EXT: Readonly<Partial<Record<string, string>>> = {
   bgm_map_f: 'mp3', bgm_map_g: 'mp3', bgm_win_a: 'mp3',
+  // 거문고 「도~」(dex_new_c 9.5초)를 3초로 자르고 2초부터 줄였다 — 고용·도감·유물 상자에 통째로 울려 길었다 (형 10-27)
+  dex_new_c3: 'wav',
   ...Object.fromEntries(['bgm_title', 'bgm_war', 'bgm_lose'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'mp3']))),
   war_cry_g1: 'wav', war_cry_g2: 'wav', war_cry_g3: 'wav',
   cmd_hold_h1: 'mp3', // 방진 — 형이 받아 온 「탱탱」 쇠판 소리 (10-24)
