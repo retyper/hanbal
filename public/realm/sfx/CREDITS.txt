@@ -190,13 +190,13 @@ hire_go_g3.mp3  공유마당 · 「국악 효과음 #355」 · 주식회사 아�
 dex_new_g1.wav  공유마당 · 「국악 효과음 #159」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387149 · 앞 2초를 잘라 1.1초부터 줄임
 dex_new_g2.wav  공유마당 · 「국악 효과음 #603」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387593 · 앞 2초를 잘라 1.1초부터 줄임
 dex_new_g3.wav  공유마당 · 「국악 효과음 #328」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387318 · 앞 2초를 잘라 1.1초부터 줄임
-wed_g1.wav  공유마당 · 「142.청명한 18현가야금 효과음 002」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290163 · 앞 4초
-wed_g2.wav  공유마당 · 「01.새초롬한 산조가야금 효과음 001」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290042 · 앞 4초
-wed_g3.wav  공유마당 · 「14.새초롬한 산조가야금 효과음 014」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290055 · 앞 4초
-tap_rite_g1.wav  공유마당 · 「국악기_동해안장구2」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13265839 · 앞 2.5초
-tap_rite_g2.wav  공유마당 · 「국악기_바라2」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13265899 · 앞 2.5초
-tap_rite_g3.wav  공유마당 · 「무당_호흡_굿_02」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13264077 · 앞 2.5초
 war_drums_b2.wav  위 war_drums_b 를 2초로 자르고 끝을 줄임 (10-27)
 defeat_a3.wav  위 defeat_a 를 3초로 줄임 (10-27)
 horses_m.wav  위 horses_a·b·c 를 시차를 두고 겹침 (10-27)
 tap_cancel_c.ogg  위 ui_cancel_c 와 같은 파일 (닫기 · 10-27 형 고름)
+wed_g4.wav  공유마당 · 「370.흥겨운 산조대금 효과음 040」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290411 · 2초 전부
+wed_g5.wav  공유마당 · 「국악 효과음 #1」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13379834 · 앞 4초
+wed_g6.wav  공유마당 · 「국악 효과음 #112」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387102 · 앞 4초
+tap_rite_g4.wav  공유마당 · 「471.기묘한 종묘대금 효과음 001」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290512 · 앞 3초
+tap_rite_g5.wav  공유마당 · 「381.애절한 시나위대금 효과음 001」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290422 · 소리가 나는 데부터 3초
+tap_rite_g6.wav  공유마당 · 「국악 효과음 #505」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387495 · 앞 3초

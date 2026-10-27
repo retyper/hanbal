@@ -14,7 +14,7 @@ export const PICK = {
   horn_victory: 'a', defeat: 'a3', capture: 'b',
   dex_new: 'c3', birth: 'c',
   // 장수 고용 · 유물 상자 — 제 소리 (형 10-27: "장수 고용 시에는 음악 새로운 거 · 유물 상자 열릴 땐 빵파레") · 공유마당 후보 g1~g3, 형이 sound-picker.html 에서 고른다
-  hire_go: 'g3', relic_open: 'g3', wed: 'g1', envoy: 'b', coins: 'c',
+  hire_go: 'g3', relic_open: 'g3', wed: 'g5', envoy: 'b', coins: 'c',
   amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b',
   // g1·g2·g3 — 공유마당(공공누리 제1유형 · CC BY)에서 받은 후보 (형 10-23: "공공누리에서 니가 싹 받아와서 쓸 수 있는 거면 다 해 · 출처표기 주의").
   // 출처는 sfx/CREDITS.txt 끝 · 첫 화면의 「소리 출처」. 형이 sound-picker.html 에서 듣고 고르면 글자만 바꾼다
@@ -37,14 +37,15 @@ export const PICK = {
   war_bell: 'c5', war_drum: 'c4', draft_go: 'c4', arm_go: 'c6',
   march_go: 'c8', cmd_counter: 'c10', cmd_art: 'c2', cmd_capture: 'c1', cmd_charge: 'm1', cmd_drum: 'c1', cmd_duel: 'c1', cmd_fire: 'c3', cmd_ford: 'c5', cmd_gate: 'c4', cmd_guard: 'c3', cmd_height: 'c5', cmd_hold: 'h1', cmd_horse: 'c4', cmd_open: 'c3', cmd_ram: 'c3', cmd_retreat: 'c1', cmd_rocks: 'c5',
   // 10-27 형: 엽전 14(g2) · 붓 17(g2) · 닫기는 옛 나무 딸깍 51(ui_cancel_c → tap_cancel_c) · 제사는 굿(tap_rite) · 혼인은 가야금(wed)
-  tap_arms: 'g1', tap_coin: 'g2', tap_brush: 'g2', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'c', tap_rite: 'g1',
+  tap_arms: 'g1', tap_coin: 'g2', tap_brush: 'g2', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'c', tap_rite: 'g4',
 } as const
 /** ogg 가 아닌 후보 — 형이 받아 온 것은 받은 꼴 그대로 · 공유마당 음악은 mp3 · 누르는 소리는 브라우저로 잘라 낸 wav */
 const EXT: Readonly<Partial<Record<string, string>>> = {
   bgm_map_f: 'mp3', bgm_map_g: 'mp3', bgm_win_a: 'mp3',
   // 거문고 「도~」(dex_new_c 9.5초)를 3초로 자르고 2초부터 줄였다 — 고용·도감·유물 상자에 통째로 울려 길었다 (형 10-27)
   dex_new_c3: 'wav', war_drums_b2: 'wav', defeat_a3: 'wav', horses_m: 'wav',
-  wed_g1: 'wav', wed_g2: 'wav', wed_g3: 'wav', tap_rite_g1: 'wav', tap_rite_g2: 'wav', tap_rite_g3: 'wav', dex_new_g1: 'wav', dex_new_g2: 'wav', dex_new_g3: 'wav',
+  // 10-27 밤 형: 제사·혼인 첫 후보 여섯 "다 별로" → 새 후보 (대금 · 국악 효과음)
+  wed_g4: 'wav', wed_g5: 'wav', wed_g6: 'wav', tap_rite_g4: 'wav', tap_rite_g5: 'wav', tap_rite_g6: 'wav', dex_new_g1: 'wav', dex_new_g2: 'wav', dex_new_g3: 'wav',
   hire_go_g1: 'mp3', hire_go_g2: 'mp3', hire_go_g3: 'mp3', relic_open_g1: 'mp3', relic_open_g2: 'mp3', relic_open_g3: 'mp3',
   ...Object.fromEntries(['bgm_title', 'bgm_war', 'bgm_lose'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'mp3']))),
   war_cry_g1: 'wav', war_cry_g2: 'wav', war_cry_g3: 'wav',
