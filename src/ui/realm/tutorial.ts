@@ -234,6 +234,16 @@ export function createSpot(root: HTMLElement): Spot {
     const w0 = wrap.getBoundingClientRect()
     return r0.top < w0.top || r0.bottom > w0.bottom || r0.left < w0.left || r0.right > w0.right
   }
+  /** 지도·판의 굴리는 틀 밖으로 통째로 나갔나 (반쯤 걸친 것은 아니다) */
+  const goneOut = (el: HTMLElement): boolean => {
+    const wrap = el.closest<HTMLElement>('.mapwrap, .sheet')
+    if (wrap === null) return false
+    const r0 = el.getBoundingClientRect()
+    const w0 = wrap.getBoundingClientRect()
+    return r0.right <= w0.left || r0.left >= w0.right || r0.bottom <= w0.top || r0.top >= w0.bottom
+  }
+  /** 누를 곳이 지도 밖으로 나간 때 — 손을 뗀 채 오래 나가 있으면 다시 굴려 온다 */
+  let goneAt = 0
   /** 화면(창) 밖에 통째로 있나 */
   const offView = (el: HTMLElement): boolean => {
     const r0 = el.getBoundingClientRect()
@@ -342,6 +352,12 @@ export function createSpot(root: HTMLElement): Spot {
         scrolled.add(target)
         if (target.closest('.mapwrap, .sheet') !== null && (scrolledOut(target) || !onTop(target))) target.scrollIntoView({ block: 'center', inline: 'center' }) // 윗줄·띠에 묻혀도
       }
+      // 지도를 밀거나 키워 누를 곳이 통째로 밖으로 나가면 고리가 안 보여 어둠만 남았다 (막무가내 로봇 10-27 · 5/12 고리가 화면 왼쪽 389px 밖).
+      // 미는 동안은 따라가지 않고, 손을 떼고 조금 지나면 다시 굴려 온다
+      if (target.closest('.mapwrap:not(.panning)') !== null && goneOut(target)) {
+        if (goneAt === 0) goneAt = now
+        else if (now - goneAt >= P.realm.tutReturnMs) { goneAt = 0; target.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' }) }
+      } else goneAt = 0
       const r = target.getBoundingClientRect()
       const v = view.getBoundingClientRect()
       const pad = 6
