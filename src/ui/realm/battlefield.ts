@@ -2109,6 +2109,18 @@ export const WAR_CSS = `
 .ap .wfpop { position: fixed; z-index: 94; width: min(330px, calc(100vw - 16px)); padding: 8px; border-radius: 14px; background: #17110cf6; border: 1.5px solid #ffd27a; box-shadow: 0 0 0 1px #000, 0 12px 34px #000d, 0 0 18px #ffd27a44; animation: wfpin .16s ease-out; }
 @keyframes wfpin { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
 .ap .wfpop[hidden] { display: none; }
+/* 다 골랐다 — 아래 띠 (고른 깃발 한 줄 + 큰 「전투 개시」) */
+.ap .wready { position: fixed; left: 0; right: 0; bottom: 0; z-index: 95; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 26px 16px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(#0d0a0700, #0d0a07ee 34%); animation: wrdyin .22s ease-out; }
+.ap .wready[hidden] { display: none; }
+@keyframes wrdyin { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+.ap .wrchips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 640px; }
+.ap .wrc { display: flex; align-items: center; gap: 5px; padding: 3px 9px 3px 4px; border-radius: 999px; background: #2a2016; border: 1.5px solid #8aa86a; font-size: 13px; color: #f0e2c4; }
+.ap .wrc .wgi, .ap .wrc .wgi.f .wf, .ap .wrc .wgi.f img { width: 24px; height: 24px; flex: none; object-fit: contain; border-radius: 50%; }
+.ap .wrc .wrf { width: 22px; height: auto; filter: drop-shadow(0 0 3px #ffd27a99); }
+.ap .wrc i { font-style: normal; font-weight: 800; color: #ffe2a0; }
+.ap .wrgo { width: min(520px, 100%); display: flex; justify-content: center; align-items: center; text-align: center; padding: 14px 16px; font-size: 20px; animation: wgoready 1.1s ease-in-out infinite alternate; }
+.ap .wr.ready .wsc { padding-bottom: 150px; }
+@media (prefers-reduced-motion: reduce) { .ap .wready, .ap .wrgo { animation: none !important; } }
 .ap .wfph { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; } .ap .wfph .wgi { width: 26px; height: 26px; flex: none; } .ap .wfph b { font-size: 14.5px; color: #fff; } .ap .wfph small { font-size: 11.5px; color: var(--mute); }
 .ap .wfpx { margin-left: auto; width: 30px; height: 30px; border-radius: 15px; border: 1px solid #6a5a48; background: #2a221a; color: #e8dcc4; font-size: 14px; cursor: pointer; flex: none; }
 .ap .wfpg { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; }
@@ -2652,7 +2664,9 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       const act = rd?.acts?.find((x) => x.g === 'lead' && x.s === ourS)
       const c: Cmd = act?.c ?? cutLead
       // 비기면 그 합의 행동에 적힌 비기 — 없으면 나선 장수의 비기 (전엔 비어 짧은 대답 「어머」가 나왔다 · 형 10-27)
-      const leadH = heroById(act?.hero ?? l.start?.heroes[weAtk ? 0 : 1] ?? null)
+      // 사로잡기의 act.hero 는 사로잡힌 적장이다 — 외치는 이는 우리 장수 (형 10-27: "남자 장수인데 여자 목소리") · 비기·겨루기는 나선 우리 장수
+      const mine = act?.c === 'capture' ? undefined : act?.hero
+      const leadH = heroById(mine ?? l.start?.heroes[weAtk ? 0 : 1] ?? null)
       const ak = c === 'art' ? (act?.art ?? (leadH !== undefined ? heroArt(leadH) : undefined)) : undefined
       const kind = ak !== undefined ? ART_CUT[ak] : CUT_OF[c]
       const hero = l.start?.heroes[weAtk ? 0 : 1] ?? null
@@ -2666,7 +2680,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         ov.appendChild(cut)
         cutSfx = kind === 'cheer' || kind === 'call' ? BATTLE_SFX.openDrum : BATTLE_SFX.duelWin
         // 나선 장수가 외친다 — 기술이면 그 기술 외침, 북·겨루기·사로잡기면 짧은 대답 (voice.ts · 장수의 목소리 결로)
-        const hh = heroById(act?.hero ?? hero)
+        const hh = heroById(mine ?? hero)
         if (hh !== undefined) cutVoice = ak !== undefined ? artVoicePath(hh, ak, isRulerHero(hh)) : voicePath(hh, 'tap', isRulerHero(hh))
       }
     }
@@ -2697,6 +2711,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       sc.scrollTop = 0
       syncField()
     }
+    syncReady()
   }
 
   /** 이번 합이 풀리는 중 — 다음 합을 고르는 판은 아직 투명하다. 그동안은 진을 되돌리지 않고 깃발 누르기도 받지 않는다 */
@@ -2776,6 +2791,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       go.disabled = k < tabs.length
       go.innerHTML = goWord(k, tabs.length)
     }
+    syncReady()
     // 짐작은 고른 표가 먼저 보인 뒤에 — 폰에서 누름이 늦게 느껴지지 않게
     timers.push(window.setTimeout(fillLooks, 0))
     syncField()
@@ -2878,6 +2894,28 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   pop.className = 'wfpop'
   pop.hidden = true
   ov.appendChild(pop)
+  /**
+   * 다 골랐다 — 화면 아래에 크게: 무리마다 고른 깃발 한 줄 + 「전투 개시」 (형 10-27 지인: "전투 개시 버튼을 스스로 찾아야 해 불편 · 내가 뭘 골랐는지 모르겠다").
+   * 하나라도 비면 걷힌다
+   */
+  const ready = document.createElement('div')
+  ready.className = 'wready'
+  ready.hidden = true
+  ov.appendChild(ready)
+  const syncReady = (): void => {
+    const tabs = [...sc.querySelectorAll<HTMLElement>('.wgt[data-g]')]
+    const all = t.line?.pending !== undefined && !animating && tabs.length > 0 && tabs.every((tb) => sel[tb.dataset['g'] as Grp | 'lead'] !== undefined)
+    ov.classList.toggle('ready', all)
+    if (!all) { ready.hidden = true; return }
+    const chips = tabs.map((tb) => {
+      const g = tb.dataset['g'] as Grp | 'lead'
+      const src = sc.querySelector<HTMLElement>(`[data-war="pick"][data-g="${g}"][data-c="${sel[g]}"]`)
+      const flag = src?.querySelector('img.wflag')?.getAttribute('src') ?? ''
+      return `<span class="wrc">${tb.querySelector('.wgi')?.outerHTML ?? ''}<b>${esc(tb.querySelector('.wgn b')?.textContent ?? '')}</b>${flag !== '' ? `<img class="wrf" src="${flag}" alt="">` : ''}<i>${esc(src?.querySelector('.wct b')?.textContent ?? '')}</i></span>`
+    }).join('')
+    ready.innerHTML = `<div class="wrchips">${chips}</div><button class="btn pri wrgo" data-war="go">⚔ 이대로 전투 개시</button>`
+    ready.hidden = false
+  }
   let tipKey = ''
   let tipHideT = 0
   const hideTip = (after = 0): void => {
@@ -3150,7 +3188,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
           const next = [...order.slice(at + 1), ...order.slice(0, at)].find((x) => sel[x] === undefined)
           if (next !== undefined) {
             timers.push(window.setTimeout(() => { if (active === g) { active = next; syncCmd(); if (fromPop && choosing()) openPop(next) } }, P.realm.warTabNextMs))
-          } else scrollInside(sc.querySelector('[data-war="go"]'), 'center', true)
+          } // 다 골랐으면 아래에 「이대로 전투 개시」 띠가 뜬다 (syncReady)
         }
         return
       }

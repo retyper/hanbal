@@ -152,7 +152,7 @@ export function tutBandHtml(i: number, esc: (s: string) => string, stuck = false
 /** 가려졌을 때 먼저 닫을 것 — [덮는 것, 그 안의 닫기 단추, 갈래]: 보고판의 「확인」 · 열린 판의 손잡이. 띠 위에 그 말이 한 줄 붙는다 (TUT_CSS 의 data-pre) */
 // 보고판이 화면 가득(정할 것이 남음)이면 「확인」이 없다 — 고를 단추(사건 카드 · 사신의 청 거절)를 가리킨다
 // 고른 군대·개척단 띠도 — 폰에선 띠가 서쪽 고을(갯골)을 덮어 누를 수 없었다 (형 10-25 4/12)
-const DISMISS: ReadonlyArray<readonly [string, string, string]> = [['.modal', '[data-act="rep-close"], .fulld [data-act="card-pick"], .fulld [data-act="answer"]', 'rep'], ['.sheet', '.grip', 'grip'], ['.selbar', '[data-act="selclose"], [data-act="pp-close"]', 'sel']]
+const DISMISS: ReadonlyArray<readonly [string, string, string]> = [['.modal', '[data-act="rep-close"], .fulld [data-act="card-pick"], .fulld [data-act="answer"], .fulld [data-act="wand-pick"][data-v="0"]', 'rep'], ['.sheet', '.grip', 'grip'], ['.selbar', '[data-act="selclose"], [data-act="pp-close"]', 'sel']]
 
 export interface Spot {
   /** 지금 단계와 판 — 없으면 끈다 */

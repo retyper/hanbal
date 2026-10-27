@@ -888,7 +888,8 @@ function pickAsk(r: Realm, from: string, to: string): Ask | null {
 export function makeAsks(r: Realm, lines: ReportLine[]): void {
   const R = P.realm
   const me = r.player
-  if (me === undefined || r.factions[me] === undefined || r.outcome) return
+  // 배우는 판엔 남이 청을 걸지 않는다 — 배우는 차례 한가운데 교역 청이 끼어들었다 (형 10-27 지인: "한 번에 너무 많은 정보가 와서")
+  if (me === undefined || r.factions[me] === undefined || r.outcome || r.region === 'tutorial') return
   const alive = (f: string): boolean => Object.values(r.nodes).some((n) => n.owner === f)
   if (!alive(me)) return
   let made = 0

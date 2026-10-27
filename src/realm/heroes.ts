@@ -683,7 +683,8 @@ export function stepHeroes(r: Realm, lines: ReportLine[]): void {
   }
   // 떠돌이 — 머물 기한이 지나면 떠난다. 봄 끝에 새 사람이 온다
   r.wanderers = (r.wanderers ?? []).filter((w) => w.until > r.season)
-  if (((r.season % 4) + 4) % 4 === 0 && roll(r.seed, r.season, 'wanderer') < R.wandererChance) {
+  // 배우는 판엔 떠돌이가 오지 않는다 — 배우는 차례 한가운데 사건 카드가 끼어들어 안내가 갇혔다 (10-27)
+  if (r.region !== 'tutorial' && ((r.season % 4) + 4) % 4 === 0 && roll(r.seed, r.season, 'wanderer') < R.wandererChance) {
     const used = new Set(r.poolUsed ?? [])
     const pool = HERO_POOL.filter((x) => !used.has(x.id) && r.heroes[x.id] === undefined)
     const places = byId(Object.values(r.nodes)).filter((n) => n.owner !== null && n.kind !== 'sodo')
