@@ -2065,8 +2065,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const placed = settles.find((o) => o.kind === 'place')
     h += `<div class="btns btnq"><button class="btn pri home wide${placed !== undefined ? ' on' : ''}" data-act="pl-open">${icon('unit-porters')}백성 배치${placed !== undefined ? ' · 이번 계절 나누었다' : ''}</button>${guideBtn('place')}</div>`
     const ps = partiesOf(r, me())
-    h += `<h4 class="sech home">${icon('unit-porters')}개척단</h4>`
-    if (ps.length === 0) h += `<p class="mute">우리 고을을 누르고 「개척단 보내기」</p>`
+    const wilds = foundLands(r).filter((to) => !(r.nodes[to]?.owner === me() && (r.nodes[to]?.hh ?? 0) > 0))
+    if (ps.length > 0 || wilds.length > 0) {
+      h += `<h4 class="sech home">${icon('unit-porters')}개척단</h4>`
+      if (ps.length === 0) h += `<p class="mute">지도에서 깜빡이는 「＋마을」을 누른다</p>`
+    }
     for (const p of partiesOf(realm!, me()).filter((x) => joining(x.id))) {
       h += `<div class="row mvq"><button class="pprow" data-act="ptjoin" data-army="${p.id}">${icon('unit-porters', 'gic')}<span class="nchip">${esc(r.nodes[p.home]?.name ?? '')} 개척단</span><span class="mute">백성 ${p.hh}가구 · ${esc(josa(r.nodes[p.at]?.name ?? '', '에', '에'))} 자리 잡는다 · 누르면 거둔다</span></button></div>`
     }
@@ -3745,9 +3748,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           const k = partySize(r, me(), id)
           const c = partyCost(k)
           const near = partyMoves(r, me(), id).filter((m) => m.found).sort((x, y) => x.seasons - y.seasons || (x.to < y.to ? -1 : 1))[0]
-          const what = near !== undefined ? `${esc(josa(r.nodes[near.to]?.name ?? '', '으로', '로'))} 개척단 보내기` : '개척단 꾸리기'
-          h += `<div class="btns"><button class="btn pri home wide" data-act="party" data-node="${id}" ${k > 0 ? '' : 'disabled'}>${icon('unit-porters')}${what}${k > 0 ? ` · 백성 ${k}가구 ${costHtml({ grain: c.grain, wood: c.wood })}` : ''}</button></div>`
-          if (k <= 0) h += `<p class="mute">${esc(partyWhy(r, id))}</p>`
+          // 갈 빈땅이 없으면 개척은 할 일이 아니다 — 단추를 아예 안 보인다 (형 10-27: "주변에 빈땅이 있을 때만 · 다른 때에는 개척 전혀 필요가 없잖아")
+          if (near !== undefined) {
+            const what = `${esc(josa(r.nodes[near.to]?.name ?? '', '으로', '로'))} 개척단 보내기`
+            h += `<div class="btns"><button class="btn pri home wide" data-act="party" data-node="${id}" ${k > 0 ? '' : 'disabled'}>${icon('unit-porters')}${what}${k > 0 ? ` · 백성 ${k}가구 ${costHtml({ grain: c.grain, wood: c.wood })}` : ''}</button></div>`
+            if (k <= 0) h += `<p class="mute">${esc(partyWhy(r, id))}</p>`
+          }
         }
       }
       h += draftCard(r, id, true)

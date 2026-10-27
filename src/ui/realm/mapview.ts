@@ -359,9 +359,12 @@ export const MAP_CSS = `
 /* 개척할 수 있는 빈땅 — 누르면 그 땅 카드에 "사람 보내기" */
 .map .nd .stl { position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, -2px); /* 그림 위에 — 밑에는 고을 이름표가 온다 (형 10-23: "개마 들머리 뒤에 뭐가 있는지 모르겠어") */ white-space: nowrap; pointer-events: none; z-index: 2;
   font-size: clamp(10px, calc(1.6cqh / var(--z, 1) * var(--zs, 1)), 13px); font-weight: 700; color: #f4ffe8; background: #3f6a2ae6; border: 1px solid #b6e08f;
-  border-radius: 9px; padding: 0 6px; box-shadow: 0 1px 4px #0008; animation: stlp 1.6s ease-in-out infinite alternate; }
-@keyframes stlp { from { box-shadow: 0 0 0 #b6e08f00; } to { box-shadow: 0 0 10px #b6e08faa; } }
-@media (prefers-reduced-motion: reduce) { .map .nd .stl { animation: none; } }
+  border-radius: 9px; padding: 0 6px; box-shadow: 0 1px 4px #0008; animation: stlp 1.1s ease-in-out infinite; }
+/* 개척할 수 있는 빈땅은 깜빡이며 튄다 — 가만히 있는 「＋마을」엔 눈이 안 갔다 (형 10-27) · 땅 둘레에 초록 고리도 */
+@keyframes stlp { 0%, 100% { transform: translate(-50%, -2px) scale(1); box-shadow: 0 0 0 #b6e08f00; opacity: 1; } 50% { transform: translate(-50%, -7px) scale(1.14); box-shadow: 0 0 16px #b6e08f; opacity: .78; } }
+.map .nd.stlok .ring { display: block; border: 3px dashed #b6e08f; box-shadow: 0 0 12px #b6e08f; animation: stlring 1.1s ease-in-out infinite; }
+@keyframes stlring { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .map .nd .stl, .map .nd.stlok .ring { animation: none; } }
 .map .nd .stl.go { background: #6b4a2ae6; border-color: #e0b070; color: #fbe8c8; animation: none; }
 /* 붐빔 — 우리 고을 그림 밑 (가까우면 노란 띠, 넘치면 붉은 글) */
 .map .nd .crw { position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, -2px); /* 위로 — 밑의 이름표와 안 겹치게 */ pointer-events: none; z-index: 2; white-space: nowrap; }
@@ -642,7 +645,7 @@ export function mapHtml(
     const tg = target.get(n.id)
     const go = tg !== undefined && !tg.off ? ` data-act="${tg.act ?? 'go'}" data-edge="${tg.edge}"${tg.goal !== undefined ? ` data-goal="${tg.goal}"` : ''}` : ''
     const tcls = (tg === undefined ? '' : tg.off ? ' tgt off' : tg.on ? ' tgt on' : ' tgt') + (tg?.act === 'ptgo' ? ' pp' : '') + (tg?.goal !== undefined ? ' farg' : '')
-    nodes += `<div class="nd${kcls}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${tcls}${far}${thr}${fr}"${go} data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color};--s:${sizeOf(n.hh).toFixed(2)};--d:${(-beat(n.id) * 7).toFixed(2)}s" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}"${more !== '' ? ` data-more="${more}"` : ''}>`
+    nodes += `<div class="nd${kcls}${tg === undefined && settleable.has(n.id) && !settling.has(n.id) ? ' stlok' : ''}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${tcls}${far}${thr}${fr}"${go} data-node="${n.id}" style="left:${p[0] * 100}%;top:${p[1] * 100}%;--c:${color};--s:${sizeOf(n.hh).toFixed(2)};--d:${(-beat(n.id) * 7).toFixed(2)}s" title="${n.name} · ${NODE_KIND_NAME[n.kind]} · ${who}"${more !== '' ? ` data-more="${more}"` : ''}>`
     // 특산 — 사람이 살면 나는 것 (쇠·소금·나무·말). 빈땅도 보여 "일구면 말이 난다"를 미리 안다
     const sp = nodeSpecials(r, n.id)
     // 바닷가 고기잡이 — 곡식이 조금 난다. 겨울엔 바다가 거칠어 쉰다 (economy.nodeYield) → 표가 얼어 흐려진다
