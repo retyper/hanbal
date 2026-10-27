@@ -425,7 +425,7 @@ export interface RoundLog {
   readonly ma: number
   readonly md: number
   /** 이 라운드의 큰일 */
-  readonly ev?: 'capture-ok' | 'capture-fail' | 'duel-win' | 'duel-lose' | 'fire-ok' | 'fire-back' | 'retreat'
+  readonly ev?: 'capture-ok' | 'capture-fail' | 'duel-win' | 'duel-lose' | 'fire-ok' | 'fire-back' | 'retreat' | 'retreat-fail'
   /** ev 를 낸 쪽 */
   readonly by?: 'a' | 'd'
   /** 두 쪽의 무리별 명령 */
@@ -471,6 +471,8 @@ export interface DuskLog {
   readonly at: number
   readonly a: Dusk
   readonly d: Dusk
+  /** 물러나려다 따라잡힌 쪽 — 그 자리에 진을 친 것으로 (상대가 밀어붙이면 싸움이 이어진다) */
+  readonly caught?: 'a' | 'd'
   readonly grain?: Readonly<Partial<Record<'a' | 'd', number>>>
   readonly hungry?: Readonly<Partial<Record<'a' | 'd', boolean>>>
 }
@@ -489,8 +491,11 @@ export interface DuskAsk {
   /** 지금 판세 (우리 몫 0..1) · 진을 치면 어떻게 정해지나 (우리 눈) */
   readonly edge: number
   readonly camp: 'win' | 'draw' | 'lose'
-  /** 물러나면 잃을 군사 (짐작이 아니라 셈 — 굴림이 없다) */
+  /** 물러나면 잃을 군사 (빠져나가면) */
   readonly retreatLoss: number
+  /** 물러날 가망 · 따라잡히면 잃을 군사 */
+  readonly retreatP?: number
+  readonly retreatFailLoss?: number
 }
 
 /** 전장 화면이 다음 라운드를 고를 때 보는 것 — 시험 돌림(open)에서만 나온다 */
@@ -506,6 +511,9 @@ export interface Pending {
   readonly foeWaver: boolean
   /** 사로잡기 확률 — 적장이 없으면 0 (화면은 말·색으로) */
   readonly capture: number
+  /** 물러날 가망 — 우리 말이 호위하지 않을 때 · 호위할 때 (형 10-27: 물러나기는 시도다) */
+  readonly retreatP?: number
+  readonly retreatGuardP?: number
   /** 사로잡으러 보낼 날랜 무리 · 적장 곁 호위 (사람 수 — 셀 수 있는 것) */
   readonly squad: number
   readonly escort: number

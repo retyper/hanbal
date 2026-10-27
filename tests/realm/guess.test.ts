@@ -73,13 +73,16 @@ describe('고르기 전 짐작', () => {
     assert.ok(better / n >= 0.8, `${better}/${n}`)
   })
 
-  it('사로잡기는 잡을 확률을 따로 · 퇴각은 한 값', () => {
+  it('사로잡기는 잡을 확률을 따로 · 퇴각은 빠져나가면 적게, 따라잡히면 크게 (적은 안 잃는다)', () => {
     const p = fightRounds(side({ spear: 150, bow: 60, shield: 40, horse: 50 }, true), side(EVEN), 'g4', 4, 0, { cmds: [], open: true }).pending!
     assert.ok(p.lead.includes('capture'))
     const cap = lookRound(p.look!, { lead: 'capture' })
     assert.ok(cap.capture !== undefined && cap.capture[0] > 0 && cap.capture[1] <= P.realm.captureMax + 1e-9)
     const back = lookRound(p.look!, { lead: 'retreat' })
-    assert.equal(width(back.us), 0)
+    assert.ok(back.us[0] <= back.us[1])
     assert.equal(back.foe[1], 0)
+    // 물러날 가망이 판에 실려 있다 — 말이 호위하면 더 높다
+    assert.ok(p.retreatP! >= P.realm.tacRetMin && p.retreatP! <= P.realm.tacRetMax)
+    assert.ok(p.retreatGuardP! >= p.retreatP!)
   })
 })

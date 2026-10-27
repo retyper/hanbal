@@ -284,12 +284,18 @@ describe('직접 지휘하는 싸움 — 전투 2판', () => {
         assert.equal(camp.pending, undefined)
         assert.equal(camp.pressA, 0)
       }
-      // 물러난다 — 진다 · 조금 잃는다 · 장수는 안 잡힌다
+      // 물러난다 — 시도다 (형 10-27). 빠져나가면 진다 · 조금 잃는다 · 장수는 안 잡힌다. 따라잡히면 크게 잃고 그 자리에 진을 친다
+      assert.ok(ask.retreatP! >= P.realm.tacRetMin && ask.retreatP! <= P.realm.tacRetMax)
       const back = fightRounds(me, foe, key, s, 0, { cmds, dusk: ['retreat'], open: true })
-      assert.equal(back.endWhy, 'withdraw')
-      assert.ok(back.outcome === 'lose' || back.outcome === 'routed')
-      assert.equal(back.captured, null)
-      assert.ok(back.na < lastNa && back.na > lastNa - P.realm.tacRoundLoss)
+      if (back.dusk[0]!.caught === 'a') {
+        assert.equal(back.dusk[0]!.a, 'camp')
+        assert.notEqual(back.endWhy, 'withdraw')
+      } else {
+        assert.equal(back.endWhy, 'withdraw')
+        assert.ok(back.outcome === 'lose' || back.outcome === 'routed')
+        assert.equal(back.captured, null)
+        assert.ok(back.na < lastNa && back.na > lastNa - P.realm.tacRoundLoss)
+      }
       // 한 합 더 — 곡식을 내고, 다음 합(밤)을 고르는 판이 열린다
       const go = fightRounds(me, foe, key, s, 0, { cmds, dusk: ['press'], open: true })
       assert.equal(go.dusk[0]!.a, 'press')

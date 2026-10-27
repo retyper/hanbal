@@ -76,7 +76,7 @@ const CMD_DOES: Record<Cmd, string> = {
   duel: '장수끼리 나선다 · 이기면 적이 무너지고, 지면 우리 장수가 다치거나 쓰러진다 · 한 번',
   capture: '날랜 무리를 적장에게 보낸다 · 무리가 호위보다 크고 적이 흔들릴수록 잘 된다 · 놓치면 무리를 잃는다',
   // 퇴각 — 사실상 이 싸움을 지는 것 (형 10-24: "물러난다는 사실상 패배 확정 · 퇴각한다 · 붉게 · 설명 확실히")
-  retreat: '이 싸움을 접고 퇴각한다 — 이 싸움은 진다. 대신 군사를 덜 잃고 장수는 안 잡힌다',
+  retreat: '이 싸움을 접고 퇴각을 꾀한다 — 빠져나가면 이 싸움은 지지만 군사를 덜 잃고 장수는 안 잡힌다. 따라잡히면 등을 보인 채 크게 잃고 싸움이 이어진다. 적 말이 많을수록 · 사기가 꺾였을수록 어렵고, 우리 말이 호위하거나 어두우면 쉽다',
   art: '그 장수만의 수 · 한 판에 한 번',
 }
 
@@ -88,7 +88,7 @@ const CMD_SHORT: Record<Cmd, string> = {
   ford: '건너오는 돌격을 크게 꺾는다', rocks: '맞붙기 전에 앞줄을 깎는다', gate: '방진에도 안 꺾이는 들이치기', ram: '물 위의 돌격',
   volley: '앞줄에 화살비 · 방진에 잘 먹힌다', counter: '적 궁수를 누른다', fire: '불을 놓는다 · 바람이 돌면 위험', height: '내리쏜다 · 방진도 단단',
   flank: '옆으로 돌아 궁수를 친다', punch: '앞줄과 함께 들이친다', pursue: '흔들리는 적을 크게 벤다', guard: '장수를 지킨다',
-  drum: '사기가 오른다', duel: '장수끼리 맞붙는다', capture: '적장을 잡으러 간다 · 놓치면 잃는다', retreat: '싸움을 접는다 · 진다 · 덜 잃는다', art: '그 장수만의 수', feast: '사기를 크게 · 이 합엔 덜 꺾인다',
+  drum: '사기가 오른다', duel: '장수끼리 맞붙는다', capture: '적장을 잡으러 간다 · 놓치면 잃는다', retreat: '빠져나가면 진다 · 덜 잃는다 · 따라잡힐 수 있다', art: '그 장수만의 수', feast: '사기를 크게 · 이 합엔 덜 꺾인다',
 }
 
 /** 장수의 비기 — 이름 · 그림 · 하는 일 (heroes.heroArt · tactics 의 비기). 장수마다 다르니 깃발에 그 이름으로 뜬다 */
@@ -381,10 +381,13 @@ function duskRow(d: DuskLog, ck: Clock, ourS: 'a' | 'd'): string {
     if (d.hungry?.[x] === true) return ' <small class="wdkc bad">곳간이 비어 굶은 채</small>'
     return ''
   }
-  const line = (x: 'a' | 'd'): string => `<span class="wdkp ${x === ourS ? 'us' : 'foe'} ${pick(x)}"><em>${who(x)}</em>${esc(duskName(pick(x), ck.night))}${pick(x) === 'press' ? cost(x) : ''}</span>`
+  // 따라잡힌 쪽은 「물러난다」를 골랐다 — 판정은 진을 친 것으로 바뀌었어도 고른 것을 보인다
+  const chose = (x: 'a' | 'd'): Dusk => (d.caught === x ? 'retreat' : pick(x))
+  const line = (x: 'a' | 'd'): string => `<span class="wdkp ${x === ourS ? 'us' : 'foe'} ${chose(x)}"><em>${who(x)}</em>${esc(duskName(chose(x), ck.night))}${pick(x) === 'press' ? cost(x) : ''}</span>`
   let res: string
   const back = (['a', 'd'] as const).filter((x) => pick(x) === 'retreat')
-  if (back.length === 2) res = ck.night ? '날이 밝자 두 쪽 다 진을 거두었다' : '해가 지자 두 쪽 다 어둠을 틈타 물러났다'
+  if (d.caught !== undefined) res = `${josa(who(d.caught), '은', '는')} ${ck.night ? '날이 밝자' : '어둠을 틈타'} 물러나려다 따라잡혔다 — 크게 잃고 그 자리에 진을 쳤다`
+  else if (back.length === 2) res = ck.night ? '날이 밝자 두 쪽 다 진을 거두었다' : '해가 지자 두 쪽 다 어둠을 틈타 물러났다'
   else if (back.length === 1) res = `${josa(who(back[0]!), '은', '는')} ${ck.night ? '날이 밝자 진을 거두어' : '어둠을 틈타'} 물러났다`
   else if (pick('a') === 'press' || pick('d') === 'press') {
     const by = (['a', 'd'] as const).filter((x) => pick(x) === 'press')
@@ -421,7 +424,9 @@ function duskHtml(l: BattleLine, a: DuskAsk, weAtk: boolean, art: string, anim: 
   h += `<div class="wdkg">`
   h += btn('camp', '진을 친다', '여기서 멈춘다 · 지금 판세로 정해진다', `<em class="wdk-${a.camp}">${esc(campWord(l, weAtk, a.camp))}</em>`, 'hold')
   h += btn('press', press, pressDoes, cost, a.night ? 'charge' : 'fire')
-  h += btn('retreat', '물러난다', `${a.night ? '날이 밝자 진을 거둔다' : '어둠을 틈타 진을 거둔다'} · ${back}`, `<span class="wfcost">군사 −${a.retreatLoss}명</span>`, 'retreat')
+  const rp = a.retreatP !== undefined ? `<span class="wf-${retreatCls(a.retreatP)}">빠져나갈 가망 ${Math.round(a.retreatP * 100)}%</span>` : ''
+  const caughtCost = a.retreatFailLoss !== undefined ? `<span class="wfcost bad">따라잡히면 −${a.retreatFailLoss}명</span>` : ''
+  h += btn('retreat', '물러난다', `${a.night ? '날이 밝자 진을 거둔다' : '어둠을 틈타 진을 거둔다'} · ${back} · 따라잡히면 그 자리에 진을 친다`, `${rp}<span class="wfcost">군사 −${a.retreatLoss}명</span>${caughtCost}`, 'retreat')
   h += `</div><p class="wdk-n">적도 고른다 — 적이 밀어붙이면 우리가 진을 쳐도 한 합 더 싸운다</p></div>`
   return h
 }
@@ -470,14 +475,14 @@ export function actRows(acts: readonly Act[] | undefined, ourS: 'a' | 'd', art: 
     const good = r === 'even' ? '' : (r === 'ok') === us ? ' good' : ' bad'
     const verb = x.c === 'art' && x.art !== undefined ? ART_NAME[x.art] : CMD_NAME[x.c]
     const badge = r === 'ok' ? '✓' : r === 'no' ? '✕' : '='
-    const word = r === 'ok' ? (x.tg !== undefined ? '먹혔다' : '해냈다') : r === 'no' ? (x.res === 'wasted' ? '헛방' : '막혔다') : '맞섰다'
+    const word = r === 'ok' ? (x.tg !== undefined ? '먹혔다' : '해냈다') : r === 'no' ? (x.res === 'wasted' ? '헛방' : x.c === 'retreat' ? '따라잡혔다' : '막혔다') : '맞섰다'
     h += `<div class="wact${us ? ' us' : ' foe'}${good}"><span class="who">${us ? '우리' : '적'}</span><img src="${art}icon/${groupIcon(mixOfS(x.s), x.g)}.png" alt=""><b>${esc(verb)}</b>`
     if (x.tg !== undefined) h += `<i class="arw">→</i><img class="tg" src="${art}icon/${groupIcon(mixOfS(other), x.tg)}.png" alt="">`
     h += `<span class="res">${badge} ${word}</span>`
     if ((x.tl ?? 0) > 0) h += `<span class="loss">${us ? '적' : '우리'} −${x.tl}</span>`
     if ((x.sl ?? 0) > 0) h += `<span class="loss own">${us ? '우리' : '적'} −${x.sl}</span>`
     // 물러나기 — 잃은 수만 있으면 「−21」을 남은 수로 읽었다 (형 10-25: "330명이 21명 됐음 · 21명이 죽은 거 아닌가?") — 빠져나간 수를 곁에
-    if (x.c === 'retreat' && x.n !== undefined) h += `<span class="kept">${x.n}명 빠져나갔다</span>`
+    if (x.c === 'retreat' && x.res === 'ok' && x.n !== undefined) h += `<span class="kept">${x.n}명 빠져나갔다</span>`
     h += '</div>'
   }
   return h + '</div>'
@@ -535,6 +540,11 @@ function face(id: string | null, art: string, fallback: string): string {
 }
 
 /** 사로잡기 — 말과 색으로 (숫자 확률은 안 보인다) */
+/** 물러날 가망의 빛 — 사로잡기 말 빛과 같은 결 */
+function retreatCls(p: number): string {
+  return p >= 0.7 ? 'hi' : p >= 0.5 ? 'mid' : p >= 0.3 ? 'lo' : 'no'
+}
+
 function captureWord(p: number): [string, string] {
   if (p >= 0.5) return ['잡을 수 있다', 'hi']
   if (p >= 0.3) return ['손이 닿는다', 'mid']
@@ -1365,6 +1375,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     h += `<div class="wst${rows !== '' ? ' sm' : ''}"${d(1)}>${rows}${story.map((s) => `<p>${esc(s)}</p>`).join('')}</div>`
     // 사로잡기·물러나기로 끝난 합은 밀고 밀린 것이 없다
     if (rd.ev === 'capture-ok' || rd.ev === 'retreat') h += `<p class="wpush"${d(2)}>싸움이 거기서 끝났다</p></div>`
+    else if (rd.ev === 'retreat-fail') h += `<p class="wpush"${d(2)}>${rd.by === ourS ? '적이 물러나다 따라잡혔다 — 싸움이 이어진다' : '물러나다 따라잡혔다 — 싸움이 이어진다'}</p></div>`
     else {
       // 무리마다 — 앞줄·활·말 그림과 잃은 수 (형: "전투로그에서도 다이나믹함이 보이게끔 유닛마다 아이콘도 같이")
       const gBefore = (sd: 0 | 1): Readonly<Partial<Record<Grp, number>>> => (i === 0 ? groupMen(mixOf(sd) as Parameters<typeof groupMen>[0]) : (sd === 0 ? rounds[i - 1]!.ga : rounds[i - 1]!.gd) ?? {})
@@ -1448,9 +1459,16 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       let feel = ''
       if (c === 'capture') {
         const [w, cls] = captureWord(p.capture)
-        feel = `<span class="wf-${cls}">${w}</span><span class="wcap">무리 ${p.squad} · 호위 ${p.escort}</span>`
+        feel = `<span class="wf-${cls}">${w}</span><span class="wcap">무리 ${p.squad} · 호위 ${p.escort}</span><i class="wodd wf-${cls}">${Math.round(p.capture * 100)}%</i>`
       }
       if (c === 'feast' && p.feast !== undefined) feel = `<span class="wfcost">곡식 ${p.feast}</span>`
+      // 물러나기는 시도다 — 빠져나갈 가망을 % 로 (우리 것은 %) · 말이 호위하면 오르는 몫도 (형 10-27)
+      if (c === 'retreat' && p.retreatP !== undefined) {
+        const rp = sel.horse === 'guard' ? (p.retreatGuardP ?? p.retreatP) : p.retreatP
+        feel = `<span class="wf-${retreatCls(rp)}">빠져나갈 가망 ${Math.round(rp * 100)}%</span>`
+        if (sel.horse !== 'guard' && (p.retreatGuardP ?? 0) > p.retreatP + 0.005) feel += `<span class="wcap">말이 호위하면 ${Math.round(p.retreatGuardP! * 100)}%</span>`
+        feel += `<i class="wodd wf-${retreatCls(rp)}">${Math.round(rp * 100)}%</i>` // 전장 깃발 판(작은 단추)에서도 가망이 보이게
+      }
       // 장수의 비기 — 그 장수만의 이름·그림 (형: "아이콘과 함께 그거라는걸 알게 해줘야함")
       const ak = c === 'art' ? p.art : undefined
       if (ak !== undefined) tag = `<em class="art">비기</em>`
@@ -2129,7 +2147,10 @@ export const WAR_CSS = `
 .ap .wfpop .wcmd.mini .wflag { width: 30px; height: auto; flex: none; }
 .ap .wfpop .wcmd.mini .wct { gap: 1px; } .ap .wfpop .wcmd.mini .wct > b { font-size: 13.5px; }
 /* 전장의 깃발 판엔 그림과 이름만 — 꼬리표·짐작 글이 자리를 넘쳐 튀어나오고 줄이 바뀌었다 (형 10-25) · 권함은 별 하나로 */
-.ap .wfpop .wcmd.mini .wct > :not(b):not(em.rec) { display: none !important; }
+.ap .wfpop .wcmd.mini .wct > :not(b):not(em.rec):not(.wodd) { display: none !important; }
+/* 가망 % — 큰 깃발엔 말로 이미 있어 작은 단추(전장 깃발 판)에서만 */
+.ap .wcmd .wct > .wodd { display: none; } .ap .wfpop .wcmd.mini .wct > .wodd { display: inline; flex: none; font-style: normal; font-size: 12px; font-weight: 800; }
+.ap .wfpop .wcmd.mini .wct:has(> .wodd) { flex-direction: column; align-items: flex-start; gap: 0; } /* 이름 밑 줄에 — 옆에 두면 「퇴…」로 잘렸다 */
 .ap .wfpop .wcmd.mini .wct { flex-direction: row; align-items: center; gap: 3px; min-width: 0; }
 .ap .wfpop .wcmd.mini .wct > b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .ap .wfpop .wcmd.mini .wct > em.rec { font-size: 0; padding: 0 3px; } .ap .wfpop .wcmd.mini .wct > em.rec::before { content: '★'; font-size: 11px; }
@@ -3068,9 +3089,16 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   const sure = document.createElement('div')
   sure.className = 'wsure'
   sure.hidden = true
-  sure.innerHTML = `<div class="wsurec"><b>정말 퇴각하시겠습니까?</b><p>${esc(CMD_DOES.retreat)}</p><div class="wsureb"><button class="btn ghost" data-war="retreat-no">계속 싸운다</button><button class="btn pri wsurey" data-war="retreat-yes">퇴각한다</button></div></div>`
+  sure.innerHTML = `<div class="wsurec"><b>정말 퇴각하시겠습니까?</b><p class="wsurep"></p><div class="wsureb"><button class="btn ghost" data-war="retreat-no">계속 싸운다</button><button class="btn pri wsurey" data-war="retreat-yes">퇴각한다</button></div></div>`
   ov.appendChild(sure)
-  const askRetreat = (): void => { sure.hidden = false }
+  const askRetreat = (): void => {
+    // 빠져나갈 가망을 묻는 판에도 — 말이 호위하게 골라 두었으면 그 몫으로 (형 10-27: 물러나기는 시도다)
+    const p = t.line?.pending
+    const rp = p === undefined || p.retreatP === undefined ? undefined : sel.horse === 'guard' ? (p.retreatGuardP ?? p.retreatP) : p.retreatP
+    const q = sure.querySelector<HTMLElement>('.wsurep')
+    if (q !== null) q.innerHTML = rp === undefined ? '' : `빠져나갈 가망 <strong class="wf-${retreatCls(rp)}">${Math.round(rp * 100)}%</strong> — 따라잡히면 등을 보인 채 크게 잃고 싸움이 이어진다`
+    sure.hidden = false
+  }
   let press: { x: number; y: number; timer: number; held: boolean } | null = null
   /** 꾹 눌러 정보창을 띄웠다 — 이어지는 click 하나를 삼킨다 (무리를 고르지 않는다) */
   let swallow = false

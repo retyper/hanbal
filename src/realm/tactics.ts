@@ -384,6 +384,34 @@ export function captureChance(me: Side, foe: Side, myN: number, foeN: number, fo
   return captureOdds(me, foe, n0m * myN, gm.horse * myN, n0f * foeN, foeM, foeHurt, foeGuard).p
 }
 
+/**
+ * 물러날 가망 — 물러나기는 시도다 (형 10-27: "퇴각은 확정이 아니라 시도이고 여러 계산에 의해서 그 확률이 보이게").
+ *   tacRetBase + 우리 말 호위 + 지략 − 적 말이 쫓는 몫 − 꺾인 사기 + 어둠 + 적이 흔들림 → [tacRetMin, tacRetMax]
+ * 보이는 것만 센다 — 적이 이번에 무엇을 고를지는 넣지 않는다 (화면의 %가 그대로 굴림이다).
+ * 둘 다 물러나면 쫓는 이가 없어 늘 된다 (resolveRound).
+ */
+function retreatOdds(c: Ctx, st: State, mine: 'a' | 'd', guard: boolean, dark: boolean): number {
+  const R = P.realm
+  const me = mine === 'a' ? c.atk : c.def
+  const foe = mine === 'a' ? c.def : c.atk
+  const g0m = mine === 'a' ? c.g0a : c.g0d
+  const fm = mine === 'a' ? st.fa : st.fd
+  const g0f = mine === 'a' ? c.g0d : c.g0a
+  const ff = mine === 'a' ? st.fd : st.fa
+  const myMen = GRPS.reduce((s, g) => s + menNow(g0m, fm, g), 0)
+  const chase = clamp((menNow(g0f, ff, 'horse') / Math.max(1, myMen)) * R.tacRetChaseK, 0, 1)
+  const myM = clamp((mine === 'a' ? st.ma : st.md) / Math.max(0.05, me.morale), 0, 1)
+  const foeM = (mine === 'a' ? st.md : st.ma) / Math.max(0.05, foe.morale)
+  let p = R.tacRetBase
+  if (guard && menNow(g0m, fm, 'horse') >= 1) p += R.tacRetGuard
+  p += R.tacRetRyak * ((me.hero?.ryak ?? 5) - 5)
+  p -= R.tacRetChase * chase
+  p -= R.tacRetMorale * (1 - myM)
+  if (dark) p += R.tacRetDark
+  if (foeM < R.tacHoldSteady) p += R.tacRetWaver
+  return clamp(p, R.tacRetMin, R.tacRetMax)
+}
+
 /** 무리 하나가 이번 합에 고를 수 있는 명령 */
 export function groupOptions(me: Side, foe: Side, g: Grp, used: ReadonlySet<Cmd>): Cmd[] {
   const t = me.terrain ?? {}
@@ -447,7 +475,7 @@ function frontHabit(foe: Side): Cmd {
 /**
  * 맡긴 쪽의 명령 — 제 처지와 상대 구성만 보고 (상대의 이번 선택은 모른다). 무리마다 따로 정한다.
  */
-function aiOrder(c: Ctx, me: Side, foe: Side, mine: 'a' | 'd', st: State, cap: number, edge: number, key: string, seed: number, season: number, lastFoe?: Cmd): RoundOrder {
+function aiOrder(c: Ctx, me: Side, foe: Side, mine: 'a' | 'd', st: State, cap: number, edge: number, key: string, seed: number, season: number, lastFoe?: Cmd, dark = false): RoundOrder {
   const R = P.realm
   const r = (k: string): number => roll(seed, season, `${key}:${k}`)
   const used = mine === 'a' ? st.usedA : st.usedD
@@ -476,7 +504,8 @@ function aiOrder(c: Ctx, me: Side, foe: Side, mine: 'a' | 'd', st: State, cap: n
     ? edge < R.tacAiRetreatMineEdge && myN < R.tacAiRetreatMineMen
     : atk ? edge < (coward ? 0.35 : 0.22) && myN < 0.75 : edge < 0.12 && myN < 0.5
   if (lopts.includes('capture') && cap >= R.tacAiCapture) lead = 'capture'
-  else if (!stay && giveUp) lead = 'retreat'
+  // 물러날 가망이 너무 낮으면 등을 보이느니 끝까지 싸운다 (말이 있으면 호위시킬 셈으로 잰다)
+  else if (!stay && giveUp && retreatOdds(c, st, mine, groups.includes('horse'), dark) >= R.tacAiRetreatOdds) lead = 'retreat'
   // 맡긴 싸움 — 사기가 흔들리면 곳간을 푼다 (호궤)
   else if (lopts.includes('feast') && (mine === 'a' ? st.ma : st.md) / Math.max(0.05, me.morale + (me.moraleBonus ?? 0)) < R.tacAiFeast) lead = 'feast'
   else if (lopts.includes('duel') && champ !== undefined && foe.hero !== null && champ.mu >= (duelist(foe, undefined)?.mu ?? 0) + 1 && r('duel') < 0.4) lead = 'duel'
@@ -699,10 +728,22 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
         if (tactic.open === true && memo.pending === undefined) memo.pending = duskPending(c, st, mine, i, k, mine === 'a' ? s : 1 - s)
         return ai
       }
-      const da = ask('a')
-      const dd = ask('d')
+      let da = ask('a')
+      let dd = ask('d')
       const grain: Partial<Record<'a' | 'd', number>> = {}
       const hungry: Partial<Record<'a' | 'd', boolean>> = {}
+      // 한쪽만 물러나면 굴린다 — 어둠을 틈타니 가망이 높지만, 따라잡히면 크게 잃고 그 자리에 진을 친다 (형 10-27: 물러나기는 시도다)
+      let caught: 'a' | 'd' | undefined
+      if ((da === 'retreat') !== (dd === 'retreat')) {
+        const x: 'a' | 'd' = da === 'retreat' ? 'a' : 'd'
+        if (rk(i, `ret-dusk-${x}`) >= retreatOdds(c, st, x, false, true)) {
+          caught = x
+          const f = x === 'a' ? st.fa : st.fd
+          for (const g of GRPS) f[g] *= 1 - R.tacRoundLoss * R.tacRetFailLoss
+          if (x === 'a') { st.ma = clamp(st.ma - R.tacRetFailMorale, 0.1, 1.6); da = 'camp' } else { st.md = clamp(st.md - R.tacRetFailMorale, 0.1, 1.6); dd = 'camp' }
+        }
+      }
+      const cg = caught !== undefined ? { caught } : {}
       if (da === 'retreat' || dd === 'retreat') {
         // 어둠을 틈타 물러난다 — 한 합 몫의 일부만 잃는다 (말이 호위할 틈도 없다)
         for (const [x, d] of [['a', da], ['d', dd]] as const) {
@@ -716,7 +757,7 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
         break
       }
       if (da !== 'press' && dd !== 'press') {
-        duskLog.push({ at: i, a: da, d: dd })
+        duskLog.push({ at: i, a: da, d: dd, ...cg })
         break
       }
       // 한 합 더 — 밀어붙인 쪽이 곡식을 내고 지친다. 곡식이 모자라면 굶은 채 싸워 사기가 더 꺾인다
@@ -730,7 +771,7 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
         if (x === 'a') st.ma = Math.max(0.1, st.ma - hit)
         else st.md = Math.max(0.1, st.md - hit)
       }
-      duskLog.push({ at: i, a: da, d: dd, ...(Object.keys(grain).length > 0 ? { grain } : {}), ...(Object.keys(hungry).length > 0 ? { hungry } : {}) })
+      duskLog.push({ at: i, a: da, d: dd, ...cg, ...(Object.keys(grain).length > 0 ? { grain } : {}), ...(Object.keys(hungry).length > 0 ? { hungry } : {}) })
     }
     const edge = shareOf(c, st)
     const goneD = st.lostD && duel?.kill === true && duel.loser === 'd'
@@ -740,8 +781,9 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
     const capA0 = capOf('a', false)
     const capD0 = capOf('d', false)
     const prev = rounds[rounds.length - 1]
-    const aiA = aiOrder(c, atk, def, 'a', st, capA0.p, edge, `${key}:t${i}:a`, seed, season, prev?.od?.front)
-    const aiD = aiOrder(c, def, atk, 'd', st, capD0.p, 1 - edge, `${key}:t${i}:d`, seed, season, prev?.oa?.front)
+    const darkI = nightAt(c, i)
+    const aiA = aiOrder(c, atk, def, 'a', st, capA0.p, edge, `${key}:t${i}:a`, seed, season, prev?.od?.front, darkI)
+    const aiD = aiOrder(c, def, atk, 'd', st, capD0.p, 1 - edge, `${key}:t${i}:d`, seed, season, prev?.oa?.front, darkI)
     const pick = (me: Side, foe: Side, mine: 'a' | 'd', ai: RoundOrder, foeAi: RoundOrder, cap: { p: number; squad: number; escort: number }): RoundOrder => {
       const used = mine === 'a' ? st.usedA : st.usedD
       const gone = mine === 'a' ? goneD : goneA
@@ -768,6 +810,7 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
           foe: foeNow,
           foeWaver: (mine === 'a' ? st.md / Math.max(0.05, def.morale) : st.ma / Math.max(0.05, atk.morale)) < P.realm.tacHoldSteady,
           capture: cap.p, squad: cap.squad, escort: cap.escort,
+          retreatP: retreatOdds(c, st, mine, false, darkI), retreatGuardP: retreatOdds(c, st, mine, true, darkI),
           ...hintFields(seenHint),
           weAtk: mine === 'a', seen: me.seen,
           // 깃발 짐작의 판 — 화면이 깃발마다 lookRound 로 (적이 이번에 낼 수는 싣지 않는다)
@@ -880,7 +923,7 @@ function aiDusk(c: Ctx, st: State, mine: 'a' | 'd', s: number, baseMe: number, b
     const m = (x === 'a' ? st.ma : st.md) / Math.max(0.05, sd.morale)
     return m < R.tacBreakMorale + R.tacDuskNear || n < R.tacBreakMen + R.tacDuskNear
   }
-  if (!me.player && me.hero?.style !== 'steadfast' && s <= 1 - R.tacWinShare && near(mine, baseMe)) return 'retreat'
+  if (!me.player && me.hero?.style !== 'steadfast' && s <= 1 - R.tacWinShare && near(mine, baseMe) && retreatOdds(c, st, mine, false, true) >= R.tacAiRetreatOdds) return 'retreat'
   if (s >= 0.5 && near(foe, baseFoe)) return 'press'
   const men = aliveShare(mine === 'a' ? c.g0a : c.g0d, mine === 'a' ? st.fa : st.fd) * totalOf(mine === 'a' ? c.g0a : c.g0d)
   if (mine === 'a' && Math.abs(s - 0.5) < R.tacExtendBand && (me.grain ?? 0) >= pressCost(men)) return 'press'
@@ -907,6 +950,7 @@ function duskPending(c: Ctx, st: State, mine: 'a' | 'd', i: number, k: number, s
     morale: Math.round(((hasGrain ? R.tacPressMorale : R.tacPressHungry) / top) * 100),
     edge: s, camp: s >= R.tacWinShare ? 'win' : s <= 1 - R.tacWinShare ? 'lose' : 'draw',
     retreatLoss: Math.round(men * R.tacRoundLoss * R.tacRetreatLoss),
+    retreatP: retreatOdds(c, st, mine, false, true), retreatFailLoss: Math.round(men * R.tacRoundLoss * R.tacRetFailLoss),
   }
   return {
     round: i, groups: [], lead: [], foe: foeNow,
@@ -1112,7 +1156,23 @@ function resolveRound(
     }
   }
 
-  // ── 물러나기 — 싸우기 전에 끝난다. 물러나는 쪽은 한 합 몫의 일부만 잃는다 (말이 호위하면 덜)
+  // ── 물러나기 — 시도다. 한쪽만 물러나면 가망을 굴린다: 따라잡히면 등을 보인 채 크게 잃고 사기가 꺾여 싸움이 이어진다 (형 10-27)
+  if ((oa.lead === 'retreat') !== (od.lead === 'retreat')) {
+    const x: 'a' | 'd' = oa.lead === 'retreat' ? 'a' : 'd'
+    const guard = side(x).o.horse === 'guard' && men(x, 'horse') >= 1
+    const p = retreatOdds(c, st, x, guard, night)
+    if (rk(i, `ret-${x}`) >= p) {
+      const k = R.tacRoundLoss * R.tacRetFailLoss * (guard ? R.tacGuardRetreat : 1)
+      let sl = 0
+      for (const g of GRPS) sl += hurt(x, g, menNow(side(x).g0, side(x).f, g) * k)
+      if (x === 'a') st.ma = clamp(st.ma - R.tacRetFailMorale, 0.1, 1.6)
+      else st.md = clamp(st.md - R.tacRetFailMorale, 0.1, 1.6)
+      acts.push({ s: x, g: 'lead', c: 'retreat', n: Math.round(GRPS.reduce((s, g) => s + men(x, g), 0)), sl, res: 'fail' })
+      ev = 'retreat-fail'
+      by = other(x)
+      return { log: finish(other(x), { push: x === 'a' ? 0 : 1 }), captured: null, retreat: null, duel: null, lost }
+    }
+  }
   if (oa.lead === 'retreat' || od.lead === 'retreat') {
     for (const x of ['a', 'd'] as const) {
       if (side(x).o.lead !== 'retreat') continue

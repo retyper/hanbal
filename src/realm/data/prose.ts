@@ -1079,7 +1079,8 @@ export function roundStory(rd: RoundLog, prev: RoundLog | undefined, c: StoryCtx
       }
       out.push(line[a.art])
     } else if (a.c === 'retreat') {
-      out.push(`${josa(who(x), '이', '가')} 징을 쳐 군사를 물렸다 — 물러나며 ${josa(ppl(a.sl ?? 0), '을', '를')} 잃었다.`)
+      if (a.res === 'fail') out.push(`${josa(who(x), '이', '가')} 징을 쳐 군사를 물리려 했지만 ${who(y)} 군사가 따라붙었다 — 등을 보인 채 ${josa(ppl(a.sl ?? 0), '을', '를')} 잃었다.`)
+      else out.push(`${josa(who(x), '이', '가')} 징을 쳐 군사를 물렸다 — 물러나며 ${josa(ppl(a.sl ?? 0), '을', '를')} 잃었다.`)
     } else if (a.c === 'duel') {
       const hx = named(a.hero, x)
       out.push(`${josa(hx, '이', '가')} 앞으로 나서 ${josa(heroOf(y), '과', '와')} 겨뤘다 — `
