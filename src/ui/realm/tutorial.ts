@@ -45,6 +45,10 @@ const has = (c: TutCtx, k: Order['kind']): boolean => c.orders.some((o) => o.kin
 const marching = (c: TutCtx): boolean => has(c, 'march') || Object.values(c.r.armies).some((a) => a.faction === c.r.player && a.march !== null)
 const FOE_HERO = 'tut-haebi'
 const tab = (t: string): string => `[data-act="tab"][data-tab="${t}"]`
+/** 해비가 우리 손에 있나 (옥 · 회유 중 · 이미 우리 장수) */
+const haveFoe = (c: TutCtx): boolean => c.r.heroes[FOE_HERO]?.status === 'captive' || c.r.heroes[FOE_HERO]?.faction === c.r.player
+/** 싸움을 한 번 치렀다 — 무엇을 골랐든 (사로잡기를 안 골라 이겨도 넘어간다 · 놀이 시험 10-27: 9/12 에 갇혔다) */
+const fought = (c: TutCtx): boolean => haveFoe(c) || (c.report?.lines.some((l) => l.kind === 'battle') ?? false) || c.r.nodes['tut-gaetgol']?.owner === c.r.player
 
 export const TUT_STEPS: readonly TutStep[] = [
   {
@@ -88,13 +92,14 @@ export const TUT_STEPS: readonly TutStep[] = [
     id: 'battle', name: '전투', what: '합마다 명령을 골라 싸운다', text: '「다음 계절」을 누르면 전장이 열린다. 합마다 명령을 하나 고른다. 여기선 「적장 사로잡기」를 골라 본다 — 이 판에선 반드시 잡힌다.',
     // 사로잡기는 「장수」 탭에 있다 · 「전투 개시」는 무리마다 다 고르면 켜진다 — 나머지는 ★ 권함으로 채운다
     press: ['.next'], war: { pick: '[data-war="pick"][data-c="capture"]', go: '[data-war="go"]', tab: '[data-war="gtab"][data-g="lead"]' },
-    done: (c) => c.r.heroes[FOE_HERO]?.status === 'captive' || c.r.heroes[FOE_HERO]?.faction === c.r.player,
+    done: fought,
   },
   {
     id: 'persuade', name: '회유', what: '사로잡은 적장을 우리 장수로 만든다', text: '사로잡은 해비를 우리 장수로 만든다. 「장수」의 「옥에 가둔 적장」에서 그 얼굴을 누르고 「회유한다」.',
     // 사로잡은 장수는 장수 판의 「옥에 가둔 적장」 칸에 있다 — 그 칸을 먼저 열게 (형 10-24: "10/12 에서 장수 탭 눌러도 다음으로 안 가짐")
     press: ['[data-act="persuade"]', `[data-act="hero"][data-id="${FOE_HERO}"]`, '[data-act="htab"][data-v="jail"]', tab('heroes')],
-    done: (c) => c.orders.some((o) => o.kind === 'persuade') || c.r.heroes[FOE_HERO]?.persuade !== undefined || c.r.heroes[FOE_HERO]?.faction === c.r.player,
+    // 해비를 못 잡았으면 회유는 건너뛴다 — 옥이 비어 갇혔다 (놀이 시험 10-27)
+    done: (c) => !haveFoe(c) || c.orders.some((o) => o.kind === 'persuade') || c.r.heroes[FOE_HERO]?.persuade !== undefined || c.r.heroes[FOE_HERO]?.faction === c.r.player,
   },
   {
     id: 'plot', name: '공작', what: '몰래 적을 흔든다 — 소문·방화·암살', text: '「외교」의 「공작」에서 미추홀에 소문을 퍼뜨린다. 적 군사의 사기가 꺾인다.',
