@@ -187,3 +187,12 @@ cmd_fire_c1.ogg  Burning arrow 05.wav · Introspectral · CC0 · https://freesou
 cmd_fire_c2.ogg  불 휙 · 김용배 · CC BY (저작자표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253638&menuNo=200020 (sfx/cand/cmd_fire_2.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
 cmd_fire_c4.ogg  Basic Fire whoosh · LookIMadeAThing · CC0 · https://freesound.org/s/260554/ (sfx/cand/cmd_fire_4.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
 cmd_fire_c5.ogg  Fire Burst Flash · Za-Games · CC0 · https://freesound.org/s/539972/ (sfx/cand/cmd_fire_5.ogg 를 그대로 · 형 10-25 싸움 소리 고르기)
+relic_open_g1.mp3  공유마당 · 「SE_10_06_짧은 축하 효과음」 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13355458
+relic_open_g2.mp3  공유마당 · 「SE_10_01_승리의 군악대 효과음」 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13355453
+relic_open_g3.mp3  공유마당 · 「국악 효과음 #478」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387468
+hire_go_g1.mp3  공유마당 · 「국악 효과음 #117」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387107
+hire_go_g2.mp3  공유마당 · 「국악 효과음 #107」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387097
+hire_go_g3.mp3  공유마당 · 「국악 효과음 #355」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387345
+dex_new_g1.wav  공유마당 · 「국악 효과음 #159」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387149 · 앞 2초를 잘라 1.1초부터 줄임
+dex_new_g2.wav  공유마당 · 「국악 효과음 #603」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387593 · 앞 2초를 잘라 1.1초부터 줄임
+dex_new_g3.wav  공유마당 · 「국악 효과음 #328」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387318 · 앞 2초를 잘라 1.1초부터 줄임

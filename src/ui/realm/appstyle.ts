@@ -319,6 +319,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .kitrow { display: flex; flex-wrap: nowrap; align-items: center; gap: 2px 6px; margin: 3px 0; font-size: 13px; } .ap .kitrow img.ic { width: 20px; height: 20px; }
 .ap .kitrow .kt { color: #c8c0b0; font-size: 12.5px; flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ap .kitrow > b { white-space: nowrap; } .ap .kitrow .btn.sm { flex: none; white-space: nowrap; } .ap .kitrow .btn.sm { margin-left: auto; }
 .ap .hints { margin: 4px 0 6px; padding-left: 18px; font-size: 13px; color: #d8c89a; } .ap .hints li { margin: 1px 0; }
+.ap .fine.histnote { max-width: 560px; margin: 10px auto 0; font-size: 11px; line-height: 1.5; text-align: center; color: #cbbf9fb0; } /* 첫 화면 밑 — 꾸민 이야기 (10-27) */
 .ap .hintd { margin: 2px 0 6px; font-size: 13px; } .ap .hintd > summary { cursor: pointer; color: var(--mute); list-style: none; } .ap .hintd > summary::before { content: "▸ "; } .ap .hintd[open] > summary::before { content: "▾ "; } /* 출정 — 상성은 접어 둔다 (형 10-27) */
 .ap .acard.fresh { border-color: #7aa83a; box-shadow: 0 0 0 2px #7aa83a55; animation: fresh 1.2s ease-out 1; } @keyframes fresh { from { background: #2f3d24; } }
 .ap .face { flex: none; width: 64px; height: 64px; border-radius: 12px; object-fit: cover; border: 1px solid #6a5236; background: #3a2c1e; display: block; }

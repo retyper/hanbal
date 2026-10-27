@@ -205,10 +205,25 @@ const GROUPS = [
       ['capture_b', '족쇄 · zaqqazlowell', '0.8초'],
       ['capture_c', '사슬 떨어짐 · Logicogonist', '0.9초'],
     ]],
-    ['dex_new', '도감에 새 사람이 들 때 — 짧고 밝은 소리', [
+    ['dex_new', '도감에 새 사람이 들 때 — 짧고 밝은 소리 (자주 울린다)', [
       ['dex_new_a', '글로켄슈필 보물 소리 (다운로드 1.4만 회) · FunWithSound', '2.5초'],
       ['dex_new_b', '반짝 업적음 · SkySpeira', '1.8초'],
       ['dex_new_c', '<b>가야금</b> 한 음 (진짜 가야금 녹음) · spt3125', '9.5초'],
+      ['dex_new_c3', '위 거문고 「도~」를 3초로 자름 (10-27)', '3초', 'wav'],
+      ['dex_new_g1', '공유마당 국악 효과음 #159 (반짝이는) 앞 2초 · 아이티앤', '2초', 'wav'],
+      ['dex_new_g2', '공유마당 국악 효과음 #603 (반짝이는) 앞 2초 · 아이티앤', '2초', 'wav'],
+      ['dex_new_g3', '공유마당 국악 효과음 #328 (신비로운) 앞 2초 · 아이티앤', '2초', 'wav'],
+    ]],
+    ['hire_go', '장수를 들일 때 — 새 사람이 온다 (형 10-27: "음악 새로운 거")', [
+      ['hire_go_g1', '공유마당 국악 효과음 #117 (등장하는) · 아이티앤', '6.6초', 'mp3'],
+      ['hire_go_g2', '공유마당 국악 효과음 #107 (등장하는) · 아이티앤', '6.8초', 'mp3'],
+      ['hire_go_g3', '공유마당 국악 효과음 #355 (웅장한) · 아이티앤', '5.8초', 'mp3'],
+    ]],
+    ['relic_open', '유물 상자가 열릴 때 — 팡파레 (형 10-27)', [
+      ['relic_open_g1', '공유마당 「짧은 축하 효과음」', '5초', 'mp3'],
+      ['relic_open_g2', '공유마당 「승리의 군악대 효과음」', '8.4초', 'mp3'],
+      ['relic_open_g3', '공유마당 국악 효과음 #478 (축하해주는) · 아이티앤', '5.5초', 'mp3'],
+      ['horn_victory_c', 'OpenGameArt 「Victory Fanfare Short」 (서양 금관)', '짧음'],
     ]],
   ]],
   ['⑤ 바탕 음악', [
@@ -230,7 +245,7 @@ const GROUPS = [
 
 /** 게임에 붙인 것 — src/ui/realm/sound.ts 의 PICK 과 같게 둔다 */
 const PICK = { ui_order: 'b', ui_open: 'c', season_turn: 'a', war_drums: 'a', arrow_volley: 'a', horses: 'c',
-  horn_victory: 'a', defeat: 'a', capture: 'b', dex_new: 'c', birth: 'c', feast: 'a', envoy: 'b', coins: 'c',
+  horn_victory: 'a', defeat: 'a', capture: 'b', dex_new: 'c3', birth: 'c', feast: 'a', envoy: 'b', coins: 'c', hire_go: 'g1', relic_open: 'g1',
   amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b', bgm_map: 'f', bgm_war: 'g1', bgm_title: 'g1', bgm_lose: 'g1',
   tap_arms: 'g1', tap_coin: 'g1', tap_brush: 'g1', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'g1', war_cry: 'g1',
   battle_clash: 'g1', battle_crit: 'g1' }

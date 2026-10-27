@@ -4469,6 +4469,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + ` <a class="btn ghost" href="${BASE}realm/credits.html">소리 출처</a>`
       // 판 기록 — 판 밖(첫 화면 · 끝 화면)에서도 받는다. 아래 「나라」 탭은 판 안에서만 보여 찾기 어려웠다 (형 10-26: "나라 탭이 어딨음??")
       + (host.gameCount() > 0 ? ` <button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>` : '') + `</p>`
+      // 문명처럼 첫 화면 밑에 작게 — 옛 기록을 빌린 꾸민 이야기다 (형 10-27: "이 게임은 실제 역사랑 상관없다는 주의 문구")
+      + `<p class="fine histnote">이 게임은 『삼국사기』·『삼국유사』 같은 옛 기록을 빌려 지은 꾸민 이야기입니다. 나오는 사람·나라·일은 실제 역사와 다를 수 있습니다.</p>`
     switch (f.kind) {
       case 'title': {
         // 영웅전(도감) — 판을 넘어 남는 것 (VISION §5-4)
@@ -4805,7 +4807,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           // 쇠창살이 닫히는 그 때 — 쇠판 소리와 떨림
           window.setTimeout(() => { if (el.isConnected) { ding(snd('cmd_hold'), 0.75, 0.9); buzz([50, 30, 80]) } }, P.realm.captSlamMs)
         }
-        else if (hire) { for (const t of P.realm.hireCutMs) window.setTimeout(() => ding(snd('cmd_duel'), 0.32), t); window.setTimeout(() => ding(snd('dex_new'), 0.55), P.realm.hirePopMs) }
+        else if (hire) { for (const t of P.realm.hireCutMs) window.setTimeout(() => ding(snd('cmd_duel'), 0.32), t); window.setTimeout(() => ding(snd('hire_go'), 0.55), P.realm.hirePopMs) }
         else if (el.classList.contains('custom')) {
           // 풍습이 처음 걸렸다 — 북이 울리고, 도장이 내려찍히는 때 종과 떨림
           ding(snd('war_drum'), 0.6)
@@ -5402,7 +5404,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const burst = (): void => {
           tombShaking = false
           if (realm === null || !tombRun(realm) || !pickRunRelic(realm, id)) { paint(); return }
-          ding(snd('dex_new'), 0.7)
+          ding(snd('relic_open'), 0.7) // 상자가 터지는 팡파레 (형 10-27)
           const tier = RELIC[id]?.tier ?? 'common'
           window.setTimeout(() => {
             if (!seen()) return
