@@ -4469,8 +4469,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + ` <a class="btn ghost" href="${BASE}realm/credits.html">소리 출처</a>`
       // 판 기록 — 판 밖(첫 화면 · 끝 화면)에서도 받는다. 아래 「나라」 탭은 판 안에서만 보여 찾기 어려웠다 (형 10-26: "나라 탭이 어딨음??")
       + (host.gameCount() > 0 ? ` <button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>` : '') + `</p>`
-      // 문명처럼 첫 화면 밑에 작게 — 옛 기록을 빌린 꾸민 이야기다 (형 10-27: "이 게임은 실제 역사랑 상관없다는 주의 문구")
-      + `<p class="fine histnote">이 게임은 『삼국사기』·『삼국유사』 같은 옛 기록을 빌려 지은 꾸민 이야기입니다. 나오는 사람·나라·일은 실제 역사와 다를 수 있습니다.</p>`
+      // 문명처럼 첫 화면 밑에 작게 — 공식 고지문 말투로 (형 10-27: "꾸민 이야기입니다? 큰 단체의 공식적인 말투에 이런 표현 안 써") (형 10-27: "이 게임은 실제 역사랑 상관없다는 주의 문구")
+      + `<p class="fine histnote">본 게임은 역사 기록을 바탕으로 재구성한 창작물로, 등장하는 인물·국가·사건은 실제 역사와 다를 수 있습니다.</p>`
     switch (f.kind) {
       case 'title': {
         // 영웅전(도감) — 판을 넘어 남는 것 (VISION §5-4)
