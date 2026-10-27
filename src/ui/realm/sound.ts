@@ -1,3 +1,5 @@
+import { P } from '../../tune/params.ts'
+
 /**
  * 칠십팔국의 소리 — public/realm/sfx (CC0 · 출처는 sfx/CREDITS.txt)
  *
@@ -18,7 +20,7 @@ export const PICK = {
   amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b',
   // g1·g2·g3 — 공유마당(공공누리 제1유형 · CC BY)에서 받은 후보 (형 10-23: "공공누리에서 니가 싹 받아와서 쓸 수 있는 거면 다 해 · 출처표기 주의").
   // 출처는 sfx/CREDITS.txt 끝 · 첫 화면의 「소리 출처」. 형이 sound-picker.html 에서 듣고 고르면 글자만 바꾼다
-  bgm_map: 'f', bgm_war: 'c7',
+  bgm_map: 'k1', bgm_war: 'c7',
   // 이기고 진 뒤의 음악 — 이김은 형이 받은 "즐겁게 추격하는 듯한 한국풍" (싸움 음악으로는 너무 신났다 — 형 10-23)
   bgm_win: 'a', bgm_lose: 'c3',
   // 첫 화면(로그인·이어 하기) 음악 — 웅장한 것 (형 10-23: "로그인 화면 메인은 웅장한 bgm 따로")
@@ -42,6 +44,8 @@ export const PICK = {
 /** ogg 가 아닌 후보 — 형이 받아 온 것은 받은 꼴 그대로 · 공유마당 음악은 mp3 · 누르는 소리는 브라우저로 잘라 낸 wav */
 const EXT: Readonly<Partial<Record<string, string>>> = {
   bgm_map_f: 'mp3', bgm_map_g: 'mp3', bgm_win_a: 'mp3',
+  // 10-28 형이 국립국악원 디지털 이음에서 고른 민요·산조 — 조각을 빈틈없이 이어 한 곡씩(k1~k11) · 통째 곡 다섯(k12~k16) · 모두 -18 LUFS 로 맞춤
+  ...Object.fromEntries(Array.from({ length: 16 }, (_, i) => [`bgm_map_k${i + 1}`, 'mp3'])),
   // 거문고 「도~」(dex_new_c 9.5초)를 3초로 자르고 2초부터 줄였다 — 고용·도감·유물 상자에 통째로 울려 길었다 (형 10-27)
   dex_new_c3: 'wav', war_drums_b2: 'wav', defeat_a3: 'wav', horses_m: 'wav',
   // 10-27 밤 형: 제사·혼인 첫 후보 여섯 "다 별로" → 새 후보 (대금 · 국악 효과음)
@@ -59,14 +63,20 @@ export type Slot = keyof typeof PICK
 export const LATER: ReadonlySet<Slot> = new Set<Slot>([])
 /** 한 곡이 끝나면 다음 곡으로 넘어가는 자리 — 첫 글자가 PICK 이다 (형이 받은 평상시 음악 둘: bgm후보 · 배경음2) */
 // 형 10-23 소리 고르기 판: 지도 = 형의 두 곡 + 국악 BGM 다섯 · 싸움 = 사물놀이 둘
-export const ROTATE: Readonly<Partial<Record<Slot, readonly string[]>>> = { bgm_map: ['f', 'c2', 'c9', 'c3', 'c4', 'c10'], bgm_war: ['c7', 'c8'] }
+// 10-28: 지도 앞에 국악원 곡 열여섯 — 민요(긴난봉가 · 아리랑 · 밀양 · 정선 · 뱃노래 · 한오백년 · 진도 · 자진난봉가 · 상주모심기) 사이사이에
+// 기악(거문고 산조 · 양금 상령산 · 영산회상 타령 · 수연장지곡 · 우조가락도드리 · 방아타령 · 25현 한오백년)을 끼워 같은 결이 이어 붙지 않게
+export const ROTATE: Readonly<Partial<Record<Slot, readonly string[]>>> = { bgm_map: ['k1', 'k12', 'k5', 'k3', 'k6', 'k14', 'k9', 'k13', 'k7', 'k4', 'k11', 'k15', 'k10', 'k16', 'k2', 'k8', 'f', 'c2', 'c9', 'c3', 'c4', 'c10'], bgm_war: ['c7', 'c8'] }
+/** 한 곡이 끝나고 다음 곡까지 쉬는 자리 — 계절 바람소리만 남는다 (형 10-28: "문명에선 배경음악 안 들릴 때도 많은데") */
+const REST: ReadonlySet<Slot> = new Set<Slot>(['bgm_map'])
 /**
  * 곡마다 소리 크기 — 형이 가져온 지도 곡(-16dB 언저리)에 맞춘다 (형 10-23: "소리도 너무 커"). 1 보다 크게는 못 키운다.
  * 2026-10-23 잰 값: map c4 -12.0 · c9 -11.9 · war c7 -12.5 · title c6 -14.0 · 끝 이김 w5(Joy of Victory) -18.0 · 끝 짐 c6 -14.8
+ * 2026-10-28 지도 곡은 모두 -18 LUFS 로 (형: "볼륨들도 제각각이니까") — 잰 값 f -15.2 · c2 -15.4 · c4 -7.9 · c9 -8.0 · c10 -14.6 →
+ * 아래 배수로 낮추고, c3(-21.0)과 국악원 곡(k1~k11)은 파일을 -18 로 다시 구웠다
  */
 const TRACK_GAIN: Readonly<Partial<Record<string, number>>> = {
   // 싸움 음악(사물놀이)은 꽹과리가 앞에 나서 깃발 소리를 덮는다 — 지도 음악보다 한참 낮게 (형 10-23: "꽹과리 소리 너무 많이 시끄러운데")
-  bgm_map_c4: 0.56, bgm_map_c9: 0.56, bgm_war_c7: 0.3, bgm_war_c8: 0.5, bgm_title_c6: 0.72, bgm_end_lose_c6: 0.87,
+  bgm_map_f: 0.72, bgm_map_c2: 0.74, bgm_map_c4: 0.31, bgm_map_c9: 0.32, bgm_map_c10: 0.68, bgm_war_c7: 0.3, bgm_war_c8: 0.5, bgm_title_c6: 0.72, bgm_end_lose_c6: 0.87,
 }
 const gainOf = (slot: Slot, pick: string = PICK[slot]): number => TRACK_GAIN[`${slot}_${pick}`] ?? 1
 
@@ -209,6 +219,8 @@ function track(base: string, vol: number): { prime(slot: Slot): void; want(slot:
   let prev: Slot | null = null
   /** 파일이 없는 곡 (아직 안 받은 승리·패배 음악) */
   const missing = new Set<Slot>()
+  /** 곡 사이에 쉬는 중 — 끝나면 다음 곡 (탭이 가려지거나 다른 곡으로 바뀌면 걷는다) */
+  let rest = 0
   const node = (slot: Slot): { el: HTMLAudioElement; gain: GainNode | null } => {
     let n = els.get(slot)
     if (n === undefined) {
@@ -224,7 +236,9 @@ function track(base: string, vol: number): { prime(slot: Slot): void; want(slot:
           i = (i + 1) % list.length
           el.src = `${base}realm/sfx/${sndFile(slot, list[i])}`
           el.volume = gainOf(slot, list[i])
-          if (cur === slot) start()
+          if (!REST.has(slot)) { if (cur === slot) start(); return }
+          const { bgmRestMinS: lo, bgmRestMaxS: hi } = P.realm
+          rest = window.setTimeout(() => { rest = 0; if (cur === slot) start() }, (lo + Math.random() * Math.max(0, hi - lo)) * 1000)
         })
       }
       el.addEventListener('error', () => {
@@ -238,13 +252,14 @@ function track(base: string, vol: number): { prime(slot: Slot): void; want(slot:
     return n
   }
   const start = (): void => {
-    if (cur === null || document.visibilityState !== 'visible') return
+    if (cur === null || rest !== 0 || document.visibilityState !== 'visible') return
     const n = node(cur)
     void n.el.play().then(() => {
       if (n.gain !== null && ctx) n.gain.gain.setTargetAtTime(vol, ctx.currentTime, FADE_S)
     }).catch(() => { /* 아직 손을 안 댔다 — 첫 탭에 다시 */ })
   }
   const stop = (slot: Slot | null): void => {
+    if (rest !== 0) { window.clearTimeout(rest); rest = 0 }
     const n = slot !== null ? els.get(slot) : undefined
     if (n === undefined) return
     n.el.pause()
