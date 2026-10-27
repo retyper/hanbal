@@ -109,11 +109,12 @@ export const LEGACY_CSS = `
 .ap .retain { text-align: left; margin: 10px 0 4px; } .ap .retain h4 { margin: 4px 0 2px; color: var(--gold); } .ap .retain h4 small { color: var(--mute); font-weight: 400; }
 .ap .retain .rtl { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .ap .retain .rtc { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 78px; padding: 6px 2px 5px; border-radius: 12px; border: 1.5px solid var(--line);
-  background: #1f1710; color: var(--ink); font: inherit; cursor: pointer; opacity: .62; }
+  background: #1f1710; color: var(--ink); font: inherit; cursor: pointer; }
 .ap .retain .rtc img, .ap .retain .rtc .nof { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; object-position: top; background: #17110c; }
 .ap .retain .rtc b { font-size: 12px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ap .retain .rtc .ttl { font-size: 9.5px; }
 .ap .retain .rtc i { font-style: normal; font-size: 10.5px; color: var(--mute); }
-.ap .retain .rtc.on { opacity: 1; border-color: #e0b860; background: linear-gradient(#2c2618, #1f1710); } .ap .retain .rtc.on i { color: #f0c860; }
+.ap .retain .rtc.on { opacity: 1; border-color: #f0c860; border-width: 2px; background: linear-gradient(#3a301a, #1f1710); box-shadow: 0 0 12px #e0b86099; } .ap .retain .rtc.on i { color: #f0c860; }
+/* 고르기 전에는 다 제 밝기 · 고른 이만 금테로 돋보인다 · 자리가 다 차면 남은 이만 흐려진다 (형 10-27: "너무 어두우니까 기본으로") */
 .ap .retain .rtc.full { cursor: default; opacity: .4; }
 .ap .retain .rtc .dlv { align-self: center; font-size: 10.5px; padding: 0 6px; } .ap .retain .rtc .rtst { font-size: 9.5px; color: #e8d8a8; letter-spacing: -.2px; white-space: nowrap; }
 .ap .front .retain.carry { margin: 8px 0 14px; }
