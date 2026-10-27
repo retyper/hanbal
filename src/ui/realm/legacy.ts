@@ -123,7 +123,7 @@ export const LEGACY_CSS = `
 .ap .bringov .retain { margin: 0; } .ap .bringov .retain h4 { font-size: 18px; } .ap .bringov .retain .rtl { justify-content: center; }
 .ap .bringov .retain .rtc { width: 92px; } .ap .bringov .retain .rtc img, .ap .bringov .retain .rtc .nof { width: 64px; height: 64px; }
 .ap .bringov .bx { position: absolute; right: 10px; top: 8px; border: 0; background: none; color: #cbbf9f; font-size: 18px; cursor: pointer; }
-.ap .bringov .bringgo { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+/* 고를 것을 다 갖추면 완료 단추는 화면 아래에 붙박이로 크게 (형 10-27: "혼자 간다 · 이대로 떠난다가 하단 고정으로") */ .ap .bringov .bringbox { max-height: calc(100% - 96px); margin-bottom: 80px; } .ap .bringov .bringgo { position: fixed; left: 0; right: 0; bottom: 0; z-index: 93; display: flex; gap: 10px; justify-content: center; padding: 22px 16px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(#0d0a0700, #0d0a07f0 34%); } .ap .bringov .bringgo .btn { flex: 0 1 260px; justify-content: center; padding: 14px 16px; font-size: 18px; } .ap .bringov .bringgo .btn.pri { flex-basis: 320px; animation: wgoready 1.1s ease-in-out infinite alternate; }
 .ap .tierp { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 10px; } .ap .tierp > b { color: #f0a070; } .ap .tierp b { color: #f0a070; }
 .ap .tierp .seg { flex-wrap: wrap; } .ap .tierp .seg button { min-width: 44px; }
 .ap .tierp .seg button.locked { opacity: .45; cursor: default; } .ap .tierp .seg button.apex:not(.locked) { color: #ffb08a; border-color: #c0603a; }
