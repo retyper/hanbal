@@ -879,7 +879,8 @@ export function sideOf(
     ...(hs.length > 1 ? { aides: hs.slice(1).map(asSide) } : {}),
     hungry: hungryOf(armies), specials, terrain, water: o.water, player: r.factions[faction]?.mind === 'player', seen: o.seen,
     ...(o.moraleBonus !== undefined || easy ? { moraleBonus: mb } : {}),
-    ...(o.captureBonus !== undefined && o.captureBonus > 0 ? { captureBonus: o.captureBonus } : {}),
+    ...((o.captureBonus ?? 0) + (easy ? P.realm.easyCapture : 0) > 0 ? { captureBonus: (o.captureBonus ?? 0) + (easy ? P.realm.easyCapture : 0) } : {}),
+    ...(easy ? { easy: true } : {}),
     // 배우는 판 — 우리 쪽 사로잡기는 반드시 되고, 상대는 우리 장수를 잡지 않는다 (형: "튜토리얼급이니 100% 성공하도록")
     ...(r.region === 'tutorial' ? { capture: r.factions[faction]?.mind === 'player' ? 'sure' as const : 'never' as const } : {}),
     // 호궤 — 플레이어 쪽만, 곳간에 그만큼 있을 때 (곡식은 싸움이 끝나고 payFeast 가 뺀다)

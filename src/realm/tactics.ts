@@ -76,6 +76,8 @@ export interface Side {
   readonly knowsFoe?: boolean
   /** 사로잡기 가산 (저격 발 묶음 …) */
   readonly captureBonus?: number
+  /** 쉬움(촌장)의 우리 쪽 — 물러나기가 쉽고 따라잡혀도 덜 잃는다 (season.sideOf) */
+  readonly easy?: boolean
   /** 배우는 판 — sure 면 이쪽 사로잡기는 반드시 되고, never 면 아예 못 한다 */
   readonly capture?: 'sure' | 'never'
   /**
@@ -409,6 +411,7 @@ function retreatOdds(c: Ctx, st: State, mine: 'a' | 'd', guard: boolean, dark: b
   p -= R.tacRetMorale * (1 - myM)
   if (dark) p += R.tacRetDark
   if (foeM < R.tacHoldSteady) p += R.tacRetWaver
+  if (me.easy === true) p += R.easyRetreat
   return clamp(p, R.tacRetMin, R.tacRetMax)
 }
 
@@ -739,7 +742,7 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
         if (rk(i, `ret-dusk-${x}`) >= retreatOdds(c, st, x, false, true)) {
           caught = x
           const f = x === 'a' ? st.fa : st.fd
-          for (const g of GRPS) f[g] *= 1 - R.tacRoundLoss * R.tacRetFailLoss
+          for (const g of GRPS) f[g] *= 1 - R.tacRoundLoss * R.tacRetFailLoss * ((x === 'a' ? atk : def).easy === true ? R.easyRetreatFail : 1)
           if (x === 'a') { st.ma = clamp(st.ma - R.tacRetFailMorale, 0.1, 1.6); da = 'camp' } else { st.md = clamp(st.md - R.tacRetFailMorale, 0.1, 1.6); dd = 'camp' }
         }
       }
@@ -1162,7 +1165,7 @@ function resolveRound(
     const guard = side(x).o.horse === 'guard' && men(x, 'horse') >= 1
     const p = retreatOdds(c, st, x, guard, night)
     if (rk(i, `ret-${x}`) >= p) {
-      const k = R.tacRoundLoss * R.tacRetFailLoss * (guard ? R.tacGuardRetreat : 1)
+      const k = R.tacRoundLoss * R.tacRetFailLoss * (guard ? R.tacGuardRetreat : 1) * (side(x).s.easy === true ? R.easyRetreatFail : 1)
       let sl = 0
       for (const g of GRPS) sl += hurt(x, g, menNow(side(x).g0, side(x).f, g) * k)
       if (x === 'a') st.ma = clamp(st.ma - R.tacRetFailMorale, 0.1, 1.6)

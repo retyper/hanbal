@@ -667,6 +667,8 @@ export function terrChips(r: Realm, l: BattleLine, me: string, foe: string): Ter
   const dw = sleep ? '' : def
   const ds = sleep ? ' — 이번엔 기습을 당해 못 쓴다' : ''
   const out: TerrChip[] = []
+  // 쉬움(촌장) — 우리 쪽 덤이 판정에 늘 걸려 있다. 보이게 맨 앞에 (형 10-27: "쉬운 난이도에서는 전투 혜택도 좀 줘라")
+  if ((r.tier ?? 1) < 1 && r.region !== 'tutorial') out.push({ k: 'easy', icon: 'emblem-crown', name: '촌장의 덤', line: `쉬움 — 우리 군사가 ${P.realm.easyPower}배 세고 사기가 ${Math.round(P.realm.easyMorale * 100)} 높다 · 물러나기와 적장 사로잡기가 쉽다 · 따라잡혀도 덜 잃는다`, who: 'us' })
   if (l.field === true) out.push({ k: 'road', icon: 'route-column', name: '길 위', line: '길에서 마주쳤다 — 성도 장정도 없이 맞붙은 그대로 겨룬다', who: '' })
   else if (node !== undefined) {
     if (node.kind === 'fort') out.push({ k: 'fort', icon: 'settle-mountain-hold', name: '산성', line: `지키는 쪽이 크게 단단하다 · 높은 곳에서 바위를 굴린다${ds}`, who: def })
