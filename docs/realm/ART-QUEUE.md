@@ -6,14 +6,16 @@
 
 | 계정 (화면에 뜨는 이름) | 풀리는 때 | 본 때 |
 |---|---|---|
-| YunCheol (edu · 'YunCheol Shin') | 지금 쓰는 중 | 10-28 02:50 부터 사건 그림 |
+| YunCheol (edu · 'YunCheol Shin') | 10-29 AM 2:53 (문구 그대로) | 10-28 03:25 한도 문구 — 02:50 부터 스물다섯 장 (사건 그림 · 한 장은 거절: bow-forge) |
 | retyper92 (계정 고르기에 'YunCheol Shin · retyper92@gmail' 로 뜬다) | 10-28 PM 2:58 (문구 그대로) | 10-27 15:10 한도 문구 — 15:00 부터 다섯 장 (g-05·06·07·18·20) |
 | roqkfeke12 ('윤철 신') | 10-28 PM 6:15 (문구 그대로) | 10-27 18:22 한도 문구 — 18:12 부터 열 장 (g-22 ~ g-32 · 다음은 g-41 고자 바우부터 아홉 장) |
 | retyper (hephaestosian · 'retyper') | 10-28 PM 10:17 (문구 그대로) | 10-28 02:47 한도 문구 — 10-27 22:16 부터 열 장 (명치판 아홉 + 사건 invade-raid) |
 
 
-**★ 2026-10-28 형: "제미나이로 만든 이벤트 화면들도 다 챗지피티로 · 제미나이로 퀄리티 있는 거 뽑아내기 너무 어렵다"** — 사건 그림 서른아홉 (챗지피티 사람 그림만 규칙을 이걸로 넓힌다). 주문서 = public/_tmp/events39.json (head + 장면 + 16:9 자리면 wide + tail · _queue 순서). 한 장마다 새 대화 · IMAGE 1 = 옛 그림(public/_tmp/ev/event-<이름>.jpg) · IMAGE 2 = 그림결 event-relief-cavalry.jpg — file_upload 로 둘을 '사진 첨부' 입력에 (챗지피티 페이지에서 127.0.0.1 fetch 는 이제 막힌다) · 받기는 a.download → ~/Downloads/gptev-<이름>.png → scratchpad bakeev.py (16:9 자리는 1600×900, 나머지 1152×768 · cut/ 에도 넣는다).
-   순서: ~~invade-raid~~(10-28 hephaestosian) · invade-siege · invade-field · take-town · captured-ours · capture · plot-assassin · plot-bribe · plot-burn · plot-rescue · plot-rumor · plot-sow · plot-spy · truce-pact · tribute-bow · court-hall · festival · flood · plague · dream · newborn · alliance-oath · bow-forge · defection · divination · egg-birth · eight-harbours · expedition-return · goguryeo-hunt · golden-egg · iron-trade · night-raid · outside-envoy · palisade-build · people-quarrel · salt-makers(옛 판에 지는 해 동그라미) · sniped-commander · spy-rumor · yeonggo
+**★ 2026-10-28 형: "제미나이로 만든 이벤트 화면들도 다 챗지피티로 · 제미나이로 퀄리티 있는 거 뽑아내기 너무 어렵다"** — 사건 그림 서른아홉 (챗지피티 사람 그림만 규칙을 이걸로 넓힌다). 주문서 = public/_tmp/events39.json (head + 장면 + 16:9 자리면 wide + tail · _queue 순서). 한 장마다 새 대화 · 처음 여덟 장은 옛 그림·그림결 그림을 붙였으나 글만으로도 결이 같아 그 뒤로는 글만 보낸다(형 10-28: 크레딧 아껴) — 장면 글은 scratchpad evprompts.json 꼴 · 챗지피티 페이지에서 127.0.0.1 fetch 는 이제 막힌다 · 받기는 a.download → ~/Downloads/gptev-<이름>.png → scratchpad bakeev.py (16:9 자리는 1600×900, 나머지 1152×768 · cut/ 에도 넣는다).
+   10-28 새벽 스물여섯 장 바꿈(hephaestosian 하나 · edu 스물다섯): invade-raid · invade-siege · invade-field · take-town · captured-ours · capture · plot-assassin · plot-bribe · plot-burn · plot-rescue · plot-rumor · plot-sow · plot-spy · truce-pact · tribute-bow · court-hall · festival · flood · plague · dream · newborn · alliance-oath · defection · divination · egg-birth · eight-harbours
+   남은 열셋: bow-forge(10-28 거절 — 활 만들기를 무기 제작으로 본 듯 · 다 만든 활을 건네는 장면으로 바꿔 다시) · expedition-return · goguryeo-hunt · golden-egg · iron-trade · night-raid · outside-envoy · palisade-build · people-quarrel · salt-makers(옛 판에 지는 해 동그라미) · sniped-commander · spy-rumor · yeonggo
+   그다음(형: "퀄리티 떨어져 보이는 것 계속 수정"): 세로 화면 event-v(태몽·탄생) · 제미나이로 받은 여인 명치판 w-29~45·w-79·w-80 · 계절 띠 넷 · 싸움터 배경 battle-field
 
 > 형 (2026-10-19): *"챗지피티를 중요한 이미지 생성에 항상 다음 만들거 목록화해두고 크레딧 생길때마다 생성시켜야지 뭐하냐"*
 
