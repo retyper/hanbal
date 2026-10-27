@@ -20,7 +20,7 @@ export const PICK = {
   amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b',
   // g1·g2·g3 — 공유마당(공공누리 제1유형 · CC BY)에서 받은 후보 (형 10-23: "공공누리에서 니가 싹 받아와서 쓸 수 있는 거면 다 해 · 출처표기 주의").
   // 출처는 sfx/CREDITS.txt 끝 · 첫 화면의 「소리 출처」. 형이 sound-picker.html 에서 듣고 고르면 글자만 바꾼다
-  bgm_map: 'k1', bgm_war: 'c7',
+  bgm_map: 'k1', bgm_war: 'c7v',
   // 이기고 진 뒤의 음악 — 이김은 형이 받은 "즐겁게 추격하는 듯한 한국풍" (싸움 음악으로는 너무 신났다 — 형 10-23)
   bgm_win: 'a', bgm_lose: 'c3',
   // 첫 화면(로그인·이어 하기) 음악 — 웅장한 것 (형 10-23: "로그인 화면 메인은 웅장한 bgm 따로")
@@ -65,7 +65,9 @@ export const LATER: ReadonlySet<Slot> = new Set<Slot>([])
 // 형 10-23 소리 고르기 판: 지도 = 형의 두 곡 + 국악 BGM 다섯 · 싸움 = 사물놀이 둘
 // 10-28: 지도 앞에 국악원 곡 열여섯 — 민요(긴난봉가 · 아리랑 · 밀양 · 정선 · 뱃노래 · 한오백년 · 진도 · 자진난봉가 · 상주모심기) 사이사이에
 // 기악(거문고 산조 · 양금 상령산 · 영산회상 타령 · 수연장지곡 · 우조가락도드리 · 방아타령 · 25현 한오백년)을 끼워 같은 결이 이어 붙지 않게
-export const ROTATE: Readonly<Partial<Record<Slot, readonly string[]>>> = { bgm_map: ['k1', 'k12', 'k5', 'k3', 'k6', 'k14', 'k9', 'k13', 'k7', 'k4', 'k11', 'k15', 'k10', 'k16', 'k2', 'k8', 'f', 'c2', 'c9', 'c3', 'c4', 'c10'], bgm_war: ['c7', 'c8'] }
+export const ROTATE: Readonly<Partial<Record<Slot, readonly string[]>>> = { bgm_map: ['k1', 'k12', 'k5', 'k3', 'k6', 'k14', 'k9', 'k13', 'k7', 'k4', 'k11', 'k15', 'k10', 'k16', 'k2', 'k8', 'f', 'c2', 'c9', 'c3', 'c4', 'c10'], bgm_war: ['c7v', 'c8v'] }
+// 싸움 음악 c7v·c8v = c7·c8 에 남창 추임새를 얹은 것 (형 10-28: c7 5초 헐씨구 · 36초 잘한다 / c8 6초 얼씨구 · 10초 좋다 · 17초 하믄 · 20초 그러지 · 31초 헐씨구 · 35초 잘한다)
+// 추임새마다 그 자리 음악보다 4dB 크게 · 봉우리만 눌렀다 — 굽는 법은 assets_src/realm/sfx-in/chuim/
 /** 한 곡이 끝나고 다음 곡까지 쉬는 자리 — 계절 바람소리만 남는다 (형 10-28: "문명에선 배경음악 안 들릴 때도 많은데") */
 const REST: ReadonlySet<Slot> = new Set<Slot>(['bgm_map'])
 /**
@@ -76,7 +78,7 @@ const REST: ReadonlySet<Slot> = new Set<Slot>(['bgm_map'])
  */
 const TRACK_GAIN: Readonly<Partial<Record<string, number>>> = {
   // 싸움 음악(사물놀이)은 꽹과리가 앞에 나서 깃발 소리를 덮는다 — 지도 음악보다 한참 낮게 (형 10-23: "꽹과리 소리 너무 많이 시끄러운데")
-  bgm_map_f: 0.72, bgm_map_c2: 0.74, bgm_map_c4: 0.31, bgm_map_c9: 0.32, bgm_map_c10: 0.68, bgm_war_c7: 0.3, bgm_war_c8: 0.5, bgm_title_c6: 0.72, bgm_end_lose_c6: 0.87,
+  bgm_map_f: 0.72, bgm_map_c2: 0.74, bgm_map_c4: 0.31, bgm_map_c9: 0.32, bgm_map_c10: 0.68, bgm_war_c7: 0.3, bgm_war_c8: 0.5, bgm_war_c7v: 0.3, bgm_war_c8v: 0.5, bgm_title_c6: 0.72, bgm_end_lose_c6: 0.87,
 }
 const gainOf = (slot: Slot, pick: string = PICK[slot]): number => TRACK_GAIN[`${slot}_${pick}`] ?? 1
 

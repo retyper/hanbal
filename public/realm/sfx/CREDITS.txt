@@ -214,3 +214,5 @@ bgm_map_k13.mp3  국립국악원 디지털 이음 · 「수연장지곡」 (거�
 bgm_map_k14.mp3  국립국악원 디지털 이음 · 「우조가락도드리」 (양금) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
 bgm_map_k15.mp3  국립국악원 디지털 이음 · 「방아타령」 (산조 가야금) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
 bgm_map_k16.mp3  국립국악원 디지털 이음 · 「25현가야금을 위한 변주곡 한오백년」 (25현 가야금) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
+bgm_war_c7v.ogg  형이 받아 온 국악 남창 추임새(헐씨구·잘한다)를 bgm_war_c7(공유마당 「국악 BGM #197 (사물놀이)」 · 주식회사 아이티앤 · CC BY)에 얹음 — 추임새 출처 확인 중
+bgm_war_c8v.ogg  형이 받아 온 국악 남창 추임새(얼씨구·좋다·하믄·그러지·헐씨구·잘한다)를 bgm_war_c8(공유마당 「LSMBG0704_사물놀이」 · 한국저작권위원회 · CC BY)에 얹음 — 추임새 출처 확인 중
