@@ -23,11 +23,12 @@
 <main>
 <p class="lead">이 게임에 쓴 소리와 음악은 모두 출처를 밝히면 쓸 수 있는 것들이다 — 공공누리 제1유형(출처표시) · CC BY(저작자 표시) · CC0(퍼블릭 도메인). 누르는 소리는 앞부분을 짧게 잘라 썼다.</p>
 <div id="list">불러오는 중…</div>
-<p class="note">공공누리 제1유형 — 이 게임의 소리 가운데 공공누리 표시가 있는 것은 (재)전주정보문화산업진흥원이 공공누리 제1유형으로 개방한 저작물을 이용하였으며, 공유마당(gongu.copyright.or.kr)에서 무료로 받을 수 있다.</p>
+<p class="note">공공누리 제1유형 — 이 게임의 소리 가운데 공공누리 표시가 있는 것은 (재)전주정보문화산업진흥원이 공공누리 제1유형으로 개방한 저작물을 이용하였으며, 공유마당(gongu.copyright.or.kr)에서 무료로 받을 수 있다. 국립국악원 표시가 있는 국악 선율은 국립국악원이 공공누리 제1유형으로 개방한 저작물(디지털 이음 · gugak.go.kr/digitaleum)을 이용하였다.</p>
 </main>
 <script>
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 const GROUPS = [
+  ['국립국악원 디지털 이음', '공공누리 제1유형', (d) => d.startsWith('국립국악원')],
   ['공유마당', '공공누리 제1유형 · CC BY', (d) => d.startsWith('공유마당')],
   ['형이 받아 온 음악', '출처 확인 중', (d) => d.startsWith('형이')],
   ['Freesound · OpenGameArt', 'CC0', () => true],
@@ -47,7 +48,7 @@ fetch('sfx/CREDITS.txt').then((r) => r.text()).then((t) => {
       const url = (x.desc.match(/https?:\/\/\S+?(?=[\s)]|$)/) || [''])[0]
       const name = (x.desc.match(/「([^」]+)」|"([^"]+)"/) || [])[1] || (x.desc.match(/"([^"]+)"/) || [])[1] || parts[1] || x.file
       const license = /공공누리/.test(x.desc) ? '공공누리 1유형' : /CC BY/.test(x.desc) ? 'CC BY' : /CC0/.test(x.desc) ? 'CC0' : ''
-      const who = title === 'Freesound · OpenGameArt' ? (parts[3] || '') : title === '공유마당' ? (parts[2] || '') : ''
+      const who = title === 'Freesound · OpenGameArt' ? (parts[3] || '') : title === '공유마당' || title === '국립국악원 디지털 이음' ? (parts[2] || '') : ''
       h += `<div class="row"><b>${esc(name)}</b><span class="lic">${esc(license)}</span><span class="who">${esc(who)}${who ? ' · ' : ''}${esc(x.file)}${url ? ` · <a href="${esc(url)}" target="_blank" rel="noopener">원본</a>` : ''}</span></div>`
     }
   }
