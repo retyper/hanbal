@@ -14,7 +14,7 @@ export type ChiefMood = 'a' | 'p'
 
 export const CHIEF_SITS: readonly ChiefSit[] = ['truce', 'alliance', 'trade', 'tribute', 'demand', 'joint', 'aid', 'peace', 'ally', 'vassal', 'refused', 'gift']
 export const CHIEF_SIT_NAME: Readonly<Record<ChiefSit, string>> = {
-  truce: '화친 청', alliance: '동맹 청', trade: '교역 청', tribute: '조공 바침', demand: '조공 요구', joint: '함께 치자', aid: '곡식 청', peace: '화친 맺음', ally: '동맹 맺음', vassal: '밑으로 들어옴', refused: '거절', gift: '선물 받음',
+  truce: '화친 청', alliance: '동맹 청', trade: '교역 청', tribute: '속국 되기', demand: '속국 요구', joint: '함께 치자', aid: '곡식 청', peace: '화친 맺음', ally: '동맹 맺음', vassal: '밑으로 들어옴', refused: '거절', gift: '선물 받음',
 }
 
 /** [적극, 소극] */

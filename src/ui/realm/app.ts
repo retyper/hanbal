@@ -187,7 +187,8 @@ function ding(name: string, vol = 0.6, rate = 1, dur = 0): void {
 const GUIDE: Readonly<Record<string, { readonly title: string; readonly body: readonly string[] }>> = {
   paths: { title: '승리 조건 — 넷 가운데 하나만 이루면 이긴다', body: [
     '정복 — 나라마다 도읍(★)이 하나씩 있다. 막대만큼 도읍을 쥐면 이긴다. 우리 도읍을 빼앗기면 진다.',
-    '맹주 — 아는 나라 절반 넘게와 동맹이나 조공으로 손잡고(조공국 하나는 있어야) 네 계절을 끊기지 않고 버티면 진왕이 된다. 동그라미가 그 네 계절이다.',
+    '맹주 — 아는 나라 절반 넘게를 속국과 동맹으로 채우고 네 계절을 끊기지 않고 버티면 진왕이 된다. 속국은 한 나라, 동맹은 반 나라로 센다(속국이 하나는 있어야). 동그라미가 그 네 계절이다.',
+    '속국은 외교의 「속국 삼기」로 만든다. 우리 힘이 그 나라보다 훨씬 셀수록 잘 받아들인다.',
     '철·뱃길 — 철광이나 포구를 하나 쥐어야 열린다. 한 해 안에 여러 나라와 철을 바꾸고, 바꾼 나라 수 × 철이 막대를 채우면 변진의 쇠가 우리 뱃길로 흐른다.',
     '큰 제사 — 소도 곁 고을을 쥐고 봄·가을 제사를 한 번도 거르지 않고 이어 지내고, 그해 가을 집이 넉넉하면 큰 제사가 열린다. 사슬 고리가 이어 지낸 제사다.',
     '소문 — 다른 나라가 어느 길에 가까우면 아래에 붉게 뜬다. 그 길을 끊어야 한다.',
@@ -208,7 +209,7 @@ const GUIDE: Readonly<Record<string, { readonly title: string; readonly body: re
     '동맹 — 함께 싸운다. 장터가 서고, 본 것을 나누고, 함께 치자·지원 요청·군대 빌리기를 할 수 있다.',
     '교역 — 무엇을 주고 무엇을 받을지 정한다. 저들 창고에 없는 것은 못 받는다.',
     '선물 — 늘 받는다. 호감이 오른다.',
-    '조공 요구 — 바치라고 할 몫을 정한다. 받아들이면 다달이 바치는 나라가 되고, 거절하면 전쟁이 난다.',
+    '속국 삼기 — 바치라고 할 몫을 정한다. 받아들이면 우리를 섬기는 속국이 되어 다달이 바치고, 맹주의 셈에 한 나라로 든다. 거절하면 전쟁이 난다.',
     '함께 치자 — 동맹이 두 계절 안에 칠 곳을 고른다. 지키면 호감이 오르고, 못 지키면 내려간다.',
     '지원 요청 — 동맹에게 곡식을 그냥 달라고 한다. 호감이 높고 저들 창고가 넉넉할수록 잘 준다.',
     '군대 빌리기 — 동맹 군대가 와서 몇 계절 우리 고을을 지켜 준다. 지도에 「도움」 말로 보인다.',
@@ -1151,7 +1152,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return [
       ['정복', cl(held / Math.max(1, need))],
       // 맹주 — 손잡은 나라를 채우는 데 반, 맹약을 네 계절 버티는 데 반
-      ['맹주', pact.have.length < pact.need ? cl(pact.have.length / Math.max(1, pact.need)) * 0.5 : 0.5 + cl(streak / S) * 0.5],
+      ['맹주', pact.score < pact.need || pact.vassals < P.realm.suzerainMinVassals ? cl(pact.score / Math.max(1, pact.need)) * 0.5 : 0.5 + cl(streak / S) * 0.5],
       ['철과 뱃길', io.gate ? cl(Math.min(io.score / Math.max(1, io.need), io.partners.length / Math.max(1, io.minPartners))) : 0],
       ['큰 제사', cl(Math.min(ri.chain / Math.max(1, ri.need), ri.hh / Math.max(1, ri.hhNeed)))],
     ]
@@ -3610,7 +3611,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const clock = Array.from({ length: S }, (_, i) => `<i class="${i < streak ? 'on' : ''}"></i>`).join('')
     let h = `<div class="paths"><h4 class="qh">승리 조건 <small>넷 가운데 하나만 이루면 이긴다</small>${guideBtn('paths')}</h4>`
     h += `<div class="path"><b>정복</b>${bar(held, need)}<span>도읍 ${held}/${need}</span></div>`
-    h += `<div class="path"><b>맹주</b>${bar(pact.have.length, pact.need, 'pact')}<span>손잡은 나라 ${pact.have.length}/${pact.need}</span></div>`
+    h += `<div class="path"><b>맹주</b>${bar(pact.score, pact.need, 'pact')}<span data-tip="속국은 한 나라, 동맹은 반 나라로 센다">속국 ${pact.vassals} · 동맹 ${pact.allies} — ${pact.score}/${pact.need}</span></div>`
     h += `<div class="path sub"><span class="clock">${clock}</span><span class="mute">${streak > 0 ? `맹약 ${streak}/${S} 계절` : '손잡고 네 계절 버티기'}</span></div>`
     // 철과 뱃길 — 교역 장부: 올해 철을 바꾼 나라 깃발이 한 줄로 · 셈(나라 수 × 철) 막대
     const io = ironOf(r, me())

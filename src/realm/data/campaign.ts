@@ -47,7 +47,7 @@ export const CHAPTERS: readonly Chapter[] = [
   {
     id: 'jumong', n: 2, region: 'jumong', nation: 'goguryeo', name: '주몽, 졸본에 서다', era: '기원전 37년 · 졸본', hero: '주몽',
     hook: '동부여를 빠져나온 활 잘 쏘는 사내. 비류수 가에 나라를 세우자 송양왕이 활 솜씨를 겨루자 한다.',
-    goal: '송양의 비류국과 동맹을 맺거나 조공을 받고, 행인국과 북옥저 도읍을 차지한다',
+    goal: '송양의 비류국과 동맹을 맺거나 속국으로 삼고, 행인국과 북옥저 도읍을 차지한다',
     art: 'keyart/jumong.jpg',
     source: '『삼국사기』 고구려본기 — 송양이 나라를 들어 항복하니 그 땅을 다물도라 하였다.',
     // 기한 열두 해 — 손 놓고 있어도 끝이 온다 (점검 10-25: 기한이 없어 놀고 있어도 지지 않았다)
@@ -57,7 +57,7 @@ export const CHAPTERS: readonly Chapter[] = [
   {
     id: 'seorabeol', n: 3, region: 'seorabeol', nation: 'saro', name: '서라벌 여섯 마을', era: '기원전 57년 · 경주', hero: '혁거세',
     hook: '나정 곁 붉은 알에서 난 아이. 여섯 마을의 촌장들이 그를 임금으로 받들기로 한다 — 칼 대신 마음으로.',
-    goal: '여섯 마을이 모두 따르게 한다 — 동맹이든 조공이든 (마을을 치면 다른 마을의 마음이 식는다)',
+    goal: '여섯 마을이 모두 따르게 한다 — 동맹이든 속국이든 (마을을 치면 다른 마을의 마음이 식는다)',
     art: 'keyart/seorabeol.jpg',
     source: '『삼국사기』 신라본기 — 여섯 마을 사람들이 혁거세를 받들어 임금으로 삼았다. 『삼국유사』 기이편.',
     // 칼을 덜 뽑는 장 — 마을을 치면 다른 마을들의 마음이 식는다 (scenario.fewerSwords) · 기한 열 해

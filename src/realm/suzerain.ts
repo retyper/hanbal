@@ -1,7 +1,8 @@
 /**
  * 맹주의 길 — 진왕 (docs/realm/VICTORY.md §1. 『삼국지』 동이전: 진왕이 목지국에서 삼한을 거느렸다 · 변진 열두 나라도 진왕에 속했다).
  *
- *   살아 있는(땅 있는) 아는 나라 가운데 **절반 넘게**가 그 나라와 동맹이거나 그 나라에 조공하는 사이(그 가운데 조공국이 하나는) → 그 상태가
+ *   살아 있는(땅 있는) 아는 나라의 **절반 넘게**를 셈으로 채운다 — 속국(조공국)은 한 나라, 동맹은 suzerainAllyWeight(반 나라)로 센다
+ *   (그 가운데 속국이 하나는. 형 10-27: "맹주로 깨는 건 동맹만 맺으면 되니까 이상한데… 속국으로까지 만들어야") → 그 상태가
  *   suzerainSeasons(네 계절) **내리** 이어지면 맹주가 된다. 끊기면 시계가 처음부터.
  *   모든 길은 남도 걷는다 — AI 나라가 다 이루면 우리가 진다. 4분의 3을 넘기면 소문이 온다.
  *
@@ -24,18 +25,20 @@ export function isVassal(r: Realm, vassal: string, lord: string): boolean {
  * 맹약의 셈 — `f` 와 손잡은(동맹·조공국) 나라 · 셈에 드는 나라(살아 있는 아는 나라) · 이기려면 필요한 수(절반 넘게).
  * 배우는 판은 셈하지 않는다 (나라가 둘뿐).
  */
-export function pactOf(r: Realm, f: string): { have: string[]; vassals: number; pool: number; need: number } {
-  if (r.region === 'tutorial') return { have: [], vassals: 0, pool: 0, need: Infinity }
+export interface Pact { have: string[]; vassals: number; allies: number; score: number; pool: number; need: number }
+export function pactOf(r: Realm, f: string): Pact {
+  if (r.region === 'tutorial') return { have: [], vassals: 0, allies: 0, score: 0, pool: 0, need: Infinity }
   const pool = Object.keys(r.factions).sort().filter((x) => x !== f && alive(r, x) && knows(r, f, x))
   const have = pool.filter((x) => relationOf(r, f, x).state === 'ally' || isVassal(r, x, f))
   const vassals = pool.filter((x) => isVassal(r, x, f)).length
-  return { have, vassals, pool: pool.length, need: Math.floor(pool.length / 2) + 1 }
+  const allies = have.length - vassals
+  return { have, vassals, allies, score: vassals + allies * P.realm.suzerainAllyWeight, pool: pool.length, need: Math.floor(pool.length / 2) + 1 }
 }
 
 /** 지금 맹주의 셈을 채웠나 (그리고 셈할 나라가 있나) */
 // 동맹만으로는 진왕이 아니다 — 바치는 나라(조공국)가 suzerainMinVassals 는 있어야 (진왕은 받드는 나라가 있었다)
-const holds = (p: { have: string[]; vassals: number; pool: number; need: number }): boolean =>
-  p.pool >= P.realm.suzerainMinPool && p.have.length >= p.need && p.vassals >= P.realm.suzerainMinVassals
+const holds = (p: Pact): boolean =>
+  p.pool >= P.realm.suzerainMinPool && p.score >= p.need && p.vassals >= P.realm.suzerainMinVassals
 
 /**
  * 9 — 나라마다 맹약 시계를 센다 (r.suzerain). 끊기면 0. 소문·우리 맹약의 해를 보고에 남긴다.
@@ -53,11 +56,11 @@ export function stepSuzerain(r: Realm, lines: ReportLine[]): void {
     const p = pactOf(r, f)
     const prev = book[f] ?? { streak: 0, have: 0 }
     const streak = holds(p) ? prev.streak + 1 : 0
-    book[f] = { streak, have: p.have.length }
-    const near = p.pool >= R.suzerainMinPool && p.have.length >= Math.ceil(p.need * R.suzerainRumorShare)
+    book[f] = { streak, have: p.score }
+    const near = p.pool >= R.suzerainMinPool && p.score >= Math.ceil(p.need * R.suzerainRumorShare)
     const wasNear = p.pool >= R.suzerainMinPool && prev.have >= Math.ceil(p.need * R.suzerainRumorShare)
     // 소문은 처음 가까워졌을 때와 시계가 가는 동안만 (계절마다 같은 말을 되풀이하지 않게)
-    if (streak > 0 || (near && !wasNear)) lines.push({ kind: 'suzerain', faction: f, have: p.have.length, need: p.need, streak })
+    if (streak > 0 || (near && !wasNear)) lines.push({ kind: 'suzerain', faction: f, have: p.score, need: p.need, streak })
   }
   // 조공 기한이 끝난 사이는 걷는다
   for (const rel of Object.values(r.relations ?? {})) if (rel.vassal !== undefined && rel.vassal.until < r.season) delete rel.vassal

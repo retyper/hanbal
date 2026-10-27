@@ -760,7 +760,7 @@ function relChip(r: Realm, me: string, owner: string | null): string {
   const rel = relationOf(r, me, owner)
   const v = rel.vassal !== undefined && rel.vassal.until >= r.season ? rel.vassal.lord : null
   if (rel.state === 'war') return '<i class="lbr war" title="전쟁 중">전쟁</i>'
-  if (v === me) return '<i class="lbr tri" title="우리에게 바치는 나라">조공</i>'
+  if (v === me) return '<i class="lbr tri" title="우리를 섬기는 속국">속국</i>'
   if (v === owner) return '<i class="lbr srv" title="우리가 바치는 나라">섬김</i>'
   if (rel.state === 'ally') return '<i class="lbr ally" title="동맹">동맹</i>'
   if (rel.state === 'truce') return '<i class="lbr tru" title="화친">화친</i>'

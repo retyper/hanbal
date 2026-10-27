@@ -21,12 +21,15 @@ const gift = (from: string, to: string, hero?: string): Order => ({
 })
 
 /** f 와 a·b 는 동맹, c 는 f 의 조공국 (기한 넉넉히) */
+/** 속국으로 삼는다 (기한 넉넉히) */
+function vassal(r: Realm, f: string, v: string): void {
+  r.relations[pairKey(f, v)] = { state: 'truce', until: 999 }
+  makeVassal(r, v, f)
+  r.relations[pairKey(f, v)]!.vassal = { lord: f, until: 999 }
+}
+/** 셋을 속국으로 — 아는 나라 다섯의 절반 넘게(3) */
 function pact(r: Realm, f: string, a: string, b: string, c: string): void {
-  r.relations[pairKey(f, a)] = { state: 'ally', until: null }
-  r.relations[pairKey(f, b)] = { state: 'ally', until: null }
-  r.relations[pairKey(f, c)] = { state: 'truce', until: 999 }
-  makeVassal(r, c, f)
-  r.relations[pairKey(f, c)]!.vassal = { lord: f, until: 999 }
+  for (const v of [a, b, c]) vassal(r, f, v)
 }
 
 describe('외교의 손 — 보낼 사람', () => {
@@ -68,10 +71,24 @@ describe('맹주의 길 — 진왕', () => {
   it('절반 넘게와 손잡고 네 계절 내리 버티면 이긴다 (path suzerain)', () => {
     let r = planned(byeonhanMini(1), [])
     pact(r, 'us', 'guya', 'anya', 'miri')
-    assert.ok(pactOf(r, 'us').have.length >= pactOf(r, 'us').need)
+    assert.ok(pactOf(r, 'us').score >= pactOf(r, 'us').need)
     for (let i = 0; i < P.realm.suzerainSeasons && !r.outcome; i++) r = advance(r, []).next
     assert.equal(r.outcome?.kind, 'win')
     assert.equal(r.outcome?.path, 'suzerain')
+  })
+
+  it('동맹은 반 나라로 센다 — 속국 하나 + 동맹 셋(2.5)은 모자라고 동맹 넷(3)이면 찬다', () => {
+    const r = planned(byeonhanMini(1), [])
+    vassal(r, 'us', 'guya')
+    for (const x of ['anya', 'miri', 'goja']) r.relations[pairKey('us', x)] = { state: 'ally', until: null }
+    const p = pactOf(r, 'us')
+    assert.equal(p.vassals, 1)
+    assert.equal(p.allies, 3)
+    assert.equal(p.score, 1 + 3 * P.realm.suzerainAllyWeight)
+    assert.ok(p.score < p.need)
+    const rest = Object.keys(r.factions).find((x) => x !== 'us' && !['guya', 'anya', 'miri', 'goja'].includes(x))!
+    r.relations[pairKey('us', rest)] = { state: 'ally', until: null }
+    assert.ok(pactOf(r, 'us').score >= pactOf(r, 'us').need)
   })
 
   it('조공국이 없으면 동맹만으로는 진왕이 아니다', () => {
@@ -89,7 +106,7 @@ describe('맹주의 길 — 진왕', () => {
     r = advance(r, []).next
     r = advance(r, []).next
     assert.equal(r.suzerain?.['us']?.streak, 2)
-    // 동맹 하나가 깨졌다 — 셈이 모자란다
+    // 속국 하나가 떨어졌다 — 셈이 모자란다
     r.relations[pairKey('us', 'guya')] = { state: 'neutral', until: null }
     r = advance(r, []).next
     assert.equal(r.suzerain?.['us']?.streak, 0)

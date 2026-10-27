@@ -108,7 +108,7 @@ export const SEASON_LINE: Record<SeasonOfYear, string> = {
 }
 
 export const ASK_NAME: Record<EnvoyAsk, string> = {
-  truce: '화친', trade: '교역', tribute: '조공 요구', alliance: '동맹',
+  truce: '화친', trade: '교역', tribute: '속국 삼기', alliance: '동맹',
   gift: '선물', joint: '함께 치자', aid: '지원 요청', troops: '군대 빌리기', break: '약조 깨기',
 }
 
@@ -222,7 +222,7 @@ export function whyLine(why: Why | undefined, about = '', them = '우리'): stri
 }
 
 export const ASK_KIND_NAME: Record<Ask['kind'], string> = {
-  truce: '화친', alliance: '동맹', trade: '교역', tribute: '조공 바침', demand: '조공 요구', joint: '함께 치자', aid: '지원 요청',
+  truce: '화친', alliance: '동맹', trade: '교역', tribute: '속국 되기', demand: '속국 요구', joint: '함께 치자', aid: '지원 요청',
 }
 
 /**
@@ -534,7 +534,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (line.from === viewer) return null
       const who = fname(line.from)
       if (line.yes) return `${who}의 청을 받아들였다.`
-      return line.askKind === 'demand' ? `${who}의 조공 요구를 거절했다. 전쟁이다.` : `${who}의 청을 물리쳤다.`
+      return line.askKind === 'demand' ? `${who}의 속국 요구를 거절했다. 전쟁이다.` : `${who}의 청을 물리쳤다.`
     }
     case 'plot': {
       const target = fname(line.target)
@@ -903,8 +903,8 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       const left = Math.max(0, P.realm.suzerainSeasons - line.streak)
       if (line.faction === viewer) {
         return line.streak > 0
-          ? `맹약의 해 — 아는 나라 가운데 ${line.have}곳이 우리와 손잡았다. 이대로 ${left}계절 더 버티면 진왕이 된다.`
-          : `손잡은 나라가 ${line.have}곳이다. ${line.need}곳이 되면 맹약의 해가 시작된다.`
+          ? `맹약의 해 — 속국과 동맹의 셈 ${line.have}/${line.need}. 이대로 ${left}계절 더 버티면 진왕이 된다.`
+          : `속국과 동맹의 셈 ${line.have}/${line.need}. 속국은 한 나라, 동맹은 반 나라로 센다. 다 채우면 맹약의 해가 시작된다.`
       }
       return line.streak > 0
         ? `소문 — ${fname(line.faction)} 군장 곁에 군장들이 모였다. 이대로 ${left}계절이면 진왕이 된다. 그 맹약을 깨야 한다.`
