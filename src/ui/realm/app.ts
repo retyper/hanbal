@@ -245,6 +245,14 @@ const GUIDE: Readonly<Record<string, { readonly title: string; readonly body: re
     '회유하면 우리 장수가 된다 — 계절마다 곡식이 들고, 맡긴 우리 장수의 매력이 빠르기를 정한다.',
     '화친·동맹을 맺거나 그 나라 도읍이 떨어지면 풀려나 돌아간다.',
   ] },
+  // 출정의 「어떻게」 — 판 위에는 이름과 판세만, 뜻은 여기 (형 10-27: "출정 보낼 때 어떻게에 텍스트가 너무 많음 · 획기적으로 줄이고 물음표")
+  march: { title: '어떻게 갈까 — 진군 방식과 군량', body: [
+    ...(Object.keys(APPROACH_NAME) as Array<keyof typeof APPROACH_NAME>).map((k) => `${APPROACH_NAME[k]} — ${APPROACH_DOES[k].gain}. ${APPROACH_DOES[k].risk}.`),
+    '판세 — 그 방식으로 닿았을 때 싸움이 어떨지. 숨어 가는 길은 「몰래 닿기」가 되면 「안 들키면」, 안 되면 「들키면」의 판세가 된다. 큰 군대일수록 잘 안 숨는다.',
+    '숨기 좋은 길 — 숲·갈대·밤·안개처럼 숨을 데가 있는 길. 길 이름에 손을 대면 까닭이 보인다.',
+    '군량 — 길 계절치는 늘 챙긴다. 그 위로 더 챙긴 만큼 남의 땅에서 버틴다. 바닥나면 사기가 꺾이고, 남의 땅에 머물면 사람이 흩어진다.',
+    '상성 — 창은 방패를, 방패는 활을, 활은 창을 이긴다. 성과 높은 데의 궁수, 들판의 창병처럼 땅도 걸린다.',
+  ] },
   draft: { title: '징병', body: [
     '집(다섯 식구 남짓)에서 사람을 뽑아 군사로 만든다. 군사는 움직이고 쳐들어가지만 곡식을 먹는다.',
     '장정은 뽑지 않은 집의 사내들이다. 적이 오면 제 고을만 지킨다. 집이 많을수록 많고 곡식을 안 먹는다.',
@@ -1290,7 +1298,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 개척단 — 흙빛 점선 (이번 계절 고른 길은 남은 계절 없이)
     for (const p of partiesOf(r, me())) if (p.march !== null) marches.push({ from: p.march.from, to: p.march.to, left: realm!.parties?.[p.id]?.march != null ? p.march.left : null, people: true })
     const ps = partySel !== '' ? r.parties?.[partySel] : undefined
-    const sel = ps !== undefined ? (ps.march?.from ?? ps.at) : sheet?.kind === 'node' ? sheet.id : scout
+    // 척후를 보낸 고을은 고른 고을처럼 금빛 고리를 돌리지 않는다 — 작은 「척후」 표만 (형 10-27: "클릭하라고 지시하는 것 같다")
+    const sel = ps !== undefined ? (ps.march?.from ?? ps.at) : sheet?.kind === 'node' ? sheet.id : ''
     // 지도에서 바로 움직인다 (형: "다른게임에서는 지도에서 바로 배치 조절하는거 같은데") — 말을 누르고, 밝아진 고을을 누른다
     // 길 위의 군대도 말을 둔다 — 길 가운데쯤에 (형: "내 군대 번예연이 군대가 지도에서 안보임")
     const tokens: MapToken[] = [...sorted(Object.values(r.armies)).filter((a) => a.faction === me()), ...lentToMe(r)].map((a) => {
@@ -1304,6 +1313,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         ...(a.faction !== me() ? { ally: a.faction } : {}),
       }
     })
+    // 보인 적의 군대 — 길 위에 그 나라 빛 테의 말로 (형 10-27: "대로로 오는 적군이나 기습이 예견된 적군은 텍스트 말고 동맹군 오듯이 유닛들이 맵에")
+    // 몇 명인지는 모른다 — 「적」 · 몰래 오는 낌새면 어둡게
+    const sneaky = new Set((report?.lines ?? []).flatMap((l) => (l.kind === 'sighted' && l.suspect === true ? [(l as { army: string }).army] : [])))
+    for (const a of seenMarches(r, me())) {
+      if (a.march === null || a.lent?.to === me()) continue
+      tokens.push({ army: a.id, node: a.march.from, men: 0, sel: false, going: false, img: `${ART}icon/unit-spear.png`, foe: a.faction,
+        ...(sneaky.has(a.id) ? { sneak: true } : {}), march: { from: a.march.from, to: a.march.to, left: a.march.left } })
+    }
     // 개척단의 말 — 군대 말처럼 누르면 고르고 갈 곳이 빛난다 (지난 계절부터 길 위에 있으면 길 가운데)
     for (const p of partiesOf(r, me())) {
       const was = realm!.parties?.[p.id]?.march
@@ -1368,7 +1385,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       else if (!atkWon && l.defender === me() && r.nodes[l.node]?.owner === me()) held.add(l.node)
     }
     if (armySel.length === 0 && partySel === '') for (const to of going) stl.add(to)
-    return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets, fr, stl, burn, going, taken, held)
+    return mapHtml(r, me(), ART, marches, sel, focus, tokens, targets, fr, stl, burn, going, taken, held, scout)
   }
 
   /**
@@ -1663,23 +1680,23 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (m.hostile) {
       // 병종·지형·공수가 어떻게 걸리나 (상성 — 창 > 방패 > 활 > 창 · 성과 높은 데의 궁수 · 들판의 창병 …)
       const hints = matchupHints(r, me(), a.mix, m.to, m.edge.kind)
-      h += hints.length > 0 ? `<ul class="hints">${hints.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''
+      h += hints.length > 0 ? `<details class="hintd"><summary>상성 ${hints.length}가지</summary><ul class="hints">${hints.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''
       const chosen: Approach = c?.approach ?? (c?.ambush === true ? 'night' : 'road')
       h += `<div class="how">`
       for (const x of approachMoves(r, me(), a, m)) {
         const does = APPROACH_DOES[x.ap]
         // 한 줄에 하나 — 왼쪽은 이름과 얻고 거는 것, 오른쪽은 판세 (좁은 폰에서도 읽히게)
-        h += `<button class="hw ${x.ap !== 'road' ? 'amb ' : ''}${chosen === x.ap ? 'on' : ''}" data-act="ap" data-army="${key}" data-v="${x.ap}"><span class="hwl"><b>${APPROACH_NAME[x.ap]}${x.seasons !== m.seasons ? ` <small>${x.seasons}계절</small>` : ''}</b>`
-        h += `<span class="mute">${tx(`${does.gain}. ${does.risk}`)}</span></span><span class="hwr">`
-        if (x.ap === 'road') h += `<span class="ln">판세 ${feel(x.hit)}</span>`
-        else h += `<span class="ln">${x.ap === 'cliff' ? '오르기' : '몰래 닿기'} ${ambushFeel(x.p)}</span><span class="ln">안 들키면 ${feel(x.hit)}</span><span class="ln">들키면 ${feel(x.miss)}</span>`
+        h += `<button class="hw ${x.ap !== 'road' ? 'amb ' : ''}${chosen === x.ap ? 'on' : ''}" data-act="ap" data-army="${key}" data-v="${x.ap}" data-tip="${esc(`${does.gain}. ${does.risk}`)}"><span class="hwl"><b>${APPROACH_NAME[x.ap]}${x.seasons !== m.seasons ? ` <small>${x.seasons}계절</small>` : ''}</b>`
+        h += `</span><span class="hwr">`
+        if (x.ap === 'road') h += `<span class="ln">${feel(x.hit)}</span>`
+        else h += `<span class="ln">${x.ap === 'cliff' ? '오르기' : '몰래'} ${ambushFeel(x.p)}</span><span class="ln">되면 ${feel(x.hit)} · 들키면 ${feel(x.miss)}</span>`
         h += `</span></button>`
       }
       h += `</div>`
       // 길과 때 (형이 고름: "길과 때의 싸움") — 이 길이 왜 숨기 좋은지·나쁜지
       const cv = concealOf(r, m.edge.id, headcount(forceOf(r, a)), m.to)
       const cw = cv.why.map((w) => CONCEAL_LINE[w]).filter((x) => x !== undefined)
-      h += `<p class="mute tip"><b>${cv.tier === 'good' ? '숨기 좋은 길' : cv.tier === 'fair' ? '그저 그런 길' : '숨기 나쁜 길'}</b>${cw.length > 0 ? ` · ${esc(cw.join(' · '))}` : ''}</p>`
+      h += `<p class="mute tip"><b${cw.length > 0 ? ` data-tip="${esc(cw.join(' · '))}"` : ''}>${cv.tier === 'good' ? '숨기 좋은 길' : cv.tier === 'fair' ? '그저 그런 길' : '숨기 나쁜 길'}</b></p>`
     }
     // 군량 — 몇 계절치를 챙기나 (형: "넉넉히랑 안듦 두개밖에 없는데 이거 기본수치로 주고 줄일수 있게").
     // 길 계절은 늘 챙기고, 그 위에 더 챙길 계절을 고른다. 기본은 옛 "넉넉히"(rationReserve). 더 챙길수록 곡식이 든다
@@ -1691,9 +1708,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<button data-act="ration" data-army="${key}" data-v="more" ${extra >= P.realm.rationMaxExtra || rationCost(r, a, m.seasons, extra + 1) > left().grain + cost ? 'disabled' : ''}>+</button></span>`
     h += cost > 0 ? costHtml({ grain: cost }) : `<span class="mute">곡식 안 듦</span>`
     h += `<button class="btn ghost sm${extra === P.realm.rationReserve ? ' on' : ''}" data-act="ration" data-army="${key}" data-v="full">기본</button></div>`
-    h += `<p class="mute tip">${tx(extra <= 0
-      ? `길 ${m.seasons}계절치만 챙긴다 — 닿자마자 바닥이라 싸움이 길어지면 사기가 꺾이고, 남의 땅에 머물면 사람이 흩어진다.`
-      : `길 ${m.seasons}계절에 더해 ${extra}계절을 남의 땅에서 버틴다. 그 뒤로는 바닥나 사기가 꺾인다.`)}</p>`
+    if (extra <= 0) h += `<p class="mute tip">닿자마자 군량이 바닥난다</p>`
     return h
   }
 
@@ -1747,7 +1762,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // ④ 어떻게 — 진군 방식(싸울 곳이면)과 군량
     const m = moves.find((x) => x.edge.id === sortieD.edge)
     if (m !== undefined) {
-      h += `<div class="sth">④ 어떻게</div>`
+      h += `<div class="sth">④ 어떻게 ${guideBtn('march')}</div>`
       if (m.blocked !== null) h += `<div class="banner bad">${esc(HARD_LINE[m.blocked])}</div>`
       h += marchChoice(r, probe, m, { approach: sortieD.approach, ambush: sortieD.approach !== 'road', ...(sortieD.ration !== undefined ? { ration: sortieD.ration } : {}) }, SORTIE)
       // ⑤ 같은 고을을 치는 다른 우리 군대가 있으면 — 다 같이 들이칠까, 뒤따라 원군으로 들이칠까 (형 10-25: "원군으로도 안 오고 그냥 한 번에 합산")
@@ -4277,7 +4292,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const bad = k === 'refused'
       const T: Readonly<Record<PactKind, readonly [string, string, string, string]>> = {
         truce: [`${josa(fac.name, '과', '와')} 화친을 맺었다`, '서로 치지 않고 장터를 연다', 'event-truce-pact', snd('feast')],
-        ally: [`${josa(fac.name, '과', '와')} 동맹을 맺었다`, '같은 적을 함께 친다', 'event-alliance-oath', snd('horn_victory')],
+        ally: [`${josa(fac.name, '과', '와')} 동맹을 맺었다`, '같은 적을 함께 친다', 'event-alliance-oath', snd('dex_new')],
         vassal: [`${josa(fac.name, '이', '가')} 우리를 섬긴다`, '해마다 바칠 것을 바친다', 'event-tribute-bow', snd('coins')],
         gift: [`${josa(fac.name, '이', '가')} 선물을 반겼다`, '사이가 한 뼘 가까워졌다', 'event-court-hall', snd('coins')],
         refused: [`${josa(fac.name, '이', '가')} 우리 청을 물리쳤다`, '사신이 빈손으로 돌아왔다', 'event-court-hall', snd('war_drum')],
@@ -5211,6 +5226,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   // 전체 화면 — 처음 손이 닿는 그 순간에 (형 10-23: "게임 시작하자마자 되어야 하는 거 아님?").
   // 브라우저는 손짓 없이는 못 켜게 막는다 — 첫 화면·불러오는 화면을 포함해 어디든 처음 누르면 켠다 (손을 뗄 때가 브라우저가 허락하는 때)
   root.addEventListener('click', (ev) => {
+    // 길 보기는 지도를 누르면 접힌다 — ✕ 를 찾지 않아도 (형 10-27)
+    if (roadOpen && (ev.target as HTMLElement).closest('.mapwrap') !== null && !zoom.dragged()) { roadOpen = false; morph($('.roadkey'), roadKeyHtml()) }
     const t = (ev.target as HTMLElement).closest<HTMLElement>('[data-act], .nd')
     if (t === null || !root.contains(t)) return
     if (zoom.dragged() && t.closest('.mapwrap') !== null) return // 지도를 끌다 놓은 것 — 누르기가 아니다
