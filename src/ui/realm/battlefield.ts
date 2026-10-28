@@ -1090,7 +1090,7 @@ function lookHtml(lk: Look | undefined, k: string): string {
   const warn = (lk.fall ?? 0) >= P.realm.tacLookFall ? `<span class="wgl wgff us"><span class="wgk">⚠</span>우리가 무너질 수 있다 <b>${oneChance(lk.fall!)}%</b></span>` : ''
   const chance = (lk.foeFall ?? 0) >= P.realm.tacLookFall ? `<span class="wgl wgff foe"><span class="wgk">★</span>적이 무너질 수 있다 <b>${oneChance(lk.foeFall!)}%</b></span>` : ''
   // 판세 막대 — 왼쪽 끝이 우리, 오른쪽 끝이 적. 파랑이 우리 몫, 옅은 데가 짐작의 폭, 금빛 금이 지금 판세
-  return `<span class="wguess ${cls}" data-k="${esc(k)}"><span class="wgq">판세${tag}</span><span class="wgk us">우리</span><span class="wgbar" style="--lo:${pc(lk.edge[0])};--hi:${pc(lk.edge[1])};--e0:${pc(lk.edge0)}"></span><span class="wgk foe">적</span><b>${w}</b>`
+  return `<span class="wguess ${cls}" data-k="${esc(k)}"><span class="wgq">판세${tag}</span><span class="wgk us">우리</span><span class="wgbar" style="--lo:${pc(lk.edge[0])};--hi:${pc(lk.edge[1])};--e0:${pc(lk.edge0)}"><i class="wgb2"></i><i class="wgb1"></i></span><span class="wgk foe">적</span><b>${w}</b>`
     + `${cap}${table}${warn}${chance}</span>`
 }
 
@@ -1544,7 +1544,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     else if (weAtk) res = atkWon ? `${josa(place, '을', '를')} 차지한다` : '물러난다'
     else res = atkWon ? `${josa(place, '을', '를')} 빼앗긴다` : `${josa(place, '을', '를')} 지켜 냈다`
     const big = l.outcome === 'rout' || l.outcome === 'routed' ? (good ? '대승 — ' : '대패 — ') : ''
-    const d = anim ? ` style="--d:${tAt(2) + 0.5}s"` : ''
+    // 결과 판은 마지막 합의 결과 띠들이 걷힌 뒤에 — 같이 뜨면 화면 아래에서 겹쳤다 (10-28)
+    const d = anim ? ` style="--d:${tAt(2) + P.realm.warRoundPopHoldS + 0.5}s"` : ''
     const fall = l.field !== true && atkWon
     if (fall) h += `<div class="wfx burn"${d}><img class="wfx-smoke" src="${art}fx/smoke.png" alt="">${burnHtml(art, 'l')}${burnHtml(art, 'r')}</div>`
     h += `<div class="wend ${good ? 'good' : l.outcome === 'draw' ? '' : 'bad'}"${d}><b>${big}${esc(res)}</b>`
@@ -1568,7 +1569,12 @@ export const WAR_CSS = `
 .ap .wr:not(.logopen) .wlog .wrd.slow { position: fixed; left: 50%; top: auto; bottom: calc(12px + env(safe-area-inset-bottom)); max-height: 46vh; overflow: hidden; z-index: 70; width: min(92vw, 480px); box-sizing: border-box; margin: 0; padding: 10px 14px; border-radius: 14px;
   background: #1a130cf2; border: 1.5px solid #c9a45a; box-shadow: 0 10px 30px #000c; pointer-events: none; transform: translateX(-50%);
   animation: wrpin .25s ease-out both, wrpout .45s ease-in var(--pd, 4s) forwards; }
-/* 화면 아래쪽에 — 가운데에 띄웠더니 맞부딪히는 전장을 가렸다 (형 10-28) */
+/* 화면 아래쪽에 — 가운데에 띄웠더니 맞부딪히는 전장을 가렸다 (형 10-28) · 상자는 투명하게, 일어난 일만 작은 띠로 하나씩 (형 10-28: "착착착") */
+.ap .wr:not(.logopen) .wlog .wrd.slow { background: none; border: 0; box-shadow: none; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; max-height: 52vh; }
+.ap .wr:not(.logopen) .wlog .wrd.slow > .wrn, .ap .wr:not(.logopen) .wlog .wrd.slow > .wcmds, .ap .wr:not(.logopen) .wlog .wrd.slow > .wpush, .ap .wr:not(.logopen) .wlog .wrd.slow > .wloss,
+.ap .wr:not(.logopen) .wlog .wrd.slow .wst > * { background: #120d09e0; border-radius: 10px; padding: 3px 10px; box-shadow: 0 2px 8px #000a; }
+.ap .wr:not(.logopen) .wlog .wrd.slow .wst { background: none; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; }
+.ap .wr:not(.logopen) .wlog .wrd.slow > .wrn { font-size: 12px; color: #ffe2a0; }
 @keyframes wrpin { from { opacity: 0; transform: translate(-50%, 16px) scale(.96); } to { opacity: 1; transform: translateX(-50%); } }
 @keyframes wrpout { to { opacity: 0; visibility: hidden; transform: translate(-50%, 24px); } }
 .ap .wr .wlogbg, .ap .wr .wlogx { display: none; }
@@ -1579,6 +1585,7 @@ export const WAR_CSS = `
 .ap .wr.logopen .wlogx { display: block; position: sticky; top: 0; margin: 0 0 6px auto; z-index: 2; }
 .ap .wrh .wlogb { margin-left: auto; padding: 2px 10px; border-radius: 12px; border: 1px solid #c9a45a; background: #1f1710cc; color: #f3d48a; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
 .ap .wrh .wlogb + .whelp { margin-left: 6px; }
+.ap .wr .wrh .whelp { display: none; } /* 설명은 누르고 있으면 뜨는 창 · 판세는 깃발 판 밑에 (형 10-28: 자세히 버튼은 필요 없다) */
 .ap .wr .wend { position: sticky; bottom: calc(8px + env(safe-area-inset-bottom)); z-index: 6; box-shadow: 0 -6px 24px #000c; }
 /* 새 전투 시험 (.wr.b0) — 손가락 · 고른 깃발이 크게 · 숫자 표는 「자세히」 안으로 */
 .ap .wr:not(.b0) .wb0g { display: none; }
@@ -2123,7 +2130,10 @@ export const WAR_CSS = `
 .ap .wguess { display: grid; grid-template-columns: auto auto 1fr auto auto; align-items: center; gap: 3px 4px; width: 100%; margin-top: 4px; }
 .ap .wguess .wgq { font-size: 10.5px; color: var(--mute); white-space: nowrap; } /* wgt 는 무리 탭 — 이름이 겹쳐 단추 모양이 됐다 */ .ap .wguess > .wgk { font-size: 10.5px; font-weight: 700; } .ap .wguess > .wgk.us { color: #7fb8f0; } .ap .wguess > .wgk.foe { color: #f09080; }
 .ap .wguess .wgbar { position: relative; height: 7px; border-radius: 4px; overflow: hidden; box-shadow: inset 0 0 0 1px #0008;
-  background: linear-gradient(90deg, #3d8fe0 0 var(--lo), #3d8fe077 var(--lo) var(--hi), #c8503a var(--hi) 100%); }
+  background: #c8503a; }
+/* 우리 몫(진한 파랑 0~lo) · 짐작의 폭(옅은 파랑 lo~hi) · 적 몫(붉은 바탕) — 그러데이션 대신 단색 조각 (형 폰에서 까맣게 깨졌다 · 10-28) */
+.ap .wguess .wgbar .wgb2, .ap .wguess .wgbar .wgb1 { position: absolute; left: 0; top: 0; bottom: 0; }
+.ap .wguess .wgbar .wgb2 { width: var(--hi); background: #3d8fe077; } .ap .wguess .wgbar .wgb1 { width: var(--lo); background: #3d8fe0; }
 .ap .wguess .wgbar::after { content: ''; position: absolute; left: var(--e0); top: -1px; bottom: -1px; width: 2px; margin-left: -1px; background: #ffe7b0; box-shadow: 0 0 3px #000; }
 .ap .wcmd .wguess > b { font-size: 11.5px; white-space: nowrap; }
 .ap .wguess > b { width: 6.4em; text-align: right; white-space: nowrap; } /* 「맞선다」·「크게 밀린다」 길이에 따라 판세 막대가 늘고 줄지 않게 (형 10-28) */
@@ -2211,6 +2221,8 @@ export const WAR_CSS = `
 .ap .wsurec b { display: block; font-size: 20px; color: #ffb4a4; }
 .ap .wsurec p { margin: 10px 0 16px; font-size: 14px; color: #e6d8c6; }
 .ap .wsureb { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ap .wauto-ask .wsurec { border-color: #e0b860; box-shadow: 0 0 24px #e0b86055, 0 14px 40px #000d; } .ap .wauto-ask .wsurec b { color: #ffe2a0; }
+.ap .wauto-ask .wsurec .wf { display: block; width: 96px; height: 110px; margin: 0 auto 10px; border-radius: 12px; object-fit: cover; object-position: top; border: 2px solid #e0b860; }
 .ap .wsureb .wsurey { background: linear-gradient(#a8291c, #6e150c); border-color: #e04a3a; color: #fff; }
 .ap .wfpop { position: fixed; z-index: 94; width: min(330px, calc(100vw - 16px)); padding: 8px; border-radius: 14px; background: #17110cf6; border: 1.5px solid #ffd27a; box-shadow: 0 0 0 1px #000, 0 12px 34px #000d, 0 0 18px #ffd27a44; animation: wfpin .16s ease-out; }
 @keyframes wfpin { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
@@ -2225,7 +2237,7 @@ export const WAR_CSS = `
 .ap .whold p { margin: 6px 0 0; font-size: 12.5px; line-height: 1.45; color: #e8dcc0; } .ap .whold .whn { color: #ffd27a; font-weight: 700; }
 .ap .wr .whold .wguess .wgx { display: grid !important; } .ap .wr .whold .wguess .wgl { display: flex !important; }
 /* 보석 — 밑변 --a, 높이 --h 인 거꾸로 선 사각뿔. 옆면은 빗변 길이(--s)의 세모, 안쪽으로 --t 만큼 기운다 (a=16 · h=21 → s≈22.5 · t≈20.9° · 형 10-28: 너무 크다) */
-.ap .wgem { position: fixed; z-index: 97; width: 0; height: 0; pointer-events: none; perspective: 260px; --a: 16px; --s: 22.5px; --t: 20.9deg; animation: wgembob 1.1s ease-in-out infinite alternate; }
+.ap .wgem { position: fixed; z-index: 95; width: 0; height: 0; pointer-events: none; perspective: 260px; --a: 16px; --s: 22.5px; --t: 20.9deg; animation: wgembob 1.1s ease-in-out infinite alternate; }
 .ap .wgem[hidden] { display: none; }
 @keyframes wgembob { from { translate: 0 -40px; } to { translate: 0 -33px; } }
 .ap .wgem .g3 { position: absolute; left: 0; top: 0; transform-style: preserve-3d; animation: wgemspin 2.6s linear infinite; }
@@ -3445,6 +3457,19 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   sure.hidden = true
   sure.innerHTML = `<div class="wsurec"><b>정말 퇴각하시겠습니까?</b><p class="wsurep"></p><div class="wsureb"><button class="btn ghost" data-war="retreat-no">계속 싸운다</button><button class="btn pri wsurey" data-war="retreat-yes">퇴각한다</button></div></div>`
   ov.appendChild(sure)
+  /** 맡긴다 — 바로 넘기지 않고 장수 얼굴과 함께 묻는다 (형 10-28: "~한테 전투를 모두 맡기겠습니까? (자동전투)") */
+  const autoAsk = document.createElement('div')
+  autoAsk.className = 'wsure wauto-ask'
+  autoAsk.hidden = true
+  ov.appendChild(autoAsk)
+  const askAuto = (): void => {
+    const l0 = t.line
+    const hid = l0?.start !== undefined ? l0.start.heroes[l0.atkFaction === host.me ? 0 : 1] ?? null : null
+    const h = hid !== null ? prev.heroes[hid] : undefined
+    const nm = h?.name ?? '장수'
+    autoAsk.innerHTML = `<div class="wsurec">${face(hid, host.art, UNIT_ICON.spear)}<b>${esc(josa(nm, '에게', '에게'))} 이 싸움을 모두 맡기겠습니까?</b><p>(자동전투)${h !== undefined ? ` · 지략 ${h.ryak} — 장수가 알아서 깃발을 고릅니다` : ''}</p><div class="wsureb"><button class="btn ghost" data-war="auto-no">내가 싸운다</button><button class="btn pri" data-war="auto-yes">맡긴다</button></div></div>`
+    autoAsk.hidden = false
+  }
   const askRetreat = (): void => {
     // 빠져나갈 가망을 묻는 판에도 — 말이 호위하게 골라 두었으면 그 몫으로 (형 10-27: 물러나기는 시도다)
     const p = t.line?.pending
@@ -3550,7 +3575,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     }
     const l = t.line
     if (l === null || l.key === undefined) return
-    if (animating && b.dataset['war'] !== 'auto' && b.dataset['war'] !== 'next' && b.dataset['war'] !== 'help') return
+    if (animating && b.dataset['war'] !== 'auto' && b.dataset['war'] !== 'auto-yes' && b.dataset['war'] !== 'auto-no' && b.dataset['war'] !== 'next' && b.dataset['war'] !== 'help') return
     host.ding('click1', 0.18)
     switch (b.dataset['war']) {
       case 'pick': {
@@ -3601,7 +3626,9 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         return
       }
       case 'retreat-no': sure.hidden = true; return
-      case 'auto': autoPlay(); return
+      case 'auto': askAuto(); return
+      case 'auto-yes': autoAsk.hidden = true; autoPlay(); return
+      case 'auto-no': autoAsk.hidden = true; return
       case 'dusk': duskPick(l.key, b.dataset['c'] as Dusk); return
       case 'next': {
         if (cur !== null) done[cur.key] = tacOf(cur.key)
