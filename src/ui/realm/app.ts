@@ -8,7 +8,7 @@
  */
 import { aiOrders } from '../../realm/ai.ts'
 import { headcount, strength, type Equip, type UnitKind } from '../../realm/battle.ts'
-import { CUSTOM_ICON, FACTION_ART, GOOD_ICON, SEASON_ICON, UNIT_ICON, bustOf, flagIcon, kidBust, nodeIcon, noteGrowing, noteKids } from '../../realm/data/art.ts'
+import { CUSTOM_ICON, FACTION_ART, GOOD_ICON, SEASON_ICON, SOL_ANIM_AR, UNIT_ICON, bustOf, flagIcon, kidBust, nodeIcon, noteGrowing, noteKids } from '../../realm/data/art.ts'
 import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../../realm/data/nations-yeongnam.ts'
 import { SOUTH_NATIONS } from '../../realm/data/nations-south.ts'
@@ -1310,8 +1310,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const tokens: MapToken[] = [...sorted(Object.values(r.armies)).filter((a) => a.faction === me()), ...lentToMe(r)].map((a) => {
       const hero = a.hero !== null ? r.heroes[a.hero] : undefined
       const file = hero !== undefined ? bustOf(hero.id) : undefined
-      const top = (Object.entries(a.mix) as Array<[UnitKind, number]>).sort((x, y) => y[1] - x[1])[0]?.[0] ?? 'spear'
+      const kinds = (Object.entries(a.mix) as Array<[UnitKind, number]>).filter(([, v]) => v > 0).sort((x, y) => y[1] - x[1]).map(([k]) => k)
+      const top = kinds[0] ?? 'spear'
       return {
+        squad: squadOf(kinds),
         army: a.id, node: a.at, men: headcount(forceOf(r, a)), sel: armySel.includes(a.id), going: pick[a.id] !== undefined,
         img: file !== undefined ? `${ART}bust/${file}.jpg` : `${ART}icon/${UNIT_ICON[top]}.png`,
         ...(a.march !== null ? { march: { from: a.march.from, to: a.march.to, left: a.march.left } } : {}),
@@ -1325,7 +1327,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const sneaky = new Set((report?.lines ?? []).flatMap((l) => (l.kind === 'sighted' && l.suspect === true ? [(l as { army: string }).army] : [])))
     for (const a of seenMarches(r, me())) {
       if (a.march === null || a.lent?.to === me()) continue
-      tokens.push({ army: a.id, node: a.march.from, men: 0, sel: false, going: false, img: `${ART}icon/unit-spear.png`, foe: a.faction,
+      tokens.push({ army: a.id, node: a.march.from, men: 0, sel: false, going: false, img: `${ART}icon/unit-spear.png`, foe: a.faction, squad: squadOf([]),
         ...(sneaky.has(a.id) ? { sneak: true } : {}), march: { from: a.march.from, to: a.march.to, left: a.march.left } })
     }
     // 개척단의 말 — 군대 말처럼 누르면 고르고 갈 곳이 빛난다 (지난 계절부터 길 위에 있으면 길 가운데)
@@ -1635,6 +1637,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (eta === 0) return `${josa(place, '을', '를')} 지키는 중 · ${till}`
     if (eta === null) return `${josa(place, '으로', '로')} 가는 길이 막혔다 · ${till}`
     return `${josa(place, '을', '를')} 지키러 오는 중 · ${arriveWhen(r.season, eta)} · ${till}`
+  }
+
+  /** 지도 유닛의 병사 셋 — 가장 많은 병종 둘, 셋째는 둘째 병종(없으면 첫째) · 수군은 땅에선 걷는 그림 · 모르는 군대는 창병 */
+  function squadOf(kinds: readonly UnitKind[]): Array<{ src: string; ar: number }> {
+    const anim = (k: UnitKind | undefined): string => (k === undefined ? 'spear' : k === 'boat' ? 'marine' : k)
+    const a = anim(kinds[0])
+    const b = anim(kinds[1] ?? kinds[0])
+    return [a, b === a ? a : b, a].map((k) => ({ src: `${ART}anim/${k}.png`, ar: SOL_ANIM_AR[k] ?? 1 }))
   }
 
   /** 그 나라가 이기는 데 얼마나 다가섰나 (0~1) — 승리 길 넷 가운데 가장 찬 것 · 장 판·배우는 판은 도읍 차지로 */

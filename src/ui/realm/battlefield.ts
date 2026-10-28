@@ -11,7 +11,7 @@
  * 움직임은 CSS 애니메이션의 지연뿐이고, 소리만 타이머로 — 탭이 보일 때만 (절대 규칙 4).
  * 확률은 숫자로 안 보인다 — 사로잡기는 말과 색으로, 대신 사람 수(날랜 무리 · 호위)는 보인다 (realm-no-numbers).
  */
-import { FACTION_ART, UNIT_ICON, bustOf, flagIcon } from '../../realm/data/art.ts'
+import { FACTION_ART, SOL_ANIM_AR, UNIT_ICON, bustOf, flagIcon } from '../../realm/data/art.ts'
 import { battleName, endStory, fieldName, groupLabel, josa, roundStory, storyCtx, UNIT_NAME } from '../../realm/data/prose.ts'
 import { BATTLE_STYLES, groupMen, groupOf, lookRound, nightAt, type BattleStyle, type RoundAt } from '../../realm/tactics.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
@@ -830,7 +830,7 @@ export function warTip(prev: Realm, after: Realm, l: BattleLine, me: string, art
 /** 활을 쏘는 명령 — 그 합에 화살이 날아간다 */
 const SHOOT_CMD: ReadonlySet<string> = new Set(['volley', 'counter', 'open', 'height', 'fire'])
 /** 동작 그림(8컷 띠)이 있는 병종 — 0·1 서기 · 2·3 걷기 · 4·5 찌르기 · 6 맞음(안 씀) · 7 쓰러짐 */
-const ANIM_SOL: Readonly<Record<string, number>> = { spear: 167 / 160, shield: 165 / 160, bow: 139 / 160, horse: 157 / 160, boat: 164 / 160, crossbow: 152 / 160, pike: 162 / 160, axe: 144 / 160, marine: 155 / 160 } // 병종 → 띠 한 칸의 가로세로 비 (tools/strip-frames.mjs 가 찍어 준다)
+const ANIM_SOL = SOL_ANIM_AR // 병종 → 띠 한 칸의 가로세로 비 (art.ts · 지도 유닛도 같이 쓴다)
 /** 전장의 진이 직접 보여 주는 무리 명령 — 위 겹의 큰 연출을 띄우지 않는다 */
 /**
  * 수군의 그림 — 배를 탄 수군은 물 위 싸움(바닷길·포구)에서만. 땅에서는 걸어서 싸우는 수군(두건·갈고리창·둥근 방패)

@@ -335,6 +335,30 @@ export const MAP_CSS = `
 /* 살아 있는 말 — 쉬는 군대는 들썩이고 · 군기가 펄럭이고 · 명령이 없으면 「명령?」 */
 .map .tok.idle { animation: tokidle 2.2s ease-in-out infinite alternate; } .map .toks .tok.idle:nth-child(2) { animation-delay: -.8s; } .map .toks .tok.idle:nth-child(3) { animation-delay: -1.5s; }
 @keyframes tokidle { from { transform: translateY(0); } to { transform: translateY(-14%); } }
+/* 유닛 — 땅에 선 병사 셋 + 장수 메달 (형 10-28: "맵에서 유닛들 선택하고 싶게 · 둥실 떠다니기만 하면 뭐하냐 · 유닛처럼").
+   떠다니지 않는다: 병사가 제자리에서 숨 쉬고(동작 그림 0·1컷) · 고르면 발밑에 금빛 고리 + 무기를 치켜든다 · 길 위에선 걷는다.
+   그림자는 단색 + blur (갤럭시 크롬이 부드러운 그러데이션을 못 그린다) */
+.map .tok.unit { width: calc(clamp(26px, calc(4.2cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 46px) * 2); }
+.map .tok.unit.idle, .map .toks.mv .tok.unit { animation: none; }
+.map .tok.unit > img { position: absolute; left: -10%; top: -26%; width: 42%; z-index: 3; }
+.map .tok.unit .squad { position: relative; display: flex; justify-content: center; align-items: flex-end; width: 100%; aspect-ratio: 1.55 / 1; }
+.map .tok.unit .squad::before { content: ''; position: absolute; left: 6%; right: 6%; bottom: -6%; height: 24%; border-radius: 50%; background: #000b; filter: blur(2px); z-index: -1; }
+.map .tok.unit .sq { position: relative; height: 100%; aspect-ratio: var(--ar, 1); margin: 0 -13%; }
+.map .tok.unit .sq:nth-child(2) { z-index: 1; height: 92%; margin-bottom: 4%; }
+.map .tok.unit .sq u { position: absolute; inset: 0; background: 0 0 / 800% 100% no-repeat; animation: mqidle 1.5s steps(1) calc(var(--j) * -.45s) infinite; }
+@keyframes mqidle { 0% { background-position-x: 0%; } 50% { background-position-x: 14.2857%; } }
+@keyframes mqwalk { 0% { background-position-x: 28.5714%; } 50% { background-position-x: 42.8571%; } }
+@keyframes mqatk { 0% { background-position-x: 57.1429%; } 50% { background-position-x: 71.4286%; } }
+.map .tok.unit.going .sq u, .map .toks.mv .tok.unit .sq u { animation: mqwalk .42s steps(1) calc(var(--j) * -.14s) infinite; }
+.map .tok.unit.sel .sq u { animation: mqatk .32s steps(1) calc(var(--j) * .06s) 3, mqidle 1.5s steps(1) 1.1s infinite; }
+.map .tok.unit .squad::after { content: ''; position: absolute; left: -4%; right: -4%; bottom: -14%; height: 34%; border-radius: 50%; border: 2px solid transparent; z-index: -1; pointer-events: none; }
+.map .tok.unit.sel .squad::after { border-color: #ffd27a; box-shadow: 0 0 8px #ffd27a, inset 0 0 6px #ffd27a88; animation: mqring .9s ease-in-out infinite alternate; }
+@keyframes mqring { from { transform: scale(.94); opacity: .75; } to { transform: scale(1.06); opacity: 1; } }
+@media (hover: hover) { .map .tok.unit:not(.sel):not(.foe):hover .squad::after { border-color: #ffd27a88; } }
+.map .tok.unit.foe .squad { transform: scaleX(-1); }
+.map .tok.unit.foe .squad::after { border-color: #e0604a99; }
+.map .tok.unit .flag { left: -2%; top: -46%; height: 80%; }
+@media (prefers-reduced-motion: reduce) { .map .tok.unit .sq u { animation: none !important; } .map .tok.unit.sel .squad::after { animation: none; } }
 .map .tok .flag { position: absolute; left: 4%; top: -34%; width: 6%; height: 70%; background: #5a3a1a; border-radius: 2px; z-index: -1; }
 .map .tok .flag::after { content: ''; position: absolute; left: 100%; top: 0; width: 520%; height: 34%; min-height: 6px; background: linear-gradient(90deg, var(--tc, #c8402a), var(--tc2, var(--tc, #c8402a))); clip-path: polygon(0 0, 100% 0, 80% 50%, 100% 100%, 0 100%); transform-origin: left center; animation: tokflag 1.1s ease-in-out infinite alternate; }
 @keyframes tokflag { from { transform: skewY(0deg) scaleX(1); } to { transform: skewY(-10deg) scaleX(.86); } }
@@ -699,8 +723,8 @@ export function mapHtml(
   // 우리 군대의 말은 살아 있다 — 군기가 펄럭이고, 쉬는 군대는 숨 쉬듯 들썩인다 (형 10-27 지인: "유닛을 전혀 안 누르더라 · 누르고 싶은 모습으로 · idle 모션")
   const ours = (t: MapToken): boolean => t.foe === undefined && t.ally === undefined && t.party !== true
   const tokBtn = (t: MapToken, ang?: number): string =>
-    `<button class="tok${ours(t) && t.march === undefined && !t.going ? ' idle' : ''}${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}${t.ally !== undefined ? ' ally' : ''}${t.party === true ? ' party' : ''}${t.foe !== undefined ? ` foe${t.sneak === true ? ' sneak' : ''}` : ''}" data-act="${t.foe !== undefined ? 'foetok' : t.party === true ? 'ptok' : 'tok'}" data-army="${t.army}" style="${tokKit(t)}">`
-    + `${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}${ours(t) ? '<i class="flag"></i>' : ''}${t.wait === true ? '<i class="ask">명령?</i>' : ''}<img src="${t.img}" alt="">${t.foe !== undefined ? '' : `<i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i>`}<b>${t.foe !== undefined ? '적' : `${t.ally !== undefined ? '도움 ' : t.party === true ? '개척 ' : ''}${t.men}`}</b></button>`
+    `<button class="tok${t.squad !== undefined ? ' unit' : ''}${ours(t) && t.march === undefined && !t.going ? ' idle' : ''}${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}${t.ally !== undefined ? ' ally' : ''}${t.party === true ? ' party' : ''}${t.foe !== undefined ? ` foe${t.sneak === true ? ' sneak' : ''}` : ''}" data-act="${t.foe !== undefined ? 'foetok' : t.party === true ? 'ptok' : 'tok'}" data-army="${t.army}" style="${tokKit(t)}">`
+    + `${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}${ours(t) ? '<i class="flag"></i>' : ''}${t.wait === true ? '<i class="ask">명령?</i>' : ''}${t.squad !== undefined ? `<span class="squad">${t.squad.map((q, j) => `<i class="sq" style="--ar:${q.ar.toFixed(3)};--j:${j}"><u style="background-image:url('${q.src}')"></u></i>`).join('')}</span>` : ''}<img src="${t.img}" alt="">${t.foe !== undefined ? '' : `<i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i>`}<b>${t.foe !== undefined ? '적' : `${t.ally !== undefined ? '도움 ' : t.party === true ? '개척 ' : ''}${t.men}`}</b></button>`
   let toks = ''
   // 길 위의 우리 군대 — 떠난 쪽에서 삼분의 일쯤 (가운데의 "n계절" 글씨를 안 가린다)
   for (const t of tokens) {
@@ -759,6 +783,8 @@ export interface MapToken {
   readonly sneak?: boolean
   /** 이번 계절 아직 명령이 없는 우리 군대 — 「명령?」 말풍선 (문명의 "유닛 명령 필요") */
   readonly wait?: boolean
+  /** 땅에 선 병사 셋 — 그 군대에 많은 병종의 동작 그림 (형 10-28: "둥실 떠다니기만 하면 뭐하냐 · 유닛처럼") */
+  readonly squad?: ReadonlyArray<{ readonly src: string; readonly ar: number }>
 }
 
 /** 고른 군대가 갈 수 있는 고을 — 칩은 판세(싸울 곳) 또는 걸리는 계절 */

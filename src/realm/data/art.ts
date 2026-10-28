@@ -377,5 +377,8 @@ export const UNIT_ICON = {
   horse: 'unit-buyeo-cavalry', crossbow: 'unit-han-crossbow', boat: 'unit-marine', // 수군은 걸어서 싸우는 그림 — 배 탄 그림(unit-boatmen)은 물 위 싸움에서만 (형 10-25)
 } as const
 
+/** 병사 동작 그림(public/realm/anim/<병종>.png · 8컷 띠) 한 칸의 가로세로 비 — tools/strip-frames.mjs 가 찍어 준다. 싸움터와 지도 유닛이 같이 쓴다 */
+export const SOL_ANIM_AR: Readonly<Record<string, number>> = { spear: 167 / 160, shield: 165 / 160, bow: 139 / 160, horse: 157 / 160, boat: 164 / 160, crossbow: 152 / 160, pike: 162 / 160, axe: 144 / 160, marine: 155 / 160 }
+
 /** 계절 → 아이콘 */
 export const SEASON_ICON = { spring: 'status-spring', summer: 'status-summer', autumn: 'status-autumn', winter: 'status-winter' } as const
