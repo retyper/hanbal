@@ -1797,7 +1797,7 @@ export const WAR_CSS = `
 .ap .wfield.play .wf-mid-terr { transform-origin: 50% 62%; animation: wpushin 1.5s cubic-bezier(.2, .7, .3, 1) calc(var(--hd) - .25s) both; }
 .ap .wf2s .tk { position: absolute; left: calc(var(--x) + var(--dx, 0%)); top: calc(60% + var(--oy) * var(--sy, 1) + var(--dy, 0%)); height: clamp(28px, 7.4cqw, 50px); width: auto;
   transform: translate(-50%, -100%) scale(var(--sc, 1)); transform-origin: 50% 100%; rotate: var(--rot, 0deg);
-  transition: left .5s cubic-bezier(.3, 1.25, .5, 1), top .5s cubic-bezier(.3, 1.25, .5, 1), rotate .35s ease-out, filter .3s; filter: drop-shadow(0 0 2px #7cc4ff) drop-shadow(0 2px 2px #000c); }
+  transition: left .5s cubic-bezier(.3, 1.25, .5, 1), top .5s cubic-bezier(.3, 1.25, .5, 1), rotate .35s ease-out; filter: drop-shadow(0 0 2px #7cc4ff) drop-shadow(0 2px 2px #000c); } /* 빛(filter)은 서서히 바꾸지 않는다 — 누를 때 파란 테가 연기처럼 번졌다 (형 10-28) */
 .ap .wf2s.foe .tk { filter: drop-shadow(0 0 2px #ff6a5a) drop-shadow(0 2px 2px #000c) sepia(.25) saturate(1.2); }
 .ap .wf2s .tk.tkd { opacity: .16; filter: grayscale(1); rotate: -78deg; }
 /* 장수 — 맨 뒤 · 깃발 */
@@ -2405,7 +2405,7 @@ export const WAR_CSS = `
 @keyframes wcin { from { opacity: 0; transform: translate(-70vw, -50%) scale(.9); } to { opacity: 1; transform: translate(0, -50%); } }
 .ap .wcut .wctx { position: absolute; left: calc(6% + min(36vw, 200px) + 14px); right: 4%; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 4px; animation: wrin .4s ease-out .25s both; }
 .ap .wcut .wctx b { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 8vw, 54px); color: #fff1c8; text-shadow: 0 0 14px #ffb04a, 0 3px 6px #000; letter-spacing: .04em; }
-.ap .wcut .wctx span { font-size: clamp(13px, 3.4vw, 16px); color: #f0dcb0; text-shadow: 0 1px 4px #000; }
+.ap .wcut .wctx span { align-self: flex-start; font-size: clamp(13px, 3.4vw, 16px); color: #f0dcb0; text-shadow: 0 1px 4px #000; background: #0b0805d9; padding: 2px 10px; border-radius: 8px; } /* 기술 카드 밑 글씨가 배경에 묻혔다 (형 10-28) */
 /* 격려·외침 — 금빛 고리가 퍼지고 불티가 오른다 */
 .ap .wcut .wcring { position: absolute; left: calc(6% + min(18vw, 100px)); top: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 3px solid #ffd27a;
   box-shadow: 0 0 14px #ffd27a; opacity: 0; animation: wcring .9s ease-out var(--t) both; }

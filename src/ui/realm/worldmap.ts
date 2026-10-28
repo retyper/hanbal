@@ -96,13 +96,19 @@ function buildBase(art: string, region: RegionId, geo: WorldGeo): Promise<HTMLCa
       const mg = mask.getContext('2d')!
       mg.fillStyle = '#000'
       mg.fillRect(0, 0, tw, th)
-      mg.globalCompositeOperation = 'destination-in'
+      // 가장자리 흐림 — 캔버스 그러데이션 대신 1px 띠를 한 줄씩 지운다 (destination-out). 갤럭시 크롬은 캔버스 그러데이션을 못 그려
+      // 흐리려던 조각이 통째로 투명해졌다 — 지도에 한지만 남은 네모가 생겼다 (형 10-28: "맵이 조각조각")
+      mg.globalCompositeOperation = 'destination-out'
       const fade = (x0: number, y0: number, x1: number, y1: number): void => {
-        const gr = mg.createLinearGradient(x0, y0, x1, y1)
-        gr.addColorStop(0, 'rgba(0,0,0,0)')
-        gr.addColorStop(1, '#000')
-        mg.fillStyle = gr
-        mg.fillRect(0, 0, tw, th)
+        const along = y0 === y1 // 가로로 흐린다 (동·서) · 아니면 세로 (남)
+        const L = Math.max(1, Math.round(along ? Math.abs(x1 - x0) : Math.abs(y1 - y0)))
+        const dir = along ? Math.sign(x1 - x0) : Math.sign(y1 - y0)
+        for (let i = 0; i < L; i++) {
+          mg.fillStyle = `rgba(0,0,0,${(1 - (i + 0.5) / L).toFixed(4)})`
+          const at = Math.round((along ? x0 : y0) + dir * i - (dir < 0 ? 1 : 0))
+          if (along) mg.fillRect(at, 0, 1, th)
+          else mg.fillRect(0, at, tw, 1)
+        }
       }
       if (t.fade.e !== undefined) fade(tw, 0, tw - t.fade.e * PX, 0)
       if (t.fade.w !== undefined) fade(0, 0, t.fade.w * PX, 0)

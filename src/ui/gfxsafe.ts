@@ -197,7 +197,7 @@ export function fixCss(css: string): string {
   }
   s = out + s.slice(at)
   // 2. filter 의 색 함수 — backdrop-filter 는 url 을 못 받으니 빼고
-  s = s.replace(/(^|[;{\s])((?:-webkit-)?filter\s*:)([^;}]+)/g, (_, pre: string, prop: string, val: string) => `${pre}${prop}${fixFilterValue(val)}`)
+  s = s.replace(/(^|[;{\s"'])((?:-webkit-)?filter\s*:)([^;}"']+)/g, (_, pre: string, prop: string, val: string) => `${pre}${prop}${fixFilterValue(val)}`)
   if (cssCache.size > 4000) cssCache.clear()
   cssCache.set(css, s)
   return s
@@ -289,6 +289,21 @@ function fixTree(n: Node): void {
   for (const s of n.querySelectorAll('style')) fixStyleEl(s)
 }
 
+/**
+ * 그리기 전에 바꿔 끼운다 — innerHTML · insertAdjacentHTML 로 들어오는 글을 먼저 고친다.
+ * 지켜보기(MutationObserver)만 하면 깨진 무늬가 한 번 그려진 뒤 바뀌어, 누를 때마다 다시 그리는 지도가 번쩍였다 (형 10-28: "뭐 터치하기만 하면 엄청 깜빡")
+ */
+function patchHtml(): void {
+  const fix = (v: unknown): unknown => (typeof v === 'string' && /gradient\(|filter/.test(v) ? fixCss(v) : v)
+  const d = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML')
+  if (d?.set !== undefined && d.get !== undefined) {
+    const set = d.set
+    Object.defineProperty(Element.prototype, 'innerHTML', { ...d, set(this: Element, v: string) { set.call(this, fix(v) as string) } })
+  }
+  const ins = Element.prototype.insertAdjacentHTML
+  Element.prototype.insertAdjacentHTML = function (this: Element, where: InsertPosition, html: string): void { ins.call(this, where, fix(html) as string) }
+}
+
 /** 켜졌나 — 다른 곳에서 볼 일이 있으면 */
 export let gfxSafe = false
 
@@ -297,6 +312,7 @@ export function startGfxSafe(): void {
   gfxSafe = true
   document.documentElement.classList.add('gfxsafe')
   patchCanvas()
+  patchHtml()
   fixTree(document.documentElement)
   const mo = new MutationObserver((list) => {
     for (const m of list) {
