@@ -10,6 +10,7 @@
  */
 import type { AskKind, Mind } from '../../realm/types.ts'
 import { CHIEF_LINE, type ChiefMood, type ChiefSit } from './chief-lines.ts'
+import { CHIEF_LINE_B } from './chief-lines-b.ts'
 import type { VoiceKind } from './voice.ts'
 
 /** 맺거나 틀어진 뒤의 한마디 */
@@ -22,19 +23,20 @@ export interface ChiefSay { readonly text: string; readonly voice: string }
 /** 욕심 많은 나라는 적극(a) · 조심스런 나라는 소극(p) */
 const moodOf = (m: Mind | undefined): ChiefMood => (m === 'greedy' ? 'a' : 'p')
 
-function chiefSay(vk: VoiceKind, sit: ChiefSit, mind: Mind | undefined): ChiefSay {
+/** cast b — 성우진 B 의 군장(얼굴로 반씩 · voice.ts castOf)은 다른 말·다른 목소리 (chief-lines-b.ts · 형 10-29) */
+function chiefSay(vk: VoiceKind, sit: ChiefSit, mind: Mind | undefined, cast: 'a' | 'b'): ChiefSay {
   const md = moodOf(mind)
-  const [a, p] = CHIEF_LINE[vk][sit]
-  return { text: md === 'a' ? a : p, voice: `realm/voice/chief/${vk}-${sit}-${md}.ogg` }
+  const [a, p] = (cast === 'b' ? CHIEF_LINE_B : CHIEF_LINE)[vk][sit]
+  return { text: md === 'a' ? a : p, voice: `realm/voice/${cast === 'b' ? 'b/' : ''}chief/${vk}-${sit}-${md}.ogg` }
 }
 
 /** 청을 건 군장의 첫마디 — 갈래 × 군장 목소리 결 × 나라 성향 */
-export function askSay(kind: AskKind, mind: Mind | undefined, vk: VoiceKind): ChiefSay {
-  return chiefSay(vk, kind, mind)
+export function askSay(kind: AskKind, mind: Mind | undefined, vk: VoiceKind, cast: 'a' | 'b' = 'a'): ChiefSay {
+  return chiefSay(vk, kind, mind, cast)
 }
 /** 맺거나 틀어진 뒤 저쪽 군장의 한마디 */
-export function pactSay(kind: PactKind, mind: Mind | undefined, vk: VoiceKind): ChiefSay {
-  return chiefSay(vk, PACT_SIT[kind], mind)
+export function pactSay(kind: PactKind, mind: Mind | undefined, vk: VoiceKind, cast: 'a' | 'b' = 'a'): ChiefSay {
+  return chiefSay(vk, PACT_SIT[kind], mind, cast)
 }
 
 /** 말이 한 자씩 찍힌다 — 글자마다 늦춤(CSS). 다 찍히는 데 `per` 초씩 */

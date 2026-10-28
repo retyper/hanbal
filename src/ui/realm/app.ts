@@ -84,7 +84,7 @@ import { AUD_CSS, askSay, pactSay, typed, type PactKind } from './audience.ts'
 import { customDef, customsOf } from '../../realm/data/customs.ts'
 import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, slotsHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
 import { SCENE_SOUND, makeMusic, playOnce, snd, sndFile, tapSlot } from './sound.ts'
-import { hireVoicePath, voiceGate, voiceKind, voicePath, type VoiceLine } from './voice.ts'
+import { castOf, hireVoicePath, voiceGate, voiceKind, voicePath, type VoiceLine } from './voice.ts'
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
 import { FEEL_CSS, alertFeel, ambushFeel, chanceFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
@@ -2311,7 +2311,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const threat = a.kind === 'demand'
     const md = moodOf(r, me(), a.from)
     // 군장의 말 — 그 군장 목소리 결 × 나라 성향 (chief-lines.ts) · 말이 찍히기 시작할 때 제 목소리로 (형 10-26)
-    const say = askSay(a.kind, f?.mind, lead !== undefined ? voiceKind(lead, true) : 'm-elder')
+    const say = askSay(a.kind, f?.mind, lead !== undefined ? voiceKind(lead, true) : 'm-elder', lead !== undefined ? castOf(lead) : 'a')
     if (!bigSounded.has(`aud:${a.id}`)) {
       bigSounded.add(`aud:${a.id}`)
       window.setTimeout(() => ding(snd(threat ? 'war_drum' : 'envoy'), 0.5), 200)
@@ -4411,7 +4411,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         refused: [`${josa(fac.name, '이', '가')} 우리 청을 물리쳤다`, '사신이 빈손으로 돌아왔다', 'event-court-hall', snd('war_drum')],
       }
       const [title, sub, bg, sfx] = T[k]
-      const say = pactSay(k, fac.mind, lord !== undefined ? voiceKind(lord, true) : 'm-elder')
+      const say = pactSay(k, fac.mind, lord !== undefined ? voiceKind(lord, true) : 'm-elder', lord !== undefined ? castOf(lord) : 'a')
       const stage = `<div class="pact${bad ? ' bad' : ''}"><img class="pactbg" src="${ART}event/${bg}.jpg" alt="">${bustHd(mine, 'pl a')}${bustHd(lord, 'pl b')}`
         + `<div class="pflags">${emblem(me(), 'fem')}<i>${bad ? '✕' : '⇄'}</i>${emblem(f, 'fem')}</div><div class="psay">${typed(say.text, esc, 1.1)}</div></div>`
       out.push({ key, art: bg, good: !bad, ...(k === 'gift' ? { tone: 'plain' as const } : {}), flags: '', title, sub, small: lord?.name ?? '', sfx, stage, ...(lord !== undefined ? { voice: say.voice } : {}) })
