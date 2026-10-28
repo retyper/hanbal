@@ -7,7 +7,7 @@
 | 계정 (화면에 뜨는 이름) | 풀리는 때 | 본 때 |
 |---|---|---|
 | YunCheol (edu · 'YunCheol Shin') | 10-29 AM 2:53 (문구 그대로) | 10-28 03:25 한도 문구 — 02:50 부터 스물다섯 장 (사건 그림 · 한 장은 거절: bow-forge) |
-| retyper92 (계정 고르기에 'YunCheol Shin · retyper92@gmail' 로 뜬다) | 10-29 PM 3:24 (문구 그대로) | 10-28 15:35 한도 문구 — 15:20 부터 네 장 (사건 expedition-return · goguryeo-hunt · golden-egg · iron-trade) |
+| retyper92 (계정 고르기에 'YunCheol Shin · retyper92@gmail' 로 뜬다) | 10-29 PM 3:24 (문구 그대로) | 10-28 22:50 한도 문구 다시 — 15:35 에 막혔는데 밤 22:25 부터 다섯 장이 더 나왔다(명치판 g-37·g-40·w-08·w-09·w-11) · 시각이 지나기 전이라도 한 번 넣어 볼 것 |
 | roqkfeke12 ('윤철 신') | 10-29 PM 6:45 (문구 그대로) | 10-28 19:20 한도 문구 — 18:40 부터 열 장 (사건 아홉 + 명치판 g-33 멧돌) |
 | retyper (hephaestosian · 'retyper') | 10-28 PM 10:17 (문구 그대로) | 10-28 02:47 한도 문구 — 10-27 22:16 부터 열 장 (명치판 아홉 + 사건 invade-raid) |
 
@@ -16,7 +16,7 @@
    10-28 새벽 스물여섯 장 바꿈(hephaestosian 하나 · edu 스물다섯): invade-raid · invade-siege · invade-field · take-town · captured-ours · capture · plot-assassin · plot-bribe · plot-burn · plot-rescue · plot-rumor · plot-sow · plot-spy · truce-pact · tribute-bow · court-hall · festival · flood · plague · dream · newborn · alliance-oath · defection · divination · egg-birth · eight-harbours
    10-28 오후 넷 더(retyper92): expedition-return · goguryeo-hunt · golden-egg · iron-trade
    ✔ 10-28 저녁 나머지 아홉(roqkfeke12): night-raid · outside-envoy · palisade-build · people-quarrel · salt-makers · sniped-commander · spy-rumor · yeonggo · bow-forge(다 만든 활을 건네는 장면으로 바꿔 통과) — **사건 그림 서른아홉 끝** (19b8e75)
-   ★ 명치판 주문서 = public/_tmp/busts27.json (head+id+tail · _queue 는 판에 쓰이는 열일곱 먼저 · _unused 열은 지금 판에 안 쓰이는 옛 그림) · 굽기 scratchpad bakeredo.py <id> <png> (같은 이름에 덮어씀 · 원본은 assets_src/realm/bust/<id>-gpt2.png) · ✔ g-33 멧돌 10-28
+   ★ 명치판 주문서 = public/_tmp/busts27.json (head+id+tail · _queue 는 판에 쓰이는 열일곱 먼저 · _unused 열은 지금 판에 안 쓰이는 옛 그림) · 굽기 scratchpad bakeredo.py <id> <png> (같은 이름에 덮어씀 · 원본은 assets_src/realm/bust/<id>-gpt2.png) · ✔ g-33 멧돌 10-28 · ✔ g-37 읍즙 · g-40 아단 · w-08 이슬 · w-09 단비 · w-11 소리 10-28 밤 (retyper92) — 다음은 w-12 나리부터
    ★10-28 명치판 — 형이 다시 그리라고 준 목록 (사건 그림 열셋 다음 · 한 사람마다 새 대화 · 민무늬 #1c2129 판): g-31-buyeo-geumha · g-33-jeoga-metdol · g-37-eumjeup-jeup · g-39-guya-soebo · g-40-anya-adan · g-72-gyeonji-soeul · l-L5-seonyeo · l-L6-jeonggyeon-moju · l-L8-nangnang-princess · l-L9-ungnyeo · l-L10-pyeonggang · w-07-shaman-queen · w-08-mahan-warrior · w-09-byeonhan-smith · w-11-assassin · w-12-court-dancer · w-14-feast-spy · w-16-clan-matriarch · w-47-gosaburi-baram · w-48-mujin-mudeung · w-49-goryong-gureum · w-51-haseulla-dangung · w-52-biryuna-songbi · w-53-hwanna-gabi · w-55-guga-nuri · w-56-dongokjeo-sogeum · w-79-yangmaek-solmae
    그다음(형: "퀄리티 떨어져 보이는 것 계속 수정"): 세로 화면 event-v(태몽·탄생) · 제미나이로 받은 여인 명치판 w-29~45·w-79·w-80 · 계절 띠 넷 · 싸움터 배경 battle-field
 
