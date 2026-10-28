@@ -345,12 +345,12 @@ export const MAP_CSS = `
 .map .tok.unit .squad::before { content: ''; position: absolute; left: 6%; right: 6%; bottom: -6%; height: 24%; border-radius: 50%; background: #000b; filter: blur(2px); z-index: -1; }
 .map .tok.unit .sq { position: relative; height: 100%; aspect-ratio: var(--ar, 1); margin: 0 -13%; }
 .map .tok.unit .sq:nth-child(2) { z-index: 1; height: 92%; margin-bottom: 4%; }
-.map .tok.unit .sq u { position: absolute; inset: 0; background: 0 0 / 800% 100% no-repeat; animation: mqidle 1.5s steps(1) calc(var(--j) * -.45s) infinite; }
+.map .tok.unit .sq u { position: absolute; inset: 0; background: 0 0 / 800% 100% no-repeat; animation: mqidle calc(1.25s + var(--k, .5) * .7s) steps(1) calc(var(--k, .5) * -1.6s) infinite; /* 병사마다 박자를 따로 (형 10-28) */ }
 @keyframes mqidle { 0% { background-position-x: 0%; } 50% { background-position-x: 14.2857%; } }
 @keyframes mqwalk { 0% { background-position-x: 28.5714%; } 50% { background-position-x: 42.8571%; } }
 @keyframes mqatk { 0% { background-position-x: 57.1429%; } 50% { background-position-x: 71.4286%; } }
 .map .tok.unit.going .sq u, .map .toks.mv .tok.unit .sq u { animation: mqwalk .42s steps(1) calc(var(--j) * -.14s) infinite; }
-.map .tok.unit.sel .sq u { animation: mqatk .32s steps(1) calc(var(--j) * .06s) 3, mqidle 1.5s steps(1) 1.1s infinite; }
+.map .tok.unit.sel .sq u { animation: mqatk .32s steps(1) calc(var(--j) * .06s) 3, mqidle calc(1.25s + var(--k, .5) * .7s) steps(1) calc(1.1s - var(--k, .5) * 1.6s) infinite; }
 .map .tok.unit .squad::after { content: ''; position: absolute; left: -4%; right: -4%; bottom: -14%; height: 34%; border-radius: 50%; border: 2px solid transparent; z-index: -1; pointer-events: none; }
 .map .tok.unit.sel .squad::after { border-color: #ffd27a; box-shadow: 0 0 8px #ffd27a, inset 0 0 6px #ffd27a88; animation: mqring .9s ease-in-out infinite alternate; }
 @keyframes mqring { from { transform: scale(.94); opacity: .75; } to { transform: scale(1.06); opacity: 1; } }
@@ -724,7 +724,7 @@ export function mapHtml(
   const ours = (t: MapToken): boolean => t.foe === undefined && t.ally === undefined && t.party !== true
   const tokBtn = (t: MapToken, ang?: number): string =>
     `<button class="tok${t.squad !== undefined ? ' unit' : ''}${ours(t) && t.march === undefined && !t.going ? ' idle' : ''}${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}${t.ally !== undefined ? ' ally' : ''}${t.party === true ? ' party' : ''}${t.foe !== undefined ? ` foe${t.sneak === true ? ' sneak' : ''}` : ''}" data-act="${t.foe !== undefined ? 'foetok' : t.party === true ? 'ptok' : 'tok'}" data-army="${t.army}" style="${tokKit(t)}">`
-    + `${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}${ours(t) ? '<i class="flag"></i>' : ''}${t.wait === true ? '<i class="ask">명령?</i>' : ''}${t.squad !== undefined ? `<span class="squad">${t.squad.map((q, j) => `<i class="sq" style="--ar:${q.ar.toFixed(3)};--j:${j}"><u style="background-image:url('${q.src}')"></u></i>`).join('')}</span>` : ''}<img src="${t.img}" alt="">${t.foe !== undefined ? '' : `<i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i>`}<b>${t.foe !== undefined ? '적' : `${t.ally !== undefined ? '도움 ' : t.party === true ? '개척 ' : ''}${t.men}`}</b></button>`
+    + `${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}${ours(t) ? '<i class="flag"></i>' : ''}${t.wait === true ? '<i class="ask">명령?</i>' : ''}${t.squad !== undefined ? `<span class="squad">${t.squad.map((q, j) => `<i class="sq" style="--ar:${q.ar.toFixed(3)};--j:${j};--k:${((([...t.army].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7) + j * 53) % 97 + 97) % 97 / 97).toFixed(2)}"><u style="background-image:url('${q.src}')"></u></i>`).join('')}</span>` : ''}<img src="${t.img}" alt="">${t.foe !== undefined ? '' : `<i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i>`}<b>${t.foe !== undefined ? '적' : `${t.ally !== undefined ? '도움 ' : t.party === true ? '개척 ' : ''}${t.men}`}</b></button>`
   let toks = ''
   // 길 위의 우리 군대 — 떠난 쪽에서 삼분의 일쯤 (가운데의 "n계절" 글씨를 안 가린다)
   for (const t of tokens) {

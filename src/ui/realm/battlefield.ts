@@ -1279,7 +1279,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         const s2 = idx < alive ? 'tku' : idx < before ? 'tkf' : 'tkd' // 'fall' 은 군주가 무너진 판(.ap .fall — 액자 테)과 이름이 겹쳐 말이 큰 액자로 그려졌다 (10-25)
         const hl = oy < -0.5 ? ' hi' : oy > 0.5 ? ' lo' : ''
         const sc = (0.8 + 0.4 * ((oy + 40) / 80)).toFixed(2)
-        const pos = `--x:${(x + oy * 0.22).toFixed(1)}%;--oy:${oy.toFixed(1)}%;--sc:${sc};--j:${idx++ % 6};z-index:${10 + Math.round(oy + 40)}`
+        const pos = `--x:${(x + oy * 0.22).toFixed(1)}%;--oy:${oy.toFixed(1)}%;--sc:${sc};--j:${idx % 6};--k:${(((idx++ * 47) % 97) / 97).toFixed(2)};z-index:${10 + Math.round(oy + 40)}`
         // 동작 그림이 있는 병종은 컷으로 움직인다 (서기 · 걷기 · 찌르기 · 쓰러짐 — public/realm/anim · tools/strip-frames.mjs)
         const ar = ANIM_SOL[k]
         if (ar !== undefined) return `<i class="tk wsp k-${k} r${r}${hl} ${s2}" style="${pos};--ar:${ar.toFixed(3)}"><b class="spf" style="background-image:url('${art}anim/${k}.png')"></b></i>`
@@ -1841,20 +1841,20 @@ export const WAR_CSS = `
 @keyframes wloss { 0% { opacity: 0; translate: 0 10px; scale: .6; } 15% { opacity: 1; translate: 0 0; scale: 1.15; } 70% { opacity: 1; scale: 1; } 100% { opacity: 0; translate: 0 -18px; } }
 /* 동작 그림 — 8컷 띠를 칸씩 넘긴다 (steps). 바깥(.tk)은 자리·밀기, 안(.spf)은 컷 */
 .ap .wf2s .tk.wsp { width: auto; aspect-ratio: var(--ar, 1); } .ap .wf2s .tk.wsp.k-horse, .ap .wf2s .tk.wsp.k-boat { height: clamp(38px, 10cqw, 68px); } /* 말 탄 이는 걷는 이보다 크다 */
-.ap .wf2s .tk.wsp .spf { position: absolute; inset: 0; background: 0 0 / 800% 100% no-repeat; animation: spidle 1.5s steps(1) calc(var(--j) * -.27s) infinite; }
+.ap .wf2s .tk.wsp .spf { position: absolute; inset: 0; background: 0 0 / 800% 100% no-repeat; animation: spidle calc(1.25s + var(--k, .5) * .7s) steps(1) calc(calc(var(--j) * -.27s) - var(--k, .5) * 1.6s) infinite; }
 @keyframes spidle { 0% { background-position-x: 0%; } 50% { background-position-x: 14.2857%; } }
 @keyframes spwalk { 0% { background-position-x: 28.5714%; } 50% { background-position-x: 42.8571%; } }
 @keyframes spatk { 0% { background-position-x: 57.1429%; } 50% { background-position-x: 71.4286%; } }
-.ap .wfield.enter .tk.wsp .spf { animation: spwalk .42s steps(1) calc(var(--j) * -.1s) 4, spidle 1.5s steps(1) 1.9s infinite; }
-.ap .wfield.play .wf2s .tk.wsp.r0:not(.tkd) .spf { animation: spwalk .42s steps(1) var(--fa, 0s) 2, spatk calc(.3s + var(--j, 0) * .03s) steps(1) calc(var(--hd) - .32s + var(--j, 0) * .05s) 7, spidle 1.5s steps(1) calc(var(--hd) + 1.9s) infinite; }
+.ap .wfield.enter .tk.wsp .spf { animation: spwalk .42s steps(1) calc(var(--j) * -.1s) 4, spidle calc(1.25s + var(--k, .5) * .7s) steps(1) calc(1.9s - var(--k, .5) * 1.6s) infinite; }
+.ap .wfield.play .wf2s .tk.wsp.r0:not(.tkd) .spf { animation: spwalk .42s steps(1) var(--fa, 0s) 2, spatk calc(.3s + var(--j, 0) * .03s) steps(1) calc(var(--hd) - .32s + var(--j, 0) * .05s) 7, spidle calc(1.25s + var(--k, .5) * .7s) steps(1) calc(calc(var(--hd) + 1.9s) - var(--k, .5) * 1.6s) infinite; }
 /* 도끼병 — 받은 그림엔 내려치는 컷이 없다(든 컷 4 뿐) → 든 컷을 앞으로 휘둘러 기울인다 (컷 5는 들기의 다른 자세라 안 쓴다) */
-.ap .wfield.play .wf2s .tk.wsp.k-axe.r0:not(.tkd) .spf { animation: spwalk .42s steps(1) var(--fa, 0s) 2, spaxe .3s steps(1) calc(var(--hd) - .32s + var(--j, 0) * .05s) 7, spidle 1.5s steps(1) calc(var(--hd) + 1.9s) infinite; }
+.ap .wfield.play .wf2s .tk.wsp.k-axe.r0:not(.tkd) .spf { animation: spwalk .42s steps(1) var(--fa, 0s) 2, spaxe .3s steps(1) calc(var(--hd) - .32s + var(--j, 0) * .05s) 7, spidle calc(1.25s + var(--k, .5) * .7s) steps(1) calc(calc(var(--hd) + 1.9s) - var(--k, .5) * 1.6s) infinite; }
 .ap .wfield.play .wf2s .tk.wsp.k-axe.r0:not(.tkd) .spf { transform-origin: 40% 90%; }
 @keyframes spaxe { 0% { background-position-x: 57.1429%; rotate: -8deg; } 50% { background-position-x: 57.1429%; rotate: 28deg; } }
 /* 궁수 — 쏘는 박자에 시위를 당겼다(4) 놓는다(5) · 기병 — 제 박자에 달린다(걷기 컷) */
-.ap .wfield.play .wf2s[data-b] .tk.wsp.r1:not(.tkd) .spf { animation: spdraw .75s steps(1) calc(var(--sa) - .45s) forwards, spidle 1.5s steps(1) calc(var(--sa) + .5s) infinite; }
+.ap .wfield.play .wf2s[data-b] .tk.wsp.r1:not(.tkd) .spf { animation: spdraw .75s steps(1) calc(var(--sa) - .45s) forwards, spidle calc(1.25s + var(--k, .5) * .7s) steps(1) calc(calc(var(--sa) + .5s) - var(--k, .5) * 1.6s) infinite; }
 @keyframes spdraw { 0% { background-position-x: 57.1429%; } 60% { background-position-x: 71.4286%; } 100% { background-position-x: 71.4286%; } }
-.ap .wfield.play .wf2s[data-h] .tk.wsp.r2:not(.tkd) .spf { animation: spwalk .3s steps(1) var(--ha, 0s) 3, spatk .26s steps(1) calc(var(--hd) - .3s) 2, spidle 1.5s steps(1) calc(var(--hd) + .5s) infinite; }
+.ap .wfield.play .wf2s[data-h] .tk.wsp.r2:not(.tkd) .spf { animation: spwalk .3s steps(1) var(--ha, 0s) 3, spatk .26s steps(1) calc(var(--hd) - .3s) 2, spidle calc(1.25s + var(--k, .5) * .7s) steps(1) calc(calc(var(--hd) + .5s) - var(--k, .5) * 1.6s) infinite; }
 /* 쓰러짐 — 굴리지 않고 쓰러진 컷으로 땅에 남는다 */
 .ap .wf2s .tk.wsp.tkd { rotate: 0deg; opacity: .62; filter: grayscale(.5) brightness(.8) drop-shadow(0 2px 2px #000c); }
 .ap .wf2s .tk.wsp.tkd .spf { animation: none; background-position-x: 100%; }
@@ -1867,7 +1867,7 @@ export const WAR_CSS = `
 .ap .wf2s .tk.r0.tkd { translate: calc(7cqw + var(--j, 0) * .3cqw) .6cqw; }
 @keyframes spdie { to { background-position-x: 100%; } }
 /* 맞음 — 맞부딪는 순간 살아남은 앞줄 몇이 뒤로 휘청(맞음 컷 6) 했다가 다시 싸운다 */
-.ap .wfield.play .wf2s .tk.wsp.r0.tku:nth-child(3n) .spf { animation: spflinch .38s steps(1) calc(var(--hd) + .02s + var(--j, 0) * .04s) 1, spatk calc(.3s + var(--j, 0) * .03s) steps(1) calc(var(--hd) + .42s) 5, spidle 1.5s steps(1) calc(var(--hd) + 1.9s) infinite; }
+.ap .wfield.play .wf2s .tk.wsp.r0.tku:nth-child(3n) .spf { animation: spflinch .38s steps(1) calc(var(--hd) + .02s + var(--j, 0) * .04s) 1, spatk calc(.3s + var(--j, 0) * .03s) steps(1) calc(var(--hd) + .42s) 5, spidle calc(1.25s + var(--k, .5) * .7s) steps(1) calc(calc(var(--hd) + 1.9s) - var(--k, .5) * 1.6s) infinite; }
 @keyframes spflinch { 0%, 100% { background-position-x: 85.7143%; } }
 /* 쓰러질 때 흙먼지 — 병사마다 발치에서 한 번 */
 .ap .wf2s .tk.wsp.tkf::after { content: ''; position: absolute; left: 50%; bottom: 0; width: 140%; height: 45%; translate: -50% 20%; border-radius: 50%; pointer-events: none;
@@ -2189,10 +2189,10 @@ export const WAR_CSS = `
 .ap .whold .whh b { font-size: 16px; color: #ffe2a0; } .ap .whold .whh small { color: var(--mute); font-size: 12px; } .ap .whold .whh em { font-size: 11px; }
 .ap .whold p { margin: 6px 0 0; font-size: 12.5px; line-height: 1.45; color: #e8dcc0; } .ap .whold .whn { color: #ffd27a; font-weight: 700; }
 .ap .wr .whold .wguess .wgx { display: grid !important; } .ap .wr .whold .wguess .wgl { display: flex !important; }
-/* 보석 — 밑변 --a, 높이 --h 인 거꾸로 선 사각뿔. 옆면은 빗변 길이(--s)의 세모, 안쪽으로 --t 만큼 기운다 (a=26 · h=34 → s≈36.4 · t≈20.9°) */
-.ap .wgem { position: fixed; z-index: 60; width: 0; height: 0; pointer-events: none; perspective: 260px; --a: 26px; --s: 36.4px; --t: 20.9deg; animation: wgembob 1.1s ease-in-out infinite alternate; }
+/* 보석 — 밑변 --a, 높이 --h 인 거꾸로 선 사각뿔. 옆면은 빗변 길이(--s)의 세모, 안쪽으로 --t 만큼 기운다 (a=16 · h=21 → s≈22.5 · t≈20.9° · 형 10-28: 너무 크다) */
+.ap .wgem { position: fixed; z-index: 60; width: 0; height: 0; pointer-events: none; perspective: 260px; --a: 16px; --s: 22.5px; --t: 20.9deg; animation: wgembob 1.1s ease-in-out infinite alternate; }
 .ap .wgem[hidden] { display: none; }
-@keyframes wgembob { from { translate: 0 -64px; } to { translate: 0 -54px; } }
+@keyframes wgembob { from { translate: 0 -40px; } to { translate: 0 -33px; } }
 .ap .wgem .g3 { position: absolute; left: 0; top: 0; transform-style: preserve-3d; animation: wgemspin 2.6s linear infinite; }
 @keyframes wgemspin { from { transform: rotateX(-22deg) rotateY(0deg); } to { transform: rotateX(-22deg) rotateY(360deg); } }
 .ap .wgem .gf { position: absolute; left: calc(var(--a) / -2); top: 0; width: var(--a); height: var(--s); transform-origin: 50% 0; clip-path: polygon(0 0, 100% 0, 50% 100%); backface-visibility: visible; }
@@ -2211,8 +2211,10 @@ export const WAR_CSS = `
 .ap .wfpop .wcmd.mini { touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .ap .wfpop .wcmd.mini.dragging, .ap .wfpop .wcmd.mini.armed { outline: 2px solid #ff5a3c; outline-offset: 1px; }
 .ap .wfpop .wfphint { margin: 6px 2px 0; font-size: 11.5px; color: #c9b88e; text-align: center; }
-/* 깃발 판은 한 줄에 하나 — 깃발마다 판세 막대와 바로 끝날 확률이 처음부터 보인다 (숫자 표는 누르고 있을 때 설명 창에) */
-.ap .wfpop .wfpg { grid-template-columns: 1fr !important; }
+/* 깃발 판 밑의 판세 — 누른 깃발(처음엔 ★권함)의 판세 막대와 바로 끝날 확률 · 깃발을 누를 때마다 바뀐다 (형 10-28: "깃발 선택 창 하단에 아예 전황 바") */
+.ap .wfpop .wfplook { margin-top: 6px; padding: 5px 7px; border-radius: 10px; background: #0b0a08b3; } .ap .wfpop .wfplook:empty { display: none; }
+.ap .wfpop .wfplook .wguess { margin-top: 0; } .ap .wr .wfpop .wfplook .wguess .wgx { display: none !important; } .ap .wr .wfpop .wfplook .wguess .wgl.wgff { display: flex !important; }
+.ap .wfpop .wfplook .wlkn { font-size: 11.5px; color: #ffe2a0; font-weight: 700; margin-bottom: 2px; }
 .ap .wfpop .wcmd.mini .wct > .wguess { display: none !important; } /* 판세는 깃발을 누르고 있을 때 뜨는 설명 창 밑에 (형 10-28) */
 .ap .wfpop .wcmd.mini { position: relative; } .ap .wfpop .wcmd.mini .wct > em.rec { position: absolute; right: 6px; top: 5px; }
 /* 싸움판을 화면 가득 — 아래로 밀지 않는다 (형 10-28) · 전장이 남은 높이를 다 쓰고, 깃발 칸(.wnext)은 「자세히」를 켰을 때만 */
@@ -2222,7 +2224,7 @@ export const WAR_CSS = `
 .ap .wr .wsc { padding-bottom: 140px; } .ap .wr.choosing:not(.help):not(.logopen) .wsc { overflow-y: hidden; }
 .ap .wrc { cursor: pointer; font: inherit; } .ap .wrc.none { border-color: #e0b860; animation: wrcask 1s ease-in-out infinite alternate; } .ap .wrc.none i { color: #ffd27a; font-size: 15px; }
 @keyframes wrcask { from { box-shadow: 0 0 0 #ffd27a00; } to { box-shadow: 0 0 10px #ffd27a; } }
-.ap .wrrow { display: flex; gap: 8px; width: min(520px, 100%); } .ap .wrrow .wrgo { flex: 1; width: auto; } .ap .wrrow .wrauto { flex: none; }
+.ap .wrrow { display: flex; gap: 8px; width: min(520px, 100%); } .ap .wrrow .wrgo { flex: 1; width: auto; } .ap .wrrow .wrauto { flex: none; flex-direction: column; line-height: 1.15; } .ap .wrrow .wrauto small { display: block; font-size: 11px; color: #ffd27a; }
 .ap .wrgo:disabled { animation: none; font-size: 15px; }
 .ap .wfpop { z-index: 96; }
 /* 다 골랐다 — 아래 띠 (고른 깃발 한 줄 + 큰 「전투 개시」) */
@@ -3051,7 +3053,11 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       return `<button class="wrc${src === null ? ' none' : ''}" data-war="gtab" data-g="${g}">${tb.querySelector('.wgi')?.outerHTML ?? ''}<b>${esc(tb.querySelector('.wgn b')?.textContent ?? '')}</b>${flag !== '' ? `<img class="wrf" src="${flag}" alt="">` : ''}<i>${src !== null ? esc(src.querySelector('.wct b')?.textContent ?? '') : '?'}</i></button>`
     }).join('')
     const n = tabs.filter((tb) => sel[tb.dataset['g'] as Grp | 'lead'] !== undefined).length
-    ready.innerHTML = `<div class="wrchips">${chips}</div><div class="wrrow"><button class="btn ghost wrauto" data-war="auto">맡긴다</button><button class="btn pri wrgo" data-war="go"${all ? '' : ' disabled'}>${all ? '⚔ 이대로 전투 개시' : `무리마다 깃발 고르기 ${n}/${tabs.length}`}</button></div>`
+    // 맡기면 장수의 지략대로 싸운다 — 그 숫자를 단추에 (형 10-28)
+    const l0 = t.line
+    const hid = l0?.start !== undefined ? l0.start.heroes[l0.atkFaction === host.me ? 0 : 1] ?? null : null
+    const ryak = hid !== null ? prev.heroes[hid]?.ryak : undefined
+    ready.innerHTML = `<div class="wrchips">${chips}</div><div class="wrrow"><button class="btn ghost wrauto" data-war="auto">맡긴다${ryak !== undefined ? `<small>지략 ${ryak}</small>` : ''}</button><button class="btn pri wrgo" data-war="go"${all ? '' : ' disabled'}>${all ? '⚔ 이대로 전투 개시' : `무리마다 깃발 고르기 ${n}/${tabs.length}`}</button></div>`
     ready.hidden = false
   }
   let tipKey = ''
@@ -3199,7 +3205,14 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   /** 깃발의 설명 — 하는 일 · 판세 막대 · 피해·사기 표 */
   const flagHold = (card: HTMLElement): string =>
     `<div class="whh">${card.querySelector('img.wflag')?.outerHTML ?? ''}<b>${esc(card.querySelector('.wct > b')?.textContent ?? '')}</b>${card.querySelector('.wct > em')?.outerHTML ?? ''}</div>`
-    + `<p>${esc(card.dataset['more'] ?? '')}</p>${card.querySelector('.wguess')?.outerHTML ?? ''}`
+    + `<p>${esc(card.dataset['desc'] ?? card.dataset['more'] ?? '')}</p>`
+  /** 깃발 판 밑의 판세 칸을 그 깃발로 */
+  const showLook = (card: HTMLElement | null): void => {
+    const box = pop.querySelector<HTMLElement>('.wfplook')
+    if (box === null) return
+    const gu = card?.querySelector('.wguess')
+    box.innerHTML = gu != null && card !== null ? `<div class="wlkn">${esc(card.querySelector('.wct > b')?.textContent ?? '')} — 이번 합</div>${gu.outerHTML}` : ''
+  }
 
   /** 지금 고를 무리 머리 위의 보석 — 초록 역삼각뿔 (그러데이션·filter 없이 면마다 단색) */
   const gem = document.createElement('div')
@@ -3224,8 +3237,9 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   dragSvg.style.display = 'none'
   ov.appendChild(dragSvg)
   const drawDrag = (x0: number, y0: number, x1: number, y1: number, ok: boolean): void => {
-    const mx = (x0 + x1) / 2
-    const my = Math.min(y0, y1) - Math.max(40, Math.abs(x1 - x0) * 0.25)
+    // 살짝만 휜다 — 굽이점을 처음과 끝 사이에 두어 화살촉이 늘 가는 쪽(위)을 본다 (형 10-28: 위로 가다 아래로 꺾였다)
+    const mx = x0 + (x1 - x0) * 0.15
+    const my = y0 + (y1 - y0) * 0.55
     const d = `M${x0},${y0} Q${mx},${my} ${x1},${y1}`
     dragSvg.querySelector('.wdl')!.setAttribute('d', d)
     dragSvg.querySelector('.wdf')!.setAttribute('d', d)
@@ -3255,7 +3269,10 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   pop.addEventListener('pointerdown', (ev) => {
     const card = (ev.target as HTMLElement).closest<HTMLElement>('[data-war="pick"]')
     if (card === null || !choosing()) return
-    showHold(flagHold(card), ev.clientX, ev.clientY)
+    // 하는 일은 판 위에 (판과 겹치지 않게) · 판세는 판 밑 칸에
+    const pq = pop.getBoundingClientRect()
+    showHold(flagHold(card), pq.left + pq.width / 2, pq.top + 18)
+    showLook(card)
     if (armed !== card) { armed?.classList.remove('armed'); armed = card; card.classList.add('armed') }
     aimAt(card)
     drag = { card, x0: ev.clientX, y0: ev.clientY, on: false, id: ev.pointerId }
@@ -3307,13 +3324,16 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const name = tab.querySelector('.wgn b')?.textContent ?? ''
     const sub = tab.querySelector('.wgn small')?.textContent ?? ''
     fillPane(pane)
-    pop.innerHTML = `<div class="wfph">${tab.querySelector('.wgi')?.outerHTML ?? ''}<b>${esc(name)}</b><small>${esc(sub)}</small><button class="wfpx" data-war="popx" aria-label="닫기">✕</button></div><div class="wfpg"></div><p class="wfphint">깃발을 누르고 있으면 판세 · 끌어 전장에 놓으면 정해집니다</p>`
+    pop.innerHTML = `<div class="wfph">${tab.querySelector('.wgi')?.outerHTML ?? ''}<b>${esc(name)}</b><small>${esc(sub)}</small><button class="wfpx" data-war="popx" aria-label="닫기">✕</button></div><div class="wfpg"></div><div class="wfplook"></div><p class="wfphint">깃발을 누르면 판세 · 끌어 전장에 놓으면 정해집니다</p>`
     const grid = pop.querySelector<HTMLElement>('.wfpg')!
     for (const b of pane.querySelectorAll<HTMLElement>('[data-war="pick"]')) {
       const c = b.cloneNode(true) as HTMLElement
       c.classList.add('mini')
+      // 누르면 뜨는 말(tips.ts · data-more)이 설명 창과 겹쳤다 (형 10-28) — 하는 일은 data-desc 로 옮겨 설명 창에서만
+      if (c.dataset['more'] !== undefined) { c.dataset['desc'] = c.dataset['more']; delete c.dataset['more'] }
       grid.appendChild(c)
     }
+    showLook(grid.querySelector<HTMLElement>('[data-war="pick"].on') ?? grid.querySelector<HTMLElement>('[data-war="pick"].rec') ?? grid.querySelector<HTMLElement>('[data-war="pick"]')) // 처음엔 고른 것 · 없으면 ★권함
 
     pop.hidden = false
     popG = g
