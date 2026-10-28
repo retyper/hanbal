@@ -126,6 +126,17 @@ fetch('voice/chief/lines.json').then((r) => r.json()).then((rows) => {
     }
   }
   document.getElementById('chief').innerHTML = g + '<hr style="border:0;border-top:1px solid #2c333d;margin:40px 0 20px">'
+  // 성우진 B 군장 (형 10-29) — 군장 얼굴로 반씩 갈라 B 는 다른 말·다른 목소리 (voice/b/chief · src/ui/realm/chief-lines-b.ts)
+  return fetch('voice/b/chief/lines.json').then((r) => r.json()).then((rb) => {
+    let gb = `<h1>군장 말 · 성우진 B (${rb.filter((x) => x.has).length}/${rb.length})</h1><p>같은 결·같은 성향이라도 군장 절반은 이 말로 한다.</p>`
+    for (const [title, k] of GROUPS) {
+      const mine = rb.filter((x) => x.kind === k)
+      if (mine.length === 0) continue
+      gb += `<h2>${title.replace(/\(.*?\)/, '(B)')}</h2>`
+      for (const x of mine) gb += `<div class="row"><span class="no" style="min-width:120px;font-size:13px">${esc(x.sitName)} · ${x.mood === 'a' ? '적극' : '소극'}</span><span class="nm">${esc(x.text)}</span><audio controls preload="none" src="voice/b/chief/${x.file}.ogg"></audio></div>`
+    }
+    document.getElementById('chief').insertAdjacentHTML('beforeend', gb)
+  })
 }).catch(() => {})
 </script>
 </body></html>
