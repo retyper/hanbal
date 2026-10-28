@@ -2187,6 +2187,12 @@ export const WAR_CSS = `
 .ap .wfpop { position: fixed; z-index: 94; width: min(330px, calc(100vw - 16px)); padding: 8px; border-radius: 14px; background: #17110cf6; border: 1.5px solid #ffd27a; box-shadow: 0 0 0 1px #000, 0 12px 34px #000d, 0 0 18px #ffd27a44; animation: wfpin .16s ease-out; }
 @keyframes wfpin { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
 .ap .wfpop[hidden] { display: none; }
+/* 깃발 판 밑 판세 — 막대 하나만, 꾹 누르면 숫자 표까지 (형 10-28) */
+.ap .wfpop .wfplook { margin-top: 6px; padding: 4px 6px; border-radius: 10px; background: #0b0a0899; } .ap .wfpop .wfplook:empty { display: none; }
+.ap .wfpop .wfplook .wguess { margin-top: 0; }
+.ap .wr .wfpop .wfplook:not(.held) .wguess :is(.wgx, .wgl) { display: none !important; }
+.ap .wr .wfpop .wfplook.held .wguess .wgx { display: grid !important; } .ap .wr .wfpop .wfplook.held .wguess .wgl { display: flex !important; }
+.ap .wfpop .wcmd.mini { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 /* 싸움판을 화면 가득 — 아래로 밀지 않는다 (형 10-28) · 전장이 남은 높이를 다 쓰고, 깃발 칸(.wnext)은 「자세히」를 켰을 때만 */
 .ap .wr.choosing:not(.help) .wnext { display: none; }
 .ap .wr.choosing .wtop { min-height: calc(100dvh - 132px - env(safe-area-inset-bottom)); display: flex; flex-direction: column; box-sizing: border-box; }
@@ -2829,6 +2835,18 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
    * 깃발 짐작을 고른 것에 맞춘다 — 펼친 무리의 깃발과 「이대로 싸우면」만 셈한다 (한 합 동안 셈한 것은 다시 쓴다).
    * 다른 무리를 바꾸면 이 깃발의 짐작도 바뀐다 (돌격에 말이 함께 들이치느냐 같은 것)
    */
+  /** 그 무리의 깃발마다 짐작 — 깃발 판에 옮기기 전에도 (숨은 무리 칸이어도) */
+  const fillPane = (pane: ParentNode): void => {
+    const at = t.line?.pending?.look
+    if (at === undefined) return
+    for (const b of pane.querySelectorAll<HTMLElement>('[data-war="pick"]')) {
+      const o = withPick(sel, b.dataset['g'] as Grp | 'lead', b.dataset['c'] as Cmd)
+      const k = orderKey(o)
+      const old = b.querySelector<HTMLElement>('.wguess')
+      if (old === null || old.dataset['k'] === k) continue
+      old.outerHTML = lookHtml(lookFor(at, o, true), k)
+    }
+  }
   const fillLooks = (): void => {
     const at = t.line?.pending?.look
     if (at === undefined) return
@@ -3102,6 +3120,18 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     if (us !== null) { us.classList.remove('b0kick'); void us.offsetWidth; us.classList.add('b0kick') }
     timers.push(window.setTimeout(() => el.remove(), P.realm.warB0PopMs))
   }
+  /**
+   * 깃발 판 밑의 판세 — 깃발을 누르면 그 깃발의 판세 막대 하나, 1초 넘게 누르고 있으면 피해·사기 숫자 표까지 (형 10-28: "깃발 터치하면 전황바 · 1초 이상 누르면 수치표까지")
+   */
+  const showLook = (card: HTMLElement | null, held: boolean): void => {
+    const box = pop.querySelector<HTMLElement>('.wfplook')
+    if (box === null) return
+    box.innerHTML = card?.querySelector('.wguess')?.outerHTML ?? ''
+    box.classList.toggle('held', held)
+  }
+  /** 깃발을 꾹 눌러 숫자 표를 띄웠다 — 손을 떼며 오는 click 은 고르기로 치지 않는다 */
+  let popHeld = false
+  let popHoldT = 0
   /** 다음 합을 고르는 중인가 (합이 풀리는 중·맡긴 싸움을 보는 중이 아니고) */
   const choosing = (): boolean => t.line?.pending !== undefined && !animating && chain.length === 0
   let popG: Grp | 'lead' | undefined
@@ -3119,13 +3149,15 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     if (pane === null || tab === null || q === null) { closePop(); return }
     const name = tab.querySelector('.wgn b')?.textContent ?? ''
     const sub = tab.querySelector('.wgn small')?.textContent ?? ''
-    pop.innerHTML = `<div class="wfph">${tab.querySelector('.wgi')?.outerHTML ?? ''}<b>${esc(name)}</b><small>${esc(sub)}</small><button class="wfpx" data-war="popx" aria-label="닫기">✕</button></div><div class="wfpg"></div>`
+    fillPane(pane)
+    pop.innerHTML = `<div class="wfph">${tab.querySelector('.wgi')?.outerHTML ?? ''}<b>${esc(name)}</b><small>${esc(sub)}</small><button class="wfpx" data-war="popx" aria-label="닫기">✕</button></div><div class="wfpg"></div><div class="wfplook"></div>`
     const grid = pop.querySelector<HTMLElement>('.wfpg')!
     for (const b of pane.querySelectorAll<HTMLElement>('[data-war="pick"]')) {
       const c = b.cloneNode(true) as HTMLElement
       c.classList.add('mini')
       grid.appendChild(c)
     }
+    showLook(grid.querySelector<HTMLElement>('[data-war="pick"].on'), false)
     pop.hidden = false
     popG = g
     window.clearTimeout(hoverT)
@@ -3195,6 +3227,16 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   /** 꾹 눌러 정보창을 띄웠다 — 이어지는 click 하나를 삼킨다 (무리를 고르지 않는다) */
   let swallow = false
   let hoverT = 0
+  // 깃발 판의 깃발을 꾹 — 숫자 표까지
+  pop.addEventListener('pointerdown', (ev) => {
+    const card = (ev.target as HTMLElement).closest<HTMLElement>('[data-war="pick"]')
+    window.clearTimeout(popHoldT)
+    popHeld = false
+    if (card === null) return
+    popHoldT = window.setTimeout(() => { popHeld = true; showLook(card, true); if (typeof navigator.vibrate === 'function') navigator.vibrate(8) }, P.realm.warHoldTableMs)
+  })
+  for (const e of ['pointerup', 'pointercancel', 'pointerleave'] as const) pop.addEventListener(e, () => window.clearTimeout(popHoldT))
+  pop.addEventListener('contextmenu', (ev) => ev.preventDefault()) // 폰에서 꾹 누르면 뜨는 메뉴를 막는다
   ov.addEventListener('pointerdown', (ev) => {
     swallow = false // 꾹 누름 뒤 click 이 안 오는 폰도 있다 — 남은 삼킴이 다음 누름을 먹지 않게
     if (ev.pointerType === 'mouse' || (ev.target as HTMLElement).closest('.wfield, .wterr') === null) return
@@ -3286,6 +3328,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     host.ding('click1', 0.18)
     switch (b.dataset['war']) {
       case 'pick': {
+        if (popHeld && b.closest('.wfpop') !== null) { popHeld = false; return } // 꾹 눌러 숫자 표를 본 뒤 뗀 것
         // 무리마다 깃발 하나 — 같은 것을 또 누르면 내린다(맡긴다). 다시 그리되 자리는 그대로
         const g = b.dataset['g'] as Grp | 'lead'
         const c = b.dataset['c'] as Cmd
@@ -3301,15 +3344,20 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         // 장수 깃발(비기·격려…)을 들 때는 말하지 않는다 — 「무엇이든 말씀만 하셔요」는 명을 고르는 자리에 안 맞았다 (형 10-27). 외침은 그 수가 풀릴 때
         // 골랐으면 아직 안 고른 다음 무리로 — 깃발이 내려앉는 것을 잠깐 보고 (전장의 깃발 판에서 골랐으면 그 판도 다음 무리 곁으로)
         const fromPop = popG !== undefined
-        closePop()
+        // 깃발 판에서 골랐으면 판을 바로 닫지 않고 고른 깃발의 판세를 잠깐 보여 준 뒤 다음 무리로
+        if (fromPop) {
+          for (const x of pop.querySelectorAll<HTMLElement>('[data-war="pick"]')) x.classList.toggle('on', sel[g] === x.dataset['c'])
+          showLook(sel[g] !== undefined ? pop.querySelector<HTMLElement>('[data-war="pick"].on') : null, false)
+        } else closePop()
         hideTip()
         if (sel[g] !== undefined) {
           const order = [...sc.querySelectorAll<HTMLElement>('.wgt[data-g]')].map((x) => x.dataset['g'] as Grp | 'lead')
           const at = order.indexOf(g)
           const next = [...order.slice(at + 1), ...order.slice(0, at)].find((x) => sel[x] === undefined)
+          const wait = fromPop ? P.realm.warPopLookMs : P.realm.warTabNextMs
           if (next !== undefined) {
-            timers.push(window.setTimeout(() => { if (active === g) { active = next; syncCmd(); if (fromPop && choosing()) openPop(next) } }, P.realm.warTabNextMs))
-          } // 다 골랐으면 아래에 「이대로 전투 개시」 띠가 뜬다 (syncReady)
+            timers.push(window.setTimeout(() => { if (active === g) { active = next; syncCmd(); if (fromPop && choosing()) openPop(next) } }, wait))
+          } else if (fromPop) timers.push(window.setTimeout(() => { if (popG === g) closePop() }, wait)) // 다 골랐으면 아래 띠의 「전투 개시」로
         }
         return
       }
