@@ -1167,6 +1167,10 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const mr = (x: number): number => Math.round(Math.max(0, Math.min(1.2, x / base)) * 83)
     const num = old !== now ? `<span class="wn swap"><s>${old}명</s><u>${now}명</u></span>` : `<span class="wn">${now}명</span>`
     const hitFx = hitOf(i) !== '' ? `<img class="wfx-hit" src="${art}fx/impact.png" alt="">` : ''
+    // 맞부딪히는 순간 잃은 사람 수와 꺾인 사기를 크게 (형 10-28: "감소하는 인원수·사기 이런 거 더 크고 도드라지게")
+    const lostN = anim ? old - now : 0
+    const mDrop = anim ? Math.round(((m0(i) - m(i)) / base) * 100) : 0
+    const dmg = (lostN > 0 ? `<b class="wdmg">−${lostN}</b>` : '') + (mDrop > 0 ? `<i class="wmdmg">사기 −${mDrop}</i>` : mDrop < 0 ? `<i class="wmdmg up">사기 +${-mDrop}</i>` : '')
     // 호궤를 고를 수 있으면 — 그 깃발에 마우스를 올리거나 누르고 있거나 골라 두면 사기 막대에 오를 몫이 깜박인다 (형 10-25)
     const fNow = mr(m(i))
     const fTo = mr(Math.min(base, m(i) + P.realm.tacFeastMorale))
@@ -1178,7 +1182,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     return `<div class="ws ${cls}${hitOf(i)}${hero !== null && lostIds.has(hero) ? ' chiefgone' : ''}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s"><span class="wpf">${face(hero, art, unitOf(i))}<i></i>${aides !== '' ? `<span class="waides">${aides}</span>` : ''}</span><b>${esc(name)}</b><span class="wnat">${roleChip((cls === 'us') === weAtk)}${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
       // 무너지는 금 — 이 밑으로 떨어지면 그 편이 무너져 진다 (tactics: 군사 tacBreakMen · 사기는 처음의 tacBreakMorale) (형 10-24: "사기가 어느 정도 떨어지면 패배한다가 가로바에 표시")
       + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}${brk(Math.round(P.realm.tacBreakMen * 100), Math.round(n(i) * 100), '군사가 이 금 밑으로 줄면 무너져 진다 — 패배')}</div>${num}`
-      + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}${feastPv}${brk(st?.brk !== undefined ? mr(st.brk[i]) : Math.round(P.realm.tacBreakMorale * 83), mr(m(i)), '사기가 이 금 밑으로 떨어지면 무너져 진다 — 패배')}</div><span class="wn">사기 ${Math.round((m(i) / base) * 100)}<small class="brkl"> · 무너지는 선 ${Math.round(((st?.brk?.[i] ?? P.realm.tacBreakMorale * base) / base) * 100)}</small></span>${hitFx}</div>` // 맞은 불꽃은 맨 뒤에 — 앞에 끼면 초상이 새로 만들어져 깜빡였다 (paintNow 의 바뀐 곳만 고치기)
+      + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}${feastPv}${brk(st?.brk !== undefined ? mr(st.brk[i]) : Math.round(P.realm.tacBreakMorale * 83), mr(m(i)), '사기가 이 금 밑으로 떨어지면 무너져 진다 — 패배')}</div><span class="wn">사기 ${Math.round((m(i) / base) * 100)}<small class="brkl"> · 무너지는 선 ${Math.round(((st?.brk?.[i] ?? P.realm.tacBreakMorale * base) / base) * 100)}</small></span>${dmg}${hitFx}</div>` // 맞은 불꽃은 맨 뒤에 — 앞에 끼면 초상이 새로 만들어져 깜빡였다 (paintNow 의 바뀐 곳만 고치기)
   }
 
   /**
@@ -1561,11 +1565,12 @@ export const WAR_CSS = `
 /* 화면을 굴리지 않는다 (형 10-28: "합 할 때마다 슬라이드로 내려가며 설명 보게 하지 말고 · 하스스톤은 팝업 · 터치하면 뜨는 상자") —
    마지막 합은 전장 위 상자로 떴다 사라지고(--pd 뒤), 지난 합들은 「기록」을 누르면 뜨는 판 안에. 끝난 판의 결과는 화면 아래에 붙는다 */
 .ap .wr:not(.logopen) .wlog > :not(.wrd.slow) { display: none; }
-.ap .wr:not(.logopen) .wlog .wrd.slow { position: fixed; left: 50%; top: 40%; z-index: 70; width: min(92vw, 480px); box-sizing: border-box; margin: 0; padding: 10px 14px; border-radius: 14px;
-  background: #1a130cf2; border: 1.5px solid #c9a45a; box-shadow: 0 10px 30px #000c; pointer-events: none; transform: translate(-50%, -50%);
+.ap .wr:not(.logopen) .wlog .wrd.slow { position: fixed; left: 50%; top: auto; bottom: calc(12px + env(safe-area-inset-bottom)); max-height: 46vh; overflow: hidden; z-index: 70; width: min(92vw, 480px); box-sizing: border-box; margin: 0; padding: 10px 14px; border-radius: 14px;
+  background: #1a130cf2; border: 1.5px solid #c9a45a; box-shadow: 0 10px 30px #000c; pointer-events: none; transform: translateX(-50%);
   animation: wrpin .25s ease-out both, wrpout .45s ease-in var(--pd, 4s) forwards; }
-@keyframes wrpin { from { opacity: 0; transform: translate(-50%, -44%) scale(.92); } to { opacity: 1; transform: translate(-50%, -50%); } }
-@keyframes wrpout { to { opacity: 0; visibility: hidden; transform: translate(-50%, -58%); } }
+/* 화면 아래쪽에 — 가운데에 띄웠더니 맞부딪히는 전장을 가렸다 (형 10-28) */
+@keyframes wrpin { from { opacity: 0; transform: translate(-50%, 16px) scale(.96); } to { opacity: 1; transform: translateX(-50%); } }
+@keyframes wrpout { to { opacity: 0; visibility: hidden; transform: translate(-50%, 24px); } }
 .ap .wr .wlogbg, .ap .wr .wlogx { display: none; }
 .ap .wr.logopen .wlogbg { display: block; position: fixed; inset: 0; z-index: 74; border: 0; padding: 0; background: #000b; }
 .ap .wr.logopen .wlog { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 75; width: min(94vw, 560px); max-height: 82vh; overflow-y: auto; box-sizing: border-box;
@@ -2063,6 +2068,23 @@ export const WAR_CSS = `
 .ap .wend.good { border: 1px solid #c9a45a; box-shadow: 0 0 14px #ffd27a33; }
 @media (prefers-reduced-motion: reduce) { .ap .ws.hit, .ap .ws.hit::after, .ap .wfx-dust, .ap .wfx-smoke { animation: none; } .ap .wfx-volley, .ap .ws .wfx-hit { display: none; } }
 .ap .wrd.slow .wcmds, .ap .wrd.slow .wst, .ap .wrd.slow .wpush { opacity: 0; animation: wrin .45s ease-out var(--d, 0s) both; }
+/* 합 결과 줄이 하나씩 촤르륵 (형 10-28) — 이야기 칸의 줄마다 · 잃은 수 칩마다 조금씩 늦게 */
+.ap .wrd.slow .wst > * { opacity: 0; animation: wrrow .32s ease-out calc(var(--d, 0s) + var(--n, 0) * .26s) both; }
+.ap .wrd.slow .wloss > * { display: inline-block; opacity: 0; animation: wrrow .3s ease-out calc(var(--d, 0s) + var(--n, 0) * .22s) both; }
+.ap .wrd.slow :is(.wst, .wloss) > :nth-child(2) { --n: 1; } .ap .wrd.slow :is(.wst, .wloss) > :nth-child(3) { --n: 2; } .ap .wrd.slow :is(.wst, .wloss) > :nth-child(4) { --n: 3; }
+.ap .wrd.slow :is(.wst, .wloss) > :nth-child(5) { --n: 4; } .ap .wrd.slow :is(.wst, .wloss) > :nth-child(6) { --n: 5; } .ap .wrd.slow :is(.wst, .wloss) > :nth-child(7) { --n: 6; } .ap .wrd.slow :is(.wst, .wloss) > :nth-child(n+8) { --n: 7; }
+@keyframes wrrow { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+/* 맞부딪힘 — 잃은 사람 수·사기가 초상 위로 크게 튀어 오른다 */
+.ap .wtop .ws { position: relative; }
+.ap .ws .wdmg, .ap .ws .wmdmg { position: absolute; left: 50%; z-index: 6; pointer-events: none; white-space: nowrap; opacity: 0; font-style: normal; translate: -50% 0;
+  text-shadow: 0 0 3px #000, 0 2px 0 #000, 0 0 10px #000; animation: wdmgpop 1.6s ease-out var(--hd, 1.2s) both; }
+.ap .ws .wdmg { top: 18px; font-size: clamp(30px, 9vw, 46px); font-weight: 900; color: #ff4a2a; -webkit-text-stroke: 1.5px #2a0500; }
+.ap .ws.foe .wdmg { color: #ffd23a; -webkit-text-stroke-color: #2a1a00; }
+.ap .ws .wmdmg { top: 70px; font-size: clamp(16px, 4.6vw, 22px); font-weight: 900; color: #ffb0a0; animation-delay: calc(var(--hd, 1.2s) + .15s); }
+.ap .ws .wmdmg.up { color: #b8f0a0; }
+@keyframes wdmgpop { 0% { opacity: 0; transform: scale(.3); } 14% { opacity: 1; transform: scale(1.45); } 28% { transform: scale(1); } 78% { opacity: 1; transform: translateY(-18px); } 100% { opacity: 0; transform: translateY(-34px); } }
+@media (max-width: 520px) { .ap .ws .wdmg { top: 8px; } .ap .ws .wmdmg { top: 52px; } }
+.ap .wr.fast .ws .wdmg, .ap .wr.fast .ws .wmdmg { animation-delay: 0s !important; }
 .ap .wrd.slow .wcmds { animation-name: wrflip; }
 @keyframes wrin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes wrflip { from { opacity: 0; transform: rotateX(90deg); } to { opacity: 1; transform: none; } }
@@ -2218,7 +2240,8 @@ export const WAR_CSS = `
 .ap .wdrag { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 98; pointer-events: none; overflow: visible; }
 .ap .wdrag .wdl { fill: none; stroke: #5a1008; stroke-width: 16; stroke-linecap: round; }
 .ap .wdrag .wdf { fill: none; stroke: #ff5a3c; stroke-width: 10; stroke-linecap: round; stroke-dasharray: 16 12; animation: wdflow .45s linear infinite; }
-.ap .wdrag .wdh { fill: #ff5a3c; stroke: none; } /* 촉에 짙은 테 없이 (형 10-28) */
+.ap .wdrag .wdh { fill: #ff5a3c; stroke: #ff5a3c; stroke-width: 6; stroke-linejoin: round; } /* 촉에 짙은 테 없이 · 모서리만 살짝 둥글게 (형 10-28) */
+.ap .wdrag.ok .wdh { stroke: #ffd27a; }
 .ap .wdrag.ok .wdf, .ap .wdrag.ok .wdh { fill: none; } .ap .wdrag.ok .wdf { stroke: #ffd27a; } .ap .wdrag.ok .wdh { fill: #ffd27a; }
 @keyframes wdflow { to { stroke-dashoffset: -28; } }
 .ap .wfpop .wcmd.mini { touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -2252,7 +2275,12 @@ export const WAR_CSS = `
 .ap .wrgo { width: min(520px, 100%); display: flex; justify-content: center; align-items: center; text-align: center; padding: 14px 16px; font-size: 20px; animation: wgoready 1.1s ease-in-out infinite alternate; }
 .ap .wr.ready .wsc { padding-bottom: 150px; }
 @media (prefers-reduced-motion: reduce) { .ap .wready, .ap .wrgo { animation: none !important; } }
-.ap .wfph { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; } .ap .wfph .wgi { width: 26px; height: 26px; flex: none; } .ap .wfph b { font-size: 14.5px; color: #fff; } .ap .wfph small { font-size: 11.5px; color: var(--mute); }
+.ap .wfph { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; } .ap .wfph .wgi { width: 26px; height: 26px; flex: none; }
+/* 장수 깃발 판 — 장수 그림을 크게 (형 10-28: "장수 이미지가 나오는 건 중요") · 기술이 늘면 판은 위로 자란다 (아래 띠 위에 붙어 있으니) */
+.ap .wfpop.lead { width: min(380px, calc(100vw - 16px)); }
+.ap .wfpop.lead .wfph { gap: 10px; margin-bottom: 8px; } .ap .wfpop.lead .wfph b { font-size: 18px; color: #ffe2a0; } .ap .wfpop.lead .wfph small { font-size: 13px; }
+.ap .wfpop.lead .wfph .wgi.f, .ap .wfpop.lead .wfph .wgi.f .wf, .ap .wfpop.lead .wfph .wgi.f img { width: 84px; height: 96px; border-radius: 12px; object-fit: cover; object-position: top; }
+.ap .wfpop.lead .wfph .wgi.f { flex: none; border: 2px solid #e0b860; box-shadow: 0 4px 12px #000a; overflow: hidden; } .ap .wfph b { font-size: 14.5px; color: #fff; } .ap .wfph small { font-size: 11.5px; color: var(--mute); }
 .ap .wfpx { margin-left: auto; width: 30px; height: 30px; border-radius: 15px; border: 1px solid #6a5a48; background: #2a221a; color: #e8dcc4; font-size: 14px; cursor: pointer; flex: none; }
 .ap .wfpg { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; }
 .ap .wfpop .wcmd.mini { min-width: 0; overflow: hidden; min-height: 44px; padding: 5px 6px 5px 4px; flex-direction: row; align-items: center; gap: 4px; text-align: left; border: 1px solid #6a5236; border-image: none; border-radius: 10px; background: #241b12; filter: none; }
@@ -2971,6 +2999,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const l0 = t.line
     const key = cur?.key ?? l0?.key
     if (l0 === null || key === undefined) return
+    gem.hidden = true // 맡기면 보석·아래 띠를 걷는다
+    ready.hidden = true
     const from = l0.pending?.round ?? (l0.rounds ?? []).length
     done[key] = tacOf(key)
     cur = null
@@ -3355,6 +3385,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     showLook(grid.querySelector<HTMLElement>('[data-war="pick"].on') ?? grid.querySelector<HTMLElement>('[data-war="pick"].rec') ?? grid.querySelector<HTMLElement>('[data-war="pick"]')) // 처음엔 고른 것 · 없으면 ★권함
 
     pop.hidden = false
+    pop.classList.toggle('lead', g === 'lead')
     popG = g
     window.clearTimeout(hoverT)
     hideTip()
@@ -3373,6 +3404,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   /** 이 합을 고른 대로 싸운다 */
   const fight = (key: string): void => {
     active = undefined
+    gem.hidden = true // 합이 풀리는 동안엔 보석을 걷는다
     if (cur === null || cur.key !== key) cur = { key, cmds: [], dusk: [] }
     cutLead = sel.lead ?? null // 고른 장수 기술 — 이 합이 풀릴 때 초상이 튀어나온다
     cur.cmds.push({ ...sel })
