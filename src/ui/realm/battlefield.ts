@@ -2445,7 +2445,7 @@ function openHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: str
   // 땅 — 그림 칩으로 (형 10-25: "지형정보라던가 이런것도 이미지나 아이콘으로") · 진군 이야기는 맨 아래 마지막으로 (형: "대로로 당당히 다가섰다 이거는 vs 화면 하단에 마지막 오브젝트로")
   // 누가 치나 — 우리의 공격·기습 / 적의 침략·기습 / 길 위에서 맞닥뜨림 (형 10-25: "침략은 내가 공격하는것도 있잖아")
   const sneak = l.ambush !== 'none'
-  const kindWord = l.field === true ? '길에서 맞닥뜨렸다' : weAtk ? (sneak ? '우리의 기습' : '우리의 공격') : (sneak ? '적의 기습' : '적의 침략')
+  const kindWord = l.field === true ? '마주침' : weAtk ? (sneak ? '우리의 기습' : '우리의 공격') : (sneak ? '적의 기습' : '적의 침략')
   const chips = terrChips(prev, l, me, foe)
   const ap = chips.find((c) => c.k === 'ap')
   const land = chips.filter((c) => c.k !== 'ap')

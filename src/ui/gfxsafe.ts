@@ -306,18 +306,26 @@ function patchCanvas(): void {
 
 /** 캔버스에 빨→파 그러데이션을 그려 가운데를 읽는다 — 고장 난 기기는 까맣게 나온다 (gpu-test3 · 형 폰 rgb(0,0,0)) */
 function broken(): boolean {
+  // 그래픽 이름으로 먼저 — 삼성 Xclipse(AMD RDNA) 는 다 같은 고장으로 본다 (형 폰: Xclipse 950 · 크롬 156)
+  try {
+    const gl = document.createElement('canvas').getContext('webgl')
+    const ext = gl?.getExtension('WEBGL_debug_renderer_info')
+    const name = gl !== null && gl !== undefined && ext !== null && ext !== undefined ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : ''
+    if (/xclipse/i.test(name)) return true
+  } catch { /* 못 물어보면 그림판으로 */ }
+  // 그림판은 크게 — 작은 판은 크롬이 그래픽 칩 대신 CPU 로 그려 고장이 안 드러났다 (10-28 · 형 폰에서 gfxsafe 가 안 켜짐)
   try {
     const cv = document.createElement('canvas')
-    cv.width = 300
-    cv.height = 40
+    cv.width = 512
+    cv.height = 512
     const x = cv.getContext('2d')
     if (x === null) return false
-    const g = x.createLinearGradient(0, 0, 300, 0)
+    const g = x.createLinearGradient(0, 0, 512, 0)
     g.addColorStop(0, '#ff0000')
     g.addColorStop(1, '#0000ff')
     x.fillStyle = g
-    x.fillRect(0, 0, 300, 40)
-    const p = x.getImageData(150, 20, 1, 1).data
+    x.fillRect(0, 0, 512, 512)
+    const p = x.getImageData(256, 256, 1, 1).data
     return !(p[0]! > 60 && p[2]! > 60 && p[3]! > 200)
   } catch { return false }
 }
