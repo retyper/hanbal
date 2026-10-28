@@ -562,7 +562,8 @@ export const FRONT_CSS = `
 .ap .front .seal span { color: #e8dcc0; font-size: 13.5px; line-height: 1.5; text-align: left; }
 .ap .front { position: absolute; inset: 0; overflow-y: auto; z-index: 5; background: #101318; color: var(--ink); }
 /* 머리(‹ 돌아가기)는 위에 붙어 있다 — 영웅전처럼 긴 판을 한참 내리면 돌아갈 단추가 저 위에 있었다 (막무가내 로봇 10-27) · 바탕은 옆으로 끝까지 */
-.ap .front .fhead { display: flex; align-items: center; gap: 10px; padding: calc(12px + env(safe-area-inset-top)) 14px 4px; max-width: 980px; margin: 0 auto; position: sticky; top: 0; z-index: 4; background: #101318; box-shadow: 0 0 0 100vmax #101318; clip-path: inset(0 -100vmax); }
+/* 띠는 화면 폭 그대로 깔고 안쪽만 980px 로 모은다 — 예전엔 100vmax 그림자 + clip-path 로 양옆을 칠했더니 폰에서 띠 위 단추(‹ 처음으로)가 안 보였다 (형 10-28) */
+.ap .front .fhead { display: flex; align-items: center; gap: 10px; padding: calc(12px + env(safe-area-inset-top)) max(14px, calc(50% - 476px)) 4px; position: sticky; top: 0; z-index: 4; background: #101318; }
 .ap .front .fhead h2 { margin: 0; font-family: 'Gowun Batang', serif; color: var(--gold); font-size: 20px; }
 /* 나의 역사 — 둔 판들 (형 10-25) */
 .ap .front.annals .ansum { max-width: 720px; margin: 4px auto 8px; padding: 0 14px; color: #cbbf9f; font-size: 13px; }
