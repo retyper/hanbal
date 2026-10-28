@@ -121,13 +121,20 @@ const bodyFor = (k: DrillKit, id: string, e: DrillEntry): (Pick<Hero, GrowStat> 
   return b !== undefined ? { mu: b.mu ?? 1, tong: b.tong ?? 1, ryak: b.ryak ?? 1, chi: b.chi ?? 1, deok: b.deok ?? 1, uiri: 5 } : null
 }
 
+/** 단련터에 늘어선 순서 — 화면을 다시 그려도 카드가 자리를 바꾸지 않게 */
+let yardOrder: string[] = []
+
 /** 단련터 화면 */
 export function yardHtml(k: DrillKit, o: YardOpts): string {
   const store = loadDrill()
   // 끝 화면에서 왔으면 공을 못 번 우리 장수도 — 무덤에서 얻은 유물을 끼울 몸이 있어야 한다 (빈 기록으로 보인다)
   const ent = (id: string): DrillEntry => store.h[id] ?? { points: 0, level: 0, add: {}, runs: 0 }
   const ids = (o.ids ?? Object.keys(store.h)).filter((id) => store.h[id] !== undefined || (o.from === 'end' && k.bodyOf(id) !== undefined))
-  const list = [...new Set(ids)].sort((a, b) => (o.gain[b] ?? 0) - (o.gain[a] ?? 0) || ent(b).level - ent(a).level || ent(b).points - ent(a).points || (a < b ? -1 : 1))
+  const fresh = [...new Set(ids)].sort((a, b) => (o.gain[b] ?? 0) - (o.gain[a] ?? 0) || ent(b).level - ent(a).level || ent(b).points - ent(a).points || (a < b ? -1 : 1))
+  // 단련·유물로 단계가 오르면 그 카드가 맨 앞으로 순간이동했다 (형 10-28) — 같은 장수들을 보는 동안은 처음 순서 그대로
+  const same = fresh.length === yardOrder.length && fresh.every((id) => yardOrder.includes(id))
+  const list = same ? [...yardOrder] : fresh
+  yardOrder = list
   let h = `<div class="front dyard"><div class="fhead">${o.from === 'title' ? `<button class="btn ghost" data-act="dy-next">‹ 처음으로</button>` : ''}<h2>단련터</h2></div>`
   h += `<p class="dylead">판에서 쌓은 공으로 장수를 단련한다 — 져도 공은 남는다. 단련 한 단계마다 능력치 하나가 +1, 값은 ${spendCost(0)}에서 시작해 단계마다 ${spendCost(1) - spendCost(0)}씩 오른다.</p>`
   if (list.length === 0) h += `<p class="mute dylead">아직 공을 새긴 장수가 없다. 판에서 싸우고 고을을 맡으면 공이 쌓이고, 판이 끝나면 여기서 쓴다.</p>`
