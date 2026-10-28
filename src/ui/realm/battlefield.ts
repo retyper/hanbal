@@ -17,7 +17,7 @@ import { BATTLE_STYLES, groupMen, groupOf, lookRound, nightAt, type BattleStyle,
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
 import { seasonOf } from '../../realm/season.ts'
 import { heroArt } from '../../realm/heroes.ts'
-import type { Act, Approach, Art, Clock, Cmd, Dusk, DuskAsk, DuskLog, Grp, Hero, Look, Order, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
+import type { Act, Approach, Art, Clock, Cmd, Dusk, DuskAsk, DuskLog, Grp, Hero, Look, Order, Pending, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { snd } from './sound.ts'
 import { artVoicePath, autoVoicePath, voiceGate, voicePath } from './voice.ts'
@@ -321,6 +321,10 @@ export function b0On(): boolean {
   try { return localStorage.getItem(B0_KEY) === '1' } catch { return false }
 }
 const ROUND_NAME = ['첫째', '둘째', '셋째', '넷째', '다섯째', '여섯째']
+/** 장수를 골라야 하는 깃발 — 비기(누가 쓰나) · 겨루기(누가 나서나) · 사로잡기(누구를 잡나) */
+const WHO_KINDS = ['art', 'duel', 'capture'] as const
+/** 비기 깃발에 걸 비기 — 「누가 비기를 쓰나」에서 고른 장수의 것 · 안 골랐으면 처음 보인 것 */
+const artFor = (p: Pending, who: string | undefined): Art | undefined => (who !== undefined ? p.heroes?.find((x) => x.id === who && x.art !== undefined && !x.artUsed)?.art : undefined) ?? p.art
 
 /**
  * 해시계 (형 10-26: "유저는 언제 전투가 끝나는지도 모르고 갑자기 끝나버려서 당황스러울거같은데" · "야습이나 야간전투 같은건 어떻게함?") —
@@ -1525,7 +1529,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         feel += `<i class="wodd wf-${retreatCls(rp)}">${Math.round(rp * 100)}%</i>` // 전장 깃발 판(작은 단추)에서도 가망이 보이게
       }
       // 장수의 비기 — 그 장수만의 이름·그림 (형: "아이콘과 함께 그거라는걸 알게 해줘야함")
-      const ak = c === 'art' ? p.art : undefined
+      const ak = c === 'art' ? artFor(p, sel.who) : undefined
       if (ak !== undefined) tag = `<em class="art">비기</em>`
       // 깃발 짐작 — 펼친 무리만 바로 셈한다 (나머지는 탭을 열 때 openWar 의 fillLooks 가)
       const gu = p.look !== undefined ? (() => { const o = withPick(sel, g, c); return lookHtml(lookFor(p.look, o, now), orderKey(o)) })() : ''
@@ -1541,7 +1545,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     h += `<div class="wgtabs">`
     for (const x of panes) {
       const c = sel[x.g]
-      const ak = c === 'art' ? p.art : undefined
+      const ak = c === 'art' ? artFor(p, sel.who) : undefined
       const chip = c !== undefined ? `<span class="wgs"><img src="${flagSrc(art, c, ak)}" alt="">${esc(ak !== undefined ? ART_NAME[ak] : CMD_NAME[c])}</span>` : '<span class="wgs none">선택</span>'
       h += `<button class="wgt${x === act ? ' on' : ''}${c !== undefined ? ' done' : ''}" data-war="gtab" data-g="${x.g}">${x.icon}<span class="wgn"><b>${esc(x.name)}</b><small>${esc(x.sub)}</small></span>${chip}</button>`
     }
@@ -2299,6 +2303,13 @@ export const WAR_CSS = `
 .ap .wfpop .wcmd.mini { touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .ap .wfpop .wcmd.mini.dragging, .ap .wfpop .wcmd.mini.armed { outline: 2px solid #ff5a3c; outline-offset: 1px; }
 .ap .wfpop .wfphint { margin: 6px 2px 0; font-size: 11.5px; color: #c9b88e; text-align: center; }
+/* 깃발 판 안의 「누가 나서나 · 누구를 잡나」 — 누른 깃발이 그것일 때만 · 작게 한 줄 */
+.ap .wfpop .wwho { margin: 6px 0 0; padding: 5px 6px; gap: 4px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.ap .wfpop .wwho.show { display: flex; }
+.ap .wfpop .wwho > span { flex: none; flex-basis: auto; width: 48px; font-size: 11.5px; line-height: 1.25; word-break: keep-all; }
+.ap .wfpop .wwho .wfc { flex: none; width: 62px; padding: 4px 2px; }
+.ap .wfpop .wwho .wfc .wf { width: 34px; height: 34px; }
+.ap .wfpop .wwho .wfc b { font-size: 11px; } .ap .wfpop .wwho .wfc small { font-size: 9.5px; }
 /* 깃발 판 밑의 판세 — 누른 깃발(처음엔 ★권함)의 판세 막대와 바로 끝날 확률 · 깃발을 누를 때마다 바뀐다 (형 10-28: "깃발 선택 창 하단에 아예 전황 바") */
 .ap .wfpop .wfplook { margin-top: 6px; padding: 5px 7px; border-radius: 10px; background: #0b0a08b3; } .ap .wfpop .wfplook:empty { display: none; }
 .ap .wfpop .wfplook .wguess { margin-top: 0; } .ap .wr .wfpop .wfplook .wguess .wgx { display: none !important; } .ap .wr .wfpop .wfplook.held .wguess .wgx { display: grid !important; } .ap .wr .wfpop .wfplook .wguess .wgl.wgff { display: flex !important; }
@@ -3315,6 +3326,11 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const gu = card?.querySelector('.wguess')
     box.innerHTML = gu != null && card !== null ? `<div class="wlkn">${esc(card.querySelector('.wct > b')?.textContent ?? '')} — 이번 합</div>${gu.outerHTML}` : ''
     box.classList.toggle('held', table) // 0.5초 넘게 누르고 있으면 피해·사기 표까지 (형 10-28) · 다른 깃발을 누르면 다시 막대만
+    // 장수가 여럿 — 누른 깃발이 비기·겨루기·사로잡기면 그 아래 「누가 나서나 · 누구를 잡나」 (끌어 놓기 전에 고른다)
+    const kind = card === null ? undefined : WHO_KINDS.find((k) => card.classList.contains(k))
+    let moved = false
+    for (const row of pop.querySelectorAll<HTMLElement>('.wwho')) { const on = kind !== undefined && row.classList.contains(kind); if (row.classList.contains('show') !== on) { row.classList.toggle('show', on); moved = true } }
+    if (moved && !pop.hidden) placePop()
   }
   let lookT = 0
 
@@ -3432,7 +3448,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const name = tab.querySelector('.wgn b')?.textContent ?? ''
     const sub = tab.querySelector('.wgn small')?.textContent ?? ''
     fillPane(pane)
-    pop.innerHTML = `<div class="wfph">${tab.querySelector('.wgi')?.outerHTML ?? ''}<b>${esc(name)}</b><small>${esc(sub)}</small><button class="wfpx" data-war="popx" aria-label="닫기">✕</button></div><div class="wfpg"></div><div class="wfplook"></div><p class="wfphint">깃발을 누르면 판세 · 끌어 전장에 놓으면 정해집니다</p>`
+    pop.innerHTML = `<div class="wfph">${tab.querySelector('.wgi')?.outerHTML ?? ''}<b>${esc(name)}</b><small>${esc(sub)}</small><button class="wfpx" data-war="popx" aria-label="닫기">✕</button></div><div class="wfpg"></div><div class="wfplook"></div>${[...pane.querySelectorAll('.wwho')].map((x) => x.outerHTML).join('')}<p class="wfphint">깃발을 누르면 판세 · 끌어 전장에 놓으면 정해집니다</p>`
     const grid = pop.querySelector<HTMLElement>('.wfpg')!
     for (const b of pane.querySelectorAll<HTMLElement>('[data-war="pick"]')) {
       const c = b.cloneNode(true) as HTMLElement
@@ -3448,6 +3464,12 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     popG = g
     window.clearTimeout(hoverT)
     hideTip()
+    placePop()
+  }
+  /** 깃발 판 자리 — 그 무리 위 가운데, 높이는 아래 띠 바로 위 · 판 높이가 바뀌면(누가 나서나 줄) 다시 */
+  const placePop = (): void => {
+    const q = popG === undefined ? null : groupRect('us', popG)
+    if (q === null) return
     const vw = window.innerWidth
     const vh = window.innerHeight
     const pw = pop.offsetWidth
@@ -3645,12 +3667,21 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         return
       }
       case 'who': case 'target': {
-        // 장수가 여럿 — 누가 나서나 · 누구를 잡나. 다시 그리지 않고 고른 표만 옮긴다
+        // 장수가 여럿 — 누가 나서나 · 누구를 잡나. 다시 그리지 않고 고른 표만 옮긴다 (깃발 판과 아래 깃발 칸 둘 다)
         const id = b.dataset['id']!
         if (b.dataset['war'] === 'who') { sel = { ...sel, who: id }; bark(id) } // 나설 장수를 고르면 그 장수가 대답한다
         else sel = { ...sel, target: id }
-        const row = b.closest('.wwho')
-        if (row !== null) for (const x of row.querySelectorAll<HTMLElement>('.wfc')) x.classList.toggle('on', x === b)
+        const kind = WHO_KINDS.find((k) => b.closest('.wwho')?.classList.contains(k))
+        if (kind !== undefined) for (const x of ov.querySelectorAll<HTMLElement>(`.wwho.${kind} .wfc`)) x.classList.toggle('on', x.dataset['id'] === id)
+        // 비기 깃발의 이름·그림도 그 장수의 비기로 (오간을 골랐는데 깃발은 을음의 「거짓 퇴각」이었다)
+        const ak = kind === 'art' && t.line?.pending !== undefined ? artFor(t.line.pending, id) : undefined
+        if (ak !== undefined) for (const x of ov.querySelectorAll<HTMLElement>('.wcmd.art[data-war="pick"]')) {
+          const nb = x.querySelector('.wct > b'); if (nb !== null) nb.textContent = ART_NAME[ak]
+          const sm = x.querySelector('.wct > small'); if (sm !== null) sm.textContent = ART_SHORT[ak]
+          x.querySelector<HTMLImageElement>('.wflag')?.setAttribute('src', flagSrc(host.art, 'art', ak))
+          if (x.dataset['more'] !== undefined) x.dataset['more'] = ART_DOES[ak]
+          if (x.dataset['desc'] !== undefined) x.dataset['desc'] = ART_DOES[ak]
+        }
         fillLooks()
         return
       }

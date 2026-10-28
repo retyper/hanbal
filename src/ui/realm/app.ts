@@ -2923,6 +2923,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (a === undefined || f === undefined) { goToast('연습 싸움을 열 수 없습니다'); return }
     a.at = f.from
     a.march = { from: f.from, to: f.to, edge: f.edge, left: 1, ambush: false, aim: r.nodes[f.to]?.owner ?? null }
+    // 장수 여럿 — 우리 군대 둘을 더 같은 길로 (비기·겨루기 「누가 나서나」 · 「누구를 잡나」도 시험되게)
+    for (const b of mine.filter((x) => x !== a).slice(0, 2)) { b.at = f.from; b.march = { ...a.march } }
     const back = (): void => { warOn = false; front = { kind: 'title' }; paint() }
     try {
       if (openWar(root, r, aiOrders(r), { art: ART, me: r.player, ding, music: (k) => { if (k === 'war') music.war(); else music.result(k) }, done: back })) { warOn = true; music.war(); music.primeResults(); return }
