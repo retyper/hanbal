@@ -369,6 +369,8 @@ const PLOT_ICON: Readonly<Record<PlotOp, string>> = {
   // 구출 — 끊긴 밧줄과 열린 옥문 (10-26 제미나이 Argon)
   rescue: 'plot-rescue',
 }
+/** 따라 누르면 되는 단추의 작은 「추천」 딱지 (형 10-29: "문명에서는 탭마다 추천 스티커를 우상단에 작게") */
+const REC_ST = '<i class="recst">추천</i>'
 /** 아래 탭 — more 는 길게 누르면 뜨는 말 (tips.ts) */
 const TABS = [
   { id: 'army', name: '군대', icon: 'unit-shield-wall', more: '우리 군대를 고르고 길을 정한다. 지도에서 군대를 눌러도 된다.' },
@@ -2016,7 +2018,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const pending = musters.filter((o): o is Extract<Order, { kind: 'draft' }> => o.kind === 'draft')
     // 알아서 뽑기 — 고을마다 뽑을 수 있는 만큼, 창병과 궁병을 섞어 곡식이 닿는 데까지 (형 10-24: "모든 고을에서 다 최대로 골고루")
     // 설명은 ? 안으로 (형 10-27: "물음표가 분명히 존재하는데 아직도 징병 탭에 텍스트가 너무 많음")
-    h += `<div class="btns"><button class="btn pri men wide" data-act="auto-draft">⚡ 알아서 뽑기</button></div>`
+    // 추천 딱지 — 아직 안 뽑았으면 따라 누르면 되는 단추 (형 10-29 · 문명)
+    h += `<div class="btns"><button class="btn pri men wide" data-act="auto-draft">⚡ 알아서 뽑기${pending.length === 0 ? REC_ST : ''}</button></div>`
     for (const n of myTowns(r)) h += draftCard(r, n.id, false)
     if (pending.length > 0) {
       h += `<h4>이번 계절 징병</h4>`
@@ -3059,10 +3062,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 떠돌이 인재 — 들일 수 있는 이
     if (wand.length > 0) {
       h += `<h4>떠돌이 인재가 우리 고을에 왔다</h4>`
+      // 추천 딱지 — 곡식이 닿는 이 가운데 가장 센 하나 (아무도 안 들였을 때)
+      const anyHired = heroOrders.some((o) => o.kind === 'hire')
+      const pickW = anyHired ? undefined : [...wand].filter((w) => left().grain >= w.price).sort((a, b) => (b.hero.mu + b.hero.tong + b.hero.ryak + b.hero.chi) - (a.hero.mu + a.hero.tong + a.hero.ryak + a.hero.chi))[0]
       for (const w of wand) {
         const hired = heroOrders.some((o) => o.kind === 'hire' && o.hero === w.hero.id)
         h += `<div class="askc">${heroRow(r, w.hero, `<span class="mute">${esc(r.nodes[w.node]?.name ?? '')} · ${Math.max(0, w.until - r.season)}계절 안에 떠난다</span>`)}`
-        h += `<div class="btns"><button class="btn ${hired ? 'on' : ''}" data-act="hire" data-id="${w.hero.id}" ${hired || left().grain >= w.price ? '' : 'disabled'}>${hired ? '들인다 · 취소' : `들인다 ${costHtml({ grain: w.price })}`}</button></div></div>`
+        h += `<div class="btns"><button class="btn ${hired ? 'on' : ''}" data-act="hire" data-id="${w.hero.id}" ${hired || left().grain >= w.price ? '' : 'disabled'}>${hired ? '들인다 · 취소' : `들인다 ${costHtml({ grain: w.price })}`}${pickW === w ? REC_ST : ''}</button></div></div>`
       }
     }
     return h
@@ -3550,6 +3556,31 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           : armyIdle && r.season >= 1 ? { tab: 'army', line: '군대에서 갈 곳을 고른다 — 빈땅·약한 이웃' }
             : null
     return t === null ? '' : `<button class="todochip" data-act="tab" data-tab="${t.tab}">👉 이번 계절 · ${esc(t.line)}</button>`
+  }
+
+  /**
+   * 추천 딱지 — 이번 계절 손대면 좋은 탭 오른쪽 위에 작은 「추천」 (형 10-29: "문명에서는 탭마다 추천 스티커를 우상단에 작게 붙여서 잘 모르는 유저들이 그냥 따라할 수 있게").
+   * 처음 하는 사람만 보던 「이번 계절 할 일」(todoHtml)과 같은 셈을 모두에게 · 어지럽지 않게 앞선 둘만 · 지금 열어 둔 탭은 빼고
+   */
+  function recTabs(r: Realm): Map<string, string> {
+    let out = new Map<string, string>()
+    if (r.region === 'tutorial' || r.outcome) return out
+    const asks = openAsks(r, me()).filter((a) => answers[a.id] === undefined).length
+    const drafted = musters.some((o) => o.kind === 'draft')
+    const canDraft = Object.values(r.nodes).some((n) => n.owner === me() && draftLimit(r, me(), n.id) > 0)
+    const idleHeroes = waitingHeroes(r).length
+    const armyIdle = Object.values(r.armies).some((a) => a.faction === me() && a.march === null && pick[a.id] === undefined && goalOf(a) === undefined)
+    if (asks > 0) out.set('diplo', `답을 기다리는 사신 ${asks}명`)
+    if (idleHeroes > 0) out.set('heroes', `쉬는 장수 ${idleHeroes}명 — 일을 맡기면 좋다`)
+    if (armyIdle && r.season >= 1) out.set('army', '이번 계절 할 일 없는 군대가 있다')
+    if (!drafted && canDraft) out.set('draft', '더 뽑을 수 있는 군사가 있다')
+    // 우리 고을로 오는 적 — 군대 탭이 먼저 (막을 군대를 보낸다)
+    if (seenMarches(r, me()).some((a) => a.march !== null && r.nodes[a.march.to]?.owner === me())) { out.delete('army'); out = new Map([['army', '우리 고을로 적이 온다 — 막을 군대를'], ...out]) }
+    if (!out.has('heroes') && wanderersFor(r, me()).length > 0) out.set('heroes', '데려올 수 있는 떠돌이 장수가 있다')
+    // 개척 — 우리 고을 가운데 갈 빈땅이 있고 아직 개척단을 안 꾸렸으면
+    if (!settles.some((o) => o.kind === 'party') && Object.values(r.nodes).some((n) => n.owner === me() && partySize(r, me(), n.id) > 0 && partyMoves(r, me(), n.id).some((m) => m.found))) out.set('people', '개척할 빈땅이 있다')
+    for (const k of [...out.keys()]) if (sheet?.kind === k) out.delete(k)
+    return new Map([...out].slice(0, P.realm.recTabMax))
   }
 
   /**
@@ -5044,11 +5075,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     morph($('.goalb'), goalBandHtml(r, esc, goalFolded()) + contestHtml(r)) // 캠페인의 장이면 이 장의 목표 — 접을 수 있다
     $('.goalb').classList.toggle('folded', goalFolded())
     let tabs = ''
+    const rec = recTabs(r)
     for (const t of TABS) {
       const wait = tabWait(r, t.id)
       if (wait > 0) { tabs += `<button class="locked" disabled data-tip="${t.name} — ${wait}계절 뒤에 열린다">🔒<span>${t.name}</span></button>`; continue }
       const dot = dotKeys(r, t.id).some((k) => !seenKeys.has(k))
-      tabs += `<button class="${sheet?.kind === t.id ? 'on' : ''}${newTab === t.id ? ' fresh' : ''}" data-act="tab" data-tab="${t.id}" data-tip="${t.name}" data-more="${t.more}">${icon(t.icon, 'tic')}<span>${t.name}</span>${dot ? '<i class="dot"></i>' : ''}</button>`
+      tabs += `<button class="${sheet?.kind === t.id ? 'on' : ''}${newTab === t.id ? ' fresh' : ''}" data-act="tab" data-tab="${t.id}" data-tip="${t.name}" data-more="${t.more}">${icon(t.icon, 'tic')}<span>${t.name}</span>${dot ? '<i class="dot"></i>' : ''}${rec.has(t.id) ? `<i class="rec" title="${esc(rec.get(t.id)!)}">추천</i>` : ''}</button>`
     }
     noteNewTabs(r)
     morph($('.tabs'), tabs)

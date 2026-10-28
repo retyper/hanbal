@@ -88,6 +88,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
   background: none; color: var(--mute); font: inherit; font-size: 12px; cursor: pointer; }
 .ap .tabs button img.tic { width: 32px; height: 32px; opacity: .75; } /* filter 는 뺐다 — 갤럭시 크롬에서 아이콘이 통째로 사라졌다 (형 10-28) */
 .ap .tabs button.on { color: var(--gold); } .ap .tabs button.on img.tic { opacity: 1; filter: none; transform: translateY(-2px); }
+.ap .tabs .rec { position: absolute; top: 1px; right: 2px; padding: 0 4px; border-radius: 6px; background: #f2c94c; color: #2a1a06; font-size: 9.5px; font-weight: 800; font-style: normal; line-height: 1.5; letter-spacing: -.02em; box-shadow: 0 1px 3px #000a; pointer-events: none; animation: recpop .35s cubic-bezier(.3, 1.6, .5, 1) both; } @keyframes recpop { from { transform: scale(0); } } /* 추천 딱지 (형 10-29 · 문명) */
+.ap .btn:has(> .recst) { position: relative; } .ap .btn > .recst { position: absolute; top: -7px; right: -4px; padding: 0 5px; border-radius: 6px; background: #f2c94c; color: #2a1a06; font-size: 10px; font-weight: 800; font-style: normal; line-height: 1.5; box-shadow: 0 1px 3px #000a; pointer-events: none; animation: recpop .35s cubic-bezier(.3, 1.6, .5, 1) both; }
 .ap .tabs button { position: relative; } .ap .tabs .dot { position: absolute; top: 5px; right: calc(50% - 22px); width: 10px; height: 10px; border-radius: 50%; background: #e0402a; box-shadow: 0 0 0 2px var(--bg, #14161a); }
 .ap .newb { display: inline-block; margin-top: 2px; padding: 1px 7px; border-radius: 9px; background: #3f8f3a; color: #fff; font-size: 11.5px; font-weight: 700; }
 
