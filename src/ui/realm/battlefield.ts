@@ -2642,6 +2642,22 @@ export const WAR_CSS = `
 /* 사기 막대의 무너지는 선 — 이름표 */
 .ap .ws .wn .brkl { font-size: .92em; font-weight: 800; color: #ffa486; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .ap .wclk li.ck-now, .ap .wclk.last > b, .ap .wdusk .wdk-sky i, .ap .wguess .wgl.wgff.us { animation: none; } }
+/* 컴퓨터 모니터 (넓고 가로로 긴 화면) — 초상·막대는 양옆으로, 전장은 가운데에 크게 (형 10-28: "전투판이 너무 모바일이라 컴퓨터로 하니까 화면이 너무 작네") */
+@media (min-width: 1100px) and (min-aspect-ratio: 5/4) {
+  .ap .wr .wrbox { max-width: min(1760px, 96vw); }
+  .ap .wr .wtop { display: grid; grid-template-columns: minmax(250px, 19%) minmax(0, 1fr) minmax(250px, 19%); grid-template-rows: auto auto auto minmax(0, 1fr); column-gap: 22px; height: calc(100dvh - 132px - env(safe-area-inset-bottom)); min-height: 0; }
+  .ap .wr .wtop > .wrh, .ap .wr .wtop > .wclk { grid-column: 1 / -1; }
+  .ap .wr .wtop > .wvs { display: contents; }
+  .ap .wr .wtop .wvs > .ws.us { grid-column: 1; grid-row: 3 / 5; align-self: center; }
+  .ap .wr .wtop .wvs > .ws.foe { grid-column: 3; grid-row: 3 / 5; align-self: center; }
+  .ap .wr .wtop .wvs > .vs { display: none; }
+  .ap .wr .wtop > .wterr { grid-column: 2; grid-row: 3; }
+  .ap .wr .wtop > .wfield { grid-column: 2; grid-row: 4; min-height: 0; height: auto !important; }
+  .ap .wr .wtop .wpf { --pf: min(220px, 15vw); }
+  .ap .wr .wtop .wf2s .tk { height: clamp(34px, 5.6cqw, 88px); } .ap .wr .wtop .wf2s .tk.wsp.k-horse, .ap .wr .wtop .wf2s .tk.wsp.k-boat { height: clamp(46px, 7.4cqw, 116px); }
+  .ap .wr .wtop .wfield .tp { height: clamp(26px, 5.2cqw, 80px); }
+  .ap .wfpop { width: 400px; }
+}
 @media (prefers-reduced-motion: reduce) { .ap .wr *, .ap .warfx, .ap .warfx * { animation-duration: .01s !important; animation-delay: 0s !important; transition: none !important; } }
 `
 
