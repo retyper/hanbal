@@ -208,7 +208,7 @@ export const MAP_CSS = `
 /* 도읍 — 크고 두껍게, 금빛 별 */
 .map .lb.k-cap { font-size: clamp(11px, calc(2.2cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 18px); border-width: .17em; border-left-width: .62em; }
 /* 빈땅·소도 — 주인 없는 땅은 띠 없이 옅게 (위계가 낮다) */
-.map .lb.k-free { background: #f3e6c8b0; border-color: transparent; border-left-color: transparent; border-left-width: .2em; box-shadow: none; font-weight: 600; font-style: italic; color: #4a3a28; }
+.map .lb.k-free { background: #f3e6c8; border-color: #8a6a3e; border-left-color: #8a6a3e; border-left-width: .2em; box-shadow: none; font-weight: 600; font-style: italic; color: #4a3a28; } /* 비침 없이 또렷하게 (형 10-28: "소도랑 들은 이름택에 opacity · 잘 안 보이니까") */
 /* 우리 고을 — 두 빛 바깥에 금빛 테 (남의 나라 옷과 섞여도 우리 것이 먼저 보인다) */
 .map .lb.me { box-shadow: 0 0 0 1px #1a120a, 0 0 0 2.6px #ffd27a, 0 0 7px #ffd27acc; }
 .ap.hide-flags .map .lb .lbe { display: none; } .ap.hide-force .map .lb .lbf { display: none; }
