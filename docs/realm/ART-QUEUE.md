@@ -12,6 +12,8 @@
 | retyper (hephaestosian · 'retyper') | 10-29 PM 11:28 (문구 그대로) | 10-29 00:33 한도 문구 — 10-28 23:05 부터 아홉 장 (초상 나리·노을·바람 + 로고 시안·제목 로고·아이콘 시안 둘·비파형 동검 아이콘) |
 
 
+**★★ 맨 먼저 (형 10-29): 제목 로고 「삼한열전」 뒤에 비파형 동검을 가로로 눕혀 겹친다** — 챗지피티 계정이 풀리면 바로. 붙일 것 두 장: 지금 제목 로고(public/realm/logo/title.png · 맥궁 지운 글자만) + 형이 준 동검 사진 public/realm/00db79af-897d-4ad4-8dbf-ecb32c544b74.webp(깔끔한 쪽 · 박물관 사진이라 커밋 금지). 손잡이·코등이 없는 날 · 아래 반이 비파처럼 불룩 · 가운데쯤 가시 한 쌍 · 등대가 끝까지 지나 아래로 짧은 슴베 — 사진 실루엣 그대로. 글자가 동검에 묻히지 않게(동검은 한 톤 어둡게 · 글자 둘레 어두운 테) · 진짜 투명 바탕. 손으로 오려 붙인 시험은 속이 지워져 버렸다(밝기로 따서 어두운 녹이 빠짐) — 다시 하지 말 것. 아이콘(동검 하나)은 10-29 올림.
+
 **★ 2026-10-28 형: "제미나이로 만든 이벤트 화면들도 다 챗지피티로 · 제미나이로 퀄리티 있는 거 뽑아내기 너무 어렵다"** — 사건 그림 서른아홉 (챗지피티 사람 그림만 규칙을 이걸로 넓힌다). 주문서 = public/_tmp/events39.json (head + 장면 + 16:9 자리면 wide + tail · _queue 순서). 한 장마다 새 대화 · 처음 여덟 장은 옛 그림·그림결 그림을 붙였으나 글만으로도 결이 같아 그 뒤로는 글만 보낸다(형 10-28: 크레딧 아껴) — 장면 글은 scratchpad evprompts.json 꼴 · 챗지피티 페이지에서 127.0.0.1 fetch 는 이제 막힌다 · 받기는 a.download → ~/Downloads/gptev-<이름>.png → scratchpad bakeev.py (16:9 자리는 1600×900, 나머지 1152×768 · cut/ 에도 넣는다).
    10-28 새벽 스물여섯 장 바꿈(hephaestosian 하나 · edu 스물다섯): invade-raid · invade-siege · invade-field · take-town · captured-ours · capture · plot-assassin · plot-bribe · plot-burn · plot-rescue · plot-rumor · plot-sow · plot-spy · truce-pact · tribute-bow · court-hall · festival · flood · plague · dream · newborn · alliance-oath · defection · divination · egg-birth · eight-harbours
    10-28 오후 넷 더(retyper92): expedition-return · goguryeo-hunt · golden-egg · iron-trade
