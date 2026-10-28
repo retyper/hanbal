@@ -1267,16 +1267,29 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       let given = 0
       const order = all.sort((p, q) => (RANK[p[0]] ?? 0) - (RANK[q[0]] ?? 0) || q[1] - p[1])
       order.forEach(([k, v], j) => {
-        const c = j === order.length - 1 ? T - given : Math.max(1, Math.round((T * v) / men))
+        // 한 명이라도 있는 병종은 그림이 꼭 하나는 선다 (형 10-28: "1명이라도 있으면 그 군대 유닛 1기 반드시") — 마지막 병종도 0 이 되지 않게
+        const c = Math.max(1, j === order.length - 1 ? T - given : Math.round((T * v) / men))
         given += c
         for (let x = 0; x < c; x++) rows[RANK[k] ?? 0]!.push(k)
       })
-      const alive = Math.round(T * n(i)), before = Math.round(T * n0(i))
+      // 쓰러지는 그림은 무리마다 따로 센다 — 그 무리에 남은 사람만큼 서고, 한 명이라도 남았으면 하나는 선다 (전엔 전체 비율로 세어 남은 무리의 그림이 다 쓰러져 보이기도 했다)
+      const RG: readonly Grp[] = ['front', 'bows', 'horse']
+      const g0 = groupMen(mix as Parameters<typeof groupMen>[0])
+      const gOf = (rd: RoundLog | undefined): Readonly<Partial<Record<Grp, number>>> | undefined => (rd === undefined ? undefined : i === 0 ? rd.ga : rd.gd)
+      const standing = (r: number, cnt: number, gm: Readonly<Partial<Record<Grp, number>>> | undefined, share: number): number => {
+        if (gm === undefined) return share <= 0 ? 0 : Math.max(1, Math.round(cnt * share))
+        const left = gm[RG[r]!] ?? 0
+        return left <= 0 ? 0 : Math.max(1, Math.min(cnt, Math.round((cnt * left) / Math.max(1, g0[RG[r]!]))))
+      }
+      const aliveR = rows.map((ks, r) => standing(r, ks.length, gOf(last), n(i)))
+      const beforeR = rows.map((ks, r) => (anim ? standing(r, ks.length, was !== undefined ? gOf(was) : g0, n0(i)) : aliveR[r]!))
+      const rowAt = [0, 0, 0]
       let idx = 0
       // 한 줄(세로) — 가운데에서 위아래로 고르게. 많으면 두 겹(앞 겹·뒤 겹이 엇갈린다)
       const tok = (k0: string, r: 0 | 1 | 2, x: number, oy: number): string => {
         const k = solArt(k0, sea)
-        const s2 = idx < alive ? 'tku' : idx < before ? 'tkf' : 'tkd' // 'fall' 은 군주가 무너진 판(.ap .fall — 액자 테)과 이름이 겹쳐 말이 큰 액자로 그려졌다 (10-25)
+        const q = rowAt[r]!++
+        const s2 = q < aliveR[r]! ? 'tku' : q < beforeR[r]! ? 'tkf' : 'tkd' // 'fall' 은 군주가 무너진 판(.ap .fall — 액자 테)과 이름이 겹쳐 말이 큰 액자로 그려졌다 (10-25)
         const hl = oy < -0.5 ? ' hi' : oy > 0.5 ? ' lo' : ''
         const sc = (0.8 + 0.4 * ((oy + 40) / 80)).toFixed(2)
         const pos = `--x:${(x + oy * 0.22).toFixed(1)}%;--oy:${oy.toFixed(1)}%;--sc:${sc};--j:${idx % 6};--k:${(((idx++ * 47) % 97) / 97).toFixed(2)};z-index:${10 + Math.round(oy + 40)}`
@@ -2190,7 +2203,7 @@ export const WAR_CSS = `
 .ap .whold p { margin: 6px 0 0; font-size: 12.5px; line-height: 1.45; color: #e8dcc0; } .ap .whold .whn { color: #ffd27a; font-weight: 700; }
 .ap .wr .whold .wguess .wgx { display: grid !important; } .ap .wr .whold .wguess .wgl { display: flex !important; }
 /* 보석 — 밑변 --a, 높이 --h 인 거꾸로 선 사각뿔. 옆면은 빗변 길이(--s)의 세모, 안쪽으로 --t 만큼 기운다 (a=16 · h=21 → s≈22.5 · t≈20.9° · 형 10-28: 너무 크다) */
-.ap .wgem { position: fixed; z-index: 60; width: 0; height: 0; pointer-events: none; perspective: 260px; --a: 16px; --s: 22.5px; --t: 20.9deg; animation: wgembob 1.1s ease-in-out infinite alternate; }
+.ap .wgem { position: fixed; z-index: 97; width: 0; height: 0; pointer-events: none; perspective: 260px; --a: 16px; --s: 22.5px; --t: 20.9deg; animation: wgembob 1.1s ease-in-out infinite alternate; }
 .ap .wgem[hidden] { display: none; }
 @keyframes wgembob { from { translate: 0 -40px; } to { translate: 0 -33px; } }
 .ap .wgem .g3 { position: absolute; left: 0; top: 0; transform-style: preserve-3d; animation: wgemspin 2.6s linear infinite; }
@@ -3224,8 +3237,10 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   gem.innerHTML = '<i class="g3"><b class="gf f0"></b><b class="gf f1"></b><b class="gf f2"></b><b class="gf f3"></b><b class="gt"></b></i>'
   ov.appendChild(gem)
   const placeGem = (): void => {
-    const g = active ?? sc.querySelector<HTMLElement>('.wgt.on[data-g]')?.dataset['g'] as Grp | 'lead' | undefined
-    const q = g !== undefined && choosing() && sel[g] === undefined ? groupRect('us', g) : null
+    // 깃발 판을 연 무리 → 지금 펼친 무리(아직 안 골랐으면) → 아직 안 고른 첫 무리 (형 10-28: "다른 UI 가 떠 가려지더라도 지금 선택한 게 이거라는 표시")
+    const tabs = [...sc.querySelectorAll<HTMLElement>('.wgt[data-g]')].map((x) => x.dataset['g'] as Grp | 'lead')
+    const g = popG ?? (active !== undefined && sel[active] === undefined ? active : tabs.find((x) => sel[x] === undefined))
+    const q = g !== undefined && choosing() ? groupRect('us', g) : null
     if (q === null) { gem.hidden = true; return }
     gem.hidden = false
     gem.style.left = `${Math.round(q.left + q.width / 2)}px`
