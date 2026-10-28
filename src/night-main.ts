@@ -17,6 +17,9 @@
  * 시드는 여기(바깥)에서만 시계로 만든다 — 판 안(src/night)은 시계를 못 읽는다 (절대 규칙 1).
  * 숨은 탭에서는 프레임을 예약하지 않는다 (절대 규칙 4).
  */
+import { startGfxSafe } from './ui/gfxsafe.ts'
+// 갤럭시 크롬은 부드러운 그러데이션을 못 그린다 — 밤 판의 하늘·불빛도 (형 10-28) · 그림판을 만들기 전에 켠다
+startGfxSafe()
 import { createNightInput } from './night/input.ts'
 import { setAlwaysPreview } from './render/stickman.ts'
 import { createCamera, resizeCamera } from './render/camera.ts'

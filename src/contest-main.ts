@@ -9,8 +9,11 @@
  * 활의 단계는 밤 판과 같은 몫 (night/sim tierBow) — 칠십팔국이 `bow=` 로 넘긴다.
  * 결과는 밤 판과 같은 말로 부모(칠십팔국)에 보낸다: `hanbal.night.result` · id · dead(이김) / fled(짐) / skip(안 겨룸).
  */
+import { startGfxSafe } from './ui/gfxsafe.ts'
+// 갤럭시 크롬은 부드러운 그러데이션을 못 그린다 — 하늘·언덕이 깨졌다 (형 10-28: "그래픽도 깨져 있고") · 그림판을 만들기 전에 켠다
+startGfxSafe()
 import { createWorld, isSettled, step } from './sim/world.ts'
-import type { StageDef, World } from './sim/types.ts'
+import type { StageDef, TargetSpec, World } from './sim/types.ts'
 import { createInput } from './input/pointer.ts'
 import { setAlwaysPreview } from './render/stickman.ts'
 import { createRenderer, getCamera, getHitStopMs } from './render/scene.ts'
@@ -34,18 +37,31 @@ const input = createInput(canvas, getCamera(renderer))
 const sfx = createSfx()
 const hud: HudState = { training: 0, canLevelUp: false, muted: false, silent: false, toast: '', arrow: '', stars: -1, endReason: '', arrowRule: false, time: 0, bestTime: 0, record: false }
 
-/** 두 판 — 백 보 과녁(고정 과녁) · 매단 옥가락지(공중 과녁: 맞으면 떨어진다). 하늘은 판 id 의 장 번호로 — 3장 「안개 아침」이 가장 밝다 */
+/**
+ * 세 판 — 과녁 하나는 너무 싱거웠다 (형 10-28: "제대로 만들어라 · 과녁도 너무 한 개뿐")
+ *  1. 백 보 과녁 셋 — 가까운 것부터 먼 것까지 높이도 제각각
+ *  2. 매단 사슴 과녁 둘 — 줄에 매달려 위아래로 흔들린다
+ *  3. 옥가락지 둘 — 높이 매단 작은 가락지(맞으면 떨어진다)
+ * 판마다 송양이 먼저 쏘고(맞힌 수가 글로 뜬다) 우리는 다 맞혀야 다음 판. 하늘은 판 id 의 장 번호로 — 3장 「안개 아침」이 가장 밝다
+ */
 const ROUNDS = [
-  { title: '백 보 과녁', line: '송양이 백 보 밖에 과녁을 세웠다.' },
-  { title: '옥가락지', line: '송양이 옥가락지를 높이 매달았다. 깨뜨리면 이긴다.' },
+  { title: '백 보 과녁', line: '송양이 백 보 안팎에 과녁 셋을 세웠다.', foe: '송양은 셋 중 둘을 맞혔다. 셋 다 맞히면 앞선다.', won: '세 과녁 한가운데' },
+  { title: '흔들리는 사슴', line: '송양이 사슴 그린 과녁 둘을 줄에 매달아 흔든다.', foe: '송양은 둘 중 하나를 맞혔다.', won: '흔들리는 사슴을 둘 다' },
+  { title: '옥가락지', line: '송양이 옥가락지 둘을 높이 매달았다. 깨뜨리면 이긴다.', foe: '송양의 화살은 가락지 곁을 스쳤다.', won: '' },
 ] as const
 
-function roundDef(i: number): StageDef {
+function roundTargets(i: number): TargetSpec[] {
   const R = P.realm
-  const arrows = R.contestArrows + P.night.tierArrows * tier
-  return i === 0
-    ? { id: '3-c1', pair: '겨루기', title: ROUNDS[0].title, seed, arrows, targetScore: 0, wind: 0, targets: [{ kind: 'static', x: R.contestDeerX, y: R.contestDeerY, r: R.contestDeerR }] }
-    : { id: '3-c2', pair: '겨루기', title: ROUNDS[1].title, seed: seed + 1, arrows, targetScore: 0, wind: 0, targets: [{ kind: 'aerial', x: R.contestRingX, y: R.contestRingY, r: R.contestRingR }] }
+  const g = R.contestGapX
+  if (i === 0) return [0, 1, 2].map((k) => ({ kind: 'static', x: R.contestDeerX - g * (2 - k), y: R.contestDeerY + (k === 1 ? R.contestDeerR * 1.5 : 0), r: R.contestDeerR }))
+  if (i === 1) return [0, 1].map((k) => ({ kind: 'moving', x: R.contestSwingX + g * k, y: R.contestSwingY, r: R.contestDeerR, ampX: 0, ampY: R.contestSwingAmp, freq: R.contestSwingFreq * (k === 0 ? 1 : 1.3) }))
+  return [0, 1].map((k) => ({ kind: 'aerial', x: R.contestRingX - g * (1 - k), y: R.contestRingY + R.contestRingR * 2 * k, r: R.contestRingR }))
+}
+
+function roundDef(i: number): StageDef {
+  const targets = roundTargets(i)
+  const arrows = targets.length + P.realm.contestArrows + P.night.tierArrows * tier
+  return { id: `3-c${i + 1}`, pair: `겨루기 ${i + 1}판`, title: ROUNDS[i]!.title, seed: seed + i, arrows, targetScore: 0, wind: 0, targets }
 }
 
 const lv = P.night.stat + P.night.tierStat * tier
@@ -90,13 +106,13 @@ const card = (h: string): void => { ui.innerHTML = `<div class="card">${h}</div>
 function showIntro(): void {
   live = false
   card(`<h1>송양과의 활쏘기 겨루기</h1><p>비류수 가 언덕, 아침 안개가 걷힌다. 활은 ${BOW_NAME[tier]}.</p>`
-    + `<p class="mute">첫 판은 백 보 과녁, 둘째 판은 매단 옥가락지다. 판마다 화살 ${roundDef(0).arrows}발. 둘 다 맞히면 이긴다.</p>`
+    + `<p class="mute">세 판을 겨룬다 — 백 보 과녁 셋 · 흔들리는 사슴 과녁 둘 · 매단 옥가락지 둘. 판마다 과녁을 다 맞혀야 다음 판으로 간다. 화살은 과녁 수보다 ${P.realm.contestArrows + P.night.tierArrows * tier}발 넉넉하다.</p>`
     + `<p class="mute">누르고 있으면 당기고, 놓으면 쏜다. 당기는 동안 점선이 화살이 날아갈 길을 보여 준다.</p>`
     + `<div class="btns"><button data-act="back">물러난다</button><button class="on" data-act="go">겨룬다</button></div>`)
 }
 
 function playHud(): void {
-  ui.innerHTML = `<div class="tag">${round + 1}판 · ${ROUNDS[round]!.title}</div><button class="quit" data-act="quit">그만</button>` // 숨 참기 단추는 뺐다 — 당기는 동안 늘 사선 (형 10-27)
+  ui.innerHTML = '<button class="quit" data-act="quit">그만</button>' // 몇째 판인지는 판 머리글(pair)에 — 가운데 띠가 머리글을 가렸다 // 숨 참기 단추는 뺐다 — 당기는 동안 늘 사선 (형 10-27)
 }
 
 function startRound(i: number): void {
@@ -109,7 +125,8 @@ function startRound(i: number): void {
 
 function showBetween(): void {
   live = false
-  card(`<h1>과녁 한가운데</h1><p>구경꾼이 웅성인다. ${ROUNDS[1].line}</p><div class="btns"><button class="on" data-act="next">둘째 판</button></div>`)
+  const nx = ROUNDS[round + 1]!
+  card(`<h1>${ROUNDS[round]!.won}</h1><p>구경꾼이 웅성인다.</p><p>${nx.line}</p><p class="mute">${nx.foe}</p><div class="btns"><button class="on" data-act="next">${round === 0 ? '둘째' : '셋째'} 판</button></div>`)
 }
 
 function showEnd(won: boolean): void {
@@ -117,7 +134,7 @@ function showEnd(won: boolean): void {
   send(won ? 'dead' : 'fled')
   card(won
     ? `<h1>옥가락지가 깨졌다</h1><p>송양이 활을 내려놓는다. 겨루기를 이겼다.</p><div class="btns"><button class="on" data-act="back">돌아가기</button></div>`
-    : `<h1>겨루기를 졌다</h1><p>${round === 0 ? '과녁을 맞히지 못했다.' : '옥가락지를 깨뜨리지 못했다.'} 송양이 웃는다.</p><div class="btns"><button class="on" data-act="back">돌아가기</button></div>`)
+    : `<h1>겨루기를 졌다</h1><p>${['과녁 셋을 다 맞히지 못했다.', '흔들리는 사슴을 다 맞히지 못했다.', '옥가락지를 다 깨뜨리지 못했다.'][round]} 송양이 웃는다.</p><div class="btns"><button class="on" data-act="back">돌아가기</button></div>`)
 }
 
 ui.addEventListener('click', (ev) => {
@@ -126,7 +143,7 @@ ui.addEventListener('click', (ev) => {
   unlock()
   switch (t.dataset['act']) {
     case 'go': startRound(0); break
-    case 'next': startRound(1); break
+    case 'next': startRound(round + 1); break
     // 쏘고 나서 그만두면 진 것 — 한 발도 안 쐈으면 안 겨룬 것
     case 'quit': if (shot) showEnd(false); else { send('skip'); showIntro() } break
     case 'back': if (!shot) send('skip'); location.href = back; break
@@ -196,7 +213,7 @@ function frame(now: number): void {
   // 마지막 살과 떨어지는 가락지가 다 멎은 뒤에 판정한다 (활터 isSettled)
   if (live && w.status !== 'playing' && isSettled(w)) {
     if (w.status === 'cleared') {
-      if (round === 0) showBetween()
+      if (round < ROUNDS.length - 1) showBetween()
       else showEnd(true)
     } else showEnd(false)
   }
