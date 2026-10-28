@@ -394,6 +394,14 @@ export function captureChance(me: Side, foe: Side, myN: number, foeN: number, fo
  */
 function retreatOdds(c: Ctx, st: State, mine: 'a' | 'd', guard: boolean, dark: boolean): number {
   const R = P.realm
+  return clamp(retreatParts(c, st, mine, guard, dark).reduce((s, [, v]) => s + v, R.tacRetBase), R.tacRetMin, R.tacRetMax)
+}
+
+/**
+ * 물러날 가망을 이루는 몫들 — [까닭, 더하고 깎는 몫]. 바탕(tacRetBase)은 빼고 · 화면이 「무엇이 몇 % 」로 보인다 (형 10-28)
+ */
+function retreatParts(c: Ctx, st: State, mine: 'a' | 'd', guard: boolean, dark: boolean): Array<[string, number]> {
+  const R = P.realm
   const me = mine === 'a' ? c.atk : c.def
   const foe = mine === 'a' ? c.def : c.atk
   const g0m = mine === 'a' ? c.g0a : c.g0d
@@ -404,15 +412,18 @@ function retreatOdds(c: Ctx, st: State, mine: 'a' | 'd', guard: boolean, dark: b
   const chase = clamp((menNow(g0f, ff, 'horse') / Math.max(1, myMen)) * R.tacRetChaseK, 0, 1)
   const myM = clamp((mine === 'a' ? st.ma : st.md) / Math.max(0.05, me.morale), 0, 1)
   const foeM = (mine === 'a' ? st.md : st.ma) / Math.max(0.05, foe.morale)
-  let p = R.tacRetBase
-  if (guard && menNow(g0m, fm, 'horse') >= 1) p += R.tacRetGuard
-  p += R.tacRetRyak * ((me.hero?.ryak ?? 5) - 5)
-  p -= R.tacRetChase * chase
-  p -= R.tacRetMorale * (1 - myM)
-  if (dark) p += R.tacRetDark
-  if (foeM < R.tacHoldSteady) p += R.tacRetWaver
-  if (me.easy === true) p += R.easyRetreat
-  return clamp(p, R.tacRetMin, R.tacRetMax)
+  const out: Array<[string, number]> = []
+  const foeHorse = menNow(g0f, ff, 'horse')
+  if (guard && menNow(g0m, fm, 'horse') >= 1) out.push(['우리 말이 뒤를 지킨다', R.tacRetGuard])
+  const ry = (me.hero?.ryak ?? 5) - 5
+  if (ry !== 0) out.push([`우리 장수 지략 ${me.hero?.ryak ?? 5}`, R.tacRetRyak * ry])
+  if (foeHorse < 1) out.push(['적에게 말이 없다 — 걸어서는 못 따라잡는다', R.tacRetNoChase])
+  else if (chase > 0) out.push([`적 말 ${Math.round(foeHorse)}명이 쫓는다`, -R.tacRetChase * chase])
+  if (myM < 1) out.push(['사기가 꺾였다', -R.tacRetMorale * (1 - myM)])
+  if (dark) out.push(['어둠', R.tacRetDark])
+  if (foeM < R.tacHoldSteady) out.push(['적이 흔들린다', R.tacRetWaver])
+  if (me.easy === true) out.push(['촌장의 덤', R.easyRetreat])
+  return out.filter(([, v]) => Math.abs(v) >= 0.005)
 }
 
 /** 무리 하나가 이번 합에 고를 수 있는 명령 */
@@ -814,6 +825,7 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
           foeWaver: (mine === 'a' ? st.md / Math.max(0.05, def.morale) : st.ma / Math.max(0.05, atk.morale)) < P.realm.tacHoldSteady,
           capture: cap.p, squad: cap.squad, escort: cap.escort,
           retreatP: retreatOdds(c, st, mine, false, darkI), retreatGuardP: retreatOdds(c, st, mine, true, darkI),
+          retreatWhy: retreatParts(c, st, mine, false, darkI),
           ...hintFields(seenHint),
           weAtk: mine === 'a', seen: me.seen,
           // 깃발 짐작의 판 — 화면이 깃발마다 lookRound 로 (적이 이번에 낼 수는 싣지 않는다)

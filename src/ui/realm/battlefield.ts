@@ -1071,7 +1071,6 @@ function lookHtml(lk: Look | undefined, k: string): string {
   if (lk === undefined) return `<span class="wguess wait" data-k=""></span>`
   const d = (lk.edge[0] + lk.edge[1]) / 2 - lk.edge0
   const [w, cls] = d > 0.07 ? ['크게 밀어붙인다', 'g2'] : d > 0.02 ? ['밀어붙인다', 'g1'] : d > -0.02 ? ['맞선다', 'g0'] : d > -0.07 ? ['밀린다', 'b1'] : ['크게 밀린다', 'b2']
-  const pc = (x: number): string => `${Math.round(Math.max(0, Math.min(1, x)) * 100)}%`
   const n = lookNums(lk)
   const tag = lk.by === 'saw' ? '<i class="wgtag">귀띔</i>' : ''
   // 위 카드와 같은 자리 — 왼쪽 우리 · 오른쪽 적, 윗줄 피해 · 아랫줄 사기 (형 10-26: "상단에서 보여지는게 우리명 적명 / 우리사기 적사기 · 깃발에서도 그런배치로").
@@ -1090,8 +1089,22 @@ function lookHtml(lk: Look | undefined, k: string): string {
   const warn = (lk.fall ?? 0) >= P.realm.tacLookFall ? `<span class="wgl wgff us"><span class="wgk">⚠</span>우리가 무너질 수 있다 <b>${oneChance(lk.fall!)}%</b></span>` : ''
   const chance = (lk.foeFall ?? 0) >= P.realm.tacLookFall ? `<span class="wgl wgff foe"><span class="wgk">★</span>적이 무너질 수 있다 <b>${oneChance(lk.foeFall!)}%</b></span>` : ''
   // 판세 막대 — 왼쪽 끝이 우리, 오른쪽 끝이 적. 파랑이 우리 몫, 옅은 데가 짐작의 폭, 금빛 금이 지금 판세
-  return `<span class="wguess ${cls}" data-k="${esc(k)}"><span class="wgq">판세${tag}</span><span class="wgk us">우리</span><span class="wgbar" style="--lo:${pc(lk.edge[0])};--hi:${pc(lk.edge[1])};--e0:${pc(lk.edge0)}"><i class="wgb2"></i><i class="wgb1"></i></span><span class="wgk foe">적</span><b>${w}</b>`
+  return `<span class="wguess ${cls}" data-k="${esc(k)}"><span class="wgq">판세${tag}</span><span class="wgk us">우리</span>${deltaBar(lk)}<span class="wgk foe">적</span><b>${w}</b>`
     + `${cap}${table}${warn}${chance}</span>`
+}
+
+/**
+ * 판세 막대 — 가운데 금이 지금 판세, 이 깃발이면 얼마나 밀어붙이나(오른쪽 파랑) · 밀리나(왼쪽 붉음)를 warLookGain 배로 키워서.
+ * 판세가 99% 처럼 한쪽으로 꽉 차면 깃발마다 막대가 똑같아 보였다 (형 10-28) · 옅은 칸은 짐작의 폭 · 그러데이션 없이 단색 조각
+ */
+function deltaBar(lk: Look): string {
+  const K = P.realm.warLookGain
+  const at = (v: number): number => 50 + Math.max(-1, Math.min(1, (v - lk.edge0) * K)) * 50
+  const mid = at((lk.edge[0] + lk.edge[1]) / 2)
+  const r0 = at(lk.edge[0])
+  const r1 = at(lk.edge[1])
+  const f = (x: number): string => `${x.toFixed(1)}%`
+  return `<span class="wgbar ${mid >= 50 ? 'pos' : 'neg'}" style="--s0:${f(Math.min(50, mid))};--sw:${f(Math.abs(mid - 50))};--r0:${f(Math.min(r0, r1))};--rw:${f(Math.abs(r1 - r0))}"><i class="wgb2"></i><i class="wgb1"></i></span>`
 }
 
 /** 「이대로 싸우면」 — 무리마다 다 골랐을 때 그 명령 그대로의 짐작 (전투 개시 단추 위) */
@@ -2130,11 +2143,12 @@ export const WAR_CSS = `
 .ap .wguess { display: grid; grid-template-columns: auto auto 1fr auto auto; align-items: center; gap: 3px 4px; width: 100%; margin-top: 4px; }
 .ap .wguess .wgq { font-size: 10.5px; color: var(--mute); white-space: nowrap; } /* wgt 는 무리 탭 — 이름이 겹쳐 단추 모양이 됐다 */ .ap .wguess > .wgk { font-size: 10.5px; font-weight: 700; } .ap .wguess > .wgk.us { color: #7fb8f0; } .ap .wguess > .wgk.foe { color: #f09080; }
 .ap .wguess .wgbar { position: relative; height: 7px; border-radius: 4px; overflow: hidden; box-shadow: inset 0 0 0 1px #0008;
-  background: #c8503a; }
-/* 우리 몫(진한 파랑 0~lo) · 짐작의 폭(옅은 파랑 lo~hi) · 적 몫(붉은 바탕) — 그러데이션 대신 단색 조각 (형 폰에서 까맣게 깨졌다 · 10-28) */
-.ap .wguess .wgbar .wgb2, .ap .wguess .wgbar .wgb1 { position: absolute; left: 0; top: 0; bottom: 0; }
-.ap .wguess .wgbar .wgb2 { width: var(--hi); background: #3d8fe077; } .ap .wguess .wgbar .wgb1 { width: var(--lo); background: #3d8fe0; }
-.ap .wguess .wgbar::after { content: ''; position: absolute; left: var(--e0); top: -1px; bottom: -1px; width: 2px; margin-left: -1px; background: #ffe7b0; box-shadow: 0 0 3px #000; }
+  background: #2a2420; }
+/* 가운데 금 = 지금 · 오른쪽 파랑 = 밀어붙임 · 왼쪽 붉음 = 밀림 · 옅은 칸 = 짐작의 폭 — 단색 조각 (형 폰에서 그러데이션이 까맣게 깨졌다 · 10-28) */
+.ap .wguess .wgbar .wgb2, .ap .wguess .wgbar .wgb1 { position: absolute; top: 0; bottom: 0; }
+.ap .wguess .wgbar .wgb2 { left: var(--r0); width: var(--rw); background: #ffffff26; } .ap .wguess .wgbar .wgb1 { left: var(--s0); width: var(--sw); background: #3d8fe0; }
+.ap .wguess .wgbar.neg .wgb1 { background: #d8503a; }
+.ap .wguess .wgbar::after { content: ''; position: absolute; left: 50%; top: -1px; bottom: -1px; width: 2px; margin-left: -1px; background: #ffe7b0; box-shadow: 0 0 3px #000; }
 .ap .wcmd .wguess > b { font-size: 11.5px; white-space: nowrap; }
 .ap .wguess > b { width: 6.4em; text-align: right; white-space: nowrap; } /* 「맞선다」·「크게 밀린다」 길이에 따라 판세 막대가 늘고 줄지 않게 (형 10-28) */
 .ap .wguess.g2 > b { color: #7fd8ff; } .ap .wguess.g1 > b { color: #a8d8f0; } .ap .wguess.g0 > b { color: #d8cfbf; } .ap .wguess.b1 > b { color: #f0b090; } .ap .wguess.b2 > b { color: #ff7a5a; }
@@ -2234,6 +2248,8 @@ export const WAR_CSS = `
 @keyframes whin { from { opacity: 0; transform: translateY(6px) scale(.96); } }
 .ap .whold .whh { display: flex; align-items: center; gap: 6px; } .ap .whold .whh img, .ap .whold .whh .wgi { width: 30px; height: 30px; object-fit: contain; flex: none; }
 .ap .whold .whh b { font-size: 16px; color: #ffe2a0; } .ap .whold .whh small { color: var(--mute); font-size: 12px; } .ap .whold .whh em { font-size: 11px; }
+.ap .whold .wrwhy { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; margin-top: 7px; padding: 6px 8px; border-radius: 8px; background: #0b0a08b3; font-size: 12.5px; color: #e8dcc0; }
+.ap .whold .wrwhy b { font-weight: 800; text-align: right; } .ap .whold .wrwhy b.up { color: #9fe08a; } .ap .whold .wrwhy b.dn { color: #ff9a7a; }
 .ap .whold p { margin: 6px 0 0; font-size: 12.5px; line-height: 1.45; color: #e8dcc0; } .ap .whold .whn { color: #ffd27a; font-weight: 700; }
 .ap .wr .whold .wguess .wgx { display: grid !important; } .ap .wr .whold .wguess .wgl { display: flex !important; }
 /* 보석 — 밑변 --a, 높이 --h 인 거꾸로 선 사각뿔. 옆면은 빗변 길이(--s)의 세모, 안쪽으로 --t 만큼 기운다 (a=16 · h=21 → s≈22.5 · t≈20.9° · 형 10-28: 너무 크다) */
@@ -2423,9 +2439,10 @@ export const WAR_CSS = `
 .ap .wopen::before { content: ''; position: absolute; inset: 0; z-index: 1; background: radial-gradient(ellipse at 50% 50%, #0000 30%, #000c 100%); }
 .ap .wopen .wofl { position: absolute; inset: 0; z-index: 2; background: radial-gradient(circle, #ff6a3a88, #b0281a55 40%, #0000 75%); opacity: 0; animation: woflash .7s ease-out .9s both; }
 @keyframes woflash { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
-.ap .wopen .woin { position: absolute; inset: 0; z-index: 3; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; padding: 0 4vw; animation: woshake .5s ease-out .9s both; }
+.ap .wopen .woin { position: absolute; inset: 0; z-index: 3; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; align-content: center; gap: 8px; padding: 0 4vw; animation: woshake .5s ease-out .9s both; }
 @keyframes woshake { 0%, 100% { transform: none; } 20% { transform: translate(-8px, 3px); } 40% { transform: translate(7px, -4px); } 60% { transform: translate(-4px, 2px); } 80% { transform: translate(2px, -1px); } }
-.ap .wosd { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; min-width: 0; }
+.ap .wosd { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; min-width: 0; align-self: start; } /* 위로 붙인다 — 병종 칩이 넷 대 하나면 가운데 맞춤이 두 장수 그림 높이를 어긋냈다 (형 10-28) */
+.ap .wopen .wom { align-self: start; margin-top: calc(clamp(40px, 11vw, 64px) + 4px + clamp(84px, 26vw, 150px) / 2 - clamp(70px, 20vw, 130px) / 2); }
 .ap .wosd.us { animation: woinl .55s cubic-bezier(.2, 1.3, .4, 1) .25s both; } .ap .wosd.foe { animation: woinr .55s cubic-bezier(.2, 1.3, .4, 1) .45s both; }
 @keyframes woinl { from { opacity: 0; transform: translateX(-60vw); } to { opacity: 1; transform: none; } }
 @keyframes woinr { from { opacity: 0; transform: translateX(60vw); } to { opacity: 1; transform: none; } }
@@ -2907,6 +2924,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const foe = f.querySelector<HTMLElement>('.wf2s.foe')
     if (foe !== null) setForm(foe, hint !== null ? { front: hint } : {})
     placeGem()
+    window.setTimeout(placeGem, P.realm.warGemSettleMs) // 병사가 걸어 들어오는 동안 재면 엉뚱한 데 선다 (형 10-28: 시작 때 보석이 창병 위에 없다)
   }
 
   /**
@@ -3258,7 +3276,12 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       + `<p>들 수 있는 깃발 — ${esc(flags.join(' · '))}</p><p class="whn">깃발을 끌어 전장에 놓으면 정해집니다</p>`
   }
   /** 깃발의 설명 — 하는 일 · 판세 막대 · 피해·사기 표 */
-  const flagHold = (card: HTMLElement): string =>
+  const flagHold = (card: HTMLElement): string => {
+    const why = card.dataset['c'] === 'retreat' ? t.line?.pending?.retreatWhy : undefined
+    const rows = why !== undefined ? `<div class="wrwhy"><span>바탕</span><b>${Math.round(P.realm.tacRetBase * 100)}%</b>${why.map(([k, v]) => `<span>${esc(k)}</span><b class="${v >= 0 ? 'up' : 'dn'}">${v >= 0 ? '+' : '−'}${Math.round(Math.abs(v) * 100)}%</b>`).join('')}</div>` : ''
+    return flagHoldBase(card) + rows
+  }
+  const flagHoldBase = (card: HTMLElement): string =>
     `<div class="whh">${card.querySelector('img.wflag')?.outerHTML ?? ''}<b>${esc(card.querySelector('.wct > b')?.textContent ?? '')}</b>${card.querySelector('.wct > em')?.outerHTML ?? ''}</div>`
     + `<p>${esc(card.dataset['desc'] ?? card.dataset['more'] ?? '')}</p>`
   /** 깃발 판 밑의 판세 칸을 그 깃발로 */

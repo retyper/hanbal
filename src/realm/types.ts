@@ -516,6 +516,8 @@ export interface Pending {
   /** 물러날 가망 — 우리 말이 호위하지 않을 때 · 호위할 때 (형 10-27: 물러나기는 시도다) */
   readonly retreatP?: number
   readonly retreatGuardP?: number
+  /** 물러날 가망의 까닭들 — [까닭, 더하고 깎는 몫] (바탕은 빼고 · 화면의 설명 창) */
+  readonly retreatWhy?: ReadonlyArray<readonly [string, number]>
   /** 사로잡으러 보낼 날랜 무리 · 적장 곁 호위 (사람 수 — 셀 수 있는 것) */
   readonly squad: number
   readonly escort: number
