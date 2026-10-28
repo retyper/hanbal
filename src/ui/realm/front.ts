@@ -365,7 +365,7 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
         : ['기원 2세기.', '옛 조선이 무너진 지 삼백 년, 왕이 하나가 아니던 때.']
     body = `<div class="pl pera">${oldMapHtml(k, r, region)}<p class="l1">${when}</p><p class="l2">${age}</p>`
       + `<p class="l3">${k.esc(ERA[region])}</p>`
-      + `<p class="l4">${r.known !== undefined ? '그러나 너는 아직 이웃밖에 모른다. 지도는 빈 한지다.' : '저마다 제 도읍을 지키며, 남의 도읍을 넘본다.'}</p></div>`
+      + `<p class="l4">${r.known !== undefined ? '그러나 당신은 아직 이웃밖에 모릅니다. 지도는 아직 빈 한지입니다.' : '저마다 제 도읍을 지키며, 남의 도읍을 넘본다.'}</p></div>`
   } else if (step === 1) {
     body = `<div class="pl pyou">${k.face(me, 'pface')}<div class="pt">${k.emblem(me, 'pem')}<b>${k.esc(f?.name ?? '')}</b>`
       + `<span>${k.esc(n?.place ?? '')}</span>${ruler !== undefined ? `<p class="who">군장 <b>${k.esc(ruler.name)}</b></p>` : ''}`
@@ -382,10 +382,10 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
     ]
     // 캠페인의 장이면 그 장의 목표를 (CAMPAIGN.md)
     const ch = chapterOfRegion(region)
-    const head = ch !== undefined ? `<small class="gch">${ch.n}장 · ${k.esc(ch.name)}</small>${k.esc(ch.goal)}.` : `도읍 <b>${need}</b>곳을 쥐면 이긴다.`
-    body = `<div class="pl pgoal"><p class="gl">${head}<br><small>우리 도읍을 잃으면 진다.</small></p><div class="ways">`
+    const head = ch !== undefined ? `<small class="gch">${ch.n}장 · ${k.esc(ch.name)}</small>${k.esc(ch.goal)}.` : `도읍 <b>${need}</b>곳을 쥐면 이깁니다.`
+    body = `<div class="pl pgoal"><p class="gl">${head}<br><small>우리 도읍을 잃으면 집니다.</small></p><div class="ways">`
       + ways.map(([ic, t, d, subs]) => `<div class="way">${k.icon(ic, 'wic')}<b>${t}</b><span>${d}<span class="wsub">${subs.map(([si, sn]) => `<i>${k.icon(si, 'wsi')}${sn}</i>`).join('')}</span></span></div>`).join('')
-      + `</div><p class="ptip">한 계절에 명령을 정하고 <b>다음 계절</b>을 누른다. 모든 나라가 한꺼번에 움직인다.</p></div>`
+      + `</div><p class="ptip">한 계절에 명령을 정하고 <b>다음 계절</b>을 누르세요. 모든 나라가 한꺼번에 움직입니다.</p></div>`
   }
   const dots = Array.from({ length: PROLOGUE_STEPS }, (_, i) => `<i class="${i === step ? 'on' : ''}"></i>`).join('')
   const last = step >= PROLOGUE_STEPS - 1
