@@ -99,6 +99,17 @@ export function voiceKind(h: Hero, ruler = false): VoiceKind {
   return s % 3 === 0 ? 'm-gruff' : 'm-young'
 }
 
+/**
+ * 성우진 — 같은 결의 장수를 이름으로 반씩 갈라 절반은 B(voice-b.ts · public/realm/voice/b/)로 말한다.
+ * 전엔 같은 결이면 전혀 다른 장수가 똑같은 대사를 쳤다 (형 10-29: "성우진 B · 중복된 것들의 절반과 교체"). 같은 장수는 늘 같은 성우
+ */
+export function castOf(h: Hero): 'a' | 'b' {
+  let s = 7
+  for (const c of h.id) s = (s * 131 + c.charCodeAt(0)) >>> 0
+  return (s >>> 3) % 2 === 1 ? 'b' : 'a'
+}
+const dirOf = (h: Hero): string => (castOf(h) === 'b' ? 'realm/voice/b/' : 'realm/voice/')
+
 /** 그 장수의 그 줄 — 탭할 때마다 돌려 가며 하나 (화면 쪽 무작위 — 판의 결정론과 무관) */
 export function voicePath(h: Hero, want: VoiceLine, ruler = false): string {
   const k = voiceKind(h, ruler)
@@ -109,24 +120,24 @@ export function voicePath(h: Hero, want: VoiceLine, ruler = false): string {
   let t = 1 + Math.floor(Math.random() * n)
   if (n > 1 && t === prev) t = (t % n) + 1
   lastTake.set(key, t)
-  return `realm/voice/${key}-${t}.ogg`
+  return `${dirOf(h)}${key}-${t}.ogg`
 }
 
 /** 장수 기술 외침 — 그 장수의 결로 */
 export function artVoicePath(h: Hero, art: Art, ruler = false): string {
-  return `realm/voice/art-${voiceKind(h, ruler)}-${art}.ogg`
+  return `${dirOf(h)}art-${voiceKind(h, ruler)}-${art}.ogg`
 }
 
 /** 싸움 맡김 — 맡아 들 때(go · 셋을 돌려 가며) · 맡긴 싸움이 끝나면 이김(win) · 짐(lose) */
 export function autoVoicePath(h: Hero, want: 'go' | 'win' | 'lose', ruler = false): string {
   const k = voiceKind(h, ruler)
-  if (want !== 'go') return `realm/voice/auto-${k}-${want}.ogg`
+  if (want !== 'go') return `${dirOf(h)}auto-${k}-${want}.ogg`
   const key = `auto-${k}`
   const prev = lastTake.get(key) ?? 0
   let t = 1 + Math.floor(Math.random() * 3)
   if (t === prev) t = (t % 3) + 1
   lastTake.set(key, t)
-  return `realm/voice/${key}-${t}.ogg`
+  return `${dirOf(h)}${key}-${t}.ogg`
 }
 
 /** 등용 첫마디 — 그 장수가 녹음한 대사 · 대사가 없는 장수(판에서 난 아이 등)는 그 결의 짧은 대답으로 */
