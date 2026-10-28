@@ -576,7 +576,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 배경 음악 · 계절 바람 — 싸움 창이 열려 있으면 싸움 음악 */
   const music = makeMusic(BASE, muted, () => root.querySelector('.nightov') !== null) // 밤 판이 떠 있으면 조용히 — 밤 판은 제 소리를 낸다
   let warOn = false
-  root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="seasonp" aria-hidden="true">${seasonParticles()}</div><div class="legend"></div><div class="zbtns"><button data-act="layers" class="lyb" aria-label="보기">👁</button><button data-act="zin">＋</button><button data-act="zout">－</button></div><div class="layers"></div><button class="next" data-act="next"></button><div class="todo"></div><div class="selbar"></div><div class="roadkey"></div><button class="logbtn" data-act="log-open">지난 기록</button><div class="tutband"></div><div class="goalb"></div>`
+  root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="seasonp" aria-hidden="true">${seasonParticles()}</div><div class="legend"></div><div class="zbtns"><button data-act="layers" class="lyb" aria-label="보기">👁</button><button data-act="zin">＋</button><button data-act="zout">－</button></div><div class="layers"></div><button class="next" data-act="next"></button><div class="todo"></div><div class="selbar"></div><div class="roadkey"></div><div class="tutband"></div><div class="goalb"></div>`
     + `<nav class="tabs"></nav><div class="back" data-act="close"></div><section class="sheet"></section><div class="modal"></div><div class="plbox"></div>`
   const $ = (sel: string): HTMLElement => root.querySelector<HTMLElement>(sel)!
   const zoom = attachZoom($('.mapwrap'))
@@ -1216,7 +1216,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const nation = r.factions[me()]
     // 누르면 바로 뜨는 말 (tips.ts) — 폰엔 마우스를 올릴 일이 없다
     // 첫 화면으로 가는 길은 나라 탭 맨 밑 「첫 화면으로」 (형 10-24: "좌상단 홈 버튼은 없애도 될 듯 · 나라 탭에서 눌러서 갈 수 있게")
-    return `<div class="tl" data-tip="${esc(SEASON_LINE[season])}">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r.season))}</b></div>`
+    // 계절 이름을 누르면 지난 기록 — 따로 있던 「지난 기록」 단추를 대신한다 (형 10-28: 그 자리만큼 목표 띠를 올려 지도를 넓게)
+    return `<button class="tl" data-act="log-open" aria-label="지난 기록">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r.season))}</b><i class="tlx">📜</i></button>`
       + `<div class="tr">${(['grain', 'iron', 'salt', 'wood', 'horse'] as const).filter((g) => g === 'grain' || g === 'iron' || goodOf(st, g) > 0).map((g) => goodStat(r, g, goodOf(st, g))).join('')}`
       + `<span class="stat" data-tip="군사 — 우리 군대를 다 합친 사람 수">${icon('unit-spear')}<b>${men}</b></span>`
       + `<button class="stat nat" data-act="tab" data-tab="nation">${bust(r.heroes[r.factions[me()]?.ruler ?? rulerId(me())], 'tface')}${emblem(me())}<b>${esc(nation?.name ?? '')}</b></button></div>`
@@ -1467,7 +1468,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 길의 선은 지도의 것(mapview.roadSvg) 그대로 그려 보인다.
    */
   function roadKeyHtml(): string {
-    let h = `<button data-act="roadkey">${roadOpen ? '길 보기 ✕' : '길 보기'}</button>`
+    let h = `<button data-act="roadkey" aria-label="길 보기">${roadOpen ? '✕' : '?'}</button>`
     if (!roadOpen) return h
     const road = (k: EdgeKind): string => `<svg width="54" height="16" viewBox="0 0 54 16">${roadSvg('M7 8H47', k, 0.85)}</svg>`
     const line = (attrs: string): string => `<svg width="54" height="14" viewBox="0 0 54 14"><path d="M4 7H50" fill="none" ${attrs.replace(/stroke-width="(\d+)"/, (_, w: string) => `stroke-width="${Math.max(3, Number(w) * 0.7)}"`)}/></svg>`

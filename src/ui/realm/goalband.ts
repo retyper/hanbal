@@ -68,7 +68,7 @@ export const GOAL_CSS = `
 .ap .goalb .gcontest.done { cursor: default; animation: none; box-shadow: none; border-color: #8a7050; background: #2a1d10; } .ap .goalb .gcontest.done.won { border-color: #9fd18b; color: #d8ffc8; }
 @keyframes gcpulse { to { box-shadow: 0 0 22px #ffd27acc; } }
 @media (prefers-reduced-motion: reduce) { .ap .goalb .gcontest { animation: none; } }
-.ap .goalb { position: absolute; left: 12px; top: calc(var(--toph) + var(--legh) + 50px); z-index: 5; max-width: min(260px, 60vw);
+.ap .goalb { position: absolute; left: 12px; top: calc(var(--toph) + var(--legh) + 8px); z-index: 5; max-width: min(260px, 60vw);
   border: 10px solid transparent; border-image: url(__ART__ui/card.png?v=1) 24 fill / 10px stretch; padding: 0 4px 2px; filter: drop-shadow(0 4px 10px #000a); }
 .ap .goalb:empty { display: none; }
 /* 낱말 가운데서 끊지 않는다 (형 10-23: "목표 부분에 줄바꿈 제대로 안 돼서 텍스트가 이상하게 줄바꿈") */

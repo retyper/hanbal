@@ -29,7 +29,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .top { position: absolute; left: 0; right: 0; top: 0; height: var(--toph); padding: env(safe-area-inset-top) 10px 0; box-sizing: border-box;
   display: flex; align-items: center; justify-content: space-between; gap: 8px; z-index: 5;
   background: linear-gradient(#120d09f0, #120d09c0); border-bottom: 1px solid #3a2c1e; }
-.ap .top .tl { display: flex; align-items: center; gap: 6px; font-size: 16px; white-space: nowrap; }
+.ap .top .tl { display: flex; align-items: center; gap: 6px; font-size: 16px; white-space: nowrap; border: 0; padding: 0; background: none; color: inherit; font-family: inherit; cursor: pointer; }
+.ap .top .tl .tlx { font-style: normal; font-size: 12px; opacity: .8; }
 .ap .top img.sic { width: 30px; height: 30px; }
 .ap .top .tr { display: flex; align-items: center; gap: 10px; overflow: hidden; }
 .ap .top .stat { display: flex; align-items: center; gap: 2px; font-size: 15px; white-space: nowrap; }
