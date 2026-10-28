@@ -576,7 +576,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 배경 음악 · 계절 바람 — 싸움 창이 열려 있으면 싸움 음악 */
   const music = makeMusic(BASE, muted, () => root.querySelector('.nightov') !== null) // 밤 판이 떠 있으면 조용히 — 밤 판은 제 소리를 낸다
   let warOn = false
-  root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="seasonp" aria-hidden="true">${seasonParticles()}</div><div class="legend"></div><div class="zbtns"><button data-act="layers" class="lyb" aria-label="보기">👁</button><button data-act="zin">＋</button><button data-act="zout">－</button></div><div class="layers"></div><button class="next" data-act="next"></button><div class="todo"></div><div class="selbar"></div><div class="roadkey"></div><button class="homebtn" data-act="home">우리 땅</button><button class="logbtn" data-act="log-open">지난 기록</button><div class="tutband"></div><div class="goalb"></div>`
+  root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="seasonp" aria-hidden="true">${seasonParticles()}</div><div class="legend"></div><div class="zbtns"><button data-act="layers" class="lyb" aria-label="보기">👁</button><button data-act="zin">＋</button><button data-act="zout">－</button></div><div class="layers"></div><button class="next" data-act="next"></button><div class="todo"></div><div class="selbar"></div><div class="roadkey"></div><button class="logbtn" data-act="log-open">지난 기록</button><div class="tutband"></div><div class="goalb"></div>`
     + `<nav class="tabs"></nav><div class="back" data-act="close"></div><section class="sheet"></section><div class="modal"></div><div class="plbox"></div>`
   const $ = (sel: string): HTMLElement => root.querySelector<HTMLElement>(sel)!
   const zoom = attachZoom($('.mapwrap'))
@@ -1154,15 +1154,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   /** 승리 조건 넷이 얼마나 찼나 (0~1) — 우리 쪽 · 판의 길 판(pathsHtml)과 같은 셈 */
-  function pathShares(r: Realm): Array<[string, number]> {
+  function pathShares(r: Realm, f: string = me()): Array<[string, number]> {
     if (r.region === 'tutorial' || r.scenario !== undefined) return []
     const need = winNeed(r.region ?? 'byeonhan-mini')
-    const held = Object.values(r.factions).filter((x) => r.nodes[x.capital]?.owner === me()).length
-    const pact = pactOf(r, me())
-    const streak = r.suzerain?.[me()]?.streak ?? 0
+    const held = Object.values(r.factions).filter((x) => r.nodes[x.capital]?.owner === f).length
+    const pact = pactOf(r, f)
+    const streak = r.suzerain?.[f]?.streak ?? 0
     const S = Math.max(1, P.realm.suzerainSeasons)
-    const io = ironOf(r, me())
-    const ri = riteOf(r, me())
+    const io = ironOf(r, f)
+    const ri = riteOf(r, f)
     const cl = (x: number): number => Math.max(0, Math.min(1, x))
     return [
       ['정복', cl(held / Math.max(1, need))],
@@ -1637,11 +1637,33 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return `${josa(place, '을', '를')} 지키러 오는 중 · ${arriveWhen(r.season, eta)} · ${till}`
   }
 
-  /** 깃발 줄 — 나라마다 깃발과 땅 수 (땅의 주인은 누구나 안다). 누르면 그 나라 땅만 또렷하다 */
+  /** 그 나라가 이기는 데 얼마나 다가섰나 (0~1) — 승리 길 넷 가운데 가장 찬 것 · 장 판·배우는 판은 도읍 차지로 */
+  function winShare(r: Realm, f: string): number {
+    const ps = pathShares(r, f)
+    if (ps.length > 0) return Math.max(...ps.map(([, v]) => v))
+    const held = Object.values(r.factions).filter((x) => r.nodes[x.capital]?.owner === f).length
+    return Math.max(0, Math.min(1, held / Math.max(1, winNeed(r.region ?? 'byeonhan-mini'))))
+  }
+
+  /**
+   * 깃발 줄 — 맨 왼쪽이 우리 나라(누르면 우리 땅으로 · 따로 있던 「우리 땅」 단추를 대신한다).
+   * 그 오른쪽은 우리와 친하고 강한 나라일수록 가까이 (형 10-28: "나와 서로 친하면서 강할수록 우리랑 가까이 붙이고") ·
+   * 칩 밑의 금빛 막대는 그 나라가 이기는 데 얼마나 다가섰나 (승리 길 가운데 가장 찬 것)
+   */
   function legendHtml(r: Realm): string {
     const count = (f: string): number => Object.values(r.nodes).filter((n) => n.owner === f).length
     // 아는 나라만 (삼한 남부 판의 발견 — 모르는 나라는 깃발 줄에도 없다)
-    const fs = sorted(Object.values(r.factions)).filter((f) => knows(r, me(), f.id)).map((f) => ({ f, n: count(f.id) })).sort((a, b) => b.n - a.n)
+    const known = sorted(Object.values(r.factions)).filter((f) => knows(r, me(), f.id)).map((f) => ({ f, n: count(f.id) }))
+    const top = Math.max(1, ...known.map((x) => x.n))
+    const near = (id: string, n: number): number => {
+      if (id === me()) return 99
+      if (n === 0) return -99
+      const rel = relationOf(r, me(), id).state
+      const base = rel === 'ally' ? 0.85 : rel === 'truce' ? 0.65 : rel === 'war' ? 0.05 : 0.45
+      const fr = Math.max(0, Math.min(1, base + favorOf(r, me(), id) / 400))
+      return fr * (0.4 + (0.6 * n) / top)
+    }
+    const fs = known.sort((a, b) => near(b.f.id, b.n) - near(a.f.id, a.n))
     let h = ''
     for (const { f, n } of fs) {
       const kit = nationKit(f.id)
@@ -1651,7 +1673,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const cls = `${focus === f.id ? ' on' : ''}${f.id === me() ? ' me' : ''}${n === 0 ? ' gone' : ''}${atWar ? ' war' : rel === 'ally' ? ' ally' : rel === 'truce' ? ' truce' : ''}`
       // 남의 나라는 군장 얼굴(탈)을 함께 — 깃발 줄만 봐도 누가 우리를 어떻게 보는지 (mood.ts)
       const mood = f.id !== me() && n > 0 ? moodImg(ART, moodOf(r, me(), f.id).mood, 'mood sm') : ''
-      h += `<button class="lg${cls}" data-act="focus" data-id="${f.id}" style="--c:${kit.c};--c2:${kit.c2}"${atWar ? ` title="${esc(josa(f.name, '과', '와'))} 싸우는 중"` : ''}>${atWar ? '<i class="lgwar">⚔</i>' : rel === 'ally' ? '<i class="lgally">동맹</i>' : ''}${emblem(f.id, 'lem')}<b>${n}</b><span>${esc(f.name)}</span>${mood}</button>`
+      const ws = n > 0 ? winShare(r, f.id) : 0
+      const act = f.id === me() ? 'data-act="home"' : `data-act="focus" data-id="${f.id}"`
+      h += `<button class="lg${cls}" ${act} style="--c:${kit.c};--c2:${kit.c2}"${atWar ? ` title="${esc(josa(f.name, '과', '와'))} 싸우는 중"` : ''}>${atWar ? '<i class="lgwar">⚔</i>' : rel === 'ally' ? '<i class="lgally">동맹</i>' : ''}${emblem(f.id, 'lem')}<b>${n}</b><span>${esc(f.name)}</span>${mood}${ws > 0.02 ? `<i class="lgwin" style="width:${Math.round(ws * 100)}%"></i>` : ''}</button>`
     }
     return h
   }
@@ -4474,15 +4498,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   // ───────── 판 바깥 — 첫 화면 · 판 고르기 · 나라 고르기 (front.ts)
   function frontHtml(f: Front): string {
     // 활터·연습장·소리 출처·시험·기록·로그인은 「더 보기」 안에 접는다 — 늘어놓았더니 폰에서 화면 밑으로 넘쳤다 (형 10-28)
-    const links = `<details class="fmore"${fmoreOpen ? ' open' : ''}><summary class="btn ghost">더 보기</summary>${f.kind === 'title' ? acctLine() : ''}<p class="fine"><a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a> ${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
+    const links = `<details class="fmore"${fmoreOpen ? ' open' : ''}><summary class="btn ghost">더 보기</summary><button class="fmbg" data-act="fmore-x" aria-label="닫기"></button><div class="fmpan"><b class="fmh">더 보기</b>${f.kind === 'title' ? acctLine() : ''}<p class="fine"><a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a> ${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
       // 소리의 출처 — 공공누리 제1유형·CC BY 는 출처를 밝혀야 쓸 수 있다 (형 10-23: "출처표기해야 상업적으로 사용가능하니까 주의")
       + ` <a class="btn ghost" href="${BASE}realm/credits.html">소리 출처</a>`
       // 새 전투 시험 (BATTLE-LIVE 0번) — 이 기기에서만 켜진다 · 형과 지인이 켜고 꺼 보며 견준다 (형 10-28)
       + ` <button class="btn ghost${b0On() ? ' on' : ''}" data-act="b0-toggle" data-tip="켜면 싸움에서 손가락이 깃발을 가리키고, 고른 깃발이 크게 뜨고, 숫자 표는 「자세히」 안으로 들어갑니다">새 전투 시험 · ${b0On() ? '켜짐' : '꺼짐'}</button>`
       // 판 기록 — 판 밖(첫 화면 · 끝 화면)에서도 받는다. 아래 「나라」 탭은 판 안에서만 보여 찾기 어려웠다 (형 10-26: "나라 탭이 어딨음??")
-      + (host.gameCount() > 0 ? ` <button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>` : '') + `</p></details>`
-      // 문명처럼 첫 화면 밑에 작게 — 공식 고지문 말투로 (형 10-27: "꾸민 이야기입니다? 큰 단체의 공식적인 말투에 이런 표현 안 써") (형 10-27: "이 게임은 실제 역사랑 상관없다는 주의 문구")
-      + `<p class="fine histnote">본 게임은 역사 기록을 바탕으로 재구성한 창작물로, 등장하는 인물·국가·사건은 실제 역사와 다를 수 있습니다.</p>`
+      + (host.gameCount() > 0 ? ` <button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>` : '') + `</p><button class="btn fmx" data-act="fmore-x">닫기</button></div></details>`
     switch (f.kind) {
       case 'title': {
         // 영웅전(도감) — 판을 넘어 남는 것 (VISION §5-4)
@@ -5499,6 +5521,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'help': openSheet({ kind: 'help' }); return
       case 'export': host.onExport(); return
+      case 'fmore-x': fmoreOpen = false; root.querySelector<HTMLDetailsElement>('.fmore')?.removeAttribute('open'); return
       case 'b0-toggle': fmoreOpen = true; try { localStorage.setItem(B0_KEY, b0On() ? '0' : '1') } catch { /* 저장이 막히면 못 켠다 */ } paint(); return
       case 'acct-in': host.cloud?.signIn(); return
       case 'acct-out': host.cloud?.signOut(); acctArmed = false; paint(); return

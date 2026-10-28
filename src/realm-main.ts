@@ -349,7 +349,7 @@ const root = document.getElementById('realm')!
  * 스플래시를 걷는다 — 글꼴과 첫 화면 그림을 다 받았을 때 (늦어도 SPLASH_MAX_MS). 너무 빨리 걷히면 번쩍이므로 SPLASH_MIN_MS 는 보인다
  * (realm.html #splash · 형 10-23: "이미지 로딩되는 게 고스란히 보이는데")
  */
-const SPLASH_MIN_MS = 1300
+const SPLASH_MIN_MS = 2600 // 형 10-28: 조금 더 길게 — 고지문도 읽히게
 const SPLASH_MAX_MS = 6000
 function hideSplashWhenReady(): void {
   const el = document.getElementById('splash')

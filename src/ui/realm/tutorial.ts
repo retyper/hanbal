@@ -52,8 +52,8 @@ const fought = (c: TutCtx): boolean => haveFoe(c) || (c.report?.lines.some((l) =
 
 export const TUT_STEPS: readonly TutStep[] = [
   {
-    id: 'look', name: '우리 땅', what: '금빛 테두리 안이 우리 나라입니다', text: '여기가 우리 백제입니다. 금빛 테두리 안이 우리 땅입니다. 빛나는 「우리 땅」을 눌러 보세요.',
-    press: ['.homebtn'], done: (c) => c.acts.has('home'),
+    id: 'look', name: '우리 땅', what: '금빛 테두리 안이 우리 나라입니다', text: '여기가 우리 백제입니다. 금빛 테두리 안이 우리 땅입니다. 맨 위 왼쪽에서 빛나는 우리 깃발을 눌러 보세요.',
+    press: ['.legend .lg.me'], done: (c) => c.acts.has('home'),
   },
   {
     id: 'draft', name: '징병', what: '마을 장정을 뽑아 군사로 만듭니다', text: '「징병」을 열고 군사를 뽑으세요. 집집에서 사내를 뽑아 군대를 키웁니다.',

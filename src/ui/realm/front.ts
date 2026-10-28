@@ -614,8 +614,17 @@ export const FRONT_CSS = `
 .ap .front .fbtns { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: auto; }
 .ap .front.title .fine { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 22px 16px 0; }
 .ap .front .fmore { text-align: center; margin: 14px 0 0; } .ap .front .fmore > summary { list-style: none; display: inline-flex; cursor: pointer; font-size: 13px; }
-.ap .front .fmore > summary::-webkit-details-marker { display: none; } .ap .front .fmore > summary::after { content: ' ▾'; } .ap .front .fmore[open] > summary::after { content: ' ▴'; }
-.ap .front .fmore .fine { margin-top: 10px; }
+.ap .front .fmore > summary::-webkit-details-marker { display: none; }
+/* 「더 보기」는 첫 화면 위에 뜨는 판으로 — 아래로 펼쳤더니 폰에서 화면 밖으로 넘쳤다 (형 10-28: "시작 화면에 스크롤 쓰지 않은 건 잘했는데") */
+.ap .front .fmore .fmbg { position: fixed; inset: 0; z-index: 40; border: 0; padding: 0; background: #000b; cursor: default; }
+.ap .front .fmore .fmpan { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 41; width: min(84vw, 420px); max-height: 86vh; overflow-y: auto; box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 16px 16px; border-radius: 16px; border: 1px solid #c9a45a; background: #1f1710f8; box-shadow: 0 10px 40px #000c; }
+.ap .front .fmore .fmh { color: var(--gold); font-size: 17px; }
+.ap .front .fmore .fmpan .fine { flex-direction: column; align-items: stretch; width: 100%; gap: 8px; margin: 0; }
+.ap .front .fmore .fmpan .fine .btn, .ap .front .fmore .fmpan .fmx { justify-content: center; width: 100%; box-sizing: border-box; }
+/* 첫 화면 단추는 모두 화면 폭의 3/5 로 같은 길이 (형 10-28) — 「더 보기」만 작게 */
+.ap .front.title .fbtns > .btn, .ap .front.title .fbtns > .cont { width: min(60vw, 560px); box-sizing: border-box; justify-content: center; }
+.ap .front.title .fbtns > .cont { justify-content: flex-start; }
 .ap .front .cont { display: flex; align-items: center; gap: 12px; width: min(420px, 92vw); padding: 10px 14px; border-radius: 16px; background: #1f1710ee; border: 1px solid #c9a45a; color: var(--ink); font: inherit; text-align: left; cursor: pointer; animation: glow 2.6s ease-in-out infinite alternate; }
 @keyframes glow { from { box-shadow: 0 0 0 #c9a45a00; } to { box-shadow: 0 0 22px #c9a45a55; } }
 .ap .front .cont .cface { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #c9a45a; }

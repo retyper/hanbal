@@ -52,11 +52,13 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
   align-items: center; gap: 4px; padding: 0 8px; overflow-x: auto; scrollbar-width: none; background: #120d09; border-bottom: 1px solid #3a2c1e; }
 .ap .legend::-webkit-scrollbar { display: none; } .ap .legend .lg { pointer-events: auto; flex: none; }
 .ap .lg { display: flex; align-items: center; gap: 4px; padding: 2px 8px 2px 7px; border-radius: 16px; border: 1px solid #0006;
-  background: linear-gradient(90deg, var(--c2, transparent) 0 4px, transparent 4px), color-mix(in srgb, var(--c) 30%, #17110ce0); color: #fff; font: inherit; font-size: 12px; cursor: pointer;
-  box-shadow: 0 2px 6px #0007; border-left: 5px solid var(--c); }
+  background: color-mix(in srgb, var(--c) 30%, #17110ce0); color: #fff; font: inherit; font-size: 12px; cursor: pointer;
+  box-shadow: inset 4px 0 0 var(--c2, transparent), 0 2px 6px #0007; border-left: 5px solid var(--c); position: relative; overflow: hidden; }
+/* 이기는 데 얼마나 다가섰나 — 칩 밑 금빛 막대 (형 10-28) · 그러데이션 대신 단색(갤럭시 크롬이 부드러운 그러데이션을 못 그린다) */
+.ap .lg .lgwin { position: absolute; left: 0; bottom: 0; height: 3px; background: #ffd27a; box-shadow: 0 0 4px #ffd27a; pointer-events: none; }
 .ap .lg img.lem { width: 22px; height: 22px; } .ap .lg b { font-size: 14px; min-width: 1em; }
 .ap .lg span { display: none; } .ap .lg.on span, .ap .lg.me span { display: inline; }
-.ap .lg.on { border-color: #fff; background: linear-gradient(90deg, var(--c2, transparent) 0 4px, transparent 4px), color-mix(in srgb, var(--c) 55%, #17110c); }
+.ap .lg.on { border-color: #fff; background: color-mix(in srgb, var(--c) 55%, #17110c); }
 .ap .lg.gone { opacity: .45; }
 /* 우리와 싸우는 나라 — 붉은 테 · 칼 · 이름도 늘 보인다 */
 .ap .lg.war { border: 2px solid #e0503a; box-shadow: 0 0 8px #e0503a99; position: relative; }
@@ -82,7 +84,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
   display: flex; background: #120d09; border-top: 1px solid #3a2c1e; z-index: 8; }
 .ap .tabs button { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; border: 0;
   background: none; color: var(--mute); font: inherit; font-size: 12px; cursor: pointer; }
-.ap .tabs button img.tic { width: 32px; height: 32px; opacity: .75; filter: grayscale(.4); }
+.ap .tabs button img.tic { width: 32px; height: 32px; opacity: .75; } /* filter 는 뺐다 — 갤럭시 크롬에서 아이콘이 통째로 사라졌다 (형 10-28) */
 .ap .tabs button.on { color: var(--gold); } .ap .tabs button.on img.tic { opacity: 1; filter: none; transform: translateY(-2px); }
 .ap .tabs button { position: relative; } .ap .tabs .dot { position: absolute; top: 5px; right: calc(50% - 22px); width: 10px; height: 10px; border-radius: 50%; background: #e0402a; box-shadow: 0 0 0 2px var(--bg, #14161a); }
 .ap .newb { display: inline-block; margin-top: 2px; padding: 1px 7px; border-radius: 9px; background: #3f8f3a; color: #fff; font-size: 11.5px; font-weight: 700; }
@@ -908,7 +910,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .todochip { padding: 8px 14px; border-radius: 999px; border: 1px solid #e0b860; background: #2a1f10f0; color: #ffe6b0; font: inherit; font-size: 13.5px; font-weight: 700; text-align: left; cursor: pointer; box-shadow: 0 4px 14px #000a; animation: todoglow 1.6s ease-in-out infinite alternate; }
 @keyframes todoglow { to { box-shadow: 0 0 16px #ffd27a99; } }
 /* 잠긴 탭 · 새로 열린 탭 */
-.ap .tabs button.locked { opacity: .38; filter: grayscale(1); cursor: default; }
+.ap .tabs button.locked { opacity: .38; cursor: default; }
 .ap .tabs button.fresh { animation: tabfresh 1s ease-in-out 4 alternate; } @keyframes tabfresh { to { box-shadow: 0 0 18px #ffd27a; background: #4a3a18; } }
 .ap .tabtoast { position: absolute; left: 50%; bottom: calc(76px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 60; display: flex; flex-direction: column; gap: 2px; max-width: min(92vw, 440px);
   padding: 9px 14px; border-radius: 12px; background: #2a1f10f2; border: 1px solid #e0b860; box-shadow: 0 6px 20px #000a; cursor: pointer; animation: updin .35s ease-out both; }
