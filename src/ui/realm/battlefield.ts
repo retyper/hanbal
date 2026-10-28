@@ -1726,10 +1726,14 @@ export const WAR_CSS = `
 .ap .wbar .brk { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; background: #ff3b2b; box-shadow: 0 0 5px #ff3b2b; z-index: 2; cursor: help; overflow: visible; }
 /* 해골 — 금 위에 · 금 밑 구역은 붉은 빗금(패배가 정해지는 곳) */
 .ap .wbar .brk::after { content: ''; position: absolute; left: 50%; top: -11px; width: 20px; height: 20px; translate: -50% 0; border-radius: 50%;
-  background: url(__ART__icon/war-skull.png) center / 82% no-repeat, radial-gradient(#2a0c08 55%, #2a0c0800 72%); filter: drop-shadow(0 0 2px #000) drop-shadow(0 0 3px #ff3b2b88); }
+  background: #2a0c08 url(__ART__icon/war-skull.png) center / 82% no-repeat; filter: drop-shadow(0 0 2px #000) drop-shadow(0 0 3px #ff3b2b88); } /* 둥근 그러데이션 대신 단색 동그라미 — 갤럭시 크롬이 못 그렸다 (10-28) */
 .ap .wbar .brk.near::after { animation: wskull .7s ease-in-out infinite alternate; } @keyframes wskull { to { scale: 1.35; filter: drop-shadow(0 0 2px #000) drop-shadow(0 0 8px #ff3b2b); } }
 .ap .wbar .wdz { position: absolute; left: 0; top: 0; bottom: 0; z-index: 1; pointer-events: none; text-decoration: none;
-  background: repeating-linear-gradient(135deg, #3a0a06b0 0 3px, #ff3b2b55 3px 6px); border-radius: 6px 0 0 6px; }
+  background: #b8221866; box-shadow: inset -2px 0 0 #ff3b2b, inset 0 0 6px #ff3b2b88; border-radius: 6px 0 0 6px; } /* 비스듬한 빗금 무늬 대신 단색 붉은 구역 — 형 폰에서 안 보였다 (10-28) */
+/* 막대가 무너지는 금에 가까우면 붉은 구역이 깜박 — 「여기로 떨어지면 진다」 (형 10-28: 그 빨간 연출을 다시) */
+.ap .wbar:has(.brk.near) .wdz { animation: wdzwarn .55s ease-in-out infinite alternate; }
+@keyframes wdzwarn { from { background-color: #b8221866; } to { background-color: #ff3b2bcc; } }
+@media (prefers-reduced-motion: reduce) { .ap .wbar:has(.brk.near) .wdz { animation: none; background-color: #ff3b2b99; } }
 .ap .wbar:has(.brk) { overflow: visible; } /* 해골이 막대 밖으로 나오게 (채움 i 는 제 둥근 테 안에서 잘린다) */
 @media (prefers-reduced-motion: reduce) { .ap .wbar .brk.near::after { animation: none; } }
 /* 전장 띠 — 병졸 말 */
