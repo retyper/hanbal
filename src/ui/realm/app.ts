@@ -4109,8 +4109,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const badge = r.outcome?.kind === 'win' && (r.region ?? 'byeonhan-mini') !== 'tutorial'
         ? `<p class="tierup">${esc(josa(r.factions[me()]?.name ?? '', '으로', '로'))} 이긴 <b>휘장</b>을 받았다 — 나라 고르기에 붙는다</p>` : ''
       // 배우는 판은 세기·무덤·단련·데려가기를 말하지 않는다 — 처음 하는 사람에게 아직 없는 것들이다 (형 10-27: "튜토리얼에 아직도 장수 데려가기가 남아 있는 듯")
-      if ((r.region ?? 'byeonhan-mini') === 'tutorial') return endingHtml(KIT, r, host.history(), `<p class="retainnote"><button class="btn ghost sm" data-act="export">기록 내보내기</button></p>`)
-      return endingHtml(KIT, r, host.history(), opened + badge + tombStripHtml(RELIC_KIT, r) + drillStrip(r) +`<p class="mute retainnote">우리 장수로 부린 이는 영웅전에 남는다 — 다음 판을 열 때 영웅전에서 골라 데려간다.</p><p class="retainnote"><button class="btn ghost sm" data-act="export">기록 내보내기</button></p>`)
+      if ((r.region ?? 'byeonhan-mini') === 'tutorial') return endingHtml(KIT, r, host.history(), '', `<p class="retainnote"><button class="btn ghost sm" data-act="export">기록 내보내기</button></p>`)
+      return endingHtml(KIT, r, host.history(), opened + badge + tombStripHtml(RELIC_KIT, r) + drillStrip(r), `<p class="mute retainnote">우리 장수로 부린 이는 영웅전에 남습니다 — 다음 판을 열 때 영웅전에서 골라 데려갈 수 있습니다.</p><p class="retainnote"><button class="btn ghost sm" data-act="export">기록 내보내기</button></p>`)
     }
     if (!showReport || before === null || report === null) return ''
     const season = seasonOf(r.season)

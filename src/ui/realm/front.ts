@@ -438,7 +438,7 @@ const FILM = (k: FrontKit, name: string): string => `${k.art}film/${name}.jpg`
  * 화면 전체를 덮고, 마지막 장에서 「승리」가 쾅 박히며 불티가 튄다 (형 10-23: "창이 화면 전체로 · 승리면 승리라고 제대로").
  * 다 돌고 나면 ‹ › 로 지나간 장면을 다시 넘겨 본다 (형: "방금 지나간 역사 슬라이드들도 버튼 눌러서 샥샥").
  */
-export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): string {
+export function endingHtml(k: FrontKit, r: Realm, history: History, keep = '', foot = ''): string {
   const win = r.outcome?.kind === 'win'
   const all = r.unified !== undefined
   const region = r.region ?? 'byeonhan-mini'
@@ -536,17 +536,21 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = ''): 
   if (tt !== null) h += `<div class="seal${win ? '' : ' lost'}"><b>${k.esc(tt.name)}</b><span>${k.esc(tt.line)}</span></div>`
   h += `<div class="stats"><span><b>${years}</b>해</span><span><b>${capsHeld(r, me)}</b>도읍</span><span><b>${won}</b>이긴 싸움</span><span><b>${lost}</b>진 싸움</span>`
   h += `${r.known !== undefined ? `<span><b>${found}</b>새로 안 나라</span>` : ''}<span><b>${heroes}</b>얻은 장수</span></div>`
-  if (pickd.length > 0) h += `<div class="chron"><h4>연대기</h4>${pickd.map((e) => `<p class="${e.big ? 'big' : ''}"><i>${k.esc(seasonLabel(e.s))}</i>${k.esc(e.t)}</p>`).join('')}</div>`
+  // 얻은 것(세기·휘장·무덤·단련) 먼저, 연대기는 접어서 — 늘어놓았더니 난잡했다 (형 10-28: "결과 보는 부분이랑 그 아래 버튼들이 정리가 안 돼 있음")
+  if (keep !== '') h += `<div class="gains">${keep}</div>`
+  if (pickd.length > 0) h += `<details class="chron"><summary>연대기 <small>${pickd.length}</small></summary>${pickd.map((e) => `<p class="${e.big ? 'big' : ''}"><i>${k.esc(seasonLabel(e.s))}</i>${k.esc(e.t)}</p>`).join('')}</details>`
   // 이야기 장을 이겼다 — 사서의 한 줄과 다음 장으로 가는 단추 (점검 10-25: 다음 장은 새 게임 → 판 고르기로만 갔다)
   const ch = chapterOfRegion(region)
   const nextCh = win && ch !== undefined ? CHAPTERS.find((c) => c.n === ch.n + 1 && c.region !== null) : undefined
   if (win && ch !== undefined) h += `<blockquote class="srcline">${k.esc(ch.source)}</blockquote>`
-  h += `${keep}<div class="btns">`
+  // 단추 — 큰 것(다음 장 · 새 게임) 한 줄씩, 작은 것은 두 칸씩 · 기록 내보내기 같은 것은 맨 밑에 작게
+  h += `<div class="btns endbtns"><div class="ebmain">`
   if (nextCh !== undefined) h += `<button class="btn pri nextch" data-act="fr-board" data-v="${nextCh.region}">다음 장 — ${nextCh.n}장 ${k.esc(nextCh.name)} ›</button>`
   // 새 게임이 맨 앞 — 무한 모드는 하고 싶은 사람만 고르는 곁길 (형 10-24: "무한모드를 1번 선택하게 되면 안 돼")
-  h += `<button class="btn${nextCh !== undefined ? '' : ' pri'}" data-act="fr-new">새 게임</button><button class="btn" data-act="fr-again">${k.esc(josa(name(me), "으로", "로"))} 다시</button>`
-  if (win && !all) h += `<button class="btn" data-act="fr-endless">계속하기 (무한 모드)<small>남은 나라까지 이어서 한다</small></button>`
-  return h + `<button class="btn ghost" data-act="fr-look">지도 둘러보기</button></div></div></div>`
+  h += `<button class="btn${nextCh !== undefined ? '' : ' pri'}" data-act="fr-new">새 게임</button></div><div class="ebsub">`
+  h += `<button class="btn" data-act="fr-again">${k.esc(josa(name(me), "으로", "로"))} 다시</button><button class="btn" data-act="fr-look">지도 둘러보기</button>`
+  if (win && !all) h += `<button class="btn wide2" data-act="fr-endless">계속하기 (무한 모드)<small>남은 나라까지 이어서 합니다</small></button>`
+  return h + `</div></div>${foot !== '' ? `<div class="efoot">${foot}</div>` : ''}</div></div>`
 }
 
 export const FRONT_CSS = `
@@ -759,7 +763,16 @@ export const FRONT_CSS = `
 .ap .front-end .stats { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 8px 0; }
 .ap .front-end .stats span { min-width: 64px; padding: 6px 8px; border-radius: 10px; background: #ffffff0d; text-align: center; font-size: 12px; color: #a89c84; }
 .ap .front-end .stats b { display: block; font-size: 20px; color: var(--gold); }
-.ap .front-end .chron { text-align: left; margin: 8px 0; } .ap .front-end .chron h4 { margin: 4px 0; color: var(--gold); }
+.ap .front-end .chron { text-align: left; margin: 10px 0; padding: 6px 12px; border-radius: 12px; background: #ffffff08; }
+.ap .front-end .chron > summary { cursor: pointer; color: var(--gold); font-weight: 700; padding: 4px 0; } .ap .front-end .chron > summary small { color: var(--mute); font-weight: 500; }
+.ap .front-end .gains { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
+.ap .front-end .gains > * { margin: 0; }
+.ap .front-end .endbtns { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.ap .front-end .endbtns .ebmain { display: grid; gap: 8px; } .ap .front-end .endbtns .ebmain .btn { width: 100%; justify-content: center; font-size: 16px; padding-top: 6px; padding-bottom: 6px; }
+.ap .front-end .endbtns .ebsub { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; } .ap .front-end .endbtns .ebsub .btn { width: 100%; justify-content: center; flex-direction: column; font-size: 13.5px; }
+.ap .front-end .endbtns .ebsub .wide2 { grid-column: 1 / -1; }
+.ap .front-end .efoot { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 10px; margin-top: 14px; }
+.ap .front-end .efoot .retainnote { margin: 0; font-size: 11.5px; text-align: center; }
 /* 끝 화면 필름 — 검은 바탕에 한 장씩 떠올랐다 사라진다. 한 장 --film 초 (형: "너무빨라서 읽을수가 없음") */
 /* 판 끝은 화면 전체 — 카드가 아니다 (형 10-23: "창이 화면 전체로 되어야 하는데 지금은 카드 팝업같이") */
 .ap .modal:has(.front-end) { padding: 0; background: #000; }
