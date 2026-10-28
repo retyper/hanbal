@@ -8,14 +8,14 @@
 |---|---|---|
 | YunCheol (edu · 'YunCheol Shin') | 10-29 AM 2:53 (문구 그대로) | 10-28 03:25 한도 문구 — 02:50 부터 스물다섯 장 (사건 그림 · 한 장은 거절: bow-forge) |
 | retyper92 (계정 고르기에 'YunCheol Shin · retyper92@gmail' 로 뜬다) | 10-29 PM 3:24 (문구 그대로) | 10-28 15:35 한도 문구 — 15:20 부터 네 장 (사건 expedition-return · goguryeo-hunt · golden-egg · iron-trade) |
-| roqkfeke12 ('윤철 신') | 10-28 PM 6:30 쯤 (문구: 2시간 뒤) | 10-28 16:33 한도 문구 — 장도 안 받고 막힘(어제 18:12 열 장의 여파) |
+| roqkfeke12 ('윤철 신') | 아직 열림 (10-28 19:03 까지 아홉 장) | 10-28 18:40 부터 사건 아홉 장 (night-raid … bow-forge) — 한도 문구 아직 없음 |
 | retyper (hephaestosian · 'retyper') | 10-28 PM 10:17 (문구 그대로) | 10-28 02:47 한도 문구 — 10-27 22:16 부터 열 장 (명치판 아홉 + 사건 invade-raid) |
 
 
 **★ 2026-10-28 형: "제미나이로 만든 이벤트 화면들도 다 챗지피티로 · 제미나이로 퀄리티 있는 거 뽑아내기 너무 어렵다"** — 사건 그림 서른아홉 (챗지피티 사람 그림만 규칙을 이걸로 넓힌다). 주문서 = public/_tmp/events39.json (head + 장면 + 16:9 자리면 wide + tail · _queue 순서). 한 장마다 새 대화 · 처음 여덟 장은 옛 그림·그림결 그림을 붙였으나 글만으로도 결이 같아 그 뒤로는 글만 보낸다(형 10-28: 크레딧 아껴) — 장면 글은 scratchpad evprompts.json 꼴 · 챗지피티 페이지에서 127.0.0.1 fetch 는 이제 막힌다 · 받기는 a.download → ~/Downloads/gptev-<이름>.png → scratchpad bakeev.py (16:9 자리는 1600×900, 나머지 1152×768 · cut/ 에도 넣는다).
    10-28 새벽 스물여섯 장 바꿈(hephaestosian 하나 · edu 스물다섯): invade-raid · invade-siege · invade-field · take-town · captured-ours · capture · plot-assassin · plot-bribe · plot-burn · plot-rescue · plot-rumor · plot-sow · plot-spy · truce-pact · tribute-bow · court-hall · festival · flood · plague · dream · newborn · alliance-oath · defection · divination · egg-birth · eight-harbours
    10-28 오후 넷 더(retyper92): expedition-return · goguryeo-hunt · golden-egg · iron-trade
-   남은 아홉(위 줄에서 넷 뺌): bow-forge(10-28 거절 — 활 만들기를 무기 제작으로 본 듯 · 다 만든 활을 건네는 장면으로 바꿔 다시) · expedition-return · goguryeo-hunt · golden-egg · iron-trade · night-raid · outside-envoy · palisade-build · people-quarrel · salt-makers(옛 판에 지는 해 동그라미) · sniped-commander · spy-rumor · yeonggo
+   ✔ 10-28 저녁 나머지 아홉(roqkfeke12): night-raid · outside-envoy · palisade-build · people-quarrel · salt-makers · sniped-commander · spy-rumor · yeonggo · bow-forge(다 만든 활을 건네는 장면으로 바꿔 통과) — **사건 그림 서른아홉 끝** (19b8e75)
    ★10-28 명치판 — 형이 다시 그리라고 준 목록 (사건 그림 열셋 다음 · 한 사람마다 새 대화 · 민무늬 #1c2129 판): g-31-buyeo-geumha · g-33-jeoga-metdol · g-37-eumjeup-jeup · g-39-guya-soebo · g-40-anya-adan · g-72-gyeonji-soeul · l-L5-seonyeo · l-L6-jeonggyeon-moju · l-L8-nangnang-princess · l-L9-ungnyeo · l-L10-pyeonggang · w-07-shaman-queen · w-08-mahan-warrior · w-09-byeonhan-smith · w-11-assassin · w-12-court-dancer · w-14-feast-spy · w-16-clan-matriarch · w-47-gosaburi-baram · w-48-mujin-mudeung · w-49-goryong-gureum · w-51-haseulla-dangung · w-52-biryuna-songbi · w-53-hwanna-gabi · w-55-guga-nuri · w-56-dongokjeo-sogeum · w-79-yangmaek-solmae
    그다음(형: "퀄리티 떨어져 보이는 것 계속 수정"): 세로 화면 event-v(태몽·탄생) · 제미나이로 받은 여인 명치판 w-29~45·w-79·w-80 · 계절 띠 넷 · 싸움터 배경 battle-field
 
