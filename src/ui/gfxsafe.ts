@@ -8,7 +8,7 @@
  *
  * 그래서 켜질 때 캔버스에 그러데이션을 한 번 그려 읽어 보고, 고장 난 기기에서만:
  *  1. 모든 <style> 과 style="" 속의 linear/radial-gradient 를 잘게 끊은 계단 그러데이션으로 바꾸고
- *  2. filter 의 색 함수를 같은 셈의 SVG 필터(url(#gfx-n))로 바꾸고
+ *  2. filter 의 색 함수(brightness 따위)를 뺀다 (drop-shadow·blur 는 남김)
  *  3. 캔버스의 createLinearGradient/createRadialGradient 도 계단으로 바꾼다 (지도 조각을 잇는 가장자리 흐림이 이걸 쓴다).
  * 멀쩡한 기기는 아무것도 바꾸지 않는다. 손으로 켜고 끄기: 주소 ?gfxsafe=1|0 또는 localStorage hanbal.gfxsafe = '1'|'0'.
  */
@@ -159,92 +159,19 @@ function stepGradient(fn: 'linear' | 'radial', inner: string): string | null {
   return `${fn}-gradient(${prelude !== null ? `${prelude}, ` : ''}${bands.join(', ')})`
 }
 
-// ───────── filter 색 함수 → SVG feColorMatrix (Filter Effects 1 의 셈 그대로)
+// ───────── filter 색 함수는 뺀다
+// 처음엔 같은 셈의 SVG 필터(feColorMatrix · url(#…))로 바꿨는데, 형 폰에서 움직이는 병사 그림에 걸면 회색 네모가 됐다 (10-28 · 폰을 직접 열어 봄).
+// 그래서 색 함수는 빼고 drop-shadow·blur 만 남긴다 — 색이 조금 덜 바래 보일 뿐, 그림은 보인다
 
 const COLOR_FN = new Set(['brightness', 'contrast', 'grayscale', 'sepia', 'saturate', 'hue-rotate', 'opacity', 'invert'])
 
-function amountOf(fn: string, arg: string): number {
-  const a = arg.trim()
-  if (fn === 'hue-rotate') {
-    if (a === '') return 0
-    const v = parseFloat(a)
-    return a.endsWith('rad') ? (v * 180) / Math.PI : a.endsWith('turn') ? v * 360 : v
-  }
-  if (a === '') return 1
-  return a.endsWith('%') ? parseFloat(a) / 100 : parseFloat(a)
-}
-
-export function colorMatrix(fn: string, x: number): number[] {
-  const id = [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]
-  switch (fn) {
-    case 'brightness': return [x, 0, 0, 0, 0, 0, x, 0, 0, 0, 0, 0, x, 0, 0, 0, 0, 0, 1, 0]
-    case 'contrast': { const o = 0.5 - 0.5 * x; return [x, 0, 0, 0, o, 0, x, 0, 0, o, 0, 0, x, 0, o, 0, 0, 0, 1, 0] }
-    case 'invert': { const s = 1 - 2 * x; return [s, 0, 0, 0, x, 0, s, 0, 0, x, 0, 0, s, 0, x, 0, 0, 0, 1, 0] }
-    case 'opacity': return [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, x, 0]
-    case 'grayscale': {
-      const a = 1 - Math.min(1, x)
-      return [0.2126 + 0.7874 * a, 0.7152 - 0.7152 * a, 0.0722 - 0.0722 * a, 0, 0, 0.2126 - 0.2126 * a, 0.7152 + 0.2848 * a, 0.0722 - 0.0722 * a, 0, 0, 0.2126 - 0.2126 * a, 0.7152 - 0.7152 * a, 0.0722 + 0.9278 * a, 0, 0, 0, 0, 0, 1, 0]
-    }
-    case 'sepia': {
-      const a = 1 - Math.min(1, x)
-      return [0.393 + 0.607 * a, 0.769 - 0.769 * a, 0.189 - 0.189 * a, 0, 0, 0.349 - 0.349 * a, 0.686 + 0.314 * a, 0.168 - 0.168 * a, 0, 0, 0.272 - 0.272 * a, 0.534 - 0.534 * a, 0.131 + 0.869 * a, 0, 0, 0, 0, 0, 1, 0]
-    }
-    case 'saturate': return [0.213 + 0.787 * x, 0.715 - 0.715 * x, 0.072 - 0.072 * x, 0, 0, 0.213 - 0.213 * x, 0.715 + 0.285 * x, 0.072 - 0.072 * x, 0, 0, 0.213 - 0.213 * x, 0.715 - 0.715 * x, 0.072 + 0.928 * x, 0, 0, 0, 0, 0, 1, 0]
-    case 'hue-rotate': {
-      const r = (x * Math.PI) / 180
-      const c = Math.cos(r)
-      const s = Math.sin(r)
-      return [0.213 + c * 0.787 - s * 0.213, 0.715 - c * 0.715 - s * 0.715, 0.072 - c * 0.072 + s * 0.928, 0, 0,
-        0.213 - c * 0.213 + s * 0.143, 0.715 + c * 0.285 + s * 0.140, 0.072 - c * 0.072 - s * 0.283, 0, 0,
-        0.213 - c * 0.213 - s * 0.787, 0.715 - c * 0.715 + s * 0.715, 0.072 + c * 0.928 + s * 0.072, 0, 0, 0, 0, 0, 1, 0]
-    }
-  }
-  return id
-}
-
-/** 만든 SVG 필터들 — 같은 함수 글은 같은 id */
-const filterIds = new Map<string, string>()
-const pendingDefs: string[] = []
-let defsHost: SVGSVGElement | null = null
-
-function filterUrl(fn: string, arg: string): string {
-  const key = `${fn}(${arg.trim()})`
-  let id = filterIds.get(key)
-  if (id === undefined) {
-    id = `gfx-${filterIds.size + 1}`
-    filterIds.set(key, id)
-    const v = colorMatrix(fn, amountOf(fn, arg)).map((x) => +x.toFixed(4)).join(' ')
-    pendingDefs.push(`<filter id="${id}" color-interpolation-filters="sRGB" x="0" y="0" width="1" height="1"><feColorMatrix type="matrix" values="${v}"/></filter>`)
-    flushDefs()
-  }
-  return `url(#${id})`
-}
-
-function flushDefs(): void {
-  if (pendingDefs.length === 0 || typeof document === 'undefined' || document.body === null) return
-  if (defsHost === null) {
-    defsHost = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-    defsHost.setAttribute('width', '0')
-    defsHost.setAttribute('height', '0')
-    defsHost.setAttribute('aria-hidden', 'true')
-    defsHost.style.position = 'absolute'
-    document.body.appendChild(defsHost)
-  }
-  defsHost.insertAdjacentHTML('beforeend', pendingDefs.splice(0).join(''))
-}
-
 function fixFilterValue(v: string): string {
   if (v.includes('var(')) return v
-  const toks = splitTop(v.trim().replace(/\s*!important\s*$/, ''), ' ')
   const imp = /!important\s*$/.test(v) ? ' !important' : ''
-  let changed = false
-  const out = toks.map((t) => {
-    const m = /^([a-z-]+)\((.*)\)$/s.exec(t)
-    if (m === null || !COLOR_FN.has(m[1]!)) return t
-    changed = true
-    return filterUrl(m[1]!, m[2]!)
-  })
-  return changed ? ` ${out.join(' ')}${imp}` : v
+  const toks = splitTop(v.trim().replace(/\s*!important\s*$/, ''), ' ')
+  const out = toks.filter((t) => { const m = /^([a-z-]+)\(/.exec(t); return m === null || !COLOR_FN.has(m[1]!) })
+  if (out.length === toks.length) return v
+  return ` ${out.length > 0 ? out.join(' ') : 'none'}${imp}`
 }
 
 const cssCache = new Map<string, string>()
@@ -377,9 +304,6 @@ export function startGfxSafe(): void {
       if (m.target instanceof HTMLStyleElement) { fixStyleEl(m.target); continue }
       for (const n of m.addedNodes) fixTree(n)
     }
-    flushDefs()
   })
   mo.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['style'] })
-  if (document.body === null) document.addEventListener('DOMContentLoaded', flushDefs, { once: true })
-  else flushDefs()
 }

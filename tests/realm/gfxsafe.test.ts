@@ -1,8 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { colorMatrix, fixCss, parseColor } from '../../src/ui/gfxsafe.ts'
+import { fixCss, parseColor } from '../../src/ui/gfxsafe.ts'
 
-// 갤럭시(Xclipse) 크롬 피해 가기 — 부드러운 그러데이션은 계단으로, filter 색 함수는 SVG 필터로 (10-28)
+// 갤럭시(Xclipse) 크롬 피해 가기 — 부드러운 그러데이션은 계단으로, filter 색 함수는 뺀다 (10-28)
 
 test('색 읽기 — hex · rgba · transparent', () => {
   assert.deepEqual(parseColor('#fff'), [255, 255, 255, 1])
@@ -35,15 +35,10 @@ test('px 자리는 calc 로 나눈다', () => {
   assert.match(a, /calc\(0px \+ \(40px - 0px\) \* 0\.125\)/)
 })
 
-test('filter 색 함수 → url(#gfx-n) · drop-shadow·blur 는 그대로 · backdrop-filter 는 안 건드림', () => {
-  const a = fixCss('.b { filter: drop-shadow(0 0 4px #000) brightness(.8); transition: filter .1s; } .c { backdrop-filter: blur(3px) saturate(2); }')
-  assert.match(a, /filter: drop-shadow\(0 0 4px #000\) url\(#gfx-\d+\);/)
+test('filter 색 함수는 빼고 drop-shadow·blur 는 남긴다 · 다 빠지면 none · backdrop-filter 는 안 건드림', () => {
+  const a = fixCss('.b { filter: drop-shadow(0 0 4px #000) brightness(.8); transition: filter .1s; } .c { filter: grayscale(1) !important; } .d { backdrop-filter: blur(3px) saturate(2); }')
+  assert.match(a, /\.b \{ filter: drop-shadow\(0 0 4px #000\);/)
+  assert.match(a, /\.c \{ filter: none !important;/)
   assert.match(a, /backdrop-filter: blur\(3px\) saturate\(2\)/)
   assert.equal(fixCss(a), a)
-})
-
-test('색 행렬 — brightness·opacity 는 그대로의 셈', () => {
-  assert.deepEqual(colorMatrix('brightness', 0.5).slice(0, 5), [0.5, 0, 0, 0, 0])
-  assert.equal(colorMatrix('opacity', 0.3)[18], 0.3)
-  assert.ok(Math.abs(colorMatrix('saturate', 1)[0]! - 1) < 1e-9)
 })

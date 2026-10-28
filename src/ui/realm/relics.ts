@@ -283,7 +283,7 @@ export const RELIC_CSS = `
 .ap .rld b { font-size: 11px; color: #e8dcc0; text-align: center; line-height: 1.2; }
 .ap .rld i { position: absolute; top: 3px; right: 5px; font-style: normal; font-size: 10.5px; color: #ffd27a; }
 .ap .rld.t-rare { border-color: #6a8aa0; } .ap .rld.t-legend { border-color: #c9a23a; box-shadow: inset 0 0 12px #c9a23a33; }
-.ap .rld.none img { filter: brightness(0) opacity(.45); } .ap .rld.none b { color: #6a604e; font-size: 16px; }
+.ap .rld.none img { filter: brightness(0) opacity(.45); } html.gfxsafe .ap .rld.none img { opacity: .12; } .ap .rld.none b { color: #6a604e; font-size: 16px; }
 .ap .tbstrip { max-width: 560px; margin: 10px auto 4px; padding: 10px 12px; border-radius: 14px; border: 1px solid #c9a45a; background: radial-gradient(ellipse at top, #3a2c14e6, #1f1710e6); text-align: left; }
 .ap .tbstrip h4 { margin: 0 0 6px; color: var(--gold); } .ap .tbstrip h4 small { color: var(--mute); font-weight: 400; margin-left: 6px; }
 .ap .tbstrip .tbsl { display: flex; justify-content: center; gap: 14px; }
