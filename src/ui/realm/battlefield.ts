@@ -313,6 +313,14 @@ const STAGE_S = [0, 1.1, 2.4] as const
 
 /** 「?」 설명 펼침 — 이 기기에서만 기억 */
 const HELP_KEY = 'hanbal.realm.warHelp'
+/**
+ * 새 전투 시험 (BATTLE-LIVE 0번 · 형 10-28: 지금 전투에 바로 넣지 말고 켜고 끄며 지인과 해 본다) — 첫 화면 단추로 이 기기에서만 켠다.
+ * 켜면: 손가락이 권하는 깃발·「전투 개시」를 가리키고 · 고르면 큰 깃발이 뜨고 진이 움찔하고 · 숫자 표는 「자세히」 안으로
+ */
+export const B0_KEY = 'hanbal.realm.battle0'
+export function b0On(): boolean {
+  try { return localStorage.getItem(B0_KEY) === '1' } catch { return false }
+}
 const ROUND_NAME = ['첫째', '둘째', '셋째', '넷째', '다섯째', '여섯째']
 
 /**
@@ -1400,6 +1408,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     h += `<div class="wnext"${anim ? ` style="--d:${(tAt(2) + 0.6).toFixed(2)}s"` : ''}><div class="wrn">${ROUND_NAME[shown] ?? `${shown + 1}`} 합 </div>`
     // 적진의 속·맞은편·땅은 전장에서 누르고 있거나 마우스를 올리면 (openWar 의 정보창 · warTip) — 여기엔 어떻게 보는지만
     h += '<p class="wfhint">전장에서 <b>우리 무리</b>를 누르면 깃발 선택 · 적·낌새·땅은 <b>누르고 있으면</b>(마우스는 올리면) 자세히 보인다</p>'
+    h += '<p class="wb0g"><b>무리마다 깃발을 하나씩 고른다</b><span>👆 손가락이 가리키는 깃발이 권하는 것 · 다 고르면 「전투 개시」</span></p>'
     if (p.foeWaver) h += `<div class="wintel"><div class="wi warn"><b>적이 흔들린다</b><p>깃발이 기울고 대열이 성기다</p><small>방진도 돌격을 못 받아 낸다 — 쫓을 때다</small></div></div>`
     // 지난 합에 장수를 잃었다 — 누가 · 누가 지휘를 넘겨받았나 (형 10-25: "한 명 잡히면 바로 지는 건 말이 안 되는데")
     const lh = rounds[rounds.length - 1]?.lostHero
@@ -1476,7 +1485,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       if (ak !== undefined) tag = `<em class="art">비기</em>`
       // 깃발 짐작 — 펼친 무리만 바로 셈한다 (나머지는 탭을 열 때 openWar 의 fillLooks 가)
       const gu = p.look !== undefined ? (() => { const o = withPick(sel, g, c); return lookHtml(lookFor(p.look, o, now), orderKey(o)) })() : ''
-      return `<button class="wcmd ${c}${on ? ' on' : ''}" data-war="pick" data-g="${g}" data-c="${c}" data-more="${esc(ak !== undefined ? ART_DOES[ak] : CMD_DOES[c])}"><img class="wflag" src="${flagSrc(art, c, ak)}" alt=""><span class="wct"><b>${ak !== undefined ? ART_NAME[ak] : CMD_NAME[c]}</b>${tag}${feel}<small>${esc(ak !== undefined ? ART_SHORT[ak] : CMD_SHORT[c])}</small>${gu}</span></button>`
+      return `<button class="wcmd ${c}${on ? ' on' : ''}${recNow === c ? ' rec' : ''}" data-war="pick" data-g="${g}" data-c="${c}" data-more="${esc(ak !== undefined ? ART_DOES[ak] : CMD_DOES[c])}"><img class="wflag" src="${flagSrc(art, c, ak)}" alt=""><span class="wct"><b>${ak !== undefined ? ART_NAME[ak] : CMD_NAME[c]}</b>${tag}${feel}<small>${esc(ak !== undefined ? ART_SHORT[ak] : CMD_SHORT[c])}</small>${gu}</span></button>`
     }
     // 무리 탭 — 누른 무리만 빛나고 그 무리 깃발만 보인다. 무리마다 다 고르면 「전투 개시」가 켜진다
     // (형 10-24: "깃발이 너무 많아서 헷갈려 · 창병 방패병을 탭하면 빛나면서 걔네들 깃발만 · 다 고른 뒤에 전투개시 버튼 활성화")
@@ -1537,6 +1546,35 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
 }
 
 export const WAR_CSS = `
+/* 새 전투 시험 (.wr.b0) — 손가락 · 고른 깃발이 크게 · 숫자 표는 「자세히」 안으로 */
+.ap .wr:not(.b0) .wb0g { display: none; }
+.ap .wb0g { display: flex; flex-direction: column; gap: 2px; margin: 4px 2px 10px; padding: 9px 12px; border-radius: 12px; background: #2a1f0ccc; border: 1.5px solid #e0b860; }
+.ap .wb0g b { color: #ffd27a; font-size: 16px; } .ap .wb0g span { font-size: 13px; color: #e8d4a8; }
+.ap .wr.b0 .wgrp:not([hidden]):not(:has(.wcmd.on)) .wcmd.rec { position: relative; animation: tutglow .9s ease-in-out infinite alternate; outline: 3px solid #ffd27a; outline-offset: 2px; }
+.ap .wr.b0 .wgrp:not([hidden]):not(:has(.wcmd.on)) .wcmd.rec::after, .ap .wr.b0 .wgo:not(:disabled)::after { content: '👆'; position: absolute; left: 50%; top: 100%; margin: 2px 0 0 -18px; font-size: 32px; line-height: 1;
+  filter: drop-shadow(0 2px 3px #000); pointer-events: none; z-index: 5; animation: b0hand .7s ease-in-out infinite alternate; }
+.ap .wr.b0 .wgo { position: relative; }
+.ap .wr.b0 .wrgo { position: relative; overflow: visible; } .ap .wr.b0 .wrgo::before { content: '👉'; position: absolute; right: 100%; top: 50%; margin: -17px 6px 0 0; font-size: 30px; line-height: 1; filter: drop-shadow(0 2px 3px #000); pointer-events: none; animation: b0point .7s ease-in-out infinite alternate; }
+@keyframes b0point { from { transform: translateX(0); } to { transform: translateX(-10px); } }
+.ap .wr.b0 .wfpop .wcmd.mini.rec:not(.on) { outline: 2px solid #ffd27a; outline-offset: 1px; animation: tutglow .9s ease-in-out infinite alternate; }
+/* 시험판 — 아직 하나도 안 골랐으면 전장의 우리 무리 위에 손가락 (첫 화면에 깃발 칸이 안 보여도 누를 곳이 보이게 · 누르면 그 자리에 깃발 판) */
+.ap .wr.b0 .wrbox:has(.wnext):not(:has(.wcmd.on)) .wfield .wf2s.us::after { content: '👆 우리 무리를 누른다'; position: absolute; left: 20%; top: 66%; z-index: 90; white-space: nowrap;
+  padding: 5px 12px; border-radius: 999px; background: #2a1f0ce6; border: 1.5px solid #e0b860; color: #ffe6a8; font-size: 15px; font-weight: 700; pointer-events: none;
+  box-shadow: 0 0 14px #ffd27a88; animation: b0hand .7s ease-in-out infinite alternate; }
+@media (max-width: 520px) { .ap .wr.b0 .wrbox:has(.wnext):not(:has(.wcmd.on)) .wfield .wf2s.us::after { font-size: 12.5px; padding: 3px 9px; left: 8%; } }
+.ap .wr.b0 .wfoot { margin-bottom: 40px; }
+@keyframes b0hand { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+.ap .wr.b0 .wgrp.b0flash .wcmdgrid { animation: b0flash .6s ease-out; } @keyframes b0flash { 0% { filter: brightness(2.2); transform: scale(1.03); } 100% { filter: none; transform: none; } }
+.ap .wb0pop { position: fixed; left: 50%; top: 38%; z-index: 80; display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; transform: translate(-50%, -50%);
+  animation: b0pop var(--ms, 1s) ease-out forwards; }
+.ap .wb0pop img { width: 132px; height: 132px; object-fit: contain; filter: drop-shadow(0 6px 14px #000c) drop-shadow(0 0 18px #ffd27a88); }
+.ap .wb0pop b { font-size: 30px; font-weight: 900; color: #ffe6a8; text-shadow: 0 2px 0 #000, 0 0 14px #000; letter-spacing: 2px; }
+@keyframes b0pop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.4); } 18% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); } 30% { transform: translate(-50%, -50%) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -60%) scale(1); } }
+.ap .wr.b0 .wf2s.us.b0kick { animation: b0kick .55s ease-out; } @keyframes b0kick { 0% { transform: none; } 30% { transform: translateX(3%); } 100% { transform: none; } }
+.ap .wr.b0:not(.help) .wgx, .ap .wr.b0:not(.help) .wgff, .ap .wr.b0:not(.help) .wgby, .ap .wr.b0:not(.help) .wloss, .ap .wr.b0:not(.help) .wodd, .ap .wr.b0:not(.help) .wcap, .ap .wr.b0:not(.help) .brkl { display: none; }
+.ap .wr.b0 .whelp { width: auto; padding: 0 10px; font-size: 0; } .ap .wr.b0 .whelp::after { content: '자세히'; font-size: 13px; }
+.ap .wr.b0.help .whelp::after { content: '접기'; }
+@media (prefers-reduced-motion: reduce) { .ap .wb0pop, .ap .wr.b0 .wf2s.us.b0kick, .ap .wr.b0 .wcmd.rec::after, .ap .wr.b0 .wgo::after { animation-duration: .01s; } }
 .ap .tn.hard { color: #f0a08a; }
 /* 장수가 여럿 — 누가 나서나 · 누구를 잡나 (그 깃발을 골랐을 때만) */
 .ap .ws .wpf .waides { position: absolute; left: 0; right: 0; bottom: 5%; z-index: 2; display: flex; gap: 2px; justify-content: center; margin: 0; pointer-events: none; }
@@ -2461,6 +2499,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   ov.className = 'wr'
   // 첫째 합 밑의 설명·깃발 설명은 「?」를 눌렀을 때만 (형 10-25) — 펼친 채로 두면 다음 싸움에도 펼쳐 둔다
   try { if (localStorage.getItem(HELP_KEY) === '1') ov.classList.add('help') } catch { /* 없으면 접힌 채 */ }
+  if (b0On()) ov.classList.add('b0')
   ov.innerHTML = '<div class="wbg"></div><div class="wfxl"></div><div class="wsc"></div><div class="wfxt"></div><div class="wwin"></div>'
   const bgEl = ov.querySelector<HTMLElement>('.wbg')!
   const fxEl = ov.querySelector<HTMLElement>('.wfxl')!
@@ -3011,6 +3050,23 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     }
     return null
   }
+  /** 시험판 — 고른 깃발이 화면 가운데 크게 떴다 지고, 우리 진이 앞으로 움찔한다 (첫 손님: 골라도 무엇이 됐는지 안 보였다) */
+  const b0Pop = (b: HTMLElement): void => {
+    fxTop.querySelector('.wb0pop')?.remove()
+    const el = document.createElement('div')
+    el.className = 'wb0pop'
+    const img = document.createElement('img')
+    img.src = b.querySelector('img.wflag')?.getAttribute('src') ?? ''
+    img.alt = ''
+    const nm = document.createElement('b')
+    nm.textContent = b.querySelector('.wct b')?.textContent ?? ''
+    el.append(img, nm)
+    el.style.setProperty('--ms', `${P.realm.warB0PopMs}ms`)
+    fxTop.appendChild(el)
+    const us = sc.querySelector<HTMLElement>('.wfield .wf2s.us')
+    if (us !== null) { us.classList.remove('b0kick'); void us.offsetWidth; us.classList.add('b0kick') }
+    timers.push(window.setTimeout(() => el.remove(), P.realm.warB0PopMs))
+  }
   /** 다음 합을 고르는 중인가 (합이 풀리는 중·맡긴 싸움을 보는 중이 아니고) */
   const choosing = (): boolean => t.line?.pending !== undefined && !animating && chain.length === 0
   let popG: Grp | 'lead' | undefined
@@ -3207,6 +3263,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         for (const x of sc.querySelectorAll<HTMLElement>(`[data-war="pick"][data-g="${g}"]`)) x.classList.toggle('on', sel[g] === x.dataset['c'])
         active = g
         syncCmd()
+        if (sel[g] !== undefined && ov.classList.contains('b0')) b0Pop(b)
         // 장수 깃발(비기·격려…)을 들 때는 말하지 않는다 — 「무엇이든 말씀만 하셔요」는 명을 고르는 자리에 안 맞았다 (형 10-27). 외침은 그 수가 풀릴 때
         // 골랐으면 아직 안 고른 다음 무리로 — 깃발이 내려앉는 것을 잠깐 보고 (전장의 깃발 판에서 골랐으면 그 판도 다음 무리 곁으로)
         const fromPop = popG !== undefined
@@ -3223,8 +3280,14 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         return
       }
       case 'gtab': {
+        const again = active === b.dataset['g']
         active = b.dataset['g'] as Grp | 'lead'
         syncCmd()
+        // 시험판 — 펼친 무리 탭을 또 누르면 그 깃발 칸이 번쩍이며 눈앞으로 (첫 손님: 「선택」을 눌러도 그대로였다)
+        if (again && ov.classList.contains('b0')) {
+          const pane = sc.querySelector<HTMLElement>(`.wgrp[data-g="${active}"]`)
+          if (pane !== null) { pane.classList.remove('b0flash'); void pane.offsetWidth; pane.classList.add('b0flash'); pane.scrollIntoView({ block: 'nearest', behavior: 'smooth' }) }
+        }
         return
       }
       case 'who': case 'target': {

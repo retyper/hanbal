@@ -67,7 +67,7 @@ import { retainMaxOf } from '../../realm/legacy.ts'
 import { morph } from './morph.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
-import { APPROACH_DOES, APPROACH_NAME, HARD_LINE, WAR_CSS, openWar } from './battlefield.ts'
+import { APPROACH_DOES, APPROACH_NAME, B0_KEY, HARD_LINE, WAR_CSS, b0On, openWar } from './battlefield.ts'
 import { attachZoom } from './zoom.ts'
 import { TUT_CSS, TUT_STEPS, createSpot, tutAt, tutBandHtml, tutStyle } from './tutorial.ts'
 import { LOG_CSS, LOG_GROUPS, lineNations, logGroup, logNations, logRows, logbookHtml, type LogFilter } from './logbook.ts'
@@ -4473,6 +4473,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const links = `<p class="fine"><a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a> ${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
       // 소리의 출처 — 공공누리 제1유형·CC BY 는 출처를 밝혀야 쓸 수 있다 (형 10-23: "출처표기해야 상업적으로 사용가능하니까 주의")
       + ` <a class="btn ghost" href="${BASE}realm/credits.html">소리 출처</a>`
+      // 새 전투 시험 (BATTLE-LIVE 0번) — 이 기기에서만 켜진다 · 형과 지인이 켜고 꺼 보며 견준다 (형 10-28)
+      + ` <button class="btn ghost${b0On() ? ' on' : ''}" data-act="b0-toggle" data-tip="켜면 싸움에서 손가락이 깃발을 가리키고, 고른 깃발이 크게 뜨고, 숫자 표는 「자세히」 안으로 들어간다">새 전투 시험 · ${b0On() ? '켜짐' : '꺼짐'}</button>`
       // 판 기록 — 판 밖(첫 화면 · 끝 화면)에서도 받는다. 아래 「나라」 탭은 판 안에서만 보여 찾기 어려웠다 (형 10-26: "나라 탭이 어딨음??")
       + (host.gameCount() > 0 ? ` <button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>` : '') + `</p>`
       // 문명처럼 첫 화면 밑에 작게 — 공식 고지문 말투로 (형 10-27: "꾸민 이야기입니다? 큰 단체의 공식적인 말투에 이런 표현 안 써") (형 10-27: "이 게임은 실제 역사랑 상관없다는 주의 문구")
@@ -5488,6 +5490,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'help': openSheet({ kind: 'help' }); return
       case 'export': host.onExport(); return
+      case 'b0-toggle': try { localStorage.setItem(B0_KEY, b0On() ? '0' : '1') } catch { /* 저장이 막히면 못 켠다 */ } paint(); return
       case 'acct-in': host.cloud?.signIn(); return
       case 'acct-out': host.cloud?.signOut(); acctArmed = false; paint(); return
       case 'acct-sync': host.cloud?.syncNow(); return
