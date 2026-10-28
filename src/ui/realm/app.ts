@@ -694,6 +694,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
   /** 첫 화면 「다른 판」에서 ✕ 를 한 번 누른 판 — 한 번 더 누르면 지운다 */
   let slotArmed: number | null = null
+  /** 첫 화면 「더 보기」를 펼친 채로 — 안에서 단추(새 전투 시험)를 눌러 다시 그려도 접히지 않게 */
+  let fmoreOpen = false
   /** 「저장 · 불러오기」 창 — 열려 있으면 (game: 판 안 · title: 첫 화면의 불러오기만) */
   let saveBox: { mode: 'game' | 'title'; name: string; ask: SaveAsk | null; msg: { text: string; bad: boolean } | null } | null = null
   let cmdHero = ''
@@ -4471,13 +4473,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   // ───────── 판 바깥 — 첫 화면 · 판 고르기 · 나라 고르기 (front.ts)
   function frontHtml(f: Front): string {
-    const links = `<p class="fine"><a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a> ${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
+    // 활터·연습장·소리 출처·시험·기록·로그인은 「더 보기」 안에 접는다 — 늘어놓았더니 폰에서 화면 밑으로 넘쳤다 (형 10-28)
+    const links = `<details class="fmore"${fmoreOpen ? ' open' : ''}><summary class="btn ghost">더 보기</summary>${f.kind === 'title' ? acctLine() : ''}<p class="fine"><a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a> ${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
       // 소리의 출처 — 공공누리 제1유형·CC BY 는 출처를 밝혀야 쓸 수 있다 (형 10-23: "출처표기해야 상업적으로 사용가능하니까 주의")
       + ` <a class="btn ghost" href="${BASE}realm/credits.html">소리 출처</a>`
       // 새 전투 시험 (BATTLE-LIVE 0번) — 이 기기에서만 켜진다 · 형과 지인이 켜고 꺼 보며 견준다 (형 10-28)
       + ` <button class="btn ghost${b0On() ? ' on' : ''}" data-act="b0-toggle" data-tip="켜면 싸움에서 손가락이 깃발을 가리키고, 고른 깃발이 크게 뜨고, 숫자 표는 「자세히」 안으로 들어간다">새 전투 시험 · ${b0On() ? '켜짐' : '꺼짐'}</button>`
       // 판 기록 — 판 밖(첫 화면 · 끝 화면)에서도 받는다. 아래 「나라」 탭은 판 안에서만 보여 찾기 어려웠다 (형 10-26: "나라 탭이 어딨음??")
-      + (host.gameCount() > 0 ? ` <button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>` : '') + `</p>`
+      + (host.gameCount() > 0 ? ` <button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>` : '') + `</p></details>`
       // 문명처럼 첫 화면 밑에 작게 — 공식 고지문 말투로 (형 10-27: "꾸민 이야기입니다? 큰 단체의 공식적인 말투에 이런 표현 안 써") (형 10-27: "이 게임은 실제 역사랑 상관없다는 주의 문구")
       + `<p class="fine histnote">본 게임은 역사 기록을 바탕으로 재구성한 창작물로, 등장하는 인물·국가·사건은 실제 역사와 다를 수 있습니다.</p>`
     switch (f.kind) {
@@ -4489,7 +4492,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         // 끝나지 않은 다른 판들은 불러오기 안에 (형 10-28: 첫 화면에 늘어놓으니 단추가 화면 밖으로) — 몇 판 있는지만 단추에
         const shelfN = (host.slots?.() ?? []).length
         const loadBtn = host.saves !== undefined ? `<button class="btn big" data-act="save-open-title">불러오기${shelfN > 0 ? `<small class="ldn">끝나지 않은 판 ${shelfN}</small>` : ''}</button>` : ''
-        return titleHtml(KIT, realm, host.savedAt(), installCard() + acctLine() + links, realm === null && !tutorialOver(), loadBtn + dexBtn)
+        return titleHtml(KIT, realm, host.savedAt(), installCard() + links, realm === null && !tutorialOver(), loadBtn + dexBtn)
       }
       case 'dex': return dexHtml(DEX_KIT, f.board, f.sel, f.back === null ? '판으로' : '처음으로')
       case 'drill': return yardHtml(DRILL_KIT, f)
@@ -5496,7 +5499,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'help': openSheet({ kind: 'help' }); return
       case 'export': host.onExport(); return
-      case 'b0-toggle': try { localStorage.setItem(B0_KEY, b0On() ? '0' : '1') } catch { /* 저장이 막히면 못 켠다 */ } paint(); return
+      case 'b0-toggle': fmoreOpen = true; try { localStorage.setItem(B0_KEY, b0On() ? '0' : '1') } catch { /* 저장이 막히면 못 켠다 */ } paint(); return
       case 'acct-in': host.cloud?.signIn(); return
       case 'acct-out': host.cloud?.signOut(); acctArmed = false; paint(); return
       case 'acct-sync': host.cloud?.syncNow(); return

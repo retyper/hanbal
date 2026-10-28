@@ -613,6 +613,9 @@ export const FRONT_CSS = `
 .ap .front.title .hook { margin: 0 auto 16px; color: #cfc6b4; font-size: 13.5px; line-height: 1.6; max-width: 460px; }
 .ap .front .fbtns { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: auto; }
 .ap .front.title .fine { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 22px 16px 0; }
+.ap .front .fmore { text-align: center; margin: 14px 0 0; } .ap .front .fmore > summary { list-style: none; display: inline-flex; cursor: pointer; font-size: 13px; }
+.ap .front .fmore > summary::-webkit-details-marker { display: none; } .ap .front .fmore > summary::after { content: ' ▾'; } .ap .front .fmore[open] > summary::after { content: ' ▴'; }
+.ap .front .fmore .fine { margin-top: 10px; }
 .ap .front .cont { display: flex; align-items: center; gap: 12px; width: min(420px, 92vw); padding: 10px 14px; border-radius: 16px; background: #1f1710ee; border: 1px solid #c9a45a; color: var(--ink); font: inherit; text-align: left; cursor: pointer; animation: glow 2.6s ease-in-out infinite alternate; }
 @keyframes glow { from { box-shadow: 0 0 0 #c9a45a00; } to { box-shadow: 0 0 22px #c9a45a55; } }
 .ap .front .cont .cface { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #c9a45a; }
