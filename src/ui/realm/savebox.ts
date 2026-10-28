@@ -29,6 +29,8 @@ export interface SaveBoxView {
   readonly hasGame: boolean
   readonly ask: SaveAsk | null
   readonly msg: { readonly text: string; readonly bad: boolean } | null
+  /** 첫 화면에서 열었을 때 — 끝나지 않은 판들 (front.slotsHtml) · 저장한 칸 위에 */
+  readonly shelf?: string | undefined
 }
 
 function when(iso: string): string {
@@ -51,6 +53,7 @@ export function saveBoxHtml(k: SaveBoxKit, v: SaveBoxView): string {
   let h = `<div class="svbox" role="dialog" aria-label="${game ? '저장 · 불러오기' : '불러오기'}"><button class="bx" data-act="sv-x" aria-label="닫기">✕</button>`
   h += `<h3>${game ? '저장 · 불러오기' : '불러오기'}</h3>`
   if (game) h += `<label class="svn"><span>저장 이름</span><input class="svname" type="text" maxlength="${v.nameMax}" placeholder="${k.esc(v.placeholder)}" value="${k.esc(v.name)}"></label>`
+  if (!game && v.shelf !== undefined && v.shelf !== '') h += v.shelf + (v.slots.some((m) => m !== null) ? `<small class="svh">저장한 판</small>` : '')
   h += `<div class="svlist">`
   v.slots.forEach((m, n) => {
     if (m === null && !game) return
@@ -64,7 +67,7 @@ export function saveBoxHtml(k: SaveBoxKit, v: SaveBoxView): string {
     h += `</span></div>`
     if (v.ask?.n === n) h += askHtml(k, v, m)
   })
-  if (!game && v.slots.every((m) => m === null)) h += `<p class="mute svnone">저장한 판이 아직 없다 — 판 안의 나라 판 「저장 · 불러오기」에서 저장한다</p>`
+  if (!game && v.slots.every((m) => m === null) && (v.shelf ?? '') === '') h += `<p class="mute svnone">저장한 판이 아직 없다 — 판 안의 나라 판 「저장 · 불러오기」에서 저장한다</p>`
   h += `</div>`
   if (v.msg !== null) h += `<p class="svmsg${v.msg.bad ? ' bad' : ''}" role="status">${k.esc(v.msg.text)}</p>`
   h += `<div class="svfile">${game ? `<button class="btn" data-act="sv-down">파일로 내려받기</button>` : ''}<button class="btn" data-act="sv-file">파일에서 불러오기</button>`

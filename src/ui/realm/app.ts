@@ -82,7 +82,7 @@ import { ironOf, riteOf } from '../../realm/paths.ts'
 import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
 import { AUD_CSS, askSay, pactSay, typed, type PactKind } from './audience.ts'
 import { customDef, customsOf } from '../../realm/data/customs.ts'
-import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
+import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, slotsHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
 import { SCENE_SOUND, makeMusic, playOnce, snd, sndFile, tapSlot } from './sound.ts'
 import { hireVoicePath, voiceGate, voiceKind, voicePath, type VoiceLine } from './voice.ts'
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
@@ -3555,6 +3555,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     ov.innerHTML = saveBoxHtml({ esc, emblem: (f, cls) => emblem(f, cls) }, {
       mode: saveBox.mode, slots: host.saves.list(), name: saveBox.name, placeholder: realm !== null ? defaultLabel(realm) : '',
       nameMax: Math.round(P.realm.saveNameMax), hasGame: live, ask: saveBox.ask, msg: saveBox.msg,
+      shelf: saveBox.mode === 'title' ? slotsHtml(KIT, host.slots?.() ?? [], slotArmed) : undefined,
     })
   }
   function saveSay(text: string, bad: boolean): void {
@@ -4485,8 +4486,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const dexBtn = `<button class="btn big" data-act="dex-open">영웅전</button>` // 형 10-25: 도감보다 즐거운 이름 · 숫자는 들어가면 보인다
           + (hasDrill() ? `<button class="btn big" data-act="dy-title">단련터</button>` : '') // 남은 단련 공은 아무 때나 쓴다 (HERO-GROWTH ★ §C)
           + ((host.pastGames?.() ?? []).length > 0 ? `<button class="btn big" data-act="annals-open">나의 역사</button>` : '')
-        const loadBtn = host.saves !== undefined ? `<button class="btn big" data-act="save-open-title">불러오기</button>` : ''
-        return titleHtml(KIT, realm, host.savedAt(), installCard() + acctLine() + links, realm === null && !tutorialOver(), loadBtn + dexBtn, host.slots?.() ?? [], slotArmed)
+        // 끝나지 않은 다른 판들은 불러오기 안에 (형 10-28: 첫 화면에 늘어놓으니 단추가 화면 밖으로) — 몇 판 있는지만 단추에
+        const shelfN = (host.slots?.() ?? []).length
+        const loadBtn = host.saves !== undefined ? `<button class="btn big" data-act="save-open-title">불러오기${shelfN > 0 ? `<small class="ldn">끝나지 않은 판 ${shelfN}</small>` : ''}</button>` : ''
+        return titleHtml(KIT, realm, host.savedAt(), installCard() + acctLine() + links, realm === null && !tutorialOver(), loadBtn + dexBtn)
       }
       case 'dex': return dexHtml(DEX_KIT, f.board, f.sel, f.back === null ? '판으로' : '처음으로')
       case 'drill': return yardHtml(DRILL_KIT, f)
@@ -5292,6 +5295,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'slot-go': {
         // 고른 판으로 — 하던 판은 선반에 (realm-main.onResume). 옮겼으면 바로 그 판으로 들어간다
         slotArmed = null
+        saveBox = null
+        savePaint()
         if (host.onResume?.(Number(d['v'])) !== true) { paint(); return }
         front = null
         paint()
@@ -5328,10 +5333,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'sv-file': root.querySelector<HTMLInputElement>('.saveov .svpick')?.click(); return
       case 'slot-drop': {
         const seed = Number(d['v'])
-        if (slotArmed !== seed) { slotArmed = seed; paint(); return }
+        if (slotArmed !== seed) { slotArmed = seed; paint(); savePaint(); return }
         slotArmed = null
         host.onDropSlot?.(seed)
         paint()
+        savePaint()
         return
       }
       case 'fr-new': case 'newgame': front = { kind: 'boards' }; sheet = null; looking = false; paint(); return

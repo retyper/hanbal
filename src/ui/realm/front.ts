@@ -137,10 +137,13 @@ export function boardLabel(region: RegionId): string {
   return ch !== undefined ? `${ch.n}장 ${ch.name}` : BOARDS.find((b) => b.id === region)?.name ?? ''
 }
 
-/** 다른 판들 — 이어 하기 아래에 최근 것부터. ✕ 는 두 번 눌러야 지운다 (armed = 한 번 누른 판) */
-function slotsHtml(k: FrontKit, slots: readonly SlotInfo[], armed: number | null): string {
+/**
+ * 끝나지 않은 판들 — 「불러오기」 창 맨 위에 최근 것부터. ✕ 는 두 번 눌러야 지운다 (armed = 한 번 누른 판).
+ * 첫 화면에 늘어놓았더니 판이 쌓이면 단추가 화면 밖으로 밀려났다 (형 10-28) — 문명·토탈 워처럼 첫 화면엔 「이어 하기」 하나, 나머지는 불러오기 안에
+ */
+export function slotsHtml(k: FrontKit, slots: readonly SlotInfo[], armed: number | null): string {
   if (slots.length === 0) return ''
-  let h = `<div class="slots"><small class="slh">다른 판</small>`
+  let h = `<div class="slots"><small class="slh">끝나지 않은 판</small>`
   for (const x of [...slots].sort((a, b) => (a.at < b.at ? 1 : -1))) {
     h += `<div class="slot"><button class="slotgo" data-act="slot-go" data-v="${x.seed}">${k.emblem(x.nation, 'cem')}<span><b>${k.esc(x.name)}</b><small>${k.esc(boardLabel(x.region))} · ${k.esc(seasonLabel(x.season))} · ${k.esc(agoText(x.at))}</small></span></button>`
       + `<button class="slotx${armed === x.seed ? ' armed' : ''}" data-act="slot-drop" data-v="${x.seed}" aria-label="이 판 지우기">${armed === x.seed ? '한 번 더 누르면 지운다' : '✕'}</button></div>`
@@ -148,7 +151,7 @@ function slotsHtml(k: FrontKit, slots: readonly SlotInfo[], armed: number | null
   return h + `</div>`
 }
 
-export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, links = '', firstTime = false, more = '', slots: readonly SlotInfo[] = [], armed: number | null = null): string {
+export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, links = '', firstTime = false, more = ''): string {
   // 로비 — 산마루에서 내려다본 일흔여덟 나라의 땅 · 로고는 청동 거울과 맥궁의 문장 + 붓글씨 (형: "게임 로고랑 파비콘, 로비 배경은 좀 제대로")
   let h = `<div class="front title"><div class="kv" style="background-image:url('${k.art}title/title-lobby.jpg')"></div><div class="tv">`
   // 로고 밑엔 단추만 — 설명 글은 걷었다 (형 10-23: "로고 밑에 텍스트 설명 너무 많음. 다른 명작 게임들에서는 그런 거 없잖아")
@@ -162,7 +165,6 @@ export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, 
     h += `<span>${k.esc(seasonLabel(r.season))} · 도읍 ${capsHeld(r, me)}/${winNeed(region)}${r.known !== undefined ? ` · 아는 나라 ${(r.known[me]?.length ?? 0) + 1}/${Object.keys(r.factions).length}` : ''}</span>`
     h += `${savedAt !== null ? `<small>최근 저장 · ${k.esc(agoText(savedAt))}</small>` : ''}</span></button>`
   }
-  h += slotsHtml(k, slots, armed)
   // 처음 켠 사람은 배우는 판으로 (형: "맨 위 첫번째 할 게임은 1:1수준으로 여러 기능 익혀가며 쉽게")
   if (firstTime) h += `<button class="btn pri big" data-act="fr-tutorial">처음이면 — 배우는 판부터</button><button class="btn big" data-act="fr-new">새 게임</button>${more}</div>`
   else h += `<button class="btn pri big" data-act="fr-new">새 게임</button>${more}</div>`
@@ -572,7 +574,7 @@ export const FRONT_CSS = `
 .ap .front.annals .anx { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
 .ap .front.annals .anres { font-style: normal; font-weight: 700; } .ap .front.annals .win .anres { color: #ffd27a; } .ap .front.annals .lose .anres { color: #f08a7a; } .ap .front.annals .quit .anres { color: #a89c84; } .ap .front.annals .now .anres { color: #9fd0f0; }
 .ap .front .fine { text-align: center; font-size: 12px; color: #8f8778; margin: 10px 16px 20px; }
-.ap .front .btn.big { padding: 12px 26px; font-size: 16px; }
+.ap .front .btn.big { padding: 12px 26px; font-size: 16px; } .ap .front .btn .ldn { display: block; font-size: 11px; font-weight: 500; color: #e8d4a8; margin-top: 1px; }
 /* 첫 화면 */
 .ap .front.title { overflow: hidden; display: flex; align-items: flex-end; justify-content: center; }
 .ap .front.title .kv { position: absolute; inset: 0; background: center 40% / cover no-repeat; animation: kv 18s ease-out both; }
@@ -676,15 +678,15 @@ export const FRONT_CSS = `
 .ap .prologue .pera .l1 { font-size: clamp(26px, 3.6vw, 40px); font-weight: 700; } .ap .prologue .pera .l2 { animation-delay: .9s; } .ap .prologue .pera .l3 { animation-delay: 2s; } .ap .prologue .pera .l4 { animation-delay: 3.4s; color: #7a1f10; }
 @keyframes ink { from { opacity: 0; filter: blur(3px); transform: translateY(6px); } to { opacity: 1; filter: none; transform: none; } }
 /* 서막 옛 지도 (oldMapHtml) — 한지 빛 · 가장자리 어둠 · 온 땅에서 이 판의 땅으로 */
-/* 다른 판 — 이어 하기 아래 작은 줄들 (형 10-25) */
-.ap .front.title .slots { display: flex; flex-direction: column; gap: 4px; width: 100%; max-width: 420px; margin: 0 auto; }
-.ap .front.title .slh { color: #e8d8b0; text-shadow: 0 1px 3px #000; font-size: 12px; text-align: left; }
-.ap .front.title .slot { display: flex; gap: 4px; }
-.ap .front.title .slotgo { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px; border: 1px solid #6a5236; background: #1c1610d8; color: #f0e2c0; font: inherit; text-align: left; cursor: pointer; }
-.ap .front.title .slotgo span { display: flex; flex-direction: column; min-width: 0; } .ap .front.title .slotgo small { color: #cbbf9f; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ap .front.title .slotgo .cem { width: 26px; height: 26px; flex: none; }
-.ap .front.title .slotx { flex: none; padding: 0 10px; border-radius: 10px; border: 1px solid #5a4630; background: #1c1610c0; color: #b8a888; font: inherit; font-size: 12px; cursor: pointer; }
-.ap .front.title .slotx.armed { background: #5a1a12; border-color: #c05040; color: #ffd8c8; }
+/* 끝나지 않은 판 — 불러오기 창 맨 위 작은 줄들 (형 10-25 · 10-28 첫 화면에서 옮김) */
+.ap .saveov .slots { display: flex; flex-direction: column; gap: 4px; width: 100%; margin: 0 0 12px; }
+.ap .saveov .slh, .ap .saveov .svh { color: #e8d8b0; font-size: 12.5px; text-align: left; }
+.ap .saveov .slot { display: flex; gap: 4px; }
+.ap .saveov .slotgo { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px; border: 1px solid #6a5236; background: #1c1610d8; color: #f0e2c0; font: inherit; text-align: left; cursor: pointer; }
+.ap .saveov .slotgo span { display: flex; flex-direction: column; min-width: 0; } .ap .saveov .slotgo small { color: #cbbf9f; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap .saveov .slotgo .cem { width: 26px; height: 26px; flex: none; }
+.ap .saveov .slotx { flex: none; padding: 0 10px; border-radius: 10px; border: 1px solid #5a4630; background: #1c1610c0; color: #b8a888; font: inherit; font-size: 12px; cursor: pointer; }
+.ap .saveov .slotx.armed { background: #5a1a12; border-color: #c05040; color: #ffd8c8; }
 .ap .prologue .pmap { position: relative; width: min(100%, calc(42vh * 1.6)); aspect-ratio: 16 / 10; margin: 0 auto 16px; overflow: hidden; border-radius: 6px; box-shadow: 0 0 0 1px #6a4a2a88, 0 10px 30px #2a1d1066; background: #c8b088; animation: ink 1s ease-out both; }
 .ap .prologue .pmw { position: absolute; left: 0; top: 0; width: 100%; aspect-ratio: 1600 / 1559; transform-origin: 0 0; animation: 7s cubic-bezier(.45, 0, .25, 1) .4s both; }
 .ap .prologue .pmw img { display: block; width: 100%; height: auto; filter: sepia(.6) saturate(.75) contrast(1.05) brightness(.97); }
