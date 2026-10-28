@@ -55,7 +55,9 @@ self.addEventListener('fetch', (e) => {
   if (req.mode === 'navigate') {
     e.respondWith((async () => {
       try {
-        const fresh = await fetch(req)
+        // 브라우저의 HTTP 캐시도 건너뛰고 서버에 물어본다 — GitHub Pages 의 문서는 10분 캐시라 새 배포 뒤에도 옛 판이 떴다
+        // (형 10-28: 폰이 옛 번들을 계속 띄웠다 · 고친 것이 안 들어갔다)
+        const fresh = await fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' })
         const c = await caches.open(CACHE)
         c.put(req, fresh.clone())
         return fresh
