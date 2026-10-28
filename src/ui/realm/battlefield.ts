@@ -1158,7 +1158,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     if (w0 === w1) return `<i style="width:${w1}%"></i>`
     const k = `wb${kn++}`
     keys += `@keyframes ${k}{from{width:${w0}%}to{width:${w1}%}}`
-    return `<i class="wgr" style="width:${w1}%;animation-name:${k}"></i>`
+    if (w1 > w0) return `<i class="wgr" style="width:${w1}%;animation-name:${k}"></i>`
+    // 줄 때는 롤 체력바처럼 — 막대는 단번에 떨어지고, 잃은 토막만 희게→노랗게→붉게 터졌다가 처음엔 빠르게 끝 무렵엔 천천히 줄어든다 (형 10-28: "와! 하고 때리거나 맞은 듯한 타격감")
+    return `<i class="wgr cut" style="width:${w1}%;animation-name:${k}"></i><em class="wchunk" style="left:${w1}%;--cw:${w0 - w1}%;--cf:${P.realm.warChunkFlashS}s;--cs:${P.realm.warChunkShrinkS}s"></em>`
   }
   /**
    * 무너지는 금 — 그 밑은 패배가 정해진 구역(붉은 빗금)이고 금 위에 해골. 지금 값이 금에 가까우면 해골이 깜박인다
@@ -1953,6 +1955,18 @@ export const WAR_CSS = `
 @keyframes wbarshine { 0% { left: -45%; } 55%, 100% { left: 110%; } }
 @media (prefers-reduced-motion: reduce) { .ap .wbar i::before, .ap .wbar i::after, .ap .ws.us .wpf > i, .ap .wbg, .ap .wember { animation: none !important; } }
 .ap .wbar i.wgr { animation-duration: .4s; animation-timing-function: ease-out; animation-delay: var(--bd, 2.4s); animation-fill-mode: both; }
+.ap .wbar i.wgr.cut { animation-duration: .04s; animation-timing-function: linear; }
+/* 잃은 토막 — 맞는 순간 나타나 터지고(희게·노랗게·붉게 · 위아래로 부풀었다) 줄어든다 · 단색만 (호환 모드에서도 그대로) */
+.ap .wbar .wchunk { position: absolute; top: 0; bottom: 0; width: var(--cw); z-index: 1; pointer-events: none; border-radius: 0 6px 6px 0; background-color: #c8160c; transform-origin: left center;
+  animation: wchunkon 0s linear var(--bd, 2.4s) both, wchunkfx var(--cf, .24s) linear var(--bd, 2.4s) both, wchunkcut var(--cs, .6s) cubic-bezier(.1, .8, .25, 1) calc(var(--bd, 2.4s) + var(--cf, .24s) * .5) both; }
+@keyframes wchunkon { from { visibility: hidden; } to { visibility: visible; } }
+@keyframes wchunkfx {
+  0% { background-color: #ffffff; box-shadow: 0 0 16px 5px #ffffff; transform: scaleY(2); }
+  30% { background-color: #ffe14a; box-shadow: 0 0 14px 4px #ffc800; transform: scaleY(1.55); }
+  65% { background-color: #ff2a14; box-shadow: 0 0 12px 3px #ff2a14; transform: scaleY(1.15); }
+  100% { background-color: #c8160c; box-shadow: 0 0 6px 1px #ff2a1499; transform: none; } }
+@keyframes wchunkcut { from { width: var(--cw); } to { width: 0; } }
+@media (prefers-reduced-motion: reduce) { .ap .wbar .wchunk { animation: wchunkon 0s linear var(--bd, 2.4s) both, wchunkcut .3s linear var(--bd, 2.4s) both; } }
 .ap .wn.swap { display: inline-grid; } .ap .wn.swap > * { grid-area: 1 / 1; text-decoration: none; }
 .ap .wn.swap s { animation: wout .3s ease-out 2.4s both; } .ap .wn.swap u { animation: wrin .3s ease-out 2.4s both; }
 @keyframes wout { to { opacity: 0; } }
@@ -2402,7 +2416,7 @@ export const WAR_CSS = `
 .ap .wend b { font-size: 21px; } .ap .wend.good b { color: var(--good); } .ap .wend.bad b { color: var(--bad); }
 .ap .wend .wwhy { font-size: 14.5px; color: #e8dcc0; }
 .ap .wr.fast .wrd.slow .wcmds, .ap .wr.fast .wrd.slow .wst, .ap .wr.fast .wrd.slow .wpush, .ap .wr.fast .wend, .ap .wr.fast .wnext { animation-delay: 0s !important; animation-duration: .01s !important; }
-.ap .wr.fast .wbar i.wgr, .ap .wr.fast .wn.swap > *, .ap .wr.fast .wrd.slow .wloss, .ap .wr.fast .ws.hit, .ap .wr.fast .ws.hit::after, .ap .wr.fast .wfx-hit { animation-delay: 0s !important; animation-duration: .01s !important; }
+.ap .wr.fast .wbar i.wgr, .ap .wr.fast .wbar .wchunk, .ap .wr.fast .wn.swap > *, .ap .wr.fast .wrd.slow .wloss, .ap .wr.fast .ws.hit, .ap .wr.fast .ws.hit::after, .ap .wr.fast .wfx-hit { animation-delay: 0s !important; animation-duration: .01s !important; }
 /* 장수 기술 — 초상이 옆에서 튀어나와 한 마디 (일본식 컷인 띠·빛살 없이 · 기술 결마다 효과가 다르다) */
 /* 장수 기술은 읽고 「내가 썼다」를 느낄 만큼 — 1.8초 또렷 · 0.4초 걷힘 (형 10-24: "너무 빨리 나타나고 없어진다" · 필살기 컷인은 흔히 1.5~2.5초) */
 .ap .wcut { position: absolute; inset: 50% 0 0 0; z-index: 6; /* 아래 반쪽에 — 위 카드의 전장을 가리지 않게 (형 10-25) */ pointer-events: auto; cursor: pointer; overflow: hidden; animation: wcout 2.2s ease-in 1 forwards; }
