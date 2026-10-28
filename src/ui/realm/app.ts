@@ -2923,6 +2923,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (a === undefined || f === undefined) { goToast('연습 싸움을 열 수 없습니다'); return }
     a.at = f.from
     a.march = { from: f.from, to: f.to, edge: f.edge, left: 1, ambush: false, aim: r.nodes[f.to]?.owner ?? null }
+    // 두 판에 한 번은 우리 장수 하나가 「뒤따른다」로 늦게 닿는 원군 — 원군이 들어오는 모습도 시험한다 (형 10-28)
+    const b2 = mine.find((x) => x !== a)
+    if (b2 !== undefined && seed % 2 === 0) { b2.at = f.from; b2.march = { from: f.from, to: f.to, edge: f.edge, left: 1, ambush: false, follow: true, aim: r.nodes[f.to]?.owner ?? null } }
     const back = (): void => { warOn = false; front = { kind: 'title' }; paint() }
     try {
       if (openWar(root, r, aiOrders(r), { art: ART, me: r.player, ding, music: (k) => { if (k === 'war') music.war(); else music.result(k) }, done: back })) { warOn = true; music.war(); music.primeResults(); return }

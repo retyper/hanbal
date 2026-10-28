@@ -1534,7 +1534,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     // 무리 탭 — 누른 무리만 빛나고 그 무리 깃발만 보인다. 무리마다 다 고르면 「전투 개시」가 켜진다
     // (형 10-24: "깃발이 너무 많아서 헷갈려 · 창병 방패병을 탭하면 빛나면서 걔네들 깃발만 · 다 고른 뒤에 전투개시 버튼 활성화")
     const panes: Array<{ g: Grp | 'lead'; name: string; sub: string; icon: string; options: readonly Cmd[] }> = []
-    for (const gr of p.groups) if (gr.options.length > 0 && gr.men >= 1) // 아직 안 닿은 원군뿐인 무리는 깃발을 안 든다 panes.push({ g: gr.g, name: groupLabel(mixOf(ourI), gr.g), sub: `${gr.men}명`, icon: `<img class="wgi" src="${art}icon/${GROUP_ICON[gr.g]}.png" alt="">`, options: gr.options })
+    // 아직 안 닿은 원군뿐인 무리는 깃발을 안 든다 (사람이 0 이면)
+    for (const gr of p.groups) if (gr.options.length > 0 && gr.men >= 1) panes.push({ g: gr.g, name: groupLabel(mixOf(ourI), gr.g), sub: `${gr.men}명`, icon: `<img class="wgi" src="${art}icon/${GROUP_ICON[gr.g]}.png" alt="">`, options: gr.options })
     if (p.lead.length > 0) panes.push({ g: 'lead', name: '장수', sub: ourName, icon: `<span class="wgi f">${face(ourHero, art, unitOf(ourI))}</span>`, options: p.lead })
     const act = panes.find((x) => x.g === active) ?? panes.find((x) => sel[x.g] === undefined) ?? panes[0]
     h += `<div class="wgtabs">`
