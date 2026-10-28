@@ -232,15 +232,12 @@ export const MAP_CSS = `
 .map .lb.k-free small { color: #5a4a36; }
 /* 받침 — 주인 빛으로 칠한 흙판에 짙은 테, 그 위에 고을이 드리운 그림자 (고을이 떠 있지 않고 땅에 앉게 · 형 10-26: "마을 이미지 고도화").
    길·땅빛(SVG) 위, 고을 그림 밑. 그림자도 여기 그라데이션이라 지도를 밀 때 아무것도 껐다 켜지 않는다. 도읍은 크고 금빛 겹테 */
-.map .nd .base { position: absolute; left: 50%; top: 80%; width: 112%; aspect-ratio: 2.7; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; opacity: .88;
-  background: radial-gradient(ellipse 50% 50% at 50% 44%, color-mix(in srgb, var(--c) 52%, #efe2c4) 0, color-mix(in srgb, var(--c) 48%, #efe2c400) 64%, color-mix(in srgb, var(--c) 45%, #1a120a80) 100%);
-  box-shadow: inset 0 0 0 1.5px #2a1d10b8, inset 0 -2px 3px #1a120a4d, 0 1px 2px #1a120a66; }
-.map .nd .base::before { content: ''; position: absolute; left: 13%; right: 13%; top: 6%; bottom: 16%; border-radius: 50%;
-  background: radial-gradient(closest-side, #1a120a99 0, #1a120a66 45%, #1a120a00 100%); }
+.map .nd .base { position: absolute; left: 50%; top: 82%; width: 118%; aspect-ratio: 2.7; transform: translate(-50%, -50%); pointer-events: none;
+  background: url(__ART__fx/ground-shadow.png) center / 100% 100% no-repeat; } /* 땅에 깔린 그림자만 — 나라 색 타원은 뺐다 (형 10-29: "마을마다 바닥에 이상한 타원 · 왜 있는지 다시 생각해") · 나라 색은 이름표 띠와 땅 둘레 선이 이미 보여 준다 */
 /* 도읍은 크게 — 군장이 있는 곳 (형: "도읍은 별표가 있기는 하지만 이미지도 좀 달라야") */
 .map .nd.k-cap { --cs: 1.45; z-index: 2; }
-.map .nd.k-cap .base { width: 128%; box-shadow: inset 0 0 0 1.5px #2a1d10c0, inset 0 0 0 3.5px #e8c06acc, inset 0 -2px 3px #1a120a4d, 0 1px 3px #1a120a73; }
-.map .nd.k-free .base { opacity: .4; }
+.map .nd.k-cap .base { width: 132%; }
+.map .nd.k-free .base { opacity: .6; }
 /* 고리 — 평소엔 없다. 고를 때 · 갈 곳 · 위협받을 때만. 그림 뒤에 두어 그림 위에 걸린다 */
 .map .nd .ring { position: absolute; left: 50%; top: 42%; width: 82%; aspect-ratio: 1; transform: translate(-50%, -50%);
   border-radius: 50%; border: 3px solid var(--c); box-shadow: 0 0 6px var(--c); pointer-events: none; display: none; }
