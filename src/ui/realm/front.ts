@@ -577,17 +577,20 @@ export const FRONT_CSS = `
 .ap .front.title { overflow: hidden; display: flex; align-items: flex-end; justify-content: center; }
 .ap .front.title .kv { position: absolute; inset: 0; background: center 40% / cover no-repeat; animation: kv 18s ease-out both; }
 .ap .front.title .kv::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 55% at 50% 52%, #0b0d1066, #0000 70%), linear-gradient(to bottom, #0000 35%, #0b0d10b3 70%, #0b0d10 100%); }
-@keyframes kv { from { transform: scale(1.08); filter: brightness(.6); } 12% { filter: brightness(1); } to { transform: scale(1); } }
+/* 어둡다 밝아지기는 그림에 filter 를 거는 대신 검은 막을 걷는다 — 화면 가득한 그림에 filter·큰 transform 을 같이 걸면
+   폰 그래픽이 그 층을 못 그려 새까맣거나 색종이 조각처럼 깨졌다 (형 10-28: "핸드폰 브라우저는 새까맣고 PWA 는 녹색 파란색 색종이") */
+.ap .front.title .kv::before { content: ''; position: absolute; inset: 0; background: #000; pointer-events: none; animation: kvdark 2.2s ease-out both; }
+@keyframes kvdark { from { opacity: .4; } to { opacity: 0; } }
+@keyframes kv { from { transform: scale(1.08); } to { transform: scale(1); } }
 /* 폰 세로 — 가로 그림을 세로로 잘라 쓰면 가운데 한 토막만 보인다. 그림을 제 비율대로 두고 왼쪽 끝에서 오른쪽 끝까지
    천천히 흘렀다가 되돌아온다 (형: "좌에서 우로 흘러가듯 · 천천히 · 우측끝 도달하면 돌아오고"). 어둡게 깔기는 세로 띠로만 — 그림과 함께 움직여도 티가 안 난다 */
+/* 그림 칸은 화면 크기 그대로 두고 그림만 옆으로 민다 — 화면보다 두 배 가까이 넓은 칸을 transform 으로 밀었더니 폰(화소 셋 배)에선 칸이 그래픽 한도를 넘었다 */
 @media (orientation: portrait) {
-  .ap .front.title .kv { right: auto; width: auto; height: 100%; aspect-ratio: 16 / 9; background-position: center; will-change: transform;
-    animation: kvlit 2.4s ease-out both, kvpan 75s ease-in-out infinite alternate; }
+  .ap .front.title .kv { background-size: auto 100%; background-position: 0% 50%; animation: kvpan 75s ease-in-out infinite alternate; }
   .ap .front.title .kv::after { background: linear-gradient(to bottom, #0b0d1040, #0000 25%, #0000 35%, #0b0d10b3 68%, #0b0d10 100%); }
 }
-@keyframes kvlit { from { filter: brightness(.6); } to { filter: brightness(1); } }
-@keyframes kvpan { from { transform: translateX(0); } to { transform: translateX(calc(100vw - 100%)); } }
-@media (orientation: portrait) and (prefers-reduced-motion: reduce) { .ap .front.title .kv { animation: kvlit 2.4s ease-out both; transform: translateX(calc((100vw - 100%) / 2)); } }
+@keyframes kvpan { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+@media (orientation: portrait) and (prefers-reduced-motion: reduce) { .ap .front.title .kv { animation: none; background-position: 50% 50%; } }
 /* 로고는 화면 위쪽 가운데에 크게, 단추는 아래에 널찍하게 (형 10-23: "로고랑 아이콘은 좀 더 크게, 화면 중상단 쯤 · UI 들이 너무 붙어 있음") */
 .ap .front.title .tv { position: relative; align-self: stretch; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center;
   padding: calc(9vh + env(safe-area-inset-top)) 18px calc(30px + env(safe-area-inset-bottom)); max-width: 640px; width: 100%; box-sizing: border-box; animation: tv 1.4s .3s ease-out both; }
