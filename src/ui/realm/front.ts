@@ -155,7 +155,7 @@ export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, 
   // 로비 — 산마루에서 내려다본 일흔여덟 나라의 땅 · 로고는 청동 거울과 맥궁의 문장 + 붓글씨 (형: "게임 로고랑 파비콘, 로비 배경은 좀 제대로")
   let h = `<div class="front title"><div class="kv" style="background-image:url('${k.art}title/title-lobby.jpg')"></div><div class="tv">`
   // 로고 밑엔 단추만 — 설명 글은 걷었다 (형 10-23: "로고 밑에 텍스트 설명 너무 많음. 다른 명작 게임들에서는 그런 거 없잖아")
-  h += `<div class="logo"><h1><img class="ltitle" src="${k.art}logo/title.png" alt="칠십팔국"></h1></div>`
+  h += `<div class="logo"><h1><img class="ltitle" src="${k.art}logo/title.png" alt="삼한열전"></h1></div>`
   h += `<div class="fbtns">`
   if (r !== null && (!r.outcome || (r.endless === true && r.outcome.kind === 'win'))) {
     const me = r.player
