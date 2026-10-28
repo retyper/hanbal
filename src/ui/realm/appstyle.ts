@@ -926,6 +926,11 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .tflow .tfa.r i { color: #ffb070; } .ap .tflow .tfa.l i { color: #9fd18b; } .ap .tflow .tfa small { font-size: 12px; color: #e8dcc0; }
 /* 앱으로 설치 카드 */
 .ap .instc { margin: 10px auto; max-width: 420px; padding: 10px 12px; border-radius: 12px; border: 1px solid #c9a45a; background: #1f1710ee; text-align: left; }
+/* 첫 화면에선 위쪽에 뜨는 알림 — 단추 줄을 밀어내지 않는다 · ✕ 로 끈다 (형 10-28) */
+.ap .front.title .instc { position: fixed; z-index: 30; left: 50%; top: calc(10px + env(safe-area-inset-top)); transform: translateX(-50%); width: min(92vw, 460px); max-width: none; margin: 0; box-sizing: border-box;
+  padding-right: 40px; box-shadow: 0 8px 26px #000c; animation: instdrop .45s ease-out both; }
+@keyframes instdrop { from { opacity: 0; transform: translate(-50%, -16px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.ap .instc .instx { position: absolute; right: 6px; top: 6px; width: 30px; height: 30px; border: 0; border-radius: 50%; background: #0006; color: #e8dcc0; font: inherit; font-size: 15px; cursor: pointer; }
 .ap .instc > b { color: #f3d48a; } .ap .instc p { margin: 6px 0; font-size: 13.5px; line-height: 1.5; color: #e8dcc0; }
 .ap .instc .instr { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .ap .instc .chk { font-size: 13px; color: #cfc6b4; margin-right: auto; }
 /* 침략 알림 — 붉게 */

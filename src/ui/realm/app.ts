@@ -3490,12 +3490,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
     let hide = false
     try { hide = localStorage.getItem(INSTALL_HIDE_KEY) === '1' } catch { hide = false }
-    if (hide || instClosed) return `<p class="fine"><button class="btn ghost sm" data-act="inst-show">📲 앱으로 설치</button></p>`
+    if (hide || instClosed) return '' // 다시 여는 단추는 「더 보기」 안에 (frontHtml links)
     const how = ios
       ? '사파리 아래 <b>공유</b> 단추(네모에 위 화살표) → <b>「홈 화면에 추가」</b>. 홈 화면의 칠십팔국 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.'
       : installPrompt() !== null ? '아래 단추를 누르면 바로 설치됩니다. 홈 화면·바탕화면의 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.'
         : '브라우저 메뉴(⋮) → <b>「앱 설치」</b> 또는 <b>「홈 화면에 추가」</b>를 누르세요. 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.'
-    return `<div class="instc"><b>📲 앱으로 설치하면 더 편리합니다</b><p>${how}</p>`
+    // 첫 화면 위쪽에 뜨는 알림 — ✕ 로 끈다 (형 10-28: "상단에 나오는 팝업으로 만들어서 끌 수 있게")
+    return `<div class="instc"><button class="instx" data-act="inst-ok" aria-label="닫기">✕</button><b>📲 앱으로 설치하면 더 편리합니다</b><p>${how}</p>`
       + `<div class="instr">${!ios && installPrompt() !== null ? '<button class="btn pri sm" data-act="install">앱으로 설치</button>' : ''}<label class="chk"><input type="checkbox" class="insthide"> 다시 보지 않기</label><button class="btn sm" data-act="inst-ok">확인</button></div></div>`
   }
 
@@ -4509,7 +4510,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   // ───────── 판 바깥 — 첫 화면 · 판 고르기 · 나라 고르기 (front.ts)
   function frontHtml(f: Front): string {
     // 활터·연습장·소리 출처·시험·기록·로그인은 「더 보기」 안에 접는다 — 늘어놓았더니 폰에서 화면 밑으로 넘쳤다 (형 10-28)
-    const links = `<details class="fmore"${fmoreOpen ? ' open' : ''}><summary class="btn ghost">더 보기</summary><button class="fmbg" data-act="fmore-x" aria-label="닫기"></button><div class="fmpan"><b class="fmh">더 보기</b>${f.kind === 'title' ? acctLine() : ''}<p class="fine"><a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a> ${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
+    const links = `<details class="fmore"${fmoreOpen ? ' open' : ''}><summary class="btn ghost">더 보기</summary><button class="fmbg" data-act="fmore-x" aria-label="닫기"></button><div class="fmpan"><b class="fmh">더 보기</b>${f.kind === 'title' ? acctLine() : ''}<p class="fine">${installed() ? '' : `<button class="btn ghost" data-act="inst-show">📲 앱으로 설치</button>`}<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a> ${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
       // 소리의 출처 — 공공누리 제1유형·CC BY 는 출처를 밝혀야 쓸 수 있다 (형 10-23: "출처표기해야 상업적으로 사용가능하니까 주의")
       + ` <a class="btn ghost" href="${BASE}realm/credits.html">소리 출처</a>`
       // 새 전투 시험 (BATTLE-LIVE 0번) — 이 기기에서만 켜진다 · 형과 지인이 켜고 꺼 보며 견준다 (형 10-28)
@@ -5544,7 +5545,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         instClosed = true
         break
       }
-      case 'inst-show': { try { localStorage.removeItem(INSTALL_HIDE_KEY) } catch { /* 저장 못 하는 곳 */ } instClosed = false; break }
+      case 'inst-show': { try { localStorage.removeItem(INSTALL_HIDE_KEY) } catch { /* 저장 못 하는 곳 */ } instClosed = false; fmoreOpen = false; break }
       case 'reset-play':
         if (!resetArmed) { resetArmed = true; paint(); return }
         resetArmed = false
