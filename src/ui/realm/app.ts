@@ -1315,7 +1315,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const top = kinds[0] ?? 'spear'
       return {
         squad: squadOf(kinds),
-        army: a.id, node: a.at, men: headcount(forceOf(r, a)), sel: armySel.includes(a.id), going: pick[a.id] !== undefined,
+        army: a.id, node: a.at, men: headcount(forceOf(r, a)), morale: a.morale, sel: armySel.includes(a.id), going: pick[a.id] !== undefined,
         img: file !== undefined ? `${ART}bust/${file}.jpg` : `${ART}icon/${UNIT_ICON[top]}.png`,
         ...(a.march !== null ? { march: { from: a.march.from, to: a.march.to, left: a.march.left } } : {}),
         ...(a.faction !== me() ? { ally: a.faction } : {}),
