@@ -2091,6 +2091,7 @@ export const WAR_CSS = `
   background: linear-gradient(90deg, #3d8fe0 0 var(--lo), #3d8fe077 var(--lo) var(--hi), #c8503a var(--hi) 100%); }
 .ap .wguess .wgbar::after { content: ''; position: absolute; left: var(--e0); top: -1px; bottom: -1px; width: 2px; margin-left: -1px; background: #ffe7b0; box-shadow: 0 0 3px #000; }
 .ap .wcmd .wguess > b { font-size: 11.5px; white-space: nowrap; }
+.ap .wguess > b { width: 6.4em; text-align: right; white-space: nowrap; } /* 「맞선다」·「크게 밀린다」 길이에 따라 판세 막대가 늘고 줄지 않게 (형 10-28) */
 .ap .wguess.g2 > b { color: #7fd8ff; } .ap .wguess.g1 > b { color: #a8d8f0; } .ap .wguess.g0 > b { color: #d8cfbf; } .ap .wguess.b1 > b { color: #f0b090; } .ap .wguess.b2 > b { color: #ff7a5a; }
 /* 잃을 군사 · 사기의 폭 — 숫자로 (형 10-26) · 한 줄에 한 쪽 */
 .ap .wguess .wgl { grid-column: 1 / -1; display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 8px; font-size: 11.5px; color: #d8cfbf; }
@@ -2188,11 +2189,19 @@ export const WAR_CSS = `
 .ap .whold .whh b { font-size: 16px; color: #ffe2a0; } .ap .whold .whh small { color: var(--mute); font-size: 12px; } .ap .whold .whh em { font-size: 11px; }
 .ap .whold p { margin: 6px 0 0; font-size: 12.5px; line-height: 1.45; color: #e8dcc0; } .ap .whold .whn { color: #ffd27a; font-weight: 700; }
 .ap .wr .whold .wguess .wgx { display: grid !important; } .ap .wr .whold .wguess .wgl { display: flex !important; }
-.ap .wgem { position: fixed; z-index: 60; width: clamp(26px, 7vw, 40px); pointer-events: none; transform: translate(-50%, -110%); }
+/* 보석 — 밑변 --a, 높이 --h 인 거꾸로 선 사각뿔. 옆면은 빗변 길이(--s)의 세모, 안쪽으로 --t 만큼 기운다 (a=26 · h=34 → s≈36.4 · t≈20.9°) */
+.ap .wgem { position: fixed; z-index: 60; width: 0; height: 0; pointer-events: none; perspective: 260px; --a: 26px; --s: 36.4px; --t: 20.9deg; animation: wgembob 1.1s ease-in-out infinite alternate; }
 .ap .wgem[hidden] { display: none; }
-.ap .wgem svg { display: block; width: 100%; height: auto; animation: wgem 1.8s linear infinite; transform-origin: 50% 40%; }
-@keyframes wgem { 0% { transform: translateY(0) perspective(120px) rotateY(0deg); } 25% { transform: translateY(-16%) perspective(120px) rotateY(90deg); } 50% { transform: translateY(0) perspective(120px) rotateY(180deg); }
-  75% { transform: translateY(-16%) perspective(120px) rotateY(270deg); } 100% { transform: translateY(0) perspective(120px) rotateY(360deg); } }
+@keyframes wgembob { from { translate: 0 -64px; } to { translate: 0 -54px; } }
+.ap .wgem .g3 { position: absolute; left: 0; top: 0; transform-style: preserve-3d; animation: wgemspin 2.6s linear infinite; }
+@keyframes wgemspin { from { transform: rotateX(-22deg) rotateY(0deg); } to { transform: rotateX(-22deg) rotateY(360deg); } }
+.ap .wgem .gf { position: absolute; left: calc(var(--a) / -2); top: 0; width: var(--a); height: var(--s); transform-origin: 50% 0; clip-path: polygon(0 0, 100% 0, 50% 100%); backface-visibility: visible; }
+.ap .wgem .f0 { transform: rotateY(0deg) translateZ(calc(var(--a) / 2)) rotateX(calc(var(--t) * -1)); background: #3fd46a; }
+.ap .wgem .f1 { transform: rotateY(90deg) translateZ(calc(var(--a) / 2)) rotateX(calc(var(--t) * -1)); background: #1f9e48; }
+.ap .wgem .f2 { transform: rotateY(180deg) translateZ(calc(var(--a) / 2)) rotateX(calc(var(--t) * -1)); background: #13702f; }
+.ap .wgem .f3 { transform: rotateY(270deg) translateZ(calc(var(--a) / 2)) rotateX(calc(var(--t) * -1)); background: #2bba57; }
+.ap .wgem .gt { position: absolute; left: calc(var(--a) / -2); top: calc(var(--a) / -2); width: var(--a); height: var(--a); transform: rotateX(90deg); background: #9dffbe; box-shadow: inset 0 0 0 2px #d8ffe6; }
+@media (prefers-reduced-motion: reduce) { .ap .wgem, .ap .wgem .g3 { animation: none; } }
 .ap .wdrag { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 98; pointer-events: none; overflow: visible; }
 .ap .wdrag .wdl { fill: none; stroke: #5a1008; stroke-width: 16; stroke-linecap: round; }
 .ap .wdrag .wdf { fill: none; stroke: #ff5a3c; stroke-width: 10; stroke-linecap: round; stroke-dasharray: 16 12; animation: wdflow .45s linear infinite; }
@@ -2200,19 +2209,17 @@ export const WAR_CSS = `
 .ap .wdrag.ok .wdf, .ap .wdrag.ok .wdh { fill: none; } .ap .wdrag.ok .wdf { stroke: #ffd27a; } .ap .wdrag.ok .wdh { fill: #ffd27a; }
 @keyframes wdflow { to { stroke-dashoffset: -28; } }
 .ap .wfpop .wcmd.mini { touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-.ap .wfpop .wcmd.mini.dragging { outline: 2px solid #ff5a3c; }
+.ap .wfpop .wcmd.mini.dragging, .ap .wfpop .wcmd.mini.armed { outline: 2px solid #ff5a3c; outline-offset: 1px; }
 .ap .wfpop .wfphint { margin: 6px 2px 0; font-size: 11.5px; color: #c9b88e; text-align: center; }
 /* 깃발 판은 한 줄에 하나 — 깃발마다 판세 막대와 바로 끝날 확률이 처음부터 보인다 (숫자 표는 누르고 있을 때 설명 창에) */
 .ap .wfpop .wfpg { grid-template-columns: 1fr !important; }
-.ap .wfpop .wcmd.mini .wct > .wguess { display: grid !important; grid-column: 1 / -1; }
-.ap .wfpop .wcmd.mini .wct:has(> .wguess) { flex-direction: column; align-items: stretch; }
+.ap .wfpop .wcmd.mini .wct > .wguess { display: none !important; } /* 판세는 깃발을 누르고 있을 때 뜨는 설명 창 밑에 (형 10-28) */
 .ap .wfpop .wcmd.mini { position: relative; } .ap .wfpop .wcmd.mini .wct > em.rec { position: absolute; right: 6px; top: 5px; }
-.ap .wr .wfpop .wcmd.mini .wguess .wgx { display: none !important; } .ap .wr .wfpop .wcmd.mini .wguess .wgl.wgff { display: flex !important; }
 /* 싸움판을 화면 가득 — 아래로 밀지 않는다 (형 10-28) · 전장이 남은 높이를 다 쓰고, 깃발 칸(.wnext)은 「자세히」를 켰을 때만 */
 .ap .wr.choosing:not(.help) .wnext { display: none; }
-.ap .wr.choosing .wtop { min-height: calc(100dvh - 132px - env(safe-area-inset-bottom)); display: flex; flex-direction: column; box-sizing: border-box; }
-.ap .wr.choosing .wtop .wfield { flex: 1 1 auto; height: auto !important; min-height: 170px; }
-.ap .wr.choosing .wsc { padding-bottom: 140px; } .ap .wr.choosing:not(.help):not(.logopen) .wsc { overflow-y: hidden; }
+.ap .wr .wtop { min-height: calc(100dvh - 132px - env(safe-area-inset-bottom)); display: flex; flex-direction: column; box-sizing: border-box; } /* 고르는 동안만 키웠더니 전투 개시 때 잠깐 낮아졌다 (형 10-28) */
+.ap .wr .wtop .wfield { flex: 1 1 auto; height: auto !important; min-height: 170px; }
+.ap .wr .wsc { padding-bottom: 140px; } .ap .wr.choosing:not(.help):not(.logopen) .wsc { overflow-y: hidden; }
 .ap .wrc { cursor: pointer; font: inherit; } .ap .wrc.none { border-color: #e0b860; animation: wrcask 1s ease-in-out infinite alternate; } .ap .wrc.none i { color: #ffd27a; font-size: 15px; }
 @keyframes wrcask { from { box-shadow: 0 0 0 #ffd27a00; } to { box-shadow: 0 0 10px #ffd27a; } }
 .ap .wrrow { display: flex; gap: 8px; width: min(520px, 100%); } .ap .wrrow .wrgo { flex: 1; width: auto; } .ap .wrrow .wrauto { flex: none; }
@@ -3198,7 +3205,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   const gem = document.createElement('div')
   gem.className = 'wgem'
   gem.hidden = true
-  gem.innerHTML = '<svg viewBox="0 0 40 50" aria-hidden="true"><polygon points="2,15 20,6 38,15 20,23" fill="#8dffb0"/><polygon points="2,15 20,23 20,49" fill="#2fbf5f"/><polygon points="38,15 20,23 20,49" fill="#13803a"/><polygon points="9,15 20,10 24,13 13,17" fill="#e8fff0"/></svg>'
+  // 진짜 3D 사각뿔 — 세모 넷이 아래 꼭짓점으로 모이고 윗면 네모 하나 · 통째로 Y 축으로 돈다 (형 10-28: "사각뿔이 아래를 가리키면서 3d로 돌아가야")
+  gem.innerHTML = '<i class="g3"><b class="gf f0"></b><b class="gf f1"></b><b class="gf f2"></b><b class="gf f3"></b><b class="gt"></b></i>'
   ov.appendChild(gem)
   const placeGem = (): void => {
     const g = active ?? sc.querySelector<HTMLElement>('.wgt.on[data-g]')?.dataset['g'] as Grp | 'lead' | undefined
@@ -3227,6 +3235,17 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     dragSvg.style.display = ''
   }
   let drag: { card: HTMLElement; x0: number; y0: number; on: boolean; id: number } | null = null
+  /** 누른 깃발 — 그 깃발에서 화면 가운데 위 1/3 자리로 화살이 서 있다 (형 10-28: "선택하자마자 그 박스를 시작점으로 화면 중앙 위에서 1/3 지점을 가리키고 · 그게 움직여야") */
+  let armed: HTMLElement | null = null
+  const aimAt = (card: HTMLElement): void => {
+    const q = card.getBoundingClientRect()
+    drawDrag(q.left + q.width / 2, q.top + 4, window.innerWidth / 2, window.innerHeight / 3, false)
+  }
+  const disarm = (): void => {
+    armed?.classList.remove('armed')
+    armed = null
+    dragSvg.style.display = 'none'
+  }
   const overField = (x: number, y: number): boolean => {
     const f = sc.querySelector<HTMLElement>('.wfield')
     if (f === null || !pop.hidden && (() => { const q = pop.getBoundingClientRect(); return x >= q.left && x <= q.right && y >= q.top && y <= q.bottom })()) return false
@@ -3237,6 +3256,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const card = (ev.target as HTMLElement).closest<HTMLElement>('[data-war="pick"]')
     if (card === null || !choosing()) return
     showHold(flagHold(card), ev.clientX, ev.clientY)
+    if (armed !== card) { armed?.classList.remove('armed'); armed = card; card.classList.add('armed') }
+    aimAt(card)
     drag = { card, x0: ev.clientX, y0: ev.clientY, on: false, id: ev.pointerId }
     try { card.setPointerCapture(ev.pointerId) } catch { /* 못 잡아도 끌기는 ov 에서 */ }
   })
@@ -3251,15 +3272,15 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     if (drag === null || ev.pointerId !== drag.id) return
     const d = drag
     drag = null
-    dragSvg.style.display = 'none'
     d.card.classList.remove('dragging')
-    if (!d.on) { hideHold(); return }
+    if (!d.on) { hideHold(); if (armed === d.card && d.card.isConnected) aimAt(d.card); return } // 누르기만 했다 — 화살은 그 깃발에서 가운데를 가리킨 채
     hideHold(0)
     if (ev.type === 'pointerup' && overField(ev.clientX, ev.clientY)) {
       swallow = true // 놓은 뒤 오는 click 이 전장 누르기로 깃발 판을 다시 열지 않게
       host.ding('click1', 0.22)
+      disarm()
       doPick(d.card.dataset['g'] as Grp | 'lead', d.card.dataset['c'] as Cmd, d.card, false)
-    }
+    } else if (d.card.isConnected) aimAt(d.card) // 전장 밖에 놓았다 — 처음 화살로
   }
   ov.addEventListener('pointerup', endDrag)
   ov.addEventListener('pointercancel', endDrag)
@@ -3270,6 +3291,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   const choosing = (): boolean => t.line?.pending !== undefined && !animating && chain.length === 0
   let popG: Grp | 'lead' | undefined
   const closePop = (): void => {
+    ov.querySelector('.wdrag')?.setAttribute('style', 'display:none') // 판이 닫히면 서 있던 화살도
+    ov.querySelector('.wfpop .armed')?.classList.remove('armed')
     if (pop.hidden) return
     pop.hidden = true
     pop.replaceChildren()
@@ -3284,7 +3307,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const name = tab.querySelector('.wgn b')?.textContent ?? ''
     const sub = tab.querySelector('.wgn small')?.textContent ?? ''
     fillPane(pane)
-    pop.innerHTML = `<div class="wfph">${tab.querySelector('.wgi')?.outerHTML ?? ''}<b>${esc(name)}</b><small>${esc(sub)}</small><button class="wfpx" data-war="popx" aria-label="닫기">✕</button></div><div class="wfpg"></div><p class="wfphint">깃발을 끌어 전장에 놓으면 정해집니다 · 누르고 있으면 설명</p>`
+    pop.innerHTML = `<div class="wfph">${tab.querySelector('.wgi')?.outerHTML ?? ''}<b>${esc(name)}</b><small>${esc(sub)}</small><button class="wfpx" data-war="popx" aria-label="닫기">✕</button></div><div class="wfpg"></div><p class="wfphint">깃발을 누르고 있으면 판세 · 끌어 전장에 놓으면 정해집니다</p>`
     const grid = pop.querySelector<HTMLElement>('.wfpg')!
     for (const b of pane.querySelectorAll<HTMLElement>('[data-war="pick"]')) {
       const c = b.cloneNode(true) as HTMLElement
@@ -3301,8 +3324,10 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const pw = pop.offsetWidth
     const ph = pop.offsetHeight
     const left = Math.max(8, Math.min(vw - pw - 8, q.left + q.width / 2 - pw / 2))
-    let top = q.bottom + 8
-    if (top + ph > vh - 8) top = Math.max(8, q.top - ph - 8)
+    // 화면 아래쪽에 — 아래 띠 바로 위 (형 10-28: "깃발 선택 창이 너무 위로 가지 않게 아래에") · 띠가 없으면 무리 밑
+    const bar = ready.hidden ? null : ready.getBoundingClientRect()
+    let top = bar !== null ? bar.top - ph + 14 : q.bottom + 8
+    if (top + ph > vh - 8) top = Math.max(8, vh - ph - 8)
     pop.style.left = `${Math.round(left)}px`
     pop.style.top = `${Math.round(top)}px`
   }
