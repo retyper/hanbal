@@ -22,7 +22,6 @@ import { P } from '../../tune/params.ts'
 import { snd } from './sound.ts'
 import { artVoicePath, autoVoicePath, voiceGate, voicePath } from './voice.ts'
 import { WIN_BUZZ, winFxHtml } from './winfx.ts'
-import { scrollInside } from './scroll.ts'
 import { morphInto } from './morph.ts'
 import { cellColor, lookCells, lookNums, oneChance, pctText, signed, type LookCell } from './lookword.ts'
 
@@ -1357,13 +1356,13 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   // 위 카드는 그 싸움터를 무대로 — 길·성문·물가·눈밭·밤 (형 10-23: "길에서 마주치거나 수성하거나 공성할 때는 그 위치에 맞게 배경")
   // 머리 카드도 같은 하늘 — 그림 위에 한 겹 (어둠 · 노을 · 새벽빛)
   const skyLayer = sky === ' dk-night' ? 'linear-gradient(#0a1440aa, #05081add), ' : sky === ' dk-dusk' ? 'linear-gradient(#ff7a2a77, #a0302a44 50%, #1a0a0a88), ' : sky === ' dk-dawn' ? 'linear-gradient(#ffd8a866, #8aa0d044 50%, #0d0f1366), ' : ''
-  h += `<div class="wtop" style="--wtbg:${skyLayer}url('${warBg(art, ground, !weAtk)}')"><div class="wrh"><b>${esc(warName(after, l))}</b>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}<button class="whelp" data-war="help" aria-label="설명 보기">?</button></div>${clockHtml(l, shown)}`
+  h += `<div class="wtop" style="--wtbg:${skyLayer}url('${warBg(art, ground, !weAtk)}')"><div class="wrh"><b>${esc(warName(after, l))}</b>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}${rounds.length > 0 ? '<button class="wlogb" data-war="log" aria-label="합 기록 보기">기록</button>' : ''}<button class="whelp" data-war="help" aria-label="설명 보기">?</button></div>${clockHtml(l, shown)}`
   // 땅 띠 — 전장 바로 위 제 자리에 (형 10-26: "목책이랑 나루 둘다 가운데 설명 '우리에게 유리' 이게 다른거랑 겹쳐짐")
   const terr = terrChips(prev, l, me, fname(foeF)).map((c) => terrChipHtml(art, c, 'wtc')).join('')
   h += `<div class="wvs">${side(ourI, ourHero, ourF, ourName, 'us')}<img class="vs" src="${art}ui/vs.png" alt="VS">${side(foeI, foeHero, foeF, foeName, 'foe')}</div>${terr !== '' ? `<div class="wterr">${terr}</div>` : ''}${fieldHtml()}</div>`
   if (keys !== '') h += `<style>${keys}</style>`
-  // 지나간 합들 — 마지막 합만 천천히
-  h += `<div class="wlog">`
+  // 지나간 합들 — 마지막 합만 천천히 · 평소엔 마지막 합만 전장 위 상자로 떴다 사라지고, 다 보려면 위의 「기록」 (형 10-28)
+  h += `<button class="wlogbg" data-war="log" aria-label="기록 닫기"></button><div class="wlog"><button class="btn sm wlogx" data-war="log">닫기</button>`
   // 마지막 때의 고름 — 묻는 중이면 그 자리부터는 아직 안 고른 것(맡긴 셈)이라 빼고
   const askK = l.pending?.dusk !== undefined && l.pending.round === shown ? l.pending.dusk.k : Infinity
   const dusks = (l.dusk ?? []).filter((_, j) => j < askK)
@@ -1376,7 +1375,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const [pw, pc] = pushWord(rd.push, weAtk, lostUs, lostFoe)
     const crit = rd.beat === ourS
     const d = (k: 0 | 1 | 2): string => (slow ? ` style="--d:${tAt(k)}s"` : '')
-    h += `<div class="wrd${slow ? ' slow' : ''}${crit ? ' crit' : ''}${rd.night === true ? ' night' : ''}"><div class="wrn">${ck !== undefined ? `${slotName(ck, i)} · ` : ''}${ROUND_NAME[i] ?? `${i + 1}`} 합</div>${reliefBanner(rd, ourS, art)}`
+    h += `<div class="wrd${slow ? ' slow' : ''}${crit ? ' crit' : ''}${rd.night === true ? ' night' : ''}"${slow ? ` style="--pd:${(tAt(2) + P.realm.warRoundPopHoldS).toFixed(2)}s"` : ''}><div class="wrn">${ck !== undefined ? `${slotName(ck, i)} · ` : ''}${ROUND_NAME[i] ?? `${i + 1}`} 합</div>${reliefBanner(rd, ourS, art)}`
     const akOf = (sd: 'a' | 'd'): Art | undefined => (rd.acts ?? []).find((x) => x.c === 'art' && x.s === sd)?.art
     h += `<div class="wcmds"${d(0)}><span class="wc us"><em class="wck">우리</em>${flags(weAtk ? rd.oa : rd.od, weAtk ? rd.a : rd.d, art, akOf(ourS))}</span><i>×</i><span class="wc foe"><em class="wck">적</em>${flags(weAtk ? rd.od : rd.oa, weAtk ? rd.d : rd.a, art, akOf(ourS === 'a' ? 'd' : 'a'))}</span></div>`
     const story = ctx !== null ? roundStory(rd, rounds[i - 1], ctx) : []
@@ -1546,6 +1545,23 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
 }
 
 export const WAR_CSS = `
+/* 화면을 굴리지 않는다 (형 10-28: "합 할 때마다 슬라이드로 내려가며 설명 보게 하지 말고 · 하스스톤은 팝업 · 터치하면 뜨는 상자") —
+   마지막 합은 전장 위 상자로 떴다 사라지고(--pd 뒤), 지난 합들은 「기록」을 누르면 뜨는 판 안에. 끝난 판의 결과는 화면 아래에 붙는다 */
+.ap .wr:not(.logopen) .wlog > :not(.wrd.slow) { display: none; }
+.ap .wr:not(.logopen) .wlog .wrd.slow { position: fixed; left: 50%; top: 40%; z-index: 70; width: min(92vw, 480px); box-sizing: border-box; margin: 0; padding: 10px 14px; border-radius: 14px;
+  background: #1a130cf2; border: 1.5px solid #c9a45a; box-shadow: 0 10px 30px #000c; pointer-events: none; transform: translate(-50%, -50%);
+  animation: wrpin .25s ease-out both, wrpout .45s ease-in var(--pd, 4s) forwards; }
+@keyframes wrpin { from { opacity: 0; transform: translate(-50%, -44%) scale(.92); } to { opacity: 1; transform: translate(-50%, -50%); } }
+@keyframes wrpout { to { opacity: 0; visibility: hidden; transform: translate(-50%, -58%); } }
+.ap .wr .wlogbg, .ap .wr .wlogx { display: none; }
+.ap .wr.logopen .wlogbg { display: block; position: fixed; inset: 0; z-index: 74; border: 0; padding: 0; background: #000b; }
+.ap .wr.logopen .wlog { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 75; width: min(94vw, 560px); max-height: 82vh; overflow-y: auto; box-sizing: border-box;
+  padding: 10px 12px 14px; border-radius: 14px; background: #15100bf8; border: 1px solid #c9a45a; box-shadow: 0 10px 40px #000d; }
+.ap .wr.logopen .wlog .wrd { animation: none !important; } .ap .wr.logopen .wlog .wrd * { animation-delay: 0s !important; }
+.ap .wr.logopen .wlogx { display: block; position: sticky; top: 0; margin: 0 0 6px auto; z-index: 2; }
+.ap .wrh .wlogb { margin-left: auto; padding: 2px 10px; border-radius: 12px; border: 1px solid #c9a45a; background: #1f1710cc; color: #f3d48a; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.ap .wrh .wlogb + .whelp { margin-left: 6px; }
+.ap .wr .wend { position: sticky; bottom: calc(8px + env(safe-area-inset-bottom)); z-index: 6; box-shadow: 0 -6px 24px #000c; }
 /* 새 전투 시험 (.wr.b0) — 손가락 · 고른 깃발이 크게 · 숫자 표는 「자세히」 안으로 */
 .ap .wr:not(.b0) .wb0g { display: none; }
 .ap .wb0g { display: flex; flex-direction: column; gap: 2px; margin: 4px 2px 10px; padding: 9px 12px; border-radius: 12px; background: #2a1f0ccc; border: 1.5px solid #e0b860; }
@@ -2755,20 +2771,18 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     // 싸운다를 누르면 — 이번 합이 위 카드 바로 밑에 오게, 판이 끝났으면 결과가 다 풀린 뒤 결과로 (형 10-23: "싸운다 누르면 스크롤 맨 위로 가는 게 맞나?")
     ov.style.setProperty('--wtoph', `${(sc.querySelector<HTMLElement>('.wtop')?.offsetHeight ?? 170) + 8}px`) // 붙박이 위 카드에 가리지 않게
     if (anim) {
-      scrollInside(sc.querySelector('.wrd.slow'), 'start', true)
       const lr = (l.rounds ?? [])[shown - 1]
       const res = lr !== undefined ? roundPlan(lr, l.atkFaction === host.me).result : STAGE_S[2]
-      if (more) { /* 다음 합이 곧 온다 */ } else if (l.pending === undefined) timers.push(window.setTimeout(() => scrollInside(sc.querySelector('.wend'), 'center', true), (res + 0.4) * 1000))
+      // 화면을 굴리지 않는다 — 합 결과는 전장 위에 떴다 사라지고, 결과·다음 합 판은 제자리에 (형 10-28: "폰 게임에서 슬라이드는 피할 수 있으면 피해야")
+      if (more || l.pending === undefined) { /* 다음 합이 곧 온다 · 끝났으면 결과 판이 아래에 붙는다 */ }
       else {
-        timers.push(window.setTimeout(() => scrollInside(sc.querySelector('.wnext'), 'start', true), (res + 0.6) * 1000))
         // 해가 진다 — 마지막 때를 묻는 판이 뜨는 때에 종 (밤 싸움이면 새벽)
         if (l.pending.dusk !== undefined) { at(res + 0.6, BATTLE_SFX.openBell, 0.5); buzz(res + 0.6, [20, 40, 20]) }
         animating = true
         timers.push(window.setTimeout(() => syncField(true), (res + 0.5) * 1000)) // 맞부딪힌 진을 거두고 다음 합을 고르는 진으로 (다음 합의 낌새도 그때 뜬다)
       }
     } else if (endNow) {
-      // 마지막 때에 판이 끝났다 — 결과로
-      timers.push(window.setTimeout(() => scrollInside(sc.querySelector('.wend'), 'center', true), 400))
+      // 마지막 때에 판이 끝났다 — 결과 판은 아래에 붙는다 (굴리지 않는다)
     } else {
       sc.scrollTop = 0
       syncField()
@@ -3141,7 +3155,6 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     // 한 합 더 — 북을 울려 다시 붙는다
     draw(false)
     if (document.visibilityState === 'visible') { at(0, BATTLE_SFX.openDrum, 0.5); at(0.38, BATTLE_SFX.openDrum, 0.5); at(0.5, BATTLE_SFX.cry, 0.35) }
-    scrollInside(sc.querySelector('.wnext'), 'start', true)
   }
   /** 정말 물러나나 — 묻는 판 (예면 그 자리에서 퇴각) */
   const sure = document.createElement('div')
@@ -3301,6 +3314,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         return
       }
       case 'popx': closePop(); return
+      case 'log': ov.classList.toggle('logopen'); return
       case 'help': {
         const on = ov.classList.toggle('help')
         try { localStorage.setItem(HELP_KEY, on ? '1' : '0') } catch { /* 저장이 막혀도 이번 판은 된다 */ }
