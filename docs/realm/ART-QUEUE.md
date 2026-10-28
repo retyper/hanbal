@@ -8,7 +8,7 @@
 |---|---|---|
 | YunCheol (edu · 'YunCheol Shin') | 10-29 AM 2:53 (문구 그대로) | 10-28 03:25 한도 문구 — 02:50 부터 스물다섯 장 (사건 그림 · 한 장은 거절: bow-forge) |
 | retyper92 (계정 고르기에 'YunCheol Shin · retyper92@gmail' 로 뜬다) | 10-29 PM 3:24 (문구 그대로) | 10-28 15:35 한도 문구 — 15:20 부터 네 장 (사건 expedition-return · goguryeo-hunt · golden-egg · iron-trade) |
-| roqkfeke12 ('윤철 신') | 10-28 PM 6:15 (문구 그대로) | 10-27 18:22 한도 문구 — 18:12 부터 열 장 (g-22 ~ g-32 · 다음은 g-41 고자 바우부터 아홉 장) |
+| roqkfeke12 ('윤철 신') | 10-28 PM 6:30 쯤 (문구: 2시간 뒤) | 10-28 16:33 한도 문구 — 장도 안 받고 막힘(어제 18:12 열 장의 여파) |
 | retyper (hephaestosian · 'retyper') | 10-28 PM 10:17 (문구 그대로) | 10-28 02:47 한도 문구 — 10-27 22:16 부터 열 장 (명치판 아홉 + 사건 invade-raid) |
 
 
