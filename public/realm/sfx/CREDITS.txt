@@ -216,3 +216,6 @@ bgm_map_k15.mp3  국립국악원 디지털 이음 · 「방아타령」 (산조 
 bgm_map_k16.mp3  국립국악원 디지털 이음 · 「25현가야금을 위한 변주곡 한오백년」 (25현 가야금) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
 bgm_war_c7v.ogg  국립국악원 디지털 이음 · 남창 추임새 「헐씨구」「잘한다」 · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 바탕 음악 bgm_war_c7(공유마당 「국악 BGM #197 (사물놀이)」 · 주식회사 아이티앤 · CC BY)에 얹음
 bgm_war_c8v.ogg  국립국악원 디지털 이음 · 남창 추임새 「얼씨구」「좋다」「하믄」「그러지」「헐씨구」「잘한다」 · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 바탕 음악 bgm_war_c8(공유마당 「LSMBG0704_사물놀이」 · 한국저작권위원회 · CC BY)에 얹음
+bgm_win_g1.mp3  공유마당 · 「태평소독주_시그널음악_011」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13289824 — 앞뒤에 「전통악기_북_치다_느린속도」·「전통악기_북_치다_빠른속도」((재)전주정보문화산업진흥원 · 공공누리 제1유형) · 「징소리B」(김용배 · CC BY)를 얹어 섞음
+bgm_win_g2.mp3  공유마당 · 「태평소독주_시그널음악_012」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13289825 — 북·징은 g1 과 같음
+bgm_win_g3.mp3  공유마당 · 「태평소독주_시그널음악_016」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13289829 — 북·징은 g1 과 같음

@@ -21,8 +21,9 @@ export const PICK = {
   // g1·g2·g3 — 공유마당(공공누리 제1유형 · CC BY)에서 받은 후보 (형 10-23: "공공누리에서 니가 싹 받아와서 쓸 수 있는 거면 다 해 · 출처표기 주의").
   // 출처는 sfx/CREDITS.txt 끝 · 첫 화면의 「소리 출처」. 형이 sound-picker.html 에서 듣고 고르면 글자만 바꾼다
   bgm_map: 'k1', bgm_war: 'c7v',
-  // 이기고 진 뒤의 음악 — 이김은 형이 받은 "즐겁게 추격하는 듯한 한국풍" (싸움 음악으로는 너무 신났다 — 형 10-23)
-  bgm_win: 'a', bgm_lose: 'c3',
+  // 이기고 진 뒤의 음악 — 이김은 국악 팡파르: 북 쿵·쿵 → 징 쾅 → 태평소 → 북·징으로 맺음, 한 번만 울린다
+  // (형 10-29: "국악식 빵빠레 같은 빠바밤 · 지금 노래는 말 타며 달리기 막 시작하는 노래 같음" — 옛 a 는 형이 받은 추격풍) · g1~g3 은 태평소독주 시그널음악(한국저작권위원회 · CC BY)에 공유마당 북·징을 얹어 구움
+  bgm_win: 'g1', bgm_lose: 'c3',
   // 첫 화면(로그인·이어 하기) 음악 — 웅장한 것 (형 10-23: "로그인 화면 메인은 웅장한 bgm 따로")
   bgm_title: 'c6',
   // 누를 때 나는 소리 — 누른 것의 바탕(쇠·엽전·붓·말굽·방울·북·바둑돌·딱따기)대로 (형 10-23: "탭할 때 나는 sfx 도 소재에 맞게 다양한 소리")
@@ -43,7 +44,7 @@ export const PICK = {
 } as const
 /** ogg 가 아닌 후보 — 형이 받아 온 것은 받은 꼴 그대로 · 공유마당 음악은 mp3 · 누르는 소리는 브라우저로 잘라 낸 wav */
 const EXT: Readonly<Partial<Record<string, string>>> = {
-  bgm_map_f: 'mp3', bgm_map_g: 'mp3', bgm_win_a: 'mp3',
+  bgm_map_f: 'mp3', bgm_map_g: 'mp3', bgm_win_a: 'mp3', bgm_win_g1: 'mp3', bgm_win_g2: 'mp3', bgm_win_g3: 'mp3',
   // 10-28 형이 국립국악원 디지털 이음에서 고른 민요·산조 — 조각을 빈틈없이 이어 한 곡씩(k1~k11) · 통째 곡 다섯(k12~k16) · 모두 -18 LUFS 로 맞춤
   ...Object.fromEntries(Array.from({ length: 16 }, (_, i) => [`bgm_map_k${i + 1}`, 'mp3'])),
   // 거문고 「도~」(dex_new_c 9.5초)를 3초로 자르고 2초부터 줄였다 — 고용·도감·유물 상자에 통째로 울려 길었다 (형 10-27)
@@ -70,6 +71,8 @@ export const ROTATE: Readonly<Partial<Record<Slot, readonly string[]>>> = { bgm_
 // 추임새마다 그 자리 음악보다 4dB 크게 · 봉우리만 눌렀다 — 굽는 법은 assets_src/realm/sfx-in/chuim/
 /** 한 곡이 끝나고 다음 곡까지 쉬는 자리 — 계절 바람소리만 남는다 (형 10-28: "문명에선 배경음악 안 들릴 때도 많은데") */
 const REST: ReadonlySet<Slot> = new Set<Slot>(['bgm_map'])
+/** 한 번만 울리고 끝나는 곡 — 팡파르는 되풀이하면 우습다 */
+const ONCE: ReadonlySet<Slot> = new Set<Slot>(['bgm_win'])
 /**
  * 곡마다 소리 크기 — 형이 가져온 지도 곡(-16dB 언저리)에 맞춘다 (형 10-23: "소리도 너무 커"). 1 보다 크게는 못 키운다.
  * 2026-10-23 잰 값: map c4 -12.0 · c9 -11.9 · war c7 -12.5 · title c6 -14.0 · 끝 이김 w5(Joy of Victory) -18.0 · 끝 짐 c6 -14.8
@@ -230,7 +233,7 @@ function track(base: string, vol: number): { prime(slot: Slot): void; want(slot:
       el.preload = 'auto'
       el.volume = gainOf(slot)
       const list = ROTATE[slot]
-      el.loop = list === undefined
+      el.loop = list === undefined && !ONCE.has(slot)
       if (list !== undefined) {
         // 한 곡이 끝나면 다음 곡 — 같은 요소에 주소만 바꿔 끼운다
         let i = 0
