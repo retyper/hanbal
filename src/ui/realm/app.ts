@@ -1320,7 +1320,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         ...(a.march !== null ? { march: { from: a.march.from, to: a.march.to, left: a.march.left } } : {}),
         ...(a.faction !== me() ? { ally: a.faction } : {}),
         // 이번 계절 시킨 일이 없는 우리 군대 — 「명령?」 (길 위 · 떠나기로 함 · 남이 빌려준 군대는 빼고)
-        ...(!tokTapped && a.faction === me() && a.march === null && pick[a.id] === undefined ? { wait: true } : {}),
+        // 한 번 눌러 본 뒤로 영영 안 뜨던 것을 — 가끔 2초씩 떴다 사라지게 (형 10-29: "가끔 「명령?」 2초간 떴다 없어지게 하는 거 괜찮았는데 왜 안 뜨지?")
+        ...(a.faction === me() && a.march === null && pick[a.id] === undefined ? { wait: true } : {}),
       }
     })
     // 보인 적의 군대 — 길 위에 그 나라 빛 테의 말로 (형 10-27: "대로로 오는 적군이나 기습이 예견된 적군은 텍스트 말고 동맹군 오듯이 유닛들이 맵에")
