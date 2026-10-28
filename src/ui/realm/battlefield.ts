@@ -474,12 +474,18 @@ const ACT_RES: Readonly<Record<Act['res'], 'ok' | 'no' | 'even'>> = {
  * [우리/적 · 무리 그림 · 명령] → [맞은편 무리 그림] · ✓ 먹혔다 / ✕ 막혔다 / = 맞섰다 · 맞은편이 잃은 사람.
  * 우리에게 좋은 일은 초록, 나쁜 일은 붉게. 글 이야기는 그 밑에 작게 남는다
  */
+/** 그림 줄에 올릴 일 — 북만 치고 겨눈 데가 없는 것은 뺀다 */
+const shownActs = (acts: readonly Act[] | undefined): Act[] => (acts ?? []).filter((x) => !(x.c === 'drum' && x.tg === undefined))
 export function actRows(acts: readonly Act[] | undefined, ourS: 'a' | 'd', art: string, mixA: Readonly<Partial<Record<string, number>>>, mixD: Readonly<Partial<Record<string, number>>>): string {
-  const list = (acts ?? []).filter((x) => !(x.c === 'drum' && x.tg === undefined))
+  const list = shownActs(acts)
   if (list.length === 0) return ''
+  return `<div class="wacts">${list.map((x) => actRow(x, ourS, art, mixA, mixD)).join('')}</div>`
+}
+/** 누가 누구를 · 됐나 — 한 줄 */
+function actRow(x: Act, ourS: 'a' | 'd', art: string, mixA: Readonly<Partial<Record<string, number>>>, mixD: Readonly<Partial<Record<string, number>>>): string {
   const mixOfS = (s: 'a' | 'd'): Readonly<Partial<Record<string, number>>> => (s === 'a' ? mixA : mixD)
-  let h = '<div class="wacts">'
-  for (const x of list) {
+  let h = ''
+  {
     const us = x.s === ourS
     const other = x.s === 'a' ? 'd' : 'a'
     const r = ACT_RES[x.res]
@@ -496,7 +502,30 @@ export function actRows(acts: readonly Act[] | undefined, ourS: 'a' | 'd', art: 
     if (x.c === 'retreat' && x.res === 'ok' && x.n !== undefined) h += `<span class="kept">${x.n}명 빠져나갔다</span>`
     h += '</div>'
   }
-  return h + '</div>'
+  return h
+}
+/**
+ * 합 결과 두 줄 창 — 일어난 일을 그 깃발 연출이 나올 때 한 줄씩 띄우고, 두 줄이 차면 위로 밀어 올린다 (1·2 → 2·3 → 3·4)
+ * (형 10-28: "전투 연출 나오는 동시에 · 싸우는 장면도 보이고 어디가 먹히고 안 먹혔는지")
+ */
+function tickerHtml(lines: ReadonlyArray<readonly [string, number]>, key: string): string {
+  if (lines.length === 0) return ''
+  const R = P.realm
+  const ls = [...lines].sort((x, y) => x[1] - y[1])
+  const step = R.warTickLineH + R.warTickGap
+  const end = ls[ls.length - 1]![1] + R.warTickMove + 0.05
+  const pc = (t: number): string => `${Math.min(100, Math.max(0, (t / end) * 100)).toFixed(2)}%`
+  let fr = '0%{transform:translateY(0)}'
+  let was = 0
+  ls.forEach(([, t], i) => {
+    if (i < 2) return
+    const at = Math.max(t, was)
+    fr += `${pc(at)}{transform:translateY(${-(i - 2) * step}px)}${pc(at + R.warTickMove)}{transform:translateY(${-(i - 1) * step}px)}`
+    was = at + R.warTickMove
+  })
+  fr += `100%{transform:translateY(${-Math.max(0, ls.length - 2) * step}px)}`
+  return `<div class="wtick" style="--th:${R.warTickLineH}px;--tg:${R.warTickGap}px"><style>@keyframes ${key}{${fr}}</style><div class="wtk" style="animation:${key} ${end.toFixed(2)}s linear both">`
+    + ls.map(([h, t]) => `<div class="wtl" style="--t:${t.toFixed(2)}s">${h}</div>`).join('') + '</div></div>'
 }
 
 /** 원군이 닿은 합의 띠 (형: "열세에 밀린 아군에 로한의 기병대 같은 쾌감") — 우리 원군은 금빛, 적 원군은 붉게 */
@@ -1433,16 +1462,34 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     // 누가 누구를 · 됐나 — 그림 줄이 먼저, 글 이야기는 그 밑에 작게
     const rows = actRows(rd.acts, ourS, art, mixOf(0), mixOf(1))
     h += `<div class="wst${rows !== '' ? ' sm' : ''}"${d(1)}>${rows}${story.map((s) => `<p>${esc(s)}</p>`).join('')}</div>`
+    // 두 줄 창 — 일마다 그 깃발 연출이 나오는 때에 (맞는 깃발이 없으면 앞 줄 조금 뒤)
+    const tick: Array<[string, number]> = []
+    if (slow && plan !== null) {
+      const used = new Set<Beat>()
+      let at = plan.beats[0]?.at ?? 0
+      for (const x of shownActs(rd.acts)) {
+        const b = plan.beats.find((q) => !used.has(q) && q.ours === (x.s === ourS) && q.c === x.c)
+        if (b !== undefined) { used.add(b); at = b.at } else at += P.realm.warTickMove + 0.15
+        tick.push([actRow(x, ourS, art, mixOf(0), mixOf(1)), Math.min(at, plan.story)])
+      }
+    }
+    // 끝줄은 밀고 밀린 말 — 잃은 수는 전장 위 숫자(.wdmg)가 보인다
+    const tickEnd = (push: string): string => {
+      if (!slow || plan === null) return ''
+      tick.push([push, plan.result])
+      return tickerHtml(tick, `wtk${kn++}`)
+    }
     // 사로잡기·물러나기로 끝난 합은 밀고 밀린 것이 없다
-    if (rd.ev === 'capture-ok' || rd.ev === 'retreat') h += `<p class="wpush"${d(2)}>싸움이 거기서 끝났다</p></div>`
-    else if (rd.ev === 'retreat-fail') h += `<p class="wpush"${d(2)}>${rd.by === ourS ? '적이 물러나다 따라잡혔다 — 싸움이 이어진다' : '물러나다 따라잡혔다 — 싸움이 이어진다'}</p></div>`
+    if (rd.ev === 'capture-ok' || rd.ev === 'retreat') h += `<p class="wpush"${d(2)}>싸움이 거기서 끝났다</p>${tickEnd('<p class="wpush">싸움이 거기서 끝났다</p>')}</div>`
+    else if (rd.ev === 'retreat-fail') { const w = rd.by === ourS ? '적이 물러나다 따라잡혔다 — 싸움이 이어진다' : '물러나다 따라잡혔다 — 싸움이 이어진다'; h += `<p class="wpush"${d(2)}>${w}</p>${tickEnd(`<p class="wpush">${w}</p>`)}</div>` }
     else {
       // 무리마다 — 앞줄·활·말 그림과 잃은 수 (형: "전투로그에서도 다이나믹함이 보이게끔 유닛마다 아이콘도 같이")
       const gBefore = (sd: 0 | 1): Readonly<Partial<Record<Grp, number>>> => (i === 0 ? groupMen(mixOf(sd) as Parameters<typeof groupMen>[0]) : (sd === 0 ? rounds[i - 1]!.ga : rounds[i - 1]!.gd) ?? {})
       const chips = (sd: 0 | 1): string => groupLoss(gBefore(sd), sd === 0 ? rd.ga : rd.gd).map(([g, k]) => `<span class="wl"><img src="${art}icon/${GROUP_ICON[g]}.png" alt="">−${k}</span>`).join('')
       const cu = chips(ourI)
       const cf = chips(foeI)
-      h += `<p class="wpush ${pc}"${d(2)}>${pw}</p><p class="wloss"${d(2)}><span class="us">우리 ${cu !== '' ? cu : `−${lostUs}`}</span><span class="foe">적 ${cf !== '' ? cf : `−${lostFoe}`}</span></p></div>`
+      const loss = `<span class="us">우리 ${cu !== '' ? cu : `−${lostUs}`}</span><span class="foe">적 ${cf !== '' ? cf : `−${lostFoe}`}</span>`
+      h += `<p class="wpush ${pc}"${d(2)}>${pw}</p><p class="wloss"${d(2)}>${loss}</p>${tickEnd(`<p class="wpush ${pc}">${pw}</p>`)}</div>`
     }
   })
   // 마지막 때에 판이 끝났다 (진을 쳤다 · 물러났다) — 그 고름을 맨 끝에
@@ -1610,6 +1657,14 @@ export const WAR_CSS = `
 .ap .wr:not(.logopen) .wlog .wrd.slow .wst > * { background: #120d09e0; border-radius: 10px; padding: 3px 10px; box-shadow: 0 2px 8px #000a; }
 .ap .wr:not(.logopen) .wlog .wrd.slow .wst { background: none; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; }
 .ap .wr:not(.logopen) .wlog .wrd.slow > .wrn { font-size: 12px; color: #ffe2a0; }
+/* 두 줄 창 — 전장 위 상자에서는 이것만 (기록 판을 열면 옛 모양 그대로) */
+.ap .wr:not(.logopen) .wlog .wrd.slow:has(.wtick) > :is(.wst, .wpush, .wloss) { display: none; }
+.ap .wr.logopen .wtick, .ap .wrd:not(.slow) .wtick { display: none; }
+.ap .wtick { width: 100%; height: calc(var(--th) * 2 + var(--tg)); overflow: hidden; }
+.ap .wtick .wtk { display: flex; flex-direction: column; gap: var(--tg); }
+.ap .wtick .wtl { flex: none; height: var(--th); display: flex; align-items: center; justify-content: center; opacity: 0; animation: wrrow .3s ease-out var(--t, 0s) both; }
+.ap .wtick .wtl > * { margin: 0; max-height: 100%; overflow: hidden; background: #120d09e0; border-radius: 10px; padding: 3px 10px; box-shadow: 0 2px 8px #000a; }
+.ap .wtick .wtl > .wact { flex-wrap: nowrap; white-space: nowrap; } .ap .wtick .wtl > .wloss { display: flex; gap: 10px; }
 @keyframes wrpin { from { opacity: 0; transform: translate(-50%, 16px) scale(.96); } to { opacity: 1; transform: translateX(-50%); } }
 @keyframes wrpout { to { opacity: 0; visibility: hidden; transform: translate(-50%, 24px); } }
 .ap .wr .wlogbg, .ap .wr .wlogx { display: none; }
@@ -2415,7 +2470,7 @@ export const WAR_CSS = `
 .ap .wend { margin-top: 14px; padding: 12px; border-radius: 14px; text-align: center; background: #1f1710; animation: wrin .5s ease-out var(--d, 0s) both; }
 .ap .wend b { font-size: 21px; } .ap .wend.good b { color: var(--good); } .ap .wend.bad b { color: var(--bad); }
 .ap .wend .wwhy { font-size: 14.5px; color: #e8dcc0; }
-.ap .wr.fast .wrd.slow .wcmds, .ap .wr.fast .wrd.slow .wst, .ap .wr.fast .wrd.slow .wpush, .ap .wr.fast .wend, .ap .wr.fast .wnext { animation-delay: 0s !important; animation-duration: .01s !important; }
+.ap .wr.fast .wtick .wtk, .ap .wr.fast .wtick .wtl, .ap .wr.fast .wrd.slow .wcmds, .ap .wr.fast .wrd.slow .wst, .ap .wr.fast .wrd.slow .wpush, .ap .wr.fast .wend, .ap .wr.fast .wnext { animation-delay: 0s !important; animation-duration: .01s !important; }
 .ap .wr.fast .wbar i.wgr, .ap .wr.fast .wbar .wchunk, .ap .wr.fast .wn.swap > *, .ap .wr.fast .wrd.slow .wloss, .ap .wr.fast .ws.hit, .ap .wr.fast .ws.hit::after, .ap .wr.fast .wfx-hit { animation-delay: 0s !important; animation-duration: .01s !important; }
 /* 장수 기술 — 초상이 옆에서 튀어나와 한 마디 (일본식 컷인 띠·빛살 없이 · 기술 결마다 효과가 다르다) */
 /* 장수 기술은 읽고 「내가 썼다」를 느낄 만큼 — 1.8초 또렷 · 0.4초 걷힘 (형 10-24: "너무 빨리 나타나고 없어진다" · 필살기 컷인은 흔히 1.5~2.5초) */
