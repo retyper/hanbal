@@ -2205,7 +2205,7 @@ export const WAR_CSS = `
 .ap .wdrag { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 98; pointer-events: none; overflow: visible; }
 .ap .wdrag .wdl { fill: none; stroke: #5a1008; stroke-width: 16; stroke-linecap: round; }
 .ap .wdrag .wdf { fill: none; stroke: #ff5a3c; stroke-width: 10; stroke-linecap: round; stroke-dasharray: 16 12; animation: wdflow .45s linear infinite; }
-.ap .wdrag .wdh { fill: #ff5a3c; stroke: #5a1008; stroke-width: 3; }
+.ap .wdrag .wdh { fill: #ff5a3c; stroke: none; } /* 촉에 짙은 테 없이 (형 10-28) */
 .ap .wdrag.ok .wdf, .ap .wdrag.ok .wdh { fill: none; } .ap .wdrag.ok .wdf { stroke: #ffd27a; } .ap .wdrag.ok .wdh { fill: #ffd27a; }
 @keyframes wdflow { to { stroke-dashoffset: -28; } }
 .ap .wfpop .wcmd.mini { touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -2213,7 +2213,7 @@ export const WAR_CSS = `
 .ap .wfpop .wfphint { margin: 6px 2px 0; font-size: 11.5px; color: #c9b88e; text-align: center; }
 /* 깃발 판 밑의 판세 — 누른 깃발(처음엔 ★권함)의 판세 막대와 바로 끝날 확률 · 깃발을 누를 때마다 바뀐다 (형 10-28: "깃발 선택 창 하단에 아예 전황 바") */
 .ap .wfpop .wfplook { margin-top: 6px; padding: 5px 7px; border-radius: 10px; background: #0b0a08b3; } .ap .wfpop .wfplook:empty { display: none; }
-.ap .wfpop .wfplook .wguess { margin-top: 0; } .ap .wr .wfpop .wfplook .wguess .wgx { display: none !important; } .ap .wr .wfpop .wfplook .wguess .wgl.wgff { display: flex !important; }
+.ap .wfpop .wfplook .wguess { margin-top: 0; } .ap .wr .wfpop .wfplook .wguess .wgx { display: none !important; } .ap .wr .wfpop .wfplook.held .wguess .wgx { display: grid !important; } .ap .wr .wfpop .wfplook .wguess .wgl.wgff { display: flex !important; }
 .ap .wfpop .wfplook .wlkn { font-size: 11.5px; color: #ffe2a0; font-weight: 700; margin-bottom: 2px; }
 .ap .wfpop .wcmd.mini .wct > .wguess { display: none !important; } /* 판세는 깃발을 누르고 있을 때 뜨는 설명 창 밑에 (형 10-28) */
 .ap .wfpop .wcmd.mini { position: relative; } .ap .wfpop .wcmd.mini .wct > em.rec { position: absolute; right: 6px; top: 5px; }
@@ -3207,12 +3207,14 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     `<div class="whh">${card.querySelector('img.wflag')?.outerHTML ?? ''}<b>${esc(card.querySelector('.wct > b')?.textContent ?? '')}</b>${card.querySelector('.wct > em')?.outerHTML ?? ''}</div>`
     + `<p>${esc(card.dataset['desc'] ?? card.dataset['more'] ?? '')}</p>`
   /** 깃발 판 밑의 판세 칸을 그 깃발로 */
-  const showLook = (card: HTMLElement | null): void => {
+  const showLook = (card: HTMLElement | null, table = false): void => {
     const box = pop.querySelector<HTMLElement>('.wfplook')
     if (box === null) return
     const gu = card?.querySelector('.wguess')
     box.innerHTML = gu != null && card !== null ? `<div class="wlkn">${esc(card.querySelector('.wct > b')?.textContent ?? '')} — 이번 합</div>${gu.outerHTML}` : ''
+    box.classList.toggle('held', table) // 0.5초 넘게 누르고 있으면 피해·사기 표까지 (형 10-28) · 다른 깃발을 누르면 다시 막대만
   }
+  let lookT = 0
 
   /** 지금 고를 무리 머리 위의 보석 — 초록 역삼각뿔 (그러데이션·filter 없이 면마다 단색) */
   const gem = document.createElement('div')
@@ -3273,6 +3275,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const pq = pop.getBoundingClientRect()
     showHold(flagHold(card), pq.left + pq.width / 2, pq.top + 18)
     showLook(card)
+    window.clearTimeout(lookT)
+    lookT = window.setTimeout(() => { if (drag?.card === card && !drag.on) showLook(card, true) }, P.realm.warLookTableMs)
     if (armed !== card) { armed?.classList.remove('armed'); armed = card; card.classList.add('armed') }
     aimAt(card)
     drag = { card, x0: ev.clientX, y0: ev.clientY, on: false, id: ev.pointerId }
