@@ -35,7 +35,7 @@ let playing = null
 const list = document.getElementById('list')
 let h = ''
 for (const s of DATA) {
-  if (s === DATA[1]) h += '<h2>칠십팔국 싸움 소리</h2>'
+  if (s === DATA[1]) h += '<h2>삼한열전 싸움 소리</h2>'
   if (s === DATA[0]) h += '<h2>아직 고를 것 — 활터 소리를 빌려 쓰는 자리</h2>'
   h += `<div class="slot${s.hwal ? ' sus' : ''}"><div class="sh"><b>${s.name}</b><small>${s.when}</small>${s.hwal ? '<span class="sus">활터 효과음 · 새 후보 붙임</span>' : ''}</div>`
   s.opts.forEach((o, i) => {

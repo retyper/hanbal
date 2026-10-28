@@ -63,7 +63,7 @@ describe('손 저장 — 파일 한 장', () => {
   })
   it('파일 이름 — 나라 · 계절, 빈칸·못 쓰는 글자 없이', () => {
     const n = saveFileName(makeSaveFile(game(), null, '', ''))
-    assert.equal(n, '칠십팔국-사로국-1년봄.json')
+    assert.equal(n, '삼한열전-사로국-1년봄.json')
     assert.ok(!/[\s\\/:*?"<>|]/.test(n))
   })
   it('자동 저장 한 판 · 「기록 내보내기」 파일도 받는다', () => {

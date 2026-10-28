@@ -439,7 +439,7 @@ const app = mountRealmApp(root, {
       return null
     },
     loadFile(text) {
-      if (text.length > P.realm.saveFileMaxMB * 1024 * 1024) return '파일이 너무 크다 — 칠십팔국 판으로 읽을 수 없다'
+      if (text.length > P.realm.saveFileMaxMB * 1024 * 1024) return '파일이 너무 크다 — 삼한열전 판으로 읽을 수 없습니다'
       const p = parseSaveFile(text)
       return p.ok ? openSave(p.file) : p.why
     },
