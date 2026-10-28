@@ -914,6 +914,7 @@ function startOf(a: Side, d: Side, af: Force, df: Force): BattleStart {
     heroes: [a.hero?.id ?? null, d.hero?.id ?? null],
     ...((a.aides ?? []).length + (d.aides ?? []).length > 0 ? { aides: [(a.aides ?? []).map((x) => x.id), (d.aides ?? []).map((x) => x.id)] as const } : {}),
     mix: [{ ...af.mix }, { ...df.mix }],
+    ...(a.relief !== undefined || d.relief !== undefined ? { late: [{ ...(a.relief?.mix ?? {}) }, { ...(d.relief?.mix ?? {}) }] as const } : {}),
   }
 }
 

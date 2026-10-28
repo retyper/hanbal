@@ -580,6 +580,8 @@ export interface BattleStart {
   readonly mix?: readonly [Readonly<Partial<Record<UnitKind, number>>>, Readonly<Partial<Record<UnitKind, number>>>]
   /** 무너지는 선의 사기 (공격, 지킴) — 사기가 이 밑이면 그 쪽이 무너진다 (tactics: 처음 사기 × tacBreakMorale · 덤은 빼고). 옛 보고에는 없다 */
   readonly brk?: readonly [number, number]
+  /** 늦게 닿는 원군의 병종 (공격, 지킴) — mix 안에 들어 있지만 닿기(RoundLog.relief) 전엔 싸움터에 없다 · 화면이 그 그림을 숨겼다가 걸어 들어오게 */
+  readonly late?: readonly [Readonly<Partial<Record<UnitKind, number>>>, Readonly<Partial<Record<UnitKind, number>>>]
 }
 
 /** 싸움이 끝난 까닭 — 이야기의 마지막 줄 (withdraw: 마지막 때에 물러났다) */

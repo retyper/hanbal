@@ -1298,15 +1298,30 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         const left = gm[RG[r]!] ?? 0
         return left <= 0 ? 0 : Math.max(1, Math.min(cnt, Math.round((cnt * left) / Math.max(1, g0[RG[r]!]))))
       }
-      const aliveR = rows.map((ks, r) => standing(r, ks.length, gOf(last), n(i)))
-      const beforeR = rows.map((ks, r) => (anim ? standing(r, ks.length, was !== undefined ? gOf(was) : g0, n0(i)) : aliveR[r]!))
+      // 원군 — 닿기 전엔 그 몫의 그림을 숨기고(쓰러진 병사로 그리면 원군이 와서 되살아나 보였다), 닿는 합에 걸어 들어온다 (형 10-28: "원군 들어와도 어색하지 않게")
+      const sd: 'a' | 'd' = i === 0 ? 'a' : 'd'
+      const lateG = groupMen((st.late?.[i] ?? {}) as Parameters<typeof groupMen>[0])
+      const came = rounds.some((rd) => rd.relief?.side === sd)
+      const cameNow = anim && came && !rounds.slice(0, -1).some((rd) => rd.relief?.side === sd)
+      const awayR = rows.map((ks, r) => { const lg = lateG[RG[r]!] ?? 0; return lg <= 0 ? 0 : lg >= g0[RG[r]!] ? ks.length : Math.min(ks.length - 1, Math.max(1, Math.round((ks.length * lg) / Math.max(1, g0[RG[r]!])))) })
+      const standingLate = (r: number, cnt: number, gm: Readonly<Partial<Record<Grp, number>>> | undefined, share: number, here: boolean): number => {
+        if (here || awayR[r] === 0) return standing(r, cnt, gm, share)
+        const present = cnt - awayR[r]!
+        const base = g0[RG[r]!] - (lateG[RG[r]!] ?? 0)
+        if (gm === undefined) return share <= 0 ? 0 : Math.max(present > 0 ? 1 : 0, Math.min(present, Math.round(present * share)))
+        const left = gm[RG[r]!] ?? 0
+        return left <= 0 || present <= 0 ? 0 : Math.max(1, Math.min(present, Math.round((present * left) / Math.max(1, base))))
+      }
+      const aliveR = rows.map((ks, r) => standingLate(r, ks.length, gOf(last), n(i), came))
+      const beforeR = rows.map((ks, r) => (anim ? standingLate(r, ks.length, was !== undefined ? gOf(was) : g0, n0(i), came && !cameNow) : aliveR[r]!))
       const rowAt = [0, 0, 0]
       let idx = 0
       // 한 줄(세로) — 가운데에서 위아래로 고르게. 많으면 두 겹(앞 겹·뒤 겹이 엇갈린다)
       const tok = (k0: string, r: 0 | 1 | 2, x: number, oy: number): string => {
         const k = solArt(k0, sea)
         const q = rowAt[r]!++
-        const s2 = q < aliveR[r]! ? 'tku' : q < beforeR[r]! ? 'tkf' : 'tkd' // 'fall' 은 군주가 무너진 판(.ap .fall — 액자 테)과 이름이 겹쳐 말이 큰 액자로 그려졌다 (10-25)
+        const late = awayR[r]! > 0 && q >= rows[r]!.length - awayR[r]! // 원군 몫 — 줄 끝의 그림들
+        const s2 = late && !came ? 'tkh' : late && cameNow ? 'tku tkn' : q < aliveR[r]! ? 'tku' : q < beforeR[r]! ? 'tkf' : 'tkd' // 'fall' 은 군주가 무너진 판(.ap .fall — 액자 테)과 이름이 겹쳐 말이 큰 액자로 그려졌다 (10-25)
         const hl = oy < -0.5 ? ' hi' : oy > 0.5 ? ' lo' : ''
         const sc = (0.8 + 0.4 * ((oy + 40) / 80)).toFixed(2)
         const pos = `--x:${(x + oy * 0.22).toFixed(1)}%;--oy:${oy.toFixed(1)}%;--sc:${sc};--j:${idx % 6};--k:${(((idx++ * 47) % 97) / 97).toFixed(2)};z-index:${10 + Math.round(oy + 40)}`
@@ -1519,7 +1534,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     // 무리 탭 — 누른 무리만 빛나고 그 무리 깃발만 보인다. 무리마다 다 고르면 「전투 개시」가 켜진다
     // (형 10-24: "깃발이 너무 많아서 헷갈려 · 창병 방패병을 탭하면 빛나면서 걔네들 깃발만 · 다 고른 뒤에 전투개시 버튼 활성화")
     const panes: Array<{ g: Grp | 'lead'; name: string; sub: string; icon: string; options: readonly Cmd[] }> = []
-    for (const gr of p.groups) if (gr.options.length > 0) panes.push({ g: gr.g, name: groupLabel(mixOf(ourI), gr.g), sub: `${gr.men}명`, icon: `<img class="wgi" src="${art}icon/${GROUP_ICON[gr.g]}.png" alt="">`, options: gr.options })
+    for (const gr of p.groups) if (gr.options.length > 0 && gr.men >= 1) // 아직 안 닿은 원군뿐인 무리는 깃발을 안 든다 panes.push({ g: gr.g, name: groupLabel(mixOf(ourI), gr.g), sub: `${gr.men}명`, icon: `<img class="wgi" src="${art}icon/${GROUP_ICON[gr.g]}.png" alt="">`, options: gr.options })
     if (p.lead.length > 0) panes.push({ g: 'lead', name: '장수', sub: ourName, icon: `<span class="wgi f">${face(ourHero, art, unitOf(ourI))}</span>`, options: p.lead })
     const act = panes.find((x) => x.g === active) ?? panes.find((x) => sel[x.g] === undefined) ?? panes[0]
     h += `<div class="wgtabs">`
@@ -2096,6 +2111,10 @@ export const WAR_CSS = `
 @keyframes wrrow { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
 /* 맞부딪힘 — 잃은 사람 수·사기가 초상 위로 크게 튀어 오른다 */
 .ap .wtop .ws { position: relative; }
+/* 원군 그림 — 닿기 전엔 없고, 닿는 합에 뒤에서 걸어 들어온다 */
+.ap .wf2s .tk.tkh { display: none; }
+.ap .wf2s .tk.tkn { animation: tknin 1s ease-out var(--hd, 1.2s) both; }
+@keyframes tknin { from { opacity: 0; translate: -60% 0; } to { opacity: 1; translate: 0 0; } }
 .ap .ws .wdmg, .ap .ws .wmdmg { position: absolute; left: 50%; z-index: 6; pointer-events: none; white-space: nowrap; opacity: 0; font-style: normal; translate: -50% 0;
   text-shadow: 0 0 3px #000, 0 2px 0 #000, 0 0 10px #000; animation: wdmgpop 1.6s ease-out var(--hd, 1.2s) both; }
 .ap .ws .wdmg { top: 18px; font-size: clamp(30px, 9vw, 46px); font-weight: 900; color: #ff4a2a; -webkit-text-stroke: 1.5px #2a0500; }
@@ -3170,7 +3189,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   const groupRect = (side: 'us' | 'foe', g: Grp | 'lead'): DOMRect | null => {
     const s = sc.querySelector<HTMLElement>(`.wfield .wf2s.${side}`)
     if (s === null) return null
-    const els = [...s.querySelectorAll<HTMLElement>(g === 'lead' ? '.wgen' : `.tk.r${RANK_G.indexOf(g)}:not(.tkd)`)]
+    const els = [...s.querySelectorAll<HTMLElement>(g === 'lead' ? '.wgen' : `.tk.r${RANK_G.indexOf(g)}:not(.tkd):not(.tkh)`)]
     if (els.length === 0) return null
     let l = Infinity, tp = Infinity, r = -Infinity, b = -Infinity
     for (const e of els) { const q = e.getBoundingClientRect(); l = Math.min(l, q.left); tp = Math.min(tp, q.top); r = Math.max(r, q.right); b = Math.max(b, q.bottom) }
