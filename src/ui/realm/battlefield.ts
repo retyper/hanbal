@@ -3396,11 +3396,10 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     armed = null
     dragSvg.style.display = 'none'
   }
+  /** 깃발을 놓으면 쓰이는 곳 — 깃발 판(없으면 아래 띠)보다 위면 어디든 (형 10-28: "드랍할 곳이 너무 팍팍해 · 깃발 창보다 위 전투판이면") */
   const overField = (x: number, y: number): boolean => {
-    const f = sc.querySelector<HTMLElement>('.wfield')
-    if (f === null || !pop.hidden && (() => { const q = pop.getBoundingClientRect(); return x >= q.left && x <= q.right && y >= q.top && y <= q.bottom })()) return false
-    const q = f.getBoundingClientRect()
-    return x >= q.left && x <= q.right && y >= q.top && y <= q.bottom
+    const top = !pop.hidden ? pop.getBoundingClientRect().top : !ready.hidden ? ready.getBoundingClientRect().top : window.innerHeight
+    return x >= 0 && x <= window.innerWidth && y >= 0 && y < top - P.realm.warDropGap
   }
   pop.addEventListener('pointerdown', (ev) => {
     const card = (ev.target as HTMLElement).closest<HTMLElement>('[data-war="pick"]')
