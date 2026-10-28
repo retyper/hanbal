@@ -5572,7 +5572,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const hide = root.querySelector<HTMLInputElement>('.instc .insthide')?.checked === true
         if (hide) { try { localStorage.setItem(INSTALL_HIDE_KEY, '1') } catch { /* 저장 못 하는 곳 */ } }
         instClosed = true
-        break
+        // 알림만 걷는다 — 다시 그리면 첫 화면의 로고·단추가 처음부터 다시 떠올랐다 (형 10-28)
+        root.querySelector('.instc')?.remove()
+        return
       }
       case 'inst-show': { try { localStorage.removeItem(INSTALL_HIDE_KEY) } catch { /* 저장 못 하는 곳 */ } instClosed = false; fmoreOpen = false; break }
       case 'reset-play':
