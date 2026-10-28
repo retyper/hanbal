@@ -604,14 +604,14 @@ export const FRONT_CSS = `
 @keyframes tv { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 /* 로고 — 문장(청동 거울·맥궁) 위에 붓글씨 이름. 금빛 그러데이션 글자 + 어두운 테 · 문장은 숨 쉬듯 빛난다 */
 .ap .front.title .logo { position: relative; display: flex; flex-direction: column; align-items: center; margin-bottom: 2px; }
-.ap .front.title .lemb { width: clamp(120px, 30vw, 190px); aspect-ratio: 1; filter: drop-shadow(0 4px 14px #000d) drop-shadow(0 0 18px #e8b85a55); animation: lemb 4.5s ease-in-out infinite; }
+.ap .front.title .lemb { width: clamp(120px, 30vw, 190px); aspect-ratio: 1; filter: drop-shadow(0 4px 14px #000d) drop-shadow(0 0 18px #e8b85a55); }
 @keyframes lemb { 0%, 100% { filter: drop-shadow(0 4px 14px #000d) drop-shadow(0 0 14px #e8b85a40); } 50% { filter: drop-shadow(0 4px 14px #000d) drop-shadow(0 0 26px #f0c86a88); } }
 .ap .front.title h1 { font-family: 'East Sea Dokdo', var(--display); font-weight: 400; font-size: clamp(96px, 24vw, 176px); line-height: .9; margin: -4px 0 0; letter-spacing: .04em;
   background: linear-gradient(#fff4cc 10%, #f0c86a 48%, #b07a2c 80%, #7a4e18); -webkit-background-clip: text; background-clip: text; color: transparent;
   filter: drop-shadow(0 2px 0 #2a1606) drop-shadow(0 6px 16px #000e); }
 /* 로고 한 장 (10-24 형: "로고도 좀 더 멋지게") — 금관·청동 거울·맥궁·오색 띠 위에 금빛 이름 · 숨 쉬듯 빛난다 */
 .ap .front.title h1:has(.ltitle) { background: none; filter: none; margin: 0; line-height: 0; }
-.ap .front.title .ltitle { width: min(760px, 94vw); height: auto; filter: drop-shadow(0 6px 16px #000d) drop-shadow(0 0 14px #e8b85a40); animation: lemb 4.5s ease-in-out infinite; }
+.ap .front.title .ltitle { width: min(760px, 94vw); height: auto; filter: drop-shadow(0 6px 16px #000d); } /* 빛이 숨 쉬던 것(filter 애니)을 뺐다 — 폰에서 로고 칸 바탕이 검었다 투명했다 했다 (형 10-29) */
 @media (prefers-reduced-motion: reduce) { .ap .front.title .lemb, .ap .front.title .ltitle { animation: none; } }
 .ap .front.title .sub { margin: 2px 0 8px; color: #e8dcc0; font-size: 14px; letter-spacing: .08em; }
 .ap .front.title .hook { margin: 0 auto 16px; color: #cfc6b4; font-size: 13.5px; line-height: 1.6; max-width: 460px; }
