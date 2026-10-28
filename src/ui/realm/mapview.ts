@@ -19,7 +19,6 @@ import { customMarks } from '../../realm/hooks.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
 import type { EdgeKind, NodeKind, Realm, REdge, RegionId, SeasonOfYear } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
-import { gfxSafe } from '../gfxsafe.ts'
 import { ferryAt, landClipSvg, midOf, riversSvg, smoothPath, tidyEnds, trimPolyline, type Pt } from './mapgeo.ts'
 import { boardRoutes, boardTerritory } from './roadlayout.ts'
 import { kitVars, nationKit } from './kitcolor.ts'
@@ -519,7 +518,7 @@ export function mapHtml(
   const landClip = landClipSvg(region, W, H)
   svg += `${landClip}${fog?.defs ?? ''}</defs>`
   // 땅빛 — 고을마다의 땅을 산·강을 따라 가르고(territory.ts) 주인 색으로
-  svg += provincesSvg(r, W, dim, focus, seen, me, landClip !== '')
+  svg += provincesSvg(r, W, H, dim, focus, seen, me, landClip !== '')
   // 강 — 또렷하게 (영남 판)
   svg += riversSvg(region, W, H)
   // 모르는 땅 — 강·땅빛 위, 길 밑 (아는 고을 사이의 길은 늘 보인다)
@@ -974,13 +973,70 @@ export function routeSign(r: Realm, ed: REdge, season: SeasonOfYear, ferry: bool
 const beat = (id: string): number => [...id].reduce((s, c) => (s * 31 + c.charCodeAt(0)) % 997, 7) / 997
 const lenOf = (p: readonly Pt[]): number => p.reduce((s, q, i) => (i === 0 ? 0 : s + Math.hypot(q[0] - p[i - 1]![0], q[1] - p[i - 1]![1])), 0)
 
+interface BandItem { own: string; rim: string; col: string; w: number; a: number }
+let bandKey = ''
+let bandOut: string | null = null
+/**
+ * 나라 땅 안쪽 띠를 그림 한 장으로 — 둘레를 굵게 긋고 그 나라 땅 안으로만 잘라 흐린다 (옛 SVG 거르개와 같은 꼴).
+ * 작게 구워 늘린다 — 늘리면 저절로 부드럽고, 확대·축소 때 다시 그리지 않는다. DOM 이 없으면(시험) null
+ */
+function bandImage(items: readonly BandItem[], W: number, H: number, blur: number): string | null {
+  if (typeof document === 'undefined' || items.length === 0) return null
+  const key = `${W}|${H}|${items.map((x) => `${x.col}${x.w}${x.a}${x.rim}${x.own}`).join('|')}`
+  if (key === bandKey) return bandOut
+  try {
+    const s = P.realm.mapBandBakeScale
+    const w = Math.max(8, Math.round(W * s))
+    const h = Math.max(8, Math.round(H * s))
+    const cv = document.createElement('canvas')
+    cv.width = w
+    cv.height = h
+    const g = cv.getContext('2d')
+    if (g === null) return null
+    g.scale(w / W, h / H)
+    g.lineCap = 'round'
+    g.lineJoin = 'round'
+    for (const x of items) {
+      g.save()
+      g.clip(new Path2D(x.own))
+      g.globalAlpha = x.a
+      g.strokeStyle = x.col
+      g.lineWidth = x.w
+      g.stroke(new Path2D(x.rim))
+      g.restore()
+    }
+    // 흐림 — 알파를 곱한 채로 상자 흐림 두 번 (가장자리가 검게 번지지 않게)
+    const img = g.getImageData(0, 0, w, h)
+    const d = img.data
+    const ch = [new Float32Array(w * h), new Float32Array(w * h), new Float32Array(w * h), new Float32Array(w * h)]
+    for (let i = 0; i < w * h; i++) { const al = d[i * 4 + 3]! / 255; ch[0]![i] = d[i * 4]! * al; ch[1]![i] = d[i * 4 + 1]! * al; ch[2]![i] = d[i * 4 + 2]! * al; ch[3]![i] = al }
+    const rr = Math.max(1, Math.round(blur * s))
+    const tmp = new Float32Array(w * h)
+    for (const c of ch) {
+      for (let pass = 0; pass < 2; pass++) {
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let sum = 0; for (let k = -rr; k <= rr; k++) sum += c[y * w + Math.min(w - 1, Math.max(0, x + k))]!; tmp[y * w + x] = sum / (rr * 2 + 1) }
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let sum = 0; for (let k = -rr; k <= rr; k++) sum += tmp[Math.min(h - 1, Math.max(0, y + k)) * w + x]!; c[y * w + x] = sum / (rr * 2 + 1) }
+      }
+    }
+    for (let i = 0; i < w * h; i++) {
+      const al = ch[3]![i]!
+      d[i * 4 + 3] = Math.round(al * 255)
+      if (al > 0.001) { d[i * 4] = Math.round(ch[0]![i]! / al); d[i * 4 + 1] = Math.round(ch[1]![i]! / al); d[i * 4 + 2] = Math.round(ch[2]![i]! / al) }
+    }
+    g.putImageData(img, 0, 0)
+    bandKey = key
+    bandOut = cv.toDataURL('image/png')
+    return bandOut
+  } catch { return null }
+}
+
 /**
  * 고을마다의 땅을 주인 색으로 — 같은 나라 사이는 옅은 점선, 다른 나라 사이는 짙은 금, 강을 따라 갈린 금은 강과 겹친다.
  * **우리 땅**은 금빛 빗금을 깔고 둘레를 짙은 띠 위 금빛 겹선으로 두른다 (형: "내나라가 지도상에서 정확히 어딘지 가늠이 안됨").
  * 땅 모양은 판마다 한 번만 셈하고(territory.ts) 여기서는 색만 칠한다. 뭍이 있는 판은 뭍 밖을 잘라 낸다.
  */
 function provincesSvg(
-  r: Realm, W: number,
+  r: Realm, W: number, H: number,
   dim: (owner: string | null) => boolean, focus: string | null, seen: (id: string) => boolean, me: string, clipped: boolean,
 ): string {
   const { nodes, t } = boardTerritory(r)
@@ -1026,18 +1082,23 @@ function provincesSvg(
   let band = ''
   let crisp = ''
   let cps = ''
+  const bake: BandItem[] = []
   for (const [o, d] of [...rim].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
     const { c: col } = nationKit(o)
     cps += `<clipPath id="rm-own-${o}"><path d="${own.get(o)!}"/></clipPath>`
     // 둘레 안쪽의 번진 제 색 띠 하나 + 또렷한 제 색 선 하나 — 이웃과 맞닿으면 두 색이 나란히 선다 (문명 6 국경).
     // 둘째 빛 띠·먹빛 테는 걷었다 — 비슷한 빛의 이웃은 이름표의 두 색(kitcolor)으로 가른다 (형 10-26: "몇 줄씩 테두리")
     band += `<path class="nbd" d="${d}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${(o === me ? 24 : 18) * k}" opacity="${o === me ? 0.45 : 0.36}"/>`
+    bake.push({ own: own.get(o)!, rim: d, col, w: (o === me ? 24 : 18) * k, a: o === me ? 0.45 : 0.36 })
     crisp += `<path class="nb" d="${d}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${(6 * k).toFixed(1)}" opacity=".9"/>`
   }
   const blurK = (3 * k).toFixed(1)
-  let h = `<defs><filter id="rm-band" x="-2%" y="-2%" width="104%" height="104%"><feGaussianBlur stdDeviation="${blurK}"/></filter>${cps}</defs>`
+  // 띠를 미리 구운 그림으로 — 흐림 거르개는 확대·축소 때마다 다시 그려 무거웠다 (형 10-29) · 구울 수 없는 곳(시험)만 옛 거르개
+  const baked = bandImage(bake, W, H, 3 * k)
+  let h = `<defs>${baked === null ? `<filter id="rm-band" x="-2%" y="-2%" width="104%" height="104%"><feGaussianBlur stdDeviation="${blurK}"/></filter>` : ''}${cps}</defs>`
   // 둘레는 고을 사이 금(조각)을 이어 그린다 — 끝을 둥글게 해야 꺾인 모서리에서 제 색 선이 끊기지 않는다 (형 10-26: "가까이서 보면 각진 곳에 국경 색이 끊어져 있음")
-  h += `<g class="terr"${clip}>${fill}<g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#rm-band)">${band}</g><g fill="none" stroke-linecap="round" stroke-linejoin="round">${crisp}</g>`
+  const bandLayer = baked !== null ? `<image href="${baked}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="none"/>` : `<g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#rm-band)">${band}</g>`
+  h += `<g class="terr"${clip}>${fill}${bandLayer}<g fill="none" stroke-linecap="round" stroke-linejoin="round">${crisp}</g>`
   // 우리 땅 — 옅은 금빛 (빗금은 비 같다고 해서 뺐다 · 형: "비오는줄알았다"). 금빛 경계가 천천히 숨 쉰다
   if (mine !== '') h += `<path d="${mine}" fill="#ffe7a8" opacity=".13"/>`
   h += `<g fill="none" stroke-linecap="round" stroke-linejoin="round">${lines}`
@@ -1094,11 +1155,13 @@ function fogSvg(
   const tile = Math.round(Math.min(W, H) * 0.42)
   // 갤럭시 호환 모드 — 그 폰 크롬은 가림막(mask) 속 SVG 거르개(흐림·일렁임)를 네모 조각으로 깨뜨린다 (형 10-28: 안개가 네모 칸처럼 끊김)
   // 그래서 작은 그림판에 미리 그려 흐린 그림 한 장을 가림막으로 쓴다 — 늘려 그리면 가장자리가 저절로 부드럽다
-  const safe = gfxSafe ? fogMaskUrl(t.fills.flatMap((d, i) => {
+  // 확대·축소할 때마다 지도 전체에 걸린 거르개(일렁임+흐림)를 다시 그려 한 번에 수십 ms 씩 버벅였다 (형 10-29: "확대 축소할 때 버벅거리는 게 고질적") —
+  // 이제 모든 기기에서 미리 구운 가림막 한 장을 늘려 쓴다 (갤럭시는 그 거르개를 네모로 깨뜨리기도 했다 · gfxSafe 이 아니어도)
+  const safe = fogMaskUrl(t.fills.flatMap((d, i) => {
     if (!vis.has(nodes[i]!.id)) return []
     const p = nodePos(region, nodes[i]!.id)
     return [{ d, dot: p !== undefined ? [p[0] * W, p[1] * H] as const : undefined }]
-  }), corridors, W, H, terrR, blur) : null
+  }), corridors, W, H, terrR, blur)
   if (safe !== null) {
     const defs = `<mask id="rm-fog" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><image href="${safe}" width="${W}" height="${H}" preserveAspectRatio="none"/></mask>`
       + `<pattern id="rm-hanji" patternUnits="userSpaceOnUse" width="${tile}" height="${tile}"><image href="${art}map-world/hanji.webp" width="${tile}" height="${tile}" preserveAspectRatio="none"/></pattern>`
@@ -1162,7 +1225,26 @@ function fogMaskUrl(holes: ReadonlyArray<{ d: string; dot: readonly [number, num
       a[y * w + x] = sum / (rr * 2 + 1)
     }
   }
-  for (let i = 0; i < a.length; i++) { const v = Math.round(a[i]!); img.data[i * 4] = v; img.data[i * 4 + 1] = v; img.data[i * 4 + 2] = v; img.data[i * 4 + 3] = 255 }
+  // 먹이 번진 듯 들쭉날쭉 — 옛 거르개(일렁임)처럼, 흐린 판을 매끈한 물결만큼 비껴 읽는다
+  const amp = terrR * 0.35 * s
+  const fq = (Math.PI * 2) / Math.max(4, terrR * 2.2 * s)
+  const at = (x: number, y: number): number => {
+    const xi = Math.min(w - 2, Math.max(0, Math.floor(x)))
+    const yi = Math.min(h - 2, Math.max(0, Math.floor(y)))
+    const fx = Math.min(1, Math.max(0, x - xi))
+    const fy = Math.min(1, Math.max(0, y - yi))
+    const o = yi * w + xi
+    return (a[o]! * (1 - fx) + a[o + 1]! * fx) * (1 - fy) + (a[o + w]! * (1 - fx) + a[o + w + 1]! * fx) * fy
+  }
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const dx = amp * (Math.sin(y * fq + x * fq * 0.37) * 0.6 + Math.sin(y * fq * 2.3 - x * fq * 1.1 + 1.7) * 0.4)
+      const dy = amp * (Math.sin(x * fq * 1.13 + y * fq * 0.29 + 0.8) * 0.6 + Math.sin(x * fq * 2.7 + y * fq * 0.9 + 2.9) * 0.4)
+      const v = Math.round(at(x + dx, y + dy))
+      const o = (y * w + x) * 4
+      img.data[o] = v; img.data[o + 1] = v; img.data[o + 2] = v; img.data[o + 3] = 255
+    }
+  }
   g.putImageData(img, 0, 0)
   fogMaskKey = key
   fogMaskOut = cv.toDataURL('image/png')
