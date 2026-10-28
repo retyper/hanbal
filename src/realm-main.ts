@@ -10,6 +10,9 @@
  * 판마다 나라·시드·계절마다 내 명령·보고·내 살림·고민한 시간·누른 것. 새 판을 열어도 지난 판은 남는다.
  * 나라 판의 "기록 내보내기"로 JSON 한 장을 받고, tools/realm-records.ts 로 읽는다.
  */
+import { startGfxSafe } from './ui/gfxsafe.ts'
+// 갤럭시(Xclipse) 크롬은 부드러운 그러데이션·filter 색 함수를 못 그린다 — 그 기기에서만 되는 꼴로 바꿔 끼운다 (gfxsafe.ts · 형 10-28)
+startGfxSafe()
 import { startRegion } from './realm/data/regions/index.ts'
 import { headcount } from './realm/battle.ts'
 import { forceOf } from './realm/season.ts'

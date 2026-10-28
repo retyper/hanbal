@@ -9,6 +9,9 @@
  * 둘을 아는 유일한 파일이 이 조립 파일이다.
  */
 
+import { startGfxSafe } from './ui/gfxsafe.ts'
+// 갤럭시(Xclipse) 크롬은 부드러운 그러데이션·filter 색 함수를 못 그린다 — 그 기기에서만 되는 꼴로 바꿔 끼운다 (gfxsafe.ts · 형 10-28)
+startGfxSafe()
 import { createLoop } from './game/loop.ts'
 import { STAGES } from './game/stages.ts'
 import { loadSave } from './game/save.ts'
