@@ -19,6 +19,7 @@ import { customMarks } from '../../realm/hooks.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
 import type { EdgeKind, NodeKind, Realm, REdge, RegionId, SeasonOfYear } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
+import { gfxSafe } from '../gfxsafe.ts'
 import { ferryAt, landClipSvg, midOf, riversSvg, smoothPath, tidyEnds, trimPolyline, type Pt } from './mapgeo.ts'
 import { boardRoutes, boardTerritory } from './roadlayout.ts'
 import { kitVars, nationKit } from './kitcolor.ts'
@@ -1094,6 +1095,18 @@ function fogSvg(
   }
   for (const d of corridors) holes += `<path d="${d}" fill="none" stroke="#000" stroke-width="${Math.round(terrR * 1.6)}" stroke-linecap="round" stroke-linejoin="round"/>`
   const tile = Math.round(Math.min(W, H) * 0.42)
+  // 갤럭시 호환 모드 — 그 폰 크롬은 가림막(mask) 속 SVG 거르개(흐림·일렁임)를 네모 조각으로 깨뜨린다 (형 10-28: 안개가 네모 칸처럼 끊김)
+  // 그래서 작은 그림판에 미리 그려 흐린 그림 한 장을 가림막으로 쓴다 — 늘려 그리면 가장자리가 저절로 부드럽다
+  const safe = gfxSafe ? fogMaskUrl(t.fills.flatMap((d, i) => {
+    if (!vis.has(nodes[i]!.id)) return []
+    const p = nodePos(region, nodes[i]!.id)
+    return [{ d, dot: p !== undefined ? [p[0] * W, p[1] * H] as const : undefined }]
+  }), corridors, W, H, terrR, blur) : null
+  if (safe !== null) {
+    const defs = `<mask id="rm-fog" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><image href="${safe}" width="${W}" height="${H}" preserveAspectRatio="none"/></mask>`
+      + `<pattern id="rm-hanji" patternUnits="userSpaceOnUse" width="${tile}" height="${tile}"><image href="${art}map-world/hanji.webp" width="${tile}" height="${tile}" preserveAspectRatio="none"/></pattern>`
+    return { defs, body: `<g class="fog" mask="url(#rm-fog)"><rect width="${W}" height="${H}" fill="#efe4cc"/><rect width="${W}" height="${H}" fill="url(#rm-hanji)"/></g>`, words: fogWords(r, me, region, W, H, terrR, vis, art) }
+  }
   // 거르개 자리는 판 전체 — 본 땅이 좁으면 ±5% 자리 밖으로 번진 먹이 잘려 곧은 금이 생겼다
   const defs = `<filter id="rm-fog-blur" filterUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}">`
     + `<feTurbulence type="fractalNoise" baseFrequency="${(3 / terrR).toFixed(4)}" numOctaves="2" seed="11" result="n"/>`
@@ -1103,6 +1116,63 @@ function fogSvg(
     + `<g fill="#000" filter="url(#rm-fog-blur)">${holes}</g></mask>`
     + `<pattern id="rm-hanji" patternUnits="userSpaceOnUse" width="${tile}" height="${tile}"><image href="${art}map-world/hanji.webp" width="${tile}" height="${tile}" preserveAspectRatio="none"/></pattern>`
   const body = `<g class="fog" mask="url(#rm-fog)"><rect width="${W}" height="${H}" fill="#efe4cc"/><rect width="${W}" height="${H}" fill="url(#rm-hanji)"/></g>`
+  return { defs, body, words: fogWords(r, me, region, W, H, terrR, vis, art) }
+}
+
+/** 갤럭시 호환 모드의 안개 가림막 — 본 땅을 검게 뚫은 흰 판을 작게 그려 흐린다 (같은 판이면 다시 그리지 않는다) */
+let fogMaskKey = ''
+let fogMaskOut = ''
+function fogMaskUrl(holes: ReadonlyArray<{ d: string; dot: readonly [number, number] | undefined }>, corridors: readonly string[], W: number, H: number, terrR: number, blur: number): string | null {
+  if (typeof document === 'undefined') return null
+  const key = `${W}|${H}|${terrR}|${corridors.join('')}|${holes.map((h) => h.d).join('')}`
+  if (key === fogMaskKey) return fogMaskOut
+  const s = P.realm.mapFogSafeScale
+  const w = Math.max(8, Math.round(W * s))
+  const h = Math.max(8, Math.round(H * s))
+  const cv = document.createElement('canvas')
+  cv.width = w
+  cv.height = h
+  const g = cv.getContext('2d')
+  if (g === null) return null
+  g.fillStyle = '#fff'
+  g.fillRect(0, 0, w, h)
+  g.scale(w / W, h / H)
+  g.fillStyle = '#000'
+  g.strokeStyle = '#000'
+  for (const x of holes) {
+    g.fill(new Path2D(x.d))
+    if (x.dot !== undefined) { g.beginPath(); g.arc(x.dot[0], x.dot[1], terrR * 0.5, 0, Math.PI * 2); g.fill() }
+  }
+  g.lineWidth = Math.round(terrR * 1.6)
+  g.lineCap = 'round'
+  g.lineJoin = 'round'
+  for (const d of corridors) g.stroke(new Path2D(d))
+  // 흐림 — 상자 흐림 세 번(가우스 흉내) · 캔버스 filter 를 안 쓴다 (그 폰은 그것도 못 믿는다)
+  const img = g.getImageData(0, 0, w, h)
+  const a = new Float32Array(w * h)
+  for (let i = 0; i < a.length; i++) a[i] = img.data[i * 4]!
+  const rr = Math.max(1, Math.round(blur * s))
+  const tmp = new Float32Array(w * h)
+  for (let pass = 0; pass < 3; pass++) {
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      let sum = 0
+      for (let k = -rr; k <= rr; k++) sum += a[y * w + Math.min(w - 1, Math.max(0, x + k))]!
+      tmp[y * w + x] = sum / (rr * 2 + 1)
+    }
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      let sum = 0
+      for (let k = -rr; k <= rr; k++) sum += tmp[Math.min(h - 1, Math.max(0, y + k)) * w + x]!
+      a[y * w + x] = sum / (rr * 2 + 1)
+    }
+  }
+  for (let i = 0; i < a.length; i++) { const v = Math.round(a[i]!); img.data[i * 4] = v; img.data[i * 4 + 1] = v; img.data[i * 4 + 2] = v; img.data[i * 4 + 3] = 255 }
+  g.putImageData(img, 0, 0)
+  fogMaskKey = key
+  fogMaskOut = cv.toDataURL('image/png')
+  return fogMaskOut
+}
+
+function fogWords(r: Realm, me: string, region: RegionId, W: number, H: number, terrR: number, vis: ReadonlySet<string>, art: string): string {
   // 구름무늬 — 고른 눈금 위, 본 고을에서 먼 자리 (나라 자리를 흘리지 않게 눈금으로)
   let words = ''
   const seenPts = [...vis].map((id) => nodePos(region, id)).filter((p) => p !== undefined)
@@ -1131,5 +1201,5 @@ function fogSvg(
     const y = p[1] + ((jit(f + 'y') - 0.5) * terrR * 1.6) / H
     words += `<span class="rumor" style="left:${(x * 100).toFixed(1)}%;top:${(y * 100).toFixed(1)}%"><i></i>${r.factions[f]!.name}<small>소문으로 들은 나라</small></span>`
   }
-  return { defs, body, words }
+  return words
 }
