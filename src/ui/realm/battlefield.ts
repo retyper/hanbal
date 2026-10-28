@@ -1570,14 +1570,18 @@ export const WAR_CSS = `
 .ap .wr.b0 .wgrp:not([hidden]):not(:has(.wcmd.on)) .wcmd.rec::after, .ap .wr.b0 .wgo:not(:disabled)::after { content: '👆'; position: absolute; left: 50%; top: 100%; margin: 2px 0 0 -18px; font-size: 32px; line-height: 1;
   filter: drop-shadow(0 2px 3px #000); pointer-events: none; z-index: 5; animation: b0hand .7s ease-in-out infinite alternate; }
 .ap .wr.b0 .wgo { position: relative; }
-.ap .wr.b0 .wrgo { position: relative; overflow: visible; } .ap .wr.b0 .wrgo::before { content: '👉'; position: absolute; right: 100%; top: 50%; margin: -17px 6px 0 0; font-size: 30px; line-height: 1; filter: drop-shadow(0 2px 3px #000); pointer-events: none; animation: b0point .7s ease-in-out infinite alternate; }
+.ap .wr.b0 .wrgo { position: relative; overflow: visible; } .ap .wr.b0 .wrgo:not(:disabled)::before { content: '👉'; position: absolute; right: 100%; top: 50%; margin: -17px 6px 0 0; font-size: 30px; line-height: 1; filter: drop-shadow(0 2px 3px #000); pointer-events: none; animation: b0point .7s ease-in-out infinite alternate; }
 @keyframes b0point { from { transform: translateX(0); } to { transform: translateX(-10px); } }
 .ap .wr.b0 .wfpop .wcmd.mini.rec:not(.on) { outline: 2px solid #ffd27a; outline-offset: 1px; animation: tutglow .9s ease-in-out infinite alternate; }
-/* 시험판 — 아직 하나도 안 골랐으면 전장의 우리 무리 위에 손가락 (첫 화면에 깃발 칸이 안 보여도 누를 곳이 보이게 · 누르면 그 자리에 깃발 판) */
-.ap .wr.b0 .wrbox:has(.wnext):not(:has(.wcmd.on)) .wfield .wf2s.us::after { content: '👆 우리 무리를 누르세요'; position: absolute; left: 20%; top: 66%; z-index: 90; white-space: nowrap;
-  padding: 5px 12px; border-radius: 999px; background: #2a1f0ce6; border: 1.5px solid #e0b860; color: #ffe6a8; font-size: 15px; font-weight: 700; pointer-events: none;
-  box-shadow: 0 0 14px #ffd27a88; animation: b0hand .7s ease-in-out infinite alternate; }
-@media (max-width: 520px) { .ap .wr.b0 .wrbox:has(.wnext):not(:has(.wcmd.on)) .wfield .wf2s.us::after { font-size: 12.5px; padding: 3px 9px; left: 8%; } }
+/* 아직 하나도 안 골랐으면 우리 앞줄 위에 초록 화살표가 빙글 돌며 둥실 (형 10-28: "글 말고 3D 같이 녹색으로 돌아가는 둥실거리는 화살표 · 유닛 위에서")
+   ::before 는 어두운 옆면, ::after 는 밝은 앞면 — 둘이 같이 돌아 두께가 보인다 · 그러데이션·filter 없이 단색 (갤럭시) */
+.ap .wr.b0 .wrbox:has(.wnext):not(:has(.wcmd.on)) .wfield .wf2s.us::before, .ap .wr.b0 .wrbox:has(.wnext):not(:has(.wcmd.on)) .wfield .wf2s.us::after {
+  content: ''; position: absolute; left: 31%; top: calc(50% - 15cqw); z-index: 90; width: clamp(28px, 9cqw, 50px); aspect-ratio: 34 / 40; pointer-events: none;
+  clip-path: polygon(30% 0, 70% 0, 70% 48%, 100% 48%, 50% 100%, 0 48%, 30% 48%); animation: b0arw 1.6s linear infinite; }
+.ap .wr.b0 .wrbox:has(.wnext):not(:has(.wcmd.on)) .wfield .wf2s.us::before { background: #1f8a3a; margin-left: 2px; }
+.ap .wr.b0 .wrbox:has(.wnext):not(:has(.wcmd.on)) .wfield .wf2s.us::after { background: #4be070; }
+@keyframes b0arw { 0% { transform: translate(-50%, 0) perspective(160px) rotateY(0deg); } 25% { transform: translate(-50%, -18%) perspective(160px) rotateY(90deg); }
+  50% { transform: translate(-50%, 0) perspective(160px) rotateY(180deg); } 75% { transform: translate(-50%, -18%) perspective(160px) rotateY(270deg); } 100% { transform: translate(-50%, 0) perspective(160px) rotateY(360deg); } }
 .ap .wr.b0 .wfoot { margin-bottom: 40px; }
 @keyframes b0hand { from { transform: translateY(0); } to { transform: translateY(-10px); } }
 .ap .wr.b0 .wgrp.b0flash .wcmdgrid { animation: b0flash .6s ease-out; } @keyframes b0flash { 0% { filter: brightness(2.2); transform: scale(1.03); } 100% { filter: none; transform: none; } }
@@ -2183,6 +2187,16 @@ export const WAR_CSS = `
 .ap .wfpop { position: fixed; z-index: 94; width: min(330px, calc(100vw - 16px)); padding: 8px; border-radius: 14px; background: #17110cf6; border: 1.5px solid #ffd27a; box-shadow: 0 0 0 1px #000, 0 12px 34px #000d, 0 0 18px #ffd27a44; animation: wfpin .16s ease-out; }
 @keyframes wfpin { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
 .ap .wfpop[hidden] { display: none; }
+/* 싸움판을 화면 가득 — 아래로 밀지 않는다 (형 10-28) · 전장이 남은 높이를 다 쓰고, 깃발 칸(.wnext)은 「자세히」를 켰을 때만 */
+.ap .wr.choosing:not(.help) .wnext { display: none; }
+.ap .wr.choosing .wtop { min-height: calc(100dvh - 132px - env(safe-area-inset-bottom)); display: flex; flex-direction: column; box-sizing: border-box; }
+.ap .wr.choosing .wtop .wfield { flex: 1 1 auto; height: auto !important; min-height: 170px; }
+.ap .wr.choosing .wsc { padding-bottom: 140px; } .ap .wr.choosing:not(.help):not(.logopen) .wsc { overflow-y: hidden; }
+.ap .wrc { cursor: pointer; font: inherit; } .ap .wrc.none { border-color: #e0b860; animation: wrcask 1s ease-in-out infinite alternate; } .ap .wrc.none i { color: #ffd27a; font-size: 15px; }
+@keyframes wrcask { from { box-shadow: 0 0 0 #ffd27a00; } to { box-shadow: 0 0 10px #ffd27a; } }
+.ap .wrrow { display: flex; gap: 8px; width: min(520px, 100%); } .ap .wrrow .wrgo { flex: 1; width: auto; } .ap .wrrow .wrauto { flex: none; }
+.ap .wrgo:disabled { animation: none; font-size: 15px; }
+.ap .wfpop { z-index: 96; }
 /* 다 골랐다 — 아래 띠 (고른 깃발 한 줄 + 큰 「전투 개시」) */
 .ap .wready { position: fixed; left: 0; right: 0; bottom: 0; z-index: 95; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 26px 16px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(#0d0a0700, #0d0a07ee 34%); animation: wrdyin .22s ease-out; }
 .ap .wready[hidden] { display: none; }
@@ -2779,7 +2793,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         // 해가 진다 — 마지막 때를 묻는 판이 뜨는 때에 종 (밤 싸움이면 새벽)
         if (l.pending.dusk !== undefined) { at(res + 0.6, BATTLE_SFX.openBell, 0.5); buzz(res + 0.6, [20, 40, 20]) }
         animating = true
-        timers.push(window.setTimeout(() => syncField(true), (res + 0.5) * 1000)) // 맞부딪힌 진을 거두고 다음 합을 고르는 진으로 (다음 합의 낌새도 그때 뜬다)
+        timers.push(window.setTimeout(() => { syncField(true); syncReady() }, (res + 0.5) * 1000)) // 아래 띠도 다시 // 맞부딪힌 진을 거두고 다음 합을 고르는 진으로 (다음 합의 낌새도 그때 뜬다)
       }
     } else if (endNow) {
       // 마지막 때에 판이 끝났다 — 결과 판은 아래에 붙는다 (굴리지 않는다)
@@ -2978,18 +2992,25 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   ready.className = 'wready'
   ready.hidden = true
   ov.appendChild(ready)
+  /**
+   * 아래 띠는 고르는 내내 붙어 있다 (형 10-28: "슬라이드 없애려면 전투판이 커지고 · 뭔가 선택하면 그 인터페이스가 팝업되고 없어지고 · 하스스톤") —
+   * 무리마다 칩(고른 깃발 또는 「?」) · 칩이나 전장의 무리를 누르면 그 자리에 깃발 판이 뜬다 · 다 고르면 「전투 개시」가 켜진다. 아래로 밀어야 보이던 깃발 칸은 「자세히」에서만
+   */
   const syncReady = (): void => {
     const tabs = [...sc.querySelectorAll<HTMLElement>('.wgt[data-g]')]
-    const all = t.line?.pending !== undefined && !animating && tabs.length > 0 && tabs.every((tb) => sel[tb.dataset['g'] as Grp | 'lead'] !== undefined)
+    const choosingNow = t.line?.pending !== undefined && !animating && tabs.length > 0
+    const all = choosingNow && tabs.every((tb) => sel[tb.dataset['g'] as Grp | 'lead'] !== undefined)
     ov.classList.toggle('ready', all)
-    if (!all) { ready.hidden = true; return }
+    ov.classList.toggle('choosing', choosingNow)
+    if (!choosingNow) { ready.hidden = true; return }
     const chips = tabs.map((tb) => {
       const g = tb.dataset['g'] as Grp | 'lead'
-      const src = sc.querySelector<HTMLElement>(`[data-war="pick"][data-g="${g}"][data-c="${sel[g]}"]`)
+      const src = sel[g] !== undefined ? sc.querySelector<HTMLElement>(`[data-war="pick"][data-g="${g}"][data-c="${sel[g]}"]`) : null
       const flag = src?.querySelector('img.wflag')?.getAttribute('src') ?? ''
-      return `<span class="wrc">${tb.querySelector('.wgi')?.outerHTML ?? ''}<b>${esc(tb.querySelector('.wgn b')?.textContent ?? '')}</b>${flag !== '' ? `<img class="wrf" src="${flag}" alt="">` : ''}<i>${esc(src?.querySelector('.wct b')?.textContent ?? '')}</i></span>`
+      return `<button class="wrc${src === null ? ' none' : ''}" data-war="gtab" data-g="${g}">${tb.querySelector('.wgi')?.outerHTML ?? ''}<b>${esc(tb.querySelector('.wgn b')?.textContent ?? '')}</b>${flag !== '' ? `<img class="wrf" src="${flag}" alt="">` : ''}<i>${src !== null ? esc(src.querySelector('.wct b')?.textContent ?? '') : '?'}</i></button>`
     }).join('')
-    ready.innerHTML = `<div class="wrchips">${chips}</div><button class="btn pri wrgo" data-war="go">⚔ 이대로 전투 개시</button>`
+    const n = tabs.filter((tb) => sel[tb.dataset['g'] as Grp | 'lead'] !== undefined).length
+    ready.innerHTML = `<div class="wrchips">${chips}</div><div class="wrrow"><button class="btn ghost wrauto" data-war="auto">맡긴다</button><button class="btn pri wrgo" data-war="go"${all ? '' : ' disabled'}>${all ? '⚔ 이대로 전투 개시' : `무리마다 깃발 고르기 ${n}/${tabs.length}`}</button></div>`
     ready.hidden = false
   }
   let tipKey = ''
@@ -3296,6 +3317,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         const again = active === b.dataset['g']
         active = b.dataset['g'] as Grp | 'lead'
         syncCmd()
+        // 아래 띠의 칩 — 그 무리 곁에 깃발 판이 뜬다
+        if (b.classList.contains('wrc')) { openPop(active); return }
         // 시험판 — 펼친 무리 탭을 또 누르면 그 깃발 칸이 번쩍이며 눈앞으로 (첫 손님: 「선택」을 눌러도 그대로였다)
         if (again && ov.classList.contains('b0')) {
           const pane = sc.querySelector<HTMLElement>(`.wgrp[data-g="${active}"]`)
