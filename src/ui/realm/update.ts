@@ -15,7 +15,7 @@ export function watchUpdates(root: HTMLElement, beforeReload: () => void): void 
   let last = -Infinity
   const show = (): void => {
     if (root.querySelector('.updbar') !== null) return
-    root.insertAdjacentHTML('beforeend', '<button class="updbar">새 판이 올라왔다 · 누르면 새로 고친다</button>')
+    root.insertAdjacentHTML('beforeend', '<button class="updbar">새 판이 올라왔습니다 · 누르면 새로 고칩니다</button>')
     const el = root.querySelector<HTMLElement>('.updbar')!
     el.addEventListener('click', (e) => { e.stopPropagation(); beforeReload(); location.reload() })
     window.setTimeout(() => el.remove(), BAR_MS)

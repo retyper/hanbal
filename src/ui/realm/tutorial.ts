@@ -52,23 +52,23 @@ const fought = (c: TutCtx): boolean => haveFoe(c) || (c.report?.lines.some((l) =
 
 export const TUT_STEPS: readonly TutStep[] = [
   {
-    id: 'look', name: '우리 땅', what: '금빛 테두리 안이 우리 나라다', text: '여기가 우리 백제다. 금빛 테두리 안이 우리 땅이다. 빛나는 「우리 땅」을 눌러 본다.',
+    id: 'look', name: '우리 땅', what: '금빛 테두리 안이 우리 나라입니다', text: '여기가 우리 백제입니다. 금빛 테두리 안이 우리 땅입니다. 빛나는 「우리 땅」을 눌러 보세요.',
     press: ['.homebtn'], done: (c) => c.acts.has('home'),
   },
   {
-    id: 'draft', name: '징병', what: '마을 장정을 뽑아 군사로 만든다', text: '「징병」을 열고 군사를 뽑는다. 집에서 사내를 뽑아 군대를 키운다.',
+    id: 'draft', name: '징병', what: '마을 장정을 뽑아 군사로 만듭니다', text: '「징병」을 열고 군사를 뽑으세요. 집집에서 사내를 뽑아 군대를 키웁니다.',
     press: ['[data-act="draft"]', tab('draft')], done: (c) => has(c, 'draft'),
   },
   {
-    id: 'settle', name: '개척', what: '백성을 빈땅에 보내 새 마을을 연다', text: '「백성」을 열고 빈땅 솔뫼의 「개척단 보내기」를 누른다. 군사가 아니라 농사지을 백성이 간다. 닿으면 새 마을이 선다.',
+    id: 'settle', name: '개척', what: '백성을 빈땅에 보내 새 마을을 엽니다', text: '「백성」을 열고 빈땅 솔뫼의 「개척단 보내기」를 누르세요. 군사가 아니라 농사지을 백성이 갑니다. 닿으면 새 마을이 섭니다.',
     press: ['.stlgo[data-node="tut-solmoe"]', tab('people')], done: (c) => has(c, 'party') || has(c, 'settle'),
   },
   {
-    id: 'scout', name: '정찰', what: '적 고을의 군세를 미리 엿본다', text: '왼쪽(서쪽) 갯골 마을을 누르고 「여기로 정찰을 보낸다」. 적 군세가 얼마인지 보인다. 정찰은 「외교」에서도 고른다.',
+    id: 'scout', name: '정찰', what: '적 고을의 군세를 미리 엿봅니다', text: '왼쪽(서쪽) 갯골 마을을 누르고 「여기로 정찰을 보낸다」를 누르세요. 적 군세가 얼마인지 보입니다. 정찰은 「외교」에서도 고를 수 있습니다.',
     press: ['[data-act="scout"][data-node="tut-gaetgol"]', '.nd[data-node="tut-gaetgol"]'], done: (c) => has(c, 'scout'),
   },
   {
-    id: 'envoy', name: '사신', what: '이웃 나라에 말과 선물을 보낸다', text: '미추홀에 「선물」 사신을 보낸다. 곡식을 조금 얹고 「사신을 보낸다」. 선물은 늘 받는다. 사신은 칠 나라와도 오간다.',
+    id: 'envoy', name: '사신', what: '이웃 나라에 말과 선물을 보냅니다', text: '미추홀에 「선물」 사신을 보내세요. 곡식을 조금 얹고 「사신을 보낸다」를 누르면 됩니다. 선물은 늘 받아 줍니다. 사신은 칠 나라와도 오갑니다.',
     press: [
       '.trade [data-act="envoy"]', '.trade [data-act="cq"][data-side="give"][data-res="grain"]:not([data-d^="-"])',
       '[data-act="compose"][data-ask="gift"]', '[data-act="compose-go"][data-ask="gift"]', '.nd[data-node="tut-gaetgol"]',
@@ -76,38 +76,38 @@ export const TUT_STEPS: readonly TutStep[] = [
     done: (c) => has(c, 'envoy'),
   },
   {
-    id: 'rite', name: '제사', what: '소도에서 하늘에 빌어 수확을 늘린다', text: '아차 마을 위 「큰나무 소도」를 누르고 봄 제사를 지낸다. 그해 가을 수확량이 늘어난다.',
+    id: 'rite', name: '제사', what: '소도에서 하늘에 빌어 수확을 늘립니다', text: '아차 마을 위 「큰나무 소도」를 누르고 봄 제사를 지내세요. 그해 가을 수확량이 늘어납니다.',
     press: ['[data-act="rite"]', '.nd[data-node="tut-sodo"]'], done: (c) => has(c, 'rite') || c.r.season > 0,
   },
   {
-    id: 'next', name: '다음 계절', what: '정한 일이 한꺼번에 이루어진다', text: '이제 「다음 계절」을 누른다. 고른 일이 한꺼번에 이루어지고 소식이 온다.',
+    id: 'next', name: '다음 계절', what: '정한 일이 한꺼번에 이루어집니다', text: '이제 「다음 계절」을 누르세요. 고른 일이 한꺼번에 이루어지고 소식이 옵니다.',
     press: ['.next'], done: (c) => c.r.season >= 1,
   },
   {
-    id: 'march', name: '출정', what: '군대를 다른 고을로 보낸다', text: '갈대울의 우리 군대 말(장수 얼굴)을 누르고, 밝아진 갯골 마을을 누른다. 그리로 간다.',
+    id: 'march', name: '출정', what: '군대를 다른 고을로 보냅니다', text: '갈대울의 우리 군대 말(장수 얼굴)을 누르고, 밝아진 갯골 마을을 누르세요. 그리로 갑니다.',
     press: ['.nd[data-node="tut-gaetgol"][data-act="go"]', '.tok[data-army="a-us"]'],
     done: (c) => has(c, 'march') || Object.values(c.r.armies).some((a) => a.faction === c.r.player && (a.march !== null || a.at === 'tut-gaetgol')),
   },
   {
-    id: 'battle', name: '전투', what: '합마다 명령을 골라 싸운다', text: '「다음 계절」을 누르면 전장이 열린다. 합마다 명령을 하나 고른다. 여기선 「적장 사로잡기」를 골라 본다 — 이 판에선 반드시 잡힌다.',
+    id: 'battle', name: '전투', what: '합마다 명령을 골라 싸웁니다', text: '「다음 계절」을 누르면 전장이 열립니다. 합마다 명령을 하나 고르세요. 여기선 「적장 사로잡기」를 골라 보세요 — 이 판에선 반드시 잡힙니다.',
     // 사로잡기는 「장수」 탭에 있다 · 「전투 개시」는 무리마다 다 고르면 켜진다 — 나머지는 ★ 권함으로 채운다
     press: ['.next'], war: { pick: '[data-war="pick"][data-c="capture"]', go: '[data-war="go"]', tab: '[data-war="gtab"][data-g="lead"]' },
     done: fought,
   },
   {
-    id: 'persuade', name: '회유', what: '사로잡은 적장을 우리 장수로 만든다', text: '사로잡은 해비를 우리 장수로 만든다. 「장수」의 「옥에 가둔 적장」에서 그 얼굴을 누르고 「회유한다」.',
+    id: 'persuade', name: '회유', what: '사로잡은 적장을 우리 장수로 만듭니다', text: '사로잡은 해비를 우리 장수로 만드세요. 「장수」의 「옥에 가둔 적장」에서 그 얼굴을 누르고 「회유한다」를 누르면 됩니다.',
     // 사로잡은 장수는 장수 판의 「옥에 가둔 적장」 칸에 있다 — 그 칸을 먼저 열게 (형 10-24: "10/12 에서 장수 탭 눌러도 다음으로 안 가짐")
     press: ['[data-act="persuade"]', `[data-act="hero"][data-id="${FOE_HERO}"]`, '[data-act="htab"][data-v="jail"]', tab('heroes')],
     // 해비를 못 잡았으면 회유는 건너뛴다 — 옥이 비어 갇혔다 (놀이 시험 10-27)
     done: (c) => !haveFoe(c) || c.orders.some((o) => o.kind === 'persuade') || c.r.heroes[FOE_HERO]?.persuade !== undefined || c.r.heroes[FOE_HERO]?.faction === c.r.player,
   },
   {
-    id: 'plot', name: '공작', what: '몰래 적을 흔든다 — 소문·방화·암살', text: '「외교」의 「공작」에서 미추홀에 소문을 퍼뜨린다. 적 군사의 사기가 꺾인다.',
+    id: 'plot', name: '공작', what: '몰래 적을 흔듭니다 — 소문·방화·암살', text: '「외교」의 「공작」에서 미추홀에 소문을 퍼뜨리세요. 적 군사의 사기가 꺾입니다.',
     press: ['[data-act="plot"][data-op="rumor"]', '[data-act="ppick"][data-op="rumor"]', '[data-act="plot-open"][data-op="rumor"]', '[data-act="dmode"][data-v="plot"]', tab('diplo')],
     done: (c) => c.orders.some((o) => o.kind === 'plot'),
   },
   {
-    id: 'win', name: '도읍 차지', what: '적의 도읍을 쥐면 이긴다', text: '마지막이다. 군대를 미추홀 도읍으로 보내 쥐면 이 판을 이긴다.',
+    id: 'win', name: '도읍 차지', what: '적의 도읍을 쥐면 이깁니다', text: '마지막입니다. 군대를 미추홀 도읍으로 보내 쥐면 이 판을 이깁니다.',
     press: [['.next', marching], '.nd[data-node="tut-michuhol-cap"][data-act="go"]', '.tok[data-army="a-us"]', ['.next', () => true]],
     done: (c) => c.r.outcome?.kind === 'win',
   },
@@ -145,7 +145,7 @@ export function tutStyle(step: TutStep | undefined): string {
 
 export function tutBandHtml(i: number, esc: (s: string) => string, stuck = false): string {
   if (i >= TUT_STEPS.length) {
-    return `<div class="tutb done"><b>다 배웠다</b><span>이제 작은 판(변한 여섯 나라)이 열렸다. 처음 화면의 「새 게임」에서 고른다.</span><button class="btn sm on" data-act="tut-end">처음으로</button></div>`
+    return `<div class="tutb done"><b>다 배웠습니다</b><span>이제 작은 판(변한 여섯 나라)이 열렸습니다. 처음 화면의 「새 게임」에서 고를 수 있습니다.</span><button class="btn sm on" data-act="tut-end">처음으로</button></div>`
   }
   // 건너뛰기 — 한 단계에 오래 머물면(갇힌 듯하면) 그때만 뜬다. 평소엔 눌러야 할 것을 눌러야 넘어간다 (형 10-20) · 막히면 그대로 떠난다 (형 10-24)
   const st = TUT_STEPS[i]!
@@ -469,9 +469,9 @@ export const TUT_CSS = `
 .tutb .tutskip { margin-left: auto; padding: 3px 9px; border-radius: 8px; border: 1px solid #6a5a3e; background: #0006; color: #c9b48a; font-size: 12px; cursor: pointer; }
 /* 먼저 닫을 것을 가리킬 때 — 띠 맨 위에 한 줄 */
 .tutband[data-pre="rep"] .tutb::before, .tutband[data-pre="grip"] .tutb::before { flex: 1 0 100%; color: #ffd27a; font-weight: 700; font-size: 13.5px; }
-.tutband[data-pre="rep"] .tutb::before { content: '먼저 소식을 읽고 「확인」을 누른다'; }
-.tutband[data-pre="grip"] .tutb::before { content: '먼저 열린 판을 닫는다 — 위의 손잡이를 누른다'; }
-.tutband[data-pre="sel"] .tutb::before { flex: 1 0 100%; color: #ffd27a; font-weight: 700; font-size: 13.5px; content: '먼저 고른 것을 푼다 — ✕ 를 누른다'; }
+.tutband[data-pre="rep"] .tutb::before { content: '먼저 소식을 읽고 「확인」을 누르세요'; }
+.tutband[data-pre="grip"] .tutb::before { content: '먼저 열린 판을 닫으세요 — 위의 손잡이를 누르면 됩니다'; }
+.tutband[data-pre="sel"] .tutb::before { flex: 1 0 100%; color: #ffd27a; font-weight: 700; font-size: 13.5px; content: '먼저 고른 것을 푸세요 — ✕ 를 누르면 됩니다'; }
 @keyframes tutglow { from { box-shadow: 0 0 4px #ffd27a66; } to { box-shadow: 0 0 18px #ffd27a; } }
 /* 스포트라이트 — 구멍 밖은 어둡다. 구멍은 누를 곳 크기, 둘레에 숨 쉬는 금빛 고리, 그 밑(또는 위)에서 손이 콕콕 가리킨다 */
 /* 자리는 미끄러지지 않고 바로 붙는다 — 판이 굴러갈 때 고리가 뒤처지면 엉뚱한 데를 누르게 된다 */

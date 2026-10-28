@@ -3417,7 +3417,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     switch (s.kind) {
       case 'off': return '클라우드 저장 꺼짐'
       case 'busy': return '클라우드에 저장하는 중…'
-      case 'choose': return '두 기기의 판이 갈라졌다 — 고를 것'
+      case 'choose': return '두 기기의 판이 갈라졌습니다 — 하나를 골라 주세요'
       case 'error': return `클라우드 저장 못 함 — ${s.msg}`
       case 'idle': return s.at !== null ? `최근 클라우드 저장 ${new Date(s.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}` : '클라우드 저장 준비됨'
     }
@@ -3457,10 +3457,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     try { hide = localStorage.getItem(INSTALL_HIDE_KEY) === '1' } catch { hide = false }
     if (hide || instClosed) return `<p class="fine"><button class="btn ghost sm" data-act="inst-show">📲 앱으로 설치</button></p>`
     const how = ios
-      ? '사파리 아래 <b>공유</b> 단추(네모에 위 화살표) → <b>「홈 화면에 추가」</b>. 홈 화면의 칠십팔국 아이콘으로 열면 주소창 없이 꽉 찬 화면이다.'
-      : installPrompt() !== null ? '아래 단추를 누르면 바로 설치된다. 홈 화면·바탕화면의 아이콘으로 열면 주소창 없이 꽉 찬 화면이다.'
-        : '브라우저 메뉴(⋮) → <b>「앱 설치」</b> 또는 <b>「홈 화면에 추가」</b>. 아이콘으로 열면 주소창 없이 꽉 찬 화면이다.'
-    return `<div class="instc"><b>📲 앱으로 설치하면 더 편하다</b><p>${how}</p>`
+      ? '사파리 아래 <b>공유</b> 단추(네모에 위 화살표) → <b>「홈 화면에 추가」</b>. 홈 화면의 칠십팔국 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.'
+      : installPrompt() !== null ? '아래 단추를 누르면 바로 설치됩니다. 홈 화면·바탕화면의 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.'
+        : '브라우저 메뉴(⋮) → <b>「앱 설치」</b> 또는 <b>「홈 화면에 추가」</b>를 누르세요. 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.'
+    return `<div class="instc"><b>📲 앱으로 설치하면 더 편리합니다</b><p>${how}</p>`
       + `<div class="instr">${!ios && installPrompt() !== null ? '<button class="btn pri sm" data-act="install">앱으로 설치</button>' : ''}<label class="chk"><input type="checkbox" class="insthide"> 다시 보지 않기</label><button class="btn sm" data-act="inst-ok">확인</button></div></div>`
   }
 
@@ -3549,8 +3549,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const f = t.classList.contains('svpick') ? t.files?.[0] : undefined
         if (f === undefined) return
         t.value = ''
-        if (f.size > P.realm.saveFileMaxMB * 1024 * 1024) { saveSay('파일이 너무 크다 — 칠십팔국 판으로 읽을 수 없다', true); return }
-        void f.text().then((text) => saveOpened(host.saves?.loadFile(text) ?? null), () => saveSay('파일을 읽지 못했다', true))
+        if (f.size > P.realm.saveFileMaxMB * 1024 * 1024) { saveSay('파일이 너무 큽니다 — 칠십팔국 판으로 읽을 수 없습니다', true); return }
+        void f.text().then((text) => saveOpened(host.saves?.loadFile(text) ?? null), () => saveSay('파일을 읽지 못했습니다', true))
       })
     }
     const live = realm !== null && (!realm.outcome || (realm.endless === true && realm.outcome.kind === 'win'))
@@ -3581,11 +3581,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (sv === undefined || saveBox === null) return
     const label = sv.list()[n]?.label ?? ''
     if (act === 'load') { saveOpened(sv.load(n)); return }
-    if (act === 'drop') { const why = sv.drop(n); saveSay(why ?? `${n + 1}번 칸을 비웠다`, why !== null); return }
+    if (act === 'drop') { const why = sv.drop(n); saveSay(why ?? `${n + 1}번 칸을 비웠습니다`, why !== null); return }
     saveDraft() // 이번 계절에 정해 둔 명령까지 담기게
     const why = sv.save(n, saveBox.name)
     if (why === null) saveBox.name = '' // 다음 저장은 다시 그때의 계절 · 나라 이름으로
-    saveSay(why ?? `${n + 1}번 칸에 저장했다${act === 'over' && label !== '' ? ` (옛 「${label}」 대신)` : ''}`, why !== null)
+    saveSay(why ?? `${n + 1}번 칸에 저장했습니다${act === 'over' && label !== '' ? ` (옛 「${label}」 대신)` : ''}`, why !== null)
   }
 
   /** 영웅전에 「거느림」으로 오른 장수 — 판을 열 때 데려갈 수 있는 이 (군주는 빼고) */
@@ -3633,7 +3633,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const c = host.cloud
     if (c === undefined || !c.available()) return ''
     const who = c.who()
-    if (who === null) return `<p class="fine acctl"><button class="btn ghost" data-act="acct-in" data-tip="다른 기기의 판을 이어 한다">구글 로그인</button></p>`
+    if (who === null) return `<p class="fine acctl"><button class="btn ghost" data-act="acct-in" data-tip="다른 기기에서 하던 판을 이어 할 수 있습니다">구글 로그인</button></p>`
     return `<p class="fine acctl mute">${esc(who.email)} · ${esc(syncWord(c.state()))}</p>`
   }
   /** 갈라진 판 고르기 — 카드 둘. 고르지 않은 쪽도 기기에 한 벌 남는다 (sync OTHER_KEY) */
@@ -3642,7 +3642,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (s?.kind !== 'choose') return ''
     const card = (x: Side, pick: 'here' | 'there', title: string): string =>
       `<button class="btn pickc" data-act="acct-pick" data-v="${pick}"><small>${title}</small><b>${esc(x.nation)}</b><span>${esc(seasonLabel(x.season))}</span><span class="mute">${x.savedAt !== '' ? esc(new Date(x.savedAt).toLocaleString('ko-KR')) : ''}</span></button>`
-    return `<div class="cloudpick"><div><h3>어느 판으로 이어 할까</h3><p class="mute">이 기기와 다른 기기에서 따로 나아간 판이 있다. 고르지 않은 쪽도 이 기기에 한 벌 남겨 둔다.</p>`
+    return `<div class="cloudpick"><div><h3>어느 판으로 이어 하시겠습니까</h3><p class="mute">이 기기와 다른 기기에서 따로 나아간 판이 있습니다. 고르지 않은 쪽도 이 기기에 한 벌 남겨 둡니다.</p>`
       + `<div class="pickrow">${card(s.here, 'here', '이 기기 판')}${card(s.there, 'there', '다른 기기 판')}</div></div></div>`
   }
 
@@ -4478,7 +4478,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 소리의 출처 — 공공누리 제1유형·CC BY 는 출처를 밝혀야 쓸 수 있다 (형 10-23: "출처표기해야 상업적으로 사용가능하니까 주의")
       + ` <a class="btn ghost" href="${BASE}realm/credits.html">소리 출처</a>`
       // 새 전투 시험 (BATTLE-LIVE 0번) — 이 기기에서만 켜진다 · 형과 지인이 켜고 꺼 보며 견준다 (형 10-28)
-      + ` <button class="btn ghost${b0On() ? ' on' : ''}" data-act="b0-toggle" data-tip="켜면 싸움에서 손가락이 깃발을 가리키고, 고른 깃발이 크게 뜨고, 숫자 표는 「자세히」 안으로 들어간다">새 전투 시험 · ${b0On() ? '켜짐' : '꺼짐'}</button>`
+      + ` <button class="btn ghost${b0On() ? ' on' : ''}" data-act="b0-toggle" data-tip="켜면 싸움에서 손가락이 깃발을 가리키고, 고른 깃발이 크게 뜨고, 숫자 표는 「자세히」 안으로 들어갑니다">새 전투 시험 · ${b0On() ? '켜짐' : '꺼짐'}</button>`
       // 판 기록 — 판 밖(첫 화면 · 끝 화면)에서도 받는다. 아래 「나라」 탭은 판 안에서만 보여 찾기 어려웠다 (형 10-26: "나라 탭이 어딨음??")
       + (host.gameCount() > 0 ? ` <button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>` : '') + `</p></details>`
       // 문명처럼 첫 화면 밑에 작게 — 공식 고지문 말투로 (형 10-27: "꾸민 이야기입니다? 큰 단체의 공식적인 말투에 이런 표현 안 써") (형 10-27: "이 게임은 실제 역사랑 상관없다는 주의 문구")
@@ -5330,7 +5330,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (saveBox === null || host.saves === undefined) return
         saveDraft()
         const why = host.saves.download(saveBox.name)
-        saveSay(why ?? '파일을 내려받았다 — 브라우저의 다운로드 폴더에 있다', why !== null)
+        saveSay(why ?? '파일을 내려받았습니다 — 브라우저의 다운로드 폴더에 있습니다', why !== null)
         return
       }
       case 'sv-file': root.querySelector<HTMLInputElement>('.saveov .svpick')?.click(); return

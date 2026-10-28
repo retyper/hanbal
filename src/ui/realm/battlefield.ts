@@ -1407,8 +1407,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     // 다음 합의 깃발을 든다 — 무리마다 하나, 장수 하나
     h += `<div class="wnext"${anim ? ` style="--d:${(tAt(2) + 0.6).toFixed(2)}s"` : ''}><div class="wrn">${ROUND_NAME[shown] ?? `${shown + 1}`} 합 </div>`
     // 적진의 속·맞은편·땅은 전장에서 누르고 있거나 마우스를 올리면 (openWar 의 정보창 · warTip) — 여기엔 어떻게 보는지만
-    h += '<p class="wfhint">전장에서 <b>우리 무리</b>를 누르면 깃발 선택 · 적·낌새·땅은 <b>누르고 있으면</b>(마우스는 올리면) 자세히 보인다</p>'
-    h += '<p class="wb0g"><b>무리마다 깃발을 하나씩 고른다</b><span>👆 손가락이 가리키는 깃발이 권하는 것 · 다 고르면 「전투 개시」</span></p>'
+    h += '<p class="wfhint">전장에서 <b>우리 무리</b>를 누르면 깃발을 고를 수 있습니다 · 적·낌새·땅은 <b>누르고 있으면</b>(마우스는 올리면) 자세히 보입니다</p>'
+    h += '<p class="wb0g"><b>무리마다 깃발을 하나씩 고르세요</b><span>👆 손가락이 가리키는 깃발을 권합니다 · 다 고르면 「전투 개시」</span></p>'
     if (p.foeWaver) h += `<div class="wintel"><div class="wi warn"><b>적이 흔들린다</b><p>깃발이 기울고 대열이 성기다</p><small>방진도 돌격을 못 받아 낸다 — 쫓을 때다</small></div></div>`
     // 지난 합에 장수를 잃었다 — 누가 · 누가 지휘를 넘겨받았나 (형 10-25: "한 명 잡히면 바로 지는 건 말이 안 되는데")
     const lh = rounds[rounds.length - 1]?.lostHero
@@ -1558,7 +1558,7 @@ export const WAR_CSS = `
 @keyframes b0point { from { transform: translateX(0); } to { transform: translateX(-10px); } }
 .ap .wr.b0 .wfpop .wcmd.mini.rec:not(.on) { outline: 2px solid #ffd27a; outline-offset: 1px; animation: tutglow .9s ease-in-out infinite alternate; }
 /* 시험판 — 아직 하나도 안 골랐으면 전장의 우리 무리 위에 손가락 (첫 화면에 깃발 칸이 안 보여도 누를 곳이 보이게 · 누르면 그 자리에 깃발 판) */
-.ap .wr.b0 .wrbox:has(.wnext):not(:has(.wcmd.on)) .wfield .wf2s.us::after { content: '👆 우리 무리를 누른다'; position: absolute; left: 20%; top: 66%; z-index: 90; white-space: nowrap;
+.ap .wr.b0 .wrbox:has(.wnext):not(:has(.wcmd.on)) .wfield .wf2s.us::after { content: '👆 우리 무리를 누르세요'; position: absolute; left: 20%; top: 66%; z-index: 90; white-space: nowrap;
   padding: 5px 12px; border-radius: 999px; background: #2a1f0ce6; border: 1.5px solid #e0b860; color: #ffe6a8; font-size: 15px; font-weight: 700; pointer-events: none;
   box-shadow: 0 0 14px #ffd27a88; animation: b0hand .7s ease-in-out infinite alternate; }
 @media (max-width: 520px) { .ap .wr.b0 .wrbox:has(.wnext):not(:has(.wcmd.on)) .wfield .wf2s.us::after { font-size: 12.5px; padding: 3px 9px; left: 8%; } }

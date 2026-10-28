@@ -42,9 +42,9 @@ function when(iso: string): string {
 function askHtml(k: SaveBoxKit, v: SaveBoxView, m: SaveMeta | null): string {
   if (v.ask === null) return ''
   const lb = `「${k.esc(m?.label ?? '')}」`
-  const [text, yes] = v.ask.act === 'over' ? [`${lb} 칸을 지금 판으로 덮어쓸까?`, '덮어쓴다']
-    : v.ask.act === 'drop' ? [`${lb} 칸을 비울까? 되돌릴 수 없다.`, '비운다']
-    : [`${lb} 판을 연다.${v.hasGame ? ' 지금 하던 판은 첫 화면 「다른 판」에 남는다.' : ''}`, '연다']
+  const [text, yes] = v.ask.act === 'over' ? [`${lb} 칸을 지금 판으로 덮어쓸까요?`, '덮어쓴다']
+    : v.ask.act === 'drop' ? [`${lb} 칸을 비울까요? 되돌릴 수 없습니다.`, '비운다']
+    : [`${lb} 판을 엽니다.${v.hasGame ? ' 지금 하던 판은 「불러오기」의 끝나지 않은 판에 남습니다.' : ''}`, '연다']
   return `<div class="svask"><span>${text}</span><button class="btn pri" data-act="sv-yes">${yes}</button><button class="btn ghost" data-act="sv-no">그만</button></div>`
 }
 
@@ -67,12 +67,12 @@ export function saveBoxHtml(k: SaveBoxKit, v: SaveBoxView): string {
     h += `</span></div>`
     if (v.ask?.n === n) h += askHtml(k, v, m)
   })
-  if (!game && v.slots.every((m) => m === null) && (v.shelf ?? '') === '') h += `<p class="mute svnone">저장한 판이 아직 없다 — 판 안의 나라 판 「저장 · 불러오기」에서 저장한다</p>`
+  if (!game && v.slots.every((m) => m === null) && (v.shelf ?? '') === '') h += `<p class="mute svnone">저장한 판이 아직 없습니다 — 판 안의 「나라」 판에 있는 「저장 · 불러오기」에서 저장할 수 있습니다</p>`
   h += `</div>`
   if (v.msg !== null) h += `<p class="svmsg${v.msg.bad ? ' bad' : ''}" role="status">${k.esc(v.msg.text)}</p>`
   h += `<div class="svfile">${game ? `<button class="btn" data-act="sv-down">파일로 내려받기</button>` : ''}<button class="btn" data-act="sv-file">파일에서 불러오기</button>`
     + `<input class="svpick" type="file" accept=".json,application/json" hidden></div>`
-  h += `<p class="mute svhint">파일은 브라우저 저장이 지워져도 남는다 · 다른 기기로 옮길 때도 쓴다</p>`
+  h += `<p class="mute svhint">파일은 브라우저 저장이 지워져도 남습니다 · 다른 기기로 옮길 때도 쓸 수 있습니다</p>`
   return h + `</div>`
 }
 
