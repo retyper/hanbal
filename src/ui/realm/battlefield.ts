@@ -1573,15 +1573,7 @@ export const WAR_CSS = `
 .ap .wr.b0 .wrgo { position: relative; overflow: visible; } .ap .wr.b0 .wrgo:not(:disabled)::before { content: '👉'; position: absolute; right: 100%; top: 50%; margin: -17px 6px 0 0; font-size: 30px; line-height: 1; filter: drop-shadow(0 2px 3px #000); pointer-events: none; animation: b0point .7s ease-in-out infinite alternate; }
 @keyframes b0point { from { transform: translateX(0); } to { transform: translateX(-10px); } }
 .ap .wr.b0 .wfpop .wcmd.mini.rec:not(.on) { outline: 2px solid #ffd27a; outline-offset: 1px; animation: tutglow .9s ease-in-out infinite alternate; }
-/* 아직 하나도 안 골랐으면 우리 앞줄 위에 초록 화살표가 빙글 돌며 둥실 (형 10-28: "글 말고 3D 같이 녹색으로 돌아가는 둥실거리는 화살표 · 유닛 위에서")
-   ::before 는 어두운 옆면, ::after 는 밝은 앞면 — 둘이 같이 돌아 두께가 보인다 · 그러데이션·filter 없이 단색 (갤럭시) */
-.ap .wr.b0 .wrbox:has(.wnext):not(:has(.wcmd.on)) .wfield .wf2s.us::before, .ap .wr.b0 .wrbox:has(.wnext):not(:has(.wcmd.on)) .wfield .wf2s.us::after {
-  content: ''; position: absolute; left: 31%; top: calc(50% - 15cqw); z-index: 90; width: clamp(28px, 9cqw, 50px); aspect-ratio: 34 / 40; pointer-events: none;
-  clip-path: polygon(30% 0, 70% 0, 70% 48%, 100% 48%, 50% 100%, 0 48%, 30% 48%); animation: b0arw 1.6s linear infinite; }
-.ap .wr.b0 .wrbox:has(.wnext):not(:has(.wcmd.on)) .wfield .wf2s.us::before { background: #1f8a3a; margin-left: 2px; }
-.ap .wr.b0 .wrbox:has(.wnext):not(:has(.wcmd.on)) .wfield .wf2s.us::after { background: #4be070; }
-@keyframes b0arw { 0% { transform: translate(-50%, 0) perspective(160px) rotateY(0deg); } 25% { transform: translate(-50%, -18%) perspective(160px) rotateY(90deg); }
-  50% { transform: translate(-50%, 0) perspective(160px) rotateY(180deg); } 75% { transform: translate(-50%, -18%) perspective(160px) rotateY(270deg); } 100% { transform: translate(-50%, 0) perspective(160px) rotateY(360deg); } }
+
 .ap .wr.b0 .wfoot { margin-bottom: 40px; }
 @keyframes b0hand { from { transform: translateY(0); } to { transform: translateY(-10px); } }
 .ap .wr.b0 .wgrp.b0flash .wcmdgrid { animation: b0flash .6s ease-out; } @keyframes b0flash { 0% { filter: brightness(2.2); transform: scale(1.03); } 100% { filter: none; transform: none; } }
@@ -2187,12 +2179,35 @@ export const WAR_CSS = `
 .ap .wfpop { position: fixed; z-index: 94; width: min(330px, calc(100vw - 16px)); padding: 8px; border-radius: 14px; background: #17110cf6; border: 1.5px solid #ffd27a; box-shadow: 0 0 0 1px #000, 0 12px 34px #000d, 0 0 18px #ffd27a44; animation: wfpin .16s ease-out; }
 @keyframes wfpin { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
 .ap .wfpop[hidden] { display: none; }
-/* 깃발 판 밑 판세 — 막대 하나만, 꾹 누르면 숫자 표까지 (형 10-28) */
-.ap .wfpop .wfplook { margin-top: 6px; padding: 4px 6px; border-radius: 10px; background: #0b0a0899; } .ap .wfpop .wfplook:empty { display: none; }
-.ap .wfpop .wfplook .wguess { margin-top: 0; }
-.ap .wr .wfpop .wfplook:not(.held) .wguess :is(.wgx, .wgl) { display: none !important; }
-.ap .wr .wfpop .wfplook.held .wguess .wgx { display: grid !important; } .ap .wr .wfpop .wfplook.held .wguess .wgl { display: flex !important; }
-.ap .wfpop .wcmd.mini { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+/* 누르는 동안만 뜨는 설명 창 · 지금 고를 무리 위 보석 · 끄는 빨간 화살 (형 10-28: 하스스톤처럼) */
+.ap .whold { position: fixed; z-index: 99; width: min(300px, calc(100vw - 16px)); box-sizing: border-box; padding: 9px 11px; border-radius: 12px; background: #120d09f5; border: 1.5px solid #e0b860;
+  box-shadow: 0 10px 28px #000d; pointer-events: none; animation: whin .12s ease-out; }
+.ap .whold[hidden] { display: none; }
+@keyframes whin { from { opacity: 0; transform: translateY(6px) scale(.96); } }
+.ap .whold .whh { display: flex; align-items: center; gap: 6px; } .ap .whold .whh img, .ap .whold .whh .wgi { width: 30px; height: 30px; object-fit: contain; flex: none; }
+.ap .whold .whh b { font-size: 16px; color: #ffe2a0; } .ap .whold .whh small { color: var(--mute); font-size: 12px; } .ap .whold .whh em { font-size: 11px; }
+.ap .whold p { margin: 6px 0 0; font-size: 12.5px; line-height: 1.45; color: #e8dcc0; } .ap .whold .whn { color: #ffd27a; font-weight: 700; }
+.ap .wr .whold .wguess .wgx { display: grid !important; } .ap .wr .whold .wguess .wgl { display: flex !important; }
+.ap .wgem { position: fixed; z-index: 60; width: clamp(26px, 7vw, 40px); pointer-events: none; transform: translate(-50%, -110%); }
+.ap .wgem[hidden] { display: none; }
+.ap .wgem svg { display: block; width: 100%; height: auto; animation: wgem 1.8s linear infinite; transform-origin: 50% 40%; }
+@keyframes wgem { 0% { transform: translateY(0) perspective(120px) rotateY(0deg); } 25% { transform: translateY(-16%) perspective(120px) rotateY(90deg); } 50% { transform: translateY(0) perspective(120px) rotateY(180deg); }
+  75% { transform: translateY(-16%) perspective(120px) rotateY(270deg); } 100% { transform: translateY(0) perspective(120px) rotateY(360deg); } }
+.ap .wdrag { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 98; pointer-events: none; overflow: visible; }
+.ap .wdrag .wdl { fill: none; stroke: #5a1008; stroke-width: 16; stroke-linecap: round; }
+.ap .wdrag .wdf { fill: none; stroke: #ff5a3c; stroke-width: 10; stroke-linecap: round; stroke-dasharray: 16 12; animation: wdflow .45s linear infinite; }
+.ap .wdrag .wdh { fill: #ff5a3c; stroke: #5a1008; stroke-width: 3; }
+.ap .wdrag.ok .wdf, .ap .wdrag.ok .wdh { fill: none; } .ap .wdrag.ok .wdf { stroke: #ffd27a; } .ap .wdrag.ok .wdh { fill: #ffd27a; }
+@keyframes wdflow { to { stroke-dashoffset: -28; } }
+.ap .wfpop .wcmd.mini { touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.ap .wfpop .wcmd.mini.dragging { outline: 2px solid #ff5a3c; }
+.ap .wfpop .wfphint { margin: 6px 2px 0; font-size: 11.5px; color: #c9b88e; text-align: center; }
+/* 깃발 판은 한 줄에 하나 — 깃발마다 판세 막대와 바로 끝날 확률이 처음부터 보인다 (숫자 표는 누르고 있을 때 설명 창에) */
+.ap .wfpop .wfpg { grid-template-columns: 1fr !important; }
+.ap .wfpop .wcmd.mini .wct > .wguess { display: grid !important; grid-column: 1 / -1; }
+.ap .wfpop .wcmd.mini .wct:has(> .wguess) { flex-direction: column; align-items: stretch; }
+.ap .wfpop .wcmd.mini { position: relative; } .ap .wfpop .wcmd.mini .wct > em.rec { position: absolute; right: 6px; top: 5px; }
+.ap .wr .wfpop .wcmd.mini .wguess .wgx { display: none !important; } .ap .wr .wfpop .wcmd.mini .wguess .wgl.wgff { display: flex !important; }
 /* 싸움판을 화면 가득 — 아래로 밀지 않는다 (형 10-28) · 전장이 남은 높이를 다 쓰고, 깃발 칸(.wnext)은 「자세히」를 켰을 때만 */
 .ap .wr.choosing:not(.help) .wnext { display: none; }
 .ap .wr.choosing .wtop { min-height: calc(100dvh - 132px - env(safe-area-inset-bottom)); display: flex; flex-direction: column; box-sizing: border-box; }
@@ -2223,7 +2238,7 @@ export const WAR_CSS = `
 .ap .wfpop .wcmd.mini .wflag { width: 30px; height: auto; flex: none; }
 .ap .wfpop .wcmd.mini .wct { gap: 1px; } .ap .wfpop .wcmd.mini .wct > b { font-size: 13.5px; }
 /* 전장의 깃발 판엔 그림과 이름만 — 꼬리표·짐작 글이 자리를 넘쳐 튀어나오고 줄이 바뀌었다 (형 10-25) · 권함은 별 하나로 */
-.ap .wfpop .wcmd.mini .wct > :not(b):not(em.rec):not(.wodd) { display: none !important; }
+.ap .wfpop .wcmd.mini .wct > :not(b):not(em.rec):not(.wodd):not(.wguess) { display: none !important; }
 /* 가망 % — 큰 깃발엔 말로 이미 있어 작은 단추(전장 깃발 판)에서만 */
 .ap .wcmd .wct > .wodd { display: none; } .ap .wfpop .wcmd.mini .wct > .wodd { display: inline; flex: none; font-style: normal; font-size: 12px; font-weight: 800; }
 .ap .wfpop .wcmd.mini .wct:has(> .wodd) { flex-direction: column; align-items: flex-start; gap: 0; } /* 이름 밑 줄에 — 옆에 두면 「퇴…」로 잘렸다 */
@@ -2829,6 +2844,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const hint = t.line?.pending?.hint ?? null
     const foe = f.querySelector<HTMLElement>('.wf2s.foe')
     if (foe !== null) setForm(foe, hint !== null ? { front: hint } : {})
+    placeGem()
   }
 
   /**
@@ -3121,17 +3137,135 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     timers.push(window.setTimeout(() => el.remove(), P.realm.warB0PopMs))
   }
   /**
-   * 깃발 판 밑의 판세 — 깃발을 누르면 그 깃발의 판세 막대 하나, 1초 넘게 누르고 있으면 피해·사기 숫자 표까지 (형 10-28: "깃발 터치하면 전황바 · 1초 이상 누르면 수치표까지")
+   * 무리 g 에 깃발 c 를 든다 — toggle 이면 같은 것을 또 들면 내린다(맡긴다).
+   * 골랐으면 아직 안 고른 다음 무리로 · 깃발 판에서 끌어 놓았으면 그 판도 다음 무리 곁으로 (보석도 그 무리 머리 위로)
    */
-  const showLook = (card: HTMLElement | null, held: boolean): void => {
-    const box = pop.querySelector<HTMLElement>('.wfplook')
-    if (box === null) return
-    box.innerHTML = card?.querySelector('.wguess')?.outerHTML ?? ''
-    box.classList.toggle('held', held)
+  const doPick = (g: Grp | 'lead', c: Cmd, card: HTMLElement | null, toggle: boolean): void => {
+    // 퇴각은 묻고 바로 — 다른 무리를 고르고 「전투 개시」까지 누를 까닭이 없다 (형 10-25: "정말 퇴각하시겠습니까? 가 뜨고 그냥 퇴각되어야")
+    if (c === 'retreat') { closePop(); hideTip(); askRetreat(); return }
+    sel = { ...sel, [g]: toggle && sel[g] === c ? undefined : c }
+    if (sel[g] === undefined) delete sel[g]
+    // 다시 그리지 않고 고른 표만 옮긴다 — 다시 그리면 배경·그림이 깜빡였다
+    for (const x of sc.querySelectorAll<HTMLElement>(`[data-war="pick"][data-g="${g}"]`)) x.classList.toggle('on', sel[g] === x.dataset['c'])
+    active = g
+    syncCmd()
+    if (sel[g] !== undefined && card !== null) b0Pop(card)
+    // 장수 깃발(비기·격려…)을 들 때는 말하지 않는다 — 「무엇이든 말씀만 하셔요」는 명을 고르는 자리에 안 맞았다 (형 10-27). 외침은 그 수가 풀릴 때
+    const fromPop = popG !== undefined
+    closePop()
+    hideTip()
+    if (sel[g] === undefined) return
+    const order = [...sc.querySelectorAll<HTMLElement>('.wgt[data-g]')].map((x) => x.dataset['g'] as Grp | 'lead')
+    const at = order.indexOf(g)
+    const next = [...order.slice(at + 1), ...order.slice(0, at)].find((x) => sel[x] === undefined)
+    if (next !== undefined) timers.push(window.setTimeout(() => { if (active === g) { active = next; syncCmd(); if (fromPop && choosing()) openPop(next) } }, P.realm.warTabNextMs))
   }
-  /** 깃발을 꾹 눌러 숫자 표를 띄웠다 — 손을 떼며 오는 click 은 고르기로 치지 않는다 */
-  let popHeld = false
-  let popHoldT = 0
+
+  // ───────── 누르고 있는 동안만 뜨는 설명 창 · 지금 고를 무리 위의 보석 · 깃발 끌기 (형 10-28: 하스스톤처럼)
+  const hold = document.createElement('div')
+  hold.className = 'whold'
+  hold.hidden = true
+  ov.appendChild(hold)
+  let holdT = 0
+  /** 설명 창 — 손가락 위에 · 손을 떼면 warHoldLingerMs 뒤 걷힌다(hideHold) */
+  const showHold = (html: string, x: number, y: number): void => {
+    window.clearTimeout(holdT)
+    hold.innerHTML = html
+    hold.hidden = false
+    const w = hold.offsetWidth
+    const h = hold.offsetHeight
+    hold.style.left = `${Math.round(Math.max(8, Math.min(window.innerWidth - w - 8, x - w / 2)))}px`
+    hold.style.top = `${Math.round(y - h - 26 >= 8 ? y - h - 26 : Math.min(window.innerHeight - h - 8, y + 30))}px`
+  }
+  const hideHold = (ms: number = P.realm.warHoldLingerMs): void => {
+    window.clearTimeout(holdT)
+    holdT = window.setTimeout(() => { hold.hidden = true; hold.replaceChildren() }, ms)
+  }
+  /** 무리의 설명 — 이름 · 사람 수 · 들 수 있는 깃발 */
+  const groupHold = (g: Grp | 'lead'): string => {
+    const tab = sc.querySelector<HTMLElement>(`.wgt[data-g="${g}"]`)
+    const pane = sc.querySelector<HTMLElement>(`.wgrp[data-g="${g}"]`)
+    const flags = [...(pane?.querySelectorAll<HTMLElement>('[data-war="pick"] .wct > b') ?? [])].map((x) => x.textContent ?? '').filter((x) => x !== '')
+    return `<div class="whh">${tab?.querySelector('.wgi')?.outerHTML ?? ''}<b>${esc(tab?.querySelector('.wgn b')?.textContent ?? '')}</b><small>${esc(tab?.querySelector('.wgn small')?.textContent ?? '')}</small></div>`
+      + `<p>들 수 있는 깃발 — ${esc(flags.join(' · '))}</p><p class="whn">깃발을 끌어 전장에 놓으면 정해집니다</p>`
+  }
+  /** 깃발의 설명 — 하는 일 · 판세 막대 · 피해·사기 표 */
+  const flagHold = (card: HTMLElement): string =>
+    `<div class="whh">${card.querySelector('img.wflag')?.outerHTML ?? ''}<b>${esc(card.querySelector('.wct > b')?.textContent ?? '')}</b>${card.querySelector('.wct > em')?.outerHTML ?? ''}</div>`
+    + `<p>${esc(card.dataset['more'] ?? '')}</p>${card.querySelector('.wguess')?.outerHTML ?? ''}`
+
+  /** 지금 고를 무리 머리 위의 보석 — 초록 역삼각뿔 (그러데이션·filter 없이 면마다 단색) */
+  const gem = document.createElement('div')
+  gem.className = 'wgem'
+  gem.hidden = true
+  gem.innerHTML = '<svg viewBox="0 0 40 50" aria-hidden="true"><polygon points="2,15 20,6 38,15 20,23" fill="#8dffb0"/><polygon points="2,15 20,23 20,49" fill="#2fbf5f"/><polygon points="38,15 20,23 20,49" fill="#13803a"/><polygon points="9,15 20,10 24,13 13,17" fill="#e8fff0"/></svg>'
+  ov.appendChild(gem)
+  const placeGem = (): void => {
+    const g = active ?? sc.querySelector<HTMLElement>('.wgt.on[data-g]')?.dataset['g'] as Grp | 'lead' | undefined
+    const q = g !== undefined && choosing() && sel[g] === undefined ? groupRect('us', g) : null
+    if (q === null) { gem.hidden = true; return }
+    gem.hidden = false
+    gem.style.left = `${Math.round(q.left + q.width / 2)}px`
+    gem.style.top = `${Math.round(q.top)}px`
+  }
+
+  /** 끄는 화살 — 깃발에서 손끝까지 흘러가는 빨간 화살 (하스스톤) */
+  const dragSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  dragSvg.setAttribute('class', 'wdrag')
+  dragSvg.innerHTML = '<path class="wdl"/><path class="wdf"/><polygon class="wdh" points="0,-14 26,0 0,14"/>'
+  dragSvg.style.display = 'none'
+  ov.appendChild(dragSvg)
+  const drawDrag = (x0: number, y0: number, x1: number, y1: number, ok: boolean): void => {
+    const mx = (x0 + x1) / 2
+    const my = Math.min(y0, y1) - Math.max(40, Math.abs(x1 - x0) * 0.25)
+    const d = `M${x0},${y0} Q${mx},${my} ${x1},${y1}`
+    dragSvg.querySelector('.wdl')!.setAttribute('d', d)
+    dragSvg.querySelector('.wdf')!.setAttribute('d', d)
+    const a = (Math.atan2(y1 - my, x1 - mx) * 180) / Math.PI
+    dragSvg.querySelector('.wdh')!.setAttribute('transform', `translate(${x1},${y1}) rotate(${a.toFixed(1)})`)
+    dragSvg.classList.toggle('ok', ok)
+    dragSvg.style.display = ''
+  }
+  let drag: { card: HTMLElement; x0: number; y0: number; on: boolean; id: number } | null = null
+  const overField = (x: number, y: number): boolean => {
+    const f = sc.querySelector<HTMLElement>('.wfield')
+    if (f === null || !pop.hidden && (() => { const q = pop.getBoundingClientRect(); return x >= q.left && x <= q.right && y >= q.top && y <= q.bottom })()) return false
+    const q = f.getBoundingClientRect()
+    return x >= q.left && x <= q.right && y >= q.top && y <= q.bottom
+  }
+  pop.addEventListener('pointerdown', (ev) => {
+    const card = (ev.target as HTMLElement).closest<HTMLElement>('[data-war="pick"]')
+    if (card === null || !choosing()) return
+    showHold(flagHold(card), ev.clientX, ev.clientY)
+    drag = { card, x0: ev.clientX, y0: ev.clientY, on: false, id: ev.pointerId }
+    try { card.setPointerCapture(ev.pointerId) } catch { /* 못 잡아도 끌기는 ov 에서 */ }
+  })
+  ov.addEventListener('pointermove', (ev) => {
+    if (drag === null || ev.pointerId !== drag.id) return
+    if (!drag.on && Math.hypot(ev.clientX - drag.x0, ev.clientY - drag.y0) < P.realm.warDragSlop) return
+    if (!drag.on) { drag.on = true; hold.hidden = true; drag.card.classList.add('dragging') }
+    const q = drag.card.getBoundingClientRect()
+    drawDrag(q.left + q.width / 2, q.top + q.height / 2, ev.clientX, ev.clientY, overField(ev.clientX, ev.clientY))
+  })
+  const endDrag = (ev: PointerEvent): void => {
+    if (drag === null || ev.pointerId !== drag.id) return
+    const d = drag
+    drag = null
+    dragSvg.style.display = 'none'
+    d.card.classList.remove('dragging')
+    if (!d.on) { hideHold(); return }
+    hideHold(0)
+    if (ev.type === 'pointerup' && overField(ev.clientX, ev.clientY)) {
+      swallow = true // 놓은 뒤 오는 click 이 전장 누르기로 깃발 판을 다시 열지 않게
+      host.ding('click1', 0.22)
+      doPick(d.card.dataset['g'] as Grp | 'lead', d.card.dataset['c'] as Cmd, d.card, false)
+    }
+  }
+  ov.addEventListener('pointerup', endDrag)
+  ov.addEventListener('pointercancel', endDrag)
+  pop.addEventListener('contextmenu', (ev) => ev.preventDefault()) // 폰에서 꾹 누르면 뜨는 메뉴를 막는다
+  window.addEventListener('resize', placeGem)
+
   /** 다음 합을 고르는 중인가 (합이 풀리는 중·맡긴 싸움을 보는 중이 아니고) */
   const choosing = (): boolean => t.line?.pending !== undefined && !animating && chain.length === 0
   let popG: Grp | 'lead' | undefined
@@ -3150,14 +3284,14 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const name = tab.querySelector('.wgn b')?.textContent ?? ''
     const sub = tab.querySelector('.wgn small')?.textContent ?? ''
     fillPane(pane)
-    pop.innerHTML = `<div class="wfph">${tab.querySelector('.wgi')?.outerHTML ?? ''}<b>${esc(name)}</b><small>${esc(sub)}</small><button class="wfpx" data-war="popx" aria-label="닫기">✕</button></div><div class="wfpg"></div><div class="wfplook"></div>`
+    pop.innerHTML = `<div class="wfph">${tab.querySelector('.wgi')?.outerHTML ?? ''}<b>${esc(name)}</b><small>${esc(sub)}</small><button class="wfpx" data-war="popx" aria-label="닫기">✕</button></div><div class="wfpg"></div><p class="wfphint">깃발을 끌어 전장에 놓으면 정해집니다 · 누르고 있으면 설명</p>`
     const grid = pop.querySelector<HTMLElement>('.wfpg')!
     for (const b of pane.querySelectorAll<HTMLElement>('[data-war="pick"]')) {
       const c = b.cloneNode(true) as HTMLElement
       c.classList.add('mini')
       grid.appendChild(c)
     }
-    showLook(grid.querySelector<HTMLElement>('[data-war="pick"].on'), false)
+
     pop.hidden = false
     popG = g
     window.clearTimeout(hoverT)
@@ -3227,18 +3361,13 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   /** 꾹 눌러 정보창을 띄웠다 — 이어지는 click 하나를 삼킨다 (무리를 고르지 않는다) */
   let swallow = false
   let hoverT = 0
-  // 깃발 판의 깃발을 꾹 — 숫자 표까지
-  pop.addEventListener('pointerdown', (ev) => {
-    const card = (ev.target as HTMLElement).closest<HTMLElement>('[data-war="pick"]')
-    window.clearTimeout(popHoldT)
-    popHeld = false
-    if (card === null) return
-    popHoldT = window.setTimeout(() => { popHeld = true; showLook(card, true); if (typeof navigator.vibrate === 'function') navigator.vibrate(8) }, P.realm.warHoldTableMs)
-  })
-  for (const e of ['pointerup', 'pointercancel', 'pointerleave'] as const) pop.addEventListener(e, () => window.clearTimeout(popHoldT))
-  pop.addEventListener('contextmenu', (ev) => ev.preventDefault()) // 폰에서 꾹 누르면 뜨는 메뉴를 막는다
   ov.addEventListener('pointerdown', (ev) => {
     swallow = false // 꾹 누름 뒤 click 이 안 오는 폰도 있다 — 남은 삼킴이 다음 누름을 먹지 않게
+    if ((ev.target as HTMLElement).closest('.wfield') !== null && choosing()) {
+      // 우리 무리를 누르는 동안 — 그 무리의 설명 창 (손을 떼면 1초쯤 뒤 걷힌다 · 떼면 깃발 판이 열린다)
+      const h0 = fieldHit(ev.clientX, ev.clientY)
+      if (h0 !== null && h0.side === 'us' && h0.g !== undefined && sc.querySelector(`.wgt[data-g="${h0.g}"]`) !== null) { showHold(groupHold(h0.g), ev.clientX, ev.clientY); return }
+    }
     if (ev.pointerType === 'mouse' || (ev.target as HTMLElement).closest('.wfield, .wterr') === null) return
     const x = ev.clientX
     const y = ev.clientY
@@ -3269,6 +3398,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     if (Math.hypot(ev.clientX - press.x, ev.clientY - press.y) > P.realm.warTipSlop) { window.clearTimeout(press.timer); press = null }
   })
   const endPress = (): void => {
+    if (!hold.hidden && drag === null) hideHold()
     if (press === null) return
     window.clearTimeout(press.timer)
     if (press.held) hideTip(P.realm.warTipLingerMs)
@@ -3328,37 +3458,9 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     host.ding('click1', 0.18)
     switch (b.dataset['war']) {
       case 'pick': {
-        if (popHeld && b.closest('.wfpop') !== null) { popHeld = false; return } // 꾹 눌러 숫자 표를 본 뒤 뗀 것
-        // 무리마다 깃발 하나 — 같은 것을 또 누르면 내린다(맡긴다). 다시 그리되 자리는 그대로
-        const g = b.dataset['g'] as Grp | 'lead'
-        const c = b.dataset['c'] as Cmd
-        // 퇴각은 묻고 바로 — 다른 무리를 고르고 「전투 개시」까지 누를 까닭이 없다 (형 10-25: "정말 퇴각하시겠습니까? 가 뜨고 그냥 퇴각되어야")
-        if (c === 'retreat') { closePop(); hideTip(); askRetreat(); return }
-        sel = { ...sel, [g]: sel[g] === c ? undefined : c }
-        if (sel[g] === undefined) delete sel[g]
-        // 다시 그리지 않고 고른 표만 옮긴다 — 다시 그리면 배경·그림이 깜빡였다
-        for (const x of sc.querySelectorAll<HTMLElement>(`[data-war="pick"][data-g="${g}"]`)) x.classList.toggle('on', sel[g] === x.dataset['c'])
-        active = g
-        syncCmd()
-        if (sel[g] !== undefined && ov.classList.contains('b0')) b0Pop(b)
-        // 장수 깃발(비기·격려…)을 들 때는 말하지 않는다 — 「무엇이든 말씀만 하셔요」는 명을 고르는 자리에 안 맞았다 (형 10-27). 외침은 그 수가 풀릴 때
-        // 골랐으면 아직 안 고른 다음 무리로 — 깃발이 내려앉는 것을 잠깐 보고 (전장의 깃발 판에서 골랐으면 그 판도 다음 무리 곁으로)
-        const fromPop = popG !== undefined
-        // 깃발 판에서 골랐으면 판을 바로 닫지 않고 고른 깃발의 판세를 잠깐 보여 준 뒤 다음 무리로
-        if (fromPop) {
-          for (const x of pop.querySelectorAll<HTMLElement>('[data-war="pick"]')) x.classList.toggle('on', sel[g] === x.dataset['c'])
-          showLook(sel[g] !== undefined ? pop.querySelector<HTMLElement>('[data-war="pick"].on') : null, false)
-        } else closePop()
-        hideTip()
-        if (sel[g] !== undefined) {
-          const order = [...sc.querySelectorAll<HTMLElement>('.wgt[data-g]')].map((x) => x.dataset['g'] as Grp | 'lead')
-          const at = order.indexOf(g)
-          const next = [...order.slice(at + 1), ...order.slice(0, at)].find((x) => sel[x] === undefined)
-          const wait = fromPop ? P.realm.warPopLookMs : P.realm.warTabNextMs
-          if (next !== undefined) {
-            timers.push(window.setTimeout(() => { if (active === g) { active = next; syncCmd(); if (fromPop && choosing()) openPop(next) } }, wait))
-          } else if (fromPop) timers.push(window.setTimeout(() => { if (popG === g) closePop() }, wait)) // 다 골랐으면 아래 띠의 「전투 개시」로
-        }
+        // 전장 위 깃발 판은 누르기로 고르지 않는다 — 끌어 전장에 놓아야 (dropFlag) · 누르고 있으면 설명 창
+        if (b.closest('.wfpop') !== null) return
+        doPick(b.dataset['g'] as Grp | 'lead', b.dataset['c'] as Cmd, b, true)
         return
       }
       case 'gtab': {
