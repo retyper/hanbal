@@ -223,7 +223,7 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1, have?: { readonly gr
     case 'whale':
       return { sure: pick === 0 ? { grain: Math.max(R.cardWhaleMin, earn(R.cardWhaleShare)) } : cheer }
     case 'fishbridge':
-      // 다리를 흩는다 — 쫓던 동부여 군대의 기가 꺾인다 · 알린다 — 우리 기운이 오른다
+      // 나루를 끊는다 — 쫓던 동부여 군대의 기가 꺾인다 · 알린다 — 우리 기운이 오른다
       return { sure: pick === 0 ? { foe: { faction: 'buyeo', d: R.cardFishMorale } } : cheer }
     case 'gogak':
       // 『삼국사기』 동명성왕 2년 — 부분노가 비류국의 고각을 가져와 송양이 감히 다투지 못했다 · 들키면 노한다
