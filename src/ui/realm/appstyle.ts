@@ -4,6 +4,7 @@
  */
 export const APP_CSS = `
 html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; overscroll-behavior: none; }
+@supports (height: 100dvh) { html, body { height: 100dvh; } } /* 주소창이 보일 때의 실제 높이 — 첫 화면 맨 밑 「더 보기」가 잘렸다 (형 10-28: 갤럭시도 아이폰도) */
 .ap { --gold: #d9b36a; --ink: #e9e2d4; --mute: #8f887b; --card: #2a1f16; --line: #4d3b26; --good: #8fd07a; --bad: #e08a74;
   --tabh: calc(62px + env(safe-area-inset-bottom)); --toph: calc(48px + env(safe-area-inset-top)); --legh: 34px;
   /* 글꼴 셋 (public/fonts — 자체 호스팅, 기기마다 같게): 본문 고운돋움 · 제목 고운바탕 · 큰 의식 글자(계절·싸움 이름·첫 화면) 송명.

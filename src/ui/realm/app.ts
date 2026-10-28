@@ -2918,14 +2918,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (nb.owner === r.player && na.owner !== null && na.owner !== r.player) return [{ from: e.b, to: e.a, edge: e.id }]
       return []
     })
-    const a = mine[seed % Math.max(1, mine.length)]
+    // 두 판에 한 번은 원군 판 — 작은 군대가 먼저 붙고 큰 군대가 늦게 닿는다 (먼저 붙은 쪽이 세면 첫 합에 끝나 원군이 올 틈이 없다)
+    const withRelief = seed % 2 === 0 && mine.length >= 2
+    const bySize = [...mine].sort((x, y) => headcount(forceOf(r, x)) - headcount(forceOf(r, y)))
+    const a = withRelief ? bySize[0] : mine[seed % Math.max(1, mine.length)]
     const f = fronts[seed % Math.max(1, fronts.length)]
     if (a === undefined || f === undefined) { goToast('연습 싸움을 열 수 없습니다'); return }
     a.at = f.from
     a.march = { from: f.from, to: f.to, edge: f.edge, left: 1, ambush: false, aim: r.nodes[f.to]?.owner ?? null }
     // 두 판에 한 번은 우리 장수 하나가 「뒤따른다」로 늦게 닿는 원군 — 원군이 들어오는 모습도 시험한다 (형 10-28)
-    const b2 = mine.find((x) => x !== a)
-    if (b2 !== undefined && seed % 2 === 0) { b2.at = f.from; b2.march = { from: f.from, to: f.to, edge: f.edge, left: 1, ambush: false, follow: true, aim: r.nodes[f.to]?.owner ?? null } }
+    const b2 = withRelief ? bySize[bySize.length - 1] : undefined
+    if (b2 !== undefined && b2 !== a) { b2.at = f.from; b2.march = { from: f.from, to: f.to, edge: f.edge, left: 1, ambush: false, follow: true, aim: r.nodes[f.to]?.owner ?? null } }
     const back = (): void => { warOn = false; front = { kind: 'title' }; paint() }
     try {
       if (openWar(root, r, aiOrders(r), { art: ART, me: r.player, ding, music: (k) => { if (k === 'war') music.war(); else music.result(k) }, done: back })) { warOn = true; music.war(); music.primeResults(); return }
@@ -4538,6 +4541,19 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return h + `</div></div>`
   }
 
+  /** 첫 화면이 한 화면에 안 들어가면 한 단계씩 줄인다 (front.ts .tight · .tight2) — 그려진 뒤에 재고, 화면 크기가 바뀌면 다시 */
+  function fitTitle(): void {
+    const tv = root.querySelector<HTMLElement>('.front.title .tv')
+    if (tv === null) return
+    const logo = tv.querySelector<HTMLImageElement>('img.ltitle')
+    if (logo !== null && !logo.complete) logo.addEventListener('load', fitTitle, { once: true }) // 로고가 다 받아진 뒤 다시 잰다
+    tv.classList.remove('tight', 'tight2')
+    const over = (): boolean => tv.scrollHeight > tv.clientHeight + 1
+    if (over()) tv.classList.add('tight')
+    if (over()) tv.classList.add('tight2')
+  }
+  window.addEventListener('resize', () => { if (front?.kind === 'title') fitTitle() })
+
   // ───────── 판 바깥 — 첫 화면 · 판 고르기 · 나라 고르기 (front.ts)
   function frontHtml(f: Front): string {
     // 활터·연습장·소리 출처·시험·기록·로그인은 「더 보기」 안에 접는다 — 늘어놓았더니 폰에서 화면 밑으로 넘쳤다 (형 10-28)
@@ -4971,6 +4987,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const keepFront = keepSel !== null ? (root.querySelector(keepSel)?.scrollTop ?? 0) : 0
       $('.mapwrap').innerHTML = frontHtml(front!)
       if (keepSel !== null && keepFront > 0) { const fe = root.querySelector(keepSel); if (fe !== null) fe.scrollTop = keepFront }
+      if (front?.kind === 'title') fitTitle()
       $('.top').innerHTML = ''
       $('.tabs').innerHTML = ''
       $('.legend').innerHTML = ''

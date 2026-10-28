@@ -17,6 +17,7 @@
     <title>칠십팔국</title>
     <style>
       html, body { margin: 0; height: 100%; overflow: hidden; background: #14181e; color: #e9e2d4; }
+      @supports (height: 100dvh) { html, body { height: 100dvh; } }
       /* 아이폰 — 가로로 돌렸을 때 글자를 멋대로 키우지 않게 · 끌어당겨 튕기지 않게 (형 10-24: "ios 에서 화면 구겨지고") */
       html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; overscroll-behavior: none; }
       /* 아이폰 — 두 번 톡 쳐서 페이지가 커지지 않게 · 입력칸에 눌러도 확대되지 않게(16px 아래면 사파리가 키운다) (형 10-24: "ios 화면이 지멋대로 확대되고 안 돌아온다") */

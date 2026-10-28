@@ -613,6 +613,14 @@ export const FRONT_CSS = `
 .ap .front.title .hook { margin: 0 auto 16px; color: #cfc6b4; font-size: 13.5px; line-height: 1.6; max-width: 460px; }
 .ap .front .fbtns { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: auto; }
 .ap .front.title .fine { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 22px 16px 0; }
+/* 첫 화면이 한 화면에 안 들어가면 (app.fitTitle) — 한 단계씩 줄인다 (형 10-28: "어떤 기기에서도 꼬이지 않게") */
+.ap .front.title .tv.tight { padding-top: calc(4.5vh + env(safe-area-inset-top)); padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+.ap .front.title .tv.tight .ltitle { max-height: 22vh; width: auto; max-width: min(760px, 94vw); }
+.ap .front.title .tv.tight .fbtns { gap: 7px; } .ap .front.title .tv.tight .fbtns > .btn.big { padding-top: 3px; padding-bottom: 3px; }
+.ap .front.title .tv.tight .cont { padding: 6px 12px; } .ap .front.title .tv.tight .cont .cface { width: 44px; height: 44px; }
+.ap .front.title .tv.tight .fmore { margin-top: 8px; }
+.ap .front.title .tv.tight2 .ltitle { max-height: 15vh; } .ap .front.title .tv.tight2 .fbtns { gap: 5px; } .ap .front.title .tv.tight2 .fbtns > .btn.big { font-size: 14px; padding-top: 1px; padding-bottom: 1px; }
+.ap .front.title .tv.tight2 .cont small { display: none; }
 .ap .front .fmore { text-align: center; margin: 14px 0 0; } .ap .front .fmore > summary { list-style: none; display: inline-flex; cursor: pointer; font-size: 13px; }
 .ap .front .fmore > summary::-webkit-details-marker { display: none; }
 /* 「더 보기」는 첫 화면 위에 뜨는 판으로 — 아래로 펼쳤더니 폰에서 화면 밖으로 넘쳤다 (형 10-28: "시작 화면에 스크롤 쓰지 않은 건 잘했는데") */
