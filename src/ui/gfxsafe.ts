@@ -389,6 +389,99 @@ function patchCanvas(): void {
   }
   P.createLinearGradient = wrap(P.createLinearGradient as (this: CanvasRenderingContext2D, ...a: number[]) => CanvasGradient) as typeof P.createLinearGradient
   P.createRadialGradient = wrap(P.createRadialGradient as (this: CanvasRenderingContext2D, ...a: number[]) => CanvasGradient) as typeof P.createRadialGradient
+  if (smoothOn) patchCanvasSmooth(P)
+}
+
+/**
+ * 캔버스 그러데이션도 매끈한 그림 무늬로 (10-29) — 하늘·빛 무리가 계단으로 층층이 보였다 (형 10-29).
+ * 그러데이션을 만들 때 자리와 색을 적어 두었다가, fillStyle·strokeStyle 에 넣는 순간 점마다 셈해 구운 그림 무늬(CanvasPattern)로 바꿔 넣는다.
+ * 곧은 것은 한 줄 띠(양끝 색을 길게 늘여 둠), 둥근 것은 작게 구워 늘린다. 못 하는 것(두 원의 가운데가 다름 등)은 위의 계단 그대로.
+ */
+function patchCanvasSmooth(P: CanvasRenderingContext2D): void {
+  interface Meta { lin: boolean; a: number[]; stops: Array<{ o: number; c: RGBA }> }
+  const meta = new WeakMap<CanvasGradient, Meta>()
+  const made = new WeakMap<CanvasGradient, CanvasPattern | null>()
+  const PAD = 2048
+  const remember = (make: (this: CanvasRenderingContext2D, ...a: number[]) => CanvasGradient, lin: boolean) => function (this: CanvasRenderingContext2D, ...a: number[]): CanvasGradient {
+    const g = make.apply(this, a)
+    const m: Meta = { lin, a, stops: [] }
+    meta.set(g, m)
+    const add = g.addColorStop.bind(g)
+    g.addColorStop = (o: number, color: string): void => { add(o, color); const c = parseColor(color); if (c !== null) m.stops.push({ o, c }) }
+    return g
+  }
+  P.createLinearGradient = remember(P.createLinearGradient as (this: CanvasRenderingContext2D, ...a: number[]) => CanvasGradient, true) as typeof P.createLinearGradient
+  P.createRadialGradient = remember(P.createRadialGradient as (this: CanvasRenderingContext2D, ...a: number[]) => CanvasGradient, false) as typeof P.createRadialGradient
+  const colorAt = (st: Meta['stops'], t: number): RGBA => {
+    if (t <= st[0]!.o) return st[0]!.c
+    for (let i = 0; i + 1 < st.length; i++) {
+      if (t <= st[i + 1]!.o) { const span = st[i + 1]!.o - st[i]!.o; return span <= 0 ? st[i + 1]!.c : mix(st[i]!.c, st[i + 1]!.c, (t - st[i]!.o) / span) }
+    }
+    return st[st.length - 1]!.c
+  }
+  const paint = (w: number, h: number, t: (x: number, y: number) => number, st: Meta['stops']): HTMLCanvasElement | null => {
+    const cv = document.createElement('canvas')
+    cv.width = w
+    cv.height = h
+    const x = cv.getContext('2d')
+    if (x === null) return null
+    const img = x.createImageData(w, h)
+    let seed = 11
+    const noise = (): number => { seed = (Math.imul(seed, 1103515245) + 12345) >>> 0; return seed / 4294967296 - 0.5 }
+    for (let j = 0; j < h; j++) {
+      for (let i = 0; i < w; i++) {
+        const c = colorAt(st, t(i + 0.5, j + 0.5))
+        const o = (j * w + i) * 4
+        img.data[o] = Math.round(c[0] + noise()); img.data[o + 1] = Math.round(c[1] + noise()); img.data[o + 2] = Math.round(c[2] + noise()); img.data[o + 3] = Math.round(c[3] * 255 + noise())
+      }
+    }
+    x.putImageData(img, 0, 0)
+    return cv
+  }
+  const patternOf = (ctx: CanvasRenderingContext2D, g: CanvasGradient): CanvasPattern | null => {
+    if (made.has(g)) return made.get(g)!
+    let out: CanvasPattern | null = null
+    try {
+      const m = meta.get(g)!
+      const st = [...m.stops].sort((p, q) => p.o - q.o)
+      if (st.length >= 2) {
+        if (m.lin) {
+          const [x0, y0, x1, y1] = m.a as [number, number, number, number]
+          const len = Math.hypot(x1 - x0, y1 - y0)
+          if (len > 0.5 && len < 8192) {
+            const w = Math.ceil(len) + PAD * 2
+            const cv = paint(w, 1, (x) => (x - PAD) / len, st)
+            const pat = cv !== null ? ctx.createPattern(cv, 'repeat-y') : null
+            if (pat !== null) {
+              pat.setTransform(new DOMMatrix().translateSelf(x0, y0).rotateSelf((Math.atan2(y1 - y0, x1 - x0) * 180) / Math.PI).translateSelf(-PAD, 0))
+              out = pat
+            }
+          }
+        } else {
+          const [x0, y0, r0, x1, y1, r1] = m.a as [number, number, number, number, number, number]
+          if (Math.abs(x0 - x1) < 0.01 && Math.abs(y0 - y1) < 0.01 && r1 > r0 && r1 < 8192) {
+            const R = r1 * 3 // 바깥은 끝 색 — 넉넉히 덮는다
+            const S = 384
+            const k = (2 * R) / S
+            const cv = paint(S, S, (x, y) => (Math.hypot(x * k - R, y * k - R) - r0) / (r1 - r0), st)
+            const pat = cv !== null ? ctx.createPattern(cv, 'no-repeat') : null
+            if (pat !== null) {
+              pat.setTransform(new DOMMatrix().translateSelf(x0 - R, y0 - R).scaleSelf(k, k))
+              out = pat
+            }
+          }
+        }
+      }
+    } catch { out = null }
+    made.set(g, out)
+    return out
+  }
+  for (const prop of ['fillStyle', 'strokeStyle'] as const) {
+    const d = Object.getOwnPropertyDescriptor(P, prop)
+    if (d?.set === undefined || d.get === undefined) continue
+    const set = d.set
+    Object.defineProperty(P, prop, { ...d, set(this: CanvasRenderingContext2D, v: unknown) { set.call(this, v instanceof CanvasGradient && meta.has(v) ? (patternOf(this, v) ?? v) : v) } })
+  }
 }
 
 // ───────── 알아채기 · 켜기
