@@ -47,7 +47,7 @@ export const AUD_CSS = `
 .ap .aud { position: relative; overflow: hidden; border-radius: 16px; width: min(100%, 1080px); align-self: center; margin: 0 auto; min-height: min(66vh, 600px); display: flex; flex-direction: column; justify-content: flex-end; background: #120c08; box-shadow: 0 14px 40px #000c; }
 .ap .aud .audbg { position: absolute; inset: 0; background-size: cover; background-position: center; filter: brightness(.62) saturate(.9); animation: audbg 2.4s ease-out both; }
 .ap .aud.threat .audbg { filter: brightness(.5) saturate(1.1) sepia(.35) hue-rotate(-20deg); }
-.ap .aud .audlord { position: absolute; right: 2%; bottom: 0; height: 100%; aspect-ratio: 1; object-fit: cover; object-position: top; -webkit-mask-image: radial-gradient(ellipse 50% 58% at 50% 42%, #000 58%, #0000 100%); mask-image: radial-gradient(ellipse 50% 58% at 50% 42%, #000 58%, #0000 100%); animation: audin .7s cubic-bezier(.2, 1.1, .4, 1) .15s both; }
+.ap .aud .audlord { position: absolute; right: 2%; bottom: 0; height: 100%; aspect-ratio: 1; object-fit: cover; object-position: top; -webkit-mask: url(__ART__fx/mask-bust.png) center / 100% 100% no-repeat; mask: url(__ART__fx/mask-bust.png) center / 100% 100% no-repeat; animation: audin .7s cubic-bezier(.2, 1.1, .4, 1) .15s both; }
 .ap .aud .audtop { position: absolute; left: 16px; top: 14px; right: 16px; display: flex; align-items: center; gap: 10px; z-index: 2; animation: audup .4s ease-out .3s both; }
 .ap .aud .audtop .aqi { width: 34px; height: 34px; } .ap .aud .audtop b { font-size: 15px; color: var(--gold); letter-spacing: .04em; text-shadow: 0 1px 4px #000; }
 .ap .aud .audname { position: relative; z-index: 2; display: flex; align-items: center; gap: 8px; margin: 0 16px 6px; animation: audup .4s ease-out .45s both; }
@@ -72,10 +72,11 @@ export const AUD_CSS = `
 @keyframes audpop { 0% { transform: scale(0) rotate(-30deg); } 70% { transform: scale(1.25) rotate(8deg); } 100% { transform: none; } }
 @keyframes audch { to { opacity: 1; } }
 
-/* 맺었다 · 틀어졌다 — 두 군장이 마주 본다 */
+/* 맺었다 · 틀어졌다 — 두 군장이 마주 본다
+ * 얼굴 가림막은 미리 구운 그림(fx/mask-bust.png) — CSS 그러데이션은 갤럭시 호환 모드에서 계단으로 층층이 보였고, 위쪽 끝(모자·머리가 잘린 자리)이 흐려지지 않아 머리가 뚝 잘려 보였다 (형 10-29) */
 .ap .pact { position: relative; aspect-ratio: 16 / 9; width: min(100%, calc(62vh * 16 / 9)); align-self: center; border-radius: 16px; overflow: hidden; box-shadow: 0 14px 40px #000c; }
 .ap .pact .pactbg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(.7); animation: audbg 2.4s ease-out both; }
-.ap .pact .pl { position: absolute; bottom: 0; height: 82%; aspect-ratio: 1; object-fit: cover; object-position: top; -webkit-mask-image: radial-gradient(ellipse 50% 58% at 50% 42%, #000 58%, #0000 100%); mask-image: radial-gradient(ellipse 50% 58% at 50% 42%, #000 58%, #0000 100%); }
+.ap .pact .pl { position: absolute; bottom: 0; height: 82%; aspect-ratio: 1; object-fit: cover; object-position: top; -webkit-mask: url(__ART__fx/mask-bust.png) center / 100% 100% no-repeat; mask: url(__ART__fx/mask-bust.png) center / 100% 100% no-repeat; }
 .ap .pact .pl.a { left: 2%; animation: pactl .7s cubic-bezier(.2, 1.1, .4, 1) .1s both; transform: scaleX(-1); }
 .ap .pact .pl.b { right: 2%; animation: pactr .7s cubic-bezier(.2, 1.1, .4, 1) .1s both; }
 .ap .pact .pflags { position: absolute; left: 50%; top: 10%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; z-index: 2; }

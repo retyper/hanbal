@@ -2540,8 +2540,8 @@ export const WAR_CSS = `
 .ap .wofoot > .wocd i.tk { animation: wocdtk .45s cubic-bezier(.2, 1.6, .4, 1); } @keyframes wocdtk { from { scale: 1.6; opacity: .3; } to { scale: 1; opacity: 1; } }
 .ap .wopen .wob { position: absolute; inset: -4%; background: center / cover no-repeat; filter: brightness(.75) saturate(1.05); animation: wozoom 3.4s ease-out both; }
 @keyframes wozoom { from { transform: scale(1.18); filter: brightness(.2); } 25% { filter: brightness(.8); } to { transform: scale(1); } }
-.ap .wopen::before { content: ''; position: absolute; inset: 0; z-index: 1; background: radial-gradient(ellipse at 50% 50%, #0000 30%, #000c 100%); }
-.ap .wopen .wofl { position: absolute; inset: 0; z-index: 2; background: radial-gradient(circle, #ff6a3a88, #b0281a55 40%, #0000 75%); opacity: 0; animation: woflash .7s ease-out .9s both; }
+.ap .wopen::before { content: ''; position: absolute; inset: 0; z-index: 1; background: url(__ART__fx/vig-edge.png) center / 100% 100% no-repeat; } /* 흐림은 구운 그림으로 — CSS 그러데이션은 갤럭시에서 층층이 띠가 졌다 (형 10-29) */
+.ap .wopen .wofl { position: absolute; inset: 0; z-index: 2; background: url(__ART__fx/flash-red.png) center / 100% 100% no-repeat; opacity: 0; animation: woflash .7s ease-out .9s both; }
 @keyframes woflash { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
 .ap .wopen .woin { position: absolute; inset: 0; z-index: 3; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; align-content: center; gap: 8px; padding: 0 4vw; animation: woshake .5s ease-out .9s both; }
 @keyframes woshake { 0%, 100% { transform: none; } 20% { transform: translate(-8px, 3px); } 40% { transform: translate(7px, -4px); } 60% { transform: translate(-4px, 2px); } 80% { transform: translate(2px, -1px); } }
@@ -2569,7 +2569,7 @@ export const WAR_CSS = `
 @media (prefers-reduced-motion: reduce) { .ap .wopen, .ap .wopen * { animation-duration: .01s !important; animation-delay: 0s !important; } .ap .wopen { animation: woout 2.2s steps(1) forwards !important; } }
 /* 싸움이 열린다 — 계절 띠처럼 가운데 이름 (북 · 종) */
 .ap .warfx { position: fixed; inset: 0; z-index: 70; display: flex; align-items: center; justify-content: center; pointer-events: none;
-  background: radial-gradient(circle, #000b 0, #0000 72%); animation: sfx 2.4s ease-out forwards; }
+  background: url(__ART__fx/vig-center.png) center / 100% 100% no-repeat; animation: sfx 2.4s ease-out forwards; }
 .ap .warfx > div { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 36px; border-radius: 18px; background: #1a1210ee;
   border: 1px solid #a0502a; box-shadow: 0 8px 40px #000c; animation: sfxin 1.6s cubic-bezier(.2, 1.4, .4, 1) forwards; }
 .ap .warfx b { font-family: var(--display); font-weight: 400; font-size: 32px; color: #f0c080; letter-spacing: 2px; }

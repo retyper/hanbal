@@ -116,8 +116,8 @@ function posAt(a: string, b: string, t: number): string {
   return `calc(${lenOf(a)} + (${lenOf(b)} - ${lenOf(a)}) * ${+t.toFixed(4)})`
 }
 
-/** 그러데이션 속 하나 — 계단으로 바꾼 글, 못 바꾸면 null(그대로 둔다) */
-function stepGradient(fn: 'linear' | 'radial', inner: string): string | null {
+/** 그러데이션 속을 머리말과 색 칸으로 — 자리 빈 칸은 채운다 · 못 읽으면(또는 이미 딱 끊긴 띠면) null */
+function parseGradient(inner: string): { prelude: string | null; stops: Stop[] } | null {
   const parts = splitTop(inner, ',')
   if (parts.length < 2) return null
   let prelude: string | null = null
@@ -148,6 +148,14 @@ function stepGradient(fn: 'linear' | 'radial', inner: string): string | null {
     for (let k = i; k < j; k++) stops[k]!.p = posAt(a, b, (k - i + 1) / (j - i + 1))
     i = j
   }
+  return { prelude, stops }
+}
+
+/** 그러데이션 속 하나 — 계단으로 바꾼 글, 못 바꾸면 null(그대로 둔다) */
+function stepGradient(fn: 'linear' | 'radial', inner: string): string | null {
+  const g = parseGradient(inner)
+  if (g === null) return null
+  const { prelude, stops } = g
   const n = stops.length > 5 ? STEPS_MANY : STEPS
   const bands: string[] = []
   for (let i = 0; i + 1 < stops.length; i++) {
@@ -157,6 +165,156 @@ function stepGradient(fn: 'linear' | 'radial', inner: string): string | null {
     for (let k = 0; k < n; k++) bands.push(`${colorText(mix(a.c, b.c, (k + 0.5) / n))} ${posAt(a.p!, b.p!, k / n)} ${posAt(a.p!, b.p!, (k + 1) / n)}`)
   }
   return `${fn}-gradient(${prelude !== null ? `${prelude}, ` : ''}${bands.join(', ')})`
+}
+
+// ───────── 매끈한 그림으로 (10-29)
+// 계단(8칸)은 화면 가득한 흐림에서 층층이 띠가 보였다 (형 10-29: "층층이 흐려지는 게 보인다 · 다시 제대로 복구"). 그 폰은 그러데이션을
+// 「그리는」 것만 못 하고 그림(이미지)은 잘 그린다 — 그래서 색을 한 점씩 셈해 작은 PNG 로 굽고, 크기 없는 SVG 로 감싸 그러데이션 자리에 넣는다.
+// 크기 없는 SVG 는 그러데이션처럼 칸 크기에 맞춰 늘어난다(preserveAspectRatio none). 못 읽는 것(px 자리·px 원 등)은 계단 그대로.
+
+const smoothCache = new Map<string, string | null>()
+
+/** 칸 0..1 자리(가로 u · 세로 v)의 그러데이션 자리 t 와 구울 그림 크기 — 못 셈하면 null */
+function geometry(fn: 'linear' | 'radial', prelude: string | null): { t: (u: number, v: number) => number; w: number; h: number } | null {
+  const pre = (prelude ?? '').trim().toLowerCase()
+  if (fn === 'linear') {
+    let deg = 180
+    if (pre !== '') {
+      const m = /^(-?[\d.]+)(deg|turn|rad)$/.exec(pre)
+      if (m !== null) deg = m[2] === 'turn' ? +m[1]! * 360 : m[2] === 'rad' ? (+m[1]! * 180) / Math.PI : +m[1]!
+      else if (pre.startsWith('to ')) {
+        const w = pre.slice(3).split(/\s+/)
+        const x = w.includes('right') ? 1 : w.includes('left') ? -1 : 0
+        const y = w.includes('top') ? 1 : w.includes('bottom') ? -1 : 0
+        if (x === 0 && y === 0) return null
+        deg = (Math.atan2(x, y) * 180) / Math.PI
+      } else return null
+    }
+    const a = (deg * Math.PI) / 180
+    const sx = Math.sin(a)
+    const sy = -Math.cos(a)
+    const L = Math.abs(sx) + Math.abs(sy)
+    const t = (u: number, v: number): number => ((u - 0.5) * sx + (v - 0.5) * sy) / L + 0.5
+    // 곧은 방향이면 한 줄짜리 띠로 충분하다
+    if (Math.abs(sx) < 1e-6) return { t, w: 1, h: 160 }
+    if (Math.abs(sy) < 1e-6) return { t, w: 160, h: 1 }
+    return { t, w: 96, h: 96 }
+  }
+  // radial — [circle|ellipse] [크기] [at x y]
+  let shape: 'circle' | 'ellipse' = 'ellipse'
+  let size = 'farthest-corner'
+  let ex: [number, number] | null = null
+  let cx = 0.5
+  let cy = 0.5
+  const cut = pre.split(/\s*\bat\b\s*/)
+  const head = (cut[0] ?? '').trim()
+  const pos = (s: string, horiz: boolean): number | null => {
+    if (s === 'center') return 0.5
+    if (s === (horiz ? 'left' : 'top')) return 0
+    if (s === (horiz ? 'right' : 'bottom')) return 1
+    const p = pctOf(s)
+    return p !== null ? p / 100 : null
+  }
+  if (cut[1] !== undefined) {
+    const w = cut[1].trim().split(/\s+/)
+    let x = w[0] ?? 'center'
+    let y = w[1] ?? 'center'
+    if (x === 'top' || x === 'bottom') { const z = x; x = y; y = z }
+    const px = pos(x, true)
+    const py = pos(y, false)
+    if (px === null || py === null) return null
+    cx = px
+    cy = py
+  }
+  for (const w of head.split(/\s+/).filter((x) => x !== '')) {
+    if (w === 'circle' || w === 'ellipse') shape = w
+    else if (/^(closest|farthest)-(side|corner)$/.test(w)) size = w
+    else {
+      const p = pctOf(w)
+      if (p === null) return null // px 크기 — 늘려 그릴 수 없다
+      ex = ex === null ? [p / 100, p / 100] : [ex[0], p / 100]
+    }
+  }
+  let rx: number
+  let ry: number
+  if (ex !== null) {
+    if (shape === 'circle') return null
+    rx = ex[0]
+    ry = ex[1]
+  } else {
+    const dx = [cx, 1 - cx]
+    const dy = [cy, 1 - cy]
+    const side = size.endsWith('side')
+    const far = size.startsWith('farthest')
+    if (shape === 'circle') {
+      const corners = dx.flatMap((a) => dy.map((b) => Math.hypot(a, b)))
+      const r = side ? (far ? Math.max(...dx, ...dy) : Math.min(...dx, ...dy)) : (far ? Math.max(...corners) : Math.min(...corners))
+      rx = r
+      ry = r
+    } else {
+      const sx = far ? Math.max(...dx) : Math.min(...dx)
+      const sy = far ? Math.max(...dy) : Math.min(...dy)
+      rx = side ? sx : sx * Math.SQRT2
+      ry = side ? sy : sy * Math.SQRT2
+    }
+  }
+  if (!(rx > 0) || !(ry > 0)) return null
+  return { t: (u, v) => Math.hypot((u - cx) / rx, (v - cy) / ry), w: 96, h: 96 }
+}
+
+/** 그러데이션 → 늘어나는 그림 주소 (blob:) · 못 하면 null */
+function smoothGradient(fn: 'linear' | 'radial', inner: string): string | null {
+  if (typeof document === 'undefined' || typeof URL === 'undefined' || typeof Blob === 'undefined') return null
+  const key = `${fn}|${inner}`
+  const hit = smoothCache.get(key)
+  if (hit !== undefined) return hit
+  let out: string | null = null
+  try {
+    const g = parseGradient(inner)
+    const geo = g !== null ? geometry(fn, g.prelude) : null
+    const pos = g !== null ? g.stops.map((s) => { const p = pctOf(s.p!); return p !== null ? p / 100 : null }) : []
+    if (g !== null && geo !== null && pos.every((p) => p !== null)) {
+      const ps = pos as number[]
+      // 뒤 칸 자리가 앞 칸보다 앞이면 앞 칸 자리로 (CSS 와 같게)
+      for (let i = 1; i < ps.length; i++) if (ps[i]! < ps[i - 1]!) ps[i] = ps[i - 1]!
+      const at = (t: number): RGBA => {
+        if (t <= ps[0]!) return g.stops[0]!.c
+        for (let i = 0; i + 1 < ps.length; i++) {
+          if (t <= ps[i + 1]!) {
+            const span = ps[i + 1]! - ps[i]!
+            return span <= 0 ? g.stops[i + 1]!.c : mix(g.stops[i]!.c, g.stops[i + 1]!.c, (t - ps[i]!) / span)
+          }
+        }
+        return g.stops[g.stops.length - 1]!.c
+      }
+      const cv = document.createElement('canvas')
+      cv.width = geo.w
+      cv.height = geo.h
+      const x = cv.getContext('2d')
+      if (x !== null) {
+        const img = x.createImageData(geo.w, geo.h)
+        let seed = 7
+        const noise = (): number => { seed = (Math.imul(seed, 1103515245) + 12345) >>> 0; return seed / 4294967296 - 0.5 } // 8비트 띠가 안 지게 반 칸 흩뿌림
+        for (let j = 0; j < geo.h; j++) {
+          for (let i = 0; i < geo.w; i++) {
+            const c = at(geo.t((i + 0.5) / geo.w, (j + 0.5) / geo.h))
+            const o = (j * geo.w + i) * 4
+            img.data[o] = Math.round(c[0] + noise())
+            img.data[o + 1] = Math.round(c[1] + noise())
+            img.data[o + 2] = Math.round(c[2] + noise())
+            img.data[o + 3] = Math.round(c[3] * 255 + noise())
+          }
+        }
+        x.putImageData(img, 0, 0)
+        const png = cv.toDataURL('image/png')
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><image width="100%" height="100%" preserveAspectRatio="none" href="${png}" xlink:href="${png}"/></svg>`
+        out = `url(${URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }))})` // 따옴표 없이 — style="" 속에 들어가도 깨지지 않게
+      }
+    }
+  } catch { out = null }
+  if (smoothCache.size > 3000) smoothCache.clear()
+  smoothCache.set(key, out)
+  return out
 }
 
 // ───────── filter 색 함수는 뺀다
@@ -175,6 +333,8 @@ function fixFilterValue(v: string): string {
 }
 
 const cssCache = new Map<string, string>()
+/** 매끈한 그림으로 바꾸나 — 켜질 때(startGfxSafe) 켠다 · 주소에 ?gfxsmooth=0 이면 옛 계단 */
+let smoothOn = false
 
 /** CSS 글 하나(스타일시트든 style="" 이든)를 고장 난 기기에서 되는 꼴로 */
 export function fixCss(css: string): string {
@@ -191,7 +351,9 @@ export function fixCss(css: string): string {
     const open = start + m[0].length - 1
     const close = closeOf(s, open)
     if (close < 0) break
-    const rep = stepGradient(m[1] as 'linear' | 'radial', s.slice(open + 1, close))
+    const fn = m[1] as 'linear' | 'radial'
+    const inner = s.slice(open + 1, close)
+    const rep = (smoothOn ? smoothGradient(fn, inner) : null) ?? stepGradient(fn, inner)
     if (rep !== null) { out += s.slice(at, start) + rep; at = close + 1 }
     re.lastIndex = close + 1
   }
@@ -310,6 +472,7 @@ export let gfxSafe = false
 export function startGfxSafe(): void {
   if (typeof document === 'undefined' || !wanted()) return
   gfxSafe = true
+  try { smoothOn = new URLSearchParams(location.search).get('gfxsmooth') !== '0' } catch { smoothOn = true }
   document.documentElement.classList.add('gfxsafe')
   patchCanvas()
   patchHtml()
