@@ -2515,7 +2515,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   ov.className = 'wr'
   // 첫째 합 밑의 설명·깃발 설명은 「?」를 눌렀을 때만 (형 10-25) — 펼친 채로 두면 다음 싸움에도 펼쳐 둔다
   try { if (localStorage.getItem(HELP_KEY) === '1') ov.classList.add('help') } catch { /* 없으면 접힌 채 */ }
-  if (b0On()) ov.classList.add('b0')
+  ov.classList.add('b0') // 새 전투 시험(BATTLE-LIVE 0번)의 안내·반응을 10-28 부터 기본으로 — 스위치 대신 「더 보기」의 연습 싸움으로 시험한다
   ov.innerHTML = '<div class="wbg"></div><div class="wfxl"></div><div class="wsc"></div><div class="wfxt"></div><div class="wwin"></div>'
   const bgEl = ov.querySelector<HTMLElement>('.wbg')!
   const fxEl = ov.querySelector<HTMLElement>('.wfxl')!

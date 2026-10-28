@@ -2902,6 +2902,34 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 궁술 연습장도 지도 위 틀로 (형: "연습하다 돌아가기 누르면 게임화면이 아니라 아예시작화면으로 튀어버려") —
    * 전에는 페이지째 night.html 로 갔다가 돌아오며 realm.html 을 새로 불러 첫 화면이 떴다
    */
+  /**
+   * 연습 싸움 — 판을 거치지 않고 1장(백제 대 마한) 판에서 우리 군대 하나가 이번 계절 바로 적 고을에 닿게 해 싸움을 연다 (형 10-28: "곧바로 테스트해 볼 수 있게").
+   * 하던 판·저장·판 기록은 건드리지 않는다 — 끝나면 첫 화면으로. 붙을 고을은 매번 바뀐다
+   */
+  function openSpar(): void {
+    const seed = Math.floor(Math.random() * 1e9)
+    const r = startRegion('mahan', seed, 'baekje')
+    const mine = sorted(Object.values(r.armies)).filter((a) => a.faction === r.player && a.hero !== null)
+    const fronts = Object.values(r.edges).flatMap((e) => {
+      const na = r.nodes[e.a]
+      const nb = r.nodes[e.b]
+      if (na === undefined || nb === undefined) return []
+      if (na.owner === r.player && nb.owner !== null && nb.owner !== r.player) return [{ from: e.a, to: e.b, edge: e.id }]
+      if (nb.owner === r.player && na.owner !== null && na.owner !== r.player) return [{ from: e.b, to: e.a, edge: e.id }]
+      return []
+    })
+    const a = mine[seed % Math.max(1, mine.length)]
+    const f = fronts[seed % Math.max(1, fronts.length)]
+    if (a === undefined || f === undefined) { goToast('연습 싸움을 열 수 없습니다'); return }
+    a.at = f.from
+    a.march = { from: f.from, to: f.to, edge: f.edge, left: 1, ambush: false, aim: r.nodes[f.to]?.owner ?? null }
+    const back = (): void => { warOn = false; front = { kind: 'title' }; paint() }
+    try {
+      if (openWar(root, r, aiOrders(r), { art: ART, me: r.player, ding, music: (k) => { if (k === 'war') music.war(); else music.result(k) }, done: back })) { warOn = true; music.war(); music.primeResults(); return }
+    } catch (e) { failNote(e) }
+    goToast('이번엔 싸움이 열리지 않았습니다 — 한 번 더 눌러 주세요')
+  }
+
   function openPractice(): void {
     const bow = realm !== null ? assassinBow(realm, me()) : 0
     openFrame(`${PRACTICE}&bow=${bow}&back=about:blank`, '궁술 연습장')
@@ -4514,7 +4542,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 소리의 출처 — 공공누리 제1유형·CC BY 는 출처를 밝혀야 쓸 수 있다 (형 10-23: "출처표기해야 상업적으로 사용가능하니까 주의")
       + ` <a class="btn ghost" href="${BASE}realm/credits.html">소리 출처</a>`
       // 새 전투 시험 (BATTLE-LIVE 0번) — 이 기기에서만 켜진다 · 형과 지인이 켜고 꺼 보며 견준다 (형 10-28)
-      + ` <button class="btn ghost${b0On() ? ' on' : ''}" data-act="b0-toggle" data-tip="켜면 싸움에서 손가락이 깃발을 가리키고, 고른 깃발이 크게 뜨고, 숫자 표는 「자세히」 안으로 들어갑니다">새 전투 시험 · ${b0On() ? '켜짐' : '꺼짐'}</button>`
+      + ` <button class="btn ghost" data-act="spar-open" data-tip="판을 거치지 않고 싸움 한 판을 바로 엽니다 — 하던 판은 그대로입니다">⚔ 연습 싸움</button>`
       // 판 기록 — 판 밖(첫 화면 · 끝 화면)에서도 받는다. 아래 「나라」 탭은 판 안에서만 보여 찾기 어려웠다 (형 10-26: "나라 탭이 어딨음??")
       + (host.gameCount() > 0 ? ` <button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>` : '') + `</p><button class="btn fmx" data-act="fmore-x">닫기</button></div></details>`
     switch (f.kind) {
@@ -5427,6 +5455,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'card-beat': if (realm?.card) { const k = `card:${realm.card.season}`; cardBeat[k] = (cardBeat[k] ?? 0) + 1 } break
       case 'card-skip': if (realm?.card) cardBeat[`card:${realm.card.season}`] = 99; break
       case 'practice-open': openPractice(); break
+      case 'spar-open': fmoreOpen = false; openSpar(); return
       case 'contest': openContest(); break
       case 'unwed': heroOrders = heroOrders.filter((o) => !(o.kind === 'wed' && (o.a === d['id'] || o.b === d['id']))); break
       case 'dex-open': root.querySelector('.dxtoast')?.remove(); front = { kind: 'dex', board: 'all', sel: null, back: front }; sheet = null; paint(); return
