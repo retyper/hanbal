@@ -920,7 +920,7 @@ function cutHtml(art: string, hero: string | null, name: string, skill: string, 
   if (kind === 'strike' || kind === 'shot') fx += `<i class="wcslash"></i>${Array.from({ length: 9 }, (_, i) => `<i class="wcline" style="--y:${(10 + i * 10)}%;--t:${(0.08 + (i % 3) * 0.05).toFixed(2)}s"></i>`).join('')}`
   if (kind === 'grab') fx += `<i class="wcrope"></i>`
   if (kind === 'guard') fx += `<i class="wcshield"></i>`
-  return `<div class="wcut k-${kind}"><i class="wcbg"></i>${fx}<div class="wcpf">${face}<i></i></div><div class="wctx"><b>${esc(shout)}</b><span>${esc(name)} · ${esc(skill)}</span></div></div>`
+  return `<div class="wcut k-${kind}"><i class="wcbg"></i>${fx}<div class="wcpf">${face}<i></i></div><div class="wctx${[...shout].length > 7 ? ' long' : ''}"><b>${esc(shout)}</b><span>${esc(name)} · ${esc(skill)}</span></div></div>`
 }
 
 /** 싸움터에 날아오르는 불티 — 낱낱이, 자리·크기·빠르기가 조금씩 다르게 (꾸밈이라 판의 시드와 상관없다) */
@@ -2539,6 +2539,8 @@ export const WAR_CSS = `
 @keyframes wcin { from { opacity: 0; transform: translate(-70vw, -50%) scale(.9); } to { opacity: 1; transform: translate(0, -50%); } }
 .ap .wcut .wctx { position: absolute; left: calc(6% + min(36vw, 200px) + 14px); right: 4%; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 4px; animation: wrin .4s ease-out .25s both; }
 .ap .wcut .wctx b { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 8vw, 54px); color: #fff1c8; text-shadow: 0 0 14px #ffb04a, 0 3px 6px #000; letter-spacing: .04em; }
+/* 긴 외침(「제게 맡겨 주시옵소서!」)은 폰 폭에서 줄이 넘어갔다 · 작게 한 줄로 조금 위에 (형 10-29) */
+.ap .wcut .wctx.long { top: 40%; } .ap .wcut .wctx.long b { font-size: clamp(16px, 4.4vw, 40px); white-space: nowrap; letter-spacing: 0; }
 .ap .wcut .wctx span { align-self: flex-start; font-size: clamp(13px, 3.4vw, 16px); color: #f0dcb0; text-shadow: 0 1px 4px #000; background: #0b0805d9; padding: 2px 10px; border-radius: 8px; } /* 기술 카드 밑 글씨가 배경에 묻혔다 (형 10-28) */
 /* 격려·외침 — 금빛 고리가 퍼지고 불티가 오른다 */
 .ap .wcut .wcring { position: absolute; left: calc(6% + min(18vw, 100px)); top: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 3px solid #ffd27a;
