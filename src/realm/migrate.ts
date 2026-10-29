@@ -55,6 +55,8 @@ export function migrate(r: Realm): void {
   // 특성이 생기기 전의 판 — 장수마다 빈 특성 줄을 채운다 (없으면 정이 100에 닿는 계절에 막혔다)
   for (const h of Object.values(r.heroes)) if (!Array.isArray(h.traits)) (h as { traits: readonly string[] }).traits = []
   for (const w of r.wanderers ?? []) if (!Array.isArray(w.hero.traits)) (w.hero as { traits: readonly string[] }).traits = []
+  // 옥중 담판이 생기기 전의 판 (docs/realm/WOO.md) — 갇힌 계절을 모르는 포로는 지금 갇힌 것으로 (시작한 계절이 없는 회유는 「마주 앉기」를 바로 열 수 있다)
+  for (const h of Object.values(r.heroes)) if (h.status === 'captive') h.caughtAt ??= r.season
   // 발견이 없던 영남 판 — 이웃과, 이미 사이가 생긴(사신·싸움·약조) 나라만 아는 것으로 (형: "시작할땐 주변 밝혀진애들만")
   if (r.region === 'yeongnam' && r.known === undefined) {
     const k = initialKnown(r)

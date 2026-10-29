@@ -213,7 +213,8 @@ export function talkRun(r: Realm, hero: string, by: string | null, talk: readonl
     const p = chanceOf(r, hero, by, a, mom)
     const u = roll(r.seed, r.season, `woo-talk:${hero}:${i}`)
     const hit = u < p
-    const react: WooReact = hit ? (fit >= 1 && fit === weak ? 'big' : 'sway') : fit <= -2 ? 'rage' : 'hold'
+    // 가시를 짚고 크게 빗나가면 노여움 — 빗나간 몫 가운데 wooRageShare 만큼 (나머지는 버팀)
+    const react: WooReact = hit ? (fit >= 1 && fit === weak ? 'big' : 'sway') : fit <= -2 && u >= p + (1 - p) * (1 - R.wooRageShare) ? 'rage' : 'hold'
     if (react === 'big') { if (open0) bonus += R.wooHandBig; else wall -= drop * R.wooBig }
     else if (react === 'sway') { if (open0) bonus += R.wooHandSway; else wall -= drop * R.wooSway }
     else if (react === 'rage') { wall = Math.max(0, wall) + drop * R.wooRage; grudge = Math.min(R.wooGrudgeMax, grudge + 1) }
