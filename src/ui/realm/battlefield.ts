@@ -1860,6 +1860,15 @@ export const WAR_CSS = `
 /* 병사 발밑 그림자 — 땅에 서 있게 */
 .ap .wf2s .tk.wsp::before { content: ''; position: absolute; left: 18%; right: 18%; bottom: -4%; height: 12%; border-radius: 50%; background: radial-gradient(closest-side, #000b, #0000); z-index: -1; pointer-events: none; }
 .ap .wf2s .tk.wsp.tkd::before { opacity: .4; }
+/* 폰 — v2 말은 그림 칸이 몸의 서너 배로 넓다(창이 다 뻗어도 들어가게). 그 말에 빛(filter: drop-shadow)을 걸면 폰에서 칸이 통째로 하늘색 띠로 번졌다
+   (형 10-29 갤럭시: 목책 곁 우리 창병 위에 기울어진 하늘색 막대 · 너비 128px = 창병 칸 131px · 기울기 8도 = 돌격 앞줄 9도). 폰에선 빛을 끄고 발밑 고리로 편을 가른다 */
+@media (pointer: coarse) {
+  .ap .wf2s .tk.wsp { filter: none !important; }
+  .ap .wf2s .tk.wsp.tkd { opacity: .5; }
+  .ap .wf2s .tk.wsp.tku::before { left: 6%; right: 6%; bottom: -7%; height: 18%; background: radial-gradient(closest-side, #000a, #0008 48%, #7cc4ffd0 72%, #7cc4ff00); }
+  .ap .wf2s.foe .tk.wsp.tku::before { background: radial-gradient(closest-side, #000a, #0008 48%, #ff6a5ad0 72%, #ff6a5a00); }
+  .ap .wfield[data-act="front"] .us .tk.wsp.r0.tku::before, .ap .wfield[data-act="bows"] .us .tk.wsp.r1.tku::before, .ap .wfield[data-act="horse"] .us .tk.wsp.r2.tku::before { background: radial-gradient(closest-side, #000a, #0008 40%, #ffd27a 68%, #ffd27a00); }
+}
 /* 땅 — 지평선 아래로 짙어져 병사가 떠 보이지 않게 */
 .ap .wfield .wf-ground { display: none; }
 /* 지키는 쪽 뒤의 성 (그림은 바깥이 왼쪽 — 우리 쪽이면 뒤집고, 거울인 적 쪽에선 한 번 더 뒤집어 바깥이 공격 쪽을 본다) */
@@ -2026,6 +2035,12 @@ export const WAR_CSS = `
 /* 맞음 — 맞부딪는 순간 살아남은 앞줄 몇이 뒤로 휘청(맞음 컷 6) 했다가 다시 싸운다 */
 .ap .wfield.play .wf2s .tk.wsp.r0.tku:nth-child(3n) .spf { animation: spflinch .38s steps(1) calc(var(--hd) + .02s + var(--j, 0) * .04s) 1, spatk calc(calc(.3s + var(--j, 0) * .03s) * var(--spatks, 1)) steps(var(--spatkn, 2)) calc(var(--hd) + .42s) 5, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--hd) + 1.9s) - var(--k, .5) * 1.6s) infinite; }
 @keyframes spflinch { 0%, 100% { background-position-x: var(--fl, 85.7143%); } }
+/* 새 띠(v2)의 앞줄 — 맞부딪기 1.2초 앞부터 합이 끝날 때까지 창을 거듭 찌르고, 다 뻗은 컷(15·16)에 오래 머문다 (형 10-29: "창병이 창을 찌르는 모션을 본 적이 없다").
+   전엔 맞부딪는 순간 0.6초쯤 한 번 찔렀고, 그때는 흙먼지·당겨 보기에 가렸다. 컷 자리는 20컷 띠 기준(n/19) */
+.ap .wfield.play .wf2s .tk.wsp.v2.r0.tku .spf { animation: spwalk calc(.42s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--fa, 0s) 2, spthr calc(.72s + var(--j, 0) * .04s) steps(1) calc(var(--hd) - 1.2s + var(--j, 0) * .09s) infinite; }
+.ap .wfield.play .wf2s .tk.wsp.v2.r0.tku:nth-child(3n) .spf { animation: spwalk calc(.42s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--fa, 0s) 2, spthr calc(.72s + var(--j, 0) * .04s) steps(1) calc(var(--hd) - 1.2s + var(--j, 0) * .09s) infinite, spflinch .38s steps(1) calc(var(--hd) + .02s + var(--j, 0) * .04s) 1; }
+.ap .wfield.play .wf2s .tk.wsp.v2.r0.tkf .spf { animation: spthr calc(.72s + var(--j, 0) * .04s) steps(1) calc(var(--hd) - 1.2s + var(--j, 0) * .09s) infinite, spdie .01s steps(1) calc(var(--hd) + .4s + var(--j) * .08s) forwards; }
+@keyframes spthr { 0% { background-position-x: 63.1579%; } 12% { background-position-x: 68.4211%; } 24% { background-position-x: 73.6842%; } 36% { background-position-x: 78.9474%; } 52% { background-position-x: 84.2105%; } 72% { background-position-x: 89.4737%; } 86%, 100% { background-position-x: 94.7368%; } }
 /* 쓰러질 때 흙먼지 — 병사마다 발치에서 한 번 */
 .ap .wf2s .tk.wsp.tkf::after { content: ''; position: absolute; left: 50%; bottom: 0; width: 140%; height: 45%; translate: -50% 20%; border-radius: 50%; pointer-events: none;
   background: radial-gradient(ellipse, #c8a87acc 0, #a0805a88 40%, #0000 70%); opacity: 0; animation: wpuff .9s ease-out calc(var(--hd) + .55s + var(--j, 0) * .06s) both; }
