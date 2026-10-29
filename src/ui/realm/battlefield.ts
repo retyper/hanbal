@@ -150,7 +150,8 @@ const FRONT_COUNTER: Partial<Record<Cmd, Cmd>> = { charge: 'hold', hold: 'open',
 /**
  * 깃발 상성을 그림으로 — 이 깃발이 이기는 적 깃발(up) · 이 깃발을 이기는 적 깃발(dn). tactics.ts 의 판정 그대로:
  * 세모 돌격 > 길 트기 > 방진 > 돌격 (여울 막기·바위 굴리기도 방진 편 · 성문 깨기는 방진에 안 꺾인다) · 화살비·높은 곳 > 방진 · 맞쏘기 > 화살비 ·
- * 옆치기 > 방진(세모 밖, tacFlankHold) · 호위 > 옆치기 · 거짓 퇴각 > 돌격. 카드엔 첫 것 하나씩만 작게 (형 10-29: "왜 언제는 이게 강하고 언제는 약한지 모르겠고")
+ * 옆치기 > 방진(세모 밖, tacFlankHold) · 호위 > 옆치기 · 거짓 퇴각 > 돌격.
+ * 깃발 카드마다 달던 줄은 걷고, 싸움 위 띠 왼쪽 「상성」 단추의 판 한 곳에 모은다 (sgHtml · 형 10-29: "상성은 깃발마다 주지 말고")
  */
 type FlagKey = Cmd | `art-${Art}`
 const HOLD_SIDE: readonly Cmd[] = ['hold', 'ford', 'rocks']
@@ -174,15 +175,6 @@ const keyOf = (c: Cmd, ak?: Art): FlagKey => (c === 'art' && ak !== undefined ? 
 const keySrc = (art: string, k: FlagKey): string => (k.startsWith('art-') ? flagSrc(art, 'art', k.slice(4) as Art) : flagSrc(art, k as Cmd))
 /** 이 깃발이 적 낌새(적 앞줄의 수)를 이기나 — 깃발 판에서 그 카드를 빛낸다 */
 const beatsHint = (c: Cmd, ak: Art | undefined, hint: Cmd | null): boolean => hint !== null && (MATCH[keyOf(c, ak)]?.up.includes(hint) ?? false)
-/** 깃발 카드의 작은 줄 — [▶ 이기는 깃발] [◀ 지는 깃발] (낌새를 이기면 ▶ 자리에 그 낌새) */
-function beatsRow(art: string, c: Cmd, ak: Art | undefined, hint: Cmd | null): string {
-  const m = MATCH[keyOf(c, ak)]
-  if (m === undefined) return ''
-  const up = hint !== null && m.up.includes(hint) ? hint : m.up[0]
-  const dn = m.dn[0]
-  if (up === undefined && dn === undefined) return ''
-  return `<span class="wbx">${up !== undefined ? `<i class="u"><img src="${flagSrc(art, up)}" alt=""></i>` : ''}${dn !== undefined ? `<i class="d"><img src="${keySrc(art, dn)}" alt=""></i>` : ''}</span>`
-}
 
 /** 한 합의 상성 판정 — 누가 어느 깃발로 어느 깃발을 이겼나 (판정이 남긴 beat 과 일을 읽기만 한다) */
 interface RoundMatch {
@@ -220,6 +212,70 @@ function roundMatch(rd: RoundLog, ourS: 'a' | 'd'): RoundMatch | null {
   return w === ourS ? { k: 'win', us: wk, foe: lk, ...(mul !== undefined ? { mul } : {}), ...also } : { k: 'lose', us: lk, foe: wk, ...(mul !== undefined ? { mul } : {}), ...also }
 }
 const mulText = (m: number): string => { const r = Math.round(m * 10) / 10; return `×${Math.abs(r - Math.round(r)) < 0.15 ? Math.round(r) : r.toFixed(1)}` }
+
+/** 상성 판의 한 칸 — 깃발 열쇠, 또는 '#글' 이면 글 딱지 */
+type SgTok = FlagKey | `#${string}`
+/** 상성 판의 한 줄 — [깃발] ▶ 이기는 것 · = 안 꺾이는 것 · ◀ 지는 것 · 몇 마디 */
+interface SgRow { readonly k: FlagKey; readonly up?: readonly SgTok[]; readonly eq?: readonly SgTok[]; readonly dn?: readonly SgTok[]; readonly w: string }
+/** 깃발 밑 이름 — 긴 것은 줄인다 */
+const SG_NAME: Readonly<Partial<Record<FlagKey, string>>> = { duel: '겨루기', capture: '사로잡기', retreat: '퇴각', drum: '격려' }
+const sgName = (k: FlagKey): string => SG_NAME[k] ?? (k.startsWith('art-') ? ART_NAME[k.slice(4) as Art] : CMD_NAME[k as Cmd])
+/**
+ * 「상성」 판 — 싸움 위 띠 왼쪽 단추로 뜬다 (오른쪽 「기록」과 짝). 한 판에 깃발이 무엇을 이기고 무엇에 지나를 그림으로.
+ * 앞줄: 세모 방진 ▶ 돌격 ▶ 길 트기 ▶ 방진 을 깃발 그림과 화살로 · 활·말 · 장수: 한 줄씩. 수는 조율판(params) 그대로.
+ * 굴리지 않는다 — 세 쪽을 탭으로 넘긴다 (형 10-29: "한 방에 깃발들이 뭔지 설명하는 팝업" · 굴리기 대신 떴다 사라지는 상자)
+ */
+export function sgHtml(art: string): string {
+  const R = P.realm
+  const pct = (x: number): string => String(Math.round(x * 100))
+  const M = (k: FlagKey): { up: readonly SgTok[]; dn: readonly SgTok[] } => ({ up: MATCH[k]?.up.slice(0, 2) ?? [], dn: MATCH[k]?.dn.slice(0, 2) ?? [] })
+  const pages: readonly { readonly tab: string; readonly icons: readonly string[]; readonly ring?: boolean; readonly rows: readonly SgRow[] }[] = [
+    { tab: '앞줄', icons: [`${art}icon/${GROUP_ICON.front}.png`], ring: true, rows: [
+      { k: 'ford', ...M('ford'), w: mulText(R.tacFordHold) },
+      { k: 'rocks', ...M('rocks'), w: `먼저 −${pct(R.tacRocks)}%` },
+      { k: 'gate', up: ['open'], eq: ['hold'], w: mulText(R.tacGateMul) },
+      { k: 'ram', ...M('ram'), w: mulText(R.tacRamMul) },
+    ] },
+    { tab: '활 · 말', icons: [`${art}icon/${GROUP_ICON.bows}.png`, `${art}icon/${GROUP_ICON.horse}.png`], rows: [
+      { k: 'volley', up: ['hold', 'ford'], dn: ['counter', 'charge'], w: mulText(R.tacVolleyHold) },
+      { k: 'counter', up: ['volley', 'height'], w: `화살 ${mulText(R.tacCounterCut)}` },
+      { k: 'fire', up: [`#불길 ${pct(R.tacFireOk)}%`], dn: [`#바람 ${pct(1 - R.tacFireOk)}%`], w: '한 번' },
+      { k: 'height', up: ['hold', 'ford'], dn: ['counter'], w: mulText(R.tacHeight) },
+      { k: 'flank', up: ['volley', 'hold'], dn: ['guard'], w: mulText(R.tacFlank2) },
+      { k: 'guard', up: ['flank', 'capture'], w: '장수 곁' },
+      { k: 'punch', ...M('punch'), w: '앞줄과 함께' },
+      { k: 'pursue', up: ['#흔들린 적'], dn: ['#멀쩡한 적'], w: mulText(R.tacPursueMul) },
+    ] },
+    { tab: '장수', icons: [flagSrc(art, 'drum')], rows: [
+      { k: 'drum', w: `사기 +${pct(R.tacDrumMorale)}` },
+      { k: 'feast', w: `사기 +${pct(R.tacFeastMorale)} · 한 번` },
+      { k: 'duel', up: ['#적장'], w: '무예' },
+      { k: 'capture', up: ['#흔들린 적장'], dn: ['guard'], w: '' },
+      { k: 'art-feint', ...M('art-feint'), w: '비기' },
+      { k: 'retreat', dn: ['#적 말'], w: '싸움을 접는다' },
+    ] },
+  ]
+  const tok = (x: SgTok): string => (x.startsWith('#') ? `<em>${esc(x.slice(1))}</em>` : `<img src="${keySrc(art, x as FlagKey)}" alt="${esc(sgName(x as FlagKey))}">`)
+  const chips = (cls: string, xs: readonly SgTok[] | undefined): string => (xs !== undefined && xs.length > 0 ? `<i class="${cls}">${xs.map(tok).join('')}</i>` : '')
+  const row = (r: SgRow): string => `<div class="wsg-row"><span class="wsg-me"><img src="${keySrc(art, r.k)}" alt=""><b>${esc(sgName(r.k))}</b></span><span class="wsg-vs">${chips('u', r.up)}${chips('e', r.eq)}${chips('d', r.dn)}</span>${r.w !== '' ? `<b class="wsg-w">${esc(r.w)}</b>` : ''}</div>`
+  // 세모 — 방진(위) ▶ 돌격(오른쪽 아래) ▶ 길 트기(왼쪽 아래) ▶ 방진. 그림 판은 300 × 222
+  const V: readonly (readonly [Cmd, number, number])[] = [['hold', 150, 48], ['charge', 250, 168], ['open', 50, 168]]
+  const cx = 150, cy = 128
+  const arrow = (i: number): string => {
+    const [, x0, y0] = V[i]!
+    const [, x1, y1] = V[(i + 1) % 3]!
+    const ax = x0 + (x1 - x0) * 0.3, ay = y0 + (y1 - y0) * 0.3, bx = x0 + (x1 - x0) * 0.7, by = y0 + (y1 - y0) * 0.7
+    const mx = (x0 + x1) / 2, my = (y0 + y1) / 2
+    const qx = mx + (mx - cx) * 0.45, qy = my + (my - cy) * 0.45
+    return `<path d="M${ax.toFixed(0)} ${ay.toFixed(0)} Q${qx.toFixed(0)} ${qy.toFixed(0)} ${bx.toFixed(0)} ${by.toFixed(0)}" marker-end="url(#wsg-ah)"/>`
+  }
+  const ring = `<div class="wsg-ring"><svg viewBox="0 0 300 222" aria-hidden="true"><defs><marker id="wsg-ah" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto"><path d="M0 0 L10 5 L0 10 z"/></marker></defs>${[0, 1, 2].map(arrow).join('')}</svg>`
+    + V.map(([c, x, y]) => `<span class="wsg-rf" style="left:${((x / 300) * 100).toFixed(1)}%;top:${((y / 222) * 100).toFixed(1)}%"><img src="${flagSrc(art, c)}" alt=""><b>${CMD_NAME[c]}</b></span>`).join('')
+    + `<b class="wsg-x2">${mulText(R.tacTriUp / R.tacTriDown)}</b></div>`
+  const tabs = `<div class="wsg-tabs">${pages.map((pg, i) => `<button class="wsg-t${i === 0 ? ' on' : ''}" data-war="mutab" data-i="${i}">${pg.icons.map((x) => `<img src="${x}" alt="">`).join('')}<span>${pg.tab}</span></button>`).join('')}</div>`
+  const body = pages.map((pg, i) => `<div class="wsg-p" data-i="${i}"${i === 0 ? '' : ' hidden'}>${pg.ring === true ? ring : ''}${pg.rows.map(row).join('')}</div>`).join('')
+  return `<button class="wsg-bg" data-war="mu" aria-label="상성 닫기"></button><div class="wsg-c" data-war="mu-in"><button class="wsg-xb" data-war="mu" aria-label="닫기">✕</button><div class="wsg-h"><b>깃발 상성</b><span class="wsg-lg"><i class="u">▶</i>이긴다<i class="d">◀</i>진다</span></div>${tabs}${body}</div>`
+}
 /** 금 간 자국 — 진 깃발 위에 그어진다 */
 const CRACK = '<svg class="wmu-ck" viewBox="0 0 100 120" aria-hidden="true"><path d="M58 0 L46 28 L62 50 L40 76 L55 98 L48 120 M46 28 L24 40 M62 50 L84 62 M40 76 L20 90"/></svg>'
 /**
@@ -1326,6 +1382,18 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     return `<i class="wgr cut" style="width:${w1}%;animation-name:${k}"></i><em class="wchunk" style="left:${w1}%;--cw:${w0 - w1}%;--cf:${P.realm.warChunkFlashS}s;--cs:${P.realm.warChunkShrinkS}s"></em>`
   }
   /**
+   * 세는 숫자 — 옛 값을 보이다가 막대가 줄기 시작하는 때(--bd)에 새 값으로 빠르게 센다 (형 10-29: "바 줄어들 때 그제야 숫자가 줄어들어야지").
+   * 줄 때는 잃은 토막이 줄어드는 길이만큼(warChunkFlashS 반 + warChunkShrinkS) · 오를 때는 막대가 자라는 .4초. 숫자는 CSS 셈(counter)이라 글에는 안 남는다
+   */
+  const cnt = (a: number, b: number): string => {
+    if (a === b) return String(b)
+    const k = `wc${kn++}`
+    keys += `@keyframes ${k}{from{--wc:${a}}to{--wc:${b}}}`
+    const dn = b < a
+    const cd = dn ? P.realm.warChunkFlashS * 0.5 + P.realm.warChunkShrinkS : 0.4
+    return `<i class="wcnt${dn ? ' dn' : ' upn'}" aria-label="${b}" style="--wc:${b};--cd:${cd.toFixed(2)}s;animation-name:${k},${dn ? 'wnhit' : 'wnup'}"></i>`
+  }
+  /**
    * 무너지는 금 — 그 밑은 패배가 정해진 구역(붉은 빗금)이고 금 위에 해골. 지금 값이 금에 가까우면 해골이 깜박인다
    * (형 10-25: "사기랑 명수 이하로는 패배 확정이라는 건 해골 표시가 필요할 듯")
    */
@@ -1347,7 +1415,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const old = Math.round(men0(i) * n0(i))
     const base = Math.max(0.05, st?.morale[i] ?? 1)
     const mr = (x: number): number => Math.round(Math.max(0, Math.min(1.2, x / base)) * 83)
-    const num = old !== now ? `<span class="wn swap"><s>${old}명</s><u>${now}명</u></span>` : `<span class="wn">${now}명</span>`
+    const num = `<span class="wn">${cnt(old, now)}명</span>`
     const hitFx = hitOf(i) !== '' ? `<img class="wfx-hit" src="${art}fx/impact.png" alt="">` : ''
     // 맞부딪히는 순간 잃은 사람 수와 꺾인 사기를 크게 (형 10-28: "감소하는 인원수·사기 이런 거 더 크고 도드라지게")
     const lostN = anim ? old - now : 0
@@ -1364,7 +1432,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     return `<div class="ws ${cls}${hitOf(i)}${hero !== null && lostIds.has(hero) ? ' chiefgone' : ''}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s"><span class="wpf">${face(hero, art, unitOf(i))}<i></i>${aides !== '' ? `<span class="waides">${aides}</span>` : ''}</span><b>${esc(name)}</b><span class="wnat">${roleChip((cls === 'us') === weAtk)}${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
       // 무너지는 금 — 이 밑으로 떨어지면 그 편이 무너져 진다 (tactics: 군사 tacBreakMen · 사기는 처음의 tacBreakMorale) (형 10-24: "사기가 어느 정도 떨어지면 패배한다가 가로바에 표시")
       + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}${brk(Math.round(P.realm.tacBreakMen * 100), Math.round(n(i) * 100), '군사가 이 금 밑으로 줄면 무너져 진다. 패배')}</div>${num}`
-      + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}${feastPv}${brk(st?.brk !== undefined ? mr(st.brk[i]) : Math.round(P.realm.tacBreakMorale * 83), mr(m(i)), '사기가 이 금 밑으로 떨어지면 무너져 진다. 패배')}</div><span class="wn">사기 ${Math.round((m(i) / base) * 100)}<small class="brkl"> · 무너지는 선 ${Math.round(((st?.brk?.[i] ?? P.realm.tacBreakMorale * base) / base) * 100)}</small></span>${dmg}${hitFx}</div>` // 맞은 불꽃은 맨 뒤에 — 앞에 끼면 초상이 새로 만들어져 깜빡였다 (paintNow 의 바뀐 곳만 고치기)
+      + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}${feastPv}${brk(st?.brk !== undefined ? mr(st.brk[i]) : Math.round(P.realm.tacBreakMorale * 83), mr(m(i)), '사기가 이 금 밑으로 떨어지면 무너져 진다. 패배')}</div><span class="wn">사기 ${cnt(Math.round((m0(i) / base) * 100), Math.round((m(i) / base) * 100))}<small class="brkl"> · 무너지는 선 ${Math.round(((st?.brk?.[i] ?? P.realm.tacBreakMorale * base) / base) * 100)}</small></span>${dmg}${hitFx}</div>` // 맞은 불꽃은 맨 뒤에 — 앞에 끼면 초상이 새로 만들어져 깜빡였다 (paintNow 의 바뀐 곳만 고치기)
   }
 
   /**
@@ -1550,7 +1618,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     // 상성 판정 — 맞부딪는 순간 한가운데 크게 (형 10-29: "전투가 깃발마다 큰 차이가 없는 느낌") · 이기거나 지면 전장이 크게 흔들린다
     const mu = play ? roundMatch(last!, ourS) : null
     const muBig = mu !== null && mu.k !== 'even' ? ' wmu-big' : ''
-    return `<div class="wfield${play ? ' play' : ''}${muBig}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--rv:${rv.toFixed(2)}s"><i class="wf-ground"></i>${midTerr}${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}<i class="wf-mid">⚔</i><b class="wf-who us">${roleChip(weAtk)}우리 ${esc(ourName)}</b><b class="wf-who foe">${roleChip(!weAtk)}적 ${esc(foeName)}</b>${hit}${omen}${mu !== null ? muHtml(art, mu) : ''}</div>`
+    return `<div class="wfield${play ? ' play' : ''}${muBig}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s;--rv:${rv.toFixed(2)}s"><i class="wf-ground"></i>${midTerr}${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}<i class="wf-mid">⚔</i><b class="wf-who us">${roleChip(weAtk)}우리 ${esc(ourName)}</b><b class="wf-who foe">${roleChip(!weAtk)}적 ${esc(foeName)}</b>${hit}${omen}${mu !== null ? muHtml(art, mu) : ''}</div>`
   }
 
   // 싸움터 배경 (땅마다) · 위 카드는 굴려도 그 자리에 (형: "싸우는로그가 스크롤로 보이더라도 상단에 캐릭터랑 체력바 있는 그 카드는 고정")
@@ -1576,7 +1644,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   // 위 카드는 그 싸움터를 무대로 — 길·성문·물가·눈밭·밤 (형 10-23: "길에서 마주치거나 수성하거나 공성할 때는 그 위치에 맞게 배경")
   // 머리 카드도 같은 하늘 — 그림 위에 한 겹 (어둠 · 노을 · 새벽빛)
   const skyLayer = sky === ' dk-night' ? 'linear-gradient(#0a1440aa, #05081add), ' : sky === ' dk-dusk' ? 'linear-gradient(#ff7a2a77, #a0302a44 50%, #1a0a0a88), ' : sky === ' dk-dawn' ? 'linear-gradient(#ffd8a866, #8aa0d044 50%, #0d0f1366), ' : ''
-  h += `<div class="wtop" style="--wtbg:${skyLayer}url('${warBg(art, ground, !weAtk)}')"><div class="wrh"><span class="wrk">${((k) => `<i class="wkind ${k.us ? 'us' : 'foe'}">${esc(k.word)}</i>`)(warKind(prev, l, me))}<b>${esc(warName(after, l))}</b></span>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}${rounds.length > 0 ? '<button class="wlogb" data-war="log" aria-label="합 기록 보기">기록</button>' : ''}<button class="whelp" data-war="help" aria-label="설명 보기">?</button></div>${clockHtml(l, shown)}`
+  h += `<div class="wtop" style="--wtbg:${skyLayer}url('${warBg(art, ground, !weAtk)}')"><div class="wrh"><span class="wrk">${((k) => `<i class="wkind ${k.us ? 'us' : 'foe'}">${esc(k.word)}</i>`)(warKind(prev, l, me))}<b>${esc(warName(after, l))}</b></span>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}<div class="wrbt"><button class="wsgb" data-war="mu" aria-label="깃발 상성 보기">상성</button>${rounds.length > 0 ? '<button class="wlogb" data-war="log" aria-label="합 기록 보기">기록</button>' : ''}</div><button class="whelp" data-war="help" aria-label="설명 보기">?</button></div>${clockHtml(l, shown)}`
   // 땅 띠 — 전장 바로 위 제 자리에 (형 10-26: "목책이랑 나루 둘다 가운데 설명 '우리에게 유리' 이게 다른거랑 겹쳐짐")
   const terr = terrChips(prev, l, me, fname(foeF)).map((c) => terrChipHtml(art, c, 'wtc')).join('')
   h += `<div class="wvs">${side(ourI, ourHero, ourF, ourName, 'us')}<img class="vs" src="${art}ui/vs.png" alt="VS">${side(foeI, foeHero, foeF, foeName, 'foe')}</div>${terr !== '' ? `<div class="wterr">${terr}</div>` : ''}${fieldHtml()}</div>`
@@ -1722,9 +1790,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       if (ak !== undefined) tag = `<em class="art">비기</em>`
       // 깃발 짐작 — 펼친 무리만 바로 셈한다 (나머지는 탭을 열 때 openWar 의 fillLooks 가)
       const gu = p.look !== undefined ? (() => { const o = withPick(sel, g, c); return lookHtml(lookFor(p.look, o, now), orderKey(o)) })() : ''
-      // 무엇을 이기고 무엇에 지나 — 깃발 그림 둘 (▶ 초록 · ◀ 붉게) · 적 낌새를 이기는 깃발은 카드가 빛난다 (형 10-29)
+      // 적 낌새를 이기는 깃발은 카드가 빛난다 (형 10-29) · 무엇이 무엇을 이기나는 위 띠의 「상성」 판에
       const ctr = beatsHint(c, ak, p.hint) ? ' wbxc' : ''
-      return `<button class="wcmd ${c}${on ? ' on' : ''}${recNow === c ? ' rec' : ''}${ctr}" data-war="pick" data-g="${g}" data-c="${c}" data-more="${esc(ak !== undefined ? ART_DOES[ak] : CMD_DOES[c])}"><img class="wflag" src="${flagSrc(art, c, ak)}" alt=""><span class="wct"><b>${ak !== undefined ? ART_NAME[ak] : CMD_NAME[c]}</b>${beatsRow(art, c, ak, p.hint)}${tag}${feel}<small>${esc(ak !== undefined ? ART_SHORT[ak] : CMD_SHORT[c])}</small>${gu}</span></button>`
+      return `<button class="wcmd ${c}${on ? ' on' : ''}${recNow === c ? ' rec' : ''}${ctr}" data-war="pick" data-g="${g}" data-c="${c}" data-more="${esc(ak !== undefined ? ART_DOES[ak] : CMD_DOES[c])}"><img class="wflag" src="${flagSrc(art, c, ak)}" alt=""><span class="wct"><b>${ak !== undefined ? ART_NAME[ak] : CMD_NAME[c]}</b>${tag}${feel}<small>${esc(ak !== undefined ? ART_SHORT[ak] : CMD_SHORT[c])}</small>${gu}</span></button>`
     }
     // 무리 탭 — 누른 무리만 빛나고 그 무리 깃발만 보인다. 무리마다 다 고르면 「전투 개시」가 켜진다
     // (형 10-24: "깃발이 너무 많아서 헷갈려 · 창병 방패병을 탭하면 빛나면서 걔네들 깃발만 · 다 고른 뒤에 전투개시 버튼 활성화")
@@ -1822,8 +1890,9 @@ export const WAR_CSS = `
   padding: 10px 12px 14px; border-radius: 14px; background: #15100bf8; border: 1px solid #c9a45a; box-shadow: 0 10px 40px #000d; }
 .ap .wr.logopen .wlog .wrd { animation: none !important; } .ap .wr.logopen .wlog .wrd * { animation-delay: 0s !important; }
 .ap .wr.logopen .wlogx { display: block; position: sticky; top: 0; margin: 0 0 6px auto; z-index: 2; }
-.ap .wrh .wlogb { margin-left: auto; padding: 2px 10px; border-radius: 12px; border: 1px solid #c9a45a; background: #1f1710cc; color: #f3d48a; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
-.ap .wrh .wlogb + .whelp { margin-left: 6px; }
+.ap .wrh .wrbt { display: flex; align-items: center; align-self: stretch; min-height: 26px; }
+.ap .wrh .wlogb, .ap .wrh .wsgb { margin-left: auto; padding: 2px 10px; border-radius: 12px; border: 1px solid #c9a45a; background: #1f1710cc; color: #f3d48a; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.ap .wrh .wsgb { margin-left: 0; } /* 「기록」과 같은 모양 · 왼쪽 (형 10-29) */
 .ap .wr .wrh .whelp { display: none; } /* 설명은 누르고 있으면 뜨는 창 · 판세는 깃발 판 밑에 (형 10-28: 자세히 버튼은 필요 없다) */
 .ap .wr .wend { position: sticky; bottom: calc(8px + env(safe-area-inset-bottom)); z-index: 6; box-shadow: 0 -6px 24px #000c; }
 /* 새 전투 시험 (.wr.b0) — 손가락 · 고른 깃발이 크게 · 숫자 표는 「자세히」 안으로 */
@@ -2146,16 +2215,10 @@ export const WAR_CSS = `
 .ap .wmu.even::before { opacity: .5; }
 .ap .wr.fast .wmu { --hd: 0s !important; }
 @media (prefers-reduced-motion: reduce) { .ap .wfield.play.wmu-big, .ap .wmu-f.broke { animation: none; } }
-/* 깃발 카드의 상성 줄 — ▶ 이기는 깃발(초록) · ◀ 지는 깃발(붉게) · 적 낌새를 이기는 카드는 초록빛이 숨 쉰다 */
-.ap .wcmd .wbx { display: inline-flex; align-items: center; gap: 3px; margin: 1px 0; }
-.ap .wcmd .wbx i { display: inline-flex; align-items: center; gap: 1px; padding: 1px 3px 1px 2px; border-radius: 7px; font-style: normal; font-size: 9px; line-height: 1; }
-.ap .wcmd .wbx i.u { background: #1d3818; box-shadow: inset 0 0 0 1px #7fd06a; color: #9fe08a; } .ap .wcmd .wbx i.u::before { content: '▶'; }
-.ap .wcmd .wbx i.d { background: #3c1814; box-shadow: inset 0 0 0 1px #e0705e; color: #ff9a8a; } .ap .wcmd .wbx i.d::before { content: '◀'; }
-.ap .wcmd .wbx img { position: static; width: 16px; height: 19px; object-fit: contain; opacity: 1; }
+/* 적 낌새를 이기는 깃발 카드는 초록빛이 숨 쉰다 */
 .ap .wcmd.wbxc { position: relative; }
 .ap .wcmd.wbxc::before { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 2px #8fe07a, inset 0 0 10px #8fe07a99; pointer-events: none; animation: wbxglow .8s ease-in-out infinite alternate; }
 @keyframes wbxglow { from { opacity: .3; } to { opacity: 1; } }
-.ap .wcmd.wbxc .wbx i.u { box-shadow: inset 0 0 0 1.5px #c8ff9a, 0 0 6px #8fe07a; }
 @media (prefers-reduced-motion: reduce) { .ap .wcmd.wbxc::before { animation: none; } }
 .ap .wf-hit { position: absolute; left: 50%; top: 56%; z-index: 85; pointer-events: none; }
 .ap .wf-hit img { position: absolute; left: 0; top: 0; translate: -50% -50%; opacity: 0; }
@@ -2167,7 +2230,7 @@ export const WAR_CSS = `
 @keyframes whit3 { 0% { opacity: 0; scale: .5; } 20% { opacity: .7; } 100% { opacity: 0; scale: 1.4; translate: -30% -55%; } }
 /* 잃은 수 — 양쪽 위로 떠오른다 */
 .ap .wf-loss { position: absolute; top: 26%; z-index: 90; font-size: clamp(15px, 4.4cqw, 26px); font-weight: 900; color: #ff6a5a; text-shadow: 0 0 6px #000, 0 2px 3px #000; opacity: 0;
-  animation: wloss 1.6s ease-out calc(var(--hd) + .35s) both; }
+  animation: wloss 1.6s ease-out var(--bd, 2.4s) both; } /* 막대·숫자와 같은 때 (형 10-29) */
 .ap .wf-loss.us { left: 26%; } .ap .wf-loss.foe { right: 26%; color: #ffd27a; }
 .ap .wf-who { position: absolute; bottom: 6px; z-index: 80; font-size: clamp(10px, 2.6cqw, 13px); font-weight: 800; padding: 2px 8px; border-radius: 9px; background: #3f8f3acc; color: #eaffe0; text-shadow: 0 1px 2px #000; pointer-events: none; max-width: 42%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ap .wf-who.us { left: 6px; } .ap .wf-who.foe { right: 6px; background: #8a3a2acc; color: #ffe3dc; }
@@ -2248,9 +2311,9 @@ export const WAR_CSS = `
   100% { background-color: #c8160c; box-shadow: 0 0 6px 1px #ff2a1499; transform: none; } }
 @keyframes wchunkcut { from { width: var(--cw); } to { width: 0; } }
 @media (prefers-reduced-motion: reduce) { .ap .wbar .wchunk { animation: wchunkon 0s linear var(--bd, 2.4s) both, wchunkcut .3s linear var(--bd, 2.4s) both; } }
-.ap .wn.swap { display: inline-grid; } .ap .wn.swap > * { grid-area: 1 / 1; text-decoration: none; }
-.ap .wn.swap s { animation: wout .3s ease-out 2.4s both; } .ap .wn.swap u { animation: wrin .3s ease-out 2.4s both; }
-@keyframes wout { to { opacity: 0; } }
+/* 세는 숫자 — 막대와 같은 --bd 에 옛 값→새 값 (cnt) · 정수 셈이라 @property 로 한 칸씩 · 못 알아듣는 브라우저는 반에서 한 번에 바뀐다 */
+.ap .wcnt { display: inline-block; font-style: normal; counter-reset: wc var(--wc); animation-duration: var(--cd, .72s), .9s; animation-timing-function: cubic-bezier(.1, .8, .25, 1), ease-out; animation-delay: var(--bd, 2.4s); animation-fill-mode: both; }
+.ap .wcnt::before { content: counter(wc); }
 .ap .wbar.men i { background: linear-gradient(90deg, #2f7a2a, #6fc05a 60%, #b6f09a); box-shadow: 0 0 10px #6fc05a99; }
 .ap .ws.foe .wbar.men i { background: linear-gradient(90deg, #f0a088, #d0583c 40%, #7a2618); box-shadow: 0 0 10px #d0583c99; }
 /* 호궤 미리 보기 — 오를 몫이 깜박인다 (깃발에 올리거나 · 누르고 있거나 · 골라 두면) */
@@ -2421,17 +2484,18 @@ export const WAR_CSS = `
 .ap .wf2s .tk.tkn { animation: tknin 1s ease-out var(--hd, 1.2s) both; }
 @keyframes tknin { from { opacity: 0; translate: -60% 0; } to { opacity: 1; translate: 0 0; } }
 .ap .ws .wdmg, .ap .ws .wmdmg { position: absolute; left: 50%; z-index: 6; pointer-events: none; white-space: nowrap; opacity: 0; font-style: normal; translate: -50% 0;
-  text-shadow: 0 0 3px #000, 0 2px 0 #000, 0 0 10px #000; animation: wdmgpop 1.6s ease-out var(--hd, 1.2s) both; }
+  text-shadow: 0 0 3px #000, 0 2px 0 #000, 0 0 10px #000; animation: wdmgpop 1.6s ease-out var(--bd, 2.4s) both; }
 .ap .ws .wdmg { top: 18px; font-size: clamp(40px, 13vw, 68px); font-weight: 900; color: #ff4a2a; -webkit-text-stroke: 2px #2a0500;
-  text-shadow: 0 0 4px #000, 0 3px 0 #000, 0 0 18px #ff2a00, 0 0 34px #ff5a1acc; animation: wdmgpop 2.1s cubic-bezier(.2, 1.4, .4, 1) var(--hd, 1.2s) both; }
+  text-shadow: 0 0 4px #000, 0 3px 0 #000, 0 0 18px #ff2a00, 0 0 34px #ff5a1acc; animation: wdmgpop 2.1s cubic-bezier(.2, 1.4, .4, 1) var(--bd, 2.4s) both; }
 .ap .ws.foe .wdmg { color: #ffd23a; -webkit-text-stroke-color: #2a1a00; text-shadow: 0 0 4px #000, 0 3px 0 #000, 0 0 18px #ffb000, 0 0 34px #ffd23acc; }
 /* 줄어든 머릿수는 붉게 번쩍이며 튄다 (형 10-29: "데미지 입을 때 명수 깎이는 게 너무 안 보여 · 더 강하게") */
-.ap .wn.swap u { color: #ff6a4a; animation: wrin .3s ease-out 2.4s both, wnhit .9s ease-out 2.4s both; } @keyframes wnhit { 0% { transform: scale(1.6); color: #ff3a1a; text-shadow: 0 0 14px #ff2a00; } 60% { transform: scale(1); } 100% { color: inherit; } }
-.ap .ws .wmdmg { top: 70px; font-size: clamp(16px, 4.6vw, 22px); font-weight: 900; color: #ffb0a0; animation-delay: calc(var(--hd, 1.2s) + .15s); }
+@keyframes wnup { 0% { transform: scale(1.4); color: #b8f0a0; text-shadow: 0 0 12px #6fc05a; } 60% { transform: scale(1); } 100% { color: inherit; } }
+@keyframes wnhit { 0% { transform: scale(1.6); color: #ff3a1a; text-shadow: 0 0 14px #ff2a00; } 60% { transform: scale(1); } 100% { color: inherit; } }
+.ap .ws .wmdmg { top: 70px; font-size: clamp(16px, 4.6vw, 22px); font-weight: 900; color: #ffb0a0; }
 .ap .ws .wmdmg.up { color: #b8f0a0; }
 @keyframes wdmgpop { 0% { opacity: 0; transform: scale(.2); } 10% { opacity: 1; transform: scale(1.7) rotate(-4deg); } 22% { transform: scale(1) rotate(0); } 30% { transform: scale(1.12); } 38% { transform: scale(1); } 85% { opacity: 1; transform: translateY(-14px); } 100% { opacity: 0; transform: translateY(-30px); } }
 @media (max-width: 520px) { .ap .ws .wdmg { top: 8px; } .ap .ws .wmdmg { top: 52px; } }
-.ap .wr.fast .ws .wdmg, .ap .wr.fast .ws .wmdmg { animation-delay: 0s !important; }
+.ap .wr.fast .ws .wdmg, .ap .wr.fast .ws .wmdmg, .ap .wr.fast .wf-loss { animation-delay: 0s !important; }
 .ap .wrd.slow .wcmds { animation-name: wrflip; }
 @keyframes wrin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes wrflip { from { opacity: 0; transform: rotateX(90deg); } to { opacity: 1; transform: none; } }
@@ -2525,6 +2589,7 @@ export const WAR_CSS = `
 @keyframes wfomen { to { box-shadow: 0 0 20px #ff6a4acc; } }
 @media (prefers-reduced-motion: reduce) { .ap .wf-omen { animation: none; } }
 .ap .wfield.play .wf-omen { display: none; } /* 합이 풀리는 동안엔 다음 합의 낌새를 띄우지 않는다 */
+@property --wc { syntax: '<integer>'; inherits: false; initial-value: 0; }
 .ap .wrs, .ap .wrs::before, .ap .wrs::after, .ap .wrs *, .ap .wrs *::before, .ap .wrs *::after { animation: none !important; } /* paintNow 의 연출 다시 틀기 */
 /* 전장을 만진다 — 꾹 누름에 글이 잡히거나 메뉴가 뜨지 않게 · 무리를 누를 수 있다는 손 모양 */
 .ap .wfield { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; cursor: pointer; }
@@ -2566,6 +2631,41 @@ export const WAR_CSS = `
 .ap .wauto-ask .wsurec .wf { display: block; width: 96px; height: 110px; margin: 0 auto 10px; border-radius: 12px; object-fit: cover; object-position: top; border: 2px solid #e0b860; }
 .ap .wsureb .wsurey { background: linear-gradient(#a8291c, #6e150c); border-color: #e04a3a; color: #fff; }
 .ap .wfpop { position: fixed; z-index: 94; width: min(330px, calc(100vw - 16px)); padding: 8px; border-radius: 14px; background: #17110cf6; border: 1.5px solid #ffd27a; box-shadow: 0 0 0 1px #000, 0 12px 34px #000d, 0 0 18px #ffd27a44; animation: wfpin .16s ease-out; }
+.ap .wsg { position: fixed; inset: 0; z-index: 97; display: grid; place-items: start center; padding: max(12px, 7dvh) 12px 12px; } /* 위에 붙여 탭을 넘겨도 판이 들썩이지 않게 */
+.ap .wsg[hidden] { display: none; }
+.ap .wsg-bg { position: absolute; inset: 0; border: 0; padding: 0; background: #000b; cursor: pointer; }
+.ap .wsg-c { position: relative; width: min(420px, 100%); max-height: calc(100dvh - max(24px, 7dvh + 12px)); overflow: hidden; box-sizing: border-box; padding: 12px 12px 10px; border-radius: 16px; background: #1c140c; border: 1.5px solid #c9a45a; box-shadow: 0 0 24px #c9a45a44, 0 14px 40px #000d; animation: wfpin .16s ease-out; }
+.ap .wsg-xb { position: absolute; right: 8px; top: 8px; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid #a0802a; background: #2a2016; color: #ffd27a; font-size: 16px; font-weight: 900; line-height: 1; cursor: pointer; }
+.ap .wsg-h { display: flex; align-items: baseline; gap: 10px; padding-right: 40px; }
+.ap .wsg-h > b { font-family: 'Gowun Batang', serif; font-size: 19px; color: var(--gold); }
+.ap .wsg-lg { font-size: 12px; color: #d8cfbd; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+.ap .wsg-lg i { font-style: normal; font-size: 11px; } .ap .wsg-lg i.u { color: #9fe08a; } .ap .wsg-lg i.d { color: #ff9a8a; margin-left: 6px; }
+.ap .wsg-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 8px 0; }
+.ap .wsg-t { display: flex; align-items: center; justify-content: center; gap: 3px; min-height: 36px; padding: 3px 4px; border-radius: 10px; border: 1px solid #4d3b26; background: #120d09; color: #bfb39c; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+.ap .wsg-t img { width: 22px; height: 22px; object-fit: contain; }
+.ap .wsg-t.on { border-color: #e0b860; background: #3a2a14; color: #ffe2a0; box-shadow: 0 0 0 1px #e0b860, 0 0 10px #e0b86055; }
+.ap .wsg-p[hidden] { display: none; }
+.ap .wsg-p { display: flex; flex-direction: column; gap: 4px; }
+.ap .wsg-ring { position: relative; width: min(100%, 300px); aspect-ratio: 300 / 222; margin: 0 auto 4px; }
+.ap .wsg-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.ap .wsg-ring svg path { fill: none; stroke: #ffd27a; stroke-width: 7; stroke-linecap: round; }
+.ap .wsg-ring svg marker path { fill: #ffd27a; stroke: none; }
+.ap .wsg-rf { position: absolute; display: flex; flex-direction: column; align-items: center; translate: -50% -50%; }
+.ap .wsg-rf img { width: clamp(52px, 17vw, 70px); height: auto; filter: drop-shadow(0 3px 5px #000c); }
+.ap .wsg-rf b { margin-top: -4px; padding: 1px 8px; border-radius: 8px; background: #0b0805d9; color: #fff2d6; font-size: 13px; white-space: nowrap; }
+.ap .wsg-x2 { position: absolute; left: 50%; top: 58%; translate: -50% -50%; font-size: clamp(24px, 8vw, 32px); font-weight: 900; color: #ffe2a0; text-shadow: 0 2px 0 #000, 0 0 10px #ffb84a; }
+.ap .wsg-row { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; align-items: center; gap: 6px; padding: 2px 8px 2px 2px; border-radius: 10px; background: #0b0a0899; }
+.ap .wsg-me { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.ap .wsg-me img { width: 30px; height: 36px; object-fit: contain; }
+.ap .wsg-me b { margin-top: -2px; font-size: 10.5px; line-height: 1.1; color: #f3e6c8; text-align: center; word-break: keep-all; }
+.ap .wsg-vs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+.ap .wsg-vs i { display: inline-flex; align-items: center; gap: 2px; padding: 2px 5px 2px 3px; border-radius: 8px; font-style: normal; font-size: 11px; font-weight: 800; line-height: 1; white-space: nowrap; }
+.ap .wsg-vs i.u { background: #1d3818; box-shadow: inset 0 0 0 1px #7fd06a; color: #9fe08a; } .ap .wsg-vs i.u::before { content: '▶'; }
+.ap .wsg-vs i.e { background: #26231e; box-shadow: inset 0 0 0 1px #8a8270; color: #cfc6b4; } .ap .wsg-vs i.e::before { content: '='; font-size: 13px; }
+.ap .wsg-vs i.d { background: #3c1814; box-shadow: inset 0 0 0 1px #e0705e; color: #ff9a8a; } .ap .wsg-vs i.d::before { content: '◀'; }
+.ap .wsg-vs img { width: 22px; height: 26px; object-fit: contain; }
+.ap .wsg-vs em { font-style: normal; padding: 0 1px; }
+.ap .wsg-w { font-size: 13px; font-weight: 900; color: #ffe2a0; white-space: nowrap; text-shadow: 0 1px 2px #000; }
 @keyframes wfpin { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
 .ap .wfpop[hidden] { display: none; }
 /* 누르는 동안만 뜨는 설명 창 · 지금 고를 무리 위 보석 · 끄는 빨간 화살 (형 10-28: 하스스톤처럼) */
@@ -2650,8 +2750,7 @@ export const WAR_CSS = `
 .ap .wfpop .wcmd.mini .wflag { width: 30px; height: auto; flex: none; }
 .ap .wfpop .wcmd.mini .wct { gap: 1px; } .ap .wfpop .wcmd.mini .wct > b { font-size: 13.5px; }
 /* 전장의 깃발 판엔 그림과 이름만 — 꼬리표·짐작 글이 자리를 넘쳐 튀어나오고 줄이 바뀌었다 (형 10-25) · 권함은 별 하나로 */
-.ap .wfpop .wcmd.mini .wct > :not(b):not(em.rec):not(.wodd):not(.wguess):not(.wbx) { display: none !important; }
-.ap .wfpop .wcmd.mini .wct:has(> .wbx) { flex-direction: column; align-items: flex-start; gap: 1px; } /* 이름 밑에 상성 줄 (형 10-29) */
+.ap .wfpop .wcmd.mini .wct > :not(b):not(em.rec):not(.wodd):not(.wguess) { display: none !important; }
 /* 가망 % — 큰 깃발엔 말로 이미 있어 작은 단추(전장 깃발 판)에서만 */
 .ap .wcmd .wct > .wodd { display: none; } .ap .wfpop .wcmd.mini .wct > .wodd { display: inline; flex: none; font-style: normal; font-size: 12px; font-weight: 800; }
 .ap .wfpop .wcmd.mini .wct:has(> .wodd) { flex-direction: column; align-items: flex-start; gap: 0; } /* 이름 밑 줄에 — 옆에 두면 「퇴…」로 잘렸다 */
@@ -2702,7 +2801,7 @@ export const WAR_CSS = `
 .ap .wend b { font-size: 21px; } .ap .wend.good b { color: var(--good); } .ap .wend.bad b { color: var(--bad); }
 .ap .wend .wwhy { font-size: 14.5px; color: #e8dcc0; }
 .ap .wr.fast .wtick .wtk, .ap .wr.fast .wtick .wtl, .ap .wr.fast .wrd.slow .wcmds, .ap .wr.fast .wrd.slow .wst, .ap .wr.fast .wrd.slow .wpush, .ap .wr.fast .wend, .ap .wr.fast .wnext { animation-delay: 0s !important; animation-duration: .01s !important; }
-.ap .wr.fast .wbar i.wgr, .ap .wr.fast .wbar .wchunk, .ap .wr.fast .wn.swap > *, .ap .wr.fast .wrd.slow .wloss, .ap .wr.fast .ws.hit, .ap .wr.fast .ws.hit::after, .ap .wr.fast .wfx-hit { animation-delay: 0s !important; animation-duration: .01s !important; }
+.ap .wr.fast .wbar i.wgr, .ap .wr.fast .wbar .wchunk, .ap .wr.fast .wcnt, .ap .wr.fast .wrd.slow .wloss, .ap .wr.fast .ws.hit, .ap .wr.fast .ws.hit::after, .ap .wr.fast .wfx-hit { animation-delay: 0s !important; animation-duration: .01s !important; }
 /* 장수 기술 — 초상이 옆에서 튀어나와 한 마디 (일본식 컷인 띠·빛살 없이 · 기술 결마다 효과가 다르다) */
 /* 장수 기술은 읽고 「내가 썼다」를 느낄 만큼 — 1.8초 또렷 · 0.4초 걷힘 (형 10-24: "너무 빨리 나타나고 없어진다" · 필살기 컷인은 흔히 1.5~2.5초) */
 .ap .wcut { position: absolute; inset: 50% 0 0 0; z-index: 6; /* 아래 반쪽에 — 위 카드의 전장을 가리지 않게 (형 10-25) */ pointer-events: auto; cursor: pointer; overflow: hidden; animation: wcout 2.2s ease-in 1 forwards; }
@@ -3850,6 +3949,18 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   sure.hidden = true
   sure.innerHTML = `<div class="wsurec"><b>정말 퇴각하시겠습니까?</b><p class="wsurep"></p><div class="wsureb"><button class="btn ghost" data-war="retreat-no">계속 싸운다</button><button class="btn pri wsurey" data-war="retreat-yes">퇴각한다</button></div></div>`
   ov.appendChild(sure)
+  /** 상성 판 — 위 띠 왼쪽 「상성」 · 연출 중에도 열고 닫는다 · 밖을 누르거나 ✕ 로 닫힌다 */
+  const sg = document.createElement('div')
+  sg.className = 'wsg'
+  sg.hidden = true
+  sg.innerHTML = sgHtml(host.art)
+  ov.appendChild(sg)
+  const sgAct = (b: HTMLElement): void => {
+    if (b.dataset['war'] === 'mu') { sg.hidden = !sg.hidden; return }
+    const i = b.dataset['i']
+    for (const x of sg.querySelectorAll<HTMLElement>('[data-war="mutab"]')) x.classList.toggle('on', x.dataset['i'] === i)
+    for (const pg of sg.querySelectorAll<HTMLElement>('.wsg-p')) pg.hidden = pg.dataset['i'] !== i
+  }
   /** 맡긴다 — 바로 넘기지 않고 장수 얼굴과 함께 묻는다 (형 10-28: "~한테 전투를 모두 맡기겠습니까? (자동전투)") */
   const autoAsk = document.createElement('div')
   autoAsk.className = 'wsure wauto-ask'
@@ -3966,6 +4077,9 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       if (t.line?.pending !== undefined) syncField(true)
       return
     }
+    // 상성 판 — 싸움이 풀리는 중에도 · 판 안을 눌러도 건너뛰지 않는다
+    if (b.dataset['war'] === 'mu-in') return
+    if (b.dataset['war'] === 'mu' || b.dataset['war'] === 'mutab') { host.ding('click1', 0.18); sgAct(b); return }
     const l = t.line
     if (l === null || l.key === undefined) return
     if (animating && b.dataset['war'] !== 'auto' && b.dataset['war'] !== 'auto-yes' && b.dataset['war'] !== 'auto-no' && b.dataset['war'] !== 'next' && b.dataset['war'] !== 'help') return
