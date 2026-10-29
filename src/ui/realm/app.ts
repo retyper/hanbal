@@ -6213,7 +6213,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const max = a?.mix[k] ?? 0
         const had = sortieAll(a!)
         sortieD.take[k] = Math.max(0, Math.min(max, (sortieD.take[k] ?? 0) + Number(d['d'])))
-        if (had && !sortieAll(a!)) sortieD.hero = false // 일부만 가면 장수는 남아 지키는 게 기본 (형: "장군이 이끄는 게 기본, 분리한 애가 그 목적대로")
+        // 일부만 떼면 — 군대 창의 나누기는 장수가 남고(떼어 낸 무리가 여기 남는다), 전략 회의의 출정은 장수가 떠나는 무리를 이끈다 (형 10-29: "분리되더라도 원래 이동 경로는 장수가 이끄는 거 맞지?")
+        if (had && !sortieAll(a!)) sortieD.hero = stratOpen !== null
         if (sortieAll(a!)) sortieD.hero = true
         break
       }
@@ -6223,7 +6224,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const half = d['v'] === 'half'
         sortieD.take = {}
         for (const [k, n] of Object.entries(a.mix) as Array<[UnitKind, number]>) sortieD.take[k] = half ? Math.floor(n / 2 / 5) * 5 : n
-        sortieD.hero = !half
+        sortieD.hero = !half || stratOpen !== null
         break
       }
       case 'shero': sortieD.hero = d['v'] === '1'; break
@@ -6239,7 +6240,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (v === undefined) break
         sortieD.chose = { ...(sortieD.chose ?? {}), [ag]: v.label }
         applyVoice(a, v)
-        bark(v.hero?.id)
         // 다음 안건 — 기다리기로 했으면 나머지는 쓰이지 않으니 정리로
         stratOpen.step = v.opt.k === 'wait' ? 99 : (stratOpen.step ?? 0) + 1
         stratOpen.beat = 0
@@ -6283,7 +6283,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         else {
           armyOrders = [...armyOrders, o]
           if (lead !== undefined) { pickLeader(id, lead); obey(lead) }
-          if (go !== null) pick[id] = go
+          if (go !== null) pick[id] = { ...go, ...(stratOpen?.goal !== undefined ? { goal: stratOpen.goal } : {}) }
+          // 전략 회의에서 나눴으면 남는 무리는 여기 남아 지킨다 — 지도에서 이미 걸어 둔 출정·먼 갈 곳을 거둔다 (두 부대가 같이 가 버렸다 · 형 10-29)
+          if (stratOpen !== null) {
+            delete pick[a.id]
+            if (goalOf(a) !== undefined && !goalStop.includes(a.id)) goalStop = [...goalStop, a.id]
+          }
           openArmy = ''
           freshArmy = id
           if (stratDone()) return
