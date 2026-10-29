@@ -470,7 +470,7 @@ const app = mountRealmApp(root, {
       sync.forget()
     }
     // 판·판 밖 기록만 — 소리·지도 층 같은 설정과 계정·기기 표시는 남긴다 (localStorage.clear() 는 쓰지 않는다)
-    const keep = new Set(['hanbal.realm.mute', 'hanbal.realm.layers'])
+    const keep = new Set(['hanbal.realm.mute', 'hanbal.realm.layers', 'hanbal.realm.gfx'])
     for (const k of Object.keys(localStorage)) if ((k.startsWith('hanbal.realm.') || k.startsWith('hanbal.night.')) && !keep.has(k)) localStorage.removeItem(k)
     location.reload()
     return true

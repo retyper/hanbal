@@ -91,6 +91,7 @@ import { exileArt, exileBeats, fugitiveBeats, quarrelArt, quarrelBeats, romanceB
 import { HERO_POOL } from '../../realm/data/heroes-pool.ts'
 import { chiefCastOf, hireVoicePath, voiceGate, voiceKind, voicePath, type VoiceLine } from './voice.ts'
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
+import { QUALITY_CSS, gfxRowHtml, setGfxPref, startQuality } from './quality.ts'
 import { HOWWIN_CSS, bannerHtml, closeHowWin, howWinDue, howWinMark, lessons, lossOf, openLessons, showBanner, type HowKit, type LessonGo, type Loss } from './howwin.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
 import { FEEL_CSS, alertFeel, ambushRangeFeel, chanceFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
@@ -581,9 +582,11 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS
+  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS
   document.head.appendChild(style)
   root.classList.add('ap')
+  // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
+  startQuality(root, (h) => goToast(h))
   installTips(root)
   /** 배경 음악 · 계절 바람 — 싸움 창이 열려 있으면 싸움 음악 */
   const music = makeMusic(BASE, muted, () => root.querySelector('.nightov') !== null) // 밤 판이 떠 있으면 조용히 — 밤 판은 제 소리를 낸다
@@ -3776,7 +3779,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     h += `<button class="btn ghost" data-act="mute">${muted() ? '소리 켜기' : '소리 끄기'}</button><button class="btn ghost" data-act="export" data-tip="지금까지 둔 판 ${host.gameCount()}개의 기록을 파일로 받는다">기록 내보내기</button>`
     h += `<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}" data-tip="활쏘기 모드 (신궁)">활터</a>${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
     h += `<button class="btn ghost" data-act="newgame" data-tip="판 고르기로, 새 게임을 시작하기 전까지 지금 판은 그대로다">새 게임</button><button class="btn ghost" data-act="lobby" data-tip="이 판은 저장돼 있어 「이어 하기」로 돌아온다">⌂ 첫 화면으로</button></div>`
-    return h + acctHtml() + resetHtml()
+    return h + gfxRowHtml() + acctHtml() + resetHtml()
   }
 
   // ───────── 계정 (docs/realm/SERVER.md) — 나라 판 맨 아래 · 첫 화면 한 줄 · 갈라진 판 고르기
@@ -4892,7 +4895,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   // ───────── 판 바깥 — 첫 화면 · 판 고르기 · 나라 고르기 (front.ts)
   function frontHtml(f: Front): string {
     // 활터·연습장·소리 출처·시험·기록·로그인은 「더 보기」 안에 접는다 — 늘어놓았더니 폰에서 화면 밑으로 넘쳤다 (형 10-28)
-    const links = `<details class="fmore"${fmoreOpen ? ' open' : ''}><summary class="btn ghost">더 보기</summary><button class="fmbg" data-act="fmore-x" aria-label="닫기"></button><div class="fmpan"><b class="fmh">더 보기</b>${document.documentElement.classList.contains('gfxsafe') ? '<small class="mute">그래픽 호환 모드 켜짐</small>' : ''}${f.kind === 'title' ? acctLine() : ''}<p class="fine">${installed() ? '' : `<button class="btn ghost" data-act="inst-show">📲 앱으로 설치</button>`}<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a> ${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
+    const links = `<details class="fmore"${fmoreOpen ? ' open' : ''}><summary class="btn ghost">더 보기</summary><button class="fmbg" data-act="fmore-x" aria-label="닫기"></button><div class="fmpan"><b class="fmh">더 보기</b>${document.documentElement.classList.contains('gfxsafe') ? '<small class="mute">그래픽 호환 모드 켜짐</small>' : ''}${gfxRowHtml()}${f.kind === 'title' ? acctLine() : ''}<p class="fine">${installed() ? '' : `<button class="btn ghost" data-act="inst-show">📲 앱으로 설치</button>`}<a class="btn ghost" href="${(import.meta.env?.BASE_URL ?? '/')}">활터</a> ${PRACTICE_READY ? `<button class="btn ghost" data-act="practice-open">궁술 연습장</button>` : ''}`
       // 소리의 출처 — 공공누리 제1유형·CC BY 는 출처를 밝혀야 쓸 수 있다 (형 10-23: "출처표기해야 상업적으로 사용가능하니까 주의")
       + ` <a class="btn ghost" href="${BASE}realm/credits.html">소리 출처</a>`
       // 새 전투 시험 (BATTLE-LIVE 0번) — 이 기기에서만 켜진다 · 형과 지인이 켜고 꺼 보며 견준다 (형 10-28)
@@ -5980,6 +5983,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'howwin': openHowWin(lastLoss); return
       case 'export': host.onExport(); return
       case 'fmore-x': fmoreOpen = false; root.querySelector<HTMLDetailsElement>('.fmore')?.removeAttribute('open'); return
+      case 'gfx': if (front !== null) fmoreOpen = true; setGfxPref(d['v']); paint(); return
       case 'b0-toggle': fmoreOpen = true; try { localStorage.setItem(B0_KEY, b0On() ? '0' : '1') } catch { /* 저장이 막히면 못 켠다 */ } paint(); return
       case 'acct-in': host.cloud?.signIn(); return
       case 'acct-out': host.cloud?.signOut(); acctArmed = false; paint(); return
