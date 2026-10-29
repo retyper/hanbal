@@ -751,6 +751,13 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
   background: #000a; border: 10px solid transparent; border-image: url(__ART__ui/card.png?v=1) 24 fill / 10px stretch; animation: csubin .4s ease-out .15s both; }
 .ap .cnstage .cnav { width: min(100%, 620px); display: flex; justify-content: space-between; align-items: center; color: #cbbf9f; font-size: 12.5px; }
 .ap .cnstage .cskip { padding: 6px 4px; border: 0; background: none; color: #e8dcc0; font: inherit; font-size: 13px; cursor: pointer; }
+/* 세로 폰 — 그림의 가운데 위(천막 벽)만 보여 탁자가 안 보이고 얼굴·대사가 맨 아래 (형 10-29) · 그림을 키워 아래쪽 지도 탁자를 · 얼굴과 대사는 제목 바로 아래로 */
+@media (max-aspect-ratio: 4/5) {
+  .ap .stov .stbox.cnx { background-size: auto 150%; background-position: 50% 100%; }
+  .ap .cnstage { justify-content: flex-start; }
+  .ap .cnstage .cnt { margin: 0 0 clamp(10px, 3vh, 28px); }
+  .ap .cnstage .cnav { margin-top: auto; }
+}
 @keyframes cnpop { from { opacity: 0; transform: translateY(16px) scale(.88); } to { opacity: 1; transform: none; } }
 .ap .cnq { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 14px 14px calc(16px + env(safe-area-inset-bottom)); }
 .ap .cnask { margin: 0; font-family: 'Gowun Batang', serif; font-size: 22px; line-height: 1.35; color: #ffe0a0; text-align: center; text-shadow: 0 2px 6px #000; word-break: keep-all; }
