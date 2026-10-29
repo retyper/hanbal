@@ -22,6 +22,8 @@ H = 160
 LAYOUT = [('idle', 4), ('walk', 8), ('attack', 6)]
 # 칸 갈아 끼우기 — 그 칸에 제미나이 별표가 흐리게 남은 것 등 (병종 → {버릴 칸: 대신 쓸 칸})
 SWAP = {'shield': {17: 18}}
+# 동작을 다른 띠에서 빌린다 — 배의 서기 띠는 사람이 노·창을 안 들고 있어(걷기·공격과 안 맞는다) 노 젓기를 느리게 돌린다
+BORROW = {'boat': {'idle': 'walk'}}
 
 
 def frames_of(path, n):
@@ -33,7 +35,10 @@ def frames_of(path, n):
 
 
 def guess_n(path, want):
-    """띠의 칸 수 — 기대한 수로 나누어떨어지면 그것, 아니면 4"""
+    """띠의 칸 수 — 곁의 미리보기 GIF(tools/anim-assemble.py)가 있으면 그 컷 수, 없으면 기대한 수로 나누어떨어지는지 (말·배는 4컷 띠가 8로 나뉘어 반쪽 말이 됐다)"""
+    gif = path[:-4] + '.gif'
+    if os.path.exists(gif):
+        return Image.open(gif).n_frames
     im = Image.open(path)
     for n in (want, 8, 6, 4):
         if im.width % n == 0 and im.width // n >= 60:
@@ -62,7 +67,7 @@ def pack(kind):
     src = os.path.join(R, 'assets_src', 'realm', 'anim-try')
     cells = []  # (frame, anchor x)
     for act, want in LAYOUT:
-        p = os.path.join(src, f'{kind}-{act}.png')
+        p = os.path.join(src, f'{kind}-{BORROW.get(kind, {}).get(act, act)}.png')
         n = guess_n(p, want)
         fs = frames_of(p, n)
         ax = head_x(fs[0])

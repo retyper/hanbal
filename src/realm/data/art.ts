@@ -382,7 +382,7 @@ export const UNIT_ICON = {
  * 병사 동작 그림 둘째 판(public/realm/anim2/<병종>.png · 20컷: 서기 4 · 걷기 8 · 공격 6 · 움찔 · 쓰러짐) 한 칸의 가로세로 비 — tools/anim-pack.py 가 찍어 준다.
  * 있는 병종만 새 띠로 그린다 (없으면 옛 8컷 띠). 칸이 넓다 — 창이 다 뻗어도 들어가게 (형 10-29)
  */
-export const SOL_ANIM2: Readonly<Record<string, number>> = { spear: 548 / 160, bow: 629 / 160, shield: 317 / 160, pike: 475 / 160, axe: 208 / 160, marine: 372 / 160 }
+export const SOL_ANIM2: Readonly<Record<string, number>> = { spear: 548 / 160, bow: 629 / 160, shield: 317 / 160, pike: 475 / 160, axe: 208 / 160, marine: 372 / 160, horse: 232 / 160, boat: 336 / 160 }
 export const SOL_ANIM_AR: Readonly<Record<string, number>> = { spear: 167 / 160, shield: 165 / 160, bow: 139 / 160, horse: 157 / 160, boat: 164 / 160, crossbow: 152 / 160, pike: 162 / 160, axe: 144 / 160, marine: 155 / 160 }
 
 /** 계절 → 아이콘 */
