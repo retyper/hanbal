@@ -240,7 +240,7 @@ export const MAP_CSS = `
 /* 고리 — 평소엔 없다. 고를 때 · 갈 곳 · 위협받을 때만. 그림 뒤에 두어 그림 위에 걸린다 */
 .map .nd .ring { position: absolute; left: 50%; top: 42%; width: 82%; aspect-ratio: 1; transform: translate(-50%, -50%);
   border-radius: 50%; border: 3px solid var(--c); box-shadow: 0 0 6px var(--c); pointer-events: none; display: none; }
-.map .nd.sel .ring, .map .nd.tgt .ring, .map .nd.threat .ring { display: block; }
+.map .nd.tgt .ring, .map .nd.threat .ring { display: block; }
 /* 소도 — 큰 나무에 방울과 북을 단 신성한 숲 (형 10-29: "신성한 중립 지역이니까 맵에서도 제대로").
    둘레에 금줄(왼새끼 · 솔가지 · 숯 · 한지 띠)을 두르고, 방울 소리가 물결처럼 퍼지고, 한지 띠가 바람에 날아오른다.
    빛은 미리 구운 그림(그 폰은 CSS 그러데이션·거르개를 못 그린다 — gfxsafe) · 움직임은 transform·opacity 만 · 햇살 무늬 금지 */
@@ -262,8 +262,20 @@ export const MAP_CSS = `
 /* 척후를 보낸 고을 — 작은 표 하나 (움직이지 않는다) */
 .map .nd .sctmk { position: absolute; left: 50%; top: -4%; transform: translate(-50%, -100%); display: flex; align-items: center; gap: 2px; padding: 1px 7px 1px 2px; border-radius: 999px; background: #1c2a1ce6; border: 1px solid #8ab07a; color: #d8f0c8; font-size: 11px; font-weight: 700; white-space: nowrap; pointer-events: none; z-index: 5; }
 .map .nd .sctmk img { width: 18px; height: 18px; object-fit: contain; }
-.map .nd.sel .ring { border: 3px solid #ffd27a; box-shadow: 0 0 0 3px #ffd27a55, 0 0 14px #ffd27a; animation: selp 1.6s ease-in-out infinite; }
-@keyframes selp { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.12); } }
+/* 고른 것 — 고리·금빛 번짐 대신 머리 위에 도는 초록 사각뿔 (싸움판의 보석과 한 벌 · 형 10-29: "전투 때 녹색 3d 포인터 · 맵에서도 · 지금 css 강조효과 너무 별로") */
+.map .mgem { position: absolute; left: 50%; top: 2%; z-index: 6; width: 0; height: 0; pointer-events: none; perspective: 260px;
+  --a: calc(19px * var(--aw, 1)); --s: calc(26.5px * var(--aw, 1)); --t: 20.9deg; animation: mgembob 1.1s ease-in-out infinite alternate; }
+.map .tok .mgem { top: -62%; }
+@keyframes mgembob { from { translate: 0 calc(-14px * var(--aw, 1)); } to { translate: 0 calc(-8px * var(--aw, 1)); } }
+.map .mgem .g3 { position: absolute; left: 0; top: 0; transform-style: preserve-3d; animation: mgemspin 2.6s linear infinite; }
+@keyframes mgemspin { from { transform: rotateX(-22deg) rotateY(0deg); } to { transform: rotateX(-22deg) rotateY(360deg); } }
+.map .mgem .gf { position: absolute; left: calc(var(--a) / -2); top: 0; width: var(--a); height: var(--s); transform-origin: 50% 0; clip-path: polygon(0 0, 100% 0, 50% 100%); backface-visibility: visible; }
+.map .mgem .f0 { transform: rotateY(0deg) translateZ(calc(var(--a) / 2)) rotateX(calc(var(--t) * -1)); background: #3fd46a; }
+.map .mgem .f1 { transform: rotateY(90deg) translateZ(calc(var(--a) / 2)) rotateX(calc(var(--t) * -1)); background: #1f9e48; }
+.map .mgem .f2 { transform: rotateY(180deg) translateZ(calc(var(--a) / 2)) rotateX(calc(var(--t) * -1)); background: #13702f; }
+.map .mgem .f3 { transform: rotateY(270deg) translateZ(calc(var(--a) / 2)) rotateX(calc(var(--t) * -1)); background: #2bba57; }
+.map .mgem .gt { position: absolute; left: calc(var(--a) / -2); top: calc(var(--a) / -2); width: var(--a); height: var(--a); transform: rotateX(90deg); background: #9dffbe; box-shadow: inset 0 0 0 2px #d8ffe6; }
+@media (prefers-reduced-motion: reduce) { .map .mgem, .map .mgem .g3 { animation: none; } }
 /* 위협 — 적이 오는 우리 고을 (Total War 의 붉은 영향권 — GAP M4) */
 .map .nd.threat .ring { border: 3px solid #d0301c; box-shadow: 0 0 0 4px #d0301c44, 0 0 16px #d0301c; animation: thr 1.1s ease-in-out infinite alternate; }
 @keyframes thr { from { opacity: .45; } to { opacity: 1; } }
@@ -273,7 +285,7 @@ export const MAP_CSS = `
 .map .nd.far { opacity: .42; filter: saturate(.5); } .map .lb.far { opacity: .45; }
 .map svg .mvglow { animation: mvg 1.2s linear infinite; } @keyframes mvg { to { stroke-dashoffset: -40; } }
 .map svg .thrarrow { animation: thr 1s ease-in-out infinite alternate; }
-@media (prefers-reduced-motion: reduce) { .map .nd.sel .ring, .map .nd.threat .ring, .map svg .mvglow, .map svg .thrarrow { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .map .nd.threat .ring, .map svg .mvglow, .map svg .thrarrow { animation: none; } }
 /* 특산 — 고을 그림 오른쪽 위에 작은 둥근 표 (쇠·소금·나무·말). 아무도 안 사는 땅은 흐리게 — 일구면 난다 */
 /* 작게 겹쳐 쌓는다 — 넷이 나란히 서면 고을 그림과 길을 덮었다 (형: "자원들이랑 지도 길 이런거랑 좀안겹치게") */
 .map .lb .lbg { display: inline-flex; align-items: center; gap: .1em; margin-left: .3em; padding: .1em .32em; border-radius: .55em; background: linear-gradient(#3a2a18f0, #20160cf0);
@@ -359,8 +371,6 @@ export const MAP_CSS = `
 .map .tok.unit.going .sq u, .map .toks.mv .tok.unit .sq u { animation: mqwalk calc(.42s * var(--mqwalks, 1)) steps(var(--mqwalkn, 2)) calc(var(--j) * -.14s) infinite; }
 .map .tok.unit.sel .sq u { animation: mqatk calc(.32s * var(--mqatks, 1)) steps(var(--mqatkn, 2)) calc(var(--j) * .06s) 3, mqidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--mqidles, 1)) steps(var(--mqidlen, 2)) calc(1.1s - var(--k, .5) * 1.6s) infinite; }
 .map .tok.unit .squad::after { content: ''; position: absolute; left: -4%; right: -4%; bottom: -14%; height: 34%; border-radius: 50%; border: 2px solid transparent; z-index: -1; pointer-events: none; }
-.map .tok.unit.sel .squad::after { border-color: #ffd27a; box-shadow: 0 0 8px #ffd27a, inset 0 0 6px #ffd27a88; animation: mqring .9s ease-in-out infinite alternate; }
-@keyframes mqring { from { transform: scale(.94); opacity: .75; } to { transform: scale(1.06); opacity: 1; } }
 @media (hover: hover) { .map .tok.unit:not(.sel):not(.foe):hover .squad::after { border-color: #ffd27a88; } }
 .map .tok.unit.foe .squad { transform: scaleX(-1); }
 .map .tok.unit.foe .squad::after { border-color: #e0604a99; }
@@ -389,7 +399,7 @@ export const MAP_CSS = `
 .map .tok.foe.sneak img { filter: brightness(.55) saturate(.6); border-style: dotted; } .map .toks.mv .tok.foe img { border-style: solid; border-color: var(--tc); }
 .map .toks.mv .tok.foe.sneak img { border-style: dotted; }
 .map .tok.party img { border-style: dashed; background: #3a2c1e; object-fit: contain; padding: 8%; } .map .tok.party b { color: #f0d8b0; border-color: #c8a070; }
-.map .tok.sel img { border-color: #ffd27a; box-shadow: 0 0 0 3px #ffd27a88, 0 0 12px #ffd27a; transform: scale(1.12); }
+.map .tok.sel img { transform: scale(1.08); }
 .map .tok.going img { border-color: #c8402a; }
 /* 개척할 수 있는 빈땅 — 누르면 그 땅 카드에 "사람 보내기" */
 .map .nd .stl { position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, -2px); /* 그림 위에 — 밑에는 고을 이름표가 온다 (형 10-23: "개마 들머리 뒤에 뭐가 있는지 모르겠어") */ white-space: nowrap; pointer-events: none; z-index: 2;
@@ -415,7 +425,7 @@ export const MAP_CSS = `
 .map svg .mvflow { animation: mvf .9s linear infinite; } @keyframes mvf { to { stroke-dashoffset: calc(-22px * var(--aw, 1)); } }
 @media (prefers-reduced-motion: reduce) { .map .toks.mv .tok, .map svg .mvflow { animation: none; } }
 .map .lb.crowd { visibility: hidden; } /* 겹쳐 자리가 없는 작은 고을 이름 — declutter */
-.map .lb.sel { box-shadow: 0 0 0 1px #1a120a, 0 0 0 3px #fff6d8, 0 0 10px #ffd27a; z-index: 1; } .map .lb.dim { opacity: 0; } /* 한 나라만 볼 때 다른 나라 글씨는 감춘다 (형: "다른나라들은 글자정돈 완전 투명하게") */ .map .nd.sel img.st { filter: drop-shadow(0 0 7px #ffd27a) drop-shadow(0 0 3px #ffd27a); }
+.map .lb.sel { z-index: 1; } .map .lb.dim { opacity: 0; } /* 한 나라만 볼 때 다른 나라 글씨는 감춘다 (형: "다른나라들은 글자정돈 완전 투명하게") */
 .map[data-world] { background-color: #cdb98e; }
 .map .nd.fresh, .map .lb.fresh, .map svg .fresh { animation: rv 2.2s ease-out both; }
 @keyframes rv { from { opacity: 0; } to { opacity: 1; } }
@@ -451,6 +461,8 @@ export interface MapMarch {
  */
 /** 본 군세의 폭 — 같으면 한 수 */
 const span = (lo: number, hi: number): string => (Math.round(lo) === Math.round(hi) ? `${Math.round(lo)}` : `${Math.round(lo)}~${Math.round(hi)}`)
+/** 고른 고을·군대 머리 위의 초록 사각뿔 (싸움판 battlefield .wgem 과 같은 꼴) */
+const GEM = '<i class="mgem"><i class="g3"><b class="gf f0"></b><b class="gf f1"></b><b class="gf f2"></b><b class="gf f3"></b><b class="gt"></b></i></i>'
 const sizeOf = (hh: number): number => Math.min(1.35, Math.max(0.8, 0.7 + hh / 900))
 
 
@@ -722,7 +734,7 @@ export function mapHtml(
     const holyFront = n.kind === 'sodo'
       ? `<img class="sr f" src="${art}fx/sodo-rope.png" alt=""><img class="sc c1" src="${art}fx/sodo-cloth-a.png" alt=""><img class="sc c2" src="${art}fx/sodo-cloth-b.png" alt=""><img class="sc c3" src="${art}fx/sodo-cloth-a.png" alt="">` : ''
     const sct = scouting === n.id ? `<span class="sctmk" title="척후가 이 고을을 엿본다"><img src="${art}icon/unit-scouts.png" alt="">척후</span>` : ''
-    nodes += `${holy}<span class="base"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${holyFront}<span class="ring"></span>${sct}${taken.has(n.id) ? `<img class="burnsm won" src="${art}fx/smoke.png" alt=""><span class="plant"><i class="pole"></i><i class="cloth" style="--fc:${FACTION_ART[me]?.color ?? '#c9a45a'}"><img src="${art}icon/${FACTION_ART[me]?.emblem ?? 'emblem-shell'}.png" alt=""></i></span><i class="wonring"></i><span class="wonchip">점령</span>` : burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${held.has(n.id) ? '<span class="heldchip">🛡 지켜 냈다</span>' : ''}${mist}${ice}${gface}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? (tg.chip !== '' ? `<span class="tchip">${tg.chip}</span>` : '') : settleable.has(n.id) ? (settling.has(n.id) ? '<span class="stl go">백성이 가는 중</span>' : '<span class="stl">＋마을</span>') : crowd}</div>`
+    nodes += `${holy}<span class="base"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${holyFront}<span class="ring"></span>${selected === n.id ? GEM : ''}${sct}${taken.has(n.id) ? `<img class="burnsm won" src="${art}fx/smoke.png" alt=""><span class="plant"><i class="pole"></i><i class="cloth" style="--fc:${FACTION_ART[me]?.color ?? '#c9a45a'}"><img src="${art}icon/${FACTION_ART[me]?.emblem ?? 'emblem-shell'}.png" alt=""></i></span><i class="wonring"></i><span class="wonchip">점령</span>` : burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${held.has(n.id) ? '<span class="heldchip">🛡 지켜 냈다</span>' : ''}${mist}${ice}${gface}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? (tg.chip !== '' ? `<span class="tchip">${tg.chip}</span>` : '') : settleable.has(n.id) ? (settling.has(n.id) ? '<span class="stl go">백성이 가는 중</span>' : '<span class="stl">＋마을</span>') : crowd}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()
@@ -738,7 +750,7 @@ export function mapHtml(
   const ours = (t: MapToken): boolean => t.foe === undefined && t.ally === undefined && t.party !== true
   const tokBtn = (t: MapToken, ang?: number): string =>
     `<button class="tok${t.squad !== undefined ? ' unit' : ''}${ours(t) && t.march === undefined && !t.going ? ' idle' : ''}${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}${t.ally !== undefined ? ' ally' : ''}${t.party === true ? ' party' : ''}${t.foe !== undefined ? ` foe${t.sneak === true ? ' sneak' : ''}` : ''}" data-act="${t.foe !== undefined ? 'foetok' : t.party === true ? 'ptok' : 'tok'}" data-army="${t.army}" style="${tokKit(t)}">`
-    + `${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}${ours(t) ? '<i class="flag"></i>' : ''}${t.wait === true ? `<i class="ask" style="--ae:${P.realm.mapAskEveryS}s;--ad:${(-(jit(t.army) * P.realm.mapAskEveryS)).toFixed(1)}s">명령?</i>` : ''}${t.squad !== undefined ? `<span class="squad">${t.squad.map((q, j) => `<i class="sq${q.r !== undefined ? ' v2' : ''}" style="--ar:${q.ar.toFixed(3)};${q.r !== undefined ? `--r:${q.r.toFixed(3)};` : ''}--j:${j};--k:${((([...t.army].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7) + j * 53) % 97 + 97) % 97 / 97).toFixed(2)}"><u style="background-image:url('${q.src}')"></u></i>`).join('')}</span>` : ''}<img src="${t.img}" alt="">${t.foe !== undefined ? '' : t.morale !== undefined ? `<i class="hp mor${t.morale < P.realm.mapMoraleLow ? ' low' : ''}" style="--p:${Math.max(0.06, Math.min(1, t.morale / P.realm.moraleMax)).toFixed(2)}"></i>` : `<i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i>`}<b>${t.foe !== undefined ? '적' : `${t.ally !== undefined ? '도움 ' : t.party === true ? '개척 ' : ''}${t.men}`}</b></button>`
+    + `${t.sel ? GEM : ''}${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}${ours(t) ? '<i class="flag"></i>' : ''}${t.wait === true ? `<i class="ask" style="--ae:${P.realm.mapAskEveryS}s;--ad:${(-(jit(t.army) * P.realm.mapAskEveryS)).toFixed(1)}s">명령?</i>` : ''}${t.squad !== undefined ? `<span class="squad">${t.squad.map((q, j) => `<i class="sq${q.r !== undefined ? ' v2' : ''}" style="--ar:${q.ar.toFixed(3)};${q.r !== undefined ? `--r:${q.r.toFixed(3)};` : ''}--j:${j};--k:${((([...t.army].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7) + j * 53) % 97 + 97) % 97 / 97).toFixed(2)}"><u style="background-image:url('${q.src}')"></u></i>`).join('')}</span>` : ''}<img src="${t.img}" alt="">${t.foe !== undefined ? '' : t.morale !== undefined ? `<i class="hp mor${t.morale < P.realm.mapMoraleLow ? ' low' : ''}" style="--p:${Math.max(0.06, Math.min(1, t.morale / P.realm.moraleMax)).toFixed(2)}"></i>` : `<i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i>`}<b>${t.foe !== undefined ? '적' : `${t.ally !== undefined ? '도움 ' : t.party === true ? '개척 ' : ''}${t.men}`}</b></button>`
   let toks = ''
   // 길 위의 우리 군대 — 떠난 쪽에서 삼분의 일쯤 (가운데의 "n계절" 글씨를 안 가린다)
   for (const t of tokens) {
