@@ -93,6 +93,8 @@ const TRIBUTE: readonly Tier[] = [
 /** 사신 — 남의 속이 섞여 범위 % (ODDS: 흥정 손잡이 · 몫을 바꾸면 바로 다시 셈) */
 export const envoyFeel = (lo: number, hi: number, ask?: string): string => chip(ask === 'tribute' ? TRIBUTE : ENVOY, lo, hi, true)
 export const ambushFeel = (p: number): string => chip(AMBUSH, p, p)
+/** 숨어 닿을 가망 — 적이 어느 길목을 지킬지 모르니 범위 % (ODDS 원칙 1 · 길목 council.ts) */
+export const ambushRangeFeel = (lo: number, hi: number): string => chip(AMBUSH, lo, hi, true)
 /** 호감 −100..100 — 숫자 없이 사이의 온도로 */
 const FAVOR: readonly Tier[] = [
   { at: 60, word: '매우 가깝다', color: '#3f8f3a' },

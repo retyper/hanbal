@@ -13,6 +13,7 @@ import type { RoundAt } from './tactics.ts'
 
 /** 계절 번호 0 = 첫해 봄. 계절 = 번호 % 4 */
 import type { CardKind, QuarrelWhy } from './data/cards.ts'
+import type { GuardWhy } from './council.ts'
 import type { CustomId } from './data/customs.ts'
 
 export type SeasonOfYear = 'spring' | 'summer' | 'autumn' | 'winter'
@@ -331,6 +332,8 @@ export interface March {
   readonly hard?: 'winterPass' | 'summerFord'
   /** 뒤따른다 — 같은 고을을 치는 다른 우리 군대 뒤에서 원군으로 몇 합 늦게 들이친다 (형 10-25) */
   readonly follow?: boolean
+  /** 군막에서 이 길을 권한 장수 — 싸움이 드러날 때 「○○의 말대로」 (COUNCIL.md · 1주 조각) */
+  readonly adviser?: string
   /**
    * 떠날 때 그 고을의 주인 (null = 빈땅). 가는 사이 싸우지 않는 다른 나라 땅이 됐으면 들어가지 않고 돌아선다 —
    * 빈땅을 일구러 갔다가 남이 먼저 쥔 땅에 "우리가 군대를 들였다"가 되던 것 (형: "전쟁시도하지 않았는데 왜"). 없으면 옛 판 — 그대로 들어간다
@@ -708,6 +711,8 @@ export interface Scenario {
 }
 
 export interface Realm {
+  /** 길목의 기억 — 「친 나라>맞은 나라」마다 마지막으로 온 길 (council.ts · 되풀이하면 읽힌다) */
+  pathMemo?: Record<string, Approach>
   readonly seed: number
   season: number
   readonly nodes: Record<string, RNode>
@@ -822,7 +827,7 @@ export interface Realm {
 
 /** 플레이어(또는 AI)가 한 계절에 내리는 명령 */
 export type Order =
-  | { readonly kind: 'march'; readonly army: string; readonly edge: string; readonly ambush: boolean; readonly approach?: Approach; readonly ration?: Ration; readonly follow?: boolean }
+  | { readonly kind: 'march'; readonly army: string; readonly edge: string; readonly ambush: boolean; readonly approach?: Approach; readonly ration?: Ration; readonly follow?: boolean; readonly adviser?: string }
   /** 먼 갈 곳을 둔다(node) · 지운다(null) — 그 계절의 첫 걸음은 함께 낸 march 가 간다 (goal.ts) */
   | { readonly kind: 'goal'; readonly army: string; readonly node: string | null }
   /** 서 있는 고을을 친다 — 동맹을 깨는 등으로 그 땅이 싸울 땅이 됐을 때, 길을 나서지 않고 그 자리에서 (형 10-24) */
@@ -976,6 +981,10 @@ export type ReportLine =
       readonly rounds?: readonly RoundLog[]
       /** 앞선 군대의 진군 방식 · 절벽에서 떨어졌나 */
       readonly approach?: Approach
+      /** 지키는 쪽이 지킨 길목과 그 까닭 · 앞선 군대에게 그 길을 권한 장수 (council.ts — 옛 보고에는 없다) */
+      readonly guarded?: Approach
+      readonly gwhy?: GuardWhy
+      readonly adviser?: string
       readonly fell?: boolean
       /** 판의 열쇠 (season.battleKey · 들판이면 fieldKey) */
       readonly key?: string

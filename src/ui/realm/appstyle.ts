@@ -548,6 +548,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .hw .hwl { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; } .ap .hw .hwl small { font-weight: 400; color: var(--mute); font-size: 12px; }
 .ap .hw .hwr { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; } .ap .hw .hwr .ln { white-space: nowrap; }
 .ap .hw.on { border-color: #e0bd78; background: #3a3020; } .ap .hw.amb.on { border-color: #9a7ad8; background: #2a2440; }
+/* 군막 — 그 길을 권한 장수의 얼굴과 한 줄 (council-lines.ts) · 단추 위 한 줄을 통째로 쓴다 */
+.ap .hw.adv { flex-wrap: wrap; row-gap: 6px; }
+.ap .hw .hwa { flex: 1 0 100%; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ap .hw .hwf { width: 38px; height: 38px; flex: none; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #8a7040; }
+.ap .hw .hws { flex: 1; min-width: 0; font-size: 13px; color: #f0e6d0; line-height: 1.35; background: #00000033; border-radius: 10px; padding: 5px 8px; white-space: normal; }
+.ap .hw .hws b { font-size: 13px; color: var(--gold); } .ap .hw .hws small { display: block; font-size: 12px; color: #cdbf9e; margin-top: 2px; }
 .ap .tip { margin: 0 0 6px; }
 .ap .flow3 { display: flex; align-items: stretch; gap: 6px; margin: 4px 0; }
 .ap .flow3 > div { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 8px 6px; border-radius: 12px; background: var(--card); }

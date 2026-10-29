@@ -41,6 +41,7 @@ import { pathsEnd, stepPaths } from './paths.ts'
 import { sendExpeditions, stepExpeditions } from './expedition.ts'
 import { goalSteps } from './goal.ts'
 import { resolveCard, stepCards } from './events.ts'
+import { guardAdjust, guardPick, pathKey } from './council.ts'
 import { PEOPLE_SCALE, migrate } from './migrate.ts'
 import { spreadRumors } from './rumor.ts'
 import { addMen, giveMen, kitOf, scaleKinds, scaleMen, takeMen } from './kit.ts'
@@ -658,7 +659,7 @@ function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): v
     const extra = rationFor(r, a, o.ration, left)
     if (extra > 0) stockOf(r, a.faction).grain -= rationCost(r, a, left, extra)
     a.food = left + extra
-    a.march = { from: a.at, to, edge: ed.id, left, ambush: approach !== 'road', ...(approach !== 'road' && approach !== 'night' ? { approach } : {}), ...(why !== null ? { hard: why } : {}), ...(o.follow === true ? { follow: true } : {}), aim: owner }
+    a.march = { from: a.at, to, edge: ed.id, left, ambush: approach !== 'road', ...(approach !== 'road' && approach !== 'night' ? { approach } : {}), ...(why !== null ? { hard: why } : {}), ...(o.follow === true ? { follow: true } : {}), ...(o.adviser !== undefined && r.heroes[o.adviser]?.faction === a.faction ? { adviser: o.adviser } : {}), aim: owner }
   }
 }
 
@@ -1133,16 +1134,22 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const knewD = knewLead(r, defFaction, atks)
   meet(r, [...atks, ...defenders, ...heroesAtNode(r, node.id).map((h) => ({ hero: h }))])
 
-  // 4 — 진군 방식: 군대마다 제 길로 따로 굴린다. 큰 군대는 잘 안 숨는다
+  // 4 — 길목: 지키는 쪽이 지킬 길 하나를 이미 정해 두었다 (council.ts — 쳐들어오는 길은 보지 않고 같은 계절에 동시에)
+  const cmd = defenders.map((d) => heroOf(r, d)).filter((h): h is Hero => h !== null).sort((x, y) => y.ryak - x.ryak || (x.id < y.id ? -1 : 1))[0] ?? null
+  const guard = node.owner !== null && node.kind !== 'sodo' ? guardPick(r, node.id, defFaction, a.faction, cmd, r.season) : null
+  // 진군 방식: 군대마다 제 길로 따로 굴린다. 큰 군대는 잘 안 숨는다 · 지킨 길목이면 깎이고 비켜 갔으면 조금 오른다
   const legs = atks.map((x) => {
     const m = x.march!
     const ed = r.edges[m.edge]!
     const ap = approachOf(m)
     let amb: 'none' | 'success' | 'caught' = 'none'
-    if (ap === 'cliff') amb = roll(r.seed, r.season, `cliff:${ed.id}:${x.id}`) < cliffChance(r, x) ? 'success' : 'caught'
-    else if (ap !== 'road') {
+    if (ap === 'cliff') {
+      const c = cliffChance(r, x)
+      amb = roll(r.seed, r.season, `cliff:${ed.id}:${x.id}`) < (guard === null ? c : Math.min(1, Math.max(0, guard.ap === 'cliff' ? c - R.cnWatchHit : c + R.cnWatchMiss))) ? 'success' : 'caught'
+    } else if (ap !== 'road') {
       const size = -ambushSizePenalty(headcount(forceOf(r, x))) + ambushTraitOf(heroOf(r, x), ed.kind)
-      const p = ambushChance(conceal(ed, node, season) + approachConceal(ap) + concealBonus(r, x.faction, ed.kind), heroOf(r, x)?.ryak ?? 1, bestRyak(r, defenders), size, w.lull, w.alert)
+      const p0 = ambushChance(conceal(ed, node, season) + approachConceal(ap) + concealBonus(r, x.faction, ed.kind), heroOf(r, x)?.ryak ?? 1, bestRyak(r, defenders), size, w.lull, w.alert)
+      const p = guard === null ? p0 : guardAdjust(p0, ap, guard.ap)
       amb = roll(r.seed, r.season, `ambush:${ed.id}:${x.id}`) < p ? 'success' : 'caught'
     }
     return { army: x, edge: ed, ambush: amb, ap }
@@ -1160,6 +1167,10 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const militia = sleeping ? null : militiaOf(r, node.id)
   const standing = militia !== null && militia.faction === defFaction ? [...defenders, militia] : defenders
   const militiaN = standing.length > defenders.length ? headcount(forceOf(r, militia!)) : 0
+  // 대로를 지켰는데 대로로 왔다 — 성문 앞에 진을 치고 기다렸다
+  if (guard?.ap === 'road' && approachOf(a.march!) === 'road') for (const d of defenders) d.morale = Math.min(R.moraleMax, d.morale + R.cnRoadHold)
+  // 길목의 기억 — 다음에 같은 나라를 같은 길로 치면 읽힌다
+  if (owner0 !== null && defFaction !== a.faction) (r.pathMemo ??= {})[pathKey(a.faction, defFaction)] = approachOf(a.march!)
   if (ambush === 'success') {
     // 이웃 고을이 기습당했다 — 같은 나라의 이웃이 경계를 올린다 (SYSTEMS §3)
     for (const nb of neighbors(r, node.id)) {
@@ -1312,6 +1323,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
     pincer: new Set(legs.map((x) => x.edge.id)).size >= 2, defender: defFaction, ambush, p, outcome, captured, killed,
     ...(captives.length > 1 ? { captives } : {}), ...(fallen.length > 1 ? { fallen } : {}),
     militia: militiaN, field: false, atkFaction: a.faction, rounds: res.rounds, key, approach: approachOf(lead), start: startOf(sa, sd, atkF, defF),
+    ...(guard !== null ? { guarded: guard.ap, gwhy: guard.why } : {}), ...(lead.adviser !== undefined ? { adviser: lead.adviser } : {}),
     via: edgeKind, endWhy: res.endWhy, clock: res.clock, ...(res.dusk.length > 0 ? { dusk: res.dusk } : {}),
     ...(fell ? { fell: true } : {}), ...(res.pending !== undefined ? { pending: res.pending } : {}), ...(res.led ? { led: true } : {}),
   })

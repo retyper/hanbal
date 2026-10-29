@@ -89,7 +89,8 @@ import { HERO_POOL } from '../../realm/data/heroes-pool.ts'
 import { castOf, hireVoicePath, voiceGate, voiceKind, voicePath, type VoiceLine } from './voice.ts'
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
-import { FEEL_CSS, alertFeel, ambushFeel, chanceFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
+import { FEEL_CSS, alertFeel, ambushRangeFeel, chanceFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
+import { adviseMarch, guardRange } from './council-lines.ts'
 
 export interface AppHost {
   /** 플레이 기록을 다 지운다(계정·설정은 남김) — 로그인했으면 서버 것부터. 못 지웠으면 false (형 10-24) */
@@ -630,7 +631,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let armyOrders: Order[] = [] // 나누기·모으기 — 화면은 이걸 먼저 해 본 판을 보인다
   let musters: Order[] = [] // 징병·해산
   let settles: Order[] = [] // 개척 — 나누기처럼 먼저 해 본 판에 든다 (그래야 남은 몫·곡식이 맞게 보인다)
-  const pick: Record<string, { edge: string; ambush: boolean; approach?: Approach; ration?: Ration; goal?: string; follow?: boolean } | undefined> = {}
+  const pick: Record<string, { edge: string; ambush: boolean; approach?: Approach; ration?: Ration; goal?: string; follow?: boolean; adviser?: string } | undefined> = {}
   /** 먼 갈 곳을 거둔 군대 — 이번 계절 「머문다」를 눌렀다 (형 10-25 · goal.ts) */
   let goalStop: string[] = []
   /** 이번 계절 큰 화면으로 본 땅의 바뀜 — `계절:고을` (확인을 눌렀다) */
@@ -722,14 +723,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 시트 안의 손 상태 */
   let openArmy = ''
   /** 출정을 꾸리는 군대의 판 (형: "다 같이 간다 말고 … 출정? 일부만 출정?") — 군사는 처음엔 전부, 줄이면 나머지가 남아 지킨다 */
-  let sortieD: { take: Partial<Record<UnitKind, number>>; hero: boolean; edge: string | null; approach: Approach; ration: Ration | undefined; follow?: boolean } = { take: {}, hero: true, edge: null, approach: 'road', ration: undefined }
+  let sortieD: { take: Partial<Record<UnitKind, number>>; hero: boolean; edge: string | null; approach: Approach; ration: Ration | undefined; follow?: boolean; adviser?: string } = { take: {}, hero: true, edge: null, approach: 'road', ration: undefined }
   /** 출정 판의 진군 방식·군량 단추가 가리키는 이름 (군대 id 대신) */
   const SORTIE = '~sortie'
   /** 출정 판을 연다 — 이미 정한 출정이 있으면 그대로 불러온다 */
   function openSortie(a: Army): void {
     const p = pick[a.id]
     openArmy = a.id
-    sortieD = { take: { ...a.mix }, hero: true, edge: p?.edge ?? null, approach: p?.approach ?? (p?.ambush === true ? 'night' : 'road'), ration: p?.ration, ...(p?.follow === true ? { follow: true } : {}) }
+    sortieD = { take: { ...a.mix }, hero: true, edge: p?.edge ?? null, approach: p?.approach ?? (p?.ambush === true ? 'night' : 'road'), ration: p?.ration, ...(p?.follow === true ? { follow: true } : {}), ...(p?.adviser !== undefined ? { adviser: p.adviser } : {}) }
   }
   const draftUnit: Record<string, UnitKind> = {}
   const draftN: Record<string, number> = {}
@@ -1132,7 +1133,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const out: Order[] = [...armyOrders, ...settles, ...heroOrders, ...musters]
     for (const [army, c] of Object.entries(pick)) {
       const a = p.armies[army]
-      if (c !== undefined && a !== undefined && a.march === null) out.push({ kind: 'march', army, edge: c.edge, ambush: c.ambush, ...(c.approach !== undefined ? { approach: c.approach } : {}), ...(c.ration !== undefined ? { ration: c.ration } : {}), ...(c.follow === true ? { follow: true } : {}) })
+      if (c !== undefined && a !== undefined && a.march === null) out.push({ kind: 'march', army, edge: c.edge, ambush: c.ambush, ...(c.approach !== undefined ? { approach: c.approach } : {}), ...(c.ration !== undefined ? { ration: c.ration } : {}), ...(c.follow === true ? { follow: true } : {}), ...(c.adviser !== undefined ? { adviser: c.adviser } : {}) })
       if (c?.goal !== undefined && a !== undefined && a.march === null) out.push({ kind: 'goal', army, node: c.goal })
     }
     for (const army of goalStop) out.push({ kind: 'goal', army, node: null })
@@ -1732,14 +1733,24 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const hints = matchupHints(r, me(), a.mix, m.to, m.edge.kind)
       h += hints.length > 0 ? `<details class="hintd"><summary>상성 ${hints.length}가지</summary><ul class="hints">${hints.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''
       const chosen: Approach = c?.approach ?? (c?.ambush === true ? 'night' : 'road')
+      const moves = approachMoves(r, me(), a, m)
+      // 군막 — 장수 둘이 저마다 길 하나를 권하고 적이 지킬 길목을 읽는다 (council-lines.ts · COUNCIL.md 1주 조각 ②)
+      const advs = adviseMarch(r, me(), a, m.to, moves)
       h += `<div class="how">`
-      for (const x of approachMoves(r, me(), a, m)) {
+      for (const x of moves) {
         const does = APPROACH_DOES[x.ap]
-        // 한 줄에 하나 — 왼쪽은 이름과 얻고 거는 것, 오른쪽은 판세 (좁은 폰에서도 읽히게)
-        h += `<button class="hw ${x.ap !== 'road' ? 'amb ' : ''}${chosen === x.ap ? 'on' : ''}" data-act="ap" data-army="${key}" data-v="${x.ap}" data-tip="${esc(`${does.gain}. ${does.risk}`)}"><span class="hwl"><b>${APPROACH_NAME[x.ap]}${x.seasons !== m.seasons ? ` <small>${x.seasons}계절</small>` : ''}</b>`
+        const adv = advs.find((v) => v.ap === x.ap)
+        // 한 줄에 하나 — 왼쪽은 이름과 얻고 거는 것, 오른쪽은 판세 (좁은 폰에서도 읽히게) · 권한 장수가 있으면 얼굴과 한 줄
+        h += `<button class="hw ${x.ap !== 'road' ? 'amb ' : ''}${chosen === x.ap ? 'on' : ''}${adv !== undefined ? ' adv' : ''}" data-act="ap" data-army="${key}" data-v="${x.ap}" data-adv="${adv?.hero.id ?? ''}" data-tip="${esc(`${does.gain}. ${does.risk}`)}">`
+        if (adv !== undefined) h += `<span class="hwa">${bust(adv.hero, 'hwf')}<span class="hws"><b>${esc(adv.hero.name)}</b> ${esc(adv.say)}<small>${esc(adv.readSay)}</small></span></span>`
+        h += `<span class="hwl"><b>${APPROACH_NAME[x.ap]}${x.seasons !== m.seasons ? ` <small>${x.seasons}계절</small>` : ''}</b>`
         h += `</span><span class="hwr">`
         if (x.ap === 'road') h += `<span class="ln">${feel(x.hit)}</span>`
-        else h += `<span class="ln">${x.ap === 'cliff' ? '오르기' : '몰래'} ${ambushFeel(x.p)}</span><span class="ln">되면 ${feel(x.hit)} · 들키면 ${feel(x.miss)}</span>`
+        else {
+          // 적이 이 길목을 지키면 깎이고 비켜 가면 오른다 — 남의 속이 섞여 범위 (ODDS)
+          const [lo, hi] = guardRange(x.p, x.ap)
+          h += `<span class="ln">${x.ap === 'cliff' ? '오르기' : '몰래'} ${ambushRangeFeel(lo, hi)}</span><span class="ln">되면 ${feel(x.hit)} · 들키면 ${feel(x.miss)}</span>`
+        }
         h += `</span></button>`
       }
       h += `</div>`
@@ -5970,11 +5981,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'ap': {
         // 진군 방식 — 대로가 아니면 숨어 간다
-        if (d['army'] === SORTIE) { sortieD.approach = d['v'] as Approach; break }
+        // 군막 — 그 길을 권한 장수를 함께 적는다 (싸움이 드러날 때 「○○의 말대로」)
+        const adv = d['adv'] !== undefined && d['adv'] !== '' ? d['adv'] : undefined
+        if (d['army'] === SORTIE) { sortieD.approach = d['v'] as Approach; if (adv !== undefined) sortieD.adviser = adv; else delete sortieD.adviser; break }
         const p = pick[d['army']!]
         if (p !== undefined) {
           p.approach = d['v'] as Approach
           p.ambush = p.approach !== 'road'
+          if (adv !== undefined) p.adviser = adv
+          else delete p.adviser
         }
         break
       }
@@ -6025,7 +6040,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         // 전부면 그 군대가 떠나고, 일부면 떼어 낸 무리가 떠난다 — 나머지(와 기본은 장수)는 남아 지킨다
         const a = r!.armies[d['army']!]
         if (a === undefined) break
-        const go = sortieD.edge !== null ? { edge: sortieD.edge, ambush: sortieD.approach !== 'road', approach: sortieD.approach, ...(sortieD.ration !== undefined ? { ration: sortieD.ration } : {}), ...(sortieD.follow === true ? { follow: true } : {}) } : null
+        const go = sortieD.edge !== null ? { edge: sortieD.edge, ambush: sortieD.approach !== 'road', approach: sortieD.approach, ...(sortieD.ration !== undefined ? { ration: sortieD.ration } : {}), ...(sortieD.follow === true ? { follow: true } : {}), ...(sortieD.adviser !== undefined ? { adviser: sortieD.adviser } : {}) } : null
         if (go !== null) marchSfx()
         if (sortieAll(a)) {
           if (go === null) break

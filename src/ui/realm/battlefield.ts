@@ -18,6 +18,7 @@ import { rehearse, type BattleLine } from '../../realm/warroom.ts'
 import { seasonOf } from '../../realm/season.ts'
 import { heroArt } from '../../realm/heroes.ts'
 import type { Act, Approach, Art, Clock, Cmd, Dusk, DuskAsk, DuskLog, Grp, Hero, Look, Order, Pending, Realm, RoundLog, RoundOrder, Tactic } from '../../realm/types.ts'
+import type { GuardWhy } from '../../realm/council.ts'
 import { P } from '../../tune/params.ts'
 import { snd } from './sound.ts'
 import { artVoicePath, autoVoicePath, voiceGate, voicePath } from './voice.ts'
@@ -696,6 +697,32 @@ const AP_EFFECT: Readonly<Record<Approach, readonly [string, string]>> = {
   ridge: ['뒤로 돌아 나왔다 — 성이 덜 막아 주고 지키는 쪽 사기가 꺾인다', '산길에서 걸렸다'],
   cliff: ['적이 뒤에서 나타났다 — 지키는 쪽 사기가 꺾인다', '떨어져 많이 잃었다'],
 }
+/** 길목이 드러나는 한 줄 — 「○○의 말대로」 (COUNCIL.md 1주 조각 ③ · 위원회: 남이 캡처하는 건 회의가 아니라 수가 드러나는 순간) */
+const GUARD_AT: Readonly<Record<Approach, string>> = { road: '대로를', night: '밤길을', ford: '여울목을', ridge: '산기슭을', cliff: '절벽 위를' }
+const CAME_BY: Readonly<Record<Approach, string>> = { road: '대로로', night: '밤길로', ford: '여울로', ridge: '산기슭으로', cliff: '절벽으로' }
+const GUARD_WHY: Readonly<Record<GuardWhy, string>> = {
+  repeat: '지난번에도 이 길로 왔던 것을 기억하고 있었다.',
+  trait: '적장의 버릇대로다.',
+  mind: '저 나라는 늘 그렇게 지킨다.',
+  land: '누구나 먼저 의심할 길이었다.',
+}
+function guardChip(r: Realm, l: BattleLine, weAtk: boolean): TerrChip | null {
+  const g = l.guarded
+  if (g === undefined || l.field === true) return null
+  const ap = l.approach ?? 'road'
+  const read = ap === g
+  const adv = l.adviser !== undefined ? r.heroes[l.adviser]?.name : undefined
+  const [icon] = AP_CHIP[g]
+  if (weAtk) {
+    if (!read) return { k: 'guard', icon, name: '길목을 비켜 갔다', line: `적은 ${GUARD_AT[g]} 지키고 있었다 — 우리는 ${CAME_BY[ap]} 왔다!${adv !== undefined ? ` 「${adv}」의 말대로였다.` : ''}`, who: 'us' }
+    const lead = ap === 'road' ? '적이 성문 앞에 진을 치고 기다리고 있었다.' : `적이 ${GUARD_AT[g]} 지키고 기다리고 있었다.`
+    return { k: 'guard', icon, name: '길목이 읽혔다', line: `${lead} ${GUARD_WHY[l.gwhy ?? 'land']}${adv !== undefined ? ` 「${adv}」의 읽음이 빗나갔다.` : ''}`, who: 'foe' }
+  }
+  return read
+    ? { k: 'guard', icon, name: '길목을 맞혔다', line: `우리가 지킨 길목으로 적이 왔다 — 기다리던 대로 맞는다!`, who: 'us' }
+    : { k: 'guard', icon, name: '길목이 빗나갔다', line: `우리는 ${GUARD_AT[g]} 지켰는데 적은 ${CAME_BY[ap]} 왔다.`, who: 'foe' }
+}
+
 export function terrChips(r: Realm, l: BattleLine, me: string, foe: string): TerrChip[] {
   const weAtk = l.atkFaction === me
   const def: 'us' | 'foe' = weAtk ? 'foe' : 'us'
@@ -732,6 +759,8 @@ export function terrChips(r: Realm, l: BattleLine, me: string, foe: string): Ter
     const eff = AP_EFFECT[ap][ok ? 0 : 1]
     const mil = l.militia > 0 ? (weAtk ? ` 마을 장정 ${l.militia}명이 막아선다.` : ` 마을 장정 ${l.militia}명이 함께 선다.`) : ''
     out.push({ k: 'ap', icon, name: caught ? `${name} · 들켰다` : name, line: `${introLine(l, weAtk, foe)} ${eff}.${mil}`, who: caught ? def : ok ? atk : '' })
+    const gc = guardChip(r, l, weAtk)
+    if (gc !== null) out.push(gc)
   }
   return out
 }

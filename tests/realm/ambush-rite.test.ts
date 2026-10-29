@@ -68,7 +68,16 @@ describe('기습이 먹히면', () => {
   })
 
   it('성·지형을 안 받는다 — 울타리·높은 터가 있어도 없어도 같은 승산', () => {
-    const s = seedWhere('success', guarded)
+    // 높은 터는 지킬 길목(산기슭·절벽)이 늘어 길목 굴림이 달라진다 (council.ts) — 둘 다 먹힌 시드를 찾는다
+    let s = 0
+    for (let t = 1; t < 500 && s === 0; t++) {
+      const w = byeonhanMini(t)
+      guarded(w)
+      const o = byeonhanMini(t)
+      o.armies['a-goja']!.at = 'goja-vil'
+      if (hit(w, true).ambush === 'success' && hit(o, true).ambush === 'success') s = t
+    }
+    assert.ok(s > 0)
     const walled = byeonhanMini(s)
     guarded(walled)
     const open = byeonhanMini(s)
