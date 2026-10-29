@@ -44,8 +44,147 @@ const TAKES: Readonly<Record<VoiceLine, number>> = { tap: 3, obey: 3 }
 /** 분부 받듦을 녹음해 둔 결 — 없는 결은 짧은 대답(tap)으로 */
 const OBEY_KINDS: ReadonlySet<VoiceKind> = new Set<VoiceKind>(['m-young', 'm-gruff', 'm-sage', 'm-elder', 'm-charm', 'w-bright', 'w-cool', 'w-sly', 'w-shaman'])
 
-/** 손으로 박은 목소리 — 그림과 이야기가 뚜렷한 장수 (없으면 voiceKind 가 고른다) */
-const VOICE_OF: Readonly<Record<string, VoiceKind>> = {}
+/**
+ * 손으로 박은 목소리 — 그림과 이야기가 뚜렷한 장수 (없으면 voiceKind 가 고른다).
+ * 10-29 장수 설정 초안(docs/realm/cast)대로 — 초안이 「바꿈」이라 한 장수, 그리고 「맞음」이어도 군주 자리 · 얼굴 표가 다른 결을 고르던 장수.
+ * 중년 무장 · 늙은 여인 결은 아직 없어 초안이 고른 가까운 결(m-gruff · w-cool)로 둔다. 같은 얼굴의 다른 판 장수는 같은 결
+ */
+const VOICE_OF: Readonly<Record<string, VoiceKind>> = {
+  'goja-1': 'm-gruff', // 살해 바다쇠
+  'dokro-2': 'm-gruff', // 견지 쇠돌
+  'mh-ogan': 'm-gruff', // 오간
+  'tut-ogan': 'm-gruff', // 오간
+  'jm-oi': 'm-gruff', // 오이
+  'samul-ruler': 'm-young', // 읍차 물결 (그림대로 · 군주 결 대신)
+  'ungcheon-ruler': 'm-gruff', // 읍차 곰내
+  'sangdang-ruler': 'm-gruff', // 읍차 쇠달 (그림대로 · 군주 결 대신)
+  'balla-ruler': 'm-sage', // 신지 큰뫼 (그림대로 · 군주 결 대신)
+  'gampyeong-ruler': 'm-gruff', // 읍차 갯벌 (그림대로 · 군주 결 대신)
+  'maek-ruler': 'm-young', // 거수 맥돌 (그림대로 · 군주 결 대신)
+  'gwanna-ruler': 'm-gruff', // 패자 쇠뫼 (그림대로 · 군주 결 대신)
+  'uga-ruler': 'm-gruff', // 우가 소두
+  'bukokjeo-ruler': 'm-gruff', // 장수 두만 (그림대로 · 군주 결 대신)
+  'jm-okjeo-ruler': 'm-gruff', // 군장 두만 (그림대로 · 군주 결 대신)
+  'dabeol-ruler': 'm-elder', // 험측 달구
+  'eumjeup-ruler': 'm-elder', // 읍차 즙
+  'chopal-ruler': 'm-young', // 읍차 팔매
+  'anya-ruler': 'm-sage', // 신지 아단 (그림대로 · 군주 결 대신)
+  'goja-ruler': 'm-charm', // 험측 바우
+  'dokro-ruler': 'm-charm', // 읍차 가람
+  'maga-1': 'm-gruff', // 견사 말굽
+  'tamna-1': 'm-gruff', // 살해 오름
+  'bihwa-1': 'm-sage', // 살해 늪
+  'usan-ruler': 'm-gruff', // 우해왕 물너울 (그림대로 · 군주 결 대신)
+  'yangmaek-ruler': 'm-gruff', // 군장 맥손
+  'wander-14': 'm-gruff', // 읍차 한결
+  'golbeol-1': 'm-elder', // 살해 골개
+  'apdok-1': 'm-gruff', // 살해 압
+  'chopal-1': 'm-young', // 살해 여울
+  'michuhol-1': 'm-gruff', // 살해 소금꾼
+  'goguryeo-ruler': 'm-gruff', // 대왕 다물 (그림대로 · 군주 결 대신)
+  'buyeo-ruler': 'm-sage', // 왕 금하 (그림대로 · 군주 결 대신)
+  'geonma-1': 'm-gruff', // 살해 말발굽
+  'gosaburi-1': 'm-young', // 살해 부리
+  'baekje-ruler': 'm-sage', // 신지 온누리 (그림대로 · 군주 결 대신)
+  'mujin-1': 'm-sage', // 살해 빛고을
+  'guya-ruler': 'm-gruff', // 진지렴 쇠보 (그림대로 · 군주 결 대신)
+  'siljik-1': 'm-gruff', // 살해 파도
+  'sr-hyeokgeose': 'm-young', // 혁거세
+  'sr-hogong': 'm-elder', // 호공
+  'sr-alpyeong': 'm-sage', // 촌장 알평 (그림대로 · 군주 결 대신)
+  'sr-jibaekho': 'm-gruff', // 촌장 지백호
+  'sr-guryema': 'm-young', // 촌장 구례마 (그림대로 · 군주 결 대신)
+  'sr-jita': 'm-charm', // 촌장 지타
+  'sr-hojin': 'm-gruff', // 촌장 호진
+  'wander-25': 'm-young', // 견지 서늘
+  'mh-mahan-3': 'm-gruff', // 읍차 금바위
+  'sr-wae-ruler': 'm-gruff', // 왜인 우두머리 (그림대로 · 군주 결 대신)
+  'jm-songyang': 'm-sage', // 송양 (그림대로 · 군주 결 대신)
+  'jomun-1': 'm-sage', // 살해 솔개
+  'mh-soseono': 'w-cool', // 소서노
+  'wander-09': 'w-cool', // 신지 별하
+  'wander-06': 'w-cool', // 번예 새벽
+  'wander-20': 'w-bright', // 번예 이슬
+  'dokro-1': 'w-cool', // 살해 너울
+  'wander-04': 'w-cool', // 험측 소리
+  'wander-13': 'w-sly', // 살해 노을
+  'goja-2': 'w-bright', // 번예 물새
+  'wander-01': 'w-sly', // 번예 다솜
+  'wander-10': 'w-bright', // 번예 연이
+  'wander-08': 'w-cool', // 살해 물결
+  'usisan-ruler': 'w-cool', // 번예 소금
+  'apdok-ruler': 'w-bright', // 읍차 누리 (그림대로 · 군주 결 대신)
+  'bihwa-ruler': 'w-shaman', // 번예 빛나
+  'michuhol-ruler': 'w-bright', // 읍차 비라
+  'guya-3': 'w-cool', // 견지 쇠비
+  'dabeol-2': 'w-sly', // 번예 달빛
+  'chopal-2': 'w-cool', // 살해 들메
+  'jomun-2': 'w-bright', // 번예 오디
+  'baekje-2': 'w-cool', // 견지 매나
+  'gwanna-2': 'w-cool', // 조의 쇠눈
+  'geonma-ruler': 'w-bright', // 신지 마루 (그림대로 · 군주 결 대신)
+  'gosaburi-ruler': 'w-cool', // 읍차 바람
+  'mujin-ruler': 'w-cool', // 읍차 무등
+  'siljik-ruler': 'w-sly', // 읍차 물가 (그림대로 · 군주 결 대신)
+  'haseulla-ruler': 'w-cool', // 삼로 단궁
+  'biryuna-ruler': 'w-bright', // 패자 송비
+  'hwanna-ruler': 'w-sly', // 패자 가비 (그림대로 · 군주 결 대신)
+  'maga-ruler': 'w-bright', // 마가 달리 (그림대로 · 군주 결 대신)
+  'guga-ruler': 'w-bright', // 구가 누리
+  'dongokjeo-ruler': 'w-sly', // 장수 소금 (그림대로 · 군주 결 대신)
+  'bullae-ruler': 'w-cool', // 삼로 박달
+  'jomun-ruler': 'w-cool', // 살해 이랑
+  'golbeol-ruler': 'w-sly', // 살해 범
+  'iseo-ruler': 'w-bright', // 읍차 시내 (그림대로 · 군주 결 대신)
+  'byeokjin-ruler': 'w-bright', // 읍차 별 (그림대로 · 군주 결 대신)
+  'us-ruler': 'w-bright', // 읍차 해솔
+  'miri-ruler': 'w-bright', // 신지 달래 (그림대로 · 군주 결 대신)
+  'buyeo-1': 'w-cool', // 대사 해달
+  'jm-haedal': 'w-cool', // 해달
+  'maek-1': 'w-sly', // 살해 범발
+  'jeoga-1': 'w-cool', // 견사 엄니
+  'bukokjeo-1': 'w-cool', // 장수 물범
+  'jm-okjeo-1': 'w-cool', // 물범
+  'yeonna-1': 'w-cool', // 선인 너울
+  'eumjeup-1': 'w-cool', // 살해 벌
+  'balla-1': 'w-shaman', // 살해 독무덤
+  'daegaya-1': 'w-cool', // 견지 쇠뫼
+  'gampyeong-1': 'w-cool', // 살해 뱃사공
+  'wansan-1': 'w-cool', // 살해 완
+  'yangmaek-1': 'w-cool', // 장수 솔매
+  'wander-22': 'w-cool', // 신지 너울
+  'sr-goya-1': 'w-sly', // 명활 달래
+  'mh-mahan-2': 'w-cool', // 원산 지기 달래
+  'jm-haengin-1': 'w-cool', // 산지기 너울
+}
+
+/** 등용 대사를 새로 쓰고 아직 녹음하지 않은 장수 — hire/<id>.ogg 가 없다. 녹음하면 여기서 지운다 (tests/realm/hire-lines.test.ts) */
+export const HIRE_UNRECORDED: ReadonlySet<string> = new Set([
+  'mh-ogan',
+  'mh-onjo',
+  'mh-eureum',
+  'sr-hyeokgeose',
+  'sr-hogong',
+  'mh-jinwang',
+  'sr-sobeol',
+  'sr-alpyeong',
+  'sr-jibaekho',
+  'sr-guryema',
+  'sr-jita',
+  'sr-hojin',
+  'mh-mahan-1',
+  'wander-25',
+  'wander-26',
+  'mh-mahan-3',
+  'sr-wae-ruler',
+  'mh-soseono',
+  'sr-aryeong',
+  'sr-danbi',
+  'sr-yangsan-1',
+  'sr-goya-1',
+  'sr-jinji-1',
+  'mh-mahan-2',
+])
 
 /**
  * 얼굴이 고르는 목소리 — 명치판 그림을 보고 박았다. 특성·능력치보다 먼저 (형 10-26: "험측 하늘 이미지는 나이든 무속인인데 젊은 장수 목소리임").
@@ -142,7 +281,7 @@ export function autoVoicePath(h: Hero, want: 'go' | 'win' | 'lose', ruler = fals
 
 /** 등용 첫마디 — 그 장수가 녹음한 대사 · 대사가 없는 장수(판에서 난 아이 등)는 그 결의 짧은 대답으로 */
 export function hireVoicePath(h: Hero, ruler = false): string {
-  return HIRE_LINE[h.id] !== undefined ? `realm/voice/hire/${h.id}.ogg` : voicePath(h, 'tap', ruler)
+  return HIRE_LINE[h.id] !== undefined && !HIRE_UNRECORDED.has(h.id) ? `realm/voice/hire/${h.id}.ogg` : voicePath(h, 'tap', ruler)
 }
 
 /** 이번에 소리를 내도 되나 — 너무 잦으면 거른다 (now 는 화면 쪽 시계) */
