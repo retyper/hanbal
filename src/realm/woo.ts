@@ -160,8 +160,8 @@ export function shownRange(r: Realm, by: string | null, p: number): { lo: number
   const shift = (((pc * 7 + ryak * 13) % 11) / 10 - 0.5) * w
   let lo = Math.round((p - w + shift) * 20) * 5
   let hi = Math.round((p + w + shift) * 20) * 5
-  lo = Math.max(0, Math.min(lo, pc))
-  hi = Math.min(100, Math.max(hi, pc))
+  lo = Math.max(Math.round(P.realm.wooChanceMin * 100), Math.min(lo, pc))
+  hi = Math.min(Math.round(P.realm.wooChanceMax * 100), Math.max(hi, pc))
   return { lo, hi, dim: ryak <= 3 }
 }
 
@@ -187,9 +187,9 @@ export const wallOf = (r: Realm, hero: string): number => r.heroes[hero]?.persua
 
 /**
  * 담판을 굴린다 — talk 는 마디마다 고른 거리(셋까지). 셋 안에서 멈췄으면 남은 마디는 맡긴다(지금 엔진의 흔들림 한 번을 남은 몫만큼).
- * 화면의 미리 보기와 계절 처음의 판이 같은 이 함수를 부른다.
+ * 화면의 미리 보기와 계절 처음의 판이 같은 이 함수를 부른다. rest false — 아직 담판 중(화면)이라 남은 마디를 맡기지 않은 채로 본다.
  */
-export function talkRun(r: Realm, hero: string, by: string | null, talk: readonly WooApproach[]): WooTalk {
+export function talkRun(r: Realm, hero: string, by: string | null, talk: readonly WooApproach[], rest = true): WooTalk {
   const R = P.realm
   const h = r.heroes[hero]
   const from = wallOf(r, hero)
@@ -225,14 +225,14 @@ export function talkRun(r: Realm, hero: string, by: string | null, talk: readonl
     mom = hit ? 1 : -1
   }
   // 셋을 다 하지 않았으면 남은 마디는 맡긴다 — 지금 엔진의 흔들림을 남은 몫만큼
-  if (end === 'done' && !open0 && beats.length < WOO_BEATS) {
+  if (rest && end === 'done' && !open0 && beats.length < WOO_BEATS) {
     const sway = 1 + (roll(r.seed, r.season, `woo-drop:${hero}`) * 2 - 1) * R.persuadeSway
     wall = Math.max(0, wall - drop * sway * (WOO_BEATS - beats.length) / WOO_BEATS)
     if (wall <= 0) end = 'broke'
   }
   // 손을 내민다 — 벽이 무너진 마디에서, 또는 무너진 뒤의 담판을 끝까지 했을 때
   let hand: WooTalk['hand'] = null
-  if (end === 'broke' || (open0 && end === 'done' && beats.length > 0)) {
+  if (end === 'broke' || (open0 && end === 'done' && beats.length > 0 && (rest || beats.length >= WOO_BEATS))) {
     const last = beats[beats.length - 1]
     const p = Math.min(R.recruitMax, Math.max(R.recruitMin, recruitChance(r, hero, by) + bonus + (last?.react === 'big' ? R.wooHandWeak : 0)))
     const u = roll(r.seed, r.season, `woo-hand:${hero}`)

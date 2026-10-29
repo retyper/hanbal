@@ -43,7 +43,7 @@ import { HIRE_BY_TRAIT, HIRE_LINE, HIRE_PLAIN } from '../../realm/data/hire-line
 import { DESTS, DEST_IDS, EXP_SEASONS, destReachable, expAmount, expBlock, expOdds, onExpedition } from '../../realm/expedition.ts'
 import { foundable, joinable, partiesOf, partyCost, partyMoves, partySize } from '../../realm/parties.ts'
 import { canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, idleHeroOrders, together, inheritOf, isRuler, postHero, rulerOf, wanderersFor, wooable } from '../../realm/heroes.ts'
-import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic } from '../../realm/types.ts'
+import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic, WooApproach } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { LEGACY_CSS, bringHtml, clearBring, toggleBring } from './legacy.ts'
@@ -56,7 +56,9 @@ import { RELIC } from '../../realm/data/relics.ts'
 import { LEVEL_LINE, TIER_MAX, levelName } from '../../realm/tier.ts'
 import { FIT_CSS, MQ_CSS, fitLabels, marquee } from './fit.ts'
 import { annalOf } from '../../realm/data/annals.ts'
-import { WOO_CSS, outlookHtml, miniHtml, pickBoxHtml, progressHtml, wallHtml, whoHtml, wooBest, type WooKit } from './woo-view.ts'
+import { TALK_CSS, WOO_CSS, outlookHtml, miniHtml, pickBoxHtml, progressHtml, talkBoxHtml, talkOver, wallHtml, whoHtml, wooBest, type TalkLines, type WooKit } from './woo-view.ts'
+import { wooLordLine, wooNotYetLine, wooOpenLine, wooPitchLine, wooReactLine, wooWonLine } from './woo-lines.ts'
+import { talkAuto, talkRun, talkWhy } from '../../realm/woo.ts'
 import { GROW_CSS, HERO_CSS, TITLE_MEAN, artChip, bondChip, growthHtml, heroRadar, nameHtml, roleLine, splitTitle, traitChips } from './heroview.ts'
 import { APP_CSS, CLOUD_CSS, SEASONP_CSS, UI_CSS } from './appstyle.ts'
 import { GOAL_CSS, goalBandHtml, goalRowsHtml } from './goalband.ts'
@@ -578,7 +580,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
+  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS + TALK_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
   installTips(root)
@@ -677,6 +679,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   const persuadeBy: Record<string, string> = {}
   /** 회유할 사람 고르기 상자를 띄운 포로 (woo-view.pickBoxHtml) */
   let wooPick: string | null = null
+  /** 열어 둔 옥중 담판 (docs/realm/WOO.md) — 고른 거리 · 손을 내밀었나. 한 마디들은 그 포로의 회유 명령(talk)에 실린다 */
+  let wooTalk: { id: string; sel: WooApproach | null; hand: boolean } | null = null
+  /** 이번 계절 담판을 마친(맡기거나 확인한) 포로 — 다시 저절로 뜨지 않는다 (초안과 함께 남는다) */
+  const wooDone: Record<string, boolean> = {}
+  /** 담판이 저절로 뜬 계절 — 한 계절에 하나만 (COUNCIL 결정 10) */
+  let wooAutoAt = -1
   /** 고른 세기(난이도) — 판마다. 캠페인의 장은 판 고르기 화면에서 고른다 (없으면 보통 · 군장) */
   const tierPick: Partial<Record<RegionId, number>> = {}
   /** 캠페인의 장에 쓸 세기 — 판 고르기 화면 맨 위 */
@@ -896,6 +904,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     plots = []
     for (const k of Object.keys(hands)) delete hands[k]
     heroOrders = []
+    wooTalk = null
+    for (const k of Object.keys(wooDone)) delete wooDone[k]
     plotOpen = null
     openArmy = ''
     note = ''
@@ -3482,6 +3492,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 한 번 맺은 짝은 계속 — 지금 판·계절 처음 판 어느 쪽이든 짝이 있으면 혼인 칸을 안 띄운다
     const pending = heroOrders.filter((o) => (o.kind === 'assign' || o.kind === 'lead' || o.kind === 'persuade' || o.kind === 'hire') && o.hero === id)
     for (const o of pending) {
+      // 한 번 연 담판은 그 계절에 무르지 못한다 (WOO §2-4 · 무를 수 있으면 굴림을 엿보고 다시 고른다)
+      if (o.kind === 'persuade' && o.talk !== undefined) {
+        h += `<div class="banner good">이번 계절: 옥중 담판<button class="btn ghost sm" data-act="dp-talk" data-id="${id}">${wooDone[id] === true ? '담판 다시 보기' : '담판을 잇는다'}</button></div>`
+        continue
+      }
       const what = o.kind === 'assign' ? (o.node === null ? '맡은 일을 그만둔다' : `${josa(r.nodes[o.node]?.name ?? '', '을', '를')} 맡는다`) : o.kind === 'lead' ? '군대를 이끈다' : o.kind === 'hire' ? '우리 장수로 들였다' : '회유한다'
       h += `<div class="banner good">이번 계절: ${esc(what)}<button class="btn ghost sm" data-act="unhero" data-id="${id}">취소</button></div>`
     }
@@ -3506,7 +3521,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += outlookHtml(kit, realm!, id, by)
       h += `<button class="btn pri" data-act="persuade" data-id="${id}" data-by="${by ?? ''}">회유한다 ${costHtml({ grain: P.realm.persuadeGrain }, '계절마다')}</button>`
     }
-    if (x.status === 'captive' && x.captor === me() && realm!.heroes[id]?.persuade !== undefined) h += progressHtml(wooKit(r), realm!, id)
+    if (x.status === 'captive' && x.captor === me() && realm!.heroes[id]?.persuade !== undefined) h += progressHtml(wooKit(r), realm!, id, talkBtn(r, id))
     return h + `</div></div>`
   }
 
@@ -3522,7 +3537,69 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   /** 회유 화면이 쓰는 손 — 그림 · 이름 · 이번 계절 묶인 장수 */
   function wooKit(r: Realm): WooKit {
-    return { esc, bust, name: nameHtml, icon, cost: costHtml, grainIcon: GOOD_ICON.grain, jobOf: (y) => heroJob(r, y)?.[1] ?? null }
+    return { art: ART, esc, bust, name: nameHtml, icon, cost: costHtml, grainIcon: GOOD_ICON.grain, jobOf: (y) => heroJob(r, y)?.[1] ?? null }
+  }
+  const WOO_LINES: TalkLines = { open: wooOpenLine, lord: wooLordLine, pitch: wooPitchLine, react: wooReactLine, notYet: wooNotYetLine, won: wooWonLine, hire: (x) => HIRE_LINE[x.id] ?? HIRE_BY_TRAIT[x.traits?.[0] ?? ''] ?? HIRE_PLAIN }
+  /** 이 포로의 이번 계절 회유 명령 */
+  const wooOrder = (id: string): Extract<Order, { kind: 'persuade' }> | undefined =>
+    heroOrders.find((o): o is Extract<Order, { kind: 'persuade' }> => o.kind === 'persuade' && o.hero === id)
+  /** 회유 중인 포로의 「마주 앉기」 — 열 수 있으면 단추, 아니면 언제 되는지 */
+  function talkBtn(r: Realm, id: string): string {
+    const pz = realm!.heroes[id]?.persuade
+    if (pz === undefined || pz.resist === undefined || wooOrder(id) !== undefined) return ''
+    const why = talkWhy(realm!, id)
+    if (why === null) {
+      const last = pz.talkAt ?? pz.since ?? realm!.season
+      return `<p class="mute">${Math.max(1, P.realm.wooTalkGap - (realm!.season - last))}계절 뒤 다시 마주 앉을 수 있다</p>`
+    }
+    const by = pz.by !== null ? r.heroes[pz.by] : undefined
+    if (by === undefined || by.status !== 'free' || by.faction !== me() || heroJob(r, by.id) !== null) return `<p class="mute">달래던 장수가 이번 계절 다른 일을 맡아 마주 앉을 수 없다</p>`
+    return `<button class="btn pri" data-act="dp-talk" data-id="${id}">마주 앉기${why !== 'free' ? ' <i class="recst">지금</i>' : ''}</button>`
+  }
+  /** 담판을 연다 — 이미 회유 중이면 이번 계절 명령을 새로 얹는다 (달래던 이가 마주 앉는다) */
+  function openTalk(id: string): boolean {
+    if (realm === null) return false
+    if (wooOrder(id) === undefined) {
+      const pz = realm.heroes[id]?.persuade
+      if (pz === undefined || pz.by === null || talkWhy(realm, id) === null) return false
+      heroOrders = [...heroOrders, { kind: 'persuade', hero: id, by: pz.by, talk: [] }]
+    } else if (wooOrder(id)!.talk === undefined) heroOrders = heroOrders.map((o) => (o.kind === 'persuade' && o.hero === id ? { ...o, talk: [] } : o))
+    wooTalk = { id, sel: null, hand: false }
+    return true
+  }
+  /** 담판이 저절로 뜰 때 — 벽이 무너진 다음 계절 · 걸 거리가 새로 생겼을 때 (WOO §3). 한 계절에 하나 */
+  function wooAuto(): void {
+    if (realm === null || front !== null || showReport || stratOpen !== null || prologue !== null || realm.outcome || wooAutoAt === realm.season) return
+    if ((realm.region ?? '') === 'tutorial' || root.classList.contains('modal-open')) return
+    const r = plan()
+    const id = Object.keys(realm.heroes).sort().find((k) => {
+      const x = realm!.heroes[k]!
+      const by = x.persuade?.by != null ? r.heroes[x.persuade.by] : undefined
+      return x.status === 'captive' && x.captor === me() && wooDone[k] !== true && wooOrder(k) === undefined && talkAuto(realm!, k)
+        && by !== undefined && by.status === 'free' && by.faction === me() && heroJob(r, by.id) === null
+    })
+    if (id === undefined) return
+    wooAutoAt = realm.season
+    if (openTalk(id)) window.setTimeout(paint, 0)
+  }
+  /** 담판 소리 — 마디의 반응대로 · 손을 내민 결과 (WWE: 크게, 소리와 움직임을 잇달아) */
+  function talkSound(id: string, handNow: boolean): void {
+    const o = wooOrder(id)
+    const x = realm?.heroes[id]
+    if (o === undefined || o.by === null || x === undefined || realm === null) return
+    const t = talkRun(realm, id, o.by, o.talk ?? [], false)
+    if (handNow) {
+      if (t.hand?.ok !== true) { ding(snd('tap_cancel'), 0.5); return }
+      ding(snd('cmd_gate'), 0.6) // 벽이 쩍 갈라진다
+      window.setTimeout(() => ding(snd('capture'), 0.5), 450) // 사슬이 끊어진다
+      window.setTimeout(() => { if (realm !== null && voiceGate(performance.now())) ding(hireVoicePath(x, isRuler(realm, x.id)), P.realm.voiceVol) }, 1500)
+      window.setTimeout(() => ding(snd('hire_go'), 0.5), 2100)
+      return
+    }
+    const last = t.beats[t.beats.length - 1]
+    if (last === undefined) return
+    if (t.end === 'broke') ding(snd('cmd_gate'), 0.6)
+    else ding(snd(last.react === 'big' ? 'battle_crit' : last.react === 'sway' ? 'tap_drum' : last.react === 'rage' ? 'war_drum' : 'tap_cancel'), 0.55)
   }
   /** 이 포로를 회유할 우리 장수 — 고른 이가 한가하면 그 사람, 아니면 추천 */
   function wooByOf(r: Realm, id: string): Hero | null {
@@ -3533,7 +3610,23 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
   /** 회유할 사람 고르기 상자 — 떴다 사라진다 (굴리지 않는다 · 한 줄에 셋) */
   function wooPaint(): void {
+    if (wooTalk === null && wooPick === null) wooAuto()
     let ov = root.querySelector<HTMLElement>('.dpov')
+    // 옥중 담판 — 한 장 · 다시 그릴 때 같은 글이면 그대로 둔다 (조각 · 도장 움직임이 다시 돌지 않게)
+    const o = wooTalk !== null ? wooOrder(wooTalk.id) : undefined
+    const tby = o?.by != null && realm !== null ? realm.heroes[o.by] : undefined
+    if (wooTalk !== null && realm !== null && front === null && o !== undefined && tby !== undefined) {
+      if (ov === null) {
+        root.insertAdjacentHTML('beforeend', `<div class="dpov talk"></div>`)
+        ov = root.querySelector<HTMLElement>('.dpov')!
+      }
+      ov.className = 'dpov talk'
+      const html = talkBoxHtml(wooKit(plan()), WOO_LINES, realm, { id: wooTalk.id, by: tby, talk: o.talk ?? [], sel: wooTalk.sel, hand: wooTalk.hand, grain: left().grain })
+      if (ov.dataset['html'] !== html) { ov.innerHTML = html; ov.dataset['html'] = html }
+      return
+    }
+    if (wooTalk !== null) wooTalk = null
+    if (ov !== null && ov.classList.contains('talk')) { ov.remove(); ov = null }
     const r = realm !== null && front === null && wooPick !== null ? plan() : null
     const x = r !== null && wooPick !== null ? r.heroes[wooPick] : undefined
     if (r === null || x === undefined || x.status !== 'captive' || x.captor !== me()) { ov?.remove(); wooPick = null; return }
@@ -4836,7 +4929,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function saveDraft(): void {
     if (realm === null) return
     // hireShown — 등용 장면을 이미 띄운 떠돌이. 초안과 함께 남겨야 앱이 다시 열려도(새 빌드 · 껐다 켬) 계절 끝에 또 뜨지 않는다 (형 10-25: "마파람 등용 한번 떴었는데 왜 또 뜨지")
-    const d = { seed: realm.seed, season: realm.season, player: realm.player, armyOrders, musters, settles, pick, goalStop, landSeen: [...landSeen], scout, rite, answers, guards, envoys, plots, heroOrders, persuadeBy, hands, hireShown: [...hireShown], autoIdle: realm.autoIdle, manual: realm.manual?.[me()] }
+    const d = { seed: realm.seed, season: realm.season, player: realm.player, armyOrders, musters, settles, pick, goalStop, landSeen: [...landSeen], scout, rite, answers, guards, envoys, plots, heroOrders, persuadeBy, wooDone, hands, hireShown: [...hireShown], autoIdle: realm.autoIdle, manual: realm.manual?.[me()] }
     try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)) } catch { /* 저장 못 하는 곳 */ }
   }
 
@@ -4864,6 +4957,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 옛 초안은 나라 열쇠 — 새 열쇠로 다시 단다
     for (const e of Object.values(rec<Envoy>('envoys'))) if (e !== null && typeof e === 'object' && typeof e.to === 'string') envoys[ekey(e.to, e.ask)] = e
     Object.assign(persuadeBy, rec<string>('persuadeBy'))
+    Object.assign(wooDone, rec<boolean>('wooDone'))
     Object.assign(hands, rec<Hand>('hands'))
     // 재상에게 맡기기 — 계절 가운데 바꾼 것 (판에는 계절을 넘길 때 실린다)
     if (typeof d['autoIdle'] === 'boolean') realm.autoIdle = d['autoIdle']
@@ -6535,12 +6629,40 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'dp-pick': wooPick = d['id']!; break
       case 'dp-x': wooPick = null; break
       case 'dp-by': persuadeBy[d['id']!] = d['by']!; wooPick = null; bark(d['by'], 'tap'); break
-      case 'persuade': heroOrders = [...heroOrders, { kind: 'persuade', hero: d['id']!, by: d['by'] ? d['by'] : null }]; obey(d['by']); break
+      // 처음 회유하면 옥중 담판이 뜬다 (WOO §3 · 첫 담판이 그 사람을 읽는 자리)
+      case 'persuade': heroOrders = [...heroOrders, { kind: 'persuade', hero: d['id']!, by: d['by'] ? d['by'] : null, ...(d['by'] ? { talk: [] } : {}) }]; obey(d['by']); if (d['by']) wooTalk = { id: d['id']!, sel: null, hand: false }; break
+      case 'dp-talk': if (wooDone[d['id']!] === true && wooOrder(d['id']!)?.talk !== undefined) wooTalk = { id: d['id']!, sel: null, hand: true }; else openTalk(d['id']!); break
+      case 'dp-sel': if (wooTalk !== null) wooTalk = { ...wooTalk, sel: wooTalk.sel === d['a'] ? null : (d['a'] as WooApproach) }; break
+      case 'dp-say': {
+        const w = wooTalk
+        const o = w !== null ? wooOrder(w.id) : undefined
+        if (w === null || o === undefined || w.sel === null || realm === null || o.by === null) break
+        if (talkOver(talkRun(realm, w.id, o.by, o.talk ?? [], false), (o.talk ?? []).length)) break
+        heroOrders = heroOrders.map((x) => (x === o ? { ...o, talk: [...(o.talk ?? []), w.sel!] } : x))
+        wooTalk = { ...w, sel: null }
+        talkSound(w.id, false)
+        break
+      }
+      case 'dp-hand': if (wooTalk !== null && !wooTalk.hand) { wooTalk = { ...wooTalk, hand: true }; wooDone[wooTalk.id] = true; talkSound(wooTalk.id, true) } break
+      case 'dp-leave': {
+        // 맡긴다 — 남은 마디는 지금 엔진대로. 아직 한 마디도 안 했으면 굴림을 본 것이 없으니 담판을 거둔다
+        const w = wooTalk
+        const o = w !== null ? wooOrder(w.id) : undefined
+        if (w === null) break
+        wooDone[w.id] = true
+        if (o !== undefined && (o.talk ?? []).length === 0) {
+          const fresh = realm?.heroes[w.id]?.persuade === undefined
+          heroOrders = fresh ? heroOrders.map((x) => (x === o ? { kind: 'persuade' as const, hero: o.hero, by: o.by } : x)) : heroOrders.filter((x) => x !== o)
+        }
+        wooTalk = null
+        break
+      }
+      case 'dp-ok': if (wooTalk !== null) wooDone[wooTalk.id] = true; wooTalk = null; break
       case 'standby': standBy(d['id']!); break
       // 재상 — 쉬는 장수 모두 · 장수 하나 (형 10-26)
       case 'js-all': if (realm !== null) realm.autoIdle = d['v'] === '1'; break
       case 'js-one': setManual(d['id']!, d['v'] === 'self'); break
-      case 'unhero': heroOrders = heroOrders.filter((o) => !((o.kind === 'assign' || o.kind === 'lead' || o.kind === 'persuade' || o.kind === 'hire') && o.hero === d['id'])); break
+      case 'unhero': heroOrders = heroOrders.filter((o) => !((o.kind === 'assign' || o.kind === 'lead' || (o.kind === 'persuade' && o.talk === undefined) || o.kind === 'hire') && o.hero === d['id'])); break
       case 'hire': {
         const id = d['id']!
         const had = heroOrders.some((o) => o.kind === 'hire' && o.hero === id)

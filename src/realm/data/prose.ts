@@ -651,6 +651,8 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     case 'recruit': {
       if (line.faction !== viewer) return null
       const h = after.heroes[line.hero]
+      const by = line.by != null ? after.heroes[line.by]?.name : undefined
+      if (line.how === 'persuade' && line.talk === true && by !== undefined) return `${josa(h?.name ?? '?', '이', '가')} 옥중 담판에서 ${josa(by, '의', '의')} 말에 무릎을 꿇었다. 우리 장수가 되었다.`
       return line.how === 'persuade'
         ? `${josa(h?.name ?? '?', '이', '가')} 마침내 무릎을 꿇었다. 우리 장수가 되었다.`
         : `${josa(h?.name ?? '?', '이', '가')} 우리 사람이 되었다.`

@@ -5,11 +5,14 @@
  */
 import { josa, STAT_NAME } from '../../realm/data/prose.ts'
 import { deokOf, hasTrait, persuadeDropOf, persuadeSeasons, recruitChance, resistOf } from '../../realm/heroes.ts'
-import type { Hero, Realm } from '../../realm/types.ts'
-import { wallOf, wallParts, wooOutlook } from '../../realm/woo.ts'
+import { TRAIT } from '../../realm/data/traits.ts'
+import type { Hero, Realm, WooApproach, WooReact } from '../../realm/types.ts'
+import { approachesOf, chanceOf, shownRange, talkRun, wallOf, wallParts, wooOutlook, WOO_BEATS, type WooTalk } from '../../realm/woo.ts'
 import { P } from '../../tune/params.ts'
 
 export interface WooKit {
+  /** 그림 바탕 주소 (realm/) */
+  readonly art: string
   readonly esc: (s: string) => string
   readonly bust: (h: Hero | undefined, cls?: string) => string
   readonly name: (n: string) => string
@@ -85,7 +88,7 @@ export function outlookHtml(k: WooKit, r: Realm, captive: string, by: string | n
 }
 
 /** 회유 중 — 달래는 이의 얼굴과 남은 벽 */
-export function progressHtml(k: WooKit, r: Realm, captive: string): string {
+export function progressHtml(k: WooKit, r: Realm, captive: string, talk = ''): string {
   const x = r.heroes[captive]
   const pz = x?.persuade
   if (x === undefined || pz === undefined) return ''
@@ -93,7 +96,7 @@ export function progressHtml(k: WooKit, r: Realm, captive: string): string {
   const head = by !== undefined
     ? `<div class="dp-pg">${k.bust(by, 'dp-pf')}<span><b>${k.esc(josa(by.name, '이', '가'))} 달래는 중</b>${perHtml(r, captive, by.id)}</span></div>`
     : `<div class="dp-pg"><span><b>회유하는 중</b></span></div>`
-  return `<div class="dp-prog">${head}${pz.resist !== undefined ? wallHtml(k, r, captive) + outlookHtml(k, r, captive, pz.by) : ''}</div>`
+  return `<div class="dp-prog">${head}${pz.resist !== undefined ? wallHtml(k, r, captive) + outlookHtml(k, r, captive, pz.by) : ''}${talk}</div>`
 }
 
 /** 옥 목록 한 줄에 붙는 작은 진행 — 달래는 이 얼굴 · 남은 벽 막대 */
@@ -161,4 +164,172 @@ export const WOO_CSS = `
 .ap .dp-c .dp-st, .ap .dp-c .dp-n { justify-content: center; font-size: 10.5px; gap: 0 5px; } .ap .dp-c .dp-n { flex-direction: column; align-items: center; }
 .ap .dp-c.on { border-color: #e0bd78; box-shadow: 0 0 0 2px #e0bd78, 0 0 10px #e0bd7866; }
 .ap .dp-c.busy { opacity: .45; cursor: default; } .ap .dp-job { font-size: 10.5px; color: #f0d090; text-align: center; line-height: 1.2; word-break: keep-all; }
+`
+
+// ── 옥중 담판 상자 (WOO §2 · §4) ─────────────────────────────
+
+const APP_NAME: Readonly<Record<WooApproach, string>> = { soothe: '달래기', cause: '명분', gain: '이익', fear: '겁주기', bond: '★ 인연' }
+const APP_STAT: Readonly<Record<WooApproach, string>> = { soothe: '매력', cause: '지략', gain: '매력', fear: '무예', bond: '판에 한 번' }
+
+/** 담판 상자가 그릴 것 — 지금까지 한 마디 · 고른 거리 · 손을 내밀었나 */
+export interface TalkState {
+  readonly id: string
+  readonly by: Hero
+  readonly talk: readonly WooApproach[]
+  readonly sel: WooApproach | null
+  readonly hand: boolean
+  /** 지금 쓸 수 있는 곡식 (이익을 걸 수 있나) */
+  readonly grain: number
+}
+export interface TalkLines {
+  readonly open: (r: Realm, x: Hero, by: string | null) => string
+  readonly lord: (by: Hero) => string
+  readonly pitch: (r: Realm, by: Hero, x: Hero, a: WooApproach) => string
+  readonly react: (x: Hero, react: WooReact) => string
+  readonly notYet: (x: Hero) => string
+  readonly won: (by: Hero, x: Hero) => string
+  /** 넘어온 이의 등용 첫마디 (hire-lines · 녹음이 함께 울린다) */
+  readonly hire: (x: Hero) => string | null
+}
+
+/** 담판이 끝났나 — 노여움 · 벽이 무너짐 · 세 마디 */
+export const talkOver = (t: WooTalk, n: number): boolean => t.end !== 'done' || n >= WOO_BEATS
+
+/** 말하는 사람 한 줄 — 작은 둥근 얼굴과 그 밑 이름, 오른쪽에 말 (형 10-29: 「"말" — 이름」 금지) */
+const say = (k: WooKit, h: Hero, line: string, cls = ''): string =>
+  `<div class="dp-say${cls}"><span class="dp-who2">${k.bust(h, 'dp-sf')}<small>${k.esc(h.name)}</small></span><span class="dp-line">${k.esc(line)}</span></div>`
+
+/** 조각 — 벽이 깎이면 낱낱이 튄다 (메모리: 이펙트는 낱낱이) */
+const pieces = (n: number, at: number): string => Array.from({ length: n }, (_, i) => {
+  const a = (i / n) * Math.PI * 2 + 0.4
+  return `<i class="dp-pc" style="left:${at.toFixed(1)}%;--x:${Math.round(Math.cos(a) * (40 + (i % 3) * 22))}px;--y:${Math.round(Math.sin(a) * (26 + (i % 4) * 10) - 18)}px;--r:${(i * 67) % 360}deg;--d:${((i % 5) * 0.04).toFixed(2)}s"></i>`
+}).join('')
+
+/** 담판 상자 한 장 — 굴리지 않는다 · 아래 붙박이 띠 */
+export function talkBoxHtml(k: WooKit, L: TalkLines, r: Realm, s: TalkState): string {
+  const x = r.heroes[s.id]
+  if (x === undefined) return ''
+  const by = s.by
+  const t = talkRun(r, s.id, by.id, s.talk, false)
+  const over = talkOver(t, s.talk.length)
+  const last = t.beats[t.beats.length - 1]
+  const full = Math.max(0.1, resistOf(r, s.id), t.from, t.resist)
+  const won = over && s.hand && t.hand?.ok === true
+  const lost = over && s.hand && t.hand !== null && !t.hand.ok
+  const rage = last?.react === 'rage'
+  let h = `<div class="dp-tk${rage ? ' rage' : ''}${won ? ' won' : ''}" role="dialog" aria-label="옥중 담판" style="--bg:url('${k.art}event/event-captive-persuade.jpg')">`
+  const dot = (i: number): string => { const b = t.beats[i]; return b === undefined ? '' : b.react === 'big' || b.react === 'sway' ? 'ok' : b.react === 'rage' ? 'bad' : 'no' }
+  h += `<div class="dp-th"><b>옥중 담판</b><i class="dp-dots">${Array.from({ length: WOO_BEATS }, (_, i) => `<b class="${dot(i)}"></b>`).join('')}</i><span>${over ? '끝' : `${s.talk.length + 1} / ${WOO_BEATS} 마디`}</span></div>`
+  // 얼굴 둘 — 갇힌 이는 사슬 테 · 우리 장수는 금빛 테. 넘어오면 갇힌 이가 우리 쪽으로 건너온다
+  h += `<div class="dp-fr"><span class="dp-fx jail">${k.bust(x, 'dp-ff')}<i class="dp-chain"></i><small>${k.name(x.name)}</small></span><span class="dp-vs">${won ? '' : '⇄'}</span><span class="dp-fx ours">${k.bust(by, 'dp-ff')}<small>${k.name(by.name)}</small></span></div>`
+  // 말 두 줄
+  const rows: string[] = []
+  if (won) {
+    rows.push(say(k, by, last !== undefined ? L.pitch(r, by, x, last.a) : L.lord(by)))
+    const hl = L.hire(x)
+    if (hl !== null) rows.push(say(k, x, hl, ' hire'))
+  }
+  else if (lost) rows.push(say(k, x, L.notYet(x)))
+  else if (s.sel !== null && !over) {
+    rows.push(last !== undefined ? say(k, x, L.react(x, last.react)) : say(k, x, L.open(r, x, by.id)))
+    rows.push(say(k, by, L.pitch(r, by, x, s.sel), ' pre'))
+  } else if (last !== undefined) {
+    rows.push(say(k, by, L.pitch(r, by, x, last.a)))
+    rows.push(say(k, x, L.react(x, last.react), ` r-${last.react}`))
+  } else {
+    rows.push(say(k, by, L.lord(by), ' lord'))
+    rows.push(say(k, x, L.open(r, x, by.id)))
+  }
+  h += `<div class="dp-talk">${rows.join('')}</div>`
+  // 벽 — 막대와 조각 · 노여움이면 붉게 두꺼워진다
+  const w = Math.max(0, Math.min(100, (t.resist / full) * 100))
+  const cut = last !== undefined && (last.react === 'big' || last.react === 'sway') && !s.hand
+  const d = t.resist - t.from
+  h += `<div class="dp-tw${rage ? ' up' : ''}"><div class="dp-wh"><b>마음의 벽</b><span>${t.resist <= 0 ? '무너졌다' : n1(t.resist)}${Math.abs(d) >= 0.05 ? ` <small class="${d < 0 ? 'dn' : 'upn'}">${d < 0 ? '−' : '+'}${n1(Math.abs(d))}</small>` : ''}</span></div>`
+    + `<div class="dp-bar big${won ? ' gone' : ''}"><i style="width:${w.toFixed(1)}%"></i>${cut ? pieces(last!.react === 'big' ? 10 : 5, w) : ''}${won ? pieces(16, 50) : ''}</div>`
+  // 칩 — 됨됨이의 사실 (단서)
+  const chips: string[] = [`의리 ${x.uiri}`]
+  const fallen = !Object.values(r.nodes).some((n) => n.owner === x.faction)
+  chips.push(`${r.factions[x.faction]?.name ?? ''} ${fallen ? '무너짐' : '남아 있음'}`)
+  if (x.caughtAt !== undefined && r.season - x.caughtAt > 0) chips.push(`갇힌 지 ${r.season - x.caughtAt}계절`)
+  for (const tr of x.traits.slice(0, 2)) { const td = TRAIT[tr]; if (td !== undefined) chips.push(td.name) }
+  // 도장 — 노여움이 터지면 붉은 네모 「원한」이 결과 위에 쿵 (둥근 것 · 해 동그라미 금지)
+  h += `<div class="dp-chips">${chips.map((c) => `<i class="dp-chip">${k.esc(c)}</i>`).join('')}${(x.grudge ?? 0) > 0 ? `<i class="dp-chip bad">원한 ${x.grudge}</i>` : ''}</div></div>`
+  // 가운데 — 말할 거리 단추 · 끝났으면 결과
+  if (won) {
+    h += `<div class="dp-end won"><b class="dp-big">${k.esc(L.won(by, x))}</b><small>계절이 끝나면 우리 장수가 됩니다.</small></div>`
+  } else if (lost) {
+    const pc = Math.round(t.hand!.p * 100)
+    h += `<div class="dp-end"><b>${pc >= 50 ? `아깝다! ${pc}%였다` : `넘어올 가망 ${pc}%, 이번엔 고개를 저었다`}</b><small>마음의 벽은 무너진 채로 남습니다. 맡겨 두면 계절마다 다시 굴립니다.</small></div>`
+  } else if (over && t.hand !== null) {
+    h += `<div class="dp-end hand"><b>마음의 벽이 무너졌다</b><small>지금 손을 내밀 수 있습니다. 넘어올 가망 <b>${Math.round(t.hand.p * 100)}%</b>${last?.react === 'big' ? ' · 약한 곳으로 끝냈다' : ''}</small></div>`
+  } else if (over) {
+    h += `<div class="dp-end${rage ? ' bad' : ''}">${rage ? '<i class="dp-stamp">원한</i>' : ''}<b>${rage ? '노여움을 샀다. 담판이 끝났다' : '담판을 마쳤다'}</b><small>마음의 벽 ${d <= 0 ? '−' : '+'}${n1(Math.abs(d))} · 남은 벽 ${n1(t.resist)}${rage ? ' · 원한이 남았다' : ''}</small></div>`
+  } else {
+    const mom = last === undefined ? 0 : last.react === 'big' || last.react === 'sway' ? 1 : -1
+    const gains = s.talk.filter((a) => a === 'gain').length
+    h += `<div class="dp-apps">`
+    for (const a of approachesOf(r, s.id, by.id)) {
+      const sh = shownRange(r, by.id, chanceOf(r, s.id, by.id, a, mom))
+      const no = (a === 'bond' && s.talk.includes('bond')) || (a === 'gain' && s.grain < P.realm.persuadeGrain + P.realm.wooGainGrain * (gains + 1))
+      h += `<button class="dp-ap${a === 'bond' ? ' gold' : ''}${s.sel === a ? ' on' : ''}" data-act="dp-sel" data-a="${a}"${no ? ' disabled' : ''}>`
+        + `<b>${APP_NAME[a]}</b><span class="dp-p">${sh.lo === sh.hi ? `${sh.lo}%` : `${sh.lo}~${sh.hi}%`}</span><small>${APP_STAT[a]}${a === 'gain' ? k.cost({ grain: P.realm.wooGainGrain }) : ''}${sh.dim ? ' · 잘 모르겠다' : ''}</small></button>`
+    }
+    h += `</div>`
+  }
+  // 아래 붙박이 띠 (메모리 confirm-bar-bottom)
+  h += `<div class="dp-go">`
+  if (won || lost || (over && t.hand === null)) h += `<button class="btn pri" data-act="dp-ok">확인</button>`
+  else if (over && t.hand !== null) h += `<button class="btn pri" data-act="dp-hand">손을 내민다 <b>${Math.round(t.hand.p * 100)}%</b></button>`
+  else h += `<button class="btn ghost" data-act="dp-leave">맡긴다</button><button class="btn pri" data-act="dp-say"${s.sel === null ? ' disabled' : ''}>${s.sel === null ? '말할 거리를 고르세요' : '이 말로 한다'}</button>`
+  return h + `</div></div>`
+}
+
+export const TALK_CSS = `
+.ap .dp-tk { position: relative; width: 100%; max-width: 430px; height: 100%; max-height: 760px; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px 0; box-sizing: border-box; overflow: hidden;
+  background: radial-gradient(ellipse at 50% 30%, #0a070588, #0a0705ee 75%), var(--bg) center / cover no-repeat, #120d08; border: 1px solid #6a5236; border-radius: 14px; }
+.ap .dp-tk.rage { animation: dpshake .45s ease-out; } @keyframes dpshake { 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(2px); } }
+.ap .dp-th { flex: none; display: flex; align-items: center; gap: 8px; } .ap .dp-th > b { font-size: 15px; color: #e0bd78; letter-spacing: .05em; } .ap .dp-th > span { margin-left: auto; font-size: 12px; color: var(--mute); }
+.ap .dp-dots { display: flex; gap: 4px; } .ap .dp-dots b { width: 9px; height: 9px; border-radius: 2px; border: 1px solid #8a6a3a; background: #2a1f14; } .ap .dp-dots b.ok { background: #e0bd78; } .ap .dp-dots b.no { background: #6a6a6a; } .ap .dp-dots b.bad { background: #c0392b; border-color: #ff7a60; }
+.ap .dp-fr { flex: none; display: flex; align-items: flex-start; justify-content: space-between; padding: 0 6px; }
+.ap .dp-fx { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; width: 96px; } .ap .dp-fx small { font-size: 12.5px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #f3e3c0; }
+.ap .dp-ff { width: 78px; height: 78px; border-radius: 10px; object-fit: cover; object-position: top; display: block; box-sizing: border-box; }
+.ap .dp-fx.jail .dp-ff { border: 3px solid #7a7a7a; box-shadow: 0 0 0 2px #2a2a2a, 0 4px 10px #000c; }
+.ap .dp-fx.ours .dp-ff { border: 3px solid #e0bd78; box-shadow: 0 0 0 2px #5a4020, 0 0 14px #e0bd7855; }
+.ap .dp-chain { position: absolute; left: 6px; right: 6px; top: 58px; height: 10px; background: repeating-linear-gradient(90deg, #9a9a9a 0 8px, #4a4a4a 8px 10px); border-radius: 4px; box-shadow: 0 1px 2px #000; }
+.ap .dp-vs { align-self: center; font-size: 18px; color: #8a6a3a; }
+.ap .dp-tk.won .dp-fx.jail { animation: dpcross 1s .9s cubic-bezier(.3, 1.2, .5, 1) both; z-index: 2; } @keyframes dpcross { to { transform: translateX(calc((min(430px, 100vw) - 132px) / 2)); } }
+.ap .dp-tk.won .dp-fx.jail .dp-ff { animation: dpgold .6s 1.5s both; } @keyframes dpgold { to { border-color: #e0bd78; box-shadow: 0 0 0 2px #5a4020, 0 0 18px #f2c94caa; } }
+.ap .dp-tk.won .dp-chain { animation: dpchain .5s .3s both; } @keyframes dpchain { to { opacity: 0; transform: translateY(14px) rotate(14deg); } }
+.ap .dp-talk { flex: none; display: flex; flex-direction: column; gap: 6px; min-height: 120px; }
+.ap .dp-say { display: flex; align-items: center; gap: 10px; padding: 7px 10px 7px 7px; border-radius: 10px; background: #1c150ee6; border: 1px solid #4a3826; animation: dpin .3s ease-out both; }
+.ap .dp-say.pre { border-style: dashed; border-color: #e0bd78; background: #2a1f14e6; } .ap .dp-say.lord .dp-line { color: #d9c69a; font-size: 13px; }
+.ap .dp-say.r-big { border-color: #e0bd78; } .ap .dp-say.hire { border-color: #f2c94c; background: #3a2a10e6; animation-delay: 1.5s; } .ap .dp-say.hire .dp-sf { border-color: #f2c94c; } .ap .dp-say.r-rage { border-color: #c0392b; background: #2a0f0ae6; }
+@keyframes dpin { from { opacity: 0; transform: translateY(6px); } }
+.ap .dp-who2 { flex: none; width: 50px; display: flex; flex-direction: column; align-items: center; gap: 2px; } .ap .dp-who2 small { max-width: 52px; font-size: 10.5px; line-height: 1.15; color: #e8cf94; text-align: center; word-break: keep-all; }
+.ap .dp-sf { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; object-position: top; box-sizing: border-box; border: 2px solid #c9a45a; }
+.ap .dp-line { flex: 1; min-width: 0; font-size: 14px; line-height: 1.4; color: #f3e3c0; word-break: keep-all; overflow-wrap: anywhere; }
+.ap .dp-tw { position: relative; flex: none; display: flex; flex-direction: column; gap: 4px; padding: 7px 10px; border-radius: 10px; background: #1c150ee6; border: 1px solid #5a4630; }
+.ap .dp-tw .dp-wh small.dn { color: #8fd08f; } .ap .dp-tw .dp-wh small.upn { color: #ff8a70; }
+.ap .dp-bar.big { height: 14px; overflow: visible; }
+.ap .dp-bar.big > i { border-radius: 6px; }
+.ap .dp-tw.up .dp-bar > i { background: repeating-linear-gradient(90deg, #c0392b 0 10px, #8a2a1e 10px 12px); animation: dpthick .5s ease-out; } @keyframes dpthick { from { transform: scaleY(1.8); } }
+.ap .dp-bar.gone > i { animation: dpgone .4s .2s both; } @keyframes dpgone { to { opacity: 0; } }
+.ap .dp-pc { position: absolute; top: 2px; width: 8px; height: 8px; margin-left: -4px; background: #8a6a4a; border: 1px solid #c9a45a; animation: dpfly .8s var(--d) ease-out both; pointer-events: none; }
+@keyframes dpfly { from { transform: translate(0, 0) rotate(0); opacity: 1; } to { transform: translate(var(--x), var(--y)) rotate(var(--r)); opacity: 0; } }
+.ap .dp-stamp { display: inline-block; margin-bottom: 10px; padding: 4px 10px; border: 4px solid #c0392b; color: #e0402b; background: #2a0a06cc; font-style: normal; font-size: 30px; font-weight: 900; letter-spacing: .1em; transform: rotate(-12deg); animation: dpstamp .35s .25s cubic-bezier(.3, 1.6, .5, 1) both; pointer-events: none; }
+@keyframes dpstamp { from { transform: rotate(-12deg) scale(2.6); opacity: 0; } }
+.ap .dp-apps { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: minmax(54px, auto); align-content: start; gap: 6px; }
+.ap .dp-ap { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 6px 4px; border-radius: 10px; border: 1px solid #6a5236; background: #241a10ee; color: #f3e3c0; cursor: pointer; min-width: 0; }
+.ap .dp-ap b { font-size: 15px; } .ap .dp-ap .dp-p { font-size: 15px; font-weight: 800; color: #f3d38a; } .ap .dp-ap small { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--mute); }
+.ap .dp-ap.on { border-color: #e0bd78; box-shadow: 0 0 0 2px #e0bd78, 0 0 12px #e0bd7866; background: #3a2a16; }
+.ap .dp-ap.gold { grid-column: 1 / -1; border-color: #f2c94c; background: #3a2a10ee; } .ap .dp-ap.gold b { color: #ffe08a; }
+.ap .dp-ap:disabled { opacity: .4; cursor: default; }
+.ap .dp-end { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; padding: 6px; } .ap .dp-end > b { font-size: 17px; color: #f3e3c0; } .ap .dp-end small { font-size: 12.5px; color: #d9c69a; word-break: keep-all; }
+.ap .dp-end.bad > b { color: #ff8a70; } .ap .dp-end.hand > b { color: #ffe08a; }
+.ap .dp-end.won .dp-big { font-size: 21px; line-height: 1.35; color: #ffe08a; text-shadow: 0 2px 8px #000; word-break: keep-all; animation: dpbig .6s 2.1s cubic-bezier(.3, 1.5, .5, 1) both; } .ap .dp-end.won small { animation: dpin .4s 2.7s both; }
+@keyframes dpbig { from { opacity: 0; transform: scale(.6); } }
+.ap .dp-go { flex: none; margin: 0 -12px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); display: flex; gap: 8px; background: #120d08f2; border-top: 1px solid #6a5236; }
+.ap .dp-go .btn { flex: 1; min-height: 48px; font-size: 16px; } .ap .dp-go .btn.ghost { flex: 0 0 34%; }
+.ap .dpov.talk { padding: 0; align-items: stretch; } @media (min-height: 780px) { .ap .dpov.talk { align-items: center; padding: 10px; } }
 `
