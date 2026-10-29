@@ -667,6 +667,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let nudgedAt = -1
   /** 군막 — 이번 계절 「다음 계절」 앞에서 전략 회의를 연 계절 (councilDue) */
   let councilAt = -1
+  /** 이번 계절 전략 회의를 마친 군대(나눠 떠난 무리도) — 「다음 계절」에서 같은 회의를 또 열지 않는다 (형 10-29: "전략회의 한번 하고 다음 계절 넘어갈 때 똑같은 전략회의 또 발생") */
+  const councilDone = new Map<string, number>()
   /** 전략 회의 — 적 고을을 칠 때 화면 가득 (지도에서 고른 출정 · 「다음 계절」 앞 마지막 걸음). next 면 출정 뒤 계절을 넘긴다 */
   // step — 지금 안건(다 지나면 정리) · beat — 그 안건에서 몇째 장수가 말하는 중(다 말하면 물음과 고르기)
   let stratOpen: { army: string; next: boolean; goal?: string; step?: number; beat?: number; man?: boolean } | null = null
@@ -1629,6 +1631,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const ours = Object.values(r.armies).filter((a) => a.faction === me() && a.march === null).sort((x, y) => headcount(forceOf(r, y)) - headcount(forceOf(r, x)) || (x.id < y.id ? -1 : 1))
     for (const a of ours) {
       const c = pick[a.id]
+      if (councilDone.get(a.id) === r.season) continue
       if (c !== undefined && (c.adviser !== undefined || (c.approach !== undefined && c.approach !== 'road'))) continue
       let edge = c?.edge ?? ''
       const goal = goalOf(a)
@@ -1682,6 +1685,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function stratDone(): boolean {
     const st = stratOpen
     stratOpen = null
+    if (st !== null && realm !== null) { councilDone.set(st.army, realm.season); councilAt = realm.season }
     if (st === null || !st.next) return false
     paint()
     root.querySelector<HTMLElement>('[data-act="next"]')?.click()
@@ -5848,6 +5852,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         // 그만둔다 — 지도에서 고른 출정을 거둔다 · 그대로 간다(「다음 계절」 앞) — 고른 길 그대로 계절을 넘긴다
         const st = stratOpen
         stratOpen = null
+        if (st !== null && realm !== null) { councilDone.set(st.army, realm.season); councilAt = realm.season }
         openArmy = ''
         if (st === null) break
         if (d['v'] === 'keep') { paint(); root.querySelector<HTMLElement>('[data-act="next"]')?.click(); return }
@@ -6284,6 +6289,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           armyOrders = [...armyOrders, o]
           if (lead !== undefined) { pickLeader(id, lead); obey(lead) }
           if (go !== null) pick[id] = { ...go, ...(stratOpen?.goal !== undefined ? { goal: stratOpen.goal } : {}) }
+          if (stratOpen !== null && realm !== null) councilDone.set(id, realm.season)
           // 전략 회의에서 나눴으면 남는 무리는 여기 남아 지킨다 — 지도에서 이미 걸어 둔 출정·먼 갈 곳을 거둔다 (두 부대가 같이 가 버렸다 · 형 10-29)
           if (stratOpen !== null) {
             delete pick[a.id]
