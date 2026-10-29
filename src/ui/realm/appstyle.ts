@@ -732,6 +732,32 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .stov .sthd p { margin: 4px 0 0; font-size: 13.5px; color: #e8dcc0; } .ap .stov .sthd p b { color: #ffe0a0; }
 .ap .stov .stbody { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 14px 16px; }
 .ap .stov .sortiebar { flex: none; position: static; margin: 0; }
+/* 결정 단추는 남은 폭만 — 긴 줄은 두 줄로 (그만둔다가 화면 밖으로 밀렸다) */
+.ap .stov .sortiebar .go { min-width: 0; white-space: normal; word-break: keep-all; line-height: 1.3; font-size: 14px; } .ap .stov .sortiebar .btn.ghost { flex: none; }
+/* 전략 회의의 안건 — 장수 얼굴과 아뢰는 말이 하나씩 떠오른다 · 고른 말은 금빛 테 (형 10-29) */
+.ap .cnov { display: flex; flex-direction: column; gap: 14px; }
+.ap .cnag { display: flex; flex-direction: column; gap: 8px; transition: opacity .25s; } .ap .cnag.off { opacity: .4; pointer-events: none; }
+.ap .cnag h3 { margin: 0; display: flex; align-items: baseline; gap: 8px; font-family: 'Gowun Batang', serif; font-size: 17px; color: #ffd27a; }
+.ap .cnag h3 i { font-style: normal; font-family: inherit; font-size: 12px; color: #c9a45a; letter-spacing: .05em; }
+.ap .cnv { display: flex; align-items: flex-start; gap: 10px; width: 100%; min-width: 0; box-sizing: border-box; padding: 0 2px; text-align: left; font: inherit; color: #efe3c6; cursor: pointer;
+  border: 10px solid transparent; border-image: url(__ART__ui/card.png?v=1) 24 fill / 10px stretch; background: none; }
+.ap .cnv.on { border-image: url(__ART__ui/frame-panel.png?v=3) 118 / 10px stretch; background: #2e2416 padding-box; filter: drop-shadow(0 0 6px #ffd27a77); }
+.ap .cnv .cnf { flex: none; width: 64px; height: 64px; object-fit: cover; object-position: top; box-sizing: border-box; border: 6px solid transparent; border-image: url(__ART__ui/frame-portrait.png) 60 / 6px stretch; }
+.ap .cnv .cnb { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ap .cnv .cnb > b { font-size: 14px; color: #ffe0a0; }
+.ap .cnv .cnl { font-size: 14px; line-height: 1.55; color: #efe3c6; word-break: keep-all; overflow-wrap: anywhere; }
+.ap .cnv.lord .cnl { color: #cbbf9f; font-style: italic; }
+.ap .cnv .cnk { align-self: flex-end; margin-top: 2px; padding: 0 3px; border: 5px solid transparent; border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 5px 7px stretch; font-size: 12.5px; font-weight: 700; color: #efe3c6; }
+.ap .cnv.on .cnk { border-image: url(__ART__ui/btn-gold.png?v=2) 30 35 fill / 5px 7px stretch; color: #2a1606; }
+.ap .cnov.play .cnv { animation: cnin .55s cubic-bezier(.2,.8,.2,1) var(--d, 0s) both; } .ap .cnov.play .cnv .cnf { animation: cnface .6s ease-out var(--d, 0s) both; }
+.ap .cnov.play .cnv .cnl { animation: cnline .9s steps(18, end) calc(var(--d, 0s) + .15s) both; }
+@keyframes cnin { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes cnface { 0% { transform: scale(.6); } 60% { transform: scale(1.08); } 100% { transform: none; } }
+@keyframes cnline { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@media (prefers-reduced-motion: reduce) { .ap .cnov.play .cnv, .ap .cnov.play .cnv .cnf, .ap .cnov.play .cnv .cnl { animation-duration: .01s; animation-delay: 0s; } }
+.ap .cnnone { margin: 6px 0 10px; color: #cbbf9f; font-size: 13px; }
+.ap .stman { display: flex; justify-content: space-between; align-items: center; width: 100%; margin: 16px 0 6px; padding: 0 4px; font: inherit; font-weight: 700; color: #d8cdb4; cursor: pointer;
+  border: 6px solid transparent; border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 6px 8px stretch; background: none; }
 .ap .ration .treas { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; font-size: 12.5px; color: #cfc6b4; } .ap .ration .treas .tri { width: 16px; height: 16px; } .ap .ration .treas b { color: #f0e2c0; } .ap .ration .treas b.neg { color: #ff8a6a; }
 @keyframes stin { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
 .ap .selbar .sbx { border: 0; background: none; color: var(--mute); font-size: 18px; padding: 4px 6px; cursor: pointer; }
