@@ -8,7 +8,7 @@
  */
 import { aiOrders } from '../../realm/ai.ts'
 import { headcount, strength, type Equip, type UnitKind } from '../../realm/battle.ts'
-import { CUSTOM_ICON, FACTION_ART, GOOD_ICON, SEASON_ICON, SOL_ANIM_AR, UNIT_ICON, bustOf, flagIcon, kidBust, nodeIcon, noteGrowing, noteKids } from '../../realm/data/art.ts'
+import { CUSTOM_ICON, FACTION_ART, GOOD_ICON, SEASON_ICON, SOL_ANIM2, SOL_ANIM_AR, UNIT_ICON, bustOf, flagIcon, kidBust, nodeIcon, noteGrowing, noteKids } from '../../realm/data/art.ts'
 import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../../realm/data/nations-yeongnam.ts'
 import { SOUTH_NATIONS } from '../../realm/data/nations-south.ts'
@@ -1710,11 +1710,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   /** 지도 유닛의 병사 셋 — 가장 많은 병종 둘, 셋째는 둘째 병종(없으면 첫째) · 수군은 땅에선 걷는 그림 · 모르는 군대는 창병 */
-  function squadOf(kinds: readonly UnitKind[]): Array<{ src: string; ar: number }> {
+  function squadOf(kinds: readonly UnitKind[]): Array<{ src: string; ar: number; r?: number }> {
     const anim = (k: UnitKind | undefined): string => (k === undefined ? 'spear' : k === 'boat' ? 'marine' : k)
     const a = anim(kinds[0])
     const b = anim(kinds[1] ?? kinds[0])
-    return [a, b === a ? a : b, a].map((k) => ({ src: `${ART}anim/${k}.png`, ar: SOL_ANIM_AR[k] ?? 1 }))
+    // 새 20컷 띠가 있으면 그것 (art.ts SOL_ANIM2) — 병사 칸은 옛 비, 안의 그림만 넓다
+    return [a, b === a ? a : b, a].map((k) => {
+      const ar = SOL_ANIM_AR[k] ?? 1
+      const a2 = SOL_ANIM2[k]
+      return a2 !== undefined ? { src: `${ART}anim2/${k}.png`, ar, r: a2 / ar } : { src: `${ART}anim/${k}.png`, ar }
+    })
   }
 
   /** 그 나라가 이기는 데 얼마나 다가섰나 (0~1) — 승리 길 넷 가운데 가장 찬 것 · 장 판·배우는 판은 도읍 차지로 */

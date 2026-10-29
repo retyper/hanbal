@@ -11,7 +11,7 @@
  * 움직임은 CSS 애니메이션의 지연뿐이고, 소리만 타이머로 — 탭이 보일 때만 (절대 규칙 4).
  * 확률은 숫자로 안 보인다 — 사로잡기는 말과 색으로, 대신 사람 수(날랜 무리 · 호위)는 보인다 (realm-no-numbers).
  */
-import { FACTION_ART, SOL_ANIM_AR, UNIT_ICON, bustOf, flagIcon } from '../../realm/data/art.ts'
+import { FACTION_ART, SOL_ANIM2, SOL_ANIM_AR, UNIT_ICON, bustOf, flagIcon } from '../../realm/data/art.ts'
 import { battleName, endStory, fieldName, groupLabel, josa, roundStory, storyCtx, UNIT_NAME } from '../../realm/data/prose.ts'
 import { BATTLE_STYLES, groupMen, groupOf, lookRound, nightAt, type BattleStyle, type RoundAt } from '../../realm/tactics.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
@@ -1391,6 +1391,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         const pos = `--x:${(x + oy * 0.22).toFixed(1)}%;--oy:${oy.toFixed(1)}%;--sc:${sc};--j:${idx % 6};--k:${(((idx++ * 47) % 97) / 97).toFixed(2)};z-index:${10 + Math.round(oy + 40)}`
         // 동작 그림이 있는 병종은 컷으로 움직인다 (서기 · 걷기 · 찌르기 · 쓰러짐 — public/realm/anim · tools/strip-frames.mjs)
         const ar = ANIM_SOL[k]
+        // 새 20컷 띠가 있으면 그것 — 말의 자리·크기는 옛 비(--ar), 안의 그림만 --r 배 넓다
+        const a2 = SOL_ANIM2[k]
+        if (ar !== undefined && a2 !== undefined) return `<i class="tk wsp v2 k-${k} r${r}${hl} ${s2}" style="${pos};--ar:${ar.toFixed(3)};--r:${(a2 / ar).toFixed(3)}"><b class="spf" style="background-image:url('${art}anim2/${k}.png')"></b></i>`
         if (ar !== undefined) return `<i class="tk wsp k-${k} r${r}${hl} ${s2}" style="${pos};--ar:${ar.toFixed(3)}"><b class="spf" style="background-image:url('${art}anim/${k}.png')"></b></i>`
         return `<img class="tk r${r}${hl} ${s2}" src="${art}icon/sol-${SOL.has(k) ? k : 'spear'}.png" alt="" style="${pos}">`
       }
@@ -1945,7 +1948,7 @@ export const WAR_CSS = `
 .ap .wfield .wf-mid { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); font-style: normal; font-size: 22px; color: #f0d090; text-shadow: 0 0 8px #000; opacity: 0; z-index: 80; }
 /* 판의 끝 — 진 쪽은 등을 돌려(거울) 뒤로 달아나며 흩어지고, 이긴 쪽 장수 깃발이 솟는다. 맞부딪힘이 끝난 뒤(--hd + .9s) */
 .ap .wfield.fin.win-us .wf2s.foe .tk.tku, .ap .wfield.fin.win-foe .wf2s.us .tk.tku { animation: wflee 1.6s ease-in calc(var(--rv, 0s) + var(--j, 0) * .07s) forwards !important; }
-.ap .wfield.fin.win-us .wf2s.foe .tk.wsp.tku .spf, .ap .wfield.fin.win-foe .wf2s.us .tk.wsp.tku .spf { animation: spwalk .26s steps(1) var(--rv, 0s) infinite !important; }
+.ap .wfield.fin.win-us .wf2s.foe .tk.wsp.tku .spf, .ap .wfield.fin.win-foe .wf2s.us .tk.wsp.tku .spf { animation: spwalk calc(.26s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--rv, 0s) infinite !important; }
 @keyframes wflee { 0% { translate: 0 0; scale: 1; } 12% { scale: -1 1; } 100% { scale: -1 1; translate: -32cqw calc((var(--j, 0) - 2.5) * 2cqw); opacity: 0; } }
 .ap .wfield.fin.win-us .wf2s.us .wgen, .ap .wfield.fin.win-foe .wf2s.foe .wgen { animation: wgenwin .7s cubic-bezier(.3, 1.6, .5, 1) calc(var(--rv, 0s) + .2s) both; }
 @keyframes wgenwin { from { translate: 0 0; scale: 1; } to { translate: 9cqw -2cqw; scale: 1.35; } }
@@ -1988,35 +1991,38 @@ export const WAR_CSS = `
 .ap .wf-who.us { left: 6px; } .ap .wf-who.foe { right: 6px; background: #8a3a2acc; color: #ffe3dc; }
 @keyframes wloss { 0% { opacity: 0; translate: 0 10px; scale: .6; } 15% { opacity: 1; translate: 0 0; scale: 1.15; } 70% { opacity: 1; scale: 1; } 100% { opacity: 0; translate: 0 -18px; } }
 /* 동작 그림 — 8컷 띠를 칸씩 넘긴다 (steps). 바깥(.tk)은 자리·밀기, 안(.spf)은 컷 */
+/* 새 20컷 띠(v2) — 칸이 넓다(창이 다 뻗어도 들어가게). 말의 자리·크기는 옛 비 그대로 두고 안의 그림만 --r 배 넓혀 가운데에 (형 10-29) */
+.ap .wf2s .tk.wsp.v2 .spf { inset: 0 auto 0 50%; width: calc(var(--r, 1) * 100%); transform: translateX(-50%); --nf: 20; --i0: 0%; --i1: 21.0526%; --w0: 21.0526%; --w1: 63.1579%; --a0: 63.1579%; --a1: 94.7368%; --al: 89.4737%; --fl: 94.7368%; --spidlen: 4; --spwalkn: 8; --spatkn: 6; --spidles: 1.6; --spwalks: 1.4; --spatks: 1.3; --spdraws: 1.2; }
 .ap .wf2s .tk.wsp { width: auto; aspect-ratio: var(--ar, 1); } .ap .wf2s .tk.wsp.k-horse, .ap .wf2s .tk.wsp.k-boat { height: clamp(38px, 10cqw, 68px); } /* 말 탄 이는 걷는 이보다 크다 */
-.ap .wf2s .tk.wsp .spf { position: absolute; inset: 0; background: 0 0 / 800% 100% no-repeat; animation: spidle calc(1.25s + var(--k, .5) * .7s) steps(1) calc(calc(var(--j) * -.27s) - var(--k, .5) * 1.6s) infinite; }
-@keyframes spidle { 0% { background-position-x: 0%; } 50% { background-position-x: 14.2857%; } }
-@keyframes spwalk { 0% { background-position-x: 28.5714%; } 50% { background-position-x: 42.8571%; } }
-@keyframes spatk { 0% { background-position-x: 57.1429%; } 50% { background-position-x: 71.4286%; } }
-.ap .wfield.enter .tk.wsp .spf { animation: spwalk .42s steps(1) calc(var(--j) * -.1s) 4, spidle calc(1.25s + var(--k, .5) * .7s) steps(1) calc(1.9s - var(--k, .5) * 1.6s) infinite; }
-.ap .wfield.play .wf2s .tk.wsp.r0:not(.tkd) .spf { animation: spwalk .42s steps(1) var(--fa, 0s) 2, spatk calc(.3s + var(--j, 0) * .03s) steps(1) calc(var(--hd) - .32s + var(--j, 0) * .05s) 7, spidle calc(1.25s + var(--k, .5) * .7s) steps(1) calc(calc(var(--hd) + 1.9s) - var(--k, .5) * 1.6s) infinite; }
+.ap .wf2s .tk.wsp .spf { position: absolute; inset: 0; background: 0 0 / calc(var(--nf, 8) * 100%) 100% no-repeat; animation: spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--j) * -.27s) - var(--k, .5) * 1.6s) infinite; }
+/* 컷의 자리와 수는 변수로 — 옛 8컷 띠(anim)와 새 20컷 띠(anim2 · tools/anim-pack.py)를 같은 규칙이 돌린다. 옛 띠는 두 컷씩 번갈아 (예전과 같다) */
+@keyframes spidle { from { background-position-x: var(--i0, 0%); } to { background-position-x: var(--i1, 28.5714%); } }
+@keyframes spwalk { from { background-position-x: var(--w0, 28.5714%); } to { background-position-x: var(--w1, 57.1429%); } }
+@keyframes spatk { from { background-position-x: var(--a0, 57.1429%); } to { background-position-x: var(--a1, 85.7143%); } }
+.ap .wfield.enter .tk.wsp .spf { animation: spwalk calc(.42s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) calc(var(--j) * -.1s) 4, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(1.9s - var(--k, .5) * 1.6s) infinite; }
+.ap .wfield.play .wf2s .tk.wsp.r0:not(.tkd) .spf { animation: spwalk calc(.42s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--fa, 0s) 2, spatk calc(calc(.3s + var(--j, 0) * .03s) * var(--spatks, 1)) steps(var(--spatkn, 2)) calc(var(--hd) - .32s + var(--j, 0) * .05s) 7, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--hd) + 1.9s) - var(--k, .5) * 1.6s) infinite; }
 /* 도끼병 — 받은 그림엔 내려치는 컷이 없다(든 컷 4 뿐) → 든 컷을 앞으로 휘둘러 기울인다 (컷 5는 들기의 다른 자세라 안 쓴다) */
-.ap .wfield.play .wf2s .tk.wsp.k-axe.r0:not(.tkd) .spf { animation: spwalk .42s steps(1) var(--fa, 0s) 2, spaxe .3s steps(1) calc(var(--hd) - .32s + var(--j, 0) * .05s) 7, spidle calc(1.25s + var(--k, .5) * .7s) steps(1) calc(calc(var(--hd) + 1.9s) - var(--k, .5) * 1.6s) infinite; }
+.ap .wfield.play .wf2s .tk.wsp.k-axe.r0:not(.tkd) .spf { animation: spwalk calc(.42s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--fa, 0s) 2, spaxe .3s steps(1) calc(var(--hd) - .32s + var(--j, 0) * .05s) 7, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--hd) + 1.9s) - var(--k, .5) * 1.6s) infinite; }
 .ap .wfield.play .wf2s .tk.wsp.k-axe.r0:not(.tkd) .spf { transform-origin: 40% 90%; }
-@keyframes spaxe { 0% { background-position-x: 57.1429%; rotate: -8deg; } 50% { background-position-x: 57.1429%; rotate: 28deg; } }
+@keyframes spaxe { 0% { background-position-x: var(--a0, 57.1429%); rotate: -8deg; } 50% { background-position-x: var(--a0, 57.1429%); rotate: 28deg; } }
 /* 궁수 — 쏘는 박자에 시위를 당겼다(4) 놓는다(5) · 기병 — 제 박자에 달린다(걷기 컷) */
-.ap .wfield.play .wf2s[data-b] .tk.wsp.r1:not(.tkd) .spf { animation: spdraw .75s steps(1) calc(var(--sa) - .45s) forwards, spidle calc(1.25s + var(--k, .5) * .7s) steps(1) calc(calc(var(--sa) + .5s) - var(--k, .5) * 1.6s) infinite; }
-@keyframes spdraw { 0% { background-position-x: 57.1429%; } 60% { background-position-x: 71.4286%; } 100% { background-position-x: 71.4286%; } }
-.ap .wfield.play .wf2s[data-h] .tk.wsp.r2:not(.tkd) .spf { animation: spwalk .3s steps(1) var(--ha, 0s) 3, spatk .26s steps(1) calc(var(--hd) - .3s) 2, spidle calc(1.25s + var(--k, .5) * .7s) steps(1) calc(calc(var(--hd) + .5s) - var(--k, .5) * 1.6s) infinite; }
+.ap .wfield.play .wf2s[data-b] .tk.wsp.r1:not(.tkd) .spf { animation: spdraw calc(.75s * var(--spdraws, 1)) steps(var(--spatkn, 2), jump-none) calc(var(--sa) - .45s) forwards, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--sa) + .5s) - var(--k, .5) * 1.6s) infinite; }
+@keyframes spdraw { from { background-position-x: var(--a0, 57.1429%); } to { background-position-x: var(--al, 71.4286%); } }
+.ap .wfield.play .wf2s[data-h] .tk.wsp.r2:not(.tkd) .spf { animation: spwalk calc(.3s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--ha, 0s) 3, spatk calc(.26s * var(--spatks, 1)) steps(var(--spatkn, 2)) calc(var(--hd) - .3s) 2, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--hd) + .5s) - var(--k, .5) * 1.6s) infinite; }
 /* 쓰러짐 — 굴리지 않고 쓰러진 컷으로 땅에 남는다 */
 .ap .wf2s .tk.wsp.tkd { rotate: 0deg; opacity: .62; filter: grayscale(.5) brightness(.8) drop-shadow(0 2px 2px #000c); }
 .ap .wf2s .tk.wsp.tkd .spf { animation: none; background-position-x: 100%; }
 .ap .wfield .tk.wsp.tkf { animation: wtkfallsp .5s ease-out calc(var(--hd) + .2s + var(--j) * .05s) forwards !important; }
-.ap .wfield .tk.wsp.tkf .spf { animation: spidle 1.5s steps(1) infinite, spdie .01s steps(1) calc(var(--hd) + .2s + var(--j) * .05s) forwards; }
+.ap .wfield .tk.wsp.tkf .spf { animation: spidle calc(1.5s * var(--spidles, 1)) steps(var(--spidlen, 2)) infinite, spdie .01s steps(1) calc(var(--hd) + .2s + var(--j) * .05s) forwards; }
 /* 앞줄에서 쓰러지는 이는 엉긴 한가운데로 달려들었다가 거기서 쓰러진다 · 다음 합에도 그 자리에 누워 있다 */
 .ap .wfield .tk.r0.tkf { animation: wtkfallm 1.5s ease-out calc(var(--hd) - .45s) forwards !important; }
 @keyframes wtkfallm { 0% { translate: 2cqw 0; } 30% { translate: calc(8.5cqw + var(--j, 0) * .3cqw) 0; } 55% { translate: calc(8.5cqw + var(--j, 0) * .3cqw) 0; opacity: 1; filter: none; } 100% { translate: calc(7cqw + var(--j, 0) * .3cqw) .6cqw; opacity: .62; filter: grayscale(.5) brightness(.8); } }
-.ap .wfield .tk.wsp.r0.tkf .spf { animation: spatk .3s steps(1) calc(var(--hd) - .2s) 2, spdie .01s steps(1) calc(var(--hd) + .4s + var(--j) * .08s) forwards; }
+.ap .wfield .tk.wsp.r0.tkf .spf { animation: spatk calc(.3s * var(--spatks, 1)) steps(var(--spatkn, 2)) calc(var(--hd) - .2s) 2, spdie .01s steps(1) calc(var(--hd) + .4s + var(--j) * .08s) forwards; }
 .ap .wf2s .tk.r0.tkd { translate: calc(7cqw + var(--j, 0) * .3cqw) .6cqw; }
-@keyframes spdie { to { background-position-x: 100%; } }
+@keyframes spdie { to { background-position-x: var(--dd, 100%); } }
 /* 맞음 — 맞부딪는 순간 살아남은 앞줄 몇이 뒤로 휘청(맞음 컷 6) 했다가 다시 싸운다 */
-.ap .wfield.play .wf2s .tk.wsp.r0.tku:nth-child(3n) .spf { animation: spflinch .38s steps(1) calc(var(--hd) + .02s + var(--j, 0) * .04s) 1, spatk calc(.3s + var(--j, 0) * .03s) steps(1) calc(var(--hd) + .42s) 5, spidle calc(1.25s + var(--k, .5) * .7s) steps(1) calc(calc(var(--hd) + 1.9s) - var(--k, .5) * 1.6s) infinite; }
-@keyframes spflinch { 0%, 100% { background-position-x: 85.7143%; } }
+.ap .wfield.play .wf2s .tk.wsp.r0.tku:nth-child(3n) .spf { animation: spflinch .38s steps(1) calc(var(--hd) + .02s + var(--j, 0) * .04s) 1, spatk calc(calc(.3s + var(--j, 0) * .03s) * var(--spatks, 1)) steps(var(--spatkn, 2)) calc(var(--hd) + .42s) 5, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--hd) + 1.9s) - var(--k, .5) * 1.6s) infinite; }
+@keyframes spflinch { 0%, 100% { background-position-x: var(--fl, 85.7143%); } }
 /* 쓰러질 때 흙먼지 — 병사마다 발치에서 한 번 */
 .ap .wf2s .tk.wsp.tkf::after { content: ''; position: absolute; left: 50%; bottom: 0; width: 140%; height: 45%; translate: -50% 20%; border-radius: 50%; pointer-events: none;
   background: radial-gradient(ellipse, #c8a87acc 0, #a0805a88 40%, #0000 70%); opacity: 0; animation: wpuff .9s ease-out calc(var(--hd) + .55s + var(--j, 0) * .06s) both; }

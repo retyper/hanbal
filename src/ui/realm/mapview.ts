@@ -350,12 +350,14 @@ export const MAP_CSS = `
 .map .tok.unit .squad::before { content: ''; position: absolute; left: 6%; right: 6%; bottom: -6%; height: 24%; border-radius: 50%; background: #000b; filter: blur(2px); z-index: -1; }
 .map .tok.unit .sq { position: relative; height: 100%; aspect-ratio: var(--ar, 1); margin: 0 -13%; }
 .map .tok.unit .sq:nth-child(2) { z-index: 1; height: 92%; margin-bottom: 4%; }
-.map .tok.unit .sq u { position: absolute; inset: 0; background: 0 0 / 800% 100% no-repeat; animation: mqidle calc(1.25s + var(--k, .5) * .7s) steps(1) calc(var(--k, .5) * -1.6s) infinite; /* 병사마다 박자를 따로 (형 10-28) */ }
-@keyframes mqidle { 0% { background-position-x: 0%; } 50% { background-position-x: 14.2857%; } }
-@keyframes mqwalk { 0% { background-position-x: 28.5714%; } 50% { background-position-x: 42.8571%; } }
-@keyframes mqatk { 0% { background-position-x: 57.1429%; } 50% { background-position-x: 71.4286%; } }
-.map .tok.unit.going .sq u, .map .toks.mv .tok.unit .sq u { animation: mqwalk .42s steps(1) calc(var(--j) * -.14s) infinite; }
-.map .tok.unit.sel .sq u { animation: mqatk .32s steps(1) calc(var(--j) * .06s) 3, mqidle calc(1.25s + var(--k, .5) * .7s) steps(1) calc(1.1s - var(--k, .5) * 1.6s) infinite; }
+.map .tok.unit .sq u { position: absolute; inset: 0; background: 0 0 / calc(var(--nf, 8) * 100%) 100% no-repeat; animation: mqidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--mqidles, 1)) steps(var(--mqidlen, 2)) calc(var(--k, .5) * -1.6s) infinite; /* 병사마다 박자를 따로 (형 10-28) */ }
+@keyframes mqidle { from { background-position-x: var(--i0, 0%); } to { background-position-x: var(--i1, 28.5714%); } }
+@keyframes mqwalk { from { background-position-x: var(--w0, 28.5714%); } to { background-position-x: var(--w1, 57.1429%); } }
+@keyframes mqatk { from { background-position-x: var(--a0, 57.1429%); } to { background-position-x: var(--a1, 85.7143%); } }
+/* 새 20컷 띠(v2 · tools/anim-pack.py) — 칸이 넓다. 병사 자리는 옛 비 그대로, 안의 그림만 --r 배 넓혀 가운데에 (형 10-29) */
+.map .tok.unit .sq.v2 u { left: 50%; right: auto; width: calc(var(--r, 1) * 100%); transform: translateX(-50%); --nf: 20; --i0: 0%; --i1: 21.0526%; --w0: 21.0526%; --w1: 63.1579%; --a0: 63.1579%; --a1: 94.7368%; --al: 89.4737%; --fl: 94.7368%; --mqidlen: 4; --mqwalkn: 8; --mqatkn: 6; --mqidles: 1.6; --mqwalks: 1.4; --mqatks: 1.3; --spdraws: 1.2; }
+.map .tok.unit.going .sq u, .map .toks.mv .tok.unit .sq u { animation: mqwalk calc(.42s * var(--mqwalks, 1)) steps(var(--mqwalkn, 2)) calc(var(--j) * -.14s) infinite; }
+.map .tok.unit.sel .sq u { animation: mqatk calc(.32s * var(--mqatks, 1)) steps(var(--mqatkn, 2)) calc(var(--j) * .06s) 3, mqidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--mqidles, 1)) steps(var(--mqidlen, 2)) calc(1.1s - var(--k, .5) * 1.6s) infinite; }
 .map .tok.unit .squad::after { content: ''; position: absolute; left: -4%; right: -4%; bottom: -14%; height: 34%; border-radius: 50%; border: 2px solid transparent; z-index: -1; pointer-events: none; }
 .map .tok.unit.sel .squad::after { border-color: #ffd27a; box-shadow: 0 0 8px #ffd27a, inset 0 0 6px #ffd27a88; animation: mqring .9s ease-in-out infinite alternate; }
 @keyframes mqring { from { transform: scale(.94); opacity: .75; } to { transform: scale(1.06); opacity: 1; } }
@@ -736,7 +738,7 @@ export function mapHtml(
   const ours = (t: MapToken): boolean => t.foe === undefined && t.ally === undefined && t.party !== true
   const tokBtn = (t: MapToken, ang?: number): string =>
     `<button class="tok${t.squad !== undefined ? ' unit' : ''}${ours(t) && t.march === undefined && !t.going ? ' idle' : ''}${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}${t.ally !== undefined ? ' ally' : ''}${t.party === true ? ' party' : ''}${t.foe !== undefined ? ` foe${t.sneak === true ? ' sneak' : ''}` : ''}" data-act="${t.foe !== undefined ? 'foetok' : t.party === true ? 'ptok' : 'tok'}" data-army="${t.army}" style="${tokKit(t)}">`
-    + `${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}${ours(t) ? '<i class="flag"></i>' : ''}${t.wait === true ? `<i class="ask" style="--ae:${P.realm.mapAskEveryS}s;--ad:${(-(jit(t.army) * P.realm.mapAskEveryS)).toFixed(1)}s">명령?</i>` : ''}${t.squad !== undefined ? `<span class="squad">${t.squad.map((q, j) => `<i class="sq" style="--ar:${q.ar.toFixed(3)};--j:${j};--k:${((([...t.army].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7) + j * 53) % 97 + 97) % 97 / 97).toFixed(2)}"><u style="background-image:url('${q.src}')"></u></i>`).join('')}</span>` : ''}<img src="${t.img}" alt="">${t.foe !== undefined ? '' : t.morale !== undefined ? `<i class="hp mor${t.morale < P.realm.mapMoraleLow ? ' low' : ''}" style="--p:${Math.max(0.06, Math.min(1, t.morale / P.realm.moraleMax)).toFixed(2)}"></i>` : `<i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i>`}<b>${t.foe !== undefined ? '적' : `${t.ally !== undefined ? '도움 ' : t.party === true ? '개척 ' : ''}${t.men}`}</b></button>`
+    + `${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}${ours(t) ? '<i class="flag"></i>' : ''}${t.wait === true ? `<i class="ask" style="--ae:${P.realm.mapAskEveryS}s;--ad:${(-(jit(t.army) * P.realm.mapAskEveryS)).toFixed(1)}s">명령?</i>` : ''}${t.squad !== undefined ? `<span class="squad">${t.squad.map((q, j) => `<i class="sq${q.r !== undefined ? ' v2' : ''}" style="--ar:${q.ar.toFixed(3)};${q.r !== undefined ? `--r:${q.r.toFixed(3)};` : ''}--j:${j};--k:${((([...t.army].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7) + j * 53) % 97 + 97) % 97 / 97).toFixed(2)}"><u style="background-image:url('${q.src}')"></u></i>`).join('')}</span>` : ''}<img src="${t.img}" alt="">${t.foe !== undefined ? '' : t.morale !== undefined ? `<i class="hp mor${t.morale < P.realm.mapMoraleLow ? ' low' : ''}" style="--p:${Math.max(0.06, Math.min(1, t.morale / P.realm.moraleMax)).toFixed(2)}"></i>` : `<i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i>`}<b>${t.foe !== undefined ? '적' : `${t.ally !== undefined ? '도움 ' : t.party === true ? '개척 ' : ''}${t.men}`}</b></button>`
   let toks = ''
   // 길 위의 우리 군대 — 떠난 쪽에서 삼분의 일쯤 (가운데의 "n계절" 글씨를 안 가린다)
   for (const t of tokens) {
@@ -798,7 +800,7 @@ export interface MapToken {
   /** 이번 계절 아직 명령이 없는 우리 군대 — 「명령?」 말풍선 (문명의 "유닛 명령 필요") */
   readonly wait?: boolean
   /** 땅에 선 병사 셋 — 그 군대에 많은 병종의 동작 그림 (형 10-28: "둥실 떠다니기만 하면 뭐하냐 · 유닛처럼") */
-  readonly squad?: ReadonlyArray<{ readonly src: string; readonly ar: number }>
+  readonly squad?: ReadonlyArray<{ readonly src: string; readonly ar: number; readonly r?: number }>
 }
 
 /** 고른 군대가 갈 수 있는 고을 — 칩은 판세(싸울 곳) 또는 걸리는 계절 */
