@@ -186,11 +186,7 @@ const VOICE_OF: Readonly<Record<string, VoiceKind>> = {
 
 /** 등용 대사를 새로 쓰고 아직 녹음하지 않은 장수 — hire/<id>.ogg 가 없다. 녹음하면 여기서 지운다 (tests/realm/hire-lines.test.ts) */
 export const HIRE_UNRECORDED: ReadonlySet<string> = new Set([
-  'sr-hogong',
   'mh-jinwang',
-  'sr-sobeol',
-  'sr-jibaekho',
-  'sr-wae-ruler',
   'mh-soseono',
   'sr-aryeong',
   'sr-danbi',
