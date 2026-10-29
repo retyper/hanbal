@@ -23,9 +23,9 @@ const esc = (s: string): string =>
 export const TITLE_MEAN: Readonly<Record<string, string>> = {
   신지: '삼한 큰 나라의 우두머리', 험측: '변진에서 신지 다음가는 우두머리', 번예: '변진의 셋째 우두머리', 살해: '변진의 넷째 우두머리', 읍차: '작은 나라·고을의 우두머리',
   견지: '마한 우두머리의 칭호', 견사: '사신을 맡은 벼슬', 장수: '군대를 이끄는 이', 군장: '고을과 나라의 우두머리', 거수: '무리의 우두머리',
-  선인: '고구려의 낮은 벼슬', 패자: '고구려의 높은 벼슬', 조의: '고구려의 벼슬 — 검은 옷을 입는다', 우태: '고구려의 벼슬', 대가: '큰 무리를 거느린 귀족',
+  선인: '고구려의 낮은 벼슬', 패자: '고구려의 높은 벼슬', 조의: '고구려의 벼슬: 검은 옷을 입는다', 우태: '고구려의 벼슬', 대가: '큰 무리를 거느린 귀족',
   진지렴: '진한의 우두머리 칭호', 삼로: '옥저·동예 읍락의 어른', 대사: '부여의 벼슬',
-  마가: '부여의 네 가 — 말', 우가: '부여의 네 가 — 소', 저가: '부여의 네 가 — 돼지', 구가: '부여의 네 가 — 개',
+  마가: '부여의 네 가: 말', 우가: '부여의 네 가: 소', 저가: '부여의 네 가: 돼지', 구가: '부여의 네 가: 개',
   왕: '임금', 대왕: '임금', 우해왕: '우산국의 임금',
 }
 
@@ -40,7 +40,7 @@ export function splitTitle(name: string): { title: string | null; given: string 
 /** 이름 HTML — 칭호는 작고 흐리게 앞에, 누르고 있으면 뜻 (성처럼 읽히지 않게) */
 export function nameHtml(name: string): string {
   const { title, given } = splitTitle(name)
-  return title === null ? esc(given) : `<small class="ttl" title="${esc(`${title} — ${TITLE_MEAN[title]}`)}">${esc(title)}</small>${esc(given)}`
+  return title === null ? esc(given) : `<small class="ttl" title="${esc(`${title}: ${TITLE_MEAN[title]}`)}">${esc(title)}</small>${esc(given)}`
 }
 
 /** 육각형 꼭짓점 순서 — STAT_NAME 의 순서 */
@@ -82,7 +82,7 @@ export function roleLine(r: Realm, h: Hero): string {
   if (h.status === 'captive') return `${r.factions[h.captor ?? '']?.name ?? '?'}에 사로잡혀 있다${h.persuade ? ` · 회유 중 · ${h.persuade.resist === undefined ? `${h.persuade.left}계절 남음` : h.persuade.resist > 0 ? '아직 마음을 닫았다' : `마음이 흔들린다${(h.persuade.tries ?? 0) > 0 ? ` · ${h.persuade.tries}번 고개를 저었다` : ''}`}` : ''}`
   if (isRuler(r, h.id)) {
     const ra = armyOfHero(r, h.id)
-    if (ra !== null) return `군주 · 친정 — ${ra.march !== null ? `${josa(node(ra.march.to), '으로', '로')} 가는 중` : `${node(ra.at)}에서 군대를 이끈다`} · 도읍의 다스림이 준다`
+    if (ra !== null) return `군주 · 친정: ${ra.march !== null ? `${josa(node(ra.march.to), '으로', '로')} 가는 중` : `${node(ra.at)}에서 군대를 이끈다`} · 도읍의 다스림이 준다`
     return h.at === r.factions[h.faction]?.capital ? '군주 · 도읍을 다스린다' : `군주 · ${node(h.at)}에 있다 · 도읍의 다스림이 준다`
   }
   const ex = (r.expeditions ?? []).find((x) => x.hero === h.id)

@@ -344,7 +344,7 @@ function buildStatRows(
       return {
         title: statLabel(key),
         sub: `Lv ${lv}`,
-        lines: [`지금 — ${now2}`, after === now2 ? '한 레벨로는 크게 달라지지 않는다' : `한 레벨 뒤 — ${after}`],
+        lines: [`지금: ${now2}`, after === now2 ? '한 레벨로는 크게 달라지지 않는다' : `한 레벨 뒤: ${after}`],
         stats: [
           ['한 레벨 값', coinText(cost)],
           ['세 레벨 값', coinText(trainingCost(lv) + trainingCost(lv + 1) + trainingCost(lv + 2))],
@@ -395,8 +395,8 @@ function buildStatRows(
   attachDetail(med, () => ({
     title: '명상',
     sub: `${d.meditate}단`,
-    lines: [`지금 — ${meditateEffect(d.meditate)}`, '자리를 비운 동안에만 듣는다. 판 안에서는 아무것도 바꾸지 않는다'],
-    stats: [['한 단 값', meditateCost(d) > 0 ? coinText(meditateCost(d)) : '—'], ['가진 돈', coinText(d.training)]],
+    lines: [`지금: ${meditateEffect(d.meditate)}`, '자리를 비운 동안에만 듣는다. 판 안에서는 아무것도 바꾸지 않는다'],
+    stats: [['한 단 값', meditateCost(d) > 0 ? coinText(meditateCost(d)) : '-'], ['가진 돈', coinText(d.training)]],
     foot: meditateBlocked(d),
   }))
   box.appendChild(med)
@@ -450,7 +450,7 @@ function buildForgeRows(d: SaveData, audio: AudioSwitch, onChange: () => void): 
   const head = document.createElement('div')
   head.className = 'f-h'
   head.innerHTML = '<div class="f-cap">김홍도 「대장간」</div><h3><i class="hb-ic i-forge"></i> 대장간</h3><span class="f-bow"></span>'
-    + '<span class="f-note">든 활을 갈아 만든다 — 개조는 그 활의 것이다 · 부위마다 세 단</span>'
+    + '<span class="f-note">든 활을 갈아 만든다. 개조는 그 활의 것이다 · 부위마다 세 단</span>'
   const bowOut = head.querySelector('.f-bow') as HTMLElement
   const grid = document.createElement('div')
   grid.className = 'g-grid'
@@ -531,14 +531,14 @@ function buildForgeRows(d: SaveData, audio: AudioSwitch, onChange: () => void): 
       aName.firstChild!.textContent = armorKind(id).name
       aOrigin.textContent = armorKind(id).origin
       aLv.textContent = `${lv} / ${max}단`
-      aNow.textContent = `입은 갑옷을 담근다 — 한 벌의 방어량과 상한이 오른다 · 지금 ${armorForgeEffect(id, lv)}`
+      aNow.textContent = `입은 갑옷을 담근다. 한 벌의 방어량과 상한이 오른다 · 지금 ${armorForgeEffect(id, lv)}`
       const why = armorForgeBlocked(d, id)
       const top = lv >= max
       aNext.textContent = top ? '끝까지 담갔다' : `→ ${armorForgeEffect(id, lv + 1)}`
       aNext.classList.toggle('g-flat', top)
       aCost.textContent = top ? '' : String(forgeCost(lv))
       aBtn.disabled = why !== ''
-      aBtn.title = why === '' ? `${armorKind(id).name} ${lv + 1}단 — ${coinText(forgeCost(lv))}` : why
+      aBtn.title = why === '' ? `${armorKind(id).name} ${lv + 1}단: ${coinText(forgeCost(lv))}` : why
     }
     for (const r of rows) {
       const lv = forgeLevel(d, d.bow, r.part)
@@ -552,7 +552,7 @@ function buildForgeRows(d: SaveData, audio: AudioSwitch, onChange: () => void): 
       r.next.classList.toggle('g-flat', top)
       r.cost.textContent = top ? '' : String(forgeCost(lv))
       r.btn.disabled = why !== ''
-      r.btn.title = why === '' ? `${def?.name ?? ''} ${lv + 1}단 — ${coinText(forgeCost(lv))}` : why
+      r.btn.title = why === '' ? `${def?.name ?? ''} ${lv + 1}단: ${coinText(forgeCost(lv))}` : why
     }
   }
   return { el: box, refresh }
@@ -710,9 +710,9 @@ function bowArt(id: string, owned: boolean, px: number): string {
         sub: k.origin,
         lines: [
           k.perk,
-          k.cost === '없음' ? '대가가 없다 — 그래서 기준이 된다.'
-            : `대가 — ${k.cost}${lv > 0 ? ` (숙련으로 ${eased}% 완화)` : ''}`,
-          k.synergy !== undefined ? `궁합 — ${k.synergy.label}` : '',
+          k.cost === '없음' ? '대가가 없다: 그래서 기준이 된다.'
+            : `대가: ${k.cost}${lv > 0 ? ` (숙련으로 ${eased}% 완화)` : ''}`,
+          k.synergy !== undefined ? `궁합: ${k.synergy.label}` : '',
         ],
         stats: nx !== undefined ? [['다음 숙련까지', `${hits} / ${nx}`]] : [['숙련', '끝까지 올렸다']],
         foot: '바꾼 활은 다음 판부터 든다',
@@ -735,7 +735,7 @@ function bowArt(id: string, owned: boolean, px: number): string {
     const k = BOW_KINDS.find((b) => b.id === id)
     const worn = d.bow === id
     if (!hasBow(id)) {
-      rackLine.innerHTML = `아직 못 든다 — ${unlockOfBow(id)?.hint ?? ''}`
+      rackLine.innerHTML = `아직 못 든다: ${unlockOfBow(id)?.hint ?? ''}`
         + ` <i>· 지금 드는 활은 ${BOW_KINDS.find((b) => b.id === d.bow)?.name ?? ''}</i>`
       take.disabled = true
       take.textContent = '못 드는 활'
@@ -744,7 +744,7 @@ function bowArt(id: string, owned: boolean, px: number): string {
     // 대가·궁합은 말풍선으로 갔다. 여기 한 줄은 **지금 무엇을 드는가**만 말한다.
     rackLine.innerHTML = worn
       ? `<b>${k?.name ?? ''}</b> 를 들고 있다`
-      : `<b>${k?.name ?? ''}</b> — 바꾼 활은 다음 판부터 든다`
+      : `<b>${k?.name ?? ''}</b>: 바꾼 활은 다음 판부터 든다`
     take.disabled = worn
     take.textContent = worn ? '들고 있음' : '이 활을 든다'
   }
@@ -855,7 +855,7 @@ function bowArt(id: string, owned: boolean, px: number): string {
     const capNow = Math.floor(P.offline.trainingCap * meditateCapMul(d.meditate))
     const arrowMin = 1 / (P.offline.arrowPerSec * meditateRateMul(d.meditate) * 60)
     hint.innerHTML = d.offlineEnabled
-      ? `게임을 닫거나 탭을 가려 둔 동안만 쌓인다 — ${(1 / perMin).toFixed(1)}분에 ${coinHtml(1)} (최대 ${capNow}) · 화살은 ${arrowMin.toFixed(1)}분에 1발`
+      ? `게임을 닫거나 탭을 가려 둔 동안만 쌓인다. ${(1 / perMin).toFixed(1)}분에 ${coinHtml(1)} (최대 ${capNow}) · 화살은 ${arrowMin.toFixed(1)}분에 1발`
       : `쌓지 않는 대신 판 보상 ×${P.offline.optOutBonus.toFixed(2)}`
     chk.checked = d.offlineEnabled
     syncSound()
@@ -962,7 +962,7 @@ export function showReinforce(
   const why = quit
     ? '여기서 접었다'
     : info.reason === 'death'
-      ? '기력이 0이 됐다 — 적의 화살은 방패로 막고 갑옷으로 받는다'
+      ? '기력이 0이 됐다. 적의 화살은 방패로 막고 갑옷으로 받는다'
       // 2026-09-20, 형: "'화살이 떨어졌다 - 남은수는 화면 왼쪽 위에 있다' 이거 고쳐야함. '화살이 없어서 더 쏠수가 없어...' 이렇게."
       : '화살이 없어서 더 쏠 수가 없어...'
 
@@ -1040,7 +1040,7 @@ export function showReinforce(
     let min = Number.POSITIVE_INFINITY
     for (const k of STAT_KEYS) min = Math.min(min, trainingCost(d.stats[k]))
     none.style.display = ''
-    none.textContent = `${coinText(Math.max(0, min - d.training))} 모자라다 — 판을 깰 때마다 쌓인다. 다음 여정에서 더 벌어 온다`
+    none.textContent = `${coinText(Math.max(0, min - d.training))} 모자라다: 판을 깰 때마다 쌓인다. 다음 여정에서 더 벌어 온다`
   }
   paneStat.appendChild(none)
   const unsub = onSaveChanged(syncNone)
@@ -1115,7 +1115,7 @@ export function showOfflineGain(
   // **얼마 동안 비웠고 그래서 무엇이 왔는지** 를 같이 말한다 (2026-09-20, 형: "얼마만에 얼마 차는지 유저가 알아야하는데").
   const min = Math.floor(gain.seconds / 60)
   const away = min >= 120 ? `${Math.floor(min / 60)}시간` : min >= 1 ? `${min}분` : '잠깐'
-  o.toast(`자리를 비운 ${away} — ${parts.join(' · ')}`, 4200)
+  o.toast(`자리를 비운 ${away}: ${parts.join(' · ')}`, 4200)
 }
 
 /**

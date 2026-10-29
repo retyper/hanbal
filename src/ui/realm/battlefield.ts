@@ -34,17 +34,17 @@ export const APPROACH_NAME: Record<Approach, string> = {
   road: '대로로 간다', night: '밤길로 숨어 간다', ford: '여울을 몰래 건넌다', ridge: '산기슭으로 돌아간다', cliff: '절벽을 타고 오른다',
 }
 export const APPROACH_DOES: Record<Approach, { gain: string; risk: string }> = {
-  road: { gain: '빠르고 질서 있게 닿는다 — 사기가 오른다', risk: '숨지 않는다. 적은 성과 장정으로 맞는다' },
-  night: { gain: '들키지 않으면 잠든 적을 친다 — 성문도 장정도 못 막는다', risk: '들키면 기다리던 적의 매복에 걸린다' },
-  ford: { gain: '갈대에 숨어 건넌다 — 들키지 않으면 강만 믿던 적을 친다', risk: '들키면 물 한가운데서 맞아 크게 잃는다' },
-  ridge: { gain: '한 계절 더 돌아 뒤로 나온다 — 성을 비켜 치고 높은 곳에서 쏠 수 있다', risk: '들키면 산길에서 걸린다' },
-  cliff: { gain: '산성 절벽을 넘어 성 안으로 — 적은 사람일수록 잘 된다', risk: '실패하면 떨어져 많이 잃는다' },
+  road: { gain: '빠르고 질서 있게 닿는다. 사기가 오른다', risk: '숨지 않는다. 적은 성과 장정으로 맞는다' },
+  night: { gain: '들키지 않으면 잠든 적을 친다. 성문도 장정도 못 막는다', risk: '들키면 기다리던 적의 매복에 걸린다' },
+  ford: { gain: '갈대에 숨어 건넌다. 들키지 않으면 강만 믿던 적을 친다', risk: '들키면 물 한가운데서 맞아 크게 잃는다' },
+  ridge: { gain: '한 계절 더 돌아 뒤로 나온다. 성을 비켜 치고 높은 곳에서 쏠 수 있다', risk: '들키면 산길에서 걸린다' },
+  cliff: { gain: '산성 절벽을 넘어 성 안으로, 적은 사람일수록 잘 된다', risk: '실패하면 떨어져 많이 잃는다' },
 }
 
 /** 계절에 막힌 길 — 갈 수는 있다. 고를 때 미리 보인다 (형: "불가능하게 만들지 말고 패널티 · 사전에 안내") */
 export const HARD_LINE = {
-  winterPass: '눈 덮인 고개 — 얼어서 사람을 잃고 한 계절 더 걸린다',
-  summerFord: '장마에 불어난 나루 — 떠내려가 사람을 잃고 한 계절 더 걸린다',
+  winterPass: '눈 덮인 고개: 얼어서 사람을 잃고 한 계절 더 걸린다',
+  summerFord: '장마에 불어난 나루: 떠내려가 사람을 잃고 한 계절 더 걸린다',
 } as const
 
 /** 깃발(명령)의 이름 — 우리 옛 진법의 말로. '일기토'처럼 남의 나라 게임 말은 쓰지 않는다 (형 2026-10-19) */
@@ -59,24 +59,24 @@ const CMD_DOES: Record<Cmd, string> = {
   charge: '길 튼 적을 뚫고 궁수까지 덮친다 · 버티는 방진에 꺾인다 (흔들리는 방진은 뚫는다)',
   hold: '돌격을 받아 꺾는다 · 덜 잃는다 · 서 있으면 화살받이가 된다',
   open: '앞줄을 벌려 우리 화살비를 세게 한다 · 방진을 이긴다 · 돌격에 뚫린다',
-  ford: '여울목에서 버틴다 — 건너오는 돌격이 크게 꺾인다 · 이 땅에서만, 한 번',
+  ford: '여울목에서 버틴다. 건너오는 돌격이 크게 꺾인다 · 이 땅에서만, 한 번',
   rocks: '비탈에서 바위를 굴려 맞붙기 전에 적 앞줄을 깎는다 · 이 땅에서만, 한 번',
-  gate: '성문을 들이친다 — 방진에도 꺾이지 않는다 · 성 앞에서만, 한 번',
-  ram: '뱃머리로 들이받는다 — 물 위의 돌격 · 배가 있을 때만, 한 번',
+  gate: '성문을 들이친다: 방진에도 꺾이지 않는다 · 성 앞에서만, 한 번',
+  ram: '뱃머리로 들이받는다. 물 위의 돌격 · 배가 있을 때만, 한 번',
   volley: '적 앞줄에 화살을 퍼붓는다 · 서 있는 방진에 잘 먹힌다',
   counter: '적 궁수를 겨눈다 · 적 화살비가 약해진다',
   fire: '불을 놓는다 · 바람이 돌면 우리가 흔들린다 · 한 번',
-  height: '높은 곳에서 내리쏜다 — 화살이 세고 방진이 단단해진다 · 이 땅에서만, 한 번',
+  height: '높은 곳에서 내리쏜다. 화살이 세고 방진이 단단해진다 · 이 땅에서만, 한 번',
   flank: '옆으로 돌아 궁수(없으면 앞줄 옆구리)를 친다 · 적 기병이 호위하면 막힌다',
   punch: '앞줄과 함께 들이친다 · 방진에 부딪히면 크게 다친다',
   pursue: '흔들리는 적을 쫓아 크게 벤다 · 안 흔들리면 헛걸음',
-  guard: '장수 곁을 지킨다 — 사로잡기를 막고 옆치기를 받아 내고, 물러날 때 덜 잃는다',
-  drum: '장수가 군사를 다잡는다 — 사기가 조금 오른다',
-  feast: '곳간의 곡식을 풀어 군사를 먹인다 — 사기가 크게 오르고(처음 사기까지) 이 합에 밀려도 반만 꺾인다 · 한 판에 한 번',
+  guard: '장수 곁을 지킨다. 사로잡기를 막고 옆치기를 받아 내고, 물러날 때 덜 잃는다',
+  drum: '장수가 군사를 다잡는다. 사기가 조금 오른다',
+  feast: '곳간의 곡식을 풀어 군사를 먹인다. 사기가 크게 오르고(처음 사기까지) 이 합에 밀려도 반만 꺾인다 · 한 판에 한 번',
   duel: '장수끼리 나선다 · 이기면 적이 무너지고, 지면 우리 장수가 다치거나 쓰러진다 · 한 번',
   capture: '날랜 무리를 적장에게 보낸다 · 무리가 호위보다 크고 적이 흔들릴수록 잘 된다 · 놓치면 무리를 잃는다',
   // 퇴각 — 사실상 이 싸움을 지는 것 (형 10-24: "물러난다는 사실상 패배 확정 · 퇴각한다 · 붉게 · 설명 확실히")
-  retreat: '이 싸움을 접고 퇴각을 꾀한다 — 빠져나가면 이 싸움은 지지만 군사를 덜 잃고 장수는 안 잡힌다. 따라잡히면 등을 보인 채 크게 잃고 싸움이 이어진다. 적 말이 많을수록 · 사기가 꺾였을수록 어렵고, 우리 말이 호위하거나 어두우면 쉽다',
+  retreat: '이 싸움을 접고 퇴각을 꾀한다. 빠져나가면 이 싸움은 지지만 군사를 덜 잃고 장수는 안 잡힌다. 따라잡히면 등을 보인 채 크게 잃고 싸움이 이어진다. 적 말이 많을수록 · 사기가 꺾였을수록 어렵고, 우리 말이 호위하거나 어두우면 쉽다',
   art: '그 장수만의 수 · 한 판에 한 번',
 }
 
@@ -101,15 +101,15 @@ export const ART_ICON: Readonly<Record<Art, string>> = {
   vanguard: 'unit-general', feint: 'unit-porters', order: 'unit-drummers', shout: 'status-morale-up',
 }
 export const ART_DOES: Readonly<Record<Art, string>> = {
-  snipe: '장수가 몸소 적장을 쏜다 — 적장이 다쳐 사로잡기 쉬워지고 적 사기가 꺾인다 · 한 번',
-  rite: '진중에서 굿을 한다 — 우리 사기가 크게 오른다 (처음보다 높아질 수 있다) · 한 번',
-  sway: '흔들리는 적에게 무기를 버리라 외친다 — 무리마다 일부가 넘어온다 · 안 흔들리면 헛일 · 한 번',
-  stand: '백 사람의 이름을 부르며 버틴다 — 이 합 우리가 덜 잃는다 · 한 번',
-  ambush: '샛길로 돌린 무리가 먼저 친다 — 적 궁수(없으면 앞줄)가 쓰러진다 · 한 번',
-  vanguard: '장수가 맨 앞에 선다 — 이 합 우리 앞줄이 세다 · 한 번',
-  feint: '물러나는 척 적의 돌격을 끌어들인다 — 적이 달려들면 꺾고, 안 달려들면 헛일 · 한 번',
-  order: '흐트러진 진을 다잡는다 — 이 합 우리가 덜 잃는다 · 한 번',
-  shout: '크게 외쳐 군사를 일으킨다 — 우리 사기가 오른다 · 한 번',
+  snipe: '장수가 몸소 적장을 쏜다. 적장이 다쳐 사로잡기 쉬워지고 적 사기가 꺾인다 · 한 번',
+  rite: '진중에서 굿을 한다. 우리 사기가 크게 오른다 (처음보다 높아질 수 있다) · 한 번',
+  sway: '흔들리는 적에게 무기를 버리라 외친다. 무리마다 일부가 넘어온다 · 안 흔들리면 헛일 · 한 번',
+  stand: '백 사람의 이름을 부르며 버틴다. 이 합 우리가 덜 잃는다 · 한 번',
+  ambush: '샛길로 돌린 무리가 먼저 친다. 적 궁수(없으면 앞줄)가 쓰러진다 · 한 번',
+  vanguard: '장수가 맨 앞에 선다. 이 합 우리 앞줄이 세다 · 한 번',
+  feint: '물러나는 척 적의 돌격을 끌어들인다. 적이 달려들면 꺾고, 안 달려들면 헛일 · 한 번',
+  order: '흐트러진 진을 다잡는다. 이 합 우리가 덜 잃는다 · 한 번',
+  shout: '크게 외쳐 군사를 일으킨다. 우리 사기가 오른다 · 한 번',
 }
 /** 비기 카드의 한 줄 */
 const ART_SHORT: Readonly<Record<Art, string>> = {
@@ -342,7 +342,7 @@ export function slotName(ck: Clock, i: number): string {
 const COUNT_WORD = ['', '한', '두', '세', '네', '다섯']
 /** 마지막 때의 고름 — 이름 */
 export function duskName(d: Dusk, night: boolean): string {
-  return d === 'camp' ? '진을 친다' : d === 'retreat' ? '물러난다' : night ? '날이 밝아도 밀어붙인다' : '밤싸움 — 한 합 더'
+  return d === 'camp' ? '진을 친다' : d === 'retreat' ? '물러난다' : night ? '날이 밝아도 밀어붙인다' : '밤싸움: 한 합 더'
 }
 
 /**
@@ -369,12 +369,12 @@ export function clockHtml(l: BattleLine, shown: number): string {
   let left: string
   let cls = ''
   if (p !== undefined && p.dusk !== undefined && p.round === shown) {
-    left = ck.night ? '날이 밝는다 — 어떻게 하나' : '해가 진다 — 어떻게 하나'
+    left = ck.night ? '날이 밝는다: 어떻게 하나' : '해가 진다: 어떻게 하나'
     cls = ' ask'
   } else if (p !== undefined && p.round === shown) {
     const k = ck.slots - p.round
-    if (k <= 0) left = ck.night ? '날이 밝았다 — 한 합 더' : '횃불을 밝혔다 — 밤싸움 한 합'
-    else if (k === 1) { left = ck.night ? '새벽 — 밤싸움 마지막 합' : '해질녘 — 오늘 마지막 합'; cls = ' last' }
+    if (k <= 0) left = ck.night ? '날이 밝았다: 한 합 더' : '횃불을 밝혔다: 밤싸움 한 합'
+    else if (k === 1) { left = ck.night ? '새벽: 밤싸움 마지막 합' : '해질녘: 오늘 마지막 합'; cls = ' last' }
     else left = `${ck.night ? '새벽까지' : '해 지기까지'} ${COUNT_WORD[k] ?? k} 합`
   } else if (ended) left = '싸움이 끝났다'
   else left = `${slotName(ck, now)}의 합`
@@ -398,16 +398,16 @@ function duskRow(d: DuskLog, ck: Clock, ourS: 'a' | 'd'): string {
   const line = (x: 'a' | 'd'): string => `<span class="wdkp ${x === ourS ? 'us' : 'foe'} ${chose(x)}"><em>${who(x)}</em>${esc(duskName(chose(x), ck.night))}${pick(x) === 'press' ? cost(x) : ''}</span>`
   let res: string
   const back = (['a', 'd'] as const).filter((x) => pick(x) === 'retreat')
-  if (d.caught !== undefined) res = `${josa(who(d.caught), '은', '는')} ${ck.night ? '날이 밝자' : '어둠을 틈타'} 물러나려다 따라잡혔다 — 크게 잃고 그 자리에 진을 쳤다`
+  if (d.caught !== undefined) res = `${josa(who(d.caught), '은', '는')} ${ck.night ? '날이 밝자' : '어둠을 틈타'} 물러나려다 따라잡혔다. 크게 잃고 그 자리에 진을 쳤다`
   else if (back.length === 2) res = ck.night ? '날이 밝자 두 쪽 다 진을 거두었다' : '해가 지자 두 쪽 다 어둠을 틈타 물러났다'
   else if (back.length === 1) res = `${josa(who(back[0]!), '은', '는')} ${ck.night ? '날이 밝자 진을 거두어' : '어둠을 틈타'} 물러났다`
   else if (pick('a') === 'press' || pick('d') === 'press') {
     const by = (['a', 'd'] as const).filter((x) => pick(x) === 'press')
     const who2 = by.length === 2 ? '두 쪽 다' : josa(who(by[0]!), '이', '가')
-    res = ck.night ? `${who2} 밀어붙인다 — 날이 밝아도 싸움은 이어진다` : `${who2} 밀어붙인다 — 횃불을 밝혀 한 합 더`
-  } else res = '두 쪽 다 진을 쳤다 — 싸움이 거기서 그친다'
+    res = ck.night ? `${who2} 밀어붙인다: 날이 밝아도 싸움은 이어진다` : `${who2} 밀어붙인다: 횃불을 밝혀 한 합 더`
+  } else res = '두 쪽 다 진을 쳤다. 싸움이 거기서 그친다'
   const when = d.at >= ck.slots + 1 ? (ck.night ? '아침' : '밤') : ck.night ? '새벽' : '해질녘'
-  return `<div class="wrd wdkrow${ck.night ? ' night' : ''}"><div class="wrn">${when} — 마지막 때</div><div class="wdkps">${line(ourS)}${line(foeS)}</div><p class="wpush">${esc(res)}</p></div>`
+  return `<div class="wrd wdkrow${ck.night ? ' night' : ''}"><div class="wrn">${when}: 마지막 때</div><div class="wdkps">${line(ourS)}${line(foeS)}</div><p class="wpush">${esc(res)}</p></div>`
 }
 
 /** 진을 치면 어떻게 정해지나 — 우리 눈의 말 (고을을 치는 쪽 · 지키는 쪽 · 들판) */
@@ -424,22 +424,22 @@ function campWord(l: BattleLine, weAtk: boolean, camp: DuskAsk['camp']): string 
 function duskHtml(l: BattleLine, a: DuskAsk, weAtk: boolean, art: string, anim: boolean, delay: number): string {
   const pc = Math.round(Math.max(0, Math.min(1, a.edge)) * 100)
   const sky = a.night ? 'dawn' : 'dusk'
-  const press = a.night ? '날이 밝아도 밀어붙인다' : '밤싸움 — 한 합 더'
+  const press = a.night ? '날이 밝아도 밀어붙인다' : '밤싸움: 한 합 더'
   const pressDoes = a.night ? '날이 밝아 기습의 덤은 없다 · 화살이 다시 잘 맞는다' : '횃불을 밝혀 한 번 더 붙는다 · 어둠 속이라 화살이 덜 맞고 밀린 쪽 사기가 크게 흔들린다'
-  const cost = a.hasGrain ? `<span class="wfcost">곡식 −${a.grain}</span><span class="wfcost">사기 −${a.morale}</span>` : `<span class="wfcost bad">곳간이 비었다 — 굶은 채 사기 −${a.morale}</span>`
-  const back = l.field === true ? '이 싸움은 진다' : weAtk ? '이 싸움은 진다 — 돌아간다' : '고을을 내준다'
+  const cost = a.hasGrain ? `<span class="wfcost">곡식 −${a.grain}</span><span class="wfcost">사기 −${a.morale}</span>` : `<span class="wfcost bad">곳간이 비었다. 굶은 채 사기 −${a.morale}</span>`
+  const back = l.field === true ? '이 싸움은 진다' : weAtk ? '이 싸움은 진다: 돌아간다' : '고을을 내준다'
   const btn = (d: Dusk, name: string, does: string, extra: string, img: Cmd): string =>
     `<button class="wdkb ${d}" data-war="dusk" data-c="${d}"><img class="wflag" src="${flagSrc(art, img)}" alt=""><span class="wct"><b>${esc(name)}</b>${extra}<small>${esc(does)}</small></span></button>`
   let h = `<div class="wnext wdusk ${sky}"${anim ? ` style="--d:${delay.toFixed(2)}s"` : ''}><div class="wdk-sky"><i></i></div>`
-  h += `<b class="wdk-h">${a.night ? '날이 밝는다' : '해가 진다'}</b><p class="wdk-s">아무도 무너지지 않았다 — 어떻게 하나</p>`
-  h += `<p class="wdk-now">지금 판세 <b class="us">우리 ${pc}</b> : <b class="foe">${100 - pc} 적</b> — 이대로 진을 치면 <b class="wdk-${a.camp}">${esc(campWord(l, weAtk, a.camp))}</b></p>`
+  h += `<b class="wdk-h">${a.night ? '날이 밝는다' : '해가 진다'}</b><p class="wdk-s">아무도 무너지지 않았다. 어떻게 하나</p>`
+  h += `<p class="wdk-now">지금 판세 <b class="us">우리 ${pc}</b> : <b class="foe">${100 - pc} 적</b>: 이대로 진을 치면 <b class="wdk-${a.camp}">${esc(campWord(l, weAtk, a.camp))}</b></p>`
   h += `<div class="wdkg">`
   h += btn('camp', '진을 친다', '여기서 멈춘다 · 지금 판세로 정해진다', `<em class="wdk-${a.camp}">${esc(campWord(l, weAtk, a.camp))}</em>`, 'hold')
   h += btn('press', press, pressDoes, cost, a.night ? 'charge' : 'fire')
   const rp = a.retreatP !== undefined ? `<span class="wf-${retreatCls(a.retreatP)}">빠져나갈 가망 ${Math.round(a.retreatP * 100)}%</span>` : ''
   const caughtCost = a.retreatFailLoss !== undefined ? `<span class="wfcost bad">따라잡히면 −${a.retreatFailLoss}명</span>` : ''
   h += btn('retreat', '물러난다', `${a.night ? '날이 밝자 진을 거둔다' : '어둠을 틈타 진을 거둔다'} · ${back} · 따라잡히면 그 자리에 진을 친다`, `${rp}<span class="wfcost">군사 −${a.retreatLoss}명</span>${caughtCost}`, 'retreat')
-  h += `</div><p class="wdk-n">적도 고른다 — 적이 밀어붙이면 우리가 진을 쳐도 한 합 더 싸운다</p></div>`
+  h += `</div><p class="wdk-n">적도 고른다. 적이 밀어붙이면 우리가 진을 쳐도 한 합 더 싸운다</p></div>`
   return h
 }
 
@@ -537,7 +537,7 @@ export function reliefBanner(rd: RoundLog, ourS: 'a' | 'd', art: string): string
   const ic = x.horse ? UNIT_ICON.horse : UNIT_ICON.spear
   const line = us
     ? (x.horse ? `우리 기병 원군 ${x.men}명이 옆구리를 들이친다! 적이 흔들린다` : `우리 원군 ${x.men}명이 닿았다! 적의 옆을 친다`)
-    : (x.horse ? `적의 기병 원군 ${x.men}명이 닿았다 — 우리 옆이 뚫린다` : `적의 원군 ${x.men}명이 닿았다 — 우리가 밀린다`)
+    : (x.horse ? `적의 기병 원군 ${x.men}명이 닿았다: 우리 옆이 뚫린다` : `적의 원군 ${x.men}명이 닿았다: 우리가 밀린다`)
   return `<div class="wrelief ${us ? 'us' : 'foe'}"><img src="${art}icon/${ic}.png" alt=""><b>${us ? '원군이다!' : '적의 원군'}</b><span>${esc(line)}</span></div>`
 }
 
@@ -568,11 +568,11 @@ export function styleWord(h: { traits?: readonly string[]; ryak: number; mu: num
 
 /** 맡겼을 때 — 장수의 지략이 무엇을 해 주나 (aiOrder: 지략만큼 적 앞줄의 버릇을 읽어 맞수를 둔다 · 흔들리는 적에 들이친다) */
 function autoLine(h: { name: string; ryak: number } | undefined): string {
-  if (h === undefined) return '장수가 없다 — 무리마다 제 버릇대로 싸운다'
+  if (h === undefined) return '장수가 없다: 무리마다 제 버릇대로 싸운다'
   const full = Math.max(1, Math.min(5, Math.round(h.ryak / 2)))
   const dots = '●'.repeat(full) + '○'.repeat(5 - full)
-  const feel = h.ryak >= 8 ? '적의 수를 잘 읽어 맞수를 둔다 — 맡겨도 좋다' : h.ryak >= 6 ? '곧잘 맞수를 둔다' : h.ryak >= 4 ? '반쯤은 제 버릇대로 싸운다' : '수를 잘 못 읽는다 — 직접 고르는 게 낫다'
-  return `${esc(h.name)} · 지략 <span class="wdots">${dots}</span> — ${feel}`
+  const feel = h.ryak >= 8 ? '적의 수를 잘 읽어 맞수를 둔다. 맡겨도 좋다' : h.ryak >= 6 ? '곧잘 맞수를 둔다' : h.ryak >= 4 ? '반쯤은 제 버릇대로 싸운다' : '수를 잘 못 읽는다. 직접 고르는 게 낫다'
+  return `${esc(h.name)} · 지략 <span class="wdots">${dots}</span>: ${feel}`
 }
 
 function face(id: string | null, art: string, fallback: string): string {
@@ -619,9 +619,9 @@ function introLine(l: BattleLine, weAtk: boolean, foe: string): string {
   const ok = l.ambush === 'success'
   switch (ap) {
     case 'road': return '대로로 당당히 다가섰다. 적도 진을 치고 기다린다.'
-    case 'night': return ok ? '밤길로 숨어 닿았다. 적은 아직 잠들어 있다 — 성문이 닫히기 전에 들이친다.' : '어둠 속에서 북이 울린다. 들켰다 — 적이 기다리고 있었다.'
+    case 'night': return ok ? '밤길로 숨어 닿았다. 적은 아직 잠들어 있다. 성문이 닫히기 전에 들이친다.' : '어둠 속에서 북이 울린다. 들켰다: 적이 기다리고 있었다.'
     case 'ford': return ok ? '갈대에 숨어 여울을 건넜다. 적은 강을 벽으로 믿고 있었다.' : '강 한가운데서 들켰다. 물을 헤치는 사이 화살이 쏟아진다.'
-    case 'ridge': return ok ? '산기슭을 돌아 적의 뒤로 나왔다 — 높은 곳을 잡았다.' : '산길에서 적의 정찰꾼에게 들켰다.'
+    case 'ridge': return ok ? '산기슭을 돌아 적의 뒤로 나왔다. 높은 곳을 잡았다.' : '산길에서 적의 정찰꾼에게 들켰다.'
     case 'cliff': return ok ? '절벽을 타고 올라 성 안으로 뛰어내렸다!' : '절벽을 오르다 들켰다. 돌과 화살에 많이 떨어졌다.'
   }
 }
@@ -692,10 +692,10 @@ const AP_CHIP: Readonly<Record<Approach, readonly [string, string]>> = {
 }
 const AP_EFFECT: Readonly<Record<Approach, readonly [string, string]>> = {
   road: ['치는 쪽이 질서 있게 닿아 사기가 오른다', '치는 쪽이 질서 있게 닿아 사기가 오른다'],
-  night: ['잠든 적을 친다 — 성문도 장정도 못 막는다', '기다리던 쪽의 매복에 걸렸다'],
+  night: ['잠든 적을 친다: 성문도 장정도 못 막는다', '기다리던 쪽의 매복에 걸렸다'],
   ford: ['강만 믿던 적을 친다', '물 한가운데서 맞아 크게 잃었다'],
-  ridge: ['뒤로 돌아 나왔다 — 성이 덜 막아 주고 지키는 쪽 사기가 꺾인다', '산길에서 걸렸다'],
-  cliff: ['적이 뒤에서 나타났다 — 지키는 쪽 사기가 꺾인다', '떨어져 많이 잃었다'],
+  ridge: ['뒤로 돌아 나왔다. 성이 덜 막아 주고 지키는 쪽 사기가 꺾인다', '산길에서 걸렸다'],
+  cliff: ['적이 뒤에서 나타났다. 지키는 쪽 사기가 꺾인다', '떨어져 많이 잃었다'],
 }
 /** 길목이 드러나는 한 줄 — 「○○의 말대로」 (COUNCIL.md 1주 조각 ③ · 위원회: 남이 캡처하는 건 회의가 아니라 수가 드러나는 순간) */
 const GUARD_AT: Readonly<Record<Approach, string>> = { road: '대로를', night: '밤길을', ford: '여울목을', ridge: '산기슭을', cliff: '절벽 위를' }
@@ -714,12 +714,12 @@ function guardChip(r: Realm, l: BattleLine, weAtk: boolean): TerrChip | null {
   const adv = l.adviser !== undefined ? r.heroes[l.adviser]?.name : undefined
   const [icon] = AP_CHIP[g]
   if (weAtk) {
-    if (!read) return { k: 'guard', icon, name: '길목을 비켜 갔다', line: `적은 ${GUARD_AT[g]} 지키고 있었다 — 우리는 ${CAME_BY[ap]} 왔다!${adv !== undefined ? ` 「${adv}」의 말대로였다.` : ''}`, who: 'us' }
+    if (!read) return { k: 'guard', icon, name: '길목을 비켜 갔다', line: `적은 ${GUARD_AT[g]} 지키고 있었다: 우리는 ${CAME_BY[ap]} 왔다!${adv !== undefined ? ` 「${adv}」의 말대로였다.` : ''}`, who: 'us' }
     const lead = ap === 'road' ? '적이 성문 앞에 진을 치고 기다리고 있었다.' : `적이 ${GUARD_AT[g]} 지키고 기다리고 있었다.`
     return { k: 'guard', icon, name: '길목이 읽혔다', line: `${lead} ${GUARD_WHY[l.gwhy ?? 'land']}${adv !== undefined ? ` 「${adv}」의 읽음이 빗나갔다.` : ''}`, who: 'foe' }
   }
   return read
-    ? { k: 'guard', icon, name: '길목을 맞혔다', line: `우리가 지킨 길목으로 적이 왔다 — 기다리던 대로 맞는다!`, who: 'us' }
+    ? { k: 'guard', icon, name: '길목을 맞혔다', line: `우리가 지킨 길목으로 적이 왔다. 기다리던 대로 맞는다!`, who: 'us' }
     : { k: 'guard', icon, name: '길목이 빗나갔다', line: `우리는 ${GUARD_AT[g]} 지켰는데 적은 ${CAME_BY[ap]} 왔다.`, who: 'foe' }
 }
 
@@ -732,25 +732,25 @@ export function terrChips(r: Realm, l: BattleLine, me: string, foe: string): Ter
   // 잠든 채 들이쳐졌으면 지키는 쪽은 땅의 수를 못 쓴다 (season: defTerrain)
   const sleep = l.field !== true && l.ambush === 'success'
   const dw = sleep ? '' : def
-  const ds = sleep ? ' — 이번엔 기습을 당해 못 쓴다' : ''
+  const ds = sleep ? '이번엔 기습을 당해 못 쓴다' : ''
   const out: TerrChip[] = []
   // 쉬움(촌장) — 우리 쪽 덤이 판정에 늘 걸려 있다. 보이게 맨 앞에 (형 10-27: "쉬운 난이도에서는 전투 혜택도 좀 줘라")
-  if ((r.tier ?? 1) < 1 && r.region !== 'tutorial') out.push({ k: 'easy', icon: 'emblem-crown', name: '촌장의 덤', line: `쉬움 — 우리 군사가 ${P.realm.easyPower}배 세고 사기가 ${Math.round(P.realm.easyMorale * 100)} 높다 · 물러나기와 적장 사로잡기가 쉽다 · 따라잡혀도 덜 잃는다`, who: 'us' })
-  if (l.field === true) out.push({ k: 'road', icon: 'route-column', name: '길 위', line: '길에서 마주쳤다 — 성도 장정도 없이 맞붙은 그대로 겨룬다', who: '' })
+  if ((r.tier ?? 1) < 1 && r.region !== 'tutorial') out.push({ k: 'easy', icon: 'emblem-crown', name: '촌장의 덤', line: `쉬움: 우리 군사가 ${P.realm.easyPower}배 세고 사기가 ${Math.round(P.realm.easyMorale * 100)} 높다 · 물러나기와 적장 사로잡기가 쉽다 · 따라잡혀도 덜 잃는다`, who: 'us' })
+  if (l.field === true) out.push({ k: 'road', icon: 'route-column', name: '길 위', line: '길에서 마주쳤다: 성도 장정도 없이 맞붙은 그대로 겨룬다', who: '' })
   else if (node !== undefined) {
     if (node.kind === 'fort') out.push({ k: 'fort', icon: 'settle-mountain-hold', name: '산성', line: `지키는 쪽이 크게 단단하다 · 높은 곳에서 바위를 굴린다${ds}`, who: def })
     else if (node.tags.includes('high')) out.push({ k: 'high', icon: 'settle-hill-fort', name: '높은 터', line: `지키는 쪽이 단단하다 · 높은 곳에서 바위를 굴린다${ds}`, who: def })
     if (node.tags.includes('palisade')) out.push({ k: 'palisade', icon: 'settle-palisade', name: '목책', line: '지키는 쪽이 단단하다 · 치는 쪽은 「성문 깨기」를 한 번 쓸 수 있다', who: def })
-    if (node.tags.includes('moat')) out.push(winter ? { k: 'moat', icon: 'settle-moat', name: '언 해자', line: '겨울이라 해자가 얼었다 — 막아 주지 못한다', who: '' } : { k: 'moat', icon: 'settle-moat', name: '해자', line: '지키는 쪽이 단단하다 — 치는 쪽은 물을 건너와야 한다', who: def })
-    if (node.kind === 'port') out.push({ k: 'port', icon: 'settle-port-town', name: '포구', line: '수군이 세다 — 배가 있는 쪽은 뱃머리로 들이받을 수 있다', who: '' })
+    if (node.tags.includes('moat')) out.push(winter ? { k: 'moat', icon: 'settle-moat', name: '언 해자', line: '겨울이라 해자가 얼었다. 막아 주지 못한다', who: '' } : { k: 'moat', icon: 'settle-moat', name: '해자', line: '지키는 쪽이 단단하다. 치는 쪽은 물을 건너와야 한다', who: def })
+    if (node.kind === 'port') out.push({ k: 'port', icon: 'settle-port-town', name: '포구', line: '수군이 세다: 배가 있는 쪽은 뱃머리로 들이받을 수 있다', who: '' })
   }
   const via = l.via
   if (via === 'pass') out.push({ k: 'pass', icon: 'settle-pass', name: '고갯길', line: `지키는 쪽이 높은 곳을 잡고 바위를 굴린다${ds}`, who: dw })
   else if (via === 'forest') out.push({ k: 'forest', icon: 'settle-clearing', name: '숲길', line: `지키는 쪽이 높은 곳을 잡을 수 있다${ds}`, who: dw })
-  else if (via === 'ford') out.push({ k: 'ford', icon: 'route-steppingstones', name: '나루', line: `건너오는 쪽은 돌격이 꺾인다 — 지키는 쪽 「여울 막기」${ds}`, who: dw })
-  else if (via === 'reeds') out.push({ k: 'ford', icon: 'settle-reed-ambush', name: '갈대 물가', line: `건너오는 쪽은 돌격이 꺾인다 — 지키는 쪽 「여울 막기」${ds}`, who: dw })
+  else if (via === 'ford') out.push({ k: 'ford', icon: 'route-steppingstones', name: '나루', line: `건너오는 쪽은 돌격이 꺾인다. 지키는 쪽 「여울 막기」${ds}`, who: dw })
+  else if (via === 'reeds') out.push({ k: 'ford', icon: 'settle-reed-ambush', name: '갈대 물가', line: `건너오는 쪽은 돌격이 꺾인다. 지키는 쪽 「여울 막기」${ds}`, who: dw })
   else if (via === 'mudflat') out.push({ k: 'ford', icon: 'route-boardwalk', name: '갯벌', line: '발이 빠져 걸음이 느리다', who: '' })
-  else if (via === 'sea' && node?.kind !== 'port') out.push({ k: 'sea', icon: 'route-searoute', name: '바닷길', line: '수군이 세다 — 배가 있는 쪽은 뱃머리로 들이받을 수 있다', who: '' })
+  else if (via === 'sea' && node?.kind !== 'port') out.push({ k: 'sea', icon: 'route-searoute', name: '바닷길', line: '수군이 세다: 배가 있는 쪽은 뱃머리로 들이받을 수 있다', who: '' })
   if (l.field !== true) {
     const ap = l.approach ?? 'road'
     const caught = l.ambush === 'caught'
@@ -828,19 +828,19 @@ export function warTip(prev: Realm, after: Realm, l: BattleLine, me: string, art
       const hint = p!.hint
       const habit = p!.hintSrc === 'habit'
       const hl = habit ? HABIT_LINE[hint] : HINT_LINE[hint]
-      h += `<div class="wtt"><img src="${flagSrc(art, hint)}" alt=""><span><b>${habit ? '적장의 버릇' : '적 앞줄의 낌새'}</b><small>${habit ? '겨뤄 본 적이 있어 안다 — 이번에도 그럴지는 모른다' : l.field === true ? '눈앞에서 맞붙어 보인다' : weAtk ? '척후가 이번 계절 보고 왔다' : '다가오는 것을 지켜봤다'}</small></span></div>`
+      h += `<div class="wtt"><img src="${flagSrc(art, hint)}" alt=""><span><b>${habit ? '적장의 버릇' : '적 앞줄의 낌새'}</b><small>${habit ? '겨뤄 본 적이 있어 안다. 이번에도 그럴지는 모른다' : l.field === true ? '눈앞에서 맞붙어 보인다' : weAtk ? '척후가 이번 계절 보고 왔다' : '다가오는 것을 지켜봤다'}</small></span></div>`
       if (hl !== undefined) h += `<p>${esc(hl)}</p>`
       const win = FRONT_COUNTER[hint]
       const lose = (Object.keys(FRONT_COUNTER) as Cmd[]).find((c) => FRONT_COUNTER[c] === hint)
       h += '<div class="wts"><b>이렇게 싸운다</b>'
-      if (win !== undefined) h += `<p class="good">앞줄에 「${CMD_NAME[win]}」 — 적 낌새를 받아친다</p>`
+      if (win !== undefined) h += `<p class="good">앞줄에 「${CMD_NAME[win]}」: 적 낌새를 받아친다</p>`
       if (lose !== undefined) h += `<p class="bad">${esc(josa(CMD_NAME[lose], '은', '는'))} 이 낌새에 당한다</p>`
       h += '</div>'
     } else {
       h += `<div class="wtt"><i class="wtq">?</i><span><b>적진의 속</b><small>보이지 않는다</small></span></div><p>정찰을 보냈거나 그 적장과 겨뤄 본 적이 있으면 보인다</p>`
-      h += '<div class="wts"><b>이렇게 싸운다</b><p>속을 모르면 깃발 밑 짐작 막대의 폭이 넓다 — 옅은 데까지 보고 고른다</p></div>'
+      h += '<div class="wts"><b>이렇게 싸운다</b><p>속을 모르면 깃발 밑 짐작 막대의 폭이 넓다. 옅은 데까지 보고 고른다</p></div>'
     }
-    if (pick && p!.foeWaver) h += '<p class="bad">적이 흔들린다 — 방진도 돌격을 못 받아 낸다. 쫓을 때다</p>'
+    if (pick && p!.foeWaver) h += '<p class="bad">적이 흔들린다. 방진도 돌격을 못 받아 낸다. 쫓을 때다</p>'
     const fl = foeList()
     if (fl !== '') h += `<div class="wts"><b>맞은편</b>${fl}</div>`
     return h
@@ -859,10 +859,10 @@ export function warTip(prev: Realm, after: Realm, l: BattleLine, me: string, art
     if (side === 'us') {
       const c = pick ? sel.lead : last !== undefined ? (weAtk ? last.oa : last.od)?.lead : undefined
       if (c !== undefined) h += flagLine(c, c === 'art' ? p?.art : undefined)
-      else if (pick && p!.lead.length > 0) h += '<p class="dim">아직 장수의 명령을 안 골랐다 — 누르면 선택</p>'
+      else if (pick && p!.lead.length > 0) h += '<p class="dim">아직 장수의 명령을 안 골랐다. 누르면 선택</p>'
     } else if (pick) {
       const [w] = captureWord(p!.capture)
-      h += `<p>사로잡기 — <b>${esc(w)}</b> <small class="dim">(우리 날랜 무리 ${p!.squad} · 적장 호위 ${p!.escort})</small></p>`
+      h += `<p>사로잡기: <b>${esc(w)}</b> <small class="dim">(우리 날랜 무리 ${p!.squad} · 적장 호위 ${p!.escort})</small></p>`
     }
     return h
   }
@@ -874,15 +874,15 @@ export function warTip(prev: Realm, after: Realm, l: BattleLine, me: string, art
   if (side === 'us') {
     const c = pick ? sel[g] : last !== undefined ? (weAtk ? last.oa : last.od)?.[g] : undefined
     if (c !== undefined) h += flagLine(c)
-    else if (pick && p!.groups.some((x) => x.g === g && x.options.length > 0)) h += '<p class="dim">아직 깃발을 안 골랐다 — 누르면 선택</p>'
-    else h += '<p class="dim">따로 깃발을 들 만큼 많지 않다 — 가까운 무리와 섞여 싸운다</p>'
+    else if (pick && p!.groups.some((x) => x.g === g && x.options.length > 0)) h += '<p class="dim">아직 깃발을 안 골랐다. 누르면 선택</p>'
+    else h += '<p class="dim">따로 깃발을 들 만큼 많지 않다. 가까운 무리와 섞여 싸운다</p>'
   } else {
     if (pick && g === 'front' && p!.hint !== null) {
       const win = FRONT_COUNTER[p!.hint]
-      h += `<p>낌새 — <b>${OMEN_WORD[p!.hint] ?? CMD_NAME[p!.hint]}</b>${win !== undefined ? ` · ${esc(josa(CMD_NAME[win], '으로', '로'))} 받아친다` : ''}</p>`
-    } else if (pick && g === 'front') h += '<p class="dim">무엇을 할지 모른다 — 정찰을 보내면 보인다</p>'
+      h += `<p>낌새: <b>${OMEN_WORD[p!.hint] ?? CMD_NAME[p!.hint]}</b>${win !== undefined ? ` · ${esc(josa(CMD_NAME[win], '으로', '로'))} 받아친다` : ''}</p>`
+    } else if (pick && g === 'front') h += '<p class="dim">무엇을 할지 모른다. 정찰을 보내면 보인다</p>'
     else if (!pick && last !== undefined) { const c = (weAtk ? last.od : last.oa)?.[g]; if (c !== undefined) h += flagLine(c) }
-    if (pick && p!.foeWaver) h += '<p class="bad">흔들린다 — 대열이 성기다</p>'
+    if (pick && p!.foeWaver) h += '<p class="bad">흔들린다. 대열이 성기다</p>'
   }
   return h
 }
@@ -1174,7 +1174,7 @@ function lookSumHtml(at: RoundAt | undefined, sel: RoundOrder, all: boolean, com
   if (at === undefined || !all) return ''
   const k = orderKey(sel)
   const lk = lookFor(at, sel, compute)
-  return lk === undefined ? '' : `<b class="wlst">이대로 싸우면 — 이번 합</b>${lookHtml(lk, k)}`
+  return lk === undefined ? '' : `<b class="wlst">이대로 싸우면, 이번 합</b>${lookHtml(lk, k)}`
 }
 
 export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: string, shown: number, anim: boolean, left: number, sel: RoundOrder = {}, active?: Grp | 'lead', more = false): string {
@@ -1258,8 +1258,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const aides = (st?.aides?.[i] ?? []).map((id) => `<span class="waide${lostIds.has(id) ? ' gone' : ''}" title="${esc(prev.heroes[id]?.name ?? after.heroes[id]?.name ?? '')}">${face(id, art, unitOf(i))}</span>`).join('')
     return `<div class="ws ${cls}${hitOf(i)}${hero !== null && lostIds.has(hero) ? ' chiefgone' : ''}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s"><span class="wpf">${face(hero, art, unitOf(i))}<i></i>${aides !== '' ? `<span class="waides">${aides}</span>` : ''}</span><b>${esc(name)}</b><span class="wnat">${roleChip((cls === 'us') === weAtk)}${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
       // 무너지는 금 — 이 밑으로 떨어지면 그 편이 무너져 진다 (tactics: 군사 tacBreakMen · 사기는 처음의 tacBreakMorale) (형 10-24: "사기가 어느 정도 떨어지면 패배한다가 가로바에 표시")
-      + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}${brk(Math.round(P.realm.tacBreakMen * 100), Math.round(n(i) * 100), '군사가 이 금 밑으로 줄면 무너져 진다 — 패배')}</div>${num}`
-      + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}${feastPv}${brk(st?.brk !== undefined ? mr(st.brk[i]) : Math.round(P.realm.tacBreakMorale * 83), mr(m(i)), '사기가 이 금 밑으로 떨어지면 무너져 진다 — 패배')}</div><span class="wn">사기 ${Math.round((m(i) / base) * 100)}<small class="brkl"> · 무너지는 선 ${Math.round(((st?.brk?.[i] ?? P.realm.tacBreakMorale * base) / base) * 100)}</small></span>${dmg}${hitFx}</div>` // 맞은 불꽃은 맨 뒤에 — 앞에 끼면 초상이 새로 만들어져 깜빡였다 (paintNow 의 바뀐 곳만 고치기)
+      + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}${brk(Math.round(P.realm.tacBreakMen * 100), Math.round(n(i) * 100), '군사가 이 금 밑으로 줄면 무너져 진다. 패배')}</div>${num}`
+      + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}${feastPv}${brk(st?.brk !== undefined ? mr(st.brk[i]) : Math.round(P.realm.tacBreakMorale * 83), mr(m(i)), '사기가 이 금 밑으로 떨어지면 무너져 진다. 패배')}</div><span class="wn">사기 ${Math.round((m(i) / base) * 100)}<small class="brkl"> · 무너지는 선 ${Math.round(((st?.brk?.[i] ?? P.realm.tacBreakMorale * base) / base) * 100)}</small></span>${dmg}${hitFx}</div>` // 맞은 불꽃은 맨 뒤에 — 앞에 끼면 초상이 새로 만들어져 깜빡였다 (paintNow 의 바뀐 곳만 고치기)
   }
 
   /**
@@ -1513,7 +1513,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     }
     // 사로잡기·물러나기로 끝난 합은 밀고 밀린 것이 없다
     if (rd.ev === 'capture-ok' || rd.ev === 'retreat') h += `<p class="wpush"${d(2)}>싸움이 거기서 끝났다</p>${tickEnd('<p class="wpush">싸움이 거기서 끝났다</p>')}</div>`
-    else if (rd.ev === 'retreat-fail') { const w = rd.by === ourS ? '적이 물러나다 따라잡혔다 — 싸움이 이어진다' : '물러나다 따라잡혔다 — 싸움이 이어진다'; h += `<p class="wpush"${d(2)}>${w}</p>${tickEnd(`<p class="wpush">${w}</p>`)}</div>` }
+    else if (rd.ev === 'retreat-fail') { const w = rd.by === ourS ? '적이 물러나다 따라잡혔다. 싸움이 이어진다' : '물러나다 따라잡혔다. 싸움이 이어진다'; h += `<p class="wpush"${d(2)}>${w}</p>${tickEnd(`<p class="wpush">${w}</p>`)}</div>` }
     else {
       // 무리마다 — 앞줄·활·말 그림과 잃은 수 (형: "전투로그에서도 다이나믹함이 보이게끔 유닛마다 아이콘도 같이")
       const gBefore = (sd: 0 | 1): Readonly<Partial<Record<Grp, number>>> => (i === 0 ? groupMen(mixOf(sd) as Parameters<typeof groupMen>[0]) : (sd === 0 ? rounds[i - 1]!.ga : rounds[i - 1]!.gd) ?? {})
@@ -1538,17 +1538,17 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     // 적진의 속·맞은편·땅은 전장에서 누르고 있거나 마우스를 올리면 (openWar 의 정보창 · warTip) — 여기엔 어떻게 보는지만
     h += '<p class="wfhint">전장에서 <b>우리 무리</b>를 누르면 깃발을 고를 수 있습니다 · 적·낌새·땅은 <b>누르고 있으면</b>(마우스는 올리면) 자세히 보입니다</p>'
     h += '<p class="wb0g"><b>무리마다 깃발을 하나씩 고르세요</b><span>👆 손가락이 가리키는 깃발을 권합니다 · 다 고르면 「전투 개시」</span></p>'
-    if (p.foeWaver) h += `<div class="wintel"><div class="wi warn"><b>적이 흔들린다</b><p>깃발이 기울고 대열이 성기다</p><small>방진도 돌격을 못 받아 낸다 — 쫓을 때다</small></div></div>`
+    if (p.foeWaver) h += `<div class="wintel"><div class="wi warn"><b>적이 흔들린다</b><p>깃발이 기울고 대열이 성기다</p><small>방진도 돌격을 못 받아 낸다. 쫓을 때다</small></div></div>`
     // 지난 합에 장수를 잃었다 — 누가 · 누가 지휘를 넘겨받았나 (형 10-25: "한 명 잡히면 바로 지는 건 말이 안 되는데")
     const lh = rounds[rounds.length - 1]?.lostHero
     if (lh !== undefined) {
       const ours = (lh.side === 'a') === weAtk
       const nm = (id: string): string => prev.heroes[id]?.name ?? after.heroes[id]?.name ?? '?'
       const what = lh.how === 'taken' ? '사로잡혔다' : '쓰러졌다'
-      const next = lh.chief !== undefined ? ` — ${josa(nm(lh.chief), '이', '가')} 지휘를 넘겨받는다` : ''
+      const next = lh.chief !== undefined ? `: ${josa(nm(lh.chief), '이', '가')} 지휘를 넘겨받는다` : ''
       h += `<div class="wintel"><div class="wi ${ours ? 'warn' : 'good'}"><b>${esc(`${ours ? '우리' : '적의'} ${lh.chief !== undefined ? '총대장' : '부장'} ${josa(nm(lh.hero), '이', '가')} ${what}`)}</b><p>${esc(`싸움은 이어진다${next}`)}</p></div></div>`
     }
-    if (p.shaken === true) h += `<div class="wintel"><div class="wi warn"><b>지휘가 흔들린다</b><p>총대장을 잃었다 — 이번 합은 북과 물러나기뿐</p></div></div>`
+    if (p.shaken === true) h += `<div class="wintel"><div class="wi warn"><b>지휘가 흔들린다</b><p>총대장을 잃었다. 이번 합은 북과 물러나기뿐</p></div></div>`
     /**
      * 권함 — 무리마다 판세로 하나 (형 10-24: 동료 "선택지마다 뭘 골라야 좋을지 몰라서"). 보이는 것만으로 셈한다(낌새 · 맞은편 수 · 사기 · 사로잡기 손)
      */
@@ -1631,7 +1631,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       h += `<button class="wgt${x === act ? ' on' : ''}${c !== undefined ? ' done' : ''}" data-war="gtab" data-g="${x.g}">${x.icon}<span class="wgn"><b>${esc(x.name)}</b><small>${esc(x.sub)}</small></span>${chip}</button>`
     }
     h += `</div>`
-    if (p.look !== undefined) h += `<p class="wgby">깃발마다 이번 합의 짐작 — 적이 낼 만한 수와 우리 운을 ${Math.round(P.realm.tacLookSamples)}번 굴려 <b>열에 ${TEN[Math.round((1 - 2 * P.realm.tacLookBand) * 10)] ?? ''}</b>이 드는 폭${p.look.by === 'saw' ? ' · <b>귀띔</b>이 맞을 법한 만큼 좁혔다' : ''} · <b>판세</b> 막대는 왼쪽 끝이 우리, 오른쪽 끝이 적 — 파랑이 그 깃발을 들었을 때 우리 몫, 금빛 금이 지금 · <b>사기</b>는 처음을 100으로 · <b>사로잡기</b>는 잡을 가망을 따로, 잃을 군사는 놓쳤을 때</p>`
+    if (p.look !== undefined) h += `<p class="wgby">깃발마다 이번 합의 짐작, 적이 낼 만한 수와 우리 운을 ${Math.round(P.realm.tacLookSamples)}번 굴려 <b>열에 ${TEN[Math.round((1 - 2 * P.realm.tacLookBand) * 10)] ?? ''}</b>이 드는 폭${p.look.by === 'saw' ? ' · <b>귀띔</b>이 맞을 법한 만큼 좁혔다' : ''} · <b>판세</b> 막대는 왼쪽 끝이 우리, 오른쪽 끝이 적: 파랑이 그 깃발을 들었을 때 우리 몫, 금빛 금이 지금 · <b>사기</b>는 처음을 100으로 · <b>사로잡기</b>는 잡을 가망을 따로, 잃을 군사는 놓쳤을 때</p>`
     for (const x of panes) {
       recNow = advise(x.g, x.options)
       h += `<div class="wgrp" data-g="${x.g}"${recNow !== undefined ? ` data-rec="${recNow}"` : ''}${x === act ? '' : ' hidden'}><div class="wcmdgrid">${x.options.map((c) => opt(x.g, c, x === act)).join('')}</div>${x.g === 'lead' ? whoRows() : ''}</div>`
@@ -1653,11 +1653,11 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const good = weAtk === atkWon && l.outcome !== 'draw'
     const place = l.field === true && l.edge !== undefined ? fieldName(after, l.edge) : (after.nodes[l.node]?.name ?? l.node)
     let res: string
-    if (l.outcome === 'draw') res = weAtk ? '승부가 안 났다 — 물러난다' : `${josa(place, '을', '를')} 지켜 냈다`
+    if (l.outcome === 'draw') res = weAtk ? '승부가 안 났다: 물러난다' : `${josa(place, '을', '를')} 지켜 냈다`
     else if (l.field === true) res = good ? '적을 물리치고 길을 간다' : '밀려서 돌아간다'
     else if (weAtk) res = atkWon ? `${josa(place, '을', '를')} 차지한다` : '물러난다'
     else res = atkWon ? `${josa(place, '을', '를')} 빼앗긴다` : `${josa(place, '을', '를')} 지켜 냈다`
-    const big = l.outcome === 'rout' || l.outcome === 'routed' ? (good ? '대승 — ' : '대패 — ') : ''
+    const big = l.outcome === 'rout' || l.outcome === 'routed' ? (good ? '대승: ' : '대패: ') : ''
     // 결과 판은 마지막 합의 결과 띠들이 걷힌 뒤에 — 같이 뜨면 화면 아래에서 겹쳤다 (10-28)
     const d = anim ? ` style="--d:${tAt(2) + P.realm.warRoundPopHoldS + 0.5}s"` : ''
     const fall = l.field !== true && atkWon
@@ -3212,7 +3212,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       const hh = prev.heroes[hero] ?? t.after.heroes[hero]
       const [sn, sl] = styleWord(hh)
       const box = document.createElement('div')
-      box.innerHTML = cutHtml(host.art, hero, hh?.name ?? '', `${sn} — ${sl}`, 'lead')
+      box.innerHTML = cutHtml(host.art, hero, hh?.name ?? '', `${sn}: ${sl}`, 'lead')
       const cut = box.firstElementChild as HTMLElement
       cut.addEventListener('animationend', (e) => { if (e.target === cut) cut.remove() })
       cut.addEventListener('click', (e) => { e.stopPropagation(); cut.remove() })
@@ -3433,7 +3433,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const pane = sc.querySelector<HTMLElement>(`.wgrp[data-g="${g}"]`)
     const flags = [...(pane?.querySelectorAll<HTMLElement>('[data-war="pick"] .wct > b') ?? [])].map((x) => x.textContent ?? '').filter((x) => x !== '')
     return `<div class="whh">${tab?.querySelector('.wgi')?.outerHTML ?? ''}<b>${esc(tab?.querySelector('.wgn b')?.textContent ?? '')}</b><small>${esc(tab?.querySelector('.wgn small')?.textContent ?? '')}</small></div>`
-      + `<p>들 수 있는 깃발 — ${esc(flags.join(' · '))}</p><p class="whn">깃발을 끌어 전장에 놓으면 정해집니다</p>`
+      + `<p>들 수 있는 깃발: ${esc(flags.join(' · '))}</p><p class="whn">깃발을 끌어 전장에 놓으면 정해집니다</p>`
   }
   /** 깃발의 설명 — 하는 일 · 판세 막대 · 피해·사기 표 */
   const flagHold = (card: HTMLElement): string => {
@@ -3449,7 +3449,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const box = pop.querySelector<HTMLElement>('.wfplook')
     if (box === null) return
     const gu = card?.querySelector('.wguess')
-    box.innerHTML = gu != null && card !== null ? `<div class="wlkn">${esc(card.querySelector('.wct > b')?.textContent ?? '')} — 이번 합</div>${gu.outerHTML}` : ''
+    box.innerHTML = gu != null && card !== null ? `<div class="wlkn">${esc(card.querySelector('.wct > b')?.textContent ?? '')}: 이번 합</div>${gu.outerHTML}` : ''
     box.classList.toggle('held', table) // 0.5초 넘게 누르고 있으면 피해·사기 표까지 (형 10-28) · 다른 깃발을 누르면 다시 막대만
     // 장수가 여럿 — 누른 깃발이 비기·겨루기·사로잡기면 그 아래 「누가 나서나 · 누구를 잡나」 (끌어 놓기 전에 고른다)
     const kind = card === null ? undefined : WHO_KINDS.find((k) => card.classList.contains(k))
@@ -3660,7 +3660,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const hid = l0?.start !== undefined ? l0.start.heroes[l0.atkFaction === host.me ? 0 : 1] ?? null : null
     const h = hid !== null ? prev.heroes[hid] : undefined
     const nm = h?.name ?? '장수'
-    autoAsk.innerHTML = `<div class="wsurec">${face(hid, host.art, UNIT_ICON.spear)}<b>${esc(josa(nm, '에게', '에게'))} 이 싸움을 모두 맡기겠습니까?</b><p>(자동전투)${h !== undefined ? ` · 지략 ${h.ryak} — 장수가 알아서 깃발을 고릅니다` : ''}</p><div class="wsureb"><button class="btn ghost" data-war="auto-no">내가 싸운다</button><button class="btn pri" data-war="auto-yes">맡긴다</button></div></div>`
+    autoAsk.innerHTML = `<div class="wsurec">${face(hid, host.art, UNIT_ICON.spear)}<b>${esc(josa(nm, '에게', '에게'))} 이 싸움을 모두 맡기겠습니까?</b><p>(자동전투)${h !== undefined ? ` · 지략 ${h.ryak}: 장수가 알아서 깃발을 고릅니다` : ''}</p><div class="wsureb"><button class="btn ghost" data-war="auto-no">내가 싸운다</button><button class="btn pri" data-war="auto-yes">맡긴다</button></div></div>`
     autoAsk.hidden = false
   }
   const askRetreat = (): void => {
@@ -3668,7 +3668,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const p = t.line?.pending
     const rp = p === undefined || p.retreatP === undefined ? undefined : sel.horse === 'guard' ? (p.retreatGuardP ?? p.retreatP) : p.retreatP
     const q = sure.querySelector<HTMLElement>('.wsurep')
-    if (q !== null) q.innerHTML = rp === undefined ? '' : `빠져나갈 가망 <strong class="wf-${retreatCls(rp)}">${Math.round(rp * 100)}%</strong> — 따라잡히면 등을 보인 채 크게 잃고 싸움이 이어진다`
+    if (q !== null) q.innerHTML = rp === undefined ? '' : `빠져나갈 가망 <strong class="wf-${retreatCls(rp)}">${Math.round(rp * 100)}%</strong>: 따라잡히면 등을 보인 채 크게 잃고 싸움이 이어진다`
     sure.hidden = false
   }
   let press: { x: number; y: number; timer: number; held: boolean } | null = null

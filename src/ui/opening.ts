@@ -151,7 +151,7 @@ function turnHint(): HTMLElement {
   el.className = 'op-turn'
   el.innerHTML =
     '<div class="op-turn-box"><div class="op-phone"></div></div>' +
-    '<div class="op-turn-txt"><b>가로로 눕히고 하는 게임</b><br>활은 옆으로 쏜다 — 눕히면 과녁이 커진다</div>'
+    '<div class="op-turn-txt"><b>가로로 눕히고 하는 게임</b><br>활은 옆으로 쏜다. 눕히면 과녁이 커진다</div>'
   return el
 }
 

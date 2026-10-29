@@ -293,25 +293,25 @@ export function customMarks(r: Realm, nodeId: string, viewer: string): CustomMar
     const st = riseState(r, f)
     if (st === null) continue
     const who = r.factions[f]?.name ?? ''
-    out.push({ id: 'ireoseom', label: '불씨', tip: `${who} 사람들이 숨죽이고 있다 — 도읍을 비워 두면 들고일어난다`, hot: r.season >= st.from })
+    out.push({ id: 'ireoseom', label: '불씨', tip: `${who} 사람들이 숨죽이고 있다. 도읍을 비워 두면 들고일어난다`, hot: r.season >= st.from })
   }
   const owner = n.owner
   if (owner !== viewer || owner === null) return out
   const has = (id: CustomId): boolean => hasCustom(r, owner, id)
   const cap = r.factions[owner]?.capital === nodeId
   // 책화 — 남의 땅과 맞닿은 우리 고을 (경계): 들어온 적은 물어내야 한다
-  if (has('chaekhwa') && nextTo(r, nodeId).some((x) => { const o = r.nodes[x]?.owner; return o != null && o !== owner && r.nodes[x]?.kind !== 'sodo' })) out.push({ id: 'chaekhwa', label: '책화', tip: '경계 — 이리로 쳐들어온 적은 물어내야 해서 첫 합에 기세가 꺾인다' })
+  if (has('chaekhwa') && nextTo(r, nodeId).some((x) => { const o = r.nodes[x]?.owner; return o != null && o !== owner && r.nodes[x]?.kind !== 'sodo' })) out.push({ id: 'chaekhwa', label: '책화', tip: '경계: 이리로 쳐들어온 적은 물어내야 해서 첫 합에 기세가 꺾인다' })
   if (cap && has('maljangrye')) out.push({ id: 'maljangrye', label: '말 장례', tip: '가을마다 소·말을 장례에 바쳐 장수들의 정이 오른다 · 기병은 못 뽑는다', hot: season === 'autumn' })
-  if (n.kind === 'ironMine' && has('dalcheon')) out.push({ id: 'dalcheon', label: '쇠 곱', tip: `${customDef('dalcheon').name} — 쇠가 곱으로 난다 · 여기서는 군사를 못 뽑는다` })
-  if (n.kind === 'ironMine' && has('landIron')) out.push({ id: 'landIron', label: '쇠 다루기', tip: '무장을 올리는 데 쇠가 적게 든다 — 이웃이 이 철광을 노린다' })
-  if (cap && has('sonoe')) out.push({ id: 'sonoe', label: `쇠뇌 ${framesOf(r, owner)}틀`, tip: '쇠뇌 틀 — 틀마다 쇠뇌병을 세운다 · 방패를 뚫는다' })
-  if (cap && has('deongisoe') && goodOf(stockOf(r, owner), 'iron') >= P.realm.deongiCovet) out.push({ id: 'deongisoe', label: '덩이쇠', tip: '쇠가 쌓였다 — 곡식 대신 쇠로 징병값을 낼 수 있고, 이웃이 탐낸다', hot: true })
-  if (n.kind === 'port' && has('soebae') && season === 'autumn') out.push({ id: 'soebae', label: '쇠배', tip: '가을 — 남는 쇠를 배에 실어 곡식을 사 온다', hot: true })
+  if (n.kind === 'ironMine' && has('dalcheon')) out.push({ id: 'dalcheon', label: '쇠 곱', tip: `${customDef('dalcheon').name}: 쇠가 곱으로 난다 · 여기서는 군사를 못 뽑는다` })
+  if (n.kind === 'ironMine' && has('landIron')) out.push({ id: 'landIron', label: '쇠 다루기', tip: '무장을 올리는 데 쇠가 적게 든다. 이웃이 이 철광을 노린다' })
+  if (cap && has('sonoe')) out.push({ id: 'sonoe', label: `쇠뇌 ${framesOf(r, owner)}틀`, tip: '쇠뇌 틀: 틀마다 쇠뇌병을 세운다 · 방패를 뚫는다' })
+  if (cap && has('deongisoe') && goodOf(stockOf(r, owner), 'iron') >= P.realm.deongiCovet) out.push({ id: 'deongisoe', label: '덩이쇠', tip: '쇠가 쌓였다: 곡식 대신 쇠로 징병값을 낼 수 있고, 이웃이 탐낸다', hot: true })
+  if (n.kind === 'port' && has('soebae') && season === 'autumn') out.push({ id: 'soebae', label: '쇠배', tip: '가을: 남는 쇠를 배에 실어 곡식을 사 온다', hot: true })
   if (n.kind === 'port' && has('landPort')) out.push({ id: 'landPort', label: '뱃길', tip: '바닷길로 가는 기습이 잘 숨고, 수군을 나무 반만 들여 뽑는다 · 사내들이 바다에 나가 이 포구의 장정이 적다' })
   const edges = Object.values(r.edges).filter((e) => e.a === nodeId || e.b === nodeId)
   if (has('landReeds') && (n.tags.includes('reeds') || n.tags.includes('shallows') || edges.some((e) => e.kind === 'reeds' || e.kind === 'ford'))) {
     out.push(season === 'summer'
-      ? { id: 'landReeds', label: '큰물', tip: '여름 — 물이 불어 강가 고을의 집이 조금 준다 · 갈대·나루 길 기습은 잘 숨는다', hot: true }
+      ? { id: 'landReeds', label: '큰물', tip: '여름: 물이 불어 강가 고을의 집이 조금 준다 · 갈대·나루 길 기습은 잘 숨는다', hot: true }
       : { id: 'landReeds', label: '갈대밭', tip: '갈대·나루 길로 가는 기습이 잘 숨는다' })
   }
   if (has('landHigh') && (n.tags.includes('high') || n.kind === 'fort' || edges.some((e) => e.kind === 'pass'))) out.push({ id: 'landHigh', label: '고갯목', tip: '고갯길·높은 터로 쳐들어온 적은 첫 합에 사기가 깎인다 · 우리도 고갯길은 한 계절 더' })
@@ -320,6 +320,6 @@ export function customMarks(r: Realm, nodeId: string, viewer: string): CustomMar
       ? { id: 'landSodo', label: '제사 때', tip: '봄 제사를 거르면 그해 가을걷이가 준다 · 제사는 반값', hot: true }
       : { id: 'landSodo', label: '소도 곁', tip: '소도 제사가 반값이다' })
   }
-  if (has('landPasture') && pastureFor(r, owner) !== null && nextTo(r, nodeId).includes(pastureFor(r, owner)!)) out.push({ id: 'landPasture', label: '말 치는 들', tip: '곁의 너른 들에서 말을 친다 — 계절마다 말이 들고 먹이 곡식이 든다' })
+  if (has('landPasture') && pastureFor(r, owner) !== null && nextTo(r, nodeId).includes(pastureFor(r, owner)!)) out.push({ id: 'landPasture', label: '말 치는 들', tip: '곁의 너른 들에서 말을 친다. 계절마다 말이 들고 먹이 곡식이 든다' })
   return out
 }

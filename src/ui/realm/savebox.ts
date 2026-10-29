@@ -67,7 +67,7 @@ export function saveBoxHtml(k: SaveBoxKit, v: SaveBoxView): string {
     h += `</span></div>`
     if (v.ask?.n === n) h += askHtml(k, v, m)
   })
-  if (!game && v.slots.every((m) => m === null) && (v.shelf ?? '') === '') h += `<p class="mute svnone">저장한 판이 아직 없습니다 — 판 안의 「나라」 판에 있는 「저장 · 불러오기」에서 저장할 수 있습니다</p>`
+  if (!game && v.slots.every((m) => m === null) && (v.shelf ?? '') === '') h += `<p class="mute svnone">저장한 판이 아직 없습니다. 판 안의 「나라」 판에 있는 「저장 · 불러오기」에서 저장할 수 있습니다</p>`
   h += `</div>`
   if (v.msg !== null) h += `<p class="svmsg${v.msg.bad ? ' bad' : ''}" role="status">${k.esc(v.msg.text)}</p>`
   h += `<div class="svfile">${game ? `<button class="btn" data-act="sv-down">파일로 내려받기</button>` : ''}<button class="btn" data-act="sv-file">파일에서 불러오기</button>`

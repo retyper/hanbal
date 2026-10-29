@@ -171,7 +171,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
       const hot = counter()
       voices.push(hot !== undefined
         ? { hero: hot, label: '지금 친다', move: 'waitAgainst', line: say(hot, 'waitAgainst'), opt: { k: 'go' } }
-        : { hero: null, label: '지금 친다', line: '기다리지 않는다 — 이번 계절에 친다', opt: { k: 'go' } })
+        : { hero: null, label: '지금 친다', line: '기다리지 않는다: 이번 계절에 친다', opt: { k: 'go' } })
       out.push({ id: 'wait', title: '지금 칠까, 기다릴까', voices })
     }
   }
@@ -194,7 +194,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
       const mv: SayMove = close ? 'keepAgainst' : 'keepAllSafe'
       voices.push(hot !== undefined
         ? { hero: hot, label: '모두 데려간다', move: mv, line: say(hot, mv), opt: { k: 'take', share: 1 } }
-        : { hero: null, label: '모두 데려간다', line: '나누지 않는다 — 군사를 모두 데려간다', opt: { k: 'take', share: 1 } })
+        : { hero: null, label: '모두 데려간다', line: '나누지 않는다: 군사를 모두 데려간다', opt: { k: 'take', share: 1 } })
       out.push({ id: 'keep', title: '군사를 얼마나 데려갈까', voices })
     }
   }
@@ -253,7 +253,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
       }
     }
     // 말이 하나뿐이고 숨는 길이면 — 군주의 대로를 곁에 (갈리지 않으면 회의가 아니다)
-    if (voices.length === 1 && voices[0]!.opt.k === 'route' && voices[0]!.opt.ap !== 'road' && has('road')) voices.push({ hero: null, label: '대로로', line: '숨지 않는다 — 대로로 간다', opt: { k: 'route', ap: 'road' } })
+    if (voices.length === 1 && voices[0]!.opt.k === 'route' && voices[0]!.opt.ap !== 'road' && has('road')) voices.push({ hero: null, label: '대로로', line: '숨지 않는다: 대로로 간다', opt: { k: 'route', ap: 'road' } })
     if (voices.length >= 2) out.push({ id: 'route', title: '어느 길로 갈까', voices })
   }
 

@@ -72,8 +72,8 @@ export function mountDefense(o: Overlay, d: SaveData, buy: (id: DefenseId) => bo
         + `<span class="d-name">${name}</span><b>${badge(item.id, held, st, d)}</b>`
       // 값과 이유를 둘 다 말한다 — 하나만 말하면 "왜 안 눌리지"가 남는다.
       btn.title = why === ''
-        ? `${name}(${item.origin}) — ${item.hint} · ${coinText(defenseCost(item.id, st, d))}`
-        : `${name}(${item.origin}) — ${why}`
+        ? `${name}(${item.origin}): ${item.hint} · ${coinText(defenseCost(item.id, st, d))}`
+        : `${name}(${item.origin}): ${why}`
       btn.setAttribute('aria-label', btn.title)
       btn.disabled = why !== ''
       btn.addEventListener('click', () => {
@@ -88,7 +88,7 @@ export function mountDefense(o: Overlay, d: SaveData, buy: (id: DefenseId) => bo
     if (st.armor > 0) worn.push(`${armorName(d)} ${st.armor}`)
     hint.textContent = worn.length > 0
       ? worn.join(' · ')
-      : `장터 — 방패 ${defenseCost('shield')} (화살 ${shieldHp()}발) · ${armorName(d)} ${defenseCost('armor', st, d)} (+${armorPer(d)}) · 화살 한 발 ${defenseCost('arrow', st)}`
+      : `장터: 방패 ${defenseCost('shield')} (화살 ${shieldHp()}발) · ${armorName(d)} ${defenseCost('armor', st, d)} (+${armorPer(d)}) · 화살 한 발 ${defenseCost('arrow', st)}`
   }
 
   refresh()

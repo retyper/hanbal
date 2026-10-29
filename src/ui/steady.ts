@@ -46,9 +46,9 @@ export function mountSteady(o: Overlay, hold: (on: boolean) => void): void {
   const btn = document.createElement('button')
   btn.type = 'button'
   btn.className = 'hb-btn st-btn'
-  btn.setAttribute('aria-label', '호흡정지 — 누르고 있는 동안 떨림이 멎는다')
+  btn.setAttribute('aria-label', '호흡정지: 누르고 있는 동안 떨림이 멎는다')
   btn.innerHTML = '<i class="hb-ic i-focus"></i><i class="st-lbl">숨참기</i><i class="st-key">Shift</i>'
-  btn.title = '숨참기 — Shift 또는 우클릭을 누르고 있는 동안 떨림이 멎는다'
+  btn.title = '숨참기: Shift 또는 우클릭을 누르고 있는 동안 떨림이 멎는다'
 
   const set = (on: boolean): void => {
     btn.classList.toggle('st-on', on)

@@ -198,7 +198,7 @@ function shelve(s: Saved | null, id = s?.seed ?? 0): boolean {
  * 어디서든 막히면 지금 판·자동 저장은 그대로 두고 까닭을 돌려준다 (메모리: localStorage 되돌리기)
  */
 function switchTo(pick: Saved): string | null {
-  if (!shelve(state, shelfIdFor(pick))) return '지금 판을 「다른 판」에 남길 자리가 모자라다 — 판을 바꾸지 않았다. 「파일로 내려받기」로 지금 판을 남겨 두자.'
+  if (!shelve(state, shelfIdFor(pick))) return '지금 판을 「다른 판」에 남길 자리가 모자라다. 판을 바꾸지 않았다. 「파일로 내려받기」로 지금 판을 남겨 두자.'
   const out: Saved = { ...pick, at: new Date().toISOString() }
   const json = JSON.stringify(out)
   let old: string | null = null
@@ -207,7 +207,7 @@ function switchTo(pick: Saved): string | null {
   try { localStorage.setItem(KEY, json); ok = localStorage.getItem(KEY) === json } catch { ok = false }
   if (!ok) {
     if (old !== null) { try { localStorage.setItem(KEY, old) } catch { /* 쓰기 전과 같은 것 — 들어간다 */ } }
-    return '고른 판을 쓸 자리가 모자라다 — 판을 바꾸지 않았다. 지금 판은 그대로다.'
+    return '고른 판을 쓸 자리가 모자라다. 판을 바꾸지 않았다. 지금 판은 그대로다.'
   }
   if (old !== null) { try { localStorage.setItem(PREV, old) } catch { /* 한 계절 앞 저장은 못 옮겨도 된다 · 지금 판은 선반에 있다 */ } }
   state = out
@@ -233,7 +233,7 @@ function draftNow(): unknown {
 /** 손 저장(칸·파일) 하나를 연다 — 판을 바꾼 뒤 그때 정해 둔 명령을 되살린다 (app.show 의 restoreDraft 가 읽는다) */
 function openSave(f: SaveFile): string | null {
   const pick = normalize(f.game)
-  if (pick === null) return '판이 깨져 있다 — 불러오지 않았다'
+  if (pick === null) return '판이 깨져 있다: 불러오지 않았다'
   const why = switchTo(pick)
   if (why !== null) return why
   try { localStorage.setItem(DRAFT, JSON.stringify(f.draft ?? null)) } catch { /* 명령 없이 그 계절 처음부터 */ }
@@ -423,14 +423,14 @@ const app = mountRealmApp(root, {
       if (state === null) return '저장할 판이 없다'
       const w = writeSave(kv, n, makeSaveFile(state, draftNow(), label, new Date().toISOString()))
       if (w.ok) return null
-      return w.why === 'full' ? '저장할 자리가 모자라다 — 아무것도 바꾸지 않았다. 「파일로 내려받기」로 이 판을 파일에 남겨 두자.' : '없는 칸이다'
+      return w.why === 'full' ? '저장할 자리가 모자라다. 아무것도 바꾸지 않았다. 「파일로 내려받기」로 이 판을 파일에 남겨 두자.' : '없는 칸이다'
     },
     load(n) {
       const p = readSave(kv, n)
       return p.ok ? openSave(p.file) : p.why
     },
     drop(n) {
-      return dropSave(kv, n) ? null : '칸을 비우지 못했다 — 그대로 두었다'
+      return dropSave(kv, n) ? null : '칸을 비우지 못했다. 그대로 두었다'
     },
     download(label) {
       if (state === null) return '내려받을 판이 없다'
@@ -439,7 +439,7 @@ const app = mountRealmApp(root, {
       return null
     },
     loadFile(text) {
-      if (text.length > P.realm.saveFileMaxMB * 1024 * 1024) return '파일이 너무 크다 — 삼한열전 판으로 읽을 수 없습니다'
+      if (text.length > P.realm.saveFileMaxMB * 1024 * 1024) return '파일이 너무 크다. 삼한열전 판으로 읽을 수 없습니다'
       const p = parseSaveFile(text)
       return p.ok ? openSave(p.file) : p.why
     },

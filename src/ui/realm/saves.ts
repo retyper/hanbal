@@ -128,15 +128,15 @@ export function parseSaveFile(text: string): Parsed {
   if (!isObj(o)) return { ok: false, why: BAD }
   if (o['kind'] === SAVE_KIND) {
     if (typeof o['fv'] !== 'number') return { ok: false, why: BAD }
-    if (o['fv'] > SAVE_FV) return { ok: false, why: '더 새 게임에서 만든 파일이다 — 게임을 새로 고친 뒤 다시 불러온다' }
-    if (!gameOk(o['game'])) return { ok: false, why: '판이 깨져 있다 — 불러오지 않았다' }
+    if (o['fv'] > SAVE_FV) return { ok: false, why: '더 새 게임에서 만든 파일이다. 게임을 새로 고친 뒤 다시 불러온다' }
+    if (!gameOk(o['game'])) return { ok: false, why: '판이 깨져 있다: 불러오지 않았다' }
     const game = fill(o['game'])
     const label = typeof o['label'] === 'string' ? cleanLabel(o['label'], game.realm) : defaultLabel(game.realm)
     return { ok: true, file: { kind: SAVE_KIND, fv: SAVE_FV, label, savedAt: typeof o['savedAt'] === 'string' ? o['savedAt'] : (game.at ?? ''), game, draft: draftFor(game, o['draft']) } }
   }
   const g = o['v'] === 2 ? o : isObj(o['save']) ? o['save'] : null
   if (g === null) return { ok: false, why: BAD }
-  if (!gameOk(g)) return { ok: false, why: '판이 깨져 있다 — 불러오지 않았다' }
+  if (!gameOk(g)) return { ok: false, why: '판이 깨져 있다: 불러오지 않았다' }
   const game = fill(g)
   return { ok: true, file: { kind: SAVE_KIND, fv: SAVE_FV, label: defaultLabel(game.realm), savedAt: game.at ?? '', game, draft: draftFor(game, o['draft']) } }
 }
@@ -207,7 +207,7 @@ export function readSave(kv: KV, n: number): Parsed {
   try { raw = kv.getItem(saveKey(n)) } catch { raw = null }
   if (raw === null) return { ok: false, why: '빈 칸이다' }
   const p = parseSaveFile(raw)
-  return p.ok ? p : { ok: false, why: '이 칸의 판이 깨져 있다 — 불러오지 않았다' }
+  return p.ok ? p : { ok: false, why: '이 칸의 판이 깨져 있다. 불러오지 않았다' }
 }
 
 /** 칸 n 을 비운다 — 목록에서 먼저 빼고 칸을 지운다. 목록을 못 쓰면 칸도 그대로 둔다 */

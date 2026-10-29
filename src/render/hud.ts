@@ -989,7 +989,7 @@ function drawResult(
     ctx.font = M.fResultSub
     ctx.fillStyle = THEME.hudText
     ctx.fillText(
-      hud.endReason === 'death' ? '쓰러졌다 — 여정이 여기서 끝난다' : '화살이 다 떨어졌다 — 여정이 여기서 끝난다',
+      hud.endReason === 'death' ? '쓰러졌다: 여정이 여기서 끝난다' : '화살이 다 떨어졌다. 여정이 여기서 끝난다',
       cx, y,
     )
     y += px(HUD.resultSubPx, M.s) + M.cardGap

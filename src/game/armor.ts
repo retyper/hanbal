@@ -35,9 +35,9 @@ export interface ArmorKind {
 }
 
 export const ARMOR_KINDS: readonly ArmorKind[] = [
-  { id: 'leather', name: '가죽갑', origin: '皮甲', hint: '가볍고 싸다 — 처음부터 있다', look: 0 },
-  { id: 'brigandine', name: '두정갑', origin: '頭釘甲', hint: '천 위에 쇠징 — 한 벌이 적 화살 두 발', look: 1 },
-  { id: 'lamellar', name: '찰갑', origin: '札甲', hint: '쇠비늘을 엮었다 — 가장 두껍고 가장 비싸다', look: 2 },
+  { id: 'leather', name: '가죽갑', origin: '皮甲', hint: '가볍고 싸다: 처음부터 있다', look: 0 },
+  { id: 'brigandine', name: '두정갑', origin: '頭釘甲', hint: '천 위에 쇠징: 한 벌이 적 화살 두 발', look: 1 },
+  { id: 'lamellar', name: '찰갑', origin: '札甲', hint: '쇠비늘을 엮었다: 가장 두껍고 가장 비싸다', look: 2 },
 ]
 
 export const DEFAULT_ARMOR: ArmorKindId = 'leather'

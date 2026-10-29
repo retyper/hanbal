@@ -22,15 +22,15 @@ const SOUTH: readonly RegionId[] = ['mahan', 'seorabeol', 'byeonhan-mini', 'yeon
 const NORTH: readonly RegionId[] = ['jumong', 'world']
 
 export const DESTS: Readonly<Record<ExpDest, DestInfo>> = {
-  wa: { name: '왜의 포구', line: '바다 건너 왜의 포구 — 변진의 쇠를 사러 오는 이들의 땅. 쇠값을 잘 쳐준다.', sea: true,
+  wa: { name: '왜의 포구', line: '바다 건너 왜의 포구: 변진의 쇠를 사러 오는 이들의 땅. 쇠값을 잘 쳐준다.', sea: true,
     bias: { iron: 1.4, grain: 0.6, wanderer: 1.0, skill: 0.9 }, skills: ['trader', 'river'], from: SOUTH },
-  juho: { name: '주호의 섬', line: '서쪽 바다의 큰 섬 — 소와 돼지를 기르고 가죽옷을 입는다. 먹을 것이 넉넉하다.', sea: true,
+  juho: { name: '주호의 섬', line: '서쪽 바다의 큰 섬: 소와 돼지를 기르고 가죽옷을 입는다. 먹을 것이 넉넉하다.', sea: true,
     bias: { iron: 0.5, grain: 1.5, wanderer: 0.9, skill: 1.0 }, skills: ['river', 'nighteye'], from: SOUTH },
-  neukdo: { name: '늑도', line: '남해의 옛 교역섬 — 먼 데서 온 배들이 들러 사람과 물건이 섞인다. 떠돌이를 만나기 좋다.', sea: true,
+  neukdo: { name: '늑도', line: '남해의 옛 교역섬: 먼 데서 온 배들이 들러 사람과 물건이 섞인다. 떠돌이를 만나기 좋다.', sea: true,
     bias: { iron: 1.0, grain: 0.8, wanderer: 1.8, skill: 0.8 }, skills: ['trader', 'smith'], from: SOUTH },
-  north: { name: '읍루의 숲', line: '북쪽 깊은 숲 — 독화살과 담비 가죽의 사람들. 거칠지만 배울 것이 있다.', sea: false,
+  north: { name: '읍루의 숲', line: '북쪽 깊은 숲: 독화살과 담비 가죽의 사람들. 거칠지만 배울 것이 있다.', sea: false,
     bias: { iron: 0.8, grain: 0.7, wanderer: 0.9, skill: 1.7 }, skills: ['mountain', 'archer'], from: NORTH },
-  hills: { name: '큰 산의 골', line: '남쪽 큰 산 깊은 골 — 사냥꾼과 숯 굽는 이들이 산다. 산길과 활을 배워 온다.', sea: false,
+  hills: { name: '큰 산의 골', line: '남쪽 큰 산 깊은 골: 사냥꾼과 숯 굽는 이들이 산다. 산길과 활을 배워 온다.', sea: false,
     bias: { iron: 0.9, grain: 0.6, wanderer: 1.0, skill: 1.6 }, skills: ['mountain', 'archer'], from: SOUTH },
 }
 export const DEST_IDS: readonly ExpDest[] = ['wa', 'juho', 'neukdo', 'north', 'hills']

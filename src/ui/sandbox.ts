@@ -74,7 +74,7 @@ export function mountSandbox(o: Overlay, hooks: SandboxHooks): void {
   let on = false
   const tag = document.createElement('div')
   tag.className = 'o-tag'
-  tag.textContent = '샌드박스 — 기록에 남지 않는다'
+  tag.textContent = '샌드박스: 기록에 남지 않는다'
   bar.appendChild(tag)
 
   // 소환 버튼들 — 두 줄로

@@ -171,9 +171,9 @@ export function mountQuiver(o: Overlay, d: SaveData): void {
 
     const held = d.runArrow as ArrowKindId
     hint.textContent = fresh > 0 && held === DEFAULT_ARROW
-      ? '새 살이 들어왔다 — 위아래로 밀어 앞에 세우면 든다'
+      ? '새 살이 들어왔다. 위아래로 밀어 앞에 세우면 든다'
       : held === DEFAULT_ARROW
-        ? '살통 — 위아래로 밀면 바꿔 든다 · 쏠 때마다 1발씩 준다'
+        ? '살통: 위아래로 밀면 바꿔 든다 · 쏠 때마다 1발씩 준다'
         : `들고 있음: ${arrowKind(held).name}`
     hint.className = 'q-hint' + (fresh > 0 && held === DEFAULT_ARROW ? ' q-hint-new' : '')
   }

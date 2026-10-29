@@ -106,7 +106,7 @@ export interface RelicKit {
 
 const img = (k: RelicKit, id: string): string => `${k.art}relic/${id}.png`
 const chestImg = (k: RelicKit, id: string): string => `${k.art}relic/${TIER_CHEST[RELIC[id]?.tier ?? 'common']}.png`
-const tipOf = (id: string): string => { const d = RELIC[id]; return d === undefined ? '' : `${d.name} · ${d.era} — ${relicLine(id)}` }
+const tipOf = (id: string): string => { const d = RELIC[id]; return d === undefined ? '' : `${d.name} · ${d.era}: ${relicLine(id)}` }
 
 // ───────── 끝 화면 — 무덤 한 줄
 
@@ -117,7 +117,7 @@ export function tombStripHtml(k: RelicKit, r: Realm): string {
   if (t.ids.length === 0) return ''
   if (t.pick !== null) {
     const d = RELIC[t.pick]!
-    return `<div class="tbstrip got"><img class="tbsr" src="${img(k, d.id)}" alt=""><div><b>${k.esc(josa(d.name, '을', '를'))} 얻었다</b><small>${k.esc(d.era)} — 단련터에서 장수에게 끼운다</small></div></div>`
+    return `<div class="tbstrip got"><img class="tbsr" src="${img(k, d.id)}" alt=""><div><b>${k.esc(josa(d.name, '을', '를'))} 얻었다</b><small>${k.esc(d.era)}: 단련터에서 장수에게 끼운다</small></div></div>`
   }
   let h = `<div class="tbstrip"><h4>옛 무덤을 열었다 <small>껴묻거리 셋 가운데 하나</small></h4><div class="tbsl">`
   for (const id of t.ids) h += `<img class="tbsc t-${RELIC[id]!.tier}" src="${chestImg(k, id)}" alt="${TIER_NAME[RELIC[id]!.tier]}">`
@@ -130,7 +130,7 @@ export function tombStripHtml(k: RelicKit, r: Realm): string {
 export function tombHtml(k: RelicKit, r: Realm, fresh: boolean): string {
   const t = tombOf(r)
   let h = `<div class="front tomb"><div class="fhead"><h2>옛 무덤을 열었다</h2></div>`
-  h += `<p class="tblead">${t.pick === null ? '덧널 셋이 놓였다 — 하나만 연다. 겉빛이 귀함이고, 안은 열어야 안다.' : '껴묻거리를 얻었다 — 장수가 몸에 지니고 다음 판에 들고 간다. 유물은 잃지 않는다.'}</p><div class="tbrow">`
+  h += `<p class="tblead">${t.pick === null ? '덧널 셋이 놓였다. 하나만 연다. 겉빛이 귀함이고, 안은 열어야 안다.' : '껴묻거리를 얻었다. 장수가 몸에 지니고 다음 판에 들고 간다. 유물은 잃지 않는다.'}</p><div class="tbrow">`
   t.ids.forEach((id, i) => {
     const d = RELIC[id]!
     const tier = `t-${d.tier}`
@@ -190,7 +190,7 @@ export function slotsHtml(k: RelicKit, hero: string, level: number, sel: number 
     if (id !== undefined && RELIC[id] !== undefined) {
       h += `<button class="rlslot full${on}" data-act="rl-slot" data-id="${k.esc(hero)}" data-i="${i}" data-tip="${k.esc(tipOf(id))}"><img src="${img(k, id)}" alt=""><span><b>${k.esc(RELIC[id]!.name)}</b><small>${k.esc(relicLine(id))}</small></span></button>`
     } else {
-      h += `<button class="rlslot${on}" data-act="rl-slot" data-id="${k.esc(hero)}" data-i="${i}"${none ? ' disabled data-tip="이긴 판의 옛 무덤에서 얻는다"' : ''}><i>＋</i><span>${none ? '유물 칸 — 이기면 옛 무덤에서' : '유물 끼우기'}</span></button>`
+      h += `<button class="rlslot${on}" data-act="rl-slot" data-id="${k.esc(hero)}" data-i="${i}"${none ? ' disabled data-tip="이긴 판의 옛 무덤에서 얻는다"' : ''}><i>＋</i><span>${none ? '유물 칸: 이기면 옛 무덤에서' : '유물 끼우기'}</span></button>`
     }
   }
   if (n < slotsFor(Number.MAX_SAFE_INTEGER)) h += `<small class="rlmore">단련 ${josa(String(slotsAt()), '이면', '면')} 한 칸 더</small>`
@@ -213,7 +213,7 @@ export function pickerHtml(k: RelicKit, hero: string, slot: number): string {
     const d = RELIC[id]!
     const who = holderOf(s, id)
     const here = who === hero
-    const by = who !== null && !here ? `<i class="rlwho">${k.esc(josa(k.nameOf(who), '이', '가'))} 지녔다 — 옮긴다</i>` : here ? '<i class="rlwho me">이 장수가 지녔다</i>' : ''
+    const by = who !== null && !here ? `<i class="rlwho">${k.esc(josa(k.nameOf(who), '이', '가'))} 지녔다: 옮긴다</i>` : here ? '<i class="rlwho me">이 장수가 지녔다</i>' : ''
     h += `<button class="rlopt t-${d.tier}${id === cur ? ' cur' : ''}" data-act="rl-put" data-id="${k.esc(hero)}" data-i="${slot}" data-r="${k.esc(id)}"${id === cur ? ' disabled' : ''}>`
       + `<img src="${img(k, id)}" alt=""><span><b>${k.esc(d.name)}</b><small>${TIER_NAME[d.tier]} · ${k.esc(d.era)}</small><em>${k.esc(relicLine(id))}</em>${by}</span></button>`
   }
@@ -234,7 +234,7 @@ export function relicDexHtml(k: RelicKit): string {
       h += `<span class="rld t-${d.tier}" data-tip="${k.esc(tipOf(d.id) + (who !== null ? ` · ${k.nameOf(who)} 지님` : ''))}"><img src="${img(k, d.id)}" alt=""><b>${k.esc(d.name)}</b>${o.n > 1 ? `<i>×${o.n}</i>` : ''}</span>`
     } else {
       const where = BOARD_HINT.filter((b) => poolOf(b.id).some((x) => x.id === d.id)).map((b) => b.name).join(' · ')
-      h += `<span class="rld none" data-tip="${k.esc(`${TIER_NAME[d.tier]} — ${where !== '' ? `${where}에서 이기면 나올 수 있다` : '아직 나는 판이 없다'}`)}"><img src="${img(k, d.id)}" alt=""><b>?</b></span>`
+      h += `<span class="rld none" data-tip="${k.esc(`${TIER_NAME[d.tier]}: ${where !== '' ? `${where}에서 이기면 나올 수 있다` : '아직 나는 판이 없다'}`)}"><img src="${img(k, d.id)}" alt=""><b>?</b></span>`
     }
   }
   return h + `</div></div>`

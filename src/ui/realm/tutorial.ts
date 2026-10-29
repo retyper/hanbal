@@ -89,7 +89,7 @@ export const TUT_STEPS: readonly TutStep[] = [
     done: (c) => has(c, 'march') || Object.values(c.r.armies).some((a) => a.faction === c.r.player && (a.march !== null || a.at === 'tut-gaetgol')),
   },
   {
-    id: 'battle', name: '전투', what: '합마다 명령을 골라 싸웁니다', text: '「다음 계절」을 누르면 전장이 열립니다. 합마다 명령을 하나 고르세요. 여기선 「적장 사로잡기」를 골라 보세요 — 이 판에선 반드시 잡힙니다.',
+    id: 'battle', name: '전투', what: '합마다 명령을 골라 싸웁니다', text: '「다음 계절」을 누르면 전장이 열립니다. 합마다 명령을 하나 고르세요. 여기선 「적장 사로잡기」를 골라 보세요. 이 판에선 반드시 잡힙니다.',
     // 사로잡기는 「장수」 탭에 있다 · 「전투 개시」는 무리마다 다 고르면 켜진다 — 나머지는 ★ 권함으로 채운다
     press: ['.next'], war: { pick: '[data-war="pick"][data-c="capture"]', go: '[data-war="go"]', tab: '[data-war="gtab"][data-g="lead"]' },
     done: fought,
@@ -102,7 +102,7 @@ export const TUT_STEPS: readonly TutStep[] = [
     done: (c) => !haveFoe(c) || c.orders.some((o) => o.kind === 'persuade') || c.r.heroes[FOE_HERO]?.persuade !== undefined || c.r.heroes[FOE_HERO]?.faction === c.r.player,
   },
   {
-    id: 'plot', name: '공작', what: '몰래 적을 흔듭니다 — 소문·방화·암살', text: '「외교」의 「공작」에서 미추홀에 소문을 퍼뜨리세요. 적 군사의 사기가 꺾입니다.',
+    id: 'plot', name: '공작', what: '몰래 적을 흔듭니다. 소문·방화·암살', text: '「외교」의 「공작」에서 미추홀에 소문을 퍼뜨리세요. 적 군사의 사기가 꺾입니다.',
     press: ['[data-act="plot"][data-op="rumor"]', '[data-act="ppick"][data-op="rumor"]', '[data-act="plot-open"][data-op="rumor"]', '[data-act="dmode"][data-v="plot"]', tab('diplo')],
     done: (c) => c.orders.some((o) => o.kind === 'plot'),
   },
@@ -470,8 +470,8 @@ export const TUT_CSS = `
 /* 먼저 닫을 것을 가리킬 때 — 띠 맨 위에 한 줄 */
 .tutband[data-pre="rep"] .tutb::before, .tutband[data-pre="grip"] .tutb::before { flex: 1 0 100%; color: #ffd27a; font-weight: 700; font-size: 13.5px; }
 .tutband[data-pre="rep"] .tutb::before { content: '먼저 소식을 읽고 「확인」을 누르세요'; }
-.tutband[data-pre="grip"] .tutb::before { content: '먼저 열린 판을 닫으세요 — 위의 손잡이를 누르면 됩니다'; }
-.tutband[data-pre="sel"] .tutb::before { flex: 1 0 100%; color: #ffd27a; font-weight: 700; font-size: 13.5px; content: '먼저 고른 것을 푸세요 — ✕ 를 누르면 됩니다'; }
+.tutband[data-pre="grip"] .tutb::before { content: '먼저 열린 판을 닫으세요. 위의 손잡이를 누르면 됩니다'; }
+.tutband[data-pre="sel"] .tutb::before { flex: 1 0 100%; color: #ffd27a; font-weight: 700; font-size: 13.5px; content: '먼저 고른 것을 푸세요. ✕ 를 누르면 됩니다'; }
 @keyframes tutglow { from { box-shadow: 0 0 4px #ffd27a66; } to { box-shadow: 0 0 18px #ffd27a; } }
 /* 스포트라이트 — 구멍 밖은 어둡다. 구멍은 누를 곳 크기, 둘레에 숨 쉬는 금빛 고리, 그 밑(또는 위)에서 손이 콕콕 가리킨다 */
 /* 자리는 미끄러지지 않고 바로 붙는다 — 판이 굴러갈 때 고리가 뒤처지면 엉뚱한 데를 누르게 된다 */

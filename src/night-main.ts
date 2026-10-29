@@ -224,15 +224,15 @@ function showMissionIntro(): void {
   rehearsal = false
   const who = esc(missionWho)
   ui.innerHTML = `<div class="card"><h1>${rescue ? '밤의 구출' : '밤의 암살'}</h1><p>기와지붕 위에 엎드렸다. 화살 ${missionArrows}발.</p>`
-    + `<p>경비 · <b>${GUARD_NAME[missionGuard]}</b> — ${GUARD_LINE[missionGuard]}</p>`
+    + `<p>경비 · <b>${GUARD_NAME[missionGuard]}</b>: ${GUARD_LINE[missionGuard]}</p>`
     + (rescue
-      ? `<p class="mute">보초를 다 쓰러뜨리고 옥에 갇힌 ${esc(josa(missionWho, '을', '를'))} 데려 나온다. 셋째 판 마루 기둥에 묶여 있다 — 묶인 이는 살이 비켜 간다. 빗나간 살은 소리를 낸다. 시체가 불빛 아래 있으면 들킨다.</p>`
+      ? `<p class="mute">보초를 다 쓰러뜨리고 옥에 갇힌 ${esc(josa(missionWho, '을', '를'))} 데려 나온다. 셋째 판 마루 기둥에 묶여 있다. 묶인 이는 살이 비켜 간다. 빗나간 살은 소리를 낸다. 시체가 불빛 아래 있으면 들킨다.</p>`
       : `<p class="mute">보초를 다 쓰러뜨리고 셋째 판의 창호지 뒤 그림자를 쏜다. 빗나간 살은 소리를 낸다. 시체가 불빛 아래 있으면 들킨다.</p>`)
-    + `<p class="mute">횃불·등불은 쏘면 꺼지고, 모닥불은 위에 매단 물동이를 쏘면 쏟아져 꺼진다. 불이 꺼지면 보초가 다시 붙이러 온다 — 어둠 속에서, 불이 붙기 전에 쓰러뜨려라.</p>`
+    + `<p class="mute">횃불·등불은 쏘면 꺼지고, 모닥불은 위에 매단 물동이를 쏘면 쏟아져 꺼진다. 불이 꺼지면 보초가 다시 붙이러 온다. 어둠 속에서, 불이 붙기 전에 쓰러뜨려라.</p>`
     + (rescue
-      ? `<p class="mute">북이 울리면 ${who}의 옥문이 잠긴다 — 들키지 않게 하나씩.</p>`
+      ? `<p class="mute">북이 울리면 ${who}의 옥문이 잠긴다. 들키지 않게 하나씩.</p>`
       : `<p class="mute">그림자가 일어서면 창호지 위 촛불 게이지가 닳는다. 다 닳으면 촛불을 끄고 달아난다. 빗나가면 더 빨리 닳는다.</p>`)
-    + `<p class="mute">아무 데나 누르고 뒤로 끈다 — 끈 쪽의 반대로 겨눈다 · 놓으면 쏜다 · 누른 자리로 돌아와 놓으면 그만둔다. 당기는 동안 점선이 화살이 날아갈 길을 보여 준다.</p>`
+    + `<p class="mute">아무 데나 누르고 뒤로 끈다. 끈 쪽의 반대로 겨눈다 · 놓으면 쏜다 · 누른 자리로 돌아와 놓으면 그만둔다. 당기는 동안 점선이 화살이 날아갈 길을 보여 준다.</p>`
     + `<div class="btns"><button data-act="rehearse">연습 먼저</button><button class="on" data-act="go">들어간다</button></div>`
     + `<p class="mute">연습은 다른 지붕에서 같은 활·같은 화살로 쏜다. 몇 번이든 되고, 결과는 남지 않는다.</p>`
     + `<div class="btns"><button data-act="skip0">${SKIP_LABEL}</button></div></div>`
@@ -294,7 +294,7 @@ function showResult(n: Night): void {
   const r = n.result!
   const good = r.result === 'dead' || r.result === 'wounded' || r.result === 'cleared'
   const line = (n.kind === 'rescue' ? RESCUE_LINES : LINES)[r.result](r)
-  let h = `<div class="card">${rehearsal ? '<p class="mute">연습 — 남지 않는다</p>' : ''}<h1 style="color:${good ? '#8fd07a' : '#e08a74'}">${esc(line)}</h1>`
+  let h = `<div class="card">${rehearsal ? '<p class="mute">연습, 남지 않는다</p>' : ''}<h1 style="color:${good ? '#8fd07a' : '#e08a74'}">${esc(line)}</h1>`
   h += `<p class="mute">쏜 ${n.shots} · 맞힘 ${n.hits} · 머리 ${n.heads}${n.practice === null ? ` · 남은 화살 ${r.arrowsLeft}` : ''}</p>`
   // 촛불로 놓쳤으면 어떻게 잡는지 (형: "촛불이 꺼져서 도망치는건 대체뭔데. 어떻게잡으라는겨")
   if (r.result === 'fled' && !r.alarm && n.chiefUp >= 0) h += `<p class="mute">그림자가 서면 창호지 위 촛불 게이지가 닳는다. 다 닳기 전에 그림자의 머리나 몸을 쏴야 한다. 빗나가면 게이지가 뭉텅 준다.</p>`

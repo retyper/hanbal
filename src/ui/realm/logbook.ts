@@ -54,8 +54,8 @@ function battleText(r: Realm, l: Extract<ReportLine, { kind: 'battle' }>): strin
   const won = l.outcome === 'rout' || l.outcome === 'win'
   const lost = l.outcome === 'lose' || l.outcome === 'routed'
   let t = l.field === true
-    ? `${josa(atk, '과', '와')} ${josa(def, '이', '가')} ${place}에서 맞붙었다 — `
-    : `${josa(atk, '이', '가')} ${def}의 ${josa(place, '을', '를')} 쳤다 — `
+    ? `${josa(atk, '과', '와')} ${josa(def, '이', '가')} ${place}에서 맞붙었다: `
+    : `${josa(atk, '이', '가')} ${def}의 ${josa(place, '을', '를')} 쳤다: `
   t += won ? (l.outcome === 'rout' ? `${atk}의 크게 이김.` : `${atk}의 이김.`) : lost ? (l.outcome === 'routed' ? `${def}의 크게 이김.` : `${def}의 이김.`) : '승부가 나지 않았다.'
   if (l.captured !== null) t += ` ${josa(r.heroes[l.captured]?.name ?? '장수', '이', '가')} 사로잡혔다.`
   if (l.killed !== null) t += ` ${josa(r.heroes[l.killed]?.name ?? '장수', '이', '가')} 쓰러졌다.`
@@ -67,7 +67,7 @@ export function logText(r: Realm, l: ReportLine, viewer: string): string | null 
   if (l.kind === 'ask') {
     if (l.ask.to !== viewer) return null
     const place = l.ask.node !== undefined ? (r.nodes[l.ask.node]?.name ?? '') : ''
-    return `사신이 왔다 — ${askLine(l.ask, r.factions[l.ask.from]?.name ?? '', place)}`
+    return `사신이 왔다: ${askLine(l.ask, r.factions[l.ask.from]?.name ?? '', place)}`
   }
   if (l.kind === 'battle') {
     const ours = l.atkFaction === viewer || l.defender === viewer

@@ -697,7 +697,7 @@ export function mapHtml(
     const sp = nodeSpecials(r, n.id)
     // 바닷가 고기잡이 — 곡식이 조금 난다. 겨울엔 바다가 거칠어 쉰다 (economy.nodeYield) → 표가 얼어 흐려진다
     const fish = n.kind !== 'sodo' && isCoast(r, n.id)
-      ? `<img class="${season === 'winter' ? 'frz' : ''}" src="${art}icon/good-dried-fish.png" alt="고기" title="${season === 'winter' ? '겨울 — 바다가 거칠어 고기잡이를 쉰다' : '고기잡이 — 겨울 빼고 곡식이 조금 난다'}">`
+      ? `<img class="${season === 'winter' ? 'frz' : ''}" src="${art}icon/good-dried-fish.png" alt="고기" title="${season === 'winter' ? '겨울: 바다가 거칠어 고기잡이를 쉰다' : '고기잡이: 겨울 빼고 곡식이 조금 난다'}">`
       : ''
     // 붐빔 — 우리 고을이 품에 가까우면 노란 띠, 넘치면 붉은 「붐빈다」 (집이 더디게 는다)
     const cr = ours && n.kind !== 'sodo' ? crowdOf(n) : 0
@@ -714,7 +714,7 @@ export function mapHtml(
     // 특산·지은 것은 이름표 옆 어두운 칸에 — 고을 그림 위에 흰 동그라미로 떠 있으면 이웃 고을 것인지 헷갈리고 지도가 어지럽다
     // (형 10-24: "지역에서 생산되는 품목도 우상단 동그라미가 아니라 더 효과적이게" — 문명 6 도시 배너처럼 이름에 붙인다)
     const tray = sp.length > 0 || fish !== '' || dfs.length > 0 || cms.length > 0
-      ? `<span class="lbg${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}" title="${GOOD_NAME[g]} — 사람이 살면 난다">`).join('')}${fish}${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${DEF_NAME[t]}</i>`).join('')}`
+      ? `<span class="lbg${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}" title="${GOOD_NAME[g]}: 사람이 살면 난다">`).join('')}${fish}${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${DEF_NAME[t]}</i>`).join('')}`
         + `${cms.map((m) => `<i class="cmk${m.hot === true ? ' hot' : ''}" title="${m.tip}">${m.label}</i>`).join('')}</span>`
       : ''
     labels.push({
@@ -727,7 +727,7 @@ export function mapHtml(
     const gv = ours ? govOf.get(n.id) : undefined
     const lordHere = gv !== undefined && n.id === capOf
     const gface = gv !== undefined && bustOf(gv.id) !== undefined
-      ? `<img class="gov${lordHere ? ' lord' : ''}${lordHere && lordAway ? ' away' : ''}" src="${art}bust/${bustOf(gv.id)}.jpg" alt="" title="${gv.name} — ${lordHere ? (lordAway ? '군주가 도읍을 비웠다' : '군주가 몸소 다스린다') : '이 고을을 맡았다'}">` : ''
+      ? `<img class="gov${lordHere ? ' lord' : ''}${lordHere && lordAway ? ' away' : ''}" src="${art}bust/${bustOf(gv.id)}.jpg" alt="" title="${gv.name}: ${lordHere ? (lordAway ? '군주가 도읍을 비웠다' : '군주가 몸소 다스린다') : '이 고을을 맡았다'}">` : ''
     // 소도 — 신성한 숲: 은은한 빛 · 금줄(뒤 반 · 앞 반) · 방울 소리 물결 둘 · 날아오르는 한지 띠 셋 (CSS 는 위 .k-sodo)
     const holy = n.kind === 'sodo'
       ? `<img class="sg" src="${art}fx/sodo-glow.png" alt=""><img class="sr" src="${art}fx/sodo-rope.png" alt=""><i class="sp"></i><i class="sp"></i>` : ''
@@ -947,27 +947,27 @@ function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly 
 
 /** 땅 조각의 크기 배수 — 고을 꼴로 정한다 (집 수는 판마다 바뀌어도 땅 모양은 그대로 두려고) */
 /** 지은 것의 말 — 고을 왼쪽 위 작은 표 */
-const DEF_TITLE = { palisade: '목책 — 한 번 지으면 계속 선다. 지키는 쪽이 세다', moat: '해자 — 목책 앞에서 한 번 더 막는다. 겨울엔 언다', earthwall: '흙성 — 흙을 다져 쌓은 성. 목책보다 훨씬 굳다 (달벌 흙성)' } as const
+const DEF_TITLE = { palisade: '목책: 한 번 지으면 계속 선다. 지키는 쪽이 세다', moat: '해자: 목책 앞에서 한 번 더 막는다. 겨울엔 언다', earthwall: '흙성: 흙을 다져 쌓은 성. 목책보다 훨씬 굳다 (달벌 흙성)' } as const
 const DEF_NAME = { palisade: '목책', moat: '해자', earthwall: '흙성' } as const
 
 // ───────── 길 기호 (public/realm/icon/route-* · 2026-10-20 그림 열여섯)
 
 /** 길 기호의 이름 — 기호에 손을 대면 뜨는 말, 길 보기 표 */
 export const ROUTE_SIGN_NAME = {
-  oxcart: '들길 — 소달구지가 다니는 트인 길',
-  caravan: '쇠 나는 고을로 가는 길 — 짐말이 오간다',
-  cairn: '고갯길 — 서낭당 돌무더기',
-  snowpass: '눈 덮인 고개 — 겨울엔 얼어서 사람을 잃는다',
-  fortstair: '산성으로 오르는 고개 — 지키는 쪽이 높다',
-  jangseung: '숲길 — 장승이 선 숨기 좋은 길',
-  boardwalk: '갈대 늪 — 널다리 · 숨기 좋다',
-  steppingstones: '갯벌 — 돌을 디뎌 건넌다 · 더디다',
-  ferry: '나루 — 배로 강을 건넌다',
-  logbridge: '여울 — 통나무 다리로 건넌다',
-  raft: '장마에 불어난 나루 — 뗏목으로 건너다 사람을 잃는다',
-  icefloe: '언 강 — 겨울엔 얼음 위로 건넌다 · 강을 믿던 쪽이 기습에 당하기 쉽다',
-  searoute: '바닷길 — 배로 건넌다',
-  sotdae: '소도로 드는 길 — 솟대 너머는 싸움이 없는 땅',
+  oxcart: '들길: 소달구지가 다니는 트인 길',
+  caravan: '쇠 나는 고을로 가는 길: 짐말이 오간다',
+  cairn: '고갯길: 서낭당 돌무더기',
+  snowpass: '눈 덮인 고개: 겨울엔 얼어서 사람을 잃는다',
+  fortstair: '산성으로 오르는 고개: 지키는 쪽이 높다',
+  jangseung: '숲길: 장승이 선 숨기 좋은 길',
+  boardwalk: '갈대 늪: 널다리 · 숨기 좋다',
+  steppingstones: '갯벌: 돌을 디뎌 건넌다 · 더디다',
+  ferry: '나루: 배로 강을 건넌다',
+  logbridge: '여울: 통나무 다리로 건넌다',
+  raft: '장마에 불어난 나루: 뗏목으로 건너다 사람을 잃는다',
+  icefloe: '언 강: 겨울엔 얼음 위로 건넌다 · 강을 믿던 쪽이 기습에 당하기 쉽다',
+  searoute: '바닷길: 배로 건넌다',
+  sotdae: '소도로 드는 길: 솟대 너머는 싸움이 없는 땅',
   column: '보인 적의 행군',
 } as const
 export type RouteSign = keyof typeof ROUTE_SIGN_NAME

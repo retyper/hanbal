@@ -49,23 +49,23 @@ export const BOW_KINDS: readonly BowKind[] = [
     name: '각궁',
     origin: '角弓 · 물소뿔 복합궁, 국궁의 활',
     perk: '당김도 빠르고 화살도 매섭다.',
-    cost: '예민하다 — 빨간 바 아래에서 더 떨린다.',
+    cost: '예민하다: 빨간 바 아래에서 더 떨린다.',
     // 편전(片箭)은 각궁에 통아를 얹어야만 쏠 수 있었다. 조선의 비기.
-    synergy: { arrow: 'pierce', label: '애기살과 짝 — 관통 +1 (옛 이름 편전)' },
+    synergy: { arrow: 'pierce', label: '애기살과 짝: 관통 +1 (옛 이름 편전)' },
   },
   {
     id: 'longbow',
     name: '장궁',
     origin: 'Longbow · 잉글랜드의 전쟁활',
     perk: '화살이 빠르고 무거워 바람을 덜 탄다.',
-    cost: '무겁다 — 당김이 느리고, 근력이 모자라면 끝까지 당겨지지 않는다.',
-    synergy: { arrow: 'heavy', label: '육량전과 짝 — 관통 +1 (전쟁화살)' },
+    cost: '무겁다: 당김이 느리고, 근력이 모자라면 끝까지 당겨지지 않는다.',
+    synergy: { arrow: 'heavy', label: '육량전과 짝: 관통 +1 (전쟁화살)' },
   },
   {
     id: 'recurve',
     name: '리커브',
     origin: 'Recurve · 안정기를 단 현대 양궁',
-    perk: '안정기 — 빨간 바 아래에서 덜 떨린다.',
+    perk: '안정기: 빨간 바 아래에서 덜 떨린다.',
     cost: '표적용 세팅이라 화살이 느리다.',
   },
   {

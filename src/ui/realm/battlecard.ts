@@ -103,7 +103,7 @@ export function battleCard(before: Realm, after: Realm, l: Battle, viewer: strin
     else if (l.outcome === 'draw') res = weA ? `${placeB}에서 물러났다` : `${josa(placeB, '을', '를')} 지켜 냈다`
     else if (weA) res = atkWonB ? `${josa(placeB, '을', '를')} 차지했다` : `${placeB}에서 물러났다`
     else res = atkWonB ? `${josa(placeB, '을', '를')} 빼앗겼다` : `${josa(placeB, '을', '를')} 지켜 냈다`
-    if (l.outcome === 'rout' || l.outcome === 'routed') res = `${goodB ? '대승' : '대패'} — ${res}`
+    if (l.outcome === 'rout' || l.outcome === 'routed') res = `${goodB ? '대승' : '대패'}: ${res}`
     return battleSummary(after, l, weA, art, viewer, res, goodB)
   }
   const lead = before.armies[l.attacker]

@@ -136,7 +136,7 @@ export function yardHtml(k: DrillKit, o: YardOpts): string {
   const list = same ? [...yardOrder] : fresh
   yardOrder = list
   let h = `<div class="front dyard"><div class="fhead">${o.from === 'title' ? `<button class="btn ghost" data-act="dy-next">‹ 처음으로</button>` : ''}<h2>단련터</h2></div>`
-  h += `<p class="dylead">판에서 쌓은 공으로 장수를 단련한다 — 져도 공은 남는다. 단련 한 단계마다 능력치 하나가 +1, 값은 ${spendCost(0)}에서 시작해 단계마다 ${spendCost(1) - spendCost(0)}씩 오른다.</p>`
+  h += `<p class="dylead">판에서 쌓은 공으로 장수를 단련한다. 져도 공은 남는다. 단련 한 단계마다 능력치 하나가 +1, 값은 ${spendCost(0)}에서 시작해 단계마다 ${spendCost(1) - spendCost(0)}씩 오른다.</p>`
   if (list.length === 0) h += `<p class="mute dylead">아직 공을 새긴 장수가 없다. 판에서 싸우고 고을을 맡으면 공이 쌓이고, 판이 끝나면 여기서 쓴다.</p>`
   h += `<div class="dyl">`
   for (const id of list) {
@@ -152,7 +152,7 @@ export function yardHtml(k: DrillKit, o: YardOpts): string {
     const from = o.anim ? Math.min(100, (Math.max(0, e.points - gain) / cost) * 100) : to
     h += `<div class="dyc${gain > 0 && o.anim ? ' fresh' : ''}"><div class="dyf">${src !== null ? `<img src="${src}" alt="">` : '<span class="nof"></span>'}`
     h += `<div class="dyn"><b>${nameHtml(name)}</b>${e.level > 0 ? `<span class="dlv">단련 ${e.level}</span>` : '<span class="dlv zero">단련 0</span>'}`
-    if (o.fell.includes(id)) h += `<small class="dyfell">이 판에서 쓰러졌다 — 다음 판엔 돌아온다</small>`
+    if (o.fell.includes(id)) h += `<small class="dyfell">이 판에서 쓰러졌다. 다음 판엔 돌아온다</small>`
     h += `</div></div>`
     h += `<div class="dyp"><span class="dypt">공 <b>${e.points}</b>${gain > 0 ? `<i class="dyg">+${gain}</i>` : ''}</span>`
     h += `<span class="dybar${e.points >= cost ? ' ready' : ''}"><i style="--from:${from.toFixed(1)}%;--to:${to.toFixed(1)}%"></i></span><small>다음 단련에 공 ${cost}${can > 1 ? ` · 지금 공으로 ${can}단계까지` : ''}</small></div>`
@@ -168,7 +168,7 @@ export function yardHtml(k: DrillKit, o: YardOpts): string {
         const cap = capOf(born, s, room)
         const st = raiseState(store, id, s, born, room)
         const add = e.add[s] ?? 0
-        const why = st === 'cap' ? `더 못 올린다 — 타고난 값에서 ${cap - born[s]}칸까지` : st === 'poor' ? `공 ${josa(String(cost), '이', '가')} 든다` : `공 ${josa(String(cost), '을', '를')} 써서 ${STAT_NAME[s]} +1`
+        const why = st === 'cap' ? `더 못 올린다: 타고난 값에서 ${cap - born[s]}칸까지` : st === 'poor' ? `공 ${josa(String(cost), '이', '가')} 든다` : `공 ${josa(String(cost), '을', '를')} 써서 ${STAT_NAME[s]} +1`
         h += `<div class="dyst${o.last === `${id}:${s}` ? ' up' : ''}"><span class="dysn">${STAT_NAME[s]}</span><b>${Math.min(10, born[s] + add)}</b>${add > 0 ? `<i>+${add}</i>` : '<i></i>'}<small>/${cap}</small>`
         h += `<button class="dyplus" data-act="dy-up" data-id="${k.esc(id)}" data-s="${s}"${st === 'ok' ? '' : ' disabled'} data-tip="${k.esc(why)}">${st === 'cap' ? '끝' : `+<small>${cost}</small>`}</button></div>`
       }
@@ -188,7 +188,7 @@ export function yardHtml(k: DrillKit, o: YardOpts): string {
     h += `</div>`
   }
   h += `</div>${relicDexHtml(k.relic)}<div class="dygo"><button class="btn pri big" data-act="dy-next">${o.from === 'end' ? '다음으로 ›' : '처음으로'}</button></div>`
-  return h + `<p class="fine">점선은 처음 몸, 금빛은 단련한 몸 — 다음 판을 열 때 우리 장수와 데려간 장수가 이 몸으로, 끼운 유물을 지니고 온다.</p></div>`
+  return h + `<p class="fine">점선은 처음 몸, 금빛은 단련한 몸: 다음 판을 열 때 우리 장수와 데려간 장수가 이 몸으로, 끼운 유물을 지니고 온다.</p></div>`
 }
 
 /** 끝 화면의 단련 한 줄 — 이번 판에 공을 번 장수 얼굴과 「+공」, 그리고 단련터로 */

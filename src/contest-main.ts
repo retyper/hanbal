@@ -106,7 +106,7 @@ const card = (h: string): void => { ui.innerHTML = `<div class="card">${h}</div>
 function showIntro(): void {
   live = false
   card(`<h1>송양과의 활쏘기 겨루기</h1><p>비류수 가 언덕, 아침 안개가 걷힌다. 활은 ${BOW_NAME[tier]}.</p>`
-    + `<p class="mute">세 판을 겨룬다 — 백 보 과녁 셋 · 흔들리는 사슴 과녁 둘 · 매단 옥가락지 둘. 판마다 과녁을 다 맞혀야 다음 판으로 간다. 화살은 과녁 수보다 ${P.realm.contestArrows + P.night.tierArrows * tier}발 넉넉하다.</p>`
+    + `<p class="mute">세 판을 겨룬다. 백 보 과녁 셋 · 흔들리는 사슴 과녁 둘 · 매단 옥가락지 둘. 판마다 과녁을 다 맞혀야 다음 판으로 간다. 화살은 과녁 수보다 ${P.realm.contestArrows + P.night.tierArrows * tier}발 넉넉하다.</p>`
     + `<p class="mute">누르고 있으면 당기고, 놓으면 쏜다. 당기는 동안 점선이 화살이 날아갈 길을 보여 준다.</p>`
     + `<div class="btns"><button data-act="back">물러난다</button><button class="on" data-act="go">겨룬다</button></div>`)
 }

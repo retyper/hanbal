@@ -55,30 +55,30 @@ export interface ForkOption {
  */
 const FIRE: ForkOption = {
   id: 'fire', title: '화공', origin: '火攻',
-  desc: '이 판의 살이 전부 화전이 된다 — 재고를 쓰지 않는다. 발치에 떨구면 나도 다친다.',
+  desc: '이 판의 살이 전부 화전이 된다. 재고를 쓰지 않는다. 발치에 떨구면 나도 다친다.',
   arrow: 'burst',
 }
 const BOMB: ForkOption = {
   id: 'bomb', title: '화약고', origin: '火藥庫',
-  desc: '화약 상자가 놓인다 — 상자를 맞히면 둘레가 같이 간다. 화살은 그만큼 적게 준다.',
+  desc: '화약 상자가 놓인다. 상자를 맞히면 둘레가 같이 간다. 화살은 그만큼 적게 준다.',
 }
 const WIND: ForkOption = {
   id: 'wind', title: '바람골', origin: '風谷',
-  desc: '골바람이 분다 — 겨냥이 밀린다. 깨면 돈을 더 준다.',
+  desc: '골바람이 분다: 겨냥이 밀린다. 깨면 돈을 더 준다.',
   trainMul: P.fork.windTrainMul,
 }
 const SUPPLY: ForkOption = {
   id: 'supply', title: '노다지', origin: '노다지',
-  desc: '보급 과녁이 하나 선다 — 맞히면 화살이 돌아온다.',
+  desc: '보급 과녁이 하나 선다. 맞히면 화살이 돌아온다.',
 }
 const SCOUT: ForkOption = {
   id: 'scout', title: '척후', origin: '斥候',
-  desc: '한 놈이 나를 향해 달려온다. 닿기 전에 끊어라 — 깨면 돈을 더 준다.',
+  desc: '한 놈이 나를 향해 달려온다. 닿기 전에 끊어라. 깨면 돈을 더 준다.',
   trainMul: P.fork.scoutTrainMul,
 }
 const SINGLE: ForkOption = {
   id: 'single', title: '단발', origin: '單發',
-  desc: '화살을 적게 준다. 한 발도 못 버린다 — 깨면 돈을 크게 번다.',
+  desc: '화살을 적게 준다. 한 발도 못 버린다. 깨면 돈을 크게 번다.',
   trainMul: P.fork.singleTrainMul,
 }
 

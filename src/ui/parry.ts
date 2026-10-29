@@ -64,9 +64,9 @@ export function mountParry(o: Overlay, hit: (on: boolean) => void, ready: () => 
   btn.className = 'hb-btn pr-btn'
   // 이름은 **패링**이다 (2026-09-10, 형: "환도라고 하지 말고 패링이라고 하고").
   // 물건 이름(환도)은 세계의 말이지만, 버튼에 적히는 건 **지금 무엇을 하는가**여야 한다.
-  btn.setAttribute('aria-label', '패링 — 날아오는 화살을 칼로 쳐서 되돌린다')
+  btn.setAttribute('aria-label', '패링: 날아오는 화살을 칼로 쳐서 되돌린다')
   btn.innerHTML = `${ICON}<i class="pr-lbl">패링</i><i class="pr-key">F</i>`
-  btn.title = '패링 — F. 날아오는 화살을 칼로 쳐서 되돌린다'
+  btn.title = '패링: F. 날아오는 화살을 칼로 쳐서 되돌린다'
 
   /** 쉬는 중에 눌렀을 때 흐려지는 시간 (ms). 다음 누름까지 남은 시간과 무관한 짧은 신호다. */
   const COOL_FLASH_MS = 260

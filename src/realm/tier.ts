@@ -20,13 +20,13 @@ export const TIER_MAX = 6
 export const LEVEL_NAME: readonly string[] = ['촌장', '군장', '대가', '왕', '대왕', '태왕', '천손']
 /** 단계마다 한 줄 */
 export const LEVEL_LINE: readonly string[] = [
-  '쉬움 — 이웃이 약하고 우리 가을걷이가 넉넉하다. 이야기를 따라가고 싶을 때',
-  '보통 — 처음 그대로',
-  '조금 어려움 — 이웃의 첫 군대·창고가 크다',
-  '어려움 — 이웃이 크고 해마다 더 거둔다',
-  '매우 어려움 — 이웃이 우리 고을을 노린다',
-  '혹독함 — 우리 가을걷이도 준다',
-  '가장 어려움 — 하늘의 자손만이 이긴다',
+  '쉬움: 이웃이 약하고 우리 가을걷이가 넉넉하다. 이야기를 따라가고 싶을 때',
+  '보통: 처음 그대로',
+  '조금 어려움: 이웃의 첫 군대·창고가 크다',
+  '어려움: 이웃이 크고 해마다 더 거둔다',
+  '매우 어려움: 이웃이 우리 고을을 노린다',
+  '혹독함: 우리 가을걷이도 준다',
+  '가장 어려움: 하늘의 자손만이 이긴다',
 ]
 export const levelName = (t: number): string => LEVEL_NAME[clampTier(t)]!
 export const clampTier = (t: number): number => Math.max(TIER_MIN, Math.min(TIER_MAX, Math.floor(t)))

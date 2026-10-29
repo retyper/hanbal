@@ -145,7 +145,7 @@ export interface GameLoop {
  * 이 힌트는 이제 보스 직전(카드 없음)에서만 쓴다.
  */
 /** 다음 판이 귀신(보스)일 때의 예고 — 긴장은 예고에서 시작된다 (감사 재미 P1). */
-const HINT_BOSS = '다음은 귀신이다 — 당기면 맞선다'
+const HINT_BOSS = '다음은 귀신이다: 당기면 맞선다'
 /** R 한 번으로 여정을 접으면 실수 한 번이 기록을 지운다. 두 번째 R까지의 유효 시간 (ms). */
 const ABANDON_MS = 2500
 /** 첫 성장 안내 토스트의 수명 (ms). 기본 토스트보다 길다 — 읽고 버튼을 찾을 시간이다. */
@@ -479,7 +479,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     save.runHp = charmStartHp(held)
     save.runArmor = charmStartArmor(held, save)
     save.runArmorMax = save.runArmor
-    if (bought && held !== '') ui.toast(`${charmDef(held).name}을 지녔다 — ${charmDef(held).hint}`, GROW_HINT_MS)
+    if (bought && held !== '') ui.toast(`${charmDef(held).name}을 지녔다: ${charmDef(held).hint}`, GROW_HINT_MS)
     save.runActive = true
     save.runScore = 0
     // 여정 요약은 여정의 것이다 (docs/MEGAHIT.md §8-③). 새 여정은 빈손으로 시작한다.
@@ -531,7 +531,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
   const SANDBOX_STAGE = {
     id: 'sandbox',
     title: '샌드박스',
-    hint: '실험장 — 기록에 남지 않는다',
+    hint: '실험장: 기록에 남지 않는다',
     seed: 0x0e0e,
     arrows: 12,
     targetScore: 999999,
@@ -699,7 +699,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
     if (growHint) save.seenGrowHint = true
 
     saveNow()
-    if (growHint) ui.toast('돈이 쌓였다 — 아래 성장(Tab)에서 근력을 올릴 수 있다', GROW_HINT_MS)
+    if (growHint) ui.toast('돈이 쌓였다: 아래 성장(Tab)에서 근력을 올릴 수 있다', GROW_HINT_MS)
     ui.progressed()
     // 별·위업까지 한 줄로. 결과 화면에 가두지 않는다 (C1).
     ui.runGain(rewardLine(reward), gain.leveled)
@@ -726,13 +726,13 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
         if (id === 'heal') {
           save.runHp = Math.min(hpMax2, save.runHp + heal)
           w.hp = save.runHp
-          ui.toast(`숨을 골랐다 — 기력 +${heal}`, 2200)
+          ui.toast(`숨을 골랐다: 기력 +${heal}`, 2200)
         } else {
           // 처음 받는 살이면 어디서 드는지 말한다 (형의 동생: "활성화시킨 다음에 쓰라고 나오면").
           // 살통 버튼은 armedArrows 에 들어올 때까지 숨 쉰다 (ui/quiver.ts).
           const first = !Number.isFinite(Math.floor(save.arrowStock[id] ?? Number.NaN))
           save.arrowStock[id] = Math.floor(save.arrowStock[id] ?? 0) + bundle
-          if (first) ui.toast(`${arrowName(id)} ${bundle}발 — 왼쪽 아래 살통에서 누르면 든다. 들고 쏘면 1발씩 준다`, NEW_ARROW_HINT_MS)
+          if (first) ui.toast(`${arrowName(id)} ${bundle}발: 왼쪽 아래 살통에서 누르면 든다. 들고 쏘면 1발씩 준다`, NEW_ARROW_HINT_MS)
         }
         saveNow()
       })
@@ -836,7 +836,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
             // 살통이 비었다 — 유엽전으로 바꿔 든다. 다음 발이 조용히 증발하면 배신이다.
             save.runArrow = DEFAULT_ARROW
             armArrow(w, DEFAULT_ARROW)
-            ui.toast('살통이 비었다 — 유엽전으로', 2200)
+            ui.toast('살통이 비었다: 유엽전으로', 2200)
           }
           // 저장은 하지 않는다 (A3: 판 종료·탭 이탈뿐). 화면(살통 버튼)만 깨운다.
           pokeSave(save)
@@ -884,7 +884,7 @@ export function createLoop(canvas: HTMLCanvasElement, deps: LoopDeps): GameLoop 
       } else {
         abandonArm = now
         // 토스트 수명 = 무장 시간. 안내가 상태보다 오래 살면 거짓말이 된다 (감사 UI P1).
-        ui.toast('R 한 번 더 — 이 여정을 접는다', ABANDON_MS)
+        ui.toast('R 한 번 더: 이 여정을 접는다', ABANDON_MS)
       }
     }
 

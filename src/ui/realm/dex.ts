@@ -132,7 +132,7 @@ interface DexKit {
 
 /** 모르는 장수의 귀띔 — 어디 가면 만나나 */
 function whereHint(x: DexHero): string {
-  if (x.board === 'wander') return '떠돌이 — 봄에 어느 고을에 나타나 값을 부른다'
+  if (x.board === 'wander') return '떠돌이: 봄에 어느 고을에 나타나 값을 부른다'
   return `${BOARD_NAME[x.board]} · ${x.nationName}${x.ruler ? '의 군주' : '의 장수'}`
 }
 

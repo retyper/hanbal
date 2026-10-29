@@ -111,11 +111,11 @@ export function matchupHints(r: Realm, viewer: string, mix: Readonly<Partial<Rec
   if (seen !== undefined) {
     const top = (Object.entries(seen) as Array<[UnitKind, number]>).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))[0]
     if (top !== undefined && top[1] >= 0.4) {
-      if (top[0] === 'bow') out.push(walled ? '성 위에 궁수가 많다 — 방패병이 화살을 막는다' : '적은 궁수가 많다 — 방패병이 화살을 막는다')
-      else if (top[0] === 'spear') out.push('적은 창병이 많다 — 궁수가 멀리서 잘 맞힌다')
-      else if (top[0] === 'shield') out.push('적은 방패병이 많다 — 창병이 방패 벽을 뚫는다')
+      if (top[0] === 'bow') out.push(walled ? '성 위에 궁수가 많다. 방패병이 화살을 막는다' : '적은 궁수가 많다. 방패병이 화살을 막는다')
+      else if (top[0] === 'spear') out.push('적은 창병이 많다. 궁수가 멀리서 잘 맞힌다')
+      else if (top[0] === 'shield') out.push('적은 방패병이 많다. 창병이 방패 벽을 뚫는다')
     }
-  } else if (walled) out.push('성 위의 궁수는 지킬 때 세다 — 정찰하면 구성이 보인다')
+  } else if (walled) out.push('성 위의 궁수는 지킬 때 세다. 정찰하면 구성이 보인다')
   return out.slice(0, 3)
 }
 

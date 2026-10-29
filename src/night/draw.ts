@@ -691,7 +691,7 @@ function drawDoor(ctx: CanvasRenderingContext2D, cam: Camera, n: Night): void {
     ctx.textAlign = 'center'
     ctx.textBaseline = 'bottom'
     ctx.fillStyle = '#ffe2a8'
-    ctx.fillText(n.phase === 'rise' ? '그림자가 일어선다 — 창호지 너머를 쏴라' : '촛불 — 다 닳으면 달아난다', x + w / 2, gy - 0.06 * s)
+    ctx.fillText(n.phase === 'rise' ? '그림자가 일어선다. 창호지 너머를 쏴라' : '촛불: 다 닳으면 달아난다', x + w / 2, gy - 0.06 * s)
     ctx.textBaseline = 'middle'
   }
   // 문살

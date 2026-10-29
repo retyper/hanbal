@@ -366,7 +366,7 @@ export function showUnlocked(o: Overlay, ids: readonly string[]): void {
       const d = UNLOCKS[j]
       if (d === undefined || d.id !== id) continue
       // 칭호는 업적처럼 알린다("Achievement Unlocked" 문법) — 얻었다는 사실 자체가 상이다.
-      o.toast(d.kind === 'title' ? `업적 달성 — ${d.label}` : `${KIND_TAG[d.kind]} 해금 · ${d.label}`)
+      o.toast(d.kind === 'title' ? `업적 달성: ${d.label}` : `${KIND_TAG[d.kind]} 해금 · ${d.label}`)
       break
     }
   }

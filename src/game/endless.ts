@@ -291,7 +291,7 @@ const THEMES: readonly Theme[] = [
     // ★ 언덕 (2026-09-03, 형: "언덕이랑 높낮이차 이런 것 있는 스테이지들"). 땅이 오르내리고
     // 과녁은 **땅 위에** 선다 — 같은 각도가 판마다 다른 자리에 떨어지는 것을 몸으로 읽는 판.
     name: '언덕',
-    hint: '땅이 오르내린다 — 언덕 위는 가까워도 높다',
+    hint: '땅이 오르내린다: 언덕 위는 가까워도 높다',
     build(rng, e, reach): Plan {
       const n = 3 + Math.min(2, Math.floor(e / L.linePerAdd))
       // 봉우리 하나 또는 둘. 높이는 판이 깊어질수록 조금 더 — 2.2 ~ 3.4m.
@@ -319,7 +319,7 @@ const THEMES: readonly Theme[] = [
   {
     // 골짜기 — 땅이 내려앉는다. 골 건너의 과녁은 실제보다 낮게 보여 낙차를 두 번 읽어야 한다.
     name: '골짜기',
-    hint: '땅이 꺼진다 — 건너편은 보기보다 낮다',
+    hint: '땅이 꺼진다: 건너편은 보기보다 낮다',
     build(rng, e, reach): Plan {
       const n = 3 + Math.min(2, Math.floor(e / L.linePerAdd))
       const span = reach - L.hillFrom
@@ -346,7 +346,7 @@ const THEMES: readonly Theme[] = [
   {
     // 가장 기본. 거리와 낙차만으로 판을 만든다. 사이사이의 쉼표 같은 판이다.
     name: '사열',
-    hint: '한 줄로 늘어섰다 — 거리부터 읽는다',
+    hint: '한 줄로 늘어섰다. 거리부터 읽는다',
     build(rng, e, reach): Plan {
       const n = 3 + Math.min(3, Math.floor(e / L.linePerAdd))
       const spots: Spot[] = []
@@ -462,7 +462,7 @@ const THEMES: readonly Theme[] = [
   {
     // 뭉친 것과 떨어진 것. 폭발 살이 빛나는 판이고, 아니면 화살을 나눠 써야 한다.
     name: '군집',
-    hint: '뭉쳐 있다 — 한가운데가 자리다',
+    hint: '뭉쳐 있다: 한가운데가 자리다',
     build(rng, e, reach): Plan {
       const spots: Spot[] = []
       const cx = reach * rng.range(L.clusterFromMin, L.clusterFromMax)
@@ -509,7 +509,7 @@ const THEMES: readonly Theme[] = [
   {
     // 바람은 매 스텝 흔들리는 게 아니라 주기적으로 변한다 (sim/world.ts). 읽고 기다리는 판.
     name: '바람골',
-    hint: '바람이 세다 — 깃발부터 본다',
+    hint: '바람이 세다: 깃발부터 본다',
     wind: (rng, e) =>
       windSign(rng) * (rng.range(L.galeWindMin, L.galeWindMax) + Math.min(L.galeWindAdd, e * L.galeWindStep)),
     build(rng, e, reach): Plan {
@@ -528,7 +528,7 @@ const THEMES: readonly Theme[] = [
   {
     // 고리. 어느 쪽을 먼저 뚫어도 되지만, 화살이 모자라면 순서가 답이 된다.
     name: '고리',
-    hint: '가장자리를 돈다 — 가운데는 비었다',
+    hint: '가장자리를 돈다: 가운데는 비었다',
     build(rng, e, reach): Plan {
       const n = L.ringCount
       const cx = reach * rng.range(L.ringFromMin, L.ringFromMax)
@@ -557,7 +557,7 @@ const THEMES: readonly Theme[] = [
      * **순서를 틀리면 돌진이 먼저 닿는다.** 그 판단 하나가 이 판의 전부다.
      */
     name: '돌진',
-    hint: '이쪽으로 온다 — 멀 때가 쉽다',
+    hint: '이쪽으로 온다: 멀 때가 쉽다',
     build(rng, e, reach): Plan {
       const spots: Spot[] = []
       const rushers = 2 + Math.min(2, Math.floor(e / L.rushPerAdd))
@@ -616,7 +616,7 @@ const THEMES: readonly Theme[] = [
   {
     // 열 판에 한 번 오는 종합. 지금까지 배운 게 한꺼번에 온다.
     name: '폭풍',
-    hint: '전부 한꺼번에 온다 — 순서를 정하라',
+    hint: '전부 한꺼번에 온다. 순서를 정하라',
     wind: (rng, e) =>
       windSign(rng) * (rng.range(L.stormWindMin, L.stormWindMax) + Math.min(L.stormWindAdd, e * L.stormWindStep)),
     build(rng, e, reach): Plan {

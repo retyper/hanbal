@@ -96,7 +96,7 @@ const MAP_MAX_SCALE = 1.7
 const CSS = `
 .map-lead { color: var(--dim); font-size: 14px; margin: 4px 0 14px; }
 .map-lead b { color: var(--teal); font-weight: 700; font-family: inherit; }
-/* 종이는 ${BOARD_W}px 고정이다 — 폰(360~390px)에는 안 들어간다. 가로 스크롤로 밀어놓으면
+/* 종이는 ${BOARD_W}px 고정이다: 폰(360~390px)에는 안 들어간다. 가로 스크롤로 밀어놓으면
    조준 중인 화면에서 손가락 드래그를 훔치므로, **통째로 줄여서** 다 보이게 한다.
    배율은 열릴 때 JS가 --map-s 에 넣는다 (calc으로는 길이÷길이를 배수로 못 만든다). */
 .map-fit { width: 100%; overflow: hidden; }
@@ -290,7 +290,7 @@ export function mountMap(
 
     if (!isCkpt) {
       g.addEventListener('click', () => {
-        o.toast('문(門)이 있는 칸에서만 출발할 수 있다 — 각 장의 첫 판이다', 2600)
+        o.toast('문(門)이 있는 칸에서만 출발할 수 있다. 각 장의 첫 판이다', 2600)
       })
     } else {
       g.classList.add('hit')
@@ -313,7 +313,7 @@ export function mountMap(
           dot.setAttribute('data-arm', '1')
           refreshFn?.()
           armTimer = window.setTimeout(disarm, ARM_MS)
-          o.toast(`한 번 더 누르면 ${n}판부터 새 여정 — 지금 여정은 여기서 접힌다`, ARM_MS)
+          o.toast(`한 번 더 누르면 ${n}판부터 새 여정: 지금 여정은 여기서 접힌다`, ARM_MS)
           return
         }
         disarm()
@@ -356,8 +356,8 @@ export function mountMap(
 
   const foot = document.createElement('div')
   foot.className = 'map-foot'
-  foot.innerHTML = '<b>문(門)</b>이 그려진 칸이 지금 열린 관문이다 — 눌러서 그 판부터 새 여정을 연다. '
-    + '여정 중에 옮기면 지금 여정은 거기서 접힌다 — 두 번 눌러 확인한다.'
+  foot.innerHTML = '<b>문(門)</b>이 그려진 칸이 지금 열린 관문이다. 눌러서 그 판부터 새 여정을 연다. '
+    + '여정 중에 옮기면 지금 여정은 거기서 접힌다. 두 번 눌러 확인한다.'
   panel.appendChild(foot)
 
   const open = document.createElement('button')

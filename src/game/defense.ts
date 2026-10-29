@@ -38,14 +38,14 @@ export const DEFENSE_ITEMS: readonly DefenseItem[] = [
     id: 'shield',
     name: '방패',
     origin: '防牌',
-    hint: '앞에 세운다 — 적 화살을 삼킨다 · 이 판만',
+    hint: '앞에 세운다: 적 화살을 삼킨다 · 이 판만',
   },
   {
     id: 'armor',
     // 쉬운 말이 이름, 실물 이름은 괄호 (형: "용어 너무 전문적이면 못 알아먹는다").
     name: '갑옷',
     origin: '두정갑 · 頭釘甲',
-    hint: '입는다 — 피해를 대신 받는다 · 여정 내내',
+    hint: '입는다: 피해를 대신 받는다 · 여정 내내',
   },
   // 화살 한 발 (2026-09-02, 형: "돈 쓸 곳을 좀 더 많이"). 방어는 아니지만 **같은 무리**다 —
   // "지금 이 판에서 훈련치로 사는 것". 살수록 비싸지고 판당 상한이 있다 (P.defense.arrow*).
@@ -53,7 +53,7 @@ export const DEFENSE_ITEMS: readonly DefenseItem[] = [
     id: 'arrow',
     name: '화살 한 발',
     origin: '箭',
-    hint: '살통에 한 발 더 — 이 판만 · 살수록 비싸진다',
+    hint: '살통에 한 발 더: 이 판만 · 살수록 비싸진다',
   },
 ]
 

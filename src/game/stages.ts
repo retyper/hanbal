@@ -91,70 +91,70 @@ interface Layout {
  */
 const LAYOUTS: readonly Layout[] = [
   // ── 챕터 1 — 당김과 놓음 ─────────────────────────────────────
-  { teach: '당기고 놓는다 — 화살이 다 떨어지면 실패다', arrows: 5, hits: 1, spots: [{ x: 8, y: 1.4 }] },
+  { teach: '당기고 놓는다: 화살이 다 떨어지면 실패다', arrows: 5, hits: 1, spots: [{ x: 8, y: 1.4 }] },
   { teach: '조준점은 손이 아니라 마우스가 정한다', arrows: 5, hits: 1, spots: [{ x: 11, y: 2.6 }] },
   { teach: '과녁이 둘이면 순서를 고른다', arrows: 6, hits: 2, spots: [{ x: 10, y: 1.5 }, { x: 14, y: 2.7 }] },
-  { teach: '거리가 늘면 화살이 떨어진다 — 위로 겨눈다', arrows: 6, hits: 2, spots: [{ x: 14, y: 1.6 }, { x: 19, y: 2.8 }] },
+  { teach: '거리가 늘면 화살이 떨어진다. 위로 겨눈다', arrows: 6, hits: 2, spots: [{ x: 14, y: 1.6 }, { x: 19, y: 2.8 }] },
   { teach: '셋을 연달아. 빨간 바 안에서 쏘는 리듬', arrows: 7, hits: 3, spots: [{ x: 12, y: 1.7 }, { x: 17, y: 2.9 }, { x: 22, y: 2.1 }] },
   // ★ 언덕 (2026-09-03, 형: "언덕이랑 높낮이차"). 가운데 과녁이 4.2m 허공에 뜬 대신 **언덕 위**에 선다.
-  { teach: '높이 차가 커진다 — 언덕 위를 겨눈다', arrows: 7, hits: 3, ground: [{ x: 4, y: 0 }, { x: 12, y: 0.3 }, { x: 20, y: 1.9 }, { x: 24, y: 1.0 }, { x: 30, y: 0 }], spots: [{ x: 15, y: 1.5 }, { x: 20, y: 1.6 }, { x: 25, y: 2.0 }] },
+  { teach: '높이 차가 커진다. 언덕 위를 겨눈다', arrows: 7, hits: 3, ground: [{ x: 4, y: 0 }, { x: 12, y: 0.3 }, { x: 20, y: 1.9 }, { x: 24, y: 1.0 }, { x: 30, y: 0 }], spots: [{ x: 15, y: 1.5 }, { x: 20, y: 1.6 }, { x: 25, y: 2.0 }] },
   { teach: '더 멀리. 만작이 왜 필요한지 알게 된다', arrows: 7, hits: 3, spots: [{ x: 22, y: 1.7 }, { x: 27, y: 3.0 }, { x: 32, y: 2.2 }] },
-  { teach: '낮은 과녁 — 아래로도 겨눌 수 있다', arrows: 7, hits: 3, spots: [{ x: 18, y: 0.6 }, { x: 24, y: 2.4 }, { x: 30, y: 1.1 }] },
+  { teach: '낮은 과녁: 아래로도 겨눌 수 있다', arrows: 7, hits: 3, spots: [{ x: 18, y: 0.6 }, { x: 24, y: 2.4 }, { x: 30, y: 1.1 }] },
   // ★ 화약통 소개 (docs/GAP.md — 앵그리버드: "한 발이 구조를 무너뜨린다").
   // 화살 4 · 과녁 4 — 하나씩 쏘면 **한 발도 못 빗나가야** 겨우 깬다. 통을 터뜨리면 한 발이다.
   // 여기서는 벌하지 않고 가르친다. 조이는 건 16판부터.
-  { teach: '화약통 — 터뜨리면 둘레가 같이 간다', arrows: 4, hits: 3, spots: [{ x: 20, y: 1.8, kind: 'barrel' }, { x: 22.15, y: 1.8 }, { x: 21.07, y: 3.66 }, { x: 18.93, y: 3.66 }] },
+  { teach: '화약통: 터뜨리면 둘레가 같이 간다', arrows: 4, hits: 3, spots: [{ x: 20, y: 1.8, kind: 'barrel' }, { x: 22.15, y: 1.8 }, { x: 21.07, y: 3.66 }, { x: 18.93, y: 3.66 }] },
   { teach: '챕터 1 종합', arrows: 8, hits: 4, spots: [{ x: 16, y: 0.9 }, { x: 22, y: 3.6 }, { x: 28, y: 1.7 }, { x: 34, y: 2.8 }] },
 
   // ── 챕터 2 — 공중 과녁과 연쇄 ────────────────────────────────
   { teach: '공중 과녁은 맞으면 떨어진다', arrows: 6, hits: 2, spots: [{ x: 16, y: 5.0, kind: 'aerial' }, { x: 16, y: 1.6 }] },
-  { teach: '떨어지는 과녁이 아래를 친다 — 연쇄', arrows: 6, hits: 2, spots: [{ x: 18, y: 5.4, kind: 'aerial' }, { x: 18, y: 3.2 }, { x: 18, y: 1.4 }] },
+  { teach: '떨어지는 과녁이 아래를 친다. 연쇄', arrows: 6, hits: 2, spots: [{ x: 18, y: 5.4, kind: 'aerial' }, { x: 18, y: 3.2 }, { x: 18, y: 1.4 }] },
   { teach: '한 발로 여럿. 순서를 설계한다', arrows: 6, hits: 3, spots: [{ x: 20, y: 6.0, kind: 'aerial' }, { x: 20, y: 4.2 }, { x: 20, y: 2.6 }, { x: 20, y: 1.2 }] },
   { teach: '연쇄 기둥이 둘', arrows: 7, hits: 4, spots: [{ x: 15, y: 5.2, kind: 'aerial' }, { x: 15, y: 2.8 }, { x: 24, y: 5.6, kind: 'aerial' }, { x: 24, y: 3.0 }] },
-  { teach: '연쇄 사이를 벌린다 — 조준이 정확해야 이어진다', arrows: 7, hits: 3, spots: [{ x: 22, y: 6.4, kind: 'aerial' }, { x: 22, y: 4.0 }, { x: 22, y: 1.8 }] },
+  { teach: '연쇄 사이를 벌린다. 조준이 정확해야 이어진다', arrows: 7, hits: 3, spots: [{ x: 22, y: 6.4, kind: 'aerial' }, { x: 22, y: 4.0 }, { x: 22, y: 1.8 }] },
   // ★ 통은 적으로 변환되지 않는다 (convertToFoes). 그래서 이 판은 **사수 셋 + 화약통**이다 —
   // 사수는 두세 발을 버티지만 폭발에는 한 번에 죽는다. 스나이퍼 게임의 '환경 처치'다.
-  { teach: '사수 곁의 화약통 — 사람보다 통을 노려라', arrows: 3, hits: 3, spots: [{ x: 22, y: 1.9, kind: 'barrel' }, { x: 24.15, y: 1.9 }, { x: 23.07, y: 3.76 }, { x: 20.93, y: 3.76 }] },
-  { teach: '언덕 위의 높은 연쇄 — 화살이 올라가는 데 시간이 걸린다', arrows: 7, hits: 3, ground: [{ x: 6, y: 0 }, { x: 18, y: 0.6 }, { x: 26, y: 2.4 }, { x: 34, y: 0.8 }, { x: 40, y: 0 }], spots: [{ x: 26, y: 5.4, kind: 'aerial' }, { x: 26, y: 3.2 }, { x: 26, y: 1.4 }] },
+  { teach: '사수 곁의 화약통: 사람보다 통을 노려라', arrows: 3, hits: 3, spots: [{ x: 22, y: 1.9, kind: 'barrel' }, { x: 24.15, y: 1.9 }, { x: 23.07, y: 3.76 }, { x: 20.93, y: 3.76 }] },
+  { teach: '언덕 위의 높은 연쇄: 화살이 올라가는 데 시간이 걸린다', arrows: 7, hits: 3, ground: [{ x: 6, y: 0 }, { x: 18, y: 0.6 }, { x: 26, y: 2.4 }, { x: 34, y: 0.8 }, { x: 40, y: 0 }], spots: [{ x: 26, y: 5.4, kind: 'aerial' }, { x: 26, y: 3.2 }, { x: 26, y: 1.4 }] },
   { teach: '작은 연쇄 알갱이', arrows: 7, hits: 4, spots: [{ x: 21, y: 6.0, kind: 'aerial' }, { x: 21, y: 4.4, size: 0.8 }, { x: 21, y: 3.0, size: 0.8 }, { x: 21, y: 1.6, size: 0.8 }] },
   // ★ 통이 둘 — 화살은 정답 두 발 + 여유. 하나씩 쏘면 절대 모자란다.
   { teach: '통이 둘이다. 한 발씩 나눠 쓴다', arrows: 3, hits: 4, spots: [{ x: 17, y: 1.9, kind: 'barrel' }, { x: 18.07, y: 3.76 }, { x: 15.93, y: 3.76 }, { x: 27, y: 1.9, kind: 'barrel' }, { x: 28.07, y: 3.76 }, { x: 25.93, y: 3.76 }] },
-  { teach: '챕터 2 종합 — 보로로로록', arrows: 8, hits: 5, spots: [{ x: 18, y: 7.0, kind: 'aerial' }, { x: 18, y: 5.0 }, { x: 18, y: 3.2 }, { x: 26, y: 6.0, kind: 'aerial' }, { x: 26, y: 3.8 }, { x: 26, y: 1.8 }] },
+  { teach: '챕터 2 종합: 보로로로록', arrows: 8, hits: 5, spots: [{ x: 18, y: 7.0, kind: 'aerial' }, { x: 18, y: 5.0 }, { x: 18, y: 3.2 }, { x: 26, y: 6.0, kind: 'aerial' }, { x: 26, y: 3.8 }, { x: 26, y: 1.8 }] },
 
   // ── 챕터 3 — 이동 과녁과 바람 ───────────────────────────────
-  { teach: '과녁이 위아래로 움직인다 — 느리게', arrows: 6, hits: 2, spots: [{ x: 16, y: 2.6, kind: 'moving', ampY: 1.0, freq: 0.25 }, { x: 22, y: 2.0 }] },
+  { teach: '과녁이 위아래로 움직인다. 느리게', arrows: 6, hits: 2, spots: [{ x: 16, y: 2.6, kind: 'moving', ampY: 1.0, freq: 0.25 }, { x: 22, y: 2.0 }] },
   { teach: '움직이는 과녁은 멈추는 순간이 있다', arrows: 6, hits: 2, spots: [{ x: 18, y: 3.0, kind: 'moving', ampY: 1.6, freq: 0.3 }, { x: 25, y: 2.2, kind: 'moving', ampY: 1.2, freq: 0.22 }] },
-  { teach: '좌우로 움직이는 과녁 — 리드 샷', arrows: 7, hits: 3, spots: [{ x: 20, y: 2.4, kind: 'moving', ampX: 2.2, freq: 0.28 }, { x: 27, y: 3.2 }, { x: 14, y: 1.6 }] },
+  { teach: '좌우로 움직이는 과녁: 리드 샷', arrows: 7, hits: 3, spots: [{ x: 20, y: 2.4, kind: 'moving', ampX: 2.2, freq: 0.28 }, { x: 27, y: 3.2 }, { x: 14, y: 1.6 }] },
   // 화살 7 -> 8, 빠른 이동 과녁 둘에 크기 +25%: 이 판만 유독 뚫렸다
   // (봇 클리어 81%, 목표 90~100% · 화살 소진 실패 19% · 발당 명중 56%).
   // 빠른 이동 과녁 둘을 한꺼번에 요구하는 유일한 판이다. **움직이는 과녁은 같은 각크기라도
   // 훨씬 어렵다** — 조준점이 멈춰 있지 않기 때문이고, 그 값을 크기로 돌려주는 게
   // 난이도 정책(크기가 아니라 메커닉으로 어렵게 한다)에 맞는 방향이다. endless.ts 도 같은 규칙이다.
   { teach: '빨라진다', arrows: 8, hits: 3, spots: [{ x: 17, y: 2.8, kind: 'moving', size: 1.25, ampY: 1.8, freq: 0.45 }, { x: 24, y: 2.0, kind: 'moving', size: 1.25, ampX: 2.0, freq: 0.4 }, { x: 31, y: 3.0 }] },
-  { teach: '움직이는 공중 과녁 — 연쇄까지', arrows: 7, hits: 3, spots: [{ x: 20, y: 5.6, kind: 'aerial' }, { x: 20, y: 3.0, kind: 'moving', ampX: 1.8, freq: 0.3 }, { x: 20, y: 1.4 }] },
+  { teach: '움직이는 공중 과녁: 연쇄까지', arrows: 7, hits: 3, spots: [{ x: 20, y: 5.6, kind: 'aerial' }, { x: 20, y: 3.0, kind: 'moving', ampX: 1.8, freq: 0.3 }, { x: 20, y: 1.4 }] },
   // 골짜기 — 바람이 부는 판에 땅이 내려앉는다. 골 건너의 과녁은 낙차를 두 번 읽어야 한다.
-  { teach: '바람이 분다 — 골짜기 건너로 밀린다', arrows: 7, hits: 3, wind: 2.5, ground: [{ x: 5, y: 0 }, { x: 14, y: -0.2 }, { x: 22, y: -1.6 }, { x: 30, y: 0.4 }, { x: 36, y: 1.4 }, { x: 42, y: 0.6 }], spots: [{ x: 20, y: 1.8 }, { x: 26, y: 2.8 }, { x: 32, y: 2.0 }] },
+  { teach: '바람이 분다: 골짜기 건너로 밀린다', arrows: 7, hits: 3, wind: 2.5, ground: [{ x: 5, y: 0 }, { x: 14, y: -0.2 }, { x: 22, y: -1.6 }, { x: 30, y: 0.4 }, { x: 36, y: 1.4 }, { x: 42, y: 0.6 }], spots: [{ x: 20, y: 1.8 }, { x: 26, y: 2.8 }, { x: 32, y: 2.0 }] },
   // ★ 여기서 처음으로 **왼쪽 바람**이 온다. 예전엔 모든 판의 풍속이 양수라
   //   바람이 언제나 오른쪽으로만 불었다 (형의 지적). 방향이 하나뿐이면 배울 게 없다 —
   //   그건 바람이 아니라 그냥 조준점 보정값이다.
-  { teach: '바람은 반대로도 분다 — 깃발을 봐라', arrows: 7, hits: 3, wind: -3.5, spots: [{ x: 22, y: 2.0 }, { x: 29, y: 3.2 }, { x: 35, y: 2.4 }] },
+  { teach: '바람은 반대로도 분다. 깃발을 봐라', arrows: 7, hits: 3, wind: -3.5, spots: [{ x: 22, y: 2.0 }, { x: 29, y: 3.2 }, { x: 35, y: 2.4 }] },
   { teach: '바람 + 낙차', arrows: 7, hits: 3, wind: 4.0, spots: [{ x: 24, y: 5.0 }, { x: 30, y: 1.6 }, { x: 36, y: 3.4 }] },
   { teach: '바람 속의 이동 과녁', arrows: 8, hits: 4, wind: -3.0, spots: [{ x: 18, y: 2.4, kind: 'moving', ampY: 1.4, freq: 0.3 }, { x: 25, y: 3.0 }, { x: 31, y: 1.8, kind: 'moving', ampX: 2.0, freq: 0.25 }, { x: 37, y: 2.6 }] },
   { teach: '챕터 3 종합', arrows: 8, hits: 4, wind: 4.5, spots: [{ x: 19, y: 6.2, kind: 'aerial' }, { x: 19, y: 3.4 }, { x: 27, y: 2.0, kind: 'moving', ampX: 2.4, freq: 0.32 }, { x: 34, y: 3.0 }] },
 
   // ── 챕터 4 — 관통과 조합 ────────────────────────────────────
-  { teach: '관통 과녁 — 화살이 뚫고 지나간다', arrows: 6, hits: 2, spots: [{ x: 16, y: 2.2, kind: 'pierceable' }, { x: 22, y: 2.2, kind: 'pierceable' }] },
+  { teach: '관통 과녁: 화살이 뚫고 지나간다', arrows: 6, hits: 2, spots: [{ x: 16, y: 2.2, kind: 'pierceable' }, { x: 22, y: 2.2, kind: 'pierceable' }] },
   { teach: '일직선으로 세우면 한 발에 여럿', arrows: 6, hits: 3, spots: [{ x: 15, y: 2.0, kind: 'pierceable' }, { x: 21, y: 2.0, kind: 'pierceable' }, { x: 27, y: 2.0, kind: 'pierceable' }] },
-  { teach: '비스듬한 일렬 — 각도를 찾는다', arrows: 7, hits: 3, spots: [{ x: 16, y: 1.6, kind: 'pierceable' }, { x: 23, y: 3.0, kind: 'pierceable' }, { x: 30, y: 4.4, kind: 'pierceable' }] },
+  { teach: '비스듬한 일렬: 각도를 찾는다', arrows: 7, hits: 3, spots: [{ x: 16, y: 1.6, kind: 'pierceable' }, { x: 23, y: 3.0, kind: 'pierceable' }, { x: 30, y: 4.4, kind: 'pierceable' }] },
   { teach: '관통 + 연쇄', arrows: 7, hits: 4, spots: [{ x: 18, y: 5.4, kind: 'aerial' }, { x: 18, y: 3.0, kind: 'pierceable' }, { x: 24, y: 3.0, kind: 'pierceable' }, { x: 24, y: 1.4 }] },
   { teach: '바람 속의 관통', arrows: 7, hits: 3, wind: -3.5, spots: [{ x: 17, y: 2.4, kind: 'pierceable' }, { x: 24, y: 2.4, kind: 'pierceable' }, { x: 31, y: 2.4, kind: 'pierceable' }] },
   { teach: '움직이는 관통줄', arrows: 7, hits: 3, spots: [{ x: 18, y: 2.6, kind: 'pierceable', ampY: 1.2, freq: 0.24 }, { x: 25, y: 2.6, kind: 'pierceable', ampY: 1.2, freq: 0.24 }, { x: 32, y: 2.6, kind: 'pierceable' }] },
   // ★ 36판+ 셋에 하나는 정예(명중률 2배)다. 그래도 통 한 발이면 셋이 같이 간다 —
   // **깊어질수록 통의 값이 커진다.** 이게 이 메커닉의 성장 곡선이다.
-  { teach: '깊은 곳에서도 답은 하나 — 통', arrows: 3, hits: 3, spots: [{ x: 24, y: 2.0, kind: 'barrel' }, { x: 26.15, y: 2.0 }, { x: 25.07, y: 3.86 }, { x: 22.93, y: 3.86 }] },
+  { teach: '깊은 곳에서도 답은 하나: 통', arrows: 3, hits: 3, spots: [{ x: 24, y: 2.0, kind: 'barrel' }, { x: 26.15, y: 2.0 }, { x: 25.07, y: 3.86 }, { x: 22.93, y: 3.86 }] },
   { teach: '멀리 + 바람 + 이동', arrows: 8, hits: 4, wind: 4.0, spots: [{ x: 26, y: 2.0, kind: 'moving', ampY: 1.6, freq: 0.35 }, { x: 33, y: 3.4 }, { x: 39, y: 2.2 }, { x: 20, y: 1.4 }] },
-  { teach: '큰 연쇄 — 한 발로 화면을 무너뜨린다', arrows: 8, hits: 5, spots: [{ x: 22, y: 7.6, kind: 'aerial' }, { x: 22, y: 5.8 }, { x: 22, y: 4.2 }, { x: 22, y: 2.8 }, { x: 22, y: 1.4 }] },
-  { teach: '챕터 4 종합 — 지금까지 배운 전부', arrows: 8, hits: 5, wind: -3.5, spots: [{ x: 18, y: 6.4, kind: 'aerial' }, { x: 18, y: 3.6, kind: 'pierceable' }, { x: 25, y: 3.6, kind: 'pierceable' }, { x: 31, y: 2.0, kind: 'moving', ampX: 2.2, freq: 0.3 }, { x: 37, y: 3.2 }] },
+  { teach: '큰 연쇄: 한 발로 화면을 무너뜨린다', arrows: 8, hits: 5, spots: [{ x: 22, y: 7.6, kind: 'aerial' }, { x: 22, y: 5.8 }, { x: 22, y: 4.2 }, { x: 22, y: 2.8 }, { x: 22, y: 1.4 }] },
+  { teach: '챕터 4 종합: 지금까지 배운 전부', arrows: 8, hits: 5, wind: -3.5, spots: [{ x: 18, y: 6.4, kind: 'aerial' }, { x: 18, y: 3.6, kind: 'pierceable' }, { x: 25, y: 3.6, kind: 'pierceable' }, { x: 31, y: 2.0, kind: 'moving', ampX: 2.2, freq: 0.3 }, { x: 37, y: 3.2 }] },
   // ── 챕터 5 — 곡사 (형: "더 멀리 쏘는 스테이지 — 멋지게 곡사로") ────────
   // 정조준 사거리(~20m)를 훌쩍 넘긴다. 만작 초속 ~60m/s의 최대 사거리는 320m이므로
   // 55~115m는 전부 닿되, **위로 겨눠 포물선을 그려야만** 닿는 거리다. 반경은 각크기
@@ -164,13 +164,13 @@ const LAYOUTS: readonly Layout[] = [
   { teach: '떨어지는 각을 몸에 새긴다', arrows: 7, hits: 2, spots: [{ x: 55, y: 2.2 }, { x: 74, y: 1.6 }] },
   { teach: '하늘에서 연쇄를 떨어뜨린다', arrows: 7, hits: 2, spots: [{ x: 64, y: 7.4, kind: 'aerial' }, { x: 64, y: 2.0 }] },
   { teach: '먼 화살일수록 바람을 오래 맞는다', arrows: 8, hits: 2, wind: 4, spots: [{ x: 62, y: 2.0 }, { x: 80, y: 2.6 }] },
-  { teach: '멀고 작다 — 만작이 아니면 흔들린다', arrows: 8, hits: 2, spots: [{ x: 70, y: 2.0, size: 0.8 }, { x: 88, y: 2.8, size: 0.8 }] },
+  { teach: '멀고 작다: 만작이 아니면 흔들린다', arrows: 8, hits: 2, spots: [{ x: 70, y: 2.0, size: 0.8 }, { x: 88, y: 2.8, size: 0.8 }] },
   // ★ 곡사 + 통. 62m 밖의 통을 포물선으로 맞혀야 한다 — 이 챕터가 가르친 것과 화약이 만난다.
-  { teach: '먼 통 하나가 셋을 끊는다 — 하늘로 겨눠라', arrows: 4, hits: 3, spots: [{ x: 62, y: 2.3, kind: 'barrel' }, { x: 64.15, y: 2.3 }, { x: 63.08, y: 4.16 }, { x: 60.92, y: 4.16 }] },
-  { teach: '역풍의 곡사 — 깃발을 두 번 봐라', arrows: 8, hits: 2, wind: -5, spots: [{ x: 68, y: 2.2 }, { x: 84, y: 1.8 }] },
-  { teach: '먼 곳에서 움직인다 — 낙하 시간만큼 앞을 본다', arrows: 8, hits: 2, spots: [{ x: 72, y: 2.6, kind: 'moving', size: 1.2, ampX: 3.0, freq: 0.18 }, { x: 58, y: 1.8 }] },
-  { teach: '극원거리 — 화살이 뜬 채로 두 번 숨 쉰다', arrows: 9, hits: 2, spots: [{ x: 92, y: 2.2 }, { x: 112, y: 2.8 }] },
-  { teach: '챕터 5 종합 — 온 마당이 사정거리다', arrows: 9, hits: 3, spots: [{ x: 48, y: 2.0 }, { x: 76, y: 6.8, kind: 'aerial' }, { x: 104, y: 2.4 }] },
+  { teach: '먼 통 하나가 셋을 끊는다. 하늘로 겨눠라', arrows: 4, hits: 3, spots: [{ x: 62, y: 2.3, kind: 'barrel' }, { x: 64.15, y: 2.3 }, { x: 63.08, y: 4.16 }, { x: 60.92, y: 4.16 }] },
+  { teach: '역풍의 곡사: 깃발을 두 번 봐라', arrows: 8, hits: 2, wind: -5, spots: [{ x: 68, y: 2.2 }, { x: 84, y: 1.8 }] },
+  { teach: '먼 곳에서 움직인다. 낙하 시간만큼 앞을 본다', arrows: 8, hits: 2, spots: [{ x: 72, y: 2.6, kind: 'moving', size: 1.2, ampX: 3.0, freq: 0.18 }, { x: 58, y: 1.8 }] },
+  { teach: '극원거리: 화살이 뜬 채로 두 번 숨 쉰다', arrows: 9, hits: 2, spots: [{ x: 92, y: 2.2 }, { x: 112, y: 2.8 }] },
+  { teach: '챕터 5 종합: 온 마당이 사정거리다', arrows: 9, hits: 3, spots: [{ x: 48, y: 2.0 }, { x: 76, y: 6.8, kind: 'aerial' }, { x: 104, y: 2.4 }] },
 ]
 
 function build(layout: Layout, i: number): StageDef {
@@ -433,15 +433,15 @@ const pheasant = (x: number, y: number, amp = 4, freq = 0.13): Game => ({ a: 'ph
 const carp = (x: number, freq = 0.22): Game => ({ a: 'carp', x, freq })
 
 const HUNTS: readonly { teach: string; arrows: number; hits: number; wind?: number; game: readonly Game[] }[] = [
-  { teach: '사냥이다 — 아무도 쏘지 않는다. 풀밭의 토끼 둘', arrows: 6, hits: 2, game: [hare(9, 1.2, 0.12), hare(13)] },
-  { teach: '고라니는 멀리 선다 — 멀수록 위를 겨눈다', arrows: 6, hits: 2, game: [deer(19), hare(11)] },
-  { teach: '꿩이 난다 — 있는 곳이 아니라 **갈 곳**을 쏜다', arrows: 7, hits: 2, game: [pheasant(15, 4.4), hare(10)] },
-  { teach: '연못의 잉어 — 물 밖으로 뛰어오를 때만 맞는다', arrows: 7, hits: 2, game: [carp(11), hare(15, 1.8)] },
-  { teach: '걷는 고라니 — 걸음만큼 앞을 본다', arrows: 7, hits: 3, game: [deer(21, 3, 0.08), pheasant(14, 5, 3.4, 0.15), carp(9, 0.25)] },
-  { teach: '꿩 두 마리가 엇갈린다 — 한 마리씩', arrows: 8, hits: 3, game: [pheasant(13, 4, 3.6, 0.11), pheasant(17, 5.6, 4.2, 0.17), deer(25)] },
-  { teach: '토끼 셋 — 빠른 놈일수록 멈추는 끝에서 쏜다', arrows: 8, hits: 3, game: [hare(9, 1.4, 0.22), hare(13, 2, 0.28), hare(16.5, 1.6, 0.2)] },
-  { teach: '바람 부는 연못 — 뛰는 때와 밀리는 만큼을 같이 잰다', arrows: 9, hits: 3, wind: 1.5, game: [carp(10, 0.2), carp(14, 0.26), pheasant(16, 5.2)] },
-  { teach: '큰 사냥 — 고라니 떼와 꿩, 그리고 토끼', arrows: 9, hits: 4, game: [deer(18, 2.4, 0.09), deer(26, 3, 0.06), pheasant(15, 5.4, 4.4, 0.14), hare(11, 1.8, 0.24)] },
+  { teach: '사냥이다: 아무도 쏘지 않는다. 풀밭의 토끼 둘', arrows: 6, hits: 2, game: [hare(9, 1.2, 0.12), hare(13)] },
+  { teach: '고라니는 멀리 선다. 멀수록 위를 겨눈다', arrows: 6, hits: 2, game: [deer(19), hare(11)] },
+  { teach: '꿩이 난다: 있는 곳이 아니라 **갈 곳**을 쏜다', arrows: 7, hits: 2, game: [pheasant(15, 4.4), hare(10)] },
+  { teach: '연못의 잉어: 물 밖으로 뛰어오를 때만 맞는다', arrows: 7, hits: 2, game: [carp(11), hare(15, 1.8)] },
+  { teach: '걷는 고라니: 걸음만큼 앞을 본다', arrows: 7, hits: 3, game: [deer(21, 3, 0.08), pheasant(14, 5, 3.4, 0.15), carp(9, 0.25)] },
+  { teach: '꿩 두 마리가 엇갈린다. 한 마리씩', arrows: 8, hits: 3, game: [pheasant(13, 4, 3.6, 0.11), pheasant(17, 5.6, 4.2, 0.17), deer(25)] },
+  { teach: '토끼 셋: 빠른 놈일수록 멈추는 끝에서 쏜다', arrows: 8, hits: 3, game: [hare(9, 1.4, 0.22), hare(13, 2, 0.28), hare(16.5, 1.6, 0.2)] },
+  { teach: '바람 부는 연못: 뛰는 때와 밀리는 만큼을 같이 잰다', arrows: 9, hits: 3, wind: 1.5, game: [carp(10, 0.2), carp(14, 0.26), pheasant(16, 5.2)] },
+  { teach: '큰 사냥: 고라니 떼와 꿩, 그리고 토끼', arrows: 9, hits: 4, game: [deer(18, 2.4, 0.09), deer(26, 3, 0.06), pheasant(15, 5.4, 4.4, 0.14), hare(11, 1.8, 0.24)] },
 ]
 
 function gameSpec(g: Game): TargetSpec {
@@ -507,7 +507,7 @@ function foeHint(n: number, base: StageDef, specs: readonly TargetSpec[]): strin
   // ★ 처음 화살을 맞는 판에서 **환도**를 가르친다 (2026-09-10, P.parry).
   //   새 세이브 칸(seen...)을 또 만들지 않는다 — 가르칠 자리가 이미 여기다. 적이 처음 활을
   //   드는 판과, 화살이 실제로 날아오는 그다음 판에 한 줄씩.
-  if (n === FOE_FROM) return '적이 활을 든다 — 당기는 쪽을 먼저 쏜다. 머리는 한 발이다'
+  if (n === FOE_FROM) return '적이 활을 든다: 당기는 쪽을 먼저 쏜다. 머리는 한 발이다'
   if (specs.some((s) => s.kind === 'barrel')) return base.hint ?? ''
   let win = 0
   let hide = 0
@@ -524,16 +524,16 @@ function foeHint(n: number, base: StageDef, specs: readonly TargetSpec[]): strin
     else if (s.look === 2) hide++
     else win++
   }
-  if (n === FOE_FROM + 1) return '날아오는 화살은 칼로 쳐낸다 — F, 폰은 패링 버튼. 쳐낸 화살은 쏜 놈에게 돌아간다'
+  if (n === FOE_FROM + 1) return '날아오는 화살은 칼로 쳐낸다. F, 폰은 패링 버튼. 쳐낸 화살은 쏜 놈에게 돌아간다'
   // 새 적은 **처음 서는 그 판에서** 자기 규칙을 말한다. 늦게 온 것부터 먼저 말한다.
-  if (slinger > 0) return '투석군(投石軍) — 돌을 넘겨 던진다. **방패 위로 넘어온다** — 칼로 쳐내라'
-  if (gunner > 0) return '총통수(銃筒手) — 탄환이 곧고 빠르다. 화승에 불이 붙으면 방패 뒤로'
-  if (hwacha > 0) return '화차(火車) — 신기전이 부채꼴로 온다. 방패로 막거나 칼로 쳐낸다'
-  if (hide > 0 && hawk === 0) return '숨은 사수는 당길 때만 나온다 — 그 틈이 유일하다'
-  if (hawk > 0 && hide === 0) return '매가 돈다 — 발톱의 돌을 놓기 전에 떨군다'
-  if (hide > 0 && hawk > 0) return '숨는 놈과 나는 놈 — 먼저 당기는 쪽부터'
-  if (win >= 3) return `창의 사수 ${win} — 가까운 창부터, 머리를 노린다`
-  return '창의 사수 — 당기는 쪽을 먼저, 머리는 한 발이다'
+  if (slinger > 0) return '투석군(投石軍): 돌을 넘겨 던진다. **방패 위로 넘어온다**: 칼로 쳐내라'
+  if (gunner > 0) return '총통수(銃筒手): 탄환이 곧고 빠르다. 화승에 불이 붙으면 방패 뒤로'
+  if (hwacha > 0) return '화차(火車): 신기전이 부채꼴로 온다. 방패로 막거나 칼로 쳐낸다'
+  if (hide > 0 && hawk === 0) return '숨은 사수는 당길 때만 나온다. 그 틈이 유일하다'
+  if (hawk > 0 && hide === 0) return '매가 돈다: 발톱의 돌을 놓기 전에 떨군다'
+  if (hide > 0 && hawk > 0) return '숨는 놈과 나는 놈: 먼저 당기는 쪽부터'
+  if (win >= 3) return `창의 사수 ${win}: 가까운 창부터, 머리를 노린다`
+  return '창의 사수: 당기는 쪽을 먼저, 머리는 한 발이다'
 }
 
 /** 보스 주기. 10판 = 여정의 한 마디 (RUN.md). */
@@ -614,13 +614,13 @@ function bossStage(i: number): StageDef {
   const reach = 40
   const targets: TargetSpec[] = []
   let title = '눈알귀신'
-  let hint = '눈을 뜰 때 쏴라 — 맞으면 멈춘다. 그때 한 발 더'
+  let hint = '눈을 뜰 때 쏴라. 맞으면 멈춘다. 그때 한 발 더'
   let hitsNeeded: number
 
   if (variant === 1) {
     // 갑주귀신 — 몸통 무효. 눈에 정확히 crit × N. 조준의 판이다.
     title = '갑주귀신'
-    hint = '몸통 두 발이면 비틀거린다 — 그때 투구가 열린다'
+    hint = '몸통 두 발이면 비틀거린다. 그때 투구가 열린다'
     const eyeHits = 2 + rank
     targets.push({
       kind: 'boss', x: reach * rng.range(0.84, 0.94), y: rng.range(2.0, 3.0),
@@ -631,7 +631,7 @@ function bossStage(i: number): StageDef {
   } else if (variant === 2) {
     // 쌍둥이 눈알 — 둘로 갈라진 위협. 어느 쪽을 먼저 잡을지가 판단이다.
     title = '쌍눈귀신'
-    hint = '둘이 엇갈려 눈을 뜬다 — 한쪽을 맞히면 둘 다 멈춘다'
+    hint = '둘이 엇갈려 눈을 뜬다. 한쪽을 맞히면 둘 다 멈춘다'
     // ★ 보스는 헤드샷 한 방에 눕지 않는다 (형: "아무리 보스여도 즉사는 안 되고").
     //   어떤 단위든 체력이 헤드샷 피해보다 확실히 크게 바닥을 깐다.
     const each = Math.max(Math.floor(crit * 1.3), Math.floor(baseHp * 0.55))
@@ -645,7 +645,7 @@ function bossStage(i: number): StageDef {
   } else if (variant === 3) {
     // 폭주귀신 — 빠르다. 시간이 무기가 아니라 상대의 무기다.
     title = '폭주귀신'
-    hint = '다리를 쏴라 — 넘어지면 눈이 드러난다'
+    hint = '다리를 쏴라: 넘어지면 눈이 드러난다'
     const rushHp = Math.max(Math.floor(crit * 1.3), Math.floor(baseHp * 0.6))
     targets.push({
       kind: 'boss', x: reach * rng.range(0.88, 0.96), y: rng.range(2.0, 3.0),
@@ -656,7 +656,7 @@ function bossStage(i: number): StageDef {
     // ── 도깨비 — **거인이다** (형: "거인형 보스"). 크고 느리고, 몸통으로는 답이 안 나온다. ──
     // 이마의 눈이 유일한 길이고, 대신 거인은 느긋해서 눈을 오래 뜬다 (P.target.bossEyeGiantMul).
     title = '도깨비'
-    hint = '거인이다 — 몸통은 소용없다. 이마의 눈이 뜰 때를 기다려라'
+    hint = '거인이다: 몸통은 소용없다. 이마의 눈이 뜰 때를 기다려라'
     const hp = Math.max(Math.floor(crit * 2), Math.floor(baseHp * 1.3))
     targets.push({
       kind: 'boss', x: reach * rng.range(0.86, 0.95), y: rng.range(3.0, 3.8),
@@ -666,7 +666,7 @@ function bossStage(i: number): StageDef {
   } else if (variant === 5) {
     // ── 구미호 — 흰 여우. 빠르다. 다리를 쏴 넘어뜨리는 것이 유일한 숨 돌릴 틈이다. ──
     title = '구미호'
-    hint = '빠르다 — 다리를 쏴 넘어뜨리고, 그때 눈을 노린다'
+    hint = '빠르다: 다리를 쏴 넘어뜨리고, 그때 눈을 노린다'
     const hp = Math.max(Math.floor(crit * 1.2), Math.floor(baseHp * 0.55))
     targets.push({
       kind: 'boss', x: reach * rng.range(0.88, 0.96), y: rng.range(1.6, 2.2),
@@ -676,7 +676,7 @@ function bossStage(i: number): StageDef {
   } else if (variant === 6) {
     // ── 장승 — 마을 어귀의 나무 기둥이 걸어온다. 나무는 두들겨야 쪼개진다 (guard 문법). ──
     title = '장승'
-    hint = '나무는 두들겨야 쪼개진다 — 몸통 두 발이면 얼굴이 열린다'
+    hint = '나무는 두들겨야 쪼개진다. 몸통 두 발이면 얼굴이 열린다'
     const eyeHits = 2 + rank
     targets.push({
       kind: 'boss', x: reach * rng.range(0.84, 0.93), y: rng.range(2.4, 3.2),
@@ -686,7 +686,7 @@ function bossStage(i: number): StageDef {
   } else if (variant === 7) {
     // ── 저승사자 — 갓이 얼굴을 덮는다. 좀처럼 안 보이니 **기다리는 것이 실력**이다. ──
     title = '저승사자'
-    hint = '갓이 얼굴을 덮는다 — 고개를 드는 그 한 순간을 기다려라'
+    hint = '갓이 얼굴을 덮는다. 고개를 드는 그 한 순간을 기다려라'
     const hp = Math.max(Math.floor(crit * 1.5), Math.floor(baseHp * 0.85))
     targets.push({
       kind: 'boss', x: reach * rng.range(0.86, 0.94), y: rng.range(2.2, 3.0),

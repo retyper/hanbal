@@ -201,7 +201,7 @@ export function mountTuneConsole(): () => void {
         Object.fromEntries(changed.map((r) => [r.path, getParam(r.path)])), null, 2)
       void navigator.clipboard.writeText(`${text}\n\n${json}\n`)
         .then(() => flash(`${changed.length}개 값 복사됨 → params.ts 에 반영`))
-        .catch(() => flash('클립보드 실패 — 콘솔 로그 확인'))
+        .catch(() => flash('클립보드 실패: 콘솔 로그 확인'))
       console.log('[튜닝] 변경분\n' + text + '\n' + json)
     }
   })

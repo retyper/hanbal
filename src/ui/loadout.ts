@@ -208,12 +208,12 @@ export function mountLoadout(
     //    잠긴 활 앞에 멈췄으면 **드는 활이 따로 있다**는 것을 여기서 분명히 말한다 —
     //    화면에 안 적으면 그건 숨은 상태고, 숨은 상태는 언젠가 형을 속인다.
     if (!isOwned(browsing)) {
-      syn.innerHTML = `<b>？？？</b> 아직 못 든다 — ${unlockOfBow(browsing)?.hint ?? ''}`
+      syn.innerHTML = `<b>？？？</b> 아직 못 든다. ${unlockOfBow(browsing)?.hint ?? ''}`
         + ` <i>· 지금 드는 활은 ${bowKind(pick.bow).name}</i>`
     } else {
       const bk = bowKind(browsing)
       const sy = bk.synergy
-      syn.innerHTML = `<b>${bk.name}</b> — ${bk.cost === '없음' ? '대가가 없다' : bk.cost}`
+      syn.innerHTML = `<b>${bk.name}</b>: ${bk.cost === '없음' ? '대가가 없다' : bk.cost}`
         + (sy !== undefined ? ` <i>· 궁합 ${sy.label}</i>` : '')
     }
     wallet.textContent = String(d.training)
@@ -351,8 +351,8 @@ function bowArt(id: string, owned: boolean, px: number): string {
         sub: mastered > 0 ? `숙련 ${mastered}` : b.origin,
         lines: [
           b.perk,
-          b.cost === '없음' ? '대가가 없다 — 그래서 기준이 된다.' : `대가 — ${b.cost}`,
-          sy !== undefined ? `궁합 — ${sy.label}` : '',
+          b.cost === '없음' ? '대가가 없다: 그래서 기준이 된다.' : `대가: ${b.cost}`,
+          sy !== undefined ? `궁합: ${sy.label}` : '',
         ],
         foot: mastered > 0 ? '숙련이 오를수록 대가가 깎인다 (그 활로 맞힌 수)' : '',
       }
@@ -367,7 +367,7 @@ function bowArt(id: string, owned: boolean, px: number): string {
   // ── 부적 — 이번 여정만 (game/charms.ts) ──
   // 하나만 지닌다. 값은 '나선다'를 누르는 순간 치른다 — 여기서 미리 깎으면 활을 고르다
   // 마음이 바뀐 사람의 훈련치가 샌다. 못 사는 카드는 왜 못 사는지 적힌 채 흐려진다.
-  section('부적 — 이번 여정만, 하나', paneCharm, true)
+  section('부적: 이번 여정만, 하나', paneCharm, true)
   const charmGrid = document.createElement('div')
   charmGrid.className = 'l-grid'
   const charmCards = new Map<CharmId, HTMLButtonElement>()
@@ -384,7 +384,7 @@ function bowArt(id: string, owned: boolean, px: number): string {
       title: c.name,
       sub: c.origin,
       lines: [c.hint],
-      foot: charmBlocked(d, c.id) === '' ? `값 ${coinText(charmCost(c.id))} — '나선다'를 누를 때 치른다` : charmBlocked(d, c.id),
+      foot: charmBlocked(d, c.id) === '' ? `값 ${coinText(charmCost(c.id))}: '나선다'를 누를 때 치른다` : charmBlocked(d, c.id),
     }))
     card.addEventListener('click', () => {
       if (charmBlocked(d, c.id) !== '') return
@@ -399,7 +399,7 @@ function bowArt(id: string, owned: boolean, px: number): string {
 
   // ── 갑옷 — 셋 중 하나를 입고 나선다 (game/armor.ts, 2026-09-10 형: "방어구는 고를 수도 없잖아") ──
   // 가진 벌은 누르면 입고, 없는 벌은 누르면 장만한다(훈련치). 판 도중에 사는 '갑옷'은 입은 벌이다.
-  section('갑옷 — 입고 나선다. 판 도중에 겹쳐 입는 것은 이 벌이다', paneArmor, true)
+  section('갑옷: 입고 나선다. 판 도중에 겹쳐 입는 것은 이 벌이다', paneArmor, true)
   const armorGrid = document.createElement('div')
   armorGrid.className = 'l-grid'
   const armorCards = new Map<ArmorKindId, HTMLButtonElement>()
@@ -462,14 +462,14 @@ function bowArt(id: string, owned: boolean, px: number): string {
         : why === '' ? `장만 ${coinHtml(armorUnlockCost(id))}` : why
     }
     const k = armorKind(worn)
-    armorLine.innerHTML = `<b>${k.name}</b> — 한 벌 ${armorPerOf(d, worn)} · 상한 ${armorCapOf(d, worn)}`
+    armorLine.innerHTML = `<b>${k.name}</b>: 한 벌 ${armorPerOf(d, worn)} · 상한 ${armorCapOf(d, worn)}`
       + ` <i>· 판에서 한 벌 ${coinHtml(armorCostOf(d, worn))}</i>`
   }
 
   // ── 살 가게 — 발견한 특수살을 훈련치로 채운다 (game/supply.ts shopPrice) ──
   // 발견한 살(arrowStock 에 키가 있는 살)만 판다 — 가게가 보급을 대신하면 보스를 잡을 이유가 준다.
   // 사는 순간 재고가 오른다 (여기서 바로 저장). 아직 하나도 못 봤으면 그 사실을 한 줄로 말한다.
-  section('살 가게 — 발견한 살을 채운다', paneShop)
+  section('살 가게: 발견한 살을 채운다', paneShop)
   const shop = document.createElement('div')
   shop.className = 'l-shop'
   paneShop.appendChild(shop)
@@ -493,7 +493,7 @@ function bowArt(id: string, owned: boolean, px: number): string {
       const btn = row.querySelector('.l-sbuy') as HTMLButtonElement
       ;(btn.querySelector('b') as HTMLElement).innerHTML = coinHtml(price)
       btn.disabled = d.training < price
-      btn.title = btn.disabled ? `${coinText(price)} 필요` : `${k.name} 한 발 — ${coinText(price)}`
+      btn.title = btn.disabled ? `${coinText(price)} 필요` : `${k.name} 한 발: ${coinText(price)}`
       btn.addEventListener('click', () => {
         if (d.training < price) return
         d.training -= price
@@ -506,7 +506,7 @@ function bowArt(id: string, owned: boolean, px: number): string {
     if (any === 0) {
       const none = document.createElement('div')
       none.className = 'l-snone'
-      none.textContent = '아직 본 살이 없다 — 귀신(보스)을 잡으면 보급에서 처음 만난다. 만난 살은 여기서 살 수 있다'
+      none.textContent = '아직 본 살이 없다. 귀신(보스)을 잡으면 보급에서 처음 만난다. 만난 살은 여기서 살 수 있다'
       shop.appendChild(none)
     }
   }
@@ -586,7 +586,7 @@ export function mountFork(
   head.innerHTML = '<h2>갈림길</h2>'
   const sub = document.createElement('p')
   sub.className = 'hb-lead'
-  sub.textContent = '다음 판에 무엇을 얹을까 — 하나를 고른다.'
+  sub.textContent = '다음 판에 무엇을 얹을까. 하나를 고른다.'
   panel.append(head, sub)
 
   const grid = document.createElement('div')
@@ -651,7 +651,7 @@ export function mountSupply(
   head.innerHTML = '<h2>보급</h2>'
   const sub = document.createElement('p')
   sub.className = 'hb-lead'
-  sub.textContent = `보스를 잡았다. 하나를 고른다 — ${count}발이 살통에 들어온다.`
+  sub.textContent = `보스를 잡았다. 하나를 고른다: ${count}발이 살통에 들어온다.`
   panel.append(head, sub)
 
   const grid = document.createElement('div')
@@ -686,7 +686,7 @@ export function mountSupply(
     const have = Math.floor(stock[id] ?? Number.NaN)
     ;(card.querySelector('.l-syn2') as HTMLElement).textContent = Number.isFinite(have)
       ? `지금 ${have}발 → ${have + count}발`
-      : '처음 얻는 살 — 받은 뒤 왼쪽 아래 살통에서 눌러 든다'
+      : '처음 얻는 살: 받은 뒤 왼쪽 아래 살통에서 눌러 든다'
     ;(parts[0] as HTMLElement).textContent = k.origin
     ;(parts[1] as HTMLElement).textContent = k.desc
     card.addEventListener('click', () => finish(id))

@@ -417,7 +417,7 @@ function retreatParts(c: Ctx, st: State, mine: 'a' | 'd', guard: boolean, dark: 
   if (guard && menNow(g0m, fm, 'horse') >= 1) out.push(['우리 말이 뒤를 지킨다', R.tacRetGuard])
   const ry = (me.hero?.ryak ?? 5) - 5
   if (ry !== 0) out.push([`우리 장수 지략 ${me.hero?.ryak ?? 5}`, R.tacRetRyak * ry])
-  if (foeHorse < 1) out.push(['적에게 말이 없다 — 걸어서는 못 따라잡는다', R.tacRetNoChase])
+  if (foeHorse < 1) out.push(['적에게 말이 없다. 걸어서는 못 따라잡는다', R.tacRetNoChase])
   else if (chase > 0) out.push([`적 말 ${Math.round(foeHorse)}명이 쫓는다`, -R.tacRetChase * chase])
   if (myM < 1) out.push(['사기가 꺾였다', -R.tacRetMorale * (1 - myM)])
   if (dark) out.push(['어둠', R.tacRetDark])

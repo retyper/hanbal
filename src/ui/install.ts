@@ -99,7 +99,7 @@ export function mountInstall(into: HTMLElement, toast: (text: string, ms?: numbe
     btn.style.display = st === 'no' ? 'none' : ''
     btn.title = st === 'ios'
       ? '사파리 공유 단추 → 홈 화면에 추가'
-      : '홈 화면에 앱으로 설치한다 — 주소창 없이 뜬다'
+      : '홈 화면에 앱으로 설치한다. 주소창 없이 뜬다'
   }
 
   btn.addEventListener('click', () => {

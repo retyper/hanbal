@@ -117,15 +117,15 @@ export const MAHAN_NATION_IDS: readonly string[] = ['baekje']
 /** 1장 나라 소개 — 그 시대(서기 8년) 그대로 */
 export const MAHAN_NATIONS: readonly NationInfo[] = [
   {
-    id: 'baekje', name: '백제', place: '하남 위례성 — 풍납토성 (설)',
+    id: 'baekje', name: '백제', place: '하남 위례성: 풍납토성 (설)',
     blurb: '졸본에서 내려온 온조가 세운 지 스물여섯 해. 땅은 한강 아래 몇 고을뿐이지만 쇠촉 화살과 날랜 군사가 있다.',
-    source: '『삼국사기』 백제본기 — 온조왕 26년 "마한이 점점 약해지고 위아래 마음이 갈라졌으니 남에게 먹히기 전에 우리가 아우르자."',
+    source: '『삼국사기』 백제본기: 온조왕 26년 "마한이 점점 약해지고 위아래 마음이 갈라졌으니 남에게 먹히기 전에 우리가 아우르자."',
     bars: { army: 3, grain: 3, militia: 3, terrain: 3 },
   },
   {
-    id: 'mokji', name: '마한', place: '목지국 — 천안 직산 (설)',
+    id: 'mokji', name: '마한', place: '목지국: 천안 직산 (설)',
     blurb: '쉰 남짓 나라를 거느린 진왕의 마한. 고을과 성이 많고 백제를 제 울타리 안 작은 나라로 본다. 그러나 위아래 마음이 갈라졌다.',
-    source: '『삼국사기』 백제본기 — 온조왕 27년 원산·금현 두 성이 항복하니 그 백성을 한산 북쪽으로 옮겼다. 마한이 마침내 없어졌다.',
+    source: '『삼국사기』 백제본기: 온조왕 27년 원산·금현 두 성이 항복하니 그 백성을 한산 북쪽으로 옮겼다. 마한이 마침내 없어졌다.',
     bars: { army: 4, grain: 4, militia: 3, terrain: 3 },
   },
 ]

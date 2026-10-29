@@ -264,7 +264,7 @@ export function effectOf(stats: Stats, key: StatKey): string {
       // 2026-08-31: 이 스탯이 드디어 **자기 이름의 것**을 한다.
       // 집중(만작 뒤 게이지, sim/types.ts)은 숨을 참는 동안 찬다 — 그래서 이 스탯이
       // 늘리는 '참는 시간'이 곧 '집중을 채울 수 있는 시간'이다. 이름이 같은 게 맞다.
-      return `숨을 ${holdLimit(stats.focus).toFixed(1)}초까지 참는다 — 그동안 집중이 찬다`
+      return `숨을 ${holdLimit(stats.focus).toFixed(1)}초까지 참는다: 그동안 집중이 찬다`
     }
   }
 }
@@ -309,8 +309,8 @@ export function recommendStat(stats: Stats): StatKey {
 /** 추천의 이유 한 줄. 화면은 이 문장을 추천 줄 곁에 붙인다. */
 export function recommendReason(key: StatKey): string {
   return key === 'str'
-    ? '추천 — 화살 피해는 속도의 제곱이다. 적을 눕히는 발수가 준다'
-    : '추천 — 지금 가장 낮은 곳이다'
+    ? '추천: 화살 피해는 속도의 제곱이다. 적을 눕히는 발수가 준다'
+    : '추천: 지금 가장 낮은 곳이다'
 }
 
 // ─────────────────────── 명상 (冥想) ───────────────────────
