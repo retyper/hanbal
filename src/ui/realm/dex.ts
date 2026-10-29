@@ -207,6 +207,10 @@ export function dexToastHtml(k: DexKit, items: ReadonlyArray<{ id: string; lv: 2
 }
 
 export const DEX_CSS = `
+/* 둥근 얼굴 — 청동 테 그림(ui/ring-portrait.png · 테 두께는 지름의 17%) · 얼굴이 줄지 않게 칸을 키운다 (형 10-29: "박스 테두리들이 여전히 css") */
+.ap .dexp .dxf, .ap .dxt img { background: url(__ART__ui/ring-portrait.png) center / 100% 100% no-repeat, #17110c; background-origin: border-box; border-style: solid; border-color: transparent; border-radius: 50%; box-sizing: border-box; }
+.ap .dexp .dxf { width: 78px !important; height: 78px !important; border-width: 13px; } .ap .dexp .dxf.none { border: 13px solid transparent !important; background: url(__ART__ui/ring-portrait.png) center / 100% 100% no-repeat, #17110c !important; background-origin: border-box !important; }
+.ap .dxt img { width: 50px !important; height: 50px !important; border-width: 8.5px; }
 .ap .dexp .dxsum { max-width: 980px; margin: 4px auto 0; padding: 0 14px; }
 .ap .dexp .dxbar { position: relative; height: 10px; border-radius: 5px; background: #30241a; overflow: hidden; }
 .ap .dexp .dxbar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; }

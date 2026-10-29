@@ -204,6 +204,11 @@ export function yardStripHtml(k: DrillKit, rows: ReadonlyArray<{ id: string; nam
 }
 
 export const DRILL_CSS = `
+/* 둥근 얼굴 — 청동 테 그림 (ui/ring-portrait.png) */
+.ap .dyf img, .ap .dyf .nof, .ap .dystrip .dysf img, .ap .dystrip .dysf .nof { background: url(__ART__ui/ring-portrait.png) center / 100% 100% no-repeat, #17110c; background-origin: border-box; border-style: solid; border-color: transparent; border-radius: 50%; box-sizing: border-box; }
+.ap .dyf img, .ap .dyf .nof, .ap .dystrip .dysf img, .ap .dystrip .dysf .nof { border-color: transparent !important; background: url(__ART__ui/ring-portrait.png) center / 100% 100% no-repeat, #17110c !important; background-origin: border-box !important; }
+.ap .dyf img, .ap .dyf .nof { width: 72px !important; height: 72px !important; border-width: 12px !important; }
+.ap .dystrip .dysf img, .ap .dystrip .dysf .nof { width: 54px !important; height: 54px !important; border-width: 9px !important; }
 .ap .front.dyard .dylead { max-width: 760px; margin: 2px auto 8px; padding: 0 14px; color: #cbbf9f; font-size: 13.5px; }
 .ap .front.dyard .dyl { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; max-width: 980px; margin: 0 auto; padding: 0 14px 8px; }
 /* 테는 그림으로 — 장수 한 사람 = 옻칠한 나무판에 청동 테 (ui/panel.png · 아래 판과 한 벌) (형 10-29: "박스 테두리들이 여전히 css") */
