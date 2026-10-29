@@ -637,6 +637,13 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     case 'persuade': {
       if (line.faction !== viewer) return null
       const h = after.heroes[line.hero]
+      const by = line.by != null ? after.heroes[line.by]?.name : undefined
+      const d = Math.abs(line.d ?? 0).toFixed(1)
+      if (line.step === 'drop') return `${h?.name ?? '?'}의 마음의 벽 −${d}${by !== undefined ? ` (${by})` : ''}`
+      if (line.step === 'talk') {
+        const how = line.broke === true ? '마음의 벽이 무너졌다' : (line.d ?? 0) > 0 ? `마음의 벽이 ${d} 도로 쌓였다` : (line.d ?? 0) < 0 ? `마음의 벽 −${d}` : '마음의 벽은 그대로다'
+        return `${by !== undefined ? `${josa(by, '이', '가')} ` : ''}옥에서 ${josa(h?.name ?? '?', '과', '와')} 마주 앉았다. ${how}.`
+      }
       return line.step === 'waver'
         ? `${josa(h?.name ?? '?', '의', '의')} 마음이 흔들린다. 이제부터는 넘어올 수도 있다.`
         : `${josa(h?.name ?? '?', '이', '가')} 또 고개를 저었다. 회유는 이어 간다.`

@@ -201,6 +201,11 @@ export interface Hand {
 
 export type Vow = 'hold' | 'rescue' | 'heart' | 'turned'
 
+/** 옥중 담판의 말할 거리 — 달래기 · 명분 · 이익 · 겁주기 · 인연 (docs/realm/WOO.md §2-2) */
+export type WooApproach = 'soothe' | 'cause' | 'gain' | 'fear' | 'bond'
+/** 갇힌 이의 반응 — 크게 흔들림 · 흔들림 · 버팀 · 노여움 */
+export type WooReact = 'big' | 'sway' | 'hold' | 'rage'
+
 export type HeroStatus = 'free' | 'captive' | 'dead'
 
 export interface Hero {
@@ -237,7 +242,24 @@ export interface Hero {
    * 회유 — resist 는 남은 마음의 벽(림월드의 저항). 계절마다 깎이고, 다 깎인 뒤엔 계절마다 넘어올지 굴린다 (heroes.stepHeroes).
    * left 는 옛 판의 남은 계절 (resist 가 없으면 그대로 센다)
    */
-  persuade?: { by: string | null; left: number; resist?: number; tries?: number }
+  persuade?: {
+    by: string | null; left: number; resist?: number; tries?: number
+    /** 회유를 시작한 계절 (담판의 「처음」 · docs/realm/WOO.md §3) */
+    since?: number
+    /** 마지막으로 담판을 연 계절 · 그때 본 걸 거리 (새 걸 거리가 생기면 담판이 다시 뜬다) */
+    talkAt?: number
+    hooks?: readonly string[]
+    /** 이 계절 담판에서 「이익」으로 더 낸 곡식 */
+    talkGrain?: number
+    /** 이 계절 담판의 「손을 내민다」가 먹혔다 — 계절 끝에 넘어온다 */
+    handAt?: number
+  }
+  /** 옥에 갇힌 계절 (담판의 「아무도 구하러 오지 않았다」) — 갇힐 때 heroes.stepHeroes 가 적는다 */
+  caughtAt?: number
+  /** 처음 섬긴 나라 — 넘어갈 때 적는다 (없으면 지금 나라) */
+  born?: string
+  /** 원한 — 담판에서 노엽게 한 겹 (넘어올 확률이 깎이고, 넘어와도 정이 낮다) */
+  grudge?: number
   /** 다친 장수 — 이 계절까지 군대를 이끌지 못한다 (암살이 먹혔다, plots.ts) */
   woundedUntil?: number
   /** 사신을 따라 나갔다 — 이 계절까지 자리를 비운다 (맡은 고을에 손이 안 간다) */
@@ -891,7 +913,8 @@ export type Order =
   /** 짝에게 가서 함께 지낸다 — 신방에 들었는데 떨어져 있을 때 (형 10-23: "버튼 하나 눌러서 같이 지내게") */
   | { readonly kind: 'cohabit'; readonly hero: string }
   /** 포로 회유를 시작한다 — 다 될 때까지 계절마다 곡식이 든다. by = 설득을 맡은 우리 장수 (매력·매혹이 빠르기를 정한다) */
-  | { readonly kind: 'persuade'; readonly hero: string; readonly by: string | null }
+  /** talk — 이 계절 담판에서 건 말할 거리 (마디마다 하나 · 셋까지 · docs/realm/WOO.md). 없으면 맡긴다 */
+  | { readonly kind: 'persuade'; readonly hero: string; readonly by: string | null; readonly talk?: readonly WooApproach[] }
   /** 떠돌이 인재를 들인다 — 그 인재가 머문 고을의 주인만, 곡식 price */
   | { readonly kind: 'hire'; readonly faction: string; readonly hero: string }
   /** 사건 카드의 답 — 고르지 않으면 0 (장수 다툼은 2 침묵) (events.resolveCard) */
@@ -1112,9 +1135,14 @@ export type ReportLine =
   /** 누가 했는지 모르는 일 — 당한 나라의 눈 (사기가 꺾였다 · 곡식이 탔다 · 장정이 안 나왔다) */
   | { readonly kind: 'mystery'; readonly faction: string; readonly what: 'morale' | 'grain' | 'militia' | 'wound' | 'death'; readonly node?: string; readonly hero?: string }
   /** 장수가 들어왔다 — 회유가 끝났거나 떠돌이를 들였다 */
-  | { readonly kind: 'recruit'; readonly hero: string; readonly faction: string; readonly how: 'persuade' | 'wanderer' }
+  /** by · talk — 회유로 넘어왔으면 달랜 이 · 담판의 「손을 내민다」로 넘어왔나 */
+  | { readonly kind: 'recruit'; readonly hero: string; readonly faction: string; readonly how: 'persuade' | 'wanderer'; readonly by?: string | null; readonly talk?: boolean }
   /** 회유가 한 걸음 — waver 마음의 벽이 무너졌다(이제부터 넘어올 수도) · refuse 또 고개를 저었다 */
-  | { readonly kind: 'persuade'; readonly hero: string; readonly faction: string; readonly step: 'waver' | 'refuse' }
+  /** drop 맡긴 계절에 벽이 d 만큼 깎였다(by 가 달래서) · talk 담판 (반응 · 벽의 바뀜 d · 무너졌나) */
+  | {
+      readonly kind: 'persuade'; readonly hero: string; readonly faction: string; readonly step: 'waver' | 'refuse' | 'drop' | 'talk'
+      readonly by?: string | null; readonly d?: number; readonly reacts?: readonly WooReact[]; readonly broke?: boolean
+    }
   /** 장수가 자랐다 — 능력치 하나가 한 단계 (HEROES §6) */
   | { readonly kind: 'grow'; readonly hero: string; readonly stat: GrowStat }
   /** 정이 문턱을 넘었다 — 믿는 장수가 됐다 */

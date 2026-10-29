@@ -424,6 +424,7 @@ export function recruitChance(r: Realm, hero: string, by: string | null): number
   if (him === undefined) return 0
   const p = R.recruitBase + ((b !== undefined ? deokOf(b) : 3) - him.uiri) * R.recruitPer + (hasTrait(b, 'charm') ? R.recruitCharm : 0)
     + (hasTrait(him, 'traitor') ? R.recruitTraitor : 0) - (hasTrait(him, 'steadfast') ? R.recruitSteadfast : 0)
+    - (him.grudge ?? 0) * R.wooGrudgeRecruit // 담판에서 노엽게 한 원한 (woo.ts)
   return Math.min(R.recruitMax, Math.max(R.recruitMin, p))
 }
 
@@ -461,7 +462,7 @@ function startPersuade(r: Realm, o: Extract<Order, { kind: 'persuade' }>): void 
   if (o.by !== null && (by === undefined || by.status !== 'free' || by.faction !== h.captor)) return
   const left = persuadeSeasons(r, h.id, o.by)
   // 회유하는 이를 바꿔도 깎인 벽은 남는다
-  h.persuade = h.persuade === undefined ? { by: o.by, left, resist: resistOf(r, h.id), tries: 0 } : { ...h.persuade, by: o.by }
+  h.persuade = h.persuade === undefined ? { by: o.by, left, resist: resistOf(r, h.id), tries: 0, since: r.season } : { ...h.persuade, by: o.by }
 }
 
 function hire(r: Realm, o: Extract<Order, { kind: 'hire' }>, lines: ReportLine[]): void {
@@ -639,6 +640,9 @@ export function stepHeroes(r: Realm, lines: ReportLine[]): void {
   const R = P.realm
   // 회유 — 사로잡은 나라가 곡식을 대는 계절만 나아간다
   for (const h of byId(Object.values(r.heroes))) {
+    // 옥에 갇힌 계절을 적어 둔다 (담판의 「아무도 구하러 오지 않았다」 · woo.ts) · 풀려나면 지운다
+    if (h.status === 'captive' && h.caughtAt === undefined) h.caughtAt = r.season
+    else if (h.status !== 'captive' && h.caughtAt !== undefined) delete h.caughtAt
     if (h.persuade === undefined) continue
     if (h.status !== 'captive' || h.captor === null) {
       delete h.persuade
@@ -646,18 +650,27 @@ export function stepHeroes(r: Realm, lines: ReportLine[]): void {
     }
     const st = (r.stock[h.captor] ??= { grain: 0, iron: 0 })
     if (st.grain < R.persuadeGrain) continue
-    st.grain -= R.persuadeGrain
     const pz = h.persuade
-    if (pz.resist === undefined) {
+    // 담판을 연 계절 — 벽은 계절 처음에 이미 바뀌었다 (woo.applyTalks). 이익으로 건 곡식을 더 받고, 손을 내민 것이 먹혔으면 들인다
+    const talked = pz.talkAt === r.season
+    st.grain -= R.persuadeGrain + (talked ? Math.min(st.grain - R.persuadeGrain, pz.talkGrain ?? 0) : 0)
+    if (talked) {
+      delete pz.talkGrain
+      if (pz.handAt !== r.season) continue
+    } else if (pz.resist === undefined) {
       // 옛 판 — 남은 계절을 센다
       pz.left -= 1
       if (pz.left > 0) continue
     } else if (pz.resist > 0) {
       // 벽을 깎는다 — 매력만큼, 흔들림 있게
       const sway = 1 + (roll(r.seed, r.season, `woo-drop:${h.id}`) * 2 - 1) * R.persuadeSway
+      const was = pz.resist
       pz.resist = Math.max(0, pz.resist - persuadeDropOf(r, pz.by) * sway)
       pz.left = persuadeSeasons(r, h.id, pz.by)
-      if (pz.resist > 0) continue
+      if (pz.resist > 0) {
+        lines.push({ kind: 'persuade', hero: h.id, faction: h.captor, step: 'drop', by: pz.by, d: pz.resist - was })
+        continue
+      }
       lines.push({ kind: 'persuade', hero: h.id, faction: h.captor, step: 'waver' })
       continue // 무너진 계절엔 아직 — 다음 계절부터 굴린다
     } else {
@@ -669,17 +682,20 @@ export function stepHeroes(r: Realm, lines: ReportLine[]): void {
     }
     const to = h.captor
     const by = h.persuade.by
+    const byTalk = h.persuade.handAt === r.season
     delete h.persuade
     if (h.faction === r.player) addVow(r, h.id, 'turned') // 우리 장수가 넘어갔다 — 의리가 내린다 (UIRI)
+    h.born ??= h.faction // 처음 섬긴 나라 (담판의 「같은 고향」 · woo.ts)
     h.faction = to
     h.status = 'free'
     h.captor = null
     h.post = null
     h.at = homeOf(r, to)
     // 새 주인과는 낯설다 — 정은 처음부터 다시
-    h.bond = R.bondPersuaded
+    // 담판으로 넘어오면 정이 더 높게 · 원한이 있으면 낮게 (WOO §2-4 · 형 대신 정함 10-29)
+    h.bond = Math.max(0, R.bondPersuaded + (byTalk ? R.wooBondTalk : 0) - ((h.grudge ?? 0) > 0 ? R.wooGrudgeBond : 0))
     h.served = 0
-    lines.push({ kind: 'recruit', hero: h.id, faction: to, how: 'persuade' })
+    lines.push({ kind: 'recruit', hero: h.id, faction: to, how: 'persuade', by, ...(byTalk ? { talk: true } : {}) })
     const pb = by !== null ? r.heroes[by] : undefined
     if (pb !== undefined) gainXp(pb, 'deok', R.xpPersuade, lines)
   }

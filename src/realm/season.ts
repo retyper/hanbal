@@ -47,6 +47,7 @@ import { spreadRumors } from './rumor.ts'
 import { addMen, giveMen, kitOf, scaleKinds, scaleMen, takeMen } from './kit.ts'
 import { formParty, joinParty, moveParty, stepParties } from './parties.ts'
 import { battleMerit, seasonMerit } from './drill.ts'
+import { applyTalks } from './woo.ts'
 import { relicHas, relicHorseMulOf, relicLeft, relicMoraleOf, relicMul, relicSum, relicWith, spendRelic } from './relics.ts'
 import {
   ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, isRuler, ironhandAt, noteMet, oneJobPerHero, postHero, releaseCaptives, stepHeroes, sweepHeroes,
@@ -594,6 +595,7 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
     else if (o.kind === 'build') applyBuild(r, o, lines)
   }
   applyHeroOrders(r, orders, lines) // 맡기기·이끌기·회유·들이기 — 나누기·해산 뒤 (떼어 낸 군대를 이끌 수 있게)
+  applyTalks(r, orders, lines) // 옥중 담판 — 회유를 건 뒤 (처음 회유하는 계절에도 열린다 · woo.ts)
   // 장수를 빼낸 군대와 합치기 — 장수가 아직 이끄는 채라 못 합친 것을 장수 명령 뒤에 한 번 더 (형 10-26: "한 장수를 빼고 … 두 부대 합치기가 안 됨")
   for (const o of later) mergeArmy(r, o, lines)
   sendExpeditions(r, orders, lines) // 원정 — 장수 명령 뒤 (군대에서 빠진 장수도 보낼 수 있게)
