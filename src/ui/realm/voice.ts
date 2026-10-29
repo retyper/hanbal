@@ -206,6 +206,11 @@ const VOICE_OF_FACE: Readonly<Record<string, VoiceKind>> = {
   'g-61-heomcheuk-bawi': 'm-gruff', 'g-63-heomcheuk-beogeum': 'm-gruff',
   // 책사 · 무당 얼굴 — 차분한 소리
   'g-06-strategist': 'm-sage', 'g-73-baekje-eureum': 'm-sage', 'g-75-saro-hogong': 'm-sage', 'g-36-gammun-gamdol': 'm-sage',
+  // 자란 아이 — 얼굴마다 설정대로 (docs/realm/cast/kids.md · 형 10-29)
+  'y-g-01': 'm-young', 'y-g-02': 'm-charm', 'y-g-03': 'm-gruff', 'y-g-04': 'm-gruff', 'y-g-05': 'm-young', 'y-g-06': 'm-charm', 'y-g-07': 'm-gruff', 'y-g-09': 'm-sage',
+  'y-g-10': 'm-young', 'y-g-11': 'm-gruff', 'y-g-12': 'm-sage', 'y-g-13': 'm-young', 'y-g-14': 'm-gruff', 'y-g-15': 'm-young', 'y-g-16': 'm-charm', 'y-g-17': 'm-young',
+  'y-w-01': 'w-bright', 'y-w-02': 'w-cool', 'y-w-03': 'w-bright', 'y-w-04': 'w-cool', 'y-w-05': 'w-sly', 'y-w-06': 'w-sly', 'y-w-07': 'w-cool', 'y-w-09': 'w-shaman',
+  'y-w-10': 'w-cool', 'y-w-11': 'w-bright', 'y-w-12': 'w-shaman', 'y-w-13': 'w-sly', 'y-w-14': 'w-cool', 'y-w-15': 'w-bright', 'y-w-16': 'w-sly', 'y-w-17': 'w-cool',
 }
 
 /** 같은 소리가 겹쳐 나오지 않게 — 이만큼(ms) 안에 또 누르면 조용히 */
@@ -239,15 +244,28 @@ export function voiceKind(h: Hero, ruler = false): VoiceKind {
 }
 
 /**
- * 성우진 — 같은 결의 장수를 이름으로 반씩 갈라 절반은 B(voice-b.ts · public/realm/voice/b/)로 말한다.
- * 전엔 같은 결이면 전혀 다른 장수가 똑같은 대사를 쳤다 (형 10-29: "성우진 B · 중복된 것들의 절반과 교체"). 같은 장수는 늘 같은 성우
+ * 성우진 — 같은 결의 장수를 이름으로 셋씩 갈라 A · B(voice-b.ts · voice/b/) · C(voice-c.ts · voice/c/)로 말한다.
+ * 전엔 같은 결이면 전혀 다른 장수가 똑같은 대사를 쳤다 (형 10-29: "성우진 B · 중복된 것들의 절반과 교체" · "성우진 C · 대사 제대로").
+ * 같은 장수는 늘 같은 성우. C 를 아직 녹음하지 않은 결은 A·B 반반으로 (없는 소리를 부르지 않게)
  */
-export function castOf(h: Hero): 'a' | 'b' {
+const castHash = (h: Hero): number => {
   let s = 7
   for (const c of h.id) s = (s * 131 + c.charCodeAt(0)) >>> 0
-  return (s >>> 3) % 2 === 1 ? 'b' : 'a'
+  return s >>> 3
 }
-const dirOf = (h: Hero): string => (castOf(h) === 'b' ? 'realm/voice/b/' : 'realm/voice/')
+/** 성우진 C 를 녹음해 둔 결 — public/realm/voice/c/ (tools/voicec-list.ts 가 다 있나 본다) */
+const C_KINDS: ReadonlySet<VoiceKind> = new Set<VoiceKind>(['m-young', 'm-gruff'])
+export function castOf(h: Hero, ruler = false): 'a' | 'b' | 'c' {
+  const t = castHash(h)
+  if (t % 3 === 2 && C_KINDS.has(voiceKind(h, ruler))) return 'c'
+  return t % 2 === 1 ? 'b' : 'a'
+}
+/** 군장 말(chief-lines · chief-lines-b)은 A·B 둘뿐 — 예전처럼 반씩 */
+export function chiefCastOf(h: Hero): 'a' | 'b' {
+  return castHash(h) % 2 === 1 ? 'b' : 'a'
+}
+const CAST_DIR = { a: 'realm/voice/', b: 'realm/voice/b/', c: 'realm/voice/c/' } as const
+const dirOf = (h: Hero, ruler = false): string => CAST_DIR[castOf(h, ruler)]
 
 /** 그 장수의 그 줄 — 탭할 때마다 돌려 가며 하나 (화면 쪽 무작위 — 판의 결정론과 무관) */
 export function voicePath(h: Hero, want: VoiceLine, ruler = false): string {
@@ -259,24 +277,24 @@ export function voicePath(h: Hero, want: VoiceLine, ruler = false): string {
   let t = 1 + Math.floor(Math.random() * n)
   if (n > 1 && t === prev) t = (t % n) + 1
   lastTake.set(key, t)
-  return `${dirOf(h)}${key}-${t}.ogg`
+  return `${dirOf(h, ruler)}${key}-${t}.ogg`
 }
 
 /** 장수 기술 외침 — 그 장수의 결로 */
 export function artVoicePath(h: Hero, art: Art, ruler = false): string {
-  return `${dirOf(h)}art-${voiceKind(h, ruler)}-${art}.ogg`
+  return `${dirOf(h, ruler)}art-${voiceKind(h, ruler)}-${art}.ogg`
 }
 
 /** 싸움 맡김 — 맡아 들 때(go · 셋을 돌려 가며) · 맡긴 싸움이 끝나면 이김(win) · 짐(lose) */
 export function autoVoicePath(h: Hero, want: 'go' | 'win' | 'lose', ruler = false): string {
   const k = voiceKind(h, ruler)
-  if (want !== 'go') return `${dirOf(h)}auto-${k}-${want}.ogg`
+  if (want !== 'go') return `${dirOf(h, ruler)}auto-${k}-${want}.ogg`
   const key = `auto-${k}`
   const prev = lastTake.get(key) ?? 0
   let t = 1 + Math.floor(Math.random() * 3)
   if (t === prev) t = (t % 3) + 1
   lastTake.set(key, t)
-  return `${dirOf(h)}${key}-${t}.ogg`
+  return `${dirOf(h, ruler)}${key}-${t}.ogg`
 }
 
 /** 등용 첫마디 — 그 장수가 녹음한 대사 · 대사가 없는 장수(판에서 난 아이 등)는 그 결의 짧은 대답으로 */

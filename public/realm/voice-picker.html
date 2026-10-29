@@ -97,6 +97,16 @@ for (const [title, k] of GROUPS) {
   h += `<h2>${title.replace(/\(.*?\)/, '(' + g.v + ')')}</h2>`
   g.lines.forEach((t, i) => { h += `<div class="row"><span class="no">${i + 1}</span><span class="nm">${g.names[i].split('-')[0]} — ${t}</span><audio controls preload="none" src="voice/b/${g.names[i]}.ogg"></audio></div>` })
 }
+// CAST_C BEGIN — 성우진 C (형 10-29: "대사 제대로") · 사극 말투 · 같은 결의 장수 셋에 하나가 이 목소리·대사로 말한다 (voice/c/ · src/ui/realm/voice-c.ts)
+const CAST_C = {"m-young":{"v":"Fenrir","lines":["예, 여기 있사옵니다!","부르셨사옵니까!","명을 내리시옵소서!","분부 받잡겠사옵니다!","반드시 해내겠사옵니다!","목숨 걸고 받들겠사옵니다!","이 싸움, 소장이 맡겠사옵니다!","적진을 단숨에 꿰뚫겠사옵니다!","승전보를 올리겠사옵니다!","적을 물리쳤사옵니다!","면목 없사옵니다. 반드시 설욕하겠사옵니다!","이 한 발로 네 목을 꿰리라!","신령이시여, 우리 군사에게 힘을 내리소서!","항복하라! 목숨만은 살려 주리라!","물러서는 자는 베리라! 버텨라!","숨은 군사여, 일어나 쳐라!","내가 선봉에 선다! 돌격하라!","물러서라! 적을 깊이 끌어들여라!","진을 굳혀라! 대오를 흩뜨리지 마라!","하늘이 우리 편이다! 함성을 올려라!"],"names":["tap-m-young-1","tap-m-young-2","tap-m-young-3","obey-m-young-1","obey-m-young-2","obey-m-young-3","auto-m-young-1","auto-m-young-2","auto-m-young-3","auto-m-young-win","auto-m-young-lose","art-m-young-snipe","art-m-young-rite","art-m-young-sway","art-m-young-stand","art-m-young-ambush","art-m-young-vanguard","art-m-young-feint","art-m-young-order","art-m-young-shout"]},"m-gruff":{"v":"Riko","lines":["예이, 여기 있소이다!","부르셨사옵니까!","싸울 일이오? 크하하!","분부 받잡겠소이다!","크하하, 맡겨만 주시오!","단숨에 쓸어버리겠소이다!","크하하! 이 싸움은 소장 몫이오!","적놈들을 쓸어버리고 오겠소이다!","개선 잔치나 차려 두시오!","크하하! 싱거운 놈들이었소!","크윽, 소장이 밀렸소이다!","이 한 발로 네 목을 꿰리라!","신령이시여, 우리 군사에게 힘을 내리소서!","항복하라! 목숨만은 살려 주리라!","물러서는 자는 베리라! 버텨라!","숨은 군사여, 일어나 쳐라!","내가 선봉에 선다! 돌격하라!","물러서라! 적을 깊이 끌어들여라!","진을 굳혀라! 대오를 흩뜨리지 마라!","하늘이 우리 편이다! 함성을 올려라!"],"names":["tap-m-gruff-1","tap-m-gruff-2","tap-m-gruff-3","obey-m-gruff-1","obey-m-gruff-2","obey-m-gruff-3","auto-m-gruff-1","auto-m-gruff-2","auto-m-gruff-3","auto-m-gruff-win","auto-m-gruff-lose","art-m-gruff-snipe","art-m-gruff-rite","art-m-gruff-sway","art-m-gruff-stand","art-m-gruff-ambush","art-m-gruff-vanguard","art-m-gruff-feint","art-m-gruff-order","art-m-gruff-shout"]}}
+h += `<h1 style="margin-top:40px">성우진 C — 사극 말투 (~하옵니다 · ~하겠사옵니다 · ~시옵소서)</h1><p>「~에요」「~할게요」 같은 말을 빼고 장수다운 사극 말로 다시 썼다 (챗지피티와 교차 검증). 부르는 말(주군·그대·전하)은 넣지 않았다. 장수 이름으로 셋씩 갈라 하나는 C 로 말한다. 어색한 결·대사는 「C ○○ 다시」라고 말해 주면 그것만 다시 뽑는다.</p>`
+for (const [title, k] of GROUPS) {
+  const g = CAST_C[k]
+  if (g === undefined) { h += `<h2>${title.replace(/(.*?)/, '(C)')} — 아직 녹음 안 함</h2>`; continue }
+  h += `<h2>${title.replace(/(.*?)/, '(' + g.v + ')')}</h2>`
+  g.lines.forEach((t, i) => { h += `<div class="row"><span class="no">${i + 1}</span><span class="nm">${g.names[i].split('-')[0]} — ${t}</span><audio controls preload="none" src="voice/c/${g.names[i]}.ogg"></audio></div>` })
+}
+// CAST_C END
 document.getElementById('list').innerHTML = h
 // 등용 첫마디 — 장수마다 하나 (voice/hire/<장수 id>.ogg · 대사는 src/realm/data/hire-lines.ts · 목록은 tools/hire-voice-list.ts --write)
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
