@@ -3646,7 +3646,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         + `<div class="instr"><a class="btn pri sm" href="kakaotalk://web/openExternal?url=${encodeURIComponent(location.href)}">${ios ? '사파리로' : '크롬으로'} 열기</a><label class="chk"><input type="checkbox" class="insthide"> 다시 보지 않기</label><button class="btn sm" data-act="inst-ok">확인</button></div></div>`
     }
     const how = ios
-      ? '사파리 아래 <b>공유</b> 단추(네모에 위 화살표) → <b>「홈 화면에 추가」</b>. 홈 화면의 삼한열전 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다. (아이폰은 웹에서 바로 설치하는 단추를 막아 두었습니다)'
+      ? '사파리 아래 <b>공유</b> 단추(네모에 위 화살표) → <b>「홈 화면에 추가」</b>. 홈 화면의 삼한열전 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.'
       : installPrompt() !== null ? '아래 단추를 누르면 바로 설치됩니다. 홈 화면·바탕화면의 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.'
         : '브라우저 메뉴(⋮) → <b>「앱 설치」</b> 또는 <b>「홈 화면에 추가」</b>를 누르세요. 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.'
     // 첫 화면 위쪽에 뜨는 알림 — ✕ 로 끈다 (형 10-28: "상단에 나오는 팝업으로 만들어서 끌 수 있게")
