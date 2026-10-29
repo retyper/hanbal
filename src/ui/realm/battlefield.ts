@@ -1882,8 +1882,8 @@ export const WAR_CSS = `
   background: repeating-linear-gradient(90deg, #5a3a1e 0 22%, #3a2614 22% 25%); border: 2px solid #2a1a0c; filter: drop-shadow(1px 2px 2px #000a); }
 .ap .wf2s .wf-pal .gatedoor.smashed { clip-path: polygon(0 0, 40% 0, 30% 40%, 55% 55%, 35% 100%, 0 100%); filter: brightness(.6) drop-shadow(1px 2px 2px #000a); }
 /* 성은 판 바닥까지 — 바닥 이름표(「수비 · 적 …」)의 중간에서 끊겨 떠 보였다 (형 10-26: "더 밑에까지 내려야해") */
-/* 폰 폭에서는 높이 95% 가 너비의 4분의 1을 먹어 목책과 겹쳤다 — 너비로도 묶는다 (형 10-29: "폰에서 성인지 망루인지가 너무 커 · 목책이랑 겹치는 수준") */
-.ap .wf2s .wf-wall { position: absolute; left: -4%; bottom: -3%; height: min(95%, 26cqw); width: auto; transform: scaleX(-1); z-index: 1; pointer-events: none; filter: brightness(.8) saturate(.9) drop-shadow(0 4px 8px #000b); }
+/* 폰 폭에서는 높이 95% 가 너비의 4분의 1을 먹어 목책과 겹쳤다 → 26cqw 로 묶었더니 너무 작다 (형 10-29: "성벽이 너무 작아진 거 아님") · 그 사이 44cqw */
+.ap .wf2s .wf-wall { position: absolute; left: -4%; bottom: -3%; height: min(95%, 44cqw); width: auto; transform: scaleX(-1); z-index: 1; pointer-events: none; filter: brightness(.8) saturate(.9) drop-shadow(0 4px 8px #000b); }
 .ap .wfield i.wf-pre, .ap .wfield i.wf-post { position: absolute; inset: 0; pointer-events: none; }
 .ap .wfield .wf-pre { animation: wfpre .5s ease-out var(--rv, 0s) forwards; } @keyframes wfpre { to { opacity: 0; visibility: hidden; } }
 .ap .wfield .wf-post { animation: wfpost .5s ease-out var(--rv, 0s) both; } @keyframes wfpost { from { opacity: 0; } to { opacity: 1; } }
@@ -2056,10 +2056,11 @@ export const WAR_CSS = `
 @keyframes wtkfallsp { 0% { translate: 3cqw 0; } 100% { translate: 1cqw 0; opacity: .62; filter: grayscale(.5) brightness(.8); } }
 @media (prefers-reduced-motion: reduce) { .ap .wfield *, .ap .wfield .tk.tkf, .ap .wfield.play { animation: none !important; transition: none !important; } .ap .wf-loss { opacity: 1; } }
 .ap .wbar i { position: relative; display: block; height: 100%; border-radius: 6px; overflow: hidden; }
-.ap .wbar i::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, #ffffff00 0 9px, #ffffff2a 9px 15px); background-size: 34px 100%; animation: wbarflow 1.1s linear infinite; }
+/* 흐르는 빗금 — 45도 네모 칸이라야 칸 이음매가 안 보인다 · 115도 빗금을 34px 칸에 넣었더니 이음매마다 끊겨 바코드처럼 보였다 (형 10-29) */
+.ap .wbar i::before { content: ''; position: absolute; inset: 0; background-image: linear-gradient(135deg, #ffffff2a 25%, #ffffff00 25% 50%, #ffffff2a 50% 75%, #ffffff00 75%); background-size: 18px 18px; animation: wbarflow 1.1s linear infinite; }
 .ap .wbar i::after { content: ''; position: absolute; top: 0; bottom: 0; left: -45%; width: 45%; background: linear-gradient(90deg, #fff0, #ffffffb0, #fff0); animation: wbarshine 3s ease-in-out infinite; }
 .ap .ws.foe .wbar i::after { animation-delay: 1.4s; }
-@keyframes wbarflow { to { background-position: 34px 0; } }
+@keyframes wbarflow { to { background-position: 18px 0; } }
 @keyframes wbarshine { 0% { left: -45%; } 55%, 100% { left: 110%; } }
 @media (prefers-reduced-motion: reduce) { .ap .wbar i::before, .ap .wbar i::after, .ap .ws.us .wpf > i, .ap .wbg, .ap .wember { animation: none !important; } }
 .ap .wbar i.wgr { animation-duration: .4s; animation-timing-function: ease-out; animation-delay: var(--bd, 2.4s); animation-fill-mode: both; }
