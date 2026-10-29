@@ -109,7 +109,15 @@ const FEAST_AT: Readonly<Record<'spring' | 'summer' | 'autumn' | 'winter', strin
   spring: '봄 제사를 마친', summer: '모내기를 마친', autumn: '가을걷이를 마친', winter: '한 해를 보내는',
 }
 
-const q = (h: Hero, s: string): string => `"${s}" — ${h.name}`
+/** 장수의 말 한 마디 — 자막이 아니라 얼굴·이름·말로 그린다 (app.ts cardHtml · 형 10-29: "「"어쩌구" — 이름」은 명언집이지 대사가 아니다") */
+const SAY = '\u0001'
+const q = (h: Hero, s: string): string => `${SAY}${h.id}${SAY}${s}`
+/** 그 자막이 장수의 말이면 누구 · 무슨 말 */
+export function sayOfBeat(beat: string): { hero: string; line: string } | null {
+  if (!beat.startsWith(SAY)) return null
+  const i = beat.indexOf(SAY, 1)
+  return i < 0 ? null : { hero: beat.slice(1, i), line: beat.slice(i + 1) }
+}
 
 /** 장수 다툼의 자막 — 덩이쇠 몫 · 고을 맡기 · 술자리 시비 */
 export function quarrelBeats(r: Realm, c: Card, a: Hero, b: Hero): string[] {

@@ -84,7 +84,7 @@ import { AUD_CSS, askSay, pactSay, typed, type PactKind } from './audience.ts'
 import { customDef, customsOf } from '../../realm/data/customs.ts'
 import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, slotsHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
 import { SCENE_SOUND, makeMusic, playOnce, snd, sndFile, tapSlot } from './sound.ts'
-import { exileArt, exileBeats, fugitiveBeats, quarrelArt, quarrelBeats, romanceBeats, romanceFlip } from './card-lines.ts'
+import { exileArt, exileBeats, fugitiveBeats, quarrelArt, quarrelBeats, romanceBeats, romanceFlip, sayOfBeat } from './card-lines.ts'
 import { HERO_POOL } from '../../realm/data/heroes-pool.ts'
 import { chiefCastOf, hireVoicePath, voiceGate, voiceKind, voicePath, type VoiceLine } from './voice.ts'
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
@@ -2400,9 +2400,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         : guest !== undefined ? exileBeats(r, c, guest)
           : c.kind === 'fugitive' ? fugitiveBeats(r, c) ?? info.beats : info.beats).map(sub)
     const at = pick !== null ? beats.length : Math.min(cardBeat[`card:${c.season}`] ?? 0, beats.length)
+    // 장수의 말은 왼쪽에 작은 둥근 얼굴과 이름, 오른쪽에 말 (형 10-29)
+    const beatHtml = (b: string): string => {
+      const say = sayOfBeat(b)
+      const who = say !== null ? r.heroes[say.hero] ?? HERO_POOL.find((x) => x.id === say.hero) : undefined
+      if (say === null || who === undefined) return `<p class="csub" aria-live="polite">${esc(b)}</p>`
+      return `<div class="csub csay" aria-live="polite"><span class="cwho">${bust(who, 'cwf')}<small>${esc(who.name)}</small></span><span class="cline">${esc(say.line)}</span></div>`
+    }
     if (at < beats.length) {
       return `<div class="cardc story${info.bad ? ' bad' : ''}" data-act="card-beat">${img}<div class="cb"><b>${icon(info.icon, 'cic')}${esc(info.name)}</b>`
-        + `<p class="csub" aria-live="polite">${esc(beats[at]!)}</p><div class="cnav"><small>${at + 1}/${beats.length} · 누르면 다음 ›</small><button class="cskip" data-act="card-skip">건너뛰기 »</button></div></div></div>`
+        + beatHtml(beats[at]!) + `<div class="cnav"><small>${at + 1}/${beats.length} · 누르면 다음 ›</small><button class="cskip" data-act="card-skip">건너뛰기 »</button></div></div></div>`
     }
     // 쫓겨 온 사람은 받기 전에 누구인지 — 얼굴 · 이름 · 특성
     // 연정 소문은 두 사람 얼굴을 나란히 — 탭탭 넘기다 와도 누가 누구인지 (형 10-29: "누가 누구랑 뭔 일 있는지 전혀 모른다")

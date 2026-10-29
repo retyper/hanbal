@@ -659,6 +659,11 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 /* 사건 카드 — 자막 두 줄씩 (누르면 다음) · 다 보면 물음 한 줄 */
 .ap .cardc.story { cursor: pointer; }
 .ap .cardc .csub { margin: 8px 0 4px; padding: 12px 14px; min-height: calc(2 * 1.5em + 24px); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 16.5px; line-height: 1.5; color: #fff4dc; background: #0008; border-radius: 10px; animation: csubin .25s ease-out; }
+.ap .cardc .csub.csay { justify-content: flex-start; gap: 12px; text-align: left; padding: 10px 14px 10px 10px; }
+.ap .cardc .csay .cwho { flex: none; width: 64px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.ap .cardc .csay .cwf { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; object-position: top; box-sizing: border-box; border: 2px solid #c9a45a; box-shadow: 0 2px 6px #000a; }
+.ap .cardc .csay .cwho small { max-width: 64px; font-size: 11.5px; line-height: 1.2; color: #e8cf94; text-align: center; word-break: keep-all; }
+.ap .cardc .csay .cline { flex: 1; min-width: 0; word-break: keep-all; overflow-wrap: anywhere; }
 @keyframes csubin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .ap .cardc .cnav { display: flex; align-items: center; justify-content: space-between; gap: 8px; } .ap .cardc .cnav small { color: var(--mute); font-size: 12px; }
 .ap .cardc .cskip { border: 0; background: none; color: #cbbf9f; font-size: 12.5px; cursor: pointer; padding: 4px 6px; }

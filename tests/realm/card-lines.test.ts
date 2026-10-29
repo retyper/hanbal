@@ -11,7 +11,7 @@ import assert from 'node:assert/strict'
 
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import type { Card, Hero } from '../../src/realm/types.ts'
-import { exileArt, exileBeats, fugitiveBeats, quarrelArt, quarrelBeats, romanceBeats } from '../../src/ui/realm/card-lines.ts'
+import { exileArt, exileBeats, fugitiveBeats, quarrelArt, quarrelBeats, romanceBeats, sayOfBeat } from '../../src/ui/realm/card-lines.ts'
 
 const R = byeonhanMini(1)
 const hero = (id: string, look: 'g' | 'w', more: Partial<Hero> = {}): Hero => ({
@@ -96,7 +96,8 @@ describe('쫓겨 온 사람 · 소도 · 연정 소문 자막', () => {
     const c: Card = { kind: 'romance', season: 0, hero: 'a', hero2: 'b' }
     const beats = romanceBeats(R, c, hero('바위', 'g', { mu: 9 }), hero('물결', 'g', { mu: 9 }))
     assert.ok(beats.length >= 8 && beats[0]!.includes('바위') && beats[0]!.includes('물결'))
-    const say = beats.filter((s) => s.includes('" — '))
-    assert.notEqual(say[0]!.split('—')[0], say[1]!.split('—')[0])
+    const say = beats.map(sayOfBeat).filter((x) => x !== null)
+    assert.ok(say.length >= 2)
+    assert.notEqual(say[0]!.line, say[1]!.line)
   })
 })
