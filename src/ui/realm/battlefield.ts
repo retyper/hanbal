@@ -3233,9 +3233,10 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     el.innerHTML = openHtml(prev, t.after, l, host.me, host.art, us, them)
     const cd = el.querySelector<HTMLElement>('.wocd i')
     let shownN = N
-    // 셈은 걷힘 애니메이션의 시계를 읽는다 — 탭이 숨어 애니메이션이 멈추면 셈도 멈춘다
-    const tick = window.setInterval(() => {
-      if (!el.isConnected) { window.clearInterval(tick); return }
+    // 셈은 걷힘 애니메이션의 시계를 읽는다. 탭이 숨으면 셈 타이머도 멈췄다가 보이면 다시 (CLAUDE 규칙 4)
+    let tick = 0
+    const step = (): void => {
+      if (!el.isConnected) { stop(); document.removeEventListener('visibilitychange', vis); return }
       const a = el.getAnimations().find((x) => (x as CSSAnimation).animationName === 'woout')
       const n = Math.max(1, Math.ceil(N - Number(a?.currentTime ?? 0) / 1000))
       if (n !== shownN && cd !== null) {
@@ -3245,8 +3246,13 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         void cd.offsetWidth
         cd.classList.add('tk')
       }
-    }, 100)
-    const gone = (): void => { window.clearInterval(tick); el.remove() }
+    }
+    const run = (): void => { if (tick === 0 && document.visibilityState === 'visible') tick = window.setInterval(step, 100) }
+    const stop = (): void => { if (tick !== 0) { window.clearInterval(tick); tick = 0 } }
+    const vis = (): void => { if (document.visibilityState === 'visible') run(); else stop() }
+    document.addEventListener('visibilitychange', vis)
+    run()
+    const gone = (): void => { stop(); document.removeEventListener('visibilitychange', vis); el.remove() }
     el.addEventListener('animationend', (e) => { if (e.target === el) gone() })
     el.addEventListener('click', (e) => { e.stopPropagation(); gone() })
     root.appendChild(el)
