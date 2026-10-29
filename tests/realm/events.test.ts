@@ -102,6 +102,29 @@ describe('사건 — 답', () => {
     assert.ok((bondOf(r, h1!) ?? 0) < b1)
   })
 
+  it('장수 다툼 — 고르지 않으면 침묵 · 둘의 정이 함께 오르거나 함께 준다', () => {
+    const r = byeonhanMini(3)
+    const ours = Object.values(r.heroes).filter((h) => h.faction === r.player && !h.id.endsWith('-ruler'))
+    if (ours.length < 2) {
+      const x = Object.values(r.heroes).find((h) => h.faction !== r.player && !h.id.endsWith('-ruler'))!
+      for (const a of Object.values(r.armies)) if (a.hero === x.id) a.hero = null
+      x.faction = r.player
+      x.at = r.factions[r.player]!.capital
+      ours.push(x)
+    }
+    const [h1, h2] = ours
+    const b1 = bondOf(r, h1!) ?? 0
+    const b2 = bondOf(r, h2!) ?? 0
+    r.card = { kind: 'quarrel', season: 0, hero: h1!.id, hero2: h2!.id, why: 'feast' }
+    const out = lines()
+    resolveCard(r, [], out)
+    const l = out.find((x): x is Extract<ReportLine, { kind: 'card' }> => x.kind === 'card')
+    assert.ok(l !== undefined && l.pick === 2 && l.good !== undefined && l.why === 'feast')
+    const d1 = (bondOf(r, h1!) ?? 0) - b1
+    const d2 = (bondOf(r, h2!) ?? 0) - b2
+    assert.ok(l.good ? d1 > 0 && d2 > 0 : d1 < 0 && d2 < 0, `${l.good} ${d1} ${d2}`)
+  })
+
   it('점괘 — 제사를 지낸 계절엔 다음 카드를 엿본다', () => {
     let found = false
     for (let seed = 1; seed <= 20 && !found; seed++) {

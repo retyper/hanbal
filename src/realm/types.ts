@@ -12,7 +12,7 @@ import type { Source } from './intel.ts'
 import type { RoundAt } from './tactics.ts'
 
 /** 계절 번호 0 = 첫해 봄. 계절 = 번호 % 4 */
-import type { CardKind } from './data/cards.ts'
+import type { CardKind, QuarrelWhy } from './data/cards.ts'
 import type { CustomId } from './data/customs.ts'
 
 export type SeasonOfYear = 'spring' | 'summer' | 'autumn' | 'winter'
@@ -281,6 +281,8 @@ export interface Card {
   readonly hero?: string
   readonly hero2?: string
   readonly node?: string
+  /** 장수 다툼의 까닭 — 덩이쇠 몫 · 고을 맡기 · 술자리 시비 (없으면 덩이쇠 몫 · 옛 저장) */
+  readonly why?: QuarrelWhy
 }
 
 /** 원정 한 번 — back 계절에 돌아와 got 을 푼다 */
@@ -883,8 +885,8 @@ export type Order =
   | { readonly kind: 'persuade'; readonly hero: string; readonly by: string | null }
   /** 떠돌이 인재를 들인다 — 그 인재가 머문 고을의 주인만, 곡식 price */
   | { readonly kind: 'hire'; readonly faction: string; readonly hero: string }
-  /** 사건 카드의 답 — 고르지 않으면 0 (events.resolveCard) */
-  | { readonly kind: 'card'; readonly faction: string; readonly pick: 0 | 1 }
+  /** 사건 카드의 답 — 고르지 않으면 0 (장수 다툼은 2 침묵) (events.resolveCard) */
+  | { readonly kind: 'card'; readonly faction: string; readonly pick: 0 | 1 | 2 }
   /** 장수를 지도 바깥 먼 땅으로 원정 보낸다 — len 0 짧게 · 1 보통 · 2 길게 (expedition.ts) */
   | { readonly kind: 'expedition'; readonly faction: string; readonly hero: string; readonly dest: ExpDest; readonly len: 0 | 1 | 2 }
   /** 우리 장수 둘(남녀)을 혼인시킨다 — 잔치 곡식이 들고, 몇 계절 뒤 자식 장수가 나선다 (SYSTEMS §5-10 · 팰 교배) */
@@ -1113,7 +1115,7 @@ export type ReportLine =
   | { readonly kind: 'custom'; readonly faction: string; readonly id: CustomId; readonly node?: string; readonly other?: string; readonly with?: string; readonly n?: number; readonly m?: number; readonly first?: boolean }
   /** 사건 카드의 결과 — 무엇이 얼마나 오갔나 · good 은 운에 맡긴 쪽이 잘됐나 */
   | {
-      readonly kind: 'card'; readonly faction: string; readonly card: CardKind; readonly pick: 0 | 1
+      readonly kind: 'card'; readonly faction: string; readonly card: CardKind; readonly pick: 0 | 1 | 2; readonly why?: QuarrelWhy
       readonly grain?: number; readonly iron?: number; readonly hh?: number; readonly good?: boolean; readonly hero?: string; readonly node?: string
     }
   /** 점괘 — 다음 계절 카드를 엿봤다 (card null 이면 조용한 계절). right 는 맞았나 — 화면에는 안 보인다 */

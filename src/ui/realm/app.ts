@@ -19,7 +19,7 @@ import { SEORA_NATIONS } from '../../realm/data/regions/seorabeol.ts'
 import { chapterOfRegion } from '../../realm/data/campaign.ts'
 import { knownOf, knows } from '../../realm/discovery.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
-import { CARDS } from '../../realm/data/cards.ts'
+import { CARDS, cardFallback, cardInfo } from '../../realm/data/cards.ts'
 import { cardPreview, type CardFx } from '../../realm/events.ts'
 import {
   ASK_KIND_NAME, ASK_NAME, deedText, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, arriveWhen, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, whyLine, NODE_NOW, BUILD_NAME, BOW_NAME, CONCEAL_LINE, GOOD_NAME, GOOD_USE, tagNow,
@@ -1134,10 +1134,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const army of goalStop) out.push({ kind: 'goal', army, node: null })
     if (scout !== '') out.push({ kind: 'scout', faction: me(), node: scout, hero: null })
     if (rite) out.push({ kind: 'rite', faction: me() })
-    // 사건 카드의 답은 answers 의 'card:<계절>' 칸에 (참 = 첫째 · 거짓 = 둘째) — 초안 저장·계절 초기화를 청의 답과 함께 탄다
+    // 사건 카드의 답은 answers 의 'card:<계절>' 칸에 (참 = 첫째 · 거짓 = 둘째 · 'hush:<계절>' 도 참이면 셋째 침묵) — 초안 저장·계절 초기화를 청의 답과 함께 탄다
     for (const [ask, yes] of Object.entries(answers)) {
       if (ask === 'contest:archery') out.push({ kind: 'contest', faction: me(), id: 'archery', won: yes })
-      else if (ask.startsWith('card:')) { if (ask === `card:${realm?.season ?? -1}`) out.push({ kind: 'card', faction: me(), pick: yes ? 0 : 1 }) } else out.push({ kind: 'answer', ask, yes })
+      else if (ask.startsWith('hush:')) continue
+      else if (ask.startsWith('card:')) { if (ask === `card:${realm?.season ?? -1}`) out.push({ kind: 'card', faction: me(), pick: answers[`hush:${realm?.season ?? -1}`] === true ? 2 : yes ? 0 : 1 }) } else out.push({ kind: 'answer', ask, yes })
     }
     for (const node of guards) out.push({ kind: 'guard', faction: me(), node })
     for (const to of Object.keys(envoys).sort()) out.push(envoys[to]!)
@@ -2204,10 +2205,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function cardHtml(r: Realm): string {
     const c = r.card
     if (c === undefined || c === null || c.season !== r.season || r.outcome) return ''
-    const info = CARDS[c.kind]
+    const info = cardInfo(c)
     const sub = (s: string): string => s.replaceAll('{a}', r.heroes[c.hero ?? '']?.name ?? '').replaceAll('{b}', r.heroes[c.hero2 ?? '']?.name ?? '').replaceAll('{n}', r.nodes[c.node ?? '']?.name ?? '')
     const ans = answers[`card:${c.season}`]
-    const pick = ans === undefined ? null : ans ? 0 : 1
+    const pick = ans === undefined ? null : answers[`hush:${c.season}`] === true ? 2 : ans ? 0 : 1
     // 자막처럼 — 두 줄씩, 누르면 다음 장. 다 보면 한 줄 물음과 짧은 답 둘 (형 10-27 지인: "성세천하처럼 자막 두 줄 · 질문 한 줄 · 선택지 세 마디")
     const beats = info.beats.map(sub)
     const at = pick !== null ? beats.length : Math.min(cardBeat[`card:${c.season}`] ?? 0, beats.length)
@@ -2216,8 +2217,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         + `<p class="csub" aria-live="polite">${esc(beats[at]!)}</p><div class="cnav"><small>${at + 1}/${beats.length} · 누르면 다음 ›</small><button class="cskip" data-act="card-skip">건너뛰기 »</button></div></div></div>`
     }
     let h = `<div class="cardc${info.bad ? ' bad' : ''}"><img class="cimg" src="${ART}event/${info.art}.jpg" alt=""><div class="cb"><b>${icon(info.icon, 'cic')}${esc(info.name)}</b><p class="cask">${esc(sub(info.ask))}</p><div class="copts">`
-    // 고르지 않았을 때 걸리는 답 — 엔진(events.resolveCard)과 같게: 망명자만 둘째(돌려보낸다)
-    const fallback = c.kind === 'exile' ? 1 : 0
+    // 고르지 않았을 때 걸리는 답 — 엔진(events.resolveCard)과 같게: 망명자는 둘째(돌려보낸다) · 장수 다툼은 침묵
+    const fallback = cardFallback(c.kind)
     info.opts.forEach((o, i) => {
       // 그 답이 어느 장수 쪽인지 — 답 이름에 먼저 나오는 장수의 얼굴을 곁에 (형 10-25: "누구 편 든다 할 때 장수들 얼굴 이미지도 있어야")
       const ia = o.name.indexOf('{a}')
@@ -2225,7 +2226,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const who = ia >= 0 && (ib < 0 || ia < ib) ? c.hero : ib >= 0 ? c.hero2 : undefined
       const face = who != null && r.heroes[who] !== undefined ? bust(r.heroes[who], 'cof') : ''
       // 얻고 잃는 것 — 아이콘·숫자로. 굴리는 답이면 % 와 「이루면 · 어긋나면」 (ODDS: 사건 카드의 답은 % + 갈래마다 아이콘·숫자)
-      const pv = cardPreview(r, c, i === 0 ? 0 : 1, left())
+      const pv = cardPreview(r, c, i === 2 ? 2 : i === 0 ? 0 : 1, left())
       let fx = ''
       if (pv !== null) {
         const sure = fxHtml(r, pv.sure)
@@ -4083,7 +4084,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       } else if (l.kind === 'rite' && l.faction === pl) {
         c = [0.6, { ev: l.season === 'spring' ? 'event-divination' : 'event-festival', hero: null, line: l.season === 'spring' ? '봄 제사를 지냈다' : '가을 제사를 지냈다' }]
       } else if (l.kind === 'card' && l.faction === pl) {
-        c = [0.88, { ev: CARDS[l.card].art, hero: l.hero !== undefined ? after.heroes[l.hero] ?? null : null, line: `${CARDS[l.card].name} — ${l.card === 'quarrel' ? `${after.heroes[l.hero ?? '']?.name ?? ''} 편을 들었다` : CARDS[l.card].opts[l.pick].name}` }]
+        c = [0.88, { ev: cardInfo({ kind: l.card, ...(l.why !== undefined ? { why: l.why } : {}) }).art, hero: l.hero !== undefined ? after.heroes[l.hero] ?? null : null, line: `${CARDS[l.card].name} — ${l.card === 'quarrel' ? (l.pick === 2 ? '침묵했다' : `${after.heroes[l.hero ?? '']?.name ?? ''} 편을 들었다`) : (CARDS[l.card].opts[l.pick]?.name ?? '')}` }]
       } else if (l.kind === 'expBack' && l.faction === pl) {
         const g = l.got
         const big = g.kind === 'wanderer' || g.kind === 'skill'
@@ -4697,7 +4698,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const s = seasonOf(season)
     const el = document.createElement('div')
     el.className = `seasonfx ${s}`
-    el.innerHTML = `<i class="band"><i class="bimg" style="background-image:url('${ART}season/season-${s}.jpg')"></i></i><div class="stxt"><i class="orn"></i>${icon(SEASON_ICON[s], 'sfx-ic')}<b>${esc(seasonLabel(season))}</b><span>${esc(SEASON_LINE[s])}</span><i class="orn"></i></div>`
+    el.innerHTML = `<i class="band"><i class="bimg" style="--hbg:url('${ART}season/season-${s}.jpg');--vbg:url('${ART}season-v/season-${s}.jpg')"></i></i><div class="stxt"><i class="orn"></i>${icon(SEASON_ICON[s], 'sfx-ic')}<b>${esc(seasonLabel(season))}</b><span>${esc(SEASON_LINE[s])}</span><i class="orn"></i></div>`
     el.addEventListener('animationend', (e) => { if (e.target === el) el.remove() }) // 안쪽 글자의 애니메이션이 먼저 끝나도 띠를 걷지 않는다
     root.appendChild(el)
     ding(snd('season_turn'), 0.4)
@@ -5500,7 +5501,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         break
       }
       case 'unexp': heroOrders = heroOrders.filter((o) => !(o.kind === 'expedition' && o.hero === d['id'])); break
-      case 'card-pick': if (realm?.card) { answers[`card:${realm.card.season}`] = d['v'] === '0'; fastNext = true } break
+      case 'card-pick': if (realm?.card) { const s = realm.card.season; answers[`card:${s}`] = d['v'] === '0'; if (d['v'] === '2') answers[`hush:${s}`] = true; else delete answers[`hush:${s}`]; fastNext = true } break
       case 'card-beat': if (realm?.card) { const k = `card:${realm.card.season}`; cardBeat[k] = (cardBeat[k] ?? 0) + 1 } break
       case 'card-skip': if (realm?.card) cardBeat[`card:${realm.card.season}`] = 99; break
       case 'practice-open': openPractice(); break

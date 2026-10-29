@@ -7,6 +7,8 @@
 
 export type CardKind = 'drought' | 'bounty' | 'locust' | 'plague' | 'halo' | 'quarrel' | 'waship' | 'pirates' | 'exile' | 'fugitive' | 'whale' | 'fishbridge' | 'gogak'
 
+export interface CardOpt { readonly name: string; readonly does: string }
+
 export interface CardInfo {
   readonly name: string
   /** 카드 머리글 — {a} {b} 는 장수 이름, {n} 은 고을 이름 (화면이 바꿔 넣는다) */
@@ -19,8 +21,8 @@ export interface CardInfo {
   readonly beats: readonly string[]
   /** 고를 때의 물음 — 한 줄 */
   readonly ask: string
-  /** 선택지 둘 — 이름은 세 마디 안(많아야 대여섯) · does 는 길게 눌러 보는 자세한 뜻 (아는 만큼) */
-  readonly opts: readonly [{ readonly name: string; readonly does: string }, { readonly name: string; readonly does: string }]
+  /** 선택지 둘(장수 다툼만 셋 — 침묵) — 이름은 세 마디 안(많아야 대여섯) · does 는 길게 눌러 보는 자세한 뜻 (아는 만큼) */
+  readonly opts: readonly [CardOpt, CardOpt, ...CardOpt[]]
   /** 갈래 — 하늘 · 사람 · 바깥 · 소도 */
   readonly kind: 'sky' | 'people' | 'outside' | 'sodo'
   /** 나쁜 일인가 — 난세 단계가 높을수록 잦다 */
@@ -103,14 +105,16 @@ export const CARDS: Readonly<Record<CardKind, CardInfo>> = {
       { name: '근신한다', does: '고을마다 경계를 높인다' },
     ],
   },
+  // 글·그림은 까닭마다 따로 (QUARREL_WHY · cardInfo) — 여기는 옛 저장과 보고 줄이 읽는 기본(덩이쇠 몫)
   quarrel: {
-    name: '장수끼리 다툼', kind: 'people', bad: true, icon: 'status-morale-down', art: 'event-people-quarrel',
-    line: '{a} · {b} 두 장수가 공을 두고 다툰다. 누구 편을 들까.',
-    beats: ['{a}, {b} 두 장수가 공을 두고 다툰다.', '목소리가 점점 높아진다.'],
+    name: '장수끼리 다툼', kind: 'people', bad: true, icon: 'status-morale-down', art: 'event-quarrel-spoils',
+    line: '싸움에서 거둔 덩이쇠 몫을 두고 {a} · {b} 두 장수가 다툰다.',
+    beats: ['싸움에서 거둔 덩이쇠 몫을 두고 {a} · {b} 두 장수가 다툰다.'],
     ask: '누구 편을 들까?',
     opts: [
       { name: '{a} 편', does: '{a} 쪽 정이 오르고 {b} 쪽 정이 떨어진다' },
       { name: '{b} 편', does: '{b} 쪽 정이 오르고 {a} 쪽 정이 떨어진다' },
+      { name: '침묵한다', does: '둘이 스스로 풀기를 기다린다 — 풀리면 둘 다 정이 조금 오르고, 앙금이 남으면 둘 다 조금 떨어진다' },
     ],
   },
   waship: {
@@ -166,3 +170,57 @@ export const CARDS: Readonly<Record<CardKind, CardInfo>> = {
 }
 
 export const CARD_KINDS = Object.keys(CARDS) as CardKind[]
+
+/**
+ * 장수 다툼의 까닭 — 아무 까닭 없이 「누구 편?」만 물으니 이상했다 (형 10-29: "아무맥락없이 편드는건 이상하잖아").
+ * 셋 다 고르기는 {a} 편 · {b} 편 · 침묵 (효과는 events.cardPreview). 이름 뒤에는 조사를 붙이지 않는다 (josa 규칙).
+ */
+export type QuarrelWhy = 'spoils' | 'town' | 'feast'
+export const QUARREL_WHYS: readonly QuarrelWhy[] = ['spoils', 'town', 'feast']
+
+const QUARREL_WHY: Readonly<Record<QuarrelWhy, Pick<CardInfo, 'line' | 'art' | 'beats' | 'ask' | 'opts'>>> = {
+  // 덩이쇠 몫 — 누가 먼저 목책을 넘었나
+  spoils: {
+    art: 'event-quarrel-spoils',
+    line: '싸움에서 거둔 덩이쇠 몫을 두고 {a} · {b} 두 장수가 다툰다.',
+    beats: ['싸움에서 거둔 덩이쇠가 마당에 쌓였다.', '"목책을 먼저 넘은 건 나다!" — 장수 {a}', '"길을 열어 준 건 내 군사다!" — 장수 {b}', '둘 다 칼자루에 손이 간다. 모두가 군장만 본다.'],
+    ask: '덩이쇠 몫을 누구에게 더 줄까?',
+    opts: [
+      { name: '{a} 몫으로', does: '{a} 쪽 정이 오르고 {b} 쪽 정이 떨어진다' },
+      { name: '{b} 몫으로', does: '{b} 쪽 정이 오르고 {a} 쪽 정이 떨어진다' },
+      { name: '침묵한다', does: '둘이 스스로 나누기를 기다린다 — 풀리면 둘 다 정이 조금 오르고, 앙금이 남으면 둘 다 조금 떨어진다' },
+    ],
+  },
+  // 고을 맡기 — 새로 얻은 고을의 우두머리 자리
+  town: {
+    art: 'event-quarrel-town',
+    line: '{n} 고을을 누가 맡을지를 두고 {a} · {b} 두 장수가 다툰다.',
+    beats: ['{n} 고을을 맡을 사람을 아직 정하지 않았다.', '"그 고을 길은 내가 훤히 안다." — 장수 {a}', '"고을 사람들이 따르는 건 나다." — 장수 {b}', '둘 다 물러설 생각이 없다.'],
+    ask: '{n} 고을을 누구 손에 맡길까?',
+    opts: [
+      { name: '{a} 손에', does: '{a} 쪽 정이 오르고 {b} 쪽 정이 떨어진다' },
+      { name: '{b} 손에', does: '{b} 쪽 정이 오르고 {a} 쪽 정이 떨어진다' },
+      { name: '침묵한다', does: '둘이 스스로 정하기를 기다린다 — 풀리면 둘 다 정이 조금 오르고, 앙금이 남으면 둘 다 조금 떨어진다' },
+    ],
+  },
+  // 술자리 시비 — 말 한마디가 화근
+  feast: {
+    art: 'event-quarrel-feast',
+    line: '잔치 술자리에서 {a} · {b} 두 장수가 말다툼 끝에 맞붙으려 한다.',
+    beats: ['잔치 술자리가 무르익은 밤.', '"그 활은 말로만 쏘는가?" — 장수 {b}', '술잔이 엎어졌다. 장수 {a}, 벌떡 일어선다.', '모두가 숨을 죽이고 군장만 본다.'],
+    ask: '누구 편을 들까?',
+    opts: [
+      { name: '{a} 편', does: '{a} 쪽 정이 오르고 {b} 쪽 정이 떨어진다' },
+      { name: '{b} 편', does: '{b} 쪽 정이 오르고 {a} 쪽 정이 떨어진다' },
+      { name: '침묵한다', does: '술이 깨면 스스로 풀기를 기다린다 — 풀리면 둘 다 정이 조금 오르고, 앙금이 남으면 둘 다 조금 떨어진다' },
+    ],
+  },
+}
+
+/** 이 카드의 글·그림 — 장수 다툼은 까닭(why)에 따라 (없으면 덩이쇠 몫) */
+export function cardInfo(c: { readonly kind: CardKind; readonly why?: QuarrelWhy }): CardInfo {
+  return c.kind === 'quarrel' ? { ...CARDS.quarrel, ...QUARREL_WHY[c.why ?? 'spoils'] } : CARDS[c.kind]
+}
+
+/** 고르지 않으면 걸리는 답 — 장수 다툼은 침묵 · 망명자는 돌려보낸다 · 나머지는 첫째 */
+export const cardFallback = (kind: CardKind): 0 | 1 | 2 => (kind === 'quarrel' ? 2 : kind === 'exile' ? 1 : 0)

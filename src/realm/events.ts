@@ -10,7 +10,7 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
-import { CARDS, CARD_KINDS, type CardKind } from './data/cards.ts'
+import { CARDS, CARD_KINDS, QUARREL_WHYS, cardFallback, type CardKind, type QuarrelWhy } from './data/cards.ts'
 import { HERO_POOL } from './data/heroes-pool.ts'
 import { addFavor } from './diplomacy.ts'
 import { knownOf } from './discovery.ts'
@@ -49,7 +49,12 @@ function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w:
     const i = Math.floor(roll(r.seed, season, 'card-q1') * heroes.length)
     let j = Math.floor(roll(r.seed, season, 'card-q2') * (heroes.length - 1))
     if (j >= i) j++
-    add('quarrel', 0.6, { hero: heroes[i]!.id, hero2: heroes[j]!.id })
+    // 까닭 — 고을 맡기는 도읍 말고 우리 고을이 있을 때만 (그 고을 이름이 글에 들어간다)
+    const cap = r.factions[f]?.capital
+    const town = big.find((id) => id !== cap)
+    const whys = QUARREL_WHYS.filter((w) => w !== 'town' || town !== undefined)
+    const why: QuarrelWhy = whys[Math.floor(roll(r.seed, season, 'card-qwhy') * whys.length)]!
+    add('quarrel', 0.6, { hero: heroes[i]!.id, hero2: heroes[j]!.id, why, ...(why === 'town' ? { node: town! } : {}) })
   }
   if (port !== null) {
     add('waship', 0.8, { node: port })
@@ -171,7 +176,7 @@ export interface CardPlan {
  * 이 답을 고르면 무엇이 되나 — 화면은 이것을 아이콘·숫자로, 엔진은 이것을 그대로 건다 (어긋날 수 없게 한 셈).
  * have — 카드가 걸릴 때의 창고 (화면은 이번 계절 명령을 뺀 남은 것을 넘긴다 · 카드는 명령 뒤에 걸린다)
  */
-export function cardPreview(r: Realm, c: Card, pick: 0 | 1, have?: { readonly grain: number; readonly iron: number }): CardPlan | null {
+export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonly grain: number; readonly iron: number }): CardPlan | null {
   const f = r.player
   if (f === undefined) return null
   const R = P.realm
@@ -196,6 +201,11 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1, have?: { readonly gr
     case 'halo':
       return { sure: pick === 0 ? { morale: R.cardMorale } : { watch: R.cardHaloWatch } }
     case 'quarrel': {
+      // 침묵 — 둘이 스스로 풀면 둘 다 조금 오르고, 앙금이 남으면 둘 다 조금 떨어진다
+      if (pick === 2) {
+        const both = (d: number): CardFx => ({ bonds: [[c.hero!, d], [c.hero2!, d]] })
+        return { sure: {}, chance: R.cardQuarrelHushOk, die: 'hush', win: both(R.cardQuarrelHush), lose: both(-R.cardQuarrelHush) }
+      }
       const [win, lose] = pick === 0 ? [c.hero!, c.hero2!] : [c.hero2!, c.hero!]
       return { sure: { bonds: [[win, R.cardQuarrel], [lose, -R.cardQuarrel]] }, hero: win }
     }
@@ -253,7 +263,7 @@ function applyFx(r: Realm, f: string, fx: CardFx, tally: { grain: number; iron: 
   }
 }
 
-/** 1 — 이번 계절 카드의 답을 건다. 고르지 않았으면 첫째 (망명자만 둘째 — 돌려보낸다) */
+/** 1 — 이번 계절 카드의 답을 건다. 고르지 않았으면 cardFallback (첫째 · 망명자는 돌려보낸다 · 장수 다툼은 침묵) */
 export function resolveCard(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
   const c = r.card
   const f = r.player
@@ -261,8 +271,9 @@ export function resolveCard(r: Realm, orders: readonly Order[], lines: ReportLin
   r.card = null
   if (c.season !== r.season || !cardValid(r, c)) return
   const o = orders.find((x): x is Extract<Order, { kind: 'card' }> => x.kind === 'card' && x.faction === f)
-  // 고르지 않으면 첫째 — 다만 망명자는 돌려보낸다 (가만히 있는데 장수가 느는 일이 없게 · 받으려면 눌러서)
-  const pick: 0 | 1 = o !== undefined ? (o.pick === 1 ? 1 : 0) : c.kind === 'exile' ? 1 : 0
+  // 고르지 않으면 첫째 — 다만 망명자는 돌려보낸다 (가만히 있는데 장수가 느는 일이 없게 · 받으려면 눌러서) · 장수 다툼은 침묵
+  const n = CARDS[c.kind].opts.length
+  const pick: 0 | 1 | 2 = o !== undefined && o.pick < n ? o.pick : o !== undefined ? 0 : cardFallback(c.kind)
   const plan = cardPreview(r, c, pick)!
   const tally = { grain: 0, iron: 0, hh: 0 }
   applyFx(r, f, plan.sure, tally, lines)
@@ -275,7 +286,7 @@ export function resolveCard(r: Realm, orders: readonly Order[], lines: ReportLin
   const { grain, iron, hh } = tally
   const hero = plan.hero
   lines.push({
-    kind: 'card', faction: f, card: c.kind, pick,
+    kind: 'card', faction: f, card: c.kind, pick, ...(c.why !== undefined ? { why: c.why } : {}),
     ...(grain !== 0 ? { grain } : {}), ...(iron !== 0 ? { iron } : {}), ...(hh !== 0 ? { hh } : {}),
     ...(good !== undefined ? { good } : {}), ...(hero !== undefined ? { hero } : {}), ...(c.node !== undefined ? { node: c.node } : {}),
   })

@@ -134,7 +134,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .seasonfx .band { position: absolute; left: 0; right: 0; top: 50%; height: min(62vh, 440px); transform: translateY(-50%); overflow: hidden;
   border-top: 2px solid #c9a45a; border-bottom: 2px solid #c9a45a; box-shadow: 0 0 0 1px #000, 0 -6px 0 -4px #8a6a3a, 0 6px 0 -4px #8a6a3a, 0 20px 50px #000c;
   animation: sfxband 2.6s cubic-bezier(.2, .8, .3, 1) forwards; }
-.ap .seasonfx .bimg { position: absolute; inset: -4%; background: #17110c center / cover no-repeat; animation: sfxpan 2.6s ease-out forwards; }
+.ap .seasonfx .bimg { position: absolute; inset: -4%; background: #17110c var(--hbg) center / cover no-repeat; animation: sfxpan 2.6s ease-out forwards; }
+/* 세로 화면 — 띠가 거의 네모라 가로 그림은 가운데만 남는다 · 네모로 따로 그린 그림 (public/realm/season-v) */
+@media (orientation: portrait) { .ap .seasonfx .bimg { background-image: var(--vbg, var(--hbg)); } }
 .ap .seasonfx .band::after { content: ''; position: absolute; inset: 0; background: linear-gradient(#0000 40%, #0008 72%, #000c); }
 @keyframes sfxpan { from { transform: scale(1.12) translateX(-1.5%); } to { transform: scale(1) translateX(1.5%); } }
 /* 글 — 상자 없이 그림 아래쪽 어둠 위에 · 금빛 붓글씨 · 위아래 장식 줄 */
