@@ -7,17 +7,22 @@
 
 **뽑는 법** — 외침 묶음은 `node --experimental-strip-types tools/shout-list.ts --batch <결> <a|b|c>` (싸움 맡김 첫마디 셋 · 이김 · 기술 외침 아홉 = 열세 줄 · 목소리 · 말투 칸 글 · sha256 · 이름 · 글자 수). 말투 칸은 그 도구가 내는 외침 말투(SHOUTED battle cry … NOT a calm indoor monologue)를 그대로. 외침은 차분한 줄과 한 묶음에 섞지 않는다. 짐(lose)·짧은 대답·분부는 차분한 묶음으로 따로.
 - 자르기: `tools/split-voice.py` 에 글자 수를 준다. 외침은 「지금이다! 샛길로 쳐라!」처럼 한 줄 안의 쉼이 대사 사이 쉼만큼 길어 덩어리가 어긋날 때가 있다 — 자른 길이가 글자 수와 안 맞으면 덩어리를 보고 손으로 묶어 다시 자른다.
-- 세기 비교: 자른 소리는 모두 loudnorm(−16 LUFS)으로 맞추므로 volumedetect 평균은 옛것과 거의 같다(옛 −18.7 dB → 새 −16.5 dB 쯤). 그래서 귀 대신 AI 스튜디오 채팅(Gemini 3.8 Flash)에 옛 · 새 다섯 줄을 순서를 섞어 붙이고 "전장 외침 세기 1~10 · 가성 · 잡소리"를 물었다. 채팅도 같은 계정 한도를 먹는 것 같다.
-- 흉내 낸 외침 태그 `<shout>` 를 줄마다 앞에 붙이면 더 세게 나오기도 하나, 「나를 따르라」 끝을 길게 끄는 함성이 붙거나 머리 소리로 뜨기도 한다. 결마다 한 번 보고 고른다.
+- 세기 비교: 자른 소리는 모두 loudnorm(−16 LUFS)으로 맞추므로 volumedetect 평균은 옛것과 거의 같다. 그래서 귀 대신 AI 스튜디오 채팅(Gemini 3.8 Flash)에 옛 · 새 다섯 줄을 순서를 섞어 붙이고 "전장 외침 세기 1~10 · 가성 · 잡소리"를 물었다(처음 세 결). 채팅도 같은 계정 한도를 먹는 것 같다.
+- 흉내 낸 외침 태그 `<shout>` 를 줄마다 앞에 붙이면 더 세게 나오기도 하나, 「나를 따르라」 끝을 길게 끄는 함성이 붙거나 머리 소리로 뜨기도 한다. 거친 노장(Daro)만 태그를 붙였다.
+- AI 스튜디오 함정 더: 오른쪽 「Run settings」 칸이 닫히면 말투 칩 자리가 옮겨 간다 — 말투 칩은 좌표 말고 ref 로 누르고, 칸 안 글상자 자리는 JS 로 재서 누른 뒤, 칩 글(버튼 글)이 바뀌었는지 꼭 본다. 화자 카드는 한 번에 안 열릴 때가 있어 "Current voice" 글이 떴는지 보고 검색한다.
 
 **성우진 A 외침 (13결 × 13줄)** — 메인 세션이 A 의 싸움 맡김 글을 사극체로 바꾼 뒤(c32b20e) 새 글로 녹음
 - **13결 다 함** (169개): m-young(Enzo · 판정 새 9 / 옛 6.5) · m-gruff(Daro · `<shout>` · 새 8 / 옛 9, 옛 글을 더 쳐 준 듯) · m-sage(Cruz · 새 8 / 옛 6) · m-elder(Arlo) · m-charm(Neno) · m-knight(Orus) · m-veteran(Ludo) · w-bright(Cleo) · w-cool(Kira) · w-sly(Lumi) · w-shaman(Hali) · w-knight(Tari) · w-matron(Jori)
-- 옛 169개 → 새 169개 평균: volumedetect 평균 −17.2 → −16.9 dB(loudnorm 으로 맞춰 거의 같음) · 높은 소리 쪽 기운(1~4kHz/0.1~1kHz) −8.8 → −6.8 dB · 음높이 중앙값 188 → 239 Hz. 소리를 지르면 음이 올라가고 높은 배음이 세진다 — 그 두 가지가 다 올랐다.
-- A 의 짐(lose) 아홉 줄도 새 글 — 그 결의 등용 첫마디 묶음 끝에 붙여 차분하게 뽑는다(아직)
+- 옛 169개 → 새 169개 평균: volumedetect 평균 −17.2 → −16.9 dB(loudnorm 으로 맞춰 거의 같음) · 높은 소리 쪽 기운(1~4kHz/0.1~1kHz) −8.8 → −6.8 dB · 음높이 중앙값 188 → 239 Hz. 소리를 지르면 음이 올라가고 높은 배음이 세진다. 그 두 가지가 다 올랐다.
+- A 의 짐(lose) 아홉 줄도 새 글. 그 결의 등용 첫마디 묶음 끝에 붙여 차분하게 뽑는다. 다 함: m-young · m-sage · m-charm. 남음: m-gruff · m-elder · w-bright · w-cool · w-sly · w-shaman
 
-**한도** — roqkfeke12(authuser=0): 10-29 밤 TTS 7번 + 채팅 판정 5번에서 "Quota limit reached". authuser=1(retyper97) 로 넘어가 TTS 10번 더(아직 안 막힘).
+**등용 첫마디 194줄** — 결마다 15줄 아래로 묶어(첫 묶음 끝에 그 결의 짐 한 줄) 차분한 사극 말투(결마다 성격 한 줄 · "speaking to a new lord on the day of joining his side · Calm, dignified … Not shouting")로. 두 문장짜리 대사는 문장 사이 쉼이 대사 사이 쉼만큼 길어 split-voice.py 의 틈 가산이 대사를 잘못 가른다. 글자 수 몫에 맞춰 덩어리를 묶고(틈 가산 작게) 길이가 기대의 0.7~1.4배를 벗어나면 굽지 않는 방식으로 잘랐다(스크래치 split-auto.py · 나중에 도구로 옮길 것).
+- 다 함(69줄): m-knight 5 · m-veteran 29 · m-young 13 · m-sage 13 · m-charm 9. HIRE_UNRECORDED 에서 12명 지움
+- 남음(125줄): m-gruff 15 · m-elder 15 · w-bright 38 · w-knight 24 · w-cool 9 · w-shaman 6 · w-sly 14 · w-matron 4
 
-**등용 첫마디 194줄** — 아직. **성우진 B · C 외침** — 아직(B 의 해요체 · 군주에게 시키는 하오체를 먼저 사극체로 고친다). **새 결 넷의 B · C** — 아직.
+**한도** — roqkfeke12(authuser=0): 10-29 밤 TTS 7번 + 채팅 판정 5번에서 "Quota limit reached". authuser=1(retyper92 · Muffin Goodbye) 로 넘어가 TTS 17번 더(아직 안 막힘 · 그중 한 번은 말투 칸이 안 바뀐 채 돌아 버림).
+
+**성우진 B · C 외침** — 아직(B 의 해요체 · 군주에게 시키는 하오체를 먼저 사극체로 고친다). **새 결 넷의 B · C** — 아직.
 <!-- /다시 녹음 진행 -->
 
 장수 설정 초안(docs/realm/cast/part-1~4)대로 등용 대사를 사극 하옵니다체로 고치고 부르는 말(주군 · 그대)을 뺐다 — 194줄 모두 글이 바뀌었다.
