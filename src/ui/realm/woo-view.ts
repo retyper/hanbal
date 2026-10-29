@@ -170,6 +170,8 @@ export const WOO_CSS = `
 
 const APP_NAME: Readonly<Record<WooApproach, string>> = { soothe: '달래기', cause: '명분', gain: '이익', fear: '겁주기', bond: '★ 인연' }
 const APP_STAT: Readonly<Record<WooApproach, string>> = { soothe: '매력', cause: '지략', gain: '매력', fear: '무예', bond: '판에 한 번' }
+/** 그 말할 거리에 쓰는 우리 장수의 능력치 (woo.ts 와 같은 것) */
+const APP_KEY: Readonly<Partial<Record<WooApproach, 'deok' | 'ryak' | 'mu'>>> = { soothe: 'deok', cause: 'ryak', gain: 'deok', fear: 'mu' }
 
 /** 담판 상자가 그릴 것 — 지금까지 한 마디 · 고른 거리 · 손을 내밀었나 */
 export interface TalkState {
@@ -220,14 +222,15 @@ export function talkBoxHtml(k: WooKit, L: TalkLines, r: Realm, s: TalkState): st
   let h = `<div class="dp-tk${rage ? ' rage' : ''}${won ? ' won' : ''}" role="dialog" aria-label="옥중 담판" style="--bg:url('${k.art}event/event-captive-persuade.jpg')">`
   const dot = (i: number): string => { const b = t.beats[i]; return b === undefined ? '' : b.react === 'big' || b.react === 'sway' ? 'ok' : b.react === 'rage' ? 'bad' : 'no' }
   h += `<div class="dp-th"><b>옥중 담판</b><i class="dp-dots">${Array.from({ length: WOO_BEATS }, (_, i) => `<b class="${dot(i)}"></b>`).join('')}</i><span>${over ? '끝' : `${s.talk.length + 1} / ${WOO_BEATS} 마디`}</span></div>`
-  // 얼굴 둘 — 갇힌 이는 사슬 테 · 우리 장수는 금빛 테. 넘어오면 갇힌 이가 우리 쪽으로 건너온다
-  h += `<div class="dp-fr"><span class="dp-fx jail">${k.bust(x, 'dp-ff')}<i class="dp-chain"></i><small>${k.name(x.name)}</small></span><span class="dp-vs">${won ? '' : '⇄'}</span><span class="dp-fx ours">${k.bust(by, 'dp-ff')}<small>${k.name(by.name)}</small></span></div>`
+  // 얼굴 둘. 갇힌 이는 사로잡기 장면과 같은 옥문 틀(fx/jail-frame.png)과 쇠창살(fx/jail-bars.png), 우리 장수는 청동 얼굴 테(ui/frame-portrait.png).
+  // 넘어오면 창살이 들보 속으로 올라가고 옥문 틀이 걷히고 청동 테가 씌워진 채 우리 쪽으로 건너온다 (형 10-29: "감옥 틀이랑 철창 어따 팔아먹고 회색 svg")
+  h += `<div class="dp-fr"><span class="dp-fx jail"><span class="dp-cell">${k.bust(x, 'dp-ff')}<i class="dp-bars"><b></b></i><i class="dp-jail"></i><i class="dp-gold"></i></span><small>${k.name(x.name)}</small></span><span class="dp-vs">${won ? '' : '⇄'}</span><span class="dp-fx ours"><span class="dp-cell">${k.bust(by, 'dp-ff')}<i class="dp-gold on"></i></span><small>${k.name(by.name)}</small><small class="dp-st3">매력 <b>${deokOf(by)}</b> · 지략 <b>${by.ryak}</b> · 무예 <b>${by.mu}</b></small></span></div>`
   // 말 두 줄
   const rows: string[] = []
   if (won) {
     rows.push(say(k, by, last !== undefined ? L.pitch(r, by, x, last.a) : L.lord(by)))
-    const hl = L.hire(x)
-    if (hl !== null) rows.push(say(k, x, hl, ' hire'))
+    // 등용 첫마디는 다음 계절 등용 장면에서 한다 · 여기서는 고개를 숙이는 한마디만 (형 10-29: "여기서 바로 옥을 열고 나와선 안 돼 · 다음 판에 등용 뜨잖아")
+    rows.push(say(k, x, L.react(x, 'big'), ' r-big'))
   }
   else if (lost) rows.push(say(k, x, L.notYet(x)))
   else if (s.sel !== null && !over) {
@@ -257,7 +260,7 @@ export function talkBoxHtml(k: WooKit, L: TalkLines, r: Realm, s: TalkState): st
   h += `<div class="dp-chips">${chips.map((c) => `<i class="dp-chip">${k.esc(c)}</i>`).join('')}${(x.grudge ?? 0) > 0 ? `<i class="dp-chip bad">원한 ${x.grudge}</i>` : ''}</div></div>`
   // 가운데 — 말할 거리 단추 · 끝났으면 결과
   if (won) {
-    h += `<div class="dp-end won"><b class="dp-big">${k.esc(L.won(by, x))}</b><small>계절이 끝나면 우리 장수가 됩니다.</small></div>`
+    h += `<div class="dp-end won"><b class="dp-big">${k.esc(L.won(by, x))}</b><small>다음 계절에 옥문을 열고 우리 장수로 맞습니다.</small></div>`
   } else if (lost) {
     const pc = Math.round(t.hand!.p * 100)
     h += `<div class="dp-end"><b>${pc >= 50 ? `아깝다! ${pc}%였다` : `넘어올 가망 ${pc}%, 이번엔 고개를 저었다`}</b><small>마음의 벽은 무너진 채로 남습니다. 맡겨 두면 계절마다 다시 굴립니다.</small></div>`
@@ -273,7 +276,7 @@ export function talkBoxHtml(k: WooKit, L: TalkLines, r: Realm, s: TalkState): st
       const sh = shownRange(r, by.id, chanceOf(r, s.id, by.id, a, mom))
       const no = (a === 'bond' && s.talk.includes('bond')) || (a === 'gain' && s.grain < P.realm.persuadeGrain + P.realm.wooGainGrain * (gains + 1))
       h += `<button class="dp-ap${a === 'bond' ? ' gold' : ''}${s.sel === a ? ' on' : ''}" data-act="dp-sel" data-a="${a}"${no ? ' disabled' : ''}>`
-        + `<b>${APP_NAME[a]}</b><span class="dp-p">${sh.lo === sh.hi ? `${sh.lo}%` : `${sh.lo}~${sh.hi}%`}</span><small>${APP_STAT[a]}${a === 'gain' ? k.cost({ grain: P.realm.wooGainGrain }) : ''}${sh.dim ? ' · 잘 모르겠다' : ''}</small></button>`
+        + `<b>${APP_NAME[a]}</b><span class="dp-p">${sh.lo === sh.hi ? `${sh.lo}%` : `${sh.lo}~${sh.hi}%`}</span><small>${APP_STAT[a]}${APP_KEY[a] !== undefined ? ` <b>${APP_KEY[a] === 'deok' ? deokOf(by) : by[APP_KEY[a]!]}</b>` : ''}${a === 'gain' ? k.cost({ grain: P.realm.wooGainGrain }) : ''}${sh.dim ? ' · 잘 모르겠다' : ''}</small></button>`
     }
     h += `</div>`
   }
@@ -292,15 +295,20 @@ export const TALK_CSS = `
 .ap .dp-th { flex: none; display: flex; align-items: center; gap: 8px; } .ap .dp-th > b { font-size: 15px; color: #e0bd78; letter-spacing: .05em; } .ap .dp-th > span { margin-left: auto; font-size: 12px; color: var(--mute); }
 .ap .dp-dots { display: flex; gap: 4px; } .ap .dp-dots b { width: 9px; height: 9px; border-radius: 2px; border: 1px solid #8a6a3a; background: #2a1f14; } .ap .dp-dots b.ok { background: #e0bd78; } .ap .dp-dots b.no { background: #6a6a6a; } .ap .dp-dots b.bad { background: #c0392b; border-color: #ff7a60; }
 .ap .dp-fr { flex: none; display: flex; align-items: flex-start; justify-content: space-between; padding: 0 6px; }
-.ap .dp-fx { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; width: 96px; } .ap .dp-fx small { font-size: 12.5px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #f3e3c0; }
+.ap .dp-fx { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; width: 124px; } .ap .dp-fx small { font-size: 12.5px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #f3e3c0; }
 .ap .dp-ff { width: 78px; height: 78px; border-radius: 10px; object-fit: cover; object-position: top; display: block; box-sizing: border-box; }
-.ap .dp-fx.jail .dp-ff { border: 3px solid #7a7a7a; box-shadow: 0 0 0 2px #2a2a2a, 0 4px 10px #000c; }
-.ap .dp-fx.ours .dp-ff { border: 3px solid #e0bd78; box-shadow: 0 0 0 2px #5a4020, 0 0 14px #e0bd7855; }
-.ap .dp-chain { position: absolute; left: 6px; right: 6px; top: 58px; height: 10px; background: repeating-linear-gradient(90deg, #9a9a9a 0 8px, #4a4a4a 8px 10px); border-radius: 4px; box-shadow: 0 1px 2px #000; }
+/* 얼굴 칸 둘레에 옥문 틀이 30% 씩 나온다 (틀 그림의 빈 칸 62.5% · 사로잡기 장면 appstyle .cere.capt .jail 과 같은 셈) */
+.ap .dp-cell { position: relative; width: 78px; height: 78px; margin: 20px 0 16px; }
+.ap .dp-cell .dp-ff { border-radius: 2px; box-shadow: 0 6px 14px #000c; }
+.ap .dp-bars { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; }
+.ap .dp-bars b { position: absolute; inset: 0; background: url(__ART__fx/jail-bars.png) center / 100% 100% no-repeat; filter: drop-shadow(2px 3px 3px #000c); }
+.ap .dp-jail { position: absolute; left: -30%; top: -30%; width: 160%; height: 160%; z-index: 3; pointer-events: none; background: url(__ART__fx/jail-frame.png) center / 100% 100% no-repeat; filter: drop-shadow(0 6px 12px #000d); }
+.ap .dp-gold { position: absolute; inset: -8px; z-index: 4; pointer-events: none; border: 10px solid transparent; border-image: url(__ART__ui/frame-portrait.png) 60 / 10px stretch; opacity: 0; filter: drop-shadow(0 4px 8px #000c); }
+.ap .dp-gold.on { opacity: 1; }
+.ap .dp-fx small.dp-st3 { font-size: 11px; color: #cbbf9f; } .ap .dp-fx small.dp-st3 b, .ap .dp-ap small b { color: #ffe0a0; }
 .ap .dp-vs { align-self: center; font-size: 18px; color: #8a6a3a; }
-.ap .dp-tk.won .dp-fx.jail { animation: dpcross 1s .9s cubic-bezier(.3, 1.2, .5, 1) both; z-index: 2; } @keyframes dpcross { to { transform: translateX(calc((min(430px, 100vw) - 132px) / 2)); } }
-.ap .dp-tk.won .dp-fx.jail .dp-ff { animation: dpgold .6s 1.5s both; } @keyframes dpgold { to { border-color: #e0bd78; box-shadow: 0 0 0 2px #5a4020, 0 0 18px #f2c94caa; } }
-.ap .dp-tk.won .dp-chain { animation: dpchain .5s .3s both; } @keyframes dpchain { to { opacity: 0; transform: translateY(14px) rotate(14deg); } }
+/* 넘어와도 옥에 그대로 있다 · 창살 너머에서 고개를 숙인다 (풀려나는 것은 다음 계절 등용 장면) */
+.ap .dp-tk.won .dp-fx.jail .dp-ff { animation: dpbow .6s .6s ease-out both; } @keyframes dpbow { to { transform: translateY(5px); filter: brightness(1.15); } }
 .ap .dp-talk { flex: none; display: flex; flex-direction: column; gap: 6px; min-height: 120px; }
 .ap .dp-say { display: flex; align-items: center; gap: 10px; padding: 7px 10px 7px 7px; border-radius: 10px; background: #1c150ee6; border: 1px solid #4a3826; animation: dpin .3s ease-out both; }
 .ap .dp-say.pre { border-style: dashed; border-color: #e0bd78; background: #2a1f14e6; } .ap .dp-say.lord .dp-line { color: #d9c69a; font-size: 13px; }

@@ -580,7 +580,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS + TALK_CSS + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
+  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
   document.head.appendChild(style)
   root.classList.add('ap')
   installTips(root)
@@ -3591,15 +3591,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (handNow) {
       if (t.hand?.ok !== true) { ding(snd('tap_cancel'), 0.5); return }
       ding(snd('cmd_gate'), 0.6) // 벽이 쩍 갈라진다
-      window.setTimeout(() => ding(snd('capture'), 0.5), 450) // 사슬이 끊어진다
-      window.setTimeout(() => { if (realm !== null && voiceGate(performance.now())) ding(hireVoicePath(x, isRuler(realm, x.id)), P.realm.voiceVol) }, 1500)
-      window.setTimeout(() => ding(snd('hire_go'), 0.5), 2100)
+      // 등용 첫마디는 다음 계절 등용 장면에서 (여기서 내면 두 번 듣는다)
       return
     }
     const last = t.beats[t.beats.length - 1]
     if (last === undefined) return
     if (t.end === 'broke') ding(snd('cmd_gate'), 0.6)
-    else ding(snd(last.react === 'big' ? 'battle_crit' : last.react === 'sway' ? 'tap_drum' : last.react === 'rage' ? 'war_drum' : 'tap_cancel'), 0.55)
+    else ding(snd(last.react === 'big' ? 'tap_bell' : last.react === 'sway' ? 'tap_brush' : last.react === 'rage' ? 'war_drum' : 'tap_cancel'), 0.55) // 말이 먹히면 방울 · 조금 먹히면 붓 소리 (칼 부딪는 소리는 싸움 것이라 뺌 · 형 10-29: "이 말로 한다 택하면 무슨 칼싸움 소리")
   }
   /** 이 포로를 회유할 우리 장수 — 고른 이가 한가하면 그 사람, 아니면 추천 */
   function wooByOf(r: Realm, id: string): Hero | null {
