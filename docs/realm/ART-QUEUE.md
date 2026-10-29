@@ -7,12 +7,12 @@
 | 계정 (화면에 뜨는 이름) | 풀리는 때 | 본 때 |
 |---|---|---|
 | YunCheol (edu · 'YunCheol Shin') | 10-29 PM 6:58 쯤 (문구 「7시간 후」 · 11:58 에 봄) | 10-28 03:25 한도 문구 — 02:50 부터 스물다섯 장 (사건 그림 · 한 장은 거절: bow-forge) |
-| retyper92 (계정 고르기에 'YunCheol Shin · retyper92@gmail' 로 뜬다) | 10-29 PM 3:24 (문구 그대로 · 12:20 에 넣어 보니 아직 막힘 「3시간 후」) | 10-28 22:50 한도 문구 다시 — 15:35 에 막혔는데 밤 22:25 부터 다섯 장이 더 나왔다(명치판 g-37·g-40·w-08·w-09·w-11) · 시각이 지나기 전이라도 한 번 넣어 볼 것 |
+| retyper92 (계정 고르기에 'YunCheol Shin · retyper92@gmail' 로 뜬다 · 왼쪽 아래 'YunCheol Shin · Free') | 10-30 PM 3:37 (문구 「내일 PM 3:37」 그대로) | 10-29 15:50 한도 문구 — 15:36 부터 열 장 (사건 romance·wanderer-arrives-g + 초상 g-31·g-39·g-72·L5·L6·L8·L9·L10) · 시각이 지나기 전이라도 한 번 넣어 볼 것 |
 | roqkfeke12 ('윤철 신') | 10-29 PM 6:45 (문구 그대로) | 10-28 19:20 한도 문구 — 18:40 부터 열 장 (사건 아홉 + 명치판 g-33 멧돌) |
 | retyper (hephaestosian · 'retyper') | 10-29 PM 11:28 (문구 그대로) | 10-29 00:33 한도 문구 — 10-28 23:05 부터 아홉 장 (초상 나리·노을·바람 + 로고 시안·제목 로고·아이콘 시안 둘·비파형 동검 아이콘) |
 
 
-**★★★ 맨 먼저 (10-29 낮) — 지금은 자리만 채운 그림 둘** (같은 이름으로 덮어쓰면 끝 · 굽기 scratchpad bakeart.py <png> public/realm/event/<이름>.jpg 1152 768)
+✔ **10-29 15:40 둘 다 받아 덮어씀 (retyper92)** ~~**★★★ 맨 먼저 (10-29 낮) — 지금은 자리만 채운 그림 둘**~~ (같은 이름으로 덮어쓰면 끝 · 굽기 scratchpad bakeart.py <png> public/realm/event/<이름>.jpg 1152 768)
    - **event-romance** (연정 소문 · 지금은 혼례 그림 복사본 — 잔치 그림이었을 때 풍년 조짐과 같다고 형 지적) — 달빛 버드나무 강가, 왼쪽 젊은 사내 장수 · 오른쪽 예쁜 여장수가 평바위에 붙어 앉아 수줍게 눈을 피함 · 손이 닿을 듯 · 반딧불 · 멀리 버드나무 뒤에서 아낙 둘이 엿보며 수군댐 · 3:2
    - **event-wanderer-arrives-g** (쫓겨 온 사람이 사내일 때 · 지금은 여인 그림 복사본) — 지금 event-wanderer-arrives 와 같은 구도(목책 문 앞 흙길, 뒤에서 본 모습, 문루에 창든 이 둘, 솟대, 왼쪽 다랑논)인데 지친 사내 무사 · 상투에 천 띠 · 도롱이·봇짐 · 맥궁 · 3:2
 
@@ -22,7 +22,7 @@
    10-28 새벽 스물여섯 장 바꿈(hephaestosian 하나 · edu 스물다섯): invade-raid · invade-siege · invade-field · take-town · captured-ours · capture · plot-assassin · plot-bribe · plot-burn · plot-rescue · plot-rumor · plot-sow · plot-spy · truce-pact · tribute-bow · court-hall · festival · flood · plague · dream · newborn · alliance-oath · defection · divination · egg-birth · eight-harbours
    10-28 오후 넷 더(retyper92): expedition-return · goguryeo-hunt · golden-egg · iron-trade
    ✔ 10-28 저녁 나머지 아홉(roqkfeke12): night-raid · outside-envoy · palisade-build · people-quarrel · salt-makers · sniped-commander · spy-rumor · yeonggo · bow-forge(다 만든 활을 건네는 장면으로 바꿔 통과) — **사건 그림 서른아홉 끝** (19b8e75)
-   ★ 명치판 주문서 = public/_tmp/busts27.json (head+id+tail · _queue 는 판에 쓰이는 열일곱 먼저 · _unused 열은 지금 판에 안 쓰이는 옛 그림) · 굽기 scratchpad bakeredo.py <id> <png> (같은 이름에 덮어씀 · 원본은 assets_src/realm/bust/<id>-gpt2.png) · ✔ g-33 멧돌 10-28 · ✔ g-37 읍즙 · g-40 아단 · w-08 이슬 · w-09 단비 · w-11 소리 10-28 밤 (retyper92) · ✔ w-12 나리 · w-14 노을 · w-47 바람 10-28 밤 (hephaestosian) · ✔ w-48 무등 · w-49 구름 · w-51 당궁 · w-52 송비 · w-53 가비 · w-55 누리 · w-56 소금 · w-79 솔매 10-29 (edu) — **판에 쓰이는 열일곱 끝** · 남은 열은 _unused(지금 판에 안 나오는 이)
+   ★ 명치판 주문서 = public/_tmp/busts27.json (head+id+tail · _queue 는 판에 쓰이는 열일곱 먼저 · _unused 열은 지금 판에 안 쓰이는 옛 그림) · 굽기 scratchpad bakeredo.py <id> <png> (같은 이름에 덮어씀 · 원본은 assets_src/realm/bust/<id>-gpt2.png) · ✔ g-33 멧돌 10-28 · ✔ g-37 읍즙 · g-40 아단 · w-08 이슬 · w-09 단비 · w-11 소리 10-28 밤 (retyper92) · ✔ w-12 나리 · w-14 노을 · w-47 바람 10-28 밤 (hephaestosian) · ✔ w-48 무등 · w-49 구름 · w-51 당궁 · w-52 송비 · w-53 가비 · w-55 누리 · w-56 소금 · w-79 솔매 10-29 (edu) — **판에 쓰이는 열일곱 끝** · 남은 열은 _unused(지금 판에 안 나오는 이) · ✔ g-31 금하 · g-39 쇠보 · g-72 쇠울 · L5 선녀 · L6 정견모주 · L8 낙랑 공주 · L9 웅녀 10-29 오후 (retyper92) · ✗ L10 평강은 받았으나 안 구움(활이 긴 장궁처럼 나오고 시위가 얼굴을 가로지름 · 원본 ~/Downloads/gptev-bust-l-L10-pyeonggang.png) — 다시 할 때 "short strongly recurved Korean horn bow, equal limbs" 로 · **남은 셋: L10 평강 · w-07 무당 여왕 · w-16 문중 어른**
    ★10-28 명치판 — 형이 다시 그리라고 준 목록 (사건 그림 열셋 다음 · 한 사람마다 새 대화 · 민무늬 #1c2129 판): g-31-buyeo-geumha · g-33-jeoga-metdol · g-37-eumjeup-jeup · g-39-guya-soebo · g-40-anya-adan · g-72-gyeonji-soeul · l-L5-seonyeo · l-L6-jeonggyeon-moju · l-L8-nangnang-princess · l-L9-ungnyeo · l-L10-pyeonggang · w-07-shaman-queen · w-08-mahan-warrior · w-09-byeonhan-smith · w-11-assassin · w-12-court-dancer · w-14-feast-spy · w-16-clan-matriarch · w-47-gosaburi-baram · w-48-mujin-mudeung · w-49-goryong-gureum · w-51-haseulla-dangung · w-52-biryuna-songbi · w-53-hwanna-gabi · w-55-guga-nuri · w-56-dongokjeo-sogeum · w-79-yangmaek-solmae
    그다음(형: "퀄리티 떨어져 보이는 것 계속 수정"): 세로 화면 event-v(태몽·탄생) · 제미나이로 받은 여인 명치판 w-29~45·w-79·w-80 · 계절 띠 넷 · 싸움터 배경 battle-field
 
