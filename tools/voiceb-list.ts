@@ -7,7 +7,7 @@
 import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { ART_B, LINES_B, VOICE_B } from '../src/ui/realm/voice-b.ts'
-import type { VoiceKind } from '../src/ui/realm/voice.ts'
+import type { BaseKind as VoiceKind } from '../src/ui/realm/voice.ts'
 
 const DIR = new URL('../public/realm/voice/b/', import.meta.url)
 const KINDS = Object.keys(LINES_B) as VoiceKind[]

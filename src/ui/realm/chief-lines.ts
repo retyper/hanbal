@@ -5,7 +5,7 @@
  * 원본 표는 docs/realm/VOICE-LINES.md (짧게 줄인 안) · 목록·녹음 묶음은 tools/chief-voice-list.ts.
  * 적극(a) = 욕심 많은 나라(greedy) · 소극(p) = 조심스런 나라(cautious).
  */
-import type { VoiceKind } from './voice.ts'
+import type { BaseKind } from './voice.ts'
 
 /** 상황 열둘 — 청을 걸 때 일곱(AskKind 그대로) · 맺거나 틀어진 뒤 다섯 */
 export type ChiefSit = 'truce' | 'alliance' | 'trade' | 'tribute' | 'demand' | 'joint' | 'aid' | 'peace' | 'ally' | 'vassal' | 'refused' | 'gift'
@@ -18,7 +18,7 @@ export const CHIEF_SIT_NAME: Readonly<Record<ChiefSit, string>> = {
 }
 
 /** [적극, 소극] */
-export const CHIEF_LINE: Readonly<Record<VoiceKind, Readonly<Record<ChiefSit, readonly [string, string]>>>> = {
+export const CHIEF_LINE: Readonly<Record<BaseKind, Readonly<Record<ChiefSit, readonly [string, string]>>>> = {
   'm-young': {
     truce: ['우리 사이에 창 겨눌 일 없게 약조합시다!', '서로 치지 않기로 하고 백성을 살핍시다.'],
     alliance: ['내 창과 그대 창이면 못 이길 자가 없소!', '그대라면 등을 맡길 수 있겠소.'],

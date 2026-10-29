@@ -21,7 +21,7 @@ const STATS: readonly Stat[] = ['mu', 'tong', 'ryak', 'chi', 'deok']
 const bestOf = (h: Hero): Stat => STATS.reduce((x, y) => (h[y] > h[x] ? y : x))
 const worstOf = (h: Hero): Stat => STATS.reduce((x, y) => (h[y] < h[x] ? y : x))
 /** 높임 — 젊은이·밝은 여인·약은 여인은 '합니다'체 */
-const polite = (h: Hero): boolean => { const k: VoiceKind = voiceKind(h); return k === 'm-young' || k === 'w-bright' || k === 'w-sly' }
+const polite = (h: Hero): boolean => { const k: VoiceKind = voiceKind(h); return k === 'm-young' || k === 'w-bright' || k === 'w-sly' || k === 'm-knight' || k === 'w-knight' }
 const iga = (h: Hero): string => josa(h.name, '이', '가')
 
 /** 두 사람 사이 — 부부 · 부모와 자식 · 한 핏줄 (없으면 null) */
@@ -99,6 +99,10 @@ const RISE: Readonly<Record<VoiceKind, (n: string) => string>> = {
   'w-cool': (n) => `${n}, 말없이 활을 집어 든다.`,
   'w-sly': (n) => `${n}, 웃으며 그 술잔을 상 위에 쏟아 버린다.`,
   'w-shaman': (n) => `${n}, 방울을 흔들며 낮게 읊조린다.`,
+  'm-knight': (n) => `${n}, 굳은 얼굴로 천천히 일어선다.`,
+  'w-knight': (n) => `${n}, 입술을 깨물고 칼자루에 손을 얹는다.`,
+  'm-veteran': (n) => `${n}, 술잔을 탁 내려놓고 눈을 가늘게 뜬다.`,
+  'w-matron': (n) => `${n}, 옷매무새를 고치고 조용히 일어선다.`,
 }
 /** 잔치의 때 — 계절마다 */
 const FEAST_AT: Readonly<Record<'spring' | 'summer' | 'autumn' | 'winter', string>> = {
@@ -213,6 +217,10 @@ const EXILE_SAY: Readonly<Record<VoiceKind, string>> = {
   'w-cool': '쓸 데가 있으면 쓰고, 없으면 가겠다.',
   'w-sly': '제가 아는 걸 다 알려 드리죠. 값만 맞으면요.',
   'w-shaman': '신령께서 이 고을로 가라 하셨소.',
+  'm-knight': '받아 주신다면 이 칼을 바치겠습니다.',
+  'w-knight': '쓸모를 보여 드리겠습니다. 받아 주십시오.',
+  'm-veteran': '싸움터를 스무 해 굴렀소. 써 보시오.',
+  'w-matron': '살림이든 싸움이든, 맡기면 해내겠소.',
 }
 
 export function exileBeats(r: Realm, c: Card, g: Hero): string[] {
@@ -271,6 +279,10 @@ const LOVE_SAY: Readonly<Record<VoiceKind, string>> = {
   'w-cool': '쓸데없는 소리. …귀가 왜 뜨겁지.',
   'w-sly': '소문이란 원래 반쯤은 참말이죠.',
   'w-shaman': '신령께서 맺어 주신 인연이오.',
+  'm-knight': '…그런 말은 삼가 주십시오.',
+  'w-knight': '허튼소리입니다. …정말 그리 보였습니까?',
+  'm-veteran': '이 나이에 그런 소문이라니, 허허.',
+  'w-matron': '다 늙어 무슨 소문이오. …싫지는 않구려.',
 }
 
 export function romanceBeats(r: Realm, _c: Card, a: Hero, b: Hero): string[] {

@@ -104,9 +104,9 @@ function members(r: Realm, me: string, a: Army): Hero[] {
 const timid = (h: Hero): boolean => hasTrait(h, 'coward') || hasTrait(h, 'careful')
 /** 거친 이 — 밀어붙이자는 쪽 */
 export const bold = (h: Hero): boolean => !timid(h)
-  && (voiceKind(h) === 'm-gruff' || voiceKind(h) === 'm-young' || voiceKind(h) === 'w-bright' || hasTrait(h, 'drinker') || hasTrait(h, 'hundred') || hasTrait(h, 'ironhand') || h.mu >= 8)
+  && (['m-gruff', 'm-young', 'w-bright', 'm-knight', 'm-veteran'].includes(voiceKind(h)) || hasTrait(h, 'drinker') || hasTrait(h, 'hundred') || hasTrait(h, 'ironhand') || h.mu >= 8)
 /** 차분한 이 — 기다리자 · 남겨 두자는 쪽에 더 어울린다 */
-const calm = (h: Hero): boolean => timid(h) || hasTrait(h, 'steadfast') || ['m-sage', 'm-elder', 'w-cool', 'w-shaman'].includes(voiceKind(h))
+const calm = (h: Hero): boolean => timid(h) || hasTrait(h, 'steadfast') || ['m-sage', 'm-elder', 'w-cool', 'w-shaman', 'w-knight', 'w-matron'].includes(voiceKind(h))
 const best = (hs: readonly Hero[], f: (h: Hero) => number): Hero | undefined => [...hs].sort((x, y) => f(y) - f(x) || (x.id < y.id ? -1 : 1))[0]
 
 /** 우리 땅 곁의 남의 군사 — 그 나라 · 고을 · 머릿수 (동맹·화친은 빼고 · skip 고을은 셈하지 않는다 — 칠 곳을 지키는 군사는 우리와 맞붙는다) */

@@ -5,16 +5,16 @@
  * 녹음: AI 스튜디오 Gemini TTS 무료 목소리 — 결마다 아래 VOICE_B 의 목소리 · 말투 칸은 A 와 같은 결의 성격 (tools/voiceb-list.ts 가 묶음 글을 낸다).
  */
 import type { Art } from '../../realm/types.ts'
-import type { VoiceKind } from './voice.ts'
+import type { BaseKind } from './voice.ts'
 
 /** 결마다 B 목소리 — AI 스튜디오 이름 · A 와 설명이 비슷한 것 (A: Enzo · Daro · Cruz · Arlo · Neno · Cleo · Kira · Lumi · Hali) */
-export const VOICE_B: Readonly<Record<VoiceKind, string>> = {
+export const VOICE_B: Readonly<Record<BaseKind, string>> = {
   'm-young': 'Mako', 'm-gruff': 'Algenib', 'm-sage': 'Olin', 'm-elder': 'Jett', 'm-charm': 'Algieba',
   'w-bright': 'Veda', 'w-cool': 'Sami', 'w-sly': 'Tova', 'w-shaman': 'Tavi',
 }
 
 /** 짧은 대답 셋 · 분부 받듦 셋 · 싸움 맡김 다섯(맡김 셋 · 이김 · 짐) */
-export const LINES_B: Readonly<Record<VoiceKind, { tap: readonly string[]; obey: readonly string[]; auto: readonly string[] }>> = {
+export const LINES_B: Readonly<Record<BaseKind, { tap: readonly string[]; obey: readonly string[]; auto: readonly string[] }>> = {
   'm-young': {
     tap: ['예!', '여기 있습니다!', '무엇이든 시키십시오!'],
     obey: ['바로 해내겠습니다!', '다녀오겠습니다!', '명대로 하겠습니다!'],

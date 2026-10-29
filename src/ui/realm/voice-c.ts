@@ -8,16 +8,16 @@
  * 녹음: AI 스튜디오 Gemini TTS 무료 목소리 — 결마다 아래 VOICE_C (tools/voicec-list.ts 가 묶음 글을 낸다).
  */
 import type { Art } from '../../realm/types.ts'
-import type { VoiceKind } from './voice.ts'
+import type { BaseKind } from './voice.ts'
 
 /** 결마다 C 목소리 — AI 스튜디오 이름 · A·B 와 겹치지 않는 것 (A: Enzo Daro Cruz Arlo Neno Cleo Kira Lumi Hali · B: Mako Algenib Olin Jett Algieba Veda Sami Tova Tavi) */
-export const VOICE_C: Readonly<Record<VoiceKind, string>> = {
+export const VOICE_C: Readonly<Record<BaseKind, string>> = {
   'm-young': 'Fenrir', 'm-gruff': 'Riko', 'm-sage': 'Sadaltager', 'm-elder': 'Charon', 'm-charm': 'Umbriel',
   'w-bright': 'Autonoe', 'w-cool': 'Kore', 'w-sly': 'Despina', 'w-shaman': 'Gacrux',
 }
 
 /** 짧은 대답 셋 · 분부 받듦 셋 · 싸움 맡김 다섯(맡김 셋 · 이김 · 짐) */
-export const LINES_C: Readonly<Record<VoiceKind, { tap: readonly string[]; obey: readonly string[]; auto: readonly string[] }>> = {
+export const LINES_C: Readonly<Record<BaseKind, { tap: readonly string[]; obey: readonly string[]; auto: readonly string[] }>> = {
   'm-young': {
     tap: ['예, 여기 있사옵니다!', '부르셨사옵니까!', '명을 내리시옵소서!'],
     obey: ['분부 받잡겠사옵니다!', '반드시 해내겠사옵니다!', '목숨 걸고 받들겠사옵니다!'],

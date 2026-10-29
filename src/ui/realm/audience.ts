@@ -11,7 +11,7 @@
 import type { AskKind, Mind } from '../../realm/types.ts'
 import { CHIEF_LINE, type ChiefMood, type ChiefSit } from './chief-lines.ts'
 import { CHIEF_LINE_B } from './chief-lines-b.ts'
-import type { VoiceKind } from './voice.ts'
+import { baseKind, type VoiceKind } from './voice.ts'
 
 /** 맺거나 틀어진 뒤의 한마디 */
 export type PactKind = 'truce' | 'ally' | 'vassal' | 'refused' | 'gift'
@@ -24,8 +24,10 @@ export interface ChiefSay { readonly text: string; readonly voice: string }
 const moodOf = (m: Mind | undefined): ChiefMood => (m === 'greedy' ? 'a' : 'p')
 
 /** cast b — 성우진 B 의 군장(얼굴로 반씩 · voice.ts castOf)은 다른 말·다른 목소리 (chief-lines-b.ts · 형 10-29) */
-function chiefSay(vk: VoiceKind, sit: ChiefSit, mind: Mind | undefined, cast: 'a' | 'b'): ChiefSay {
+function chiefSay(k: VoiceKind, sit: ChiefSit, mind: Mind | undefined, cast: 'a' | 'b'): ChiefSay {
   const md = moodOf(mind)
+  // 새 결 넷(청년 무장 등)은 군장 말이 없어 가까운 옛 결의 말 · 목소리로 (voice.ts BASE_OF)
+  const vk = baseKind(k)
   const [a, p] = (cast === 'b' ? CHIEF_LINE_B : CHIEF_LINE)[vk][sit]
   return { text: md === 'a' ? a : p, voice: `realm/voice/${cast === 'b' ? 'b/' : ''}chief/${vk}-${sit}-${md}.ogg` }
 }

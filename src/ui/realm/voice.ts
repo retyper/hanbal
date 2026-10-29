@@ -18,8 +18,19 @@ import { bustOf } from '../../realm/data/art.ts'
 import { HIRE_LINE } from '../../realm/data/hire-lines.ts'
 import { hasTrait } from '../../realm/heroes.ts'
 import type { Art, Hero } from '../../realm/types.ts'
+import { LINES_NEW } from './voice-new.ts'
 
-export type VoiceKind = 'm-young' | 'm-gruff' | 'm-sage' | 'm-elder' | 'm-charm' | 'w-bright' | 'w-cool' | 'w-sly' | 'w-shaman'
+/** 처음 결 아홉 — 군장 말 · 성우진 B · C 는 이 아홉에만 있다 */
+export type BaseKind = 'm-young' | 'm-gruff' | 'm-sage' | 'm-elder' | 'm-charm' | 'w-bright' | 'w-cool' | 'w-sly' | 'w-shaman'
+/**
+ * 10-29 더한 결 넷 — 청년 무장 · 젊은 여장수 · 중년 무장 · 나이 든 여인 (voice-new.ts · 형: "이미지로는 20대가 많은데 진지하면 목소리가 다 40대 같다").
+ * A 칸에만 녹음했다 · 군장 말은 BASE_OF 의 가까운 결 것을 빌린다
+ */
+export type NewKind = 'm-knight' | 'w-knight' | 'm-veteran' | 'w-matron'
+export type VoiceKind = BaseKind | NewKind
+export const BASE_OF: Readonly<Record<NewKind, BaseKind>> = { 'm-knight': 'm-young', 'w-knight': 'w-cool', 'm-veteran': 'm-gruff', 'w-matron': 'w-cool' }
+/** 그 결이 처음 아홉에 없으면 가까운 결로 */
+export const baseKind = (k: VoiceKind): BaseKind => (k in BASE_OF ? BASE_OF[k as NewKind] : (k as BaseKind))
 export type VoiceLine = 'tap' | 'obey'
 
 /**
@@ -36,35 +47,36 @@ export const AUTO_LINE: Readonly<Record<VoiceKind, readonly [string, string, str
   'w-cool': ['맡겨 주십시오. 이기고 오겠습니다.', '싸움은 제가 끝냅니다.', '물러서지 않겠습니다.', '이겼습니다.', '…송구합니다.'],
   'w-sly': ['후후, 재미있게 놀다 올게요.', '저들, 금방 울게 될 거예요.', '제게 맡겨 두세요.', '후후, 너무 쉬웠네요.', '흥, 오늘은 봐준 거예요.'],
   'w-shaman': ['하늘이 우리 편이에요. 맡겨 주세요.', '방울이 이길 길을 일러 줘요.', '별이 이긴다고 말하네요.', '하늘이 웃어요.', '하늘이 등을 돌렸어요…'],
+  'm-knight': LINES_NEW['m-knight'].auto, 'w-knight': LINES_NEW['w-knight'].auto, 'm-veteran': LINES_NEW['m-veteran'].auto, 'w-matron': LINES_NEW['w-matron'].auto,
 }
 
 /** 결마다 받아 둔 대답 수 — public/realm/voice/<줄>-<결>-<n>.ogg */
 const TAKES: Readonly<Record<VoiceLine, number>> = { tap: 3, obey: 3 }
 
 /** 분부 받듦을 녹음해 둔 결 — 없는 결은 짧은 대답(tap)으로 */
-const OBEY_KINDS: ReadonlySet<VoiceKind> = new Set<VoiceKind>(['m-young', 'm-gruff', 'm-sage', 'm-elder', 'm-charm', 'w-bright', 'w-cool', 'w-sly', 'w-shaman'])
+const OBEY_KINDS: ReadonlySet<VoiceKind> = new Set<VoiceKind>(['m-young', 'm-gruff', 'm-sage', 'm-elder', 'm-charm', 'w-bright', 'w-cool', 'w-sly', 'w-shaman', 'm-knight', 'w-knight', 'm-veteran', 'w-matron'])
 
 /**
  * 손으로 박은 목소리 — 그림과 이야기가 뚜렷한 장수 (없으면 voiceKind 가 고른다).
  * 10-29 장수 설정 초안(docs/realm/cast)대로 — 초안이 「바꿈」이라 한 장수, 그리고 「맞음」이어도 군주 자리 · 얼굴 표가 다른 결을 고르던 장수.
- * 중년 무장 · 늙은 여인 결은 아직 없어 초안이 고른 가까운 결(m-gruff · w-cool)로 둔다. 같은 얼굴의 다른 판 장수는 같은 결
+ * 10-29 새 결 넷으로 다시 옮겼다 — 서른 아래 진지·냉정·결연한 이는 청년 무장 · 젊은 여장수, 35~50 무장 사내는 중년 무장, 마흔 넘은 여인은 나이 든 여인 (docs/realm/cast/README.md). 같은 얼굴의 다른 판 장수는 같은 결
  */
 const VOICE_OF: Readonly<Record<string, VoiceKind>> = {
   'goja-1': 'm-gruff', // 살해 바다쇠
-  'dokro-2': 'm-gruff', // 견지 쇠돌
-  'mh-ogan': 'm-gruff', // 오간
-  'tut-ogan': 'm-gruff', // 오간
+  'dokro-2': 'm-veteran', // 견지 쇠돌
+  'mh-ogan': 'm-veteran', // 오간
+  'tut-ogan': 'm-veteran', // 오간
   'jm-oi': 'm-gruff', // 오이
   'samul-ruler': 'm-young', // 읍차 물결 (그림대로 · 군주 결 대신)
-  'ungcheon-ruler': 'm-gruff', // 읍차 곰내
-  'sangdang-ruler': 'm-gruff', // 읍차 쇠달 (그림대로 · 군주 결 대신)
+  'ungcheon-ruler': 'm-veteran', // 읍차 곰내
+  'sangdang-ruler': 'm-veteran', // 읍차 쇠달 (그림대로 · 군주 결 대신)
   'balla-ruler': 'm-sage', // 신지 큰뫼 (그림대로 · 군주 결 대신)
-  'gampyeong-ruler': 'm-gruff', // 읍차 갯벌 (그림대로 · 군주 결 대신)
+  'gampyeong-ruler': 'm-veteran', // 읍차 갯벌 (그림대로 · 군주 결 대신)
   'maek-ruler': 'm-young', // 거수 맥돌 (그림대로 · 군주 결 대신)
-  'gwanna-ruler': 'm-gruff', // 패자 쇠뫼 (그림대로 · 군주 결 대신)
-  'uga-ruler': 'm-gruff', // 우가 소두
-  'bukokjeo-ruler': 'm-gruff', // 장수 두만 (그림대로 · 군주 결 대신)
-  'jm-okjeo-ruler': 'm-gruff', // 군장 두만 (그림대로 · 군주 결 대신)
+  'gwanna-ruler': 'm-veteran', // 패자 쇠뫼 (그림대로 · 군주 결 대신)
+  'uga-ruler': 'm-veteran', // 우가 소두
+  'bukokjeo-ruler': 'm-veteran', // 장수 두만 (그림대로 · 군주 결 대신)
+  'jm-okjeo-ruler': 'm-veteran', // 군장 두만 (그림대로 · 군주 결 대신)
   'dabeol-ruler': 'm-elder', // 험측 달구
   'eumjeup-ruler': 'm-elder', // 읍차 즙
   'chopal-ruler': 'm-young', // 읍차 팔매
@@ -72,41 +84,41 @@ const VOICE_OF: Readonly<Record<string, VoiceKind>> = {
   'goja-ruler': 'm-charm', // 험측 바우
   'dokro-ruler': 'm-charm', // 읍차 가람
   'maga-1': 'm-gruff', // 견사 말굽
-  'tamna-1': 'm-gruff', // 살해 오름
+  'tamna-1': 'm-veteran', // 살해 오름
   'bihwa-1': 'm-sage', // 살해 늪
   'usan-ruler': 'm-gruff', // 우해왕 물너울 (그림대로 · 군주 결 대신)
-  'yangmaek-ruler': 'm-gruff', // 군장 맥손
-  'wander-14': 'm-gruff', // 읍차 한결
+  'yangmaek-ruler': 'm-veteran', // 군장 맥손
+  'wander-14': 'm-veteran', // 읍차 한결
   'golbeol-1': 'm-elder', // 살해 골개
-  'apdok-1': 'm-gruff', // 살해 압
+  'apdok-1': 'm-veteran', // 살해 압
   'chopal-1': 'm-young', // 살해 여울
-  'michuhol-1': 'm-gruff', // 살해 소금꾼
-  'goguryeo-ruler': 'm-gruff', // 대왕 다물 (그림대로 · 군주 결 대신)
+  'michuhol-1': 'm-veteran', // 살해 소금꾼
+  'goguryeo-ruler': 'm-veteran', // 대왕 다물 (그림대로 · 군주 결 대신)
   'buyeo-ruler': 'm-sage', // 왕 금하 (그림대로 · 군주 결 대신)
   'geonma-1': 'm-gruff', // 살해 말발굽
   'gosaburi-1': 'm-young', // 살해 부리
   'baekje-ruler': 'm-sage', // 신지 온누리 (그림대로 · 군주 결 대신)
   'mujin-1': 'm-sage', // 살해 빛고을
-  'guya-ruler': 'm-gruff', // 진지렴 쇠보 (그림대로 · 군주 결 대신)
-  'siljik-1': 'm-gruff', // 살해 파도
+  'guya-ruler': 'm-veteran', // 진지렴 쇠보 (그림대로 · 군주 결 대신)
+  'siljik-1': 'm-veteran', // 살해 파도
   'sr-hyeokgeose': 'm-young', // 혁거세
   'sr-hogong': 'm-elder', // 호공
   'sr-alpyeong': 'm-sage', // 촌장 알평 (그림대로 · 군주 결 대신)
   'sr-jibaekho': 'm-gruff', // 촌장 지백호
   'sr-guryema': 'm-young', // 촌장 구례마 (그림대로 · 군주 결 대신)
   'sr-jita': 'm-charm', // 촌장 지타
-  'sr-hojin': 'm-gruff', // 촌장 호진
-  'wander-25': 'm-young', // 견지 서늘
-  'mh-mahan-3': 'm-gruff', // 읍차 금바위
+  'sr-hojin': 'm-veteran', // 촌장 호진
+  'wander-25': 'm-knight', // 견지 서늘
+  'mh-mahan-3': 'm-veteran', // 읍차 금바위
   'sr-wae-ruler': 'm-gruff', // 왜인 우두머리 (그림대로 · 군주 결 대신)
   'jm-songyang': 'm-sage', // 송양 (그림대로 · 군주 결 대신)
   'jomun-1': 'm-sage', // 살해 솔개
   'mh-soseono': 'w-cool', // 소서노
-  'wander-09': 'w-cool', // 신지 별하
-  'wander-06': 'w-cool', // 번예 새벽
+  'wander-09': 'w-knight', // 신지 별하
+  'wander-06': 'w-knight', // 번예 새벽
   'wander-20': 'w-bright', // 번예 이슬
   'dokro-1': 'w-cool', // 살해 너울
-  'wander-04': 'w-cool', // 험측 소리
+  'wander-04': 'w-knight', // 험측 소리
   'wander-13': 'w-sly', // 살해 노을
   'goja-2': 'w-bright', // 번예 물새
   'wander-01': 'w-sly', // 번예 다솜
@@ -114,48 +126,62 @@ const VOICE_OF: Readonly<Record<string, VoiceKind>> = {
   'wander-08': 'w-cool', // 살해 물결
   'usisan-ruler': 'w-cool', // 번예 소금
   'apdok-ruler': 'w-bright', // 읍차 누리 (그림대로 · 군주 결 대신)
-  'bihwa-ruler': 'w-shaman', // 번예 빛나
+  'bihwa-ruler': 'w-knight', // 번예 빛나 — 스물넷 제사장 · 무당 결이 나이 든 여인처럼 들려 젊은 결로 (형 10-29: "21살 아이돌 같은데 목소리가 아줌마")
   'michuhol-ruler': 'w-bright', // 읍차 비라
-  'guya-3': 'w-cool', // 견지 쇠비
+  'guya-3': 'w-knight', // 견지 쇠비
   'dabeol-2': 'w-sly', // 번예 달빛
-  'chopal-2': 'w-cool', // 살해 들메
+  'chopal-2': 'w-knight', // 살해 들메
   'jomun-2': 'w-bright', // 번예 오디
-  'baekje-2': 'w-cool', // 견지 매나
-  'gwanna-2': 'w-cool', // 조의 쇠눈
+  'baekje-2': 'w-knight', // 견지 매나
+  'gwanna-2': 'w-knight', // 조의 쇠눈
   'geonma-ruler': 'w-bright', // 신지 마루 (그림대로 · 군주 결 대신)
-  'gosaburi-ruler': 'w-cool', // 읍차 바람
-  'mujin-ruler': 'w-cool', // 읍차 무등
-  'siljik-ruler': 'w-sly', // 읍차 물가 (그림대로 · 군주 결 대신)
-  'haseulla-ruler': 'w-cool', // 삼로 단궁
+  'gosaburi-ruler': 'w-knight', // 읍차 바람
+  'mujin-ruler': 'w-matron', // 읍차 무등
+  'siljik-ruler': 'w-matron', // 읍차 물가 (그림대로 · 군주 결 대신)
+  'haseulla-ruler': 'w-knight', // 삼로 단궁
   'biryuna-ruler': 'w-bright', // 패자 송비
   'hwanna-ruler': 'w-sly', // 패자 가비 (그림대로 · 군주 결 대신)
   'maga-ruler': 'w-bright', // 마가 달리 (그림대로 · 군주 결 대신)
   'guga-ruler': 'w-bright', // 구가 누리
-  'dongokjeo-ruler': 'w-sly', // 장수 소금 (그림대로 · 군주 결 대신)
-  'bullae-ruler': 'w-cool', // 삼로 박달
-  'jomun-ruler': 'w-cool', // 살해 이랑
+  'dongokjeo-ruler': 'w-matron', // 장수 소금 (그림대로 · 군주 결 대신)
+  'bullae-ruler': 'w-knight', // 삼로 박달
+  'jomun-ruler': 'w-knight', // 살해 이랑
   'golbeol-ruler': 'w-sly', // 살해 범
-  'iseo-ruler': 'w-bright', // 읍차 시내 (그림대로 · 군주 결 대신)
+  'iseo-ruler': 'w-knight', // 읍차 시내 (그림대로 · 군주 결 대신)
   'byeokjin-ruler': 'w-bright', // 읍차 별 (그림대로 · 군주 결 대신)
   'us-ruler': 'w-bright', // 읍차 해솔
   'miri-ruler': 'w-bright', // 신지 달래 (그림대로 · 군주 결 대신)
-  'buyeo-1': 'w-cool', // 대사 해달
-  'jm-haedal': 'w-cool', // 해달
+  'buyeo-1': 'w-knight', // 대사 해달
+  'jm-haedal': 'w-knight', // 해달
   'maek-1': 'w-sly', // 살해 범발
   'jeoga-1': 'w-cool', // 견사 엄니
   'bukokjeo-1': 'w-cool', // 장수 물범
   'jm-okjeo-1': 'w-cool', // 물범
-  'yeonna-1': 'w-cool', // 선인 너울
+  'yeonna-1': 'w-knight', // 선인 너울
   'eumjeup-1': 'w-cool', // 살해 벌
   'balla-1': 'w-shaman', // 살해 독무덤
   'daegaya-1': 'w-cool', // 견지 쇠뫼
-  'gampyeong-1': 'w-cool', // 살해 뱃사공
-  'wansan-1': 'w-cool', // 살해 완
-  'yangmaek-1': 'w-cool', // 장수 솔매
-  'wander-22': 'w-cool', // 신지 너울
+  'gampyeong-1': 'w-matron', // 살해 뱃사공
+  'wansan-1': 'w-knight', // 살해 완
+  'yangmaek-1': 'w-knight', // 장수 솔매
+  'wander-22': 'w-knight', // 신지 너울
   'sr-goya-1': 'w-sly', // 명활 달래
-  'mh-mahan-2': 'w-cool', // 원산 지기 달래
-  'jm-haengin-1': 'w-cool', // 산지기 너울
+  'mh-mahan-2': 'w-knight', // 원산 지기 달래
+  'jm-haengin-1': 'w-knight', // 산지기 너울
+  // 10-29 새 결 넷으로 옮긴 장수 (docs/realm/cast 나이·성격대로)
+  'guga-1': 'm-knight',
+  'sr-danbi': 'w-knight',
+  'anya-1': 'w-knight',
+  'anya-2': 'w-knight',
+  'jm-mari': 'm-veteran',
+  'gwanna-1': 'm-veteran',
+  'guya-1': 'm-veteran',
+  'tut-maryeo': 'm-veteran',
+  'sangdang-1': 'm-veteran',
+  'goguryeo-1': 'm-veteran',
+  'gammun-1': 'm-veteran',
+  'saro-1': 'm-veteran',
+  'mh-mahan-1': 'm-veteran',
 }
 
 /** 등용 대사를 새로 쓰고 아직 녹음하지 않은 장수 — hire/<id>.ogg 가 없다. 녹음하면 여기서 지운다 (tests/realm/hire-lines.test.ts) */
@@ -196,8 +222,8 @@ const VOICE_OF_FACE: Readonly<Record<string, VoiceKind>> = {
   'g-19-sabeol-veteran': 'm-elder', 'g-29-yeonna-myeongsol': 'm-elder', 'g-50-bullae-gwaha': 'm-elder', 'g-54-mokji-mahan': 'm-elder',
   'g-69-goryong-yong': 'm-elder', 'g-77-saro-sobeol': 'm-elder', 'g-90-haengin-gomok': 'm-elder',
   // 젊은 얼굴 — 군주여도 젊은 소리
-  'g-02-goguryeo-archer-prince': 'm-young', 'g-12-silla-youth': 'm-young', 'g-43-hwanna-amnok': 'm-young', 'g-56-haseulla-gwahama': 'm-young',
-  'g-64-jumong': 'm-young', 'g-71-baekje-onjo': 'm-young', 'g-28-goguryeo-damul': 'm-young',
+  'g-02-goguryeo-archer-prince': 'm-knight', 'g-12-silla-youth': 'm-young', 'g-43-hwanna-amnok': 'm-young', 'g-56-haseulla-gwahama': 'm-young',
+  'g-64-jumong': 'm-young', 'g-71-baekje-onjo': 'm-knight', 'g-28-goguryeo-damul': 'm-young',
   // 고운 얼굴 — 매혹
   'g-24-wansan-onsan': 'm-charm', 'g-51-biryuna-mulgyeol': 'm-charm', 'g-62-beonye-hanul': 'm-charm', 'g-74-saro-hyeokgeose': 'm-charm',
   'g-84-wander-seoneul': 'm-charm', 'g-67-buyeo-daeso': 'm-charm',
@@ -207,10 +233,10 @@ const VOICE_OF_FACE: Readonly<Record<string, VoiceKind>> = {
   // 책사 · 무당 얼굴 — 차분한 소리
   'g-06-strategist': 'm-sage', 'g-73-baekje-eureum': 'm-sage', 'g-75-saro-hogong': 'm-sage', 'g-36-gammun-gamdol': 'm-sage',
   // 자란 아이 — 얼굴마다 설정대로 (docs/realm/cast/kids.md · 형 10-29)
-  'y-g-01': 'm-young', 'y-g-02': 'm-charm', 'y-g-03': 'm-gruff', 'y-g-04': 'm-gruff', 'y-g-05': 'm-young', 'y-g-06': 'm-charm', 'y-g-07': 'm-gruff', 'y-g-09': 'm-sage',
-  'y-g-10': 'm-young', 'y-g-11': 'm-gruff', 'y-g-12': 'm-sage', 'y-g-13': 'm-young', 'y-g-14': 'm-gruff', 'y-g-15': 'm-young', 'y-g-16': 'm-charm', 'y-g-17': 'm-young',
-  'y-w-01': 'w-bright', 'y-w-02': 'w-cool', 'y-w-03': 'w-bright', 'y-w-04': 'w-cool', 'y-w-05': 'w-sly', 'y-w-06': 'w-sly', 'y-w-07': 'w-cool', 'y-w-09': 'w-shaman',
-  'y-w-10': 'w-cool', 'y-w-11': 'w-bright', 'y-w-12': 'w-shaman', 'y-w-13': 'w-sly', 'y-w-14': 'w-cool', 'y-w-15': 'w-bright', 'y-w-16': 'w-sly', 'y-w-17': 'w-cool',
+  'y-g-01': 'm-young', 'y-g-02': 'm-charm', 'y-g-03': 'm-gruff', 'y-g-04': 'm-knight', 'y-g-05': 'm-young', 'y-g-06': 'm-charm', 'y-g-07': 'm-knight', 'y-g-09': 'm-sage',
+  'y-g-10': 'm-knight', 'y-g-11': 'm-gruff', 'y-g-12': 'm-sage', 'y-g-13': 'm-young', 'y-g-14': 'm-knight', 'y-g-15': 'm-young', 'y-g-16': 'm-charm', 'y-g-17': 'm-knight',
+  'y-w-01': 'w-bright', 'y-w-02': 'w-knight', 'y-w-03': 'w-bright', 'y-w-04': 'w-knight', 'y-w-05': 'w-sly', 'y-w-06': 'w-sly', 'y-w-07': 'w-knight', 'y-w-09': 'w-shaman',
+  'y-w-10': 'w-knight', 'y-w-11': 'w-bright', 'y-w-12': 'w-shaman', 'y-w-13': 'w-sly', 'y-w-14': 'w-knight', 'y-w-15': 'w-bright', 'y-w-16': 'w-sly', 'y-w-17': 'w-knight',
 }
 
 /** 같은 소리가 겹쳐 나오지 않게 — 이만큼(ms) 안에 또 누르면 조용히 */
@@ -253,11 +279,15 @@ const castHash = (h: Hero): number => {
   for (const c of h.id) s = (s * 131 + c.charCodeAt(0)) >>> 0
   return s >>> 3
 }
+/** 성우진 B 를 녹음해 둔 결 — public/realm/voice/b/ (새 결 넷은 A 뿐) */
+const B_KINDS: ReadonlySet<VoiceKind> = new Set<VoiceKind>(['m-young', 'm-gruff', 'm-sage', 'm-elder', 'm-charm', 'w-bright', 'w-cool', 'w-sly', 'w-shaman'])
 /** 성우진 C 를 녹음해 둔 결 — public/realm/voice/c/ (tools/voicec-list.ts 가 다 있나 본다) */
 const C_KINDS: ReadonlySet<VoiceKind> = new Set<VoiceKind>(['m-young', 'm-gruff', 'm-sage', 'm-elder', 'm-charm', 'w-bright', 'w-cool', 'w-sly', 'w-shaman'])
 export function castOf(h: Hero, ruler = false): 'a' | 'b' | 'c' {
+  const k = voiceKind(h, ruler)
+  if (!B_KINDS.has(k)) return 'a'
   const t = castHash(h)
-  if (t % 3 === 2 && C_KINDS.has(voiceKind(h, ruler))) return 'c'
+  if (t % 3 === 2 && C_KINDS.has(k)) return 'c'
   return t % 2 === 1 ? 'b' : 'a'
 }
 /** 군장 말(chief-lines · chief-lines-b)은 A·B 둘뿐 — 예전처럼 반씩 */

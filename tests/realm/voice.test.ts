@@ -9,7 +9,7 @@ import { existsSync } from 'node:fs'
 import type { VoiceKind } from '../../src/ui/realm/voice.ts'
 import type { Art } from '../../src/realm/types.ts'
 
-const KINDS: readonly VoiceKind[] = ['m-young', 'm-gruff', 'm-sage', 'm-elder', 'm-charm', 'w-bright', 'w-cool', 'w-sly', 'w-shaman']
+const KINDS: readonly VoiceKind[] = ['m-young', 'm-gruff', 'm-sage', 'm-elder', 'm-charm', 'w-bright', 'w-cool', 'w-sly', 'w-shaman', 'm-knight', 'w-knight', 'm-veteran', 'w-matron']
 const ARTS: readonly Art[] = ['snipe', 'rite', 'sway', 'stand', 'ambush', 'vanguard', 'feint', 'order', 'shout']
 
 describe('장수 목소리 파일', () => {

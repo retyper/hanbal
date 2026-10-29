@@ -60,7 +60,7 @@ function polite(line: string, who: string): void {
 }
 
 const PUSHY = new Set(['waitAgainst', 'keepAgainst', 'keepAllSafe', 'roadStrong', 'roadBlind'])
-const VOICES = ['m-gruff', 'm-young', 'm-sage', 'm-elder', 'm-charm', 'w-bright', 'w-cool', 'w-sly', 'w-shaman'] as const
+const VOICES = ['m-gruff', 'm-young', 'm-sage', 'm-elder', 'm-charm', 'w-bright', 'w-cool', 'w-sly', 'w-shaman', 'm-knight', 'w-knight', 'm-veteran', 'w-matron'] as const
 const TRAITS = ['coward', 'careful', 'drinker', 'glutton', 'farmer', 'trader', 'steadfast', 'hundred', 'smith', 'ironhand', 'shaman', 'nighteye', 'river', 'mountain', 'charm']
 
 /** 씨앗으로 정해지는 굴림 (시험만) */

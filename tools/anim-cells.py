@@ -94,6 +94,9 @@ for rr in range(R):
             rgba[int(h * 0.6):, int(w * 0.75):, 3] = 0  # 제미나이 별표
         solid = rgba[..., 3] > 60
         lab, k = ndimage.label(ndimage.binary_dilation(solid, iterations=4))
+        if k == 0:
+            print(f'cell {rr + 1},{cc + 1} empty - skipped')
+            continue
         sizes = ndimage.sum(solid, lab, range(1, k + 1))
         keep = lab == 1 + int(np.argmax(sizes))
         rgba[..., 3] = np.where(keep, rgba[..., 3], 0)
