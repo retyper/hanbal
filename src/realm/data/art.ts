@@ -127,9 +127,9 @@ export type KidLine = 'archer' | 'smith' | 'shaman' | 'river' | 'mountain' | 'vi
 export const KID_LINE: Readonly<Record<KidLine, Readonly<Record<'g' | 'w', readonly string[]>>>> = {
   archer: { g: ['y-g-10', 'y-g-01'], w: ['y-w-02', 'y-w-10'] }, // 사냥꾼 궁수
   smith: { g: ['y-g-04', 'y-g-11'], w: ['y-w-11'] }, // 대장장이 집 아이
-  shaman: { g: ['y-g-09', 'y-g-12'], w: ['y-w-09'] }, // 무당 핏줄
-  river: { g: ['y-g-05'], w: ['y-w-05'] }, // 물가·바다
-  mountain: { g: ['y-g-07'], w: ['y-w-07'] }, // 산사람
+  shaman: { g: ['y-g-09', 'y-g-12'], w: ['y-w-09', 'y-w-12'] }, // 무당 핏줄
+  river: { g: ['y-g-05', 'y-g-13'], w: ['y-w-05', 'y-w-13'] }, // 물가·바다
+  mountain: { g: ['y-g-07', 'y-g-14'], w: ['y-w-07', 'y-w-14'] }, // 산사람
   village: { g: [], w: ['y-w-01', 'y-w-03'] }, // 마을·장터
   charm: { g: ['y-g-06', 'y-g-02'], w: ['y-w-06'] }, // 귀한 집 미남·미녀
   warrior: { g: ['y-g-03'], w: ['y-w-04'] }, // 반듯한 젊은 무장
