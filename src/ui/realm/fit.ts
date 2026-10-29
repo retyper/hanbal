@@ -34,3 +34,55 @@ export function fitLabels(scope: ParentNode): void {
     else b.style.fontSize = `${(px * k * 0.98).toFixed(1)}px`
   }
 }
+
+/**
+ * 잘린 글은 지하철 안내판처럼 흐른다 (형 10-29: "버튼 크기는 유지하되 텍스트가 왼쪽으로 쭉 흘러가야 하지 않나") —
+ * 말줄임(…)으로 잘린 한 줄 글만 골라, 칸은 그대로 두고 안의 글을 왼쪽으로 천천히 밀었다가 되돌린다.
+ * 지도(.map)는 빼고 판·창·띠 안만 잰다 — 넘친 것만 모양을 읽는다(가벼운 것부터). 움직임은 transform 하나 (폰 그래픽 한도 · 메모리 mobile-gpu-layer-limit).
+ */
+const MQ_SCOPE = '.sheet, .front, .modal, .selbar, .todo, .cnov, .saveov, .warp, .cardc'
+/** 흐르는 빠르기 (px/초) · 끝에서 쉬는 몫 */
+const MQ_SPEED = 28
+
+export const MQ_CSS = `
+.ap .mqon { text-overflow: clip !important; }
+.ap .mqon > .mq { display: inline-block; animation: mqgo var(--mqd, 6s) ease-in-out infinite; }
+@keyframes mqgo { 0%, 18% { transform: translateX(0); } 72%, 88% { transform: translateX(var(--mq, 0)); } 100% { transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) { .ap .mqon > .mq { animation: none; } .ap .mqon { text-overflow: ellipsis !important; } }
+`
+
+export function marquee(root: ParentNode): void {
+  const cand: HTMLElement[] = []
+  for (const s of root.querySelectorAll<HTMLElement>(MQ_SCOPE)) {
+    if (s.closest('.map') !== null) continue
+    for (const el of s.querySelectorAll<HTMLElement>('*')) {
+      if (el.children.length > 0 && !el.classList.contains('mqon')) continue // 글만 든 칸 (흐르게 감싼 것은 다시 잰다)
+      if (el.scrollWidth > el.clientWidth + 2 || el.classList.contains('mqon')) cand.push(el)
+    }
+  }
+  const go: Array<[HTMLElement, number]> = []
+  for (const el of cand) {
+    const cs = getComputedStyle(el)
+    if (cs.textOverflow !== 'ellipsis' || cs.whiteSpace !== 'nowrap') continue
+    const inner = el.querySelector<HTMLElement>(':scope > .mq')
+    const need = (inner?.scrollWidth ?? el.scrollWidth) - el.clientWidth
+    go.push([el, need])
+  }
+  for (const [el, need] of go) {
+    if (need <= 2) {
+      if (el.classList.contains('mqon')) { el.classList.remove('mqon'); el.textContent = el.querySelector('.mq')?.textContent ?? el.textContent }
+      continue
+    }
+    if (!el.classList.contains('mqon')) {
+      const t = el.textContent ?? ''
+      el.textContent = ''
+      const sp = document.createElement('span')
+      sp.className = 'mq'
+      sp.textContent = t
+      el.appendChild(sp)
+      el.classList.add('mqon')
+    }
+    el.style.setProperty('--mq', `${-(need + 6)}px`)
+    el.style.setProperty('--mqd', `${(2.4 + (need / MQ_SPEED) * 2).toFixed(1)}s`)
+  }
+}
