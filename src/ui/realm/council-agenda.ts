@@ -65,8 +65,8 @@ export interface CouncilCtx {
 const AP_NAME: Readonly<Record<Approach, string>> = { road: '대로', night: '밤길', ford: '여울', ridge: '산기슭', cliff: '절벽' }
 /** 결정 띠의 짧은 길 이름 */
 export const APPROACH_SHORT = AP_NAME
-/** 전략 회의의 바탕 그림 (public/realm/event) — 군막 그림이 오면 바꾼다 (ART-QUEUE) */
-export const COUNCIL_ART = 'event-court-hall'
+/** 전략 회의의 바탕 그림 — 군막 안 (public/realm/event · 챗지피티 10-29) */
+export const COUNCIL_ART = 'event-war-council'
 /** 고른 안의 짧은 이름 */
 const AP_LABEL: Readonly<Record<Approach, string>> = { road: '대로로', night: '밤길로', ford: '여울로', ridge: '산기슭으로', cliff: '절벽으로' }
 /** 적이 지킬 길목을 읽은 말 */

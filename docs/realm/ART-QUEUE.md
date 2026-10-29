@@ -8,7 +8,7 @@
 |---|---|---|
 | YunCheol (edu · 'YunCheol Shin') | 10-29 PM 6:58 쯤 (문구 「7시간 후」 · 11:58 에 봄) | 10-28 03:25 한도 문구 — 02:50 부터 스물다섯 장 (사건 그림 · 한 장은 거절: bow-forge) |
 | retyper92 (계정 고르기에 'YunCheol Shin · retyper92@gmail' 로 뜬다 · 왼쪽 아래 'YunCheol Shin · Free') | 10-30 PM 3:37 (문구 「내일 PM 3:37」 그대로) | 10-29 15:50 한도 문구 — 15:36 부터 열 장 (사건 romance·wanderer-arrives-g + 초상 g-31·g-39·g-72·L5·L6·L8·L9·L10) · 시각이 지나기 전이라도 한 번 넣어 볼 것 |
-| roqkfeke12 ('윤철 신') | 10-29 PM 6:45 (문구 그대로 · 10-29 16:05 에 넣어 보니 같은 문구로 막힘 — 일찍 안 풀림) | 10-28 19:20 한도 문구 — 18:40 부터 열 장 (사건 아홉 + 명치판 g-33 멧돌) |
+| roqkfeke12 ('윤철 신') | 아직 안 막힘 — 10-29 18:46 부터 넷 씀 (초상 L10 평강 · w-07 무당 여왕 · w-16 문중 어른 + 군막 바탕) | 10-28 19:20 한도 문구(10-29 18:45 풀림 확인) |
 | retyper (hephaestosian · 'retyper') | 10-29 PM 11:28 (문구 그대로) | 10-29 00:33 한도 문구 — 10-28 23:05 부터 아홉 장 (초상 나리·노을·바람 + 로고 시안·제목 로고·아이콘 시안 둘·비파형 동검 아이콘) |
 
 
@@ -18,7 +18,7 @@
 
 **★★★ 지금 (형 10-29 저녁) — 제미나이 Jay(u/4) 18:54 풀리면 내가 굽는다 (병사 동작은 에이전트가 u/0·u/1)**
    - **앱 아이콘 다시** — 지금 아이콘(public/realm-icon-*.png)은 첫 사진(초록 녹 · fBx5…webp)으로 구웠다. 형이 그 뒤에 준 깔끔한 사진(00db79af…webp · 숭실대 박물관 · 커밋 금지)으로 다시 — 제목 로고 뒤 동검과 같은 결(짙은 청동 · 매끈한 날 · 비파처럼 불룩한 아래 · 가시 한 쌍 · 짧은 슴베). 192·512·maskable·파비콘 32·64
-   - **전략 회의 바탕 — 군막 안** (챗지피티 · 사람 없는 장면이라 제미나이도 됨) — 가죽 장막을 친 군막 안, 가운데 낮은 탁자에 펼친 땅 그림(나무판에 그린 지도)과 돌 말 몇 · 등잔·횃불 빛 · 걸어 둔 맥궁과 화살통 · 사람 없음(장수 얼굴은 위에 얹는다) · 16:9 · 지금은 event-court-hall 을 빌려 쓴다(council-agenda.ts COUNCIL_ART) · 일장기·햇살 금지
+   - ✔ 10-29 저녁 받음(roqkfeke12 · event-war-council) ~~**전략 회의 바탕 — 군막 안** (챗지피티 · 사람 없는 장면이라 제미나이도 됨) — 가죽 장막을 친 군막 안, 가운데 낮은 탁자에 펼친 땅 그림(나무판에 그린 지도)과 돌 말 몇 · 등잔·횃불 빛 · 걸어 둔 맥궁과 화살통 · 사람 없음(장수 얼굴은 위에 얹는다) · 16:9 · 지금은 event-court-hall 을 빌려 쓴다(council-agenda.ts COUNCIL_ART) · 일장기·햇살 금지~~
    - **둥근 청동 얼굴 테** — 영웅전·단련터·알림의 둥근 얼굴(지금 CSS 2px 줄). 가운데 투명 · 청동에 옅은 녹 · 위아래 작은 징. 빈 얼굴 칸(? 자리)도 같은 테에 어두운 속
 
 **★★ 맨 먼저 (형 10-29): 제목 로고 「삼한열전」 뒤에 비파형 동검을 가로로 눕혀 겹친다** — 챗지피티 계정이 풀리면 바로. 붙일 것 두 장: 지금 제목 로고(public/realm/logo/title.png · 맥궁 지운 글자만) + 형이 준 동검 사진 public/realm/00db79af-897d-4ad4-8dbf-ecb32c544b74.webp(깔끔한 쪽 · 박물관 사진이라 커밋 금지). 손잡이·코등이 없는 날 · 아래 반이 비파처럼 불룩 · 가운데쯤 가시 한 쌍 · 등대가 끝까지 지나 아래로 짧은 슴베 — 사진 실루엣 그대로. 글자가 동검에 묻히지 않게(동검은 한 톤 어둡게 · 글자 둘레 어두운 테) · 진짜 투명 바탕. 손으로 오려 붙인 시험은 속이 지워져 버렸다(밝기로 따서 어두운 녹이 빠짐) — 다시 하지 말 것. 아이콘(동검 하나)은 10-29 올림.
@@ -27,7 +27,7 @@
    10-28 새벽 스물여섯 장 바꿈(hephaestosian 하나 · edu 스물다섯): invade-raid · invade-siege · invade-field · take-town · captured-ours · capture · plot-assassin · plot-bribe · plot-burn · plot-rescue · plot-rumor · plot-sow · plot-spy · truce-pact · tribute-bow · court-hall · festival · flood · plague · dream · newborn · alliance-oath · defection · divination · egg-birth · eight-harbours
    10-28 오후 넷 더(retyper92): expedition-return · goguryeo-hunt · golden-egg · iron-trade
    ✔ 10-28 저녁 나머지 아홉(roqkfeke12): night-raid · outside-envoy · palisade-build · people-quarrel · salt-makers · sniped-commander · spy-rumor · yeonggo · bow-forge(다 만든 활을 건네는 장면으로 바꿔 통과) — **사건 그림 서른아홉 끝** (19b8e75)
-   ★ 명치판 주문서 = public/_tmp/busts27.json (head+id+tail · _queue 는 판에 쓰이는 열일곱 먼저 · _unused 열은 지금 판에 안 쓰이는 옛 그림) · 굽기 scratchpad bakeredo.py <id> <png> (같은 이름에 덮어씀 · 원본은 assets_src/realm/bust/<id>-gpt2.png) · ✔ g-33 멧돌 10-28 · ✔ g-37 읍즙 · g-40 아단 · w-08 이슬 · w-09 단비 · w-11 소리 10-28 밤 (retyper92) · ✔ w-12 나리 · w-14 노을 · w-47 바람 10-28 밤 (hephaestosian) · ✔ w-48 무등 · w-49 구름 · w-51 당궁 · w-52 송비 · w-53 가비 · w-55 누리 · w-56 소금 · w-79 솔매 10-29 (edu) — **판에 쓰이는 열일곱 끝** · 남은 열은 _unused(지금 판에 안 나오는 이) · ✔ g-31 금하 · g-39 쇠보 · g-72 쇠울 · L5 선녀 · L6 정견모주 · L8 낙랑 공주 · L9 웅녀 10-29 오후 (retyper92) · ✗ L10 평강은 받았으나 안 구움(활이 긴 장궁처럼 나오고 시위가 얼굴을 가로지름 · 원본 ~/Downloads/gptev-bust-l-L10-pyeonggang.png) — 다시 할 때 "short strongly recurved Korean horn bow, equal limbs" 로 · **남은 셋: L10 평강 · w-07 무당 여왕 · w-16 문중 어른**
+   ★ 명치판 주문서 = public/_tmp/busts27.json (head+id+tail · _queue 는 판에 쓰이는 열일곱 먼저 · _unused 열은 지금 판에 안 쓰이는 옛 그림) · 굽기 scratchpad bakeredo.py <id> <png> (같은 이름에 덮어씀 · 원본은 assets_src/realm/bust/<id>-gpt2.png) · ✔ g-33 멧돌 10-28 · ✔ g-37 읍즙 · g-40 아단 · w-08 이슬 · w-09 단비 · w-11 소리 10-28 밤 (retyper92) · ✔ w-12 나리 · w-14 노을 · w-47 바람 10-28 밤 (hephaestosian) · ✔ w-48 무등 · w-49 구름 · w-51 당궁 · w-52 송비 · w-53 가비 · w-55 누리 · w-56 소금 · w-79 솔매 10-29 (edu) — **판에 쓰이는 열일곱 끝** · 남은 열은 _unused(지금 판에 안 나오는 이) · ✔ g-31 금하 · g-39 쇠보 · g-72 쇠울 · L5 선녀 · L6 정견모주 · L8 낙랑 공주 · L9 웅녀 10-29 오후 (retyper92) · ✗ L10 평강은 받았으나 안 구움(활이 긴 장궁처럼 나오고 시위가 얼굴을 가로지름 · 원본 ~/Downloads/gptev-bust-l-L10-pyeonggang.png) — 다시 할 때 "short strongly recurved Korean horn bow, equal limbs" 로 · ✔ **L10 평강(짧은 각궁·어깨 가림) · w-07 무당 여왕 · w-16 문중 어른 10-29 저녁 (roqkfeke12) — 명치판 다시 그리기 끝**
    ★10-28 명치판 — 형이 다시 그리라고 준 목록 (사건 그림 열셋 다음 · 한 사람마다 새 대화 · 민무늬 #1c2129 판): g-31-buyeo-geumha · g-33-jeoga-metdol · g-37-eumjeup-jeup · g-39-guya-soebo · g-40-anya-adan · g-72-gyeonji-soeul · l-L5-seonyeo · l-L6-jeonggyeon-moju · l-L8-nangnang-princess · l-L9-ungnyeo · l-L10-pyeonggang · w-07-shaman-queen · w-08-mahan-warrior · w-09-byeonhan-smith · w-11-assassin · w-12-court-dancer · w-14-feast-spy · w-16-clan-matriarch · w-47-gosaburi-baram · w-48-mujin-mudeung · w-49-goryong-gureum · w-51-haseulla-dangung · w-52-biryuna-songbi · w-53-hwanna-gabi · w-55-guga-nuri · w-56-dongokjeo-sogeum · w-79-yangmaek-solmae
    그다음(형: "퀄리티 떨어져 보이는 것 계속 수정"): 세로 화면 event-v(태몽·탄생) · 제미나이로 받은 여인 명치판 w-29~45·w-79·w-80 · 계절 띠 넷 · 싸움터 배경 battle-field
 
