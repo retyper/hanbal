@@ -24,15 +24,27 @@ import { otherEnd } from '../../src/realm/season.ts'
 import type { Hero, Realm } from '../../src/realm/types.ts'
 import { P } from '../../src/tune/params.ts'
 import { councilAgendas, takeCount, type Agenda } from '../../src/ui/realm/council-agenda.ts'
-import { fill, SAYS, TRAIT_SAYS, VOLUNTEER, VOLUNTEER_ASK, type Move } from '../../src/ui/realm/council-says.ts'
+import { fill, NEED, sageuk, SAYS, TRAIT_SAYS, VOLUNTEER, VOLUNTEER_ASK, type Move } from '../../src/ui/realm/council-says.ts'
 
 const CTX = { canLead: () => true, rationNow: 2, rationCost: () => 10, grain: 1000 }
-const MOVES: readonly Move[] = ['waitAdvise', 'waitAgainst', 'keepAdvise', 'keepAgainst', 'roadStrong', 'roadSafe', 'roadBlind', 'sneakRead', 'sneakSame', 'sneakBlind', 'rationWall', 'rationFar', 'rationFrugal']
+const MOVES = Object.keys(NEED) as Move[]
 /** 받침 있는 낱말 · 없는 낱말 두 벌 */
 const VARS = [
-  { foe: '골포국', here: '골포 도읍', there: '갯벌 마을', tf: '아라국', tn: '안개골', size: '만만치 않은 군사', take: '7할', keep: '3할', ap: '여울', read: '적은 여울목에 군사를 둘 것입니다. ', seasons: '2계절' },
-  { foe: '고자', here: '고자', there: '미리', tf: '구야', tn: '돌섬', size: '얼마간의 군사', take: '6할', keep: '4할', ap: '대로', read: '', seasons: '3계절' },
+  { foe: '골포국', here: '골포 도읍', there: '갯벌 마을', tf: '아라국', tn: '안개골', size: '만만치 않은 군사', go: '336명', stay: '144명', all: '480명', ap: '여울', read: '적은 여울목에 군사를 둘 것입니다. ', seasons: '2계절', rnow: '4계절치', rmore: '5계절치', rcost: '120' },
+  { foe: '고자', here: '고자', there: '미리', tf: '구야', tn: '돌섬', size: '얼마간의 군사', go: '70명', stay: '30명', all: '100명', ap: '대로', read: '', seasons: '3계절', rnow: '5계절치', rmore: '6계절치', rcost: '15' },
 ]
+
+/** 한 마디 — 처지마다 들어갈 칸(곳 · 숫자 · 길)이 다 있고 · 세 토막만큼 길고 · 사극 말투로 바꿔도 높임 (형 10-29: "어디는 어떤 이유 때문에 · 어떻게 해 달라") */
+function checkLine(t: string, mv: Move, who: string): void {
+  for (const k of NEED[mv]) assert.ok(t.includes(`{${k}`), `${who} — {${k}} 가 없다: ${t}`)
+  for (const v of VARS) {
+    const f = fill(t, v)
+    // 길목을 읽은 말이 늘 앞에 붙는 처지(sneakRead·sneakSame)는 그 말 없이 재지 않는다
+    if (v.read === '' && mv !== 'sneakRead' && mv !== 'sneakSame') assert.ok(f.length >= 35, `${who} — 너무 짧다(${f.length}): ${f}`)
+    polite(f, who)
+    polite(sageuk(f), who)
+  }
+}
 
 /** 문장마다 높임으로 끝나고, 시키는 말이 없다 */
 function polite(line: string, who: string): void {
@@ -41,12 +53,13 @@ function polite(line: string, who: string): void {
   for (const s of line.split(/(?<=[.!?])\s+/)) {
     const t = s.trim()
     if (t === '') continue
-    assert.match(t, /(니다|지요|시오|세요)[.!?]$/, `${who}: ${t}`)
-    if (/십시오[.!]$/.test(t)) assert.match(t, /주십시오[.!]$/, `군주에게 시키는 말 ${who}: ${t}`)
+    assert.match(t, /(니다|지요|시오|세요|소서)[.!?]$/, `${who}: ${t}`)
+    if (/(십시오|시옵소서)[.!]$/.test(t)) assert.match(t, /주(십시오|시옵소서)[.!]$/, `군주에게 시키는 말 ${who}: ${t}`)
+    assert.ok(!/(에요|예요|해요|어요|아요)[.!?]/.test(t), `어린애 말투 ${who}: ${t}`)
   }
 }
 
-const PUSHY = new Set(['waitAgainst', 'keepAgainst', 'roadStrong', 'roadBlind'])
+const PUSHY = new Set(['waitAgainst', 'keepAgainst', 'keepAllSafe', 'roadStrong', 'roadBlind'])
 const VOICES = ['m-gruff', 'm-young', 'm-sage', 'm-elder', 'm-charm', 'w-bright', 'w-cool', 'w-sly', 'w-shaman'] as const
 const TRAITS = ['coward', 'careful', 'drinker', 'glutton', 'farmer', 'trader', 'steadfast', 'hundred', 'smith', 'ironhand', 'shaman', 'nighteye', 'river', 'mountain', 'charm']
 
@@ -79,12 +92,17 @@ describe('전략 회의의 말', () => {
         const ls = SAYS[k][mv]
         assert.ok(ls.length >= 2, `${k} ${mv}: ${ls.length}`)
         assert.equal(new Set(ls).size, ls.length, `${k} ${mv} 겹침`)
-        for (const t of ls) for (const v of VARS) polite(fill(t, v), `${k} ${mv}`)
+        for (const t of ls) checkLine(t, mv, `${k} ${mv}`)
       }
     }
-    for (const [tr, ms] of Object.entries(TRAIT_SAYS)) for (const [mv, ls] of Object.entries(ms)) for (const t of ls ?? []) for (const v of VARS) polite(fill(t, v), `${tr} ${mv}`)
+    for (const [tr, ms] of Object.entries(TRAIT_SAYS)) for (const [mv, ls] of Object.entries(ms)) for (const t of ls ?? []) checkLine(t, mv as Move, `${tr} ${mv}`)
     for (const vol of VOLUNTEER) for (const t of vol.intro) polite(t, vol.trait)
     for (const [k, x] of Object.entries(VOLUNTEER_ASK)) for (const t of [...x.leads, ...x.lead]) for (const v of VARS) polite(fill(t, v), `${k} 나섬`)
+  })
+
+  it('사극 말투 — -사옵니다 · -옵니다 · -시옵소서', () => {
+    assert.equal(sageuk('성이 굳습니다. 오래 걸립니다. 군량을 늘려 주십시오. 지금 치시지요.'), '성이 굳사옵니다. 오래 걸리옵니다. 군량을 늘려 주시옵소서. 지금 치시지요.')
+    assert.equal(sageuk('것입니다 · 하겠습니다 · 됩니다'), '것이옵니다 · 하겠사옵니다 · 되옵니다')
   })
 
   it('조사가 받침을 따른다', () => {

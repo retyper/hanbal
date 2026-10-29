@@ -23,7 +23,7 @@ import { hasTrait, isRuler } from '../../realm/heroes.ts'
 import { forceOf, otherEnd } from '../../realm/season.ts'
 import type { Approach, Army, Hero, Realm } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
-import { fill, pickIdx, sayOf, VOLUNTEER, VOLUNTEER_ASK, type Move as SayMove } from './council-says.ts'
+import { fill, pickIdx, sageuk, sayOf, VOLUNTEER, VOLUNTEER_ASK, type Move as SayMove } from './council-says.ts'
 import { voiceKind } from './voice.ts'
 
 /** 고르면 출정 판에 무엇이 걸리나 */
@@ -152,7 +152,9 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
     if (h !== undefined) used.add(h.id)
     return h
   }
-  const base = { foe, here, there, seasons: `${m.seasons}계절` }
+  const base = { foe, here, there, seasons: `${m.seasons}계절`, all: `${ours.toLocaleString('ko-KR')}명` }
+  // 맞서는 이 — 겁쟁이·신중한 이가 아니면 누구든, 거친 이가 먼저 (한 사람만 말하면 회의가 아니다 · 형 10-29: "대사가 한 줄밖에 안 뜬다")
+  const counter = (): Hero | undefined => pickSeat((h) => h.mu + (bold(h) ? 5 : 0), (h) => !timid(h))
   const say = (h: Hero, move: SayMove, v: Readonly<Record<string, string>> = {}): string => sayOf(h, move, { ...base, ...v }, r.season)
 
   // ① 때 — 호전적인 나라가 우리 땅 곁에 큰 군사를 두었으면, 먼저 치게 두고 성에서 맞아 힘을 뺀 뒤에 치자
@@ -166,7 +168,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
     const wise = pickSeat((h) => h.ryak + (calm(h) ? 2 : 0) - (bold(h) ? 2 : 0), (h) => h.ryak >= P.realm.cnReadRyak)
     if (wise !== undefined) {
       const voices: Voice[] = [{ hero: wise, label: '기다린다', move: 'waitAdvise', line: say(wise, 'waitAdvise', { size: sizeWord(foeMen, ours) }), opt: { k: 'wait' } }]
-      const hot = pickSeat((h) => h.mu, bold)
+      const hot = counter()
       voices.push(hot !== undefined
         ? { hero: hot, label: '지금 친다', move: 'waitAgainst', line: say(hot, 'waitAgainst'), opt: { k: 'go' } }
         : { hero: null, label: '지금 친다', line: '기다리지 않는다 — 이번 계절에 친다', opt: { k: 'go' } })
@@ -184,12 +186,14 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
     const keepPct = Math.round((1 - P.realm.cnKeepTake) * 10)
     const careful = pickSeat((h) => h.tong + (calm(h) ? 3 : 0) - (bold(h) ? 5 : 0) - (hasTrait(h, 'drinker') ? 3 : 0))
     if (careful !== undefined) {
-      const v = { tf: r.factions[t.faction]?.name ?? '', tn: r.nodes[t.at]?.name ?? '', size: sizeWord(t.men, ours), take: `${10 - keepPct}할`, keep: `${keepPct}할` }
+      const v = { tf: r.factions[t.faction]?.name ?? '', tn: r.nodes[t.at]?.name ?? '', size: sizeWord(t.men, ours), go: `${go.toLocaleString('ko-KR')}명`, stay: `${(ours - go).toLocaleString('ko-KR')}명` }
       const voices: Voice[] = [{ hero: careful, label: `${10 - keepPct}할만 데려간다`, move: 'keepAdvise', line: say(careful, 'keepAdvise', v), opt: { k: 'take', share: P.realm.cnKeepTake } }]
+      // 맞서는 말 — 승산이 빠듯하면 「수비가 단단하니 다 데려가자」, 넉넉하면 「빨리 끝내고 돌아오자」
       const close = m.win === null || m.win[0] < P.realm.cnCloseOdds
-      const hot = close ? pickSeat((h) => h.mu, bold) : undefined
+      const hot = counter()
+      const mv: SayMove = close ? 'keepAgainst' : 'keepAllSafe'
       voices.push(hot !== undefined
-        ? { hero: hot, label: '모두 데려간다', move: 'keepAgainst', line: say(hot, 'keepAgainst'), opt: { k: 'take', share: 1 } }
+        ? { hero: hot, label: '모두 데려간다', move: mv, line: say(hot, mv), opt: { k: 'take', share: 1 } }
         : { hero: null, label: '모두 데려간다', line: '나누지 않는다 — 군사를 모두 데려간다', opt: { k: 'take', share: 1 } })
       out.push({ id: 'keep', title: '군사를 얼마나 데려갈까', voices })
     }
@@ -224,7 +228,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
       const leads = h.id === a.hero
       if (!leads && !ctx.canLead(h.id)) continue
       const ask = VOLUNTEER_ASK[voiceKind(h)][leads ? 'leads' : 'lead']
-      const line = `${vol.intro[pickIdx(`${h.id}:vol:${r.season}`, vol.intro.length)]} ${fill(ask[pickIdx(`${h.id}:ask:${r.season}`, ask.length)]!, { ap: AP_NAME[vol.ap] })}`
+      const line = sageuk(`${vol.intro[pickIdx(`${h.id}:vol:${r.season}`, vol.intro.length)]} ${fill(ask[pickIdx(`${h.id}:ask:${r.season}`, ask.length)]!, { ap: AP_NAME[vol.ap], there })}`)
       add({ hero: h, label: `${AP_LABEL[vol.ap]}${leads ? '' : ` · ${josa(h.name, '이', '가')} 이끈다`}`, move: 'volunteer', line, opt: { k: 'route', ap: vol.ap, ...(leads ? {} : { lead: h.id }) } }, vol.ap)
       break
     }
@@ -262,10 +266,16 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
     if (steward !== undefined) {
       const mv: SayMove = m.walled ? 'rationWall' : 'rationFar'
       const tight = ctx.grain - ctx.rationCost(more) < ctx.rationCost(more)
-      const voices: Voice[] = [{ hero: steward, label: '군량을 더', move: mv, line: say(steward, mv), opt: { k: 'ration', extra: more } }]
-      const frugal = tight ? best(seats.filter((h) => h.id !== steward.id), (h) => h.chi + (hasTrait(h, 'farmer') || hasTrait(h, 'trader') ? 3 : 0)) : undefined
+      const rv = { rnow: `${m.seasons + now}계절치`, rmore: `${m.seasons + more}계절치`, rcost: `${Math.max(0, ctx.rationCost(more) - ctx.rationCost(now)).toLocaleString('ko-KR')}` }
+      used.add(steward.id)
+      const voices: Voice[] = [{ hero: steward, label: '군량을 더', move: mv, line: say(steward, mv, rv), opt: { k: 'ration', extra: more } }]
+      // 맞서는 말 — 국고가 빠듯하면 「곳간을 아끼자」, 아니면 「이 길이면 지금 것으로 넉넉하다」(아직 말하지 않은 이 먼저)
+      const others = seats.filter((h) => h.id !== steward.id)
+      const fresh = others.filter((h) => !used.has(h.id))
+      const frugal = best(fresh.length > 0 ? fresh : others, (h) => h.chi + (hasTrait(h, 'farmer') || hasTrait(h, 'trader') ? 3 : 0))
+      const fmv: SayMove = tight ? 'rationFrugal' : 'rationEnough'
       voices.push(frugal !== undefined
-        ? { hero: frugal, label: '군량은 그대로', move: 'rationFrugal', line: say(frugal, 'rationFrugal'), opt: { k: 'ration', extra: now } }
+        ? { hero: frugal, label: '군량은 그대로', move: fmv, line: say(frugal, fmv, rv), opt: { k: 'ration', extra: now } }
         : { hero: null, label: '군량은 그대로', line: '지금 챙긴 만큼으로 간다', opt: { k: 'ration', extra: now } })
       out.push({ id: 'ration', title: '군량을 얼마나 챙길까', voices })
     }
