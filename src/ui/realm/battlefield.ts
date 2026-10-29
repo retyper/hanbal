@@ -677,6 +677,21 @@ function warBg(art: string, g: WarGround, def = false): string {
 }
 
 /** 그 판의 이름 — 땅에서 딴다 (prose.battleName). 옛 보고처럼 판 기록이 모자라면 곳 이름으로 */
+/**
+ * 이 싸움이 어떤 판인가: 우리의 기습 · 적의 기습 · 우리의 공성 · 적의 공성(수성) · 들판에서 맞붙음 · 우리가 침 · 적이 쳐들어옴.
+ * 싸움 이름 왼쪽에 꼬리표로 (형 10-29: "이게 어디서 어떻게 싸운 건지 모르겠어")
+ */
+export function warKind(r: Realm, l: BattleLine, me: string): { word: string; us: boolean } {
+  const weAtk = l.atkFaction === me
+  const node = r.nodes[l.node]
+  if (l.field === true) return { word: '들판에서 맞붙음', us: weAtk }
+  if (l.ambush === 'success') return { word: weAtk ? '우리의 기습' : '적의 기습', us: weAtk }
+  if (l.ambush === 'caught') return { word: weAtk ? '기습이 들킴' : '적의 기습을 막음', us: !weAtk }
+  const walled = node !== undefined && (node.kind === 'fort' || node.kind === 'capital' || node.tags.includes('palisade'))
+  if (walled) return { word: weAtk ? '우리의 공성' : '적의 공성', us: weAtk }
+  return { word: weAtk ? '우리가 침' : '적이 쳐들어옴', us: weAtk }
+}
+
 export function warName(r: Realm, l: BattleLine): string {
   return r.nodes[l.node] !== undefined ? battleName(r, l) : `${l.field === true && l.edge !== undefined ? fieldName(r, l.edge) : l.node} 싸움`
 }
@@ -1468,7 +1483,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   // 위 카드는 그 싸움터를 무대로 — 길·성문·물가·눈밭·밤 (형 10-23: "길에서 마주치거나 수성하거나 공성할 때는 그 위치에 맞게 배경")
   // 머리 카드도 같은 하늘 — 그림 위에 한 겹 (어둠 · 노을 · 새벽빛)
   const skyLayer = sky === ' dk-night' ? 'linear-gradient(#0a1440aa, #05081add), ' : sky === ' dk-dusk' ? 'linear-gradient(#ff7a2a77, #a0302a44 50%, #1a0a0a88), ' : sky === ' dk-dawn' ? 'linear-gradient(#ffd8a866, #8aa0d044 50%, #0d0f1366), ' : ''
-  h += `<div class="wtop" style="--wtbg:${skyLayer}url('${warBg(art, ground, !weAtk)}')"><div class="wrh"><b>${esc(warName(after, l))}</b>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}${rounds.length > 0 ? '<button class="wlogb" data-war="log" aria-label="합 기록 보기">기록</button>' : ''}<button class="whelp" data-war="help" aria-label="설명 보기">?</button></div>${clockHtml(l, shown)}`
+  h += `<div class="wtop" style="--wtbg:${skyLayer}url('${warBg(art, ground, !weAtk)}')"><div class="wrh"><span class="wrk">${((k) => `<i class="wkind ${k.us ? 'us' : 'foe'}">${esc(k.word)}</i>`)(warKind(prev, l, me))}<b>${esc(warName(after, l))}</b></span>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}${rounds.length > 0 ? '<button class="wlogb" data-war="log" aria-label="합 기록 보기">기록</button>' : ''}<button class="whelp" data-war="help" aria-label="설명 보기">?</button></div>${clockHtml(l, shown)}`
   // 땅 띠 — 전장 바로 위 제 자리에 (형 10-26: "목책이랑 나루 둘다 가운데 설명 '우리에게 유리' 이게 다른거랑 겹쳐짐")
   const terr = terrChips(prev, l, me, fname(foeF)).map((c) => terrChipHtml(art, c, 'wtc')).join('')
   h += `<div class="wvs">${side(ourI, ourHero, ourF, ourName, 'us')}<img class="vs" src="${art}ui/vs.png" alt="VS">${side(foeI, foeHero, foeF, foeName, 'foe')}</div>${terr !== '' ? `<div class="wterr">${terr}</div>` : ''}${fieldHtml()}</div>`
@@ -1799,6 +1814,9 @@ export const WAR_CSS = `
 .ap .wtop .ws b, .ap .wtop .ws > span, .ap .wtop .wn, .ap .wrh { text-shadow: 0 1px 3px #000, 0 0 8px #000c; }
 .ap .wtop .wf { box-shadow: 0 4px 14px #000c; }
 @media (max-width: 520px) { .ap .wtop .wrh { font-size: 17px; } }
+.ap .wrh .wrk { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.ap .wrh .wkind { font-style: normal; font-size: 13px; font-weight: 800; letter-spacing: .02em; padding: 2px 9px; border-radius: 9px; text-shadow: none; white-space: nowrap; }
+.ap .wrh .wkind.us { background: #2f5a8acc; color: #e6f2ff; border: 1px solid #8ab8e8; } .ap .wrh .wkind.foe { background: #8a2a1ecc; color: #ffe3dc; border: 1px solid #e8907a; }
 .ap .wrh { position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 0; color: var(--gold); font-size: 21px; margin: -6px 0 4px; }
 .ap .wrh b { padding: 2px 18px 3px; border-radius: 4px; background: linear-gradient(#2a1c0ee6, #1a1008e6); border: 1px solid #8a6a3a; box-shadow: 0 2px 8px #000c; }
 .ap .wrh .mute { font-size: 12px; margin-top: 2px; }
@@ -2249,11 +2267,14 @@ export const WAR_CSS = `
 @keyframes tknin { from { opacity: 0; translate: -60% 0; } to { opacity: 1; translate: 0 0; } }
 .ap .ws .wdmg, .ap .ws .wmdmg { position: absolute; left: 50%; z-index: 6; pointer-events: none; white-space: nowrap; opacity: 0; font-style: normal; translate: -50% 0;
   text-shadow: 0 0 3px #000, 0 2px 0 #000, 0 0 10px #000; animation: wdmgpop 1.6s ease-out var(--hd, 1.2s) both; }
-.ap .ws .wdmg { top: 18px; font-size: clamp(30px, 9vw, 46px); font-weight: 900; color: #ff4a2a; -webkit-text-stroke: 1.5px #2a0500; }
-.ap .ws.foe .wdmg { color: #ffd23a; -webkit-text-stroke-color: #2a1a00; }
+.ap .ws .wdmg { top: 18px; font-size: clamp(40px, 13vw, 68px); font-weight: 900; color: #ff4a2a; -webkit-text-stroke: 2px #2a0500;
+  text-shadow: 0 0 4px #000, 0 3px 0 #000, 0 0 18px #ff2a00, 0 0 34px #ff5a1acc; animation: wdmgpop 2.1s cubic-bezier(.2, 1.4, .4, 1) var(--hd, 1.2s) both; }
+.ap .ws.foe .wdmg { color: #ffd23a; -webkit-text-stroke-color: #2a1a00; text-shadow: 0 0 4px #000, 0 3px 0 #000, 0 0 18px #ffb000, 0 0 34px #ffd23acc; }
+/* 줄어든 머릿수는 붉게 번쩍이며 튄다 (형 10-29: "데미지 입을 때 명수 깎이는 게 너무 안 보여 · 더 강하게") */
+.ap .wn.swap u { color: #ff6a4a; animation: wrin .3s ease-out 2.4s both, wnhit .9s ease-out 2.4s both; } @keyframes wnhit { 0% { transform: scale(1.6); color: #ff3a1a; text-shadow: 0 0 14px #ff2a00; } 60% { transform: scale(1); } 100% { color: inherit; } }
 .ap .ws .wmdmg { top: 70px; font-size: clamp(16px, 4.6vw, 22px); font-weight: 900; color: #ffb0a0; animation-delay: calc(var(--hd, 1.2s) + .15s); }
 .ap .ws .wmdmg.up { color: #b8f0a0; }
-@keyframes wdmgpop { 0% { opacity: 0; transform: scale(.3); } 14% { opacity: 1; transform: scale(1.45); } 28% { transform: scale(1); } 78% { opacity: 1; transform: translateY(-18px); } 100% { opacity: 0; transform: translateY(-34px); } }
+@keyframes wdmgpop { 0% { opacity: 0; transform: scale(.2); } 10% { opacity: 1; transform: scale(1.7) rotate(-4deg); } 22% { transform: scale(1) rotate(0); } 30% { transform: scale(1.12); } 38% { transform: scale(1); } 85% { opacity: 1; transform: translateY(-14px); } 100% { opacity: 0; transform: translateY(-30px); } }
 @media (max-width: 520px) { .ap .ws .wdmg { top: 8px; } .ap .ws .wmdmg { top: 52px; } }
 .ap .wr.fast .ws .wdmg, .ap .wr.fast .ws .wmdmg { animation-delay: 0s !important; }
 .ap .wrd.slow .wcmds { animation-name: wrflip; }
