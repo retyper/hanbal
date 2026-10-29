@@ -125,9 +125,9 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
  */
 export type KidLine = 'archer' | 'smith' | 'shaman' | 'river' | 'mountain' | 'village' | 'charm' | 'warrior'
 export const KID_LINE: Readonly<Record<KidLine, Readonly<Record<'g' | 'w', readonly string[]>>>> = {
-  archer: { g: ['y-g-10', 'y-g-01'], w: ['y-w-02'] }, // 사냥꾼 궁수
-  smith: { g: ['y-g-04'], w: [] }, // 대장장이 집 아이
-  shaman: { g: ['y-g-09'], w: ['y-w-09'] }, // 무당 핏줄
+  archer: { g: ['y-g-10', 'y-g-01'], w: ['y-w-02', 'y-w-10'] }, // 사냥꾼 궁수
+  smith: { g: ['y-g-04', 'y-g-11'], w: ['y-w-11'] }, // 대장장이 집 아이
+  shaman: { g: ['y-g-09', 'y-g-12'], w: ['y-w-09'] }, // 무당 핏줄
   river: { g: ['y-g-05'], w: ['y-w-05'] }, // 물가·바다
   mountain: { g: ['y-g-07'], w: ['y-w-07'] }, // 산사람
   village: { g: [], w: ['y-w-01', 'y-w-03'] }, // 마을·장터
