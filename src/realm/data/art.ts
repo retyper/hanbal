@@ -249,7 +249,7 @@ export const GOOD_ICON: Readonly<Record<Good, string>> = { grain: 'good-rice', i
 const KIND_ICON: Readonly<Record<NodeKind, string>> = {
   capital: 'settle-capital',
   village: 'settle-farm-village',
-  sodo: 'settle-sodo-village',
+  sodo: 'settle-sodo-grove',
   port: 'settle-port-town',
   fort: 'settle-hill-fort',
   ironMine: 'settle-iron-town',
@@ -272,7 +272,7 @@ const NODE_ICON: Readonly<Record<string, string>> = {
   'goja-vil': 'settle-salt-town',
   'anya-vil': 'settle-mountain-hold',
   'm-baekje-v': 'settle-river-town',
-  'm-sodo': 'settle-sodo-village',
+  'm-sodo': 'settle-sodo-grove',
 }
 
 /**

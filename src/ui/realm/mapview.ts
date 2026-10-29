@@ -241,17 +241,24 @@ export const MAP_CSS = `
 .map .nd .ring { position: absolute; left: 50%; top: 42%; width: 82%; aspect-ratio: 1; transform: translate(-50%, -50%);
   border-radius: 50%; border: 3px solid var(--c); box-shadow: 0 0 6px var(--c); pointer-events: none; display: none; }
 .map .nd.sel .ring, .map .nd.tgt .ring, .map .nd.threat .ring { display: block; }
-/* 소도 — 신성한 빛 (숨 쉬는 둘레 · 천천히 도는 빛살 · 오르는 빛 알갱이) — 누르라는 고리처럼 커졌다 작아지지 않는다 */
-.map .nd.k-sodo .holy { position: absolute; left: 50%; top: 42%; width: 230%; aspect-ratio: 1; transform: translate(-50%, -50%); pointer-events: none; z-index: 0; border-radius: 50%; background: radial-gradient(circle, #fffbe8f0 0%, #fff0b8a0 24%, #ffe7a040 46%, #ffe7a000 68%); mix-blend-mode: screen; animation: holyb 4.2s ease-in-out infinite alternate; }
-/* 하늘에서 내리는 빛기둥 */ .map .nd.k-sodo .holy::after { content: ""; position: absolute; left: 50%; bottom: 50%; width: 22%; height: 190%; transform: translateX(-50%); background: linear-gradient(#fff6d000, #fff6d066 55%, #fffbe8cc); filter: blur(3px); border-radius: 50% 50% 0 0; }
-.map .nd.k-sodo .holy::before { content: ''; position: absolute; inset: -10%; border-radius: 50%; background: repeating-conic-gradient(from 0deg, #fff3c838 0deg 5deg, #0000 5deg 30deg); -webkit-mask: radial-gradient(circle, #000 18%, #0000 68%); mask: radial-gradient(circle, #000 18%, #0000 68%); animation: holyr 48s linear infinite; }
-.map .nd.k-sodo .holy > i { position: absolute; bottom: 42%; width: 6%; aspect-ratio: 1; border-radius: 50%; background: #fff8dc; box-shadow: 0 0 6px 2px #ffe7a0; opacity: 0; animation: holym 5s ease-in infinite; }
-.map .nd.k-sodo .holy > i:nth-child(1) { left: 36%; } .map .nd.k-sodo .holy > i:nth-child(2) { left: 56%; animation-delay: 1.3s; } .map .nd.k-sodo .holy > i:nth-child(3) { left: 46%; animation-delay: 2.6s; } .map .nd.k-sodo .holy > i:nth-child(4) { left: 62%; animation-delay: 3.8s; }
-@keyframes holyb { from { opacity: .55; } to { opacity: 1; } }
-@keyframes holyr { to { transform: rotate(360deg); } }
-@keyframes holym { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: .95; } 100% { transform: translateY(-260%); opacity: 0; } }
-.map .nd.k-sodo img.st { position: relative; z-index: 1; filter: drop-shadow(0 0 6px #fff1c0); }
-@media (prefers-reduced-motion: reduce) { .map .nd.k-sodo .holy, .map .nd.k-sodo .holy::before, .map .nd.k-sodo .holy > i { animation: none; } }
+/* 소도 — 큰 나무에 방울과 북을 단 신성한 숲 (형 10-29: "신성한 중립 지역이니까 맵에서도 제대로").
+   둘레에 금줄(왼새끼 · 솔가지 · 숯 · 한지 띠)을 두르고, 방울 소리가 물결처럼 퍼지고, 한지 띠가 바람에 날아오른다.
+   빛은 미리 구운 그림(그 폰은 CSS 그러데이션·거르개를 못 그린다 — gfxsafe) · 움직임은 transform·opacity 만 · 햇살 무늬 금지 */
+.map .nd.k-sodo .sg { position: absolute; left: 50%; top: 40%; width: 150%; transform: translate(-50%, -50%); pointer-events: none; z-index: 0; opacity: .6; animation: holyb 4.2s ease-in-out infinite alternate; }
+/* 금줄 — 땅에 납작하게. 뒤쪽 반은 숲 뒤, 앞쪽 반은 숲 앞 (같은 그림을 위아래로 잘라 둘) */
+.map .nd.k-sodo .sr { position: absolute; left: 50%; top: 84%; width: 190%; aspect-ratio: 2.4; transform: translate(-50%, -50%); pointer-events: none; z-index: 0; clip-path: inset(0 0 50% 0); }
+.map .nd.k-sodo .sr.f { z-index: 2; clip-path: inset(50% 0 0 0); }
+/* 방울 소리 — 금줄 안에서 물결처럼 퍼진다 */
+.map .nd.k-sodo .sp { position: absolute; left: 50%; top: 84%; width: 150%; aspect-ratio: 2.4; border-radius: 50%; border: 2px solid #fff3c8; pointer-events: none; z-index: 0; opacity: 0; animation: holyp 4.8s ease-out infinite; }
+.map .nd.k-sodo .sp + .sp { animation-delay: 2.4s; }
+/* 한지 띠 — 바람에 하나씩 날아오른다 (낱낱이 · 메모리 effects-individual-particles) */
+.map .nd.k-sodo .sc { position: absolute; top: 74%; width: 7%; pointer-events: none; z-index: 2; opacity: 0; animation: holym 6s ease-in infinite; }
+.map .nd.k-sodo .sc.c1 { left: 14%; } .map .nd.k-sodo .sc.c2 { left: 78%; animation-delay: 2s; } .map .nd.k-sodo .sc.c3 { left: 46%; animation-delay: 4s; }
+@keyframes holyb { from { opacity: .45; } to { opacity: .85; } }
+@keyframes holyp { 0% { transform: translate(-50%, -50%) scale(.4); opacity: .9; } 100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0; } }
+@keyframes holym { 0% { transform: translate(0, 0) rotate(-8deg); opacity: 0; } 15% { opacity: .95; } 100% { transform: translate(120%, -700%) rotate(24deg); opacity: 0; } }
+.map .nd.k-sodo img.st { position: relative; z-index: 1; }
+@media (prefers-reduced-motion: reduce) { .map .nd.k-sodo .sg { animation: none; } .map .nd.k-sodo .sp, .map .nd.k-sodo .sc { display: none; } }
 /* 척후를 보낸 고을 — 작은 표 하나 (움직이지 않는다) */
 .map .nd .sctmk { position: absolute; left: 50%; top: -4%; transform: translate(-50%, -100%); display: flex; align-items: center; gap: 2px; padding: 1px 7px 1px 2px; border-radius: 999px; background: #1c2a1ce6; border: 1px solid #8ab07a; color: #d8f0c8; font-size: 11px; font-weight: 700; white-space: nowrap; pointer-events: none; z-index: 5; }
 .map .nd .sctmk img { width: 18px; height: 18px; object-fit: contain; }
@@ -707,10 +714,13 @@ export function mapHtml(
     const lordHere = gv !== undefined && n.id === capOf
     const gface = gv !== undefined && bustOf(gv.id) !== undefined
       ? `<img class="gov${lordHere ? ' lord' : ''}${lordHere && lordAway ? ' away' : ''}" src="${art}bust/${bustOf(gv.id)}.jpg" alt="" title="${gv.name} — ${lordHere ? (lordAway ? '군주가 도읍을 비웠다' : '군주가 몸소 다스린다') : '이 고을을 맡았다'}">` : ''
-    // 소도 — 신성한 땅: 둘레가 숨 쉬듯 밝아지고 빛살이 천천히 돌고 빛 알갱이가 오른다 (형 10-27: "소도는 신성한 땅이니 신성한 이펙트도")
-    const holy = n.kind === 'sodo' ? '<i class="holy"><i></i><i></i><i></i><i></i></i>' : ''
+    // 소도 — 신성한 숲: 은은한 빛 · 금줄(뒤 반 · 앞 반) · 방울 소리 물결 둘 · 날아오르는 한지 띠 셋 (CSS 는 위 .k-sodo)
+    const holy = n.kind === 'sodo'
+      ? `<img class="sg" src="${art}fx/sodo-glow.png" alt=""><img class="sr" src="${art}fx/sodo-rope.png" alt=""><i class="sp"></i><i class="sp"></i>` : ''
+    const holyFront = n.kind === 'sodo'
+      ? `<img class="sr f" src="${art}fx/sodo-rope.png" alt=""><img class="sc c1" src="${art}fx/sodo-cloth-a.png" alt=""><img class="sc c2" src="${art}fx/sodo-cloth-b.png" alt=""><img class="sc c3" src="${art}fx/sodo-cloth-a.png" alt="">` : ''
     const sct = scouting === n.id ? `<span class="sctmk" title="척후가 이 고을을 엿본다"><img src="${art}icon/unit-scouts.png" alt="">척후</span>` : ''
-    nodes += `${holy}<span class="base"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt=""><span class="ring"></span>${sct}${taken.has(n.id) ? `<img class="burnsm won" src="${art}fx/smoke.png" alt=""><span class="plant"><i class="pole"></i><i class="cloth" style="--fc:${FACTION_ART[me]?.color ?? '#c9a45a'}"><img src="${art}icon/${FACTION_ART[me]?.emblem ?? 'emblem-shell'}.png" alt=""></i></span><i class="wonring"></i><span class="wonchip">점령</span>` : burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${held.has(n.id) ? '<span class="heldchip">🛡 지켜 냈다</span>' : ''}${mist}${ice}${gface}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? (tg.chip !== '' ? `<span class="tchip">${tg.chip}</span>` : '') : settleable.has(n.id) ? (settling.has(n.id) ? '<span class="stl go">백성이 가는 중</span>' : '<span class="stl">＋마을</span>') : crowd}</div>`
+    nodes += `${holy}<span class="base"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${holyFront}<span class="ring"></span>${sct}${taken.has(n.id) ? `<img class="burnsm won" src="${art}fx/smoke.png" alt=""><span class="plant"><i class="pole"></i><i class="cloth" style="--fc:${FACTION_ART[me]?.color ?? '#c9a45a'}"><img src="${art}icon/${FACTION_ART[me]?.emblem ?? 'emblem-shell'}.png" alt=""></i></span><i class="wonring"></i><span class="wonchip">점령</span>` : burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${held.has(n.id) ? '<span class="heldchip">🛡 지켜 냈다</span>' : ''}${mist}${ice}${gface}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? (tg.chip !== '' ? `<span class="tchip">${tg.chip}</span>` : '') : settleable.has(n.id) ? (settling.has(n.id) ? '<span class="stl go">백성이 가는 중</span>' : '<span class="stl">＋마을</span>') : crowd}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()
