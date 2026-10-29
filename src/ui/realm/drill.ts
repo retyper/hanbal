@@ -210,7 +210,7 @@ export const DRILL_CSS = `
 .ap .dyf img, .ap .dyf .nof { width: 72px !important; height: 72px !important; border-width: 12px !important; }
 .ap .dystrip .dysf img, .ap .dystrip .dysf .nof { width: 54px !important; height: 54px !important; border-width: 9px !important; }
 .ap .front.dyard .dylead { max-width: 760px; margin: 2px auto 8px; padding: 0 14px; color: #cbbf9f; font-size: 13.5px; }
-.ap .front.dyard .dyl { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; max-width: 980px; margin: 0 auto; padding: 0 14px 8px; }
+.ap .front.dyard .dyl { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 10px; max-width: 980px; margin: 0 auto; padding: 0 14px 8px; }
 /* 테는 그림으로 — 장수 한 사람 = 옻칠한 나무판에 청동 테 (ui/panel.png · 아래 판과 한 벌) (형 10-29: "박스 테두리들이 여전히 css") */
 .ap .dyc { display: flex; flex-direction: column; gap: 6px; padding: 0 2px 2px; border: 18px solid transparent; border-image: url(__ART__ui/panel.png?v=2) 64 fill / 18px stretch; border-radius: 0; background: none; }
 .ap .dyc.fresh { animation: dyin .5s ease-out both; }
@@ -229,7 +229,9 @@ export const DRILL_CSS = `
 .ap .dybar i { display: block; height: 100%; width: var(--to); background: linear-gradient(90deg, #8a6a3a, #f0c060); border-radius: 5px; animation: dyfill 1.4s .25s cubic-bezier(.2,.8,.2,1) both; }
 .ap .dybar.ready i { background: linear-gradient(90deg, #c9a23a, #ffe08a); box-shadow: 0 0 8px #ffd27a99; }
 @keyframes dyfill { from { width: var(--from); } to { width: var(--to); } }
-.ap .dyr { display: flex; align-items: center; gap: 6px; } .ap .dyr .radar { flex: none; }
+.ap .dyr { display: flex; align-items: center; gap: 6px; min-width: 0; } .ap .dyr .radar { flex: 0 1 auto; min-width: 0; max-width: 44%; height: auto; }
+/* + 단추는 테(그림)까지 넣어 52px — 좁은 칸에서 카드 밖으로 튀어나갔다 (형 10-29) */
+.ap .dyplus, .ap .dyui .dyq { box-sizing: border-box; min-width: 52px !important; max-width: 100%; }
 .ap .dys { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .ap .dyst { display: grid; grid-template-columns: 2.6em 1.4em 1.8em 1.8em 1fr; align-items: center; gap: 2px; font-size: 13px; }
 .ap .dyst b { color: #f0e2c0; text-align: right; } .ap .dyst i { font-style: normal; color: #9fd07a; font-size: 11.5px; } .ap .dyst small { color: var(--mute); font-size: 11px; }
