@@ -368,7 +368,7 @@ function hideSplashWhenReady(): void {
   }
   const img = (src: string): Promise<void> => new Promise((ok) => { const i = new Image(); i.onload = i.onerror = () => { tick(); ok() }; i.src = src })
   const base = import.meta.env.BASE_URL
-  const ready = Promise.all([document.fonts.ready.then(() => { tick() }), img(`${base}realm/title/title-lobby.jpg`), img(`${base}realm/logo/emblem.png`)])
+  const ready = Promise.all([document.fonts.ready.then(() => { tick() }), img(`${base}realm/title/title-lobby.jpg`), img(`${base}realm/logo/emblem-dagger.png`)])
   const late = new Promise<void>((ok) => setTimeout(ok, SPLASH_MAX_MS))
   void Promise.race([ready, late]).then(() => {
     setTimeout(() => {

@@ -30,7 +30,7 @@
       #splash.out { opacity: 0; visibility: hidden; }
       /* 고지문 — 첫 화면에서 옮겨 왔다 (형 10-28) */
       #splash .spnote { position: absolute; left: 16px; right: 16px; bottom: calc(5vh + env(safe-area-inset-bottom)); margin: 0; text-align: center; font: 12px/1.5 sans-serif; color: #cbbf9fb0; }
-      #splash img { width: min(38vw, 170px); aspect-ratio: 1; opacity: 0; animation: spin 1.2s ease-out .1s forwards, spglow 3s ease-in-out 1.3s infinite; }
+      #splash img { height: min(42vh, 280px); width: auto; opacity: 0; animation: spin 1.2s ease-out .1s forwards, spglow 3s ease-in-out 1.3s infinite; }
       /* 받는 막대 — 옻칠 홈에 단청 띠가 차오른다 (realm/ui/dancheong-tile.jpg · 제미나이 · 형 10-23: "꼬부랑 꼬부랑 … 한국 전통을 살려서") */
       .lbar { width: min(66vw, 340px); height: 20px; padding: 3px; box-sizing: content-box; border-radius: 3px; background: linear-gradient(#0b0806, #1a120c);
         box-shadow: inset 0 1px 3px #000, 0 0 0 1px #c9a45a, 0 0 0 3px #2a1c0e, 0 0 0 4px #8a6a3a, 0 6px 16px #000a; }
@@ -50,7 +50,7 @@
   </head>
   <body>
     <!-- 칠십팔국 시험판 — 앱 화면 (docs/realm/FLOW.md §5). 활터는 index.html 그대로다. -->
-    <div id="splash" aria-hidden="true"><img src="realm/logo/emblem.png" alt="" /><div class="lbar"><i></i></div><i class="run"></i><p class="spnote">본 게임은 역사 기록을 바탕으로 재구성한 창작물로, 등장하는 인물·국가·사건은 실제 역사와 다를 수 있습니다.</p></div>
+    <div id="splash" aria-hidden="true"><img src="realm/logo/emblem-dagger.png" alt="" /><div class="lbar"><i></i></div><i class="run"></i><p class="spnote">본 게임은 역사 기록을 바탕으로 재구성한 창작물로, 등장하는 인물·국가·사건은 실제 역사와 다를 수 있습니다.</p></div>
     <main id="realm"></main>
     <script>
       // 앱으로 설치 — 크롬이 권할 때를 받아 둔다 (설정의 「앱으로 설치」 · app.ts installPrompt). 브라우저 전체 화면은 쓰지 않는다
