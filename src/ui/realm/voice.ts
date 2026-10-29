@@ -185,11 +185,7 @@ const VOICE_OF: Readonly<Record<string, VoiceKind>> = {
 }
 
 /** 등용 대사를 새로 쓰고 아직 녹음하지 않은 장수 — hire/<id>.ogg 가 없다. 녹음하면 여기서 지운다 (tests/realm/hire-lines.test.ts) */
-export const HIRE_UNRECORDED: ReadonlySet<string> = new Set([
-  'mh-jinwang',
-  'mh-soseono',
-  'sr-goya-1',
-])
+export const HIRE_UNRECORDED: ReadonlySet<string> = new Set<string>([])
 
 /**
  * 얼굴이 고르는 목소리 — 명치판 그림을 보고 박았다. 특성·능력치보다 먼저 (형 10-26: "험측 하늘 이미지는 나이든 무속인인데 젊은 장수 목소리임").
