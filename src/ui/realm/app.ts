@@ -91,7 +91,7 @@ import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
 import { FEEL_CSS, alertFeel, ambushRangeFeel, chanceFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
 import { adviseMarch, guardRange } from './council-lines.ts'
-import { APPROACH_SHORT, councilAgendas, type Agenda, type AgendaId, type Voice } from './council-agenda.ts'
+import { APPROACH_SHORT, COUNCIL_ART, councilAgendas, type Agenda, type AgendaId, type Voice } from './council-agenda.ts'
 
 export interface AppHost {
   /** 플레이 기록을 다 지운다(계정·설정은 남김) — 로그인했으면 서버 것부터. 못 지웠으면 false (형 10-24) */
@@ -668,7 +668,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 군막 — 이번 계절 「다음 계절」 앞에서 전략 회의를 연 계절 (councilDue) */
   let councilAt = -1
   /** 전략 회의 — 적 고을을 칠 때 화면 가득 (지도에서 고른 출정 · 「다음 계절」 앞 마지막 걸음). next 면 출정 뒤 계절을 넘긴다 */
-  let stratOpen: { army: string; next: boolean; goal?: string; played?: boolean; man?: boolean } | null = null
+  // step — 지금 안건(다 지나면 정리) · beat — 그 안건에서 몇째 장수가 말하는 중(다 말하면 물음과 고르기)
+  let stratOpen: { army: string; next: boolean; goal?: string; step?: number; beat?: number; man?: boolean } | null = null
   /** 회유를 맡길 장수 — 포로마다 */
   const persuadeBy: Record<string, string> = {}
   /** 고른 세기(난이도) — 판마다. 캠페인의 장은 판 고르기 화면에서 고른다 (없으면 보통 · 군장) */
@@ -1660,15 +1661,19 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const probe = sortieProbe(a)
     const m = movesOf(r, me(), probe).find((x) => x.edge.id === ed.id)
     const keep = ov.querySelector<HTMLElement>('.stbody')?.scrollTop ?? 0
-    // 장수들이 하나씩 제 생각을 편다 — 처음 열 때만 차례로 떠오른다(다시 그릴 때는 그대로) · 군사·길·군량 손 조정은 「직접 정한다」 안에
+    // 사건 카드처럼 — 회의 그림을 깔고 안건 하나씩: 장수가 한 사람씩 아뢴다(누르면 다음) → 물음 하나와 큰 결정 카드 → 다음 안건 → 정리와 「결정」 (형 10-29)
+    const st = stratOpen!
     const ags = m !== undefined && m.hostile ? agendasFor(r, a, probe, m, sortieD.ration) : []
-    const play = stratOpen!.played !== true
-    stratOpen!.played = true
-    const man = stratOpen!.man === true || ags.length === 0
-    ov.innerHTML = `<div class="stbox"><div class="sthd"><h2>전략 회의</h2><p>${esc(josa(armyName(r, a), '이', '가'))} <b>${esc(josa(to?.name ?? '', '을', '를'))}</b> 치러 간다${m !== undefined ? ` · ${m.seasons}계절 · ${m.win !== null ? fightFeel(m.win[0], m.win[1]) : unknownFeel()}` : ''}</p></div>`
-      + `<div class="stbody">${note !== '' ? `<div class="banner bad">${tx(note)}</div>` : ''}${councilHtml(ags, play)}`
-      + (ags.length > 0 ? `<button class="stman${man ? ' on' : ''}" data-act="st-man"><span>직접 정한다 — 군사 · 길 · 군량</span><i>${man ? '▴' : '▾'}</i></button>` : '')
-      + `${man ? sortiePanel(r, a, 'strat') : ''}</div>${sortieBar(r, a)}</div>`
+    const step = Math.min(st.step ?? 0, ags.length)
+    const on = step < ags.length
+    const man = st.man === true || ags.length === 0
+    const head = `<div class="sthd"><h2>전략 회의${on ? ` <small>안건 ${step + 1} / ${ags.length}</small>` : ''}</h2><p>${esc(josa(armyName(r, a), '이', '가'))} <b>${esc(josa(to?.name ?? '', '을', '를'))}</b> 치러 간다${m !== undefined ? ` · ${m.seasons}계절 · ${m.win !== null ? fightFeel(m.win[0], m.win[1]) : unknownFeel()}` : ''}</p>`
+      + (on ? `<button class="stx" data-act="strat-x"${st.next ? ' data-v="keep"' : ''} aria-label="${st.next ? '그대로 간다' : '그만둔다'}">✕</button>` : '') + `</div>`
+    const inner = on && m !== undefined ? agendaHtml(r, a, probe, m, ags[step]!, st.beat ?? 0)
+      : `<div class="stbody">${note !== '' ? `<div class="banner bad">${tx(note)}</div>` : ''}${summaryHtml(ags)}`
+        + (ags.length > 0 ? `<button class="stman${man ? ' on' : ''}" data-act="st-man"><span>직접 정한다 — 군사 · 길 · 군량</span><i>${man ? '▴' : '▾'}</i></button>` : '')
+        + `${man ? sortiePanel(r, a, 'strat') : ''}</div>${sortieBar(r, a)}`
+    ov.innerHTML = `<div class="stbox${ags.length > 0 ? ' cnx' : ''}" style="--bg:url('${ART}event/${COUNCIL_ART}.jpg')">${head}${inner}</div>`
     const body = ov.querySelector<HTMLElement>('.stbody')
     if (body !== null) body.scrollTop = keep
   }
@@ -1712,21 +1717,53 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     else sortieD.wait = o.k === 'wait'
   }
 
-  /** 전략 회의 — 안건마다 장수 얼굴과 아뢰는 말 · 하나를 고른다 (형 10-29: "장수 얼굴이 나오고 하나씩 대사 치듯") */
-  function councilHtml(ags: readonly Agenda[], play: boolean): string {
+  /**
+   * 전략 회의의 안건 한 장 — 말하는 장수가 하나씩(크게 얼굴 · 자막처럼 말 · 누르면 다음) · 다 말하면 물음 하나와 큰 결정 카드.
+   * 군주의 뜻(얼굴 없는 말)은 아뢰지 않고 카드로만 · 카드의 얼굴은 그 말을 한 장수(군주의 뜻이면 군주)
+   */
+  function agendaHtml(r: Realm, a: Army, probe: Army, m: Move, ag: Agenda, beat: number): string {
+    const says = ag.voices.filter((v) => v.hero !== null)
+    if (beat < says.length) {
+      const v = says[beat]!
+      return `<div class="cnstage" data-act="cn-next"><h3 class="cnt">${esc(ag.title)}</h3><div class="cnspk">${bust(v.hero!, 'cnbig')}<b>${nameHtml(v.hero!.name)}</b></div>`
+        + `<p class="cnsub" aria-live="polite">${esc(v.line)}</p><div class="cnav"><small>${beat + 1}/${says.length} · 누르면 다음 ›</small><button class="cskip" data-act="cn-skip">건너뛰기 »</button></div></div>`
+    }
+    const ruler = r.factions[me()]?.ruler
+    const rh = ruler !== undefined ? r.heroes[ruler] : undefined
+    let h = `<div class="cnq"><p class="cnask">${esc(ag.title)}</p><div class="cnopts${ag.voices.length > 2 ? ' n3' : ''}">`
+    for (const v of ag.voices) {
+      const face = v.hero !== null ? bust(v.hero, 'cof') : rh !== undefined ? bust(rh, 'cof') : ''
+      const on = sortieD.chose?.[ag.id] === v.label
+      h += `<button class="cnopt${on ? ' on' : ''}" data-act="cn-pick" data-ag="${ag.id}" data-l="${esc(v.label)}">${face}<span class="cot"><small>${v.hero !== null ? `${esc(v.hero.name)}의 말` : '내 뜻'}</small><b>${esc(v.label)}</b><span>${esc(voiceDoes(r, a, probe, m, v))}</span></span></button>`
+    }
+    return h + `</div><button class="cnre" data-act="cn-replay">다시 듣는다</button></div>`
+  }
+
+  /** 그 말을 따르면 무엇이 되나 — 결정 카드의 아랫줄 */
+  function voiceDoes(r: Realm, a: Army, probe: Army, m: Move, v: Voice): string {
+    const o = v.opt
+    if (o.k === 'take') {
+      const total = headcount(forceOf(r, a))
+      if (o.share >= 1) return `${total.toLocaleString('ko-KR')}명 모두 출정 · ${josa(r.nodes[a.at]?.name ?? '', '이', '가')} 빈다`
+      const go = (Object.values(a.mix) as number[]).reduce((s, n) => s + Math.round(n * o.share), 0)
+      return `${go.toLocaleString('ko-KR')}명 출정 · ${(total - go).toLocaleString('ko-KR')}명 남아 지킨다`
+    }
+    if (o.k === 'route') {
+      const lead = o.lead !== undefined ? r.heroes[o.lead] : undefined
+      return `${APPROACH_NAME[o.ap]}${lead !== undefined ? ` · ${josa(lead.name, '이', '가')} 이끈다` : ''}`
+    }
+    if (o.k === 'ration') return `군량 ${m.seasons + o.extra}계절치 · 곡식 ${rationCost(r, probe, m.seasons, o.extra).toLocaleString('ko-KR')}`
+    return o.k === 'wait' ? '이번 계절은 떠나지 않고 성을 지킨다' : '이번 계절에 떠난다'
+  }
+
+  /** 회의를 다 했다 — 안건마다 고른 것 (누르면 그 안건으로 돌아가 고친다) */
+  function summaryHtml(ags: readonly Agenda[]): string {
     if (ags.length === 0) return `<p class="cnnone">장수들의 뜻이 갈리지 않습니다 — 아래에서 직접 정합니다</p>`
-    const waiting = sortieD.wait === true
-    let h = `<div class="cnov${play ? ' play' : ''}">`
-    let n = 0
+    let h = `<div class="cnsum"><h3>회의에서 정한 것</h3>`
     ags.forEach((ag, i) => {
-      h += `<section class="cnag${waiting && ag.id !== 'wait' ? ' off' : ''}"><h3><i>안건 ${i + 1}</i>${esc(ag.title)}</h3>`
-      for (const v of ag.voices) {
-        const on = sortieD.chose?.[ag.id] === v.label
-        h += `<button class="cnv${v.hero === null ? ' lord' : ''}${on ? ' on' : ''}" data-act="cn-pick" data-ag="${ag.id}" data-l="${esc(v.label)}" style="--d:${(0.3 + n++ * 0.85).toFixed(2)}s">`
-        h += v.hero !== null ? `${bust(v.hero, 'cnf')}<span class="cnb"><b>${nameHtml(v.hero.name)}</b>` : `<span class="cnb"><b>내 뜻</b>`
-        h += `<span class="cnl">${esc(v.line)}</span><span class="cnk">${on ? '✓ ' : ''}${esc(v.label)}</span></span></button>`
-      }
-      h += `</section>`
+      const c = sortieD.chose?.[ag.id]
+      const off = sortieD.wait === true && ag.id !== 'wait'
+      h += `<button class="cnsr${off ? ' off' : ''}" data-act="cn-goto" data-i="${i}"><span>${esc(ag.title)}</span><b>${esc(off ? '—' : (c ?? '정하지 않았다'))}</b><i>고친다 ›</i></button>`
     })
     return h + `</div>`
   }
@@ -6203,8 +6240,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         sortieD.chose = { ...(sortieD.chose ?? {}), [ag]: v.label }
         applyVoice(a, v)
         bark(v.hero?.id)
+        // 다음 안건 — 기다리기로 했으면 나머지는 쓰이지 않으니 정리로
+        stratOpen.step = v.opt.k === 'wait' ? 99 : (stratOpen.step ?? 0) + 1
+        stratOpen.beat = 0
         break
       }
+      case 'cn-next': if (stratOpen !== null) stratOpen.beat = (stratOpen.beat ?? 0) + 1; break
+      case 'cn-skip': if (stratOpen !== null) stratOpen.beat = 99; break
+      case 'cn-replay': if (stratOpen !== null) stratOpen.beat = 0; break
+      case 'cn-goto': if (stratOpen !== null) { stratOpen.step = Number(d['i'] ?? 0); stratOpen.beat = 99 } break
       case 'sortie-cancel': delete pick[d['army']!]; openArmy = ''; break
       case 'sfollow': sortieD.follow = d['v'] === '1'; break
       case 'sortie-go': {

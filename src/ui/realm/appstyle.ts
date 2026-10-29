@@ -734,27 +734,43 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .stov .sortiebar { flex: none; position: static; margin: 0; }
 /* 결정 단추는 남은 폭만 — 긴 줄은 두 줄로 (그만둔다가 화면 밖으로 밀렸다) */
 .ap .stov .sortiebar .go { min-width: 0; white-space: normal; word-break: keep-all; line-height: 1.3; font-size: 14px; } .ap .stov .sortiebar .btn.ghost { flex: none; }
-/* 전략 회의의 안건 — 장수 얼굴과 아뢰는 말이 하나씩 떠오른다 · 고른 말은 금빛 테 (형 10-29) */
-.ap .cnov { display: flex; flex-direction: column; gap: 14px; }
-.ap .cnag { display: flex; flex-direction: column; gap: 8px; transition: opacity .25s; } .ap .cnag.off { opacity: .4; pointer-events: none; }
-.ap .cnag h3 { margin: 0; display: flex; align-items: baseline; gap: 8px; font-family: 'Gowun Batang', serif; font-size: 17px; color: #ffd27a; }
-.ap .cnag h3 i { font-style: normal; font-family: inherit; font-size: 12px; color: #c9a45a; letter-spacing: .05em; }
-.ap .cnv { display: flex; align-items: flex-start; gap: 10px; width: 100%; min-width: 0; box-sizing: border-box; padding: 0 2px; text-align: left; font: inherit; color: #efe3c6; cursor: pointer;
+/* 전략 회의 — 사건 카드처럼: 회의 그림을 깔고 안건 하나씩 · 장수가 한 사람씩 크게 아뢴다 · 물음 하나와 큰 결정 카드 (형 10-29) */
+.ap .stov .stbox { position: relative; }
+.ap .stov .stbox.cnx { background: #0b0806 var(--bg) center 30% / cover no-repeat; }
+.ap .stov .stbox.cnx::before { content: ''; position: absolute; inset: 0; background: #0b0806; opacity: .5; pointer-events: none; }
+.ap .stov .stbox.cnx > * { position: relative; }
+.ap .stov .stbox.cnx .sthd { background: #120d08d9; }
+.ap .stov .sthd h2 small { margin-left: 8px; font-size: 13px; color: #c9a45a; font-family: inherit; }
+.ap .stov .sthd .stx { position: absolute; right: 8px; top: 8px; width: 38px; height: 34px; border: 6px solid transparent; border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 6px 8px stretch; background: none; color: #efe3c6; font-weight: 700; cursor: pointer; }
+.ap .cnstage { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 10px; padding: 14px 16px calc(16px + env(safe-area-inset-bottom)); cursor: pointer; }
+.ap .cnstage .cnt { margin: 0 0 auto; padding-top: 6px; font-family: 'Gowun Batang', serif; font-size: 20px; color: #ffd27a; text-shadow: 0 2px 6px #000; text-align: center; }
+.ap .cnspk { display: flex; flex-direction: column; align-items: center; gap: 6px; animation: cnpop .45s cubic-bezier(.2,.9,.3,1.2) both; }
+.ap .cnspk .cnbig { width: min(46vw, 210px); aspect-ratio: 1; height: auto; object-fit: cover; object-position: top; box-sizing: border-box; border: 12px solid transparent; border-image: url(__ART__ui/frame-portrait.png) 60 / 12px stretch; filter: drop-shadow(0 8px 16px #000c); }
+.ap .cnspk b { font-size: 18px; color: #ffe0a0; text-shadow: 0 2px 4px #000; }
+.ap .cnsub { width: min(100%, 620px); box-sizing: border-box; margin: 0; padding: 14px 16px; font-size: 16.5px; line-height: 1.6; color: #fff4dc; text-align: center; word-break: keep-all; overflow-wrap: anywhere;
+  background: #000a; border: 10px solid transparent; border-image: url(__ART__ui/card.png?v=1) 24 fill / 10px stretch; animation: csubin .4s ease-out .15s both; }
+.ap .cnstage .cnav { width: min(100%, 620px); display: flex; justify-content: space-between; align-items: center; color: #cbbf9f; font-size: 12.5px; }
+.ap .cnstage .cskip { padding: 6px 4px; border: 0; background: none; color: #e8dcc0; font: inherit; font-size: 13px; cursor: pointer; }
+@keyframes cnpop { from { opacity: 0; transform: translateY(16px) scale(.88); } to { opacity: 1; transform: none; } }
+.ap .cnq { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 14px 14px calc(16px + env(safe-area-inset-bottom)); }
+.ap .cnask { margin: 0; font-family: 'Gowun Batang', serif; font-size: 22px; line-height: 1.35; color: #ffe0a0; text-align: center; text-shadow: 0 2px 6px #000; word-break: keep-all; }
+.ap .cnopts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; width: min(100%, 620px); align-self: center; }
+.ap .cnopt { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; min-height: 170px; justify-content: center; padding: 2px; text-align: center; font: inherit; color: #efe3c6; cursor: pointer;
+  border: 12px solid transparent; border-image: url(__ART__ui/card.png?v=1) 24 fill / 12px stretch; background: none; animation: cnpop .4s ease-out both; }
+.ap .cnopt + .cnopt { animation-delay: .08s; } .ap .cnopt + .cnopt + .cnopt { animation-delay: .16s; }
+.ap .cnopt.on { border-image: url(__ART__ui/frame-panel.png?v=3) 118 / 12px stretch; background: #2e2416 padding-box; }
+.ap .cnopt .cof { width: 72px; height: 72px; object-fit: cover; object-position: top; box-sizing: border-box; border: 6px solid transparent; border-image: url(__ART__ui/frame-portrait.png) 60 / 6px stretch; }
+.ap .cnopt .cot { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
+.ap .cnopt .cot small { font-size: 11.5px; color: #c9a45a; } .ap .cnopt .cot b { font-size: 18px; color: #ffe0a0; word-break: keep-all; }
+.ap .cnopt .cot > span { font-size: 13px; line-height: 1.4; color: #e0d4b8; word-break: keep-all; overflow-wrap: anywhere; }
+/* 셋이면 세로로 쌓고 얼굴은 왼쪽 (폰 폭) */
+.ap .cnopts.n3 { grid-template-columns: minmax(0, 1fr); } .ap .cnopts.n3 .cnopt { flex-direction: row; min-height: 0; justify-content: flex-start; text-align: left; gap: 10px; } .ap .cnopts.n3 .cnopt .cot { align-items: flex-start; }
+.ap .cnre { align-self: center; padding: 6px 10px; border: 0; background: none; color: #cbbf9f; font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; }
+.ap .cnsum { display: flex; flex-direction: column; gap: 6px; } .ap .cnsum h3 { margin: 2px 0 4px; font-family: 'Gowun Batang', serif; font-size: 17px; color: #ffd27a; }
+.ap .cnsr { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 8px; padding: 0 4px; text-align: left; font: inherit; color: #e8dcc0; cursor: pointer;
   border: 10px solid transparent; border-image: url(__ART__ui/card.png?v=1) 24 fill / 10px stretch; background: none; }
-.ap .cnv.on { border-image: url(__ART__ui/frame-panel.png?v=3) 118 / 10px stretch; background: #2e2416 padding-box; filter: drop-shadow(0 0 6px #ffd27a77); }
-.ap .cnv .cnf { flex: none; width: 64px; height: 64px; object-fit: cover; object-position: top; box-sizing: border-box; border: 6px solid transparent; border-image: url(__ART__ui/frame-portrait.png) 60 / 6px stretch; }
-.ap .cnv .cnb { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.ap .cnv .cnb > b { font-size: 14px; color: #ffe0a0; }
-.ap .cnv .cnl { font-size: 14px; line-height: 1.55; color: #efe3c6; word-break: keep-all; overflow-wrap: anywhere; }
-.ap .cnv.lord .cnl { color: #cbbf9f; font-style: italic; }
-.ap .cnv .cnk { align-self: flex-end; margin-top: 2px; padding: 0 3px; border: 5px solid transparent; border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 5px 7px stretch; font-size: 12.5px; font-weight: 700; color: #efe3c6; }
-.ap .cnv.on .cnk { border-image: url(__ART__ui/btn-gold.png?v=2) 30 35 fill / 5px 7px stretch; color: #2a1606; }
-.ap .cnov.play .cnv { animation: cnin .55s cubic-bezier(.2,.8,.2,1) var(--d, 0s) both; } .ap .cnov.play .cnv .cnf { animation: cnface .6s ease-out var(--d, 0s) both; }
-.ap .cnov.play .cnv .cnl { animation: cnline .9s steps(18, end) calc(var(--d, 0s) + .15s) both; }
-@keyframes cnin { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-@keyframes cnface { 0% { transform: scale(.6); } 60% { transform: scale(1.08); } 100% { transform: none; } }
-@keyframes cnline { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
-@media (prefers-reduced-motion: reduce) { .ap .cnov.play .cnv, .ap .cnov.play .cnv .cnf, .ap .cnov.play .cnv .cnl { animation-duration: .01s; animation-delay: 0s; } }
+.ap .cnsr span { font-size: 12.5px; color: #cbbf9f; } .ap .cnsr b { grid-column: 1; font-size: 15.5px; color: #ffe0a0; } .ap .cnsr i { grid-column: 2; grid-row: 1 / 3; font-style: normal; font-size: 12.5px; color: #c9a45a; } .ap .cnsr.off { opacity: .45; }
+@media (prefers-reduced-motion: reduce) { .ap .cnspk, .ap .cnsub, .ap .cnopt { animation-duration: .01s; } }
 .ap .cnnone { margin: 6px 0 10px; color: #cbbf9f; font-size: 13px; }
 .ap .stman { display: flex; justify-content: space-between; align-items: center; width: 100%; margin: 16px 0 6px; padding: 0 4px; font: inherit; font-weight: 700; color: #d8cdb4; cursor: pointer;
   border: 6px solid transparent; border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 6px 8px stretch; background: none; }

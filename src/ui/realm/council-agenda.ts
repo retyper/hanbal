@@ -58,10 +58,10 @@ const TAIL: Readonly<Record<VoiceKind, readonly [string, string, string]>> = {
   'm-gruff': ['제 말이 틀림없습니다.', '제 창이 앞장서겠습니다.', '길게 따질 일이 아닙니다.'],
   'm-young': ['그리하시는 것이 옳습니다!', '맡겨만 주십시오!', '부디 제 말을 들어 주십시오!'],
   'm-sage': ['깊이 헤아려 주십시오.', '셈으로 보아도 그러합니다.', '서두르실 일이 아닙니다.'],
-  'm-elder': ['이 늙은 몸의 소견입니다.', '오래 싸워 본 자의 말씀이니 새겨 주십시오.', '젊은 혈기로 정하실 일이 아닙니다.'],
+  'm-elder': ['이 늙은 몸의 소견입니다.', '오래 싸워 본 자의 말씀이니 새겨 주십시오.', '이 몸이 겪어 본 바가 그러합니다.'],
   'm-charm': ['보기에도 좋고 셈에도 맞습니다.', '그리하면 저들이 먼저 겁을 먹을 겁니다.', '백성들도 그리 바랄 것입니다.'],
-  'w-bright': ['꼭 그리하셔야 합니다!', '저를 믿어 주십시오!', '제 말이 맞을 겁니다!'],
-  'w-cool': ['더 말씀드릴 것은 없습니다.', '그것으로 족합니다.', '그리하십시오.'],
+  'w-bright': ['꼭 그리해 주십시오!', '저를 믿어 주십시오!', '제 말이 맞을 겁니다!'],
+  'w-cool': ['더 말씀드릴 것은 없습니다.', '그것으로 족합니다.', '그리하시는 편이 낫습니다.'],
   'w-sly': ['셈이 빠른 쪽이 이깁니다.', '저들은 눈치채지 못할 겁니다.', '손해 볼 일은 없습니다.'],
   'w-shaman': ['신령의 뜻도 그러합니다.', '하늘이 그리 일러 주었습니다.', '조상께서도 그리 이르십니다.'],
 }
@@ -69,6 +69,8 @@ const TAIL: Readonly<Record<VoiceKind, readonly [string, string, string]>> = {
 const AP_NAME: Readonly<Record<Approach, string>> = { road: '대로', night: '밤길', ford: '여울', ridge: '산기슭', cliff: '절벽' }
 /** 결정 띠의 짧은 길 이름 */
 export const APPROACH_SHORT = AP_NAME
+/** 전략 회의의 바탕 그림 (public/realm/event) — 군막 그림이 오면 바꾼다 (ART-QUEUE) */
+export const COUNCIL_ART = 'event-court-hall'
 /** 고른 안의 짧은 이름 */
 const AP_LABEL: Readonly<Record<Approach, string>> = { road: '대로로', night: '밤길로', ford: '여울로', ridge: '산기슭으로', cliff: '절벽으로' }
 /** 적이 지킬 길목을 읽은 말 */
@@ -231,7 +233,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
       if (q(vol.ap, read) < P.realm.cnAdviseMin) continue
       const leads = h.id === a.hero
       const lead = !leads && ctx.canLead(h.id) ? h.id : undefined
-      const ask = leads ? `제가 앞장서 ${AP_LABEL[vol.ap]} 이끌겠습니다.` : lead !== undefined ? `저를 믿고 이 군사를 맡겨 주십시오. ${AP_LABEL[vol.ap]} 데려가겠습니다.` : `제 말대로 ${AP_LABEL[vol.ap]} 가십시오.`
+      const ask = leads ? `제가 앞장서 ${AP_LABEL[vol.ap]} 이끌겠습니다.` : lead !== undefined ? `저를 믿고 이 군사를 맡겨 주십시오. ${AP_LABEL[vol.ap]} 데려가겠습니다.` : `제 말대로 ${AP_LABEL[vol.ap]} 가시지요.`
       add({ hero: h, label: `${AP_LABEL[vol.ap]}${lead !== undefined ? ` · ${josa(h.name, '이', '가')} 이끈다` : ''}`, line: `${vol.say} ${ask} ${tail(h, 1)}`, opt: { k: 'route', ap: vol.ap, ...(lead !== undefined ? { lead } : {}) } }, vol.ap)
       break
     }
