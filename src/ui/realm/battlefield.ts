@@ -1992,7 +1992,7 @@ export const WAR_CSS = `
 @keyframes wloss { 0% { opacity: 0; translate: 0 10px; scale: .6; } 15% { opacity: 1; translate: 0 0; scale: 1.15; } 70% { opacity: 1; scale: 1; } 100% { opacity: 0; translate: 0 -18px; } }
 /* 동작 그림 — 8컷 띠를 칸씩 넘긴다 (steps). 바깥(.tk)은 자리·밀기, 안(.spf)은 컷 */
 /* 새 20컷 띠(v2) — 칸이 넓다(창이 다 뻗어도 들어가게). 말의 자리·크기는 옛 비 그대로 두고 안의 그림만 --r 배 넓혀 가운데에 (형 10-29) */
-.ap .wf2s .tk.wsp.v2 .spf { inset: 0 auto 0 50%; width: calc(var(--r, 1) * 100%); transform: translateX(-50%); --nf: 20; --i0: 0%; --i1: 21.0526%; --w0: 21.0526%; --w1: 63.1579%; --a0: 63.1579%; --a1: 94.7368%; --al: 89.4737%; --fl: 94.7368%; --spidlen: 4; --spwalkn: 8; --spatkn: 6; --spidles: 1.6; --spwalks: 1.4; --spatks: 1.3; --spdraws: 1.2; }
+.ap .wf2s .tk.wsp.v2 .spf { inset: 0 auto 0 50%; width: calc(var(--r, 1) * 100%); transform: translateX(-50%); --nf: 20; --i0: 0%; --i1: 21.0526%; --w0: 21.0526%; --w1: 63.1579%; --a0: 63.1579%; --a1: 94.7368%; --al: 89.4737%; --fl: 94.7368%; --spidlen: 4; --spwalkn: 8; --spatkn: 6; --spidles: 1.6; --spwalks: 1.4; --spatks: 2.2; --spdraws: 1.2; }
 .ap .wf2s .tk.wsp { width: auto; aspect-ratio: var(--ar, 1); } .ap .wf2s .tk.wsp.k-horse, .ap .wf2s .tk.wsp.k-boat { height: clamp(38px, 10cqw, 68px); } /* 말 탄 이는 걷는 이보다 크다 */
 .ap .wf2s .tk.wsp .spf { position: absolute; inset: 0; background: 0 0 / calc(var(--nf, 8) * 100%) 100% no-repeat; animation: spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--j) * -.27s) - var(--k, .5) * 1.6s) infinite; }
 /* 컷의 자리와 수는 변수로 — 옛 8컷 띠(anim)와 새 20컷 띠(anim2 · tools/anim-pack.py)를 같은 규칙이 돌린다. 옛 띠는 두 컷씩 번갈아 (예전과 같다) */
@@ -2008,6 +2008,8 @@ export const WAR_CSS = `
 /* 궁수 — 쏘는 박자에 시위를 당겼다(4) 놓는다(5) · 기병 — 제 박자에 달린다(걷기 컷) */
 .ap .wfield.play .wf2s[data-b] .tk.wsp.r1:not(.tkd) .spf { animation: spdraw calc(.75s * var(--spdraws, 1)) steps(var(--spatkn, 2), jump-none) calc(var(--sa) - .45s) forwards, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--sa) + .5s) - var(--k, .5) * 1.6s) infinite; }
 @keyframes spdraw { from { background-position-x: var(--a0, 57.1429%); } to { background-position-x: var(--al, 71.4286%); } }
+/* 새 띠(v2)의 궁수 — 당기고 놓고 다음 살을 집는 여섯 컷을 쏘는 박자에 네 번 되풀이 (형 10-29: "공격하는 모습이 하나도 안 보인다" — 한 번 당기고 멈춰 있었다) */
+.ap .wfield.play .wf2s[data-b] .tk.wsp.v2.r1:not(.tkd) .spf { animation: spatk calc(.62s * var(--spatks, 1)) steps(var(--spatkn, 2)) calc(var(--sa) - .45s + var(--j, 0) * .07s) 4, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--sa) + 5.2s) - var(--k, .5) * 1.6s) infinite; }
 .ap .wfield.play .wf2s[data-h] .tk.wsp.r2:not(.tkd) .spf { animation: spwalk calc(.3s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--ha, 0s) 3, spatk calc(.26s * var(--spatks, 1)) steps(var(--spatkn, 2)) calc(var(--hd) - .3s) 2, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--hd) + .5s) - var(--k, .5) * 1.6s) infinite; }
 /* 쓰러짐 — 굴리지 않고 쓰러진 컷으로 땅에 남는다 */
 .ap .wf2s .tk.wsp.tkd { rotate: 0deg; opacity: .62; filter: grayscale(.5) brightness(.8) drop-shadow(0 2px 2px #000c); }
