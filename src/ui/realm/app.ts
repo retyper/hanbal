@@ -84,6 +84,7 @@ import { AUD_CSS, askSay, pactSay, typed, type PactKind } from './audience.ts'
 import { customDef, customsOf } from '../../realm/data/customs.ts'
 import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, slotsHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
 import { SCENE_SOUND, makeMusic, playOnce, snd, sndFile, tapSlot } from './sound.ts'
+import { quarrelArt, quarrelBeats } from './quarrel-lines.ts'
 import { castOf, hireVoicePath, voiceGate, voiceKind, voicePath, type VoiceLine } from './voice.ts'
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
@@ -2210,13 +2211,18 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const ans = answers[`card:${c.season}`]
     const pick = ans === undefined ? null : answers[`hush:${c.season}`] === true ? 2 : ans ? 0 : 1
     // 자막처럼 — 두 줄씩, 누르면 다음 장. 다 보면 한 줄 물음과 짧은 답 둘 (형 10-27 지인: "성세천하처럼 자막 두 줄 · 질문 한 줄 · 선택지 세 마디")
-    const beats = info.beats.map(sub)
+    // 장수 다툼은 누가 다투나(말투·성별·사이)에 따라 자막과 그림을 고른다 (quarrel-lines.ts)
+    const qa = c.kind === 'quarrel' ? r.heroes[c.hero ?? ''] : undefined
+    const qb = c.kind === 'quarrel' ? r.heroes[c.hero2 ?? ''] : undefined
+    const q = qa !== undefined && qb !== undefined ? quarrelArt(info.art, qa, qb) : { art: info.art, flip: false }
+    const img = `<img class="cimg${q.flip ? ' flip' : ''}" src="${ART}event/${q.art}.jpg" alt="">`
+    const beats = (qa !== undefined && qb !== undefined ? quarrelBeats(c, qa, qb) : info.beats).map(sub)
     const at = pick !== null ? beats.length : Math.min(cardBeat[`card:${c.season}`] ?? 0, beats.length)
     if (at < beats.length) {
-      return `<div class="cardc story${info.bad ? ' bad' : ''}" data-act="card-beat"><img class="cimg" src="${ART}event/${info.art}.jpg" alt=""><div class="cb"><b>${icon(info.icon, 'cic')}${esc(info.name)}</b>`
+      return `<div class="cardc story${info.bad ? ' bad' : ''}" data-act="card-beat">${img}<div class="cb"><b>${icon(info.icon, 'cic')}${esc(info.name)}</b>`
         + `<p class="csub" aria-live="polite">${esc(beats[at]!)}</p><div class="cnav"><small>${at + 1}/${beats.length} · 누르면 다음 ›</small><button class="cskip" data-act="card-skip">건너뛰기 »</button></div></div></div>`
     }
-    let h = `<div class="cardc${info.bad ? ' bad' : ''}"><img class="cimg" src="${ART}event/${info.art}.jpg" alt=""><div class="cb"><b>${icon(info.icon, 'cic')}${esc(info.name)}</b><p class="cask">${esc(sub(info.ask))}</p><div class="copts">`
+    let h = `<div class="cardc${info.bad ? ' bad' : ''}">${img}<div class="cb"><b>${icon(info.icon, 'cic')}${esc(info.name)}</b><p class="cask">${esc(sub(info.ask))}</p><div class="copts">`
     // 고르지 않았을 때 걸리는 답 — 엔진(events.resolveCard)과 같게: 망명자는 둘째(돌려보낸다) · 장수 다툼은 침묵
     const fallback = cardFallback(c.kind)
     info.opts.forEach((o, i) => {

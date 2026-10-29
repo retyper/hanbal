@@ -134,6 +134,8 @@ export const LEGACY_CSS = `
 .ap .cardc { display: flex; gap: 10px; margin: 8px 0; padding: 10px; border-radius: 14px; border: 1px solid #6a5a3a; background: #201c16; text-align: left; flex-wrap: wrap; }
 .ap .cardc.bad { border-color: #7a4a3a; background: #221816; }
 .ap .cardc .cimg { width: min(180px, 100%); aspect-ratio: 3 / 2; object-fit: cover; border-radius: 10px; flex: none; }
+/* 남녀 다툼 그림은 사내가 왼쪽 — 먼저 나선 이({a})가 여인이면 좌우를 뒤집는다 (quarrel-lines.quarrelArt) */
+.ap .cardc .cimg.flip { transform: scaleX(-1); }
 .ap .cardc .cb { flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 4px; } .ap .cardc .cb > b { color: var(--gold); display: flex; align-items: center; gap: 6px; }
 .ap .cardc .cic { width: 22px; height: 22px; } .ap .cardc p { margin: 0; font-size: 13.5px; }
 /* 고를 것은 한 줄에 나란히 (형 10-25: "1열 n행 말고 1행 n열") */
