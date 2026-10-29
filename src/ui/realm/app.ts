@@ -5932,6 +5932,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const id = d['army']!
         const x = r?.armies[id]
         const sameNode = (y: string): boolean => r?.armies[y]?.at === x?.at && r?.armies[y]?.march === null && r?.armies[y]?.faction === me()
+        // 고른 군대가 있는데 갈 수 있는 다른 고을에 선 말(우리 · 동맹 · 적)을 누르면 그 고을로 보낸다 — 말이 고을을 가려 「옮기기」가 안 먹었다 (형 10-29: "내 군대를 다른 내 고을로 옮기는 게 안 돼 · 탭탭으로")
+        if (x !== undefined && x.march === null && armySel.length > 0 && !armySel.includes(id) && !armySel.every(sameNode)) {
+          const go = root.querySelector<HTMLElement>(`.nd[data-act="go"][data-node="${x.at}"]`)
+          if (go !== null) { go.click(); return }
+        }
         clearParty() // 군대를 고르면 개척단 고르기는 풀린다 — 둘은 함께 켜지지 않는다
         leadPop = ''
         if (armySel.includes(id)) armySel = armySel.filter((y) => y !== id)
