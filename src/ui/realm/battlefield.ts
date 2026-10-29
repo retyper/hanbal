@@ -908,10 +908,10 @@ const ART_CUT: Readonly<Record<Art, CutKind>> = {
   snipe: 'shot', rite: 'cheer', sway: 'call', stand: 'guard', ambush: 'strike', vanguard: 'strike', feint: 'back', order: 'cheer', shout: 'call',
 }
 /** 기술 몸짓마다 한 마디 — 초상 옆에 크게 */
-const CUT_SHOUT: Readonly<Record<CutKind, string>> = { lead: '내게 맡겨라!', cheer: '힘을 내라!', strike: '나를 따르라!', grab: '사로잡아라!', back: '물러서라!', shot: '한 발로 끝낸다', call: '무기를 버려라!', guard: '버텨라!' }
+const CUT_SHOUT: Readonly<Record<CutKind, string>> = { lead: '제게 맡겨 주시옵소서!', cheer: '힘을 내라!', strike: '나를 따르라!', grab: '사로잡아라!', back: '물러서라!', shot: '한 발로 끝낸다', call: '무기를 버려라!', guard: '버텨라!' }
 
 /** 장수 기술이 나가는 장면 — 초상 · 이름 · 기술 이름 · 결마다 다른 효과 (2.2초쯤 · 누르면 바로 걷힌다) */
-function cutHtml(art: string, hero: string | null, name: string, skill: string, kind: CutKind): string {
+function cutHtml(art: string, hero: string | null, name: string, skill: string, kind: CutKind, shout: string = CUT_SHOUT[kind]): string {
   const file = hero !== null ? bustOf(hero) : undefined
   const face = file !== undefined ? `<img class="wcf" src="${art}bust/${file}.jpg" alt="">` : `<img class="wcf unit" src="${art}icon/unit-general.png" alt="">`
   let fx = ''
@@ -920,7 +920,7 @@ function cutHtml(art: string, hero: string | null, name: string, skill: string, 
   if (kind === 'strike' || kind === 'shot') fx += `<i class="wcslash"></i>${Array.from({ length: 9 }, (_, i) => `<i class="wcline" style="--y:${(10 + i * 10)}%;--t:${(0.08 + (i % 3) * 0.05).toFixed(2)}s"></i>`).join('')}`
   if (kind === 'grab') fx += `<i class="wcrope"></i>`
   if (kind === 'guard') fx += `<i class="wcshield"></i>`
-  return `<div class="wcut k-${kind}"><i class="wcbg"></i>${fx}<div class="wcpf">${face}<i></i></div><div class="wctx"><b>${esc(CUT_SHOUT[kind])}</b><span>${esc(name)} · ${esc(skill)}</span></div></div>`
+  return `<div class="wcut k-${kind}"><i class="wcbg"></i>${fx}<div class="wcpf">${face}<i></i></div><div class="wctx"><b>${esc(shout)}</b><span>${esc(name)} · ${esc(skill)}</span></div></div>`
 }
 
 /** 싸움터에 날아오르는 불티 — 낱낱이, 자리·크기·빠르기가 조금씩 다르게 (꾸밈이라 판의 시드와 상관없다) */
@@ -3228,7 +3228,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       const hh = prev.heroes[hero] ?? t.after.heroes[hero]
       const [sn, sl] = styleWord(hh)
       const box = document.createElement('div')
-      box.innerHTML = cutHtml(host.art, hero, hh?.name ?? '', `${sn}: ${sl}`, 'lead')
+      // 맡긴 장수가 군주에게 「제게 맡겨 주시옵소서!」 · 내 군주가 몸소 이끌면 군사들에게 외친다 (형 10-29: "전투 일임하면 '내게 맡겨라' 라고 반말")
+      box.innerHTML = cutHtml(host.art, hero, hh?.name ?? '', `${sn}: ${sl}`, 'lead', hh !== undefined && isMe(hh) ? '나를 따르라!' : CUT_SHOUT.lead)
       const cut = box.firstElementChild as HTMLElement
       cut.addEventListener('animationend', (e) => { if (e.target === cut) cut.remove() })
       cut.addEventListener('click', (e) => { e.stopPropagation(); cut.remove() })
