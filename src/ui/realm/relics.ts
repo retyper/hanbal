@@ -140,7 +140,8 @@ export function tombHtml(k: RelicKit, r: Realm, fresh: boolean): string {
       h += `<div class="tbx ${tier} open${fresh ? ' fresh' : ''}"><img class="tbc" src="${chestImg(k, id)}" alt=""><img class="tbloot" src="${k.art}relic/loot.png" alt=""><img class="tbr" src="${img(k, id)}" alt="">`
         + `<b class="tbn">${k.esc(d.name)}</b><small class="tbe">${TIER_NAME[d.tier]} · ${k.esc(d.era)}</small><span class="tbfx">${k.esc(relicLine(id))}</span></div>`
     } else {
-      h += `<div class="tbx ${tier} miss${fresh ? ' fresh' : ''}"><img class="tbc" src="${chestImg(k, id)}" alt=""><img class="tbr" src="${img(k, id)}" alt=""><b class="tbn">${k.esc(d.name)}</b><small class="tbe">남겨 둔 것 — 다음 무덤에서</small></div>`
+      // 안 고른 둘은 닫힌 채 — 안을 보여 주지 않는다 (형 10-29: "남은 2상자에 들어있던 거 보여 주는 건 말이 안 된다")
+      h += `<div class="tbx ${tier} miss${fresh ? ' fresh' : ''}"><img class="tbc" src="${chestImg(k, id)}" alt=""></div>`
     }
   })
   h += `</div>`
@@ -152,7 +153,7 @@ export function tombHtml(k: RelicKit, r: Realm, fresh: boolean): string {
 
 /**
  * 방금 연 상자 — 화면을 덮고 크게 (형: "유저가 퍽 하면 게임은 으아아아" · 메모리 wwe-overreaction-ux).
- * 번쩍 → 상자가 터지며 흙먼지 → 유물이 솟아 낱알 금빛이 흩어지고 → 이름이 도장처럼 박힌다. 누르면 상자 셋 화면으로.
+ * 번쩍 → 상자가 터지며 흙먼지 → 유물이 솟아 낱알 금빛이 흩어지고 → 이름이 도장처럼 박힌다. 누르면 덮개만 걷힌다(안 고른 둘은 닫힌 채).
  * 금빛 낱알은 한 개짜리 그림(fx/gold)을 N개로 흩는다 — 덩어리 그림을 통째로 움직이지 않는다
  */
 function revealHtml(k: RelicKit, id: string): string {
@@ -171,7 +172,7 @@ function revealHtml(k: RelicKit, id: string): string {
   return `<div class="tbrv t-${d.tier}" data-act="tomb-seen"><div class="tbfl"></div><div class="tbglow"></div>`
     + `<div class="tbst">${fx}<img class="tbrc" src="${chestImg(k, id)}" alt=""><img class="tbrr" src="${img(k, id)}" alt=""></div>`
     + `<div class="tbrt"><span class="tbtier">${TIER_NAME[d.tier]}</span><b>${k.esc(d.name)}</b><small>${k.esc(d.era)}</small><span class="tbrfx">${k.esc(relicLine(id))}</span></div>`
-    + `<div class="tbgo"><button class="btn pri big" data-act="dy-open">단련터에서 끼운다 ›</button><button class="btn ghost" data-act="tomb-seen">상자 셋 보기</button></div></div>`
+    + `<div class="tbgo"><button class="btn pri big" data-act="dy-open">단련터에서 끼운다 ›</button><button class="btn ghost" data-act="tomb-back">끝 화면으로</button></div></div>`
 }
 
 // ───────── 단련터 — 유물 칸 · 고르기 · 도감
