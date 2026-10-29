@@ -36,7 +36,7 @@ export const CHAPTERS: readonly Chapter[] = [
   },
   // 1장 — 배우는 판 다음, 손을 놓고 1:1 로 제대로 붙는다 (형 10-25: "튜토리얼은 0장으로 두고 1장은 1:1로 제대로 싸워보게")
   {
-    id: 'mahan', n: 1, region: 'mahan', nation: 'baekje', name: '온조, 마한을 아우르다', era: '8년 · 한강에서 차령까지', hero: '온조',
+    id: 'mahan', n: 1, region: 'mahan', nation: 'baekje', name: '온조, 마한을 아우르다', era: '기원후 8년 · 한강에서 차령까지', hero: '온조',
     hook: '위례에 선 지 스물여섯 해. 남쪽의 큰 나라 마한은 백제를 아직 제 울타리 안 작은 나라로 본다. 온조는 사냥을 간다며 군사를 일으킨다.',
     goal: '마한의 목지 도읍과 원산성·금현성을 쥔다',
     art: 'keyart/mahan.jpg',
@@ -64,7 +64,7 @@ export const CHAPTERS: readonly Chapter[] = [
     scenario: { id: 'seorabeol', win: [{ kind: 'submit', factions: ['sr-yangsan', 'sr-goheo', 'sr-jinji', 'sr-daesu', 'sr-gari', 'sr-goya'], how: 'either' }], limit: 40 },
   },
   {
-    id: 'gujibong', n: 4, region: null, nation: 'garak', name: '구지봉의 노래', era: '42년 · 김해', hero: '김수로',
+    id: 'gujibong', n: 4, region: null, nation: 'garak', name: '구지봉의 노래', era: '기원후 42년 · 김해', hero: '김수로',
     hook: '「거북아 거북아 머리를 내어라」 — 하늘에서 내린 금빛 알. 바다 건너 탈해가 왕위를 내놓으라 한다.',
     goal: '아홉 간이 모두 따르고, 철을 판 나라가 다섯을 넘는다',
     art: 'event/event-egg-birth.jpg',
@@ -72,7 +72,7 @@ export const CHAPTERS: readonly Chapter[] = [
     scenario: { id: 'gujibong', win: [] },
   },
   {
-    id: 'daemusin', n: 5, region: null, nation: 'goguryeo', name: '대무신왕, 부여를 치다', era: '22년 · 동부여', hero: '대무신왕',
+    id: 'daemusin', n: 5, region: null, nation: 'goguryeo', name: '대무신왕, 부여를 치다', era: '기원후 22년 · 동부여', hero: '대무신왕',
     hook: '할아버지 주몽을 쫓던 그 부여. 봄·여름이면 부여 도읍 앞 들은 말이 빠지는 수렁이 된다.',
     goal: '동부여 도읍을 치고 대소왕을 쓰러뜨린다',
     art: 'event/event-winter-ambush.jpg',
@@ -80,7 +80,7 @@ export const CHAPTERS: readonly Chapter[] = [
     scenario: { id: 'daemusin', win: [] },
   },
   {
-    id: 'jamyeonggo', n: 6, region: null, nation: 'goguryeo', name: '자명고', era: '32년 · 낙랑', hero: '호동 왕자',
+    id: 'jamyeonggo', n: 6, region: null, nation: 'goguryeo', name: '자명고', era: '기원후 32년 · 낙랑', hero: '호동 왕자',
     hook: '적이 오면 스스로 우는 북. 낙랑 공주의 칼끝이 북을 찢어야 기습이 먹힌다 — 대가가 따른다.',
     goal: '낙랑 도읍을 기습으로 쥔다',
     art: 'event/event-night-raid.jpg',
@@ -96,7 +96,7 @@ export const CHAPTERS: readonly Chapter[] = [
     scenario: { id: 'samseonghyeol', win: [] },
   },
   {
-    id: 'namusaja', n: 8, region: null, nation: 'saro', name: '나무 사자', era: '512년 · 우산국', hero: '이사부',
+    id: 'namusaja', n: 8, region: null, nation: 'saro', name: '나무 사자', era: '기원후 512년 · 우산국', hero: '이사부',
     hook: '배마다 나무 사자를 싣고 간다. "항복하지 않으면 이 짐승을 풀어 밟아 죽이겠다."',
     goal: '우산국이 싸우지 않고 항복한다',
     art: 'event/event-eight-harbours.jpg',

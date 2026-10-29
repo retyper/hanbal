@@ -54,7 +54,7 @@ export function customsHtml(k: Pick<FrontKit, 'esc'> & Partial<Pick<FrontKit, 'i
   // 군대의 결 — 무엇을 많이 뽑나 (남의 나라도 이 비로 뽑는다)
   const src = NATION_MIX[nation]?.source ?? KYEOL_MIX[kyeol].source
   const shares = mix.filter(([, w]) => w > 0).map(([u, w]) => `<i>${k.esc(UNIT_NAME[u])} ${Math.round(w * 100)}%</i>`).join('')
-  if (shares !== '') h += `<div class="carmy"${src !== '' ? ` data-tip="${k.esc(src)}"` : ''}><b>군대</b>${army !== '' ? `<span>${k.esc(army)}</span>` : ''}<span class="cmix">${shares}</span></div>`
+  if (shares !== '') h += `<div class="carmy"${src !== '' ? ` data-tip="${k.esc(src)}"` : ''}><b>군대 짜임</b>${army !== '' ? `<span>${k.esc(army)}</span>` : ''}<span class="cmix">${shares}</span><small class="cmw">이 나라 군사는 대개 이 비율로 짜입니다 — 처음 군대도, 알아서 뽑을 때도</small></div>`
   return h + '</div>'
 }
 
@@ -359,10 +359,10 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
   if (step === 0) {
     // 배우는 판은 백제가 서던 해 — 『삼국사기』 온조왕 원년 (기원전 18)
     const [when, age] = region === 'tutorial' ? ['기원전 18년.', '옛 조선이 무너진 지 아흔 해, 주몽이 졸본에 고구려를 세운 무렵.']
-      : region === 'mahan' ? ['서기 8년.', '온조가 위례에 나라를 세운 지 스물여섯 해, 마한의 진왕이 아직 쉰 나라의 우두머리이던 때.']
+      : region === 'mahan' ? ['기원후 8년.', '온조가 위례에 나라를 세운 지 스물여섯 해, 마한의 진왕이 아직 쉰 나라의 우두머리이던 때.']
       : region === 'seorabeol' ? ['기원전 57년.', '옛 조선의 유민이 진한 골짜기마다 마을을 이루어 살던 때.']
       : region === 'jumong' ? ['기원전 37년.', '옛 조선이 무너진 지 일흔 해, 동부여의 왕자들이 활 잘 쏘는 사내를 시기하던 때.']
-        : ['기원 2세기.', '옛 조선이 무너진 지 삼백 년, 왕이 하나가 아니던 때.']
+        : ['기원후 2세기.', '옛 조선이 무너진 지 삼백 년, 왕이 하나가 아니던 때.']
     body = `<div class="pl pera">${oldMapHtml(k, r, region)}<p class="l1">${when}</p><p class="l2">${age}</p>`
       + `<p class="l3">${k.esc(ERA[region])}</p>`
       + `<p class="l4">${r.known !== undefined ? '그러나 당신은 아직 이웃밖에 모릅니다. 지도는 아직 빈 한지입니다.' : '저마다 제 도읍을 지키며, 남의 도읍을 넘본다.'}</p></div>`
@@ -382,8 +382,14 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
     ]
     // 캠페인의 장이면 그 장의 목표를 (CAMPAIGN.md)
     const ch = chapterOfRegion(region)
-    const head = ch !== undefined ? `<small class="gch">${ch.n}장 · ${k.esc(ch.name)}</small>${k.esc(ch.goal)}.` : `도읍 <b>${need}</b>곳을 쥐면 이깁니다.`
-    body = `<div class="pl pgoal"><p class="gl">${head}<br><small>우리 도읍을 잃으면 집니다.</small></p><div class="ways">`
+    // 장(캠페인)·배우는 판은 목표가 하나 — 크게 한 줄 · 자유 판은 넷 가운데 하나 (app.pathShares 와 같은 넷)
+    const free = ch === undefined && region !== 'tutorial'
+    const one = ch !== undefined ? k.esc(ch.goal) : region === 'tutorial' ? '미추홀 도읍을 쥐면 이깁니다' : `도읍 <b>${need}</b>곳을 쥔다`
+    const paths = free ? `<ol class="gpaths">${WIN_PATHS.map(([ic, name, what], i) => `<li style="--d:${(0.35 + i * 0.18).toFixed(2)}s">${k.icon(ic, 'gpi')}<b>${name}</b><span>${i === 0 ? `도읍 <b>${need}</b>곳을 쥔다` : what}</span></li>`).join('')}</ol>` : ''
+    const head = `<div class="gbox"><span class="gtag">승리 목표</span>${ch !== undefined ? `<small class="gch">${ch.n}장 · ${k.esc(ch.name)}</small>` : ''}`
+      + (free ? `<p class="gone">넷 가운데 <b>하나만</b> 이루면 이깁니다</p>${paths}` : `<p class="gone big">${one}</p>`)
+      + `<p class="glose">우리 도읍을 잃으면 집니다</p></div>`
+    body = `<div class="pl pgoal">${head}<div class="ways">`
       + ways.map(([ic, t, d, subs]) => `<div class="way">${k.icon(ic, 'wic')}<b>${t}</b><span>${d}<span class="wsub">${subs.map(([si, sn]) => `<i>${k.icon(si, 'wsi')}${sn}</i>`).join('')}</span></span></div>`).join('')
       + `</div><p class="ptip">한 계절에 명령을 정하고 <b>다음 계절</b>을 누르세요. 모든 나라가 한꺼번에 움직입니다.</p></div>`
   }
@@ -392,6 +398,14 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
   return `<div class="prologue s${step}"><div class="pin">${body}</div><div class="pnav"><span class="pdots">${dots}</span>`
     + `<button class="btn ghost" data-act="pl-skip">넘기기</button><button class="btn pri big" data-act="pl-next">${last ? '첫 봄을 연다' : '다음'}</button></div></div>`
 }
+
+/** 자유 판의 승리 길 넷 — 아이콘 · 이름 · 한 줄 (자세한 것은 판 위 「?」 · app GUIDE.paths) */
+const WIN_PATHS: ReadonlyArray<readonly [string, string, string]> = [
+  ['settle-capital', '정복', ''],
+  ['ask-alliance', '맹주', '아는 나라 절반 넘게를 속국과 동맹으로 묶고 네 계절을 버틴다'],
+  ['settle-iron-town', '철과 뱃길', '철광이나 포구를 쥐고 여러 나라와 철을 바꾼다'],
+  ['status-good-omen', '큰 제사', '소도 곁 고을에서 봄·가을 제사를 한 번도 거르지 않는다'],
+]
 
 // ───────── 끝 — 연대기
 
@@ -757,6 +771,21 @@ export const FRONT_CSS = `
 /* 서막 둘째 장은 밝은 한지 위 — 결의 한 줄은 먹빛으로, 카드는 짙게 */
 .ap .prologue .kyeol .kl { color: #4a3826; } .ap .prologue .kyeol .kl b { color: #7a1f10; }
 .ap .prologue .cust, .ap .prologue .carmy { background-color: #2a2015ee; text-align: left; } .ap .prologue .cust.t-nation { background-color: #3a1f12ee; } .ap .prologue .cust.t-land { background-color: #1f2a1aee; } .ap .prologue .carmy { background-color: #1a1d22ee; }
+.ap .carmy .cmw { flex-basis: 100%; font-size: 11px; color: #a8b0bc; }
+/* 승리 목표 — 도장 찍듯 내려앉는 판 · 붉은 띠 「승리 목표」 · 자유 판은 넷을 한 줄씩 (형 10-29: "무조건 읽게끔") */
+.ap .prologue .pgoal .gbox { position: relative; box-sizing: border-box; width: min(100%, 640px); margin: 0 auto 16px; padding: 12px 14px 12px; border: 3px double #7a1f10; background: #f6ead0e6; box-shadow: 0 6px 18px #0005; text-align: center; animation: gstamp .55s cubic-bezier(.2,.9,.3,1.3) .1s both; }
+.ap .prologue .pgoal .gtag { display: inline-block; padding: 3px 16px; background: #7a1f10; color: #fff3d6; font-weight: 800; letter-spacing: .3em; font-size: 14px; margin-bottom: 8px; }
+.ap .prologue .pgoal .gch { display: block; font-size: 14px; letter-spacing: .1em; color: #8a5a2a; margin-bottom: 4px; }
+.ap .prologue .pgoal .gone { margin: 2px 0 8px; font-size: clamp(18px, 2.4vw, 24px); font-weight: 800; color: #3a2412; word-break: keep-all; }
+.ap .prologue .pgoal .gone.big { font-size: clamp(22px, 3.2vw, 32px); line-height: 1.35; } .ap .prologue .pgoal .gone b { color: #7a1f10; font-size: 1.3em; }
+.ap .prologue .pgoal .gpaths { list-style: none; margin: 0 auto; padding: 0; display: grid; gap: 6px; text-align: left; }
+.ap .prologue .pgoal .gpaths li { display: grid; grid-template-columns: 34px auto minmax(0, 1fr); align-items: center; gap: 8px; padding: 6px 8px; background: #fff8e6b3; border-left: 4px solid #7a1f10; animation: gin .4s ease-out var(--d, 0s) both; }
+.ap .prologue .pgoal .gpaths .gpi { width: 32px; height: 32px; object-fit: contain; } .ap .prologue .pgoal .gpaths li > b { color: #7a1f10; font-size: 16px; white-space: nowrap; }
+.ap .prologue .pgoal .gpaths li > span { font-size: 13.5px; line-height: 1.4; color: #3a2412; word-break: keep-all; overflow-wrap: anywhere; } .ap .prologue .pgoal .gpaths li > span b { color: #7a1f10; }
+.ap .prologue .pgoal .glose { margin: 8px 0 0; font-size: 13.5px; font-weight: 700; color: #7a1f10; }
+@keyframes gstamp { from { opacity: 0; transform: scale(1.25); } to { opacity: 1; transform: none; } }
+@keyframes gin { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ap .prologue .pgoal .gbox, .ap .prologue .pgoal .gpaths li { animation: none; } }
 .ap .carmy b { color: #dfe6f0; font-size: 13px; } .ap .carmy .cmix { display: flex; flex-wrap: wrap; gap: 4px; } .ap .carmy .cmix i { font-style: normal; padding: 0 6px; border-radius: 8px; background: #ffffff12; }
 .ap .cust .do { color: #d8e6c8; } .ap .cust .co { color: #e0b0a0; }
 .ap .cust .do::before { content: '+ '; color: #9fd18b; } .ap .cust .co::before { content: '− '; color: #e08a74; }

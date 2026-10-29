@@ -232,10 +232,10 @@ export const CUSTOMS: readonly CustomDef[] = [
     source: '『삼국사기』 신라본기 첨해이사금 15년 — 다벌 땅에 달벌성을 쌓고 성주를 두었다 · 대구 달성 토성',
   }),
   def({
-    id: 'geumseong', kyeol: 'other', tier: 'nation', nations: ['iseo'], name: '도읍 에우기', layer: 'rule', seed: '에움', pack: 'base', wave: 3, live: true,
-    does: '남의 도읍을 곧장 에운다 — 도읍을 칠 때 성의 덤을 덜 받는다',
-    cost: '도읍을 치면 그 나라와 손잡은 나라들이 모두 구하러 온다 (전쟁)',
-    verb: '군사가 적어 작은 고을부터 하나씩 먹어 들어갈 수 없다. 그래서 큰 나라의 도읍을 곧장 에운다',
+    id: 'geumseong', kyeol: 'other', tier: 'nation', nations: ['iseo'], name: '도읍 포위', layer: 'rule', seed: '에움', pack: 'base', wave: 3, live: true,
+    does: '남의 도읍을 곧바로 둘러싸고 친다 — 도읍을 칠 때 성벽이 덜 막아 준다',
+    cost: '남의 도읍을 치면 그 나라와 동맹인 나라들이 모두 우리와 전쟁에 든다',
+    verb: '군사가 적어 작은 고을부터 하나씩 먹어 들어갈 수 없다. 그래서 큰 나라의 도읍을 곧바로 둘러싸고 친다',
     source: '『삼국사기』 신라본기 유례이사금 14년 — 이서국이 와서 금성을 에웠다. 대나무 잎을 꽂은 군사가 나타나 물리쳤다',
   }),
   def({
