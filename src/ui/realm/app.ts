@@ -57,7 +57,7 @@ import { LEVEL_LINE, TIER_MAX, levelName } from '../../realm/tier.ts'
 import { FIT_CSS, MQ_CSS, fitLabels, marquee } from './fit.ts'
 import { annalOf } from '../../realm/data/annals.ts'
 import { TALK_CSS, WOO_CSS, outlookHtml, miniHtml, pickBoxHtml, progressHtml, talkBoxHtml, talkOver, wallHtml, whoHtml, wooBest, type TalkLines, type WooKit } from './woo-view.ts'
-import { wooLordLine, wooNotYetLine, wooOpenLine, wooPitchLine, wooReactLine, wooWonLine } from './woo-lines.ts'
+import { wooKneelLine, wooLordLine, wooNotYetLine, wooOpenLine, wooPitchLine, wooReactLine, wooWonLine } from './woo-lines.ts'
 import { talkAuto, talkRun, talkWhy } from '../../realm/woo.ts'
 import { GROW_CSS, HERO_CSS, TITLE_MEAN, artChip, bondChip, growthHtml, heroRadar, nameHtml, roleLine, splitTitle, traitChips } from './heroview.ts'
 import { APP_CSS, CLOUD_CSS, SEASONP_CSS, UI_CSS } from './appstyle.ts'
@@ -3539,7 +3539,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function wooKit(r: Realm): WooKit {
     return { art: ART, esc, bust, name: nameHtml, icon, cost: costHtml, grainIcon: GOOD_ICON.grain, jobOf: (y) => heroJob(r, y)?.[1] ?? null }
   }
-  const WOO_LINES: TalkLines = { open: wooOpenLine, lord: wooLordLine, pitch: wooPitchLine, react: wooReactLine, notYet: wooNotYetLine, won: wooWonLine, hire: (x) => HIRE_LINE[x.id] ?? HIRE_BY_TRAIT[x.traits?.[0] ?? ''] ?? HIRE_PLAIN }
+  const WOO_LINES: TalkLines = { open: wooOpenLine, lord: wooLordLine, pitch: wooPitchLine, react: wooReactLine, notYet: wooNotYetLine, kneel: wooKneelLine, won: wooWonLine, hire: (x) => HIRE_LINE[x.id] ?? HIRE_BY_TRAIT[x.traits?.[0] ?? ''] ?? HIRE_PLAIN }
   /** 이 포로의 이번 계절 회유 명령 */
   const wooOrder = (id: string): Extract<Order, { kind: 'persuade' }> | undefined =>
     heroOrders.find((o): o is Extract<Order, { kind: 'persuade' }> => o.kind === 'persuade' && o.hero === id)

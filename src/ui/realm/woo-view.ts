@@ -186,10 +186,13 @@ export interface TalkState {
 export interface TalkLines {
   readonly open: (r: Realm, x: Hero, by: string | null) => string
   readonly lord: (by: Hero) => string
-  readonly pitch: (r: Realm, by: Hero, x: Hero, a: WooApproach) => string
-  readonly react: (x: Hero, react: WooReact) => string
+  /** i 번째 마디에 우리 장수가 할 말 (talk[i] 가 그 거리 · reacts 는 앞 마디들의 반응) */
+  readonly pitch: (r: Realm, by: Hero, x: Hero, talk: readonly WooApproach[], i: number, reacts: readonly WooReact[]) => string
+  /** i 번째 마디의 대답 · hook 이면 다음 마디를 부르는 물음까지 */
+  readonly react: (r: Realm, by: Hero, x: Hero, talk: readonly WooApproach[], i: number, reacts: readonly WooReact[], hook: boolean) => string
   readonly notYet: (x: Hero) => string
-  readonly won: (by: Hero, x: Hero) => string
+  readonly kneel: (x: Hero) => string
+  readonly won: (r: Realm, by: Hero, x: Hero, talk: readonly WooApproach[], reacts: readonly WooReact[]) => string
   /** 넘어온 이의 등용 첫마디 (hire-lines · 녹음이 함께 울린다) */
   readonly hire: (x: Hero) => string | null
 }
@@ -200,6 +203,9 @@ export const talkOver = (t: WooTalk, n: number): boolean => t.end !== 'done' || 
 /** 말하는 사람 한 줄 — 작은 둥근 얼굴과 그 밑 이름, 오른쪽에 말 (형 10-29: 「"말" — 이름」 금지) */
 const say = (k: WooKit, h: Hero, line: string, cls = ''): string =>
   `<div class="dp-say${cls}"><span class="dp-who2">${k.bust(h, 'dp-sf')}<small>${k.esc(h.name)}</small></span><span class="dp-line">${k.esc(line)}</span></div>`
+/** 지난 말 — 한 마디를 한 줄로 접는다 (작은 얼굴 + 말 앞머리 · 폰에서 굴리지 않게) */
+const oldHalf = (k: WooKit, h: Hero, line: string, cls = ''): string =>
+  `<span class="dp-oh${cls}">${k.bust(h, 'dp-of')}<i>${k.esc(line)}</i></span>`
 
 /** 조각 — 벽이 깎이면 낱낱이 튄다 (메모리: 이펙트는 낱낱이) */
 const pieces = (n: number, at: number): string => Array.from({ length: n }, (_, i) => {
@@ -219,29 +225,40 @@ export function talkBoxHtml(k: WooKit, L: TalkLines, r: Realm, s: TalkState): st
   const won = over && s.hand && t.hand?.ok === true
   const lost = over && s.hand && t.hand !== null && !t.hand.ok
   const rage = last?.react === 'rage'
-  let h = `<div class="dp-tk${rage ? ' rage' : ''}${won ? ' won' : ''}" role="dialog" aria-label="옥중 담판" style="--bg:url('${k.art}event/event-captive-persuade.jpg')">`
+  let h = `<div class="dp-tk${rage ? ' rage' : ''}${won ? ' won' : ''}${t.beats.length > 0 ? ' deep' : ''}" role="dialog" aria-label="옥중 담판" style="--bg:url('${k.art}event/event-captive-persuade.jpg')">`
   const dot = (i: number): string => { const b = t.beats[i]; return b === undefined ? '' : b.react === 'big' || b.react === 'sway' ? 'ok' : b.react === 'rage' ? 'bad' : 'no' }
   h += `<div class="dp-th"><b>옥중 담판</b><i class="dp-dots">${Array.from({ length: WOO_BEATS }, (_, i) => `<b class="${dot(i)}"></b>`).join('')}</i><span>${over ? '끝' : `${s.talk.length + 1} / ${WOO_BEATS} 마디`}</span></div>`
   // 얼굴 둘. 갇힌 이는 사로잡기 장면과 같은 옥문 틀(fx/jail-frame.png)과 쇠창살(fx/jail-bars.png), 우리 장수는 청동 얼굴 테(ui/frame-portrait.png).
   // 넘어오면 창살이 들보 속으로 올라가고 옥문 틀이 걷히고 청동 테가 씌워진 채 우리 쪽으로 건너온다 (형 10-29: "감옥 틀이랑 철창 어따 팔아먹고 회색 svg")
   h += `<div class="dp-fr"><span class="dp-fx jail"><span class="dp-cell">${k.bust(x, 'dp-ff')}<i class="dp-bars"><b></b></i><i class="dp-jail"></i><i class="dp-gold"></i></span><small>${k.name(x.name)}</small></span><span class="dp-vs">${won ? '' : '⇄'}</span><span class="dp-fx ours"><span class="dp-cell">${k.bust(by, 'dp-ff')}<i class="dp-gold on"></i></span><small>${k.name(by.name)}</small><small class="dp-st3">매력 <b>${deokOf(by)}</b> · 지략 <b>${by.ryak}</b> · 무예 <b>${by.mu}</b></small></span></div>`
-  // 말 두 줄
+  // 말 — 한 줄기로 쌓인다 (형 10-29: "대사가 이어지지가 않는데 · 루트마다 분기가 나뉘어야"). 위가 먼저 한 말.
+  // 지난 마디는 한 줄로 접고(얼굴 둘 + 말 앞머리), 지금 마디만 펼쳐 밝힌다. 첫마디(단서)는 마디 0
+  const n = t.beats.length
+  const said = s.talk.slice(0, n)
+  const reacts = t.beats.map((b) => b.react)
+  const pitch = (i: number, tk: readonly WooApproach[] = said): string => L.pitch(r, by, x, tk, i, reacts)
+  const react = (i: number, hook: boolean): string => L.react(r, by, x, said, i, reacts, hook)
   const rows: string[] = []
-  if (won) {
-    rows.push(say(k, by, last !== undefined ? L.pitch(r, by, x, last.a) : L.lord(by)))
-    // 등용 첫마디는 다음 계절 등용 장면에서 한다 · 여기서는 고개를 숙이는 한마디만 (형 10-29: "여기서 바로 옥을 열고 나와선 안 돼 · 다음 판에 등용 뜨잖아")
-    rows.push(say(k, x, L.react(x, 'big'), ' r-big'))
+  const fold = (upto: number): void => {
+    rows.push(`<div class="dp-old">${oldHalf(k, x, L.open(r, x, by.id))}</div>`)
+    for (let i = 0; i < upto; i++) rows.push(`<div class="dp-old">${oldHalf(k, by, pitch(i))}${oldHalf(k, x, react(i, true), ` r-${reacts[i]}`)}</div>`)
   }
-  else if (lost) rows.push(say(k, x, L.notYet(x)))
-  else if (s.sel !== null && !over) {
-    rows.push(last !== undefined ? say(k, x, L.react(x, last.react)) : say(k, x, L.open(r, x, by.id)))
-    rows.push(say(k, by, L.pitch(r, by, x, s.sel), ' pre'))
-  } else if (last !== undefined) {
-    rows.push(say(k, by, L.pitch(r, by, x, last.a)))
-    rows.push(say(k, x, L.react(x, last.react), ` r-${last.react}`))
+  if (n === 0) {
+    if (s.sel !== null) rows.push(say(k, x, L.open(r, x, by.id)), say(k, by, pitch(0, [s.sel]), ' pre now'))
+    else rows.push(say(k, by, L.lord(by), ' lord'), say(k, x, L.open(r, x, by.id), ' now'))
+  } else if (won || lost) {
+    // 등용 첫마디는 다음 계절 등용 장면에서 한다 · 여기서는 고개를 숙이는 한마디만 (형 10-29: "여기서 바로 옥을 열고 나와선 안 돼 · 다음 판에 등용 뜨잖아")
+    fold(n - 1)
+    // 판을 가른 말은 아래 큰 글이 인용한다 · 마지막 마디도 접어 두고 고개 숙이는 한마디만 펼친다 (폰에서 넘치지 않게)
+    rows.push(`<div class="dp-old">${oldHalf(k, by, pitch(n - 1))}${oldHalf(k, x, react(n - 1, false), ` r-${reacts[n - 1]}`)}</div>`)
+    rows.push(won ? say(k, x, L.kneel(x), ' hire now') : say(k, x, L.notYet(x), ' now'))
+  } else if (s.sel !== null && !over) {
+    fold(n - 1)
+    rows.push(`<div class="dp-old">${oldHalf(k, by, pitch(n - 1))}</div>`)
+    rows.push(say(k, x, react(n - 1, true), ` r-${reacts[n - 1]}`), say(k, by, pitch(n, [...said, s.sel]), ' pre now'))
   } else {
-    rows.push(say(k, by, L.lord(by), ' lord'))
-    rows.push(say(k, x, L.open(r, x, by.id)))
+    fold(n - 1)
+    rows.push(say(k, by, pitch(n - 1)), say(k, x, react(n - 1, !over), ` r-${reacts[n - 1]} now`))
   }
   h += `<div class="dp-talk">${rows.join('')}</div>`
   // 벽 — 막대와 조각 · 노여움이면 붉게 두꺼워진다
@@ -260,7 +277,7 @@ export function talkBoxHtml(k: WooKit, L: TalkLines, r: Realm, s: TalkState): st
   h += `<div class="dp-chips">${chips.map((c) => `<i class="dp-chip">${k.esc(c)}</i>`).join('')}${(x.grudge ?? 0) > 0 ? `<i class="dp-chip bad">원한 ${x.grudge}</i>` : ''}</div></div>`
   // 가운데 — 말할 거리 단추 · 끝났으면 결과
   if (won) {
-    h += `<div class="dp-end won"><b class="dp-big">${k.esc(L.won(by, x))}</b><small>다음 계절에 옥문을 열고 우리 장수로 맞습니다.</small></div>`
+    h += `<div class="dp-end won"><b class="dp-big">${k.esc(L.won(r, by, x, said, reacts))}</b><small>다음 계절에 옥문을 열고 우리 장수로 맞습니다.</small></div>`
   } else if (lost) {
     const pc = Math.round(t.hand!.p * 100)
     h += `<div class="dp-end"><b>${pc >= 50 ? `아깝다! ${pc}%였다` : `넘어올 가망 ${pc}%, 이번엔 고개를 저었다`}</b><small>마음의 벽은 무너진 채로 남습니다. 맡겨 두면 계절마다 다시 굴립니다.</small></div>`
@@ -300,6 +317,7 @@ export const TALK_CSS = `
 /* 얼굴 칸 둘레에 옥문 틀이 30% 씩 나온다 (틀 그림의 빈 칸 62.5% · 사로잡기 장면 appstyle .cere.capt .jail 과 같은 셈) */
 .ap .dp-cell { position: relative; width: 78px; height: 78px; margin: 20px 0 16px; }
 .ap .dp-cell .dp-ff { border-radius: 2px; box-shadow: 0 6px 14px #000c; }
+.ap .dp-tk.deep .dp-cell, .ap .dp-tk.deep .dp-ff { width: 62px; height: 62px; } .ap .dp-tk.deep .dp-cell { margin: 13px 0 11px; }
 .ap .dp-bars { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; }
 .ap .dp-bars b { position: absolute; inset: 0; background: url(__ART__fx/jail-bars.png) center / 100% 100% no-repeat; filter: drop-shadow(2px 3px 3px #000c); }
 .ap .dp-jail { position: absolute; left: -30%; top: -30%; width: 160%; height: 160%; z-index: 3; pointer-events: none; background: url(__ART__fx/jail-frame.png) center / 100% 100% no-repeat; filter: drop-shadow(0 6px 12px #000d); }
@@ -314,6 +332,12 @@ export const TALK_CSS = `
 .ap .dp-say.pre { border-style: dashed; border-color: #e0bd78; background: #2a1f14e6; } .ap .dp-say.lord .dp-line { color: #d9c69a; font-size: 13px; }
 .ap .dp-say.r-big { border-color: #e0bd78; } .ap .dp-say.hire { border-color: #f2c94c; background: #3a2a10e6; animation-delay: 1.5s; } .ap .dp-say.hire .dp-sf { border-color: #f2c94c; } .ap .dp-say.r-rage { border-color: #c0392b; background: #2a0f0ae6; }
 @keyframes dpin { from { opacity: 0; transform: translateY(6px); } }
+.ap .dp-old { flex: none; display: flex; gap: 5px; min-width: 0; opacity: .66; }
+.ap .dp-oh { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 4px; height: 24px; padding: 0 7px 0 2px; border-radius: 12px; background: #1c150ecc; border: 1px solid #3a2c1e; box-sizing: border-box; }
+.ap .dp-oh > i { flex: 1; min-width: 0; font-style: normal; font-size: 12px; color: #d9c69a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap .dp-oh.r-big, .ap .dp-oh.r-sway { border-color: #8a6a3a; } .ap .dp-oh.r-rage { border-color: #a03a2a; }
+.ap .dp-of { flex: none; width: 20px; height: 20px; border-radius: 50%; object-fit: cover; object-position: top; border: 1px solid #c9a45a; box-sizing: border-box; }
+.ap .dp-say.now { box-shadow: 0 0 0 1px #e0bd7866, 0 0 12px #e0bd7833; }
 .ap .dp-who2 { flex: none; width: 50px; display: flex; flex-direction: column; align-items: center; gap: 2px; } .ap .dp-who2 small { max-width: 52px; font-size: 10.5px; line-height: 1.15; color: #e8cf94; text-align: center; word-break: keep-all; }
 .ap .dp-sf { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; object-position: top; box-sizing: border-box; border: 2px solid #c9a45a; }
 .ap .dp-line { flex: 1; min-width: 0; font-size: 14px; line-height: 1.4; color: #f3e3c0; word-break: keep-all; overflow-wrap: anywhere; }
@@ -335,7 +359,7 @@ export const TALK_CSS = `
 .ap .dp-ap:disabled { opacity: .4; cursor: default; }
 .ap .dp-end { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; padding: 6px; } .ap .dp-end > b { font-size: 17px; color: #f3e3c0; } .ap .dp-end small { font-size: 12.5px; color: #d9c69a; word-break: keep-all; }
 .ap .dp-end.bad > b { color: #ff8a70; } .ap .dp-end.hand > b { color: #ffe08a; }
-.ap .dp-end.won .dp-big { font-size: 21px; line-height: 1.35; color: #ffe08a; text-shadow: 0 2px 8px #000; word-break: keep-all; animation: dpbig .6s 2.1s cubic-bezier(.3, 1.5, .5, 1) both; } .ap .dp-end.won small { animation: dpin .4s 2.7s both; }
+.ap .dp-end.won .dp-big { font-size: 19px; line-height: 1.35; color: #ffe08a; text-shadow: 0 2px 8px #000; word-break: keep-all; animation: dpbig .6s 2.1s cubic-bezier(.3, 1.5, .5, 1) both; } .ap .dp-end.won small { animation: dpin .4s 2.7s both; }
 @keyframes dpbig { from { opacity: 0; transform: scale(.6); } }
 .ap .dp-go { flex: none; margin: 0 -12px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); display: flex; gap: 8px; background: #120d08f2; border-top: 1px solid #6a5236; }
 .ap .dp-go .btn { flex: 1; min-height: 48px; font-size: 16px; } .ap .dp-go .btn.ghost { flex: 0 0 34%; }
