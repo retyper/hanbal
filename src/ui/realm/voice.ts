@@ -188,12 +188,7 @@ const VOICE_OF: Readonly<Record<string, VoiceKind>> = {
 export const HIRE_UNRECORDED: ReadonlySet<string> = new Set([
   'mh-jinwang',
   'mh-soseono',
-  'sr-aryeong',
-  'sr-danbi',
-  'sr-yangsan-1',
   'sr-goya-1',
-  'sr-jinji-1',
-  'mh-mahan-2',
 ])
 
 /**

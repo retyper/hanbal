@@ -14,13 +14,13 @@
 **성우진 A 외침 (13결 × 13줄)** — 메인 세션이 A 의 싸움 맡김 글을 사극체로 바꾼 뒤(c32b20e) 새 글로 녹음
 - **13결 다 함** (169개): m-young(Enzo · 판정 새 9 / 옛 6.5) · m-gruff(Daro · `<shout>` · 새 8 / 옛 9, 옛 글을 더 쳐 준 듯) · m-sage(Cruz · 새 8 / 옛 6) · m-elder(Arlo) · m-charm(Neno) · m-knight(Orus) · m-veteran(Ludo) · w-bright(Cleo) · w-cool(Kira) · w-sly(Lumi) · w-shaman(Hali) · w-knight(Tari) · w-matron(Jori)
 - 옛 169개 → 새 169개 평균: volumedetect 평균 −17.2 → −16.9 dB(loudnorm 으로 맞춰 거의 같음) · 높은 소리 쪽 기운(1~4kHz/0.1~1kHz) −8.8 → −6.8 dB · 음높이 중앙값 188 → 239 Hz. 소리를 지르면 음이 올라가고 높은 배음이 세진다. 그 두 가지가 다 올랐다.
-- A 의 짐(lose) 아홉 줄도 새 글. 그 결의 등용 첫마디 묶음 끝에 붙여 차분하게 뽑는다. 다 함: m-young · m-sage · m-charm · m-elder · m-gruff. 남음: w-bright · w-cool · w-sly · w-shaman
+- A 의 짐(lose) 아홉 줄도 새 글. 그 결의 등용 첫마디 묶음 끝에 붙여 차분하게 뽑는다. 다 함: m-young · m-sage · m-charm · m-elder · m-gruff · w-bright. 남음: w-cool · w-sly · w-shaman
 
 **등용 첫마디 194줄** — 결마다 15줄 아래로 묶어(첫 묶음 끝에 그 결의 짐 한 줄) 차분한 사극 말투(결마다 성격 한 줄 · "speaking to a new lord on the day of joining his side · Calm, dignified … Not shouting")로. 두 문장짜리 대사는 문장 사이 쉼이 대사 사이 쉼만큼 길어 split-voice.py 의 틈 가산이 대사를 잘못 가른다. 글자 수 몫에 맞춰 덩어리를 묶고(틈 가산 작게) 길이가 기대의 0.7~1.4배를 벗어나면 굽지 않는 방식으로 잘랐다(스크래치 split-auto.py · 나중에 도구로 옮길 것).
-- 다 함(99줄 · 남자 결 일곱 모두): m-knight 5 · m-veteran 29 · m-young 13 · m-sage 13 · m-charm 9 · m-elder 15 · m-gruff 15. HIRE_UNRECORDED 에서 16명 지움
-- 남음(95줄): w-bright 38 · w-knight 24 · w-cool 9 · w-shaman 6 · w-sly 14 · w-matron 4
+- 다 함(161줄): 남자 결 일곱 99줄(m-knight 5 · m-veteran 29 · m-young 13 · m-sage 13 · m-charm 9 · m-elder 15 · m-gruff 15) · w-bright 38 · w-knight 24. HIRE_UNRECORDED 에서 21명 지움(남은 셋은 이 결들 녹음 뒤 지운다)
+- 남음(33줄): w-cool 9 · w-shaman 6 · w-sly 14 · w-matron 4
 
-**한도** — roqkfeke12(authuser=0): 10-29 밤 TTS 7번 + 채팅 판정 5번에서 "Quota limit reached". authuser=1(retyper92 · Muffin Goodbye) 로 넘어가 TTS 21번 더(아직 안 막힘 · 그중 한 번은 말투 칸이 안 바뀐 채 돌아 버림).
+**한도** — roqkfeke12(authuser=0): 10-29 밤 TTS 7번 + 채팅 판정 5번에서 "Quota limit reached". authuser=1(retyper92 · Muffin Goodbye) 로 넘어가 TTS 27번 뒤 막힘(10-30 새벽 · 그중 한 번은 말투 칸이 안 바뀐 채 돌아 버림). authuser=2 는 AI 스튜디오 첫 약관 화면이라 쓰지 않음.
 
 **성우진 B · C 외침** — 아직(B 의 해요체 · 군주에게 시키는 하오체를 먼저 사극체로 고친다). **새 결 넷의 B · C** — 아직.
 <!-- /다시 녹음 진행 -->
