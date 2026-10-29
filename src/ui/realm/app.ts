@@ -1440,6 +1440,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return [...out].sort()
   }
 
+  /** 추천할 빈땅 — 임자 없고, 가는 개척단이 없고, 맞닿은 우리 고을에서 지금 꾸릴 수 있는 첫 곳 (이번 계절 이미 꾸렸으면 없음) */
+  function settleRec(r: Realm): string | null {
+    if (settles.some((o) => o.kind === 'party')) return null
+    const going = new Set(partiesOf(r, me()).flatMap((p) => (p.march !== null ? [p.march.to] : [])))
+    return foundLands(r).find((to) => r.nodes[to]?.owner === null && !going.has(to) && partySource(r, to) !== null) ?? null
+  }
+
   /** 빈땅에 개척단을 보낼 고을 — 맞닿은 우리 고을 가운데 개척단을 꾸릴 수 있고 이번 계절 아직 안 꾸린 곳, 도읍이 아닌 가장 붐비는 곳 먼저 */
   function partySource(r: Realm, to: string): { from: string; edge: string } | null {
     const caps = new Set(Object.values(r.factions).map((f) => f.capital))
@@ -2361,7 +2368,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (src === null) return h + `<p class="mute">맞닿은 우리 고을에서 개척단을 꾸릴 수 없다 — 백성·곡식·나무가 모자라거나 길이 막혔다</p></div>`
     const k = partySize(r, me(), src.from)
     const c = partyCost(k)
-    h += `<button class="btn pri home wide stlgo" data-act="party-to" data-node="${to}" data-from="${src.from}" data-edge="${src.edge}">${esc(r.nodes[src.from]?.name ?? '')}에서 개척단 보내기</button>`
+    h += `<button class="btn pri home wide stlgo" data-act="party-to" data-node="${to}" data-from="${src.from}" data-edge="${src.edge}">${esc(r.nodes[src.from]?.name ?? '')}에서 개척단 보내기${settleRec(r) === to ? REC_ST : ''}</button>`
     return h + `<p class="mute">백성 ${k}가구 ${costHtml({ grain: c.grain, wood: c.wood })}</p></div>`
   }
 
@@ -3768,8 +3775,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 우리 고을로 오는 적 — 군대 탭이 먼저 (막을 군대를 보낸다)
     if (seenMarches(r, me()).some((a) => a.march !== null && r.nodes[a.march.to]?.owner === me())) { out.delete('army'); out = new Map([['army', '우리 고을로 적이 온다 — 막을 군대를'], ...out]) }
     if (!out.has('heroes') && wanderersFor(r, me()).length > 0) out.set('heroes', '데려올 수 있는 떠돌이 장수가 있다')
-    // 개척 — 우리 고을 가운데 갈 빈땅이 있고 아직 개척단을 안 꾸렸으면
-    if (!settles.some((o) => o.kind === 'party') && Object.values(r.nodes).some((n) => n.owner === me() && partySize(r, me(), n.id) > 0 && partyMoves(r, me(), n.id).some((m) => m.found))) out.set('people', '개척할 빈땅이 있다')
+    // 개척 — 임자 없는 빈땅에 지금 개척단을 보낼 수 있으면 (우리 마을에 품이 남은 것은 빈땅이 아니다 · 형 10-29: "개척할 빈땅이 없는데 백성에 추천")
+    if (settleRec(r) !== null) out.set('people', '개척할 빈땅이 있다')
     for (const k of [...out.keys()]) if (sheet?.kind === k) out.delete(k)
     return new Map([...out].slice(0, P.realm.recTabMax))
   }

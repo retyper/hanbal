@@ -156,7 +156,7 @@ describe('맡기기 · 이끌기', () => {
     sweepHeroes(r, [])
     assert.equal(r.heroes[me]!.status, 'free')
     assert.notEqual(r.heroes[me]!.at, cap)
-    assert.equal(r.nodes[r.heroes[me]!.at]!.owner, r.player)
+    assert.equal(r.nodes[r.heroes[me]!.at!]!.owner, r.player)
   })
 })
 
