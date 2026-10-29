@@ -146,6 +146,96 @@ export function setForm(el: HTMLElement, o: RoundOrder | undefined): void {
 const OMEN_WORD: Partial<Record<Cmd, string>> = { charge: '돌격할 기세', hold: '버틸 채비', open: '활을 쏠 채비' }
 /** 적 앞줄의 수를 이기는 우리 앞줄의 수 — 방진 > 돌격 > 길 트기 > 방진 */
 const FRONT_COUNTER: Partial<Record<Cmd, Cmd>> = { charge: 'hold', hold: 'open', open: 'charge' }
+
+/**
+ * 깃발 상성을 그림으로 — 이 깃발이 이기는 적 깃발(up) · 이 깃발을 이기는 적 깃발(dn). tactics.ts 의 판정 그대로:
+ * 세모 돌격 > 길 트기 > 방진 > 돌격 (여울 막기·바위 굴리기도 방진 편 · 성문 깨기는 방진에 안 꺾인다) · 화살비·높은 곳 > 방진 · 맞쏘기 > 화살비 ·
+ * 옆치기 > 방진(세모 밖, tacFlankHold) · 호위 > 옆치기 · 거짓 퇴각 > 돌격. 카드엔 첫 것 하나씩만 작게 (형 10-29: "왜 언제는 이게 강하고 언제는 약한지 모르겠고")
+ */
+type FlagKey = Cmd | `art-${Art}`
+const HOLD_SIDE: readonly Cmd[] = ['hold', 'ford', 'rocks']
+const MATCH: Readonly<Partial<Record<FlagKey, { readonly up: readonly Cmd[]; readonly dn: readonly FlagKey[] }>>> = {
+  charge: { up: ['open', 'volley'], dn: ['hold', 'ford'] },
+  ram: { up: ['open'], dn: ['hold'] },
+  gate: { up: ['open'], dn: [] },
+  hold: { up: ['charge', 'ram'], dn: ['open', 'volley', 'flank'] },
+  ford: { up: ['charge', 'ram'], dn: ['open', 'volley'] },
+  rocks: { up: ['charge', 'ram'], dn: ['open', 'volley'] },
+  open: { up: [...HOLD_SIDE], dn: ['charge', 'gate', 'ram'] },
+  volley: { up: [...HOLD_SIDE], dn: ['counter', 'charge'] },
+  height: { up: [...HOLD_SIDE], dn: ['counter', 'charge'] },
+  counter: { up: ['volley', 'height'], dn: [] },
+  flank: { up: [...HOLD_SIDE], dn: ['guard'] },
+  guard: { up: ['flank'], dn: [] },
+  punch: { up: [], dn: [...HOLD_SIDE] },
+  'art-feint': { up: ['charge', 'gate', 'ram'], dn: [] },
+}
+const keyOf = (c: Cmd, ak?: Art): FlagKey => (c === 'art' && ak !== undefined ? `art-${ak}` : c)
+const keySrc = (art: string, k: FlagKey): string => (k.startsWith('art-') ? flagSrc(art, 'art', k.slice(4) as Art) : flagSrc(art, k as Cmd))
+/** 이 깃발이 적 낌새(적 앞줄의 수)를 이기나 — 깃발 판에서 그 카드를 빛낸다 */
+const beatsHint = (c: Cmd, ak: Art | undefined, hint: Cmd | null): boolean => hint !== null && (MATCH[keyOf(c, ak)]?.up.includes(hint) ?? false)
+/** 깃발 카드의 작은 줄 — [▶ 이기는 깃발] [◀ 지는 깃발] (낌새를 이기면 ▶ 자리에 그 낌새) */
+function beatsRow(art: string, c: Cmd, ak: Art | undefined, hint: Cmd | null): string {
+  const m = MATCH[keyOf(c, ak)]
+  if (m === undefined) return ''
+  const up = hint !== null && m.up.includes(hint) ? hint : m.up[0]
+  const dn = m.dn[0]
+  if (up === undefined && dn === undefined) return ''
+  return `<span class="wbx">${up !== undefined ? `<i class="u"><img src="${flagSrc(art, up)}" alt=""></i>` : ''}${dn !== undefined ? `<i class="d"><img src="${keySrc(art, dn)}" alt=""></i>` : ''}</span>`
+}
+
+/** 한 합의 상성 판정 — 누가 어느 깃발로 어느 깃발을 이겼나 (판정이 남긴 beat 과 일을 읽기만 한다) */
+interface RoundMatch {
+  readonly k: 'win' | 'lose' | 'even'; readonly us: FlagKey; readonly foe: FlagKey; readonly mul?: number
+  /** 진 쪽도 다른 무리에서 하나 먹였다 (앞줄은 졌어도 화살비가 방진을 쳤다 같은 것) — 밑에 작게 [그 깃발 ▶ 맞은 깃발 ✓] */
+  readonly also?: { readonly us: boolean; readonly from: FlagKey; readonly to: FlagKey }
+}
+const MU_SKIP: ReadonlySet<NonNullable<RoundLog['ev']>> = new Set(['retreat', 'retreat-fail', 'capture-ok', 'capture-fail', 'duel-win', 'duel-lose'])
+function roundMatch(rd: RoundLog, ourS: 'a' | 'd'): RoundMatch | null {
+  if (rd.ev !== undefined && MU_SKIP.has(rd.ev)) return null
+  const foeS: 'a' | 'd' = ourS === 'a' ? 'd' : 'a'
+  const ordOf = (s: 'a' | 'd'): RoundOrder | undefined => (s === 'a' ? rd.oa : rd.od)
+  const chip = (s: 'a' | 'd'): Cmd => ordOf(s)?.front ?? (s === 'a' ? rd.a : rd.d)
+  if (rd.beat === null) {
+    const u = chip(ourS)
+    const f = chip(foeS)
+    return u === 'drum' || f === 'drum' ? null : { k: 'even', us: u, foe: f }
+  }
+  const w = rd.beat
+  const l: 'a' | 'd' = w === 'a' ? 'd' : 'a'
+  // beat 을 낸 일 — 이긴 쪽의 「먹혔다」(won) · 옆치기는 방진 옆구리를 친 것
+  const x = (rd.acts ?? []).find((a) => a.s === w && (a.res === 'won' || (a.c === 'flank' && a.res === 'hit' && a.tg === 'front' && HOLD_SIDE.includes(ordOf(l)?.front ?? 'charge'))))
+  if (x === undefined) return null
+  const wk = keyOf(x.c, x.art)
+  const lc = x.tg !== undefined && x.tg !== 'lead' ? ordOf(l)?.[x.tg] : ordOf(l)?.front
+  const lk: FlagKey = lc ?? chip(l)
+  const y = (rd.acts ?? []).find((a) => a.s === l && a.res === 'won')
+  const yt = y === undefined ? undefined : y.tg !== undefined && y.tg !== 'lead' ? ordOf(w)?.[y.tg] : ordOf(w)?.front
+  const also = y !== undefined && yt !== undefined ? { also: { us: l === ourS, from: keyOf(y.c, y.art), to: yt as FlagKey } } : {}
+  const R = P.realm
+  // 그 판정의 배수 — 세모는 이긴 세기 ÷ 진 세기 · 화살비는 방진에 · 옆치기는 방진 옆구리에 (돌격이 궁수를 덮친 것은 배수 없이 ✓)
+  const mul = x.c === 'flank' ? R.tacFlank2 * R.tacFlankHold
+    : x.c === 'volley' || x.c === 'height' ? R.tacVolleyHold
+      : x.c === 'art' || x.tg === 'front' ? R.tacTriUp / R.tacTriDown : undefined
+  return w === ourS ? { k: 'win', us: wk, foe: lk, ...(mul !== undefined ? { mul } : {}), ...also } : { k: 'lose', us: lk, foe: wk, ...(mul !== undefined ? { mul } : {}), ...also }
+}
+const mulText = (m: number): string => { const r = Math.round(m * 10) / 10; return `×${Math.abs(r - Math.round(r)) < 0.15 ? Math.round(r) : r.toFixed(1)}` }
+/** 금 간 자국 — 진 깃발 위에 그어진다 */
+const CRACK = '<svg class="wmu-ck" viewBox="0 0 100 120" aria-hidden="true"><path d="M58 0 L46 28 L62 50 L40 76 L55 98 L48 120 M46 28 L24 40 M62 50 L84 62 M40 76 L20 90"/></svg>'
+/**
+ * 맞부딪는 순간 전장 한가운데 — [우리 깃발] ▶ [적 깃발] 크게. 이기면 금빛이 터지고 ✓ · 배수, 진 깃발이 금 가며 흔들린다.
+ * 지면 붉게 ✗ · 우리 깃발이 흔들린다. 맞서면 작은 회색 = 만 (읽지 않고 1초 안에 · 누르기를 막지 않는다)
+ */
+function muHtml(art: string, mu: RoundMatch): string {
+  const f = (k: FlagKey, side: 'us' | 'foe', broke: boolean): string => `<span class="wmu-f ${side}${broke ? ' broke' : ''}"><img src="${keySrc(art, k)}" alt="">${broke ? CRACK : ''}</span>`
+  if (mu.k === 'even') return `<div class="wmu even" style="--mus:${P.realm.warMuS}s">${f(mu.us, 'us', false)}<b class="wmu-v">=</b>${f(mu.foe, 'foe', false)}</div>`
+  const win = mu.k === 'win'
+  const glow = win ? `<img class="wmu-burst" src="${art}fx/gold.png" alt="">` : '<i class="wmu-red"></i>'
+  const mid = `<span class="wmu-c"><b class="wmu-k">${win ? '✓' : '✗'}</b><b class="wmu-v">${win ? '▶' : '◀'}</b>${mu.mul !== undefined ? `<em class="wmu-x">${mulText(mu.mul)}</em>` : ''}</span>`
+  const a = mu.also
+  const also = a === undefined ? '' : `<span class="wmu-also ${a.us ? 'us' : 'foe'}"><img src="${keySrc(art, a.from)}" alt=""><b>${a.us ? '▶' : '◀'}</b><img src="${keySrc(art, a.to)}" alt=""><b>✓</b></span>`
+  return `<div class="wmu ${win ? 'win' : 'lose'}" style="--mus:${P.realm.warMuS}s">${glow}${f(mu.us, 'us', !win)}${mid}${f(mu.foe, 'foe', win)}${also}</div>`
+}
 /** 땅이 주는 수 — 그 땅에서만 깃발에 뜬다 */
 const TERRAIN_CMD: ReadonlySet<Cmd> = new Set<Cmd>(['ford', 'rocks', 'gate', 'ram', 'height'])
 
@@ -1457,7 +1547,10 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const endCls = fin ? (usWon ? ' fin win-us' : ' fin win-foe') : ''
     // 승패가 드러나는 때 — 「승리·패배」 글자와 같은 때(paintNow 의 endAt). 다시 그린 끝 판(연출 없음)이면 처음부터
     const rv = fin && play ? roundPlan(last!, weAtk).result + 0.9 : 0
-    return `<div class="wfield${play ? ' play' : ''}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--rv:${rv.toFixed(2)}s"><i class="wf-ground"></i>${midTerr}${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}<i class="wf-mid">⚔</i><b class="wf-who us">${roleChip(weAtk)}우리 ${esc(ourName)}</b><b class="wf-who foe">${roleChip(!weAtk)}적 ${esc(foeName)}</b>${hit}${omen}</div>`
+    // 상성 판정 — 맞부딪는 순간 한가운데 크게 (형 10-29: "전투가 깃발마다 큰 차이가 없는 느낌") · 이기거나 지면 전장이 크게 흔들린다
+    const mu = play ? roundMatch(last!, ourS) : null
+    const muBig = mu !== null && mu.k !== 'even' ? ' wmu-big' : ''
+    return `<div class="wfield${play ? ' play' : ''}${muBig}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--rv:${rv.toFixed(2)}s"><i class="wf-ground"></i>${midTerr}${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}<i class="wf-mid">⚔</i><b class="wf-who us">${roleChip(weAtk)}우리 ${esc(ourName)}</b><b class="wf-who foe">${roleChip(!weAtk)}적 ${esc(foeName)}</b>${hit}${omen}${mu !== null ? muHtml(art, mu) : ''}</div>`
   }
 
   // 싸움터 배경 (땅마다) · 위 카드는 굴려도 그 자리에 (형: "싸우는로그가 스크롤로 보이더라도 상단에 캐릭터랑 체력바 있는 그 카드는 고정")
@@ -1629,7 +1722,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       if (ak !== undefined) tag = `<em class="art">비기</em>`
       // 깃발 짐작 — 펼친 무리만 바로 셈한다 (나머지는 탭을 열 때 openWar 의 fillLooks 가)
       const gu = p.look !== undefined ? (() => { const o = withPick(sel, g, c); return lookHtml(lookFor(p.look, o, now), orderKey(o)) })() : ''
-      return `<button class="wcmd ${c}${on ? ' on' : ''}${recNow === c ? ' rec' : ''}" data-war="pick" data-g="${g}" data-c="${c}" data-more="${esc(ak !== undefined ? ART_DOES[ak] : CMD_DOES[c])}"><img class="wflag" src="${flagSrc(art, c, ak)}" alt=""><span class="wct"><b>${ak !== undefined ? ART_NAME[ak] : CMD_NAME[c]}</b>${tag}${feel}<small>${esc(ak !== undefined ? ART_SHORT[ak] : CMD_SHORT[c])}</small>${gu}</span></button>`
+      // 무엇을 이기고 무엇에 지나 — 깃발 그림 둘 (▶ 초록 · ◀ 붉게) · 적 낌새를 이기는 깃발은 카드가 빛난다 (형 10-29)
+      const ctr = beatsHint(c, ak, p.hint) ? ' wbxc' : ''
+      return `<button class="wcmd ${c}${on ? ' on' : ''}${recNow === c ? ' rec' : ''}${ctr}" data-war="pick" data-g="${g}" data-c="${c}" data-more="${esc(ak !== undefined ? ART_DOES[ak] : CMD_DOES[c])}"><img class="wflag" src="${flagSrc(art, c, ak)}" alt=""><span class="wct"><b>${ak !== undefined ? ART_NAME[ak] : CMD_NAME[c]}</b>${beatsRow(art, c, ak, p.hint)}${tag}${feel}<small>${esc(ak !== undefined ? ART_SHORT[ak] : CMD_SHORT[c])}</small>${gu}</span></button>`
     }
     // 무리 탭 — 누른 무리만 빛나고 그 무리 깃발만 보인다. 무리마다 다 고르면 「전투 개시」가 켜진다
     // (형 10-24: "깃발이 너무 많아서 헷갈려 · 창병 방패병을 탭하면 빛나면서 걔네들 깃발만 · 다 고른 뒤에 전투개시 버튼 활성화")
@@ -2003,6 +2098,58 @@ export const WAR_CSS = `
 /* 맞부딪힘 — 불꽃 · 흙먼지 · 흔들림 · 살짝 당겨 보기 */
 .ap .wfield.play { animation: wshake .5s ease-out var(--hd) both; }
 @keyframes wshake { 0% { translate: 0 0; scale: 1; } 15% { translate: -5px 2px; scale: 1.05; } 35% { translate: 4px -2px; } 55% { translate: -2px 1px; } 100% { translate: 0 0; scale: 1; } }
+/* 상성 판정 (muHtml) — 맞부딪는 순간 한가운데 [우리 깃발] ▶ [적 깃발] · 움직임은 transform·opacity 만, 몇 개 안 되는 칸에만 (폰 그래픽 한도) · 누르기를 막지 않는다 */
+.ap .wfield.play.wmu-big { animation: wmufs .6s ease-out var(--hd) both; }
+@keyframes wmufs { 0% { translate: 0 0; scale: 1; } 12% { translate: -11px 5px; scale: 1.06; } 28% { translate: 10px -5px; } 46% { translate: -6px 3px; } 66% { translate: 3px -1px; } 100% { translate: 0 0; scale: 1; } }
+.ap .wmu { position: absolute; left: 50%; top: 31%; z-index: 95; display: flex; align-items: center; gap: clamp(4px, 2cqw, 12px); translate: -50% -50%; white-space: nowrap; pointer-events: none; opacity: 0; animation: wmuin var(--mus, 1.2s) ease-out var(--hd) both; }
+.ap .wmu::before { content: ''; position: absolute; left: -16%; right: -16%; top: -26%; bottom: -26%; z-index: -2; border-radius: 50%; background: radial-gradient(closest-side, #0b0805d9 40%, #0b080500); } /* 병사들 위에서도 읽히게 — 어두운 받침 (움직이지 않는다) */
+@keyframes wmuin { 0% { opacity: 0; scale: .5; } 10% { opacity: 1; scale: 1.18; } 20% { scale: 1; } 82% { opacity: 1; scale: 1; } 100% { opacity: 0; scale: 1.04; } }
+.ap .wmu-f { position: relative; display: block; width: clamp(54px, 17cqw, 104px); }
+.ap .wmu-f img { display: block; width: 100%; height: auto; filter: drop-shadow(0 4px 6px #000c); }
+.ap .wmu.win .wmu-f.us img { filter: drop-shadow(0 0 7px #ffd27a) drop-shadow(0 4px 6px #000c); }
+.ap .wmu.lose .wmu-f.foe img { filter: drop-shadow(0 0 7px #ff5a3c) drop-shadow(0 4px 6px #000c); }
+.ap .wmu-f.broke { animation: wmushk .5s ease-in-out calc(var(--hd) + .14s) both; }
+.ap .wmu-f.broke img { animation: wmudim .4s ease-out calc(var(--hd) + .2s) both; }
+@keyframes wmushk { 0%, 100% { translate: 0 0; rotate: 0deg; } 15% { translate: -6px 0; rotate: -8deg; } 35% { translate: 6px 2px; rotate: 7deg; } 55% { translate: -4px 3px; rotate: -4deg; } 75% { translate: 2px 4px; rotate: 3deg; } }
+@keyframes wmudim { from { opacity: 1; } to { opacity: .55; } }
+.ap .wmu-ck { position: absolute; left: 24%; top: 6%; width: 66%; height: 84%; overflow: visible; filter: drop-shadow(0 0 2px #000); }
+.ap .wmu-ck path { fill: none; stroke: #fff4dc; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 260; stroke-dashoffset: 260; animation: wmuck .3s ease-out calc(var(--hd) + .12s) both; }
+.ap .wmu.lose .wmu-ck path { stroke: #ffd0c4; }
+@keyframes wmuck { to { stroke-dashoffset: 0; } }
+.ap .wmu-c { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.ap .wmu-k { display: grid; place-items: center; width: clamp(34px, 10cqw, 56px); height: clamp(34px, 10cqw, 56px); border-radius: 50%; font-size: clamp(22px, 7cqw, 38px); font-weight: 900; line-height: 1; color: #1b1206; background: #ffd27a; box-shadow: 0 0 0 3px #1b1206, 0 0 18px #ffd27a; animation: wmukin .4s cubic-bezier(.3, 1.8, .5, 1) calc(var(--hd) + .1s) both; }
+.ap .wmu.lose .wmu-k { color: #fff; background: #d8402c; box-shadow: 0 0 0 3px #2a0806, 0 0 18px #ff5a3c; }
+@keyframes wmukin { from { scale: 2.4; opacity: 0; } to { scale: 1; opacity: 1; } }
+.ap .wmu-v { font-size: clamp(22px, 7cqw, 40px); line-height: 1; color: #ffe2a0; text-shadow: 0 2px 4px #000, 0 0 10px #ffd27a; }
+.ap .wmu.lose .wmu-v { color: #ffb0a0; text-shadow: 0 2px 4px #000, 0 0 10px #ff5a3c; }
+.ap .wmu-x { font-style: normal; font-weight: 900; font-size: clamp(20px, 6.5cqw, 36px); line-height: 1; color: #ffe2a0; text-shadow: 0 2px 0 #000, 0 0 10px #ffb84a; animation: wmukin .35s cubic-bezier(.3, 1.8, .5, 1) calc(var(--hd) + .26s) both; }
+.ap .wmu.lose .wmu-x { color: #ff9a8a; text-shadow: 0 2px 0 #000, 0 0 10px #ff3a2a; }
+.ap .wmu-burst { position: absolute; left: 50%; top: 50%; width: 170%; height: auto; translate: -50% -50%; z-index: -1; opacity: 0; animation: wmubst .8s ease-out var(--hd) both; }
+.ap .wmu-red { position: absolute; left: 50%; top: 50%; width: 150%; aspect-ratio: 1; translate: -50% -50%; z-index: -1; border-radius: 50%; background: radial-gradient(circle, #ff3a2aaa 0%, #ff3a2a00 68%); opacity: 0; animation: wmubst .8s ease-out var(--hd) both; }
+@keyframes wmubst { 0% { opacity: 0; scale: .3; } 15% { opacity: 1; } 100% { opacity: 0; scale: 1.5; } }
+/* 맞섰다 — 작은 회색 = 만 (세모에서 갈린 합이 더 크게 보이게) */
+.ap .wmu.even { top: 22%; gap: 4px; animation-name: wmuev; }
+@keyframes wmuev { 0% { opacity: 0; } 15% { opacity: .85; } 80% { opacity: .85; } 100% { opacity: 0; } }
+.ap .wmu.even .wmu-f { width: clamp(24px, 7.5cqw, 40px); } .ap .wmu.even .wmu-f img { filter: none; opacity: .7; }
+.ap .wmu.even .wmu-v { font-size: clamp(16px, 5cqw, 26px); font-weight: 900; color: #b8b0a0; text-shadow: 0 1px 2px #000; }
+/* 진 쪽이 다른 무리에서 먹인 것 — 밑에 작게 (우리 것은 초록 · 적 것은 붉게) */
+.ap .wmu-also { position: absolute; left: 50%; top: 100%; translate: -50% 4px; display: flex; align-items: center; gap: 3px; padding: 2px 8px 2px 4px; border-radius: 999px; background: #0b0805d9; box-shadow: inset 0 0 0 1.5px #7fd06a; color: #9fe08a; font-size: 13px; animation: wmukin .3s ease-out calc(var(--hd) + .35s) both; }
+.ap .wmu-also.foe { box-shadow: inset 0 0 0 1.5px #e0705e; color: #ff9a8a; }
+.ap .wmu-also img { width: clamp(20px, 6cqw, 30px); height: auto; }
+.ap .wmu.even::before { opacity: .5; }
+.ap .wr.fast .wmu { --hd: 0s !important; }
+@media (prefers-reduced-motion: reduce) { .ap .wfield.play.wmu-big, .ap .wmu-f.broke { animation: none; } }
+/* 깃발 카드의 상성 줄 — ▶ 이기는 깃발(초록) · ◀ 지는 깃발(붉게) · 적 낌새를 이기는 카드는 초록빛이 숨 쉰다 */
+.ap .wcmd .wbx { display: inline-flex; align-items: center; gap: 3px; margin: 1px 0; }
+.ap .wcmd .wbx i { display: inline-flex; align-items: center; gap: 1px; padding: 1px 3px 1px 2px; border-radius: 7px; font-style: normal; font-size: 9px; line-height: 1; }
+.ap .wcmd .wbx i.u { background: #1d3818; box-shadow: inset 0 0 0 1px #7fd06a; color: #9fe08a; } .ap .wcmd .wbx i.u::before { content: '▶'; }
+.ap .wcmd .wbx i.d { background: #3c1814; box-shadow: inset 0 0 0 1px #e0705e; color: #ff9a8a; } .ap .wcmd .wbx i.d::before { content: '◀'; }
+.ap .wcmd .wbx img { position: static; width: 16px; height: 19px; object-fit: contain; opacity: 1; }
+.ap .wcmd.wbxc { position: relative; }
+.ap .wcmd.wbxc::before { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 2px #8fe07a, inset 0 0 10px #8fe07a99; pointer-events: none; animation: wbxglow .8s ease-in-out infinite alternate; }
+@keyframes wbxglow { from { opacity: .3; } to { opacity: 1; } }
+.ap .wcmd.wbxc .wbx i.u { box-shadow: inset 0 0 0 1.5px #c8ff9a, 0 0 6px #8fe07a; }
+@media (prefers-reduced-motion: reduce) { .ap .wcmd.wbxc::before { animation: none; } }
 .ap .wf-hit { position: absolute; left: 50%; top: 56%; z-index: 85; pointer-events: none; }
 .ap .wf-hit img { position: absolute; left: 0; top: 0; translate: -50% -50%; opacity: 0; }
 .ap .wf-hit .h1 { width: clamp(70px, 22cqw, 140px); animation: whit1 .45s ease-out var(--hd) both; mix-blend-mode: screen; }
@@ -2495,7 +2642,8 @@ export const WAR_CSS = `
 .ap .wfpop .wcmd.mini .wflag { width: 30px; height: auto; flex: none; }
 .ap .wfpop .wcmd.mini .wct { gap: 1px; } .ap .wfpop .wcmd.mini .wct > b { font-size: 13.5px; }
 /* 전장의 깃발 판엔 그림과 이름만 — 꼬리표·짐작 글이 자리를 넘쳐 튀어나오고 줄이 바뀌었다 (형 10-25) · 권함은 별 하나로 */
-.ap .wfpop .wcmd.mini .wct > :not(b):not(em.rec):not(.wodd):not(.wguess) { display: none !important; }
+.ap .wfpop .wcmd.mini .wct > :not(b):not(em.rec):not(.wodd):not(.wguess):not(.wbx) { display: none !important; }
+.ap .wfpop .wcmd.mini .wct:has(> .wbx) { flex-direction: column; align-items: flex-start; gap: 1px; } /* 이름 밑에 상성 줄 (형 10-29) */
 /* 가망 % — 큰 깃발엔 말로 이미 있어 작은 단추(전장 깃발 판)에서만 */
 .ap .wcmd .wct > .wodd { display: none; } .ap .wfpop .wcmd.mini .wct > .wodd { display: inline; flex: none; font-style: normal; font-size: 12px; font-weight: 800; }
 .ap .wfpop .wcmd.mini .wct:has(> .wodd) { flex-direction: column; align-items: flex-start; gap: 0; } /* 이름 밑 줄에 — 옆에 두면 「퇴…」로 잘렸다 */
@@ -2915,6 +3063,10 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       if (rd.ev === 'capture-ok') at(clashAt, rd.by === ourSide ? BATTLE_SFX.caught : BATTLE_SFX.lose, 0.5, 1, 1)
       else if (rd.ev === 'duel-win' || rd.ev === 'duel-lose') at(clashAt, BATTLE_SFX.duelWin, 0.45, 1, 1)
       else at(clashAt, rd.beat !== null ? BATTLE_SFX.crit : BATTLE_SFX.clash, rd.beat !== null ? 0.6 : 0.42, 1, 0.9)
+      // 상성 판정 — 이기면 겨루기 이긴 소리를 한 겹 더 · 지면 맞부딪힘을 낮고 무겁게 한 번 더 (전장 한가운데 ✓ ✗ 와 같은 때)
+      const mu = roundMatch(rd, ourSide)
+      if (mu?.k === 'win') at(clashAt + 0.08, BATTLE_SFX.duelWin, 0.5, 1, 1)
+      else if (mu?.k === 'lose') at(clashAt + 0.08, BATTLE_SFX.crit, 0.45, 0.72, 0.9)
       // 깃발 소리 — 그림과 같은 차례·박자로, 앞부분만 짧게 · 적 것은 더 짧고 작게, 자리가 없으면 버린다
       const beat = (c: Cmd, s0: number, vol: number, dur: number, low: boolean): void => {
         if (c === 'volley' || c === 'counter') { for (const [dt, v, rt] of VOLLEY_SHOTS.slice(0, 3)) at(s0 + dt, BATTLE_SFX[c], vol * v, rt, 0.4, low); return }
