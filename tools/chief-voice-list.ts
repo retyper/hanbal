@@ -5,27 +5,32 @@
  *   … --batch m-young a --auto → 그 뒤에 싸움 맡김 다섯 줄(voice.ts AUTO_LINE · auto-<결>-1..3 · win · lose)을 붙여 한 번에
  *   … --batch m-young a --auto-only → 싸움 맡김 다섯 줄만
  *   npx tsx tools/chief-voice-list.ts --write        → public/realm/voice/chief/lines.json (들어 보는 판 realm/voice-picker.html 이 읽는다)
+ *   … --cast b → 성우진 B 군장 말(chief-lines-b.ts · public/realm/voice/b/chief/ · 목소리 voice-b.ts VOICE_B) — 위 셋 모두에 붙인다
  * 한 줄을 고치면: chief-lines.ts 를 고치고 → 같은 결·같은 말씨로 다시 뽑아 split-voice.py 로 public/realm/voice/chief/<결>-<상황>-<a|p>.ogg → --write.
  */
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { CHIEF_LINE, CHIEF_SITS, CHIEF_SIT_NAME, type ChiefMood } from '../src/ui/realm/chief-lines.ts'
-import { AUTO_LINE, type VoiceKind } from '../src/ui/realm/voice.ts'
-
-const DIR = new URL('../public/realm/voice/chief/', import.meta.url)
-const KINDS = Object.keys(CHIEF_LINE) as VoiceKind[]
-const MOODS: readonly ChiefMood[] = ['a', 'p']
-const file = (k: VoiceKind, s: string, m: ChiefMood): string => `${k}-${s}-${m}`
-const text = (k: VoiceKind, s: (typeof CHIEF_SITS)[number], m: ChiefMood): string => CHIEF_LINE[k][s][m === 'a' ? 0 : 1]
+import { CHIEF_LINE_B } from '../src/ui/realm/chief-lines-b.ts'
+import { AUTO_LINE, type BaseKind as VoiceKind } from '../src/ui/realm/voice.ts'
 
 const arg = process.argv
+const castB = arg[arg.indexOf('--cast') + 1] === 'b' && arg.includes('--cast')
+const LINE = castB ? CHIEF_LINE_B : CHIEF_LINE
+const DIR = new URL(castB ? '../public/realm/voice/b/chief/' : '../public/realm/voice/chief/', import.meta.url)
+const KINDS = Object.keys(LINE) as VoiceKind[]
+const MOODS: readonly ChiefMood[] = ['a', 'p']
+const file = (k: VoiceKind, s: string, m: ChiefMood): string => `${k}-${s}-${m}`
+const text = (k: VoiceKind, s: (typeof CHIEF_SITS)[number], m: ChiefMood): string => LINE[k][s][m === 'a' ? 0 : 1]
+
 if (arg.includes('--batch')) {
   const i = arg.indexOf('--batch')
   const k = arg[i + 1] as VoiceKind
   const m = arg[i + 2] as ChiefMood
-  if (CHIEF_LINE[k] === undefined || !MOODS.includes(m)) throw new Error('--batch <결> <a|p>')
+  if (LINE[k] === undefined || !MOODS.includes(m)) throw new Error('--batch <결> <a|p>')
   const auto = arg.includes('--auto')
   const only = arg.includes('--auto-only')
+  if (castB && (auto || only)) throw new Error('--auto 는 성우진 A 만 (B 의 싸움 맡김은 tools/voiceb-list.ts)')
   const sits = only ? [] : CHIEF_SITS
   const lines = [...sits.map((s) => text(k, s, m)), ...(auto || only ? AUTO_LINE[k] : [])]
   const body = lines.join('\n\n')
