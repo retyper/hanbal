@@ -5016,7 +5016,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           ding(snd('war_drum'), 0.6)
           window.setTimeout(() => { if (el.isConnected) { ding(snd('war_bell'), 0.45); buzz([30, 40, 70]) } }, P.realm.customStampMs)
         }
-        else ding(snd(el.classList.contains('wed') ? 'wed' : 'birth'), 0.5) // 혼례는 형이 고른 국악 가락 (10-24 · 전엔 종 세 번)
+        // 혼례는 배경 음악으로 — 꼭두각시 01~04 한 곡, 닫으면 지도 음악으로 잦아들며 돌아간다 (형 10-29)
+        else if (el.classList.contains('wed')) music.wedding()
+        else ding(snd('birth'), 0.5)
       }
       if (hire) window.setTimeout(() => buzz([20, 40, 20, 40, 60]), P.realm.hirePopMs)
       // 얼굴이 다 드러나면 그 장수가 첫마디를 한다 — 이름 아래 「」 대사 그대로 (voice.ts · 소리를 못 받으면 조용히)
@@ -5025,7 +5027,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (el.isConnected && realm !== null && voiceGate(performance.now())) ding(hireVoicePath(voiced, isRuler(realm, voiced.id)), P.realm.voiceVol)
       }, P.realm.hireVoiceMs)
       let gone = false
-      const close = (): void => { if (gone) return; gone = true; el.classList.add('out'); window.setTimeout(() => { el.remove(); show(i + 1) }, 450) }
+      const close = (): void => {
+        if (gone) return
+        gone = true
+        el.classList.add('out')
+        if (el.classList.contains('wed') && realm !== null) music.map(seasonOf(realm.season)) // 혼례 가락은 잦아들고 지도 음악으로
+        window.setTimeout(() => { el.remove(); show(i + 1) }, 450)
+      }
       // 특성 칩을 누르면(설명을 보려고) 장면이 닫히지 않는다 · 누르고 있는 동안은 저절로도 안 닫힌다
       let reading = false
       el.addEventListener('pointerdown', (e) => { reading = (e.target as HTMLElement).closest('.ctr[data-tip]') !== null })

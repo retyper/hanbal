@@ -198,6 +198,7 @@ tap_rite_g4.wav  공유마당 · 「471.기묘한 종묘대금 효과음 001」 
 tap_rite_g5.wav  공유마당 · 「381.애절한 시나위대금 효과음 001」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290422 · 소리가 나는 데부터 3초
 tap_rite_g6.wav  공유마당 · 「국악 효과음 #505」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387495 · 앞 3초
 wed_g7.wav  국립국악원 디지털 이음 · 국악 선율 「꼭두각시 01」(경기민요 꼭두각시 · 가야금 · 제1~4장단 · s1-911-001) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 10초 전부
+bgm_wed_g1.mp3  국립국악원 디지털 이음 · 국악 선율 「꼭두각시 01·02·03·04」(경기민요 꼭두각시 · 가야금 · s1-911-001~004 · 이어 붙임) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞추고 끝을 잦아들게
 bgm_map_k1.mp3  국립국악원 디지털 이음 · 「긴난봉가」 1·2·3 (가야금 · 이어 붙임) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
 bgm_map_k2.mp3  국립국악원 디지털 이음 · 「자진난봉가」 1·2 (가야금 · 이어 붙임) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤
 bgm_map_k3.mp3  국립국악원 디지털 이음 · 「한갑득류 거문고산조 자진모리」 s2-001-049~071 (이어 붙임) · 국립국악원 · 공공누리 제1유형(출처표시) · https://www.gugak.go.kr/digitaleum/front/phrase/list.do · 소리 크기만 맞춤

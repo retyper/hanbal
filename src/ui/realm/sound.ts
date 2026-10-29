@@ -35,6 +35,8 @@ export const PICK = {
   bgm_end_win: 'w5', bgm_end_lose: 'c6',
   // 신방 — 장수 판의 「신방을 살펴본다」 장면 (형 10-24) · c9 = 국악연주곡 반우반계 반엽 「남하여」(한국저작권위원회 · 형이 소리 고르기 판에서 고름 10-24)
   bgm_bridal: 'c9',
+  // 혼례 장면의 배경 음악 — 꼭두각시 01~04 를 빈틈없이 이은 한 곡(30초 · -18 LUFS · 국립국악원 디지털 이음 · 공공누리 1유형) (형 10-29)
+  bgm_wed: 'g1',
   // 깃발 소리 — 깃발마다 제 소리 (형 10-23: "돌격 방진 바위 굴리기 … 다 그만의 이펙트와 사운드") · 맞쏘기는 화살비 소리를 흩어 친다
   // 싸움이 열릴 때 — 종 「댕」 한 번 · 북 두 번 (형 10-23: "싸움 발생할 때 댕 하고 이상한 소리 · 소리 설정 웹페이지에서 바꿀 수 있게") — k1 은 옛 활터 소리
   war_bell: 'c5', war_drum: 'c4', draft_go: 'c4', arm_go: 'c6',
@@ -51,7 +53,7 @@ const EXT: Readonly<Partial<Record<string, string>>> = {
   dex_new_c3: 'wav', war_drums_b2: 'wav', defeat_a3: 'wav', horses_m: 'wav',
   // 10-27 밤 형: 제사·혼인 첫 후보 여섯 "다 별로" → 새 후보 (대금 · 국악 효과음)
   // 10-28 형: 제사는 108(시나위 대금) · 혼인은 국립국악원 디지털 이음 「꼭두각시 01」 가야금 (공공누리 1유형)
-  wed_g7: 'wav', tap_rite_g4: 'wav', tap_rite_g5: 'wav', tap_rite_g6: 'wav', dex_new_g1: 'wav', dex_new_g2: 'wav', dex_new_g3: 'wav',
+  wed_g7: 'wav', bgm_wed_g1: 'mp3', tap_rite_g4: 'wav', tap_rite_g5: 'wav', tap_rite_g6: 'wav', dex_new_g1: 'wav', dex_new_g2: 'wav', dex_new_g3: 'wav',
   hire_go_g1: 'mp3', hire_go_g2: 'mp3', hire_go_g3: 'mp3', relic_open_g1: 'mp3', relic_open_g2: 'mp3', relic_open_g3: 'mp3',
   ...Object.fromEntries(['bgm_title', 'bgm_war', 'bgm_lose'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'mp3']))),
   war_cry_g1: 'wav', war_cry_g2: 'wav', war_cry_g3: 'wav',
@@ -72,7 +74,7 @@ export const ROTATE: Readonly<Partial<Record<Slot, readonly string[]>>> = { bgm_
 /** 한 곡이 끝나고 다음 곡까지 쉬는 자리 — 계절 바람소리만 남는다 (형 10-28: "문명에선 배경음악 안 들릴 때도 많은데") */
 const REST: ReadonlySet<Slot> = new Set<Slot>(['bgm_map'])
 /** 한 번만 울리고 끝나는 곡 — 팡파르는 되풀이하면 우습다 */
-const ONCE: ReadonlySet<Slot> = new Set<Slot>(['bgm_win'])
+const ONCE: ReadonlySet<Slot> = new Set<Slot>(['bgm_win', 'bgm_wed'])
 /**
  * 곡마다 소리 크기 — 형이 가져온 지도 곡(-16dB 언저리)에 맞춘다 (형 10-23: "소리도 너무 커"). 1 보다 크게는 못 키운다.
  * 2026-10-23 잰 값: map c4 -12.0 · c9 -11.9 · war c7 -12.5 · title c6 -14.0 · 끝 이김 w5(Joy of Victory) -18.0 · 끝 짐 c6 -14.8
@@ -128,7 +130,7 @@ export const sndFile = (slot: Slot, pick: string = PICK[slot]): string => `${slo
 
 /** 장면 그림(event-*) → 그 장면의 소리. 없으면 소리 없이 */
 export const SCENE_SOUND: Readonly<Record<string, Slot>> = {
-  'event-marriage': 'wed', 'event-festival': 'wed', 'event-egg-birth': 'birth', 'event-newborn': 'birth', 'event-dream': 'birth',
+  'event-festival': 'wed', 'event-egg-birth': 'birth', 'event-newborn': 'birth', 'event-dream': 'birth',
   'event-alliance-oath': 'envoy', 'event-outside-envoy': 'envoy', 'event-iron-trade': 'coins',
   'event-relief-cavalry': 'horses', 'event-captive-persuade': 'capture', 'event-wanderer-arrives': 'horses',
 }
@@ -258,17 +260,34 @@ function track(base: string, vol: number): { prime(slot: Slot): void; want(slot:
   }
   const start = (): void => {
     if (cur === null || rest !== 0 || document.visibilityState !== 'visible') return
+    window.clearTimeout(fading.get(cur))
+    fading.delete(cur)
     const n = node(cur)
     void n.el.play().then(() => {
       if (n.gain !== null && ctx) n.gain.gain.setTargetAtTime(vol, ctx.currentTime, FADE_S)
     }).catch(() => { /* 아직 손을 안 댔다 — 첫 탭에 다시 */ })
   }
+  /** 잦아든 뒤 멈출 때를 기다리는 곡 — 그새 다시 틀면 걷는다 */
+  const fading = new Map<Slot, number>()
   const stop = (slot: Slot | null): void => {
     if (rest !== 0) { window.clearTimeout(rest); rest = 0 }
     const n = slot !== null ? els.get(slot) : undefined
-    if (n === undefined) return
+    if (n === undefined || slot === null) return
+    window.clearTimeout(fading.get(slot))
+    fading.delete(slot)
     n.el.pause()
     if (n.gain !== null) n.gain.gain.value = 0
+  }
+  /** 곡을 바꿀 때 — 앞 곡은 뚝 끊지 않고 잦아든다 (형 10-29: "혼인 화면에서 다음으로 넘어가면 음악 잘 끝나게") */
+  const fadeOut = (slot: Slot | null): void => {
+    if (rest !== 0) { window.clearTimeout(rest); rest = 0 }
+    const n = slot !== null ? els.get(slot) : undefined
+    if (n === undefined || slot === null) return
+    if (n.gain === null || ctx === null || ctx === undefined || n.el.paused) { stop(slot); return }
+    n.gain.gain.cancelScheduledValues(ctx.currentTime)
+    n.gain.gain.setTargetAtTime(0, ctx.currentTime, P.realm.bgmFadeOutS / 3)
+    window.clearTimeout(fading.get(slot))
+    fading.set(slot, window.setTimeout(() => { fading.delete(slot); if (cur !== slot) { n.el.pause(); if (n.gain !== null) n.gain.gain.value = 0 } }, P.realm.bgmFadeOutS * 1000))
   }
   return {
     /** 미리 받아 둔다 — 틀기 전에 다 받아 두어야 처음에 버벅이지 않는다 (싸움이 열리면 이긴·진 음악을) */
@@ -276,7 +295,7 @@ function track(base: string, vol: number): { prime(slot: Slot): void; want(slot:
     want(slot) {
       if (slot !== null && missing.has(slot)) return // 없는 곡 — 듣던 것을 그대로
       if (slot === cur) { if (cur !== null && els.get(cur)?.el.paused !== false) start(); return }
-      stop(cur)
+      fadeOut(cur)
       prev = cur
       cur = slot
       start()
@@ -299,6 +318,8 @@ export function makeMusic(base: string, muted: () => boolean, quiet: () => boole
   ending(kind: 'win' | 'lose'): void
   /** 신방 장면 — 닫으면 부른 쪽이 map() 으로 되돌린다 */
   bridal(): void
+  /** 혼례 장면 — 닫으면 부른 쪽이 map() 으로 되돌린다 (가락은 스르르 잦아든다) */
+  wedding(): void
   refresh(): void
 } {
   const bgm = track(base, BGM_VOL)
@@ -333,6 +354,7 @@ export function makeMusic(base: string, muted: () => boolean, quiet: () => boole
     /** 판이 끝났다 — 이겼다·졌다 화면의 음악 */
     ending(kind) { mode = { bgm: kind === 'win' ? 'bgm_end_win' : 'bgm_end_lose', amb: null }; apply() },
     bridal() { mode = { bgm: 'bgm_bridal', amb: null }; apply() },
+    wedding() { mode = { bgm: 'bgm_wed', amb: null }; apply() },
     refresh: apply,
   }
 }
