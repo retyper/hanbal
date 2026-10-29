@@ -215,16 +215,19 @@ export const DEX_CSS = `
 .ap .dexp .dxsum p { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin: 6px 0 2px; font-size: 12.5px; color: #a89c84; }
 .ap .dexp .dxsum p b { font-size: 17px; color: var(--gold); margin-right: 3px; }
 .ap .dexp .dxtabs { display: flex; gap: 6px; overflow-x: auto; max-width: 980px; margin: 8px auto 0; padding: 0 14px 4px; scrollbar-width: none; }
-.ap .dexp .dxtabs button { flex: none; padding: 6px 11px; border-radius: 16px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
-.ap .dexp .dxtabs button.on { border-color: var(--gold); color: var(--gold); } .ap .dexp .dxtabs small { margin-left: 5px; color: var(--mute); font-size: 11px; }
+/* 테는 그림으로 — 쇠판 단추 · 고른 것은 금빛 (형 10-29: "박스 테두리들이 여전히 css") */
+.ap .dexp .dxtabs button { flex: none; padding: 2px 5px; border: 6px solid transparent; border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 6px 8px stretch; border-radius: 0; background: none; color: #d8cdb4; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.ap .dexp .dxtabs button.on { border-image: url(__ART__ui/btn-gold.png?v=2) 30 35 fill / 6px 8px stretch; color: #2a1606; } .ap .dexp .dxtabs button.on small { color: #4a2e10; } .ap .dexp .dxtabs small { margin-left: 5px; color: var(--mute); font-size: 11px; }
 .ap .dexp .dxgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; max-width: 980px; margin: 8px auto; padding: 0 14px 220px; }
-.ap .dexp .dxc { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px 5px; border-radius: 12px;
-  border: 1.5px solid var(--line); background: var(--card); color: var(--ink); font: inherit; cursor: pointer; min-width: 0; }
-.ap .dexp .dxc.graded { border-color: var(--g); } .ap .dexp .dxc.lv4 { background: linear-gradient(#2c2618, var(--card)); box-shadow: 0 0 0 1px #e0b86055 inset; }
-.ap .dexp .dxc.sel { outline: 2px solid var(--gold); outline-offset: 1px; }
+/* 명부 한 칸 — 밤빛 판에 청동 줄 · 모서리 징 (ui/card.png · 판 안 카드와 한 벌) · 다 알아낸 이는 청동·옻칠 나무 테 (ui/frame-panel.png) */
+.ap .dexp .dxc { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0 0 1px; border-radius: 0;
+  border: 10px solid transparent; border-image: url(__ART__ui/card.png?v=1) 24 fill / 10px stretch; background: none; color: var(--ink); font: inherit; cursor: pointer; min-width: 0; }
+.ap .dexp .dxc.graded { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--g) 70%, transparent)); }
+.ap .dexp .dxc.lv4 { border-image: url(__ART__ui/frame-panel.png?v=3) 118 / 10px stretch; background: linear-gradient(#2c2618, #1f1710) padding-box; }
+.ap .dexp .dxc.sel { filter: drop-shadow(0 0 3px #ffd27a) drop-shadow(0 0 8px #ffd27a88); }
 /* 판 밖에서 키운 것 — 얼굴 위 왼쪽에 단련 단계 · 지닌 유물 (형 10-26: 영웅전 카드에도 「단련 n」) */
 .ap .dexp .dxc .dxgr { position: absolute; top: 3px; left: 3px; z-index: 2; display: flex; align-items: center; gap: 1px; pointer-events: none; }
-.ap .dexp .dxc .dxgr b { padding: 1px 5px; border-radius: 8px; background: #1a120acc; border: 1px solid #e0b860; color: #ffe08a; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.ap .dexp .dxc .dxgr b { padding: 0 2px; border: 4px solid transparent; border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 4px 5px stretch; border-radius: 0; background: none; color: #ffe08a; font-size: 10px; font-weight: 800; white-space: nowrap; }
 .ap .dexp .dxc .dxgr .rlchip { width: 18px; height: 18px; margin-left: 1px; } .ap .dexp .dxc .dxgr .rlchip img { width: 15px; height: 15px; }
 .ap .dexp .dxgrl { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 6px 0 0; font-size: 12.5px; color: #cbbf9f; }
 .ap .dexp .dxgrl b { color: #ffe08a; margin-right: 4px; }
@@ -240,29 +243,29 @@ export const DEX_CSS = `
 .ap .dexp .rope { position: absolute; top: 46px; right: 10px; width: 22px; height: 22px; border-radius: 50%; background: #8a5a2a; border: 2px solid #e0b070;
   box-shadow: 0 1px 4px #000a; } .ap .dexp .rope::after { content: ''; position: absolute; inset: 4px; border-radius: 50%; border: 2px dashed #f0d8a8; }
 .ap .dexp .dxclan { max-width: 980px; margin: 10px auto; padding: 0 14px 40px; display: flex; flex-direction: column; gap: 8px; }
-.ap .dexp .clk { display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 12px; border: 1px solid #6a4a5a; background: #231a20; }
+.ap .dexp .clk { display: flex; gap: 10px; align-items: center; padding: 0; border-radius: 0; border: 10px solid transparent; border-image: url(__ART__ui/card.png?v=1) 24 fill / 10px stretch; background: none; }
 .ap .dexp .clk > div { display: flex; flex-direction: column; gap: 2px; } .ap .dexp .clk .dxf.none { font-size: 16px; color: #f0b8c8; }
 .ap .dexp .dxsel { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); width: min(560px, 100%); max-height: 62vh; overflow-y: auto; z-index: 6; box-sizing: border-box;
-  padding: 14px 16px calc(16px + env(safe-area-inset-bottom)); border-radius: 18px 18px 0 0; background: #231c18f5; border: 1px solid #4a4436; border-bottom: none;
+  padding: 0 0 env(safe-area-inset-bottom); border-radius: 0; border: 18px solid transparent; border-bottom-width: 12px; border-image: url(__ART__ui/panel.png?v=2) 64 fill / 18px 18px 12px stretch; background: none;
   box-shadow: 0 -8px 30px #000a; animation: dxup .25s ease-out both; }
 @keyframes dxup { from { transform: translate(-50%, 30px); opacity: 0; } to { transform: translateX(-50%); opacity: 1; } }
-.ap .dexp .dxsel .x { position: absolute; right: 10px; top: 8px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: #2a1f16; color: var(--ink); cursor: pointer; }
+.ap .dexp .dxsel .x { position: absolute; right: -6px; top: -8px; width: 38px; height: 34px; border: 6px solid transparent; border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 6px 8px stretch; border-radius: 0; background: none; color: #efe3c6; font-weight: 700; cursor: pointer; }
 .ap .dexp .dxtop { display: flex; gap: 12px; align-items: center; } .ap .dexp .dxtop > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.ap .dexp .dxbig { width: 96px; height: 96px; border-radius: 14px; object-fit: cover; object-position: top; border: 1px solid #6a5a3a; flex: none; }
+.ap .dexp .dxbig { width: 96px; height: 96px; border-radius: 0; object-fit: cover; object-position: top; flex: none; box-sizing: border-box; border: 9px solid transparent; border-image: url(__ART__ui/frame-portrait.png) 60 / 9px stretch; }
 .ap .dexp .dxbig.none { display: grid; place-items: center; background: #17110c; color: #60524a; font-size: 40px; }
 .ap .dexp .dxname { font-size: 19px; color: var(--gold); font-family: 'Gowun Batang', serif; }
-.ap .dexp .grade { align-self: flex-start; padding: 0 8px; border-radius: 9px; border: 1.5px solid var(--g); font-size: 12px; }
-.ap .dexp .lvs { display: flex; flex-wrap: wrap; gap: 4px; } .ap .dexp .lvs i { font-style: normal; font-size: 11.5px; padding: 1px 7px; border-radius: 9px; border: 1px solid #463a33; color: #70625a; }
-.ap .dexp .lvs i.on { color: var(--ink); border-color: #8a7a5a; background: #2a2618; }
+.ap .dexp .grade { align-self: flex-start; padding: 0 3px; border: 5px solid transparent; border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 5px 7px stretch; border-radius: 0; color: var(--g); font-size: 12px; font-weight: 700; }
+.ap .dexp .lvs { display: flex; flex-wrap: wrap; gap: 4px; } .ap .dexp .lvs i { font-style: normal; font-size: 11.5px; padding: 0 3px; border: 5px solid transparent; border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 5px 7px stretch; border-radius: 0; color: #8a7c6a; opacity: .7; }
+.ap .dexp .lvs i.on { border-image: url(__ART__ui/btn-gold.png?v=2) 30 35 fill / 5px 7px stretch; color: #2a1606; font-weight: 700; opacity: 1; }
 .ap .dexp .dxstat { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; } .ap .dexp .dxtr { flex: 1; min-width: 180px; display: flex; flex-wrap: wrap; gap: 4px; }
 .ap .dexp .dxtr p { flex-basis: 100%; }
 .ap .dxtoast { position: absolute; right: 10px; top: calc(64px + env(safe-area-inset-top)); z-index: 45; display: flex; flex-direction: column; gap: 6px; cursor: pointer;
   animation: dxt 5.5s ease-in-out both; } .ap .dxtoast.gone { display: none; }
 @keyframes dxt { 0% { opacity: 0; transform: translateX(30px); } 8%, 82% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateX(30px); visibility: hidden; } }
-.ap .dxt { display: flex; align-items: center; gap: 8px; padding: 5px 12px 5px 5px; border-radius: 26px; background: #231c18ee; border: 1px solid #8a7a5a; box-shadow: 0 4px 14px #0009; }
+.ap .dxt { display: flex; align-items: center; gap: 8px; padding: 0 4px 0 0; border-radius: 0; border: 10px solid transparent; border-image: url(__ART__ui/card.png?v=1) 24 fill / 10px stretch; background: none; filter: drop-shadow(0 4px 10px #0009); }
 .ap .dxt img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; object-position: top; }
 .ap .dxt span { display: flex; flex-direction: column; line-height: 1.2; } .ap .dxt small { font-size: 11px; color: var(--mute); } .ap .dxt b { font-size: 14px; }
-.ap .dxt.lv3 { border-color: #e0915a; } .ap .dxt.lv3 small { color: #f0b080; } .ap .dxt.lv4 { border-color: #f0c860; } .ap .dxt.lv4 small { color: #f0c860; }
+.ap .dxt.lv3 small { color: #f0b080; } .ap .dxt.lv4 { border-image: url(__ART__ui/frame-panel.png?v=3) 118 / 10px stretch; background: #1f1710 padding-box; } .ap .dxt.lv4 small { color: #f0c860; }
 /* 새로 오른 장수 얼굴 뒤로 금빛이 한 번 터진다 (realm/fx/gold.png · __ART__ 는 app.ts 가 바꿔 넣는다) */
 .ap .dxt { position: relative; } .ap .dxt img { position: relative; }
 .ap .dxt:not(.more)::before { content: ''; position: absolute; left: -32px; top: 50%; width: 104px; height: 104px; margin-top: -52px; pointer-events: none;

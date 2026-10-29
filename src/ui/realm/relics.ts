@@ -257,7 +257,7 @@ export const RELIC_CSS = `
 .ap .rlchip { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-left: 3px; vertical-align: middle; border-radius: 50%; background: radial-gradient(#4a3a1a, #1f170e); border: 1px solid #c9a23a; }
 .ap .rlchip img { width: 21px; height: 21px; object-fit: contain; filter: drop-shadow(0 1px 1px #000a); }
 .ap .rlslots { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.ap .rlslot { flex: 1 1 200px; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 8px; border-radius: 10px; border: 1px dashed #7a6440; background: #18120b; color: #cbbf9f; font: inherit; font-size: 12.5px; text-align: left; cursor: pointer; }
+.ap .rlslot { flex: 1 1 200px; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 2px; border-radius: 0; border: 8px solid transparent; border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 8px 10px stretch; background: none; color: #cbbf9f; font: inherit; font-size: 12.5px; text-align: left; cursor: pointer; }
 .ap .rlslot i { font-style: normal; font-size: 18px; color: #c9a23a; width: 36px; text-align: center; }
 .ap .rlslot.full { border-style: solid; border-color: #c9a23a; background: linear-gradient(90deg, #2c2412, #1a140d); }
 .ap .rlslot.full img { width: 40px; height: 40px; object-fit: contain; flex: none; filter: drop-shadow(0 2px 3px #000b); }

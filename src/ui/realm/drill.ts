@@ -206,14 +206,15 @@ export function yardStripHtml(k: DrillKit, rows: ReadonlyArray<{ id: string; nam
 export const DRILL_CSS = `
 .ap .front.dyard .dylead { max-width: 760px; margin: 2px auto 8px; padding: 0 14px; color: #cbbf9f; font-size: 13.5px; }
 .ap .front.dyard .dyl { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; max-width: 980px; margin: 0 auto; padding: 0 14px 8px; }
-.ap .dyc { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 14px; border: 1px solid #6a5a3a; background: linear-gradient(#231b12, #1a140d); }
+/* 테는 그림으로 — 장수 한 사람 = 옻칠한 나무판에 청동 테 (ui/panel.png · 아래 판과 한 벌) (형 10-29: "박스 테두리들이 여전히 css") */
+.ap .dyc { display: flex; flex-direction: column; gap: 6px; padding: 0 2px 2px; border: 18px solid transparent; border-image: url(__ART__ui/panel.png?v=2) 64 fill / 18px stretch; border-radius: 0; background: none; }
 .ap .dyc.fresh { animation: dyin .5s ease-out both; }
 @keyframes dyin { from { transform: translateY(10px) scale(.97); opacity: 0; } to { transform: none; opacity: 1; } }
 .ap .dyf { display: flex; align-items: center; gap: 10px; }
 .ap .dyf img, .ap .dyf .nof { width: 58px; height: 58px; flex: none; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #8a7040; background: #17110c; }
 .ap .dyn { display: flex; flex-direction: column; gap: 2px; min-width: 0; } .ap .dyn b { font-size: 16px; color: #f0e2c0; }
-.ap .dlv { display: inline-block; align-self: flex-start; padding: 0 8px; border-radius: 9px; border: 1px solid #c9a23a; color: #f0d27a; font-size: 12px; font-weight: 700; background: #2c2412; }
-.ap .dlv.zero { border-color: #5a4a30; color: #a89c84; background: none; font-weight: 400; }
+.ap .dlv { display: inline-block; align-self: flex-start; padding: 0 4px; border: 5px solid transparent; border-image: url(__ART__ui/btn-gold.png?v=2) 30 35 fill / 5px 7px stretch; border-radius: 0; color: #2a1606; font-size: 12px; font-weight: 800; background: none; }
+.ap .dlv.zero { border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 5px 7px stretch; color: #cbbf9f; font-weight: 700; }
 .ap .dyfell { color: #e0a090; font-size: 11.5px; }
 .ap .dyp { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; align-items: center; } .ap .dyp small { grid-column: 1 / 3; color: var(--mute); font-size: 11.5px; }
 .ap .dypt { font-size: 13px; color: #cfc6b4; white-space: nowrap; } .ap .dypt b { color: #ffd27a; font-size: 16px; }
@@ -231,16 +232,16 @@ export const DRILL_CSS = `
 @keyframes dyup { 0% { transform: scale(2); } 100% { transform: none; } }
 .ap .dyst.dyui { display: block; } .ap .dyui summary { display: grid; grid-template-columns: 2.6em 1.4em 1.8em 1.8em 1fr; align-items: center; gap: 2px; cursor: pointer; list-style: none; }
 .ap .dyui summary::-webkit-details-marker { display: none; }
-.ap .dyui .dyq { box-sizing: border-box; justify-self: end; min-width: 46px; text-align: center; padding: 3px 8px; border-radius: 9px; border: 1px solid #8a7a5a; color: #d8c8a0; font-weight: 800; }
-.ap .dyui[open] .dyq { background: #3a2c14; border-color: #c9a23a; color: #ffe08a; }
+.ap .dyui .dyq { box-sizing: border-box; justify-self: end; min-width: 46px; text-align: center; padding: 0 2px; border: 6px solid transparent; border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 6px 8px stretch; border-radius: 0; color: #efe3c6; font-weight: 800; }
+.ap .dyui[open] .dyq { border-image: url(__ART__ui/btn-gold.png?v=2) 30 35 fill / 6px 8px stretch; color: #2a1606; }
 .ap .dyui p { margin: 4px 0 2px; padding: 6px 8px; border-radius: 8px; background: #2a2016; color: #e0d4b8; font-size: 12px; line-height: 1.5; }
 .ap .dyui p b { color: #ffe08a; font-weight: 700; } .ap .dyui p.dyut { background: none; padding: 0 8px; color: var(--mute); }
 .ap .dyst i.dn { color: #e08a7a; }
-.ap .dyplus { justify-self: end; min-width: 46px; padding: 3px 8px; border-radius: 9px; border: 1px solid #c9a23a; background: #3a2c14; color: #ffe08a; font: inherit; font-weight: 800; cursor: pointer; }
-.ap .dyplus small { font-weight: 400; font-size: 10.5px; color: #e8d8a8; margin-left: 2px; }
-.ap .dyplus:disabled { border-color: #4a3e2a; background: none; color: #6a604e; cursor: default; } .ap .dyplus:disabled small { color: #6a604e; }
+.ap .dyplus { justify-self: end; min-width: 46px; padding: 0 2px; border: 6px solid transparent; border-image: url(__ART__ui/btn-gold.png?v=2) 30 35 fill / 6px 8px stretch; border-radius: 0; background: none; color: #2a1606; font: inherit; font-weight: 800; cursor: pointer; }
+.ap .dyplus small { font-weight: 700; font-size: 10.5px; color: #4a2e10; margin-left: 2px; }
+.ap .dyplus:disabled { border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 6px 8px stretch; color: #8a7e6a; cursor: default; } .ap .dyplus:disabled small { color: #8a7e6a; }
 .ap .front.dyard .dygo { display: flex; justify-content: center; margin: 12px 0 4px; }
-.ap .dystrip { max-width: 560px; margin: 10px auto 4px; padding: 10px 12px; border-radius: 14px; border: 1px solid #c9a45a; background: #1f1710e6; text-align: left; }
+.ap .dystrip { max-width: 560px; margin: 10px auto 4px; padding: 2px 4px; border: 12px solid transparent; border-image: url(__ART__ui/frame-panel.png?v=3) 118 / 12px stretch; border-radius: 0; background: #1f1710f2 padding-box; text-align: left; }
 .ap .dystrip h4 { margin: 0 0 6px; color: var(--gold); } .ap .dystrip h4 small { color: var(--mute); font-weight: 400; margin-left: 6px; }
 .ap .dystrip .dysl { display: flex; flex-wrap: wrap; gap: 6px; }
 .ap .dystrip .dysf { display: flex; flex-direction: column; align-items: center; width: 64px; gap: 1px; }

@@ -3,6 +3,7 @@
  * 새 화면을 지으면 이걸로 390px 폭에서 넘치지 않는지 본다 — 넘친 칸(scrollWidth > clientWidth 또는 화면 밖)도 적어 준다.
  *
  *   node --experimental-strip-types tools/phone-shot.ts <나갈 png> [html 파일 — .ap 안에 끼워 넣는다 · 없으면 -] [너비 390] [높이 844] [주소 http://localhost:5174/realm.html]
+ *   LS='json 파일' — { 키: 값 } 을 저장 칸에 더 넣고 다시 연다
  *   PRE='js 식' — 찍기 전에 페이지에서 돌린다(눌러서 화면을 연다 · await 를 쓸 수 있다) · SAVE='판 json' — 저장 칸에 넣고 다시 연다(tools/phone-save.ts)
  *
  * 런타임 의존성 없음 — 크롬 원격 디버깅(CDP)을 Node 내장 WebSocket 으로 (tools/monkey.ts 와 같은 길). 쓴 임시 폴더는 스스로 지운다.
@@ -41,8 +42,13 @@ try {
   await sleep(4000)
   // SAVE='json 파일' — 그 판을 이 창의 저장 칸에 넣고 다시 연다 (tools/phone-save.ts 가 만든다)
   const save = process.env['SAVE']
-  if (save !== undefined && save !== '') {
-    await call('Runtime.evaluate', { expression: `localStorage.setItem('hanbal.realm.v2', ${JSON.stringify(readFileSync(save, 'utf8'))})` })
+  // LS='json 파일' — { 키: 값 } 을 저장 칸에 더 넣는다 (영웅전·단련터 기록 등)
+  const ls = process.env['LS']
+  if (ls !== undefined && ls !== '') {
+    for (const [key, v] of Object.entries(JSON.parse(readFileSync(ls, 'utf8')) as Record<string, unknown>)) await call('Runtime.evaluate', { expression: `localStorage.setItem(${JSON.stringify(key)}, ${JSON.stringify(typeof v === 'string' ? v : JSON.stringify(v))})` })
+  }
+  if ((save !== undefined && save !== '') || (ls !== undefined && ls !== '')) {
+    if (save !== undefined && save !== '') await call('Runtime.evaluate', { expression: `localStorage.setItem('hanbal.realm.v2', ${JSON.stringify(readFileSync(save, 'utf8'))})` })
     await call('Page.reload')
     await sleep(4000)
   }
