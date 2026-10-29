@@ -1667,7 +1667,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (edge === '') continue
       const m = movesOf(r, me(), a).find((x) => x.edge.id === edge)
       if (m === undefined || !m.hostile) continue
-      if (adviseMarch(r, me(), a, m.to, approachMoves(r, me(), a, m)).length === 0) continue
+      // 모두 대로만 말하면 회의가 아니라 알림이다 — 숨는 길을 내놓는 장수가 있을 때만 연다 (위원회)
+      if (!adviseMarch(r, me(), a, m.to, approachMoves(r, me(), a, m)).some((v) => v.ap !== 'road')) continue
       return { army: a.id, edge, ...(goal !== undefined ? { goal } : {}) }
     }
     return null
@@ -1685,7 +1686,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       ov = root.querySelector<HTMLElement>('.cnov')!
     }
     const to = r.nodes[m.to]?.name ?? ''
-    ov.innerHTML = `<div class="cnbox"><h3>군막 회의</h3><p class="cnlead">${esc(josa(armyName(r, a), '이', '가'))} ${esc(josa(to, '을', '를'))} 치러 간다. 장수들이 저마다 길을 내놓는다.</p>`
+    const n = adviseMarch(r, me(), a, m.to, approachMoves(r, me(), a, m)).length
+    ov.innerHTML = `<div class="cnbox"><h3>군막 회의</h3><p class="cnlead">${esc(josa(armyName(r, a), '이', '가'))} ${esc(josa(to, '을', '를'))} 치러 간다. ${n > 1 ? '장수들이 저마다 길을 내놓는다.' : '장수가 길을 내놓는다.'}</p>`
       + `<div class="cnl">${councilButtons(r, a, m, 'cn-pick')}</div><button class="btn ghost cnskip" data-act="cn-skip">그대로 간다 (대로)</button></div>`
   }
 
