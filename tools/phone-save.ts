@@ -2,12 +2,13 @@
  * 폰 폭 확인용 판 — 변한 작은 판을 한 계절 돌려 보고까지 만든 뒤, 이번 계절 카드를 바꿔 끼운다 (tools/phone-shot.ts 와 함께).
  *   node --experimental-strip-types tools/phone-save.ts <나갈 json> <카드: quarrel-town|quarrel-feast|romance|exile|fugitive|none|captive|woo> [시드]
  *   captive — 카드 없이 적장 하나를 우리 옥에 (회유 화면) · woo — 그 적장을 이미 달래는 중 (진행 줄) · woo0 — 벽이 막 무너졌다 (담판이 저절로 뜬다)
+ *   lost — 카드 없이, 이번 보고에 우리가 쳐서 진 싸움 한 판 (적이 셋 배 · 온 쇠 · 깃발에 밀림 · 정찰 없음) — 보고를 닫으면 「이기는 법」 띠 (howwin.ts)
  */
 import { writeFileSync } from 'node:fs'
 import { startRegion } from '../src/realm/data/regions/index.ts'
 import { HERO_POOL } from '../src/realm/data/heroes-pool.ts'
 import { advance } from '../src/realm/season.ts'
-import type { Card } from '../src/realm/types.ts'
+import type { Card, ReportLine } from '../src/realm/types.ts'
 
 const out = process.argv[2]!
 const kind = process.argv[3] ?? 'quarrel-town'
@@ -48,6 +49,20 @@ if (kind === 'captive' || kind === 'woo' || kind === 'woo0') {
   if (kind === 'woo') cap.persuade = { by: g.id, left: 4, resist: 3.2, tries: 0, since: next.season - 2, talkAt: next.season - 2 }
   if (kind === 'woo0') cap.persuade = { by: g.id, left: 2, resist: 0, tries: 0, since: next.season - 4, talkAt: next.season - 4 }
   next.stock[next.player]!.grain = Math.max(next.stock[next.player]!.grain, 300)
+}
+// 진 싸움 — 우리 군대 하나가 이웃 나라 고을을 쳤다가 졌다 (보고에 한 줄 · 적 군대는 쇠로)
+if (kind === 'lost') {
+  const ours = Object.values(r0.armies).find((a) => a.faction === r0.player)!
+  const foeArmy = Object.values(r0.armies).find((a) => a.faction !== r0.player && a.march === null)!
+  foeArmy.equip = 'iron'
+  delete foeArmy.kit
+  const R = (a: 'a' | 'd' | null, c1: string, c2: string): unknown => ({ a: c1, d: c2, beat: a, push: 0.3, na: 0, nd: 0, ma: 0, md: 0 })
+  ;(report.lines as ReportLine[]).push({
+    kind: 'battle', node: foeArmy.at, attacker: ours.id, allies: [], pincer: false, defender: foeArmy.faction, ambush: 'none', p: 0.3, outcome: 'lose',
+    captured: null, killed: null, militia: 0, atkFaction: r0.player,
+    start: { men: [80, 240], morale: [1, 1.2], heroes: [null, null] },
+    rounds: [R('d', 'charge', 'hold'), R('a', 'hold', 'charge'), R('d', 'open', 'charge'), R('d', 'charge', 'hold')],
+  } as unknown as ReportLine)
 }
 const quiet = kind === 'captive' || kind === 'woo' || kind === 'woo0' // 보고 없이 판 위에서 연다
 writeFileSync(out, JSON.stringify({ v: 2, nation: 'us', seed, log: [], realm: next, before: quiet ? null : r0, report: quiet ? null : report }))

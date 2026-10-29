@@ -91,6 +91,7 @@ import { exileArt, exileBeats, fugitiveBeats, quarrelArt, quarrelBeats, romanceB
 import { HERO_POOL } from '../../realm/data/heroes-pool.ts'
 import { chiefCastOf, hireVoicePath, voiceGate, voiceKind, voicePath, type VoiceLine } from './voice.ts'
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
+import { HOWWIN_CSS, bannerHtml, closeHowWin, howWinDue, howWinMark, lessons, lossOf, openLessons, showBanner, type HowKit, type LessonGo, type Loss } from './howwin.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
 import { FEEL_CSS, alertFeel, ambushRangeFeel, chanceFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
 import { adviseMarch, guardRange } from './council-lines.ts'
@@ -580,7 +581,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART)
+  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS
   document.head.appendChild(style)
   root.classList.add('ap')
   installTips(root)
@@ -4090,7 +4091,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   function helpSheet(): string {
-    return `<h3>도움말</h3><div class="help">`
+    return `<h3>도움말</h3><div class="btns"><button class="btn pri wide" data-act="howwin">⚔ 이기는 법</button></div><div class="help">`
       + `<p><b>한 계절 = 한 턴.</b> 명령을 고르고 다음 계절을 누른다.</p>`
       + `<p><b>봄</b>에 심은 집 수만큼 가을에 거두니, 봄에 군사를 뽑으면 그만큼 가을걷이가 준다. <b>여름</b>엔 장마로 나루가 막히고 길이 느려진다. `
       + `<b>가을</b>엔 곡식이 들어오고, <b>겨울</b>엔 강이 얼어 언 강을 건너 기습하기 좋지만 고개가 막히고 군량이 더 든다.</p>`
@@ -5586,6 +5587,53 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const cue = ourWar ? 'war_drums' : ev !== undefined ? SCENE_SOUND[ev] : undefined
     if (cue !== undefined) window.setTimeout(() => { if (document.visibilityState === 'visible') ding(snd(cue), 0.4) }, SCENE_CUE_MS)
     paint()
+    queueHowWin(lossOf(prev, res.next, res.report, me()))
+  }
+
+  // ───────── 이기는 법 — 싸움에 지고 지도로 돌아오면 위에 띠 (howwin.ts · 형 10-29: "전투에서 패배하면 개빡치고 하기 싫어지니까")
+  /** 띄울 차례를 기다리는 진 싸움 · 이 판에서 마지막으로 진 싸움(도움말에서 다시 열 때) */
+  let lossPending: Loss | null = null
+  let lastLoss: Loss | null = null
+  const HOWWIN_WAIT_MAX_MS = 10 * 60 * 1000
+  const howKit = (): HowKit => ({ art: ART, flag: (f) => (f !== null && FACTION_ART[f] !== undefined ? flagIcon(f) ?? null : null), wait: (t) => (realm !== null ? tabWait(realm, t) : 0) })
+  /** 지도가 비었나 — 보고·장면·싸움·다른 알림이 다 걷혔다 */
+  const mapClear = (): boolean => realm !== null && front === null && prologue === null && !showReport && !warOn && !root.classList.contains('modal-open') && !root.classList.contains('war-open')
+    && root.querySelector('.cere, .wr, .bktoast, .guidebox, .failbox, .lsn-box, .nightov') === null
+  /** 진 싸움을 받아 둔다 — 보고와 장면이 다 걷혀 지도로 돌아오면 띄운다 (배우는 판 · 끝난 판 · 이번 계절 이미 띄운 것은 빼고) */
+  function queueHowWin(loss: Loss | null): void {
+    if (loss === null || realm === null || realm.region === 'tutorial' || realm.outcome) return
+    lastLoss = loss
+    if (!howWinDue(realm.seed, loss)) return
+    lossPending = loss
+    const born = performance.now()
+    const tick = (): void => {
+      if (lossPending !== loss) return
+      if (realm === null || realm.season !== loss.season || performance.now() - born > HOWWIN_WAIT_MAX_MS) { lossPending = null; return }
+      // 뒤에 숨은 탭에서는 세지 않는다 — 다시 보일 때 이어서 (절대 규칙 4)
+      if (document.visibilityState !== 'visible') { document.addEventListener('visibilitychange', tick, { once: true }); return }
+      if (mapClear()) {
+        lossPending = null
+        howWinMark(realm.seed, loss.season)
+        showBanner(root, bannerHtml(howKit(), loss), () => openHowWin(loss))
+        ding(snd('ui_open'), 0.3)
+        return
+      }
+      window.setTimeout(tick, 600)
+    }
+    window.setTimeout(tick, 600)
+  }
+  function openHowWin(loss: Loss | null): void {
+    openLessons(root, lessons(howKit(), loss), howWinGo)
+    ding(snd('ui_open'), 0.2)
+  }
+  /** 「해 보기」 — 그 탭(외교면 그 칸)을 연다 */
+  function howWinGo(g: LessonGo): void {
+    if (realm === null) return
+    if (g.mode !== undefined) diploMode = g.mode
+    if (g.tab === 'heroes') cmdJob = null
+    markSeen(g.tab)
+    sheet = null
+    openSheet({ kind: g.tab })
   }
 
   // ───────── 폰 뒤로가기 — 웹 페이지 뒤로가 아니라 열린 창부터 닫는다 (형 2026-10-20: "뒤로가기 누르면 … 그냥 웹페이지 뒤로가버리는데")
@@ -5593,6 +5641,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 한 겹 닫는다 — 닫은 게 있으면 true */
   function backOne(): boolean {
     if (root.classList.contains('war-open') || root.querySelector('.wr') !== null) return true // 싸움 중엔 닫지 않는다 (싸움은 끝까지)
+    if (closeHowWin(root)) return true
     const fail = root.querySelector('.failbox')
     if (fail !== null) { fail.remove(); return true }
     if (front !== null) {
@@ -5928,6 +5977,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         markSeen(d['tab']!); openSheet({ kind: d['tab'] as 'army' }); return
       }
       case 'help': openSheet({ kind: 'help' }); return
+      case 'howwin': openHowWin(lastLoss); return
       case 'export': host.onExport(); return
       case 'fmore-x': fmoreOpen = false; root.querySelector<HTMLDetailsElement>('.fmore')?.removeAttribute('open'); return
       case 'b0-toggle': fmoreOpen = true; try { localStorage.setItem(B0_KEY, b0On() ? '0' : '1') } catch { /* 저장이 막히면 못 켠다 */ } paint(); return
@@ -6705,6 +6755,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       sheet = null
       paint()
       if (fresh && r !== null) coverMap() // 새 판 — 지도 그림을 다 받을 때까지 가린다
+      // 진 싸움의 보고를 닫기 전에 창을 닫았다 — 다시 열어 지도로 돌아오면 띄운다 (같은 계절엔 한 번)
+      lossPending = null
+      lastLoss = null
+      closeHowWin(root)
+      if (r !== null && b !== null && rep !== null) queueHowWin(lossOf(b, r, rep, r.player))
     },
   }
 }

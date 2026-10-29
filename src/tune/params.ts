@@ -1671,6 +1671,9 @@ export const SPEC = {
     hireCutMs: [100, 560, 1020] as const,
     /** 돌아온 장수 알림이 머무는 시간(ms) — 큰 장면이 떠 있는 동안은 세지 않는다 */
     backToastMs: 7000,
+    /** 싸움에 진 뒤 위에 뜨는 「이기는 법」 띠가 머무는 시간(ms) · 한 판에 이만큼 띄운 뒤로는 크게 졌을 때만 (howwin.ts) */
+    howWinToastMs: 9000,
+    howWinFreeShows: 3,
     /** 배우는 판 — 한 단계에 이만큼(ms) 머물면 「막혔으면 건너뛰기」가 뜬다 */
     tutStuckMs: 25000,
     hirePopMs: 1480,
