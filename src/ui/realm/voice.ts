@@ -254,7 +254,7 @@ const castHash = (h: Hero): number => {
   return s >>> 3
 }
 /** 성우진 C 를 녹음해 둔 결 — public/realm/voice/c/ (tools/voicec-list.ts 가 다 있나 본다) */
-const C_KINDS: ReadonlySet<VoiceKind> = new Set<VoiceKind>(['m-young', 'm-gruff'])
+const C_KINDS: ReadonlySet<VoiceKind> = new Set<VoiceKind>(['m-young', 'm-gruff', 'm-sage', 'm-elder', 'm-charm'])
 export function castOf(h: Hero, ruler = false): 'a' | 'b' | 'c' {
   const t = castHash(h)
   if (t % 3 === 2 && C_KINDS.has(voiceKind(h, ruler))) return 'c'
