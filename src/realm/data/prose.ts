@@ -423,7 +423,10 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       const cap = line.captured !== null ? ` ${josa(after.heroes[line.captured]?.name ?? '?', '을', '를')} 사로잡았다.` : ''
       const dead = line.killed !== null ? ` ${josa(after.heroes[line.killed]?.name ?? '?', '이', '가')} 죽었다.` : ''
       // 싸움 소식은 퍼진다 (SYSTEMS §2-2) — 남의 싸움도 한 줄은 들린다
-      return ours ? head + odds + amb + cap + dead : `소문. ${head}`
+      // 항복한 군사를 거뒀다 (season.takeYielded)
+      const y = line.yielded
+      const yl = y !== undefined && y.join + y.hh > 0 ? ` 무기를 버린 ${y.n}명 가운데 ${y.join}명이 ${(y.side === 'a') === weAtk ? '우리' : '적의'} 군대에 들었다${y.hh > 0 ? `. ${y.hh}집이 고을에 자리 잡았다` : ''}.` : ''
+      return ours ? head + odds + amb + cap + dead + yl : `소문. ${head}`
     }
     case 'harvest':
       return line.faction === viewer ? `추수. 곡식 ${line.grain}섬이 창고에 들었다.` : null

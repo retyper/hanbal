@@ -198,11 +198,15 @@ describe('나누기를 섞어 아무렇게나 돌려도', () => {
         const o = messyOrders(r, 'mess')
         const prevMen: Record<string, number> = {}
         for (const f of Object.keys(r.factions)) prevMen[f] = factionMen(r, f)
-        r = advance(r, o).next
+        const adv = advance(r, o)
+        r = adv.next
         again = advance(again, messyOrders(again, 'mess')).next
+        // 항복한 군사가 이긴 군대에 드는 것만은 늘 수 있다 (season.takeYielded · 형 10-29)
+        const joined: Record<string, number> = {}
+        for (const l of adv.report.lines) if (l.kind === 'battle' && l.yielded !== undefined) { const w = l.yielded.side === 'a' ? l.atkFaction : l.defender; if (w !== undefined) joined[w] = (joined[w] ?? 0) + l.yielded.join }
         for (const f of Object.keys(r.factions)) {
           assert.ok(Object.values(r.armies).filter((a) => a.faction === f).length <= P.realm.armyMax, `seed ${seed} ${f} 군대 수`)
-          assert.ok(factionMen(r, f) <= prevMen[f]!, `seed ${seed} s${s} ${f} 사람이 늘었다`)
+          assert.ok(factionMen(r, f) <= prevMen[f]! + (joined[f] ?? 0), `seed ${seed} s${s} ${f} 사람이 늘었다`)
         }
         for (const a of Object.values(r.armies)) {
           for (const v of Object.values(a.mix)) assert.ok((v ?? 0) >= 0)

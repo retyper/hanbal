@@ -1092,17 +1092,51 @@ function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines
       }
       if (!atkWon) back(atks)
       if (!atkLost) back(defs)
+      const yielded = takeYielded(r, res, atkWon ? 'a' : atkLost ? 'd' : null, atkWon ? r.armies[lead.id] : atkLost ? r.armies[defs[0]!.id] : undefined, atkWon ? defs : atks)
       lines.push({
         kind: 'battle', node: target, attacker: lead.id, allies: atks.slice(1).map((x) => x.id), pincer: false,
         defender: defs[0]!.faction, ambush: 'none', p, outcome, captured: fateOf.captured, killed: fateOf.killed,
         ...(fateOf.captives.length > 1 ? { captives: fateOf.captives } : {}), ...(fateOf.fallen.length > 1 ? { fallen: fateOf.fallen } : {}),
         militia: 0, field: true, edge: eid, atkFaction: lead.faction, rounds: res.rounds, key, start: startOf(sa, sd, atkF, defF), via: ed.kind, endWhy: res.endWhy,
+        ...(yielded !== undefined ? { yielded } : {}),
         clock: res.clock, ...(res.dusk.length > 0 ? { dusk: res.dusk } : {}),
         ...(res.pending !== undefined ? { pending: res.pending } : {}), ...(res.led ? { led: true } : {}),
       })
     }
   }
   for (const a of Object.values(r.armies)) if (headcount(forceOf(r, a)) < 1) delete r.armies[a.id]
+}
+
+/**
+ * 항복한 군사 — 싸움 가운데 항복 권유(비기 sway)로 무기를 버린 적은 싸움이 끝난 뒤 이긴 쪽이 거둔다.
+ * swayJoin 몫은 이긴 군대에 든다(그 적의 병종·무장대로 · 사기는 낮게 섞인다), 나머지는 그 고을의 집으로.
+ * 권유한 쪽이 졌거나 교착이면 항복한 이들은 도로 제 편으로 달아난다 (싸움에서 빠진 것으로 끝)
+ * (형 10-29: "항복권유 스킬을 쓰면 아군이 늘어야 하는 거 아닌가 · 너무 사기적인가" → 싸우는 도중이 아니라 끝난 뒤에)
+ */
+function takeYielded(r: Realm, res: FightResult, win: 'a' | 'd' | null, winner: Army | undefined, losers: readonly Army[]): { side: 'a' | 'd'; n: number; join: number; hh: number } | undefined {
+  if (win === null || winner === undefined || r.armies[winner.id] === undefined) return undefined
+  let n = 0
+  for (const rd of res.rounds) for (const x of rd.acts ?? []) if (x.s === win && x.c === 'art' && x.art === 'sway' && x.res === 'hit') n += x.tl ?? 0
+  n = Math.round(n)
+  if (n <= 0) return undefined
+  const R = P.realm
+  const join = Math.floor(n * R.swayJoin)
+  const mix: Partial<Record<UnitKind, number>> = {}
+  for (const l of losers) for (const [k, v] of Object.entries(l.mix)) mix[k as UnitKind] = (mix[k as UnitKind] ?? 0) + (v ?? 0)
+  const kinds = (Object.keys(mix) as UnitKind[]).filter((k) => (mix[k] ?? 0) > 0).sort()
+  const total = kinds.reduce((s, k) => s + (mix[k] ?? 0), 0)
+  const before = Object.values(winner.mix).reduce((s, v) => s + (v ?? 0), 0)
+  const tier = losers[0]?.equip ?? winner.equip
+  let given = 0
+  if (total > 0) kinds.forEach((k, i) => {
+    const m = i === kinds.length - 1 ? join - given : Math.floor((join * (mix[k] ?? 0)) / total)
+    if (m > 0) { addMen(winner, k, m, tier); given += m }
+  })
+  if (given > 0) winner.morale = (winner.morale * before + R.swayJoinMorale * given) / (before + given)
+  const node = r.nodes[winner.at]
+  const hh = node !== undefined && node.owner === winner.faction ? Math.round((n - given) * R.swayHomeHH) : 0
+  if (node !== undefined && hh > 0) node.hh += hh
+  return { side: win, n, join: given, hh }
 }
 
 /**
@@ -1323,6 +1357,8 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
       else delete r.armies[x.id]
     }
   }
+  // 항복한 군사를 이긴 쪽이 거둔다 (takeYielded) — 자리를 정한 뒤에 (이긴 군대가 선 고을에 집이 든다)
+  const yielded = takeYielded(r, res, atkWon ? 'a' : atkLost ? 'd' : null, atkWon ? r.armies[a.id] : atkLost ? defenders.find((d) => r.armies[d.id] !== undefined) : undefined, atkWon ? defenders : atks)
   lines.push({
     kind: 'battle', node: node.id, attacker: a.id, allies: atks.slice(1).map((x) => x.id),
     pincer: new Set(legs.map((x) => x.edge.id)).size >= 2, defender: defFaction, ambush, p, outcome, captured, killed,
@@ -1330,6 +1366,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
     militia: militiaN, field: false, atkFaction: a.faction, rounds: res.rounds, key, approach: approachOf(lead), start: startOf(sa, sd, atkF, defF),
     ...(guard !== null ? { guarded: guard.ap, gwhy: guard.why } : {}), ...(lead.adviser !== undefined ? { adviser: lead.adviser } : {}),
     via: edgeKind, endWhy: res.endWhy, clock: res.clock, ...(res.dusk.length > 0 ? { dusk: res.dusk } : {}),
+    ...(yielded !== undefined ? { yielded } : {}),
     ...(fell ? { fell: true } : {}), ...(res.pending !== undefined ? { pending: res.pending } : {}), ...(res.led ? { led: true } : {}),
   })
 }

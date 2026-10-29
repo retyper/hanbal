@@ -1780,6 +1780,13 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       h += c?.faction === me ? '<p>' + esc(josa(c.name, '이', '가')) + ' 사로잡혀 갔다.</p>' : '<p>' + esc(josa(c?.name ?? '?', '을', '를')) + ' 사로잡았다!</p>'
     }
     for (const id of l.fallen ?? (l.killed !== null ? [l.killed] : [])) h += `<p>${esc(josa(after.heroes[id]?.name ?? '?', '이', '가'))} 쓰러졌다.</p>`
+    // 항복한 군사를 거뒀다 (season.takeYielded) — 그림으로: 흰 깃발 수 → 군사 +n · 집 +n (형 10-29)
+    const yl = l.yielded
+    if (yl !== undefined && yl.join + yl.hh > 0) {
+      const mine = (yl.side === 'a') === (l.atkFaction === me)
+      h += `<p class="wyld ${mine ? 'us' : 'foe'}"><img src="${art}icon/status-betrayal.png" alt="항복"><b>${yl.n}</b><i>▶</i>`
+        + `${yl.join > 0 ? `<img src="${art}icon/unit-spear.png" alt="군사"><b>+${yl.join}</b>` : ''}${yl.hh > 0 ? `<img src="${art}icon/settle-farm-village.png" alt="집"><b>+${yl.hh}</b>` : ''}</p>`
+    }
     h += `<button class="btn pri wide" data-war="next">${left > 1 ? '다음 싸움으로' : '계절을 마무리한다'}</button></div>`
   }
   h += `</div>`
@@ -2373,6 +2380,7 @@ export const WAR_CSS = `
 .ap .ws .wfx-hit { position: absolute; left: 50%; top: 42px; width: 150px; height: 150px; margin: -75px 0 0 -75px; z-index: 2; pointer-events: none; opacity: 0; animation: whitfx .55s ease-out var(--hd, 1.2s) both; }
 @keyframes whitfx { 0% { opacity: 0; transform: scale(.3) rotate(0); } 25% { opacity: 1; transform: scale(1.05) rotate(12deg); } 100% { opacity: 0; transform: scale(1.35) rotate(24deg); } }
 .ap .wend { position: relative; } .ap .wend > b { position: relative; }
+.ap .wend .wyld { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 6px 0 0; font-size: 18px; } .ap .wend .wyld img { width: 30px; height: 30px; object-fit: contain; } .ap .wend .wyld i { font-style: normal; color: #cbbf9f; } .ap .wend .wyld.us b { color: #b8f09a; } .ap .wend .wyld.foe b { color: #ffb4a0; }
 .ap .wfx.burn { opacity: 0; animation: wrin 1.2s ease-out var(--d, 0s) both; }
 /* 불 — 작은 불길 여럿이 바닥에서 솟아 스러진다 · 불티는 낱낱이 위로 · 밑에 붉은 숯불 기운 */
 .ap .wburn { position: absolute; bottom: 1%; width: min(46vw, 430px); height: min(40vw, 360px); }

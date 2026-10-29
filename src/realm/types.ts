@@ -1020,6 +1020,8 @@ export type ReportLine =
       readonly via?: EdgeKind
       /** 싸움이 끝난 까닭 */
       readonly endWhy?: EndWhy
+      /** 항복 권유로 무기를 버린 적을 이긴 쪽이 거뒀다 — 군대에 든 수 · 고을에 든 집 (형 10-29) */
+      readonly yielded?: { readonly side: 'a' | 'd'; readonly n: number; readonly join: number; readonly hh: number }
       /** 해시계 — 낮 싸움인가 밤 싸움인가 · 때의 수 (옛 보고에는 없다) */
       readonly clock?: Clock
       /** 마지막 때마다 두 쪽이 고른 것 */
