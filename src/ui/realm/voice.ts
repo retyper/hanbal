@@ -24,7 +24,7 @@ import { LINES_NEW } from './voice-new.ts'
 export type BaseKind = 'm-young' | 'm-gruff' | 'm-sage' | 'm-elder' | 'm-charm' | 'w-bright' | 'w-cool' | 'w-sly' | 'w-shaman'
 /**
  * 10-29 더한 결 넷 — 청년 무장 · 젊은 여장수 · 중년 무장 · 나이 든 여인 (voice-new.ts · 형: "이미지로는 20대가 많은데 진지하면 목소리가 다 40대 같다").
- * A 칸에만 녹음했다 · 군장 말은 BASE_OF 의 가까운 결 것을 빌린다
+ * A · B 칸에 녹음했다(B 는 10-30 · voice-b.ts) · C 는 아직 · 군장 말은 BASE_OF 의 가까운 결 것을 빌린다
  */
 export type NewKind = 'm-knight' | 'w-knight' | 'm-veteran' | 'w-matron'
 export type VoiceKind = BaseKind | NewKind
@@ -254,8 +254,8 @@ const castHash = (h: Hero): number => {
   for (const c of h.id) s = (s * 131 + c.charCodeAt(0)) >>> 0
   return s >>> 3
 }
-/** 성우진 B 를 녹음해 둔 결 — public/realm/voice/b/ (새 결 넷은 A 뿐) */
-const B_KINDS: ReadonlySet<VoiceKind> = new Set<VoiceKind>(['m-young', 'm-gruff', 'm-sage', 'm-elder', 'm-charm', 'w-bright', 'w-cool', 'w-sly', 'w-shaman'])
+/** 성우진 B 를 녹음해 둔 결 — public/realm/voice/b/ (10-30 새 결 넷도 B 녹음 · C 는 아직이라 새 결은 A·B 반반) */
+const B_KINDS: ReadonlySet<VoiceKind> = new Set<VoiceKind>(['m-young', 'm-gruff', 'm-sage', 'm-elder', 'm-charm', 'w-bright', 'w-cool', 'w-sly', 'w-shaman', 'm-knight', 'w-knight', 'm-veteran', 'w-matron'])
 /** 성우진 C 를 녹음해 둔 결 — public/realm/voice/c/ (tools/voicec-list.ts 가 다 있나 본다) */
 const C_KINDS: ReadonlySet<VoiceKind> = new Set<VoiceKind>(['m-young', 'm-gruff', 'm-sage', 'm-elder', 'm-charm', 'w-bright', 'w-cool', 'w-sly', 'w-shaman'])
 export function castOf(h: Hero, ruler = false): 'a' | 'b' | 'c' {

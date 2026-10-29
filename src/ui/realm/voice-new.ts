@@ -2,7 +2,7 @@
  * 결 넷 더 (형 10-29: "우리 무장들이 이미지로는 20대가 많은데 진지하면 목소리가 다 40대 같다 · 진지하면서도 젊은 목소리").
  *   m-knight 청년 무장 (남 20대 · 진지하고 곧다 · 낮고 단단하되 젊게)   w-knight 젊은 여장수 (여 20대 · 단정하고 결연하다)
  *   m-veteran 중년 무장 (남 35~50 · 굵고 노련하다)                       w-matron 나이 든 여인 (여 40~55 · 차분하고 묵직하다)
- * 성우진 A 칸(public/realm/voice/ 바로 아래 · 이름 꼴은 다른 결과 같다)에만 녹음한다 — B · C 가 없어 이 결의 장수는 모두 A 로 말한다 (voice.ts castOf).
+ * 성우진 A 칸(public/realm/voice/ 바로 아래 · 이름 꼴은 다른 결과 같다)에 녹음했다. 10-30 성우진 B(voice-b.ts · Iapetus · Erinome · Schedar · Vindemiatrix)도 녹음해 이 결의 장수는 A · B 반반으로 말한다 · C 는 아직 (voice.ts castOf).
  * 군장 말은 가까운 옛 결의 것을 빌린다 (voice.ts BASE_OF). 사극 말투 · 부르는 말(주군 · 그대 · 전하) 없이 · 「~요」로 끝나는 말 없이.
  * 대사는 챗지피티와 교차 검증해 고친 안을 그대로 받았다 (형 10-29).
  * 녹음: AI 스튜디오 Gemini TTS 무료 목소리 VOICE_NEW (A · B · C 와 겹치지 않게) · tools/voicenew-list.ts 가 묶음 글을 낸다.

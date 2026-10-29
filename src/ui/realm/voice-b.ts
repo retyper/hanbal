@@ -5,16 +5,18 @@
  * 녹음: AI 스튜디오 Gemini TTS 무료 목소리 — 결마다 아래 VOICE_B 의 목소리 · 말투 칸은 A 와 같은 결의 성격 (tools/voiceb-list.ts 가 묶음 글을 낸다).
  */
 import type { Art } from '../../realm/types.ts'
-import type { BaseKind } from './voice.ts'
+import type { VoiceKind } from './voice.ts'
 
 /** 결마다 B 목소리 — AI 스튜디오 이름 · A 와 설명이 비슷한 것 (A: Enzo · Daro · Cruz · Arlo · Neno · Cleo · Kira · Lumi · Hali) */
-export const VOICE_B: Readonly<Record<BaseKind, string>> = {
+export const VOICE_B: Readonly<Record<VoiceKind, string>> = {
   'm-young': 'Mako', 'm-gruff': 'Algenib', 'm-sage': 'Olin', 'm-elder': 'Jett', 'm-charm': 'Algieba',
   'w-bright': 'Veda', 'w-cool': 'Sami', 'w-sly': 'Tova', 'w-shaman': 'Tavi',
+  // 10-30 새 결 넷 — A(Orus · Tari · Ludo · Jori) · C 와 겹치지 않게
+  'm-knight': 'Iapetus', 'w-knight': 'Erinome', 'm-veteran': 'Schedar', 'w-matron': 'Vindemiatrix',
 }
 
 /** 짧은 대답 셋 · 분부 받듦 셋 · 싸움 맡김 다섯(맡김 셋 · 이김 · 짐) — 10-29 사극체로 고침(해요체 · 군주에게 시키는 하오체 · 「그대」를 걷음 · 형: "'내게 맡겨라' 라고 반말하는데") */
-export const LINES_B: Readonly<Record<BaseKind, { tap: readonly string[]; obey: readonly string[]; auto: readonly string[] }>> = {
+export const LINES_B: Readonly<Record<VoiceKind, { tap: readonly string[]; obey: readonly string[]; auto: readonly string[] }>> = {
   'm-young': {
     tap: ['예!', '여기 있사옵니다!', '무엇이든 명하시옵소서!'],
     obey: ['바로 해내겠사옵니다!', '다녀오겠사옵니다!', '명대로 하겠사옵니다!'],
@@ -59,6 +61,27 @@ export const LINES_B: Readonly<Record<BaseKind, { tap: readonly string[]; obey: 
     tap: ['신령이 속삭이옵니다…', '부르셨사옵니까.', '방울이 울렸사옵니다.'],
     obey: ['신령의 뜻대로.', '길이 보이옵니다. 다녀오겠사옵니다.', '받들겠사옵니다.'],
     auto: ['신령이 우리 곁에 계시옵니다!', '하늘의 뜻을 따르겠사옵니다!', '별들이 길을 비추옵니다!', '신령께서 기뻐하시옵니다!', '하늘이 오늘은 외면하였사옵니다…'],
+  },
+  // 10-30 새 결 넷 — A(voice-new.ts)와 다른 말 · 사극체 · 부르는 말 없이
+  'm-knight': {
+    tap: ['대령하였사옵니다.', '하명하시옵소서.', '소장, 여기 있사옵니다.'],
+    obey: ['명을 받들겠사옵니다.', '한 치 어긋남 없이 해내겠사옵니다.', '곧 다녀오겠사옵니다.'],
+    auto: ['이 싸움, 소장에게 맡겨 주시옵소서!', '적의 선봉부터 꺾겠사옵니다!', '물러섬 없이 싸우겠사옵니다!', '이겼사옵니다! 적이 무너졌사옵니다!', '송구하옵니다… 다음엔 반드시 이기겠사옵니다.'],
+  },
+  'w-knight': {
+    tap: ['예, 대령하였사옵니다.', '부르심을 기다렸사옵니다.', '말씀하시옵소서.'],
+    obey: ['명을 받잡겠사옵니다.', '반드시 해내고 돌아오겠사옵니다.', '믿고 맡겨 주시옵소서.'],
+    auto: ['이 싸움, 제가 앞장서겠사옵니다!', '적진을 꿰뚫고 오겠사옵니다!', '한 발도 물러서지 않겠사옵니다!', '이겼사옵니다! 우리 군사가 해냈사옵니다!', '분하옵니다… 다시 기회를 주시옵소서.'],
+  },
+  'm-veteran': {
+    tap: ['소장이 왔사옵니다.', '찾으셨사옵니까.', '하문하시옵소서.'],
+    obey: ['맡겨 두시옵소서. 늘 하던 일이옵니다.', '분부대로 처리하겠사옵니다.', '어김없이 해내겠사옵니다.'],
+    auto: ['이런 싸움은 수없이 치렀사옵니다!', '판을 읽었으니 곧 끝내겠사옵니다!', '차분히 지켜보시옵소서!', '예상한 대로이옵니다! 적을 물리쳤사옵니다!', '허, 소장이 적을 얕보았사옵니다.'],
+  },
+  'w-matron': {
+    tap: ['예, 부르셨사옵니까.', '이 몸, 여기 있사옵니다.', '말씀만 하시옵소서.'],
+    obey: ['그리하겠사옵니다.', '염려 거두시옵소서.', '이 몸이 잘 매듭짓겠사옵니다.'],
+    auto: ['이 싸움은 이 몸에게 맡기시옵소서!', '서두르지 않고 이기겠사옵니다!', '무사히 돌아오겠사옵니다!', '무사히 이겼사옵니다!', '송구하옵니다. 이 몸의 헤아림이 모자랐사옵니다.'],
   },
 }
 
