@@ -226,10 +226,10 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonl
     case 'halo':
       return { sure: pick === 0 ? { morale: R.cardMorale } : { watch: R.cardHaloWatch } }
     case 'quarrel': {
-      // 침묵 — 둘이 스스로 풀면 둘 다 조금 오르고, 앙금이 남으면 둘 다 조금 떨어진다
+      // 침묵 — 둘이 스스로 풀면 아무 일 없고, 앙금이 남으면 둘 다 군장이 외면했다고 서운해한다 (형 10-29: "침묵하는데 정이 오를 일이 뭐가 있지")
       if (pick === 2) {
         const both = (d: number): CardFx => ({ bonds: [[c.hero!, d], [c.hero2!, d]] })
-        return { sure: {}, chance: R.cardQuarrelHushOk, die: 'hush', win: both(R.cardQuarrelHush), lose: both(-R.cardQuarrelHush) }
+        return { sure: {}, chance: R.cardQuarrelHushOk, die: 'hush', win: {}, lose: both(-R.cardQuarrelHush) }
       }
       const [win, lose] = pick === 0 ? [c.hero!, c.hero2!] : [c.hero2!, c.hero!]
       return { sure: { bonds: [[win, R.cardQuarrel], [lose, -R.cardQuarrel]] }, hero: win }

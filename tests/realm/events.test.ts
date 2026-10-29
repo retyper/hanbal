@@ -103,7 +103,7 @@ describe('사건 — 답', () => {
     assert.ok((bondOf(r, h1!) ?? 0) < b1)
   })
 
-  it('장수 다툼 — 고르지 않으면 침묵 · 둘의 정이 함께 오르거나 함께 준다', () => {
+  it('장수 다툼 — 고르지 않으면 침묵 · 풀리면 그대로, 앙금이 남으면 둘 다 준다', () => {
     const r = byeonhanMini(3)
     const ours = Object.values(r.heroes).filter((h) => h.faction === r.player && !h.id.endsWith('-ruler'))
     if (ours.length < 2) {
@@ -123,7 +123,7 @@ describe('사건 — 답', () => {
     assert.ok(l !== undefined && l.pick === 2 && l.good !== undefined && l.why === 'feast')
     const d1 = (bondOf(r, h1!) ?? 0) - b1
     const d2 = (bondOf(r, h2!) ?? 0) - b2
-    assert.ok(l.good ? d1 > 0 && d2 > 0 : d1 < 0 && d2 < 0, `${l.good} ${d1} ${d2}`)
+    assert.ok(l.good ? d1 === 0 && d2 === 0 : d1 < 0 && d2 < 0, `${l.good} ${d1} ${d2}`)
   })
 
   it('점괘 — 제사를 지낸 계절엔 다음 카드를 엿본다', () => {

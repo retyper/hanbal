@@ -2314,10 +2314,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       : c.kind === 'romance' && qa !== undefined ? { art: info.art, flip: romanceFlip(qa) }
         : guest !== undefined ? { art: exileArt(info.art, guest), flip: false } : { art: info.art, flip: false }
     const img = `<img class="cimg${q.flip ? ' flip' : ''}" src="${ART}event/${q.art}.jpg" alt="">`
-    const beats = (c.kind === 'quarrel' && two ? quarrelBeats(c, qa, qb)
-      : c.kind === 'romance' && two ? romanceBeats(c, qa, qb)
-        : guest !== undefined ? exileBeats(c, guest)
-          : c.kind === 'fugitive' ? fugitiveBeats(c) ?? info.beats : info.beats).map(sub)
+    const beats = (c.kind === 'quarrel' && two ? quarrelBeats(r, c, qa, qb)
+      : c.kind === 'romance' && two ? romanceBeats(r, c, qa, qb)
+        : guest !== undefined ? exileBeats(r, c, guest)
+          : c.kind === 'fugitive' ? fugitiveBeats(r, c) ?? info.beats : info.beats).map(sub)
     const at = pick !== null ? beats.length : Math.min(cardBeat[`card:${c.season}`] ?? 0, beats.length)
     if (at < beats.length) {
       return `<div class="cardc story${info.bad ? ' bad' : ''}" data-act="card-beat">${img}<div class="cb"><b>${icon(info.icon, 'cic')}${esc(info.name)}</b>`
