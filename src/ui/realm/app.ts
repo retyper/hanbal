@@ -2291,7 +2291,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 연정 소문은 두 사람 얼굴을 나란히 — 탭탭 넘기다 와도 누가 누구인지 (형 10-29: "누가 누구랑 뭔 일 있는지 전혀 모른다")
     const who0 = guest !== undefined ? `<div class="cguest">${bust(guest, 'cof')}<span><b>${esc(guest.name)}</b><span class="wtr">${traitChips(guest, true)}</span></span></div>`
       : c.kind === 'romance' && qa !== undefined && qb !== undefined ? `<div class="cguest">${bust(qa, 'cof')}<b>${esc(qa.name)}</b><span class="cheart">♥</span>${bust(qb, 'cof')}<b>${esc(qb.name)}</b></div>` : ''
-    let h = `<div class="cardc${info.bad ? ' bad' : ''}">${img}<div class="cb"><b>${icon(info.icon, 'cic')}${esc(info.name)}</b>${who0}<p class="cask">${esc(sub(info.ask))}</p><div class="copts">`
+    let h = `<div class="cardc${info.bad ? ' bad' : ''}${info.opts.length > 2 ? ' n3' : ''}">${img}<div class="cb"><b>${icon(info.icon, 'cic')}${esc(info.name)}</b>${who0}<p class="cask">${esc(sub(info.ask))}</p><div class="copts">`
     // 고르지 않았을 때 걸리는 답 — 엔진(events.resolveCard)과 같게: 망명자는 둘째(돌려보낸다) · 장수 다툼은 침묵
     const fallback = cardFallback(c.kind)
     info.opts.forEach((o, i) => {

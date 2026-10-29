@@ -37,6 +37,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .top .stat { display: flex; align-items: center; gap: 2px; font-size: 15px; white-space: nowrap; }
 .ap .top .stat b { font-family: 'Bahnschrift', 'Barlow Condensed', system-ui, sans-serif; font-variant-numeric: tabular-nums; }
 @media (max-width: 520px) { .ap .top .stat.nat b { display: none; } .ap .top .tr { gap: 6px; } }
+/* 폰 폭(아이폰 390 · 갤럭시 360) — 위 띠가 435px 를 써서 우리 나라 칸(얼굴·깃발)과 다섯째 물건이 화면 밖으로 잘렸다 (형 10-29) */
+@media (max-width: 430px) { .ap .top { padding-left: 8px; padding-right: 8px; } .ap .top .tl { gap: 4px; font-size: 14px; } .ap .top img.sic { width: 24px; height: 24px; }
+  .ap .top .tr { gap: 3px; } .ap .top .stat { font-size: 13px; gap: 1px; } .ap .top .stat img { width: 18px; height: 18px; } .ap .top .tface { width: 26px; height: 26px; } }
+@media (max-width: 370px) { .ap .top .tface { display: none; } .ap .top .tl .tlx { display: none; } }
 
 /* 지도 — 남은 자리를 꽉. 폰 세로에서는 옆으로 민다 */
 .ap .mapwrap { position: absolute; left: 0; right: 0; top: calc(var(--toph) + var(--legh)); bottom: var(--tabh); overflow: auto;
@@ -633,7 +637,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .mcard.fulld .cardc { flex-direction: column; gap: 10px; margin: 0; padding: 12px; border-color: #e0b860; box-shadow: 0 0 0 1px #e0b86033 inset, 0 10px 30px #000a; }
 /* 넓은 창(PC 앱)에서 가로만 꽉 차고 높이가 34vh 에 막혀 그림 가운데 가슴께만 남았다 (형 10-25 해무리) — 그림 비율(3:2)을 지키며 폭을 줄이고 얼굴 쪽을 남긴다 */
 .ap .mcard.fulld .cardc .cimg { width: min(100%, calc(40vh * 1.5)); aspect-ratio: 3 / 2; max-height: none; align-self: center; object-position: center 30%; }
-.ap .mcard.fulld .cardc .cb { flex: 1; } .ap .mcard.fulld .cardc .cb > b { font-size: 18px; } .ap .mcard.fulld .cardc .cb > p { font-size: 15.5px; line-height: 1.45; }
+.ap .mcard.fulld .cardc .cb { flex: 1; align-self: stretch; width: 100%; min-width: 0; } /* 안의 한 줄 글이 상자를 화면 밖으로 밀었다 (폰 390px · 형 10-29) */ .ap .mcard.fulld .cardc .cask { white-space: normal; overflow: visible; max-width: 100%; } .ap .mcard.fulld .cardc .cb > b { font-size: 18px; } .ap .mcard.fulld .cardc .cb > p { font-size: 15.5px; line-height: 1.45; }
 .ap .mcard.fulld .cardc .copt { padding: 12px 14px; font-size: 16px; border-width: 1.5px; } .ap .mcard.fulld .cardc .copt .cot > span { font-size: 13.5px; }
 .ap .askc .aqh { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; } .ap .askc .aqh b { color: var(--gold); font-size: 13.5px; } .ap .askc .aqh .aqi { width: 26px; height: 26px; object-fit: contain; }
 /* 화면 가득 — 사신의 청을 사건 카드만큼 크게 (형 10-25: "어린애도 알지") */
@@ -645,6 +649,13 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .mcard.fulld .askc .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; } .ap .mcard.fulld .askc .btns .btn { justify-content: center; padding: 14px 16px; font-size: 17px; } .ap .mcard.fulld .askc .btns > .mute { grid-column: 1 / -1; text-align: center; }
 .ap .mcard.fulld .rdecide.full > .cardc, .ap .mcard.fulld .rdecide.full > .askc { width: min(100%, 760px); align-self: center; }
 .ap .mcard.fulld .cardc .copt { justify-content: center; min-height: 64px; } .ap .mcard.fulld .cardc .copt .cof { width: 72px; height: 72px; }
+/* 고르기가 셋이면 (장수 다툼 · 연정 소문) 옆으로 셋을 세우면 폰 폭(390px)에서 화면 밖으로 밀려났다 — 세로로 쌓고 얼굴은 왼쪽에 작게 · 그림은 낮게 (형 10-29) */
+.ap .cardc.n3 .copts { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: minmax(0, 1fr); }
+.ap .cardc.n3 .copt { flex-direction: row; align-items: center; text-align: left; min-width: 0; }
+.ap .cardc.n3 .copt .cot { align-items: flex-start; min-width: 0; }
+.ap .cardc.n3 .copt .cfx { justify-content: flex-start; }
+.ap .mcard.fulld .cardc.n3 .copt { min-height: 0; padding: 8px 12px; } .ap .mcard.fulld .cardc.n3 .copt .cof { width: 48px; height: 48px; }
+.ap .mcard.fulld .cardc.n3 .cimg { width: min(100%, calc(26vh * 1.5)); }
 /* 사건 카드 — 자막 두 줄씩 (누르면 다음) · 다 보면 물음 한 줄 */
 .ap .cardc.story { cursor: pointer; }
 .ap .cardc .csub { margin: 8px 0 4px; padding: 12px 14px; min-height: calc(2 * 1.5em + 24px); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 16.5px; line-height: 1.5; color: #fff4dc; background: #0008; border-radius: 10px; animation: csubin .25s ease-out; }
