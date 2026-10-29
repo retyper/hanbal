@@ -45,6 +45,14 @@ const READ_SAY: Readonly<Record<Approach, string>> = {
   cliff: '적은 절벽 위를 지킬 겁니다',
 }
 const READ_NONE = '적이 어디를 지킬지는 모르겠습니다'
+/** 읽은 길목으로 그래도 가자고 할 때 */
+const READ_BUT: Readonly<Record<Approach, string>> = {
+  road: '적이 대로를 막겠지만 밀어붙일 만합니다',
+  night: '적이 밤 경계를 서겠지만 해 볼 만합니다',
+  ford: '적이 여울목을 지키겠지만 해 볼 만합니다',
+  ridge: '적이 산기슭을 지키겠지만 해 볼 만합니다',
+  cliff: '적이 절벽 위를 지키겠지만 해 볼 만합니다',
+}
 
 /** 지키는 쪽의 장수 — 그 고을에 선 적 군대 가운데 지략이 가장 높은 이 */
 function foeCmd(r: Realm, to: string, def: string): Hero | null {
@@ -53,20 +61,26 @@ function foeCmd(r: Realm, to: string, def: string): Hero | null {
 }
 
 /** 이 장수가 마음에 둔 길 — 특성이 먼저, 아니면 읽은 대로 가장 잘 숨는 길 */
-function wantOf(h: Hero, moves: readonly ApproachMove[], read: Approach | null, not: Approach | null): Approach {
-  const has = (ap: Approach): boolean => ap !== not && moves.some((x) => x.ap === ap)
-  if (hasTrait(h, 'mountain') && has('ridge')) return 'ridge'
-  if (hasTrait(h, 'river') && has('ford')) return 'ford'
-  if (hasTrait(h, 'nighteye') && has('night')) return 'night'
+function wantOf(h: Hero, moves: readonly ApproachMove[], read: Approach | null): Approach {
+  const has = (ap: Approach): boolean => moves.some((x) => x.ap === ap)
+  // 읽은 대로 숨어 닿을 가망 — 대로는 숨지 않으니 셈하지 않는다
+  const q = (ap: Approach): number => {
+    const x = moves.find((y) => y.ap === ap)
+    return x === undefined || ap === 'road' ? 0 : read === null ? x.p : guardAdjust(x.p, ap, read)
+  }
+  // 특성이 먼저 말한다 — 다만 그 길이 거의 막혔으면(가망이 cnAdviseMin 밑) 고집하지 않는다
+  const fits = (ap: Approach): boolean => has(ap) && q(ap) >= P.realm.cnAdviseMin
+  if (hasTrait(h, 'mountain') && fits('ridge')) return 'ridge'
+  if (hasTrait(h, 'river') && fits('ford')) return 'ford'
+  if (hasTrait(h, 'nighteye') && fits('night')) return 'night'
   if ((voiceKind(h) === 'm-gruff' || h.mu >= 8) && has('road')) return 'road'
   let best: Approach | null = null
   let bp = -1
   for (const x of moves) {
-    if (x.ap === 'road' || x.ap === not) continue
-    const q = read === null ? x.p : guardAdjust(x.p, x.ap, read)
-    if (q > bp) { bp = q; best = x.ap }
+    if (x.ap === 'road') continue
+    if (q(x.ap) > bp) { bp = q(x.ap); best = x.ap }
   }
-  return best !== null && bp >= 0.4 ? best : has('road') ? 'road' : (best ?? 'road')
+  return best !== null && bp >= P.realm.cnAdviseMin ? best : has('road') ? 'road' : (best ?? 'road')
 }
 
 /** 군막에 앉은 둘의 말 — 적 고을을 칠 때만 (빈 땅·소도면 빈 배열) */
@@ -84,8 +98,10 @@ export function adviseMarch(r: Realm, me: string, a: Army, to: string, moves: re
   const out: Advice[] = []
   for (const h of seats) {
     const read = h.ryak >= P.realm.cnReadRyak ? top : null
-    const ap = wantOf(h, moves, read, out[0]?.ap ?? null)
-    out.push({ hero: h, ap, read, say: SAY[voiceKind(h)][ap], readSay: read !== null ? READ_SAY[read] : READ_NONE })
+    const ap = wantOf(h, moves, read)
+    // 뜻이 같으면 한 사람만 말한다 — 갈리지 않으면 회의가 아니라 알림이다 (위원회)
+    if (out.some((v) => v.ap === ap)) continue
+    out.push({ hero: h, ap, read, say: SAY[voiceKind(h)][ap], readSay: read === null ? READ_NONE : read === ap ? READ_BUT[read] : READ_SAY[read] })
   }
   return out
 }
