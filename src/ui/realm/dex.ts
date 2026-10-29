@@ -7,6 +7,7 @@
  */
 import { DEX_CAUGHT, DEX_HEARD, DEX_MET, DEX_SERVED, dexCatalog, dexCounts, dexLevel, scanDex, type Dex, type DexHero } from '../../realm/dex.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
+import { noteKids } from '../../realm/data/art.ts'
 import { josa } from '../../realm/data/prose.ts'
 import type { Hero, Realm, RegionId } from '../../realm/types.ts'
 import { heroRadar, nameHtml, traitChips } from './heroview.ts'
@@ -86,7 +87,7 @@ function recordClan(r: Realm): void {
  * id 는 `clan-<생김>-<시드>-<판의 id>` — 얼굴은 판에서와 같은 그림 (art.bustOf 가 이 꼴을 읽는다)
  */
 export function clanHeroes(): Array<{ id: string; name: string; hero: Hero }> {
-  return Object.entries(loadClan()).map(([key, x]) => {
+  const out = Object.entries(loadClan()).map(([key, x]) => {
     const id = `clan-${x.look}-${key.replace(':', '-')}`
     const [mu, tong, ryak, chi, deok, uiri] = x.stats
     const hero: Hero = {
@@ -95,6 +96,8 @@ export function clanHeroes(): Array<{ id: string; name: string; hero: Hero }> {
     }
     return { id, name: x.name, hero }
   })
+  noteKids(out.map((x) => x.hero)) // 얼굴은 특성의 갈래로 — 판에서 본 얼굴 그대로
+  return out
 }
 
 function clanHtml(k: DexKit): string {
@@ -103,7 +106,7 @@ function clanHtml(k: DexKit): string {
   let h = `<div class="dxclan">`
   for (const [key, x] of Object.entries(loadClan())) {
     const chips = x.traits.map((t) => TRAIT[t]).filter((t) => t !== undefined).map((t) => `<span class="trait" style="--g:${GRADE_COLOR[t!.grade]}"><b>${k.esc(t!.name)}</b></span>`).join('')
-    const pic = k.kid(key.split(':').slice(1).join(':'), x.look)
+    const pic = k.kid(key.split(':').slice(1).join(':'), x.look, x.traits)
     h += `<div class="clk">${pic !== null ? `<img class="dxf" src="${pic}" alt="">` : `<span class="dxf none">${x.look === 'w' ? '여' : '남'}</span>`}<div><b>${nameHtml(x.name)}</b><span class="mute">${k.esc(x.parents.join(' · '))}의 아이 · ${k.esc(BOARD_NAME[x.board])} ${k.esc(x.nation)}</span><span class="tr3">${chips}</span></div></div>`
   }
   return h + `</div>`
@@ -122,7 +125,7 @@ interface DexKit {
   /** 명치판 그림 주소 — 없으면 null */
   readonly bust: (hero: string) => string | null
   /** 아이의 얼굴 (판 밖 가문 칸 — 판의 장수 id 와 성별로) */
-  readonly kid: (hero: string, look: 'g' | 'w') => string | null
+  readonly kid: (hero: string, look: 'g' | 'w', traits?: readonly string[]) => string | null
   /** 판 밖에서 키운 것 — 단련 단계 · 지닌 유물 (단련터 · drill.ts · relics.ts). 없으면 0 · [] */
   readonly grow: (hero: string) => { lv: number; relics: string }
 }

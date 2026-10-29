@@ -118,16 +118,49 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'mujin-1': 'g-68-mujin-bitgoeul', 'goryong-1': 'g-69-goryong-yong', 'siljik-1': 'g-70-siljik-pado', 'byeokjin-1': 'w-81-byeokjin-byeolbit', 'ungcheon-1': 'w-82-ungcheon-gom',
 }
 
-/** 혼인에서 난 아이가 다 자란 얼굴 — 젊은 명치판(그림 줄 K1)에서 성별(look)에 맞춰 id 로 하나 고른다 (어려 보이는 둘은 뺐다 — 형 10-24) */
-export const KID_BUST: Readonly<Record<'g' | 'w', readonly string[]>> = {
+/**
+ * 자란 아이의 갈래 — 부모에게서 물려받은 특성이 얼굴이 된다 (형 10-29: "자식 영웅들 성체 캐릭터 설정이랑 이미지도 더").
+ * 명궁의 아이는 활을 든 얼굴, 대장장이 집 아이는 그을린 얼굴. 설정은 docs/realm/cast/kids.md · 그림 줄은 ART-QUEUE 「자란 아이 얼굴」.
+ * 새 얼굴을 받으면 그 갈래 칸에 이름만 넣는다 (파일이 없으면 tests/realm/kid-bust.test.ts 가 막는다).
+ */
+export type KidLine = 'archer' | 'smith' | 'shaman' | 'river' | 'mountain' | 'village' | 'charm' | 'warrior'
+export const KID_LINE: Readonly<Record<KidLine, Readonly<Record<'g' | 'w', readonly string[]>>>> = {
+  archer: { g: ['y-g-10', 'y-g-01'], w: ['y-w-02'] }, // 사냥꾼 궁수
+  smith: { g: ['y-g-04'], w: [] }, // 대장장이 집 아이
+  shaman: { g: ['y-g-09'], w: ['y-w-09'] }, // 무당 핏줄
+  river: { g: ['y-g-05'], w: ['y-w-05'] }, // 물가·바다
+  mountain: { g: ['y-g-07'], w: ['y-w-07'] }, // 산사람
+  village: { g: [], w: ['y-w-01', 'y-w-03'] }, // 마을·장터
+  charm: { g: ['y-g-06', 'y-g-02'], w: ['y-w-06'] }, // 귀한 집 미남·미녀
+  warrior: { g: ['y-g-03'], w: ['y-w-04'] }, // 반듯한 젊은 무장
+}
+/** 특성 → 갈래 (아이의 특성 가운데 앞에서부터 처음 걸리는 것) */
+export const LINE_OF_TRAIT: Readonly<Record<string, KidLine>> = {
+  archer: 'archer', nighteye: 'archer', smith: 'smith', ironhand: 'smith', shaman: 'shaman', river: 'river', mountain: 'mountain',
+  farmer: 'village', trader: 'village', charm: 'charm', steadfast: 'warrior', hundred: 'warrior', careful: 'warrior',
+}
+const OLD_KID: Readonly<Record<'g' | 'w', readonly string[]>> = {
   g: ['y-g-01', 'y-g-02', 'y-g-03', 'y-g-04', 'y-g-05', 'y-g-06', 'y-g-07', 'y-g-09'],
   w: ['y-w-01', 'y-w-02', 'y-w-03', 'y-w-04', 'y-w-05', 'y-w-06', 'y-w-07', 'y-w-09'],
 }
+const kidPool = (look: 'g' | 'w'): string[] => [...new Set([...OLD_KID[look], ...Object.values(KID_LINE).flatMap((l) => l[look])])]
+/** 혼인에서 난 아이가 다 자란 얼굴 — 갈래가 없으면 이 묶음 전부에서 (어려 보이는 둘은 뺐다 — 형 10-24) */
+export const KID_BUST: Readonly<Record<'g' | 'w', readonly string[]>> = { g: kidPool('g'), w: kidPool('w') }
 /** 자라는 동안의 얼굴 — 장수로 쓰기엔 어려 보이는 명치판 (형 10-24: "아이 이미지가 너무 어린아이 · 성장 중으로 · 자라면 본래 모습으로 교체") */
 export const GROW_BUST: Readonly<Record<'g' | 'w', readonly string[]>> = { g: ['y-g-08'], w: ['y-w-08'] }
 
-export function kidBust(id: string, look: 'g' | 'w'): string | undefined {
-  const pool = KID_BUST[look]
+/** 아이의 갈래 — 특성 가운데 그 성별 얼굴이 있는 첫 갈래 */
+export function kidLine(look: 'g' | 'w', traits: readonly string[] = []): KidLine | undefined {
+  for (const t of traits) {
+    const l = LINE_OF_TRAIT[t]
+    if (l !== undefined && KID_LINE[l][look].length > 0) return l
+  }
+  return undefined
+}
+
+export function kidBust(id: string, look: 'g' | 'w', traits: readonly string[] = []): string | undefined {
+  const line = kidLine(look, traits)
+  const pool = line !== undefined ? KID_LINE[line][look] : KID_BUST[look]
   let x = 0
   for (const c of id) x = (x * 31 + c.charCodeAt(0)) >>> 0
   return pool.length > 0 ? pool[x % pool.length] : undefined
@@ -146,21 +179,23 @@ export function noteGrowing(kids: Iterable<{ readonly id: string; readonly look:
     if (pool.length > 0) { kidFace.set(h.id, pool[x % pool.length]!); childFace.add(h.id) }
   }
 }
-export function noteKids(heroes: Iterable<{ readonly id: string; readonly look: 'g' | 'w'; readonly parents?: unknown }>): void {
+/** 다 자란 아이(부모가 있는 장수)와 가문의 아이(clan-)의 얼굴을 적어 둔다 — 특성으로 갈래를 고른다 */
+export function noteKids(heroes: Iterable<{ readonly id: string; readonly look: 'g' | 'w'; readonly parents?: unknown; readonly traits?: readonly string[] }>): void {
   for (const h of heroes) {
-    if (h.parents === undefined || (kidFace.has(h.id) && !childFace.has(h.id))) continue
+    const clan = h.id.startsWith('clan-')
+    if ((h.parents === undefined && !clan) || (kidFace.has(h.id) && !childFace.has(h.id))) continue
     childFace.delete(h.id)
-    const f = kidBust(h.id, h.look)
+    const f = clan ? clanFace(h.id, h.traits) : kidBust(h.id, h.look, h.traits)
     if (f !== undefined) kidFace.set(h.id, f)
   }
 }
 
-/** 장수 id → 명치판 이름 (아이도) · 다음 판에 데려온 가문의 아이(`clan-<생김>-<시드>-<판의 id>`)는 난 판의 얼굴 그대로 */
+/** 장수 id → 명치판 이름 (아이도) · 다음 판에 데려온 가문의 아이(`clan-<생김>-<시드>-<판의 id>`)는 난 판의 얼굴 그대로 (특성은 noteKids 로 적어 둔다) */
 export const bustOf = (id: string): string | undefined => HERO_BUST[id] ?? kidFace.get(id) ?? clanFace(id)
-function clanFace(id: string): string | undefined {
+function clanFace(id: string, traits?: readonly string[]): string | undefined {
   if (!id.startsWith('clan-')) return undefined
   const [, look, , ...rest] = id.split('-')
-  return look === 'g' || look === 'w' ? kidBust(rest.join('-'), look) : undefined
+  return look === 'g' || look === 'w' ? kidBust(rest.join('-'), look, traits) : undefined
 }
 
 /**

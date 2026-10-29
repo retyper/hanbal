@@ -517,7 +517,7 @@ function nationFace(id: string, cls = 'nface', ruler?: string): string {
 const DEX_KIT = {
   esc,
   bust: (id: string): string | null => (bustOf(id) !== undefined ? `${ART}bust/${bustOf(id)}.jpg` : null),
-  kid: (key: string, look: 'g' | 'w'): string | null => { const f = kidBust(key, look); return f !== undefined ? `${ART}bust/${f}.jpg` : null },
+  kid: (key: string, look: 'g' | 'w', traits?: readonly string[]): string | null => { const f = kidBust(key, look, traits); return f !== undefined ? `${ART}bust/${f}.jpg` : null },
   grow: (id: string): { lv: number; relics: string } => ({ lv: drillLevel(id), relics: relicChips(ART, esc, wornBy(id)) }),
 }
 
