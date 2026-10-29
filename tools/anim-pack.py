@@ -20,6 +20,8 @@ from PIL import Image
 R = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 H = 160
 LAYOUT = [('idle', 4), ('walk', 8), ('attack', 6)]
+# 칸 갈아 끼우기 — 그 칸에 제미나이 별표가 흐리게 남은 것 등 (병종 → {버릴 칸: 대신 쓸 칸})
+SWAP = {'shield': {17: 18}}
 
 
 def frames_of(path, n):
@@ -74,6 +76,8 @@ def pack(kind):
     if f.height != H:
         f = f.resize((round(f.width * H / f.height), H), Image.LANCZOS)
     cells.append((f, f.width / 2))
+    for bad, good in SWAP.get(kind, {}).items():
+        cells[bad] = cells[good]
     half = 0
     for f, ax in cells:
         l, r = ink_x(f)
