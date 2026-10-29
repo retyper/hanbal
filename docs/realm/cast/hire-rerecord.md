@@ -11,11 +11,11 @@
 - 흉내 낸 외침 태그 `<shout>` 를 줄마다 앞에 붙이면 더 세게 나오기도 하나, 「나를 따르라」 끝을 길게 끄는 함성이 붙거나 머리 소리로 뜨기도 한다. 결마다 한 번 보고 고른다.
 
 **성우진 A 외침 (13결 × 13줄)** — 메인 세션이 A 의 싸움 맡김 글을 사극체로 바꾼 뒤(c32b20e) 새 글로 녹음
-- 다 함: m-young(Enzo · 판정 새 9 / 옛 6.5) · m-gruff(Daro · `<shout>` · 새 8 / 옛 9, 옛 글을 더 쳐 준 듯) · m-sage(Cruz · 새 8 / 옛 6)
-- 남음: m-elder · m-charm · m-knight · m-veteran · w-bright · w-cool · w-sly · w-shaman · w-knight · w-matron
+- **13결 다 함** (169개): m-young(Enzo · 판정 새 9 / 옛 6.5) · m-gruff(Daro · `<shout>` · 새 8 / 옛 9, 옛 글을 더 쳐 준 듯) · m-sage(Cruz · 새 8 / 옛 6) · m-elder(Arlo) · m-charm(Neno) · m-knight(Orus) · m-veteran(Ludo) · w-bright(Cleo) · w-cool(Kira) · w-sly(Lumi) · w-shaman(Hali) · w-knight(Tari) · w-matron(Jori)
+- 옛 169개 → 새 169개 평균: volumedetect 평균 −17.2 → −16.9 dB(loudnorm 으로 맞춰 거의 같음) · 높은 소리 쪽 기운(1~4kHz/0.1~1kHz) −8.8 → −6.8 dB · 음높이 중앙값 188 → 239 Hz. 소리를 지르면 음이 올라가고 높은 배음이 세진다 — 그 두 가지가 다 올랐다.
 - A 의 짐(lose) 아홉 줄도 새 글 — 그 결의 등용 첫마디 묶음 끝에 붙여 차분하게 뽑는다(아직)
 
-**한도** — roqkfeke12(authuser=0): 10-29 밤 TTS 7번 + 채팅 판정 5번에서 "Quota limit reached". authuser=1 로 넘어감.
+**한도** — roqkfeke12(authuser=0): 10-29 밤 TTS 7번 + 채팅 판정 5번에서 "Quota limit reached". authuser=1(retyper97) 로 넘어가 TTS 10번 더(아직 안 막힘).
 
 **등용 첫마디 194줄** — 아직. **성우진 B · C 외침** — 아직(B 의 해요체 · 군주에게 시키는 하오체를 먼저 사극체로 고친다). **새 결 넷의 B · C** — 아직.
 <!-- /다시 녹음 진행 -->
