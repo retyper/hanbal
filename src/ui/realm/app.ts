@@ -91,7 +91,7 @@ import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
 import { FEEL_CSS, alertFeel, ambushRangeFeel, chanceFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
 import { adviseMarch, guardRange } from './council-lines.ts'
-import { APPROACH_SHORT, COUNCIL_ART, councilAgendas, type Agenda, type AgendaId, type Voice } from './council-agenda.ts'
+import { APPROACH_SHORT, COUNCIL_ART, councilAgendas, takeCount, type Agenda, type AgendaId, type Voice } from './council-agenda.ts'
 
 export interface AppHost {
   /** 플레이 기록을 다 지운다(계정·설정은 남김) — 로그인했으면 서버 것부터. 못 지웠으면 false (형 10-24) */
@@ -1745,7 +1745,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (o.k === 'take') {
       const total = headcount(forceOf(r, a))
       if (o.share >= 1) return `${total.toLocaleString('ko-KR')}명 모두 출정 · ${josa(r.nodes[a.at]?.name ?? '', '이', '가')} 빈다`
-      const go = (Object.values(a.mix) as number[]).reduce((s, n) => s + Math.round(n * o.share), 0)
+      const go = takeCount(a, o.share)
       return `${go.toLocaleString('ko-KR')}명 출정 · ${(total - go).toLocaleString('ko-KR')}명 남아 지킨다`
     }
     if (o.k === 'route') {
