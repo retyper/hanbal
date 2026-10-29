@@ -590,6 +590,15 @@ export function sweepHeroes(r: Realm, lines: ReportLine[]): void {
       h.at = homeOf(r, h.faction)
       continue
     }
+    // 플레이어의 군주 = 플레이어 자신 — 도읍을 빼앗겨도 사로잡히거나 쓰러지지 않고 남은 제 고을로 물러난다 (형 10-29: "내 군주는 도읍을 빼앗겨도 사로잡히는 일은 없어야")
+    if (h.faction === r.player && isRuler(r, h.id)) {
+      const to = safe ?? homeOf(r, h.faction) ?? byId(Object.values(r.nodes)).find((n) => n.owner === h.faction && n.kind !== 'sodo')?.id ?? null
+      if (to !== null && to !== lost) {
+        h.at = to
+        lines.push({ kind: 'heroMoved', hero: h.id, faction: h.faction, to, captor: null, fate: 'slipped' })
+        continue
+      }
+    }
     const wit = escapeOf(h) + R.heroFallPerRyak * (h.ryak - 5) + (hasTrait(h, 'coward') ? R.heroFallCoward : 0)
     const roll1 = roll(r.seed, r.season, `fall:${h.id}:${lost}`)
     const pDie = hasTrait(h, 'coward') ? 0 : Math.max(0, R.heroFallDeath - escapeOf(h))

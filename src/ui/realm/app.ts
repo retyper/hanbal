@@ -976,7 +976,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    */
   function bark(id: string | undefined, line: VoiceLine = 'tap'): void {
     const h = id !== undefined && id !== '' ? realm?.heroes[id] : undefined
-    if (h === undefined || realm === null || h.faction !== me() || !voiceGate(performance.now())) return
+    // 내 군주는 나 자신이다 — 부르면 대답하지 않는다 (형 10-29: "내가 나를 부르는 격")
+    if (h === undefined || realm === null || h.faction !== me() || isRuler(realm, h.id) || !voiceGate(performance.now())) return
     ding(voicePath(h, line, isRuler(realm, h.id)), P.realm.voiceVol)
   }
 
@@ -5932,7 +5933,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         else armySel = [id]
         // 우리 장수가 이끄는 군대를 고르면 그 장수가 곧바로 대답한다 (RTS 의 대답처럼 · voice.ts)
         const hh = x !== undefined && x.faction === me() && x.hero !== null && armySel.includes(id) ? r?.heroes[x.hero] : undefined
-        if (hh !== undefined && hh.status === 'free' && voiceGate(performance.now())) ding(voicePath(hh, 'tap', isRuler(r!, hh.id)), 0.9)
+        if (hh !== undefined && hh.status === 'free' && !isRuler(r!, hh.id) && voiceGate(performance.now())) ding(voicePath(hh, 'tap', false), 0.9)
         break
       }
       case 'selclose': armySel = []; leadPop = ''; break
@@ -6488,7 +6489,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'hero': {
         // 우리 장수를 부르면 곧바로 대답한다 — 결마다 「네?」 「부르셨습니까」… (voice.ts)
         const h = realm?.heroes[d['id']!]
-        if (h !== undefined && h.faction === me() && h.status === 'free' && voiceGate(performance.now())) ding(voicePath(h, 'tap', isRuler(realm!, h.id)), 0.9)
+        if (h !== undefined && h.faction === me() && h.status === 'free' && !isRuler(realm!, h.id) && voiceGate(performance.now())) ding(voicePath(h, 'tap', false), 0.9)
         openSheet({ kind: 'hero', id: d['id']! }); return
       }
       case 'bust-view': openBust(d['src']!); return

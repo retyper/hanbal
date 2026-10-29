@@ -49,7 +49,7 @@ import { formParty, joinParty, moveParty, stepParties } from './parties.ts'
 import { battleMerit, seasonMerit } from './drill.ts'
 import { relicHas, relicHorseMulOf, relicLeft, relicMoraleOf, relicMul, relicSum, relicWith, spendRelic } from './relics.ts'
 import {
-  ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, ironhandAt, noteMet, oneJobPerHero, postHero, releaseCaptives, stepHeroes, sweepHeroes,
+  ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, isRuler, ironhandAt, noteMet, oneJobPerHero, postHero, releaseCaptives, stepHeroes, sweepHeroes,
 } from './heroes.ts'
 import type {
   Approach, Army, BattleStart, Cmd, EdgeKind, Hero, Order, Ration, Realm, REdge, Report, ReportLine, RNode, SeasonOfYear, SnipeZone, Tactic,
@@ -952,9 +952,12 @@ export function battleFates(
     return true
   }
   // 사로잡힌 장수 — 싸움이 이어졌어도 (장수가 여럿이었다)
+  // 플레이어의 군주(= 플레이어)는 싸움에서 사로잡히거나 쓰러지지 않는다 — 다친 몸으로 빠져나온다 (형 10-29)
+  const self = (h: Hero): boolean => h.faction === r.player && isRuler(r, h.id)
   for (const t of res.taken) {
     const h = r.heroes[t.hero]
     if (h === undefined || h.status !== 'free') continue
+    if (self(h)) { h.woundedUntil = Math.max(h.woundedUntil ?? -1, r.season + 1); continue }
     if (slip(h)) continue
     h.status = 'captive'
     h.captor = t.side === 'a' ? defFaction : atkFaction
@@ -965,7 +968,7 @@ export function battleFates(
   for (const f of res.fell) {
     const h = r.heroes[f.hero]
     if (h === undefined || h.status !== 'free') continue
-    if (f.kill && !slip(h)) {
+    if (f.kill && !self(h) && !slip(h)) {
       h.status = 'dead'
       fallen.push(h.id)
       out(h.id)

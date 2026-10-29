@@ -2814,6 +2814,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
    */
   const heroById = (id: string | null | undefined): Hero | undefined => (id == null ? undefined : prev.heroes[id] ?? t.after.heroes[id])
   const isRulerHero = (h: Hero): boolean => Object.values(prev.factions).some((f) => f.ruler === h.id)
+  /** 내 군주는 나 자신이다 — 대답·「맡기시오」·이김 짐 보고를 내지 않는다 (기술 외침만 · 형 10-29: "내가 나를 부르는 격") */
+  const isMe = (h: Hero): boolean => h.faction === prev.player && isRulerHero(h)
   const say = (path: string): void => {
     if (document.visibilityState !== 'visible' || !ov.isConnected || !voiceGate(performance.now())) return
     host.ding(path, P.realm.voiceVol)
@@ -2821,7 +2823,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   /** 짧은 대답(「네?」 「부르셨습니까?」) */
   const bark = (id: string | null | undefined): void => {
     const hh = heroById(id)
-    if (hh !== undefined) say(voicePath(hh, 'tap', isRulerHero(hh)))
+    if (hh !== undefined && !isMe(hh)) say(voicePath(hh, 'tap', isRulerHero(hh)))
   }
 
   /**
@@ -3030,7 +3032,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         cutSfx = kind === 'cheer' || kind === 'call' ? BATTLE_SFX.openDrum : BATTLE_SFX.duelWin
         // 나선 장수가 외친다 — 기술이면 그 기술 외침, 북·겨루기·사로잡기면 짧은 대답 (voice.ts · 장수의 목소리 결로)
         const hh = heroById(mine ?? hero)
-        if (hh !== undefined) cutVoice = ak !== undefined ? artVoicePath(hh, ak, isRulerHero(hh)) : voicePath(hh, 'tap', isRulerHero(hh))
+        if (hh !== undefined) cutVoice = ak !== undefined ? artVoicePath(hh, ak, isRulerHero(hh)) : isMe(hh) ? null : voicePath(hh, 'tap', isRulerHero(hh))
       }
     }
     cutLead = null
@@ -3217,7 +3219,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       at(0.28, BATTLE_SFX.openDrum, 0.45)
       t0 = P.realm.warAutoCutS
       // 맡은 장수가 「싸움은 제게 맡기시오!」 — 장면이 튀어나올 때 · 끝나면 이김·짐 한마디 (형 10-27)
-      if (hh !== undefined) {
+      if (hh !== undefined && !isMe(hh)) {
         autoEnd = { key: l.key ?? '', hero: hh, said: false }
         window.setTimeout(() => say(autoVoicePath(hh, 'go', isRulerHero(hh))), P.realm.warVoiceArtS * 1000)
       }

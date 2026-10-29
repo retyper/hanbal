@@ -15,7 +15,7 @@ import { fightHead } from '../../src/realm/battle.ts'
 import { TRAIT } from '../../src/realm/data/traits.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import {
-  addBond, alertFloor, armyOfHero, harvestMul, heroSeen, persuadeSeasons, postHero, rulerOf, sweepHeroes, wanderersFor,
+  addBond, alertFloor, armyOfHero, harvestMul, heroSeen, isRuler, persuadeSeasons, postHero, rulerOf, sweepHeroes, wanderersFor,
 } from '../../src/realm/heroes.ts'
 import { advance, forceOf, planned } from '../../src/realm/season.ts'
 import { migrate } from '../../src/realm/migrate.ts'
@@ -144,6 +144,19 @@ describe('맡기기 · 이끌기', () => {
     sweepHeroes(s, [])
     assert.equal(s.heroes['dokro-2']!.status, 'captive')
     assert.equal(s.heroes['dokro-2']!.captor, 'guya')
+  })
+
+  it('내 군주는 도읍을 잃어도 사로잡히지 않고 남은 제 땅으로 빠진다 (형 10-29)', () => {
+    const r = structuredClone(byeonhanMini(1))
+    const me = rulerOf(r, r.player)!.id
+    for (const a of Object.values(r.armies)) if (a.hero === me) delete r.armies[a.id]
+    const cap = r.heroes[me]!.at
+    for (const n of Object.values(r.nodes)) if (n.owner === r.player) n.owner = 'guya'
+    r.nodes['wild-keunseom']!.owner = r.player
+    sweepHeroes(r, [])
+    assert.equal(r.heroes[me]!.status, 'free')
+    assert.notEqual(r.heroes[me]!.at, cap)
+    assert.equal(r.nodes[r.heroes[me]!.at]!.owner, r.player)
   })
 })
 
@@ -277,7 +290,7 @@ describe('고을이 떨어질 때 혼자 머물던 장수', () => {
     const out: Record<string, number> = { moved: 0, caught: 0, slipped: 0, fell: 0, captive: 0 }
     for (let seed = 1; seed <= n; seed++) {
       const r = byeonhanMini(seed)
-      const h = Object.values(r.heroes).find((x) => x.faction === 'us' && armyOfHero(r, x.id) === null && x.status === 'free')!
+      const h = Object.values(r.heroes).find((x) => x.faction === 'us' && !isRuler(r, x.id) && armyOfHero(r, x.id) === null && x.status === 'free')!
       h.mu = stat
       h.ryak = stat
       h.at = 'our-east'
