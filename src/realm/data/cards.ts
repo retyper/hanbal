@@ -5,7 +5,7 @@
  * 그림은 이미 받아 둔 사건 삽화 (public/realm/event/). 글은 쉬운 말로 (메모리 realm-plain-words).
  */
 
-export type CardKind = 'drought' | 'bounty' | 'locust' | 'plague' | 'halo' | 'quarrel' | 'waship' | 'pirates' | 'exile' | 'fugitive' | 'whale' | 'fishbridge' | 'gogak'
+export type CardKind = 'drought' | 'bounty' | 'locust' | 'plague' | 'halo' | 'quarrel' | 'waship' | 'pirates' | 'exile' | 'fugitive' | 'whale' | 'fishbridge' | 'gogak' | 'romance'
 
 export interface CardOpt { readonly name: string; readonly does: string }
 
@@ -137,16 +137,18 @@ export const CARDS: Readonly<Record<CardKind, CardInfo>> = {
       { name: '맞선다', does: '이기면 도적의 쇠를 빼앗고, 지면 집과 곡식을 잃는다' },
     ],
   },
+  // 누가 오는지는 카드를 뽑을 때 정한다(Card.guest) — 받기 전에 얼굴·재주를 보고 고른다 · 자막은 화면(card-lines.exileBeats)이 그 사람에 맞춰
   exile: {
-    name: '북에서 온 망명자', kind: 'outside', bad: false, icon: 'unit-general', art: 'event-wanderer-arrives',
-    line: '북쪽 나라에서 쫓겨난 무사가 우리를 찾아왔다.',
-    beats: ['북쪽 나라에서 쫓겨난 무사가 왔다.', '우리 앞에 머리를 숙인다.'],
+    name: '쫓겨 온 사람', kind: 'outside', bad: false, icon: 'unit-general', art: 'event-wanderer-arrives',
+    line: '이웃 나라에서 쫓겨난 이가 우리를 찾아왔다.',
+    beats: ['이웃 나라에서 쫓겨난 이가 왔다.', '우리 앞에 머리를 숙인다.'],
     ask: '받아 줄까?',
     opts: [
       { name: '받아들인다', does: '곡식을 조금 쓴다 · 새 장수가 된다' },
       { name: '돌려보낸다', does: '아무 일도 없다' },
     ],
   },
+  // 어느 나라가 내놓으라 하나는 뽑을 때 정한다(Card.from) — 효과가 그 나라에 걸린다 · 없으면(옛 저장·아는 나라 없음) 옛 글
   fugitive: {
     name: '소도의 도망자', kind: 'sodo', bad: false, icon: 'status-good-omen', art: 'event-sodo-fugitive',
     line: '죄를 지은 이가 소도로 달아났다. 소도에 들어간 사람은 잡지 않는 것이 법이다.',
@@ -155,6 +157,18 @@ export const CARDS: Readonly<Record<CardKind, CardInfo>> = {
     opts: [
       { name: '내버려 둔다', does: '이웃 나라들이 우리를 조금 좋게 본다 · 장수들 마음이 놓인다' },
       { name: '끌어낸다', does: '몸값 곡식이 들어온다 · 이웃 나라들이 우리를 나쁘게 본다' },
+    ],
+  },
+  // 혼인 안 한 우리 남녀 장수 둘 (핏줄·부부 아님 · heroes.canWed) — 자막은 화면(card-lines.romanceBeats)이 둘의 결에 맞춰
+  romance: {
+    name: '연정 소문', kind: 'people', bad: false, icon: 'mood-warm', art: 'event-romance',
+    line: '{a} · {b} 두 장수 사이에 연정이 싹텄다는 소문이 돈다.',
+    beats: ['{a} · {b} 두 장수 사이에 연정이 싹텄다는 소문이 돈다.'],
+    ask: '두 사람을 어찌할까?',
+    opts: [
+      { name: '짝지어 준다', does: '혼례 곡식이 든다 · 둘이 혼인한다 (몇 해 뒤 자식 장수)' },
+      { name: '모른 척한다', does: '둘에게 맡긴다 — 마음이 깊어지면 둘 다 정이 조금 오른다' },
+      { name: '떼어 놓는다', does: '군기는 선다 · 둘 다 정이 떨어진다' },
     ],
   },
   whale: {
@@ -217,10 +231,22 @@ const QUARREL_WHY: Readonly<Record<QuarrelWhy, Pick<CardInfo, 'line' | 'art' | '
   },
 }
 
-/** 이 카드의 글·그림 — 장수 다툼은 까닭(why)에 따라 (없으면 덩이쇠 몫) */
-export function cardInfo(c: { readonly kind: CardKind; readonly why?: QuarrelWhy }): CardInfo {
-  return c.kind === 'quarrel' ? { ...CARDS.quarrel, ...QUARREL_WHY[c.why ?? 'spoils'] } : CARDS[c.kind]
+/** 소도의 도망자 — 내놓으라는 나라가 있을 때 ({f} 는 그 나라 이름) */
+const FUGITIVE_FROM: Pick<CardInfo, 'line' | 'ask' | 'opts'> = {
+  line: '{f} 땅에서 죄를 짓고 달아난 자가 소도로 숨어들었다. {f} 사신이 그자를 내놓으라 한다.',
+  ask: '소도의 법을 지킬까?',
+  opts: [
+    { name: '법을 지킨다', does: '{f} 호감이 떨어진다 · 우리 장수들 마음이 놓인다' },
+    { name: '넘겨준다', does: '{f} 호감이 오르고 사례 곡식이 들어온다 · 다른 이웃 나라들은 우리가 법을 깼다고 나쁘게 본다' },
+  ],
 }
 
-/** 고르지 않으면 걸리는 답 — 장수 다툼은 침묵 · 망명자는 돌려보낸다 · 나머지는 첫째 */
-export const cardFallback = (kind: CardKind): 0 | 1 | 2 => (kind === 'quarrel' ? 2 : kind === 'exile' ? 1 : 0)
+/** 이 카드의 글·그림 — 장수 다툼은 까닭(why)에 따라 (없으면 덩이쇠 몫) · 소도의 도망자는 내놓으라는 나라가 있으면 */
+export function cardInfo(c: { readonly kind: CardKind; readonly why?: QuarrelWhy; readonly from?: string }): CardInfo {
+  if (c.kind === 'quarrel') return { ...CARDS.quarrel, ...QUARREL_WHY[c.why ?? 'spoils'] }
+  if (c.kind === 'fugitive' && c.from !== undefined) return { ...CARDS.fugitive, ...FUGITIVE_FROM }
+  return CARDS[c.kind]
+}
+
+/** 고르지 않으면 걸리는 답 — 장수 다툼은 침묵 · 망명자는 돌려보낸다 · 연정 소문은 모른 척 · 나머지는 첫째 */
+export const cardFallback = (kind: CardKind): 0 | 1 | 2 => (kind === 'quarrel' ? 2 : kind === 'exile' || kind === 'romance' ? 1 : 0)

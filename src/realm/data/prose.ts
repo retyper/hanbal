@@ -672,6 +672,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       const what = line.card === 'quarrel' ? (line.pick === 2 ? '두 장수의 다툼에 침묵했다' : `${who} 편을 들었다`) : (c.opts[line.pick]?.name ?? '')
       const bits: string[] = []
       if (line.card === 'quarrel' && line.good !== undefined) bits.push(line.good ? '둘이 스스로 풀고 술잔을 나눴다' : '앙금이 남았다 — 둘 다 서운해한다')
+      else if (line.card === 'romance' && line.good !== undefined) bits.push(line.good ? '둘의 마음이 깊어졌다' : '소문은 잠잠해졌다')
       else if (line.good === true) bits.push(line.card === 'pirates' ? '도적을 물리쳤다' : line.card === 'gogak' ? '고각을 가져왔다 — 송양이 감히 다투지 못한다' : '다행히 그냥 지나갔다')
       else if (line.good === false) bits.push(line.card === 'pirates' ? '도적에게 당했다' : line.card === 'gogak' ? '들켰다 — 송양이 크게 노했다' : '운이 나빴다')
       if (line.card === 'fishbridge' && line.pick === 0) bits.push('쫓아오던 동부여 군사들이 물가에서 발을 구른다')

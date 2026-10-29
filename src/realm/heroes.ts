@@ -874,19 +874,26 @@ function cohabit(r: Realm, o: Extract<Order, { kind: 'cohabit' }>, lines: Report
 }
 
 /** 혼인할 수 있나 — 같은 나라 · 자유로운 몸 · 남녀 · 둘 다 짝 없음 */
+/** 한 핏줄인가 — 부모와 자식 · 한 부모의 자식 (혼인 못 한다 · 사건 글이 그 사이를 말한다) */
+export function isKin(x: Hero, y: Hero): boolean {
+  if (x.parents?.includes(y.id) === true || y.parents?.includes(x.id) === true) return true
+  return x.parents !== undefined && y.parents !== undefined && x.parents.some((p) => y.parents!.includes(p))
+}
+
 export function canWed(r: Realm, faction: string, a: string, b: string): boolean {
   const x = r.heroes[a]
   const y = r.heroes[b]
   if (x === undefined || y === undefined || a === b) return false
   if (x.faction !== faction || y.faction !== faction || x.status !== 'free' || y.status !== 'free') return false
-  if (x.look === y.look || x.spouse !== undefined || y.spouse !== undefined) return false
+  if (x.look === y.look || x.spouse !== undefined || y.spouse !== undefined || isKin(x, y)) return false
   return !(r.births ?? []).some((v) => v.a === a || v.b === a || v.a === b || v.b === b)
 }
 
-function wed(r: Realm, o: Extract<Order, { kind: 'wed' }>, lines: ReportLine[]): void {
-  if (!canWed(r, o.faction, o.a, o.b)) return
+/** 혼인시킨다 — 명령과 사건(연정 소문)이 같이 쓴다. 곡식이 모자라거나 맺을 수 없으면 false */
+export function wed(r: Realm, o: Extract<Order, { kind: 'wed' }>, lines: ReportLine[]): boolean {
+  if (!canWed(r, o.faction, o.a, o.b)) return false
   const st = (r.stock[o.faction] ??= { grain: 0, iron: 0 })
-  if (st.grain < P.realm.wedGrain) return
+  if (st.grain < P.realm.wedGrain) return false
   st.grain -= P.realm.wedGrain
   const [a, b] = o.a < o.b ? [o.a, o.b] : [o.b, o.a]
   r.heroes[a]!.spouse = b
@@ -895,6 +902,7 @@ function wed(r: Realm, o: Extract<Order, { kind: 'wed' }>, lines: ReportLine[]):
   const due = r.season + Math.max(1, P.realm.wedSeasons - P.realm.kidGrowSeasons)
   ;(r.births ??= []).push({ a, b, faction: o.faction, due, wed: r.season })
   lines.push({ kind: 'wed', faction: o.faction, a, b, due })
+  return true
 }
 
 const GRADE_UP: Readonly<Record<TraitGrade, TraitGrade>> = { common: 'good', good: 'rare', rare: 'precious', precious: 'precious', legend: 'legend' }

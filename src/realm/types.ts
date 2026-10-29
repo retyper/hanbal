@@ -283,6 +283,10 @@ export interface Card {
   readonly node?: string
   /** 장수 다툼의 까닭 — 덩이쇠 몫 · 고을 맡기 · 술자리 시비 (없으면 덩이쇠 몫 · 옛 저장) */
   readonly why?: QuarrelWhy
+  /** 쫓겨 온 사람 — 떠돌이 명단(HERO_POOL)의 그 사람. 뽑을 때 정해 두어 받기 전에 얼굴·재주를 본다 (없으면 옛 저장 — 받을 때 굴린다) */
+  readonly guest?: string
+  /** 그 일이 난 이웃 나라 — 쫓겨 온 사람의 고향 · 소도 도망자를 내놓으라는 나라 */
+  readonly from?: string
 }
 
 /** 원정 한 번 — back 계절에 돌아와 got 을 푼다 */

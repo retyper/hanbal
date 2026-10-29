@@ -1,5 +1,5 @@
 /**
- * 장수 다툼 자막·그림 (src/ui/realm/quarrel-lines.ts)
+ * 장수 다툼 자막·그림 (src/ui/realm/card-lines.ts)
  *
  *  - 말투는 결을 따른다 — 거친 사내와 무당 여인의 말이 다르다
  *  - 부부 · 부모와 자식 · 한 핏줄이면 그 사이를 말하는 한 장이 붙는다
@@ -9,7 +9,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import type { Card, Hero } from '../../src/realm/types.ts'
-import { quarrelArt, quarrelBeats } from '../../src/ui/realm/quarrel-lines.ts'
+import { exileArt, exileBeats, fugitiveBeats, quarrelArt, quarrelBeats, romanceBeats } from '../../src/ui/realm/card-lines.ts'
 
 const hero = (id: string, look: 'g' | 'w', more: Partial<Hero> = {}): Hero => ({
   id, name: id, faction: 'x', mu: 5, tong: 5, ryak: 5, chi: 5, deok: 5, uiri: 5, traits: [], look,
@@ -56,3 +56,25 @@ describe('장수 다툼 자막', () => {
     assert.deepEqual(quarrelArt('event-quarrel-feast', hero('a', 'w'), hero('b', 'g')), { art: 'event-quarrel-feast-mw', flip: true })
   })
 })
+
+describe('쫓겨 온 사람 · 소도 · 연정 소문 자막', () => {
+  it('쫓겨 온 사람 — 성별·특성에 맞게 · 배신 기질이 먼저', () => {
+    const c: Card = { kind: 'exile', season: 0, guest: 'g', from: 'f' }
+    const w = exileBeats(c, hero('g', 'w', { traits: ['farmer', 'traitor'] }))
+    assert.ok(w[0]!.includes('여인') && w[0]!.includes('{f}'))
+    assert.ok(w[1]!.includes('배신') || w[1]!.includes('팔아넘겼다'))
+    assert.equal(exileArt('event-wanderer-arrives', hero('g', 'g')), 'event-wanderer-arrives-g')
+  })
+
+  it('소도 — 내놓으라는 나라가 있을 때만 새 글', () => {
+    assert.equal(fugitiveBeats({ kind: 'fugitive', season: 0 }), null)
+    assert.ok(fugitiveBeats({ kind: 'fugitive', season: 1, from: 'f' })!.some((s) => s.includes('{f} 사신')))
+  })
+
+  it('연정 소문 — 같은 결이면 둘째는 다른 말', () => {
+    const c: Card = { kind: 'romance', season: 0, hero: 'a', hero2: 'b' }
+    const beats = romanceBeats(c, hero('a', 'g', { mu: 9 }), hero('b', 'g', { mu: 9 }))
+    assert.notEqual(beats[1]!.split('—')[0], beats[2]!.split('—')[0])
+  })
+})
+

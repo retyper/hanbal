@@ -1,9 +1,11 @@
 /**
- * 장수 다툼의 자막 — 누가 다투느냐에 따라 (형 10-29: "장수들마다 성별 나이 성격 다 다른데 그에 알맞게 짜여진거 맞지?").
+ * 사람이 나오는 사건의 자막 — 누가 나오느냐에 따라 (형 10-29: "장수들마다 성별 나이 성격 다 다른데 그에 알맞게 짜여진거 맞지?").
+ *   장수 다툼 · 쫓겨 온 사람 · 소도의 도망자 · 연정 소문 — 상황이 다 달라 짜임도 다르다.
  *
  * 말투는 목소리 결 아홉(voice.voiceKind — 거친 사내·젊은이·꾀돌이·어른·멋쟁이 · 밝은·차가운·약은 여인·무당)을 따른다.
- * 부부 · 부모와 자식 · 한 핏줄 · 갓 자란 자식 장수면 한 장이 더 붙는다. 그림은 둘의 성별로 고른다 (사내 둘 · 남녀 · 여인 둘).
+ * 부부 · 부모와 자식 · 한 핏줄 · 갓 자란 자식 장수면 한 장이 더 붙는다. 그림은 성별로 고른다.
  * 글만 고르고 판에는 손대지 않는다 — 효과는 events.cardPreview. 이름 뒤에는 조사를 붙이지 않는다 (josa 규칙).
+ * {a} {b} 장수 · {g} 쫓겨 온 사람 · {f} 그 나라 · {n} 고을 — 화면이 바꿔 넣는다.
  */
 import type { QuarrelWhy } from '../../realm/data/cards.ts'
 import type { Card, Hero } from '../../realm/types.ts'
@@ -109,3 +111,88 @@ export function quarrelArt(base: string, a: Hero, b: Hero): { art: string; flip:
   if (a.look === 'w' && b.look === 'w') return { art: `${base}-ww`, flip: false }
   return { art: `${base}-mw`, flip: a.look === 'w' }
 }
+
+// ── 쫓겨 온 사람 — 받기 전에 누구인지 · 왜 쫓겨났나 · 어떤 사람인지 (형 10-29)
+
+/** 왜 쫓겨났나 — 그 사람의 특성으로 (배신 기질이 맨 먼저 · 받을지 가늠하라고) */
+const EXILE_WHY: Readonly<Record<string, string>> = {
+  traitor: '옛 주인을 팔아넘겼다는 소문이 따라다닌다.',
+  shaman: '새 군장이 무당을 내치자 방울 하나만 들고 쫓겨났다고 한다.',
+  coward: '싸움터에서 달아났다가 쫓겨났다고 한다.',
+  charm: '군장 집안의 미움을 사서 쫓겨났다고 한다.',
+  smith: '솜씨를 탐낸 군장에게 붙잡혀 있다가 몰래 도망쳤다고 한다.',
+  ironhand: '솜씨를 탐낸 군장에게 붙잡혀 있다가 몰래 도망쳤다고 한다.',
+  farmer: '흉년에 곳간을 열어 백성을 먹였다가 쫓겨났다고 한다.',
+  trader: '셈이 꼬여 큰 빚을 지고 쫓겨났다고 한다.',
+  archer: '군장의 사냥에서 군장보다 큰 짐승을 잡았다가 미움을 샀다고 한다.',
+  nighteye: '군장의 사냥에서 군장보다 큰 짐승을 잡았다가 미움을 샀다고 한다.',
+  mountain: '군장의 사냥에서 군장보다 큰 짐승을 잡았다가 미움을 샀다고 한다.',
+  river: '물길을 두고 군장과 다투다 쫓겨났다고 한다.',
+  careful: '군장에게 바른말을 했다가 쫓겨났다고 한다.',
+  hundred: '군장에게 바른말을 했다가 쫓겨났다고 한다.',
+  steadfast: '군장에게 바른말을 했다가 쫓겨났다고 한다.',
+  glutton: '잔치에서 취해 군장 앞에서 큰소리를 쳤다가 쫓겨났다고 한다.',
+  drinker: '잔치에서 취해 군장 앞에서 큰소리를 쳤다가 쫓겨났다고 한다.',
+}
+
+/** 우리 앞에서 하는 첫마디 (결마다) */
+const EXILE_SAY: Readonly<Record<VoiceKind, string>> = {
+  'm-gruff': '칼 한 자루면 밥값은 하겠소.',
+  'm-young': '무엇이든 시켜만 주십시오!',
+  'm-sage': '내 꾀를 쓸 곳을 찾고 있소.',
+  'm-elder': '늙었어도 아직 쓸모는 있소.',
+  'm-charm': '날 들이면 손해 볼 일은 없을 거요.',
+  'w-bright': '받아 주시면 정말 열심히 할게요!',
+  'w-cool': '쓸 데가 있으면 쓰고, 없으면 가겠다.',
+  'w-sly': '제가 아는 걸 다 알려 드리죠. 값만 맞으면요.',
+  'w-shaman': '신령께서 이 고을로 가라 하셨소.',
+}
+
+export function exileBeats(c: Card, g: Hero): string[] {
+  const from = c.from !== undefined ? '{f} 땅에서' : '이웃 나라에서'
+  const one = g.look === 'w' ? '여인 하나가' : '사내 하나가'
+  const why = g.traits.includes('traitor') ? EXILE_WHY['traitor']! : (g.traits.map((t) => EXILE_WHY[t]).find((s) => s !== undefined) ?? '군장이 바뀌자 옛 사람이라며 내쳐졌다고 한다.')
+  return [`${from} 쫓겨난 ${one} 우리 고을 문을 두드렸다.`, why, `"${EXILE_SAY[voiceKind(g)]}" — {g}`]
+}
+
+/** 쫓겨 온 사람 그림 — 여인이 문 앞에 선 그림이 기본, 사내면 -g */
+export const exileArt = (base: string, g: Hero): string => (g.look === 'g' ? `${base}-g` : base)
+
+// ── 소도의 도망자 — 어느 나라에서 무슨 죄를 짓고 왔나 (그 나라가 내놓으라 한다)
+
+const CRIME: readonly string[] = ['사람을 해치고', '곳간을 털고', '군장의 말을 훔쳐']
+
+export function fugitiveBeats(c: Card): string[] | null {
+  if (c.from === undefined) return null
+  return [`{f} 땅에서 ${CRIME[c.season % CRIME.length]!} 달아난 자가 소도로 숨어들었다.`, '{f} 사신이 와서 그자를 내놓으라 한다.', '소도에 든 사람은 잡지 않는 것이 삼한의 법이다.']
+}
+
+// ── 연정 소문 — 혼인 안 한 남녀 장수 둘
+
+/** 어디서 눈에 띄었나 — 계절마다 */
+const LOVE_AT: readonly string[] = ['강가 버드나무 아래', '밤 냇가', '달 밝은 타작마당', '화톳불 곁']
+
+/** 소문을 들은 장수의 말 (결마다) */
+const LOVE_SAY: Readonly<Record<VoiceKind, string>> = {
+  'm-gruff': '그, 그런 거 아니다! 누가 그런 소리를 해!',
+  'm-young': '소문이 벌써 거기까지 갔습니까…?',
+  'm-sage': '사람 입은 막을 수 없는 법이오.',
+  'm-elder': '늘그막에 이런 일이 생길 줄이야.',
+  'm-charm': '소문이 사실이면 어쩌겠소?',
+  'w-bright': '에이, 아니야! …조금은 맞나?',
+  'w-cool': '쓸데없는 소리. …귀가 왜 뜨겁지.',
+  'w-sly': '소문이란 원래 반쯤은 참말이죠.',
+  'w-shaman': '신령께서 맺어 주신 인연이오.',
+}
+
+export function romanceBeats(c: Card, a: Hero, b: Hero): string[] {
+  const at = LOVE_AT[((c.season % 4) + 4) % 4]!
+  const ka = voiceKind(a)
+  const kb = voiceKind(b)
+  // 같은 결이면 둘째는 다른 말로 — 같은 말을 두 번 하지 않게
+  const sb = kb === ka ? '…부디 모르는 척해 주십시오.' : LOVE_SAY[kb]
+  return [`{a} · {b} 두 장수가 ${at}에서 함께 있는 것을 본 사람이 있다.`, quote(LOVE_SAY[ka], '{a}'), quote(sb, '{b}'), '장수들이 수군댄다. 군장의 뜻은 어떠한가.']
+}
+
+/** 연정 소문 그림 — 사내가 왼쪽 · 먼저 나오는 이({a})가 여인이면 뒤집는다 */
+export const romanceFlip = (a: Hero): boolean => a.look === 'w'

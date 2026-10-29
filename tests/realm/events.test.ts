@@ -13,6 +13,7 @@ import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { startRegion } from '../../src/realm/data/regions/index.ts'
 import { cardValid, drawCard, resolveCard } from '../../src/realm/events.ts'
 import { bondOf } from '../../src/realm/heroes.ts'
+import { pairKey } from '../../src/realm/diplomacy.ts'
 import { advance } from '../../src/realm/season.ts'
 import type { Card, Realm, ReportLine } from '../../src/realm/types.ts'
 
@@ -154,5 +155,46 @@ describe('망명자 — 가만히 있으면 장수가 늘지 않는다 (형 10-2
     yes.card = card
     resolveCard(yes, [{ kind: 'card', faction: yes.player, pick: 0 }], lines())
     assert.equal(Object.values(yes.heroes).filter((h) => h.faction === yes.player).length, n0 + 1)
+  })
+
+  /** 우리 남녀 장수 둘 — 없으면 남의 장수를 데려온다 */
+  const couple = (r: Realm): [string, string] => {
+    const pick = (look: 'g' | 'w'): string => {
+      let h = Object.values(r.heroes).find((x) => x.faction === r.player && x.look === look && !x.id.endsWith('-ruler') && x.spouse === undefined)
+      if (h === undefined) {
+        h = Object.values(r.heroes).find((x) => x.faction !== r.player && x.look === look && !x.id.endsWith('-ruler'))!
+        for (const a of Object.values(r.armies)) if (a.hero === h.id) a.hero = null
+        h.faction = r.player
+        h.at = r.factions[r.player]!.capital
+      }
+      return h.id
+    }
+    return [pick('g'), pick('w')]
+  }
+
+  it('연정 소문 — 짝지어 주면 혼인한다 · 핏줄끼리는 카드가 서지 않는다', () => {
+    const r = byeonhanMini(5)
+    r.stock[r.player]!.grain = 5000
+    const [a, b] = couple(r)
+    r.card = { kind: 'romance', season: 0, hero: a, hero2: b }
+    assert.ok(cardValid(r, r.card))
+    const out = lines()
+    resolveCard(r, [{ kind: 'card', faction: r.player, pick: 0 }], out)
+    assert.equal(r.heroes[a]!.spouse, b)
+    assert.ok(out.some((l) => l.kind === 'wed'))
+    const k = byeonhanMini(5)
+    const [x, y] = couple(k)
+    k.heroes[y]!.parents = [x, 'someone']
+    assert.ok(!cardValid(k, { kind: 'romance', season: 0, hero: x, hero2: y }))
+  })
+
+  it('소도의 도망자 — 넘겨주면 내놓으라던 나라만 반긴다', () => {
+    const r = byeonhanMini(2)
+    const other = Object.keys(r.factions).find((f) => f !== r.player)!
+    r.card = { kind: 'fugitive', season: 0, from: other }
+    const before = r.relations?.[pairKey(r.player, other)]?.favor ?? 0
+    resolveCard(r, [{ kind: 'card', faction: r.player, pick: 1 }], lines())
+    const after = r.relations?.[pairKey(r.player, other)]?.favor ?? 0
+    assert.ok(after > before, `${before} → ${after}`)
   })
 })

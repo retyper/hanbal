@@ -84,7 +84,8 @@ import { AUD_CSS, askSay, pactSay, typed, type PactKind } from './audience.ts'
 import { customDef, customsOf } from '../../realm/data/customs.ts'
 import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, slotsHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
 import { SCENE_SOUND, makeMusic, playOnce, snd, sndFile, tapSlot } from './sound.ts'
-import { quarrelArt, quarrelBeats } from './quarrel-lines.ts'
+import { exileArt, exileBeats, fugitiveBeats, quarrelArt, quarrelBeats, romanceBeats, romanceFlip } from './card-lines.ts'
+import { HERO_POOL } from '../../realm/data/heroes-pool.ts'
 import { castOf, hireVoicePath, voiceGate, voiceKind, voicePath, type VoiceLine } from './voice.ts'
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
@@ -451,12 +452,14 @@ function fxHtml(r: Realm, fx: CardFx): string {
   const hh = (fx.hurt ?? []).reduce((a, [, d]) => a + d, 0)
   if (hh > 0) h += fxChip(false, 'settle-hamlet', `집 -${hh}`)
   if (fx.watch !== undefined) h += fxChip(true, 'settle-beacon', `경계 +${Math.round(fx.watch * 100)}%`)
-  if (fx.favor !== undefined && fx.favor.to.length > 0) {
-    const who = fx.favor.to.length === 1 ? r.factions[fx.favor.to[0]!]?.name ?? '' : '이웃 나라'
-    h += fxChip(fx.favor.d > 0, fx.favor.d > 0 ? 'mood-joy' : 'mood-angry', `${who} 호감 ${signed(fx.favor.d)}`)
+  for (const fv of fx.favor ?? []) {
+    if (fv.to.length === 0) continue
+    const who = fv.to.length === 1 ? r.factions[fv.to[0]!]?.name ?? '' : (fx.favor!.length > 1 ? '다른 나라들' : '이웃 나라들')
+    h += fxChip(fv.d > 0, fv.d > 0 ? 'mood-joy' : 'mood-angry', `${who} 호감 ${signed(fv.d)}`)
   }
   if (fx.foe !== undefined) h += fxChip(true, 'war-broken-banner', `${r.factions[fx.foe.faction]?.name ?? ''} 사기 -${Math.round(fx.foe.d * 100)}%`)
   if (fx.join !== undefined) h += fxChip(true, 'unit-general', '새 장수')
+  if (fx.wed !== undefined) h += fxChip(true, 'mood-warm', '혼인')
   // 아무 일 없음 — 글 대신 「곡식 0」 그림 칩 (형 10-26: "아무 일 없는 건 텍스트로 하지 말고 0 으로 이미지화")
   return h === '' ? `<span class="cnone"><b class="gz" title="오가는 것 없음">${icon(GOOD_ICON.grain, 'cgi')}0</b></span>` : h
 }
@@ -2207,22 +2210,33 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const c = r.card
     if (c === undefined || c === null || c.season !== r.season || r.outcome) return ''
     const info = cardInfo(c)
+    // 쫓겨 온 사람 — 아직 우리 장수가 아니라 떠돌이 명단에서 (뽑을 때 정해 둔 사람)
+    const guest = c.kind === 'exile' && c.guest !== undefined ? HERO_POOL.find((h) => h.id === c.guest) : undefined
     const sub = (s: string): string => s.replaceAll('{a}', r.heroes[c.hero ?? '']?.name ?? '').replaceAll('{b}', r.heroes[c.hero2 ?? '']?.name ?? '').replaceAll('{n}', r.nodes[c.node ?? '']?.name ?? '')
+      .replaceAll('{g}', guest?.name ?? '').replaceAll('{f}', r.factions[c.from ?? '']?.name ?? '')
     const ans = answers[`card:${c.season}`]
     const pick = ans === undefined ? null : answers[`hush:${c.season}`] === true ? 2 : ans ? 0 : 1
     // 자막처럼 — 두 줄씩, 누르면 다음 장. 다 보면 한 줄 물음과 짧은 답 둘 (형 10-27 지인: "성세천하처럼 자막 두 줄 · 질문 한 줄 · 선택지 세 마디")
-    // 장수 다툼은 누가 다투나(말투·성별·사이)에 따라 자막과 그림을 고른다 (quarrel-lines.ts)
-    const qa = c.kind === 'quarrel' ? r.heroes[c.hero ?? ''] : undefined
-    const qb = c.kind === 'quarrel' ? r.heroes[c.hero2 ?? ''] : undefined
-    const q = qa !== undefined && qb !== undefined ? quarrelArt(info.art, qa, qb) : { art: info.art, flip: false }
+    // 사람이 나오는 사건은 누가 나오나(말투·성별·사이)에 따라 자막과 그림을 고른다 (card-lines.ts)
+    const qa = c.kind === 'quarrel' || c.kind === 'romance' ? r.heroes[c.hero ?? ''] : undefined
+    const qb = c.kind === 'quarrel' || c.kind === 'romance' ? r.heroes[c.hero2 ?? ''] : undefined
+    const two = qa !== undefined && qb !== undefined
+    const q = c.kind === 'quarrel' && two ? quarrelArt(info.art, qa, qb)
+      : c.kind === 'romance' && qa !== undefined ? { art: info.art, flip: romanceFlip(qa) }
+        : guest !== undefined ? { art: exileArt(info.art, guest), flip: false } : { art: info.art, flip: false }
     const img = `<img class="cimg${q.flip ? ' flip' : ''}" src="${ART}event/${q.art}.jpg" alt="">`
-    const beats = (qa !== undefined && qb !== undefined ? quarrelBeats(c, qa, qb) : info.beats).map(sub)
+    const beats = (c.kind === 'quarrel' && two ? quarrelBeats(c, qa, qb)
+      : c.kind === 'romance' && two ? romanceBeats(c, qa, qb)
+        : guest !== undefined ? exileBeats(c, guest)
+          : c.kind === 'fugitive' ? fugitiveBeats(c) ?? info.beats : info.beats).map(sub)
     const at = pick !== null ? beats.length : Math.min(cardBeat[`card:${c.season}`] ?? 0, beats.length)
     if (at < beats.length) {
       return `<div class="cardc story${info.bad ? ' bad' : ''}" data-act="card-beat">${img}<div class="cb"><b>${icon(info.icon, 'cic')}${esc(info.name)}</b>`
         + `<p class="csub" aria-live="polite">${esc(beats[at]!)}</p><div class="cnav"><small>${at + 1}/${beats.length} · 누르면 다음 ›</small><button class="cskip" data-act="card-skip">건너뛰기 »</button></div></div></div>`
     }
-    let h = `<div class="cardc${info.bad ? ' bad' : ''}">${img}<div class="cb"><b>${icon(info.icon, 'cic')}${esc(info.name)}</b><p class="cask">${esc(sub(info.ask))}</p><div class="copts">`
+    // 쫓겨 온 사람은 받기 전에 누구인지 — 얼굴 · 이름 · 특성
+    const who0 = guest !== undefined ? `<div class="cguest">${bust(guest, 'cof')}<span><b>${esc(guest.name)}</b><span class="wtr">${traitChips(guest, true)}</span></span></div>` : ''
+    let h = `<div class="cardc${info.bad ? ' bad' : ''}">${img}<div class="cb"><b>${icon(info.icon, 'cic')}${esc(info.name)}</b>${who0}<p class="cask">${esc(sub(info.ask))}</p><div class="copts">`
     // 고르지 않았을 때 걸리는 답 — 엔진(events.resolveCard)과 같게: 망명자는 둘째(돌려보낸다) · 장수 다툼은 침묵
     const fallback = cardFallback(c.kind)
     info.opts.forEach((o, i) => {
@@ -2230,7 +2244,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const ia = o.name.indexOf('{a}')
       const ib = o.name.indexOf('{b}')
       const who = ia >= 0 && (ib < 0 || ia < ib) ? c.hero : ib >= 0 ? c.hero2 : undefined
-      const face = who != null && r.heroes[who] !== undefined ? bust(r.heroes[who], 'cof') : ''
+      const face = who != null && r.heroes[who] !== undefined ? bust(r.heroes[who], 'cof') : guest !== undefined && i === 0 ? bust(guest, 'cof') : ''
       // 얻고 잃는 것 — 아이콘·숫자로. 굴리는 답이면 % 와 「이루면 · 어긋나면」 (ODDS: 사건 카드의 답은 % + 갈래마다 아이콘·숫자)
       const pv = cardPreview(r, c, i === 2 ? 2 : i === 0 ? 0 : 1, left())
       let fx = ''

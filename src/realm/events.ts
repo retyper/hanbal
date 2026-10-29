@@ -14,7 +14,7 @@ import { CARDS, CARD_KINDS, QUARREL_WHYS, cardFallback, type CardKind, type Quar
 import { HERO_POOL } from './data/heroes-pool.ts'
 import { addFavor } from './diplomacy.ts'
 import { knownOf } from './discovery.ts'
-import { addBond, hasTrait, homeOf, isRuler } from './heroes.ts'
+import { addBond, canWed, hasTrait, homeOf, isRuler, wed } from './heroes.ts'
 import type { Card, Hero, Order, Realm, ReportLine } from './types.ts'
 
 const byId = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
@@ -28,6 +28,12 @@ const bigNodes = (r: Realm, f: string): string[] =>
 const poolFree = (r: Realm): Hero[] => {
   const taken = new Set([...Object.keys(r.heroes), ...(r.wanderers ?? []).map((w) => w.hero.id), ...(r.expeditions ?? []).flatMap((e) => (e.got.kind === 'wanderer' ? [e.got.hero] : []))])
   return HERO_POOL.filter((h) => !taken.has(h.id))
+}
+
+/** 우리가 아는 이웃 나라 하나 (없으면 null) — 사건이 그 나라 이름으로 일어난다 */
+function pickKnown(r: Realm, f: string, season: number, key: string): string | null {
+  const known = knownOf(r, f).filter((x) => x !== f && r.factions[x] !== undefined).sort()
+  return known.length > 0 ? known[Math.floor(roll(r.seed, season, key) * known.length)]! : null
 }
 
 /** 그 계절에 올 수 있는 카드와 무게 */
@@ -65,9 +71,25 @@ function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w:
   if (poolFree(r).length > 0) {
     const towns = Object.values(r.nodes).filter((n) => n.owner === f && n.kind !== 'sodo').length
     const need = Math.max(P.realm.wandererNeedMin, Math.min(1, ((towns + 1) / (heroes.length + 1)) * P.realm.wandererNeedMul))
-    add('exile', P.realm.cardExileW * need)
+    // 누가 오나 — 뽑을 때 정한다 (받기 전에 얼굴·재주를 본다) · 어디서 쫓겨났나 — 우리가 아는 이웃 나라 하나
+    const pool = poolFree(r)
+    const guest = pool[Math.floor(roll(r.seed, season, 'card-exile-who') * pool.length)]!.id
+    const from = pickKnown(r, f, season, 'card-exile-from')
+    add('exile', P.realm.cardExileW * need, { guest, ...(from !== null ? { from } : {}) })
   }
-  if (Object.values(r.nodes).some((n) => n.kind === 'sodo')) add('fugitive', 0.5)
+  if (Object.values(r.nodes).some((n) => n.kind === 'sodo')) {
+    const from = pickKnown(r, f, season, 'card-fug-from')
+    add('fugitive', 0.5, from !== null ? { from } : {})
+  }
+  // 연정 소문 — 혼인 안 한 우리 남녀 장수 둘 (핏줄·부부 아님)
+  const pairs: Array<readonly [string, string]> = []
+  for (const x of heroes) for (const y of heroes) if (x.look === 'g' && y.look === 'w' && canWed(r, f, x.id, y.id)) pairs.push([x.id, y.id])
+  if (pairs.length > 0) {
+    const [a, b] = pairs[Math.floor(roll(r.seed, season, 'card-love') * pairs.length)]!
+    // 먼저 나오는 이를 반반으로 — 늘 사내가 앞이지 않게
+    const swap = roll(r.seed, season, 'card-love-swap') < 0.5
+    add('romance', P.realm.cardRomanceW, { hero: swap ? b : a, hero2: swap ? a : b })
+  }
   return out
 }
 
@@ -110,7 +132,8 @@ export function cardValid(r: Realm, c: Card): boolean {
     if (x === undefined || x.faction !== f || x.status !== 'free') return false
   }
   if (c.node !== undefined && r.nodes[c.node]?.owner !== f) return false
-  if (c.kind === 'exile' && poolFree(r).length === 0) return false
+  if (c.kind === 'exile' && (poolFree(r).length === 0 || (c.guest !== undefined && !poolFree(r).some((h) => h.id === c.guest)))) return false
+  if (c.kind === 'romance' && !canWed(r, f, c.hero ?? '', c.hero2 ?? '')) return false
   return true
 }
 
@@ -152,8 +175,10 @@ export interface CardFx {
   readonly hurt?: ReadonlyArray<readonly [node: string, hh: number]>
   /** 우리 고을마다 경계 + */
   readonly watch?: number
-  /** 그 나라들의 호감 ± */
-  readonly favor?: { readonly to: readonly string[]; readonly d: number }
+  /** 그 나라들의 호감 ± — 갈래마다 (내놓으라는 나라는 오르고 다른 나라는 내린다) */
+  readonly favor?: ReadonlyArray<{ readonly to: readonly string[]; readonly d: number }>
+  /** 두 장수를 혼인시킨다 (연정 소문 · heroes.wed — 혼례 곡식이 든다) */
+  readonly wed?: readonly [string, string]
   /** 그 나라 군대의 사기가 꺾인다 */
   readonly foe?: { readonly faction: string; readonly d: number }
   /** 새로 오는 장수 */
@@ -223,13 +248,27 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonl
     case 'exile': {
       if (pick === 1) return { sure: {} }
       const pool = poolFree(r)
-      const p = pool[Math.floor(roll(r.seed, r.season, `card-res:${c.kind}:who`) * pool.length)]
+      const p = c.guest !== undefined ? pool.find((h) => h.id === c.guest) : pool[Math.floor(roll(r.seed, r.season, `card-res:${c.kind}:who`) * pool.length)]
       return p !== undefined && homeOf(r, f) !== null ? { sure: { grain: cost(R.cardExileCost), join: p.id }, hero: p.id } : { sure: {} }
     }
-    case 'fugitive':
+    case 'fugitive': {
+      // 내놓으라는 나라가 있으면 — 법을 지키면 그 나라만 노하고, 넘겨주면 그 나라는 반기고 다른 나라들이 법을 깼다고 본다
+      if (c.from !== undefined) {
+        const others = knownOf(r, f).filter((x) => x !== c.from)
+        return pick === 0
+          ? { sure: { favor: [{ to: [c.from], d: -R.cardFavorDown }], bond: R.cardFugitiveBond } }
+          : { sure: { grain: earn(R.cardFugitiveGrain), favor: [{ to: [c.from], d: R.cardFavorUp }, ...(others.length > 0 ? [{ to: others, d: -R.cardFavorDown }] : [])] } }
+      }
       return pick === 0
-        ? { sure: { favor: { to: knownOf(r, f), d: R.cardFavorUp }, bond: R.cardFugitiveBond } }
-        : { sure: { grain: earn(R.cardFugitiveGrain), favor: { to: knownOf(r, f), d: -R.cardFavorDown } } }
+        ? { sure: { favor: [{ to: knownOf(r, f), d: R.cardFavorUp }], bond: R.cardFugitiveBond } }
+        : { sure: { grain: earn(R.cardFugitiveGrain), favor: [{ to: knownOf(r, f), d: -R.cardFavorDown }] } }
+    }
+    case 'romance': {
+      const both = (d: number): CardFx => ({ bonds: [[c.hero!, d], [c.hero2!, d]] })
+      if (pick === 0) return { sure: { grain: -Math.min(st.grain, R.wedGrain), wed: [c.hero!, c.hero2!] }, hero: c.hero! }
+      if (pick === 1) return { sure: {}, chance: R.cardRomanceOk, die: 'love', win: both(R.cardRomanceBond), lose: {} }
+      return { sure: both(-R.cardRomanceSplit) }
+    }
     case 'whale':
       return { sure: pick === 0 ? { grain: Math.max(R.cardWhaleMin, earn(R.cardWhaleShare)) } : cheer }
     case 'fishbridge':
@@ -237,8 +276,8 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonl
       return { sure: pick === 0 ? { foe: { faction: 'buyeo', d: R.cardFishMorale } } : cheer }
     case 'gogak':
       // 『삼국사기』 동명성왕 2년 — 부분노가 비류국의 고각을 가져와 송양이 감히 다투지 못했다 · 들키면 노한다
-      if (pick === 1) return { sure: { favor: { to: ['biryuna'], d: R.cardGogakFavor } } }
-      return { sure: {}, chance: R.cardGogakOk, die: 'steal', win: { foe: { faction: 'biryuna', d: R.cardGogakMorale } }, lose: { favor: { to: ['biryuna'], d: -R.cardGogakAngry } } }
+      if (pick === 1) return { sure: { favor: [{ to: ['biryuna'], d: R.cardGogakFavor }] } }
+      return { sure: {}, chance: R.cardGogakOk, die: 'steal', win: { foe: { faction: 'biryuna', d: R.cardGogakMorale } }, lose: { favor: [{ to: ['biryuna'], d: -R.cardGogakAngry }] } }
   }
 }
 
@@ -254,7 +293,11 @@ function applyFx(r: Realm, f: string, fx: CardFx, tally: { grain: number; iron: 
   if (fx.bond !== undefined) for (const h of freeHeroes(r, f)) addBond(r, h, fx.bond, lines)
   for (const [id, d] of fx.bonds ?? []) { const h = r.heroes[id]; if (h !== undefined) addBond(r, h, d, lines) }
   if (fx.watch !== undefined) for (const n of Object.values(r.nodes)) if (n.owner === f) { const w = (r.watch[n.id] ??= { alert: 0, lull: 0 }); w.alert = Math.min(1, w.alert + fx.watch) }
-  if (fx.favor !== undefined) for (const o of fx.favor.to) addFavor(r, f, o, fx.favor.d)
+  for (const fv of fx.favor ?? []) for (const o of fv.to) addFavor(r, f, o, fv.d)
+  if (fx.wed !== undefined) {
+    const g0 = st.grain
+    if (wed(r, { kind: 'wed', faction: f, a: fx.wed[0], b: fx.wed[1] }, lines)) tally.grain += st.grain - g0
+  }
   if (fx.foe !== undefined) for (const a of Object.values(r.armies)) if (a.faction === fx.foe.faction) a.morale = Math.max(R.cardFishFloor, a.morale - fx.foe.d)
   if (fx.join !== undefined) {
     const p = HERO_POOL.find((h) => h.id === fx.join)
