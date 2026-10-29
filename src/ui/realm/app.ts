@@ -3640,8 +3640,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     let hide = false
     try { hide = localStorage.getItem(INSTALL_HIDE_KEY) === '1' } catch { hide = false }
     if (hide || instClosed) return '' // 다시 여는 단추는 「더 보기」 안에 (frontHtml links)
+    // 카카오톡 안의 브라우저는 설치를 못 한다 — 바깥 브라우저(크롬·사파리)로 여는 단추 (지인들은 카톡으로 받은 주소를 연다)
+    if (/KAKAOTALK/i.test(navigator.userAgent)) {
+      return `<div class="instc"><button class="instx" data-act="inst-ok" aria-label="닫기">✕</button><b>📲 앱으로 설치하면 더 편리합니다</b><p>카카오톡 안에서는 설치할 수 없습니다. 아래 단추로 ${ios ? '사파리' : '크롬'}에서 연 뒤 설치해 주세요.</p>`
+        + `<div class="instr"><a class="btn pri sm" href="kakaotalk://web/openExternal?url=${encodeURIComponent(location.href)}">${ios ? '사파리로' : '크롬으로'} 열기</a><label class="chk"><input type="checkbox" class="insthide"> 다시 보지 않기</label><button class="btn sm" data-act="inst-ok">확인</button></div></div>`
+    }
     const how = ios
-      ? '사파리 아래 <b>공유</b> 단추(네모에 위 화살표) → <b>「홈 화면에 추가」</b>. 홈 화면의 삼한열전 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.'
+      ? '사파리 아래 <b>공유</b> 단추(네모에 위 화살표) → <b>「홈 화면에 추가」</b>. 홈 화면의 삼한열전 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다. (아이폰은 웹에서 바로 설치하는 단추를 막아 두었습니다)'
       : installPrompt() !== null ? '아래 단추를 누르면 바로 설치됩니다. 홈 화면·바탕화면의 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.'
         : '브라우저 메뉴(⋮) → <b>「앱 설치」</b> 또는 <b>「홈 화면에 추가」</b>를 누르세요. 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.'
     // 첫 화면 위쪽에 뜨는 알림 — ✕ 로 끈다 (형 10-28: "상단에 나오는 팝업으로 만들어서 끌 수 있게")
@@ -4693,6 +4698,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (over()) tv.classList.add('tight2')
   }
   window.addEventListener('resize', () => { if (front?.kind === 'title') fitTitle() })
+  // 크롬이 설치를 권할 수 있게 된 때(beforeinstallprompt — realm.html 이 받아 둔다)는 첫 화면이 그려진 뒤일 때가 많다 — 그때 다시 그려
+  // 「앱으로 설치하면 더 편리합니다」 알림에 바로 설치 단추가 뜨게 (형 10-29: "설명서만 있고 바로 설치하는 버튼이 없다") · 설치를 마치면 알림을 걷는다
+  window.addEventListener('beforeinstallprompt', () => setTimeout(paint, 0))
+  window.addEventListener('appinstalled', () => setTimeout(paint, 0))
 
   // ───────── 판 바깥 — 첫 화면 · 판 고르기 · 나라 고르기 (front.ts)
   function frontHtml(f: Front): string {
