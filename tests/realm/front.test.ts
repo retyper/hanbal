@@ -49,7 +49,7 @@ describe('판의 앞과 끝', () => {
   it('서막 세 장 — 시대 · 우리 나라(군장) · 할 일', () => {
     const r = startYeongnam(1, 'saro')
     assert.equal(PROLOGUE_STEPS, 3)
-    assert.ok(prologueHtml(KIT, r, 0).includes('기원 2세기'))
+    assert.ok(prologueHtml(KIT, r, 0).includes('기원후 2세기'))
     const you = prologueHtml(KIT, r, 1)
     assert.ok(you.includes('사로국') && you.includes(r.heroes[r.factions['saro']!.ruler!]!.name))
     const goal = prologueHtml(KIT, r, 2)
