@@ -5,7 +5,7 @@
  *   결 풍습   — 결(문화권)마다 사서에 적힌 풍습 둘. 그 결의 모든 나라 (tier 'kyeol')
  *   나라 고리 — 사서·고고학에 그 나라 이야기가 남은 나라만, 실제 사건·유물 한 줄이 규칙 하나 (tier 'nation')
  *   땅 한 수  — 이야기가 없는 소국. 지어내지 않고 그 나라 땅의 꼬리표(쇠·포구·목장·갈대·높은 터·소도 곁)에서 (tier 'land')
- * 좋은 것에는 늘 값이 붙는다. 규칙마다 동사 한 문장(`verb`) — 「이 나라로 하면 □를 못 해서 △로 한다」 (§8-1 지킬 것 1).
+ * 좋은 것에는 늘 값이 붙는다. 규칙마다 화면에 뜨는 두 문장(`verb`) — 「못 하는 것. 대신(그래서) 이렇게 싸운다」 (§8-1 지킬 것 1 · 형 10-29: 설계 틀 문장 그대로는 알아먹지 못한다).
  * 뿌리는 우리 책이 먼저(『삼국사기』·『삼국유사』), 『삼국지』 위서 동이전은 곁들임. 늦은 것(개마·판갑)은 넣지 않는다.
  *
  * 나라의 풍습은 `Faction.customs` — 없으면 제 것(nativeCustoms: 결 풍습 + 나라 고리, 고리가 없으면 땅 한 수). 셈은 `hasCustom` 하나로만 묻는다.
@@ -62,7 +62,7 @@ export interface CustomDef {
   readonly does: string
   /** 무엇을 내주나 — 한 줄 */
   readonly cost: string
-  /** 동사 한 문장 — 「이 나라로 하면 □를 못 해서 △로 한다」 (§8-1 지킬 것 1) */
+  /** 화면에 뜨는 두 문장 — 「못 하는 것. 대신(그래서) 이렇게 싸운다」 (§8-1 지킬 것 1) */
   readonly verb: string
   /** 사서 한 줄 (땅 한 수는 땅의 말) */
   readonly source: string
@@ -84,7 +84,7 @@ export const CUSTOMS: readonly CustomDef[] = [
     id: 'chaekhwa', kyeol: 'ye', name: '책화', layer: 'rule', seed: '경계', pack: 'base', wave: 1, live: true,
     does: '남의 땅을 밟으면 물어내야 한다 — 이웃이 우리 땅을 덜 넘보고, 쳐들어온 적군은 첫 합에서 사기가 깎인다',
     cost: '우리 군대가 남의 땅에 나가 있으면 군량이 곱으로 든다',
-    verb: '동예로 하면 멀리 치러 나가지 못해서(남의 땅에선 군량이 곱으로 든다), 우리 땅에 들어온 적에게 물어내게 한다',
+    verb: '남의 땅에 오래 나가 있기는 어렵다. 대신 우리 땅에 들어온 적은 값을 톡톡히 치른다',
     source: '『삼국지』 위서 예전 — 읍락이 서로 침범하면 사람·소·말로 물어내게 하니, 이를 책화라 한다',
   }),
   def({
@@ -109,14 +109,14 @@ export const CUSTOMS: readonly CustomDef[] = [
     id: 'guseul', kyeol: 'mahan', name: '구슬', layer: 'matter', seed: '구슬', pack: 'base', wave: 1, live: true,
     does: '선물로 오르는 호감이 크다',
     cost: '쇠를 귀히 여기지 않아 쇠를 싸게 친다',
-    verb: '마한으로 하면 쇠로 이웃을 사지 못해서, 구슬 선물로 마음을 산다',
+    verb: '쇠로는 이웃의 마음을 사기 어렵다. 대신 구슬 선물이 잘 통한다',
     source: '『삼국지』 위서 한전 — 구슬을 재보로 여기고, 금·은·비단은 보배로 여기지 않는다',
   }),
   def({
     id: 'maljangrye', kyeol: 'mahan', name: '말 장례', layer: 'family', seed: '무덤', pack: 'base', wave: 1, live: true,
     does: '가을마다 소·말을 장례에 바쳐 크게 묻는다 — 장수들의 정이 오른다 (믿는 장수는 군대의 사기를 올린다)',
     cost: '말을 타지 않아 기병을 뽑지 못한다 · 장례에 곡식과 말이 든다',
-    verb: '마한으로 하면 기병을 뽑지 못해서, 장례로 묶인 장수들의 정으로 싸운다',
+    verb: '기병 없이 싸운다. 대신 장례로 맺은 장수들의 정이 군대를 붙든다',
     source: '『삼국지』 위서 한전 — 소와 말을 탈 줄 모르고, 소와 말은 장례에 다 쓴다',
   }),
   def({
@@ -147,21 +147,21 @@ export const CUSTOMS: readonly CustomDef[] = [
     id: 'deongisoe', kyeol: 'byeonhan', name: '덩이쇠', layer: 'matter', seed: '쇠', pack: 'base', wave: 2, live: true,
     does: '쇠가 곧 돈이다 — 징병값의 절반을 쇠로 내 곡식을 아끼고, 곡식이 모자라면 쇠로 다 낸다',
     cost: '쇠를 돈으로 쓴 만큼 무장할 쇠가 준다 · 쇠가 쌓이면 이웃이 탐낸다',
-    verb: '변한으로 하면 곡식이 떨어져도 징병을 멈추지 않고, 쇠로 값을 낸다 — 그만큼 무장을 못 올린다',
+    verb: '곡식이 떨어져도 쇠로 군사를 뽑는다. 다만 그만큼 무장할 쇠가 줄어든다',
     source: '『삼국지』 위서 변진전 — 나라에서 쇠가 나 한·예·왜가 다 가져가고, 저자에서는 쇠를 돈처럼 쓴다',
   }),
   def({
     id: 'girbikyeo', kyeol: 'byeonhan', name: '길 비켜 주기', layer: 'rule', seed: '길', pack: 'base', wave: 2, live: true,
     does: '사신과 장사꾼이 막히지 않는다 — 화친·동맹·교역 청이 잘 받아들여진다',
     cost: '남의 척후와 첩자도 잘 들어온다 — 들키지 않고 우리 땅을 본다',
-    verb: '변한으로 하면 길을 막지 못해서(남의 척후도 들어온다), 사신과 장사로 이웃을 붙든다',
+    verb: '남의 척후에게도 길이 열려 있다. 대신 사신과 장사꾼이 오가며 이웃과 가까워진다',
     source: '『삼국지』 위서 변진전 — 길 가는 이가 서로 만나면 다 멈춰 서서 길을 비켜 준다',
   }),
   def({
     id: 'yeoseotmaeul', kyeol: 'jinhan', tier: 'nation', nations: ['saro'], name: '여섯 마을의 뜻', layer: 'rule', seed: '마을', pack: 'base', wave: 3, live: true,
     does: '물어서 시작한 싸움 — 치러 가는 우리 군대의 사기가 높다',
     cost: '사이가 무던한 나라를 불시에 치지 못한다 — 먼저 여섯 마을에 묻고 한 계절 뒤에 친다',
-    verb: '사로로 하면 이웃을 불시에 치지 못해서, 여섯 마을에 묻고 사기 높은 군대로 친다',
+    verb: '이웃을 불시에 칠 수는 없다. 대신 여섯 마을이 뜻을 모은 군대는 사기가 높다',
     source: '『삼국유사』 기이 신라시조 혁거세왕 — 여섯 마을 촌장이 알천 언덕에 모여 임금을 세웠다',
   }),
   def({
@@ -200,63 +200,63 @@ export const CUSTOMS: readonly CustomDef[] = [
     id: 'judge', kyeol: 'other', tier: 'nation', nations: ['eumjeup'], name: '수로왕의 판결', layer: 'rule', seed: '판결', pack: 'base', wave: 3, live: true,
     does: '싸우는 나라에 화친을 청하면 큰 나라의 판결이 붙어 잘 먹힌다',
     cost: '판결해 준 큰 나라에 곡식을 바친다',
-    verb: '음즙벌로 하면 군대로 땅을 지켜 내지 못해서, 큰 나라의 판결로 싸움을 멈춘다',
+    verb: '군대만으로 땅을 지키기엔 힘이 모자라다. 대신 큰 나라의 판결로 싸움을 멈춘다',
     source: '『삼국사기』 신라본기 파사이사금 23년 — 음즙벌국과 실직곡국이 땅을 다투자 금관국 수로왕을 불러 물으니, 수로가 그 땅을 음즙벌에 붙였다',
   }),
   def({
     id: 'dalcheon', kyeol: 'other', tier: 'nation', nations: ['usisan'], name: '달천 철광', layer: 'matter', seed: '쇠돌', pack: 'base', wave: 3, live: true, sure: '고고학',
     does: '우리 철광에서 쇠가 곱으로 난다 — 땅 위에 드러난 쇠돌을 캔다',
     cost: '쇠돌 캐기에 일손이 묶여 철광 고을에서는 군사를 못 뽑고, 나라가 뽑는 군사도 준다',
-    verb: '우시산으로 하면 군사를 많이 뽑지 못해서, 쇠를 두른 적은 군대로 싸운다',
+    verb: '군사를 많이 뽑지 못한다. 대신 쇠가 넉넉해 적은 군사를 단단히 무장시킨다',
     source: '울산 달천 유적 — 기원 전후부터 쇠돌을 캐던 노천 철광 · 『삼국사기』 거도전의 우시산국',
   }),
   def({
     id: 'sonoe', kyeol: 'other', tier: 'nation', nations: ['golbeol'], name: '쇠뇌', layer: 'matter', seed: '쇠뇌', pack: 'base', wave: 3, live: true, sure: '고고학',
     does: '처음부터 쇠뇌 몇 틀이 있어 쇠뇌병을 뽑는다 — 방패를 뚫는다',
     cost: '틀 수만큼만 뽑고 한 명마다 쇠가 든다 · 장수의 활 솜씨를 타지 않는다',
-    verb: '골벌로 하면 활 무리를 크게 꾸리지 못해서, 쇠뇌 몇 틀로 방패벽을 뚫는다',
+    verb: '활 무리를 크게 꾸리지는 못한다. 대신 쇠뇌 몇 틀로 방패벽을 뚫는다',
     source: '영천 용전리 널무덤 — 쇠뇌의 방아쇠 틀(청동 노기)이 나왔다, 기원전 1세기 · 『삼국사기』 조분이사금 7년의 골벌국',
   }),
   def({
     id: 'ireoseom', kyeol: 'other', tier: 'nation', nations: ['apdok', 'siljik'], name: '다시 일어남', layer: 'family', seed: '불씨', pack: 'base', wave: 3, live: true,
     does: '도읍을 빼앗겨도 끝나지 않는다 — 빼앗은 나라가 도읍을 비워 두면 사람들이 들고일어나 되찾는다 (판에 한 번)',
     cost: '들고일어난 뒤 도읍의 집이 크게 준다',
-    verb: '압독으로 하면 큰 이웃을 막아 내지 못해서, 빼앗긴 뒤 다시 일어난다',
+    verb: '큰 이웃을 막아 내기는 버겁다. 대신 도읍을 빼앗겨도 다시 일어선다',
     source: '『삼국사기』 신라본기 일성이사금 13년 — 압독이 들고일어나 군사를 내어 평정하고 남은 무리를 남쪽으로 옮겼다 · 파사이사금 25년 실직도 그렇게 들고일어났다',
   }),
   def({
     id: 'dalbeol', kyeol: 'other', tier: 'nation', nations: ['dabeol'], name: '달벌 흙성', layer: 'rule', seed: '흙성', pack: 'base', wave: 3, live: true,
     does: '도읍에 흙성을 쌓는다 — 목책보다 훨씬 굳다',
     cost: '흙성은 곡식과 나무가 크게 들고, 쌓는 계절엔 도읍에서 군사를 못 뽑는다',
-    verb: '다벌로 하면 산에 기대 지키지 못해서(사방이 열린 들), 들 한가운데 흙성을 쌓아 버틴다',
+    verb: '기댈 산이 없는 탁 트인 들판이다. 그래서 들 한가운데 흙성을 쌓아 버틴다',
     source: '『삼국사기』 신라본기 첨해이사금 15년 — 다벌 땅에 달벌성을 쌓고 성주를 두었다 · 대구 달성 토성',
   }),
   def({
     id: 'geumseong', kyeol: 'other', tier: 'nation', nations: ['iseo'], name: '도읍 에우기', layer: 'rule', seed: '에움', pack: 'base', wave: 3, live: true,
     does: '남의 도읍을 곧장 에운다 — 도읍을 칠 때 성의 덤을 덜 받는다',
     cost: '도읍을 치면 그 나라와 손잡은 나라들이 모두 구하러 온다 (전쟁)',
-    verb: '이서로 하면 작은 고을을 하나씩 먹지 못해서(군사가 적다), 큰 나라 도읍을 곧장 에운다',
+    verb: '군사가 적어 작은 고을부터 하나씩 먹어 들어갈 수 없다. 그래서 큰 나라의 도읍을 곧장 에운다',
     source: '『삼국사기』 신라본기 유례이사금 14년 — 이서국이 와서 금성을 에웠다. 대나무 잎을 꽂은 군사가 나타나 물리쳤다',
   }),
   def({
     id: 'julta', kyeol: 'other', tier: 'nation', nations: ['sabeol'], name: '줄타기', layer: 'rule', seed: '줄', pack: 'base', wave: 3, live: true,
     does: '가장 센 두 나라에 화친·동맹 청이 잘 먹힌다',
     cost: '한쪽과 손을 잡으면 다른 쪽이 언짢아한다',
-    verb: '사벌로 하면 두 큰 나라를 다 막아 내지 못해서, 둘 사이에서 줄을 탄다',
+    verb: '두 큰 나라를 다 막아 낼 힘은 없다. 그래서 둘 사이에서 줄을 탄다',
     source: '『삼국사기』 열전 석우로 — 사량벌국이 신라에 붙어 있다가 갑자기 백제로 돌아서자 우로가 쳐서 멸했다 · 지리지 상주',
   }),
   def({
     id: 'soebae', kyeol: 'other', tier: 'nation', nations: ['guya'], name: '쇠 실은 배', layer: 'matter', seed: '돛', pack: 'base', wave: 3, live: true, sure: '고고학',
     does: '가을마다 남는 쇠를 배에 실어 내고 곡식을 사 온다',
     cost: '쇠를 많이 쌓아 두지 못한다 — 남는 쇠는 배가 실어 간다 · 포구를 잃으면 배가 못 뜬다',
-    verb: '가락으로 하면 쇠를 쌓아 두지 못해서, 배로 내다 팔아 곡식으로 사람을 먹인다',
+    verb: '쇠를 쌓아 두지 못한다. 대신 배로 내다 팔아 곡식을 들여온다',
     source: '김해 양동리 무덤의 쇠도끼·덩이쇠 · 『삼국유사』 가락국기 — 바다로 배가 닿는 나라 · 위서 변진전 「國出鐵…倭皆從取之」',
   }),
   def({
     id: 'posang', kyeol: 'other', tier: 'nation', nations: ['us', 'samul', 'goja'], name: '바닷가 여덟 나라', layer: 'rule', seed: '갯마을', pack: 'base', wave: 3, live: true,
     does: '바닷가 나라끼리 화친으로 시작한다 — 서로의 화친·동맹·함께 치기 청이 잘 먹힌다',
     cost: '가락이 처음부터 우리를 미워한다 · 손잡은 바닷가 나라 땅으로는 넓히지 못한다',
-    verb: '골포로 하면 혼자서는 가락을 막지 못해서, 바닷가 나라들과 손잡고 싸운다',
+    verb: '혼자서는 가락을 당해 내지 못한다. 그래서 바닷가 나라들과 손잡고 싸운다',
     source: '『삼국사기』 신라본기 나해이사금 14년 — 포상팔국이 가라를 치려 하자 가라 왕자가 구원을 청했다 · 열전 물계자 (골포·사물·고사포)',
   }),
 
@@ -265,42 +265,42 @@ export const CUSTOMS: readonly CustomDef[] = [
     id: 'landIron', kyeol: 'other', tier: 'land', name: '쇠 다루기', layer: 'matter', seed: '쇠', pack: 'base', wave: 3, live: true, sure: '땅',
     does: '무장을 올리는 데 쇠가 적게 든다',
     cost: '쇠 나는 우리 고을을 이웃이 노린다',
-    verb: '쇠 나는 땅으로 하면 철광을 비우고 멀리 나가지 못해서, 쇠를 두른 군사로 지킨다',
+    verb: '철광을 비우고 멀리 나가기는 어렵다. 대신 쇠를 두른 군사로 단단히 지킨다',
     source: '나라 안에 철광이 있다',
   }),
   def({
     id: 'landPort', kyeol: 'other', tier: 'land', name: '뱃길', layer: 'matter', seed: '물길', pack: 'base', wave: 3, live: true, sure: '땅',
     does: '바닷길로 가는 군대가 잘 숨고, 포구에서 수군을 나무 반만 들여 뽑는다',
     cost: '사내들이 바다에 나가 있어 우리 포구를 지키는 장정이 적다',
-    verb: '포구 나라로 하면 포구를 장정으로 지켜 내지 못해서(사내들이 바다에 있다), 배를 띄워 바닷길로 먼저 친다',
+    verb: '사내들이 바다에 나가 있어 포구를 지킬 장정이 적다. 대신 배를 띄워 바닷길로 먼저 친다',
     source: '도읍이 포구다',
   }),
   def({
     id: 'landReeds', kyeol: 'other', tier: 'land', name: '갈대밭', layer: 'rule', seed: '갈대', pack: 'base', wave: 3, live: true, sure: '땅',
     does: '갈대·나루 길로 가는 기습이 잘 숨는다',
     cost: '여름 큰물에 강가 고을의 집이 조금씩 준다',
-    verb: '강가 늪 나라로 하면 여름 큰물에 강가 집을 지켜 내지 못해서, 갈대밭에 숨어 기습으로 넓힌다',
+    verb: '여름 큰물이 들면 강가 집이 떠내려간다. 대신 갈대밭에 숨어 기습한다',
     source: '갈대 늪과 나루를 낀 땅이다',
   }),
   def({
     id: 'landHigh', kyeol: 'other', tier: 'land', name: '고갯목', layer: 'rule', seed: '고개', pack: 'base', wave: 3, live: true, sure: '땅',
     does: '목책·해자를 반값에 두르고, 고갯길·높은 터로 쳐들어온 적은 첫 합에 사기가 깎인다 — 바위를 굴린다',
     cost: '우리 군대도 고갯길로 나가면 한 계절 더 걸린다',
-    verb: '고갯마루 나라로 하면 고개 너머로 빨리 나가지 못해서, 고갯목을 막고 버틴다',
+    verb: '고개가 험해 우리도 밖으로 나가는 데 오래 걸린다. 대신 고갯목만 막으면 쳐들어온 적을 쉽게 물리친다',
     source: '높은 터와 고갯길에 둘러싸인 땅이다',
   }),
   def({
     id: 'landPasture', kyeol: 'other', tier: 'land', name: '말 치는 들', layer: 'matter', seed: '말', pack: 'base', wave: 3, live: true, sure: '땅',
     does: '곁의 너른 들에서 말을 친다 — 계절마다 말이 들어와 기병을 뽑는다',
     cost: '말 먹이로 계절마다 곡식이 든다',
-    verb: '너른 들 나라로 하면 곡식을 다 쌓아 두지 못해서(말이 먹는다), 기병으로 들에서 싸운다',
+    verb: '말이 곡식을 먹어 곳간이 넉넉하지 않다. 대신 기병으로 들판에서 싸운다',
     source: '말을 칠 너른 들이 곁에 있다',
   }),
   def({
     id: 'landSodo', kyeol: 'other', tier: 'land', name: '소도 곁', layer: 'family', seed: '솟대', pack: 'base', wave: 3, live: true, sure: '땅',
     does: '소도 제사가 반값이다',
     cost: '봄 제사를 거르면 그해 가을걷이가 준다',
-    verb: '소도 곁 나라로 하면 봄 제사를 거르지 못해서, 제사로 하늘의 덤을 받는다',
+    verb: '봄 제사를 거르면 가을걷이가 준다. 대신 제사를 지내면 하늘의 덤을 받는다',
     source: '소도와 길로 맞닿은 땅이다',
   }),
 ]

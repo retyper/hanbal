@@ -52,7 +52,8 @@ describe('풍습의 층 셋 — 데이터', () => {
 
   it('규칙이 걸린 풍습은 동사 한 문장 · 득 · 값 · 사서 · 확신 표기가 다 있다 · 해명 문구가 없다', () => {
     for (const c of CUSTOMS.filter((x) => x.live)) {
-      assert.ok(c.verb.includes('하면') && c.verb.includes('못'), `${c.id} 동사 시험: ${c.verb}`)
+      // 화면에 뜨는 두 문장 — 못 하는 것 · 대신(그래서) 이렇게 싸운다 · 설계 틀(「○○로 하면 … 못 해서」)이 화면에 새지 않는다 (형 10-29)
+      assert.ok(/(대신|그래서|다만)/.test(c.verb) && !/로 하면/.test(c.verb), `${c.id} 두 문장: ${c.verb}`)
       assert.ok(c.does !== '' && c.cost !== '' && c.source !== '', c.id)
       assert.ok(['문헌', '고고학', '전승', '땅'].includes(c.sure), c.id)
       for (const s of [c.does, c.cost, c.verb, c.name]) assert.ok(!/이지 .*(이|가) 아니다/.test(s), `${c.id} 해명 문구: ${s}`)
