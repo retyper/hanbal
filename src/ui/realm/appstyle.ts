@@ -713,6 +713,26 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .selbar .sbf { display: flex; } .ap .selbar .sbface { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid #ffd27a; margin-right: -8px; background: #3a2c1e; display: block; }
 .ap .selbar .sbt { flex: 1; min-width: 140px; margin-left: 10px; display: flex; flex-direction: column; } .ap .selbar .sbt b { font-size: 14.5px; } .ap .selbar .sbt span { font-size: 12.5px; color: var(--mute); }
 .ap .selbar .sbwhy { font-size: 12px; color: #e8a08a; width: 100%; text-align: right; }
+/* 출정 전 군막 창 (councilPaint) — 화면 가운데 · 굴리지 않는다 */
+.ap .cnov { position: absolute; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; background: #000a; padding: 16px; }
+.ap .cnov .cnbox { width: min(460px, 100%); display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 12px solid transparent; border-image: url(__ART__ui/frame-panel.png?v=3) 118 / 12px stretch; background: #1f1710f6 padding-box; animation: cnin .35s cubic-bezier(.2, 1.3, .4, 1); }
+.ap .cnov h3 { margin: 0; font-family: 'Gowun Batang', serif; font-size: 20px; color: #ffd27a; text-align: center; }
+.ap .cnov .cnlead { margin: 0; font-size: 13.5px; color: #e8dcc0; text-align: center; }
+.ap .cnov .cnl { display: flex; flex-direction: column; gap: 6px; }
+.ap .cnov .cnb { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--line); background: #2a2016; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.ap .cnov .cnf { width: 52px; height: 52px; flex: none; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #c9a45a; }
+.ap .cnov .cns { flex: 1; min-width: 0; font-size: 13.5px; line-height: 1.4; color: #f0e6d0; } .ap .cnov .cns b { display: block; font-size: 14px; color: var(--gold); } .ap .cnov .cns small { display: block; font-size: 12.5px; color: #cdbf9e; }
+.ap .cnov .cno { flex: none; font-size: 12.5px; white-space: nowrap; }
+.ap .cnov .cnskip { align-self: center; }
+@keyframes cnin { from { transform: scale(.92); opacity: 0; } to { transform: none; opacity: 1; } }
+/* 군막 — 적 고을을 고르면 띠 아래로 장수 둘의 안 (councilStrip) */
+.ap .selbar .cnl { flex-basis: 100%; min-width: 0; display: flex; flex-direction: column; gap: 5px; border-top: 1px solid var(--line); padding-top: 6px; }
+.ap .selbar .cnh { font-size: 13px; color: #e0bd78; }
+.ap .selbar .cnb { display: flex; align-items: center; gap: 8px; width: 100%; padding: 5px 8px; border-radius: 10px; border: 1px solid var(--line); background: #2a2016; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.ap .selbar .cnb.on { border-color: #9a7ad8; background: #2a2440; }
+.ap .selbar .cnf { width: 40px; height: 40px; flex: none; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #8a7040; }
+.ap .selbar .cns { flex: 1; min-width: 0; font-size: 12.5px; line-height: 1.35; color: #f0e6d0; } .ap .selbar .cns b { display: block; font-size: 13px; color: var(--gold); } .ap .selbar .cns small { display: block; font-size: 11.5px; color: #cdbf9e; }
+.ap .selbar .cno { flex: none; font-size: 12px; white-space: nowrap; }
 .ap .selbar .sbx { border: 0; background: none; color: var(--mute); font-size: 18px; padding: 4px 6px; cursor: pointer; }
 /* 장수 얼굴을 눌러 이끌 장수 고르기 — 얼굴 모서리의 ⇄ · 펼치면 띠 아래 한 줄 (형 10-26) */
 .ap .selbar .sbfb { position: relative; border: 0; background: none; padding: 0 8px 0 0; margin: 0; cursor: pointer; color: inherit; font: inherit; }

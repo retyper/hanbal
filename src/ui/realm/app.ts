@@ -664,6 +664,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let heroOrders: Order[] = []
   /** 「다음 계절」 전에 한 번 물어본 계절 — 쉬는 장수·안 보낸 정찰이 있으면 그 판으로 데려가고, 한 번 더 누르면 넘긴다 (형 10-23) */
   let nudgedAt = -1
+  /** 군막 — 이번 계절 출정 전에 연 계절 · 지금 연 군막 (councilDue · councilPaint) */
+  let councilAt = -1
+  let councilOpen: { army: string; edge: string; goal?: string } | null = null
   /** 회유를 맡길 장수 — 포로마다 */
   const persuadeBy: Record<string, string> = {}
   /** 고른 세기(난이도) — 판마다. 캠페인의 장은 판 고르기 화면에서 고른다 (없으면 보통 · 군장) */
@@ -1610,7 +1613,80 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (heroes > 1) h += `<span class="sbwhy">장수 둘은 한 군대를 함께 못 이끈다</span>`
       return h + `<button class="sbx" data-act="selclose" aria-label="고르기 풀기">✕</button>`
     }
-    return h + `</div><button class="sbx" data-act="selclose" aria-label="고르기 풀기">✕</button>` + (swap && leadPop === first.id ? leadPickHtml(r, first) : '')
+    return h + `</div><button class="sbx" data-act="selclose" aria-label="고르기 풀기">✕</button>` + (swap && leadPop === first.id ? leadPickHtml(r, first) : '') + (swap ? councilStrip(r, first) : '')
+  }
+
+  /**
+   * 군막 — 지도에서 적 고을을 고르면(바로 옆이든 멀리 걸어 둔 목표의 이번 걸음이든) 아래 띠에 장수 둘의 얼굴과 말.
+   * 누르면 그 장수의 길로 정한다 (형 10-29: "주몽판 다 차지할 때까지 군사회의 한 번도 안 했다" — 길 고르기가 군대 창 깊숙이에만 있었다)
+   */
+  function councilStrip(r: Realm, a: Army): string {
+    const c = pick[a.id]
+    const moves = movesOf(r, me(), a)
+    let m = c !== undefined && c.edge !== '' ? moves.find((x) => x.edge.id === c.edge) : undefined
+    if (c === undefined) {
+      const g = goalOf(a)
+      const st = g !== undefined ? goalReach(r, me(), a.at).get(g) : undefined
+      if (st !== undefined) m = moves.find((x) => x.edge.id === st.edge)
+    }
+    if (m === undefined || !m.hostile) return ''
+    const btns = councilButtons(r, a, m, 'ap')
+    return btns === '' ? '' : `<div class="cnl"><b class="cnh">군막 — ${esc(josa(r.nodes[m.to]?.name ?? '', '을', '를'))} 친다</b>${btns}</div>`
+  }
+
+  /** 군막의 안 — 장수 얼굴 · 권하는 말 · 읽은 길목 · 숨어 닿을 가망 (아래 띠와 출정 전 군막이 같이 쓴다) */
+  function councilButtons(r: Realm, a: Army, m: Move, act: string): string {
+    const c = pick[a.id]
+    const mv = approachMoves(r, me(), a, m)
+    const advs = adviseMarch(r, me(), a, m.to, mv)
+    const chosen: Approach = c?.approach ?? (c?.ambush === true ? 'night' : 'road')
+    let h = ''
+    for (const v of advs) {
+      const x = mv.find((y) => y.ap === v.ap)
+      if (x === undefined) continue
+      const odds = v.ap === 'road' ? '<span class="mute">숨지 않는다</span>' : (() => { const [lo, hi] = guardRange(x.p, x.ap); return `몰래 ${ambushRangeFeel(lo, hi)}` })()
+      const on = c?.adviser === v.hero.id || (act === 'ap' && c?.adviser === undefined && chosen === v.ap)
+      h += `<button class="cnb${on ? ' on' : ''}" data-act="${act}" data-army="${a.id}" data-edge="${m.edge.id}" data-v="${v.ap}" data-adv="${v.hero.id}">${bust(v.hero, 'cnf')}`
+        + `<span class="cns"><b>${esc(v.hero.name)} · ${APPROACH_NAME[v.ap]}</b>${esc(v.say)}<small>${esc(v.readSay)}</small></span><span class="cno">${odds}</span></button>`
+    }
+    return h
+  }
+
+  /**
+   * 출정 전 군막 — 이번 계절 적 고을로 드는 우리 군대 가운데 아직 길을 장수와 정하지 않은 가장 큰 군대 하나.
+   * 지도에서 바로 보냈든 멀리 걸어 둔 목표의 마지막 걸음이든 같다 (형 10-29: "주몽판 다 차지할 때까지 군사회의 한 번도 안 했다")
+   */
+  function councilDue(r: Realm): { army: string; edge: string; goal?: string } | null {
+    const ours = Object.values(r.armies).filter((a) => a.faction === me() && a.march === null).sort((x, y) => headcount(forceOf(r, y)) - headcount(forceOf(r, x)) || (x.id < y.id ? -1 : 1))
+    for (const a of ours) {
+      const c = pick[a.id]
+      if (c !== undefined && (c.adviser !== undefined || (c.approach !== undefined && c.approach !== 'road'))) continue
+      let edge = c?.edge ?? ''
+      const goal = goalOf(a)
+      if (c === undefined && goal !== undefined) edge = goalReach(r, me(), a.at).get(goal)?.edge ?? ''
+      if (edge === '') continue
+      const m = movesOf(r, me(), a).find((x) => x.edge.id === edge)
+      if (m === undefined || !m.hostile) continue
+      if (adviseMarch(r, me(), a, m.to, approachMoves(r, me(), a, m)).length === 0) continue
+      return { army: a.id, edge, ...(goal !== undefined ? { goal } : {}) }
+    }
+    return null
+  }
+
+  /** 출정 전 군막 창 — 장수 안을 누르거나 「그대로 간다」 → 계절을 넘긴다 */
+  function councilPaint(): void {
+    let ov = root.querySelector<HTMLElement>('.cnov')
+    const r = realm !== null ? plan() : null
+    const a = councilOpen !== null && r !== null ? r.armies[councilOpen.army] : undefined
+    const m = a !== undefined && r !== null ? movesOf(r, me(), a).find((x) => x.edge.id === councilOpen!.edge) : undefined
+    if (a === undefined || m === undefined || r === null) { ov?.remove(); return }
+    if (ov === null) {
+      root.insertAdjacentHTML('beforeend', `<div class="cnov"></div>`)
+      ov = root.querySelector<HTMLElement>('.cnov')!
+    }
+    const to = r.nodes[m.to]?.name ?? ''
+    ov.innerHTML = `<div class="cnbox"><h3>군막 회의</h3><p class="cnlead">${esc(josa(armyName(r, a), '이', '가'))} ${esc(josa(to, '을', '를'))} 치러 간다. 장수들이 저마다 길을 내놓는다.</p>`
+      + `<div class="cnl">${councilButtons(r, a, m, 'cn-pick')}</div><button class="btn ghost cnskip" data-act="cn-skip">그대로 간다 (대로)</button></div>`
   }
 
   /** 아래 띠의 「누가 이끄나」 — 지금 장수(빛남) · 이 고을에서 이끌 수 있는 장수(무예·통솔) · 장수 없이 */
@@ -2246,7 +2322,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         + `<p class="csub" aria-live="polite">${esc(beats[at]!)}</p><div class="cnav"><small>${at + 1}/${beats.length} · 누르면 다음 ›</small><button class="cskip" data-act="card-skip">건너뛰기 »</button></div></div></div>`
     }
     // 쫓겨 온 사람은 받기 전에 누구인지 — 얼굴 · 이름 · 특성
-    const who0 = guest !== undefined ? `<div class="cguest">${bust(guest, 'cof')}<span><b>${esc(guest.name)}</b><span class="wtr">${traitChips(guest, true)}</span></span></div>` : ''
+    // 연정 소문은 두 사람 얼굴을 나란히 — 탭탭 넘기다 와도 누가 누구인지 (형 10-29: "누가 누구랑 뭔 일 있는지 전혀 모른다")
+    const who0 = guest !== undefined ? `<div class="cguest">${bust(guest, 'cof')}<span><b>${esc(guest.name)}</b><span class="wtr">${traitChips(guest, true)}</span></span></div>`
+      : c.kind === 'romance' && qa !== undefined && qb !== undefined ? `<div class="cguest">${bust(qa, 'cof')}<b>${esc(qa.name)}</b><span class="cheart">♥</span>${bust(qb, 'cof')}<b>${esc(qb.name)}</b></div>` : ''
     let h = `<div class="cardc${info.bad ? ' bad' : ''}">${img}<div class="cb"><b>${icon(info.icon, 'cic')}${esc(info.name)}</b>${who0}<p class="cask">${esc(sub(info.ask))}</p><div class="copts">`
     // 고르지 않았을 때 걸리는 답 — 엔진(events.resolveCard)과 같게: 망명자는 둘째(돌려보낸다) · 장수 다툼은 침묵
     const fallback = cardFallback(c.kind)
@@ -5681,6 +5759,19 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'mute': try { localStorage.setItem(MUTE_KEY, muted() ? '0' : '1') } catch { /* 저장 못 하는 곳 */ } music.refresh(); break
       case 'focus': focus = focus === d['id'] ? null : d['id']!; break
       case 'rep-close': showReport = false; paint(); return
+      case 'cn-pick': case 'cn-skip': {
+        // 군막에서 고른 길 — 이번 걸음을 그 길로 (목표는 그대로) · 「그대로 간다」면 대로. 그리고 계절을 넘긴다
+        const o = councilOpen
+        councilOpen = null
+        councilPaint()
+        if (o !== null && d['act'] === 'cn-pick') {
+          const ap = d['v'] as Approach
+          const prev = pick[o.army]
+          pick[o.army] = { ...(prev ?? {}), edge: o.edge, ambush: ap !== 'road', approach: ap, adviser: d['adv']!, ...(o.goal !== undefined ? { goal: o.goal } : {}) }
+        }
+        root.querySelector<HTMLElement>('[data-act="next"]')?.click()
+        return
+      }
       case 'next': {
         if (realm === null || (realm.outcome && !realm.endless)) return
         // 문명의 "명령을 기다리는 유닛" — 쉬는 장수가 있거나 정찰을 안 보냈으면 한 번은 그 판으로 데려간다. 한 번 더 누르면 그냥 넘긴다
@@ -5691,6 +5782,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           if (idle.length > 0 || noScout) {
             nudgedAt = realm.season
             openSheet(idle.length > 0 ? { kind: 'heroes' } : { kind: 'scout' })
+            return
+          }
+        }
+        // 출정 전 군막 — 이번 계절 적 고을로 드는 군대가 있고 아직 장수와 길을 정하지 않았으면 한 번 연다 (계절에 하나)
+        if (councilAt !== realm.season && realm.region !== 'tutorial') {
+          const due = councilDue(plan())
+          if (due !== null) {
+            councilAt = realm.season
+            councilOpen = due
+            councilPaint()
             return
           }
         }
@@ -5990,6 +6091,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           p.ambush = p.approach !== 'road'
           if (adv !== undefined) p.adviser = adv
           else delete p.adviser
+        } else if (d['edge'] !== undefined && r !== null) {
+          // 멀리 걸어 둔 목표의 이번 걸음 — 군막에서 길을 고르면 이번 걸음을 그 길로 (목표는 그대로)
+          const ar = r.armies[d['army']!]
+          const g = ar !== undefined ? goalOf(ar) : undefined
+          const ap = d['v'] as Approach
+          pick[d['army']!] = { edge: d['edge'], ambush: ap !== 'road', approach: ap, ...(adv !== undefined ? { adviser: adv } : {}), ...(g !== undefined ? { goal: g } : {}) }
         }
         break
       }

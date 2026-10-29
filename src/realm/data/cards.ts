@@ -164,7 +164,7 @@ export const CARDS: Readonly<Record<CardKind, CardInfo>> = {
     name: '연정 소문', kind: 'people', bad: false, icon: 'mood-warm', art: 'event-romance',
     line: '{a} · {b} 두 장수 사이에 연정이 싹텄다는 소문이 돈다.',
     beats: ['{a} · {b} 두 장수 사이에 연정이 싹텄다는 소문이 돈다.'],
-    ask: '두 사람을 어찌할까?',
+    ask: '{a} · {b} 두 장수 사이에 연정이 싹텄다는 소문이 돈다. 두 사람을 어찌할까?',
     opts: [
       { name: '짝지어 준다', does: '혼례 곡식이 든다 · 둘이 혼인한다 (몇 해 뒤 자식 장수)' },
       { name: '모른 척한다', does: '둘에게 맡긴다 — 마음이 깊어지면 둘 다 정이 조금 오른다' },

@@ -138,6 +138,7 @@ export const LEGACY_CSS = `
 .ap .cardc .cimg.flip { transform: scaleX(-1); }
 /* 쫓겨 온 사람 — 받기 전에 얼굴·이름·특성 */
 .ap .cardc .cguest { display: flex; align-items: center; gap: 8px; margin: 4px 0 2px; } .ap .cardc .cguest > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ap .cardc .cguest .cheart { color: #e8708a; font-size: 18px; }
 .ap .cardc .cguest .cof { width: 56px; height: 56px; flex: none; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid #8a7040; }
 .ap .cardc .cb { flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 4px; } .ap .cardc .cb > b { color: var(--gold); display: flex; align-items: center; gap: 6px; }
 .ap .cardc .cic { width: 22px; height: 22px; } .ap .cardc p { margin: 0; font-size: 13.5px; }
