@@ -145,3 +145,26 @@ type MemKind =
 1. 위 순서로 갈까? (회유 대사를 먼저 바로잡고 기억 엔진으로)
 2. 사람마다 대사를 Argon으로 쓰고 챗지피티로 교차 검증하는 길이 괜찮은가?
 3. 새 회의 안건 셋 가운데 먼저 넣고 싶은 것?
+
+---
+
+## 진행 (사람마다 회유 대사 · 4절 차례 1~2)
+
+**1단계 끝 (10-30):** 되묻기(받는 말 · 걸이)를 걷었다. 군주였던 이는 군주 묶음(`src/realm/data/woo-talk/ruler.ts`)으로 말한다. 방금 고개를 저어 놓고 넘어오면 그 거절을 짚는 줄(`yield.refused` · 결 틀은 `KNEEL_AFTER_NO`).
+
+**2단계 · 사람마다 묶음** (갇혔을 때 26줄 + 회유할 때 18줄 = 44줄)
+- 묶음 꼴: `src/realm/data/woo-talk/types.ts` · 판마다 파일(`byeonhan-mini.ts` · `jumong.ts` …) · `index.ts` 가 모은다.
+- 차례: 군주 모두(변한 판 먼저) → 자주 나오는 장수(변한 판 · 주몽 · 서라벌 · 마한 · 길잡이 판) → 나머지. `npx tsx tools/woo-lines-gen.ts next 5` 가 다음 다섯을 낸다.
+- 이어 하는 법:
+  1. `npx tsx tools/woo-lines-gen.ts brief <id 다섯>` → 묶음 글
+  2. AI 스튜디오 Argon(`aistudio.google.com/u/4/prompts/new_chat?model=gemini-4-argon` · 임시 채팅 · Google 검색 끄기)에 붙여 실행. **한 번에 한 요청만** (둘을 겹치면 「Permission denied」)
+  3. 답을 JSON 파일로 → `check` 로 거르고 손보기(흔한 탈: 하오체 「~요」 → 「~이오」, 「주군」 → 「주인」, 자리표 뒤 「이라는」) → `write` 가 판 파일에 넣는다
+  4. 다섯~열 사람마다 `tools/woo-talk-dump.ts <회유하는 이> <갇힌 이> …` 로 두 판을 찍어 챗지피티(새 탭 · jiiyea 계정 아님)에 「자연스러운가 · 사극 말투인가」를 묻고 대부분 따른다
+  5. `npx tsx --test tests/realm/woo-lines.test.ts` (모든 줄이 서로 다름 · 해요체 · 되묻기 · 자리표 · 앞말 옮겨 오기)
+- 챗지피티가 짚은 것 (묶음 글 규칙에 넣었다): 반응 줄이 상대의 몸짓·무기를 지어내면 조립했을 때 어긋난다(「손을 잡아 주니」 · 활을 당겼는데 「쇳조각」) · hit 줄은 기우는 말만 · lord 줄은 「저 장수」라 단정 말 것 · 한 줄 안에서 말씨 섞지 말 것.
+
+| 차례 | 사람 | 상태 |
+|---|---|---|
+| 1 | us-ruler guya-ruler anya-ruler miri-ruler goja-ruler | 넣음 · 챗지피티 1판 |
+| 2 | dokro-ruler tut-onjo tut-biryu mh-onjo mh-jinwang | 넣음 |
+| 3 | jm-jumong jm-songyang jm-daeso jm-haengin-ruler jm-okjeo-ruler | 넣음 · 챗지피티 2판 |
