@@ -182,3 +182,6 @@ type MemKind =
 | 12 | yeonna-ruler hwanna-ruler gwanna-ruler buyeo-ruler maga-ruler | 넣음 · 챗지피티 4판 |
 | 13 | uga-ruler jeoga-ruler guga-ruler dongokjeo-ruler bukokjeo-ruler | 넣음 · 챗지피티 4판 |
 | 14 | bullae-ruler tamna-ruler yangmaek-ruler usan-ruler chief | 넣음 (군주 예순아홉 끝) |
+| 15 | us-1 guya-1 guya-2 anya-1 anya-2 | 넣음 · 챗지피티 5판 |
+| 16 | miri-1 miri-2 goja-1 goja-2 dokro-1 | 넣음 · 챗지피티 5판 |
+| 17 | dokro-2 us-2 guya-3 jm-oi jm-mari | 넣음 (변한 판 스무 사람 끝) |

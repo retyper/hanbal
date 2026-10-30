@@ -253,7 +253,7 @@ export function problems(data: Record<string, WooBundle>, others: Readonly<Recor
       }
       if (/[a-zA-Z]/.test(l.replace(/\{\w+\}/g, ''))) out.push(`${at}: 로마자: ${l}`)
       if (!k.endsWith(".lord") && /옵니다|옵소서/.test(l)) out.push(`${at}: 하옵니다체는 lord 줄만: ${l}`)
-      const banned = /주군|(?<![가-힣])전하(?=[,.!?\s]|께|의|를)|마님|대감|양반|엽전|주판|판옥선|거북선|조총|손절|스트레스|오케이|타이밍|파이팅|사무라이|닌자|카타나/.exec(l)
+      const banned = /주군|(?<![가-힣])전하(?=[,.!?\s]|께|의|를)|마님|대감|양반|엽전|주판|(?<![가-힣])폼(?![가-힣])|투자|판옥선|거북선|조총|손절|스트레스|오케이|타이밍|파이팅|사무라이|닌자|카타나/.exec(l)
       if (banned !== null) out.push(`${at}: 안 쓰는 말 「${banned[0]}」: ${l}`)
       if (/사이가 아니오\.$/.test(l)) out.push(`${at}: 「아니오.」 되묻는 뜻이면 「?」: ${l}`)
       const prev = seen.get(l)
