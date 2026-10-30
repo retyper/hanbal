@@ -776,8 +776,8 @@ export function mapHtml(
     if (p === undefined) continue
     const fr = isFresh(n.id) ? ' fresh' : ''
     const owner = n.owner
-    const color = owner !== null ? (FACTION_ART[owner]?.color ?? '#ccc') : '#d9d2c0'
     const ours = owner === me
+    const color = ours ? MY_LAND : owner !== null ? (FACTION_ART[owner]?.color ?? '#ccc') : '#d9d2c0'
     let badge = ''
     let force = ''
     if (ours && !hasTok.has(n.id)) {
@@ -1172,8 +1172,16 @@ function bandImage(items: readonly BandItem[], W: number, H: number, blur: numbe
 }
 
 /**
+ * 우리 땅의 빛 — 어느 나라를 골라도 늘 같은 파랑 (형 10-30: "내 영토는 항상 고정된 색깔로 해야하지 않을까? 노란색이 내땅인줄알았네").
+ * 나라 빛(FACTION_ART)에는 이만큼 짙고 맑은 파랑이 없다 — 남의 땅과 섞이지 않는다
+ */
+export const MY_LAND = '#2f8cff'
+const MY_EDGE_DARK = '#0a1a3a'
+const MY_EDGE_CORE = '#eaf4ff'
+
+/**
  * 고을마다의 땅을 주인 색으로 — 같은 나라 사이는 옅은 점선, 다른 나라 사이는 짙은 금, 강을 따라 갈린 금은 강과 겹친다.
- * **우리 땅**은 금빛 빗금을 깔고 둘레를 짙은 띠 위 금빛 겹선으로 두른다 (형: "내나라가 지도상에서 정확히 어딘지 가늠이 안됨").
+ * **우리 땅**은 늘 같은 파랑(MY_LAND)으로 칠하고 둘레를 남색 띠 위 파랑·흰 심 겹선으로 두른다 (형: "내나라가 지도상에서 정확히 어딘지 가늠이 안됨").
  * 땅 모양은 판마다 한 번만 셈하고(territory.ts) 여기서는 색만 칠한다. 뭍이 있는 판은 뭍 밖을 잘라 낸다.
  */
 function provincesSvg(
@@ -1184,7 +1192,6 @@ function provincesSvg(
   const clip = clipped ? ' clip-path="url(#rm-land)"' : ''
   const k = Math.max(1, W / 1100) // 굵기 — 그림 폭에 맞춘다
   let fill = ''
-  let mine = ''
   let lines = ''
   let gold = ''
   // 나라마다 — 그 나라 땅(잘라 낼 틀)과 바깥 둘레. 둘레를 굵고 옅게 그려 땅 안쪽으로만 잘라 내면 문명 6 의 '안쪽 띠'가 된다 (GAP M2)
@@ -1195,8 +1202,7 @@ function provincesSvg(
     const o = nodes[i]!.owner
     if (o === null) continue
     // 안은 옅게 — 나라는 둘레로 읽힌다
-    fill += `<path d="${d}" fill="${FACTION_ART[o]?.color ?? '#ccc'}" opacity="${dim(o) ? 0.05 : focus === o ? 0.34 : o === me ? 0.26 : 0.17}"/>`
-    if (o === me && !dim(o)) mine += d
+    fill += `<path d="${d}" fill="${o === me ? MY_LAND : FACTION_ART[o]?.color ?? '#ccc'}" opacity="${dim(o) ? 0.05 : focus === o ? 0.34 : o === me ? 0.3 : 0.17}"/>`
     if (!dim(o)) own.set(o, (own.get(o) ?? '') + d)
   }
   for (const e of t.edges) {
@@ -1204,7 +1210,7 @@ function provincesSvg(
     const o = nodes[e.i]!.owner
     const o2 = e.j >= 0 ? nodes[e.j]!.owner : null
     if (o === null && o2 === null) continue
-    const col = FACTION_ART[(o ?? o2)!]?.color ?? '#ccc'
+    const col = (o ?? o2) === me ? MY_LAND : FACTION_ART[(o ?? o2)!]?.color ?? '#ccc'
     // 같은 나라 고을 사이 — 옛 지도의 고을 금처럼 긴 점·짧은 점이 번갈아 (형 10-24: "마을 테두리도 확실하고" · 10-26: "마을들 테두리 고도화").
     // 밑에 한지 빛 가는 띠를 깔아 짙은 땅 위에서도 끊긴 금이 보인다. 나라 둘레의 굵은 띠보다는 한참 낮은 위계
     // 금은 덜 긋는다 — 줄이 몇 겹씩 돌아 지도가 어지러웠다 (형 10-26: "국경 영역도 너무 몇 줄씩 테두리 두르고 있어서 너무 복잡")
@@ -1225,7 +1231,7 @@ function provincesSvg(
   let cps = ''
   const bake: BandItem[] = []
   for (const [o, d] of [...rim].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
-    const { c: col } = nationKit(o)
+    const col = o === me ? MY_LAND : nationKit(o).c
     cps += `<clipPath id="rm-own-${o}"><path d="${own.get(o)!}"/></clipPath>`
     // 둘레 안쪽의 번진 제 색 띠 하나 + 또렷한 제 색 선 하나 — 이웃과 맞닿으면 두 색이 나란히 선다 (문명 6 국경).
     // 둘째 빛 띠·먹빛 테는 걷었다 — 비슷한 빛의 이웃은 이름표의 두 색(kitcolor)으로 가른다 (형 10-26: "몇 줄씩 테두리")
@@ -1240,10 +1246,14 @@ function provincesSvg(
   // 둘레는 고을 사이 금(조각)을 이어 그린다 — 끝을 둥글게 해야 꺾인 모서리에서 제 색 선이 끊기지 않는다 (형 10-26: "가까이서 보면 각진 곳에 국경 색이 끊어져 있음")
   const bandLayer = baked !== null ? `<image href="${baked}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="none"/>` : `<g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#rm-band)">${band}</g>`
   h += `<g class="terr"${clip}>${fill}${bandLayer}<g fill="none" stroke-linecap="round" stroke-linejoin="round">${crisp}</g>`
-  // 우리 땅 — 옅은 금빛 (빗금은 비 같다고 해서 뺐다 · 형: "비오는줄알았다"). 금빛 경계가 천천히 숨 쉰다
-  if (mine !== '') h += `<path d="${mine}" fill="#ffe7a8" opacity=".13"/>`
+  // 우리 땅의 둘레 — 짙은 남색 띠 위에 우리 빛 · 흰 심 세 겹. 천천히 숨 쉰다
+  // (옛 금빛 가는 선은 노란 나라와 헷갈렸다 · 형 10-30: "노란색이 내땅인줄알았네… 영토 테두리 금색이 너무 가시성 떨어지고 효과가 없는거같다")
   h += `<g fill="none" stroke-linecap="round" stroke-linejoin="round">${lines}`
-  if (gold !== '') h += `<path class="mine-edge" d="${gold}" stroke="#ffd27a" stroke-width="${(3 * k).toFixed(1)}"/>`
+  if (gold !== '') {
+    h += `<g class="mine-edge"><path d="${gold}" stroke="${MY_EDGE_DARK}" stroke-width="${(9 * k).toFixed(1)}" opacity=".8"/>`
+      + `<path d="${gold}" stroke="${MY_LAND}" stroke-width="${(5.5 * k).toFixed(1)}"/>`
+      + `<path d="${gold}" stroke="${MY_EDGE_CORE}" stroke-width="${(1.8 * k).toFixed(1)}"/></g>`
+  }
   return h + `</g></g>`
 }
 
