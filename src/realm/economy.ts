@@ -934,6 +934,9 @@ export function stepEconomy(r: Realm, season: number, fought: ReadonlySet<string
       for (const a of Object.values(r.armies)) {
         if (a.faction === f) a.morale = Math.max(R.moraleFloor, a.morale - R.hungerMorale)
       }
+    } else if (need > 0 && s.grain >= R.fedMoraleStock * need) {
+      // 창고가 넉넉하다 — 꺾인 사기가 조금씩 돌아온다 (1 까지 · 그 위는 제사·막아낸 싸움으로) (형 10-31: "군량으로 인한 사기")
+      for (const a of Object.values(r.armies)) if (a.faction === f && a.morale < 1) a.morale = Math.min(1, a.morale + R.fedMorale)
     }
     // 가호 — 굶으면 줄고, 먹고 싸움이 없으면 는다. 개척한 빈땅은 품(room)까지 빨리 큰다
     for (const n of nodes) {
