@@ -122,6 +122,9 @@ type MemKind =
      - **두 갈래로**: 지형이 두 길을 주면(가는 길이 둘 · 우리 군대가 둘 이상이거나 나눌 수 있으면) 「두 갈래로 함께 치시옵소서」 → 고르면 군대를 나눠 다른 길로 같은 계절에 닿게 짠다(협공).
      - **치지 말자 / 때를 기다리자 / 이간하자**: 적이 튼튼한 동맹을 끼고 있으면(동맹 수 · 호감) 「저 나라를 치면 이웃이 다 적이 되옵니다」 → 고르면 출정을 거두거나 미루거나, 이간 공작 판이 열린다.
    - 장수마다 낸 안이 받아들여졌는지·결과를 `council` 기억으로 남긴다 → 다음 회의에서 「지난번 소장의 말대로 하시어 이겼사옵니다」 / 맞았던 장수의 말에 금빛 테.
+   - **지음 (10-30 · 4절 차례 4):** 까닭은 `src/ui/realm/council-recall.ts`(겪은 장수 먼저 · 없으면 나라의 장부 · `cnMemAge` 계절 안만) · 새 안건의 말은 `council-schemes.ts`(숨결 여섯 × 처지 여덟 × 두 마디 · Argon 교차 검증) · 안건과 한 번 누름은 `council-agenda.ts`(`planChoice` · `planOrders`).
+     먼저 공작은 정찰이 본 곳간(`NodeIntel.grain` · `cnPlotRich` · `cnGrainAge`) 또는 공작 뒤 싸움을 이긴 장부로 서고, 고르면 출정을 멈추고 방화를 미리 고른 이와 함께 건다. 두 갈래는 다른 우리 군대가 다른 길로 같은 계절에 닿을 때(성이 굳거나 · 지난번 졌거나 · 승산이 빠듯하면) 서고, 고르면 그 군대의 출정이 서서 협공 한 판으로 붙는다. 동맹 안건은 칠 나라가 우리와 땅을 맞댄 나라와 손잡았거나 · 두 나라 넘게와 손잡았거나 · 지난번 동맹에 막혀 졌을 때 서고, 치지 않는다 · 때를 기다린다 · 이간 공작(그리고 거친 이의 그래도 친다).
+     들은 안은 `council` 명령으로 판에 실려 장수의 기억에 적히고(`n` 1 따름 · 0 안 따름), 그 고을 싸움(`cnCouncilWatch` 안) · 기다림은 그 계절에 결과가 붙는다(`memory.noteCouncil`). 판의 흐름은 그대로(시험이 본다).
 2. **회유**: 갇힌 이가 사로잡힌 싸움·사로잡은 이를 기억한다. 「그날 여울에서 나를 묶은 자가 바로 그대요」. 회유하는 이가 그와 칼을 맞댄 적이 있으면 인연 거리처럼 쓴다. 노여움은 이미 원한으로 남는다(woo.ts).
 3. **풀려남**: 화친으로 돌아온 장수는 옥을 기억한다 → 그 나라를 칠 때 앞장서겠다는 안, 그 나라 장수와의 겨루기에 힘이 들어감(작게).
 4. **알아서 행동하기**(재상·맡김·AI 나라): 같은 전례 장부를 읽어 지난번 진 길을 피하고, 이긴 길을 다시 고른다. 결정론으로, 가중치만 조금.
@@ -176,3 +179,6 @@ type MemKind =
 | 9 | michuhol-ruler ungcheon-ruler sangdang-ruler geonma-ruler wansan-ruler | 넣음 |
 | 10 | gosaburi-ruler balla-ruler mujin-ruler gampyeong-ruler goryong-ruler | 넣음 |
 | 11 | maek-ruler siljik-ruler haseulla-ruler goguryeo-ruler biryuna-ruler | 넣음 |
+| 12 | yeonna-ruler hwanna-ruler gwanna-ruler buyeo-ruler maga-ruler | 넣음 · 챗지피티 4판 |
+| 13 | uga-ruler jeoga-ruler guga-ruler dongokjeo-ruler bukokjeo-ruler | 넣음 · 챗지피티 4판 |
+| 14 | bullae-ruler tamna-ruler yangmaek-ruler usan-ruler chief | 넣음 (군주 예순아홉 끝) |
