@@ -1587,7 +1587,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       // 무리마다 제 깃발 박자 — 그 박자에 앞줄이 나서고 · 기병이 돌고 · 화살이 난다. 박자가 없으면(깃발 연출 수를 넘었으면) 맞부딪기 조금 앞
       const beatOf = (c: Cmd | undefined): number => (c === undefined ? 0 : plan?.beats.find((x) => x.ours === (cls === 'us') && x.c === c)?.at ?? Math.max(0, (plan?.clash ?? 1) - 0.7))
       const shoot = play && o?.bows !== undefined && rows[1]!.length > 0 ? beatOf(o.bows) : null
-      const tempo = play ? ` style="--fa:${beatOf(o?.front).toFixed(2)}s;--ha:${beatOf(o?.horse).toFixed(2)}s;--sa:${(shoot ?? 0).toFixed(2)}s"` : ''
+      // 쏘는 횟수 — 첫 살(--sa)부터 합이 끝날 때(맞부딪힘 + 1.2초)까지 한 박자(CSS spshot 1.1초)마다 한 번씩 (활 당기기와 화살 날기가 같은 수로 되풀이된다)
+      const volleys = shoot === null ? 1 : Math.max(2, Math.min(6, Math.floor(((plan?.clash ?? shoot) + 1.2 - shoot) / 1.1) + 1))
+      const tempo = play ? ` style="--fa:${beatOf(o?.front).toFixed(2)}s;--ha:${beatOf(o?.horse).toFixed(2)}s;--sa:${(shoot ?? 0).toFixed(2)}s;--bn:${volleys}"` : ''
       const arrows = shoot === null ? '' : `<i class="wf-arw" style="--sa:${shoot.toFixed(2)}s">${Array.from({ length: 8 }, (_, j) => `<i style="--k:${j};--ay:${-30 + j * 8}%"><img src="${art}fx/arrow.png" alt=""></i>`).join('')}</i>`
       const terr = terrainProps(cls)
       // 꽂힌 화살 — 맞은편이 쏜 적이 있으면 이쪽 앞줄 곁에. 진의 맨 뒤에 붙인다(앞에 끼면 뒤의 병사 그림이 다 새로 만들어져 깜빡였다)
@@ -1644,7 +1646,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   // 위 카드는 그 싸움터를 무대로 — 길·성문·물가·눈밭·밤 (형 10-23: "길에서 마주치거나 수성하거나 공성할 때는 그 위치에 맞게 배경")
   // 머리 카드도 같은 하늘 — 그림 위에 한 겹 (어둠 · 노을 · 새벽빛)
   const skyLayer = sky === ' dk-night' ? 'linear-gradient(#0a1440aa, #05081add), ' : sky === ' dk-dusk' ? 'linear-gradient(#ff7a2a77, #a0302a44 50%, #1a0a0a88), ' : sky === ' dk-dawn' ? 'linear-gradient(#ffd8a866, #8aa0d044 50%, #0d0f1366), ' : ''
-  h += `<div class="wtop" style="--wtbg:${skyLayer}url('${warBg(art, ground, !weAtk)}')"><div class="wrh"><span class="wrk">${((k) => `<i class="wkind ${k.us ? 'us' : 'foe'}">${esc(k.word)}</i>`)(warKind(prev, l, me))}<b>${esc(warName(after, l))}</b></span>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}<div class="wrbt"><button class="wsgb" data-war="mu" aria-label="깃발 상성 보기">상성</button>${rounds.length > 0 ? '<button class="wlogb" data-war="log" aria-label="합 기록 보기">기록</button>' : ''}</div><button class="whelp" data-war="help" aria-label="설명 보기">?</button></div>${clockHtml(l, shown)}`
+  h += `<div class="wtop" style="--wtbg:${skyLayer}url('${warBg(art, ground, !weAtk)}')"><div class="wrh"><span class="wrk">${((k) => `<i class="wkind ${k.us ? 'us' : 'foe'}">${esc(k.word)}</i>`)(warKind(prev, l, me))}<b>${esc(warName(after, l))}</b></span>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}<div class="wrbt"><button class="wsgb" data-war="mu" aria-label="깃발 상성 보기">상성</button>${`<button class="wlogb${rounds.length > 0 ? '' : ' off'}" data-war="log" aria-label="합 기록 보기"${rounds.length > 0 ? '' : ' disabled'}>기록</button>`}</div><button class="whelp" data-war="help" aria-label="설명 보기">?</button></div>${clockHtml(l, shown)}`
   // 땅 띠 — 전장 바로 위 제 자리에 (형 10-26: "목책이랑 나루 둘다 가운데 설명 '우리에게 유리' 이게 다른거랑 겹쳐짐")
   const terr = terrChips(prev, l, me, fname(foeF)).map((c) => terrChipHtml(art, c, 'wtc')).join('')
   h += `<div class="wvs">${side(ourI, ourHero, ourF, ourName, 'us')}<img class="vs" src="${art}ui/vs.png" alt="VS">${side(foeI, foeHero, foeF, foeName, 'foe')}</div>${terr !== '' ? `<div class="wterr">${terr}</div>` : ''}${fieldHtml()}</div>`
@@ -1892,6 +1894,8 @@ export const WAR_CSS = `
 .ap .wr.logopen .wlogx { display: block; position: sticky; top: 0; margin: 0 0 6px auto; z-index: 2; }
 .ap .wrh .wrbt { display: flex; align-items: center; align-self: stretch; min-height: 26px; }
 .ap .wrh .wlogb, .ap .wrh .wsgb { margin-left: auto; padding: 2px 10px; border-radius: 12px; border: 1px solid #c9a45a; background: #1f1710cc; color: #f3d48a; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+/* 기록 단추는 처음부터 늘 같은 자리에 · 합이 없으면 흐리게 (형 10-30: "시작할 때는 없다가 전투하는 도중에 생김") */
+.ap .wrh .wlogb.off { opacity: .45; cursor: default; }
 .ap .wrh .wsgb { margin-left: 0; } /* 「기록」과 같은 모양 · 왼쪽 (형 10-29) */
 .ap .wr .wrh .whelp { display: none; } /* 설명은 누르고 있으면 뜨는 창 · 판세는 깃발 판 밑에 (형 10-28: 자세히 버튼은 필요 없다) */
 .ap .wr .wend { position: sticky; bottom: calc(8px + env(safe-area-inset-bottom)); z-index: 6; box-shadow: 0 -6px 24px #000c; }
@@ -2147,7 +2151,13 @@ export const WAR_CSS = `
 .ap .wfield .wf-mid { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); font-style: normal; font-size: 22px; color: #f0d090; text-shadow: 0 0 8px #000; opacity: 0; z-index: 80; }
 /* 판의 끝 — 진 쪽은 등을 돌려(거울) 뒤로 달아나며 흩어지고, 이긴 쪽 장수 깃발이 솟는다. 맞부딪힘이 끝난 뒤(--hd + .9s) */
 .ap .wfield.fin.win-us .wf2s.foe .tk.tku, .ap .wfield.fin.win-foe .wf2s.us .tk.tku { animation: wflee 1.6s ease-in calc(var(--rv, 0s) + var(--j, 0) * .07s) forwards !important; }
-.ap .wfield.fin.win-us .wf2s.foe .tk.wsp.tku .spf, .ap .wfield.fin.win-foe .wf2s.us .tk.wsp.tku .spf { animation: spwalk calc(.26s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--rv, 0s) infinite !important; }
+.ap .wfield.fin.win-us .wf2s.foe .tk.wsp.tku .spf, .ap .wfield.fin.win-foe .wf2s.us .tk.wsp.tku .spf { animation: spflee calc(.26s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--rv, 0s) infinite !important; }
+/* 진 쪽도 달아나기(--rv) 전까지는 싸운다 — 전엔 끝 합에서 진 쪽은 한 번도 칼질을 안 했다 (형 10-30) · 달아나는 컷은 spwalk 와 이름이 달라야 처음부터 다시 돈다
+   (같은 이름이면 앞 장면의 걷기가 이어 돌아 합이 열리자마자 달아났다) */
+.ap .wfield.fin.win-us .wf2s.foe .tk.wsp.v2.r0.tku .spf, .ap .wfield.fin.win-foe .wf2s.us .tk.wsp.v2.r0.tku .spf { animation: var(--atk, spthr) calc(.72s + var(--j, 0) * .04s) steps(1) calc(var(--hd) - 1.2s + var(--j, 0) * .09s) 5, spflee calc(.26s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--rv, 0s) infinite !important; }
+.ap .wfield.fin.win-us .wf2s.foe[data-b] .tk.wsp.v2.r1.tku .spf, .ap .wfield.fin.win-foe .wf2s.us[data-b] .tk.wsp.v2.r1.tku .spf { animation: spshot 1.1s steps(1) calc(var(--sa) - .55s + var(--j, 0) * .07s) var(--bn, 2), spflee calc(.26s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--rv, 0s) infinite !important; }
+.ap .wfield.fin.win-us .wf2s.foe[data-h] .tk.wsp.v2.r2.tku .spf, .ap .wfield.fin.win-foe .wf2s.us[data-h] .tk.wsp.v2.r2.tku .spf { animation: spthr calc(.7s + var(--j, 0) * .05s) steps(1) max(calc(var(--ha, 0s) + .45s), calc(var(--hd) - 1.2s + var(--j, 0) * .09s)) 5, spflee calc(.26s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--rv, 0s) infinite !important; }
+@keyframes spflee { from { background-position-x: var(--w0, 28.5714%); } to { background-position-x: var(--w1, 57.1429%); } }
 @keyframes wflee { 0% { translate: 0 0; scale: 1; } 12% { scale: -1 1; } 100% { scale: -1 1; translate: -32cqw calc((var(--j, 0) - 2.5) * 2cqw); opacity: 0; } }
 .ap .wfield.fin.win-us .wf2s.us .wgen, .ap .wfield.fin.win-foe .wf2s.foe .wgen { animation: wgenwin .7s cubic-bezier(.3, 1.6, .5, 1) calc(var(--rv, 0s) + .2s) both; }
 @keyframes wgenwin { from { translate: 0 0; scale: 1; } to { translate: 9cqw -2cqw; scale: 1.35; } }
@@ -2167,10 +2177,11 @@ export const WAR_CSS = `
 .ap .wfield.play .wf2s[data-f="hold"] .tk.r0:not(.tkd) { animation-name: wsteph, wclashh; } @keyframes wsteph { from { translate: 0 0; } to { translate: 0 0; scale: 1; } } @keyframes wclashh { 0% { translate: 0 0; } 50% { translate: calc(4cqw + var(--j, 0) * .3cqw) 0; } 100% { translate: calc(3cqw + var(--j, 0) * .4cqw) calc((var(--j, 0) - 2.5) * .3cqw); } }
 /* 전장 안의 화살비 — 궁수 자리에서 적 앞줄까지 활꼴로 (밖 틀이 가로로 가고 안의 화살이 오르내린다) */
 .ap .wf-arw { position: absolute; left: 24%; top: 44%; z-index: 75; pointer-events: none; }
-.ap .wf-arw > i { position: absolute; left: 0; top: var(--ay); opacity: 0; animation: arwx .8s linear calc(var(--sa) + var(--k) * .05s) both; }
-.ap .wf-arw img { display: block; width: clamp(14px, 4.2cqw, 28px); filter: drop-shadow(0 1px 1px #000a); animation: arwy .8s calc(var(--sa) + var(--k) * .05s) both; }
-@keyframes arwx { 0% { opacity: 1; translate: 0 0; } 90% { opacity: 1; } 100% { opacity: 0; translate: 38cqw 0; } }
-@keyframes arwy { 0% { translate: 0 0; rotate: -38deg; animation-timing-function: ease-out; } 50% { translate: 0 -15cqw; rotate: 0deg; animation-timing-function: ease-in; } 100% { translate: 0 0; rotate: 38deg; } }
+/* 화살은 궁수가 놓는 박자(spshot 1.1초 · 놓는 때 = 박자의 반)마다 한 번씩 --bn 번 난다 · 나는 데 .8초(박자의 72.7%), 나머지는 쉰다 (형 10-30: "다른 유닛들은 공격하는 게 안 보임") */
+.ap .wf-arw > i { position: absolute; left: 0; top: var(--ay); opacity: 0; animation: arwx 1.1s linear calc(var(--sa) + var(--k) * .05s) var(--bn, 1) both; }
+.ap .wf-arw img { display: block; width: clamp(14px, 4.2cqw, 28px); filter: drop-shadow(0 1px 1px #000a); animation: arwy 1.1s calc(var(--sa) + var(--k) * .05s) var(--bn, 1) both; }
+@keyframes arwx { 0% { opacity: 1; translate: 0 0; } 65.5% { opacity: 1; } 72.7%, 100% { opacity: 0; translate: 38cqw 0; } }
+@keyframes arwy { 0% { translate: 0 0; rotate: -38deg; animation-timing-function: ease-out; } 36.4% { translate: 0 -15cqw; rotate: 0deg; animation-timing-function: ease-in; } 72.7%, 100% { translate: 0 0; rotate: 38deg; } }
 /* 맞부딪힘 — 불꽃 · 흙먼지 · 흔들림 · 살짝 당겨 보기 */
 .ap .wfield.play { animation: wshake .5s ease-out var(--hd) both; }
 @keyframes wshake { 0% { translate: 0 0; scale: 1; } 15% { translate: -5px 2px; scale: 1.05; } 35% { translate: 4px -2px; } 55% { translate: -2px 1px; } 100% { translate: 0 0; scale: 1; } }
@@ -2253,9 +2264,19 @@ export const WAR_CSS = `
 /* 궁수 — 쏘는 박자에 시위를 당겼다(4) 놓는다(5) · 기병 — 제 박자에 달린다(걷기 컷) */
 .ap .wfield.play .wf2s[data-b] .tk.wsp.r1:not(.tkd) .spf { animation: spdraw calc(.75s * var(--spdraws, 1)) steps(var(--spatkn, 2), jump-none) calc(var(--sa) - .45s) forwards, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--sa) + .5s) - var(--k, .5) * 1.6s) infinite; }
 @keyframes spdraw { from { background-position-x: var(--a0, 57.1429%); } to { background-position-x: var(--al, 71.4286%); } }
-/* 새 띠(v2)의 궁수 — 당기고 놓고 다음 살을 집는 여섯 컷을 쏘는 박자에 네 번 되풀이 (형 10-29: "공격하는 모습이 하나도 안 보인다" — 한 번 당기고 멈춰 있었다) */
-.ap .wfield.play .wf2s[data-b] .tk.wsp.v2.r1:not(.tkd) .spf { animation: spatk calc(.62s * var(--spatks, 1)) steps(var(--spatkn, 2)) calc(var(--sa) - .45s + var(--j, 0) * .07s) 4, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--sa) + 5.2s) - var(--k, .5) * 1.6s) infinite; }
+/* 새 띠(v2)의 궁수·쇠뇌 — 1.1초 박자로 살 메기기(12) 당기기(13) 다 당겨 겨누기(14 · 오래) 놓기(15 · 살이 떠난다) 내리기(16·17).
+   놓는 때(박자의 반)가 화살(.wf-arw)이 뜨는 때와 같고, 화살과 같은 수(--bn)만큼 되풀이한다 (형 10-30: "창병은 공격 모션이 보이는데 다른 유닛들은 공격하는 게 안 보임" — 전엔 여섯 컷을 고르게 넘겨 다 당긴 컷이 0.2초씩만 비쳤고 화살은 한 번만 났다).
+   끝없는 움직임이 아니라 횟수가 있어 저사양에서도 멈추지 않는다 (quality.ts 는 infinite 만 멈춘다) */
+.ap .wfield.play .wf2s[data-b] .tk.wsp.v2.r1.tku .spf { animation: spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--j) * -.27s) - var(--k, .5) * 1.6s) infinite, spshot 1.1s steps(1) calc(var(--sa) - .55s + var(--j, 0) * .07s) var(--bn, 2); }
+.ap .wfield.play .wf2s[data-b] .tk.wsp.v2.r1.tkf .spf { animation: spshot 1.1s steps(1) calc(var(--sa) - .55s + var(--j, 0) * .07s) var(--bn, 2), spdie .01s steps(1) calc(var(--hd) + .2s + var(--j) * .05s) forwards; }
+@keyframes spshot { 0% { background-position-x: 63.1579%; } 8% { background-position-x: 68.4211%; } 20% { background-position-x: 73.6842%; } 50% { background-position-x: 78.9474%; } 64% { background-position-x: 84.2105%; } 78%, 100% { background-position-x: 89.4737%; } }
 .ap .wfield.play .wf2s[data-h] .tk.wsp.r2:not(.tkd) .spf { animation: spwalk calc(.3s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--ha, 0s) 3, spatk calc(.26s * var(--spatks, 1)) steps(var(--spatkn, 2)) calc(var(--hd) - .3s) 2, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--hd) + .5s) - var(--k, .5) * 1.6s) infinite; }
+/* 새 띠(v2)의 기병 — 제 박자에 달려(걷기 컷이 달리기) 들이친 뒤, 거의 닿은 때(--ha + .45초 · 맞부딪기 1.2초 앞 중 늦은 때)부터 창을 들어(14) 내지르고(15·16 · 오래) 거두기를 다섯 번 (형 10-30 · 전엔 맞부딪는 0.3초 앞에 0.57초짜리 한 번 두 번) */
+.ap .wfield.play .wf2s[data-h] .tk.wsp.v2.r2.tku .spf { animation: spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--j) * -.27s) - var(--k, .5) * 1.6s) infinite, spwalk calc(.3s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--ha, 0s) 3, spthr calc(.7s + var(--j, 0) * .05s) steps(1) max(calc(var(--ha, 0s) + .45s), calc(var(--hd) - 1.2s + var(--j, 0) * .09s)) 5; }
+.ap .wfield.play .wf2s[data-h] .tk.wsp.v2.r2.tkf .spf { animation: spwalk calc(.3s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--ha, 0s) 3, spthr calc(.7s + var(--j, 0) * .05s) steps(1) max(calc(var(--ha, 0s) + .45s), calc(var(--hd) - 1.2s + var(--j, 0) * .09s)) 5, spdie .01s steps(1) calc(var(--hd) + .2s + var(--j) * .05s) forwards; }
+/* 무리가 작아 제 깃발이 없는 활·말(가까운 무리에 섞여 싸운다)도 맞부딪기 1.2초 앞부터 쏘고 찌른다 — 전엔 끝까지 서 있기만 했다 (형 10-30) */
+.ap .wfield.play .wf2s:not([data-b]) .tk.wsp.v2.r1.tku .spf { animation: spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--j) * -.27s) - var(--k, .5) * 1.6s) infinite, spshot 1.1s steps(1) calc(var(--hd) - 1.2s + var(--j, 0) * .07s) 3; }
+.ap .wfield.play .wf2s:not([data-h]) .tk.wsp.v2.r2.tku .spf { animation: spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--j) * -.27s) - var(--k, .5) * 1.6s) infinite, spthr calc(.7s + var(--j, 0) * .05s) steps(1) calc(var(--hd) - 1.2s + var(--j, 0) * .09s) 5; }
 /* 쓰러짐 — 굴리지 않고 쓰러진 컷으로 땅에 남는다 */
 .ap .wf2s .tk.wsp.tkd { rotate: 0deg; opacity: .62; filter: grayscale(.5) brightness(.8) drop-shadow(0 2px 2px #000c); }
 .ap .wf2s .tk.wsp.tkd .spf { animation: none; background-position-x: 100%; }
@@ -2272,10 +2293,16 @@ export const WAR_CSS = `
 @keyframes spflinch { 0%, 100% { background-position-x: var(--fl, 85.7143%); } }
 /* 새 띠(v2)의 앞줄 — 맞부딪기 1.2초 앞부터 합이 끝날 때까지 창을 거듭 찌르고, 다 뻗은 컷(15·16)에 오래 머문다 (형 10-29: "창병이 창을 찌르는 모션을 본 적이 없다").
    전엔 맞부딪는 순간 0.6초쯤 한 번 찔렀고, 그때는 흙먼지·당겨 보기에 가렸다. 컷 자리는 20컷 띠 기준(n/19) */
-.ap .wfield.play .wf2s .tk.wsp.v2.r0.tku .spf { animation: spwalk calc(.42s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--fa, 0s) 2, spthr calc(.72s + var(--j, 0) * .04s) steps(1) calc(var(--hd) - 1.2s + var(--j, 0) * .09s) infinite; }
-.ap .wfield.play .wf2s .tk.wsp.v2.r0.tku:nth-child(3n) .spf { animation: spwalk calc(.42s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--fa, 0s) 2, spthr calc(.72s + var(--j, 0) * .04s) steps(1) calc(var(--hd) - 1.2s + var(--j, 0) * .09s) infinite, spflinch .38s steps(1) calc(var(--hd) + .02s + var(--j, 0) * .04s) 1; }
-.ap .wfield.play .wf2s .tk.wsp.v2.r0.tkf .spf { animation: spthr calc(.72s + var(--j, 0) * .04s) steps(1) calc(var(--hd) - 1.2s + var(--j, 0) * .09s) infinite, spdie .01s steps(1) calc(var(--hd) + .4s + var(--j) * .08s) forwards; }
+/* 앞줄 병종마다 제 칼질 (--atk) — 창·방패칼·긴창·갈고리창·배의 창은 뻗는 컷(15·16)에 · 도끼는 치켜든 컷(13)과 내려찍는 컷(14)에 머문다 (형 10-30: "다른 유닛들은 공격하는 게 안 보임").
+   다섯 번이면 합이 끝날 때(맡긴 싸움은 맞부딪힘 + 1.65초)를 넘는다 · 횟수가 있어야 저사양에서도 돈다(끝없으면 quality.ts 가 멈춘다) · 끝나면 맨 앞의 서기로 */
+.ap .wf2s .tk.wsp.v2.k-axe { --atk: spchop; }
+.ap .wfield.play .wf2s .tk.wsp.v2.r0.tku .spf { animation: spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--j) * -.27s) - var(--k, .5) * 1.6s) infinite, spwalk calc(.42s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--fa, 0s) 2, var(--atk, spthr) calc(.72s + var(--j, 0) * .04s) steps(1) calc(var(--hd) - 1.2s + var(--j, 0) * .09s) 5; }
+.ap .wfield.play .wf2s .tk.wsp.v2.r0.tku:nth-child(3n) .spf { animation: spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--j) * -.27s) - var(--k, .5) * 1.6s) infinite, spwalk calc(.42s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--fa, 0s) 2, var(--atk, spthr) calc(.72s + var(--j, 0) * .04s) steps(1) calc(var(--hd) - 1.2s + var(--j, 0) * .09s) 5, spflinch .38s steps(1) calc(var(--hd) + .02s + var(--j, 0) * .04s) 1; }
+.ap .wfield.play .wf2s .tk.wsp.v2.r0.tkf .spf { animation: var(--atk, spthr) calc(.72s + var(--j, 0) * .04s) steps(1) calc(var(--hd) - 1.2s + var(--j, 0) * .09s) 5, spdie .01s steps(1) calc(var(--hd) + .4s + var(--j) * .08s) forwards; }
 @keyframes spthr { 0% { background-position-x: 63.1579%; } 12% { background-position-x: 68.4211%; } 24% { background-position-x: 73.6842%; } 36% { background-position-x: 78.9474%; } 52% { background-position-x: 84.2105%; } 72% { background-position-x: 89.4737%; } 86%, 100% { background-position-x: 94.7368%; } }
+@keyframes spchop { 0% { background-position-x: 63.1579%; } 6% { background-position-x: 68.4211%; } 36% { background-position-x: 73.6842%; } 58% { background-position-x: 78.9474%; } 72% { background-position-x: 84.2105%; } 86%, 100% { background-position-x: 89.4737%; } }
+/* 건너뛰면(아무 데나 누름) 끝 판의 이긴 쪽은 칼질을 멈추고 선다 · 진 쪽은 위의 달아나기(!important) */
+.ap .wr.fast .wfield.play .wf2s .tk.wsp.v2.tku:not(.tkd) .spf { animation: spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--j) * -.27s) - var(--k, .5) * 1.6s) infinite; }
 /* 쓰러질 때 흙먼지 — 병사마다 발치에서 한 번 */
 .ap .wf2s .tk.wsp.tkf::after { content: ''; position: absolute; left: 50%; bottom: 0; width: 140%; height: 45%; translate: -50% 20%; border-radius: 50%; pointer-events: none;
   background: radial-gradient(ellipse, #c8a87acc 0, #a0805a88 40%, #0000 70%); opacity: 0; animation: wpuff .9s ease-out calc(var(--hd) + .55s + var(--j, 0) * .06s) both; }
@@ -2410,17 +2437,19 @@ export const WAR_CSS = `
 @keyframes wcrd { 0% { opacity: 0; transform: translateX(-14vw); } 12% { opacity: .95; } 82% { opacity: .95; } 100% { opacity: 0; transform: translateX(var(--dx)); } }
 @keyframes wcfl { 0% { opacity: 0; transform: translate(-14vw, -6vh); } 12% { opacity: .95; } 82% { opacity: .95; } 100% { opacity: 0; transform: translate(var(--dx), 12vh); } }
 @keyframes wcbob { from { transform: translateY(0) rotate(-1.5deg); } to { transform: translateY(-5%) rotate(1.5deg); } }
-.ap .wfx-cmd .sh { --w: clamp(54px, 7vw, 112px); --ar: 165 / 256; --an: wcsh; --du: 1.1s; filter: drop-shadow(0 6px 6px #000a); }
+.ap .wfx-cmd .sh { --w: clamp(54px, 7vw, 112px); --ar: 165 / 256; --an: wcsh; --du: 1.1s; }
 @keyframes wcsh { 0% { opacity: 0; transform: translateY(-34vh) rotate(-10deg) scale(1.1); animation-timing-function: cubic-bezier(.6, 0, 1, .6); }
   22% { opacity: 1; transform: translateY(0) rotate(0) scale(1); } 28% { transform: translateY(-4%) scale(1.03, .97); } 34% { transform: translateY(0) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(0); } }
 .ap .wfx-cmd .sh.gd { --an: wcgd; }
 @keyframes wcgd { 0% { opacity: 0; transform: translateY(30%) scale(.6); } 25% { opacity: 1; transform: translateY(0) scale(1.05); } 35% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
 .ap .wfx-cmd .sh.op { --an: wcop; --du: 1.3s; }
 @keyframes wcop { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: 1; } 55% { opacity: 1; transform: translateY(var(--dy)); } 100% { opacity: 0; transform: translateY(var(--dy)); } }
-.ap .wfx-cmd .rk { --w: clamp(76px, 9.5vw, 150px); --ar: 256 / 220; --an: wcrk; --du: 1.15s; --ease: cubic-bezier(.45, 0, .85, .55); filter: drop-shadow(0 8px 6px #000b); }
+.ap .wfx-cmd .rk { --w: clamp(76px, 9.5vw, 150px); --ar: 256 / 220; --an: wcrk; --du: 1.15s; --ease: cubic-bezier(.45, 0, .85, .55); }
 @keyframes wcrk { 0% { opacity: 0; transform: translate(-6vw, -30vh) rotate(0); } 12% { opacity: 1; } 70% { transform: translate(calc(var(--dx) * .8), 0) rotate(420deg); }
   80% { transform: translate(calc(var(--dx) * .88), -3vh) rotate(480deg); } 90% { opacity: 1; transform: translate(var(--dx), 0) rotate(540deg); } 100% { opacity: 0; transform: translate(var(--dx), 0) rotate(560deg); } }
-.ap .wfx-cmd .lg { --w: clamp(180px, 24vw, 360px); --ar: 256 / 135; --x: -8%; --an: wclg; --du: 1.25s; filter: drop-shadow(0 8px 8px #000b); }
+.ap .wfx-cmd .lg { --w: clamp(180px, 24vw, 360px); --ar: 256 / 135; --x: -8%; --an: wclg; --du: 1.25s; }
+/* 날아드는 공성추·바위·방패의 그림자 — drop-shadow 필터는 폰에서 움직이는 그림의 네모 칸째로 그림자가 졌다 (형 10-30: "누끼는 따졌는데 이미지 박스 그대로 그림자가 테두리에") · 밑에 둥근 바닥 그림자만 */
+.ap .wfx-cmd :is(.lg, .rk, .sh)::after { content: ''; position: absolute; left: 12%; right: 12%; bottom: -8%; height: 18%; border-radius: 50%; background: radial-gradient(closest-side, #000a, #0000); z-index: -1; pointer-events: none; }
 @keyframes wclg { 0% { opacity: 0; transform: translateX(-30vw); } 10% { opacity: 1; } 24% { transform: translateX(24vw); } 34% { transform: translateX(16vw); }
   53% { transform: translateX(25vw); } 63% { transform: translateX(16vw); } 82% { opacity: 1; transform: translateX(26vw); } 100% { opacity: 0; transform: translateX(22vw); } }
 .ap .wfx-cmd .pop { --w: clamp(80px, 10vw, 150px); --ar: 1; --an: wcpop; --du: .7s; --ease: ease-out; }
