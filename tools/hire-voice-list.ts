@@ -1,7 +1,7 @@
 /**
  * 등용 목소리 목록 — 장수마다 등용 대사(src/realm/data/hire-lines.ts)와 목소리 결(src/ui/realm/voice.ts voiceKind)
  *   npx tsx tools/hire-voice-list.ts           → 결마다 몇 줄 · 소리 파일이 없는 장수 · 문서(HIRE-VOICE.md)의 결과 다른 장수
- *   npx tsx tools/hire-voice-list.ts --json    → [{ id, name, kind, text }] (녹음 묶음 짤 때)
+ *   npx tsx tools/hire-voice-list.ts --json    → [{ id, name, kind, cast, text }] (녹음 묶음 짤 때 · cast 는 castOf — 등용 첫마디도 그 성우진 목소리로 뽑는다)
  *   npx tsx tools/hire-voice-list.ts --write   → public/realm/voice/hire/lines.json (들어 보는 판 realm/voice-picker.html 이 읽는다)
  * 한 줄을 고치면: hire-lines.ts 를 고치고 → 이것으로 그 장수의 결을 보고 → 같은 결 목소리로 다시 뽑아
  * tools/split-voice.py 로 public/realm/voice/hire/<id>.ogg 에 굽고 → --write.
@@ -10,7 +10,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { REGION_IDS, regionNations, startRegion } from '../src/realm/data/regions/index.ts'
 import { HERO_POOL } from '../src/realm/data/heroes-pool.ts'
 import { HIRE_LINE } from '../src/realm/data/hire-lines.ts'
-import { voiceKind } from '../src/ui/realm/voice.ts'
+import { castOf, voiceKind } from '../src/ui/realm/voice.ts'
 import type { Hero } from '../src/realm/types.ts'
 
 const LABEL: Readonly<Record<string, string>> = {
@@ -35,7 +35,7 @@ for (const m of doc.matchAll(/^\| .+? <small>(.+?)<\/small> \| (.+?) \|/gm)) doc
 
 const rows = Object.entries(HIRE_LINE).map(([id, text]) => {
   const h = heroes.get(id)
-  return { id, name: h?.name ?? id, kind: h !== undefined ? voiceKind(h, rulers.has(id)) : '?', text }
+  return { id, name: h?.name ?? id, kind: h !== undefined ? voiceKind(h, rulers.has(id)) : '?', cast: h !== undefined ? castOf(h, rulers.has(id)) : '?', text }
 })
 
 if (process.argv.includes('--json')) console.log(JSON.stringify(rows, null, 1))

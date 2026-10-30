@@ -11,8 +11,8 @@ import type { VoiceKind } from './voice.ts'
 export const VOICE_B: Readonly<Record<VoiceKind, string>> = {
   'm-young': 'Mako', 'm-gruff': 'Algenib', 'm-sage': 'Olin', 'm-elder': 'Jett', 'm-charm': 'Algieba',
   'w-bright': 'Veda', 'w-cool': 'Sami', 'w-sly': 'Tova', 'w-shaman': 'Tavi',
-  // 10-30 새 결 넷 — A(Orus · Tari · Ludo · Jori) · C 와 겹치지 않게
-  'm-knight': 'Iapetus', 'w-knight': 'Erinome', 'm-veteran': 'Schedar', 'w-matron': 'Vindemiatrix',
+  // 10-30 새 결 넷 — A(Orus · Leda · Ludo · Jori) · C 와 겹치지 않게 · w-knight 는 Erinome → Zephyr (형이 젊게 들은 목소리 · Laomedeia 보다 덜 들뜸)
+  'm-knight': 'Iapetus', 'w-knight': 'Zephyr', 'm-veteran': 'Schedar', 'w-matron': 'Vindemiatrix',
 }
 
 /** 짧은 대답 셋 · 분부 받듦 셋 · 싸움 맡김 다섯(맡김 셋 · 이김 · 짐) — 10-29 사극체로 고침(해요체 · 군주에게 시키는 하오체 · 「그대」를 걷음 · 형: "'내게 맡겨라' 라고 반말하는데") */

@@ -61,3 +61,13 @@
 > Performed by a professional Korean anime and video game voice actress. A young female general in a Korean historical drama (sageuk). SHOUTED battle cry on a roaring battlefield, commanding hundreds of soldiers over the noise. Highly excited, furious, adrenaline-charged, at the top of the lungs but full chest voice, never falsetto or head voice, powerful from the diaphragm. Fresh, sharp, youthful energy, not matronly. NOT a calm indoor monologue, NOT reading aloud. One-second silence between lines.
 
 형이 번호를 고르면 그 목소리 이름과 위 말투 칸으로 w-knight 의 나머지 줄(분부 · 이김 · 짐 · 기술 외침 · 등용 첫마디)을 다시 뽑는다. 유료 Voice Design 을 쓰기로 하면(결제 키는 형이) 아래 설명으로 시작한다: *"Korean woman in her early twenties, a young general. Clear, firm mid-range chest voice, bright but grounded, crisp diction, serious and resolute, no breathiness, no falsetto."* (아직 안 써 봄)
+
+### 젊은 여장수 새 목소리 (10-30)
+
+형: *"성우진 D 중에서는 Leda 가 제일 젊네."* → `w-knight` A 를 Tari → **Leda**, B 를 Erinome → **Zephyr** 로 다시 녹음 (`src/ui/realm/voice-new.ts` VOICE_NEW · `voice-b.ts` VOICE_B). 결마다 스무 줄(대답 셋 · 분부 셋 · 맡김 셋 · 이김 · 짐 · 기술 외침 아홉) × 2, 그리고 이 결 장수 스물넷의 등용 첫마디를 castOf 대로(A 9명 Leda · B 15명 Zephyr). 신지 너울(`wander-22`)도 이 결로 되돌렸다.
+- B 고르기: Laomedeia 와 Zephyr 로 같은 차분한 일곱 줄을 뽑아 견줌 — 같은 말투 칸에서 Laomedeia 가 음높이 가운데 154Hz · 오르내림 4.2반음, Zephyr 165Hz · 3.3반음 (Leda 193Hz · 2.8반음, 옛 Erinome 190Hz · 3.0반음). Laomedeia 가 더 들떠 Zephyr 로. Laomedeia 일곱 줄은 `voice/d/try/w-knight-lao-*.ogg` · 고르기 판 「젊은 여장수 새 목소리」.
+- 말투 칸이 "voice dropped low from the chest" 라 차분한 줄은 B 가 옛것보다 낮게 나왔다(Zephyr 165Hz). A Leda 는 그대로 높다. 외침은 A 262Hz(옛 Tari 262) · B 302Hz(옛 Erinome 327).
+- 3.8 TTS 규칙 — 말투 칸은 짧게(나이 · 성별 없이), 대본엔 무대 지시 없이 꺾쇠 태그만. 외침 열셋 가운데 여덟 줄 앞에 `<heavy breath>` · `<grunt>` · `<argh>`. 태그 소리 뒤 쉼이 1초 넘게 나온 줄이 있어, 자를 때 한 줄 안의 틈을 0.4초까지만 남겼다.
+- 차분한 말투 칸: *Korean historical anime (sageuk) protagonist, performed by a professional anime voice actor. Resolute and restrained but full of feeling, voice dropped low from the chest, measured pace with weighty pauses, crisp formal Korean diction.*
+- 외침 말투 칸: *Korean historical anime (sageuk) protagonist, performed by a professional anime voice actor, SHOUTING a battle cry over a roaring battlefield. Furious, adrenaline-charged, top of the lungs, full chest voice, never falsetto; fast, explosive, clipped delivery.*
+- 함정: 아홉 줄 등용 묶음에서 첫 줄(대사 해달)이 3.4초로 짧게 나왔다(둘째 문장을 빼먹은 듯 · 같은 줄만 다시 뽑으니 7.6초). 길이 비가 0.7 아래면 다시 뽑는다. 계정 authuser=4 (10-30 낮 · 여덟 번).
