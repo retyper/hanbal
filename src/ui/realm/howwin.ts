@@ -31,7 +31,7 @@ const GO: Readonly<Record<LessonId, LessonGo>> = {
   hero: { tab: 'heroes' },
 }
 /** 구운 그림이 들어온 장 — 이름이 있으면 짠 그림 대신 public/realm/howwin/howwin-<id>.jpg */
-export const HOWWIN_BAKED: ReadonlySet<LessonId> = new Set<LessonId>(['draft', 'iron', 'scout'])
+export const HOWWIN_BAKED: ReadonlySet<LessonId> = new Set<LessonId>(['draft', 'iron', 'scout', 'plot', 'pincer', 'ally'])
 
 /** 방금 진 싸움 한 판에서 읽은 것 */
 export interface Loss {
