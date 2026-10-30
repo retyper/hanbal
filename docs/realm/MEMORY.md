@@ -158,13 +158,17 @@ type MemKind =
 - 이어 하는 법:
   1. `npx tsx tools/woo-lines-gen.ts brief <id 다섯>` → 묶음 글
   2. AI 스튜디오 Argon(`aistudio.google.com/u/4/prompts/new_chat?model=gemini-4-argon` · 임시 채팅 · Google 검색 끄기)에 붙여 실행. **한 번에 한 요청만** (둘을 겹치면 「Permission denied」)
-  3. 답을 JSON 파일로 → `check` 로 거르고 손보기(흔한 탈: 하오체 「~요」 → 「~이오」, 「주군」 → 「주인」, 자리표 뒤 「이라는」) → `write` 가 판 파일에 넣는다
+  3. 답을 JSON 파일로 → `check` 로 거르고 손보기(흔한 탈: 하오체 「~요」 → 「~이오」, 「주군」 → 「주인」, 자리표 뒤 「이라는」, lord 밖의 「~사옵니다」, 시대에 없는 물건 「주판 · 판옥선」) → `write` 가 판 파일에 넣는다
   4. 다섯~열 사람마다 `tools/woo-talk-dump.ts <회유하는 이> <갇힌 이> …` 로 두 판을 찍어 챗지피티(새 탭 · jiiyea 계정 아님)에 「자연스러운가 · 사극 말투인가」를 묻고 대부분 따른다
   5. `npx tsx --test tests/realm/woo-lines.test.ts` (모든 줄이 서로 다름 · 해요체 · 되묻기 · 자리표 · 앞말 옮겨 오기)
-- 챗지피티가 짚은 것 (묶음 글 규칙에 넣었다): 반응 줄이 상대의 몸짓·무기를 지어내면 조립했을 때 어긋난다(「손을 잡아 주니」 · 활을 당겼는데 「쇳조각」) · hit 줄은 기우는 말만 · lord 줄은 「저 장수」라 단정 말 것 · 한 줄 안에서 말씨 섞지 말 것.
+- 챗지피티가 짚은 것 (묶음 글 규칙에 넣었다): 넘어오는 줄이 앞에서 안 한 말(「가락이 맞지 않는다며」)을 옮김 · 인연 반응이 「한 핏줄과 고향」을 늘어놓음 · 「영혼 · 오산 · 성의」 같은 요즘 말 · 반응 줄이 상대의 몸짓·무기를 지어내면 조립했을 때 어긋난다(「손을 잡아 주니」 · 활을 당겼는데 「쇳조각」) · hit 줄은 기우는 말만 · lord 줄은 「저 장수」라 단정 말 것 · 한 줄 안에서 말씨 섞지 말 것.
 
 | 차례 | 사람 | 상태 |
 |---|---|---|
 | 1 | us-ruler guya-ruler anya-ruler miri-ruler goja-ruler | 넣음 · 챗지피티 1판 |
 | 2 | dokro-ruler tut-onjo tut-biryu mh-onjo mh-jinwang | 넣음 |
 | 3 | jm-jumong jm-songyang jm-daeso jm-haengin-ruler jm-okjeo-ruler | 넣음 · 챗지피티 2판 |
+| 4 | sr-hyeokgeose sr-alpyeong sr-sobeol sr-jibaekho sr-guryema | 넣음 · 챗지피티 1판 |
+| 5 | sr-jita sr-hojin sr-wae-ruler saro-ruler daegaya-ruler | 넣음 · 챗지피티 2판 |
+| 6 | dabeol-ruler sabeol-ruler usisan-ruler bihwa-ruler jomun-ruler | 넣음 |
+| 7 | golbeol-ruler apdok-ruler iseo-ruler byeokjin-ruler gammun-ruler | 넣음 |
