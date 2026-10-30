@@ -2761,7 +2761,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 맺으면 뭐가 되는지는 ? 안에 (GUIDE.envoy — 형 10-23: "탭마다 있는 설명 고봉밥들은 전부 다 물음표에")
     // 앞서가는 나라 — 모두 이기려 하니, 앞선 나라는 다른 나라들이 함께 막으려 한다 (stance.leaderOf)
     // 외교 추천 — 이번 계절 손볼 만한 이웃 (advice.ts · 형 10-31) · 누르면 그 나라 카드가 펼쳐진다
-    for (const t of diploTips(r, me())) h += `<div class="banner${t.kind === 'chance' ? ' good' : t.kind === 'strong' ? ' bad' : ''} an" data-act="fopen" data-to="${t.to}">${emblem(t.to, 'fem')}<span class="txw">${tx(tipText(r, t))}</span></div>`
+    const order = { chance: 0, strong: 1, met: 2 } as const
+    for (const t of diploTips(r, me()).sort((a, b) => order[a.kind] - order[b.kind]).slice(0, 2)) h += `<div class="banner${t.kind === 'chance' ? ' good' : t.kind === 'strong' ? ' bad' : ''} an" data-act="fopen" data-to="${t.to}">${emblem(t.to, 'fem')}<span class="txw">${tx(tipText(r, t))}</span></div>`
     const L = leaderOf(r, me())
     if (L === me()) h += `<div class="banner bad">우리가 앞서간다. 다른 나라들이 손을 잡고, 맺은 약조도 깨고 등을 돌릴 수 있다.</div>`
     else if (L !== null) h += `<div class="banner">앞서가는 나라: ${emblem(L, 'fem')}<b>${esc(r.factions[L]?.name ?? '')}</b> · 다른 나라들이 함께 막으려 한다. 손잡을 때다.</div>`
