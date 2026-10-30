@@ -3854,6 +3854,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let acctArmed = false
   /** 이번에 띄운 동안 「확인」으로 닫았다 (다시 보지 않기를 안 골랐으면 다음에 켤 때 또 뜬다) */
   let instClosed = false
+  /**
+   * 이 기기에 이미 깔린 앱이 있나 — 깔려 있으면 크롬이 설치 신호(beforeinstallprompt)를 안 줘서 설치 단추를 띄울 수 없다
+   * (형 10-30: "상단에 아직도 텍스트로만 앱설치 안내 · 앱설치 버튼 어디갔음"). realm.webmanifest 의 related_applications 로 묻는다
+   */
+  let appOnDevice = false
+  void (navigator as unknown as { getInstalledRelatedApps?: () => Promise<unknown[]> }).getInstalledRelatedApps?.()
+    .then((a) => { if (a.length > 0) { appOnDevice = true; paint() } }).catch(() => { /* 못 묻는 브라우저 */ })
   /** 「플레이 기록 지우기」를 한 번 눌렀다 — 한 번 더 눌러야 지운다 */
   let resetArmed = false
   function syncWord(s: SyncState): string {
@@ -3903,6 +3910,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (/KAKAOTALK/i.test(navigator.userAgent)) {
       return `<div class="instc"><button class="instx" data-act="inst-ok" aria-label="닫기">✕</button><b>📲 앱으로 설치하면 더 편리합니다</b><p>카카오톡 안에서는 설치할 수 없습니다. 아래 단추로 ${ios ? '사파리' : '크롬'}에서 연 뒤 설치해 주세요.</p>`
         + `<div class="instr"><a class="btn pri sm" href="kakaotalk://web/openExternal?url=${encodeURIComponent(location.href)}">${ios ? '사파리로' : '크롬으로'} 열기</a><label class="chk"><input type="checkbox" class="insthide"> 다시 보지 않기</label><button class="btn sm" data-act="inst-ok">확인</button></div></div>`
+    }
+    // 이미 깔려 있으면 설치 대신 아이콘으로 열라고 (설치 단추는 크롬이 주지 않는다)
+    if (appOnDevice && installPrompt() === null) {
+      return `<div class="instc"><button class="instx" data-act="inst-ok" aria-label="닫기">✕</button><b>📲 이 기기에 이미 설치되어 있습니다</b><p>바탕화면·시작 메뉴·홈 화면의 <b>삼한열전</b> 아이콘으로 여세요. 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.</p>`
+        + `<div class="instr"><label class="chk"><input type="checkbox" class="insthide"> 다시 보지 않기</label><button class="btn sm" data-act="inst-ok">확인</button></div></div>`
     }
     const how = ios
       ? '사파리 아래 <b>공유</b> 단추(네모에 위 화살표) → <b>「홈 화면에 추가」</b>. 홈 화면의 삼한열전 아이콘으로 열면 주소창 없이 꽉 찬 화면으로 즐길 수 있습니다.'
