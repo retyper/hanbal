@@ -592,8 +592,8 @@ export function mapHtml(
   svg += fog?.body ?? ''
   // 길 — 골짜기·바닷가를 따라 휜다 (형: "직선경로만 있는게 이상하지 않냐?"). 막힌 길은 흐리고 가운데 ✕
   const sw = RA.nodeScale < 1 ? 0.6 : 1
-  /** 길 기호의 크기 — 고을 그림의 절반 남짓 */
-  const signW = ICON_W * RA.nodeScale * W * 0.6
+  /** 길 기호의 크기 — 고을 그림의 3/4 쯤 (10-30 물건 하나짜리 실루엣이 되어 디오라마보다 덜 차서 키웠다) */
+  const signW = ICON_W * RA.nodeScale * W * 0.75
   /** 고을 그림의 반 너비 (지도 좌표) — 그 밑에 묻힌 길은 안 보인다 */
   const nodeHalf = ICON_W * RA.nodeScale * W * 0.45
   svg += `<g class="ly-roads">` // 보기 켜고 끄기 (app 의 .layers) — 길
