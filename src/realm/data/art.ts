@@ -132,7 +132,7 @@ export const KID_LINE: Readonly<Record<KidLine, Readonly<Record<'g' | 'w', reado
   mountain: { g: ['y-g-07', 'y-g-14'], w: ['y-w-07', 'y-w-14'] }, // 산사람
   village: { g: ['y-g-15'], w: ['y-w-01', 'y-w-03', 'y-w-15'] }, // 마을·장터
   charm: { g: ['y-g-06', 'y-g-02', 'y-g-16'], w: ['y-w-06', 'y-w-16'] }, // 귀한 집 미남·미녀
-  warrior: { g: ['y-g-03'], w: ['y-w-04'] }, // 반듯한 젊은 무장
+  warrior: { g: ['y-g-03', 'y-g-17'], w: ['y-w-04', 'y-w-17'] }, // 반듯한 젊은 무장
 }
 /** 특성 → 갈래 (아이의 특성 가운데 앞에서부터 처음 걸리는 것) */
 export const LINE_OF_TRAIT: Readonly<Record<string, KidLine>> = {
