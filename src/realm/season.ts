@@ -48,6 +48,7 @@ import { addMen, giveMen, kitOf, scaleKinds, scaleMen, takeMen } from './kit.ts'
 import { formParty, joinParty, moveParty, stepParties } from './parties.ts'
 import { battleMerit, seasonMerit } from './drill.ts'
 import { applyTalks } from './woo.ts'
+import { noteMemory, type Departure } from './memory.ts'
 import { relicHas, relicHorseMulOf, relicLeft, relicMoraleOf, relicMul, relicSum, relicWith, spendRelic } from './relics.ts'
 import {
   ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, isRuler, ironhandAt, noteMet, oneJobPerHero, postHero, releaseCaptives, stepHeroes, sweepHeroes,
@@ -1521,6 +1522,39 @@ export function stepExile(r: Realm, lines: ReportLine[]): void {
   }
 }
 
+/**
+ * 이번 계절 남의 땅을 치러 제 고을을 떠난 군대 — 기억의 「나눠 떠남」(memory.ts · MEMORY §3-1). 명령을 적용한 직후에 잰다.
+ * 고을마다 하나: 떠난 고을에 쉬는 같은 나라 군대가 남긴 몫(백분율) · 치러 가는 나라(가장 많이 가는 쪽) · 떠난 군대의 장수.
+ * 도읍에서 떠났거나 이번 계절 군대를 나눠 떠난 것만 — 빼앗은 고을에서 다음 고을로 밀고 가는 걸음마다 적으면 기억이 그것으로 찬다.
+ * `was` — 명령 앞에 이미 길 위에 있던 군대 (이어 가는 길은 떠남이 아니다)
+ */
+function departures(r: Realm, was: ReadonlySet<string>, lines: readonly ReportLine[]): Departure[] {
+  const split = new Set<string>()
+  for (const l of lines) if (l.kind === 'split') { split.add(l.army); split.add(l.id) }
+  const groups = new Map<string, { faction: string; from: string; go: number; foes: Map<string, number>; heroes: string[] }>()
+  for (const a of byId(Object.values(r.armies))) {
+    const m = a.march
+    if (m === null || was.has(a.id) || r.nodes[m.from]?.owner !== a.faction) continue
+    if (m.from !== r.factions[a.faction]?.capital && !split.has(a.id)) continue
+    const foe = m.aim !== undefined ? m.aim : r.nodes[m.to]?.owner ?? null
+    if (foe === null || foe === a.faction || r.factions[foe] === undefined || allied(r, a.faction, foe)) continue
+    const key = `${a.faction}|${m.from}`
+    const g = groups.get(key) ?? { faction: a.faction, from: m.from, go: 0, foes: new Map<string, number>(), heroes: [] }
+    const n = headcount(forceOf(r, a))
+    g.go += n
+    g.foes.set(foe, (g.foes.get(foe) ?? 0) + n)
+    if (a.hero !== null) g.heroes.push(a.hero)
+    groups.set(key, g)
+  }
+  const out: Departure[] = []
+  for (const g of groups.values()) {
+    const stay = Object.values(r.armies).filter((x) => x.faction === g.faction && x.march === null && x.at === g.from).reduce((s, x) => s + headcount(forceOf(r, x)), 0)
+    const foe = [...g.foes.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))[0]![0]
+    out.push({ faction: g.faction, from: g.from, foe, keep: stay + g.go > 0 ? Math.round((100 * stay) / (stay + g.go)) : 0, heroes: g.heroes })
+  }
+  return out
+}
+
 export function checkOutcome(r: Realm): 'win' | 'lose' | null {
   const me = r.player
   const capital = r.factions[me]?.capital
@@ -1557,7 +1591,9 @@ export function advance(
   const fought = new Set<string>()
   const season = ((r.season % 4) + 4) % 4
   resolveAnswers(r, orders, lines) // 1 — 지난 계절에 온 청에 답한다 (답이 없으면 거절)
+  const wasMarching = new Set(Object.values(r.armies).filter((a) => a.march !== null).map((a) => a.id))
   applyOrders(r, orders, lines) // 1
+  const departs = departures(r, wasMarching, lines) // 기억의 「나눠 떠남」 — 판을 바꾸지 않는다
   resolveScouts(r, orders, lines) // 2
   // 사신·공작은 보낼 사람만큼 (hands.ts) — 맡기기·이끌기를 다 적용한 판으로 센다
   const handed = limitHands(r, orders)
@@ -1621,6 +1657,7 @@ export function advance(
     makeAsks(r, lines) // 9 — 남의 나라가 다음 계절에 답할 청을 건다
   }
   seasonMerit(r, lines) // 9 끝 — 단련 공: 맡은 고을 · 이끈 군대 · 먹힌 공작 · 받아들여진 청 (drill.ts)
+  noteMemory(r, lines, orders, departs) // 9 끝 — 장수의 기억 · 나라의 전례 장부 (memory.ts — 판을 바꾸지 않는다)
   const report: Report = { season: r.season, lines }
   r.season += 1 // 11
   stepCards(r, lines) // 11 끝 — 새 계절의 사건 카드를 펴고 다음 카드를 뽑아 둔다 · 점괘 (events.ts)

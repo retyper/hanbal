@@ -10,6 +10,7 @@
  */
 import { initialKnown } from './discovery.ts'
 import { scaleMen } from './kit.ts'
+import { P } from '../tune/params.ts'
 import type { Realm } from './types.ts'
 
 /** 지금 판의 사람 눈금 — 옛 판의 몇 배인가 */
@@ -57,6 +58,13 @@ export function migrate(r: Realm): void {
   for (const w of r.wanderers ?? []) if (!Array.isArray(w.hero.traits)) (w.hero as { traits: readonly string[] }).traits = []
   // 옥중 담판이 생기기 전의 판 (docs/realm/WOO.md) — 갇힌 계절을 모르는 포로는 지금 갇힌 것으로 (시작한 계절이 없는 회유는 「마주 앉기」를 바로 열 수 있다)
   for (const h of Object.values(r.heroes)) if (h.status === 'captive') h.caughtAt ??= r.season
+  // 장수의 기억이 생기기 전의 판 (docs/realm/MEMORY.md §3) — 빈 기억으로 시작한다. 깨진 칸은 걷고, 넘치는 줄은 최근 것만
+  for (const h of Object.values(r.heroes)) {
+    if (h.mem === undefined) continue
+    if (!Array.isArray(h.mem)) delete h.mem
+    else if (h.mem.length > P.realm.memMax) h.mem = h.mem.slice(-P.realm.memMax)
+  }
+  if (r.lessons !== undefined && (r.lessons === null || typeof r.lessons !== 'object' || Array.isArray(r.lessons))) delete r.lessons
   // 발견이 없던 영남 판 — 이웃과, 이미 사이가 생긴(사신·싸움·약조) 나라만 아는 것으로 (형: "시작할땐 주변 밝혀진애들만")
   if (r.region === 'yeongnam' && r.known === undefined) {
     const k = initialKnown(r)

@@ -295,6 +295,60 @@ export interface Hero {
   relicAdd?: Partial<Record<GrowStat, number>>
   /** 이 판에 이미 쓴 판마다 몇 번짜리 유물 효과 — 오리모양 토기 escape · 진묘수 ward (relics.spendRelic) */
   relicSpent?: Partial<Record<'escape' | 'ward', number>>
+  /**
+   * 기억 (docs/realm/MEMORY.md §3 · memory.ts) — 최근 P.realm.memMax 줄, 계절 차례. 판정이 이미 낸 보고 줄에서 옮겨 적는다(굴림 없음).
+   * 아직 판을 바꾸지 않는다 — 회의·회유가 읽을 것. 옛 저장에는 없다 (빈 기억)
+   */
+  mem?: Mem[]
+}
+
+/**
+ * 장수의 기억 한 줄 — 열쇠를 짧게 둔다 (저장 크기 · 사람마다 12줄 × 장수 수백).
+ *   s 계절 · k 무엇 · at 고을 · foe 상대 나라 · who 상대 사람 · how 길(Approach · 'field' 들판)·공작(PlotOp)·거리(WooApproach 를 '+'로)·풀려난 까닭
+ *   res — 싸움·겨루기·나눠 떠남은 이 사람 쪽에서 본 결과(won/lost/draw · ok 도읍이 무사 · fail 털림), 공작·회유는 그 일이 먹혔나(ok/fail)
+ *   n — 나눠 떠남: 떠난 고을에 남긴 몫(백분율) · on — 당한 쪽(지킨 싸움 · 공작·회유를 받았다) · keep — 줄이 넘쳐도 지우지 않는다
+ */
+export interface Mem {
+  readonly s: number
+  readonly k: MemKind
+  readonly at?: string
+  readonly foe?: string
+  readonly who?: string
+  readonly how?: string
+  res?: 'won' | 'lost' | 'draw' | 'ok' | 'fail'
+  readonly n?: number
+  readonly on?: 1
+  keep?: true
+}
+export type MemKind =
+  | 'battle'      // 이끈 싸움: 어디서 · 누구와 · 어느 길로 · 결과
+  | 'split'       // 나눠 떠남: 남긴 몫 · 그 뒤 도읍이 털렸나
+  | 'plot'        // 공작을 했다/당했다: 방화·이간·매수·암살
+  | 'council'     // 회의에서 낸 안이 받아들여졌나 · 그 결과 (TODO 회의 걸음 · memory.rememberCouncil)
+  | 'captured'    // 사로잡혔다: 누구에게 · 어디서
+  | 'freed'       // 풀려났다: 화친(peace) · 도읍이 떨어짐(take) · 구출(rescue) · 넘어옴(turned)
+  | 'woo'         // 회유를 받았다/했다: 누가 · 무엇으로 · 노여움
+  | 'duel'        // 겨루기
+  | 'betrayed'    // 동맹이 등을 돌림 · 약조 깨짐 (TODO)
+
+/**
+ * 나라의 전례 장부 한 줄 (MEMORY §3-1) — 장수가 바뀌어도 나라가 기억한다. r.lessons[나라][상대 나라] 에 최근 P.realm.lessonMax 줄.
+ *   k: b 싸움 · p 공작 · s 나눠 떠남
+ *   b — how 진군 길 · res 이 나라 쪽 결과 · on 지킨 싸움 · plot 바로 앞에 그 나라에 먹힌 공작이 있었다 · ally 칠 때 그 나라와 손잡은 나라 수
+ *   p — how 공작 · res 먹혔나 · on 당했다 (누가 했는지 드러났을 때만 적힌다)
+ *   s — at 떠난 고을 · n 남긴 몫(백분율) · raid 그 사이 떠난 고을·도읍을 빼앗겼다 · res 그 나라와 붙은 싸움의 결과(있으면)
+ */
+export interface Lesson {
+  readonly s: number
+  readonly k: 'b' | 'p' | 's'
+  readonly at?: string
+  readonly how?: string
+  res?: 'won' | 'lost' | 'draw' | 'ok' | 'fail'
+  readonly on?: 1
+  readonly n?: number
+  raid?: 1
+  readonly plot?: 1
+  readonly ally?: number
 }
 
 /** 사건 카드 한 장 (events.ts · data/cards.ts) — season 계절에 답한다. hero·hero2·node 는 카드에 붙은 사람·고을 */
@@ -735,6 +789,8 @@ export interface Scenario {
 export interface Realm {
   /** 길목의 기억 — 「친 나라>맞은 나라」마다 마지막으로 온 길 (council.ts · 되풀이하면 읽힌다) */
   pathMemo?: Record<string, Approach>
+  /** 나라의 전례 장부 — lessons[나라][상대 나라] (memory.ts · MEMORY §3-1). 옛 저장에는 없다 */
+  lessons?: Record<string, Record<string, Lesson[]>>
   readonly seed: number
   season: number
   readonly nodes: Record<string, RNode>
