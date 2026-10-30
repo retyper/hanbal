@@ -324,7 +324,7 @@ export type MemKind =
   | 'battle'      // 이끈 싸움: 어디서 · 누구와 · 어느 길로 · 결과
   | 'split'       // 나눠 떠남: 남긴 몫 · 그 뒤 도읍이 털렸나
   | 'plot'        // 공작을 했다/당했다: 방화·이간·매수·암살
-  | 'council'     // 회의에서 낸 안이 받아들여졌나 · 그 결과 (TODO 회의 걸음 · memory.rememberCouncil)
+  | 'council'     // 회의에서 낸 안: how 안의 종류 · at 칠 고을 · n 1 받아들여짐/0 안 받아들여짐 · res 결과(won·lost·ok·fail, 나면) (memory.rememberCouncil)
   | 'captured'    // 사로잡혔다: 누구에게 · 어디서
   | 'freed'       // 풀려났다: 화친(peace) · 도읍이 떨어짐(take) · 구출(rescue) · 넘어옴(turned)
   | 'woo'         // 회유를 받았다/했다: 누가 · 무엇으로 · 노여움
@@ -715,6 +715,8 @@ export interface NodeIntel {
   force: { f0: number; src: Source; u: number; season: number; mix?: Partial<Record<UnitKind, number>> } | null
   /** 경계 — 본 값과 본 계절 */
   alert: { v: number; season: number } | null
+  /** 그 고을 주인 나라의 곳간 — 정찰이 본 곡식과 본 계절 (회의의 「먼저 공작」이 읽는다 · 옛 저장에는 없다) */
+  grain?: { v: number; season: number }
 }
 
 /** 고을의 경계·방심 (SYSTEMS §3) — 기습의 덧셈 값 */
@@ -979,6 +981,11 @@ export type Order =
   | { readonly kind: 'expedition'; readonly faction: string; readonly hero: string; readonly dest: ExpDest; readonly len: 0 | 1 | 2 }
   /** 우리 장수 둘(남녀)을 혼인시킨다 — 잔치 곡식이 들고, 몇 계절 뒤 자식 장수가 나선다 (SYSTEMS §5-10 · 팰 교배) */
   | { readonly kind: 'wed'; readonly faction: string; readonly a: string; readonly b: string }
+  /**
+   * 전략 회의에서 들은 안 — 판을 바꾸지 않고 장수의 기억에만 적는다 (memory.noteMemory · MEMORY §3-2 1).
+   * foe 칠 나라 · at 칠 고을 · said 말한 장수마다 안의 종류(how)와 받아들였나(took)
+   */
+  | { readonly kind: 'council'; readonly faction: string; readonly foe: string; readonly at: string; readonly said: ReadonlyArray<{ readonly hero: string; readonly how: string; readonly took: boolean }> }
   /** 사신 (FLOW §4) — 한 나라가 한 계절에 하나. give 는 보내는 쪽이, take 는 받는 쪽이 내놓는다 */
   | {
       readonly kind: 'envoy'

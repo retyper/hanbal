@@ -752,6 +752,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cnspk { display: flex; flex-direction: column; align-items: center; gap: 6px; animation: cnpop .45s cubic-bezier(.2,.9,.3,1.2) both; }
 .ap .cnspk .cnbig { width: min(46vw, 210px); aspect-ratio: 1; height: auto; object-fit: cover; object-position: top; box-sizing: border-box; border: 12px solid transparent; border-image: url(__ART__ui/frame-portrait.png) 60 / 12px stretch; filter: drop-shadow(0 8px 16px #000c); }
 .ap .cnspk b { font-size: 18px; color: #ffe0a0; text-shadow: 0 2px 4px #000; }
+/* 지난번 말이 맞았던 장수 — 얼굴에 금빛 테 · 이름 밑에 작은 금빛 표 (MEMORY §3-2 1 · 형 10-30: "사람처럼 기억하는 듯") */
+.ap .cnspk .cnbig.gold { box-shadow: 0 0 0 3px #f2c14e, 0 0 22px #f2c14e99; }
+.ap .cnspk .cngold { padding: 2px 10px; border-radius: 10px; background: #3a2a10e6; border: 1px solid #f2c14e; color: #ffe08a; font-size: 12.5px; font-style: normal; }
 .ap .cnsub { width: min(100%, 620px); box-sizing: border-box; margin: 0; padding: 14px 16px; font-size: 16.5px; line-height: 1.6; color: #fff4dc; text-align: center; word-break: keep-all; overflow-wrap: anywhere;
   background: #000a; border: 10px solid transparent; border-image: url(__ART__ui/card.png?v=1) 24 fill / 10px stretch; animation: csubin .4s ease-out .15s both; }
 .ap .cnstage .cnav { width: min(100%, 620px); display: flex; justify-content: space-between; align-items: center; color: #cbbf9f; font-size: 12.5px; }
@@ -772,6 +775,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .cnopt + .cnopt { animation-delay: .08s; } .ap .cnopt + .cnopt + .cnopt { animation-delay: .16s; }
 .ap .cnopt.on { border-image: url(__ART__ui/frame-panel.png?v=3) 118 / 12px stretch; background: #2e2416 padding-box; }
 .ap .cnopt .cof { width: 72px; height: 72px; object-fit: cover; object-position: top; box-sizing: border-box; border: 6px solid transparent; border-image: url(__ART__ui/frame-portrait.png) 60 / 6px stretch; }
+.ap .cnopt .cof.gold { box-shadow: 0 0 0 2px #f2c14e, 0 0 12px #f2c14e99; }
 .ap .cnopt .cot { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
 .ap .cnopt .cot small { font-size: 11.5px; color: #c9a45a; } .ap .cnopt .cot b { font-size: 18px; color: #ffe0a0; word-break: keep-all; }
 .ap .cnopt .cot > span { font-size: 13px; line-height: 1.4; color: #e0d4b8; word-break: keep-all; overflow-wrap: anywhere; }

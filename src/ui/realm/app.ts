@@ -97,7 +97,7 @@ import { HOWWIN_CSS, bannerHtml, closeHowWin, howWinDue, howWinMark, lessons, lo
 import type { Side, SyncState } from '../../net/sync.ts'
 import { FEEL_CSS, alertFeel, ambushRangeFeel, chanceFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
 import { adviseMarch, guardRange } from './council-lines.ts'
-import { APPROACH_SHORT, COUNCIL_ART, councilAgendas, takeCount, type Agenda, type AgendaId, type Voice } from './council-agenda.ts'
+import { APPROACH_SHORT, COUNCIL_ART, councilAgendas, howOf, planChoice, planOrders, takeCount, type Agenda, type AgendaId, type CouncilPlan, type Voice } from './council-agenda.ts'
 
 export interface AppHost {
   /** 플레이 기록을 다 지운다(계정·설정은 남김) — 로그인했으면 서버 것부터. 못 지웠으면 false (형 10-24) */
@@ -669,6 +669,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   const sentTo = (to: string): Envoy[] => Object.values(envoys).filter((e) => e.to === to)
   /** 이번 계절의 공작 (한 계절에 P.realm.plotsPerSeason 개) · 외교 판의 갈래 · 펼친 공작 */
   let plots: Order[] = []
+  /** 이번 계절 전략 회의에서 들은 안 — 장수의 기억에 적힌다 (memory.noteMemory · 판은 그대로) */
+  let councils: Order[] = []
   /** 장수 명령 — 맡기기 · 이끌기 · 회유 · 떠돌이 들이기 (HEROES §3·§4) */
   let heroOrders: Order[] = []
   /** 「다음 계절」 전에 한 번 물어본 계절 — 쉬는 장수·안 보낸 정찰이 있으면 그 판으로 데려가고, 한 번 더 누르면 넘긴다 (형 10-23) */
@@ -748,7 +750,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let openArmy = ''
   /** 출정을 꾸리는 군대의 판 (형: "다 같이 간다 말고 … 출정? 일부만 출정?") — 군사는 처음엔 전부, 줄이면 나머지가 남아 지킨다 */
   // chose — 전략 회의에서 안건마다 고른 말(그 말의 label) · lead — 나서서 이끌겠다는 장수 · wait — 이번 계절은 기다린다
-  let sortieD: { take: Partial<Record<UnitKind, number>>; hero: boolean; edge: string | null; approach: Approach; ration: Ration | undefined; follow?: boolean; adviser?: string; chose?: Partial<Record<AgendaId, string>>; lead?: string; wait?: boolean } = { take: {}, hero: true, edge: null, approach: 'road', ration: undefined }
+  let sortieD: { take: Partial<Record<UnitKind, number>>; hero: boolean; edge: string | null; approach: Approach; ration: Ration | undefined; follow?: boolean; adviser?: string; chose?: Partial<Record<AgendaId, string>>; lead?: string; wait?: boolean; plan?: CouncilPlan; said?: Partial<Record<AgendaId, Array<{ hero: string; how: string; took: boolean }>>> } = { take: {}, hero: true, edge: null, approach: 'road', ration: undefined }
   /** 출정 판의 진군 방식·군량 단추가 가리키는 이름 (군대 id 대신) */
   const SORTIE = '~sortie'
   /** 출정 판을 연다 — 이미 정한 출정이 있으면 그대로 불러온다 */
@@ -907,6 +909,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     guards = []
     for (const k of Object.keys(envoys)) delete envoys[k]
     plots = []
+    councils = []
     for (const k of Object.keys(hands)) delete hands[k]
     heroOrders = []
     wooTalk = null
@@ -1158,7 +1161,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   function ordersNow(): Order[] {
     const p = plan()
-    const out: Order[] = [...armyOrders, ...settles, ...heroOrders, ...musters]
+    const out: Order[] = [...armyOrders, ...settles, ...heroOrders, ...musters, ...councils]
     for (const [army, c] of Object.entries(pick)) {
       const a = p.armies[army]
       if (c !== undefined && a !== undefined && a.march === null) out.push({ kind: 'march', army, edge: c.edge, ambush: c.ambush, ...(c.approach !== undefined ? { approach: c.approach } : {}), ...(c.ration !== undefined ? { ration: c.ration } : {}), ...(c.follow === true ? { follow: true } : {}), ...(c.adviser !== undefined ? { adviser: c.adviser } : {}) })
@@ -1728,12 +1731,42 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       rationNow: rationExtraOf(r, probe, m.seasons, ration),
       rationCost: (e) => rationCost(r, probe, m.seasons, e),
       grain: left().grain + had,
+      plotHand: (op, target, other) => councilPlotHand(r, op, target, other),
+      armyFree: (id) => pick[id] === undefined && !armyOrders.some((o) => (o.kind === 'split' || o.kind === 'merge') && o.army === id),
     })
   }
 
+  /**
+   * 회의의 「먼저 공작」 · 「이간」 — 이번 계절 걸 수 있으면 보낼 이와 값. 가장 잘 먹힐 이(쉬는 우리 장수 · 고용 밀정)를 미리 고른다 (공작 판의 「누가 가나」와 같은 셈).
+   * 자리가 없거나 · 보낼 사람이 없거나 · 곡식이 모자라거나 · 이미 같은 공작을 걸었으면 null
+   */
+  function councilPlotHand(r: Realm, op: 'burn' | 'sow', target: string, other?: string): { agent: string | null; grain: number } | null {
+    if (plots.length >= P.realm.plotsPerSeason || handsOut(r)) return null
+    if (plots.some((o) => o.kind === 'plot' && o.op === op && o.target === target && o.other === other)) return null
+    const t = plotTargets(r, me(), op).find((x) => x.target === target && x.other === other)
+    if (t === undefined) return null
+    const busy = new Set<string>()
+    for (const e of Object.values(envoys)) if (e.hero !== undefined) busy.add(e.hero)
+    for (const p of plots) if (p.kind === 'plot' && p.agent !== undefined) busy.add(p.agent)
+    const st = left()
+    let top: { agent: string | null; grain: number; c: number } | null = null
+    for (const id of ['', ...plotAgents(r, me()).filter((x) => !busy.has(x) && heroBusy(r, x) === null)]) {
+      const agent = id === '' ? null : id
+      const cost = plotCost(op, agent)
+      if (!handFor(r, id) || st.grain < cost.grain || st.iron < cost.iron) continue
+      const c = plotChance(r, me(), op, t.target, t.node, t.hero, agent)
+      const score = c[0] + c[1]
+      if (top === null || score > top.c) top = { agent, grain: cost.grain, c: score }
+    }
+    return top === null ? null : { agent: top.agent, grain: top.grain }
+  }
+
   /** 장수의 말을 따른다 — 출정 판에 바로 건다 (군사 몇 할 · 길과 이끌 이 · 군량 · 기다림). 「결정」 한 번에 모두 이루어진다 */
-  function applyVoice(a: Army, v: Voice): void {
+  function applyVoice(a: Army, v: Voice, ag: AgendaId): void {
     const o = v.opt
+    // 떠나지 않음 · 먼저 걸 공작 · 두 갈래 — 안건마다 전에 건 것을 거두고 새로 건다
+    sortieD.plan = planChoice(sortieD.plan ?? {}, v, ag)
+    sortieD.wait = sortieD.plan.wait === true
     if (o.k === 'take') {
       sortieD.take = {}
       for (const [k, n] of Object.entries(a.mix) as Array<[UnitKind, number]>) sortieD.take[k] = o.share >= 1 ? n : Math.round(n * o.share)
@@ -1745,7 +1778,25 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (o.lead !== undefined) sortieD.lead = o.lead
       else delete sortieD.lead
     } else if (o.k === 'ration') sortieD.ration = o.extra
-    else sortieD.wait = o.k === 'wait'
+  }
+
+  /**
+   * 「결정」 — 회의가 건 것을 이번 계절 명령에 싣는다 (council-agenda.planOrders): 먼저 걸 공작(미리 고른 이 · 공작 판에서 바꾸거나 거둘 수 있다) ·
+   * 두 갈래의 다른 군대의 출정 · 들은 안(장수의 기억). 같은 고을의 회의는 하나만 (다시 열면 바꾼다)
+   */
+  function councilOrdersGo(r: Realm, a: Army): void {
+    if (sortieD.edge === null) return
+    for (const o of planOrders(r, me(), a, sortieD.edge, sortieD.plan ?? {}, Object.values(sortieD.said ?? {}).flat())) {
+      if (o.kind === 'council') councils = [...councils.filter((x) => !(x.kind === 'council' && x.at === o.at)), o]
+      else if (o.kind === 'plot') {
+        if (plots.length >= P.realm.plotsPerSeason || plots.some((x) => x.kind === 'plot' && x.op === o.op && x.target === o.target && x.other === o.other)) continue
+        plots = [...plots, o]
+        obey(o.agent)
+      } else if (o.kind === 'march') {
+        pick[o.army] = { edge: o.edge, ambush: false, approach: 'road' }
+        if (realm !== null) councilDone.set(o.army, realm.season)
+      }
+    }
   }
 
   /**
@@ -1756,14 +1807,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const says = ag.voices.filter((v) => v.hero !== null)
     if (beat < says.length) {
       const v = says[beat]!
-      return `<div class="cnstage" data-act="cn-next"><h3 class="cnt">${esc(ag.title)}</h3><div class="cnspk">${bust(v.hero!, 'cnbig')}<b>${nameHtml(v.hero!.name)}</b></div>`
+      return `<div class="cnstage" data-act="cn-next"><h3 class="cnt">${esc(ag.title)}</h3><div class="cnspk">${bust(v.hero!, v.proven === true ? 'cnbig gold' : 'cnbig')}<b>${nameHtml(v.hero!.name)}</b>${v.proven === true ? '<i class="cngold">지난번 말이 맞았다</i>' : ''}</div>`
         + `<p class="cnsub" aria-live="polite">${esc(v.line)}</p><div class="cnav"><small>${beat + 1}/${says.length} · 누르면 다음 ›</small><button class="cskip" data-act="cn-skip">건너뛰기 »</button></div></div>`
     }
     const ruler = r.factions[me()]?.ruler
     const rh = ruler !== undefined ? r.heroes[ruler] : undefined
     let h = `<div class="cnq"><p class="cnask">${esc(ag.title)}</p><div class="cnopts${ag.voices.length > 2 ? ' n3' : ''}">`
     for (const v of ag.voices) {
-      const face = v.hero !== null ? bust(v.hero, 'cof') : rh !== undefined ? bust(rh, 'cof') : ''
+      const face = v.hero !== null ? bust(v.hero, v.proven === true ? 'cof gold' : 'cof') : rh !== undefined ? bust(rh, 'cof') : ''
       const on = sortieD.chose?.[ag.id] === v.label
       h += `<button class="cnopt${on ? ' on' : ''}" data-act="cn-pick" data-ag="${ag.id}" data-l="${esc(v.label)}">${face}<span class="cot"><small>${v.hero !== null ? `${esc(v.hero.name)}의 말` : '내 뜻'}</small><b>${esc(v.label)}</b><span>${esc(voiceDoes(r, a, probe, m, v))}</span></span></button>`
     }
@@ -1784,6 +1835,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       return `${APPROACH_NAME[o.ap]}${lead !== undefined ? ` · ${josa(lead.name, '이', '가')} 이끈다` : ''}`
     }
     if (o.k === 'ration') return `군량 ${m.seasons + o.extra}계절치 · 곡식 ${rationCost(r, probe, m.seasons, o.extra).toLocaleString('ko-KR')}`
+    if (o.k === 'pincer') {
+      const b = r.armies[o.army]
+      return `${josa(b !== undefined ? armyName(r, b) : '', '이', '가')} ${r.nodes[o.from]?.name ?? ''}에서 다른 길로 함께 친다 · 같은 계절에 닿는다`
+    }
+    if (o.k === 'plot') {
+      const who = o.agent !== null ? r.heroes[o.agent]?.name ?? '' : '고용 밀정'
+      const aim = o.other !== undefined ? `${r.factions[o.target]?.name ?? ''} ↔ ${r.factions[o.other]?.name ?? ''}` : r.factions[o.target]?.name ?? ''
+      return `이번 계절은 떠나지 않는다 · ${PLOT_NAME[o.op]}: ${aim} · ${josa(who, '이', '가')} 간다 · 곡식 ${o.grain.toLocaleString('ko-KR')}`
+    }
+    if (o.k === 'hold') return `출정을 거둔다 · 군사는 ${r.nodes[a.at]?.name ?? ''}에 머문다`
     return o.k === 'wait' ? '이번 계절은 떠나지 않고 성을 지킨다' : '이번 계절에 떠난다'
   }
 
@@ -4935,7 +4996,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function saveDraft(): void {
     if (realm === null) return
     // hireShown — 등용 장면을 이미 띄운 떠돌이. 초안과 함께 남겨야 앱이 다시 열려도(새 빌드 · 껐다 켬) 계절 끝에 또 뜨지 않는다 (형 10-25: "마파람 등용 한번 떴었는데 왜 또 뜨지")
-    const d = { seed: realm.seed, season: realm.season, player: realm.player, armyOrders, musters, settles, pick, goalStop, landSeen: [...landSeen], scout, rite, answers, guards, envoys, plots, heroOrders, persuadeBy, wooDone, hands, hireShown: [...hireShown], autoIdle: realm.autoIdle, manual: realm.manual?.[me()] }
+    const d = { seed: realm.seed, season: realm.season, player: realm.player, armyOrders, musters, settles, pick, goalStop, landSeen: [...landSeen], scout, rite, answers, guards, envoys, plots, heroOrders, councils, persuadeBy, wooDone, hands, hireShown: [...hireShown], autoIdle: realm.autoIdle, manual: realm.manual?.[me()] }
     try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)) } catch { /* 저장 못 하는 곳 */ }
   }
 
@@ -4951,6 +5012,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     settles = list('settles').filter((o) => o.kind !== 'migrateAuto') // 자동 분배는 늘 켜짐 — 옛 초안의 켜고 끄기는 버린다
     plots = list('plots')
     heroOrders = list('heroOrders')
+    councils = list('councils').filter((o) => o.kind === 'council')
     guards = Array.isArray(d['guards']) ? (d['guards'] as string[]) : []
     scout = typeof d['scout'] === 'string' ? d['scout'] : ''
     rite = d['rite'] === true
@@ -6435,12 +6497,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const probe = sortieProbe(a)
         const m = movesOf(r, me(), probe).find((x) => x.edge.id === sortieD.edge)
         const ag = d['ag'] as AgendaId
-        const v = m !== undefined ? agendasFor(r, a, probe, m, sortieD.ration).find((x) => x.id === ag)?.voices.find((x) => x.label === d['l']) : undefined
+        const agv = m !== undefined ? agendasFor(r, a, probe, m, sortieD.ration).find((x) => x.id === ag) : undefined
+        const v = agv?.voices.find((x) => x.label === d['l'])
         if (v === undefined) break
         sortieD.chose = { ...(sortieD.chose ?? {}), [ag]: v.label }
-        applyVoice(a, v)
-        // 다음 안건 — 기다리기로 했으면 나머지는 쓰이지 않으니 정리로
-        stratOpen.step = v.opt.k === 'wait' ? 99 : (stratOpen.step ?? 0) + 1
+        applyVoice(a, v, ag)
+        sortieD.said = { ...(sortieD.said ?? {}), [ag]: agv!.voices.filter((x) => x.hero !== null).map((x) => ({ hero: x.hero!.id, how: howOf(x), took: x.label === v.label })) }
+        // 다음 안건 — 떠나지 않기로 했으면(기다림 · 거둠 · 공작 먼저) 나머지는 쓰이지 않으니 정리로
+        stratOpen.step = v.opt.k === 'wait' || v.opt.k === 'hold' || v.opt.k === 'plot' ? 99 : (stratOpen.step ?? 0) + 1
         stratOpen.beat = 0
         break
       }
@@ -6456,6 +6520,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (a === undefined) break
         // 전략 회의에서 「기다린다」 — 이번 계절은 떠나지 않는다(먼 갈 곳도 거둔다) · 성에서 맞는다
         if (sortieD.wait === true && stratOpen !== null) {
+          // 회의에서 공작을 먼저 하기로 했으면 그 공작을 건다 · 들은 안을 적는다
+          councilOrdersGo(r!, a)
           delete pick[a.id]
           if (goalOf(a) !== undefined && !goalStop.includes(a.id)) goalStop = [...goalStop, a.id]
           openArmy = ''
@@ -6466,6 +6532,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const lead = sortieD.lead !== undefined && leadCands(r!, a).some((x) => x.id === sortieD.lead) ? sortieD.lead : undefined
         const go = sortieD.edge !== null ? { edge: sortieD.edge, ambush: sortieD.approach !== 'road', approach: sortieD.approach, ...(sortieD.ration !== undefined ? { ration: sortieD.ration } : {}), ...(sortieD.follow === true ? { follow: true } : {}), ...(sortieD.adviser !== undefined ? { adviser: sortieD.adviser } : {}) } : null
         if (go !== null) marchSfx()
+        // 두 갈래(다른 군대도 다른 길로 같은 계절에 · 협공) · 들은 안 — 회의에서 고른 것
+        if (go !== null && stratOpen !== null) councilOrdersGo(r!, a)
         if (sortieAll(a)) {
           if (go === null) break
           if (lead !== undefined) { pickLeader(a.id, lead); obey(lead) }

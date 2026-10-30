@@ -764,6 +764,8 @@ function resolveScouts(r: Realm, orders: readonly Order[], lines: ReportLine[]):
       land: true,
       force: { f0: nodeStrength(r, node.id, node.owner), src: 'scout', u: roll(r.seed, r.season, `scout-u:${o.faction}:${node.id}`), season: r.season, ...seenShares(r, node.id, node.owner) },
       alert: { v: w.alert, season: r.season },
+      // 그 고을 주인 나라의 곳간 — 척후가 곡식 수레·창고를 보고 온다 (회의의 「먼저 공작」 · 굴림 없음)
+      ...(node.owner !== null && node.owner !== o.faction ? { grain: { v: stockOf(r, node.owner).grain, season: r.season } } : {}),
     }
     for (const nb of neighbors(r, node.id)) known[nb] ??= { land: true, force: null, alert: null }
     noteMet(r, o.faction, heroesAtNode(r, node.id))

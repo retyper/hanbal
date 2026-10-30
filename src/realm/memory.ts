@@ -75,12 +75,15 @@ function learn(r: Realm, faction: string, foe: string, l: Lesson): Lesson | null
 }
 
 /**
- * 회의에서 낸 안이 받아들여졌나 · 그 결과 (TODO 회의 걸음 — MEMORY §3-2 1). 회의가 고른 안을 이 손으로 적는다:
- * remember(r, 낸 장수, { s, k: 'council', how: 안의 종류, foe, res: 받아들여졌으면 'ok' 아니면 'fail' }) — 결과가 나면 res 를 고쳐 쓴다.
+ * 회의에서 낸 안 (MEMORY §3-2 1) — how 안의 종류(길 이름 · keep · all · wait · hold · burn · sow · pincer · one · go · more · same) ·
+ * at 칠 고을 · took 받아들였나(n 1/0). 결과(res)는 noteCouncil 이 그 고을 싸움·그 계절의 일로 나중에 적는다.
  */
-export function rememberCouncil(r: Realm, hero: string, how: string, foe: string | undefined, res: 'ok' | 'fail'): void {
-  remember(r, hero, { s: r.season, k: 'council', how, ...(foe !== undefined ? { foe } : {}), res })
+export function rememberCouncil(r: Realm, hero: string, how: string, foe: string, at: string, took: boolean): void {
+  if (r.heroes[hero] === undefined || r.factions[foe] === undefined) return
+  remember(r, hero, { s: r.season, k: 'council', how, foe, at, n: took ? 1 : 0 })
 }
+/** 이번 계절에 떠나지 않는 안 — 그 계절 안에 결과가 난다 (털렸나 · 막았나 · 탈 없었나) */
+const STAY_HOW: ReadonlySet<string> = new Set(['wait', 'hold'])
 // TODO 'betrayed' — 동맹이 등을 돌림·약조 깨짐 (relation 줄 why 'betray'·'break' · pledge kept false) 은 회의 걸음과 함께 적는다
 
 const sideRes = (o: Battle['outcome'], atk: boolean): Res => {
@@ -166,6 +169,11 @@ function champion(r: Realm, ids: readonly string[]): string | undefined {
  */
 export function noteMemory(r: Realm, lines: readonly ReportLine[], orders: readonly Order[], departs: readonly Departure[]): void {
   const s = r.season
+  // 0 — 회의에서 들은 안 (이번 계절 · 결과는 아래 noteCouncil)
+  for (const o of orders) {
+    if (o.kind !== 'council' || r.factions[o.faction] === undefined) continue
+    for (const x of o.said) if (r.heroes[x.hero]?.faction === o.faction) rememberCouncil(r, x.hero, x.how, o.foe, o.at, x.took)
+  }
   // 1 — 공작이 먼저 (같은 계절 싸움의 「공작 뒤」를 재려고)
   for (const l of lines) {
     if (l.kind !== 'plot') continue
@@ -210,6 +218,8 @@ export function noteMemory(r: Realm, lines: readonly ReportLine[], orders: reado
       }
     }
   }
+  // 4-2 — 회의에서 받아들인 안의 결과
+  noteCouncil(r, lines)
   // 5 — 사로잡힘(혼자 머물다 · 사신으로 갔다가) · 풀려남 · 회유
   for (const l of lines) {
     switch (l.kind) {
@@ -238,6 +248,39 @@ export function noteMemory(r: Realm, lines: readonly ReportLine[], orders: reado
         break
       }
       default: break
+    }
+  }
+}
+
+/**
+ * 받아들인 회의 안의 결과 — 굴림 없이 이번 계절의 보고 줄로:
+ *  - 떠나지 않는 안(wait · hold): 그 계절에 쳐들어온 그 나라에 졌으면 lost · 막았으면 won · 아니면 ok
+ *  - 이간(sow): 그 공작이 먹혔나 (ok · fail)
+ *  - 방화(burn): 실패면 fail · 먹혔으면 그 고을 싸움을 기다리고(cnCouncilWatch), 싸움 없이 지나면 ok
+ *  - 나머지(길 · 군사 · 두 갈래 · 군량 · 곧장): 그 고을을 친 우리 싸움의 결과 (cnCouncilWatch 안)
+ */
+function noteCouncil(r: Realm, lines: readonly ReportLine[]): void {
+  const s = r.season
+  const W = P.realm.cnCouncilWatch
+  for (const h of Object.values(r.heroes)) {
+    if (h.mem === undefined || r.factions[h.faction] === undefined) continue
+    for (const m of h.mem) {
+      if (m.k !== 'council' || m.n !== 1 || m.res !== undefined || m.foe === undefined || s - m.s > W) continue
+      const how = m.how ?? ''
+      if (STAY_HOW.has(how)) {
+        if (m.s !== s) continue
+        const vs = lines.filter((l): l is Battle => l.kind === 'battle' && l.pending === undefined && l.atkFaction === m.foe && l.defender === h.faction)
+        m.res = vs.some((l) => sideRes(l.outcome, false) === 'lost') ? 'lost' : vs.some((l) => sideRes(l.outcome, false) === 'won') ? 'won' : 'ok'
+        continue
+      }
+      if (how === 'sow' || how === 'burn') {
+        const pl = lines.find((l): l is Extract<ReportLine, { kind: 'plot' }> => l.kind === 'plot' && l.faction === h.faction && l.op === how && l.target === m.foe)
+        if (m.s === s && pl !== undefined && !pl.ok) { m.res = 'fail'; continue }
+        if (how === 'sow') { if (m.s === s && pl !== undefined) m.res = 'ok'; continue }
+      }
+      const b = lines.find((l): l is Battle => l.kind === 'battle' && l.pending === undefined && l.atkFaction === h.faction && l.node === m.at)
+      if (b !== undefined) m.res = sideRes(b.outcome, true)
+      else if (how === 'burn' && s - m.s >= W) m.res = 'ok'
     }
   }
 }
@@ -345,5 +388,46 @@ export function plotBeforeWin(r: Realm, faction: string, foe: string): { won: nu
 export function foeAlliesWhenStruck(r: Realm, faction: string, foe: string): number | null {
   const xs = r.lessons?.[faction]?.[foe] ?? []
   for (let i = xs.length - 1; i >= 0; i--) if (xs[i]!.k === 'b' && xs[i]!.on !== 1 && xs[i]!.ally !== undefined) return xs[i]!.ally!
+  return null
+}
+
+/** 장수가 그 나라를 치며 겪은 싸움들 (지킨 싸움 · 들판 빼고) — 오래된 차례 */
+export function heroBattlesVs(r: Realm, hero: string, foe: string): Array<{ s: number; at?: string; how: string; res: Res }> {
+  const out: Array<{ s: number; at?: string; how: string; res: Res }> = []
+  for (const m of r.heroes[hero]?.mem ?? []) {
+    if (m.k !== 'battle' || m.foe !== foe || m.on === 1 || m.how === undefined || m.how === 'field' || m.res === undefined) continue
+    out.push({ s: m.s, ...(m.at !== undefined ? { at: m.at } : {}), how: m.how, res: m.res })
+  }
+  return out
+}
+
+/** 장수가 마지막으로 나눠 떠난 일 — 남긴 몫 · 그 사이 털렸나(res fail) */
+export function heroSplit(r: Realm, hero: string): { s: number; at?: string; foe?: string; keep: number; raid: boolean } | null {
+  const xs = r.heroes[hero]?.mem ?? []
+  for (let i = xs.length - 1; i >= 0; i--) {
+    const m = xs[i]!
+    if (m.k === 'split') return { s: m.s, ...(m.at !== undefined ? { at: m.at } : {}), ...(m.foe !== undefined ? { foe: m.foe } : {}), keep: m.n ?? 0, raid: m.res === 'fail' }
+  }
+  return null
+}
+
+/** 장수가 그 나라에 마지막으로 먹인 공작 (우리가 한 것만) */
+export function heroPlotVs(r: Realm, hero: string, foe: string): { s: number; how: string } | null {
+  const xs = r.heroes[hero]?.mem ?? []
+  for (let i = xs.length - 1; i >= 0; i--) {
+    const m = xs[i]!
+    if (m.k === 'plot' && m.on !== 1 && m.foe === foe && m.res === 'ok' && m.how !== undefined) return { s: m.s, how: m.how }
+  }
+  return null
+}
+
+/** 장수가 회의에서 낸 안 가운데 받아들여져 결과가 난 마지막 것 (since 계절부터) — 「지난번 소장의 말대로」 */
+export function councilRecord(r: Realm, hero: string, since: number): { s: number; how: string; foe?: string; at?: string; res: Res } | null {
+  const xs = r.heroes[hero]?.mem ?? []
+  for (let i = xs.length - 1; i >= 0; i--) {
+    const m = xs[i]!
+    if (m.s < since) break
+    if (m.k === 'council' && m.n === 1 && m.res !== undefined) return { s: m.s, how: m.how ?? '', ...(m.foe !== undefined ? { foe: m.foe } : {}), ...(m.at !== undefined ? { at: m.at } : {}), res: m.res }
+  }
   return null
 }
