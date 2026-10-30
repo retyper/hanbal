@@ -9,17 +9,16 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { byeonhanMini, startRealm } from '../../src/realm/data/regions/byeonhan-mini.ts'
-import { startRegion } from '../../src/realm/data/regions/index.ts'
 import { holdMarkets, pairKey } from '../../src/realm/diplomacy.ts'
-import { ironOf, noteIron, pathsEnd, riteOf, stepPaths } from '../../src/realm/paths.ts'
+import { ironOf, ironTrade, noteIron, pathsEnd, riteOf, stepPaths } from '../../src/realm/paths.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Realm, ReportLine } from '../../src/realm/types.ts'
 
-/** 문턱을 넘길 만큼 철을 바꾼다 — 세 나라와 고르게 */
-function trade(r: Realm, f: string, withs: readonly string[]): void {
-  const need = ironOf(r, f).need
-  const per = Math.ceil(need / withs.length / withs.length) + 1
-  for (const w of withs) noteIron(r, f, w, per)
+/** 철광과 포구를 둘 다 쥐게 하고 창고 철을 n 으로 */
+function hold(r: Realm, f: string, iron: number): void {
+  r.nodes['guya-iron']!.owner = f
+  r.nodes['goja-cap']!.owner = f
+  r.stock[f]!.iron = iron
 }
 
 /** 계절 s 로 옮겨 제사 줄을 넣고 사슬을 센다 */
@@ -35,11 +34,11 @@ describe('철과 뱃길', () => {
     const r = byeonhanMini(1)
     r.season = 10
     noteIron(r, 'goja', 'us', 30)
-    assert.equal(ironOf(r, 'goja').iron, 30)
-    assert.deepEqual(ironOf(r, 'us').partners, ['goja'])
+    assert.equal(ironTrade(r, 'goja').iron, 30)
+    assert.deepEqual(ironTrade(r, 'us').partners, ['goja'])
     r.season = 14
     stepPaths(r, [])
-    assert.equal(ironOf(r, 'goja').iron, 0, '네 계절 창을 지났다')
+    assert.equal(ironTrade(r, 'goja').iron, 0, '네 계절 창을 지났다')
   })
 
   it('장터 — 철광 쥔 나라가 철광 없는 화친 나라에 철을 판다 · 장부에 오른다', () => {
@@ -51,34 +50,32 @@ describe('철과 뱃길', () => {
     holdMarkets(r, lines)
     const im = lines.find((l) => l.kind === 'ironMarket')
     assert.ok(im !== undefined && im.kind === 'ironMarket' && im.from === 'guya' && im.to === 'us' && im.iron === P.realm.marketIron)
-    assert.ok(ironOf(r, 'us').partners.includes('guya'))
+    assert.ok(ironTrade(r, 'us').partners.includes('guya'))
   })
 
-  it('포구를 쥔 나라가 문턱을 넘으면 이긴다 · 포구를 잃으면 안 된다', () => {
-    const r = startRealm(1, 'goja') // 고자국(포구)을 맡는다 · 여섯 나라가 다 있는 판 (쇠의 바다 자유판은 타국 하나 · rivals.ts)
-    trade(r, 'goja', ['us', 'anya', 'miri'])
+  it('철광과 포구를 쥔 채 창고 철이 문턱이면 이긴다 · 하나라도 잃으면 안 된다', () => {
+    const r = startRealm(1, 'goja')
+    hold(r, 'goja', P.realm.ironseaStock)
     assert.deepEqual(pathsEnd(r), { kind: 'win', by: 'goja', path: 'ironsea' })
-    // 포구를 빼앗기면 뱃길이 끊긴다
-    r.nodes['goja-cap']!.owner = 'dokro'
+    r.nodes['guya-iron']!.owner = 'guya'
     assert.equal(ironOf(r, 'goja').gate, false)
     assert.equal(pathsEnd(r), null)
   })
 
-  it('한 나라와 큰 거래 하나로는 안 된다 (바꾼 나라가 셋은 넘어야)', () => {
-    const r = startRegion('byeonhan-mini', 1, 'goja')
-    noteIron(r, 'goja', 'us', 100000)
+  it('거래를 아무리 많이 해도 창고에 쌓지 않으면 안 된다 (형 10-30: 뜬금없이 이겼다)', () => {
+    const r = startRealm(1, 'goja')
+    hold(r, 'goja', P.realm.ironseaStock - 1)
+    for (const w of ['us', 'anya', 'miri']) noteIron(r, 'goja', w, 100000)
     assert.equal(pathsEnd(r), null)
   })
 
   it('남이 이루면 우리가 진다 — 그 전에 소문', () => {
     const r = byeonhanMini(1)
     const lines: ReportLine[] = []
-    // 문턱의 4분의 3쯤 — 소문
-    const need = ironOf(r, 'dokro').need
-    for (const w of ['guya', 'anya', 'miri']) noteIron(r, 'dokro', w, Math.ceil((need * 0.8) / 9))
+    hold(r, 'dokro', Math.ceil(P.realm.ironseaStock * 0.8))
     stepPaths(r, lines)
     assert.ok(lines.some((l) => l.kind === 'pathIron' && l.faction === 'dokro'))
-    trade(r, 'dokro', ['guya', 'anya', 'miri'])
+    r.stock['dokro']!.iron = P.realm.ironseaStock
     assert.deepEqual(pathsEnd(r), { kind: 'lose', by: 'dokro', path: 'ironsea' })
   })
 })

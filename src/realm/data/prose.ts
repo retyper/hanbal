@@ -518,8 +518,8 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       return null
     case 'pathIron':
       // 철과 뱃길 — 우리 것이면 알림, 남의 것이면 소문
-      if (line.faction === viewer) return `교역 장부: 올해 ${line.partners}나라와 철을 바꿨다. 뱃길이 무르익는다. 조금만 더 바꾸면 변진의 쇠가 우리 뱃길로 흐른다.`
-      return `소문: ${fname(line.faction)} 포구에 이웃 나라 배들이 줄을 선다. 철이 그리로 흐른다. 그 뱃길을 끊어야 한다.`
+      if (line.faction === viewer) return `철광과 포구를 쥐고 창고에 덩이쇠가 ${line.iron} 쌓였다. ${line.need}에 닿으면 변진의 쇠가 우리 뱃길로 흐른다.`
+      return `소문: ${fname(line.faction)} 창고에 덩이쇠가 산처럼 쌓인다. 철광이나 포구를 빼앗지 않으면 그 나라가 이긴다.`
     case 'pathRite':
       // 큰 제사 — 우리 것은 제사철마다 사슬, 남의 것은 소문
       if (line.faction === viewer) {

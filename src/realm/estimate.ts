@@ -154,7 +154,8 @@ export function movesOf(r: Realm, faction: string, a: Army): Move[] {
     if (to === null) continue
     const node = r.nodes[to]!
     // 아무도 안 쥔 빈땅은 칠 데가 아니다 — 장정이 없다. 개척(settle)이나 깃발 꽂기로 쥔다
-    const hostile = node.owner !== null && node.owner !== faction && node.kind !== 'sodo'
+    // 주인 잃은 철광·포구(자유판 · regions/rivals.ts)는 사람이 남아 있다 — 들어가 차지한다
+    const hostile = node.owner !== faction && node.kind !== 'sodo' && (node.owner !== null || node.kind !== 'wild')
     const k = known[to]
     const v = winVs(r, faction, to, myF, { force: forceOf(r, a), edge: ed.kind })
     const al = k?.alert ? alertRange(k.alert.v, r.season - k.alert.season) : null

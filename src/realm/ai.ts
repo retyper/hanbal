@@ -867,8 +867,61 @@ export function aiOrders(r: Realm): Order[] {
         continue
       }
       // 사신·공작은 보낼 사람만큼만 낸다 (hands.ts — 엔진도 같은 규칙으로 버린다)
-      out.push(...limitHands(r, decide(r, f.id, f.mind)))
+      const mine = limitHands(r, decide(r, f.id, f.mind))
+      out.push(...mine, ...approach(r, f.id, mine))
     }
     return out
   })
+}
+
+/**
+ * 다가가기 — 바로 옆에 칠 곳이 없으면 빈 땅을 지나 가장 가까운 남의 고을 쪽으로 한 길 간다.
+ * 자유판은 모든 나라가 도읍 하나로, 사이가 빈 땅이다 (regions/rivals.ts) — 옆만 보던 AI 는 40계절 내내 제 도읍에 앉아 있었다.
+ * aiApproachFrom 계절부터 · 도읍엔 군대 하나를 남긴다 (군대가 하나뿐이면 aiApproachSolo 계절부터 그 하나로).
+ */
+function approach(r: Realm, faction: string, decided: readonly Order[]): Order[] {
+  const R = P.realm
+  if (r.season < R.aiApproachFrom) return []
+  const busy = new Set(decided.flatMap((o) => ('army' in o && typeof o.army === 'string' ? [o.army] : [])))
+  const cap = r.factions[faction]?.capital
+  const mine = sorted(Object.values(r.armies)).filter((a) => a.faction === faction && a.lent === undefined)
+  const idle = mine.filter((a) => a.march === null && !busy.has(a.id))
+  const edges = Object.values(r.edges).sort((a, b) => (a.id < b.id ? -1 : 1))
+  const passable = (id: string): boolean => {
+    const n = r.nodes[id]
+    return n !== undefined && n.kind !== 'sodo' && (n.owner === faction || (n.owner === null && n.kind === 'wild'))
+  }
+  const goal = (id: string): boolean => {
+    const n = r.nodes[id]
+    return n !== undefined && n.kind !== 'sodo' && n.owner !== faction && !(n.owner === null && n.kind === 'wild') && !spared(r, faction, id)
+  }
+  const out: Order[] = []
+  let atCap = cap === undefined ? 0 : mine.filter((a) => a.at === cap && a.march === null).length
+  for (const a of idle) {
+    if (a.at === cap && atCap <= 1 && (mine.length > 1 || r.season < R.aiApproachSolo)) continue
+    // 너비 우선 — 처음 디딘 길을 기억한다 (같은 판이면 같은 길: 길 id 순)
+    const first = new Map<string, string>([[a.at, '']])
+    let queue = [a.at]
+    let step: string | null = null
+    for (let d = 0; d < R.aiApproachDepth && step === null && queue.length > 0; d++) {
+      const next: string[] = []
+      for (const at of queue) {
+        for (const ed of edges) {
+          const to = ed.a === at ? ed.b : ed.b === at ? ed.a : null
+          if (to === null || first.has(to)) continue
+          const via = first.get(at) === '' ? ed.id : first.get(at)!
+          if (goal(to)) { step = d === 0 ? null : via; if (d > 0) break; else continue }
+          if (!passable(to)) continue
+          first.set(to, via)
+          next.push(to)
+        }
+        if (step !== null) break
+      }
+      queue = next
+    }
+    if (step === null) continue
+    out.push({ kind: 'march', army: a.id, edge: step, ambush: false })
+    if (a.at === cap) atCap -= 1
+  }
+  return out
 }

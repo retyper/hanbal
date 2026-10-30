@@ -1207,7 +1207,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       ['정복', cl(held / Math.max(1, need))],
       // 맹주 — 손잡은 나라를 채우는 데 반, 맹약을 네 계절 버티는 데 반
       ['맹주', pact.score < pact.need || pact.vassals < P.realm.suzerainMinVassals ? cl(pact.score / Math.max(1, pact.need)) * 0.5 : 0.5 + cl(streak / S) * 0.5],
-      ['철과 뱃길', io.gate ? cl(Math.min(io.score / Math.max(1, io.need), io.partners.length / Math.max(1, io.minPartners))) : 0],
+      ['철과 뱃길', io.gate ? cl(io.iron / Math.max(1, io.need)) : 0],
       ['큰 제사', cl(Math.min(ri.chain / Math.max(1, ri.need), ri.hh / Math.max(1, ri.hhNeed)))],
     ]
   }
@@ -4145,12 +4145,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const clock = Array.from({ length: S }, (_, i) => `<i class="${i < streak ? 'on' : ''}"></i>`).join('')
     let h = `<div class="paths"><h4 class="qh">승리 조건 <small>넷 가운데 하나만 이루면 이긴다</small>${guideBtn('paths')}</h4>`
     h += `<div class="path"><b>정복</b>${bar(held, need)}<span>도읍 ${held}/${need}</span></div>`
-    h += `<div class="path"><b>맹주</b>${bar(pact.score, pact.need, 'pact')}<span data-tip="속국은 한 나라, 동맹은 반 나라로 센다">속국 ${pact.vassals} · 동맹 ${pact.allies}: ${pact.score}/${pact.need}</span></div>`
+    h += `<div class="path"><b>맹주</b>${bar(pact.score, pact.need, 'pact')}<span data-tip="아는 나라를 모두 속국으로 만든다">속국 ${pact.vassals}/${pact.need}</span></div>`
     h += `<div class="path sub"><span class="clock">${clock}</span><span class="mute">${streak > 0 ? `맹약 ${streak}/${S} 계절` : '손잡고 네 계절 버티기'}</span></div>`
-    // 철과 뱃길 — 교역 장부: 올해 철을 바꾼 나라 깃발이 한 줄로 · 셈(나라 수 × 철) 막대
+    // 철과 뱃길 — 철광·포구를 둘 다 쥐고 창고 철을 문턱까지 (paths.ironOf)
     const io = ironOf(r, me())
-    h += `<div class="path"><b>철·뱃길</b>${bar(io.score, io.need, 'iron')}<span>${io.partners.length}나라 · 철 ${io.iron}</span></div>`
-    h += `<div class="path sub"><span class="flags">${io.partners.length > 0 ? io.partners.map((f) => emblem(f, 'fem')).join('') : ''}</span><span class="mute">${!io.gate ? '철광·포구를 쥐어야 열린다' : `올해 ${io.minPartners}나라 넘게와 철 바꾸기`}</span></div>`
+    h += `<div class="path"><b>철·뱃길</b>${bar(io.gate ? io.iron : 0, io.need, 'iron')}<span>철 ${io.iron}/${io.need}</span></div>`
+    h += `<div class="path sub"><span class="mute">${io.mine ? '철광 ✓' : '철광 ✗'} · ${io.port ? '포구 ✓' : '포구 ✗'}${io.gate ? '' : ' · 둘 다 쥐어야 쌓인 철이 셈에 든다'}</span></div>`
     // 큰 제사 — 사슬(봄·가을 제사를 내리) · 집 막대
     const ri = riteOf(r, me())
     const chain = Array.from({ length: ri.need }, (_, i) => `<i class="${i < ri.chain ? 'on' : ''}" title="${i % 2 === 0 ? '봄' : '가을'}"></i>`).join('')

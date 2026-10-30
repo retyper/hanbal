@@ -27,9 +27,9 @@ function vassal(r: Realm, f: string, v: string): void {
   makeVassal(r, v, f)
   r.relations[pairKey(f, v)]!.vassal = { lord: f, until: 999 }
 }
-/** 셋을 속국으로 — 아는 나라 다섯의 절반 넘게(3) */
-function pact(r: Realm, f: string, a: string, b: string, c: string): void {
-  for (const v of [a, b, c]) vassal(r, f, v)
+/** 맹약 — f 가 판의 다른 나라를 모두 속국으로 (형 10-30: 맹주는 다 속국) */
+function pact(r: Realm, f: string): void {
+  for (const v of Object.keys(r.factions)) if (v !== f) vassal(r, f, v)
 }
 
 describe('외교의 손 — 보낼 사람', () => {
@@ -68,27 +68,22 @@ describe('외교의 손 — 보낼 사람', () => {
 })
 
 describe('맹주의 길 — 진왕', () => {
-  it('절반 넘게와 손잡고 네 계절 내리 버티면 이긴다 (path suzerain)', () => {
+  it('아는 나라를 모두 속국으로 네 계절 내리 버티면 이긴다 (path suzerain)', () => {
     let r = planned(byeonhanMini(1), [])
-    pact(r, 'us', 'guya', 'anya', 'miri')
+    pact(r, 'us')
     assert.ok(pactOf(r, 'us').score >= pactOf(r, 'us').need)
     for (let i = 0; i < P.realm.suzerainSeasons && !r.outcome; i++) r = advance(r, []).next
     assert.equal(r.outcome?.kind, 'win')
     assert.equal(r.outcome?.path, 'suzerain')
   })
 
-  it('동맹은 반 나라로 센다 — 속국 하나 + 동맹 셋(2.5)은 모자라고 동맹 넷(3)이면 찬다', () => {
+  it('동맹은 셈에 안 든다 — 하나라도 속국이 아니면 모자란다 (형 10-30)', () => {
     const r = planned(byeonhanMini(1), [])
-    vassal(r, 'us', 'guya')
-    for (const x of ['anya', 'miri', 'goja']) r.relations[pairKey('us', x)] = { state: 'ally', until: null }
-    const p = pactOf(r, 'us')
-    assert.equal(p.vassals, 1)
-    assert.equal(p.allies, 3)
-    assert.equal(p.score, 1 + 3 * P.realm.suzerainAllyWeight)
-    assert.ok(p.score < p.need)
-    const rest = Object.keys(r.factions).find((x) => x !== 'us' && !['guya', 'anya', 'miri', 'goja'].includes(x))!
-    r.relations[pairKey('us', rest)] = { state: 'ally', until: null }
+    pact(r, 'us')
     assert.ok(pactOf(r, 'us').score >= pactOf(r, 'us').need)
+    const one = Object.keys(r.factions).find((x) => x !== 'us')!
+    r.relations[pairKey('us', one)] = { state: 'ally', until: null }
+    assert.ok(pactOf(r, 'us').score < pactOf(r, 'us').need)
   })
 
   it('조공국이 없으면 동맹만으로는 진왕이 아니다', () => {
@@ -102,7 +97,7 @@ describe('맹주의 길 — 진왕', () => {
 
   it('끊기면 시계가 처음부터', () => {
     let r = planned(byeonhanMini(1), [])
-    pact(r, 'us', 'guya', 'anya', 'miri')
+    pact(r, 'us')
     r = advance(r, []).next
     r = advance(r, []).next
     assert.equal(r.suzerain?.['us']?.streak, 2)
@@ -115,7 +110,7 @@ describe('맹주의 길 — 진왕', () => {
 
   it('남이 맹주가 되면 우리가 진다 · 그 전에 소문이 온다', () => {
     let r = planned(byeonhanMini(1), [])
-    pact(r, 'guya', 'anya', 'miri', 'goja')
+    pact(r, 'guya')
     let rumor = false
     for (let i = 0; i < P.realm.suzerainSeasons && !r.outcome; i++) {
       const res = advance(r, [])

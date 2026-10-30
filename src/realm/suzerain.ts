@@ -1,7 +1,7 @@
 /**
  * 맹주의 길 — 진왕 (docs/realm/VICTORY.md §1. 『삼국지』 동이전: 진왕이 목지국에서 삼한을 거느렸다 · 변진 열두 나라도 진왕에 속했다).
  *
- *   살아 있는(땅 있는) 아는 나라의 **절반 넘게**를 셈으로 채운다 — 속국(조공국)은 한 나라, 동맹은 suzerainAllyWeight(반 나라)로 센다
+ *   살아 있는(땅 있는) 아는 나라를 **모두** 속국(조공국)으로 만든다 (형 10-30 — 예전엔 절반 넘게 · 동맹은 반 나라로 셌다)
  *   (그 가운데 속국이 하나는. 형 10-27: "맹주로 깨는 건 동맹만 맺으면 되니까 이상한데… 속국으로까지 만들어야") → 그 상태가
  *   suzerainSeasons(네 계절) **내리** 이어지면 맹주가 된다. 끊기면 시계가 처음부터.
  *   모든 길은 남도 걷는다 — AI 나라가 다 이루면 우리가 진다. 4분의 3을 넘기면 소문이 온다.
@@ -32,7 +32,8 @@ export function pactOf(r: Realm, f: string): Pact {
   const have = pool.filter((x) => relationOf(r, f, x).state === 'ally' || isVassal(r, x, f))
   const vassals = pool.filter((x) => isVassal(r, x, f)).length
   const allies = have.length - vassals
-  return { have, vassals, allies, score: vassals + allies * P.realm.suzerainAllyWeight, pool: pool.length, need: Math.floor(pool.length / 2) + 1 }
+  // 아는 나라를 모두 속국으로 (형 10-30: "맹주도 속국 동맹이 아니라 다 속국으로") — 동맹은 셈에 안 든다
+  return { have, vassals, allies, score: vassals, pool: pool.length, need: pool.length }
 }
 
 /** 지금 맹주의 셈을 채웠나 (그리고 셈할 나라가 있나) */

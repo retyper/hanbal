@@ -1130,7 +1130,7 @@ export type ReportLine =
   /** 큰 제사의 사슬 — 우리 것이면 제사철마다, 남의 것이면 가까워졌을 때 소문 (paths.ts) */
   | { readonly kind: 'pathRite'; readonly faction: string; readonly chain: number; readonly need: number; readonly hh: number; readonly hhNeed: number }
   /** 철과 뱃길 — 가까워졌을 때 (우리 것이면 알림, 남의 것이면 소문) */
-  | { readonly kind: 'pathIron'; readonly faction: string; readonly partners: number; readonly iron: number; readonly score: number; readonly need: number }
+  | { readonly kind: 'pathIron'; readonly faction: string; readonly iron: number; readonly need: number }
   /** 장터에서 철이 팔렸다 — `from` 이 `to` 에게 철 `iron` 을 곡식 `grain` 에 */
   | { readonly kind: 'ironMarket'; readonly from: string; readonly to: string; readonly iron: number; readonly grain: number }
   /** 맹약 — `faction` 과 손잡은 나라 `have` / 필요한 `need` · 내리 `streak` 계절 (suzerain.ts — 우리 것이면 맹약의 해, 남의 것이면 소문) */

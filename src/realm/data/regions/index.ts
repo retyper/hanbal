@@ -6,7 +6,7 @@
 import type { Realm, RegionId } from '../../types.ts'
 import type { WorldGeo } from './geoframe.ts'
 import { NATION_IDS, startRealm } from './byeonhan-mini.ts'
-import { keepRivals } from './rivals.ts'
+import { capitalOnly, keepRivals } from './rivals.ts'
 import { P } from '../../../tune/params.ts'
 import { SOUTH_WORLD } from './south-geo.ts'
 import { SOUTH_NATION_IDS, southGeo, startSouth } from './south.ts'
@@ -51,7 +51,8 @@ export function startRegion(region: RegionId, seed: number, player: string, edit
 function openRegion(region: RegionId, seed: number, player: string, edit?: (r: Realm) => void): Realm {
   // 자유 판은 판을 열 때 풍습의 처음 것을 건다 (바닷가 여덟 나라 — hooks.startCustoms). 장(캠페인)은 짜인 대로.
   // edit — 그 앞에 판을 고친다 (짝 씨앗 도구가 나라의 풍습을 더하고 뺀다 · tools/realm-customs.ts)
-  const free = (r: Realm): Realm => { edit?.(r); startCustoms(r); return r }
+  // 자유판은 늘 도읍 하나로 시작한다 (rivals.capitalOnly · 형 10-30)
+  const free = (r: Realm): Realm => { capitalOnly(r); edit?.(r); startCustoms(r); return r }
   switch (region) {
     case 'yeongnam': return free(startYeongnam(seed, player))
     case 'south': return free(startSouth(seed, player))
