@@ -386,7 +386,7 @@ export const MAP_CSS = `
 .map .tok.unit .squad::before { content: ''; position: absolute; left: 6%; right: 6%; bottom: -6%; height: 24%; border-radius: 50%; background: #000b; filter: blur(2px); z-index: -1; }
 .map .tok.unit .sq { position: relative; height: 100%; aspect-ratio: var(--ar, 1); margin: 0 -13%; }
 .map .tok.unit .sq:nth-child(2) { z-index: 1; height: 92%; margin-bottom: 4%; }
-.map .tok.unit .sq u { position: absolute; inset: 0; background: 0 0 / calc(var(--nf, 8) * 100%) 100% no-repeat; animation: mqidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--mqidles, 1)) steps(var(--mqidlen, 2)) calc(var(--k, .5) * -1.6s) infinite; /* 병사마다 박자를 따로 (형 10-28) */ }
+.map .tok.unit .sq u { position: absolute; inset: 0; pointer-events: none; /* 공격 칸 때문에 그림이 칸보다 3배 넓어 투명한 자리가 옆 고을을 덮고 누름을 먹었다 · 누름은 .squad 칸이 받는다 (형 10-30: "군사가 있으면 마을 선택이 안돼") */ background: 0 0 / calc(var(--nf, 8) * 100%) 100% no-repeat; animation: mqidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--mqidles, 1)) steps(var(--mqidlen, 2)) calc(var(--k, .5) * -1.6s) infinite; /* 병사마다 박자를 따로 (형 10-28) */ }
 @keyframes mqidle { from { background-position-x: var(--i0, 0%); } to { background-position-x: var(--i1, 28.5714%); } }
 @keyframes mqwalk { from { background-position-x: var(--w0, 28.5714%); } to { background-position-x: var(--w1, 57.1429%); } }
 @keyframes mqatk { from { background-position-x: var(--a0, 57.1429%); } to { background-position-x: var(--a1, 85.7143%); } }
