@@ -6,7 +6,7 @@
 
 | 계정 (화면에 뜨는 이름) | 풀리는 때 | 본 때 |
 |---|---|---|
-| YunCheol (edu · 'YunCheol Shin') | 지금 쓸 수 있음 (10-30 10:27~11:02 열여덟 장 받는 동안 한도 문구 없음 · 다음에 막히면 그 문구 시각으로 고친다) | 10-30 오전 — 성벽 둘 · 자란 아이 여섯(+고침 하나) · 이기는 법 여덟(+고침 하나) |
+| YunCheol (edu · 'YunCheol Shin') | 10-31 AM 10:28 (문구 「내일 AM 10:28」 그대로) | 10-30 11:40 한도 문구 — 10:27 부터 스물다섯 장쯤 (성벽 둘 · 자란 아이 여섯(+고침 하나) · 이기는 법 여덟(+고침 하나) · 좌원 싸움(+고침 하나) · 장 표지 구지봉(+고침)·대무신(+고침)·자명고 · 삼성혈은 문구만 왔다) |
 | retyper92 (계정 고르기에 'YunCheol Shin · retyper92@gmail' 로 뜬다 · 왼쪽 아래 'YunCheol Shin · Free') | 10-30 PM 3:37 (문구 「내일 PM 3:37」 그대로) | 10-29 15:50 한도 문구 — 15:36 부터 열 장 (사건 romance·wanderer-arrives-g + 초상 g-31·g-39·g-72·L5·L6·L8·L9·L10) · 시각이 지나기 전이라도 한 번 넣어 볼 것 |
 | roqkfeke12 ('윤철 신') | 10-30 PM 6:47 (문구 「내일 PM 6:47」 그대로) | 10-29 20:21 한도 문구 — 18:46 부터 열 장 (초상 L10 평강 · w-07 무당 여왕 · w-16 문중 어른 · g-34 두만 · g-35 달구 · g-46 누렁소 · g-56 과하마 · w-70 물범 + 군막 바탕 + 자란 아이 y-g-10 명궁) |
 | retyper (hephaestosian · 'retyper') | 10-30 PM 11:41 (문구 「내일 PM 11:41」 그대로) | 10-29 23:56 한도 문구 — 23:41 부터 열 장 (자란 아이 y-w-10 · y-g/w-11 · y-g/w-12 · y-g/w-13 · y-g/w-14 · 열 번째 y-w-14 는 문구와 함께 그림도 왔다) |
@@ -20,6 +20,13 @@
    - 지금 것: public/realm/fx/field/wall-whole.png · wall-breach.png (295×420 · 투명 · 흙돌 성벽 위 초가 망루 · 전장 왼쪽 아래 구석에 .wf-wall 로 붙고 scaleX(-1) 로 뒤집힘, battlefield.ts)
    - 챗지피티 한 대화: IMAGE 1 = 지금 wall-whole.png · IMAGE 2 = 형 폰 전장 캡처 public/KakaoTalk_20261029_214004208.jpg(커밋 금지) — 입력칸 + 쪽 input 에 file_upload 도구로(크롬 대화상자 금지) · "같은 구도·세로 420:가로 295 · 전장 그림결(손그림 수채 · 단청 없는 삼한 흙돌 성 · 초가 망루) · 일본·중국풍 금지 · 해 동그라미 금지 · 바탕 단색 #00ff00" → 같은 대화에서 무너지고 그을린 판 한 장
    - 초록 빼서 투명 png(가장자리 초록 번짐 제거) · 295×420 로 덮어쓰기 · 커밋 뒤 tools/retire-history.py
+
+✔ **10-30 낮 받아 넣음 (edu · howwin-few.jpg · HOWWIN_BAKED 에 'few' · 첫 판은 산성 문루가 기와 지붕이라 초가 망루로 한 번 고침 · 원본 assets_src/realm/event-gpt3/howwin-few-gpt.png)** — 받은 판은 산성 문에서 내리닫는 고구려 기병 몇이 굶주려 물러나는 긴 대열 옆구리를 치는 그림이다. 아래 사양의 흰 수염 노장·여인 궁수·서리는 안 들어갔다 — 형이 더 원하면 그 둘을 넣어 다시 ~~**★★★★ 맨 먼저 — 이기는 법 아홉째 「좌원 싸움」 (형 10-30: "맨 마지막 거에는 적은 군사로도 대군을 이기는 사례를 보여 줘 · 역사적으로 그런 사례가 있다면 더 좋고")**~~ — 챗지피티(사람이 든 장면 · 메모리 chatgpt-people-only) · 새 대화 한 장
+   - 지금은 event-invade-siege(목책 뒤 몇 사람과 밀려오는 대군)를 빌려 쓴다. 구우면 **public/realm/howwin/howwin-few.jpg** (4:3 · 1024×768 · 굽기 scratchpad bakeart.py <png> public/realm/howwin/howwin-few.jpg 1024 768) → src/ui/realm/howwin.ts 의 `HOWWIN_BAKED` 에 'few' 를 넣는다 (위는 16:9 로 잘려 보인다 — 가운데에 사람을 모을 것)
+   - 사료: 『삼국사기』 고구려본기 신대왕 8년(172) — 대군이 오자 국상 명림답부는 맞서 나가지 않고 성을 지키며 들을 비웠다(청야). 굶주려 물러나는 대군을 수천 기병으로 쫓아 좌원에서 깨뜨리니 말 한 필도 돌아가지 못했다(匹馬不反). 대군의 머릿수는 기록에 없으니 숫자를 그리지 말 것
+   - 장면: 늦가을~초겨울 좌원 들판 · 서리 내린 마른 풀 · 눈발 조금 · 앞쪽에서 고구려 기병 무리가 언덕을 타고 내려 달린다 — 삼한·초기 삼국 무장(가죽과 쇠 비늘 갑옷 · 상투나 절풍 · 맥궁 · 긴 창 · 짧은 갈기 말) · 앞장선 이는 흰 수염 긴 노장 명림답부(쇠 비늘 갑옷 · 붉은 띠 · 칼을 앞으로) · 곁에 말 위에서 활을 당기는 여인 궁수 하나(예쁘게 · 메모리 realm-art-direction) · 멀리 지치고 굶주린 대군이 흩어져 물러난다(쓰러진 깃발 · 버려진 짐수레 · 뒤돌아 달아나는 작은 사람들, 얼굴 없이) · 뒤 산 위에 우리 돌 산성
+   - 한국 중심(메모리 korea-centered-history): 물러나는 쪽은 바깥 군대로만 — 용 무늬·중국 성곽·한자 깃발 그리지 말 것 · 우리 쪽이 화면의 주인공 · 손그림 수채 결(다른 이기는 법 여덟 장과 같은 결) · 글자 넣지 말 것 · 일장기·햇살 금지 · 아래 15% 어둡게
+   - 시험 한 장 먼저(메모리 ai-credits-plan-first) · 받은 뒤 크기 0 이 아닌지 보고 커밋(메모리 verify-baked-files)
 
 ✔ **10-30 오전 여덟 장 다 받아 넣음 (edu · HOWWIN_BAKED 여덟 · 굽기 scratchpad bakeart.py <png> public/realm/howwin/howwin-<id>.jpg 1024 768 · 깃발 장은 첫 판 무늬가 그리스 투구·서양 방패라 한 번 고침)** ~~**★★★★ 맨 먼저 (성벽 다음) — 이기는 법 여덟 장 (형 10-29: "전투에서 패배하면 … 설명 페이지들 이미지로 만들어 주는 거임 · 하나씩 넘겨 가면서 · 쉽게")**~~
    - 지금은 있는 그림(병사 sol-* · 깃발 · 아이콘 · 사건 그림 바탕)을 짜 맞춰 보인다 (src/ui/realm/howwin.ts picHtml). 구우면 **public/realm/howwin/howwin-<id>.jpg** (4:3 · 1024×768) 에 두고 howwin.ts 의 `HOWWIN_BAKED` 에 그 id 를 넣는다 → 짠 그림 대신 그 그림이 뜬다
@@ -43,7 +50,7 @@
    - ✔ 10-29 저녁 받음(roqkfeke12 · event-war-council) ~~**전략 회의 바탕 — 군막 안** (챗지피티 · 사람 없는 장면이라 제미나이도 됨) — 가죽 장막을 친 군막 안, 가운데 낮은 탁자에 펼친 땅 그림(나무판에 그린 지도)과 돌 말 몇 · 등잔·횃불 빛 · 걸어 둔 맥궁과 화살통 · 사람 없음(장수 얼굴은 위에 얹는다) · 16:9 · 지금은 event-court-hall 을 빌려 쓴다(council-agenda.ts COUNCIL_ART) · 일장기·햇살 금지~~
    - **둥근 청동 얼굴 테** — 영웅전·단련터·알림의 둥근 얼굴(지금 CSS 2px 줄). 가운데 투명 · 청동에 옅은 녹 · 위아래 작은 징. 빈 얼굴 칸(? 자리)도 같은 테에 어두운 속
 
-**★★ 맨 먼저 (형 10-29): 제목 로고 「삼한열전」 뒤에 비파형 동검을 가로로 눕혀 겹친다** — 챗지피티 계정이 풀리면 바로. 붙일 것 두 장: 지금 제목 로고(public/realm/logo/title.png · 맥궁 지운 글자만) + 형이 준 동검 사진 public/realm/00db79af-897d-4ad4-8dbf-ecb32c544b74.webp(깔끔한 쪽 · 박물관 사진이라 커밋 금지). 손잡이·코등이 없는 날 · 아래 반이 비파처럼 불룩 · 가운데쯤 가시 한 쌍 · 등대가 끝까지 지나 아래로 짧은 슴베 — 사진 실루엣 그대로. 글자가 동검에 묻히지 않게(동검은 한 톤 어둡게 · 글자 둘레 어두운 테) · 진짜 투명 바탕. 손으로 오려 붙인 시험은 속이 지워져 버렸다(밝기로 따서 어두운 녹이 빠짐) — 다시 하지 말 것. 아이콘(동검 하나)은 10-29 올림.
+✔ **10-29 03:00 이미 받아 넣었다 (8062096 · edu · logo/title.png)** ~~**★★ 맨 먼저 (형 10-29): 제목 로고 「삼한열전」 뒤에 비파형 동검을 가로로 눕혀 겹친다**~~ — 챗지피티 계정이 풀리면 바로. 붙일 것 두 장: 지금 제목 로고(public/realm/logo/title.png · 맥궁 지운 글자만) + 형이 준 동검 사진 public/realm/00db79af-897d-4ad4-8dbf-ecb32c544b74.webp(깔끔한 쪽 · 박물관 사진이라 커밋 금지). 손잡이·코등이 없는 날 · 아래 반이 비파처럼 불룩 · 가운데쯤 가시 한 쌍 · 등대가 끝까지 지나 아래로 짧은 슴베 — 사진 실루엣 그대로. 글자가 동검에 묻히지 않게(동검은 한 톤 어둡게 · 글자 둘레 어두운 테) · 진짜 투명 바탕. 손으로 오려 붙인 시험은 속이 지워져 버렸다(밝기로 따서 어두운 녹이 빠짐) — 다시 하지 말 것. 아이콘(동검 하나)은 10-29 올림.
 
 **★ 2026-10-28 형: "제미나이로 만든 이벤트 화면들도 다 챗지피티로 · 제미나이로 퀄리티 있는 거 뽑아내기 너무 어렵다"** — 사건 그림 서른아홉 (챗지피티 사람 그림만 규칙을 이걸로 넓힌다). 주문서 = public/_tmp/events39.json (head + 장면 + 16:9 자리면 wide + tail · _queue 순서). 한 장마다 새 대화 · 처음 여덟 장은 옛 그림·그림결 그림을 붙였으나 글만으로도 결이 같아 그 뒤로는 글만 보낸다(형 10-28: 크레딧 아껴) — 장면 글은 scratchpad evprompts.json 꼴 · 챗지피티 페이지에서 127.0.0.1 fetch 는 이제 막힌다 · 받기는 a.download → ~/Downloads/gptev-<이름>.png → scratchpad bakeev.py (16:9 자리는 1600×900, 나머지 1152×768 · cut/ 에도 넣는다).
    10-28 새벽 스물여섯 장 바꿈(hephaestosian 하나 · edu 스물다섯): invade-raid · invade-siege · invade-field · take-town · captured-ours · capture · plot-assassin · plot-bribe · plot-burn · plot-rescue · plot-rumor · plot-sow · plot-spy · truce-pact · tribute-bow · court-hall · festival · flood · plague · dream · newborn · alliance-oath · defection · divination · egg-birth · eight-harbours
@@ -70,6 +77,13 @@
    ~~②~~ (10-26 낮 제미나이 Argon · 옛 아이콘 셋을 IMAGE 1 로 · 초록 바탕 → cut-sprites) **plot-rescue.png** (챗지피티 · 다른 plot-* 아이콘과 같은 격자 결 · 투명 바탕) — 끊어진 밧줄 고리와 열린 나무 옥문 → public/realm/icon/plot-rescue.png
 
 ~~**★ 2026-10-25 밤 형: "온조도 챗지피티로 만들어주면 안될까?"**~~ — 10-25 밤 받아 넣음 (을음·진왕·혁거세·호공·여섯 촌장도) · 아래는 그때 쓴 머리말: 온조 명치판 g-71-baekje-onjo 를 챗지피티로 다시 (지금 것은 제미나이 · 뻣뻣하다). 주몽(g-64, 뜨거운 젊은 궁수)과 다른 멋 — 차분하고 기품 있는 젊은 건국 군주. 보낸 프롬프트(한 줄로): `Create a square 1:1 image. Semi-realistic painterly game character portrait, upper body, plain dark slate-blue studio background, dramatic soft rim light, high detail, like a premium Korean historical strategy game hero card. Subject: Onjo, the young founding king of Baekje, about 25 years old, strikingly handsome with a calm, noble, quietly confident gaze, sharp jawline, clean-shaven, long black hair partly tied in a topknot with loose strands. He wears a gilt-bronze crown with flame and lotus openwork and small dangling gold leaves, a deep indigo silk robe with red and gold collar trim, over it lamellar iron armor with gold-riveted edges, and a dark fur-lined cloak over one shoulder. Both hands rest on the pommel of a ring-pommel sword planted point-down in front of him. Elegant and regal rather than fierce; cool blue and gold palette. No text, no watermark, no sun symbol, no Japanese or Chinese style armor.` → public/realm/bust/g-71-baekje-onjo.jpg (320) · bust-hd (900) · 출처.txt
+
+**★★★ 짓는 중인 장 표지 다섯 (campaign.ts 4~8장 — 지금은 사건 그림을 빌린다) · 챗지피티 · 장면 글은 scratchpad covers30.json (0장 표지 머리말과 같은 결 · 글만 보내도 결이 같았다) · 굽기 scratchpad bakeart.py <png> public/realm/keyart/<id>.jpg 1536 864 → campaign.ts art 를 keyart/<id>.jpg 로**
+   - ✔ 4장 gujibong 구지봉의 노래 (10-30 edu · 첫 판 촌장 깃털관이 북미 원주민 머리장식 같아 머리띠로 고침)
+   - ✔ 5장 daemusin 대무신왕, 부여를 치다 (10-30 edu · 첫 판 깃발에 둥근 바퀴 무늬(해처럼 읽힘) → 민무늬로 고침)
+   - ✔ 6장 jamyeonggo 자명고 (10-30 edu · 무기고에서 북을 찢는 낙랑 공주 · 창밖 호동의 횃불)
+   - 7장 samseonghyeol 삼성혈 — 셋이 솟은 구멍 셋 · 바닷가 나무 궤짝에서 나오는 세 여인과 망아지·송아지·씨앗 · 한라산 (edu 한도에 걸려 안 받음 · 다음 계정에서 이것부터)
+   - 8장 namusaja 나무 사자 — 우산국 벼랑 앞 신라 배 이물의 나무 사자 · 이사부 · 겁먹은 섬사람 (중국 돌사자 꼴 금지)
 
 **★ 2026-10-25 캠페인 새 장 표지 (챗지피티 · 0장 표지를 IMAGE 1 로 "EXACTLY the same painting style" · 16:9 · 아래 25% 어둡게)** —
 ~~1장 온조, 마한을 아우르다~~ (10-25 받음 keyart/mahan.jpg — 멀리 마을 지붕이 기와 전각처럼 보이면 "thatched roofs only" 로 다시)
