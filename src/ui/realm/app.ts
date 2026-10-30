@@ -83,6 +83,7 @@ import { nationKit } from './kitcolor.ts'
 import { handsOf, idleHeroes, ownHand, ownHandsIn } from '../../realm/hands.ts'
 import { pactOf } from '../../realm/suzerain.ts'
 import { ironOf, riteOf } from '../../realm/paths.ts'
+import { diploTips, type DiploTip } from '../../realm/advice.ts'
 import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
 import { AUD_CSS, askSay, pactSay, typed, type PactKind } from './audience.ts'
 import { customDef, customsOf } from '../../realm/data/customs.ts'
@@ -1219,6 +1220,23 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const hit = pathShares(next).filter(([k, v]) => v >= T && v < 1 && (was.get(k) ?? 0) < T)
     if (hit.length === 0) return
     goToast(`<span class="gtk">승리가 가깝다</span>${hit.map(([k, v]) => `<b>${k}</b> ${Math.floor(v * 100)}%`).join(' · ')}: 이대로면 곧 이긴다`, 'big')
+  }
+
+  /** 외교 추천 한 줄 (advice.ts) — 알림과 외교 판 띠가 같은 말을 쓴다 */
+  function tipText(r: Realm, t: DiploTip): string {
+    const name = r.factions[t.to]?.name ?? ''
+    if (t.kind === 'chance') return `${josa(name, '이', '가')} ${josa(r.factions[t.foe ?? '']?.name ?? '', '과', '와')} 싸우느라 힘이 빠졌습니다. 지금 치면 쉽습니다.`
+    if (t.kind === 'strong') return `${name}의 힘이 우리보다 셉니다. 칼을 맞대기 전에 화친이나 동맹을 청하세요.`
+    return `${josa(name, '과', '와')} 국경이 맞닿았습니다. 화친을 청하거나 선물을 보내 보세요.`
+  }
+  /** 새로 생긴 외교 추천 — 그 계절에 한 번 알린다 (가장 급한 것 하나) */
+  function diploToast(prev: Realm, next: Realm): void {
+    if (next.outcome != null) return
+    const was = new Set(diploTips(prev, me()).map((t) => t.key))
+    const fresh = diploTips(next, me()).filter((t) => !was.has(t.key))
+    const t = fresh.find((x) => x.kind === 'chance') ?? fresh.find((x) => x.kind === 'strong') ?? fresh[0]
+    if (t === undefined) return
+    goToast(`<span class="gtk">외교</span>${emblem(t.to, 'fem')}${tx(tipText(next, t))}`)
   }
 
   /** 잠깐 떴다 스스로 걷히는 한 줄 — 누르면 바로 닫힌다 (메모리 notices-must-dismiss · 걷힘은 CSS 애니메이션 끝에서 · 타이머 없음) */
@@ -2742,6 +2760,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const e of out) h += sentBanner(r, e, true)
     // 맺으면 뭐가 되는지는 ? 안에 (GUIDE.envoy — 형 10-23: "탭마다 있는 설명 고봉밥들은 전부 다 물음표에")
     // 앞서가는 나라 — 모두 이기려 하니, 앞선 나라는 다른 나라들이 함께 막으려 한다 (stance.leaderOf)
+    // 외교 추천 — 이번 계절 손볼 만한 이웃 (advice.ts · 형 10-31) · 누르면 그 나라 카드가 펼쳐진다
+    for (const t of diploTips(r, me())) h += `<div class="banner${t.kind === 'chance' ? ' good' : t.kind === 'strong' ? ' bad' : ''} an" data-act="fopen" data-to="${t.to}">${emblem(t.to, 'fem')}<span class="txw">${tx(tipText(r, t))}</span></div>`
     const L = leaderOf(r, me())
     if (L === me()) h += `<div class="banner bad">우리가 앞서간다. 다른 나라들이 손을 잡고, 맺은 약조도 깨고 등을 돌릴 수 있다.</div>`
     else if (L !== null) h += `<div class="banner">앞서가는 나라: ${emblem(L, 'fem')}<b>${esc(r.factions[L]?.name ?? '')}</b> · 다른 나라들이 함께 막으려 한다. 손잡을 때다.</div>`
@@ -5661,6 +5681,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     engraveNow(res.next) // 판이 끝났다 — 이기든 지든 장수마다 공을 판 밖 단련 공으로 (drill.ts)
     backToast(backNotes(prev, res.next, mine))
     nearWinToast(prev, res.next)
+    diploToast(prev, res.next)
     seasonFx(res.next.season)
     noteFaces(res.next) // 갓 난 아이 얼굴 — 보고·장면·장수 판 어디서나 (형 10-23: "하늬도 이미지가 없어 보이네 애기 태어날 때")
     ceremonyFx(prev, res.next, res.report)
