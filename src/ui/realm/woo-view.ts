@@ -185,13 +185,14 @@ export interface TalkState {
 }
 export interface TalkLines {
   readonly open: (r: Realm, x: Hero, by: string | null) => string
-  readonly lord: (by: Hero) => string
+  readonly lord: (by: Hero, r: Realm) => string
   /** i 번째 마디에 우리 장수가 할 말 (talk[i] 가 그 거리 · reacts 는 앞 마디들의 반응) */
   readonly pitch: (r: Realm, by: Hero, x: Hero, talk: readonly WooApproach[], i: number, reacts: readonly WooReact[]) => string
-  /** i 번째 마디의 대답 · hook 이면 다음 마디를 부르는 물음까지 */
-  readonly react: (r: Realm, by: Hero, x: Hero, talk: readonly WooApproach[], i: number, reacts: readonly WooReact[], hook: boolean) => string
-  readonly notYet: (x: Hero) => string
-  readonly kneel: (x: Hero) => string
+  /** i 번째 마디의 대답 (앞말을 되받지 않는다 · 형 10-30) */
+  readonly react: (r: Realm, by: Hero, x: Hero, talk: readonly WooApproach[], i: number, reacts: readonly WooReact[]) => string
+  readonly notYet: (r: Realm, x: Hero) => string
+  /** 손을 잡는 한마디 — 마지막 마디에 고개를 저었으면 그 거절을 짚는다 */
+  readonly kneel: (r: Realm, by: Hero, x: Hero, talk: readonly WooApproach[], reacts: readonly WooReact[]) => string
   readonly won: (r: Realm, by: Hero, x: Hero, talk: readonly WooApproach[], reacts: readonly WooReact[]) => string
   /** 넘어온 이의 등용 첫마디 (hire-lines · 녹음이 함께 울린다) */
   readonly hire: (x: Hero) => string | null
@@ -237,28 +238,28 @@ export function talkBoxHtml(k: WooKit, L: TalkLines, r: Realm, s: TalkState): st
   const said = s.talk.slice(0, n)
   const reacts = t.beats.map((b) => b.react)
   const pitch = (i: number, tk: readonly WooApproach[] = said): string => L.pitch(r, by, x, tk, i, reacts)
-  const react = (i: number, hook: boolean): string => L.react(r, by, x, said, i, reacts, hook)
+  const react = (i: number): string => L.react(r, by, x, said, i, reacts)
   const rows: string[] = []
   const fold = (upto: number): void => {
     rows.push(`<div class="dp-old">${oldHalf(k, x, L.open(r, x, by.id))}</div>`)
-    for (let i = 0; i < upto; i++) rows.push(`<div class="dp-old">${oldHalf(k, by, pitch(i))}${oldHalf(k, x, react(i, true), ` r-${reacts[i]}`)}</div>`)
+    for (let i = 0; i < upto; i++) rows.push(`<div class="dp-old">${oldHalf(k, by, pitch(i))}${oldHalf(k, x, react(i), ` r-${reacts[i]}`)}</div>`)
   }
   if (n === 0) {
     if (s.sel !== null) rows.push(say(k, x, L.open(r, x, by.id)), say(k, by, pitch(0, [s.sel]), ' pre now'))
-    else rows.push(say(k, by, L.lord(by), ' lord'), say(k, x, L.open(r, x, by.id), ' now'))
+    else rows.push(say(k, by, L.lord(by, r), ' lord'), say(k, x, L.open(r, x, by.id), ' now'))
   } else if (won || lost) {
     // 등용 첫마디는 다음 계절 등용 장면에서 한다 · 여기서는 고개를 숙이는 한마디만 (형 10-29: "여기서 바로 옥을 열고 나와선 안 돼 · 다음 판에 등용 뜨잖아")
     fold(n - 1)
     // 판을 가른 말은 아래 큰 글이 인용한다 · 마지막 마디도 접어 두고 고개 숙이는 한마디만 펼친다 (폰에서 넘치지 않게)
-    rows.push(`<div class="dp-old">${oldHalf(k, by, pitch(n - 1))}${oldHalf(k, x, react(n - 1, false), ` r-${reacts[n - 1]}`)}</div>`)
-    rows.push(won ? say(k, x, L.kneel(x), ' hire now') : say(k, x, L.notYet(x), ' now'))
+    rows.push(`<div class="dp-old">${oldHalf(k, by, pitch(n - 1))}${oldHalf(k, x, react(n - 1), ` r-${reacts[n - 1]}`)}</div>`)
+    rows.push(won ? say(k, x, L.kneel(r, by, x, said, reacts), ' hire now') : say(k, x, L.notYet(r, x), ' now'))
   } else if (s.sel !== null && !over) {
     fold(n - 1)
     rows.push(`<div class="dp-old">${oldHalf(k, by, pitch(n - 1))}</div>`)
-    rows.push(say(k, x, react(n - 1, true), ` r-${reacts[n - 1]}`), say(k, by, pitch(n, [...said, s.sel]), ' pre now'))
+    rows.push(say(k, x, react(n - 1), ` r-${reacts[n - 1]}`), say(k, by, pitch(n, [...said, s.sel]), ' pre now'))
   } else {
     fold(n - 1)
-    rows.push(say(k, by, pitch(n - 1)), say(k, x, react(n - 1, !over), ` r-${reacts[n - 1]} now`))
+    rows.push(say(k, by, pitch(n - 1)), say(k, x, react(n - 1), ` r-${reacts[n - 1]} now`))
   }
   h += `<div class="dp-talk">${rows.join('')}</div>`
   // 벽 — 막대와 조각 · 노여움이면 붉게 두꺼워진다

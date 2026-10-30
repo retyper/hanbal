@@ -1,19 +1,23 @@
 /**
- * 옥중 담판의 대사 (docs/realm/WOO.md §5) — 결 아홉(voice.baseKind)으로 짠다. 글만 (녹음은 반응을 본 뒤).
+ * 옥중 담판의 대사 (docs/realm/WOO.md §5 · docs/realm/MEMORY.md §2) — 글만 (녹음은 반응을 본 뒤).
  * (형 10-29: "옥중담판 대사가 이어지지가 않는데... 루트마다 분기가 나뉘어야 하는 거 아냐?")
+ * (형 10-30: 「누구를 섬기겠느냐 물었소?」 같은 되묻기가 어색 · 군주가 일반 장수처럼 말함 · 사람마다 제 사연으로)
  *
- * 한 판은 이어지는 말 한 줄기다.
+ * 한 판은 이어지는 말 한 줄기다. 앞말을 되받지 않는다. 이어짐은 같은 사람이 제 사연을 끝까지 붙잡는 것으로 낸다.
  *   - 열림: 갇힌 이의 첫마디가 단서다 (마디 0). 그 사람의 약한 곳(가장 맞는 거리)으로 속을 고른다
- *   - 우리 장수의 말 = 받는 말(앞 마디에 갇힌 이가 남긴 물음을 짚는다) + 본말(결 × 거리 × 갈래)
+ *   - 우리 장수의 말: 사람마다 묶음(src/realm/data/woo-talk)이 있으면 그 사람의 말, 없으면 결 × 거리 × 갈래
  *       갈래: open 첫 마디 · press 앞 마디가 먹혔다 · recover 앞 마디가 막혔다 · again 같은 거리를 한 번 더
- *   - 갇힌 이의 반응 = 결 × 방금 들은 거리 × 반응 (같은 거리 · 같은 반응을 또 들으면 「또 그 말이오」 줄)
- *       + 판이 이어지면 다음 마디를 부르는 물음(걸이) · 걸이는 거리 × 먹혔나로 정해지고, 받는 말이 그것을 짚는다
+ *   - 갇힌 이의 반응: 사람마다 묶음 → 군주였던 이는 군주 묶음(RULER_HELD) → 결 × 거리 × 반응
+ *       (같은 거리 · 같은 반응을 또 들으면 「또 그 말이오」 줄)
+ *   - 손을 잡는 한마디: 앞 마디가 먹힌 뒤와, 방금 고개를 저어 놓고 넘어올 때가 다르다
  *   - 우리 장수 → 군주: 사극체, 부르는 말 없이 (cast-delegated) · 우리 장수 → 갇힌 이: 하오체(늙은 장수는 하게, 무녀는 해라)
  *   - 갇힌 이: 하오 · 해라(거친 사내 · 무녀) · 하게(늙은 장수). 어린애 끝(-요)은 어디에도 없다 (tests/realm/woo-lines.test.ts)
  *   - 판의 사실을 넣는다: 나라 이름 · 무너졌나 · 갇힌 계절 · 피붙이 이름 · 고향 · 건 곡식. 조사는 josa() 로
  * 글만 고르고 판에는 손대지 않는다. 같은 판 같은 말이면 같은 줄.
  */
 import { josa } from '../../realm/data/prose.ts'
+import { RULER_GOES, RULER_HELD, WOO_TALK, type WooHeld, type WooSpeak } from '../../realm/data/woo-talk/index.ts'
+import { isRuler } from '../../realm/heroes.ts'
 import type { Hero, Realm, WooApproach, WooReact } from '../../realm/types.ts'
 import { approachesOf, bondHookOf, bornOf, fitOf } from '../../realm/woo.ts'
 import { P } from '../../tune/params.ts'
@@ -28,7 +32,6 @@ export type Reg = 'hao' | 'hage' | 'hae'
 /** 본말의 갈래 */
 export type Mode = 'open' | 'press' | 'recover' | 'again'
 type Ok = 'ok' | 'no'
-type Topic = `${WooApproach}:${Ok}`
 type Line = (f: Facts) => string
 
 /** 우리 장수가 갇힌 이에게 쓰는 말씨 */
@@ -572,98 +575,6 @@ export const BODY: Readonly<Record<BaseKind, Bodies>> = {
   },
 }
 
-// ───────────────────────── 걸이와 받는 말 ─────────────────────────
-
-/**
- * 걸이 — 갇힌 이가 다음 마디를 부르며 남기는 물음 · 의심 · 조건. 거리 × 먹혔나로 물음이 정해지고 말씨대로 말한다.
- * [0] 첫 마디 뒤 · [1] 둘째 마디 뒤 (셋째 마디 뒤에는 걸이가 없다)
- */
-export const HOOK: Readonly<Record<Topic, readonly [Readonly<Record<Reg, Line>>, Readonly<Record<Reg, Line>>]>> = {
-  'soothe:ok': [
-    { hao: () => '허나 그 다정함이 언제까지 가겠소?', hae: () => '헌데 그 다정함이 언제까지 가겠느냐?', hage: () => '헌데 그 다정함이 언제까지 가겠는가?' },
-    { hao: () => '하나만 묻겠소. 그대 군장도 그대와 같은 마음이오?', hae: () => '하나만 묻자. 네 군장도 너와 같은 마음이냐?', hage: () => '하나만 묻세. 자네 군장도 자네와 같은 마음인가?' },
-  ],
-  'soothe:no': [
-    { hao: () => '말이야 누군들 못 하겠소. 말 말고 무엇이 있소?', hae: () => '말이야 누군들 못 하겠느냐. 말 말고 무엇이 있느냐?', hage: () => '말이야 누군들 못 하겠나. 말 말고 무엇이 있는가?' },
-    { hao: () => '그대 말은 귀에 걸리지 않소. 더 할 말이 남았소?', hae: () => '네 말은 귀에 걸리지 않는다. 더 할 말이 남았느냐?', hage: () => '자네 말은 귀에 걸리지 않네. 더 할 말이 남았는가?' },
-  ],
-  'cause:ok': [
-    { hao: () => '그렇다면 나더러 누구를 섬기란 말이오?', hae: () => '그럼 나더러 누구를 섬기란 말이냐?', hage: () => '그럼 이 몸더러 누구를 섬기란 말인가?' },
-    { hao: () => '그대 군장은 옛 주인과 무엇이 다르오?', hae: () => '네 군장은 옛 주인과 무엇이 다르냐?', hage: () => '자네 군장은 옛 주인과 무엇이 다른가?' },
-  ],
-  'cause:no': [
-    { hao: () => '그대라면 옛 주인을 저버리겠소?', hae: () => '너라면 옛 주인을 저버리겠느냐?', hage: () => '자네라면 옛 주인을 저버리겠는가?' },
-    { hao: () => '옳은 말만으로 내 마음까지 돌릴 수 있겠소?', hae: () => '옳은 말만으로 내 마음까지 돌릴 수 있겠느냐?', hage: () => '옳은 말만으로 이 늙은이 마음까지 돌릴 수 있겠는가?' },
-  ],
-  'gain:ok': [
-    { hao: () => '곡식은 좋소. 허나 나는 가서 무엇이 되오?', hae: () => '곡식은 좋다. 헌데 가서 나는 무엇이 되느냐?', hage: () => '곡식은 좋네. 헌데 가서 이 몸은 무엇이 되는가?' },
-    { hao: () => '그 약조는 누가 지키오? 말로야 무엇을 못 하겠소.', hae: () => '그 약조는 누가 지키느냐? 말로야 무엇을 못 하겠느냐.', hage: () => '그 약조는 누가 지키는가? 말로야 무엇을 못 하겠나.' },
-  ],
-  'gain:no': [
-    { hao: () => '내가 장사꾼으로 보이오?', hae: () => '내가 장사치로 보이느냐?', hage: () => '이 늙은이가 장사치로 보이는가?' },
-    { hao: () => '곡식으로 사람의 마음을 사려는 자와는 더 나눌 말이 없소. 그것뿐이오?', hae: () => '곡식으로 사람의 마음을 사려는 자와는 더 나눌 말이 없다. 그것뿐이냐?', hage: () => '곡식으로 사람의 마음을 사려는 이와는 더 나눌 말이 없네. 그것뿐인가?' },
-  ],
-  'fear:ok': [
-    { hao: () => '……허나 나를 살려 둘 생각은 있소?', hae: () => '……헌데 나를 살려 둘 생각은 있느냐?', hage: () => '……헌데 이 늙은이를 살려 둘 생각은 있는가?' },
-    { hao: () => '넘어가면 내 식구들은 무사하오?', hae: () => '넘어가면 내 식구들은 무사하냐?', hage: () => '넘어가면 내 식구들은 무사한가?' },
-  ],
-  'fear:no': [
-    { hao: (f) => `${f.blade} 다음엔 무엇을 꺼낼 셈이오?`, hae: (f) => `${f.blade} 다음엔 무엇을 꺼낼 셈이냐?`, hage: (f) => `${f.blade} 다음엔 무엇을 꺼낼 셈인가?` },
-    { hao: () => '겁주는 것밖에 할 줄 모르오?', hae: () => '겁주는 것밖에 할 줄 모르느냐?', hage: () => '겁주는 것밖에 할 줄 모르는가?' },
-  ],
-  'bond:ok': [
-    { hao: () => '그 말이 참이라면…… 내가 그 끈을 다시 잡아도 되겠소?', hae: () => '그 말이 참이라면…… 내가 그 끈을 다시 잡아도 되겠느냐?', hage: () => '그 말이 참이라면…… 이 늙은이가 그 끈을 다시 잡아도 되겠는가?' },
-    { hao: () => '그 끈을 그대는 끝까지 붙잡겠소?', hae: () => '그 끈을 너는 끝까지 붙잡겠느냐?', hage: () => '그 끈을 자네는 끝까지 붙잡겠는가?' },
-  ],
-  'bond:no': [
-    { hao: () => '그 끈은 이미 끊어졌소. 그런 것으로 나를 묶을 셈이오?', hae: () => '그 끈은 이미 끊어졌다. 그걸로 나를 묶으려느냐?', hage: () => '그 끈은 벌써 끊어졌네. 그걸로 나를 묶으려는가?' },
-    { hao: () => '사람의 정을 셈에 쓰는 자를 어찌 믿겠소?', hae: () => '사람의 정을 셈에 쓰는 자를 어찌 믿겠느냐?', hage: () => '사람의 정을 셈에 쓰는 사람을 어찌 믿겠는가?' },
-  ],
-}
-/** 받는 말 — 우리 장수가 걸이를 짚는다 (먹혔으면 답하고, 막혔으면 받아들이고). [0] 첫 마디의 걸이 · [1] 둘째 마디의 걸이 */
-export const ECHO: Readonly<Record<Topic, readonly [Readonly<Record<Reg, Line>>, Readonly<Record<Reg, Line>>]>> = {
-  'soothe:ok': [
-    { hao: () => '언제까지 가겠느냐 물었소? 그대가 우리 사람이 되는 날부터는 끝이 없소.', hage: () => '언제까지 가겠느냐 물었나? 자네가 우리 사람이 되는 날부터는 끝이 없네.', hae: () => '언제까지 가겠느냐 물었느냐? 네가 우리 사람이 되는 날부터는 끝이 없다.' },
-    { hao: () => '우리 군장의 마음을 물었소? 그분이 나를 이리 보내셨소.', hage: () => '우리 군장의 마음을 물었나? 그분이 나를 여기 보내셨네.', hae: () => '우리 군장의 마음을 물었느냐? 그분이 나를 여기 보내셨다.' },
-  ],
-  'soothe:no': [
-    { hao: () => '말뿐이라 했소? 그 말도 옳소.', hage: () => '말뿐이라 했나? 그 말도 옳네.', hae: () => '말뿐이라 했느냐? 그 말도 옳다.' },
-    { hao: () => '귀에 걸리지 않는다 했소? 그럼 이 말 하나만 들으시오.', hage: () => '귀에 걸리지 않는다 했나? 그럼 이 말 하나만 듣게.', hae: () => '귀에 걸리지 않는다 했느냐? 그럼 이 말 하나만 들어라.' },
-  ],
-  'cause:ok': [
-    { hao: () => '누구를 섬기겠느냐 물었소? 그대를 알아보는 사람을 섬기시오.', hage: () => '누구를 섬기겠느냐 물었나? 자네를 알아보는 사람을 섬기게.', hae: () => '누구를 섬기겠느냐 물었느냐? 너를 알아보는 이를 섬기거라.' },
-    { hao: () => '무엇이 다르냐 물었소? 우리 군장은 제 사람을 옥에 버려두지 않소.', hage: () => '무엇이 다르냐 물었나? 우리 군장은 제 사람을 옥에 버려두지 않네.', hae: () => '무엇이 다르냐 물었느냐? 우리 군장은 제 사람을 옥에 버려두지 않는다.' },
-  ],
-  'cause:no': [
-    { hao: () => '나라면 저버리겠느냐 물었소? 나도 못 하오. 그 마음을 아오.', hage: () => '나라면 저버리겠느냐 물었나? 나도 못 하네. 그 마음을 아네.', hae: () => '나라면 저버리겠느냐 물었느냐? 나도 못 한다. 그 마음을 안다.' },
-    { hao: () => '옳은 말만으로는 안 된다 했소? 그 말을 새겨듣겠소.', hage: () => '옳은 말만으로는 안 된다 했나? 그 말을 새겨듣겠네.', hae: () => '옳은 말만으로는 안 된다 했느냐? 그 말을 새겨듣겠다.' },
-  ],
-  'gain:ok': [
-    { hao: () => '무엇이 되느냐 물었소? 우리 장수들과 나란히 설 자리를 비워 두었소.', hage: () => '무엇이 되느냐 물었나? 우리 장수들과 나란히 설 자리를 비워 두었네.', hae: () => '무엇이 되느냐 물었느냐? 우리 장수들과 나란히 설 자리를 비워 두었다.' },
-    { hao: () => '약조를 누가 지키느냐 물었소? 내가 살아 있는 한 그 약조는 헛되지 않소.', hage: () => '약조를 누가 지키느냐 물었나? 내가 살아 있는 한 그 약조는 헛되지 않네.', hae: () => '약조를 누가 지키느냐 물었느냐? 내가 살아 있는 한 그 약조는 헛되지 않다.' },
-  ],
-  'gain:no': [
-    { hao: () => '장사꾼으로 보이느냐 물었소? 내 말이 짧았소.', hage: () => '장사치로 보이느냐 물었나? 내 말이 짧았네.', hae: () => '장사치로 보이느냐 물었느냐? 내 말이 짧았다.' },
-    { hao: () => '그것뿐이냐 물었소? 내 말은 곡식에만 있지 않소.', hage: () => '그것뿐이냐 물었나? 내 말은 곡식에만 있지 않네.', hae: () => '그것뿐이냐 물었느냐? 내 말은 곡식에만 있지 않다.' },
-  ],
-  'fear:ok': [
-    { hao: () => '살려 둘 생각이 있느냐 물었소? 우리 사람이 되면 그대 목숨은 내가 지키오.', hage: () => '살려 둘 생각이 있느냐 물었나? 우리 사람이 되면 자네 목숨은 내가 지키네.', hae: () => '살려 둘 생각이 있느냐 물었느냐? 우리 사람이 되면 네 목숨은 내가 지킨다.' },
-    { hao: () => '식구들이 무사하냐 물었소? 털끝 하나 다치지 않소.', hage: () => '식구들이 무사하냐 물었나? 털끝 하나 다치지 않네.', hae: () => '식구들이 무사하냐 물었느냐? 털끝 하나 다치지 않는다.' },
-  ],
-  'fear:no': [
-    { hao: () => '다음은 무엇이냐 물었소? 들어 보시오.', hage: () => '다음은 무엇이냐 물었나? 들어 보게.', hae: () => '다음은 무엇이냐 물었느냐? 들어 보아라.' },
-    { hao: () => '겁주는 것밖에 모르느냐 했소? 그 말은 받아 두겠소.', hage: () => '겁주는 것밖에 모르느냐 했나? 그 말은 받아 두겠네.', hae: () => '겁주는 것밖에 모르느냐 했느냐? 그 말은 받아 두마.' },
-  ],
-  'bond:ok': [
-    { hao: () => '그 끈을 잡아도 되느냐 물었소? 그러라고 내민 손이오.', hage: () => '그 끈을 잡아도 되느냐 물었나? 그러라고 내민 손일세.', hae: () => '그 끈을 잡아도 되느냐 물었느냐? 그러라고 내민 손이다.' },
-    { hao: () => '끝까지 붙잡겠느냐 물었소? 놓을 생각이었으면 꺼내지도 않았소.', hage: () => '끝까지 붙잡겠느냐 물었나? 놓을 생각이었으면 꺼내지도 않았네.', hae: () => '끝까지 붙잡겠느냐 물었느냐? 놓을 생각이었으면 꺼내지도 않았다.' },
-  ],
-  'bond:no': [
-    { hao: () => '끊어졌다 했소? 끊어진 끈도 다시 묶는 법이오.', hage: () => '끊어졌다 했나? 끊어진 끈도 다시 묶는 법일세.', hae: () => '끊어졌다 했느냐? 끊어진 끈도 다시 묶는 법이다.' },
-    { hao: () => '정을 셈에 쓴다 했소? 그리 들렸다면 내 허물이오.', hage: () => '정을 셈에 쓴다 했나? 그리 들렸다면 내 허물일세.', hae: () => '정을 셈에 쓴다 했느냐? 그리 들렸다면 내 허물이다.' },
-  ],
-}
-
 // ───────────────────────── 갇힌 이의 반응 ─────────────────────────
 
 /** 반응 — 결 × 방금 들은 거리 × 크게 흔들림 · 흔들림 · 버팀 · 노여움 */
@@ -793,7 +704,7 @@ const NOT_YET: Readonly<Record<BaseKind, string>> = {
   'w-shaman': '아직 신의 허락이 내리지 않았다.',
 }
 /** 손을 잡았다 — 옥에서 바로 나오지는 않는다 (다음 계절 등용 장면에서 옥문이 열린다) */
-const KNEEL: Readonly<Record<BaseKind, string>> = {
+export const KNEEL: Readonly<Record<BaseKind, string>> = {
   'm-young': '……졌소. 그대 손을 잡겠소. 옥문이 열리는 날 그대를 따르리다.',
   'm-gruff': '허, 끝내 내 마음을 꺾는구나. 옥문이 열리면 네 편에서 칼을 들마.',
   'm-sage': '이제 셈은 끝났소. 옥문이 열리면 내 꾀를 그대의 군사에 보태겠소.',
@@ -803,6 +714,52 @@ const KNEEL: Readonly<Record<BaseKind, string>> = {
   'w-cool': '……그대 손을 잡겠소. 옥문이 열리는 날까지 이 마음은 바뀌지 않소.',
   'w-sly': '후후, 내가 졌구려. 옥문이 열리면 그대 곁에 있겠소.',
   'w-shaman': '신께서 허락하셨다. 옥문이 열리는 날 너희 편에 서겠노라.',
+}
+
+/** 방금 고개를 저어 놓고 손을 잡는다 — 그 거절을 짚는다 (형 10-30: 「듣기 싫다」 하고 곧바로 「끝내 내 마음을 꺾는구나」가 어색) */
+export const KNEEL_AFTER_NO: Readonly<Record<BaseKind, string>> = {
+  'm-young': '……방금은 아니라 했으나, 그대 말이 귀에서 떠나지 않소. 옥문이 열리면 따르리다.',
+  'm-gruff': '흥, 싫다고 해 놓고 이러니 우습구나. 허나 네 말이 자꾸 걸린다. 옥문이 열리면 네 편에 서마.',
+  'm-sage': '방금은 셈이 안 맞는다 했소만, 다시 셈하니 답이 바뀌었소. 옥문이 열리면 그대를 돕겠소.',
+  'm-elder': '허허, 고개를 저은 지 얼마나 됐다고. 늙은이 고집도 이만 꺾이는구먼. 옥문이 열리거든 자네 편에 서겠네.',
+  'm-charm': '아니라고 해 놓고 이리 되니 낯이 뜨겁구려. 그래도 마음은 거짓말을 못 하오. 옥문이 열리면 그대 곁에 서리다.',
+  'w-bright': '아까는 싫다고 했지만…… 그대 말이 자꾸 생각나오. 옥문이 열리면 그대들 편에서 싸우겠소!',
+  'w-cool': '방금은 거절했소. 허나 그 말은 거두겠소. 옥문이 열리는 날 그대를 따르겠소.',
+  'w-sly': '후후, 싫다 해 놓고 손을 잡으니 나도 참 알 수 없는 여인이구려. 옥문이 열리면 그대 곁에 있겠소.',
+  'w-shaman': '방금 신께서 고개를 저으셨는데, 방울이 다시 운다. 옥문이 열리는 날 너희 편에 서겠노라.',
+}
+
+// ───────────────────────── 사람마다의 묶음 ─────────────────────────
+
+/** 군주였던 이 — 지금 군주이거나 군주로 났다 (-ruler) */
+const rulerish = (r: Realm, x: Hero): boolean => isRuler(r, x.id) || x.id.endsWith('-ruler')
+/** 갇힌 이의 묶음 — 사람마다 것 · 없으면 군주 묶음 · 그것도 아니면 null(결 틀). 결을 박은 사람(시험 · 대사 보기)은 늘 결 틀 */
+export function heldOf(r: Realm, x: Hero): WooHeld | null {
+  if (WOO_KIND_PIN.has(x.id)) return null
+  return WOO_TALK[x.id]?.held ?? (rulerish(r, x) ? RULER_HELD : null)
+}
+/** 회유하는 이의 묶음 */
+export const speakOf = (by: Hero): WooSpeak | null => (WOO_KIND_PIN.has(by.id) ? null : WOO_TALK[by.id]?.speak ?? null)
+
+const PAIR: Readonly<Record<string, readonly [string, string]>> = {
+  은: ['은', '는'], 는: ['은', '는'], 이: ['이', '가'], 가: ['이', '가'], 을: ['을', '를'], 를: ['을', '를'],
+  과: ['과', '와'], 와: ['과', '와'], 으로: ['으로', '로'], 로: ['으로', '로'],
+}
+/** 자리표에 넣을 값 */
+export function talkVars(f: Facts): Readonly<Record<string, string>> {
+  return {
+    nation: f.nation, ours: f.ours, captor: f.ours, jail: f.jail ?? '며칠', grain: f.grain,
+    kin: f.kin?.name ?? f.tie, rel: f.kin?.rel ?? '피붙이', home: f.home ?? f.ours, tie: f.tie, blade: f.blade,
+  }
+}
+/** 묶음의 한 줄에 자리표를 채운다 — 자리표 바로 뒤의 조사는 받침대로 고친다 */
+export function fillTalk(line: string, v: Readonly<Record<string, string>>): string {
+  return line
+    .replace(/\{(\w+)\}(으로|은|는|이|가|을|를|과|와|로)(?=[\s.,!?…」)]|$)/g, (m, k: string, p: string) => {
+      const w = v[k]
+      return w === undefined ? m : josa(w, PAIR[p]![0], PAIR[p]![1])
+    })
+    .replace(/\{(\w+)\}/g, (m, k: string) => v[k] ?? m)
 }
 
 // ───────────────────────── 이어 붙이기 ─────────────────────────
@@ -821,12 +778,23 @@ export function modeOf(talk: readonly WooApproach[], i: number, reacts: readonly
   return ok ? 'press' : 'recover'
 }
 
-/** 우리 장수의 한 마디 — 받는 말과 본말 */
-export function pitchParts(r: Realm, by: Hero, x: Hero, talk: readonly WooApproach[], i: number, reacts: readonly WooReact[]): { echo: string; body: string; fact: string } {
-  const k = kindOf(by)
-  const reg = SPEAK_REG[k]
+/**
+ * 우리 장수의 한 마디 (형 10-30: 「~ 물었소?」 되묻기를 걷는다 · 앞말을 되받지 않고 바로 제 말을 한다).
+ * 사람마다 묶음이 있으면 그 사람의 말 · 같은 거리를 거듭 쓰면 다음 줄. 없으면 결 틀 (fact 는 명분 · 인연이 내세운 사실 한 줄)
+ */
+export function pitchParts(r: Realm, by: Hero, x: Hero, talk: readonly WooApproach[], i: number, reacts: readonly WooReact[]): { body: string; fact: string } {
   const a = talk[i]!
   const f = factsOf(r, x, by, gainsUpTo(talk, i))
+  const sp = speakOf(by)
+  if (sp !== null) {
+    const n = Math.min(2, talk.slice(0, i).filter((b) => b === a).length)
+    const raw = a === 'cause' ? (n === 0 ? sp.cause[f.sit] : n === 1 ? sp.cause.again : sp.cause.third)
+      : a === 'bond' ? sp.bond[f.kin !== null ? 'kin' : f.blood ? 'blood' : 'home']
+        : sp[a][n]!
+    return { body: fillTalk(raw, talkVars(f)), fact: '' }
+  }
+  const k = kindOf(by)
+  const reg = SPEAK_REG[k]
   const mode = modeOf(talk, i, reacts)
   const prevOk = i > 0 && okOf(reacts[i - 1] ?? 'hold') === 'ok'
   const used = talk.slice(0, i).includes(a)
@@ -834,54 +802,59 @@ export function pitchParts(r: Realm, by: Hero, x: Hero, talk: readonly WooApproa
   const c = a === 'cause' ? CAUSE[reg][f.sit][stage](f) : a === 'bond' ? BOND[reg](f) : ''
   const B = BODY[k]
   const body = a === 'bond' ? B.bond[mode === 'again' ? 'press' : mode](f, c) : B[a][mode](f, c)
-  if (i === 0) return { echo: '', body, fact: c }
-  const pa = talk[i - 1]!
-  const echo = ECHO[`${pa}:${okOf(reacts[i - 1] ?? 'hold')}`][Math.min(1, i - 1)]![reg](f)
-  return { echo, body, fact: c }
+  return { body, fact: c }
 }
 
-/** 갇힌 이의 반응 한 줄 — hook 이면 다음 마디를 부르는 물음을 붙인다 */
-export function reactParts(r: Realm, by: Hero, x: Hero, talk: readonly WooApproach[], i: number, reacts: readonly WooReact[]): { core: string; hook: string } {
-  const k = kindOf(x)
+/** 갇힌 이의 반응 한 줄 — 같은 거리로 같은 쪽 반응을 이미 냈으면 「또 그 말이오」 줄 */
+export function reactLineOf(r: Realm, by: Hero, x: Hero, talk: readonly WooApproach[], i: number, reacts: readonly WooReact[]): string {
   const a = talk[i]!
   const re = reacts[i]!
   const f = factsOf(r, x, by, gainsUpTo(talk, i))
   const cls = okOf(re)
-  // 같은 거리로 같은 쪽 반응을 이미 냈으면 「또 그 말이오」
   const seen = re === 'rage' ? 0 : talk.slice(0, i).filter((b, j) => b === a && reacts[j] !== 'rage' && okOf(reacts[j]!) === cls).length
-  const core = seen > 0 ? REPEAT[k][cls === 'ok' ? 'ok' : 'hold'][Math.min(1, seen - 1)]!(NOUN[a](f)) : REACT[k][a][re](f)
-  const hook = re === 'rage' || i >= 2 ? '' : HOOK[`${a}:${cls}`][i]![HEAR_REG[k]](f)
-  return { core, hook }
+  const held = heldOf(r, x)
+  if (held !== null) {
+    const raw = re === 'rage' ? held.rage[a === 'gain' || a === 'fear' ? 'insult' : 'slight']
+      : seen > 0 ? (cls === 'ok' ? held.againHit : held.againMiss)[Math.min(1, seen - 1)]!
+        : (cls === 'ok' ? held.hit : held.miss)[a]
+    return fillTalk(raw, talkVars(f))
+  }
+  const k = kindOf(x)
+  return seen > 0 ? REPEAT[k][cls === 'ok' ? 'ok' : 'hold'][Math.min(1, seen - 1)]!(NOUN[a](f)) : REACT[k][a][re](f)
 }
 
 /** 열림 — 단서 한 줄 (원한이 있으면 그것부터) */
 export function wooOpenLine(r: Realm, x: Hero, by: string | null): string {
+  const held = heldOf(r, x)
   const k = kindOf(x)
-  if ((x.grudge ?? 0) > 0) return OPEN_GRUDGE[k]
   const c = clueOf(r, x.id, by)
-  if (c === 'kin') {
-    const f = factsOf(r, x, by !== null ? (r.heroes[by] ?? null) : null)
-    if (f.kin !== null) return OPEN_KIN[k](f.kin.name, `내 ${f.kin.rel}`)
-    return OPEN[k].pride
+  const f = factsOf(r, x, by !== null ? (r.heroes[by] ?? null) : null)
+  if (held !== null) {
+    if ((x.grudge ?? 0) > 0) return fillTalk(held.grudge, talkVars(f))
+    if (c === 'kin') return fillTalk(f.kin !== null ? held.kin : held.open.pride, talkVars(f))
+    return fillTalk(held.open[c], talkVars(f))
   }
+  if ((x.grudge ?? 0) > 0) return OPEN_GRUDGE[k]
+  if (c === 'kin') return f.kin !== null ? OPEN_KIN[k](f.kin.name, `내 ${f.kin.rel}`) : OPEN[k].pride
   return OPEN[k][c]
 }
-/** 우리 장수가 군주에게 */
-export const wooLordLine = (by: Hero): string => TO_LORD[kindOf(by)]
+/** 우리 장수가 군주에게 (군주 몸소 가면 신하들에게) */
+export const wooLordLine = (by: Hero, r?: Realm): string => speakOf(by)?.lord ?? (r !== undefined && !WOO_KIND_PIN.has(by.id) && isRuler(r, by.id) ? RULER_GOES : TO_LORD[kindOf(by)])
 /** 우리 장수가 i 번째 마디에 할 말 (talk[i] 가 그 마디의 거리 · reacts 는 앞 마디들의 반응) */
-export function wooPitchLine(r: Realm, by: Hero, x: Hero, talk: readonly WooApproach[], i: number, reacts: readonly WooReact[]): string {
-  const p = pitchParts(r, by, x, talk, i, reacts)
-  return p.echo === '' ? p.body : `${p.echo} ${p.body}`
-}
-/** 갇힌 이가 i 번째 마디에 한 대답 — hook 이면 다음 마디를 부르는 물음까지 */
-export function wooReactLine(r: Realm, by: Hero, x: Hero, talk: readonly WooApproach[], i: number, reacts: readonly WooReact[], hook: boolean): string {
-  const p = reactParts(r, by, x, talk, i, reacts)
-  return hook && p.hook !== '' ? `${p.core} ${p.hook}` : p.core
-}
+export const wooPitchLine = (r: Realm, by: Hero, x: Hero, talk: readonly WooApproach[], i: number, reacts: readonly WooReact[]): string =>
+  pitchParts(r, by, x, talk, i, reacts).body
+/** 갇힌 이가 i 번째 마디에 한 대답 */
+export const wooReactLine = reactLineOf
 /** 손을 내밀었는데 아직은 */
-export const wooNotYetLine = (x: Hero): string => NOT_YET[kindOf(x)]
-/** 손을 잡았다 */
-export const wooKneelLine = (x: Hero): string => KNEEL[kindOf(x)]
+export const wooNotYetLine = (r: Realm, x: Hero): string => heldOf(r, x)?.notYet ?? NOT_YET[kindOf(x)]
+/** 손을 잡았다 — 마지막 마디에 고개를 저었으면(버팀 · 노여움) 그 거절을 짚는 줄 */
+export function wooKneelLine(r: Realm, _by: Hero, x: Hero, _talk: readonly WooApproach[], reacts: readonly WooReact[]): string {
+  const last = reacts[reacts.length - 1]
+  const refused = last !== undefined && okOf(last) === 'no'
+  const held = heldOf(r, x)
+  if (held !== null) return held.yield[refused ? 'refused' : 'agreed']
+  return (refused ? KNEEL_AFTER_NO : KNEEL)[kindOf(x)]
+}
 
 /** 본말의 첫 문장 (지문 괄호는 뺀다) — 넘어온 한 줄에 인용한다 */
 const sentences = (s: string): string[] => s.replace(/\([^)]*\)\s*/g, '').trim().split(/(?<=[.!?…])\s+/).filter((y) => y !== '')
