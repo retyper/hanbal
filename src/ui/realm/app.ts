@@ -1218,8 +1218,19 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const was = new Map(pathShares(prev))
     const T = P.realm.pathAlertShare
     const hit = pathShares(next).filter(([k, v]) => v >= T && v < 1 && (was.get(k) ?? 0) < T)
-    if (hit.length === 0) return
-    goToast(`<span class="gtk">승리가 가깝다</span>${hit.map(([k, v]) => `<b>${k}</b> ${Math.floor(v * 100)}%`).join(' · ')}: 이대로면 곧 이긴다`, 'big')
+    if (hit.length > 0) {
+      goToast(`<span class="gtk">승리가 가깝다</span>${hit.map(([k, v]) => `<b>${k}</b> ${Math.floor(v * 100)}%`).join(' · ')}: 이대로면 곧 이긴다`, 'big')
+      return
+    }
+    // 남이 가깝다 — 아는 나라가 문턱을 넘으면 크게 한 번 (형 10-30: "나도 적도 안 떠서 갑자기 게임이 끝남")
+    for (const f of Object.keys(next.factions).sort()) {
+      if (f === me() || !knows(next, me(), f)) continue
+      const wasF = new Map(pathShares(prev, f))
+      const near = pathShares(next, f).filter(([k, v]) => v >= T && v < 1 && (wasF.get(k) ?? 0) < T)
+      if (near.length === 0) continue
+      goToast(`<span class="gtk">적이 승리에 가깝다</span>${emblem(f, 'fem')}<b>${esc(next.factions[f]?.name ?? '')}</b> ${near.map(([k, v]) => `${k} ${Math.floor(v * 100)}%`).join(' · ')}: 막지 않으면 진다`, 'big')
+      return
+    }
   }
 
   /** 외교 추천 한 줄 (advice.ts) — 알림과 외교 판 띠가 같은 말을 쓴다 */

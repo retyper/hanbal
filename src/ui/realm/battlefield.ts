@@ -875,13 +875,13 @@ function guardChip(r: Realm, l: BattleLine, weAtk: boolean): TerrChip | null {
   const adv = l.adviser !== undefined ? r.heroes[l.adviser]?.name : undefined
   const [icon] = AP_CHIP[g]
   if (weAtk) {
-    if (!read) return { k: 'guard', icon, name: '길목을 비켜 갔다', line: `적은 ${GUARD_AT[g]} 지키고 있었다: 우리는 ${CAME_BY[ap]} 왔다!${adv !== undefined ? ` 「${adv}」의 말대로였다.` : ''}`, who: 'us' }
+    if (!read) return { k: 'guard', icon, name: '적이 없는 길로 들어갔다', line: `적은 ${GUARD_AT[g]} 막고 있었다. 우리는 ${CAME_BY[ap]} 돌아 들어갔다!${adv !== undefined ? ` 「${adv}」의 말대로였다.` : ''}`, who: 'us' }
     const lead = ap === 'road' ? '적이 성문 앞에 진을 치고 기다리고 있었다.' : `적이 ${GUARD_AT[g]} 지키고 기다리고 있었다.`
-    return { k: 'guard', icon, name: '길목이 읽혔다', line: `${lead} ${GUARD_WHY[l.gwhy ?? 'land']}${adv !== undefined ? ` 「${adv}」의 읽음이 빗나갔다.` : ''}`, who: 'foe' }
+    return { k: 'guard', icon, name: '적이 우리 길을 막고 있었다', line: `${lead} ${GUARD_WHY[l.gwhy ?? 'land']}${adv !== undefined ? ` 「${adv}」의 읽음이 빗나갔다.` : ''}`, who: 'foe' }
   }
   return read
-    ? { k: 'guard', icon, name: '길목을 맞혔다', line: `우리가 지킨 길목으로 적이 왔다. 기다리던 대로 맞는다!`, who: 'us' }
-    : { k: 'guard', icon, name: '길목이 빗나갔다', line: `우리는 ${GUARD_AT[g]} 지켰는데 적은 ${CAME_BY[ap]} 왔다.`, who: 'foe' }
+    ? { k: 'guard', icon, name: '지키던 길로 적이 왔다', line: `우리가 막고 있던 길로 적이 왔다. 기다리던 대로 맞는다!`, who: 'us' }
+    : { k: 'guard', icon, name: '적이 다른 길로 왔다', line: `우리는 ${GUARD_AT[g]} 막고 있었는데 적은 ${CAME_BY[ap]} 돌아 들어왔다. 그 길엔 지키는 군사가 없었다.`, who: 'foe' }
 }
 
 export function terrChips(r: Realm, l: BattleLine, me: string, foe: string): TerrChip[] {
