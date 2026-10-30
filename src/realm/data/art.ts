@@ -130,7 +130,7 @@ export const KID_LINE: Readonly<Record<KidLine, Readonly<Record<'g' | 'w', reado
   shaman: { g: ['y-g-09', 'y-g-12'], w: ['y-w-09', 'y-w-12'] }, // 무당 핏줄
   river: { g: ['y-g-05', 'y-g-13'], w: ['y-w-05', 'y-w-13'] }, // 물가·바다
   mountain: { g: ['y-g-07', 'y-g-14'], w: ['y-w-07', 'y-w-14'] }, // 산사람
-  village: { g: [], w: ['y-w-01', 'y-w-03'] }, // 마을·장터
+  village: { g: ['y-g-15'], w: ['y-w-01', 'y-w-03', 'y-w-15'] }, // 마을·장터
   charm: { g: ['y-g-06', 'y-g-02'], w: ['y-w-06'] }, // 귀한 집 미남·미녀
   warrior: { g: ['y-g-03'], w: ['y-w-04'] }, // 반듯한 젊은 무장
 }
