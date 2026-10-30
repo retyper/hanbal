@@ -420,5 +420,48 @@ export const UNIT_ICON = {
 export const SOL_ANIM2: Readonly<Record<string, number>> = { spear: 548 / 160, bow: 629 / 160, shield: 317 / 160, pike: 475 / 160, axe: 208 / 160, marine: 372 / 160, horse: 232 / 160, boat: 336 / 160, crossbow: 768 / 160 }
 export const SOL_ANIM_AR: Readonly<Record<string, number>> = { spear: 167 / 160, shield: 165 / 160, bow: 139 / 160, horse: 157 / 160, boat: 164 / 160, crossbow: 152 / 160, pike: 162 / 160, axe: 144 / 160, marine: 155 / 160 }
 
+/**
+ * 장수 동작 그림(public/realm/anim2/gen-<결>.png · 20컷, 병사 v2 띠와 같은 차례: 서기 4 · 걷기 8 · 공격 6 · 움찔 · 쓰러짐) — tools/general-pack.py 가 찍어 준다.
+ * ar = 한 칸의 가로세로 비 · body = 서 있는 몸의 키 / 띠 높이 (칼을 치켜든 컷이 더 높으면 1 보다 작다). 형 10-30: "전투할 때 장수 유닛도 추가해 줘"
+ * 결 여섯은 장수마다 그리기 전의 원형이다 — 이름난 장수의 제 그림은 docs/realm/GENERAL-SPRITES.md 의 차례대로 GEN_OWN 에 더한다.
+ */
+export type GenSprite = 'g-sword' | 'g-bow' | 'g-spear' | 'w-spear' | 'w-bow' | 'mount'
+export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: number; bow?: true }>>> = {
+  'g-sword': { ar: 255 / 160, body: 0.946 },
+  'g-bow': { ar: 182 / 160, body: 0.984, bow: true },
+  'g-spear': { ar: 297 / 160, body: 0.988 },
+  'w-spear': { ar: 437 / 160, body: 0.996 },
+  'w-bow': { ar: 185 / 160, body: 0.967, bow: true },
+  mount: { ar: 246 / 160, body: 0.968 },
+  // 제 그림 (GEN_OWN) — 글 주문만으로 받은 장수 (docs/realm/GENERAL-SPRITES.md)
+  jumong: { ar: 243 / 160, body: 0.948, bow: true },
+}
+/** 제 그림이 있는 장수 (장수 id → gen-<이름>.png 의 이름) */
+export const GEN_OWN: Readonly<Record<string, string>> = { 'jm-jumong': 'jumong' }
+type GenLook = { readonly id?: string; readonly look: 'g' | 'w'; readonly traits: readonly string[]; readonly mu: number; readonly tong: number; readonly ryak: number; readonly chi: number; readonly deok: number }
+/**
+ * 장수 → 싸움터에 설 그림 (순수). 제 그림이 있으면 그것 · 명궁이면 활 · 통솔이 가장 높고 비기가 날 만큼(tacArtMinStat) 높은 남자는 말 탄 장수 ·
+ * 여인은 창 · 남자는 무예가 가장 높으면 언월도, 아니면 환두대도. 장수가 없으면(민병) 환두대도.
+ */
+export function generalSprite(h: GenLook | null | undefined, minStat = 7): string {
+  if (h === null || h === undefined) return 'g-sword'
+  const own = h.id !== undefined ? GEN_OWN[h.id] : undefined
+  if (own !== undefined) return own
+  const w = h.look === 'w'
+  if (h.traits.includes('archer')) return w ? 'w-bow' : 'g-bow'
+  if (w) return 'w-spear'
+  const top = Math.max(h.mu, h.tong, h.ryak, h.chi, h.deok)
+  if (h.tong === top && h.tong >= minStat) return 'mount'
+  return h.mu === top ? 'g-spear' : 'g-sword'
+}
+/** 그림이 아직 없는 결은 가까운 결로 (다 구우면 그대로 돌아간다) · bow 면 공격 컷이 활 쏘기(싸움터가 spshot 박자로 돌린다) */
+export function genArtOf(kind: string): { kind: string; ar: number; body: number; bow?: true } {
+  for (const k of [kind, kind.startsWith('w-') ? 'w-spear' : 'g-sword', 'g-sword']) {
+    const a = GEN_ANIM[k]
+    if (a !== undefined) return { kind: k, ...a }
+  }
+  return { kind: 'g-sword', ar: 1, body: 1 }
+}
+
 /** 계절 → 아이콘 */
 export const SEASON_ICON = { spring: 'status-spring', summer: 'status-summer', autumn: 'status-autumn', winter: 'status-winter' } as const

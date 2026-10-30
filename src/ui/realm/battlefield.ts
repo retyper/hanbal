@@ -11,7 +11,7 @@
  * 움직임은 CSS 애니메이션의 지연뿐이고, 소리만 타이머로 — 탭이 보일 때만 (절대 규칙 4).
  * 확률은 숫자로 안 보인다 — 사로잡기는 말과 색으로, 대신 사람 수(날랜 무리 · 호위)는 보인다 (realm-no-numbers).
  */
-import { FACTION_ART, SOL_ANIM2, SOL_ANIM_AR, UNIT_ICON, bustOf, flagIcon } from '../../realm/data/art.ts'
+import { FACTION_ART, SOL_ANIM2, SOL_ANIM_AR, UNIT_ICON, bustOf, flagIcon, genArtOf, generalSprite } from '../../realm/data/art.ts'
 import { battleName, endStory, fieldName, groupLabel, josa, roundStory, storyCtx, UNIT_NAME } from '../../realm/data/prose.ts'
 import { BATTLE_STYLES, groupMen, groupOf, lookRound, nightAt, type BattleStyle, type RoundAt } from '../../realm/tactics.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
@@ -1510,7 +1510,14 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       const men = all.reduce((s, [, v]) => s + v, 0)
       const fc = f !== undefined ? (FACTION_ART[f]?.color ?? '#888') : '#888'
       const em = flagIcon(f)
-      const gen = `<span class="wgen" style="--fc:${fc}"><i class="wpole">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}</i>${face(hero, art, 'unit-general')}</span>`
+      // 장수 — 사령관 하나만 진 맨 뒤에 그림으로 선다(부장은 비기 깃발로만 · 형 10-30: "장수가 여럿이면 사령관 대표 유닛만"). 얼굴 동그라미는 머리 위, 깃대는 등 뒤.
+      // 결은 장수에서 (art.ts generalSprite: 명궁 활 · 통솔 말 · 여인 창 · 무예 언월도 · 그 밖 환두대도). 사로잡히거나 쓰러지면 그 합에 쓰러지고 다음 합부터 누워 있다
+      const gh = hero !== null ? (prev.heroes[hero] ?? after.heroes[hero]) : undefined
+      const ga = genArtOf(generalSprite(gh, P.realm.tacArtMinStat))
+      const gDown = hero !== null && rounds.some((rd) => rd.lostHero?.hero === hero)
+      const gNow = gDown && anim && last?.lostHero?.hero === hero
+      const gCls = ` gsp g-${ga.kind}${ga.bow === true ? ' gbw' : ''}${ga.kind === 'mount' ? ' gmt' : ''}${gNow ? ' gfall' : gDown ? ' gdown' : ''}`
+      const gen = `<span class="wgen${gCls}" style="--fc:${fc};--gar:${ga.ar.toFixed(3)};--gb:${ga.body.toFixed(3)}"><i class="wpole">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}</i><i class="gbody"><b class="gspf" style="background-image:url('${art}anim2/gen-${ga.kind}.png')"></b></i>${face(hero, art, 'unit-general')}</span>`
       const cues = '<i class="wq q-charge"><b>돌격</b></i><i class="wq q-hold"></i><i class="wq q-shoot"></i><i class="wq q-ride"></i><i class="wq q-drum"></i><i class="wq q-cap"><b>사로잡으러</b></i><i class="wq q-back"><b>물러난다</b></i>'
       if (men <= 0) return `<div class="wf2s ${cls}"${formAttrs(o)}>${terrainProps(cls)}${gen}${cues}</div>`
       // 말 수는 군사 수에 비례 — 큰 쪽이 판의 크기(백 명 8 · 천 명 13 · 만 명 18), 작은 쪽은 그 몫만큼. 전엔 6~18 에 눌려 230 대 640 이 10 대 18 로 보였다 (형 10-25: "군사 숫자에 비례해서 유닛 개수도")
@@ -2105,6 +2112,36 @@ export const WAR_CSS = `
 /* 지금 고르는 무리가 진에서 빛난다 (탭과 이어진다) */
 .ap .wfield[data-act="front"] .us .tk.r0, .ap .wfield[data-act="bows"] .us .tk.r1, .ap .wfield[data-act="horse"] .us .tk.r2 { filter: drop-shadow(0 0 4px #ffd27a) drop-shadow(0 0 2px #ffd27a) drop-shadow(0 2px 2px #000c); }
 .ap .wfield[data-act="lead"] .us .wgen .wf { box-shadow: 0 0 0 2px #ffd27a, 0 0 14px #ffd27a; }
+/* 장수 그림 (형 10-30: "전투할 때 장수 유닛도") — public/realm/anim2/gen-<결>.png · 병사 v2 띠와 같은 20컷(서기 0~3 · 걷기 4~11 · 공격 12~17 · 맞음 18 · 쓰러짐 19).
+   발이 땅(60%)에 · 몸은 병사의 1.3배쯤(--gb = 서 있는 몸 / 띠 높이) · 얼굴 동그라미는 머리 위 · 깃대는 등 뒤 */
+.ap .wf2s .wgen.gsp { left: calc(9% + var(--gdx, 0%)); width: auto; height: calc(clamp(44px, 12.4cqw, 80px) / var(--gb, 1)); aspect-ratio: var(--gar, 1); transform: translate(-50%, -100%); }
+.ap .wf2s .wgen.gsp.gmt { height: calc(clamp(56px, 15.6cqw, 100px) / var(--gb, 1)); }
+.ap .wf2s .wgen.gsp .gbody { position: absolute; inset: 0; z-index: 1; filter: drop-shadow(0 0 2px #7cc4ff) drop-shadow(0 2px 2px #000c); }
+.ap .wf2s.foe .wgen.gsp .gbody { filter: drop-shadow(0 0 2px #ff6a5a) drop-shadow(0 2px 2px #000c); }
+.ap .wf2s .wgen.gsp .gbody::before { content: ''; position: absolute; left: 30%; right: 30%; bottom: -3%; height: 9%; border-radius: 50%; background: radial-gradient(closest-side, #000b, #0000); z-index: -1; }
+.ap .wf2s .wgen.gsp .gspf { position: absolute; inset: 0; background: 0 0 / 2000% 100% no-repeat; --i0: 0%; --i1: 21.0526%; --w0: 21.0526%; --w1: 63.1579%;
+  animation: spidle 2.6s steps(4) calc(var(--k, .4) * -2s) infinite; }
+.ap .wf2s .wgen.gsp .wf { position: absolute; left: 50%; top: 0; width: clamp(16px, 4.2cqw, 26px); translate: -50% -92%; z-index: 2; }
+.ap .wf2s .wgen.gsp .wpole { left: 30%; bottom: 30%; height: 175%; z-index: 0; }
+/* 싸움이 열리면 걸어 들어와 칼을 한 번 치켜든다 · 장수의 깃발(비기·겨루기·사로잡기·북)이 오른 합엔 맞부딪기 앞부터 칼질(활 장수는 쏘기) */
+.ap .wfield.enter .wgen.gsp .gspf { animation: spwalk .6s steps(8) 4, gatk .9s steps(1) 2.4s 1, spidle 2.6s steps(4) 3.3s infinite; }
+.ap .wfield.enter .wgen.gsp.gbw .gspf { animation: spwalk .6s steps(8) 4, spshot 1.1s steps(1) 2.4s 1, spidle 2.6s steps(4) 3.5s infinite; }
+.ap .wfield.play .wf2s:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"]) .wgen.gsp:not(.gdown):not(.gfall) .gspf { animation: spidle 2.6s steps(4) infinite, gatk .9s steps(1) calc(var(--hd) - 1.2s) 3; }
+.ap .wfield.play .wf2s:is([data-l="art"], [data-l="duel"], [data-l="capture"], [data-l="drum"]) .wgen.gsp.gbw:not(.gdown):not(.gfall) .gspf { animation: spidle 2.6s steps(4) infinite, spshot 1.1s steps(1) calc(var(--hd) - 1.2s) 3; }
+@keyframes gatk { 0% { background-position-x: 63.1579%; } 10% { background-position-x: 68.4211%; } 26% { background-position-x: 73.6842%; } 40% { background-position-x: 78.9474%; } 66% { background-position-x: 84.2105%; } 84%, 100% { background-position-x: 89.4737%; } }
+/* 사로잡히거나 쓰러진 장수 — 그 합엔 휘청(18) 했다가 쓰러지고(19) 깃대가 넘어간다 · 다음 합부터 누운 채 */
+.ap .wfield .wgen.gsp.gfall .gspf { animation: gdie 1.3s steps(1) calc(var(--hd) + .1s) forwards; }
+@keyframes gdie { 0% { background-position-x: 94.7368%; } 35%, 100% { background-position-x: 100%; } }
+.ap .wfield .wgen.gsp.gfall .wpole { animation: gpolefall .7s ease-in calc(var(--hd) + .6s) forwards; } @keyframes gpolefall { to { rotate: -70deg; } }
+.ap .wfield .wgen.gsp.gfall .wf { animation: gbadge .5s ease-in calc(var(--hd) + .6s) forwards; } @keyframes gbadge { to { top: 58%; opacity: .7; } }
+.ap .wf2s .wgen.gsp.gdown .gspf { animation: none; background-position-x: 100%; }
+.ap .wf2s .wgen.gsp.gdown .wpole { rotate: -70deg; } .ap .wf2s .wgen.gsp .wpole { transform-origin: 50% 100%; }
+.ap .wf2s .wgen.gsp.gdown .wf { top: 58%; opacity: .7; }
+@media (pointer: coarse) {
+  .ap .wf2s .wgen.gsp .gbody, .ap .wf2s.foe .wgen.gsp .gbody { filter: none; }
+  .ap .wf2s .wgen.gsp .gbody::before { left: 22%; right: 22%; bottom: -5%; height: 13%; background: radial-gradient(closest-side, #000a, #0008 48%, #7cc4ffd0 72%, #7cc4ff00); }
+  .ap .wf2s.foe .wgen.gsp .gbody::before { background: radial-gradient(closest-side, #000a, #0008 48%, #ff6a5ad0 72%, #ff6a5a00); }
+}
 /* 진의 꼴 — 앞줄 */
 .ap .wf2s[data-f="charge"] .tk.r0 { --dx: 7%; --rot: 9deg; }
 .ap .wf2s[data-f="hold"] .tk.r0 { --sy: .7; --dx: -1%; }
