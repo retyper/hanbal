@@ -115,6 +115,16 @@ for (const [title, k] of GROUPS) {
   g.lines.forEach((t, i) => { h += `<div class="row"><span class="no">${i + 1}</span><span class="nm">${g.names[i].split('-')[0]} — ${t}</span><audio controls preload="none" src="voice/c/${g.names[i]}.ogg"></audio></div>` })
 }
 // CAST_C END
+// CAST_D_TRY BEGIN — 성우진 D 시험 (형 10-30: Voice Design 해 볼 수 있겠어?) · Voice Design 은 유료 등급이라 무료 목소리 중 젊은 결 셋 + 말투 칸으로 시험 (voice/d/try/ · docs/realm/cast/README.md 성우진 D)
+const D_TRY = {"k":"w-knight","t":"여 · 젊은 여장수 — 20대 · 단정하고 결연","lines":["예, 여기 있사옵니다.","부르셨사옵니까.","분부를 기다리고 있었사옵니다.","이 싸움, 제가 맡겠사옵니다!","한 치도 물러서지 않겠사옵니다!"],"a":["tap-w-knight-1","tap-w-knight-2","tap-w-knight-3","auto-w-knight-1","auto-w-knight-2"],"cand":[{"n":1,"v":"Leda","d":"Youthful · Higher pitch"},{"n":2,"v":"Pulcherrima","d":"Forward · Middle pitch"},{"n":3,"v":"Nyla","d":"Direct and professional · Medium-high pitch"}],"files":["tap1","tap2","tap3","shout1","shout2"]}
+h += `<h1 style="margin-top:40px">성우진 D 시험 — ${D_TRY.t}</h1><p>목소리를 글로 지어 내는 Voice Design 은 AI 스튜디오에서 유료 등급(결제한 API 키)에서만 열린다. 그래서 무료 목소리 가운데 아직 안 쓴 젊은 결 셋에 말투 칸 지시를 붙여 뽑았다. 지금 A(Tari)와 견주어 듣고 마음에 드는 번호를 「D 2번」처럼 말해 주면 그 목소리로 이 결 장수를 다시 녹음한다. 앞 셋은 짧은 대답 · 뒤 둘은 싸움 외침.</p>`
+h += `<h2>지금 A (Tari) — 비교용</h2>`
+D_TRY.lines.forEach((t, i) => { h += `<div class="row"><span class="no">${i + 1}</span><span class="nm">${t}</span><audio controls preload="none" src="voice/${D_TRY.a[i]}.ogg"></audio></div>` })
+for (const c of D_TRY.cand) {
+  h += `<h2>D 시험 ${c.n}번 (${c.v}) — ${c.d}</h2>`
+  D_TRY.lines.forEach((t, i) => { h += `<div class="row"><span class="no">${i + 1}</span><span class="nm">${t}</span><audio controls preload="none" src="voice/d/try/${D_TRY.k}-${c.n}-${D_TRY.files[i]}.ogg"></audio></div>` })
+}
+// CAST_D_TRY END
 document.getElementById('list').innerHTML = h
 // 등용 첫마디 — 장수마다 하나 (voice/hire/<장수 id>.ogg · 대사는 src/realm/data/hire-lines.ts · 목록은 tools/hire-voice-list.ts --write)
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])

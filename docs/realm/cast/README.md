@@ -42,3 +42,22 @@
 ## 10-29 외침·등용 다시 녹음
 
 형: *"외치는 목소리들이 확실하게 흥분되고 격앙되게 · 지금은 방 안에서 아마추어가 독백하는 느낌"* → 외침(기술 외침 · 싸움 맡김 첫마디 · 이김)을 따로 묶어 격앙된 말투로 다시 뽑고, 고친 등용 대사 194줄도 차분한 사극 말투로 다시 녹음한다. 어디까지 했는지·이어 하는 법은 `hire-rerecord.md` 맨 위 「다시 녹음 진행」.
+
+## 성우진 D (Voice Design 시험)
+
+형 10-30: *"Voice Design 으로 새 성우진 해 볼 수 있겠어?"* (AI 스튜디오 말하기가 Gemini 3.8 Flash TTS · `gemini-3.8-flash-tts` 로 바뀜)
+
+**Voice Design 은 아직 유료다.** 계정 넷(authuser 0 roqkfeke12 · 1 retyper92 · 3 yuncheol · 4 jiiyea PRO)에서 Create new voice → Voice Design 을 누르면 모두 *"Voice Design runs on the paid tier. Link a paid API key to continue."* 와 결제 설정 · 유료 API 키 연결 단계가 뜬다. 목소리 검색(2,000+ 목소리 · Extended Voice Library)도 무료로는 *"Link a Paid Key to explore more voices"* 로 막히고, 무료로 고를 수 있는 여자 목소리는 서른여섯 개뿐이다. 공식 문서: 만든 목소리는 프로젝트마다 200개까지, 마지막으로 쓴 뒤 1년 보관. 문서는 말투 칸(style)에 나이 · 성별을 넣지 말고 목소리 자체를 고르라고 한다.
+
+**그래서 무료 길로 시험** — 젊은 여장수 `w-knight` (지금 A Tari · B Erinome) 를 무료 목소리 가운데 아직 아무 성우진도 안 쓴 젊은 결 셋으로. 대사는 `src/ui/realm/voice-new.ts` 의 w-knight 짧은 대답 셋 · 싸움 맡김 첫마디 둘. 대답 묶음과 외침 묶음은 따로 뽑았다. 계정 authuser=4 (10-30 오전 · 여섯 번).
+- D 시험 1번 **Leda** (Youthful · Higher pitch) · 2번 **Pulcherrima** (Forward · Middle pitch) · 3번 **Nyla** (Direct and professional · Medium-high pitch)
+- 소리: `public/realm/voice/d/try/w-knight-<번호>-<tap1|tap2|tap3|shout1|shout2>.ogg` · 고르기 판 맨 아래 「성우진 D 시험」
+- 음높이 중앙값(대략): A Tari 대답 179~195Hz · 외침 207~253Hz / Leda 170~202 · 275~307 / Pulcherrima 135~168 · 225 / Nyla 177~210 · 285~290
+
+대답 말투 칸 (그대로 넣었다):
+> Performed by a professional Korean anime and video game voice actress. A young female general reporting to her lord in a Korean historical drama (sageuk). Neat, composed and resolute; serious but with fresh, light, energetic vocal energy, not matronly and not heavy. Crisp, clear diction, short and firm. Full chest voice, never falsetto or head voice, powerful from the diaphragm. Calm and dignified, not shouting. One-second silence between lines.
+
+외침 말투 칸:
+> Performed by a professional Korean anime and video game voice actress. A young female general in a Korean historical drama (sageuk). SHOUTED battle cry on a roaring battlefield, commanding hundreds of soldiers over the noise. Highly excited, furious, adrenaline-charged, at the top of the lungs but full chest voice, never falsetto or head voice, powerful from the diaphragm. Fresh, sharp, youthful energy, not matronly. NOT a calm indoor monologue, NOT reading aloud. One-second silence between lines.
+
+형이 번호를 고르면 그 목소리 이름과 위 말투 칸으로 w-knight 의 나머지 줄(분부 · 이김 · 짐 · 기술 외침 · 등용 첫마디)을 다시 뽑는다. 유료 Voice Design 을 쓰기로 하면(결제 키는 형이) 아래 설명으로 시작한다: *"Korean woman in her early twenties, a young general. Clear, firm mid-range chest voice, bright but grounded, crisp diction, serious and resolute, no breathiness, no falsetto."* (아직 안 써 봄)
