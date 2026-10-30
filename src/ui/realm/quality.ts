@@ -160,6 +160,14 @@ export function slowFrames(ds: readonly number[]): boolean {
   return med > P.realm.gfxSlowFrameMs || long > P.realm.gfxLongShare
 }
 
+/** 아주 부드럽다: 가운데값이 짧고 긴 프레임이 거의 없다 · 내렸던 단계를 올려 봐도 된다 */
+export function smoothFrames(ds: readonly number[]): boolean {
+  if (ds.length < 3) return false
+  const s = [...ds].sort((a, b) => a - b)
+  const long = ds.filter((d) => d > P.realm.gfxLongFrameMs).length / ds.length
+  return s[s.length >> 1]! <= P.realm.gfxSmoothFrameMs && long < 0.03
+}
+
 // ───────── 쌍둥이 규칙
 
 /** 움직이는 것 · 거르개 · 그림자를 단 규칙마다 단계 아래 쌍둥이를 만든다 */
@@ -225,13 +233,19 @@ function readPref(): GfxPref {
 }
 
 /** 자동의 출발점: 폰은 보통 · 마우스 컴퓨터는 고사양 · 메모리 적은 기기는 그 아래 · 얼마 전 자동이 내렸으면 거기서 */
-function baseTier(): Tier {
+/** 기기만 보고 정한 위끝: 폰 보통 · 마우스 컴퓨터 고사양 · 메모리 적으면 그 아래 */
+function deviceTier(): Tier {
   let t: Tier = mq('(pointer: fine)') && mq('(hover: hover)') ? 'high' : 'mid'
   const mem = (navigator as Navigator & { deviceMemory?: number }).deviceMemory
   if (typeof mem === 'number' && mem > 0) {
     if (mem <= P.realm.gfxMemLow) t = 'low'
     else if (mem <= P.realm.gfxMemMid) t = lower(t, 'mid')
   }
+  return t
+}
+
+function baseTier(): Tier {
+  let t: Tier = deviceTier()
   try {
     const a = JSON.parse(localStorage.getItem(AUTO_KEY) ?? 'null') as { t?: unknown; at?: unknown } | null
     if (a !== null && isTier(a.t) && typeof a.at === 'number' && Date.now() - a.at < P.realm.gfxRememberH * 3600_000) t = lower(t, a.t)
@@ -253,7 +267,21 @@ function stepDown(why: 'frames' | 'battery'): void {
   tier = ORDER[ORDER.indexOf(tier) - 1]!
   apply()
   try { localStorage.setItem(AUTO_KEY, JSON.stringify({ t: tier, at: Date.now() })) } catch { /* 이번 판만 */ }
-  if (tier === 'low') say(why === 'battery' ? '배터리가 적어 그래픽을 가볍게 바꿨습니다' : '절전 상태라 그래픽을 가볍게 바꿨습니다')
+  // 절전 모드를 켰는지는 알 수 없다 · 본 것만 말한다 (형 10-30: "절전 상태 풀었는데 왜 절전 상태로 바꿨다고 뜨지?")
+  if (tier === 'low') say(why === 'battery' ? '배터리가 적어 그래픽을 가볍게 바꿨습니다' : '화면이 버벅여 그래픽을 가볍게 바꿨습니다 · 나라 탭에서 바꿀 수 있습니다')
+}
+
+/** 자동이 한 단계 올린다: 내린 뒤 gfxUpAfterS 가 지났고 지도가 아주 부드러울 때 · 출발점(baseTier 의 기기 몫)보다 위로는 안 간다 */
+function stepUp(): void {
+  if (pref !== 'auto' || tier === 'high') return
+  const now = performance.now()
+  if (now - lastStep < P.realm.gfxUpAfterS * 1000) return
+  const cap = deviceTier()
+  if (ORDER.indexOf(tier) >= ORDER.indexOf(cap)) return
+  lastStep = now
+  tier = ORDER[ORDER.indexOf(tier) + 1]!
+  apply()
+  try { localStorage.setItem(AUTO_KEY, JSON.stringify({ t: tier, at: Date.now() })) } catch { /* 이번 판만 */ }
 }
 
 /** 손으로 고른다 (설정 단추) · 자동으로 돌리면 출발점부터 다시 잰다 */
@@ -274,7 +302,9 @@ export function setGfxPref(v: string | undefined): void {
 
 let probing = false
 function probe(): void {
-  if (pref !== 'auto' || probing || tier === 'low' || document.visibilityState !== 'visible') return
+  if (pref !== 'auto' || probing || document.visibilityState !== 'visible') return
+  // 싸움 화면은 재지 않는다 · 첫 장면이 일부러 무거워 멀쩡한 폰도 버벅임으로 잡혔다 (형 10-30)
+  if (host?.querySelector('.wr, .wfield') !== null) return
   probing = true
   const ds: number[] = []
   let t0 = -1
@@ -287,6 +317,7 @@ function probe(): void {
     if (t - t0 < P.realm.gfxProbeMs) { requestAnimationFrame(f); return }
     probing = false
     if (slowFrames(ds)) stepDown('frames')
+    else if (smoothFrames(ds) && (battery === null || battery.charging || battery.level >= P.realm.gfxBatteryLow)) stepUp()
   }
   requestAnimationFrame(f)
 }
@@ -299,11 +330,9 @@ function later(fn: () => void): void {
 /** 첫 지도 · 첫 싸움이 뜨면 잰다 · 둘 다 쟀으면 그만 본다 */
 function watchFirst(root: HTMLElement): void {
   let map = false
-  let war = false
   const mo = new MutationObserver(() => {
     if (!map && root.querySelector('.map') !== null) { map = true; later(probe) }
-    if (!war && root.querySelector('.wfield') !== null) { war = true; later(probe) }
-    if (map && war) mo.disconnect()
+    if (map) mo.disconnect()
   })
   mo.observe(root, { childList: true, subtree: true })
 }
