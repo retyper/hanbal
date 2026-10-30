@@ -580,11 +580,12 @@ function duskHtml(l: BattleLine, a: DuskAsk, weAtk: boolean, art: string, anim: 
   h += `<b class="wdk-h">${a.night ? '날이 밝는다' : '해가 진다'}</b><p class="wdk-s">아무도 무너지지 않았다. 어떻게 하나</p>`
   h += `<p class="wdk-now">지금 판세 <b class="us">우리 ${pc}</b> : <b class="foe">${100 - pc} 적</b>: 이대로 진을 치면 <b class="wdk-${a.camp}">${esc(campWord(l, weAtk, a.camp))}</b></p>`
   h += `<div class="wdkg">`
-  h += btn('camp', '진을 친다', '여기서 멈춘다 · 지금 판세로 정해진다', `<em class="wdk-${a.camp}">${esc(campWord(l, weAtk, a.camp))}</em>`, 'hold')
+  // 확실히 지는 고름은 내놓지 않는다 — 진을 쳐서 지면 「진을 친다」를, 진을 쳐서 이기면 「물러난다」(물러나면 진다)를 뺀다 (형 10-31: "패배하는 선택지가 왜 있는거임 · 그걸 누가 선택해")
+  if (a.camp !== 'lose') h += btn('camp', '진을 친다', '여기서 멈춘다 · 지금 판세로 정해진다', `<em class="wdk-${a.camp}">${esc(campWord(l, weAtk, a.camp))}</em>`, 'hold')
   h += btn('press', press, pressDoes, cost, a.night ? 'charge' : 'fire')
   const rp = a.retreatP !== undefined ? `<span class="wf-${retreatCls(a.retreatP)}">빠져나갈 가망 ${Math.round(a.retreatP * 100)}%</span>` : ''
   const caughtCost = a.retreatFailLoss !== undefined ? `<span class="wfcost bad">따라잡히면 −${a.retreatFailLoss}명</span>` : ''
-  h += btn('retreat', '물러난다', `${a.night ? '날이 밝자 진을 거둔다' : '어둠을 틈타 진을 거둔다'} · ${back} · 따라잡히면 그 자리에 진을 친다`, `${rp}<span class="wfcost">군사 −${a.retreatLoss}명</span>${caughtCost}`, 'retreat')
+  if (a.camp !== 'win') h += btn('retreat', '물러난다', `${a.night ? '날이 밝자 진을 거둔다' : '어둠을 틈타 진을 거둔다'} · ${back} · 따라잡히면 그 자리에 진을 친다`, `${rp}<span class="wfcost">군사 −${a.retreatLoss}명</span>${caughtCost}`, 'retreat')
   h += `</div><p class="wdk-n">적도 고른다. 적이 밀어붙이면 우리가 진을 쳐도 한 합 더 싸운다</p></div>`
   return h
 }
@@ -3002,7 +3003,8 @@ export const WAR_CSS = `
 .ap .wbg.dk-dawn::after { background: linear-gradient(#ffd8a855, #8aa0d033 40%, #0d0f13cc 85%); }
 .ap .wrd.night { background: #141a26e6; border-color: #3a4a6a; }
 /* 마지막 때의 큰 판 — 하늘이 바뀌고 해가 진다(새벽이면 뜬다) */
-.ap .wdusk { position: relative; overflow: hidden; text-align: center; border-color: #a0602a; background: linear-gradient(#3a1c10, #1f1710 60%); }
+/* 화면 아래에 붙는다 — 칸 밑에 숨어 굴려야 고를 수 있었다 (형 10-31: "합 다 끝나고 나오는 선택지가 아직도 칸 밑에서 스크롤되어야 선택") */
+.ap .wdusk { position: fixed; left: 0; right: 0; margin: 0 auto; bottom: calc(10px + env(safe-area-inset-bottom)); width: min(94vw, 560px); box-sizing: border-box; z-index: 72; max-height: 72vh; overflow-y: auto; box-shadow: 0 -6px 24px #000c; text-align: center; border-color: #a0602a; background: linear-gradient(#3a1c10, #1f1710 60%); }
 .ap .wdusk.dawn { border-color: #8aa0d0; background: linear-gradient(#20304a, #1f1710 60%); }
 .ap .wdusk .wdk-sky { position: absolute; left: 0; right: 0; top: 0; height: 70px; pointer-events: none; }
 .ap .wdusk .wdk-sky i { position: absolute; left: 50%; top: 18px; width: 54px; height: 54px; margin-left: -27px; border-radius: 50%;

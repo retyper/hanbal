@@ -903,9 +903,12 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
   else if (retreat === 'both') outcome = 'draw'
   else outcome = s >= R.tacWinShare ? 'win' : s <= 1 - R.tacWinShare ? 'lose' : 'draw'
   // 무너진 쪽은 쫓기며 더 잃는다 (물러난 쪽은 아니다 — 물러나기의 값이다)
-  const chase = (f: Record<Grp, number>): void => { for (const g of GRPS) f[g] = Math.max(0, f[g] - R.tacChase) }
+  const chase = (f: Record<Grp, number>, k = 1): void => { for (const g of GRPS) f[g] = Math.max(0, f[g] - R.tacChase * k) }
+  // 대승까지는 아니어도 무너진 쪽은 쫓긴다 — 안 그러면 버티다 무너지는 것이 물러나는 것보다 쌌다 (형 10-31: "사기 떨어져서 돌아갈 때 피해가 너무 적다")
   if (outcome === 'rout' && retreat !== 'd') chase(st.fd)
+  else if (broke === 'd' && retreat === null && captured === null) chase(st.fd, R.tacBreakChase)
   if (outcome === 'routed' && retreat !== 'a') chase(st.fa)
+  else if (broke === 'a' && retreat === null && captured === null) chase(st.fa, R.tacBreakChase)
   if (outcome === 'rout' || outcome === 'routed') broke ??= outcome === 'rout' ? 'd' : 'a'
   if (retreat !== null) broke = null
   const endWhy: EndWhy = captured !== null ? 'captured' : retreat !== null ? (withdrew ? 'withdraw' : 'retreat') : brokeBy !== null ? brokeBy : outcome === 'draw' ? 'draw' : 'share'
