@@ -1313,6 +1313,11 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   for (const d of defenders) scaleByGroups(d, res.gd)
   shiftMorale(atks, res.dma)
   shiftMorale(defenders, res.dmd)
+  // 막아냈다 — 지킨 쪽은 사기가 오르고(성벽 안이면 더) 물러난 쪽은 꺾인다 (형 10-31: "몇 번이고 외적을 막아낸 고을에서 사기가 늘어야")
+  if (outcome !== 'rout' && outcome !== 'win') {
+    shiftMorale(defenders, R.holdMorale + (fortMul(node, seasonOf(r.season)) > 1 ? R.wallHoldMorale : 0))
+    shiftMorale(atks, -R.repelMorale)
+  }
 
   // 5 — 장수의 운명 (사로잡기는 명령으로만 · 장수 겨루기 · 무너진 쪽의 난전)
   const atkWon = outcome === 'rout' || outcome === 'win'
