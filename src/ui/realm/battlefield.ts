@@ -2179,6 +2179,8 @@ export const WAR_CSS = `
 /* 맞부딪힘 — 앞줄이 서로 달려들어 부딪고 조금 물러선다. 이번 합에 잃은 만큼 쓰러진다 */
 /* 근접전 — 맞부딪친 앞줄이 한가운데서 엉긴 채 남는다(말마다 조금씩 들쭉날쭉 — --j). 결과가 나오면 syncField 가 진으로 되돌린다 (형 10-25: "메가히트 수준") */
 .ap .wfield.play .wf2s .tk.r0:not(.tkd) { animation: wstep .5s ease-out var(--fa, 0s) both, wclash .9s cubic-bezier(.3, .1, .3, 1) calc(var(--hd) - .45s) forwards; }
+/* 앞줄이 다 쓰러지면 뒷줄이 나서 맞붙는다 (형 10-31: "자동전투 1합은 잘 움직이는데 갈수록 안 움직임" · 사상자는 앞줄부터 쓰러지고 움직임은 앞줄에만 걸려, 남은 병사가 서 있기만 했다) */
+.ap .wfield.play .wf2s:not(:has(.tk.r0:not(.tkd))) .tk.r1:not(.tkd) { animation: wstep .5s ease-out var(--fa, 0s) both, wclash .9s cubic-bezier(.3, .1, .3, 1) calc(var(--hd) - .45s) forwards; }
 @keyframes wstep { from { translate: 0 0; } to { translate: 2cqw 0; } }
 @keyframes wclash { 0% { translate: 2cqw 0; } 50% { translate: calc(9cqw + var(--j, 0) * .3cqw) 0; } 100% { translate: calc(6.5cqw + var(--j, 0) * .4cqw) calc((var(--j, 0) - 2.5) * .4cqw); } }
 .ap .wfield.play .wf2s[data-h="flank"] .tk.r2:not(.tkd), .ap .wfield.play .wf2s[data-h="pursue"] .tk.r2:not(.tkd), .ap .wfield.play .wf2s[data-h="punch"] .tk.r2:not(.tkd) { animation: wride .9s ease-in var(--ha, 0s) both; }
@@ -2294,6 +2296,7 @@ export const WAR_CSS = `
 @keyframes spatk { from { background-position-x: var(--a0, 57.1429%); } to { background-position-x: var(--a1, 85.7143%); } }
 .ap .wfield.enter .tk.wsp .spf { animation: spwalk calc(.42s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) calc(var(--j) * -.1s) 4, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(1.9s - var(--k, .5) * 1.6s) infinite; }
 .ap .wfield.play .wf2s .tk.wsp.r0:not(.tkd) .spf { animation: spwalk calc(.42s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--fa, 0s) 2, spatk calc(calc(.3s + var(--j, 0) * .03s) * var(--spatks, 1)) steps(var(--spatkn, 2)) calc(var(--hd) - .32s + var(--j, 0) * .05s) 7, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--hd) + 1.9s) - var(--k, .5) * 1.6s) infinite; }
+.ap .wfield.play .wf2s:not(:has(.tk.r0:not(.tkd))) .tk.wsp.r1:not(.tkd) .spf { animation: spwalk calc(.42s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--fa, 0s) 2, spatk calc(calc(.3s + var(--j, 0) * .03s) * var(--spatks, 1)) steps(var(--spatkn, 2)) calc(var(--hd) - .32s + var(--j, 0) * .05s) 7, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--hd) + 1.9s) - var(--k, .5) * 1.6s) infinite; }
 /* 도끼병 — 받은 그림엔 내려치는 컷이 없다(든 컷 4 뿐) → 든 컷을 앞으로 휘둘러 기울인다 (컷 5는 들기의 다른 자세라 안 쓴다) */
 .ap .wfield.play .wf2s .tk.wsp.k-axe:not(.v2).r0:not(.tkd) .spf { animation: spwalk calc(.42s * var(--spwalks, 1)) steps(var(--spwalkn, 2)) var(--fa, 0s) 2, spaxe .3s steps(1) calc(var(--hd) - .32s + var(--j, 0) * .05s) 7, spidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--spidles, 1)) steps(var(--spidlen, 2)) calc(calc(var(--hd) + 1.9s) - var(--k, .5) * 1.6s) infinite; }
 .ap .wfield.play .wf2s .tk.wsp.k-axe:not(.v2).r0:not(.tkd) .spf { transform-origin: 40% 90%; }
