@@ -435,9 +435,10 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   mount: { ar: 246 / 160, body: 0.968 },
   // 제 그림 (GEN_OWN) — 글 주문만으로 받은 장수 (docs/realm/GENERAL-SPRITES.md)
   jumong: { ar: 243 / 160, body: 0.948, bow: true },
+  onjo: { ar: 281 / 160, body: 0.986 }, // 첫 판은 불꽃 금관이라 버리고 쇠투구로 다시 (형 10-30: "금관은 왕의 것이지, 장수의 것이 아니야")
 }
 /** 제 그림이 있는 장수 (장수 id → gen-<이름>.png 의 이름) */
-export const GEN_OWN: Readonly<Record<string, string>> = { 'jm-jumong': 'jumong' }
+export const GEN_OWN: Readonly<Record<string, string>> = { 'jm-jumong': 'jumong', 'mh-onjo': 'onjo', 'tut-onjo': 'onjo' }
 type GenLook = { readonly id?: string; readonly look: 'g' | 'w'; readonly traits: readonly string[]; readonly mu: number; readonly tong: number; readonly ryak: number; readonly chi: number; readonly deok: number }
 /**
  * 장수 → 싸움터에 설 그림 (순수). 제 그림이 있으면 그것 · 명궁이면 활 · 통솔이 가장 높고 비기가 날 만큼(tacArtMinStat) 높은 남자는 말 탄 장수 ·
