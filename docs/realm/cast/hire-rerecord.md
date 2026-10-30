@@ -1,5 +1,16 @@
 # 등용 대사 다시 녹음할 목록 (10-29)
 
+## 여자 목소리가 남자 쪽으로 처진 등용 첫마디 (10-30)
+
+형: *"해비 목소리가 여자가 아니라 무슨 게이목소리 같아. 여자는 여자답게 남자는 남자답게"* · *"특히 '쇠 다루는 솜씨는 제게 맡기시옵소서' 이 등용 목소리"*
+
+- 잰 것: 음높이 중앙값(자기상관 · 40ms 틀). 결·성우진 평균은 여자 결이 대개 165~262Hz. 옛 해비 등용 172Hz.
+- **해비 다시 녹음 함**: Leda(젊은 여장수 A · 형이 "제일 젊네") · 말투 "bright, cheerful, lively craftswoman … sweet, clear, light and soft tone with a smile · Not shouting" · 세 번 뽑아 235Hz 것. 옛것은 assets_src/realm/retired/voice/hire-tut-haebi-1030.ogg.
+- **아직**: 이 문서의 여자 결 41줄 가운데 180Hz 아래 29줄. 거의 당찬 여무사(w-bright · Cleo) 결이다 — 「당찬」 말투가 목소리를 끌어내린 듯.
+  wander-16(134) iseo-1(148) jm-songbi(150) saro-2(152) sabeol-1(158) goryong-ruler(160) gosaburi-ruler(160) uga-2(160) wander-18(160) bullae-ruler(162) haseulla-ruler(162) michuhol-2(162) wander-03(162) gosaburi-2(163) ungcheon-1(163) goguryeo-2(165) samul-1(165) mokji-ruler(167) usan-1(167) wander-07(167) usisan-ruler(168) wander-21(168) byeokjin-1(170) tamna-ruler(170) us-2(170) golbeol-2(172) mujin-ruler(174) gammun-2(178) hwanna-2(179)
+  늙은 여인·무녀는 낮아도 맞을 수 있다 — 다시 녹음 전에 나이(data/ages.ts)를 본다.
+- 결 목소리 쪽 의심: 의젓한 여장수 B(Sami) 121Hz · 나이 든 여인 B 147Hz · 무녀 C 148Hz.
+
 <!-- 다시 녹음 진행 -->
 ## 다시 녹음 진행 (10-29 밤~)
 
