@@ -5,10 +5,12 @@
  * 빛살(햇살)·붉은 동그라미는 쓰지 않는다 — 일장기처럼 읽힌다.
  */
 
+/** 폰 — 한꺼번에 움직이는 조각이 많으면 깜빡인다 (형 10-31) · 조각 수를 반 아래로 */
+const PHONE = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches
 /** 불티 수 — 한 번 터질 때 (두 번 터진다) */
-const SPARKS = 56
+const SPARKS = PHONE ? 24 : 56
 /** 떨어지는 금박 수 */
-const FLAKES = 26
+const FLAKES = PHONE ? 12 : 26
 
 /** 0..1 — 자리마다 늘 같은 값 (화면 꾸밈이라 판정과 상관없다) */
 const hash = (i: number, k: number): number => {
@@ -130,6 +132,14 @@ export const WINFX_CSS = `
 @keyframes wfout { to { opacity: 0; visibility: hidden; } }
 .ap .winfx.big.brief { animation: wfquake .6s ease-out calc(var(--wd) + .3s) both, wfout .6s ease-in calc(var(--wd) + 2.6s) forwards; }
 @media (prefers-reduced-motion: reduce) { .ap .winfx .wf-burst, .ap .winfx .wf-rain, .ap .winfx .wf-ring { display: none; } .ap .winfx .wf-word { animation-duration: .3s; } }
+/* 폰 — 화면 가득한 칸의 흔들기 · 화면 전체 backdrop-filter · 커졌다 줄어드는 글자의 drop-shadow 가 한꺼번에 돌면 깜빡인다
+   (형 10-31: "핸드폰으로 할 때 승리나 패배하면 엄청 깜빡거림" · 폰 그래픽 한도) — 흔들기는 빼고, 흑백은 어두운 막으로, 그림자는 끈다 */
+@media (pointer: coarse) {
+  .ap .winfx.big { animation: none; }
+  .ap .winfx.big.brief { animation: wfout .6s ease-in calc(var(--wd) + 2.6s) forwards; }
+  .ap .winfx.lose::after { backdrop-filter: none; -webkit-backdrop-filter: none; background: #0008; }
+  .ap .winfx .wf-word .wf-logo, .ap .winfx .wf-word b, .ap .winfx.lose .wf-word b { filter: none; }
+}
 `
 
 /** 폰 떨림 — 이겼을 때 "파바방" (안드로이드만 · 아이폰 사파리는 진동을 막아 두었다) */
