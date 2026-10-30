@@ -188,6 +188,39 @@ const VOICE_OF: Readonly<Record<string, VoiceKind>> = {
 export const HIRE_UNRECORDED: ReadonlySet<string> = new Set<string>([])
 
 /**
+ * 남자 쪽으로 처진 여자 목소리 — 다시 녹음할 때까지 다른 목소리로 갈아 끼운다
+ * (형 10-30: "해비 목소리가 여자가 아니라 … 여자는 여자답게" · "소서노 목소리도 … 일단 다른걸로 갈아끼워라").
+ * 잣대: 음높이 중앙값 175Hz 아래 (옛 해비 172Hz 를 형이 짚었다 · 다시 녹음한 해비 246Hz).
+ * 다시 녹음하면 여기서 지운다 — 목록·잰 값은 docs/realm/cast/hire-rerecord.md 맨 위.
+ */
+/** 차분한 줄(대답 · 분부 · 짐)이 처진 성우진·결 → 대신 말할 성우진·결. 한 장수가 외침까지 같은 목소리로 내게 통째로 옮긴다 */
+const LOW_SLOT: Readonly<Record<string, { readonly cast: 'a' | 'b' | 'c'; readonly kind: VoiceKind }>> = {
+  'a:w-cool': { cast: 'a', kind: 'w-knight' }, // Kira 160Hz → Leda 194Hz
+  'b:w-cool': { cast: 'b', kind: 'w-bright' }, // Sami 120Hz (소서노) → Veda 219Hz
+  'c:w-cool': { cast: 'c', kind: 'w-bright' }, // Kore 172Hz → Autonoe 225Hz
+  'b:w-knight': { cast: 'a', kind: 'w-knight' }, // Zephyr 167Hz → Leda 194Hz
+  'b:w-matron': { cast: 'a', kind: 'w-matron' }, // Vindemiatrix 151Hz → Jori 178Hz
+  'a:w-shaman': { cast: 'b', kind: 'w-shaman' }, // Hali 174Hz → Tavi 186Hz
+  'c:w-shaman': { cast: 'b', kind: 'w-shaman' }, // Gacrux 151Hz → Tavi 186Hz
+}
+/** 군장 말(chief/<결>-…)이 처진 성우진·결 → 대신 말할 성우진·결 (말도 그 결 것으로 같이 바뀐다) */
+export const LOW_CHIEF: Readonly<Record<string, { readonly cast: 'a' | 'b'; readonly kind: BaseKind }>> = {
+  'a:w-cool': { cast: 'b', kind: 'w-bright' }, // 159Hz → 208Hz
+  'b:w-cool': { cast: 'b', kind: 'w-bright' }, // 137Hz → 208Hz
+  'a:w-sly': { cast: 'b', kind: 'w-sly' }, // 174Hz → 183Hz
+}
+/** 등용 첫마디가 175Hz 아래인 여장수 — 다시 녹음할 때까지 갈아 끼운 목소리의 짧은 대답으로 (낮은 차례) */
+export const HIRE_LOW: ReadonlySet<string> = new Set<string>([
+  'wander-20', 'dongokjeo-ruler', 'wander-16', 'maga-ruler', 'miri-ruler', 'jm-songbi', 'wander-08', 'dabeol-2', 'guga-ruler', 'mh-jinwang', 'saro-2',
+  'biryuna-ruler', 'iseo-1', 'us-ruler', 'geonma-ruler', 'dokro-1', 'daegaya-1', 'sabeol-1', 'wander-13', 'mh-soseono', 'apdok-ruler',
+  'gosaburi-ruler', 'jeoga-1', 'wander-18', 'yangmaek-1', 'jm-haengin-1', 'michuhol-2', 'uga-2', 'wander-03', 'bullae-ruler', 'golbeol-ruler',
+  'goryong-ruler', 'haseulla-ruler', 'mh-mahan-2', 'wander-22', 'sr-aryeong', 'bukokjeo-1', 'goguryeo-2', 'guya-3', 'jm-okjeo-1', 'maek-1', 'samul-1',
+  'ungcheon-1', 'wander-09', 'buyeo-1', 'chopal-2', 'goja-2', 'gosaburi-2', 'mokji-ruler', 'usan-1', 'wander-07', 'wander-21', 'yeonna-1', 'eumjeup-1',
+  'tamna-ruler', 'usisan-ruler', 'wander-10', 'sr-goya-1', 'byeokjin-1', 'gampyeong-1', 'iseo-ruler', 'hwanna-ruler', 'mujin-ruler', 'siljik-ruler',
+  'sr-danbi',
+])
+
+/**
  * 얼굴이 고르는 목소리 — 명치판 그림을 보고 박았다. 특성·능력치보다 먼저 (형 10-26: "험측 하늘 이미지는 나이든 무속인인데 젊은 장수 목소리임").
  * 군주라고 다 늙은 목소리가 아니다 — 주몽·온조·혁거세는 젊다. 그림을 바꾸면 여기도 본다
  */
@@ -270,11 +303,17 @@ export function chiefCastOf(h: Hero): 'a' | 'b' {
   return castHash(h) % 2 === 1 ? 'b' : 'a'
 }
 const CAST_DIR = { a: 'realm/voice/', b: 'realm/voice/b/', c: 'realm/voice/c/' } as const
-const dirOf = (h: Hero, ruler = false): string => CAST_DIR[castOf(h, ruler)]
+/** 그 장수가 실제로 내는 목소리 — 성우진 폴더와 결 (처진 여자 목소리는 LOW_SLOT 이 갈아 끼운다) */
+export function voiceSlot(h: Hero, ruler = false): { readonly dir: string; readonly kind: VoiceKind } {
+  const cast = castOf(h, ruler)
+  const kind = voiceKind(h, ruler)
+  const swap = LOW_SLOT[`${cast}:${kind}`]
+  return swap !== undefined ? { dir: CAST_DIR[swap.cast], kind: swap.kind } : { dir: CAST_DIR[cast], kind }
+}
 
 /** 그 장수의 그 줄 — 탭할 때마다 돌려 가며 하나 (화면 쪽 무작위 — 판의 결정론과 무관) */
 export function voicePath(h: Hero, want: VoiceLine, ruler = false): string {
-  const k = voiceKind(h, ruler)
+  const { dir, kind: k } = voiceSlot(h, ruler)
   const line: VoiceLine = want === 'obey' && !OBEY_KINDS.has(k) ? 'tap' : want
   const n = TAKES[line]
   const key = `${line}-${k}`
@@ -282,29 +321,30 @@ export function voicePath(h: Hero, want: VoiceLine, ruler = false): string {
   let t = 1 + Math.floor(Math.random() * n)
   if (n > 1 && t === prev) t = (t % n) + 1
   lastTake.set(key, t)
-  return `${dirOf(h, ruler)}${key}-${t}.ogg`
+  return `${dir}${key}-${t}.ogg`
 }
 
 /** 장수 기술 외침 — 그 장수의 결로 */
 export function artVoicePath(h: Hero, art: Art, ruler = false): string {
-  return `${dirOf(h, ruler)}art-${voiceKind(h, ruler)}-${art}.ogg`
+  const { dir, kind } = voiceSlot(h, ruler)
+  return `${dir}art-${kind}-${art}.ogg`
 }
 
 /** 싸움 맡김 — 맡아 들 때(go · 셋을 돌려 가며) · 맡긴 싸움이 끝나면 이김(win) · 짐(lose) */
 export function autoVoicePath(h: Hero, want: 'go' | 'win' | 'lose', ruler = false): string {
-  const k = voiceKind(h, ruler)
-  if (want !== 'go') return `${dirOf(h, ruler)}auto-${k}-${want}.ogg`
+  const { dir, kind: k } = voiceSlot(h, ruler)
+  if (want !== 'go') return `${dir}auto-${k}-${want}.ogg`
   const key = `auto-${k}`
   const prev = lastTake.get(key) ?? 0
   let t = 1 + Math.floor(Math.random() * 3)
   if (t === prev) t = (t % 3) + 1
   lastTake.set(key, t)
-  return `${dirOf(h, ruler)}${key}-${t}.ogg`
+  return `${dir}${key}-${t}.ogg`
 }
 
-/** 등용 첫마디 — 그 장수가 녹음한 대사 · 대사가 없는 장수(판에서 난 아이 등)는 그 결의 짧은 대답으로 */
+/** 등용 첫마디 — 그 장수가 녹음한 대사 · 대사가 없는 장수(판에서 난 아이 등) · 목소리가 처진 장수(HIRE_LOW)는 그 결의 짧은 대답으로 */
 export function hireVoicePath(h: Hero, ruler = false): string {
-  return HIRE_LINE[h.id] !== undefined && !HIRE_UNRECORDED.has(h.id) ? `realm/voice/hire/${h.id}.ogg` : voicePath(h, 'tap', ruler)
+  return HIRE_LINE[h.id] !== undefined && !HIRE_UNRECORDED.has(h.id) && !HIRE_LOW.has(h.id) ? `realm/voice/hire/${h.id}.ogg` : voicePath(h, 'tap', ruler)
 }
 
 /** 이번에 소리를 내도 되나 — 너무 잦으면 거른다 (now 는 화면 쪽 시계) */
