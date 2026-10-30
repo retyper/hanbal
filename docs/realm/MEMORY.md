@@ -185,3 +185,8 @@ type MemKind =
 | 15 | us-1 guya-1 guya-2 anya-1 anya-2 | 넣음 · 챗지피티 5판 |
 | 16 | miri-1 miri-2 goja-1 goja-2 dokro-1 | 넣음 · 챗지피티 5판 |
 | 17 | dokro-2 us-2 guya-3 jm-oi jm-mari | 넣음 (변한 판 스무 사람 끝) |
+| 18 | jm-hyeopbo jm-songbi jm-haedal jm-haengin-1 jm-okjeo-1 | 넣음 |
+| 19 | sr-aryeong sr-hogong sr-danbi sr-yangsan-1 sr-goya-1 | 넣음 |
+| 20 | sr-jinji-1 mh-eureum mh-ogan mh-soseono mh-mahan-1 | 넣음 |
+
+**여기서 이어 한다 (10-30 사용량으로 멈춤):** 묶음 100 / 168. 남은 68명은 `npx tsx tools/woo-lines-gen.ts next 5` 차례(마한 둘 · 길잡이 판 셋 · 영남 · 남부 · 북녘 장수). 챗지피티 교차 검증은 5판까지 함(20차례 가운데 1·3·4·5·7·8·12·13·15·16). 늙음 규칙(형 10-30): 제 몸을 늙은이라 하는 말은 설정 나이 50 이상 · 흰머리만 (`tools/woo-age.ts` · 시험이 지킨다).

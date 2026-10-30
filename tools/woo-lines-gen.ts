@@ -20,6 +20,7 @@ import { isRuler } from '../src/realm/heroes.ts'
 import { fitOf } from '../src/realm/woo.ts'
 import { baseKind, voiceKind } from '../src/ui/realm/voice.ts'
 import { HEAR_REG, SPEAK_REG, type Reg } from '../src/ui/realm/woo-lines.ts'
+import { castEntries, isOld, OLD_SELF } from './woo-age.ts'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const APPS = ['soothe', 'cause', 'gain', 'fear', 'bond'] as const
@@ -36,23 +37,8 @@ export function groupOf(id: string): RegionId | null {
 }
 const boardOf = (id: string): Realm => BOARDS.find((b) => b.r.heroes[id] !== undefined)!.r
 
-/** cast 문서 — id → 그 칸의 줄들 */
-function castEntries(): Map<string, string[]> {
-  const out = new Map<string, string[]>()
-  const dir = path.join(ROOT, 'docs/realm/cast')
-  for (const f of ['part-1.md', 'part-2.md', 'part-3.md', 'part-4.md']) {
-    const lines = fs.readFileSync(path.join(dir, f), 'utf8').replaceAll('\r\n', '\n').split('\n')
-    let cur: string[] | null = null
-    for (const l of lines) {
-      const m = /^### .*?`([\w-]+)`/.exec(l)
-      if (m !== null) { cur = []; out.set(m[1]!, cur); continue }
-      if (l.startsWith('#')) { cur = null; continue }
-      if (cur !== null && l.startsWith('- ') && !/^- (확인|목소리 결|등용 대사)/.test(l)) cur.push(l.slice(2))
-    }
-  }
-  return out
-}
 const CAST = castEntries()
+
 
 /** 차례 — 군주 모두(작은 판부터) → 자주 나오는 장수 (변한 판 · 주몽 · 서라벌 · 마한 · 길잡이 판) */
 export function order(): string[] {
@@ -110,6 +96,7 @@ function heroBrief(id: string): string {
     ...(HIRE_LINE[id] !== undefined ? [`- 넘어온 뒤 첫마디(이미 있음, 겹치지 말 것): "${HIRE_LINE[id]}"`] : []),
     `- 갇혔을 때 말씨: ${REG_NAME[HEAR_REG[k]]} · 남을 회유할 때 말씨: ${REG_NAME[SPEAK_REG[k]]}`,
     `- 회유 규칙: ${fits(r, h)}`,
+    `- 나이: ${isOld(id) ? "늙은 사람이라 제 몸을 늙었다 해도 된다" : "젊다 · 제 몸을 늙은이 · 늙은 몸 · 노구라 부르지 말 것"}`,
   ]
   return lines.join('\n').replaceAll(' — ', ', ').replaceAll('—', ', ')
 }
@@ -188,7 +175,8 @@ speak (회유하러 간 우리 장수):
 - yield.refused 는 방금 고개를 저었다는 것만 짚는다. 앞에서 한 특정한 말(「가락이 맞지 않는다며」)을 옮기지 말 것 (그 말을 했는지 모른다).
 - 인연(bond) 반응은 피붙이 · 한 핏줄 · 고향 가운데 어느 것인지 모른다. 「인연 · 끈 · 정」으로 쓰고 셋을 늘어놓지 말 것.
 - 「영혼 · 오산 · 성의」 같은 요즘 말 대신 「넋 · 그릇된 셈 · 정성」.
-- 설득 줄은 상대가 사내인지 여인인지, 늙었는지 젊은지 모른다 (「사내끼리」 ✗). 「쏘다 · 통 크다」 같은 요즘 말투도 금지.
+- 설득 줄은 상대가 사내인지 여인인지, 늙었는지 젊은지 모른다 (「사내끼리」 · 「늙은이」 ✗).
+- **제 몸을 「늙은이 · 이 늙은 몸 · 노구 · 늙은 칼 · 노장」이라 부르는 말은 설정 나이 50 이상이거나 흰머리 · 희끗한 수염인 사람만.** 다른 사람은 젊은 말로 (사람마다 칸의 「나이」를 볼 것). 「쏘다 · 통 크다」 같은 요즘 말투도 금지.
 - 한 사람의 말씨를 한 줄 안에서 섞지 말 것 (「~게냐! ~줄 아시오!」 ✗).
 - 「~이지 ~가 아니다」 같은 해명투 줄이지 말 것.
 - 말버릇은 묶음 전체에서 한두 번만 (모든 줄에 넣지 말 것).
@@ -261,6 +249,7 @@ export function problems(data: Record<string, WooBundle>, others: Readonly<Recor
       seen.set(l, at)
     }
     if (typeof b.speak?.gain?.[0] === 'string') for (const [i, l] of b.speak.gain.entries()) if (!l.includes('{grain}')) out.push(`${id} speak.gain.${i}: {grain} 없음`)
+    if (!isOld(id)) for (const [k, l] of linesOf(b)) if (OLD_SELF.test(l)) out.push(`${id} ${k}: 젊은 사람이 제 몸을 늙었다 함 (나이 50 이상 · 흰머리만): ${l}`)
     if (typeof b.held?.kin === 'string' && !b.held.kin.includes('{kin}')) out.push(`${id} held.kin: {kin} 없음`)
     if (typeof b.speak?.bond?.kin === 'string' && !b.speak.bond.kin.includes('{kin}')) out.push(`${id} speak.bond.kin: {kin} 없음`)
   }

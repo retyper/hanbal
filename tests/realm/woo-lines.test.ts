@@ -18,6 +18,7 @@ import { RULER_HELD, WOO_TALK, type WooBundle, type WooHeld, type WooSpeak } fro
 import type { Realm, WooApproach, WooReact } from '../../src/realm/types.ts'
 import { WOO_APPROACHES } from '../../src/realm/woo.ts'
 import type { BaseKind } from '../../src/ui/realm/voice.ts'
+import { isOld, OLD_SELF } from '../../tools/woo-age.ts'
 import {
   BODY, factsOf, fillTalk, heldOf, KNEEL, KNEEL_AFTER_NO, REACT, REPEAT, WOO_KIND_PIN, wooKneelLine, wooLordLine, wooNotYetLine, wooOpenLine, wooPitchLine, wooReactLine, wooWonLine, talkVars, type Facts,
 } from '../../src/ui/realm/woo-lines.ts'
@@ -319,6 +320,25 @@ describe('옥중 담판 대사', () => {
       }
       assert.ok(b.held.kin.includes('{kin}'), `${id} kin 에 {kin}: ${b.held.kin}`)
       assert.ok(b.speak.bond.kin.includes('{kin}'), `${id} bond.kin 에 {kin}: ${b.speak.bond.kin}`)
+    }
+  })
+
+  it('나이 50 미만 · 흰머리 없는 사람은 제 몸을 늙은이 · 노구 · 늙은 몸이라 하지 않는다 (형 10-30) · 결 틀은 늙음을 말하지 않는다', () => {
+    for (const [id, b] of Object.entries(WOO_TALK)) {
+      if (isOld(id)) continue
+      for (const [slot, line] of bundleLines(b)) assert.doesNotMatch(line, OLD_SELF, `${id} ${slot} 젊은 사람이 늙었다 함: ${line}`)
+    }
+    for (const [slot, line] of heldLines(RULER_HELD)) assert.doesNotMatch(line, OLD_SELF, `군주 묶음 ${slot}: ${line}`)
+    const f = factSets()[0]!
+    for (const k of KINDS) {
+      const all: string[] = [KNEEL[k], KNEEL_AFTER_NO[k]]
+      for (const a of APPS) {
+        for (const re of REACTS) all.push(REACT[k][a][re](f))
+        const B = BODY[k]
+        if (a === 'bond') for (const m of ['open', 'press', 'recover'] as const) all.push(B.bond[m](f, ''))
+        else for (const m of ['open', 'press', 'recover', 'again'] as const) all.push(B[a][m](f, ''))
+      }
+      for (const l of all) assert.doesNotMatch(l, /늙|노구|노장/, `결 틀 ${k}: ${l}`)
     }
   })
 
