@@ -12,6 +12,7 @@ import { NATIONS } from '../../src/realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../../src/realm/data/nations-yeongnam.ts'
 import { SOUTH_NATIONS } from '../../src/realm/data/nations-south.ts'
 import { WORLD_NATIONS } from '../../src/realm/data/nations-world.ts'
+import { startRegion } from '../../src/realm/data/regions/index.ts'
 import { startYeongnam } from '../../src/realm/data/regions/yeongnam.ts'
 import { josa } from '../../src/realm/data/prose.ts'
 import { checkOutcome } from '../../src/realm/season.ts'
@@ -40,7 +41,7 @@ describe('판의 앞과 끝', () => {
     const h = boardHtml(KIT, false)
     for (const b of BOARDS) assert.ok(h.includes(`data-v="${b.id}"`) && (b.id === 'tutorial' || h.includes(`도읍 ${winNeed(b.id)}곳`)))
     // 도읍을 winNeed 만큼 쥐면 checkOutcome 이 이김
-    const r = startYeongnam(2, 'saro')
+    const r = startRegion('yeongnam', 2, 'saro') // 실제로 여는 판 — 타국 수가 정해져 있다 (rivals.ts)
     const caps = Object.values(r.factions).map((f) => f.capital).filter((c) => c !== r.factions['saro']!.capital)
     for (const c of caps.slice(0, winNeed('yeongnam') - 1)) r.nodes[c]!.owner = 'saro'
     assert.equal(checkOutcome(r), 'win')

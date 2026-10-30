@@ -15,6 +15,11 @@ import { mixOf } from '../../src/realm/data/armymix.ts'
 import { YEONGNAM_NATIONS } from '../../src/realm/data/nations-yeongnam.ts'
 import { startRegion } from '../../src/realm/data/regions/index.ts'
 import { YEONGNAM_NATION_IDS, startYeongnam } from '../../src/realm/data/regions/yeongnam.ts'
+import { startSouth } from '../../src/realm/data/regions/south.ts'
+import { startCustoms } from '../../src/realm/hooks.ts'
+
+/** 나라가 다 있는 판 — 자유판은 타국을 몇만 남기지만 (regions/rivals.ts), 풍습은 그 나라가 있어야 본다 */
+const full = (r: Realm): Realm => { startCustoms(r); return r }
 import { bigTwo, envoyTrueChance, favorOf, judgeOf, pairKey, relationOf } from '../../src/realm/diplomacy.ts'
 import { armCost, canBuild, draftLimit, draftNeeds, draftPay, militiaMen, nextBuild, nodeYield, riteCost, sonoeRoom, stockOf, upkeepOf } from '../../src/realm/economy.ts'
 import { concealBonus, customMarks, passExtra, riseState, siegeFort } from '../../src/realm/hooks.ts'
@@ -261,7 +266,7 @@ describe('나라 고리 — 판에서 걸린다', () => {
   })
 
   it('바닷가 여덟 나라(포상) — 골포·사물·고자는 화친으로 시작하고, 가락이 그들을 미워한다', () => {
-    const r = startRegion('yeongnam', 1, 'us')
+    const r = full(startYeongnam(1, 'us'))
     assert.equal(relationOf(r, 'us', 'samul').state, 'truce')
     assert.equal(relationOf(r, 'us', 'goja').state, 'truce')
     assert.equal(relationOf(r, 'samul', 'goja').state, 'truce')
@@ -269,7 +274,9 @@ describe('나라 고리 — 판에서 걸린다', () => {
     assert.ok(favorOf(r, 'guya', 'us') < 0)
     assert.equal(relationOf(r, 'us', 'anya').state, 'neutral')
     // 판을 열기 전에 풍습을 빼면 동맹도 없다 (짝 씨앗 도구의 길)
-    const q = startRegion('yeongnam', 1, 'us', (x) => { x.factions['us']!.customs = customsOf(x, 'us').filter((c) => c !== 'posang') })
+    const q = startYeongnam(1, 'us')
+    q.factions['us']!.customs = customsOf(q, 'us').filter((c) => c !== 'posang')
+    full(q)
     assert.equal(relationOf(q, 'us', 'samul').state, 'neutral')
     assert.equal(relationOf(q, 'samul', 'goja').state, 'truce')
   })
@@ -363,7 +370,7 @@ describe('나라 고르기 · 서막 둘째 장의 카드', () => {
 
 describe('남부 판 대비 셋 (S3)', () => {
   it('책화(동예) — 우리 땅에 쳐들어온 적은 첫 합 사기가 깎이고, 밖에 나간 우리 군사는 군량이 곱으로 든다', () => {
-    const r = startRegion('south', 1, 'mokji')
+    const r = full(startSouth(1, 'mokji'))
     assert.ok(hasCustom(r, 'maek', 'chaekhwa') && hasCustom(r, 'siljik', 'chaekhwa') && !hasCustom(r, 'mokji', 'chaekhwa'))
     // 맥국 군대를 남의 땅에 세워 본다 — 군량(upkeep)이 책화 없는 판보다 크다
     const a = Object.values(r.armies).find((x) => x.faction === 'maek')!

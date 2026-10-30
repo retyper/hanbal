@@ -91,29 +91,31 @@ export const BOARDS: ReadonlyArray<{ id: RegionId; name: string; era: string; ho
   {
     id: 'byeonhan-mini', name: '쇠의 바다', era: '2세기 · 변한 남쪽 바닷가', art: 'keyart/byeonhan.jpg', length: '짧다',
     hook: '덩이쇠 한 장이 곧 돈이던 바다. 쇠를 쥔 나라가 뱃길을 쥔다.',
-    play: '변한 바닷가의 한 나라로 시작한다. 맞설 이웃은 한 나라뿐, 나머지는 빈 땅이다.',
+    play: `변한 바닷가의 한 나라로 시작한다. 맞설 나라 ${P.realm.miniRivals}곳, 나머지는 빈 땅이다.`,
   },
   {
     id: 'yeongnam', name: '낙동강 스물한 나라', era: '2세기 · 낙동강', art: 'keyart/yeongnam.jpg', length: '보통',
     hook: '훗날 신라가 될 사로도, 가야가 될 가락도 아직은 강가의 작은 나라였다.',
-    play: '스물한 나라 가운데 하나로 강을 오르내리며 판을 넓힌다.',
+    play: `낙동강 가 한 나라로 시작한다. 맞설 나라 ${P.realm.yeongnamRivals}곳, 나머지는 빈 땅이다.`,
   },
   {
     id: 'south', name: '삼한', era: '3세기 · 한강에서 영산강까지', art: 'keyart/south.jpg', length: '길다',
     hook: '천군이 소도에서 하늘에 제사하던 땅. 마한·진한·변한 서른여섯 나라가 깃발을 올렸다.',
-    play: '처음엔 이웃만 안다. 보고 다닌 만큼 지도가 칠해진다.',
+    play: `처음엔 이웃만 안다. 맞설 나라 ${P.realm.southRivals}곳, 나머지는 빈 땅이다. 보고 다닌 만큼 지도가 칠해진다.`,
   },
   {
     id: 'world', name: '북녘의 바람', era: '3세기 · 탐라에서 부여의 들까지', art: 'keyart/world.jpg', length: '아주 길다',
     hook: '압록 골짜기의 고구려 다섯 나부와 송화강 들의 부여 네 가가 남쪽을 내려다본다.',
-    play: '쉰두 나라: 요동·옥저·동해의 우산국까지. 가장 긴 판.',
+    play: `탐라에서 부여의 들까지. 맞설 나라 ${P.realm.worldRivals}곳, 나머지는 빈 땅이다. 가장 긴 판.`,
   },
 ]
 
 /** 이기려면 쥘 도읍 수 (season.ts checkOutcome 과 같은 값) */
 export function winNeed(region: RegionId): number {
   if (region === 'tutorial') return 2 // 배우는 판 — 미추홀 도읍 하나 (제 도읍 포함 둘)
-  return region === 'yeongnam' ? P.realm.winCapitalsYeongnam : region === 'south' ? P.realm.winCapitalsSouth : region === 'world' ? P.realm.winCapitalsWorld : Math.min(P.realm.winCapitals, P.realm.miniRivals + 1)
+  // 판에 있는 나라 수(타국 + 우리)보다 많이는 못 쥔다 (season.checkOutcome 과 같다)
+  const R = P.realm
+  return region === 'yeongnam' ? Math.min(R.winCapitalsYeongnam, R.yeongnamRivals + 1) : region === 'south' ? Math.min(R.winCapitalsSouth, R.southRivals + 1) : region === 'world' ? Math.min(R.winCapitalsWorld, R.worldRivals + 1) : Math.min(R.winCapitals, R.miniRivals + 1)
 }
 
 const capsHeld = (r: Realm, f: string): number => Object.values(r.factions).filter((x) => r.nodes[x.capital]?.owner === f).length

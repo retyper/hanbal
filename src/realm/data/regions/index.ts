@@ -54,14 +54,14 @@ function openRegion(region: RegionId, seed: number, player: string, edit?: (r: R
   // 자유판은 늘 도읍 하나로 시작한다 (rivals.capitalOnly · 형 10-30)
   const free = (r: Realm): Realm => { capitalOnly(r); edit?.(r); startCustoms(r); return r }
   switch (region) {
-    case 'yeongnam': return free(startYeongnam(seed, player))
-    case 'south': return free(startSouth(seed, player))
-    case 'world': return free(startWorld(seed, player))
+    case 'yeongnam': return free(keepRivals(startYeongnam(seed, player), P.realm.yeongnamRivals))
+    case 'south': return free(keepRivals(startSouth(seed, player), P.realm.southRivals))
+    case 'world': return free(keepRivals(startWorld(seed, player), P.realm.worldRivals))
     case 'tutorial': return startTutorial(seed)
     case 'jumong': return startJumong(seed)
     case 'mahan': return startMahan(seed)
     case 'seorabeol': return startSeorabeol(seed)
-    // 쇠의 바다 — 타국은 판마다 무작위로 하나만, 나머지 나라 땅은 빈 땅 (rivals.ts · FOCUS.md J)
+    // 자유판마다 타국 수가 정해져 있다 — 판마다 무작위 나라, 나머지 나라 땅은 빈 땅 (rivals.ts · FOCUS.md J)
     default: return free(keepRivals(startRealm(seed, player), P.realm.miniRivals))
   }
 }

@@ -52,7 +52,9 @@ export function ironOf(r: Realm, f: string): { mine: boolean; port: boolean; gat
   const own = Object.values(r.nodes).filter((n) => n.owner === f)
   const mine = own.some((n) => n.kind === 'ironMine')
   const port = own.some((n) => n.kind === 'port')
-  return { mine, port, gate: mine && port, iron: goodOf(stockOf(r, f), 'iron'), need: P.realm.ironseaStock }
+  // 문턱은 판의 철광 수에 비례 — 철광이 셋인 낙동강 판은 쇠가 세 배로 돈다 (450 그대로면 남이 이긴 판 37% · realm-paths 10-31)
+  const mines = Object.values(r.nodes).filter((n) => n.kind === 'ironMine').length
+  return { mine, port, gate: mine && port, iron: goodOf(stockOf(r, f), 'iron'), need: Math.round(P.realm.ironseaStock * Math.max(1, mines)) }
 }
 
 const ironHolds = (x: ReturnType<typeof ironOf>): boolean => x.gate && x.iron >= x.need
