@@ -91,7 +91,7 @@ export const BOARDS: ReadonlyArray<{ id: RegionId; name: string; era: string; ho
   {
     id: 'byeonhan-mini', name: '쇠의 바다', era: '2세기 · 변한 남쪽 바닷가', art: 'keyart/byeonhan.jpg', length: '짧다',
     hook: '덩이쇠 한 장이 곧 돈이던 바다. 쇠를 쥔 나라가 뱃길을 쥔다.',
-    play: '변한 여섯 나라 가운데 하나로 쇠와 뱃길을 다툰다.',
+    play: '변한 바닷가의 한 나라로 시작한다. 맞설 이웃은 한 나라뿐, 나머지는 빈 땅이다.',
   },
   {
     id: 'yeongnam', name: '낙동강 스물한 나라', era: '2세기 · 낙동강', art: 'keyart/yeongnam.jpg', length: '보통',
