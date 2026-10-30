@@ -2,17 +2,20 @@
  * 결 넷 더 (형 10-29: "우리 무장들이 이미지로는 20대가 많은데 진지하면 목소리가 다 40대 같다 · 진지하면서도 젊은 목소리").
  *   m-knight 청년 무장 (남 20대 · 진지하고 곧다 · 낮고 단단하되 젊게)   w-knight 젊은 여장수 (여 20대 · 단정하고 결연하다)
  *   m-veteran 중년 무장 (남 35~50 · 굵고 노련하다)                       w-matron 나이 든 여인 (여 40~55 · 차분하고 묵직하다)
- * 성우진 A 칸(public/realm/voice/ 바로 아래 · 이름 꼴은 다른 결과 같다)에 녹음했다. 10-30 성우진 B(voice-b.ts · Iapetus · Erinome · Schedar · Vindemiatrix)도 녹음해 이 결의 장수는 A · B 반반으로 말한다 · C 는 아직 (voice.ts castOf).
+ * 성우진 A 칸(public/realm/voice/ 바로 아래 · 이름 꼴은 다른 결과 같다)에 녹음했다. 10-30 성우진 B(voice-b.ts · Iapetus · Zephyr(옛 Erinome) · Schedar · Vindemiatrix)도 녹음해 이 결의 장수는 A · B 반반으로 말한다 · C 는 아직 (voice.ts castOf).
  * 군장 말은 가까운 옛 결의 것을 빌린다 (voice.ts BASE_OF). 사극 말투 · 부르는 말(주군 · 그대 · 전하) 없이 · 「~요」로 끝나는 말 없이.
  * 대사는 챗지피티와 교차 검증해 고친 안을 그대로 받았다 (형 10-29).
  * 녹음: AI 스튜디오 Gemini TTS 무료 목소리 VOICE_NEW (A · B · C 와 겹치지 않게) · tools/voicenew-list.ts 가 묶음 글을 낸다.
+ * 10-30 젊은 여장수는 Gemini 3.8 TTS 규칙으로 다시 녹음 — 말투 칸은 짧게(나이·성별 없이) · 차분한 줄(대답·분부·짐)과 외침(맡김·이김·기술)을 따로 ·
+ *   외침 대본엔 꺾쇠 태그(<heavy breath> <grunt> <argh>)만 · 말투 칸 글은 docs/realm/cast/README.md 「젊은 여장수 새 목소리」.
  */
 import type { Art } from '../../realm/types.ts'
 import type { NewKind } from './voice.ts'
 
 /** 결마다 목소리 — AI 스튜디오 이름 */
 export const VOICE_NEW: Readonly<Record<NewKind, string>> = {
-  'm-knight': 'Orus', 'w-knight': 'Tari', 'm-veteran': 'Ludo', 'w-matron': 'Jori',
+  // w-knight 는 10-30 Tari → Leda (형: "성우진 D 중에서는 Leda 가 제일 젊네" · Tari 는 서른 넘게 들렸다)
+  'm-knight': 'Orus', 'w-knight': 'Leda', 'm-veteran': 'Ludo', 'w-matron': 'Jori',
 }
 
 /** 짧은 대답 셋 · 분부 받듦 셋 · 싸움 맡김 다섯(맡김 셋 · 이김 · 짐) */
