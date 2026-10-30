@@ -164,7 +164,7 @@ const VOICE_OF: Readonly<Record<string, VoiceKind>> = {
   'gampyeong-1': 'w-matron', // 살해 뱃사공
   'wansan-1': 'w-knight', // 살해 완
   'yangmaek-1': 'w-knight', // 장수 솔매
-  'wander-22': 'w-knight', // 신지 너울
+  'wander-22': 'w-bright', // 신지 너울 — 스물둘. 젊은 여장수 결(Tari)도 서른 넘게 들려 가장 젊은 결로 (형 10-30: "이미지는 21살인데 목소리는 35살") · 성우진 D 를 고르면 그리로
   'sr-goya-1': 'w-sly', // 명활 달래
   'mh-mahan-2': 'w-knight', // 원산 지기 달래
   'jm-haengin-1': 'w-knight', // 산지기 너울
