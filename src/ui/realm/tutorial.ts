@@ -266,7 +266,8 @@ export function createSpot(root: HTMLElement): Spot {
   }
   const war = (): boolean => root.classList.contains('war-open') || root.querySelector('.wr') !== null
   /** 큰 장면이 떠 있나 — 그동안은 고리도 막기도 쉰다 */
-  const cere = (): boolean => root.querySelector('.cere, .saveov') !== null // 「저장 · 불러오기」 창도 막지 않는다
+  // 「저장 · 불러오기」 창 · 전략 회의(.stov) · 옥중 담판과 회유할 사람 고르기(.dpov)도 막지 않는다 — 그 창은 제 손으로 마친다 (형 10-30)
+  const cere = (): boolean => root.querySelector('.cere, .saveov, .stov, .dpov') !== null
 
   /**
    * 누를 곳을 덮고 있는 보고판·판 — 자리(좌표)로 본다. 화면 맨 위 요소를 찍어 보던 것(elementFromPoint)은 고리·어둠·판이 미끄러지는
@@ -451,6 +452,8 @@ export const TUT_CSS = `
 .ap.war-open .tutband, .ap:has(.wr) .tutband { display: none; }
 /* 큰 장면(등용·사로잡음·혼례…)이 떠 있는 동안은 띠·고리를 숨긴다 — 고리가 장면 뒤를 가리켜 누를 수 없었다(10/12 막힘 · 형 10-24) */
 .ap:has(.cere) .tutband, .ap:has(.cere) .tutspot, .ap:has(.cere) .tutring { display: none !important; }
+/* 전략 회의 · 옥중 담판도 — 띠가 회의 머리(✕)를 덮지 않게 (형 10-30) */
+.ap:has(.stov) .tutband, .ap:has(.stov) .tutspot, .ap:has(.stov) .tutring, .ap:has(.dpov) .tutband, .ap:has(.dpov) .tutspot, .ap:has(.dpov) .tutring { display: none !important; }
 .ap.war-open .tutspot, .ap.war-open .tutring, .ap:has(.wr) .tutspot, .ap:has(.wr) .tutring { display: none !important; }
 .tutb { pointer-events: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; max-width: 560px; padding: 10px 14px; border-radius: 14px;
   background: #1f1710f8; border: 1px solid #e8c06a; box-shadow: 0 6px 24px #000d; color: #f3ead8; font-size: 15px; line-height: 1.5; }

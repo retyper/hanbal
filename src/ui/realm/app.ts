@@ -1562,7 +1562,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       return
     }
     const ctx = { r, orders: ordersNow(), report, acts: tut.acts }
-    const i = tutAt(tut.i, ctx)
+    // 전략 회의 · 옥중 담판 · 회유할 사람 고르기가 떠 있는 동안은 단계를 넘기지 않는다 — 그 창을 마쳐야 한 일이다.
+    // 출정을 고르는 순간 · 「회유한다」를 누르는 순간 명령이 서서 다음 단계로 넘어가, 고리가 창 뒤를 가리키며 창 안을 막았다 (형 10-30: 9/12 · 10/12 · 도읍 출정)
+    const busy = stratOpen !== null || wooTalk !== null || wooPick !== null
+    const i = busy ? tut.i : tutAt(tut.i, ctx)
     if (i !== tut.i) {
       tut.i = i
       saveTut()
