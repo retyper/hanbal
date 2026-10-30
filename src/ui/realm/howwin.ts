@@ -214,7 +214,7 @@ function lineOf(id: LessonId, loss: Loss | null): string {
     case 'scout': return loss === null ? '적의 군사와 낌새가 미리 보입니다' : loss.def ? '적의 기습을 미리 몰랐습니다' : '적의 군사를 모르고 쳤습니다'
     case 'plot': return loss !== null ? '적의 사기가 더 높았습니다' : `소문은 적의 사기를 ${pct(R.plotRumorMorale)}% 깎습니다`
     case 'pincer': return loss !== null ? '한 군대로만 쳤습니다' : `두 길에서 같은 계절에 닿으면 ${pct(R.pincer - 1)}% 더 셉니다`
-    case 'ally': return loss !== null && loss.men !== null && loss.men[1] > loss.men[0] * 1.6 ? `적이 ${(loss.men[1] / Math.max(1, loss.men[0])).toFixed(1)}배나 많았습니다` : loss !== null ? '적이 두 길로 협공했습니다' : '함께 치자고 하거나 군대를 빌립니다'
+    case 'ally': return loss !== null && loss.men !== null && loss.men[1] > loss.men[0] * 1.6 ? `적이 ${(loss.men[1] / Math.max(1, loss.men[0])).toFixed(1)}배나 많았습니다` : loss !== null ? '적이 두 길로 협공했습니다' : '함께 치자고 하거나 원군을 청합니다'
     case 'flag': return loss !== null ? `깃발 상성에서 ${loss.flags[1]}번 밀렸습니다` : '적의 낌새를 보고 이기는 깃발을 고릅니다'
     case 'hero': return loss !== null ? '장수 없이 싸웠습니다' : '장수가 이끌면 군대가 더 셉니다'
   }
@@ -270,7 +270,7 @@ function picHtml(k: HowKit, id: LessonId, loss: Loss | null): string {
         + col(crowd(k, 2, false, 'sol-bow'), '<i class="lsn-arr l">➜</i>', 'side flip')
     }
     case 'ally': {
-      return col(big(k, 'ask-joint'), tag('함께 치자', 'good')) + '<i class="lsn-vs">＋</i>' + col(big(k, 'ask-troops'), tag('군대 빌리기', 'good'))
+      return col(big(k, 'ask-joint'), tag('함께 치자', 'good')) + '<i class="lsn-vs">＋</i>' + col(big(k, 'ask-troops'), tag('원군 청하기', 'good'))
     }
     case 'flag': {
       const f = (c: 'hold' | 'charge' | 'open', name: string, cls: string): string => `<span class="lsn-fl ${cls}"><img src="${k.art}flag/flag-${c}.png" alt=""><b>${name}</b></span>`

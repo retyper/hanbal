@@ -109,7 +109,7 @@ export const SEASON_LINE: Record<SeasonOfYear, string> = {
 
 export const ASK_NAME: Record<EnvoyAsk, string> = {
   truce: '화친', trade: '교역', tribute: '속국 삼기', alliance: '동맹',
-  gift: '선물', joint: '함께 치자', aid: '지원 요청', troops: '군대 빌리기', break: '약조 깨기',
+  gift: '선물', joint: '함께 치자', aid: '지원 요청', troops: '원군 청하기', break: '약조 깨기',
 }
 
 export const RELATION_NAME: Record<Relation['state'], string> = {
