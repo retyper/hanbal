@@ -1,5 +1,6 @@
 /**
- * 이기는 법 — 진 싸움을 읽어 까닭을 짚고, 넘길 판 여덟 장을 까닭부터 늘어놓는다 (src/ui/realm/howwin.ts · 형 10-29)
+ * 이기는 법 — 진 싸움을 읽어 까닭을 짚고, 넘길 판 아홉 장을 까닭부터 늘어놓는다 (src/ui/realm/howwin.ts · 형 10-29)
+ * 장마다 위 그림 밑에 짠 그림 · 맨 끝은 적은 군사로 대군을 이긴 좌원 싸움 (형 10-30)
  */
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
@@ -31,12 +32,18 @@ describe('이기는 법', () => {
     assert.ok(loss.causes.length <= 3)
     assert.equal(fake('win', [80, 240]).loss, null)
   })
-  it('판은 여덟 장 · 까닭이 앞에', () => {
+  it('판은 아홉 장 · 까닭이 앞에 · 좌원 싸움이 맨 끝', () => {
     const { loss } = fake('lose', [80, 240])
     const pages = lessons({ art: '/', flag: () => null, wait: () => 0 }, loss)
     assert.equal(pages.length, LESSON_ORDER.length)
     assert.deepEqual(pages.slice(0, loss!.causes.length).map((p) => p.id), [...loss!.causes])
     assert.ok(pages.every((p) => p.html.includes('lsn-go')))
+    // 그림 밑에 짠 그림(병사·깃발·숫자)이 붙고, 이번 싸움의 숫자는 그 짠 그림에 든다
+    assert.ok(pages.every((p) => p.html.includes('lsn-pic') && p.html.includes('lsn-dg')))
+    assert.ok(pages[0]!.html.includes('적 240'))
+    const last = pages[pages.length - 1]!
+    assert.equal(last.id, 'few')
+    assert.ok(last.html.includes('좌원') && last.html.includes('삼국사기 고구려본기 신대왕 8년'))
   })
   it('띠의 시간 값은 맨 숫자', () => {
     assert.equal(typeof P.realm.howWinToastMs, 'number')

@@ -15,9 +15,12 @@ import { PLOT_NAME, TIER_NAME } from '../../realm/data/prose.ts'
 import type { Army, Realm, Report, ReportLine } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 
-export type LessonId = 'draft' | 'iron' | 'scout' | 'plot' | 'pincer' | 'ally' | 'flag' | 'hero'
-/** 넘기는 차례 — 까닭으로 짚인 것이 앞으로 나온다 */
-export const LESSON_ORDER: readonly LessonId[] = ['draft', 'iron', 'scout', 'plot', 'pincer', 'ally', 'flag', 'hero']
+export type LessonId = 'draft' | 'iron' | 'scout' | 'plot' | 'pincer' | 'ally' | 'flag' | 'hero' | 'few'
+/**
+ * 넘기는 차례 — 까닭으로 짚인 것이 앞으로 나온다.
+ * 맨 끝 'few' 는 까닭으로 짚이지 않는 마무리 장 — 적은 군사로 대군을 이긴 좌원 싸움 (형 10-30: "맨 마지막 거에는 적은 군사로도 대군을 이기는 사례")
+ */
+export const LESSON_ORDER: readonly LessonId[] = ['draft', 'iron', 'scout', 'plot', 'pincer', 'ally', 'flag', 'hero', 'few']
 /** 「해 보기」가 여는 곳 — 탭 · 외교 탭이면 그 칸 */
 export interface LessonGo { readonly tab: 'draft' | 'army' | 'diplo' | 'heroes'; readonly mode?: 'envoy' | 'plot' | 'scout' }
 const GO: Readonly<Record<LessonId, LessonGo>> = {
@@ -29,9 +32,14 @@ const GO: Readonly<Record<LessonId, LessonGo>> = {
   ally: { tab: 'diplo', mode: 'envoy' },
   flag: { tab: 'army' }, // 깃발은 싸움 안에서 고른다 — 출정부터
   hero: { tab: 'heroes' },
+  few: { tab: 'army' }, // 성을 지키고 · 굶기고 · 흔들릴 때 쫓는다 — 출정부터
 }
-/** 구운 그림이 들어온 장 — 이름이 있으면 짠 그림 대신 public/realm/howwin/howwin-<id>.jpg */
-export const HOWWIN_BAKED: ReadonlySet<LessonId> = new Set<LessonId>(['draft', 'iron', 'scout', 'plot', 'pincer', 'ally', 'flag', 'hero'])
+/**
+ * 구운 그림이 들어온 장 — 이름이 있으면 위 그림이 public/realm/howwin/howwin-<id>.jpg, 없으면 사건 그림(BG)을 빌린다.
+ * 어느 쪽이든 그 밑에 짠 그림(병사·깃발·숫자)이 붙는다 (형 10-30: "유닛이랑 깃발 들어간 거 … 이미지 밑에다가").
+ * 'few' 는 좌원 싸움 그림 (docs/realm/ART-QUEUE.md 「이기는 법 아홉째」 · 10-30 받음)
+ */
+export const HOWWIN_BAKED: ReadonlySet<LessonId> = new Set<LessonId>(['draft', 'iron', 'scout', 'plot', 'pincer', 'ally', 'flag', 'hero', 'few'])
 
 /** 방금 진 싸움 한 판에서 읽은 것 */
 export interface Loss {
@@ -169,16 +177,17 @@ const TIER_IC: Readonly<Record<Equip, string>> = {
 /** 띠에 뜨는 까닭 그림 */
 const CAUSE_IC: Readonly<Record<LessonId, string>> = {
   draft: 'icon/sol-spear', iron: 'icon/treasure-iron-helmet', scout: 'icon/unit-scouts', plot: 'icon/plot-schemes',
-  pincer: 'icon/war-melee', ally: 'icon/ask-joint', flag: 'flag/flag-hold', hero: 'icon/unit-general',
+  pincer: 'icon/war-melee', ally: 'icon/ask-joint', flag: 'flag/flag-hold', hero: 'icon/unit-general', few: 'flag/flag-pursue',
 }
-/** 판의 바탕 그림 (event 폴더) */
+/** 구운 그림이 아직 없을 때 빌리는 사건 그림 (event 폴더) */
 const BG: Readonly<Record<LessonId, string>> = {
   draft: 'event-invade-field', iron: 'event-bow-forge', scout: 'event-spy-rumor', plot: 'event-plot-burn',
   pincer: 'event-relief-cavalry', ally: 'event-alliance-oath', flag: 'event-war-council', hero: 'event-sniped-commander',
+  few: 'event-invade-siege', // 목책 뒤 몇 사람과 밀려오는 대군
 }
 const TITLE: Readonly<Record<LessonId, string>> = {
   draft: '군사 더 뽑기', iron: '쇠 무기 들리기', scout: '정찰 보내기', plot: '공작으로 흔들기',
-  pincer: '두 군대로 협공', ally: '동맹 부르기', flag: '깃발 상성', hero: '장수 붙이기',
+  pincer: '두 군대로 협공', ally: '동맹 부르기', flag: '깃발 상성', hero: '장수 붙이기', few: '적은 군사로 대군을',
 }
 
 /** 위 띠 — 그림 · 「⚔ 이기는 법」 · 짚인 까닭 그림 (셋까지) */
@@ -200,10 +209,20 @@ export function lessons(k: HowKit, loss: Loss | null): Lesson[] {
 function pageHtml(k: HowKit, id: LessonId, loss: Loss | null): string {
   const g = GO[id]
   const w = k.wait(g.tab)
-  const pic = HOWWIN_BAKED.has(id) ? `<div class="lsn-pic baked" style="background-image:url('${k.art}howwin/howwin-${id}.jpg')"></div>` : `<div class="lsn-pic" style="background-image:url('${k.art}event/${BG[id]}.jpg')"><div class="lsn-st">${picHtml(k, id, loss)}</div></div>`
+  // 위는 그림(구운 것 · 없으면 사건 그림) · 밑은 짠 그림(병사·깃발·숫자 — 이번 싸움의 숫자도 여기에)
+  const src = HOWWIN_BAKED.has(id) ? `howwin/howwin-${id}.jpg` : `event/${BG[id]}.jpg`
+  const pic = `<div class="lsn-pic" style="background-image:url('${k.art}${src}')"></div><div class="lsn-dg${id === 'few' ? ' few' : ''}">${picHtml(k, id, loss)}</div>`
   const go = w > 0 ? `<button class="lsn-go" disabled>🔒 ${w}계절 뒤에 열립니다</button>` : `<button class="lsn-go" data-lsn="go" data-id="${id}">해 보기</button>`
-  return `<div class="lsn-pg" data-id="${id}">${loss !== null ? '<i class="lsn-why">이번 싸움</i>' : ''}${pic}<h4 class="lsn-h">${esc(TITLE[id])}</h4><p class="lsn-ln${loss !== null ? ' why' : ''}">${esc(lineOf(id, loss))}</p>${go}</div>`
+  return `<div class="lsn-pg" data-id="${id}">${loss !== null ? '<i class="lsn-why">이번 싸움</i>' : ''}${pic}<h4 class="lsn-h">${esc(TITLE[id])}</h4><p class="lsn-ln${loss !== null ? ' why' : ''}">${esc(lineOf(id, loss))}</p>${id === 'few' ? HIST : ''}${go}</div>`
 }
+
+/**
+ * 좌원 싸움 (172 · 고구려 신대왕 8년) — 대군이 오자 명림답부는 맞서 나가지 않고 성을 지키며 들을 비웠다(청야).
+ * 굶주린 대군이 물러나자 수천 기병으로 쫓아 좌원에서 크게 깨뜨렸고, 말 한 필도 돌아가지 못했다(匹馬不反).
+ * 『삼국사기』 고구려본기 신대왕 8년 · 명림답부 열전. 대군의 머릿수는 기록에 없어 적지 않는다 (「大兵」 · 「數千騎」만).
+ * 후대에도 같은 길 — 을지문덕의 살수 싸움(612)도 지치게 하고 굶긴 뒤 물러날 때 쳤다.
+ */
+const HIST = '<p class="lsn-hist"><b>좌원 싸움 (172) · 명림답부</b> 수천 기병이 굶주린 대군을 쫓아, 말 한 필도 돌아가지 못했습니다.<small>삼국사기 고구려본기 신대왕 8년</small></p>'
 
 /** 한 줄 — 까닭이면 방금 싸움의 숫자로, 아니면 늘 맞는 말로 (합니다체 · 메모리 system-text-honorific) */
 function lineOf(id: LessonId, loss: Loss | null): string {
@@ -217,6 +236,7 @@ function lineOf(id: LessonId, loss: Loss | null): string {
     case 'ally': return loss !== null && loss.men !== null && loss.men[1] > loss.men[0] * 1.6 ? `적이 ${(loss.men[1] / Math.max(1, loss.men[0])).toFixed(1)}배나 많았습니다` : loss !== null ? '적이 두 길로 협공했습니다' : '함께 치자고 하거나 원군을 청합니다'
     case 'flag': return loss !== null ? `깃발 상성에서 ${loss.flags[1]}번 밀렸습니다` : '적의 낌새를 보고 이기는 깃발을 고릅니다'
     case 'hero': return loss !== null ? '장수 없이 싸웠습니다' : '장수가 이끌면 군대가 더 셉니다'
+    case 'few': return '버티고, 굶기고, 흔들릴 때 쫓습니다'
   }
 }
 
@@ -283,6 +303,18 @@ function picHtml(k: HowKit, id: LessonId, loss: Loss | null): string {
     case 'hero': {
       return col(big(k, 'unit-general'), tag('장수 ★', 'good')) + '<i class="lsn-ar">▶</i>' + col(crowd(k, 3, false), tag('더 세다', 'good'))
     }
+    case 'few': {
+      // 위: 성에 든 우리 몇 ⚔ 밀려오는 대군 · 아래: 버티기 ▶ 곡식에 불 ▶ 굶주려 사기 ▼ ▶ 흔들릴 때 추격
+      const fl = (c: string): string => `<img class="lsn-big mid" src="${k.art}flag/flag-${c}.png" alt="">`
+      const step = (pic: string, t: string, cls = ''): string => `<span class="lsn-stp">${pic}${tag(t, cls)}</span>`
+      const ar = '<i class="lsn-sa">▶</i>'
+      return `<span class="lsn-few">${col(`<span class="lsn-fort">${big(k, 'settle-hill-fort', 'town')}${crowd(k, 2, false, 'sol-bow')}</span>`, tag('우리', 'good'))}`
+        + `<i class="lsn-vs">⚔</i>${col(crowd(k, 7, true), tag('대군', 'foe'))}</span>`
+        + `<span class="lsn-steps">${step(fl('hold'), '버티기')}${ar}`
+        + step(`<span class="lsn-burn">${big(k, 'good-rice', 'mid')}${big(k, 'plot-burn', 'sm')}</span>`, '적 곡식', 'bad') + ar
+        + step(big(k, 'status-morale-down', 'mid'), `사기 −${pct(R.tacHungry)}%`, 'bad') + ar
+        + step(fl('pursue'), `추격 ×${R.tacPursueMul}`, 'good') + '</span>'
+    }
   }
 }
 
@@ -339,8 +371,9 @@ export function openLessons(root: HTMLElement, pages: readonly Lesson[], go: (g:
 
 /**
  * 위 띠를 띄운다 — 누르면 판 · 띠 밖을 누르면 걷힘 · 정한 시간이면 걷힘 (값이 깨져도 기본값 · 상한 30초) (메모리 notices-must-dismiss)
+ * 걷히면 gone 을 부른다 — 작은 붙박이 단추(syncPin)로 접혀 들어간다
  */
-export function showBanner(root: HTMLElement, html: string, open: () => void): void {
+export function showBanner(root: HTMLElement, html: string, open: () => void, onGone: () => void = () => {}): void {
   root.querySelector('.lsn-bn')?.remove()
   root.insertAdjacentHTML('beforeend', html)
   const el = root.querySelector<HTMLElement>('.lsn-bn')
@@ -352,6 +385,7 @@ export function showBanner(root: HTMLElement, html: string, open: () => void): v
     if (!el.isConnected || el.classList.contains('out')) return
     el.classList.add('out')
     window.setTimeout(() => el.remove(), 350)
+    onGone()
   }
   const outside = (ev: Event): void => { if (!el.contains(ev.target as Node)) gone() }
   root.addEventListener('pointerdown', outside, true)
@@ -366,6 +400,18 @@ export function closeHowWin(root: HTMLElement): boolean {
   const bn = root.querySelector('.lsn-bn')
   if (bn !== null) { bn.remove(); return true }
   return false
+}
+
+/**
+ * 진 계절 내내 지도 위에 붙는 작은 「⚔ 이기는 법」 (형 10-30: "한 번 끄면 없어져 버리잖아 · 패배한 계절에는 계속 떠 있게").
+ * 알림이 아니라 단추라 저절로 걷히지 않는다 — 다음 계절이 되면(on=false) 걷힌다. 큰 띠가 떠 있는 동안은 숨는다.
+ * 누르면 판의 「howwin」 손잡이가 판을 연다 (app.ts)
+ */
+export function syncPin(root: HTMLElement, on: boolean, art: string): void {
+  const pin = root.querySelector('.lsn-pin')
+  if (!on || root.querySelector('.lsn-bn:not(.out)') !== null) { pin?.remove(); return }
+  if (pin !== null) return
+  root.insertAdjacentHTML('beforeend', `<button class="lsn-pin" data-act="howwin" aria-label="이기는 법 보기"><img src="${art}icon/war-broken-banner.png" alt=""><b>⚔ 이기는 법</b></button>`)
 }
 
 // 폰 그래픽 한도 (메모리 mobile-gpu-layer-limit): 부드러운 linear-gradient · filter 밝기 금지 — 둥근 그러데이션과 drop-shadow 만
@@ -389,15 +435,14 @@ export const HOWWIN_CSS = `
 @keyframes lsnFade { from { opacity: 0; } to { opacity: 1; } }
 .ap .lsn-card { position: relative; width: min(100%, 420px); max-height: 100%; box-sizing: border-box; padding: 14px 14px 10px; border-radius: 16px; background: #1f1710; border: 2px solid #c9a45a; box-shadow: 0 12px 40px #000d; overflow: hidden; }
 .ap .lsn-x { position: absolute; right: 8px; top: 8px; z-index: 3; width: 36px; height: 36px; border-radius: 50%; border: 1px solid #c9a45a; background: #000a; color: #f0e2c0; font-size: 17px; cursor: pointer; }
-.ap .lsn-pg { position: relative; display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+.ap .lsn-pg { position: relative; display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
 .ap .lsn-pg.in-r { animation: lsnR .28s ease-out both; } .ap .lsn-pg.in-l { animation: lsnL .28s ease-out both; } .ap .lsn-pg.in-0 { animation: lsnFade .3s ease-out both; }
 @keyframes lsnR { from { opacity: 0; translate: 40px 0; } to { opacity: 1; translate: 0 0; } }
 @keyframes lsnL { from { opacity: 0; translate: -40px 0; } to { opacity: 1; translate: 0 0; } }
 .ap .lsn-why { position: absolute; left: 8px; top: 8px; z-index: 2; padding: 3px 10px; border-radius: 6px; background: #b8321e; color: #fff3e0; font-style: normal; font-weight: 800; font-size: 13px; box-shadow: 0 2px 6px #000a; rotate: -4deg; }
-.ap .lsn-pic { position: relative; width: 100%; aspect-ratio: 4 / 3; max-height: 46vh; border-radius: 12px; overflow: hidden; background: #2a1f16 center / cover no-repeat; cursor: pointer; }
-.ap .lsn-pic::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, #000a 0%, #000d 100%); }
-.ap .lsn-pic.baked::before { display: none; }
-.ap .lsn-st { position: absolute; inset: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; align-content: center; gap: 6px 10px; padding: 10px; box-sizing: border-box; }
+/* 위 그림은 16:9 로 잘라 낮게 — 밑의 짠 그림과 「해 보기」까지 360×640 한 화면에 (굴리기 없음) */
+.ap .lsn-pic { position: relative; width: 100%; aspect-ratio: 16 / 9; max-height: 29vh; border-radius: 12px; overflow: hidden; background: #2a1f16 center / cover no-repeat; cursor: pointer; }
+.ap .lsn-dg { position: relative; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; align-content: center; gap: 4px 8px; min-height: 92px; padding: 8px 6px 6px; box-sizing: border-box; border-radius: 10px; background: #0007; border: 1px solid #4a3a26; }
 .ap .lsn-h { margin: 2px 0 0; text-align: center; font-family: var(--display); font-size: 24px; color: #ffe08a; letter-spacing: 1px; text-shadow: 0 2px 0 #000; }
 .ap .lsn-ln { margin: 0; text-align: center; font-size: 15px; color: #ece2cf; min-height: 1.45em; }
 .ap .lsn-ln.why { color: #ffb49c; font-weight: 700; }
@@ -449,4 +494,54 @@ export const HOWWIN_CSS = `
 .ap .lsn-fl.t { left: 50%; top: 0; translate: -50% 0; } .ap .lsn-fl.r { right: 0; bottom: 0; } .ap .lsn-fl.l { left: 0; bottom: 0; }
 .ap .lsn-tsv { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .ap .lsn-tsv path:not([fill]) { fill: none; stroke: #ffd27a; stroke-width: 5; stroke-linecap: round; filter: drop-shadow(0 2px 1px #000); }
+
+/* 짠 그림을 그림 밑에 작게 */
+.ap .lsn-dg .lsn-crowd img { width: 34px; height: 34px; }
+.ap .lsn-dg .lsn-crowd img:not(:first-child) { margin-left: -13px; }
+.ap .lsn-dg .lsn-big { width: 52px; height: 52px; }
+.ap .lsn-dg .lsn-big.mid { width: 40px; height: 40px; }
+.ap .lsn-dg .lsn-big.town { width: 60px; height: 60px; }
+.ap .lsn-dg .lsn-big.sm { width: 28px; height: 28px; right: -10px; top: 20px; }
+.ap .lsn-dg .lsn-vs, .ap .lsn-dg .lsn-ar, .ap .lsn-dg .lsn-arr { font-size: 20px; }
+.ap .lsn-dg .lsn-tag { padding: 1px 6px; font-size: 12px; }
+.ap .lsn-dg .lsn-em { top: -8px; width: 20px; height: 20px; }
+.ap .lsn-dg .lsn-plus { font-size: 17px; }
+.ap .lsn-dg .lsn-plus .lsn-crowd img { width: 26px; height: 26px; }
+.ap .lsn-dg .lsn-plus .lsn-crowd img:not(:first-child) { margin-left: -10px; }
+.ap .lsn-dg .lsn-q { font-size: 26px; }
+.ap .lsn-dg .lsn-col.side .lsn-crowd img { width: 30px; height: 30px; }
+.ap .lsn-dg .lsn-col.side .lsn-crowd img:not(:first-child) { margin-left: -12px; }
+.ap .lsn-dg .lsn-tri { width: 172px; height: 128px; }
+.ap .lsn-dg .lsn-fl img { width: 36px; height: 44px; }
+.ap .lsn-dg .lsn-fl b { font-size: 11px; }
+/* 마지막 장 — 성에 든 몇 ⚔ 대군 · 버티기 ▶ 적 곡식 ▶ 사기 ▶ 추격 */
+.ap .lsn-few { display: flex; align-items: center; gap: 6px; }
+.ap .lsn-fort { position: relative; display: flex; }
+.ap .lsn-dg .lsn-fort .lsn-crowd { position: absolute; left: 50%; bottom: 22px; translate: -50% 0; }
+.ap .lsn-dg .lsn-fort .lsn-crowd img { width: 24px; height: 24px; }
+.ap .lsn-dg .lsn-fort .lsn-crowd img:not(:first-child) { margin-left: -6px; }
+.ap .lsn-dg.few .lsn-few .lsn-col .lsn-crowd img { width: 30px; height: 30px; }
+.ap .lsn-dg.few .lsn-few .lsn-col .lsn-crowd img:not(:first-child) { margin-left: -14px; }
+.ap .lsn-steps { flex-basis: 100%; display: flex; align-items: flex-end; justify-content: center; gap: 2px; }
+.ap .lsn-stp { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+.ap .lsn-dg.few .lsn-stp .lsn-big.mid { width: 36px; height: 36px; }
+.ap .lsn-dg.few .lsn-tag { padding: 1px 4px; font-size: 11px; }
+.ap .lsn-burn { position: relative; display: inline-flex; }
+.ap .lsn-dg .lsn-burn .lsn-big.sm { width: 24px; height: 24px; right: -8px; top: 12px; }
+.ap .lsn-sa { font-style: normal; font-size: 12px; color: #ffd27a; padding-bottom: 22px; animation: lsnNudge 1s ease-in-out infinite; }
+.ap .lsn-pg[data-id="few"] .lsn-pic { aspect-ratio: 2 / 1; }
+.ap .lsn-hist { margin: 0; padding: 5px 8px; border-radius: 8px; background: #2a1f16; border-left: 3px solid #c9a45a; font-size: 12.5px; line-height: 1.4; color: #e6d6b4; word-break: keep-all; }
+.ap .lsn-hist b { display: block; color: #ffe08a; }
+.ap .lsn-hist small { display: block; margin-top: 2px; font-size: 10.5px; color: #a99a7c; }
+
+/* 진 계절 내내 붙는 작은 단추 — 「?」(길 보기) 밑 오른쪽 */
+.ap .lsn-pin { position: absolute; right: 12px; top: calc(var(--toph) + var(--legh) + 56px); z-index: 5; display: flex; align-items: center; gap: 4px; padding: 3px 10px 3px 3px; border-radius: 999px;
+  border: 1.5px solid #ffd27a; background: #2a1208eb; color: #ffe08a; font: inherit; font-size: 14px; white-space: nowrap; cursor: pointer; box-shadow: 0 4px 12px #000a;
+  animation: lsnPinIn .5s cubic-bezier(.2,1.5,.4,1) both, lsnPinGlow 2.4s ease-in-out .6s infinite; }
+.ap .lsn-pin img { width: 26px; height: 26px; border-radius: 50%; background: #0006; }
+.ap .lsn-pin b { font-family: var(--display); letter-spacing: .5px; text-shadow: 0 1px 0 #000; }
+.ap.choosing .lsn-pin, .ap.war-open .lsn-pin { display: none; }
+@keyframes lsnPinIn { 0% { opacity: 0; scale: 1.7; translate: -28vw -10px; } 100% { opacity: 1; scale: 1; translate: 0 0; } }
+@keyframes lsnPinGlow { 0%, 100% { box-shadow: 0 4px 12px #000a, 0 0 0 0 #ffd27a66; } 50% { box-shadow: 0 4px 12px #000a, 0 0 0 6px #ffd27a00; } }
+@media (prefers-reduced-motion: reduce) { .ap .lsn-pin { animation: none; } }
 `

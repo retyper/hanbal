@@ -93,7 +93,7 @@ import { HERO_POOL } from '../../realm/data/heroes-pool.ts'
 import { chiefCastOf, hireVoicePath, voiceGate, voiceKind, voicePath, type VoiceLine } from './voice.ts'
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import { QUALITY_CSS, gfxRowHtml, setGfxPref, startQuality } from './quality.ts'
-import { HOWWIN_CSS, bannerHtml, closeHowWin, howWinDue, howWinMark, lessons, lossOf, openLessons, showBanner, type HowKit, type LessonGo, type Loss } from './howwin.ts'
+import { HOWWIN_CSS, bannerHtml, closeHowWin, howWinDue, howWinMark, lessons, lossOf, openLessons, showBanner, syncPin, type HowKit, type LessonGo, type Loss } from './howwin.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
 import { FEEL_CSS, alertFeel, ambushRangeFeel, chanceFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
 import { adviseMarch, guardRange } from './council-lines.ts'
@@ -5608,20 +5608,31 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     && root.querySelector('.cere, .wr, .bktoast, .guidebox, .failbox, .lsn-box, .nightov') === null
   /** 진 싸움을 받아 둔다 — 보고와 장면이 다 걷혀 지도로 돌아오면 띄운다 (배우는 판 · 끝난 판 · 이번 계절 이미 띄운 것은 빼고) */
   function queueHowWin(loss: Loss | null): void {
-    if (loss === null || realm === null || realm.region === 'tutorial' || realm.outcome) return
-    lastLoss = loss
-    if (!howWinDue(realm.seed, loss)) return
+    if (loss !== null && realm !== null && realm.region !== 'tutorial' && !realm.outcome) {
+      lastLoss = loss
+      if (howWinDue(realm.seed, loss)) waitHowWin(loss)
+    }
+    howPin()
+  }
+  /** 진 계절 내내 붙는 작은 「⚔ 이기는 법」 — 큰 띠를 기다리거나 띠가 떠 있는 동안은 숨고, 다음 계절이면 걷힌다 (형 10-30: "한 번 끄면 없어져 버리잖아") */
+  function howPin(): void {
+    const on = realm !== null && lastLoss !== null && lastLoss.season === realm.season && lossPending === null && realm.region !== 'tutorial' && !realm.outcome
+    syncPin(root, on, ART)
+  }
+  /** 큰 띠는 세 번까지(그 뒤로는 크게 졌을 때만) — 지도가 비면 띄운다 */
+  function waitHowWin(loss: Loss): void {
+    if (realm === null) return
     lossPending = loss
     const born = performance.now()
     const tick = (): void => {
       if (lossPending !== loss) return
-      if (realm === null || realm.season !== loss.season || performance.now() - born > HOWWIN_WAIT_MAX_MS) { lossPending = null; return }
+      if (realm === null || realm.season !== loss.season || performance.now() - born > HOWWIN_WAIT_MAX_MS) { lossPending = null; howPin(); return }
       // 뒤에 숨은 탭에서는 세지 않는다 — 다시 보일 때 이어서 (절대 규칙 4)
       if (document.visibilityState !== 'visible') { document.addEventListener('visibilitychange', tick, { once: true }); return }
       if (mapClear()) {
         lossPending = null
         howWinMark(realm.seed, loss.season)
-        showBanner(root, bannerHtml(howKit(), loss), () => openHowWin(loss))
+        showBanner(root, bannerHtml(howKit(), loss), () => openHowWin(loss), howPin) // 걷히면 작은 단추로 접힌다
         ding(snd('ui_open'), 0.3)
         return
       }
@@ -5648,7 +5659,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 한 겹 닫는다 — 닫은 게 있으면 true */
   function backOne(): boolean {
     if (root.classList.contains('war-open') || root.querySelector('.wr') !== null) return true // 싸움 중엔 닫지 않는다 (싸움은 끝까지)
-    if (closeHowWin(root)) return true
+    if (closeHowWin(root)) { howPin(); return true }
     const fail = root.querySelector('.failbox')
     if (fail !== null) { fail.remove(); return true }
     if (front !== null) {
@@ -6767,7 +6778,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       lossPending = null
       lastLoss = null
       closeHowWin(root)
-      if (r !== null && b !== null && rep !== null) queueHowWin(lossOf(b, r, rep, r.player))
+      queueHowWin(r !== null && b !== null && rep !== null ? lossOf(b, r, rep, r.player) : null) // 없으면 붙박이 단추도 걷는다
     },
   }
 }
