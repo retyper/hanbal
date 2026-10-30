@@ -171,4 +171,8 @@ type MemKind =
 | 4 | sr-hyeokgeose sr-alpyeong sr-sobeol sr-jibaekho sr-guryema | 넣음 · 챗지피티 1판 |
 | 5 | sr-jita sr-hojin sr-wae-ruler saro-ruler daegaya-ruler | 넣음 · 챗지피티 2판 |
 | 6 | dabeol-ruler sabeol-ruler usisan-ruler bihwa-ruler jomun-ruler | 넣음 |
-| 7 | golbeol-ruler apdok-ruler iseo-ruler byeokjin-ruler gammun-ruler | 넣음 |
+| 7 | golbeol-ruler apdok-ruler iseo-ruler byeokjin-ruler gammun-ruler | 넣음 · 챗지피티 3판 |
+| 8 | samul-ruler eumjeup-ruler chopal-ruler baekje-ruler mokji-ruler | 넣음 · 챗지피티 3판 |
+| 9 | michuhol-ruler ungcheon-ruler sangdang-ruler geonma-ruler wansan-ruler | 넣음 |
+| 10 | gosaburi-ruler balla-ruler mujin-ruler gampyeong-ruler goryong-ruler | 넣음 |
+| 11 | maek-ruler siljik-ruler haseulla-ruler goguryeo-ruler biryuna-ruler | 넣음 |

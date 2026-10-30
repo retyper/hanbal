@@ -3,6 +3,8 @@
  * 묶음이 없는 사람(판에서 난 아이 등)은 결 틀(src/ui/realm/woo-lines.ts)로, 군주였던 이는 RULER_HELD 로 떨어진다.
  */
 import type { WooBundle } from './types.ts'
+import { WOO_WORLD } from './world.ts'
+import { WOO_SOUTH } from './south.ts'
 import { WOO_YEONGNAM } from './yeongnam.ts'
 import { WOO_SEORABEOL } from './seorabeol.ts'
 import { WOO_JUMONG } from './jumong.ts'
@@ -13,4 +15,4 @@ import { WOO_BYEONHAN_MINI } from './byeonhan-mini.ts'
 export type { WooBundle, WooHeld, WooSpeak } from './types.ts'
 export { RULER_GOES, RULER_HELD } from './ruler.ts'
 
-export const WOO_TALK: Readonly<Record<string, WooBundle>> = { ...WOO_BYEONHAN_MINI, ...WOO_TUTORIAL, ...WOO_MAHAN, ...WOO_JUMONG, ...WOO_SEORABEOL, ...WOO_YEONGNAM }
+export const WOO_TALK: Readonly<Record<string, WooBundle>> = { ...WOO_BYEONHAN_MINI, ...WOO_TUTORIAL, ...WOO_MAHAN, ...WOO_JUMONG, ...WOO_SEORABEOL, ...WOO_YEONGNAM, ...WOO_SOUTH, ...WOO_WORLD }
