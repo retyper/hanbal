@@ -135,4 +135,25 @@ describe('배우는 판 — 갇히지 않는다', () => {
       assert.ok(tutBandHtml(i, (s) => s, true).includes('data-act="tut-skip"'))
     }
   })
+
+  // 형 10-30: "9/12 전략회의에서 꼬이고 · 10/12 회유한다 누르면 옥중담판을 무시하고 공작으로". 명령은 누르는 순간 서지만 창을 마쳐야 넘어간다
+  it('출정을 고르면 전략 회의 단계 — 회의가 떠 있는 동안은 전투로 넘어가지 않는다', () => {
+    const r = startTutorial(1)
+    const march: Order = { kind: 'march', army: 'a-us', edge: Object.keys(r.edges)[0]!, ambush: false }
+    const c = { r, orders: [march], report: null, acts: new Set<string>() }
+    const at = (id: string): number => TUT_STEPS.findIndex((s) => s.id === id)
+    assert.equal(tutAt(at('march'), { ...c, ov: 'strat' }), at('council'))
+    assert.equal(tutAt(at('council'), { ...c, ov: null }), at('battle'))
+  })
+
+  it('「회유한다」를 누르면 옥중 담판 단계 — 담판이 떠 있는 동안은 공작으로 넘어가지 않는다', () => {
+    const r = startTutorial(1)
+    r.heroes['tut-haebi']!.status = 'captive'
+    r.heroes['tut-haebi']!.captor = r.player
+    const persuade: Order = { kind: 'persuade', hero: 'tut-haebi', by: 'tut-onjo', talk: [] }
+    const c = { r, orders: [persuade], report: null, acts: new Set<string>() }
+    const at = (id: string): number => TUT_STEPS.findIndex((s) => s.id === id)
+    assert.equal(tutAt(at('persuade'), { ...c, ov: 'talk' }), at('talk'))
+    assert.equal(tutAt(at('talk'), { ...c, ov: null }), at('plot'))
+  })
 })

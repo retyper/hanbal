@@ -22,6 +22,8 @@ export interface TutCtx {
   readonly report: Report | null
   /** 이 판에서 누른 단추 (data-act) */
   readonly acts: ReadonlySet<string>
+  /** 떠 있는 창 — 전략 회의 · 옥중 담판 · 회유할 사람 고르기 (없으면 지도) */
+  readonly ov?: 'strat' | 'talk' | 'pick' | null
 }
 
 /** 누를 곳 — 선택자, 또는 [선택자, 이때만] */
@@ -49,6 +51,11 @@ const tab = (t: string): string => `[data-act="tab"][data-tab="${t}"]`
 const haveFoe = (c: TutCtx): boolean => c.r.heroes[FOE_HERO]?.status === 'captive' || c.r.heroes[FOE_HERO]?.faction === c.r.player
 /** 싸움을 한 번 치렀다 — 무엇을 골랐든 (사로잡기를 안 골라 이겨도 넘어간다 · 놀이 시험 10-27: 9/12 에 갇혔다) */
 const fought = (c: TutCtx): boolean => haveFoe(c) || (c.report?.lines.some((l) => l.kind === 'battle') ?? false) || c.r.nodes['tut-gaetgol']?.owner === c.r.player
+/** 창이 안 떠 있나 — 출정·회유는 누르는 순간 명령이 서지만, 전략 회의·옥중 담판을 마쳐야 한 일이다 (형 10-30: 9/12 · 10/12 꼬임) */
+const shut = (c: TutCtx): boolean => (c.ov ?? null) === null
+/** 전략 회의 안에서 누를 곳 — 나중 것부터: 정리의 「출정」 · 결정 카드 · 장수가 아뢰는 중이면 「누르면 다음」 */
+const COUNCIL: readonly Press[] = ['.stov [data-act="sortie-go"]', '.stov [data-act="cn-pick"]', '.stov .cnstage .cnav small']
+const persuading = (c: TutCtx): boolean => c.orders.some((o) => o.kind === 'persuade') || c.r.heroes[FOE_HERO]?.persuade !== undefined || c.r.heroes[FOE_HERO]?.faction === c.r.player
 
 export const TUT_STEPS: readonly TutStep[] = [
   {
@@ -86,10 +93,17 @@ export const TUT_STEPS: readonly TutStep[] = [
   {
     id: 'march', name: '출정', what: '군대를 다른 고을로 보냅니다', text: '갈대울의 우리 군대 말(장수 얼굴)을 누르고, 밝아진 갯골 마을을 누르세요. 그리로 갑니다.',
     press: ['.nd[data-node="tut-gaetgol"][data-act="go"]', '.tok[data-army="a-us"]'],
-    done: (c) => has(c, 'march') || Object.values(c.r.armies).some((a) => a.faction === c.r.player && (a.march !== null || a.at === 'tut-gaetgol')),
+    done: (c) => c.ov === 'strat' || (shut(c) && marching(c)) || Object.values(c.r.armies).some((a) => a.faction === c.r.player && a.at === 'tut-gaetgol'),
   },
   {
-    id: 'battle', name: '전투', what: '합마다 명령을 골라 싸웁니다', text: '「다음 계절」을 누르면 전장이 열립니다. 합마다 명령을 하나 고르세요. 여기선 「적장 사로잡기」를 골라 보세요. 이 판에선 반드시 잡힙니다.',
+    id: 'council', name: '전략 회의', what: '적을 치기 전에 장수들의 뜻을 듣고 정합니다',
+    text: '장수가 한 사람씩 아뢰면 눌러서 들으세요. 다 들으면 따를 말을 하나 고릅니다. 다 정하면 맨 아래 「출정」을 누르세요.',
+    // 회의를 ✕ 로 그만두면 다시 군대 말부터 (지도)
+    press: [...COUNCIL, '.nd[data-node="tut-gaetgol"][data-act="go"]', '.tok[data-army="a-us"]'],
+    done: (c) => (shut(c) && marching(c)) || Object.values(c.r.armies).some((a) => a.faction === c.r.player && a.at === 'tut-gaetgol'),
+  },
+  {
+    id: 'battle', name: '전투', what: '합마다 명령을 골라 싸웁니다', text: '「다음 계절」을 누르면 전장이 열립니다. 아래 무리마다 깃발을 하나씩 끌어 전장에 놓으세요. 「장수」에선 「적장 사로잡기」를 골라 보세요. 이 판에선 반드시 잡힙니다.',
     // 사로잡기는 「장수」 탭에 있다 · 「전투 개시」는 무리마다 다 고르면 켜진다 — 나머지는 ★ 권함으로 채운다
     press: ['.next'], war: { pick: '[data-war="pick"][data-c="capture"]', go: '[data-war="go"]', tab: '[data-war="gtab"][data-g="lead"]' },
     done: fought,
@@ -97,18 +111,24 @@ export const TUT_STEPS: readonly TutStep[] = [
   {
     id: 'persuade', name: '회유', what: '사로잡은 적장을 우리 장수로 만듭니다', text: '사로잡은 해비를 우리 장수로 만드세요. 「장수」의 「옥에 가둔 적장」에서 그 얼굴을 누르고 「회유한다」를 누르면 됩니다.',
     // 사로잡은 장수는 장수 판의 「옥에 가둔 적장」 칸에 있다 — 그 칸을 먼저 열게 (형 10-24: "10/12 에서 장수 탭 눌러도 다음으로 안 가짐")
-    press: ['[data-act="persuade"]', `[data-act="hero"][data-id="${FOE_HERO}"]`, '[data-act="htab"][data-v="jail"]', tab('heroes')],
+    press: ['.dpov [data-act="dp-by"]', '[data-act="persuade"]', `[data-act="hero"][data-id="${FOE_HERO}"]`, '[data-act="htab"][data-v="jail"]', tab('heroes')],
     // 해비를 못 잡았으면 회유는 건너뛴다 — 옥이 비어 갇혔다 (놀이 시험 10-27)
-    done: (c) => !haveFoe(c) || c.orders.some((o) => o.kind === 'persuade') || c.r.heroes[FOE_HERO]?.persuade !== undefined || c.r.heroes[FOE_HERO]?.faction === c.r.player,
+    done: (c) => !haveFoe(c) || c.ov === 'talk' || (shut(c) && persuading(c)),
   },
   {
-    id: 'plot', name: '공작', what: '몰래 적을 흔듭니다. 소문·방화·암살', text: '「외교」의 「공작」에서 미추홀에 소문을 퍼뜨리세요. 적 군사의 사기가 꺾입니다.',
+    id: 'talk', name: '옥중 담판', what: '말을 골라 적장의 마음의 벽을 허뭅니다',
+    text: '말할 거리를 하나 고르고 「이 말로 한다」를 누르세요. 마디마다 마음의 벽이 깎입니다. 벽이 무너지면 「손을 내민다」, 끝나면 「확인」을 누르세요.',
+    press: ['.dpov [data-act="dp-ok"]', '.dpov [data-act="dp-hand"]', '.dpov [data-act="dp-say"]', '.dpov [data-act="dp-sel"]'],
+    done: (c) => !haveFoe(c) || (shut(c) && persuading(c)),
+  },
+  {
+    id: 'plot', name: '공작', what: '몰래 적을 흔듭니다. 소문·방화·암살', text: '「외교」의 「공작」에서 「소문」을 열고 미추홀을 고른 뒤, 보낼 사람(고용 밀정)을 누르세요. 미추홀 군사의 사기가 꺾입니다.',
     press: ['[data-act="plot"][data-op="rumor"]', '[data-act="ppick"][data-op="rumor"]', '[data-act="plot-open"][data-op="rumor"]', '[data-act="dmode"][data-v="plot"]', tab('diplo')],
     done: (c) => c.orders.some((o) => o.kind === 'plot'),
   },
   {
-    id: 'win', name: '도읍 차지', what: '적의 도읍을 쥐면 이깁니다', text: '마지막입니다. 군대를 미추홀 도읍으로 보내 쥐면 이 판을 이깁니다.',
-    press: [['.next', marching], '.nd[data-node="tut-michuhol-cap"][data-act="go"]', '.tok[data-army="a-us"]', ['.next', () => true]],
+    id: 'win', name: '도읍 차지', what: '적의 도읍을 쥐면 이깁니다', text: '마지막입니다. 군대를 미추홀 도읍으로 보내세요. 전략 회의에서 장수들의 말을 듣고 「출정」, 그다음 「다음 계절」을 누르면 됩니다. 도읍을 쥐면 이 판을 이깁니다.',
+    press: [...COUNCIL, ['.next', marching], '.nd[data-node="tut-michuhol-cap"][data-act="go"]', '.tok[data-army="a-us"]', ['.next', () => true]],
     done: (c) => c.r.outcome?.kind === 'win',
   },
 ]
@@ -266,8 +286,13 @@ export function createSpot(root: HTMLElement): Spot {
   }
   const war = (): boolean => root.classList.contains('war-open') || root.querySelector('.wr') !== null
   /** 큰 장면이 떠 있나 — 그동안은 고리도 막기도 쉰다 */
-  // 「저장 · 불러오기」 창 · 전략 회의(.stov) · 옥중 담판과 회유할 사람 고르기(.dpov)도 막지 않는다 — 그 창은 제 손으로 마친다 (형 10-30)
-  const cere = (): boolean => root.querySelector('.cere, .saveov, .stov, .dpov') !== null
+  const cere = (): boolean => root.querySelector('.cere, .saveov') !== null // 「저장 · 불러오기」 창도 막지 않는다
+  /**
+   * 전략 회의 · 옥중 담판 · 회유할 사람 고르기 — 그 창 안에서만 가리키고, 어둡게 하지도 막지도 않는다 (창이 이미 어둡다 · 형 10-30: "화면이 이중으로 어두워져서").
+   * 창 뒤(지도·「다음 계절」)는 가리키지 않는다 — 고리가 창 뒤를 가리키며 창 안을 막아 회의·담판이 건너뛰어졌다
+   */
+  const soft = (): boolean => root.querySelector('.stov, .dpov') !== null
+  const firstIn = (sel: string): HTMLElement | null => [...root.querySelectorAll<HTMLElement>(sel)].find((e) => shown(e) && e.closest('.stov, .dpov') !== null) ?? null
 
   /**
    * 누를 곳을 덮고 있는 보고판·판 — 자리(좌표)로 본다. 화면 맨 위 요소를 찍어 보던 것(elementFromPoint)은 고리·어둠·판이 미끄러지는
@@ -296,6 +321,11 @@ export function createSpot(root: HTMLElement): Spot {
 
   function pick(): HTMLElement | null {
     if (step === undefined || ctx === null || war() || cere()) return null
+    pre = ''
+    if (soft()) {
+      const s = tutPick(step, ctx, (q) => firstIn(q) !== null)
+      return s !== null ? firstIn(s) : null
+    }
     const sel = tutPick(step, ctx, (s) => first(s) !== null)
     const el = sel !== null ? first(sel) : null
     pre = ''
@@ -340,10 +370,12 @@ export function createSpot(root: HTMLElement): Spot {
       view = null
       box.hidden = true
       hole.hidden = true
-      if (b !== null) b.style.cssText = ''
+      // 창 안에 가리킬 곳이 없으면 띠도 숨긴다 — 띠가 창 머리(✕)를 덮지 않게
+      if (b !== null) b.style.cssText = soft() ? 'display:none' : ''
       last = ''
     } else {
-      view = target.closest<HTMLElement>('.mcard, .ncard') ?? target
+      // 공작은 펼친 판 통째(누구에게 · 무슨 공작 · 누가 가나) — 밀정 카드만 밝으면 무슨 단추인지 몰랐다 (형 10-30)
+      view = target.closest<HTMLElement>('.mcard, .ncard, .popan') ?? target
       // 지도·판 안에서 다 안 보이면(반쯤 윗줄에 묻힌 고을도) 한 번만 굴려 가운데로 (그 뒤엔 지도를 끌어도 따라가기만)
       if (scrolledStep !== (step?.id ?? '')) {
         scrolledStep = step?.id ?? ''
@@ -363,11 +395,12 @@ export function createSpot(root: HTMLElement): Spot {
       const v = view.getBoundingClientRect()
       const pad = 6
       const at = (x: DOMRect, p: number): string => `left:${x.left - p}px;top:${x.top - p}px;width:${x.width + p * 2}px;height:${x.height + p * 2}px;--rad:${Math.min(18, (Math.min(x.width, x.height) + p * 2) / 2)}px`
-      const key = [r.left, r.top, r.width, r.height, v.left, v.top, v.width, v.height, innerWidth, innerHeight].map(Math.round).join(',')
+      const sf = soft()
+      const key = [r.left, r.top, r.width, r.height, v.left, v.top, v.width, v.height, innerWidth, innerHeight].map(Math.round).join(',') + (sf ? 's' : '')
       if (key !== last) {
         last = key
         box.hidden = false
-        hole.hidden = false
+        hole.hidden = sf // 창 안에선 어둠을 덧칠하지 않는다
         const below = r.top + r.height / 2 < innerHeight * 0.55 // 누를 곳이 위쪽이면 손은 그 밑에
         box.style.cssText = at(r, pad)
         box.classList.toggle('up', !below)
@@ -385,7 +418,13 @@ export function createSpot(root: HTMLElement): Spot {
           const fits = (y: number): boolean => y >= 4 && y + bh <= innerHeight - 4 && (y >= bot || y + bh <= top)
           const overlap = (y: number): number => Math.max(0, Math.min(y + bh, bot) - Math.max(y, top))
           const y = at.find(fits) ?? [8, innerHeight - 8 - bh].sort((p, q) => overlap(p) - overlap(q))[0]!
-          b.style.cssText = `top:${Math.round(y)}px;bottom:auto`
+          // 창(회의·담판) 안을 가리킬 때 — 옆에 자리가 있으면 띠는 창 옆에 (띠가 담판 말·회의 말을 덮었다 · 10-30). 폰처럼 자리가 없으면 위처럼
+          const card = sf ? target.closest<HTMLElement>('.dp-tk, .dp-box, .stbox') : null
+          const cb = card?.getBoundingClientRect()
+          const side = P.realm.tutSideMin
+          if (cb !== undefined && innerWidth - cb.right >= side) b.style.cssText = `top:${Math.round(Math.max(8, cb.top))}px;bottom:auto;left:${Math.round(cb.right + 12)}px;right:8px`
+          else if (cb !== undefined && cb.left >= side) b.style.cssText = `top:${Math.round(Math.max(8, cb.top))}px;bottom:auto;left:8px;right:${Math.round(innerWidth - cb.left + 12)}px`
+          else b.style.cssText = `top:${Math.round(y)}px;bottom:auto`
         }
       }
     }
@@ -395,7 +434,7 @@ export function createSpot(root: HTMLElement): Spot {
   // 누를 곳(과 배우기 띠, 지도 확대·축소) 밖의 누르기는 먹지 않는다 — 앱이 듣기 전에 (잡기 단계)
   document.addEventListener('click', (ev) => {
     if (target === null || view === null || box.hidden || !target.isConnected) return
-    if (war()) return // 전장은 막지 않는다 (빛만)
+    if (war() || soft()) return // 전장 · 전략 회의 · 옥중 담판은 막지 않는다 (빛만)
     // 큰 장면(사로잡음·등용·혼례…)이 떠 있으면 막지 않는다 — 고리는 CSS 로 숨겼는데 누르기는 여기서 먹어 「확인」이 안 눌렸다 (형 10-24: "해비 사로잡았다 했는데 확인 눌러도 안 넘어가짐")
     if (cere()) return
     const t = ev.target as HTMLElement
@@ -452,8 +491,6 @@ export const TUT_CSS = `
 .ap.war-open .tutband, .ap:has(.wr) .tutband { display: none; }
 /* 큰 장면(등용·사로잡음·혼례…)이 떠 있는 동안은 띠·고리를 숨긴다 — 고리가 장면 뒤를 가리켜 누를 수 없었다(10/12 막힘 · 형 10-24) */
 .ap:has(.cere) .tutband, .ap:has(.cere) .tutspot, .ap:has(.cere) .tutring { display: none !important; }
-/* 전략 회의 · 옥중 담판도 — 띠가 회의 머리(✕)를 덮지 않게 (형 10-30) */
-.ap:has(.stov) .tutband, .ap:has(.stov) .tutspot, .ap:has(.stov) .tutring, .ap:has(.dpov) .tutband, .ap:has(.dpov) .tutspot, .ap:has(.dpov) .tutring { display: none !important; }
 .ap.war-open .tutspot, .ap.war-open .tutring, .ap:has(.wr) .tutspot, .ap:has(.wr) .tutring { display: none !important; }
 .tutb { pointer-events: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; max-width: 560px; padding: 10px 14px; border-radius: 14px;
   background: #1f1710f8; border: 1px solid #e8c06a; box-shadow: 0 6px 24px #000d; color: #f3ead8; font-size: 15px; line-height: 1.5; }
