@@ -543,5 +543,13 @@ export const HOWWIN_CSS = `
 .ap.choosing .lsn-pin, .ap.war-open .lsn-pin { display: none; }
 @keyframes lsnPinIn { 0% { opacity: 0; scale: 1.7; translate: -28vw -10px; } 100% { opacity: 1; scale: 1; translate: 0 0; } }
 @keyframes lsnPinGlow { 0%, 100% { box-shadow: 0 4px 12px #000a, 0 0 0 0 #ffd27a66; } 50% { box-shadow: 0 4px 12px #000a, 0 0 0 6px #ffd27a00; } }
+/* 컴퓨터(마우스) — 오른쪽 구석에선 눈에 안 띈다 → 위 가운데에 크게 (형 10-30: "PC에서 할때 이기는 법이 우상단에 있어서 눈에 안띄어") */
+@media (hover: hover) and (pointer: fine) and (min-width: 900px) {
+  .ap .lsn-pin { right: auto; left: 50%; top: calc(var(--toph) + var(--legh) + 10px); transform: translateX(-50%); gap: 10px; padding: 6px 22px 6px 6px; border-width: 2px; font-size: 24px;
+    animation: lsnPinDrop .55s cubic-bezier(.2,1.6,.4,1) both, lsnPinGlow 2.4s ease-in-out .6s infinite; }
+  .ap .lsn-pin img { width: 48px; height: 48px; }
+  .ap .lsn-pin b { letter-spacing: 1px; }
+}
+@keyframes lsnPinDrop { 0% { opacity: 0; translate: 0 -24px; scale: .8; } 100% { opacity: 1; translate: 0 0; scale: 1; } }
 @media (prefers-reduced-motion: reduce) { .ap .lsn-pin { animation: none; } }
 `
