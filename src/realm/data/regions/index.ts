@@ -6,6 +6,8 @@
 import type { Realm, RegionId } from '../../types.ts'
 import type { WorldGeo } from './geoframe.ts'
 import { NATION_IDS, startRealm } from './byeonhan-mini.ts'
+import { keepRivals } from './rivals.ts'
+import { P } from '../../../tune/params.ts'
 import { SOUTH_WORLD } from './south-geo.ts'
 import { SOUTH_NATION_IDS, southGeo, startSouth } from './south.ts'
 import { WORLD_GEO } from './world-geo.ts'
@@ -58,7 +60,8 @@ function openRegion(region: RegionId, seed: number, player: string, edit?: (r: R
     case 'jumong': return startJumong(seed)
     case 'mahan': return startMahan(seed)
     case 'seorabeol': return startSeorabeol(seed)
-    default: return free(startRealm(seed, player))
+    // 쇠의 바다 — 타국은 판마다 무작위로 하나만, 나머지 나라 땅은 빈 땅 (rivals.ts · FOCUS.md J)
+    default: return free(keepRivals(startRealm(seed, player), P.realm.miniRivals))
   }
 }
 

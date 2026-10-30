@@ -113,7 +113,7 @@ export const BOARDS: ReadonlyArray<{ id: RegionId; name: string; era: string; ho
 /** 이기려면 쥘 도읍 수 (season.ts checkOutcome 과 같은 값) */
 export function winNeed(region: RegionId): number {
   if (region === 'tutorial') return 2 // 배우는 판 — 미추홀 도읍 하나 (제 도읍 포함 둘)
-  return region === 'yeongnam' ? P.realm.winCapitalsYeongnam : region === 'south' ? P.realm.winCapitalsSouth : region === 'world' ? P.realm.winCapitalsWorld : P.realm.winCapitals
+  return region === 'yeongnam' ? P.realm.winCapitalsYeongnam : region === 'south' ? P.realm.winCapitalsSouth : region === 'world' ? P.realm.winCapitalsWorld : Math.min(P.realm.winCapitals, P.realm.miniRivals + 1)
 }
 
 const capsHeld = (r: Realm, f: string): number => Object.values(r.factions).filter((x) => r.nodes[x.capital]?.owner === f).length

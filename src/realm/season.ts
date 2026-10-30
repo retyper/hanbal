@@ -1577,7 +1577,8 @@ export function checkOutcome(r: Realm): 'win' | 'lose' | null {
   if (r.region === 'tutorial') return held >= 2 ? 'win' : null
   // 판마다 — 영남 판은 나라가 스물하나라 더 많이 쥐어야 한다
   const need = r.region === 'yeongnam' ? P.realm.winCapitalsYeongnam : r.region === 'south' ? P.realm.winCapitalsSouth : r.region === 'world' ? P.realm.winCapitalsWorld : P.realm.winCapitals
-  return held >= need ? 'win' : null
+  // 타국이 적은 판(쇠의 바다 · rivals.ts) — 판에 있는 나라 수보다 많이는 못 쥔다
+  return held >= Math.min(need, Object.keys(r.factions).length) ? 'win' : null
 }
 
 export function advance(

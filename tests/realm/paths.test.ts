@@ -8,7 +8,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
+import { byeonhanMini, startRealm } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { startRegion } from '../../src/realm/data/regions/index.ts'
 import { holdMarkets, pairKey } from '../../src/realm/diplomacy.ts'
 import { ironOf, noteIron, pathsEnd, riteOf, stepPaths } from '../../src/realm/paths.ts'
@@ -55,7 +55,7 @@ describe('철과 뱃길', () => {
   })
 
   it('포구를 쥔 나라가 문턱을 넘으면 이긴다 · 포구를 잃으면 안 된다', () => {
-    const r = startRegion('byeonhan-mini', 1, 'goja') // 고자국(포구)을 맡는다
+    const r = startRealm(1, 'goja') // 고자국(포구)을 맡는다 · 여섯 나라가 다 있는 판 (쇠의 바다 자유판은 타국 하나 · rivals.ts)
     trade(r, 'goja', ['us', 'anya', 'miri'])
     assert.deepEqual(pathsEnd(r), { kind: 'win', by: 'goja', path: 'ironsea' })
     // 포구를 빼앗기면 뱃길이 끊긴다
