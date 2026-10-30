@@ -1136,9 +1136,15 @@ function resolveRound(
   const pow = (x: 'a' | 'd', g: Grp): number => { const q = side(x); return groupPower(q.s, q.g0, q.f, q.m, q.lost, g) * (x === 'a' ? surge : 1) }
   /** 비기(버텨라 · 진을 다잡는다)가 걸린 쪽은 이 합에 덜 잃는다 */
   const standMul: Record<'a' | 'd', number> = { a: 1, d: 1 }
-  const hurt = (x: 'a' | 'd', g: Grp, n: number): number => {
+  // 머릿수 — 잃는 몫은 제 사람 수에 비례하는데, 때리는 쪽이 많으면 더 죽는다 (형 10-30: "수백 명대 40명이 합을 겨뤄 내가 더 잃는 경우도").
+  // (상대 ÷ 나)^tacSizeExp 배 · 같은 머릿수면 1 이라 비슷한 싸움은 그대로
+  const total = (x: 'a' | 'd'): number => GRPS.reduce((s, g) => s + men(x, g), 0)
+  const sizeMul = (me: number, foe: number): number => (me <= 0 || foe <= 0 ? 1 : Math.min(R.tacSizeMax, Math.max(R.tacSizeMin, Math.pow(foe / me, R.tacSizeExp))))
+  const sz: Record<'a' | 'd', number> = { a: sizeMul(total('a'), total('d')), d: sizeMul(total('d'), total('a')) }
+  // scaled — 물러남·무너짐의 손실은 제 몫의 비율로 상한이 정해져 있어 머릿수를 안 탄다
+  const hurt = (x: 'a' | 'd', g: Grp, n: number, scaled = true): number => {
     const q = side(x)
-    const cut = Math.min(Math.max(0, n) * standMul[x], menNow(q.g0, q.f, g) - q.loss[g])
+    const cut = Math.min(Math.max(0, n) * standMul[x] * (scaled ? sz[x] : 1), menNow(q.g0, q.f, g) - q.loss[g])
     q.loss[g] += cut
     return Math.round(cut)
   }
@@ -1179,7 +1185,7 @@ function resolveRound(
     if (rk(i, `ret-${x}`) >= p) {
       const k = R.tacRoundLoss * R.tacRetFailLoss * (guard ? R.tacGuardRetreat : 1) * (side(x).s.easy === true ? R.easyRetreatFail : 1)
       let sl = 0
-      for (const g of GRPS) sl += hurt(x, g, menNow(side(x).g0, side(x).f, g) * k)
+      for (const g of GRPS) sl += hurt(x, g, menNow(side(x).g0, side(x).f, g) * k, false)
       if (x === 'a') st.ma = clamp(st.ma - R.tacRetFailMorale, 0.1, 1.6)
       else st.md = clamp(st.md - R.tacRetFailMorale, 0.1, 1.6)
       acts.push({ s: x, g: 'lead', c: 'retreat', n: Math.round(GRPS.reduce((s, g) => s + men(x, g), 0)), sl, res: 'fail' })
@@ -1193,7 +1199,7 @@ function resolveRound(
       if (side(x).o.lead !== 'retreat') continue
       const k = R.tacRoundLoss * R.tacRetreatLoss * (side(x).o.horse === 'guard' ? R.tacGuardRetreat : 1)
       let lost = 0
-      for (const g of GRPS) lost += hurt(x, g, menNow(side(x).g0, side(x).f, g) * k)
+      for (const g of GRPS) lost += hurt(x, g, menNow(side(x).g0, side(x).f, g) * k, false)
       acts.push({ s: x, g: 'lead', c: 'retreat', n: Math.round(GRPS.reduce((s, g) => s + men(x, g), 0)), sl: lost, res: 'ok' })
     }
     const retreat = oa.lead === 'retreat' && od.lead === 'retreat' ? 'both' : oa.lead === 'retreat' ? 'a' : 'd'

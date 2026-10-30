@@ -63,7 +63,8 @@ describe('장수의 기억', () => {
         const lead = l.start.heroes[0]
         const h = lead !== null ? res.next.heroes[lead] : undefined
         if (h === undefined || h.status === 'dead') continue
-        const m = (h.mem ?? []).find((x) => x.s === res.report.season && x.k === 'battle' && x.at === l.node)
+        // 친 쪽 기록만 (on 없음) — 같은 계절 같은 고을에서 쳐서 이긴 뒤 반격을 막다 질 수도 있다
+        const m = (h.mem ?? []).find((x) => x.s === res.report.season && x.k === 'battle' && x.at === l.node && x.on === undefined && x.foe === l.defender && x.how === (l.field === true ? 'field' : l.approach))
         assert.ok(m !== undefined, `${lead} 의 ${l.node} 싸움`)
         assert.equal(m.foe, l.defender)
         const won = l.outcome === 'rout' || l.outcome === 'win'

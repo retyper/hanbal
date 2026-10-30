@@ -292,13 +292,16 @@ describe('직접 지휘하는 싸움 — 전투 2판', () => {
         assert.notEqual(back.endWhy, 'withdraw')
       } else {
         assert.equal(back.endWhy, 'withdraw')
-        assert.ok(back.outcome === 'lose' || back.outcome === 'routed')
+        // 적도 함께 물러나면 비긴다 (둘 다 어둠을 틈탔다)
+        const both = back.dusk[0]!.d === 'retreat'
+        assert.ok(both ? back.outcome === 'draw' : back.outcome === 'lose' || back.outcome === 'routed', `s${s} ${back.outcome}`)
         assert.equal(back.captured, null)
         assert.ok(back.na < lastNa && back.na > lastNa - P.realm.tacRoundLoss)
       }
       // 한 합 더 — 곡식을 내고, 다음 합(밤)을 고르는 판이 열린다
       const go = fightRounds(me, foe, key, s, 0, { cmds, dusk: ['press'], open: true })
       assert.equal(go.dusk[0]!.a, 'press')
+      if (go.dusk[0]!.d === 'retreat') continue // 적이 어둠을 틈타 물러났다 — 밀어붙일 판이 없다
       assert.equal(go.dusk[0]!.grain?.a, ask.grain)
       assert.equal(go.pressA, ask.grain)
       assert.equal(go.pending?.round, P.realm.tacClock)
