@@ -27,7 +27,7 @@ import type { Approach, Army, Hero, Order, Realm } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { councilFact, grainSeen, heroRouteFact, heroSplitFact, lostLast, nationRouteFacts, nationSplitFact, plotFact, whenSaid, type RouteFact } from './council-recall.ts'
 import { schemeSay, type Scheme } from './council-schemes.ts'
-import { fill, pickIdx, sageuk, sayOf, VOLUNTEER, VOLUNTEER_ASK, type Move as SayMove } from './council-says.ts'
+import { askOf, fill, pickIdx, sageuk, sayOf, VOLUNTEER, type Move as SayMove } from './council-says.ts'
 import { voiceKind } from './voice.ts'
 
 /** 고르면 출정 판에 무엇이 걸리나 */
@@ -422,7 +422,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
       if (q(vol.ap, readOf(h).ap) < P.realm.cnAdviseMin) continue
       const leads = h.id === a.hero
       if (!leads && !ctx.canLead(h.id)) continue
-      const ask = VOLUNTEER_ASK[voiceKind(h)][leads ? 'leads' : 'lead']
+      const ask = askOf(h)[leads ? 'leads' : 'lead']
       const line = sageuk(`${vol.intro[pickIdx(`${h.id}:vol:${r.season}`, vol.intro.length)]} ${fill(ask[pickIdx(`${h.id}:ask:${r.season}`, ask.length)]!, { ap: AP_NAME[vol.ap], there })}`)
       add({ hero: h, label: `${AP_LABEL[vol.ap]}${leads ? '' : ` · ${josa(h.name, '이', '가')} 이끈다`}`, move: 'volunteer', line, opt: { k: 'route', ap: vol.ap, ...(leads ? {} : { lead: h.id }) } }, vol.ap)
       break

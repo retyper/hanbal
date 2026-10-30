@@ -8,6 +8,7 @@
  *  - 말은 '합니다'로 끝난다 (회의 말과 함께 sageuk 이 사극 말투로 바꾼다). 바뀌는 낱말 뒤 조사는 josa 로만.
  * 판을 읽기만 한다.
  */
+import { isOld } from '../../realm/age.ts'
 import { seasonOf } from '../../realm/calendar.ts'
 import { josa, SEASON_NAME } from '../../realm/data/prose.ts'
 import { bestRouteVs, councilRecord, heroBattlesVs, heroPlotVs, heroSplit, lastBattleVs, plotBeforeWin, splitLesson, worstRouteVs } from '../../realm/memory.ts'
@@ -129,12 +130,12 @@ export function lostLast(r: Realm, me: string, foe: string): string {
   return `${whenSaid(r.season, b.s)} ${nodeName(r, b.at)} 싸움에서 저들에게 졌습니다.`
 }
 
-/** 장수가 스스로를 낮춰 부르는 말 */
+/** 장수가 스스로를 낮춰 부르는 말 · 「이 늙은이」는 쉰이 넘었거나 머리가 센 장수만 (형 10-30) */
 function selfWord(h: Hero): string {
   switch (voiceKind(h)) {
     case 'm-sage': return '소신'
     case 'w-shaman': return '소인'
-    case 'm-elder': return '이 늙은이'
+    case 'm-elder': return isOld(h) ? '이 늙은이' : '소장'
     case 'w-matron': return '이 몸'
     default: return '소장'
   }

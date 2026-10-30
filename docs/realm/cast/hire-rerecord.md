@@ -228,3 +228,16 @@
 - ★☆`mh-mahan-2` · w-cool · 원산을 지켜 온 창이옵니다. 이제 이 나라의 성문을 지키겠사옵니다.
 - `tut-haebi` · w-bright · 쇠 다루는 솜씨는 제게 맡기시옵소서. 품삯만 후히 쳐 주시면 되옵니다!
 - ★`jm-haengin-1` · w-cool · 달 없는 밤이면 산짐승도 저를 찾지 못하옵니다. 길은 제가 열겠사옵니다.
+
+## 10-30 늙은이 말 고침, 다시 녹음할 것
+
+형 (10-30): *"흰머리 나지 않은 이상 본인을 늙은이라고 하는 대사는 거의 쓰지 말아야 할 듯."* 늙은 장수 결(m-elder)의 녹음 줄을 나이 말 없이 고쳤다. 글은 코드 표에 있다.
+- A `public/realm/voice/`: auto-m-elder-1 · auto-m-elder-2 · auto-m-elder-win · auto-m-elder-lose (voice.ts AUTO_LINE)
+- A 소리만 있고 글 표가 없는 줄: tap-m-elder-3(옛: 늙은 몸이나마 받들겠사옵니다 → 새: 부족하나마 받들겠사옵니다.) · obey-m-elder-1(옛: 허허, 늙은 몸이나마 다녀오리다 → 새: 허허, 소장이 다녀오겠사옵니다.)
+- B `public/realm/voice/b/`: tap-m-elder-3 · auto-m-elder-1 · auto-m-elder-2 · auto-m-elder-win · auto-m-elder-lose (voice-b.ts LINES_B)
+- C `public/realm/voice/c/`: tap-m-elder-1 · tap-m-elder-3 · obey-m-elder-2 · auto-m-elder-1 · auto-m-elder-2 · auto-m-elder-3 · auto-m-elder-win · auto-m-elder-lose (voice-c.ts LINES_C)
+- 군장 말 A `public/realm/voice/chief/`: m-elder-tribute-a · m-elder-aid-a · m-elder-vassal-p · m-elder-gift-a (chief-lines.ts)
+- 군장 말 B `public/realm/voice/b/chief/`: m-elder-truce-a · m-elder-alliance-a · m-elder-tribute-a · m-elder-joint-a · m-elder-aid-a · m-elder-ally-p · m-elder-vassal-p · m-elder-gift-a (chief-lines-b.ts)
+- 등용 대사: 고친 것 없음 (늙은이라 한 여섯 장수 모두 쉰 넘거나 머리가 셌다)
+
+이어 할 것: Argon 교차 검증을 못 했다(사용량). 고친 글을 한 번 보여 고칠 것. docs/realm/VOICE-LINES.md 의 m-elder 표와 public/realm/voice-picker.html 의 옛 글도 아직 옛 말이다.

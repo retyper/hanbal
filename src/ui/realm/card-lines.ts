@@ -11,6 +11,7 @@
  */
 import { seasonOf } from '../../realm/calendar.ts'
 import type { QuarrelWhy } from '../../realm/data/cards.ts'
+import { isOld } from '../../realm/age.ts'
 import { josa } from '../../realm/data/prose.ts'
 import type { Card, Hero, Realm } from '../../realm/types.ts'
 import { voiceKind, type VoiceKind } from './voice.ts'
@@ -93,7 +94,7 @@ const RISE: Readonly<Record<VoiceKind, (n: string) => string>> = {
   'm-gruff': (n) => `${n}, 술상을 걷어차고 일어선다.`,
   'm-young': (n) => `${n}, 얼굴이 새빨개져 벌떡 일어선다.`,
   'm-sage': (n) => `${n}, 잔을 내려놓고 조용히 노려본다.`,
-  'm-elder': (n) => `${n}, 수염을 떨며 지팡이를 짚고 일어선다.`,
+  'm-elder': (n) => `${n}, 상을 짚고 무겁게 일어선다.`,
   'm-charm': (n) => `${n}, 웃음을 거두고 칼자루를 쥔다.`,
   'w-bright': (n) => `${n}, 발끈해 술잔을 내던진다.`,
   'w-cool': (n) => `${n}, 말없이 활을 집어 든다.`,
@@ -104,6 +105,11 @@ const RISE: Readonly<Record<VoiceKind, (n: string) => string>> = {
   'm-veteran': (n) => `${n}, 술잔을 탁 내려놓고 눈을 가늘게 뜬다.`,
   'w-matron': (n) => `${n}, 옷매무새를 고치고 조용히 일어선다.`,
 }
+/** 늙은 장수(age.isOld)가 일어설 때 · 그 결이면서 정말 늙었을 때만 (형 10-30: "흰머리 나지 않은 이상 본인을 늙은이라고 하는 대사는 거의 쓰지 말아야") */
+const OLD_RISE: Readonly<Partial<Record<VoiceKind, (n: string) => string>>> = {
+  'm-elder': (n) => `${n}, 수염을 떨며 지팡이를 짚고 일어선다.`,
+}
+const riseOf = (h: Hero): string => ((isOld(h) ? OLD_RISE[voiceKind(h)] : undefined) ?? RISE[voiceKind(h)])(h.name)
 /** 잔치의 때 — 계절마다 */
 const FEAST_AT: Readonly<Record<'spring' | 'summer' | 'autumn' | 'winter', string>> = {
   spring: '봄 제사를 마친', summer: '모내기를 마친', autumn: '가을걷이를 마친', winter: '한 해를 보내는',
@@ -168,7 +174,7 @@ export function quarrelBeats(r: Realm, c: Card, a: Hero, b: Hero): string[] {
     `${iga(b)} 잔을 내려놓으며 ${a.name}에게 말을 던졌다.`,
     q(b, sting[pb]),
     '자리가 순간 조용해졌다.',
-    RISE[voiceKind(a)](a.name),
+    riseOf(a),
     q(a, `${pa ? '말 다 하셨습니까' : '말 다 했소'}? ${FAULT[wb][pa]}.`),
     '곁의 장수들이 둘을 뜯어말렸지만, 술잔 깨지는 소리가 밖까지 들렸다.',
   )
@@ -219,7 +225,7 @@ const EXILE_SAY: Readonly<Record<VoiceKind, string>> = {
   'm-gruff': '칼 한 자루면 밥값은 하겠소.',
   'm-young': '무엇이든 시켜만 주십시오!',
   'm-sage': '내 꾀를 쓸 곳을 찾고 있소.',
-  'm-elder': '늙었어도 아직 쓸모는 있소.',
+  'm-elder': '겪어 본 일이 많소. 쓸모는 있을 것이오.',
   'm-charm': '날 들이면 손해 볼 일은 없을 거요.',
   'w-bright': '받아 주시면 정말 열심히 할게요!',
   'w-cool': '쓸 데가 있으면 쓰고, 없으면 가겠다.',
@@ -229,6 +235,10 @@ const EXILE_SAY: Readonly<Record<VoiceKind, string>> = {
   'w-knight': '쓸모를 보여 드리겠습니다. 받아 주십시오.',
   'm-veteran': '싸움터를 스무 해 굴렀소. 써 보시오.',
   'w-matron': '살림이든 싸움이든, 맡기면 해내겠소.',
+}
+/** 늙은 사람(age.isOld)의 첫마디 · 그 결이면서 정말 늙었을 때만 */
+const OLD_EXILE_SAY: Readonly<Partial<Record<VoiceKind, string>>> = {
+  'm-elder': '늙었어도 아직 쓸모는 있소.',
 }
 
 export function exileBeats(r: Realm, c: Card, g: Hero): string[] {
@@ -241,7 +251,7 @@ export function exileBeats(r: Realm, c: Card, g: Hero): string[] {
     LOOK[bestOf(g)],
     '문지기가 데려와 군장 앞에 엎드리게 했다.',
     `이름은 ${josa(g.name, '이라', '라')} 했다. ${why}`,
-    q(g, EXILE_SAY[voiceKind(g)]),
+    q(g, (isOld(g) ? OLD_EXILE_SAY[voiceKind(g)] : undefined) ?? EXILE_SAY[voiceKind(g)]),
     g.traits.includes('traitor') ? '받아들였다가 언젠가 등에 칼이 꽂힐지도 모른다.' : '받아 주면 먹이고 입힐 곡식이 들지만, 쓸 만한 사람 하나를 얻는다.',
     '군장의 말 한마디에 이 사람의 앞날이 걸렸다.',
   ]
@@ -281,7 +291,7 @@ const LOVE_SAY: Readonly<Record<VoiceKind, string>> = {
   'm-gruff': '그, 그런 거 아니다! 누가 그런 소리를 해!',
   'm-young': '소문이 벌써 거기까지 갔습니까…?',
   'm-sage': '사람 입은 막을 수 없는 법이오.',
-  'm-elder': '늘그막에 이런 일이 생길 줄이야.',
+  'm-elder': '허허, 이런 일이 내게도 생기는구려.',
   'm-charm': '소문이 사실이면 어쩌겠소?',
   'w-bright': '에이, 아니야! …조금은 맞나?',
   'w-cool': '쓸데없는 소리. …귀가 왜 뜨겁지.',
@@ -289,22 +299,29 @@ const LOVE_SAY: Readonly<Record<VoiceKind, string>> = {
   'w-shaman': '신령께서 맺어 주신 인연이오.',
   'm-knight': '…그런 말은 삼가 주십시오.',
   'w-knight': '허튼소리입니다. …정말 그리 보였습니까?',
+  'm-veteran': '싸움터만 알던 몸에 그런 소문이라니, 허허.',
+  'w-matron': '남부끄럽게 무슨 소문이오. …싫지는 않구려.',
+}
+/** 늙은 장수(age.isOld)가 소문을 들었을 때 · 그 결이면서 정말 늙었을 때만 */
+const OLD_LOVE_SAY: Readonly<Partial<Record<VoiceKind, string>>> = {
+  'm-elder': '늘그막에 이런 일이 생길 줄이야.',
   'm-veteran': '이 나이에 그런 소문이라니, 허허.',
   'w-matron': '다 늙어 무슨 소문이오. …싫지는 않구려.',
 }
+const loveSayOf = (h: Hero): string => (isOld(h) ? OLD_LOVE_SAY[voiceKind(h)] : undefined) ?? LOVE_SAY[voiceKind(h)]
 
 export function romanceBeats(r: Realm, _c: Card, a: Hero, b: Hero): string[] {
   const ka = voiceKind(a)
   const kb = voiceKind(b)
   // 같은 결이면 둘째는 다른 말로 — 같은 말을 두 번 하지 않게
-  const sb = kb === ka ? '…부디 모르는 척해 주십시오.' : LOVE_SAY[kb]
+  const sb = kb === ka ? '…부디 모르는 척해 주십시오.' : loveSayOf(b)
   const place = a.at !== null && a.at === b.at ? r.nodes[a.at]?.name : undefined
   return [
     place !== undefined ? `${josa(a.name, '과', '와')} ${b.name}, 둘은 ${place}에서 같은 계절을 나며 자주 마주쳤다.` : `${josa(a.name, '과', '와')} ${b.name}, 둘은 같은 깃발 아래에서 여러 계절을 함께 보냈다.`,
     '처음엔 서로 말도 섞지 않던 사이였다.',
     `그런데 요즘 ${LOVE_AT[seasonOf(r.season)]}에서 둘이 함께 있는 것을 본 사람이 여럿이다.`,
     '소문은 금세 군중에 퍼졌다.',
-    q(a, LOVE_SAY[ka]),
+    q(a, loveSayOf(a)),
     q(b, sb),
     '혼례를 올리면 곡식이 들지만, 둘 사이에서 난 아이는 언젠가 장수가 될 것이다.',
     '한편 군기가 흐트러진다며 못마땅해하는 장수들도 있다.',

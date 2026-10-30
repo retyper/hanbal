@@ -27,6 +27,7 @@
  *   rationFrugal 국고가 빠듯하니 그대로 — {rnow} {rcost}(더 챙기면 드는 곡식)
  *   rationEnough 길이 짧고 넉넉하니 그대로 — {there} {seasons} {rnow}
  */
+import { isOld } from '../../realm/age.ts'
 import { josa } from '../../realm/data/prose.ts'
 import { hasTrait } from '../../realm/heroes.ts'
 import type { Hero } from '../../realm/types.ts'
@@ -238,14 +239,14 @@ export const SAYS: Readonly<Record<VoiceKind, Lines>> = {
       '가까운 싸움입니다. {there}까지 {seasons}이니 {rnow|으로} 충분하다고 봅니다.',
     ],
   },
-  // 늙은 장수 — 겪어 본 일로 말한다
+  // 늙은 장수 결 — 겪어 본 일로 말한다 · 스스로 늙었다는 말은 OLD_SAYS 에만 (그 결에도 젊은 얼굴이 있다)
   'm-elder': {
     waitAdvise: [
-      '{foe|은} 예부터 먼저 칼을 뽑는 나라였습니다. 저들이 {size|을} 모았으니 곧 올 것입니다. 성에서 맞아 지치게 한 뒤에 치시는 것이 이 늙은 몸의 소견입니다.',
-      '젊은 날 저런 적을 여럿 보았습니다. {size|을} 모으고 먼저 달려드는 자는 먼저 지칩니다. {foe|이} 성벽에 힘을 쏟게 두고 이번 계절은 지키시지요.',
+      '{foe|은} 예부터 먼저 칼을 뽑는 나라였습니다. 저들이 {size|을} 모았으니 곧 올 것입니다. 성에서 맞아 지치게 한 뒤에 치시는 것이 제 소견입니다.',
+      '저런 적을 여럿 겪어 보았습니다. {size|을} 모으고 먼저 달려드는 자는 먼저 지칩니다. {foe|이} 성벽에 힘을 쏟게 두고 이번 계절은 지키시지요.',
     ],
     waitAgainst: [
-      '늙은이도 서둘러야 할 때를 압니다. 저들이 다 모이기 전인 지금 {there|을} 치지 않으면 다음엔 더 어렵습니다. 이번 계절에 나서시지요.',
+      '신중한 사람도 서둘러야 할 때가 있습니다. 저들이 다 모이기 전인 지금 {there|을} 치지 않으면 다음엔 더 어렵습니다. 이번 계절에 나서시지요.',
       '기다리다 놓친 싸움을 여럿 보았습니다. {there|은} 지금이 가장 허술합니다. 이번에는 먼저 나서시지요.',
     ],
     keepAdvise: [
@@ -257,7 +258,7 @@ export const SAYS: Readonly<Record<VoiceKind, Lines>> = {
       '군사를 나누면 이길 싸움도 놓칩니다. {there|을} 얻으시려면 {all|을} 다 데려가시지요.',
     ],
     keepAllSafe: [
-      '{there|은} 어렵지 않은 싸움입니다. {all|을} 다 데려가 빨리 끝내고 돌아오시면 {here}도 걱정 없습니다. 이 늙은 몸의 소견입니다.',
+      '{there|은} 어렵지 않은 싸움입니다. {all|을} 다 데려가 빨리 끝내고 돌아오시면 {here}도 걱정 없습니다. 제 소견은 그렇습니다.',
       '짧게 끝낼 싸움은 크게 몰아쳐야 합니다. {all|이} 함께 가 {there|을} 치고 곧장 {here|으로} 돌아오시지요.',
     ],
     roadStrong: [
@@ -266,7 +267,7 @@ export const SAYS: Readonly<Record<VoiceKind, Lines>> = {
     ],
     roadSafe: [
       '{read}숨는 길은 저들도 다 알고 있습니다. 숨지 말고 대로로 {there}에 드시는 것이 낫습니다.',
-      '{read}이 늙은 몸이 보기엔 몰래 가는 길이 모두 위태롭습니다. 대로로 {there}에 가시지요.',
+      '{read}제가 보기엔 몰래 가는 길이 모두 위태롭습니다. 대로로 {there}에 가시지요.',
     ],
     roadBlind: [
       '{there}의 속을 모를 때는 큰길로 가는 것이 예부터의 법입니다. 대로로 가시지요.',
@@ -281,7 +282,7 @@ export const SAYS: Readonly<Record<VoiceKind, Lines>> = {
       '{read}알고 가는 길이라면 조심만 하시면 됩니다. 날랜 이들을 앞세워 {ap|으로} {there}에 가 보시지요.',
     ],
     sneakBlind: [
-      '저들이 어디를 지킬지는 이 늙은 눈으로도 모르겠습니다. 다만 {there|으로} 드는 길 가운데 {ap|이} 가장 숨기 좋아 보입니다.',
+      '저들이 어디를 지킬지는 제 눈으로도 가늠하기 어렵습니다. 다만 {there|으로} 드는 길 가운데 {ap|이} 가장 숨기 좋아 보입니다.',
       '땅을 보니 옛날 {ap|으로} 건너던 생각이 납니다. {there}에는 그 길로 드시지요.',
     ],
     rationWall: [
@@ -290,10 +291,10 @@ export const SAYS: Readonly<Record<VoiceKind, Lines>> = {
     ],
     rationFar: [
       '{there}까지 {seasons}이나 걸립니다. 먼 길에 군량이 떨어져 돌아온 군사를 본 적이 있습니다. {rnow}에서 {rmore|으로} 늘려 주십시오.',
-      '{there}까지 {seasons} 길에 {rnow|은} 빠듯합니다. {rmore|을} 챙겨 두면 이 늙은이 마음이 놓이겠습니다.',
+      '{there}까지 {seasons} 길에 {rnow|은} 빠듯합니다. {rmore|을} 챙겨 두면 제 마음이 놓이겠습니다.',
     ],
     rationFrugal: [
-      '곳간이 빠듯합니다. 곡식 {rcost|을} 더 퍼 가면 남은 늙은이와 아이들이 굶습니다. 지금 챙긴 {rnow|으로} 가시지요.',
+      '곳간이 빠듯합니다. 곡식 {rcost|을} 더 퍼 가면 성에 남은 아이들까지 굶습니다. 지금 챙긴 {rnow|으로} 가시지요.',
       '곡식은 아껴 쓰는 것이 오래 가는 법입니다. 지금 챙긴 {rnow|으로} 족하니 곡식 {rcost|은} 남겨 두시지요.',
     ],
     rationEnough: [
@@ -943,7 +944,7 @@ export const VOLUNTEER_ASK: Readonly<Record<VoiceKind, { readonly leads: readonl
   'm-gruff': { leads: ['제가 앞장서 {ap|으로} {there}까지 끌고 가겠습니다!', '{ap|으로} 가시지요. {there}의 성문 앞까지 제가 맨 앞에 서겠습니다!'], lead: ['이 군사를 저에게 맡겨 주십시오. {ap|으로} 끌고 가 {there}의 성문을 열겠습니다!', '제게 맡기시면 {ap|으로} 들어가 {there}에서 끝장을 내겠습니다!'] },
   'm-young': { leads: ['제가 앞장서 {ap|으로} {there}까지 이끌겠습니다!', '{ap|으로} 가게 해 주십시오! {there|을} 반드시 떨어뜨리겠습니다!'], lead: ['저를 믿고 이 군사를 맡겨 주십시오! {ap|으로} {there}까지 데려가겠습니다!', '이 일은 제가 해야 합니다! 맡겨 주시면 {ap|으로} {there}에 들겠습니다!'] },
   'm-sage': { leads: ['제가 이끄는 군사이니 {ap|으로} {there}에 들겠습니다. 셈으로도 맞습니다.', '{ap|으로} 가는 것이 이치에 맞습니다. 제가 {there}까지 이끌겠습니다.'], lead: ['이 군사를 저에게 맡기시면 {ap|으로} {there}까지 이끌겠습니다. 셈으로도 그것이 낫습니다.', '제게 맡겨 주시지요. {ap|으로} 가면 {there}의 저들이 모를 것입니다.'] },
-  'm-elder': { leads: ['이 늙은이가 앞장서 {ap|으로} {there}까지 이끌겠습니다.', '{ap|으로} 가시지요. {there}에서 옛 솜씨를 보여 드리겠습니다.'], lead: ['이 늙은 몸에게 군사를 맡겨 주십시오. {ap|으로} {there}까지 데려가겠습니다.', '마지막으로 한 번 더 맡겨 주시지요. {ap|으로} {there}에 들겠습니다.'] },
+  'm-elder': { leads: ['제가 앞서 {ap|으로} {there}까지 군사를 이끌겠습니다.', '{ap|으로} 가시지요. {there}에서 갈고닦은 솜씨를 보여 드리겠습니다.'], lead: ['저에게 군사를 맡겨 주십시오. {ap|으로} {there}까지 탈 없이 데려가겠습니다.', '이번 일은 저에게 맡겨 주시지요. {ap|으로} {there}에 들겠습니다.'] },
   'm-charm': { leads: ['제가 {ap|으로} {there}까지 이끌겠습니다. 이기면 노래가 될 것입니다.', '{ap|으로} 가시지요. {there}에는 제가 앞장서 들겠습니다.'], lead: ['이 군사를 맡겨 주시지요. {ap|으로} {there}에 들어 이름을 얻어 오겠습니다.', '제게 맡기시면 {ap|으로} 살짝 {there}에 들어가 보이겠습니다.'] },
   'w-bright': { leads: ['제가 앞장서 {ap|으로} {there}까지 이끌겠습니다! 저를 믿어 주십시오!', '{ap|으로} 가시지요! {there}까지 제가 길을 열겠습니다!'], lead: ['저를 믿고 맡겨 주십시오! {ap|으로} {there}까지 데려가겠습니다!', '이 군사, 제가 이끌게 해 주십시오! {ap|으로} {there|을} 꼭 떨어뜨리겠습니다!'] },
   'w-cool': { leads: ['{ap|으로} {there}까지 이끌겠습니다. 소리는 내지 않습니다.', '제가 이끕니다. {ap|으로} {there}에 듭니다.'], lead: ['맡겨 주시지요. {ap|으로} {there}까지 데려갑니다.', '이 군사를 주십시오. {ap|으로} {there}에 들겠습니다.'] },
@@ -953,6 +954,32 @@ export const VOLUNTEER_ASK: Readonly<Record<VoiceKind, { readonly leads: readonl
   'w-knight': { leads: ['제가 이끌겠습니다. {ap|으로} {there}에 들겠습니다.', '{ap|으로} 가시지요. {there}까지 흐트러짐 없이 이끌겠습니다.'], lead: ['이 군사를 맡겨 주십시오. {ap|으로} {there}까지 데려가겠습니다.', '저에게 맡겨 주시지요. {ap|으로} 들어 {there|을} 치겠습니다.'] },
   'm-veteran': { leads: ['{ap|으로} 가는 길은 제가 압니다. {there}까지 끌고 가겠습니다.', '이런 길은 여러 번 걸어 봤습니다. {ap|으로} {there}에 들겠습니다.'], lead: ['군사를 저에게 맡겨 주십시오. {ap|으로} {there}까지 탈 없이 데려가겠습니다.', '저에게 맡기시면 {ap|으로} 들어 {there}에서 판을 정리하겠습니다.'] },
   'w-matron': { leads: ['제가 이끄는 군사이니 {ap|으로} {there}에 들겠습니다. 마음 놓으시지요.', '{ap|으로} 가시지요. {there}까지 한 사람도 잃지 않고 가겠습니다.'], lead: ['이 군사를 이 몸에게 맡겨 주십시오. {ap|으로} {there}까지 데려가겠습니다.', '저에게 맡겨 주시지요. {ap|으로} 조용히 {there}에 들겠습니다.'] },
+}
+
+/**
+ * 늙은 장수만의 말 — 쉰이 넘었거나 머리가 센 장수(age.isOld)만 「이 늙은 몸 · 젊은 날」을 쓴다 (형 10-30: "흰머리 나지 않은 이상 본인을 늙은이라고 하는 대사는 거의 쓰지 말아야 할 듯").
+ * 결의 말에 더해 고른다 (그 장수는 가끔만 늙었다고 말한다)
+ */
+export const OLD_SAYS: Readonly<Partial<Record<Move, readonly string[]>>> = {
+  waitAdvise: [
+    '{foe|은} 예부터 먼저 칼을 뽑는 나라였습니다. 저들이 {size|을} 모았으니 곧 올 것입니다. 성에서 맞아 지치게 한 뒤에 치시는 것이 이 늙은 몸의 소견입니다.',
+    '젊은 날 저런 적을 여럿 보았습니다. {size|을} 모으고 먼저 달려드는 자는 먼저 지칩니다. {foe|이} 성벽에 힘을 쏟게 두고 이번 계절은 지키시지요.',
+  ],
+  waitAgainst: ['늙은이도 서둘러야 할 때를 압니다. 저들이 다 모이기 전인 지금 {there|을} 치지 않으면 다음엔 더 어렵습니다. 이번 계절에 나서시지요.'],
+  keepAllSafe: ['{there|은} 어렵지 않은 싸움입니다. {all|을} 다 데려가 빨리 끝내고 돌아오시면 {here}도 걱정 없습니다. 이 늙은 몸의 소견입니다.'],
+  roadSafe: ['{read}이 늙은 몸이 보기엔 몰래 가는 길이 모두 위태롭습니다. 대로로 {there}에 가시지요.'],
+  sneakBlind: ['저들이 어디를 지킬지는 이 늙은 눈으로도 모르겠습니다. 다만 {there|으로} 드는 길 가운데 {ap|이} 가장 숨기 좋아 보입니다.'],
+  rationFar: ['{there}까지 {seasons} 길에 {rnow|은} 빠듯합니다. {rmore|을} 챙겨 두면 이 늙은이 마음이 놓이겠습니다.'],
+}
+/** 늙은 장수 결의 나섬 — 그 결이면서 isOld 인 장수만 */
+export const OLD_ASK: { readonly leads: readonly string[]; readonly lead: readonly string[] } = {
+  leads: ['이 늙은이가 앞장서 {ap|으로} {there}까지 이끌겠습니다.', '{ap|으로} 가시지요. {there}에서 옛 솜씨를 보여 드리겠습니다.'],
+  lead: ['이 늙은 몸에게 군사를 맡겨 주십시오. {ap|으로} {there}까지 데려가겠습니다.', '마지막으로 한 번 더 맡겨 주시지요. {ap|으로} {there}에 들겠습니다.'],
+}
+/** 이 장수가 나설 때의 끝말 — 늙은 장수 결이고 정말 늙었으면 OLD_ASK */
+export function askOf(h: Hero): { readonly leads: readonly string[]; readonly lead: readonly string[] } {
+  const k = voiceKind(h)
+  return k === 'm-elder' && isOld(h) ? OLD_ASK : VOLUNTEER_ASK[k]
 }
 
 /** 조사 짝 — {이름|은} 의 '은' 이 무엇과 짝인가 (으로는 · 이면 은 앞 조사를 받침으로 가른다) */
@@ -996,6 +1023,7 @@ export function sageuk(s: string): string {
 /** 이 장수가 이 처지에서 할 말 — 결의 말과 특성의 말 가운데 하나 (특성 말은 두 번 넣어 더 자주) */
 export function sayOf(h: Hero, move: Move, v: Readonly<Record<string, string>>, season: number): string {
   const pool: string[] = [...SAYS[voiceKind(h)][move]]
+  if (isOld(h)) pool.push(...(OLD_SAYS[move] ?? []))
   for (const t of h.traits) {
     const ts = TRAIT_SAYS[t]?.[move]
     if (ts !== undefined && hasTrait(h, t)) pool.push(...ts, ...ts)
