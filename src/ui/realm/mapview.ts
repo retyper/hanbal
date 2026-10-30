@@ -19,7 +19,7 @@ import { customMarks } from '../../realm/hooks.ts'
 import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
 import type { EdgeKind, NodeKind, Realm, REdge, RegionId, SeasonOfYear } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
-import { ferryAt, landClipSvg, midOf, riversSvg, smoothPath, tidyEnds, trimPolyline, type Pt } from './mapgeo.ts'
+import { curvePts, ferryAt, landClipSvg, midOf, riversSvg, smoothPath, tidyEnds, trimPolyline, type Pt } from './mapgeo.ts'
 import { boardRoutes, boardTerritory } from './roadlayout.ts'
 import { kitVars, nationKit } from './kitcolor.ts'
 import { worldMapFallback, worldMapUrl } from './worldmap.ts'
@@ -118,6 +118,29 @@ export function roadSvg(d: string, kind: EdgeKind, k: number, op = 1, title = ''
   if (L.mid !== undefined) s += line(L.mid, L.midW ?? 1.5, L.midOp ?? 0.85, dash(L.midDash))
   return s
 }
+
+/**
+ * 출정 화살의 꼴 (지도 좌표 · 화면의 생김새라 params 가 아니라 여기 둔다).
+ * 흐르는 점선은 모두 한 마디(period) — keyframes 가 꼭 한 마디만큼 돌아 이음매에서 튀지 않는다 (형 10-30: "툭툭 끊어지고").
+ */
+const ARROW = {
+  /** 흐르는 점선 한 마디 (칠 + 틈) */
+  period: 23,
+  /** 고을 그림 반지름의 몫 — 화살은 고을 그림 밖에서 떠나 그림 앞에서 멎는다 */
+  iconR: 0.36,
+  /** 끝을 당기는 것은 그 걸음 길이의 이 몫까지만 (가까운 고을 사이에도 화살이 남게) */
+  maxTrim: 0.34,
+  /** 끝 곁의 잔 점을 덜어 내는 몫 (tidyEnds) */
+  tidy: 0.12,
+  /** 곡선을 쪼개는 수 (구간마다) — 꺾은선으로 그려 자르기·점선이 곡선과 딱 맞는다 */
+  sub: 8,
+  /** 같은 길을 나눠 쓰는 화살 사이 */
+  lane: 13,
+  /** 크림빛 바탕 띠가 화살보다 굵은 만큼 */
+  casing: 5,
+  /** 촉을 다는 실선 끝의 길이 — 점선 틈에 촉이 뜨지 않게 */
+  stub: 16,
+} as const
 
 /**
  * 지도는 제 상자의 **높이를 꽉 채운다** — 폰 세로에서는 지도가 화면보다 넓어져 옆으로 밀어 본다 (앱 화면, FLOW §5).
@@ -283,8 +306,9 @@ export const MAP_CSS = `
   color: #fff; background: #b0281a; border-radius: 50%; width: 1.5em; height: 1.5em; line-height: 1.5em; box-shadow: 0 0 8px #d0301c; pointer-events: none; z-index: 2; }
 /* 갈 수 없는 곳 — 군대를 고르면 흐려진다 (이동 범위만 또렷 — GAP M3) */
 .map .nd.far { opacity: .42; filter: saturate(.5); } .map .lb.far { opacity: .45; }
-.map svg .mvglow { animation: mvg 1.2s linear infinite; } @keyframes mvg { to { stroke-dashoffset: -40; } }
-.map svg .thrarrow { animation: thr 1s ease-in-out infinite alternate; }
+.map svg .mvglow { animation: mvg .6s linear infinite; } @keyframes mvg { to { stroke-dashoffset: -20; } }
+/* 위협 화살은 또렷하게 떠나 옅어진다 — 저사양·쉼(q-rest)에서 처음 장면에 멈춰도 진하게 보이게 */
+.map svg .thrarrow { animation: thrarw 1s ease-in-out infinite alternate; } @keyframes thrarw { from { opacity: 1; } to { opacity: .6; } }
 @media (prefers-reduced-motion: reduce) { .map .nd.threat .ring, .map svg .mvglow, .map svg .thrarrow { animation: none; } }
 /* 특산 — 고을 그림 오른쪽 위에 작은 둥근 표 (쇠·소금·나무·말). 아무도 안 사는 땅은 흐리게 — 일구면 난다 */
 /* 작게 겹쳐 쌓는다 — 넷이 나란히 서면 고을 그림과 길을 덮었다 (형: "자원들이랑 지도 길 이런거랑 좀안겹치게") */
@@ -422,7 +446,7 @@ export const MAP_CSS = `
 @keyframes mvbob { from { transform: translateY(0) rotate(-3deg); } to { transform: translateY(-12%) rotate(3deg); } }
 .map .toks.mv .mvtag { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 2px; white-space: nowrap; z-index: 3; pointer-events: none;
   font-size: clamp(10px, calc(1.6cqh / var(--z, 1) * var(--zs, 1)), 13px); font-weight: 700; color: #fff4dc; background: #7a1f10e6; border-radius: 8px; padding: 1px 6px; box-shadow: 0 1px 3px #0008; }
-.map svg .mvflow { animation: mvf .9s linear infinite; } @keyframes mvf { to { stroke-dashoffset: calc(-22px * var(--aw, 1)); } }
+.map svg .mvflow { animation: mvf .9s linear infinite; } @keyframes mvf { to { stroke-dashoffset: -${ARROW.period}; } }
 @media (prefers-reduced-motion: reduce) { .map .toks.mv .tok, .map svg .mvflow { animation: none; } }
 .map .lb.crowd { visibility: hidden; } /* 겹쳐 자리가 없는 작은 고을 이름 — declutter */
 .map .lb.sel { z-index: 1; } .map .lb.dim { opacity: 0; } /* 한 나라만 볼 때 다른 나라 글씨는 감춘다 (형: "다른나라들은 글자정돈 완전 투명하게") */
@@ -453,12 +477,30 @@ export interface MapMarch {
   readonly ally?: boolean
   /** 이번 계절 보내기로 한 집(새 마을 · 집 나누기) — 흙빛 점선 */
   readonly people?: boolean
+  /** 먼 갈 곳 — `to` 다음에 차례로 지날 고을 (마지막이 갈 곳). 이번 계절 걸음에 이어 흐린 점선으로 */
+  readonly then?: readonly string[]
+  /** 갈 곳까지 걸리는 계절 — 먼 갈 곳 화살에 「n계절」 */
+  readonly eta?: number
 }
 
 /**
  * 고을 그림의 크기 — 집이 많을수록 크다 (형: "규모를 이해하기 쉽게"). 빈땅·작은 마을 0.8 ~ 큰 도읍 1.35.
  * 화면의 생김새라 params 가 아니라 여기 둔다.
  */
+/** 출정 화살의 갈래 — 고른 걸음 · 길 위의 우리 · 동맹 · 남의 행군 · 우리 고을로 오는 적 · 우리 기습 · 개척단 */
+type ArrowKind = 'pick' | 'road' | 'ally' | 'foe' | 'thr' | 'amb' | 'ppl'
+/** 갈래마다 색·굵기·촉 · on: 점선의 칠 길이 (틈은 한 마디의 나머지 · 길 위에 있으면 흐른다) · ink: 글씨 색 */
+const ARROW_STYLE: Readonly<Record<ArrowKind, { col: string; w: number; head: string; ink: string; on?: number; round?: boolean }>> = {
+  pick: { col: '#c8402a', w: 9, head: 'rm-ah', ink: '#7a1f10' },
+  road: { col: '#c8402a', w: 9, head: 'rm-ah', ink: '#7a1f10', on: 14 },
+  ally: { col: '#3f7a3a', w: 9, head: 'rm-ah-ally', ink: '#2c5a28', on: 14 },
+  foe: { col: '#3a2a5a', w: 9, head: 'rm-ah-foe', ink: '#3a2a5a' },
+  thr: { col: '#b0281a', w: 10, head: 'rm-ah-thr', ink: '#8a1a0a' },
+  // 기습은 밤길처럼 — 어두운 둥근 점
+  amb: { col: '#3a2a5a', w: 11, head: 'rm-ah-foe', ink: '#3a2a5a', on: 2, round: true },
+  // 보내기로 한 집 — 흙빛 점선 (군대의 붉은 화살과 갈린다)
+  ppl: { col: '#8a5a2b', w: 7, head: 'rm-ah-ppl', ink: '#5a3a1b', on: 13 },
+}
 /** 본 군세의 폭 — 같으면 한 수 */
 const span = (lo: number, hi: number): string => (Math.round(lo) === Math.round(hi) ? `${Math.round(lo)}` : `${Math.round(lo)}~${Math.round(hi)}`)
 /** 고른 고을·군대 머리 위의 초록 사각뿔 (싸움판 battlefield .wgem 과 같은 꼴) */
@@ -524,6 +566,10 @@ export function mapHtml(
   svg += `<path d="M0 0L10 5L0 10z" fill="#3a2a5a"/></marker>`
   svg += `<marker id="rm-ah-ppl" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">`
   svg += `<path d="M0 0L10 5L0 10z" fill="#8a5a2b"/></marker>`
+  svg += `<marker id="rm-ah-ally" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">`
+  svg += `<path d="M0 0L10 5L0 10z" fill="#3f7a3a"/></marker>`
+  svg += `<marker id="rm-ah-thr" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">`
+  svg += `<path d="M0 0L10 5L0 10z" fill="#b0281a"/></marker>`
   for (const [f, a] of Object.entries(FACTION_ART).sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
     svg += `<radialGradient id="rm-t-${f}"><stop offset="0" stop-color="${a.color}" stop-opacity=".72"/>`
     svg += `<stop offset=".65" stop-color="${a.color}" stop-opacity=".45"/><stop offset="1" stop-color="${a.color}" stop-opacity="0"/></radialGradient>`
@@ -593,8 +639,11 @@ export function mapHtml(
     const ends = new Map<string, number>()
     for (const t of targets) { const e = r.edges[t.edge]; if (e !== undefined && !t.off) for (const x of [e.a, e.b]) ends.set(x, (ends.get(x) ?? 0) + 1) }
     const src = targets.length === 1 ? selected : [...ends.entries()].sort((x, y) => y[1] - x[1] || (x[0] < y[0] ? -1 : 1))[0]?.[0] ?? selected
+    // 먼 곳들은 첫 길을 함께 쓴다 — 같은 길은 한 번만 (겹쳐 그리면 빛이 진해지고 그릴 일만 는다)
+    const lit = new Set<string>()
     for (const t of targets) {
-      if (t.edge === '' || t.off) continue
+      if (t.edge === '' || t.off || lit.has(t.edge)) continue
+      lit.add(t.edge)
       const ed = r.edges[t.edge]
       if (ed === undefined || !seen(ed.a) || !seen(ed.b)) continue
       // 흐름은 늘 지금 고을에서 바깥으로 — 길은 a→b 로 그려져 있어 b 에 서 있으면 뒤집는다 (형 10-27: "애니메이션이 항상 지금 고을에서 바깥쪽으로 흐르게")
@@ -602,46 +651,114 @@ export function mapHtml(
       const inward = ed.b === src || (ed.a !== src && t.node === ed.a)
       const d = smoothPath(inward ? [...pts].reverse() : pts)
       svg += `<path d="${d}" fill="none" stroke="#ffd27a" stroke-width="${(16 * sw).toFixed(1)}" stroke-linecap="round" opacity=".28"/>`
-      svg += `<path class="mvglow" d="${d}" fill="none" stroke="#fff3c8" stroke-width="${(4 * sw).toFixed(1)}" stroke-dasharray="${(10 * sw).toFixed(1)} ${(10 * sw).toFixed(1)}" stroke-linecap="round" opacity=".95"/>`
+      svg += `<path class="mvglow" d="${d}" fill="none" stroke="#fff3c8" stroke-width="${(4 * sw).toFixed(1)}" stroke-dasharray="10 10" stroke-linecap="round" opacity=".95"/>`
     }
   }
   svg += `</g><g class="ly-marches">` // 출정 화살
-  // 출정 화살 — 그 길의 모양을 따라 간다. 고른 것은 굵은 실선, 길 위의 것은 점선 + 남은 계절
-  // 굵기·점선은 style 로 --aw 를 곱한다 — 가까이 볼수록 지도처럼 커지지 않게 (머리는 marker 라 굵기를 따라간다)
+  // 출정 화살 — 군대 하나에 화살 하나 (형 10-30: "군사 보낼 때 화살표가 왜 이렇게 툭툭 끊어지고 제대로 안 보이냐").
+  // 예전엔 걸음마다 따로 그려 양 끝을 길이의 22%씩 잘랐다: 먼 갈 곳은 고을마다 큰 틈이 나고 토막마다 촉이 달렸다.
+  //  · 먼 갈 곳도 지나는 고을을 꿰어 한 줄로. 떠나는 고을 그림 밖에서 나와 마지막 고을 그림 앞에서 멎고, 촉은 그 끝에 하나
+  //  · 이번 계절 걸음은 또렷하게, 그 뒤 걸음은 흐린 점선 + 「n계절」
+  //  · 같은 길을 같은 꼴로 가는 군대는 화살 하나에 「×n」, 다른 화살과 길을 나누면 나란히 비켜 선다
+  //  · 점선은 지도 단위의 맨 숫자 (흐름은 꼭 한 마디만큼 돈다) · 촉은 점선 틈에 뜨지 않게 짧은 실선 끝에 단다
+  // 굵기는 style 로 --aw 를 곱한다: 가까이 볼수록 지도처럼 커지지 않게 (머리는 marker 라 굵기를 따라간다)
   const aw = (n: number): string => `calc(${n.toFixed(1)}px * var(--aw, 1))`
   const edgeOf = (a: string, b: string): REdge | undefined => Object.values(r.edges).find((e) => (e.a === a && e.b === b) || (e.a === b && e.b === a))
+  /** 한 걸음의 길 모양 — 떠나는 쪽부터. 끝 곁의 잔 점은 덜어 촉이 거꾸로 서지 않게 */
+  const legOf = (a: string, b: string): Pt[] => {
+    const ed = edgeOf(a, b)
+    let p: Pt[] = ed !== undefined ? route(ed) : [px(a), px(b)]
+    if (ed !== undefined && ed.a !== a) p = p.slice().reverse()
+    return tidyEnds(p, ARROW.tidy)
+  }
+  /** 고을 그림의 반지름쯤 (지도 좌표) */
+  const iconR = (id: string): number => ICON_W * RA.nodeScale * W * ARROW.iconR * sizeOf(r.nodes[id]?.hh ?? 0)
+  /** 보이는 고을 자리와 이름표까지의 내림 (지도 좌표) — 화살 글씨를 비켜 단다 */
+  const seenPts = Object.values(r.nodes).filter((n) => seen(n.id) && pos(n.id) !== undefined).map((n) => [...px(n.id), iconR(n.id) * 2.2] as const)
+  const lineD = (p: readonly Pt[]): string => `M${p.map((q) => `${q[0].toFixed(1)} ${q[1].toFixed(1)}`).join('L')}`
+  const arrows = new Map<string, { kind: ArrowKind; nodes: string[]; n: number; m: MapMarch }>()
   for (const m of marches) {
-    if (!seen(m.from) || !seen(m.to)) continue
-    const ed = edgeOf(m.from, m.to)
-    let full: Pt[] = ed !== undefined ? route(ed) : [px(m.from), px(m.to)]
-    if (ed !== undefined && ed.a !== m.from) full = full.slice().reverse()
-    const k = 0.22 // 고을 기호에 안 묻히게 끝을 당긴다
-    const pts = tidyEnds(trimPolyline(full, k, 1 - k), 0.08)
-    // 보내기로 한 집 — 흙빛 점선 (군대의 붉은 화살과 갈린다)
-    if (m.people === true) {
-      svg += `<path class="pplarrow" d="${smoothPath(pts)}" fill="none" stroke="#8a5a2b" style="stroke-width:${aw(7 * lw)};stroke-dasharray:${aw(12 * lw)} ${aw(8 * lw)}" stroke-linecap="round" marker-end="url(#rm-ah-ppl)" opacity=".92"/>`
-      continue
-    }
-    // 기습은 밤길처럼 — 어두운 짧은 점선. 정면은 붉은 실선
+    // 모르는 땅 앞에서 끊는다 (첫 걸음은 두 끝을 다 봐야 그린다)
+    const all = [m.from, m.to, ...(m.then ?? [])]
+    const cut = all.findIndex((id) => !seen(id))
+    const nodes = cut < 0 ? all : all.slice(0, cut)
+    if (nodes.length < 2) continue
     const amb = m.ambush === true && m.foe !== true
-    const dash = amb ? `;stroke-dasharray:${aw(2)} ${aw(14)}" stroke-linecap="round` : m.left === null ? '' : `;stroke-dasharray:${aw(14)} ${aw(8)}`
-    const onUs = m.foe === true && threatened.has(m.to)
-    const col = m.ally === true ? '#3f7a3a' : onUs ? '#b0281a' : m.foe === true || amb ? '#3a2a5a' : '#c8402a'
-    const head = onUs ? 'rm-ah' : m.foe === true || amb ? 'rm-ah-foe' : 'rm-ah'
-    if (onUs) svg += `<path d="${smoothPath(pts)}" fill="none" stroke="#ffb09a" style="stroke-width:${aw(18 * lw)}" stroke-linecap="round" opacity=".35"/>`
-    // 길 위의 우리 행군은 점선이 가는 쪽으로 흐른다 (형: "이동중이면 … 애니메이션이 뭔가 있음 좋겠음")
-    const flow = m.left !== null && m.foe !== true && !amb ? ' class="mvflow"' : onUs ? ' class="thrarrow"' : ''
-    const label0 = m.ally === true && m.left !== null ? `도우러 · ${m.left <= 1 ? '다음 계절' : `${m.left}계절 뒤`}` : ''
-    svg += `<path${flow} d="${smoothPath(pts)}" fill="none" stroke="${col}" style="stroke-width:${aw((amb ? 11 : onUs ? 10 : 9) * lw)}${dash}" marker-end="url(#${head})" opacity=".9"/>`
-    // 언제 닿나 — 우리 행군·적 행군 모두 말 밑 꼬리표가 말한다(가려지지 않게)
-    // 적 행군은 길 위의 적 말과 그 꼬리표가 말한다 (형 10-27: "보인 적의 행군 이건 필요 없어질 것")
-    const label = label0 !== '' ? label0 : m.foe === true ? '' : m.left !== null ? '' : amb ? '우리 기습' : ''
-    // 보인 적의 행군 — 창을 멘 줄 그림 (무엇이 오는지 한눈에)
-    // 보인 적의 행군 — 창을 멘 줄 그림을 길 한가운데 바로 위에 얹고, 글씨는 그 밑에 (형 10-23: "보인 적의 행군 이미지가 제대로 된 위치가 아닌 이상한 곳에")
-    if (label !== '') {
-      const [lx, ly] = midOf(pts)
-      svg += `<text x="${lx}" y="${ly - 12}" font-size="${26 * lw}" font-weight="700" fill="${m.ally === true ? '#2c5a28' : onUs ? '#8a1a0a' : m.foe === true || amb ? '#3a2a5a' : '#7a1f10'}" stroke="#f3e6c8" stroke-width="5" paint-order="stroke" text-anchor="middle">${label}</text>`
+    const kind: ArrowKind = m.people === true ? 'ppl' : m.ally === true ? 'ally' : m.foe === true ? (threatened.has(m.to) ? 'thr' : 'foe') : amb ? 'amb' : m.left === null ? 'pick' : 'road'
+    const key = `${kind}|${nodes.join('>')}`
+    const g = arrows.get(key)
+    if (g !== undefined) g.n++
+    else arrows.set(key, { kind, nodes, n: 1, m })
+  }
+  // 첫 걸음의 길이 같은 화살끼리 나란히 선다 (길의 두 끝 이름 차례를 기준으로 왼쪽·오른쪽)
+  const laneKey = (nodes: readonly string[]): string => [nodes[0]!, nodes[1]!].sort().join('~')
+  const lanes = new Map<string, string[]>()
+  for (const [key, g] of arrows) lanes.set(laneKey(g.nodes), [...(lanes.get(laneKey(g.nodes)) ?? []), key])
+  for (const [key, { kind, nodes, n, m }] of arrows) {
+    const st = ARROW_STYLE[kind]
+    // 길을 꿴다 — 이음점(앞 걸음의 끝)은 한 번만. joint: 이번 계절 걸음이 끝나는 점 · last: 마지막 걸음이 떠나는 점
+    const pts: Pt[] = []
+    let joint = 0
+    let last = 0
+    for (let i = 1; i < nodes.length; i++) {
+      const leg = legOf(nodes[i - 1]!, nodes[i]!)
+      if (i === nodes.length - 1) last = i === 1 ? 0 : pts.length - 1
+      pts.push(...(i === 1 ? leg : leg.slice(1)))
+      if (i === 1) joint = pts.length - 1
     }
+    const k = pts.length <= 2 ? 1 : ARROW.sub
+    const cv0 = pts.length <= 2 ? pts : curvePts(pts, ARROW.sub)
+    const lane = lanes.get(laneKey(nodes))!
+    const off = lane.length < 2 ? 0 : (lane.indexOf(key) - (lane.length - 1) / 2) * ARROW.lane * lw * (nodes[0]! < nodes[1]! ? 1 : -1)
+    const cv: Pt[] = off === 0 ? cv0 : cv0.map((q, i): Pt => {
+      const a = cv0[Math.max(0, i - 1)]!
+      const b = cv0[Math.min(cv0.length - 1, i + 1)]!
+      const l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1
+      return [q[0] - ((b[1] - a[1]) / l) * off, q[1] + ((b[0] - a[0]) / l) * off]
+    })
+    const acc: number[] = [0]
+    for (let i = 1; i < cv.length; i++) acc.push(acc[i - 1]! + Math.hypot(cv[i]![0] - cv[i - 1]![0], cv[i]![1] - cv[i - 1]![1]))
+    const L = acc[acc.length - 1]!
+    const d0 = Math.min(iconR(nodes[0]!), acc[joint * k]! * ARROW.maxTrim)
+    const d1 = L - Math.min(iconR(nodes[nodes.length - 1]!), (L - acc[last * k]!) * ARROW.maxTrim)
+    if (d1 - d0 < ARROW.stub) continue
+    const dj = Math.min(d1, Math.max(d0, acc[joint * k]!))
+    const later = d1 - dj > 1
+    const part = (a: number, b: number): string => lineD(trimPolyline(cv, a / L, b / L))
+    const at = (d: number): Pt => trimPolyline(cv, d / L, d / L)[0]!
+    const w = st.w * lw
+    const cap = st.round === true ? 'round' : 'butt'
+    // 크림빛 바탕 띠 — 길·땅빛 위에서도 화살이 또렷하고, 점선 틈도 한 줄로 이어 보인다
+    svg += `<path d="${part(d0, dj)}" fill="none" stroke="#f3e6c8" style="stroke-width:${aw(w + ARROW.casing * lw)}" stroke-linecap="round" stroke-linejoin="round" opacity=".6"/>`
+    if (later) svg += `<path d="${part(dj, d1)}" fill="none" stroke="#f3e6c8" style="stroke-width:${aw(w * 0.8 + ARROW.casing * lw)}" stroke-linecap="round" stroke-linejoin="round" opacity=".35"/>`
+    if (kind === 'thr') svg += `<path d="${part(d0, d1)}" fill="none" stroke="#ffb09a" style="stroke-width:${aw(18 * lw)}" stroke-linecap="round" stroke-linejoin="round" opacity=".35"/>`
+    // 길 위의 점선은 가는 쪽으로 흐른다 · 우리 고을로 오는 적은 깜빡 · 개척단 길은 pplarrow
+    const cls = [kind === 'ppl' ? 'pplarrow' : '', st.on !== undefined && m.left !== null ? 'mvflow' : '', kind === 'thr' ? 'thrarrow' : ''].filter((c) => c !== '').join(' ')
+    const flow = cls !== '' ? ` class="${cls}"` : ''
+    const dash = (on: number): string => `;stroke-dasharray:${on} ${ARROW.period - on}`
+    const head = ` marker-end="url(#${st.head})"`
+    // 이번 계절 걸음 — 실선이면 촉까지 한 줄, 점선이면 촉은 끝의 짧은 실선에
+    const stubbed = !later && st.on !== undefined
+    const nowEnd = stubbed ? d1 - ARROW.stub : dj
+    svg += `<path${flow} d="${part(d0, nowEnd)}" fill="none" stroke="${st.col}" style="stroke-width:${aw(w)}${st.on !== undefined ? dash(st.on) : ''}" stroke-linecap="${cap}" stroke-linejoin="round"${!later && !stubbed ? head : ''} opacity=".92"/>`
+    if (stubbed) svg += `<path d="${part(nowEnd, d1)}" fill="none" stroke="${st.col}" style="stroke-width:${aw(w)}" stroke-linejoin="round"${head} opacity=".92"/>`
+    // 그 뒤 걸음 — 흐린 점선, 끝의 짧은 실선에 촉 하나
+    if (later) {
+      svg += `<path d="${part(dj, d1 - ARROW.stub)}" fill="none" stroke="${st.col}" style="stroke-width:${aw(w * 0.8)};stroke-dasharray:10 9" stroke-linejoin="round" opacity=".6"/>`
+      svg += `<path d="${part(d1 - ARROW.stub, d1)}" fill="none" stroke="${st.col}" style="stroke-width:${aw(w * 0.8)}" stroke-linejoin="round"${head} opacity=".75"/>`
+    }
+    // 글씨 — 먼 갈 곳은 흐린 걸음 가운데에 「n계절」 · 이번에 고른 기습 · 같은 화살 여럿은 「×n」 (도우러 오는 동맹은 길 위의 말 꼬리표가 말한다)
+    const text = (p: Pt, t: string, size: number): string =>
+      `<text x="${p[0].toFixed(1)}" y="${(p[1] - 12).toFixed(1)}" font-size="${size * lw}" font-weight="700" fill="${st.ink}" stroke="#f3e6c8" stroke-width="5" paint-order="stroke" text-anchor="middle">${t}</text>`
+    if (later && m.eta !== undefined) {
+      // 고을 그림과 그 밑 이름표에서 가장 먼 자리에 — 길이 이름표 곁을 지나면 글씨가 이름표 밑에 묻혔다
+      const away = (p: Pt): number => Math.min(...seenPts.map((q) => Math.min(Math.hypot(p[0] - q[0], p[1] - q[1]), Math.hypot(p[0] - q[0], p[1] - q[1] - q[2]))))
+      const cands = [0.3, 0.4, 0.5, 0.6, 0.7].map((f) => at(dj + (d1 - dj) * f))
+      svg += text(cands.reduce((b, p) => (away(p) > away(b) ? p : b)), `${m.eta}계절`, 24)
+    }
+    const label = kind === 'amb' && m.left === null ? '우리 기습' : ''
+    if (label !== '') svg += text(at(d0 + (dj - d0) * 0.7), label, 26)
+    if (n > 1) svg += text(at(d0 + (dj - d0) * 0.62), `×${n}`, 26)
   }
   svg += `</g></svg>`
 

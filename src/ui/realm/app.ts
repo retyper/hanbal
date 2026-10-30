@@ -1323,16 +1323,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const marches: MapMarch[] = []
     for (const a of Object.values(r.armies)) {
       if (a.faction !== me()) continue
-      if (a.march !== null) marches.push({ from: a.march.from, to: a.march.to, left: a.march.left, ambush: a.march.ambush })
       const c = pick[a.id]
       const ed = c !== undefined && a.march === null ? r.edges[c.edge] : undefined
-      if (ed !== undefined) marches.push({ from: a.at, to: otherEnd(ed, a.at)!, left: null, ambush: c!.ambush })
-      // 먼 갈 곳 — 거기까지의 길을 화살로 이어 (이번 계절 고른 첫 걸음은 위에서 그렸다 · 길 위의 군대는 닿는 고을부터)
+      // 군대 하나에 화살 하나 — 이번 계절 걸음(길 위 · 이번에 고른 것)에 먼 갈 곳까지 남은 고을을 잇는다 (형 10-30: "화살표가 왜 이렇게 툭툭 끊어지고")
       const g = goalOf(a)
-      if (g !== undefined) {
-        const start = a.march !== null ? a.march.to : ed !== undefined ? otherEnd(ed, a.at)! : a.at
-        for (const [x, y] of goalRoute(r, me(), start, g)) marches.push({ from: x, to: y, left: null, ambush: false })
-      }
+      const step = a.march !== null ? { from: a.march.from, to: a.march.to, left: a.march.left as number | null, ambush: a.march.ambush }
+        : ed !== undefined ? { from: a.at, to: otherEnd(ed, a.at)!, left: null, ambush: c!.ambush } : null
+      const then = g !== undefined ? goalRoute(r, me(), step?.to ?? a.at, g).map(([, y]) => y) : []
+      const first = step ?? (then.length > 0 ? { from: a.at, to: then.shift()!, left: null, ambush: false } : null)
+      if (first === null) continue
+      const rest = g !== undefined && then.length > 0 ? goalReach(r, me(), a.march !== null ? a.march.to : a.at).get(g)?.seasons : undefined
+      marches.push({ ...first, ...(then.length > 0 ? { then } : {}), ...(rest !== undefined ? { eta: rest + (a.march?.left ?? 0) } : {}) })
     }
     // 우리를 지키러 오는 동맹 군대는 적이 아니다 — 초록 화살 「도우러」
     for (const a of seenMarches(r, me())) if (a.march !== null && a.lent?.to !== me()) marches.push({ from: a.march.from, to: a.march.to, left: a.march.left, foe: true })

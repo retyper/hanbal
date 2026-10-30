@@ -5,6 +5,7 @@
  *  - 군대를 고르면 갈 수 없는 고을은 흐리고(far), 갈 길은 빛난다(mvglow)
  *  - 우리 고을로 오는 적: 그 고을은 threat · 그 화살은 깜빡(thrarrow)
  *  - 길 위의 말은 가는 쪽(dir)과 병력 막대(hp)
+ *  - 출정 화살은 군대 하나에 한 줄 · 촉은 끝에 하나 · 먼 갈 곳은 「n계절」 · 같은 길의 같은 화살은 「×n」 (형 10-30: "화살표가 왜 이렇게 툭툭 끊어지고")
  */
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
@@ -47,6 +48,17 @@ describe('지도 겉모습', () => {
     const h = mapHtml(r, 'saro', '/', [{ from, to: cap, left: 1, foe: true }], '')
     assert.ok(new RegExp(`class="nd[^"]* threat[^"]*"[^>]*data-node="${cap}"`).test(h))
     assert.ok(h.includes('class="thrarrow"'))
+  })
+
+  it('출정 화살 — 먼 갈 곳도 한 줄에 촉 하나 · 같은 길 두 군대는 화살 하나에 ×2', () => {
+    const r = startRealm(1, 'us')
+    const arrows = (h: string): string => h.slice(h.indexOf('class="ly-marches"'), h.indexOf('</svg>', h.indexOf('class="ly-marches"')))
+    const far = arrows(mapHtml(r, 'us', '/', [{ from: 'our-cap', to: 'our-north', left: null, then: ['sodo'], eta: 4 }], ''))
+    assert.equal(far.match(/marker-end=/g)?.length, 1, '촉은 갈 곳에 하나')
+    assert.ok(far.includes('4계절'))
+    const two = arrows(mapHtml(r, 'us', '/', [{ from: 'our-cap', to: 'our-east', left: 2 }, { from: 'our-cap', to: 'our-east', left: 1 }], ''))
+    assert.equal(two.match(/marker-end=/g)?.length, 1, '같은 길 두 군대는 화살 하나')
+    assert.ok(two.includes('×2') && two.includes('class="mvflow"'))
   })
 
   it('길 위의 말 — 가는 쪽과 병력 막대', () => {
