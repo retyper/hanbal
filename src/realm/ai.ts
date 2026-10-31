@@ -30,6 +30,7 @@ import type { UnitKind } from './battle.ts'
 import { bowUpCost, plotAgents, plotCost, plotTargets } from './plots.ts'
 import { allianceWhy, borders, breakWhy, leaderOf, truceWhy } from './stance.ts'
 import { knows } from './discovery.ts'
+import { beatenResting, warDeadRoom } from './rout.ts'
 import { BASE_MIX, mixOf } from './data/armymix.ts'
 import type { Army, EnvoyAsk, Hero, Order, PlotOp, Realm, Why } from './types.ts'
 
@@ -185,7 +186,8 @@ function drafts(r: Realm, faction: string): Order[] {
   const places = [fac.capital, ...sorted(Object.values(r.armies)).filter((a) => a.faction === faction && a.march === null).map((a) => a.at)]
   const out: Order[] = []
   // 나라 상한 — 뽑으면 가호가 줄고 군사가 늘어 (가호+군사)는 그대로라, 이번 계절에 뽑은 몫만 빼면 된다
-  let room = Math.floor(R.draftCap * (hhOf(r, faction) + men)) - men
+  // 달 시계 — 싸움에서 잃은 사람이 아물 때까지 그만큼 덜 뽑는다 (rout.ts · 잃은 만큼 곧바로 다시 뽑아 같은 크기 군대가 또 오지 않게)
+  let room = Math.floor(R.draftCap * (hhOf(r, faction) + men)) - men - warDeadRoom(r, faction)
   let took = 0
   for (const node of [...new Set(places)]) {
     const nd = r.nodes[node]
@@ -697,7 +699,8 @@ function decideNow(r: Realm, faction: string, brain: Brain): Order[] {
   // 자객의 활 — 공작을 안 벌이는 계절에 드물게 (값이 크다)
   const bw = brain === 'random' || !end || ps.length > 0 ? [] : bows(r, faction)
   // 출정은 aiMarchEvery 턴마다 정한다 — 달 시계에서 달마다 정하면 싸움의 박자가 세 배가 된다 (길은 달로 가도 군장은 계절마다 출정을 정한다)
-  const go = aiMarchTurn(r)
+  // 연달아 진 AI 나라는 몇 계절 새 출정을 쉰다 (달 시계 · rout.ts · FOCUS C)
+  const go = aiMarchTurn(r) && !beatenResting(r, faction)
   return [...talk, ...first, ...gs, ...ps, ...bw, ...hs, ...as, ...bs, ...lentMoves(r, faction), ...(!go ? [] : brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
 }
 
@@ -895,7 +898,7 @@ export function aiOrders(r: Realm): Order[] {
  */
 function approach(r: Realm, faction: string, decided: readonly Order[]): Order[] {
   const R = P.realm
-  if (seasonIdx(r) < R.aiApproachFrom) return []
+  if (seasonIdx(r) < R.aiApproachFrom || beatenResting(r, faction)) return []
   const busy = new Set(decided.flatMap((o) => ('army' in o && typeof o.army === 'string' ? [o.army] : [])))
   const cap = r.factions[faction]?.capital
   const mine = sorted(Object.values(r.armies)).filter((a) => a.faction === faction && a.lent === undefined)

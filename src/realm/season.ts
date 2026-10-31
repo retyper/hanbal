@@ -50,6 +50,7 @@ import { battleMerit, seasonMerit } from './drill.ts'
 import { applyTalks } from './woo.ts'
 import { noteMemory, type Departure } from './memory.ts'
 import { relicHas, relicHorseMulOf, relicLeft, relicMoraleOf, relicMul, relicSum, relicWith, spendRelic } from './relics.ts'
+import { healWarDead, menByFaction, noteBeaten, noteWarDead } from './rout.ts'
 import {
   ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, isRuler, ironhandAt, noteMet, oneJobPerHero, postHero, releaseCaptives, stepHeroes, sweepHeroes,
 } from './heroes.ts'
@@ -340,6 +341,59 @@ function retreatTo(r: Realm, a: Army, from: string, prefer: string | null): stri
     r.nodes[n]?.owner === a.faction && !armiesAt(r, n).some((x) => x.faction !== a.faction)
   if (prefer !== null && safe(prefer)) return prefer
   return neighbors(r, from).find(safe) ?? null
+}
+
+/** 진 군대가 흩어져 더 잃는 몫 — 무너져 졌으면 scatterRouted · 그냥 졌으면 scatterLose · 지지 않았으면 0 */
+function scatterShare(lost: boolean, routed: boolean): number {
+  return !lost ? 0 : routed ? P.realm.scatterRouted : P.realm.scatterLose
+}
+
+/**
+ * 싸움 뒤 물러나기 — 달 시계 판이면 진 군대가 흩어진다 (FOCUS C · 형: "400, 300, 200 계속 옴, 섬멸 안 됨").
+ *  - 싸움에서 잃은 것 말고도 `share` 몫이 달아난다 (도망병 · scatterShare)
+ *  - 남은 사람이 scatterFloor 아래면 군대가 다 흩어진다 (장수는 혼자 돌아간다)
+ *  - 물러날 곳(back)이 없으면 섬멸 — 장수는 wipeCapture 가늠으로 `captor` 에게 사로잡히고, 아니면 다쳐서 빠져나온다
+ *    (오리모양 토기가 있으면 다쳐서 빠져나온다 · 플레이어의 군주는 사로잡히지 않는다 — battleFates 와 같다)
+ * 옛 판은 예전 그대로: 물러날 곳이 있으면 물러나고, 없으면 말없이 흩어진다. 흩어짐 줄은 `out` 에 (싸움 줄 뒤에 붙인다)
+ */
+function fallBack(r: Realm, x: Army, back: string | null, share: number, captor: string, node: string, key: string, out: ReportLine[]): void {
+  if (!monthly(r)) {
+    if (back !== null) x.at = back
+    else delete r.armies[x.id]
+    return
+  }
+  const R = P.realm
+  const n0 = headcount(forceOf(r, x))
+  if (share > 0) scaleMix(x, 1 - Math.min(1, share))
+  const left = headcount(forceOf(r, x))
+  const cut = back === null
+  if (!cut && (share <= 0 || left >= R.scatterFloor)) {
+    x.at = back
+    if (n0 - left > 0) out.push({ kind: 'scatter', faction: x.faction, army: x.id, node, lost: n0 - left, wiped: false, cut: false, by: captor })
+    return
+  }
+  // 다 흩어졌다 — 퇴로가 끊겼으면 이끈 장수의 운명이 걸린다
+  const h = x.hero !== null ? r.heroes[x.hero] : undefined
+  let fate: { hero: string; fate: 'captive' | 'wounded' } | null = null
+  if (cut && h !== undefined && h.status === 'free') {
+    const self = h.faction === r.player && isRuler(r, h.id)
+    const caught = !self && roll(r.seed, r.season, `${key}:wipe:${x.id}`) < R.wipeCapture
+    if (caught && relicLeft(h, 'escape') <= 0) {
+      h.status = 'captive'
+      h.captor = captor
+      fate = { hero: h.id, fate: 'captive' }
+    } else {
+      if (caught) {
+        spendRelic(h, 'escape')
+        out.push({ kind: 'relicSave', faction: h.faction, hero: h.id, relic: relicWith(h, 'escape') })
+      }
+      h.woundedUntil = Math.max(h.woundedUntil ?? -1, r.season + seasons(r, 1))
+      fate = { hero: h.id, fate: 'wounded' }
+    }
+  }
+  x.hero = null
+  delete r.armies[x.id]
+  out.push({ kind: 'scatter', faction: x.faction, army: x.id, node, lost: n0, wiped: true, cut, by: captor, ...(fate ?? {}) })
 }
 
 /**
@@ -1121,18 +1175,17 @@ function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines
       else if (atkLost) battleGrowth(r, defHeroes, atkHeroes, [], lines)
       else battleGrowth(r, [], [], [...atkHeroes, ...defHeroes], lines)
       battleMerit(r, atkHeroes, defHeroes, atkWon ? 'a' : atkLost ? 'd' : null, res.duel?.winner, fateOf.captives) // 단련 공 (drill.ts)
-      // 진 쪽(교착이면 둘 다)은 떠난 고을로 — 그새 남이 쥐었으면 이웃의 제 땅, 없으면 흩어진다
-      const back = (g: Army[]): void => {
+      // 진 쪽(교착이면 둘 다)은 떠난 고을로 — 그새 남이 쥐었으면 이웃의 제 땅, 없으면 흩어진다 (달 시계: 진 쪽은 도망병도 · fallBack)
+      const scattered: ReportLine[] = []
+      const back = (g: Army[], share: number, captor: string): void => {
         for (const x of g) {
           const home = x.march!.from
           x.march = null
-          const to = retreatTo(r, x, home, home)
-          if (to !== null) x.at = to
-          else delete r.armies[x.id]
+          fallBack(r, x, retreatTo(r, x, home, home), share, captor, target, key, scattered)
         }
       }
-      if (!atkWon) back(atks)
-      if (!atkLost) back(defs)
+      if (!atkWon) back(atks, scatterShare(atkLost, outcome === 'routed'), defs[0]!.faction)
+      if (!atkLost) back(defs, scatterShare(atkWon, outcome === 'rout'), lead.faction)
       const yielded = takeYielded(r, res, atkWon ? 'a' : atkLost ? 'd' : null, atkWon ? r.armies[lead.id] : atkLost ? r.armies[defs[0]!.id] : undefined, atkWon ? defs : atks)
       lines.push({
         kind: 'battle', node: target, attacker: lead.id, allies: atks.slice(1).map((x) => x.id), pincer: false,
@@ -1143,6 +1196,7 @@ function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines
         clock: res.clock, ...(res.dusk.length > 0 ? { dusk: res.dusk } : {}),
         ...(res.pending !== undefined ? { pending: res.pending } : {}), ...(res.led ? { led: true } : {}),
       })
+      lines.push(...scattered)
     }
   }
   for (const a of Object.values(r.armies)) if (headcount(forceOf(r, a)) < 1) delete r.armies[a.id]
@@ -1373,12 +1427,11 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const from = new Map(atks.map((x) => [x.id, x.march!.from]))
   const lead = a.march!
   for (const x of atks) x.march = null
+  // 진 군대는 물러나며 흩어진다 (달 시계 · fallBack) — 그 줄은 싸움 줄 뒤에
+  const scattered: ReportLine[] = []
   if (atkWon) {
-    for (const d of defenders) {
-      const back = retreatTo(r, d, node.id, null)
-      if (back !== null) d.at = back
-      else delete r.armies[d.id] // 물러날 곳이 없다 — 흩어진다
-    }
+    // 물러날 곳이 없으면 흩어진다 (달 시계: 섬멸)
+    for (const d of defenders) fallBack(r, d, retreatTo(r, d, node.id, null), scatterShare(true, outcome === 'rout'), a.faction, node.id, key, scattered)
     for (const x of atks) x.at = node.id
     if (node.kind !== 'sodo' && node.owner !== a.faction && !allied(r, a.faction, node.owner)) {
       noteTake(r, a.faction, node.owner, node.id)
@@ -1396,12 +1449,10 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
       if (k !== undefined) k.force = null
     }
   } else {
-    // 지거나 교착 — 떠나온 고을로. 그새 남이 쥐었으면 이웃의 제 땅으로, 그것도 없으면 흩어진다
+    // 지거나 교착 — 떠나온 고을로. 그새 남이 쥐었으면 이웃의 제 땅으로, 그것도 없으면 흩어진다 (졌으면 도망병도 · 교착이면 그냥 물러난다)
     for (const x of atks) {
       const home = from.get(x.id)!
-      const back = retreatTo(r, x, home, home)
-      if (back !== null) x.at = back
-      else delete r.armies[x.id]
+      fallBack(r, x, retreatTo(r, x, home, home), scatterShare(atkLost, outcome === 'routed'), defFaction, node.id, key, scattered)
     }
   }
   // 항복한 군사를 이긴 쪽이 거둔다 (takeYielded) — 자리를 정한 뒤에 (이긴 군대가 선 고을에 집이 든다)
@@ -1416,6 +1467,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
     ...(yielded !== undefined ? { yielded } : {}),
     ...(fell ? { fell: true } : {}), ...(res.pending !== undefined ? { pending: res.pending } : {}), ...(res.led ? { led: true } : {}),
   })
+  lines.push(...scattered)
 }
 
 /** 싸움 없이 들어간다 — 군대가 고을에 닿고, 남의 땅이면 쥔다 (동맹의 땅은 지나갈 뿐) */
@@ -1654,8 +1706,11 @@ export function advance(
   // 전장에서 내린 명령은 명령 줄로도 온다 (판 기록에 남는다) — 따로 받은 tactics 가 먼저 (시험 돌림)
   const led: Record<string, Tactic> = { ...tactics }
   for (const o of orders) if (o.kind === 'command' && led[o.key] === undefined) led[o.key] = { cmds: o.cmds, ...(o.dusk !== undefined ? { dusk: o.dusk } : {}) }
+  const menBefore = menByFaction(r)
   resolveMarches(r, snipes, led, lines, fought) // 3 · 4 · 5
   restAfterBattles(r, lines) // 5 끝 — 달 시계: 싸운 군대는 한동안 추스른다
+  noteWarDead(r, menBefore) // 5 끝 — 달 시계: 싸움에서 잃은 사람 장부 (AI 징병 상한 · rout.ts)
+  noteBeaten(r, lines) // 5 끝 — 달 시계: 연달아 진 AI 나라는 새 출정을 쉰다 (rout.ts)
   stepParties(r, lines) // 5 — 개척단이 한 턴 간다 · 빈땅에 닿으면 마을 · 적 곁이면 흩어진다
   stepFood(r, lines) // 5 끝 — 남의 땅에 머무는 군대가 군량을 먹는다
   sweepHeroes(r, lines) // 5 끝 — 잃은 고을에 혼자 있던 장수는 물러나거나 잡힌다
@@ -1672,6 +1727,7 @@ export function advance(
     stepEconomy(r, season, fought, lines) // 7
     stepMigration(r, fought, lines) // 7 끝 — 붐비는 고을의 집이 한산한 제 고을로 (자동 분배)
     decayWatch(r) // 9
+    healWarDead(r) // 9 — 잃은 사람 장부가 아문다 (달 시계 · rout.ts)
     stepHeroes(r, lines) // 9 — 회유 · 맡은 고을의 경계·철 · 떠돌이
   }
   stepExpeditions(r, lines) // 9 — 돌아온 원정이 짐을 푼다

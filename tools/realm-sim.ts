@@ -10,6 +10,7 @@
  *   싸움    판당 싸움 수 · 이긴 비율 · 판당 생포 · 첫 장수를 잃은 판
  *   기습    이 나라가 친 기습/판 · 그 가운데 먹힌 비율 · 판 전체(모든 나라)의 기습/판 · 제사/판
  *   외교    이 나라가 받은 청/판 · 판 전체에서 맺어진 화친·동맹/판 · 판 전체의 들판 싸움/판
+ *   끝맺음  (둘째 표 · FOCUS C) 적 공세/판 = 남이 우리를 친 싸움 · 판 전체의 싸움·흩어짐·섬멸·연패 쉬기 · 짐의 갈래
  * `--as all` 은 여섯 나라를 차례로 고른다 — FLOW §3 "잘하는 것이 다르고 합은 비슷하게"를 재는 표.
  * 합격선의 씨앗 — "신중 봇이 무모 봇보다 나아야 정보 체계가 장식이 아니다" (BUILD §3-5). 감이 아니라 숫자로 (CLAUDE.md).
  */
@@ -83,6 +84,16 @@ interface Run {
   arms: number
   lent: number
   hh: number
+  /**
+   * 싸움의 끝맺음 (FOCUS C) — 적 공세: 남이 우리를 친 싸움 · 판 전체의 싸움 · 진 군대가 흩어짐(scatter 줄) ·
+   * 그 가운데 퇴로가 끊겨 섬멸 · 연달아 져서 쉬기에 든 나라(beaten 줄) · 졌으면 그 갈래
+   */
+  offensives: number
+  worldBattles: number
+  scatters: number
+  wipes: number
+  rests: number
+  losePath: string
 }
 
 function play(bot: Brain, as: string, seed: number): Run {
@@ -90,7 +101,7 @@ function play(bot: Brain, as: string, seed: number): Run {
   applyTier(r, TIER) // 난세 단계 (--tier 3)
   const own = (x: Realm): number => Object.values(x.nodes).filter((n) => n.owner === as).length
   const lead = Object.values(r.heroes).filter((h) => h.faction === as).sort((a, b) => (a.id < b.id ? -1 : 1))[0]?.id
-  const run: Run = { bot, as, seed, start: own(r), nodes: 0, nodesEarly: -1, win: false, lose: false, battles: 0, wins: 0, captured: 0, lostHero: false, settled: 0, wildHeld: 0, ambush: 0, ambushOk: 0, rites: 0, worldAmbush: 0, asks: 0, pacts: 0, fieldFights: 0, plots: 0, plotsOk: 0, plotsAtUs: 0, worldPlots: 0, heroes: 0, persuaded: 0, hired: 0, allies: 0, pledgeKept: 0, pledgeBroken: 0, gifts: 0, arms: 0, lent: 0, hh: 0 }
+  const run: Run = { bot, as, seed, start: own(r), nodes: 0, nodesEarly: -1, win: false, lose: false, battles: 0, wins: 0, captured: 0, lostHero: false, settled: 0, wildHeld: 0, ambush: 0, ambushOk: 0, rites: 0, worldAmbush: 0, asks: 0, pacts: 0, fieldFights: 0, plots: 0, plotsOk: 0, plotsAtUs: 0, worldPlots: 0, heroes: 0, persuaded: 0, hired: 0, allies: 0, pledgeKept: 0, pledgeBroken: 0, gifts: 0, arms: 0, lent: 0, hh: 0, offensives: 0, worldBattles: 0, scatters: 0, wipes: 0, rests: 0, losePath: '' }
   // 계절 수로 돌린다 — 달 시계 판이면 계절마다 석 턴 (calendar.perSeason)
   const per = perSeason(r)
   for (let s = 0; s < SEASONS * per; s++) {
@@ -124,10 +135,17 @@ function play(bot: Brain, as: string, seed: number): Run {
           if (l.ambush === 'success') run.ambushOk++
         }
       }
+      if (l.kind === 'scatter') {
+        run.scatters++
+        if (l.wiped) run.wipes++
+      }
+      if (l.kind === 'beaten') run.rests++
       if (l.kind !== 'battle') continue
+      run.worldBattles++
       // 나눈 별동대도 우리 군대다 — 넘기기 전 판에서 주인을 본다
       const weAttack = r.armies[l.attacker]?.faction === as
       const weDefend = l.defender === as
+      if (weDefend && !weAttack && (l.atkFaction ?? r.armies[l.attacker]?.faction) !== as) run.offensives++
       if (!weAttack && !weDefend) continue
       run.battles++
       const atkWon = l.outcome === 'rout' || l.outcome === 'win'
@@ -141,6 +159,7 @@ function play(bot: Brain, as: string, seed: number): Run {
   run.nodes = own(r)
   run.win = r.outcome?.kind === 'win'
   run.lose = r.outcome?.kind === 'lose'
+  if (run.lose) run.losePath = r.outcome?.path ?? 'conquest'
   run.lostHero = lead !== undefined && r.heroes[lead]?.status !== 'free'
   run.wildHeld = Object.values(r.nodes).filter((n) => n.kind === 'wild' && n.owner !== null).length
   run.heroes = Object.values(r.heroes).filter((h) => h.faction === as && h.status === 'free').length
@@ -178,6 +197,22 @@ for (const as of AS) {
       `${mean(rs.map((x) => x.heroes)).toFixed(2).padStart(6)}  ${mean(rs.map((x) => x.persuaded)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.hired)).toFixed(2).padStart(7)}  ` +
       `${mean(rs.map((x) => x.allies)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.pledgeKept)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.pledgeBroken)).toFixed(2).padStart(9)}  ` +
       `${mean(rs.map((x) => x.gifts)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.arms)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.lent)).toFixed(2).padStart(7)}  ${mean(rs.map((x) => x.hh)).toFixed(0).padStart(7)}`,
+    )
+  }
+}
+
+// 싸움의 끝맺음 (FOCUS C · 형: "400, 300, 200 계속 옴, 섬멸 안 됨") — 적 공세: 남이 우리를 친 싸움/판 ·
+// 판 싸움·흩어짐·섬멸·쉬기는 판 전체(모든 나라)의 판당 수 · 짐의 갈래
+console.log(`\n나라    봇          짐     싸움/판  적 공세/판  판 싸움/판  판 흩어짐  판 섬멸  판 쉬기  끝땅   짐: 정복  철·뱃길  제사  맹주`)
+for (const as of AS) {
+  for (const bot of BOTS) {
+    const rs = runs.filter((x) => x.bot === bot && x.as === as)
+    const by = (p: string): string => pct(mean(rs.map((x) => (x.losePath === p ? 1 : 0)))).padStart(6)
+    console.log(
+      `${as.padEnd(7)} ${bot.padEnd(9)} ${pct(mean(rs.map((x) => (x.lose ? 1 : 0)))).padStart(6)}  ${mean(rs.map((x) => x.battles)).toFixed(2).padStart(7)}  ` +
+      `${mean(rs.map((x) => x.offensives)).toFixed(2).padStart(9)}  ${mean(rs.map((x) => x.worldBattles)).toFixed(2).padStart(9)}  ` +
+      `${mean(rs.map((x) => x.scatters)).toFixed(2).padStart(8)}  ${mean(rs.map((x) => x.wipes)).toFixed(2).padStart(6)}  ${mean(rs.map((x) => x.rests)).toFixed(2).padStart(6)}  ` +
+      `${mean(rs.map((x) => x.nodes)).toFixed(2).padStart(5)}  ${by('conquest')}  ${by('ironsea')}  ${by('rite')}  ${by('suzerain')}`,
     )
   }
 }
