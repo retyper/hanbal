@@ -1284,10 +1284,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const el = document.createElement('div')
     el.className = 'ascfx'
     el.style.cssText = `--t0:${P.realm.ascendSlotMs}ms;--tg:${P.realm.ascendSlotGapMs}ms;--tf:${P.realm.ascendFlashMs}ms`
-    el.innerHTML = `<div class="axveil"></div><img class="axwall" src="${FX}wall.png" alt=""><div class="axembers">${embers}</div>`
-      + `<div class="axstage"><div class="axcard">${tongues}<div class="axwin">${before}${after}</div><img class="axframe" src="${FX}frame0.png" alt=""><canvas class="axburn" style="--bt:${P.realm.ascendFrameTop};--bs:${P.realm.ascendFrameSide}"></canvas></div><div class="axslots">${slots}</div>`
+    // 불 캔버스는 액자 그림 뒤 — 혀가 청동 테 너머에서 솟는다 · 액자 위엔 불빛을 받는 겹(axglow) · 바닥 불도 같은 셰이더 (그림 검토 11-01)
+    const fr = `--bt:${P.realm.ascendFrameTop};--bs:${P.realm.ascendFrameSide};--bb:${P.realm.ascendFrameBot}`
+    el.innerHTML = `<div class="axveil"></div><img class="axwall" src="${FX}wall.png" alt=""><canvas class="axground"></canvas><div class="axembers">${embers}</div>`
+      + `<div class="axstage"><div class="axcard">${tongues}<div class="axwin">${before}${after}</div><canvas class="axburn" style="${fr}"></canvas><img class="axframe" src="${FX}frame0.png" alt=""><img class="axglow" src="${FX}frame0.png" alt=""></div><div class="axslots">${slots}</div>`
       + `<div class="axtitle"><img class="axbrush" src="${FX}brush.png" alt=""><img class="axword" src="${FX}word.png" alt="각성"></div>`
-      + `<b class="axname">${esc(h.name)}</b><div class="axstats">${stats}</div></div><div class="axflash"></div>`
+      + `<b class="axname">${esc(h.name)}</b><div class="axstats">${stats}</div><p class="axtap">누르면 닫힙니다</p></div><div class="axflash"></div>`
     const timers: number[] = []
     const gone = (): void => { timers.forEach((t) => window.clearTimeout(t)); if (!el.isConnected) return; el.classList.add('out'); window.setTimeout(() => el.remove(), 350) }
     el.addEventListener('click', gone)
@@ -1295,7 +1297,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 불을 피운다 — 세 자리는 북소리마다 하나씩, 액자는 번쩍 0.6초 앞부터 번진다. 하나라도 못 피우면 그린 불로 (.nogl)
     const lit = [
       ...[...el.querySelectorAll<HTMLCanvasElement>('.axsb')].map((cv, i) => burn(cv, { mode: 'socket', at: P.realm.ascendSlotMs + i * P.realm.ascendSlotGapMs, ramp: P.realm.ascendIgniteMs, seed: i * 3.1 })),
-      ...[...el.querySelectorAll<HTMLCanvasElement>('.axburn')].map((cv) => burn(cv, { mode: 'frame', at: P.realm.ascendFlashMs - P.realm.ascendFrameLeadMs, ramp: P.realm.ascendFrameLeadMs, top: P.realm.ascendFrameTop, side: P.realm.ascendFrameSide, seed: 7.3 })),
+      ...[...el.querySelectorAll<HTMLCanvasElement>('.axburn')].map((cv) => burn(cv, { mode: 'frame', at: P.realm.ascendFlashMs - P.realm.ascendFrameLeadMs, ramp: P.realm.ascendFrameLeadMs, top: P.realm.ascendFrameTop, side: P.realm.ascendFrameSide, bot: P.realm.ascendFrameBot, seed: 7.3 })),
+      ...[...el.querySelectorAll<HTMLCanvasElement>('.axground')].map((cv) => burn(cv, { mode: 'ground', at: P.realm.ascendFlashMs - P.realm.ascendFrameLeadMs, ramp: P.realm.ascendFrameLeadMs * 1.5, seed: 2.2 })),
     ]
     if (lit.some((x) => !x)) el.classList.add('nogl')
     // 소리도 장면을 따라 — 불꽃 세 칸은 북 셋 · 번쩍에 큰 타격 · 붓글씨에 나팔 · 그다음 장수의 한마디

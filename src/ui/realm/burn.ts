@@ -11,7 +11,7 @@ const VS = 'attribute vec2 p;varying vec2 v;void main(){v=p*.5+.5;gl_Position=ve
 
 const FS = `precision mediump float;
 varying vec2 v;
-uniform float uT, uOn, uSeed, uMode, uTop, uSide;
+uniform float uT, uOn, uSeed, uMode, uTop, uSide, uBot;
 float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
 float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
   return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x),f.y);}
@@ -43,36 +43,42 @@ void main(){
     h=tongue(uv,vec2(.5,.12),.62,.56,uSeed);
     h=max(h,.85*tongue(uv,vec2(.38,.13),.36,.38,uSeed+5.));
     h=max(h,.85*tongue(uv,vec2(.62,.13),.36,.42,uSeed+9.));
-  }else{
-    // 액자: 캔버스 위쪽 uTop 만큼은 액자 밖(불이 솟을 자리). cy 는 액자 높이 비율 (0 아래 · 1 윗변)
-    float cy=uv.y*(1.+uTop);
-    float x=uv.x*(1.+2.*uSide)-uSide; // 캔버스는 액자보다 양옆으로 uSide 만큼 넓다: 끝 혀가 잘리지 않게
-    // 액자 바깥 테두리 둘레 전체가 불의 근원 (burning paper): 바깥 테에서 떨어진 거리 e. 불은 위로 타므로
-    // 옆·아래로는 짧게(.07), 위로는 길게(uTop) 잰다. 띠 위에서는 e=0 이지만 띠 안쪽으로 갈수록 식어 청동이 드러난다
+  }else if(uMode<1.5){
+    // 액자: 불 캔버스는 액자 그림 뒤에 깔린다. 띠 위의 불은 청동에 가려지고 바깥 테 너머로 혀가 솟는다
+    // 캔버스는 액자보다 위로 uTop · 아래로 uBot · 양옆으로 uSide 만큼 크다. cy 는 액자 높이 비율 (0 아랫변 · 1 윗변)
+    float cy=uv.y*(1.+uTop+uBot)-uBot;
+    float x=uv.x*(1.+2.*uSide)-uSide;
+    // 근원은 바깥 테 둘레 전체 (burning paper): 바깥 테에서 떨어진 거리 e. 불은 위로 타므로 옆은 .09 · 위는 uTop · 아래는 uBot 로 잰다
     float ox=max(max(-x,x-1.),0.);
     float above=max(cy-1.,0.);
     float below=max(-cy,0.);
-    float e=length(vec2(ox/.07,above/uTop+below/.012)); // 아래로는 거의 안 번진다 (캔버스가 액자 밑에서 끝난다)
-    float inBand=min(min(x,1.-x),min(cy,1.-cy)); // 띠 안에서 바깥 테까지 (0 = 바깥 테)
-    float cool=smoothstep(.0,.07,inBand);        // 띠 안쪽 깊이 들수록 불이 옅다
+    float e=length(vec2(ox/.075,above/uTop+below/max(uBot,.001)));
     if(e<1.){
       // 혀로 갈라지게: 흐름 잡음으로 x 를 비틀고, 능선 잡음(1-|2n-1|)으로 가는 혀를 세운 뒤, 근원에서 멀수록 문턱을 올려 끝이 끊긴다
+      // 옆의 불도 위로 흐른다 (세로로 길게 늘인 잡음) · 혀마다 키가 다르다(col)
       float w=fbm(vec2(x*4.+uSeed,cy*1.6-uT*1.5));
-      float n=fbm(vec2(x*11.+(w-.5)*2.2,cy*2.6-uT*2.8));
+      float n=fbm(vec2(x*11.+(w-.5)*2.2,cy*2.2-uT*2.8));
       float ridge=1.-abs(2.*n-1.);
-      float col=fbm(vec2(x*6.-uSeed,uT*.6)); // 혀마다 키가 다르다
-      float topw=(.55+.45*smoothstep(.2,1.,cy))*smoothstep(.0,.14,cy); // 아랫변 끝은 옅게: 캔버스 밑에서 잘린 줄이 안 보이게 // 윗변 쪽이 더 세다: 열은 위로 모인다
-      h=max(h,(ridge*1.45-.3-e*(2.4-col*1.2)-cool*.9)*(1.-smoothstep(.8,1.,e))*topw);
+      float col=fbm(vec2(x*6.-uSeed,cy*1.2+uT*.6));
+      float topw=.45+.55*smoothstep(.1,1.,cy); // 윗변 쪽이 더 세다: 열은 위로 모인다 · 아랫변은 낮게 그을린다
+      h=(ridge*1.5-.25-e*(2.3-col*1.3))*(1.-smoothstep(.8,1.,e))*topw;
     }
-    // 안쪽 창(초상)은 가리지 않는다
-    if(x>.15&&x<.85&&cy>.15&&cy<.85)h=0.;
+    // 액자 안(띠와 초상 창)에는 불을 두지 않는다: 띠는 청동이 가리지만 창은 비치므로
+    if(x>.025&&x<.975&&cy>.025&&cy<.975)h=0.; // 액자 그림 둘레의 빈 여백까지는 불이 채운다 (검은 테가 안 보이게)
+  }else{
+    // 바닥 불: 화면 아래에서 낮게 넘실 (그린 불벽 대신 · 같은 불 말씨)
+    float w=fbm(vec2(uv.x*3.+uSeed,uv.y*1.4-uT*1.2));
+    float n=fbm(vec2(uv.x*7.+(w-.5)*2.,uv.y*1.8-uT*2.2));
+    float ridge=1.-abs(2.*n-1.);
+    float col=fbm(vec2(uv.x*5.,uT*.4));
+    h=ridge*1.3-.15-uv.y*(2.-col*1.2);
   }
   h-=(1.-uOn)*.9; // 깎기: 붙는 동안 문턱이 내려가며 번진다
   gl_FragColor=ramp(clamp(h,0.,1.));
 }`
 
 export interface BurnOpts {
-  readonly mode: 'socket' | 'frame'
+  readonly mode: 'socket' | 'frame' | 'ground'
   /** 불이 붙기 시작하는 때 (지금부터 ms) · 번지는 데 걸리는 ms */
   readonly at: number
   readonly ramp: number
@@ -80,6 +86,8 @@ export interface BurnOpts {
   readonly top?: number
   /** 액자 — 캔버스 양옆에 더 둔 몫 (액자 너비 비율) */
   readonly side?: number
+  /** 액자 — 캔버스 아래로 더 둔 몫 (아랫변이 그을릴 자리) */
+  readonly bot?: number
   readonly seed?: number
 }
 
@@ -110,11 +118,12 @@ export function burn(cv: HTMLCanvasElement, o: BurnOpts): boolean {
   gl.enableVertexAttribArray(loc)
   gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0)
   const u = (n: string): WebGLUniformLocation | null => gl.getUniformLocation(pr, n)
-  const [uT, uOn, uSeed, uMode, uTop, uSide] = [u('uT'), u('uOn'), u('uSeed'), u('uMode'), u('uTop'), u('uSide')]
+  const [uT, uOn, uSeed, uMode, uTop, uSide, uBot] = [u('uT'), u('uOn'), u('uSeed'), u('uMode'), u('uTop'), u('uSide'), u('uBot')]
   gl.uniform1f(uSeed, o.seed ?? 0)
-  gl.uniform1f(uMode, o.mode === 'frame' ? 1 : 0)
+  gl.uniform1f(uMode, o.mode === 'ground' ? 2 : o.mode === 'frame' ? 1 : 0)
   gl.uniform1f(uTop, o.top ?? 0)
   gl.uniform1f(uSide, o.side ?? 0)
+  gl.uniform1f(uBot, o.bot ?? 0)
   const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const t0 = performance.now()
   const fit = (): void => {

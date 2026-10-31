@@ -1244,9 +1244,26 @@ export const UI_CSS = `
 @keyframes axign { to { opacity: 1; transform: none; } }
 /* 타는 불 (burn.ts 셰이더) — 빈 청동 자리·민 액자 위에 캔버스. WebGL 이 없으면(.nogl) 그린 불 그림과 불혀 그림으로 */
 .ap .axsb { position: absolute; left: -30%; bottom: 0; width: 160%; height: 160%; pointer-events: none; }
-.ap .axburn { position: absolute; left: calc(var(--bs) * -100%); width: calc((1 + 2 * var(--bs)) * 100%); top: calc(var(--bt) * -100%); height: calc((1 + var(--bt)) * 100%); z-index: 2; pointer-events: none; }
 .ap .ascfx:not(.nogl) .axtg, .ap .ascfx:not(.nogl) .axslot img.on { display: none; }
 .ap .ascfx.nogl canvas { display: none; }
+/* 그림 검토 11-01 뒤 — 불은 액자 뒤에서 솟고(axburn z 0 · 액자 z 1) 액자는 불빛을 받는다(axglow) · 바닥도 같은 불(axground) · 뒤 지도는 가린다 */
+.ap .axburn { position: absolute; left: calc(var(--bs) * -100%); width: calc((1 + 2 * var(--bs)) * 100%); top: calc(var(--bt) * -100%); height: calc((1 + var(--bt) + var(--bb)) * 100%); z-index: 0; pointer-events: none; }
+.ap .axglow { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; mix-blend-mode: screen; filter: sepia(1) saturate(5) hue-rotate(-12deg) brightness(1.15); opacity: 0;
+  animation: axglowin .6s ease-out calc(var(--tf) - 300ms) forwards, axglowp 1.1s ease-in-out calc(var(--tf) + 300ms) infinite alternate; }
+@keyframes axglowin { to { opacity: .3; } }
+@keyframes axglowp { from { opacity: .3; } to { opacity: .16; } }
+.ap .axground { position: absolute; left: 0; bottom: 0; width: 100%; height: 30%; opacity: .78; pointer-events: none; }
+.ap .ascfx:not(.nogl) .axwall { display: none; }
+.ap .axveil { background: radial-gradient(ellipse at 50% 38%, #2a1408 0, #120c0a 55%, #0b0a0d 100%); }
+.ap .axbrush { opacity: .5; }
+.ap .axword { filter: drop-shadow(0 2px 0 #2a1200) drop-shadow(0 0 10px #000000aa); }
+.ap .axname { position: relative; margin-top: -30px; padding: 3px 26px; font-size: 28px; font-weight: 800; letter-spacing: .06em; color: #ffe6a8; text-shadow: 0 2px 6px #000;
+  background: linear-gradient(90deg, transparent, #000000b0 22%, #000000b0 78%, transparent); }
+.ap .ascfx .axstats { flex-wrap: nowrap; gap: 4px; }
+.ap .ascfx .axst { padding: 2px 7px; font-size: 12px; white-space: nowrap; }
+.ap .axslots { position: relative; z-index: 3; margin-top: -10px; padding: 4px 16px; gap: 10px; border-radius: 10px; border: 1px solid #c08a4a88; background: linear-gradient(#5a3418, #2a160a); box-shadow: 0 3px 8px #000a; }
+.ap .axslot { width: 38px; height: 53px; }
+.ap .axtap { margin: 6px 0 0; font-size: 13px; color: #d8c8a8; opacity: 0; animation: axfade .4s ease-out calc(var(--tf) + 2600ms) forwards; }
 .ap .axtitle { position: relative; width: min(84vw, 420px); aspect-ratio: 900 / 503; margin-top: -26px; pointer-events: none; }
 .ap .axbrush, .ap .axword { position: absolute; inset: 0; width: 100%; height: 100%; }
 .ap .axbrush { opacity: .85; transform: scaleX(0); transform-origin: 8% 50%; animation: axswipe .35s cubic-bezier(.3, .9, .3, 1) calc(var(--tf) + 150ms) forwards; }
