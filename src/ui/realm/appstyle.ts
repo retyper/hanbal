@@ -526,6 +526,14 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .farseg button { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.2; } .ap .farseg small { font-size: 10.5px; opacity: .8; }
 .ap .scouthd { display: flex; align-items: center; gap: 10px; margin: 4px 0 10px; padding: 8px 10px; border-radius: 12px; background: #1d2418; border: 1px solid #4f5a3a; }
 .ap .scouthd .scic { width: 52px; height: 52px; } .ap .scouthd b { display: block; font-size: 15px; color: var(--gold); } .ap .scouthd span { font-size: 12.5px; color: var(--mute); }
+/* 정찰꾼 자리 — 1 → 2 → 3 (FOCUS D) · 보낸 자리는 고을 이름과 ✕ · 잠긴 자리엔 열리는 고을 수 · 360px 에서 한 줄에 셋 */
+.ap .sslots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0 0 10px; }
+.ap .sslot { display: flex; align-items: center; gap: 4px; min-width: 0; padding: 5px 6px; border-radius: 10px; border: 1px dashed #4f5a3a; background: #161b12; color: var(--mute); font: inherit; font-size: 12px; text-align: left; }
+.ap .sslot b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.ap .sslot .ssic { width: 24px; height: 24px; flex: none; object-fit: contain; }
+.ap .sslot.on { border-style: solid; border-color: #8ab07a; background: #1c2a1c; color: #d8f0c8; cursor: pointer; } .ap .sslot.on i { font-style: normal; flex: none; opacity: .7; }
+.ap .sslot.lock { opacity: .55; } .ap .sslot.lock .ssic { filter: grayscale(1); } .ap .sslot:not(.on) .ssic { opacity: .6; }
+.ap .scoutbox .ssic { width: 20px; height: 20px; vertical-align: -5px; object-fit: contain; }
 /* 「?」 — 판 이름 옆 작은 동그라미 · 누르면 설명 */
 .ap .qh { display: flex; align-items: center; gap: 8px; }
 .ap .qi { width: 24px; height: 24px; border-radius: 50%; border: 1px solid #c9a45a; background: #241a0e; color: #f3d48a; font: inherit; font-size: 14px; font-weight: 700; line-height: 1; cursor: pointer; padding: 0; }

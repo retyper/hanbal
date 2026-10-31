@@ -9,7 +9,7 @@
 import { faceFile } from './face.ts'
 import { headcount } from '../../realm/battle.ts'
 import { FACTION_ART, GOOD_ICON, REGION_ART, SEASON_MAP, flagIcon, nodeIcon, nodePos } from '../../realm/data/art.ts'
-import { seasons } from '../../realm/calendar.ts'
+import { ageSeasons, seasons } from '../../realm/calendar.ts'
 import { EDGE_NAME, GOOD_NAME, NODE_KIND_NAME, NODE_NOW, tagNow, turnWord, turnsLabel } from '../../realm/data/prose.ts'
 import { worldGeoOf } from '../../realm/data/regions/index.ts'
 import { relationOf } from '../../realm/diplomacy.ts'
@@ -569,8 +569,8 @@ export function mapHtml(
   /** 지난 계절 우리가 빼앗은 고을 — 우리 깃발이 꽂히고 금빛이 번진다 · 지켜 낸 고을 — 방패가 빛난다 (형 10-23: "졌을 때는 불나는 게 맞는데 이겼을 땐 어떤 연출") */
   taken: ReadonlySet<string> = new Set(),
   held: ReadonlySet<string> = new Set(),
-  /** 척후를 보낸 고을 — 금빛 고리(누르라는 듯 보였다) 대신 작은 「척후」 표 (형 10-27) */
-  scouting = '',
+  /** 척후를 보낸 고을들 — 금빛 고리(누르라는 듯 보였다) 대신 작은 「척후」 표 (형 10-27) · 정찰꾼 여럿 (FOCUS D) */
+  scouting: readonly string[] = [],
 ): string {
   // 판마다 지도 그림·좌표계·기호 크기 (영남 판은 고을이 빽빽해 작게)
   const region = r.region ?? 'byeonhan-mini'
@@ -841,7 +841,7 @@ export function mapHtml(
       // 정찰로 본 군세는 남의 고을에만 — 차지해 우리 군대가 들어앉은 고을에 옛 적 군세가 남지 않게 (형 10-24: "개마들머리 점령했는데 붉은 273~550 이 남아 있다")
       const f = known[n.id]?.force
       if (f) {
-        const v = visibleRange({ f0: f.f0, src: f.src, u: f.u }, r.season - f.season)
+        const v = visibleRange({ f0: f.f0, src: f.src, u: f.u }, ageSeasons(r, f.season))
         // 척후·첩자가 본 군세만 — 못 본 곳마다 ?를 흩뿌리지 않는다 (형: "빨간물음표들 위치가 너무 중구난방"). 배너 끝에 붙는다
         if (v !== null) force = `<i class="lbf${r.season - f.season > 0 ? ' old' : ''}">${span(v[0], v[1])}</i>`
       }
@@ -909,7 +909,7 @@ export function mapHtml(
       ? `<img class="sg" src="${art}fx/sodo-glow.png" alt=""><img class="sr" src="${art}fx/sodo-rope.png" alt=""><i class="sp"></i><i class="sp"></i>` : ''
     const holyFront = n.kind === 'sodo'
       ? `<img class="sr f" src="${art}fx/sodo-rope.png" alt=""><img class="sc c1" src="${art}fx/sodo-cloth-a.png" alt=""><img class="sc c2" src="${art}fx/sodo-cloth-b.png" alt=""><img class="sc c3" src="${art}fx/sodo-cloth-a.png" alt="">` : ''
-    const sct = scouting === n.id ? `<span class="sctmk" title="척후가 이 고을을 엿본다"><img src="${art}icon/unit-scouts.png" alt="">척후</span>` : ''
+    const sct = scouting.includes(n.id) ? `<span class="sctmk" title="척후가 이 고을을 엿본다"><img src="${art}icon/unit-scouts.png" alt="">척후</span>` : ''
     // 개척단이 못 닿는 빈 땅 — 까닭을 작게 (형 10-31: "왜 몇몇 빈 땅에는 개척단이 아예 안 보내지는지"). 개척단은 우리 고을에서 이웃 한 칸만 간다.
     // 고른 것이 없을 때(settleable 이 채워졌을 때)만
     let noReach = ''

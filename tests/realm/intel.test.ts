@@ -14,7 +14,7 @@ import {
 } from '../../src/realm/intel.ts'
 import { P } from '../../src/tune/params.ts'
 
-const SOURCES: Source[] = ['scout', 'spy', 'captive', 'merchant']
+const SOURCES: Source[] = ['scout', 'spy', 'captive', 'merchant', 'watch']
 
 describe('정보의 계약', () => {
   it('보이는 범위는 언제나 참값을 품는다 — 1만 번', () => {

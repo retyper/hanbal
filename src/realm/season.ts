@@ -36,6 +36,7 @@ import { applyBowUps, refreshSpies, resolvePlots } from './plots.ts'
 import { noteTake } from './stance.ts'
 import { stepDiscovery, stepSight } from './discovery.ts'
 import { limitHands } from './hands.ts'
+import { scoutCap, watchBorders } from './scouts.ts'
 import { stepSuzerain, suzerainEnd } from './suzerain.ts'
 import { pathsEnd, stepPaths } from './paths.ts'
 import { sendExpeditions, stepExpeditions } from './expedition.ts'
@@ -835,14 +836,18 @@ export function fireable(ed: REdge | undefined, node: RNode | undefined, season:
 const WATER: ReadonlySet<EdgeKind> = new Set(['ford', 'reeds', 'sea', 'mudflat'])
 export const isWater = (k: EdgeKind | undefined): boolean => k !== undefined && WATER.has(k)
 
-/** 2 — 정찰: 땅을 열고 군세를 a=0 으로 · 들키면 경계 + (SYSTEMS §2-4) */
+/** 2 — 정찰: 땅을 열고 군세를 a=0 으로 · 들키면 경계 + (SYSTEMS §2-4) · 나라마다 정찰꾼 수(scouts.scoutCap)까지, 같은 곳은 한 번 */
 function resolveScouts(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
   const R = P.realm
+  const sent = new Map<string, Set<string>>()
   for (const o of orders) {
     if (o.kind !== 'scout') continue
     const node = r.nodes[o.node]
     const known = r.intel[o.faction]
-    if (node === undefined || known === undefined) continue
+    if (node === undefined || known === undefined || node.owner === o.faction) continue
+    const went = sent.get(o.faction) ?? sent.set(o.faction, new Set()).get(o.faction)!
+    if (went.has(node.id) || went.size >= scoutCap(r, o.faction)) continue
+    went.add(node.id)
     const scout = o.hero !== null ? r.heroes[o.hero] : undefined
     const ourRyak = scout !== undefined && scout.status === 'free' ? scout.ryak : R.scoutRyak
     const theirRyak = bestRyak(r, armiesAt(r, node.id).filter((a) => a.faction !== o.faction))
@@ -927,7 +932,7 @@ function hungryOf(armies: readonly Army[]): boolean {
 /** 이 나라가 그 고을을 이번 계절(또는 지난 계절)에 정찰·첩자로 봤나 — 귀띔이 잘 맞는다 */
 function freshSight(r: Realm, faction: string, node: string): boolean {
   const k = r.intel[faction]?.[node]?.force
-  return k !== null && k !== undefined && r.season - k.season <= seasons(r, 1)
+  return k !== null && k !== undefined && k.src !== 'watch' && r.season - k.season <= seasons(r, 1) // 파수가 멀찍이 본 것은 귀띔이 아니다
 }
 
 /** tactics.Side 를 만든다 */
@@ -1783,5 +1788,6 @@ export function advance(
   r.season += 1 // 11
   // 11 끝 — 새 계절의 사건 카드를 펴고 다음 카드를 뽑아 둔다 · 점괘 (events.ts). 달 시계면 계절의 첫 달에만 (카드는 계절마다 한 장)
   if (isSeasonStart(r)) stepCards(r, lines)
+  watchBorders(r) // 11 끝 — 우리 고을 이웃은 늘 보인다: 새 턴의 군세를 범위로 (scouts.ts · FOCUS D)
   return { next: r, report }
 }
