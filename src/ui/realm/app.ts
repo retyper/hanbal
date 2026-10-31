@@ -35,7 +35,7 @@ import { goalReach, goalRoute } from '../../realm/goal.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
 import { kitLines } from '../../realm/kit.ts'
 import { alertRange, seenMix, visibleRange } from '../../realm/intel.ts'
-import { advance, concealOf, draftable, forceOf, neighbors, newArmyId, otherEnd, planned, rationCost, rationExtra, seasonOf, seenMarches } from '../../realm/season.ts'
+import { advance, concealOf, draftable, forceOf, neighbors, newArmyId, otherEnd, planned, rationCost, rationExtra, resting, seasonOf, seenMarches } from '../../realm/season.ts'
 import { ageSeasons, isSeasonStart, seasons } from '../../realm/calendar.ts'
 import { NIGHT_OPS, PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bowUpCost, escapeChance, plotAgents, plotCap, plotChance, plotCost, plotTargets, rescueGuard } from '../../realm/plots.ts'
 import { allianceWhy, leaderOf, tookRecently, truceWhy, winningAgainst } from '../../realm/stance.ts'
@@ -1457,7 +1457,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const d = Math.min(...ks.map((x) => Math.abs(x - k)))
       return `<span class="tn hard">${turnsLabel(r, d)} 어긋남</span>`
     }
-    const targets: MapTarget[] = a === undefined || a.march !== null ? [] : movesOf(r, me(), a).map((m) => ({
+    const targets: MapTarget[] = a === undefined || a.march !== null || resting(r, a) ? [] : movesOf(r, me(), a).map((m) => ({
       // 막힌 길도 갈 수는 있다 — 무엇을 잃는지 칩으로 미리 (형: "불가능하게 만들지 말고 패널티 · 사전에 안내")
       node: m.to, edge: m.edge.id, off: false, on: armySel.every((id) => pick[id]?.edge === m.edge.id),
       // 걸리는 계절은 늘 — 칠 곳에도 (형: "적을 치러갈때 그 마을까지 얼마나걸리는지 여전히 안보임")
@@ -1466,7 +1466,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         + `<span class="tn when">${turnsLabel(r, m.seasons)}</span>${pincerChip(m.to, m.seasons, m.hostile)}`,
     }))
     // 먼 곳 — 옆 고을이 아니어도 누르면 계절마다 한 걸음씩 간다 (우리·친한 나라·빈땅을 지나서) (형 10-25: "매번 옆 고을을 선택해 줘야 하는 게 귀찮어")
-    if (a !== undefined && a.march === null && armySel.length === 1) {
+    if (a !== undefined && a.march === null && !resting(r, a) && armySel.length === 1) {
       const near = new Set(targets.map((t) => t.node))
       for (const [to, x] of goalReach(r, me(), a.at)) {
         if (near.has(to) || x.hops < 2) continue
@@ -2274,6 +2274,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         h += `</div></div>`
         continue
       }
+      // 싸운 뒤 추스르는 중 (달 시계 · battleRest) — 떠나지 못한다. 언제 다시 떠날 수 있는지
+      if (resting(r, a)) h += `<div class="mute">⏳ 싸운 뒤 추스르는 중 · ${turnsLabel(r, a.rest! - r.season + 1)} 뒤 다시 떠난다</div>`
       if (disbanding) {
         h += `<div class="mute">해산한다</div><div class="btns"><button class="btn ghost" data-act="undisband" data-army="${a.id}">해산 취소</button></div></div></div>`
         continue
@@ -4680,7 +4682,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         t += LINE_S
       }
     }
-    h += `<div class="lines">${lines.length === 0 ? `<p class="mute rv" style="--t:${t}s">조용한 계절이었다.</p>` : groupedRows(r, lines, t)}</div>`
+    h += `<div class="lines">${lines.length === 0 ? `<p class="mute rv" style="--t:${t}s">조용한 ${josa(turnWord(r), '이었다', '였다')}.</p>` : groupedRows(r, lines, t)}</div>`
     // 아직 길 위의 우리 군대 — 언제 닿나 (형: "그 턴이 다음턴인지 그다음인지 몰라가지고 헷갈림. 왜안오는거야")
     const going = sorted(Object.values(r.armies)).filter((a) => a.faction === me() && a.march !== null)
     if (going.length > 0) {
@@ -5556,7 +5558,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 답할 청이 남았으면 깃발 줄 끝에 사신 알림 — 누르면 외교 판
     const waiting = openAsks(realm, me()).filter((a) => answers[a.id] === undefined).length
     morph($('.legend'), legendHtml(r) + (waiting > 0 ? `<button class="askpill" data-act="tab" data-tab="diplo">${icon('good-tribute-bell')}사신 ${waiting}</button>` : ''))
-    $('.next').innerHTML = `다음 계절 <span>›</span>`
+    $('.next').innerHTML = `다음 ${turnWord(r)} <span>›</span>`
     morph($('.todo'), todoHtml(r))
     morph($('.goalb'), goalBandHtml(r, esc, goalFolded()) + contestHtml(r)) // 캠페인의 장이면 이 장의 목표 — 접을 수 있다
     $('.goalb').classList.toggle('folded', goalFolded())

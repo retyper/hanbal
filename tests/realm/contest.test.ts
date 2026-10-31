@@ -11,6 +11,7 @@ import { contestOpen } from '../../src/realm/scenario.ts'
 import { favorOf } from '../../src/realm/diplomacy.ts'
 import { advance } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
+import { seasons } from '../../src/realm/calendar.ts'
 
 describe('송양의 활쏘기 겨루기', () => {
   it('이기면 비류국 마음이 크게 기울고 사건이 적힌다 — 다시는 못 한다', () => {
@@ -32,7 +33,7 @@ describe('송양의 활쏘기 겨루기', () => {
   })
   it('첫 해가 지나면 · 다른 판에선 없다', () => {
     const r = startRegion('jumong', 3, 'goguryeo')
-    r.season = P.realm.contestSeasons
+    r.season = seasons(r, P.realm.contestSeasons) // 달 시계면 그 계절의 첫 달
     assert.ok(!contestOpen(r, 'goguryeo'))
     assert.ok(!contestOpen(startRegion('byeonhan-mini', 3, 'guya'), 'guya'))
   })

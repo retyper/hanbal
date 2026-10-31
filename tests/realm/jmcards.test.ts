@@ -10,13 +10,14 @@ import { startRegion } from '../../src/realm/data/regions/index.ts'
 import { drawCard, resolveCard } from '../../src/realm/events.ts'
 import { favorOf } from '../../src/realm/diplomacy.ts'
 import { P } from '../../src/tune/params.ts'
+import { seasons } from '../../src/realm/calendar.ts'
 import type { ReportLine } from '../../src/realm/types.ts'
 
 describe('2장 사건 카드', () => {
   it('정해진 계절에 온다 · 다른 판엔 없다', () => {
     const r = startRegion('jumong', 2, 'goguryeo')
-    assert.equal(drawCard(r, P.realm.cardFishSeason)?.kind, 'fishbridge')
-    assert.equal(drawCard(r, P.realm.cardGogakSeason)?.kind, 'gogak')
+    assert.equal(drawCard(r, seasons(r, P.realm.cardFishSeason))?.kind, 'fishbridge') // 그 계절의 첫 턴
+    assert.equal(drawCard(r, seasons(r, P.realm.cardGogakSeason))?.kind, 'gogak')
     const b = startRegion('byeonhan-mini', 2, 'guya')
     for (let s = 0; s < 8; s++) assert.ok(!['fishbridge', 'gogak'].includes(drawCard(b, s)?.kind ?? ''))
   })
