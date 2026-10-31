@@ -9,6 +9,7 @@
 import { readFileSync } from 'node:fs'
 import { aiOrders, decide, type Brain } from '../src/realm/ai.ts'
 import { regionNations, startRegion } from '../src/realm/data/regions/index.ts'
+import { perSeason } from '../src/realm/calendar.ts'
 import { advance } from '../src/realm/season.ts'
 import type { Realm, RegionId } from '../src/realm/types.ts'
 import { P } from '../src/tune/params.ts'
@@ -69,7 +70,7 @@ for (const as of AS) {
   for (let g = 0; g < GAMES; g++) {
     const seed = 1000 + g
     let r: Realm = startRegion(REGION, seed, as)
-    for (let s = 0; s < SEASONS; s++) {
+    for (let s = 0; s < SEASONS * perSeason(r); s++) {
       r = advance(r, [...decide(r, as, BOT), ...aiOrders(r)]).next
       // 플레이어의 판이 끝나도 계절을 다 돌린다 — AI 판의 모양을 보려고
     }

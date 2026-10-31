@@ -4,6 +4,7 @@
  */
 import { decide, aiOrders } from '../src/realm/ai.ts'
 import { regionNations, startRegion } from '../src/realm/data/regions/index.ts'
+import { perSeason } from '../src/realm/calendar.ts'
 import { bondOf } from '../src/realm/heroes.ts'
 import { advance } from '../src/realm/season.ts'
 import type { RegionId } from '../src/realm/types.ts'
@@ -23,11 +24,11 @@ for (let seed = 1; seed <= SEEDS; seed++) {
   let r = startRegion(region, seed, as)
   let a70 = -1
   let a100 = -1
-  for (let s = 0; s < SEASONS && !r.outcome; s++) {
+  for (let s = 0; s < SEASONS * perSeason(r) && !r.outcome; s++) {
     r = advance(r, [...decide(r, as, 'planner'), ...aiOrders(r)]).next
     const best = Math.max(0, ...Object.values(r.heroes).filter((h) => h.faction === as).map((h) => bondOf(r, h) ?? 0))
-    if (a70 < 0 && best >= 70) a70 = s + 1
-    if (a100 < 0 && best >= 100) a100 = s + 1
+    if (a70 < 0 && best >= 70) a70 = Math.ceil((s + 1) / perSeason(r))
+    if (a100 < 0 && best >= 100) a100 = Math.ceil((s + 1) / perSeason(r))
   }
   if (a70 > 0) t70.push(a70)
   if (a100 > 0) t100.push(a100)

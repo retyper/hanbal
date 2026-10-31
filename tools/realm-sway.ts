@@ -6,6 +6,7 @@
  */
 import { aiOrders, decide, type Brain } from '../src/realm/ai.ts'
 import { startRegion, regionNations } from '../src/realm/data/regions/index.ts'
+import { perSeason } from '../src/realm/calendar.ts'
 import { advance } from '../src/realm/season.ts'
 import type { Realm, RegionId } from '../src/realm/types.ts'
 import { P } from '../src/tune/params.ts'
@@ -27,7 +28,7 @@ function run(join: number): Tally {
     const as = nations[g % nations.length]!
     const bot = BOTS[g % BOTS.length]!
     let r: Realm = startRegion(REGION, 1000 + g, as)
-    for (let s = 0; s < SEASONS && !r.outcome; s++) {
+    for (let s = 0; s < SEASONS * perSeason(r) && !r.outcome; s++) {
       const { next, report } = advance(r, [...decide(r, as, bot), ...aiOrders(r)])
       for (const l of report.lines) {
         if (l.kind !== 'battle') continue

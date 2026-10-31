@@ -8,6 +8,7 @@
  */
 import { aiOrders, decide, type Brain } from '../src/realm/ai.ts'
 import { regionNations, startRegion } from '../src/realm/data/regions/index.ts'
+import { perSeason } from '../src/realm/calendar.ts'
 import { advance } from '../src/realm/season.ts'
 import type { Realm, RegionId, ReportLine } from '../src/realm/types.ts'
 
@@ -27,7 +28,7 @@ for (let g = 0; g < GAMES; g++) {
   const as = nations[g % nations.length]!
   const bot = BOTS[g % BOTS.length]!
   let r: Realm = startRegion(REGION, 2000 + g, as)
-  for (let s = 0; s < SEASONS && r.outcome === null; s++) {
+  for (let s = 0; s < SEASONS * perSeason(r) && r.outcome === null; s++) {
     const { next, report } = advance(r, [...decide(r, as, bot), ...aiOrders(r)])
     for (const l of report.lines) if (l.kind === 'battle' && l.rounds !== undefined) lines.push(l)
     r = next

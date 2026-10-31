@@ -7,6 +7,7 @@
  */
 import { aiOrders, decide } from '../src/realm/ai.ts'
 import { regionNations, startRegion } from '../src/realm/data/regions/index.ts'
+import { perSeason, seasonIdx } from '../src/realm/calendar.ts'
 import { advance } from '../src/realm/season.ts'
 import type { Realm, RegionId } from '../src/realm/types.ts'
 
@@ -20,7 +21,7 @@ const SEASONS = Number(opt('seasons', '40'))
 const SEED = Number(opt('seed', '7'))
 
 let r: Realm = startRegion(REGION, SEED, regionNations(REGION)[0]!)
-for (let s = 0; s < SEASONS && !r.outcome; s++) r = advance(r, [...aiOrders(r), ...decide(r, r.player, 'planner')]).next
+for (let s = 0; s < SEASONS * perSeason(r) && !r.outcome; s++) r = advance(r, [...aiOrders(r), ...decide(r, r.player, 'planner')]).next
 const all = JSON.stringify(r).length
 const bare = JSON.parse(JSON.stringify(r)) as Realm
 for (const h of Object.values(bare.heroes)) delete h.mem
@@ -31,7 +32,7 @@ const lessonB = r.lessons !== undefined ? JSON.stringify(r.lessons).length : 0
 const lines = Object.values(r.heroes).map((h) => h.mem?.length ?? 0)
 const kinds: Record<string, number> = {}
 for (const h of Object.values(r.heroes)) for (const m of h.mem ?? []) kinds[m.k] = (kinds[m.k] ?? 0) + 1
-console.log(`${REGION} · ${r.season}계절 · 장수 ${lines.length}명 (기억 있는 이 ${lines.filter((n) => n > 0).length})`)
+console.log(`${REGION} · ${seasonIdx(r)}계절 · 장수 ${lines.length}명 (기억 있는 이 ${lines.filter((n) => n > 0).length})`)
 console.log(`판 JSON ${(all / 1024).toFixed(1)}KB · 기억·장부 없이 ${(without / 1024).toFixed(1)}KB · 늘어난 몫 ${((all - without) / 1024).toFixed(1)}KB (+${(((all - without) / without) * 100).toFixed(1)}%)`)
 console.log(`기억 ${(memB / 1024).toFixed(1)}KB · 장부 ${(lessonB / 1024).toFixed(1)}KB · 장수당 줄 평균 ${(lines.reduce((a, b) => a + b, 0) / Math.max(1, lines.length)).toFixed(1)} · 가장 많은 ${Math.max(...lines)}`)
 console.log(`줄 종류 ${JSON.stringify(kinds)}`)

@@ -17,6 +17,7 @@
 import { aiOrders, decide, type Brain } from '../src/realm/ai.ts'
 import { CUSTOMS, customsOf, kyeolOf, type CustomId } from '../src/realm/data/customs.ts'
 import { regionNations, startRegion } from '../src/realm/data/regions/index.ts'
+import { perSeason } from '../src/realm/calendar.ts'
 import type { UnitKind } from '../src/realm/battle.ts'
 import { advance } from '../src/realm/season.ts'
 import { applyTier } from '../src/realm/tier.ts'
@@ -101,7 +102,7 @@ function play(as: string, seed: number, b: boolean): Run {
   let r: Realm = startRegion(REGION, seed, as, edit)
   applyTier(r, TIER)
   const run: Run = { win: 0, lose: 0, marches: 0, battles: 0, wins: 0, drafted: {}, standing: {}, envoys: 0, envoysOk: 0, pacts: 0, gifts: 0, rites: 0, plots: 0, settles: 0, nodes: 0, arms: 0, builds: 0, hooks: 0, iron: 0, grain: 0, bond: 0 }
-  for (let s = 0; s < SEASONS; s++) {
+  for (let s = 0; s < SEASONS * perSeason(r); s++) {
     const mine = decide(r, as, BOT)
     run.marches += mine.filter((o) => o.kind === 'march').length
     const { next, report } = advance(r, [...mine, ...aiOrders(r)])

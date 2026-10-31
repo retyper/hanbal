@@ -5,6 +5,7 @@
  */
 import { aiOrders, decide } from '../src/realm/ai.ts'
 import { startRegion } from '../src/realm/data/regions/index.ts'
+import { perSeason } from '../src/realm/calendar.ts'
 import { advance } from '../src/realm/season.ts'
 import type { Realm, RegionId } from '../src/realm/types.ts'
 
@@ -20,7 +21,7 @@ const SEEDS = Number(opt('seeds', '5'))
 const times: number[] = []
 for (let seed = 1; seed <= SEEDS; seed++) {
   let r: Realm = startRegion(REGION, seed, 'us')
-  for (let s = 0; s < SEASONS && !r.outcome; s++) {
+  for (let s = 0; s < SEASONS * perSeason(r) && !r.outcome; s++) {
     const t0 = performance.now()
     const orders = [...decide(r, r.player, 'planner'), ...aiOrders(r)]
     r = advance(r, orders).next

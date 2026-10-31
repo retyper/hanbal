@@ -8,6 +8,7 @@
  */
 import { decide, aiOrders, type Brain } from '../src/realm/ai.ts'
 import { regionNations, startRegion } from '../src/realm/data/regions/index.ts'
+import { perSeason } from '../src/realm/calendar.ts'
 import { NATIONS } from '../src/realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../src/realm/data/nations-yeongnam.ts'
 import { SOUTH_NATIONS } from '../src/realm/data/nations-south.ts'
@@ -41,7 +42,7 @@ for (const region of ['tutorial', 'byeonhan-mini', 'yeongnam', 'south', 'world']
     try {
       prologueHtml(KIT, r, 0); prologueHtml(KIT, r, 1); prologueHtml(KIT, r, 2)
       const history: Array<{ s: number; lines: readonly ReportLine[] }> = []
-      for (; s < SEASONS && !r.outcome; s++) {
+      for (; s < SEASONS * perSeason(r) && !r.outcome; s++) {
         const before = r
         const res = advance(r, [...decide(r, as, brain), ...aiOrders(r)])
         r = res.next
