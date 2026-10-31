@@ -153,6 +153,7 @@ export const MAP_CSS = `
   /* 가장자리 고을 이름·말이 밖으로 삐져나가 굴릴 자리를 늘리지 않게 — 지도 바깥 빈 바탕까지 끌려 나갔다 (형 10-23: "맵에서 지도 바깥으로 막 나가지지 않게") */
   overflow: clip; }
 .map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.map svg.marr { z-index: 6; pointer-events: none; }
 .map .nd { position: absolute; transform: translate(-50%, -62%); width: calc(8.5% * var(--s, 1) * var(--ns, 1) * var(--cs, 1)); text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 /* 나라가 많은 판 — 당기면 고을 그림이 지도만큼 커지지 않아 서로 벌어진다 (형 10-25: "낙동강 스물한 나라는 마을 이미지가 너무 커서 텍스트가 밀려난다") */
 .map[data-region="yeongnam"] .nd, .map[data-region="south"] .nd, .map[data-region="world"] .nd { width: calc(8.5% * var(--s, 1) * var(--ns, 1) * var(--cs, 1) / var(--z, 1) * var(--zs, 1)); }
@@ -654,7 +655,10 @@ export function mapHtml(
       svg += `<path class="mvglow" d="${d}" fill="none" stroke="#fff3c8" stroke-width="${(4 * sw).toFixed(1)}" stroke-dasharray="10 10" stroke-linecap="round" opacity=".95"/>`
     }
   }
-  svg += `</g><g class="ly-marches">` // 출정 화살
+  svg += `</g>`
+  // 출정 화살은 따로 떼어 고을·말·이름표보다 위의 막에 그린다 (형 10-31: "화살표는 다른 어떤 오브젝트보다도 위에 · 적국에서 올 때도 잘 안 보임")
+  const arrowAt = svg.length
+  svg += `<g class="ly-marches">` // 출정 화살
   // 출정 화살 — 군대 하나에 화살 하나 (형 10-30: "군사 보낼 때 화살표가 왜 이렇게 툭툭 끊어지고 제대로 안 보이냐").
   // 예전엔 걸음마다 따로 그려 양 끝을 길이의 22%씩 잘랐다: 먼 갈 곳은 고을마다 큰 틈이 나고 토막마다 촉이 달렸다.
   //  · 먼 갈 곳도 지나는 고을을 꿰어 한 줄로. 떠나는 고을 그림 밖에서 나와 마지막 고을 그림 앞에서 멎고, 촉은 그 끝에 하나
@@ -760,7 +764,9 @@ export function mapHtml(
     if (label !== '') svg += text(at(d0 + (dj - d0) * 0.7), label, 26)
     if (n > 1) svg += text(at(d0 + (dj - d0) * 0.62), `×${n}`, 26)
   }
-  svg += `</g></svg>`
+  svg += `</g>`
+  const arrowSvg = `<svg class="marr" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${svg.slice(arrowAt)}</svg>`
+  svg = `${svg.slice(0, arrowAt)}</svg>`
 
   let nodes = ''
   const labels: LabelIn[] = []
@@ -901,7 +907,7 @@ export function mapHtml(
   // 밝혀진 땅의 테두리 (0~1) — 축소는 여기까지만 (zoom.ts · 형: "문명처럼 유저가 보이는 구역을 기반으로 최대 축소")
   const sp = [...vis].map((id) => pos(id)).filter((p): p is readonly [number, number] => p !== undefined)
   const seenBox = sp.length === 0 ? '0,0,1,1' : [Math.min(...sp.map((p) => p[0])), Math.min(...sp.map((p) => p[1])), Math.max(...sp.map((p) => p[0])), Math.max(...sp.map((p) => p[1]))].map((v) => v.toFixed(3)).join(',')
-  return `<div class="map" data-seen="${seenBox}" data-region="${region}"${world ? ` data-world="${season}"` : ''} data-aspect="${W / H}" data-zmax="${RA.zmax}" style="${bg}aspect-ratio:${W} / ${H};--ns:${RA.nodeScale};--ls:${RA.labelScale}">${svg}<div class="clsh"></div>${fog?.words ?? ''}${nodes}${toks}${placeLabels(labels, byNode, W, H, RA.nodeScale, RA.labelScale)}</div>`
+  return `<div class="map" data-seen="${seenBox}" data-region="${region}"${world ? ` data-world="${season}"` : ''} data-aspect="${W / H}" data-zmax="${RA.zmax}" style="${bg}aspect-ratio:${W} / ${H};--ns:${RA.nodeScale};--ls:${RA.labelScale}">${svg}<div class="clsh"></div>${fog?.words ?? ''}${nodes}${toks}${placeLabels(labels, byNode, W, H, RA.nodeScale, RA.labelScale)}${arrowSvg}</div>`
 }
 
 /** 지도 위 우리 군대의 말 — 머무는 군대 하나에 하나 */
