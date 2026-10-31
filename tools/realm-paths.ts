@@ -6,6 +6,7 @@
  */
 import { decide, aiOrders, type Brain } from '../src/realm/ai.ts'
 import { regionNations, startRegion } from '../src/realm/data/regions/index.ts'
+import { perSeason } from '../src/realm/calendar.ts'
 import { advance } from '../src/realm/season.ts'
 import type { Realm, RegionId } from '../src/realm/types.ts'
 import { P } from '../src/tune/params.ts'
@@ -34,7 +35,7 @@ for (let g = 0; g < GAMES; g++) {
   const as = nations[g % nations.length]!
   let r: Realm = startRegion(REGION, g + 1, as)
   const seen = { pact: false, rp: false, ri: false, rr: false, chain: false }
-  for (let s = 0; s < SEASONS && !r.outcome; s++) {
+  for (let s = 0; s < SEASONS * perSeason(r) && !r.outcome; s++) {
     const res = advance(r, [...decide(r, as, BOT), ...aiOrders(r)])
     for (const l of res.report.lines) {
       if (l.kind === 'suzerain') {

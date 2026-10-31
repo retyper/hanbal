@@ -6,6 +6,7 @@
 import { P } from '../src/tune/params.ts'
 import { aiOrders, decide } from '../src/realm/ai.ts'
 import { regionNations, startRegion } from '../src/realm/data/regions/index.ts'
+import { perSeason } from '../src/realm/calendar.ts'
 import { advance } from '../src/realm/season.ts'
 import type { Realm } from '../src/realm/types.ts'
 const [exp, jit] = (process.env.SET ?? `${P.realm.tacSizeExp},${P.realm.tacJitter}`).split(',').map(Number)
@@ -13,7 +14,7 @@ const [exp, jit] = (process.env.SET ?? `${P.realm.tacSizeExp},${P.realm.tacJitte
 let big = 0, bigLost = 0, bigNotWin = 0
 for (const as of regionNations('byeonhan-mini')) for (let seed = 1; seed <= 20; seed++) {
   let r: Realm = startRegion('byeonhan-mini', seed, as)
-  for (let s = 0; s < 40 && !r.outcome; s++) {
+  for (let s = 0; s < 40 * perSeason(r) && !r.outcome; s++) {
     const res = advance(r, [...decide(r, as, 'planner'), ...aiOrders(r)])
     for (const l of res.report.lines) {
       if (l.kind !== 'battle' || l.start === undefined || l.rounds === undefined || l.rounds.length === 0) continue

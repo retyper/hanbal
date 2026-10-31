@@ -11,6 +11,7 @@
  */
 import { aiOrders, decide, type Brain } from '../src/realm/ai.ts'
 import { startRegion } from '../src/realm/data/regions/index.ts'
+import { perSeason } from '../src/realm/calendar.ts'
 import { earnedOf, spendCost } from '../src/realm/drill.ts'
 import { isRuler } from '../src/realm/heroes.ts'
 import { advance } from '../src/realm/season.ts'
@@ -48,13 +49,13 @@ function play(seed: number): Row {
   let r: Realm = startRegion(REGION, seed, AS)
   applyTier(r, TIER)
   let s = 0
-  for (; s < SEASONS && r.outcome === null; s++) r = advance(r, [...decide(r, AS, BOT), ...aiOrders(r)]).next
+  for (; s < SEASONS * perSeason(r) && r.outcome === null; s++) r = advance(r, [...decide(r, AS, BOT), ...aiOrders(r)]).next
   const ids = Object.keys(r.merit ?? {})
   const each = ids.map((id) => earnedOf(r, id)).sort((a, b) => b - a)
   const topId = ids.sort((a, b) => earnedOf(r, b) - earnedOf(r, a))[0]
   const ruler = Object.values(r.heroes).find((h) => isRuler(r, h.id) && h.faction === AS) ?? Object.values(r.heroes).find((h) => h.id === `${AS}-ruler`)
   return {
-    seed, seasons: s, end: r.outcome?.kind ?? '-', heroes: ids.length,
+    seed, seasons: Math.ceil(s / perSeason(r)), end: r.outcome?.kind ?? '-', heroes: ids.length,
     top: each[0] ?? 0, topName: topId !== undefined ? (r.heroes[topId]?.name ?? topId) : '-',
     ruler: ruler !== undefined ? earnedOf(r, ruler.id) : 0,
     sum: each.reduce((a, b) => a + b, 0), each,

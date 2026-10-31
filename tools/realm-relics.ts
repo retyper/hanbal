@@ -13,6 +13,7 @@
 import { aiOrders, decide, type Brain } from '../src/realm/ai.ts'
 import { RELICS } from '../src/realm/data/relics.ts'
 import { startRegion } from '../src/realm/data/regions/index.ts'
+import { perSeason, seasonIdx } from '../src/realm/calendar.ts'
 import { isRuler } from '../src/realm/heroes.ts'
 import { relicRealm } from '../src/realm/relics.ts'
 import { advance } from '../src/realm/season.ts'
@@ -50,12 +51,12 @@ function play(kit: string, seed: number): Out {
   let r: Realm = startRegion(REGION, seed, AS)
   applyTier(r, TIER)
   relicRealm(r, wearOf(r, kit))
-  for (let s = 0; s < SEASONS; s++) {
+  for (let s = 0; s < SEASONS * perSeason(r); s++) {
     const { next } = advance(r, [...decide(r, AS, BOT), ...aiOrders(r)])
     r = next
     if (r.outcome !== null) break
   }
-  return { win: r.outcome?.kind === 'win', lose: r.outcome?.kind === 'lose', at: r.season }
+  return { win: r.outcome?.kind === 'win', lose: r.outcome?.kind === 'lose', at: seasonIdx(r) }
 }
 
 const pct = (x: number): string => `${(x * 100).toFixed(1)}%`

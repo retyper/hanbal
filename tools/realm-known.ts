@@ -4,6 +4,7 @@
  */
 import { aiOrders } from '../src/realm/ai.ts'
 import { startRegion } from '../src/realm/data/regions/index.ts'
+import { perSeason } from '../src/realm/calendar.ts'
 import { advance } from '../src/realm/season.ts'
 import type { RegionId } from '../src/realm/types.ts'
 
@@ -18,10 +19,12 @@ let total = 0
 for (let g = 1; g <= GAMES; g++) {
   let r = startRegion(REGION, g, AS)
   total = Object.keys(r.factions).length - 1
-  for (let s = 0; s <= 40; s++) {
-    const i = AT.indexOf(s)
+  const per = perSeason(r)
+  for (let t = 0; t <= 40 * per; t++) {
+    const s = t / per
+    const i = Number.isInteger(s) ? AT.indexOf(s) : -1
     if (i >= 0) sum[i] = (sum[i] ?? 0) + (r.known?.[AS]?.length ?? total)
-    if (s < 40) r = advance(r, aiOrders(r)).next
+    if (t < 40 * per) r = advance(r, aiOrders(r)).next
   }
 }
 console.log(`${REGION} · ${AS} · ${GAMES}판 — 아는 나라 (모두 ${total})`)

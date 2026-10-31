@@ -8,6 +8,7 @@
 import { gzipSync } from 'node:zlib'
 import { aiOrders, decide } from '../src/realm/ai.ts'
 import { startRegion } from '../src/realm/data/regions/index.ts'
+import { perSeason } from '../src/realm/calendar.ts'
 import { advance } from '../src/realm/season.ts'
 import type { Order, Realm, RegionId } from '../src/realm/types.ts'
 
@@ -22,14 +23,15 @@ for (const [region, nation] of [['byeonhan-mini', 'guya'], ['yeongnam', 'saro'],
   const log: Order[][] = []
   let s = 0
   const at: string[] = []
-  for (; s < SEASONS && !r.outcome; s++) {
+  for (; s < SEASONS * perSeason(r) && !r.outcome; s++) {
     const orders = [...decide(r, r.player, 'planner'), ...aiOrders(r)]
     log.push(orders.filter((o) => (o as { faction?: string }).faction === r.player || true))
     r = advance(r, orders).next
-    if (s === 0 || s === 19 || s === 39 || s === SEASONS - 1) {
+    const sn = Math.floor((s + 1) / perSeason(r))
+    if ((s + 1) % perSeason(r) === 0 && (sn === 1 || sn === 20 || sn === 40 || sn === SEASONS)) {
       const j = JSON.stringify(r)
       const lj = JSON.stringify(log)
-      at.push(`${s + 1}계절: 판 ${kb(j.length)} (gzip ${kb(gzipSync(j).length)}) · 기록 ${kb(lj.length)} (gzip ${kb(gzipSync(lj).length)})`)
+      at.push(`${sn}계절: 판 ${kb(j.length)} (gzip ${kb(gzipSync(j).length)}) · 기록 ${kb(lj.length)} (gzip ${kb(gzipSync(lj).length)})`)
     }
   }
   console.log(`${region} — ${at.join(' | ')}`)
