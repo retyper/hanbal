@@ -23,6 +23,7 @@ import { SEORA_WORLD, seoraGeo } from './seorabeol-geo.ts'
 import { JUMONG_WORLD, jumongGeo } from './jumong-geo.ts'
 import { startCustoms } from '../../hooks.ts'
 import { fogStart } from '../../discovery.ts'
+import { watchBorders } from '../../scouts.ts'
 
 export const REGION_IDS: readonly RegionId[] = ['tutorial', 'mahan', 'jumong', 'seorabeol', 'byeonhan-mini', 'yeongnam', 'south', 'world']
 
@@ -45,6 +46,7 @@ export function startRegion(region: RegionId, seed: number, player: string, edit
   // 모든 판은 안개 속에서 연다 — 제 땅과 길로 맞닿은 곳만 (형 10-27 · discovery.fogStart)
   const r = openRegion(region, seed, player, edit)
   fogStart(r)
+  watchBorders(r) // 첫 턴부터 우리 고을 이웃의 군세가 범위로 보인다 (scouts.ts · FOCUS D)
   // 배우는 판은 계절 시계 그대로 — 차례(튜토리얼)가 계절 턴에 맞춰 짜여 있다
   return P.realm.monthClock >= 1 && region !== 'tutorial' ? monthClock(r) : r
 }

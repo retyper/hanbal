@@ -11,8 +11,8 @@ import { ageSeasons } from './calendar.ts'
 import { winChance, type UnitKind } from './battle.ts'
 import type { Realm } from './types.ts'
 
-/** 정보의 출처마다 흐림 s (§2-2). 척후는 0 — 제 눈으로 봤다. */
-export type Source = 'scout' | 'spy' | 'captive' | 'merchant'
+/** 정보의 출처마다 흐림 s (§2-2). 척후는 0 — 제 눈으로 봤다. 파수(watch)는 우리 고을 곁에서 턴마다 멀찍이 본 것 (scouts.ts) */
+export type Source = 'scout' | 'spy' | 'captive' | 'merchant' | 'watch'
 
 export function sourceBlur(src: Source): number {
   switch (src) {
@@ -20,6 +20,7 @@ export function sourceBlur(src: Source): number {
     case 'spy': return 0.1
     case 'captive': return 0.2
     case 'merchant': return 0.3
+    case 'watch': return P.realm.watchBlur
   }
 }
 

@@ -13,7 +13,7 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
-import { isSeasonEnd, monthly, seasonIdx } from './calendar.ts'
+import { ageSeasons, isSeasonEnd, monthly, seasonIdx } from './calendar.ts'
 import {
   allyFoe, bigTwo, canEscort, envoyOptions, favorOf, friendly, jointTargets, lentStep, nationPower, openAsks, pledgedNodes, powerRange, relationOf, tradeOffer,
 } from './diplomacy.ts'
@@ -30,6 +30,7 @@ import type { UnitKind } from './battle.ts'
 import { bowUpCost, plotAgents, plotCost, plotTargets } from './plots.ts'
 import { allianceWhy, borders, breakWhy, leaderOf, truceWhy } from './stance.ts'
 import { knows } from './discovery.ts'
+import { scoutCap } from './scouts.ts'
 import { BASE_MIX, mixOf } from './data/armymix.ts'
 import type { Army, EnvoyAsk, Hero, Order, PlotOp, Realm, Why } from './types.ts'
 
@@ -297,7 +298,8 @@ function plan(r: Realm, faction: string): Order[] {
     orders.push(o)
     p = next
   }
-  let scouted = false
+  const scouted = new Set<string>()
+  const scoutMax = scoutCap(r, faction)
   for (const a of idle()) {
     const ts = movesOf(p, faction, a).filter((t) => t.hostile && t.blocked === null && !spared(p, faction, t.to))
     if (ts.length === 0) continue
@@ -334,13 +336,7 @@ function plan(r: Realm, faction: string): Order[] {
         }
       }
     }
-    if (!scouted) {
-      const stale = ts.reduce((x, y) => (y.age > x.age ? y : x))
-      if (stale.age > R.aiCautiousAge) {
-        orders.push({ kind: 'scout', faction, node: stale.to, hero: null })
-        scouted = true
-      }
-    }
+    scoutStale(p, ts, scouted, scoutMax, faction, orders)
   }
   return orders
 }
@@ -701,12 +697,33 @@ function decideNow(r: Realm, faction: string, brain: Brain): Order[] {
   return [...talk, ...first, ...gs, ...ps, ...bw, ...hs, ...as, ...bs, ...lentMoves(r, faction), ...(!go ? [] : brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
 }
 
+/**
+ * 가장 오래 못 본 곳 하나에 정찰꾼을 — 나라의 정찰꾼 수(scouts.scoutCap: 고을 수에 따라 1·2·3)까지, 같은 곳은 한 번.
+ * 파수(scouts.watchBorders · 플레이어 자리의 봇)가 멀찍이 본 것은 정찰이 아니다 — 마지막으로 제 눈으로 본 때(경계를 본 때)로 센다.
+ */
+function scoutStale(r: Realm, ts: readonly Move[], went: Set<string>, max: number, faction: string, orders: Order[]): void {
+  if (went.size >= max) return
+  const left = ts.filter((t) => !went.has(t.to))
+  if (left.length === 0) return
+  const known = r.intel[faction] ?? {}
+  const looked = (t: Move): number => {
+    const k = known[t.to]
+    if (k?.force?.src !== 'watch') return t.age
+    return k.alert ? ageSeasons(r, k.alert.season) : Infinity
+  }
+  const stale = left.reduce((x, y) => (looked(y) > looked(x) ? y : x))
+  if (looked(stale) <= P.realm.aiCautiousAge) return
+  orders.push({ kind: 'scout', faction, node: stale.to, hero: null })
+  went.add(stale.to)
+}
+
 function moves(r: Realm, faction: string, brain: Brain): Order[] {
   const R = P.realm
   const orders: Order[] = []
   const armies = sorted(Object.values(r.armies)).filter((a) => a.faction === faction && a.march === null && a.lent === undefined) // 빌려준 군대는 lentMoves
   const waiting: Army[] = []
-  let scouted = false
+  const scouted = new Set<string>()
+  const scoutMax = scoutCap(r, faction)
   /** 이번 계절에 나눈 것까지 해 본 판 — 새 군대 이름이 겹치지 않게 */
   let p = r
 
@@ -824,13 +841,7 @@ function moves(r: Realm, faction: string, brain: Brain): Order[] {
       }
       // 칠 데가 안 보이면 탐욕도 한 곳은 들여다본다 — 성벽 뒤를 모르면 영영 못 친다
       if (!went) went = raid(a)
-      if (!went && brain === 'greedy' && !scouted) {
-        const stale = ts.reduce((x, y) => (y.age > x.age ? y : x))
-        if (stale.age > R.aiCautiousAge) {
-          orders.push({ kind: 'scout', faction, node: stale.to, hero: null })
-          scouted = true
-        }
-      }
+      if (!went && brain === 'greedy') scoutStale(p, ts, scouted, scoutMax, faction, orders)
       continue
     }
 
@@ -846,14 +857,7 @@ function moves(r: Realm, faction: string, brain: Brain): Order[] {
     }
     if (raid(a)) continue
     waiting.push(a)
-    if (!scouted) {
-      // 가장 오래 못 본 이웃 적 고을을 본다 — 한 계절에 척후 하나
-      const stale = ts.reduce((x, y) => (y.age > x.age ? y : x))
-      if (stale.age > R.aiCautiousAge) {
-        orders.push({ kind: 'scout', faction, node: stale.to, hero: null })
-        scouted = true
-      }
-    }
+    scoutStale(p, ts, scouted, scoutMax, faction, orders) // 가장 오래 못 본 이웃 적 고을을 본다
   }
   if (brain === 'cautious' && waiting.length >= 2) orders.push(...joint(r, faction, waiting))
   return orders
