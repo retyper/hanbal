@@ -1087,7 +1087,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /**
    * 쉬는 장수가 알아서 찾은 일 — 그림 한 줄: 얼굴 · 이름 → 일 아이콘 · 어디 · 무엇 (형 10-26: "재상이 맡긴다가 아니라 알아서 할 일을 찾아 한다 · 텍스트만 주지 말고 아이콘도 · 누가 어디에 뭘 하러 가는지")
    */
-  function chanJobHtml(id: string): string {
+  function chanJobHtml(id: string, tap = false): string {
     const o = chancellorOrders().find((x) => (x.kind === 'assign' || x.kind === 'lead') && x.hero === id)
     if (o === undefined || realm === null) return ''
     const p = plan()
@@ -1103,7 +1103,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       men = `<span class="jmen">${icon('unit-spear', 'jri')}${headcount(forceOf(p, a)).toLocaleString('ko-KR')}</span>`
     } else return ''
     const away = (o.kind === 'assign' ? o.node : p.armies[(o as { army: string }).army]?.at) !== far
-    return `<span class="jrow">${bust(h, 'jrf')}<b>${esc(h.name)}</b><i class="jarr">›</i>${icon(ic, 'jri')}<span class="jpl">${esc(place)}</span>${men}<small>${what}${away ? ' · 먼 길' : ''}</small></span>`
+    const inner = `${bust(h, 'jrf')}<b>${esc(h.name)}</b><i class="jarr">›</i>${icon(ic, 'jri')}<span class="jpl">${esc(place)}</span>${men}<small>${what}${away ? ' · 먼 길' : ''}</small>`
+    // 재상 띠에서는 탭하면 그 장수 화면 — 손수 부릴 수 있게 (형 10-31) · 장수 줄 안에서는 단추 속 단추가 되므로 글만
+    return tap ? `<button class="jrow tap" data-act="hero" data-id="${h.id}">${inner}</button>` : `<span class="jrow">${inner}</span>`
   }
   /** 쉬는 장수가 알아서 찾은 일 — 글 한 줄 (「안개골 마을 고을지기」 · 「갈대울 마을의 군사 120명」) */
   function chanJob(id: string): string | null {
@@ -1133,7 +1135,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (on) {
       const jobs = chancellorOrders().flatMap((o) => (o.kind === 'assign' || o.kind === 'lead' ? [o.hero] : []))
       h += jobs.length > 0
-        ? `<div class="jsl"><b>⚙ 이번 계절 알아서 갈 곳 · ${jobs.length}명</b>${jobs.map((id) => chanJobHtml(id)).join('')}</div>`
+        ? `<div class="jsl"><b>⚙ 이번 계절 알아서 갈 곳 · ${jobs.length}명</b>${jobs.map((id) => chanJobHtml(id, true)).join('')}</div>`
         : `<p class="mute">장수는 고을·군대를 알아서 맡는다. 원정·사신·공작은 내가 보낼 때만 간다. 고을을 맡은 장수도 보낼 수 있다.</p>`
     }
     return h + `</div>`

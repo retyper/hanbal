@@ -122,6 +122,7 @@ export const HERO_CSS = `
 .ap .hrow .jsd { display: block; font-size: 12.5px; font-weight: 700; color: #b8d89a; }
 /* 알아서 찾은 일 한 줄 — 얼굴 · 이름 › 일 아이콘 · 어디 · 군사 · 무엇 (형 10-26) */
 .ap .jrow { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; font-size: 13px; color: #e8d8b0; padding: 2px 0; }
+.ap .jrow.tap { padding: 4px 6px; width: 100%; text-align: left; background: rgba(200,160,80,.08); border: 1px solid rgba(200,160,80,.35); border-radius: 8px; font: inherit; font-size: 13px; color: #e8d8b0; cursor: pointer; margin-top: 4px; }
 .ap .jrow .jrf { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; object-position: top; border: 1.5px solid #c8a050; background: #1c2129; flex: none; }
 .ap .jrow b { color: #f6e6c0; font-weight: 800; }
 .ap .jrow .jarr { font-style: normal; color: #c8a050; font-weight: 900; }
