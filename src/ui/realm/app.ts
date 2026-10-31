@@ -1314,7 +1314,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
   /** 군대 말 꾹 누름 상자 — 우리·동맹은 장수·사람 수·병종·사기 · 적은 나라와 가는 곳만 (군세는 정찰로 안다) */
   function armyHoldHtml(r: Realm, a: Army, foe: boolean): string {
-    const go = a.march !== null ? `<p>${esc(josa(r.nodes[a.march.to]?.name ?? '', '으로', '로'))} 가는 중 · ${esc(arriveWhen(r.season, a.march.left))}</p>` : ''
+    const go = a.march !== null ? `<p>${esc(josa(r.nodes[a.march.to]?.name ?? '', '으로', '로'))} 가는 중 · ${esc(arriveWhen(r, a.march.left))}</p>` : ''
     if (foe) return `<div class="whh">${emblem(a.faction)}<b>${esc(r.factions[a.faction]?.name ?? '')}</b><small>적 군대</small></div>${go}<p class="whn">우리 군대를 고르고 누르면 치러 갑니다</p>`
     const hero = a.hero !== null ? r.heroes[a.hero] : undefined
     const rows = (Object.entries(a.mix) as [UnitKind, number][]).filter(([, n]) => n > 0).map(([k, n]) => `<span>${UNIT_NAME[k]}</span><b>${n}</b>`).join('')
