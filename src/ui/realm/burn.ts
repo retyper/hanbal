@@ -61,11 +61,11 @@ void main(){
       float n=fbm(vec2(x*11.+(w-.5)*2.2,cy*2.6-uT*2.8));
       float ridge=1.-abs(2.*n-1.);
       float col=fbm(vec2(x*6.-uSeed,uT*.6)); // 혀마다 키가 다르다
-      float topw=.55+.45*smoothstep(.2,1.,cy); // 윗변 쪽이 더 세다: 열은 위로 모인다
+      float topw=(.55+.45*smoothstep(.2,1.,cy))*smoothstep(.0,.14,cy); // 아랫변 끝은 옅게: 캔버스 밑에서 잘린 줄이 안 보이게 // 윗변 쪽이 더 세다: 열은 위로 모인다
       h=max(h,(ridge*1.45-.3-e*(2.4-col*1.2)-cool*.9)*(1.-smoothstep(.8,1.,e))*topw);
     }
     // 안쪽 창(초상)은 가리지 않는다
-    if(x>.086&&x<.914&&cy>.086&&cy<.914)h=0.;
+    if(x>.15&&x<.85&&cy>.15&&cy<.85)h=0.;
   }
   h-=(1.-uOn)*.9; // 깎기: 붙는 동안 문턱이 내려가며 번진다
   gl_FragColor=ramp(clamp(h,0.,1.));

@@ -1222,12 +1222,12 @@ export const UI_CSS = `
 .ap .axembers img { display: block; width: 100%; }
 @keyframes axember { 0% { opacity: 0; transform: none; } 12% { opacity: 1; } 75% { opacity: .85; } 100% { opacity: 0; transform: translate(var(--dx), -96vh) rotate(30deg); } }
 .ap .axstage { position: relative; z-index: 1; display: grid; justify-items: center; gap: 6px; }
-.ap .axcard { position: relative; width: min(74vw, 400px, 48vh); aspect-ratio: 1;
+.ap .axcard { position: relative; width: min(84vw, 440px, 52vh); aspect-ratio: 1;
   animation: axpop .55s cubic-bezier(.2, 1.4, .4, 1) .15s both, axshake .5s linear calc(var(--tf) - 550ms), axboom .6s cubic-bezier(.2, 1.6, .4, 1) var(--tf); }
 @keyframes axpop { from { opacity: 0; transform: translateY(14%) scale(.85); } to { opacity: 1; transform: none; } }
 @keyframes axshake { 0%, 100% { transform: none; } 20% { transform: translate(-4px, 2px) rotate(-1deg); } 40% { transform: translate(5px, -2px) rotate(1deg); } 60% { transform: translate(-6px, 1px); } 80% { transform: translate(4px, -1px); } }
 @keyframes axboom { 0% { transform: none; } 30% { transform: scale(1.08); } 100% { transform: none; } }
-.ap .axwin { position: absolute; left: 8%; right: 8%; top: 8%; bottom: 8%; overflow: hidden; background: #1c2129; }
+.ap .axwin { position: absolute; left: 15%; right: 15%; top: 15%; bottom: 15%; overflow: hidden; background: #1c2129; }
 .ap .axframe { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
 .ap .axold, .ap .axnew { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; }
 .ap .axold { animation: axgone .25s linear var(--tf) forwards; }
