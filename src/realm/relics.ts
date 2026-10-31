@@ -12,6 +12,7 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
+import { monthly, type ClockKind } from './calendar.ts'
 import { RELIC, RELICS, poolOf, type RelicDef, type RelicFx, type RelicNumKind, type RelicTier } from './data/relics.ts'
 import type { GrowStat, Hero, Realm, RegionId } from './types.ts'
 
@@ -379,9 +380,12 @@ export function unequip(store: RelicStore, hero: string, slot: number): RelicSto
 const STAT_WORD: Readonly<Record<GrowStat, string>> = { mu: '무예', tong: '통솔', ryak: '지략', chi: '내정', deok: '매력' }
 const pct = (v: number): string => `${Math.round(v * 100)}%`
 const times = (v: number): string => String(Math.round(v * 100) / 100)
+/** 유물은 다음 판에 들고 간다 — 새 판은 달 시계라 판 밖 화면(무덤·단련터)의 글은 달로 (marchCut 은 턴을 깎는다) */
+const NEW_CLOCK: ClockKind = { clock: 'month' }
+const turnOf = (c: ClockKind): string => (monthly(c) ? '달' : '계절')
 
 /** 효과 한 조각의 글 — 판이 하는 그대로 */
-export function fxText(f: RelicFx, lv = 1): string {
+export function fxText(f: RelicFx, lv = 1, c: ClockKind = NEW_CLOCK): string {
   const v = relicValue(f, lv)
   switch (f.kind) {
     case 'stat': return `${STAT_WORD[f.stat]} +${v}`
@@ -397,7 +401,7 @@ export function fxText(f: RelicFx, lv = 1): string {
     case 'chant': return `비기가 진중 굿이 된다 · 굿의 사기 +${pct(v - 1)}`
     case 'steady': return `함께 싸우는 군사가 지는 합에서 사기가 ${pct(1 - v)} 덜 꺾인다`
     case 'escape': return `싸움에서 잡히거나 쓰러질 때 다친 몸으로 빠져나온다 (판마다 ${v}번)`
-    case 'march': return `이끄는 군대가 길에서 ${v}계절 덜 걸린다 (적어도 한 계절)`
+    case 'march': return `이끄는 군대가 길에서 ${v}${turnOf(c)} 덜 걸린다 (적어도 한 ${turnOf(c)})`
     case 'feast': return `호궤에 드는 곡식 −${pct(1 - v)}`
     case 'woo': return `회유할 때 마음의 벽이 ${times(v)}배 빨리 깎인다`
     case 'blessing': return `나라 제사 효과 ${times(v)}배 (무당 핏줄과 같다)`
@@ -408,8 +412,8 @@ export function fxText(f: RelicFx, lv = 1): string {
 }
 
 /** 유물 하나의 효과 한 줄 */
-export function relicLine(id: string, lv = 1): string {
+export function relicLine(id: string, lv = 1, c: ClockKind = NEW_CLOCK): string {
   const d = RELIC[id]
   if (d === undefined) return ''
-  return d.fx.map((f) => fxText(f, lv)).join(' · ')
+  return d.fx.map((f) => fxText(f, lv, c)).join(' · ')
 }
