@@ -179,15 +179,24 @@ function strikes(r: Realm, faction: string): { orders: Order[]; armies: Set<stri
     const s = a.strike
     if (a.faction !== faction || s === undefined || s.at !== r.season) continue
     armies.add(a.id)
-    const ed = r.edges[s.edge]
-    if (a.march !== null || resting(r, a) || beatenResting(r, faction) || ed === undefined || otherEnd(ed, a.at) !== s.node) continue
-    if (r.nodes[s.node]?.owner !== r.player || spared(r, faction, s.node)) continue
-    const t = movesOf(r, faction, a).find((m) => m.edge.id === s.edge)
-    if (t === undefined || t.blocked !== null || !t.hostile) continue
-    if (s.est !== undefined && t.win !== null && midOf(t.win) < s.est - P.realm.aiStrikeCallOff) continue
-    orders.push({ kind: 'march', army: a.id, edge: s.edge, ambush: s.ambush })
+    if (strikeLive(r, a)) orders.push({ kind: 'march', army: a.id, edge: s.edge, ambush: s.ambush })
   }
   return { orders, armies }
+}
+
+/**
+ * 이 채비가 이번 턴에 정말 치나 — strikes 가 거두는 까닭을 지금 판으로 다 본다 (칠 턴이 아님 · 길 위 · 추스름 · 연패 · 길이 막힘 ·
+ * 고을 주인이 바뀜 · 화친/유예 · 승률이 aiStrikeCallOff 넘게 떨어짐). 지도의 「⚔ 다음 달 친다」와 봇의 경계 강화도 이것만 본다
+ */
+export function strikeLive(r: Realm, a: Army): boolean {
+  const s = a.strike
+  if (s === undefined || s.at !== r.season || a.march !== null || resting(r, a) || beatenResting(r, a.faction)) return false
+  const ed = r.edges[s.edge]
+  if (ed === undefined || otherEnd(ed, a.at) !== s.node) return false
+  if (r.nodes[s.node]?.owner !== r.player || spared(r, a.faction, s.node)) return false
+  const t = movesOf(r, a.faction, a).find((m) => m.edge.id === s.edge)
+  if (t === undefined || t.blocked !== null || !t.hostile) return false
+  return s.est === undefined || t.win === null || midOf(t.win) >= s.est - P.realm.aiStrikeCallOff
 }
 
 /** 2장 동부여의 추격 — 이 계절에 대소의 군대가 주몽을 쫓고 있나 */
@@ -441,7 +450,7 @@ function guards(r: Realm, faction: string): Order[] {
   let spare = stockOf(r, faction).grain - P.realm.aiDraftReserve * upkeepOf(r, faction, true)
   const out: Order[] = []
   // 제 고을을 이번 턴에 치려고 모인 채비(Army.strike)도 — 지도에 「다음 달 친다」로 보이는 것 (달 시계 · 플레이어 자리의 봇만 받는다)
-  const poisedAt = Object.values(r.armies).flatMap((a) => (a.faction !== faction && a.strike?.at === r.season && r.nodes[a.strike.node]?.owner === faction ? [a.strike.node] : []))
+  const poisedAt = Object.values(r.armies).flatMap((a) => (a.faction !== faction && a.strike !== undefined && r.nodes[a.strike.node]?.owner === faction && strikeLive(r, a) ? [a.strike.node] : []))
   const nodes = [...new Set([...seenMarches(r, faction).map((a) => a.march!.to), ...poisedAt])].sort()
   for (const node of nodes) {
     if (spare < guardCost().grain || !canGuard(r, faction, node)) continue

@@ -7,7 +7,8 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { aiMarchTurn, aiOrders, marchPhase } from '../../src/realm/ai.ts'
+import { aiMarchTurn, aiOrders, decide, marchPhase, strikeLive } from '../../src/realm/ai.ts'
+import { stockOf } from '../../src/realm/economy.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { startRegion } from '../../src/realm/data/regions/index.ts'
 import { PEOPLE_SCALE as S } from '../../src/realm/migrate.ts'
@@ -140,6 +141,42 @@ describe('칠 채비 — 모였다가 다음 달에 친다', () => {
     const o2 = aiOrders(s1.next)
     assert.equal(marchOf(o2, 'a-atk'), undefined)
     assert.equal(poiseOf(o2, 'a-atk'), undefined)
+  })
+  it('거둘 채비는 지도에 「다음 달 친다」로 안 뜬다 · 봇도 경계를 안 올린다 (strikeLive)', () => {
+    const { r, to } = scene(true)
+    const s1 = advance(r, aiOrders(r))
+    const live = s1.next
+    const a = live.armies['a-atk']!
+    assert.ok(strikeLive(live, a), '그대로면 친다')
+    const shows = (n: Realm): boolean => mapHtml(n, n.player, '', [], '').includes('class="strk')
+    const strikes = (n: Realm): boolean => marchOf(aiOrders(n), 'a-atk') !== undefined
+    assert.ok(shows(live) && strikes(live))
+    // 거두는 까닭마다 — 지도·AI·봇의 경계가 같은 답을 낸다
+    const cases: Array<[string, (n: Realm) => void]> = [
+      ['싸운 뒤 추스름', (n) => { n.armies['a-atk']!.rest = n.season }],
+      ['연패로 쉬는 나라', (n) => { n.factions[ATK]!.beaten = { n: 3, until: n.season } }],
+      ['고을 주인이 바뀜', (n) => { n.nodes[to]!.owner = ATK }],
+      ['길 위에 있다', (n) => { const x = n.armies['a-atk']!; x.march = { from: x.at, to, edge: x.strike!.edge, left: 2, ambush: false } }],
+      ['칠 턴이 아님', (n) => { const x = n.armies['a-atk']!; x.strike = { ...x.strike!, at: n.season + 1 } }],
+    ]
+    for (const [why, set] of cases) {
+      const n = structuredClone(live)
+      set(n)
+      assert.equal(strikeLive(n, n.armies['a-atk']!), false, why)
+      assert.equal(shows(n), false, `${why}: 지도`)
+      assert.equal(strikes(n), false, `${why}: AI`)
+    }
+    // 봇(플레이어 자리)의 경계 강화 — 칠 채비면 올리고, 거둘 채비면 안 올린다
+    const me = live.player
+    const bot = (n: Realm): boolean => {
+      const b = structuredClone(n)
+      stockOf(b, me).grain = 100000
+      return decide(b, me, 'cautious').some((o) => o.kind === 'guard' && o.faction === me && o.node === to)
+    }
+    assert.ok(bot(live), '칠 채비면 봇이 경계를 올린다')
+    const tired = structuredClone(live)
+    tired.armies['a-atk']!.rest = tired.season
+    assert.equal(bot(tired), false, '거둘 채비면 안 올린다')
   })
   it('같은 판 같은 명령이면 같은 채비 (A1)', () => {
     const run = (): string => {
