@@ -78,6 +78,7 @@ import { APPROACH_DOES, APPROACH_NAME, B0_KEY, HARD_LINE, WAR_CSS, b0On, openWar
 import { MEM_CSS, memRowHtml } from './memrow.ts'
 import { attachZoom } from './zoom.ts'
 import { holdBox, longPress } from './holdbox.ts'
+import { burn } from './burn.ts'
 import { TUT_CSS, TUT_STEPS, createSpot, tutAt, tutBandHtml, tutStyle } from './tutorial.ts'
 import { LOG_CSS, LOG_GROUPS, lineNations, logGroup, logNations, logRows, logbookHtml, type LogFilter } from './logbook.ts'
 import { markTutorialOver, markWon, nationWon, tutorialOver, unlockedBoards, tierOpen, tierWon } from './unlock.ts'
@@ -1246,15 +1247,18 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 각성 불꽃 칸 — 우리 장수만. 빈 칸 셋이 이길 때마다 켜진다 · 각성하면 「각성」 띠 (형 10-31) */
   function flamesHtml(x: Hero): string {
     if (realm === null || x.faction !== me() || isRuler(realm, x.id)) return ''
-    if (x.ascended === true) return `<span class="flms on" title="각성했습니다">각성</span>`
+    if (x.ascended === true) return `<span class="flms on" title="각성했습니다"><img class="flmw" src="${ART}fx/awaken/word.png" alt="각성"></span>`
     const n = x.flames ?? 0
-    const cells = Array.from({ length: P.realm.ascendWins }, (_, i) => `<img class="flm${i < n ? ' lit' : ''}" src="${ART}fx/fire.png" alt="">`).join('')
+    // 빈 칸·붙은 칸은 청동 불꽃 자리 그림 둘 (형 11-01: "빈 엠블럼 칸이랑 채워진 불 이미지 다 새로" · 제미나이 Argon)
+    const cells = Array.from({ length: P.realm.ascendWins }, (_, i) => `<img class="flm${i < n ? ' lit' : ''}" src="${ART}fx/awaken/slot-${i < n ? 'on' : 'off'}.png" alt="">`).join('')
     return `<span class="flms" title="${P.realm.ascendWins}번 내리 이기면 각성합니다. 지면 꺼집니다">${cells}</span>`
   }
   /**
    * 각성 연출 — 우리 장수가 내리 이겨 각성하면 그 자리에서 크게 (형 10-31: 3연승 직후 각성 연출 · 메모리 WWE 오버액션).
    * 각성 초상이 아래에서 솟고 빛이 터진다. 누르거나 몇 초 뒤 걷힌다. 여럿이면 첫째만 크게, 나머지는 보고에
    */
+  // 개발판에서만 — 각성 연출을 바로 띄워 본다 (콘솔 · tools/phone-shot PRE): __ascend('장수 id')
+  if (import.meta.env.DEV) (window as unknown as Record<string, unknown>)['__ascend'] = (id: string): void => { if (realm !== null) ascendShow(realm, [{ kind: 'ascend', hero: id }]) }
   function ascendShow(r: Realm, lines: readonly ReportLine[]): void {
     const l = lines.find((x): x is Extract<ReportLine, { kind: 'ascend' }> => x.kind === 'ascend' && r.heroes[x.hero]?.faction === me())
     if (l === undefined) return
@@ -1272,19 +1276,26 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const embers = Array.from({ length: n }, (_, i) => `<i style="--x:${(jit(i, 1) * 100).toFixed(1)}%;--s:${(0.5 + jit(i, 2)).toFixed(2)};--d:${(2.2 + jit(i, 3) * 2).toFixed(2)}s;--dl:${(1.4 + jit(i, 4) * 2.4).toFixed(2)}s;--dx:${((jit(i, 5) - 0.5) * 60).toFixed(0)}px"><img src="${FX}ember.png" alt=""></i>`).join('')
     // 불혀 여섯 — 초상 양옆에서 치솟는다 (가운데는 초상이 가린다)
     const tongues = [-34, -22, -10, 64, 76, 88].map((l, i) => `<img class="axtg" src="${FX}flame.png" style="--i:${i};--l:${l}%" alt="">`).join('')
-    const slots = [0, 1, 2].map((i) => `<i class="axslot" style="--i:${i}"><img src="${ART}fx/fire.png" alt=""></i>`).join('')
+    // 빈 청동 자리 위에 지금 타는 불 (burn.ts 셰이더) · WebGL 이 없으면 그린 불(slot-on · 불혀 그림)로 (.nogl)
+    const slots = [0, 1, 2].map((i) => `<i class="axslot" style="--i:${i}"><img class="off" src="${FX}slot-off.png" alt=""><img class="on" src="${FX}slot-on.png" alt=""><canvas class="axsb"></canvas></i>`).join('')
     const stats = (['mu', 'tong', 'ryak', 'chi', 'deok'] as const).map((s, i) => `<span class="axst" style="--i:${i}">${STAT_NAME[s]} <s>${h[s] - P.realm.ascendBonus}</s><b>${h[s]}</b></span>`).join('')
     const el = document.createElement('div')
     el.className = 'ascfx'
     el.style.cssText = `--t0:${P.realm.ascendSlotMs}ms;--tg:${P.realm.ascendSlotGapMs}ms;--tf:${P.realm.ascendFlashMs}ms`
     el.innerHTML = `<div class="axveil"></div><img class="axwall" src="${FX}wall.png" alt=""><div class="axembers">${embers}</div>`
-      + `<div class="axstage"><div class="axcard">${tongues}${before}${after}</div><div class="axslots">${slots}</div>`
+      + `<div class="axstage"><div class="axcard">${tongues}<div class="axwin">${before}${after}</div><img class="axframe" src="${FX}frame0.png" alt=""><canvas class="axburn" style="--bt:${P.realm.ascendFrameTop};--bs:${P.realm.ascendFrameSide}"></canvas></div><div class="axslots">${slots}</div>`
       + `<div class="axtitle"><img class="axbrush" src="${FX}brush.png" alt=""><img class="axword" src="${FX}word.png" alt="각성"></div>`
       + `<b class="axname">${esc(h.name)}</b><div class="axstats">${stats}</div></div><div class="axflash"></div>`
     const timers: number[] = []
     const gone = (): void => { timers.forEach((t) => window.clearTimeout(t)); if (!el.isConnected) return; el.classList.add('out'); window.setTimeout(() => el.remove(), 350) }
     el.addEventListener('click', gone)
     root.appendChild(el)
+    // 불을 피운다 — 세 자리는 북소리마다 하나씩, 액자는 번쩍 0.6초 앞부터 번진다. 하나라도 못 피우면 그린 불로 (.nogl)
+    const lit = [
+      ...[...el.querySelectorAll<HTMLCanvasElement>('.axsb')].map((cv, i) => burn(cv, { mode: 'socket', at: P.realm.ascendSlotMs + i * P.realm.ascendSlotGapMs, ramp: P.realm.ascendIgniteMs, seed: i * 3.1 })),
+      ...[...el.querySelectorAll<HTMLCanvasElement>('.axburn')].map((cv) => burn(cv, { mode: 'frame', at: P.realm.ascendFlashMs - P.realm.ascendFrameLeadMs, ramp: P.realm.ascendFrameLeadMs, top: P.realm.ascendFrameTop, side: P.realm.ascendFrameSide, seed: 7.3 })),
+    ]
+    if (lit.some((x) => !x)) el.classList.add('nogl')
     // 소리도 장면을 따라 — 불꽃 세 칸은 북 셋 · 번쩍에 큰 타격 · 붓글씨에 나팔 · 그다음 장수의 한마디
     const at = (ms: number, f: () => void): void => { timers.push(window.setTimeout(() => { if (el.isConnected && document.visibilityState === 'visible') f() }, ms)) }
     for (const i of [0, 1, 2]) at(P.realm.ascendSlotMs + i * P.realm.ascendSlotGapMs, () => ding(snd('tap_drum'), 0.55 + i * 0.15))

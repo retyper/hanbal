@@ -1212,7 +1212,8 @@ export const UI_CSS = `
 .ap .ascfx.out { opacity: 0; }
 .ap .axveil { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 62%, #2a0e04f2 0, #07080cf7 72%); animation: axfade .4s ease-out both; }
 @keyframes axfade { from { opacity: 0; } to { opacity: 1; } }
-.ap .axwall { position: absolute; left: 50%; bottom: 0; width: max(100%, 720px); transform: translateX(-50%); opacity: 0; pointer-events: none;
+.ap .axwall { -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
+.ap .axwall { position: absolute; left: 50%; bottom: -3%; width: max(100%, 720px); transform: translateX(-50%); opacity: 0; pointer-events: none;
   animation: axwall .9s ease-out calc(var(--tf) - 600ms) forwards, axwallb 1.4s ease-in-out calc(var(--tf) + 300ms) infinite alternate; }
 @keyframes axwall { from { opacity: 0; } to { opacity: .95; } }
 @keyframes axwallb { from { opacity: .95; } to { opacity: .68; } }
@@ -1221,12 +1222,14 @@ export const UI_CSS = `
 .ap .axembers img { display: block; width: 100%; }
 @keyframes axember { 0% { opacity: 0; transform: none; } 12% { opacity: 1; } 75% { opacity: .85; } 100% { opacity: 0; transform: translate(var(--dx), -96vh) rotate(30deg); } }
 .ap .axstage { position: relative; z-index: 1; display: grid; justify-items: center; gap: 6px; }
-.ap .axcard { position: relative; width: min(64vw, 360px, 44vh); aspect-ratio: 1;
+.ap .axcard { position: relative; width: min(74vw, 400px, 48vh); aspect-ratio: 1;
   animation: axpop .55s cubic-bezier(.2, 1.4, .4, 1) .15s both, axshake .5s linear calc(var(--tf) - 550ms), axboom .6s cubic-bezier(.2, 1.6, .4, 1) var(--tf); }
 @keyframes axpop { from { opacity: 0; transform: translateY(14%) scale(.85); } to { opacity: 1; transform: none; } }
 @keyframes axshake { 0%, 100% { transform: none; } 20% { transform: translate(-4px, 2px) rotate(-1deg); } 40% { transform: translate(5px, -2px) rotate(1deg); } 60% { transform: translate(-6px, 1px); } 80% { transform: translate(4px, -1px); } }
 @keyframes axboom { 0% { transform: none; } 30% { transform: scale(1.08); } 100% { transform: none; } }
-.ap .axold, .ap .axnew { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 14px; box-shadow: 0 0 0 2px #ffd76a, 0 0 36px #ff9a3a88; }
+.ap .axwin { position: absolute; left: 8%; right: 8%; top: 8%; bottom: 8%; overflow: hidden; background: #1c2129; }
+.ap .axframe { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+.ap .axold, .ap .axnew { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; }
 .ap .axold { animation: axgone .25s linear var(--tf) forwards; }
 @keyframes axgone { to { opacity: 0; } }
 .ap .axnew { opacity: 0; animation: axfade .25s ease-out var(--tf) forwards; }
@@ -1234,11 +1237,16 @@ export const UI_CSS = `
   animation: axtg .5s ease-out calc(var(--tf) - 600ms + var(--i) * 40ms) forwards, axlick .9s ease-in-out calc(var(--tf) + var(--i) * 70ms) infinite alternate; }
 @keyframes axtg { from { opacity: 0; transform: scaleY(.2); } to { opacity: 1; transform: translateY(-10%) scaleY(1.9); } }
 @keyframes axlick { from { transform: translateY(-10%) scaleY(1.9); } to { transform: translateY(-4%) scaleY(1.55) skewX(4deg); } }
-.ap .axslots { display: flex; gap: 14px; margin-top: 4px; }
-.ap .axslot { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 2px solid #ffd76a44; background: #1a0d06; animation: axring .4s ease-out calc(var(--t0) + var(--i) * var(--tg)) forwards; }
-@keyframes axring { to { border-color: #ffd76a; } }
-.ap .axslot img { width: 30px; opacity: 0; transform: scale(.2); animation: axign .35s cubic-bezier(.2, 1.8, .4, 1) calc(var(--t0) + var(--i) * var(--tg)) forwards; }
+.ap .axslots { display: flex; gap: 12px; margin-top: 2px; }
+.ap .axslot { position: relative; width: 32px; height: 44px; }
+.ap .axslot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.ap .axslot img.on { opacity: 0; transform: scale(.4); animation: axign .35s cubic-bezier(.2, 1.8, .4, 1) calc(var(--t0) + var(--i) * var(--tg)) forwards; }
 @keyframes axign { to { opacity: 1; transform: none; } }
+/* 타는 불 (burn.ts 셰이더) — 빈 청동 자리·민 액자 위에 캔버스. WebGL 이 없으면(.nogl) 그린 불 그림과 불혀 그림으로 */
+.ap .axsb { position: absolute; left: -30%; bottom: 0; width: 160%; height: 160%; pointer-events: none; }
+.ap .axburn { position: absolute; left: calc(var(--bs) * -100%); width: calc((1 + 2 * var(--bs)) * 100%); top: calc(var(--bt) * -100%); height: calc((1 + var(--bt)) * 100%); z-index: 2; pointer-events: none; }
+.ap .ascfx:not(.nogl) .axtg, .ap .ascfx:not(.nogl) .axslot img.on { display: none; }
+.ap .ascfx.nogl canvas { display: none; }
 .ap .axtitle { position: relative; width: min(84vw, 420px); aspect-ratio: 900 / 503; margin-top: -26px; pointer-events: none; }
 .ap .axbrush, .ap .axword { position: absolute; inset: 0; width: 100%; height: 100%; }
 .ap .axbrush { opacity: .85; transform: scaleX(0); transform-origin: 8% 50%; animation: axswipe .35s cubic-bezier(.3, .9, .3, 1) calc(var(--tf) + 150ms) forwards; }
@@ -1257,9 +1265,9 @@ export const UI_CSS = `
 /* 각성 불꽃 칸 — 초상 아래 가운데 · 꺼진 칸은 잿빛 */
 .ap .hpic { position: relative; }
 .ap .flms { position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); display: flex; gap: 2px; padding: 2px 6px; border-radius: 999px; background: #140f0ad9; border: 1px solid #6a5030; }
-.ap .flms .flm { width: 22px; height: 22px; object-fit: contain; filter: grayscale(1) brightness(.45); opacity: .7; }
-.ap .flms .flm.lit { filter: none; opacity: 1; }
-.ap .flms.on { color: #ffd76a; font-weight: 900; letter-spacing: .15em; font-size: 13px; border-color: #ffd76a; box-shadow: 0 0 10px #ffb84a88; }
+.ap .flms .flm { width: 16px; height: 22px; object-fit: contain; }
+.ap .flms .flm.lit { transform: scale(1.08); }
+.ap .flms.on { padding: 1px 8px; border-color: #ffd76a; box-shadow: 0 0 10px #ffb84a88; } .ap .flms .flmw { height: 20px; width: auto; display: block; }
 /* 혼인 고르기 — 친밀 하트 (아끼는 사이 붉게 · 정략은 잿빛) */
 .ap .wcand .wtie { display: block; font-size: 12px; color: #e8b0a0; letter-spacing: .02em; } .ap .wcand .wtie.love { color: #ff8a8a; font-weight: 700; } .ap .wcand .wtie.cold { color: #9a9a9a; }
 /* 쉴 때 다이어트 (형 10-31: "안 건드리면 아주 최소화한 것만" · ZAXIS-1031 2단계) — 아무것도 안 고르고 멀리 볼 때는 관계 칩 · 특산 칸 ·
