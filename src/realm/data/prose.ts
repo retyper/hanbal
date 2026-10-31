@@ -397,6 +397,23 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (a?.faction !== viewer) return null
       return `${josa(nameArmy(line.army), '은', '는')} 군량이 떨어졌다. 배를 곯아 ${line.lost}명이 흩어지고 사기가 꺾였다.`
     }
+    case 'scatter': {
+      // 진 군대가 흩어졌다 (season.fallBack · FOCUS C) — 우리 군대거나, 우리가 이긴 싸움의 적 군대만
+      const ours = line.faction === viewer
+      if (!ours && line.by !== viewer) return null
+      const army = nameArmy(line.army)
+      const hero = line.hero !== undefined ? (after.heroes[line.hero]?.name ?? '?') : null
+      if (!line.wiped) return `${josa(army, '이', '가')} 지고 물러나는 길에 ${line.lost}명이 달아났다.`
+      if (!line.cut) return `${josa(army, '은', '는')} 지고 남은 ${line.lost}명마저 흩어졌다.`
+      const fate = hero === null ? ''
+        : line.fate === 'captive' ? (ours ? ` ${josa(hero, '이', '가')} ${fname(line.by)}에 사로잡혔다.` : ` 이끌던 ${josa(hero, '을', '를')} 사로잡았다.`)
+          : ` ${josa(hero, '은', '는')} 다친 몸으로 빠져나왔다.`
+      return `${josa(army, '은', '는')} 물러날 길이 끊겨 ${line.lost}명이 모두 흩어졌다.${fate}`
+    }
+    case 'beaten':
+      // 연달아 진 나라가 숨을 고른다 (rout.ts) — 언제까지 안 쳐들어오는지 숫자로 (보드게임처럼 예측할 수 있게)
+      return line.faction === viewer ? null
+        : `소문. ${josa(fname(line.faction), '이', '가')} 잇단 싸움에 지고 군사를 거두었다. ${turnsLabel(after, Math.max(1, line.until - after.season + 1))} 동안 새로 쳐들어오지 않는다.`
     case 'arrive': {
       const a = after.armies[line.army] ?? before.armies[line.army]
       if (a?.faction !== viewer) return null

@@ -93,6 +93,13 @@ export interface Faction {
    * exileSeasons 안에 도읍을 되찾으면 사라지고, 못 되찾거나 고을을 다 잃으면 진다 (season.stepExile)
    */
   exile?: { since: number; seat: string }
+  /**
+   * 연패 (달 시계 · FOCUS C) — 잇달아 진 싸움 수 n. beatenStreak 에 닿으면 until 턴까지 AI 가 새 출정을 쉰다 (rout.ts).
+   * 옛 판·플레이어 나라에는 없다
+   */
+  beaten?: { n: number; until?: number }
+  /** 싸움에서 잃은 사람 장부 (달 시계 · AI 징병 상한에서 뺀다 · 계절마다 warDeadHeal 몫씩 아문다 · rout.ts). 옛 판에는 없다 */
+  warDead?: number
 }
 
 /** 나라 사이 관계 (FLOW §4) — 판은 중립에서 시작한다. 화친은 `until` 계절에 끝난다 */
@@ -1057,6 +1064,17 @@ export type ReportLine =
   | { readonly kind: 'blocked'; readonly army: string; readonly edge: string; readonly why: 'winterPass' | 'summerFord'; readonly lost?: number }
   /** 군량이 떨어졌다 — 사기가 꺾이고 lost 명이 빠졌다 */
   | { readonly kind: 'hungry'; readonly army: string; readonly lost: number }
+  /**
+   * 진 군대가 흩어졌다 (달 시계 · FOCUS C) — 싸움 뒤 lost 명이 달아났다. wiped 면 군대가 다 흩어졌다:
+   * cut 이면 물러날 곳이 끊겨 섬멸됐다(아니면 남은 사람이 너무 적었다). by = 이긴 나라. 섬멸된 군대를 이끈 장수가 있었으면 hero 와 그 운명
+   * (captive 면 by 에게 사로잡힘 · wounded 면 다쳐서 빠져나옴)
+   */
+  | {
+      readonly kind: 'scatter'; readonly faction: string; readonly army: string; readonly node: string; readonly lost: number
+      readonly wiped: boolean; readonly cut: boolean; readonly by: string; readonly hero?: string; readonly fate?: 'captive' | 'wounded'
+    }
+  /** 연달아 진 나라가 군사를 거두고 숨을 고른다 — until 턴까지 새 출정이 없다 (달 시계 · rout.ts) */
+  | { readonly kind: 'beaten'; readonly faction: string; readonly until: number }
   | { readonly kind: 'arrive'; readonly army: string; readonly node: string }
   | { readonly kind: 'split'; readonly army: string; readonly id: string }
   | { readonly kind: 'merge'; readonly army: string; readonly into: string }
