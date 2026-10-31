@@ -37,7 +37,7 @@ export function holdBox(parent: HTMLElement, linger: () => number): HoldBox {
 
 export interface LongPress {
   /** 꾹 누름이 방금 떴다 — 이어지는 click 하나를 삼킨다 (한 번 물으면 풀린다) */
-  swallow(): boolean
+  swallow(target: EventTarget | null): boolean
 }
 
 /** 터치로 꾹 누르면 onHold(대상, x, y) — 움직이면(끌기·당기기) 곧바로 접는다. 마우스는 대지 않는다 */
@@ -77,5 +77,6 @@ export function longPress(
   area.addEventListener('pointerup', end)
   area.addEventListener('pointercancel', end)
   area.addEventListener('contextmenu', (ev) => { if (pick(ev.target as HTMLElement) !== null) ev.preventDefault() })
-  return { swallow() { const e = eat; eat = false; return e } }
+  // 판 밖을 누른 손은 삼키지 않는다 — 꾹 누름 뒤 click 이 안 온 폰에서 다음 「다음 달」·탭 누름이 먹혔다 (검토 11-01)
+  return { swallow(target) { const e = eat && target instanceof Node && area.contains(target); eat = false; return e } }
 }

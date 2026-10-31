@@ -7,7 +7,7 @@
  * 루프·타이머가 없다 — 누르면 다시 그린다 (절대 규칙 4). 글은 FLOW §6: 짧게, AI 말투 금지.
  */
 import { faceFile, noteAscended } from './face.ts'
-import { aiOrders } from '../../realm/ai.ts'
+import { aiOrders, strikeLive } from '../../realm/ai.ts'
 import { headcount, strength, type Equip, type UnitKind } from '../../realm/battle.ts'
 import { bustOf, CUSTOM_ICON, FACTION_ART, GOOD_ICON, SEASON_ICON, SOL_ANIM2, SOL_ANIM_AR, UNIT_ICON, flagIcon, kidBust, nodeIcon, noteGrowing, noteKids } from '../../realm/data/art.ts'
 import { AWAKEN_ART } from '../../realm/data/awaken-art.ts'
@@ -702,6 +702,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let heroOrders: Order[] = []
   /** 「다음 계절」 전에 한 번 물어본 계절 — 쉬는 장수·안 보낸 정찰이 있으면 그 판으로 데려가고, 한 번 더 누르면 넘긴다 (형 10-23) */
   let nudgedAt = -1
+  /** 붙잡은 바로 그 턴 — 「그냥 넘긴다」 띠는 그 턴에만 (검토 11-01: 계절 내내 떠서 장수 판을 열면 달이 넘어갔다) */
+  let nudgedTurn = -1
   /** 군막 — 이번 계절 「다음 계절」 앞에서 전략 회의를 연 계절 (councilDue) */
   let councilAt = -1
   /** 이번 계절 전략 회의를 마친 군대(나눠 떠난 무리도) — 「다음 계절」에서 같은 회의를 또 열지 않는다 (형 10-29: "전략회의 한번 하고 다음 계절 넘어갈 때 똑같은 전략회의 또 발생") */
@@ -1173,7 +1175,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   /** 그 판 맨 위 — 왜 데려왔는지 한 줄 · 그냥 넘기기 */
   function nudgeHtml(r: Realm, kind: 'heroes' | 'scout'): string {
-    if (nudgedAt !== seasonIdx(r)) return ''
+    if (nudgedTurn !== r.season) return ''
     const idle = kind === 'heroes' ? waitingHeroes(plan()) : []
     const msg = kind === 'heroes'
       ? (idle.length === 0 ? '' : realm !== null && autoIdle(realm) ? `직접 부리는 장수 ${idle.length}명이 쉰다: 누르면 그 장수에게 일을 준다` : `쉬는 장수 ${idle.length}명: 누르면 그 장수에게 일을 준다`)
@@ -1366,7 +1368,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (!monthly(r)) return ''
     const out: string[] = []
     const vis = visibleNodes(r, me())
-    if (Object.values(r.armies).some((a) => a.faction !== me() && a.march === null && a.strike?.at === r.season && r.nodes[a.strike.node]?.owner === me() && vis.has(a.at))) out.push('<i class="nxp foe">⚔</i>')
+    if (Object.values(r.armies).some((a) => a.faction !== me() && strikeLive(r, a) && r.nodes[a.strike!.node]?.owner === me() && vis.has(a.at))) out.push('<i class="nxp foe">⚔</i>')
     if (Object.values(r.armies).some((a) => a.faction === me() && a.march !== null && a.march.left <= 1)) out.push(`<i class="nxp">${icon('unit-spear')}</i>`)
     if ((r.builds ?? []).some((b) => b.faction === me() && b.done <= r.season)) out.push(`<i class="nxp">${icon('settle-palisade')}</i>`)
     if (isSeasonEnd(r)) out.push(`<i class="nxp">${icon(SEASON_ICON[seasonOf(r, r.season + 1)])}</i>`)
@@ -1388,7 +1390,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   /** 정찰꾼이 갈 수 있는 곳 — 우리 고을에서 scoutReach 칸 안의 본 땅 (scouts.scoutTargets · 사람과 AI 가 같은 셈) */
   function scoutable(r: Realm): string[] {
-    return scoutTargets(r, me())
+    // 아직 소개 안 된 나라의 고을은 빼고 (검토 11-01 · 지도에도 안 보인다 · discovery.met)
+    return scoutTargets(r, me()).filter((id) => { const o = r.nodes[id]?.owner ?? null; return o === null || met(r, me(), o) })
   }
 
   /** 정찰꾼을 그곳으로 (보내면 고정도 된다 · 10-24 「정찰 기본 고정」) · 이미 갔으면 거둔다 · 다 나갔으면 먼저 보낸 정찰꾼을 돌린다 */
@@ -6065,7 +6068,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   // 전체 화면 — 처음 손이 닿는 그 순간에 (형 10-23: "게임 시작하자마자 되어야 하는 거 아님?").
   // 브라우저는 손짓 없이는 못 켜게 막는다 — 첫 화면·불러오는 화면을 포함해 어디든 처음 누르면 켠다 (손을 뗄 때가 브라우저가 허락하는 때)
   root.addEventListener('click', (ev) => {
-    if (tokPress.swallow()) return // 꾹 눌러 설명 창을 띄운 손 — 고르기가 아니다
+    if (tokPress.swallow(ev.target)) return // 꾹 눌러 설명 창을 띄운 손 — 고르기가 아니다
     // 길 보기는 지도를 누르면 접힌다 — ✕ 를 찾지 않아도 (형 10-27)
     if (roadOpen && (ev.target as HTMLElement).closest('.mapwrap') !== null && !zoom.dragged()) { roadOpen = false; morph($('.roadkey'), roadKeyHtml()) }
     const t = (ev.target as HTMLElement).closest<HTMLElement>('[data-act], .nd')
@@ -6379,6 +6382,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           const noScout = scouts.length === 0 && scoutable(realm).length > 0
           if (idle.length > 0 || noScout) {
             nudgedAt = seasonIdx(realm) // 달 시계면 계절마다 한 번 — 달마다 붙잡지 않는다
+            nudgedTurn = realm.season
             openSheet(idle.length > 0 ? { kind: 'heroes' } : { kind: 'scout' })
             return
           }
