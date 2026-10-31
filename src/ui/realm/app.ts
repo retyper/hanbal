@@ -36,7 +36,7 @@ import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } 
 import { kitLines } from '../../realm/kit.ts'
 import { alertRange, seenMix, visibleRange } from '../../realm/intel.ts'
 import { advance, concealOf, draftable, forceOf, neighbors, newArmyId, otherEnd, planned, rationCost, rationExtra, resting, seasonOf, seenMarches } from '../../realm/season.ts'
-import { ageSeasons, isSeasonStart, monthly, seasons } from '../../realm/calendar.ts'
+import { ageSeasons, isSeasonStart, monthly, seasonIdx, seasons } from '../../realm/calendar.ts'
 import { NIGHT_OPS, PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bowUpCost, escapeChance, plotAgents, plotCap, plotChance, plotCost, plotTargets, rescueGuard } from '../../realm/plots.ts'
 import { allianceWhy, leaderOf, tookRecently, truceWhy, winningAgainst } from '../../realm/stance.ts'
 // 등용 대사 — 장수마다 한 마디 (형 10-24: "장수마다 각각 등용 대사 개성 있고 다양하고 독특하게")
@@ -954,13 +954,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (h.woundedUntil !== undefined && h.woundedUntil > r.season) { const n = h.woundedUntil - r.season; return [`다쳐 누웠다 · ${turnsLabel(r, n)}`, `다쳐 쉬는 중 · ${turnsLabel(r, n)}`] }
     if (h.awayUntil !== undefined && h.awayUntil >= r.season) return ['자리를 비웠다', '길에 있는 중']
     const pl = plots.find((o): o is Extract<Order, { kind: 'plot' }> => o.kind === 'plot' && o.agent === id)
-    if (pl !== undefined) return NIGHT_OPS.has(pl.op) ? ['이번 계절 자객으로 간다', '자객으로 가는 중'] : [`이번 계절 ${PLOT_NAME[pl.op]} 공작을 하러 간다`, `${PLOT_NAME[pl.op]} 공작 가는 중`]
+    if (pl !== undefined) return NIGHT_OPS.has(pl.op) ? [`이번 ${turnWord(r)} 자객으로 간다`, '자객으로 가는 중'] : [`이번 ${turnWord(r)} ${PLOT_NAME[pl.op]} 공작을 하러 간다`, `${PLOT_NAME[pl.op]} 공작 가는 중`]
     const ev = Object.values(envoys).find((e) => e.hero === id)
-    if (ev !== undefined) { const to = r.factions[ev.to]?.name ?? ''; return [`이번 계절 ${to}에 사신으로 간다`, `${to}에 사신 가는 중`] }
+    if (ev !== undefined) { const to = r.factions[ev.to]?.name ?? ''; return [`이번 ${turnWord(r)} ${to}에 사신으로 간다`, `${to}에 사신 가는 중`] }
     for (const o of heroOrders) {
       if (o.kind === 'expedition' && o.hero === id) return ['이번 계절 원정을 떠난다', '원정 떠나는 중']
       if (o.kind === 'wed' && (o.a === id || o.b === id)) return ['이번 계절 혼인한다', '혼인하는 중']
-      if (o.kind === 'assign' && o.hero === id && o.node !== null) { const n = r.nodes[o.node]?.name ?? ''; return [`이번 계절 ${josa(n, '을', '를')} 맡는다`, `${n} 맡으러 가는 중`] }
+      if (o.kind === 'assign' && o.hero === id && o.node !== null) { const n = r.nodes[o.node]?.name ?? ''; return [`이번 ${turnWord(r)} ${josa(n, '을', '를')} 맡는다`, `${n} 맡으러 가는 중`] }
       if (o.kind === 'lead' && o.hero === id) return ['이번 계절 군대를 이끈다', '군대 이끌러 가는 중']
       if (o.kind === 'persuade' && o.by === id) return ['이번 계절 포로를 달랜다', '포로 달래는 중']
       if (o.kind === 'cohabit' && o.hero === id) return ['이번 계절 짝에게 가서 함께 지낸다', '짝에게 가는 중']
@@ -1163,7 +1163,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   /** 그 판 맨 위 — 왜 데려왔는지 한 줄 · 그냥 넘기기 */
   function nudgeHtml(r: Realm, kind: 'heroes' | 'scout'): string {
-    if (nudgedAt !== r.season) return ''
+    if (nudgedAt !== seasonIdx(r)) return ''
     const idle = kind === 'heroes' ? waitingHeroes(plan()) : []
     const msg = kind === 'heroes'
       ? (idle.length === 0 ? '' : realm !== null && autoIdle(realm) ? `직접 부리는 장수 ${idle.length}명이 쉰다: 누르면 그 장수에게 일을 준다` : `쉬는 장수 ${idle.length}명: 누르면 그 장수에게 일을 준다`)
@@ -1683,7 +1683,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const node = r.nodes[a.at]
     if (a.lent !== undefined || a.march !== null || node === undefined || node.owner === null || node.owner === me() || node.kind === 'sodo' || friendly(r, me(), node.owner)) return ''
     const on = armyOrders.some((o) => o.kind === 'assault' && o.army === a.id)
-    return `<div class="btns"><button class="btn ${on ? 'on' : 'pri'}" data-act="assault" data-army="${a.id}">${on ? `이번 계절 ${esc(josa(node.name, '을', '를'))} 친다 · 누르면 거둔다` : `⚔ 서 있는 ${esc(josa(node.name, '을', '를'))} 친다`}</button></div>`
+    return `<div class="btns"><button class="btn ${on ? 'on' : 'pri'}" data-act="assault" data-army="${a.id}">${on ? `이번 ${turnWord(r)} ${esc(josa(node.name, '을', '를'))} 친다 · 누르면 거둔다` : `⚔ 서 있는 ${esc(josa(node.name, '을', '를'))} 친다`}</button></div>`
   }
 
   function turnBackBtn(a: Army): string {
@@ -4049,7 +4049,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         : idle > 0 ? { tab: 'heroes', line: `쉬는 장수 ${idle}명: 장수에서 일을 맡긴다` }
           : armyIdle && r.season >= 1 ? { tab: 'army', line: '군대에서 갈 곳을 고른다. 빈땅·약한 이웃' }
             : null
-    return t === null ? '' : `<button class="todochip" data-act="tab" data-tab="${t.tab}">👉 이번 계절 · ${esc(t.line)}</button>`
+    return t === null ? '' : `<button class="todochip" data-act="tab" data-tab="${t.tab}">👉 이번 ${turnWord(r)} · ${esc(t.line)}</button>`
   }
 
   /**
@@ -6245,12 +6245,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (realm === null || (realm.outcome && !realm.endless)) return
         if (root.querySelector('.wr') !== null) return // 싸움 화면이 떠 있으면 다음 계절을 또 열지 않는다 · 겹쳐 눌러 싸움 판이 셋 쌓였다(10-29 시험)
         // 문명의 "명령을 기다리는 유닛" — 쉬는 장수가 있거나 정찰을 안 보냈으면 한 번은 그 판으로 데려간다. 한 번 더 누르면 그냥 넘긴다
-        if (nudgedAt !== realm.season && realm.region !== 'tutorial') {
+        if (nudgedAt !== seasonIdx(realm) && realm.region !== 'tutorial') {
           // 장수 탭이 아직 안 열렸으면 쉬는 장수로 붙잡지 않는다 · 재상이 맡을 장수로도 붙잡지 않는다 (직접 부리는 장수만)
           const idle = tabWait(realm, 'heroes') > 0 ? [] : waitingHeroes(plan())
           const noScout = scout === ''
           if (idle.length > 0 || noScout) {
-            nudgedAt = realm.season
+            nudgedAt = seasonIdx(realm) // 달 시계면 계절마다 한 번 — 달마다 붙잡지 않는다
             openSheet(idle.length > 0 ? { kind: 'heroes' } : { kind: 'scout' })
             return
           }
