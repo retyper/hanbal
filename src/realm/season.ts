@@ -106,14 +106,16 @@ export function resting(r: Realm, a: Army): boolean {
   return a.rest !== undefined && a.rest >= r.season
 }
 
-/** 달 시계 — 이번 턴에 싸운 군대(친 쪽 · 함께 친 쪽 · 그 고을에 남은 쪽)는 battleRest 달 동안 추스른다 */
-function restAfterBattles(r: Realm, lines: readonly ReportLine[]): void {
+/**
+ * 달 시계 — 이번 턴에 맞붙은 군대(이긴 쪽 · 진 쪽 · 지킨 쪽)는 battleRest 달 동안 추스른다.
+ * `fought` 는 fight·fieldBattles 가 적은 군대 id — 이웃으로 물러난 진 쪽도 들고, 싸움에 안 선 그 고을의 군대는 안 든다
+ */
+function restAfterBattles(r: Realm, fought: ReadonlySet<string>): void {
   const n = P.realm.battleRest
   if (!monthly(r) || n <= 0) return
-  for (const l of lines) {
-    if (l.kind !== 'battle') continue
-    const ids = new Set([l.attacker, ...l.allies])
-    for (const a of byId(Object.values(r.armies))) if (ids.has(a.id) || (a.march === null && a.at === l.node)) a.rest = r.season + n
+  for (const id of fought) {
+    const a = r.armies[id]
+    if (a !== undefined) a.rest = r.season + n
   }
 }
 
@@ -475,7 +477,11 @@ function splitArmy(r: Realm, o: Extract<Order, { kind: 'split' }>, lines: Report
   const part = takeMen(a, o.take)
   const hero = o.hero ? a.hero : null
   if (o.hero) a.hero = null
-  const b: Army = { id: o.id, faction: a.faction, hero, mix: {}, equip: a.equip, morale: a.morale, at: a.at, march: null }
+  // 떼어 낸 무리도 같은 군량·닿은 때·추스름을 진다 — 나눠서 battleRest 를 비켜 가지 못하게
+  const b: Army = {
+    id: o.id, faction: a.faction, hero, mix: {}, equip: a.equip, morale: a.morale, at: a.at, march: null,
+    ...(a.food !== undefined ? { food: a.food } : {}), ...(a.came !== undefined ? { came: a.came } : {}), ...(a.rest !== undefined ? { rest: a.rest } : {}),
+  }
   giveMen(b, part)
   r.armies[o.id] = b
   lines.push({ kind: 'split', army: a.id, id: o.id })
@@ -494,6 +500,8 @@ function mergeArmy(r: Realm, o: Extract<Order, { kind: 'merge' }>, lines: Report
   giveMen(b, { mix: a.mix, kit: kitOf(a) }) // 병종마다 무장째 더한다
   if (na + nb > 0) b.morale = (a.morale * na + b.morale * nb) / (na + nb)
   if (heroOf(r, b) === null) b.hero = a.hero
+  // 추스르는 군대를 합쳐도 추스름은 남는다 — 둘 가운데 늦게 풀리는 쪽 (battleRest)
+  if (a.rest !== undefined && (b.rest === undefined || a.rest > b.rest)) b.rest = a.rest
   delete r.armies[a.id]
   lines.push({ kind: 'merge', army: a.id, into: b.id })
   return true
@@ -1132,7 +1140,7 @@ export function fieldKey(edge: string, army: string): string {
  * 성·장정·기습이 없다(둘 다 걷는 중). 지는 쪽은 떠난 고을로 물러나고, 이긴 쪽은 가던 길을 그대로 간다.
  * 교착이면 둘 다 물러난다. 길마다 id 순서로, 한 길에 무리가 여럿이면 앞선 짝부터 (결정론). 싸움은 라운드로 (tactics.ts).
  */
-function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines: ReportLine[]): void {
+function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines: ReportLine[], rested: Set<string>): void {
   const season = seasonOf(r)
   const marching = byId(Object.values(r.armies).filter((a) => a.march !== null))
   for (const eid of [...new Set(marching.map((a) => a.march!.edge))].sort()) {
@@ -1157,6 +1165,7 @@ function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines
       const lead = atks[0]!
       const target = lead.march!.to
       const ed = r.edges[eid]!
+      for (const x of [...atks, ...defs]) rested.add(x.id) // 맞붙은 두 쪽만 추스른다 (restAfterBattles)
       const key = fieldKey(eid, lead.id)
       provoke(r, lead.faction, defs[0]!.faction, lines)
       const knewA = knewLead(r, lead.faction, defs)
@@ -1259,7 +1268,7 @@ function takeYielded(r: Realm, res: FightResult, win: 'a' | 'd' | null, winner: 
  *   산기슭: 먹히면 성을 반쯤 비켜 뒤를 치고 옆치기를 얻는다
  *   절벽: 먹히면 성을 넘는다. 실패하면 떨어져 잃는다
  */
-function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, SnipeZone>>, tactics: Readonly<Record<string, Tactic>>, lines: ReportLine[]): void {
+function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, SnipeZone>>, tactics: Readonly<Record<string, Tactic>>, lines: ReportLine[], rested: Set<string>): void {
   const R = P.realm
   const season = seasonOf(r)
   const a = atks[0]!
@@ -1278,6 +1287,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   }
   const defenders = armiesAt(r, node.id).filter((d) => !allied(r, a.faction, d.faction))
   const defFaction = node.owner !== null && !allied(r, a.faction, node.owner) ? node.owner : defenders[0]!.faction
+  for (const x of [...atks, ...defenders]) rested.add(x.id) // 친 쪽 · 지킨 쪽 — 이기든 지든 물러나든 추스른다 (restAfterBattles)
   const w = r.watch[node.id]!
   provoke(r, a.faction, defFaction, lines)
   rescueCapital(r, a.faction, node.id, defFaction, lines) // 도읍 에우기(이서) — 그 나라와 손잡은 나라들이 구하러 온다
@@ -1515,9 +1525,9 @@ function walkIn(r: Realm, live: readonly Army[], node: RNode, lines: ReportLine[
 
 /** 3·4·5 — 행군: 남은 계절을 줄이고, 닿은 군대를 무리(협공)로 처리한다. 싸움이 난 고을을 `fought` 에 적는다 */
 function resolveMarches(
-  r: Realm, snipes: Readonly<Record<string, SnipeZone>>, tactics: Readonly<Record<string, Tactic>>, lines: ReportLine[], fought: Set<string>,
+  r: Realm, snipes: Readonly<Record<string, SnipeZone>>, tactics: Readonly<Record<string, Tactic>>, lines: ReportLine[], fought: Set<string>, rested: Set<string>,
 ): void {
-  fieldBattles(r, tactics, lines) // 길 위에서 먼저 마주친다
+  fieldBattles(r, tactics, lines, rested) // 길 위에서 먼저 마주친다
   const marching = byId(Object.values(r.armies).filter((a) => a.march !== null))
   for (const a of marching) {
     a.march!.left -= 1
@@ -1553,7 +1563,7 @@ function resolveMarches(
     }
     if (contested(r, node.id, lead.faction)) {
       fought.add(node.id)
-      fight(r, live, snipes, tactics, lines)
+      fight(r, live, snipes, tactics, lines, rested)
       continue
     }
     walkIn(r, live, node, lines)
@@ -1724,8 +1734,9 @@ export function advance(
   const led: Record<string, Tactic> = { ...tactics }
   for (const o of orders) if (o.kind === 'command' && led[o.key] === undefined) led[o.key] = { cmds: o.cmds, ...(o.dusk !== undefined ? { dusk: o.dusk } : {}) }
   const menBefore = menByFaction(r)
-  resolveMarches(r, snipes, led, lines, fought) // 3 · 4 · 5
-  restAfterBattles(r, lines) // 5 끝 — 달 시계: 싸운 군대는 한동안 추스른다
+  const rested = new Set<string>()
+  resolveMarches(r, snipes, led, lines, fought, rested) // 3 · 4 · 5
+  restAfterBattles(r, rested) // 5 끝 — 달 시계: 싸운 군대는 한동안 추스른다
   noteWarDead(r, menBefore) // 5 끝 — 달 시계: 싸움에서 잃은 사람 장부 (AI 징병 상한 · rout.ts)
   noteBeaten(r, lines) // 5 끝 — 달 시계: 연달아 진 AI 나라는 새 출정을 쉰다 (rout.ts)
   stepParties(r, lines) // 5 — 개척단이 한 턴 간다 · 빈땅에 닿으면 마을 · 적 곁이면 흩어진다
