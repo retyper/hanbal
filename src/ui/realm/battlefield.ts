@@ -25,6 +25,7 @@ import { snd } from './sound.ts'
 import { artVoicePath, autoVoicePath, voiceGate, voicePath } from './voice.ts'
 import { WIN_BUZZ, winFxHtml } from './winfx.ts'
 import { morphInto } from './morph.ts'
+import { holdBox } from './holdbox.ts'
 import { cellColor, lookCells, lookNums, oneChance, pctText, signed, type LookCell } from './lookword.ts'
 
 const esc = (s: string): string =>
@@ -3787,25 +3788,10 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   }
 
   // ───────── 누르고 있는 동안만 뜨는 설명 창 · 지금 고를 무리 위의 보석 · 깃발 끌기 (형 10-28: 하스스톤처럼)
-  const hold = document.createElement('div')
-  hold.className = 'whold'
-  hold.hidden = true
-  ov.appendChild(hold)
-  let holdT = 0
-  /** 설명 창 — 손가락 위에 · 손을 떼면 warHoldLingerMs 뒤 걷힌다(hideHold) */
-  const showHold = (html: string, x: number, y: number): void => {
-    window.clearTimeout(holdT)
-    hold.innerHTML = html
-    hold.hidden = false
-    const w = hold.offsetWidth
-    const h = hold.offsetHeight
-    hold.style.left = `${Math.round(Math.max(8, Math.min(window.innerWidth - w - 8, x - w / 2)))}px`
-    hold.style.top = `${Math.round(y - h - 26 >= 8 ? y - h - 26 : Math.min(window.innerHeight - h - 8, y + 30))}px`
-  }
-  const hideHold = (ms: number = P.realm.warHoldLingerMs): void => {
-    window.clearTimeout(holdT)
-    holdT = window.setTimeout(() => { hold.hidden = true; hold.replaceChildren() }, ms)
-  }
+  /** 설명 창 — 손가락 위에 · 손을 떼면 warHoldLingerMs 뒤 걷힌다 (holdbox.ts · 지도와 같이 쓴다) */
+  const hold = holdBox(ov, () => P.realm.warHoldLingerMs)
+  const showHold = hold.show
+  const hideHold = hold.hide
   /** 무리의 설명 — 이름 · 사람 수 · 들 수 있는 깃발 */
   const groupHold = (g: Grp | 'lead'): string => {
     const tab = sc.querySelector<HTMLElement>(`.wgt[data-g="${g}"]`)
@@ -3908,7 +3894,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   ov.addEventListener('pointermove', (ev) => {
     if (drag === null || ev.pointerId !== drag.id) return
     if (!drag.on && Math.hypot(ev.clientX - drag.x0, ev.clientY - drag.y0) < P.realm.warDragSlop) return
-    if (!drag.on) { drag.on = true; hold.hidden = true; drag.card.classList.add('dragging') }
+    if (!drag.on) { drag.on = true; hold.close(); drag.card.classList.add('dragging') }
     const q = drag.card.getBoundingClientRect()
     drawDrag(q.left + q.width / 2, q.top + q.height / 2, ev.clientX, ev.clientY, overField(ev.clientX, ev.clientY))
   })
@@ -4103,7 +4089,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     if (Math.hypot(ev.clientX - press.x, ev.clientY - press.y) > P.realm.warTipSlop) { window.clearTimeout(press.timer); press = null }
   })
   const endPress = (): void => {
-    if (!hold.hidden && drag === null) hideHold()
+    if (hold.isOpen() && drag === null) hideHold()
     if (press === null) return
     window.clearTimeout(press.timer)
     if (press.held) hideTip(P.realm.warTipLingerMs)

@@ -74,6 +74,7 @@ import { BATTLE_CSS, battleCard } from './battlecard.ts'
 import { APPROACH_DOES, APPROACH_NAME, B0_KEY, HARD_LINE, WAR_CSS, b0On, openWar } from './battlefield.ts'
 import { MEM_CSS, memRowHtml } from './memrow.ts'
 import { attachZoom } from './zoom.ts'
+import { holdBox, longPress } from './holdbox.ts'
 import { TUT_CSS, TUT_STEPS, createSpot, tutAt, tutBandHtml, tutStyle } from './tutorial.ts'
 import { LOG_CSS, LOG_GROUPS, lineNations, logGroup, logNations, logRows, logbookHtml, type LogFilter } from './logbook.ts'
 import { markTutorialOver, markWon, nationWon, tutorialOver, unlockedBoards, tierOpen, tierWon } from './unlock.ts'
@@ -627,6 +628,19 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   let realm: Realm | null = null
+  // 군대 말을 꾹 누르면 그 군대의 설명 창 — 손을 떼면 걷힌다 (형 10-31 z축 · ZAXIS-1031 4단계 · 전장과 같은 상자 holdbox.ts)
+  const mapHold = holdBox(root, () => P.realm.mapHoldLingerMs)
+  const tokPress = longPress($('.mapwrap'), (t) => t.closest<HTMLElement>('.tok[data-army]'), {
+    holdMs: () => P.realm.mapHoldMs,
+    slop: () => P.realm.mapHoldSlop,
+    onHold: (el, x, y) => {
+      const a = realm?.armies[el.dataset['army'] ?? '']
+      if (realm === null || a === undefined) return false
+      mapHold.show(armyHoldHtml(realm, a, el.dataset['act'] === 'foetok'), x, y)
+      return true
+    },
+    onEnd: () => mapHold.hide(),
+  })
   let before: Realm | null = null
   /** 이번 계절에 막 알게 된 나라 — 지도에서 한 번 서서히 드러난다 (발견) */
   let fresh = new Set<string>()
@@ -1295,6 +1309,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function armyName(r: Realm, a: Army): string {
     const h = a.hero !== null ? r.heroes[a.hero] : undefined
     return h !== undefined && h.status === 'free' ? h.name : `별동대 ${headcount(forceOf(r, a))}`
+  }
+  /** 군대 말 꾹 누름 상자 — 우리·동맹은 장수·사람 수·병종·사기 · 적은 나라와 가는 곳만 (군세는 정찰로 안다) */
+  function armyHoldHtml(r: Realm, a: Army, foe: boolean): string {
+    const go = a.march !== null ? `<p>${esc(josa(r.nodes[a.march.to]?.name ?? '', '으로', '로'))} 가는 중 · ${esc(arriveWhen(r.season, a.march.left))}</p>` : ''
+    if (foe) return `<div class="whh">${emblem(a.faction)}<b>${esc(r.factions[a.faction]?.name ?? '')}</b><small>적 군대</small></div>${go}<p class="whn">우리 군대를 고르고 누르면 치러 갑니다</p>`
+    const hero = a.hero !== null ? r.heroes[a.hero] : undefined
+    const rows = (Object.entries(a.mix) as [UnitKind, number][]).filter(([, n]) => n > 0).map(([k, n]) => `<span>${UNIT_NAME[k]}</span><b>${n}</b>`).join('')
+    return `<div class="whh">${bust(hero)}<b>${esc(armyName(r, a))}</b><small>${headcount(forceOf(r, a))}명</small></div>`
+      + `<div class="wrwhy">${rows}<span>사기</span><b class="${a.morale < P.realm.mapMoraleLow ? 'dn' : 'up'}">${Math.round(a.morale * 100)}%</b></div>${go}`
   }
 
   /** 우리 고을 — 가장 최근에 차지한 것이 맨 위 (형 10-27: "내 마을 점점 많아지면 뭐가 뭔지 모르니까") · 처음부터 쥔 고을은 그 밑에 이름 순 */
@@ -5904,6 +5927,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   // 전체 화면 — 처음 손이 닿는 그 순간에 (형 10-23: "게임 시작하자마자 되어야 하는 거 아님?").
   // 브라우저는 손짓 없이는 못 켜게 막는다 — 첫 화면·불러오는 화면을 포함해 어디든 처음 누르면 켠다 (손을 뗄 때가 브라우저가 허락하는 때)
   root.addEventListener('click', (ev) => {
+    if (tokPress.swallow()) return // 꾹 눌러 설명 창을 띄운 손 — 고르기가 아니다
     // 길 보기는 지도를 누르면 접힌다 — ✕ 를 찾지 않아도 (형 10-27)
     if (roadOpen && (ev.target as HTMLElement).closest('.mapwrap') !== null && !zoom.dragged()) { roadOpen = false; morph($('.roadkey'), roadKeyHtml()) }
     const t = (ev.target as HTMLElement).closest<HTMLElement>('[data-act], .nd')
