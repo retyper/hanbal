@@ -998,8 +998,16 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 /* 이번 계절 할 일 — 다음 계절 단추 위 */
 .ap .todo { position: absolute; right: 14px; bottom: calc(var(--tabh) + 78px); z-index: 6; max-width: min(78vw, 360px); }
 .ap .todo:empty { display: none; }
-.ap .todochip { padding: 8px 14px; border-radius: 999px; border: 1px solid #e0b860; background: #2a1f10f0; color: #ffe6b0; font: inherit; font-size: 13.5px; font-weight: 700; text-align: left; cursor: pointer; box-shadow: 0 4px 14px #000a; animation: todoglow 1.6s ease-in-out infinite alternate; }
-@keyframes todoglow { to { box-shadow: 0 0 16px #ffd27a99; } }
+.ap .todochip { padding: 8px 14px; border-radius: 999px; border: 1px solid #e0b860; background: #2a1f10f0; color: #ffe6b0; font: inherit; font-size: 13.5px; font-weight: 700; text-align: left; cursor: pointer; box-shadow: 0 4px 14px #000a; }
+/* 금빛 숨 — 어두운 그림자(::before)가 옅어지며 금빛(::after)이 짙어진다. box-shadow 를 직접 움직이면 GPU 로 못 가,
+   이 칩 하나 때문에 지도의 모든 움직임이 매 프레임 메인 스레드에서 다시 그려졌다 (형 10-31 "멀리 보면 버벅" · tools/realm-zoomperf.ts) */
+@media (prefers-reduced-motion: no-preference) {
+  .ap .todochip { position: relative; box-shadow: none; }
+  .ap .todochip::before, .ap .todochip::after { content: ''; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none; animation: todoglow 1.6s ease-in-out infinite alternate; }
+  .ap .todochip::before { box-shadow: 0 4px 14px #000a; animation-direction: alternate-reverse; }
+  .ap .todochip::after { box-shadow: 0 0 16px #ffd27a99; opacity: 0; }
+}
+@keyframes todoglow { from { opacity: 0; } to { opacity: 1; } }
 /* 잠긴 탭 · 새로 열린 탭 */
 .ap .tabs button.locked { opacity: .38; cursor: default; }
 .ap .tabs button.fresh { animation: tabfresh 1s ease-in-out 4 alternate; } @keyframes tabfresh { to { box-shadow: 0 0 18px #ffd27a; background: #4a3a18; } }
