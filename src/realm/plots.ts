@@ -22,6 +22,7 @@
 import { roll } from '../core/rng.ts'
 import { addVow } from './drill.ts'
 import { P } from '../tune/params.ts'
+import { ageSeasons, isSeasonEnd, perSeason, seasons, type ClockKind } from './calendar.ts'
 import { addFavor, noteDeed, relationOf, worsen } from './diplomacy.ts'
 import { knows } from './discovery.ts'
 import { stockOf } from './economy.ts'
@@ -253,7 +254,7 @@ export function plotChance(
   }
   if (ON_NODE.has(op) && node !== undefined) {
     const k = (r.intel[faction] ?? {})[node]
-    const al = k?.alert ? alertRange(k.alert.v, r.season - k.alert.season) : null
+    const al = k?.alert ? alertRange(k.alert.v, ageSeasons(r, k.alert.season)) : null
     lo -= R.plotAlertWeight * (al === null ? R.alertMax : al[1])
     hi -= R.plotAlertWeight * (al === null ? 0 : al[0])
   }
@@ -410,16 +411,21 @@ function stepConfessions(r: Realm, lines: ReportLine[]): void {
   }
 }
 
+/** 한 턴에 벌일 수 있는 공작 수 — 한 계절에 plotsPerSeason · 달 시계면 달마다 그 셋째 몫(올림) */
+export function plotCap(c: ClockKind): number {
+  return Math.ceil(P.realm.plotsPerSeason / perSeason(c))
+}
+
 /** 2 — 공작. 값을 내고, 굴리고, 먹히면 효과. 들키면 경계가 오르고, 누가 했는지까지 드러나면 그 나라와 나빠진다 */
 export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
   const R = P.realm
-  stepConfessions(r, lines) // 지난 계절까지 붙잡힌 자객이 먼저 입을 연다
+  if (isSeasonEnd(r)) stepConfessions(r, lines) // 지난 계절까지 붙잡힌 자객이 먼저 입을 연다 (계절마다 한 번 · 달 시계면 계절 끝 달)
   const count = new Map<string, number>()
   const done = new Set<string>()
   const agents = new Set<string>()
   for (const o of orders) {
     if (o.kind !== 'plot') continue
-    if ((count.get(o.faction) ?? 0) >= R.plotsPerSeason) continue
+    if ((count.get(o.faction) ?? 0) >= plotCap(r)) continue
     const aim = NIGHT_OPS.has(o.op) ? (o.hero ?? '') : ON_NODE.has(o.op) ? (o.node ?? '') : o.op === 'sow' ? (o.other ?? '') : ''
     const dup = `${o.faction}:${o.op}:${o.target}:${aim}`
     if (done.has(dup) || !valid(r, o)) continue
@@ -478,7 +484,7 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
           result = 'kill'
           mystery = 'death'
         } else {
-          v.woundedUntil = r.season + R.plotWoundSeasons - 1
+          v.woundedUntil = r.season + seasons(r, R.plotWoundSeasons) - 1
           result = 'wound'
           mystery = 'wound'
         }
@@ -489,7 +495,7 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
         const ag = o.agent !== undefined ? r.heroes[o.agent] : undefined
         if (ag !== undefined && ag.status === 'free' && isRuler(r, ag.id)) {
           // 군주는 호위가 빼낸다 — 대신 다쳐 누워 다스림이 준다
-          ag.woundedUntil = r.season + P.realm.rulerAgentWound
+          ag.woundedUntil = r.season + seasons(r, P.realm.rulerAgentWound)
           agentFate = 'escaped'
         } else if (ag !== undefined && ag.status === 'free') {
           if (roll(r.seed, r.season, `${key}:escape`) < escapeChance(r, ag.id)) agentFate = 'escaped'
@@ -521,7 +527,7 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
           break
         }
         case 'bribe':
-          r.watch[o.node!]!.bribedUntil = r.season + R.plotBribeSeasons - 1
+          r.watch[o.node!]!.bribedUntil = r.season + seasons(r, R.plotBribeSeasons) - 1
           mystery = 'militia'
           break
         case 'burn': {
@@ -534,7 +540,7 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
           // 먹혔어도 들키면 첩자를 잃는다
           if (!caught) {
             const list = ((r.spies ??= {})[o.faction] ??= [])
-            list.push({ node: o.node!, until: r.season + R.plotSpySeasons - 1 })
+            list.push({ node: o.node!, until: r.season + seasons(r, R.plotSpySeasons) - 1 })
             spyLook(r, o.faction, o.node!)
           }
           break

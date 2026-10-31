@@ -15,6 +15,7 @@
  * 배우는 판은 셈하지 않는다.
  */
 import { P } from '../tune/params.ts'
+import { monthly, seasonIdx, seasonNo, seasonOf, seasons } from './calendar.ts'
 import { goodOf, hhOf, stockOf } from './economy.ts'
 import { relicBest } from './relics.ts'
 import type { Realm, ReportLine } from './types.ts'
@@ -42,7 +43,7 @@ export function seaGate(r: Realm, f: string): boolean {
  * 문턱은 판의 나라 수에 비례한다 (작은 판은 작게).
  */
 export function ironTrade(r: Realm, f: string): { partners: string[]; iron: number } {
-  const from = r.season - 3
+  const from = r.season - seasons(r, 4) + 1
   const rows = (r.ironBook?.[f] ?? []).filter((x) => x.s >= from && r.factions[x.w] !== undefined)
   return { partners: [...new Set(rows.map((x) => x.w))].sort(), iron: rows.reduce((s, x) => s + x.n, 0) }
 }
@@ -82,13 +83,16 @@ export function stepPaths(r: Realm, lines: ReportLine[]): void {
   const R = P.realm
   // 장부 — 네 계절이 지난 줄은 걷는다
   for (const [f, rows] of Object.entries(r.ironBook ?? {})) {
-    const keep = rows.filter((x) => x.s >= r.season - 3)
+    const keep = rows.filter((x) => x.s > r.season - seasons(r, 4))
     if (keep.length > 0) r.ironBook![f] = keep
     else delete r.ironBook![f]
   }
-  const yearSeason = ((r.season % 4) + 4) % 4
+  const yearSeason = seasonNo(r)
   const riteSeason = yearSeason === 0 || yearSeason === 2
-  const did = new Set(lines.filter((l): l is Extract<ReportLine, { kind: 'rite' }> => l.kind === 'rite').map((l) => l.faction))
+  // 이번 계절에 제사를 지낸 나라 — 달 시계면 석 달 가운데 어느 달이든 (economy.resolveRites 가 적은 계절 번호)
+  const did = monthly(r)
+    ? new Set(Object.keys(r.riteSeason ?? {}).filter((f) => r.riteSeason![f] === seasonIdx(r)))
+    : new Set(lines.filter((l): l is Extract<ReportLine, { kind: 'rite' }> => l.kind === 'rite').map((l) => l.faction))
   const chain = (r.riteChain ??= {})
   const near = (r.pathNear ??= {})
   for (const f of Object.keys(r.factions).sort()) {
@@ -125,7 +129,7 @@ export function stepPaths(r: Realm, lines: ReportLine[]): void {
 export function pathsEnd(r: Realm): { kind: 'win' | 'lose'; by: string; path: 'ironsea' | 'rite' } | null {
   if (r.region === 'tutorial') return null
   const me = r.player
-  const autumn = ((r.season % 4) + 4) % 4 === 2
+  const autumn = seasonOf(r) === 'autumn'
   const riteDone = (f: string): boolean => {
     const x = riteOf(r, f)
     return autumn && x.chain >= x.need && x.hh >= x.hhNeed

@@ -7,6 +7,7 @@
  */
 import { addFavor, pairKey } from './diplomacy.ts'
 import { P } from '../tune/params.ts'
+import { seasonIdx } from './calendar.ts'
 import type { Goal, Order, Realm, ReportLine } from './types.ts'
 
 /** 목표 하나가 어디까지 왔나 — 화면의 막대 (숫자 대신 감: have/need 는 막대 길이로만 쓴다) */
@@ -46,7 +47,7 @@ export function goalState(r: Realm, g: Goal): GoalState {
     }
     case 'survive': {
       // 이번 계절을 치르고 셈한다 — 지난 계절 수는 season + 1
-      const have = Math.min(g.seasons, r.season + 1)
+      const have = Math.min(g.seasons, seasonIdx(r, r.season + 1))
       return { done: have >= g.seasons, have, need: g.seasons }
     }
   }
@@ -57,14 +58,14 @@ export function scenarioOutcome(r: Realm): 'win' | 'lose' | null {
   const sc = r.scenario
   if (sc === undefined) return null
   if (sc.win.every((g) => goalState(r, g).done)) return 'win'
-  if (sc.limit !== undefined && r.season + 1 >= sc.limit) return 'lose'
+  if (sc.limit !== undefined && seasonIdx(r, r.season + 1) >= sc.limit) return 'lose'
   return null
 }
 
 /** 남은 계절 — 기한이 없으면 null */
 export function seasonsLeft(r: Realm): number | null {
   const lim = r.scenario?.limit
-  return lim === undefined ? null : Math.max(0, lim - r.season)
+  return lim === undefined ? null : Math.max(0, lim - seasonIdx(r))
 }
 
 /**
@@ -73,7 +74,7 @@ export function seasonsLeft(r: Realm): number | null {
  */
 export function contestOpen(r: Realm, faction: string): boolean {
   const sc = r.scenario
-  return sc?.id === 'jumong' && r.factions[faction]?.id === 'goguryeo' && !(sc.marks ?? []).includes('archery-done') && r.season < P.realm.contestSeasons
+  return sc?.id === 'jumong' && r.factions[faction]?.id === 'goguryeo' && !(sc.marks ?? []).includes('archery-done') && seasonIdx(r) < P.realm.contestSeasons
     && r.factions['biryuna'] !== undefined && r.outcome == null
 }
 export function resolveContests(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {

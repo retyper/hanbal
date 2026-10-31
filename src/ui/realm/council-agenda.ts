@@ -16,7 +16,8 @@
  */
 import { guardAdjust, guardWeights, type GuardWhy } from '../../realm/council.ts'
 import { headcount } from '../../realm/battle.ts'
-import { josa } from '../../realm/data/prose.ts'
+import { josa, turnsLabel } from '../../realm/data/prose.ts'
+import { seasons } from '../../realm/calendar.ts'
 import { relationOf } from '../../realm/diplomacy.ts'
 import { knows } from '../../realm/discovery.ts'
 import { movesOf, type ApproachMove, type Move } from '../../realm/estimate.ts'
@@ -230,7 +231,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
     if (h !== undefined) from.add(h.id)
     return h
   }
-  const base = { foe, here, there, seasons: `${m.seasons}계절`, all: `${ours.toLocaleString('ko-KR')}명` }
+  const base = { foe, here, there, seasons: turnsLabel(r, m.seasons), all: `${ours.toLocaleString('ko-KR')}명` }
   // 맞서는 이 — 겁쟁이·신중한 이가 아니면 누구든, 거친 이가 먼저 (한 사람만 말하면 회의가 아니다 · 형 10-29: "대사가 한 줄밖에 안 뜬다")
   const counter = (from: Set<string> = used): Hero | undefined => pickSeat((h) => h.mu + (bold(h) ? 5 : 0), (h) => !timid(h), from)
   const say = (h: Hero, move: SayMove, v: Readonly<Record<string, string>> = {}): string => sayOf(h, move, { ...base, ...v }, r.season)
@@ -241,12 +242,12 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
   const struck = foeAlliesWhenStruck(r, me, def)
   const lastB = lastBattleVs(r, { faction: me }, def)
   const near = allies.filter((f) => bordersUs(r, me, f))
-  const burned = struck !== null && struck >= 1 && lastB !== null && !lastB.on && lastB.res === 'lost' && r.season - lastB.s <= P.realm.cnMemAge
+  const burned = struck !== null && struck >= 1 && lastB !== null && !lastB.on && lastB.res === 'lost' && r.season - lastB.s <= seasons(r, P.realm.cnMemAge)
   if (allies.length > 0 && (near.length > 0 || allies.length >= 2 || burned)) {
     const ally = near[0] ?? allies[0]!
     const allyName = r.factions[ally]?.name ?? ''
     const v = { ...base, ally: allyName }
-    const why = burned ? `${whenSaid(r.season, lastB!.s)} ${josa(foe, '을', '를')} 칠 때 이웃 ${countWord(struck!)} 나라가 함께 막아 우리가 졌습니다.`
+    const why = burned ? `${whenSaid(r, lastB!.s)} ${josa(foe, '을', '를')} 칠 때 이웃 ${countWord(struck!)} 나라가 함께 막아 우리가 졌습니다.`
       : near.length > 0 ? `${josa(allyName, '은', '는')} 우리와 땅을 맞댄 나라입니다.`
         : `${josa(foe, '은', '는')} ${countWord(allies.length)} 나라와 손을 잡았습니다.`
     const mine = new Set<string>()
@@ -293,7 +294,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
       if (plotter !== undefined) {
         mine.add(plotter.id)
         const own = plotFact(r, me, def, plotter.id)
-        const why = rich ? `${whenSaid(r.season, seen!.s)} 척후가 보니 ${foe}의 곳간에 곡식이 그득하였습니다.${own !== nationPlot ? ` ${own}` : ''}` : own
+        const why = rich ? `${whenSaid(r, seen!.s)} 척후가 보니 ${foe}의 곳간에 곡식이 그득하였습니다.${own !== nationPlot ? ` ${own}` : ''}` : own
         const voices: Voice[] = [{ hero: plotter, label: '먼저 곳간에 불을', move: 'plotAdvise', line: schemeSay(plotter, 'plotAdvise', base, r.season, why), opt: { k: 'plot', op: 'burn', target: def, agent: burnHand.agent, grain: burnHand.grain } }]
         const hot = counter(mine)
         voices.push(hot !== undefined
@@ -479,7 +480,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
     if (steward !== undefined) {
       const mv: SayMove = m.walled ? 'rationWall' : 'rationFar'
       const tight = ctx.grain - ctx.rationCost(more) < ctx.rationCost(more)
-      const rv = { rnow: `${m.seasons + now}계절치`, rmore: `${m.seasons + more}계절치`, rcost: `${Math.max(0, ctx.rationCost(more) - ctx.rationCost(now)).toLocaleString('ko-KR')}` }
+      const rv = { rnow: `${turnsLabel(r, m.seasons + seasons(r, now))}치`, rmore: `${turnsLabel(r, m.seasons + seasons(r, more))}치`, rcost: `${Math.max(0, ctx.rationCost(more) - ctx.rationCost(now)).toLocaleString('ko-KR')}` }
       used.add(steward.id)
       const voices: Voice[] = [{ hero: steward, label: '군량을 더', move: mv, how: 'more', line: say(steward, mv, rv), opt: { k: 'ration', extra: more } }]
       // 맞서는 말 — 국고가 빠듯하면 「곳간을 아끼자」, 아니면 「이 길이면 지금 것으로 넉넉하다」(아직 말하지 않은 이 먼저)

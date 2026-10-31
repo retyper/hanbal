@@ -98,13 +98,14 @@ export function battleMerit(
  * 계절 끝 — 고을을 맡은 장수 · 군대를 이끈 장수, 그리고 이 계절 보고에서 먹힌 공작의 자객 · 받아들여진 청의 사신.
  * season.advance 가 계절마다 한 번 부른다 (보고 줄이 다 모인 뒤).
  */
-export function seasonMerit(r: Realm, lines: readonly ReportLine[]): void {
+export function seasonMerit(r: Realm, lines: readonly ReportLine[], end = true): void {
   if (r.region === 'tutorial') return
   const R = P.realm
   const me = r.player
   const leading = new Set(Object.values(r.armies).filter((a) => a.faction === me && a.hero !== null).map((a) => a.hero!))
+  // 맡은 고을 · 이끈 군대는 계절마다 한 번 (달 시계면 계절 끝 달에만 — end)
   for (const h of Object.values(r.heroes).sort((x, y) => (x.id < y.id ? -1 : 1))) {
-    if (h.faction !== me || h.status !== 'free') continue
+    if (!end || h.faction !== me || h.status !== 'free') continue
     if (h.post !== null) addMerit(r, h.id, R.drillMeritPost)
     if (leading.has(h.id)) addMerit(r, h.id, R.drillMeritLead)
   }

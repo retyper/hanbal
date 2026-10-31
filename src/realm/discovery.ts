@@ -98,7 +98,7 @@ export function discover(r: Realm, a: string, b: string, how: DiscoverHow, lines
 }
 
 /** 9 — 이번 계절에 생긴 일로 서로 알게 된다 (보고의 줄을 읽는다) */
-export function stepDiscovery(r: Realm, lines: ReportLine[]): void {
+export function stepDiscovery(r: Realm, lines: ReportLine[], drift = true): void {
   if (r.known === undefined) return
   const seen = lines.slice() // 이번 계절에 이미 적힌 줄만 — 새 발견 줄은 다시 읽지 않는다
   const both = (a: string, b: string, how: DiscoverHow): void => {
@@ -134,7 +134,8 @@ export function stepDiscovery(r: Realm, lines: ReportLine[]): void {
       for (const x of knownOf(r, g)) if (x !== f) discover(r, f, x, 'ally', lines)
     }
   }
-  // 소문 — 아는 나라가 아는, 아직 모르는 나라 하나
+  // 소문 — 아는 나라가 아는, 아직 모르는 나라 하나 (계절마다 한 번 · 달 시계면 계절 끝 달에만 — drift)
+  if (!drift) return
   for (const f of fs) {
     // 영남 판은 더 좁고 촘촘해 소문이 빨리 돈다 (2026-10-21 안개를 켜며 — 80판 시뮬로 맞춘 값, BALANCE)
     if (roll(r.seed, r.season, `disc:${f}`) >= (r.region === 'yeongnam' ? P.realm.discoverDriftYeongnam : P.realm.discoverDrift)) continue

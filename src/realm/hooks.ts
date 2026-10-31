@@ -7,7 +7,7 @@
  * 순수 함수 — 굴림이 없다 (A1). 셈은 hasCustom 하나로만 묻는다.
  */
 import { P } from '../tune/params.ts'
-import { seasonOf } from './calendar.ts'
+import { isSeasonEnd, monthly, seasonOf, seasons, yearOf } from './calendar.ts'
 import { customDef, hasCustom, holders, noteCustom, noteOnce, type CustomId } from './data/customs.ts'
 import { addGood, framesOf, goodOf, harvestModOf, isRiverside, sodoNeighbors, stockOf } from './economy.ts'
 import { addFavor, declareWar, makeTruce, relationOf } from './diplomacy.ts'
@@ -76,8 +76,8 @@ export function riseState(r: Realm, faction: string): { lost: number; from: numb
   if (st === undefined || st === 'done') return null
   const cap = r.factions[faction]?.capital
   if (cap === undefined || r.nodes[cap]?.owner === faction) return null
-  if (r.season - st > P.realm.riseWindow) return null
-  return { lost: st, from: st + P.realm.riseWait, until: st + P.realm.riseWindow }
+  if (r.season - st > seasons(r, P.realm.riseWindow)) return null
+  return { lost: st, from: st + seasons(r, P.realm.riseWait), until: st + seasons(r, P.realm.riseWindow) }
 }
 
 // ───────── 판을 열 때
@@ -105,6 +105,8 @@ export function stepCustoms(r: Realm, lines: ReportLine[]): void {
     if (mate !== undefined) noteOnce(r, lines, f, 'posang', { other: mate })
   }
   stepRise(r, lines)
+  // 계절마다 한 번 도는 것 — 달 시계면 그 계절의 마지막 달에만 (calendar.isSeasonEnd)
+  if (!isSeasonEnd(r)) return
   stepFuneral(r, lines)
   stepIronShip(r, lines)
   stepPasture(r, lines)
@@ -114,7 +116,7 @@ export function stepCustoms(r: Realm, lines: ReportLine[]): void {
 
 /** 갈대밭(땅)의 값 — 여름 큰물: 여름이 끝날 때 우리 강가 고을의 집이 landReedsFlood 만큼 준다 */
 function stepFlood(r: Realm, lines: ReportLine[]): void {
-  if (seasonOf(r.season) !== 'summer' || P.realm.landReedsFlood <= 0) return
+  if (seasonOf(r) !== 'summer' || P.realm.landReedsFlood <= 0) return
   for (const f of holders(r, 'landReeds')) {
     let lost = 0
     let at: string | undefined
@@ -152,11 +154,11 @@ function stepRise(r: Realm, lines: ReportLine[]): void {
       continue
     }
     const since = r.season - st
-    if (since > R.riseWindow) {
+    if (since > seasons(r, R.riseWindow)) {
       r.rise![f] = 'done' // 불씨가 꺼졌다
       continue
     }
-    if (since < R.riseWait || node.owner === null) continue
+    if (since < seasons(r, R.riseWait) || node.owner === null) continue
     const holder = node.owner
     const here = Object.values(r.armies).filter((a) => a.at === cap && a.march === null && a.faction === holder)
     const guard = here.reduce((s, a) => s + menIn(a), 0)
@@ -194,7 +196,7 @@ function stepRise(r: Realm, lines: ReportLine[]): void {
  */
 function stepFuneral(r: Realm, lines: ReportLine[]): void {
   const R = P.realm
-  if (seasonOf(r.season) !== 'autumn') return
+  if (seasonOf(r) !== 'autumn') return
   for (const f of holders(r, 'maljangrye')) {
     const s = stockOf(r, f)
     if (s.grain < R.maljangGrain) continue
@@ -211,7 +213,7 @@ function stepFuneral(r: Realm, lines: ReportLine[]): void {
 /** 쇠 실은 배(가락) — 가을에 포구가 있으면 soebaeKeep 을 넘는 쇠를 soebaeMax 까지 배에 실어 곡식으로 바꾼다 */
 function stepIronShip(r: Realm, lines: ReportLine[]): void {
   const R = P.realm
-  if (seasonOf(r.season) !== 'autumn') return
+  if (seasonOf(r) !== 'autumn') return
   for (const f of holders(r, 'soebae')) {
     const port = Object.values(r.nodes).filter((n) => n.owner === f && n.kind === 'port').sort((a, b) => (a.id < b.id ? -1 : 1))[0]
     if (port === undefined) continue
@@ -228,7 +230,7 @@ function stepIronShip(r: Realm, lines: ReportLine[]): void {
 /** 말 치는 들(땅) — 그 나라 고을과 맞닿은(또는 쥔) 목장 땅이 남의 것이 아니면, 겨울 빼고 계절마다 말이 들고 먹이 곡식이 든다 */
 function stepPasture(r: Realm, lines: ReportLine[]): void {
   const R = P.realm
-  if (seasonOf(r.season) === 'winter') return
+  if (seasonOf(r) === 'winter') return
   for (const f of holders(r, 'landPasture')) {
     const field = pastureFor(r, f)
     if (field === null) continue
@@ -255,8 +257,8 @@ export function pastureFor(r: Realm, faction: string): string | null {
 
 /** 소도 곁(땅) — 봄이 끝날 때까지 봄 제사를 안 지냈으면 그해 가을걷이가 준다 (소도와 맞닿은 고을이 있을 때만) */
 function stepSodoSkip(r: Realm, lines: ReportLine[]): void {
-  if (seasonOf(r.season) !== 'spring') return
-  const year = Math.floor(r.season / 4)
+  if (seasonOf(r) !== 'spring') return
+  const year = yearOf(r)
   for (const f of holders(r, 'landSodo')) {
     const near = sodoNeighbors(r, f)
     if (near.length === 0 || r.blessed?.[f] === year) continue
@@ -286,7 +288,7 @@ export function customMarks(r: Realm, nodeId: string, viewer: string): CustomMar
   const n = r.nodes[nodeId]
   if (n === undefined) return []
   const out: CustomMark[] = []
-  const season = seasonOf(r.season)
+  const season = seasonOf(r)
   // 다시 일어날 불씨 — 빼앗긴 도읍 (누구에게나)
   for (const f of holders(r, 'ireoseom')) {
     if (r.factions[f]?.capital !== nodeId) continue
@@ -314,9 +316,9 @@ export function customMarks(r: Realm, nodeId: string, viewer: string): CustomMar
       ? { id: 'landReeds', label: '큰물', tip: '여름: 물이 불어 강가 고을의 집이 조금 준다 · 갈대·나루 길 기습은 잘 숨는다', hot: true }
       : { id: 'landReeds', label: '갈대밭', tip: '갈대·나루 길로 가는 기습이 잘 숨는다' })
   }
-  if (has('landHigh') && (n.tags.includes('high') || n.kind === 'fort' || edges.some((e) => e.kind === 'pass'))) out.push({ id: 'landHigh', label: '고갯목', tip: '고갯길·높은 터로 쳐들어온 적은 첫 합에 사기가 깎인다 · 우리도 고갯길은 한 계절 더' })
+  if (has('landHigh') && (n.tags.includes('high') || n.kind === 'fort' || edges.some((e) => e.kind === 'pass'))) out.push({ id: 'landHigh', label: '고갯목', tip: `고갯길·높은 터로 쳐들어온 적은 첫 합에 사기가 깎인다 · 우리도 고갯길은 한 ${monthly(r) ? '달' : '계절'} 더` })
   if (has('landSodo') && sodoNeighbors(r, owner).includes(nodeId)) {
-    out.push(season === 'spring' && r.blessed?.[owner] !== Math.floor(r.season / 4)
+    out.push(season === 'spring' && r.blessed?.[owner] !== yearOf(r)
       ? { id: 'landSodo', label: '제사 때', tip: '봄 제사를 거르면 그해 가을걷이가 준다 · 제사는 반값', hot: true }
       : { id: 'landSodo', label: '소도 곁', tip: '소도 제사가 반값이다' })
   }

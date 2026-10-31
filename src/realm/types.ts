@@ -47,6 +47,9 @@ export interface RNode {
   uprooted?: number
   /** 이번 계절 이 고을에서 억지로 내보낸 집 — 한 계절 몫(migrateShare)을 여러 번 나눠 눌러도 넘지 않게 */
   movedOut?: { readonly season: number; readonly n: number }
+  /** 달 시계 — 이번 계절 이 고을에서 뽑은 군사 · 개척으로 떠나보낸 집 (한 계절 한도를 석 달에 나눠 써도 넘지 않게 · economy.spentThisSeason) */
+  drafted?: { readonly season: number; readonly n: number; readonly hh: number }
+  settledOut?: { readonly season: number; readonly n: number }
   /** 백성 배치로 이 고을로 오는 길 위의 집 — 계절마다 조금씩 닿는다 (economy.stepInbound). 없으면 없음 · 옛 저장에도 없다 */
   inbound?: { readonly faction: string; readonly n: number }
   /** 지금 주인이 이 고을을 쥔 계절 (차지·개척·다시 일어남) — 화면의 「최근에 차지한 고을 먼저」 (형 10-27). 판 처음부터 쥔 고을은 없음 */
@@ -81,6 +84,8 @@ export interface Faction {
   readonly ruler?: string
   /** 집 자동 분배를 껐다 (economy.stepMigration). 없으면 켜짐 — 옛 판도 켜짐. AI 는 늘 켜짐 */
   migrateOff?: boolean
+  /** 달 시계 — 이번 계절 백성 배치로 옮긴 집 (한 계절 한도 placeShare 장부 · economy.placeLimit) */
+  placed?: { readonly season: number; readonly n: number }
   /** 풍습 (data/customs.ts · CUSTOMS.md §7) — 없으면 제 결의 풍습 둘. 섞임으로 받거나 버리면 여기 적힌다 */
   customs?: CustomId[]
   /**
@@ -707,6 +712,8 @@ export interface Army {
   food?: number
   /** 이 고을에 닿은 계절 — 같은 계절에 적이 들이치면 원군으로 늦게 붙는다 (season.fight) */
   came?: number
+  /** 달 시계 — 싸운 군대가 추스르는 동안: 이 턴까지는 떠나지 못한다 (season.advance · P.realm.battleRest). 옛 판에는 없다 */
+  rest?: number
   /** 동맹에게 빌려준 군대 — `to` 나라의 `node` 고을로 가서 `until` 계절까지 머물며 지킨다 (diplomacy troops). 그동안 AI 가 마음대로 안 움직인다 */
   lent?: { readonly to: string; readonly node: string; readonly until: number; readonly arrived?: boolean }
   /** 먼 갈 곳 — 닿을 때까지 계절마다 한 걸음씩 저절로 간다 (goal.ts). 없으면 그냥 선다 */
@@ -800,7 +807,16 @@ export interface Realm {
   /** 나라의 전례 장부 — lessons[나라][상대 나라] (memory.ts · MEMORY §3-1). 옛 저장에는 없다 */
   lessons?: Record<string, Record<string, Lesson[]>>
   readonly seed: number
+  /** 턴 번호 — 옛 판은 계절을, 달 시계(`clock: 'month'`)면 달을 센다. 철·해·달은 calendar.ts 로만 셈한다 */
   season: number
+  /** 판의 시계 — 'month' 면 한 턴 = 한 달 (형 10-31 · calendar.ts). 옛 저장에는 없다 = 한 턴 한 계절 */
+  readonly clock?: 'month'
+  /** 길마다 지도 위 길이(km) — 달 시계에서 행군 달 수를 셈한다 (calendar · season.marchTurns). 판을 열 때 정해진다. 옛 저장·지도 자리 없는 판에는 없다 */
+  readonly roadKm?: Readonly<Record<string, number>>
+  /** 달 시계 — 이번 계절 앞 달들에 싸움이 난 고을 (계절 끝 달의 살림 셈이 같이 본다 · season.advance). 계절 끝에 지운다 */
+  foughtSeason?: string[]
+  /** 달 시계 — 나라마다 마지막으로 제사를 지낸 계절 번호 (calendar.seasonIdx · 제사는 계절에 한 번 · 큰 제사 사슬이 센다) */
+  riteSeason?: Record<string, number>
   readonly nodes: Record<string, RNode>
   readonly edges: Record<string, REdge>
   readonly factions: Record<string, Faction>

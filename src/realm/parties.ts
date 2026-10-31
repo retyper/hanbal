@@ -11,8 +11,8 @@
  */
 import { P } from '../tune/params.ts'
 import { goodOf, stockOf } from './economy.ts'
-import { blockedWhy, seasonOf } from './calendar.ts'
-import { marchSeasons } from './season.ts'
+import { blockedWhy } from './calendar.ts'
+import { marchTurns } from './season.ts'
 import type { Order, Party, Realm, ReportLine } from './types.ts'
 
 /** 고을에서 꾸릴 수 있는 개척단의 가구 수 — 안 되면 0 (도읍 · 곡식·나무·가구·개척단 수) */
@@ -48,17 +48,16 @@ function hostileHere(r: Realm, faction: string, node: string): boolean {
 
 /** `at` 에서 개척단이 이번 계절 갈 수 있는 곳 — 길 하나씩. found 면 닿자마자 마을이 선다 */
 export function partyMoves(r: Realm, faction: string, at: string): Array<{ edge: string; to: string; seasons: number; found: boolean }> {
-  const season = seasonOf(r.season)
   const out: Array<{ edge: string; to: string; seasons: number; found: boolean }> = []
   for (const id of Object.keys(r.edges).sort()) {
     const ed = r.edges[id]!
     const to = ed.a === at ? ed.b : ed.b === at ? ed.a : null
-    if (to === null || blockedWhy(ed, season) !== null || hostileHere(r, faction, to)) continue
+    if (to === null || blockedWhy(ed, r) !== null || hostileHere(r, faction, to)) continue
     const n = r.nodes[to]
     if (n === undefined || n.kind === 'sodo') continue
     const found = foundable(r, faction, to)
     if (!found && n.owner !== faction) continue
-    out.push({ edge: ed.id, to, seasons: marchSeasons(ed.kind, season), found })
+    out.push({ edge: ed.id, to, seasons: marchTurns(r, ed), found })
   }
   return out
 }

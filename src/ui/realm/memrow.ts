@@ -52,7 +52,7 @@ const heroName = (r: Realm, id: string | undefined): string => (id !== undefined
 
 /** 누르면 뜨는 한 줄 — 평서 (이야기 글). faction — 이 기억의 주인이 섬기는 나라 (나눠 떠남이 「도읍」인지) */
 export function memLine(r: Realm, m: Mem, faction?: string): string {
-  const when = seasonLabel(m.s)
+  const when = seasonLabel(r, m.s)
   const parts: string[] = [when]
   switch (m.k) {
     case 'battle': {

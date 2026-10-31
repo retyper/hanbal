@@ -23,7 +23,8 @@ const full = (r: Realm): Realm => { startCustoms(r); return r }
 import { bigTwo, envoyTrueChance, favorOf, judgeOf, pairKey, relationOf } from '../../src/realm/diplomacy.ts'
 import { armCost, canBuild, draftLimit, draftNeeds, draftPay, militiaMen, nextBuild, nodeYield, riteCost, sonoeRoom, stockOf, upkeepOf } from '../../src/realm/economy.ts'
 import { concealBonus, customMarks, passExtra, riseState, siegeFort } from '../../src/realm/hooks.ts'
-import { advance, checkOutcome, draftable, fortMul } from '../../src/realm/season.ts'
+import { advance, checkOutcome, draftable, fortMul, seasonOf } from '../../src/realm/season.ts'
+import { isSeasonEnd } from '../../src/realm/calendar.ts'
 import { reportText } from '../../src/realm/data/prose.ts'
 import { customsHtml } from '../../src/ui/realm/front.ts'
 import { P } from '../../src/tune/params.ts'
@@ -253,7 +254,7 @@ describe('나라 고리 — 판에서 걸린다', () => {
   it('쇠 실은 배(가락) — 가을에 남는 쇠를 실어 내고 곡식을 사 온다', () => {
     let r = startYeongnam(1, 'saro')
     stockOf(r, 'guya').iron = P.realm.soebaeKeep + 50
-    while (r.season % 4 !== 2) r = advance(r, []).next // 가을
+    while (seasonOf(r) !== 'autumn' || !isSeasonEnd(r)) r = advance(r, []).next // 가을 (달 시계면 가을의 끝 달 — 계절마다 한 번 도는 일)
     stockOf(r, 'guya').iron = P.realm.soebaeKeep + 50
     const g0 = stockOf(r, 'guya').grain
     const { next, report } = advance(r, [])
@@ -385,7 +386,7 @@ describe('남부 판 대비 셋 (S3)', () => {
     const cap = r.nodes[r.factions['mokji']!.capital]!
     assert.ok(!draftable(cap, r, 'mokji').includes('horse'))
     assert.ok(draftable(cap, r, 'maek').includes('horse'))
-    while (r.season % 4 !== 2) r = advance(r, []).next // 가을
+    while (seasonOf(r) !== 'autumn' || !isSeasonEnd(r)) r = advance(r, []).next // 가을 (달 시계면 가을의 끝 달 — 계절마다 한 번 도는 일)
     stockOf(r, 'mokji').grain = 1000
     stockOf(r, 'mokji').horse = 3
     const h = Object.values(r.heroes).find((x) => x.faction === 'mokji' && x.status === 'free' && r.factions['mokji']!.ruler !== x.id)!

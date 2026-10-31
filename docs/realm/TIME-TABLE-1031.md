@@ -1,6 +1,21 @@
 # 시간 개편 작업표 (10-31 · 한 턴 = 한 달)
 
-`docs/realm/FEEDBACK-1031.md` 「시간 개편 계획」의 일 목록. **아직 코드는 하나도 안 바꿨다.**
+`docs/realm/FEEDBACK-1031.md` 「시간 개편 계획」의 일 목록.
+
+## 0. 한 것 (11-01 · 가지 `month-turns`)
+
+- 새 판(자유판·장)은 `clock: 'month'` 로 연다 (`P.realm.monthClock` 1). **배우는 판은 계절 시계 그대로** (차례가 계절 턴에 맞춰 짜여 있다). 옛 저장은 옛 길 — master 와 해시가 같다.
+- 달력은 `src/realm/calendar.ts` 한 곳 (`seasonOf(r, t?)` · `yearOf` · `monthOf` · `seasonIdx` · `isSeasonEnd/Start` · `seasons(r, n)` · `ageSeasons` · `isMonsoon` · `blockedWhy(ed, r, t?)`).
+- 행군: `season.marchTurns` — 판을 열 때 길마다 경위도로 잰 km(`r.roadKm`) ÷ `marchMonthKm`(25) 반올림, 고갯길·갯벌 ×`marchMonthSlow`(1.5), 많아야 `marchMonthMax`(4). 영남 판: 이웃 길 대개 1달 · 가장 먼 길 3달. 자리 없는 변한 축소판은 모든 길 1달 길이. 장마(7·8월)에 떠나면 +1달 · 나루는 7·8월만 막힌다.
+- §3 대로 계절 끝 달에만: 살림 · 이주 · 경계 감쇠 · 장수(회유·정·친밀·떠돌이·혼인) · 장터 · 호감 · 머묾 마찰 · 소문 · 소문 발견 · 맹약 · 철과 뱃길·큰 제사 · 청 · 공(고을·군대) · 풍습의 계절 몫(장례·쇠배·말·제사 거름·홍수) · 자객 실토. 싸움이 난 고을은 석 달 모아 둔다(`r.foughtSeason`). 카드는 계절 첫 달.
+- 기간은 `seasons(r, n)` (×3) · 나이는 `ageSeasons` (정보는 계절로 센 나이 그대로) · 절대 문턱은 `seasonIdx`.
+- 계절 한도(징병·개척·이주·배치)는 **석 달이 한 장부** (`spentThisSeason` · 고을 `drafted`/`settledOut` · 나라 `placed`). 달마다 ⅓ 은 AI 의 최소 덩이(splitMin)에 걸려 아무도 안 뽑아서 버렸다. 공작은 달마다 `ceil(plotsPerSeason/3)` (`plots.plotCap`). 배치한 백성이 닿는 속도(inbound)는 달마다 ⅓.
+- 제사는 계절에 한 번 (`r.riteSeason`). 군량은 턴으로 센다 (`food = 길 턴 + seasons(r, 더 챙긴 계절)`) · 굶주림은 달마다 ⅓.
+- AI: 사신·깨기·짓기·공작·무장·자객의 활은 계절 끝 달에만 · 출정과 다가가기는 `aiMarchEvery`(3) 달마다 (계절 첫 달). 싸운 군대는 `battleRest`(2) 달 추스른다 (플레이어도 · 군대 칸에 보인다).
+- 화면: 위 띠 「1년 7월 · 여름」 · 「다음 달」 단추 · 계절 알림은 계절 첫 달에만 · 남은 기간(턴 차)은 「n달」(`prose.turnsLabel`) · param 으로 적힌 「두 계절 동안」 같은 글은 그대로 (기간이 ×3 이라 참이다).
+- 봇 판 (영남 · planner · 80판 × 40계절): BALANCE.md 「한 턴 = 한 달」.
+
+아래 표는 처음 짠 일 목록 그대로 둔다.
 바탕: `r.season` 은 「턴 수」로 남기고, calendar.ts 에 `seasonOf(t) = floor(t/3) % 4` · `monthOf(t) = t % 12` ·
 `yearOf(t) = floor(t/12)` · `seasonIdx(t) = floor(t/3)` · `seasonEnd(t) = t % 3 === 2` 를 둔다.
 아래 「×3」은 `r.season + n*3` 처럼 기한을 달로 바꾸는 것, 「끝셈」은 seasonEnd 턴에만 한 칸 세는 것.

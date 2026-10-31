@@ -8,6 +8,7 @@ import { P } from '../../tune/params.ts'
 import type { Equip, Outcome, UnitKind } from '../battle.ts'
 import type { Art, Ask, BuildWhat, Deed, Cmd, DiscoverHow, EdgeKind, Good, Grp, PlotOp, EnvoyAsk, NodeKind, Realm, Relation, ReportLine, RoundLog, RoundOrder, SeasonOfYear, Tag, Why } from '../types.ts'
 import { groupOf } from '../tactics.ts'
+import { monthly, monthOf, seasonOf, seasons, yearOf, type ClockKind, type Clocked } from '../calendar.ts'
 import type { ConcealWhy } from '../season.ts'
 import { TRAIT } from './traits.ts'
 import { RELIC } from './relics.ts'
@@ -77,23 +78,42 @@ export const BLOCKED_LINE = {
   summerFord: '장마로 나루를 건널 수 없다',
 } as const
 
-/** 0 = 첫해 봄 → "1년 봄" */
-export function seasonLabel(n: number): string {
-  const s: SeasonOfYear[] = ['spring', 'summer', 'autumn', 'winter']
-  return `${Math.floor(n / 4) + 1}년 ${SEASON_NAME[s[((n % 4) + 4) % 4]!]}`
+/** 그 턴의 이름 — 옛 판 0 = "1년 봄" · 달 시계 0 = "1년 3월 · 봄" (calendar.ts) */
+export function seasonLabel(c: Clocked, t: number = c.season): string {
+  const name = SEASON_NAME[seasonOf(c, t)]
+  return monthly(c) ? `${yearOf(c, t) + 1}년 ${monthOf(c, t)}월 · ${name}` : `${yearOf(c, t) + 1}년 ${name}`
+}
+
+/** 턴 단위 이름 — 옛 판 「계절」 · 달 시계 「달」 */
+export function turnWord(c: ClockKind): string {
+  return monthly(c) ? '달' : '계절'
+}
+
+/**
+ * 계절 단위 기간을 화면 말로 — 옛 판 「n계절」 · 달 시계 「3n달」 (params 의 계절 수치를 그대로 받는다).
+ * 숫자 뒤에 붙으니 조사는 받는 쪽이 josa 로 붙인다.
+ */
+export function spanLabel(c: ClockKind, n: number): string {
+  return monthly(c) ? `${seasons(c, n)}달` : `${n}계절`
+}
+
+/** 턴 수를 화면 말로 — 옛 판 「n계절」 · 달 시계 「n달」 */
+export function turnsLabel(c: ClockKind, n: number): string {
+  return `${n}${turnWord(c)}`
 }
 
 const COUNT_WORD = ['', '한', '두', '세', '네', '다섯', '여섯', '일곱', '여덟'] as const
 
 /**
- * 언제 닿나 — 지금 `season` 에서 `k` 계절을 가면 (형: "다음계절 누를때 바로가는게 아니잖아. 그 턴이 다음턴인지 그다음인지 몰라가지고 헷갈림").
- * 계절을 한 번 넘기면 1 줄어든다 — k=1 이면 다음 계절 소식에 닿아 있다.
- *   "다음 계절(1년 겨울)에 닿는다" · "두 계절 뒤(2년 봄)에 닿는다". `short` 면 "에 닿는다" 를 뺀다.
+ * 언제 닿나 — 지금 턴에서 `k` 턴을 가면 (형: "다음계절 누를때 바로가는게 아니잖아. 그 턴이 다음턴인지 그다음인지 몰라가지고 헷갈림").
+ * 턴을 한 번 넘기면 1 줄어든다 — k=1 이면 다음 턴 소식에 닿아 있다.
+ *   "다음 계절(1년 겨울)에 닿는다" · "두 계절 뒤(2년 봄)에 닿는다" · 달 시계면 "다음 달(1년 4월 · 봄)에 닿는다". `short` 면 "에 닿는다" 를 뺀다.
  */
-export function arriveWhen(season: number, k: number, short = false): string {
+export function arriveWhen(c: Clocked, k: number, short = false): string {
   const n = Math.max(1, Math.round(k))
-  const when = n === 1 ? '다음 계절' : `${COUNT_WORD[n] ?? String(n)} 계절 뒤`
-  return `${when}(${seasonLabel(season + n)})${short ? '' : '에 닿는다'}`
+  const w = turnWord(c)
+  const when = n === 1 ? `다음 ${w}` : `${COUNT_WORD[n] ?? String(n)} ${w} 뒤`
+  return `${when}(${seasonLabel(c, c.season + n)})${short ? '' : '에 닿는다'}`
 }
 
 /**
@@ -624,11 +644,11 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     }
     case 'lent': {
       if (line.to !== viewer) return null
-      const till = line.until !== undefined ? ` ${seasonLabel(line.until)}까지 머문다.` : ''
+      const till = line.until !== undefined ? ` ${seasonLabel(after, line.until)}까지 머문다.` : ''
       if (line.back) return `${fname(line.from)}에서 빌려 온 군대가 돌아갔다.`
       if (line.arrived === true) return `${fname(line.from)} 군대가 ${josa(node(line.node), '에', '에')} 닿아 지키기 시작했다.${till}`
       if (line.eta === undefined || line.eta <= 0) return `${fname(line.from)} 군대가 ${josa(node(line.node), '을', '를')} 지킨다.${till}`
-      return `${fname(line.from)} 군대가 ${josa(node(line.node), '을', '를')} 지키러 떠났다. ${arriveWhen(after.season, line.eta)}.${till}`
+      return `${fname(line.from)} 군대가 ${josa(node(line.node), '을', '를')} 지키러 떠났다. ${arriveWhen(after, line.eta)}.${till}`
     }
     case 'arm': {
       if (line.faction !== viewer) return null
@@ -704,7 +724,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (line.hh !== undefined) bits.push(`집 ${line.hh}`)
       if (line.card === 'drought' || line.card === 'bounty' || line.card === 'locust') {
         const m = after.harvestMod?.[viewer]
-        if (m !== undefined && m.year === Math.floor((after.season - 1) / 4) && m.mul !== 1) bits.push(`올 가을걷이 ${m.mul > 1 ? '+' : ''}${Math.round((m.mul - 1) * 100)}%`)
+        if (m !== undefined && m.year === yearOf(after, after.season - 1) && m.mul !== 1) bits.push(`올 가을걷이 ${m.mul > 1 ? '+' : ''}${Math.round((m.mul - 1) * 100)}%`)
       }
       return `「${c.name}」: ${what}.${bits.length > 0 ? ` ${bits.join(' · ')}.` : ''}`
     }
@@ -716,7 +736,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     // 원정 (SYSTEMS §15-4) — 우리 것만
     case 'expGo': {
       if (line.faction !== viewer) return null
-      return `${josa(after.heroes[line.hero]?.name ?? '?', '이', '가')} ${josa(DESTS[line.dest].name, '으로', '로')} 원정을 떠났다. ${line.back - after.season + 1}계절 뒤 돌아온다.`
+      return `${josa(after.heroes[line.hero]?.name ?? '?', '이', '가')} ${josa(DESTS[line.dest].name, '으로', '로')} 원정을 떠났다. ${turnsLabel(after, line.back - after.season + 1)} 뒤 돌아온다.`
     }
     case 'expStay': {
       if (line.faction !== viewer) return null
@@ -738,7 +758,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (line.faction !== viewer) return null
       const a = after.heroes[line.a]?.name ?? '?'
       const b = after.heroes[line.b]?.name ?? '?'
-      return `${josa(a, '과', '와')} ${josa(b, '이', '가')} 혼인했다. 잔치를 열었다. ${line.due - after.season + 1}계절쯤 뒤 아이가 나선다.`
+      return `${josa(a, '과', '와')} ${josa(b, '이', '가')} 혼인했다. 잔치를 열었다. ${turnsLabel(after, line.due - after.season + 1)}쯤 뒤 아이가 나선다.`
     }
     case 'birth': {
       if (line.faction !== viewer) return null
@@ -748,7 +768,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       const s = line.surprise !== undefined ? ` 부모 누구에게도 없던 「${TRAIT[line.surprise]?.name ?? line.surprise}」의 피가 터졌다!` : ''
       const kid = k ?? (after.growing ?? []).find((g) => g.hero.id === line.hero)?.hero
       const grow = (after.growing ?? []).find((g) => g.hero.id === line.hero)
-      return `${josa(a, '과', '와')} ${b}의 아이 ${josa(kid?.name ?? '?', '이', '가')} 태어났다.${grow !== undefined ? ` ${grow.grown - after.season}계절 자라면 장수로 나선다.` : ''}${s}`
+      return `${josa(a, '과', '와')} ${b}의 아이 ${josa(kid?.name ?? '?', '이', '가')} 태어났다.${grow !== undefined ? ` ${turnsLabel(after, grow.grown - after.season)} 자라면 장수로 나선다.` : ''}${s}`
     }
     case 'grown': {
       if (line.faction !== viewer) return null
@@ -899,8 +919,8 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (line.faction !== viewer) return null
       const left = Math.max(1, line.until - after.season + 1)
       return line.moved === true
-        ? `피해 있던 고을마저 빼앗겼다. 조정이 다시 ${josa(node(line.seat), '으로', '로')} 옮겼다. 도읍 ${josa(node(line.capital), '을', '를')} 되찾을 날이 ${left}계절 남았다.`
-        : `도읍 ${josa(node(line.capital), '이', '가')} 무너졌다. 군장과 조정이 ${josa(node(line.seat), '으로', '로')} 피했다. ${left}계절 안에 도읍을 되찾지 못하면 나라가 끝난다.`
+        ? `피해 있던 고을마저 빼앗겼다. 조정이 다시 ${josa(node(line.seat), '으로', '로')} 옮겼다. 도읍 ${josa(node(line.capital), '을', '를')} 되찾을 날이 ${turnsLabel(after, left)} 남았다.`
+        : `도읍 ${josa(node(line.capital), '이', '가')} 무너졌다. 군장과 조정이 ${josa(node(line.seat), '으로', '로')} 피했다. ${turnsLabel(after, left)} 안에 도읍을 되찾지 못하면 나라가 끝난다.`
     }
     case 'retake':
       return line.faction === viewer ? `도읍 ${josa(node(line.capital), '을', '를')} 되찾았다! 조정이 돌아왔다.` : null

@@ -7,6 +7,7 @@
  * 소문 표식이 붙은 정보만 예외다 (여기서는 다루지 않는다 — 소문은 범위가 아니라 표식이다).
  */
 import { P } from '../tune/params.ts'
+import { ageSeasons } from './calendar.ts'
 import { winChance, type UnitKind } from './battle.ts'
 import type { Realm } from './types.ts'
 
@@ -88,7 +89,7 @@ export function winRange(fa: number, foe: readonly [number, number]): readonly [
 export function seenMix(r: Realm, viewer: string, node: string): { mix: Partial<Record<UnitKind, number>>; age: number } | null {
   const k = r.intel[viewer]?.[node]?.force
   if (k?.mix === undefined) return null
-  const age = r.season - k.season
+  const age = ageSeasons(r, k.season) // 본 지 몇 계절 (달 시계면 석 달이 1)
   if (age >= P.realm.intelBlindAge) return null
   return { mix: k.mix, age }
 }

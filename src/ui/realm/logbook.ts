@@ -128,7 +128,7 @@ export function logbookHtml(k: LogKit, r: Realm, rows: readonly LogRow[], nation
   h += `<div class="lines logl">`
   for (const x of rows) {
     if (x.s !== last) {
-      h += `<h4 class="logs">${k.esc(seasonLabel(x.s))}</h4>`
+      h += `<h4 class="logs">${k.esc(seasonLabel(r, x.s))}</h4>`
       last = x.s
     }
     h += k.row(x.l, x.text)

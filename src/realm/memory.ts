@@ -8,6 +8,7 @@
  *  - 없는 나라의 장수 · 쓰러진 장수에게는 적지 않는다.
  */
 import { P } from '../tune/params.ts'
+import { seasons } from './calendar.ts'
 import type { Hero, Lesson, Mem, Order, Realm, ReportLine } from './types.ts'
 
 type Battle = Extract<ReportLine, { kind: 'battle' }>
@@ -108,7 +109,7 @@ function plotBefore(r: Realm, faction: string, foe: string): string | undefined 
   const xs = r.lessons?.[faction]?.[foe] ?? []
   for (let i = xs.length - 1; i >= 0; i--) {
     const l = xs[i]!
-    if (r.season - l.s > P.realm.memPlotWindow) break
+    if (r.season - l.s > seasons(r, P.realm.memPlotWindow)) break
     if (l.k === 'p' && l.on !== 1 && l.res === 'ok') return l.how
   }
   return undefined
@@ -154,7 +155,7 @@ function noteBattle(r: Realm, l: Battle): void {
   learn(r, df, af, { s, k: 'b', at, ...(how !== undefined ? { how } : {}), res: rd, on: 1 })
   // 나눠 떠난 뒤의 첫 싸움 — 그 떠남에 결과를 붙인다
   for (const e of r.lessons?.[af]?.[df] ?? []) {
-    if (e.k === 's' && e.res === undefined && s - e.s <= P.realm.memSplitWatch) e.res = ra
+    if (e.k === 's' && e.res === undefined && s - e.s <= seasons(r, P.realm.memSplitWatch)) e.res = ra
   }
 }
 
@@ -206,14 +207,14 @@ export function noteMemory(r: Realm, lines: readonly ReportLine[], orders: reado
       const cap = r.factions[f]?.capital
       for (const xs of Object.values(book)) {
         for (const e of xs) {
-          if (e.k !== 's' || e.raid === 1 || s - e.s > P.realm.memSplitWatch) continue
+          if (e.k !== 's' || e.raid === 1 || s - e.s > seasons(r, P.realm.memSplitWatch)) continue
           if (taken.some((t) => t.faction !== f && (t.node === e.at || t.node === cap))) e.raid = 1
         }
       }
       for (const h of Object.values(r.heroes)) {
         if (h.faction !== f || h.mem === undefined) continue
         for (const m of h.mem) {
-          if (m.k === 'split' && m.res === 'ok' && s - m.s <= P.realm.memSplitWatch && taken.some((t) => t.faction !== f && (t.node === m.at || t.node === cap))) m.res = 'fail'
+          if (m.k === 'split' && m.res === 'ok' && s - m.s <= seasons(r, P.realm.memSplitWatch) && taken.some((t) => t.faction !== f && (t.node === m.at || t.node === cap))) m.res = 'fail'
         }
       }
     }
@@ -261,7 +262,7 @@ export function noteMemory(r: Realm, lines: readonly ReportLine[], orders: reado
  */
 function noteCouncil(r: Realm, lines: readonly ReportLine[]): void {
   const s = r.season
-  const W = P.realm.cnCouncilWatch
+  const W = seasons(r, P.realm.cnCouncilWatch)
   for (const h of Object.values(r.heroes)) {
     if (h.mem === undefined || r.factions[h.faction] === undefined) continue
     for (const m of h.mem) {

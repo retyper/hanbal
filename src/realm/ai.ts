@@ -13,6 +13,7 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
+import { isSeasonEnd, monthly, seasonIdx } from './calendar.ts'
 import {
   allyFoe, bigTwo, canEscort, envoyOptions, favorOf, friendly, jointTargets, lentStep, nationPower, openAsks, pledgedNodes, powerRange, relationOf, tradeOffer,
 } from './diplomacy.ts'
@@ -119,8 +120,17 @@ function march(a: Army, t: Move): Order {
  * 승률 문턱으로는 못 막는다 — 빈 읍락은 승률 100% 다 (봇 대전: 잃은 땅의 7할이 싸움 없이 빈 고을이었다).
  */
 /** 2장 동부여의 추격 — 이 계절에 대소의 군대가 주몽을 쫓고 있나 */
+/**
+ * AI 가 출정·다가가기를 정하는 턴인가 — 옛 판은 늘. 달 시계면 aiMarchEvery 달마다 (계절의 첫 달부터).
+ * 길 위의 군대는 달마다 나아가고, 지키러 돌아오는 것·빌려준 군대·회군은 이것과 상관없다.
+ */
+export function aiMarchTurn(r: Realm): boolean {
+  const every = Math.max(1, Math.round(P.realm.aiMarchEvery))
+  return !monthly(r) || r.season % every === 0
+}
+
 export function pursuing(r: Realm, faction: string): boolean {
-  return r.scenario?.id === 'jumong' && faction === 'buyeo' && r.season < P.realm.pursuitSeasons
+  return r.scenario?.id === 'jumong' && faction === 'buyeo' && seasonIdx(r) < P.realm.pursuitSeasons
 }
 
 export function spared(r: Realm, faction: string, to: string): boolean {
@@ -128,7 +138,7 @@ export function spared(r: Realm, faction: string, to: string): boolean {
   if (owner === null || owner === undefined || owner === faction) return false
   // 화친·동맹을 맺은 나라는 치지 않는다 (FLOW §4)
   if (friendly(r, faction, owner)) return true
-  if (r.factions[owner]?.mind !== 'player' || r.season >= P.realm.aiGrace) return false
+  if (r.factions[owner]?.mind !== 'player' || seasonIdx(r) >= P.realm.aiGrace) return false
   // 2장 동부여의 추격군 — 주몽을 쫓아 첫 몇 계절은 유예 없이 내려온다 (CAMPAIGN §1 · 점검 10-25)
   if (pursuing(r, faction)) return false
   return !(r.provoked ?? []).includes(faction)
@@ -143,7 +153,7 @@ export function spared(r: Realm, faction: string, to: string): boolean {
  */
 function drafts(r: Realm, faction: string): Order[] {
   const R = P.realm
-  const s = seasonOf(r.season)
+  const s = seasonOf(r)
   if (s !== 'autumn' && s !== 'winter') return []
   const fac = r.factions[faction]
   if (fac === undefined) return []
@@ -343,7 +353,7 @@ function plan(r: Realm, faction: string): Order[] {
  */
 function settles(r: Realm, faction: string): Order[] {
   const R = P.realm
-  const s = seasonOf(r.season)
+  const s = seasonOf(r)
   if (s !== 'spring' && s !== 'autumn') return []
   const spare = stockOf(r, faction).grain - R.aiDraftReserve * upkeepOf(r, faction, true)
   if (spare <= 0) return []
@@ -676,15 +686,19 @@ function decideNow(r: Realm, faction: string, brain: Brain): Order[] {
   const rs = brain === 'random' ? [] : rites(upTo([...ds, ...ss]), faction)
   const first = [...ds, ...ss, ...rs]
   const gs = brain === 'random' || brain === 'reckless' ? [] : guards(upTo(first), faction)
-  const talk = brain === 'random' ? [] : [...answers(r, faction), ...breaks(r, faction), ...envoys(r, faction)]
-  const bs = brain === 'random' ? [] : builds(r, faction)
+  // 사신·깨기·짓기·공작·무장·자객의 활은 계절마다 한 번 굴린다 — 달 시계면 계절 끝 달에만 (확률 수치가 계절 단위다). 청의 답은 늘
+  const end = isSeasonEnd(r)
+  const talk = brain === 'random' ? [] : [...answers(r, faction), ...(end ? [...breaks(r, faction), ...envoys(r, faction)] : [])]
+  const bs = brain === 'random' || !end ? [] : builds(r, faction)
   // 공작은 징병·개척·제사·경계로 곡식을 쓴 뒤의 창고로 셈한다 (판정도 그 뒤다 — 2단계)
-  const ps = brain === 'random' ? [] : plots(upTo([...first, ...gs]), faction, brain)
+  const ps = brain === 'random' || !end ? [] : plots(upTo([...first, ...gs]), faction, brain)
   const hs = brain === 'random' ? [] : heroCare(r, faction)
-  const as = brain === 'random' ? [] : arms(r, faction)
+  const as = brain === 'random' || !end ? [] : arms(r, faction)
   // 자객의 활 — 공작을 안 벌이는 계절에 드물게 (값이 크다)
-  const bw = brain === 'random' || ps.length > 0 ? [] : bows(r, faction)
-  return [...talk, ...first, ...gs, ...ps, ...bw, ...hs, ...as, ...bs, ...lentMoves(r, faction), ...(brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
+  const bw = brain === 'random' || !end || ps.length > 0 ? [] : bows(r, faction)
+  // 출정은 aiMarchEvery 턴마다 정한다 — 달 시계에서 달마다 정하면 싸움의 박자가 세 배가 된다 (길은 달로 가도 군장은 계절마다 출정을 정한다)
+  const go = aiMarchTurn(r)
+  return [...talk, ...first, ...gs, ...ps, ...bw, ...hs, ...as, ...bs, ...lentMoves(r, faction), ...(!go ? [] : brain === 'planner' ? plan(r, faction) : moves(r, faction, brain))]
 }
 
 function moves(r: Realm, faction: string, brain: Brain): Order[] {
@@ -799,7 +813,7 @@ function moves(r: Realm, faction: string, brain: Brain): Order[] {
     if (brain === 'greedy' || brain === 'reckless') {
       // 가운데로 셈하고, 모르면 얕본다 — 다만 성벽은 보인다 (모르는 고을의 짐작을 성 배수로 나눈다). 무모는 국읍도 비운다
       const mid = (w: readonly [number, number] | null, t: Move): number =>
-        (w !== null ? Math.max((w[0] + w[1]) / 2, w === t.win ? (ambushWorth(t) ?? 0) : 0) : R.aiUnknownWin / fortMul(r.nodes[t.to]!, seasonOf(r.season))) + focus(r, faction, t.to)
+        (w !== null ? Math.max((w[0] + w[1]) / 2, w === t.win ? (ambushWorth(t) ?? 0) : 0) : R.aiUnknownWin / fortMul(r.nodes[t.to]!, seasonOf(r))) + focus(r, faction, t.to)
       const bar = brain === 'reckless' ? R.aiRecklessWin : R.aiGreedyWin
       let went: boolean
       if (brain === 'greedy' && lastGuard(r, faction, a)) went = detach(a, ts, mid, bar)
@@ -862,13 +876,13 @@ export function aiOrders(r: Realm): Order[] {
       // 나머지 계절은 청에 답하고 징병만 한다 (나라가 서른여섯이라 폰에서 버티려고). 발견이 없는 판은 늘 다 생각한다
       const far = r.known !== undefined && player !== undefined && !knows(r, player, f.id)
       const every = r.region === 'world' ? P.realm.aiFarEveryWorld : P.realm.aiFarEvery
-      if (far && (r.season + i) % every !== 0) {
+      if (far && (seasonIdx(r) + i) % every !== 0) {
         out.push(...answers(r, f.id), ...drafts(r, f.id))
         continue
       }
       // 사신·공작은 보낼 사람만큼만 낸다 (hands.ts — 엔진도 같은 규칙으로 버린다)
       const mine = limitHands(r, decide(r, f.id, f.mind))
-      out.push(...mine, ...approach(r, f.id, mine))
+      out.push(...mine, ...(aiMarchTurn(r) ? approach(r, f.id, mine) : []))
     }
     return out
   })
@@ -881,7 +895,7 @@ export function aiOrders(r: Realm): Order[] {
  */
 function approach(r: Realm, faction: string, decided: readonly Order[]): Order[] {
   const R = P.realm
-  if (r.season < R.aiApproachFrom) return []
+  if (seasonIdx(r) < R.aiApproachFrom) return []
   const busy = new Set(decided.flatMap((o) => ('army' in o && typeof o.army === 'string' ? [o.army] : [])))
   const cap = r.factions[faction]?.capital
   const mine = sorted(Object.values(r.armies)).filter((a) => a.faction === faction && a.lent === undefined)
@@ -898,7 +912,7 @@ function approach(r: Realm, faction: string, decided: readonly Order[]): Order[]
   const out: Order[] = []
   let atCap = cap === undefined ? 0 : mine.filter((a) => a.at === cap && a.march === null).length
   for (const a of idle) {
-    if (a.at === cap && atCap <= 1 && (mine.length > 1 || r.season < R.aiApproachSolo)) continue
+    if (a.at === cap && atCap <= 1 && (mine.length > 1 || seasonIdx(r) < R.aiApproachSolo)) continue
     // 너비 우선 — 처음 디딘 길을 기억한다 (같은 판이면 같은 길: 길 id 순)
     const first = new Map<string, string>([[a.at, '']])
     let queue = [a.at]

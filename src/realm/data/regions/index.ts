@@ -12,7 +12,7 @@ import { SOUTH_WORLD } from './south-geo.ts'
 import { SOUTH_NATION_IDS, southGeo, startSouth } from './south.ts'
 import { WORLD_GEO } from './world-geo.ts'
 import { WORLD_NATION_IDS, startWorld, worldGeo } from './world.ts'
-import { YEONGNAM_NATION_IDS, startYeongnam } from './yeongnam.ts'
+import { GEO as YEONGNAM_GEO, YEONGNAM_NATION_IDS, startYeongnam } from './yeongnam.ts'
 import { TUTORIAL_NATION_IDS, startTutorial } from './tutorial.ts'
 import { TUTORIAL_WORLD, tutorialGeo } from './tutorial-geo.ts'
 import { JUMONG_NATION_IDS, startJumong } from './jumong.ts'
@@ -45,7 +45,35 @@ export function startRegion(region: RegionId, seed: number, player: string, edit
   // 모든 판은 안개 속에서 연다 — 제 땅과 길로 맞닿은 곳만 (형 10-27 · discovery.fogStart)
   const r = openRegion(region, seed, player, edit)
   fogStart(r)
-  return r
+  // 배우는 판은 계절 시계 그대로 — 차례(튜토리얼)가 계절 턴에 맞춰 짜여 있다
+  return P.realm.monthClock >= 1 && region !== 'tutorial' ? monthClock(r) : r
+}
+
+/**
+ * 달 시계를 건다 — 한 턴 = 한 달 (형 10-31 · calendar.ts). 길마다 지도 위 길이(km)를 적어 둔다 (행군 달 수 · season.marchTurns).
+ * 고을 자리(경위도)가 없는 판(변한 축소판)은 길이를 안 적는다 — 그 판의 길은 한 달 길로 친다.
+ */
+export function monthClock(r: Realm): Realm {
+  const roadKm: Record<string, number> = {}
+  for (const id of Object.keys(r.edges).sort()) {
+    const e = r.edges[id]!
+    const a = lonLatOf(r.region, e.a)
+    const b = lonLatOf(r.region, e.b)
+    if (a === undefined || b === undefined) continue
+    roadKm[id] = Math.round(kmBetween(a, b) * 10) / 10
+  }
+  return { ...r, clock: 'month', ...(Object.keys(roadKm).length > 0 ? { roadKm } : {}) }
+}
+
+/** 고을의 실제 자리 [경도, 위도] — 영남 판은 GEO, 넓어지는 지도·장은 placeOf */
+export function lonLatOf(region: RegionId | undefined, id: string): readonly [number, number] | undefined {
+  return placeOf(region, id) ?? (region === 'yeongnam' ? YEONGNAM_GEO[id] : undefined)
+}
+
+/** 두 자리 사이 땅 위 거리(km) — 짧은 거리라 평면으로 어림한다 */
+function kmBetween(a: readonly [number, number], b: readonly [number, number]): number {
+  const lat = (((a[1] + b[1]) / 2) * Math.PI) / 180
+  return Math.hypot((a[0] - b[0]) * P.realm.kmPerLon * Math.cos(lat), (a[1] - b[1]) * P.realm.kmPerLat)
 }
 
 function openRegion(region: RegionId, seed: number, player: string, edit?: (r: Realm) => void): Realm {

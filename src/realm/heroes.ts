@@ -9,6 +9,7 @@
 import { roll } from '../core/rng.ts'
 import { addVow } from './drill.ts'
 import { P } from '../tune/params.ts'
+import { seasonIdx, seasonNo, seasons } from './calendar.ts'
 import { HERO_POOL } from './data/heroes-pool.ts'
 import { TRAITS, TRAIT, type TraitGrade } from './data/traits.ts'
 import type { Art, EdgeKind, GrowStat, Hero, Order, Realm, ReportLine, RNode } from './types.ts'
@@ -652,11 +653,11 @@ export function stepHeroes(r: Realm, lines: ReportLine[]): void {
     if (st.grain < R.persuadeGrain) continue
     const pz = h.persuade
     // 담판을 연 계절 — 벽은 계절 처음에 이미 바뀌었다 (woo.applyTalks). 이익으로 건 곡식을 더 받고, 손을 내민 것이 먹혔으면 들인다
-    const talked = pz.talkAt === r.season
+    const talked = pz.talkAt !== undefined && seasonIdx(r, pz.talkAt) === seasonIdx(r) // 이번 계절(달 시계면 석 달 가운데 어느 달이든)
     st.grain -= R.persuadeGrain + (talked ? Math.min(st.grain - R.persuadeGrain, pz.talkGrain ?? 0) : 0)
     if (talked) {
       delete pz.talkGrain
-      if (pz.handAt !== r.season) continue
+      if (pz.handAt === undefined || seasonIdx(r, pz.handAt) !== seasonIdx(r)) continue
     } else if (pz.resist === undefined) {
       // 옛 판 — 남은 계절을 센다
       pz.left -= 1
@@ -682,7 +683,7 @@ export function stepHeroes(r: Realm, lines: ReportLine[]): void {
     }
     const to = h.captor
     const by = h.persuade.by
-    const byTalk = h.persuade.handAt === r.season
+    const byTalk = h.persuade.handAt !== undefined && seasonIdx(r, h.persuade.handAt) === seasonIdx(r)
     delete h.persuade
     if (h.faction === r.player) addVow(r, h.id, 'turned') // 우리 장수가 넘어갔다 — 의리가 내린다 (UIRI)
     h.born ??= h.faction // 처음 섬긴 나라 (담판의 「같은 고향」 · woo.ts)
@@ -712,7 +713,7 @@ export function stepHeroes(r: Realm, lines: ReportLine[]): void {
   // 떠돌이 — 머물 기한이 지나면 떠난다. 봄 끝에 새 사람이 온다
   r.wanderers = (r.wanderers ?? []).filter((w) => w.until > r.season)
   // 배우는 판엔 떠돌이가 오지 않는다 — 배우는 차례 한가운데 사건 카드가 끼어들어 안내가 갇혔다 (10-27)
-  if (r.region !== 'tutorial' && ((r.season % 4) + 4) % 4 === 0 && roll(r.seed, r.season, 'wanderer') < R.wandererChance) {
+  if (r.region !== 'tutorial' && seasonNo(r) === 0 && roll(r.seed, r.season, 'wanderer') < R.wandererChance) {
     const used = new Set(r.poolUsed ?? [])
     const pool = HERO_POOL.filter((x) => !used.has(x.id) && r.heroes[x.id] === undefined)
     const places = byId(Object.values(r.nodes)).filter((n) => n.owner !== null && n.kind !== 'sodo')
@@ -725,7 +726,7 @@ export function stepHeroes(r: Realm, lines: ReportLine[]): void {
       const heroes = Object.values(r.heroes).filter((h) => h.faction === f && h.status === 'free').length
       const stay = Math.max(R.wandererNeedMin, Math.min(1, ((towns + 1) / (heroes + 1)) * R.wandererNeedMul))
       if (roll(r.seed, r.season, 'wanderer-need') >= stay) { stepGrowth(r, lines); return }
-      const until = r.season + R.wandererStay
+      const until = r.season + seasons(r, R.wandererStay)
       const price = poolPrice(who)
       ;(r.poolUsed ??= []).push(who.id)
       r.wanderers.push({ hero: structuredClone(who), node: at.id, until, price })
@@ -920,8 +921,8 @@ function stepTies(r: Realm): void {
 export function honeyLeft(r: Realm, hero: string): number {
   const v = (r.births ?? []).find((x) => x.a === hero || x.b === hero)
   if (v === undefined) return 0
-  const wedAt = v.wed ?? v.due - P.realm.wedSeasons
-  return Math.max(0, wedAt + P.realm.wedHoney - r.season + 1)
+  const wedAt = v.wed ?? v.due - seasons(r, P.realm.wedSeasons)
+  return Math.max(0, wedAt + seasons(r, P.realm.wedHoney) - r.season + 1)
 }
 
 /** 부부가 함께 있나 — 같은 고을에 둘 다 머문다 (원정·길 위의 군대·사로잡힘이면 떨어진 것) */
@@ -985,7 +986,7 @@ export function wed(r: Realm, o: Extract<Order, { kind: 'wed' }>, lines: ReportL
   r.heroes[a]!.spouse = b
   r.heroes[b]!.spouse = a
   // 태어나는 때 — 혼인에서 장수로 나서기까지(wedSeasons) 가운데 마지막 kidGrowSeasons 는 자라는 동안이다
-  const due = r.season + Math.max(1, P.realm.wedSeasons - P.realm.kidGrowSeasons)
+  const due = r.season + seasons(r, Math.max(1, P.realm.wedSeasons - P.realm.kidGrowSeasons))
   ;(r.births ??= []).push({ a, b, faction: o.faction, due, wed: r.season })
   lines.push({ kind: 'wed', faction: o.faction, a, b, due })
   return true
@@ -1050,7 +1051,7 @@ function makeKid(r: Realm, v: { a: string; b: string; faction: string; due: numb
     chi: stat(pa.chi, pb.chi, 'chi'), deok: stat(pa.deok, pb.deok, 'deok'), uiri: stat(pa.uiri, pb.uiri, 'uiri'),
     traits, status: 'free', captor: null, at: home, post: null, bond: R.wedBond, parents: [v.a, v.b],
   }
-  if (R.kidGrowSeasons > 0) (r.growing ??= []).push({ hero: kid, grown: r.season + R.kidGrowSeasons })
+  if (R.kidGrowSeasons > 0) (r.growing ??= []).push({ hero: kid, grown: r.season + seasons(r, R.kidGrowSeasons) })
   else r.heroes[id] = kid
   lines.push({ kind: 'birth', faction: v.faction, hero: id, a: v.a, b: v.b, ...(surprise !== undefined ? { surprise } : {}) })
 }
@@ -1076,7 +1077,7 @@ function stepBirths(r: Realm, lines: ReportLine[]): void {
   // 신혼에 떨어져 지냈으면 아이가 한 계절 늦어진다
   for (const v of r.births) {
     if (honeyLeft(r, v.a) > 0 && !together(r, v.a, v.b)) {
-      v.due += 1
+      v.due += seasons(r, 1)
       v.late = (v.late ?? 0) + 1
     }
   }

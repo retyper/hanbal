@@ -9,7 +9,7 @@
 import { faceFile } from './face.ts'
 import { headcount } from '../../realm/battle.ts'
 import { FACTION_ART, GOOD_ICON, REGION_ART, SEASON_MAP, flagIcon, nodeIcon, nodePos } from '../../realm/data/art.ts'
-import { EDGE_NAME, GOOD_NAME, NODE_KIND_NAME, NODE_NOW, tagNow } from '../../realm/data/prose.ts'
+import { EDGE_NAME, GOOD_NAME, NODE_KIND_NAME, NODE_NOW, tagNow, turnWord, turnsLabel } from '../../realm/data/prose.ts'
 import { worldGeoOf } from '../../realm/data/regions/index.ts'
 import { relationOf } from '../../realm/diplomacy.ts'
 import { knows } from '../../realm/discovery.ts'
@@ -562,7 +562,7 @@ export function mapHtml(
   const target = new Map(targets.map((t) => [t.node, t]))
   const hasTok = new Set(tokens.filter((t) => t.march === undefined).map((t) => t.node))
   const known = r.intel[me] ?? {}
-  const season = seasonOf(r.season)
+  const season = seasonOf(r)
   // 아는 나라의 땅과 주인은 다 안다 (형: "어느나라가 어디 먹는지 한방에" — 2026-10-18). 모르는 것은 군세,
   // 그리고 넓어지는 지도에서는 아직 모르는 나라 (발견 — 그 땅은 '모르는 땅'으로 덮는다)
   const vis = visibleNodes(r, me)
@@ -618,7 +618,7 @@ export function mapHtml(
   for (const ed of Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))) {
     if (!seen(ed.a) || !seen(ed.b)) continue
     const pts = route(ed)
-    const shut = blockedWhy(ed, season) !== null
+    const shut = blockedWhy(ed, r) !== null
     // 길가는 옅은 흙빛 어깨로 바탕과 떼어 본다 (형: "지도랑 색이 비슷해서 길 색이 잘 안보이는건" · "길같지가 않고 오브젝트같아")
     const d = smoothPath(pts)
     svg += roadSvg(d, ed.kind, sw, shut ? 0.35 : 1, EDGE_NAME[ed.kind])
@@ -777,7 +777,7 @@ export function mapHtml(
       // 고을 그림과 그 밑 이름표에서 가장 먼 자리에 — 길이 이름표 곁을 지나면 글씨가 이름표 밑에 묻혔다
       const away = (p: Pt): number => Math.min(...seenPts.map((q) => Math.min(Math.hypot(p[0] - q[0], p[1] - q[1]), Math.hypot(p[0] - q[0], p[1] - q[1] - q[2]))))
       const cands = [0.3, 0.4, 0.5, 0.6, 0.7].map((f) => at(dj + (d1 - dj) * f))
-      svg += text(cands.reduce((b, p) => (away(p) > away(b) ? p : b)), `${m.eta}계절`, 24)
+      svg += text(cands.reduce((b, p) => (away(p) > away(b) ? p : b)), turnsLabel(r, m.eta), 24)
     }
     const label = kind === 'amb' && m.left === null ? '우리 기습' : ''
     if (label !== '') svg += text(at(d0 + (dj - d0) * 0.7), label, 26)
@@ -885,7 +885,7 @@ export function mapHtml(
         const o = e.a === n.id ? e.b : e.b === n.id ? e.a : null
         return o !== null && r.nodes[o]?.owner === me && r.nodes[o]?.kind !== 'sodo'
       })
-      const why = links.length === 0 ? '우리 땅과 안 닿음' : links.every((e) => blockedWhy(e, season) !== null) ? '이 철엔 길이 막힘' : '적 군대가 있음'
+      const why = links.length === 0 ? '우리 땅과 안 닿음' : links.every((e) => blockedWhy(e, r) !== null) ? '이 철엔 길이 막힘' : '적 군대가 있음'
       noReach = `<span class="stl nor" title="개척단은 우리 고을에서 길로 바로 이웃한 빈 땅에만 갑니다">${why}</span>`
     }
     // 주인 없이 사람만 사는 철광·포구 — 지키는 군대가 없어 우리 군대가 닿기만 하면 싸움 없이 우리 땅 (season.walkIn · 형 10-31: "문명6 촌락처럼")
@@ -922,7 +922,7 @@ export function mapHtml(
     const a1 = seg[seg.length - 1]!
     const ang = (Math.atan2(a1[1] - a0[1], a1[0] - a0[0]) * 180) / Math.PI
     const left = t.march.left
-    const when = left <= 1 ? '다음 계절' : `${left}계절 뒤`
+    const when = left <= 1 ? `다음 ${turnWord(r)}` : `${turnsLabel(r, left)} 뒤`
     const tag = t.foe !== undefined ? `${t.sneak === true ? '기습 낌새' : '적'} · ${when} 닿음` : `이동 중 · ${when} 도착`
     toks += `<div class="toks mv" style="left:${(mx / W) * 100}%;top:${(my / H) * 100}%">${tokBtn(t, ang)}<span class="mvtag">${tag}</span></div>`
   }

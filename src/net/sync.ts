@@ -27,7 +27,7 @@ export interface SaveLike {
   readonly seed: number
   readonly nation: string
   readonly log: readonly unknown[]
-  readonly realm: { readonly season: number; readonly region?: string; readonly tier?: number; readonly outcome?: { kind: string } | null; readonly factions: Record<string, { name: string }>; readonly player: string }
+  readonly realm: { readonly season: number; readonly clock?: 'month'; readonly region?: string; readonly tier?: number; readonly outcome?: { kind: string } | null; readonly factions: Record<string, { name: string }>; readonly player: string }
   readonly at?: string
 }
 
@@ -40,7 +40,7 @@ export interface SyncHost {
   adopt(saveJson: string, recordJson: string | null): boolean
 }
 
-export interface Side { readonly nation: string; readonly season: number; readonly region: string; readonly savedAt: string }
+export interface Side { readonly nation: string; readonly season: number; readonly clock?: 'month'; readonly region: string; readonly savedAt: string }
 export type SyncState =
   | { readonly kind: 'off' }
   | { readonly kind: 'idle'; readonly at: string | null }
@@ -92,7 +92,7 @@ function deviceId(): string {
 
 const head = (s: SaveLike): LocalHead => ({ seed: s.seed, rev: s.log.length, hashAt: (n) => logHash(s.log.slice(0, n)) })
 const sideOf = (s: SaveLike): Side => ({
-  nation: s.realm.factions[s.realm.player]?.name ?? s.nation, season: s.realm.season, region: s.realm.region ?? 'byeonhan-mini', savedAt: s.at ?? '',
+  nation: s.realm.factions[s.realm.player]?.name ?? s.nation, season: s.realm.season, ...(s.realm.clock !== undefined ? { clock: s.realm.clock } : {}), region: s.realm.region ?? 'byeonhan-mini', savedAt: s.at ?? '',
 })
 const sameHead = (a: SaveLike | null, seed: number | null, rev: number): boolean => (a === null ? seed === null : a.seed === seed && a.log.length === rev)
 
@@ -179,7 +179,7 @@ export function makeSync(host: SyncHost, onChange: (s: SyncState) => void): {
       kind: 'set', path: `${base}/saves/main`, ifUpdateTime, stamp: 'updatedAt',
       data: {
         v: 1, fmt: 'gz', data, seed: s.seed, rev, h, savedAt: s.at ?? new Date().toISOString(),
-        meta: { nation: s.nation, nationName: sideOf(s).nation, region: sideOf(s).region, tier: s.realm.tier ?? 1, season: s.realm.season, outcome: s.realm.outcome?.kind ?? null },
+        meta: { nation: s.nation, nationName: sideOf(s).nation, region: sideOf(s).region, tier: s.realm.tier ?? 1, season: s.realm.season, ...(s.realm.clock !== undefined ? { clock: s.realm.clock } : {}), outcome: s.realm.outcome?.kind ?? null },
         device: { id: deviceId(), kind: 'web' },
       },
     }]
@@ -248,10 +248,10 @@ export function makeSync(host: SyncHost, onChange: (s: SyncState) => void): {
         return
       } else if (p === 'choose' && local !== null && remote !== null) {
         const meta = (await getDoc(`${base}/saves/main`, token, ['meta', 'savedAt']))?.fields ?? {}
-        const m = (meta['meta'] ?? {}) as { nationName?: string; season?: number; region?: string }
+        const m = (meta['meta'] ?? {}) as { nationName?: string; season?: number; clock?: 'month'; region?: string }
         chooseRemote = remote
         clearTimer()
-        set({ kind: 'choose', here: sideOf(local), there: { nation: m.nationName ?? '', season: m.season ?? 0, region: m.region ?? '', savedAt: String(meta['savedAt'] ?? '') } })
+        set({ kind: 'choose', here: sideOf(local), there: { nation: m.nationName ?? '', season: m.season ?? 0, ...(m.clock === 'month' ? { clock: m.clock } : {}), region: m.region ?? '', savedAt: String(meta['savedAt'] ?? '') } })
         return
       } else if (p === 'none' && remote !== null && local !== null) remember({ seed: local.seed, rev: local.log.length, h: remote.h, updateTime: remote.updateTime })
       set({ kind: 'idle', at: new Date().toISOString() })

@@ -97,8 +97,8 @@ describe('군량 — 더 챙길 계절 수', () => {
 
 describe('닿는 계절 말', () => {
   it('한 계절이면 다음 계절, 둘이면 두 계절 뒤 — 그때의 해·철까지', () => {
-    assert.equal(arriveWhen(0, 1), '다음 계절(1년 여름)에 닿는다')
-    assert.equal(arriveWhen(0, 2), '두 계절 뒤(1년 가을)에 닿는다')
-    assert.equal(arriveWhen(3, 1, true), '다음 계절(2년 봄)')
+    assert.equal(arriveWhen({ season: 0 }, 1), '다음 계절(1년 여름)에 닿는다')
+    assert.equal(arriveWhen({ season: 0 }, 2), '두 계절 뒤(1년 가을)에 닿는다')
+    assert.equal(arriveWhen({ season: 3 }, 1, true), '다음 계절(2년 봄)')
   })
 })

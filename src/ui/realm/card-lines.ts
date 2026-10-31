@@ -166,7 +166,7 @@ export function quarrelBeats(r: Realm, c: Card, a: Hero, b: Hero): string[] {
     return out
   }
   // 술자리 시비 — b 가 a 의 약한 곳을 찌른다
-  const at = FEAST_AT[seasonOf(r.season)]
+  const at = FEAST_AT[seasonOf(r)]
   const sting = a.traits.includes('coward') ? TAUNT.coward : TAUNT[wa]
   out.push(
     `${at} 잔치 날 밤, 큰 집에 장수들이 모였다.`,
@@ -319,7 +319,7 @@ export function romanceBeats(r: Realm, _c: Card, a: Hero, b: Hero): string[] {
   return [
     place !== undefined ? `${josa(a.name, '과', '와')} ${b.name}, 둘은 ${place}에서 같은 계절을 나며 자주 마주쳤다.` : `${josa(a.name, '과', '와')} ${b.name}, 둘은 같은 깃발 아래에서 여러 계절을 함께 보냈다.`,
     '처음엔 서로 말도 섞지 않던 사이였다.',
-    `그런데 요즘 ${LOVE_AT[seasonOf(r.season)]}에서 둘이 함께 있는 것을 본 사람이 여럿이다.`,
+    `그런데 요즘 ${LOVE_AT[seasonOf(r)]}에서 둘이 함께 있는 것을 본 사람이 여럿이다.`,
     '소문은 금세 군중에 퍼졌다.',
     q(a, loveSayOf(a)),
     q(b, sb),
