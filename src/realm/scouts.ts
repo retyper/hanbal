@@ -110,7 +110,10 @@ export function watchBorders(r: Realm): void {
     const force = { f0: nodeStrength(r, id, n.owner), src: 'watch' as const, u: roll(r.seed, r.season, `watch-u:${f}:${id}`), season: r.season }
     const had = known[id]?.force
     if (had && (keepsLastTurn(r, had) || spread(had, ageSeasons(r, had.season)) <= spread(force, 0))) continue
-    known[id] = { ...(known[id] ?? { alert: null }), land: true, force }
+    // 파수는 군세만 본다 — 정찰이 본 병종 몫(seenMix)은 본 때(mixAt)째 남겨, 제 나이대로 낡는다
+    const mixAt = had?.mix !== undefined ? (had.mixAt ?? had.season) : undefined
+    const keep = had?.mix !== undefined && mixAt !== undefined && ageSeasons(r, mixAt) < P.realm.intelBlindAge ? { mix: had.mix, mixAt } : {}
+    known[id] = { ...(known[id] ?? { alert: null }), land: true, force: { ...force, ...keep } }
   }
 }
 
