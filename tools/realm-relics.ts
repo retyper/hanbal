@@ -1,7 +1,7 @@
 /**
  * 유물 셈 — 유물을 낀 판이 얼마나 쉬워지나 (docs/realm/HERO-GROWTH.md ★ §B · §D · src/realm/relics.ts)
  *
- *   node --experimental-strip-types tools/realm-relics.ts [--games 40] [--seasons 40] [--region yeongnam] [--as bihwa] [--bot planner] [--tier 1]
+ *   node --experimental-strip-types tools/realm-relics.ts [--games 40] [--seasons 40] [--region yeongnam] [--as bihwa] [--bot planner] [--tier 1] [--lv 1]
  *        [--only none,guardian,kit3]
  *
  * 봇을 플레이어 자리에 앉혀 같은 시드들로 판을 돌리고, 차림(kit)마다 이김 · 짐 · 이긴 계절을 견준다.
@@ -31,6 +31,9 @@ const REGION = opt('region', 'yeongnam') as RegionId
 const AS = opt('as', 'bihwa')
 const BOT = opt('bot', 'planner') as Brain
 const TIER = Number(opt('tier', '1'))
+/** 유물 강화 단계 (★ 수 · 그 유물이 오를 수 있는 끝에서 멈춘다) */
+const LV = Number(opt('lv', '1'))
+const LVS: Record<string, number> = Object.fromEntries(RELICS.map((x) => [x.id, LV]))
 const ALL = ['none', ...RELICS.map((x) => x.id), 'kit3']
 const ONLY = opt('only', '').split(',').filter((x) => x !== '')
 const KITS = ONLY.length > 0 ? ALL.filter((k) => ONLY.includes(k)) : ALL
@@ -50,7 +53,7 @@ interface Out { win: boolean; lose: boolean; at: number }
 function play(kit: string, seed: number): Out {
   let r: Realm = startRegion(REGION, seed, AS)
   applyTier(r, TIER)
-  relicRealm(r, wearOf(r, kit))
+  relicRealm(r, wearOf(r, kit), LVS)
   for (let s = 0; s < SEASONS * perSeason(r); s++) {
     const { next } = advance(r, [...decide(r, AS, BOT), ...aiOrders(r)])
     r = next
@@ -60,7 +63,7 @@ function play(kit: string, seed: number): Out {
 }
 
 const pct = (x: number): string => `${(x * 100).toFixed(1)}%`
-console.log(`유물 셈 — ${REGION} · ${AS} · ${BOT} · 난세 ${TIER} · ${GAMES}판 × ${SEASONS}계절`)
+console.log(`유물 셈 — ${REGION} · ${AS} · ${BOT} · 난세 ${TIER} · ★${LV} · ${GAMES}판 × ${SEASONS}계절`)
 console.log('차림          이김     짐     이긴 계절   이김 차이')
 let base = -1
 for (const kit of KITS) {

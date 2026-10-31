@@ -4,6 +4,8 @@
  *   판 끝   이기면 「옛 무덤을 열었다」 — 판의 땅에서 상자 셋 (drawChests · 판의 시드로 정한다 → 다시 열어도 같은 셋). 하나를 고른다.
  *   단련터  장수마다 유물 한 칸 (단련 relicTwoAt 넘으면 두 칸). 다른 장수에게서 옮겨 끼워도 된다. 유물은 잃지 않는다.
  *   다음 판 판을 열 때 우리 장수(drillRealm 뒤)에 지닌 유물을 붙인다 (relicRealm) — `Hero.relics`. 판은 그 효과를 읽는다.
+ *   강화  가진 것을 또 고르면 한 단계 (★ relicLvMax 까지 · 고른 횟수 n 으로 센다) — 단계는 `Hero.relicLv` 로 판에 들고 간다 (FOCUS F).
+ *   드문 상자 판 끝 무덤에 relicRareChance 몫으로 넷째 상자 — 귀함·보배만 (drawRare).
  *
  * 표는 data/relics.ts. 순수한 셈만 한다 — 판 밖 기록(hanbal.realm.relics)을 이 기기에 두는 일은 화면(ui/realm/relics.ts)이 한다.
  * 굴림은 roll(시드) 뿐 (A1).
@@ -23,21 +25,77 @@ export function relicDefs(h: Pick<Hero, 'relics'> | null | undefined): RelicDef[
 }
 
 type NumKind = RelicNumKind
+type Holder = Pick<Hero, 'relics' | 'relicLv'>
 
-/** 그 효과의 숫자들 — 지닌 유물마다 */
-function knobs(h: Pick<Hero, 'relics'> | null | undefined, kind: NumKind): number[] {
+// ───────── 강화 — 가진 유물을 또 얻으면 한 단계 오른다 (FOCUS F · 형: "판 수만큼 하면 얻을 유물이 없음")
+
+/**
+ * 강화가 효과를 키우는 꼴 — 단계마다 세기(효과가 없을 때와의 차이)가 relicUpStep 만큼 는다.
+ *   add  더하는 몫 × (사기 5% → 7.5% → 10%)
+ *   mul  1 위로 곱하는 몫 (기병 ×1.25 → ×1.375 → ×1.5)
+ *   cut  1 아래로 곱하는 몫 — 거듭제곱이라 0 에 닿지 않는다 (뿔잔 ×0.5 → ×0.35 → ×0.25)
+ *   int  정수 + relicUpInt (능력치 +1 → +2 → +3)
+ *   slow 길·큰 제사 줄임 — 판을 통째로 줄이니 느리게 (relicUpSlow 올림)
+ */
+type Grow = 'add' | 'mul' | 'cut' | 'int' | 'slow'
+const GROW: Readonly<Record<RelicFx['kind'], Grow>> = {
+  morale: 'add', farm: 'add', crown: 'add', envoy: 'add',
+  horse: 'mul', bond: 'mul', chant: 'mul', woo: 'mul', blessing: 'mul',
+  steady: 'cut', feast: 'cut', stealth: 'cut',
+  stat: 'int', room: 'int', iron: 'int', duel: 'int', escape: 'int', ward: 'int',
+  march: 'slow', altar: 'slow',
+}
+
+/** 효과 한 조각의 숫자 — 그 강화 단계에서 (★ 하나면 손잡이 그대로 · 손잡이가 꺼져 있으면 강화해도 꺼진 채) */
+export function relicValue(f: RelicFx, lv: number): number {
+  const R = P.realm
+  const v = R[f.by]
+  const up = Math.max(0, Math.floor(lv) - 1)
+  const g = GROW[f.kind]
+  if (up === 0 || v === (g === 'mul' || g === 'cut' ? 1 : 0)) return v
+  const m = 1 + up * R.relicUpStep
+  switch (g) {
+    case 'add': return v * m
+    case 'mul': return 1 + (v - 1) * m
+    case 'cut': return v ** m
+    case 'int': return v + up * R.relicUpInt
+    case 'slow': return v + Math.ceil(up * R.relicUpSlow)
+  }
+}
+
+/** 그 유물이 오를 수 있는 끝 단계 — relicLvMax 까지, 다음 단계가 효과를 바꾸지 않으면 거기서 멈춘다 (빈 강화를 내밀지 않는다) */
+export function relicTop(id: string): number {
+  const d = RELIC[id]
+  if (d === undefined) return 1
+  const cap = Math.max(1, Math.floor(P.realm.relicLvMax))
+  let top = 1
+  for (let lv = 2; lv <= cap; lv++) {
+    if (!d.fx.some((f) => relicValue(f, lv) !== relicValue(f, lv - 1))) break
+    top = lv
+  }
+  return top
+}
+
+/** 단계를 그 유물의 1..끝 사이로 */
+export const clampLv = (id: string, lv: number | undefined): number => Math.max(1, Math.min(relicTop(id), Math.floor(lv ?? 1)))
+
+/** 판 안의 장수가 지닌 그 유물의 단계 (옛 저장 · 강화 안 한 것은 1) */
+export const relicLvOf = (h: Holder | null | undefined, id: string): number => clampLv(id, h?.relicLv?.[id])
+
+/** 그 효과의 숫자들 — 지닌 유물마다 (강화 단계까지) */
+function knobs(h: Holder | null | undefined, kind: NumKind): number[] {
   const out: number[] = []
-  for (const d of relicDefs(h)) for (const f of d.fx) if (f.kind === kind) out.push(P.realm[f.by])
+  for (const d of relicDefs(h)) for (const f of d.fx) if (f.kind === kind) out.push(relicValue(f, relicLvOf(h, d.id)))
   return out
 }
 
 /** 더하는 효과의 합 (사기 · 철 · 수확 · 사신 · 겨루기) — 없으면 0 */
-export function relicSum(h: Pick<Hero, 'relics'> | null | undefined, kind: NumKind): number {
+export function relicSum(h: Holder | null | undefined, kind: NumKind): number {
   return knobs(h, kind).reduce((a, b) => a + b, 0)
 }
 
 /** 곱하는 효과의 곱 (기병 힘 · 정) — 없으면 1 */
-export function relicMul(h: Pick<Hero, 'relics'> | null | undefined, kind: NumKind): number {
+export function relicMul(h: Holder | null | undefined, kind: NumKind): number {
   return knobs(h, kind).reduce((a, b) => a * b, 1)
 }
 
@@ -52,7 +110,7 @@ export function relicWith(h: Pick<Hero, 'relics'> | null | undefined, kind: NumK
 }
 
 /** 판마다 몇 번 쓰는 효과(오리모양 토기 escape · 진묘수 ward)의 남은 횟수 */
-export function relicLeft(h: Pick<Hero, 'relics' | 'relicSpent'> | null | undefined, kind: 'escape' | 'ward'): number {
+export function relicLeft(h: Pick<Hero, 'relics' | 'relicLv' | 'relicSpent'> | null | undefined, kind: 'escape' | 'ward'): number {
   return Math.max(0, Math.floor(relicSum(h, kind)) - (h?.relicSpent?.[kind] ?? 0))
 }
 
@@ -75,21 +133,24 @@ export function relicBest(r: Realm, faction: string, kind: 'blessing' | 'altar')
 }
 
 /** 간두령 — 이끄는 군대 사기 덤 */
-export const relicMoraleOf = (h: Pick<Hero, 'relics'> | null): number => relicSum(h, 'morale')
+export const relicMoraleOf = (h: Holder | null): number => relicSum(h, 'morale')
 /** 천마도 말다래 · 기마인물형 토기 — 이끄는 기병의 힘 배수 */
-export const relicHorseMulOf = (h: Pick<Hero, 'relics'> | null): number => relicMul(h, 'horse')
+export const relicHorseMulOf = (h: Holder | null): number => relicMul(h, 'horse')
+
+/** 유물 id → 강화 단계 (판 밖 기록의 relicLevels · 판 안 Hero.relicLv) — 없는 id 는 1 */
+export type RelicLv = Readonly<Record<string, number>>
 
 /** 지닌 유물이 넓힌 단련 그릇 — 능력치마다 (stat 유물은 그릇을 먹지 않으니 여기 안 든다) */
-export function relicRoom(ids: readonly string[]): Partial<Record<GrowStat, number>> {
+export function relicRoom(ids: readonly string[], lv: RelicLv = {}): Partial<Record<GrowStat, number>> {
   const out: Partial<Record<GrowStat, number>> = {}
-  for (const id of ids) for (const f of RELIC[id]?.fx ?? []) if (f.kind === 'room') out[f.stat] = (out[f.stat] ?? 0) + P.realm[f.by]
+  for (const id of ids) for (const f of RELIC[id]?.fx ?? []) if (f.kind === 'room') out[f.stat] = (out[f.stat] ?? 0) + relicValue(f, clampLv(id, lv[id]))
   return out
 }
 
 /** 지닌 유물이 판을 열 때 더하는 능력치 */
-export function relicStats(ids: readonly string[]): Partial<Record<GrowStat, number>> {
+export function relicStats(ids: readonly string[], lv: RelicLv = {}): Partial<Record<GrowStat, number>> {
   const out: Partial<Record<GrowStat, number>> = {}
-  for (const id of ids) for (const f of RELIC[id]?.fx ?? []) if (f.kind === 'stat') out[f.stat] = (out[f.stat] ?? 0) + P.realm[f.by]
+  for (const id of ids) for (const f of RELIC[id]?.fx ?? []) if (f.kind === 'stat') out[f.stat] = (out[f.stat] ?? 0) + relicValue(f, clampLv(id, lv[id]))
   return out
 }
 
@@ -100,13 +161,16 @@ export function slotsFor(level: number): number {
 
 // ───────── 다음 판 — 유물을 지니고 온다
 
-/** 유물을 지닌 몸 — 능력치 유물은 10 에 막힌 몫을 뺀 만큼 더한다 (relicAdd). 지닌 것이 없으면 받은 그대로 */
-export function applyRelics(hero: Hero, ids: readonly string[]): Hero {
+/** 유물을 지닌 몸 — 능력치 유물은 10 에 막힌 몫을 뺀 만큼 더한다 (relicAdd). 강화한 것은 relicLv 에 단계를 적는다. 지닌 것이 없으면 받은 그대로 */
+export function applyRelics(hero: Hero, ids: readonly string[], lv: RelicLv = {}): Hero {
   const keep = ids.filter((id) => RELIC[id] !== undefined)
   if (keep.length === 0) return hero
   const out: Hero = { ...hero, relics: keep }
+  const up: Record<string, number> = {}
+  for (const id of keep) { const n = clampLv(id, lv[id]); if (n > 1) up[id] = n }
+  if (Object.keys(up).length > 0) out.relicLv = up
   const add: Partial<Record<GrowStat, number>> = {}
-  for (const [s, n] of Object.entries(relicStats(keep)) as Array<[GrowStat, number]>) {
+  for (const [s, n] of Object.entries(relicStats(keep, up)) as Array<[GrowStat, number]>) {
     const v = Math.min(10, hero[s] + n)
     if (v > hero[s]) add[s] = v - hero[s]
     out[s] = v
@@ -117,16 +181,16 @@ export function applyRelics(hero: Hero, ids: readonly string[]): Hero {
 
 /**
  * 판을 열 때 — 우리 장수(처음 장수 · 군주 · 데려온 동행)에 지닌 유물을. 남의 나라 장수 · 배우는 판은 안 붙인다.
- * 칸 수는 판을 열 때의 단련 단계로 (drillRealm 뒤에 부른다). 붙인 장수 id 를 돌려준다
+ * 칸 수는 판을 열 때의 단련 단계로 (drillRealm 뒤에 부른다). lv 는 판 밖 기록의 강화 단계 (relicLevels). 붙인 장수 id 를 돌려준다
  */
-export function relicRealm(r: Realm, wear: Readonly<Record<string, readonly string[]>>): string[] {
+export function relicRealm(r: Realm, wear: Readonly<Record<string, readonly string[]>>, lv: RelicLv = {}): string[] {
   if (r.region === 'tutorial') return []
   const out: string[] = []
   for (const id of Object.keys(r.heroes).sort()) {
     const h = r.heroes[id]!
     const ids = wear[id]
     if (h.faction !== r.player || h.relics !== undefined || ids === undefined || ids.length === 0) continue
-    const next = applyRelics(h, ids.slice(0, slotsFor(h.drill?.lv ?? 0)))
+    const next = applyRelics(h, ids.slice(0, slotsFor(h.drill?.lv ?? 0)), lv)
     if (next === h) continue
     r.heroes[id] = next
     out.push(id)
@@ -137,18 +201,38 @@ export function relicRealm(r: Realm, wear: Readonly<Record<string, readonly stri
 // ───────── 판 밖 기록 — 모은 유물 · 지닌 장수 · 연 무덤
 
 export interface RelicOwn {
-  /** 고른 횟수 (같은 것을 또 고르면 는다) */
+  /** 고른 횟수 (같은 것을 또 고르면 는다) — 강화 단계는 이것으로 센다 (relicLevel · 끝 단계에서 멈춘다) */
   n: number
   /** 처음 찾은 판의 시드 · 땅 */
   seed: number
   region?: RegionId
 }
 
-/** 연 무덤 — 놓인 상자 셋 · 고른 것 (아직 안 골랐으면 null) */
+/** 연 무덤 — 놓인 상자 셋(드문 상자가 놓이면 넷) · 고른 것 (아직 안 골랐으면 null) */
 export interface RelicTomb {
   ids: string[]
   pick: string | null
+  /** 드문 상자 — 판 끝에만 놓이는 넷째 상자의 유물 (ids 맨 뒤에도 있다 · 옛 기록 · 안 놓인 판은 없다) */
+  rare?: string
+  /** 고른 유물을 이미 가졌을 때 고르기 전의 단계 — 강화를 보여 준다 (새로 얻었으면 없다) */
+  was?: number
 }
+
+/** 가진 유물의 강화 단계 — 고른 횟수로 센다 (옛 기록도 n 이 있으니 그대로 · n 이 깨졌으면 1). 없으면 0 */
+export function relicLevel(own: { readonly n?: number } | undefined, id: string): number {
+  if (own === undefined) return 0
+  return clampLv(id, typeof own.n === 'number' && Number.isFinite(own.n) ? own.n : 1)
+}
+
+/** 가진 유물 가운데 ★ 둘 이상인 것의 단계 — 판을 열 때 relicRealm 에, 단련터 그릇 셈에 넘긴다 */
+export function relicLevels(own: Readonly<Record<string, { readonly n?: number }>>): Record<string, number> {
+  const out: Record<string, number> = {}
+  for (const id of Object.keys(own)) { const lv = relicLevel(own[id], id); if (lv > 1) out[id] = lv }
+  return out
+}
+
+/** 더 오를 수 있나 — 가졌고 끝 단계 아래 */
+const canUp = (owned: Readonly<Record<string, { readonly n?: number }>>, id: string): boolean => owned[id] !== undefined && relicLevel(owned[id], id) < relicTop(id)
 
 export interface RelicStore {
   v: 1
@@ -170,29 +254,60 @@ export function emptyRelics(): RelicStore {
 const tierWeight = (t: RelicTier): number =>
   Math.max(0, t === 'legend' ? P.realm.relicWeightLegend : t === 'rare' ? P.realm.relicWeightRare : P.realm.relicWeightCommon)
 
+type Owned = Readonly<Record<string, { readonly n?: number }>>
+
+/** 차례대로 — 그 땅의 새 것 · 그 땅의 오를 것 · 다른 땅의 새 것 · 다른 땅의 오를 것 · (다 오른 뒤에야) 그 땅의 것 · 아무것 */
+function chestTiers(region: RegionId, owned: Owned, only: (d: RelicDef) => boolean, full: boolean): RelicDef[][] {
+  const pool = poolOf(region).filter(only)
+  const rest = RELICS.filter((x) => only(x) && !pool.includes(x))
+  const fresh = (xs: RelicDef[]): RelicDef[] => xs.filter((x) => owned[x.id] === undefined)
+  const up = (xs: RelicDef[]): RelicDef[] => xs.filter((x) => canUp(owned, x.id))
+  const tiers = [fresh(pool), up(pool), fresh(rest), up(rest)]
+  return full ? [...tiers, pool, rest] : tiers
+}
+
+/** 그 묶음에서 귀함 무게로 하나 — 판의 시드로 */
+function drawOne(from: readonly RelicDef[], seed: number, i: number, key: string): RelicDef {
+  const total = from.reduce((s, x) => s + tierWeight(x.tier), 0)
+  let at = roll(seed, i, key) * (total > 0 ? total : from.length)
+  for (const x of from) {
+    at -= total > 0 ? tierWeight(x.tier) : 1
+    if (at < 0) return x
+  }
+  return from[from.length - 1]!
+}
+
 /**
- * 옛 무덤의 상자 — 판의 땅에서 relicChests 개 (판의 시드로 정한다). 아직 없는 것부터, 모자라면 있는 것 · 그래도 모자라면 다른 땅의 것.
- * 귀함마다 무게(흔함 6 · 귀함 3 · 보배 1)로 뽑는다. 같은 것은 두 번 안 놓인다
+ * 옛 무덤의 상자 — 판의 땅에서 relicChests 개 (판의 시드로 정한다). 아직 없는 것부터, 모자라면 더 오를 것 · 그래도 모자라면 다른 땅의 것.
+ * 다 오른 유물(★ 끝)은 모든 유물이 다 오른 뒤에야 놓인다. 귀함마다 무게(흔함 6 · 귀함 3 · 보배 1)로 뽑는다. 같은 것은 두 번 안 놓인다
  */
-export function drawChests(seed: number, region: RegionId, owned: Readonly<Record<string, unknown>>): string[] {
+export function drawChests(seed: number, region: RegionId, owned: Owned): string[] {
   const n = Math.max(1, Math.floor(P.realm.relicChests))
-  const pool = poolOf(region)
-  const fresh = pool.filter((x) => owned[x.id] === undefined)
-  const tiers: RelicDef[][] = [fresh, pool.filter((x) => owned[x.id] !== undefined), RELICS.filter((x) => !pool.includes(x) && owned[x.id] === undefined), RELICS.filter((x) => !pool.includes(x))]
+  const tiers = chestTiers(region, owned, () => true, true)
   const out: string[] = []
   for (let i = 0; i < n; i++) {
     const from = tiers.map((t) => t.filter((x) => !out.includes(x.id))).find((t) => t.length > 0)
     if (from === undefined) break
-    const total = from.reduce((s, x) => s + tierWeight(x.tier), 0)
-    let at = roll(seed, i, `relic-chest:${region}`) * (total > 0 ? total : from.length)
-    let got = from[from.length - 1]!
-    for (const x of from) {
-      at -= total > 0 ? tierWeight(x.tier) : 1
-      if (at < 0) { got = x; break }
-    }
-    out.push(got.id)
+    out.push(drawOne(from, seed, i, `relic-chest:${region}`).id)
   }
   return out
+}
+
+/**
+ * 드문 상자 — 판 끝 무덤에만, relicRareChance 몫으로 넷째 상자가 놓인다 (판의 시드로 정한다). 귀함·보배만 든다:
+ * 아직 없는 것 · 없으면 더 오를 것 (다 올랐으면 안 놓인다). 이미 놓인 셋(taken)과는 겹치지 않는다
+ */
+export function drawRare(seed: number, region: RegionId, owned: Owned, taken: readonly string[]): string | null {
+  if (roll(seed, 0, `relic-rare:${region}`) >= P.realm.relicRareChance) return null
+  const from = chestTiers(region, owned, (d) => d.tier !== 'common', false).map((t) => t.filter((x) => !taken.includes(x.id))).find((t) => t.length > 0)
+  return from === undefined ? null : drawOne(from, seed, 0, `relic-rare-pick:${region}`).id
+}
+
+/** 이 판의 무덤 — 상자 셋 (+ 드문 상자) · 아직 안 골랐다 */
+export function drawTomb(seed: number, region: RegionId, owned: Owned): RelicTomb {
+  const ids = drawChests(seed, region, owned)
+  const rare = drawRare(seed, region, owned, ids)
+  return rare === null ? { ids, pick: null } : { ids: [...ids, rare], pick: null, rare }
 }
 
 /** 판의 열쇠 — 시드 (같은 판은 몇 번을 열어도 한 번만 고른다) */
@@ -202,21 +317,24 @@ export const tombKey = (seed: number): string => String(seed)
 export function openTomb(store: RelicStore, seed: number, region: RegionId): RelicStore {
   const key = tombKey(seed)
   if (store.tombs[key] !== undefined) return store
-  const ids = drawChests(seed, region, store.own)
   const order = [...store.order.filter((x) => x !== key), key]
-  const tombs = { ...store.tombs, [key]: { ids, pick: null } }
+  const tombs = { ...store.tombs, [key]: drawTomb(seed, region, store.own) }
   while (order.length > Math.max(1, P.realm.relicKeepRuns)) delete tombs[order.shift()!]
   return { ...store, tombs, order }
 }
 
-/** 상자 하나를 고른다 — 그 판에서 한 번만 · 놓인 상자 가운데서만. 못 고르면 받은 그대로 */
+/**
+ * 상자 하나를 고른다 — 그 판에서 한 번만 · 놓인 상자 가운데서만. 못 고르면 받은 그대로.
+ * 이미 가진 것이면 한 단계 오른다(n + 1 · 끝 단계에서 멈춘다) — 무덤에 고르기 전 단계(was)를 적어 강화를 보여 준다
+ */
 export function pickTomb(store: RelicStore, seed: number, id: string, region?: RegionId): RelicStore {
   const key = tombKey(seed)
   const t = store.tombs[key]
   if (t === undefined || t.pick !== null || !t.ids.includes(id) || RELIC[id] === undefined) return store
-  const was = store.own[id]
-  const own: Record<string, RelicOwn> = { ...store.own, [id]: was !== undefined ? { ...was, n: was.n + 1 } : { n: 1, seed, ...(region !== undefined ? { region } : {}) } }
-  return { ...store, own, tombs: { ...store.tombs, [key]: { ...t, pick: id } } }
+  const had = store.own[id]
+  const own: Record<string, RelicOwn> = { ...store.own, [id]: had !== undefined ? { ...had, n: Math.max(1, Math.floor(had.n || 1)) + 1 } : { n: 1, seed, ...(region !== undefined ? { region } : {}) } }
+  const tomb: RelicTomb = { ...t, pick: id, ...(had !== undefined ? { was: relicLevel(had, id) } : {}) }
+  return { ...store, own, tombs: { ...store.tombs, [key]: tomb } }
 }
 
 /** 그 유물을 지닌 장수 — 없으면 null */
@@ -260,16 +378,17 @@ export function unequip(store: RelicStore, hero: string, slot: number): RelicSto
 
 const STAT_WORD: Readonly<Record<GrowStat, string>> = { mu: '무예', tong: '통솔', ryak: '지략', chi: '내정', deok: '매력' }
 const pct = (v: number): string => `${Math.round(v * 100)}%`
+const times = (v: number): string => String(Math.round(v * 100) / 100)
 
 /** 효과 한 조각의 글 — 판이 하는 그대로 */
-export function fxText(f: RelicFx): string {
-  const v = P.realm[f.by]
+export function fxText(f: RelicFx, lv = 1): string {
+  const v = relicValue(f, lv)
   switch (f.kind) {
     case 'stat': return `${STAT_WORD[f.stat]} +${v}`
     case 'room': return `${STAT_WORD[f.stat]} 그릇 +${v}`
     case 'morale': return `이끄는 군대 사기 +${pct(v)}`
     case 'horse': return `이끄는 기병 힘 +${pct(v - 1)}`
-    case 'bond': return `정이 ${v}배 빨리 찬다`
+    case 'bond': return `정이 ${times(v)}배 빨리 찬다`
     case 'iron': return `맡은 고을 철 +${v} (계절마다)`
     case 'farm': return `맡은 고을 수확 +${pct(v)}`
     case 'crown': return `군주가 지니면 나라 수확 +${pct(v)}`
@@ -280,8 +399,8 @@ export function fxText(f: RelicFx): string {
     case 'escape': return `싸움에서 잡히거나 쓰러질 때 다친 몸으로 빠져나온다 (판마다 ${v}번)`
     case 'march': return `이끄는 군대가 길에서 ${v}계절 덜 걸린다 (적어도 한 계절)`
     case 'feast': return `호궤에 드는 곡식 −${pct(1 - v)}`
-    case 'woo': return `회유할 때 마음의 벽이 ${v}배 빨리 깎인다`
-    case 'blessing': return `나라 제사 효과 ${v}배 (무당 핏줄과 같다)`
+    case 'woo': return `회유할 때 마음의 벽이 ${times(v)}배 빨리 깎인다`
+    case 'blessing': return `나라 제사 효과 ${times(v)}배 (무당 핏줄과 같다)`
     case 'altar': return `큰 제사 길에 내리 지낼 제사 −${v}`
     case 'ward': return `맡은 고을에 쳐들어온 적을 싸움 없이 돌려보낸다 (판마다 ${v}번)`
     case 'stealth': return `자객·구출로 보내면 들킬 몫 −${pct(1 - v)}`
@@ -289,8 +408,8 @@ export function fxText(f: RelicFx): string {
 }
 
 /** 유물 하나의 효과 한 줄 */
-export function relicLine(id: string): string {
+export function relicLine(id: string, lv = 1): string {
   const d = RELIC[id]
   if (d === undefined) return ''
-  return d.fx.map(fxText).join(' · ')
+  return d.fx.map((f) => fxText(f, lv)).join(' · ')
 }

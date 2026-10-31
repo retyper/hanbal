@@ -11,7 +11,7 @@ import type { GrowStat, Hero, Realm, Vow } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { relicRoom } from '../../realm/relics.ts'
 import { nameHtml } from './heroview.ts'
-import { pickerHtml, relicDexHtml, slotsHtml, wornBy, type RelicKit } from './relics.ts'
+import { pickerHtml, relicDexHtml, slotsHtml, wornBy, wornLv, type RelicKit } from './relics.ts'
 import { radarSvg } from './radar.ts'
 
 const KEY = 'hanbal.realm.drill'
@@ -68,7 +68,7 @@ export function engraveRun(r: Realm): Record<string, number> {
 /** 단련터의 + — 올렸으면 true */
 export function raiseHero(id: string, stat: GrowStat, born: Pick<Hero, GrowStat> | undefined): boolean {
   const s = loadDrill()
-  const n = raise(s, id, stat, born, relicRoom(wornBy(id))) // 지닌 유물이 넓힌 그릇까지 (relics.ts)
+  const n = raise(s, id, stat, born, relicRoom(wornBy(id), wornLv())) // 지닌 유물이 넓힌 그릇까지 (relics.ts)
   if (n === s) return false
   saveDrill(n)
   return true
@@ -163,7 +163,7 @@ export function yardHtml(k: DrillKit, o: YardOpts): string {
       const uv = uiriWith(born.uiri, shift)
       h += `<div class="dyr">${radarSvg([...axes, { label: STAT_NAME.uiri, value: uv }], '#d9b36a', 150, [born.mu, born.tong, born.ryak, born.chi, born.deok, born.uiri])}`
       h += `<div class="dys">`
-      const room = relicRoom(wornBy(id)) // 지닌 유물이 넓힌 그릇 (천마도 말다래 · 비파형동검)
+      const room = relicRoom(wornBy(id), wornLv()) // 지닌 유물이 넓힌 그릇 (천마도 말다래 · 비파형동검)
       for (const s of DRILL_STATS) {
         const cap = capOf(born, s, room)
         const st = raiseState(store, id, s, born, room)

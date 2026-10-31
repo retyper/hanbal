@@ -3404,7 +3404,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const work = h.faction !== me() || h.status !== 'free' ? '' : orderedByMe(h.id) ? ' <i class="hwk me">📜 명령</i>'
       : !ours ? '' : job === null && !mine && realm !== null && autoIdle(realm) && (chan !== null || keeps) ? ' <i class="hwk au">⚙ 알아서</i>' : ''
     return `<button class="hrow${isRuler(r, h.id) ? ' ruler' : ''}${job !== null ? ' busy' : ''}" data-act="hero" data-id="${h.id}">${bust(h)}${job !== null ? `<i class="hbz">⏳</i>` : ''}<span class="hb">`
-      + `<b>${nameHtml(h.name)}${isRuler(r, h.id) ? ' <span class="mute">군주</span>' : ''}${h.drill !== undefined && h.drill.lv > 0 && h.faction === me() ? ` <span class="dlv">단련 ${h.drill.lv}</span>` : ''}${h.faction === me() ? relicChips(ART, esc, h.relics) : ''}${mine ? ' <span class="jsm">직접</span>' : ''}${work}${seen ? '' : ' <span class="heard">이름만 들었다</span>'}</b>`
+      + `<b>${nameHtml(h.name)}${isRuler(r, h.id) ? ' <span class="mute">군주</span>' : ''}${h.drill !== undefined && h.drill.lv > 0 && h.faction === me() ? ` <span class="dlv">단련 ${h.drill.lv}</span>` : ''}${h.faction === me() ? relicChips(ART, esc, h.relics, h.relicLv ?? {}) : ''}${mine ? ' <span class="jsm">직접</span>' : ''}${work}${seen ? '' : ' <span class="heard">이름만 들었다</span>'}</b>`
       + (job !== null ? `<span class="hdo">⏳ ${esc(job[1])}</span>` : `<span class="mute">${esc(roleLine(r, h))}</span>`)
       + (chan !== null ? `<span class="jsd">${chanJobHtml(h.id)}</span>` : '')
       + `<span class="tr3">${h.faction === me() && h.status === 'free' ? bondChip(r, h) : ''}${traitChips(h, seen)}</span>${extra}</span></button>`
@@ -3615,7 +3615,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const annal = annalOf(x.id)
     h += `<div class="hpic">${file !== undefined ? `<img class="big" src="${ART}bust/${file}.jpg" alt="" data-act="bust-view" data-src="${ART}bust/${file}.jpg">` : bust(x, 'face')}${annal !== undefined ? `<button class="annb" data-act="annal" data-id="${x.id}" aria-label="사서에 남은 이야기">📜<b>?</b></button>` : ''}${flamesHtml(x)}</div>`
     // 판 밖 단련을 들고 온 장수 — 「단련 n」 (HERO-GROWTH ★ §A)
-    h += `<div class="hn">${nameHtml(x.name)}${x.drill !== undefined && x.drill.lv > 0 && x.faction === me() ? ` <span class="dlv">단련 ${x.drill.lv}</span>` : ''}${x.faction === me() ? relicChips(ART, esc, x.relics) : ''}</div><div class="mute">${emblem(x.faction)}${esc(r.factions[x.faction]?.name ?? '떠돌이')}${isRuler(r, x.id) ? ' 군주' : ''} · ${esc(roleLine(r, x))}</div>`
+    h += `<div class="hn">${nameHtml(x.name)}${x.drill !== undefined && x.drill.lv > 0 && x.faction === me() ? ` <span class="dlv">단련 ${x.drill.lv}</span>` : ''}${x.faction === me() ? relicChips(ART, esc, x.relics, x.relicLv ?? {}) : ''}</div><div class="mute">${emblem(x.faction)}${esc(r.factions[x.faction]?.name ?? '떠돌이')}${isRuler(r, x.id) ? ' 군주' : ''} · ${esc(roleLine(r, x))}</div>`
     // 기억 — 겪은 일이 계절 차례 그림으로, 이름 바로 밑에 (MEMORY §3-2 5). 남의 장수는 우리와 얽힌 일만
     if (seen) h += memRowHtml(realm!, x, me(), ART, esc)
     h += heroRadar(x, seen, ours)
