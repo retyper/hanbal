@@ -1059,6 +1059,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .plcard.up { border-color: #6fae5a; background: #1c2416; } .ap .plcard.down { border-color: #b8784a; background: #261c14; }
 .ap .plch { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; } .ap .plch b { font-size: 15px; }
 .ap .pltag { font-size: 11.5px; padding: 1px 7px; border-radius: 999px; } .ap .pltag.rv { background: #183048; color: #a8d4ff; border: 1px solid #3a6a9a; } .ap .pltag.hl { background: #2e2618; color: #d8c090; border: 1px solid #6a5a3a; }
+.ap .pltag.bd { background: #3a1a14; color: #ffc8b0; border: 1px solid #a04a30; display: inline-flex; align-items: center; gap: 3px; flex-wrap: wrap; } .ap .pltag .plem { width: 16px; height: 16px; object-fit: contain; }
+/* 우리 도읍 카드 — 우리 땅 파랑 테 · 별 (형 10-31: "우리 도읍은 확실하게 표시" · 금빛 테는 노란 나라와 헷갈렸다) */
+.ap .plcard.cap { border: 2px solid #4a8ae0; background: #142236; box-shadow: 0 0 10px #4a8ae044; } .ap .plcard.cap .star { color: #ffd76a; font-style: normal; margin-right: 3px; }
 .ap .plrow { display: flex; align-items: center; gap: 8px; } .ap .plrow > .btn { flex: none; min-width: 54px; font-variant-numeric: tabular-nums; }
 .ap .plmid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; } .ap .plmid > b { font-size: 15px; font-variant-numeric: tabular-nums; }
 .ap .plmid > b i { font-style: normal; font-size: 12.5px; color: #9fd18b; } .ap .plcard.down .plmid > b i { color: #f0a070; }

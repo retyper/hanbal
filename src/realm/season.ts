@@ -547,6 +547,12 @@ function disbandArmy(r: Realm, o: Extract<Order, { kind: 'disband' }>, lines: Re
   lines.push({ kind: 'disband', army: a.id, node: node.id, n })
 }
 
+/** 남의 도읍을 빼앗으면 이름의 「도읍」을 「옛터」로 — 차지한 쪽의 도읍이 아니다 (형 10-31: "옛터를 먹었다고 도읍이라 이름 짓지 마") */
+function ruinName(r: Realm, node: RNode): void {
+  // 이름은 판을 짤 때만 정해 readonly 다 — 빼앗긴 도읍만 여기서 고쳐 쓴다 (부르는 곳이 이 node 를 계속 쓰므로 갈아 끼우지 않는다)
+  if (node.owner !== null && r.factions[node.owner]?.capital !== node.id) (node as { name: string }).name = node.name.replace('도읍', '옛터')
+}
+
 /** 도읍이 떨어지면 그 나라가 잡아 두었던 빼앗은 쪽 장수들이 풀려난다 */
 function freeAtCapital(r: Realm, node: string, prevOwner: string | null, taker: string, lines: ReportLine[]): void {
   if (prevOwner === null || r.factions[prevOwner]?.capital !== node) return
@@ -1347,6 +1353,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
       onTake(r, node.id)
       freeAtCapital(r, node.id, node.owner, a.faction, lines)
       node.owner = a.faction
+      ruinName(r, node)
       node.takenAt = r.season
       lines.push({ kind: 'take', faction: a.faction, node: node.id })
       revealAround(r, a.faction, node.id)
@@ -1394,6 +1401,7 @@ function walkIn(r: Realm, live: readonly Army[], node: RNode, lines: ReportLine[
     if (node.owner !== null) onTake(r, node.id)
     freeAtCapital(r, node.id, node.owner, lead.faction, lines)
     node.owner = lead.faction
+    ruinName(r, node)
     node.takenAt = r.season
     lines.push({ kind: 'take', faction: lead.faction, node: node.id })
     revealAround(r, lead.faction, node.id)
