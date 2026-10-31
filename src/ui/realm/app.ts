@@ -9,7 +9,8 @@
 import { faceFile, noteAscended } from './face.ts'
 import { aiOrders } from '../../realm/ai.ts'
 import { headcount, strength, type Equip, type UnitKind } from '../../realm/battle.ts'
-import { CUSTOM_ICON, FACTION_ART, GOOD_ICON, SEASON_ICON, SOL_ANIM2, SOL_ANIM_AR, UNIT_ICON, flagIcon, kidBust, nodeIcon, noteGrowing, noteKids } from '../../realm/data/art.ts'
+import { bustOf, CUSTOM_ICON, FACTION_ART, GOOD_ICON, SEASON_ICON, SOL_ANIM2, SOL_ANIM_AR, UNIT_ICON, flagIcon, kidBust, nodeIcon, noteGrowing, noteKids } from '../../realm/data/art.ts'
+import { AWAKEN_ART } from '../../realm/data/awaken-art.ts'
 import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../../realm/data/nations-yeongnam.ts'
 import { SOUTH_NATIONS } from '../../realm/data/nations-south.ts'
@@ -1259,13 +1260,38 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (l === undefined) return
     const h = r.heroes[l.hero]!
     root.querySelector('.ascfx')?.remove()
+    // 형 11-01: "각성 연출은 정말 제대로 힘줘 봐" — 불꽃 세 칸이 차례로 붙고 → 초상이 떨며 불길이 치솟고 → 번쩍 · 각성 초상으로 바뀌고
+    // → 금빛 붓질 위에 「각성」 붓글씨가 내리찍히고 → 능력치가 하나씩 오른다. 불티는 낱낱이 (메모리: 이펙트는 낱낱이) · 넓은 막은 opacity 만 (폰 그래픽 한도)
+    const b = bustOf(h.id)
+    const FX = `${ART}fx/awaken/`
+    const before = b !== undefined ? `<img class="axold" src="${ART}bust-hd/${b}.jpg" onerror="this.onerror=null;this.src='${ART}bust/${b}.jpg'" alt="">` : ''
+    const after = b !== undefined && AWAKEN_ART.has(b) ? `<img class="axnew" src="${ART}awaken-hd/${b}.jpg" alt="">` : before.replace('axold', 'axnew')
+    const phone = window.matchMedia('(pointer: coarse)').matches
+    const n = phone ? P.realm.ascendEmbersPhone : P.realm.ascendEmbers
+    const jit = (i: number, k: number): number => ((i * 73 + k * 151 + h.id.length * 37) % 101) / 101 // 불티 자리 — 장수마다 같은 흩어짐
+    const embers = Array.from({ length: n }, (_, i) => `<i style="--x:${(jit(i, 1) * 100).toFixed(1)}%;--s:${(0.5 + jit(i, 2)).toFixed(2)};--d:${(2.2 + jit(i, 3) * 2).toFixed(2)}s;--dl:${(1.4 + jit(i, 4) * 2.4).toFixed(2)}s;--dx:${((jit(i, 5) - 0.5) * 60).toFixed(0)}px"><img src="${FX}ember.png" alt=""></i>`).join('')
+    // 불혀 여섯 — 초상 양옆에서 치솟는다 (가운데는 초상이 가린다)
+    const tongues = [-34, -22, -10, 64, 76, 88].map((l, i) => `<img class="axtg" src="${FX}flame.png" style="--i:${i};--l:${l}%" alt="">`).join('')
+    const slots = [0, 1, 2].map((i) => `<i class="axslot" style="--i:${i}"><img src="${ART}fx/fire.png" alt=""></i>`).join('')
+    const stats = (['mu', 'tong', 'ryak', 'chi', 'deok'] as const).map((s, i) => `<span class="axst" style="--i:${i}">${STAT_NAME[s]} <s>${h[s] - P.realm.ascendBonus}</s><b>${h[s]}</b></span>`).join('')
     const el = document.createElement('div')
     el.className = 'ascfx'
-    el.innerHTML = `<div class="ascin">${bustHd(h, 'ascimg')}<b class="ascnm">${esc(h.name)}</b><span class="asct">각성</span><small>능력치 모두 +${P.realm.ascendBonus}</small></div>`
-    el.addEventListener('click', () => el.remove())
+    el.style.cssText = `--t0:${P.realm.ascendSlotMs}ms;--tg:${P.realm.ascendSlotGapMs}ms;--tf:${P.realm.ascendFlashMs}ms`
+    el.innerHTML = `<div class="axveil"></div><img class="axwall" src="${FX}wall.png" alt=""><div class="axembers">${embers}</div>`
+      + `<div class="axstage"><div class="axcard">${tongues}${before}${after}</div><div class="axslots">${slots}</div>`
+      + `<div class="axtitle"><img class="axbrush" src="${FX}brush.png" alt=""><img class="axword" src="${FX}word.png" alt="각성"></div>`
+      + `<b class="axname">${esc(h.name)}</b><div class="axstats">${stats}</div></div><div class="axflash"></div>`
+    const timers: number[] = []
+    const gone = (): void => { timers.forEach((t) => window.clearTimeout(t)); if (!el.isConnected) return; el.classList.add('out'); window.setTimeout(() => el.remove(), 350) }
+    el.addEventListener('click', gone)
     root.appendChild(el)
-    ding(snd('horn_victory'), 0.7)
-    window.setTimeout(() => el.remove(), P.realm.ascendShowMs)
+    // 소리도 장면을 따라 — 불꽃 세 칸은 북 셋 · 번쩍에 큰 타격 · 붓글씨에 나팔 · 그다음 장수의 한마디
+    const at = (ms: number, f: () => void): void => { timers.push(window.setTimeout(() => { if (el.isConnected && document.visibilityState === 'visible') f() }, ms)) }
+    for (const i of [0, 1, 2]) at(P.realm.ascendSlotMs + i * P.realm.ascendSlotGapMs, () => ding(snd('tap_drum'), 0.55 + i * 0.15))
+    at(P.realm.ascendFlashMs, () => { ding(snd('battle_crit'), 0.8); if (typeof navigator.vibrate === 'function') navigator.vibrate([30, 40, 60]) })
+    at(P.realm.ascendFlashMs + 250, () => ding(snd('horn_victory'), 0.7))
+    at(P.realm.ascendFlashMs + 1100, () => { if (h.status === 'free' && !isRuler(r, h.id)) ding(voicePath(h, 'tap', false), 0.9) })
+    timers.push(window.setTimeout(gone, P.realm.ascendShowMs))
   }
   /** 승리가 가깝다 — 넷 가운데 하나가 이번 계절에 문턱(pathAlertShare)을 넘으면 크게 한 번 (형 10-26: "승리 목표 달성의 80%가 되면 한번 알림") */
   function nearWinToast(prev: Realm, next: Realm): void {

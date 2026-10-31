@@ -1204,16 +1204,54 @@ export const UI_CSS = `
 .ap .seg button { border: 6px solid transparent; border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 6px 8px stretch; background: none; padding: 0 2px; color: #d8cdb4; }
 .ap .seg button.on { border-image-source: url(__ART__ui/btn-gold.png?v=2); border-image-slice: 30 35 fill; background: none; color: #2a1606; font-weight: 700; }
 /* 각성 연출 (형 10-31 · WWE 오버액션) — 어두운 막 위로 각성 초상이 솟고 금빛 글이 쾅. 막은 opacity 만 (폰 그래픽 한도) */
-.ap .ascfx { position: absolute; inset: 0; z-index: 90; display: grid; place-items: center; background: #0b0d12e6; animation: ascbg .35s ease-out both; cursor: pointer; }
-@keyframes ascbg { from { opacity: 0; } to { opacity: 1; } }
-.ap .ascin { display: grid; justify-items: center; gap: 4px; }
-.ap .ascimg { width: min(72vw, 420px); aspect-ratio: 1; border-radius: 14px; box-shadow: 0 0 0 2px #ffd76a, 0 0 40px #ffb84a99; animation: ascup .7s cubic-bezier(.2, 1.4, .4, 1) .1s both; }
-@keyframes ascup { from { opacity: 0; transform: translateY(18%) scale(.85); } to { opacity: 1; transform: none; } }
-.ap .ascnm { font-size: 22px; color: #f6e6c0; margin-top: 8px; animation: ascbg .4s ease-out .6s both; }
-.ap .asct { font-size: 46px; font-weight: 900; letter-spacing: .2em; color: #ffd76a; text-shadow: 0 0 18px #ffb84a, 0 2px 0 #6a3a10; animation: ascslam .45s cubic-bezier(.2, 1.8, .4, 1) .75s both; }
-@keyframes ascslam { from { opacity: 0; transform: scale(2.4); } to { opacity: 1; transform: none; } }
-.ap .ascfx small { color: #e8d8b0; font-size: 14px; animation: ascbg .4s ease-out 1.1s both; }
-@media (prefers-reduced-motion: reduce) { .ap .ascfx, .ap .ascimg, .ap .ascnm, .ap .asct, .ap .ascfx small { animation: none; } }
+/* 각성 연출 (형 11-01: "정말 제대로 힘줘 봐") — 시각은 app.ts ascendShow 가 --t0(불꽃 첫 칸) · --tg(칸 사이) · --tf(번쩍) 로 준다.
+   넓은 막(어둠·불벽·번쩍)은 opacity 만 움직인다 (폰 그래픽 한도) · 움직임은 작은 것(초상·불혀·불티·칸·글씨)에만 */
+.ap .ascfx { position: absolute; inset: 0; z-index: 90; overflow: hidden; display: grid; place-items: center; cursor: pointer; transition: opacity .3s ease; }
+.ap .ascfx.out { opacity: 0; }
+.ap .axveil { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 62%, #2a0e04f2 0, #07080cf7 72%); animation: axfade .4s ease-out both; }
+@keyframes axfade { from { opacity: 0; } to { opacity: 1; } }
+.ap .axwall { position: absolute; left: 50%; bottom: 0; width: max(100%, 720px); transform: translateX(-50%); opacity: 0; pointer-events: none;
+  animation: axwall .9s ease-out calc(var(--tf) - 600ms) forwards, axwallb 1.4s ease-in-out calc(var(--tf) + 300ms) infinite alternate; }
+@keyframes axwall { from { opacity: 0; } to { opacity: .95; } }
+@keyframes axwallb { from { opacity: .95; } to { opacity: .68; } }
+.ap .axembers { position: absolute; inset: 0; pointer-events: none; }
+.ap .axembers i { position: absolute; left: var(--x); bottom: -40px; width: calc(28px * var(--s)); opacity: 0; animation: axember var(--d) linear var(--dl) infinite; }
+.ap .axembers img { display: block; width: 100%; }
+@keyframes axember { 0% { opacity: 0; transform: none; } 12% { opacity: 1; } 75% { opacity: .85; } 100% { opacity: 0; transform: translate(var(--dx), -96vh) rotate(30deg); } }
+.ap .axstage { position: relative; z-index: 1; display: grid; justify-items: center; gap: 6px; }
+.ap .axcard { position: relative; width: min(64vw, 360px, 44vh); aspect-ratio: 1;
+  animation: axpop .55s cubic-bezier(.2, 1.4, .4, 1) .15s both, axshake .5s linear calc(var(--tf) - 550ms), axboom .6s cubic-bezier(.2, 1.6, .4, 1) var(--tf); }
+@keyframes axpop { from { opacity: 0; transform: translateY(14%) scale(.85); } to { opacity: 1; transform: none; } }
+@keyframes axshake { 0%, 100% { transform: none; } 20% { transform: translate(-4px, 2px) rotate(-1deg); } 40% { transform: translate(5px, -2px) rotate(1deg); } 60% { transform: translate(-6px, 1px); } 80% { transform: translate(4px, -1px); } }
+@keyframes axboom { 0% { transform: none; } 30% { transform: scale(1.08); } 100% { transform: none; } }
+.ap .axold, .ap .axnew { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 14px; box-shadow: 0 0 0 2px #ffd76a, 0 0 36px #ff9a3a88; }
+.ap .axold { animation: axgone .25s linear var(--tf) forwards; }
+@keyframes axgone { to { opacity: 0; } }
+.ap .axnew { opacity: 0; animation: axfade .25s ease-out var(--tf) forwards; }
+.ap .axtg { position: absolute; bottom: -6%; left: var(--l); width: 46%; z-index: -1; transform-origin: 50% 100%; opacity: 0; pointer-events: none;
+  animation: axtg .5s ease-out calc(var(--tf) - 600ms + var(--i) * 40ms) forwards, axlick .9s ease-in-out calc(var(--tf) + var(--i) * 70ms) infinite alternate; }
+@keyframes axtg { from { opacity: 0; transform: scaleY(.2); } to { opacity: 1; transform: translateY(-10%) scaleY(1.9); } }
+@keyframes axlick { from { transform: translateY(-10%) scaleY(1.9); } to { transform: translateY(-4%) scaleY(1.55) skewX(4deg); } }
+.ap .axslots { display: flex; gap: 14px; margin-top: 4px; }
+.ap .axslot { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 2px solid #ffd76a44; background: #1a0d06; animation: axring .4s ease-out calc(var(--t0) + var(--i) * var(--tg)) forwards; }
+@keyframes axring { to { border-color: #ffd76a; } }
+.ap .axslot img { width: 30px; opacity: 0; transform: scale(.2); animation: axign .35s cubic-bezier(.2, 1.8, .4, 1) calc(var(--t0) + var(--i) * var(--tg)) forwards; }
+@keyframes axign { to { opacity: 1; transform: none; } }
+.ap .axtitle { position: relative; width: min(84vw, 420px); aspect-ratio: 900 / 503; margin-top: -26px; pointer-events: none; }
+.ap .axbrush, .ap .axword { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ap .axbrush { opacity: .85; transform: scaleX(0); transform-origin: 8% 50%; animation: axswipe .35s cubic-bezier(.3, .9, .3, 1) calc(var(--tf) + 150ms) forwards; }
+@keyframes axswipe { to { transform: none; } }
+.ap .axword { opacity: 0; animation: axslam .45s cubic-bezier(.2, 1.8, .4, 1) calc(var(--tf) + 250ms) forwards; }
+@keyframes axslam { from { opacity: 0; transform: scale(2.6) rotate(-4deg); } 60% { opacity: 1; } to { opacity: 1; transform: none; } }
+.ap .axname { margin-top: -34px; font-size: 22px; color: #fff1cc; text-shadow: 0 2px 6px #000; opacity: 0; animation: axfade .4s ease-out calc(var(--tf) + 700ms) forwards; }
+.ap .axstats { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 92vw; }
+.ap .axst { padding: 3px 9px; border-radius: 999px; background: #2a1606e6; border: 1px solid #ffd76a99; color: #f0dfb8; font-size: 13px; opacity: 0;
+  animation: axstat .4s cubic-bezier(.2, 1.6, .4, 1) calc(var(--tf) + 1000ms + var(--i) * 140ms) forwards; }
+.ap .axst s { margin: 0 2px; color: #a08c70; } .ap .axst b { color: #9fe08a; font-weight: 900; } .ap .axst b::before { content: '›'; margin-right: 3px; color: #ffd76a; }
+@keyframes axstat { from { opacity: 0; transform: translateY(8px) scale(.6); } to { opacity: 1; transform: none; } }
+.ap .axflash { position: absolute; inset: 0; background: #fff6dc; opacity: 0; pointer-events: none; animation: axflash .6s ease-out var(--tf) forwards; }
+@keyframes axflash { 0% { opacity: 0; } 15% { opacity: .92; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ap .ascfx * { animation-duration: .01s !important; animation-iteration-count: 1 !important; } }
 /* 각성 불꽃 칸 — 초상 아래 가운데 · 꺼진 칸은 잿빛 */
 .ap .hpic { position: relative; }
 .ap .flms { position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); display: flex; gap: 2px; padding: 2px 6px; border-radius: 999px; background: #140f0ad9; border: 1px solid #6a5030; }
