@@ -1210,4 +1210,9 @@ export const UI_CSS = `
    정찰 군세 · 맡은 장수 얼굴 · 붐빔을 접는다. 가까이 당기거나 무엇을 고르면 다시 뜬다. ＋마을 · 군대만 가면 · 우리 군사 수 · 규칙 그림은 늘 남는다 */
 .ap.rest .map[data-zl="far"] .lb .lbr, .ap.rest .map[data-zl="far"] .lb .lbg, .ap.rest .map[data-zl="far"] .lb .lbf,
 .ap.rest .map[data-zl="far"] .nd .gov, .ap.rest .map[data-zl="far"] .nd .crw { display: none; }
+/* 고르면 둘레가 물러난다 (ZAXIS-1031 3단계) — 군대·개척단을 골랐을 때 깃발 줄 · 길 보기 · 이번 계절 칩 · 장 목표 띠가 옅어지고 눌리지 않는다.
+   고른 것과 갈 곳만 남는다. opacity 만 (폰 그래픽 한도) */
+.ap .legend, .ap .zbtns, .ap .roadkey, .ap .todo, .ap .goalb { transition: opacity .2s ease; }
+.ap.sel-open .legend, .ap.sel-open .roadkey, .ap.sel-open .todo, .ap.sel-open .goalb { opacity: .12; pointer-events: none; } /* 보기·＋·－ 는 남긴다 — 먼 갈 곳을 고르려면 당겨 봐야 한다 */
+@media (prefers-reduced-motion: reduce) { .ap .legend, .ap .zbtns, .ap .roadkey, .ap .todo, .ap .goalb { transition: none; } }
 `
