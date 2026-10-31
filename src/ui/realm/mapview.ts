@@ -13,7 +13,7 @@ import { ageSeasons, seasons } from '../../realm/calendar.ts'
 import { EDGE_NAME, GOOD_NAME, NODE_KIND_NAME, NODE_NOW, tagNow, turnWord, turnsLabel } from '../../realm/data/prose.ts'
 import { worldGeoOf } from '../../realm/data/regions/index.ts'
 import { relationOf } from '../../realm/diplomacy.ts'
-import { knows } from '../../realm/discovery.ts'
+import { met } from '../../realm/discovery.ts'
 import { postHero, rulerOf } from '../../realm/heroes.ts'
 import { crowdOf, inboundOf, isCoast, nodeHarvest, nodeSpecials, nodeYield } from '../../realm/economy.ts'
 import { visibleRange } from '../../realm/intel.ts'
@@ -1037,7 +1037,7 @@ const CROWDED: ReadonlySet<RegionId> = new Set<RegionId>(['yeongnam', 'south', '
  * 전쟁 붉게(깜빡) · 동맹 초록 · 화친 하늘 · 조공(우리에게 바친다) 금빛 · 섬김(우리가 바친다) 잿빛. 중립·모르는 나라·우리 땅은 없음
  */
 function relChip(r: Realm, me: string, owner: string | null): string {
-  if (owner === null || owner === me || r.factions[owner] === undefined || !knows(r, me, owner)) return ''
+  if (owner === null || owner === me || r.factions[owner] === undefined || !met(r, me, owner)) return ''
   const rel = relationOf(r, me, owner)
   const v = rel.vassal !== undefined && rel.vassal.until >= r.season ? rel.vassal.lord : null
   if (rel.state === 'war') return '<i class="lbr war" title="전쟁 중">전쟁</i>'
@@ -1339,7 +1339,7 @@ export function visibleNodes(r: Realm, me: string): Set<string> {
   const k = r.intel[me] ?? {}
   for (const n of Object.values(r.nodes)) {
     if (n.owner !== me && k[n.id]?.land !== true) continue
-    if (n.owner === null || knows(r, me, n.owner)) out.add(n.id)
+    if (n.owner === null || met(r, me, n.owner)) out.add(n.id)
   }
   for (const a of Object.values(r.armies)) if (a.faction === me) out.add(a.at)
   return out
@@ -1492,7 +1492,7 @@ function fogWords(r: Realm, me: string, region: RegionId, W: number, H: number, 
   }
   // 이름만 들은 나라 — 도읍 자리 언저리에 먹점과 이름
   for (const f of Object.keys(r.factions).sort()) {
-    if (f === me || !knows(r, me, f)) continue
+    if (f === me || !met(r, me, f)) continue
     if (Object.values(r.nodes).some((n) => n.owner === f && vis.has(n.id))) continue
     const cap = r.factions[f]!.capital
     const p = nodePos(region, cap)

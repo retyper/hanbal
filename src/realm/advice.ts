@@ -7,7 +7,7 @@
  * 힘은 우리 정보로 본다 (powerRange 가운데 — 정보의 계약). 화면은 처음 생긴 계절에 알리고(key 로 견준다) 외교 판 맨 위에 띠로 둔다.
  */
 import { P } from '../tune/params.ts'
-import { knows } from './discovery.ts'
+import { met } from './discovery.ts'
 import { nationPower, powerRange, relationOf } from './diplomacy.ts'
 import { borders } from './stance.ts'
 import type { Realm } from './types.ts'
@@ -26,13 +26,13 @@ export function diploTips(r: Realm, me: string): DiploTip[] {
   const R = P.realm
   const mine = nationPower(r, me)
   const out: DiploTip[] = []
-  const others = Object.keys(r.factions).sort().filter((f) => f !== me && alive(r, f) && knows(r, me, f) && borders(r, me, f))
+  const others = Object.keys(r.factions).sort().filter((f) => f !== me && alive(r, f) && met(r, me, f) && borders(r, me, f))
   for (const f of others) {
     const state = relationOf(r, me, f).state
     if (state === 'truce' || state === 'ally') continue
     const [lo, hi] = powerRange(r, me, f)
     const seen = (lo + hi) / 2
-    const foe = Object.keys(r.factions).sort().find((x) => x !== me && x !== f && alive(r, x) && knows(r, me, x) && relationOf(r, f, x).state === 'war')
+    const foe = Object.keys(r.factions).sort().find((x) => x !== me && x !== f && alive(r, x) && met(r, me, x) && relationOf(r, f, x).state === 'war')
     if (foe !== undefined && seen < mine * R.adviseWeakMul) out.push({ key: `chance:${f}:${foe}`, kind: 'chance', to: f, foe })
     else if (state !== 'war' && seen > mine * R.adviseStrongMul) out.push({ key: `strong:${f}`, kind: 'strong', to: f })
     else if (state === 'neutral') out.push({ key: `met:${f}`, kind: 'met', to: f })

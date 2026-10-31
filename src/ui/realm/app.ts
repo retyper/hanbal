@@ -18,12 +18,12 @@ import { HAENGIN_NATION, JUMONG_NATIONS } from '../../realm/data/regions/jumong.
 import { MAHAN_NATIONS } from '../../realm/data/regions/mahan.ts'
 import { SEORA_NATIONS } from '../../realm/data/regions/seorabeol.ts'
 import { chapterOfRegion } from '../../realm/data/campaign.ts'
-import { knownOf, knows } from '../../realm/discovery.ts'
+import { knownOf, met } from '../../realm/discovery.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
 import { CARDS, cardFallback, cardInfo } from '../../realm/data/cards.ts'
 import { cardPreview, type CardFx } from '../../realm/events.ts'
 import {
-  ASK_KIND_NAME, ASK_NAME, deedText, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, arriveWhen, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, turnsLabel, turnWord, whyLine, NODE_NOW, BUILD_NAME, BOW_NAME, CONCEAL_LINE, GOOD_NAME, GOOD_USE, tagNow,
+  ASK_KIND_NAME, ASK_NAME, deedText, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, arriveWhen, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, turnsLabel, turnWord, whyLine, NODE_NOW, BUILD_NAME, BOW_NAME, CONCEAL_LINE, GOOD_NAME, GOOD_USE, MEET_HOW, tagNow,
 } from '../../realm/data/prose.ts'
 import { canEscort, envoyChanceFor, envoyClash, envoyOptions, favorOf, friendly, jointTargets, lentEta, openAsks, relationOf } from '../../realm/diplomacy.ts'
 import {
@@ -1279,7 +1279,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     // 남이 가깝다 — 아는 나라가 문턱을 넘으면 크게 한 번 (형 10-30: "나도 적도 안 떠서 갑자기 게임이 끝남")
     for (const f of Object.keys(next.factions).sort()) {
-      if (f === me() || !knows(next, me(), f)) continue
+      if (f === me() || !met(next, me(), f)) continue
       const wasF = new Map(pathShares(prev, f))
       const near = pathShares(next, f).filter(([k, v]) => v >= T && v < 1 && (wasF.get(k) ?? 0) < T)
       if (near.length === 0) continue
@@ -2038,7 +2038,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function legendHtml(r: Realm): string {
     const count = (f: string): number => Object.values(r.nodes).filter((n) => n.owner === f).length
     // 아는 나라만 (삼한 남부 판의 발견 — 모르는 나라는 깃발 줄에도 없다)
-    const known = sorted(Object.values(r.factions)).filter((f) => knows(r, me(), f.id)).map((f) => ({ f, n: count(f.id) }))
+    const known = sorted(Object.values(r.factions)).filter((f) => met(r, me(), f.id)).map((f) => ({ f, n: count(f.id) }))
     const top = Math.max(1, ...known.map((x) => x.n))
     const near = (id: string, n: number): number => {
       if (id === me()) return 99
@@ -2870,9 +2870,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const t of diploTips(r, me()).sort((a, b) => order[a.kind] - order[b.kind]).slice(0, 2)) h += `<div class="banner${t.kind === 'chance' ? ' good' : t.kind === 'strong' ? ' bad' : ''} an" data-act="fopen" data-to="${t.to}">${emblem(t.to, 'fem')}<span class="txw">${tx(tipText(r, t))}</span></div>`
     const L = leaderOf(r, me())
     if (L === me()) h += `<div class="banner bad">우리가 앞서간다. 다른 나라들이 손을 잡고, 맺은 약조도 깨고 등을 돌릴 수 있다.</div>`
-    else if (L !== null) h += `<div class="banner">앞서가는 나라: ${emblem(L, 'fem')}<b>${esc(r.factions[L]?.name ?? '')}</b> · 다른 나라들이 함께 막으려 한다. 손잡을 때다.</div>`
+    else if (L !== null && met(r, me(), L)) h += `<div class="banner">앞서가는 나라: ${emblem(L, 'fem')}<b>${esc(r.factions[L]?.name ?? '')}</b> · 다른 나라들이 함께 막으려 한다. 손잡을 때다.</div>`
     // 지금 벌어진 전쟁 — 아는 나라끼리 (형: "누구랑 누가 전쟁나면 그걸 좀 잘 보여줬음")
-    const live = sorted(Object.values(r.factions)).filter((x) => x.id !== me() && knows(r, me(), x.id) && Object.values(r.nodes).some((n) => n.owner === x.id))
+    const live = sorted(Object.values(r.factions)).filter((x) => x.id !== me() && met(r, me(), x.id) && Object.values(r.nodes).some((n) => n.owner === x.id))
     const wars: string[] = []
     for (let i = 0; i < live.length; i++) for (let j = i + 1; j < live.length; j++) {
       if (relationOf(r, live[i]!.id, live[j]!.id).state === 'war') wars.push(`<div class="warbar">${emblem(live[i]!.id, 'fem')}<i>⚔</i>${emblem(live[j]!.id, 'fem')}<span>${tx(`${live[i]!.name} · ${live[j]!.name}`)}</span></div>`)
@@ -2880,8 +2880,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (wars.length > 0) h += `<h4>지금 싸우는 나라들</h4>${wars.join('')}`
     // 땅이 하나도 없는 나라(무너진 나라)는 사신을 받을 곳이 없다 — 맨 아래에 이름만 (형: "지도에없는나라인데 상호작용까지 아직도 가능")
     const hasLand = (f: string): boolean => Object.values(r.nodes).some((n) => n.owner === f)
-    const gone = sorted(Object.values(r.factions)).filter((x) => x.id !== me() && knows(r, me(), x.id) && !hasLand(x.id))
-    for (const f of sorted(Object.values(r.factions)).filter((x) => x.id !== me() && knows(r, me(), x.id) && hasLand(x.id))) {
+    const gone = sorted(Object.values(r.factions)).filter((x) => x.id !== me() && met(r, me(), x.id) && !hasLand(x.id))
+    for (const f of sorted(Object.values(r.factions)).filter((x) => x.id !== me() && met(r, me(), x.id) && hasLand(x.id))) {
       const rel = relationOf(r, me(), f.id)
       const left = rel.until !== null ? ` ${turnsLabel(r, Math.max(0, rel.until - r.season))}` : ''
       const lead = r.heroes[f.ruler ?? rulerId(f.id)]
@@ -3259,7 +3259,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function plotGrid(r: Realm, scope: { f: string; node: string } | null): string {
     const full = plots.length >= plotCap(realm!) || handsOut(r)
     const targetsOf = (op: PlotOp): PlotTarget[] => {
-      const all = plotTargets(r, me(), op).filter((t) => knows(r, me(), t.target)) // 아는 나라에만 (발견)
+      const all = plotTargets(r, me(), op).filter((t) => met(r, me(), t.target)) // 아는 나라에만 (발견)
       return scope === null ? all : op === 'sow' ? [] : all.filter((t) => t.target === scope.f && (t.node === undefined || t.node === scope.node))
     }
     let h = `<div class="pogrid">`
@@ -4314,12 +4314,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 남의 철과 뱃길 · 큰 제사 — 소문으로 들은 것 (아는 나라만)
     for (const key of Object.keys(r.pathNear ?? {}).sort()) {
       const [kind, f] = key.split(':') as [string, string]
-      if (f === me() || !knows(r, me(), f)) continue
+      if (f === me() || !met(r, me(), f)) continue
       h += `<div class="path rival">${emblem(f, 'fem')}<span>${tx(kind === 'iron' ? `소문: ${r.factions[f]?.name ?? ''} 포구로 철이 흐른다. 뱃길을 끊지 않으면 그 나라가 이긴다` : `소문: ${r.factions[f]?.name ?? ''}의 제사 사슬이 길다. 소도 곁 땅을 흔들지 않으면 큰 제사가 열린다`)}</span></div>`
     }
     // 남의 맹약 — 소문 (아는 나라만)
     for (const f of Object.keys(r.suzerain ?? {}).sort()) {
-      if (f === me() || !knows(r, me(), f)) continue
+      if (f === me() || !met(r, me(), f)) continue
       const s = r.suzerain![f]!
       if (s.streak <= 0) continue
       h += `<div class="path rival">${emblem(f, 'fem')}<span>${tx(`소문: ${r.factions[f]?.name ?? ''} 군장이 맹약의 해 ${s.streak}/${S} 계절이다. 깨지 않으면 진왕이 된다`)}</span></div>`
@@ -4452,7 +4452,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
     }
     // 이 나라와 지금 할 수 있는 것 — 외교 판까지 안 가고 여기서 바로 (형: "타국 마을 누르면 … 얘내랑 할수있는 상호작용만 추려서 보여주고 바로 할수 있게")
-    if (!ours && n.owner !== null && n.kind !== 'sodo' && knows(r, me(), n.owner) && r.factions[n.owner] !== undefined) h += nationActs(r, n.owner, id)
+    if (!ours && n.owner !== null && n.kind !== 'sodo' && met(r, me(), n.owner) && r.factions[n.owner] !== undefined) h += nationActs(r, n.owner, id)
     // 보내기는 지도에서 — 군대를 누르고 이 고을을 누른다 (형 10-29)
     return h
   }
@@ -4695,7 +4695,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const cards = report.lines.map((l, i) => (l.kind === 'battle' ? battleCard(before!, r, l, me(), ART, i) : ''))
     // 넓어지는 지도 — 모르는 나라 이야기는 들리지 않는다 (줄에 적힌 나라 id 를 훑는다)
     const heard = (l: ReportLine): boolean => r.known === undefined
-      || Object.values(l).every((v) => typeof v !== 'string' || r.factions[v] === undefined || knows(r, me(), v))
+      || Object.values(l).every((v) => typeof v !== 'string' || r.factions[v] === undefined || met(r, me(), v))
     // 전쟁 — 우리에게 걸어온 것은 카드로, 남의 나라끼리는 깃발 둘로 (형: "누구랑 누가 전쟁나면 그걸 좀 잘 보여줬음 · 상대가 걸어왔다는걸 알려줘야지")
     type Rel = Extract<ReportLine, { kind: 'relation' }>
     const isWar = (l: ReportLine): l is Rel => l.kind === 'relation' && l.state === 'war'
@@ -4727,7 +4727,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const wins = (r.region ?? 'byeonhan-mini') === 'tutorial' ? [] : plotWins(r, report).filter((x) => !landSeen.has(x.key))
     const pacts = (r.region ?? 'byeonhan-mini') === 'tutorial' ? [] : pactBigs(r, report).filter((x) => !landSeen.has(x.key))
     const backs = (r.region ?? 'byeonhan-mini') === 'tutorial' ? [] : freedBigs(r, report).filter((x) => !landSeen.has(x.key))
-    const bigs = [...lands.map((x) => landBig(r, x)), ...pacts, ...wins, ...backs]
+    const meets = (r.region ?? 'byeonhan-mini') === 'tutorial' ? [] : meetBigs(r, report).filter((x) => !landSeen.has(x.key))
+    const bigs = [...lands.map((x) => landBig(r, x)), ...pacts, ...wins, ...backs, ...meets]
     if (bigs.length > 0) return bigCardHtml(r, bigs[0]!, bigs.length - 1)
     // 달 시계의 조용한 달 — 빈 보고 판을 띄우지 않고 지도 위 한 줄로 (FOCUS (I) 초반은 빨리 넘어가야 · 한 계절에 세 번 누르는데 빈 판을 세 번 닫게 하지 않는다)
     if (monthly(r) && decide === '' && cards.every((c) => c === '') && onUs.length === 0 && between.length === 0 && lines.length === 0 && fallen(before, r).length === 0 && sceneOf(before, r, report) === '') {
@@ -4824,9 +4825,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const r = realm!
     const hist = host.history()
     const heard = (l: ReportLine): boolean => r.known === undefined
-      || Object.values(l).every((v) => typeof v !== 'string' || r.factions[v] === undefined || knows(r, me(), v))
+      || Object.values(l).every((v) => typeof v !== 'string' || r.factions[v] === undefined || met(r, me(), v))
     const rows = logRows(r, hist, me(), logFilter, logNation, heard)
-    const nations = logNations(r, hist, me()).filter((f) => knows(r, me(), f))
+    const nations = logNations(r, hist, me()).filter((f) => met(r, me(), f))
     return logbookHtml({ esc, emblem: (f, cls) => emblem(f, cls), row: (l, text) => reportRow(r, l, text, 0) }, r, rows, nations, logFilter, logNation)
   }
 
@@ -4990,6 +4991,28 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return out
   }
 
+  /**
+   * 새 나라 — 한 계절에 하나씩 한 장 (discovery.stepMeet · FOCUS G 형: "한 계절에 모르는 도시 2개 이상이면 과부하").
+   * 그 나라 군주 얼굴 · 깃발 · 이름 · 도읍 · 우리와의 사이. 확인을 누르면 지도에 그 땅이 피어난다 (fresh)
+   */
+  function meetBigs(r: Realm, rep: Report): Big[] {
+    const out: Big[] = []
+    for (const l of rep.lines) {
+      if (l.kind !== 'discover' || l.faction !== me()) continue
+      const fac = r.factions[l.nation]
+      if (fac === undefined) continue
+      const lord = r.heroes[fac.ruler ?? rulerId(l.nation)]
+      const rel = relationOf(r, me(), l.nation).state
+      const bg = l.how === 'war' ? 'event-invade-field' : l.how === 'spy' || l.how === 'rumor' ? 'event-spy-rumor' : 'event-outside-envoy'
+      const cap = r.nodes[fac.capital]?.name
+      const stage = `<div class="pact meetv${rel === 'war' ? ' bad' : ''}"><img class="pactbg" src="${ART}event/${bg}.jpg" alt="">${bustHd(lord, 'pl b')}`
+        + `<div class="pflags">${emblem(l.nation, 'fem')}</div>`
+        + `<div class="meetc">${cap !== undefined ? `<span>${icon('settle-capital', 'mcap')}${esc(cap)}</span>` : ''}<span class="rel ${rel}">${REL_NAME[rel]}</span></div></div>`
+      out.push({ key: `${r.season}:meet:${l.nation}`, art: bg, good: rel !== 'war', tone: rel === 'war' ? 'bad' : 'plain', flags: '', title: fac.name, sub: MEET_HOW[l.how], small: lord?.name ?? '', sfx: snd(rel === 'war' ? 'war_drum' : 'tap_bell'), stage })
+    }
+    return out
+  }
+
   /** 땅의 바뀜 — 어디 · 누구에게서/누구에게 */
   function landBig(r: Realm, x: { key: string; node: string; won: boolean; other: string | null }): Big {
     const n = r.nodes[x.node]!
@@ -5088,7 +5111,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   function fallen(b: Realm, after: Realm): string[] {
     const has = (x: Realm, f: string): boolean => Object.values(x.nodes).some((n) => n.owner === f)
-    return Object.keys(b.factions).sort().filter((f) => f !== after.player && has(b, f) && !has(after, f) && knows(after, me(), f))
+    return Object.keys(b.factions).sort().filter((f) => f !== after.player && has(b, f) && !has(after, f) && met(after, me(), f))
   }
 
   /** 나라가 무너졌다 — 깃발 · 군주 · 누가 도읍을 쥐었나 (형: "나라가 멸망하면 멸망한거 띄워줘야 할듯") */
@@ -5820,7 +5843,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     report = res.report
     showReport = true
     realm = res.next
-    fresh = new Set(knownOf(res.next, me()).filter((f) => !knows(prev, me(), f)))
+    fresh = new Set(knownOf(res.next, me()).filter((f) => met(res.next, me(), f) && !met(prev, me(), f))) // 소개된 나라만 (discovery.stepMeet)
     // 계속 둔 판 — 도읍을 모두 쥐면 한 번 더 끝 화면 (하나가 됐다)
     if (res.next.endless === true && res.next.unified === undefined && Object.values(res.next.factions).every((f) => res.next.nodes[f.capital]?.owner === me())) res.next.unified = res.report.season
     // 판을 이기면 다음 판이 열린다 (unlock.ts)

@@ -15,6 +15,7 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
+import { seasonIdx } from './calendar.ts'
 import type { DiscoverHow, NodeIntel, Realm, ReportLine } from './types.ts'
 
 /** `a` 가 `b` 를 아나 — 발견이 없는 판이면 늘 안다 */
@@ -28,6 +29,14 @@ export function knows(r: Realm, a: string, b: string): boolean {
 export function knownOf(r: Realm, a: string): string[] {
   const k = r.known?.[a]
   return k === undefined ? Object.keys(r.factions).filter((f) => f !== a).sort() : [...k]
+}
+
+/**
+ * 화면이 그 나라를 보이나 — 플레이어는 소개 줄(`meet.wait`)에 선 나라를 아직 모르는 것처럼 본다 (이름·땅·소식).
+ * 판의 셈(AI · 외교 · 사건)은 늘 `knows` 를 쓴다. 이것은 화면(src/ui)과 화면만 쓰는 셈(advice · dex)만 부른다
+ */
+export function met(r: Realm, a: string, b: string): boolean {
+  return knows(r, a, b) && !(a === r.player && r.meet !== undefined && r.meet.wait.some((x) => x.nation === b))
 }
 
 /** 처음 아는 나라 — 제 땅과 길로 맞닿은 고을의 주인 */
@@ -146,6 +155,76 @@ export function stepDiscovery(r: Realm, lines: ReportLine[], drift = true): void
     const pick = list[Math.floor(roll(r.seed, r.season, `disc-pick:${f}`) * list.length)]!
     discover(r, f, pick, 'rumor', lines)
   }
+}
+
+// ───────── 새 나라 소개 — 한 계절에 하나씩 (FOCUS G · 형: "한 계절에 모르는 도시 2개 이상이면 과부하")
+//
+// 판의 셈은 그대로 둔다: 플레이어의 known 은 이번 턴에 바로 늘고, AI·외교·사건은 그것을 본다 (줄을 sim 에 걸면 realm-sim 이 달라진다).
+// 화면만 늦춘다: 이번 턴에 알게 된 나라는 meet.wait 줄 끝에 서고, 화면은 met() 으로 그 줄의 나라를 아직 모르는 것처럼 본다.
+
+/** 이번 턴에 우리와 직접 얽힌 나라 — 싸움 · 사신 · 장터 · 사이가 바뀜 · 우리 고을을 오가는 군대 · 드러난 공작 · 우리에게 건 청 · 사건 카드의 나라 */
+function touching(r: Realm, me: string, lines: readonly ReportLine[]): Set<string> {
+  const out = new Set<string>()
+  const pair = (a: string, b: string): void => {
+    if (a === me) out.add(b)
+    else if (b === me) out.add(a)
+  }
+  for (const l of lines) {
+    switch (l.kind) {
+      case 'battle': {
+        const atk = l.atkFaction ?? r.armies[l.attacker]?.faction
+        if (atk !== undefined) pair(atk, l.defender)
+        break
+      }
+      case 'envoy': pair(l.from, l.to); break
+      case 'market': pair(l.a, l.b); break
+      case 'relation': pair(l.a, l.b); break
+      case 'sighted': out.add(l.faction); break
+      case 'plot': if (l.target === me && (l.exposed ?? l.caught)) out.add(l.faction); break
+      case 'ask': pair(l.ask.from, l.ask.to); break
+      default: break
+    }
+  }
+  for (const a of r.asks ?? []) if (a.to === me) out.add(a.from)
+  if (r.card?.from !== undefined) out.add(r.card.from)
+  return out
+}
+
+/**
+ * 11 끝 — 새 나라 소개. 플레이어가 이번 턴에 알게 된 나라(discover 줄)를 줄 끝에 세우고, 한 계절에 meetPerSeason 나라씩 화면에 낸다.
+ * 소개되는 나라만 discover 줄이 보고에 남는다 — 줄을 섰던 나라는 소개되는 턴의 보고에 다시 적힌다 (그 줄이 화면의 소개 카드가 된다).
+ * 달 시계면 석 달에 하나다 (`seasonIdx`). 우리와 직접 얽힌 나라는 이름 없이 둘 수 없어 줄을 건너뛴다.
+ * 땅을 다 잃은 나라는 조용히 줄에 남는다 (다시 일어나면 그때 소개). known 은 만지지 않는다 · 굴림 없음.
+ * `t` 는 방금 넘긴 턴 번호 (보고의 season).
+ */
+export function stepMeet(r: Realm, lines: ReportLine[], t: number): void {
+  const me = r.player
+  if (r.known === undefined || me === undefined) return
+  const fresh: Array<{ nation: string; how: DiscoverHow }> = []
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i]!
+    if (l.kind !== 'discover' || l.faction !== me) continue
+    fresh.push({ nation: l.nation, how: l.how })
+    lines.splice(i--, 1)
+  }
+  if (fresh.length === 0 && r.meet === undefined) return
+  const si = seasonIdx(r, t)
+  let n = r.meet !== undefined && r.meet.at === si ? r.meet.n : 0
+  const wait = [...(r.meet?.wait ?? []), ...fresh]
+  const urgent = touching(r, me, lines)
+  const alive = (f: string): boolean => Object.values(r.nodes).some((x) => x.owner === f)
+  const keep: Array<{ nation: string; how: DiscoverHow }> = []
+  const show = (x: { nation: string; how: DiscoverHow }): void => {
+    lines.push({ kind: 'discover', faction: me, nation: x.nation, how: x.how })
+    n++
+  }
+  for (const x of wait) if (urgent.has(x.nation)) show(x)
+  for (const x of wait) {
+    if (urgent.has(x.nation)) continue
+    if (n < P.realm.meetPerSeason && alive(x.nation)) show(x)
+    else keep.push(x)
+  }
+  r.meet = { wait: keep, at: si, n }
 }
 
 // ───────── 본 땅 — 지도는 보고 다닌 만큼 그려진다 (형: "지도 밝히는건 정찰같은게 해야하지 않나" — 2026-10-19)

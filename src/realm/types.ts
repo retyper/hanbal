@@ -936,6 +936,12 @@ export interface Realm {
   rise?: Record<string, number | 'done'>
   /** 쇠뇌 틀 — 나라마다 (골벌 「쇠뇌」). 없으면 처음 틀 수 (P.realm.sonoeFrames). 옛 저장에는 없다 */
   frames?: Record<string, number>
+  /**
+   * 새 나라 소개 줄 (FOCUS G · 형: "한 계절에 모르는 도시 2개 이상이면 과부하") — 플레이어가 알게 됐지만 화면에 아직 이름·땅을 안 보인 나라.
+   * 한 계절에 P.realm.meetPerSeason 나라씩 소개한다 (discovery.stepMeet). 판의 셈(known)은 그대로 — 화면만 늦춘다.
+   * at 은 마지막으로 소개한 계절 번호(seasonIdx) · n 은 그 계절에 소개한 수. 옛 저장에는 없다 (없으면 줄이 빈 것)
+   */
+  meet?: { wait: Array<{ readonly nation: string; readonly how: DiscoverHow }>; at: number; n: number }
 }
 
 /** 플레이어(또는 AI)가 한 계절에 내리는 명령 */
