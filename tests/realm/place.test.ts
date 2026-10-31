@@ -11,7 +11,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
-import { homeRoom, isRiverside, landMul, placeLimit, placeNodes, workMul } from '../../src/realm/economy.ts'
+import { homeRoom, inboundRate, isRiverside, landMul, placeLimit, placeNodes, workMul } from '../../src/realm/economy.ts'
 import { advance } from '../../src/realm/season.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Realm } from '../../src/realm/types.ts'
@@ -40,7 +40,25 @@ describe('백성 배치', () => {
     const { next, report } = advance(r, [{ kind: 'place', faction: r.player, delta: { [from]: -n, [to]: n } }])
     assert.ok(report.lines.some((l) => l.kind === 'place' && l.n === n))
     assert.equal(next.nodes[from]!.hh, a0 - n, '뗀 고을은 그만큼 준다 (자리 잡느라 늘지 않는다)')
-    assert.equal(next.nodes[to]!.hh, b0 + n, '부은 고을은 그만큼 는다')
+    assert.equal(next.nodes[to]!.hh, b0, '부은 고을은 바로 늘지 않는다 — 백성은 길 위에 있다')
+    assert.equal(next.nodes[to]!.inbound?.n, n, '길 위의 집으로 쌓인다')
+    // 다음 계절부터 품의 몇 할씩 닿는다 — 많이 옮기면 여러 계절 (형 10-31)
+    let s = next
+    const rate = inboundRate(s.nodes[to]!)
+    for (let i = 0; i < Math.ceil(n / rate); i++) s = advance(s, []).next
+    assert.equal(s.nodes[to]!.inbound, undefined, '다 닿으면 길 위의 집이 사라진다')
+    assert.ok(s.nodes[to]!.hh >= b0 + n, '부은 고을은 그만큼 는다')
+  })
+
+  it('많이 옮기면 한 계절에 다 닿지 않는다', () => {
+    const r = rich(byeonhanMini(1))
+    const { from, to } = pair(r)
+    const rate = inboundRate(r.nodes[to]!)
+    const n = Math.min(placeLimit(r, r.player), homeRoom(r.nodes[to]!) - r.nodes[to]!.hh, r.nodes[from]!.hh - 1)
+    if (n <= rate) return // 이 판에서는 한 계절 몫보다 크게 못 옮긴다
+    const one = advance(r, [{ kind: 'place', faction: r.player, delta: { [from]: -n, [to]: n } }]).next
+    const two = advance(one, []).next
+    assert.equal(two.nodes[to]!.inbound?.n, n - rate, '한 계절에 rate 만큼만 닿는다')
   })
 
   it('모아 둔 백성이 남거나 한도·품을 넘기면 아무것도 안 바뀐다', () => {

@@ -27,7 +27,7 @@ import {
 import { canEscort, envoyChanceFor, envoyClash, envoyOptions, favorOf, friendly, jointTargets, lentEta, openAsks, relationOf } from '../../realm/diplomacy.ts'
 import {
   GOODS, armCost, buildCost, canBuild, canGuard, draftCost, draftIronCost, draftLimit, draftNeeds, draftPay, goodOf, guardCost, hhGrowth, isCoast, militiaMen, nextBuild, nodeHarvest, nodeYield, nodeSpecials, upkeepOf, riteAllowed, riteCost,
-  autoFlows, crowdOf, migratePath, fieldMul, homeRoom, isRiverside, landMul, placeLimit, placeNodes, workMul,
+  autoFlows, crowdOf, migratePath, fieldMul, homeRoom, inboundOf, inboundRate, isRiverside, landMul, placeLimit, placeNodes, workMul,
   goodsWorth,
 } from '../../realm/economy.ts'
 import { goalReach, goalRoute } from '../../realm/goal.ts'
@@ -803,7 +803,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const step = P.realm.placeStep
     if (add) {
       const pool = -ids.reduce((s, x) => s + dd(x), 0)
-      return Math.max(0, Math.min(step, pool, homeRoom(n) - now))
+      return Math.max(0, Math.min(step, pool, homeRoom(n) - now - inboundOf(n, me())))
     }
     const out = ids.reduce((s, x) => s + Math.max(0, -dd(x)), 0)
     let k = Math.max(0, Math.min(step, now - 1))
@@ -2456,7 +2456,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         return f !== null && f !== me() && base.factions[f] !== undefined ? [f] : []
       }))].sort()
       const border = rivals.length > 0 ? `<span class="pltag bd">접경지 ${rivals.map((f) => `${emblem(f, 'plem')}${esc(base.factions[f]!.name)}`).join(' ')}</span>` : ''
-      h += `<div class="plcard${cap ? ' cap' : ''}${dd !== 0 ? (dd > 0 ? ' up' : ' down') : ''}"><div class="plch"><b>${cap ? '<i class="star">★</i>' : ''}${esc(n.name)}</b><span class="mute">${cap ? '우리 도읍' : NODE_KIND_NAME[n.kind]}</span>${land}${border}</div>`
+      // 길 위에 이 고을로 오는 백성 — 계절마다 조금씩 닿는다 (형 10-31)
+      const ib = inboundOf(n, me()) + Math.max(0, dd)
+      const coming = ib > 0 ? `<span class="pltag go">${icon('unit-porters', 'plem')}오는 중 ${ib.toLocaleString('ko-KR')}가구 · ${Math.ceil(ib / inboundRate(n))}계절</span>` : ''
+      h += `<div class="plcard${cap ? ' cap' : ''}${dd !== 0 ? (dd > 0 ? ' up' : ' down') : ''}"><div class="plch"><b>${cap ? '<i class="star">★</i>' : ''}${esc(n.name)}</b><span class="mute">${cap ? '우리 도읍' : NODE_KIND_NAME[n.kind]}</span>${land}${border}${coming}</div>`
         + `<div class="plrow"><button class="btn sm" data-act="pl-sub" data-node="${id}" ${kSub > 0 ? '' : 'disabled'}>−${kSub > 0 ? kSub : step}</button>`
         + `<div class="plmid"><b>${now.toLocaleString('ko-KR')}가구${dd !== 0 ? ` <i>${dd > 0 ? '+' : ''}${dd}</i>` : ''}</b><span class="plbar"><i style="width:${Math.min(100, Math.round((now / Math.max(1, room)) * 100))}%"></i></span><small>품 ${room.toLocaleString('ko-KR')} · ${yl} <small>계절마다 · 쌀은 한 해</small></small></div>`
         + `<button class="btn sm" data-act="pl-add" data-node="${id}" ${kAdd > 0 ? '' : 'disabled'}>+${kAdd > 0 ? kAdd : step}</button></div></div>`

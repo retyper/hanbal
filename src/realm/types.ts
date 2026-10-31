@@ -47,6 +47,8 @@ export interface RNode {
   uprooted?: number
   /** 이번 계절 이 고을에서 억지로 내보낸 집 — 한 계절 몫(migrateShare)을 여러 번 나눠 눌러도 넘지 않게 */
   movedOut?: { readonly season: number; readonly n: number }
+  /** 백성 배치로 이 고을로 오는 길 위의 집 — 계절마다 조금씩 닿는다 (economy.stepInbound). 없으면 없음 · 옛 저장에도 없다 */
+  inbound?: { readonly faction: string; readonly n: number }
   /** 지금 주인이 이 고을을 쥔 계절 (차지·개척·다시 일어남) — 화면의 「최근에 차지한 고을 먼저」 (형 10-27). 판 처음부터 쥔 고을은 없음 */
   takenAt?: number
 }

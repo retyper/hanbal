@@ -27,7 +27,7 @@ import {
 } from './diplomacy.ts'
 import {
   addGood, applyArm, applyBuild, applyGuard, draftIronCost, draftLimit, draftNeeds, draftPay, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepBuilds, stepEconomy,
-  migrateHouses, placeHouses, setMigrateAuto, stepMigration, stockOf,
+  migrateHouses, placeHouses, setMigrateAuto, stepInbound, stepMigration, stockOf,
 } from './economy.ts'
 import { hasCustom, noteCustom, noteOnce } from './data/customs.ts'
 import { concealBonus, passExtra, rescueCapital, riseState, siegeFort, stepCustoms } from './hooks.ts'
@@ -1608,6 +1608,7 @@ export function advance(
   const season = ((r.season % 4) + 4) % 4
   resolveAnswers(r, orders, lines) // 1 — 지난 계절에 온 청에 답한다 (답이 없으면 거절)
   const wasMarching = new Set(Object.values(r.armies).filter((a) => a.march !== null).map((a) => a.id))
+  stepInbound(r) // 1 앞 — 지난 계절까지 옮긴 백성이 길 위에서 조금씩 닿는다 (이번 계절 배치는 다음 계절부터)
   applyOrders(r, orders, lines) // 1
   const departs = departures(r, wasMarching, lines) // 기억의 「나눠 떠남」 — 판을 바꾸지 않는다
   resolveScouts(r, orders, lines) // 2

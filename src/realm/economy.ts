@@ -530,7 +530,8 @@ export function placeNodes(r: Realm, faction: string): string[] {
 
 /**
  * 백성 배치 (사민) — 고을마다 더하고 빼는 몫. 합이 0 이어야 하고(모아 둔 백성이 남지 않게), 옮기는 집이 placeLimit 안,
- * 고을마다 남는 집은 1 이상 · 받는 고을은 품(homeRoom)까지. 옮긴 만큼 곡식이 들고 손댄 고을은 한동안 집이 안 는다.
+ * 고을마다 남는 집은 1 이상 · 받는 고을은 품(homeRoom)까지(길 위에 오는 집까지 셈). 옮긴 만큼 곡식이 들고 손댄 고을은 한동안 집이 안 는다.
+ * 떼는 고을은 바로 줄고, 받는 고을에는 길 위의 집(inbound)으로 쌓였다가 다음 계절부터 조금씩 닿는다 (stepInbound · 형 10-31).
  */
 export function placeHouses(r: Realm, o: Extract<Order, { kind: 'place' }>, lines: ReportLine[]): void {
   const ok = new Set(placeNodes(r, o.faction))
@@ -542,7 +543,7 @@ export function placeHouses(r: Realm, o: Extract<Order, { kind: 'place' }>, line
     if (!Number.isInteger(d) || !ok.has(id)) return
     const n = r.nodes[id]!
     if (d < 0 && n.hh + d < 1) return
-    if (d > 0 && n.hh + d > homeRoom(n)) return
+    if (d > 0 && n.hh + inboundOf(n, o.faction) + d > homeRoom(n)) return
     sum += d
     if (d > 0) moved += d
   }
@@ -552,11 +553,45 @@ export function placeHouses(r: Realm, o: Extract<Order, { kind: 'place' }>, line
     const d = o.delta[id]!
     if (d === 0) continue
     const n = r.nodes[id]!
-    n.hh += d
+    if (d < 0) n.hh += d
+    else n.inbound = { faction: o.faction, n: inboundOf(n, o.faction) + d }
     n.uprooted = Math.max(n.uprooted ?? -1, until)
   }
   stockOf(r, o.faction).grain -= migrateCost(moved).grain
   lines.push({ kind: 'place', faction: o.faction, n: moved, to: ids.filter((id) => o.delta[id]! > 0) })
+}
+
+/** 이 고을로 오는 길 위의 집 — 그 나라 몫만 */
+export function inboundOf(n: RNode, faction: string): number {
+  return n.inbound !== undefined && n.inbound.faction === faction ? n.inbound.n : 0
+}
+
+/** 한 계절에 이 고을에 닿는 집 — 품의 몇 할, 바닥 placeRateMin */
+export function inboundRate(n: RNode): number {
+  return Math.max(P.realm.placeRateMin, Math.ceil(homeRoom(n) * P.realm.placeRateRoom))
+}
+
+/**
+ * 계절 처음 — 길 위의 백성이 조금씩 닿는다. 그 사이 고을을 잃었으면 남은 집은 그 나라 도읍으로 돌아가고,
+ * 도읍도 없으면 흩어진다. 고을 id 차례 (결정론 A1)
+ */
+export function stepInbound(r: Realm): void {
+  for (const id of Object.keys(r.nodes).sort()) {
+    const n = r.nodes[id]!
+    const ib = n.inbound
+    if (ib === undefined) continue
+    if (n.owner === ib.faction) {
+      const k = Math.min(ib.n, inboundRate(n))
+      n.hh += k
+      if (ib.n - k > 0) n.inbound = { faction: ib.faction, n: ib.n - k }
+      else delete n.inbound
+      continue
+    }
+    const cap = r.factions[ib.faction]?.capital
+    const home = cap !== undefined ? r.nodes[cap] : undefined
+    if (home !== undefined && home.owner === ib.faction) home.hh += ib.n
+    delete n.inbound
+  }
 }
 
 /** 자동 분배 켜기·끄기 */
