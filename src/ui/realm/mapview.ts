@@ -9,6 +9,7 @@
 import { faceFile } from './face.ts'
 import { headcount } from '../../realm/battle.ts'
 import { FACTION_ART, GOOD_ICON, REGION_ART, SEASON_MAP, flagIcon, nodeIcon, nodePos } from '../../realm/data/art.ts'
+import { seasons } from '../../realm/calendar.ts'
 import { EDGE_NAME, GOOD_NAME, NODE_KIND_NAME, NODE_NOW, tagNow, turnWord, turnsLabel } from '../../realm/data/prose.ts'
 import { worldGeoOf } from '../../realm/data/regions/index.ts'
 import { relationOf } from '../../realm/diplomacy.ts'
@@ -328,6 +329,8 @@ export const MAP_CSS = `
 .map .lb .lbg.idle img { opacity: .55; filter: saturate(.4) drop-shadow(0 0 1px #000c); }
 .map .lb .lbg i { font-style: normal; font-size: .7em; font-weight: 700; color: #f3e3bd; padding-left: .35em; margin-left: .15em; border-left: 1px solid #c8a05066; }
 .map .lb .lbg i.moat { color: #bfe0ff; } .map .lb .lbg i.earthwall { color: #f0c890; }
+.map .lb .lbg b.bld { display: inline-flex; align-items: center; gap: .15em; font-size: .7em; font-weight: 800; color: #ffd27a; padding-left: .35em; margin-left: .15em; border-left: 1px solid #c8a05066; }
+.map .lb .lbg b.bld img { width: 1.9em; height: 1.9em; margin: -.2em 0; padding: .14em; box-sizing: border-box; border-radius: 50%; background: conic-gradient(#ffd27a calc(var(--p) * 360deg), #00000066 0); filter: none; }
 .map .lb .lbg i.cmk { color: #ffd2a0; } .map .lb .lbg i.cmk.hot { position: relative; color: #fff1c8; text-shadow: 0 0 6px #ff9a4a; }
 /* 센 빛은 같은 글자를 ::after 에 투명하게 겹쳐 그 그림자만 opacity 로 숨쉰다 — text-shadow 를 움직이면 GPU 로 못 가 지도 전체를 매 프레임 다시 셈했다 (형 10-31) */
 .map .lb .lbg i.cmk.hot::after { content: attr(data-l); position: absolute; left: .35em; top: 0; color: transparent; text-shadow: 0 0 12px #ffb060, 0 0 2px #fff; opacity: 0; pointer-events: none; animation: cmkhot 1.6s ease-in-out infinite; }
@@ -878,11 +881,17 @@ export function mapHtml(
     const dfs = (['palisade', 'moat', 'earthwall'] as const).filter((t) => n.tags.includes(t))
     // 풍습이 이 고을에 걸려 있다 — 쇠 곱 · 쇠뇌 틀 · 불씨 · 고갯목 … (규칙은 지도에 보이게 · GAP §11 · hooks.customMarks)
     const cms = customMarks(r, n.id, me)
+    // 짓는 중 — 무엇을 · 몇 달 남았나 · 얼마나 됐나 둥근 눈금 (형 11-01: "목책 짓는 거랑 해자 파는 것도 시간이 안 나와서 문제")
+    const bld = (r.builds ?? []).filter((b) => b.node === n.id && b.faction === me).map((b) => {
+      const left = Math.max(1, b.done - r.season + 1)
+      const p = Math.min(1, Math.max(0, 1 - left / seasons(r, 1)))
+      return `<b class="bld" style="--p:${p.toFixed(2)}" title="${DEF_NAME[b.what]} 짓는 중 · ${turnsLabel(r, left)} 뒤 선다"><img src="${art}icon/settle-${b.what === 'moat' ? 'moat' : 'palisade'}.png" alt="">${turnsLabel(r, left)}</b>`
+    }).join('')
     // 특산·지은 것은 이름표 옆 어두운 칸에 — 고을 그림 위에 흰 동그라미로 떠 있으면 이웃 고을 것인지 헷갈리고 지도가 어지럽다
     // (형 10-24: "지역에서 생산되는 품목도 우상단 동그라미가 아니라 더 효과적이게" — 문명 6 도시 배너처럼 이름에 붙인다)
-    const tray = sp.length > 0 || fish !== '' || dfs.length > 0 || cms.length > 0
+    const tray = sp.length > 0 || fish !== '' || dfs.length > 0 || cms.length > 0 || bld !== ''
       ? `<span class="lbg${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}" title="${GOOD_NAME[g]}: 사람이 살면 난다">`).join('')}${fish}${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${DEF_NAME[t]}</i>`).join('')}`
-        + `${cms.map((m) => `<i class="cmk${m.hot === true ? ' hot' : ''}" title="${m.tip}"${m.hot === true ? ` data-l="${m.label}"` : ''}>${m.label}</i>`).join('')}</span>`
+        + `${bld}${cms.map((m) => `<i class="cmk${m.hot === true ? ' hot' : ''}" title="${m.tip}"${m.hot === true ? ` data-l="${m.label}"` : ''}>${m.label}</i>`).join('')}</span>`
       : ''
     labels.push({
       // 나라 많은 판은 지금 지명 줄을 빼 이름표를 한 줄로 — 작아야 제 고을 곁에 붙는다 (형 10-26: "마을 텍스트 바가 너무 큼 · 줄여서 제대로 그 마을의 텍스트라는 게 보이게")

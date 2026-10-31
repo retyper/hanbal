@@ -4357,11 +4357,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 목책·해자 — 나무로 짓는다 (땅마다 나는 것). 다음 계절에 선다
       const nb = nextBuild(r, id)
       const queued = musters.some((o) => o.kind === 'build' && o.node === id) || (r.builds ?? []).some((b) => b.node === id)
+      const going = (r.builds ?? []).find((b) => b.node === id) // 짓는 중 — 몇 달 남았나 (형 11-01: "시간이 안 나와서 문제")
       if (nb !== null) {
         const bc = buildCost(nb, r, me())
         const ok = queued || (canBuild(r, me(), id, nb) && left().wood >= bc.wood && left().grain >= bc.grain)
-        h += `<div class="btns"><button class="btn ${queued ? 'on' : ''}" data-act="build" data-node="${id}" data-what="${nb}" ${ok ? '' : 'disabled'}>${queued ? `${BUILD_NAME[nb]} 짓는 중` : `${josa(BUILD_NAME[nb], '을', '를')} 두른다 ${costHtml({ wood: bc.wood, grain: bc.grain })}`}</button></div>`
-        h += `<p class="mute">${nb === 'palisade' ? '지키는 쪽이 세진다.' : '목책 앞에서 한 번 더 막는다 · 겨울엔 언다.'} 다음 계절에 선다.</p>`
+        h += `<div class="btns"><button class="btn ${queued ? 'on' : ''}" data-act="build" data-node="${id}" data-what="${nb}" ${ok ? '' : 'disabled'}>${going !== undefined ? `${BUILD_NAME[going.what]} 짓는 중 · ${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음` : queued ? `${BUILD_NAME[nb]} 짓기 시작 · ${turnsLabel(r, seasons(r, 1))} 걸린다` : `${josa(BUILD_NAME[nb], '을', '를')} 두른다 ${costHtml({ wood: bc.wood, grain: bc.grain })}`}</button></div>`
+        h += `<p class="mute">${nb === 'palisade' ? '지키는 쪽이 세진다.' : '목책 앞에서 한 번 더 막는다 · 겨울엔 언다.'} ${turnsLabel(r, seasons(r, 1))} 걸려 선다.</p>`
       }
     }
     // 이 땅에서 나는 것 — 남의 고을·빈땅도 보인다 (칠 까닭 · 바꿀 까닭). 우리 고을은 위 「고을 형편」 밑에 이미 있다
