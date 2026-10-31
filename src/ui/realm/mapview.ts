@@ -404,6 +404,14 @@ export const MAP_CSS = `
 .map .tok.unit .flag { left: -2%; top: -46%; height: 80%; }
 /* 병사 그림 말 — 사람 수(초록) 바로 밑에 사기 막대(노랑) · 숫자 칸에 가려 안 보였다 */
 .map .tok.unit .hp { position: relative; order: 9; left: auto; right: auto; top: auto; width: 46%; margin-top: 2px; box-shadow: 0 0 0 1px #201811, 0 1px 3px #000a; }
+/* 장수 얼굴 + 대표 병사 하나를 한 가로줄에 (형 10-31: "군사 유닛과 장수가 너무 동떨어져 있고 군사들끼리도 너무 멀어 보임 ·
+   대표 유닛 하나와 장수 얼굴을 같은 x축에"). 얼굴 | 병사 / 그 밑에 사람 수 · 막대가 두 칸에 걸친다. 병사 둘째·셋째는 숨긴다 */
+.map .tok.unit { --tw: clamp(26px, calc(4.2cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 46px); display: grid; grid-template-columns: var(--tw) calc(var(--tw) * .95); align-items: end; justify-items: center; column-gap: 0; width: auto; }
+.map .tok.unit > img { position: relative; left: auto; top: auto; width: calc(var(--tw) * .92); grid-column: 1; grid-row: 1; align-self: center; }
+.map .tok.unit .squad { grid-column: 2; grid-row: 1; width: 100%; aspect-ratio: auto; height: calc(var(--tw) * 1.45); }
+.map .tok.unit .sq { margin: 0; } .map .tok.unit .sq:nth-child(n+2) { display: none; }
+.map .tok.unit > b, .map .tok.unit .hp { grid-column: 1 / span 2; grid-row: auto; }
+.map .tok.unit .hp { width: 70%; }
 @media (prefers-reduced-motion: reduce) { .map .tok.unit .sq u { animation: none !important; } .map .tok.unit.sel .squad::after { animation: none; } }
 .map .tok .flag { position: absolute; left: 4%; top: -34%; width: 6%; height: 70%; background: #5a3a1a; border-radius: 2px; z-index: -1; }
 .map .tok .flag::after { content: ''; position: absolute; left: 100%; top: 0; width: 520%; height: 34%; min-height: 6px; background: linear-gradient(90deg, var(--tc, #c8402a), var(--tc2, var(--tc, #c8402a))); clip-path: polygon(0 0, 100% 0, 80% 50%, 100% 100%, 0 100%); transform-origin: left center; animation: tokflag 1.1s ease-in-out infinite alternate; }
