@@ -34,7 +34,7 @@ describe('이기는 법', () => {
   })
   it('판은 아홉 장 · 까닭이 앞에 · 좌원 싸움이 맨 끝', () => {
     const { loss } = fake('lose', [80, 240])
-    const pages = lessons({ art: '/', flag: () => null, wait: () => 0 }, loss)
+    const pages = lessons({ art: '/', flag: () => null, wait: () => 0, turns: (n) => `${n}달` }, loss)
     assert.equal(pages.length, LESSON_ORDER.length)
     assert.deepEqual(pages.slice(0, loss!.causes.length).map((p) => p.id), [...loss!.causes])
     assert.ok(pages.every((p) => p.html.includes('lsn-go')))

@@ -160,6 +160,8 @@ export interface HowKit {
   readonly flag: (f: string | null) => string | null
   /** 그 탭이 열리기까지 남은 계절 (0 이면 열림) */
   readonly wait: (tab: LessonGo['tab']) => number
+  /** 턴 수를 화면 말로 — 옛 판 n계절 · 달 시계 n달 */
+  readonly turns: (n: number) => string
 }
 
 const esc = (s: string): string => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
@@ -212,7 +214,7 @@ function pageHtml(k: HowKit, id: LessonId, loss: Loss | null): string {
   // 위는 그림(구운 것 · 없으면 사건 그림) · 밑은 짠 그림(병사·깃발·숫자 — 이번 싸움의 숫자도 여기에)
   const src = HOWWIN_BAKED.has(id) ? `howwin/howwin-${id}.jpg` : `event/${BG[id]}.jpg`
   const pic = `<div class="lsn-pic" style="background-image:url('${k.art}${src}')"></div><div class="lsn-dg${id === 'few' ? ' few' : ''}">${picHtml(k, id, loss)}</div>`
-  const go = w > 0 ? `<button class="lsn-go" disabled>🔒 ${w}계절 뒤에 열립니다</button>` : `<button class="lsn-go" data-lsn="go" data-id="${id}">해 보기</button>`
+  const go = w > 0 ? `<button class="lsn-go" disabled>🔒 ${k.turns(w)} 뒤에 열립니다</button>` : `<button class="lsn-go" data-lsn="go" data-id="${id}">해 보기</button>`
   return `<div class="lsn-pg" data-id="${id}">${loss !== null ? '<i class="lsn-why">이번 싸움</i>' : ''}${pic}<h4 class="lsn-h">${esc(TITLE[id])}</h4><p class="lsn-ln${loss !== null ? ' why' : ''}">${esc(lineOf(id, loss))}</p>${id === 'few' ? HIST : ''}${go}</div>`
 }
 

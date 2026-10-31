@@ -5789,7 +5789,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   let lossPending: Loss | null = null
   let lastLoss: Loss | null = null
   const HOWWIN_WAIT_MAX_MS = 10 * 60 * 1000
-  const howKit = (): HowKit => ({ art: ART, flag: (f) => (f !== null && FACTION_ART[f] !== undefined ? flagIcon(f) ?? null : null), wait: (t) => (realm !== null ? tabWait(realm, t) : 0) })
+  const howKit = (): HowKit => ({ art: ART, flag: (f) => (f !== null && FACTION_ART[f] !== undefined ? flagIcon(f) ?? null : null), wait: (t) => (realm !== null ? tabWait(realm, t) : 0), turns: (n) => (realm !== null ? turnsLabel(realm, n) : `${n}계절`) })
   /** 지도가 비었나 — 보고·장면·싸움·다른 알림이 다 걷혔다 */
   const mapClear = (): boolean => realm !== null && front === null && prologue === null && !showReport && !warOn && !root.classList.contains('modal-open') && !root.classList.contains('war-open')
     && root.querySelector('.cere, .wr, .bktoast, .guidebox, .failbox, .lsn-box, .nightov') === null
