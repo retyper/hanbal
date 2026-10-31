@@ -1038,10 +1038,7 @@ function placeLabels(ls: readonly LabelIn[], toks: ReadonlyMap<string, readonly 
     const iw = ICON_W * ns * l.s
     const ih = (iw * W) / H
     const cands: Array<[number, number]> = [
-      [l.x, l.y + ih * 0.3], // 밑
-      [l.x, l.y - ih * 0.62 - h], // 위
-      [l.x + iw / 2 + w / 2, l.y - h / 2], // 오른쪽
-      [l.x - iw / 2 - w / 2, l.y - h / 2], // 왼쪽
+      [l.x, l.y + ih * 0.3], // 밑 — 이름은 늘 고을 아래 (형 10-31 · 그린 뒤 declutter 가 더 아래로만 내린다)
     ]
     let best: { c: [number, number]; cost: number } | null = null
     for (const [i, c] of cands.entries()) {
