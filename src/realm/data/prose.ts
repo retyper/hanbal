@@ -389,8 +389,8 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (a?.faction !== viewer) return null
       if (line.lost === undefined) return `${BLOCKED_LINE[line.why]}. ${josa(nameArmy(line.army), '은', '는')} 떠나지 못했다.`
       return line.why === 'winterPass'
-        ? `${josa(nameArmy(line.army), '이', '가')} 눈 덮인 고개를 넘는다. 얼어서 ${line.lost}명을 잃고 한 계절 더 걸린다.`
-        : `${josa(nameArmy(line.army), '이', '가')} 불어난 나루를 건넌다. 물살에 ${line.lost}명이 떠내려갔고 한 계절 더 걸린다.`
+        ? `${josa(nameArmy(line.army), '이', '가')} 눈 덮인 고개를 넘는다. 얼어서 ${line.lost}명을 잃고 한 ${turnWord(after)} 더 걸린다.`
+        : `${josa(nameArmy(line.army), '이', '가')} 불어난 나루를 건넌다. 물살에 ${line.lost}명이 떠내려갔고 한 ${turnWord(after)} 더 걸린다.`
     }
     case 'hungry': {
       const a = after.armies[line.army] ?? before.armies[line.army]
@@ -795,7 +795,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (line.faction !== viewer) return null
       return line.done
         ? `${node(line.node)}에 ${josa(BUILD_NAME[line.what], "이", "가")} 섰다.`
-        : `${node(line.node)}에 ${josa(BUILD_NAME[line.what], '을', '를')} 짓기 시작했다. 이 계절이 끝나면 선다.`
+        : `${node(line.node)}에 ${josa(BUILD_NAME[line.what], '을', '를')} 짓기 시작했다. ${monthly(after) ? '석 달 뒤에' : '이 계절이 끝나면'} 선다.`
     case 'spoil':
       return line.faction === viewer ? `겨울 동안 곡식 ${line.grain}섬이 썩었다. 소금이 모자랐다.` : null
     case 'discover':
