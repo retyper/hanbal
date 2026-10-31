@@ -24,7 +24,7 @@ import { P } from '../../tune/params.ts'
 import { snd } from './sound.ts'
 import { artVoicePath, autoVoicePath, voiceGate, voicePath } from './voice.ts'
 import { WIN_BUZZ, winFxHtml } from './winfx.ts'
-import { morphInto } from './morph.ts'
+import { morph, morphInto } from './morph.ts'
 import { holdBox } from './holdbox.ts'
 import { cellColor, lookCells, lookNums, oneChance, pctText, signed, type LookCell } from './lookword.ts'
 
@@ -1487,7 +1487,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
           h += late ? wall(false, ' wf-pre') + wall(true, ' wf-post') : wall(breached)
           // 목책 — 깎은 통나무 말뚝을 하나하나 세운다(굵기·높이·기울기가 저마다) · 가로대·새끼줄 · 도읍·산성은 망루 둘 사이 성문.
           // 깨지면 말뚝이 꺾이고 쓰러지고 그을린다 (형 10-26: "목책 더 잘 구현해야" · 메모리: 이펙트는 낱낱이)
-          h += late ? `<i class="wf-pre">${stakes(art, false, gate)}</i><i class="wf-post">${stakes(art, true, gate)}</i>` : stakes(art, breached, gate)
+          // 말뚝은 늘 감싸개(wf-tw) 안에 — 끝 합에 감싸개가 생기며 진의 그림이 한 칸씩 밀려 모두 새로 그려지던 것 (형 10-31: 끝날 때 낱낱이 깜빡)
+          h += late ? `<i class="wf-tw wf-pre">${stakes(art, false, gate)}</i><i class="wf-tw wf-post">${stakes(art, true, gate)}</i>` : `<i class="wf-tw">${stakes(art, breached, gate)}</i>`
         }
       }
       if (cls === defCls && l.via === 'pass') { h += tp('rocks', 30, -36, 0.9); h += tp('rocks', 24, 32, 1.1) }
@@ -2087,7 +2088,7 @@ export const WAR_CSS = `
 /* 성은 판 바닥까지 — 바닥 이름표(「수비 · 적 …」)의 중간에서 끊겨 떠 보였다 (형 10-26: "더 밑에까지 내려야해") */
 /* 폰 폭에서는 높이 95% 가 너비의 4분의 1을 먹어 목책과 겹쳤다 → 26cqw 로 묶었더니 너무 작다 (형 10-29: "성벽이 너무 작아진 거 아님") · 그 사이 44cqw */
 .ap .wf2s .wf-wall { position: absolute; left: -4%; bottom: -3%; height: min(95%, 44cqw); width: auto; transform: scaleX(-1); z-index: 1; pointer-events: none; filter: brightness(.8) saturate(.9) drop-shadow(0 4px 8px #000b); }
-.ap .wfield i.wf-pre, .ap .wfield i.wf-post { position: absolute; inset: 0; pointer-events: none; }
+.ap .wfield i.wf-tw, .ap .wfield i.wf-pre, .ap .wfield i.wf-post { position: absolute; inset: 0; pointer-events: none; }
 .ap .wfield .wf-pre { animation: wfpre .5s ease-out var(--rv, 0s) forwards; } @keyframes wfpre { to { opacity: 0; visibility: hidden; } }
 .ap .wfield .wf-post { animation: wfpost .5s ease-out var(--rv, 0s) both; } @keyframes wfpost { from { opacity: 0; } to { opacity: 1; } }
 .ap .wr.fast .wfield { --rv: 0s !important; }
@@ -3355,15 +3356,33 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     // 화살은 글판 위로 날아간다 — 흙먼지만 뒤에 (형 10-23: "배경이 막 화살 날아다니는 거 같은데 보드판 뒤로 밀려서 안 보임")
     fxTop.replaceChildren(...tpl.content.querySelectorAll('.wfx-volley, .wfx-cmd'))
     // 바뀐 곳만 고친다 — 합마다 통째로 갈아 끼워 초상·병사·깃발·배경 먼지 그림이 새로 만들어지며 화면 전체가 깜빡였다 (형 10-25: "전투할때 전부 화면이 엄청 깜빡")
+    // 꼴로 맞춘다(keyed) — 가운데에 하나(<style>·성벽 둘째 장·꽂힌 화살)가 끼면 그 뒤 요소가 한 칸씩 밀려 남의 그림으로 덮어써지며 낱낱이 깜빡였다 (형 10-31)
+    const rewind = typeof sc.getAnimations === 'function'
+    const had = anim && rewind ? new Set([...fxEl.getAnimations({ subtree: true }), ...sc.getAnimations({ subtree: true })]) : null
     const fxf = document.createDocumentFragment()
     fxf.append(...tpl.content.querySelectorAll('.wfx'))
-    morphInto(fxEl, fxf)
-    morphInto(sc, tpl.content)
-    // 살려 둔 요소의 연출(막대·흔들림·진·다음 합 판·먼지)은 새로 그린 것처럼 처음부터 다시 — 한 틀 안에서 껐다 켜서 비는 틀이 없다
+    morphInto(fxEl, fxf, true)
+    morphInto(sc, tpl.content, true)
+    // 살려 둔 요소의 연출(막대·흔들림·진·다음 합 판)은 새 합이 풀릴 때만 처음부터 다시 — 그 연출만 되감는다.
+    // 전엔 통째로 animation:none 을 걸었다 풀어 수백 개가 한꺼번에 다시 돌았다: 늘 도는 불티·먼지·물결·숨쉬기까지 처음으로 튀고
+    // (불티는 투명에서 다시 떠 낱낱이 깜빡) · 연출 없이 다시 그릴 때도 병사가 다시 걸어 들어왔다 (형 10-31: 합이 풀릴 때·끝날 때 낱낱이 깜빡)
     const again = [fxEl, ...sc.querySelectorAll<HTMLElement>('.wvs, .wfield, .wnext, .wend')]
-    for (const e of again) e.classList.add('wrs')
-    void sc.offsetWidth
-    for (const e of again) e.classList.remove('wrs')
+    if (had !== null) {
+      for (const e of again) {
+        for (const a of e.getAnimations({ subtree: true })) {
+          if (!had.has(a)) continue // 이번에 새로 걸린 연출은 스스로 처음부터 돈다
+          const tm = a.effect?.getTiming()
+          // 늘 도는 것(끝없고 기다림 없이 바로 도는 것)은 그대로 둔다 — 불티·먼지·물결·숨쉬기·깃발 손짓
+          if (tm === undefined || (tm.iterations === Infinity && Number(tm.delay ?? 0) <= 0)) continue
+          a.currentTime = 0
+        }
+      }
+    } else if (!rewind) {
+      // getAnimations 가 없는 옛 브라우저 — 옛 길(한 틀 안에서 껐다 켠다)
+      for (const e of again) e.classList.add('wrs')
+      void sc.offsetWidth
+      for (const e of again) e.classList.remove('wrs')
+    }
     // 싸움이 끝났다 — 이겼으면 「승리」가 쾅, 졌으면 「패배」가 내려앉는다 (형: "승리했다는 이펙트가 더 확실히")
     winEl.replaceChildren()
     if ((anim || endNow) && !more && l.pending === undefined && l.outcome !== 'draw') {
@@ -3517,11 +3536,16 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       const src = c !== undefined ? sc.querySelector<HTMLElement>(`[data-war="pick"][data-g="${g}"][data-c="${c}"]`) : null
       if (chip === null) continue
       if (src !== null) {
-        const img = document.createElement('img')
-        img.src = src.querySelector('img.wflag')?.getAttribute('src') ?? ''
+        // 있던 깃발 그림은 살려 두고 주소만 — 고를 때마다 새로 만들어 깜빡였다 (형 10-31)
+        const img = chip.querySelector('img') ?? document.createElement('img')
+        const want = src.querySelector('img.wflag')?.getAttribute('src') ?? ''
+        if (img.getAttribute('src') !== want) img.setAttribute('src', want)
         img.alt = ''
         chip.className = 'wgs'
-        chip.replaceChildren(img, src.querySelector('.wct b')?.textContent ?? '')
+        const word = src.querySelector('.wct b')?.textContent ?? ''
+        const tx = chip.childNodes[1]
+        if (chip.firstChild === img && chip.childNodes.length === 2 && tx?.nodeType === Node.TEXT_NODE) { if (tx.nodeValue !== word) tx.nodeValue = word }
+        else chip.replaceChildren(img, word)
       } else {
         chip.className = 'wgs none'
         chip.textContent = '선택'
@@ -3670,7 +3694,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const l0 = t.line
     const hid = l0?.start !== undefined ? l0.start.heroes[l0.atkFaction === host.me ? 0 : 1] ?? null : null
     const ryak = hid !== null ? prev.heroes[hid]?.ryak : undefined
-    ready.innerHTML = `<div class="wrchips">${chips}</div><div class="wrrow"><button class="btn ghost wrauto" data-war="auto">맡긴다${ryak !== undefined ? `<small>지략 ${ryak}</small>` : ''}</button><button class="btn pri wrgo" data-war="go"${all ? '' : ' disabled'}>${all ? '⚔ 이대로 전투 개시' : `무리마다 깃발 고르기 ${n}/${tabs.length}`}</button></div>`
+    // 바뀐 곳만 — 합이 풀린 뒤 띠가 다시 뜰 때마다 칩의 깃발·무리 그림이 새로 만들어지며 깜빡였다 (형 10-31)
+    morph(ready, `<div class="wrchips">${chips}</div><div class="wrrow"><button class="btn ghost wrauto" data-war="auto">맡긴다${ryak !== undefined ? `<small>지략 ${ryak}</small>` : ''}</button><button class="btn pri wrgo" data-war="go"${all ? '' : ' disabled'}>${all ? '⚔ 이대로 전투 개시' : `무리마다 깃발 고르기 ${n}/${tabs.length}`}</button></div>`, true)
     ready.hidden = false
   }
   let tipKey = ''
