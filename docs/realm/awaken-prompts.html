@@ -1,0 +1,274 @@
+<title>여장수 각성 프롬프트</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@700;800&family=Gowun+Dodum&display=swap">
+<style>
+/* 판: 장수 초상과 같은 남색 판 위에 청동 띠 · 카드 격자 · 단일 어두운 결 */
+:root {
+  --bg: #1c2129;
+  --panel: #252b35;
+  --line: #3a4250;
+  --fg: #e7e2d6;
+  --dim: #9aa0a8;
+  --bronze: #c9a25a;
+  --done: #5e8c6a;
+  --display: "Nanum Myeongjo", "Batang", serif;
+  --body: "Gowun Dodum", "Malgun Gothic", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 22px; }
+h1 { font-family: var(--display); font-weight: 800; font-size: clamp(26px, 5vw, 38px); margin: 0; letter-spacing: .02em; text-wrap: balance; }
+h1 span { color: var(--bronze); }
+.how { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.how li { border-top: 2px solid var(--bronze); padding-top: 8px; color: var(--dim); font-size: 14px; }
+.how b { color: var(--fg); display: block; font-weight: normal; font-family: var(--display); font-size: 16px; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bar input { flex: 1 1 200px; min-width: 0; background: var(--panel); border: 1px solid var(--line); color: var(--fg); border-radius: 6px; padding: 9px 12px; font: inherit; }
+.chip { background: transparent; border: 1px solid var(--line); color: var(--dim); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--bronze); color: var(--bronze); }
+.count { color: var(--dim); font-size: 13px; margin-left: auto; font-variant-numeric: tabular-nums; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; display: grid; grid-template-columns: 84px 1fr; gap: 12px; padding: 12px; align-items: start; }
+.card.is-done { opacity: .55; }
+.card img { width: 84px; height: 84px; object-fit: cover; border-radius: 6px; background: var(--bg); }
+.info { min-width: 0; display: grid; gap: 6px; }
+.name { font-family: var(--display); font-size: 18px; font-weight: 700; line-height: 1.2; }
+.meta { color: var(--dim); font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 4px 8px; }
+.tag { color: var(--bronze); }
+.file { font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; color: var(--dim); word-break: break-all; }
+.note { font-size: 12.5px; color: #e0b46a; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.copy { background: var(--bronze); color: #1c2129; border: 0; border-radius: 6px; padding: 7px 14px; font: inherit; font-weight: bold; cursor: pointer; }
+.copy.ok { background: var(--done); color: var(--fg); }
+.done { color: var(--dim); font-size: 13px; display: inline-flex; gap: 4px; align-items: center; cursor: pointer; }
+details { grid-column: 1 / -1; font-size: 13px; color: var(--dim); }
+details summary { cursor: pointer; }
+details pre { white-space: pre-wrap; word-break: break-word; background: var(--bg); padding: 10px; border-radius: 6px; color: var(--fg); font-size: 12.5px; max-height: 320px; overflow: auto; }
+button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--bronze); outline-offset: 2px; }
+textarea.fallback { position: fixed; left: -9999px; }
+</style>
+
+<div class="wrap">
+  <h1>여장수 <span>각성</span> 프롬프트</h1>
+  <ul class="how">
+    <li><b>1. 챗지피티 새 대화</b>장수 한 명마다 새 대화를 엽니다. 거절된 대화창은 계속 거절합니다.</li>
+    <li><b>2. 그림 붙이기</b>카드 아래 적힌 파일(bust-hd)을 붙입니다.</li>
+    <li><b>3. 복사해서 붙여넣기</b>자세와 옷은 장수마다 이미 들어 있습니다.</li>
+    <li><b>막히면</b>옷 결을 「딱 붙음」 쪽으로 순하게 바꾸거나, 맨 아래 한 줄을 붙입니다.</li>
+  </ul>
+  <div class="bar">
+    <input id="q" type="search" placeholder="이름 · 파일 찾기" aria-label="이름 찾기">
+    <div class="row" id="chips"></div>
+    <span class="count" id="count"></span>
+  </div>
+  <div class="grid" id="grid"></div>
+  <p class="meta">그래도 막힐 때 프롬프트 맨 끝에 덧붙일 한 줄: <code>Render her in a slightly more stylized illustrated look than the reference.</code></p>
+</div>
+
+<script>
+// [그림, 이름, 나이, 결, 자세, 옷, 메모]
+const H = [
+['g-76-mokji-jinha','진왕 진하',38,'V','seen from slightly below, body turned three-quarters away, glancing back at the viewer with a knowing half-smile, holding up her bronze mirror so it catches the light beside her face','a deep V-neck red silk robe with an ochre collar wrapped tightly over a fitted gilt-bronze waist cincher, long strands of blue and red beads draping across her shoulders, gogok earrings'],
+['l-L2-soseono','소서노',31,'O','seated sideways on an unseen throne, leaning on one elbow, chin slightly raised, an unrolled map scroll trailing from her hand, looking down at the viewer with calm authority','an off-shoulder red silk robe with a thick black fur stole draped low around her upper arms, a fitted gilt-bronze plated bodice beneath, the flame-shaped gold crown taller and more ornate'],
+['l-L7-aryeong','알영',19,'F','turned in profile, eyes closed, face lifted as the blue dragon coils up around her shoulder and over her head, an armful of rice stalks held close','a fitted white hemp dress with a high green crossed collar and a slim gilt-bronze belt, sleeves gathered at the wrists with jade cuffs, the gold-leaf diadem taller and glowing'],
+['w-01-silla-princess','신지 고은',24,'V','head tilted, half-turned away, peeking back at the viewer from behind a raised silk sleeve that hides her mouth, eyes sly and amused','a red silk robe with a navy collar crossing in a deep V, cinched tightly by a wide gilt-bronze belt, gogok necklace in several strands, longer and more elaborate gold dangle earrings'],
+['w-02-goguryeo-lady','번예 고운',20,'F','spinning mid-ritual, seen slightly from above, the bell in her hand ringing and trailing light, the bronze mirror swinging on its cord, a shy smile breaking into joy','a fitted white hemp ritual dress with red-dotted patterns and a red crossed collar, the bronze mirror on her chest, layered sheer sleeves that flare as she turns'],
+['w-03-goguryeo-archer','살해 매화',21,'S','leaning back with her bow raised overhead, shot from a low angle, an arrow nocked and glowing, winking and laughing','a sleeveless fitted red hunting top with a high collar, leather bracers up to the elbows, a gilt-bronze plated belt, the feathered hood pushed back'],
+['w-04-gaya-swordswoman','견지 아라',22,'C','turned fully sideways, sword half-drawn and glowing at hip level, glaring at the viewer from the corner of her eye, short hair swept up by the aura','a corset-shaped breastplate of fine iron lamellar scales edged in gold, molded to her figure, bare shoulders with a single high pauldron, a short dark cape on one side'],
+['w-05-baekje-queen','신지 별하',27,'V','facing the viewer but leaning slightly forward, chin lowered, eyes raised, a strand of gogok beads pulled taut between both hands like a weapon','a violet silk robe with a gold-thread collar in a deep V, a fitted gilt-bronze waist piece, layered silk sleeves, the flame gold crown more ornate'],
+['w-06-buyeo-huntress','번예 새벽',19,'F','crouched low as if about to spring, seen from slightly above, spear held across her body, breath misting, the wolf-fur hood framing a wary glare','a fitted white wolf-fur trimmed tunic bound tight with leather straps, silver-bronze plates along the ribs, wrapped bracers on bare forearms'],
+['w-08-mahan-warrior','번예 이슬',25,'S','lunging forward in a spear thrust toward the lower corner, body twisted, curly hair flying, grinning with teeth','a sleeveless navy top cut high at the neck and fitted to her torso, both tattooed arms bare, crossed leather straps with gilt-bronze buckles, small lamellar plates at the hips'],
+['w-09-byeonhan-smith','번예 단비',24,'O','seen from a low angle, swinging a glowing hammer up onto her shoulder, sparks bursting around her, eyes smiling through the soot','a white hemp top slipping off one shoulder under a fitted leather apron-corset with bronze rivets, rolled sleeves, a gourd at her hip'],
+['w-10-pirate-captain','살해 너울',30,'V','leaning against an unseen mast, the harpoon-spear slung behind her neck with both wrists draped over it, smirking down at the viewer','an open leopard-fur vest over a deep V-neck wrapped silk top, fitted at the waist with a wide red sash, tooth necklace, a gold hoop at one ear'],
+['w-11-assassin','험측 소리',26,'F','back mostly to the viewer, head turned sharply to look past her shoulder, a dagger held reversed along her forearm, the maekgung bow across her back','a fitted black Korean jeogori with a high collar and close sleeves, a leather vest laced tight, a navy head wrap with long tails flowing, face uncovered'],
+['w-12-court-dancer','읍차 나리',22,'K','mid-spin seen from behind and slightly above, a white silk ribbon whirling in a spiral around her, glancing back at the viewer with a playful smile','a fitted red dance bodice with white dots and a small keyhole opening at the collarbone, flowing sheer sleeves, more gold-leaf ornaments in her braided hair'],
+['w-13-young-archer','번예 솔미',20,'F','kneeling on one knee, drawing her bow fully, arrow aimed upward past the frame, calm focused eyes, the long braid swinging','a fitted grass-green hemp archer tunic with a crossed collar, a leather chest strap holding the quiver, the patterned headband turned into gilt-bronze'],
+['w-14-feast-spy','살해 노을',22,'O','reclining sideways as if at a feast table, raising a bronze cup to her lips, eyes sliding toward the viewer, the hidden blade glinting from her sleeve','a navy silk robe slipping off both shoulders, held by a fitted bead-strung bodice, strands of red and blue beads across her collarbones'],
+['w-17-mahan-pearl-diver','번예 물새',20,'F','bursting up as if surfacing from the sea, head thrown back, wet hair whipping droplets that turn into sparks, laughing','a sleek fitted sea-blue diving top tied at the waist, shell and pearl necklaces, a net bag at her hip'],
+['w-18-jinhan-salt-widow','번예 다솜',33,'V','turned three-quarters, one hand on her hip, the other lifting a pinch of glowing salt crystals that drift into the air, a mature knowing smile','a violet hemp robe with a yellow collar in a soft deep V, cinched by a shell-studded belt that hugs her waist, a layered sash'],
+['w-19-buyeo-fur-princess','읍차 가온',23,'O','eyes closed, head bowed in prayer, snowflakes and light motes swirling around her, both hands folded together at her chin','an off-shoulder white fur-trimmed silk gown with a fitted gold-embroidered bodice, long twin braids threaded with gold, the snowy fur hat crowned with a gold band'],
+['w-20-gaya-smith-daughter','견지 아름',26,'S','planting a huge maul head-down in front of her and leaning on its handle with both forearms, seen from a low angle, a confident grin','a sleeveless fitted leather jerkin with a high collar and bronze rivets, strong bare arms, the leather headband turned into a gilt-bronze circlet'],
+['w-21-baekje-court-dancer','번예 연이',18,'F','twirling with one arm flung up and the other holding the lacquered box out to the side, braids flying, seen slightly from below, a bright mischievous smile','a fitted pink jeogori with green sleeves and red ties, a short silk cape fluttering, gilt-bronze hair pins and glowing ribbon ends'],
+['w-22-dongye-tiger-huntress','살해 물결',30,'O','crouched forward with the spear held low and level, head lowered, glaring up at the viewer like a stalking tiger','a tiger pelt over one shoulder leaving the other bare, a fitted dark tunic with gold-edged lamellar plates over the ribs, tiger-claw necklace'],
+['w-23-usisan-whale-queen','번예 소금',36,'S','raising her harpoon high overhead about to throw, body twisted, seen from below, eyes calm and set','a sleeveless fur vest fitted over a high-collared top, whale-tattooed arms bare, tooth necklace, bronze armbands'],
+['w-24-apdok-queen','읍차 누리',30,'V','walking forward mid-stride, turned slightly sideways, rice stalks in one arm turning into golden light, a gentle smile aimed off-frame','a green silk robe with a gold-thread collar in a deep V, fitted by a gold vine-patterned belt, many strands of gogok and crystal beads'],
+['w-25-bihwa-priestess','번예 빛나',24,'F','raising the bronze mirror high above her head so it blazes with light, the bell branch lowered in her other hand, looking up at it','a fitted white ritual robe with a navy collar, wrapped tightly at the waist with a red cord, sheer sleeves billowing'],
+['w-26-iseo-tomboy-general','살해 고개',20,'S','jumping forward toward the viewer, spear trailing behind, a fist raised, shouting with a huge grin','a sleeveless short vest of iron lamellar scales over a fitted top, a red sash knotted at the waist, bronze bracers on bare arms'],
+['w-27-mokji-jinha','신지 진하',37,'V','seated and leaning forward with elbows on her knees, the bell branch dangling from her fingers, studying the viewer with a measuring half-smile','a white ritual robe with a navy collar opened in a deep V, layered carnelian and blue bead strands, a fitted gilt-bronze waist plate, the bronze mirror at her hip'],
+['w-28-michuhol-bira','읍차 비라',31,'O','one foot up on an unseen crate, coiling a rope over her shoulder, head thrown back laughing','a navy top slipping off one shoulder, fitted with a wide leather belt hung with salt pouches and copper bells, amber and shell necklaces'],
+['w-29-golpo-janmul','살해 잔물',20,'S','pulling hard on an oar with her whole body, seen from the side, wet braid swinging, a determined grin','a sleeveless fitted hemp top tied tight with rope, broad sun-tanned shoulders, gilt-bronze armbands'],
+['w-30-guya-soebi','견지 쇠비',27,'C','swinging the bundle of iron ingots off her shoulder so it trails sparks, chin raised, looking down her nose at the viewer','a corset-style breastplate of gilt-edged iron lamellar, one shoulder in a sculpted iron pauldron and the other bare, red lips'],
+['w-31-dabeol-dalbit','번예 달빛',24,'V','drawing her bow from a low crouch, seen slightly from below, moonlight on her face, head tilted with a sly smile','a fitted leather bodice with a deep V-neck, a navy cloak of black feathers draped off the shoulders, black feathers in her hair'],
+['w-32-golbeol-budeul','살해 부들',25,'K','springing out sideways from tall reeds, blade swung behind her, a cheeky tongue-out grin','a fitted woven-reed vest over a short top with a side cutout at the waist, leather straps and gilt-bronze buckles, cattail spikes on her back'],
+['w-33-gammun-gamsil','읍차 감실',28,'O','lounging back as if floating in the air, head resting on one raised arm, half-lidded eyes, the bells on her wrist chiming with light','an orange patterned outer robe slipping off both shoulders over a fitted red bodice, bell earrings, the bronze mirror on a cord'],
+['w-34-chopal-deulme','살해 들메',25,'S','charging with the spear swung in an arc behind her, seen from a high angle, hair whipping, a fierce frown','a sleeveless fitted leather top with a high collar, a fur mantle on one shoulder, claw necklace, bronze plated bracers on strong arms'],
+['w-35-jomun-odi','번예 오디',23,'F','tossing a handful of glowing silkworm cocoons into the air and laughing up at them, the basket on her hip','a fitted white hemp jeogori with a purple sash tied tight at the waist, a multicolor bead necklace, mulberry leaves and flowers in her hair'],
+['w-36-baekje-maena','견지 매나',25,'O','arm swung out to the side as the great hawk launches from her gauntlet, wings spread across the frame, her face in profile following its flight','a fitted leather riding top with bare shoulders and a single sculpted gilt-bronze pauldron on the gauntlet arm, a quiver strap across her body'],
+['w-37-michuhol-gaennae','살해 갯내',23,'F','crouched low, twirling a dagger between her fingers, peering up at the viewer through messy bangs with a narrow-eyed grin','black cloth bands wrapped tightly around her torso and arms like a fitted bodysuit, a leather harness, a sack slung on her back'],
+['w-38-sangdang-bulmae','살해 불매',28,'S','mid-swing bringing a red-hot hammer down, sparks exploding outward, face lit from below, laughing','a sleeveless fitted leather apron-corset with bronze rivets, bare muscular arms, a cloth headband'],
+['w-39-gosaburi-galmae','번예 갈매',22,'S','leaping, seen from below against the glow, bow held sideways and firing down past the viewer, hair and feathers streaming','a sleeveless hemp top knotted at the side of the waist and fitted, white feathers through her hair, gilt-bronze armlets'],
+['w-40-mujin-munui','읍차 무늬',22,'O','bent backward in ecstatic dance, face turned up, eyes closed, bell clusters raised in both hands, five-color ribbons spiraling around her','a fitted bodice with bare shoulders showing the blue spiral tattoos, layered five-color sashes, feathers and beads in her hair'],
+['w-41-hwanna-beodeul','조의 버들',26,'V','the arrow just released and the bowstring still humming, body in profile, a confident smile, the glowing arrow streaking out of frame','a fitted navy spotted robe with a red collar crossing in a deep V, arm guards, the black feathered hat'],
+['w-42-gwanna-soenun','조의 쇠눈',27,'C','putting on her red-tasseled helmet with both hands, head slightly lowered, cold eyes locked on the viewer','a gilt-edged iron lamellar cuirass molded to her figure, a high collar, bronze armbands on bare upper arms'],
+['w-43-uga-nuri','견사 누리',22,'F','leaning her cheek against the calf\'s neck, seen slightly from above, eyes glowing gently, gold beads in her braids swinging','a fitted white fur-trimmed silk jacket with gold fastenings, the gold-ornamented fur hat'],
+['w-44-okjeo-sogeumbi','장수 소금비',30,'O','swinging the string of dried fish over her shoulder like a weapon, the other hand on her blade hilt, laughing loudly, seen from a low angle','an open worn vest over a wrapped top slipping off one shoulder, a shell necklace, the salt sack on a strap'],
+['w-45-tamna-oreumbi','살해 오름비',22,'S','riding at full gallop leaning over the pony\'s mane, her hair and its mane streaming together, laughing, whip raised','a sleeveless fitted hemp jeogori with a high collar, a thick wooden bead necklace, leather riding bracers'],
+['w-46-geonma-maru','신지 마루',32,'F','lifting an armful of rice stalks overhead with both arms as the grains turn into floating light motes, face tilted up, eyes open and bright','a fitted yellow hemp robe with a crossed collar and a wide embroidered waistband, a blue bead necklace, a crown of braids'],
+['w-47-gosaburi-baram','읍차 바람',28,'V','turned sideways into the wind, scarf streaming, releasing the carved wooden bird which takes flight in light, a knowing smile','a deep teal silk robe crossed in a deep V, cinched by a jade-beaded belt that carries her sword, a long white scarf'],
+['w-48-mujin-mudeung','읍차 무등',52,'R','planting the hawk-feathered spear beside her with both hands on the shaft, chin raised, seen from below like a mountain','a fitted dark lamellar coat edged in gold, a heavy fur mantle across the shoulders, jade and amber beads, the grey braid over her shoulder'],
+['w-49-goryong-gureum','읍차 구름',26,'V','pouring wine from a high-held jar into a cup in a long glowing arc, eyes on the viewer, a playful smile','a white hemp robe with a sky-blue collar opened in a deep V, fitted with a pearl-studded sash, pearls in her wavy hair'],
+['w-50-siljik-mulga','읍차 물가',42,'V','seated sideways, tapping an iron ingot against her other hand, head tilted, studying the viewer with a cool half-smile','a teal robe with a yellow collar in a deep V, a fitted waist with a gilt-bronze belt, many strands of red and blue glass beads'],
+['w-51-haseulla-dangung','삼로 단궁',26,'O','turning on her heel with the bow swung low, three glowing arrows fanned between her fingers, a fierce stare','a fitted red top with a leopard pelt draped off one shoulder, the other shoulder bare, leopard-fur ties in her braids'],
+['w-52-biryuna-songbi','송비 (패자 송비)',20,'F','kneeling on one knee with her bow upright beside her in a formal salute, head slightly bowed but eyes raised, a bright determined smile','a fitted yellow robe with round patterns and a gilt-bronze waist plate, red hair ribbon, gold earrings'],
+['w-53-hwanna-gabi','패자 가비',32,'V','settling her fox-fur stole on her shoulders with one hand, the other holding a gold piece up at eye level, narrowed amused eyes','a green spotted silk robe in a deep V, a fitted waist, an amber necklace, many thin beaded braids'],
+['w-54-maga-dalli','마가 달리',27,'O','twisted around in the saddle, drawing her horn bow back over her shoulder to shoot behind her, laughing','a grey fur vest leaving the shoulders bare over a fitted leather bodice with bronze studs, horsetail ornaments'],
+['w-55-guga-nuri','구가 누리',19,'F','turned sideways, holding the white puppy up to her cheek, eyes closed in a gentle smile, the gold dog charm glowing','a fitted white fur-trimmed silk coat with pearl fastenings, the gold dog ornament at her waist'],
+['w-56-dongokjeo-sogeum','장수 소금',52,'R','slamming the salt box down beside her and leaning on it with both hands, glaring straight at the viewer','a leopard-pelt coat over a fitted dark jacket with gold-edged trim, the salt-crystal necklace, grey twin braids'],
+['w-57-bullae-bakdal','삼로 박달',28,'C','standing guard with the horn bow held upright in front of her, gaze fixed past the viewer, a calm smile, seen from a slightly low angle','a lamellar corset with gold edges over a fitted ochre top, a tiger pelt over one shoulder, a tooth necklace'],
+['w-58-tamna-halla','군장 한라',30,'O','head thrown back, the bell raised high and the mirror held low, hair whipped upward by a volcanic updraft','an off-shoulder black and red ritual robe with a fitted bodice, volcanic stone and red bead necklace, the red camellia crown'],
+['w-59-jomun-irang','살해 이랑',25,'S','crouched low on guard, the bronze dagger held back along her forearm, the other arm across her body, glaring up through her brows','a sleeveless leather vest fitted to her torso, tattooed forearms bare, strands of red and blue beads'],
+['w-60-golbeol-beom','살해 범',28,'O','leaning forward low like a stalking tiger, one clawed hand raised beside her face, teeth bared in a grin, amber eyes glowing','a tiger pelt worn off both shoulders over a fitted leather bodice, tiger-stripe paint on her arms'],
+['w-61-iseo-sinae','읍차 시내',22,'F','counting rods floating in a ring of light around her, one rod raised to her lips in thought, head tilted, a calm smile','a fitted sky-blue hemp robe with a white crossed collar and a slim gilt-bronze belt'],
+['w-62-byeokjin-byeol','읍차 별',23,'O','holding the glowing tongs close to her face to inspect a red-hot blade, sparks lighting her face, a cheerful focused look','a white jeogori slipping off one shoulder under a fitted leather apron, rolled sleeves, leather gloves'],
+['w-63-us-haesol','읍차 해솔',20,'F','walking forward and glancing to the side with a warm smile, a pine branch in her hand trailing green light','a fitted white hemp robe with a green collar and ties, a gogok on blue beads'],
+['w-64-miri-dallae','신지 달래',35,'V','hoisting the millet basket onto her hip, the other hand on her waist, laughing heartily, seen from below','a hemp robe with a green collar in a soft deep V, a fitted waistband, green beads, wildflowers in her hair'],
+['w-65-goguryeo-hwalmi','조의 활미',26,'V','standing in profile, aiming an arrow straight up at the sky, back arched, hair streaming','a fitted white robe with black spots in a deep V, a wide red belt cinching her waist, two feathers in her hair','이마 붉은 점이 걸리면 프롬프트에 "no dot on the forehead" 를 더합니다'],
+['w-66-saro-noeul','번예 노을',22,'O','turned three-quarters, nocking an arrow while glancing back at the viewer with smiling eyes, sunset glow on one side of her face','a fitted orange hemp top with bare shoulders, a quiver strap across her body, many gogok beads'],
+['w-67-buyeo-haedal','해달 (대사 해달)',28,'V','drawing her black bow, seen from a low angle, aiming just above the viewer with a cold expressionless stare along the arrow','a white silk robe in a deep V under a black bear-fur cloak thrown back off the shoulders, a gold buckle cinching a fitted waist'],
+['w-68-maek-beombal','살해 범발',24,'O','leaning back lazily, a dagger spinning above her fingers, a sly sideways grin, amber eyes','a torn leather vest leaving the shoulders bare, a tiger pelt slung at the hip, claw ornaments in her hair'],
+['w-69-jeoga-eomni','견사 엄니',33,'S','bracing the iron spear diagonally across her body to receive a charge, jaw set, eyes hard','a sleeveless fitted leather top with a high collar, a bear-fur mantle on one shoulder, the tusk necklace'],
+['w-70-bukokjeo-mulbeom','물범 (장수 물범)',38,'F','drawing back the barbed harpoon to throw, body coiled, eyes on a distant target off-frame','a fitted sealskin hooded jacket thrown open at the collar, a shell-threaded braid, a rope coil over one shoulder'],
+['w-71-yeonna-neoul','선인 너울',27,'V','parting the mountain mist with one sweep of her spear, mid-stride, a calm half-smile','a violet round-patterned robe crossed in a deep V, a fitted waist, a fur stole, a pheasant feather in her hair'],
+['w-72-eumjeup-beol','살해 벌',34,'C','drawing her ring-pommel sword from over her shoulder, body turned, a one-sided smirk','a gilt-edged lamellar corset over a fitted yellow top, rope coiled across her body, ruby and crystal beads'],
+['w-73-samul-sagong','살해 사공',27,'S','at the stern with the oar braced, leaning into the wind, laughing with teeth, hair and rope streaming','a sleeveless blue vest fitted tight, a shell necklace, sun-tanned bare arms'],
+['w-74-balla-dokmudeom','살해 독무덤',24,'O','head tilted down, very long hair falling around her face, eyes staring up eerily, one hand on the great burial jar glowing from inside','a fur mantle slipping off her shoulders over a fitted dark red bodice, blue beads and the bronze mirror'],
+['w-75-daegaya-soemoe','견지 쇠뫼',30,'S','holding the glowing iron bar high like a torch, sparks raining around her, a grin','a sleeveless red jeogori-style top under a fitted leather apron, thick bare arms, a gogok necklace'],
+['w-76-gampyeong-baetsagong','살해 뱃사공',50,'R','blowing her bronze whistle with the long bamboo pole braced in the crook of her arm, eyes crinkled in a grin','a quilted vest fitted over a high-collared jacket with gold trim, the blue cord in her grey hair'],
+['w-77-sabeol-malgalgi','살해 말갈기',19,'F','leaning far out from her saddle, swinging the whip overhead, laughing, the belled braid flying','a fitted yellow jeogori under a leather vest laced tight'],
+['w-78-wansan-wan','살해 완',24,'V','holding an arrow up at eye level, sighting along the shaft with one eye closed, a quiet smirk','a fitted green hemp robe in a deep V with a brown collar, a leather belt with the quiver'],
+['w-79-yangmaek-solmae','장수 솔매',22,'F','arms crossed with the bow in one hand, turned away sulkily but eyes flicking back toward the viewer, cheeks slightly flushed','a fitted navy spotted top under a fur vest, dried fish at her waist, pine sprigs in her twin braids'],
+['w-80-usan-gangchi','장수 강치',26,'S','thrusting the barbed harpoon downward as if spearing from a rock, leaning over, wet hair flying, a wild grin','a sleeveless black sea-lion leather vest molded to her torso, a tooth necklace'],
+['w-81-byeokjin-byeolbit','살해 별빛',21,'F','face tilted up to the night sky, star-like motes gathering around her raised fingertips, a soft smile','a fitted vest of small iron lamellar scales with navy trim, a crystal bead necklace','bust-hd 가 없어 작은 그림(bust/)을 붙입니다'],
+['w-82-ungcheon-gom','살해 곰',25,'O','swinging the giant club over her shoulder in a full arc, the bear-head hood flapping, a roaring laugh','the bear pelt worn off both shoulders like a cape over a fitted leather top'],
+['w-83-gyeonji-beodeul','견지 버들',20,'F','sweeping the sickle in a wide arc as rice stalks scatter into light, body twisted, a shy smile turning brave','a fitted white hemp jeogori with rolled sleeves, a wide sash, willow leaves in her braid'],
+['w-84-salhae-dallae','살해 달래',23,'C','spinning, one curved blade raised high behind her and the other low in front, seen slightly from above, a wink','a sleeveless leather lamellar corset fitted to her figure, bare shoulders, the red hair tie streaming'],
+['w-85-sinji-neoul','신지 너울',22,'F','rising from the water to the waist, pulling her net bag over her shoulder, the hook in her other hand, a steady gaze','a fitted white wrap top layered under a dark sealskin vest, a gogok necklace, wet hair','옛 그림이 젖은 홑옷이라 조끼를 덧입혔습니다'],
+['w-90-saro-danbi','나정 지기 단비',18,'F','turned away, glancing back over her shoulder while lowering her bow, a determined frown','a fitted white robe with green stripes, leather bracers, a high ponytail'],
+['w-91-saro-mulsae','알천 물새',19,'S','spinning the harpoon over her head, droplets flying in a ring, a big laugh','a sleeveless fitted blue top, a pebble necklace, shell earrings'],
+['w-92-saro-dallae','명활 달래',25,'V','drawing her bow at a downward angle from high ground, seen from below, a smile at the corner of her mouth','a red robe with a fur collar crossed in a deep V, fitted leather shoulder armor on one side'],
+['w-93-saro-beomi','토함 범이',24,'S','leaping forward with the stone-tipped spear raised to stab down, tongue out, a wild laugh','a sleeveless tiger-skin vest fitted to her torso, the fang headband, strong bare arms'],
+['w-94-mokji-dallae','원산 지기 달래',28,'C','on the edge of a fortress wall, the long spear swung out to her side, cloak flaring, a steady smile','a fitted leather lamellar cuirass over a navy top, a brown fur cloak, a gogok'],
+['w-95-michuhol-haebi','해비',22,'S','hefting the big axe from behind her back over her head in both hands, mid-swing, a grin','a sleeveless navy top fitted high at the neck, iron arm rings, gogok and shell necklace'],
+['w-96-haengin-neoul','산지기 너울',24,'O','crouched on a rocky ledge looking down, bow drawn at a steep downward angle, pale eyes glowing in the dark','a white fur mantle slipping off her shoulders over a fitted green top, the silver bead circlet'],
+]
+
+const KIND = { V: '파인 옷', F: '딱 붙음', O: '어깨 드러냄', C: '코르셋 갑옷', S: '민소매', K: '트임', R: '위엄' }
+
+function agePhrase(a) {
+  if (a <= 22) return 'in her early twenties'
+  if (a <= 26) return 'in her mid-twenties'
+  if (a <= 29) return 'in her late twenties'
+  if (a <= 34) return 'in her early thirties'
+  if (a <= 39) return 'in her late thirties'
+  if (a <= 49) return 'in her forties'
+  return 'in her fifties'
+}
+function tone(a) {
+  if (a <= 20) return 'graceful and radiant'
+  if (a >= 40) return 'dignified and commanding'
+  return 'elegant and alluring'
+}
+
+function prompt([img, , age, , pose, outfit]) {
+  return `This is an original character from my own Korean historical fantasy strategy game. The attached portrait is an AI-generated illustration of a fictional adult woman ${agePhrase(age)}, not a real person. Create a square 1:1 image of the SAME character in her awakened form, the moment she reaches her full power.
+
+Identity: keep the exact same face, age, ethnicity, hairstyle and color palette, so she is instantly recognizable as the same hero.
+
+Framing: upper-body shot from just above the head to around the waist. The pose must be dynamic and asymmetric, not a frontal symmetrical bust: ${pose}. The face does not need to be centered, and one shoulder may turn away from the viewer. No open palm pushed toward the viewer.
+
+Style: semi-realistic painterly splash art, the quality of a premium Korean MMORPG female class illustration, dramatic soft rim light, high detail. Plain very dark slate-blue studio background (#1c2129) with a stronger warm glow behind the shoulders. No scenery, landscape, buildings or sky.
+
+Costume (the main focus): a high-fashion warrior design, ${tone(age)}, neither fully covered in armor nor bare. A tailored silhouette that follows her figure: ${outfit}. Gilt-bronze ornaments, small iron lamellar plates edged in gold, comma-shaped jade (gogok) beads, silk and fur. Ancient Korean Samhan / Three Kingdoms motifs, reimagined boldly and ornately. Confident, glamorous, powerful.
+
+Expression: the same personality as the reference, but more intense and resolved, a fierce or serene inner fire in the eyes. The irises may glow faintly.
+
+Power: an aura of light rising like heat haze, with small individual sparks and light motes drawn one by one, not a single blob. If she holds a weapon, it gleams with the same light.
+
+Do NOT draw: a halo or disc behind the head, sun rays, any red circle or sun symbol, Japanese or Chinese style armor or clothing, ninja masks, katana, shuriken, horns, demonic features, any text, letters, banner, caption, watermark or frame.`
+}
+
+const KEY = 'awaken-done'
+let done = {}
+try { done = JSON.parse(localStorage.getItem(KEY) || '{}') || {} } catch (e) { done = {} }
+function saveDone() { try { localStorage.setItem(KEY, JSON.stringify(done)) } catch (e) {} }
+
+let filter = ''
+const grid = document.getElementById('grid')
+const q = document.getElementById('q')
+const chips = document.getElementById('chips')
+const count = document.getElementById('count')
+
+for (const k of ['', ...Object.keys(KIND)]) {
+  const b = document.createElement('button')
+  b.className = 'chip'
+  b.type = 'button'
+  b.textContent = k ? KIND[k] : '전부'
+  b.setAttribute('aria-pressed', String(k === filter))
+  b.onclick = () => { filter = k; for (const c of chips.children) c.setAttribute('aria-pressed', 'false'); b.setAttribute('aria-pressed', 'true'); render() }
+  chips.appendChild(b)
+}
+
+function copyText(text, btn) {
+  const ok = () => { btn.textContent = '복사됨'; btn.classList.add('ok'); setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('ok') }, 1600) }
+  const fallback = () => {
+    const t = document.createElement('textarea'); t.className = 'fallback'; t.value = text; document.body.appendChild(t); t.select()
+    try { document.execCommand('copy'); ok() } catch (e) { btn.textContent = '아래 글을 직접 복사' }
+    t.remove()
+  }
+  try { navigator.clipboard.writeText(text).then(ok, fallback) } catch (e) { fallback() }
+}
+
+function render() {
+  const s = q.value.trim().toLowerCase()
+  grid.textContent = ''
+  let n = 0
+  for (const h of H) {
+    const [img, name, age, kind, , , note] = h
+    if (filter && kind !== filter) continue
+    if (s && !(name + img).toLowerCase().includes(s)) continue
+    n++
+    const dir = img === 'w-81-byeokjin-byeolbit' ? 'bust' : 'bust-hd'
+    const text = prompt(h)
+    const card = document.createElement('article')
+    card.className = 'card' + (done[img] ? ' is-done' : '')
+    card.innerHTML = `
+      <img src="bust/${img}.jpg" alt="${name}" loading="lazy">
+      <div class="info">
+        <div class="name">${name}</div>
+        <div class="meta"><span>${age}살</span><span class="tag">${KIND[kind]}</span></div>
+        <div class="file">public/realm/${dir}/${img}.jpg</div>
+        ${note ? `<div class="note">${note}</div>` : ''}
+        <div class="row">
+          <button class="copy" type="button">복사</button>
+          <label class="done"><input type="checkbox" id="d-${img}" ${done[img] ? 'checked' : ''}> 다 구움</label>
+        </div>
+      </div>
+      <details><summary>프롬프트 보기</summary><pre></pre></details>`
+    card.querySelector('pre').textContent = text
+    card.querySelector('.copy').onclick = e => copyText(text, e.currentTarget)
+    card.querySelector('input').onchange = e => { done[img] = e.target.checked; if (!done[img]) delete done[img]; saveDone(); card.classList.toggle('is-done', e.target.checked) }
+    grid.appendChild(card)
+  }
+  const d = H.filter(h => done[h[0]]).length
+  count.textContent = `${n}명 · 다 구움 ${d}/${H.length}`
+}
+q.oninput = render
+render()
+</script>
