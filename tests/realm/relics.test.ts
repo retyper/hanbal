@@ -19,11 +19,12 @@ import { movesOf } from '../../src/realm/estimate.ts'
 import { addBond, persuadeDropOf, postHero, riteMul, stepHeroes } from '../../src/realm/heroes.ts'
 import { riteOf } from '../../src/realm/paths.ts'
 import { reportText } from '../../src/realm/data/prose.ts'
-import { RELICS, REGION_TAGS, TIER_CHEST, poolOf } from '../../src/realm/data/relics.ts'
+import { RELIC, RELICS, REGION_TAGS, TIER_CHEST, poolOf, type RelicFx } from '../../src/realm/data/relics.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { startRegion } from '../../src/realm/data/regions/index.ts'
 import {
-  applyRelics, drawChests, emptyRelics, equip, holderOf, openTomb, pickTomb, relicDefs, relicHorseMulOf, relicLine, relicMoraleOf, relicMul, relicRealm, relicRoom, relicSum, slotsFor, unequip,
+  applyRelics, drawChests, drawRare, drawTomb, emptyRelics, equip, holderOf, openTomb, pickTomb, relicDefs, relicHorseMulOf, relicLevel, relicLevels, relicLine, relicLvOf, relicMoraleOf, relicMul,
+  relicRealm, relicRoom, relicSum, relicTop, relicValue, slotsFor, unequip, type RelicStore,
 } from '../../src/realm/relics.ts'
 import { advance, battleFates, forceOf, preview, sideOf } from '../../src/realm/season.ts'
 import { feastCost, fightRounds, type FightResult, type Side } from '../../src/realm/tactics.ts'
@@ -232,6 +233,126 @@ describe('유물 — 판 안의 효과', () => {
     assert.deepEqual(r2.heroes[mine.id]!.relics, ['goldbelt', 'gogok'])
     const t = startRegion('tutorial', 1, 'baekje')
     assert.deepEqual(relicRealm(t, { [ourHeroes(t)[0]!.id]: ['gogok'] }), [])
+  })
+})
+
+describe('유물 — 강화 (같은 것을 또 얻으면 한 단계)', () => {
+  const neutral = (f: RelicFx): number => (['horse', 'bond', 'chant', 'woo', 'blessing', 'steady', 'feast', 'stealth'].includes(f.kind) ? 1 : 0)
+
+  it('단계마다 세기가 는다 — 더하기 · 곱하기 · 줄이기 · 정수 · 느린 정수', () => {
+    const fx = (id: string, i = 0): RelicFx => RELIC[id]!.fx[i]!
+    const m = (lv: number): number => 1 + (lv - 1) * R.relicUpStep
+    for (const d of RELICS) for (const f of d.fx) assert.equal(relicValue(f, 1), R[f.by], `${d.id} ★ 하나는 손잡이 그대로`)
+    assert.ok(Math.abs(relicValue(fx('polebell'), 2) - R.relicMorale * m(2)) < 1e-12)
+    assert.ok(Math.abs(relicValue(fx('cheonma'), 3) - (1 + (R.relicCheonmaHorse - 1) * m(3))) < 1e-12)
+    assert.ok(Math.abs(relicValue(fx('horncup'), 3) - R.relicHornFeast ** m(3)) < 1e-12)
+    assert.equal(relicValue(fx('goldbelt'), 3), R.relicStat + 2 * R.relicUpInt)
+    assert.equal(relicValue(fx('wheelcup'), 2), R.relicWheelMarch + Math.ceil(R.relicUpSlow))
+  })
+
+  it('끝 단계 — relicLvMax 를 안 넘고, 효과가 안 바뀌는 단계는 내밀지 않는다 · 단계마다 효과가 세진다', () => {
+    for (const d of RELICS) {
+      const top = relicTop(d.id)
+      assert.ok(top >= 1 && top <= R.relicLvMax, d.id)
+      for (let lv = 2; lv <= top; lv++) {
+        assert.notEqual(relicLine(d.id, lv), relicLine(d.id, lv - 1), `${d.id} ★${lv} 글이 바뀐다`)
+        for (const f of d.fx) {
+          const n = neutral(f), a = relicValue(f, lv - 1), b = relicValue(f, lv)
+          assert.ok(Math.abs(b - n) >= Math.abs(a - n), `${d.id} ${f.kind} ★${lv} 약해지지 않는다`)
+          if (n === 1 && a < 1) assert.ok(b > 0, `${d.id} ${f.kind} 0 에 닿지 않는다`)
+        }
+      }
+      if (top < R.relicLvMax) assert.equal(relicLine(d.id, top + 1), relicLine(d.id, top), `${d.id} 끝 위는 같은 효과`)
+    }
+    assert.equal(relicTop('polebell'), R.relicLvMax, '더하는 효과는 끝까지 오른다')
+    assert.equal(relicTop('nothing'), 1)
+  })
+
+  it('또 고르면 오른다 — 무덤에 고르기 전 단계를 적고 · 끝에서 멈춘다', () => {
+    const tomb = (seed: number, ids: string[]) => ({ [String(seed)]: { ids, pick: null } })
+    let s: RelicStore = { ...emptyRelics(), own: { gogok: { n: 1, seed: 1 } }, tombs: { ...tomb(7, ['gogok', 'ingots', 'duck']), ...tomb(8, ['gogok', 'beads', 'duck']) }, order: ['7', '8'] }
+    assert.equal(relicLevel(s.own['gogok'], 'gogok'), 1)
+    s = pickTomb(s, 7, 'gogok')
+    assert.equal(s.own['gogok']!.n, 2)
+    assert.equal(s.own['gogok']!.seed, 1, '처음 찾은 판은 그대로')
+    assert.equal(s.tombs['7']!.was, 1)
+    assert.equal(relicLevel(s.own['gogok'], 'gogok'), Math.min(2, relicTop('gogok')))
+    s = pickTomb(s, 8, 'duck')
+    assert.equal(s.tombs['8']!.was, undefined, '새로 얻으면 강화가 아니다')
+    // 끝 단계에서 또 고르면 — 횟수는 늘어도 단계는 끝 그대로
+    const top = relicTop('gogok')
+    let c: RelicStore = { ...emptyRelics(), own: { gogok: { n: top, seed: 1 } }, tombs: tomb(9, ['gogok']), order: ['9'] }
+    c = pickTomb(c, 9, 'gogok')
+    assert.equal(c.tombs['9']!.was, top)
+    assert.equal(relicLevel(c.own['gogok'], 'gogok'), top)
+    assert.deepEqual(relicLevels(c.own), top > 1 ? { gogok: top } : {})
+  })
+
+  it('옛 기록 — n 이 곧 단계 · n 이 없거나 깨졌으면 ★ 하나 · 판 안의 옛 장수(relicLv 없음)는 손잡이 그대로', () => {
+    assert.equal(relicLevel(undefined, 'gogok'), 0)
+    assert.equal(relicLevel({}, 'gogok'), 1)
+    assert.equal(relicLevel({ n: Number.NaN }, 'gogok'), 1)
+    assert.equal(relicLevel({ n: 2 }, 'polebell'), 2)
+    assert.equal(relicLevel({ n: 99 }, 'polebell'), relicTop('polebell'))
+    assert.deepEqual(relicLevels({ polebell: { n: 1 }, gogok: { n: 3 } } as Record<string, { n?: number }>), { gogok: relicTop('gogok') })
+    const old: Hero = { ...body, relics: ['polebell', 'dagger'] }
+    assert.equal(relicSum(old, 'morale'), R.relicMorale)
+    assert.equal(relicSum(old, 'duel'), R.relicDaggerDuel)
+    assert.equal(relicLvOf(old, 'polebell'), 1)
+  })
+
+  it('판 안의 효과가 단계를 따른다 — 능력치 · 사기 · 겨루기 · 칸에 끼워 판을 열 때', () => {
+    const a = applyRelics(body, ['goldbelt'], { goldbelt: 3 })
+    assert.equal(a.tong, Math.min(10, body.tong + R.relicStat + 2 * R.relicUpInt))
+    assert.deepEqual(a.relicAdd, { tong: a.tong - body.tong })
+    assert.deepEqual(a.relicLv, { goldbelt: 3 })
+    assert.equal(applyRelics(body, ['goldbelt']).relicLv, undefined, '★ 하나는 안 적는다')
+    assert.equal(relicSum(applyRelics(body, ['dagger'], { dagger: 2 }), 'duel'), R.relicDaggerDuel + R.relicUpInt)
+    assert.equal(relicLvOf(applyRelics(body, ['wheelcup'], { wheelcup: 9 }), 'wheelcup'), relicTop('wheelcup'), '끝 위는 끝으로')
+    const r = bihwa()
+    const army = Object.values(r.armies).find((x) => x.faction === r.player && x.hero !== null)!
+    const was = forceOf(r, army).morale
+    relicRealm(r, { [army.hero!]: ['polebell'] }, { polebell: 3 })
+    assert.ok(Math.abs(forceOf(r, army).morale - was - R.relicMorale * (1 + 2 * R.relicUpStep)) < 1e-9)
+    // 그릇 유물 — 강화하면 그릇도 넓어진다
+    assert.equal(relicRoom(['cheonma'], { cheonma: 2 })['mu'], R.relicRoom + R.relicUpInt)
+  })
+
+  it('상자 — 더 오를 것은 놓이고, 다 오른 것은 모든 유물이 다 오른 뒤에야', () => {
+    const pool = poolOf('byeonhan-mini').map((x) => x.id)
+    const maxed = Object.fromEntries(RELICS.map((x) => [x.id, { n: relicTop(x.id) }]))
+    const last = pool.find((id) => relicTop(id) > 1)!
+    const a = drawChests(9, 'byeonhan-mini', { ...maxed, [last]: { n: 1 } })
+    assert.ok(a.includes(last), '하나 남은 오를 것은 반드시 놓인다')
+    assert.equal(drawChests(9, 'byeonhan-mini', maxed).length, R.relicChests, '다 올라도 상자는 놓인다')
+  })
+})
+
+describe('유물 — 판 끝 드문 상자', () => {
+  it('relicRareChance 몫으로 넷째 상자 — 귀함·보배만 · 셋과 겹치지 않고 · 같은 시드는 같다 · 고를 수 있다', () => {
+    let n = 0
+    for (let seed = 1; seed <= 400; seed++) {
+      const t = drawTomb(seed, 'yeongnam', {})
+      assert.deepEqual(t, drawTomb(seed, 'yeongnam', {}))
+      if (t.rare === undefined) { assert.equal(t.ids.length, R.relicChests); continue }
+      n++
+      assert.equal(t.ids.length, R.relicChests + 1)
+      assert.equal(t.ids[t.ids.length - 1], t.rare)
+      assert.equal(new Set(t.ids).size, t.ids.length)
+      assert.notEqual(RELIC[t.rare]!.tier, 'common')
+    }
+    assert.ok(Math.abs(n / 400 - R.relicRareChance) < 0.08, `드문 상자 ${n}/400`)
+    // 무덤에 놓이고 고를 수 있다
+    const seed = Array.from({ length: 400 }, (_, i) => i + 1).find((x) => drawTomb(x, 'south', {}).rare !== undefined)!
+    let s = openTomb(emptyRelics(), seed, 'south')
+    const rare = s.tombs[String(seed)]!.rare!
+    s = pickTomb(s, seed, rare, 'south')
+    assert.equal(s.own[rare]!.n, 1)
+  })
+
+  it('귀함·보배가 다 올랐으면 드문 상자는 안 놓인다', () => {
+    const maxed = Object.fromEntries(RELICS.map((x) => [x.id, { n: relicTop(x.id) }]))
+    for (let seed = 1; seed <= 100; seed++) assert.equal(drawRare(seed, 'world', maxed, []), null)
   })
 })
 

@@ -302,6 +302,8 @@ export interface Hero {
    * 옛 저장 · 남의 나라 장수 · 유물 없는 장수에는 없다
    */
   relics?: readonly string[]
+  /** 지닌 유물의 강화 단계 (relics.relicLvOf · ★ 둘 이상인 것만) — 옛 저장 · 강화 안 한 유물은 없다 (= 1) */
+  relicLv?: Readonly<Record<string, number>>
   /** 능력치 유물이 판을 열 때 더해 준 몫 (10 에 막혀 덜 든 것은 뺀 값) */
   relicAdd?: Partial<Record<GrowStat, number>>
   /** 이 판에 이미 쓴 판마다 몇 번짜리 유물 효과 — 오리모양 토기 escape · 진묘수 ward (relics.spendRelic) */
