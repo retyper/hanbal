@@ -6,6 +6,7 @@
  */
 
 export type CardKind = 'drought' | 'bounty' | 'locust' | 'plague' | 'halo' | 'quarrel' | 'waship' | 'pirates' | 'exile' | 'fugitive' | 'whale' | 'fishbridge' | 'gogak' | 'romance'
+  | 'sowfest' | 'skyfest' | 'mentor' | 'smith' | 'homenews' | 'song' | 'spring' | 'gift' | 'hunt'
 
 export interface CardOpt { readonly name: string; readonly does: string }
 
@@ -179,6 +180,97 @@ export const CARDS: Readonly<Record<CardKind, CardInfo>> = {
     opts: [
       { name: '내다 판다', does: '곡식이 들어온다' },
       { name: '나눠 먹는다', does: '군대 사기와 장수의 정이 오른다' },
+    ],
+  },
+  // ── 좋은 것 둘 가운데 하나 (형 10-31: "이득 이벤트를 더 많이 · 장수들은 맨날 싸우기만 하냐" · docs/realm/EVENTS-1031.md)
+  sowfest: {
+    name: '씨 뿌린 뒤 잔치', kind: 'sky', bad: false, icon: 'status-feast', art: 'event-festival',
+    line: '씨를 다 뿌렸다. 마을마다 밤새 노래하고 춤춘다.',
+    beats: ['씨를 다 뿌렸다.', '마을마다 밤새 노래하고 춤춘다.'],
+    ask: '이 기운을 어디에 쓸까?',
+    opts: [
+      { name: '함께 춤춘다', does: '군대 사기와 장수의 정이 오른다' },
+      { name: '밭을 돌본다', does: '그해 가을걷이가 늘어난다' },
+    ],
+  },
+  skyfest: {
+    name: '하늘 제사', kind: 'sodo', bad: false, icon: 'status-good-omen', art: 'event-yeonggo',
+    line: '가을걷이를 마치고 온 나라가 모여 하늘에 제사를 지낸다.',
+    beats: ['가을걷이를 마쳤다.', '온 나라가 모여 하늘에 제사를 지낸다.'],
+    ask: '제사에 누구를 부를까?',
+    opts: [
+      { name: '이웃을 부른다', does: '아는 나라마다 우리를 좋게 본다' },
+      { name: '군대가 맹세한다', does: '군대 사기가 크게 오른다' },
+    ],
+  },
+  mentor: {
+    name: '스승과 제자', kind: 'people', bad: false, icon: 'mood-warm', art: 'event-war-council',
+    line: '{a} 장수가 {b}에게 무예를 가르치겠다고 청한다.',
+    beats: ['{a} 장수가 {b}에게 무예를 가르치겠다고 청한다.'],
+    ask: '어떻게 할까?',
+    opts: [
+      { name: '가르치게 한다', does: '{b}의 무예가 오른다' },
+      { name: '함께 다니게 한다', does: '두 장수의 정이 오른다' },
+    ],
+  },
+  smith: {
+    name: '대장장이의 새 틀', kind: 'people', bad: false, icon: 'treasure-iron-ingots', art: 'event-bow-forge',
+    line: '{n} 대장간에서 쇠를 더 단단히 녹이는 틀을 찾았다.',
+    beats: ['{n} 대장간에서', '쇠를 더 단단히 녹이는 틀을 찾았다.'],
+    ask: '새 틀을 어디에 쓸까?',
+    opts: [
+      { name: '쇠를 더 뽑는다', does: '쇠가 들어온다' },
+      { name: '틀을 판다', does: '곡식이 들어온다' },
+    ],
+  },
+  homenews: {
+    name: '고향 소식', kind: 'people', bad: false, icon: 'unit-general', art: 'event-wanderer-arrives-g',
+    line: '{a} 장수의 고향 사람들이 찾아와 함께 살게 해 달라고 한다.',
+    beats: ['{a} 장수의 고향 사람들이 찾아왔다.', '함께 살게 해 달라고 한다.'],
+    ask: '어찌할까?',
+    opts: [
+      { name: '받아들인다', does: '{n}의 집이 늘어난다' },
+      { name: '장수와 쉬게 한다', does: '{a} 장수의 정이 크게 오른다' },
+    ],
+  },
+  song: {
+    name: '노래 짓기', kind: 'people', bad: false, icon: 'mood-joy', art: 'event-court-hall',
+    line: '{a} 장수가 우리 군대를 기리는 노래를 지었다.',
+    beats: ['{a} 장수가', '우리 군대를 기리는 노래를 지었다.'],
+    ask: '노래를 어디로 퍼뜨릴까?',
+    opts: [
+      { name: '군대에 퍼뜨린다', does: '군대 사기가 오른다' },
+      { name: '이웃에 퍼뜨린다', does: '아는 나라마다 우리를 좋게 본다' },
+    ],
+  },
+  spring: {
+    name: '새 샘', kind: 'sky', bad: false, icon: 'status-good-omen', art: 'event-divination',
+    line: '{n} 뒤에서 맑은 샘이 솟았다.',
+    beats: ['{n} 뒤에서', '맑은 샘이 솟았다.'],
+    ask: '샘을 어찌할까?',
+    opts: [
+      { name: '마을을 넓힌다', does: '{n}의 집이 늘어난다' },
+      { name: '샘에 제사한다', does: '그해 가을걷이가 늘어난다' },
+    ],
+  },
+  gift: {
+    name: '사신의 선물', kind: 'outside', bad: false, icon: 'mood-joy', art: 'event-outside-envoy',
+    line: '{f}에서 사신이 선물을 들고 왔다.',
+    beats: ['{f}에서 사신이', '선물을 들고 왔다.'],
+    ask: '어떻게 맞을까?',
+    opts: [
+      { name: '선물을 받는다', does: '곡식이 들어온다' },
+      { name: '크게 답례한다', does: '{f}의 호감이 크게 오른다' },
+    ],
+  },
+  hunt: {
+    name: '사냥 대회', kind: 'people', bad: false, icon: 'unit-general', art: 'event-goguryeo-hunt',
+    line: '겨울 들판에서 장수들이 사냥을 겨룬다.',
+    beats: ['겨울 들판에서', '장수들이 사냥을 겨룬다.'],
+    ask: '잡은 짐승을 어찌할까?',
+    opts: [
+      { name: '고기를 나눈다', does: '군대 사기와 장수의 정이 오른다' },
+      { name: '가죽을 판다', does: '곡식이 들어온다' },
     ],
   },
 }

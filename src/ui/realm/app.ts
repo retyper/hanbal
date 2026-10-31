@@ -470,6 +470,9 @@ function fxHtml(r: Realm, fx: CardFx): string {
   if (fx.foe !== undefined) h += fxChip(true, 'war-broken-banner', `${r.factions[fx.foe.faction]?.name ?? ''} 사기 -${Math.round(fx.foe.d * 100)}%`)
   if (fx.join !== undefined) h += fxChip(true, 'unit-general', '새 장수')
   if (fx.wed !== undefined) h += fxChip(true, 'mood-warm', '혼인')
+  const up = (fx.gain ?? []).reduce((a, [, d]) => a + d, 0)
+  if (up > 0) h += fxChip(true, 'settle-hamlet', `집 +${up}`)
+  if (fx.stat !== undefined) h += fxChip(true, 'unit-general', `${r.heroes[fx.stat[0]]?.name ?? ''} ${STAT_NAME[fx.stat[1]]} +${fx.stat[2]}`)
   // 아무 일 없음 — 글 대신 「곡식 0」 그림 칩 (형 10-26: "아무 일 없는 건 텍스트로 하지 말고 0 으로 이미지화")
   return h === '' ? `<span class="cnone"><b class="gz" title="오가는 것 없음">${icon(GOOD_ICON.grain, 'cgi')}0</b></span>` : h
 }

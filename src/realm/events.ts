@@ -15,7 +15,7 @@ import { HERO_POOL } from './data/heroes-pool.ts'
 import { addFavor } from './diplomacy.ts'
 import { knownOf } from './discovery.ts'
 import { addBond, canWed, hasTrait, homeOf, isRuler, wed } from './heroes.ts'
-import type { Card, Hero, Order, Realm, ReportLine } from './types.ts'
+import type { Card, GrowStat, Hero, Order, Realm, ReportLine } from './types.ts'
 
 const byId = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 
@@ -60,8 +60,31 @@ function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w:
     const town = big.find((id) => id !== cap)
     const whys = QUARREL_WHYS.filter((w) => w !== 'town' || town !== undefined)
     const why: QuarrelWhy = whys[Math.floor(roll(r.seed, season, 'card-qwhy') * whys.length)]!
-    add('quarrel', 0.6, { hero: heroes[i]!.id, hero2: heroes[j]!.id, why, ...(why === 'town' ? { node: town! } : {}) })
+    // 다툼은 반으로 — 장수끼리 싸우기만 했다 (형 10-31)
+    add('quarrel', 0.3, { hero: heroes[i]!.id, hero2: heroes[j]!.id, why, ...(why === 'town' ? { node: town! } : {}) })
   }
+  // ── 좋은 것 둘 가운데 하나 (형 10-31 · EVENTS-1031.md)
+  const G = P.realm.cardGoodW
+  const pickOf = <T>(xs: readonly T[], key: string): T | undefined => (xs.length > 0 ? xs[Math.floor(roll(r.seed, season, key) * xs.length)] : undefined)
+  if (y === 1) add('sowfest', P.realm.cardFestW) // 씨 뿌린 뒤 — 마한의 5월 제사
+  if (y === 2) add('skyfest', P.realm.cardFestW) // 가을걷이 뒤 — 고구려 동맹 · 동예 무천 (10월)
+  if (y === 3 && heroes.length >= 2) add('hunt', G)
+  // 스승과 제자 — 무예가 cardMentorGap 넘게 앞선 장수가 뒤진 장수를
+  const pairsM: Array<readonly [Hero, Hero]> = []
+  for (const a of heroes) for (const b of heroes) if (a.mu - b.mu >= P.realm.cardMentorGap) pairsM.push([a, b])
+  const pm = pickOf(pairsM, 'card-mentor')
+  if (pm !== undefined) add('mentor', G, { hero: pm[0].id, hero2: pm[1].id })
+  const mine = byId(Object.values(r.nodes)).find((n) => n.owner === f && n.kind === 'ironMine')
+  if (mine !== undefined) add('smith', G, { node: mine.id })
+  const kin = pickOf(heroes, 'card-home')
+  const home = homeOf(r, f)
+  if (kin !== undefined && home !== null) add('homenews', G, { hero: kin.id, node: home })
+  const bard = [...heroes].sort((a, b) => b.deok - a.deok || (a.id < b.id ? -1 : 1))[0]
+  if (bard !== undefined) add('song', G, { hero: bard.id })
+  const well = pickOf(big, 'card-spring')
+  if (well !== undefined) add('spring', G, { node: well })
+  const giver = pickKnown(r, f, season, 'card-gift')
+  if (giver !== null) add('gift', G, { from: giver })
   if (port !== null) {
     add('waship', 0.8, { node: port })
     add('pirates', 0.6, { node: port })
@@ -183,6 +206,10 @@ export interface CardFx {
   readonly foe?: { readonly faction: string; readonly d: number }
   /** 새로 오는 장수 */
   readonly join?: string
+  /** 고을마다 느는 집 (고향 소식 · 새 샘) */
+  readonly gain?: ReadonlyArray<readonly [node: string, hh: number]>
+  /** 한 장수의 능력치가 오른다 (스승과 제자) — 판 안에서 자란 몫(grown)으로 센다 */
+  readonly stat?: readonly [hero: string, stat: GrowStat, n: number]
 }
 
 export interface CardPlan {
@@ -271,6 +298,33 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonl
     }
     case 'whale':
       return { sure: pick === 0 ? { grain: Math.max(R.cardWhaleMin, earn(R.cardWhaleShare)) } : cheer }
+    // ── 좋은 것 둘 가운데 하나 (형 10-31)
+    case 'sowfest':
+      return { sure: pick === 0 ? cheer : { harvest: R.cardSowMul } }
+    case 'skyfest':
+      return { sure: pick === 0 ? { favor: [{ to: knownOf(r, f).filter((x) => x !== f), d: R.cardSkyFavor }] } : { morale: R.cardSkyMorale } }
+    case 'hunt':
+      return { sure: pick === 0 ? cheer : { grain: earn(R.cardGoodGrain) } }
+    case 'mentor':
+      return pick === 0
+        ? { sure: { stat: [c.hero2!, 'mu', R.cardMentorStat] }, hero: c.hero2! }
+        : { sure: { bonds: [[c.hero!, R.cardPairBond], [c.hero2!, R.cardPairBond]] } }
+    case 'smith':
+      return { sure: pick === 0 ? { iron: R.cardSmithIron } : { grain: earn(R.cardGoodGrain) } }
+    case 'homenews': {
+      const n = r.nodes[c.node!]
+      const add = n !== undefined ? Math.max(R.cardHomeMin, Math.round(n.hh * R.cardHomeShare)) : 0
+      return pick === 0 ? { sure: { gain: [[c.node!, add]] } } : { sure: { bonds: [[c.hero!, R.cardHomeBond]] }, hero: c.hero! }
+    }
+    case 'song':
+      return { sure: pick === 0 ? { morale: R.cardMorale } : { favor: [{ to: knownOf(r, f).filter((x) => x !== f), d: R.cardSkyFavor }] }, hero: c.hero! }
+    case 'spring': {
+      const n = r.nodes[c.node!]
+      const add = n !== undefined ? Math.max(R.cardHomeMin, Math.round(n.hh * R.cardHomeShare)) : 0
+      return { sure: pick === 0 ? { gain: [[c.node!, add]] } : { harvest: R.cardSowMul } }
+    }
+    case 'gift':
+      return { sure: pick === 0 ? { grain: earn(R.cardGoodGrain) } : { favor: [{ to: c.from !== undefined ? [c.from] : [], d: R.cardGiftFavor }] } }
     case 'fishbridge':
       // 나루를 끊는다 — 쫓던 동부여 군대의 기가 꺾인다 · 알린다 — 우리 기운이 오른다
       return { sure: pick === 0 ? { foe: { faction: 'buyeo', d: R.cardFishMorale } } : cheer }
@@ -288,6 +342,16 @@ function applyFx(r: Realm, f: string, fx: CardFx, tally: { grain: number; iron: 
   if (fx.grain !== undefined) { const d = Math.max(-st.grain, fx.grain); st.grain += d; tally.grain += d }
   if (fx.iron !== undefined) { const d = Math.max(-st.iron, fx.iron); st.iron += d; tally.iron += d }
   for (const [id, d] of fx.hurt ?? []) { const n = r.nodes[id]; if (n !== undefined) { n.hh -= d; tally.hh -= d } }
+  for (const [id, d] of fx.gain ?? []) { const n = r.nodes[id]; if (n !== undefined && n.owner === f) { n.hh += d; tally.hh += d } }
+  if (fx.stat !== undefined) {
+    const [id, s, d] = fx.stat
+    const h = r.heroes[id]
+    if (h !== undefined && h.status === 'free') {
+      h[s] += d
+      ;(h.grown ??= {})[s] = (h.grown[s] ?? 0) + d
+      lines.push({ kind: 'grow', hero: id, stat: s })
+    }
+  }
   if (fx.harvest !== undefined) setHarvest(r, f, fx.harvest)
   if (fx.morale !== undefined) for (const a of Object.values(r.armies)) if (a.faction === f) a.morale = clampMorale(a.morale + fx.morale)
   if (fx.bond !== undefined) for (const h of freeHeroes(r, f)) addBond(r, h, fx.bond, lines)
