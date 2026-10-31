@@ -90,7 +90,7 @@ export function winRange(fa: number, foe: readonly [number, number]): readonly [
 export function seenMix(r: Realm, viewer: string, node: string): { mix: Partial<Record<UnitKind, number>>; age: number } | null {
   const k = r.intel[viewer]?.[node]?.force
   if (k?.mix === undefined) return null
-  const age = ageSeasons(r, k.season) // 본 지 몇 계절 (달 시계면 석 달이 1)
+  const age = ageSeasons(r, k.mixAt ?? k.season) // 본 지 몇 계절 (달 시계면 석 달이 1) · 파수가 군세만 새로 봤으면 몫을 본 때로
   if (age >= P.realm.intelBlindAge) return null
   return { mix: k.mix, age }
 }

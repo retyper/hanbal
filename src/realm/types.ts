@@ -739,8 +739,8 @@ export interface Army {
 export interface NodeIntel {
   /** 땅 — 한 번 보면 안 낡는다 */
   land: boolean
-  /** 군세 — 그때의 참 전투력 · 출처 · u · 본 계절. 없으면 본 적 없음 */
-  force: { f0: number; src: Source; u: number; season: number; mix?: Partial<Record<UnitKind, number>> } | null
+  /** 군세 — 그때의 참 전투력 · 출처 · u · 본 계절. 없으면 본 적 없음 · mixAt 은 병종 몫(mix)을 본 턴 (파수가 군세만 새로 볼 때 · 없으면 season) */
+  force: { f0: number; src: Source; u: number; season: number; mix?: Partial<Record<UnitKind, number>>; mixAt?: number } | null
   /** 경계 — 본 값과 본 계절 */
   alert: { v: number; season: number } | null
   /** 그 고을 주인 나라의 곳간 — 정찰이 본 곡식과 본 계절 (회의의 「먼저 공작」이 읽는다 · 옛 저장에는 없다) */

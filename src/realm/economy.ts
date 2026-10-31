@@ -773,11 +773,13 @@ export function guardCost(): { grain: number } {
   return { grain: P.realm.guardGrain }
 }
 
-/** 이 고을의 경계를 이번 계절에 강화할 수 있나 — 제 고을 · 이번 계절에 아직 안 함 · 곡식이 있다 */
+/** 이 고을의 경계를 이번 계절에 강화할 수 있나 — 제 고을 · 이번 계절(달 시계면 그 석 달)에 아직 안 함 · 곡식이 있다 */
 export function canGuard(r: Realm, faction: string, node: string): boolean {
   const n = r.nodes[node]
   if (n === undefined || n.owner !== faction || n.kind === 'sodo') return false
-  if (r.watch[node]?.guarded === r.season) return false
+  // 한 계절에 한 번 — 달 시계면 석 달에 한 번 (riteSeason 처럼 계절 번호로 견준다 · 옛 판은 턴이 곧 계절이라 그대로)
+  const g = r.watch[node]?.guarded
+  if (g !== undefined && seasonIdx(r, g) === seasonIdx(r)) return false
   return stockOf(r, faction).grain >= guardCost().grain
 }
 

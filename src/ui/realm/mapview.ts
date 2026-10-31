@@ -12,6 +12,7 @@ import { FACTION_ART, GOOD_ICON, REGION_ART, SEASON_MAP, flagIcon, nodeIcon, nod
 import { ageSeasons, seasons } from '../../realm/calendar.ts'
 import { EDGE_NAME, GOOD_NAME, NODE_KIND_NAME, NODE_NOW, tagNow, turnWord, turnsLabel } from '../../realm/data/prose.ts'
 import { worldGeoOf } from '../../realm/data/regions/index.ts'
+import { strikeLive } from '../../realm/ai.ts'
 import { relationOf } from '../../realm/diplomacy.ts'
 import { met } from '../../realm/discovery.ts'
 import { postHero, rulerOf } from '../../realm/heroes.ts'
@@ -612,7 +613,7 @@ export function mapHtml(
   // 칠 채비 — 우리 고을을 이번 달 끝에 치려고 이웃 고을에 모인 적 (Army.strike · 달 시계). 그 고을이 보이면:
   // 모인 고을에 「⚔ 다음 달 친다」 · 노리는 우리 고을엔 붉은 고리 · 그 사이에 위협 화살 (길 위의 적과 같은 결)
   const poised = Object.values(r.armies)
-    .filter((a) => a.faction !== me && a.march === null && a.strike !== undefined && a.strike.at === r.season && r.nodes[a.strike.node]?.owner === me && vis.has(a.at))
+    .filter((a) => a.faction !== me && a.strike !== undefined && r.nodes[a.strike.node]?.owner === me && vis.has(a.at) && strikeLive(r, a))
     .sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0))
   for (const a of poised) threatened.add(a.strike!.node)
   const poisedAt = new Set(poised.map((a) => a.at))

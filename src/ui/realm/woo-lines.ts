@@ -15,6 +15,7 @@
  *   - 판의 사실을 넣는다: 나라 이름 · 무너졌나 · 갇힌 계절 · 피붙이 이름 · 고향 · 건 곡식. 조사는 josa() 로
  * 글만 고르고 판에는 손대지 않는다. 같은 판 같은 말이면 같은 줄.
  */
+import { ageSeasons } from '../../realm/calendar.ts'
 import { josa } from '../../realm/data/prose.ts'
 import { RULER_GOES, RULER_HELD, WOO_TALK, type WooHeld, type WooSpeak } from '../../realm/data/woo-talk/index.ts'
 import { isRuler } from '../../realm/heroes.ts'
@@ -192,7 +193,8 @@ export const grainWord = (n: number): string => (SEOM[n] !== undefined ? `${SEOM
 export function factsOf(r: Realm, x: Hero, by: Hero | null, gains = 1): Facts {
   const nation = r.factions[x.faction]?.name ?? '그대 나라'
   const fallen = !Object.values(r.nodes).some((n) => n.owner === x.faction)
-  const seasons = x.caughtAt !== undefined ? Math.max(0, r.season - x.caughtAt) : 0
+  const age = x.caughtAt !== undefined ? Math.max(0, ageSeasons(r, x.caughtAt)) : 0 // 갇힌 계절 (달 시계면 석 달이 하나 · woo.ts 의 「명분」 셈과 같다)
+  const seasons = Math.floor(age)
   const k = bondHookOf(r, x.id, by?.id ?? null)
   let kin: Facts['kin'] = null
   if (k !== null && k.who !== null && (k.kind === 'spouse' || k.kind === 'child' || k.kind === 'parent')) {
@@ -204,7 +206,7 @@ export function factsOf(r: Realm, x: Hero, by: Hero | null, gains = 1): Facts {
   const bk = by !== null ? kindOf(by) : 'm-young'
   return {
     nation,
-    sit: fallen ? 'fallen' : seasons > P.realm.wooRescueSeasons ? 'alone' : 'alive',
+    sit: fallen ? 'fallen' : age > P.realm.wooRescueSeasons ? 'alone' : 'alive',
     jail: seasonsWord(seasons),
     kin,
     blood,

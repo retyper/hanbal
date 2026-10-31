@@ -31,7 +31,7 @@ export type RelicKnob =
  *   morale 이끄는 군대 사기 + · horse 이끄는 기병 힘 × · bond 정이 오를 때 × · iron 맡은 고을 철 +/계절 · farm 맡은 고을 수확 +
  *   crown 군주가 지니면 나라 모든 고을 수확 + · envoy 따라간 사신이 받아들여질 몫 + · duel 겨루기 무예 +
  *   chant 비기가 진중 굿이 되고 굿의 사기 × · steady 함께 싸우는 군사가 지는 합에서 꺾이는 사기 × · escape 싸움에서 잡히거나 쓰러질 때 빠져나오는 횟수(판마다)
- *   march 이끄는 군대의 길 − 계절 · feast 호궤 곡식 × · woo 회유하면 깎는 벽 × · blessing 나라 제사 효과 배수(무당 핏줄처럼)
+ *   march 이끄는 군대의 길 − 턴(달 시계면 달) · feast 호궤 곡식 × · woo 회유하면 깎는 벽 × · blessing 나라 제사 효과 배수(무당 핏줄처럼)
  *   altar 큰 제사 길에 내리 지낼 제사 − · ward 맡은 고을에 쳐들어온 적을 돌려보내는 횟수(판마다) · stealth 자객·구출로 보낼 때 들킬 몫 ×
  */
 export type RelicNumKind =
