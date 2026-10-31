@@ -34,7 +34,7 @@ import { concealBonus, passExtra, rescueCapital, riseState, siegeFort, stepCusto
 import { blockedWhy, isMonsoon, isSeasonEnd, isSeasonStart, monthly, perSeason, seasonNo, seasonOf, seasons } from './calendar.ts'
 import { applyBowUps, refreshSpies, resolvePlots } from './plots.ts'
 import { noteTake } from './stance.ts'
-import { stepDiscovery, stepSight } from './discovery.ts'
+import { stepDiscovery, stepMeet, stepSight } from './discovery.ts'
 import { limitHands } from './hands.ts'
 import { stepSuzerain, suzerainEnd } from './suzerain.ts'
 import { pathsEnd, stepPaths } from './paths.ts'
@@ -1727,5 +1727,6 @@ export function advance(
   r.season += 1 // 11
   // 11 끝 — 새 계절의 사건 카드를 펴고 다음 카드를 뽑아 둔다 · 점괘 (events.ts). 달 시계면 계절의 첫 달에만 (카드는 계절마다 한 장)
   if (isSeasonStart(r)) stepCards(r, lines)
+  stepMeet(r, lines, report.season) // 11 끝 — 새 나라는 한 계절에 하나씩 화면에 (discovery.ts · 판의 셈은 그대로)
   return { next: r, report }
 }

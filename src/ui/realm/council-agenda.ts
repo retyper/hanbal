@@ -19,7 +19,7 @@ import { headcount } from '../../realm/battle.ts'
 import { josa, turnsLabel } from '../../realm/data/prose.ts'
 import { seasons } from '../../realm/calendar.ts'
 import { relationOf } from '../../realm/diplomacy.ts'
-import { knows } from '../../realm/discovery.ts'
+import { met } from '../../realm/discovery.ts'
 import { movesOf, type ApproachMove, type Move } from '../../realm/estimate.ts'
 import { hasTrait, isRuler } from '../../realm/heroes.ts'
 import { foeAlliesWhenStruck, lastBattleVs } from '../../realm/memory.ts'
@@ -168,7 +168,7 @@ export const takeCount = (a: Army, share: number): number => (Object.values(a.mi
 function alliesOf(r: Realm, me: string, def: string): string[] {
   const size = (f: string): number => Object.values(r.nodes).filter((n) => n.owner === f).length
   return Object.keys(r.factions).sort()
-    .filter((f) => f !== me && f !== def && size(f) > 0 && knows(r, me, f) && relationOf(r, def, f).state === 'ally' && relationOf(r, me, f).state !== 'ally')
+    .filter((f) => f !== me && f !== def && size(f) > 0 && met(r, me, f) && relationOf(r, def, f).state === 'ally' && relationOf(r, me, f).state !== 'ally')
     .sort((x, y) => size(y) - size(x) || (x < y ? -1 : 1))
 }
 
@@ -284,7 +284,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
   const seen = grainSeen(r, me, def)
   const rich = seen !== null && seen.v >= P.realm.cnPlotRich
   const burnHand = ctx.plotHand?.('burn', def) ?? null
-  if (burnHand !== null && knows(r, me, def)) {
+  if (burnHand !== null && met(r, me, def)) {
     const nationPlot = plotFact(r, me, def, null)
     if (rich || nationPlot !== '') {
       const mine = new Set<string>()

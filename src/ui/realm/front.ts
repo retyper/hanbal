@@ -165,7 +165,7 @@ export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, 
     const region = r.region ?? 'byeonhan-mini'
     const name = r.factions[me]?.name ?? ''
     h += `<button class="cont" data-act="continue">${k.face(me, 'cface', r.factions[me]?.ruler ?? undefined)}<span class="ct"><b>${k.emblem(me, 'cem')}${k.esc(name)} 이어 하기</b>`
-    h += `<span>${k.esc(seasonLabel(r))} · 도읍 ${capsHeld(r, me)}/${winNeed(region)}${r.known !== undefined ? ` · 아는 나라 ${(r.known[me]?.length ?? 0) + 1}/${Object.keys(r.factions).length}` : ''}</span>`
+    h += `<span>${k.esc(seasonLabel(r))} · 도읍 ${capsHeld(r, me)}/${winNeed(region)}${r.known !== undefined ? ` · 아는 나라 ${(r.known[me]?.length ?? 0) - (r.meet?.wait.length ?? 0) + 1}/${Object.keys(r.factions).length}` : ''}</span>`
     h += `${savedAt !== null ? `<small>최근 저장 · ${k.esc(agoText(savedAt))}</small>` : ''}</span></button>`
   }
   // 처음 켠 사람은 배우는 판으로 (형: "맨 위 첫번째 할 게임은 1:1수준으로 여러 기능 익혀가며 쉽게")

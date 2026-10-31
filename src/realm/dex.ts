@@ -20,7 +20,7 @@ import { WORLD_DATA } from './data/regions/world.ts'
 import { startMahan } from './data/regions/mahan.ts'
 import { startJumong } from './data/regions/jumong.ts'
 import { startSeorabeol } from './data/regions/seorabeol.ts'
-import { knows } from './discovery.ts'
+import { met } from './discovery.ts'
 import { heroSeen, wanderersFor } from './heroes.ts'
 import type { Hero, Realm, RegionId } from './types.ts'
 
@@ -114,7 +114,7 @@ function flagsIn(r: Realm, h: Hero): number {
   if (h.faction === me) f |= DEX_HEARD | DEX_MET | DEX_SERVED
   if (h.status === 'captive' && h.captor === me) f |= DEX_HEARD | DEX_MET | DEX_CAUGHT
   if (heroSeen(r, me, h.id)) f |= DEX_HEARD | DEX_MET
-  if (h.faction !== '' && knows(r, me, h.faction)) f |= DEX_HEARD
+  if (h.faction !== '' && met(r, me, h.faction)) f |= DEX_HEARD
   return f
 }
 

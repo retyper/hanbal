@@ -93,6 +93,12 @@ export const AUD_CSS = `
 .ap .pact .psay { position: absolute; left: 0; right: 0; margin: 0 auto; bottom: 6%; width: min(560px, 60%); z-index: 2; padding: 10px 14px; border-radius: 14px; background: #f3ead6; color: #2a1d10; font-size: clamp(14px, 2vw, 18px); line-height: 1.5; text-align: center; box-shadow: 0 6px 20px #000a; animation: audup .35s ease-out 1s both; }
 .ap .pact.bad .psay { background: #2a0e0a; color: #ffd8cc; border: 1.5px solid #c8503a; }
 .ap .pact .psay i { font-style: normal; opacity: 0; animation: audch .01s linear var(--d) forwards; }
+/* 새 나라 소개 — 깃발 하나가 크게 튀어나오고, 왼쪽 아래에 도읍과 우리와의 사이 (discovery.stepMeet · FOCUS G) */
+.ap .pact.meetv .pflags { top: 12%; left: 38%; }
+.ap .pact.meetv .pflags .fem { width: clamp(60px, 17vw, 104px); height: clamp(60px, 17vw, 104px); animation: audpop .6s cubic-bezier(.3, 1.6, .5, 1) .45s both; }
+.ap .pact .meetc { position: absolute; left: 4%; bottom: 8%; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; animation: audup .4s ease-out 1s both; }
+.ap .pact .meetc span { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 4px 12px; border-radius: 14px; font-size: clamp(13px, 2vw, 16px); background: #1c2129d9; color: #efe6d2; box-shadow: 0 4px 12px #0008; }
+.ap .pact .meetc .mcap { width: 22px; height: 22px; object-fit: contain; }
 @keyframes pactl { from { transform: scaleX(-1) translateX(60%); opacity: 0; } to { transform: scaleX(-1); opacity: 1; } }
 @keyframes pactr { from { transform: translateX(60%); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes pflagl { from { transform: translateX(-120px) rotate(-30deg); opacity: 0; } to { transform: none; opacity: 1; } }

@@ -1387,6 +1387,18 @@ const DISCOVER_LINE: Readonly<Record<DiscoverHow, (n: string) => string>> = {
   rumor: (n) => `상인에게서 ${n} 이야기를 들었다. 지도에 새 땅이 펼쳐진다.`,
 }
 
+/** 새 나라 소개 카드의 한 줄 — 어떻게 만났나 (app.ts meetBigs · discovery.stepMeet) */
+export const MEET_HOW: Readonly<Record<DiscoverHow, string>> = {
+  border: '땅이 맞닿은 이웃',
+  envoy: '사신이 오가며 안 나라',
+  market: '장터에서 만난 나라',
+  war: '싸움터에서 마주친 나라',
+  spy: '첩자가 이름을 듣고 온 나라',
+  scout: '정찰꾼이 찾은 나라',
+  ally: '동맹이 알려 준 나라',
+  rumor: '상인에게서 들은 나라',
+}
+
 /** 자객의 활 단계 (plots.assassinBow · 밤 판 bow=) — 0 단궁 · 1 맥궁 · 2 각궁 · 3 신궁 */
 export const BOW_NAME: readonly string[] = ['단궁', '맥궁', '각궁', '신궁']
 
