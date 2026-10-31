@@ -36,7 +36,7 @@ import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } 
 import { kitLines } from '../../realm/kit.ts'
 import { alertRange, seenMix, visibleRange } from '../../realm/intel.ts'
 import { advance, concealOf, draftable, forceOf, neighbors, newArmyId, otherEnd, planned, rationCost, rationExtra, resting, seasonOf, seenMarches } from '../../realm/season.ts'
-import { ageSeasons, isSeasonStart, seasons } from '../../realm/calendar.ts'
+import { ageSeasons, isSeasonStart, monthly, seasons } from '../../realm/calendar.ts'
 import { NIGHT_OPS, PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bowUpCost, escapeChance, plotAgents, plotCap, plotChance, plotCost, plotTargets, rescueGuard } from '../../realm/plots.ts'
 import { allianceWhy, leaderOf, tookRecently, truceWhy, winningAgainst } from '../../realm/stance.ts'
 // 등용 대사 — 장수마다 한 마디 (형 10-24: "장수마다 각각 등용 대사 개성 있고 다양하고 독특하게")
@@ -4675,6 +4675,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const backs = (r.region ?? 'byeonhan-mini') === 'tutorial' ? [] : freedBigs(r, report).filter((x) => !landSeen.has(x.key))
     const bigs = [...lands.map((x) => landBig(r, x)), ...pacts, ...wins, ...backs]
     if (bigs.length > 0) return bigCardHtml(r, bigs[0]!, bigs.length - 1)
+    // 달 시계의 조용한 달 — 빈 보고 판을 띄우지 않고 지도 위 한 줄로 (FOCUS (I) 초반은 빨리 넘어가야 · 한 계절에 세 번 누르는데 빈 판을 세 번 닫게 하지 않는다)
+    if (monthly(r) && decide === '' && cards.every((c) => c === '') && onUs.length === 0 && between.length === 0 && lines.length === 0 && fallen(before, r).length === 0 && sceneOf(before, r, report) === '') {
+      showReport = false
+      window.setTimeout(() => goToast(`<b>${esc(seasonLabel(r))}</b> 조용한 달이었다`), 0)
+      return ''
+    }
     let h = `<div class="mcard" data-act="rep-fast"><div class="mt">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r))}</b><span>${esc(SEASON_LINE[season])}</span></div>`
     if (decide !== '') h += `<div class="rdecide"><h4 class="rdh">이번 계절 정할 것 · 다 골랐다</h4>${decide}</div>`
     for (const l of onUs) {
