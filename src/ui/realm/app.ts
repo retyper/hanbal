@@ -37,7 +37,7 @@ import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } 
 import { kitLines } from '../../realm/kit.ts'
 import { alertRange, seenMix, visibleRange } from '../../realm/intel.ts'
 import { advance, concealOf, draftable, forceOf, newArmyId, otherEnd, planned, rationCost, rationExtra, resting, seasonOf, seenMarches } from '../../realm/season.ts'
-import { ageSeasons, isSeasonStart, monthly, seasonIdx, seasons } from '../../realm/calendar.ts'
+import { ageSeasons, isSeasonEnd, isSeasonStart, monthly, seasonIdx, seasons } from '../../realm/calendar.ts'
 import { draftScouts, parseScoutKeep, scoutCap, scoutTargets, watchedNodes } from '../../realm/scouts.ts'
 import { NIGHT_OPS, PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bowUpCost, escapeChance, plotAgents, plotCap, plotChance, plotCost, plotTargets, rescueGuard } from '../../realm/plots.ts'
 import { allianceWhy, leaderOf, tookRecently, truceWhy, winningAgainst } from '../../realm/stance.ts'
@@ -49,7 +49,7 @@ import { foundable, joinable, partiesOf, partyCost, partyMoves, partySize } from
 import { canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, idleHeroOrders, together, inheritOf, isRuler, postHero, rulerOf, tieOf, wanderersFor, wedCost, wooable } from '../../realm/heroes.ts'
 import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic, WooApproach } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
-import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
+import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, visibleNodes, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { LEGACY_CSS, bringHtml, clearBring, toggleBring } from './legacy.ts'
 import { DEX_CSS, clanHeroes, dexHtml, dexToastHtml, loadDex, recordDex, type DexBoard } from './dex.ts'
 import { DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
@@ -1347,8 +1347,22 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return h !== undefined && h.status === 'free' ? h.name : `별동대 ${headcount(forceOf(r, a))}`
   }
   /** 군대 말 꾹 누름 상자 — 우리·동맹은 장수·사람 수·병종·사기 · 적은 나라와 가는 곳만 (군세는 정찰로 안다) */
+  /**
+   * 「다음 달」 단추 앞의 작은 그림 — 다음 달이 무엇을 가져오나 (loop-lens 11-01: "단추가 아무것도 말하지 않는다")
+   * ⚔ 적이 친다(모인 적이 보일 때) · 우리 군대가 닿는다 · 짓던 것이 선다 · 계절이 바뀐다(다음 계절 그림). 셋까지
+   */
+  function nextPreview(r: Realm): string {
+    if (!monthly(r)) return ''
+    const out: string[] = []
+    const vis = visibleNodes(r, me())
+    if (Object.values(r.armies).some((a) => a.faction !== me() && a.march === null && a.strike?.at === r.season && r.nodes[a.strike.node]?.owner === me() && vis.has(a.at))) out.push('<i class="nxp foe">⚔</i>')
+    if (Object.values(r.armies).some((a) => a.faction === me() && a.march !== null && a.march.left <= 1)) out.push(`<i class="nxp">${icon('unit-spear')}</i>`)
+    if ((r.builds ?? []).some((b) => b.faction === me() && b.done <= r.season)) out.push(`<i class="nxp">${icon('settle-palisade')}</i>`)
+    if (isSeasonEnd(r)) out.push(`<i class="nxp">${icon(SEASON_ICON[seasonOf(r, r.season + 1)])}</i>`)
+    return out.length === 0 ? '' : `<span class="nxps">${out.slice(0, 3).join('')}</span>`
+  }
   function armyHoldHtml(r: Realm, a: Army, foe: boolean): string {
-    const go = a.march !== null ? `<p>${esc(josa(r.nodes[a.march.to]?.name ?? '', '으로', '로'))} 가는 중 · ${esc(arriveWhen(r, a.march.left))}</p>` : ''
+    const go =a.march !== null ? `<p>${esc(josa(r.nodes[a.march.to]?.name ?? '', '으로', '로'))} 가는 중 · ${esc(arriveWhen(r, a.march.left))}</p>` : ''
     if (foe) return `<div class="whh">${emblem(a.faction)}<b>${esc(r.factions[a.faction]?.name ?? '')}</b><small>적 군대</small></div>${go}<p class="whn">우리 군대를 고르고 누르면 치러 갑니다</p>`
     const hero = a.hero !== null ? r.heroes[a.hero] : undefined
     const rows = (Object.entries(a.mix) as [UnitKind, number][]).filter(([, n]) => n > 0).map(([k, n]) => `<span>${UNIT_NAME[k]}</span><b>${n}</b>`).join('')
@@ -5690,7 +5704,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 답할 청이 남았으면 깃발 줄 끝에 사신 알림 — 누르면 외교 판
     const waiting = openAsks(realm, me()).filter((a) => answers[a.id] === undefined).length
     morph($('.legend'), legendHtml(r) + (waiting > 0 ? `<button class="askpill" data-act="tab" data-tab="diplo">${icon('good-tribute-bell')}사신 ${waiting}</button>` : ''))
-    $('.next').innerHTML = `다음 ${turnWord(r)} <span>›</span>`
+    $('.next').innerHTML = `${nextPreview(r)}다음 ${turnWord(r)} <span>›</span>`
     morph($('.todo'), todoHtml(r))
     morph($('.goalb'), goalBandHtml(r, esc, goalFolded()) + contestHtml(r)) // 캠페인의 장이면 이 장의 목표 — 접을 수 있다
     $('.goalb').classList.toggle('folded', goalFolded())

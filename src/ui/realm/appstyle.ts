@@ -82,6 +82,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
   border: 1px solid #f0d08a; background: linear-gradient(#b8893a, #8a6224); color: #fff6df; font-size: 17px; font-weight: 700;
   box-shadow: 0 6px 16px #000a, inset 0 1px 0 #ffe3a0; cursor: pointer; }
 .ap .next span { font-size: 20px; margin-left: 4px; }
+.ap .next .nxps { display: inline-flex; gap: 2px; margin: -6px 6px -6px -8px; vertical-align: middle; } .ap .next .nxps .nxp { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #00000040; font-style: normal; font-size: 15px; margin: 0; }
+.ap .next .nxps .nxp img { width: 22px; height: 22px; } .ap .next .nxps .nxp.foe { background: #7a1a10; color: #fff; }
 .ap .next:active { transform: translateY(1px); filter: brightness(.95); }
 .ap.sheet-open .next { opacity: 0; pointer-events: none; }
 
