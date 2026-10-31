@@ -14,7 +14,7 @@ import { CARDS, CARD_KINDS, QUARREL_WHYS, cardFallback, type CardKind, type Quar
 import { HERO_POOL } from './data/heroes-pool.ts'
 import { addFavor } from './diplomacy.ts'
 import { knownOf } from './discovery.ts'
-import { addBond, canWed, hasTrait, homeOf, isRuler, wed } from './heroes.ts'
+import { addBond, canWed, hasTrait, homeOf, isRuler, tieOf, wed, wedCost } from './heroes.ts'
 import type { Card, GrowStat, Hero, Order, Realm, ReportLine } from './types.ts'
 
 const byId = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
@@ -108,7 +108,9 @@ function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w:
   const pairs: Array<readonly [string, string]> = []
   for (const x of heroes) for (const y of heroes) if (x.look === 'g' && y.look === 'w' && canWed(r, f, x.id, y.id)) pairs.push([x.id, y.id])
   if (pairs.length > 0) {
-    const [a, b] = pairs[Math.floor(roll(r.seed, season, 'card-love') * pairs.length)]!
+    // 서로 아끼는 둘(친밀 tieLove 넘음)이 있으면 그 가운데 가장 가까운 둘 · 없으면 아무나 (형 10-31)
+    const close = pairs.filter(([a, b]) => tieOf(r, a, b) >= P.realm.tieLove).sort(([a, b], [c, d]) => tieOf(r, c, d) - tieOf(r, a, b))
+    const [a, b] = close[0] ?? pairs[Math.floor(roll(r.seed, season, 'card-love') * pairs.length)]!
     // 먼저 나오는 이를 반반으로 — 늘 사내가 앞이지 않게
     const swap = roll(r.seed, season, 'card-love-swap') < 0.5
     add('romance', P.realm.cardRomanceW, { hero: swap ? b : a, hero2: swap ? a : b })
@@ -292,7 +294,7 @@ export function cardPreview(r: Realm, c: Card, pick: 0 | 1 | 2, have?: { readonl
     }
     case 'romance': {
       const both = (d: number): CardFx => ({ bonds: [[c.hero!, d], [c.hero2!, d]] })
-      if (pick === 0) return { sure: { grain: -Math.min(st.grain, R.wedGrain), wed: [c.hero!, c.hero2!] }, hero: c.hero! }
+      if (pick === 0) return { sure: { grain: -Math.min(st.grain, wedCost(r, c.hero!, c.hero2!)), wed: [c.hero!, c.hero2!] }, hero: c.hero! }
       if (pick === 1) return { sure: {}, chance: R.cardRomanceOk, die: 'love', win: both(R.cardRomanceBond), lose: {} }
       return { sure: both(-R.cardRomanceSplit) }
     }

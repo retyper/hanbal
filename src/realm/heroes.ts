@@ -836,6 +836,9 @@ export function battleGrowth(r: Realm, won: readonly (string | null)[], lost: re
   // 각성 — 우리(플레이어) 장수만. 이기면 불꽃 하나, 지거나 비기면 다 꺼진다 (내리 이김 · 형 10-31)
   const ours = (h: Hero): boolean => h.faction === r.player && h.ascended !== true
   each(won, (h) => { if (ours(h)) kindle(h, lines) })
+  // 함께 이긴 우리 장수끼리 가까워진다 (친밀)
+  const mates = [...new Set(won)].filter((id): id is string => id !== null && r.heroes[id]?.faction === r.player && r.heroes[id]?.status === 'free').sort()
+  for (let i = 0; i < mates.length; i++) for (let j = i + 1; j < mates.length; j++) addTie(r, mates[i]!, mates[j]!, R.tieWin)
   each([...lost, ...drawn], (h) => { if (ours(h)) delete h.flames })
 }
 
@@ -866,6 +869,42 @@ function stepGrowth(r: Realm, lines: ReportLine[]): void {
       gainXp(h, 'deok', R.xpPost, lines)
     }
   }
+  stepTies(r)
+}
+
+// ───────── 친밀 — 장수 둘 사이 (형 10-31: "장수끼리의 서로 간의 친밀도 시스템")
+// 같은 곳(고을·군대)에 머문 계절마다 · 함께 이긴 싸움마다 오른다. 혼인은 누구든 맺지만, 친하면 잔치가 싸고 낯설면(정략) 비싸고 서운해한다.
+
+const tieKey = (a: string, b: string): string => (a < b ? `${a}|${b}` : `${b}|${a}`)
+
+/** 두 장수 사이의 친밀 (없으면 0) */
+export function tieOf(r: Realm, a: string, b: string): number {
+  return r.ties?.[tieKey(a, b)] ?? 0
+}
+
+export function addTie(r: Realm, a: string, b: string, d: number): void {
+  if (a === b || d === 0) return
+  const k = tieKey(a, b)
+  ;(r.ties ??= {})[k] = Math.max(0, Math.min(P.realm.tieMax, (r.ties[k] ?? 0) + d))
+}
+
+/** 이 둘의 혼인 잔치 곡식 — 아끼는 사이면 싸고, 정략이면 비싸다 */
+export function wedCost(r: Realm, a: string, b: string): number {
+  const R = P.realm
+  const t = tieOf(r, a, b)
+  return Math.round(R.wedGrain * (t >= R.tieLove ? R.wedLoveMul : t < R.tieCold ? R.wedColdMul : 1))
+}
+
+/** 9 — 우리 장수 가운데 같은 곳에 머문 둘은 가까워진다 (군대를 이끌면 그 군대가 선 곳) */
+function stepTies(r: Realm): void {
+  const f = r.player
+  if (f === undefined) return
+  const at = new Map<string, string[]>()
+  for (const h of byId(Object.values(r.heroes))) {
+    if (h.faction !== f || h.status !== 'free' || h.at === null) continue
+    at.set(h.at, [...(at.get(h.at) ?? []), h.id])
+  }
+  for (const ids of at.values()) for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) addTie(r, ids[i]!, ids[j]!, P.realm.tieSeason)
 }
 
 // ───────── 혈통 — 혼인과 자식 (SYSTEMS §5-10 · 슬롯 ⑨ · 팰 교배)
@@ -937,8 +976,11 @@ export function canWed(r: Realm, faction: string, a: string, b: string): boolean
 export function wed(r: Realm, o: Extract<Order, { kind: 'wed' }>, lines: ReportLine[]): boolean {
   if (!canWed(r, o.faction, o.a, o.b)) return false
   const st = (r.stock[o.faction] ??= { grain: 0, iron: 0 })
-  if (st.grain < P.realm.wedGrain) return false
-  st.grain -= P.realm.wedGrain
+  const cost = wedCost(r, o.a, o.b)
+  if (st.grain < cost) return false
+  st.grain -= cost
+  // 정략혼인 — 서로 낯선 둘은 서운해한다 (형 10-31)
+  if (tieOf(r, o.a, o.b) < P.realm.tieCold) for (const id of [o.a, o.b]) { const h = r.heroes[id]; if (h !== undefined) addBond(r, h, -P.realm.wedColdBond, lines) }
   const [a, b] = o.a < o.b ? [o.a, o.b] : [o.b, o.a]
   r.heroes[a]!.spouse = b
   r.heroes[b]!.spouse = a

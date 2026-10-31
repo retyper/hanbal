@@ -1204,4 +1204,6 @@ export const UI_CSS = `
 .ap .flms .flm { width: 22px; height: 22px; object-fit: contain; filter: grayscale(1) brightness(.45); opacity: .7; }
 .ap .flms .flm.lit { filter: none; opacity: 1; }
 .ap .flms.on { color: #ffd76a; font-weight: 900; letter-spacing: .15em; font-size: 13px; border-color: #ffd76a; box-shadow: 0 0 10px #ffb84a88; }
+/* 혼인 고르기 — 친밀 하트 (아끼는 사이 붉게 · 정략은 잿빛) */
+.ap .wcand .wtie { display: block; font-size: 12px; color: #e8b0a0; letter-spacing: .02em; } .ap .wcand .wtie.love { color: #ff8a8a; font-weight: 700; } .ap .wcand .wtie.cold { color: #9a9a9a; }
 `

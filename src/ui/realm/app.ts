@@ -43,7 +43,7 @@ import { startRegion } from '../../realm/data/regions/index.ts'
 import { HIRE_BY_TRAIT, HIRE_LINE, HIRE_PLAIN } from '../../realm/data/hire-lines.ts'
 import { DESTS, DEST_IDS, EXP_SEASONS, destReachable, expAmount, expBlock, expOdds, onExpedition } from '../../realm/expedition.ts'
 import { foundable, joinable, partiesOf, partyCost, partyMoves, partySize } from '../../realm/parties.ts'
-import { canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, idleHeroOrders, together, inheritOf, isRuler, postHero, rulerOf, wanderersFor, wooable } from '../../realm/heroes.ts'
+import { canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, idleHeroOrders, together, inheritOf, isRuler, postHero, rulerOf, tieOf, wanderersFor, wedCost, wooable } from '../../realm/heroes.ts'
 import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic, WooApproach } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
@@ -3620,7 +3620,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const weds = heroOrders.filter((o): o is Extract<Order, { kind: 'wed' }> => o.kind === 'wed' && (o.a === id || o.b === id))
     for (const o of weds) {
       const other = r.heroes[o.a === id ? o.b : o.a]
-      h += `<div class="banner good">이번 계절: ${esc(josa(other?.name ?? '', '과', '와'))} 혼인한다 ${costHtml({ grain: P.realm.wedGrain })}<button class="btn ghost sm" data-act="unwed" data-id="${id}">취소</button></div>`
+      h += `<div class="banner good">이번 계절: ${esc(josa(other?.name ?? '', '과', '와'))} 혼인한다 ${costHtml({ grain: other !== undefined ? wedCost(r, id, other.id) : P.realm.wedGrain })}<button class="btn ghost sm" data-act="unwed" data-id="${id}">취소</button></div>`
     }
     // 묶인 장수 — 사정만 보이고 할 일은 숨긴다
     const busy = ours ? heroBusy(r, id) : null
@@ -3791,16 +3791,22 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const tied = all.filter((y) => heroBusy(r, y.id) !== null)
     if (all.length === 0) return ''
     const grain = r.stock[me()]?.grain ?? 0
-    let h = `<div class="wed"><b>혼인</b>${costHtml({ grain: P.realm.wedGrain }, '잔치')}<span class="mute">${P.realm.wedSeasons}계절쯤 뒤 아이가 자라 나선다. 부모 특성은 하나하나 반반으로 내려오고, 드물게(${Math.round(P.realm.wedSurprise * 100)}%) 둘 다 없던 한 등급 위 특성이 터진다.</span>`
+    let h = `<div class="wed"><b>혼인</b><span class="mute">함께 지내고 함께 이길수록 가까워진다. 가까운 사이는 잔치가 싸고, 낯선 사이(정략혼인)는 비싸고 둘 다 서운해한다. ${P.realm.wedSeasons}계절쯤 뒤 아이가 자라 나선다. 부모 특성은 하나하나 반반으로 내려오고, 드물게(${Math.round(P.realm.wedSurprise * 100)}%) 둘 다 없던 한 등급 위 특성이 터진다.</span>`
     for (const y of cands) {
       const inh = inheritOf(r, x.id, y.id)
       const chips = inh.traits.map((t) => TRAIT[t]).filter((t) => t !== undefined)
         .map((t) => `<span class="trait${t!.bad === true ? ' bad' : ''}" style="--g:${GRADE_COLOR[t!.grade]}"><b>${esc(t!.name)}</b><i>반반</i></span>`).join('')
-      h += `<button class="wcand" data-act="wed" data-id="${x.id}" data-with="${y.id}"${grain < P.realm.wedGrain ? ' disabled' : ''}>${bust(y, 'face')}<span><b>${nameHtml(y.name)}</b>`
+      // 친밀 — 하트 다섯 칸 · 잔치 곡식이 사이에 따라 (아끼는 사이 싸게 · 정략 비싸게 · 형 10-31)
+      const t = tieOf(r, x.id, y.id)
+      const cost = wedCost(r, x.id, y.id)
+      const hearts = Math.round((t / P.realm.tieMax) * 5)
+      const mood = t >= P.realm.tieLove ? '서로 아낀다' : t < P.realm.tieCold ? '낯설다 · 정략혼인' : '가깝다'
+      h += `<button class="wcand" data-act="wed" data-id="${x.id}" data-with="${y.id}"${grain < cost ? ' disabled' : ''}>${bust(y, 'face')}<span><b>${nameHtml(y.name)}</b>`
+      h += `<span class="wtie${t >= P.realm.tieLove ? ' love' : t < P.realm.tieCold ? ' cold' : ''}" title="친밀 ${Math.round(t)} / ${P.realm.tieMax}">${'♥'.repeat(hearts)}${'♡'.repeat(5 - hearts)} ${mood}</span>${costHtml({ grain: cost }, '잔치')}`
       h += `<span class="tr3">${chips}<span class="trait" style="--g:${GRADE_COLOR[inh.surpriseGrade]}"><b>?</b><i>${GRADE_NAME[inh.surpriseGrade]} 이상 · 드묾</i></span></span></span></button>`
     }
     for (const y of tied) h += `<button class="wcand busy" disabled>${bust(y, 'face')}<span><b>${nameHtml(y.name)}</b><span class="hdo">⏳ ${esc(heroJob(r, y.id)?.[1] ?? '')}</span></span></button>`
-    if (grain < P.realm.wedGrain) h += `<p class="mute">곡식이 모자란다 (${Math.floor(grain)} / ${P.realm.wedGrain}).</p>`
+    if (cands.length > 0 && cands.every((y) => grain < wedCost(r, x.id, y.id))) h += `<p class="mute">곡식이 모자란다 (${Math.floor(grain)}).</p>`
     return h + `</div>`
   }
 
