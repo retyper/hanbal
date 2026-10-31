@@ -6,8 +6,9 @@
  * 한 줄씩 띄우고, 기세 막대가 흔들리다 결과에 멈춘다. 움직임은 CSS 애니메이션의 지연뿐이다 (rAF·타이머 없음 — 절대 규칙 4).
  * 카드를 누르면 바로 끝까지 보인다.
  */
+import { faceFile } from './face.ts'
 import { BATTLE_AMBUSH, BATTLE_APPROACH, BATTLE_CLASH, endStory, fieldName, josa, roundStory, storyCtx } from '../../realm/data/prose.ts'
-import { bustOf, flagIcon } from '../../realm/data/art.ts'
+import { flagIcon } from '../../realm/data/art.ts'
 import { CMD_NAME, actRows, flagSrc, reliefBanner, warName } from './battlefield.ts'
 import type { Army, Hero, Realm, ReportLine } from '../../realm/types.ts'
 
@@ -37,7 +38,7 @@ function wobble(key: string): [number, number, number] {
 
 /** 장수 얼굴 — 장수 없이 싸운 군대는 그 나라 깃발 (빈 상자로 두지 않는다) */
 function face(h: Hero | null, art: string, faction?: string): string {
-  const file = h !== null ? bustOf(h.id) : undefined
+  const file = h !== null ? faceFile(h.id) : undefined
   if (file !== undefined) return `<img class="bkf" src="${art}bust/${file}.jpg" alt="">`
   const em = flagIcon(faction)
   return em !== undefined ? `<span class="bkf noface flag"><img src="${art}icon/${em}.png" alt=""></span>` : `<span class="bkf noface"></span>`

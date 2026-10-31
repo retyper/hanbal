@@ -271,6 +271,10 @@ export interface Hero {
    * 없으면 P.realm.bondStart. 섬긴 계절·이긴 싸움으로 오르고 진 싸움으로 준다. 70 이면 믿는 장수, 100 이면 특성 하나에 눈뜬다
    */
   bond?: number
+  /** 각성 불꽃 — 우리 장수가 내리 이긴 싸움 수 (ascendWins 에 닿으면 각성 · 지거나 비기면 꺼진다) · 형 10-31. 없으면 0 */
+  flames?: number
+  /** 각성했다 — 이 판에서 능력치가 모두 오르고 얼굴이 각성 초상으로 (heroes.battleGrowth) */
+  ascended?: boolean
   /** 자라는 능력치마다 쌓인 공 — growNeed 를 채우면 한 단계 오른다 */
   xp?: Partial<Record<GrowStat, number>>
   /** 이 장수가 자라서 오른 단계 (화면이 "얼마나 컸나"를 보인다) */
@@ -1216,6 +1220,9 @@ export type ReportLine =
   | { readonly kind: 'bond'; readonly hero: string; readonly tier: 'trust' }
   /** 정이 다 차서 특성 하나에 눈떴다 */
   | { readonly kind: 'awaken'; readonly hero: string; readonly trait: string }
+  /** 각성 불꽃이 하나 켜졌다 (n / ascendWins) · 각성했다 — 능력치가 모두 오른다 (형 10-31) */
+  | { readonly kind: 'kindle'; readonly hero: string; readonly n: number }
+  | { readonly kind: 'ascend'; readonly hero: string }
   /**
    * 풍습·나라 고리·땅 한 수가 걸렸다 (data/customs.ts · customs-rules.ts) — 누가 · 무엇이 · 어디서 · 누구와 · 얼마나.
    * first — 이 나라에 처음 걸렸다 (화면이 크게: 도장 · 사서 한 줄 · 북)

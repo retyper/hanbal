@@ -1187,4 +1187,21 @@ export const UI_CSS = `
 .ap .seg { border: 0; border-radius: 0; overflow: visible; gap: 3px; }
 .ap .seg button { border: 6px solid transparent; border-image: url(__ART__ui/btn-dark.png?v=2) 30 33 fill / 6px 8px stretch; background: none; padding: 0 2px; color: #d8cdb4; }
 .ap .seg button.on { border-image-source: url(__ART__ui/btn-gold.png?v=2); border-image-slice: 30 35 fill; background: none; color: #2a1606; font-weight: 700; }
+/* 각성 연출 (형 10-31 · WWE 오버액션) — 어두운 막 위로 각성 초상이 솟고 금빛 글이 쾅. 막은 opacity 만 (폰 그래픽 한도) */
+.ap .ascfx { position: absolute; inset: 0; z-index: 90; display: grid; place-items: center; background: #0b0d12e6; animation: ascbg .35s ease-out both; cursor: pointer; }
+@keyframes ascbg { from { opacity: 0; } to { opacity: 1; } }
+.ap .ascin { display: grid; justify-items: center; gap: 4px; }
+.ap .ascimg { width: min(72vw, 420px); aspect-ratio: 1; border-radius: 14px; box-shadow: 0 0 0 2px #ffd76a, 0 0 40px #ffb84a99; animation: ascup .7s cubic-bezier(.2, 1.4, .4, 1) .1s both; }
+@keyframes ascup { from { opacity: 0; transform: translateY(18%) scale(.85); } to { opacity: 1; transform: none; } }
+.ap .ascnm { font-size: 22px; color: #f6e6c0; margin-top: 8px; animation: ascbg .4s ease-out .6s both; }
+.ap .asct { font-size: 46px; font-weight: 900; letter-spacing: .2em; color: #ffd76a; text-shadow: 0 0 18px #ffb84a, 0 2px 0 #6a3a10; animation: ascslam .45s cubic-bezier(.2, 1.8, .4, 1) .75s both; }
+@keyframes ascslam { from { opacity: 0; transform: scale(2.4); } to { opacity: 1; transform: none; } }
+.ap .ascfx small { color: #e8d8b0; font-size: 14px; animation: ascbg .4s ease-out 1.1s both; }
+@media (prefers-reduced-motion: reduce) { .ap .ascfx, .ap .ascimg, .ap .ascnm, .ap .asct, .ap .ascfx small { animation: none; } }
+/* 각성 불꽃 칸 — 초상 아래 가운데 · 꺼진 칸은 잿빛 */
+.ap .hpic { position: relative; }
+.ap .flms { position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); display: flex; gap: 2px; padding: 2px 6px; border-radius: 999px; background: #140f0ad9; border: 1px solid #6a5030; }
+.ap .flms .flm { width: 22px; height: 22px; object-fit: contain; filter: grayscale(1) brightness(.45); opacity: .7; }
+.ap .flms .flm.lit { filter: none; opacity: 1; }
+.ap .flms.on { color: #ffd76a; font-weight: 900; letter-spacing: .15em; font-size: 13px; border-color: #ffd76a; box-shadow: 0 0 10px #ffb84a88; }
 `

@@ -676,6 +676,16 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (h === undefined || h.faction !== viewer) return null
       return `${josa(h.name, '이', '가')} 「${TRAIT[line.trait]?.name ?? line.trait}」에 눈떴다.`
     }
+    case 'kindle': {
+      const h = after.heroes[line.hero]
+      if (h === undefined || h.faction !== viewer) return null
+      return `${h.name}의 각성 불꽃이 ${line.n}개 켜졌다. ${P.realm.ascendWins}번 내리 이기면 각성한다.`
+    }
+    case 'ascend': {
+      const h = after.heroes[line.hero]
+      if (h === undefined || h.faction !== viewer) return null
+      return `${josa(h.name, '이', '가')} 각성했다! 능력치가 모두 ${P.realm.ascendBonus} 올랐다.`
+    }
     // 사건 카드 · 점괘 (SYSTEMS §9) — 우리 것만
     case 'card': {
       if (line.faction !== viewer) return null

@@ -6,8 +6,9 @@
  * 상태를 읽기만 하고 HTML 문자열을 돌려준다 — 고르는 손짓(고을 누르기)은 글자 지도가 data-node 로 받는다.
  * 자리·그림 이름은 realm/data/art.ts.
  */
+import { faceFile } from './face.ts'
 import { headcount } from '../../realm/battle.ts'
-import { FACTION_ART, GOOD_ICON, REGION_ART, SEASON_MAP, bustOf, flagIcon, nodeIcon, nodePos } from '../../realm/data/art.ts'
+import { FACTION_ART, GOOD_ICON, REGION_ART, SEASON_MAP, flagIcon, nodeIcon, nodePos } from '../../realm/data/art.ts'
 import { EDGE_NAME, GOOD_NAME, NODE_KIND_NAME, NODE_NOW, tagNow } from '../../realm/data/prose.ts'
 import { worldGeoOf } from '../../realm/data/regions/index.ts'
 import { relationOf } from '../../realm/diplomacy.ts'
@@ -868,8 +869,8 @@ export function mapHtml(
     // 맡은 장수 — 우리 고을이면 얼굴을 작게 (형 10-23: "마을에 장수 배치한 거 아직 맵에선 아무것도 안 보이던데")
     const gv = ours ? govOf.get(n.id) : undefined
     const lordHere = gv !== undefined && n.id === capOf
-    const gface = gv !== undefined && bustOf(gv.id) !== undefined
-      ? `<img class="gov${lordHere ? ' lord' : ''}${lordHere && lordAway ? ' away' : ''}" src="${art}bust/${bustOf(gv.id)}.jpg" alt="" title="${gv.name}: ${lordHere ? (lordAway ? '군주가 도읍을 비웠다' : '군주가 몸소 다스린다') : '이 고을을 맡았다'}">` : ''
+    const gface = gv !== undefined && faceFile(gv.id) !== undefined
+      ? `<img class="gov${lordHere ? ' lord' : ''}${lordHere && lordAway ? ' away' : ''}" src="${art}bust/${faceFile(gv.id)}.jpg" alt="" title="${gv.name}: ${lordHere ? (lordAway ? '군주가 도읍을 비웠다' : '군주가 몸소 다스린다') : '이 고을을 맡았다'}">` : ''
     // 소도 — 신성한 숲: 은은한 빛 · 금줄(뒤 반 · 앞 반) · 방울 소리 물결 둘 · 날아오르는 한지 띠 셋 (CSS 는 위 .k-sodo)
     const holy = n.kind === 'sodo'
       ? `<img class="sg" src="${art}fx/sodo-glow.png" alt=""><img class="sr" src="${art}fx/sodo-rope.png" alt=""><i class="sp"></i><i class="sp"></i>` : ''

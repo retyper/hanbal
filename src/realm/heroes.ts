@@ -833,6 +833,25 @@ export function battleGrowth(r: Realm, won: readonly (string | null)[], lost: re
   each(won, (h) => { gainXp(h, 'mu', R.xpWin, lines); gainXp(h, 'tong', R.xpWin, lines); addBond(r, h, R.bondWin, lines) })
   each(lost, (h) => { gainXp(h, 'mu', R.xpLose, lines); gainXp(h, 'tong', R.xpLose, lines); addBond(r, h, -R.bondLose, lines) })
   each(drawn, (h) => { gainXp(h, 'mu', R.xpLose, lines); gainXp(h, 'tong', R.xpLose, lines) })
+  // 각성 — 우리(플레이어) 장수만. 이기면 불꽃 하나, 지거나 비기면 다 꺼진다 (내리 이김 · 형 10-31)
+  const ours = (h: Hero): boolean => h.faction === r.player && h.ascended !== true
+  each(won, (h) => { if (ours(h)) kindle(h, lines) })
+  each([...lost, ...drawn], (h) => { if (ours(h)) delete h.flames })
+}
+
+/** 불꽃 하나 — 다 켜지면 각성: 능력치가 모두 ascendBonus 오른다 (10 을 넘을 수 있다 · 그 판에서만) */
+function kindle(h: Hero, lines: ReportLine[]): void {
+  const R = P.realm
+  const n = (h.flames ?? 0) + 1
+  if (n < R.ascendWins) {
+    h.flames = n
+    lines.push({ kind: 'kindle', hero: h.id, n })
+    return
+  }
+  delete h.flames
+  h.ascended = true
+  for (const s of GROW) h[s] += R.ascendBonus
+  lines.push({ kind: 'ascend', hero: h.id })
 }
 
 /** 9 — 섬긴 계절: 정이 조금 오르고, 맡은 고을이 있으면 내정·매력에 공이 쌓인다. 군주는 정이 없다 */

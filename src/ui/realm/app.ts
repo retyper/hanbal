@@ -6,9 +6,10 @@
  * 화면은 판을 읽기만 하고, 바꾸는 일은 명령을 모아 advance 에 넘기는 것 하나다 (절대 규칙 2 의 정신).
  * 루프·타이머가 없다 — 누르면 다시 그린다 (절대 규칙 4). 글은 FLOW §6: 짧게, AI 말투 금지.
  */
+import { faceFile, noteAscended } from './face.ts'
 import { aiOrders } from '../../realm/ai.ts'
 import { headcount, strength, type Equip, type UnitKind } from '../../realm/battle.ts'
-import { CUSTOM_ICON, FACTION_ART, GOOD_ICON, SEASON_ICON, SOL_ANIM2, SOL_ANIM_AR, UNIT_ICON, bustOf, flagIcon, kidBust, nodeIcon, noteGrowing, noteKids } from '../../realm/data/art.ts'
+import { CUSTOM_ICON, FACTION_ART, GOOD_ICON, SEASON_ICON, SOL_ANIM2, SOL_ANIM_AR, UNIT_ICON, flagIcon, kidBust, nodeIcon, noteGrowing, noteKids } from '../../realm/data/art.ts'
 import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../../realm/data/nations-yeongnam.ts'
 import { SOUTH_NATIONS } from '../../realm/data/nations-south.ts'
@@ -475,11 +476,11 @@ function fxHtml(r: Realm, fx: CardFx): string {
 /** 큰 얼굴 — 900px 판이 있으면 그것 (알현처럼 화면 가득일 때) · 900px 판이 없는 얼굴(아이 · 몇 군주)은 320px 판으로 갈아 낀다
  *  (형 10-27: "우리 밀정 누가 갔는지 얼굴이 안 보이는데 — 찌그러진 빈 타원 동그라미밖에 없음" — 없는 bust-hd 를 불러 빈 그림이 떴다) */
 const bustHd = (h: Hero | undefined, cls: string): string =>
-  h !== undefined && bustOf(h.id) !== undefined
-    ? `<img class="${cls}" src="${ART}bust-hd/${bustOf(h.id)}.jpg" onerror="this.onerror=null;this.src='${ART}bust/${bustOf(h.id)}.jpg'" alt="">`
+  h !== undefined && faceFile(h.id) !== undefined
+    ? `<img class="${cls}" src="${ART}bust-hd/${faceFile(h.id)}.jpg" onerror="this.onerror=null;this.src='${ART}bust/${faceFile(h.id)}.jpg'" alt="">`
     : ''
 const bust = (h: Hero | undefined, cls = 'face'): string =>
-  h !== undefined && bustOf(h.id) !== undefined ? `<img class="${cls}" src="${ART}bust/${bustOf(h.id)}.jpg" alt="">` : `<span class="${cls} noface"></span>`
+  h !== undefined && faceFile(h.id) !== undefined ? `<img class="${cls}" src="${ART}bust/${faceFile(h.id)}.jpg" alt="">` : `<span class="${cls} noface"></span>`
 /** 우리 나라 — 깃발마다 금빛 후광을 두른다 (형 2026-10-20: "사용자의 나라는 로그에서 아이콘도 뭔가 후광이 있거나 특별하게 … 내나라가 어느나란지도 모르겠어서") */
 let MINE = ''
 /**
@@ -516,14 +517,14 @@ function boardRuler(region: RegionId, nation: string): string | undefined {
 function nationFace(id: string, cls = 'nface', ruler?: string): string {
   // ruler — 저장된 판의 진짜 군주 (첫 화면 「이어 하기」: 2장 고구려는 젊은 궁수 주몽 — 형 10-24)
   const hid = ruler ?? LIVE_RULER[id] ?? rulerId(id)
-  const file = hid !== undefined ? bustOf(hid) : undefined
+  const file = hid !== undefined ? faceFile(hid) : undefined
   return file !== undefined ? `<img class="${cls}" src="${ART}bust/${file}.jpg" alt="">` : ''
 }
 
 /** 도감(dex.ts)이 쓰는 그림 손 */
 const DEX_KIT = {
   esc,
-  bust: (id: string): string | null => (bustOf(id) !== undefined ? `${ART}bust/${bustOf(id)}.jpg` : null),
+  bust: (id: string): string | null => (faceFile(id) !== undefined ? `${ART}bust/${faceFile(id)}.jpg` : null),
   kid: (key: string, look: 'g' | 'w', traits?: readonly string[]): string | null => { const f = kidBust(key, look, traits); return f !== undefined ? `${ART}bust/${f}.jpg` : null },
   grow: (id: string): { lv: number; relics: string } => ({ lv: drillLevel(id), relics: relicChips(ART, esc, wornBy(id)) }),
 }
@@ -535,7 +536,7 @@ const RELIC_KIT: RelicKit = { art: ART, esc, nameOf: (id: string): string => dri
 /** 단련터(drill.ts)가 쓰는 그림 손 */
 const DRILL_KIT: DrillKit = {
   esc,
-  bust: (id: string): string | null => (bustOf(id) !== undefined ? `${ART}bust/${bustOf(id)}.jpg` : null),
+  bust: (id: string): string | null => (faceFile(id) !== undefined ? `${ART}bust/${faceFile(id)}.jpg` : null),
   bodyOf: drillBody,
   relic: RELIC_KIT,
 }
@@ -544,7 +545,7 @@ const DRILL_KIT: DrillKit = {
 const KIT: FrontKit = {
   art: ART, esc, icon, nations: nationsOf, face: nationFace, boardRuler,
   emblem: (f, cls) => emblem(f, cls),
-  bust: (id) => (bustOf(id) !== undefined ? `${ART}bust/${bustOf(id)}.jpg` : null),
+  bust: (id) => (faceFile(id) !== undefined ? `${ART}bust/${faceFile(id)}.jpg` : null),
   won: nationWon,
 }
 
@@ -1214,6 +1215,31 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       ['큰 제사', cl(Math.min(ri.chain / Math.max(1, ri.need), ri.hh / Math.max(1, ri.hhNeed)))],
     ]
   }
+  /** 각성 불꽃 칸 — 우리 장수만. 빈 칸 셋이 이길 때마다 켜진다 · 각성하면 「각성」 띠 (형 10-31) */
+  function flamesHtml(x: Hero): string {
+    if (realm === null || x.faction !== me() || isRuler(realm, x.id)) return ''
+    if (x.ascended === true) return `<span class="flms on" title="각성했습니다">각성</span>`
+    const n = x.flames ?? 0
+    const cells = Array.from({ length: P.realm.ascendWins }, (_, i) => `<img class="flm${i < n ? ' lit' : ''}" src="${ART}fx/fire.png" alt="">`).join('')
+    return `<span class="flms" title="${P.realm.ascendWins}번 내리 이기면 각성합니다. 지면 꺼집니다">${cells}</span>`
+  }
+  /**
+   * 각성 연출 — 우리 장수가 내리 이겨 각성하면 그 자리에서 크게 (형 10-31: 3연승 직후 각성 연출 · 메모리 WWE 오버액션).
+   * 각성 초상이 아래에서 솟고 빛이 터진다. 누르거나 몇 초 뒤 걷힌다. 여럿이면 첫째만 크게, 나머지는 보고에
+   */
+  function ascendShow(r: Realm, lines: readonly ReportLine[]): void {
+    const l = lines.find((x): x is Extract<ReportLine, { kind: 'ascend' }> => x.kind === 'ascend' && r.heroes[x.hero]?.faction === me())
+    if (l === undefined) return
+    const h = r.heroes[l.hero]!
+    root.querySelector('.ascfx')?.remove()
+    const el = document.createElement('div')
+    el.className = 'ascfx'
+    el.innerHTML = `<div class="ascin">${bustHd(h, 'ascimg')}<b class="ascnm">${esc(h.name)}</b><span class="asct">각성</span><small>능력치 모두 +${P.realm.ascendBonus}</small></div>`
+    el.addEventListener('click', () => el.remove())
+    root.appendChild(el)
+    ding(snd('horn_victory'), 0.7)
+    window.setTimeout(() => el.remove(), P.realm.ascendShowMs)
+  }
   /** 승리가 가깝다 — 넷 가운데 하나가 이번 계절에 문턱(pathAlertShare)을 넘으면 크게 한 번 (형 10-26: "승리 목표 달성의 80%가 되면 한번 알림") */
   function nearWinToast(prev: Realm, next: Realm): void {
     if (next.outcome != null) return
@@ -1381,7 +1407,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 길 위의 군대도 말을 둔다 — 길 가운데쯤에 (형: "내 군대 번예연이 군대가 지도에서 안보임")
     const tokens: MapToken[] = [...sorted(Object.values(r.armies)).filter((a) => a.faction === me()), ...lentToMe(r)].map((a) => {
       const hero = a.hero !== null ? r.heroes[a.hero] : undefined
-      const file = hero !== undefined ? bustOf(hero.id) : undefined
+      const file = hero !== undefined ? faceFile(hero.id) : undefined
       const kinds = (Object.entries(a.mix) as Array<[UnitKind, number]>).filter(([, v]) => v > 0).sort((x, y) => y[1] - x[1]).map(([k]) => k)
       const top = kinds[0] ?? 'spear'
       return {
@@ -3552,11 +3578,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (x === undefined) return ''
     const ours = x.faction === me() && x.status === 'free'
     const seen = x.faction === me() || heroSeen(realm!, me(), x.id) || (realm!.wanderers ?? []).some((w) => w.hero.id === id)
-    const file = bustOf(x.id)
+    const file = faceFile(x.id)
     let h = `<button class="btn ghost sm hback" data-act="hero-back">‹ 장수 목록</button><div class="hcard">`
     // 사서에 남은 사람 — 얼굴 모서리의 「📜?」를 누르면 사서의 이야기 (형 10-25: 이름 줄에 붙이면 특성처럼 보였다 · 그림과 물음표만)
     const annal = annalOf(x.id)
-    h += `<div class="hpic">${file !== undefined ? `<img class="big" src="${ART}bust/${file}.jpg" alt="" data-act="bust-view" data-src="${ART}bust/${file}.jpg">` : bust(x, 'face')}${annal !== undefined ? `<button class="annb" data-act="annal" data-id="${x.id}" aria-label="사서에 남은 이야기">📜<b>?</b></button>` : ''}</div>`
+    h += `<div class="hpic">${file !== undefined ? `<img class="big" src="${ART}bust/${file}.jpg" alt="" data-act="bust-view" data-src="${ART}bust/${file}.jpg">` : bust(x, 'face')}${annal !== undefined ? `<button class="annb" data-act="annal" data-id="${x.id}" aria-label="사서에 남은 이야기">📜<b>?</b></button>` : ''}${flamesHtml(x)}</div>`
     // 판 밖 단련을 들고 온 장수 — 「단련 n」 (HERO-GROWTH ★ §A)
     h += `<div class="hn">${nameHtml(x.name)}${x.drill !== undefined && x.drill.lv > 0 && x.faction === me() ? ` <span class="dlv">단련 ${x.drill.lv}</span>` : ''}${x.faction === me() ? relicChips(ART, esc, x.relics) : ''}</div><div class="mute">${emblem(x.faction)}${esc(r.factions[x.faction]?.name ?? '떠돌이')}${isRuler(r, x.id) ? ' 군주' : ''} · ${esc(roleLine(r, x))}</div>`
     // 기억 — 겪은 일이 계절 차례 그림으로, 이름 바로 밑에 (MEMORY §3-2 5). 남의 장수는 우리와 얽힌 일만
@@ -4745,7 +4771,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'arm': ic = 'treasure-iron-ingots'; break
       case 'bowUp': ic = 'unit-archer'; break
       case 'suzerain': ic = 'treasure-silla-crown'; break
-      case 'grow': case 'bond': case 'awaken': ic = 'status-morale-up'; break
+      case 'grow': case 'bond': case 'awaken': case 'kindle': case 'ascend': ic = 'status-morale-up'; break
       case 'wed': ic = 'status-alliance'; break
       case 'persuade': ic = l.step === 'waver' ? 'status-alliance' : 'status-morale-down'; break
       case 'exile': ic = 'status-bad-omen'; break
@@ -4759,7 +4785,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     // 장수 얼굴이 주인공인 줄 — 들임·떠돌이·자람
     const hero = typeof L['hero'] === 'string' ? (r.heroes[L['hero'] as string] ?? (realm!.wanderers ?? []).find((w) => w.hero.id === L['hero'])?.hero) : undefined
-    const lead = (l.kind === 'recruit' || l.kind === 'persuade' || l.kind === 'wanderer' || l.kind === 'grow' || l.kind === 'bond' || l.kind === 'awaken' || l.kind === 'birth' || l.kind === 'expBack' || l.kind === 'chancellor') && hero !== undefined
+    const lead = (l.kind === 'recruit' || l.kind === 'persuade' || l.kind === 'wanderer' || l.kind === 'grow' || l.kind === 'bond' || l.kind === 'awaken' || l.kind === 'kindle' || l.kind === 'ascend' || l.kind === 'birth' || l.kind === 'expBack' || l.kind === 'chancellor') && hero !== undefined
       ? bust(hero, 'rface rl') : ic !== '' ? icon(ic, 'ri') : '<i class="ri dot"></i>'
     // 누가→누구 · 어디→어디
     let flow = ''
@@ -5258,7 +5284,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const ts = (x.traits ?? []).map((t) => TRAIT[t]).filter((t): t is NonNullable<typeof t> => t !== undefined)
     const top = ts.filter((t) => t.bad !== true).sort((p, q) => RANK[q.grade] - RANK[p.grade])[0]
     const gc = top !== undefined ? GRADE_COLOR[top.grade] : '#f0d090'
-    const file = bustOf(x.id)
+    const file = faceFile(x.id)
     const src = file !== undefined ? `${ART}bust/${file}.jpg` : ''
     const face = src !== '' ? `<img class="hbust" src="${src}" alt="">` : bust(x, 'hbust')
     // 컷인 셋 — 화면을 위아래로 가로지르는 사선 띠마다 그림의 한 곳을 크게 (손·무기 → 어깨·장신구 → 눈빛) (형 10-24: "사선 부위만 화면에 꽉 찰 정도로 확대")
@@ -5444,6 +5470,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   function paintNow(): void {
     MINE = realm?.player ?? ''
+    noteAscended(realm) // 각성한 장수는 각성 초상으로 (face.ts)
     LIVE_RULER = realm !== null && front === null
       ? Object.fromEntries(Object.values(realm.factions).flatMap((f) => (f.ruler !== undefined ? [[f.id, f.ruler]] : [])))
       : {}
@@ -5706,6 +5733,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     backToast(backNotes(prev, res.next, mine))
     nearWinToast(prev, res.next)
     diploToast(prev, res.next)
+    ascendShow(res.next, res.report.lines)
     seasonFx(res.next.season)
     noteFaces(res.next) // 갓 난 아이 얼굴 — 보고·장면·장수 판 어디서나 (형 10-23: "하늬도 이미지가 없어 보이네 애기 태어날 때")
     ceremonyFx(prev, res.next, res.report)
