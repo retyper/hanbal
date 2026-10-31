@@ -123,6 +123,8 @@ export function roadSvg(d: string, kind: EdgeKind, k: number, op = 1, title = ''
  * 출정 화살의 꼴 (지도 좌표 · 화면의 생김새라 params 가 아니라 여기 둔다).
  * 흐르는 점선은 모두 한 마디(period) — keyframes 가 꼭 한 마디만큼 돌아 이음매에서 튀지 않는다 (형 10-30: "툭툭 끊어지고").
  */
+/** 화살 하나가 한 번 숨 쉬는(옅어졌다 짙어지는) 초 — 화살마다 다른 데서 시작한다 */
+const ARROW_BREATH_S = 2.4
 const ARROW = {
   /** 흐르는 점선 한 마디 (칠 + 틈) */
   period: 23,
@@ -451,7 +453,8 @@ export const MAP_CSS = `
 .map .toks.mv .mvtag { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 2px; white-space: nowrap; z-index: 3; pointer-events: none;
   font-size: clamp(10px, calc(1.6cqh / var(--z, 1) * var(--zs, 1)), 13px); font-weight: 700; color: #fff4dc; background: #7a1f10e6; border-radius: 8px; padding: 1px 6px; box-shadow: 0 1px 3px #0008; }
 .map svg .mvflow { animation: mvf .9s linear infinite; } @keyframes mvf { to { stroke-dashoffset: -${ARROW.period}; } }
-@media (prefers-reduced-motion: reduce) { .map .toks.mv .tok, .map svg .mvflow { animation: none; } }
+.map svg .arw { animation: arwb ${ARROW_BREATH_S}s ease-in-out infinite; } @keyframes arwb { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .map .toks.mv .tok, .map svg .mvflow, .map svg .arw { animation: none; } }
 .map .lb.crowd { visibility: hidden; } /* 겹쳐 자리가 없는 작은 고을 이름 — declutter */
 .map .lb.sel { z-index: 1; } .map .lb.dim { opacity: 0; } /* 한 나라만 볼 때 다른 나라 글씨는 감춘다 (형: "다른나라들은 글자정돈 완전 투명하게") */
 .map[data-world] { background-color: #cdb98e; }
@@ -735,6 +738,8 @@ export function mapHtml(
     const at = (d: number): Pt => trimPolyline(cv, d / L, d / L)[0]!
     const w = st.w * lw
     const cap = st.round === true ? 'round' : 'butt'
+    // 화살 하나를 한 묶음으로 — 묶음마다 다른 박자로 숨 쉰다 (형 10-31: "각각 다른 시작으로 fade in fade out") · opacity 만 움직인다(폰 한도)
+    svg += `<g class="arw" style="animation-delay:${(-beat(key) * ARROW_BREATH_S).toFixed(2)}s">`
     // 크림빛 바탕 띠 — 길·땅빛 위에서도 화살이 또렷하고, 점선 틈도 한 줄로 이어 보인다
     svg += `<path d="${part(d0, dj)}" fill="none" stroke="#f3e6c8" style="stroke-width:${aw(w + ARROW.casing * lw)}" stroke-linecap="round" stroke-linejoin="round" opacity=".6"/>`
     if (later) svg += `<path d="${part(dj, d1)}" fill="none" stroke="#f3e6c8" style="stroke-width:${aw(w * 0.8 + ARROW.casing * lw)}" stroke-linecap="round" stroke-linejoin="round" opacity=".35"/>`
@@ -766,6 +771,7 @@ export function mapHtml(
     const label = kind === 'amb' && m.left === null ? '우리 기습' : ''
     if (label !== '') svg += text(at(d0 + (dj - d0) * 0.7), label, 26)
     if (n > 1) svg += text(at(d0 + (dj - d0) * 0.62), `×${n}`, 26)
+    svg += `</g>`
   }
   svg += `</g>`
   const arrowSvg = `<svg class="marr" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${svg.slice(arrowAt)}</svg>`
