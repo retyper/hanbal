@@ -6320,6 +6320,18 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (partySel === formId(node)) clearParty()
         break
       }
+      case 'foetok': {
+        // 적 군대 말 — 전엔 눌러도 아무 일이 없었다 (docs/realm/ZAXIS-1031.md). 우리 군대를 골랐으면 그 고을로 보내고(치러 감), 아니면 그 고을을 연다
+        const x = r?.armies[d['army'] ?? '']
+        const at = x?.march?.to ?? x?.at
+        if (at === undefined || at === null) return
+        if (armySel.length > 0) {
+          const go = root.querySelector<HTMLElement>(`.nd[data-act="go"][data-node="${at}"]`)
+          if (go !== null) { go.click(); return }
+        }
+        openSheet({ kind: 'node', id: at })
+        return
+      }
       case 'ptok': armySel = []; partySel = partySel === d['army'] ? '' : d['army']!; sheet = null; break
       case 'pp-close': clearParty(); break
       case 'ptjoin': {
