@@ -15,11 +15,13 @@ import { blockedWhy, seasonOf } from './calendar.ts'
 import { marchSeasons } from './season.ts'
 import type { Order, Party, Realm, ReportLine } from './types.ts'
 
-/** 고을에서 꾸릴 수 있는 개척단의 가구 수 — 안 되면 0 (곡식·나무·가구·개척단 수) */
+/** 고을에서 꾸릴 수 있는 개척단의 가구 수 — 안 되면 0 (도읍 · 곡식·나무·가구·개척단 수) */
 export function partySize(r: Realm, faction: string, from: string): number {
   const R = P.realm
   const a = r.nodes[from]
   if (a === undefined || a.owner !== faction || a.kind === 'sodo' || a.kind === 'wild') return 0
+  // 개척단은 도읍에서만 꾸린다 (형 10-31)
+  if (r.factions[faction]?.capital !== from) return 0
   if (Object.values(r.parties ?? {}).filter((p) => p.faction === faction).length >= R.partyMax) return 0
   const want = Math.floor(a.hh * R.partyShare)
   const grain = R.settleGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.settleGrain) : Infinity
