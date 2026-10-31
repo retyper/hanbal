@@ -89,6 +89,9 @@ interface Run {
    * 그 가운데 퇴로가 끊겨 섬멸 · 연달아 져서 쉬기에 든 나라(beaten 줄) · 졌으면 그 갈래
    */
   offensives: number
+  /** 그 가운데 앞 턴(명령을 고르던 판)에 이미 보이던 것 — 우리 고을로 오는 길 위의 군대 · 「다음 달 친다」 채비 (loop 리뷰 11-01) · 계절 안 몇째 달에 맞았나 */
+  warned: number
+  byMonth: [number, number, number]
   worldBattles: number
   scatters: number
   wipes: number
@@ -101,7 +104,7 @@ function play(bot: Brain, as: string, seed: number): Run {
   applyTier(r, TIER) // 난세 단계 (--tier 3)
   const own = (x: Realm): number => Object.values(x.nodes).filter((n) => n.owner === as).length
   const lead = Object.values(r.heroes).filter((h) => h.faction === as).sort((a, b) => (a.id < b.id ? -1 : 1))[0]?.id
-  const run: Run = { bot, as, seed, start: own(r), nodes: 0, nodesEarly: -1, win: false, lose: false, battles: 0, wins: 0, captured: 0, lostHero: false, settled: 0, wildHeld: 0, ambush: 0, ambushOk: 0, rites: 0, worldAmbush: 0, asks: 0, pacts: 0, fieldFights: 0, plots: 0, plotsOk: 0, plotsAtUs: 0, worldPlots: 0, heroes: 0, persuaded: 0, hired: 0, allies: 0, pledgeKept: 0, pledgeBroken: 0, gifts: 0, arms: 0, lent: 0, hh: 0, offensives: 0, worldBattles: 0, scatters: 0, wipes: 0, rests: 0, losePath: '' }
+  const run: Run = { bot, as, seed, start: own(r), nodes: 0, nodesEarly: -1, win: false, lose: false, battles: 0, wins: 0, captured: 0, lostHero: false, settled: 0, wildHeld: 0, ambush: 0, ambushOk: 0, rites: 0, worldAmbush: 0, asks: 0, pacts: 0, fieldFights: 0, plots: 0, plotsOk: 0, plotsAtUs: 0, worldPlots: 0, heroes: 0, persuaded: 0, hired: 0, allies: 0, pledgeKept: 0, pledgeBroken: 0, gifts: 0, arms: 0, lent: 0, hh: 0, offensives: 0, warned: 0, byMonth: [0, 0, 0], worldBattles: 0, scatters: 0, wipes: 0, rests: 0, losePath: '' }
   // 계절 수로 돌린다 — 달 시계 판이면 계절마다 석 턴 (calendar.perSeason)
   const per = perSeason(r)
   for (let s = 0; s < SEASONS * per; s++) {
@@ -145,7 +148,12 @@ function play(bot: Brain, as: string, seed: number): Run {
       // 나눈 별동대도 우리 군대다 — 넘기기 전 판에서 주인을 본다
       const weAttack = r.armies[l.attacker]?.faction === as
       const weDefend = l.defender === as
-      if (weDefend && !weAttack && (l.atkFaction ?? r.armies[l.attacker]?.faction) !== as) run.offensives++
+      if (weDefend && !weAttack && (l.atkFaction ?? r.armies[l.attacker]?.faction) !== as) {
+        run.offensives++
+        const pre = r.armies[l.attacker]
+        if (pre !== undefined && ((pre.march !== null && pre.march.to === l.node) || (pre.strike?.at === r.season && pre.strike.node === l.node))) run.warned++
+        run.byMonth[((r.season % per) + per) % per]! += 1
+      }
       if (!weAttack && !weDefend) continue
       run.battles++
       const atkWon = l.outcome === 'rout' || l.outcome === 'win'
@@ -214,6 +222,18 @@ for (const as of AS) {
       `${mean(rs.map((x) => x.scatters)).toFixed(2).padStart(8)}  ${mean(rs.map((x) => x.wipes)).toFixed(2).padStart(6)}  ${mean(rs.map((x) => x.rests)).toFixed(2).padStart(6)}  ` +
       `${mean(rs.map((x) => x.nodes)).toFixed(2).padStart(5)}  ${by('conquest')}  ${by('ironsea')}  ${by('rite')}  ${by('suzerain')}`,
     )
+  }
+}
+
+// 예고 (loop 리뷰 11-01) — 적 공세 가운데 앞 턴에 이미 보이던 것 · 계절 안 몇째 달에 맞았나 (달 시계 판만 셋으로 갈린다)
+console.log(`\n나라    봇          적 공세   예고됨   첫 달  둘째 달  셋째 달`)
+for (const as of AS) {
+  for (const bot of BOTS) {
+    const rs = runs.filter((x) => x.bot === bot && x.as === as)
+    const off = rs.reduce((a, x) => a + x.offensives, 0)
+    const m = [0, 1, 2].map((i) => rs.reduce((a, x) => a + x.byMonth[i]!, 0))
+    const share = (n: number): string => pct(off > 0 ? n / off : 0).padStart(6)
+    console.log(`${as.padEnd(7)} ${bot.padEnd(9)} ${String(off).padStart(7)}  ${share(rs.reduce((a, x) => a + x.warned, 0))}  ${share(m[0]!)}  ${share(m[1]!)}  ${share(m[2]!)}`)
   }
 }
 

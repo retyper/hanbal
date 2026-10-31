@@ -727,6 +727,12 @@ export interface Army {
   lent?: { readonly to: string; readonly node: string; readonly until: number; readonly arrived?: boolean }
   /** 먼 갈 곳 — 닿을 때까지 계절마다 한 걸음씩 저절로 간다 (goal.ts). 없으면 그냥 선다 */
   goal?: string
+  /**
+   * 칠 채비 (달 시계 · loop 리뷰 11-01: "치는 달이 늘 계절 첫 달이고 아무 낌새가 없다") — AI 가 플레이어 고을을 한 달 길로 치기 전에
+   * 제 자리에서 한 달 모인다. `at` 턴에 `edge` 로 `node` 를 친다 · `est` 는 채비할 때 본 승률(가운데) — 그사이 크게 떨어지면 거둔다 (ai.ts strikes).
+   * 지도가 「다음 달 친다」로 보여 준다. 옛 저장·옛 판에는 없다
+   */
+  strike?: { readonly node: string; readonly edge: string; readonly at: number; readonly ambush: boolean; readonly est?: number }
 }
 
 /** 한 세력이 한 고을에 대해 아는 것 (SYSTEMS §2-1 세 겹 가운데 땅·군세) */
@@ -951,6 +957,8 @@ export type Order =
   | { readonly kind: 'goal'; readonly army: string; readonly node: string | null }
   /** 서 있는 고을을 친다 — 동맹을 깨는 등으로 그 땅이 싸울 땅이 됐을 때, 길을 나서지 않고 그 자리에서 (형 10-24) */
   | { readonly kind: 'assault'; readonly army: string }
+  /** 칠 채비 — 이번 달엔 떠나지 않고 모여, 다음 달 이 길로 친다 (Army.strike · AI 만 낸다 · 달 시계) */
+  | { readonly kind: 'poise'; readonly army: string; readonly edge: string; readonly ambush: boolean; readonly est?: number }
   /** 전장에서 직접 내린 명령 — 그 판(key)의 라운드마다 (advance 가 tactics 로 받는다 · 판 기록에 남아 다시 돌려도 같다) */
   | { readonly kind: 'command'; readonly key: string; readonly cmds: readonly (Cmd | RoundOrder)[]; /** 마지막 때마다 고른 것 (Tactic.dusk) — 옛 기록에는 없다 */ readonly dusk?: readonly Dusk[] }
   | { readonly kind: 'scout'; readonly faction: string; readonly node: string; readonly hero: string | null }

@@ -314,6 +314,12 @@ export const MAP_CSS = `
 @keyframes thr { from { opacity: .45; } to { opacity: 1; } }
 .map .nd .thr { position: absolute; left: 50%; top: -18%; transform: translateX(-50%); font-size: clamp(11px, calc(2.2cqh / var(--z, 1) * var(--zs, 1)), 18px);
   color: #fff; background: #b0281a; border-radius: 50%; width: 1.5em; height: 1.5em; line-height: 1.5em; box-shadow: 0 0 8px #d0301c; pointer-events: none; z-index: 2; }
+/* 칠 채비 — 우리 고을을 치려고 모인 적의 고을 위에 「⚔ 다음 달 친다」 (Army.strike) · 칼만 뛴다 (opacity·transform 만 — 11-01 지도 버벅임) */
+.map .nd .strk { position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); white-space: nowrap; pointer-events: none; z-index: 3;
+  font-size: clamp(10px, calc(1.9cqh / var(--z, 1) * var(--zs, 1)), 16px); font-weight: 700; line-height: 1.5; color: #fff; background: #7a1a10; border: 1px solid #e0604a; border-radius: .8em; padding: 0 .5em 0 .25em; }
+.map .nd .strk i { display: inline-block; margin-right: .2em; font-style: normal; animation: strk .8s ease-in-out infinite alternate; }
+@keyframes strk { from { opacity: .55; transform: scale(.85) rotate(-12deg); } to { opacity: 1; transform: scale(1.2) rotate(8deg); } }
+@media (prefers-reduced-motion: reduce) { .map .nd .strk i { animation: none; } }
 /* 갈 수 없는 곳 — 군대를 고르면 흐려진다 (이동 범위만 또렷 — GAP M3) */
 .map .nd.far { opacity: .42; filter: saturate(.5); } .map .lb.far { opacity: .45; }
 .map svg .mvglow { animation: mvg .6s linear infinite; } @keyframes mvg { to { stroke-dashoffset: -20; } }
@@ -603,6 +609,14 @@ export function mapHtml(
   const ranging = targets.length > 0
   // 우리 고을로 오는 적 — 그 고을에 붉은 고리, 그 길은 붉게 깜빡 (GAP M4)
   const threatened = new Set(marches.filter((m) => m.foe === true && r.nodes[m.to]?.owner === me).map((m) => m.to))
+  // 칠 채비 — 우리 고을을 이번 달 끝에 치려고 이웃 고을에 모인 적 (Army.strike · 달 시계). 그 고을이 보이면:
+  // 모인 고을에 「⚔ 다음 달 친다」 · 노리는 우리 고을엔 붉은 고리 · 그 사이에 위협 화살 (길 위의 적과 같은 결)
+  const poised = Object.values(r.armies)
+    .filter((a) => a.faction !== me && a.march === null && a.strike !== undefined && a.strike.at === r.season && r.nodes[a.strike.node]?.owner === me && vis.has(a.at))
+    .sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0))
+  for (const a of poised) threatened.add(a.strike!.node)
+  const poisedAt = new Set(poised.map((a) => a.at))
+  marches = [...marches, ...poised.map((a): MapMarch => ({ from: a.at, to: a.strike!.node, left: 1, foe: true }))]
 
   let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">`
   svg += `<defs><marker id="rm-ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">`
@@ -924,7 +938,7 @@ export function mapHtml(
     // 주인 없이 사람만 사는 철광·포구 — 지키는 군대가 없어 우리 군대가 닿기만 하면 싸움 없이 우리 땅 (season.walkIn · 형 10-31: "문명6 촌락처럼")
     const freeTake = owner === null && n.kind !== 'wild' && n.kind !== 'sodo' && n.hh > 0 && !Object.values(r.armies).some((a) => a.at === n.id && a.march === null)
       ? `<span class="stl frt" title="주인이 없습니다. 군대를 보내면 싸움 없이 우리 땅이 됩니다"><img src="${art}icon/unit-spear.png" alt="">군대만 가면</span>` : ''
-    nodes += `${holy}<span class="base"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${holyFront}<span class="ring"></span>${selected === n.id ? GEM : ''}${sct}${taken.has(n.id) ? `<img class="burnsm won" src="${art}fx/smoke.png" alt=""><span class="plant"><i class="pole"></i><i class="cloth" style="--fc:${FACTION_ART[me]?.color ?? '#c9a45a'}"><img src="${art}icon/${FACTION_ART[me]?.emblem ?? 'emblem-shell'}.png" alt=""></i></span><i class="wonring"></i><span class="wonchip">점령</span>` : burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${held.has(n.id) ? '<span class="heldchip">🛡 지켜 냈다</span>' : ''}${mist}${ice}${gface}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${tg !== undefined ? (tg.chip !== '' ? `<span class="tchip">${tg.chip}</span>` : '') : settleable.has(n.id) ? (settling.has(n.id) ? '<span class="stl go">백성이 가는 중</span>' : '<span class="stl">＋마을</span>') : inboundOf(n, me) > 0 ? '<span class="stl go">백성이 오는 중</span>' : freeTake !== '' ? freeTake : noReach !== '' ? noReach : crowd}</div>`
+    nodes += `${holy}<span class="base"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${holyFront}<span class="ring"></span>${selected === n.id ? GEM : ''}${sct}${taken.has(n.id) ? `<img class="burnsm won" src="${art}fx/smoke.png" alt=""><span class="plant"><i class="pole"></i><i class="cloth" style="--fc:${FACTION_ART[me]?.color ?? '#c9a45a'}"><img src="${art}icon/${FACTION_ART[me]?.emblem ?? 'emblem-shell'}.png" alt=""></i></span><i class="wonring"></i><span class="wonchip">점령</span>` : burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${held.has(n.id) ? '<span class="heldchip">🛡 지켜 냈다</span>' : ''}${mist}${ice}${gface}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${poisedAt.has(n.id) ? '<span class="strk"><i>⚔</i>다음 달 친다</span>' : ''}${tg !== undefined ? (tg.chip !== '' ? `<span class="tchip">${tg.chip}</span>` : '') : settleable.has(n.id) ? (settling.has(n.id) ? '<span class="stl go">백성이 가는 중</span>' : '<span class="stl">＋마을</span>') : inboundOf(n, me) > 0 ? '<span class="stl go">백성이 오는 중</span>' : freeTake !== '' ? freeTake : noReach !== '' ? noReach : crowd}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()

@@ -699,6 +699,8 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
 
 /** 1 — 명령 확정: 나누기·모으기를 먼저 하고, 출정 명령을 군대에 싣는다. 막힌 길은 보고에 남기고 떠나지 않는다 */
 function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
+  // 칠 채비 — 이번 턴이 칠 턴이었던 채비는 걷는다 (AI 가 이번 턴 출정으로 냈거나 거뒀다). 옛 판엔 채비가 없다
+  for (const a of Object.values(r.armies)) if (a.strike !== undefined && a.strike.at <= r.season) delete a.strike
   applyArmyOrders(r, orders, lines)
   // 서 있는 고을을 친다 — 그 고을이 남의 땅이고 싸울 사이(동맹·화친이 아님)일 때만. 들어온 길로 한 계절에 닿은 것으로 친다
   for (const o of orders) {
@@ -756,6 +758,16 @@ function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): v
     if (extra > 0) stockOf(r, a.faction).grain -= rationCost(r, a, left, extra)
     a.food = left + seasons(r, extra) // 군량은 턴으로 센다 (달 시계면 계절치 하나가 석 달)
     a.march = { from: a.at, to, edge: ed.id, left, ambush: approach !== 'road', ...(approach !== 'road' && approach !== 'night' ? { approach } : {}), ...(why !== null ? { hard: why } : {}), ...(o.follow === true ? { follow: true } : {}), ...(o.adviser !== undefined && r.heroes[o.adviser]?.faction === a.faction ? { adviser: o.adviser } : {}), aim: owner }
+  }
+  // 칠 채비 — 떠나지 않고 제 자리에 모여 다음 턴에 그 길로 친다 (ai.ts poised · 지도가 「다음 달 친다」로 보여 준다). 달 시계에서만
+  for (const o of orders) {
+    if (o.kind !== 'poise' || !monthly(r)) continue
+    const a = r.armies[o.army]
+    const ed = r.edges[o.edge]
+    if (a === undefined || ed === undefined || a.march !== null) continue
+    const to = otherEnd(ed, a.at)
+    if (to === null) continue
+    a.strike = { node: to, edge: ed.id, at: r.season + 1, ambush: o.ambush, ...(o.est !== undefined ? { est: o.est } : {}) }
   }
 }
 
