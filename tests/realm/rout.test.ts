@@ -168,34 +168,56 @@ describe('연달아 진 나라는 쉰다', () => {
   }
 
   it('beatenStreak 번 잇달아 지면 그 계절 끝부터 beatenRest 계절 동안 새 출정을 쉰다', () => {
-    const r = monthRealm()
-    const lines: ReportLine[] = [lost(r, ATK, DEF, 'lose')]
-    noteBeaten(r, lines)
-    assert.equal(beatenResting(r, ATK), false)
-    assert.equal(r.factions[ATK]!.beaten?.n, 1)
-    const more: ReportLine[] = [lost(r, ATK, DEF, 'lose')]
-    for (let i = 2; i < P.realm.beatenStreak; i++) more.push(lost(r, ATK, DEF, 'lose'))
-    noteBeaten(r, more)
-    assert.equal(beatenResting(r, ATK), true)
-    const b = more.find((l) => l.kind === 'beaten')
-    assert.ok(b !== undefined && b.kind === 'beaten' && b.faction === ATK)
-    // 계절 끝(2달째) + beatenRest 계절
-    assert.equal(b.until, 2 + 3 * P.realm.beatenRest)
-    // 쉬는 동안엔 출정·다가가기가 없다
-    const orders = decide(r, ATK, 'greedy')
-    assert.ok(!orders.some((o) => o.kind === 'march'), JSON.stringify(orders.filter((o) => o.kind === 'march')))
-    r.season = b.until + 1
-    assert.equal(beatenResting(r, ATK), false)
+    withKnobs({ beatenStreak: 2, beatenRest: 2 }, () => {
+      const r = monthRealm()
+      const lines: ReportLine[] = [lost(r, ATK, DEF, 'lose')]
+      noteBeaten(r, lines)
+      assert.equal(beatenResting(r, ATK), false)
+      assert.equal(r.factions[ATK]!.beaten?.n, 1)
+      const more: ReportLine[] = [lost(r, ATK, DEF, 'lose')]
+      noteBeaten(r, more)
+      assert.equal(beatenResting(r, ATK), true)
+      const b = more.find((l) => l.kind === 'beaten')
+      assert.ok(b !== undefined && b.kind === 'beaten' && b.faction === ATK)
+      // 계절 끝(2달째) + 두 계절(여섯 달)
+      assert.equal(b.until, 2 + 6)
+      // 쉬는 동안엔 출정·다가가기가 없다 · 쉬는 동안 또 져도 늘지 않는다
+      const orders = decide(r, ATK, 'greedy')
+      assert.ok(!orders.some((o) => o.kind === 'march'), JSON.stringify(orders.filter((o) => o.kind === 'march')))
+      const again: ReportLine[] = [lost(r, ATK, DEF, 'lose'), lost(r, ATK, DEF, 'lose')]
+      noteBeaten(r, again)
+      assert.ok(!again.some((l) => l.kind === 'beaten'))
+      r.season = b.until + 1
+      assert.equal(beatenResting(r, ATK), false)
+    })
   })
 
   it('이기면 연패가 끊긴다 · 막힌 공격(고을 싸움 교착)도 진 것으로 센다', () => {
-    const r = monthRealm()
-    noteBeaten(r, [lost(r, ATK, DEF, 'lose')])
-    noteBeaten(r, [lost(r, ATK, DEF, 'win')])
-    assert.equal(r.factions[ATK]!.beaten?.n, 0)
-    const draw: ReportLine = { ...(lost(r, ATK, DEF, 'lose') as Extract<ReportLine, { kind: 'battle' }>), outcome: 'draw' }
-    noteBeaten(r, [draw])
-    assert.equal(r.factions[ATK]!.beaten?.n, 1)
+    withKnobs({ beatenStreak: 3 }, () => {
+      const r = monthRealm()
+      noteBeaten(r, [lost(r, ATK, DEF, 'lose')])
+      noteBeaten(r, [lost(r, ATK, DEF, 'win')])
+      assert.equal(r.factions[ATK]!.beaten?.n, 0)
+      const draw: ReportLine = { ...(lost(r, ATK, DEF, 'lose') as Extract<ReportLine, { kind: 'battle' }>), outcome: 'draw' }
+      noteBeaten(r, [draw])
+      assert.equal(r.factions[ATK]!.beaten?.n, 1)
+      // 들판의 교착은 아무도 지지 않았다
+      noteBeaten(r, [{ ...draw, field: true }])
+      assert.equal(r.factions[ATK]!.beaten?.n, 1)
+    })
+  })
+
+  it('쉬기 소문은 몇 달 동안인지 말한다', () => {
+    withKnobs({ beatenStreak: 1, beatenRest: 2 }, () => {
+      const r = monthRealm()
+      const ls: ReportLine[] = [lost(r, ATK, DEF, 'lose')]
+      noteBeaten(r, ls)
+      const b = ls.find((l) => l.kind === 'beaten')!
+      const next = structuredClone(r)
+      next.season += 1
+      assert.match(reportText(r, next, b, r.player) ?? '', /8달 동안 새로 쳐들어오지 않는다/)
+      assert.equal(reportText(r, next, b, ATK), null)
+    })
   })
 
   it('플레이어 나라 · 옛 판은 세지 않는다', () => {
