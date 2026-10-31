@@ -194,7 +194,8 @@ export function earnedOf(r: Realm, id: string, won = r.outcome?.kind === 'win'):
 /** 판에서 본 몸에서 처음 몸을 거꾸로 — 판 안에서 자란 몫 · 들고 온 단련 · 지닌 유물이 더한 몫을 뺀다 */
 export function bornFrom(h: Hero): Partial<Record<GrowStat, number>> {
   const out: Partial<Record<GrowStat, number>> = {}
-  for (const s of DRILL_STATS) out[s] = Math.max(1, h[s] - (h.grown?.[s] ?? 0) - (h.drill?.add[s] ?? 0) - (h.relicAdd?.[s] ?? 0))
+  // 각성 몫도 뺀다 — 각성은 그 판에서만 (형 10-31)
+  for (const s of DRILL_STATS) out[s] = Math.max(1, h[s] - (h.grown?.[s] ?? 0) - (h.drill?.add[s] ?? 0) - (h.relicAdd?.[s] ?? 0) - (h.ascended === true ? P.realm.ascendBonus : 0))
   return out
 }
 

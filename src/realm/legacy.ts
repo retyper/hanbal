@@ -24,9 +24,11 @@ export function retainable(r: Realm): Hero[] {
 
 /** 다음 판으로 가져갈 몸 — 솜씨·특성·공은 그대로, 이 판의 자리·정·다친 몸은 내려놓는다 */
 export function snapshot(h: Hero): Hero {
+  const asc = h.ascended === true ? P.realm.ascendBonus : 0
   const out: Hero = {
     id: h.id, name: h.name, faction: '', look: h.look,
-    mu: h.mu, tong: h.tong, ryak: h.ryak, chi: h.chi, deok: h.deok, uiri: h.uiri, traits: [...(h.traits ?? [])],
+    // 각성 몫은 내려놓는다 — 각성은 그 판에서만 (형 10-31)
+    mu: h.mu - asc, tong: h.tong - asc, ryak: h.ryak - asc, chi: h.chi - asc, deok: h.deok - asc, uiri: h.uiri, traits: [...(h.traits ?? [])],
     status: 'free', captor: null, at: null, post: null,
   }
   if (h.xp !== undefined) out.xp = { ...h.xp }
