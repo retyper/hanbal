@@ -11,6 +11,7 @@
  *   기습    이 나라가 친 기습/판 · 그 가운데 먹힌 비율 · 판 전체(모든 나라)의 기습/판 · 제사/판
  *   외교    이 나라가 받은 청/판 · 판 전체에서 맺어진 화친·동맹/판 · 판 전체의 들판 싸움/판
  *   끝맺음  (둘째 표 · FOCUS C) 적 공세/판 = 남이 우리를 친 싸움 · 판 전체의 싸움·흩어짐·섬멸·연패 쉬기 · 짐의 갈래
+ *   다시 싸움 (넷째 표 · loop 리뷰 #5) 우리 싸움 가운데 같은 고을에서 --refight 턴(기본 3) 안에 또 싸운 것 · 그 가운데 따로 닿은 원군
  * `--as all` 은 여섯 나라를 차례로 고른다 — FLOW §3 "잘하는 것이 다르고 합은 비슷하게"를 재는 표.
  * 합격선의 씨앗 — "신중 봇이 무모 봇보다 나아야 정보 체계가 장식이 아니다" (BUILD §3-5). 감이 아니라 숫자로 (CLAUDE.md).
  */
@@ -42,6 +43,8 @@ for (const kv of opt('set', '').split(',').filter((x) => x !== '')) {
   ;(P.realm as unknown as Record<string, number>)[k!] = Number(v)
 }
 const EARLY = 8
+// 다시 싸운 고을 — 같은 고을의 앞선 우리 싸움이 이 턴 수 안에 있었나 (--refight 3 · 달 시계면 석 달)
+const REFIGHT = Number(opt('refight', '3'))
 
 interface Run {
   bot: Brain
@@ -97,6 +100,19 @@ interface Run {
   wipes: number
   rests: number
   losePath: string
+  /**
+   * 다시 싸운 고을 (loop 리뷰 #5 · 11-01) — 우리 싸움 가운데 같은 고을에서 앞선 우리 싸움이 REFIGHT 턴 안(같은 턴 포함)에 있던 것 ·
+   * 그 가운데 같은 나라가 같은 쪽으로 또 친 것(따로 닿은 원군) · 같은 턴의 것
+   */
+  refought: number
+  refoughtWave: number
+  refoughtSame: number
+  /** 그 가운데 친 군대가 앞 싸움 뒤에도 이미 이 고을로 오던 것 — 따로 닿은 원군 */
+  refoughtLate: number
+  /** 그 가운데 우리가 친 쪽인 것 */
+  refoughtUs: number
+  /** 우리 싸움 가운데 같은 고을에서 누구든(남끼리 포함) REFIGHT 턴 안에 싸운 것 */
+  refoughtAny: number
 }
 
 function play(bot: Brain, as: string, seed: number): Run {
@@ -104,9 +120,13 @@ function play(bot: Brain, as: string, seed: number): Run {
   applyTier(r, TIER) // 난세 단계 (--tier 3)
   const own = (x: Realm): number => Object.values(x.nodes).filter((n) => n.owner === as).length
   const lead = Object.values(r.heroes).filter((h) => h.faction === as).sort((a, b) => (a.id < b.id ? -1 : 1))[0]?.id
-  const run: Run = { bot, as, seed, start: own(r), nodes: 0, nodesEarly: -1, win: false, lose: false, battles: 0, wins: 0, captured: 0, lostHero: false, settled: 0, wildHeld: 0, ambush: 0, ambushOk: 0, rites: 0, worldAmbush: 0, asks: 0, pacts: 0, fieldFights: 0, plots: 0, plotsOk: 0, plotsAtUs: 0, worldPlots: 0, heroes: 0, persuaded: 0, hired: 0, allies: 0, pledgeKept: 0, pledgeBroken: 0, gifts: 0, arms: 0, lent: 0, hh: 0, offensives: 0, warned: 0, byMonth: [0, 0, 0], worldBattles: 0, scatters: 0, wipes: 0, rests: 0, losePath: '' }
+  const run: Run = { bot, as, seed, start: own(r), nodes: 0, nodesEarly: -1, win: false, lose: false, battles: 0, wins: 0, captured: 0, lostHero: false, settled: 0, wildHeld: 0, ambush: 0, ambushOk: 0, rites: 0, worldAmbush: 0, asks: 0, pacts: 0, fieldFights: 0, plots: 0, plotsOk: 0, plotsAtUs: 0, worldPlots: 0, heroes: 0, persuaded: 0, hired: 0, allies: 0, pledgeKept: 0, pledgeBroken: 0, gifts: 0, arms: 0, lent: 0, hh: 0, offensives: 0, warned: 0, byMonth: [0, 0, 0], worldBattles: 0, scatters: 0, wipes: 0, rests: 0, losePath: '', refought: 0, refoughtWave: 0, refoughtSame: 0, refoughtLate: 0, refoughtUs: 0, refoughtAny: 0 }
   // 계절 수로 돌린다 — 달 시계 판이면 계절마다 석 턴 (calendar.perSeason)
   const per = perSeason(r)
+  // 우리 싸움의 고을 → 그 턴 · 친 나라 · 지킨 나라 (다시 싸운 고을)
+  const lastAt = new Map<string, { t: number; atk: string; def: string; late: Set<string> }>()
+  // 누구의 싸움이든 그 고을의 마지막 싸움 턴
+  const anyAt = new Map<string, number>()
   for (let s = 0; s < SEASONS * per; s++) {
     if (s === EARLY * per) run.nodesEarly = own(r)
     const orders = [...decide(r, as, bot), ...aiOrders(r)]
@@ -154,8 +174,23 @@ function play(bot: Brain, as: string, seed: number): Run {
         if (pre !== undefined && ((pre.march !== null && pre.march.to === l.node) || (pre.strike?.at === r.season && pre.strike.node === l.node))) run.warned++
         run.byMonth[((r.season % per) + per) % per]! += 1
       }
+      const anyPrev = anyAt.get(l.node)
+      anyAt.set(l.node, r.season)
       if (!weAttack && !weDefend) continue
       run.battles++
+      if (anyPrev !== undefined && r.season - anyPrev <= REFIGHT) run.refoughtAny++
+      const atkF = l.atkFaction ?? r.armies[l.attacker]?.faction ?? ''
+      const prev = lastAt.get(l.node)
+      if (prev !== undefined && r.season - prev.t <= REFIGHT) {
+        run.refought++
+        if (prev.atk === atkF && prev.def === l.defender) run.refoughtWave++
+        if (prev.t === r.season) run.refoughtSame++
+        if ([l.attacker, ...l.allies].some((id) => prev.late.has(id))) run.refoughtLate++
+        if (weAttack) run.refoughtUs++
+      }
+      // 이 싸움 뒤에도 이 고을로 오던(또는 채비한) 군대 — 다음 싸움이 이들이면 따로 닿은 원군이다
+      const late = new Set(Object.values(next.armies).filter((x) => x.march?.to === l.node || x.strike?.node === l.node).map((x) => x.id))
+      lastAt.set(l.node, { t: r.season, atk: atkF, def: l.defender, late })
       const atkWon = l.outcome === 'rout' || l.outcome === 'win'
       if ((weAttack && atkWon) || (weDefend && (l.outcome === 'lose' || l.outcome === 'routed'))) run.wins++
       if (l.captured !== null && next.heroes[l.captured]?.captor === as) run.captured++
@@ -234,6 +269,18 @@ for (const as of AS) {
     const m = [0, 1, 2].map((i) => rs.reduce((a, x) => a + x.byMonth[i]!, 0))
     const share = (n: number): string => pct(off > 0 ? n / off : 0).padStart(6)
     console.log(`${as.padEnd(7)} ${bot.padEnd(9)} ${String(off).padStart(7)}  ${share(rs.reduce((a, x) => a + x.warned, 0))}  ${share(m[0]!)}  ${share(m[1]!)}  ${share(m[2]!)}`)
+  }
+}
+
+// 다시 싸운 고을 (loop 리뷰 #5) — 우리 싸움 가운데 같은 고을에서 REFIGHT 턴 안에 또 싸운 것 · 그 가운데 같은 나라가 같은 쪽으로(따로 닿은 원군) · 같은 턴
+console.log(`\n나라    봇          우리 싸움  다시 싸움(${REFIGHT}턴 안)  같은 쪽 또  같은 턴  따로 닿은 원군  우리가 친 것  남의 싸움 포함`)
+for (const as of AS) {
+  for (const bot of BOTS) {
+    const rs = runs.filter((x) => x.bot === bot && x.as === as)
+    const all = rs.reduce((a, x) => a + x.battles, 0)
+    const sum = (f: (x: Run) => number): number => rs.reduce((a, x) => a + f(x), 0)
+    const share = (n: number): string => pct(all > 0 ? n / all : 0).padStart(6)
+    console.log(`${as.padEnd(7)} ${bot.padEnd(9)} ${String(all).padStart(8)}  ${share(sum((x) => x.refought)).padStart(17)}  ${share(sum((x) => x.refoughtWave)).padStart(9)}  ${share(sum((x) => x.refoughtSame)).padStart(6)}  ${share(sum((x) => x.refoughtLate)).padStart(13)}  ${share(sum((x) => x.refoughtUs)).padStart(11)}  ${share(sum((x) => x.refoughtAny)).padStart(13)}`)
   }
 }
 
