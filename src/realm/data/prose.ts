@@ -430,6 +430,8 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       return `${josa(nameArmy(line.army), '이', '가')} ${nameArmy(line.into)}에 합쳤다.`
     }
     case 'take':
+      // 남이 먼 빈 땅을 차지한 것은 우리 땅에 맞닿은 곳만 (loop-lens 11-01 · 위 settle 과 같다)
+      if (line.faction !== viewer && !Object.values(after.edges).some((e) => (e.a === line.node && after.nodes[e.b]?.owner === viewer) || (e.b === line.node && after.nodes[e.a]?.owner === viewer))) return null
       return `${josa(fname(line.faction), '이', '가')} ${josa(node(line.node), '을', '를')} 차지했다.`
     case 'battle': {
       const atk = before.armies[line.attacker]
@@ -519,6 +521,8 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     case 'settle':
       // 개척은 계절을 넘기면 바로 자리 잡는다 — 길 위에 머물지 않는다
       if (line.faction === viewer) return `${node(line.from)}의 백성 ${line.n}가구가 ${josa(node(line.to), '에', '에')} 자리 잡았다. 새 마을이 선다.`
+      // 남의 개척은 우리 땅에 맞닿은 곳만 — 먼 곳 소문은 달마다 보고를 채워 조용한 달이 없었다 (loop-lens 11-01: 둘째 달 줄의 대부분)
+      if (!Object.values(after.edges).some((e) => (e.a === line.to && after.nodes[e.b]?.owner === viewer) || (e.b === line.to && after.nodes[e.a]?.owner === viewer))) return null
       return `소문. ${josa(fname(line.faction), '이', '가')} ${josa(node(line.to), '에', '에')} 사람을 보냈다.`
     case 'cohabit':
       if (line.faction !== viewer) return null
