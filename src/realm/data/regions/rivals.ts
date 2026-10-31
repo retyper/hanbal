@@ -18,7 +18,7 @@ const emptied = (node: RNode): RNode => {
 }
 
 /** 우리 도읍에서 길로 몇 걸음 — 닿지 않으면 Infinity */
-function hopsFrom(r: Realm, start: string | undefined): Map<string, number> {
+export function hopsFrom(r: Realm, start: string | undefined): Map<string, number> {
   const d = new Map<string, number>()
   if (start === undefined) return d
   d.set(start, 0)
@@ -56,6 +56,14 @@ export function keepRivals(r: Realm, n: number): Realm {
   for (const [id, h] of Object.entries(r.heroes)) if (gone(h.faction)) delete r.heroes[id]
   for (const f of Object.keys(r.stock)) if (gone(f)) delete r.stock[f]
   for (const f of Object.keys(r.intel)) if (gone(f)) delete r.intel[f]
+  // 아는 나라 줄 · 사이도 걷는다 — 남겨 두면 판에 없는 나라를 안다고 여겨 소문이 그쪽으로만 돌고, 진짜 타국은 못 만났다 (11-01 · 영남 판 40계절 내내 0)
+  if (r.known !== undefined) {
+    for (const f of Object.keys(r.known)) {
+      if (gone(f)) delete r.known[f]
+      else r.known[f] = r.known[f]!.filter((x) => !gone(x))
+    }
+  }
+  for (const key of Object.keys(r.relations)) if (key.split('|').some((f) => gone(f))) delete r.relations[key]
   return r
 }
 

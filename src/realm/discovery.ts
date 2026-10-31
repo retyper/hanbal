@@ -15,7 +15,8 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
-import { seasonIdx } from './calendar.ts'
+import { monthly, seasonIdx } from './calendar.ts'
+import { hopsFrom } from './data/regions/rivals.ts'
 import type { DiscoverHow, NodeIntel, Realm, ReportLine } from './types.ts'
 
 /** `a` 가 `b` 를 아나 — 발견이 없는 판이면 늘 안다 */
@@ -143,8 +144,21 @@ export function stepDiscovery(r: Realm, lines: ReportLine[], drift = true): void
       for (const x of knownOf(r, g)) if (x !== f) discover(r, f, x, 'ally', lines)
     }
   }
-  // 소문 — 아는 나라가 아는, 아직 모르는 나라 하나 (계절마다 한 번 · 달 시계면 계절 끝 달에만 — drift)
   if (!drift) return
+  // 먼 소식 — 빈 땅이 사이를 가르는 판(타국 몇만 남긴 자유판)은 아무와도 안 닿아 소문이 돌 길이 없다. 계절 farMeetSeasons 마다
+  // 아직 모르는 가장 가까운 나라(길 걸음 수) 하나를 떠돌이 장사꾼의 소식으로 안다 — 첫 만남 ~6계절 · 둘째 ~12
+  // (FOCUS J · 11-01: 영남 판 40계절 내내 아무도 못 만났다) · 달 시계 판만 (옛 판은 그대로)
+  if (monthly(r)) {
+    for (const f of fs) {
+      const kn = knownOf(r, f).filter((x) => alive(x)).length
+      if (seasonIdx(r) + 1 < P.realm.farMeetSeasons * (kn + 1)) continue
+      const hops = hopsFrom(r, r.factions[f]?.capital)
+      const far = (x: string): number => hops.get(r.factions[x]?.capital ?? '') ?? Infinity
+      const next = fs.filter((x) => x !== f && !knows(r, f, x)).sort((a, b) => far(a) - far(b) || (a < b ? -1 : 1))[0]
+      if (next !== undefined) discover(r, f, next, 'rumor', lines)
+    }
+  }
+  // 소문 — 아는 나라가 아는, 아직 모르는 나라 하나 (계절마다 한 번 · 달 시계면 계절 끝 달에만 — drift)
   for (const f of fs) {
     // 영남 판은 더 좁고 촘촘해 소문이 빨리 돈다 (2026-10-21 안개를 켜며 — 80판 시뮬로 맞춘 값, BALANCE)
     if (roll(r.seed, r.season, `disc:${f}`) >= (r.region === 'yeongnam' ? P.realm.discoverDriftYeongnam : P.realm.discoverDrift)) continue
