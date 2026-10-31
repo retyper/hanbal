@@ -22,20 +22,27 @@ const OBST = '.tok img, .tok b, .nd img.st, .nd .thr, .nd .men, .nd .tchip'
 export function declutter(map: HTMLElement): void {
   const labels = [...map.querySelectorAll<HTMLElement>('.lbs .lb')]
   if (labels.length === 0) return
+  // 읽기를 모두 먼저 — 예전엔 이름 하나 옮길 때마다 다음 이름을 재며 배치를 통째로 다시 해(이름 수만큼) 확대·축소가 끝날 때 폰 4배 느림에서
+  // 수백 ms 멈췄다 (형 10-31 "확대 축소 버벅" · tools/realm-zoomperf.ts). 글씨 상자의 크기는 자리와 상관없다(한 줄 · nowrap) — 쓰기 전에 재도 같다
   const mr = map.getBoundingClientRect()
   if (mr.width <= 0) return
   const obst = [...map.querySelectorAll(OBST)].map(box).filter((b) => b.r > b.l && b.b > b.t)
-  const placed: Box[] = []
+  const icons = new Map<string, Box>()
+  for (const nd of map.querySelectorAll<HTMLElement>('.nd[data-node]')) {
+    const id = nd.dataset['node'] ?? ''
+    const im = icons.has(id) ? null : nd.querySelector('img.st')
+    if (im !== null) icons.set(id, box(im))
+  }
   // 먼저 자리를 잡는 차례 — 도읍(별) · 우리 고을 · 여느 고을 · 주인 없는 땅 (지도 글씨의 위계 — GAP M1)
   const rank = (l: HTMLElement): number => (l.querySelector('.star') !== null ? 0 : l.classList.contains('me') ? 1 : l.classList.contains('k-free') ? 3 : 2)
-  labels.sort((a, b) => rank(a) - rank(b))
-  for (const l of labels) {
-    const icon = map.querySelector(`.nd[data-node="${l.dataset['n'] ?? ''}"] img.st`)
-    const b0 = box(l)
+  const items = labels.map((l) => ({ l, r: rank(l), b0: box(l), ic: icons.get(l.dataset['n'] ?? '') }))
+  items.sort((a, b) => a.r - b.r)
+  const placed: Box[] = []
+  const writes: Array<() => void> = []
+  for (const { l, r: rk, b0, ic } of items) {
     const w = b0.r - b0.l
     const h = b0.b - b0.t
-    if (icon === null || w <= 0 || h <= 0) continue
-    const ic = box(icon)
+    if (ic === undefined || w <= 0 || h <= 0) continue
     const cx = (ic.l + ic.r) / 2
     // 후보 — 이름 상자의 왼쪽 위 (화면 좌표) · 늘 고을 아래, 걸리면 더 아래로만 (형 10-31: "왼쪽 갔다 위로 갔다 오른쪽 갔다 정신 사나움")
     const tries: Array<[number, number]> = [
@@ -53,14 +60,16 @@ export function declutter(map: HTMLElement): void {
       break
     }
     // 빈 데가 없으면 덜 중요한 이름은 숨긴다 — 가까이 보면 다시 뜬다 (CK3·지도 그리기의 글씨 위계). 도읍·우리 고을은 늘 남는다
-    const crowd = !found && rank(l) >= 2
-    l.classList.toggle('crowd', crowd)
-    if (crowd) continue
+    const crowd = !found && rk >= 2
+    if (crowd) { writes.push(() => l.classList.add('crowd')); continue }
     // .lb 는 translateX(-50%) 로 가운데를 맞춘다 — left 는 상자 가운데
-    l.style.left = `${(((pick[0] + w / 2) - mr.left) / mr.width * 100).toFixed(3)}%`
-    l.style.top = `${((pick[1] - mr.top) / mr.height * 100).toFixed(3)}%`
+    const left = `${(((pick[0] + w / 2) - mr.left) / mr.width * 100).toFixed(3)}%`
+    const top = `${((pick[1] - mr.top) / mr.height * 100).toFixed(3)}%`
+    writes.push(() => { l.classList.remove('crowd'); l.style.left = left; l.style.top = top })
     placed.push({ l: pick[0], t: pick[1], r: pick[0] + w, b: pick[1] + h })
   }
+  // 쓰기는 끝에 한꺼번에 — 배치는 다음 그리기에서 한 번만
+  for (const f of writes) f()
 }
 
 /** 한 프레임 뒤에 한 번 — 그 사이 여러 번 불러도 한 번만 돈다 */

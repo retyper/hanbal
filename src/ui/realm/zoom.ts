@@ -109,7 +109,7 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     live = { s: 1, cx0: cx, cy0: cy, sl0: wrap.scrollLeft, st0: wrap.scrollTop, ox0, oy0, tx: 0, ty: 0 }
     const m = map()
     if (m !== null) { m.style.transformOrigin = `${live.sl0 + cx - ox0}px ${live.st0 + cy - oy0}px`; m.style.willChange = 'transform' }
-    // 늘리는 동안 고을의 늘 도는 움직임을 멈춘다 — 미는 동안과 같다 (모습은 그대로, 그릴 일만 준다)
+    // 「미는 중」 표시 — 튜토리얼이 보고, 흐르는 점선(GPU 로 못 가는 하나)만 멈춘다 (mapview · 예전엔 고을 움직임 전부를 멈춰 지도 전체 스타일을 다시 셈했다)
     wrap.classList.add('panning')
   }
   const liveSet = (s: number, tx: number, ty: number): void => {
@@ -137,8 +137,8 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     wrap.scrollTop = (g.st0 + g.cy0 - g.oy0) * g.s + oy1 - (g.cy0 + g.ty)
   }
 
-  // 미는 동안 — 고을 그림의 그림자 필터·늘 도는 애니메이션을 잠깐 멈춘다. 폰에서 지도를 밀면 그릴 조각이 늦어 마을이 비어 보였다
-  // (형 10-25: "게임 맵을 슬라이드 하다보면 마을들이 눈에 안보이는 버그") · 멈추고 조금 뒤 되돌린다
+  // 미는 동안 — 「미는 중」 표시 (튜토리얼이 보고 흐르는 점선만 멈춘다). 예전엔 이걸로 고을 움직임 전부를 멈췄다 (형 10-25: "슬라이드 하다보면 마을들이 눈에 안보이는 버그") —
+  // 그 까닭이던 메인 스레드 움직임(box-shadow·background-position)은 10-31 에 모두 GPU 움직임으로 바꿨다
   wrap.addEventListener('scroll', () => {
     wrap.classList.add('panning')
     window.clearTimeout(panT)
@@ -156,23 +156,23 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
   }, { passive: false })
 
   // 손가락 둘 — 벌린 만큼 (손가락 사이 가운데가 움직이면 지도도 따라 옮긴다)
-  let pinch: { d: number } | null = null
+  // 칸의 화면 자리는 손가락을 댈 때 한 번만 잰다 — touchmove 마다 재면 방금 바꾼 transform 때문에 스타일 계산을 그 자리에서 강제했다
+  let pinch: { d: number; l: number; t: number } | null = null
   const dist = (t: TouchList): number => Math.hypot(t[0]!.clientX - t[1]!.clientX, t[0]!.clientY - t[1]!.clientY)
-  const mid = (t: TouchList): readonly [number, number] => {
-    const rect = wrap.getBoundingClientRect()
-    return [(t[0]!.clientX + t[1]!.clientX) / 2 - rect.left, (t[0]!.clientY + t[1]!.clientY) / 2 - rect.top]
-  }
+  const mid = (t: TouchList, l: number, top: number): readonly [number, number] =>
+    [(t[0]!.clientX + t[1]!.clientX) / 2 - l, (t[0]!.clientY + t[1]!.clientY) / 2 - top]
   wrap.addEventListener('touchstart', (ev) => {
     if (ev.touches.length !== 2) return
     commit()
-    pinch = { d: dist(ev.touches) }
-    const [cx, cy] = mid(ev.touches)
+    const rect = wrap.getBoundingClientRect()
+    pinch = { d: dist(ev.touches), l: rect.left, t: rect.top }
+    const [cx, cy] = mid(ev.touches, pinch.l, pinch.t)
     liveStart(cx, cy)
   }, { passive: true })
   wrap.addEventListener('touchmove', (ev) => {
     if (pinch === null || live === null || ev.touches.length !== 2) return
     ev.preventDefault()
-    const [cx, cy] = mid(ev.touches)
+    const [cx, cy] = mid(ev.touches, pinch.l, pinch.t)
     moved = true
     movedAt = performance.now()
     liveSet(dist(ev.touches) / pinch.d, cx - live.cx0, cy - live.cy0)

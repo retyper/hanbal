@@ -164,7 +164,9 @@ export const MAP_CSS = `
    그래서 지도를 밀면 그림자가 사라졌다가 멈추면 돋았다 (형 10-26: "맵을 움직일 때 마을 그림자가 없어졌다가 … 깜빡임 버그").
    relative 는 받침 위에 그림이 오게 (받침·그림·고리가 문서 순서대로 쌓인다) */
 .map .nd img.st { position: relative; width: 100%; }
-.mapwrap.panning .map .nd, .mapwrap.panning .map .nd * { animation-play-state: paused !important; } /* 미는 동안 (zoom.ts) — 멈출 뿐 모습은 그대로 */
+/* 미는·늘리는 동안 고을 움직임을 멈추던 규칙(.mapwrap.panning … animation-play-state)은 뺐다 (형 10-31 "확대 축소 버벅").
+   「.nd *」 가 지도 칸 전체(2500여 칸)의 스타일을 다시 셈하게 해 손짓 시작·끝마다 폰 4배 느림에서 130ms · 100ms 를 먹었다.
+   지도의 끝없는 움직임은 이제 모두 transform·opacity 라 GPU 가 돌린다 — 멈춰도 얻는 게 없다 (tools/realm-zoomperf.ts LAYOUT=1) */
 /* 살아 있는 지도 — CSS 만 (규칙 4: 숨은 탭에선 그리지 않는다). 밥 짓는 연기 · 포구의 배 · 구름 그림자 */
 .map .nd .smk { position: absolute; left: 46%; top: 10%; width: 30%; aspect-ratio: 1; pointer-events: none; z-index: 1; }
 .map .nd .smk::before, .map .nd .smk::after { content: ''; position: absolute; inset: 0; border-radius: 50%;
@@ -191,11 +193,13 @@ export const MAP_CSS = `
 /* 맡은 장수 — 고을 기호 오른쪽 위에 작은 얼굴 (금테) */
 /* 우리와의 사이 칩 — 이름표 깃발 곁 */
 .map .lb .lbr { flex: none; font-style: normal; font-weight: 800; font-size: .78em; line-height: 1; padding: .18em .38em; border-radius: .5em; margin-right: .25em; border: 1px solid #0008; box-shadow: 0 1px 2px #0006; }
-.map .lb .lbr.war { background: #b3261e; color: #fff; animation: lbrwar 1.4s ease-in-out infinite alternate; }
+.map .lb .lbr.war { position: relative; background: #b3261e; color: #fff; }
+/* 붉은 숨 — 그림자를 움직이지 않고 ::after 의 고정 빛을 opacity 로만 (GPU 로 간다 · .stl 과 같은 까닭) */
+.map .lb .lbr.war::after { content: ''; position: absolute; inset: -1px; border-radius: inherit; box-shadow: 0 0 6px #ff4a3a; opacity: 0; pointer-events: none; animation: lbrwar 1.4s ease-in-out infinite alternate; }
 .map .lb .lbr.ally { background: #2e7d32; color: #fff; } .map .lb .lbr.tru { background: #4a90b8; color: #fff; }
 .map .lb .lbr.tri { background: #d4a72c; color: #1c140a; } .map .lb .lbr.srv { background: #6b6358; color: #fff; }
-@keyframes lbrwar { from { box-shadow: 0 1px 2px #0006; } to { box-shadow: 0 0 6px #ff4a3a; } }
-@media (prefers-reduced-motion: reduce) { .map .lb .lbr.war { animation: none; } }
+@keyframes lbrwar { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .map .lb .lbr.war::after { animation: none; } }
 .map .nd .gov.lord { width: 40%; border-color: #ffd77a; box-shadow: 0 0 0 1px #000, 0 0 10px #ffd77acc, 0 2px 6px #000c; }
 .map .nd .gov.lord.away { filter: grayscale(.8) brightness(.7); box-shadow: 0 0 0 1px #000, 0 2px 6px #000c; }
 .map .nd .gov { position: absolute; right: -6%; top: -4%; width: 34%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 2px solid #e0b04a; box-shadow: 0 0 0 1px #000, 0 2px 6px #000c; z-index: 4; pointer-events: none; background: #2a2016; }
@@ -251,6 +255,7 @@ export const MAP_CSS = `
    (형 10-26: "멀리 볼 때는 마을 수십 개 — 이름표 바가 더 단순하게 · 국경들도 명확하고 · 가까울 때 더 많은 정보는 잘했어") */
 .map[data-zl="far"][data-region="yeongnam"] .lb small, .map[data-zl="far"][data-region="south"] .lb small, .map[data-zl="far"][data-region="world"] .lb small { display: none !important; }
 .map[data-zl="far"][data-region="yeongnam"] .lb .lbr, .map[data-zl="far"][data-region="south"] .lb .lbr, .map[data-zl="far"][data-region="world"] .lb .lbr { font-size: 0; width: .62em; height: .62em; padding: 0; border-radius: 50%; margin-right: .3em; animation: none; box-shadow: 0 0 0 1.5px #1a120a; }
+.map[data-zl="far"][data-region="yeongnam"] .lb .lbr::after, .map[data-zl="far"][data-region="south"] .lb .lbr::after, .map[data-zl="far"][data-region="world"] .lb .lbr::after { display: none; }
 .map[data-zl="far"][data-region="yeongnam"] svg .nb, .map[data-zl="far"][data-region="south"] svg .nb, .map[data-zl="far"][data-region="world"] svg .nb { stroke-width: 20; opacity: 1; }
 .map[data-zl="far"][data-region="yeongnam"] svg .nbd, .map[data-zl="far"][data-region="south"] svg .nbd, .map[data-zl="far"][data-region="world"] svg .nbd { opacity: .55; }
 .map[data-zl="far"] .lb small { display: none; } .map[data-zl="far"] .lb small.nowi, .map .lb small.nowi { display: inline; }
@@ -323,9 +328,11 @@ export const MAP_CSS = `
 .map .lb .lbg.idle img { opacity: .55; filter: saturate(.4) drop-shadow(0 0 1px #000c); }
 .map .lb .lbg i { font-style: normal; font-size: .7em; font-weight: 700; color: #f3e3bd; padding-left: .35em; margin-left: .15em; border-left: 1px solid #c8a05066; }
 .map .lb .lbg i.moat { color: #bfe0ff; } .map .lb .lbg i.earthwall { color: #f0c890; }
-.map .lb .lbg i.cmk { color: #ffd2a0; } .map .lb .lbg i.cmk.hot { color: #fff1c8; text-shadow: 0 0 6px #ff9a4a; animation: cmkhot 1.6s ease-in-out infinite; }
-@keyframes cmkhot { 50% { text-shadow: 0 0 12px #ffb060, 0 0 2px #fff; } }
-@media (prefers-reduced-motion: reduce) { .map .lb .lbg i.cmk.hot { animation: none; } }
+.map .lb .lbg i.cmk { color: #ffd2a0; } .map .lb .lbg i.cmk.hot { position: relative; color: #fff1c8; text-shadow: 0 0 6px #ff9a4a; }
+/* 센 빛은 같은 글자를 ::after 에 투명하게 겹쳐 그 그림자만 opacity 로 숨쉰다 — text-shadow 를 움직이면 GPU 로 못 가 지도 전체를 매 프레임 다시 셈했다 (형 10-31) */
+.map .lb .lbg i.cmk.hot::after { content: attr(data-l); position: absolute; left: .35em; top: 0; color: transparent; text-shadow: 0 0 12px #ffb060, 0 0 2px #fff; opacity: 0; pointer-events: none; animation: cmkhot 1.6s ease-in-out infinite; }
+@keyframes cmkhot { 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .map .lb .lbg i.cmk.hot::after { animation: none; } }
 /* 겨울 고기잡이 표 — 얼어 흐려진다 */
 .map .lb .lbg img.frz { opacity: .5; filter: grayscale(1) brightness(1.25) drop-shadow(0 0 1px #7fb6d8); }
 /* 지은 것 — 목책·해자 (고을 왼쪽 위) */
@@ -390,14 +397,19 @@ export const MAP_CSS = `
 .map .tok.unit .squad::before { content: ''; position: absolute; left: 6%; right: 6%; bottom: -6%; height: 24%; border-radius: 50%; background: #000b; filter: blur(2px); z-index: -1; }
 .map .tok.unit .sq { position: relative; height: 100%; aspect-ratio: var(--ar, 1); margin: 0 -13%; }
 .map .tok.unit .sq:nth-child(2) { z-index: 1; height: 92%; margin-bottom: 4%; }
-.map .tok.unit .sq u { position: absolute; inset: 0; pointer-events: none; /* 공격 칸 때문에 그림이 칸보다 3배 넓어 투명한 자리가 옆 고을을 덮고 누름을 먹었다 · 누름은 .squad 칸이 받는다 (형 10-30: "군사가 있으면 마을 선택이 안돼") */ background: 0 0 / calc(var(--nf, 8) * 100%) 100% no-repeat; animation: mqidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--mqidles, 1)) steps(var(--mqidlen, 2)) calc(var(--k, .5) * -1.6s) infinite; /* 병사마다 박자를 따로 (형 10-28) */ }
-@keyframes mqidle { from { background-position-x: var(--i0, 0%); } to { background-position-x: var(--i1, 28.5714%); } }
-@keyframes mqwalk { from { background-position-x: var(--w0, 28.5714%); } to { background-position-x: var(--w1, 57.1429%); } }
-@keyframes mqatk { from { background-position-x: var(--a0, 57.1429%); } to { background-position-x: var(--a1, 85.7143%); } }
+.map .tok.unit .sq u { position: absolute; inset: 0; pointer-events: none; /* 공격 칸 때문에 그림이 칸보다 3배 넓어 투명한 자리가 옆 고을을 덮고 누름을 먹었다 · 누름은 .squad 칸이 받는다 (형 10-30: "군사가 있으면 마을 선택이 안돼") */ overflow: hidden; background-size: 0 0; }
+/* 그림띠는 u 의 ::before 에 통째로 깔고 translate 로 칸을 넘긴다 — background-position 을 움직이면 GPU 로 못 가서, 병사 하나만 서 있어도
+   지도의 모든 움직임(연기·빈땅 칩·물결…)을 매 프레임 메인 스레드에서 다시 계산했다 (형 10-31 "멀리 보면 버벅" · 폰 4배 느림에서 메인 스레드 99% → 0% · tools/realm-zoomperf.ts).
+   띠 너비가 칸의 nf 배라, background-position-x p% 는 translate -p·(nf-1)/nf (띠 너비의 %) 와 같은 자리다 */
+.map .tok.unit .sq u::before { content: ''; position: absolute; left: 0; top: 0; width: calc(var(--nf, 8) * 100%); height: 100%; background-image: inherit; background-size: 100% 100%; background-repeat: no-repeat;
+  animation: mqidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--mqidles, 1)) steps(var(--mqidlen, 2)) calc(var(--k, .5) * -1.6s) infinite; /* 병사마다 박자를 따로 (형 10-28) */ }
+@keyframes mqidle { from { translate: calc(var(--i0, 0%) * (1 - var(--nf, 8)) / var(--nf, 8)) 0; } to { translate: calc(var(--i1, 28.5714%) * (1 - var(--nf, 8)) / var(--nf, 8)) 0; } }
+@keyframes mqwalk { from { translate: calc(var(--w0, 28.5714%) * (1 - var(--nf, 8)) / var(--nf, 8)) 0; } to { translate: calc(var(--w1, 57.1429%) * (1 - var(--nf, 8)) / var(--nf, 8)) 0; } }
+@keyframes mqatk { from { translate: calc(var(--a0, 57.1429%) * (1 - var(--nf, 8)) / var(--nf, 8)) 0; } to { translate: calc(var(--a1, 85.7143%) * (1 - var(--nf, 8)) / var(--nf, 8)) 0; } }
 /* 새 20컷 띠(v2 · tools/anim-pack.py) — 칸이 넓다. 병사 자리는 옛 비 그대로, 안의 그림만 --r 배 넓혀 가운데에 (형 10-29) */
 .map .tok.unit .sq.v2 u { left: 50%; right: auto; width: calc(var(--r, 1) * 100%); transform: translateX(-50%); --nf: 20; --i0: 0%; --i1: 21.0526%; --w0: 21.0526%; --w1: 63.1579%; --a0: 63.1579%; --a1: 94.7368%; --al: 89.4737%; --fl: 94.7368%; --mqidlen: 4; --mqwalkn: 8; --mqatkn: 6; --mqidles: 1.6; --mqwalks: 1.4; --mqatks: 1.3; --spdraws: 1.2; }
-.map .tok.unit.going .sq u, .map .toks.mv .tok.unit .sq u { animation: mqwalk calc(.42s * var(--mqwalks, 1)) steps(var(--mqwalkn, 2)) calc(var(--j) * -.14s) infinite; }
-.map .tok.unit.sel .sq u { animation: mqatk calc(.32s * var(--mqatks, 1)) steps(var(--mqatkn, 2)) calc(var(--j) * .06s) 3, mqidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--mqidles, 1)) steps(var(--mqidlen, 2)) calc(1.1s - var(--k, .5) * 1.6s) infinite; }
+.map .tok.unit.going .sq u::before, .map .toks.mv .tok.unit .sq u::before { animation: mqwalk calc(.42s * var(--mqwalks, 1)) steps(var(--mqwalkn, 2)) calc(var(--j) * -.14s) infinite; }
+.map .tok.unit.sel .sq u::before { animation: mqatk calc(.32s * var(--mqatks, 1)) steps(var(--mqatkn, 2)) calc(var(--j) * .06s) 3, mqidle calc(calc(1.25s + var(--k, .5) * .7s) * var(--mqidles, 1)) steps(var(--mqidlen, 2)) calc(1.1s - var(--k, .5) * 1.6s) infinite; }
 .map .tok.unit .squad::after { content: ''; position: absolute; left: -4%; right: -4%; bottom: -14%; height: 34%; border-radius: 50%; border: 2px solid transparent; z-index: -1; pointer-events: none; }
 @media (hover: hover) { .map .tok.unit:not(.sel):not(.foe):hover .squad::after { border-color: #ffd27a88; } }
 .map .tok.unit.foe .squad { transform: scaleX(-1); }
@@ -413,7 +425,7 @@ export const MAP_CSS = `
 .map .tok.unit .sq { margin: 0; } .map .tok.unit .sq:nth-child(n+2) { display: none; }
 .map .tok.unit > b, .map .tok.unit .hp { grid-column: 1 / span 2; grid-row: auto; }
 .map .tok.unit .hp { width: 70%; }
-@media (prefers-reduced-motion: reduce) { .map .tok.unit .sq u { animation: none !important; } .map .tok.unit.sel .squad::after { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .map .tok.unit .sq u::before { animation: none !important; translate: calc(var(--i0, 0%) * (1 - var(--nf, 8)) / var(--nf, 8)) 0; } .map .tok.unit.sel .squad::after { animation: none; } }
 .map .tok .flag { position: absolute; left: 4%; top: -34%; width: 6%; height: 70%; background: #5a3a1a; border-radius: 2px; z-index: -1; }
 .map .tok .flag::after { content: ''; position: absolute; left: 100%; top: 0; width: 520%; height: 34%; min-height: 6px; background: linear-gradient(90deg, var(--tc, #c8402a), var(--tc2, var(--tc, #c8402a))); clip-path: polygon(0 0, 100% 0, 80% 50%, 100% 100%, 0 100%); transform-origin: left center; animation: tokflag 1.1s ease-in-out infinite alternate; }
 @keyframes tokflag { from { transform: skewY(0deg) scaleX(1); } to { transform: skewY(-10deg) scaleX(.86); } }
@@ -442,10 +454,16 @@ export const MAP_CSS = `
   font-size: clamp(10px, calc(1.6cqh / var(--z, 1) * var(--zs, 1)), 13px); font-weight: 700; color: #f4ffe8; background: #3f6a2ae6; border: 1px solid #b6e08f;
   border-radius: 9px; padding: 0 6px; box-shadow: 0 1px 4px #0008; animation: stlp 1.1s ease-in-out infinite; }
 /* 개척할 수 있는 빈땅은 깜빡이며 튄다 — 가만히 있는 「＋마을」엔 눈이 안 갔다 (형 10-27) · 땅 둘레에 초록 고리도 */
-@keyframes stlp { 0%, 100% { transform: translate(-50%, -2px) scale(1); box-shadow: 0 0 0 #b6e08f00; opacity: 1; } 50% { transform: translate(-50%, -7px) scale(1.14); box-shadow: 0 0 16px #b6e08f; opacity: .78; } }
+@keyframes stlp { 0%, 100% { transform: translate(-50%, -2px) scale(1); opacity: 1; } 50% { transform: translate(-50%, -7px) scale(1.14); opacity: .78; } }
+/* 초록 빛은 ::after 의 고정 그림자를 opacity 로만 숨쉬게 한다 — box-shadow 를 움직이면 GPU 로 못 가서, 이 칩 하나가 남아 있는 것만으로
+   지도의 모든 움직임을 매 프레임 메인 스레드에서 다시 그리게 했다 (형 10-31: "멀리 보면 버벅" · tools/realm-zoomperf.ts) */
+.map .nd .stl:not(.go):not(.nor) { box-shadow: none; }
+.map .nd .stl::after { content: ''; position: absolute; inset: -1px; border-radius: inherit; box-shadow: 0 0 16px #b6e08f; opacity: 0; pointer-events: none; animation: stlg 1.1s ease-in-out infinite; }
+.map .nd .stl.go::after, .map .nd .stl.nor::after { display: none; }
+@keyframes stlg { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
 .map .nd.stlok .ring { display: block; border: 3px dashed #b6e08f; box-shadow: 0 0 12px #b6e08f; animation: stlring 1.1s ease-in-out infinite; }
 @keyframes stlring { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .map .nd .stl, .map .nd.stlok .ring { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .map .nd .stl, .map .nd.stlok .ring { animation: none; } .map .nd .stl::after { display: none; } .map .nd .stl:not(.go):not(.nor) { box-shadow: 0 1px 4px #0008; } }
 .map .nd .stl.go { background: #6b4a2ae6; border-color: #e0b070; color: #fbe8c8; animation: none; }
 /* 군대만 가면 우리 땅 — 개척단 초록과 갈리게 붉은 구리빛 · 창 그림 */
 .map .nd .stl.frt { background: #7a3a1ee6; border-color: #f0b070; color: #fff0dc; display: inline-flex; align-items: center; gap: 2px; padding-left: 2px; }
@@ -464,6 +482,12 @@ export const MAP_CSS = `
 .map .toks.mv .mvtag { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 2px; white-space: nowrap; z-index: 3; pointer-events: none;
   font-size: clamp(10px, calc(1.6cqh / var(--z, 1) * var(--zs, 1)), 13px); font-weight: 700; color: #fff4dc; background: #7a1f10e6; border-radius: 8px; padding: 1px 6px; box-shadow: 0 1px 3px #0008; }
 .map svg .mvflow { animation: mvf .9s linear infinite; } @keyframes mvf { to { stroke-dashoffset: -${ARROW.period}; } }
+/* 흐르는 점선(stroke-dashoffset)은 GPU 로 못 가는 유일한 지도 움직임 — 미는·늘리는 동안만 멈춘다. 이 둘만 고르는 좁은 선택자라
+   손짓 시작·끝에 다시 셈할 칸이 몇 개뿐이다 (예전의 「.nd *」 는 2500칸 · 형 10-31 "확대 축소 버벅" · tools/realm-zoomperf.ts) */
+.mapwrap.panning .map svg .mvflow, .mapwrap.panning .map svg .mvglow { animation-play-state: paused; }
+/* 멀리 볼 때도 흐름은 멈춘다 (점선은 그대로 보인다) — 점선 하나가 흐르는 것만으로 지도의 GPU 움직임 백여 개까지 매 프레임 메인 스레드에서
+   다시 셈해, 폰 4배 느림에서 메인 스레드가 96% 바빴다 → 1% (형 10-31 "멀리 보면 버벅"). 가까이 당기면 다시 흐른다 */
+.map[data-zl="far"] svg .mvflow { animation-play-state: paused; }
 .map svg .arw { animation: arwb ${ARROW_BREATH_S}s ease-in-out infinite; } @keyframes arwb { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
 @media (prefers-reduced-motion: reduce) { .map .toks.mv .tok, .map svg .mvflow, .map svg .arw { animation: none; } }
 .map .lb.crowd { visibility: hidden; } /* 겹쳐 자리가 없는 작은 고을 이름 — declutter */
@@ -858,7 +882,7 @@ export function mapHtml(
     // (형 10-24: "지역에서 생산되는 품목도 우상단 동그라미가 아니라 더 효과적이게" — 문명 6 도시 배너처럼 이름에 붙인다)
     const tray = sp.length > 0 || fish !== '' || dfs.length > 0 || cms.length > 0
       ? `<span class="lbg${n.owner === null || n.hh <= 0 ? ' idle' : ''}">${sp.map((g) => `<img src="${art}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}" title="${GOOD_NAME[g]}: 사람이 살면 난다">`).join('')}${fish}${dfs.map((t) => `<i class="${t}" title="${DEF_TITLE[t]}">${DEF_NAME[t]}</i>`).join('')}`
-        + `${cms.map((m) => `<i class="cmk${m.hot === true ? ' hot' : ''}" title="${m.tip}">${m.label}</i>`).join('')}</span>`
+        + `${cms.map((m) => `<i class="cmk${m.hot === true ? ' hot' : ''}" title="${m.tip}"${m.hot === true ? ` data-l="${m.label}"` : ''}>${m.label}</i>`).join('')}</span>`
       : ''
     labels.push({
       // 나라 많은 판은 지금 지명 줄을 빼 이름표를 한 줄로 — 작아야 제 고을 곁에 붙는다 (형 10-26: "마을 텍스트 바가 너무 큼 · 줄여서 제대로 그 마을의 텍스트라는 게 보이게")
