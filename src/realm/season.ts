@@ -27,11 +27,11 @@ import {
 } from './diplomacy.ts'
 import {
   addGood, applyArm, applyBuild, applyGuard, draftIronCost, draftLimit, draftNeeds, draftPay, militiaMen, onTake, resolveRites, settleCost, settleLimit, stepBuilds, stepEconomy,
-  migrateHouses, placeHouses, setMigrateAuto, stepInbound, stepMigration, stockOf,
+  migrateHouses, placeHouses, setMigrateAuto, spentThisSeason, stepInbound, stepMigration, stockOf,
 } from './economy.ts'
 import { hasCustom, noteCustom, noteOnce } from './data/customs.ts'
 import { concealBonus, passExtra, rescueCapital, riseState, siegeFort, stepCustoms } from './hooks.ts'
-import { blockedWhy, seasonNo, seasonOf } from './calendar.ts'
+import { blockedWhy, isMonsoon, isSeasonEnd, isSeasonStart, monthly, perSeason, seasonNo, seasonOf, seasons } from './calendar.ts'
 import { applyBowUps, refreshSpies, resolvePlots } from './plots.ts'
 import { noteTake } from './stance.ts'
 import { stepDiscovery, stepSight } from './discovery.ts'
@@ -79,10 +79,40 @@ export function neighbors(r: Realm, node: string): string[] {
   return out.sort()
 }
 
-/** 길 하나를 지나는 계절 수 */
+/** 길 하나를 지나는 계절 수 — 옛 판(한 턴 한 계절)의 셈 */
 export function marchSeasons(kind: EdgeKind, season: SeasonOfYear): number {
   const base = kind === 'pass' || kind === 'mudflat' ? P.realm.marchSlow : 1
   return base + (season === 'summer' ? P.realm.marchSummerExtra : 0)
+}
+
+/**
+ * 길 하나를 지나는 턴 수 — `t` 턴에 떠나면.
+ *  - 옛 판: marchSeasons (길 종류 · 여름)
+ *  - 달 시계: 지도 위 길이 ÷ 한 달 행군 (형 10-31: "지도에서 가까우면 실제로도 가까워야 함") — 고갯길·갯벌은 길게 치고,
+ *    장마(7·8월)에 떠나면 한 달 더. 자리 없는 판의 길은 한 달 길이로 친다.
+ */
+export function marchTurns(r: Realm, ed: REdge, t: number = r.season): number {
+  if (!monthly(r)) return marchSeasons(ed.kind, seasonOf(r, t))
+  const R = P.realm
+  const km = (r.roadKm?.[ed.id] ?? R.marchMonthKm) * (ed.kind === 'pass' || ed.kind === 'mudflat' ? R.marchMonthSlow : 1)
+  const base = Math.max(1, Math.min(R.marchMonthMax, Math.round(km / R.marchMonthKm)))
+  return base + (isMonsoon(r, t) ? R.marchSummerExtra : 0)
+}
+
+/** 싸운 뒤 추스르는 중이라 떠나지 못하나 (달 시계 · battleRest) */
+export function resting(r: Realm, a: Army): boolean {
+  return a.rest !== undefined && a.rest >= r.season
+}
+
+/** 달 시계 — 이번 턴에 싸운 군대(친 쪽 · 함께 친 쪽 · 그 고을에 남은 쪽)는 battleRest 달 동안 추스른다 */
+function restAfterBattles(r: Realm, lines: readonly ReportLine[]): void {
+  const n = P.realm.battleRest
+  if (!monthly(r) || n <= 0) return
+  for (const l of lines) {
+    if (l.kind !== 'battle') continue
+    const ids = new Set([l.attacker, ...l.allies])
+    for (const a of byId(Object.values(r.armies))) if (ids.has(a.id) || (a.march === null && a.at === l.node)) a.rest = r.season + n
+  }
 }
 
 /** 기습 은폐 — 길·고을 꼬리표·계절 (SYSTEMS §1-1 · §1-2 · §3) */
@@ -509,7 +539,9 @@ function draftArmy(r: Realm, o: Extract<Order, { kind: 'draft' }>, lines: Report
   if (up !== null) stockOf(r, o.faction).iron -= up.iron
   addMen(army, o.unit, o.n, tier)
   army.morale = (army.morale * had + o.n) / (had + o.n) // 새로 든 사람은 사기 1
-  node.hh -= Math.round(o.n * P.realm.draftHHPerMan) // 집이 사라지는 게 아니라 일손이 빠진다
+  const gone = Math.round(o.n * P.realm.draftHHPerMan)
+  node.hh -= gone // 집이 사라지는 게 아니라 일손이 빠진다
+  if (monthly(r)) { const was = spentThisSeason(r, node.drafted); node.drafted = { season: r.season, n: was + o.n, hh: (was > 0 ? node.drafted!.hh : 0) + gone } } // 계절 한도 장부
   stockOf(r, o.faction).grain -= pay.grain
   if (need.wood > 0) addGood(r, o.faction, 'wood', -need.wood)
   if (need.horse > 0) addGood(r, o.faction, 'horse', -need.horse)
@@ -530,7 +562,7 @@ function turnBack(r: Realm, o: Extract<Order, { kind: 'turnBack' }>, lines: Repo
   const m = a?.march
   if (a === undefined || m === null || m === undefined || a.lent !== undefined) return
   const ed = r.edges[m.edge]
-  const total = ed !== undefined ? marchSeasons(ed.kind, seasonOf(r)) : 1
+  const total = ed !== undefined ? marchTurns(r, ed) : 1
   a.march = { from: m.to, to: m.from, edge: m.edge, left: Math.max(1, total - m.left), ambush: false, aim: r.nodes[m.from]?.owner ?? null }
   lines.push({ kind: 'recall', faction: a.faction, army: a.id, node: m.to, why: 'order' })
 }
@@ -570,6 +602,7 @@ function settleLand(r: Realm, o: Extract<Order, { kind: 'settle' }>, lines: Repo
   to.owner = o.faction
   to.takenAt = r.season
   stockOf(r, o.faction).grain -= settleCost(o.n).grain
+  if (monthly(r)) from.settledOut = { season: r.season, n: spentThisSeason(r, from.settledOut) + o.n } // 계절 한도 장부
   addGood(r, o.faction, 'wood', -settleCost(o.n).wood)
   revealAround(r, o.faction, o.to)
   lines.push({ kind: 'settle', faction: o.faction, from: o.from, to: o.to, n: o.n })
@@ -611,14 +644,13 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
 
 /** 1 — 명령 확정: 나누기·모으기를 먼저 하고, 출정 명령을 군대에 싣는다. 막힌 길은 보고에 남기고 떠나지 않는다 */
 function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
-  const season = seasonOf(r)
   applyArmyOrders(r, orders, lines)
   // 서 있는 고을을 친다 — 그 고을이 남의 땅이고 싸울 사이(동맹·화친이 아님)일 때만. 들어온 길로 한 계절에 닿은 것으로 친다
   for (const o of orders) {
     if (o.kind !== 'assault') continue
     const a = r.armies[o.army]
     const node = a !== undefined ? r.nodes[a.at] : undefined
-    if (a === undefined || node === undefined || a.march !== null || node.owner === null || node.owner === a.faction || node.kind === 'sodo' || friendly(r, a.faction, node.owner)) continue
+    if (a === undefined || node === undefined || a.march !== null || resting(r, a) || node.owner === null || node.owner === a.faction || node.kind === 'sodo' || friendly(r, a.faction, node.owner)) continue
     const ed = byId(Object.values(r.edges)).find((e) => e.a === a.at || e.b === a.at)
     if (ed === undefined) continue
     a.food = Math.max(a.food ?? 0, 1)
@@ -631,7 +663,7 @@ function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): v
     if (o.kind !== 'march') continue
     const a = r.armies[o.army]
     const ed = r.edges[o.edge]
-    if (a === undefined || ed === undefined || a.march !== null) continue
+    if (a === undefined || ed === undefined || a.march !== null || resting(r, a)) continue
     const to = otherEnd(ed, a.at)
     if (to === null) continue
     // AI 의 명령은 계절 처음의 판으로 짰다 — 이번 계절 1 에서 화친을 맺은 나라 땅으로는 가지 않는다 (깨는 것은 플레이어만 고른다)
@@ -652,7 +684,7 @@ function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): v
     const want = o.approach ?? (o.ambush ? (opts.includes('ford') ? 'ford' : 'night') : 'road')
     const approach: Approach = opts.includes(want) ? want : o.ambush && opts.includes('night') ? 'night' : 'road'
     // 고갯목(땅) — 그 나라 군대는 고갯길이 한 계절 더 (hooks.passExtra)
-    let left = marchSeasons(ed.kind, season) + passExtra(r, a.faction, ed.kind)
+    let left = marchTurns(r, ed) + passExtra(r, a.faction, ed.kind)
     if (approach === 'ridge') left += P.realm.apRidgeExtra
     // 계절에 막힌 길 (형: "불가능하게 만들지 말고 패널티") — 더 걸리고, 얼거나 떠내려가 사람을 잃는다
     const why = blockedWhy(ed, r)
@@ -667,7 +699,7 @@ function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): v
     // 군량 — 길 계절에 더해 몇 계절치를 챙기나. 더 챙길수록 곡식이 들고, 0 이면 닿자마자 바닥이다
     const extra = rationFor(r, a, o.ration, left)
     if (extra > 0) stockOf(r, a.faction).grain -= rationCost(r, a, left, extra)
-    a.food = left + extra
+    a.food = left + seasons(r, extra) // 군량은 턴으로 센다 (달 시계면 계절치 하나가 석 달)
     a.march = { from: a.at, to, edge: ed.id, left, ambush: approach !== 'road', ...(approach !== 'road' && approach !== 'night' ? { approach } : {}), ...(why !== null ? { hard: why } : {}), ...(o.follow === true ? { follow: true } : {}), ...(o.adviser !== undefined && r.heroes[o.adviser]?.faction === a.faction ? { adviser: o.adviser } : {}), aim: owner }
   }
 }
@@ -696,7 +728,7 @@ export function approachOf(m: { readonly ambush: boolean; readonly approach?: Ap
 export function rationCost(r: Realm, a: Army, left: number, extra: number = P.realm.rationReserve): number {
   const R = P.realm
   if (extra <= 0) return 0
-  const full = headcount(forceOf(r, a)) * R.rationPerSoldier * R.rationPack * (left + R.rationReserve)
+  const full = headcount(forceOf(r, a)) * R.rationPerSoldier * R.rationPack * (left / perSeason(r) + R.rationReserve) // 길 턴은 계절치로
   return Math.ceil(R.rationReserve > 0 ? (full * extra) / R.rationReserve : full)
 }
 
@@ -841,7 +873,7 @@ function hungryOf(armies: readonly Army[]): boolean {
 /** 이 나라가 그 고을을 이번 계절(또는 지난 계절)에 정찰·첩자로 봤나 — 귀띔이 잘 맞는다 */
 function freshSight(r: Realm, faction: string, node: string): boolean {
   const k = r.intel[faction]?.[node]?.force
-  return k !== null && k !== undefined && r.season - k.season <= 1
+  return k !== null && k !== undefined && r.season - k.season <= seasons(r, 1)
 }
 
 /** tactics.Side 를 만든다 */
@@ -958,7 +990,7 @@ export function battleFates(
   const slip = (h: Hero): boolean => {
     if (relicLeft(h, 'escape') <= 0) return false
     spendRelic(h, 'escape')
-    h.woundedUntil = Math.max(h.woundedUntil ?? -1, r.season + 1)
+    h.woundedUntil = Math.max(h.woundedUntil ?? -1, r.season + seasons(r, 1))
     lines.push({ kind: 'relicSave', faction: h.faction, hero: h.id, relic: relicWith(h, 'escape') })
     return true
   }
@@ -968,7 +1000,7 @@ export function battleFates(
   for (const t of res.taken) {
     const h = r.heroes[t.hero]
     if (h === undefined || h.status !== 'free') continue
-    if (self(h)) { h.woundedUntil = Math.max(h.woundedUntil ?? -1, r.season + 1); continue }
+    if (self(h)) { h.woundedUntil = Math.max(h.woundedUntil ?? -1, r.season + seasons(r, 1)); continue }
     if (slip(h)) continue
     h.status = 'captive'
     h.captor = t.side === 'a' ? defFaction : atkFaction
@@ -983,7 +1015,7 @@ export function battleFates(
       h.status = 'dead'
       fallen.push(h.id)
       out(h.id)
-    } else h.woundedUntil = Math.max(h.woundedUntil ?? -1, r.season + 1)
+    } else h.woundedUntil = Math.max(h.woundedUntil ?? -1, r.season + seasons(r, 1))
   }
   if (res.broke !== null) {
     // 무너진 쪽의 그때 총대장 (지휘가 넘어갔으면 넘겨받은 이)
@@ -1474,13 +1506,13 @@ function stepFood(r: Realm, lines: ReportLine[]): void {
       delete a.food
       continue
     }
-    if (a.food === undefined) a.food = R.rationReserve
+    if (a.food === undefined) a.food = seasons(r, R.rationReserve)
     a.food -= 1
     if (a.food >= 0) continue
     a.food = 0
     const before = headcount(forceOf(r, a))
-    scaleMix(a, 1 - R.rationHungryLoss)
-    a.morale = Math.max(R.moraleFloor, a.morale - R.rationHungryMorale)
+    scaleMix(a, 1 - R.rationHungryLoss / perSeason(r)) // 계절치 몫 — 달 시계면 달마다 셋으로 나눠
+    a.morale = Math.max(R.moraleFloor, a.morale - R.rationHungryMorale / perSeason(r))
     lines.push({ kind: 'hungry', army: a.id, lost: Math.max(0, before - headcount(forceOf(r, a))) })
   }
   for (const a of Object.values(r.armies)) if (headcount(forceOf(r, a)) < 1) delete r.armies[a.id]
@@ -1530,10 +1562,10 @@ export function stepExile(r: Realm, lines: ReportLine[]): void {
   if (seat === undefined) return // 고을이 없다 — checkOutcome 이 끝낸다
   if (fac.exile === undefined) {
     fac.exile = { since: r.season, seat: seat.id }
-    lines.push({ kind: 'exile', faction: me, capital: cap, seat: seat.id, until: r.season + P.realm.exileSeasons })
+    lines.push({ kind: 'exile', faction: me, capital: cap, seat: seat.id, until: r.season + seasons(r, P.realm.exileSeasons) })
   } else if (r.nodes[fac.exile.seat]?.owner !== me) {
     fac.exile.seat = seat.id
-    lines.push({ kind: 'exile', faction: me, capital: cap, seat: seat.id, until: fac.exile.since + P.realm.exileSeasons, moved: true })
+    lines.push({ kind: 'exile', faction: me, capital: cap, seat: seat.id, until: fac.exile.since + seasons(r, P.realm.exileSeasons), moved: true })
   }
 }
 
@@ -1580,7 +1612,7 @@ export function checkOutcome(r: Realm): 'win' | 'lose' | null {
     // 피한 조정이 버틸 고을이 있고 기한이 남았으면 아직 안 졌다
     const ex = r.factions[me]?.exile
     const any = Object.values(r.nodes).some((n) => n.owner === me && n.kind !== 'sodo')
-    return ex !== undefined && any && r.season - ex.since < P.realm.exileSeasons ? null : 'lose'
+    return ex !== undefined && any && r.season - ex.since < seasons(r, P.realm.exileSeasons) ? null : 'lose'
   }
   // 캠페인의 장 — 그 장의 목표로 (scenario.ts)
   if (r.scenario !== undefined) return scenarioOutcome(r)
@@ -1623,30 +1655,46 @@ export function advance(
   const led: Record<string, Tactic> = { ...tactics }
   for (const o of orders) if (o.kind === 'command' && led[o.key] === undefined) led[o.key] = { cmds: o.cmds, ...(o.dusk !== undefined ? { dusk: o.dusk } : {}) }
   resolveMarches(r, snipes, led, lines, fought) // 3 · 4 · 5
-  stepParties(r, lines) // 5 — 개척단이 한 계절 간다 · 빈땅에 닿으면 마을 · 적 곁이면 흩어진다
+  restAfterBattles(r, lines) // 5 끝 — 달 시계: 싸운 군대는 한동안 추스른다
+  stepParties(r, lines) // 5 — 개척단이 한 턴 간다 · 빈땅에 닿으면 마을 · 적 곁이면 흩어진다
   stepFood(r, lines) // 5 끝 — 남의 땅에 머무는 군대가 군량을 먹는다
   sweepHeroes(r, lines) // 5 끝 — 잃은 고을에 혼자 있던 장수는 물러나거나 잡힌다
-  stepEconomy(r, season, fought, lines) // 7
-  stepMigration(r, fought, lines) // 7 끝 — 붐비는 고을의 집이 한산한 제 고을로 (자동 분배)
-  decayWatch(r) // 9
-  stepHeroes(r, lines) // 9 — 회유 · 맡은 고을의 경계·철 · 떠돌이
+  // 계절마다 한 번 도는 일 — 달 시계면 그 계절의 마지막 달에만 (TIME-TABLE §3). 계절 단위 수치(params)를 그대로 쓴다.
+  // 싸움이 난 고을은 석 달 내내 모아 둔다 (가호가 안 는다 · 자동 분배가 안 보낸다)
+  const end = isSeasonEnd(r)
+  if (monthly(r)) {
+    const all = new Set([...(r.foughtSeason ?? []), ...fought])
+    if (end) delete r.foughtSeason
+    else if (all.size > 0) r.foughtSeason = [...all].sort()
+    for (const id of all) fought.add(id)
+  }
+  if (end) {
+    stepEconomy(r, season, fought, lines) // 7
+    stepMigration(r, fought, lines) // 7 끝 — 붐비는 고을의 집이 한산한 제 고을로 (자동 분배)
+    decayWatch(r) // 9
+    stepHeroes(r, lines) // 9 — 회유 · 맡은 고을의 경계·철 · 떠돌이
+  }
   stepExpeditions(r, lines) // 9 — 돌아온 원정이 짐을 푼다
   expireRelations(r, lines) // 9
-  holdMarkets(r, lines) // 9 — 화친·동맹의 장터 (호감도 조금)
-  driftFavor(r) // 9 — 같은 적과 싸우는 나라끼리 가까워진다
+  if (end) {
+    holdMarkets(r, lines) // 9 — 화친·동맹의 장터 (호감도 조금)
+    driftFavor(r) // 9 — 같은 적과 싸우는 나라끼리 가까워진다
+  }
   checkPledges(r, lines) // 9 — 함께 치자는 약속을 지켰나
   stepLent(r, lines) // 9 — 빌려준 군대가 돌아갈 때
-  stationFriction(r, lines) // 9 — 동맹 땅에 약속 없이 머무는 군대 (형 10-24)
+  if (end) stationFriction(r, lines) // 9 — 동맹 땅에 약속 없이 머무는 군대 (형 10-24)
   shareIntel(r) // 9 — 동맹은 본 것을 나눈다
   stepBuilds(r, lines) // 9 — 다 지은 목책·해자가 선다
   stepCustoms(r, lines) // 9 — 풍습의 걸음: 다시 일어남 · 쇠 실은 배 · 말 치는 들 · 거른 봄 제사 (hooks.ts)
   refreshSpies(r) // 9 — 첩자가 본다
   for (const [f, spies] of Object.entries(r.spies ?? {})) for (const s of spies) noteMet(r, f, heroesAtNode(r, s.node))
-  spreadRumors(r, lines) // 9 — 첩자가 들은 것 (간접 정보)
-  stepDiscovery(r, lines) // 9 — 이번 계절의 일로 서로 알게 된다 (삼한 남부 판 · 발견)
+  if (end) spreadRumors(r, lines) // 9 — 첩자가 들은 것 (간접 정보)
+  stepDiscovery(r, lines, end) // 9 — 이번 턴의 일로 서로 알게 된다 (삼한 남부 판 · 발견) · 소문으로 아는 것은 계절 끝에만
   stepSight(r, lines) // 9 — 우리 군대·사신·장사꾼이 본 땅 (지도는 보고 다닌 만큼)
-  stepSuzerain(r, lines) // 9 — 맹약 시계 (맹주의 길)
-  stepPaths(r, lines) // 9 — 교역 장부 · 제사 사슬 (철과 뱃길 · 큰 제사)
+  if (end) {
+    stepSuzerain(r, lines) // 9 — 맹약 시계 (맹주의 길)
+    stepPaths(r, lines) // 9 — 교역 장부 · 제사 사슬 (철과 뱃길 · 큰 제사)
+  }
   if (r.player !== undefined) {
     for (const a of seenMarches(r, r.player)) {
       const line = { kind: 'sighted', faction: a.faction, army: a.id, from: a.march!.from, to: a.march!.to } as const
@@ -1671,12 +1719,13 @@ export function advance(
         lines.push({ kind: 'end', outcome: via.kind, faction: r.player, path: via.path, by: via.by })
       }
     }
-    makeAsks(r, lines) // 9 — 남의 나라가 다음 계절에 답할 청을 건다
+    if (end) makeAsks(r, lines) // 9 — 남의 나라가 다음 턴에 답할 청을 건다
   }
-  seasonMerit(r, lines) // 9 끝 — 단련 공: 맡은 고을 · 이끈 군대 · 먹힌 공작 · 받아들여진 청 (drill.ts)
+  seasonMerit(r, lines, end) // 9 끝 — 단련 공: 맡은 고을 · 이끈 군대(계절 끝) · 먹힌 공작 · 받아들여진 청 (drill.ts)
   noteMemory(r, lines, orders, departs) // 9 끝 — 장수의 기억 · 나라의 전례 장부 (memory.ts — 판을 바꾸지 않는다)
   const report: Report = { season: r.season, lines }
   r.season += 1 // 11
-  stepCards(r, lines) // 11 끝 — 새 계절의 사건 카드를 펴고 다음 카드를 뽑아 둔다 · 점괘 (events.ts)
+  // 11 끝 — 새 계절의 사건 카드를 펴고 다음 카드를 뽑아 둔다 · 점괘 (events.ts). 달 시계면 계절의 첫 달에만 (카드는 계절마다 한 장)
+  if (isSeasonStart(r)) stepCards(r, lines)
   return { next: r, report }
 }

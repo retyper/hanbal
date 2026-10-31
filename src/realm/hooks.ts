@@ -7,7 +7,7 @@
  * 순수 함수 — 굴림이 없다 (A1). 셈은 hasCustom 하나로만 묻는다.
  */
 import { P } from '../tune/params.ts'
-import { seasonOf, yearOf } from './calendar.ts'
+import { isSeasonEnd, monthly, seasonOf, seasons, yearOf } from './calendar.ts'
 import { customDef, hasCustom, holders, noteCustom, noteOnce, type CustomId } from './data/customs.ts'
 import { addGood, framesOf, goodOf, harvestModOf, isRiverside, sodoNeighbors, stockOf } from './economy.ts'
 import { addFavor, declareWar, makeTruce, relationOf } from './diplomacy.ts'
@@ -76,8 +76,8 @@ export function riseState(r: Realm, faction: string): { lost: number; from: numb
   if (st === undefined || st === 'done') return null
   const cap = r.factions[faction]?.capital
   if (cap === undefined || r.nodes[cap]?.owner === faction) return null
-  if (r.season - st > P.realm.riseWindow) return null
-  return { lost: st, from: st + P.realm.riseWait, until: st + P.realm.riseWindow }
+  if (r.season - st > seasons(r, P.realm.riseWindow)) return null
+  return { lost: st, from: st + seasons(r, P.realm.riseWait), until: st + seasons(r, P.realm.riseWindow) }
 }
 
 // ───────── 판을 열 때
@@ -105,6 +105,8 @@ export function stepCustoms(r: Realm, lines: ReportLine[]): void {
     if (mate !== undefined) noteOnce(r, lines, f, 'posang', { other: mate })
   }
   stepRise(r, lines)
+  // 계절마다 한 번 도는 것 — 달 시계면 그 계절의 마지막 달에만 (calendar.isSeasonEnd)
+  if (!isSeasonEnd(r)) return
   stepFuneral(r, lines)
   stepIronShip(r, lines)
   stepPasture(r, lines)
@@ -152,11 +154,11 @@ function stepRise(r: Realm, lines: ReportLine[]): void {
       continue
     }
     const since = r.season - st
-    if (since > R.riseWindow) {
+    if (since > seasons(r, R.riseWindow)) {
       r.rise![f] = 'done' // 불씨가 꺼졌다
       continue
     }
-    if (since < R.riseWait || node.owner === null) continue
+    if (since < seasons(r, R.riseWait) || node.owner === null) continue
     const holder = node.owner
     const here = Object.values(r.armies).filter((a) => a.at === cap && a.march === null && a.faction === holder)
     const guard = here.reduce((s, a) => s + menIn(a), 0)
@@ -314,7 +316,7 @@ export function customMarks(r: Realm, nodeId: string, viewer: string): CustomMar
       ? { id: 'landReeds', label: '큰물', tip: '여름: 물이 불어 강가 고을의 집이 조금 준다 · 갈대·나루 길 기습은 잘 숨는다', hot: true }
       : { id: 'landReeds', label: '갈대밭', tip: '갈대·나루 길로 가는 기습이 잘 숨는다' })
   }
-  if (has('landHigh') && (n.tags.includes('high') || n.kind === 'fort' || edges.some((e) => e.kind === 'pass'))) out.push({ id: 'landHigh', label: '고갯목', tip: '고갯길·높은 터로 쳐들어온 적은 첫 합에 사기가 깎인다 · 우리도 고갯길은 한 계절 더' })
+  if (has('landHigh') && (n.tags.includes('high') || n.kind === 'fort' || edges.some((e) => e.kind === 'pass'))) out.push({ id: 'landHigh', label: '고갯목', tip: `고갯길·높은 터로 쳐들어온 적은 첫 합에 사기가 깎인다 · 우리도 고갯길은 한 ${monthly(r) ? '달' : '계절'} 더` })
   if (has('landSodo') && sodoNeighbors(r, owner).includes(nodeId)) {
     out.push(season === 'spring' && r.blessed?.[owner] !== yearOf(r)
       ? { id: 'landSodo', label: '제사 때', tip: '봄 제사를 거르면 그해 가을걷이가 준다 · 제사는 반값', hot: true }

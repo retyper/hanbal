@@ -10,6 +10,7 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
+import { seasons } from './calendar.ts'
 import { bondOf, deokOf, hasTrait, isKin, isRuler, persuadeDropOf, recruitChance, resistOf } from './heroes.ts'
 import type { Hero, Order, Realm, ReportLine, WooApproach, WooReact } from './types.ts'
 
@@ -75,7 +76,7 @@ export function hookKeys(r: Realm, hero: string): string[] {
   if (fallen(r, h.faction)) out.push('fallen')
   const k = bondHookOf(r, hero, null)
   if (k !== null && k.kind !== 'kin' && k.kind !== 'home') out.push(`kin:${k.who}`)
-  if (h.caughtAt !== undefined && r.season - h.caughtAt > P.realm.wooRescueSeasons) out.push('alone')
+  if (h.caughtAt !== undefined && r.season - h.caughtAt > seasons(r, P.realm.wooRescueSeasons)) out.push('alone')
   return out
 }
 
@@ -90,7 +91,7 @@ export function fitOf(r: Realm, hero: string, by: string | null, a: WooApproach)
   const add = (key: string, n: number, on: boolean): void => { if (on) why.push({ key, n }) }
   const alive = !fallen(r, h.faction)
   const trust = (bondOf(r, h) ?? 0) >= R.bondTrust
-  const alone = h.caughtAt !== undefined && r.season - h.caughtAt > R.wooRescueSeasons
+  const alone = h.caughtAt !== undefined && r.season - h.caughtAt > seasons(r, R.wooRescueSeasons)
   switch (a) {
     case 'soothe':
       add('coward', 1, hasTrait(h, 'coward'))
@@ -255,7 +256,7 @@ export function talkWhy(r: Realm, hero: string): 'first' | 'last' | 'hook' | 'fr
   const seen = new Set(pz.hooks ?? [])
   if (hookKeys(r, hero).some((k) => !seen.has(k))) return 'hook'
   const last = pz.talkAt ?? pz.since
-  if (last === undefined || r.season - last >= P.realm.wooTalkGap) return 'free'
+  if (last === undefined || r.season - last >= seasons(r, P.realm.wooTalkGap)) return 'free'
   return null
 }
 /** 저절로 띄울 때인가 */

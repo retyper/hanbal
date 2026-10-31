@@ -8,8 +8,8 @@
  *  - 길이 끊기면(지날 땅을 잃었다) 갈 곳을 지운다. 그 계절에 이 군대에 다른 명령이 있으면 그 명령이 먼저다.
  */
 import { friendly } from './diplomacy.ts'
-import { blockedWhy, seasonOf } from './calendar.ts'
-import { marchSeasons } from './season.ts'
+import { blockedWhy } from './calendar.ts'
+import { marchTurns } from './season.ts'
 import { P } from '../tune/params.ts'
 import type { Order, Realm } from './types.ts'
 
@@ -22,7 +22,6 @@ export interface Reach {
 
 /** `from` 에서 갈 수 있는 모든 고을 (from 자신은 빼고) */
 export function goalReach(r: Realm, faction: string, from: string): Map<string, Reach> {
-  const season = seasonOf(r)
   const through = (id: string): boolean => {
     const n = r.nodes[id]
     if (n === undefined || n.kind === 'sodo') return false
@@ -30,7 +29,7 @@ export function goalReach(r: Realm, faction: string, from: string): Map<string, 
   }
   const adj = new Map<string, Array<{ to: string; edge: string; w: number }>>()
   for (const e of Object.values(r.edges)) {
-    const w = marchSeasons(e.kind, season) + (blockedWhy(e, r) !== null ? P.realm.hardExtra : 0)
+    const w = marchTurns(r, e) + (blockedWhy(e, r) !== null ? P.realm.hardExtra : 0)
     ;(adj.get(e.a) ?? adj.set(e.a, []).get(e.a)!).push({ to: e.b, edge: e.id, w })
     ;(adj.get(e.b) ?? adj.set(e.b, []).get(e.b)!).push({ to: e.a, edge: e.id, w })
   }

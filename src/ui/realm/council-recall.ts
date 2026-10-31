@@ -117,7 +117,7 @@ export function grainSeen(r: Realm, me: string, foe: string): { v: number; s: nu
   let best: { v: number; s: number } | null = null
   for (const [node, k] of Object.entries(r.intel[me] ?? {}).sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
     const g = k.grain
-    if (g === undefined || r.nodes[node]?.owner !== foe || r.season - g.season > P.realm.cnGrainAge) continue
+    if (g === undefined || r.nodes[node]?.owner !== foe || r.season - g.season > seasons(r, P.realm.cnGrainAge)) continue
     if (best === null || g.season > best.s) best = { v: g.v, s: g.season }
   }
   return best
@@ -146,7 +146,7 @@ function selfWord(h: Hero): string {
  * 빗나갔으면 머뭇거리며 「지난번에는 소장의 말이 빗나갔습니다」.
  */
 export function councilFact(r: Realm, h: Hero): { proven: boolean; line: string } | null {
-  const rec = councilRecord(r, h.id, r.season - P.realm.cnMemAge)
+  const rec = councilRecord(r, h.id, r.season - seasons(r, P.realm.cnMemAge))
   if (rec === null || rec.res === 'draw') return null
   const me = selfWord(h)
   if (rec.res === 'lost' || rec.res === 'fail') return { proven: false, line: `지난번에는 ${me}의 말이 빗나갔습니다. 부끄러우나 다시 말씀 올립니다.` }

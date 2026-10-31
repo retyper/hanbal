@@ -4,7 +4,7 @@
  * 판을 읽기만 하고 HTML 을 돌려준다. 고르는 손짓(맡기기·이끌기·회유)은 app.ts 가 받는다.
  * **본 만큼만** (HEROES §5): 우리 장수 · 싸워 본 장수 · 정찰로 본 장수만 능력치와 특성이 보이고, 아니면 얼굴과 이름뿐.
  */
-import { STAT_NAME, josa } from '../../realm/data/prose.ts'
+import { STAT_NAME, josa, turnsLabel } from '../../realm/data/prose.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
 import { armyOfHero, bondOf, bondTier, growNeed, heroArt, honeyLeft, isRuler } from '../../realm/heroes.ts'
 import { ART_DOES, ART_ICON, ART_NAME } from './battlefield.ts'
@@ -86,9 +86,9 @@ export function roleLine(r: Realm, h: Hero): string {
     return h.at === r.factions[h.faction]?.capital ? '군주 · 도읍을 다스린다' : `군주 · ${node(h.at)}에 있다 · 도읍의 다스림이 준다`
   }
   const ex = (r.expeditions ?? []).find((x) => x.hero === h.id)
-  if (ex !== undefined) return `원정 중 · ${Math.max(1, ex.back - r.season + 1)}계절 뒤 돌아온다`
+  if (ex !== undefined) return `원정 중 · ${turnsLabel(r, Math.max(1, ex.back - r.season + 1))} 뒤 돌아온다`
   const honey = honeyLeft(r, h.id)
-  const hurt = (h.woundedUntil !== undefined && h.woundedUntil > r.season ? ` · 다쳐 누웠다 (${h.woundedUntil - r.season}계절)` : '') + (honey > 0 ? ` · 신혼 (${honey}계절)` : '')
+  const hurt = (h.woundedUntil !== undefined && h.woundedUntil > r.season ? ` · 다쳐 누웠다 (${turnsLabel(r, h.woundedUntil - r.season)})` : '') + (honey > 0 ? ` · 신혼 (${turnsLabel(r, honey)})` : '')
   const a = armyOfHero(r, h.id)
   if (a !== null) {
     let n = 0

@@ -11,6 +11,7 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
+import { seasons } from './calendar.ts'
 import { HERO_POOL } from './data/heroes-pool.ts'
 import { TRAIT } from './data/traits.ts'
 import { armyOfHero, homeOf, isRuler } from './heroes.ts'
@@ -119,7 +120,7 @@ export function sendExpeditions(r: Realm, orders: readonly Order[], lines: Repor
     const a = armyOfHero(r, o.hero)
     if (a !== null) a.hero = null // 이끌던 군대는 그 자리에 남는다
     r.stock[o.faction]!.grain -= P.realm.expGrainPer * EXP_SEASONS[o.len]
-    const back = r.season + EXP_SEASONS[o.len]
+    const back = r.season + seasons(r, EXP_SEASONS[o.len])
     const got = decide(r, h, o.dest, o.len)
     h.at = null
     h.post = null

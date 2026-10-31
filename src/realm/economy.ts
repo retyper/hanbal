@@ -13,7 +13,7 @@
  * 순수 함수만 — season.ts 가 부른다. 이 파일은 season.ts 를 부르지 않는다 (고리를 만들지 않는다).
  */
 import { P } from '../tune/params.ts'
-import { blockedWhy, seasonOf, yearOf } from './calendar.ts'
+import { blockedWhy, monthly, perSeason, seasonEndTurn, seasonIdx, seasonOf, seasons, yearOf, type ClockKind } from './calendar.ts'
 import { tierMul } from './tier.ts'
 import { hasCustom, noteCustom, noteOnce } from './data/customs.ts'
 import { draftCapBonus, gluttonMen, growMul, harvestMul, militiaMul, postHero, riteMul } from './heroes.ts'
@@ -239,6 +239,14 @@ export function draftCost(n: number): { grain: number } {
 }
 
 /**
+ * 이번 계절에 이미 쓴 한도 — 징병·개척·이주·배치의 「한 계절 몫」 장부 (TIME-TABLE §1-G).
+ * 달 시계면 석 달이 한 장부라 몫을 나눠 써도 넘지 않는다. 옛 판은 그 턴만 (한 턴이 곧 한 계절).
+ */
+export function spentThisSeason(r: Realm, x: { readonly season: number; readonly n: number } | undefined): number {
+  return x !== undefined && seasonIdx(r, x.season) === seasonIdx(r) ? x.n : 0
+}
+
+/**
  * 이 고을에서 이번 계절에 뽑을 수 있는 수 — 셋 가운데 작은 것:
  * 고을 가호의 draftPerSeason · 나라 상한(가호+군사의 draftCap)까지 남은 몫 · 창고가 대는 채비
  */
@@ -249,7 +257,10 @@ export function draftLimit(r: Realm, faction: string, node: string, unit?: UnitK
   // 달천 철광 — 쇠돌 캐는 일손은 뽑지 않는다 · 달벌 흙성 — 쌓는 계절엔 그 고을에서 못 뽑는다 (data/customs.ts)
   if (n.kind === 'ironMine' && hasCustom(r, faction, 'dalcheon')) return 0
   if ((r.builds ?? []).some((b) => b.node === node && b.what === 'earthwall')) return 0
-  const per = Math.floor(n.hh * R.draftPerSeason)
+  // 한 계절 몫 — 달 시계면 석 달이 한 장부: 이번 계절에 이미 뽑은 만큼 빼고, 계절 처음의 가호로 센다 (옛 판은 장부가 없다)
+  const sent = spentThisSeason(r, n.drafted)
+  const back = sent > 0 ? n.drafted!.hh : 0 // 뽑느라 빠진 가호
+  const per = Math.floor((n.hh + back) * R.draftPerSeason) - sent
   const men = menOf(r, faction)
   const capShare = R.draftCap + draftCapBonus(r, faction) - (hasCustom(r, faction, 'dalcheon') ? R.dalcheonCap : 0)
   const cap = Math.floor(capShare * (hhOf(r, faction) + men)) - men
@@ -370,7 +381,7 @@ export function applyBuild(r: Realm, o: Extract<Order, { kind: 'build' }>, lines
   if (o.what !== 'earthwall' && hasCustom(r, o.faction, 'landHigh')) noteOnce(r, lines, o.faction, 'landHigh', { node: o.node, n: 0, m: 1 })
   addGood(r, o.faction, 'wood', -c.wood)
   stockOf(r, o.faction).grain -= c.grain
-  ;(r.builds ??= []).push({ faction: o.faction, node: o.node, what: o.what, done: r.season })
+  ;(r.builds ??= []).push({ faction: o.faction, node: o.node, what: o.what, done: r.season + seasons(r, 1) - 1 }) // 한 계절 걸린다
   lines.push({ kind: 'build', faction: o.faction, node: o.node, what: o.what, done: false })
 }
 
@@ -414,7 +425,8 @@ export function settleLimit(r: Realm, faction: string, from: string, to: string)
   const ed = edgeBetween(r, from, to)
   if (ed === null || blockedWhy(ed, r) !== null) return 0
   if (Object.values(r.armies).some((x) => x.at === to && x.march === null && x.faction !== faction)) return 0
-  const share = Math.floor(a.hh * R.settleShare)
+  const sent = spentThisSeason(r, a.settledOut) // 달 시계 — 이번 계절에 이미 떠나보낸 집
+  const share = Math.floor((a.hh + sent) * R.settleShare) - sent
   const room = Math.max(0, (b.room ?? 0) - b.hh)
   const grain = R.settleGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.settleGrain) : Infinity
   const wood = R.settleWood > 0 ? Math.floor(goodOf(stockOf(r, faction), 'wood') / R.settleWood) : Infinity
@@ -486,7 +498,7 @@ export function migrateLimit(r: Realm, faction: string, from: string, to: string
   if (a === undefined || b === undefined || a.owner !== faction || b.owner !== faction || a.kind === 'sodo' || b.kind === 'sodo') return 0
   if (migratePath(r, faction, from, to) === null) return 0
   // 한 계절 몫은 계절 처음의 집 기준 — 이미 내보낸 만큼 뺀다 (형: "최대로 해서 옮기기 적용했는데 왜 더 옮겨지는거임? 2개씩 계속 쌓임")
-  const sent = a.movedOut?.season === r.season ? a.movedOut.n : 0
+  const sent = spentThisSeason(r, a.movedOut)
   const share = Math.floor((a.hh + sent) * R.migrateShare) - sent
   const grain = R.migrateGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.migrateGrain) : Infinity
   return Math.max(0, Math.min(share, grain))
@@ -503,9 +515,9 @@ export function migrateHouses(r: Realm, o: Extract<Order, { kind: 'migrate' }>, 
   const b = r.nodes[o.to]!
   a.hh -= o.n
   b.hh += o.n
-  a.movedOut = { season: r.season, n: (a.movedOut?.season === r.season ? a.movedOut.n : 0) + o.n }
+  a.movedOut = { season: r.season, n: spentThisSeason(r, a.movedOut) + o.n }
   stockOf(r, o.faction).grain -= migrateCost(o.n).grain
-  const until = r.season + P.realm.migrateCalm
+  const until = seasonEndTurn(r) + seasons(r, P.realm.migrateCalm) // 이 계절 끝과 그 뒤 migrateCalm 계절
   a.uprooted = Math.max(a.uprooted ?? -1, until)
   b.uprooted = Math.max(b.uprooted ?? -1, until)
   lines.push({ kind: 'migrate', faction: o.faction, from: o.from, to: o.to, n: o.n })
@@ -515,7 +527,8 @@ export function migrateHouses(r: Realm, o: Extract<Order, { kind: 'migrate' }>, 
 export function placeLimit(r: Realm, faction: string): number {
   const R = P.realm
   const grain = R.migrateGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.migrateGrain) : Infinity
-  return Math.max(0, Math.min(Math.floor(hhOf(r, faction) * R.placeShare), grain))
+  const spent = spentThisSeason(r, r.factions[faction]?.placed) // 달 시계 — 이번 계절에 이미 옮긴 집
+  return Math.max(0, Math.min(Math.floor(hhOf(r, faction) * R.placeShare) - spent, grain))
 }
 
 /** 백성 배치에 넣을 수 있는 고을 — 우리 고을(소도 아님) 가운데 도읍과 우리 땅으로 이어진 곳 · 사람이 사는 빈땅도 */
@@ -547,7 +560,7 @@ export function placeHouses(r: Realm, o: Extract<Order, { kind: 'place' }>, line
     if (d > 0) moved += d
   }
   if (sum !== 0 || moved === 0 || moved > placeLimit(r, o.faction)) return
-  const until = r.season + P.realm.migrateCalm
+  const until = seasonEndTurn(r) + seasons(r, P.realm.migrateCalm) // 이 계절 끝과 그 뒤 migrateCalm 계절
   for (const id of ids) {
     const d = o.delta[id]!
     if (d === 0) continue
@@ -557,6 +570,8 @@ export function placeHouses(r: Realm, o: Extract<Order, { kind: 'place' }>, line
     n.uprooted = Math.max(n.uprooted ?? -1, until)
   }
   stockOf(r, o.faction).grain -= migrateCost(moved).grain
+  const fac = r.factions[o.faction]
+  if (monthly(r) && fac !== undefined) fac.placed = { season: r.season, n: spentThisSeason(r, fac.placed) + moved } // 계절 한도 장부
   lines.push({ kind: 'place', faction: o.faction, n: moved, to: ids.filter((id) => o.delta[id]! > 0) })
 }
 
@@ -566,8 +581,8 @@ export function inboundOf(n: RNode, faction: string): number {
 }
 
 /** 한 계절에 이 고을에 닿는 집 — 품의 몇 할, 바닥 placeRateMin */
-export function inboundRate(n: RNode): number {
-  return Math.max(P.realm.placeRateMin, Math.ceil(homeRoom(n) * P.realm.placeRateRoom))
+export function inboundRate(n: RNode, c: ClockKind = {}): number {
+  return Math.max(Math.ceil(P.realm.placeRateMin / perSeason(c)), Math.ceil((homeRoom(n) * P.realm.placeRateRoom) / perSeason(c)))
 }
 
 /**
@@ -580,7 +595,7 @@ export function stepInbound(r: Realm): void {
     const ib = n.inbound
     if (ib === undefined) continue
     if (n.owner === ib.faction) {
-      const k = Math.min(ib.n, inboundRate(n))
+      const k = Math.min(ib.n, inboundRate(n, r))
       n.hh += k
       if (ib.n - k > 0) n.inbound = { faction: ib.faction, n: ib.n - k }
       else delete n.inbound
@@ -725,6 +740,8 @@ export function riteAllowed(r: Realm, faction: string): boolean {
   if (season !== 'spring' && season !== 'autumn') return false
   if (r.factions[faction] === undefined || sodoNeighbors(r, faction).length === 0) return false
   if (season === 'spring' && r.blessed?.[faction] === yearOf(r)) return false
+  // 달 시계 — 제사는 그 계절에 한 번 (석 달 내내 지낼 수 있으면 가을 사기가 세 번 오른다)
+  if (monthly(r) && r.riteSeason?.[faction] === seasonIdx(r)) return false
   const c = riteCost(r, faction, season)
   const s = stockOf(r, faction)
   return s.grain >= c.grain && s.iron >= c.iron
@@ -743,6 +760,7 @@ export function resolveRites(r: Realm, orders: readonly Order[], lines: ReportLi
     const c = riteCost(r, f, season)
     stockOf(r, f).grain -= c.grain
     stockOf(r, f).iron -= c.iron
+    if (monthly(r)) (r.riteSeason ??= {})[f] = seasonIdx(r)
     if (season === 'spring') (r.blessed ??= {})[f] = yearOf(r)
     else for (const a of Object.values(r.armies)) if (a.faction === f) a.morale = Math.min(R.moraleMax, a.morale + R.riteMorale * riteMul(r, f))
     lines.push({ kind: 'rite', faction: f, season: season === 'spring' ? 'spring' : 'autumn' })

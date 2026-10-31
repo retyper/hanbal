@@ -9,7 +9,7 @@
 import { faceFile } from './face.ts'
 import { headcount } from '../../realm/battle.ts'
 import { FACTION_ART, GOOD_ICON, REGION_ART, SEASON_MAP, flagIcon, nodeIcon, nodePos } from '../../realm/data/art.ts'
-import { EDGE_NAME, GOOD_NAME, NODE_KIND_NAME, NODE_NOW, tagNow } from '../../realm/data/prose.ts'
+import { EDGE_NAME, GOOD_NAME, NODE_KIND_NAME, NODE_NOW, tagNow, turnWord, turnsLabel } from '../../realm/data/prose.ts'
 import { worldGeoOf } from '../../realm/data/regions/index.ts'
 import { relationOf } from '../../realm/diplomacy.ts'
 import { knows } from '../../realm/discovery.ts'
@@ -777,7 +777,7 @@ export function mapHtml(
       // 고을 그림과 그 밑 이름표에서 가장 먼 자리에 — 길이 이름표 곁을 지나면 글씨가 이름표 밑에 묻혔다
       const away = (p: Pt): number => Math.min(...seenPts.map((q) => Math.min(Math.hypot(p[0] - q[0], p[1] - q[1]), Math.hypot(p[0] - q[0], p[1] - q[1] - q[2]))))
       const cands = [0.3, 0.4, 0.5, 0.6, 0.7].map((f) => at(dj + (d1 - dj) * f))
-      svg += text(cands.reduce((b, p) => (away(p) > away(b) ? p : b)), `${m.eta}계절`, 24)
+      svg += text(cands.reduce((b, p) => (away(p) > away(b) ? p : b)), turnsLabel(r, m.eta), 24)
     }
     const label = kind === 'amb' && m.left === null ? '우리 기습' : ''
     if (label !== '') svg += text(at(d0 + (dj - d0) * 0.7), label, 26)
@@ -922,7 +922,7 @@ export function mapHtml(
     const a1 = seg[seg.length - 1]!
     const ang = (Math.atan2(a1[1] - a0[1], a1[0] - a0[0]) * 180) / Math.PI
     const left = t.march.left
-    const when = left <= 1 ? '다음 계절' : `${left}계절 뒤`
+    const when = left <= 1 ? `다음 ${turnWord(r)}` : `${turnsLabel(r, left)} 뒤`
     const tag = t.foe !== undefined ? `${t.sneak === true ? '기습 낌새' : '적'} · ${when} 닿음` : `이동 중 · ${when} 도착`
     toks += `<div class="toks mv" style="left:${(mx / W) * 100}%;top:${(my / H) * 100}%">${tokBtn(t, ang)}<span class="mvtag">${tag}</span></div>`
   }

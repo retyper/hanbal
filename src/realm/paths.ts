@@ -15,7 +15,7 @@
  * 배우는 판은 셈하지 않는다.
  */
 import { P } from '../tune/params.ts'
-import { seasonNo, seasonOf, seasons } from './calendar.ts'
+import { monthly, seasonIdx, seasonNo, seasonOf, seasons } from './calendar.ts'
 import { goodOf, hhOf, stockOf } from './economy.ts'
 import { relicBest } from './relics.ts'
 import type { Realm, ReportLine } from './types.ts'
@@ -89,7 +89,10 @@ export function stepPaths(r: Realm, lines: ReportLine[]): void {
   }
   const yearSeason = seasonNo(r)
   const riteSeason = yearSeason === 0 || yearSeason === 2
-  const did = new Set(lines.filter((l): l is Extract<ReportLine, { kind: 'rite' }> => l.kind === 'rite').map((l) => l.faction))
+  // 이번 계절에 제사를 지낸 나라 — 달 시계면 석 달 가운데 어느 달이든 (economy.resolveRites 가 적은 계절 번호)
+  const did = monthly(r)
+    ? new Set(Object.keys(r.riteSeason ?? {}).filter((f) => r.riteSeason![f] === seasonIdx(r)))
+    : new Set(lines.filter((l): l is Extract<ReportLine, { kind: 'rite' }> => l.kind === 'rite').map((l) => l.faction))
   const chain = (r.riteChain ??= {})
   const near = (r.pathNear ??= {})
   for (const f of Object.keys(r.factions).sort()) {

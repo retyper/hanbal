@@ -20,6 +20,7 @@ import { applyTier } from '../src/realm/tier.ts'
 import { advance } from '../src/realm/season.ts'
 import type { Realm, RegionId } from '../src/realm/types.ts'
 import { P } from '../src/tune/params.ts'
+import { perSeason } from '../src/realm/calendar.ts'
 
 const args = process.argv.slice(2)
 const opt = (name: string, def: string): string => {
@@ -90,8 +91,10 @@ function play(bot: Brain, as: string, seed: number): Run {
   const own = (x: Realm): number => Object.values(x.nodes).filter((n) => n.owner === as).length
   const lead = Object.values(r.heroes).filter((h) => h.faction === as).sort((a, b) => (a.id < b.id ? -1 : 1))[0]?.id
   const run: Run = { bot, as, seed, start: own(r), nodes: 0, nodesEarly: -1, win: false, lose: false, battles: 0, wins: 0, captured: 0, lostHero: false, settled: 0, wildHeld: 0, ambush: 0, ambushOk: 0, rites: 0, worldAmbush: 0, asks: 0, pacts: 0, fieldFights: 0, plots: 0, plotsOk: 0, plotsAtUs: 0, worldPlots: 0, heroes: 0, persuaded: 0, hired: 0, allies: 0, pledgeKept: 0, pledgeBroken: 0, gifts: 0, arms: 0, lent: 0, hh: 0 }
-  for (let s = 0; s < SEASONS; s++) {
-    if (s === EARLY) run.nodesEarly = own(r)
+  // 계절 수로 돌린다 — 달 시계 판이면 계절마다 석 턴 (calendar.perSeason)
+  const per = perSeason(r)
+  for (let s = 0; s < SEASONS * per; s++) {
+    if (s === EARLY * per) run.nodesEarly = own(r)
     const orders = [...decide(r, as, bot), ...aiOrders(r)]
     const { next, report } = advance(r, orders)
     for (const l of report.lines) {
@@ -151,7 +154,7 @@ for (const as of AS) for (const bot of BOTS) for (let g = 0; g < GAMES; g++) run
 const mean = (xs: number[]): number => (xs.length === 0 ? 0 : xs.reduce((a, b) => a + b, 0) / xs.length)
 const pct = (x: number): string => `${(x * 100).toFixed(1)}%`
 
-console.log(`나라 시뮬 — ${REGION === "yeongnam" ? "영남 판 스물한 나라" : "변한 6국 축소판"} · ${GAMES}판 × ${SEASONS}계절 · 봇이 고른 나라를 맡는다\n`)
+console.log(`나라 시뮬 — ${REGION === "yeongnam" ? "영남 판 스물한 나라" : "변한 6국 축소판"} · ${GAMES}판 × ${SEASONS}계절 (${P.realm.monthClock >= 1 ? '한 턴 한 달' : '한 턴 한 계절'}) · 봇이 고른 나라를 맡는다\n`)
 console.log(`나라    봇         시작  땅@${EARLY}  끝땅   이김    짐     싸움/판  이긴 비율  생포/판  장수 잃음  개척/판  쥔 빈땅  기습/판  먹힘   제사/판  판 기습  청/판  맺음/판  들판/판  공작/판  먹힘   당함/판  판 공작  장수끝  회유/판  들임/판  동맹/판  지킴/판  저버림/판  선물/판  무장/판  빌림/판  끝 가호`)
 for (const as of AS) {
   for (const bot of BOTS) {

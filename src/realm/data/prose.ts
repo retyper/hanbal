@@ -736,7 +736,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
     // 원정 (SYSTEMS §15-4) — 우리 것만
     case 'expGo': {
       if (line.faction !== viewer) return null
-      return `${josa(after.heroes[line.hero]?.name ?? '?', '이', '가')} ${josa(DESTS[line.dest].name, '으로', '로')} 원정을 떠났다. ${line.back - after.season + 1}계절 뒤 돌아온다.`
+      return `${josa(after.heroes[line.hero]?.name ?? '?', '이', '가')} ${josa(DESTS[line.dest].name, '으로', '로')} 원정을 떠났다. ${turnsLabel(after, line.back - after.season + 1)} 뒤 돌아온다.`
     }
     case 'expStay': {
       if (line.faction !== viewer) return null
@@ -758,7 +758,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (line.faction !== viewer) return null
       const a = after.heroes[line.a]?.name ?? '?'
       const b = after.heroes[line.b]?.name ?? '?'
-      return `${josa(a, '과', '와')} ${josa(b, '이', '가')} 혼인했다. 잔치를 열었다. ${line.due - after.season + 1}계절쯤 뒤 아이가 나선다.`
+      return `${josa(a, '과', '와')} ${josa(b, '이', '가')} 혼인했다. 잔치를 열었다. ${turnsLabel(after, line.due - after.season + 1)}쯤 뒤 아이가 나선다.`
     }
     case 'birth': {
       if (line.faction !== viewer) return null
@@ -768,7 +768,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       const s = line.surprise !== undefined ? ` 부모 누구에게도 없던 「${TRAIT[line.surprise]?.name ?? line.surprise}」의 피가 터졌다!` : ''
       const kid = k ?? (after.growing ?? []).find((g) => g.hero.id === line.hero)?.hero
       const grow = (after.growing ?? []).find((g) => g.hero.id === line.hero)
-      return `${josa(a, '과', '와')} ${b}의 아이 ${josa(kid?.name ?? '?', '이', '가')} 태어났다.${grow !== undefined ? ` ${grow.grown - after.season}계절 자라면 장수로 나선다.` : ''}${s}`
+      return `${josa(a, '과', '와')} ${b}의 아이 ${josa(kid?.name ?? '?', '이', '가')} 태어났다.${grow !== undefined ? ` ${turnsLabel(after, grow.grown - after.season)} 자라면 장수로 나선다.` : ''}${s}`
     }
     case 'grown': {
       if (line.faction !== viewer) return null
@@ -919,8 +919,8 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       if (line.faction !== viewer) return null
       const left = Math.max(1, line.until - after.season + 1)
       return line.moved === true
-        ? `피해 있던 고을마저 빼앗겼다. 조정이 다시 ${josa(node(line.seat), '으로', '로')} 옮겼다. 도읍 ${josa(node(line.capital), '을', '를')} 되찾을 날이 ${left}계절 남았다.`
-        : `도읍 ${josa(node(line.capital), '이', '가')} 무너졌다. 군장과 조정이 ${josa(node(line.seat), '으로', '로')} 피했다. ${left}계절 안에 도읍을 되찾지 못하면 나라가 끝난다.`
+        ? `피해 있던 고을마저 빼앗겼다. 조정이 다시 ${josa(node(line.seat), '으로', '로')} 옮겼다. 도읍 ${josa(node(line.capital), '을', '를')} 되찾을 날이 ${turnsLabel(after, left)} 남았다.`
+        : `도읍 ${josa(node(line.capital), '이', '가')} 무너졌다. 군장과 조정이 ${josa(node(line.seat), '으로', '로')} 피했다. ${turnsLabel(after, left)} 안에 도읍을 되찾지 못하면 나라가 끝난다.`
     }
     case 'retake':
       return line.faction === viewer ? `도읍 ${josa(node(line.capital), '을', '를')} 되찾았다! 조정이 돌아왔다.` : null

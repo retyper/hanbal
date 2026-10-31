@@ -9,7 +9,7 @@
  * 순서: 1 명령 확정 때 이번 카드의 답을 건다 (resolveCard) → 7 가을걷이가 그해 배수(harvestMod)를 읽는다 → 11 계절을 넘긴 뒤 다음 카드를 편다 (stepCards).
  */
 import { roll } from '../core/rng.ts'
-import { seasonNo, yearOf } from './calendar.ts'
+import { monthly, perSeason, seasonIdx, seasonNo, yearOf } from './calendar.ts'
 import { P } from '../tune/params.ts'
 import { CARDS, CARD_KINDS, QUARREL_WHYS, cardFallback, type CardKind, type QuarrelWhy } from './data/cards.ts'
 import { HERO_POOL } from './data/heroes-pool.ts'
@@ -125,8 +125,8 @@ function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w:
  */
 function chapterCard(r: Realm, season: number): Card | null {
   if (r.scenario?.id !== 'jumong' || r.player !== 'goguryeo') return null
-  if (season === P.realm.cardFishSeason) return { kind: 'fishbridge', season }
-  if (season === P.realm.cardGogakSeason && r.factions['biryuna'] !== undefined) return { kind: 'gogak', season }
+  if (seasonIdx(r, season) === P.realm.cardFishSeason) return { kind: 'fishbridge', season }
+  if (seasonIdx(r, season) === P.realm.cardGogakSeason && r.factions['biryuna'] !== undefined) return { kind: 'gogak', season }
   return null
 }
 
@@ -405,7 +405,8 @@ export function resolveCard(r: Realm, orders: readonly Order[], lines: ReportLin
 /** 점괘를 볼 수 있나 — 이번 계절에 제사를 지냈거나 무당 핏줄 장수가 있다 */
 function canDivine(r: Realm, f: string, lines: readonly ReportLine[]): { ok: boolean; shaman: boolean } {
   const shaman = freeHeroes(r, f).some((h) => hasTrait(h, 'shaman')) || Object.values(r.heroes).some((h) => h.faction === f && h.status === 'free' && hasTrait(h, 'shaman'))
-  const rite = lines.some((l) => l.kind === 'rite' && l.faction === f)
+  // 달 시계 — 막 지난 계절의 어느 달이든 제사를 지냈으면 (stepCards 는 새 계절 첫 턴에 돈다)
+  const rite = monthly(r) ? r.riteSeason?.[f] === seasonIdx(r) - 1 : lines.some((l) => l.kind === 'rite' && l.faction === f)
   return { ok: shaman || rite, shaman }
 }
 
@@ -422,7 +423,7 @@ export function stepCards(r: Realm, lines: ReportLine[]): void {
   }
   const next = r.cardNext
   r.card = next !== undefined && next !== null && next.season === r.season && cardValid(r, next) ? next : next === undefined ? drawCard(r, r.season) : null
-  r.cardNext = drawCard(r, r.season + 1)
+  r.cardNext = drawCard(r, r.season + perSeason(r)) // 다음 계절의 첫 턴
   const dv = canDivine(r, f, lines)
   if (!dv.ok) return
   const acc = Math.min(0.95, P.realm.omenRight + (dv.shaman ? P.realm.omenShaman : 0))

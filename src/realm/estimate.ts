@@ -5,6 +5,7 @@
  * 승률은 범위로 낸다 — 모르는 입력(적 군세)을 끝에서 끝까지 넣는다. 범위가 좁혀지는 것이 정찰의 보상이다.
  */
 import { P } from '../tune/params.ts'
+import { ageSeasons } from './calendar.ts'
 import {
   ambushChance, ambushSizePenalty, counterMul, fightHead, gearMul, headcount, leadMul, roleMul, strength, winChance, type Field, type Force, type UnitKind,
 } from './battle.ts'
@@ -12,7 +13,7 @@ import { militiaMen } from './economy.ts'
 import { ambushTraitOf } from './heroes.ts'
 import { alertRange, seenMix, visibleRange } from './intel.ts'
 import {
-  approachConceal, approachOptions, blockedWhy, cliffChance, conceal, concealOf, forceOf, fortMul, marchCut, marchSeasons, otherEnd, seasonOf, seenMarches,
+  approachConceal, approachOptions, blockedWhy, cliffChance, conceal, concealOf, forceOf, fortMul, marchCut, marchTurns, otherEnd, seasonOf, seenMarches,
 } from './season.ts'
 import { concealBonus, passExtra, siegeFort } from './hooks.ts'
 import type { Approach, Army, EdgeKind, Realm, REdge } from './types.ts'
@@ -64,7 +65,7 @@ function winVs(
   const k = (r.intel[faction] ?? {})[to]
   const none = { win: null, ambush: null, caught: null }
   if (node.owner === faction || node.kind === 'sodo' || !k?.force) return { ...none, age: Infinity }
-  const age = r.season - k.force.season
+  const age = ageSeasons(r, k.force.season) // 본 지 몇 계절 (달 시계면 석 달이 1)
   const range = visibleRange({ f0: k.force.f0, src: k.force.src, u: k.force.u }, age)
   if (range === null) return { ...none, age }
   // 도읍 에우기(이서) — 남의 도읍은 성의 덤을 덜 받는다 (판정 season.fight 와 같은 셈)
@@ -158,12 +159,12 @@ export function movesOf(r: Realm, faction: string, a: Army): Move[] {
     const hostile = node.owner !== faction && node.kind !== 'sodo' && (node.owner !== null || node.kind !== 'wild')
     const k = known[to]
     const v = winVs(r, faction, to, myF, { force: forceOf(r, a), edge: ed.kind })
-    const al = k?.alert ? alertRange(k.alert.v, r.season - k.alert.season) : null
+    const al = k?.alert ? alertRange(k.alert.v, ageSeasons(r, k.alert.season)) : null
     const ambushP = ambushChance(conceal(ed, node, season) + concealBonus(r, faction, ed.kind), myRyak, R.aiAssumeRyak, size + ambushTraitOf(a.hero !== null ? (r.heroes[a.hero] ?? null) : null, ed.kind), 0, al === null ? R.aiAssumeAlert : al[1])
     // 풍습 — 고갯목은 고갯길 한 계절 더 (hooks.passExtra · 판정 season.applyOrders 와 같다)
     const shut = blockedWhy(ed, r)
     out.push({
-      edge: ed, to, seasons: Math.max(1, marchSeasons(ed.kind, season) + passExtra(r, faction, ed.kind) + (shut !== null ? R.hardExtra : 0) - marchCut(r, a)), blocked: shut, hostile,
+      edge: ed, to, seasons: Math.max(1, marchTurns(r, ed) + passExtra(r, faction, ed.kind) + (shut !== null ? R.hardExtra : 0) - marchCut(r, a)), blocked: shut, hostile,
       win: v.win, winAmbush: v.ambush, winCaught: v.caught, age: v.age, ambushP,
       ...concealBits(concealOf(r, ed.id, headcount(forceOf(r, a)), to)), walled: fortMul(node, season) > 1,
     })
@@ -193,7 +194,7 @@ export function approachMoves(r: Realm, faction: string, a: Army, m: Move): Appr
   const season = seasonOf(r)
   const myRyak = a.hero !== null ? (r.heroes[a.hero]?.ryak ?? 1) : 1
   const known = (r.intel[faction] ?? {})[m.to]
-  const al = known?.alert ? alertRange(known.alert.v, r.season - known.alert.season) : null
+  const al = known?.alert ? alertRange(known.alert.v, ageSeasons(r, known.alert.season)) : null
   const size = -ambushSizePenalty(headcount(forceOf(r, a))) + ambushTraitOf(a.hero !== null ? (r.heroes[a.hero] ?? null) : null, m.edge.kind)
   const mid = (x: Range | null, y: Range | null): Range | null => (x === null || y === null ? null : [(x[0] + y[0]) / 2, (x[1] + y[1]) / 2])
   const out: ApproachMove[] = []

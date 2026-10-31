@@ -10,6 +10,7 @@
  * 셈은 참값이다 (AI 의 머리). 다만 까닭이 쓰는 것은 대개 누구나 아는 것이다 — 전쟁, 땅의 주인, 앗긴 땅, 도읍.
  */
 import { P } from '../tune/params.ts'
+import { seasons } from './calendar.ts'
 import { stockOf, upkeepOf } from './economy.ts'
 import { favorOf, nationPower, noteDeed, pairKey, powerRange, relationOf } from './diplomacy.ts'
 import { knows } from './discovery.ts'
@@ -73,7 +74,7 @@ function leaderNow(r: Realm, viewer: string): string | null {
 /** `taker` 가 stanceMemory 계절 안에 `victim` 의 땅을 앗았나 */
 export function tookRecently(r: Realm, taker: string, victim: string): boolean {
   const s = relationOf(r, taker, victim).took?.[taker]
-  return s !== undefined && s >= r.season - P.realm.stanceMemory
+  return s !== undefined && s >= r.season - seasons(r, P.realm.stanceMemory)
 }
 
 /** `from` 의 군대가 지금 `to` 의 땅으로 가고 있나 */

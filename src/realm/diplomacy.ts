@@ -15,8 +15,8 @@ import { GOODS, canPayGoods, goodOf, goodsOne, goodsWorth, menOf, payGoods, stoc
 import { envoyBonus, releaseCaptives } from './heroes.ts'
 import { visibleRange } from './intel.ts'
 import { memoFor } from './memo.ts'
-import { marchSeasons, nodeStrength } from './season.ts'
-import { seasonOf } from './calendar.ts'
+import { marchTurns, nodeStrength } from './season.ts'
+import { ageSeasons, seasons } from './calendar.ts'
 import { allianceWhy, truceWhy, winningAgainst, type Motive } from './stance.ts'
 import { knows } from './discovery.ts'
 import { noteIron } from './paths.ts'
@@ -68,7 +68,7 @@ export function declareWar(r: Realm, by: string, to: string, lines: ReportLine[]
 /** 판을 열 때 화친으로 시작한다 (바닷가 여덟 나라 — hooks.startCustoms). 보고 없이 · 화친은 truceSeasons 뒤에 끝난다 */
 export function makeTruce(r: Realm, a: string, b: string): void {
   if (a === b || r.factions[a] === undefined || r.factions[b] === undefined) return
-  setRelation(r, a, b, 'truce', r.season + P.realm.truceSeasons, [])
+  setRelation(r, a, b, 'truce', r.season + seasons(r, P.realm.truceSeasons), [])
 }
 
 /**
@@ -208,7 +208,7 @@ export function checkPledges(r: Realm, lines: ReportLine[]): void {
 /** 약속을 건다 — `by` 가 `node` 를 pledgeSeasons 안에 친다 */
 function pledge(r: Realm, by: string, other: string, node: string): void {
   const rel = ((r.relations ??= {})[pairKey(by, other)] ??= { state: 'neutral', until: null })
-  ;(rel.pledges ??= []).push({ by, node, until: r.season + P.realm.pledgeSeasons })
+  ;(rel.pledges ??= []).push({ by, node, until: r.season + seasons(r, P.realm.pledgeSeasons) })
 }
 
 /** 9 — 사이가 저절로 움직인다: 같은 적과 싸우는 두 나라는 가까워진다 (장터의 호감은 holdMarkets) */
@@ -272,7 +272,7 @@ export function lentEta(r: Realm, army: string): number | null {
   if (from === a.lent.node) return k
   const path = lentPath(r, army, from)
   if (path.length === 0) return null
-  for (const s of path) k += marchSeasons(r.edges[s.edge]!.kind, seasonOf(r, r.season + k))
+  for (const s of path) k += marchTurns(r, r.edges[s.edge]!, r.season + k)
   return k
 }
 
@@ -320,14 +320,14 @@ export function makeVassal(r: Realm, vassal: string, lord: string): void {
   if (vassal === lord || r.factions[vassal] === undefined || r.factions[lord] === undefined) return
   const key = pairKey(vassal, lord)
   const rel = ((r.relations ??= {})[key] ??= { state: 'neutral', until: null })
-  rel.vassal = { lord, until: r.season + P.realm.tributeSeasons }
+  rel.vassal = { lord, until: r.season + seasons(r, P.realm.tributeSeasons) }
 }
 
 /** 두 나라 사이가 한 칸 나빠진다 (동맹→화친→중립→전쟁) — 공작이 들키거나 이간이 먹힐 때 (plots.ts) */
 export function worsen(r: Realm, a: string, b: string, lines: ReportLine[], cause?: { by?: string; why: RelationWhy }): void {
   if (a === b || r.factions[a] === undefined || r.factions[b] === undefined) return
   const down = STEP[relationOf(r, a, b).state]
-  setRelation(r, a, b, down, down === 'truce' ? r.season + P.realm.truceSeasons : null, lines, cause)
+  setRelation(r, a, b, down, down === 'truce' ? r.season + seasons(r, P.realm.truceSeasons) : null, lines, cause)
 }
 
 /**
@@ -348,7 +348,7 @@ export function onHostile(r: Realm, attacker: string, victim: string | null, lin
     // (형: "그냥무작정 전쟁이다라 그러면 어떡하냐" — 약조를 깬 한 번에 판의 모든 나라와 전쟁이 나던 것)
     if (s !== 'truce' && s !== 'ally') { addFavor(r, attacker, x, -P.realm.favorBreakOthers); continue }
     const down = STEP[s]
-    setRelation(r, attacker, x, down, down === 'truce' ? r.season + P.realm.truceSeasons : null, lines, { by: x, why: 'distrust' })
+    setRelation(r, attacker, x, down, down === 'truce' ? r.season + seasons(r, P.realm.truceSeasons) : null, lines, { by: x, why: 'distrust' })
   }
 }
 
@@ -450,7 +450,7 @@ export function powerRange(r: Realm, asker: string, faction: string): [number, n
   for (const n of Object.values(r.nodes)) {
     if (n.owner !== faction) continue
     const k = known[n.id]?.force
-    const v = k ? visibleRange({ f0: k.f0, src: k.src, u: k.u }, r.season - k.season) : null
+    const v = k ? visibleRange({ f0: k.f0, src: k.src, u: k.u }, ageSeasons(r, k.season)) : null
     if (v !== null) {
       lo += v[0]
       hi += v[1]
@@ -677,7 +677,7 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
     if ((o.ask === 'truce' || o.ask === 'alliance' || o.ask === 'trade') && hasCustom(r, o.from, 'girbikyeo')) noteOnce(r, lines, o.from, 'girbikyeo', { other: o.to })
     switch (o.ask) {
       case 'truce':
-        setRelation(r, o.from, o.to, 'truce', r.season + R.truceSeasons, lines)
+        setRelation(r, o.from, o.to, 'truce', r.season + seasons(r, R.truceSeasons), lines)
         addFavor(r, o.from, o.to, R.favorAccept)
         if (wasWar) judgeFee(r, o.from, o.to, lines)
         swayBig(r, o.from, o.to, lines)
@@ -696,7 +696,7 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
         pay(r, o.to, o.from, { grain: Math.min(take.grain, s.grain), iron: Math.min(take.iron, s.iron) })
         // 바치기로 했으니 조공국이다 — 칼을 거두고 화친한다
         makeVassal(r, o.to, o.from)
-        if (relationOf(r, o.from, o.to).state !== 'ally') setRelation(r, o.from, o.to, 'truce', r.season + R.truceSeasons, lines, { by: o.to, why: 'envoy' })
+        if (relationOf(r, o.from, o.to).state !== 'ally') setRelation(r, o.from, o.to, 'truce', r.season + seasons(r, R.truceSeasons), lines, { by: o.to, why: 'envoy' })
         break
       }
       case 'gift': {
@@ -721,7 +721,7 @@ export function resolveEnvoys(r: Realm, orders: readonly Order[], lines: ReportL
       }
       case 'troops': {
         const a = r.armies[lend!]!
-        a.lent = { to: o.from, node: o.target!, until: r.season + R.troopsSeasons, ...(a.at === o.target ? { arrived: true } : {}) }
+        a.lent = { to: o.from, node: o.target!, until: r.season + seasons(r, R.troopsSeasons), ...(a.at === o.target ? { arrived: true } : {}) }
         const eta = lentEta(r, a.id)
         lines.push({ kind: 'lent', from: o.to, to: o.from, node: o.target!, army: a.id, back: false, until: a.lent.until, ...(eta !== null ? { eta } : {}) })
         break
@@ -921,7 +921,7 @@ export function resolveAnswers(r: Realm, orders: readonly Order[], lines: Report
     if (yes) {
       switch (a.kind) {
         case 'truce':
-          setRelation(r, a.from, a.to, 'truce', r.season + R.truceSeasons, lines)
+          setRelation(r, a.from, a.to, 'truce', r.season + seasons(r, R.truceSeasons), lines)
           break
         case 'alliance':
           setRelation(r, a.from, a.to, 'ally', null, lines)
@@ -936,14 +936,14 @@ export function resolveAnswers(r: Realm, orders: readonly Order[], lines: Report
           const s = stockOf(r, a.from)
           pay(r, a.from, a.to, { grain: Math.min(a.give.grain, s.grain), iron: Math.min(a.give.iron, s.iron) })
           makeVassal(r, a.from, a.to) // 바치겠다는 나라 — 받아 주면 우리 조공국
-          if (relationOf(r, a.from, a.to).state !== 'ally') setRelation(r, a.from, a.to, 'truce', r.season + R.truceSeasons, lines)
+          if (relationOf(r, a.from, a.to).state !== 'ally') setRelation(r, a.from, a.to, 'truce', r.season + seasons(r, R.truceSeasons), lines)
           break
         }
         case 'demand':
           if (canPay(r, a.to, a.take)) {
             pay(r, a.to, a.from, a.take)
             makeVassal(r, a.to, a.from) // 요구를 들어주면 그 나라의 조공국이 된다
-            if (relationOf(r, a.from, a.to).state !== 'ally') setRelation(r, a.from, a.to, 'truce', r.season + R.truceSeasons, lines)
+            if (relationOf(r, a.from, a.to).state !== 'ally') setRelation(r, a.from, a.to, 'truce', r.season + seasons(r, R.truceSeasons), lines)
           } else yes = false
           break
         case 'joint':

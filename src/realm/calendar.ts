@@ -81,6 +81,11 @@ export function isSeasonStart(c: Clocked, t: number = c.season): boolean {
   return c.clock !== 'month' || mod(t, MONTHS_PER_SEASON) === 0
 }
 
+/** 그 턴이 든 계절의 마지막 턴 — 「이 계절과 그 뒤 n계절」 기한은 `seasonEndTurn(r) + seasons(r, n)`. 옛 판은 그 턴 그대로 */
+export function seasonEndTurn(c: Clocked, t: number = c.season): number {
+  return t + (perSeason(c) - 1 - mod(t, perSeason(c)))
+}
+
 /** `since` 턴부터 지난 계절 수 — 달 시계면 석 달이 1 (나눈 값 그대로 · 정보의 나이 같은 셈) */
 export function ageSeasons(c: Clocked, since: number, t: number = c.season): number {
   return (t - since) / perSeason(c)

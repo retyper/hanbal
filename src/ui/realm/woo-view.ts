@@ -3,7 +3,7 @@
  * (형 10-29: "회유를 권할 때 누구를 시킬지 장수 얼굴도 안 나오고, 뭐가 얼마나 되는지 구체적이지도 않음")
  * 숫자는 ODDS 원칙 1 — 우리 옥의 사람이라 %. 말 칩은 숫자 곁에 남긴다. 판은 읽기만 한다.
  */
-import { josa, STAT_NAME } from '../../realm/data/prose.ts'
+import { josa, STAT_NAME, turnsLabel } from '../../realm/data/prose.ts'
 import { deokOf, hasTrait, persuadeDropOf, persuadeSeasons, recruitChance, resistOf } from '../../realm/heroes.ts'
 import { TRAIT } from '../../realm/data/traits.ts'
 import type { Hero, Realm, WooApproach, WooReact } from '../../realm/types.ts'
@@ -272,7 +272,7 @@ export function talkBoxHtml(k: WooKit, L: TalkLines, r: Realm, s: TalkState): st
   const chips: string[] = [`의리 ${x.uiri}`]
   const fallen = !Object.values(r.nodes).some((n) => n.owner === x.faction)
   chips.push(`${r.factions[x.faction]?.name ?? ''} ${fallen ? '무너짐' : '남아 있음'}`)
-  if (x.caughtAt !== undefined && r.season - x.caughtAt > 0) chips.push(`갇힌 지 ${r.season - x.caughtAt}계절`)
+  if (x.caughtAt !== undefined && r.season - x.caughtAt > 0) chips.push(`갇힌 지 ${turnsLabel(r, r.season - x.caughtAt)}`)
   for (const tr of x.traits.slice(0, 2)) { const td = TRAIT[tr]; if (td !== undefined) chips.push(td.name) }
   // 도장 — 노여움이 터지면 붉은 네모 「원한」이 결과 위에 쿵 (둥근 것 · 해 동그라미 금지)
   h += `<div class="dp-chips">${chips.map((c) => `<i class="dp-chip">${k.esc(c)}</i>`).join('')}${(x.grudge ?? 0) > 0 ? `<i class="dp-chip bad">원한 ${x.grudge}</i>` : ''}</div></div>`
