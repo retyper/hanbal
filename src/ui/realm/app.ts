@@ -639,6 +639,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const a = realm?.armies[el.dataset['army'] ?? '']
       if (realm === null || a === undefined) return false
       mapHold.show(armyHoldHtml(realm, a, el.dataset['act'] === 'foetok'), x, y)
+      { const s = tapSlot('hold'); if (s !== null) ding(snd(s), 0.15) } // 튀어나올 때 작은 소리 · 걷힐 때는 소리 없이 (ZAXIS-1031 7단계)
       return true
     },
     onEnd: () => mapHold.hide(),
