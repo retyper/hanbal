@@ -1260,6 +1260,21 @@ function takeYielded(r: Realm, res: FightResult, win: 'a' | 'd' | null, winner: 
   return { side: win, n, join: given, hh }
 }
 
+/** 둘째 물결이 닿는 달 수 — 옛 판은 0 (같은 계절에 닿은 것만 · 예전 그대로) */
+function reliefReachOf(r: Realm): number {
+  return monthly(r) ? Math.max(0, Math.round(P.realm.reliefReach)) : 0
+}
+
+/**
+ * 둘째 물결 (달 시계 · loop 리뷰 #5) — 고을에 싸움이 붙을 때, 같은 나라의 다른 군대가 그 고을로 오는 길 위에 있고 reliefReach 달 안에 닿을 것이면
+ * 이 싸움에 원군으로 늦게 붙는다. 달을 달리해 닿은 군대가 하나씩 따로 싸워 싸움 화면·보고가 겹치던 것을 한 싸움으로 (fight 의 lateA)
+ */
+function waveOf(r: Realm, node: string, faction: string, live: readonly Army[]): Army[] {
+  const reach = reliefReachOf(r)
+  if (reach <= 0) return []
+  return byId(Object.values(r.armies)).filter((x) => x.faction === faction && x.march !== null && x.march.to === node && x.march.left > 0 && x.march.left <= reach && !live.includes(x))
+}
+
 /**
  * 4·5 — 한 나라의 군대들이 같은 계절에 적 고을에 닿았다: 진군 방식 → 맞붙음(라운드) → 장수의 운명. 하나여도 같은 길을 지난다.
  * 진군 방식 (형: "강을 도하해 기습 · 대로로 행군 · 산기슭 · 절벽") —
@@ -1268,17 +1283,22 @@ function takeYielded(r: Realm, res: FightResult, win: 'a' | 'd' | null, winner: 
  *   산기슭: 먹히면 성을 반쯤 비켜 뒤를 치고 옆치기를 얻는다
  *   절벽: 먹히면 성을 넘는다. 실패하면 떨어져 잃는다
  */
-function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, SnipeZone>>, tactics: Readonly<Record<string, Tactic>>, lines: ReportLine[], rested: Set<string>): void {
+function fight(
+  r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, SnipeZone>>, tactics: Readonly<Record<string, Tactic>>, lines: ReportLine[],
+  rested: Set<string>, wave: ReadonlySet<string> = new Set(),
+): void {
   const R = P.realm
   const season = seasonOf(r)
   const a = atks[0]!
   const node = r.nodes[a.march!.to]!
-  // 같은 계절 이 고을로 닿는 지키는 쪽 군대 — 먼저 들인다 (원군: 처음부터 섞지 않고 늦게 붙는다 · 아래 reliefD)
+  // 같은 계절 이 고을로 닿는 지키는 쪽 군대 — 먼저 들인다 (원군: 처음부터 섞지 않고 늦게 붙는다 · 아래 reliefD).
+  // 달 시계면 reliefReach 달 안에 닿을 군대도 — 에워싸인 고을이 원군이 올 때까지 버틴다 (둘째 물결 · waveOf)
   const owner0 = node.owner
+  const reach = reliefReachOf(r)
   if (owner0 !== null && !allied(r, a.faction, owner0)) {
     for (const x of byId(Object.values(r.armies))) {
       const m = x.march
-      if (m === null || m.to !== node.id || m.left > 0 || atks.includes(x) || !allied(r, x.faction, owner0)) continue
+      if (m === null || m.to !== node.id || m.left > reach || atks.includes(x) || !allied(r, x.faction, owner0)) continue
       x.march = null
       x.at = node.id
       x.came = r.season
@@ -1404,10 +1424,12 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   const menOf = (xs: readonly Army[]): number => xs.reduce((s, x) => s + headcount(forceOf(r, x)), 0)
   const byEdge = new Map<string, Army[]>()
   for (const l of legs) byEdge.set(l.edge.id, [...(byEdge.get(l.edge.id) ?? []), l.army])
-  const mainEdge = [...byEdge.entries()].sort((x, y) => menOf(y[1]) - menOf(x[1]) || (x[0] < y[0] ? -1 : 1))[0]![0]
+  // 앞선 길은 이번 달에 닿은 군대로만 고른다 — 둘째 물결(wave)은 늘 늦게 붙는다
+  const firstMen = (xs: readonly Army[]): number => menOf(xs.filter((v) => !wave.has(v.id)))
+  const mainEdge = [...byEdge.entries()].sort((x, y) => firstMen(y[1]) - firstMen(x[1]) || (x[0] < y[0] ? -1 : 1))[0]![0]
   // 늦게 붙는 군대 — 다른 길로 온 군대 · 「뒤따른다」로 보낸 군대 (형 10-25: "원군으로도 안 오고 그냥 한 번에 합산"). 다 뒤따르면 뒤따름은 없는 셈
-  const follows = legs.filter((l) => l.edge.id !== mainEdge || l.army.march?.follow === true)
-  const lateA = (follows.length < legs.length ? follows : legs.filter((l) => l.edge.id !== mainEdge)).map((l) => l.army)
+  const follows = legs.filter((l) => l.edge.id !== mainEdge || l.army.march?.follow === true || wave.has(l.army.id))
+  const lateA = (follows.length < legs.length ? follows : legs.filter((l) => l.edge.id !== mainEdge || wave.has(l.army.id))).map((l) => l.army)
   const lateD = defenders.filter((d) => d.came === r.season)
   const reliefA = lateA.length > 0 ? { relief: { mix: mergeForces(r, lateA).mix, at: R.reliefRound } } : {}
   const reliefD = lateD.length > 0 && standing.length > lateD.length ? { relief: { mix: mergeForces(r, lateD).mix, at: R.reliefRound } } : {}
@@ -1563,7 +1585,8 @@ function resolveMarches(
     }
     if (contested(r, node.id, lead.faction)) {
       fought.add(node.id)
-      fight(r, live, snipes, tactics, lines, rested)
+      const wave = waveOf(r, node.id, lead.faction, live)
+      fight(r, [...live, ...wave], snipes, tactics, lines, rested, new Set(wave.map((x) => x.id)))
       continue
     }
     walkIn(r, live, node, lines)
