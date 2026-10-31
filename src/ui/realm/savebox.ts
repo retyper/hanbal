@@ -60,7 +60,7 @@ export function saveBoxHtml(k: SaveBoxKit, v: SaveBoxView): string {
     h += `<div class="svrow${m === null ? ' empty' : ''}${v.ask?.n === n ? ' asking' : ''}"><span class="svno">${n + 1}</span>`
     h += m === null
       ? `<span class="svt"><b>빈 칸</b></span>`
-      : `${k.emblem(m.nation, 'svem')}<span class="svt"><b>${k.esc(m.label)}</b><small>${k.esc(m.name)} · ${k.esc(boardLabel(m.region as RegionId))} · ${k.esc(seasonLabel(m.season))}</small><small>${k.esc(when(m.savedAt))}</small></span>`
+      : `${k.emblem(m.nation, 'svem')}<span class="svt"><b>${k.esc(m.label)}</b><small>${k.esc(m.name)} · ${k.esc(boardLabel(m.region as RegionId))} · ${k.esc(seasonLabel(m))}</small><small>${k.esc(when(m.savedAt))}</small></span>`
     h += `<span class="svb">`
     if (game) h += `<button class="btn" data-act="sv-save" data-n="${n}">${m === null ? '여기 저장' : '덮어쓰기'}</button>`
     if (m !== null) h += `<button class="btn pri" data-act="sv-load" data-n="${n}">불러오기</button><button class="btn ghost svx" data-act="sv-drop" data-n="${n}" aria-label="이 칸 비우기">✕</button>`

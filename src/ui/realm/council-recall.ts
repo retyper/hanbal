@@ -9,7 +9,7 @@
  * 판을 읽기만 한다.
  */
 import { isOld } from '../../realm/age.ts'
-import { seasonOf } from '../../realm/calendar.ts'
+import { seasonIdx, seasonOf, seasons, type Clocked } from '../../realm/calendar.ts'
 import { josa, SEASON_NAME } from '../../realm/data/prose.ts'
 import { bestRouteVs, councilRecord, heroBattlesVs, heroPlotVs, heroSplit, lastBattleVs, plotBeforeWin, splitLesson, worstRouteVs } from '../../realm/memory.ts'
 import type { Approach, Hero, Realm } from '../../realm/types.ts'
@@ -19,10 +19,10 @@ import { voiceKind } from './voice.ts'
 const AP_NAME: Readonly<Record<Approach, string>> = { road: '대로', night: '밤길', ford: '여울', ridge: '산기슭', cliff: '절벽' }
 const isAp = (x: string): x is Approach => x in AP_NAME
 
-/** 그 계절을 지금에서 본 말 — 「지난 봄」 · 「지난해 가을」 · 「두 해 전 겨울」 */
-export function whenSaid(now: number, s: number): string {
-  const name = SEASON_NAME[seasonOf(s)]
-  const d = now - s
+/** 그 계절을 지금에서 본 말 — 「지난 봄」 · 「지난해 가을」 · 「두 해 전 겨울」 (`s` 는 그 일의 턴) */
+export function whenSaid(r: Clocked, s: number): string {
+  const name = SEASON_NAME[seasonOf(r, s)]
+  const d = seasonIdx(r) - seasonIdx(r, s)
   if (d <= 0) return `이번 ${name}`
   if (d < 4) return `지난 ${name}`
   if (d < 8) return `지난해 ${name}`
@@ -30,7 +30,7 @@ export function whenSaid(now: number, s: number): string {
   return `${y === 2 ? '두' : y === 3 ? '세' : y === 4 ? '네' : String(y)} 해 전 ${name}`
 }
 
-const fresh = (r: Realm, s: number): boolean => r.season - s <= P.realm.cnMemAge
+const fresh = (r: Realm, s: number): boolean => r.season - s <= seasons(r, P.realm.cnMemAge)
 const nodeName = (r: Realm, id: string | undefined): string => (id !== undefined ? r.nodes[id]?.name ?? '' : '')
 
 /** 길의 까닭 — 이 길로 가자는 말 앞에. 이긴 길이면 「그 길로 가 이겼다」, 진 다른 길이 있으면 「그 길로 갔다가 졌다」 */
@@ -49,7 +49,7 @@ export function heroRouteFact(r: Realm, hero: string, foe: string): RouteFact | 
   const x = xs[xs.length - 1]
   if (x === undefined) return null
   const ap = x.how as Approach
-  const where = `${whenSaid(r.season, x.s)} ${nodeName(r, x.at)} 싸움에서`
+  const where = `${whenSaid(r, x.s)} ${nodeName(r, x.at)} 싸움에서`
   return x.res === 'won'
     ? { ap, won: true, own: true, line: `${where} ${josa(AP_NAME[ap], '으로', '로')} 가 이겼습니다.` }
     : { ap, won: false, own: true, line: `${where} ${josa(AP_NAME[ap], '으로', '로')} 갔다가 크게 졌습니다.` }
@@ -69,7 +69,7 @@ export function nationRouteFacts(r: Realm, me: string, foe: string): { best: Rou
     if (how === undefined || !isAp(how)) return null
     const l = last(how, won ? 'won' : 'lost')
     if (l === null || !fresh(r, l.s)) return null
-    const where = `${whenSaid(r.season, l.s)} ${josa(nodeName(r, l.at), '을', '를')} 칠 때`
+    const where = `${whenSaid(r, l.s)} ${josa(nodeName(r, l.at), '을', '를')} 칠 때`
     return { ap: how, won, own: false, line: won ? `${where} ${josa(AP_NAME[how], '으로', '로')} 가 이겼습니다.` : `${where} ${josa(AP_NAME[how], '으로', '로')} 갔다가 졌습니다.` }
   }
   return { best: mk(bestRouteVs(r, me, foe)?.how, true), worst: mk(worstRouteVs(r, me, foe)?.how, false) }
@@ -86,14 +86,14 @@ export interface SplitFact {
 export function heroSplitFact(r: Realm, hero: string): SplitFact | null {
   const x = heroSplit(r, hero)
   if (x === null || !x.raid || !fresh(r, x.s)) return null
-  return { side: 'keep', own: true, line: `${whenSaid(r.season, x.s)} ${x.keep <= 0 ? '군사를 다 데려갔다가' : `${Math.round(x.keep / 10)}할만 남기고 갔다가`} 빈 ${josa(nodeName(r, x.at), '이', '가')} 짓밟혔습니다.` }
+  return { side: 'keep', own: true, line: `${whenSaid(r, x.s)} ${x.keep <= 0 ? '군사를 다 데려갔다가' : `${Math.round(x.keep / 10)}할만 남기고 갔다가`} 빈 ${josa(nodeName(r, x.at), '이', '가')} 짓밟혔습니다.` }
 }
 
 /** 나라의 장부 — 가장 최근의 나눠 떠남과 그 결과 */
 export function nationSplitFact(r: Realm, me: string): SplitFact | null {
   const x = splitLesson(r, me)
   if (x === null || !fresh(r, x.s)) return null
-  const when = whenSaid(r.season, x.s)
+  const when = whenSaid(r, x.s)
   const foe = r.factions[x.foe]?.name ?? ''
   if (x.raid) return { side: 'keep', own: false, line: `${when} ${x.keep <= 0 ? '군사를 다 데려갔다가' : `${Math.round(x.keep / 10)}할만 남기고 갔다가`} 빈 ${josa(nodeName(r, x.at), '이', '가')} 짓밟혔습니다.` }
   if (x.res === 'lost' && x.keep > 0) return { side: 'all', own: false, line: `${when} 군사를 쪼개 갔다가 ${foe}에 졌습니다.` }
@@ -106,7 +106,7 @@ export function nationSplitFact(r: Realm, me: string): SplitFact | null {
 export function plotFact(r: Realm, me: string, foe: string, hero: string | null): string {
   const name = r.factions[foe]?.name ?? ''
   const own = hero !== null ? heroPlotVs(r, hero, foe) : null
-  if (own !== null && fresh(r, own.s)) return `${whenSaid(r.season, own.s)} ${name}에 공작을 놓아 본 적이 있어 그 속을 압니다.`
+  if (own !== null && fresh(r, own.s)) return `${whenSaid(r, own.s)} ${name}에 공작을 놓아 본 적이 있어 그 속을 압니다.`
   const pb = plotBeforeWin(r, me, foe)
   if (pb !== null && pb.won > 0 && pb.won > pb.lost) return `${name}에는 공작을 먼저 놓고 쳤을 때 이겼습니다.`
   return ''
@@ -127,7 +127,7 @@ export function grainSeen(r: Realm, me: string, foe: string): { v: number; s: nu
 export function lostLast(r: Realm, me: string, foe: string): string {
   const b = lastBattleVs(r, { faction: me }, foe)
   if (b === null || b.on || b.res !== 'lost' || !fresh(r, b.s)) return ''
-  return `${whenSaid(r.season, b.s)} ${nodeName(r, b.at)} 싸움에서 저들에게 졌습니다.`
+  return `${whenSaid(r, b.s)} ${nodeName(r, b.at)} 싸움에서 저들에게 졌습니다.`
 }
 
 /** 장수가 스스로를 낮춰 부르는 말 · 「이 늙은이」는 쉰이 넘었거나 머리가 센 장수만 (형 10-30) */

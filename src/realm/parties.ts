@@ -48,12 +48,12 @@ function hostileHere(r: Realm, faction: string, node: string): boolean {
 
 /** `at` 에서 개척단이 이번 계절 갈 수 있는 곳 — 길 하나씩. found 면 닿자마자 마을이 선다 */
 export function partyMoves(r: Realm, faction: string, at: string): Array<{ edge: string; to: string; seasons: number; found: boolean }> {
-  const season = seasonOf(r.season)
+  const season = seasonOf(r)
   const out: Array<{ edge: string; to: string; seasons: number; found: boolean }> = []
   for (const id of Object.keys(r.edges).sort()) {
     const ed = r.edges[id]!
     const to = ed.a === at ? ed.b : ed.b === at ? ed.a : null
-    if (to === null || blockedWhy(ed, season) !== null || hostileHere(r, faction, to)) continue
+    if (to === null || blockedWhy(ed, r) !== null || hostileHere(r, faction, to)) continue
     const n = r.nodes[to]
     if (n === undefined || n.kind === 'sodo') continue
     const found = foundable(r, faction, to)

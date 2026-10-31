@@ -808,7 +808,7 @@ const WAR_BG_FALLBACK: Readonly<Record<WarGround, string>> = {
 export function warGround(r: Realm, l: BattleLine): WarGround {
   const node = r.nodes[l.node]
   if (l.approach === 'night' && l.ambush === 'success') return 'night'
-  if (seasonOf(r.season) === 'winter') return 'snow'
+  if (seasonOf(r) === 'winter') return 'snow'
   const via = l.via
   if (via === 'sea' || (l.field !== true && node?.kind === 'port' && via === undefined)) return 'sea'
   if (l.field !== true && node !== undefined && (node.kind === 'fort' || node.kind === 'capital' || node.tags.includes('palisade'))) return 'gate'
@@ -890,7 +890,7 @@ export function terrChips(r: Realm, l: BattleLine, me: string, foe: string): Ter
   const weAtk = l.atkFaction === me
   const def: 'us' | 'foe' = weAtk ? 'foe' : 'us'
   const atk: 'us' | 'foe' = weAtk ? 'us' : 'foe'
-  const winter = seasonOf(r.season) === 'winter'
+  const winter = seasonOf(r) === 'winter'
   const node = r.nodes[l.node]
   // 잠든 채 들이쳐졌으면 지키는 쪽은 땅의 수를 못 쓴다 (season: defTerrain)
   const sleep = l.field !== true && l.ambush === 'success'

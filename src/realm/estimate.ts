@@ -68,7 +68,7 @@ function winVs(
   const range = visibleRange({ f0: k.force.f0, src: k.force.src, u: k.force.u }, age)
   if (range === null) return { ...none, age }
   // 도읍 에우기(이서) — 남의 도읍은 성의 덤을 덜 받는다 (판정 season.fight 와 같은 셈)
-  const t = siegeFort(r, faction, node, fortMul(node, seasonOf(r.season)))
+  const t = siegeFort(r, faction, node, fortMul(node, seasonOf(r)))
   // 병종의 쓰임 — 우리 쪽은 안다(길·공수). 저쪽 구성은 정찰로 본 몫이 있을 때만 넣는다 (판정의 battle.power 와 같은 셈 · 정찰의 보상)
   const seen = seenMix(r, faction, to)?.mix
   const foe: Force | null = seen !== undefined ? { mix: seen, equip: 'bronze', mu: 1, morale: 1 } : null
@@ -106,7 +106,7 @@ export function matchupHints(r: Realm, viewer: string, mix: Readonly<Partial<Rec
   if (edge === 'field' && share('spear') >= 0.3) out.push('들길이라 창병이 세다')
   if (edge === 'pass' && share('spear') >= 0.3) out.push('좁은 고갯길이라 창병이 창을 못 휘두른다')
   const node = r.nodes[targetNode]
-  const walled = node !== undefined && fortMul(node, seasonOf(r.season)) > 1
+  const walled = node !== undefined && fortMul(node, seasonOf(r)) > 1
   const seen = seenMix(r, viewer, targetNode)?.mix
   if (seen !== undefined) {
     const top = (Object.entries(seen) as Array<[UnitKind, number]>).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))[0]
@@ -143,7 +143,7 @@ export function ambushWorth(m: Move): number | null {
 
 export function movesOf(r: Realm, faction: string, a: Army): Move[] {
   const R = P.realm
-  const season = seasonOf(r.season)
+  const season = seasonOf(r)
   const known = r.intel[faction] ?? {}
   const myF = strength(forceOf(r, a))
   const myRyak = a.hero !== null ? (r.heroes[a.hero]?.ryak ?? 1) : 1
@@ -161,7 +161,7 @@ export function movesOf(r: Realm, faction: string, a: Army): Move[] {
     const al = k?.alert ? alertRange(k.alert.v, r.season - k.alert.season) : null
     const ambushP = ambushChance(conceal(ed, node, season) + concealBonus(r, faction, ed.kind), myRyak, R.aiAssumeRyak, size + ambushTraitOf(a.hero !== null ? (r.heroes[a.hero] ?? null) : null, ed.kind), 0, al === null ? R.aiAssumeAlert : al[1])
     // 풍습 — 고갯목은 고갯길 한 계절 더 (hooks.passExtra · 판정 season.applyOrders 와 같다)
-    const shut = blockedWhy(ed, season)
+    const shut = blockedWhy(ed, r)
     out.push({
       edge: ed, to, seasons: Math.max(1, marchSeasons(ed.kind, season) + passExtra(r, faction, ed.kind) + (shut !== null ? R.hardExtra : 0) - marchCut(r, a)), blocked: shut, hostile,
       win: v.win, winAmbush: v.ambush, winCaught: v.caught, age: v.age, ambushP,
@@ -190,7 +190,7 @@ export interface ApproachMove {
 export function approachMoves(r: Realm, faction: string, a: Army, m: Move): ApproachMove[] {
   const R = P.realm
   const node = r.nodes[m.to]!
-  const season = seasonOf(r.season)
+  const season = seasonOf(r)
   const myRyak = a.hero !== null ? (r.heroes[a.hero]?.ryak ?? 1) : 1
   const known = (r.intel[faction] ?? {})[m.to]
   const al = known?.alert ? alertRange(known.alert.v, r.season - known.alert.season) : null

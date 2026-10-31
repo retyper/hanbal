@@ -70,10 +70,10 @@ describe('한 계절이 돈다', () => {
 
   it('겨울엔 고개가 막히고 여름엔 나루가 막힌다', () => {
     const r = byeonhanMini(3)
-    assert.equal(blockedWhy(r.edges['e11']!, 'winter'), 'winterPass')
-    assert.equal(blockedWhy(r.edges['e11']!, 'autumn'), null)
-    assert.equal(blockedWhy(r.edges['e06']!, 'summer'), 'summerFord')
-    assert.equal(blockedWhy(r.edges['e06']!, 'winter'), null) // 언 강은 배 없이 건넌다
+    assert.equal(blockedWhy(r.edges['e11']!, { season: 3 }), 'winterPass')
+    assert.equal(blockedWhy(r.edges['e11']!, { season: 2 }), null)
+    assert.equal(blockedWhy(r.edges['e06']!, { season: 1 }), 'summerFord')
+    assert.equal(blockedWhy(r.edges['e06']!, { season: 3 }), null) // 언 강은 배 없이 건넌다
     assert.equal(marchSeasons('pass', 'spring'), 2)
     assert.equal(marchSeasons('field', 'summer'), 2)
   })
@@ -82,7 +82,7 @@ describe('한 계절이 돈다', () => {
     let r = byeonhanMini(3)
     // 봄: 갯마을 → 안개골 (나루 e06 이 안개골에서 나간다). 닿으면 여름
     r = advance(r, [{ kind: 'march', army: 'a-us', edge: 'e01', ambush: false }]).next
-    assert.equal(seasonOf(r.season), 'summer')
+    assert.equal(seasonOf(r), 'summer')
     assert.equal(r.armies['a-us']!.at, 'our-north')
     const men0 = Object.values(r.armies['a-us']!.mix).reduce((s, v) => s + (v ?? 0), 0)
     const m0 = r.armies['a-us']!.morale

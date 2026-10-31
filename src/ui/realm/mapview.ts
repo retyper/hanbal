@@ -562,7 +562,7 @@ export function mapHtml(
   const target = new Map(targets.map((t) => [t.node, t]))
   const hasTok = new Set(tokens.filter((t) => t.march === undefined).map((t) => t.node))
   const known = r.intel[me] ?? {}
-  const season = seasonOf(r.season)
+  const season = seasonOf(r)
   // 아는 나라의 땅과 주인은 다 안다 (형: "어느나라가 어디 먹는지 한방에" — 2026-10-18). 모르는 것은 군세,
   // 그리고 넓어지는 지도에서는 아직 모르는 나라 (발견 — 그 땅은 '모르는 땅'으로 덮는다)
   const vis = visibleNodes(r, me)
@@ -618,7 +618,7 @@ export function mapHtml(
   for (const ed of Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))) {
     if (!seen(ed.a) || !seen(ed.b)) continue
     const pts = route(ed)
-    const shut = blockedWhy(ed, season) !== null
+    const shut = blockedWhy(ed, r) !== null
     // 길가는 옅은 흙빛 어깨로 바탕과 떼어 본다 (형: "지도랑 색이 비슷해서 길 색이 잘 안보이는건" · "길같지가 않고 오브젝트같아")
     const d = smoothPath(pts)
     svg += roadSvg(d, ed.kind, sw, shut ? 0.35 : 1, EDGE_NAME[ed.kind])
@@ -885,7 +885,7 @@ export function mapHtml(
         const o = e.a === n.id ? e.b : e.b === n.id ? e.a : null
         return o !== null && r.nodes[o]?.owner === me && r.nodes[o]?.kind !== 'sodo'
       })
-      const why = links.length === 0 ? '우리 땅과 안 닿음' : links.every((e) => blockedWhy(e, season) !== null) ? '이 철엔 길이 막힘' : '적 군대가 있음'
+      const why = links.length === 0 ? '우리 땅과 안 닿음' : links.every((e) => blockedWhy(e, r) !== null) ? '이 철엔 길이 막힘' : '적 군대가 있음'
       noReach = `<span class="stl nor" title="개척단은 우리 고을에서 길로 바로 이웃한 빈 땅에만 갑니다">${why}</span>`
     }
     // 주인 없이 사람만 사는 철광·포구 — 지키는 군대가 없어 우리 군대가 닿기만 하면 싸움 없이 우리 땅 (season.walkIn · 형 10-31: "문명6 촌락처럼")

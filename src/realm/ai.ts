@@ -143,7 +143,7 @@ export function spared(r: Realm, faction: string, to: string): boolean {
  */
 function drafts(r: Realm, faction: string): Order[] {
   const R = P.realm
-  const s = seasonOf(r.season)
+  const s = seasonOf(r)
   if (s !== 'autumn' && s !== 'winter') return []
   const fac = r.factions[faction]
   if (fac === undefined) return []
@@ -343,7 +343,7 @@ function plan(r: Realm, faction: string): Order[] {
  */
 function settles(r: Realm, faction: string): Order[] {
   const R = P.realm
-  const s = seasonOf(r.season)
+  const s = seasonOf(r)
   if (s !== 'spring' && s !== 'autumn') return []
   const spare = stockOf(r, faction).grain - R.aiDraftReserve * upkeepOf(r, faction, true)
   if (spare <= 0) return []
@@ -799,7 +799,7 @@ function moves(r: Realm, faction: string, brain: Brain): Order[] {
     if (brain === 'greedy' || brain === 'reckless') {
       // 가운데로 셈하고, 모르면 얕본다 — 다만 성벽은 보인다 (모르는 고을의 짐작을 성 배수로 나눈다). 무모는 국읍도 비운다
       const mid = (w: readonly [number, number] | null, t: Move): number =>
-        (w !== null ? Math.max((w[0] + w[1]) / 2, w === t.win ? (ambushWorth(t) ?? 0) : 0) : R.aiUnknownWin / fortMul(r.nodes[t.to]!, seasonOf(r.season))) + focus(r, faction, t.to)
+        (w !== null ? Math.max((w[0] + w[1]) / 2, w === t.win ? (ambushWorth(t) ?? 0) : 0) : R.aiUnknownWin / fortMul(r.nodes[t.to]!, seasonOf(r))) + focus(r, faction, t.to)
       const bar = brain === 'reckless' ? R.aiRecklessWin : R.aiGreedyWin
       let went: boolean
       if (brain === 'greedy' && lastGuard(r, faction, a)) went = detach(a, ts, mid, bar)

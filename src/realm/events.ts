@@ -9,6 +9,7 @@
  * 순서: 1 명령 확정 때 이번 카드의 답을 건다 (resolveCard) → 7 가을걷이가 그해 배수(harvestMod)를 읽는다 → 11 계절을 넘긴 뒤 다음 카드를 편다 (stepCards).
  */
 import { roll } from '../core/rng.ts'
+import { seasonNo, yearOf } from './calendar.ts'
 import { P } from '../tune/params.ts'
 import { CARDS, CARD_KINDS, QUARREL_WHYS, cardFallback, type CardKind, type QuarrelWhy } from './data/cards.ts'
 import { HERO_POOL } from './data/heroes-pool.ts'
@@ -38,7 +39,7 @@ function pickKnown(r: Realm, f: string, season: number, key: string): string | n
 
 /** 그 계절에 올 수 있는 카드와 무게 */
 function candidates(r: Realm, f: string, season: number): Array<{ card: Card; w: number }> {
-  const y = ((season % 4) + 4) % 4
+  const y = seasonNo(r, season)
   const out: Array<{ card: Card; w: number }> = []
   const port = portOf(r, f)
   const big = bigNodes(r, f)
@@ -175,7 +176,7 @@ const grainCost = (r: Realm, have: number, share: number): number => {
 }
 
 function setHarvest(r: Realm, f: string, mul: number): void {
-  const year = Math.floor(r.season / 4)
+  const year = yearOf(r)
   const had = r.harvestMod?.[f]
   ;(r.harvestMod ??= {})[f] = { year, mul: had !== undefined && had.year === year ? had.mul * mul : mul }
 }

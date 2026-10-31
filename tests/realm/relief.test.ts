@@ -47,7 +47,7 @@ describe('원군', () => {
       const r: Realm = byeonhanMini(seed)
       const cap = 'anya-cap'
       // 같은 계절에 닿는 두 길 (고개는 더 걸린다)
-      const ways = Object.values(r.edges).filter((e) => otherEnd(e, cap) !== null && marchSeasons(e.kind, seasonOf(r.season)) === 1)
+      const ways = Object.values(r.edges).filter((e) => otherEnd(e, cap) !== null && marchSeasons(e.kind, seasonOf(r)) === 1)
       if (ways.length < 2) continue
       const [e1, e2] = ways
       const main = Object.values(r.armies).find((a) => a.faction === r.player)
@@ -78,7 +78,7 @@ describe('원군', () => {
     for (let seed = 1; seed <= 30 && !found; seed++) {
       const r: Realm = byeonhanMini(seed)
       const cap = 'anya-cap'
-      const way = Object.values(r.edges).find((e) => otherEnd(e, cap) !== null && marchSeasons(e.kind, seasonOf(r.season)) === 1)
+      const way = Object.values(r.edges).find((e) => otherEnd(e, cap) !== null && marchSeasons(e.kind, seasonOf(r)) === 1)
       if (way === undefined) continue
       const main = Object.values(r.armies).find((a) => a.faction === r.player)
       if (main === undefined) continue

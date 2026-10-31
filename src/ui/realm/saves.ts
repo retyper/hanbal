@@ -48,6 +48,7 @@ export interface SaveMeta {
   readonly name: string
   readonly region: string
   readonly season: number
+  readonly clock?: 'month'
   readonly savedAt: string
 }
 
@@ -68,7 +69,7 @@ export const saveSlotCount = (): number => Math.max(1, Math.round(P.realm.saveSl
 
 /** 비운 이름 대신 — 「3년 겨울 · 비화가야」 */
 export function defaultLabel(r: Realm): string {
-  return `${seasonLabel(r.season)} · ${r.factions[r.player]?.name ?? ''}`
+  return `${seasonLabel(r)} · ${r.factions[r.player]?.name ?? ''}`
 }
 
 /** 이름을 다듬는다 — 앞뒤 빈칸·줄바꿈을 걷고 한도까지 */
@@ -143,13 +144,13 @@ export function parseSaveFile(text: string): Parsed {
 
 export function metaOf(n: number, f: SaveFile): SaveMeta {
   const r = f.game.realm
-  return { n, label: f.label, nation: f.game.nation, name: r.factions[r.player]?.name ?? '', region: r.region ?? 'byeonhan-mini', season: r.season, savedAt: f.savedAt }
+  return { n, label: f.label, nation: f.game.nation, name: r.factions[r.player]?.name ?? '', region: r.region ?? 'byeonhan-mini', season: r.season, ...(r.clock !== undefined ? { clock: r.clock } : {}), savedAt: f.savedAt }
 }
 
 /** 내려받을 파일 이름 — `삼한열전-비화가야-3년겨울.json` (파일 이름에 못 쓰는 글자는 뺀다) */
 export function saveFileName(f: SaveFile): string {
   const r = f.game.realm
-  const raw = `삼한열전-${r.factions[r.player]?.name ?? f.game.nation}-${seasonLabel(r.season)}`
+  const raw = `삼한열전-${r.factions[r.player]?.name ?? f.game.nation}-${seasonLabel(r)}`
   return `${raw.replace(/[\\/:*?"<>|\s]+/g, '')}.json`
 }
 

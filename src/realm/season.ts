@@ -31,7 +31,7 @@ import {
 } from './economy.ts'
 import { hasCustom, noteCustom, noteOnce } from './data/customs.ts'
 import { concealBonus, passExtra, rescueCapital, riseState, siegeFort, stepCustoms } from './hooks.ts'
-import { blockedWhy, seasonOf } from './calendar.ts'
+import { blockedWhy, seasonNo, seasonOf } from './calendar.ts'
 import { applyBowUps, refreshSpies, resolvePlots } from './plots.ts'
 import { noteTake } from './stance.ts'
 import { stepDiscovery, stepSight } from './discovery.ts'
@@ -122,7 +122,7 @@ export function concealOf(r: Realm, edgeId: string, armySize?: number, to?: stri
   const R = P.realm
   const ed = r.edges[edgeId]
   if (ed === undefined) return { tier: 'poor', value: 0, why: [] }
-  const season = seasonOf(r.season)
+  const season = seasonOf(r)
   const ends = to !== undefined ? [to] : [ed.a, ed.b]
   const nodes = ends.map((id) => r.nodes[id]).filter((n): n is RNode => n !== undefined)
   const best = nodes.map((n) => ({ n, c: conceal(ed, n, season) })).sort((x, y) => y.c - x.c)[0]
@@ -530,7 +530,7 @@ function turnBack(r: Realm, o: Extract<Order, { kind: 'turnBack' }>, lines: Repo
   const m = a?.march
   if (a === undefined || m === null || m === undefined || a.lent !== undefined) return
   const ed = r.edges[m.edge]
-  const total = ed !== undefined ? marchSeasons(ed.kind, seasonOf(r.season)) : 1
+  const total = ed !== undefined ? marchSeasons(ed.kind, seasonOf(r)) : 1
   a.march = { from: m.to, to: m.from, edge: m.edge, left: Math.max(1, total - m.left), ambush: false, aim: r.nodes[m.from]?.owner ?? null }
   lines.push({ kind: 'recall', faction: a.faction, army: a.id, node: m.to, why: 'order' })
 }
@@ -611,7 +611,7 @@ function applyArmyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]
 
 /** 1 — 명령 확정: 나누기·모으기를 먼저 하고, 출정 명령을 군대에 싣는다. 막힌 길은 보고에 남기고 떠나지 않는다 */
 function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
-  const season = seasonOf(r.season)
+  const season = seasonOf(r)
   applyArmyOrders(r, orders, lines)
   // 서 있는 고을을 친다 — 그 고을이 남의 땅이고 싸울 사이(동맹·화친이 아님)일 때만. 들어온 길로 한 계절에 닿은 것으로 친다
   for (const o of orders) {
@@ -655,7 +655,7 @@ function applyOrders(r: Realm, orders: readonly Order[], lines: ReportLine[]): v
     let left = marchSeasons(ed.kind, season) + passExtra(r, a.faction, ed.kind)
     if (approach === 'ridge') left += P.realm.apRidgeExtra
     // 계절에 막힌 길 (형: "불가능하게 만들지 말고 패널티") — 더 걸리고, 얼거나 떠내려가 사람을 잃는다
-    const why = blockedWhy(ed, season)
+    const why = blockedWhy(ed, r)
     if (why !== null) {
       const before = headcount(forceOf(r, a))
       scaleMix(a, 1 - (why === 'winterPass' ? P.realm.hardFrostLoss : P.realm.hardFloodLoss))
@@ -786,7 +786,7 @@ export function groupPower(
   defF: Force,
   fort: number,
 ): number {
-  const season = seasonOf(r.season)
+  const season = seasonOf(r)
   let f = 0
   for (const x of atks) {
     const field = { fort, crossing: x.edge.kind === 'ford' && season !== 'winter', ambush: x.ambush, snipeAtk: 1, snipeDef: 1, edge: x.edge.kind }
@@ -1030,7 +1030,7 @@ export function fieldKey(edge: string, army: string): string {
  * 교착이면 둘 다 물러난다. 길마다 id 순서로, 한 길에 무리가 여럿이면 앞선 짝부터 (결정론). 싸움은 라운드로 (tactics.ts).
  */
 function fieldBattles(r: Realm, tactics: Readonly<Record<string, Tactic>>, lines: ReportLine[]): void {
-  const season = seasonOf(r.season)
+  const season = seasonOf(r)
   const marching = byId(Object.values(r.armies).filter((a) => a.march !== null))
   for (const eid of [...new Set(marching.map((a) => a.march!.edge))].sort()) {
     for (;;) {
@@ -1158,7 +1158,7 @@ function takeYielded(r: Realm, res: FightResult, win: 'a' | 'd' | null, winner: 
  */
 function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, SnipeZone>>, tactics: Readonly<Record<string, Tactic>>, lines: ReportLine[]): void {
   const R = P.realm
-  const season = seasonOf(r.season)
+  const season = seasonOf(r)
   const a = atks[0]!
   const node = r.nodes[a.march!.to]!
   // 같은 계절 이 고을로 닿는 지키는 쪽 군대 — 먼저 들인다 (원군: 처음부터 섞지 않고 늦게 붙는다 · 아래 reliefD)
@@ -1321,7 +1321,7 @@ function fight(r: Realm, atks: readonly Army[], snipes: Readonly<Record<string, 
   shiftMorale(defenders, res.dmd)
   // 막아냈다 — 지킨 쪽은 사기가 오르고(성벽 안이면 더) 물러난 쪽은 꺾인다 (형 10-31: "몇 번이고 외적을 막아낸 고을에서 사기가 늘어야")
   if (outcome !== 'rout' && outcome !== 'win') {
-    shiftMorale(defenders, R.holdMorale + (fortMul(node, seasonOf(r.season)) > 1 ? R.wallHoldMorale : 0))
+    shiftMorale(defenders, R.holdMorale + (fortMul(node, seasonOf(r)) > 1 ? R.wallHoldMorale : 0))
     shiftMorale(atks, -R.repelMorale)
   }
 
@@ -1605,7 +1605,7 @@ export function advance(
   orders = oneJobPerHero(r, orders) // 한 장수 한 계절 한 가지 일
   const lines: ReportLine[] = []
   const fought = new Set<string>()
-  const season = ((r.season % 4) + 4) % 4
+  const season = seasonNo(r)
   resolveAnswers(r, orders, lines) // 1 — 지난 계절에 온 청에 답한다 (답이 없으면 거절)
   const wasMarching = new Set(Object.values(r.armies).filter((a) => a.march !== null).map((a) => a.id))
   stepInbound(r) // 1 앞 — 지난 계절까지 옮긴 백성이 길 위에서 조금씩 닿는다 (이번 계절 배치는 다음 계절부터)

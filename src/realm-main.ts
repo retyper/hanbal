@@ -78,6 +78,8 @@ interface GameRecord {
   readonly region?: string
   readonly name?: string
   readonly tier?: number
+  /** 판의 시계 (calendar.ts) — 달 시계 판이면 'month' */
+  readonly clock?: 'month'
   readonly seed: number
   readonly started: string
   readonly screen: string
@@ -184,7 +186,7 @@ function shelve(s: Saved | null, id = s?.seed ?? 0): boolean {
   let ok = false
   try { ok = localStorage.getItem(slotKey(id)) === json } catch { ok = false }
   if (!ok) return false
-  xs = [{ seed: id, nation: s.nation, name: r.factions[r.player]?.name ?? '', region: r.region ?? 'byeonhan-mini', season: r.season, at: s.at ?? new Date().toISOString() }, ...xs]
+  xs = [{ seed: id, nation: s.nation, name: r.factions[r.player]?.name ?? '', region: r.region ?? 'byeonhan-mini', season: r.season, ...(r.clock !== undefined ? { clock: r.clock } : {}), at: s.at ?? new Date().toISOString() }, ...xs]
   while (xs.length > SLOT_MAX) {
     const drop = xs.pop()!
     try { localStorage.removeItem(slotKey(drop.seed)) } catch { /* 그대로 */ }
@@ -313,7 +315,7 @@ function recordFor(s: Saved): GameRecord {
   const had = games.find((g) => g.seed === s.seed && g.nation === s.nation)
   if (had !== undefined) return had
   const g: GameRecord = {
-    v: 1, nation: s.nation, region: s.realm.region ?? 'byeonhan-mini', name: s.realm.factions[s.realm.player]?.name ?? '', tier: s.realm.tier ?? 1, seed: s.seed, started: new Date().toISOString(),
+    v: 1, nation: s.nation, region: s.realm.region ?? 'byeonhan-mini', name: s.realm.factions[s.realm.player]?.name ?? '', tier: s.realm.tier ?? 1, ...(s.realm.clock !== undefined ? { clock: s.realm.clock } : {}), seed: s.seed, started: new Date().toISOString(),
     screen: `${window.innerWidth}x${window.innerHeight}`, turns: [], end: null,
   }
   games.push(g)
@@ -458,7 +460,7 @@ const app = mountRealmApp(root, {
   },
   gameCount: () => games.length,
   pastGames: () => [...games].reverse().map((g) => ({
-    nation: g.nation, name: g.name ?? '', region: g.region ?? null, tier: g.tier ?? null, started: g.started,
+    nation: g.nation, name: g.name ?? '', region: g.region ?? null, tier: g.tier ?? null, ...(g.clock !== undefined ? { clock: g.clock } : {}), started: g.started,
     end: g.end, seasons: g.turns.length, current: g.seed === state?.seed,
   })),
   history: () => (game?.turns ?? []).map((t) => ({ s: t.s, lines: t.lines })),

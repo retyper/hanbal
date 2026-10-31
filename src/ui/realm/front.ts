@@ -15,7 +15,7 @@ import type { NationInfo } from '../../realm/data/nations.ts'
 import { badgeRank, lockWhy } from './unlock.ts'
 import { CHAPTERS, chapterOfRegion } from '../../realm/data/campaign.ts'
 import { placeOf } from '../../realm/data/regions/index.ts'
-import { seasonOf } from '../../realm/calendar.ts'
+import { seasonOf, yearOf } from '../../realm/calendar.ts'
 import { UNIT_NAME, battleName, josa, seasonLabel } from '../../realm/data/prose.ts'
 import type { Realm, RegionId, ReportLine } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
@@ -129,6 +129,7 @@ export interface SlotInfo {
   readonly name: string
   readonly region: RegionId
   readonly season: number
+  readonly clock?: 'month'
   /** 마지막으로 둔 때 (ISO) */
   readonly at: string
 }
@@ -147,7 +148,7 @@ export function slotsHtml(k: FrontKit, slots: readonly SlotInfo[], armed: number
   if (slots.length === 0) return ''
   let h = `<div class="slots"><small class="slh">끝나지 않은 판</small>`
   for (const x of [...slots].sort((a, b) => (a.at < b.at ? 1 : -1))) {
-    h += `<div class="slot"><button class="slotgo" data-act="slot-go" data-v="${x.seed}">${k.emblem(x.nation, 'cem')}<span><b>${k.esc(x.name)}</b><small>${k.esc(boardLabel(x.region))} · ${k.esc(seasonLabel(x.season))} · ${k.esc(agoText(x.at))}</small></span></button>`
+    h += `<div class="slot"><button class="slotgo" data-act="slot-go" data-v="${x.seed}">${k.emblem(x.nation, 'cem')}<span><b>${k.esc(x.name)}</b><small>${k.esc(boardLabel(x.region))} · ${k.esc(seasonLabel(x))} · ${k.esc(agoText(x.at))}</small></span></button>`
       + `<button class="slotx${armed === x.seed ? ' armed' : ''}" data-act="slot-drop" data-v="${x.seed}" aria-label="이 판 지우기">${armed === x.seed ? '한 번 더 누르면 지운다' : '✕'}</button></div>`
   }
   return h + `</div>`
@@ -164,7 +165,7 @@ export function titleHtml(k: FrontKit, r: Realm | null, savedAt: string | null, 
     const region = r.region ?? 'byeonhan-mini'
     const name = r.factions[me]?.name ?? ''
     h += `<button class="cont" data-act="continue">${k.face(me, 'cface', r.factions[me]?.ruler ?? undefined)}<span class="ct"><b>${k.emblem(me, 'cem')}${k.esc(name)} 이어 하기</b>`
-    h += `<span>${k.esc(seasonLabel(r.season))} · 도읍 ${capsHeld(r, me)}/${winNeed(region)}${r.known !== undefined ? ` · 아는 나라 ${(r.known[me]?.length ?? 0) + 1}/${Object.keys(r.factions).length}` : ''}</span>`
+    h += `<span>${k.esc(seasonLabel(r))} · 도읍 ${capsHeld(r, me)}/${winNeed(region)}${r.known !== undefined ? ` · 아는 나라 ${(r.known[me]?.length ?? 0) + 1}/${Object.keys(r.factions).length}` : ''}</span>`
     h += `${savedAt !== null ? `<small>최근 저장 · ${k.esc(agoText(savedAt))}</small>` : ''}</span></button>`
   }
   // 처음 켠 사람은 배우는 판으로 (형: "맨 위 첫번째 할 게임은 1:1수준으로 여러 기능 익혀가며 쉽게")
@@ -485,7 +486,7 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = '', f
             : l.via === 'sea' || r.nodes[l.node]?.kind === 'port' ? FILM(k, 'film-win-sea')
             : sneak && l.approach === 'night' ? FILM(k, 'film-win-night')
             : l.via === 'ford' || l.via === 'reeds' || l.via === 'mudflat' ? FILM(k, 'film-win-ford')
-            : seasonOf(s) === 'winter' ? FILM(k, 'film-win-winter')
+            : seasonOf(r, s) === 'winter' ? FILM(k, 'film-win-winter')
             : l.defender === me ? FILM(k, 'film-win-defend')
             : l.outcome === 'rout' || l.outcome === 'routed' ? FILM(k, 'film-win-rout')
             : FILM(k, 'film-win-field')
@@ -515,7 +516,7 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = '', f
   const ranked = [...events.filter((e) => e.big), ...events.filter((e) => !e.big)]
   const pickd = ranked.slice(0, 9).sort((a, b) => a.s - b.s)
   const shots = ranked.slice(0, SHOTS).sort((a, b) => a.s - b.s)
-  const years = Math.floor((r.outcome?.season ?? r.season) / 4) + 1
+  const years = yearOf(r, r.outcome?.season ?? r.season) + 1
   // 어느 길로 끝났나 — 맹주(진왕)면 제목이 다르다 (VICTORY §1-2)
   const path = r.outcome?.path
   const by = name(r.outcome?.by ?? '')
@@ -538,7 +539,7 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = '', f
   shots.forEach((e, i) => {
     // 홀수 장은 반대로 천천히 민다 (켄 번스)
     h += `<figure class="cp${i % 2 === 1 ? ' odd' : ''}" style="--i:${i}"><img src="${e.img}" alt="">`
-    h += `<figcaption>${e.em !== undefined ? k.emblem(e.em, 'cpem') : ''}<i>${k.esc(seasonLabel(e.s))}</i><span>${k.esc(e.t)}</span></figcaption></figure>`
+    h += `<figcaption>${e.em !== undefined ? k.emblem(e.em, 'cpem') : ''}<i>${k.esc(seasonLabel(r, e.s))}</i><span>${k.esc(e.t)}</span></figcaption></figure>`
   })
   // 마지막 장 — 잔치(이김) · 가뭄(짐) 위로 제목
   h += `<figure class="cp last" style="--i:${shots.length}"><img src="${k.art}end/${lastArt}.jpg" alt=""><figcaption><b>${k.esc(title)}</b></figcaption></figure>`
@@ -546,7 +547,7 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = '', f
   h += `<span class="skip">누르면 넘긴다</span>`
   h += `<button class="fnav fprev" data-act="film-prev" aria-label="앞 장면">‹</button><button class="fnav fnext" data-act="film-next" aria-label="다음 장면">›</button></div>`
   h += `<div class="after" style="--n:${shots.length + 1}">`
-  h += `<p class="mute">${k.emblem(me, 'cem')}${k.esc(name(me))} · ${k.esc(seasonLabel(r.outcome?.season ?? r.season))}${win ? '' : '여기까지였다'}</p>`
+  h += `<p class="mute">${k.emblem(me, 'cem')}${k.esc(name(me))} · ${k.esc(seasonLabel(r, r.outcome?.season ?? r.season))}${win ? '' : '여기까지였다'}</p>`
   // 칭호 도장 — 이긴 길마다 옛 임금 하나, 진 판은 비류 (회의 결정 META §7-1). 네모난 붉은 도장 — 둥근 것은 쓰지 않는다
   const tt = titleOf(r)
   if (tt !== null) h += `<div class="seal${win ? '' : ' lost'}"><b>${k.esc(tt.name)}</b><span>${k.esc(tt.line)}</span></div>`
@@ -554,7 +555,7 @@ export function endingHtml(k: FrontKit, r: Realm, history: History, keep = '', f
   h += `${r.known !== undefined ? `<span><b>${found}</b>새로 안 나라</span>` : ''}<span><b>${heroes}</b>얻은 장수</span></div>`
   // 얻은 것(세기·휘장·무덤·단련) 먼저, 연대기는 접어서 — 늘어놓았더니 난잡했다 (형 10-28: "결과 보는 부분이랑 그 아래 버튼들이 정리가 안 돼 있음")
   if (keep !== '') h += `<div class="gains">${keep}</div>`
-  if (pickd.length > 0) h += `<details class="chron"><summary>연대기 <small>${pickd.length}</small></summary>${pickd.map((e) => `<p class="${e.big ? 'big' : ''}"><i>${k.esc(seasonLabel(e.s))}</i>${k.esc(e.t)}</p>`).join('')}</details>`
+  if (pickd.length > 0) h += `<details class="chron"><summary>연대기 <small>${pickd.length}</small></summary>${pickd.map((e) => `<p class="${e.big ? 'big' : ''}"><i>${k.esc(seasonLabel(r, e.s))}</i>${k.esc(e.t)}</p>`).join('')}</details>`
   // 이야기 장을 이겼다 — 사서의 한 줄과 다음 장으로 가는 단추 (점검 10-25: 다음 장은 새 게임 → 판 고르기로만 갔다)
   const ch = chapterOfRegion(region)
   const nextCh = win && ch !== undefined ? CHAPTERS.find((c) => c.n === ch.n + 1 && c.region !== null) : undefined

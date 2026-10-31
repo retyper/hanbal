@@ -22,7 +22,7 @@ export interface Reach {
 
 /** `from` 에서 갈 수 있는 모든 고을 (from 자신은 빼고) */
 export function goalReach(r: Realm, faction: string, from: string): Map<string, Reach> {
-  const season = seasonOf(r.season)
+  const season = seasonOf(r)
   const through = (id: string): boolean => {
     const n = r.nodes[id]
     if (n === undefined || n.kind === 'sodo') return false
@@ -30,7 +30,7 @@ export function goalReach(r: Realm, faction: string, from: string): Map<string, 
   }
   const adj = new Map<string, Array<{ to: string; edge: string; w: number }>>()
   for (const e of Object.values(r.edges)) {
-    const w = marchSeasons(e.kind, season) + (blockedWhy(e, season) !== null ? P.realm.hardExtra : 0)
+    const w = marchSeasons(e.kind, season) + (blockedWhy(e, r) !== null ? P.realm.hardExtra : 0)
     ;(adj.get(e.a) ?? adj.set(e.a, []).get(e.a)!).push({ to: e.b, edge: e.id, w })
     ;(adj.get(e.b) ?? adj.set(e.b, []).get(e.b)!).push({ to: e.a, edge: e.id, w })
   }

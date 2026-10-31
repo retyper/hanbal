@@ -272,7 +272,7 @@ export function lentEta(r: Realm, army: string): number | null {
   if (from === a.lent.node) return k
   const path = lentPath(r, army, from)
   if (path.length === 0) return null
-  for (const s of path) k += marchSeasons(r.edges[s.edge]!.kind, seasonOf(r.season + k))
+  for (const s of path) k += marchSeasons(r.edges[s.edge]!.kind, seasonOf(r, r.season + k))
   return k
 }
 

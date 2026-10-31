@@ -246,7 +246,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
     const ally = near[0] ?? allies[0]!
     const allyName = r.factions[ally]?.name ?? ''
     const v = { ...base, ally: allyName }
-    const why = burned ? `${whenSaid(r.season, lastB!.s)} ${josa(foe, '을', '를')} 칠 때 이웃 ${countWord(struck!)} 나라가 함께 막아 우리가 졌습니다.`
+    const why = burned ? `${whenSaid(r, lastB!.s)} ${josa(foe, '을', '를')} 칠 때 이웃 ${countWord(struck!)} 나라가 함께 막아 우리가 졌습니다.`
       : near.length > 0 ? `${josa(allyName, '은', '는')} 우리와 땅을 맞댄 나라입니다.`
         : `${josa(foe, '은', '는')} ${countWord(allies.length)} 나라와 손을 잡았습니다.`
     const mine = new Set<string>()
@@ -293,7 +293,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
       if (plotter !== undefined) {
         mine.add(plotter.id)
         const own = plotFact(r, me, def, plotter.id)
-        const why = rich ? `${whenSaid(r.season, seen!.s)} 척후가 보니 ${foe}의 곳간에 곡식이 그득하였습니다.${own !== nationPlot ? ` ${own}` : ''}` : own
+        const why = rich ? `${whenSaid(r, seen!.s)} 척후가 보니 ${foe}의 곳간에 곡식이 그득하였습니다.${own !== nationPlot ? ` ${own}` : ''}` : own
         const voices: Voice[] = [{ hero: plotter, label: '먼저 곳간에 불을', move: 'plotAdvise', line: schemeSay(plotter, 'plotAdvise', base, r.season, why), opt: { k: 'plot', op: 'burn', target: def, agent: burnHand.agent, grain: burnHand.grain } }]
         const hot = counter(mine)
         voices.push(hot !== undefined

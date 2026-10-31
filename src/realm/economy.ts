@@ -13,7 +13,7 @@
  * 순수 함수만 — season.ts 가 부른다. 이 파일은 season.ts 를 부르지 않는다 (고리를 만들지 않는다).
  */
 import { P } from '../tune/params.ts'
-import { blockedWhy, seasonOf } from './calendar.ts'
+import { blockedWhy, seasonOf, yearOf } from './calendar.ts'
 import { tierMul } from './tier.ts'
 import { hasCustom, noteCustom, noteOnce } from './data/customs.ts'
 import { draftCapBonus, gluttonMen, growMul, harvestMul, militiaMul, postHero, riteMul } from './heroes.ts'
@@ -170,7 +170,7 @@ export function nodeSpecials(r: Realm, node: string): Good[] {
 }
 
 /** 그 고을이 계절마다 내는 것 — 화면·첩보·AI 가 함께 쓴다. 사람이 안 사는 빈땅은 아무것도 안 낸다 */
-export function nodeYield(r: Realm, node: string, season = seasonOf(r.season)): Partial<Record<Good, number>> {
+export function nodeYield(r: Realm, node: string, season = seasonOf(r)): Partial<Record<Good, number>> {
   const R = P.realm
   const n = r.nodes[node]
   if (n === undefined || n.owner === null || n.kind === 'sodo' || (n.kind === 'wild' && n.hh <= 0)) return {}
@@ -199,7 +199,7 @@ export function nodeYield(r: Realm, node: string, season = seasonOf(r.season)): 
 export function nodeHarvest(r: Realm, node: string): number {
   const n = r.nodes[node]
   if (n === undefined || n.owner === null || n.kind === 'sodo') return 0
-  const season = seasonOf(r.season)
+  const season = seasonOf(r)
   const sown = season === 'autumn' || season === 'winter' ? n.hh : n.sown
   return Math.round(sown * P.realm.harvestPerHH * fieldMul(r, node))
 }
@@ -412,7 +412,7 @@ export function settleLimit(r: Realm, faction: string, from: string, to: string)
   if (a === undefined || b === undefined || a.owner !== faction || a.kind === 'sodo') return 0
   if (b.kind !== 'wild' || (b.owner !== null && b.owner !== faction)) return 0
   const ed = edgeBetween(r, from, to)
-  if (ed === null || blockedWhy(ed, seasonOf(r.season)) !== null) return 0
+  if (ed === null || blockedWhy(ed, r) !== null) return 0
   if (Object.values(r.armies).some((x) => x.at === to && x.march === null && x.faction !== faction)) return 0
   const share = Math.floor(a.hh * R.settleShare)
   const room = Math.max(0, (b.room ?? 0) - b.hh)
@@ -456,7 +456,6 @@ function threatened(r: Realm, node: string, faction: string): boolean {
  */
 export function migratePath(r: Realm, faction: string, from: string, to: string, anySeason = false): string[] | null {
   if (from === to) return null
-  const season = seasonOf(r.season)
   const prev = new Map<string, string>([[from, '']])
   const q = [from]
   const edges = Object.keys(r.edges).sort().map((id) => r.edges[id]!)
@@ -468,7 +467,7 @@ export function migratePath(r: Realm, faction: string, from: string, to: string,
       if (nx === null || prev.has(nx)) continue
       const n = r.nodes[nx]
       if (n === undefined || (n.kind === 'sodo' ? nx === to : n.owner !== faction)) continue
-      if (!anySeason && blockedWhy(ed, season) !== null) continue
+      if (!anySeason && blockedWhy(ed, r) !== null) continue
       prev.set(nx, cur)
       q.push(nx)
     }
@@ -617,7 +616,6 @@ export function autoFlows(r: Realm, faction: string, fought: ReadonlySet<string>
   const R = P.realm
   const fac = r.factions[faction]
   if (fac === undefined || fac.migrateOff === true) return []
-  const season = seasonOf(r.season)
   const mine = Object.values(r.nodes).filter((n) => n.owner === faction && n.kind !== 'sodo').sort((x, y) => (x.id < y.id ? -1 : 1))
   const hh = new Map(mine.map((n) => [n.id, n.hh]))
   const crowd = (id: string): number => {
@@ -633,7 +631,7 @@ export function autoFlows(r: Realm, faction: string, fought: ReadonlySet<string>
     let best: string | null = null
     for (const ed of edges) {
       const nx = ed.a === src.id ? ed.b : ed.b === src.id ? ed.a : null
-      if (nx === null || !hh.has(nx) || blockedWhy(ed, season) !== null) continue
+      if (nx === null || !hh.has(nx) || blockedWhy(ed, r) !== null) continue
       if (homeRoom(r.nodes[nx]!) <= 0 || fought.has(nx) || threatened(r, nx, faction)) continue
       if ((r.nodes[nx]!.uprooted ?? -1) >= r.season) continue
       if (crowd(nx) > crowd(src.id) - R.migrateAutoGap) continue
@@ -698,7 +696,7 @@ export function settleTargets(r: Realm, faction: string): Array<{ from: string; 
  *   가을 — 곡식 riteAutumnGrain + 철기 제물 riteAutumnIron
  * `season` 을 안 주면 지금 계절. 봄·가을이 아니면 봄 값.
  */
-export function riteCost(r: Realm, faction: string, season = seasonOf(r.season)): { grain: number; iron: number } {
+export function riteCost(r: Realm, faction: string, season = seasonOf(r)): { grain: number; iron: number } {
   const R = P.realm
   // 소도 곁(땅) — 제사가 반값 (data/customs.ts)
   const half = hasCustom(r, faction, 'landSodo') ? R.landSodoRite : 1
@@ -723,10 +721,10 @@ export function sodoNeighbors(r: Realm, faction: string): string[] {
  * 곡식이 riteCost 이상이면. 봄 제사는 그해에 한 번만 (이미 지냈으면 안 된다).
  */
 export function riteAllowed(r: Realm, faction: string): boolean {
-  const season = seasonOf(r.season)
+  const season = seasonOf(r)
   if (season !== 'spring' && season !== 'autumn') return false
   if (r.factions[faction] === undefined || sodoNeighbors(r, faction).length === 0) return false
-  if (season === 'spring' && r.blessed?.[faction] === Math.floor(r.season / 4)) return false
+  if (season === 'spring' && r.blessed?.[faction] === yearOf(r)) return false
   const c = riteCost(r, faction, season)
   const s = stockOf(r, faction)
   return s.grain >= c.grain && s.iron >= c.iron
@@ -736,7 +734,7 @@ export function riteAllowed(r: Realm, faction: string): boolean {
 export function resolveRites(r: Realm, orders: readonly Order[], lines: ReportLine[]): void {
   const R = P.realm
   const done = new Set<string>()
-  const season = seasonOf(r.season)
+  const season = seasonOf(r)
   for (const o of orders) {
     if (o.kind !== 'rite' || done.has(o.faction)) continue
     const f = o.faction
@@ -745,7 +743,7 @@ export function resolveRites(r: Realm, orders: readonly Order[], lines: ReportLi
     const c = riteCost(r, f, season)
     stockOf(r, f).grain -= c.grain
     stockOf(r, f).iron -= c.iron
-    if (season === 'spring') (r.blessed ??= {})[f] = Math.floor(r.season / 4)
+    if (season === 'spring') (r.blessed ??= {})[f] = yearOf(r)
     else for (const a of Object.values(r.armies)) if (a.faction === f) a.morale = Math.min(R.moraleMax, a.morale + R.riteMorale * riteMul(r, f))
     lines.push({ kind: 'rite', faction: f, season: season === 'spring' ? 'spring' : 'autumn' })
     if (hasCustom(r, f, 'landSodo')) noteOnce(r, lines, f, 'landSodo', { n: 1 })
@@ -863,7 +861,7 @@ export function hhGrowth(r: Realm, node: string): { per: number; why: string[] }
   const n = r.nodes[node]
   if (n === undefined || n.owner === null || n.kind === 'sodo') return { per: 0, why: [] }
   const f = n.owner
-  const season = seasonOf(r.season)
+  const season = seasonOf(r)
   // 굶나 — 이번 계절 끝의 가을걷이(여름이 끝날 때)를 더하고 군량을 뺀다
   let grain = stockOf(r, f).grain
   if (season === 'summer') {
@@ -935,7 +933,7 @@ export function stepEconomy(r: Realm, season: number, fought: ReadonlySet<string
       const tm = tierMul(r.tier ?? 1)
       const base = Math.round(sown * R.harvestPerHH * (f !== r.player ? tm.income : tm.ours) * harvestModOf(r, f))
       // 봄 제사를 지낸 해면 더 든다
-      const blessed = r.blessed?.[f] === Math.floor(r.season / 4) ? Math.round(base * R.riteHarvest * riteMul(r, f)) : 0
+      const blessed = r.blessed?.[f] === yearOf(r) ? Math.round(base * R.riteHarvest * riteMul(r, f)) : 0
       const grain = base + blessed
       if (grain > 0) {
         s.grain += grain
@@ -991,5 +989,5 @@ export function stepEconomy(r: Realm, season: number, fought: ReadonlySet<string
 /** 그해 가을걷이에 걸린 사건의 배수 (가뭄·풍년·메뚜기 — events.ts). 그해가 아니면 1 */
 export function harvestModOf(r: Realm, f: string): number {
   const m = r.harvestMod?.[f]
-  return m !== undefined && m.year === Math.floor(r.season / 4) ? m.mul : 1
+  return m !== undefined && m.year === yearOf(r) ? m.mul : 1
 }

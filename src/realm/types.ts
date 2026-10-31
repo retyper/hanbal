@@ -800,7 +800,12 @@ export interface Realm {
   /** 나라의 전례 장부 — lessons[나라][상대 나라] (memory.ts · MEMORY §3-1). 옛 저장에는 없다 */
   lessons?: Record<string, Record<string, Lesson[]>>
   readonly seed: number
+  /** 턴 번호 — 옛 판은 계절을, 달 시계(`clock: 'month'`)면 달을 센다. 철·해·달은 calendar.ts 로만 셈한다 */
   season: number
+  /** 판의 시계 — 'month' 면 한 턴 = 한 달 (형 10-31 · calendar.ts). 옛 저장에는 없다 = 한 턴 한 계절 */
+  readonly clock?: 'month'
+  /** 길마다 지도 위 길이(km) — 달 시계에서 행군 달 수를 셈한다 (calendar · season.marchTurns). 판을 열 때 정해진다. 옛 저장·지도 자리 없는 판에는 없다 */
+  readonly roadKm?: Readonly<Record<string, number>>
   readonly nodes: Record<string, RNode>
   readonly edges: Record<string, REdge>
   readonly factions: Record<string, Faction>
