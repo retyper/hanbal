@@ -1206,4 +1206,8 @@ export const UI_CSS = `
 .ap .flms.on { color: #ffd76a; font-weight: 900; letter-spacing: .15em; font-size: 13px; border-color: #ffd76a; box-shadow: 0 0 10px #ffb84a88; }
 /* 혼인 고르기 — 친밀 하트 (아끼는 사이 붉게 · 정략은 잿빛) */
 .ap .wcand .wtie { display: block; font-size: 12px; color: #e8b0a0; letter-spacing: .02em; } .ap .wcand .wtie.love { color: #ff8a8a; font-weight: 700; } .ap .wcand .wtie.cold { color: #9a9a9a; }
+/* 쉴 때 다이어트 (형 10-31: "안 건드리면 아주 최소화한 것만" · ZAXIS-1031 2단계) — 아무것도 안 고르고 멀리 볼 때는 관계 칩 · 특산 칸 ·
+   정찰 군세 · 맡은 장수 얼굴 · 붐빔을 접는다. 가까이 당기거나 무엇을 고르면 다시 뜬다. ＋마을 · 군대만 가면 · 우리 군사 수 · 규칙 그림은 늘 남는다 */
+.ap.rest .map[data-zl="far"] .lb .lbr, .ap.rest .map[data-zl="far"] .lb .lbg, .ap.rest .map[data-zl="far"] .lb .lbf,
+.ap.rest .map[data-zl="far"] .nd .gov, .ap.rest .map[data-zl="far"] .nd .crw { display: none; }
 `

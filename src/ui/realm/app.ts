@@ -5547,6 +5547,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     morph($('.selbar'), sb)
     $('.selbar').classList.toggle('pp', partySel !== '' && armySel.length === 0) // 개척단 띠는 작게 — 가린 고을을 누를 수 있게
     root.classList.toggle('sel-open', sb !== '')
+    // 쉴 때 — 고른 것도 연 판도 없다. 멀리 볼 때는 지도 글씨를 줄인다 (형 10-31 z축 · docs/realm/ZAXIS-1031.md 2단계)
+    root.classList.toggle('rest', sb === '' && sheet === null)
     morph($('.roadkey'), roadKeyHtml())
     $('.layers').innerHTML = layersOpen ? layersHtml() : ''
     // 답할 청이 남았으면 깃발 줄 끝에 사신 알림 — 누르면 외교 판
