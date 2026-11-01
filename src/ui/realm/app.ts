@@ -95,7 +95,7 @@ import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
 import { AUD_CSS, askSay, pactSay, typed, type PactKind } from './audience.ts'
 import { customDef, customsOf } from '../../realm/data/customs.ts'
 import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, slotsHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
-import { SCENE_SOUND, makeMusic, playOnce, snd, sndFile, tapSlot } from './sound.ts'
+import { SCENE_SOUND, makeMusic, playOnce, snd, sndFile, tapSlot, warmOnce } from './sound.ts'
 import { exileArt, exileBeats, fugitiveBeats, quarrelArt, quarrelBeats, romanceBeats, romanceFlip, sayOfBeat } from './card-lines.ts'
 import { HERO_POOL } from '../../realm/data/heroes-pool.ts'
 import { chiefCastOf, hireVoicePath, voiceGate, voiceKind, voicePath, type VoiceLine } from './voice.ts'
@@ -196,10 +196,16 @@ function goalFolded(): boolean {
 function muted(): boolean {
   try { return localStorage.getItem(MUTE_KEY) === '1' } catch { return false }
 }
+// 확장자가 이미 붙은 이름(snd() 의 'realm/sfx/x.ogg')엔 또 붙이지 않는다 — 전엔 /.w+$/ 라 「.ogg.ogg」로 받아 깃발·징병·출정 소리가 안 났다 (형 10-24)
+const sfxUrl = (name: string): string => `${name.includes('/') ? BASE : SFX}${name}${/\.\w+(#t=[\d.]+)?$/.test(name) ? '' : '.ogg'}`
 function ding(name: string, vol = 0.6, rate = 1, dur = 0): void {
   if (muted()) return
-  // 확장자가 이미 붙은 이름(snd() 의 'realm/sfx/x.ogg')엔 또 붙이지 않는다 — 전엔 /.w+$/ 라 「.ogg.ogg」로 받아 깃발·징병·출정 소리가 안 났다 (형 10-24)
-  playOnce(`${name.includes('/') ? BASE : SFX}${name}${/\.\w+(#t=[\d.]+)?$/.test(name) ? '' : '.ogg'}`, vol, rate, dur) // 탭이 가려져 있으면 안 낸다 (규칙 4)
+  playOnce(sfxUrl(name), vol, rate, dur) // 탭이 가려져 있으면 안 낸다 (규칙 4)
+}
+/** 곧 낼 소리를 미리 받아 풀어 둔다 — 처음 한 번이 늦게 나지 않게 (싸움이 열릴 때) */
+function warmSfx(names: readonly string[]): void {
+  if (muted()) return
+  for (const n of names) warmOnce(sfxUrl(n))
 }
 /** 판마다 「?」 단추로 여는 설명 — 판 위에는 고를 것만 두고, 읽을 거리는 여기로 (형 10-23: "설명서를 물음표 버튼 같은 거 하나 만들어서 필요할 때 읽어 볼 수 있게") */
 const GUIDE: Readonly<Record<string, { readonly title: string; readonly body: readonly string[] }>> = {
@@ -3425,7 +3431,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const b of mine.filter((x) => x !== a).slice(0, 2)) { b.at = f.from; b.march = { ...a.march } }
     const back = (): void => { warOn = false; front = { kind: 'title' }; paint() }
     try {
-      if (openWar(root, r, aiOrders(r), { art: ART, me: r.player, ding, music: (k) => { if (k === 'war') music.war(); else music.result(k) }, done: back })) { warOn = true; music.war(); music.primeResults(); return }
+      if (openWar(root, r, aiOrders(r), { art: ART, me: r.player, ding, warm: warmSfx, music: (k) => { if (k === 'war') music.war(); else music.result(k) }, done: back })) { warOn = true; music.war(); music.primeResults(); return }
     } catch (e) { failNote(e) }
     goToast('이번엔 싸움이 열리지 않았습니다. 한 번 더 눌러 주세요')
   }
@@ -6574,7 +6580,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         }
         const startWar = (): void => {
           try {
-            if (openWar(root, prev, [...orders, ...ai], { art: ART, me: me(), ding, music: (k) => { if (k === 'war') music.war(); else music.result(k) }, done: finish })) { warOn = true; music.war(); music.primeResults(); return }
+            if (openWar(root, prev, [...orders, ...ai], { art: ART, me: me(), ding, warm: warmSfx, music: (k) => { if (k === 'war') music.war(); else music.result(k) }, done: finish })) { warOn = true; music.war(); music.primeResults(); return }
           } catch (e) {
             failNote(e)
             return
