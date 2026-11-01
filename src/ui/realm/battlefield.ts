@@ -1965,9 +1965,9 @@ export const WAR_CSS = `
 .ap .wb0pop b { font-size: 30px; font-weight: 900; color: #ffe6a8; text-shadow: 0 2px 0 #000, 0 0 14px #000; letter-spacing: 2px; }
 @keyframes b0pop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.4); } 18% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); } 30% { transform: translate(-50%, -50%) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -60%) scale(1); } }
 .ap .wr.b0 .wf2s.us.b0kick { animation: b0kick .55s ease-out; } @keyframes b0kick { 0% { transform: none; } 30% { transform: translateX(3%); } 100% { transform: none; } }
-.ap .wr.b0:not(.help) .wgx, .ap .wr.b0:not(.help) .wgff, .ap .wr.b0:not(.help) .wgby, .ap .wr.b0:not(.help) .wloss, .ap .wr.b0:not(.help) .wodd, .ap .wr.b0:not(.help) .wcap, .ap .wr.b0:not(.help) .brkl { display: none; }
+.ap .wr.b0:not(.whelpon) .wgx, .ap .wr.b0:not(.whelpon) .wgff, .ap .wr.b0:not(.whelpon) .wgby, .ap .wr.b0:not(.whelpon) .wloss, .ap .wr.b0:not(.whelpon) .wodd, .ap .wr.b0:not(.whelpon) .wcap, .ap .wr.b0:not(.whelpon) .brkl { display: none; }
 .ap .wr.b0 .whelp { width: auto; padding: 0 10px; font-size: 0; } .ap .wr.b0 .whelp::after { content: '자세히'; font-size: 13px; }
-.ap .wr.b0.help .whelp::after { content: '접기'; }
+.ap .wr.b0.whelpon .whelp::after { content: '접기'; }
 @media (prefers-reduced-motion: reduce) { .ap .wb0pop, .ap .wr.b0 .wf2s.us.b0kick, .ap .wr.b0 .wcmd.rec::after, .ap .wr.b0 .wgo::after { animation-duration: .01s; } }
 .ap .tn.hard { color: #f0a08a; }
 /* 장수가 여럿 — 누가 나서나 · 누구를 잡나 (그 깃발을 골랐을 때만) */
@@ -2464,9 +2464,9 @@ export const WAR_CSS = `
 .ap .wrd.crit { border-color: #d9b36a; box-shadow: 0 0 0 1px #d9b36a55 inset; }
 .ap .wrn { font-size: 12px; color: var(--mute); margin-bottom: 4px; }
 .ap .wrh .whelp { position: absolute; right: 0; top: 0; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid #a0802a; background: #2a2016; color: #ffd27a; font-weight: 900; font-size: 16px; cursor: pointer; flex: none; }
-.ap .wr.help .whelp { background: #ffd27a; color: #1b1408; box-shadow: 0 0 10px #ffd27a88; }
-.ap .wr:not(.help) .wfhint, .ap .wr:not(.help) .wgby, .ap .wr:not(.help) .wnext .wintel, .ap .wr:not(.help) .wnext .wcmd .wct > small, .ap .wr:not(.help) .wst > p { display: none; }
-.ap .wr:not(.help) .wst:not(:has(.wact)):not(:has(> :not(p))) { display: none; }
+.ap .wr.whelpon .whelp { background: #ffd27a; color: #1b1408; box-shadow: 0 0 10px #ffd27a88; }
+.ap .wr:not(.whelpon) .wfhint, .ap .wr:not(.whelpon) .wgby, .ap .wr:not(.whelpon) .wnext .wintel, .ap .wr:not(.whelpon) .wnext .wcmd .wct > small, .ap .wr:not(.whelpon) .wst > p { display: none; }
+.ap .wr:not(.whelpon) .wst:not(:has(.wact)):not(:has(> :not(p))) { display: none; }
 .ap .wcmds { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; }
 .ap .wc { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 3px; padding: 3px 6px; border-radius: 12px; background: #2a1f16; flex: 1; min-width: 0; }
 .ap .wc.foe { background: #2d1f1d; }
@@ -2846,10 +2846,10 @@ export const WAR_CSS = `
 .ap .wfpop .wcmd.mini .wct > .wguess { display: none !important; } /* 판세는 깃발을 누르고 있을 때 뜨는 설명 창 밑에 (형 10-28) */
 .ap .wfpop .wcmd.mini { position: relative; } .ap .wfpop .wcmd.mini .wct > em.rec { position: absolute; right: 6px; top: 5px; }
 /* 싸움판을 화면 가득 — 아래로 밀지 않는다 (형 10-28) · 전장이 남은 높이를 다 쓰고, 깃발 칸(.wnext)은 「자세히」를 켰을 때만 */
-.ap .wr.choosing:not(.help) .wnext { display: none; }
+.ap .wr.choosing:not(.whelpon) .wnext { display: none; }
 .ap .wr .wtop { min-height: calc(100dvh - 132px - env(safe-area-inset-bottom)); display: flex; flex-direction: column; box-sizing: border-box; } /* 고르는 동안만 키웠더니 전투 개시 때 잠깐 낮아졌다 (형 10-28) */
 .ap .wr .wtop .wfield { flex: 1 1 auto; height: auto !important; min-height: 170px; }
-.ap .wr .wsc { padding-bottom: 140px; } .ap .wr.choosing:not(.help):not(.logopen) .wsc { overflow-y: hidden; }
+.ap .wr .wsc { padding-bottom: 140px; } .ap .wr.choosing:not(.whelpon):not(.logopen) .wsc { overflow-y: hidden; }
 .ap .wrc { cursor: pointer; font: inherit; } .ap .wrc.none { border-color: #e0b860; animation: wrcask 1s ease-in-out infinite alternate; } .ap .wrc.none i { color: #ffd27a; font-size: 15px; }
 @keyframes wrcask { from { box-shadow: 0 0 0 #ffd27a00; } to { box-shadow: 0 0 10px #ffd27a; } }
 .ap .wrrow { display: flex; gap: 8px; width: min(520px, 100%); } .ap .wrrow .wrgo { flex: 1; width: auto; } .ap .wrrow .wrauto { flex: none; flex-direction: column; line-height: 1.15; } .ap .wrrow .wrauto small { display: block; font-size: 11px; color: #ffd27a; }
@@ -3187,7 +3187,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   const ov = document.createElement('div')
   ov.className = 'wr'
   // 첫째 합 밑의 설명·깃발 설명은 「?」를 눌렀을 때만 (형 10-25) — 펼친 채로 두면 다음 싸움에도 펼쳐 둔다
-  try { if (localStorage.getItem(HELP_KEY) === '1') ov.classList.add('help') } catch { /* 없으면 접힌 채 */ }
+  try { if (localStorage.getItem(HELP_KEY) === '1') ov.classList.add('whelpon') } catch { /* 없으면 접힌 채 */ }
   ov.classList.add('b0') // 새 전투 시험(BATTLE-LIVE 0번)의 안내·반응을 10-28 부터 기본으로 — 스위치 대신 「더 보기」의 연습 싸움으로 시험한다
   ov.innerHTML = '<div class="wbg"></div><div class="wfxl"></div><div class="wsc"></div><div class="wfxt"></div><div class="wwin"></div>'
   const bgEl = ov.querySelector<HTMLElement>('.wbg')!
@@ -4254,7 +4254,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       case 'popx': closePop(); return
       case 'log': ov.classList.toggle('logopen'); return
       case 'help': {
-        const on = ov.classList.toggle('help')
+        const on = ov.classList.toggle('whelpon')
         try { localStorage.setItem(HELP_KEY, on ? '1' : '0') } catch { /* 저장이 막혀도 이번 판은 된다 */ }
         return
       }
