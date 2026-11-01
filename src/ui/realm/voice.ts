@@ -19,6 +19,7 @@ import { HIRE_LINE } from '../../realm/data/hire-lines.ts'
 import { hasTrait } from '../../realm/heroes.ts'
 import type { Art, Hero } from '../../realm/types.ts'
 import { LINES_NEW } from './voice-new.ts'
+import { HERO_VOICE, heroVoiceDir } from './voice-hero.ts'
 
 /** 처음 결 아홉 — 군장 말 · 성우진 B · C 는 이 아홉에만 있다 */
 export type BaseKind = 'm-young' | 'm-gruff' | 'm-sage' | 'm-elder' | 'm-charm' | 'w-bright' | 'w-cool' | 'w-sly' | 'w-shaman'
@@ -321,6 +322,9 @@ export function voiceSlot(h: Hero, ruler = false): { readonly dir: string; reado
 
 /** 그 장수의 그 줄 — 탭할 때마다 돌려 가며 하나 (화면 쪽 무작위 — 판의 결정론과 무관) */
 export function voicePath(h: Hero, want: VoiceLine, ruler = false): string {
+  // 전용 성우로 녹음한 장수는 제 폴더에서 (voice-hero.ts · 형 11-02)
+  const own = heroVoiceDir(h.id)
+  if (own !== null) return `${own}${want}-${take(`${h.id}:${want}`, 3)}.ogg`
   const { dir, kind: k } = voiceSlot(h, ruler)
   const line: VoiceLine = want === 'obey' && !OBEY_KINDS.has(k) ? 'tap' : want
   const n = TAKES[line]
@@ -332,14 +336,27 @@ export function voicePath(h: Hero, want: VoiceLine, ruler = false): string {
   return `${dir}${key}-${t}.ogg`
 }
 
+/** n 가운데 하나 — 같은 것이 연달아 안 나오게 (꾸밈 소리라 판의 시드와 상관없다) */
+function take(key: string, n: number): number {
+  const prev = lastTake.get(key) ?? 0
+  let t = 1 + Math.floor(Math.random() * n)
+  if (n > 1 && t === prev) t = (t % n) + 1
+  lastTake.set(key, t)
+  return t
+}
+
 /** 장수 기술 외침 — 그 장수의 결로 */
 export function artVoicePath(h: Hero, art: Art, ruler = false): string {
+  const own = heroVoiceDir(h.id)
+  if (own !== null && HERO_VOICE[h.id]?.art[0] === art) return `${own}art.ogg`
   const { dir, kind } = voiceSlot(h, ruler)
   return `${dir}art-${kind}-${art}.ogg`
 }
 
 /** 싸움 맡김 — 맡아 들 때(go · 셋을 돌려 가며) · 맡긴 싸움이 끝나면 이김(win) · 짐(lose) */
 export function autoVoicePath(h: Hero, want: 'go' | 'win' | 'lose', ruler = false): string {
+  const own = heroVoiceDir(h.id)
+  if (own !== null) return want === 'go' ? `${own}auto-${take(`${h.id}:auto`, 3)}.ogg` : `${own}auto-${want}.ogg`
   const { dir, kind: k } = voiceSlot(h, ruler)
   if (want !== 'go') return `${dir}auto-${k}-${want}.ogg`
   const key = `auto-${k}`
@@ -352,6 +369,8 @@ export function autoVoicePath(h: Hero, want: 'go' | 'win' | 'lose', ruler = fals
 
 /** 등용 첫마디 — 그 장수가 녹음한 대사 · 대사가 없는 장수(판에서 난 아이 등) · 목소리가 처진 장수(HIRE_LOW)는 그 결의 짧은 대답으로 */
 export function hireVoicePath(h: Hero, ruler = false): string {
+  const own = heroVoiceDir(h.id)
+  if (own !== null) return `${own}hire.ogg`
   return HIRE_LINE[h.id] !== undefined && !HIRE_UNRECORDED.has(h.id) && !HIRE_LOW.has(h.id) ? `realm/voice/hire/${h.id}.ogg` : voicePath(h, 'tap', ruler)
 }
 
