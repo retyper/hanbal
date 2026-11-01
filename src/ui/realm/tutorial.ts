@@ -87,7 +87,7 @@ export const TUT_STEPS: readonly TutStep[] = [
     press: ['[data-act="rite"]', '.nd[data-node="tut-sodo"]'], done: (c) => has(c, 'rite') || c.r.season > 0,
   },
   {
-    id: 'next', name: '다음 계절', what: '정한 일이 한꺼번에 이루어집니다', text: '이제 「다음 계절」을 누르세요. 고른 일이 한꺼번에 이루어지고 소식이 옵니다.',
+    id: 'next', name: '다음 달', what: '정한 일이 한꺼번에 이루어집니다', text: '이제 「다음 달」을 누르세요. 고른 일이 한꺼번에 이루어지고 소식이 옵니다.',
     press: ['.next'], done: (c) => c.r.season >= 1,
   },
   {
@@ -103,7 +103,7 @@ export const TUT_STEPS: readonly TutStep[] = [
     done: (c) => (shut(c) && marching(c)) || Object.values(c.r.armies).some((a) => a.faction === c.r.player && a.at === 'tut-gaetgol'),
   },
   {
-    id: 'battle', name: '전투', what: '합마다 명령을 골라 싸웁니다', text: '「다음 계절」을 누르면 전장이 열립니다. 아래 무리마다 깃발을 하나씩 끌어 전장에 놓으세요. 「장수」에선 「적장 사로잡기」를 골라 보세요. 이 판에선 반드시 잡힙니다.',
+    id: 'battle', name: '전투', what: '합마다 명령을 골라 싸웁니다', text: '「다음 달」을 누르면 전장이 열립니다. 아래 무리마다 깃발을 하나씩 끌어 전장에 놓으세요. 「장수」에선 「적장 사로잡기」를 골라 보세요. 이 판에선 반드시 잡힙니다.',
     // 사로잡기는 「장수」 탭에 있다 · 「전투 개시」는 무리마다 다 고르면 켜진다 — 나머지는 ★ 권함으로 채운다
     press: ['.next'], war: { pick: '[data-war="pick"][data-c="capture"]', go: '[data-war="go"]', tab: '[data-war="gtab"][data-g="lead"]' },
     done: fought,
@@ -127,7 +127,7 @@ export const TUT_STEPS: readonly TutStep[] = [
     done: (c) => c.orders.some((o) => o.kind === 'plot'),
   },
   {
-    id: 'win', name: '도읍 차지', what: '적의 도읍을 쥐면 이깁니다', text: '마지막입니다. 군대를 미추홀 도읍으로 보내세요. 전략 회의에서 장수들의 말을 듣고 「출정」, 그다음 「다음 계절」을 누르면 됩니다. 도읍을 쥐면 이 판을 이깁니다.',
+    id: 'win', name: '도읍 차지', what: '적의 도읍을 쥐면 이깁니다', text: '마지막입니다. 군대를 미추홀 도읍으로 보내세요. 전략 회의에서 장수들의 말을 듣고 「출정」, 그다음 「다음 달」을 누르면 됩니다. 도읍을 쥐면 이 판을 이깁니다.',
     press: [...COUNCIL, ['.next', marching], '.nd[data-node="tut-michuhol-cap"][data-act="go"]', '.tok[data-army="a-us"]', ['.next', () => true]],
     done: (c) => c.r.outcome?.kind === 'win',
   },
@@ -516,7 +516,7 @@ export const TUT_CSS = `
 /* 스포트라이트 — 구멍 밖은 어둡다. 구멍은 누를 곳 크기, 둘레에 숨 쉬는 금빛 고리, 그 밑(또는 위)에서 손이 콕콕 가리킨다 */
 /* 자리는 미끄러지지 않고 바로 붙는다 — 판이 굴러갈 때 고리가 뒤처지면 엉뚱한 데를 누르게 된다 */
 .ap .tutspot { position: fixed; inset: 0; z-index: 95; pointer-events: none; }
-.ap .tutspot i { position: absolute; background: #000000a8; }
+.ap .tutspot i { position: absolute; background: #00000066; } /* 볼 곳 밖은 어둡게 · 66% 는 가르칠 지도까지 가려 흐릿했다 (형 11-01: "지도가 너무 불투명해서 제대로 안 보임") */
 .ap .tutspot .t { left: 0; right: 0; top: 0; height: max(0px, var(--y)); }
 .ap .tutspot .b { left: 0; right: 0; top: calc(var(--y) + var(--h)); bottom: 0; }
 .ap .tutspot .l { left: 0; width: max(0px, var(--x)); top: var(--y); height: var(--h); }

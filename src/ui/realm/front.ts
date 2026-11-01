@@ -394,7 +394,7 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
       + `<p class="glose">우리 도읍을 잃으면 집니다</p></div>`
     body = `<div class="pl pgoal">${head}<div class="ways">`
       + ways.map(([ic, t, d, subs]) => `<div class="way">${k.icon(ic, 'wic')}<b>${t}</b><span>${d}<span class="wsub">${subs.map(([si, sn]) => `<i>${k.icon(si, 'wsi')}${sn}</i>`).join('')}</span></span></div>`).join('')
-      + `</div><p class="ptip">한 계절에 명령을 정하고 <b>다음 계절</b>을 누르세요. 모든 나라가 한꺼번에 움직입니다.</p></div>`
+      + `</div><p class="ptip">${r.clock === 'month' ? '한 달에 명령을 정하고 <b>다음 달</b>을 누르세요. 석 달이 한 계절입니다.' : '한 계절에 명령을 정하고 <b>다음 계절</b>을 누르세요.'} 모든 나라가 한꺼번에 움직입니다.</p></div>`
   }
   const dots = Array.from({ length: PROLOGUE_STEPS }, (_, i) => `<i class="${i === step ? 'on' : ''}"></i>`).join('')
   const last = step >= PROLOGUE_STEPS - 1

@@ -47,8 +47,8 @@ export function startRegion(region: RegionId, seed: number, player: string, edit
   const r = openRegion(region, seed, player, edit)
   fogStart(r)
   watchBorders(r) // 첫 턴부터 우리 고을 이웃의 군세가 범위로 보인다 (scouts.ts · FOCUS D)
-  // 배우는 판은 계절 시계 그대로 — 차례(튜토리얼)가 계절 턴에 맞춰 짜여 있다
-  return P.realm.monthClock >= 1 && region !== 'tutorial' ? monthClock(r) : r
+  // 배우는 판도 달 시계 (형 11-01: "아직도 턴이 계절로 넘어가잖아" · 0장이 형이 여는 보통 판이다). 상대가 먼저 치지 않아 차례가 흔들리지 않는다
+  return P.realm.monthClock >= 1 ? monthClock(r) : r
 }
 
 /**

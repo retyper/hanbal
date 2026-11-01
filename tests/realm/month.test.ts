@@ -65,13 +65,13 @@ describe('달력', () => {
 })
 
 describe('새 판은 달 시계', () => {
-  it('자유판·장은 달 시계로 열고 길 길이를 적는다 · 배우는 판은 계절 그대로', () => {
+  it('자유판·장·배우는 판 모두 달 시계로 연다 (형 11-01)', () => {
     assert.equal(P.realm.monthClock, 1)
     const y = startRegion('yeongnam', 1, 'guya')
     assert.equal(y.clock, 'month')
     assert.equal(Object.keys(y.roadKm ?? {}).length, Object.keys(y.edges).length)
     assert.equal(startRegion('mahan', 1, 'baekje').clock, 'month')
-    assert.equal(startRegion('tutorial', 1, 'baekje').clock, undefined)
+    assert.equal(startRegion('tutorial', 1, 'baekje').clock, 'month')
   })
   it('이웃 길은 대개 한 달 · 가장 먼 길도 석 달 · 장마 나루는 7·8월에만 막힌다', () => {
     const r = startRegion('yeongnam', 1, 'guya')
