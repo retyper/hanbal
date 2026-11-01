@@ -314,14 +314,17 @@ export function makeSync(host: SyncHost, onChange: (s: SyncState) => void): {
     },
     async wipe() {
       const base = uidPath()
-      if (base === null) return
+      // 못 지운 채 넘어가면 이 기기만 비고 다음 열 때 서버 판·도감이 도로 내려온다 (형 11-01: 초기화해도 남는 게 많다) — 막히면 알린다
+      if (base === null) throw new Error('로그인 정보가 없습니다')
       const token = await idToken()
-      if (token === null) return
+      if (token === null) throw new Error('로그인이 오래됐습니다. 다시 로그인한 뒤 지워 주세요')
       clearTimer()
       pending = false
       const recs = await listIds(`${base}/records`, token)
       const writes: Write[] = [...recs.map((id) => ({ kind: 'delete' as const, path: `${base}/records/${id}` })), { kind: 'delete', path: `${base}/saves/main` }, { kind: 'delete', path: base }]
       for (let i = 0; i < writes.length; i += 400) await commit(writes.slice(i, i + 400), token)
+      // 정말 비었나 — 판이 남아 있으면 지운 게 아니다
+      if ((await remoteHead(base, token)) !== null) throw new Error('서버의 판이 아직 남아 있습니다')
       remember(null)
     },
     forget() { remember(null); clearTimer(); pending = false; again = false; chooseRemote = null; set({ kind: 'off' }) },

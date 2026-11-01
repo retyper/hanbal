@@ -10,6 +10,8 @@
  * 판마다 나라·시드·계절마다 내 명령·보고·내 살림·고민한 시간·누른 것. 새 판을 열어도 지난 판은 남는다.
  * 나라 판의 "기록 내보내기"로 JSON 한 장을 받고, tools/realm-records.ts 로 읽는다.
  */
+// 맨 먼저 — 기록 지우기 뒤의 새로고침이면 다른 모듈이 저장을 읽기 전에 한 번 더 지운다 (wipe.ts)
+import { wipeAndMark } from './ui/realm/wipe.ts'
 import { startGfxSafe } from './ui/gfxsafe.ts'
 // 갤럭시(Xclipse) 크롬은 부드러운 그러데이션·filter 색 함수를 못 그린다 — 그 기기에서만 되는 꼴로 바꿔 끼운다 (gfxsafe.ts · 형 10-28)
 startGfxSafe()
@@ -469,14 +471,13 @@ const app = mountRealmApp(root, {
   async resetPlay() {
     // 서버 것부터 — 이 기기만 지우면 다음 맞추기 때 서버의 도감·해금이 되살아난다. 서버를 못 지우면 이 기기 것도 그대로 둔다
     if (account() !== null) {
-      try { await sync.wipe() } catch (e) { console.warn('[기록] 서버 기록을 못 지웠다:', e); return false }
+      try { await sync.wipe() } catch (e) { console.warn('[기록] 서버 기록을 못 지웠다:', e); return e instanceof Error ? e.message : '서버에 닿지 않았습니다' }
       sync.forget()
     }
-    // 판·판 밖 기록만 — 소리·지도 층 같은 설정과 계정·기기 표시는 남긴다 (localStorage.clear() 는 쓰지 않는다)
-    const keep = new Set(['hanbal.realm.mute', 'hanbal.realm.layers', 'hanbal.realm.gfx'])
-    for (const k of Object.keys(localStorage)) if ((k.startsWith('hanbal.realm.') || k.startsWith('hanbal.night.')) && !keep.has(k)) localStorage.removeItem(k)
+    // 판·판 밖 기록 전부 — 설정과 계정·기기 표시는 남긴다 (wipe.ts · localStorage.clear() 는 쓰지 않는다)
+    wipeAndMark()
     location.reload()
-    return true
+    return null
   },
   cloud: {
     available: canSync,

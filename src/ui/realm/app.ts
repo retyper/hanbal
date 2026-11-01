@@ -110,7 +110,8 @@ import { APPROACH_SHORT, COUNCIL_ART, councilAgendas, howOf, planChoice, planOrd
 
 export interface AppHost {
   /** 플레이 기록을 다 지운다(계정·설정은 남김) — 로그인했으면 서버 것부터. 못 지웠으면 false (형 10-24) */
-  resetPlay?(): Promise<boolean>
+  /** 플레이 기록 지우기 — 다 지웠으면 null(곧 새로고침), 못 지웠으면 까닭 */
+  resetPlay?(): Promise<string | null>
   /** 계절을 넘긴 뒤 — 저장은 바깥이 한다. `orders` 는 AI 것까지 전부, `mine` 은 플레이어 것 */
   onAdvance(next: Realm, report: Report, orders: readonly Order[], mine: readonly Order[]): void
   /** 나라를 골라 새 판 */
@@ -4210,8 +4211,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function resetHtml(): string {
     if (host.resetPlay === undefined) return ''
     const cloud = host.cloud?.who() != null
-    return `<h3>기록 지우기</h3><div class="acct"><p class="mute">지금 판 · 저장 칸 · 영웅전 · 해금한 판 · 연대기 · 데려갈 장수를 다 지우고 처음부터 한다.${cloud ? ' 계정에 저장된 같은 기록도 함께 지운다.' : ''} 계정과 소리 같은 설정은 남는다. 되돌릴 수 없다.</p>`
-      + `<div class="btns"><button class="btn ghost danger" data-act="reset-play">${resetArmed ? '한 번 더 누르면 지운다. 되돌릴 수 없다' : '플레이 기록 모두 지우기'}</button></div></div>`
+    return `<h3>기록 지우기</h3><div class="acct"><p class="mute">지금 판 · 저장 칸 · 영웅전 · 해금한 판 · 연대기 · 데려갈 장수 · 단련 · 유물 · 배우는 판 · 궁술 연습 기록을 모두 지우고 처음부터 합니다.${cloud ? ' 계정에 저장된 같은 기록도 함께 지웁니다.' : ''} 계정과 소리·그래픽 같은 설정은 남습니다. 되돌릴 수 없습니다.</p>`
+      + `<div class="btns"><button class="btn ghost danger" data-act="reset-play">${resetArmed ? '한 번 더 누르면 지웁니다. 되돌릴 수 없습니다' : '플레이 기록 모두 지우기'}</button></div></div>`
   }
 
   function acctHtml(): string {
@@ -6678,7 +6679,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'reset-play':
         if (!resetArmed) { resetArmed = true; paint(); return }
         resetArmed = false
-        void host.resetPlay?.().then((ok) => { if (!ok) { failNote(new Error('기록을 못 지웠다. 잠시 뒤 다시 (서버에 닿지 않았다면 이 기기 것도 그대로 두었다)')); paint() } })
+        void host.resetPlay?.().then((why) => { if (why !== null) { failNote(new Error(`기록을 지우지 못했습니다. ${why}. 이 기기의 기록도 그대로 두었습니다`)); paint() } })
         return
       case 'acct-del':
         if (!acctArmed) { acctArmed = true; paint(); return }
