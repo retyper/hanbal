@@ -184,8 +184,16 @@ const VOICE_OF: Readonly<Record<string, VoiceKind>> = {
   'mh-mahan-1': 'm-veteran',
 }
 
-/** 등용 대사를 새로 쓰고 아직 녹음하지 않은 장수 — hire/<id>.ogg 가 없다. 녹음하면 여기서 지운다 (tests/realm/hire-lines.test.ts) */
-export const HIRE_UNRECORDED: ReadonlySet<string> = new Set<string>([])
+/**
+ * 등용 대사를 새로 쓰고 아직 녹음하지 않은 장수 — hire/<id>.ogg 가 없거나 옛 글의 소리라 화면 글과 다르다.
+ * 그동안은 그 결의 짧은 대답으로 운다. 녹음하면 여기서 지운다 (tests/realm/hire-lines.test.ts · 목록은 docs/realm/cast/hire-rerecord.md 맨 끝)
+ * 11-01 — 떠돌이 스물다섯(서늘 wander-25 만 그대로)의 등용 대사를 성격대로 새로 썼다 (형: "이건 목소리도 필요 없는데 말투 고쳐 줘")
+ */
+export const HIRE_UNRECORDED: ReadonlySet<string> = new Set<string>([
+  'wander-01', 'wander-02', 'wander-03', 'wander-04', 'wander-05', 'wander-06', 'wander-07', 'wander-08', 'wander-09', 'wander-10',
+  'wander-11', 'wander-12', 'wander-13', 'wander-14', 'wander-15', 'wander-16', 'wander-17', 'wander-18', 'wander-19', 'wander-20',
+  'wander-21', 'wander-22', 'wander-23', 'wander-24', 'wander-26',
+])
 
 /**
  * 남자 쪽으로 처진 여자 목소리 — 다시 녹음할 때까지 다른 목소리로 갈아 끼운다
