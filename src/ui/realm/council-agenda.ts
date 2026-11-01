@@ -16,7 +16,7 @@
  */
 import { guardAdjust, guardWeights, type GuardWhy } from '../../realm/council.ts'
 import { headcount } from '../../realm/battle.ts'
-import { josa, turnsLabel } from '../../realm/data/prose.ts'
+import { josa, turnsLabel, turnWord } from '../../realm/data/prose.ts'
 import { seasons } from '../../realm/calendar.ts'
 import { relationOf } from '../../realm/diplomacy.ts'
 import { met } from '../../realm/discovery.ts'
@@ -231,7 +231,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
     if (h !== undefined) from.add(h.id)
     return h
   }
-  const base = { foe, here, there, seasons: turnsLabel(r, m.seasons), all: `${ours.toLocaleString('ko-KR')}명` }
+  const base = { foe, here, there, turn: turnWord(r), seasons: turnsLabel(r, m.seasons), all: `${ours.toLocaleString('ko-KR')}명` }
   // 맞서는 이 — 겁쟁이·신중한 이가 아니면 누구든, 거친 이가 먼저 (한 사람만 말하면 회의가 아니다 · 형 10-29: "대사가 한 줄밖에 안 뜬다")
   const counter = (from: Set<string> = used): Hero | undefined => pickSeat((h) => h.mu + (bold(h) ? 5 : 0), (h) => !timid(h), from)
   const say = (h: Hero, move: SayMove, v: Readonly<Record<string, string>> = {}): string => sayOf(h, move, { ...base, ...v }, r.season)
@@ -262,7 +262,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
     const waiter = pickSeat((h) => h.ryak + (calm(h) ? 2 : 0) - (bold(h) ? 3 : 0), (h) => !bold(h) || h.ryak >= P.realm.cnReadRyak, mine)
     voices.push(waiter !== undefined
       ? { hero: waiter, label: '때를 기다린다', move: 'allyWait', line: line(waiter, 'allyWait'), opt: { k: 'wait' } }
-      : { hero: null, label: '때를 기다린다', line: '이번 계절은 머물고 때를 본다', opt: { k: 'wait' } })
+      : { hero: null, label: '때를 기다린다', line: `이번 ${josa(turnWord(r), '은', '는')} 머물고 때를 본다`, opt: { k: 'wait' } })
     const [x, y] = def < ally ? [def, ally] : [ally, def]
     const hand = ctx.plotHand?.('sow', x, y) ?? null
     if (hand !== null) {
@@ -319,7 +319,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
       const hot = counter()
       voices.push(hot !== undefined
         ? { hero: hot, label: '지금 친다', move: 'waitAgainst', line: say(hot, 'waitAgainst'), opt: { k: 'go' } }
-        : { hero: null, label: '지금 친다', line: '기다리지 않는다: 이번 계절에 친다', opt: { k: 'go' } })
+        : { hero: null, label: '지금 친다', line: `기다리지 않는다: 이번 ${turnWord(r)}에 친다`, opt: { k: 'go' } })
       out.push({ id: 'wait', title: '지금 칠까, 기다릴까', voices })
     }
   }

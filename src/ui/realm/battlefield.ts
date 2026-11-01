@@ -13,7 +13,7 @@
  */
 import { faceFile } from './face.ts'
 import { FACTION_ART, SOL_ANIM2, SOL_ANIM_AR, UNIT_ICON, flagIcon, genArtOf, generalSprite } from '../../realm/data/art.ts'
-import { battleName, endStory, fieldName, groupLabel, josa, roundStory, storyCtx, UNIT_NAME } from '../../realm/data/prose.ts'
+import { battleName, endStory, fieldName, groupLabel, josa, roundStory, storyCtx, TURN, turnWord, UNIT_NAME } from '../../realm/data/prose.ts'
 import { BATTLE_STYLES, groupMen, groupOf, lookRound, nightAt, type BattleStyle, type RoundAt } from '../../realm/tactics.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
 import { seasonOf } from '../../realm/season.ts'
@@ -41,14 +41,14 @@ export const APPROACH_DOES: Record<Approach, { gain: string; risk: string }> = {
   road: { gain: '빠르고 질서 있게 닿는다. 사기가 오른다', risk: '숨지 않는다. 적은 성과 장정으로 맞는다' },
   night: { gain: '들키지 않으면 잠든 적을 친다. 성문도 장정도 못 막는다', risk: '들키면 기다리던 적의 매복에 걸린다' },
   ford: { gain: '갈대에 숨어 건넌다. 들키지 않으면 강만 믿던 적을 친다', risk: '들키면 물 한가운데서 맞아 크게 잃는다' },
-  ridge: { gain: '한 계절 더 돌아 뒤로 나온다. 성을 비켜 치고 높은 곳에서 쏠 수 있다', risk: '들키면 산길에서 걸린다' },
+  ridge: { gain: `한 ${TURN} 더 돌아 뒤로 나온다. 성을 비켜 치고 높은 곳에서 쏠 수 있다`, risk: '들키면 산길에서 걸린다' },
   cliff: { gain: '산성 절벽을 넘어 성 안으로, 적은 사람일수록 잘 된다', risk: '실패하면 떨어져 많이 잃는다' },
 }
 
 /** 계절에 막힌 길 — 갈 수는 있다. 고를 때 미리 보인다 (형: "불가능하게 만들지 말고 패널티 · 사전에 안내") */
 export const HARD_LINE = {
-  winterPass: '눈 덮인 고개: 얼어서 사람을 잃고 한 계절 더 걸린다',
-  summerFord: '장마에 불어난 나루: 떠내려가 사람을 잃고 한 계절 더 걸린다',
+  winterPass: `눈 덮인 고개: 얼어서 사람을 잃고 한 ${TURN} 더 걸린다`,
+  summerFord: `장마에 불어난 나루: 떠내려가 사람을 잃고 한 ${TURN} 더 걸린다`,
 } as const
 
 /** 깃발(명령)의 이름 — 우리 옛 진법의 말로. '일기토'처럼 남의 나라 게임 말은 쓰지 않는다 (형 2026-10-19) */
@@ -998,7 +998,7 @@ export function warTip(prev: Realm, after: Realm, l: BattleLine, me: string, art
       const hint = p!.hint
       const habit = p!.hintSrc === 'habit'
       const hl = habit ? HABIT_LINE[hint] : HINT_LINE[hint]
-      h += `<div class="wtt"><img src="${flagSrc(art, hint)}" alt=""><span><b>${habit ? '적장의 버릇' : '적 앞줄의 낌새'}</b><small>${habit ? '겨뤄 본 적이 있어 안다. 이번에도 그럴지는 모른다' : l.field === true ? '눈앞에서 맞붙어 보인다' : weAtk ? '척후가 이번 계절 보고 왔다' : '다가오는 것을 지켜봤다'}</small></span></div>`
+      h += `<div class="wtt"><img src="${flagSrc(art, hint)}" alt=""><span><b>${habit ? '적장의 버릇' : '적 앞줄의 낌새'}</b><small>${habit ? '겨뤄 본 적이 있어 안다. 이번에도 그럴지는 모른다' : l.field === true ? '눈앞에서 맞붙어 보인다' : weAtk ? `척후가 이번 ${turnWord(after)} 보고 왔다` : '다가오는 것을 지켜봤다'}</small></span></div>`
       if (hl !== undefined) h += `<p>${esc(hl)}</p>`
       const win = FRONT_COUNTER[hint]
       const lose = (Object.keys(FRONT_COUNTER) as Cmd[]).find((c) => FRONT_COUNTER[c] === hint)
@@ -1701,7 +1701,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   // 위 카드는 그 싸움터를 무대로 — 길·성문·물가·눈밭·밤 (형 10-23: "길에서 마주치거나 수성하거나 공성할 때는 그 위치에 맞게 배경")
   // 머리 카드도 같은 하늘 — 그림 위에 한 겹 (어둠 · 노을 · 새벽빛)
   const skyLayer = sky === ' dk-night' ? 'linear-gradient(#0a1440aa, #05081add), ' : sky === ' dk-dusk' ? 'linear-gradient(#ff7a2a77, #a0302a44 50%, #1a0a0a88), ' : sky === ' dk-dawn' ? 'linear-gradient(#ffd8a866, #8aa0d044 50%, #0d0f1366), ' : ''
-  h += `<div class="wtop" style="--wtbg:${skyLayer}url('${warBg(art, ground, !weAtk)}')"><div class="wrh"><span class="wrk">${((k) => `<i class="wkind ${k.us ? 'us' : 'foe'}">${esc(k.word)}</i>`)(warKind(prev, l, me))}<b>${esc(warName(after, l))}</b></span>${left > 1 ? `<span class="mute">이번 계절 우리 싸움 ${left}판</span>` : ''}<div class="wrbt"><button class="wsgb" data-war="mu" aria-label="깃발 상성 보기">상성</button>${`<button class="wlogb${rounds.length > 0 ? '' : ' off'}" data-war="log" aria-label="합 기록 보기"${rounds.length > 0 ? '' : ' disabled'}>기록</button>`}</div><button class="whelp" data-war="help" aria-label="설명 보기">?</button></div>${clockHtml(l, shown)}`
+  h += `<div class="wtop" style="--wtbg:${skyLayer}url('${warBg(art, ground, !weAtk)}')"><div class="wrh"><span class="wrk">${((k) => `<i class="wkind ${k.us ? 'us' : 'foe'}">${esc(k.word)}</i>`)(warKind(prev, l, me))}<b>${esc(warName(after, l))}</b></span>${left > 1 ? `<span class="mute">이번 ${turnWord(after)} 우리 싸움 ${left}판</span>` : ''}<div class="wrbt"><button class="wsgb" data-war="mu" aria-label="깃발 상성 보기">상성</button>${`<button class="wlogb${rounds.length > 0 ? '' : ' off'}" data-war="log" aria-label="합 기록 보기"${rounds.length > 0 ? '' : ' disabled'}>기록</button>`}</div><button class="whelp" data-war="help" aria-label="설명 보기">?</button></div>${clockHtml(l, shown)}`
   // 땅 띠 — 전장 바로 위 제 자리에 (형 10-26: "목책이랑 나루 둘다 가운데 설명 '우리에게 유리' 이게 다른거랑 겹쳐짐")
   const terr = terrChips(prev, l, me, fname(foeF)).map((c) => terrChipHtml(art, c, 'wtc')).join('')
   h += `<div class="wvs">${side(ourI, ourHero, ourF, ourName, 'us')}<img class="vs" src="${art}ui/vs.png" alt="VS">${side(foeI, foeHero, foeF, foeName, 'foe')}</div>${terr !== '' ? `<div class="wterr">${terr}</div>` : ''}${fieldHtml()}</div>`
@@ -1912,7 +1912,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       h += `<p class="wyld ${mine ? 'us' : 'foe'}"><img src="${art}icon/status-betrayal.png" alt="항복"><b>${yl.n}</b><i>▶</i>`
         + `${yl.join > 0 ? `<img src="${art}icon/unit-spear.png" alt="군사"><b>+${yl.join}</b>` : ''}${yl.hh > 0 ? `<img src="${art}icon/settle-farm-village.png" alt="집"><b>+${yl.hh}</b>` : ''}</p>`
     }
-    h += `<button class="btn pri wide" data-war="next">${left > 1 ? '다음 싸움으로' : '계절을 마무리한다'}</button></div>`
+    h += `<button class="btn pri wide" data-war="next">${left > 1 ? '다음 싸움으로' : `${josa(turnWord(after), '을', '를')} 마무리한다`}</button></div>`
   }
   h += `</div>`
   return h

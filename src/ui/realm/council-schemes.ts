@@ -40,15 +40,15 @@ const TONE_OF: Readonly<Record<VoiceKind, Tone>> = {
 export const SCHEME_SAYS: Readonly<Record<Tone, Readonly<Record<Scheme, readonly string[]>>>> = {
   gruff: {
     plotAdvise: [
-      '{foe}의 곳간이 그득하면 성 안 놈들은 몇 해라도 버팁니다. 이번 계절은 참고 곳간에 불부터 놓으시지요. 배곯은 {there|은} 제가 단숨에 부수겠습니다.',
+      '{foe}의 곳간이 그득하면 성 안 놈들은 몇 해라도 버팁니다. 이번 {turn|은} 참고 곳간에 불부터 놓으시지요. 배곯은 {there|은} 제가 단숨에 부수겠습니다.',
       '배부른 적은 질기게 버팁니다. {foe}의 곳간을 먼저 태워 버리면 {there}의 놈들도 기운이 빠집니다. 칼은 그다음에 뽑으시지요.',
     ],
     plotAgainst: [
       '불 놓고 기다리는 사이 저들도 채비를 마칩니다. {there|은} 지금 쳐야 합니다. 곧장 치게 해 주십시오!',
-      '곳간 태우는 건 좀도둑들 일입니다. {there}의 성문은 제 창으로 열겠습니다. 이번 계절에 곧장 치시지요!',
+      '곳간 태우는 건 좀도둑들 일입니다. {there}의 성문은 제 창으로 열겠습니다. 이번 {turn}에 곧장 치시지요!',
     ],
     pincerAdvise: [
-      '{via}에 있는 {with|과} 함께 두 길로 몰아치면 {there}의 놈들은 어느 쪽을 막을지 모릅니다. 같은 계절에 닿게 맞춰 주십시오.',
+      '{via}에 있는 {with|과} 함께 두 길로 몰아치면 {there}의 놈들은 어느 쪽을 막을지 모릅니다. 같은 {turn}에 닿게 맞춰 주십시오.',
       '한쪽 문만 두드리면 저들이 거기만 막습니다. {with|이} {via}에서 다른 길로 들게 하시지요. {there|을} 앞뒤로 조이겠습니다!',
     ],
     pincerAgainst: [
@@ -61,7 +61,7 @@ export const SCHEME_SAYS: Readonly<Record<Tone, Readonly<Record<Scheme, readonly
     ],
     allyWait: [
       '{foe|과} {ally}의 사이가 지금은 단단합니다. 그래도 남과 맺은 약조란 오래 가지 않습니다. 금이 갈 때까지 기다렸다 치시지요.',
-      '지금은 때가 아닙니다. {ally|이} 등을 돌리는 날 {foe|을} 치면 됩니다. 한 계절 숨을 고르시지요.',
+      '지금은 때가 아닙니다. {ally|이} 등을 돌리는 날 {foe|을} 치면 됩니다. 한 {turn} 숨을 고르시지요.',
     ],
     allySow: [
       '{foe|과} {ally} 사이를 갈라놓으시지요. 둘이 서로 으르렁대면 {foe|은} 혼자 남습니다. 그때 제가 들이치겠습니다.',
@@ -74,15 +74,15 @@ export const SCHEME_SAYS: Readonly<Record<Tone, Readonly<Record<Scheme, readonly
   },
   young: {
     plotAdvise: [
-      '곳간이 비면 아무리 굳은 성도 무너집니다! {foe}의 곳간에 불부터 지르면 {there}의 군사는 배를 곯으며 싸웁니다. 이번 계절은 불을 놓게 해 주십시오!',
+      '곳간이 비면 아무리 굳은 성도 무너집니다! {foe}의 곳간에 불부터 지르면 {there}의 군사는 배를 곯으며 싸웁니다. 이번 {turn|은} 불을 놓게 해 주십시오!',
       '{foe|은} 곡식이 많아 오래 버틸 것입니다. 먼저 곳간을 태우면 {there|을} 훨씬 쉽게 떨어뜨립니다. 불부터 놓으시지요!',
     ],
     plotAgainst: [
-      '불을 놓는 사이 한 계절이 그냥 갑니다! {there|은} 지금 치면 떨어집니다. 곧장 가게 해 주십시오!',
+      '불을 놓는 사이 한 {turn|이} 그냥 갑니다! {there|은} 지금 치면 떨어집니다. 곧장 가게 해 주십시오!',
       '저들이 눈치채기 전에 치는 게 낫습니다! {there}까지 단숨에 달려가겠습니다. 곧장 치시지요!',
     ],
     pincerAdvise: [
-      '{with|과} 함께 두 길로 들면 {there|을} 지키는 군사가 둘로 갈립니다! {via}에서도 같은 계절에 떠나게 해 주십시오!',
+      '{with|과} 함께 두 길로 들면 {there|을} 지키는 군사가 둘로 갈립니다! {via}에서도 같은 {turn}에 떠나게 해 주십시오!',
       '앞에서 우리가, 옆에서 {with|이} 들이치면 저들은 정신을 못 차립니다! {there|을} 두 길로 치시지요!',
     ],
     pincerAgainst: [
@@ -108,15 +108,15 @@ export const SCHEME_SAYS: Readonly<Record<Tone, Readonly<Record<Scheme, readonly
   },
   wise: {
     plotAdvise: [
-      '배부른 성은 쉽게 떨어지지 않습니다. 먼저 {foe}의 곳간을 태우면 {there}의 군사는 굶주림과 싸워야 합니다. 이번 계절은 불을 놓고, 다음 계절에 치시지요.',
-      '싸움은 칼보다 곡식이 먼저입니다. {foe}의 곳간에 불을 놓아 두면 {there|은} 오래 버티지 못합니다. 한 계절만 늦추시지요.',
+      '배부른 성은 쉽게 떨어지지 않습니다. 먼저 {foe}의 곳간을 태우면 {there}의 군사는 굶주림과 싸워야 합니다. 이번 {turn|은} 불을 놓고, 다음 {turn}에 치시지요.',
+      '싸움은 칼보다 곡식이 먼저입니다. {foe}의 곳간에 불을 놓아 두면 {there|은} 오래 버티지 못합니다. 한 {turn}만 늦추시지요.',
     ],
     plotAgainst: [
       '불은 바람을 타야 하는데, 들키면 저들의 경계만 높아집니다. {there|은} 지금 치는 편이 셈에 맞습니다. 곧장 치시지요.',
-      '한 계절을 늦추면 저들도 성을 고칩니다. {there}에는 지금 드는 것이 낫습니다. 곧장 가시지요.',
+      '한 {turn|을} 늦추면 저들도 성을 고칩니다. {there}에는 지금 드는 것이 낫습니다. 곧장 가시지요.',
     ],
     pincerAdvise: [
-      '두 길로 함께 들면 저들은 군사를 나눠 막아야 합니다. {via}의 {with|과} 같은 계절에 {there}에 닿게 맞추시지요.',
+      '두 길로 함께 들면 저들은 군사를 나눠 막아야 합니다. {via}의 {with|과} 같은 {turn}에 {there}에 닿게 맞추시지요.',
       '한 길로만 들면 저들은 한 곳만 지키면 됩니다. {with|이} {via}에서 다른 길로 들면 {there|을} 지키는 군사가 둘로 갈립니다. 두 갈래로 치시지요.',
     ],
     pincerAgainst: [
@@ -129,7 +129,7 @@ export const SCHEME_SAYS: Readonly<Record<Tone, Readonly<Record<Scheme, readonly
     ],
     allyWait: [
       '약조란 얻을 것이 다하면 풀립니다. {foe|과} {ally} 사이에 금이 갈 때까지 기다리시지요. 그때 치면 힘을 반만 들여도 됩니다.',
-      '때를 기다리는 것도 싸움입니다. {ally|이} 다른 일에 매일 때까지 한 계절 지켜보시지요.',
+      '때를 기다리는 것도 싸움입니다. {ally|이} 다른 일에 매일 때까지 한 {turn} 지켜보시지요.',
     ],
     allySow: [
       '{foe|과} {ally} 사이에 말을 놓아 서로 의심하게 하시지요. 약조가 깨지면 {foe|은} 홀로 우리를 맞아야 합니다.',
@@ -142,7 +142,7 @@ export const SCHEME_SAYS: Readonly<Record<Tone, Readonly<Record<Scheme, readonly
   },
   knight: {
     plotAdvise: [
-      '{foe}의 곳간이 차 있으면 {there|은} 오래 버팁니다. 이번 계절은 곳간에 불을 놓고, 저들이 굶주린 뒤에 치시지요.',
+      '{foe}의 곳간이 차 있으면 {there|은} 오래 버팁니다. 이번 {turn|은} 곳간에 불을 놓고, 저들이 굶주린 뒤에 치시지요.',
       '먼저 {foe}의 곳간을 태우시지요. 곡식이 타면 {there}의 기운도 꺾입니다. 칼은 그다음입니다.',
     ],
     plotAgainst: [
@@ -150,7 +150,7 @@ export const SCHEME_SAYS: Readonly<Record<Tone, Readonly<Record<Scheme, readonly
       '기다리면 저들의 성벽만 높아집니다. {there}에 곧장 들겠습니다. 명을 내려 주십시오.',
     ],
     pincerAdvise: [
-      '{with|과} 두 길로 함께 들겠습니다. {there|을} 지키는 자들은 어느 한쪽을 비워야 합니다. 같은 계절에 닿게 맞추시지요.',
+      '{with|과} 두 길로 함께 들겠습니다. {there|을} 지키는 자들은 어느 한쪽을 비워야 합니다. 같은 {turn}에 닿게 맞추시지요.',
       '{via}의 군대가 다른 길로 들면 {there|은} 앞뒤로 막힙니다. 두 갈래로 치시지요.',
     ],
     pincerAgainst: [
@@ -163,7 +163,7 @@ export const SCHEME_SAYS: Readonly<Record<Tone, Readonly<Record<Scheme, readonly
     ],
     allyWait: [
       '{foe|과} {ally}의 사이는 지금 굳습니다. 금이 갈 때까지 기다리시지요.',
-      '한 계절 기다리시지요. {ally|이} 손을 떼는 때가 오옵니다. 그때 치겠습니다.',
+      '한 {turn} 기다리시지요. {ally|이} 손을 떼는 때가 오옵니다. 그때 치겠습니다.',
     ],
     allySow: [
       '{foe|과} {ally} 사이를 먼저 갈라 두시지요. 홀로 남은 {foe|은} 쉽게 꺾입니다.',
@@ -177,11 +177,11 @@ export const SCHEME_SAYS: Readonly<Record<Tone, Readonly<Record<Scheme, readonly
   sly: {
     plotAdvise: [
       '{foe}의 곳간에 불 한 번 놓는 값이 싸움 한 번보다 쌉니다. 곳간을 먼저 태우시지요. {there|은} 그다음에 싸게 거두겠습니다.',
-      '배부른 적과 싸우는 것은 손해 보는 장사입니다. {foe}의 곳간부터 태우면 {there}의 값이 뚝 떨어집니다. 이번 계절은 불을 놓으시지요.',
+      '배부른 적과 싸우는 것은 손해 보는 장사입니다. {foe}의 곳간부터 태우면 {there}의 값이 뚝 떨어집니다. 이번 {turn|은} 불을 놓으시지요.',
     ],
     plotAgainst: [
       '불 놓는 데도 곡식이 듭니다. {there|은} 지금 쳐도 남는 장사입니다. 곧장 치시지요.',
-      '한 계절 늦추는 값이 더 비쌉니다. 저들이 문단속을 하기 전에 {there}에 곧장 드시지요.',
+      '한 {turn} 늦추는 값이 더 비쌉니다. 저들이 문단속을 하기 전에 {there}에 곧장 드시지요.',
     ],
     pincerAdvise: [
       '한 길로 가면 저들이 막을 곳을 압니다. {via}의 {with|과} 두 길로 나눠 들면 {there|은} 어디를 막을지 헷갈릴 것입니다. 두 갈래로 치시지요.',
@@ -210,8 +210,8 @@ export const SCHEME_SAYS: Readonly<Record<Tone, Readonly<Record<Scheme, readonly
   },
   shaman: {
     plotAdvise: [
-      '꿈에 {foe}의 곳간이 불타는 것을 보았습니다. 곳간을 먼저 태우면 {there}의 기운이 꺾입니다. 이번 계절은 불을 놓으시지요.',
-      '신령께서 불의 철이라 하십니다. {foe}의 곳간에 불을 놓으면 {there|은} 굶주림에 흔들릴 것입니다. 칼은 다음 계절에 드시지요.',
+      '꿈에 {foe}의 곳간이 불타는 것을 보았습니다. 곳간을 먼저 태우면 {there}의 기운이 꺾입니다. 이번 {turn|은} 불을 놓으시지요.',
+      '신령께서 불의 철이라 하십니다. {foe}의 곳간에 불을 놓으면 {there|은} 굶주림에 흔들릴 것입니다. 칼은 다음 {turn}에 드시지요.',
     ],
     plotAgainst: [
       '불의 점괘는 흐립니다. {there}에는 지금 드는 것이 길합니다. 곧장 치시지요.',
@@ -231,7 +231,7 @@ export const SCHEME_SAYS: Readonly<Record<Tone, Readonly<Record<Scheme, readonly
     ],
     allyWait: [
       '달이 차면 기웁니다. {foe|과} {ally}의 약조도 기울 날이 오옵니다. 그때까지 기다리시지요.',
-      '신령께서 아직 때가 아니라 하십니다. {ally|이} {foe} 곁을 떠날 때까지 한 계절 기다리시지요.',
+      '신령께서 아직 때가 아니라 하십니다. {ally|이} {foe} 곁을 떠날 때까지 한 {turn} 기다리시지요.',
     ],
     allySow: [
       '{foe|과} {ally} 사이에 의심의 씨를 뿌리시지요. 싹이 트면 둘은 서로를 겨눌 것입니다.',

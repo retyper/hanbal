@@ -4,6 +4,7 @@
  * 숫자는 ODDS 원칙 1 — 우리 옥의 사람이라 %. 말 칩은 숫자 곁에 남긴다. 판은 읽기만 한다.
  */
 import { josa, STAT_NAME, turnsLabel } from '../../realm/data/prose.ts'
+import { monthly, seasons } from '../../realm/calendar.ts'
 import { deokOf, hasTrait, persuadeDropOf, persuadeSeasons, recruitChance, resistOf } from '../../realm/heroes.ts'
 import { TRAIT } from '../../realm/data/traits.ts'
 import type { Hero, Realm, WooApproach, WooReact } from '../../realm/types.ts'
@@ -82,7 +83,7 @@ export function outlookHtml(k: WooKit, r: Realm, captive: string, by: string | n
   const o = wooOutlook(r, captive, by)
   const p = recruitChance(r, captive, by)
   const rng = (a: number, b: number): string => (a === b ? `${a}` : `${a}~${b}`)
-  const wall = wallOf(r, captive) <= 0 ? '<span>마음의 벽은 이미 무너졌다</span>' : `<span>벽이 무너질 때까지 <b>${rng(o.wall[0], o.wall[1])}계절</b></span>`
+  const wall = wallOf(r, captive) <= 0 ? '<span>마음의 벽은 이미 무너졌다</span>' : `<span>벽이 무너질 때까지 <b>${monthly(r) ? `${rng(seasons(r, o.wall[0]), seasons(r, o.wall[1]))}달` : `${rng(o.wall[0], o.wall[1])}계절`}</b></span>`
   return `<div class="dp-out">${wall}<span>그 뒤 계절마다 넘어올 가망 <b>${pct(p)}</b> <i class="dp-word">${oddsWord(p)}</i></span>`
     + `<span>곡식 모두 ${k.icon(k.grainIcon, 'dp-ic')}<b>${rng(o.grain[0], o.grain[1])}</b>쯤 <small>(계절마다 ${P.realm.persuadeGrain})</small></span></div>`
 }

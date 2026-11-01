@@ -107,6 +107,17 @@ export function turnsLabel(c: ClockKind, n: number): string {
   return `${n}${turnWord(c)}`
 }
 
+/** 판 없이 쓰는 고정 글 속의 턴 말 자리 — `turnText` 가 그 판의 턴 이름으로 바꾼다 */
+export const TURN = '{턴}'
+
+/**
+ * 고정 글(상수) 속 「{턴}」을 그 판의 턴 이름으로 — 달 시계 「달」 · 옛 판 「계절」.
+ * 둘 다 끝 받침이 ㄹ 이라 뒤의 조사(을·이·로 …)는 글에 그대로 적어 둔다.
+ */
+export function turnText(c: ClockKind, s: string): string {
+  return s.split(TURN).join(turnWord(c))
+}
+
 const COUNT_WORD = ['', '한', '두', '세', '네', '다섯', '여섯', '일곱', '여덟'] as const
 
 /**
@@ -210,7 +221,7 @@ export function fieldName(r: Realm, edge: string): string {
 }
 
 /** 남의 나라가 걸어온 청 한 줄 — 무엇을 주고 무엇을 바라나 */
-export function askLine(a: Ask, from: string, place = ''): string {
+export function askLine(a: Ask, from: string, place = '', c: ClockKind = {}): string {
   const goods = goodsLine
   switch (a.kind) {
     case 'truce': return `${josa(from, '이', '가')} 화친하자고 한다. 서로 치지 않고 장터를 연다.`
@@ -218,7 +229,7 @@ export function askLine(a: Ask, from: string, place = ''): string {
     case 'trade': return `${josa(from, '이', '가')} ${josa(goods(a.give), '을', '를')} 줄 테니 ${josa(goods(a.take), '을', '를')} 달라고 한다.`
     case 'tribute': return `${josa(from, '이', '가')} 고개를 숙이고 ${josa(goods(a.give), '을', '를')} 바치겠다고 한다.`
     case 'demand': return `${josa(from, '이', '가')} ${josa(goods(a.take), '을', '를')} 바치라고 한다. 거절하면 전쟁이다.`
-    case 'joint': return `${josa(from, '이', '가')} ${place !== '' ? `${josa(place, '을', '를')} ` : ''}두 계절 안에 함께 치자고 한다. 받으면 우리도 그곳을 쳐야 한다. 약속을 어기면 사이가 크게 틀어진다.`
+    case 'joint': return `${josa(from, '이', '가')} ${place !== '' ? `${josa(place, '을', '를')} ` : ''}${spanLabel(c, P.realm.pledgeSeasons)} 안에 함께 치자고 한다. 받으면 우리도 그곳을 쳐야 한다. 약속을 어기면 사이가 크게 틀어진다.`
     case 'aid': return `동맹 ${josa(from, '이', '가')} ${josa(goods(a.take), '을', '를')} 보태 달라고 한다. 거절하면 서운해한다.`
   }
 }
@@ -302,7 +313,7 @@ export function deedText(r: Realm, viewer: string, other: string, d: Deed): { te
  * 풍습·나라 고리·땅 한 수가 걸린 줄 (data/customs.ts · hooks.ts) — 우리 것은 무엇이 됐고 무엇을 냈는지, 당한 쪽은 무엇을 겪었는지,
  * 남의 나라끼리는 소문 한 줄 (큰일만)
  */
-function customText(line: Extract<ReportLine, { kind: 'custom' }>, viewer: string, fname: (id: string) => string, node: (id: string) => string): string | null {
+function customText(line: Extract<ReportLine, { kind: 'custom' }>, viewer: string, fname: (id: string) => string, node: (id: string) => string, c: ClockKind): string | null {
   const ours = line.faction === viewer
   const f = fname(line.faction)
   const o = line.other !== undefined ? fname(line.other) : ''
@@ -312,8 +323,8 @@ function customText(line: Extract<ReportLine, { kind: 'custom' }>, viewer: strin
   const m = line.m ?? 0
   switch (line.id) {
     case 'yeoseotmaeul':
-      if (ours) return `여섯 마을에 물었다. ${josa(o, '과', '와')} 싸우기로 뜻을 모았다. 군대는 다음 계절에 떠난다.`
-      if (line.other === viewer) return `${josa(f, '이', '가')} 여섯 마을에 묻고 우리와 싸우기로 했다. 다음 계절에 쳐들어온다.`
+      if (ours) return `여섯 마을에 물었다. ${josa(o, '과', '와')} 싸우기로 뜻을 모았다. 군대는 다음 ${turnWord(c)}에 떠난다.`
+      if (line.other === viewer) return `${josa(f, '이', '가')} 여섯 마을에 묻고 우리와 싸우기로 했다. 다음 ${turnWord(c)}에 쳐들어온다.`
       return `소문. ${josa(f, '이', '가')} 여섯 마을에 묻고 ${josa(o, '과', '와')} 싸우기로 했다.`
     case 'judge':
       if (ours) return `수로왕의 판결: ${o}의 판결로 ${josa(w, '과', '와')} 싸움을 멈췄다. 판결 값으로 곡식 ${n}섬을 바쳤다.`
@@ -589,7 +600,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       const target = fname(line.target)
       const where = line.node !== undefined ? node(line.node) : target
       if (line.faction === viewer) {
-        const did = PLOT_DONE[line.op](target, where, line.other !== undefined ? fname(line.other) : '')
+        const did = PLOT_DONE[line.op](target, where, line.other !== undefined ? fname(line.other) : '', after)
         if ((line.op === 'assassin' || line.op === 'rescue') && line.hero !== undefined) {
           const who = after.heroes[line.hero]?.name ?? '?'
           // 들켰을 때 — 고용 자객은 값만 잃고, 우리 장수는 빠져나오거나 붙잡힌다 (자객 기본 · 장수는 도박)
@@ -607,7 +618,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
             if (line.ok) return `${target} 옥에서 ${josa(who, '을', '를')} 구해 냈다. 우리 땅으로 돌아온다.${fateLine}${whoKnows}`
             return `구출이 틀어졌다. ${josa(who, '은', '는')} 아직 ${target}에 갇혀 있다.${line.caught ? fateLine + whoKnows : ` ${josa(agent, '은', '는')} 어둠 속으로 물러났다.`}`
           }
-          if (line.ok) return `자객의 화살이 ${josa(who, '을', '를')} 꿰뚫었다. ${line.result === 'kill' ? `${josa(who, '이', '가')} 죽었다.` : `${josa(who, '은', '는')} 두 계절 동안 일어나지 못한다.`}${fateLine}${whoKnows}`
+          if (line.ok) return `자객의 화살이 ${josa(who, '을', '를')} 꿰뚫었다. ${line.result === 'kill' ? `${josa(who, '이', '가')} 죽었다.` : `${josa(who, '은', '는')} ${spanLabel(after, P.realm.plotWoundSeasons)} 동안 일어나지 못한다.`}${fateLine}${whoKnows}`
           return `암살이 틀어졌다.${line.caught ? fateLine + whoKnows : ` ${josa(agent, '은', '는')} 어둠 속으로 물러났다.`}`
         }
         const knew = exposedOf(line)
@@ -870,7 +881,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
         if (line.ask === 'joint' && at !== undefined) {
           const place = `${atOwner !== '' ? `${atOwner}의 ` : ''}${at.name}`
           return line.accepted
-            ? `${josa(fname(other), '이', '가')} ${josa(place, '을', '를')} 함께 치기로 했다. 두 계절 안에 그쪽 군대도 그리로 간다.`
+            ? `${josa(fname(other), '이', '가')} ${josa(place, '을', '를')} 함께 치기로 했다. ${spanLabel(after, P.realm.pledgeSeasons)} 안에 그쪽 군대도 그리로 간다.`
             : `${josa(fname(other), '이', '가')} ${josa(place, '을', '를')} 함께 치자는 말을 거절했다.`
         }
         return line.accepted
@@ -881,7 +892,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
       return `${fname(other)}에서 ${ASK_NAME[line.ask]} 사신이 왔다.`
     }
     case 'custom':
-      return customText(line, viewer, fname, node)
+      return customText(line, viewer, fname, node, after)
     case 'stationed': {
       if (line.faction === viewer) return `${josa(node(line.node), '에', '에')} 약속 없이 머무는 우리 군대를 ${fname(line.owner)}에서 언짢아한다: 호감이 내려간다.`
       if (line.owner === viewer) return `${fname(line.faction)} 군대가 약속 없이 ${josa(node(line.node), '에', '에')} 머문다.`
@@ -922,7 +933,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
           if (by === other) {
             const how = why === 'betray' ? '약조를 깨고 쳐들어왔다' : why === 'attack' ? '우리 땅에 군대를 들였다'
               : why === 'tribute' ? '바치라는 요구를 우리가 거절하자 칼을 뽑았다' : why === 'demand' ? '우리가 그 요구를 거절하자 칼을 뽑았다'
-                : why === 'plot' ? '우리가 보낸 공작이 드러나 노했다' : why === 'council' ? '여섯 마을에 묻고 싸우기로 뜻을 모았다 · 다음 계절에 쳐들어온다'
+                : why === 'plot' ? '우리가 보낸 공작이 드러나 노했다' : why === 'council' ? `여섯 마을에 묻고 싸우기로 뜻을 모았다 · 다음 ${turnWord(after)}에 쳐들어온다`
                   : why === 'rescue' ? '우리가 그 동맹의 도읍을 에우자 구하러 나섰다' : '칼을 뽑았다'
             return `${josa(o, '이', '가')} 우리에게 전쟁을 걸어왔다. ${how}.`
           }
@@ -1292,14 +1303,14 @@ export const PLOT_NAME: Record<PlotOp, string> = {
   rumor: '소문', sow: '이간', bribe: '매수', burn: '방화', spy: '첩자', assassin: '암살', rescue: '구출',
 }
 
-export const PLOT_DOES: Record<PlotOp, string> = {
-  rumor: '그 나라 진중에 흉흉한 소문을 퍼뜨려 군사들 기운을 꺾는다',
-  sow: '두 나라 사이를 갈라놓는다. 화친이 깨지고, 전쟁이 붙기도 한다',
-  bribe: '그 마을 장정들을 매수한다. 두 계절 동안 싸우러 나오지 않는다',
-  burn: '그 나라 창고에 불을 놓아 곡식을 태운다',
-  spy: '그 마을에 첩자를 심는다. 네 계절 동안 군세가 늘 보인다',
-  assassin: '밤에 자객을 보내 적장을 쏜다. 군주는 도읍 깊이 있어 못 노린다. 맞히면 다치거나 죽는다. 들키면 자객이 잡힌다',
-  rescue: '잡혀간 우리 장수를 밤에 옥에서 빼낸다. 보초를 다 쓰러뜨리면 데려 나온다. 들키면 보낸 이도 잡힐 수 있다',
+export const PLOT_DOES: Record<PlotOp, (c: ClockKind) => string> = {
+  rumor: () => '그 나라 진중에 흉흉한 소문을 퍼뜨려 군사들 기운을 꺾는다',
+  sow: () => '두 나라 사이를 갈라놓는다. 화친이 깨지고, 전쟁이 붙기도 한다',
+  bribe: (c) => `그 마을 장정들을 매수한다. ${spanLabel(c, P.realm.plotBribeSeasons)} 동안 싸우러 나오지 않는다`,
+  burn: () => '그 나라 창고에 불을 놓아 곡식을 태운다',
+  spy: (c) => `그 마을에 첩자를 심는다. ${spanLabel(c, P.realm.plotSpySeasons)} 동안 군세가 늘 보인다`,
+  assassin: () => '밤에 자객을 보내 적장을 쏜다. 군주는 도읍 깊이 있어 못 노린다. 맞히면 다치거나 죽는다. 들키면 자객이 잡힌다',
+  rescue: () => '잡혀간 우리 장수를 밤에 옥에서 빼낸다. 보초를 다 쓰러뜨리면 데려 나온다. 들키면 보낸 이도 잡힐 수 있다',
 }
 
 /** 공작이 안 됐을 때 — 무엇을 하려다 왜 안 됐는지 한 문장 (형 2026-10-20: "\"공작이 틀어졌다. 첩자.\" 이게 뭔말이야. 알아들을수있게 써라좀") */
@@ -1313,12 +1324,12 @@ const PLOT_FAIL: Record<PlotOp, (target: string, where: string, other: string) =
   rescue: (t) => `${t} 옥으로 사람을 보냈지만 보초를 뚫지 못했다.`,
 }
 
-const PLOT_DONE: Record<PlotOp, (target: string, where: string, other: string) => string> = {
+const PLOT_DONE: Record<PlotOp, (target: string, where: string, other: string, c: ClockKind) => string> = {
   rumor: (t) => `${t} 진중에 소문이 돌아 군사들 기운이 꺾였다.`,
   sow: (t, _w, o) => `${josa(t, '과', '와')} ${o} 사이가 틀어졌다.`,
-  bribe: (_t, w) => `${w} 장정들이 두 계절 동안 나서지 않는다.`,
+  bribe: (_t, w, _o, c) => `${w} 장정들이 ${spanLabel(c, P.realm.plotBribeSeasons)} 동안 나서지 않는다.`,
   burn: (t) => `${t} 창고가 불탔다.`,
-  spy: (_t, w) => `${w}에 첩자를 심었다. 네 계절 동안 군세가 보인다.`,
+  spy: (_t, w, _o, c) => `${w}에 첩자를 심었다. ${spanLabel(c, P.realm.plotSpySeasons)} 동안 군세가 보인다.`,
   assassin: (t) => `${t} 진중에 자객의 화살이 날아들었다.`,
   rescue: (t) => `${t} 옥에서 우리 장수를 빼냈다.`,
 }

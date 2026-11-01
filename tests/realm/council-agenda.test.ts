@@ -30,8 +30,8 @@ const CTX = { canLead: () => true, rationNow: 2, rationCost: () => 10, grain: 10
 const MOVES = Object.keys(NEED) as Move[]
 /** 받침 있는 낱말 · 없는 낱말 두 벌 */
 const VARS = [
-  { foe: '골포국', here: '골포 도읍', there: '갯벌 마을', tf: '아라국', tn: '안개골', size: '만만치 않은 군사', go: '336명', stay: '144명', all: '480명', ap: '여울', read: '적은 여울목에 군사를 둘 것입니다. ', seasons: '2계절', rnow: '4계절치', rmore: '5계절치', rcost: '120' },
-  { foe: '고자', here: '고자', there: '미리', tf: '구야', tn: '돌섬', size: '얼마간의 군사', go: '70명', stay: '30명', all: '100명', ap: '대로', read: '', seasons: '3계절', rnow: '5계절치', rmore: '6계절치', rcost: '15' },
+  { foe: '골포국', here: '골포 도읍', there: '갯벌 마을', tf: '아라국', tn: '안개골', size: '만만치 않은 군사', go: '336명', stay: '144명', all: '480명', ap: '여울', read: '적은 여울목에 군사를 둘 것입니다. ', turn: '달', seasons: '2계절', rnow: '4계절치', rmore: '5계절치', rcost: '120' },
+  { foe: '고자', here: '고자', there: '미리', tf: '구야', tn: '돌섬', size: '얼마간의 군사', go: '70명', stay: '30명', all: '100명', ap: '대로', read: '', turn: '계절', seasons: '3계절', rnow: '5계절치', rmore: '6계절치', rcost: '15' },
 ]
 
 /** 한 마디 — 처지마다 들어갈 칸(곳 · 숫자 · 길)이 다 있고 · 세 토막만큼 길고 · 사극 말투로 바꿔도 높임 (형 10-29: "어디는 어떤 이유 때문에 · 어떻게 해 달라") */

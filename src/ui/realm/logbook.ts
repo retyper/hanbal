@@ -6,7 +6,7 @@
  * 걸러 보기: 갈래(전쟁·화친 · 사신 · 싸움 · 공작 · 우리 살림)와 나라 하나. 최근 계절이 위.
  * 보고판에서는 받기·거절 칸이 대신하던 "남이 우리에게 건 청"(ask)과 싸움 카드도 여기서는 글 한 줄로 남긴다.
  */
-import { askLine, fieldName, josa, reportText, seasonLabel } from '../../realm/data/prose.ts'
+import { askLine, fieldName, josa, reportText, seasonLabel, turnWord } from '../../realm/data/prose.ts'
 import type { Realm, ReportLine } from '../../realm/types.ts'
 import type { History } from './front.ts'
 
@@ -67,7 +67,7 @@ export function logText(r: Realm, l: ReportLine, viewer: string): string | null 
   if (l.kind === 'ask') {
     if (l.ask.to !== viewer) return null
     const place = l.ask.node !== undefined ? (r.nodes[l.ask.node]?.name ?? '') : ''
-    return `사신이 왔다: ${askLine(l.ask, r.factions[l.ask.from]?.name ?? '', place)}`
+    return `사신이 왔다: ${askLine(l.ask, r.factions[l.ask.from]?.name ?? '', place, r)}`
   }
   if (l.kind === 'battle') {
     const ours = l.atkFaction === viewer || l.defender === viewer
@@ -123,7 +123,7 @@ export function logbookHtml(k: LogKit, r: Realm, rows: readonly LogRow[], nation
     for (const f of nations) h += `<button class="${nation === f ? 'on' : ''}" data-act="log-n" data-id="${f}">${k.emblem(f, 'lem')}${k.esc(r.factions[f]?.name ?? '')}</button>`
     h += `</div>`
   }
-  if (rows.length === 0) return h + `<p class="mute">${filter === 'all' && nation === null ? '아직 남은 기록이 없다. 계절이 지나면 여기 쌓인다.' : '고른 갈래에 남은 기록이 없다.'}</p>`
+  if (rows.length === 0) return h + `<p class="mute">${filter === 'all' && nation === null ? `아직 남은 기록이 없다. ${josa(turnWord(r), '이', '가')} 지나면 여기 쌓인다.` : '고른 갈래에 남은 기록이 없다.'}</p>`
   let last = -1
   h += `<div class="lines logl">`
   for (const x of rows) {

@@ -4,7 +4,7 @@
  * 판을 읽기만 하고 HTML 을 돌려준다. 고르는 손짓(맡기기·이끌기·회유)은 app.ts 가 받는다.
  * **본 만큼만** (HEROES §5): 우리 장수 · 싸워 본 장수 · 정찰로 본 장수만 능력치와 특성이 보이고, 아니면 얼굴과 이름뿐.
  */
-import { STAT_NAME, josa, turnsLabel } from '../../realm/data/prose.ts'
+import { STAT_NAME, josa, spanLabel, turnsLabel } from '../../realm/data/prose.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
 import { armyOfHero, bondOf, bondTier, growNeed, heroArt, honeyLeft, isRuler } from '../../realm/heroes.ts'
 import { ART_DOES, ART_ICON, ART_NAME } from './battlefield.ts'
@@ -79,7 +79,7 @@ export function artChip(h: Hero, seen: boolean, icon: (name: string, cls: string
 export function roleLine(r: Realm, h: Hero): string {
   const node = (id: string | null | undefined): string => (id != null ? (r.nodes[id]?.name ?? '?') : '?')
   if (h.status === 'dead') return '죽었다'
-  if (h.status === 'captive') return `${r.factions[h.captor ?? '']?.name ?? '?'}에 사로잡혀 있다${h.persuade ? ` · 회유 중 · ${h.persuade.resist === undefined ? `${h.persuade.left}계절 남음` : h.persuade.resist > 0 ? '아직 마음을 닫았다' : `마음이 흔들린다${(h.persuade.tries ?? 0) > 0 ? ` · ${h.persuade.tries}번 고개를 저었다` : ''}`}` : ''}`
+  if (h.status === 'captive') return `${r.factions[h.captor ?? '']?.name ?? '?'}에 사로잡혀 있다${h.persuade ? ` · 회유 중 · ${h.persuade.resist === undefined ? `${spanLabel(r, h.persuade.left)} 남음` : h.persuade.resist > 0 ? '아직 마음을 닫았다' : `마음이 흔들린다${(h.persuade.tries ?? 0) > 0 ? ` · ${h.persuade.tries}번 고개를 저었다` : ''}`}` : ''}`
   if (isRuler(r, h.id)) {
     const ra = armyOfHero(r, h.id)
     if (ra !== null) return `군주 · 친정: ${ra.march !== null ? `${josa(node(ra.march.to), '으로', '로')} 가는 중` : `${node(ra.at)}에서 군대를 이끈다`} · 도읍의 다스림이 준다`

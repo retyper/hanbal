@@ -76,8 +76,8 @@ function battle(over: Partial<Battle> & Pick<Battle, 'node' | 'defender' | 'atkF
 
 describe('새 안건의 말', () => {
   const VARS = [
-    { foe: '골포국', there: '갯벌 마을', ally: '아라국', via: '안개골', with: '쇠보', here: '골포 도읍' },
-    { foe: '고자', there: '미리', ally: '구야', via: '돌섬', with: '아사', here: '고자' },
+    { foe: '골포국', there: '갯벌 마을', ally: '아라국', via: '안개골', with: '쇠보', here: '골포 도읍', turn: '달' },
+    { foe: '고자', there: '미리', ally: '구야', via: '돌섬', with: '아사', here: '고자', turn: '계절' },
   ]
   it('숨결마다 처지마다 두 마디 · 들어갈 칸이 다 있고 · 채우면 모두 높임', () => {
     for (const [tone, sc] of Object.entries(SCHEME_SAYS)) {

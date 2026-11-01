@@ -160,7 +160,7 @@ export const CUSTOMS: readonly CustomDef[] = [
   def({
     id: 'yeoseotmaeul', kyeol: 'jinhan', tier: 'nation', nations: ['saro'], name: '여섯 마을의 뜻', layer: 'rule', seed: '마을', pack: 'base', wave: 3, live: true,
     does: '물어서 시작한 싸움: 치러 가는 우리 군대의 사기가 높다',
-    cost: '사이가 무던한 나라를 불시에 치지 못한다. 먼저 여섯 마을에 묻고 한 계절 뒤에 친다',
+    cost: '사이가 무던한 나라를 불시에 치지 못한다. 먼저 여섯 마을에 묻고 나서야 친다',
     verb: '이웃을 불시에 칠 수는 없다. 대신 여섯 마을이 뜻을 모은 군대는 사기가 높다',
     source: '『삼국유사』 기이 신라시조 혁거세왕, 여섯 마을 촌장이 알천 언덕에 모여 임금을 세웠다',
   }),
@@ -227,7 +227,7 @@ export const CUSTOMS: readonly CustomDef[] = [
   def({
     id: 'dalbeol', kyeol: 'other', tier: 'nation', nations: ['dabeol'], name: '달벌 흙성', layer: 'rule', seed: '흙성', pack: 'base', wave: 3, live: true,
     does: '도읍에 흙성을 쌓는다. 목책보다 훨씬 굳다',
-    cost: '흙성은 곡식과 나무가 크게 들고, 쌓는 계절엔 도읍에서 군사를 못 뽑는다',
+    cost: '흙성은 곡식과 나무가 크게 들고, 쌓는 동안엔 도읍에서 군사를 못 뽑는다',
     verb: '기댈 산이 없는 탁 트인 들판이다. 그래서 들 한가운데 흙성을 쌓아 버틴다',
     source: '『삼국사기』 신라본기 첨해이사금 15년, 다벌 땅에 달벌성을 쌓고 성주를 두었다 · 대구 달성 토성',
   }),
@@ -285,7 +285,7 @@ export const CUSTOMS: readonly CustomDef[] = [
   def({
     id: 'landHigh', kyeol: 'other', tier: 'land', name: '고갯목', layer: 'rule', seed: '고개', pack: 'base', wave: 3, live: true, sure: '땅',
     does: '목책·해자를 반값에 두르고, 고갯길·높은 터로 쳐들어온 적은 첫 합에 사기가 깎인다. 바위를 굴린다',
-    cost: '우리 군대도 고갯길로 나가면 한 계절 더 걸린다',
+    cost: '우리 군대도 고갯길로 나가면 더 오래 걸린다',
     verb: '고개가 험해 우리도 밖으로 나가는 데 오래 걸린다. 대신 고갯목만 막으면 쳐들어온 적을 쉽게 물리친다',
     source: '높은 터와 고갯길에 둘러싸인 땅이다',
   }),
