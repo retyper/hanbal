@@ -53,7 +53,7 @@ import { noteMemory, type Departure } from './memory.ts'
 import { relicHas, relicHorseMulOf, relicLeft, relicMoraleOf, relicMul, relicSum, relicWith, spendRelic } from './relics.ts'
 import { healWarDead, menByFaction, noteBeaten, noteWarDead } from './rout.ts'
 import {
-  ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, isRuler, ironhandAt, noteMet, oneJobPerHero, postHero, releaseCaptives, stepHeroes, sweepHeroes,
+  ambushTraitOf, applyHeroOrders, battleGrowth, heroArt, bondMoraleOf, bowMulOf, commandOf, escapeOf, hasTrait, heroSeen, heroesAtNode, isRuler, ironhandAt, noteMet, oneJobPerHero, postHero, releaseCaptives, stepHeroes, stepServed, sweepHeroes,
 } from './heroes.ts'
 import type {
   Approach, Army, BattleStart, Cmd, EdgeKind, Hero, Order, Ration, Realm, REdge, Report, ReportLine, RNode, SeasonOfYear, SnipeZone, Tactic,
@@ -92,13 +92,31 @@ export function marchSeasons(kind: EdgeKind, season: SeasonOfYear): number {
  *  - 옛 판: marchSeasons (길 종류 · 여름)
  *  - 달 시계: 지도 위 길이 ÷ 한 달 행군 (형 10-31: "지도에서 가까우면 실제로도 가까워야 함") — 고갯길·갯벌은 길게 치고,
  *    장마(7·8월)에 떠나면 한 달 더. 자리 없는 판의 길은 한 달 길이로 친다.
+ *  - 한 달 길이는 판마다 그 판 길의 가운데 길이에 맞춘다 (형 11-01: "가까운 건 바로 다음 달") — 넓은 판(주몽)의 이웃도 한 달.
+ *    뱃길은 빠르다 (marchMonthSea · 형 11-01: "바닷길이 의미 있게 빠른 거라면 한 달").
  */
 export function marchTurns(r: Realm, ed: REdge, t: number = r.season): number {
   if (!monthly(r)) return marchSeasons(ed.kind, seasonOf(r, t))
   const R = P.realm
-  const km = (r.roadKm?.[ed.id] ?? R.marchMonthKm) * (ed.kind === 'pass' || ed.kind === 'mudflat' ? R.marchMonthSlow : 1)
-  const base = Math.max(1, Math.min(R.marchMonthMax, Math.round(km / R.marchMonthKm)))
+  const mul = ed.kind === 'pass' || ed.kind === 'mudflat' ? R.marchMonthSlow : ed.kind === 'sea' ? R.marchMonthSea : 1
+  const unit = monthKm(r.roadKm)
+  const km = (r.roadKm?.[ed.id] ?? unit) * mul
+  const base = Math.max(1, Math.min(R.marchMonthMax, Math.round(km / unit)))
   return base + (isMonsoon(r, t) ? R.marchSummerExtra : 0)
+}
+
+const MONTH_KM = new WeakMap<object, number>()
+/** 그 판의 한 달 길이(km) — 뭍길(뱃길 빼고는 모르니 전부) 길이의 가운데 × marchMonthMid, 적어도 marchMonthKm. 판의 길은 안 바뀌니 한 번 센다 */
+function monthKm(roadKm: Readonly<Record<string, number>> | undefined): number {
+  const R = P.realm
+  if (roadKm === undefined) return R.marchMonthKm
+  const hit = MONTH_KM.get(roadKm)
+  if (hit !== undefined) return hit
+  const ks = Object.values(roadKm).sort((a, b) => a - b)
+  const mid = ks.length === 0 ? 0 : ks[Math.floor(ks.length / 2)]!
+  const v = Math.max(R.marchMonthKm, mid * R.marchMonthMid)
+  MONTH_KM.set(roadKm, v)
+  return v
 }
 
 /** 싸운 뒤 추스르는 중이라 떠나지 못하나 (달 시계 · battleRest) */
@@ -1781,6 +1799,7 @@ export function advance(
     healWarDead(r) // 9 — 잃은 사람 장부가 아문다 (달 시계 · rout.ts)
     stepHeroes(r, lines) // 9 — 회유 · 맡은 고을의 경계·철 · 떠돌이
   }
+  stepServed(r) // 9 — 함께한 턴 (정 칸의 「함께한 지 n달」)
   stepExpeditions(r, lines) // 9 — 돌아온 원정이 짐을 푼다
   expireRelations(r, lines) // 9
   if (end) {

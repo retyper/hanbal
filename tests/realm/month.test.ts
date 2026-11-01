@@ -87,16 +87,19 @@ describe('새 판은 달 시계', () => {
 })
 
 describe('달 시계의 박자', () => {
-  it('정·섬긴 계절은 계절 끝 달에만 오른다 · 카드는 계절의 첫 달에만 편다', () => {
+  it('함께한 턴은 달마다 · 정은 계절 끝 달에만 오른다 · 카드는 계절의 첫 달에만 편다', () => {
     let r = startRegion('yeongnam', 4, 'guya')
     const h = Object.values(r.heroes).find((x) => x.faction === 'guya' && x.status === 'free' && r.factions['guya']!.ruler !== x.id)!
     const served: number[] = []
+    const bond: number[] = []
     for (let t = 0; t < 6; t++) {
       r = advance(r, []).next
       served.push(r.heroes[h.id]!.served ?? 0)
+      bond.push(r.heroes[h.id]!.bond ?? 0)
       if (!isSeasonStart(r)) assert.ok(r.card === undefined || r.card === null || r.card.season !== r.season)
     }
-    assert.deepEqual(served, [0, 0, 1, 1, 1, 2])
+    assert.deepEqual(served, [1, 2, 3, 4, 5, 6]) // 형 11-01: 「함께한 지 n달」
+    assert.ok(bond[0] === bond[1] && bond[2]! > bond[1]! && bond[2] === bond[4] && bond[5]! > bond[4]!, String(bond))
   })
   it('징병 한도는 석 달이 한 장부 — 달마다 1/3씩 차오르고, 다음 계절에 다시 찬다', () => {
     let r = startRegion('yeongnam', 2, 'guya')

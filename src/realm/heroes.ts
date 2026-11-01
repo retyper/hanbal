@@ -858,12 +858,21 @@ function kindle(h: Hero, lines: ReportLine[]): void {
   lines.push({ kind: 'ascend', hero: h.id })
 }
 
+/**
+ * 함께한 턴 — 달 시계면 달마다 하나 (형 11-01: "한 달 지났는데 한 계절로 표시") · 옛 판은 계절마다. 정이 오르는 것은 계절 끝(stepGrowth) 그대로
+ */
+export function stepServed(r: Realm): void {
+  for (const h of byId(Object.values(r.heroes))) {
+    if (h.status !== 'free' || isRuler(r, h.id)) continue
+    h.served = (h.served ?? 0) + 1
+  }
+}
+
 /** 9 — 섬긴 계절: 정이 조금 오르고, 맡은 고을이 있으면 내정·매력에 공이 쌓인다. 군주는 정이 없다 */
 function stepGrowth(r: Realm, lines: ReportLine[]): void {
   const R = P.realm
   for (const h of byId(Object.values(r.heroes))) {
     if (h.status !== 'free' || isRuler(r, h.id)) continue
-    h.served = (h.served ?? 0) + 1
     addBond(r, h, R.bondSeason, lines)
     if (h.post !== null) {
       gainXp(h, 'chi', R.xpPost, lines)

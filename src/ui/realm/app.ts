@@ -1614,7 +1614,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
     }
     // 머물기도 지도에서 — 제 고을을 누르면 떠나기를 거둔다 (형: "머물기는 지도에서 선택을 못하고")
-    if (a !== undefined && a.march === null) targets.push({ node: a.at, edge: '', off: false, on: armySel.every((id) => pick[id] === undefined), chip: `<span class="tn stay">머문다</span>` })
+    if (a !== undefined && a.march === null) targets.push({ node: a.at, edge: '', off: false, on: armySel.every((id) => pick[id] === undefined), chip: resting(r, a) ? `<span class="tn stay rest">⏳ 추스름 · ${turnsLabel(r, a.rest! - r.season + 1)}</span>` : `<span class="tn stay">머문다</span>` })
     if (partySel !== '' && armySel.length === 0) targets.push(...partyTargets(r, partySel))
     const fr = fresh
     if (!showReport) fresh = new Set() // 드러나는 것은 한 번만 — 계절 소식을 닫고 지도를 볼 때
@@ -1863,7 +1863,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<b>${esc(armyName(r, first))}</b><span>${esc(josa(r.nodes[first.march.to]?.name ?? '', '으로', '로'))} 가는 중 · ${esc(arriveWhen(r, first.march.left))}</span>${turnBackBtn(first)}`
     } else if (sel.length === 1) {
       const more = Object.values(r.armies).filter((x) => x.faction === me() && x.id !== first.id && x.at === first.at && x.march === null).length
-      h += `<b>${esc(armyName(r, first))} · ${headcount(forceOf(r, first))}명 ${guideBtn('move')}</b><span>군사를 보낼 곳을 선택한다${more > 0 ? ' · 옆 말도 누르면 함께' : ''}</span>`
+      // 싸운 뒤 추스르는 군대는 떠날 곳이 안 뜬다 — 까닭과 언제 풀리는지를 띠에 (형 11-01: "소서노 군대를 아무 데도 보낼 수가 없는 버그")
+      const why = resting(r, first) ? `⏳ 싸운 뒤 추스르는 중입니다 · ${esc(arriveWhen(r, first.rest! - r.season + 1, true))}에 다시 떠날 수 있습니다` : `군사를 보낼 곳을 선택한다${more > 0 ? ' · 옆 말도 누르면 함께' : ''}`
+      h += `<b>${esc(armyName(r, first))} · ${headcount(forceOf(r, first))}명 ${guideBtn('move')}</b><span>${why}</span>`
     } else {
       const men = sel.reduce((s, a) => s + headcount(forceOf(r, a)), 0)
       // 이번 계절 장수 명령을 넣은 모습으로 센다 — 장수를 빼낸 군대는 장수 없는 군대 (형 10-26: "한 장수를 빼고 … 합치기가 안 됨")

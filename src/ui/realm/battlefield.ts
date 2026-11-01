@@ -1642,13 +1642,21 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const lost = (i: 0 | 1): number => Math.max(0, Math.round(men0(i) * (n0(i) - n(i))))
     /**
      * 잃은 수 · 꺾인 사기 — 전장 한가운데 가까이, 두 진 위에 배지로 튄다 (형 11-01: "화면 중앙부근에서 튀어나갔으면 · 명수 감소 숫자는 색이 너무 까매서 안보여 · 하스스톤은 배경도").
-     * 잃은 수: 붉은 방패 배지 위에 흰 굵은 숫자(검은 테) · 뒤로 터지는 불꽃 · 사기: 금빛(꺾임)·푸른(오름) 띠. 커졌다 제자리 → 위로 떠오르며 사라진다
+     * 잃은 수: 붉은 방패 배지 위에 흰 굵은 숫자(검은 테) · 뒤로 터지는 불꽃 · 사기: 금빛(꺾임)·푸른(오름) 띠.
+     * 맞부딪는 한가운데서 팡 튀어나와 제 진 위에 꽂히고, 팡 부풀며 사라진다 (형 11-01: "뿡 하고 먼지처럼 올라와 사라지는 게 아니라 팡 하고 튀어나와야").
+     * 크기는 잃은 크기대로 — 머릿수(자릿수)와 그 군대에서 잃은 몫. 크면 파편이 더 많이 튀고 배지가 떨린다 ("1명이랑 40명이 똑같으면 안 되지")
      */
     const popOf = (i: 0 | 1, cls: 'us' | 'foe'): string => {
       const ln = lost(i)
       const md = Math.round(((m0(i) - m(i)) / Math.max(0.05, st.morale[i] ?? 1)) * 100)
       if (ln <= 0 && md === 0) return ''
-      return `<div class="wpop ${cls}">${ln > 0 ? `<b class="wpn"><img src="${art}fx/impact.png" alt=""><span>−${ln.toLocaleString('ko-KR')}</span></b>` : ''}`
+      const W = P.realm
+      const share = men0(i) > 0 ? ln / men0(i) : 0
+      const pz = Math.min(W.warPopMax, W.warPopMin + W.warPopLog * Math.log10(1 + ln) + W.warPopShare * share + W.warPopMorale * Math.max(0, md) / 100)
+      const k = Math.round(Math.max(0, Math.min(1, (pz - W.warPopMin) / (W.warPopMax - W.warPopMin))) * W.warPopSparks)
+      // 파편은 낱낱이 (메모리: 이펙트는 낱낱이) — 고른 각에 조금씩 비틀어 · 판마다 같은 흩어짐
+      const sparks = Array.from({ length: k }, (_, j) => `<i class="wsp" style="--a:${Math.round((360 / Math.max(1, k)) * j + ((j * 47 + i * 23) % 29) - 14)}deg;--r:${(2.4 + ((j * 31 + i * 17) % 10) / 6).toFixed(2)}em;--w:${(0.7 + ((j * 13) % 5) / 8).toFixed(2)}"></i>`).join('')
+      return `<div class="wpop ${cls}${pz >= W.warPopBig ? ' big' : ''}" style="--pz:${pz.toFixed(2)}"><i class="wring"></i>${sparks}${ln > 0 ? `<b class="wpn"><img src="${art}fx/impact.png" alt=""><span>−${ln.toLocaleString('ko-KR')}</span></b>` : ''}`
         + `${md !== 0 ? `<i class="wpm${md < 0 ? ' up' : ''}">사기 ${md > 0 ? '−' : '+'}${Math.abs(md)}</i>` : ''}</div>`
     }
     const hit = play ? `<i class="wf-hit"><img class="h1" src="${art}fx/impact.png" alt=""><img class="h2" src="${art}fx/dust.png" alt=""><img class="h3" src="${art}fx/dust.png" alt=""></i>`
@@ -2320,17 +2328,35 @@ export const WAR_CSS = `
 @keyframes whit2 { 0% { opacity: 0; scale: .5; } 20% { opacity: .85; } 100% { opacity: 0; scale: 1.5; translate: -70% -60%; } }
 @keyframes whit3 { 0% { opacity: 0; scale: .5; } 20% { opacity: .7; } 100% { opacity: 0; scale: 1.4; translate: -30% -55%; } }
 /* 잃은 수 · 사기 — 전장 가운데 가까이 배지로 튄다 (형 11-01 · 하스스톤처럼 숫자 뒤에 판). 막대·숫자와 같은 때(--bd) */
-.ap .wpop { position: absolute; top: 28%; z-index: 92; display: flex; flex-direction: column; align-items: center; gap: 5px; translate: -50% 0; pointer-events: none; opacity: 0; animation: wpopf 2.3s ease-out var(--bd, 2.4s) both; }
-.ap .wpop.us { left: 33%; } .ap .wpop.foe { left: 67%; }
+.ap .wpop { position: absolute; top: 28%; z-index: 92; display: flex; flex-direction: column; align-items: center; gap: 5px; translate: -50% 0; pointer-events: none; opacity: 0; --fx: 17cqw; transform-origin: 50% 60%; animation: wpbang 2.2s linear var(--bd, 2.4s) both; }
+.ap .wpop.us { left: 33%; } .ap .wpop.foe { left: 67%; --fx: -17cqw; }
+/* 팡 — 한가운데(맞부딪는 자리)에서 제자리로 튀어나와 크게 부풀고 → 꽂히고 → 팡 부풀며 사라진다. 크기는 --pz (popOf) */
+@keyframes wpbang {
+  0% { opacity: 0; transform: translate(var(--fx), 50%) scale(.15); animation-timing-function: cubic-bezier(.15, .9, .3, 1.2); }
+  11% { opacity: 1; transform: translate(0, -12%) scale(calc(var(--pz) * 1.5)); animation-timing-function: ease-in; }
+  19% { transform: translate(0, 2%) scale(calc(var(--pz) * .88)); animation-timing-function: ease-out; }
+  27% { transform: scale(var(--pz)); }
+  84% { opacity: 1; transform: scale(var(--pz)); animation-timing-function: ease-in; }
+  100% { opacity: 0; transform: scale(calc(var(--pz) * 1.35)); } }
+/* 큰 피해 — 배지가 떨린다 (작은 칸만 움직인다 · 폰 그래픽 한도) */
+.ap .wpop.big .wpn { animation: wpshake .09s linear calc(var(--bd, 2.4s) + .24s) 5; }
+@keyframes wpshake { 0%, 100% { translate: 0 0; } 25% { translate: -3px 1px; } 50% { translate: 3px -1px; } 75% { translate: -2px -1px; } }
+/* 터지는 고리 · 튀는 파편 (낱낱이) */
+.ap .wpop .wring { position: absolute; left: 50%; top: 32%; width: 3em; height: 3em; margin: -1.5em 0 0 -1.5em; border-radius: 50%; border: 3px solid #fff1dc; box-shadow: 0 0 10px #ff8a3a, inset 0 0 8px #ff8a3a; opacity: 0;
+  animation: wpring .5s ease-out calc(var(--bd, 2.4s) + .2s) both; }
+@keyframes wpring { 0% { opacity: .95; transform: scale(.3); } 100% { opacity: 0; transform: scale(2.4); } }
+.ap .wpop .wsp { position: absolute; left: 50%; top: 32%; width: calc(5px * var(--w)); height: calc(16px * var(--w)); margin-left: calc(-2.5px * var(--w)); border-radius: 50%; background: linear-gradient(#fffbe8, #ffb43a 55%, #ff4a1a); opacity: 0;
+  transform-origin: 50% 0; animation: wpspark .55s cubic-bezier(.1, .8, .3, 1) calc(var(--bd, 2.4s) + .2s) both; }
+.ap .wpop.foe .wsp { background: linear-gradient(#fffbe8, #ffe07a 55%, #ffb000); }
+@keyframes wpspark { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0) scaleY(.5); } 70% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--a)) translateY(var(--r)) scaleY(1.1); } }
 .ap .wpn { position: relative; display: grid; place-items: center; min-width: clamp(56px, 16cqw, 88px); height: clamp(40px, 11cqw, 60px); padding: 0 10px; box-sizing: border-box;
   border-radius: 14px 14px 50% 50% / 14px 14px 42% 42%; background: radial-gradient(circle at 50% 30%, #f0482c, #b41c0a 62%, #6a0c04); border: 3px solid #fff1dc; box-shadow: 0 0 0 2px #2a0500, 0 5px 12px #000d;
-  animation: wpopin .55s cubic-bezier(.2, 1.6, .4, 1) var(--bd, 2.4s) both; }
+}
 .ap .wpn img { position: absolute; left: 50%; top: 50%; width: 230%; height: auto; translate: -50% -50%; z-index: -1; opacity: .95; }
 .ap .wpn span { font-size: clamp(22px, 6.6cqw, 36px); font-weight: 900; line-height: 1; color: #fff; -webkit-text-stroke: 1.5px #2a0500; paint-order: stroke fill; text-shadow: 0 2px 0 #2a0500, 0 0 6px #000; letter-spacing: -.02em; }
 .ap .wpm { font-style: normal; font-size: clamp(12px, 3.5cqw, 17px); font-weight: 900; line-height: 1.25; white-space: nowrap; color: #2a1600; padding: 1px 10px; border-radius: 10px;
   background: linear-gradient(#ffe48e, #e2a634); border: 2px solid #fff4d2; box-shadow: 0 0 0 1.5px #2a1600, 0 3px 8px #000c; animation: wpopin .55s cubic-bezier(.2, 1.6, .4, 1) calc(var(--bd, 2.4s) + .12s) both; }
 .ap .wpm.up { color: #04203a; background: linear-gradient(#c8ecff, #5aa8e8); border-color: #eef8ff; box-shadow: 0 0 0 1.5px #04203a, 0 3px 8px #000c; }
-@keyframes wpopf { 0% { opacity: 0; } 6% { opacity: 1; } 72% { opacity: 1; translate: -50% -4px; } 100% { opacity: 0; translate: -50% -24px; } }
 @keyframes wpopin { 0% { scale: .25; } 38% { scale: 1.35; } 64% { scale: .94; } 100% { scale: 1; } }
 .ap .wf-who { position: absolute; bottom: 6px; z-index: 80; font-size: clamp(10px, 2.6cqw, 13px); font-weight: 800; padding: 2px 8px; border-radius: 9px; background: #3f8f3acc; color: #eaffe0; text-shadow: 0 1px 2px #000; pointer-events: none; max-width: 42%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ap .wf-who.us { left: 6px; } .ap .wf-who.foe { right: 6px; background: #8a3a2acc; color: #ffe3dc; }
