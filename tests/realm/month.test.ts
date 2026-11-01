@@ -98,7 +98,7 @@ describe('달 시계의 박자', () => {
     }
     assert.deepEqual(served, [0, 0, 1, 1, 1, 2])
   })
-  it('징병 한도는 석 달이 한 장부 — 다 뽑으면 그 계절엔 더 못 뽑고, 다음 계절에 다시 찬다', () => {
+  it('징병 한도는 석 달이 한 장부 — 달마다 1/3씩 차오르고, 다음 계절에 다시 찬다', () => {
     let r = startRegion('yeongnam', 2, 'guya')
     while (seasonOf(r) !== 'autumn') r = advance(r, []).next
     const cap = r.factions['guya']!.capital
@@ -106,8 +106,11 @@ describe('달 시계의 박자', () => {
     const n = draftLimit(r, 'guya', cap, 'spear')
     assert.ok(n > 0)
     r = advance(r, [{ kind: 'draft', faction: 'guya', node: cap, unit: 'spear', n }]).next
-    assert.ok(draftLimit(r, 'guya', cap, 'spear') < n / 10) // 같은 계절 둘째 달 — 남은 몫만
-    r = advance(advance(r, []).next, []).next // 겨울 첫 달
+    const m2 = draftLimit(r, 'guya', cap, 'spear') // 같은 계절 둘째 달 — 첫 달 몫을 다 썼어도 1/3 이 또 열린다
+    assert.ok(m2 > 0 && m2 < n * 1.6, `${n} → ${m2}`)
+    r = advance(r, [{ kind: 'draft', faction: 'guya', node: cap, unit: 'spear', n: m2 }]).next
+    assert.ok(draftLimit(r, 'guya', cap, 'spear') < n * 1.6) // 끝 달 — 마지막 1/3 만
+    r = advance(r, []).next // 겨울 첫 달
     assert.equal(seasonOf(r), 'winter')
     r.stock['guya']!.grain = 100000
     assert.equal(spentThisSeason(r, r.nodes[cap]!.drafted), 0) // 새 계절 — 장부가 비었다

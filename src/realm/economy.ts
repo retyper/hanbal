@@ -247,6 +247,16 @@ export function spentThisSeason(r: Realm, x: { readonly season: number; readonly
 }
 
 /**
+ * 이번 계절 몫 가운데 지금까지 열린 몫 — 달 시계면 달마다 1/3씩 차오른다 (첫 달 1/3 · 둘째 달 2/3 · 끝 달 다).
+ * 첫 달에 한 계절 몫을 다 쓰면 남은 두 달은 할 일이 없었다 (loop 리뷰 · 「한 달만 더」). 옛 판은 늘 다
+ */
+export function shareOpen(r: Realm): number {
+  if (!monthly(r) || P.realm.monthShareStep < 1) return 1
+  const k = perSeason(r)
+  return ((((r.season % k) + k) % k) + 1) / k
+}
+
+/**
  * 이 고을에서 이번 계절에 뽑을 수 있는 수 — 셋 가운데 작은 것:
  * 고을 가호의 draftPerSeason · 나라 상한(가호+군사의 draftCap)까지 남은 몫 · 창고가 대는 채비
  */
@@ -260,7 +270,7 @@ export function draftLimit(r: Realm, faction: string, node: string, unit?: UnitK
   // 한 계절 몫 — 달 시계면 석 달이 한 장부: 이번 계절에 이미 뽑은 만큼 빼고, 계절 처음의 가호로 센다 (옛 판은 장부가 없다)
   const sent = spentThisSeason(r, n.drafted)
   const back = sent > 0 ? n.drafted!.hh : 0 // 뽑느라 빠진 가호
-  const per = Math.floor((n.hh + back) * R.draftPerSeason) - sent
+  const per = Math.floor((n.hh + back) * R.draftPerSeason * shareOpen(r)) - sent
   const men = menOf(r, faction)
   const capShare = R.draftCap + draftCapBonus(r, faction) - (hasCustom(r, faction, 'dalcheon') ? R.dalcheonCap : 0)
   const cap = Math.floor(capShare * (hhOf(r, faction) + men)) - men
@@ -426,7 +436,7 @@ export function settleLimit(r: Realm, faction: string, from: string, to: string)
   if (ed === null || blockedWhy(ed, r) !== null) return 0
   if (Object.values(r.armies).some((x) => x.at === to && x.march === null && x.faction !== faction)) return 0
   const sent = spentThisSeason(r, a.settledOut) // 달 시계 — 이번 계절에 이미 떠나보낸 집
-  const share = Math.floor((a.hh + sent) * R.settleShare) - sent
+  const share = Math.floor((a.hh + sent) * R.settleShare * shareOpen(r)) - sent
   const room = Math.max(0, (b.room ?? 0) - b.hh)
   const grain = R.settleGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.settleGrain) : Infinity
   const wood = R.settleWood > 0 ? Math.floor(goodOf(stockOf(r, faction), 'wood') / R.settleWood) : Infinity
@@ -499,7 +509,7 @@ export function migrateLimit(r: Realm, faction: string, from: string, to: string
   if (migratePath(r, faction, from, to) === null) return 0
   // 한 계절 몫은 계절 처음의 집 기준 — 이미 내보낸 만큼 뺀다 (형: "최대로 해서 옮기기 적용했는데 왜 더 옮겨지는거임? 2개씩 계속 쌓임")
   const sent = spentThisSeason(r, a.movedOut)
-  const share = Math.floor((a.hh + sent) * R.migrateShare) - sent
+  const share = Math.floor((a.hh + sent) * R.migrateShare * shareOpen(r)) - sent
   const grain = R.migrateGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.migrateGrain) : Infinity
   return Math.max(0, Math.min(share, grain))
 }
@@ -528,7 +538,7 @@ export function placeLimit(r: Realm, faction: string): number {
   const R = P.realm
   const grain = R.migrateGrain > 0 ? Math.floor(stockOf(r, faction).grain / R.migrateGrain) : Infinity
   const spent = spentThisSeason(r, r.factions[faction]?.placed) // 달 시계 — 이번 계절에 이미 옮긴 집
-  return Math.max(0, Math.min(Math.floor(hhOf(r, faction) * R.placeShare) - spent, grain))
+  return Math.max(0, Math.min(Math.floor(hhOf(r, faction) * R.placeShare * shareOpen(r)) - spent, grain))
 }
 
 /** 백성 배치에 넣을 수 있는 고을 — 우리 고을(소도 아님) 가운데 도읍과 우리 땅으로 이어진 곳 · 사람이 사는 빈땅도 */
