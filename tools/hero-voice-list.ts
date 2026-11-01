@@ -23,7 +23,7 @@ export function batch(id: string, kind: 'calm' | 'shout'): { voice: string; styl
 }
 
 const [id, kind = 'calm', flag] = process.argv.slice(2)
-if (id !== undefined) {
+if (id !== undefined && /hero-voice-list.ts$/.test(process.argv[1] ?? '')) { // 다른 도구가 batch 만 가져다 쓸 때는 돌지 않는다
   const b = batch(id, kind === 'shout' ? 'shout' : 'calm')
   if (flag === '--json') console.log(JSON.stringify(b))
   else console.log(`목소리 ${b.voice}\n말투 ${b.style}\n---\n${b.text}\n---\n${b.names.join(',')} ${b.lens.join(',')}`)
