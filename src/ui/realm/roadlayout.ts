@@ -6,14 +6,15 @@
  *   - 남의 고을 자리를 스치거나
  *   - 두 끝이 아닌 고을의 땅(가까운 고을 셈)으로 한참 들어가는 길은
  * 몇 가지 단순한 모양(물길 · 곧은 길 · 한 구비 휜 길 · 물길을 곧게 편 것)을 대어 보고 가장 덜 꼬이는 것을 고른다.
- * 어느 고을끼리 잇는지(판)는 그대로다 — 그림만 바뀐다. 길이 정해지면 땅 가르기(territory.ts)가 길 둘레를 두 끝 고을 땅으로 묶는다.
+ * 어느 고을끼리 잇는지(판)는 그대로다 — 그림만 바뀐다. 고을 구역을 구울 때(tools/zonegeo.ts) 이 길 둘레를 두 끝 고을 땅으로 묶는다 — 길 모양을 바꾸면 tools/bake-zones.ts 를 다시 돌린다.
  * 판마다 한 번만 셈한다 (고을 자리·길은 안 바뀐다). 재는 것은 tools/realm-tangle.ts.
  */
 import { REGION_ART, nodePos } from '../../realm/data/art.ts'
 import type { NodeKind, Realm, REdge, RegionId } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
-import { curvePts, ferryAt, naturalLines, routePoints, segCross, separatedRoutes, type Pt } from './mapgeo.ts'
-import { territory, type Territory } from './territory.ts'
+import { worldGeoOf } from '../../realm/data/regions/index.ts'
+import { ZONES } from '../../realm/data/zones/index.ts'
+import { curvePts, ferryAt, routePoints, segCross, separatedRoutes, type Pt } from './mapgeo.ts'
 
 /** 고을 땅의 크기 배수 — 큰 고을이 조금 넓다 */
 export const CELL_SIZE: Readonly<Record<NodeKind, number>> = { capital: 1.3, port: 1.1, fort: 0.95, village: 1, ironMine: 0.9, wild: 0.85, sodo: 0.7 }
@@ -25,8 +26,8 @@ export function roadScale(region: RegionId): { sw: number; gap: number; endR: nu
   return { sw, gap: 14 * sw, endR: RA.terrR * 0.15, hub: RA.terrR * 0.25, clear: RA.terrR * P.realm.roadClear }
 }
 
-/** 땅 가르기의 퍼지는 끝 — 뭍 자료가 없는 판(변한 축소판)은 바다로 번지지 않게 줄인다 */
-const terrReach = (region: RegionId, landNull: boolean): number => REGION_ART[region].terrR * (landNull ? 1.15 : 1.5)
+/** 땅 가르기의 퍼지는 끝 — 뭍 자료가 없는 판(변한 축소판)은 바다로 번지지 않게 줄인다 (구역 굽기 tools/zonegeo.ts 도 같은 값) */
+export const terrReach = (region: RegionId): number => REGION_ART[region].terrR * (region === 'yeongnam' || worldGeoOf(region) !== null ? 1.5 : 1.15)
 
 export interface Town { readonly id: string; readonly p: Pt; readonly size: number }
 interface Road { readonly ed: REdge; readonly ia: number; readonly ib: number; readonly base: readonly Pt[]; readonly sep: readonly Pt[] }
@@ -169,14 +170,14 @@ export function layRoads(key: string, region: RegionId, edges: readonly REdge[],
   const hit = layCache.get(key)
   if (hit !== undefined) return hit
   const { gap, endR, hub, clear } = roadScale(region)
-  const R = terrReach(region, naturalLines(region, W, H).land === null)
+  const R = terrReach(region)
   const at = new Map(towns.map((t, i) => [t.id, i] as const))
   const sorted = [...edges].sort((x, y) => (x.id < y.id ? -1 : 1))
   const base = sorted.map((ed) => routePoints(region, ed, towns[at.get(ed.a)!]?.p ?? [0, 0], towns[at.get(ed.b)!]?.p ?? [0, 0], W, H))
   const sep = separatedRoutes(`${key}:sep`, sorted.map((ed, i) => [ed.id, base[i]!] as const), gap, endR)
   const roads: Road[] = sorted.map((ed, i) => ({ ed, ia: at.get(ed.a) ?? -1, ib: at.get(ed.b) ?? -1, base: base[i]!, sep: sep.get(ed.id) ?? base[i]! }))
   const ferry = roads.map((rd) => (rd.ed.kind === 'ford' ? ferryAt(region, rd.ed, W, H) : null))
-  // 고을마다 땅을 셈하는 대강 — 걸음이 가장 짧은 고을의 땅 (큰 고을은 조금 앞에서 출발 · territory.ts 와 같은 뜻)
+  // 고을마다 땅을 셈하는 대강 — 걸음이 가장 짧은 고을의 땅 (큰 고을은 조금 앞에서 출발 · 구역 굽기 tools/zonegeo.ts 와 같은 뜻)
   const off = towns.map((t) => -R * 0.3 * (t.size - 1))
 
   type Shape = { pts: Pt[]; curve: Pt[]; dense: Pt[]; box: BBox; ref: Pt[] }
@@ -294,14 +295,18 @@ export function layRoads(key: string, region: RegionId, edges: readonly REdge[],
   return res
 }
 
-/** 판의 고을(id 순) — 땅 가르기·길 펴기가 같은 차례를 쓴다 */
-export function boardTowns(r: Realm): { nodes: Realm['nodes'][string][]; towns: Town[] } {
+/**
+ * 판의 고을(id 순) — 구역 굽기·길 펴기가 같은 차례를 쓴다.
+ * 크기 배수는 구운 구역의 것(처음 판의 종류) — 빈 땅이 되어 종류가 바뀐 고을도 길이 판마다 같다. `fromKind` 는 굽는 도구가 지금 종류로 셈할 때
+ */
+export function boardTowns(r: Realm, fromKind = false): { nodes: Realm['nodes'][string][]; towns: Town[] } {
   const region = r.region ?? 'byeonhan-mini'
   const { w: W, h: H } = REGION_ART[region]
+  const baked = fromKind ? undefined : ZONES[region]?.size
   const nodes = Object.values(r.nodes).sort((x, y) => (x.id < y.id ? -1 : 1))
   const towns = nodes.map((n) => {
     const p = nodePos(region, n.id) ?? [0.5, 0.5]
-    return { id: n.id, p: [p[0] * W, p[1] * H] as const, size: CELL_SIZE[n.kind] }
+    return { id: n.id, p: [p[0] * W, p[1] * H] as const, size: baked?.[n.id] ?? CELL_SIZE[n.kind] }
   })
   return { nodes, towns }
 }
@@ -315,23 +320,3 @@ export function boardRoutes(r: Realm): Map<string, Pt[]> {
   return layRoads(`${region}:${W}x${H}:${edges.length}`, region, edges, towns, W, H)
 }
 
-/**
- * 판의 고을(id 순)과 그 땅 — 산·강·뭍을 따라 가르고, 길 둘레는 두 끝 고을 땅으로 묶는다 (territory.ts).
- * 고을 자리는 안 바뀌니 판마다 한 번만 셈한다. `roads: false` 는 길을 안 묶은 옛 땅 (tools/realm-tangle.ts 의 견줌).
- */
-export function boardTerritory(r: Realm, roads = true): { nodes: Realm['nodes'][string][]; t: Territory } {
-  const region = r.region ?? 'byeonhan-mini'
-  const { w: W, h: H } = REGION_ART[region]
-  const { nodes, towns } = boardTowns(r)
-  const nat = naturalLines(region, W, H)
-  const seeds = towns.map((t) => ({ x: t.p[0], y: t.p[1], size: t.size }))
-  const at = new Map(towns.map((t, i) => [t.id, i] as const))
-  let lock: Array<{ a: number; b: number; pts: Pt[] }> | undefined
-  if (roads) {
-    const rt = boardRoutes(r)
-    lock = Object.values(r.edges).filter((ed) => ed.kind !== 'sea' && at.has(ed.a) && at.has(ed.b)).sort((x, y) => (x.id < y.id ? -1 : 1))
-      .map((ed) => ({ a: at.get(ed.a)!, b: at.get(ed.b)!, pts: curvePts(rt.get(ed.id)!, 8) }))
-  }
-  const key = `${region}:${W}x${H}:${nodes.length}${roads ? ':roads' : ''}`
-  return { nodes, t: territory(key, W, H, terrReach(region, nat.land === null), { seeds, ...nat, ...(lock !== undefined ? { roads: lock } : {}) }) }
-}

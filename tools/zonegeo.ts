@@ -1,4 +1,7 @@
 /**
+ * 고을 구역 굽기의 셈 — tools/bake-zones.ts 가 판마다 한 번 돌려 src/realm/data/zones/ 에 데이터로 적는다
+ * (FOCUS H · 형: "국경이 줌마다 꼬이고 작으면 사라짐"). 게임은 이 셈을 하지 않는다 — 구운 구역과 맞닿은 변만 읽는다 (ui/realm/zones.ts).
+ *
  * 고을마다의 땅 — 산과 강을 따라 갈린다 (형: "모양이 안이쁨... 고대시대에는 산이나 강같은게 자연국경같은거로 되는거 아닌가?" — 2026-10-19).
  *
  * 판을 고른 눈금(긴 변 260칸쯤)으로 나누고, 고을들에서 한꺼번에 퍼져 나가는 가장 가까운 길(다익스트라)로 칸마다 주인 고을을 정한다.
@@ -7,14 +10,111 @@
  *   - 뭍이 있는 판은 바다 칸으로 못 건넌다 → 만 건너편까지 땅이 번지지 않는다
  *   - 고을마다 퍼질 수 있는 끝(큰 고을이 조금 멀리) — 빈 들·먼 바다로 끝없이 번지지 않게
  * 칸의 테두리를 이어 고을마다의 고리로 만들고, 이웃이 같은 구간마다 줄여(더글러스-포이커) 매끈하게(차이킨) 다듬는다.
- * 맞닿은 두 고을은 같은 구간을 똑같이 다듬어 쓰므로 땅빛과 금이 꼭 맞물린다. 판·고을 자리마다 한 번만 셈한다.
+ * 맞닿은 두 고을은 같은 구간을 똑같이 다듬어 쓰므로 땅빛과 금이 꼭 맞물린다.
  *
  * 길은 제 두 고을의 땅으로 미리 묶는다 (형 10-27: "국경이랑 길이 … 서로 꼬이지 않게") — 길 둘레 몇 칸을 가운데 금까지는 앞 고을,
  * 그 너머는 뒤 고을 땅으로 정해 두고 퍼지기 시작한다. 그래서 길은 남의 고을 땅을 지나지 않고, 두 고을 사이 금을 한 번만 건넌다.
  * 가운데 금은 두 끝에서 같은 걸음(산·강 값까지 셈한)이 되는 자리 — 길이 강을 건너면 대개 그 강에서 갈린다.
  */
-import { P as TUNE } from '../../tune/params.ts'
-import { segCross, type Pt } from './mapgeo.ts'
+import { REGION_ART, nodePos } from '../src/realm/data/art.ts'
+import { NATION_IDS, startRealm } from '../src/realm/data/regions/byeonhan-mini.ts'
+import { startJumong } from '../src/realm/data/regions/jumong.ts'
+import { startMahan } from '../src/realm/data/regions/mahan.ts'
+import { startSeorabeol } from '../src/realm/data/regions/seorabeol.ts'
+import { SOUTH_NATION_IDS, startSouth } from '../src/realm/data/regions/south.ts'
+import { SOUTH_MOUNTAINS } from '../src/realm/data/regions/south-geo.ts'
+import { startTutorial } from '../src/realm/data/regions/tutorial.ts'
+import { WORLD_NATION_IDS, startWorld } from '../src/realm/data/regions/world.ts'
+import { ISLES, LAND, MOUNTAINS, RIVERS } from '../src/realm/data/regions/yeongnam-geo.ts'
+import { YEONGNAM_NATION_IDS, startYeongnam, yeongnamPos } from '../src/realm/data/regions/yeongnam.ts'
+import { worldGeoOf } from '../src/realm/data/regions/index.ts'
+import type { ZoneData } from '../src/realm/data/zones/index.ts'
+import type { Realm, RegionId } from '../src/realm/types.ts'
+import { P as TUNE } from '../src/tune/params.ts'
+import { curvePts, segCross, type Pt } from '../src/ui/realm/mapgeo.ts'
+import { boardTowns, layRoads, terrReach } from '../src/ui/realm/roadlayout.ts'
+
+/** 판마다 구울 때 쓰는 처음 판 — 고을 자리·종류·길은 판을 어떻게 열든 같다 (빈 땅이 된 고을도 구역은 처음 종류로) */
+export function canonicalRealm(region: RegionId): Realm {
+  switch (region) {
+    case 'yeongnam': return startYeongnam(1, YEONGNAM_NATION_IDS[0]!)
+    case 'south': return startSouth(1, SOUTH_NATION_IDS[0]!)
+    case 'world': return startWorld(1, WORLD_NATION_IDS[0]!)
+    case 'tutorial': return startTutorial(1)
+    case 'jumong': return startJumong(1)
+    case 'mahan': return startMahan(1)
+    case 'seorabeol': return startSeorabeol(1)
+    case 'byeonhan-mini': return startRealm(1, NATION_IDS[0]!)
+  }
+}
+
+/** 구운 구역이 낡았는지 — 고을 자리·종류·길·판 크기를 한 줄로 (FNV-1a). 고을을 옮기면 바뀐다 → tools/bake-zones.ts 를 다시 돌린다 */
+export function zoneHash(region: RegionId, r: Realm): string {
+  const RA = REGION_ART[region]
+  let s = `${RA.w}x${RA.h}:${RA.terrR}`
+  for (const n of Object.values(r.nodes).sort((a, b) => (a.id < b.id ? -1 : 1))) {
+    const p = nodePos(region, n.id) ?? [0.5, 0.5]
+    s += `|${n.id}:${p[0].toFixed(5)},${p[1].toFixed(5)}:${n.kind}`
+  }
+  for (const e of Object.values(r.edges).sort((a, b) => (a.id < b.id ? -1 : 1))) s += `|${e.id}:${e.a}:${e.b}:${e.kind}`
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619)
+  return (h >>> 0).toString(16).padStart(8, '0')
+}
+
+/**
+ * 땅을 가를 자연의 금 — 판마다의 강 · 산줄기 · 뭍 (그림 좌표).
+ * 변한 축소판은 밑그림뿐이라 강·뭍 자료가 없다 — 그 판은 거리만으로 가른다.
+ */
+export function naturalLines(region: RegionId, W: number, H: number): {
+  rivers: Pt[][]; rough: Array<[number, number, number, number]>; land: Pt[][] | null
+} {
+  const g = worldGeoOf(region)
+  if (region !== 'yeongnam' && g === null) return { rivers: [], rough: [], land: null }
+  const pos = g !== null ? g.pos : yeongnamPos
+  const px = ([lon, lat]: readonly [number, number]): Pt => {
+    const [x, y] = pos(lon, lat)
+    return [x * W, y * H]
+  }
+  const rivers = (g !== null ? g.rivers : RIVERS).map((rv) => rv.pts.map(px))
+  const rough = (g !== null ? SOUTH_MOUNTAINS : MOUNTAINS).map(([lon0, lon1, lat0, lat1]) => {
+    const a = px([lon0, lat1])
+    const b = px([lon1, lat0])
+    return [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])] as [number, number, number, number]
+  })
+  const land = g !== null ? [...g.lands, ...g.isles].map((l) => l.map(px)) : [LAND, ...ISLES].map((l) => l.map(px))
+  return { rivers, rough, land }
+}
+
+/** 땅 반지름을 몇 칸으로 나눌지 — 게임 중에 셈하던 때(10)보다 곱게. 굽는 때만 무거워진다 */
+export const CELL_DIV = 14
+
+/**
+ * 판 하나를 굽는다 — 처음 판의 고을(id 순)에서 땅을 가르고(길 둘레는 두 끝 고을 땅으로 묶는다), 고을 id 로 적는다.
+ * `cellDiv` — 땅 반지름을 몇 칸으로 나눌지 (클수록 곱다).
+ */
+export function bakeRegion(region: RegionId, cellDiv = CELL_DIV): { data: ZoneData; cells: Record<string, number> } {
+  const r = canonicalRealm(region)
+  const { w: W, h: H } = REGION_ART[region]
+  const { nodes, towns } = boardTowns(r, true)
+  const nat = naturalLines(region, W, H)
+  const at = new Map(towns.map((t, i) => [t.id, i] as const))
+  // 길 모양 — 게임이 그리는 그대로 (게임은 구운 크기 배수 = 여기 처음 종류의 배수로 길을 편다)
+  const rt = layRoads(`${region}:bake`, region, Object.values(r.edges), towns, W, H)
+  const roads = Object.values(r.edges).filter((ed) => ed.kind !== 'sea' && at.has(ed.a) && at.has(ed.b)).sort((x, y) => (x.id < y.id ? -1 : 1))
+    .map((ed) => ({ a: at.get(ed.a)!, b: at.get(ed.b)!, pts: curvePts(rt.get(ed.id)!, 8) }))
+  const t = territory(W, H, terrReach(region), { seeds: towns.map((x) => ({ x: x.p[0], y: x.p[1], size: x.size })), ...nat, roads }, cellDiv)
+  const fill: Record<string, string> = {}
+  const size: Record<string, number> = {}
+  const cells: Record<string, number> = {}
+  for (const [i, n] of nodes.entries()) {
+    if (t.fills[i] !== '') fill[n.id] = t.fills[i]!
+    size[n.id] = towns[i]!.size
+    cells[n.id] = t.cells[i]!
+  }
+  const edge = t.edges.map((e) => [nodes[e.i]!.id, e.j < 0 ? '' : nodes[e.j]!.id, e.d] as const)
+  return { data: { hash: zoneHash(region, r), w: W, h: H, size, fill, edge }, cells }
+}
 
 export interface TerritoryIn {
   /** 고을 자리(그림 좌표) · 크기 배수 */
@@ -42,13 +142,9 @@ export interface Territory {
 const RIVER_COST = 0.55
 const ROUGH_MUL = 1.9
 
-const cache = new Map<string, Territory>()
-
-export function territory(key: string, W: number, H: number, R: number, inp: TerritoryIn): Territory {
-  const hit = cache.get(key)
-  if (hit !== undefined) return hit
-  // 칸 크기 — 고을 땅 하나의 반지름이 열두 칸 남짓 (판 크기가 아니라 고을 크기에 맞춘다 — 세로로 긴 판은 고을이 빽빽해 칸이 크면 계단이 진다)
-  const cs = R / 10
+export function territory(W: number, H: number, R: number, inp: TerritoryIn, cellDiv = 10): Territory {
+  // 칸 크기 — 고을 땅 하나의 반지름이 cellDiv 칸 남짓 (판 크기가 아니라 고을 크기에 맞춘다 — 세로로 긴 판은 고을이 빽빽해 칸이 크면 계단이 진다)
+  const cs = R / cellDiv
   const cols = Math.ceil(W / cs)
   const rows = Math.ceil(H / cs)
   const N = cols * rows
@@ -430,7 +526,6 @@ export function territory(key: string, W: number, H: number, R: number, inp: Ter
     fills.push(fill)
   }
   const out: Territory = { fills, edges, cells: cellCount }
-  cache.set(key, out)
   return out
 }
 
