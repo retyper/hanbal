@@ -1294,7 +1294,7 @@ function provincesSvg(
   if (z === undefined) return ''
   const ids = Object.keys(r.nodes).sort()
   const ownerOf = (id: string): string | null => (id === '' ? null : r.nodes[id]?.owner ?? null)
-  const key = `${region}|${W}|${me}|${focus ?? ''}|${clipped ? 1 : 0}|${ids.map((id) => `${ownerOf(id) ?? ''}${seen(id) ? '' : '?'}`).join(',')}`
+  const key = `${region}|${W}|${me}|${focus ?? ''}|${clipped ? 1 : 0}|${P.realm.mapBorderPx},${P.realm.mapBorderInkPx},${P.realm.mapTownLinePx},${P.realm.mapTownDashPx},${P.realm.mapMyEdgePx}|${ids.map((id) => `${ownerOf(id) ?? ''}${seen(id) ? '' : '?'}`).join(',')}`
   if (key === provKey) return provOut
   const clip = clipped ? ' clip-path="url(#rm-land)"' : ''
   const k = Math.max(1, W / 1100) // 안쪽 띠 굵기 — 그림 폭에 맞춘다 (띠는 땅빛의 일부라 지도와 함께 커진다)

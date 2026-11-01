@@ -88,11 +88,16 @@ export function partyRoute(r: Realm, faction: string, from: string, goal: string
   return null
 }
 
-/** 갈 빈땅이 있으면 다음 길로 떠난다 — 그 땅을 남이 먼저 일궜거나 길이 끊겼으면 목표를 내려놓고 선다 */
+/**
+ * 갈 빈땅이 있으면 다음 길로 떠난다. 그 땅을 남이 먼저 일궜으면 목표를 내려놓고 선다.
+ * 길이 이번 달만 막혔으면(겨울 고개 · 장마 나루 · 적 군대가 잠깐 머묾) 목표를 쥔 채 기다린다 — 한 번 막혔다고 버리면
+ * 지나던 우리 빈 마을에 엉뚱하게 눌러앉았다 (리뷰 11-01)
+ */
 function goOn(r: Realm, p: Party): void {
   if (p.goal === undefined || p.march !== null) return
-  const route = foundable(r, p.faction, p.goal) ? partyRoute(r, p.faction, p.at, p.goal) : null
-  if (route === null || route.edge === '') { delete p.goal; return }
+  if (!foundable(r, p.faction, p.goal)) { delete p.goal; return }
+  const route = partyRoute(r, p.faction, p.at, p.goal)
+  if (route === null || route.edge === '') return
   startMarch(r, p, route.edge)
 }
 

@@ -1537,7 +1537,8 @@ function resolveRound(
   if (atk.hungry) st.ma -= R.tacHungry
   if (def.hungry) st.md -= R.tacHungry
   st.ma = clamp(st.ma, 0.1, 1.6)
-  st.md = clamp(st.md, walled ? Math.min(R.tacWallFloor, def.morale) : 0.1, 1.6)
+  // 벽 안 바닥은 처음 사기의 몫 — 무너짐은 비율(downOf)이라 고정 바닥이면 사기 낮은 장정·굶은 군대가 오히려 영영 안 무너졌다 (리뷰 11-01)
+  st.md = clamp(st.md, walled ? Math.max(0.1, def.morale * Math.min(R.tacWallFloor, R.tacBreakMorale - 0.05)) : 0.1, 1.6)
   const log = finish(beat)
   return { log: { ...log, push: pr }, captured: null, retreat: null, duel: duelRes, lost }
 }

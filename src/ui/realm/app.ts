@@ -1655,7 +1655,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (cap === undefined) return ''
     const mine = settles.find((o) => o.kind === 'party' && o.node === cap)
     if (mine !== undefined && mine.kind === 'party' && mine.goal === to) return `<button class="btn home wide on ${cls}" data-act="party-undo" data-node="${cap}">${icon('unit-porters')}개척단이 떠난다 · 누르면 거둔다</button>`
-    if (mine !== undefined) return `<p class="mute">이번 달 개척단은 이미 다른 곳으로 꾸렸습니다</p>`
+    if (mine !== undefined) return `<p class="mute">이번 ${turnWord(r)} 개척단은 이미 다른 곳으로 꾸렸습니다</p>`
     const k = partySize(r, me(), cap)
     if (k <= 0) return `<p class="mute">${esc(partyWhy(r, cap))}</p>`
     const route = partyRoute(r, me(), cap, to)
@@ -4455,7 +4455,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       else if (ours && n.hh <= 0) h += `<p class="story">깃발만 꽂은 빈땅이다. 사는 사람이 없어 아무것도 나지 않는다. 개척단이 와야 마을이 선다. 붐비는 이웃 고을이 있으면 백성이 조금씩 저절로 넘어오기도 한다.</p>`
       if (n.owner === null || ours) {
         const can = foundLands(r).includes(id) || partiesOf(r, me()).some((p) => p.march?.to === id)
-        h += can ? settleCard(r, id) : `<p class="mute">우리 고을과 길로 맞닿고, 그 길이 열려 있어야 개척단이 간다.</p>`
+        h += can ? settleCard(r, id) : `<p class="mute">개척단은 도읍에서 꾸려 우리 땅을 거쳐 간다. 그 길이 우리 땅으로 이어지고 열려 있어야 한다.</p>`
       }
     }
     if (ours) {
@@ -4564,7 +4564,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const rb = (act: string, ic: string, label: string, extra = '', cls = ''): string =>
       `<button class="nrb${cls}" data-act="${act}" data-node="${id}"${extra}>${ic}<small>${label}</small></button>`
     const more = rb('nr-more', '<i class="nrm">⋯</i>', '자세히', '', ' more')
-    if (ours && n.kind !== 'wild' && n.kind !== 'sodo') {
+    // 개척단이 세운 마을은 kind 가 빈땅(wild)으로 남는다 — 사람이 살면 우리 고을과 같이 둘레 단추 (리뷰 11-01)
+    if (ours && n.kind !== 'sodo' && (n.kind !== 'wild' || n.hh > 0)) {
       const bs: string[] = []
       if (r.factions[me()]?.capital !== id && n.hh > 0) {
         const ch = postHero(r, id)
@@ -4633,7 +4634,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           const c = partyCost(partySize(r, me(), src.from))
           h += `<button class="btn pri home wide nrbig" data-act="party-to" data-node="${id}" data-from="${src.from}" data-edge="${src.edge}">${icon('unit-porters')}개척단 보내기 ${costHtml({ grain: c.grain, wood: c.wood })}</button>`
         } else if (foundLands(r).includes(id)) h += capPartyHtml(r, id, 'nrbig')
-        else h += `<p class="nrwhy">${esc(noReachWhy(r, me(), id))}<small>개척단은 우리 고을에서 길로 바로 이웃한 빈 땅에만 갑니다</small></p>`
+        else h += `<p class="nrwhy">${esc(noReachWhy(r, me(), id))}<small>개척단은 도읍에서 꾸려 우리 땅을 거쳐 빈 땅으로 갑니다</small></p>`
       } else if (n.owner === null && n.kind !== 'wild' && n.kind !== 'sodo' && n.hh > 0) {
         h += `<p class="nrwhy">${icon('unit-spear')}군사 이동 필요<small>주인이 없어 군사가 닿으면 싸움 없이 우리 땅이 됩니다</small></p>`
       }
@@ -6160,6 +6161,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     else if (leadPop !== '' && armySel.includes(leadPop)) leadPop = ''
     else if (armySel.length > 0) armySel = []
     else if (partySel !== '') clearParty()
+    else if (ring !== '') ring = '' // 고을 둘레 단추만 떠 있으면 그것만 걷는다 (리뷰 11-01: 처음 화면으로 튕겼다)
     else front = { kind: 'title' } // 아무것도 안 열려 있으면 처음 화면으로
     paint()
     return true
@@ -6225,9 +6227,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 길 보기는 지도를 누르면 접힌다 — ✕ 를 찾지 않아도 (형 10-27)
     if (roadOpen && (ev.target as HTMLElement).closest('.mapwrap') !== null && !zoom.dragged()) { roadOpen = false; morph($('.roadkey'), roadKeyHtml()) }
     // 둘레 단추가 떠 있을 때 지도 빈 곳을 누르면 걷힌다 (고을·말을 누르면 그쪽이 받는다)
-    if (ring !== '' && !zoom.dragged()) {
+    if (ring !== '' && front === null && !zoom.dragged()) { // 첫 화면 같은 판이 덮여 있으면 그 누름은 판의 것 (리뷰 11-01: 걷기에 먹혔다)
       const e = ev.target as HTMLElement
-      if (e.closest('.mapwrap') !== null && e.closest('.nring, .nd, .tok') === null) { ring = ''; paint(); return }
+      if (e.closest('.map') !== null && e.closest('.nring, .nd, .tok') === null) { ring = ''; paint(); return }
     }
     const t = (ev.target as HTMLElement).closest<HTMLElement>('[data-act], .nd')
     if (t === null || !root.contains(t)) return
@@ -6330,7 +6332,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'fr-new': case 'newgame': front = { kind: 'boards' }; sheet = null; looking = false; paint(); return
       case 'fr-back': front = { kind: 'title' }; paint(); return
-      case 'lobby': saveDraft(); front = { kind: 'title' }; sheet = null; armySel = []; clearParty(); paint(); return
+      case 'lobby': saveDraft(); front = { kind: 'title' }; sheet = null; armySel = []; ring = ''; clearParty(); paint(); return
       case 'fr-board':
         // 캠페인의 장은 나라를 고르지 않는다 — 배우는 판은 백제(온조), 2장은 고구려(주몽)
         { const ch = chapterOfRegion(d['v'] as RegionId); if (ch !== undefined) { startWithBring(ch.nation, d['v'] as RegionId, d['v'] === 'tutorial' ? 1 : chapTier); return } }

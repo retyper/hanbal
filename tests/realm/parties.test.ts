@@ -166,7 +166,7 @@ describe('개척단 — 겹치거나 먼저 일궈졌을 때', () => {
 
 describe('개척단 갈 곳(goal) — 도읍에 맞닿지 않은 빈땅 (형 11-01: "토함 산성 빈땅인데 왜 개척단이 안 보내지냐")', () => {
   /** 도읍 곁 빈땅 하나를 우리 마을로 만들고, 그 너머의 빈땅(도읍과 안 맞닿음)을 찾는다 */
-  function twoHop(): { r: Realm; cap: string; far: string } {
+  function twoHop(): { r: Realm; cap: string; far: string; via: string } {
     const r = rich(startRegion('yeongnam', 7, 'golbeol'))
     const me = r.player
     const cap = r.factions[me]!.capital
@@ -176,7 +176,7 @@ describe('개척단 갈 곳(goal) — 도읍에 맞닿지 않은 빈땅 (형 11-
       v.owner = me
       v.hh = 40
       const far = partyMoves(r, me, m.to).find((x) => x.found && !near.has(x.to) && x.to !== cap)
-      if (far !== undefined) return { r, cap, far: far.to }
+      if (far !== undefined) return { r, cap, far: far.to, via: m.to }
       v.owner = null
       v.hh = 0
     }
@@ -205,5 +205,42 @@ describe('개척단 갈 곳(goal) — 도읍에 맞닿지 않은 빈땅 (형 11-
       return JSON.stringify(r.parties ?? {}) + r.nodes[t.far]!.owner
     }
     assert.equal(run(), run())
+  })
+})
+
+describe('개척단 갈 곳 — 길이 잠깐 막히면 기다린다 (리뷰 11-01)', () => {
+  it('지나갈 우리 마을에 적 군대가 머물면 목표를 쥔 채 서 있다가, 비키면 다시 간다', () => {
+    const r = rich(startRegion('yeongnam', 7, 'golbeol'))
+    const me = r.player
+    const cap = r.factions[me]!.capital
+    const near = new Set(partyMoves(r, me, cap).map((m) => m.to))
+    let via = '', far = ''
+    for (const m of partyMoves(r, me, cap).filter((x) => x.found)) {
+      const v = r.nodes[m.to]!
+      v.owner = me
+      v.hh = 40
+      const f = partyMoves(r, me, m.to).find((x) => x.found && !near.has(x.to) && x.to !== cap)
+      if (f !== undefined) { via = m.to; far = f.to; break }
+      v.owner = null
+      v.hh = 0
+    }
+    assert.ok(far !== '')
+    // 지나갈 마을에만 길이 있게 — 다른 길로 돌아가면 시험이 안 된다
+    assert.ok(partyRoute(r, me, cap, far) !== null)
+    const foe = Object.keys(r.factions).find((f) => f !== me)!
+    const any = Object.values(r.armies).find((a) => a.faction === foe)!
+    const blocker = { ...structuredClone(any), id: 'test-block', at: via, march: null }
+    r.armies['test-block'] = blocker
+    r.parties = { pz: { id: 'pz', faction: me, home: cap, at: cap, hh: 30, march: null, goal: far } }
+    stepParties(r, [])
+    const p = r.parties['pz']!
+    assert.equal(partyRoute(r, me, cap, far), null, "적 군대가 지나갈 마을을 막아야 한다")
+    {
+      assert.equal(p.goal, far) // 막혔어도 목표는 그대로
+      assert.equal(p.march, null)
+      delete r.armies['test-block']
+      stepParties(r, [])
+      assert.ok(r.parties['pz']?.march !== null || r.nodes[far]!.owner === me) // 비키면 떠난다
+    }
   })
 })
