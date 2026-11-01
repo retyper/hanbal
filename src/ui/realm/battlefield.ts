@@ -3284,7 +3284,9 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         if (b === undefined) { at(s0, BATTLE_SFX[c], vol, 1, dur, low); return }
         // 방진의 「탱탱」은 끝까지 울린다 — 0.5초에 자르며 0.32초부터 줄였더니 소리가 가장 큰 곳(0.25~0.45초)이 깎여 안 들렸다 (형 10-25)
         const ring = RING_FULL.has(c)
-        for (const [dt, v, rt] of b.slice(0, 2)) at(s0 + dt, BATTLE_SFX[c], vol * v * (ring ? P.realm.warRingBoost : 1), rt, ring ? 0 : Math.max(0.25, dur - dt), low)
+        // 그림(cmdFxHtml)은 제 차례 길이에 맞춰 사이 시각을 K 배로 줄인다 — 소리도 같은 배율로 (성문 통나무 1·3번째 쿵에 맞게). 진이 직접 움직이는 명령(FIELD_CMD)은 그림이 없어 그대로
+        const kx = FIELD_CMD.has(c) ? 1 : beatLen(c) / (FX_SPAN[c] ?? 1)
+        for (const [dt, v, rt] of b.slice(0, 2)) at(s0 + dt * kx, BATTLE_SFX[c], vol * v * (ring ? P.realm.warRingBoost : 1), rt, ring ? 0 : Math.max(0.25, dur - dt * kx), low)
       }
       for (const b of plan.beats) beat(b.c, b.at, b.ours ? 0.5 : 0.3, b.ours ? P.realm.warBeatDur : P.realm.warFoeBeatDur, !b.ours)
       // 엉긴 앞줄 — 찌르기 컷의 박자에 쇠가 부딪는 소리를 몇 번 흩어 낸다(작게 · 자리가 없으면 버린다). 소리마다 높낮이를 조금씩 (형 10-25: 소리와 동작 박자)
