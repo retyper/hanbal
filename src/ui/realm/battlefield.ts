@@ -1195,9 +1195,10 @@ export function cmdFxHtml(art: string, c: Cmd, dir: 'r' | 'l', at: number, end: 
       break
     case 'gate': case 'ram':
       // 통나무가 세 번 들이친다 — 칠 때마다 나무 조각이 튄다 (배 들이받기는 물보라까지)
-      h += `<i class="lg" style="--y:${c === 'ram' ? 66 : 56}%;${t(0)}">${img('ramlog')}</i>`
+      h += `<i class="ramlg" style="--y:${c === 'ram' ? 66 : 56}%;${t(0)}">${img('ramlog')}</i>`
       for (let k = 0; k < 3; k++) {
         h += many(2, 'splinter', 'pop', () => `--x:${(44 + rnd() * 8).toFixed(1)}%;--y:${((c === 'ram' ? 62 : 52) + rnd() * 8).toFixed(1)}%;${z(0.6, 0.5)};${t(0.3 + k * 0.36)}`)
+        h += `<i class="pop fl" style="--x:${(40 + rnd() * 6).toFixed(1)}%;--y:${((c === 'ram' ? 58 : 48) + rnd() * 4).toFixed(1)}%;${z(0.9, 0.3)};${t(0.29 + k * 0.36)}">${img('skill/common/flash')}</i>` // 칠 때마다 쾅 — 번쩍임 (비기 그림과 같은 것)
         if (c === 'ram') h += many(2, 'splash', 'pop', () => `--x:${(40 + rnd() * 12).toFixed(1)}%;--y:${(74 + rnd() * 6).toFixed(1)}%;${z(0.8, 0.4)};${t(0.32 + k * 0.36)}`)
       }
       break
@@ -1211,7 +1212,7 @@ export function cmdFxHtml(art: string, c: Cmd, dir: 'r' | 'l', at: number, end: 
       break
     case 'retreat':
       // 먼지를 일으키며 뒤로 빠진다
-      h += many(5, 'smoke', 'pf bk', (i) => `--x:${(30 - i * 5).toFixed(1)}%;--y:${(70 + rnd() * 10).toFixed(1)}%;${z(0.7, 0.5)};${t(i * 0.09)}`)
+      h += many(5, 'smoke', 'pf pfbk', (i) => `--x:${(30 - i * 5).toFixed(1)}%;--y:${(70 + rnd() * 10).toFixed(1)}%;${z(0.7, 0.5)};${t(i * 0.09)}`)
       break
     case 'drum':
       // 북소리 — 금빛 고리가 장수 둘레로 퍼진다
@@ -2546,16 +2547,26 @@ export const WAR_CSS = `
 .ap .wfx-cmd .rk { --w: clamp(76px, 9.5vw, 150px); --ar: 256 / 220; --an: wcrk; --du: 1.15s; --ease: cubic-bezier(.45, 0, .85, .55); }
 @keyframes wcrk { 0% { opacity: 0; transform: translate(-6vw, -30vh) rotate(0); } 12% { opacity: 1; } 70% { transform: translate(calc(var(--dx) * .8), 0) rotate(420deg); }
   80% { transform: translate(calc(var(--dx) * .88), -3vh) rotate(480deg); } 90% { opacity: 1; transform: translate(var(--dx), 0) rotate(540deg); } 100% { opacity: 0; transform: translate(var(--dx), 0) rotate(560deg); } }
-.ap .wfx-cmd .lg { --w: clamp(180px, 24vw, 360px); --ar: 256 / 135; --x: -8%; --an: wclg; --du: 1.25s; }
-/* 날아드는 공성추·바위·방패의 그림자 — drop-shadow 필터는 폰에서 움직이는 그림의 네모 칸째로 그림자가 졌다 (형 10-30: "누끼는 따졌는데 이미지 박스 그대로 그림자가 테두리에") · 밑에 둥근 바닥 그림자만 */
-.ap .wfx-cmd :is(.lg, .rk, .sh)::after { content: ''; position: absolute; left: 12%; right: 12%; bottom: -8%; height: 18%; border-radius: 50%; background: radial-gradient(closest-side, #000a, #0000); z-index: -1; pointer-events: none; }
-@keyframes wclg { 0% { opacity: 0; transform: translateX(-30vw); } 10% { opacity: 1; } 24% { transform: translateX(24vw); } 34% { transform: translateX(16vw); }
-  53% { transform: translateX(25vw); } 63% { transform: translateX(16vw); } 82% { opacity: 1; transform: translateX(26vw); } 100% { opacity: 0; transform: translateX(22vw); } }
+/* 공성추 (이름은 ramlg — .lg 는 깃발 줄 알약이라 둥근 판·테두리가 통나무에 같이 붙어 「아크릴 카드」로 보였다) — 줄에 매단 통나무처럼 위를 축으로 크게 젖혔다가(천천히) 가속해 내리친다(빠르게) · 칠 때 눌린다 · 쾅 번쩍임(.pop.fl)
+   (형 11-01: "나무가 움직이는 게 아니라 아크릴 카드가 왔다 갔다 · 이미지 통째로 그림자" — 가로로만 미끄러지고 공중에서 둥근 그림자를 끌고 다녔다) */
+.ap .wfx-cmd .ramlg { --w: clamp(180px, 24vw, 360px); --ar: 256 / 135; --x: -8%; --an: wclg; --du: 1.25s; transform-origin: 40% -160%; }
+/* 날아드는 바위·방패의 그림자 — drop-shadow 필터는 폰에서 움직이는 그림의 네모 칸째로 그림자가 졌다 (형 10-30: "누끼는 따졌는데 이미지 박스 그대로 그림자가 테두리에") · 밑에 둥근 바닥 그림자만 · 공성추는 매달려 흔들리므로 그림자를 끌고 다니지 않는다 */
+.ap .wfx-cmd :is(.rk, .sh)::after { content: ''; position: absolute; left: 12%; right: 12%; bottom: -8%; height: 18%; border-radius: 50%; background: radial-gradient(closest-side, #000a, #0000); z-index: -1; pointer-events: none; }
+@keyframes wclg {
+  0% { opacity: 0; transform: translateX(-24vw) rotate(-16deg); animation-timing-function: ease-out; }
+  8% { opacity: 1; } 16% { transform: translateX(6vw) rotate(-17deg); animation-timing-function: cubic-bezier(.55, 0, 1, .45); }
+  24% { transform: translateX(24vw) rotate(3deg) scale(1.05, .93); animation-timing-function: ease-out; }
+  29% { transform: translateX(19vw) rotate(-3deg) scale(1); } 45% { transform: translateX(7vw) rotate(-16deg); animation-timing-function: cubic-bezier(.55, 0, 1, .45); }
+  53% { transform: translateX(25vw) rotate(4deg) scale(1.05, .93); animation-timing-function: ease-out; }
+  58% { transform: translateX(19vw) rotate(-3deg) scale(1); } 74% { transform: translateX(6vw) rotate(-18deg); animation-timing-function: cubic-bezier(.6, 0, 1, .4); }
+  82% { opacity: 1; transform: translateX(27vw) rotate(5deg) scale(1.07, .9); animation-timing-function: ease-out; }
+  100% { opacity: 0; transform: translateX(21vw) rotate(-2deg) scale(1); } }
+.ap .wfx-cmd .pop.fl { --w: clamp(110px, 15vw, 220px); --ar: 1; --du: .45s; mix-blend-mode: screen; }
 .ap .wfx-cmd .pop { --w: clamp(80px, 10vw, 150px); --ar: 1; --an: wcpop; --du: .7s; --ease: ease-out; }
 .ap .wfx-cmd .pop.fr { --w: clamp(150px, 20vw, 300px); --ar: 1; --du: 1.2s; transform-origin: 50% 100%; filter: drop-shadow(0 0 10px #ff8a2a); }
 @keyframes wcpop { 0% { opacity: 0; transform: scale(.2) rotate(-8deg); } 25% { opacity: 1; transform: scale(1) rotate(0); } 100% { opacity: 0; transform: scale(1.25) rotate(6deg); } }
 .ap .wfx-cmd .pf { --w: 120px; --ar: 1; --an: wcpf; --du: 1.2s; --ease: ease-out; mix-blend-mode: screen; }
-.ap .wfx-cmd .pf.bk { --an: wcpb; }
+.ap .wfx-cmd .pf.pfbk { --an: wcpb; } /* .bk 는 전투 카드 판이라 바탕·테두리가 연기에 붙었다 */
 @keyframes wcpf { 0% { opacity: 0; transform: scale(.4) translateX(0); } 25% { opacity: .55; } 100% { opacity: 0; transform: scale(1.4) translateX(4vw); } }
 @keyframes wcpb { 0% { opacity: 0; transform: scale(.5) translateX(0); } 25% { opacity: .6; } 100% { opacity: 0; transform: scale(1.5) translateX(-10vw); } }
 .ap .wfx-cmd .rp { --w: clamp(110px, 12vw, 180px); --ar: 256 / 242; --x: 20%; --an: wcrp; --du: 1.1s; --ease: cubic-bezier(.3, .2, .6, 1); }
