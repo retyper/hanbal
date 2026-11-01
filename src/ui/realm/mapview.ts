@@ -627,6 +627,8 @@ export function mapHtml(
     .sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0))
   for (const a of poised) threatened.add(a.strike!.node)
   const poisedAt = new Set(poised.map((a) => a.at))
+  // 우리 땅과 길로 맞닿은 고을 — 중간 배율에서도 이름표를 남긴다 (어디가 어딘지 · 형 10-31: "어디가 어딘지 모르겠다")
+  const nearMine = new Set(Object.values(r.edges).flatMap((e) => (r.nodes[e.a]?.owner === me ? [e.b] : r.nodes[e.b]?.owner === me ? [e.a] : [])))
   marches = [...marches, ...poised.map((a): MapMarch => ({ from: a.at, to: a.strike!.node, left: 1, foe: true }))]
 
   let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">`
@@ -921,9 +923,9 @@ export function mapHtml(
     labels.push({
       // 나라 많은 판은 지금 지명 줄을 빼 이름표를 한 줄로 — 작아야 제 고을 곁에 붙는다 (형 10-26: "마을 텍스트 바가 너무 큼 · 줄여서 제대로 그 마을의 텍스트라는 게 보이게")
       id: n.id, name: n.name, now: NODE_NOW[n.id], inl: CROWDED.has(region), x: p[0], y: p[1], s: sizeOf(n.hh), cap: n.kind === 'capital' || cap, hh: n.hh,
-      // 줌 단계 (FOCUS G) — lkeep: 어느 배율에서도 보인다 (고른 고을 · 위협받는 우리 고을 · 칠 채비가 모인 고을) · lmid: 중간 배율에서도 (도읍 · 우리 고을)
+      // 줌 단계 (FOCUS G) — lkeep: 어느 배율에서도 보인다 (고른 고을 · 위협받는 우리 고을 · 칠 채비가 모인 고을) · lmid: 중간 배율에서도 (도읍 · 우리 고을 · 우리 땅과 맞닿은 고을)
       cls: `${kcls}${ours ? ' me' : ''}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${far}${fr}`
-        + `${selected === n.id || threatened.has(n.id) || poisedAt.has(n.id) ? ' lkeep' : ''}${n.kind === 'capital' || cap || ours ? ' lmid' : ''}`,
+        + `${selected === n.id || threatened.has(n.id) || poisedAt.has(n.id) ? ' lkeep' : ''}${n.kind === 'capital' || cap || ours || nearMine.has(n.id) ? ' lmid' : ''}`,
       kit: owner !== null ? kitVars(owner) : '', emb, rel: relChip(r, me, owner), force, tray, trayW: sp.length + (fish !== '' ? 1 : 0) + dfs.length * 1.6 + cms.reduce((s, m) => s + 0.6 + m.label.length * 0.62, 0),
     })
     // 맡은 장수 — 우리 고을이면 얼굴을 작게 (형 10-23: "마을에 장수 배치한 거 아직 맵에선 아무것도 안 보이던데")
