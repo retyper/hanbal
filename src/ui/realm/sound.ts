@@ -48,7 +48,8 @@ export const PICK = {
 const EXT: Readonly<Partial<Record<string, string>>> = {
   bgm_map_f: 'mp3', bgm_map_g: 'mp3', bgm_win_a: 'mp3', bgm_win_g1: 'mp3', bgm_win_g2: 'mp3', bgm_win_g3: 'mp3',
   // 10-28 형이 국립국악원 디지털 이음에서 고른 민요·산조 — 조각을 빈틈없이 이어 한 곡씩(k1~k11) · 통째 곡 다섯(k12~k16) · 모두 -18 LUFS 로 맞춤
-  ...Object.fromEntries(Array.from({ length: 16 }, (_, i) => [`bgm_map_k${i + 1}`, 'mp3'])),
+  // 11-01 형: 귀인(정악 아쟁 k17) · 우조초수대엽(양금 k18) · 경기민요 일곱(k19~k25 · 메기고 받는 한 묶음을 두 번)
+  ...Object.fromEntries(Array.from({ length: 25 }, (_, i) => [`bgm_map_k${i + 1}`, 'mp3'])),
   // 거문고 「도~」(dex_new_c 9.5초)를 3초로 자르고 2초부터 줄였다 — 고용·도감·유물 상자에 통째로 울려 길었다 (형 10-27)
   dex_new_c3: 'wav', war_drums_b2: 'wav', defeat_a3: 'wav', horses_m: 'wav',
   // 10-27 밤 형: 제사·혼인 첫 후보 여섯 "다 별로" → 새 후보 (대금 · 국악 효과음)
@@ -68,8 +69,8 @@ export const LATER: ReadonlySet<Slot> = new Set<Slot>([])
 // 형 10-23 소리 고르기 판: 지도 = 형의 두 곡 + 국악 BGM 다섯 · 싸움 = 사물놀이 둘
 // 10-28: 지도 앞에 국악원 곡 열여섯 — 민요(긴난봉가 · 아리랑 · 밀양 · 정선 · 뱃노래 · 한오백년 · 진도 · 자진난봉가 · 상주모심기) 사이사이에
 // 기악(거문고 산조 · 양금 상령산 · 영산회상 타령 · 수연장지곡 · 우조가락도드리 · 방아타령 · 25현 한오백년)을 끼워 같은 결이 이어 붙지 않게
-// 11-01 형: "예전 국립국악원 음악 말고 다른 게 들어가 있던데 그거 빼 줘" — 형의 옛 두 곡(f)과 저작권위원회 국악 BGM(c2·c9·c3·c4·c10)을 지도에서 뺐다. 형이 새 곡을 가져오면 이 줄에 끼운다
-export const ROTATE: Readonly<Partial<Record<Slot, readonly string[]>>> = { bgm_map: ['k1', 'k12', 'k5', 'k3', 'k6', 'k14', 'k9', 'k13', 'k7', 'k4', 'k11', 'k15', 'k10', 'k16', 'k2', 'k8'], bgm_war: ['c7v', 'c8v'] }
+// 11-01 형: "예전 국립국악원 음악 말고 다른 게 들어가 있던데 그거 빼 줘" — 형의 옛 두 곡(f)과 저작권위원회 국악 BGM(c2·c9·c3·c4·c10)을 지도에서 뺐다. 같은 날 형이 받은 아홉 곡(k17~k25)을 사이사이에 끼웠다
+export const ROTATE: Readonly<Partial<Record<Slot, readonly string[]>>> = { bgm_map: ['k1', 'k12', 'k5', 'k19', 'k3', 'k6', 'k14', 'k20', 'k9', 'k13', 'k22', 'k7', 'k17', 'k23', 'k4', 'k11', 'k15', 'k21', 'k10', 'k16', 'k24', 'k2', 'k18', 'k25', 'k8'], bgm_war: ['c7v', 'c8v'] }
 // 싸움 음악 c7v·c8v = c7·c8 에 남창 추임새를 얹은 것 (형 10-28: c7 5초 헐씨구 · 36초 잘한다 / c8 6초 얼씨구 · 10초 좋다 · 17초 하믄 · 20초 그러지 · 31초 헐씨구 · 35초 잘한다)
 // 추임새마다 그 자리 음악보다 4dB 크게 · 봉우리만 눌렀다 — 굽는 법은 assets_src/realm/sfx-in/chuim/
 /** 한 곡이 끝나고 다음 곡까지 쉬는 자리 — 계절 바람소리만 남는다 (형 10-28: "문명에선 배경음악 안 들릴 때도 많은데") */
