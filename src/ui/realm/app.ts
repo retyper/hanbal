@@ -4601,7 +4601,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         } else if (foundLands(r).includes(id)) h += `<p class="mute">맞닿은 우리 고을에서 개척단을 꾸릴 수 없습니다. 백성·곡식·나무를 보세요</p>`
         else h += `<p class="nrwhy">${esc(noReachWhy(r, me(), id))}<small>개척단은 우리 고을에서 길로 바로 이웃한 빈 땅에만 갑니다</small></p>`
       } else if (n.owner === null && n.kind !== 'wild' && n.kind !== 'sodo' && n.hh > 0) {
-        h += `<p class="nrwhy">${icon('unit-spear')}군대만 가면<small>주인이 없습니다. 군대를 보내면 싸움 없이 우리 땅이 됩니다</small></p>`
+        h += `<p class="nrwhy">${icon('unit-spear')}군사 이동 필요<small>주인이 없어 군사가 닿으면 싸움 없이 우리 땅이 됩니다</small></p>`
       }
       h += `<div class="nrbs">${more}</div>`
     }
