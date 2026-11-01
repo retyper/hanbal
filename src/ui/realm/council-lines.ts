@@ -9,7 +9,7 @@
  */
 import { guardAdjust, guardWeights } from '../../realm/council.ts'
 import type { ApproachMove } from '../../realm/estimate.ts'
-import { hasTrait, isRuler } from '../../realm/heroes.ts'
+import { hasTrait, isAway, isRuler } from '../../realm/heroes.ts'
 import type { Approach, Army, Hero, Realm } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { voiceKind, type VoiceKind } from './voice.ts'
@@ -88,13 +88,15 @@ function wantOf(h: Hero, moves: readonly ApproachMove[], read: Approach | null):
   return best !== null && bp >= P.realm.cnAdviseMin ? best : has('road') ? 'road' : (best ?? 'road')
 }
 
-/** 군막에 앉은 둘의 말 — 적 고을을 칠 때만 (빈 땅·소도면 빈 배열) */
-export function adviseMarch(r: Realm, me: string, a: Army, to: string, moves: readonly ApproachMove[]): Advice[] {
+/** 군막에 앉은 둘의 말 — 적 고을을 칠 때만 (빈 땅·소도면 빈 배열) · 원정 가 있거나 이번 계절 떠나는 이(leaving)는 앉지 않는다 */
+export function adviseMarch(r: Realm, me: string, a: Army, to: string, moves: readonly ApproachMove[], leaving: (id: string) => boolean = () => false): Advice[] {
   const def = r.nodes[to]?.owner ?? null
   if (def === null || def === me || moves.length < 2) return []
-  const lead = a.hero !== null ? r.heroes[a.hero] : undefined
+  const here = (h: Hero): boolean => h.status === 'free' && !isAway(r, h.id) && !leaving(h.id)
+  const lead0 = a.hero !== null ? r.heroes[a.hero] : undefined
+  const lead = lead0 !== undefined && here(lead0) ? lead0 : undefined
   const others = Object.values(r.heroes)
-    .filter((h) => h.faction === me && h.status === 'free' && h.id !== lead?.id && !isRuler(r, h.id))
+    .filter((h) => h.faction === me && here(h) && h.id !== lead0?.id && !isRuler(r, h.id))
     .sort((x, y) => y.ryak - x.ryak || (x.id < y.id ? -1 : 1))
   const seats = [lead ?? others[0], lead !== undefined ? others[0] : others[1]].filter((h): h is Hero => h !== undefined)
   if (seats.length === 0) return []

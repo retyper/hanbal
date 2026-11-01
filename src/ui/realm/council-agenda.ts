@@ -21,7 +21,7 @@ import { seasons } from '../../realm/calendar.ts'
 import { relationOf } from '../../realm/diplomacy.ts'
 import { met } from '../../realm/discovery.ts'
 import { movesOf, type ApproachMove, type Move } from '../../realm/estimate.ts'
-import { hasTrait, isRuler } from '../../realm/heroes.ts'
+import { hasTrait, isAway, isRuler } from '../../realm/heroes.ts'
 import { foeAlliesWhenStruck, lastBattleVs } from '../../realm/memory.ts'
 import { forceOf, otherEnd } from '../../realm/season.ts'
 import type { Approach, Army, Hero, Order, Realm } from '../../realm/types.ts'
@@ -81,6 +81,8 @@ export interface CouncilCtx {
   readonly plotHand?: (op: 'burn' | 'sow', target: string, other?: string) => { readonly agent: string | null; readonly grain: number } | null
   /** 이 군대를 두 갈래의 다른 한쪽으로 부를 수 있나 (이번 계절 다른 곳으로 걸어 둔 군대는 빼고) */
   readonly armyFree?: (id: string) => boolean
+  /** 이번 계절 떠나는 장수 (원정을 고른 이) — 회의에 앉지 않는다. 이미 떠나 있는 이는 판이 안다 (heroes.isAway) */
+  readonly leaving?: (id: string) => boolean
 }
 
 /** 안의 종류 — 장수의 기억에 적는 이름 (길 · keep · all · wait · go · hold · burn · sow · pincer · more · same) */
@@ -125,11 +127,16 @@ function foeCmd(r: Realm, to: string, def: string): Hero | null {
   return hs.sort((x, y) => y.ryak - x.ryak || (x.id < y.id ? -1 : 1))[0] ?? null
 }
 
-/** 회의에 앉는 이 — 이 군대의 장수, 그 밖에 지략·통솔이 높은 우리 장수 (군주 빼고) · 넷까지 */
-function members(r: Realm, me: string, a: Army): Hero[] {
-  const lead = a.hero !== null ? r.heroes[a.hero] : undefined
+/**
+ * 회의에 앉는 이 — 이 군대의 장수, 그 밖에 지략·통솔이 높은 우리 장수 (군주 빼고) · 넷까지.
+ * 원정 가 있거나 이번 계절 떠나는 이는 없다 (형 11-02: "자꾸 원정 나간 장수가 군사회의에 등장")
+ */
+function members(r: Realm, me: string, a: Army, ctx: CouncilCtx): Hero[] {
+  const here = (h: Hero): boolean => h.status === 'free' && !isAway(r, h.id) && ctx.leaving?.(h.id) !== true
+  const lead0 = a.hero !== null ? r.heroes[a.hero] : undefined
+  const lead = lead0 !== undefined && here(lead0) ? lead0 : undefined
   const others = Object.values(r.heroes)
-    .filter((h) => h.faction === me && h.status === 'free' && h.id !== lead?.id && !isRuler(r, h.id))
+    .filter((h) => h.faction === me && here(h) && h.id !== lead0?.id && !isRuler(r, h.id))
     .sort((x, y) => y.ryak + y.tong - (x.ryak + x.tong) || (x.id < y.id ? -1 : 1))
   return [...(lead !== undefined ? [lead] : []), ...others].slice(0, 4)
 }
@@ -222,7 +229,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
   const here = r.nodes[a.at]?.name ?? ''
   const there = node.name
   const ours = headcount(forceOf(r, a))
-  const seats = members(r, me, a)
+  const seats = members(r, me, a, ctx)
   if (seats.length === 0) return []
   const out: Agenda[] = []
   const used = new Set<string>()
@@ -331,7 +338,7 @@ export function councilAgendas(r: Realm, me: string, a: Army, m: Move, moves: re
     const mine = new Set<string>()
     const bLead = pin.army.hero !== null ? r.heroes[pin.army.hero] : undefined
     // 그쪽 군대를 이끄는 이가 먼저 나선다 (겁쟁이·신중한 이가 아니면) — 아니면 자리의 통솔 높은 이
-    const fromB = bLead !== undefined && bLead.status === 'free' && !timid(bLead)
+    const fromB = bLead !== undefined && bLead.status === 'free' && ctx.leaving?.(bLead.id) !== true && !timid(bLead)
     const adv = fromB ? bLead : pickSeat((h) => h.tong + (bold(h) ? 2 : 0), (h) => !timid(h), mine)
     if (adv !== undefined) {
       mine.add(adv.id)

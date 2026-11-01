@@ -47,6 +47,12 @@ export function isRuler(r: Realm, hero: string): boolean {
   return Object.values(r.factions).some((f) => f.ruler === hero && (r.heroes[hero]?.faction ?? f.id) === f.id)
 }
 
+/** 판을 떠나 있나 — 원정 중이거나 자리를 비운(멀리 가는 길) 장수. 회의에 앉지도, 이번 계절 일을 맡지도 못한다 (oneJobPerHero · 화면 회의) */
+export function isAway(r: Realm, hero: string): boolean {
+  const h = r.heroes[hero]
+  return (r.expeditions ?? []).some((x) => x.hero === hero) || (h?.awayUntil !== undefined && h.awayUntil >= r.season)
+}
+
 /**
  * 플레이어는 그 나라의 **군주**다 (형 10-23: "플레이어가 정확히 뭐여야 하는지 올바르게 정의해 봐" · HEROES.md §7).
  * 군주는 도읍에서 다스린다 — 능력치가 나라 전체에 작게 걸리고, 도읍은 따로 맡긴 장수가 없으면 군주가 맡는다(맡은 고을 특성이 도읍에 걸린다).
@@ -502,7 +508,7 @@ export function oneJobPerHero(r: Realm, orders: readonly Order[]): Order[] {
     if (id === null) return true
     const h = r.heroes[id]
     if (h === undefined) return true
-    const away = (r.expeditions ?? []).some((x) => x.hero === id) || (h.awayUntil !== undefined && h.awayUntil >= r.season)
+    const away = isAway(r, id)
     if (away || seen.has(id)) return false
     seen.add(id)
     return true

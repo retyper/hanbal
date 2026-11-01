@@ -108,6 +108,7 @@ import { HOWWIN_CSS, bannerHtml, closeHowWin, howWinDue, howWinMark, lessons, lo
 import type { Side, SyncState } from '../../net/sync.ts'
 import { FEEL_CSS, alertFeel, ambushRangeFeel, chanceFeel, envoyFeel, favorFeel, fightFeel, plotFeel, unknownFeel } from './feel.ts'
 import { adviseMarch, guardRange } from './council-lines.ts'
+import { cmdPickId } from './cmdpick.ts'
 import { APPROACH_SHORT, COUNCIL_ART, councilAgendas, howOf, planChoice, planOrders, takeCount, type Agenda, type AgendaId, type CouncilPlan, type Voice } from './council-agenda.ts'
 
 export interface AppHost {
@@ -1982,7 +1983,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       grain: left().grain + had,
       plotHand: (op, target, other) => councilPlotHand(r, op, target, other),
       armyFree: (id) => pick[id] === undefined && !armyOrders.some((o) => (o.kind === 'split' || o.kind === 'merge') && o.army === id),
+      leaving: expLeaving,
     })
+  }
+
+  /** 이번 계절 원정을 떠나기로 한 장수 — 계획 판(plan)에는 아직 판 위에 있지만 회의에는 앉지 않는다 (형 11-02) */
+  function expLeaving(id: string): boolean {
+    return heroOrders.some((o) => o.kind === 'expedition' && o.hero === id)
   }
 
   /**
@@ -2217,7 +2224,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const moves = approachMoves(r, me(), a, m)
       // 군막 — 장수 둘이 저마다 길 하나를 권하고 적이 지킬 길목을 읽는다 (council-lines.ts · COUNCIL.md 1주 조각 ②)
       // 전략 회의 화면에서는 안건이 이미 말했다 — 길 단추에 얼굴을 또 붙이지 않는다 (quiet)
-      const advs = quiet ? [] : adviseMarch(r, me(), a, m.to, moves)
+      const advs = quiet ? [] : adviseMarch(r, me(), a, m.to, moves, expLeaving)
       h += `<div class="how">`
       for (const x of moves) {
         const does = APPROACH_DOES[x.ap]
@@ -3703,7 +3710,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }
     // 장군은 군대를 떠나지 않는다 — 사신·자객으로 못 간다 (엔진 canEscort·plotAgents 와 같게 · 형 10-25: "군사를 맡은 장군은 사신으로 못 보내야")
     if ((job === 'envoy' || job === 'plot') && Object.values(r.armies).some((a) => a.hero === x.id)) return '군대를 이끈다'
-    if (job === 'exp') return null // 원정 칸이 제 사정(길 양식·한꺼번에 몇)을 말한다
+    // 원정 칸이 제 사정(길 양식·한꺼번에 몇)을 말한다 · 군주는 못 간다 (expBlock) — 맨 앞에 골라 두면 빈 칸이 뜬다
+    if (job === 'exp') return isRuler(r, x.id) ? '군주는 나라를 비울 수 없다' : null
     if (handLocked(r, x.id)) return '사신·공작을 나르는 손'
     if (job === 'post') return postTargets(r, x) === '' ? '맡을 고을이 없다' : null
     if (job === 'lead') return Object.values(r.armies).some((a) => a.hero === x.id) ? '벌써 군대를 이끈다' : leadTargets(r, x) === '' ? '이끌 군대가 없다' : null
@@ -3778,7 +3786,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const list = cmdHeroes(r, job)
     if (list.length === 0) return h + `<p class="mute">맡길 장수가 없다.</p>`
     const free = list.filter((c) => c.why === null)
-    const pickId = free.some((c) => c.x.id === cmdHero) ? cmdHero : free[0]?.x.id ?? ''
+    // 방금 원정을 보낸 장수는 그대로 둔다 (cmdpick.ts · 형 11-02)
+    const pickId = cmdPickId(free.map((c) => c.x.id), cmdHero, job === 'exp' && expLeaving(cmdHero))
     h += `<h4>누가 가나</h4><div class="cmdp">`
     for (const { x, why } of list) {
       const st = def.stat.map((k) => `<i>${STAT_NAME[k]} ${x[k]}</i>`).join('')
@@ -6634,6 +6643,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'exp-go': {
         const pk = expPickOf(plan(), d['id']!) // 화면이 보여 준 그 땅·길이로
         heroOrders = [...heroOrders.filter((o) => !(o.kind === 'expedition' && o.hero === d['id'])), { kind: 'expedition', faction: me(), hero: d['id']!, dest: pk.dest, len: pk.len }]
+        // 원정 창은 보낸 그 장수를 계속 보인다 (cmdWinHtml justSent) — 맨 앞 장수로 골라 둔 채 보냈어도
+        if (cmdJob === 'exp') cmdHero = d['id']!
         obey(d['id'])
         break
       }
