@@ -26,6 +26,8 @@ import { artVoicePath, autoVoicePath, voiceGate, voicePath } from './voice.ts'
 import { WIN_BUZZ, winFxHtml } from './winfx.ts'
 import { morph, morphInto } from './morph.ts'
 import { holdBox } from './holdbox.ts'
+import { TIER_MEN, sideIdx, tierCounts, tierPrec, tierStanding, type Tier } from './troops.ts'
+import { preloadSkillFx, skillCues, skillCutHtml, type SkSfx, type SkillId } from './skillfx.ts'
 import { cellColor, lookCells, lookNums, oneChance, pctText, signed, type LookCell } from './lookword.ts'
 
 const esc = (s: string): string =>
@@ -1065,26 +1067,19 @@ function solArt(k: string, sea: boolean): string {
   return k === 'boat' && !sea ? 'marine' : k
 }
 const FIELD_CMD: ReadonlySet<string> = new Set(['charge', 'hold', 'open', 'volley', 'counter', 'flank', 'punch', 'pursue', 'guard', 'drum', 'capture', 'duel', 'retreat'])
-/** 장수 기술의 결 — 초상이 튀어나오는 몸짓 */
-type CutKind = 'lead' | 'cheer' | 'strike' | 'grab' | 'back' | 'shot' | 'call' | 'guard'
-const CUT_OF: Readonly<Partial<Record<Cmd, CutKind>>> = { duel: 'strike', capture: 'grab', retreat: 'back' } // 격려는 흔해 장면을 띄우지 않는다 — 합마다 2초씩 전장을 가렸다 (형 10-25 · 전장의 격려 고리로 보인다)
-const ART_CUT: Readonly<Record<Art, CutKind>> = {
-  snipe: 'shot', rite: 'cheer', sway: 'call', stand: 'guard', ambush: 'strike', vanguard: 'strike', feint: 'back', order: 'cheer', shout: 'call',
+/** 장면이 뜨는 장수의 명령 — 비기는 비기마다 (skillfx.ts). 격려는 흔해 장면을 띄우지 않는다 — 합마다 2초씩 전장을 가렸다 (형 10-25 · 전장의 격려 고리로 보인다) */
+const CUT_OF: Readonly<Partial<Record<Cmd, SkillId>>> = { duel: 'duel', capture: 'capture', retreat: 'retreat' }
+/** 장면의 소리 — 장면이 부르는 이름을 싸움 소리로 */
+const SK_SFX: Readonly<Record<SkSfx, string>> = {
+  whoosh: BATTLE_SFX.art, draw: snd('tap_arms'), release: BATTLE_SFX.counter, impact: BATTLE_SFX.crit, drum: BATTLE_SFX.drum, bell: snd('tap_bell'), rite: snd('tap_rite'),
+  cry: BATTLE_SFX.cry, shield: BATTLE_SFX.hold, clatter: snd('tap_arms'), slash: BATTLE_SFX.duel, charge: BATTLE_SFX.charge, retreat: BATTLE_SFX.retreat, capture: BATTLE_SFX.capture, gong: BATTLE_SFX.openBell,
 }
-/** 기술 몸짓마다 한 마디 — 초상 옆에 크게 */
-const CUT_SHOUT: Readonly<Record<CutKind, string>> = { lead: '제게 맡겨 주시옵소서!', cheer: '힘을 내라!', strike: '나를 따르라!', grab: '사로잡아라!', back: '물러서라!', shot: '한 발로 끝낸다', call: '무기를 버려라!', guard: '버텨라!' }
 
-/** 장수 기술이 나가는 장면 — 초상 · 이름 · 기술 이름 · 결마다 다른 효과 (2.2초쯤 · 누르면 바로 걷힌다) */
-function cutHtml(art: string, hero: string | null, name: string, skill: string, kind: CutKind, shout: string = CUT_SHOUT[kind]): string {
+/** 맡길 때 장수가 나서는 장면 — 초상 · 한 마디 (기술이 아니라 꾸밈 없이 · 누르면 바로 걷힌다) */
+function cutHtml(art: string, hero: string | null, name: string, skill: string, shout: string): string {
   const file = hero !== null ? faceFile(hero) : undefined
   const face = file !== undefined ? `<img class="wcf" src="${art}bust/${file}.jpg" alt="">` : `<img class="wcf unit" src="${art}icon/unit-general.png" alt="">`
-  let fx = ''
-  if (kind === 'cheer' || kind === 'call' || kind === 'lead') for (let i = 0; i < 3; i++) fx += `<i class="wcring" style="--t:${(0.35 + i * 0.18).toFixed(2)}s"></i>`
-  if (kind === 'cheer') for (let i = 0; i < 14; i++) fx += `<i class="wcspark" style="--x:${(8 + ((i * 37) % 84)).toFixed(0)}%;--t:${(0.3 + ((i * 0.11) % 0.7)).toFixed(2)}s"></i>`
-  if (kind === 'strike' || kind === 'shot') fx += `<i class="wcslash"></i>${Array.from({ length: 9 }, (_, i) => `<i class="wcline" style="--y:${(10 + i * 10)}%;--t:${(0.08 + (i % 3) * 0.05).toFixed(2)}s"></i>`).join('')}`
-  if (kind === 'grab') fx += `<i class="wcrope"></i>`
-  if (kind === 'guard') fx += `<i class="wcshield"></i>`
-  return `<div class="wcut k-${kind}"><i class="wcbg"></i>${fx}<div class="wcpf">${face}<i></i></div><div class="wctx${[...shout].length > 7 ? ' long' : ''}"><b>${esc(shout)}</b><span>${esc(name)} · ${esc(skill)}</span></div></div>`
+  return `<div class="wcut k-lead"><i class="wcbg"></i><div class="wcpf">${face}<i></i></div><div class="wctx${[...shout].length > 7 ? ' long' : ''}"><b>${esc(shout)}</b><span>${esc(name)} · ${esc(skill)}</span></div></div>`
 }
 
 /** 싸움터에 날아오르는 불티 — 낱낱이, 자리·크기·빠르기가 조금씩 다르게 (꾸밈이라 판의 시드와 상관없다) */
@@ -1420,10 +1415,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const mr = (x: number): number => Math.round(Math.max(0, Math.min(1.2, x / base)) * 83)
     const num = `<span class="wn">${cnt(old, now)}명</span>`
     const hitFx = hitOf(i) !== '' ? `<img class="wfx-hit" src="${art}fx/impact.png" alt="">` : ''
-    // 맞부딪히는 순간 잃은 사람 수와 꺾인 사기를 크게 (형 10-28: "감소하는 인원수·사기 이런 거 더 크고 도드라지게")
-    const lostN = anim ? old - now : 0
-    const mDrop = anim ? Math.round(((m0(i) - m(i)) / base) * 100) : 0
-    const dmg = (lostN > 0 ? `<b class="wdmg">−${lostN}</b>` : '') + (mDrop > 0 ? `<i class="wmdmg">사기 −${mDrop}</i>` : mDrop < 0 ? `<i class="wmdmg up">사기 +${-mDrop}</i>` : '')
+    // 잃은 사람 수 · 꺾인 사기는 전장 한가운데 배지로 튄다 (fieldHtml 의 popOf · 형 11-01: "화면 중앙부근에서") — 위 카드에서는 막대와 숫자만 준다
     // 호궤를 고를 수 있으면 — 그 깃발에 마우스를 올리거나 누르고 있거나 골라 두면 사기 막대에 오를 몫이 깜박인다 (형 10-25)
     const fNow = mr(m(i))
     const fTo = mr(Math.min(base, m(i) + P.realm.tacFeastMorale))
@@ -1435,7 +1427,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     return `<div class="ws ${cls}${hitOf(i)}${hero !== null && lostIds.has(hero) ? ' chiefgone' : ''}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s"><span class="wpf">${face(hero, art, unitOf(i))}<i></i>${aides !== '' ? `<span class="waides">${aides}</span>` : ''}</span><b>${esc(name)}</b><span class="wnat">${roleChip((cls === 'us') === weAtk)}${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
       // 무너지는 금 — 이 밑으로 떨어지면 그 편이 무너져 진다 (tactics: 군사 tacBreakMen · 사기는 처음의 tacBreakMorale) (형 10-24: "사기가 어느 정도 떨어지면 패배한다가 가로바에 표시")
       + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}${brk(Math.round(P.realm.tacBreakMen * 100), Math.round(n(i) * 100), '군사가 이 금 밑으로 줄면 무너져 진다. 패배')}</div>${num}`
-      + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}${feastPv}${brk(st?.brk !== undefined ? mr(st.brk[i]) : Math.round(P.realm.tacBreakMorale * 83), mr(m(i)), '사기가 이 금 밑으로 떨어지면 무너져 진다. 패배')}</div><span class="wn">사기 ${cnt(Math.round((m0(i) / base) * 100), Math.round((m(i) / base) * 100))}<small class="brkl"> · 무너지는 선 ${Math.round(((st?.brk?.[i] ?? P.realm.tacBreakMorale * base) / base) * 100)}</small></span>${dmg}${hitFx}</div>` // 맞은 불꽃은 맨 뒤에 — 앞에 끼면 초상이 새로 만들어져 깜빡였다 (paintNow 의 바뀐 곳만 고치기)
+      + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}${feastPv}${brk(st?.brk !== undefined ? mr(st.brk[i]) : Math.round(P.realm.tacBreakMorale * 83), mr(m(i)), '사기가 이 금 밑으로 떨어지면 무너져 진다. 패배')}</div><span class="wn">사기 ${cnt(Math.round((m0(i) / base) * 100), Math.round((m(i) / base) * 100))}<small class="brkl"> · 무너지는 선 ${Math.round(((st?.brk?.[i] ?? P.realm.tacBreakMorale * base) / base) * 100)}</small></span>${hitFx}</div>` // 맞은 불꽃은 맨 뒤에 — 앞에 끼면 초상이 새로 만들어져 깜빡였다 (paintNow 의 바뀐 곳만 고치기)
   }
 
   /**
@@ -1444,13 +1436,15 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
    * 적은 같은 배치를 거울로 (.wf2s.foe 가 통째로 뒤집힌다). 아래에 선 말일수록 크고 앞에 선다 (깊이).
    * 깃발(data-f·b·h·l)대로 진이 움직인다 — 돌격은 앞줄이 기울며 나서고, 방진은 촘촘히 방패벽, 길 트기는 앞줄이 갈라져 궁수가 나온다 ….
    * 고르는 동안은 고른 것(openWar.syncField) · 적은 낌새 · 합이 풀릴 때는 그 합에 실제로 낸 명령으로 맞부딪친다 (play).
-   * 말 수는 군사 수에 비례 — 큰 쪽이 판 크기(warTokMin~warTokMax), 작은 쪽은 그 몫만큼. 숫자 대신 진의 두께로 보인다.
+   * 병사 그림은 한 잣대 — 작은 병사 10명 · 큰 병사 100명 · 깃발 병사 1000명 (troops.ts). 무리마다 정확한 수가 진 발치에, 잣대는 맨 아래 가운데에.
    */
   /** 공격·수비 (형 10-25: "공성하는쪽이랑 수성하는쪽이 어딘지 모르겠고") — 길에서 맞닥뜨린 싸움엔 없다 */
   const roleChip = (atk: boolean): string => (l.field === true ? '' : `<em class="wrole ${atk ? 'atk' : 'def'}">${atk ? '공격' : '수비'}</em>`)
   const fieldHtml = (): string => {
     if (st === undefined) return ''
-    const big = Math.max(1, st.men[0], st.men[1])
+    // 그림이 폰에 너무 많으면 잣대는 그대로 두고 맨 아랫자리만 버린다 — 두 쪽이 같은 자리 (원군은 따로 센다: 따로 그려지니까)
+    const kindMen = (i: 0 | 1): number[] => Object.entries(st.mix?.[i] ?? {}).flatMap(([k, v]) => { const lv = Math.min(v ?? 0, st.late?.[i]?.[k as keyof NonNullable<typeof st.late>[0]] ?? 0); return [(v ?? 0) - lv, lv] })
+    const prec = tierPrec([kindMen(0), kindMen(1)], P.realm.warTokCap)
     const RANK: Readonly<Record<string, 0 | 1 | 2>> = { spear: 0, pike: 0, shield: 0, boat: 0, axe: 0, bow: 1, crossbow: 1, horse: 2 }
     const SOL = new Set(['spear', 'shield', 'bow', 'crossbow', 'horse', 'pike', 'boat', 'axe', 'marine'])
     const sea = warGround(prev, l) === 'sea'
@@ -1524,77 +1518,93 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       const gen = `<span class="wgen${gCls}" style="--fc:${fc};--gar:${ga.ar.toFixed(3)};--gb:${ga.body.toFixed(3)}"><i class="wpole">${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}</i><i class="gbody"><b class="gspf" style="background-image:url('${art}anim2/gen-${ga.kind}.png')"></b></i>${face(hero, art, 'unit-general')}</span>`
       const cues = '<i class="wq q-charge"><b>돌격</b></i><i class="wq q-hold"></i><i class="wq q-shoot"></i><i class="wq q-ride"></i><i class="wq q-drum"></i><i class="wq q-cap"><b>사로잡으러</b></i><i class="wq q-back"><b>물러난다</b></i>'
       if (men <= 0) return `<div class="wf2s ${cls}"${formAttrs(o)}>${terrainProps(cls)}${gen}${cues}</div>`
-      // 말 수는 군사 수에 비례 — 큰 쪽이 판의 크기(백 명 8 · 천 명 13 · 만 명 18), 작은 쪽은 그 몫만큼. 전엔 6~18 에 눌려 230 대 640 이 10 대 18 로 보였다 (형 10-25: "군사 숫자에 비례해서 유닛 개수도")
-      const tMax = Math.max(P.realm.warTokMin, Math.min(P.realm.warTokMax, Math.round(8 + 5 * Math.log10(big / 100))))
-      const T = Math.max(2, Math.round((tMax * st.men[i]) / big))
-      // 병종마다 몫 — 줄마다 모은다
-      const rows: string[][] = [[], [], []]
-      let given = 0
-      const order = all.sort((p, q) => (RANK[p[0]] ?? 0) - (RANK[q[0]] ?? 0) || q[1] - p[1])
-      order.forEach(([k, v], j) => {
-        // 한 명이라도 있는 병종은 그림이 꼭 하나는 선다 (형 10-28: "1명이라도 있으면 그 군대 유닛 1기 반드시") — 마지막 병종도 0 이 되지 않게
-        const c = Math.max(1, j === order.length - 1 ? T - given : Math.round((T * v) / men))
-        given += c
-        for (let x = 0; x < c; x++) rows[RANK[k] ?? 0]!.push(k)
-      })
-      // 쓰러지는 그림은 무리마다 따로 센다 — 그 무리에 남은 사람만큼 서고, 한 명이라도 남았으면 하나는 선다 (전엔 전체 비율로 세어 남은 무리의 그림이 다 쓰러져 보이기도 했다)
+      // 병사 그림 — 어느 싸움이든 한 잣대: 작은 병사 10명 · 큰 병사(2배) 100명 · 깃발 병사 1000명 (troops.ts · 형 11-01: "보기만 해도 몇명인지").
+      // 전엔 큰 쪽 군대에 맞춘 로그 눈금(백 명 8 · 천 명 13)이라 920 명과 340 명이 13 대 5 로 보였다 — 판마다 잣대가 달라 셀 수가 없었다
       const RG: readonly Grp[] = ['front', 'bows', 'horse']
       const g0 = groupMen(mix as Parameters<typeof groupMen>[0])
       const gOf = (rd: RoundLog | undefined): Readonly<Partial<Record<Grp, number>>> | undefined => (rd === undefined ? undefined : i === 0 ? rd.ga : rd.gd)
-      const standing = (r: number, cnt: number, gm: Readonly<Partial<Record<Grp, number>>> | undefined, share: number): number => {
-        if (gm === undefined) return share <= 0 ? 0 : Math.max(1, Math.round(cnt * share))
-        const left = gm[RG[r]!] ?? 0
-        return left <= 0 ? 0 : Math.max(1, Math.min(cnt, Math.round((cnt * left) / Math.max(1, g0[RG[r]!]))))
-      }
       // 원군 — 닿기 전엔 그 몫의 그림을 숨기고(쓰러진 병사로 그리면 원군이 와서 되살아나 보였다), 닿는 합에 걸어 들어온다 (형 10-28: "원군 들어와도 어색하지 않게")
       const sd: 'a' | 'd' = i === 0 ? 'a' : 'd'
-      const lateG = groupMen((st.late?.[i] ?? {}) as Parameters<typeof groupMen>[0])
+      const lateMix: Readonly<Partial<Record<string, number>>> = st.late?.[i] ?? {}
+      const lateG = groupMen(lateMix as Parameters<typeof groupMen>[0])
       const came = rounds.some((rd) => rd.relief?.side === sd)
       const cameNow = anim && came && !rounds.slice(0, -1).some((rd) => rd.relief?.side === sd)
-      const awayR = rows.map((ks, r) => { const lg = lateG[RG[r]!] ?? 0; return lg <= 0 ? 0 : lg >= g0[RG[r]!] ? ks.length : Math.min(ks.length - 1, Math.max(1, Math.round((ks.length * lg) / Math.max(1, g0[RG[r]!])))) })
-      const standingLate = (r: number, cnt: number, gm: Readonly<Partial<Record<Grp, number>>> | undefined, share: number, here: boolean): number => {
-        if (here || awayR[r] === 0) return standing(r, cnt, gm, share)
-        const present = cnt - awayR[r]!
-        const base = g0[RG[r]!] - (lateG[RG[r]!] ?? 0)
-        if (gm === undefined) return share <= 0 ? 0 : Math.max(present > 0 ? 1 : 0, Math.min(present, Math.round(present * share)))
-        const left = gm[RG[r]!] ?? 0
-        return left <= 0 || present <= 0 ? 0 : Math.max(1, Math.min(present, Math.round((present * left) / Math.max(1, base))))
+      /** 병종 k 에 남은 사람 — 무리(창·활·말)마다 남은 수(ga·gd)를 병종 몫대로 나눈다. 기록이 없는 옛 판은 전체 몫(share) · here: 원군까지 센다 */
+      const leftOf = (k: string, v: number, lv: number, gm: Readonly<Partial<Record<Grp, number>>> | undefined, share: number, here: boolean): number => {
+        const base = here ? v : v - lv
+        if (base <= 0) return 0
+        if (gm === undefined) return base * share
+        const g = RG[RANK[k] ?? 0]!
+        return (base * (gm[g] ?? 0)) / Math.max(1, here ? g0[g] : g0[g] - (lateG[g] ?? 0))
       }
-      const aliveR = rows.map((ks, r) => standingLate(r, ks.length, gOf(last), n(i), came))
-      const beforeR = rows.map((ks, r) => (anim ? standingLate(r, ks.length, was !== undefined ? gOf(was) : g0, n0(i), came && !cameNow) : aliveR[r]!))
-      const rowAt = [0, 0, 0]
+      type Tok = { k: string; r: 0 | 1 | 2; t: Tier; s2: string }
+      const rows: [Tok[], Tok[], Tok[]] = [[], [], []]
+      const order = all.sort((p, q) => (RANK[p[0]] ?? 0) - (RANK[q[0]] ?? 0) || q[1] - p[1])
+      for (const [k, v] of order) {
+        const lv = Math.min(v, lateMix[k] ?? 0)
+        const cP = tierCounts(v - lv, prec)
+        const cL = tierCounts(lv, prec)
+        const cA: [number, number, number] = [cP[0] + cL[0], cP[1] + cL[1], cP[2] + cL[2]]
+        // 서 있는 수 — 지금(이 합 뒤) · 이 합 앞. 원군이 닿았으면 원군까지 한데 센다
+        const stand = (gm: Readonly<Partial<Record<Grp, number>>> | undefined, share: number, here: boolean): readonly number[] =>
+          here ? tierStanding(cA, v, leftOf(k, v, lv, gm, share, true)) : tierStanding(cP, v - lv, leftOf(k, v, lv, gm, share, false))
+        const now = stand(gOf(last), n(i), came)
+        const before = anim ? stand(was !== undefined ? gOf(was) : g0, n0(i), came && !cameNow) : now
+        const r = (RANK[k] ?? 0) as 0 | 1 | 2
+        for (const t of [0, 1, 2] as const) {
+          for (let q = 0; q < cA[t]; q++) {
+            const late = q >= cP[t]
+            // 'fall' 은 군주가 무너진 판(.ap .fall — 액자 테)과 이름이 겹쳐 말이 큰 액자로 그려졌다 (10-25)
+            const s2 = late && !came ? 'tkh' : late && cameNow ? (q < now[t]! ? 'tku tkn' : 'tkd') : q < now[t]! ? 'tku' : q < before[t]! ? 'tkf' : 'tkd'
+            rows[r].push({ k, r, t, s2 })
+          }
+        }
+      }
       let idx = 0
-      // 한 줄(세로) — 가운데에서 위아래로 고르게. 많으면 두 겹(앞 겹·뒤 겹이 엇갈린다)
-      const tok = (k0: string, r: 0 | 1 | 2, x: number, oy: number): string => {
-        const k = solArt(k0, sea)
-        const q = rowAt[r]!++
-        const late = awayR[r]! > 0 && q >= rows[r]!.length - awayR[r]! // 원군 몫 — 줄 끝의 그림들
-        const s2 = late && !came ? 'tkh' : late && cameNow ? 'tku tkn' : q < aliveR[r]! ? 'tku' : q < beforeR[r]! ? 'tkf' : 'tkd' // 'fall' 은 군주가 무너진 판(.ap .fall — 액자 테)과 이름이 겹쳐 말이 큰 액자로 그려졌다 (10-25)
+      const TSC = [1, P.realm.warTokBigSc, P.realm.warTokFlagSc] as const
+      // 병사 하나 — 큰 병사는 크게, 깃발 병사는 등에 나라 깃발
+      const tok = (tk: Tok, x: number, oy: number): string => {
+        const k = solArt(tk.k, sea)
+        const { r, s2 } = tk
         const hl = oy < -0.5 ? ' hi' : oy > 0.5 ? ' lo' : ''
-        const sc = (0.8 + 0.4 * ((oy + 40) / 80)).toFixed(2)
+        const sc = ((0.8 + 0.4 * ((oy + 40) / 80)) * TSC[tk.t]).toFixed(2)
+        const tb = tk.t > 0 ? ` tb${tk.t}` : ''
+        const ban = tk.t === 2 && em !== undefined ? `<u class="tkban"><img src="${art}icon/${em}.png" alt=""></u>` : ''
         const pos = `--x:${(x + oy * 0.22).toFixed(1)}%;--oy:${oy.toFixed(1)}%;--sc:${sc};--j:${idx % 6};--k:${(((idx++ * 47) % 97) / 97).toFixed(2)};z-index:${10 + Math.round(oy + 40)}`
         // 동작 그림이 있는 병종은 컷으로 움직인다 (서기 · 걷기 · 찌르기 · 쓰러짐 — public/realm/anim · tools/strip-frames.mjs)
         const ar = ANIM_SOL[k]
         // 새 20컷 띠가 있으면 그것 — 말의 자리·크기는 옛 비(--ar), 안의 그림만 --r 배 넓다
         const a2 = SOL_ANIM2[k]
-        if (ar !== undefined && a2 !== undefined) return `<i class="tk wsp v2 k-${k} r${r}${hl} ${s2}" style="${pos};--ar:${ar.toFixed(3)};--r:${(a2 / ar).toFixed(3)}"><b class="spf" style="background-image:url('${art}anim2/${k}.png')"></b></i>`
-        if (ar !== undefined) return `<i class="tk wsp k-${k} r${r}${hl} ${s2}" style="${pos};--ar:${ar.toFixed(3)}"><b class="spf" style="background-image:url('${art}anim/${k}.png')"></b></i>`
-        return `<img class="tk r${r}${hl} ${s2}" src="${art}icon/sol-${SOL.has(k) ? k : 'spear'}.png" alt="" style="${pos}">`
+        if (ar !== undefined && a2 !== undefined) return `<i class="tk wsp v2 k-${k} r${r}${tb}${hl} ${s2}" style="${pos};--ar:${ar.toFixed(3)};--r:${(a2 / ar).toFixed(3)}"><b class="spf" style="background-image:url('${art}anim2/${k}.png')"></b>${ban}</i>`
+        if (ar !== undefined) return `<i class="tk wsp k-${k} r${r}${tb}${hl} ${s2}" style="${pos};--ar:${ar.toFixed(3)}"><b class="spf" style="background-image:url('${art}anim/${k}.png')"></b>${ban}</i>`
+        return `<img class="tk r${r}${tb}${hl} ${s2}" src="${art}icon/sol-${SOL.has(k) ? k : 'spear'}.png" alt="" style="${pos}">`
       }
-      const column = (ks: readonly string[], r: 0 | 1, x0: number): string => {
-        // 겹 — 한 겹에 다섯까지. 많으면 겹을 늘려 두꺼운 네모 진이 된다 (한 줄로 길게 늘어지면 진이 아니라 줄로 보였다 · 형 10-25)
-        const nl = Math.max(1, Math.ceil(ks.length / 5))
-        const lines = Array.from({ length: nl }, (_, li) => ks.filter((_, j) => j % nl === li))
-        return lines.map((ln, li) => {
-          const sp = Math.min(9, 44 / Math.max(1, ln.length))
-          return ln.map((k, j) => tok(k, r, x0 - li * 4.5, (j - (ln.length - 1) / 2) * sp + (li % 2) * sp * 0.5)).join('')
-        }).join('')
+      /**
+       * 한 무리(세로 진) — 앞 겹엔 작은 병사, 뒤 겹으로 갈수록 큰 병사 (큰 병사가 작은 병사를 가리지 않고 · 쓰러지는 것도 맞부딪는 앞 겹의 작은 병사부터).
+       * 한 겹에 다섯까지, 많으면 겹을 늘려 두꺼운 네모 진이 된다 (한 줄로 길게 늘어지면 진이 아니라 줄로 보였다 · 형 10-25). 큰 병사 겹은 그만큼 넓게. 돌려주는 값은 맨 뒤 겹의 자리
+       */
+      const column = (ts: readonly Tok[], x0: number): [string, number] => {
+        const sorted = [...ts].sort((p, q) => p.t - q.t)
+        const nl = Math.max(1, Math.ceil(sorted.length / 5))
+        const per = Math.ceil(sorted.length / nl)
+        let x = x0
+        let h = ''
+        for (let li = 0; li < nl; li++) {
+          const ln = sorted.slice(li * per, (li + 1) * per)
+          const w = TSC[ln[ln.length - 1]?.t ?? 0]
+          if (li > 0) x -= 4.5 * w
+          const sp = Math.min(9 * w, 48 / Math.max(1, ln.length))
+          h += ln.map((tk, j) => tok(tk, x, (j - (ln.length - 1) / 2) * sp + (li % 2) * sp * 0.25)).join('')
+        }
+        return [h, x]
       }
-      // 기병 — 위 옆구리에 가로로
-      const horse = rows[2]!.map((k, j) => tok(k, 2, 18 + (j % 6) * 4.2, -34 + Math.floor(j / 6) * 7)).join('')
-      // 뒷줄·옆을 먼저 세고 앞줄을 나중에 — 쓰러지는 것은 맞부딪는 앞줄부터
-      const bows = column(rows[1]!, 1, 22)
-      const front = column(rows[0]!, 0, 37)
+      // 기병 — 위 옆구리에 가로로 (큰 말은 그만큼 띄운다)
+      let hx = 18
+      const horse = [...rows[2]].sort((p, q) => q.t - p.t).map((tk, j) => { const x = hx; hx += 4.2 * TSC[tk.t]; if (j % 6 === 5) hx = 18; return tok(tk, x, -34 + Math.floor(j / 6) * 7) }).join('')
+      // 뒷줄·옆을 먼저 세고 앞줄을 나중에 — 쓰러지는 것은 맞부딪는 앞줄부터. 궁수는 앞 무리의 맨 뒤 겹 뒤에
+      const [front, fBack] = column(rows[0], 37)
+      const bowX = Math.max(15, Math.min(22, fBack - 7))
+      const [bows] = column(rows[1], bowX)
       // 무리마다 제 깃발 박자 — 그 박자에 앞줄이 나서고 · 기병이 돌고 · 화살이 난다. 박자가 없으면(깃발 연출 수를 넘었으면) 맞부딪기 조금 앞
       const beatOf = (c: Cmd | undefined): number => (c === undefined ? 0 : plan?.beats.find((x) => x.ours === (cls === 'us') && x.c === c)?.at ?? Math.max(0, (plan?.clash ?? 1) - 0.7))
       const shoot = play && o?.bows !== undefined && rows[1]!.length > 0 ? beatOf(o.bows) : null
@@ -1607,7 +1617,14 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       const stuck = shot(cls === 'us' ? (weAtk ? 'd' : 'a') : (weAtk ? 'a' : 'd')) ? [-14, 4, 22].map((oy) => tp('arrows', 41, oy, 0.55)).join('') : ''
       // 적이 흔들린다(사기가 꺾여 방진도 돌격을 못 받아 낼 지경) — 고를 때 적 진이 떨고 깃발이 기운다 (판세가 눈에 보이게)
       const waver = !play && cls === 'foe' && pd !== undefined && pd.round === shown && pd.foeWaver ? ' waver' : ''
-      return `<div class="wf2s ${cls}${waver}"${formAttrs(o)}${tempo}>${terr}${gen}${cues}${bows}${horse}${front}${stuck}${arrows}</div>`
+      // 무리마다 정확한 수 — 진 발치에 (그림은 어림, 숫자는 정확 · 토탈워의 부대 카드처럼). 줄 때는 막대와 같은 때에 센다
+      const gAt = (g: Grp, rd: RoundLog | undefined, share: number, here: boolean): number => Math.round(gOf(rd)?.[g] ?? (g0[g] - (here ? 0 : lateG[g] ?? 0)) * share)
+      const gLeft = (g: Grp): number => gAt(g, last, n(i), came)
+      const gWas = (g: Grp): number => (anim ? gAt(g, was, n0(i), came && !cameNow) : gLeft(g))
+      const chipAt: Readonly<Record<Grp, string>> = { front: 'left:37%;top:calc(60% + 27%)', bows: `left:${bowX}%;top:calc(60% + 27%)`, horse: 'left:24%;top:27%' }
+      const gChips = RG.filter((g) => rows[RG.indexOf(g)]!.some((tk) => tk.s2 !== 'tkh'))
+        .map((g) => `<b class="wgct${gLeft(g) <= 0 ? ' none' : ''}" style="${chipAt[g]}"><img src="${art}icon/${GROUP_ICON[g]}.png" alt="">${cnt(gWas(g), gLeft(g))}</b>`).join('')
+      return `<div class="wf2s ${cls}${waver}"${formAttrs(o)}${tempo}>${terr}${gen}${cues}${bows}${horse}${front}${stuck}${arrows}${gChips}</div>`
     }
     // 이 합에 낸 명령 (풀릴 때) · 고르는 중엔 우리는 고른 것, 적은 낌새
     const ordUs: RoundOrder | undefined = play ? (weAtk ? last!.oa : last!.od) : pd !== undefined ? sel : undefined
@@ -1618,8 +1635,19 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         : '<div class="wf-omen none"><i>?</i><span><b>속을 모른다</b><small>정찰을 보내면 보인다</small></span></div>'
     // 맞부딪는 자리에 불꽃·흙먼지 · 양쪽이 잃은 수가 떠오른다 · 싸움이 처음 열리면 두 군대가 대열을 지어 들어온다
     const lost = (i: 0 | 1): number => Math.max(0, Math.round(men0(i) * (n0(i) - n(i))))
+    /**
+     * 잃은 수 · 꺾인 사기 — 전장 한가운데 가까이, 두 진 위에 배지로 튄다 (형 11-01: "화면 중앙부근에서 튀어나갔으면 · 명수 감소 숫자는 색이 너무 까매서 안보여 · 하스스톤은 배경도").
+     * 잃은 수: 붉은 방패 배지 위에 흰 굵은 숫자(검은 테) · 뒤로 터지는 불꽃 · 사기: 금빛(꺾임)·푸른(오름) 띠. 커졌다 제자리 → 위로 떠오르며 사라진다
+     */
+    const popOf = (i: 0 | 1, cls: 'us' | 'foe'): string => {
+      const ln = lost(i)
+      const md = Math.round(((m0(i) - m(i)) / Math.max(0.05, st.morale[i] ?? 1)) * 100)
+      if (ln <= 0 && md === 0) return ''
+      return `<div class="wpop ${cls}">${ln > 0 ? `<b class="wpn"><img src="${art}fx/impact.png" alt=""><span>−${ln.toLocaleString('ko-KR')}</span></b>` : ''}`
+        + `${md !== 0 ? `<i class="wpm${md < 0 ? ' up' : ''}">사기 ${md > 0 ? '−' : '+'}${Math.abs(md)}</i>` : ''}</div>`
+    }
     const hit = play ? `<i class="wf-hit"><img class="h1" src="${art}fx/impact.png" alt=""><img class="h2" src="${art}fx/dust.png" alt=""><img class="h3" src="${art}fx/dust.png" alt=""></i>`
-      + (lost(ourI) > 0 ? `<b class="wf-loss us">−${lost(ourI)}</b>` : '') + (lost(foeI) > 0 ? `<b class="wf-loss foe">−${lost(foeI)}</b>` : '') : ''
+      + popOf(ourI, 'us') + popOf(foeI, 'foe') : ''
     const enter = !anim && shown === 0 ? ' enter' : ''
     // 판의 끝 — 진 쪽은 무너져 등을 돌려 달아나고, 이긴 쪽은 한 발 나서며 장수 깃발을 높이 든다 (형 10-25: 승패가 전장에서 보이게)
     const fin = l.pending === undefined && shown >= (l.rounds ?? []).length && l.outcome !== undefined && l.outcome !== 'draw'
@@ -1631,7 +1659,10 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     // 상성 판정 — 맞부딪는 순간 한가운데 크게 (형 10-29: "전투가 깃발마다 큰 차이가 없는 느낌") · 이기거나 지면 전장이 크게 흔들린다
     const mu = play ? roundMatch(last!, ourS) : null
     const muBig = mu !== null && mu.k !== 'even' ? ' wmu-big' : ''
-    return `<div class="wfield${play ? ' play' : ''}${muBig}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s;--rv:${rv.toFixed(2)}s"><i class="wf-ground"></i>${midTerr}${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}<i class="wf-mid">⚔</i><b class="wf-who us">${roleChip(weAtk)}우리 ${esc(ourName)}</b><b class="wf-who foe">${roleChip(!weAtk)}적 ${esc(foeName)}</b>${hit}${omen}${mu !== null ? muHtml(art, mu) : ''}</div>`
+    // 잣대 — 작은 병사 10 · 큰 병사 100 (· 깃발 병사 1000 은 그런 병사가 섰을 때만). 읽지 않아도 크기 차이로 보이게 그림 셋을 크기대로
+    const used = [0, 1, 2].filter((t) => t === 0 || [kindMen(0), kindMen(1)].some((ks) => ks.some((v) => (tierCounts(v, prec)[t] ?? 0) > 0)))
+    const legend = `<div class="wleg" aria-label="병사 하나 10명 · 큰 병사 100명">${used.map((t) => `<span class="l${t}"><img src="${art}icon/sol-spear.png" alt="">${TIER_MEN[t]!.toLocaleString('ko-KR')}</span>`).join('')}</div>`
+    return `<div class="wfield${play ? ' play' : ''}${muBig}${enter}${endCls}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s;--rv:${rv.toFixed(2)}s"><i class="wf-ground"></i>${midTerr}${side(ourI, 'us', ordUs, ourHero, ourF)}${side(foeI, 'foe', ordFoe, foeHero, foeF)}${legend}<i class="wf-mid">⚔</i><b class="wf-who us">${roleChip(weAtk)}우리 ${esc(ourName)}</b><b class="wf-who foe">${roleChip(!weAtk)}적 ${esc(foeName)}</b>${hit}${omen}${mu !== null ? muHtml(art, mu) : ''}</div>`
   }
 
   // 싸움터 배경 (땅마다) · 위 카드는 굴려도 그 자리에 (형: "싸우는로그가 스크롤로 보이더라도 상단에 캐릭터랑 체력바 있는 그 카드는 고정")
@@ -1694,7 +1725,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         tick.push([actRow(x, ourS, art, mixOf(0), mixOf(1)), Math.min(at, plan.story)])
       }
     }
-    // 끝줄은 밀고 밀린 말 — 잃은 수는 전장 위 숫자(.wdmg)가 보인다
+    // 끝줄은 밀고 밀린 말 — 잃은 수는 전장 위 숫자(.wpop)가 보인다
     const tickEnd = (push: string): string => {
       if (!slow || plan === null) return ''
       tick.push([push, plan.result])
@@ -2283,13 +2314,33 @@ export const WAR_CSS = `
 @keyframes whit1 { 0% { opacity: 0; scale: .3; } 25% { opacity: 1; scale: 1.1; } 100% { opacity: 0; scale: 1.5; } }
 @keyframes whit2 { 0% { opacity: 0; scale: .5; } 20% { opacity: .85; } 100% { opacity: 0; scale: 1.5; translate: -70% -60%; } }
 @keyframes whit3 { 0% { opacity: 0; scale: .5; } 20% { opacity: .7; } 100% { opacity: 0; scale: 1.4; translate: -30% -55%; } }
-/* 잃은 수 — 양쪽 위로 떠오른다 */
-.ap .wf-loss { position: absolute; top: 26%; z-index: 90; font-size: clamp(15px, 4.4cqw, 26px); font-weight: 900; color: #ff6a5a; text-shadow: 0 0 6px #000, 0 2px 3px #000; opacity: 0;
-  animation: wloss 1.6s ease-out var(--bd, 2.4s) both; } /* 막대·숫자와 같은 때 (형 10-29) */
-.ap .wf-loss.us { left: 26%; } .ap .wf-loss.foe { right: 26%; color: #ffd27a; }
+/* 잃은 수 · 사기 — 전장 가운데 가까이 배지로 튄다 (형 11-01 · 하스스톤처럼 숫자 뒤에 판). 막대·숫자와 같은 때(--bd) */
+.ap .wpop { position: absolute; top: 28%; z-index: 92; display: flex; flex-direction: column; align-items: center; gap: 5px; translate: -50% 0; pointer-events: none; opacity: 0; animation: wpopf 2.3s ease-out var(--bd, 2.4s) both; }
+.ap .wpop.us { left: 33%; } .ap .wpop.foe { left: 67%; }
+.ap .wpn { position: relative; display: grid; place-items: center; min-width: clamp(56px, 16cqw, 88px); height: clamp(40px, 11cqw, 60px); padding: 0 10px; box-sizing: border-box;
+  border-radius: 14px 14px 50% 50% / 14px 14px 42% 42%; background: radial-gradient(circle at 50% 30%, #f0482c, #b41c0a 62%, #6a0c04); border: 3px solid #fff1dc; box-shadow: 0 0 0 2px #2a0500, 0 5px 12px #000d;
+  animation: wpopin .55s cubic-bezier(.2, 1.6, .4, 1) var(--bd, 2.4s) both; }
+.ap .wpn img { position: absolute; left: 50%; top: 50%; width: 230%; height: auto; translate: -50% -50%; z-index: -1; opacity: .95; }
+.ap .wpn span { font-size: clamp(22px, 6.6cqw, 36px); font-weight: 900; line-height: 1; color: #fff; -webkit-text-stroke: 1.5px #2a0500; paint-order: stroke fill; text-shadow: 0 2px 0 #2a0500, 0 0 6px #000; letter-spacing: -.02em; }
+.ap .wpm { font-style: normal; font-size: clamp(12px, 3.5cqw, 17px); font-weight: 900; line-height: 1.25; white-space: nowrap; color: #2a1600; padding: 1px 10px; border-radius: 10px;
+  background: linear-gradient(#ffe48e, #e2a634); border: 2px solid #fff4d2; box-shadow: 0 0 0 1.5px #2a1600, 0 3px 8px #000c; animation: wpopin .55s cubic-bezier(.2, 1.6, .4, 1) calc(var(--bd, 2.4s) + .12s) both; }
+.ap .wpm.up { color: #04203a; background: linear-gradient(#c8ecff, #5aa8e8); border-color: #eef8ff; box-shadow: 0 0 0 1.5px #04203a, 0 3px 8px #000c; }
+@keyframes wpopf { 0% { opacity: 0; } 6% { opacity: 1; } 72% { opacity: 1; translate: -50% -4px; } 100% { opacity: 0; translate: -50% -24px; } }
+@keyframes wpopin { 0% { scale: .25; } 38% { scale: 1.35; } 64% { scale: .94; } 100% { scale: 1; } }
 .ap .wf-who { position: absolute; bottom: 6px; z-index: 80; font-size: clamp(10px, 2.6cqw, 13px); font-weight: 800; padding: 2px 8px; border-radius: 9px; background: #3f8f3acc; color: #eaffe0; text-shadow: 0 1px 2px #000; pointer-events: none; max-width: 42%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ap .wf-who.us { left: 6px; } .ap .wf-who.foe { right: 6px; background: #8a3a2acc; color: #ffe3dc; }
-@keyframes wloss { 0% { opacity: 0; translate: 0 10px; scale: .6; } 15% { opacity: 1; translate: 0 0; scale: 1.15; } 70% { opacity: 1; scale: 1; } 100% { opacity: 0; translate: 0 -18px; } }
+/* 머릿수 잣대 (troops.ts) — 큰 병사 · 깃발 병사 · 무리마다 정확한 수 · 맨 아래 가운데 잣대 */
+.ap .wf2s .tk.tb2 { filter: drop-shadow(0 0 3px #ffd27a) drop-shadow(0 2px 2px #000c); }
+.ap .wf2s .tkban { position: absolute; left: 4%; top: -16%; width: 34%; height: 40%; border-left: 2px solid #3a2a18; pointer-events: none; }
+.ap .wf2s .tkban img { position: absolute; left: 0; top: 0; width: 100%; height: 70%; object-fit: contain; }
+.ap .wf2s .tk.tkd .tkban { display: none; }
+.ap .wgct { position: absolute; z-index: 95; translate: -50% 0; display: inline-flex; align-items: center; gap: 2px; padding: 1px 6px 1px 2px; border-radius: 9px; background: #000b; border: 1px solid #7cc4ff99; color: #fff; font-size: clamp(10px, 2.8cqw, 13px); font-weight: 800; line-height: 1.2; white-space: nowrap; pointer-events: none; text-shadow: 0 1px 2px #000; }
+.ap .wgct img { height: 1.5em; width: auto; }
+.ap .wf2s.foe .wgct { transform: scaleX(-1); border-color: #ff6a5a99; }
+.ap .wgct.none { opacity: .4; }
+.ap .wleg { position: absolute; left: 50%; bottom: 5px; translate: -50% 0; z-index: 80; display: flex; align-items: flex-end; gap: 6px; padding: 1px 7px; border-radius: 9px; background: #000a; color: #f6ead2; font-size: clamp(10px, 2.6cqw, 12px); font-weight: 800; line-height: 1; white-space: nowrap; pointer-events: none; }
+.ap .wleg span { display: inline-flex; align-items: flex-end; gap: 1px; } .ap .wleg img { width: auto; height: 12px; } .ap .wleg .l1 img { height: 19px; } .ap .wleg .l2 img { height: 25px; }
+@media (max-width: 520px) { .ap .wf-who { max-width: 33%; } }
 /* 동작 그림 — 8컷 띠를 칸씩 넘긴다 (steps). 바깥(.tk)은 자리·밀기, 안(.spf)은 컷 */
 /* 새 20컷 띠(v2) — 칸이 넓다(창이 다 뻗어도 들어가게). 말의 자리·크기는 옛 비 그대로 두고 안의 그림만 --r 배 넓혀 가운데에 (형 10-29) */
 .ap .wf2s .tk.wsp.v2 .spf { inset: 0 auto 0 50%; width: calc(var(--r, 1) * 100%); transform: translateX(-50%); --nf: 20; --i0: 0%; --i1: 21.0526%; --w0: 21.0526%; --w1: 63.1579%; --a0: 63.1579%; --a1: 94.7368%; --al: 89.4737%; --fl: 94.7368%; --spidlen: 4; --spwalkn: 8; --spatkn: 6; --spidles: 1.6; --spwalks: 1.4; --spatks: 2.2; --spdraws: 1.2; }
@@ -2362,7 +2413,7 @@ export const WAR_CSS = `
 .ap .wf2s.waver .wpole { rotate: 18deg; transform-origin: 50% 100%; transition: rotate .6s; }
 @media (prefers-reduced-motion: reduce) { .ap .wfield.play .wf2s, .ap .wfield.play .wf-ground, .ap .wf2s.waver .tk.tku { animation: none !important; } }
 @keyframes wtkfallsp { 0% { translate: 3cqw 0; } 100% { translate: 1cqw 0; opacity: .62; filter: grayscale(.5) brightness(.8); } }
-@media (prefers-reduced-motion: reduce) { .ap .wfield *, .ap .wfield .tk.tkf, .ap .wfield.play { animation: none !important; transition: none !important; } .ap .wf-loss { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ap .wfield *, .ap .wfield .tk.tkf, .ap .wfield.play { animation: none !important; transition: none !important; } .ap .wpop { opacity: 1; } }
 .ap .wbar i { position: relative; display: block; height: 100%; border-radius: 6px; overflow: hidden; }
 /* 흐르는 빗금 — 45도 네모 칸이라야 칸 이음매가 안 보인다 · 115도 빗금을 34px 칸에 넣었더니 이음매마다 끊겨 바코드처럼 보였다 (형 10-29) */
 .ap .wbar i::before { content: ''; position: absolute; inset: 0; background-image: linear-gradient(135deg, #ffffff2a 25%, #ffffff00 25% 50%, #ffffff2a 50% 75%, #ffffff00 75%); background-size: 18px 18px; animation: wbarflow 1.1s linear infinite; }
@@ -2558,19 +2609,10 @@ export const WAR_CSS = `
 .ap .wf2s .tk.tkh { display: none; }
 .ap .wf2s .tk.tkn { animation: tknin 1s ease-out var(--hd, 1.2s) both; }
 @keyframes tknin { from { opacity: 0; translate: -60% 0; } to { opacity: 1; translate: 0 0; } }
-.ap .ws .wdmg, .ap .ws .wmdmg { position: absolute; left: 50%; z-index: 6; pointer-events: none; white-space: nowrap; opacity: 0; font-style: normal; translate: -50% 0;
-  text-shadow: 0 0 3px #000, 0 2px 0 #000, 0 0 10px #000; animation: wdmgpop 1.6s ease-out var(--bd, 2.4s) both; }
-.ap .ws .wdmg { top: 18px; font-size: clamp(40px, 13vw, 68px); font-weight: 900; color: #ff4a2a; -webkit-text-stroke: 2px #2a0500;
-  text-shadow: 0 0 4px #000, 0 3px 0 #000, 0 0 18px #ff2a00, 0 0 34px #ff5a1acc; animation: wdmgpop 2.1s cubic-bezier(.2, 1.4, .4, 1) var(--bd, 2.4s) both; }
-.ap .ws.foe .wdmg { color: #ffd23a; -webkit-text-stroke-color: #2a1a00; text-shadow: 0 0 4px #000, 0 3px 0 #000, 0 0 18px #ffb000, 0 0 34px #ffd23acc; }
 /* 줄어든 머릿수는 붉게 번쩍이며 튄다 (형 10-29: "데미지 입을 때 명수 깎이는 게 너무 안 보여 · 더 강하게") */
 @keyframes wnup { 0% { transform: scale(1.4); color: #b8f0a0; text-shadow: 0 0 12px #6fc05a; } 60% { transform: scale(1); } 100% { color: inherit; } }
 @keyframes wnhit { 0% { transform: scale(1.6); color: #ff3a1a; text-shadow: 0 0 14px #ff2a00; } 60% { transform: scale(1); } 100% { color: inherit; } }
-.ap .ws .wmdmg { top: 70px; font-size: clamp(16px, 4.6vw, 22px); font-weight: 900; color: #ffb0a0; }
-.ap .ws .wmdmg.up { color: #b8f0a0; }
-@keyframes wdmgpop { 0% { opacity: 0; transform: scale(.2); } 10% { opacity: 1; transform: scale(1.7) rotate(-4deg); } 22% { transform: scale(1) rotate(0); } 30% { transform: scale(1.12); } 38% { transform: scale(1); } 85% { opacity: 1; transform: translateY(-14px); } 100% { opacity: 0; transform: translateY(-30px); } }
-@media (max-width: 520px) { .ap .ws .wdmg { top: 8px; } .ap .ws .wmdmg { top: 52px; } }
-.ap .wr.fast .ws .wdmg, .ap .wr.fast .ws .wmdmg, .ap .wr.fast .wf-loss { animation-delay: 0s !important; }
+.ap .wr.fast .wpop, .ap .wr.fast .wpop > * { animation-delay: 0s !important; }
 .ap .wrd.slow .wcmds { animation-name: wrflip; }
 @keyframes wrin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes wrflip { from { opacity: 0; transform: rotateX(90deg); } to { opacity: 1; transform: none; } }
@@ -2893,34 +2935,6 @@ export const WAR_CSS = `
 /* 긴 외침(「제게 맡겨 주시옵소서!」)은 폰 폭에서 줄이 넘어갔다 · 작게 한 줄로 조금 위에 (형 10-29) */
 .ap .wcut .wctx.long { top: 40%; } .ap .wcut .wctx.long b { font-size: clamp(16px, 4.4vw, 40px); white-space: nowrap; letter-spacing: 0; }
 .ap .wcut .wctx span { align-self: flex-start; font-size: clamp(13px, 3.4vw, 16px); color: #f0dcb0; text-shadow: 0 1px 4px #000; background: #0b0805d9; padding: 2px 10px; border-radius: 8px; } /* 기술 카드 밑 글씨가 배경에 묻혔다 (형 10-28) */
-/* 격려·외침 — 금빛 고리가 퍼지고 불티가 오른다 */
-.ap .wcut .wcring { position: absolute; left: calc(6% + min(18vw, 100px)); top: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 3px solid #ffd27a;
-  box-shadow: 0 0 14px #ffd27a; opacity: 0; animation: wcring .9s ease-out var(--t) both; }
-@keyframes wcring { 0% { opacity: 0; transform: scale(.4); } 10% { opacity: .9; } 100% { opacity: 0; transform: scale(4); } }
-.ap .wcut.k-call .wcring { border-color: #f0f0ff; box-shadow: 0 0 14px #c8d8ff; }
-.ap .wcut .wcspark { position: absolute; bottom: 20%; left: var(--x); width: 6px; height: 6px; border-radius: 50%; background: radial-gradient(circle, #fff6d0, #ffc04a 60%, #0000); opacity: 0;
-  animation: wcspark 1s ease-out var(--t) both; }
-@keyframes wcspark { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(-40vh); } }
-/* 겨루기·돌진·한 발 — 흰 칼금이 비껴 지나가고 빠르기 줄이 흐른다, 화면이 한 번 흔들린다 */
-.ap .wcut.k-strike, .ap .wcut.k-shot { animation: wcout .9s ease-in 1 forwards; }
-@keyframes wcshake { 0%, 100% { transform: none; } 25% { transform: translate(-8px, 4px); } 50% { transform: translate(7px, -4px); } 75% { transform: translate(-3px, 2px); } }
-.ap .wcut .wcslash { position: absolute; left: -20%; right: -20%; top: 48%; height: 6px; background: linear-gradient(90deg, #fff0, #ffffff, #fff0); box-shadow: 0 0 18px #fff;
-  transform: rotate(-14deg) scaleX(0); animation: wcslash .32s ease-out .28s both; }
-@keyframes wcslash { 0% { transform: rotate(-14deg) scaleX(0); opacity: 1; } 70% { transform: rotate(-14deg) scaleX(1); opacity: 1; } 100% { transform: rotate(-14deg) scaleX(1); opacity: 0; } }
-.ap .wcut.k-shot .wcslash { height: 3px; transform-origin: 0 50%; }
-.ap .wcut .wcline { position: absolute; left: 100%; top: var(--y); width: 40%; height: 2px; background: linear-gradient(90deg, #fff0, #ffffffaa); animation: wcline .5s linear var(--t) both; }
-@keyframes wcline { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-260%); opacity: 0; } }
-/* 사로잡기 — 고리가 좁혀 든다 */
-.ap .wcut .wcrope { position: absolute; right: 18%; top: 50%; width: 160px; height: 160px; margin-top: -80px; border-radius: 50%; border: 6px dashed #c8a060; opacity: 0;
-  animation: wcrope .8s ease-in .3s both; }
-@keyframes wcrope { 0% { opacity: 0; transform: scale(2) rotate(0); } 30% { opacity: 1; } 100% { opacity: 1; transform: scale(.5) rotate(200deg); } }
-/* 버텨라 — 방패 고리가 쾅 */
-.ap .wcut .wcshield { position: absolute; left: calc(6% + min(18vw, 100px)); top: 50%; width: 220px; height: 220px; margin: -110px 0 0 -110px; border-radius: 50%;
-  background: radial-gradient(circle, #9fd0f000 55%, #9fd0f066 62%, #9fd0f000 70%); opacity: 0; animation: wcshield .7s ease-out .3s both; }
-@keyframes wcshield { 0% { opacity: 0; transform: scale(.6); } 30% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0; transform: scale(1.2); } }
-/* 물러서라 — 초상이 들어왔다 뒤로 빠진다 */
-.ap .wcut.k-back .wcpf { animation: wcin .4s cubic-bezier(.2, 1.4, .4, 1) .05s both, wcbackout .5s ease-in .9s both; }
-@keyframes wcbackout { to { opacity: 0; transform: translate(-30vw, -50%); } }
 @media (prefers-reduced-motion: reduce) { .ap .wcut, .ap .wcut * { animation-duration: .01s !important; animation-delay: 0s !important; } .ap .wcut { animation: wcout 1.2s steps(1) forwards !important; } }
 /* 싸움이 열린다 — 판 전체: 싸움터 그림이 다가오고, 양쪽 깃발·장수가 밀려들고, 이름이 쾅 (형 10-23: "전투가 발생했다는 게 확 실감이 안 나는데")
    히어로즈·토탈워의 싸움 앞 화면처럼 — 누가 누구와 어디서, 세기는 막대로 */
@@ -3070,7 +3084,7 @@ export const WAR_CSS = `
 `
 
 /** 싸움이 열리는 판 — 싸움터 그림 · 양쪽 깃발과 장수 · 이름 · 누가 쳐들어왔나 · 세기 막대 · 어느 나라와 싸우는 중인가 */
-function openHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: string, us: number, them: number): string {
+export function openHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: string, us: number, them: number): string {
   const weAtk = l.atkFaction === me
   const atkF = l.atkFaction ?? prev.armies[l.attacker]?.faction
   const ourF = weAtk ? atkF : l.defender
@@ -3114,7 +3128,8 @@ function openHtml(prev: Realm, after: Realm, l: BattleLine, me: string, art: str
   const intro = l.field === true ? '길 한가운데서 두 군대가 마주쳤다. 성도 장정도 없다.' : (ap?.line ?? '')
   return `<div class="wob" style="background-image:url('${warBg(art, ground, !weAtk)}');animation-duration:${D}s"></div><div class="wofl"></div><div class="wocol">`
     + `<div class="wohead"><b>${esc(warName(after, l))}</b><span>${esc(sub)}</span></div>`
-    + `<div class="woin">${side('us', ourF, ourHero, us, UNIT_ICON.spear, 0)}<div class="wom"><img class="wox" src="${art}ui/vs.png" alt="VS"></div>${side('foe', foeF, foeHero, them, UNIT_ICON.shield, 1)}</div>`
+    // 병종 짜임은 [공격, 지킴] 순으로 적혀 있다 — 우리가 지키는 싸움에서 0·1 을 그대로 썼더니 우리 칸에 적의 짜임이 떴다 (형 11-01: "군사구성 나랑 적이 반대로")
+    + `<div class="woin">${side('us', ourF, ourHero, us, UNIT_ICON.spear, sideIdx(weAtk).us)}<div class="wom"><img class="wox" src="${art}ui/vs.png" alt="VS"></div>${side('foe', foeF, foeHero, them, UNIT_ICON.shield, sideIdx(weAtk).foe)}</div>`
     + `<div class="wofoot"><div class="wobar"><i class="us" style="width:${share}%"></i><i class="foe" style="width:${100 - share}%"></i></div>`
     + `<em class="${weAtk ? 'us' : 'foe'}">⚔ ${esc(kindWord)} · ${esc(josa(foe, '과', '와'))} 싸운다</em>${terr}`
     + (intro !== '' ? `<div class="wointro${ap !== undefined && ap.who !== '' ? ` ${ap.who}` : ''}" style="--d:${lastAt.toFixed(2)}s">${ap !== undefined ? `<img src="${art}icon/${ap.icon}.png" alt="">` : ''}<p>${esc(intro)}</p></div>` : '')
@@ -3142,11 +3157,12 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   const stopChain = (): void => { for (const x of chain.splice(0)) clearTimeout(x) }
   let t = rehearse(prev, orders, done, null, host.me)
   if (t.line === null) return false
+  preloadSkillFx(host.art) // 기술 장면 그림을 미리 — 안 구운 그림은 장면에서 빠진다 (skillfx.ts)
   /** 처음 우리 싸움 수 — 머리의 "몇 판" */
   let left = t.left
   /** 이번 합에 고른 장수 기술 — 풀릴 때 초상 장면을 띄운다 */
   let cutLead: Cmd | null = null
-  let cutSfx: string | null = null
+  let cutSfx: Array<readonly [number, SkSfx]> | null = null
   /** 그 장면의 외침 — sound() 가 소리 시계를 걷은 뒤에 건다 */
   let cutVoice: string | null = null
   /** 이름 띠를 띄운 판 — 판마다 한 번 */
@@ -3418,17 +3434,20 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       const mine = act?.c === 'capture' ? undefined : act?.hero
       const leadH = heroById(mine ?? l.start?.heroes[weAtk ? 0 : 1] ?? null)
       const ak = c === 'art' ? (act?.art ?? (leadH !== undefined ? heroArt(leadH) : undefined)) : undefined
-      const kind = ak !== undefined ? ART_CUT[ak] : CUT_OF[c]
+      const kind: SkillId | undefined = ak ?? CUT_OF[c]
       const hero = l.start?.heroes[weAtk ? 0 : 1] ?? null
       if (kind !== undefined && hero !== null) {
-        const name = prev.heroes[hero]?.name ?? t.after.heroes[hero]?.name ?? ''
+        // 장면의 얼굴은 나선 장수 (부장이 비기를 쓰면 그 부장) · 사로잡기·물러나기는 총대장
+        const actor = mine !== undefined && heroById(mine) !== undefined ? mine : hero
+        const name = heroById(actor)?.name ?? ''
         const el = document.createElement('div')
-        el.innerHTML = cutHtml(host.art, hero, name, ak !== undefined ? ART_NAME[ak] : CMD_NAME[c], kind)
+        el.innerHTML = skillCutHtml(host.art, kind, faceFile(actor) ?? null, name, ak !== undefined ? ART_NAME[ak] : CMD_NAME[c])
         const cut = el.firstElementChild as HTMLElement
         cut.addEventListener('animationend', (e) => { if (e.target === cut) cut.remove() })
         cut.addEventListener('click', (e) => { e.stopPropagation(); cut.remove() })
+        ov.querySelector('.wsk')?.remove()
         ov.appendChild(cut)
-        cutSfx = kind === 'cheer' || kind === 'call' ? BATTLE_SFX.openDrum : BATTLE_SFX.duelWin
+        cutSfx = skillCues(kind)
         // 나선 장수가 외친다 — 기술이면 그 기술 외침, 북·겨루기·사로잡기면 짧은 대답 (voice.ts · 장수의 목소리 결로)
         const hh = heroById(mine ?? hero)
         if (hh !== undefined) cutVoice = ak !== undefined ? artVoicePath(hh, ak, isRulerHero(hh)) : isMe(hh) ? null : voicePath(hh, 'tap', isRulerHero(hh))
@@ -3436,7 +3455,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     }
     cutLead = null
     sound(anim ? (l.rounds ?? [])[shown - 1] : undefined, l.atkFaction === host.me, (anim || endNow) && l.pending === undefined && !more ? l : null)
-    if (cutSfx !== null) { at(0.28, cutSfx, 0.45); cutSfx = null } // 장수 기술 소리 — sound() 가 앞의 것을 걷은 뒤에
+    if (cutSfx !== null) { for (const [s, k] of cutSfx) at(s, SK_SFX[k], 0.5); cutSfx = null } // 장수 기술 장면의 소리 — sound() 가 앞의 것을 걷은 뒤에
     // 외침도 sound() 뒤에 건다 — 전엔 앞에 걸어 sound() 의 clearTimers 가 바로 걷어 싸움에서 목소리가 한 번도 안 났다 (형 10-26: "전투할때도")
     if (cutVoice !== null) { const v = cutVoice; timers.push(window.setTimeout(() => say(v), P.realm.warVoiceArtS * 1000)); cutVoice = null }
     if (!anim && !endNow) band(l)
@@ -3616,7 +3635,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       const [sn, sl] = styleWord(hh)
       const box = document.createElement('div')
       // 맡긴 장수가 군주에게 「제게 맡겨 주시옵소서!」 · 내 군주가 몸소 이끌면 군사들에게 외친다 (형 10-29: "전투 일임하면 '내게 맡겨라' 라고 반말")
-      box.innerHTML = cutHtml(host.art, hero, hh?.name ?? '', `${sn}: ${sl}`, 'lead', hh !== undefined && isMe(hh) ? '나를 따르라!' : CUT_SHOUT.lead)
+      box.innerHTML = cutHtml(host.art, hero, hh?.name ?? '', `${sn}: ${sl}`, hh !== undefined && isMe(hh) ? '나를 따르라!' : '제게 맡겨 주시옵소서!')
       const cut = box.firstElementChild as HTMLElement
       cut.addEventListener('animationend', (e) => { if (e.target === cut) cut.remove() })
       cut.addEventListener('click', (e) => { e.stopPropagation(); cut.remove() })
@@ -4164,6 +4183,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
       flushEnd() // 끝에 닿았으면 걷힌 뿔나팔·대승 음악을 바로
       fxTop.replaceChildren()
       ov.querySelector('.wcut')?.remove()
+      ov.querySelector('.wsk')?.remove()
       // 진을 되돌리는 타이머도 걷혔다 — 다음 합을 고를 판이면 바로 고르는 진으로 (재검토 10-25: 연출 상태로 굳었다)
       if (t.line?.pending !== undefined) syncField(true)
       return

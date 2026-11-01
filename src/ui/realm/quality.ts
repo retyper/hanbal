@@ -404,7 +404,7 @@ export function gfxRowHtml(): string {
 }
 
 /** 입자 묶음: 저사양 넷에 하나 · 보통 반 */
-const SPARKS = '.wember, .wcspark, .wcline, .cere .bmote i, .cere .cmote i, .cere .cpet i, .cere .cspk i, .cere.invade .emb, .winfx .wf-rain s, .winfx .wf-burst b'
+const SPARKS = '.wember, .wsk .wsk-n, .cere .bmote i, .cere .cmote i, .cere .cpet i, .cere .cspk i, .cere.invade .emb, .winfx .wf-rain s, .winfx .wf-burst b'
 /** 연출 조각: 저사양 반 · 보통 그대로 (깃발 연출 · 화살 비 · 먼지) */
 const PIECES = '.wfx-cmd > i, .wf-arw > i, .cere .iarw, .tbdu'
 
