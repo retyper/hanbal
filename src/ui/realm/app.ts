@@ -47,6 +47,7 @@ import { HIRE_BY_TRAIT, HIRE_LINE, HIRE_PLAIN } from '../../realm/data/hire-line
 import { DESTS, DEST_IDS, EXP_SEASONS, destReachable, expAmount, expBlock, expOdds, onExpedition } from '../../realm/expedition.ts'
 import { foundable, joinable, partiesOf, partyCost, partyMoves, partyRoute, partySize } from '../../realm/parties.ts'
 import { canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, idleHeroOrders, together, inheritOf, isRuler, postHero, rulerOf, tieOf, wanderersFor, wedCost, wooable } from '../../realm/heroes.ts'
+import { guardOptions } from '../../realm/council.ts'
 import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic, WooApproach } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, noReachWhy, visibleNodes, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
@@ -74,7 +75,7 @@ import { retainMaxOf } from '../../realm/legacy.ts'
 import { morph } from './morph.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
-import { APPROACH_DOES, APPROACH_NAME, B0_KEY, HARD_LINE, WAR_CSS, b0On, openWar } from './battlefield.ts'
+import { AP_CHIP, APPROACH_DOES, APPROACH_NAME, B0_KEY, HARD_LINE, WAR_CSS, b0On, openWar } from './battlefield.ts'
 import { SKFX_CSS } from './skillfx.ts'
 import { MEM_CSS, memRowHtml } from './memrow.ts'
 import { attachZoom } from './zoom.ts'
@@ -695,6 +696,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   const cardBeat: Record<string, number> = {}
   /** 경계를 강화할 우리 고을 */
   let guards: string[] = []
+  /** 경계 강화한 고을에서 몸소 고른 지킬 길 — 없으면 지키는 장수에게 맡긴다 (council.guardPick · 형 11-01 「길이 빗겨나감」) */
+  let guardAp: Record<string, Approach> = {}
   /** 보고 카드에서 답·경계를 누른 뒤 다시 그릴 때는 싸움 카드를 다시 돌리지 않는다 */
   let fastNext = false
   /** 이번 계절의 사신 — ekey(나라, 청)마다 하나 */
@@ -908,11 +911,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    */
   let leftCache: { key: string; st: Record<Good, number> } | null = null
   function left(): Record<Good, number> {
-    const key = JSON.stringify([realm!.season, armyOrders, settles, heroOrders, musters, guards, rite, plots, envoys])
+    const key = JSON.stringify([realm!.season, armyOrders, settles, heroOrders, musters, guards, guardAp, rite, plots, envoys])
     if (leftCache !== null && leftCache.key === key) return leftCache.st
     const p = planned(realm!, [
       ...armyOrders, ...settles, ...musters.filter((o) => o.kind !== 'disband'),
-      ...guards.map((node): Order => ({ kind: 'guard', faction: me(), node })),
+      ...guards.map(guardOrder),
       ...heroOrders.filter((o) => o.kind === 'hire' || o.kind === 'assign' || o.kind === 'lead'),
     ])
     const st = Object.fromEntries(GOODS.map((g) => [g, goodOf(p.stock[me()], g)])) as Record<Good, number>
@@ -949,6 +952,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     rite = false
     for (const k of Object.keys(answers)) delete answers[k]
     guards = []
+    guardAp = {}
     for (const k of Object.keys(envoys)) delete envoys[k]
     plots = []
     councils = []
@@ -1220,7 +1224,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       else if (ask.startsWith('hush:')) continue
       else if (ask.startsWith('card:')) { if (ask === `card:${realm?.season ?? -1}`) out.push({ kind: 'card', faction: me(), pick: answers[`hush:${realm?.season ?? -1}`] === true ? 2 : yes ? 0 : 1 }) } else out.push({ kind: 'answer', ask, yes })
     }
-    for (const node of guards) out.push({ kind: 'guard', faction: me(), node })
+    for (const node of guards) out.push(guardOrder(node))
     for (const to of Object.keys(envoys).sort()) out.push(envoys[to]!)
     out.push(...plots)
     return out
@@ -2835,6 +2839,23 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return `<h4>사신이 왔다 · 이번 계절 안에 답한다</h4>` + asks.map(askCard).join('')
   }
 
+  function guardOrder(node: string): Order {
+    const ap = guardAp[node]
+    return { kind: 'guard', faction: me(), node, ...(ap !== undefined ? { ap } : {}) }
+  }
+
+  /** 경계 강화한 고을의 지킬 길 칩 — 길이 대로뿐이면 없다 · 안 고르면 지키는 장수에게 맡긴다 */
+  function guardPathHtml(r: Realm, node: string): string {
+    if (!guards.includes(node)) return ''
+    const ops = guardOptions(r, node)
+    if (ops.length < 2) return ''
+    const cur = guardAp[node]
+    let h = `<div class="grdap"><span class="mute">지킬 길</span>`
+    h += `<button class="btn sm ${cur === undefined ? 'on' : ''}" data-act="guard-ap" data-node="${node}" data-ap="" data-tip="지키는 장수가 적의 버릇·지난번 길을 보고 고른다">장수에게</button>`
+    for (const ap of ops) h += `<button class="btn sm ${cur === ap ? 'on' : ''}" data-act="guard-ap" data-node="${node}" data-ap="${ap}" data-tip="적이 이 길로 오면 기습이 잘 들킨다 · 다른 길로 오면 조금 덜 들킨다">${icon(AP_CHIP[ap][0])}${AP_CHIP[ap][1]}</button>`
+    return h + `</div>`
+  }
+
   /** 우리 고을로 오는 적 — 보인 행군마다 경계 강화 단추 */
   function threatsHtml(r: Realm): string {
     const foes = seenMarches(realm!, me()).filter((a) => a.march !== null && realm!.nodes[a.march.to]?.owner === me())
@@ -2847,6 +2868,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const can = on || (canGuard(r, me(), to) && left().grain >= guardCost().grain)
       h += `<div class="row foerow">${emblem(a.faction)}<span class="fet">${esc(realm!.factions[a.faction]?.name ?? '')} → <b>${esc(realm!.nodes[to]?.name ?? '')}</b> · ${turnsLabel(r, a.march!.left)}${suspect.has(a.id) ? ' · <span class="sus">몰래 오는 낌새</span>' : ''}</span>`
       h += `<button class="btn sm ${on ? 'on' : ''}" data-act="guard" data-node="${to}" ${can ? '' : 'disabled'}>경계 강화 ${costHtml({ grain: guardCost().grain })}</button></div>`
+      h += guardPathHtml(r, to)
     }
     return h
   }
@@ -4494,6 +4516,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       h += draftCard(r, id, true)
       h += `<div class="btns"><button class="btn ${guarded ? 'on' : ''}" data-act="guard" data-node="${id}" data-tip="경계를 올리면 이 고을로 오는 기습이 잘 들킨다 · 한 계절 동안" ${guarded || (canGuard(r, me(), id) && left().grain >= guardCost().grain) ? '' : 'disabled'}>경계 강화 ${costHtml({ grain: guardCost().grain })}</button></div>`
+      h += guardPathHtml(r, id)
       // 목책·해자 — 나무로 짓는다 (땅마다 나는 것). 다음 계절에 선다
       const nb = nextBuild(r, id)
       const queued = musters.some((o) => o.kind === 'build' && o.node === id) || (r.builds ?? []).some((b) => b.node === id)
@@ -5385,7 +5408,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function saveDraft(): void {
     if (realm === null) return
     // hireShown — 등용 장면을 이미 띄운 떠돌이. 초안과 함께 남겨야 앱이 다시 열려도(새 빌드 · 껐다 켬) 계절 끝에 또 뜨지 않는다 (형 10-25: "마파람 등용 한번 떴었는데 왜 또 뜨지")
-    const d = { seed: realm.seed, season: realm.season, player: realm.player, armyOrders, musters, settles, pick, goalStop, landSeen: [...landSeen], scouts, rite, answers, guards, envoys, plots, heroOrders, councils, persuadeBy, wooDone, hands, hireShown: [...hireShown], autoIdle: realm.autoIdle, manual: realm.manual?.[me()] }
+    const d = { seed: realm.seed, season: realm.season, player: realm.player, armyOrders, musters, settles, pick, goalStop, landSeen: [...landSeen], scouts, rite, answers, guards, guardAp, envoys, plots, heroOrders, councils, persuadeBy, wooDone, hands, hireShown: [...hireShown], autoIdle: realm.autoIdle, manual: realm.manual?.[me()] }
     try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)) } catch { /* 저장 못 하는 곳 */ }
   }
 
@@ -5403,6 +5426,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     heroOrders = list('heroOrders')
     councils = list('councils').filter((o) => o.kind === 'council')
     guards = Array.isArray(d['guards']) ? (d['guards'] as string[]) : []
+    guardAp = rec<Approach>('guardAp')
     scouts = draftScouts(d).slice(0, scoutCap(realm, me())) // 옛 초안의 scout 한 칸도 읽는다
     rite = d['rite'] === true
     Object.assign(pick, rec<{ edge: string; ambush: boolean; ration?: Ration }>('pick'))
@@ -7117,6 +7141,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'guard': {
         const node = d['node']!
         guards = guards.includes(node) ? guards.filter((x) => x !== node) : [...guards, node]
+        if (!guards.includes(node)) delete guardAp[node]
+        fastNext = true
+        break
+      }
+      case 'guard-ap': {
+        const node = d['node']!
+        const ap = d['ap'] as Approach | ''
+        if (ap === '') delete guardAp[node]
+        else guardAp = { ...guardAp, [node]: ap }
         fastNext = true
         break
       }

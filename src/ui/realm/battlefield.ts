@@ -855,7 +855,7 @@ export function warName(r: Realm, l: BattleLine): string {
  * 판정(season.fortMul · 땅의 수 · 진군 방식)과 같은 규칙만 적는다. VS 화면과 전장 왼쪽 위에 같은 칩이 뜬다
  */
 export interface TerrChip { readonly k: string; readonly icon: string; readonly name: string; readonly line: string; readonly who: 'us' | 'foe' | '' }
-const AP_CHIP: Readonly<Record<Approach, readonly [string, string]>> = {
+export const AP_CHIP: Readonly<Record<Approach, readonly [string, string]>> = {
   road: ['route-column', '대로'], night: ['emblem-moon', '밤길'], ford: ['route-ferry', '여울 건너기'], ridge: ['emblem-mountain', '산기슭'], cliff: ['route-fortstair', '절벽'],
 }
 const AP_EFFECT: Readonly<Record<Approach, readonly [string, string]>> = {
@@ -886,9 +886,11 @@ function guardChip(r: Realm, l: BattleLine, weAtk: boolean): TerrChip | null {
     const lead = ap === 'road' ? '적이 성문 앞에 진을 치고 기다리고 있었다.' : `적이 ${GUARD_AT[g]} 지키고 기다리고 있었다.`
     return { k: 'guard', icon, name: '적이 우리 길을 막고 있었다', line: `${lead} ${GUARD_WHY[l.gwhy ?? 'land']}${adv !== undefined ? ` 「${adv}」의 읽음이 빗나갔다.` : ''}`, who: 'foe' }
   }
+  // 누가 그 길을 골랐나 — 몸소 고른 길(경계 강화 · 지킬 길)인지, 지키는 장수에게 맡긴 길인지 (형 11-01 FOCUS E: 고른 적 없는 길이 「빗겨나감」으로 보였다)
+  const who = l.gord === true ? '명하신 대로' : '지키는 장수가 골라'
   return read
-    ? { k: 'guard', icon, name: '지키던 길로 적이 왔다', line: `우리가 막고 있던 길로 적이 왔다. 기다리던 대로 맞는다!`, who: 'us' }
-    : { k: 'guard', icon, name: '적이 다른 길로 왔다', line: `우리는 ${GUARD_AT[g]} 막고 있었는데 적은 ${CAME_BY[ap]} 돌아 들어왔다. 그 길엔 지키는 군사가 없었다.`, who: 'foe' }
+    ? { k: 'guard', icon, name: '지키던 길로 적이 왔다', line: `${who} 막고 있던 ${josa(AP_CHIP[g][1], '으로', '로')} 적이 왔다. 기다리던 대로 맞는다!`, who: 'us' }
+    : { k: 'guard', icon, name: '적이 다른 길로 왔다', line: `${who} ${GUARD_AT[g]} 막았는데 적은 ${CAME_BY[ap]} 돌아 들어왔다.${l.gord === true ? '' : ' 경계 강화에서 지킬 길을 몸소 고를 수 있습니다.'}`, who: 'foe' }
 }
 
 export function terrChips(r: Realm, l: BattleLine, me: string, foe: string): TerrChip[] {

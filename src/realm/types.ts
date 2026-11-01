@@ -755,6 +755,8 @@ export interface Watch {
   lull: number
   /** 경계를 강화한 계절 (guard 명령) — 한 고을 한 계절 한 번. 옛 저장에는 없다 */
   guarded?: number
+  /** 경계를 강화하며 몸소 고른 지킬 길 — guarded 와 같은 계절(달 시계면 석 달) 동안만 (council.guardPick) */
+  path?: Approach
   /** 매수 공작이 먹혀 장정이 서지 않는 마지막 계절 (plots.ts). 옛 저장에는 없다 */
   bribedUntil?: number
 }
@@ -1002,7 +1004,8 @@ export type Order =
   /** 청에 답한다 — 받기(yes) · 거절. 답하지 않은 청은 거절로 친다 */
   | { readonly kind: 'answer'; readonly ask: string; readonly yes: boolean }
   /** 경계 강화 — 곡식을 내고 그 고을 경계를 올린다 (economy.canGuard · guardCost). 한 고을 한 계절 한 번 */
-  | { readonly kind: 'guard'; readonly faction: string; readonly node: string }
+  /** `ap` — 지킬 길을 몸소 고른다 (형 11-01 FOCUS E: 맡긴 길이 엉뚱해 「길이 빗겨나감」). 없으면 지키는 장수에게 맡긴다 (council.guardPick) */
+  | { readonly kind: 'guard'; readonly faction: string; readonly node: string; readonly ap?: Approach }
   /** 공작 (plots.ts) — 한 계절에 plotsPerSeason 까지, 같은 대상에 같은 공작은 하나. sow 는 `other`, bribe·spy 는 `node` */
   | {
       readonly kind: 'plot'; readonly faction: string; readonly op: PlotOp; readonly target: string; readonly node?: string; readonly other?: string
@@ -1130,6 +1133,8 @@ export type ReportLine =
       /** 지키는 쪽이 지킨 길목과 그 까닭 · 앞선 군대에게 그 길을 권한 장수 (council.ts — 옛 보고에는 없다) */
       readonly guarded?: Approach
       readonly gwhy?: GuardWhy
+      /** 지킨 길을 그 나라 군주가 몸소 골랐다 (경계 강화 · 지킬 길) */
+      readonly gord?: true
       readonly adviser?: string
       readonly fell?: boolean
       /** 판의 열쇠 (season.battleKey · 들판이면 fieldKey) */

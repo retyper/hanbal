@@ -17,6 +17,7 @@ import { blockedWhy, monthly, perSeason, seasonEndTurn, seasonIdx, seasonOf, sea
 import { tierMul } from './tier.ts'
 import { hasCustom, noteCustom, noteOnce } from './data/customs.ts'
 import { draftCapBonus, gluttonMen, growMul, harvestMul, militiaMul, postHero, riteMul } from './heroes.ts'
+import { guardOptions } from './council.ts'
 import { relicSum } from './relics.ts'
 import type { Equip, UnitKind } from './battle.ts'
 import { TIERS, kitOf, lowestTier, nextTier, upgradeKind } from './kit.ts'
@@ -800,6 +801,9 @@ export function applyGuard(r: Realm, o: Extract<Order, { kind: 'guard' }>, lines
   w.alert = Math.min(P.realm.alertMax, w.alert + P.realm.guardAlert)
   w.lull = 0 // 방심도 걷힌다
   w.guarded = r.season
+  // 지킬 길 — 그 고을로 드는 길에 열린 것만 (council.guardOptions)
+  if (o.ap !== undefined && guardOptions(r, o.node).includes(o.ap)) w.path = o.ap
+  else delete w.path
   stockOf(r, o.faction).grain -= guardCost().grain
   lines.push({ kind: 'guard', faction: o.faction, node: o.node })
 }

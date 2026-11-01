@@ -1511,7 +1511,7 @@ function fight(
     pincer: new Set(legs.map((x) => x.edge.id)).size >= 2, defender: defFaction, ambush, p, outcome, captured, killed,
     ...(captives.length > 1 ? { captives } : {}), ...(fallen.length > 1 ? { fallen } : {}),
     militia: militiaN, field: false, atkFaction: a.faction, rounds: res.rounds, key, approach: approachOf(lead), start: startOf(sa, sd, atkF, defF),
-    ...(guard !== null ? { guarded: guard.ap, gwhy: guard.why } : {}), ...(lead.adviser !== undefined ? { adviser: lead.adviser } : {}),
+    ...(guard !== null ? { guarded: guard.ap, gwhy: guard.why, ...(guard.ord === true ? { gord: true as const } : {}) } : {}), ...(lead.adviser !== undefined ? { adviser: lead.adviser } : {}),
     via: edgeKind, endWhy: res.endWhy, clock: res.clock, ...(res.dusk.length > 0 ? { dusk: res.dusk } : {}),
     ...(yielded !== undefined ? { yielded } : {}),
     ...(fell ? { fell: true } : {}), ...(res.pending !== undefined ? { pending: res.pending } : {}), ...(res.led ? { led: true } : {}),

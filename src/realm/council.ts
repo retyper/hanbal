@@ -4,11 +4,12 @@
  * 쳐들어오는 쪽의 실제 길은 보지 않는다 — 같은 계절에 동시에 정한다. 무게는 셋에서 온다:
  *   땅(그 고을로 드는 길에 열린 진군 방식) · 적장의 버릇(특성) · 나라의 성향(mind) · 지난번에 그 나라가 어디로 왔나(되풀이하면 읽힌다).
  * 들어간 길 = 지킨 길목이면 숨어 닿을 가망이 깎이고, 다른 길이면 그만큼 사람을 뺐으니 조금 오른다. 대로를 지켰는데 대로로 오면 성문 앞에 진을 친다.
- * 순수 함수 · 굴림은 이름 있는 roll (A1). 플레이어가 지키는 쪽이어도 같은 셈으로 맡긴다 (지키는 칩은 나중 조각).
+ * 순수 함수 · 굴림은 이름 있는 roll (A1). 경계 강화로 지킬 길을 몸소 골랐으면(Watch.path) 그 길, 아니면 지키는 장수에게 맡긴다.
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
 import { hasTrait } from './heroes.ts'
+import { seasonIdx } from './calendar.ts'
 import { approachOptions } from './season.ts'
 import type { Approach, Hero, Realm } from './types.ts'
 
@@ -18,6 +19,8 @@ export type GuardWhy = 'repeat' | 'trait' | 'mind' | 'land'
 export interface GuardPick {
   readonly ap: Approach
   readonly why: GuardWhy
+  /** 군주가 경계 강화로 몸소 고른 길 (Watch.path) */
+  readonly ord?: true
 }
 
 /** 이 고을로 드는 모든 길에서 열리는 진군 방식 */
@@ -58,6 +61,10 @@ export function guardWeights(r: Realm, node: string, def: string, atk: string, c
 export function guardPick(r: Realm, node: string, def: string, atk: string, cmd: Hero | null, season: number): GuardPick | null {
   const ws = guardWeights(r, node, def, atk, cmd)
   if (ws.length < 2) return null
+  const w = r.watch[node]
+  if (w?.path !== undefined && w.guarded !== undefined && r.nodes[node]?.owner === def && seasonIdx(r, w.guarded) === seasonIdx(r, season) && ws.some((x) => x.ap === w.path)) {
+    return { ap: w.path, why: 'land', ord: true }
+  }
   const sum = ws.reduce((s, x) => s + x.w, 0)
   let t = roll(r.seed, season, `guard:${node}:${atk}`) * sum
   for (const x of ws) {

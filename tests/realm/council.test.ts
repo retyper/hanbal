@@ -60,3 +60,22 @@ describe('길목', () => {
     assert.ok(seen, '길목이 남은 싸움이 없다')
   })
 })
+
+describe('지킬 길을 몸소 고른다 (형 11-01 「길이 빗겨나감」)', () => {
+  it('경계 강화로 고른 길은 그 계절 동안 굴림 없이 그 길이고, 계절이 지나면 장수에게 돌아간다', () => {
+    const r = byeonhanMini(4)
+    const node = Object.values(r.nodes).find((n) => n.owner === r.player && n.kind !== 'sodo' && guardOptions(r, n.id).length >= 2)
+    assert.ok(node !== undefined, '길목이 둘 넘는 우리 고을이 없다')
+    const foe = Object.keys(r.factions).find((f) => f !== r.player)!
+    const ap = guardOptions(r, node.id).at(-1)!
+    r.watch[node.id] = { alert: 0, lull: 0, guarded: r.season, path: ap }
+    for (let s = 0; s < 6; s++) {
+      const g = guardPick(r, node.id, r.player, foe, null, r.season)
+      assert.deepEqual(g, { ap, why: 'land', ord: true })
+    }
+    // 남의 고을이 되면 그 나라는 우리 명을 안 따른다
+    assert.equal(guardPick(r, node.id, foe, r.player, null, r.season)?.ord, undefined)
+    // 한 해 뒤에는 옛 명이 걷힌다
+    assert.equal(guardPick(r, node.id, r.player, foe, null, r.season + 12)?.ord, undefined)
+  })
+})
