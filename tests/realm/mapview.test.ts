@@ -67,12 +67,14 @@ describe('지도 겉모습', () => {
     const ed = Object.values(r.edges).find((e) => e.a === cap || e.b === cap)!
     const to = ed.a === cap ? ed.b : ed.a
     const toks: MapToken[] = [
-      { army: 'x', node: cap, men: 100, img: '/a.png', sel: false, going: false, march: { from: cap, to, left: 1 } },
+      { army: 'x', node: cap, men: 100, img: '/a.png', sel: true, going: false, march: { from: cap, to, left: 1 } },
       { army: 'y', node: cap, men: 400, img: '/b.png', sel: false, going: false },
     ]
     const h = mapHtml(r, 'saro', '/', [], '', null, toks)
     assert.ok(/<i class="dir" style="--a:-?\d+deg"><\/i>/.test(h))
-    assert.ok(h.includes('이동 중 · 다음 계절 도착'), '길 위의 군대에 언제 닿나 꼬리표')
+    assert.ok(h.includes('이동 중 · 다음 계절 도착'), '고른 길 위의 군대에 언제 닿나 꼬리표')
+    // 고르지 않은 말은 꼬리표 없이 (형 11-01: "선택하면 그 정보만")
+    assert.ok(!mapHtml(r, 'saro', '/', [], '', null, toks.map((t) => ({ ...t, sel: false }))).includes('이동 중 ·'))
     assert.ok(h.includes('class="hp" style="--p:0.25"') && h.includes('class="hp" style="--p:1.00"'))
   })
 

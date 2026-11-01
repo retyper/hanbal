@@ -322,6 +322,14 @@ const JOIN_SCENES_MAX = 4
 const TUT_CAP_MAX_MS = 3000
 /** 도감 알림이 아무리 늦어도 걷히는 때 (ms) — CSS 로는 5.5초에 걷힌다 */
 const DEX_TOAST_MAX_MS = 9000
+/**
+ * 떴다 스스로 걷히는 알림이 머무는 시간 — 최소 `min`, 글자 수에 비례해 더 (형 11-01: "획득창 너무 빨리 없어짐 · 최소 유지시간 넣고 텍스트 비례해서").
+ * 누르면 언제든 바로 걷힌다 (메모리 notices-must-dismiss)
+ */
+function noticeMs(text: string, min: number = P.realm.noticeMinMs): number {
+  const n = text.replace(/\s+/g, '').length
+  return Math.min(P.realm.noticeMaxMs, Math.max(min, P.realm.noticeBaseMs + n * P.realm.noticePerCharMs))
+}
 /** 세로 구도로 따로 그린 장면 그림 (public/realm/event-v) — 세로 화면에선 16:9 가운데 띠만 남아 용 허리만 보였다 (형 10-24) */
 const SCENE_V: ReadonlySet<string> = new Set(['event-dream', 'event-newborn', 'event-marriage', 'event-bridal-a', 'event-bridal-b', 'event-bridal-c', 'event-bridal-d'])
 /** 큰 장면 바탕 — 가로 그림(--hbg) · 세로 화면이면 세로 그림(--vbg, 있으면) */
@@ -1360,13 +1368,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     goToast(`<span class="gtk">외교</span>${emblem(t.to, 'fem')}${tx(tipText(next, t))}`)
   }
 
-  /** 잠깐 떴다 스스로 걷히는 한 줄 — 누르면 바로 닫힌다 (메모리 notices-must-dismiss · 걷힘은 CSS 애니메이션 끝에서 · 타이머 없음) */
+  /** 잠깐 떴다 스스로 걷히는 한 줄 — 누르면 바로 닫힌다 (메모리 notices-must-dismiss · 걷힘은 CSS 애니메이션 끝에서 · 머무는 시간은 noticeMs) */
   function goToast(html: string, cls = ''): void {
     root.querySelector('.gotoast')?.remove()
     const el = document.createElement('div')
     el.className = `gotoast${cls !== '' ? ` ${cls}` : ''}`
     el.innerHTML = html
-    el.addEventListener('animationend', () => el.remove())
+    el.addEventListener('animationend', (e) => { if (e.target === el) el.remove() })
+    // 글이 길면 더 머문다 · 애니메이션이 안 끝나도(멈춘 탭·움직임 줄이기) 반드시 걷힌다
+    const life = noticeMs(el.textContent ?? '', cls === 'big' ? P.realm.noticeBigMs : P.realm.noticeMinMs)
+    el.style.animationDuration = `${life}ms`
+    window.setTimeout(() => el.remove(), life + 1000)
     el.addEventListener('click', () => el.remove())
     root.append(el)
   }
@@ -2852,10 +2864,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const el = document.createElement('div')
     el.className = 'dnpop'
     el.textContent = why
-    el.style.cssText = `left:${Math.round(Math.min(innerWidth - 12, Math.max(12, b.left + b.width / 2)))}px;top:${Math.round(Math.max(8, b.top - 8))}px;animation-duration:${P.realm.denyPopMs}ms`
+    const life = noticeMs(why, P.realm.denyPopMs)
+    el.style.cssText = `left:${Math.round(Math.min(innerWidth - 12, Math.max(12, b.left + b.width / 2)))}px;top:${Math.round(Math.max(8, b.top - 8))}px;animation-duration:${life}ms`
     el.addEventListener('click', () => el.remove())
     root.append(el)
-    window.setTimeout(() => el.remove(), P.realm.denyPopMs)
+    window.setTimeout(() => el.remove(), life)
   }
 
   /** 못 하는 단추의 꼬리표 — disabled 대신 (disabled 는 눌러도 아무 일이 없다). 누르면 denyPop 이 까닭을 띄운다 */
@@ -2865,6 +2878,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const have = left()
     const miss = (Object.entries(need) as Array<[Good, number]>).filter(([g, n]) => n > 0 && have[g] < n).map(([g, n]) => `${GOOD_NAME[g]} ${Math.ceil(n - have[g])}`)
     return miss.length > 0 ? `모자람: ${miss.join(' · ')}` : ''
+  }
+  /** 그 고을에 가장 빨리 닿는 쉬는 우리 군대 — 옆 길이면 movesOf, 멀면 goalReach (고을 카드의 「군사 보내기」) */
+  function senderFor(r: Realm, to: string): { army: string; seasons: number } | null {
+    let best: { army: string; seasons: number } | null = null
+    for (const a of sorted(Object.values(r.armies)).filter((x) => x.faction === me() && x.march === null && x.at !== to && !resting(r, x))) {
+      const near = movesOf(r, me(), a).find((m) => m.to === to && m.blocked === null)
+      const k = near?.seasons ?? goalReach(r, me(), a.at).get(to)?.seasons
+      if (k !== undefined && (best === null || k < best.seasons)) best = { army: a.id, seasons: k }
+    }
+    return best
   }
   /** 목책·해자를 지금 못 두르는 까닭 */
   function buildWhy(r: Realm, id: string, what: BuildWhat): string {
@@ -4677,6 +4700,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<div class="nrl">${icon('unit-spear')}<span>군세 <b>${force}</b></span>${gains !== '' ? `<span class="nrg">${gains}</span>` : ''}</div>`
       h += `<div class="nrbs">`
       if (scoutable(r).includes(id)) h += rb('scout', icon('unit-scouts'), scouts.includes(id) ? '거둔다' : '정찰', '', scouts.includes(id) ? ' on' : '')
+      { const s = senderFor(r, id); if (s !== null) h += rb('send-army', icon('unit-spear'), '출정', ` data-army="${s.army}"`) }
       if (knownNation && r.factions[o] !== undefined) h += rb('nr-diplo', icon('good-tribute-bell'), '외교', ` data-to="${o}"`)
       h += `${more}</div>`
     } else {
@@ -4694,7 +4718,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         } else if (foundLands(r).includes(id)) h += capPartyHtml(r, id, 'nrbig')
         else h += `<p class="nrwhy">${esc(noReachWhy(r, me(), id))}<small>개척단은 도읍에서 꾸려 우리 땅을 거쳐 빈 땅으로 갑니다</small></p>`
       } else if (n.owner === null && n.kind !== 'wild' && n.kind !== 'sodo' && n.hh > 0) {
-        h += `<p class="nrwhy">${icon('unit-spear')}군사 이동 필요<small>주인이 없어 군사가 닿으면 싸움 없이 우리 땅이 됩니다</small></p>`
+        const s = senderFor(r, id)
+        h += s !== null
+          ? `<button class="btn pri wide nrbig" data-act="send-army" data-node="${id}" data-army="${s.army}">${icon('unit-spear')}${esc(r.heroes[r.armies[s.army]?.hero ?? '']?.name ?? '우리')} 군대 보내기 · ${turnsLabel(r, s.seasons)}</button><p class="nrwhy"><small>주인이 없어 군사가 닿으면 싸움 없이 우리 땅이 됩니다</small></p>`
+          : `<button class="btn wide nrbig" data-act="send-army" data-node="${id}"${noBtn('여기로 갈 수 있는 쉬는 군대가 없습니다. 징병하거나 싸운 군대가 추스르기를 기다리세요')}>${icon('unit-spear')}군사 이동 필요</button>`
       }
       h += `<div class="nrbs">${more}</div>`
     }
@@ -6035,7 +6062,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const el = root.querySelector('.dxtoast')
     el?.addEventListener('animationend', (e) => { if (e.target === el) el.remove() }) // 얼굴 뒤 금빛이 먼저 끝나도 알림은 그대로
     // 애니메이션이 안 끝나는 일(멈춘 탭·움직임 줄이기)이 있어도 알림은 반드시 걷힌다 (형 10-24: "알림은 잘 없어지는 것도 빠지지 않고")
-    window.setTimeout(() => el?.remove(), DEX_TOAST_MAX_MS)
+    const life = noticeMs(el?.textContent ?? '', P.realm.noticeBigMs)
+    if (el instanceof HTMLElement) el.style.animationDuration = `${life}ms`
+    window.setTimeout(() => el?.remove(), Math.max(DEX_TOAST_MAX_MS, life + 1000))
   }
 
   /**
@@ -6079,7 +6108,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 알림은 반드시 사라진다 (형 10-24: "사신 돌아왔다가 안 없어지고 남아 있다 · 알림 만들면 잘 없어지는 것도 빠지지 않고")
     //  - 큰 장면이 떠 있는 동안은 세지 않되, 정한 시간의 세 배가 지나면 무조건 걷는다 (장면이 걸려 있어도)
     //  - 시간 값이 숫자가 아니면(10-24 의 {} 사고) 바로 걷는다 · 머리를 누르면 바로 걷는다
-    const LIFE = P.realm.backToastMs
+    const LIFE = noticeMs(el.textContent ?? '', P.realm.backToastMs)
     let left = LIFE
     const born = performance.now()
     const gone = (): void => { if (!el.isConnected || el.classList.contains('out')) return; el.classList.add('out'); window.setTimeout(() => el.remove(), 400) }
@@ -6094,6 +6123,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   /** 계절을 넘긴다 — 우리 명령(전장의 명령 줄 포함) + AI 명령. 막히면 까닭을 띄운다 */
+  /** 마지막으로 달을 넘긴 때 (performance.now) — 그 뒤 nextLockMs 동안 「다음 달」 누름은 버린다 */
+  let nextDoneAt = -Infinity
   function endSeason(prev: Realm, mine: Order[], ai: Order[]): void {
     const all = [...mine, ...ai]
     let res: ReturnType<typeof advance>
@@ -6133,6 +6164,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     paint()
     queueHowWin(lossOf(prev, res.next, res.report, me()))
     queueGain(res.next, res.report)
+    // 넘긴 뒤 잠깐 「다음 달」을 잠근다 — 그 사이 누름은 먹지 않는다 (형 11-01: "결과 창 뜰 때까지 비활 · 자꾸 두세 번 누르게 됨")
+    nextDoneAt = performance.now()
+    root.classList.add('nxlock')
+    window.setTimeout(() => root.classList.remove('nxlock'), P.realm.nextLockMs)
   }
 
   // ───────── 얻은 것 — 고을을 차지하거나 새 마을이 서면 크게 (형 11-01: "이로운 게 생기면 크고 확실하게 · 슈퍼마리오에도 있다")
@@ -6172,7 +6207,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const el = document.createElement('div')
     el.className = 'gnpop'
     el.innerHTML = `<div class="gnbox">${sparks}<b class="gnh">획득!</b>${rows}</div>`
-    el.style.setProperty('--life', `${P.realm.gainPopMs}ms`)
+    const life = noticeMs(el.textContent ?? '', P.realm.gainPopMs)
+    el.style.setProperty('--life', `${life}ms`)
     el.style.setProperty('--cm', `${P.realm.gainChipMs}ms`)
     el.addEventListener('click', () => el.remove())
     root.append(el)
@@ -6182,7 +6218,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 위 띠의 그 생산품 칸이 함께 뛴다 — 무엇이 늘었는지 눈이 따라가게
     const goods = new Set(gains.flatMap((g) => nodeSpecials(r, g.node)))
     for (const s of root.querySelectorAll<HTMLElement>('.stat[data-g]')) if (goods.has(s.dataset['g'] as Good)) { s.classList.remove('gnpulse'); void s.offsetWidth; s.classList.add('gnpulse') }
-    window.setTimeout(() => el.remove(), P.realm.gainPopMs)
+    window.setTimeout(() => el.remove(), life)
   }
 
   // ───────── 이기는 법 — 싸움에 지고 지도로 돌아오면 위에 띠 (howwin.ts · 형 10-29: "전투에서 패배하면 개빡치고 하기 싫어지니까")
@@ -6652,6 +6688,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
       case 'next': {
         if (realm === null || (realm.outcome && !realm.endless)) return
+        // 넘긴 직후 · 넘기느라 멈춘 사이에 쌓인 누름은 버린다 — 조용한 달은 보고 판이 안 떠서 두세 번 누르면 두세 달이 넘어갔다 (형 11-01)
+        if (ev.timeStamp < nextDoneAt + P.realm.nextLockMs || root.classList.contains('nxlock')) return
         if (root.querySelector('.wr') !== null) return // 싸움 화면이 떠 있으면 다음 계절을 또 열지 않는다 · 겹쳐 눌러 싸움 판이 셋 쌓였다(10-29 시험)
         // 문명의 "명령을 기다리는 유닛" — 쉬는 장수가 있거나 정찰을 안 보냈으면 한 번은 그 판으로 데려간다. 한 번 더 누르면 그냥 넘긴다
         if (nudgedAt !== seasonIdx(realm) && realm.region !== 'tutorial') {
@@ -6781,6 +6819,19 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         openSheet({ kind: 'node', id: d['node']! })
         requestAnimationFrame(() => scrollInside(root.querySelector<HTMLElement>('.sheet .draftc'), 'start'))
         return
+      // 「군사 보내기」 — 그 군대를 골라 그 고을의 갈 곳을 누른 것과 같다 (전략 회의·먼 길도 그 길로)
+      case 'send-army': {
+        const id = d['army']
+        if (id === undefined || r?.armies[id] === undefined) return
+        const to = d['node']!
+        armySel = [id]
+        clearParty()
+        ring = ''
+        sheet = null
+        paint()
+        root.querySelector<HTMLElement>(`.nd[data-act="go"][data-node="${to}"]`)?.click()
+        return
+      }
       case 'nr-diplo': diploOpen.add(d['to']!); openSheet({ kind: 'diplo' }); return
       case 'foetok': {
         // 적 군대 말 — 전엔 눌러도 아무 일이 없었다 (docs/realm/ZAXIS-1031.md). 우리 군대를 골랐으면 그 고을로 보내고(치러 감), 아니면 그 고을을 연다
