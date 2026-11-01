@@ -1277,7 +1277,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (x.ascended === true) return `<span class="flms on" data-act="flm" data-why="각성했습니다. 이 판에서 능력치가 모두 올랐습니다"><img class="flmw" src="${ART}fx/awaken/word.png" alt="각성"></span>`
     const n = x.flames ?? 0
     // 빈 칸·붙은 칸은 청동 불꽃 자리 그림 둘 (형 11-01: "빈 엠블럼 칸이랑 채워진 불 이미지 다 새로" · 제미나이 Argon)
-    const cells = Array.from({ length: P.realm.ascendWins }, (_, i) => `<img class="flm${i < n ? ' lit' : ''}" src="${ART}fx/awaken/slot-${i < n ? 'on' : 'off'}.png" alt="">`).join('')
+    // 붙은 칸은 청동 자리는 가만히 · 그 안의 불만 일렁인다 (형 11-01: "촛대에 불 붙었을 때 촛대가 춤추는 거 봤냐? 불만 활활 타올라야지")
+    const cells = Array.from({ length: P.realm.ascendWins }, (_, i) => i < n
+      ? `<span class="flm lit"><img src="${ART}fx/awaken/slot-on.png" alt=""><i class="flmf"><img src="${ART}fx/awaken/flame.png" alt=""></i></span>`
+      : `<img class="flm" src="${ART}fx/awaken/slot-off.png" alt="">`).join('')
     return `<span class="flms" data-act="flm" data-why="불꽃 ${n}/${P.realm.ascendWins}. 내리 이기면 한 칸씩 붙고, 다 붙으면 각성해 능력치가 모두 오릅니다. 지면 다 꺼집니다">${cells}</span>`
   }
   /**

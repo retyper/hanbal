@@ -1290,9 +1290,13 @@ export const UI_CSS = `
 .ap .hpic { position: relative; }
 .ap .flms { cursor: pointer; position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); display: flex; gap: 2px; padding: 2px 6px; border-radius: 999px; background: #140f0ad9; border: 1px solid #6a5030; }
 .ap .flms .flm { width: 16px; height: 22px; object-fit: contain; }
-.ap .flms .flm.lit { transform-origin: 50% 90%; animation: flmflick .7s ease-in-out infinite alternate; } /* 장수 칸의 켜진 자리는 일렁인다 — 목록이라 셰이더 대신 작은 transform·opacity 만 */
-@keyframes flmflick { 0% { transform: scale(1.04, 1.02); opacity: .92; } 50% { transform: scale(1.1, 1.12) skewX(-2deg); opacity: 1; } 100% { transform: scale(1.06, 1.06) skewX(2deg); opacity: .96; } }
-@media (prefers-reduced-motion: reduce) { .ap .flms .flm.lit { animation: none; } }
+.ap .flms .flm.lit { position: relative; display: block; } .ap .flms .flm.lit > img { display: block; width: 100%; height: 100%; object-fit: contain; }
+/* 켜진 칸 — 청동 자리는 가만히, 창 안의 불만 일렁인다 (형 11-01: "촛대가 춤추냐") · 목록이라 셰이더 대신 작은 불 그림의 transform·opacity 만 */
+.ap .flms .flmf { position: absolute; inset: 0; clip-path: ellipse(31% 36% at 50% 55%); pointer-events: none; }
+.ap .flms .flmf img { position: absolute; left: 50%; bottom: 8%; width: 120%; translate: -50% 0; transform-origin: 50% 92%; mix-blend-mode: screen; animation: flmflick .62s ease-in-out infinite alternate; }
+.ap .flms .flm.lit:nth-child(2) .flmf img { animation-delay: -.23s; } .ap .flms .flm.lit:nth-child(3) .flmf img { animation-delay: -.41s; }
+@keyframes flmflick { 0% { transform: scale(.92, .86) skewX(-3deg); opacity: .7; } 45% { transform: scale(1.04, 1.12) skewX(2deg); opacity: 1; } 100% { transform: scale(.97, 1.02) skewX(-1deg); opacity: .85; } }
+@media (prefers-reduced-motion: reduce) { .ap .flms .flmf img { animation: none; } }
 .ap .flms.on { padding: 1px 8px; border-color: #ffd76a; box-shadow: 0 0 10px #ffb84a88; } .ap .flms .flmw { height: 20px; width: auto; display: block; }
 /* 혼인 고르기 — 친밀 하트 (아끼는 사이 붉게 · 정략은 잿빛) */
 .ap .wcand .wtie { display: block; font-size: 12px; color: #e8b0a0; letter-spacing: .02em; } .ap .wcand .wtie.love { color: #ff8a8a; font-weight: 700; } .ap .wcand .wtie.cold { color: #9a9a9a; }
