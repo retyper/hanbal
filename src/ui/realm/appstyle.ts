@@ -324,8 +324,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 @media (prefers-reduced-motion: reduce) { .ap .cere.capt .jbars b { animation: none; transform: none; } }
 /* 확인 — 글 맨 아래 · 얼굴이 다 드러난 뒤 나타난다 */
 .ap .cere .cok { position: relative; z-index: 8; margin-top: 6px; min-width: 140px; padding: 11px 28px; font-size: 16px; pointer-events: auto; justify-content: center; text-align: center; line-height: 1.2; /* 글자가 왼쪽에 붙고 오른쪽이 비었다 (형 10-25) */
-  opacity: 0; animation: cokin .4s ease-out 2.2s both; }
-@keyframes cokin { from { opacity: 0; } to { opacity: 1; } }
+  opacity: 0; pointer-events: none; animation: cokin .4s ease-out 2.6s both; } /* 안 보일 때는 눌리지도 않는다 — 투명한 확인을 잘못 눌러 등용 장면이 바로 닫혔다 (형 11-01: "등용도 마찬가지") */
+@keyframes cokin { from { opacity: 0; pointer-events: none; } to { opacity: 1; pointer-events: auto; } }
 @media (prefers-reduced-motion: reduce) { .ap .cere *, .ap .cere { animation-duration: .01s !important; animation-delay: 0s !important; } }
 @keyframes sfxband { 0% { transform: translateY(-50%) scale(1.06); } 100% { transform: translateY(-50%) scale(1); } }
 @keyframes sfxin { 0% { transform: scale(.7) translateY(16px); } 25% { transform: scale(1) translateY(0); } 100% { transform: scale(1.04); } }

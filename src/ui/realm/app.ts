@@ -82,6 +82,7 @@ import { MEM_CSS, memRowHtml } from './memrow.ts'
 import { attachZoom } from './zoom.ts'
 import { holdBox, longPress } from './holdbox.ts'
 import { burn } from './burn.ts'
+import { ASCEND_CSS, ELEM, RINGS, elemOf, elemVars, gatherHtml, vortexHtml } from './ascend.ts'
 import { TUT_CSS, TUT_STEPS, createSpot, tutAt, tutBandHtml, tutStyle } from './tutorial.ts'
 import { LOG_CSS, LOG_GROUPS, lineNations, logGroup, logNations, logRows, logbookHtml, type LogFilter } from './logbook.ts'
 import { markTutorialOver, markWon, nationWon, tutorialOver, unlockedBoards, tierOpen, tierWon } from './unlock.ts'
@@ -613,7 +614,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + MEM_CSS
+  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + MEM_CSS + ASCEND_CSS
   document.head.appendChild(style)
   root.classList.add('ap')
   // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
@@ -1294,48 +1295,64 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (l === undefined) return
     const h = r.heroes[l.hero]!
     root.querySelector('.ascfx')?.remove()
-    // 형 11-01: "각성 연출은 정말 제대로 힘줘 봐" — 불꽃 세 칸이 차례로 붙고 → 초상이 떨며 불길이 치솟고 → 번쩍 · 각성 초상으로 바뀌고
-    // → 금빛 붓질 위에 「각성」 붓글씨가 내리찍히고 → 능력치가 하나씩 오른다. 불티는 낱낱이 (메모리: 이펙트는 낱낱이) · 넓은 막은 opacity 만 (폰 그래픽 한도)
+    // 형 11-01: "디지몬 진화처럼 길고 강렬하게 · 온 세계의 기운이 한 곳으로 모이고 · 성격별로 물·번개·바람·불 · 동물 연출" (ascend.ts)
+    // 모임(둘레의 기운이 감겨 든다 · 북이 두구두구 빨라진다 · 불꽃 칸 셋) → 소용돌이(초상이 빛으로 바래고 기운이 돈다) → 짐승이 솟는다
+    // → 번쩍 · 각성 초상 · 충격파 → 「각성」 붓글씨 → 능력치 → 아래 「확인」.
+    // 탭으로 넘기거나 닫지 않는다 · 저절로 걷히지 않는다 (형 11-01: "실수로 탭 한 번 하니 아무것도 못 보고 끝나 버림 · 다 보고 나서 확인 버튼")
     const b = bustOf(h.id)
     const FX = `${ART}fx/awaken/`
+    const R = P.realm
+    const e = elemOf(h)
+    const E = ELEM[e]
+    const sd = h.id.length + h.name.length
     const before = b !== undefined ? `<img class="axold" src="${ART}bust-hd/${b}.jpg" onerror="this.onerror=null;this.src='${ART}bust/${b}.jpg'" alt="">` : ''
     const after = b !== undefined && AWAKEN_ART.has(b) ? `<img class="axnew" src="${ART}awaken-hd/${b}.jpg" alt="">` : before.replace('axold', 'axnew')
     const phone = window.matchMedia('(pointer: coarse)').matches
-    const n = phone ? P.realm.ascendEmbersPhone : P.realm.ascendEmbers
+    const n = phone ? R.ascendEmbersPhone : R.ascendEmbers
     const jit = (i: number, k: number): number => ((i * 73 + k * 151 + h.id.length * 37) % 101) / 101 // 불티 자리 — 장수마다 같은 흩어짐
-    const embers = Array.from({ length: n }, (_, i) => `<i style="--x:${(jit(i, 1) * 100).toFixed(1)}%;--s:${(0.5 + jit(i, 2)).toFixed(2)};--d:${(2.2 + jit(i, 3) * 2).toFixed(2)}s;--dl:${(1.4 + jit(i, 4) * 2.4).toFixed(2)}s;--dx:${((jit(i, 5) - 0.5) * 60).toFixed(0)}px"><img src="${FX}ember.png" alt=""></i>`).join('')
-    // 불혀 여섯 — 초상 양옆에서 치솟는다 (가운데는 초상이 가린다)
+    const rise = e === 'fire' ? `<img src="${FX}ember.png" alt="">` : `<b class="axdot"></b>`
+    const embers = Array.from({ length: n }, (_, i) => `<i style="--x:${(jit(i, 1) * 100).toFixed(1)}%;--s:${(0.5 + jit(i, 2)).toFixed(2)};--d:${(2.2 + jit(i, 3) * 2).toFixed(2)}s;--dl:${(R.ascendVortexMs / 1000 + jit(i, 4) * 2.4).toFixed(2)}s;--dx:${((jit(i, 5) - 0.5) * 60).toFixed(0)}px">${rise}</i>`).join('')
+    // 불혀 여섯 — WebGL 이 없을 때(.nogl)만 보인다
     const tongues = [-34, -22, -10, 64, 76, 88].map((l, i) => `<img class="axtg" src="${FX}flame.png" style="--i:${i};--l:${l}%" alt="">`).join('')
     // 빈 청동 자리 위에 지금 타는 불 (burn.ts 셰이더) · WebGL 이 없으면 그린 불(slot-on · 불혀 그림)로 (.nogl)
     const slots = [0, 1, 2].map((i) => `<i class="axslot" style="--i:${i}"><img class="off" src="${FX}slot-off.png" alt=""><img class="on" src="${FX}slot-on.png" alt=""><canvas class="axsb"></canvas></i>`).join('')
-    const stats = (['mu', 'tong', 'ryak', 'chi', 'deok'] as const).map((s, i) => `<span class="axst" style="--i:${i}">${STAT_NAME[s]} <s>${h[s] - P.realm.ascendBonus}</s><b>${h[s]}</b></span>`).join('')
+    const stats = (['mu', 'tong', 'ryak', 'chi', 'deok'] as const).map((s, i) => `<span class="axst" style="--i:${i}">${STAT_NAME[s]} <s>${h[s] - R.ascendBonus}</s><b>${h[s]}</b></span>`).join('')
     const el = document.createElement('div')
-    el.className = 'ascfx'
-    el.style.cssText = `--t0:${P.realm.ascendSlotMs}ms;--tg:${P.realm.ascendSlotGapMs}ms;--tf:${P.realm.ascendFlashMs}ms`
+    el.className = 'ascfx evo'
+    el.style.cssText = `--t0:${R.ascendSlotMs}ms;--tg:${R.ascendSlotGapMs}ms;--tv:${R.ascendVortexMs}ms;--tb:${R.ascendBeastMs}ms;--tf:${R.ascendFlashMs}ms;--tok:${R.ascendOkMs}ms;${elemVars(e)}`
     // 불 캔버스는 액자 그림 뒤 — 혀가 청동 테 너머에서 솟는다 · 액자 위엔 불빛을 받는 겹(axglow) · 바닥 불도 같은 셰이더 (그림 검토 11-01)
-    const fr = `--bt:${P.realm.ascendFrameTop};--bs:${P.realm.ascendFrameSide};--bb:${P.realm.ascendFrameBot}`
-    el.innerHTML = `<div class="axveil"></div><img class="axwall" src="${FX}wall.png" alt=""><canvas class="axground"></canvas><div class="axembers">${embers}</div>`
-      + `<div class="axstage"><div class="axcard">${tongues}<div class="axwin">${before}${after}</div><canvas class="axburn" style="${fr}"></canvas><img class="axframe" src="${FX}frame0.png" alt=""><img class="axglow" src="${FX}frame0.png" alt=""></div><div class="axslots">${slots}</div>`
+    const fr = `--bt:${R.ascendFrameTop};--bs:${R.ascendFrameSide};--bb:${R.ascendFrameBot}`
+    el.innerHTML = `<div class="axveil"></div><img class="axwall" src="${FX}wall.png" alt=""><canvas class="axground"></canvas>`
+      + `<img class="axbeast" src="${FX}beast-${E.beast}.png" alt="" onerror="this.classList.add('gone')">${gatherHtml(e, phone ? R.ascendGatherPhone : R.ascendGather, sd, ART)}<div class="axembers">${embers}</div>`
+      + `<p class="axcall">${esc(E.name)}의 기운이 모입니다</p>`
+      + `<div class="axstage"><div class="axcard">${tongues}<div class="axwin">${before}<i class="axsil"></i>${after}</div><canvas class="axburn" style="${fr}"></canvas><img class="axframe" src="${FX}frame0.png" alt=""><img class="axglow" src="${FX}frame0.png" alt="">${vortexHtml(e, phone ? R.ascendOrbitPhone : R.ascendOrbit, sd, ART)}</div><div class="axslots">${slots}</div>`
       + `<div class="axtitle"><img class="axbrush" src="${FX}brush.png" alt=""><img class="axword" src="${FX}word.png" alt="각성"></div>`
-      + `<b class="axname">${esc(h.name)}</b><div class="axstats">${stats}</div><p class="axtap">누르면 닫힙니다</p></div><div class="axflash"></div>`
+      + `<b class="axname">${esc(h.name)}</b><span class="axel">${esc(E.name)} · ${esc(E.beastName)}</span><div class="axstats">${stats}</div></div>${RINGS}<div class="axflash"></div>`
+      + `<div class="axok"><button class="btn pri">확인</button></div>`
     const timers: number[] = []
     const gone = (): void => { timers.forEach((t) => window.clearTimeout(t)); if (!el.isConnected) return; el.classList.add('out'); window.setTimeout(() => el.remove(), 350) }
-    el.addEventListener('click', gone)
+    // 확인 단추만 닫는다 — 단추는 능력치가 다 오른 뒤에 뜬다 (CSS --tok · 그 전엔 눌리지 않는다)
+    el.querySelector('.axok button')?.addEventListener('click', (ev) => { ev.stopPropagation(); gone() })
     root.appendChild(el)
-    // 불을 피운다 — 세 자리는 북소리마다 하나씩, 액자는 번쩍 0.6초 앞부터 번진다. 하나라도 못 피우면 그린 불로 (.nogl)
+    // 불을 피운다 — 세 자리는 북소리마다 하나씩 (늘 불) · 액자·바닥은 그 장수의 기운 빛으로. 하나라도 못 피우면 그린 불로 (.nogl)
     const lit = [
-      ...[...el.querySelectorAll<HTMLCanvasElement>('.axsb')].map((cv, i) => burn(cv, { mode: 'socket', at: P.realm.ascendSlotMs + i * P.realm.ascendSlotGapMs, ramp: P.realm.ascendIgniteMs, seed: i * 3.1 })),
-      ...[...el.querySelectorAll<HTMLCanvasElement>('.axburn')].map((cv) => burn(cv, { mode: 'frame', at: P.realm.ascendFlashMs - P.realm.ascendFrameLeadMs, ramp: P.realm.ascendFrameLeadMs, top: P.realm.ascendFrameTop, side: P.realm.ascendFrameSide, bot: P.realm.ascendFrameBot, seed: 7.3 })),
-      ...[...el.querySelectorAll<HTMLCanvasElement>('.axground')].map((cv) => burn(cv, { mode: 'ground', at: P.realm.ascendFlashMs - P.realm.ascendFrameLeadMs, ramp: P.realm.ascendFrameLeadMs * 1.5, seed: 2.2 })),
+      ...[...el.querySelectorAll<HTMLCanvasElement>('.axsb')].map((cv, i) => burn(cv, { mode: 'socket', at: R.ascendSlotMs + i * R.ascendSlotGapMs, ramp: R.ascendIgniteMs, seed: i * 3.1 })),
+      ...[...el.querySelectorAll<HTMLCanvasElement>('.axburn')].map((cv) => burn(cv, { mode: 'frame', at: R.ascendVortexMs, ramp: R.ascendFlashMs - R.ascendVortexMs, top: R.ascendFrameTop, side: R.ascendFrameSide, bot: R.ascendFrameBot, seed: 7.3, colors: E.c })),
+      ...[...el.querySelectorAll<HTMLCanvasElement>('.axground')].map((cv) => burn(cv, { mode: 'ground', at: R.ascendFlashMs - R.ascendFrameLeadMs, ramp: R.ascendFrameLeadMs * 1.5, seed: 2.2, colors: E.c })),
     ]
     if (lit.some((x) => !x)) el.classList.add('nogl')
-    // 소리도 장면을 따라 — 불꽃 세 칸은 북 셋 · 번쩍에 큰 타격 · 붓글씨에 나팔 · 그다음 장수의 한마디
+    // 소리 — 두구두구(점점 빨라지는 북) · 불꽃 칸 셋 · 소용돌이에 그 기운의 소리 · 짐승이 솟을 때 함성 · 번쩍에 큰 타격 · 나팔 · 장수의 한마디
     const at = (ms: number, f: () => void): void => { timers.push(window.setTimeout(() => { if (el.isConnected && document.visibilityState === 'visible') f() }, ms)) }
-    for (const i of [0, 1, 2]) at(P.realm.ascendSlotMs + i * P.realm.ascendSlotGapMs, () => ding(snd('tap_drum'), 0.55 + i * 0.15))
-    at(P.realm.ascendFlashMs, () => { ding(snd('battle_crit'), 0.8); if (typeof navigator.vibrate === 'function') navigator.vibrate([30, 40, 60]) })
-    at(P.realm.ascendFlashMs + 250, () => ding(snd('horn_victory'), 0.7))
-    at(P.realm.ascendFlashMs + 1100, () => { if (h.status === 'free' && !isRuler(r, h.id)) ding(voicePath(h, 'tap', false), 0.9) })
-    timers.push(window.setTimeout(gone, P.realm.ascendShowMs))
+    for (let t = 0, gap = R.ascendRollGapMs, k = 0; t < R.ascendFlashMs - R.ascendRollMinMs; t += gap, gap = Math.max(R.ascendRollMinMs, gap * R.ascendRollAccel), k++) {
+      const v = 0.25 + 0.5 * (t / R.ascendFlashMs)
+      at(t, () => ding(snd(k % 2 === 0 ? 'tap_drum' : 'war_drum'), v))
+    }
+    for (const i of [0, 1, 2]) at(R.ascendSlotMs + i * R.ascendSlotGapMs, () => ding(snd('tap_bell'), 0.55 + i * 0.15))
+    at(R.ascendVortexMs, () => ding(snd(E.sfx), 0.8))
+    at(R.ascendBeastMs, () => ding(snd('war_cry'), 0.75))
+    at(R.ascendFlashMs, () => { ding(snd('battle_crit'), 0.9); if (typeof navigator.vibrate === 'function') navigator.vibrate([40, 40, 80, 40, 120]) })
+    at(R.ascendFlashMs + 250, () => ding(snd('horn_victory'), 0.75))
+    at(R.ascendFlashMs + 1100, () => { if (h.status === 'free' && !isRuler(r, h.id)) ding(voicePath(h, 'tap', false), 0.9) })
   }
   /** 승리가 가깝다 — 넷 가운데 하나가 이번 계절에 문턱(pathAlertShare)을 넘으면 크게 한 번 (형 10-26: "승리 목표 달성의 80%가 되면 한번 알림") */
   function nearWinToast(prev: Realm, next: Realm): void {

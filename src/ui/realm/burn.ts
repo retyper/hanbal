@@ -12,14 +12,15 @@ const VS = 'attribute vec2 p;varying vec2 v;void main(){v=p*.5+.5;gl_Position=ve
 const FS = `precision mediump float;
 varying vec2 v;
 uniform float uT, uOn, uSeed, uMode, uTop, uSide, uBot;
+uniform vec3 uC0, uC1, uC2, uC3;
 float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
 float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
   return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x),f.y);}
 float fbm(vec2 p){float a=.5*noise(p);p*=2.03;a+=.25*noise(p);p*=2.01;a+=.125*noise(p);return a/.875;}
 vec4 ramp(float h){
-  vec3 c=mix(vec3(.5,.05,.02),vec3(1.,.4,.05),smoothstep(.12,.42,h));
-  c=mix(c,vec3(1.,.8,.28),smoothstep(.42,.68,h));
-  c=mix(c,vec3(1.,.97,.86),smoothstep(.7,.95,h));
+  vec3 c=mix(uC0,uC1,smoothstep(.12,.42,h));
+  c=mix(c,uC2,smoothstep(.42,.68,h));
+  c=mix(c,uC3,smoothstep(.7,.95,h));
   float a=smoothstep(.06,.28,h);
   return vec4(c*a,a);
 }
@@ -89,6 +90,15 @@ export interface BurnOpts {
   /** 액자 — 캔버스 아래로 더 둔 몫 (아랫변이 그을릴 자리) */
   readonly bot?: number
   readonly seed?: number
+  /** 그레이디언트 넷 (짙은 끝 · 가운데 · 밝은 · 심) — 각성의 기운 색 (ascend.ts ELEM). 없으면 불 */
+  readonly colors?: readonly [string, string, string, string]
+}
+
+/** 불의 그레이디언트 — 옛 셰이더 값 그대로 */
+const FIRE: readonly (readonly [number, number, number])[] = [[0.5, 0.05, 0.02], [1, 0.4, 0.05], [1, 0.8, 0.28], [1, 0.97, 0.86]]
+const rgb = (hex: string): readonly [number, number, number] => {
+  const n = parseInt(hex.slice(1, 7), 16)
+  return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255]
 }
 
 /** 캔버스에 불을 피운다 — 캔버스가 문서에서 빠지면 저절로 멈춘다. WebGL 이 없으면 false (부른 쪽이 그린 불로 대신한다) */
@@ -124,6 +134,8 @@ export function burn(cv: HTMLCanvasElement, o: BurnOpts): boolean {
   gl.uniform1f(uTop, o.top ?? 0)
   gl.uniform1f(uSide, o.side ?? 0)
   gl.uniform1f(uBot, o.bot ?? 0)
+  const cs = o.colors !== undefined ? o.colors.map(rgb) : FIRE
+  ;(['uC0', 'uC1', 'uC2', 'uC3'] as const).forEach((n, i) => gl.uniform3f(u(n), ...cs[i]!))
   const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const t0 = performance.now()
   const fit = (): void => {
