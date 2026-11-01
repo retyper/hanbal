@@ -93,15 +93,15 @@ const TAP: ReadonlyArray<readonly [RegExp, TapSlot | 'ui_open' | 'wed']> = [
   // 닫기 · 물리기 · 되돌리기
   [/^(close|rep-close|selclose|dex-close|failclose|sortie-cancel|fr-back|turnback|undo-split|pp-close|pp-undo|un[a-z]+)$/, 'tap_cancel'],
   // 책장 · 기록 · 도움말
-  [/-open$|^film-|^(help|tab|log-n|log-f|mig-n|layers|layer|deeds|jump|roadkey|hero)$/, 'ui_open'],
+  [/-open$|^film-|^(help|tab|log-n|log-f|mig-n|layers|layer|deeds|jump|roadkey|hero|nr-more)$/, 'ui_open'],
   // 군사 — 뽑기 · 편성 · 진군 · 지키기 · 쏘기
-  [/^(draft|dunit|diron|dn|assign|tok|sq|sqall|ap|mv|go|guard|arm|shoot|sortie-go|lead|merge|selmerge|disband|bowup|shero|sdest|sstay)$/, 'tap_arms'],
+  [/^(draft|dunit|diron|dn|assign|tok|sq|sqall|ap|mv|go|guard|arm|shoot|sortie-go|lead|merge|selmerge|disband|bowup|shero|sdest|sstay|nr-draft)$/, 'tap_arms'],
   // 곡식 · 쇠 · 교역 — 고용 · 짓기 · 군량 · 주고받기
   [/^(hire|build|ration|cq)$/, 'tap_coin'],
   // 글 · 꾀 · 사신 — 붓과 도장
-  [/^(compose|compose-go|ctarget|chero|plot|nat-plot|pagent|persuade|pby|answer|envoy|nat-diplo|dmode|dex-sel)$/, 'tap_brush'],
+  [/^(compose|compose-go|ctarget|chero|plot|nat-plot|pagent|persuade|pby|answer|envoy|nat-diplo|dmode|dex-sel|nr-chief|nr-diplo)$/, 'tap_brush'],
   // 사람이 움직인다 — 정찰 · 원정 · 옮겨 살기
-  [/^(scout|exp-go|exp-dest|exp-len|settle|sn|sfrom|migrate|mig-[a-z]+|pgo|pp-[a-z]+|pl-[a-z]+)$/, 'tap_move'],
+  [/^(scout|exp-go|exp-dest|exp-len|settle|sn|sfrom|migrate|mig-[a-z]+|pgo|pp-[a-z]+|pl-[a-z]+|party|party-to|party-goal)$/, 'tap_move'],
   // 방울은 혼인·제사에만 — 영웅전 장수 보기 · 사건 고르기 · 나라 비추기에도 울려 거슬렸다 (형 10-25: "방울 소리가 이상한 데서 계속 · 영웅전에서 장수 볼 때도")
   // 제사는 굿 소리 · 혼인은 가야금 (형 10-27: "제사는 굿 소리로 · 혼인은 가야금 아르페지오")
   [/^rite$/, 'tap_rite'],

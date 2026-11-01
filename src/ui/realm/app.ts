@@ -5832,7 +5832,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       mapEl.querySelector('.nring')?.remove()
       if (rh !== '') {
         mapEl.insertAdjacentHTML('beforeend', rh)
-        if (ring !== lastRingId) mapEl.querySelector('.nring')?.classList.add('pop')
+        if (ring !== lastRingId) {
+          mapEl.querySelector('.nring')?.classList.add('pop')
+          if (document.visibilityState === 'visible') { const s = tapSlot('hold'); if (s !== null) ding(snd(s), 0.15) } // 튀어나올 때 작은 소리 · 걷힐 때는 소리 없이 (ZAXIS-1031 7단계)
+        }
       }
     }
     lastMapRing = mh
