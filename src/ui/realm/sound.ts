@@ -68,7 +68,8 @@ export const LATER: ReadonlySet<Slot> = new Set<Slot>([])
 // 형 10-23 소리 고르기 판: 지도 = 형의 두 곡 + 국악 BGM 다섯 · 싸움 = 사물놀이 둘
 // 10-28: 지도 앞에 국악원 곡 열여섯 — 민요(긴난봉가 · 아리랑 · 밀양 · 정선 · 뱃노래 · 한오백년 · 진도 · 자진난봉가 · 상주모심기) 사이사이에
 // 기악(거문고 산조 · 양금 상령산 · 영산회상 타령 · 수연장지곡 · 우조가락도드리 · 방아타령 · 25현 한오백년)을 끼워 같은 결이 이어 붙지 않게
-export const ROTATE: Readonly<Partial<Record<Slot, readonly string[]>>> = { bgm_map: ['k1', 'k12', 'k5', 'k3', 'k6', 'k14', 'k9', 'k13', 'k7', 'k4', 'k11', 'k15', 'k10', 'k16', 'k2', 'k8', 'f', 'c2', 'c9', 'c3', 'c4', 'c10'], bgm_war: ['c7v', 'c8v'] }
+// 11-01 형: "예전 국립국악원 음악 말고 다른 게 들어가 있던데 그거 빼 줘" — 형의 옛 두 곡(f)과 저작권위원회 국악 BGM(c2·c9·c3·c4·c10)을 지도에서 뺐다. 형이 새 곡을 가져오면 이 줄에 끼운다
+export const ROTATE: Readonly<Partial<Record<Slot, readonly string[]>>> = { bgm_map: ['k1', 'k12', 'k5', 'k3', 'k6', 'k14', 'k9', 'k13', 'k7', 'k4', 'k11', 'k15', 'k10', 'k16', 'k2', 'k8'], bgm_war: ['c7v', 'c8v'] }
 // 싸움 음악 c7v·c8v = c7·c8 에 남창 추임새를 얹은 것 (형 10-28: c7 5초 헐씨구 · 36초 잘한다 / c8 6초 얼씨구 · 10초 좋다 · 17초 하믄 · 20초 그러지 · 31초 헐씨구 · 35초 잘한다)
 // 추임새마다 그 자리 음악보다 4dB 크게 · 봉우리만 눌렀다 — 굽는 법은 assets_src/realm/sfx-in/chuim/
 /** 한 곡이 끝나고 다음 곡까지 쉬는 자리 — 계절 바람소리만 남는다 (형 10-28: "문명에선 배경음악 안 들릴 때도 많은데") */
@@ -83,7 +84,7 @@ const ONCE: ReadonlySet<Slot> = new Set<Slot>(['bgm_win', 'bgm_wed'])
  */
 const TRACK_GAIN: Readonly<Partial<Record<string, number>>> = {
   // 싸움 음악(사물놀이)은 꽹과리가 앞에 나서 깃발 소리를 덮는다 — 지도 음악보다 한참 낮게 (형 10-23: "꽹과리 소리 너무 많이 시끄러운데")
-  bgm_map_f: 0.72, bgm_map_c2: 0.74, bgm_map_c4: 0.31, bgm_map_c9: 0.32, bgm_map_c10: 0.68, bgm_war_c7: 0.3, bgm_war_c8: 0.5, bgm_war_c7v: 0.3, bgm_war_c8v: 0.5, bgm_title_c6: 0.72, bgm_end_lose_c6: 0.87,
+  bgm_war_c7: 0.3, bgm_war_c8: 0.5, bgm_war_c7v: 0.3, bgm_war_c8v: 0.5, bgm_title_c6: 0.72, bgm_end_lose_c6: 0.87,
 }
 const gainOf = (slot: Slot, pick: string = PICK[slot]): number => TRACK_GAIN[`${slot}_${pick}`] ?? 1
 
