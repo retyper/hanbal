@@ -778,6 +778,23 @@ export const FRONT_CSS = `
 /* 서막 둘째 장은 밝은 한지 위 — 결의 한 줄은 먹빛으로, 카드는 짙게 */
 .ap .prologue .kyeol .kl { color: #4a3826; } .ap .prologue .kyeol .kl b { color: #7a1f10; }
 .ap .prologue .cust, .ap .prologue .carmy { background-color: #2a2015ee; text-align: left; } .ap .prologue .cust.t-nation { background-color: #3a1f12ee; } .ap .prologue .cust.t-land { background-color: #1f2a1aee; } .ap .prologue .carmy { background-color: #1a1d22ee; }
+/* 서막이 화면보다 길면 — 가운데 맞춤이면 위(초상)와 아래(단추)가 같이 잘렸다. 넘치면 위에서부터 놓이고 굴러간다 (형 11-01: "정보가 너무 많을 때 화면 넘쳐버리는데") */
+.ap .prologue { justify-content: safe center; overflow-y: auto; overscroll-behavior: contain; }
+/* 폰 — 나라 소개 장을 촘촘히: 초상은 화면 높이 몫으로 · 글자·풍습 카드는 한 단계 작게 */
+@media (max-width: 640px) {
+  .ap .prologue { padding: 12px 14px; }
+  .ap .prologue .pyou { gap: 6px; flex-direction: column; }
+  .ap .prologue .pyou .pface { width: min(140px, 36vw, 16vh); }
+  .ap .prologue .pt { min-width: 0; width: 100%; }
+  .ap .prologue .pt > b { font-size: 24px; } .ap .prologue img.pem { width: 36px; height: 36px; }
+  .ap .prologue .pt > span { margin: 0 0 4px; font-size: 13px; }
+  .ap .prologue .pt p { font-size: 13.5px; line-height: 1.55; margin: 0 0 8px; }
+  .ap .prologue .kyeol .kl { font-size: 13px; line-height: 1.5; }
+  .ap .prologue .cust { padding: 4px 8px; font-size: 11.5px; line-height: 1.4; margin-top: 5px; }
+  .ap .prologue .cust b { font-size: 12.5px; min-width: 46px; } .ap .prologue .cust b .cuic { width: 24px; height: 24px; }
+  .ap .prologue .carmy { font-size: 11.5px; padding: 4px 8px; }
+  .ap .prologue .pnav { margin-top: 10px; }
+}
 .ap .carmy .cmw { flex-basis: 100%; font-size: 11px; color: #a8b0bc; }
 /* 승리 목표 — 도장 찍듯 내려앉는 판 · 붉은 띠 「승리 목표」 · 자유 판은 넷을 한 줄씩 (형 10-29: "무조건 읽게끔") */
 .ap .prologue .pgoal .gbox { position: relative; box-sizing: border-box; width: min(100%, 640px); margin: 0 auto 16px; padding: 12px 14px 12px; border: 3px double #7a1f10; background: #f6ead0e6; box-shadow: 0 6px 18px #0005; text-align: center; animation: gstamp .55s cubic-bezier(.2,.9,.3,1.3) .1s both; }
