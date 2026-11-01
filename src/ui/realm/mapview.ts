@@ -23,7 +23,8 @@ import { blockedWhy, forceOf, seasonOf } from '../../realm/season.ts'
 import type { EdgeKind, NodeKind, Realm, REdge, RegionId, SeasonOfYear } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { curvePts, ferryAt, landClipSvg, midOf, riversSvg, smoothPath, tidyEnds, trimPolyline, type Pt } from './mapgeo.ts'
-import { boardRoutes, boardTerritory } from './roadlayout.ts'
+import { boardRoutes } from './roadlayout.ts'
+import { ZONES } from '../../realm/data/zones/index.ts'
 import { kitVars, nationKit } from './kitcolor.ts'
 import { worldMapFallback, worldMapUrl } from './worldmap.ts'
 
@@ -258,7 +259,6 @@ export const MAP_CSS = `
 .map[data-zl="far"][data-region="yeongnam"] .lb small, .map[data-zl="far"][data-region="south"] .lb small, .map[data-zl="far"][data-region="world"] .lb small { display: none !important; }
 .map[data-zl="far"][data-region="yeongnam"] .lb .lbr, .map[data-zl="far"][data-region="south"] .lb .lbr, .map[data-zl="far"][data-region="world"] .lb .lbr { font-size: 0; width: .62em; height: .62em; padding: 0; border-radius: 50%; margin-right: .3em; animation: none; box-shadow: 0 0 0 1.5px #1a120a; }
 .map[data-zl="far"][data-region="yeongnam"] .lb .lbr::after, .map[data-zl="far"][data-region="south"] .lb .lbr::after, .map[data-zl="far"][data-region="world"] .lb .lbr::after { display: none; }
-.map[data-zl="far"][data-region="yeongnam"] svg .nb, .map[data-zl="far"][data-region="south"] svg .nb, .map[data-zl="far"][data-region="world"] svg .nb { stroke-width: 20; opacity: 1; }
 .map[data-zl="far"][data-region="yeongnam"] svg .nbd, .map[data-zl="far"][data-region="south"] svg .nbd, .map[data-zl="far"][data-region="world"] svg .nbd { opacity: .55; }
 .map[data-zl="far"] .lb small { display: none; } .map[data-zl="far"] .lb small.nowi, .map .lb small.nowi { display: inline; }
 .map .lb small { display: block; font-size: .74em; font-weight: 500; color: var(--ink, #5a4a36); opacity: .78; margin-top: -2px; }
@@ -644,7 +644,7 @@ export function mapHtml(
   const fog = r.known !== undefined ? fogSvg(r, me, region, W, H, TERRITORY_R, vis, isFresh, corridors, art) : null
   const landClip = landClipSvg(region, W, H)
   svg += `${landClip}${fog?.defs ?? ''}</defs>`
-  // 땅빛 — 고을마다의 땅을 산·강을 따라 가르고(territory.ts) 주인 색으로
+  // 땅빛 — 구워 둔 고을 구역(realm/data/zones)을 주인 색으로
   svg += provincesSvg(r, W, H, dim, focus, seen, me, landClip !== '')
   // 강 — 또렷하게 (영남 판)
   svg += riversSvg(region, W, H)
@@ -1256,79 +1256,102 @@ const MY_EDGE_CORE = '#eaf4ff'
 /**
  * 고을마다의 땅을 주인 색으로 — 같은 나라 사이는 옅은 점선, 다른 나라 사이는 짙은 금, 강을 따라 갈린 금은 강과 겹친다.
  * **우리 땅**은 늘 같은 파랑(MY_LAND)으로 칠하고 둘레를 남색 띠 위 파랑·흰 심 겹선으로 두른다 (형: "내나라가 지도상에서 정확히 어딘지 가늠이 안됨").
- * 땅 모양은 판마다 한 번만 셈하고(territory.ts) 여기서는 색만 칠한다. 뭍이 있는 판은 뭍 밖을 잘라 낸다.
+ *
+ * 땅 모양은 구워 둔 고을 구역(realm/data/zones · FOCUS H)이다 — 여기서는 주인을 읽어 칠하고, 주인이 다른 이웃 구역 사이 변만 국경으로 긋는다.
+ * 금의 굵기는 화면 px 로 늘 같다 (vector-effect non-scaling-stroke · 형: "국경이 줌마다 꼬이고 작으면 사라짐") — 멀리 봐도 안 사라지고 가까이 봐도 안 부푼다.
+ * 같은 판·같은 주인이면 지난번 그림을 그대로 쓴다 (확대·축소·밀기는 이 셈을 부르지 않는다). 뭍이 있는 판은 뭍 밖을 잘라 낸다.
  */
+let provKey = ''
+let provOut = ''
 function provincesSvg(
   r: Realm, W: number, H: number,
   dim: (owner: string | null) => boolean, focus: string | null, seen: (id: string) => boolean, me: string, clipped: boolean,
 ): string {
-  const { nodes, t } = boardTerritory(r)
+  const region = r.region ?? 'byeonhan-mini'
+  const z = ZONES[region]
+  if (z === undefined) return ''
+  const ids = Object.keys(r.nodes).sort()
+  const ownerOf = (id: string): string | null => (id === '' ? null : r.nodes[id]?.owner ?? null)
+  const key = `${region}|${W}|${me}|${focus ?? ''}|${clipped ? 1 : 0}|${ids.map((id) => `${ownerOf(id) ?? ''}${seen(id) ? '' : '?'}`).join(',')}`
+  if (key === provKey) return provOut
   const clip = clipped ? ' clip-path="url(#rm-land)"' : ''
-  const k = Math.max(1, W / 1100) // 굵기 — 그림 폭에 맞춘다
-  let fill = ''
-  let lines = ''
-  let gold = ''
-  // 나라마다 — 그 나라 땅(잘라 낼 틀)과 바깥 둘레. 둘레를 굵고 옅게 그려 땅 안쪽으로만 잘라 내면 문명 6 의 '안쪽 띠'가 된다 (GAP M2)
-  const own = new Map<string, string>()
+  const k = Math.max(1, W / 1100) // 안쪽 띠 굵기 — 그림 폭에 맞춘다 (띠는 땅빛의 일부라 지도와 함께 커진다)
+  const T = P.realm
+  // 나라마다 — 그 나라 땅(한 패스로 모아 칠하고 잘라 낼 틀로도 쓴다)과 바깥 둘레. 둘레를 굵고 옅게 그려 땅 안쪽으로만 잘라 내면 문명 6 의 '안쪽 띠'가 된다 (GAP M2)
+  const area = new Map<string, string>()
+  for (const id of ids) {
+    const d = z.fill[id]
+    const o = ownerOf(id)
+    if (d === undefined || o === null || !seen(id)) continue // 모르는 땅은 안개가 덮는다
+    area.set(o, (area.get(o) ?? '') + d)
+  }
   const rim = new Map<string, string>()
-  for (const [i, d] of t.fills.entries()) {
-    if (d === '' || !seen(nodes[i]!.id)) continue // 모르는 땅은 안개가 덮는다
-    const o = nodes[i]!.owner
-    if (o === null) continue
-    // 안은 옅게 — 나라는 둘레로 읽힌다
-    fill += `<path d="${d}" fill="${o === me ? MY_LAND : FACTION_ART[o]?.color ?? '#ccc'}" opacity="${dim(o) ? 0.05 : focus === o ? 0.34 : o === me ? 0.3 : 0.17}"/>`
-    if (!dim(o)) own.set(o, (own.get(o) ?? '') + d)
-  }
-  for (const e of t.edges) {
-    if (!seen(nodes[e.i]!.id) && (e.j < 0 || !seen(nodes[e.j]!.id))) continue
-    const o = nodes[e.i]!.owner
-    const o2 = e.j >= 0 ? nodes[e.j]!.owner : null
+  const town = new Map<string, string>() // 나라마다 제 고을 사이 금
+  let ink = ''
+  let inkDim = ''
+  let gold = ''
+  for (const [a, b, d] of z.edge) {
+    if (!seen(a) && (b === '' || !seen(b))) continue
+    const o = ownerOf(a)
+    const o2 = ownerOf(b)
     if (o === null && o2 === null) continue
-    const col = (o ?? o2) === me ? MY_LAND : FACTION_ART[(o ?? o2)!]?.color ?? '#ccc'
-    // 같은 나라 고을 사이 — 옛 지도의 고을 금처럼 긴 점·짧은 점이 번갈아 (형 10-24: "마을 테두리도 확실하고" · 10-26: "마을들 테두리 고도화").
-    // 밑에 한지 빛 가는 띠를 깔아 짙은 땅 위에서도 끊긴 금이 보인다. 나라 둘레의 굵은 띠보다는 한참 낮은 위계
-    // 금은 덜 긋는다 — 줄이 몇 겹씩 돌아 지도가 어지러웠다 (형 10-26: "국경 영역도 너무 몇 줄씩 테두리 두르고 있어서 너무 복잡")
-    if (o === o2) {
-      // 같은 나라 고을 사이 — 가는 점선 하나만 (밑 띠는 걷었다 · 빽빽한 판을 멀리 볼 땐 숨는다 .tw)
-      const a = dim(o) ? 0.1 : 1
-      lines += `<path class="tw" d="${e.d}" stroke="color-mix(in srgb, ${col} 45%, #2a1d10)" stroke-width="${(1.2 * k).toFixed(1)}" stroke-dasharray="${(5 * k).toFixed(1)} ${(4 * k).toFixed(1)}" opacity="${(0.5 * a).toFixed(2)}"/>`
-    } else {
+    if (o === o2) town.set(o!, (town.get(o!) ?? '') + d)
+    else {
       // 나라의 바깥 둘레 — 두 쪽 저마다 제 색 선을 안쪽에 갖는다. 금 자체는 가는 먹선 하나
-      for (const x of [o, o2]) if (x !== null && own.has(x)) rim.set(x, (rim.get(x) ?? '') + e.d)
-      lines += `<path d="${e.d}" stroke="#1a120a" stroke-width="${(1.3 * k).toFixed(1)}" opacity="${e.j < 0 && dim(o) ? 0.1 : 0.7}"/>`
+      for (const x of [o, o2]) if (x !== null && area.has(x) && !dim(x)) rim.set(x, (rim.get(x) ?? '') + d)
+      if (b === '' && dim(o)) inkDim += d
+      else ink += d
     }
-    // 우리 땅의 둘레 — 짙은 띠 위에 금빛
-    if ((o === me) !== (o2 === me)) gold += e.d
+    // 우리 땅의 둘레
+    if ((o === me) !== (o2 === me)) gold += d
   }
-  let band = ''
-  let crisp = ''
+  const NS = 'vector-effect="non-scaling-stroke"'
+  let fill = ''
   let cps = ''
+  let crisp = ''
+  let band = ''
   const bake: BandItem[] = []
-  for (const [o, d] of [...rim].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
+  for (const [o, d] of [...area].sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
+    // 안은 옅게 — 나라는 둘레로 읽힌다. 한 나라의 고을들을 한 패스로 칠해 고을 사이에 이음매가 안 진다
+    fill += `<path d="${d}" fill="${o === me ? MY_LAND : FACTION_ART[o]?.color ?? '#ccc'}" opacity="${dim(o) ? 0.05 : focus === o ? 0.34 : o === me ? 0.3 : 0.17}"/>`
+    const rd = rim.get(o)
+    if (rd === undefined) continue
     const col = o === me ? MY_LAND : nationKit(o).c
-    cps += `<clipPath id="rm-own-${o}"><path d="${own.get(o)!}"/></clipPath>`
+    cps += `<clipPath id="rm-own-${o}"><path d="${d}"/></clipPath>`
     // 둘레 안쪽의 번진 제 색 띠 하나 + 또렷한 제 색 선 하나 — 이웃과 맞닿으면 두 색이 나란히 선다 (문명 6 국경).
     // 둘째 빛 띠·먹빛 테는 걷었다 — 비슷한 빛의 이웃은 이름표의 두 색(kitcolor)으로 가른다 (형 10-26: "몇 줄씩 테두리")
-    band += `<path class="nbd" d="${d}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${(o === me ? 24 : 18) * k}" opacity="${o === me ? 0.45 : 0.36}"/>`
-    bake.push({ own: own.get(o)!, rim: d, col, w: (o === me ? 24 : 18) * k, a: o === me ? 0.45 : 0.36 })
-    crisp += `<path class="nb" d="${d}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${(6 * k).toFixed(1)}" opacity=".9"/>`
+    const bw = (o === me ? 24 : 18) * k
+    const ba = o === me ? 0.45 : 0.36
+    bake.push({ own: d, rim: rd, col, w: bw, a: ba })
+    band += `<path class="nbd" d="${rd}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${bw}" opacity="${ba}"/>`
+    crisp += `<path class="nb" d="${rd}" clip-path="url(#rm-own-${o})" stroke="${col}" stroke-width="${T.mapBorderPx}" ${NS} opacity=".9"/>`
   }
-  const blurK = (3 * k).toFixed(1)
+  // 같은 나라 고을 사이 — 가는 점선 하나만 (빽빽한 판을 멀리 볼 땐 숨는다 .tw · 형 10-26: "국경 영역도 너무 몇 줄씩 테두리 두르고 있어서 너무 복잡")
+  let lines = ''
+  for (const [o, d] of [...town].sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
+    const col = o === me ? MY_LAND : FACTION_ART[o]?.color ?? '#ccc'
+    lines += `<path class="tw" d="${d}" stroke="color-mix(in srgb, ${col} 45%, #2a1d10)" stroke-width="${T.mapTownLinePx}" stroke-dasharray="${T.mapTownDashPx} ${(T.mapTownDashPx * 0.8).toFixed(1)}" ${NS} opacity="${dim(o) ? 0.05 : 0.5}"/>`
+  }
+  if (ink !== '') lines += `<path d="${ink}" stroke="#1a120a" stroke-width="${T.mapBorderInkPx}" ${NS} opacity=".7"/>`
+  if (inkDim !== '') lines += `<path d="${inkDim}" stroke="#1a120a" stroke-width="${T.mapBorderInkPx}" ${NS} opacity=".1"/>`
   // 띠를 미리 구운 그림으로 — 흐림 거르개는 확대·축소 때마다 다시 그려 무거웠다 (형 10-29) · 구울 수 없는 곳(시험)만 옛 거르개
   const baked = bandImage(bake, W, H, 3 * k)
-  let h = `<defs>${baked === null ? `<filter id="rm-band" x="-2%" y="-2%" width="104%" height="104%"><feGaussianBlur stdDeviation="${blurK}"/></filter>` : ''}${cps}</defs>`
+  let h = `<defs>${baked === null ? `<filter id="rm-band" x="-2%" y="-2%" width="104%" height="104%"><feGaussianBlur stdDeviation="${(3 * k).toFixed(1)}"/></filter>` : ''}${cps}</defs>`
   // 둘레는 고을 사이 금(조각)을 이어 그린다 — 끝을 둥글게 해야 꺾인 모서리에서 제 색 선이 끊기지 않는다 (형 10-26: "가까이서 보면 각진 곳에 국경 색이 끊어져 있음")
   const bandLayer = baked !== null ? `<image href="${baked}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="none"/>` : `<g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#rm-band)">${band}</g>`
   h += `<g class="terr"${clip}>${fill}${bandLayer}<g fill="none" stroke-linecap="round" stroke-linejoin="round">${crisp}</g>`
+  h += `<g fill="none" stroke-linecap="round" stroke-linejoin="round">${lines}`
   // 우리 땅의 둘레 — 짙은 남색 띠 위에 우리 빛 · 흰 심 세 겹. 천천히 숨 쉰다
   // (옛 금빛 가는 선은 노란 나라와 헷갈렸다 · 형 10-30: "노란색이 내땅인줄알았네… 영토 테두리 금색이 너무 가시성 떨어지고 효과가 없는거같다")
-  h += `<g fill="none" stroke-linecap="round" stroke-linejoin="round">${lines}`
   if (gold !== '') {
-    h += `<g class="mine-edge"><path d="${gold}" stroke="${MY_EDGE_DARK}" stroke-width="${(9 * k).toFixed(1)}" opacity=".8"/>`
-      + `<path d="${gold}" stroke="${MY_LAND}" stroke-width="${(5.5 * k).toFixed(1)}"/>`
-      + `<path d="${gold}" stroke="${MY_EDGE_CORE}" stroke-width="${(1.8 * k).toFixed(1)}"/></g>`
+    const w = T.mapMyEdgePx
+    h += `<g class="mine-edge"><path d="${gold}" stroke="${MY_EDGE_DARK}" stroke-width="${w}" ${NS} opacity=".8"/>`
+      + `<path d="${gold}" stroke="${MY_LAND}" stroke-width="${(w * 0.6).toFixed(2)}" ${NS}/>`
+      + `<path d="${gold}" stroke="${MY_EDGE_CORE}" stroke-width="${(w * 0.2).toFixed(2)}" ${NS}/></g>`
   }
-  return h + `</g></g>`
+  provKey = key
+  provOut = h + `</g></g>`
+  return provOut
 }
 
 // ───────── 넓어지는 지도 — 모르는 땅 (발견, docs/realm/WORLD-MAP.md §2 · 2026-10-19)
@@ -1365,12 +1388,12 @@ function fogSvg(
   r: Realm, me: string, region: RegionId, W: number, H: number, terrR: number, vis: ReadonlySet<string>, fresh: (id: string) => boolean,
   corridors: readonly string[], art: string,
 ): { defs: string; body: string; words: string } {
-  const { nodes, t } = boardTerritory(r)
+  const zone = ZONES[region]?.fill ?? {}
+  const ids = Object.keys(r.nodes).sort().filter((id) => vis.has(id))
   const blur = Math.round(terrR * 0.3)
   let holes = ''
-  for (const [i, d] of t.fills.entries()) {
-    const id = nodes[i]!.id
-    if (!vis.has(id)) continue
+  for (const id of ids) {
+    const d = zone[id] ?? ''
     const p = nodePos(region, id)
     // 땅을 못 받은 고을(이웃에 다 먹힌 작은 자리)도 제 둘레는 보인다
     const dot = p !== undefined ? `M${(p[0] * W - terrR * 0.5).toFixed(1)} ${(p[1] * H).toFixed(1)}a${(terrR * 0.5).toFixed(1)} ${(terrR * 0.5).toFixed(1)} 0 1 0 ${terrR.toFixed(1)} 0a${(terrR * 0.5).toFixed(1)} ${(terrR * 0.5).toFixed(1)} 0 1 0 ${(-terrR).toFixed(1)} 0Z` : ''
@@ -1382,10 +1405,9 @@ function fogSvg(
   // 그래서 작은 그림판에 미리 그려 흐린 그림 한 장을 가림막으로 쓴다 — 늘려 그리면 가장자리가 저절로 부드럽다
   // 확대·축소할 때마다 지도 전체에 걸린 거르개(일렁임+흐림)를 다시 그려 한 번에 수십 ms 씩 버벅였다 (형 10-29: "확대 축소할 때 버벅거리는 게 고질적") —
   // 이제 모든 기기에서 미리 구운 가림막 한 장을 늘려 쓴다 (갤럭시는 그 거르개를 네모로 깨뜨리기도 했다 · gfxSafe 이 아니어도)
-  const safe = fogMaskUrl(t.fills.flatMap((d, i) => {
-    if (!vis.has(nodes[i]!.id)) return []
-    const p = nodePos(region, nodes[i]!.id)
-    return [{ d, dot: p !== undefined ? [p[0] * W, p[1] * H] as const : undefined }]
+  const safe = fogMaskUrl(`${region}|${ids.join(',')}`, ids.map((id) => {
+    const p = nodePos(region, id)
+    return { d: zone[id] ?? '', dot: p !== undefined ? [p[0] * W, p[1] * H] as const : undefined }
   }), corridors, W, H, terrR, blur)
   if (safe !== null) {
     const defs = `<mask id="rm-fog" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><image href="${safe}" width="${W}" height="${H}" preserveAspectRatio="none"/></mask>`
@@ -1407,9 +1429,10 @@ function fogSvg(
 /** 갤럭시 호환 모드의 안개 가림막 — 본 땅을 검게 뚫은 흰 판을 작게 그려 흐린다 (같은 판이면 다시 그리지 않는다) */
 let fogMaskKey = ''
 let fogMaskOut = ''
-function fogMaskUrl(holes: ReadonlyArray<{ d: string; dot: readonly [number, number] | undefined }>, corridors: readonly string[], W: number, H: number, terrR: number, blur: number): string | null {
+function fogMaskUrl(seenKey: string, holes: ReadonlyArray<{ d: string; dot: readonly [number, number] | undefined }>, corridors: readonly string[], W: number, H: number, terrR: number, blur: number): string | null {
   if (typeof document === 'undefined') return null
-  const key = `${W}|${H}|${terrR}|${corridors.join('')}|${holes.map((h) => h.d).join('')}`
+  // 구역은 구워 둔 것이라 본 고을 id 만 같으면 같은 구멍이다 (패스 수백 KB 를 잇대어 견주지 않는다)
+  const key = `${W}|${H}|${terrR}|${seenKey}|${corridors.join('')}`
   if (key === fogMaskKey) return fogMaskOut
   const s = P.realm.mapFogSafeScale
   const w = Math.max(8, Math.round(W * s))

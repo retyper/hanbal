@@ -3,22 +3,24 @@
  *
  *   node --experimental-strip-types tools/realm-tangle.ts [--list]
  *
- * 판마다 — 옛 그림(서로 밀기만 한 물길 · 길을 안 묶은 땅 · 옛 금 다듬기)과 지금 그림(ui/realm/roadlayout.ts)을 견준다.
+ * 판마다 — 지금 그림(길: ui/realm/roadlayout.ts · 땅: 구워 둔 고을 구역 realm/data/zones)을 잰다. 주인은 처음 판(tools/zonegeo canonicalRealm)의 것.
  *   길×길   고을 밖에서 두 길이 엇갈리는 자리 수 (같은 고을에서 갈라지는 길이 그 고을 그림 밑에서 닿는 것은 뺀다) — 목표 0
  *   스침    길이 두 끝이 아닌 고을 자리 바로 위(고을 그림 밑)를 지나는 수
  *   고을금  길(뱃길 빼고)이 두 끝 고을 사이 금 하나만 한 번 건너는 게 아닌 길 수 — 남의 고을 땅을 지나거나 금을 여러 번 넘나든다
  *   같은나라 같은 나라 두 고을을 잇는 길이 나라 금을 건너는 수 — 목표 0 (처음 판의 주인으로 잰다)
  *   남의나라 다른 나라를 잇는 길이 한 번 넘게 금을 건너는 군더더기 수 — 목표 0
  *   금×금   금끼리(다듬은 뒤) 엇갈리는 자리 수 — 다듬기가 금을 꼬지 않았나
- * --list 는 지금 그림에서 아직 꼬인 길을 낱낱이 적는다. --set realm.borderSimplify=1.3,… 은 params 를 바꿔 지금 그림을 다시 잰다.
+ * --list 는 지금 그림에서 아직 꼬인 길을 낱낱이 적는다. --set realm.borderSimplify=1.3,… 은 params 를 바꿔 구역을 다시 구워 잰다 (파일은 안 쓴다 — 쓰려면 tools/bake-zones.ts).
  */
-import { REGION_ART } from '../src/realm/data/art.ts'
-import { regionNations, startRegion } from '../src/realm/data/regions/index.ts'
+import { ZONES } from '../src/realm/data/zones/index.ts'
 import type { Realm, RegionId } from '../src/realm/types.ts'
-import { P, setParam } from '../src/tune/params.ts'
-import { curvePts, routePoints, segCross, separatedRoutes, type Pt } from '../src/ui/realm/mapgeo.ts'
-import { boardRoutes, boardTerritory, boardTowns, crossCount, roadScale } from '../src/ui/realm/roadlayout.ts'
-import type { Territory } from '../src/ui/realm/territory.ts'
+import { setParam } from '../src/tune/params.ts'
+import { curvePts, segCross, type Pt } from '../src/ui/realm/mapgeo.ts'
+import { boardRoutes, boardTowns, crossCount, roadScale } from '../src/ui/realm/roadlayout.ts'
+import { bakeRegion, canonicalRealm, CELL_DIV } from './zonegeo.ts'
+
+/** 금 — i 와 j 사이(j = -1 이면 바깥) */
+interface Territory { readonly edges: ReadonlyArray<{ readonly i: number; readonly j: number; readonly d: string }> }
 
 const LIST = process.argv.includes('--list')
 const SET = process.argv.includes('--set') ? process.argv[process.argv.indexOf('--set') + 1]!.split(',').map((kv) => kv.split('=') as [string, string]) : []
@@ -145,33 +147,17 @@ function measure(r: Realm, region: RegionId, routes: Map<string, Pt[]>, t: Terri
 const row = (s: Score): string => `길×길 ${String(s.rr).padStart(3)} · 스침 ${String(s.graze).padStart(2)} · 고을금 ${String(s.town).padStart(3)} · 같은나라 ${String(s.same).padStart(3)} · 남의나라 ${String(s.foreign).padStart(3)} · 금×금 ${String(s.bb).padStart(3)}`
 
 for (const region of REGIONS) {
-  const r = startRegion(region, 1, regionNations(region)[0]!)
-  const RA = REGION_ART[region]
-  const W = RA.w
-  const H = RA.h
-  // 옛 그림 — 서로 밀기만 한 물길 · 길을 안 묶은 땅 · 옛 금 다듬기(0.85칸 · 깎기 한 번)
+  const r = canonicalRealm(region)
   const { towns } = boardTowns(r)
-  const pos = new Map(towns.map((t) => [t.id, t.p] as const))
-  const edges = Object.values(r.edges).sort((x, y) => (x.id < y.id ? -1 : 1))
-  const { gap, endR } = roadScale(region)
-  const old = separatedRoutes(`${region}:old`, edges.map((ed) => [ed.id, routePoints(region, ed, pos.get(ed.a)!, pos.get(ed.b)!, W, H)] as const), gap, endR)
-  const keep = [P.realm.borderSimplify, P.realm.borderSmooth] as const
-  setParam('realm.borderSimplify', 0.85)
-  setParam('realm.borderSmooth', 1)
+  const at = new Map(towns.map((t, i) => [t.id, i] as const))
   const t0 = performance.now()
-  const oldT = boardTerritory(r, false).t
-  const t1 = performance.now()
-  const before = measure(r, region, old, oldT)
-  setParam('realm.borderSimplify', keep[0])
-  setParam('realm.borderSmooth', keep[1])
-  const t2 = performance.now()
   const routes = boardRoutes(r)
-  const t3 = performance.now()
-  const newT = boardTerritory(r).t
-  const t4 = performance.now()
-  const after = measure(r, region, routes, newT)
-  console.log(`${region} (고을 ${towns.length} · 길 ${edges.length})`)
-  console.log(`  전  ${row(before)}`)
-  console.log(`  후  ${row(after)}   [길 펴기 ${(t3 - t2).toFixed(0)}ms · 땅 ${(t4 - t3).toFixed(0)}ms (옛 땅 ${(t1 - t0).toFixed(0)}ms)]`)
-  if (LIST) for (const b of after.bad) console.log(`     ${b}`)
+  const t1 = performance.now()
+  const z = SET.length > 0 ? bakeRegion(region, CELL_DIV).data : ZONES[region]!
+  const t2 = performance.now()
+  const t: Territory = { edges: z.edge.map(([a, b, d]) => ({ i: at.get(a) ?? -1, j: b === '' ? -1 : at.get(b) ?? -1, d })) }
+  const now = measure(r, region, routes, t)
+  console.log(`${region} (고을 ${towns.length} · 길 ${Object.keys(r.edges).length})`)
+  console.log(`  ${row(now)}   [길 펴기 ${(t1 - t0).toFixed(0)}ms${SET.length > 0 ? ` · 다시 굽기 ${(t2 - t1).toFixed(0)}ms` : ''}]`)
+  if (LIST) for (const b of now.bad) console.log(`     ${b}`)
 }
