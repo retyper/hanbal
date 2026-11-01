@@ -323,7 +323,8 @@ function oldMapHtml(k: FrontKit, r: Realm, region: RegionId): string {
   const dy = ((n - s) / (P.lat1 - P.lat0)) * OLD_HW
   const diag = Math.max(Math.hypot(dx, dy), 0.02)
   // 땅이 상자 가로의 4할쯤 되게 다가간다 — 그림이 뭉개지지 않게 넷까지, 판이 넓으면 다가가지 않는다
-  const z = Math.min(4, Math.max(1, 0.4 / (diag * 1.1)))
+  // 2배까지만 — 4배로 당기면 1600px 그림의 400px 이 폰 화면 가득 늘어 뭉개졌다 (형 11-01: "기원후 2세기 나올 때 지도 이미지가 왜 이렇게 흐리냐")
+  const z = Math.min(2, Math.max(1, 0.4 / (diag * 1.1)))
   // 고리 지름(상자 가로의 몫) — 상자 높이(0.625)를 넘지 않게
   const ring = Math.min(0.58, Math.max(0.12, diag * z * 1.1))
   // 그림이 상자를 늘 다 덮게 가운데를 그림 안쪽으로 당기고, 당긴 만큼 고리를 옮긴다 (넓은 판에서 그림 끝이 비어 보였다)
@@ -731,8 +732,8 @@ export const FRONT_CSS = `
 .ap .saveov .slotx.armed { background: #5a1a12; border-color: #c05040; color: #ffd8c8; }
 .ap .prologue .pmap { position: relative; width: min(100%, calc(42vh * 1.6)); aspect-ratio: 16 / 10; margin: 0 auto 16px; overflow: hidden; border-radius: 6px; box-shadow: 0 0 0 1px #6a4a2a88, 0 10px 30px #2a1d1066; background: #c8b088; animation: ink 1s ease-out both; }
 .ap .prologue .pmw { position: absolute; left: 0; top: 0; width: 100%; aspect-ratio: 1600 / 1559; transform-origin: 0 0; animation: 7s cubic-bezier(.45, 0, .25, 1) .4s both; }
-.ap .prologue .pmw img { display: block; width: 100%; height: auto; filter: sepia(.6) saturate(.75) contrast(1.05) brightness(.97); }
-.ap .prologue .pmap::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 50%, #0000 45%, #3a2410aa 100%), url(__ART__map-world/hanji.webp) center / cover; mix-blend-mode: multiply; opacity: .85; }
+.ap .prologue .pmw img { display: block; width: 100%; height: auto; filter: sepia(.35) saturate(.9) contrast(1.08); }
+.ap .prologue .pmap::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 50%, #0000 60%, #3a241066 100%), url(__ART__map-world/hanji.webp) center / cover; mix-blend-mode: multiply; opacity: .35; } /* 한지 결은 옅게 — .85 는 지도를 뿌옇게 덮었다 */
 .ap .prologue .pold { position: absolute; transform: translate(-50%, -50%); font-family: var(--display); font-weight: 400; font-size: 2.4vw; letter-spacing: .5em; color: #5a2a10aa; text-shadow: 0 0 6px #f0e0c0; white-space: nowrap; pointer-events: none; }
 .ap .prologue .pring { position: absolute; left: 50%; top: 50%; width: 22%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; border: 3px solid #b0281a; box-shadow: 0 0 0 2px #f0d8a088, 0 0 22px #b0281a99, inset 0 0 18px #f0d8a055; opacity: 0; animation: pring 1.2s ease-out 6.6s both, pglow 2.4s ease-in-out 7.8s infinite; z-index: 2; }
 @keyframes pglow { 50% { box-shadow: 0 0 0 3px #f0d8a0aa, 0 0 34px #d0402acc, inset 0 0 24px #f0d8a077; } }
