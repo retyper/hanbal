@@ -12,6 +12,7 @@
  */
 import type { Order, Realm, Report } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
+import { resting } from '../../realm/season.ts'
 
 export interface TutCtx {
   /** 지금 판 (이번 계절 고른 것을 먼저 해 본 판) */
@@ -55,6 +56,8 @@ const fought = (c: TutCtx): boolean => haveFoe(c) || (c.report?.lines.some((l) =
 const shut = (c: TutCtx): boolean => (c.ov ?? null) === null
 /** 전략 회의 안에서 누를 곳 — 나중 것부터: 정리의 「출정」 · 결정 카드 · 장수가 아뢰는 중이면 「누르면 다음」 */
 const COUNCIL: readonly Press[] = ['.stov [data-act="sortie-go"]', '.stov [data-act="cn-pick"]', '.stov .cnstage .cnav small']
+/** 우리 군대가 떠날 수 있나 — 싸운 군대는 battleRest 달 동안 추스른다 (달 시계 · 14/14 에서 말만 가리키며 갇혔다 11-01) */
+const ready = (c: TutCtx): boolean => { const a = c.r.armies['a-us']; return a !== undefined && a.march === null && !resting(c.r, a) }
 const persuading = (c: TutCtx): boolean => c.orders.some((o) => o.kind === 'persuade') || c.r.heroes[FOE_HERO]?.persuade !== undefined || c.r.heroes[FOE_HERO]?.faction === c.r.player
 
 export const TUT_STEPS: readonly TutStep[] = [
@@ -63,22 +66,23 @@ export const TUT_STEPS: readonly TutStep[] = [
     press: ['.legend .lg.me'], done: (c) => c.acts.has('home'),
   },
   {
-    id: 'draft', name: '징병', what: '마을 장정을 뽑아 군사로 만듭니다', text: '「징병」을 열고 군사를 뽑으세요. 집집에서 사내를 뽑아 군대를 키웁니다.',
-    press: ['[data-act="draft"]', tab('draft')], done: (c) => has(c, 'draft'),
+    id: 'draft', name: '징병', what: '마을 장정을 뽑아 군사로 만듭니다', text: '위례 도읍을 누르세요. 둘레에 단추가 뜹니다. 「징병」을 누르고 군사를 뽑으세요.',
+    // 고을을 누르면 둘레 단추(z축) — 본 게임과 같은 길로 (형 11-01: "튜토리얼도 지금에 맞게") · 징병 탭으로 열어도 된다
+    press: ['[data-act="draft"]', '.nring [data-act="nr-draft"][data-node="tut-wirye-cap"]', '.nd[data-node="tut-wirye-cap"]'], done: (c) => has(c, 'draft'),
   },
   {
-    id: 'settle', name: '개척', what: '백성을 빈땅에 보내 새 마을을 엽니다', text: '「백성」을 열고 빈땅 솔뫼의 「개척단 보내기」를 누르세요. 군사가 아니라 농사지을 백성이 갑니다. 닿으면 새 마을이 섭니다.',
-    press: ['.stlgo[data-node="tut-solmoe"]', tab('people')], done: (c) => has(c, 'party') || has(c, 'settle'),
+    id: 'settle', name: '개척', what: '백성을 빈땅에 보내 새 마을을 엽니다', text: '빈땅 솔뫼로 「개척단 보내기」를 누르세요. 군사가 아니라 농사지을 백성이 도읍에서 떠납니다. 닿으면 새 마을이 섭니다.',
+    press: ['[data-act="party-to"][data-node="tut-solmoe"]', '.sheet [data-act="party"][data-node="tut-wirye-cap"]', '.nd[data-node="tut-solmoe"]'], done: (c) => has(c, 'party') || has(c, 'settle'),
   },
   {
-    id: 'scout', name: '정찰', what: '적 고을의 군세를 미리 엿봅니다', text: '왼쪽(서쪽) 갯골 마을을 누르고 「여기로 정찰을 보낸다」를 누르세요. 적 군세가 얼마인지 보입니다. 정찰은 「외교」에서도 고를 수 있습니다.',
+    id: 'scout', name: '정찰', what: '적 고을의 군세를 미리 엿봅니다', text: '왼쪽(서쪽) 갯골 마을을 누르고 「정찰」을 누르세요. 적 군세가 얼마인지 보입니다.',
     press: ['[data-act="scout"][data-node="tut-gaetgol"]', '.nd[data-node="tut-gaetgol"]'], done: (c) => has(c, 'scout'),
   },
   {
-    id: 'envoy', name: '사신', what: '이웃 나라에 말과 선물을 보냅니다', text: '미추홀에 「선물」 사신을 보내세요. 곡식을 조금 얹고 「사신을 보낸다」를 누르면 됩니다. 선물은 늘 받아 줍니다. 사신은 칠 나라와도 오갑니다.',
+    id: 'envoy', name: '사신', what: '이웃 나라에 말과 선물을 보냅니다', text: '갯골 마을을 누르고 「외교」를 누르세요. 미추홀에 「선물」 사신을 보냅니다. 곡식을 조금 얹고 「사신을 보낸다」를 누르면 됩니다. 선물은 늘 받아 줍니다.',
     press: [
       '.trade [data-act="envoy"]', '.trade [data-act="cq"][data-side="give"][data-res="grain"]:not([data-d^="-"])',
-      '[data-act="compose"][data-ask="gift"]', '[data-act="compose-go"][data-ask="gift"]', '.nd[data-node="tut-gaetgol"]',
+      '[data-act="compose"][data-ask="gift"]', '[data-act="compose-go"][data-ask="gift"]', '.nring [data-act="nr-diplo"]', '.nd[data-node="tut-gaetgol"]',
     ],
     done: (c) => has(c, 'envoy'),
   },
@@ -127,8 +131,8 @@ export const TUT_STEPS: readonly TutStep[] = [
     done: (c) => c.orders.some((o) => o.kind === 'plot'),
   },
   {
-    id: 'win', name: '도읍 차지', what: '적의 도읍을 쥐면 이깁니다', text: '마지막입니다. 군대를 미추홀 도읍으로 보내세요. 전략 회의에서 장수들의 말을 듣고 「출정」, 그다음 「다음 달」을 누르면 됩니다. 도읍을 쥐면 이 판을 이깁니다.',
-    press: [...COUNCIL, ['.next', marching], '.nd[data-node="tut-michuhol-cap"][data-act="go"]', '.tok[data-army="a-us"]', ['.next', () => true]],
+    id: 'win', name: '도읍 차지', what: '적의 도읍을 쥐면 이깁니다', text: '마지막입니다. 군대를 미추홀 도읍으로 보내세요. 싸운 군대는 잠시 추스르니 그동안은 「다음 달」을 누르세요. 전략 회의에서 「출정」, 그다음 「다음 달」을 누르면 됩니다. 도읍을 쥐면 이 판을 이깁니다.',
+    press: [...COUNCIL, ['.next', marching], '.nd[data-node="tut-michuhol-cap"][data-act="go"]', ['.tok[data-army="a-us"]', ready], ['.next', () => true]],
     done: (c) => c.r.outcome?.kind === 'win',
   },
 ]
@@ -375,7 +379,7 @@ export function createSpot(root: HTMLElement): Spot {
       last = ''
     } else {
       // 공작은 펼친 판 통째(누구에게 · 무슨 공작 · 누가 가나) — 밀정 카드만 밝으면 무슨 단추인지 몰랐다 (형 10-30)
-      view = target.closest<HTMLElement>('.mcard, .ncard, .popan') ?? target
+      view = target.closest<HTMLElement>('.mcard, .ncard, .popan, .nring.card') ?? target
       // 지도·판 안에서 다 안 보이면(반쯤 윗줄에 묻힌 고을도) 한 번만 굴려 가운데로 (그 뒤엔 지도를 끌어도 따라가기만)
       if (scrolledStep !== (step?.id ?? '')) {
         scrolledStep = step?.id ?? ''

@@ -71,7 +71,7 @@ describe('집 보내기', () => {
 
   it('배우는 판 — 개척 단계는 솔뫼의 개척단 단추를 가리킨다 · 개척단이 솔뫼로 갈 수 있다', () => {
     const st = TUT_STEPS.find((s) => s.id === 'settle')!
-    assert.ok(st.press.includes('.stlgo[data-node="tut-solmoe"]'))
+    assert.ok(st.press.includes('[data-act="party-to"][data-node="tut-solmoe"]'))
     const r = startTutorial(1)
     const ok = Object.values(r.nodes).some((n) => n.owner === r.player && partyMoves(r, r.player, n.id).some((m) => m.to === 'tut-solmoe' && m.found))
     assert.ok(ok)

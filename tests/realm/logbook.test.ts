@@ -73,7 +73,7 @@ describe('배우기 — 누를 곳을 눌러야 넘어간다', () => {
 
   it('누를 곳은 나중 것부터 — 판이 열려 있으면 그 안의 단추, 아니면 탭', () => {
     const draft = TUT_STEPS.find((s) => s.id === 'draft')!
-    assert.equal(tutPick(draft, ctx, (s) => s.includes('tab')), '[data-act="tab"][data-tab="draft"]')
+    assert.equal(tutPick(draft, ctx, (s) => s.includes('nr-draft')), '.nring [data-act="nr-draft"][data-node="tut-wirye-cap"]')
     assert.equal(tutPick(draft, ctx, () => true), '[data-act="draft"]')
     assert.equal(tutPick(draft, ctx, () => false), null, '못 찾으면 없다 — 어둡게 막지 않는다')
   })

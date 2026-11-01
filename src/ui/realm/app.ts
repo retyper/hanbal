@@ -1604,7 +1604,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (!showReport) fresh = new Set() // 드러나는 것은 한 번만 — 계절 소식을 닫고 지도를 볼 때
     // 군대를 고르지 않았을 때만 — 개척할 수 있는 빈땅에 「＋마을」
     const going = new Set(partiesOf(r, me()).flatMap((p) => (p.march !== null && foundable(r, me(), p.march.to) ? [p.march.to] : [])))
-    const stl = armySel.length === 0 && partySel === '' && r.region !== 'tutorial' ? new Set(foundLands(r).filter((to) => !(r.nodes[to]?.owner === me() && (r.nodes[to]?.hh ?? 0) > 0))) : new Set<string>()
+    const stl = armySel.length === 0 && partySel === '' ? new Set(foundLands(r).filter((to) => !(r.nodes[to]?.owner === me() && (r.nodes[to]?.hh ?? 0) > 0))) : new Set<string>()
     // 지난 계절 싸움으로 주인이 바뀐 고을 (보고에 남은 것) — 지도에 불과 연기
     const burn = new Set<string>()
     // 우리가 빼앗았으면 불 대신 우리 깃발 · 지켜 냈으면 방패 (형 10-23: "졌을 때는 불나는 게 맞는데 이겼을 땐 어떤 연출")
@@ -4500,7 +4500,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           ? `<div class="btns"><button class="btn home wide on" data-act="ptjoin" data-army="${p.id}">${icon('unit-porters')}${esc(r.nodes[p.home]?.name ?? '')} 개척단 ${p.hh}가구가 여기 자리 잡는다 · 누르면 거둔다</button></div>`
           : `<div class="btns"><button class="btn pri home wide" data-act="ptjoin" data-army="${p.id}">${icon('unit-porters')}${esc(r.nodes[p.home]?.name ?? '')} 개척단 ${p.hh}가구를 여기 자리 잡게 한다 · 이주</button></div>`
       }
-      if (r.region !== 'tutorial' && n.kind !== 'wild') {
+      if (n.kind !== 'wild') {
         if (settles.some((o) => o.kind === 'party' && o.node === id)) h += `<div class="btns"><button class="btn home wide on" data-act="party-undo" data-node="${id}">개척단을 꾸렸다 · 누르면 거둔다</button></div>`
         else {
           const k = partySize(r, me(), id)
@@ -4596,7 +4596,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const who = come !== undefined ? r.heroes[come.hero] : ch ?? undefined
         bs.push(rb('nr-chief', who !== undefined ? bust(who, 'nrf') : '<b class="nrq">?</b>', '고을지기', '', who === undefined ? ' empty' : ''))
       }
-      if (r.region !== 'tutorial') {
+      {
         // 개척단은 도읍에서만 꾸린다 — 다른 고을엔 단추를 안 둔다 · 갈 빈 땅이 어디든 닿으면 뜬다
         const near = r.factions[me()]?.capital === id && foundLands(r).length > 0
         if (settles.some((o) => o.kind === 'party' && o.node === id)) bs.push(rb('party-undo', icon('unit-porters'), '거둔다', '', ' on'))
@@ -4648,7 +4648,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<div class="nrh">${icon(nodeIcon(n), 'nic')}<b>${esc(n.name)}</b></div>`
       if (gains !== '') h += `<div class="nrl"><span>생산품</span><span class="nrg">${gains}</span></div>`
       const wildFree = n.kind === 'wild' && (n.owner === null || (ours && n.hh <= 0))
-      if (wildFree && r.region !== 'tutorial') {
+      if (wildFree) {
         // 빈 땅 한 단추 (z축 6단계) — 개척단이 닿으면 큰 단추 하나 · 못 닿으면 까닭 한 줄
         const goingP = partiesOf(r, me()).find((x) => x.march?.to === id || x.goal === id)
         const src = goingP === undefined && foundLands(r).includes(id) ? partySource(r, id) : null
@@ -6281,9 +6281,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       host.onTap('node', t.dataset['node']!)
       const tap = tapSlot('node')
       if (tap !== null) ding(snd(tap), 0.2)
-      // 첫 누름은 둘레 단추 (z축 5·6단계) — 「자세히」 만 큰 판. 배우는 판은 차례가 고을 누름 → 큰 판을 기다리므로 그대로 · 소도는 굿 판 하나뿐이라 곧바로
+      // 첫 누름은 둘레 단추 (z축 5·6단계) — 「자세히」 만 큰 판. 배우는 판도 같다 (형 11-01: 튜토리얼도 지금에 맞게) · 소도는 굿 판 하나뿐이라 곧바로
       const id = t.dataset['node']!
-      if (realm === null || realm.region === 'tutorial' || realm.nodes[id]?.kind === 'sodo') { openSheet({ kind: 'node', id }); return }
+      if (realm === null || realm.nodes[id]?.kind === 'sodo') { openSheet({ kind: 'node', id }); return }
       const was = ring
       sheet = null
       ring = was === id ? '' : id
