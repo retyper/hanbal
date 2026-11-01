@@ -26,6 +26,8 @@ function Save-Size($img, $size, $path) {
 foreach ($f in Get-ChildItem $src -Filter *.png) {
   $short = $f.BaseName
   $id = $Fix[$short]
+  # g60~g69 처럼 번호 하나에 초상이 둘이면 짧은 이름 대신 초상 id 그대로(g-60-golbeol-golgae.png) 붙인다
+  if (-not $id -and (Test-Path (Join-Path $bust "$short.jpg"))) { $id = $short }
   if (-not $id) {
     if ($short -match '^([gwl])(\d+)$') {
       $p = if ($Matches[1] -eq 'l') { "l-L$($Matches[2])-" } else { '{0}-{1:D2}-' -f $Matches[1], [int]$Matches[2] }
