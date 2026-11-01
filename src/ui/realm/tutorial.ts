@@ -59,7 +59,7 @@ const persuading = (c: TutCtx): boolean => c.orders.some((o) => o.kind === 'pers
 
 export const TUT_STEPS: readonly TutStep[] = [
   {
-    id: 'look', name: '우리 땅', what: '금빛 테두리 안이 우리 나라입니다', text: '여기가 우리 백제입니다. 금빛 테두리 안이 우리 땅입니다. 맨 위 왼쪽에서 빛나는 우리 깃발을 눌러 보세요.',
+    id: 'look', name: '우리 땅', what: '파란 테두리 안이 우리 나라입니다', text: '여기가 우리 백제입니다. 파란 테두리 안이 우리 땅입니다. 맨 위 왼쪽에서 빛나는 우리 깃발을 눌러 보세요.',
     press: ['.legend .lg.me'], done: (c) => c.acts.has('home'),
   },
   {
