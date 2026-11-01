@@ -2600,7 +2600,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const lim = placeLimit(base, me())
     let h = `<button class="btn ghost sm hback" data-act="tab" data-tab="people">‹ 백성</button>`
     h += `<h3 class="sech home">${icon('unit-porters')}백성 배치 <small class="mute">옛말로 사민</small> ${guideBtn('place')}</h3>`
-    h += `<div class="plpool${pool > 0 ? ' full' : ''}"><span>모아 둔 백성</span><b>${pool}가구</b><small>이번 계절 ${out} / ${lim}가구 옮김${out > 0 ? ` ${costHtml({ grain: Math.ceil(out * P.realm.migrateGrain) })}` : ''}</small></div>`
+    h += `<div class="plpool${pool > 0 ? ' full' : ''}"><span>모아 둔 백성</span><b>${pool}가구</b><small>이번 ${turnWord(base)} ${out} / ${lim}가구 옮김${out > 0 ? ` ${costHtml({ grain: Math.ceil(out * P.realm.migrateGrain) })}` : ''}</small></div>`
     for (const id of ids) {
       const n = base.nodes[id]!
       const room = homeRoom(n)
@@ -2626,7 +2626,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       // 길 위에 이 고을로 오는 백성 — 계절마다 조금씩 닿는다 (형 10-31)
       const ib = inboundOf(n, me()) + Math.max(0, dd)
       const coming = ib > 0 ? `<span class="pltag go">${icon('unit-porters', 'plem')}오는 중 ${ib.toLocaleString('ko-KR')}가구 · ${turnsLabel(realm!, Math.ceil(ib / inboundRate(n, realm!)))}</span>` : ''
-      h += `<div class="plcard${cap ? ' cap' : ''}${dd !== 0 ? (dd > 0 ? ' up' : ' down') : ''}"><div class="plch"><b>${cap ? '<i class="star">★</i>' : ''}${esc(n.name)}</b><span class="mute">${cap ? '우리 도읍' : NODE_KIND_NAME[n.kind]}</span>${land}${border}${coming}</div>`
+      h += `<div class="plcard${cap ? ' plcap' : ''}${dd !== 0 ? (dd > 0 ? ' up' : ' down') : ''}"><div class="plch"><b>${cap ? '<i class="star">★</i>' : ''}${esc(n.name)}</b><span class="mute">${cap ? '우리 도읍' : NODE_KIND_NAME[n.kind]}</span>${land}${border}${coming}</div>`
         + `<div class="plrow"><button class="btn sm" data-act="pl-sub" data-node="${id}" ${kSub > 0 ? '' : 'disabled'}>−${kSub > 0 ? kSub : step}</button>`
         + `<div class="plmid"><b>${now.toLocaleString('ko-KR')}가구${dd !== 0 ? ` <i>${dd > 0 ? '+' : ''}${dd}</i>` : ''}</b><span class="plbar"><i style="width:${Math.min(100, Math.round((now / Math.max(1, room)) * 100))}%"></i></span><small>품 ${room.toLocaleString('ko-KR')} · ${yl} <small>계절마다 · 쌀은 한 해</small></small></div>`
         + `<button class="btn sm" data-act="pl-add" data-node="${id}" ${kAdd > 0 ? '' : 'disabled'}>+${kAdd > 0 ? kAdd : step}</button></div></div>`
