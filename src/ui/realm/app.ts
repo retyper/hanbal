@@ -75,6 +75,7 @@ import { morph } from './morph.ts'
 import { rehearse, type BattleLine } from '../../realm/warroom.ts'
 import { BATTLE_CSS, battleCard } from './battlecard.ts'
 import { APPROACH_DOES, APPROACH_NAME, B0_KEY, HARD_LINE, WAR_CSS, b0On, openWar } from './battlefield.ts'
+import { SKFX_CSS } from './skillfx.ts'
 import { MEM_CSS, memRowHtml } from './memrow.ts'
 import { attachZoom } from './zoom.ts'
 import { holdBox, longPress } from './holdbox.ts'
@@ -595,7 +596,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + MEM_CSS
+  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + MEM_CSS
   document.head.appendChild(style)
   root.classList.add('ap')
   // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
