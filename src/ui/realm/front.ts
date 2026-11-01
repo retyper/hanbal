@@ -203,7 +203,8 @@ export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<
     // 아직 지도가 없는 장은 자물쇠가 아니라 「짓는 중」 — 앞 장을 깨도 안 열려 자물쇠면 버그처럼 보인다 (형 10-24: "2장 깼는데 왜 3장 안 열리냐")
     // 깬 장 — 금빛 도장 (형 10-24: "깬 캠페인은 깼다는 표시")
     const cleared = ready && (tierWon?.(c.region!) ?? 0) > 0
-    h += `<i class="bbadge">${c.n}장</i>${cleared ? '<i class="cleared">✓ 깼다</i>' : ''}${open ? '' : ready ? '<i class="lock">🔒</i>' : '<i class="lock wip">🛠 짓는 중</i>'}<span class="btitle"><small>${k.esc(c.era)} · ${k.esc(c.hero)}</small><b>${k.esc(c.name)}</b>${open ? '' : `<em>${k.esc(why)}</em>`}</span></span>${peek}</button>`
+    const cr = badgeRank(tierWon?.(c.region!) ?? 0)
+    h += `<i class="bbadge">${c.n}장</i>${cleared ? `<img class="cleared" src="${k.art}ui/badge/won-${cr}.png" alt="깼다" title="깼다">` : ''}${open ? '' : ready ? '<i class="lock">🔒</i>' : '<i class="lock wip">🛠 짓는 중</i>'}<span class="btitle"><small>${k.esc(c.era)} · ${k.esc(c.hero)}</small><b>${k.esc(c.name)}</b>${open ? '' : `<em>${k.esc(why)}</em>`}</span></span>${peek}</button>`
   })
   h += `</div><h3 class="bsec"><b>자유 판</b><span>나라 하나를 골라 마음대로, 정복 · 맹주 · 철과 뱃길 · 큰 제사</span></h3><div class="bcards">`
   for (const b of BOARDS) {
@@ -234,7 +235,7 @@ export function nationsHtml(k: FrontKit, region: RegionId): string {
   for (const n of all) {
     const w = k.won?.(region, n.id) ?? 0
     h += `<button class="ncard pick" data-act="fr-nation" data-id="${n.id}">${k.face(n.id, 'nface', k.boardRuler?.(region, n.id))}<div class="nb">`
-    h += `<div class="an">${k.emblem(n.id)}<b>${k.esc(n.name)}</b><span class="mute">${k.esc(n.place)}</span>${n.hard ? '<span class="hard">어려움</span>' : ''}${w > 0 ? `<span class="wonb r${badgeRank(w)}">휘장 · 난세 ${w}</span>` : ''}</div>`
+    h += `<div class="an">${k.emblem(n.id)}<b>${k.esc(n.name)}</b><span class="mute">${k.esc(n.place)}</span>${n.hard ? '<span class="hard">어려움</span>' : ''}${w > 0 ? `<span class="wonb"><img src="${k.art}ui/badge/won-${badgeRank(w)}.png" alt=""><small>난세 ${w}</small></span>` : ''}</div>`
     h += `<p>${k.esc(n.blurb)}</p>${barsHtml(n)}</div></button>`
   }
   return h + `</div></div>`
@@ -576,7 +577,10 @@ export const FRONT_CSS = `
 .ap .front .srcline { max-width: 520px; margin: 10px auto 4px; padding: 8px 14px; border-left: 3px solid #c9a45a; color: #e8dcc0; font-family: var(--display); font-size: 15px; line-height: 1.6; background: #1a140ccc; border-radius: 0 10px 10px 0; text-align: left; }
 .ap .front .btn.nextch { font-size: 16px; padding: 10px 18px; }
 /* 깬 장 */
-.ap .front .bcard .cleared { position: absolute; right: 8px; top: 8px; z-index: 2; font-style: normal; font-weight: 800; font-size: 13px; padding: 3px 10px; border-radius: 999px; background: #2c4a1ccc; border: 1px solid #9fd18b; color: #d8ffc8; box-shadow: 0 2px 6px #000a; }
+/* 깬 장 — 청동 휘장 그림 (형 11-01: "클리어한 휘장은 어설프게 css 로 만들지 말고 제대로 이미지로") · 단계따라 구리 → 은 → 금 → 붉은 금 (unlock.badgeRank) */
+.ap .front .bcard .cleared { position: absolute; right: 6px; top: 4px; z-index: 2; width: clamp(54px, 14vw, 78px); height: auto; filter: drop-shadow(0 3px 6px #000c); animation: clrin .5s cubic-bezier(.2, 1.4, .4, 1) .2s both; }
+@keyframes clrin { from { opacity: 0; transform: scale(1.6) rotate(-12deg); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ap .front .bcard .cleared { animation: none; } }
 /* 칭호 도장 — 붉은 네모 낙관 */
 .ap .front .seal { display: flex; align-items: center; gap: 12px; margin: 8px auto 6px; max-width: 460px; }
 .ap .front .seal b { flex: none; display: grid; place-items: center; min-width: 64px; height: 64px; padding: 0 8px; border: 3px solid #c0392b; border-radius: 6px; color: #e04a3a; font-family: var(--display); font-size: 26px; transform: rotate(-4deg); box-shadow: inset 0 0 0 2px #c0392b55; background: #2a0f0a66; }
@@ -694,10 +698,9 @@ export const FRONT_CSS = `
 .ap .front .bcard.locked .bb b { color: #8f8778; } .ap .front .bcard.locked .bmeta.lockwhy { color: #e8c070; }
 .ap .front .bcard.locked:hover, .ap .front .bcard.locked:active { border-color: var(--line); }
 /* 나라 고르기 — 옛 .choose 와 같은 카드 · 휘장(이 나라로 이겼다)은 단계따라 구리 → 은 → 금 → 붉은 금 */
-.ap .front .wonb { margin-left: auto; padding: 1px 9px; border-radius: 10px; font-size: 12px; font-weight: 700; white-space: nowrap; color: #2a1d10;
-  background: linear-gradient(#f0d27a, #b8892e); box-shadow: inset 0 1px 0 #fff6, 0 0 0 1px #0005; }
-.ap .front .wonb.r1 { background: linear-gradient(#e3b07a, #9a6a3a); } .ap .front .wonb.r2 { background: linear-gradient(#eef1f5, #9aa4b0); }
-.ap .front .wonb.r4 { color: #fff4dc; background: linear-gradient(#f2c46a, #b8452a); }
+.ap .front .wonb { margin-left: auto; display: inline-flex; flex-direction: column; align-items: center; line-height: 1; }
+.ap .front .wonb img { width: 40px; height: 40px; object-fit: contain; filter: drop-shadow(0 2px 3px #000a); }
+.ap .front .wonb small { margin-top: 1px; font-size: 11px; font-weight: 700; color: #e8c070; white-space: nowrap; }
 .ap .front .wonc { margin-left: auto; font-size: 13px; color: #e8c070; }
 .ap .front.choose .ncards { max-width: 980px; margin: 8px auto; padding: 0 14px 24px; }
 /* 자세히 */

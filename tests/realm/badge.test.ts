@@ -43,7 +43,7 @@ describe('휘장', () => {
       nations: (_r: RegionId) => NATIONS, won: (_r, n) => (n === id ? 3 : 0),
     }
     const h = nationsHtml(kit, 'byeonhan-mini')
-    assert.ok(h.includes('휘장 · 난세 3') && h.includes('wonb r2'))
+    assert.ok(h.includes('난세 3') && h.includes('ui/badge/won-2.png')) // 휘장은 청동 메달 그림 (11-01)
     assert.ok(h.includes(`휘장 1/${NATIONS.length}`))
     assert.ok(!nationsHtml({ ...kit, won: () => 0 }, 'byeonhan-mini').includes('휘장'))
   })
