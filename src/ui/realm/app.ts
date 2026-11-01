@@ -48,7 +48,7 @@ import { DESTS, DEST_IDS, EXP_SEASONS, destReachable, expAmount, expBlock, expOd
 import { foundable, joinable, partiesOf, partyCost, partyMoves, partyRoute, partySize } from '../../realm/parties.ts'
 import { canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, idleHeroOrders, together, inheritOf, isRuler, postHero, rulerOf, tieOf, wanderersFor, wedCost, wooable } from '../../realm/heroes.ts'
 import { guardOptions } from '../../realm/council.ts'
-import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic, WooApproach } from '../../realm/types.ts'
+import type { Approach, Army, BuildWhat, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic, WooApproach } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, noReachWhy, visibleNodes, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { LEGACY_CSS, bringHtml, clearBring, toggleBring } from './legacy.ts'
@@ -2575,7 +2575,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const wilds = foundLands(r).filter((to) => !(r.nodes[to]?.owner === me() && (r.nodes[to]?.hh ?? 0) > 0))
     if (ps.length > 0 || wilds.length > 0) {
       h += `<h4 class="sech home">${icon('unit-porters')}개척단</h4>`
-      if (ps.length === 0) h += `<p class="mute">지도에서 깜빡이는 「＋마을」을 누른다</p>`
+      if (ps.length === 0) h += `<p class="mute">지도에서 깜빡이는 「개척단 필요」를 누른다</p>`
     }
     for (const p of partiesOf(realm!, me()).filter((x) => joining(x.id))) {
       h += `<div class="row mvq"><button class="pprow" data-act="ptjoin" data-army="${p.id}">${icon('unit-porters', 'gic')}<span class="nchip">${esc(r.nodes[p.home]?.name ?? '')} 개척단</span><span class="mute">백성 ${p.hh}가구 · ${esc(josa(r.nodes[p.at]?.name ?? '', '에', '에'))} 자리 잡는다 · 누르면 거둔다</span></button></div>`
@@ -2837,6 +2837,41 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const asks = openAsks(realm!, me())
     if (asks.length === 0) return ''
     return `<h4>사신이 왔다 · 이번 계절 안에 답한다</h4>` + asks.map(askCard).join('')
+  }
+
+  /** 못 하는 단추를 눌렀다 — 단추 위에 까닭 한 줄이 튀어 올랐다 걷히고, 둔탁한 소리·짧은 떨림 (스스로 걷힌다 · 누르면 바로 걷힌다) */
+  function denyPop(at: HTMLElement, why: string): void {
+    root.querySelector('.dnpop')?.remove()
+    ding(snd('tap_cancel'), 0.5, 0.7)
+    buzz([25, 40, 25])
+    at.classList.remove('dnshake')
+    void at.offsetWidth
+    at.classList.add('dnshake')
+    if (why === '') return
+    const b = at.getBoundingClientRect()
+    const el = document.createElement('div')
+    el.className = 'dnpop'
+    el.textContent = why
+    el.style.cssText = `left:${Math.round(Math.min(innerWidth - 12, Math.max(12, b.left + b.width / 2)))}px;top:${Math.round(Math.max(8, b.top - 8))}px;animation-duration:${P.realm.denyPopMs}ms`
+    el.addEventListener('click', () => el.remove())
+    root.append(el)
+    window.setTimeout(() => el.remove(), P.realm.denyPopMs)
+  }
+
+  /** 못 하는 단추의 꼬리표 — disabled 대신 (disabled 는 눌러도 아무 일이 없다). 누르면 denyPop 이 까닭을 띄운다 */
+  const noBtn = (why: string): string => ` aria-disabled="true" data-why="${esc(why)}"`
+  /** 모자란 것 — 「모자람: 나무 12 · 곡식 5」 (없으면 '') */
+  function shortOf(need: Partial<Record<Good, number>>): string {
+    const have = left()
+    const miss = (Object.entries(need) as Array<[Good, number]>).filter(([g, n]) => n > 0 && have[g] < n).map(([g, n]) => `${GOOD_NAME[g]} ${Math.ceil(n - have[g])}`)
+    return miss.length > 0 ? `모자람: ${miss.join(' · ')}` : ''
+  }
+  /** 목책·해자를 지금 못 두르는 까닭 */
+  function buildWhy(r: Realm, id: string, what: BuildWhat): string {
+    const going = (r.builds ?? []).find((b) => b.node === id)
+    if (going !== undefined) return `${BUILD_NAME[going.what]} 짓는 중입니다 · ${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음`
+    const bc = buildCost(what, r, me())
+    return shortOf({ wood: bc.wood, grain: bc.grain }) || '지금은 지을 수 없습니다'
   }
 
   function guardOrder(node: string): Order {
@@ -4515,7 +4550,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         }
       }
       h += draftCard(r, id, true)
-      h += `<div class="btns"><button class="btn ${guarded ? 'on' : ''}" data-act="guard" data-node="${id}" data-tip="경계를 올리면 이 고을로 오는 기습이 잘 들킨다 · 한 계절 동안" ${guarded || (canGuard(r, me(), id) && left().grain >= guardCost().grain) ? '' : 'disabled'}>경계 강화 ${costHtml({ grain: guardCost().grain })}</button></div>`
+      h += `<div class="btns"><button class="btn ${guarded ? 'on' : ''}" data-act="guard" data-node="${id}" data-tip="경계를 올리면 이 고을로 오는 기습이 잘 들킨다 · 한 계절 동안"${guarded || (canGuard(r, me(), id) && left().grain >= guardCost().grain) ? '' : noBtn(shortOf({ grain: guardCost().grain }) || '이번 계절엔 이미 경계를 올렸습니다')}>경계 강화 ${costHtml({ grain: guardCost().grain })}</button></div>`
       h += guardPathHtml(r, id)
       // 목책·해자 — 나무로 짓는다 (땅마다 나는 것). 다음 계절에 선다
       const nb = nextBuild(r, id)
@@ -4524,7 +4559,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       if (nb !== null) {
         const bc = buildCost(nb, r, me())
         const ok = queued || (canBuild(r, me(), id, nb) && left().wood >= bc.wood && left().grain >= bc.grain)
-        h += `<div class="btns"><button class="btn ${queued ? 'on' : ''}" data-act="build" data-node="${id}" data-what="${nb}" ${ok ? '' : 'disabled'}>${going !== undefined ? `${BUILD_NAME[going.what]} 짓는 중 · ${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음` : queued ? `${BUILD_NAME[nb]} 짓기 시작 · ${turnsLabel(r, seasons(r, 1))} 걸린다` : `${josa(BUILD_NAME[nb], '을', '를')} 두른다 ${costHtml({ wood: bc.wood, grain: bc.grain })}`}</button></div>`
+        h += `<div class="btns"><button class="btn ${queued ? 'on' : ''}" data-act="build" data-node="${id}" data-what="${nb}"${ok ? '' : noBtn(buildWhy(r, id, nb))}>${going !== undefined ? `${BUILD_NAME[going.what]} 짓는 중 · ${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음` : queued ? `${BUILD_NAME[nb]} 짓기 시작 · ${turnsLabel(r, seasons(r, 1))} 걸린다` : `${josa(BUILD_NAME[nb], '을', '를')} 두른다 ${costHtml({ wood: bc.wood, grain: bc.grain })}`}</button></div>`
         h += `<p class="mute">${nb === 'palisade' ? '지키는 쪽이 세진다.' : '목책 앞에서 한 번 더 막는다 · 겨울엔 언다.'} ${turnsLabel(r, seasons(r, 1))} 걸려 선다.</p>`
       }
     }
@@ -4600,10 +4635,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         // 개척단은 도읍에서만 꾸린다 — 다른 고을엔 단추를 안 둔다 · 갈 빈 땅이 어디든 닿으면 뜬다
         const near = r.factions[me()]?.capital === id && foundLands(r).length > 0
         if (settles.some((o) => o.kind === 'party' && o.node === id)) bs.push(rb('party-undo', icon('unit-porters'), '거둔다', '', ' on'))
-        else if (near) bs.push(rb('party', icon('unit-porters'), '개척단', partySize(r, me(), id) > 0 ? '' : ' disabled'))
+        else if (near) bs.push(rb('party', icon('unit-porters'), '개척단', partySize(r, me(), id) > 0 ? '' : noBtn(partyWhy(r, id))))
       }
       const done = musters.reduce((s, o) => s + (o.kind === 'draft' && o.node === id ? o.n : 0), 0)
-      bs.push(rb('nr-draft', icon('unit-spear'), done > 0 ? `+${done}` : '징병', draftLimit(r, me(), id) - done > 0 || done > 0 ? '' : ' disabled', done > 0 ? ' on' : ''))
+      bs.push(rb('nr-draft', icon('unit-spear'), done > 0 ? `+${done}` : '징병', draftLimit(r, me(), id) - done > 0 || done > 0 ? '' : noBtn('이번 달엔 이 고을에서 더 뽑을 장정이 없습니다'), done > 0 ? ' on' : ''))
       const nb = nextBuild(r, id)
       const going = (r.builds ?? []).find((b) => b.node === id)
       if (nb !== null || going !== undefined) {
@@ -4612,7 +4647,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const bc = buildCost(what, r, me())
         const ok = going === undefined && (queued || (canBuild(r, me(), id, what) && left().wood >= bc.wood && left().grain >= bc.grain))
         const label = going !== undefined ? `${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음` : BUILD_NAME[what]
-        bs.push(rb('build', icon(what === 'moat' ? 'settle-moat' : 'settle-palisade'), label, ` data-what="${what}"${ok ? '' : ' disabled'}`, queued || going !== undefined ? ' on' : ''))
+        bs.push(rb('build', icon(what === 'moat' ? 'settle-moat' : 'settle-palisade'), label, ` data-what="${what}"${ok ? '' : noBtn(buildWhy(r, id, what))}`, queued || going !== undefined ? ' on' : ''))
       }
       bs.push(more)
       // 부채꼴 — 위쪽 가운데를 중심으로 왼쪽부터 오른쪽으로 (이름표는 고을 아래에 있다)
@@ -6097,6 +6132,57 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (cue !== undefined) window.setTimeout(() => { if (document.visibilityState === 'visible') ding(snd(cue), 0.4) }, SCENE_CUE_MS)
     paint()
     queueHowWin(lossOf(prev, res.next, res.report, me()))
+    queueGain(res.next, res.report)
+  }
+
+  // ───────── 얻은 것 — 고을을 차지하거나 새 마을이 서면 크게 (형 11-01: "이로운 게 생기면 크고 확실하게 · 슈퍼마리오에도 있다")
+  // 보고·장면·싸움이 다 걷혀 지도로 돌아온 그때 — 가운데에서 튀어 오르고 엽전 소리 · 위 띠의 그 생산품이 함께 뛴다. 스스로 걷힌다
+  interface Gain { readonly node: string; readonly how: 'take' | 'settle'; readonly n?: number }
+  let gainPending = -1
+  function queueGain(next: Realm, rep: Report): void {
+    if (next.outcome) return // 판이 끝났다 — 끝 화면이 그 몫을 한다
+    const gains: Gain[] = []
+    for (const l of rep.lines) {
+      if (l.kind === 'take' && l.faction === me() && next.nodes[l.node]?.owner === me()) gains.push({ node: l.node, how: 'take' })
+      else if (l.kind === 'settle' && l.faction === me() && next.nodes[l.to]?.owner === me()) gains.push({ node: l.to, how: 'settle', n: l.n })
+    }
+    if (gains.length === 0) return
+    const season = next.season
+    gainPending = season
+    const tick = (): void => {
+      if (gainPending !== season || realm === null || realm.season !== season) return
+      // 뒤에 숨은 탭에서는 기다리지 않는다 — 다시 보일 때 이어서 (절대 규칙 4)
+      if (document.visibilityState !== 'visible') { document.addEventListener('visibilitychange', tick, { once: true }); return }
+      if (mapClear()) { gainPending = -1; gainPop(realm, gains); return }
+      window.setTimeout(tick, P.realm.gainWaitMs)
+    }
+    window.setTimeout(tick, P.realm.gainWaitMs)
+  }
+  function gainPop(r: Realm, gains: readonly Gain[]): void {
+    root.querySelector('.gnpop')?.remove()
+    let k = 0
+    const rows = gains.slice(0, 3).map((g, i) => {
+      const n = r.nodes[g.node]
+      if (n === undefined) return ''
+      const chip = (ic: string, t: string): string => `<b class="gnc" style="--k:${k++}">${icon(ic)}${t}</b>`
+      const chips = [...(g.how === 'settle' && g.n !== undefined ? [chip('unit-porters', `+${g.n}가구`)] : []), ...nodeSpecials(r, g.node).map((x) => chip(GOOD_ICON[x], `+${GOOD_NAME[x]}`))]
+      return `<div class="gnrow" style="--i:${i}"><img class="gnnd" src="${ART}icon/${nodeIcon(n)}.png" alt=""><div><b class="gnt">${esc(n.name)}</b><small>${g.how === 'take' ? '우리 땅이 되었습니다' : '새 마을이 섰습니다'}</small><span class="gncs">${chips.join('')}</span></div></div>`
+    }).join('')
+    const sparks = Array.from({ length: 10 }, (_, i) => `<i class="gnsp" style="--a:${i * 36}deg;--r:${140 + (i % 3) * 40}px;--dl:${(i % 4) * 60}ms"></i>`).join('')
+    const el = document.createElement('div')
+    el.className = 'gnpop'
+    el.innerHTML = `<div class="gnbox">${sparks}<b class="gnh">획득!</b>${rows}</div>`
+    el.style.setProperty('--life', `${P.realm.gainPopMs}ms`)
+    el.style.setProperty('--cm', `${P.realm.gainChipMs}ms`)
+    el.addEventListener('click', () => el.remove())
+    root.append(el)
+    ding(snd('coins'), 0.6)
+    buzz([20, 30, 20, 30, 50])
+    for (let i = 0; i < Math.min(k, 4); i++) window.setTimeout(() => { if (el.isConnected) ding(snd('tap_coin'), 0.35, 1 + i * 0.12) }, P.realm.gainChipMs * (i + 1))
+    // 위 띠의 그 생산품 칸이 함께 뛴다 — 무엇이 늘었는지 눈이 따라가게
+    const goods = new Set(gains.flatMap((g) => nodeSpecials(r, g.node)))
+    for (const s of root.querySelectorAll<HTMLElement>('.stat[data-g]')) if (goods.has(s.dataset['g'] as Good)) { s.classList.remove('gnpulse'); void s.offsetWidth; s.classList.add('gnpulse') }
+    window.setTimeout(() => el.remove(), P.realm.gainPopMs)
   }
 
   // ───────── 이기는 법 — 싸움에 지고 지도로 돌아오면 위에 띠 (howwin.ts · 형 10-29: "전투에서 패배하면 개빡치고 하기 싫어지니까")
@@ -6258,6 +6344,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const t = (ev.target as HTMLElement).closest<HTMLElement>('[data-act], .nd')
     if (t === null || !root.contains(t)) return
     if (zoom.dragged() && t.closest('.mapwrap') !== null) return // 지도를 끌다 놓은 것 — 누르기가 아니다
+    // 못 하는 단추 — 눌러도 아무 일 없으면 고장 같았다 (형 11-01: "목책 눌렀는데 아무 반응 없음 · 글자·소리로 알려줘야") → 까닭을 띄우고 둔탁한 소리
+    if (t.getAttribute('aria-disabled') === 'true') { denyPop(t, t.dataset['why'] ?? ''); return }
     if (t.dataset['act'] === 'bk-fast' || t.dataset['act'] === 'rep-fast') {
       $('.modal').classList.add('fast') // 보고판을 한 번 누르면 끝까지 바로 — 다시 그리지 않는다
       return

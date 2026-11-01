@@ -1173,7 +1173,7 @@ export const UI_CSS = `
 .ap .btn.prs, .ap .row.prs, .ap .srow .pin.prs { background: linear-gradient(#140f0a, #241a12); border-color: #4a3a28; color: #cfe8b8; box-shadow: inset 0 3px 7px #000d, inset 0 -1px 0 #ffffff12; transform: translateY(1px); filter: none; }
 .ap .btn.prs::before { content: '✓ '; color: #9fd18b; }
 .ap .btn.ghost { color: #c9bea6; } /* filter(saturate·brightness)는 뺐다 — 폰에서 흐린 단추가 보라색이거나 아예 안 보였다 (형 10-28) */
-.ap .btn:disabled, .ap .btn:disabled:hover { filter: grayscale(.7) brightness(.7); opacity: .6; transform: none; }
+.ap .btn:disabled, .ap .btn:disabled:hover, .ap .btn[aria-disabled="true"], .ap .btn[aria-disabled="true"]:hover { filter: grayscale(.7) brightness(.7); opacity: .6; transform: none; }
 .ap .btn.sm { border-width: 7px 9px; border-image-width: 7px 9px; padding: 1px 4px; }
 .ap .btn.wide { padding: 7px 8px; } .ap .btn.big { padding: 7px 18px; }
 .ap .btn.pri.men { filter: hue-rotate(-28deg) saturate(1.25); } .ap .btn.pri.home, .ap .btn.pri.move { filter: saturate(.85); }
@@ -1199,7 +1199,7 @@ export const UI_CSS = `
 .ap .btn.pri .mute, .ap .btn.pri small, .ap .seg button.on .mute { color: #4a2e10; }
 .ap .btn.pri.men, .ap .btn.pri.home, .ap .btn.pri.move { color: #2a1606; }
 .ap .btn.danger { color: #ffb4a4; }
-.ap .btn:disabled { color: #c8bda8; }
+.ap .btn:disabled, .ap .btn[aria-disabled="true"] { color: #c8bda8; }
 /* 얇은 글씨 — 흐린 말은 한 단 밝게 · 판 안 글씨는 그림자로 가장자리를 세우고, 작은 글씨는 획을 살짝 두껍게 */
 .ap { --mute: #ada391; }
 .ap .tabs button { font-size: 13px; color: #cdbf9f; font-weight: 700; } .ap .tabs button.on { color: var(--gold); }
@@ -1316,7 +1316,31 @@ export const UI_CSS = `
   color: #fff3d6; background: #201811e6; border-radius: 6px; padding: 0 4px; }
 .ap .map .nring .nrb.on { border-color: #8fd06a; box-shadow: 0 0 0 2px #8fd06a55, 0 2px 6px #000a; }
 .ap .map .nring .nrb.empty { border-style: dashed; }
-.ap .map .nring .nrb:disabled { opacity: .45; }
+.ap .map .nring .nrb:disabled, .ap .map .nring .nrb[aria-disabled="true"] { opacity: .45; }
+/* 못 하는 단추를 눌렀다 — 까닭 한 줄이 위로 튀어 올랐다 걷힌다 · 단추는 도리질 (형 11-01: "아무 반응 없는 게 미비함") */
+.ap .dnpop { position: fixed; z-index: 120; transform: translate(-50%, -100%); max-width: min(78vw, 320px); padding: 7px 12px; border-radius: 10px; background: #2a0f0cf2; border: 1px solid #e0705a; color: #ffe2d6; font-size: 13.5px; font-weight: 700; line-height: 1.4; text-align: center; box-shadow: 0 4px 14px #000b; animation: dnpop 1.8s ease-out both; cursor: pointer; }
+@keyframes dnpop { 0% { opacity: 0; transform: translate(-50%, -80%) scale(.8); } 10% { opacity: 1; transform: translate(-50%, -100%) scale(1.06); } 18%, 80% { opacity: 1; transform: translate(-50%, -100%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -120%); } }
+.ap .dnshake { animation: dnshake .35s ease-out; }
+@keyframes dnshake { 0%, 100% { translate: 0 0; } 20% { translate: -5px 0; } 40% { translate: 5px 0; } 60% { translate: -3px 0; } 80% { translate: 2px 0; } }
+/* 획득! — 고을을 얻거나 새 마을이 섰다 (형 11-01: "이로운 게 생기면 크고 확실하게") · 튀어 오르고, 생산품이 하나씩 퐁 · 금빛 낱알이 사방으로 · 스스로 걷힌다 */
+.ap .gnpop { position: fixed; left: 50%; top: 40%; z-index: 110; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; animation: gnlife var(--life, 2.6s) linear both; }
+.ap .gnbox { position: relative; min-width: min(86vw, 320px); max-width: min(92vw, 440px); padding: 16px 22px 18px; border-radius: 16px; background: linear-gradient(#2c2112f5, #1a130af5); border: 2px solid #f0c860; box-shadow: 0 0 0 4px #f0c86033, 0 10px 30px #000c; color: #f8ecd0; animation: gnin .42s cubic-bezier(.3, 1.7, .5, 1) both; }
+.ap .gnh { display: block; text-align: center; font-family: var(--display); font-weight: 400; font-size: clamp(44px, 11vw, 64px); line-height: 1.05; color: #ffd76a; text-shadow: 0 3px 0 #4a3010, 0 0 18px #ffc04088; margin-bottom: 8px; }
+.ap .gnrow { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #f0c86033; animation: gnrow .35s ease-out both; animation-delay: calc(.18s + var(--i) * .12s); }
+.ap .gnnd { width: 84px; height: 84px; object-fit: contain; flex: none; }
+.ap .gnt { display: block; font-size: 22px; color: #fff3d6; } .ap .gnrow small { display: block; font-size: 14px; color: #e8d8b0; }
+.ap .gncs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.ap .gnc { display: inline-flex; align-items: center; gap: 3px; padding: 3px 12px 3px 5px; border-radius: 999px; background: #5a4410; border: 1.5px solid #f0c860; color: #ffe9a8; font-size: 19px; font-weight: 800; animation: gnchip .38s cubic-bezier(.3, 1.8, .5, 1) both; animation-delay: calc(.3s + var(--k) * var(--cm, 220ms)); }
+.ap .gnc img { width: 34px; height: 34px; object-fit: contain; }
+.ap .gnsp { position: absolute; left: 50%; top: 34px; width: 10px; height: 10px; margin: -5px; border-radius: 50%; background: #ffe08a; box-shadow: 0 0 6px #ffd76a; opacity: 0; animation: gnsp .7s ease-out both; animation-delay: calc(.12s + var(--dl)); }
+.ap .stat.gnpulse { animation: gnpulse .5s ease-out 3; }
+@keyframes gnlife { 0%, 88% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes gnin { 0% { transform: scale(.4); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes gnrow { from { transform: translateX(-14px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes gnchip { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes gnsp { 0% { transform: rotate(var(--a)) translateX(0) scale(1.4); opacity: 1; } 100% { transform: rotate(var(--a)) translateX(var(--r)) scale(.3); opacity: 0; } }
+@keyframes gnpulse { 0% { transform: scale(1); } 40% { transform: scale(1.3); color: #ffe08a; } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .ap .gnbox, .ap .gnrow, .ap .gnc, .ap .gnsp, .ap .stat.gnpulse { animation: none; opacity: 1; } .ap .gnsp { display: none; } }
 .ap .map .nring .nrq { font-size: 22px; color: #ffd76a; font-style: normal; }
 .ap .map .nring .nrm { font-size: 22px; font-style: normal; line-height: 1; color: #ffd76a; }
 .ap .map .nring.own.pop .nrb { animation: nrpop .24s cubic-bezier(.3, 1.6, .5, 1) both; animation-delay: calc(var(--i) * var(--st)); }
