@@ -1520,7 +1520,9 @@ function resolveRound(
   // 팔주령 — 그 쪽 장수가 지녔으면 지는 합에서 덜 꺾인다 (relics.ts)
   const steadyOf = (s: Side): number => Math.min(1, ...heroesOf(s).map((h) => h.steady ?? 1))
   const fedA = (oa.lead === 'feast' ? R.tacFeastGuard : 1) * steadyOf(atk)
-  const fedD = (od.lead === 'feast' ? R.tacFeastGuard : 1) * steadyOf(def)
+  // 성벽·목책 안에서 지키는 쪽 — 벽이 안겨 주는 위안으로 밀린 합에서 덜 꺾인다 (M2 · 치는 쪽 땅에 「성문 깨기」가 있으면 벽 안이다)
+  const walled = atk.terrain?.gate === true
+  const fedD = (od.lead === 'feast' ? R.tacFeastGuard : 1) * steadyOf(def) * (walled ? 1 - R.tacWallSteady : 1)
   st.ma += dm < 0 ? dm * fedA * darkMor : dm
   st.md -= dm > 0 ? dm * fedD * darkMor : dm
   if (beat === 'a') st.md -= R.tacTriMorale * fedD * darkMor
@@ -1535,7 +1537,7 @@ function resolveRound(
   if (atk.hungry) st.ma -= R.tacHungry
   if (def.hungry) st.md -= R.tacHungry
   st.ma = clamp(st.ma, 0.1, 1.6)
-  st.md = clamp(st.md, 0.1, 1.6)
+  st.md = clamp(st.md, walled ? Math.min(R.tacWallFloor, def.morale) : 0.1, 1.6)
   const log = finish(beat)
   return { log: { ...log, push: pr }, captured: null, retreat: null, duel: duelRes, lost }
 }
