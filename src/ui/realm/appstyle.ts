@@ -225,11 +225,17 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 /* 컷인 — 사선 띠 셋이 **하나씩 차례로**(0.10 · 0.56 · 1.02초): 띠 하나가 들어와 머물다, 다음 띠가 들어올 때 빠진다 (형 10-24: "셋이 동시에가 아니라 하나씩 보였다 바뀌었다").
    띠마다 그림의 한 곳을 크게(너무 크지 않게 — 형 10-24: "너무 많이 확대") · 하얀 테 · 들어오며 번쩍 · 안에서 천천히 밀린다. 1.48초에 펑 — 액자 속 얼굴 */
 .ap .cere.hire .hbands { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }
-.ap .cere.hire .hb { --w: max(44vw, 40vh); position: absolute; top: -12%; height: 124%; width: var(--w); min-width: 190px; overflow: hidden; transform: skewX(-16deg);
+.ap .cere.hire .hb { --w: max(44vw, 40vh, 190px); position: absolute; top: 0; height: 100%; width: var(--w); overflow: hidden; transform: skewX(-16deg);
   border-left: 5px solid #fff; border-right: 5px solid #fff; box-shadow: 0 0 26px #fff9, 0 0 60px var(--gc); background: #000;
   opacity: 0; animation: hbin .26s cubic-bezier(.15, 1, .3, 1) var(--bd) both, hbout .2s cubic-bezier(.5, 0, .9, .4) var(--bo) forwards; }
-/* 띠 속 그림 — 그림의 한 점(--cx --cy, 0~1)을 띠 한가운데에, 크기 --s 로. % 위치로는 그림이 띠보다 조금만 커서 셋이 다 같은 데를 비췄다 (형 10-24) */
-.ap .cere.hire .hb > i { position: absolute; width: var(--s); height: var(--s); left: calc(50% - var(--cx) * var(--s)); top: calc(50% - var(--cy) * var(--s)); background-repeat: no-repeat; background-size: 100% 100%;
+/* 띠 속 그림 — 그림의 한 점(--cx --cy, 0~1)을 띠 한가운데에, 크기 --s 로. % 위치로는 그림이 띠보다 조금만 커서 셋이 다 같은 데를 비췄다 (형 10-24)
+   단 그림 가장자리가 띠 안으로 들어오면 띠의 검은 바탕이 보였다 (형 11-01: "사선 조각 몇장에서 이미지 바깥 까만부분") — 그 점이 너무 가장자리면 그림이 띠를 다 덮는 데까지만 옮긴다.
+   띠(너비 --w · 높이 = 화면)는 -16° 기울었고 그림은 +16° 로 펴져 있어, 띠 기준으로는 그림이 아래로 갈수록 오른쪽으로 tan16°(.2867)만큼 밀린다.
+   --dy --dx = 그림 가운데가 띠 가운데서 떨어진 거리 · 위아래: |dy| ≤ (s − 100vh)/2 · 옆: 띠 맨 위·맨 아래 모서리까지 덮게 (높이는 100vh 로 넉넉히 잡는다 — 폰의 주소창 몫만큼 더 안쪽)
+   · 가장자리마다 4px 더 넘치게 (딱 맞추면 기운 모서리의 반 화소 틈으로 바탕이 비쳤다) */
+.ap .cere.hire .hb > i { --dy: clamp(calc(50vh + 4px - var(--s) / 2), calc(var(--s) * (.5 - var(--cy))), calc(var(--s) / 2 - 50vh - 4px));
+  --dx: clamp(calc((var(--w) - var(--s)) / 2 + 4px + .2867 * (50vh + var(--dy))), calc(var(--s) * (.5 - var(--cx))), calc((var(--s) - var(--w)) / 2 - 4px - .2867 * (50vh - var(--dy))));
+  position: absolute; width: var(--s); height: var(--s); left: calc(50% - var(--s) / 2 + var(--dx)); top: calc(50% - var(--s) / 2 + var(--dy)); background-repeat: no-repeat; background-size: 100% 100%;
   transform: skewX(16deg); animation: hbpan 1.3s ease-out var(--bd) both; }
 /* 띠 하나 — 화면 자리(left) · 들어오는 쪽(--from) · 그림의 어느 점을(--cx --cy) 얼마나 크게(--s) */
 .ap .cere.hire { animation-duration: .12s; }

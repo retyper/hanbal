@@ -123,8 +123,17 @@ export function tapSlot(act: string): Slot | null {
   return TAP_STANDIN[s]
 }
 
+/**
+ * 앞이 비거나 차오르기만 하는 파일 — 그만큼 건너뛰고 낸다(초 · playOnce 의 「#t=」). 파일은 그대로 둔다(소리 고르기 판은 통째로 듣는다).
+ * 방진 「탱탱」(h1)은 0.07초까지 무음, 0.2초까지 서서히 차올라 0.29초에 가장 크다 — 방패가 내려앉은 뒤에야 쾅이 났다 (형 11-01).
+ * 0.22초부터 내면 바로 −14dB 로 시작해 0.07초 뒤 봉우리 (헤드리스 크롬 decodeAudioData 로 잼)
+ */
+const LEAD_IN: Readonly<Partial<Record<string, number>>> = { cmd_hold_h1: 0.22 }
 /** ding 에 넘기는 이름 — public 아래 길 (확장자까지 — 형이 받아 온 mp3 도 있다) */
-export const snd = (slot: Slot): string => `realm/sfx/${sndFile(slot)}`
+export const snd = (slot: Slot): string => {
+  const lead = LEAD_IN[`${slot}_${PICK[slot]}`]
+  return `realm/sfx/${sndFile(slot)}${lead !== undefined ? `#t=${lead}` : ''}`
+}
 /** 고른 후보의 파일 이름 (확장자까지) */
 export const sndFile = (slot: Slot, pick: string = PICK[slot]): string => `${slot}_${pick}.${EXT[`${slot}_${pick}`] ?? 'ogg'}`
 
@@ -183,6 +192,16 @@ function bufferOf(c: AudioContext, url: string): Promise<AudioBuffer | null> {
     buffers.set(url, p)
   }
   return p
+}
+
+/**
+ * 미리 받아 풀어 둔다 — 처음 내는 소리는 받기·풀기를 기다리느라 늦게 났다(방패가 내려앉은 뒤에 쾅 · 형 11-01).
+ * 싸움이 열릴 때 그 싸움에서 낼 소리를 한 번씩. 받기만 하고 내지는 않는다
+ */
+export function warmOnce(url0: string): void {
+  const c = audio()
+  if (c === null) return
+  void bufferOf(c, url0.replace(/#t=[\d.]+$/, ''))
 }
 
 /** rate — 빠르기(=높낮이). 같은 소리를 여러 번 겹칠 때 조금씩 달리 낸다 (화살비 여러 발) */

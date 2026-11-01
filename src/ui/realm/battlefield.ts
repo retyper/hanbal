@@ -598,6 +598,8 @@ export interface WarHost {
   readonly art: string
   readonly me: string
   ding(name: string, vol?: number, rate?: number, dur?: number): void
+  /** 곧 낼 소리를 미리 받아 풀어 둔다 (ding 과 같은 이름) — 처음 한 번이 늦게 나지 않게 */
+  warm?(names: readonly string[]): void
   /** 음악 — 싸움이 열리면 싸움 음악, 끝나면 이긴·진 음악 (비기면 그대로) */
   music?(kind: 'war' | 'win' | 'lose'): void
   /** 다 골랐다 — 이 명령들로 진짜 넘긴다 */
@@ -3158,6 +3160,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
   let t = rehearse(prev, orders, done, null, host.me)
   if (t.line === null) return false
   preloadSkillFx(host.art) // 기술 장면 그림을 미리 — 안 구운 그림은 장면에서 빠진다 (skillfx.ts)
+  // 싸움 소리도 미리 — 처음 내는 소리는 받기·풀기를 기다려 늦었다: 방진의 쾅이 방패가 내려앉은 뒤에 났다 (형 11-01)
+  host.warm?.([...new Set([...Object.values(BATTLE_SFX), ...Object.values(SK_SFX), ...MELEE, ...Object.values(LAYERS).flatMap((ly) => (ly ?? []).map(([f]) => f))])])
   /** 처음 우리 싸움 수 — 머리의 "몇 판" */
   let left = t.left
   /** 이번 합에 고른 장수 기술 — 풀릴 때 초상 장면을 띄운다 */
