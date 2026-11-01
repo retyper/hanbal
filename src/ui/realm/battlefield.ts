@@ -2438,7 +2438,7 @@ export const WAR_CSS = `
 @keyframes wchunkcut { from { width: var(--cw); } to { width: 0; } }
 @media (prefers-reduced-motion: reduce) { .ap .wbar .wchunk { animation: wchunkon 0s linear var(--bd, 2.4s) both, wchunkcut .3s linear var(--bd, 2.4s) both; } }
 /* 세는 숫자 — 막대와 같은 --bd 에 옛 값→새 값 (cnt) · 정수 셈이라 @property 로 한 칸씩 · 못 알아듣는 브라우저는 반에서 한 번에 바뀐다 */
-.ap .wcnt { display: inline-block; font-style: normal; counter-reset: wc var(--wc); animation-duration: var(--cd, .72s), .9s; animation-timing-function: cubic-bezier(.1, .8, .25, 1), ease-out; animation-delay: var(--bd, 2.4s); animation-fill-mode: both; }
+.ap .wcnt { display: inline-block; font-style: normal; counter-reset: wc var(--wc); transform-origin: 100% 60%; animation-duration: var(--cd, .72s), .9s; animation-timing-function: cubic-bezier(.1, .8, .25, 1), ease-out; animation-delay: var(--bd, 2.4s); animation-fill-mode: both, none; } /* 튀는 붉은 빛(wnhit·wnup)은 바뀌는 그때만 — both 로 두면 기다리는 2.4초 내내 커다란 붉은 숫자가 「명」을 덮었다 · 오른쪽을 축으로 커져 「명」을 안 덮는다 */
 .ap .wcnt::before { content: counter(wc); }
 .ap .wbar.men i { background: linear-gradient(90deg, #2f7a2a, #6fc05a 60%, #b6f09a); box-shadow: 0 0 10px #6fc05a99; }
 .ap .ws.foe .wbar.men i { background: linear-gradient(90deg, #f0a088, #d0583c 40%, #7a2618); box-shadow: 0 0 10px #d0583c99; }
