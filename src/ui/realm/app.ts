@@ -45,7 +45,7 @@ import { allianceWhy, leaderOf, tookRecently, truceWhy, winningAgainst } from '.
 import { startRegion } from '../../realm/data/regions/index.ts'
 import { HIRE_BY_TRAIT, HIRE_LINE, HIRE_PLAIN } from '../../realm/data/hire-lines.ts'
 import { DESTS, DEST_IDS, EXP_SEASONS, destReachable, expAmount, expBlock, expOdds, onExpedition } from '../../realm/expedition.ts'
-import { foundable, joinable, partiesOf, partyCost, partyMoves, partySize } from '../../realm/parties.ts'
+import { foundable, joinable, partiesOf, partyCost, partyMoves, partyRoute, partySize } from '../../realm/parties.ts'
 import { canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, idleHeroOrders, together, inheritOf, isRuler, postHero, rulerOf, tieOf, wanderersFor, wedCost, wooable } from '../../realm/heroes.ts'
 import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic, WooApproach } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
@@ -1642,15 +1642,19 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return [...out].sort()
   }
 
-  /** 도읍에 맞닿지 않은 빈땅 — 도읍에서 개척단을 꾸려 우리 고을을 거쳐 보낸다 (꾸리면 개척단이 골라져 갈 곳이 빛난다) */
-  function capPartyHtml(r: Realm, cls: string): string {
+  /** 도읍에 맞닿지 않은 빈땅 — 도읍에서 개척단을 꾸려 우리 고을을 거쳐 저절로 보낸다 (Party.goal · 형 11-01: "토함 산성 빈땅인데 왜 개척단이 안 보내지냐") */
+  function capPartyHtml(r: Realm, to: string, cls: string): string {
     const cap = r.factions[me()]?.capital
     if (cap === undefined) return ''
-    if (settles.some((o) => o.kind === 'party' && o.node === cap)) return `<p class="mute">이번 달 도읍에서 개척단을 꾸렸습니다. 개척단 말을 눌러 길을 고르세요</p>`
+    const mine = settles.find((o) => o.kind === 'party' && o.node === cap)
+    if (mine !== undefined && mine.kind === 'party' && mine.goal === to) return `<button class="btn home wide on ${cls}" data-act="party-undo" data-node="${cap}">${icon('unit-porters')}개척단이 떠난다 · 누르면 거둔다</button>`
+    if (mine !== undefined) return `<p class="mute">이번 달 개척단은 이미 다른 곳으로 꾸렸습니다</p>`
     const k = partySize(r, me(), cap)
     if (k <= 0) return `<p class="mute">${esc(partyWhy(r, cap))}</p>`
+    const route = partyRoute(r, me(), cap, to)
+    if (route === null) return `<p class="mute">도읍에서 우리 땅을 따라 가는 길이 지금은 막혔습니다</p>`
     const c = partyCost(k)
-    return `<button class="btn pri home wide ${cls}" data-act="party" data-node="${cap}">${icon('unit-porters')}도읍에서 개척단 꾸리기 ${costHtml({ grain: c.grain, wood: c.wood })}</button><p class="mute">우리 고을을 거쳐 한 칸씩 갑니다</p>`
+    return `<button class="btn pri home wide ${cls}" data-act="party-goal" data-node="${to}">${icon('unit-porters')}개척단 보내기 · ${turnsLabel(r, route.turns)} ${costHtml({ grain: c.grain, wood: c.wood })}</button><p class="mute">도읍에서 떠나 우리 고을을 거쳐 저절로 갑니다</p>`
   }
 
   /** 추천할 빈땅 — 임자 없고, 가는 개척단이 없고, 맞닿은 우리 고을에서 지금 꾸릴 수 있는 첫 곳 (이번 계절 이미 꾸렸으면 없음) */
@@ -2648,10 +2652,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const gains = nodeSpecials(r, to).map((g) => `${icon(GOOD_ICON[g], 'gic')}${GOOD_NAME[g]}`)
     let h = `<div class="ncard settlec" id="stl-${to}"><div class="an">${icon(nodeIcon(n), 'nic')}<b>${esc(n.name)}</b></div>`
     if (gains.length > 0) h += `<p class="gain">생산품 · ${gains.join(' ')}</p>`
-    const going = partiesOf(r, me()).find((p) => p.march?.to === to)
+    const going = partiesOf(r, me()).find((p) => p.march?.to === to || p.goal === to)
     if (going !== undefined) return h + `<button class="btn home wide stlgo on" data-act="ptok" data-army="${going.id}" data-node="${to}">${esc(r.nodes[going.home]?.name ?? '')} 개척단이 간다 · 백성 ${going.hh}가구</button></div>`
     const src = partySource(r, to)
-    if (src === null) return h + capPartyHtml(r, 'stlgo') + `</div>`
+    if (src === null) return h + capPartyHtml(r, to, 'stlgo') + `</div>`
     const k = partySize(r, me(), src.from)
     const c = partyCost(k)
     h += `<button class="btn pri home wide stlgo" data-act="party-to" data-node="${to}" data-from="${src.from}" data-edge="${src.edge}">${esc(r.nodes[src.from]?.name ?? '')}에서 개척단 보내기${settleRec(r) === to ? REC_ST : ''}</button>`
@@ -4615,13 +4619,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const wildFree = n.kind === 'wild' && (n.owner === null || (ours && n.hh <= 0))
       if (wildFree && r.region !== 'tutorial') {
         // 빈 땅 한 단추 (z축 6단계) — 개척단이 닿으면 큰 단추 하나 · 못 닿으면 까닭 한 줄
-        const goingP = partiesOf(r, me()).find((x) => x.march?.to === id)
+        const goingP = partiesOf(r, me()).find((x) => x.march?.to === id || x.goal === id)
         const src = goingP === undefined && foundLands(r).includes(id) ? partySource(r, id) : null
         if (goingP !== undefined) h += `<button class="btn home wide on nrbig" data-act="ptok" data-army="${goingP.id}" data-node="${id}">${icon('unit-porters')}${esc(r.nodes[goingP.home]?.name ?? '')} 개척단이 가는 중</button>`
         else if (src !== null) {
           const c = partyCost(partySize(r, me(), src.from))
           h += `<button class="btn pri home wide nrbig" data-act="party-to" data-node="${id}" data-from="${src.from}" data-edge="${src.edge}">${icon('unit-porters')}개척단 보내기 ${costHtml({ grain: c.grain, wood: c.wood })}</button>`
-        } else if (foundLands(r).includes(id)) h += capPartyHtml(r, 'nrbig')
+        } else if (foundLands(r).includes(id)) h += capPartyHtml(r, id, 'nrbig')
         else h += `<p class="nrwhy">${esc(noReachWhy(r, me(), id))}<small>개척단은 우리 고을에서 길로 바로 이웃한 빈 땅에만 갑니다</small></p>`
       } else if (n.owner === null && n.kind !== 'wild' && n.kind !== 'sodo' && n.hh > 0) {
         h += `<p class="nrwhy">${icon('unit-spear')}군사 이동 필요<small>주인이 없어 군사가 닿으면 싸움 없이 우리 땅이 됩니다</small></p>`
@@ -6631,6 +6635,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'party-to': {
         const node = d['from']!
         settles = [...settles.filter((o) => !(o.kind === 'party' && o.node === node)), { kind: 'party', faction: me(), node, edge: d['edge']! }]
+        break
+      }
+      // 도읍에 맞닿지 않은 빈땅 — 도읍에서 꾸려 우리 땅을 거쳐 저절로 간다 (Party.goal)
+      case 'party-goal': {
+        const cap = r?.factions[me()]?.capital
+        if (cap === undefined) break
+        settles = [...settles.filter((o) => !(o.kind === 'party' && o.node === cap)), { kind: 'party', faction: me(), node: cap, goal: d['node']! }]
         break
       }
       case 'party-undo': {

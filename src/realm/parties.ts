@@ -62,6 +62,40 @@ export function partyMoves(r: Realm, faction: string, at: string): Array<{ edge:
   return out
 }
 
+/**
+ * `from` 에서 빈땅 `goal` 까지 개척단이 갈 길 — 우리 고을만 거쳐서, 걸리는 턴이 가장 짧은 길 (같으면 길 id 차례 · A1).
+ * 첫 길과 다 가는 데 드는 턴. 못 가면 null
+ */
+export function partyRoute(r: Realm, faction: string, from: string, goal: string): { edge: string; turns: number } | null {
+  const best = new Map<string, { turns: number; first: string }>([[from, { turns: 0, first: '' }]])
+  const open = [from]
+  while (open.length > 0) {
+    open.sort((a, b) => best.get(a)!.turns - best.get(b)!.turns || (a < b ? -1 : a > b ? 1 : 0))
+    const at = open.shift()!
+    const cur = best.get(at)!
+    if (at === goal) return { edge: cur.first, turns: cur.turns }
+    // 빈땅에 닿으면 거기 마을이 서므로 지나가지 못한다 — 우리 고을만 거친다
+    if (at !== from && r.nodes[at]?.owner !== faction) continue
+    for (const m of partyMoves(r, faction, at)) {
+      if (m.to !== goal && r.nodes[m.to]?.owner !== faction) continue
+      const t = cur.turns + m.seasons
+      const had = best.get(m.to)
+      if (had !== undefined && had.turns <= t) continue
+      best.set(m.to, { turns: t, first: cur.first === '' ? m.edge : cur.first })
+      if (!open.includes(m.to)) open.push(m.to)
+    }
+  }
+  return null
+}
+
+/** 갈 빈땅이 있으면 다음 길로 떠난다 — 그 땅을 남이 먼저 일궜거나 길이 끊겼으면 목표를 내려놓고 선다 */
+function goOn(r: Realm, p: Party): void {
+  if (p.goal === undefined || p.march !== null) return
+  const route = foundable(r, p.faction, p.goal) ? partyRoute(r, p.faction, p.at, p.goal) : null
+  if (route === null || route.edge === '') { delete p.goal; return }
+  startMarch(r, p, route.edge)
+}
+
 function startMarch(r: Realm, p: Party, edge: string): void {
   const m = partyMoves(r, p.faction, p.at).find((x) => x.edge === edge)
   if (m === undefined) return
@@ -85,6 +119,7 @@ export function formParty(r: Realm, o: Extract<Order, { kind: 'party' }>, lines:
   const p: Party = { id, faction: o.faction, home: o.node, at: o.node, hh: n, march: null }
   ps[id] = p
   if (o.edge !== undefined) startMarch(r, p, o.edge)
+  else if (o.goal !== undefined) { p.goal = o.goal; goOn(r, p) }
   lines.push({ kind: 'party', faction: o.faction, party: id, node: o.node, n })
 }
 
@@ -107,6 +142,7 @@ export function joinParty(r: Realm, o: Extract<Order, { kind: 'partyJoin' }>, li
 export function moveParty(r: Realm, o: Extract<Order, { kind: 'partyGo' }>): void {
   const p = r.parties?.[o.party]
   if (p === undefined || p.march !== null) return
+  delete p.goal // 손으로 길을 고르면 저절로 가기는 멈춘다
   startMarch(r, p, o.edge)
 }
 
@@ -144,14 +180,16 @@ export function stepParties(r: Realm, lines: ReportLine[]): void {
       delete ps[id]
       continue
     }
-    if (foundable(r, p.faction, p.at)) {
+    if (foundable(r, p.faction, p.at) && (p.goal === undefined || p.goal === p.at)) { // 갈 곳이 따로 있으면 거쳐 가는 우리 마을엔 눌러앉지 않는다
       const n = r.nodes[p.at]!
       n.hh += p.hh
       n.owner = p.faction
       n.takenAt = r.season
       lines.push({ kind: 'settle', faction: p.faction, from: p.home, to: p.at, n: p.hh })
       delete ps[id]
+      continue
     }
+    goOn(r, p) // 우리 고을에 닿았거나 서 있으면 — 갈 빈땅이 있으면 다음 길로
   }
 }
 

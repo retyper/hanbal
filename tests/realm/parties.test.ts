@@ -10,8 +10,9 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
-import { joinable, partyCost, partyMoves, partySize, partiesOf, stepParties } from '../../src/realm/parties.ts'
+import { joinable, partyCost, partyMoves, partyRoute, partySize, partiesOf, stepParties } from '../../src/realm/parties.ts'
 import { advance } from '../../src/realm/season.ts'
+import { startRegion } from '../../src/realm/data/regions/index.ts'
 import { P } from '../../src/tune/params.ts'
 import type { Realm } from '../../src/realm/types.ts'
 
@@ -160,5 +161,49 @@ describe('개척단 — 겹치거나 먼저 일궈졌을 때', () => {
     assert.equal(p!.hh, 50)
     assert.ok(lines.some((l) => l.kind === 'partyBack' && l.faction === r.player && l.by === foe && l.back === from))
     assert.ok(!lines.some((l) => l.kind === 'partyLost'))
+  })
+})
+
+describe('개척단 갈 곳(goal) — 도읍에 맞닿지 않은 빈땅 (형 11-01: "토함 산성 빈땅인데 왜 개척단이 안 보내지냐")', () => {
+  /** 도읍 곁 빈땅 하나를 우리 마을로 만들고, 그 너머의 빈땅(도읍과 안 맞닿음)을 찾는다 */
+  function twoHop(): { r: Realm; cap: string; far: string } {
+    const r = rich(startRegion('yeongnam', 7, 'golbeol'))
+    const me = r.player
+    const cap = r.factions[me]!.capital
+    const near = new Set(partyMoves(r, me, cap).map((m) => m.to))
+    for (const m of partyMoves(r, me, cap).filter((x) => x.found)) {
+      const v = r.nodes[m.to]!
+      v.owner = me
+      v.hh = 40
+      const far = partyMoves(r, me, m.to).find((x) => x.found && !near.has(x.to) && x.to !== cap)
+      if (far !== undefined) return { r, cap, far: far.to }
+      v.owner = null
+      v.hh = 0
+    }
+    throw new Error('두 칸 너머 빈땅이 없다')
+  }
+
+  it('partyRoute 는 우리 마을을 거쳐 닿는 길을 준다', () => {
+    const { r, cap, far } = twoHop()
+    const route = partyRoute(r, r.player, cap, far)
+    assert.ok(route !== null && route.edge !== '' && route.turns >= 2)
+  })
+
+  it('도읍에서 goal 로 꾸리면 저절로 걸어가 마을을 세운다', () => {
+    const t = twoHop()
+    let r = t.r
+    r = advance(r, [{ kind: 'party', faction: r.player, node: t.cap, goal: t.far }]).next
+    for (let i = 0; i < 24 && r.nodes[t.far]!.owner !== r.player; i++) r = advance(r, []).next
+    assert.equal(r.nodes[t.far]!.owner, r.player)
+  })
+
+  it('같은 판이면 같은 결과 (A1)', () => {
+    const run = (): string => {
+      const t = twoHop()
+      let r = advance(t.r, [{ kind: 'party', faction: t.r.player, node: t.cap, goal: t.far }]).next
+      for (let i = 0; i < 6; i++) r = advance(r, []).next
+      return JSON.stringify(r.parties ?? {}) + r.nodes[t.far]!.owner
+    }
+    assert.equal(run(), run())
   })
 })

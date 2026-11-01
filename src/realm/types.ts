@@ -701,6 +701,8 @@ export interface Party {
   at: string
   readonly hh: number
   march: { readonly from: string; readonly to: string; readonly edge: string; left: number } | null
+  /** 갈 빈땅 — 우리 땅을 거쳐 한 칸씩 저절로 간다 (도읍에 맞닿지 않은 빈땅 · 형 11-01: "토함 산성 빈땅인데 왜 개척단이 안 보내지냐") */
+  goal?: string
 }
 
 export interface Army {
@@ -981,8 +983,8 @@ export type Order =
   | { readonly kind: 'turnBack'; readonly army: string }
   /** 개척 — 제 고을 `from` 의 가호 n 을 길로 맞닿은 빈땅 `to` 로 옮긴다. 곡식이 든다 (economy.settleLimit · settleCost) */
   | { readonly kind: 'settle'; readonly faction: string; readonly from: string; readonly to: string; readonly n: number }
-  /** 개척단 꾸리기 — 고을 `node` 의 백성을 떼어 낸다. edge 를 주면 바로 그 길로 떠난다 (parties.ts) */
-  | { readonly kind: 'party'; readonly faction: string; readonly node: string; readonly edge?: string }
+  /** 개척단 꾸리기 — 고을 `node` 의 백성을 떼어 낸다. edge 를 주면 바로 그 길로 떠난다 · goal 을 주면 우리 땅을 거쳐 그 빈땅까지 저절로 간다 (parties.ts) */
+  | { readonly kind: 'party'; readonly faction: string; readonly node: string; readonly edge?: string; readonly goal?: string }
   /** 개척단을 길 하나로 보낸다 */
   | { readonly kind: 'partyGo'; readonly party: string; readonly edge: string }
   /** 백성 배치(사민) — 고을마다 더하고 빼는 집 (합 0) */
