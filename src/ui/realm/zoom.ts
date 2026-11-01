@@ -77,8 +77,11 @@ export function attachZoom(wrap: HTMLElement): MapZoom {
     // 글씨는 배율의 제곱근만큼 — 크게 보면 조금 커지되 고을 그림만큼 부풀지 않게
     m.style.setProperty('--z', String(z))
     m.style.setProperty('--zs', String(Math.sqrt(z)))
-    // 멀리 볼 때는 배너의 둘째 줄(지금 땅이름)을 감춘다 — 글씨가 고을을 덮지 않게 (GAP M1)
-    m.dataset['zl'] = z >= cover() * 1.45 ? 'near' : 'far'
+    // 줌 단계 — 멀리(나라 이름만) · 중간(도읍·우리 고을 · 꾸밈 칩 없이) · 가까이(전부). 이름표를 보이고 감추는 건 CSS 가 이 값 하나로 한다
+    // (FOCUS G · 형: "이름표가 줌과 상관없이 고정 → 멀리서 이름표만 보임" · mapview MAP_CSS 의 data-zl 규칙)
+    const rz = z / cover()
+    const zl = rz >= P.realm.mapZoomNearAt ? 'near' : rz >= P.realm.mapZoomMidAt ? 'mid' : 'far'
+    if (m.dataset['zl'] !== zl) m.dataset['zl'] = zl
     declutterSoon(wrap) // 배율이 바뀌면 글씨가 말·숫자와 겹칠 수 있다 — 그린 뒤 비킨다
   }
 

@@ -20,6 +20,7 @@ const hit = (a: Box, b: Box, pad: number): boolean => a.l < b.r + pad && a.r + p
 const OBST = '.tok img, .tok b, .nd img.st, .nd .thr, .nd .men, .nd .tchip'
 
 export function declutter(map: HTMLElement): void {
+  nations(map)
   const labels = [...map.querySelectorAll<HTMLElement>('.lbs .lb')]
   if (labels.length === 0) return
   // 읽기를 모두 먼저 — 예전엔 이름 하나 옮길 때마다 다음 이름을 재며 배치를 통째로 다시 해(이름 수만큼) 확대·축소가 끝날 때 폰 4배 느림에서
@@ -34,7 +35,8 @@ export function declutter(map: HTMLElement): void {
     if (im !== null) icons.set(id, box(im))
   }
   // 먼저 자리를 잡는 차례 — 도읍(별) · 우리 고을 · 여느 고을 · 주인 없는 땅 (지도 글씨의 위계 — GAP M1)
-  const rank = (l: HTMLElement): number => (l.querySelector('.star') !== null ? 0 : l.classList.contains('me') ? 1 : l.classList.contains('k-free') ? 3 : 2)
+  // 고른 고을 · 위협받는 고을(.lkeep · 어느 배율에서도 보인다)이 맨 먼저 — 숨지 않는다 (FOCUS G)
+  const rank = (l: HTMLElement): number => (l.classList.contains('lkeep') ? -1 : l.querySelector('.star') !== null ? 0 : l.classList.contains('me') ? 1 : l.classList.contains('k-free') ? 3 : 2)
   const items = labels.map((l) => ({ l, r: rank(l), b0: box(l), ic: icons.get(l.dataset['n'] ?? '') }))
   items.sort((a, b) => a.r - b.r)
   const placed: Box[] = []
@@ -70,6 +72,27 @@ export function declutter(map: HTMLElement): void {
   }
   // 쓰기는 끝에 한꺼번에 — 배치는 다음 그리기에서 한 번만
   for (const f of writes) f()
+}
+
+/**
+ * 멀리 볼 때의 나라 이름 (FOCUS G) — 겹치면 덜 중요한 쪽(우리 나라가 먼저, 그다음 본 땅이 넓은 나라)을 숨긴다.
+ * 감춘 단계(중간·가까이)에서는 상자가 없어 아무것도 안 한다 — 멀리로 바뀔 때 배율이 바뀌어 다시 불린다
+ */
+function nations(map: HTMLElement): void {
+  const els = [...map.querySelectorAll<HTMLElement>('.nnms .nnm')]
+  if (els.length === 0) return
+  const items = els.map((e) => ({ e, w: Number(e.dataset['w']) || 0, b: box(e) })).filter((q) => q.b.r > q.b.l && q.b.b > q.b.t)
+  items.sort((a, b) => b.w - a.w)
+  const placed: Box[] = []
+  const hide: HTMLElement[] = []
+  const show: HTMLElement[] = []
+  for (const q of items) {
+    if (placed.some((o) => hit(q.b, o, 2))) { hide.push(q.e); continue }
+    placed.push(q.b)
+    show.push(q.e)
+  }
+  for (const e of hide) e.classList.add('crowd')
+  for (const e of show) e.classList.remove('crowd')
 }
 
 /** 한 프레임 뒤에 한 번 — 그 사이 여러 번 불러도 한 번만 돈다 */

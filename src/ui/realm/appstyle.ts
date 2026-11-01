@@ -1297,8 +1297,8 @@ export const UI_CSS = `
 .ap .wcand .wtie { display: block; font-size: 12px; color: #e8b0a0; letter-spacing: .02em; } .ap .wcand .wtie.love { color: #ff8a8a; font-weight: 700; } .ap .wcand .wtie.cold { color: #9a9a9a; }
 /* 쉴 때 다이어트 (형 10-31: "안 건드리면 아주 최소화한 것만" · ZAXIS-1031 2단계) — 아무것도 안 고르고 멀리 볼 때는 관계 칩 · 특산 칸 ·
    정찰 군세 · 맡은 장수 얼굴 · 붐빔을 접는다. 가까이 당기거나 무엇을 고르면 다시 뜬다. ＋마을 · 군사 이동 필요 · 우리 군사 수 · 규칙 그림은 늘 남는다 */
-.ap.rest .map[data-zl="far"] .lb .lbr, .ap.rest .map[data-zl="far"] .lb .lbg, .ap.rest .map[data-zl="far"] .lb .lbf,
-.ap.rest .map[data-zl="far"] .nd .gov, .ap.rest .map[data-zl="far"] .nd .crw { display: none; }
+.ap.rest .map:not([data-zl="near"]) .lb .lbr, .ap.rest .map:not([data-zl="near"]) .lb .lbg, .ap.rest .map:not([data-zl="near"]) .lb .lbf,
+.ap.rest .map:not([data-zl="near"]) .nd .gov, .ap.rest .map:not([data-zl="near"]) .nd .crw { display: none; }
 /* 고르면 둘레가 물러난다 (ZAXIS-1031 3단계) — 군대·개척단을 골랐을 때 깃발 줄 · 길 보기 · 이번 계절 칩 · 장 목표 띠가 옅어지고 눌리지 않는다.
    고른 것과 갈 곳만 남는다. opacity 만 (폰 그래픽 한도) */
 .ap .legend, .ap .zbtns, .ap .roadkey, .ap .todo, .ap .goalb { transition: opacity .2s ease; }

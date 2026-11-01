@@ -25,7 +25,7 @@ import { P } from '../../tune/params.ts'
 import { curvePts, ferryAt, landClipSvg, midOf, riversSvg, smoothPath, tidyEnds, trimPolyline, type Pt } from './mapgeo.ts'
 import { boardRoutes } from './roadlayout.ts'
 import { ZONES } from '../../realm/data/zones/index.ts'
-import { kitVars, nationKit } from './kitcolor.ts'
+import { inkOn, kitVars, nationKit } from './kitcolor.ts'
 import { worldMapFallback, worldMapUrl } from './worldmap.ts'
 
 /** 미리 받아 둔 다음 계절 지도 그림 — 붙잡아 두어야 브라우저가 풀어 둔 그림을 버리지 않는다 */
@@ -248,19 +248,19 @@ export const MAP_CSS = `
 .map .lb .star { font-style: normal; color: #b8860b; margin-right: 2px; text-shadow: 0 0 2px #fff8d0, 0 0 3px #fff8d0; } /* 도읍 (형: "수도같은건 별표해야하지 않나?") */
 /* 지금 땅이름 줄은 가까이 볼 때만 (멀리서는 배너가 한 줄로 작게) */
 /* 빽빽한 판을 멀리 볼 때 — 이름표의 꾸밈 칩(목책·특산)과 같은 나라 고을 사이 점선은 가까이 볼 때만 (형 10-26: "이미지랑 마을 이름 텍스트 서로 자리 차지") */
-.map[data-zl="far"][data-region="yeongnam"] .lb .lbg, .map[data-zl="far"][data-region="south"] .lb .lbg, .map[data-zl="far"][data-region="world"] .lb .lbg { display: none; }
-.map[data-zl="far"][data-region="yeongnam"] svg .tw, .map[data-zl="far"][data-region="south"] svg .tw, .map[data-zl="far"][data-region="world"] svg .tw { display: none; }
+.map:not([data-zl="near"])[data-region="yeongnam"] .lb .lbg, .map:not([data-zl="near"])[data-region="south"] .lb .lbg, .map:not([data-zl="near"])[data-region="world"] .lb .lbg { display: none; }
+.map:not([data-zl="near"])[data-region="yeongnam"] svg .tw, .map:not([data-zl="near"])[data-region="south"] svg .tw, .map:not([data-zl="near"])[data-region="world"] svg .tw { display: none; }
 /* 빽빽한 판을 멀리 볼 때 — 길은 옅게, 길 기호(소달구지·돌다리…)와 남의 군세 어림 칩은 가까이 볼 때만. 막힌 길의 ✕ 는 남는다 */
-.map[data-zl="far"][data-region="yeongnam"] .ly-roads, .map[data-zl="far"][data-region="south"] .ly-roads, .map[data-zl="far"][data-region="world"] .ly-roads { opacity: .62; }
-.map[data-zl="far"][data-region="yeongnam"] svg .rsign, .map[data-zl="far"][data-region="south"] svg .rsign, .map[data-zl="far"][data-region="world"] svg .rsign { display: none; }
-.map[data-zl="far"][data-region="yeongnam"] .lb .lbf, .map[data-zl="far"][data-region="south"] .lb .lbf, .map[data-zl="far"][data-region="world"] .lb .lbf { display: none; }
+.map:not([data-zl="near"])[data-region="yeongnam"] .ly-roads, .map:not([data-zl="near"])[data-region="south"] .ly-roads, .map:not([data-zl="near"])[data-region="world"] .ly-roads { opacity: .62; }
+.map:not([data-zl="near"])[data-region="yeongnam"] svg .rsign, .map:not([data-zl="near"])[data-region="south"] svg .rsign, .map:not([data-zl="near"])[data-region="world"] svg .rsign { display: none; }
+.map:not([data-zl="near"])[data-region="yeongnam"] .lb .lbf, .map:not([data-zl="near"])[data-region="south"] .lb .lbf, .map:not([data-zl="near"])[data-region="world"] .lb .lbf { display: none; }
 /* 빽빽한 판을 멀리 볼 때 — 이름표는 깃발 · 별 · 이름만 (지금 땅 이름은 숨기고), 나라 사이(전쟁·동맹…)는 글 대신 색 점 하나, 나라 둘레는 굵고 짙게
    (형 10-26: "멀리 볼 때는 마을 수십 개 — 이름표 바가 더 단순하게 · 국경들도 명확하고 · 가까울 때 더 많은 정보는 잘했어") */
-.map[data-zl="far"][data-region="yeongnam"] .lb small, .map[data-zl="far"][data-region="south"] .lb small, .map[data-zl="far"][data-region="world"] .lb small { display: none !important; }
-.map[data-zl="far"][data-region="yeongnam"] .lb .lbr, .map[data-zl="far"][data-region="south"] .lb .lbr, .map[data-zl="far"][data-region="world"] .lb .lbr { font-size: 0; width: .62em; height: .62em; padding: 0; border-radius: 50%; margin-right: .3em; animation: none; box-shadow: 0 0 0 1.5px #1a120a; }
-.map[data-zl="far"][data-region="yeongnam"] .lb .lbr::after, .map[data-zl="far"][data-region="south"] .lb .lbr::after, .map[data-zl="far"][data-region="world"] .lb .lbr::after { display: none; }
-.map[data-zl="far"][data-region="yeongnam"] svg .nbd, .map[data-zl="far"][data-region="south"] svg .nbd, .map[data-zl="far"][data-region="world"] svg .nbd { opacity: .55; }
-.map[data-zl="far"] .lb small { display: none; } .map[data-zl="far"] .lb small.nowi, .map .lb small.nowi { display: inline; }
+.map:not([data-zl="near"])[data-region="yeongnam"] .lb small, .map:not([data-zl="near"])[data-region="south"] .lb small, .map:not([data-zl="near"])[data-region="world"] .lb small { display: none !important; }
+.map:not([data-zl="near"])[data-region="yeongnam"] .lb .lbr, .map:not([data-zl="near"])[data-region="south"] .lb .lbr, .map:not([data-zl="near"])[data-region="world"] .lb .lbr { font-size: 0; width: .62em; height: .62em; padding: 0; border-radius: 50%; margin-right: .3em; animation: none; box-shadow: 0 0 0 1.5px #1a120a; }
+.map:not([data-zl="near"])[data-region="yeongnam"] .lb .lbr::after, .map:not([data-zl="near"])[data-region="south"] .lb .lbr::after, .map:not([data-zl="near"])[data-region="world"] .lb .lbr::after { display: none; }
+.map:not([data-zl="near"])[data-region="yeongnam"] svg .nbd, .map:not([data-zl="near"])[data-region="south"] svg .nbd, .map:not([data-zl="near"])[data-region="world"] svg .nbd { opacity: .55; }
+.map:not([data-zl="near"]) .lb small { display: none; } .map:not([data-zl="near"]) .lb small.nowi, .map .lb small.nowi { display: inline; }
 .map .lb small { display: block; font-size: .74em; font-weight: 500; color: var(--ink, #5a4a36); opacity: .78; margin-top: -2px; }
 .map .lb.k-free small { color: #5a4a36; }
 /* 받침 — 주인 빛으로 칠한 흙판에 짙은 테, 그 위에 고을이 드리운 그림자 (고을이 떠 있지 않고 땅에 앉게 · 형 10-26: "마을 이미지 고도화").
@@ -358,7 +358,7 @@ export const MAP_CSS = `
 .map svg .mine-edge { animation: mglow 3.2s ease-in-out infinite alternate; }
 @keyframes mglow { from { opacity: .65; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .map svg .mine-edge { animation: none; } }
-.map svg .rsign { pointer-events: auto; filter: drop-shadow(0 0 1.5px #f8eed6) drop-shadow(0 0 1.5px #f8eed6) drop-shadow(0 1px 2px #0009); } .map[data-zl="far"] svg .rs-f { display: none; } /* 들길은 흔해 가까이 볼 때만 */
+.map svg .rsign { pointer-events: auto; filter: drop-shadow(0 0 1.5px #f8eed6) drop-shadow(0 0 1.5px #f8eed6) drop-shadow(0 1px 2px #0009); } .map:not([data-zl="near"]) svg .rs-f { display: none; } /* 들길은 흔해 가까이 볼 때만 */
 .map .nd .men, .map .nd .foe { position: absolute; left: 86%; top: 42%; transform: translateY(-50%); background: #201811; border-radius: 9px; padding: 0 5px;
   font-size: clamp(10px, calc(1.9cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 15px); font-weight: 700; white-space: nowrap; }
 .map .nd .men { color: #9fd18b; border: 1px solid #9fd18b; } .map .nd .foe { color: #e8a08a; border: 1px solid #8a5a3a; }
@@ -497,10 +497,20 @@ export const MAP_CSS = `
 .mapwrap.panning .map svg .mvflow, .mapwrap.panning .map svg .mvglow { animation-play-state: paused; }
 /* 멀리 볼 때도 흐름은 멈춘다 (점선은 그대로 보인다) — 점선 하나가 흐르는 것만으로 지도의 GPU 움직임 백여 개까지 매 프레임 메인 스레드에서
    다시 셈해, 폰 4배 느림에서 메인 스레드가 96% 바빴다 → 1% (형 10-31 "멀리 보면 버벅"). 가까이 당기면 다시 흐른다 */
-.map[data-zl="far"] svg .mvflow { animation-play-state: paused; }
+.map:not([data-zl="near"]) svg .mvflow { animation-play-state: paused; }
 .map svg .arw { animation: arwb ${ARROW_BREATH_S}s ease-in-out infinite; } @keyframes arwb { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
 @media (prefers-reduced-motion: reduce) { .map .toks.mv .tok, .map svg .mvflow, .map svg .arw { animation: none; } }
 .map .lb.crowd { visibility: hidden; } /* 겹쳐 자리가 없는 작은 고을 이름 — declutter */
+/* 줌 단계별 이름표 (FOCUS G · 형: "이름표가 줌과 상관없이 고정 → 멀리서 이름표만 보임") — data-zl 은 zoom.ts 가 단다.
+   멀리: 고을 이름 대신 나라 이름만 크게 · 중간(빽빽한 판): 도읍·우리 고을만 · 가까이: 전부. 고른 고을 · 위협받는 고을 · 칠 채비가 모인 고을(.lkeep)은 늘.
+   감춘 이름은 상자가 없어 declutter 가 건너뛴다 — 단계를 바꿀 때 속성 하나만 바뀐다 */
+.map[data-zl="far"] .lb:not(.lkeep), .map[data-zl="mid"][data-dense] .lb:not(.lkeep):not(.lmid) { display: none; }
+.map .nnms { position: absolute; inset: 0; z-index: 5; pointer-events: none; display: none; }
+.map[data-zl="far"] .nnms { display: block; }
+/* 나라 이름 — 그 나라 빛 글씨에 대비되는 테 (우리 나라는 늘 우리 파랑) · 글씨 크기는 화면 px 로 늘 같다 */
+.map .nnm { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; font-size: var(--nnpx, 17px); font-weight: 900; line-height: 1; letter-spacing: .1em; color: var(--nc, #f3e3bd);
+  text-shadow: 1.5px 0 0 var(--no), -1.5px 0 0 var(--no), 0 1.5px 0 var(--no), 0 -1.5px 0 var(--no), 1px 1px 0 var(--no), -1px -1px 0 var(--no), 1px -1px 0 var(--no), -1px 1px 0 var(--no), 0 2px 5px #000a; }
+.map .nnm.crowd { visibility: hidden; } .map .nnm.dim { opacity: 0; }
 .map .lb.sel { z-index: 1; } .map .lb.dim { opacity: 0; } /* 한 나라만 볼 때 다른 나라 글씨는 감춘다 (형: "다른나라들은 글자정돈 완전 투명하게") */
 .map[data-world] { background-color: #cdb98e; }
 .map .nd.fresh, .map .lb.fresh, .map svg .fresh { animation: rv 2.2s ease-out both; }
@@ -911,7 +921,9 @@ export function mapHtml(
     labels.push({
       // 나라 많은 판은 지금 지명 줄을 빼 이름표를 한 줄로 — 작아야 제 고을 곁에 붙는다 (형 10-26: "마을 텍스트 바가 너무 큼 · 줄여서 제대로 그 마을의 텍스트라는 게 보이게")
       id: n.id, name: n.name, now: NODE_NOW[n.id], inl: CROWDED.has(region), x: p[0], y: p[1], s: sizeOf(n.hh), cap: n.kind === 'capital' || cap, hh: n.hh,
-      cls: `${kcls}${ours ? ' me' : ''}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${far}${fr}`,
+      // 줌 단계 (FOCUS G) — lkeep: 어느 배율에서도 보인다 (고른 고을 · 위협받는 우리 고을 · 칠 채비가 모인 고을) · lmid: 중간 배율에서도 (도읍 · 우리 고을)
+      cls: `${kcls}${ours ? ' me' : ''}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${far}${fr}`
+        + `${selected === n.id || threatened.has(n.id) || poisedAt.has(n.id) ? ' lkeep' : ''}${n.kind === 'capital' || cap || ours ? ' lmid' : ''}`,
       kit: owner !== null ? kitVars(owner) : '', emb, rel: relChip(r, me, owner), force, tray, trayW: sp.length + (fish !== '' ? 1 : 0) + dfs.length * 1.6 + cms.reduce((s, m) => s + 0.6 + m.label.length * 0.62, 0),
     })
     // 맡은 장수 — 우리 고을이면 얼굴을 작게 (형 10-23: "마을에 장수 배치한 거 아직 맵에선 아무것도 안 보이던데")
@@ -978,7 +990,15 @@ export function mapHtml(
   // 밝혀진 땅의 테두리 (0~1) — 축소는 여기까지만 (zoom.ts · 형: "문명처럼 유저가 보이는 구역을 기반으로 최대 축소")
   const sp = [...vis].map((id) => pos(id)).filter((p): p is readonly [number, number] => p !== undefined)
   const seenBox = sp.length === 0 ? '0,0,1,1' : [Math.min(...sp.map((p) => p[0])), Math.min(...sp.map((p) => p[1])), Math.max(...sp.map((p) => p[0])), Math.max(...sp.map((p) => p[1]))].map((v) => v.toFixed(3)).join(',')
-  return `<div class="map" data-seen="${seenBox}" data-region="${region}"${world ? ` data-world="${season}"` : ''} data-aspect="${W / H}" data-zmax="${RA.zmax}" style="${bg}aspect-ratio:${W} / ${H};--ns:${RA.nodeScale};--ls:${RA.labelScale}">${svg}<div class="clsh"></div>${fog?.words ?? ''}${nodes}${toks}${placeLabels(labels, byNode, W, H, RA.nodeScale, RA.labelScale)}${arrowSvg}</div>`
+  // 멀리 볼 때의 나라 이름 — 그 나라의 본 땅 한가운데 (자리는 판·주인·본 땅이 바뀔 때만 다시 셈한다)
+  const nn = nationSpots(r, region, seen).map((s) => {
+    const name = r.factions[s.o]?.name ?? ''
+    if (name === '') return ''
+    const col = s.o === me ? MY_LAND : nationKit(s.o).c
+    return `<span class="nnm${s.o === me ? ' me' : ''}${dim(s.o) ? ' dim' : ''}" data-w="${(s.o === me ? 2 : s.a).toFixed(5)}" style="left:${(s.x * 100).toFixed(2)}%;top:${(s.y * 100).toFixed(2)}%;--nc:${col};--no:${inkOn(col)}">${name}</span>`
+  }).join('')
+  const names = `<div class="nnms" style="--nnpx:${P.realm.mapNationNamePx}px">${nn}</div>`
+  return `<div class="map" data-seen="${seenBox}" data-region="${region}"${CROWDED.has(region) ? ' data-dense' : ''}${world ? ` data-world="${season}"` : ''} data-aspect="${W / H}" data-zmax="${RA.zmax}" style="${bg}aspect-ratio:${W} / ${H};--ns:${RA.nodeScale};--ls:${RA.labelScale}">${svg}<div class="clsh"></div>${fog?.words ?? ''}${nodes}${toks}${placeLabels(labels, byNode, W, H, RA.nodeScale, RA.labelScale)}${names}${arrowSvg}</div>`
 }
 
 /** 지도 위 우리 군대의 말 — 머무는 군대 하나에 하나 */
@@ -1352,6 +1372,111 @@ function provincesSvg(
   provKey = key
   provOut = h + `</g></g>`
   return provOut
+}
+
+// ───────── 나라 이름 자리 (FOCUS G · 멀리 볼 때 고을 이름 대신)
+
+type Ring = ReadonlyArray<readonly [number, number]>
+/** 고을 구역 하나 — 넓이 · 무게중심 (그림 좌표) · 테두리 고리들 */
+interface ZoneGeo { readonly a: number; readonly cx: number; readonly cy: number; readonly rings: readonly Ring[] }
+const zoneGeos = new Map<string, ZoneGeo>()
+
+/** 구운 구역 패스(M·L·Z)를 한 번만 읽어 넓이와 무게중심을 셈한다 — 판마다 고을마다 한 번 */
+function zoneGeo(region: RegionId, id: string, d: string): ZoneGeo {
+  const key = `${region}|${id}`
+  const had = zoneGeos.get(key)
+  if (had !== undefined) return had
+  const rings: Array<Array<[number, number]>> = []
+  for (const m of d.matchAll(/([MLZ])([^MLZ]*)/g)) {
+    if (m[1] === 'M') rings.push([])
+    const v = (m[2] ?? '').trim().split(/[\s,]+/).filter((s) => s !== '').map(Number)
+    const ring = rings[rings.length - 1]
+    if (ring !== undefined) for (let i = 0; i + 1 < v.length; i += 2) ring.push([v[i]!, v[i + 1]!])
+  }
+  let a = 0
+  let sx = 0
+  let sy = 0
+  for (const ring of rings) {
+    // 고리마다 신발끈 셈 — 감긴 방향과 상관없이 넓이는 양수로 더한다
+    let ra = 0
+    let rx = 0
+    let ry = 0
+    for (let i = 0; i < ring.length; i++) {
+      const [x0, y0] = ring[i]!
+      const [x1, y1] = ring[(i + 1) % ring.length]!
+      const c = x0 * y1 - x1 * y0
+      ra += c
+      rx += (x0 + x1) * c
+      ry += (y0 + y1) * c
+    }
+    if (ra === 0) continue
+    const s = Math.sign(ra)
+    a += Math.abs(ra) / 2
+    sx += (rx / 6) * s
+    sy += (ry / 6) * s
+  }
+  const g: ZoneGeo = a > 0 ? { a, cx: sx / a, cy: sy / a, rings } : { a: 0, cx: 0, cy: 0, rings }
+  zoneGeos.set(key, g)
+  return g
+}
+
+/** 점이 구역 안에 있나 (짝홀 규칙) */
+function inZone(g: ZoneGeo, x: number, y: number): boolean {
+  let inside = false
+  for (const ring of g.rings) {
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i]!
+      const [xj, yj] = ring[j]!
+      if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside
+    }
+  }
+  return inside
+}
+
+/** 나라 이름을 둘 자리 (0~1) · 그 나라 본 땅의 넓이 (판에 대한 몫) */
+interface NationSpot { readonly o: string; readonly x: number; readonly y: number; readonly a: number }
+let spotKey = ''
+let spotOut: readonly NationSpot[] = []
+
+/**
+ * 나라마다 이름 자리 — 본 땅(안개 밖) 구역들의 넓이 가중 무게중심. 그 점이 제 땅 밖이면(굽거나 갈라진 나라) 가장 넓은 구역의 가운데로.
+ * 모르는 땅은 셈하지 않는다 (나라를 흘리지 않게). 판·주인·본 땅이 같으면 지난번 것을 그대로 — 확대·축소·밀기는 이 셈을 부르지 않는다
+ */
+function nationSpots(r: Realm, region: RegionId, seen: (id: string) => boolean): readonly NationSpot[] {
+  const ids = Object.keys(r.nodes).sort()
+  const key = `${region}|${ids.map((id) => `${r.nodes[id]?.owner ?? ''}${seen(id) ? '' : '?'}`).join(',')}`
+  if (key === spotKey) return spotOut
+  const z = ZONES[region]
+  const by = new Map<string, Array<{ g: ZoneGeo | null; x: number; y: number; a: number }>>()
+  for (const id of ids) {
+    const o = r.nodes[id]?.owner
+    if (o == null || !seen(id)) continue
+    const list = by.get(o) ?? []
+    by.set(o, list)
+    const d = z?.fill[id]
+    const g = z !== undefined && z.w > 0 && d !== undefined ? zoneGeo(region, id, d) : null
+    if (g !== null && g.a > 0) { list.push({ g, x: g.cx / z!.w, y: g.cy / z!.h, a: g.a / (z!.w * z!.h) }); continue }
+    // 구역이 없는 고을(구워 두지 않은 판) — 고을 자리를 작은 몫으로
+    const p = nodePos(region, id)
+    if (p !== undefined) list.push({ g: null, x: p[0], y: p[1], a: 1e-4 })
+  }
+  const out: NationSpot[] = []
+  for (const [o, list] of [...by].sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
+    const A = list.reduce((s, q) => s + q.a, 0)
+    if (A <= 0) continue
+    let x = list.reduce((s, q) => s + q.x * q.a, 0) / A
+    let y = list.reduce((s, q) => s + q.y * q.a, 0) / A
+    const own = list.filter((q) => q.g !== null)
+    if (own.length > 0 && z !== undefined && !own.some((q) => inZone(q.g!, x * z.w, y * z.h))) {
+      const big = own.reduce((b, q) => (q.a > b.a ? q : b))
+      x = big.x
+      y = big.y
+    }
+    out.push({ o, x, y, a: A })
+  }
+  spotKey = key
+  spotOut = out
+  return out
 }
 
 // ───────── 넓어지는 지도 — 모르는 땅 (발견, docs/realm/WORLD-MAP.md §2 · 2026-10-19)
