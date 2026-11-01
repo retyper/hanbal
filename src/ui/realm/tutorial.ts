@@ -75,6 +75,12 @@ export const TUT_STEPS: readonly TutStep[] = [
     press: ['[data-act="party-to"][data-node="tut-solmoe"]', '.sheet [data-act="party"][data-node="tut-wirye-cap"]', '.nd[data-node="tut-solmoe"]'], done: (c) => has(c, 'party') || has(c, 'settle'),
   },
   {
+    id: 'build', name: '건설', what: '나무로 목책을 둘러 고을을 지킵니다', text: '위례 도읍을 다시 누르고 「목책」을 누르세요. 나무 울타리를 두르면 적이 쳐들어와도 오래 버팁니다. 몇 달 걸려 다 지어집니다. 나무가 모자라면 단추를 눌렀을 때 까닭이 뜹니다.',
+    // 첫 판엔 짓기를 한 번도 안 가르쳤다 — 목책을 눌러도 반응이 없다는 형 11-01 지적의 뿌리 · 둘레 단추로
+    press: ['.nring [data-act="build"][data-node="tut-wirye-cap"]', '.nd[data-node="tut-wirye-cap"]'],
+    done: (c) => has(c, 'build') || (c.r.builds ?? []).some((b) => b.faction === c.r.player) || c.r.season > 0,
+  },
+  {
     id: 'scout', name: '정찰', what: '적 고을의 군세를 미리 엿봅니다', text: '왼쪽(서쪽) 갯골 마을을 누르고 「정찰」을 누르세요. 적 군세가 얼마인지 보입니다.',
     press: ['[data-act="scout"][data-node="tut-gaetgol"]', '.nd[data-node="tut-gaetgol"]'], done: (c) => has(c, 'scout'),
   },
@@ -95,6 +101,12 @@ export const TUT_STEPS: readonly TutStep[] = [
     press: ['.next'], done: (c) => c.r.season >= 1,
   },
   {
+    id: 'flame', name: '각성 불꽃', what: '내리 세 번 이긴 장수는 각성합니다', text: '「장수」의 「우리 장수」에서 오간을 누르고, 얼굴 아래 불꽃 칸 셋을 눌러 보세요. 싸움을 이길 때마다 한 칸씩 붙고, 지면 다 꺼집니다. 세 칸이 다 붙으면 각성해 얼굴이 바뀌고 능력치가 모두 오릅니다. 오간은 벌써 두 번 이겼습니다.',
+    // 각성을 첫 판에서 맛보게 — 오간은 불꽃 둘을 켠 채 시작하고(regions/tutorial) 갯골 싸움을 이기면 각성한다 (형 11-01: "튜토리얼에 장수각성도")
+    press: ['[data-act="flm"]', '[data-act="hero"][data-id="tut-ogan"]', '[data-act="htab"][data-v="mine"]', tab('heroes')],
+    done: (c) => c.acts.has('flm') || c.r.heroes['tut-ogan']?.ascended === true || fought(c),
+  },
+  {
     id: 'march', name: '출정', what: '군대를 다른 고을로 보냅니다', text: '갈대울의 우리 군대 말(장수 얼굴)을 누르고, 밝아진 갯골 마을을 누르세요. 그리로 갑니다.',
     press: ['.nd[data-node="tut-gaetgol"][data-act="go"]', '.tok[data-army="a-us"]'],
     done: (c) => c.ov === 'strat' || (shut(c) && marching(c)) || Object.values(c.r.armies).some((a) => a.faction === c.r.player && a.at === 'tut-gaetgol'),
@@ -107,7 +119,7 @@ export const TUT_STEPS: readonly TutStep[] = [
     done: (c) => (shut(c) && marching(c)) || Object.values(c.r.armies).some((a) => a.faction === c.r.player && a.at === 'tut-gaetgol'),
   },
   {
-    id: 'battle', name: '전투', what: '합마다 명령을 골라 싸웁니다', text: '「다음 달」을 누르면 전장이 열립니다. 아래 무리마다 깃발을 하나씩 끌어 전장에 놓으세요. 「장수」에선 「적장 사로잡기」를 골라 보세요. 이 판에선 반드시 잡힙니다.',
+    id: 'battle', name: '전투', what: '합마다 명령을 골라 싸웁니다', text: '「다음 달」을 누르면 전장이 열립니다. 아래 무리마다 깃발을 하나씩 끌어 전장에 놓으세요. 「장수」에선 「적장 사로잡기」를 골라 보세요. 이 판에선 반드시 잡힙니다. 이기면 오간의 마지막 불꽃이 붙습니다.',
     // 사로잡기는 「장수」 탭에 있다 · 「전투 개시」는 무리마다 다 고르면 켜진다 — 나머지는 ★ 권함으로 채운다
     press: ['.next'], war: { pick: '[data-war="pick"][data-c="capture"]', go: '[data-war="go"]', tab: '[data-war="gtab"][data-g="lead"]' },
     done: fought,
@@ -290,7 +302,7 @@ export function createSpot(root: HTMLElement): Spot {
   }
   const war = (): boolean => root.classList.contains('war-open') || root.querySelector('.wr') !== null
   /** 큰 장면이 떠 있나 — 그동안은 고리도 막기도 쉰다 */
-  const cere = (): boolean => root.querySelector('.cere, .saveov') !== null // 「저장 · 불러오기」 창도 막지 않는다
+  const cere = (): boolean => root.querySelector('.cere, .saveov, .ascfx, .gnpop') !== null // 「저장 · 불러오기」 창 · 각성 연출 · 「획득!」도 막지 않는다 (눌러 닫는다)
   /**
    * 전략 회의 · 옥중 담판 · 회유할 사람 고르기 — 그 창 안에서만 가리키고, 어둡게 하지도 막지도 않는다 (창이 이미 어둡다 · 형 10-30: "화면이 이중으로 어두워져서").
    * 창 뒤(지도·「다음 계절」)는 가리키지 않는다 — 고리가 창 뒤를 가리키며 창 안을 막아 회의·담판이 건너뛰어졌다
@@ -494,7 +506,8 @@ export const TUT_CSS = `
 /* 전장이 열린 동안은 띠를 숨긴다 — 싸움에 집중 (전투 쪽이 다는 war-open, 아니면 전장 DOM 으로) */
 .ap.war-open .tutband, .ap:has(.wr) .tutband { display: none; }
 /* 큰 장면(등용·사로잡음·혼례…)이 떠 있는 동안은 띠·고리를 숨긴다 — 고리가 장면 뒤를 가리켜 누를 수 없었다(10/12 막힘 · 형 10-24) */
-.ap:has(.cere) .tutband, .ap:has(.cere) .tutspot, .ap:has(.cere) .tutring { display: none !important; }
+.ap:has(.cere) .tutband, .ap:has(.cere) .tutspot, .ap:has(.cere) .tutring,
+.ap:has(.ascfx) .tutband, .ap:has(.ascfx) .tutspot, .ap:has(.ascfx) .tutring { display: none !important; } /* 각성 연출도 가리지 않게 */
 .ap.war-open .tutspot, .ap.war-open .tutring, .ap:has(.wr) .tutspot, .ap:has(.wr) .tutring { display: none !important; }
 .tutb { pointer-events: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; max-width: 560px; padding: 10px 14px; border-radius: 14px;
   background: #1f1710f8; border: 1px solid #e8c06a; box-shadow: 0 6px 24px #000d; color: #f3ead8; font-size: 15px; line-height: 1.5; }

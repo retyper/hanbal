@@ -1288,7 +1288,7 @@ export const UI_CSS = `
 @media (prefers-reduced-motion: reduce) { .ap .ascfx * { animation-duration: .01s !important; animation-iteration-count: 1 !important; } }
 /* 각성 불꽃 칸 — 초상 아래 가운데 · 꺼진 칸은 잿빛 */
 .ap .hpic { position: relative; }
-.ap .flms { position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); display: flex; gap: 2px; padding: 2px 6px; border-radius: 999px; background: #140f0ad9; border: 1px solid #6a5030; }
+.ap .flms { cursor: pointer; position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); display: flex; gap: 2px; padding: 2px 6px; border-radius: 999px; background: #140f0ad9; border: 1px solid #6a5030; }
 .ap .flms .flm { width: 16px; height: 22px; object-fit: contain; }
 .ap .flms .flm.lit { transform-origin: 50% 90%; animation: flmflick .7s ease-in-out infinite alternate; } /* 장수 칸의 켜진 자리는 일렁인다 — 목록이라 셰이더 대신 작은 transform·opacity 만 */
 @keyframes flmflick { 0% { transform: scale(1.04, 1.02); opacity: .92; } 50% { transform: scale(1.1, 1.12) skewX(-2deg); opacity: 1; } 100% { transform: scale(1.06, 1.06) skewX(2deg); opacity: .96; } }

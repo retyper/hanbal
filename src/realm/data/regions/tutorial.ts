@@ -55,7 +55,7 @@ const FACTIONS: Array<Omit<Faction, 'mind'>> = [
 ]
 
 const STOCK: Record<string, Stock> = {
-  baekje: { grain: 400, iron: 30, salt: 20, wood: 40 },
+  baekje: { grain: 400, iron: 30, salt: 20, wood: 120 }, // 개척단·목책을 다 배울 만큼
   michuhol: { grain: 200, iron: 0, wood: 10 },
 }
 
@@ -68,7 +68,8 @@ const h = (
 // 온조와 함께 내려온 열 신하 가운데 오간·마려 (백제본기) · 비류 · 해비는 지어낸 미추홀의 여인 장수
 const HEROES: Hero[] = [
   h('tut-onjo', '온조', 'baekje', 'g', [5, 6, 7, 6, 8, 9], ['charm'], 'tut-wirye-cap'),
-  h('tut-ogan', '오간', 'baekje', 'g', [7, 5, 6, 4, 5, 8], ['archer', 'nighteye']),
+  // 불꽃 둘을 켠 채 — 갯골 싸움을 이기면 첫 판에서 각성을 맛본다 (형 11-01)
+  { ...h('tut-ogan', '오간', 'baekje', 'g', [7, 5, 6, 4, 5, 8], ['archer', 'nighteye']), flames: 2 },
   h('tut-maryeo', '마려', 'baekje', 'g', [5, 5, 4, 6, 4, 7], ['farmer'], 'tut-wirye-cap'),
   h('tut-biryu', '비류', 'michuhol', 'g', [6, 7, 4, 5, 4, 8], ['smith'], 'tut-michuhol-cap'),
   // 사로잡기를 배우는 상대 장수 — 여인. 무예가 낮아 일기토도 겁낼 것 없다

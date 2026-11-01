@@ -620,6 +620,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 배경 음악 · 계절 바람 — 싸움 창이 열려 있으면 싸움 음악 */
   const music = makeMusic(BASE, muted, () => root.querySelector('.nightov') !== null) // 밤 판이 떠 있으면 조용히 — 밤 판은 제 소리를 낸다
   let warOn = false
+  /** 줄 서 있거나 떠 있는 장면(사로잡음·등용·혼례…) 수 — 각성 연출은 이것이 다 걷힌 뒤에 (playScenes) */
+  let scenesLeft = 0
   root.innerHTML = `<header class="top"></header><div class="mapwrap"></div><div class="seasonp" aria-hidden="true">${seasonParticles()}</div><div class="legend"></div><div class="zbtns"><button data-act="layers" class="lyb" aria-label="보기">👁</button><button data-act="zin">＋</button><button data-act="zout">－</button></div><div class="layers"></div><button class="next" data-act="next"></button><div class="todo"></div><div class="selbar"></div><div class="roadkey"></div><div class="tutband"></div><div class="goalb"></div>`
     + `<nav class="tabs"></nav><div class="back" data-act="close"></div><section class="sheet"></section><div class="modal"></div><div class="plbox"></div>`
   const $ = (sel: string): HTMLElement => root.querySelector<HTMLElement>(sel)!
@@ -1270,11 +1272,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 각성 불꽃 칸 — 우리 장수만. 빈 칸 셋이 이길 때마다 켜진다 · 각성하면 「각성」 띠 (형 10-31) */
   function flamesHtml(x: Hero): string {
     if (realm === null || x.faction !== me() || isRuler(realm, x.id)) return ''
-    if (x.ascended === true) return `<span class="flms on" title="각성했습니다"><img class="flmw" src="${ART}fx/awaken/word.png" alt="각성"></span>`
+    if (x.ascended === true) return `<span class="flms on" data-act="flm" data-why="각성했습니다. 이 판에서 능력치가 모두 올랐습니다"><img class="flmw" src="${ART}fx/awaken/word.png" alt="각성"></span>`
     const n = x.flames ?? 0
     // 빈 칸·붙은 칸은 청동 불꽃 자리 그림 둘 (형 11-01: "빈 엠블럼 칸이랑 채워진 불 이미지 다 새로" · 제미나이 Argon)
     const cells = Array.from({ length: P.realm.ascendWins }, (_, i) => `<img class="flm${i < n ? ' lit' : ''}" src="${ART}fx/awaken/slot-${i < n ? 'on' : 'off'}.png" alt="">`).join('')
-    return `<span class="flms" title="${P.realm.ascendWins}번 내리 이기면 각성합니다. 지면 꺼집니다">${cells}</span>`
+    return `<span class="flms" data-act="flm" data-why="불꽃 ${n}/${P.realm.ascendWins}. 내리 이기면 한 칸씩 붙고, 다 붙으면 각성해 능력치가 모두 오릅니다. 지면 다 꺼집니다">${cells}</span>`
   }
   /**
    * 각성 연출 — 우리 장수가 내리 이겨 각성하면 그 자리에서 크게 (형 10-31: 3연승 직후 각성 연출 · 메모리 WWE 오버액션).
@@ -2853,12 +2855,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   /** 못 하는 단추를 눌렀다 — 단추 위에 까닭 한 줄이 튀어 올랐다 걷히고, 둔탁한 소리·짧은 떨림 (스스로 걷힌다 · 누르면 바로 걷힌다) */
   function denyPop(at: HTMLElement, why: string): void {
-    root.querySelector('.dnpop')?.remove()
     ding(snd('tap_cancel'), 0.5, 0.7)
     buzz([25, 40, 25])
     at.classList.remove('dnshake')
     void at.offsetWidth
     at.classList.add('dnshake')
+    tipPop(at, why)
+  }
+
+  /** 단추 위에 한 줄 — 까닭이든 뜻풀이든. 글 길이만큼 머물고 누르면 닫힌다 (메모리: 알림은 반드시 걷힌다) */
+  function tipPop(at: HTMLElement, why: string): void {
+    root.querySelector('.dnpop')?.remove()
     if (why === '') return
     const b = at.getBoundingClientRect()
     const el = document.createElement('div')
@@ -5770,8 +5777,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   /** 큰 장면을 차례로 — 누르면 다음 (혼례·등용·탄생·태몽) */
   function playScenes(scenes: readonly string[], lead: number): void {
+    scenesLeft++
     const show = (i: number): void => {
-      if (i >= scenes.length) return
+      if (i >= scenes.length) { scenesLeft = Math.max(0, scenesLeft - 1); return }
       root.insertAdjacentHTML('beforeend', scenes[i]!)
       const el = root.lastElementChild as HTMLElement
       const capt = el.classList.contains('capt')
@@ -6152,7 +6160,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     backToast(backNotes(prev, res.next, mine))
     nearWinToast(prev, res.next)
     diploToast(prev, res.next)
-    ascendShow(res.next, res.report.lines)
+    queueAscend(res.next, res.report.lines)
     if (isSeasonStart(res.next)) seasonFx(res.next) // 계절이 바뀔 때만 (달 시계면 계절의 첫 달)
     noteFaces(res.next) // 갓 난 아이 얼굴 — 보고·장면·장수 판 어디서나 (형 10-23: "하늬도 이미지가 없어 보이네 애기 태어날 때")
     ceremonyFx(prev, res.next, res.report)
@@ -6174,6 +6182,21 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   // 보고·장면·싸움이 다 걷혀 지도로 돌아온 그때 — 가운데에서 튀어 오르고 엽전 소리 · 위 띠의 그 생산품이 함께 뛴다. 스스로 걷힌다
   interface Gain { readonly node: string; readonly how: 'take' | 'settle'; readonly n?: number }
   let gainPending = -1
+  /**
+   * 각성 연출은 싸움판·사로잡은 장면이 걷힌 뒤에 — 넘기는 순간 띄우면 실시간 전장 뒤에 깔려 아무도 못 봤다 (배우는 판 11-01).
+   * 보고판 위에는 뜬다 (싸움의 결과니까). 숨은 탭에서는 기다린다 (절대 규칙 4)
+   */
+  function queueAscend(next: Realm, lines: readonly ReportLine[]): void {
+    if (!lines.some((l) => l.kind === 'ascend')) return
+    const season = next.season
+    const tick = (): void => {
+      if (realm === null || realm.season !== season) return
+      if (document.visibilityState !== 'visible') { document.addEventListener('visibilitychange', tick, { once: true }); return }
+      if (!warOn && scenesLeft === 0 && !root.classList.contains('war-open') && root.querySelector('.cere, .wr') === null) { ascendShow(realm, lines); return }
+      window.setTimeout(tick, P.realm.gainWaitMs)
+    }
+    window.setTimeout(tick, P.realm.gainWaitMs) // 전장이 이 다음에 열린다 — 한 박자 뒤부터 본다
+  }
   function queueGain(next: Realm, rep: Report): void {
     if (next.outcome) return // 판이 끝났다 — 끝 화면이 그 몫을 한다
     const gains: Gain[] = []
@@ -6229,7 +6252,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   const howKit = (): HowKit => ({ art: ART, flag: (f) => (f !== null && FACTION_ART[f] !== undefined ? flagIcon(f) ?? null : null), wait: (t) => (realm !== null ? tabWait(realm, t) : 0), turns: (n) => (realm !== null ? turnsLabel(realm, n) : `${n}계절`) })
   /** 지도가 비었나 — 보고·장면·싸움·다른 알림이 다 걷혔다 */
   const mapClear = (): boolean => realm !== null && front === null && prologue === null && !showReport && !warOn && !root.classList.contains('modal-open') && !root.classList.contains('war-open')
-    && root.querySelector('.cere, .wr, .bktoast, .guidebox, .failbox, .lsn-box, .nightov') === null
+    && root.querySelector('.cere, .wr, .bktoast, .guidebox, .failbox, .lsn-box, .nightov, .ascfx') === null
   /** 진 싸움을 받아 둔다 — 보고와 장면이 다 걷혀 지도로 돌아오면 띄운다 (배우는 판 · 끝난 판 · 이번 계절 이미 띄운 것은 빼고) */
   function queueHowWin(loss: Loss | null): void {
     if (loss !== null && realm !== null && realm.region !== 'tutorial' && !realm.outcome) {
@@ -6813,6 +6836,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         break
       }
       // 고을 둘레 단추 (z축 5단계) — 큰 판으로 넘어가는 것들. 판을 열면 둘레 단추는 접힌다 (openSheet)
+      case 'flm': tipPop(t, d['why'] ?? ''); return
       case 'nr-more': openSheet({ kind: 'node', id: d['node']! }); return
       case 'nr-chief': foldOpen.add('chief'); openSheet({ kind: 'node', id: d['node']! }); return
       case 'nr-draft':
