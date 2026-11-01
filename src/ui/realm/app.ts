@@ -69,6 +69,7 @@ import { APP_CSS, CLOUD_CSS, SEASONP_CSS, UI_CSS } from './appstyle.ts'
 import { GOAL_CSS, goalBandHtml, goalRowsHtml } from './goalband.ts'
 import { contestOpen } from '../../realm/scenario.ts'
 import { installTips, TIP_CSS } from './tips.ts'
+import { FIRST_CSS, FIRSTS, loadFirsts, nextFirst, saveFirsts, type First } from './firsts.ts'
 import { UPDATE_CSS } from './update.ts'
 import { scrollInside } from './scroll.ts'
 import { retainMaxOf } from '../../realm/legacy.ts'
@@ -612,7 +613,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + MEM_CSS
+  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + MEM_CSS
   document.head.appendChild(style)
   root.classList.add('ap')
   // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
@@ -5858,9 +5859,74 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       stratPaint() // 전략 회의 화면 — 열려 있으면 다시 그린다
       wooPaint() // 회유할 사람 고르기 상자
       marquee(root) // 말줄임으로 잘린 한 줄 글은 지하철 안내판처럼 흐른다 (형 10-29)
+      firstsAfterPaint()
     } catch (e) {
       failNote(e)
     }
+  }
+
+  /** 처음 한 번 알림 (firsts.ts) — 본 것 · 떠 있는 것 */
+  const firstsSeen = loadFirsts()
+  let firstOn: First | null = null
+  let firstTimer = 0
+  /** 다시 그린 뒤 몇 번 더 볼까 — 판 속 카드는 그린 뒤 조금 있다 펼쳐진다(백성 배치 단추를 놓쳤다) */
+  let firstTries = 0
+  /** 처음 보이는 것인가 — 화면 안에 실제로 그려진 첫 것 */
+  const firstEl = (sel: string): HTMLElement | null => [...root.querySelectorAll<HTMLElement>(sel)].find((e) => { const b = e.getBoundingClientRect(); return b.width > 1 && b.height > 1 && b.bottom > 0 && b.top < innerHeight && b.right > 0 && b.left < innerWidth && getComputedStyle(e).visibility !== 'hidden' }) ?? null
+  /** 다시 그린 뒤 — 떠 있으면 새 자리에 다시 붙이고, 아니면 판이 자리 잡은 뒤(판이 미끄러져 열린다) 처음 보이는 것이 있나 본다 */
+  function firstsAfterPaint(): void {
+    if (firstOn !== null) { firstPlace(); return }
+    // 이미 기다리는 중이면 그대로 — 자꾸 다시 그리는 동안 미루기만 하다 끝내 못 띄웠다
+    firstTries = 0
+    if (firstTimer === 0) firstTimer = window.setTimeout(firstCheck, P.realm.firstHintDelayMs)
+  }
+  function firstCheck(): void {
+    firstTimer = 0
+    // 배우는 판은 제 띠가 가르친다 · 큰 장면·전장·회의·담판 위에는 띄우지 않는다 · 숨은 탭에서는 쉰다 (절대 규칙 4)
+    if (realm === null || realm.region === 'tutorial' || warOn || firstOn !== null || document.visibilityState !== 'visible' || FIRSTS.every((f) => firstsSeen.has(f.id))) return
+    // 가려 있으면 걷힌 뒤 다시 본다 — 보고판이 떠 있는 채 판을 열면 그 뒤로 다시 그리지 않아 놓쳤다
+    if (root.classList.contains('modal-open') || root.querySelector('.cere, .ascfx, .gnpop, .wr, .stov, .dpov') !== null) { firstTimer = window.setTimeout(firstCheck, P.realm.firstHintDelayMs); return }
+    const f = nextFirst(firstsSeen, (s) => firstEl(s) !== null)
+    if (f === null) {
+      // 그려져 있는데 아직 안 보이면(판이 미끄러지는 중 · 굴려야 보이는 자리) 보일 때까지 · 아니면 몇 번만 더
+      const soon = FIRSTS.some((x) => !firstsSeen.has(x.id) && root.querySelector(x.sel) !== null)
+      if (soon || firstTries++ < P.realm.firstHintTries) firstTimer = window.setTimeout(firstCheck, P.realm.firstHintDelayMs)
+      return
+    }
+    firstsSeen.add(f.id)
+    saveFirsts(firstsSeen)
+    firstOn = f
+    const el = document.createElement('div')
+    el.className = 'fhint'
+    el.innerHTML = `<b>${esc(f.title)}</b>${esc(f.text)}${f.guide !== undefined ? `<br><button class="fhmore" data-act="guide" data-k="${f.guide}">자세히 ›</button>` : ''}`
+    el.addEventListener('click', () => window.setTimeout(firstClose, 0)) // 「자세히」는 설명을 연 뒤 닫는다
+    root.append(el)
+    firstPlace()
+    ding(snd('tap_brush'), 0.35)
+    window.setTimeout(() => { if (firstOn?.id === f.id) firstClose() }, noticeMs(f.title + f.text, P.realm.firstHintMs))
+  }
+  /** 말풍선을 그것 곁에 — 위에 자리가 있으면 위, 없으면 아래 · 화면 밖으로 안 나가게. 그것이 사라졌으면 닫는다 */
+  function firstPlace(): void {
+    const box = root.querySelector<HTMLElement>('.fhint')
+    const at = firstOn !== null ? firstEl(firstOn.sel) : null
+    if (box === null || at === null) { firstClose(); return }
+    root.querySelectorAll('.fhon').forEach((e) => { if (e !== at) e.classList.remove('fhon') })
+    at.classList.add('fhon')
+    const b = at.getBoundingClientRect()
+    const up = b.top > box.offsetHeight + 24
+    const half = box.offsetWidth / 2
+    box.classList.toggle('up', up)
+    box.classList.toggle('dn', !up)
+    box.style.left = `${Math.round(Math.min(innerWidth - 12 - half, Math.max(12 + half, b.left + b.width / 2)))}px`
+    box.style.top = `${Math.round(up ? b.top : b.bottom)}px`
+  }
+  function firstClose(): void {
+    firstOn = null
+    root.querySelectorAll('.fhon').forEach((e) => e.classList.remove('fhon'))
+    const box = root.querySelector<HTMLElement>('.fhint')
+    if (box === null) return
+    box.classList.add('out')
+    window.setTimeout(() => box.remove(), 300)
   }
 
   /** 마지막으로 깐 지도 글 — 같으면 다시 깔지 않는다 */
