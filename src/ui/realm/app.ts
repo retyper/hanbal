@@ -1622,14 +1622,35 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     }))
   }
 
-  /** 개척단이 마을을 열 수 있는 빈땅 — 우리 고을과 길로 맞닿은 곳 (지도의 「＋마을」 · 백성 판의 땅 목록) */
+  /**
+   * 개척단이 마을을 열 수 있는 빈땅 (지도의 「＋마을」 · 백성 판의 땅 목록) — 개척단은 도읍에서 꾸려 우리 고을을 거쳐 한 칸씩 가므로
+   * 도읍에서 우리 땅을 따라 닿는 곳 모두. 전엔 빈 땅에 세운 우리 마을을 건너뛰어 그 너머가 「못 가는 땅」이 됐다 (형 11-01)
+   */
   function foundLands(r: Realm): string[] {
+    const cap = r.factions[me()]?.capital
+    if (cap === undefined) return []
     const out = new Set<string>()
-    for (const n of Object.values(r.nodes)) {
-      if (n.owner !== me() || n.kind === 'wild' || n.kind === 'sodo') continue
-      for (const m of partyMoves(r, me(), n.id)) if (m.found) out.add(m.to)
+    const seen = new Set([cap])
+    const q = [cap]
+    while (q.length > 0) {
+      const at = q.shift()!
+      for (const m of partyMoves(r, me(), at)) {
+        if (m.found) out.add(m.to)
+        if (r.nodes[m.to]?.owner === me() && !seen.has(m.to)) { seen.add(m.to); q.push(m.to) }
+      }
     }
     return [...out].sort()
+  }
+
+  /** 도읍에 맞닿지 않은 빈땅 — 도읍에서 개척단을 꾸려 우리 고을을 거쳐 보낸다 (꾸리면 개척단이 골라져 갈 곳이 빛난다) */
+  function capPartyHtml(r: Realm, cls: string): string {
+    const cap = r.factions[me()]?.capital
+    if (cap === undefined) return ''
+    if (settles.some((o) => o.kind === 'party' && o.node === cap)) return `<p class="mute">이번 달 도읍에서 개척단을 꾸렸습니다. 개척단 말을 눌러 길을 고르세요</p>`
+    const k = partySize(r, me(), cap)
+    if (k <= 0) return `<p class="mute">${esc(partyWhy(r, cap))}</p>`
+    const c = partyCost(k)
+    return `<button class="btn pri home wide ${cls}" data-act="party" data-node="${cap}">${icon('unit-porters')}도읍에서 개척단 꾸리기 ${costHtml({ grain: c.grain, wood: c.wood })}</button><p class="mute">우리 고을을 거쳐 한 칸씩 갑니다</p>`
   }
 
   /** 추천할 빈땅 — 임자 없고, 가는 개척단이 없고, 맞닿은 우리 고을에서 지금 꾸릴 수 있는 첫 곳 (이번 계절 이미 꾸렸으면 없음) */
@@ -1654,6 +1675,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   /** 개척단을 못 꾸리는 까닭 한 줄 */
   function partyWhy(r: Realm, node: string): string {
+    if (r.factions[me()]?.capital !== node) return '개척단은 도읍에서만 꾸린다'
     if (partiesOf(r, me()).length >= P.realm.partyMax) return `개척단은 한꺼번에 ${P.realm.partyMax}까지 둔다`
     const n = r.nodes[node]!
     if (Math.floor(n.hh * P.realm.partyShare) < P.realm.partyMin) return '백성이 아직 적다'
@@ -2629,7 +2651,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const going = partiesOf(r, me()).find((p) => p.march?.to === to)
     if (going !== undefined) return h + `<button class="btn home wide stlgo on" data-act="ptok" data-army="${going.id}" data-node="${to}">${esc(r.nodes[going.home]?.name ?? '')} 개척단이 간다 · 백성 ${going.hh}가구</button></div>`
     const src = partySource(r, to)
-    if (src === null) return h + `<p class="mute">맞닿은 우리 고을에서 개척단을 꾸릴 수 없다. 백성·곡식·나무가 모자라거나 길이 막혔다</p></div>`
+    if (src === null) return h + capPartyHtml(r, 'stlgo') + `</div>`
     const k = partySize(r, me(), src.from)
     const c = partyCost(k)
     h += `<button class="btn pri home wide stlgo" data-act="party-to" data-node="${to}" data-from="${src.from}" data-edge="${src.edge}">${esc(r.nodes[src.from]?.name ?? '')}에서 개척단 보내기${settleRec(r) === to ? REC_ST : ''}</button>`
@@ -4540,7 +4562,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         bs.push(rb('nr-chief', who !== undefined ? bust(who, 'nrf') : '<b class="nrq">?</b>', '고을지기', '', who === undefined ? ' empty' : ''))
       }
       if (r.region !== 'tutorial') {
-        const near = partyMoves(r, me(), id).some((m) => m.found)
+        // 개척단은 도읍에서만 꾸린다 — 다른 고을엔 단추를 안 둔다 · 갈 빈 땅이 어디든 닿으면 뜬다
+        const near = r.factions[me()]?.capital === id && foundLands(r).length > 0
         if (settles.some((o) => o.kind === 'party' && o.node === id)) bs.push(rb('party-undo', icon('unit-porters'), '거둔다', '', ' on'))
         else if (near) bs.push(rb('party', icon('unit-porters'), '개척단', partySize(r, me(), id) > 0 ? '' : ' disabled'))
       }
@@ -4598,7 +4621,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         else if (src !== null) {
           const c = partyCost(partySize(r, me(), src.from))
           h += `<button class="btn pri home wide nrbig" data-act="party-to" data-node="${id}" data-from="${src.from}" data-edge="${src.edge}">${icon('unit-porters')}개척단 보내기 ${costHtml({ grain: c.grain, wood: c.wood })}</button>`
-        } else if (foundLands(r).includes(id)) h += `<p class="mute">맞닿은 우리 고을에서 개척단을 꾸릴 수 없습니다. 백성·곡식·나무를 보세요</p>`
+        } else if (foundLands(r).includes(id)) h += capPartyHtml(r, 'nrbig')
         else h += `<p class="nrwhy">${esc(noReachWhy(r, me(), id))}<small>개척단은 우리 고을에서 길로 바로 이웃한 빈 땅에만 갑니다</small></p>`
       } else if (n.owner === null && n.kind !== 'wild' && n.kind !== 'sodo' && n.hh > 0) {
         h += `<p class="nrwhy">${icon('unit-spear')}군사 이동 필요<small>주인이 없어 군사가 닿으면 싸움 없이 우리 땅이 됩니다</small></p>`
@@ -6506,7 +6529,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (nudgedAt !== seasonIdx(realm) && realm.region !== 'tutorial') {
           // 장수 탭이 아직 안 열렸으면 쉬는 장수로 붙잡지 않는다 · 재상이 맡을 장수로도 붙잡지 않는다 (직접 부리는 장수만)
           const idle = tabWait(realm, 'heroes') > 0 ? [] : waitingHeroes(plan())
-          const noScout = scouts.length === 0 && scoutable(realm).length > 0
+          // 정찰은 싸울 상대가 있을 때만 붙잡는다 — 싸움도 없는데 정찰을 보내게 만들었다 (형 11-01)
+          const noScout = scouts.length === 0 && scoutable(realm).some((id) => { const o = realm!.nodes[id]?.owner ?? null; return o !== null && o !== me() && relationOf(realm!, me(), o).state === 'war' })
           if (idle.length > 0 || noScout) {
             nudgedAt = seasonIdx(realm) // 달 시계면 계절마다 한 번 — 달마다 붙잡지 않는다
             nudgedTurn = realm.season

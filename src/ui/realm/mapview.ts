@@ -1510,12 +1510,19 @@ function fogWords(r: Realm, me: string, region: RegionId, W: number, H: number, 
 
 /**
  * 개척단이 못 닿는 빈 땅의 까닭 한 마디 (형 10-31: "왜 몇몇 빈 땅에는 개척단이 아예 안 보내지는지").
- * 개척단은 우리 고을에서 길로 바로 이웃한 빈 땅에만 간다 — 우리 땅과 안 닿음 · 이 철엔 길이 막힘 · 적 군대가 있음
+ * 개척단은 도읍에서 꾸려 우리 고을을 거쳐 한 칸씩 간다 — 자리 없음 · 다른 나라 군대 · 우리 땅과 안 닿음 · 철에 막힌 길 · 도읍에서 가는 길이 막힘
  */
 export function noReachWhy(r: Realm, me: string, id: string): string {
+  const n = r.nodes[id]
+  if (n !== undefined && (n.room ?? 0) - n.hh <= 0) return '더 들어설 자리 없음'
+  // 개척단은 다른 나라 군대가 머문 땅에 못 선다 — 보이는 군대일 때만 그렇게 말한다 (11-01 형: "적의 군대가 없는 마을인데 적군 있다고")
+  const vis = visibleNodes(r, me)
+  if (vis.has(id) && Object.values(r.armies).some((a) => a.at === id && a.march === null && a.faction !== me)) return '다른 나라 군대가 머묾'
   const links = Object.values(r.edges).filter((e) => {
     const o = e.a === id ? e.b : e.b === id ? e.a : null
     return o !== null && r.nodes[o]?.owner === me && r.nodes[o]?.kind !== 'sodo'
   })
-  return links.length === 0 ? '우리 땅과 안 닿음' : links.every((e) => blockedWhy(e, r) !== null) ? '이 철엔 길이 막힘' : '적 군대가 있음'
+  if (links.length === 0) return '우리 땅과 안 닿음'
+  if (links.every((e) => blockedWhy(e, r) !== null)) return '이 철엔 길이 막힘'
+  return '도읍에서 가는 길이 막힘'
 }
