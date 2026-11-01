@@ -1298,4 +1298,38 @@ export const UI_CSS = `
 .ap .legend, .ap .zbtns, .ap .roadkey, .ap .todo, .ap .goalb { transition: opacity .2s ease; }
 .ap.sel-open .legend, .ap.sel-open .roadkey, .ap.sel-open .todo, .ap.sel-open .goalb { opacity: .12; pointer-events: none; } /* 보기·＋·－ 는 남긴다 — 먼 갈 곳을 고르려면 당겨 봐야 한다 */
 @media (prefers-reduced-motion: reduce) { .ap .legend, .ap .zbtns, .ap .roadkey, .ap .todo, .ap .goalb { transition: none; } }
+/* 고을 둘레 단추 (ZAXIS-1031 5·6단계) — 지도 판 안에 얹어 끌고 당기면 고을과 함께 간다. 작은 칸의 opacity·scale 만 (폰 그래픽 한도) */
+.ap .map .nring { position: absolute; z-index: 40; pointer-events: auto; }
+.ap .map .nring.own { width: 0; height: 0; }
+.ap .map .nring.own .nrb { position: absolute; left: 0; top: 0; width: 46px; height: 46px; margin: -23px 0 0 -23px; padding: 0; transform: translate(var(--x), var(--y));
+  display: grid; place-items: center; border-radius: 50%; border: 2px solid #c9a45a; background: #1c1610f0; color: #f3e6c8; box-shadow: 0 2px 6px #000a; -webkit-tap-highlight-color: transparent; }
+.ap .map .nring.own .nrb img { width: 30px; height: 30px; object-fit: contain; }
+.ap .map .nring.own .nrb .nrf { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; object-position: 50% 15%; }
+.ap .map .nring.own .nrb small { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 1px; white-space: nowrap; font-size: 11px; font-weight: 800; line-height: 1.35;
+  color: #fff3d6; background: #201811e6; border-radius: 6px; padding: 0 4px; }
+.ap .map .nring .nrb.on { border-color: #8fd06a; box-shadow: 0 0 0 2px #8fd06a55, 0 2px 6px #000a; }
+.ap .map .nring .nrb.empty { border-style: dashed; }
+.ap .map .nring .nrb:disabled { opacity: .45; }
+.ap .map .nring .nrq { font-size: 22px; color: #ffd76a; font-style: normal; }
+.ap .map .nring .nrm { font-size: 22px; font-style: normal; line-height: 1; color: #ffd76a; }
+.ap .map .nring.own.pop .nrb { animation: nrpop .24s cubic-bezier(.3, 1.6, .5, 1) both; animation-delay: calc(var(--i) * var(--st)); }
+@keyframes nrpop { from { opacity: 0; transform: translate(0, 0) scale(.4); } to { opacity: 1; transform: translate(var(--x), var(--y)) scale(1); } }
+/* 남의 고을 · 빈 땅 — 곁에 작은 카드 (위쪽 고을이면 아래로 · 가장자리면 안쪽으로) */
+.ap .map .nring.card { --tx: -50%; --ty: calc(-100% - 30px); transform: translate(var(--tx), var(--ty)); width: max-content; min-width: 176px; max-width: min(250px, 70vw);
+  padding: 8px; border-radius: 12px; border: 1px solid #c9a45a; background: #1c1610f4; color: #f3e6c8; font-size: 13px; line-height: 1.4; box-shadow: 0 4px 14px #000b; }
+.ap .map .nring.card.dn { --ty: 34px; } .ap .map .nring.card.lf { --tx: -12%; } .ap .map .nring.card.rt { --tx: -88%; }
+.ap .map .nring.card.pop { animation: nrcard .2s ease-out both; }
+@keyframes nrcard { from { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(.9); } to { opacity: 1; transform: translate(var(--tx), var(--ty)) scale(1); } }
+.ap .map .nring .nrh { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.ap .map .nring .nrh img { width: 22px; height: 22px; object-fit: contain; } .ap .map .nring .nrh b { flex: 1; min-width: 0; }
+.ap .map .nring .nrl { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.ap .map .nring .nrl > img { width: 18px; height: 18px; object-fit: contain; }
+.ap .map .nring .nrg { display: inline-flex; gap: 2px; } .ap .map .nring .nrg img { width: 20px; height: 20px; object-fit: contain; }
+.ap .map .nring .nrbs { display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px; }
+.ap .map .nring.card .nrb { width: 54px; padding: 4px 0 2px; display: flex; flex-direction: column; align-items: center; gap: 1px; border-radius: 10px; border: 1px solid #6a5030; background: #2a2016; color: #f3e6c8; }
+.ap .map .nring.card .nrb img { width: 26px; height: 26px; object-fit: contain; } .ap .map .nring.card .nrb small { font-size: 11px; font-weight: 700; }
+.ap .map .nring .nrbig { margin-top: 6px; } .ap .map .nring .nrbig img { width: 22px; height: 22px; vertical-align: middle; margin-right: 4px; }
+.ap .map .nring .nrwhy { margin: 6px 0 0; font-weight: 800; color: #ffd9a0; } .ap .map .nring .nrwhy img { width: 18px; height: 18px; vertical-align: middle; margin-right: 3px; }
+.ap .map .nring .nrwhy small { display: block; font-weight: 400; font-size: 11.5px; color: #d8c8a8; }
+@media (prefers-reduced-motion: reduce) { .ap .map .nring.pop, .ap .map .nring.pop .nrb { animation: none; } }
 `

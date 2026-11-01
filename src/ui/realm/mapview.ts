@@ -925,21 +925,10 @@ export function mapHtml(
     const holyFront = n.kind === 'sodo'
       ? `<img class="sr f" src="${art}fx/sodo-rope.png" alt=""><img class="sc c1" src="${art}fx/sodo-cloth-a.png" alt=""><img class="sc c2" src="${art}fx/sodo-cloth-b.png" alt=""><img class="sc c3" src="${art}fx/sodo-cloth-a.png" alt="">` : ''
     const sct = scouting.includes(n.id) ? `<span class="sctmk" title="척후가 이 고을을 엿본다"><img src="${art}icon/unit-scouts.png" alt="">척후</span>` : ''
-    // 개척단이 못 닿는 빈 땅 — 까닭을 작게 (형 10-31: "왜 몇몇 빈 땅에는 개척단이 아예 안 보내지는지"). 개척단은 우리 고을에서 이웃 한 칸만 간다.
-    // 고른 것이 없을 때(settleable 이 채워졌을 때)만
-    let noReach = ''
-    if (settleable.size > 0 && owner === null && n.kind === 'wild' && (n.room ?? 0) - n.hh > 0 && !settleable.has(n.id)) {
-      const links = Object.values(r.edges).filter((e) => {
-        const o = e.a === n.id ? e.b : e.b === n.id ? e.a : null
-        return o !== null && r.nodes[o]?.owner === me && r.nodes[o]?.kind !== 'sodo'
-      })
-      const why = links.length === 0 ? '우리 땅과 안 닿음' : links.every((e) => blockedWhy(e, r) !== null) ? '이 철엔 길이 막힘' : '적 군대가 있음'
-      noReach = `<span class="stl nor" title="개척단은 우리 고을에서 길로 바로 이웃한 빈 땅에만 갑니다">${why}</span>`
-    }
     // 주인 없이 사람만 사는 철광·포구 — 지키는 군대가 없어 우리 군대가 닿기만 하면 싸움 없이 우리 땅 (season.walkIn · 형 10-31: "문명6 촌락처럼")
     const freeTake = owner === null && n.kind !== 'wild' && n.kind !== 'sodo' && n.hh > 0 && !Object.values(r.armies).some((a) => a.at === n.id && a.march === null)
       ? `<span class="stl frt" title="주인이 없습니다. 군대를 보내면 싸움 없이 우리 땅이 됩니다"><img src="${art}icon/unit-spear.png" alt="">군대만 가면</span>` : ''
-    nodes += `${holy}<span class="base"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${holyFront}<span class="ring"></span>${selected === n.id ? GEM : ''}${sct}${taken.has(n.id) ? `<img class="burnsm won" src="${art}fx/smoke.png" alt=""><span class="plant"><i class="pole"></i><i class="cloth" style="--fc:${FACTION_ART[me]?.color ?? '#c9a45a'}"><img src="${art}icon/${FACTION_ART[me]?.emblem ?? 'emblem-shell'}.png" alt=""></i></span><i class="wonring"></i><span class="wonchip">점령</span>` : burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${held.has(n.id) ? '<span class="heldchip">🛡 지켜 냈다</span>' : ''}${mist}${ice}${gface}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${poisedAt.has(n.id) ? '<span class="strk"><i>⚔</i>다음 달 친다</span>' : ''}${tg !== undefined ? (tg.chip !== '' ? `<span class="tchip">${tg.chip}</span>` : '') : settleable.has(n.id) ? (settling.has(n.id) ? '<span class="stl go">백성이 가는 중</span>' : '<span class="stl">＋마을</span>') : inboundOf(n, me) > 0 ? '<span class="stl go">백성이 오는 중</span>' : freeTake !== '' ? freeTake : noReach !== '' ? noReach : crowd}</div>`
+    nodes += `${holy}<span class="base"></span><img class="st" src="${art}icon/${nodeIcon(n)}.png" alt="">${holyFront}<span class="ring"></span>${selected === n.id ? GEM : ''}${sct}${taken.has(n.id) ? `<img class="burnsm won" src="${art}fx/smoke.png" alt=""><span class="plant"><i class="pole"></i><i class="cloth" style="--fc:${FACTION_ART[me]?.color ?? '#c9a45a'}"><img src="${art}icon/${FACTION_ART[me]?.emblem ?? 'emblem-shell'}.png" alt=""></i></span><i class="wonring"></i><span class="wonchip">점령</span>` : burning.has(n.id) ? `<img class="burnsm" src="${art}fx/smoke.png" alt=""><img class="burnfx" src="${art}fx/fire.png" alt="">` : lived ? '<i class="smk"></i>' : ''}${held.has(n.id) ? '<span class="heldchip">🛡 지켜 냈다</span>' : ''}${mist}${ice}${gface}${badge}${thr !== '' ? '<i class="thr">⚔</i>' : ''}${poisedAt.has(n.id) ? '<span class="strk"><i>⚔</i>다음 달 친다</span>' : ''}${tg !== undefined ? (tg.chip !== '' ? `<span class="tchip">${tg.chip}</span>` : '') : settleable.has(n.id) ? (settling.has(n.id) ? '<span class="stl go">백성이 가는 중</span>' : '<span class="stl">＋마을</span>') : inboundOf(n, me) > 0 ? '<span class="stl go">백성이 오는 중</span>' : freeTake !== '' ? freeTake : crowd}</div>`
   }
   // 우리 군대의 말 — 고을 밑에 나란히. 누르면 고르고, 갈 곳이 지도에 밝아진다
   const byNode = new Map<string, MapToken[]>()
@@ -1517,4 +1506,16 @@ function fogWords(r: Realm, me: string, region: RegionId, W: number, H: number, 
     words += `<span class="rumor" style="left:${(x * 100).toFixed(1)}%;top:${(y * 100).toFixed(1)}%"><i></i>${r.factions[f]!.name}<small>소문으로 들은 나라</small></span>`
   }
   return words
+}
+
+/**
+ * 개척단이 못 닿는 빈 땅의 까닭 한 마디 (형 10-31: "왜 몇몇 빈 땅에는 개척단이 아예 안 보내지는지").
+ * 개척단은 우리 고을에서 길로 바로 이웃한 빈 땅에만 간다 — 우리 땅과 안 닿음 · 이 철엔 길이 막힘 · 적 군대가 있음
+ */
+export function noReachWhy(r: Realm, me: string, id: string): string {
+  const links = Object.values(r.edges).filter((e) => {
+    const o = e.a === id ? e.b : e.b === id ? e.a : null
+    return o !== null && r.nodes[o]?.owner === me && r.nodes[o]?.kind !== 'sodo'
+  })
+  return links.length === 0 ? '우리 땅과 안 닿음' : links.every((e) => blockedWhy(e, r) !== null) ? '이 철엔 길이 막힘' : '적 군대가 있음'
 }

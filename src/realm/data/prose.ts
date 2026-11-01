@@ -84,6 +84,11 @@ export function seasonLabel(c: Clocked, t: number = c.season): string {
   return monthly(c) ? `${yearOf(c, t) + 1}년 ${monthOf(c, t)}월 · ${name}` : `${yearOf(c, t) + 1}년 ${name}`
 }
 
+/** 위 띠의 날짜 — 달 시계는 「1년 3월」 (철은 곁의 그림이 말한다 · 형 11-01) · 옛 판은 seasonLabel 그대로 */
+export function dateLabel(c: Clocked, t: number = c.season): string {
+  return monthly(c) ? `${yearOf(c, t) + 1}년 ${monthOf(c, t)}월` : seasonLabel(c, t)
+}
+
 /** 턴 단위 이름 — 옛 판 「계절」 · 달 시계 「달」 */
 export function turnWord(c: ClockKind): string {
   return monthly(c) ? '달' : '계절'

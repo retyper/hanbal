@@ -9,7 +9,7 @@
 import { faceFile, noteAscended } from './face.ts'
 import { aiOrders, strikeLive } from '../../realm/ai.ts'
 import { headcount, strength, type Equip, type UnitKind } from '../../realm/battle.ts'
-import { bustOf, CUSTOM_ICON, FACTION_ART, GOOD_ICON, SEASON_ICON, SOL_ANIM2, SOL_ANIM_AR, UNIT_ICON, flagIcon, kidBust, nodeIcon, noteGrowing, noteKids } from '../../realm/data/art.ts'
+import { bustOf, CUSTOM_ICON, FACTION_ART, GOOD_ICON, SEASON_ICON, SOL_ANIM2, SOL_ANIM_AR, UNIT_ICON, flagIcon, kidBust, nodeIcon, nodePos, noteGrowing, noteKids } from '../../realm/data/art.ts'
 import { AWAKEN_ART } from '../../realm/data/awaken-art.ts'
 import { NATIONS, type NationInfo } from '../../realm/data/nations.ts'
 import { YEONGNAM_NATIONS } from '../../realm/data/nations-yeongnam.ts'
@@ -24,7 +24,7 @@ import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
 import { CARDS, cardFallback, cardInfo } from '../../realm/data/cards.ts'
 import { cardPreview, type CardFx } from '../../realm/events.ts'
 import {
-  ASK_KIND_NAME, ASK_NAME, deedText, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, arriveWhen, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, turnsLabel, turnWord, whyLine, NODE_NOW, BUILD_NAME, BOW_NAME, CONCEAL_LINE, GOOD_NAME, GOOD_USE, MEET_HOW, tagNow,
+  ASK_KIND_NAME, ASK_NAME, deedText, GEAR_NAME, TIER_NAME, PLOT_DOES, PLOT_NAME, askLine, arriveWhen, josa, EDGE_NAME, NODE_KIND_NAME, SEASON_LINE, SETTLED_NAME, STAT_NAME, TAG_LINE, UNIT_NAME, reportText, seasonLabel, dateLabel, turnsLabel, turnWord, whyLine, NODE_NOW, BUILD_NAME, BOW_NAME, CONCEAL_LINE, GOOD_NAME, GOOD_USE, MEET_HOW, tagNow,
 } from '../../realm/data/prose.ts'
 import { canEscort, envoyChanceFor, envoyClash, envoyOptions, favorOf, friendly, jointTargets, lentEta, openAsks, relationOf } from '../../realm/diplomacy.ts'
 import {
@@ -49,7 +49,7 @@ import { foundable, joinable, partiesOf, partyCost, partyMoves, partySize } from
 import { canCohabit, canWed, heroJobOf, heroSeen, honeyLeft, idleHeroOrders, together, inheritOf, isRuler, postHero, rulerOf, tieOf, wanderersFor, wedCost, wooable } from '../../realm/heroes.ts'
 import type { Approach, Army, EdgeKind, EnvoyAsk, ExpDest, Good, Hand, Hero, Order, Party, PlotOp, Ration, Realm, RegionId, Report, ReportLine, Tactic, WooApproach } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
-import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, visibleNodes, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
+import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, noReachWhy, visibleNodes, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { LEGACY_CSS, bringHtml, clearBring, toggleBring } from './legacy.ts'
 import { DEX_CSS, clanHeroes, dexHtml, dexToastHtml, loadDex, recordDex, type DexBoard } from './dex.ts'
 import { DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
@@ -811,6 +811,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * (형 10-23: "백성 배치 … 아직도 이해가 안 돼" → 문명의 개척자처럼 지도에 말 하나). armySel 과 함께 켜지지 않는다
    */
   let partySel = ''
+  /** 둘레 단추를 펼친 고을 (z축 5·6단계) — 고을을 누르면 큰 판 대신 이것. 군대·개척단을 고르거나 판을 열면 접힌다 */
+  let ring = ''
   /** 장수 판의 「사신으로 보낸다」 — 다음에 꾸리는 사신에 이 장수를 미리 고른다 */
   let envoyPick = ''
   /** 배우는 판 — 지금 단계와 그 단계에 들어선 때 (오래 머물면 「건너뛰기」) */
@@ -1424,7 +1426,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 누르면 바로 뜨는 말 (tips.ts) — 폰엔 마우스를 올릴 일이 없다
     // 첫 화면으로 가는 길은 나라 탭 맨 밑 「첫 화면으로」 (형 10-24: "좌상단 홈 버튼은 없애도 될 듯 · 나라 탭에서 눌러서 갈 수 있게")
     // 계절 이름을 누르면 지난 기록 — 따로 있던 「지난 기록」 단추를 대신한다 (형 10-28: 그 자리만큼 목표 띠를 올려 지도를 넓게)
-    return `<button class="tl" data-act="log-open" aria-label="지난 기록">${icon(SEASON_ICON[season], 'sic')}<b>${esc(seasonLabel(r))}</b><i class="tlx">📜</i></button>`
+    return `<button class="tl" data-act="log-open" aria-label="지난 기록">${icon(SEASON_ICON[season], 'sic')}<b>${esc(dateLabel(r))}</b><i class="tlx">📜</i></button>`
       + `<div class="tr">${(['grain', 'iron', 'salt', 'wood', 'horse'] as const).filter((g) => g === 'grain' || g === 'iron' || goodOf(st, g) > 0).map((g) => goodStat(r, g, goodOf(st, g))).join('')}`
       + `<span class="stat" data-tip="군사, 우리 군대를 다 합친 사람 수">${icon('unit-spear')}<b>${men}</b></span>`
       + `<button class="stat nat" data-act="tab" data-tab="nation">${bust(r.heroes[r.factions[me()]?.ruler ?? rulerId(me())], 'tface')}${emblem(me())}<b>${esc(nation?.name ?? '')}</b></button></div>`
@@ -1513,7 +1515,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const p of partiesOf(r, me())) if (p.march !== null) marches.push({ from: p.march.from, to: p.march.to, left: realm!.parties?.[p.id]?.march != null ? p.march.left : null, people: true })
     const ps = partySel !== '' ? r.parties?.[partySel] : undefined
     // 척후를 보낸 고을은 고른 고을처럼 금빛 고리를 돌리지 않는다 — 작은 「척후」 표만 (형 10-27: "클릭하라고 지시하는 것 같다")
-    const sel = ps !== undefined ? (ps.march?.from ?? ps.at) : sheet?.kind === 'node' ? sheet.id : ''
+    const sel = ps !== undefined ? (ps.march?.from ?? ps.at) : sheet?.kind === 'node' ? sheet.id : ring
     // 지도에서 바로 움직인다 (형: "다른게임에서는 지도에서 바로 배치 조절하는거 같은데") — 말을 누르고, 밝아진 고을을 누른다
     // 길 위의 군대도 말을 둔다 — 길 가운데쯤에 (형: "내 군대 번예연이 군대가 지도에서 안보임")
     const tokens: MapToken[] = [...sorted(Object.values(r.armies)).filter((a) => a.faction === me()), ...lentToMe(r)].map((a) => {
@@ -4515,6 +4517,98 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   /**
+   * 고을 둘레 단추 (z축 5·6단계 · docs/realm/ZAXIS-1031.md) — 고을을 누르면 큰 판 대신 그 고을에 붙은 것만 튀어나온다 (하스스톤처럼).
+   * 우리 고을: 둘레에 동그란 단추 (고을지기 · 개척단 · 징병 · 목책 · 자세히) · 남의 고을: 곁에 작은 카드 (깃발 · 사이 · 군세 · 특산 + 정찰 · 외교 · 자세히)
+   * 빈 땅: 큰 단추 하나 (개척단 보내기) 또는 못 가는 까닭 한 줄. 「자세히」 만 지금의 큰 판을 연다
+   */
+  function ringHtml(r: Realm): string {
+    const id = ring
+    const n = r.nodes[id]
+    const p = nodePos(r.region ?? 'byeonhan-mini', id)
+    if (n === undefined || p === undefined) return ''
+    const at = `left:${(p[0] * 100).toFixed(3)}%;top:${(p[1] * 100).toFixed(3)}%`
+    const ours = n.owner === me()
+    const rb = (act: string, ic: string, label: string, extra = '', cls = ''): string =>
+      `<button class="nrb${cls}" data-act="${act}" data-node="${id}"${extra}>${ic}<small>${label}</small></button>`
+    const more = rb('nr-more', '<i class="nrm">⋯</i>', '자세히', '', ' more')
+    if (ours && n.kind !== 'wild' && n.kind !== 'sodo') {
+      const bs: string[] = []
+      if (r.factions[me()]?.capital !== id && n.hh > 0) {
+        const ch = postHero(r, id)
+        const come = heroOrders.find((o): o is Extract<Order, { kind: 'assign' }> => o.kind === 'assign' && o.node === id)
+        const who = come !== undefined ? r.heroes[come.hero] : ch ?? undefined
+        bs.push(rb('nr-chief', who !== undefined ? bust(who, 'nrf') : '<b class="nrq">?</b>', '고을지기', '', who === undefined ? ' empty' : ''))
+      }
+      if (r.region !== 'tutorial') {
+        const near = partyMoves(r, me(), id).some((m) => m.found)
+        if (settles.some((o) => o.kind === 'party' && o.node === id)) bs.push(rb('party-undo', icon('unit-porters'), '거둔다', '', ' on'))
+        else if (near) bs.push(rb('party', icon('unit-porters'), '개척단', partySize(r, me(), id) > 0 ? '' : ' disabled'))
+      }
+      const done = musters.reduce((s, o) => s + (o.kind === 'draft' && o.node === id ? o.n : 0), 0)
+      bs.push(rb('nr-draft', icon('unit-spear'), done > 0 ? `+${done}` : '징병', draftLimit(r, me(), id) - done > 0 || done > 0 ? '' : ' disabled', done > 0 ? ' on' : ''))
+      const nb = nextBuild(r, id)
+      const going = (r.builds ?? []).find((b) => b.node === id)
+      if (nb !== null || going !== undefined) {
+        const what = going?.what ?? nb!
+        const queued = musters.some((o) => o.kind === 'build' && o.node === id)
+        const bc = buildCost(what, r, me())
+        const ok = going === undefined && (queued || (canBuild(r, me(), id, what) && left().wood >= bc.wood && left().grain >= bc.grain))
+        const label = going !== undefined ? `${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음` : BUILD_NAME[what]
+        bs.push(rb('build', icon(what === 'moat' ? 'settle-moat' : 'settle-palisade'), label, ` data-what="${what}"${ok ? '' : ' disabled'}`, queued || going !== undefined ? ' on' : ''))
+      }
+      bs.push(more)
+      // 부채꼴 — 위쪽 가운데를 중심으로 왼쪽부터 오른쪽으로 (이름표는 고을 아래에 있다)
+      const arc = P.realm.mapRingArc
+      const R = P.realm.mapRingR
+      const btns = bs.map((b, i) => {
+        const deg = bs.length > 1 ? 90 + arc / 2 - (arc * i) / (bs.length - 1) : 90
+        const a = (deg * Math.PI) / 180
+        return b.replace('<button class="nrb', `<button style="--x:${(Math.cos(a) * R).toFixed(1)}px;--y:${(-Math.sin(a) * R).toFixed(1)}px;--i:${i}" class="nrb`)
+      }).join('')
+      return `<div class="nring own" style="${at};--st:${P.realm.mapRingStaggerMs}ms">${btns}</div>`
+    }
+    // 곁에 뜨는 작은 카드 — 화면 위쪽 고을이면 아래로, 가장자리면 안쪽으로
+    const side = `${p[1] < 0.3 ? ' dn' : ''}${p[0] < 0.18 ? ' lf' : p[0] > 0.82 ? ' rt' : ''}`
+    const gains = nodeSpecials(r, id).map((g) => `<img src="${ART}icon/${GOOD_ICON[g]}.png" alt="${GOOD_NAME[g]}" title="${GOOD_NAME[g]}">`).join('')
+    let h = ''
+    if (n.owner !== null && !ours && n.kind !== 'sodo') {
+      const o = n.owner
+      const knownNation = met(r, me(), o)
+      h += `<div class="nrh">${emblem(o)}<b>${esc(n.name)}</b>${knownNation ? relChipHtml(r, o) : '<span class="rel neutral">모르는 나라</span>'}</div>`
+      const f = (r.intel[me()] ?? {})[id]?.force
+      let force = '못 봤습니다'
+      if (f) {
+        const v = visibleRange({ f0: f.f0, src: f.src, u: f.u }, ageSeasons(r, f.season))
+        force = v === null ? '너무 오래됐습니다' : `${span(v[0], v[1], (x) => String(Math.round(x)))}${r.season === f.season ? '' : ` · ${turnsLabel(r, r.season - f.season)} 전`}`
+      }
+      h += `<div class="nrl">${icon('unit-spear')}<span>군세 <b>${force}</b></span>${gains !== '' ? `<span class="nrg">${gains}</span>` : ''}</div>`
+      h += `<div class="nrbs">`
+      if (scoutable(r).includes(id)) h += rb('scout', icon('unit-scouts'), scouts.includes(id) ? '거둔다' : '정찰', '', scouts.includes(id) ? ' on' : '')
+      if (knownNation && r.factions[o] !== undefined) h += rb('nr-diplo', icon('good-tribute-bell'), '외교', ` data-to="${o}"`)
+      h += `${more}</div>`
+    } else {
+      h += `<div class="nrh">${icon(nodeIcon(n), 'nic')}<b>${esc(n.name)}</b></div>`
+      if (gains !== '') h += `<div class="nrl"><span>생산품</span><span class="nrg">${gains}</span></div>`
+      const wildFree = n.kind === 'wild' && (n.owner === null || (ours && n.hh <= 0))
+      if (wildFree && r.region !== 'tutorial') {
+        // 빈 땅 한 단추 (z축 6단계) — 개척단이 닿으면 큰 단추 하나 · 못 닿으면 까닭 한 줄
+        const goingP = partiesOf(r, me()).find((x) => x.march?.to === id)
+        const src = goingP === undefined && foundLands(r).includes(id) ? partySource(r, id) : null
+        if (goingP !== undefined) h += `<button class="btn home wide on nrbig" data-act="ptok" data-army="${goingP.id}" data-node="${id}">${icon('unit-porters')}${esc(r.nodes[goingP.home]?.name ?? '')} 개척단이 가는 중</button>`
+        else if (src !== null) {
+          const c = partyCost(partySize(r, me(), src.from))
+          h += `<button class="btn pri home wide nrbig" data-act="party-to" data-node="${id}" data-from="${src.from}" data-edge="${src.edge}">${icon('unit-porters')}개척단 보내기 ${costHtml({ grain: c.grain, wood: c.wood })}</button>`
+        } else if (foundLands(r).includes(id)) h += `<p class="mute">맞닿은 우리 고을에서 개척단을 꾸릴 수 없습니다. 백성·곡식·나무를 보세요</p>`
+        else h += `<p class="nrwhy">${esc(noReachWhy(r, me(), id))}<small>개척단은 우리 고을에서 길로 바로 이웃한 빈 땅에만 갑니다</small></p>`
+      } else if (n.owner === null && n.kind !== 'wild' && n.kind !== 'sodo' && n.hh > 0) {
+        h += `<p class="nrwhy">${icon('unit-spear')}군대만 가면<small>주인이 없습니다. 군대를 보내면 싸움 없이 우리 땅이 됩니다</small></p>`
+      }
+      h += `<div class="nrbs">${more}</div>`
+    }
+    return `<div class="nring card${side}" style="${at}">${h}</div>`
+  }
+
+  /**
    * 다스리는 장수 — 이 고을을 맡은 장수 (부르는 이름은 형이 고른다 · 「촌장」은 난이도 첫 단계라 안 씀). 장수 판까지 안 가고 고을 판에서 바로 앉히고 바꾼다
    * (형 10-24: "마을 눌렀을 때 거기서도 통치하는 애 배치할 수 있게"). 앉힐 수 있는 이는 장수 판의 「맡는다」와 같다 —
    * 여기 있거나 우리 땅으로 이어진 곳에 있는 한가한 장수 (멀면 정예를 거느리고 그 계절 길에 있다) · 군대를 이끄는 이는 그 군대가 여기 있을 때만
@@ -5641,6 +5735,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   /** 마지막으로 깐 지도 글 — 같으면 다시 깔지 않는다 */
   let lastMap = ''
+  /** 둘레 단추를 마지막으로 얹은 지도 · 그 단추 · 그 고을 — 바뀔 때만 갈아 끼운다 */
+  let lastMapRing = ''
+  let lastRing = ''
+  let lastRingId = ''
   /** 지난번 그린 판 — 바뀌었을 때만 카드를 펼친다 */
   let lastSheet = ''
 
@@ -5690,6 +5788,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const keep = [wrap.scrollLeft, wrap.scrollTop] as const
     const first = wrap.querySelector('.map') === null
     // 지도가 그대로면 다시 깔지 않는다 — 징병 수 ± 처럼 판만 바뀔 때마다 바탕 그림이 깜빡였다 (형: "뒷배경이 너무 깜빡거림")
+    if (armySel.length > 0 || partySel !== '' || sheet !== null || realm.nodes[ring] === undefined) ring = '' // 군대·개척단을 고르거나 판을 열면 둘레 단추는 접힌다
     const mh = mapPart(r)
     if (mh !== lastMap || first) {
       wrap.innerHTML = mh
@@ -5699,6 +5798,19 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const next = seasonOf(r, r.season + 1)
       window.setTimeout(() => warmNextSeason(ART, rg, next), WARM_MS)
     }
+    // 둘레 단추 — 지도 판 안에 (끌고 당기면 고을과 함께 간다). 지도를 다시 깔지 않고 이것만 갈아 끼운다 · 새 고을을 열 때만 퐁
+    const rh = ring !== '' ? ringHtml(r) : ''
+    const mapEl = wrap.querySelector('.map')
+    if (mapEl !== null && (first || mh !== lastMapRing || rh !== lastRing)) {
+      mapEl.querySelector('.nring')?.remove()
+      if (rh !== '') {
+        mapEl.insertAdjacentHTML('beforeend', rh)
+        if (ring !== lastRingId) mapEl.querySelector('.nring')?.classList.add('pop')
+      }
+    }
+    lastMapRing = mh
+    lastRing = rh
+    lastRingId = ring
     zoom.apply()
     if (first) {
       // 처음엔 우리 국읍이 가운데 오게
@@ -5715,7 +5827,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     $('.selbar').classList.toggle('pp', partySel !== '' && armySel.length === 0) // 개척단 띠는 작게 — 가린 고을을 누를 수 있게
     root.classList.toggle('sel-open', sb !== '')
     // 쉴 때 — 고른 것도 연 판도 없다. 멀리 볼 때는 지도 글씨를 줄인다 (형 10-31 z축 · docs/realm/ZAXIS-1031.md 2단계)
-    root.classList.toggle('rest', sb === '' && sheet === null)
+    root.classList.toggle('rest', sb === '' && sheet === null && ring === '')
     morph($('.roadkey'), roadKeyHtml())
     $('.layers').innerHTML = layersOpen ? layersHtml() : ''
     // 답할 청이 남았으면 깃발 줄 끝에 사신 알림 — 누르면 외교 판
@@ -5796,6 +5908,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   function openSheet(s: Sheet | null): void {
     const same = s !== null && sheet !== null && s.kind === sheet.kind && (s.kind !== 'node' || (sheet.kind === 'node' && sheet.id === s.id))
     sheet = same ? null : s
+    ring = ''
     $('.sheet').scrollTop = 0
     note = ''
     paint()
@@ -6074,6 +6187,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (tokPress.swallow(ev.target)) return // 꾹 눌러 설명 창을 띄운 손 — 고르기가 아니다
     // 길 보기는 지도를 누르면 접힌다 — ✕ 를 찾지 않아도 (형 10-27)
     if (roadOpen && (ev.target as HTMLElement).closest('.mapwrap') !== null && !zoom.dragged()) { roadOpen = false; morph($('.roadkey'), roadKeyHtml()) }
+    // 둘레 단추가 떠 있을 때 지도 빈 곳을 누르면 걷힌다 (고을·말을 누르면 그쪽이 받는다)
+    if (ring !== '' && !zoom.dragged()) {
+      const e = ev.target as HTMLElement
+      if (e.closest('.mapwrap') !== null && e.closest('.nring, .nd, .tok') === null) { ring = ''; paint(); return }
+    }
     const t = (ev.target as HTMLElement).closest<HTMLElement>('[data-act], .nd')
     if (t === null || !root.contains(t)) return
     if (zoom.dragged() && t.closest('.mapwrap') !== null) return // 지도를 끌다 놓은 것 — 누르기가 아니다
@@ -6100,7 +6218,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       host.onTap('node', t.dataset['node']!)
       const tap = tapSlot('node')
       if (tap !== null) ding(snd(tap), 0.2)
-      openSheet({ kind: 'node', id: t.dataset['node']! })
+      // 첫 누름은 둘레 단추 (z축 5·6단계) — 「자세히」 만 큰 판. 배우는 판은 차례가 고을 누름 → 큰 판을 기다리므로 그대로 · 소도는 굿 판 하나뿐이라 곧바로
+      const id = t.dataset['node']!
+      if (realm === null || realm.region === 'tutorial' || realm.nodes[id]?.kind === 'sodo') { openSheet({ kind: 'node', id }); return }
+      const was = ring
+      sheet = null
+      ring = was === id ? '' : id
+      paint()
       return
     }
     const d = t.dataset
@@ -6491,6 +6615,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (partySel === formId(node)) clearParty()
         break
       }
+      // 고을 둘레 단추 (z축 5단계) — 큰 판으로 넘어가는 것들. 판을 열면 둘레 단추는 접힌다 (openSheet)
+      case 'nr-more': openSheet({ kind: 'node', id: d['node']! }); return
+      case 'nr-chief': foldOpen.add('chief'); openSheet({ kind: 'node', id: d['node']! }); return
+      case 'nr-draft':
+        openSheet({ kind: 'node', id: d['node']! })
+        requestAnimationFrame(() => scrollInside(root.querySelector<HTMLElement>('.sheet .draftc'), 'start'))
+        return
+      case 'nr-diplo': diploOpen.add(d['to']!); openSheet({ kind: 'diplo' }); return
       case 'foetok': {
         // 적 군대 말 — 전엔 눌러도 아무 일이 없었다 (docs/realm/ZAXIS-1031.md). 우리 군대를 골랐으면 그 고을로 보내고(치러 감), 아니면 그 고을을 연다
         const x = r?.armies[d['army'] ?? '']
