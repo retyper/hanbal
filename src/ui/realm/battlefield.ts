@@ -1421,10 +1421,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const mr = (x: number): number => Math.round(Math.max(0, Math.min(1.2, x / base)) * 83)
     const num = `<span class="wn">${cnt(old, now)}명</span>`
     const hitFx = hitOf(i) !== '' ? `<img class="wfx-hit" src="${art}fx/impact.png" alt="">` : ''
-    // 맞부딪히는 순간 잃은 사람 수와 꺾인 사기를 크게 (형 10-28: "감소하는 인원수·사기 이런 거 더 크고 도드라지게")
-    const lostN = anim ? old - now : 0
-    const mDrop = anim ? Math.round(((m0(i) - m(i)) / base) * 100) : 0
-    const dmg = (lostN > 0 ? `<b class="wdmg">−${lostN}</b>` : '') + (mDrop > 0 ? `<i class="wmdmg">사기 −${mDrop}</i>` : mDrop < 0 ? `<i class="wmdmg up">사기 +${-mDrop}</i>` : '')
+    // 잃은 사람 수 · 꺾인 사기는 전장 한가운데 배지로 튄다 (fieldHtml 의 popOf · 형 11-01: "화면 중앙부근에서") — 위 카드에서는 막대와 숫자만 준다
     // 호궤를 고를 수 있으면 — 그 깃발에 마우스를 올리거나 누르고 있거나 골라 두면 사기 막대에 오를 몫이 깜박인다 (형 10-25)
     const fNow = mr(m(i))
     const fTo = mr(Math.min(base, m(i) + P.realm.tacFeastMorale))
@@ -1436,7 +1433,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     return `<div class="ws ${cls}${hitOf(i)}${hero !== null && lostIds.has(hero) ? ' chiefgone' : ''}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s"><span class="wpf">${face(hero, art, unitOf(i))}<i></i>${aides !== '' ? `<span class="waides">${aides}</span>` : ''}</span><b>${esc(name)}</b><span class="wnat">${roleChip((cls === 'us') === weAtk)}${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
       // 무너지는 금 — 이 밑으로 떨어지면 그 편이 무너져 진다 (tactics: 군사 tacBreakMen · 사기는 처음의 tacBreakMorale) (형 10-24: "사기가 어느 정도 떨어지면 패배한다가 가로바에 표시")
       + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}${brk(Math.round(P.realm.tacBreakMen * 100), Math.round(n(i) * 100), '군사가 이 금 밑으로 줄면 무너져 진다. 패배')}</div>${num}`
-      + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}${feastPv}${brk(st?.brk !== undefined ? mr(st.brk[i]) : Math.round(P.realm.tacBreakMorale * 83), mr(m(i)), '사기가 이 금 밑으로 떨어지면 무너져 진다. 패배')}</div><span class="wn">사기 ${cnt(Math.round((m0(i) / base) * 100), Math.round((m(i) / base) * 100))}<small class="brkl"> · 무너지는 선 ${Math.round(((st?.brk?.[i] ?? P.realm.tacBreakMorale * base) / base) * 100)}</small></span>${dmg}${hitFx}</div>` // 맞은 불꽃은 맨 뒤에 — 앞에 끼면 초상이 새로 만들어져 깜빡였다 (paintNow 의 바뀐 곳만 고치기)
+      + `<div class="wbar mor">${bar(mr(m(i)), mr(m0(i)))}${feastPv}${brk(st?.brk !== undefined ? mr(st.brk[i]) : Math.round(P.realm.tacBreakMorale * 83), mr(m(i)), '사기가 이 금 밑으로 떨어지면 무너져 진다. 패배')}</div><span class="wn">사기 ${cnt(Math.round((m0(i) / base) * 100), Math.round((m(i) / base) * 100))}<small class="brkl"> · 무너지는 선 ${Math.round(((st?.brk?.[i] ?? P.realm.tacBreakMorale * base) / base) * 100)}</small></span>${hitFx}</div>` // 맞은 불꽃은 맨 뒤에 — 앞에 끼면 초상이 새로 만들어져 깜빡였다 (paintNow 의 바뀐 곳만 고치기)
   }
 
   /**
@@ -1644,8 +1641,19 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         : '<div class="wf-omen none"><i>?</i><span><b>속을 모른다</b><small>정찰을 보내면 보인다</small></span></div>'
     // 맞부딪는 자리에 불꽃·흙먼지 · 양쪽이 잃은 수가 떠오른다 · 싸움이 처음 열리면 두 군대가 대열을 지어 들어온다
     const lost = (i: 0 | 1): number => Math.max(0, Math.round(men0(i) * (n0(i) - n(i))))
+    /**
+     * 잃은 수 · 꺾인 사기 — 전장 한가운데 가까이, 두 진 위에 배지로 튄다 (형 11-01: "화면 중앙부근에서 튀어나갔으면 · 명수 감소 숫자는 색이 너무 까매서 안보여 · 하스스톤은 배경도").
+     * 잃은 수: 붉은 방패 배지 위에 흰 굵은 숫자(검은 테) · 뒤로 터지는 불꽃 · 사기: 금빛(꺾임)·푸른(오름) 띠. 커졌다 제자리 → 위로 떠오르며 사라진다
+     */
+    const popOf = (i: 0 | 1, cls: 'us' | 'foe'): string => {
+      const ln = lost(i)
+      const md = Math.round(((m0(i) - m(i)) / Math.max(0.05, st.morale[i] ?? 1)) * 100)
+      if (ln <= 0 && md === 0) return ''
+      return `<div class="wpop ${cls}">${ln > 0 ? `<b class="wpn"><img src="${art}fx/impact.png" alt=""><span>−${ln.toLocaleString('ko-KR')}</span></b>` : ''}`
+        + `${md !== 0 ? `<i class="wpm${md < 0 ? ' up' : ''}">사기 ${md > 0 ? '−' : '+'}${Math.abs(md)}</i>` : ''}</div>`
+    }
     const hit = play ? `<i class="wf-hit"><img class="h1" src="${art}fx/impact.png" alt=""><img class="h2" src="${art}fx/dust.png" alt=""><img class="h3" src="${art}fx/dust.png" alt=""></i>`
-      + (lost(ourI) > 0 ? `<b class="wf-loss us">−${lost(ourI)}</b>` : '') + (lost(foeI) > 0 ? `<b class="wf-loss foe">−${lost(foeI)}</b>` : '') : ''
+      + popOf(ourI, 'us') + popOf(foeI, 'foe') : ''
     const enter = !anim && shown === 0 ? ' enter' : ''
     // 판의 끝 — 진 쪽은 무너져 등을 돌려 달아나고, 이긴 쪽은 한 발 나서며 장수 깃발을 높이 든다 (형 10-25: 승패가 전장에서 보이게)
     const fin = l.pending === undefined && shown >= (l.rounds ?? []).length && l.outcome !== undefined && l.outcome !== 'draw'
@@ -1723,7 +1731,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         tick.push([actRow(x, ourS, art, mixOf(0), mixOf(1)), Math.min(at, plan.story)])
       }
     }
-    // 끝줄은 밀고 밀린 말 — 잃은 수는 전장 위 숫자(.wdmg)가 보인다
+    // 끝줄은 밀고 밀린 말 — 잃은 수는 전장 위 숫자(.wpop)가 보인다
     const tickEnd = (push: string): string => {
       if (!slow || plan === null) return ''
       tick.push([push, plan.result])
@@ -2312,10 +2320,19 @@ export const WAR_CSS = `
 @keyframes whit1 { 0% { opacity: 0; scale: .3; } 25% { opacity: 1; scale: 1.1; } 100% { opacity: 0; scale: 1.5; } }
 @keyframes whit2 { 0% { opacity: 0; scale: .5; } 20% { opacity: .85; } 100% { opacity: 0; scale: 1.5; translate: -70% -60%; } }
 @keyframes whit3 { 0% { opacity: 0; scale: .5; } 20% { opacity: .7; } 100% { opacity: 0; scale: 1.4; translate: -30% -55%; } }
-/* 잃은 수 — 양쪽 위로 떠오른다 */
-.ap .wf-loss { position: absolute; top: 26%; z-index: 90; font-size: clamp(15px, 4.4cqw, 26px); font-weight: 900; color: #ff6a5a; text-shadow: 0 0 6px #000, 0 2px 3px #000; opacity: 0;
-  animation: wloss 1.6s ease-out var(--bd, 2.4s) both; } /* 막대·숫자와 같은 때 (형 10-29) */
-.ap .wf-loss.us { left: 26%; } .ap .wf-loss.foe { right: 26%; color: #ffd27a; }
+/* 잃은 수 · 사기 — 전장 가운데 가까이 배지로 튄다 (형 11-01 · 하스스톤처럼 숫자 뒤에 판). 막대·숫자와 같은 때(--bd) */
+.ap .wpop { position: absolute; top: 28%; z-index: 92; display: flex; flex-direction: column; align-items: center; gap: 5px; translate: -50% 0; pointer-events: none; opacity: 0; animation: wpopf 2.3s ease-out var(--bd, 2.4s) both; }
+.ap .wpop.us { left: 33%; } .ap .wpop.foe { left: 67%; }
+.ap .wpn { position: relative; display: grid; place-items: center; min-width: clamp(56px, 16cqw, 88px); height: clamp(40px, 11cqw, 60px); padding: 0 10px; box-sizing: border-box;
+  border-radius: 14px 14px 50% 50% / 14px 14px 42% 42%; background: radial-gradient(circle at 50% 30%, #f0482c, #b41c0a 62%, #6a0c04); border: 3px solid #fff1dc; box-shadow: 0 0 0 2px #2a0500, 0 5px 12px #000d;
+  animation: wpopin .55s cubic-bezier(.2, 1.6, .4, 1) var(--bd, 2.4s) both; }
+.ap .wpn img { position: absolute; left: 50%; top: 50%; width: 230%; height: auto; translate: -50% -50%; z-index: -1; opacity: .95; }
+.ap .wpn span { font-size: clamp(22px, 6.6cqw, 36px); font-weight: 900; line-height: 1; color: #fff; -webkit-text-stroke: 1.5px #2a0500; paint-order: stroke fill; text-shadow: 0 2px 0 #2a0500, 0 0 6px #000; letter-spacing: -.02em; }
+.ap .wpm { font-style: normal; font-size: clamp(12px, 3.5cqw, 17px); font-weight: 900; line-height: 1.25; white-space: nowrap; color: #2a1600; padding: 1px 10px; border-radius: 10px;
+  background: linear-gradient(#ffe48e, #e2a634); border: 2px solid #fff4d2; box-shadow: 0 0 0 1.5px #2a1600, 0 3px 8px #000c; animation: wpopin .55s cubic-bezier(.2, 1.6, .4, 1) calc(var(--bd, 2.4s) + .12s) both; }
+.ap .wpm.up { color: #04203a; background: linear-gradient(#c8ecff, #5aa8e8); border-color: #eef8ff; box-shadow: 0 0 0 1.5px #04203a, 0 3px 8px #000c; }
+@keyframes wpopf { 0% { opacity: 0; } 6% { opacity: 1; } 72% { opacity: 1; translate: -50% -4px; } 100% { opacity: 0; translate: -50% -24px; } }
+@keyframes wpopin { 0% { scale: .25; } 38% { scale: 1.35; } 64% { scale: .94; } 100% { scale: 1; } }
 .ap .wf-who { position: absolute; bottom: 6px; z-index: 80; font-size: clamp(10px, 2.6cqw, 13px); font-weight: 800; padding: 2px 8px; border-radius: 9px; background: #3f8f3acc; color: #eaffe0; text-shadow: 0 1px 2px #000; pointer-events: none; max-width: 42%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ap .wf-who.us { left: 6px; } .ap .wf-who.foe { right: 6px; background: #8a3a2acc; color: #ffe3dc; }
 /* 머릿수 잣대 (troops.ts) — 큰 병사 · 깃발 병사 · 무리마다 정확한 수 · 맨 아래 가운데 잣대 */
@@ -2330,7 +2347,6 @@ export const WAR_CSS = `
 .ap .wleg { position: absolute; left: 50%; bottom: 5px; translate: -50% 0; z-index: 80; display: flex; align-items: flex-end; gap: 6px; padding: 1px 7px; border-radius: 9px; background: #000a; color: #f6ead2; font-size: clamp(10px, 2.6cqw, 12px); font-weight: 800; line-height: 1; white-space: nowrap; pointer-events: none; }
 .ap .wleg span { display: inline-flex; align-items: flex-end; gap: 1px; } .ap .wleg img { width: auto; height: 12px; } .ap .wleg .l1 img { height: 19px; } .ap .wleg .l2 img { height: 25px; }
 @media (max-width: 520px) { .ap .wf-who { max-width: 33%; } }
-@keyframes wloss { 0% { opacity: 0; translate: 0 10px; scale: .6; } 15% { opacity: 1; translate: 0 0; scale: 1.15; } 70% { opacity: 1; scale: 1; } 100% { opacity: 0; translate: 0 -18px; } }
 /* 동작 그림 — 8컷 띠를 칸씩 넘긴다 (steps). 바깥(.tk)은 자리·밀기, 안(.spf)은 컷 */
 /* 새 20컷 띠(v2) — 칸이 넓다(창이 다 뻗어도 들어가게). 말의 자리·크기는 옛 비 그대로 두고 안의 그림만 --r 배 넓혀 가운데에 (형 10-29) */
 .ap .wf2s .tk.wsp.v2 .spf { inset: 0 auto 0 50%; width: calc(var(--r, 1) * 100%); transform: translateX(-50%); --nf: 20; --i0: 0%; --i1: 21.0526%; --w0: 21.0526%; --w1: 63.1579%; --a0: 63.1579%; --a1: 94.7368%; --al: 89.4737%; --fl: 94.7368%; --spidlen: 4; --spwalkn: 8; --spatkn: 6; --spidles: 1.6; --spwalks: 1.4; --spatks: 2.2; --spdraws: 1.2; }
@@ -2403,7 +2419,7 @@ export const WAR_CSS = `
 .ap .wf2s.waver .wpole { rotate: 18deg; transform-origin: 50% 100%; transition: rotate .6s; }
 @media (prefers-reduced-motion: reduce) { .ap .wfield.play .wf2s, .ap .wfield.play .wf-ground, .ap .wf2s.waver .tk.tku { animation: none !important; } }
 @keyframes wtkfallsp { 0% { translate: 3cqw 0; } 100% { translate: 1cqw 0; opacity: .62; filter: grayscale(.5) brightness(.8); } }
-@media (prefers-reduced-motion: reduce) { .ap .wfield *, .ap .wfield .tk.tkf, .ap .wfield.play { animation: none !important; transition: none !important; } .ap .wf-loss { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ap .wfield *, .ap .wfield .tk.tkf, .ap .wfield.play { animation: none !important; transition: none !important; } .ap .wpop { opacity: 1; } }
 .ap .wbar i { position: relative; display: block; height: 100%; border-radius: 6px; overflow: hidden; }
 /* 흐르는 빗금 — 45도 네모 칸이라야 칸 이음매가 안 보인다 · 115도 빗금을 34px 칸에 넣었더니 이음매마다 끊겨 바코드처럼 보였다 (형 10-29) */
 .ap .wbar i::before { content: ''; position: absolute; inset: 0; background-image: linear-gradient(135deg, #ffffff2a 25%, #ffffff00 25% 50%, #ffffff2a 50% 75%, #ffffff00 75%); background-size: 18px 18px; animation: wbarflow 1.1s linear infinite; }
@@ -2599,19 +2615,10 @@ export const WAR_CSS = `
 .ap .wf2s .tk.tkh { display: none; }
 .ap .wf2s .tk.tkn { animation: tknin 1s ease-out var(--hd, 1.2s) both; }
 @keyframes tknin { from { opacity: 0; translate: -60% 0; } to { opacity: 1; translate: 0 0; } }
-.ap .ws .wdmg, .ap .ws .wmdmg { position: absolute; left: 50%; z-index: 6; pointer-events: none; white-space: nowrap; opacity: 0; font-style: normal; translate: -50% 0;
-  text-shadow: 0 0 3px #000, 0 2px 0 #000, 0 0 10px #000; animation: wdmgpop 1.6s ease-out var(--bd, 2.4s) both; }
-.ap .ws .wdmg { top: 18px; font-size: clamp(40px, 13vw, 68px); font-weight: 900; color: #ff4a2a; -webkit-text-stroke: 2px #2a0500;
-  text-shadow: 0 0 4px #000, 0 3px 0 #000, 0 0 18px #ff2a00, 0 0 34px #ff5a1acc; animation: wdmgpop 2.1s cubic-bezier(.2, 1.4, .4, 1) var(--bd, 2.4s) both; }
-.ap .ws.foe .wdmg { color: #ffd23a; -webkit-text-stroke-color: #2a1a00; text-shadow: 0 0 4px #000, 0 3px 0 #000, 0 0 18px #ffb000, 0 0 34px #ffd23acc; }
 /* 줄어든 머릿수는 붉게 번쩍이며 튄다 (형 10-29: "데미지 입을 때 명수 깎이는 게 너무 안 보여 · 더 강하게") */
 @keyframes wnup { 0% { transform: scale(1.4); color: #b8f0a0; text-shadow: 0 0 12px #6fc05a; } 60% { transform: scale(1); } 100% { color: inherit; } }
 @keyframes wnhit { 0% { transform: scale(1.6); color: #ff3a1a; text-shadow: 0 0 14px #ff2a00; } 60% { transform: scale(1); } 100% { color: inherit; } }
-.ap .ws .wmdmg { top: 70px; font-size: clamp(16px, 4.6vw, 22px); font-weight: 900; color: #ffb0a0; }
-.ap .ws .wmdmg.up { color: #b8f0a0; }
-@keyframes wdmgpop { 0% { opacity: 0; transform: scale(.2); } 10% { opacity: 1; transform: scale(1.7) rotate(-4deg); } 22% { transform: scale(1) rotate(0); } 30% { transform: scale(1.12); } 38% { transform: scale(1); } 85% { opacity: 1; transform: translateY(-14px); } 100% { opacity: 0; transform: translateY(-30px); } }
-@media (max-width: 520px) { .ap .ws .wdmg { top: 8px; } .ap .ws .wmdmg { top: 52px; } }
-.ap .wr.fast .ws .wdmg, .ap .wr.fast .ws .wmdmg, .ap .wr.fast .wf-loss { animation-delay: 0s !important; }
+.ap .wr.fast .wpop, .ap .wr.fast .wpop > * { animation-delay: 0s !important; }
 .ap .wrd.slow .wcmds { animation-name: wrflip; }
 @keyframes wrin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes wrflip { from { opacity: 0; transform: rotateX(90deg); } to { opacity: 1; transform: none; } }
