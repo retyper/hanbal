@@ -44,7 +44,7 @@ export const PICK = {
   // 10-27 형: 엽전 14(g2) · 붓 17(g2) · 닫기는 옛 나무 딸깍 51(ui_cancel_c → tap_cancel_c) · 제사는 굿(tap_rite) · 혼인은 가야금(wed)
   tap_arms: 'g1', tap_coin: 'g2', tap_brush: 'g2', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'c', tap_rite: 'g5',
   // 각성 연출 제 소리 — 모임(차오름) · 번쩍(한 방) · 짐승 다섯의 울음 (형 11-03: "각성은 사운드도 제대로 새로") · 공유마당 후보 g1~g3, 형이 sound-picker.html 에서 고른다
-  ax_rise: 'g2', ax_flash: 'g1', ax_tiger: 'g1', ax_bear: 'g3', ax_hawk: 'g1', ax_crane: 'g1', ax_dragon: 'g1',
+  ax_rise: 'g2', ax_flash: 'g3', ax_tiger: 'g1', ax_bear: 'g3', ax_hawk: 'g1', ax_crane: 'g1', ax_dragon: 'g1',
 } as const
 /** ogg 가 아닌 후보 — 형이 받아 온 것은 받은 꼴 그대로 · 공유마당 음악은 mp3 · 누르는 소리는 브라우저로 잘라 낸 wav */
 const EXT: Readonly<Partial<Record<string, string>>> = {
