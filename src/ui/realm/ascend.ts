@@ -59,13 +59,15 @@ const jit = (i: number, k: number, s: number): number => ((i * 73 + k * 151 + s 
 const fx = (art: string, name: string, cls = ''): string => `<img${cls !== '' ? ` class="${cls}"` : ''} src="${art}fx/awaken/${name}.png" alt="">`
 
 /** 1 모임 — 화면 둘레에서 소용돌이치며 가운데로 빨려 드는 빛줄기 · 알갱이 */
-export function gatherHtml(e: Elem, n: number, s: number, art: string): string {
+export function gatherHtml(e: Elem, n: number, s: number, art: string, pace: { readonly sec: number; readonly spread: number; readonly stagger: number }): string {
   let h = ''
   for (let i = 0; i < n; i++) {
     const a = Math.round((360 / n) * i + jit(i, 1, s) * 40)
-    const R = (62 + jit(i, 2, s) * 30).toFixed(0)
-    const d = (0.9 + jit(i, 3, s) * 0.7).toFixed(2)
-    const dl = (jit(i, 4, s) * 1.4).toFixed(2)
+    // 화면 가장자리에서 출발 — 화면 밖에서 오면 마지막 빠른 토막만 보여 휙 지나간다 (11-03)
+    const R = (40 + jit(i, 2, s) * 22).toFixed(0)
+    // 천천히 — 둘레에 떠서 잠깐 머물다 빨려 든다 (형 11-03: "너무 빨리 지나감 · 천천히 보여서 기대하게")
+    const d = (pace.sec + jit(i, 3, s) * pace.spread).toFixed(2)
+    const dl = (jit(i, 4, s) * pace.stagger).toFixed(2)
     // 빛줄기 — 머리가 가운데를 보고 꼬리를 끌며 꽂힌다 (그림의 머리가 왼쪽)
     h += `<i style="--a:${a}deg;--R:${R}vmax;--d:${d}s;--dl:${dl}s;--z:${(0.6 + jit(i, 5, s) * 0.9).toFixed(2)}">${fx(art, `st-${e}`, 'st')}${i % 3 === 0 ? mote(e, art, i) : ''}</i>`
   }
@@ -120,9 +122,9 @@ export const ASCEND_CSS = `
 @keyframes axcore { 0% { opacity: 0; } 40% { opacity: .35; } 100% { opacity: .95; } }
 .ap .axgather .st { position: absolute; left: 0; top: 50%; width: calc(170px * var(--z)); height: auto; translate: 0 -50%; max-width: none; }
 .ap .axgather > i > img:not(.st) { position: absolute; left: -40%; top: -40%; width: 180%; height: 180%; }
-.ap .axgather { position: absolute; left: 50%; top: 42%; width: 0; height: 0; z-index: 2; pointer-events: none; animation: axgone .4s linear var(--tv) forwards; }
+.ap .axgather { position: absolute; left: 50%; top: 42%; width: 0; height: 0; z-index: 2; pointer-events: none; animation: axgone 1.2s ease-in var(--tv) forwards; }
 .ap .axgather > i { position: absolute; left: 0; top: 0; width: calc(22px * var(--z)); height: calc(22px * var(--z)); margin: calc(-11px * var(--z)); opacity: 0;
-  animation: axsuck var(--d) cubic-bezier(.55, 0, .9, .45) var(--dl) infinite; }
+  animation: axsuck var(--d) cubic-bezier(.4, 0, .8, .6) var(--dl) infinite; }
 .ap .axvortex > i > * { display: block; width: 100%; height: 100%; }
 .ap .axgather .rk, .ap .axvortex .rk { filter: brightness(.9) sepia(.6); }
 @keyframes axsuck { 0% { opacity: 0; transform: rotate(var(--a)) translateX(var(--R)) scale(1.4); } 15% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; transform: rotate(calc(var(--a) + 70deg)) translateX(2vmin) scale(.3); } }

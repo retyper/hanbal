@@ -1332,7 +1332,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 불 캔버스는 액자 그림 뒤 — 혀가 청동 테 너머에서 솟는다 · 액자 위엔 불빛을 받는 겹(axglow) · 바닥 불도 같은 셰이더 (그림 검토 11-01)
     const fr = `--bt:${R.ascendFrameTop};--bs:${R.ascendFrameSide};--bb:${R.ascendFrameBot}`
     el.innerHTML = `<div class="axveil"></div><img class="axwall" src="${FX}wall.png" alt=""><canvas class="axground"></canvas>`
-      + `<img class="axbeast" src="${FX}beast-${E.beast}.png" alt="" onerror="this.classList.add('gone')">${gatherHtml(e, phone ? R.ascendGatherPhone : R.ascendGather, sd, ART)}<div class="axembers">${embers}</div>`
+      + `<img class="axbeast" src="${FX}beast-${E.beast}.png" alt="" onerror="this.classList.add('gone')">${gatherHtml(e, phone ? R.ascendGatherPhone : R.ascendGather, sd, ART, { sec: R.ascendStreakSec, spread: R.ascendStreakSpreadSec, stagger: R.ascendStreakStaggerSec })}<div class="axembers">${embers}</div>`
       + `<div class="axstage"><div class="axcard">${tongues}<div class="axwin">${before}<i class="axsil"></i>${after}</div><canvas class="axburn" style="${fr}"></canvas><img class="axframe" src="${FX}frame0.png" alt=""><img class="axglow" src="${FX}frame0.png" alt="">${vortexHtml(e, phone ? R.ascendOrbitPhone : R.ascendOrbit, sd, ART)}</div><div class="axslots">${slots}</div>`
       + `<div class="axtitle"><img class="axbrush" src="${FX}brush.png" alt=""><img class="axword" src="${FX}word.png" alt="각성"></div>`
       + `<b class="axname">${esc(h.name)}</b><div class="axstats">${stats}</div></div>${ringsHtml(e, ART)}<div class="axflash"></div>`
