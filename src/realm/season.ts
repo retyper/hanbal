@@ -20,7 +20,7 @@ import {
   OPEN_FIELD, ambushChance, ambushSizePenalty, headcount, power, strength, winChance,
   type Equip, type Force, type Kit, type UnitKind,
 } from './battle.ts'
-import { BATTLE_STYLES, feastCost, fightRounds, groupOf, type BattleStyle, type FightResult, type Side, type Terrain } from './tactics.ts'
+import { BATTLE_STYLES, feastCost, fightRounds, groupOf, heroesOf, type BattleStyle, type FightResult, type Side, type Terrain } from './tactics.ts'
 import {
   checkPledges, declareWar, driftFavor, expireRelations, friendly, holdMarkets, makeAsks, onHostile, relationOf, resolveAnswers, resolveEnvoys,
   shareIntel, stationFriction, stepLent,
@@ -1025,6 +1025,21 @@ function payPress(r: Realm, grain: number, faction: string): void {
   if (st !== undefined) st.grain = Math.max(0, st.grain - grain)
 }
 
+/**
+ * 원군의 장수는 원군과 함께 늦게 선다 — 처음부터 총대장·부장으로 세우면 원군이 닿기도 전에 지휘하고 비기를 냈다
+ * (형 11-03: "수성하는데 장수 없었는데 적이랑 같이 도착한 견지 버들이 이미 지휘관으로 뜨고 시작함"). 원군이 없는 싸움이면 그대로
+ */
+function lateHeroes(s: Side, late: readonly Army[]): Side {
+  if (s.relief === undefined) return s
+  const ids = new Set(late.flatMap((x) => (x.hero !== null ? [x.hero] : [])))
+  const all = heroesOf(s)
+  const come = all.filter((h) => ids.has(h.id))
+  if (come.length === 0) return s
+  const now = all.filter((h) => !ids.has(h.id))
+  const { aides: _drop, ...rest } = s
+  return { ...rest, hero: now[0] ?? null, ...(now.length > 1 ? { aides: now.slice(1) } : {}), relief: { ...s.relief, heroes: come } }
+}
+
 /** 싸움이 시작될 때의 사람 · 사기 · 장수 — 전장 화면의 막대 */
 function startOf(a: Side, d: Side, af: Force, df: Force): BattleStart {
   return {
@@ -1434,14 +1449,14 @@ function fight(
   const lateD = defenders.filter((d) => d.came === r.season)
   const reliefA = lateA.length > 0 ? { relief: { mix: mergeForces(r, lateA).mix, at: R.reliefRound } } : {}
   const reliefD = lateD.length > 0 && standing.length > lateD.length ? { relief: { mix: mergeForces(r, lateD).mix, at: R.reliefRound } } : {}
-  const sa = knowFoe({ ...sideOf(r, atks, atkF, fa, a.faction, {
+  const sa = knowFoe(lateHeroes({ ...sideOf(r, atks, atkF, fa, a.faction, {
     water, edge: edgeKind, fire, flank: flankWon, seen: freshSight(r, a.faction, node.id), moraleBonus: atkBonus + atkCustom,
     captureBonus: playerIsAtk ? capShot : 0, terrain: atkTerrain,
-  }), ...reliefA }, knewA)
-  const sd = knowFoe({ ...sideOf(r, standing, defF, fd, defFaction, {
+  }), ...reliefA }, lateA), knewA)
+  const sd = knowFoe(lateHeroes({ ...sideOf(r, standing, defF, fd, defFaction, {
     water, edge: edgeKind, fire, flank: false, seen: ambush !== 'success', moraleBonus: defBonus,
     captureBonus: playerIsAtk ? 0 : capShot, terrain: defTerrain,
-  }), ...reliefD }, knewD)
+  }), ...reliefD }, lateD), knewD)
   // 해시계 — 기습·야습으로 닿았으면 밤 싸움 (한밤 → 새벽). 먹힌 기습이면 치는 쪽이 첫 때에 세다 (형 10-26: "야습이나 야간전투 같은건 어떻게함?")
   const res = fightRounds(sa, sd, key, r.seed, r.season, tacticFor(tactics, key), { night: ambush !== 'none', edge: ambush === 'success' })
   payFeast(r, sa, res.fedA, a.faction)

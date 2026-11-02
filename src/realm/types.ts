@@ -519,7 +519,11 @@ export interface Act {
 /** 라운드 하나의 기록 — 화면이 그대로 풀어 보인다. n 은 처음 사람의 몫 0~1, m 은 사기 */
 export interface RoundLog {
   /** 이 합 처음에 원군이 닿았다 — 그 쪽 · 닿은 사람 · 기병이 있었나 (tactics.fightRounds · 형: "로한의 기병대 같은 쾌감") */
-  readonly relief?: { readonly side: 'a' | 'd'; readonly men: number; readonly horse: boolean }
+  readonly relief?: {
+    readonly side: 'a' | 'd'; readonly men: number; readonly horse: boolean
+    /** 원군과 함께 닿은 장수 — 이때부터 싸움에 선다(비기·겨루기). chief: 그 쪽에 총대장이 없어 지휘를 맡았다 (형 11-03: "2합 때 도착한 내 장수가 지휘관 되는 게 맞나 · 기술도 생기고") */
+    readonly heroes?: readonly string[]; readonly chief?: string
+  }
   /** 그 합의 앞줄 명령(앞줄이 없으면 장수·활·말의 것) — 요약 칩 */
   readonly a: Cmd
   readonly d: Cmd

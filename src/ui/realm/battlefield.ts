@@ -1348,7 +1348,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   const atkF = l.atkFaction ?? prev.armies[l.attacker]?.faction
   const ourF = weAtk ? atkF : l.defender
   const foeF = weAtk ? l.defender : atkF
-  const heroOf = (i: 0 | 1): string | null => st?.heroes[i] ?? null
+  // 원군과 함께 닿은 장수가 지휘를 맡았으면 그 합부터 그가 총대장 (형 11-03 · tactics arrive)
+  const heroOf = (i: 0 | 1): string | null => st?.heroes[i] ?? (l.rounds ?? []).slice(0, shown).find((rd) => rd.relief?.side === (i === 0 ? 'a' : 'd') && rd.relief.chief !== undefined)?.relief?.chief ?? null
   const ourHero = heroOf(weAtk ? 0 : 1)
   const foeHero = heroOf(weAtk ? 1 : 0)
   const hname = (id: string | null, f: string | undefined): string => (id !== null ? (prev.heroes[id]?.name ?? after.heroes[id]?.name ?? '?') : `${fname(f)} 군`)
@@ -1360,7 +1361,13 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   const plan = anim && last !== undefined ? roundPlan(last, weAtk) : null
   /** 시계의 세 때 — 0: 깃발 줄 · 1: 이야기 · 2: 밀림·잃은 수·막대 (시계가 없으면 옛 STAGE_S) */
   const tAt = (k: 0 | 1 | 2): number => (plan === null ? STAGE_S[k] : k === 0 ? 0 : k === 1 ? plan.story : plan.result)
-  const n = (i: 0 | 1): number => (last === undefined ? 1 : i === 0 ? last.na : last.nd)
+  /** 처음 와 있는 몫 — 원군은 닿기 전엔 싸움터에 없다. 1 로 두면 첫 합에 원군 몫까지 잃은 것으로 보였다 (형 11-03: "합 한 번 붙으니 290명 마이너스") */
+  const here0 = (i: 0 | 1): number => {
+    const all = Object.values(st?.mix?.[i] ?? {}).reduce((x: number, v) => x + (v ?? 0), 0)
+    const late = Object.values(st?.late?.[i] ?? {}).reduce((x: number, v) => x + (v ?? 0), 0)
+    return all > 0 ? Math.max(0, 1 - late / all) : 1
+  }
+  const n = (i: 0 | 1): number => (last === undefined ? here0(i) : i === 0 ? last.na : last.nd)
   const m = (i: 0 | 1): number => (last === undefined ? (st?.morale[i] ?? 1) : i === 0 ? last.ma : last.md)
   const men0 = (i: 0 | 1): number => st?.men[i] ?? 0
   const ourI: 0 | 1 = weAtk ? 0 : 1
@@ -1371,7 +1378,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
 
   // 지난 합의 값 — 천천히 풀 때 막대·사람 수가 거기서 새 값으로 간다
   const was = anim && rounds.length >= 2 ? rounds[rounds.length - 2] : undefined
-  const n0 = (i: 0 | 1): number => (!anim ? n(i) : was === undefined ? 1 : i === 0 ? was.na : was.nd)
+  const n0 = (i: 0 | 1): number => (!anim ? n(i) : was === undefined ? here0(i) : i === 0 ? was.na : was.nd)
+  /** 이 합에 원군이 닿았으면 잃은 수는 원군까지 친 처음에서 잰다 — 닿은 몫이 잃은 수를 가리지 않게 */
+  const lostBase = (i: 0 | 1): number => n0(i) + (anim && last?.relief?.side === (i === 0 ? 'a' : 'd') ? 1 - here0(i) : 0)
   const m0 = (i: 0 | 1): number => (!anim ? m(i) : was === undefined ? (st?.morale[i] ?? 1) : i === 0 ? was.ma : was.md)
   // 막대마다 제 키프레임 (battlecard 와 같은 길 — var() 키프레임은 크롬에서 칠이 안 됐다)
   let keys = ''
@@ -1405,10 +1414,10 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   // 마지막 합에 맞은 쪽은 흔들린다 (형: "피격당한쪽이 흔들리거나") — 우리는 붉게, 적은 금빛으로 번쩍
   const hitOf = (i: 0 | 1): string => {
     if (!anim) return ''
-    const lost = Math.round(men0(i) * (n0(i) - n(i)))
+    const lost = Math.round(men0(i) * (lostBase(i) - n(i)))
     if (lost <= 0) return ''
     const j: 0 | 1 = i === 0 ? 1 : 0
-    const other = Math.round(men0(j) * (n0(j) - n(j)))
+    const other = Math.round(men0(j) * (lostBase(j) - n(j)))
     // 흔들림은 한 합에 한 번 — 더 많이 잃은 쪽만 (같으면 적 쪽)
     if (lost < other || (lost === other && i === ourI)) return ''
     return ` hit${lost > other * 1.3 ? ' hithard' : ''}`
@@ -1428,7 +1437,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const em = flagIcon(f)
     // 부장 — 함께 선 장수들 (형 10-25) · 잃은 이는 흐리게. 초상 안 밑에 얹는다 — 줄을 따로 먹으면 장수가 많은 쪽의 막대가 밀려 내려갔다 (형 10-26)
     const lostIds = new Set(rounds.flatMap((x) => (x.lostHero !== undefined ? [x.lostHero.hero] : [])))
-    const aides = (st?.aides?.[i] ?? []).map((id) => `<span class="waide${lostIds.has(id) ? ' gone' : ''}" title="${esc(prev.heroes[id]?.name ?? after.heroes[id]?.name ?? '')}">${face(id, art, unitOf(i))}</span>`).join('')
+    // 부장 — 처음부터 선 이들 + 원군과 함께 닿아 지휘를 맡지 않은 이들
+    const cameH = rounds.flatMap((x) => (x.relief?.side === (i === 0 ? 'a' : 'd') ? (x.relief.heroes ?? []).filter((id) => id !== x.relief!.chief) : []))
+    const aides = [...(st?.aides?.[i] ?? []), ...cameH].map((id) => `<span class="waide${lostIds.has(id) ? ' gone' : ''}" title="${esc(prev.heroes[id]?.name ?? after.heroes[id]?.name ?? '')}">${face(id, art, unitOf(i))}</span>`).join('')
     return `<div class="ws ${cls}${hitOf(i)}${hero !== null && lostIds.has(hero) ? ' chiefgone' : ''}" style="--hd:${plan?.clash ?? STAGE_S[1] + 0.15}s;--bd:${tAt(2)}s"><span class="wpf">${face(hero, art, unitOf(i))}<i></i>${aides !== '' ? `<span class="waides">${aides}</span>` : ''}</span><b>${esc(name)}</b><span class="wnat">${roleChip((cls === 'us') === weAtk)}${em !== undefined ? `<img src="${art}icon/${em}.png" alt="">` : ''}${esc(fname(f))}</span>`
       // 무너지는 금 — 이 밑으로 떨어지면 그 편이 무너져 진다 (tactics: 군사 tacBreakMen · 사기는 처음의 tacBreakMorale) (형 10-24: "사기가 어느 정도 떨어지면 패배한다가 가로바에 표시")
       + `<div class="wbar men">${bar(Math.round(n(i) * 100), Math.round(n0(i) * 100))}${brk(Math.round(P.realm.tacBreakMen * 100), Math.round(n(i) * 100), '군사가 이 금 밑으로 줄면 무너져 진다. 패배')}</div>${num}`
@@ -1639,7 +1650,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       : pd.hint !== null ? `<div class="wf-omen${pd.hintSrc === 'habit' ? ' habit' : ''}"><img src="${flagSrc(art, pd.hint)}" alt=""><span><b>${OMEN_WORD[pd.hint] ?? CMD_NAME[pd.hint]}</b><small>${pd.hintSrc === 'habit' ? '적장의 버릇' : '적 앞줄의 낌새'}</small></span></div>`
         : '<div class="wf-omen none"><i>?</i><span><b>속을 모른다</b><small>정찰을 보내면 보인다</small></span></div>'
     // 맞부딪는 자리에 불꽃·흙먼지 · 양쪽이 잃은 수가 떠오른다 · 싸움이 처음 열리면 두 군대가 대열을 지어 들어온다
-    const lost = (i: 0 | 1): number => Math.max(0, Math.round(men0(i) * (n0(i) - n(i))))
+    const lost = (i: 0 | 1): number => Math.max(0, Math.round(men0(i) * (lostBase(i) - n(i))))
     /**
      * 잃은 수 · 꺾인 사기 — 전장 한가운데 가까이, 두 진 위에 배지로 튄다 (형 11-01: "화면 중앙부근에서 튀어나갔으면 · 명수 감소 숫자는 색이 너무 까매서 안보여 · 하스스톤은 배경도").
      * 잃은 수: 붉은 방패 배지 위에 흰 굵은 숫자(검은 테) · 뒤로 터지는 불꽃 · 사기: 금빛(꺾임)·푸른(오름) 띠.

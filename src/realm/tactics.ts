@@ -86,7 +86,11 @@ export interface Side {
    */
   readonly feast?: number
   /** 원군 — mix 가운데 이만큼(병종별)은 처음엔 없고 at 합 처음에 닿는다 (P.realm.relief*) */
-  readonly relief?: { readonly mix: Readonly<Partial<Record<UnitKind, number>>>; readonly at: number }
+  readonly relief?: {
+    readonly mix: Readonly<Partial<Record<UnitKind, number>>>; readonly at: number
+    /** 원군을 이끌고 오는 장수 — 닿기 전엔 싸움터에 없다(지휘·비기·겨루기 · 형 11-03). 총대장이 없으면 맨 앞이 지휘를 맡는다 */
+    readonly heroes?: readonly SideHero[]
+  }
   /** 곳간의 곡식 — 마지막 때에 「한 합 더」를 고르면 여기서 낸다 (모자라면 굶은 채 싸워 사기가 더 꺾인다) */
   readonly grain?: number
 }
@@ -706,7 +710,19 @@ export function fightRounds(atk0: Side, def0: Side, key: string, seed: number, s
       st.ma = Math.max(0, st.ma - shock)
       st.md += R.reliefLift
     }
-    return { side: sd, men: Math.round(men), horse: horse >= 0.3 }
+    // 원군의 장수가 싸움터에 선다 — 총대장이 없으면 맨 앞이 지휘를 맡고, 나머지는 부장으로 (비기도 이때부터)
+    const hs = s.relief!.heroes ?? []
+    let chief: string | undefined
+    if (hs.length > 0) {
+      const ns: Side = s.hero === null
+        ? { ...s, hero: hs[0]!, aides: [...(s.aides ?? []), ...hs.slice(1)] }
+        : { ...s, aides: [...(s.aides ?? []), ...hs] }
+      if (s.hero === null) chief = hs[0]!.id
+      if (sd === 'a') atk = ns
+      else def = ns
+      c = { ...c, atk, def }
+    }
+    return { side: sd, men: Math.round(men), horse: horse >= 0.3, ...(hs.length > 0 ? { heroes: hs.map((h) => h.id) } : {}), ...(chief !== undefined ? { chief } : {}) }
   }
   let came: RoundLog['relief'] = undefined
   let captured: 'a' | 'd' | null = null

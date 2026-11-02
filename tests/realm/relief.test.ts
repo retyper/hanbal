@@ -34,6 +34,18 @@ describe('원군', () => {
     assert.ok(res.rounds[0]!.nd > merged.rounds[0]!.nd, `${res.rounds[0]!.nd} vs ${merged.rounds[0]!.nd}`)
   })
 
+  it('원군의 장수는 원군과 함께 닿는다 — 그 전엔 지휘하지 않고, 총대장이 없으면 닿는 합에 지휘를 맡는다 (형 11-03: 견지 버들이 처음부터 지휘관으로 떴다)', () => {
+    const buddle = { id: 'w-late', mu: 6, ryak: 6, coward: false, art: 'vanguard' as const }
+    const atk = side({ spear: 400 })
+    const def = side({ spear: 400 }, { relief: { mix: { spear: 300 }, at: P.realm.reliefRound, heroes: [buddle] } })
+    const res = fightRounds(atk, def, 'late-hero', 7, 1)
+    const at = res.rounds.findIndex((x) => x.relief !== undefined)
+    assert.equal(at, P.realm.reliefRound)
+    assert.deepEqual(res.rounds[at]!.relief!.heroes, ['w-late'])
+    assert.equal(res.rounds[at]!.relief!.chief, 'w-late', '지키는 쪽에 총대장이 없으니 닿은 장수가 맡는다')
+    for (const rd of res.rounds.slice(0, at)) assert.ok(!(rd.acts ?? []).some((x) => x.hero === 'w-late'), '닿기 전엔 그 장수가 싸움터에 없다')
+  })
+
   it('싸움이 원군 전에 끝나도 원군은 잃지 않는다 — 남은 몫이 0~1', () => {
     const atk = side({ spear: 40, horse: 300 }, { relief: { mix: { horse: 300 }, at: 3 } })
     const def = side({ spear: 900 })
