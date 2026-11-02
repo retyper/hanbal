@@ -2939,6 +2939,11 @@ export const WAR_CSS = `
 .ap .wfpop.lead .wfph .wgi.f { flex: none; border: 2px solid #e0b860; box-shadow: 0 4px 12px #000a; overflow: hidden; } .ap .wfph b { font-size: 14.5px; color: #fff; } .ap .wfph small { font-size: 11.5px; color: var(--mute); }
 .ap .wfpx { margin-left: auto; width: 30px; height: 30px; border-radius: 15px; border: 1px solid #6a5a48; background: #2a221a; color: #e8dcc4; font-size: 14px; cursor: pointer; flex: none; }
 .ap .wfpg { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; }
+/* 좁은 화면에서 전장을 안 가리게 줄인 판 (placePop · 형 11-02) — 깃발 넷을 한 줄에, 이름은 깃발 밑 · 누가 나서나·도움말은 「자세히」에만 */
+.ap .wfpop.tight { width: calc(100vw - 12px); padding: 6px; } .ap .wfpop.tight .wfphint, .ap .wfpop.tight .wwho { display: none !important; }
+.ap .wfpop.tight .wfph { margin-bottom: 4px; } .ap .wfpop.tight .wfpg { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.ap .wfpop.tight .wcmd.mini { flex-direction: column; min-height: 0; padding: 4px 2px 3px; gap: 2px; text-align: center; } .ap .wfpop.tight .wcmd.mini .wflag { width: 26px; }
+.ap .wfpop.tight .wcmd.mini .wct { justify-content: center; } .ap .wfpop.tight .wcmd.mini .wct > b { font-size: 12.5px; } .ap .wfpop.tight .wfplook { margin-top: 4px; padding: 4px 6px; }
 .ap .wfpop .wcmd.mini { min-width: 0; overflow: hidden; min-height: 44px; padding: 5px 6px 5px 4px; flex-direction: row; align-items: center; gap: 4px; text-align: left; border: 1px solid #6a5236; border-image: none; border-radius: 10px; background: #241b12; filter: none; }
 .ap .wfpop .wcmd.mini.on { border-color: var(--gold); background: #3a2e1c; box-shadow: 0 0 0 2px #d9b36a66; }
 .ap .wfpop .wcmd.mini .wflag { width: 30px; height: auto; flex: none; }
@@ -4077,6 +4082,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     }
     showLook(grid.querySelector<HTMLElement>('[data-war="pick"].on') ?? grid.querySelector<HTMLElement>('[data-war="pick"].rec') ?? grid.querySelector<HTMLElement>('[data-war="pick"]')) // 처음엔 고른 것 · 없으면 ★권함
 
+    pop.classList.remove('tight')
     pop.hidden = false
     pop.classList.toggle('lead', g === 'lead')
     popG = g
@@ -4097,6 +4103,13 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const bar = ready.hidden ? null : ready.getBoundingClientRect()
     let top = bar !== null ? bar.top - ph + 14 : q.bottom + 8
     if (top + ph > vh - 8) top = Math.max(8, vh - ph - 8)
+    // 전장(깃발을 끌어다 놓는 곳)을 가리면 화면 맨 아래로 내려 아래 띠를 덮고, 그래도 가리면 판을 줄인다
+    // (형 11-02 · 동생 폰 411×780: 판이 전장의 3분의 2를 덮어 끌어 놓을 데가 없었다)
+    const field = sc.querySelector<HTMLElement>('.wtop .wfield')?.getBoundingClientRect()
+    if (field !== undefined && top < field.bottom - 4) {
+      top = vh - ph - 6
+      if (top < field.bottom - 4 && !pop.classList.contains('tight')) { pop.classList.add('tight'); placePop(); return }
+    }
     pop.style.left = `${Math.round(left)}px`
     pop.style.top = `${Math.round(top)}px`
   }
