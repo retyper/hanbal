@@ -9,7 +9,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { DEX_CAUGHT, DEX_HEARD, DEX_MET, DEX_SERVED, dexCatalog, dexCounts, dexLevel, heroGrade, scanDex } from '../../src/realm/dex.ts'
+import { DEX_AWOKE, DEX_CAUGHT, DEX_HEARD, DEX_MET, DEX_SERVED, dexCatalog, dexCounts, dexLevel, heroGrade, scanDex } from '../../src/realm/dex.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { startRegion } from '../../src/realm/data/regions/index.ts'
 import { HERO_POOL } from '../../src/realm/data/heroes-pool.ts'
@@ -54,6 +54,18 @@ describe('도감 — 한 판 훑기', () => {
     }
     assert.ok(fresh.length > 0)
     assert.equal(Object.values(dex)[0]!.b, 'byeonhan-mini')
+  })
+
+  it('우리 장수로 각성한 이는 각성 칸이 켜진다 — 남의 각성은 안 켜진다 · 단계는 그대로 (형 11-03 영웅전 각성 토글)', () => {
+    const r = byeonhanMini(7)
+    const mine = Object.values(r.heroes).filter((h) => h.faction === r.player).sort((a, b) => (a.id < b.id ? -1 : 1))[0]!
+    const foe = Object.values(r.heroes).filter((h) => h.faction !== r.player).sort((a, b) => (a.id < b.id ? -1 : 1))[0]!
+    mine.ascended = true
+    foe.ascended = true
+    const { dex } = scanDex({}, r)
+    assert.ok(dex[mine.id]!.f & DEX_AWOKE)
+    assert.equal(dexLevel(dex[mine.id]!.f), 4)
+    assert.equal((dex[foe.id]?.f ?? 0) & DEX_AWOKE, 0)
   })
 
   it('사로잡은 장수는 사로잡음 · 본 장수는 만남', () => {

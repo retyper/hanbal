@@ -5,7 +5,7 @@
  * 들으면 이름과 얼굴, 만나면 능력치와 특성(그 판에 처음 나올 때의 솜씨), 사로잡으면 포승줄, 거느리면 금테.
  * 기록은 이 기기에만 (판 저장·판 해금처럼). 상태는 app.ts 가 쥐고, 누름은 data-act 로 app.ts 가 받는다.
  */
-import { DEX_CAUGHT, DEX_HEARD, DEX_MET, DEX_SERVED, dexCatalog, dexCounts, dexLevel, scanDex, type Dex, type DexHero } from '../../realm/dex.ts'
+import { DEX_AWOKE, DEX_CAUGHT, DEX_HEARD, DEX_MET, DEX_SERVED, dexCatalog, dexCounts, dexLevel, scanDex, type Dex, type DexHero } from '../../realm/dex.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
 import { noteKids } from '../../realm/data/art.ts'
 import { josa } from '../../realm/data/prose.ts'
@@ -21,7 +21,7 @@ export function loadDex(): Dex {
     const out: Dex = {}
     for (const [id, e] of Object.entries(v as Record<string, unknown>)) {
       const f = (e as { f?: unknown })?.f
-      if (typeof f === 'number' && f > 0) out[id] = { f: f & 15, ...(typeof (e as { b?: unknown }).b === 'string' ? { b: (e as { b: RegionId }).b } : {}) }
+      if (typeof f === 'number' && f > 0) out[id] = { f: f & 31, ...(typeof (e as { b?: unknown }).b === 'string' ? { b: (e as { b: RegionId }).b } : {}) }
     }
     return out
   } catch {
@@ -128,7 +128,13 @@ interface DexKit {
   readonly kid: (hero: string, look: 'g' | 'w', traits?: readonly string[]) => string | null
   /** 판 밖에서 키운 것 — 단련 단계 · 지닌 유물 (단련터 · drill.ts · relics.ts). 없으면 0 · [] */
   readonly grow: (hero: string) => { lv: number; relics: string }
+  /** 각성 초상 주소 — 그림이 없으면 null */
+  readonly awake: (hero: string) => string | null
 }
+
+/** 영웅전에서 각성 초상을 켜 둔 장수 (화면만의 것 · 판 밖에는 각성 얼굴을 안 보인다 · 형 11-03: "각성은 게임판에서만 · 한 번 성공했으면 영웅전에서 토글") */
+const awakeOn = new Set<string>()
+export function toggleDexAwake(id: string): void { if (awakeOn.has(id)) awakeOn.delete(id); else awakeOn.add(id) }
 
 /** 모르는 장수의 귀띔 — 어디 가면 만나나 */
 function whereHint(x: DexHero): string {
@@ -152,12 +158,15 @@ function card(k: DexKit, x: DexHero, f: number, sel: boolean): string {
 function detail(k: DexKit, x: DexHero, f: number): string {
   const lv = dexLevel(f)
   let h = `<div class="dxsel"><button class="x" data-act="dex-sel" aria-label="닫기">✕</button>`
-  const src = k.bust(x.id)
+  const aw = (f & DEX_AWOKE) !== 0 ? k.awake(x.id) : null
+  const src = aw !== null && awakeOn.has(x.id) ? aw : k.bust(x.id)
   h += `<div class="dxtop">${lv > 0 && src !== null ? `<img class="dxbig" src="${src}" alt="" data-act="bust-view" data-src="${src}">` : '<span class="dxbig none">?</span>'}<div>`
   h += `<b class="dxname">${lv > 0 ? nameHtml(x.name) : '???'}</b>`
   h += `<span class="mute">${k.esc(whereHint(x))}</span>`
   if (lv >= 2) h += `<span class="grade" style="--g:${GRADE_COLOR[x.grade]}">${GRADE_NAME[x.grade]}</span>`
-  h += `<span class="lvs">${[DEX_HEARD, DEX_MET, DEX_CAUGHT, DEX_SERVED].map((b, i) => `<i class="${f & b ? 'on' : ''}">${LV_NAME[i + 1]}</i>`).join('')}</span></div></div>`
+  h += `<span class="lvs">${[DEX_HEARD, DEX_MET, DEX_CAUGHT, DEX_SERVED].map((b, i) => `<i class="${f & b ? 'on' : ''}">${LV_NAME[i + 1]}</i>`).join('')}</span>`
+  if (aw !== null) h += `<button class="btn sm dxaw${awakeOn.has(x.id) ? ' on' : ''}" data-act="dex-awake" data-id="${x.id}">${awakeOn.has(x.id) ? '각성 초상 · 본래 얼굴로' : '각성 초상 보기'}</button>`
+  h += `</div></div>`
   const gr = k.grow(x.id)
   const grown = gr.lv > 0 || gr.relics !== '' ? `<p class="dxgrl">${gr.lv > 0 ? `<b>단련 ${gr.lv}</b> 단련터에서 키운 몸으로 다음 판에 온다` : ''}${gr.relics !== '' ? `<span>지닌 유물 ${gr.relics}</span>` : ''}</p>` : ''
   if (lv >= 2) h += `<div class="dxstat">${heroRadar(x.hero, true, (f & DEX_SERVED) !== 0, 150)}<div class="dxtr">${traitChips(x.hero, true)}<p class="mute">처음 나올 때의 솜씨다. 판에서 부리면 자란다.</p>${grown}</div></div>`
@@ -210,6 +219,8 @@ export function dexToastHtml(k: DexKit, items: ReadonlyArray<{ id: string; lv: 2
 }
 
 export const DEX_CSS = `
+/* 각성 초상 켜기 — 우리 장수로 한 번 각성해 본 이만 (형 11-03) */
+.ap .dexp .dxaw { align-self: flex-start; margin-top: 6px; } .ap .dexp .dxaw.on { color: #ffd27a; border-color: #c9a45a; }
 /* 둥근 얼굴 — 청동 테 그림(ui/ring-portrait.png · 테 두께는 지름의 17%) · 얼굴이 줄지 않게 칸을 키운다 (형 10-29: "박스 테두리들이 여전히 css") */
 .ap .dexp .dxf, .ap .dxt img { background: url(__ART__ui/ring-portrait.png) center / 100% 100% no-repeat, #17110c; background-origin: border-box; border-style: solid; border-color: transparent; border-radius: 50%; box-sizing: border-box; }
 .ap .dexp .dxf { width: 78px !important; height: 78px !important; border-width: 13px; } .ap .dexp .dxf.none { border: 13px solid transparent !important; background: url(__ART__ui/ring-portrait.png) center / 100% 100% no-repeat, #17110c !important; background-origin: border-box !important; }

@@ -31,6 +31,8 @@ export const DEX_HEARD = 1
 export const DEX_MET = 2
 export const DEX_CAUGHT = 4
 export const DEX_SERVED = 8
+/** 우리 장수로 각성해 본 적이 있다 — 영웅전에서 각성 초상을 켜 볼 수 있다 (형 11-03 · 단계 셈 dexLevel 에는 안 든다) */
+export const DEX_AWOKE = 16
 
 /** 도감 한 줄 — `f` 켜진 칸 · `b` 처음 오른 판 */
 export interface DexEntry { f: number; b?: RegionId }
@@ -116,6 +118,7 @@ function flagsIn(r: Realm, h: Hero): number {
   const me = r.player
   let f = 0
   if (h.faction === me) f |= DEX_HEARD | DEX_MET | DEX_SERVED
+  if (h.faction === me && h.ascended === true) f |= DEX_AWOKE
   if (h.status === 'captive' && h.captor === me) f |= DEX_HEARD | DEX_MET | DEX_CAUGHT
   if (heroSeen(r, me, h.id)) f |= DEX_HEARD | DEX_MET
   if (h.faction !== '' && met(r, me, h.faction)) f |= DEX_HEARD

@@ -54,7 +54,7 @@ import type { Approach, Army, BuildWhat, EdgeKind, EnvoyAsk, ExpDest, Good, Hand
 import { P } from '../../tune/params.ts'
 import { MAP_CSS, roadSvg, ROUTE_SIGN_NAME, mapHtml, noReachWhy, visibleNodes, warmNextSeason, type RouteSign, type MapMarch, type MapTarget, type MapToken } from './mapview.ts'
 import { LEGACY_CSS, bringHtml, clearBring, toggleBring } from './legacy.ts'
-import { DEX_CSS, clanHeroes, dexHtml, dexToastHtml, loadDex, recordDex, type DexBoard } from './dex.ts'
+import { DEX_CSS, clanHeroes, dexHtml, dexToastHtml, loadDex, recordDex, toggleDexAwake, type DexBoard } from './dex.ts'
 import { DEX_SERVED, dexCatalog } from '../../realm/dex.ts'
 import { DRILL_CSS, drillLevel, engraveRun, hasDrill, loadDrill, raiseHero, yardHtml, yardStripHtml, type DrillKit } from './drill.ts'
 import { applyDrill, earnedOf } from '../../realm/drill.ts'
@@ -559,6 +559,7 @@ const DEX_KIT = {
   bust: (id: string): string | null => (faceFile(id) !== undefined ? `${ART}bust/${faceFile(id)}.jpg` : null),
   kid: (key: string, look: 'g' | 'w', traits?: readonly string[]): string | null => { const f = kidBust(key, look, traits); return f !== undefined ? `${ART}bust/${f}.jpg` : null },
   grow: (id: string): { lv: number; relics: string } => ({ lv: drillLevel(id), relics: relicChips(ART, esc, wornBy(id)) }),
+  awake: (id: string): string | null => { const b = bustOf(id); return b !== undefined && AWAKEN_ART.has(b) ? `${ART}awaken-hd/${b}.jpg` : null },
 }
 
 /** 처음 몸 — 영웅전 명부 · 가문의 아이 (단련터 · 동행 고르기의 단련 몸) */
@@ -5994,7 +5995,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   function paintNow(): void {
     MINE = realm?.player ?? ''
-    noteAscended(realm) // 각성한 장수는 각성 초상으로 (face.ts)
+    // 각성한 장수는 각성 초상으로 (face.ts) — 판 위에서만. 첫 화면·영웅전·데려갈 장수·판 끝 화면은 본래 얼굴 (형 11-03: "각성은 게임판에서만 보여져야")
+    noteAscended(front === null && realm?.outcome == null ? realm : null)
     LIVE_RULER = realm !== null && front === null
       ? Object.fromEntries(Object.values(realm.factions).flatMap((f) => (f.ruler !== undefined ? [[f.id, f.ruler]] : [])))
       : {}
@@ -6754,6 +6756,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'rl-close': if (front !== null && front.kind === 'drill') front = { ...front, anim: false, gain: {}, slot: null }; paint(); return
       case 'dex-close': if (front !== null && front.kind === 'dex') front = front.back; paint(); return
       case 'dex-board': if (front !== null && front.kind === 'dex') { front = { ...front, board: d['v'] as DexBoard, sel: null }; root.querySelector('.front.dexp')?.scrollTo(0, 0) } paint(); return
+      case 'dex-awake': toggleDexAwake(d['id']!); paint(); return
       case 'dex-sel': if (front !== null && front.kind === 'dex') front = { ...front, sel: d['id'] === undefined || d['id'] === front.sel ? null : d['id'] }; paint(); return
       case 'fr-endless': if (realm !== null) { realm.endless = true; looking = false; showReport = false } paint(); return
       case 'pl-next': case 'pl-skip': {
