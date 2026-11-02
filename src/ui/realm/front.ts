@@ -669,6 +669,13 @@ export const FRONT_CSS = `
 .ap .front .bcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 14px; padding: 10px 14px 24px; max-width: 1180px; margin: 0 auto; }
 .ap .front .bcard { display: flex; flex-direction: column; padding: 0; overflow: hidden; border-radius: 16px; background: var(--card); border: 1px solid var(--line); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
 .ap .front .bcard:active, .ap .front .bcard:hover { border-color: var(--gold); }
+/* 판 카드의 청동 테 — 그림 위에 얹는다 (형 11-03: "캠페인이나 일반 게임 고를 때 아직 기본 CSS · 이미지 테두리 새로 만들어 감싸줘").
+   ui/frame-card.png (제미나이 · 가장자리는 민무늬라 아홉 조각으로 늘려도 안 깨진다 · 귀퉁이 180px) */
+.ap .front .bcard { position: relative; border-color: transparent; border-radius: 6px; }
+.ap .front .bcard::after { content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none; border: clamp(30px, 8vw, 40px) solid transparent; border-image: url(__ART__ui/frame-card.png?v=1) 180 / clamp(30px, 8vw, 40px) round; filter: drop-shadow(0 2px 4px #000a); transition: filter .15s; }
+.ap .front .bcard:hover::after, .ap .front .bcard:active::after { filter: drop-shadow(0 2px 4px #000a) brightness(1.25) drop-shadow(0 0 8px #e0bd7866); }
+.ap .front .bcard.locked::after { filter: drop-shadow(0 2px 4px #000a) grayscale(.6) brightness(.7); }
+.ap .front .bcard .bbadge { top: 14px; left: 14px; } .ap .front .bcard .cleared { right: 12px; top: 10px; }
 /* 판 카드 — 상자 그림처럼: 그림 위에 때와 제목, 아래에 이야기 한 줄 */
 .ap .front .bth { position: relative; display: block; aspect-ratio: 16 / 9; background: center / cover no-repeat; }
 .ap .front .bth::after { content: ''; position: absolute; inset: 40% 0 0; background: linear-gradient(#0000, #0b0d11e8); }
