@@ -41,8 +41,8 @@ export const CHAPTERS: readonly Chapter[] = [
     goal: '마한의 목지 도읍과 원산성·금현성을 쥔다',
     art: 'keyart/mahan.jpg',
     source: '『삼국사기』 백제본기 온조왕 26·27년: 왕이 사냥한다 하고 마한을 습격해 그 국읍을 아울렀다. 원산·금현 두 성만이 굳게 지키다 이듬해 항복했다.',
-    // 기한 열 해 — 마한은 먼저 치고, 버티기만 해서는 이기지 못한다
-    scenario: { id: 'mahan', win: [{ kind: 'hold', nodes: ['mh-mokji-cap', 'mh-wonsan', 'mh-geumhyeon'] }], limit: 40 },
+    // 기한 열두 해 — 마한은 먼저 치고, 버티기만 해서는 이기지 못한다 (11-03 열 해 → 열두 해 · 형: "1장이니까 웬만하면 누가 해도 이기게")
+    scenario: { id: 'mahan', win: [{ kind: 'hold', nodes: ['mh-mokji-cap', 'mh-wonsan', 'mh-geumhyeon'] }], limit: 48 },
   },
   {
     id: 'jumong', n: 2, region: 'jumong', nation: 'goguryeo', name: '주몽, 졸본에 서다', era: '기원전 37년 · 졸본', hero: '주몽',

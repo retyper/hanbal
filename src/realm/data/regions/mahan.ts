@@ -42,10 +42,10 @@ const NODES: RNode[] = [
   wild('mh-handeul', '한내 들', 160),
   // 마한 — 진왕의 목지국이 이끄는 큰 나라. 고을이 많다
   node('mh-jinwi', '진위 마을', 'village', [], 'mokji', 150),
-  node('mh-mokji-cap', '목지 도읍', 'capital', ['palisade'], 'mokji', 360),
-  node('mh-asan', '아산만 포구', 'port', [], 'mokji', 170),
-  node('mh-wonsan', '원산성', 'fort', ['palisade', 'high'], 'mokji', 160),
-  node('mh-geumhyeon', '금현성', 'fort', ['palisade', 'pines'], 'mokji', 150),
+  node('mh-mokji-cap', '목지 도읍', 'capital', [], 'mokji', 220),
+  node('mh-asan', '아산만 포구', 'port', [], 'mokji', 110),
+  node('mh-wonsan', '원산성', 'fort', ['palisade', 'high'], 'mokji', 110),
+  node('mh-geumhyeon', '금현성', 'fort', ['palisade', 'pines'], 'mokji', 100),
 ]
 
 const e = (id: string, a: string, b: string, kind: REdge['kind'], tags: REdge['tags'] = []): REdge => ({ id, a, b, kind, tags })
@@ -105,9 +105,9 @@ const ARMIES: Army[] = [
   a('a-mh-us2', 'baekje', 'mh-eureum', 'mh-namhan', { spear: 40, bow: 30 }, 'ironTip'),
   // 마한 — 군사는 더 많지만 여러 성에 흩어져 있다. 진위로 올라오는 무리가 먼저 친다
   a('a-mh-front', 'mokji', 'mh-mahan-1', 'mh-jinwi', { spear: 70, bow: 40, shield: 10 }, 'ironTip'),
-  a('a-mh-cap', 'mokji', null, 'mh-mokji-cap', { spear: 50, bow: 30 }, 'bronze'),
-  a('a-mh-wonsan', 'mokji', 'mh-mahan-2', 'mh-wonsan', { spear: 40, bow: 40 }, 'bronze'),
-  a('a-mh-geum', 'mokji', 'mh-mahan-3', 'mh-geumhyeon', { spear: 40, bow: 30 }, 'bronze'),
+  a('a-mh-cap', 'mokji', null, 'mh-mokji-cap', { spear: 40, bow: 20 }, 'bronze'),
+  a('a-mh-wonsan', 'mokji', 'mh-mahan-2', 'mh-wonsan', { spear: 30, bow: 30 }, 'bronze'),
+  a('a-mh-geum', 'mokji', 'mh-mahan-3', 'mh-geumhyeon', { spear: 30, bow: 20 }, 'bronze'),
 ]
 
 const byId = <T extends { id: string }>(xs: readonly T[]): Record<string, T> => Object.fromEntries(xs.map((x) => [x.id, structuredClone(x)]))
