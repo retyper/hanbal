@@ -42,7 +42,7 @@ export const PICK = {
   war_bell: 'c5', war_drum: 'c4', draft_go: 'c4', arm_go: 'c6',
   march_go: 'c8', cmd_counter: 'c10', cmd_art: 'c2', cmd_capture: 'c1', cmd_charge: 'm1', cmd_drum: 'c1', cmd_duel: 'c1', cmd_fire: 'c3', cmd_ford: 'c5', cmd_gate: 'c4', cmd_guard: 'c3', cmd_height: 'c5', cmd_hold: 'h1', cmd_horse: 'c4', cmd_open: 'c3', cmd_ram: 'c3', cmd_retreat: 'c1', cmd_rocks: 'c5',
   // 10-27 형: 엽전 14(g2) · 붓 17(g2) · 닫기는 옛 나무 딸깍 51(ui_cancel_c → tap_cancel_c) · 제사는 굿(tap_rite) · 혼인은 가야금(wed)
-  tap_arms: 'g1', tap_coin: 'g2', tap_brush: 'g2', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'c', tap_rite: 'g11',
+  tap_arms: 'g1', tap_coin: 'g2', tap_brush: 'g2', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'c', tap_rite: 'g14',
   // 각성 연출 제 소리 — 모임(차오름) · 번쩍(한 방) · 짐승 다섯의 울음 (형 11-03: "각성은 사운드도 제대로 새로") · 공유마당 후보 g1~g3, 형이 sound-picker.html 에서 고른다
   // 적 침공 알림 — 둥둥 큰북(+뿔나팔) · 담판에서 마음의 벽이 무너질 때 — 맑은 방울·풍경 (형 11-03: "침공 소리 징 별로 · 둥둥 침략당한 느낌" · "마음의 벽 깨지는 소리 너무 개박살")
   invade: 'g4', woo_break: 'g1',
@@ -70,7 +70,7 @@ const EXT: Readonly<Partial<Record<string, string>>> = {
   ...Object.fromEntries(['battle_clash', 'battle_crit'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'mp3']))),
   // 제사 — 힐 하는 소리로 (형 11-03: "향피리 소리 별로 · 힐 하는 소리 같은 거") · g7~g10 공유마당
   tap_rite_g7: 'mp3', tap_rite_g8: 'mp3', tap_rite_g9: 'mp3', tap_rite_g10: 'mp3',
-  tap_rite_g11: 'mp3', tap_rite_g12: 'mp3', tap_rite_g13: 'mp3', invade_g4: 'mp3', invade_g5: 'mp3', invade_g6: 'mp3',
+  tap_rite_g11: 'mp3', tap_rite_g12: 'mp3', tap_rite_g13: 'mp3', tap_rite_g14: 'wav', invade_g4: 'mp3', invade_g5: 'mp3', invade_g6: 'mp3',
   ...Object.fromEntries(['invade', 'woo_break', 'bad_small', 'bad_big', 'capt_lock'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'mp3']))),
   ax_flash_g4: 'mp3', ax_flash_g5: 'mp3', ax_flash_g6: 'mp3',
   ...Object.fromEntries(['ax_rise', 'ax_flash', 'ax_tiger', 'ax_bear', 'ax_hawk', 'ax_crane', 'ax_dragon'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'mp3']))),
