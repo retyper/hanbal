@@ -223,13 +223,17 @@ function clanFace(id: string, traits?: readonly string[]): string | undefined {
  */
 export function flagIcon(f: string | null | undefined): string | undefined {
   if (f == null || FACTION_ART[f] === undefined) return undefined
-  return NFLAG_SAME[f] !== undefined ? `nflag-${NFLAG_SAME[f]}` : NFLAG_TODO.has(f) ? FACTION_ART[f]!.emblem : `nflag-${f}`
+  return `nflag-${NFLAG_SAME[f] ?? f}`
 }
-/** 같은 나라라 깃발을 나눠 쓰는 것 — 가락 = 금관가야(구야) · 문양·빛이 같다 */
-const NFLAG_SAME: Readonly<Record<string, string>> = { garak: 'guya' }
-/** 나라 깃발을 아직 안 구운 나라 — 그동안은 옛 문양 그림(emblem)으로 (형 11-02: 구지봉의 노래 마을마다 깨진 그림)
- *  구우면 여기서 빼면 된다 · tests/realm/nflag-art.test.ts 가 「깃발 그림이 없는데 여기 없는 나라」를 잡는다 */
-export const NFLAG_TODO: ReadonlySet<string> = new Set(['gj-ado', 'gj-yeodo', 'gj-pido', 'gj-odo', 'gj-yusu', 'gj-yucheon', 'gj-sincheon', 'gj-ocheon', 'gj-singwi', 'tahae'])
+/**
+ * 깃발을 빌려 쓰는 나라 — 같은 판에 서지 않는 옛 나라의 깃발을 그대로 (빛도 그 깃발에 맞췄다).
+ * 가락 = 금관가야(구야) · 아홉 간과 탈해는 같은 문양의 나라에서 (형 11-02: "나라깃발을 왜 기존껄 안 씀" · 마을마다 깨진 그림이 떴다).
+ * 깃발 파일이 없는 나라는 tests/realm/nflag-art.test.ts 가 잡는다
+ */
+const NFLAG_SAME: Readonly<Record<string, string>> = {
+  garak: 'guya', 'gj-ado': 'hwanna', 'gj-yeodo': 'miri', 'gj-pido': 'sr-goya', 'gj-odo': 'geonma', 'gj-yusu': 'siljik',
+  'gj-yucheon': 'wansan', 'gj-sincheon': 'byeokjin', 'gj-ocheon': 'gosaburi', 'gj-singwi': 'us', tahae: 'sr-wae',
+}
 
 export const FACTION_ART: Readonly<Record<string, { emblem: string; color: string; color2: string }>> = {
   us: { emblem: 'emblem-shell', color: '#9fd18b', color2: '#6a2a7a' },
@@ -264,11 +268,12 @@ export const FACTION_ART: Readonly<Record<string, { emblem: string; color: strin
   'sr-wae': { emblem: 'emblem-wave', color: '#5a5f6a', color2: '#b8e04a' },
   // 4장 가락 · 아홉 간 · 탈해 (gujibong.ts) — 가락은 쌍어(김해) · 맏이 아도간은 거북(구지가)
   garak: { emblem: 'emblem-twinfish', color: '#e0b64a', color2: '#b0202a' },
-  'gj-ado': { emblem: 'emblem-tortoise', color: '#3a8a6a', color2: '#f2c230' }, 'gj-yeodo': { emblem: 'emblem-grain', color: '#d8c060', color2: '#1f3f8f' },
-  'gj-pido': { emblem: 'emblem-mountain', color: '#8a6ab0', color2: '#b8e04a' }, 'gj-odo': { emblem: 'emblem-plough', color: '#b8784a', color2: '#2f8a3a' },
-  'gj-yusu': { emblem: 'emblem-fish', color: '#5aa0b8', color2: '#e86a1a' }, 'gj-yucheon': { emblem: 'emblem-ginkgo', color: '#7a9a4a', color2: '#6a2a7a' },
-  'gj-sincheon': { emblem: 'emblem-stars', color: '#c08bb0', color2: '#2f8a3a' }, 'gj-ocheon': { emblem: 'emblem-egret', color: '#c8ccd8', color2: '#b0202a' },
-  'gj-singwi': { emblem: 'emblem-shell', color: '#c88a6a', color2: '#1f3f8f' }, tahae: { emblem: 'emblem-sailboat', color: '#5a5f6a', color2: '#e8e0c8' },
+  // 아홉 간·탈해는 같은 문양의 옛 나라 깃발을 빌려 쓴다 — 빛도 그 깃발 그대로 (형 11-02: "나라깃발을 왜 기존껄 안 씀") · NFLAG_SAME
+  'gj-ado': { emblem: 'emblem-tortoise', color: '#3a7a6a', color2: '#1f3f8f' }, 'gj-yeodo': { emblem: 'emblem-grain', color: '#6fa8dc', color2: '#f08ab0' },
+  'gj-pido': { emblem: 'emblem-mountain', color: '#8a6ab0', color2: '#b8e04a' }, 'gj-odo': { emblem: 'emblem-plough', color: '#b8784a', color2: '#b8e04a' },
+  'gj-yusu': { emblem: 'emblem-fish', color: '#5aa0b8', color2: '#b8e04a' }, 'gj-yucheon': { emblem: 'emblem-ginkgo', color: '#7a9a4a', color2: '#f6f1e4' },
+  'gj-sincheon': { emblem: 'emblem-stars', color: '#c08bb0', color2: '#2f8a3a' }, 'gj-ocheon': { emblem: 'emblem-egret', color: '#a6a05a', color2: '#b0202a' },
+  'gj-singwi': { emblem: 'emblem-shell', color: '#9fd18b', color2: '#6a2a7a' }, tahae: { emblem: 'emblem-wave', color: '#5a5f6a', color2: '#b8e04a' },
   michuhol: { emblem: 'emblem-wave', color: '#4a9fd0', color2: '#2f8a3a' },
   ungcheon: { emblem: 'emblem-bear', color: '#8d7a5a', color2: '#b8e04a' },
   sangdang: { emblem: 'emblem-dagger', color: '#6a8aa0', color2: '#e86a1a' },
