@@ -278,3 +278,5 @@ capt_lock_g1.mp3  공유마당 · 「전통사물_큰자물쇠_열다」 · (재
 capt_lock_g2.mp3  공유마당 · 「돌 문 열리는(쇠사슬)」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253188 · 잘라 냄
 capt_lock_g3.mp3  공유마당 · 「foleychainrattle04」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252095 · 잘라 냄
 tap_rite_g14.wav  공유마당 · 「국악 효과음 #651」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387641 · 잘라 냄
+invade_g7.wav  공유마당 · 「시골 학교종(빨리)」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254040 · 잘라 냄
+capt_lock_g4.wav  공유마당 · 「기쁨_승리의_강의실_남성(20명)_멀다(300cm)_KM184_ST_192」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13288167 · 잘라 냄

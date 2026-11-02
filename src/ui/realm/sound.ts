@@ -44,12 +44,12 @@ export const PICK = {
   // 10-27 형: 엽전 14(g2) · 붓 17(g2) · 닫기는 옛 나무 딸깍 51(ui_cancel_c → tap_cancel_c) · 제사는 굿(tap_rite) · 혼인은 가야금(wed)
   tap_arms: 'g1', tap_coin: 'g2', tap_brush: 'g2', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'c', tap_rite: 'g14',
   // 각성 연출 제 소리 — 모임(차오름) · 번쩍(한 방) · 짐승 다섯의 울음 (형 11-03: "각성은 사운드도 제대로 새로") · 공유마당 후보 g1~g3, 형이 sound-picker.html 에서 고른다
-  // 적 침공 알림 — 둥둥 큰북(+뿔나팔) · 담판에서 마음의 벽이 무너질 때 — 맑은 방울·풍경 (형 11-03: "침공 소리 징 별로 · 둥둥 침략당한 느낌" · "마음의 벽 깨지는 소리 너무 개박살")
-  invade: 'g4', woo_break: 'g1',
+  // 적 침공 알림 — 경종 「뎅뎅뎅」 시골 학교종 빠르게 (형 11-02: "침공은 차라리 경종 · 뎅뎅뎅뎅뎅") · 담판에서 마음의 벽이 무너질 때 — 맑은 방울·풍경
+  invade: 'g7', woo_break: 'g1',
   // 나쁜 일 — 낮은 큰북 「둥」(작은 일: 거절·소문·위협) · 큰북 두 번에 처지는 대금(큰 일: 짐·장수 잃음·실패) · 좋은 일은 뿔나팔과 맑은 종 (형 11-03: "나발이 좋을 때도 안 좋을 때도 · 확실히 구분 · 쾡쾡쾡 말고")
   bad_small: 'g2', bad_big: 'g2',
-  // 적장을 사로잡았다 — 쇠사슬·자물쇠 「철컥」 (형 11-03: "사로잡기 성공할 때 뚱둥! 그 소리 자체가 너무 별로" · 옛것은 활터의 jingleUnlock)
-  capt_lock: 'g1',
+  // 싸움 중 적장을 사로잡았다 — 사내들 환호 (형 11-02 고름 · 옛 「뚜룽」 jingleUnlock → 자물쇠 → 환호) · 옥문 닫힘은 쇠판 「챙」(cmd_hold) 그대로
+  capt_lock: 'g4',
   ax_rise: 'g2', ax_flash: 'g3', ax_tiger: 'g2', ax_bear: 'g3', ax_hawk: 'g2', ax_crane: 'g1', ax_dragon: 'g1',
 } as const
 /** ogg 가 아닌 후보 — 형이 받아 온 것은 받은 꼴 그대로 · 공유마당 음악은 mp3 · 누르는 소리는 브라우저로 잘라 낸 wav */
@@ -70,7 +70,7 @@ const EXT: Readonly<Partial<Record<string, string>>> = {
   ...Object.fromEntries(['battle_clash', 'battle_crit'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'mp3']))),
   // 제사 — 힐 하는 소리로 (형 11-03: "향피리 소리 별로 · 힐 하는 소리 같은 거") · g7~g10 공유마당
   tap_rite_g7: 'mp3', tap_rite_g8: 'mp3', tap_rite_g9: 'mp3', tap_rite_g10: 'mp3',
-  tap_rite_g11: 'mp3', tap_rite_g12: 'mp3', tap_rite_g13: 'mp3', tap_rite_g14: 'wav', invade_g4: 'mp3', invade_g5: 'mp3', invade_g6: 'mp3',
+  tap_rite_g11: 'mp3', tap_rite_g12: 'mp3', tap_rite_g13: 'mp3', tap_rite_g14: 'wav', invade_g4: 'mp3', invade_g5: 'mp3', invade_g6: 'mp3', invade_g7: 'wav', capt_lock_g4: 'wav',
   ...Object.fromEntries(['invade', 'woo_break', 'bad_small', 'bad_big', 'capt_lock'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'mp3']))),
   ax_flash_g4: 'mp3', ax_flash_g5: 'mp3', ax_flash_g6: 'mp3',
   ...Object.fromEntries(['ax_rise', 'ax_flash', 'ax_tiger', 'ax_bear', 'ax_hawk', 'ax_crane', 'ax_dragon'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'mp3']))),
