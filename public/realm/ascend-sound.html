@@ -1,0 +1,119 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>각성 소리 듣기</title>
+<style>
+  :root { color-scheme: dark; }
+  body { background:#171c23; color:#e2dbcd; margin:0; padding:22px 16px 60px;
+         font-family:"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; }
+  h1 { font-size:20px; letter-spacing:.06em; margin:0 0 6px; }
+  p  { color:#95a1ae; font-size:13px; line-height:1.7; max-width:760px; margin:6px 0 14px; }
+  .beasts { display:flex; flex-wrap:wrap; gap:10px; margin:16px 0 8px; }
+  .beasts button { font:inherit; font-size:16px; font-weight:700; padding:14px 18px; border-radius:10px; border:1px solid #3a4350;
+                   background:#232a33; color:#fff; cursor:pointer; min-width:120px; }
+  .beasts button.on { border-color:#ffb347; box-shadow:0 0 0 2px #ffb34766; }
+  .beasts button small { display:block; font-size:12px; font-weight:400; color:#95a1ae; margin-top:2px; }
+  .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 0; border-top:1px solid #2c333d; max-width:760px; }
+  .row b { min-width:96px; color:#ffb347; font-size:14px; }
+  .row label { font-size:13px; color:#ccd6e0; display:flex; align-items:center; gap:4px; cursor:pointer; }
+  .row .nm { font-size:12px; color:#6f7c8a; flex-basis:100%; padding-left:106px; }
+  .ctl { display:flex; gap:10px; align-items:center; margin:16px 0; flex-wrap:wrap; }
+  .ctl button { font:inherit; padding:10px 16px; border-radius:8px; border:1px solid #3a4350; background:#2c333d; color:#e2dbcd; cursor:pointer; }
+  #bar { height:6px; background:#2c333d; border-radius:3px; max-width:760px; position:relative; overflow:hidden; margin-top:6px; }
+  #bar i { position:absolute; left:0; top:0; bottom:0; width:0; background:#ffb347; }
+  #now { font-size:13px; color:#ffd88f; min-height:20px; margin-top:8px; }
+  code { background:#232a33; padding:1px 5px; border-radius:3px; color:#ffd88f; }
+</style></head><body>
+
+<h1>각성 소리 듣기</h1>
+<p>각성 연출의 소리를 게임과 같은 시각표로 처음부터 끝까지 틀어 봅니다. 짐승을 누르면 바로 시작합니다.
+모든 장수에게 같은 바탕(북 두구두구 · 불꽃 칸 방울 셋 · 모임 · 번쩍 · 뿔나팔)이 깔리고, 그 장수의 기운 소리와 짐승 울음이 얹힙니다.
+아래에서 후보를 바꿔 가며 들어 보고, 마음에 드는 번호를 말해 주세요.</p>
+
+<div class="beasts" id="beasts"></div>
+
+<div id="picks"></div>
+
+<div class="ctl">
+  <button id="stop">멈춤</button>
+  <label><input type="checkbox" id="solo"> 바탕 북·방울·나팔 빼고 새 소리만</label>
+</div>
+<div id="bar"><i></i></div>
+<div id="now"></div>
+
+<script>
+// 시각표 — src/tune/params.ts 의 ascend* 와 src/ui/realm/app.ts 의 각성 소리 줄과 같게 둔다
+const T = { rollGap: 520, rollMin: 90, rollAccel: 0.86, slot: 1200, slotGap: 700, vortex: 3600, beast: 5400, flash: 7200, end: 11000 }
+// 기운 → 소용돌이 소리 · 짐승 (src/ui/realm/ascend.ts ELEM)
+const ELEM = [
+  { id: 'fire', name: '불', beast: '범', cry: 'ax_tiger', sfx: 'cmd_fire_c3.ogg' },
+  { id: 'earth', name: '땅', beast: '곰', cry: 'ax_bear', sfx: 'cmd_rocks_c5.ogg' },
+  { id: 'bolt', name: '번개', beast: '매', cry: 'ax_hawk', sfx: 'battle_crit_g3.mp3' },
+  { id: 'wind', name: '바람', beast: '학', cry: 'ax_crane', sfx: 'arrow_volley_c3.ogg' },
+  { id: 'water', name: '물', beast: '청룡', cry: 'ax_dragon', sfx: 'cmd_ford_c5.ogg' },
+]
+// 후보 — 게임에 지금 붙은 것(src/ui/realm/sound.ts PICK)이 먼저 골라져 있다
+const SLOTS = [
+  ['ax_rise', '모임', 'g2', ['점점 상승하는 임팩트', 'Rise & Hit Long 1 (차오르다 끝에 한 방)', '징 열기 긴']],
+  ['ax_flash', '번쩍', 'g1', ['동양적인 징 임팩트', '웅장한 서막 임팩트', 'Trailer Hit 2']],
+  ['ax_tiger', '범 울음', 'g1', ['호랑이 포효 (서울대공원)', '맹수의 숨소리']],
+  ['ax_bear', '곰 울음', 'g3', ['곰 우리 1', '곰 우리 2', '곰 우리 3']],
+  ['ax_hawk', '매 울음', 'g1', ['독수리 울음', '솔개', '솔개 2']],
+  ['ax_crane', '학 울음', 'g1', ['두루미', '재두루미 날아오름 (철원)', '두루미 두 쌍 (철원)']],
+  ['ax_dragon', '청룡 울음', 'g1', ['몬스터 등장 임팩트', '강력한 저음', '폭풍 뒤 천둥 임팩트']],
+]
+const pick = Object.fromEntries(SLOTS.map(([s, , g]) => [s, g]))
+document.getElementById('picks').innerHTML = SLOTS.map(([s, label, g, names]) =>
+  `<div class="row"><b>${label}</b>${names.map((nm, i) => `<label><input type="radio" name="${s}" value="g${i + 1}"${'g' + (i + 1) === g ? ' checked' : ''}> ${i + 1}번</label>`).join('')}`
+  + `<span class="nm">${names.map((nm, i) => `${i + 1} ${nm}`).join(' · ')}</span></div>`).join('')
+document.getElementById('picks').addEventListener('change', (e) => { pick[e.target.name] = e.target.value })
+
+let ctx = null, playing = [], raf = 0
+const bufs = new Map()
+async function buf(file) {
+  if (!bufs.has(file)) bufs.set(file, fetch('sfx/' + file).then((r) => r.arrayBuffer()).then((a) => ctx.decodeAudioData(a)))
+  return bufs.get(file)
+}
+function stop() {
+  for (const s of playing) { try { s.stop() } catch {} }
+  playing = []; cancelAnimationFrame(raf)
+  document.querySelector('#bar i').style.width = '0'; document.getElementById('now').textContent = ''
+  document.querySelectorAll('.beasts button').forEach((b) => b.classList.remove('on'))
+}
+async function play(e, btn) {
+  ctx ??= new AudioContext()
+  stop(); btn.classList.add('on')
+  const solo = document.getElementById('solo').checked
+  const ev = [] // [ms, 파일, 크기, 이름]
+  if (!solo) {
+    for (let t = 0, gap = T.rollGap, k = 0; t < T.flash - T.rollMin; t += gap, gap = Math.max(T.rollMin, gap * T.rollAccel), k++)
+      ev.push([t, k % 2 === 0 ? 'tap_drum_g1.wav' : 'war_drum_c4.ogg', 0.25 + 0.5 * (t / T.flash), '북 두구두구'])
+    for (const i of [0, 1, 2]) ev.push([T.slot + i * T.slotGap, 'tap_bell_g1.wav', 0.55 + i * 0.15, `불꽃 칸 ${i + 1}`])
+    ev.push([T.flash + 250, 'horn_victory_a.ogg', 0.75, '뿔나팔'])
+  }
+  ev.push([0, `ax_rise_${pick.ax_rise}.mp3`, 0.6, '모임'])
+  ev.push([T.vortex, e.sfx, 0.8, `소용돌이 (${e.name}의 기운)`])
+  ev.push([T.beast, `${e.cry}_${pick[e.cry]}.mp3`, 0.9, `${e.beast} 솟음`])
+  ev.push([T.flash, `ax_flash_${pick.ax_flash}.mp3`, 0.95, '번쩍'])
+  document.getElementById('now').textContent = '불러오는 중…'
+  const loaded = await Promise.all(ev.map(([, f]) => buf(f)))
+  const t0 = ctx.currentTime + 0.1
+  ev.forEach(([ms, , vol], i) => {
+    const src = ctx.createBufferSource(), g = ctx.createGain()
+    src.buffer = loaded[i]; g.gain.value = vol; src.connect(g).connect(ctx.destination); src.start(t0 + ms / 1000); playing.push(src)
+  })
+  const marks = ev.filter(([, , , n]) => n !== '북 두구두구').sort((a, b) => a[0] - b[0])
+  const tick = () => {
+    const ms = (ctx.currentTime - t0) * 1000
+    document.querySelector('#bar i').style.width = `${Math.min(100, (ms / T.end) * 100)}%`
+    const cur = marks.filter(([m]) => m <= ms).pop()
+    document.getElementById('now').textContent = ms < 0 ? '' : `${(ms / 1000).toFixed(1)}초 · ${cur ? cur[3] : ''}`
+    if (ms < T.end) raf = requestAnimationFrame(tick); else btn.classList.remove('on')
+  }
+  raf = requestAnimationFrame(tick)
+}
+document.getElementById('beasts').innerHTML = ELEM.map((e, i) => `<button data-i="${i}">${e.beast}<small>${e.name}의 장수</small></button>`).join('')
+document.getElementById('beasts').addEventListener('click', (ev) => { const b = ev.target.closest('button'); if (b) play(ELEM[+b.dataset.i], b) })
+document.getElementById('stop').addEventListener('click', stop)
+document.addEventListener('visibilitychange', () => { if (document.hidden) stop() })
+</script>
+</body></html>
