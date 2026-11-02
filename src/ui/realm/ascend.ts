@@ -165,11 +165,6 @@ export const ASCEND_CSS = `
 @keyframes axring { 0% { opacity: 1; transform: scale(.1); } 100% { opacity: 0; transform: scale(3.2); } }
 .ap .ascfx.evo .axflash { background: var(--c3); }
 .ap .ascfx.evo .axveil { background: radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--c0) 70%, #000) 0, #07080c 70%); }
-.ap .axel { position: relative; z-index: 3; margin-top: -2px; padding: 1px 12px; border-radius: 999px; font-size: 14px; font-weight: 800; color: var(--c3); border: 1px solid var(--c2); background: #000a;
-  box-shadow: 0 0 10px var(--c1); opacity: 0; animation: axfade .4s ease-out calc(var(--tf) + 850ms) forwards; }
-/* 둘레 글 — 모이는 동안 한 줄 */
-.ap .axcall { position: absolute; bottom: 16%; left: 0; right: 0; z-index: 5; text-align: center; font-size: clamp(16px, 4.6vw, 24px); font-weight: 800; letter-spacing: .1em; color: var(--c3); text-shadow: 0 0 12px var(--c1), 0 2px 4px #000;
-  opacity: 0; animation: axfade .5s ease-out .5s forwards, axgone .4s linear var(--tf) forwards; pointer-events: none; }
 /* 기운 방울 — 불이 아닌 결의 떠오르는 알갱이 */
 .ap .axembers .axdot { display: block; width: 60%; aspect-ratio: 1; margin: 20%; border-radius: 50%; background: radial-gradient(circle, var(--c3), var(--c2) 45%, transparent 72%); }
 /* 확인 — 다 보고 나서 누른다 (형 11-01: "탭으로 스킵 안 되게 · 확인 버튼 눌러서 종료") · 화면 아래 붙박이 (메모리: 완료 단추는 하단) */

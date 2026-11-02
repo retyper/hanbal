@@ -83,6 +83,7 @@ import { attachZoom } from './zoom.ts'
 import { holdBox, longPress } from './holdbox.ts'
 import { burn } from './burn.ts'
 import { ASCEND_CSS, ELEM, RINGS, elemOf, elemVars, gatherHtml, vortexHtml } from './ascend.ts'
+import { HILITE_CSS, hilite } from './hilite.ts'
 import { TUT_CSS, TUT_STEPS, createSpot, tutAt, tutBandHtml, tutStyle } from './tutorial.ts'
 import { LOG_CSS, LOG_GROUPS, lineNations, logGroup, logNations, logRows, logbookHtml, type LogFilter } from './logbook.ts'
 import { markTutorialOver, markWon, nationWon, tutorialOver, unlockedBoards, tierOpen, tierWon } from './unlock.ts'
@@ -615,7 +616,7 @@ type Front = { kind: 'title' } | { kind: 'boards' } | { kind: 'nations'; region:
 
 export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm | null, before: Realm | null, report: Report | null, fresh?: boolean): void; cloudChanged(): void } {
   const style = document.createElement('style')
-  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + MEM_CSS + ASCEND_CSS
+  style.textContent = FIT_CSS + MQ_CSS + TIP_CSS + FIRST_CSS + UPDATE_CSS + APP_CSS.replaceAll('__ART__', ART) + LOG_CSS + TINT_CSS + MOOD_CSS + AUD_CSS.replaceAll('__ART__', ART) + MAP_CSS.replaceAll('__ART__', ART) + FEEL_CSS + BATTLE_CSS + WAR_CSS.replaceAll('__ART__', ART) + SKFX_CSS.replaceAll('__ART__', ART) + HERO_CSS + GROW_CSS + WOO_CSS.replaceAll('__ART__', ART) + TALK_CSS.replaceAll('__ART__', ART) + DEX_CSS.replaceAll('__ART__', ART) + LEGACY_CSS + DRILL_CSS.replaceAll('__ART__', ART) + RELIC_CSS.replaceAll('__ART__', ART) + CLOUD_CSS + WINFX_CSS + SAVE_CSS + (FRONT_CSS + SEASONP_CSS + UI_CSS + GOAL_CSS).replaceAll('__ART__', ART) + HOWWIN_CSS + QUALITY_CSS + MEM_CSS + ASCEND_CSS + HILITE_CSS
   document.head.appendChild(style)
   root.classList.add('ap')
   // 그래픽 단계 저사양 · 보통 · 고사양 (quality.ts · 형 10-29: 폰 절전 모드에서 그림이 다 깨졌다)
@@ -1326,10 +1327,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const fr = `--bt:${R.ascendFrameTop};--bs:${R.ascendFrameSide};--bb:${R.ascendFrameBot}`
     el.innerHTML = `<div class="axveil"></div><img class="axwall" src="${FX}wall.png" alt=""><canvas class="axground"></canvas>`
       + `<img class="axbeast" src="${FX}beast-${E.beast}.png" alt="" onerror="this.classList.add('gone')">${gatherHtml(e, phone ? R.ascendGatherPhone : R.ascendGather, sd, ART)}<div class="axembers">${embers}</div>`
-      + `<p class="axcall">${esc(E.name)}의 기운이 모입니다</p>`
       + `<div class="axstage"><div class="axcard">${tongues}<div class="axwin">${before}<i class="axsil"></i>${after}</div><canvas class="axburn" style="${fr}"></canvas><img class="axframe" src="${FX}frame0.png" alt=""><img class="axglow" src="${FX}frame0.png" alt="">${vortexHtml(e, phone ? R.ascendOrbitPhone : R.ascendOrbit, sd, ART)}</div><div class="axslots">${slots}</div>`
       + `<div class="axtitle"><img class="axbrush" src="${FX}brush.png" alt=""><img class="axword" src="${FX}word.png" alt="각성"></div>`
-      + `<b class="axname">${esc(h.name)}</b><span class="axel">${esc(E.name)} · ${esc(E.beastName)}</span><div class="axstats">${stats}</div></div>${RINGS}<div class="axflash"></div>`
+      + `<b class="axname">${esc(h.name)}</b><div class="axstats">${stats}</div></div>${RINGS}<div class="axflash"></div>`
       + `<div class="axok"><button class="btn pri">확인</button></div>`
     const timers: number[] = []
     const gone = (): void => { timers.forEach((t) => window.clearTimeout(t)); if (!el.isConnected) return; el.classList.add('out'); window.setTimeout(() => el.remove(), 350) }
@@ -2064,7 +2064,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (beat < says.length) {
       const v = says[beat]!
       return `<div class="cnstage" data-act="cn-next"><h3 class="cnt">${esc(ag.title)}</h3><div class="cnspk">${bust(v.hero!, v.proven === true ? 'cnbig gold' : 'cnbig')}<b>${nameHtml(v.hero!.name)}</b>${v.proven === true ? '<i class="cngold">지난번 말이 맞았다</i>' : ''}</div>`
-        + `<p class="cnsub" aria-live="polite">${esc(v.line)}</p><div class="cnav"><small>${beat + 1}/${says.length} · 누르면 다음 ›</small><button class="cskip" data-act="cn-skip">건너뛰기 »</button></div></div>`
+        + `<p class="cnsub" aria-live="polite">${hilite(r, me(), v.line)}</p><div class="cnav"><small>${beat + 1}/${says.length} · 누르면 다음 ›</small><button class="cskip" data-act="cn-skip">건너뛰기 »</button></div></div>`
     }
     const ruler = r.factions[me()]?.ruler
     const rh = ruler !== undefined ? r.heroes[ruler] : undefined
@@ -2072,7 +2072,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const v of ag.voices) {
       const face = v.hero !== null ? bust(v.hero, v.proven === true ? 'cof gold' : 'cof') : rh !== undefined ? bust(rh, 'cof') : ''
       const on = sortieD.chose?.[ag.id] === v.label
-      h += `<button class="cnopt${on ? ' on' : ''}" data-act="cn-pick" data-ag="${ag.id}" data-l="${esc(v.label)}">${face}<span class="cot"><small>${v.hero !== null ? `${esc(v.hero.name)}의 말` : '내 뜻'}</small><b>${esc(v.label)}</b><span>${esc(voiceDoes(r, a, probe, m, v))}</span></span></button>`
+      h += `<button class="cnopt${on ? ' on' : ''}" data-act="cn-pick" data-ag="${ag.id}" data-l="${esc(v.label)}">${face}<span class="cot"><small>${v.hero !== null ? `${esc(v.hero.name)}의 말` : '내 뜻'}</small><b>${esc(v.label)}</b><span>${hilite(r, me(), voiceDoes(r, a, probe, m, v))}</span></span></button>`
     }
     return h + `</div><button class="cnre" data-act="cn-replay">다시 듣는다</button></div>`
   }
