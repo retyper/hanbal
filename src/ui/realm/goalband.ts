@@ -68,7 +68,7 @@ export function goalRowsHtml(r: Realm, esc: (s: string) => string): string {
     h += `<div class="gbr gleft warn" data-tip="바다 건너 섬에 머무는 탈해가 왕위를 노린다. 배는 망산도 바닷가로 닿는다. 그 길목을 지키거나 도읍에 군대를 모아 둔다"><span class="gck">⚓</span><span>${wait > 0 ? `탈해의 배: ${wait}계절 뒤 건너올 수 있다` : '탈해의 배가 건너올 수 있다'}</span></div>`
   }
   // 5장 — 부여 도읍 앞 수렁: 갈대 덮인 여울이라 장마(7·8월)엔 막히고 숨어 들기 좋다 (calendar.blockedWhy · 은폐)
-  if (sc.id === 'daemusin' && !done) h += `<div class="gbr gleft warn" data-tip="부여 도읍 남쪽은 갈대 덮인 진흙 수렁이다. 장마(7·8월)엔 물이 불어 건너지 못하고, 갈대에 숨어 기습하기는 좋다. 서쪽 목장·송화강 마을로 돌아가는 들길도 있다"><span class="gck">🌾</span><span>부여 남쪽 수렁: 장마엔 건너지 못한다</span></div>`
+  if (sc.id === 'daemusin' && !done) h += `<div class="gbr gleft warn" data-tip="부여 도읍 남쪽은 갈대 덮인 진흙 수렁이다. 장마(7·8월)엔 물이 불어 건너지 못하고, 갈대에 숨어 기습하기는 좋다. 서쪽 목장·송화강 마을로 돌아가는 들길도 있다"><span class="gck">≋</span><span>부여 남쪽 수렁: 장마엔 건너지 못한다</span></div>`
   if (sc.id === 'jumong' && !done && seasonIdx(r) < P.realm.pursuitSeasons) h += `<div class="gbr gleft warn" data-tip="대소의 추격대가 북쪽 동부여 진영에서 엄리 나루로 내려올 수 있다. 나루를 지키거나 군대를 모아 둔다"><span class="gck">⚠</span><span>동부여 추격군: ${P.realm.pursuitSeasons - seasonIdx(r)}계절 동안 쫓아온다</span></div>`
   const left = seasonsLeft({ ...r, scenario: sc })
   if (left !== null && !done) h += `<div class="gbr gleft${left <= 2 ? ' warn' : ''}"><span class="gck">⏳</span><span>${left}계절 남았다</span></div>`
