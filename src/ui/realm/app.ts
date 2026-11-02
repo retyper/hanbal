@@ -19,6 +19,7 @@ import { HAENGIN_NATION, JUMONG_NATIONS } from '../../realm/data/regions/jumong.
 import { MAHAN_NATIONS } from '../../realm/data/regions/mahan.ts'
 import { SEORA_NATIONS } from '../../realm/data/regions/seorabeol.ts'
 import { GUJI_NATIONS } from '../../realm/data/regions/gujibong.ts'
+import { DAEMUSIN_NATIONS } from '../../realm/data/regions/daemusin.ts'
 import { chapterOfRegion } from '../../realm/data/campaign.ts'
 import { knownOf, met } from '../../realm/discovery.ts'
 import { GRADE_COLOR, GRADE_NAME, TRAIT } from '../../realm/data/traits.ts'
@@ -528,10 +529,10 @@ const rulerId = (nation: string): string => `${nation}-ruler`
 /** 판마다 나라 고르기 글 — 변한 6국 축소판 · 영남 판 */
 const nationsOf = (region: RegionId): readonly NationInfo[] => (region === 'yeongnam' ? YEONGNAM_NATIONS : region === 'south' ? SOUTH_NATIONS : region === 'world' ? WORLD_NATIONS
   : region === 'tutorial' ? SOUTH_NATIONS.filter((n) => n.id === 'baekje' || n.id === 'michuhol')
-    : region === 'jumong' ? [...JUMONG_NATIONS, HAENGIN_NATION] : region === 'mahan' ? MAHAN_NATIONS : region === 'seorabeol' ? SEORA_NATIONS : region === 'gujibong' ? GUJI_NATIONS : NATIONS)
+    : region === 'jumong' ? [...JUMONG_NATIONS, HAENGIN_NATION] : region === 'mahan' ? MAHAN_NATIONS : region === 'seorabeol' ? SEORA_NATIONS : region === 'gujibong' ? GUJI_NATIONS : region === 'daemusin' ? DAEMUSIN_NATIONS : NATIONS)
 /** 「나의 역사」의 판 이름 · 옛 기록의 나라 이름 (판마다 같은 id 면 앞 것) */
 const BOARD_NAME_OF: Readonly<Record<string, string>> = Object.fromEntries(BOARDS.map((b) => [b.id, b.name]))
-const FACTION_NAME_OF: Readonly<Record<string, string>> = Object.fromEntries((['byeonhan-mini', 'yeongnam', 'south', 'world', 'tutorial', 'mahan', 'jumong', 'seorabeol', 'gujibong'] as const).flatMap((rg) => nationsOf(rg).map((n) => [n.id, n.name] as const)).reverse())
+const FACTION_NAME_OF: Readonly<Record<string, string>> = Object.fromEntries((['byeonhan-mini', 'yeongnam', 'south', 'world', 'tutorial', 'mahan', 'jumong', 'seorabeol', 'gujibong', 'daemusin'] as const).flatMap((rg) => nationsOf(rg).map((n) => [n.id, n.name] as const)).reverse())
 
 /** 판마다 나라의 진짜 군주 — 나라 고르기·자세히 보기에서도 그 판의 얼굴로 (2장 고구려 = 젊은 궁수 주몽 · 형 10-24) */
 const BOARD_RULERS = new Map<RegionId, Readonly<Record<string, string>>>()
@@ -4467,7 +4468,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
 
   /** 처음 하는 사람인가 — 배우는 판 말고 한 판이라도 이겼으면 아니다 */
   function novice(): boolean {
-    return !(['mahan', 'jumong', 'seorabeol', 'gujibong', 'byeonhan-mini', 'yeongnam', 'south', 'world'] as const).some((b) => tierWon(b) > 0)
+    return !(['mahan', 'jumong', 'seorabeol', 'gujibong', 'daemusin', 'byeonhan-mini', 'yeongnam', 'south', 'world'] as const).some((b) => tierWon(b) > 0)
   }
   /** 이 탭이 열리기까지 남은 계절 (0 이면 열림) */
   function tabWait(r: Realm, id: (typeof TABS)[number]['id']): number {

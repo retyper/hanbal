@@ -26,7 +26,7 @@ const LIST = process.argv.includes('--list')
 const SET = process.argv.includes('--set') ? process.argv[process.argv.indexOf('--set') + 1]!.split(',').map((kv) => kv.split('=') as [string, string]) : []
 for (const [k, v] of SET) setParam(k, Number(v))
 const ONLY = process.argv.includes('--region') ? process.argv[process.argv.indexOf('--region') + 1] : undefined
-const REGIONS = (['yeongnam', 'byeonhan-mini', 'south', 'world', 'mahan', 'jumong', 'tutorial', 'seorabeol', 'gujibong'] as RegionId[]).filter((x) => ONLY === undefined || x === ONLY)
+const REGIONS = (['yeongnam', 'byeonhan-mini', 'south', 'world', 'mahan', 'jumong', 'tutorial', 'seorabeol', 'gujibong', 'daemusin'] as RegionId[]).filter((x) => ONLY === undefined || x === ONLY)
 
 /** 금 패스("M x yLx y…Z") → 꺾은선 */
 function parse(d: string): Pt[] {

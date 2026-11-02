@@ -49,7 +49,7 @@ export function order(): string[] {
     if (id !== undefined && r.heroes[id] !== undefined && !seen.has(id)) { seen.add(id); rulers.push(id) }
   }
   const often: string[] = []
-  for (const reg of ['byeonhan-mini', 'jumong', 'seorabeol', 'gujibong', 'mahan', 'tutorial', 'yeongnam', 'south', 'world'] as const) {
+  for (const reg of ['byeonhan-mini', 'jumong', 'seorabeol', 'gujibong', 'daemusin', 'mahan', 'tutorial', 'yeongnam', 'south', 'world'] as const) {
     const r = BOARDS.find((b) => b.reg === reg)!.r
     for (const h of Object.values(r.heroes)) if (!seen.has(h.id)) { seen.add(h.id); often.push(h.id) }
   }

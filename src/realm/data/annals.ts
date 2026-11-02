@@ -139,6 +139,22 @@ const ANNALS: Readonly<Record<string, Annal>> = {
       '뒤에 신라의 넷째 임금 탈해 이사금이 되었다(『삼국사기』).',
     ],
   },
+  daemusin: {
+    name: '대무신왕 (무휼)', book: '『삼국사기』 고구려본기 대무신왕',
+    lines: [
+      '유리왕의 셋째 아들, 주몽의 손자. 나면서부터 슬기롭고 자라서는 씩씩하며 큰 꾀가 있었다. 18년에 왕위에 올랐다.',
+      '4년 겨울 부여를 치러 나섰다. 비류수 가에서 불을 때지 않아도 밥이 되는 솥을 얻고, 이물림에서 금도장과 병기를 얻었다. 북명 사람 괴유와 적곡 사람 마로가 따르기를 청했다.',
+      '5년 봄 부여 남쪽에 이르니 땅이 진흙 수렁이었다. 부여왕 대소가 쳐들어오다 말이 수렁에 빠져 괴유에게 목이 베였다. 그러나 고구려군도 겹겹이 에워싸여 먹을 것이 떨어졌고, 큰 안개가 이레 동안 낀 틈에 허수아비를 세워 두고 빠져나왔다.',
+    ],
+  },
+  gwaeyu: {
+    name: '괴유', book: '『삼국사기』 고구려본기 대무신왕 4·5년',
+    lines: [
+      '북명 사람. 키가 아홉 자이고 얼굴이 희며 눈에 빛이 있었다. 왕에게 절하며 부여왕의 머리를 베어 오겠다고 청했다.',
+      '부여 남쪽 수렁에서 말이 빠진 대소왕에게 달려들어 목을 베었다. 뒤에 죽자 왕이 북명산 남쪽에 장사 지내게 했다.',
+    ],
+  },
+  maro: { name: '마로', book: '『삼국사기』 고구려본기 대무신왕 4년', lines: ['적곡 사람. 긴 창을 들고 와 길잡이가 되기를 청했다.'] },
   ninegan: {
     name: '아홉 간', book: '『삼국유사』 가락국기',
     lines: [
@@ -155,6 +171,7 @@ const ANNAL_OF: Readonly<Record<string, string>> = {
   'sr-hyeokgeose': 'hyeokgeose', 'sr-aryeong': 'aryeong', 'sr-hogong': 'hogong', 'sr-alpyeong': 'alpyeong', 'sr-sobeol': 'sobeol',
   'sr-jibaekho': 'jibaekho', 'sr-guryema': 'guryema', 'sr-jita': 'jita', 'sr-hojin': 'hojin',
   'gj-suro': 'suro', 'gj-heo': 'heohwangok', 'gj-tahae': 'tahae',
+  'dm-daemusin': 'daemusin', 'dm-gwaeyu': 'gwaeyu', 'dm-maro': 'maro', 'dm-daeso': 'daeso',
   'gj-adogan': 'ninegan', 'gj-yeodogan': 'ninegan', 'gj-pidogan': 'ninegan', 'gj-odogan': 'ninegan', 'gj-yusugan': 'ninegan',
   'gj-yucheongan': 'ninegan', 'gj-sincheongan': 'ninegan', 'gj-ocheongan': 'ninegan', 'gj-singwigan': 'ninegan',
   'jm-jumong': 'jumong', 'jm-oi': 'oi', 'jm-mari': 'mari', 'jm-hyeopbo': 'hyeopbo', 'jm-songyang': 'songyang', 'jm-daeso': 'daeso',

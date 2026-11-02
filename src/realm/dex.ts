@@ -21,6 +21,7 @@ import { startMahan } from './data/regions/mahan.ts'
 import { startJumong } from './data/regions/jumong.ts'
 import { startSeorabeol } from './data/regions/seorabeol.ts'
 import { startGujibong } from './data/regions/gujibong.ts'
+import { startDaemusin } from './data/regions/daemusin.ts'
 import { met } from './discovery.ts'
 import { heroSeen, wanderersFor } from './heroes.ts'
 import type { Hero, Realm, RegionId } from './types.ts'
@@ -83,6 +84,7 @@ export function dexCatalog(): readonly DexHero[] {
     { board: 'jumong', ...chapter(startJumong(1)) },
     { board: 'seorabeol', ...chapter(startSeorabeol(1)) },
     { board: 'gujibong', ...chapter(startGujibong(1)) },
+    { board: 'daemusin', ...chapter(startDaemusin(1)) },
   ]
   for (const b of boards) {
     const names = new Map(b.starts.map((s) => [s.faction.id, s.faction.name]))

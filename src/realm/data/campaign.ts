@@ -73,15 +73,17 @@ export const CHAPTERS: readonly Chapter[] = [
     // 기한 열두 해 — 아홉은 많다 (서라벌 여섯은 열 해)
     scenario: { id: 'gujibong', win: [{ kind: 'submit', factions: ['gj-ado', 'gj-yeodo', 'gj-pido', 'gj-odo', 'gj-yusu', 'gj-yucheon', 'gj-sincheon', 'gj-ocheon', 'gj-singwi'], how: 'either', take: true }, { kind: 'trade', partners: 5 }], limit: 48 },
   },
-  // 아래는 아직 판이 없는 장 — 카드는 "짓는 중"으로 보인다 (형 10-23: "캠페인 수 너무 적음"). 그림은 표지가 오기 전까지 사건 그림을 빌린다
+  // 5장 — 판 위의 나라는 고구려와 부여 둘뿐, 그 사이는 임자 없는 들과 숲 (형 11-03: "되도록이면 주변국 없는 상태로")
   {
-    id: 'daemusin', n: 5, region: null, nation: 'goguryeo', name: '대무신왕, 부여를 치다', era: '기원후 22년 · 동부여', hero: '대무신왕',
-    hook: '할아버지 주몽을 쫓던 그 부여. 봄·여름이면 부여 도읍 앞 들은 말이 빠지는 수렁이 된다.',
-    goal: '동부여 도읍을 치고 대소왕을 쓰러뜨린다',
+    id: 'daemusin', n: 5, region: 'daemusin', nation: 'goguryeo', name: '대무신왕, 부여를 치다', era: '기원후 22년 · 동부여', hero: '대무신왕',
+    hook: '할아버지 주몽을 쫓던 그 부여. 부여 도읍 앞 들은 진흙 수렁이라, 장마가 들면 건널 수 없다.',
+    goal: '부여 도읍을 쥐고 대소왕을 쓰러뜨린다 (사로잡거나 베거나)',
     art: 'keyart/daemusin.jpg',
     source: '『삼국사기』 고구려본기 대무신왕 5년, 부여를 쳐서 괴유가 대소왕의 머리를 베었다.',
-    scenario: { id: 'daemusin', win: [] },
+    // 기한 열 해
+    scenario: { id: 'daemusin', win: [{ kind: 'hold', nodes: ['dm-buyeo-cap'] }, { kind: 'fell', hero: 'dm-daeso' }], limit: 40 },
   },
+  // 아래는 아직 판이 없는 장 — 카드는 "짓는 중"으로 보인다 (형 10-23: "캠페인 수 너무 적음"). 그림은 표지가 오기 전까지 사건 그림을 빌린다
   {
     id: 'jamyeonggo', n: 6, region: null, nation: 'goguryeo', name: '자명고', era: '기원후 32년 · 낙랑', hero: '호동 왕자',
     hook: '적이 오면 스스로 우는 북. 낙랑 공주의 칼끝이 북을 찢어야 기습이 먹힌다. 대가가 따른다.',

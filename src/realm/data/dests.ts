@@ -19,7 +19,7 @@ export interface DestInfo {
 }
 
 const SOUTH: readonly RegionId[] = ['mahan', 'seorabeol', 'gujibong', 'byeonhan-mini', 'yeongnam', 'south', 'world']
-const NORTH: readonly RegionId[] = ['jumong', 'world']
+const NORTH: readonly RegionId[] = ['jumong', 'daemusin', 'world']
 
 export const DESTS: Readonly<Record<ExpDest, DestInfo>> = {
   wa: { name: '왜의 포구', line: '바다 건너 왜의 포구: 변진의 쇠를 사러 오는 이들의 땅. 쇠값을 잘 쳐준다.', sea: true,

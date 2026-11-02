@@ -23,6 +23,8 @@ export const REGION_ART: Readonly<Record<RegionId, { dir: string; ext: string; w
   seorabeol: { dir: 'map-world', ext: 'webp', w: 706, h: 622, nodeScale: 0.5, labelScale: 0.8, zmax: 2.5, terrR: 80, terrBand: 48 },
   // 캠페인 4장 — 김해 골과 낙동강 어귀 (gujibong-geo.ts). 경도 0.9° × 위도 0.75° 를 조각 눈금의 두 배로
   gujibong: { dir: 'map-world', ext: 'webp', w: 636, h: 574, nodeScale: 0.45, labelScale: 0.8, zmax: 2.5, terrR: 80, terrBand: 48 },
+  // 캠페인 5장 — 국내에서 송화강 가 부여까지 (daemusin-geo.ts). 경도 2.4° × 위도 3.3° 를 조각 눈금 그대로 (세로로 긴 판)
+  daemusin: { dir: 'map-world', ext: 'webp', w: 847, h: 1262, nodeScale: 0.42, labelScale: 0.75, zmax: 4, terrR: 60, terrBand: 34 },
   // 캠페인 1장 — 한강 아래에서 차령까지 (mahan-geo.ts). 경도 1.3° × 위도 1.35° 를 조각 눈금의 두 배로
   mahan: { dir: 'map-world', ext: 'webp', w: 918, h: 1033, nodeScale: 0.45, labelScale: 0.8, zmax: 3, terrR: 90, terrBand: 54 },
   jumong: { dir: 'map-world', ext: 'webp', w: 1871, h: 861, nodeScale: 0.32, labelScale: 0.75, zmax: 5, terrR: 60, terrBand: 34 },
@@ -94,6 +96,9 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'gj-adogan': 'g-60-eupcha-hangyeol', 'gj-yeodogan': 'g-05-mahan-chieftain', 'gj-pidogan': 'g-61-heomcheuk-bawi', 'gj-odogan': 'g-03-sea-trader',
   'gj-yusugan': 'g-57-bihwa-neup', 'gj-yucheongan': 'w-16-clan-matriarch', 'gj-sincheongan': 'w-25-bihwa-priestess', 'gj-ocheongan': 'g-63-heomcheuk-beogeum',
   'gj-singwigan': 'w-17-mahan-pearl-diver', 'gj-tahae': 'g-20-samul-sea-lord', 'gj-tahae-1': 'w-10-pirate-captain',
+  // 캠페인 5장 — 대무신왕 · 괴유 · 마로 · 미르 / 대소(2장과 같은 얼굴) · 부여 장수 (daemusin.ts). 있는 명치판을 나눠 쓴다
+  'dm-daemusin': 'g-02-goguryeo-archer-prince', 'dm-gwaeyu': 'g-04-jinhan-giant', 'dm-maro': 'g-19-sabeol-veteran', 'dm-mir': 'w-03-goguryeo-archer',
+  'dm-daeso': 'g-67-buyeo-daeso', 'dm-buyeo-1': 'g-10-buyeo-horse-lord', 'dm-buyeo-2': 'w-06-buyeo-huntress',
   'tut-onjo': 'g-71-baekje-onjo', 'tut-biryu': 'g-28-goguryeo-damul', 'tut-ogan': 'g-13-baekje-general', 'tut-maryeo': 'g-89-baekje-maryeo', 'tut-haebi': 'w-95-michuhol-haebi',
   'baekje-ruler': 'g-68-baekje-onnuri', 'mokji-ruler': 'w-27-mokji-jinha', 'michuhol-ruler': 'w-28-michuhol-bira',
   'ungcheon-ruler': 'g-22-ungcheon-gomnae', 'sangdang-ruler': 'g-23-sangdang-soedal', 'geonma-ruler': 'w-46-geonma-maru',

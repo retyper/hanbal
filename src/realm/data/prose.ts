@@ -1404,6 +1404,8 @@ export const NODE_NOW: Readonly<Record<string, string>> = {
   'gj-yusu-cap': '부산 북구 낙동강 동쪽', 'gj-yucheon-cap': '김해 한림·진영 북쪽', 'gj-sincheon-cap': '창원 북면 쪽', 'gj-ocheon-cap': '양산 원동 낙동강 굽이', 'gj-singwi-cap': '부산 강서 강어귀',
   'gj-soedun': '김해 상동 쪽 언덕', 'gj-reeds': '부산 강서 낙동강 어귀', 'gj-jinyeong': '김해 진영', 'gj-sineo': '김해 신어산', 'gj-mangsan': '창원 진해 용원 망산도',
   'gj-hwangsan': '양산 물금 황산강 나루', 'gj-tahae-camp': '거제도 북쪽',
+  'dm-gungnae-cap': '지린 지안(집안)', 'dm-jolbon': '랴오닝 환런', 'dm-biryusu': '혼강 윗줄기', 'dm-imul': '지린 후이난 쪽 숲', 'dm-bukmyeong': '지린 화뎬 쪽',
+  'dm-jeokgok': '지린 류허 쪽', 'dm-mire': '지린 남쪽 송화강 들', 'dm-buyeo-cap': '지린 동단산', 'dm-buyeo-west': '지린 서쪽 들', 'dm-buyeo-east': '지린 동쪽 송화강 가',
   'mh-wirye-cap': '서울 송파 풍납토성', 'mh-hannaru': '서울 한강', 'mh-namhan': '성남 남한산', 'mh-sodo': '남양주', 'mh-handeul': '수원·오산',
   'mh-jinwi': '평택 진위', 'mh-mokji-cap': '천안 직산', 'mh-asan': '아산', 'mh-wonsan': '예산', 'mh-geumhyeon': '세종 전의',
   'tut-wirye-cap': '서울 송파 풍납토성', 'tut-acha': '서울 광진 아차산', 'tut-galdae': '서울 마포', 'tut-sodo': '남양주', 'tut-solmoe': '성남 남한산', 'tut-gaetgol': '부천', 'tut-michuhol-cap': '인천 문학산',

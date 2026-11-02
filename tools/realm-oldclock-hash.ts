@@ -18,7 +18,7 @@ const fnv = (s: string): string => {
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0 }
   return h.toString(16)
 }
-const runs: Array<[RegionId, string]> = [['yeongnam', 'guya'], ['byeonhan-mini', 'us'], ['south', 'guya'], ['mahan', 'baekje'], ['tutorial', 'baekje'], ['jumong', 'goguryeo'], ['seorabeol', 'saro'], ['gujibong', 'garak']]
+const runs: Array<[RegionId, string]> = [['yeongnam', 'guya'], ['byeonhan-mini', 'us'], ['south', 'guya'], ['mahan', 'baekje'], ['tutorial', 'baekje'], ['jumong', 'goguryeo'], ['seorabeol', 'saro'], ['gujibong', 'garak'], ['daemusin', 'goguryeo']]
 const turns = Number(process.argv[2] ?? '16')
 for (const [reg, nat] of runs) {
   for (const seed of [1, 2, 3]) {
