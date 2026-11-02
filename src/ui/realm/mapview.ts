@@ -433,6 +433,9 @@ export const MAP_CSS = `
 .map .tok.unit > img { position: relative; left: auto; top: auto; width: calc(var(--tw) * .92); grid-column: 1; grid-row: 1; align-self: center; }
 .map .tok.unit .squad { grid-column: 2; grid-row: 1; width: 100%; aspect-ratio: auto; height: calc(var(--tw) * 1.45); }
 .map .tok.unit .sq { margin: 0; } .map .tok.unit .sq:nth-child(n+2) { display: none; }
+/* 모르는 적의 장수 칸 — 얼굴 자리에 큰 「?」 (척후를 보내면 얼굴·수가 보인다 · 형 11-02) · 누르면 아는 만큼 한 줄 */
+.map .tok .unk { position: absolute; left: 0; top: 0; width: 100%; aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%; z-index: 4; font-style: normal; font-weight: 900; font-size: 1.4em; color: #ffd27a; background: #201811e6; box-shadow: inset 0 0 0 2px var(--tc, #c8402a); pointer-events: none; }
+.map .tok.unit > .unk { position: relative; grid-column: 1; grid-row: 1; align-self: center; width: calc(var(--tw) * .92); font-size: calc(var(--tw) * .62); }
 .map .tok.unit > b, .map .tok.unit .hp { grid-column: 1 / span 2; grid-row: auto; }
 .map .tok.unit .hp { width: 70%; }
 @media (prefers-reduced-motion: reduce) { .map .tok.unit .sq u::before { animation: none !important; translate: calc(var(--i0, 0%) * (1 - var(--nf, 8)) / var(--nf, 8)) 0; } .map .tok.unit.sel .squad::after { animation: none; } }
@@ -970,7 +973,7 @@ export function mapHtml(
   const ours = (t: MapToken): boolean => t.foe === undefined && t.ally === undefined && t.party !== true
   const tokBtn = (t: MapToken, ang?: number): string =>
     `<button class="tok${t.squad !== undefined ? ' unit' : ''}${ours(t) && t.march === undefined && !t.going ? ' idle' : ''}${t.sel ? ' sel' : ''}${t.going ? ' going' : ''}${t.ally !== undefined ? ' ally' : ''}${t.party === true ? ' party' : ''}${t.foe !== undefined ? ` foe${t.sneak === true ? ' sneak' : ''}` : ''}" data-act="${t.foe !== undefined ? 'foetok' : t.party === true ? 'ptok' : 'tok'}" data-army="${t.army}" style="${tokKit(t)}">`
-    + `${t.sel ? GEM : ''}${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}${ours(t) ? '<i class="flag"></i>' : ''}${t.wait === true ? `<i class="ask" style="--ae:${P.realm.mapAskEveryS}s;--ad:${(-(jit(t.army) * P.realm.mapAskEveryS)).toFixed(1)}s">명령?</i>` : ''}${t.squad !== undefined ? `<span class="squad">${t.squad.map((q, j) => `<i class="sq${q.r !== undefined ? ' v2' : ''}" style="--ar:${q.ar.toFixed(3)};${q.r !== undefined ? `--r:${q.r.toFixed(3)};` : ''}--j:${j};--k:${((([...t.army].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7) + j * 53) % 97 + 97) % 97 / 97).toFixed(2)}"><u style="background-image:url('${q.src}')"></u></i>`).join('')}</span>` : ''}<img src="${t.img}" alt="">${t.foe !== undefined ? '' : t.morale !== undefined ? `<i class="hp mor${t.morale < P.realm.mapMoraleLow ? ' low' : ''}" style="--p:${Math.max(0.06, Math.min(1, t.morale / P.realm.moraleMax)).toFixed(2)}"></i>` : `<i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i>`}<b>${t.foe !== undefined ? '적' : `${t.ally !== undefined ? '도움 ' : t.party === true ? '개척 ' : ''}${t.men}`}</b></button>`
+    + `${t.sel ? GEM : ''}${ang !== undefined ? `<i class="dir" style="--a:${ang.toFixed(0)}deg"></i>` : ''}${ours(t) ? '<i class="flag"></i>' : ''}${t.wait === true ? `<i class="ask" style="--ae:${P.realm.mapAskEveryS}s;--ad:${(-(jit(t.army) * P.realm.mapAskEveryS)).toFixed(1)}s">명령?</i>` : ''}${t.squad !== undefined ? `<span class="squad">${t.squad.map((q, j) => `<i class="sq${q.r !== undefined ? ' v2' : ''}" style="--ar:${q.ar.toFixed(3)};${q.r !== undefined ? `--r:${q.r.toFixed(3)};` : ''}--j:${j};--k:${((([...t.army].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7) + j * 53) % 97 + 97) % 97 / 97).toFixed(2)}"><u style="background-image:url('${q.src}')"></u></i>`).join('')}</span>` : ''}<img src="${t.img}" alt="">${t.foe !== undefined && t.known !== true ? '<i class="unk">?</i>' : ''}${t.foe !== undefined ? '' : t.morale !== undefined ? `<i class="hp mor${t.morale < P.realm.mapMoraleLow ? ' low' : ''}" style="--p:${Math.max(0.06, Math.min(1, t.morale / P.realm.moraleMax)).toFixed(2)}"></i>` : `<i class="hp" style="--p:${Math.max(0.08, t.men / topMen).toFixed(2)}"></i>`}<b>${t.foe !== undefined ? (t.known === true ? `적 ${t.men}` : '적') : `${t.ally !== undefined ? '도움 ' : t.party === true ? '개척 ' : ''}${t.men}`}</b></button>`
   let toks = ''
   // 길 위의 우리 군대 — 떠난 쪽에서 삼분의 일쯤 (가운데의 "n계절" 글씨를 안 가린다)
   for (const t of tokens) {
@@ -1070,6 +1073,8 @@ export interface MapToken {
   readonly party?: boolean
   /** 보인 적의 군대 — 그 나라 id. 그 나라 빛 테 · 붉은 「적」 (형 10-27: "어느 마을로 오는지 텍스트 말고 동맹군 오듯이 유닛들이 아예 보이게") */
   readonly foe?: string
+  /** 척후·첩자가 본 곳에서 떠난 적 — 군사 수·병종·장수가 보인다. 아니면 장수 칸에 「?」 (형 11-02) */
+  readonly known?: boolean
   /** 몰래 오는 낌새 — 어둡게 · 「기습 낌새」 */
   readonly sneak?: boolean
   /** 이번 계절 아직 명령이 없는 우리 군대 — 「명령?」 말풍선 (문명의 "유닛 명령 필요") */

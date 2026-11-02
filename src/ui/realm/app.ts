@@ -1606,10 +1606,16 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 보인 적의 군대 — 길 위에 그 나라 빛 테의 말로 (형 10-27: "대로로 오는 적군이나 기습이 예견된 적군은 텍스트 말고 동맹군 오듯이 유닛들이 맵에")
     // 몇 명인지는 모른다 — 「적」 · 몰래 오는 낌새면 어둡게
     const sneaky = new Set((report?.lines ?? []).flatMap((l) => (l.kind === 'sighted' && l.suspect === true ? [(l as { army: string }).army] : [])))
+    // 척후·첩자가 본 곳에서 떠난 적이면 군사 수 · 병종 · 장수까지 다 보인다 · 모르면 장수 칸에 「?」 (형 11-02)
     for (const a of seenMarches(r, me())) {
       if (a.march === null || a.lent?.to === me()) continue
-      tokens.push({ army: a.id, node: a.march.from, men: 0, sel: false, going: false, img: `${ART}icon/unit-spear.png`, foe: a.faction, squad: squadOf([]),
-        ...(sneaky.has(a.id) ? { sneak: true } : {}), march: { from: a.march.from, to: a.march.to, left: a.march.left } })
+      const known = foeKnown(r, a)
+      const kinds = (Object.entries(a.mix) as Array<[UnitKind, number]>).filter(([, v]) => v > 0).sort((x, y) => y[1] - x[1]).map(([k]) => k)
+      const hero = known && a.hero !== null ? r.heroes[a.hero] : undefined
+      const file = hero !== undefined ? faceFile(hero.id) : undefined
+      tokens.push({ army: a.id, node: a.march.from, men: known ? headcount(forceOf(r, a)) : 0, sel: false, going: false, foe: a.faction,
+        img: file !== undefined ? `${ART}bust/${file}.jpg` : `${ART}icon/${UNIT_ICON[kinds[0] ?? 'spear']}.png`, squad: squadOf(known ? kinds : []),
+        ...(known ? { known: true } : {}), ...(sneaky.has(a.id) ? { sneak: true } : {}), march: { from: a.march.from, to: a.march.to, left: a.march.left } })
     }
     // 개척단의 말 — 군대 말처럼 누르면 고르고 갈 곳이 빛난다 (지난 계절부터 길 위에 있으면 길 가운데)
     for (const p of partiesOf(r, me())) {
@@ -2173,6 +2179,24 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   /** 지도 유닛의 병사 셋 — 가장 많은 병종 둘, 셋째는 둘째 병종(없으면 첫째) · 수군은 땅에선 걷는 그림 · 모르는 군대는 창병 */
+  /** 오는 적을 다 아는가 — 떠난 고을이 우리 땅이거나, 척후·첩자가 이번 · 지난 계절에 그 고을을 봤다 (파수는 범위만이라 안 든다) */
+  function foeKnown(r: Realm, a: Army): boolean {
+    const from = a.march?.from ?? a.at
+    if (r.nodes[from]?.owner === me()) return true
+    const f = r.intel[me()]?.[from]?.force
+    return f != null && (f.src === 'scout' || f.src === 'spy') && f.season >= r.season - 1
+  }
+  /** 적 군대 말을 눌렀다 — 아는 만큼 한 줄 (형 11-02: "장수 칸에는 물음표 · 터치하면 정보") */
+  function foeTokLine(r: Realm, a: Army): string {
+    const nation = r.factions[a.faction]?.name ?? ''
+    const to = a.march !== null ? r.nodes[a.march.to]?.name ?? '' : ''
+    const when = a.march !== null ? (a.march.left <= 1 ? `다음 ${turnWord(r)}` : `${turnsLabel(r, a.march.left)} 뒤`) : ''
+    const head = `${nation} 군대${to !== '' ? ` · ${josa(to, '으로', '로')} ${when} 닿음` : ''}`
+    if (!foeKnown(r, a)) return `${head}. 군사 수와 장수는 모릅니다. 떠난 곳(${r.nodes[a.march?.from ?? a.at]?.name ?? ''})에 척후를 보내면 다 보입니다`
+    const mix = (Object.entries(a.mix) as Array<[UnitKind, number]>).filter(([, v]) => v > 0).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${UNIT_NAME[k]} ${v}`).join(' · ')
+    const hero = a.hero !== null ? r.heroes[a.hero] : undefined
+    return `${head}. 군사 ${headcount(forceOf(r, a))}명 (${mix})${hero !== undefined ? ` · 장수 ${hero.name}` : ' · 장수 없음'}`
+  }
   function squadOf(kinds: readonly UnitKind[]): Array<{ src: string; ar: number; r?: number }> {
     const anim = (k: UnitKind | undefined): string => (k === undefined ? 'spear' : k === 'boat' ? 'marine' : k)
     const a = anim(kinds[0])
@@ -6999,6 +7023,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           const go = root.querySelector<HTMLElement>(`.nd[data-act="go"][data-node="${at}"]`)
           if (go !== null) { go.click(); return }
         }
+        // 아무 군대도 안 골랐으면 아는 만큼 한 줄 — 군사 · 병종 · 장수 (척후가 본 곳) 또는 「모릅니다」 (형 11-02)
+        if (x !== undefined && r !== null) { tipPop(t, foeTokLine(r, x)); return }
         openSheet({ kind: 'node', id: at })
         return
       }
