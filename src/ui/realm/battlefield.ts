@@ -2015,22 +2015,32 @@ export const WAR_CSS = `
 .ap .wfxt { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
 .ap .wwin { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
 /* 싸움터 — 화면 뒤에 붙박이. 받아 둔 싸움터 그림이 없으면(stand) 장면 그림을 더 어둡고 흐리게 */
-.ap .wbg { position: absolute; inset: 0; z-index: 0; background: center / cover no-repeat; filter: brightness(.62) saturate(.9); }
-.ap .wbg { animation: wbgpan 26s ease-in-out infinite alternate; }
+/* 폰 깜빡임 (형 11-02 · 동생 폰 영상: 전술 상자를 연 채 위 띠·숫자·상자 가운데가 몇 프레임씩 통째로 빠짐) — 화면 가득한 층에
+   filter 밝기·채도 + 끝없이 커지는 transform 이 겹쳐 그래픽 한도를 넘었다 (메모리 mobile-gpu-layer-limit).
+   어둡게 하기는 filter 대신 위에 덮는 검은 막(::before)의 opacity 로 (--wdim · --wtint) · 천천히 미는 움직임은 고사양에서만 */
+.ap .wbg { position: absolute; inset: 0; z-index: 0; background: center / cover no-repeat; --wdim: .38; --wtint: #0d0f13; }
+.ap .wbg::before { content: ''; position: absolute; inset: 0; background: var(--wtint); opacity: var(--wdim); }
+.ap.q-high .wbg { animation: wbgpan 26s ease-in-out infinite alternate; }
 @keyframes wbgpan { from { transform: scale(1.04) translate(-1%, 0); } to { transform: scale(1.1) translate(1.2%, -1%); } }
 .ap .wember { position: absolute; bottom: -10px; left: var(--x); width: var(--s); height: var(--s); border-radius: 50%; background: radial-gradient(circle, #fff2c0, #ffb04a 45%, #ff6a1a00 70%);
   opacity: 0; animation: wemberup var(--d) linear var(--t) infinite; }
 @keyframes wemberup { 0% { opacity: 0; transform: translate(0, 0); } 10% { opacity: .9; } 70% { opacity: .6; } 100% { opacity: 0; transform: translate(var(--w), -70vh); } }
-.ap .wbg.stand { filter: brightness(.3) saturate(.7) blur(2px); transform: scale(1.04); }
-.ap .wbg.g-snow { filter: brightness(.45) saturate(.6) hue-rotate(-8deg); } .ap .wbg.g-night { filter: brightness(.3) saturate(.7); }
+.ap .wbg.stand { --wdim: .7; } .ap.q-high .wbg.stand { filter: blur(2px); transform: scale(1.04); }
+.ap .wbg.g-snow { --wdim: .55; --wtint: #0d1218; } .ap .wbg.g-night { --wdim: .7; }
 .ap .wbg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(#0d0f1340, #0d0f1300 30%, #0d0f1388 55%, #0d0f13dd 90%); }
+/* 부드러운 linear-gradient 는 폰에서 까만 줄무늬로 깨진다 — 고사양이 아니면 둥근 그러데이션으로 아래를 어둡게 */
+.ap:not(.q-high) .wbg::after { background: radial-gradient(ellipse 150% 100% at 50% 0%, #0d0f1311 30%, #0d0f13cc 100%); }
 .ap .wrbox { position: relative; z-index: 1; max-width: 600px; margin: 0 auto; padding: 0 14px 40px; }
 /* 위 카드 — 굴려도 늘 보인다 (포켓몬의 HP 창) */
 .ap .wtop { position: sticky; top: 0; z-index: 3; margin: 0 -14px; padding: calc(16px + env(safe-area-inset-top)) 30px 22px;
   background: linear-gradient(#0d0f1388, #0d0f1311 35%, #0d0f1322 70%, #0d0f1330), var(--wtbg) center 55% / cover no-repeat; background-origin: border-box;
-  filter: drop-shadow(0 6px 14px #000a); }
+  box-shadow: 0 6px 14px #000a; }
+/* 붙박이 위 띠에 filter 를 걸면 띠 전체가 따로 그려져 폰에서 통째로 빠졌다 (형 11-02 깜빡임) — 그림자는 box-shadow ·
+   고사양이 아니면 부드러운 linear-gradient 대신 둥근 그러데이션으로 */
+.ap:not(.q-high) .wtop { background: radial-gradient(ellipse 120% 80% at 50% 50%, #0d0f1311 40%, #0d0f1366 100%), var(--wtbg) center 55% / cover no-repeat; background-origin: border-box; }
 .ap .wtop::after { content: ''; position: absolute; inset: 0; border: 22px solid transparent; border-image: url(__ART__ui/frame-panel.png?v=3) 118 / 22px stretch; pointer-events: none; z-index: 2; }
 .ap .wtop.def { background: linear-gradient(#0d0f1388, #0d0f1311 35%, #0d0f1322 70%, #0d0f1330), var(--wtbg) center 55% / cover no-repeat; }
+.ap:not(.q-high) .wtop.def { background: radial-gradient(ellipse 120% 80% at 50% 50%, #0d0f1311 40%, #0d0f1366 100%), var(--wtbg) center 55% / cover no-repeat; }
 @media (max-width: 520px) { .ap .wtop { padding: calc(12px + env(safe-area-inset-top)) 22px 18px; } .ap .wtop::after { border-width: 16px; border-image-width: 16px; } }
 /* 위 카드 안의 싸움판은 테 안쪽 선에 딱 붙인다 — 모서리 없이, 테 밑으로 2px 숨겨 틈이 안 보이게 (형 10-26: "판 테두리 이미지에서 살짝 이격 · 성 이미지가 옆 아래 잘려 · 코너도 주지 말고")
    테의 안쪽 선은 22px(폰 16px) — 좌우는 안쪽 여백(30·22)에서 그만큼 빼고, 아래는 여백(22·18)에서 뺀다. isolation 으로 판 속 높은 z(장수 깃발)가 테 위로 못 올라온다 */
@@ -3014,6 +3024,8 @@ export const WAR_CSS = `
 .ap .wofoot > .wocd i { font-style: normal; font-family: var(--display); font-size: 26px; color: #fff3dc; text-shadow: 0 0 10px #ff6a3a, 0 2px 4px #000; }
 .ap .wofoot > .wocd i.tk { animation: wocdtk .45s cubic-bezier(.2, 1.6, .4, 1); } @keyframes wocdtk { from { scale: 1.6; opacity: .3; } to { scale: 1; opacity: 1; } }
 .ap .wopen .wob { position: absolute; inset: -4%; background: center / cover no-repeat; filter: brightness(.75) saturate(1.05); animation: wozoom 3.4s ease-out both; }
+/* 고사양이 아니면 여는 그림도 filter·크게 키우기 없이 어둠에서 밝아지기만 (화면보다 큰 층 · 폰 깜빡임) */
+.ap:not(.q-high) .wopen .wob { inset: 0; filter: none; animation: wozoomlite 1.2s ease-out both; } @keyframes wozoomlite { from { opacity: .25; } to { opacity: .85; } }
 @keyframes wozoom { from { transform: scale(1.18); filter: brightness(.2); } 25% { filter: brightness(.8); } to { transform: scale(1); } }
 .ap .wopen::before { content: ''; position: absolute; inset: 0; z-index: 1; background: url(__ART__fx/vig-edge.png) center / 100% 100% no-repeat; } /* 흐림은 구운 그림으로 — CSS 그러데이션은 갤럭시에서 층층이 띠가 졌다 (형 10-29) */
 .ap .wopen .wofl { position: absolute; inset: 0; z-index: 2; background: url(__ART__fx/flash-red.png) center / 100% 100% no-repeat; opacity: 0; animation: woflash .7s ease-out .9s both; }
@@ -3066,12 +3078,13 @@ export const WAR_CSS = `
 @keyframes wclklast { to { text-shadow: 0 1px 3px #000, 0 0 12px #ff5a3a; transform: scale(1.06); } }
 @media (max-width: 520px) { .ap .wclk li { padding: 0 6px; font-size: 10.5px; } .ap .wclk > b { font-size: 12px; } }
 /* 해시계의 하늘 — 어둠 속 합 · 해질녘 노을 · 새벽빛 (그림은 읽기만) */
-.ap .wbg.dk-night { filter: brightness(.3) saturate(.55) hue-rotate(12deg); }
+.ap .wbg.dk-night { --wdim: .7; --wtint: #05081a; }
 .ap .wbg.dk-night::after { background: radial-gradient(ellipse at 50% 20%, #1a2a5a55, #05081acc 75%); }
-.ap .wbg.dk-dusk { filter: brightness(.55) saturate(1.2) sepia(.35); }
+.ap .wbg.dk-dusk { --wdim: .45; --wtint: #2a1206; }
 .ap .wbg.dk-dusk::after { background: linear-gradient(#ff8a3a55, #a0302a33 40%, #0d0f13cc 85%); }
-.ap .wbg.dk-dawn { filter: brightness(.6) saturate(.8); }
+.ap .wbg.dk-dawn { --wdim: .4; --wtint: #1a1410; }
 .ap .wbg.dk-dawn::after { background: linear-gradient(#ffd8a855, #8aa0d033 40%, #0d0f13cc 85%); }
+.ap:not(.q-high) .wbg.dk-dusk::after { background: radial-gradient(ellipse 150% 100% at 50% 0%, #ff8a3a33 20%, #0d0f13cc 100%); } .ap:not(.q-high) .wbg.dk-dawn::after { background: radial-gradient(ellipse 150% 100% at 50% 0%, #ffd8a833 20%, #0d0f13cc 100%); }
 .ap .wrd.night { background: #141a26e6; border-color: #3a4a6a; }
 /* 마지막 때의 큰 판 — 하늘이 바뀌고 해가 진다(새벽이면 뜬다) */
 /* 화면 아래에 붙는다 — 칸 밑에 숨어 굴려야 고를 수 있었다 (형 10-31: "합 다 끝나고 나오는 선택지가 아직도 칸 밑에서 스크롤되어야 선택") */
