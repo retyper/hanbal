@@ -82,7 +82,7 @@ import { MEM_CSS, memRowHtml } from './memrow.ts'
 import { attachZoom } from './zoom.ts'
 import { holdBox, longPress } from './holdbox.ts'
 import { burn } from './burn.ts'
-import { ASCEND_CSS, ELEM, RINGS, elemOf, elemVars, gatherHtml, vortexHtml } from './ascend.ts'
+import { ASCEND_CSS, ELEM, elemOf, elemVars, gatherHtml, mote, ringsHtml, vortexHtml } from './ascend.ts'
 import { HILITE_CSS, hilite } from './hilite.ts'
 import { TUT_CSS, TUT_STEPS, createSpot, tutAt, tutBandHtml, tutStyle } from './tutorial.ts'
 import { LOG_CSS, LOG_GROUPS, lineNations, logGroup, logNations, logRows, logbookHtml, type LogFilter } from './logbook.ts'
@@ -1292,7 +1292,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 각성 초상이 아래에서 솟고 빛이 터진다. 누르거나 몇 초 뒤 걷힌다. 여럿이면 첫째만 크게, 나머지는 보고에
    */
   // 개발판에서만 — 각성 연출을 바로 띄워 본다 (콘솔 · tools/phone-shot PRE): __ascend('장수 id')
-  if (import.meta.env.DEV) (window as unknown as Record<string, unknown>)['__ascend'] = (id: string): void => { if (realm !== null) ascendShow(realm, [{ kind: 'ascend', hero: id }]) }
+  // 숫자를 주면 우리 장수 가운데 그 차례 (기운마다 돌려 보기)
+  if (import.meta.env.DEV) (window as unknown as Record<string, unknown>)['__ascend'] = (id: string | number = 0): string => {
+    if (realm === null) return ''
+    const hid = typeof id === 'string' ? id : sorted(Object.values(realm.heroes).filter((x) => x.faction === me() && x.status === 'free'))[id]?.id ?? ''
+    ascendShow(realm, [{ kind: 'ascend', hero: hid }])
+    const x = realm.heroes[hid]
+    return x !== undefined ? `${x.name} ${elemOf(x)}` : ''
+  }
   function ascendShow(r: Realm, lines: readonly ReportLine[]): void {
     const l = lines.find((x): x is Extract<ReportLine, { kind: 'ascend' }> => x.kind === 'ascend' && r.heroes[x.hero]?.faction === me())
     if (l === undefined) return
@@ -1313,8 +1320,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const phone = window.matchMedia('(pointer: coarse)').matches
     const n = phone ? R.ascendEmbersPhone : R.ascendEmbers
     const jit = (i: number, k: number): number => ((i * 73 + k * 151 + h.id.length * 37) % 101) / 101 // 불티 자리 — 장수마다 같은 흩어짐
-    const rise = e === 'fire' ? `<img src="${FX}ember.png" alt="">` : `<b class="axdot"></b>`
-    const embers = Array.from({ length: n }, (_, i) => `<i style="--x:${(jit(i, 1) * 100).toFixed(1)}%;--s:${(0.5 + jit(i, 2)).toFixed(2)};--d:${(2.2 + jit(i, 3) * 2).toFixed(2)}s;--dl:${(R.ascendVortexMs / 1000 + jit(i, 4) * 2.4).toFixed(2)}s;--dx:${((jit(i, 5) - 0.5) * 60).toFixed(0)}px">${rise}</i>`).join('')
+    const embers = Array.from({ length: n }, (_, i) => `<i style="--x:${(jit(i, 1) * 100).toFixed(1)}%;--s:${(0.5 + jit(i, 2)).toFixed(2)};--d:${(2.2 + jit(i, 3) * 2).toFixed(2)}s;--dl:${(R.ascendVortexMs / 1000 + jit(i, 4) * 2.4).toFixed(2)}s;--dx:${((jit(i, 5) - 0.5) * 60).toFixed(0)}px">${mote(e, ART, i)}</i>`).join('')
     // 불혀 여섯 — WebGL 이 없을 때(.nogl)만 보인다
     const tongues = [-34, -22, -10, 64, 76, 88].map((l, i) => `<img class="axtg" src="${FX}flame.png" style="--i:${i};--l:${l}%" alt="">`).join('')
     // 빈 청동 자리 위에 지금 타는 불 (burn.ts 셰이더) · WebGL 이 없으면 그린 불(slot-on · 불혀 그림)로 (.nogl)
@@ -1329,7 +1335,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + `<img class="axbeast" src="${FX}beast-${E.beast}.png" alt="" onerror="this.classList.add('gone')">${gatherHtml(e, phone ? R.ascendGatherPhone : R.ascendGather, sd, ART)}<div class="axembers">${embers}</div>`
       + `<div class="axstage"><div class="axcard">${tongues}<div class="axwin">${before}<i class="axsil"></i>${after}</div><canvas class="axburn" style="${fr}"></canvas><img class="axframe" src="${FX}frame0.png" alt=""><img class="axglow" src="${FX}frame0.png" alt="">${vortexHtml(e, phone ? R.ascendOrbitPhone : R.ascendOrbit, sd, ART)}</div><div class="axslots">${slots}</div>`
       + `<div class="axtitle"><img class="axbrush" src="${FX}brush.png" alt=""><img class="axword" src="${FX}word.png" alt="각성"></div>`
-      + `<b class="axname">${esc(h.name)}</b><div class="axstats">${stats}</div></div>${RINGS}<div class="axflash"></div>`
+      + `<b class="axname">${esc(h.name)}</b><div class="axstats">${stats}</div></div>${ringsHtml(e, ART)}<div class="axflash"></div>`
       + `<div class="axok"><button class="btn pri">확인</button></div>`
     const timers: number[] = []
     const gone = (): void => { timers.forEach((t) => window.clearTimeout(t)); if (!el.isConnected) return; el.classList.add('out'); window.setTimeout(() => el.remove(), 350) }

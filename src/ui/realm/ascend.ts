@@ -55,7 +55,10 @@ export function elemOf(h: Hero): Elem {
 /** 판마다 같은 흩어짐 (꾸밈이라 판의 시드와 상관없다) */
 const jit = (i: number, k: number, s: number): number => ((i * 73 + k * 151 + s * 37) % 101) / 101
 
-/** 1 모임 — 화면 둘레에서 소용돌이치며 가운데로 빨려 드는 알갱이 */
+/** 그림 자리 — fx/awaken (제미나이로 구운 낱낱의 그림 · 형 11-03: "허접한 CSS 말고 이미지 소스 각각") */
+const fx = (art: string, name: string, cls = ''): string => `<img${cls !== '' ? ` class="${cls}"` : ''} src="${art}fx/awaken/${name}.png" alt="">`
+
+/** 1 모임 — 화면 둘레에서 소용돌이치며 가운데로 빨려 드는 빛줄기 · 알갱이 */
 export function gatherHtml(e: Elem, n: number, s: number, art: string): string {
   let h = ''
   for (let i = 0; i < n; i++) {
@@ -63,11 +66,11 @@ export function gatherHtml(e: Elem, n: number, s: number, art: string): string {
     const R = (62 + jit(i, 2, s) * 30).toFixed(0)
     const d = (0.9 + jit(i, 3, s) * 0.7).toFixed(2)
     const dl = (jit(i, 4, s) * 1.4).toFixed(2)
-    // 빛줄기 — 꼬리를 끌며 가운데로 꽂힌다 (가로 줄이 둘레→가운데 방향으로 놓인다)
-    h += `<i style="--a:${a}deg;--R:${R}vmax;--d:${d}s;--dl:${dl}s;--z:${(0.6 + jit(i, 5, s) * 0.9).toFixed(2)}"><b class="st"></b>${i % 3 === 0 ? mote(e, art) : ''}</i>`
+    // 빛줄기 — 머리가 가운데를 보고 꼬리를 끌며 꽂힌다 (그림의 머리가 왼쪽)
+    h += `<i style="--a:${a}deg;--R:${R}vmax;--d:${d}s;--dl:${dl}s;--z:${(0.6 + jit(i, 5, s) * 0.9).toFixed(2)}">${fx(art, `st-${e}`, 'st')}${i % 3 === 0 ? mote(e, art, i) : ''}</i>`
   }
   // 가운데 기운 덩이 — 모일수록 짙어진다 (opacity 만)
-  return `<div class="axcore"></div><div class="axgather e-${e}">${h}</div>`
+  return `${fx(art, `orb-${e}`, 'axcore')}<div class="axgather e-${e}">${h}</div>`
 }
 
 /** 2 소용돌이 — 초상 둘레를 도는 알갱이 · 번개 줄기 */
@@ -77,30 +80,29 @@ export function vortexHtml(e: Elem, n: number, s: number, art: string): string {
     const a = Math.round((360 / n) * i)
     const r = (34 + jit(i, 6, s) * 22).toFixed(0)
     const d = (0.7 + jit(i, 7, s) * 0.8).toFixed(2)
-    h += `<i style="--a:${a}deg;--r:${r}cqmin;--d:${d}s;--z:${(0.7 + jit(i, 8, s) * 0.8).toFixed(2)};--y:${((jit(i, 9, s) - 0.5) * 16).toFixed(0)}cqmin">${mote(e, art)}</i>`
+    h += `<i style="--a:${a}deg;--r:${r}cqmin;--d:${d}s;--z:${(0.7 + jit(i, 8, s) * 0.8).toFixed(2)};--y:${((jit(i, 9, s) - 0.5) * 16).toFixed(0)}cqmin">${mote(e, art, i)}</i>`
   }
   let bolts = ''
   if (e === 'bolt') {
-    // 번개 줄기 여섯 — 위에서 초상 둘레로 내리꽂는다 · 꺾임은 장수마다 같은 흩어짐
+    // 번개 줄기 여섯 — 위에서 초상 둘레로 내리꽂는다 · 그림 넷을 돌려 쓰고 반은 좌우를 뒤집는다
     for (let b = 0; b < 6; b++) {
-      let x = 50
-      let pts = `${x},0`
-      for (let y = 10; y <= 100; y += 10) { x += (jit(b * 11 + y, 10, s) - 0.5) * 22; pts += ` ${x.toFixed(1)},${y}` }
-      bolts += `<svg class="axbolt" viewBox="0 0 100 100" preserveAspectRatio="none" style="--x:${(8 + jit(b, 11, s) * 84).toFixed(0)}%;--t:${(jit(b, 12, s) * 2).toFixed(2)}s"><polyline points="${pts}"/><polyline class="core" points="${pts}"/></svg>`
+      bolts += `<img class="axbolt${b % 2 === 1 ? ' flip' : ''}" src="${art}fx/awaken/bolt-${(b % 4) + 1}.png" alt="" style="--x:${(8 + jit(b, 11, s) * 84).toFixed(0)}%;--t:${(jit(b, 12, s) * 2).toFixed(2)}s">`
     }
   }
   return `<div class="axvortex e-${e}">${h}</div>${bolts !== '' ? `<div class="axbolts">${bolts}</div>` : ''}`
 }
 
-/** 알갱이 하나 — 불은 불티 그림 · 땅은 돌 · 나머지는 빛 방울 (바람은 가는 줄) */
-function mote(e: Elem, art: string): string {
-  if (e === 'fire') return `<img src="${art}fx/awaken/ember.png" alt="">`
+/** 알갱이 하나 — 불은 불티 · 땅은 돌 · 물은 물방울 · 번개는 불꽃 튀김 · 바람은 바람결 (그림마다 몇 벌을 돌려 쓴다) */
+export function mote(e: Elem, art: string, i: number): string {
+  if (e === 'fire') return fx(art, 'ember')
   if (e === 'earth') return `<img class="rk" src="${art}fx/rock.png" alt="">`
-  return `<b></b>`
+  if (e === 'water') return fx(art, `p-drop${i % 2 === 0 ? 1 : 3}`)
+  if (e === 'bolt') return fx(art, `p-spark${(i % 3) + 1}`)
+  return fx(art, 'st-wind', 'gust') // 바람결 그림(S 자)은 작게 보면 $ 표처럼 읽혀 짧은 바람 줄기로 (11-03)
 }
 
-/** 번쩍 뒤 충격파 고리 셋 */
-export const RINGS = '<div class="axrings"><i></i><i></i><i></i></div>'
+/** 번쩍 뒤 충격파 고리 셋 — 그 기운의 고리 그림 */
+export const ringsHtml = (e: Elem, art: string): string => `<div class="axrings">${fx(art, `ring-${e}`)}${fx(art, `ring-${e}`)}${fx(art, `ring-${e}`)}</div>`
 
 /** 기운 색을 CSS 변수로 */
 export function elemVars(e: Elem): string {
@@ -113,19 +115,15 @@ export function elemVars(e: Elem): string {
  */
 export const ASCEND_CSS = `
 /* 1 모임 — 둘레에서 빛줄기가 감겨 들며 작아진다 · 가운데 기운 덩이가 짙어진다 */
-.ap .axcore { position: absolute; left: 50%; top: 42%; width: min(90vmin, 640px); aspect-ratio: 1; translate: -50% -50%; z-index: 0; pointer-events: none; border-radius: 50%;
-  background: radial-gradient(circle, var(--c3) 0, var(--c2) 18%, color-mix(in srgb, var(--c1) 55%, transparent) 38%, transparent 68%); opacity: 0;
+.ap .axcore { position: absolute; left: 50%; top: 42%; width: min(80vmin, 560px); aspect-ratio: 1; translate: -50% -50%; z-index: 0; pointer-events: none; opacity: 0;
   animation: axcore var(--tf) ease-in forwards, axgone .8s ease-out calc(var(--tf) + 200ms) forwards; }
 @keyframes axcore { 0% { opacity: 0; } 40% { opacity: .35; } 100% { opacity: .95; } }
-.ap .axgather .st { position: absolute; left: 0; top: 50%; width: calc(150px * var(--z)); height: calc(5px * var(--z)); translate: 0 -50%; border-radius: 3px;
-  background: linear-gradient(90deg, var(--c3), var(--c2) 25%, color-mix(in srgb, var(--c1) 60%, transparent) 60%, transparent); box-shadow: 0 0 8px var(--c2); }
-.ap .axgather > i > img, .ap .axgather > i > b:not(.st) { position: absolute; left: -40%; top: -40%; width: 180%; height: 180%; }
+.ap .axgather .st { position: absolute; left: 0; top: 50%; width: calc(170px * var(--z)); height: auto; translate: 0 -50%; max-width: none; }
+.ap .axgather > i > img:not(.st) { position: absolute; left: -40%; top: -40%; width: 180%; height: 180%; }
 .ap .axgather { position: absolute; left: 50%; top: 42%; width: 0; height: 0; z-index: 2; pointer-events: none; animation: axgone .4s linear var(--tv) forwards; }
 .ap .axgather > i { position: absolute; left: 0; top: 0; width: calc(22px * var(--z)); height: calc(22px * var(--z)); margin: calc(-11px * var(--z)); opacity: 0;
   animation: axsuck var(--d) cubic-bezier(.55, 0, .9, .45) var(--dl) infinite; }
 .ap .axvortex > i > * { display: block; width: 100%; height: 100%; }
-.ap .axgather b, .ap .axvortex b { border-radius: 50%; background: radial-gradient(circle, var(--c3) 0, var(--c2) 35%, var(--c1) 60%, transparent 72%); }
-.ap .axgather.e-wind b, .ap .axvortex.e-wind b { border-radius: 40%; scale: 3.2 .35; }
 .ap .axgather .rk, .ap .axvortex .rk { filter: brightness(.9) sepia(.6); }
 @keyframes axsuck { 0% { opacity: 0; transform: rotate(var(--a)) translateX(var(--R)) scale(1.4); } 15% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; transform: rotate(calc(var(--a) + 70deg)) translateX(2vmin) scale(.3); } }
 /* 2 소용돌이 — 초상 둘레를 돈다 (cq: 액자 칸 크기) */
@@ -147,26 +145,27 @@ export const ASCEND_CSS = `
 @keyframes axquake2 { 0%, 100% { transform: none; } 25% { transform: translate(-4px, 2px) rotate(-.6deg); } 50% { transform: translate(3px, -3px); } 75% { transform: translate(4px, 1px) rotate(.6deg); } }
 /* 번개 줄기 — 소용돌이 동안 번쩍번쩍 */
 .ap .axbolts { position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; animation: axfade .1s linear var(--tv) forwards, axgone .3s linear var(--tf) forwards; }
-.ap .axbolt { position: absolute; left: var(--x); top: 0; width: 18%; height: 62%; translate: -50% 0; overflow: visible; opacity: 0; animation: axzap .5s steps(1) calc(var(--tv) + var(--t)) infinite; }
-.ap .axbolt polyline { fill: none; stroke: var(--c1); stroke-width: 3.2; stroke-linejoin: bevel; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 6px var(--c2)); }
-.ap .axbolt polyline.core { stroke: #fff; stroke-width: 1.2; }
+.ap .axbolt { position: absolute; left: var(--x); top: 0; width: 16%; height: 62%; translate: -50% 0; opacity: 0; animation: axzap .5s steps(1) calc(var(--tv) + var(--t)) infinite; }
+.ap .axbolt.flip { scale: -1 1; }
+/* 바람 알갱이 — 가로로 긴 바람 줄기라 칸보다 넓게 · 눌리지 않게 */
+.ap .ascfx i > img.gust.gust { position: relative; left: -110%; top: 35%; width: 320%; height: auto; max-width: none; }
+/* 그림 위 끝이 곧게 잘렸다 — 위쪽을 서서히 드러낸다 (그림 검토 11-03) */
+.ap .axbolt { -webkit-mask-image: linear-gradient(transparent, #000 18%); mask-image: linear-gradient(transparent, #000 18%); }
 @keyframes axzap { 0% { opacity: 1; } 12% { opacity: .2; } 20% { opacity: 1; } 34% { opacity: 0; } 100% { opacity: 0; } }
-/* 3 짐승 — 액자 뒤에서 솟는다 · 검은 바탕 그림을 screen 으로 */
-.ap .axbeast { position: absolute; left: 50%; top: 44%; width: min(150vw, 980px, 120vh); translate: -50% -50%; z-index: 0; pointer-events: none; mix-blend-mode: screen; opacity: 0;
+/* 3 짐승 — 액자 뒤에서 솟는다 · 알파 그림 (넓은 칸에 섞기 모드를 걸지 않는다 · 폰 그래픽 한도) */
+.ap .axbeast { position: absolute; left: 50%; top: 44%; width: min(150vw, 980px, 120vh); translate: -50% -50%; z-index: 0; pointer-events: none; opacity: 0;
   animation: axbeast 1.1s cubic-bezier(.2, 1.2, .4, 1) var(--tb) forwards, axbeastb 1.6s ease-in-out calc(var(--tf) + 700ms) infinite alternate; }
 @keyframes axbeast { 0% { opacity: 0; transform: scale(.55) translateY(12%); } 55% { opacity: 1; } 100% { opacity: .9; transform: none; } }
 @keyframes axbeastb { from { opacity: .9; } to { opacity: .55; } }
 .ap .axbeast.gone { display: none; }
 /* 4 번쩍 — 충격파 고리 셋 */
 .ap .axrings { position: absolute; left: 50%; top: 42%; width: 0; height: 0; z-index: 4; pointer-events: none; }
-.ap .axrings i { position: absolute; left: -20vmin; top: -20vmin; width: 40vmin; height: 40vmin; border-radius: 50%; border: 4px solid var(--c3); box-shadow: 0 0 18px var(--c2), inset 0 0 14px var(--c2); opacity: 0;
+.ap .axrings img { position: absolute; left: -20vmin; top: -20vmin; width: 40vmin; height: 40vmin; opacity: 0;
   animation: axring .9s cubic-bezier(.1, .7, .3, 1) var(--tf) forwards; }
-.ap .axrings i:nth-child(2) { animation-delay: calc(var(--tf) + 140ms); border-color: var(--c2); } .ap .axrings i:nth-child(3) { animation-delay: calc(var(--tf) + 300ms); border-width: 2px; }
+.ap .axrings img:nth-child(2) { animation-delay: calc(var(--tf) + 140ms); } .ap .axrings img:nth-child(3) { animation-delay: calc(var(--tf) + 300ms); }
 @keyframes axring { 0% { opacity: 1; transform: scale(.1); } 100% { opacity: 0; transform: scale(3.2); } }
 .ap .ascfx.evo .axflash { background: var(--c3); }
 .ap .ascfx.evo .axveil { background: radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--c0) 70%, #000) 0, #07080c 70%); }
-/* 기운 방울 — 불이 아닌 결의 떠오르는 알갱이 */
-.ap .axembers .axdot { display: block; width: 60%; aspect-ratio: 1; margin: 20%; border-radius: 50%; background: radial-gradient(circle, var(--c3), var(--c2) 45%, transparent 72%); }
 /* 확인 — 다 보고 나서 누른다 (형 11-01: "탭으로 스킵 안 되게 · 확인 버튼 눌러서 종료") · 화면 아래 붙박이 (메모리: 완료 단추는 하단) */
 .ap .ascfx.evo { cursor: default; }
 .ap .axok { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; justify-content: center; padding: 14px 16px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, #000c 40%);
