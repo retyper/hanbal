@@ -95,7 +95,7 @@ export function markTutorialOver(how: 'done' | 'quit'): void {
  * 캠페인의 장은 처음부터 다 열려 있다 — 이야기는 마음대로 고른 세기로 (형 10-23)
  */
 export function tierOpen(region: RegionId): number {
-  if (region === 'tutorial') return 1
+  if (region === 'tutorial') return 0 // 0장은 늘 촌장 (형 11-02)
   if (CHAPTERS.some((c) => c.region === region)) return TIER_MAX
   return Math.min(TIER_MAX, (load().tiers?.[region] ?? 0) + 1)
 }

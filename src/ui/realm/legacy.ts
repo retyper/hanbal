@@ -126,9 +126,13 @@ export const LEGACY_CSS = `
 .ap .bringov .bx { position: absolute; right: 10px; top: 8px; border: 0; background: none; color: #cbbf9f; font-size: 18px; cursor: pointer; }
 /* 고를 것을 다 갖추면 완료 단추는 화면 아래에 붙박이로 크게 (형 10-27: "혼자 간다 · 이대로 떠난다가 하단 고정으로") */ .ap .bringov .bringbox { max-height: calc(100% - 96px); margin-bottom: 80px; } .ap .bringov .bringgo { position: fixed; left: 0; right: 0; bottom: 0; z-index: 93; display: flex; gap: 10px; justify-content: center; padding: 22px 16px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(#0d0a0700, #0d0a07f0 34%); } .ap .bringov .bringgo .btn { flex: 0 1 260px; justify-content: center; padding: 14px 16px; font-size: 18px; } .ap .bringov .bringgo .btn.pri { flex-basis: 320px; animation: wgoready 1.1s ease-in-out infinite alternate; }
 .ap .tierp { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 10px; } .ap .tierp > b { color: #f0a070; } .ap .tierp b { color: #f0a070; }
-.ap .tierp .seg { flex-wrap: wrap; } .ap .tierp .seg button { min-width: 44px; }
-.ap .tierp .seg button.locked { opacity: .45; cursor: default; } .ap .tierp .seg button.apex:not(.locked) { color: #ffb08a; border-color: #c0603a; }
-.ap .front.boards .tierp { max-width: 980px; margin: 0 auto 8px; padding: 0 14px; }
+/* 세기 — 한 줄에 한 단계, 위에서 아래로 촌장 → 천손 (형 11-02: "1열 n행") · 이름 · 한 줄 풀이 · 데려갈 수 */
+.ap .tierp .tlist { display: flex; flex-direction: column; gap: 6px; }
+.ap .tierp .trow { display: grid; grid-template-columns: 4.2em minmax(0, 1fr); column-gap: 10px; align-items: center; text-align: left; width: 100%; padding: 9px 12px; border-radius: 10px; border: 1.5px solid #4a3f30; background: #1e1913; color: #d8cdb6; font: inherit; cursor: pointer; }
+.ap .tierp .trow b { grid-row: 1 / span 2; font-size: 17px; color: #f0d9a8; }
+.ap .tierp .trow span { font-size: 13px; line-height: 1.35; } .ap .tierp .trow small { grid-column: 2; font-size: 12px; color: #a99c82; }
+.ap .tierp .trow.on { border-color: #ffd27a; background: #3a2c14; box-shadow: 0 0 0 1px #ffd27a, 0 0 12px #ffd27a44; } .ap .tierp .trow.on b { color: #ffd27a; }
+.ap .tierp .trow.apex:not(.locked) b { color: #ffb08a; } .ap .tierp .trow.locked { opacity: .5; cursor: default; }
 .ap .tierup { text-align: center; color: #f0a070; margin: 8px 0; } .ap .tierc { display: inline-block; white-space: nowrap; margin-left: 6px; padding: 0 7px; border-radius: 9px; border: 1px solid #a0603a; color: #f0a070; font-size: 12px; }
 .ap .front .bmeta.tierw { color: #f0a070; }
 .ap .cardc { display: flex; gap: 10px; margin: 8px 0; padding: 10px; border-radius: 14px; border: 1px solid #6a5a3a; background: #201c16; text-align: left; flex-wrap: wrap; }

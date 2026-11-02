@@ -187,11 +187,11 @@ function agoText(iso: string): string {
  * 판 고르기 — 위에서부터 배우는 판 → 작은 판 → … 차례로 열린다 (unlock.ts). 잠긴 판은 자물쇠와 여는 길.
  * `unlocked` 가 없으면 다 열린 것으로 (시험)
  */
-export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<RegionId>, tierWon?: (r: RegionId) => number, chapLevel = ''): string {
+export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<RegionId>, tierWon?: (r: RegionId) => number): string {
   let h = `<div class="front boards"><div class="fhead"><button class="btn ghost" data-act="fr-back">‹ 처음으로</button><h2>어느 이야기로 시작할까</h2></div>`
   const names = Object.fromEntries(BOARDS.map((b) => [b.id, b.name])) as Partial<Record<RegionId, string>>
   // 캠페인 — 사료의 사건 하나가 한 장 (CAMPAIGN.md · 형: "문명처럼 … 특수한 승리조건"). 장은 배우는 차례로 열린다
-  h += `<h3 class="bsec"><b>캠페인</b><span>삼국의 새벽, 사서에 남은 일을 그 사람이 되어</span></h3>${chapLevel}<div class="bcards chaps">`
+  h += `<h3 class="bsec"><b>캠페인</b><span>삼국의 새벽, 사서에 남은 일을 그 사람이 되어</span></h3><div class="bcards chaps">`
   CHAPTERS.forEach((c, i) => {
     const prev = CHAPTERS[i - 1]
     const ready = c.region !== null
@@ -225,11 +225,13 @@ export function boardHtml(k: FrontKit, hasGame: boolean, unlocked?: ReadonlySet<
 
 // ───────── 나라 고르기 · 자세히
 
-export function nationsHtml(k: FrontKit, region: RegionId): string {
-  const b = BOARDS.find((x) => x.id === region)!
-  const all = k.nations(region)
+/** `only` — 캠페인의 장은 그 장의 나라 하나만 (형 11-02: 하나뿐이어도 고르게) */
+export function nationsHtml(k: FrontKit, region: RegionId, only?: string): string {
+  // 캠페인의 장은 판 목록(BOARDS)에 없는 것도 있다 — 장 이름으로 (gujibong · daemusin)
+  const title = BOARDS.find((x) => x.id === region)?.name ?? CHAPTERS.find((c) => c.region === region)?.name ?? ''
+  const all = k.nations(region).filter((n) => only === undefined || n.id === only)
   const wonN = all.filter((n) => (k.won?.(region, n.id) ?? 0) > 0).length
-  let h = `<div class="front choose"><div class="fhead"><button class="btn ghost" data-act="fr-new">‹ 이야기 고르기</button><h2>「${k.esc(b.name)}」: 어느 나라로</h2>`
+  let h = `<div class="front choose"><div class="fhead"><button class="btn ghost" data-act="fr-new">‹ 이야기 고르기</button><h2>「${k.esc(title)}」: 어느 나라로</h2>`
   if (wonN > 0) h += `<span class="wonc">휘장 ${wonN}/${all.length}</span>`
   h += `</div><div class="ncards">`
   for (const n of all) {

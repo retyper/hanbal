@@ -752,7 +752,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 고른 세기(난이도) — 판마다. 캠페인의 장은 판 고르기 화면에서 고른다 (없으면 보통 · 군장) */
   const tierPick: Partial<Record<RegionId, number>> = {}
   /** 캠페인의 장에 쓸 세기 — 판 고르기 화면 맨 위 */
-  let chapTier = 1
   /** 원정 고르는 중 — 장수마다 갈 곳·길이 (명령이 되기 전) */
   const expPick: Record<string, { dest: ExpDest; len: 0 | 1 | 2 }> = {}
   /** 나라 카드에서 "있었던 일"을 다 펼친 나라 */
@@ -5462,17 +5461,20 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /**
    * 난세 단계 고르기 — 디아블로의 고통 단계 (tier.ts · 형의 메모: "최대한 빨리 보스를 잡을때까지 강해지려고함"). 이 판을 이긴 단계 + 1 까지 열린다
    */
-  function tierHtml(region: RegionId, pick0?: number, act = 'tier-pick'): string {
+  function tierHtml(region: RegionId): string {
     const open = tierOpen(region)
-    const pick = Math.min(pick0 ?? tierPick[region] ?? 1, open)
+    const pick = Math.min(tierPick[region] ?? 1, open)
     // 세기 — 문명의 개척자·왕·신처럼 칭호로 (형 10-23). 잠긴 칭호도 보인다 — 무엇을 향해 가는지
     // 동행 수도 단계마다 다르다 — 고를 때 보이게 (형 10-24: "난이도에 따라 데려갈 장수 숫자가 변하면 선택할 때 알려 줘야")
-    const carry = retainMaxOf(pick)
-    let h = `<div class="tierp"><b>세기 · ${esc(levelName(pick))}</b><span class="mute">${esc(LEVEL_LINE[pick] ?? '')} · 영웅전의 장수를 ${carry > 0 ? `${carry}명까지 데려간다` : '데려가지 못한다'}</span><div class="seg">`
-    for (let t = 0; t <= TIER_MAX; t++) {
+    // 한 줄에 한 단계씩 위에서 아래로 촌장 → 천손 (형 11-02: "1열 n행으로 촌장부터 천손까지") · 0장(배우는 판)은 촌장 하나뿐
+    const last = region === 'tutorial' ? 0 : TIER_MAX
+    let h = `<div class="tierp"><b>세기</b><div class="tlist">`
+    for (let t = 0; t <= last; t++) {
+      const carry = retainMaxOf(t)
+      const body = `<b>${esc(levelName(t))}</b><span>${esc(LEVEL_LINE[t] ?? '')}</span><small>${region === 'tutorial' ? '0장은 촌장으로 배웁니다' : carry > 0 ? `장수 ${carry}명까지 데려감` : '장수를 데려가지 못함'}</small>`
       h += t <= open
-        ? `<button class="${t === pick ? 'on' : ''}${t === TIER_MAX ? ' apex' : ''}" data-act="${act}" data-v="${t}">${esc(levelName(t))}</button>`
-        : `<button class="locked" disabled data-tip="앞 세기로 이기면 열린다">🔒 ${esc(levelName(t))}</button>`
+        ? `<button class="trow${t === pick ? ' on' : ''}${t === TIER_MAX ? ' apex' : ''}" data-act="tier-pick" data-v="${t}">${body}</button>`
+        : `<button class="trow locked"${noBtn('앞 세기로 이기면 열립니다')}>🔒 ${body}</button>`
     }
     return h + `</div></div>`
   }
@@ -5519,9 +5521,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'drill': return yardHtml(DRILL_KIT, f)
       case 'tomb': return tombRun(realm) ? tombHtml(RELIC_KIT, realm, f.fresh) : ''
       case 'annals': return annalsHtml()
-      case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null), tierWon, tierHtml('jumong', chapTier, 'chap-tier'))
-      case 'nations': return nationsHtml(KIT, f.region)
-      case 'detail': return detailHtml(KIT, f.region, f.id, f.region === 'tutorial' ? '' : tierHtml(f.region))
+      case 'boards': return boardHtml(KIT, realm !== null && !realm.outcome, unlockedBoards(realm?.region ?? null), tierWon)
+      case 'nations': return nationsHtml(KIT, f.region, chapterOfRegion(f.region)?.nation)
+      case 'detail': return detailHtml(KIT, f.region, f.id, tierHtml(f.region))
     }
   }
 
@@ -6627,11 +6629,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'fr-new': case 'newgame': front = { kind: 'boards' }; sheet = null; looking = false; paint(); return
       case 'fr-back': front = { kind: 'title' }; paint(); return
       case 'lobby': saveDraft(); front = { kind: 'title' }; sheet = null; armySel = []; ring = ''; clearParty(); paint(); return
-      case 'fr-board':
-        // 캠페인의 장은 나라를 고르지 않는다 — 배우는 판은 백제(온조), 2장은 고구려(주몽)
-        { const ch = chapterOfRegion(d['v'] as RegionId); if (ch !== undefined) { startWithBring(ch.nation, d['v'] as RegionId, d['v'] === 'tutorial' ? 1 : chapTier); return } }
+      case 'fr-board': // 캠페인의 장도 자유 판처럼 나라 → 세기 → 데려갈 장수 (형 11-02 · 장은 나라가 하나뿐이어도 고르게)
         front = { kind: 'nations', region: d['v'] as RegionId }; $('.mapwrap').scrollTop = 0; paint(); return
-      case 'fr-tutorial': host.onNewGame('baekje', 'tutorial'); return
+      case 'fr-tutorial': host.onNewGame('baekje', 'tutorial', 0); return // 0장은 늘 촌장 (형 11-02)
       case 'fr-locked': return
       case 'tut-end': markTutorialOver('done'); front = { kind: 'title' }; paint(); return
       case 'tut-skip': {
@@ -6645,13 +6645,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         return
       }
       case 'fr-nation': if (front !== null && front.kind === 'nations') front = { kind: 'detail', region: front.region, id: d['id']! }; $('.mapwrap').scrollTop = 0; paint(); return
-      case 'fr-start': if (front !== null && front.kind === 'detail') startWithBring(d['id']!, front.region, Math.min(tierPick[front.region] ?? 1, tierOpen(front.region))); return
+      case 'fr-start': if (front !== null && front.kind === 'detail') startWithBring(d['id']!, front.region, front.region === 'tutorial' ? 0 : Math.min(tierPick[front.region] ?? 1, tierOpen(front.region))); return
       case 'bring-go': { const b = bringAsk; bringAsk = null; root.querySelector('.bringov')?.remove(); if (b !== null) host.onNewGame(b.nation, b.region, b.tier); return }
       case 'bring-none': { const b = bringAsk; bringAsk = null; root.querySelector('.bringov')?.remove(); clearBring(); if (b !== null) host.onNewGame(b.nation, b.region, b.tier); return }
       case 'bring-x': bringAsk = null; root.querySelector('.bringov')?.remove(); return
       case 'fr-again': if (realm !== null) { const rg = realm.region ?? 'byeonhan-mini'; host.onNewGame(realm.player, rg, Math.min(realm.tier ?? 1, tierOpen(rg))) } return
       case 'tier-pick': if (front !== null && front.kind === 'detail') tierPick[front.region] = Number(d['v']); paint(); return
-      case 'chap-tier': chapTier = Number(d['v']); paint(); return
       case 'goal-fold': try { localStorage.setItem(GOAL_FOLD_KEY, goalFolded() ? '0' : '1') } catch { /* 저장 못 하는 곳 */ } paint(); return
       case 'fr-look': looking = true; paint(); return
       case 'bring': toggleBring(d['id']!, Number(d['max'] ?? 0)); if (bringAsk !== null) bringPopup(); else paint(); return
