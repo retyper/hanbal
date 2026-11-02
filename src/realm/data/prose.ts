@@ -618,7 +618,7 @@ export function reportText(before: Realm, after: Realm, line: ReportLine, viewer
             if (line.ok) return `${target} 옥에서 ${josa(who, '을', '를')} 구해 냈다. 우리 땅으로 돌아온다.${fateLine}${whoKnows}`
             return `구출이 틀어졌다. ${josa(who, '은', '는')} 아직 ${target}에 갇혀 있다.${line.caught ? fateLine + whoKnows : ` ${josa(agent, '은', '는')} 어둠 속으로 물러났다.`}`
           }
-          if (line.ok) return `자객의 화살이 ${josa(who, '을', '를')} 꿰뚫었다. ${line.result === 'kill' ? `${josa(who, '이', '가')} 죽었다.` : `${josa(who, '은', '는')} ${spanLabel(after, P.realm.plotWoundSeasons)} 동안 일어나지 못한다.`}${fateLine}${whoKnows}`
+          if (line.ok) return `자객의 화살이 ${josa(who, '을', '를')} 꿰뚫었다. ${line.result === 'kill' ? `${josa(who, '이', '가')} 죽었다.` : `${josa(who, '은', '는')} ${turnsLabel(after, monthly(after) ? P.realm.plotWoundMonths : 1)} 동안 일어나지 못한다.`}${fateLine}${whoKnows}`
           return `암살이 틀어졌다.${line.caught ? fateLine + whoKnows : ` ${josa(agent, '은', '는')} 어둠 속으로 물러났다.`}`
         }
         const knew = exposedOf(line)

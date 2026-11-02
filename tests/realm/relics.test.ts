@@ -406,7 +406,7 @@ describe('유물 — 뒤에 건 아홉 (곧 쓰인다던 것)', () => {
     assert.deepEqual(play(true).res, yes.res)
   })
 
-  it('오리모양 토기 — 잡히거나 쓰러질 장수가 판마다 한 번 다친 몸으로 빠져나온다', () => {
+  it('오리모양 토기 — 잡히거나 쓰러질 장수가 판마다 한 번 빠져나온다 (우리 장수는 싸움으로 눕지 않는다 · 형 11-03)', () => {
     const fake = (taken: FightResult['taken'], fell: FightResult['fell']): FightResult =>
       ({ taken, fell, broke: null, chiefA: null, chiefD: null }) as unknown as FightResult
     const fates = (r: Realm, res: FightResult, lines: ReportLine[]) =>
@@ -423,16 +423,16 @@ describe('유물 — 뒤에 건 아홉 (곧 쓰인다던 것)', () => {
     const h = r.heroes['chief']!
     assert.equal(h.status, 'free')
     assert.equal(r.armies['a-us']!.hero, 'chief', '군대는 그대로 이끈다')
-    assert.ok((h.woundedUntil ?? -1) >= r.season + 1, '다쳤다')
+    assert.ok((h.woundedUntil ?? -1) < r.season, '우리 장수는 싸움으로 눕지 않는다')
     assert.deepEqual(h.relicSpent, { escape: R.relicDuckSaves })
     const save = lines.find((l) => l.kind === 'relicSave')!
     assert.deepEqual(save, { kind: 'relicSave', faction: 'us', hero: 'chief', relic: 'duck' })
     assert.ok(reportText(r, r, save, 'us')!.includes('오리모양 토기'))
     assert.equal(reportText(r, r, save, 'guya'), null)
-    // 다 썼다 — 그래도 우리 장수는 겨루기에서 져도 죽지 않고 다쳐 눕는다 (형 11-03)
+    // 다 썼다 — 그래도 우리 장수는 겨루기에서 져도 죽지 않고, 눕지도 않는다 (형 11-03: 장수가 쉬는 건 자객에게 당했을 때뿐)
     assert.deepEqual(fates(r, fake([], [{ side: 'a', hero: 'chief', kill: true }]), []).fallen, [])
     assert.equal(r.heroes['chief']!.status, 'free')
-    assert.ok((r.heroes['chief']!.woundedUntil ?? -1) >= r.season + 1, '다쳐 눕는다')
+    assert.ok((r.heroes['chief']!.woundedUntil ?? -1) < r.season, '눕지 않는다')
     // 남의 장수는 쓰러지면 죽는다
     r.heroes['chief']!.faction = 'guya'
     fates(r, fake([], [{ side: 'a', hero: 'chief', kill: true }]), [])

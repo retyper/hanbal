@@ -22,7 +22,7 @@
 import { roll } from '../core/rng.ts'
 import { addVow } from './drill.ts'
 import { P } from '../tune/params.ts'
-import { ageSeasons, isSeasonEnd, perSeason, seasons, type ClockKind } from './calendar.ts'
+import { ageSeasons, isSeasonEnd, monthly, perSeason, seasons, type ClockKind } from './calendar.ts'
 import { addFavor, noteDeed, relationOf, worsen } from './diplomacy.ts'
 import { knows } from './discovery.ts'
 import { stockOf } from './economy.ts'
@@ -485,7 +485,7 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
           result = 'kill'
           mystery = 'death'
         } else {
-          v.woundedUntil = r.season + seasons(r, R.plotWoundSeasons) - 1
+          v.woundedUntil = r.season + (monthly(r) ? R.plotWoundMonths : 1) - 1
           result = 'wound'
           mystery = 'wound'
         }

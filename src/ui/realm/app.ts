@@ -5388,7 +5388,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           case 'burn': title = `${fn}의 곳간이 불탄다`; sub = '쌓아 둔 곡식이 잿더미가 됐다'; sfx = 'realm/sfx/cmd_fire_c1.ogg'; break
           case 'spy': title = `${nn}에 첩자를 심었다`; sub = `${spanLabel(r, P.realm.plotSpySeasons)} 동안 그곳 군세가 훤히 보인다`; sfx = snd('tap_move'); break
           case 'rescue': title = `${josa(hn, '을', '를')} 구해 냈다`; sub = '옥을 깨고 우리 도읍으로 돌아왔다'; sfx = snd('horn_victory'); break
-          default: title = l.result === 'kill' ? `${josa(hn, '이', '가')} 쓰러졌다` : `${josa(hn, '이', '가')} 화살을 맞았다`; sub = l.result === 'kill' ? `${fn}의 장수 하나가 사라졌다` : `${spanLabel(r, P.realm.plotWoundSeasons)} 동안 군대를 이끌지 못한다`; sfx = 'realm/sfx/battle_final_c1.ogg'
+          default: title = l.result === 'kill' ? `${josa(hn, '이', '가')} 쓰러졌다` : `${josa(hn, '이', '가')} 화살을 맞았다`; sub = l.result === 'kill' ? `${fn}의 장수 하나가 사라졌다` : `${turnsLabel(r, monthly(r) ? P.realm.plotWoundMonths : 1)} 동안 군대를 이끌지 못한다`; sfx = 'realm/sfx/battle_final_c1.ogg'
         }
       } else {
         title = `${PLOT_NAME[l.op]}: 어긋났다`
