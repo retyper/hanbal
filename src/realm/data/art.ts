@@ -222,8 +222,14 @@ function clanFace(id: string, traits?: readonly string[]): string | undefined {
  * `emblem` 은 옛 깃발 그림(icon/emblem-*) — 화면에는 이 깃발을 쓴다.
  */
 export function flagIcon(f: string | null | undefined): string | undefined {
-  return f != null && FACTION_ART[f] !== undefined ? `nflag-${f}` : undefined
+  if (f == null || FACTION_ART[f] === undefined) return undefined
+  return NFLAG_SAME[f] !== undefined ? `nflag-${NFLAG_SAME[f]}` : NFLAG_TODO.has(f) ? FACTION_ART[f]!.emblem : `nflag-${f}`
 }
+/** 같은 나라라 깃발을 나눠 쓰는 것 — 가락 = 금관가야(구야) · 문양·빛이 같다 */
+const NFLAG_SAME: Readonly<Record<string, string>> = { garak: 'guya' }
+/** 나라 깃발을 아직 안 구운 나라 — 그동안은 옛 문양 그림(emblem)으로 (형 11-02: 구지봉의 노래 마을마다 깨진 그림)
+ *  구우면 여기서 빼면 된다 · tests/realm/nflag-art.test.ts 가 「깃발 그림이 없는데 여기 없는 나라」를 잡는다 */
+export const NFLAG_TODO: ReadonlySet<string> = new Set(['gj-ado', 'gj-yeodo', 'gj-pido', 'gj-odo', 'gj-yusu', 'gj-yucheon', 'gj-sincheon', 'gj-ocheon', 'gj-singwi', 'tahae'])
 
 export const FACTION_ART: Readonly<Record<string, { emblem: string; color: string; color2: string }>> = {
   us: { emblem: 'emblem-shell', color: '#9fd18b', color2: '#6a2a7a' },
