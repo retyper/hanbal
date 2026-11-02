@@ -2881,7 +2881,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const say = askSay(a.kind, f?.mind, lead !== undefined ? voiceKind(lead, true) : 'm-elder', lead !== undefined ? chiefCastOf(lead) : 'a')
     if (!bigSounded.has(`aud:${a.id}`)) {
       bigSounded.add(`aud:${a.id}`)
-      window.setTimeout(() => ding(snd(threat ? 'war_drum' : 'envoy'), 0.5), 200)
+      window.setTimeout(() => ding(snd(threat ? 'bad_small' : 'envoy'), 0.5), 200)
       if (lead !== undefined) window.setTimeout(() => { if (document.querySelector('.ap .aud') !== null && voiceGate(performance.now())) ding(say.voice, P.realm.voiceVol) }, P.realm.chiefVoiceMs)
     }
     const face = bustHd(lead, 'audlord') || bust(lead, 'audlord')
@@ -5294,7 +5294,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         ally: [`${josa(fac.name, '과', '와')} 동맹을 맺었다`, '같은 적을 함께 친다', 'event-alliance-oath', snd('horn_victory')],
         vassal: [`${josa(fac.name, '이', '가')} 우리를 섬긴다`, '해마다 바칠 것을 바친다', 'event-tribute-bow', snd('coins')],
         gift: [`${josa(fac.name, '이', '가')} 선물을 반겼다`, '사이가 한 뼘 가까워졌다', 'event-court-hall', snd('coins')],
-        refused: [`${josa(fac.name, '이', '가')} 우리 청을 물리쳤다`, '사신이 빈손으로 돌아왔다', 'event-court-hall', snd('war_drum')],
+        refused: [`${josa(fac.name, '이', '가')} 우리 청을 물리쳤다`, '사신이 빈손으로 돌아왔다', 'event-court-hall', snd('bad_small')],
       }
       const [title, sub, bg, sfx] = T[k]
       const say = pactSay(k, fac.mind, lord !== undefined ? voiceKind(lord, true) : 'm-elder', lord !== undefined ? chiefCastOf(lord) : 'a')
@@ -5342,7 +5342,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const stage = `<div class="pact meetv${rel === 'war' ? ' bad' : ''}"><img class="pactbg" src="${ART}event/${bg}.jpg" alt="">${bustHd(lord, 'pl b')}`
         + `<div class="pflags">${emblem(l.nation, 'fem')}</div>`
         + `<div class="meetc">${cap !== undefined ? `<span>${icon('settle-capital', 'mcap')}${esc(cap)}</span>` : ''}<span class="rel ${rel}">${REL_NAME[rel]}</span></div></div>`
-      out.push({ key: `${r.season}:meet:${l.nation}`, art: bg, good: rel !== 'war', tone: rel === 'war' ? 'bad' : 'plain', flags: '', title: fac.name, sub: MEET_HOW[l.how], small: lord?.name ?? '', sfx: snd(rel === 'war' ? 'war_drum' : 'tap_bell'), stage })
+      out.push({ key: `${r.season}:meet:${l.nation}`, art: bg, good: rel !== 'war', tone: rel === 'war' ? 'bad' : 'plain', flags: '', title: fac.name, sub: MEET_HOW[l.how], small: lord?.name ?? '', sfx: snd(rel === 'war' ? 'bad_small' : 'tap_bell'), stage })
     }
     return out
   }
@@ -5358,7 +5358,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       title: x.won ? `${josa(n.name, '을', '를')} 차지했다` : `${josa(n.name, '을', '를')} 빼앗겼다`,
       sub: x.won ? (who !== '' ? `${who}의 ${josa(kind, '이었다', '였다')}` : '') : (who !== '' ? `${josa(who, '이', '가')} 쥐었다` : '우리 손을 떠났다'),
       small: `${kind} · 백성 ${Math.floor(n.hh).toLocaleString('ko-KR')}가구`,
-      sfx: x.won ? snd('horn_victory') : snd('defeat'),
+      sfx: x.won ? snd('horn_victory') : snd('bad_big'),
     }
   }
 
@@ -5389,7 +5389,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       let title: string, sub: string, sfx: string
       if (l.ok) {
         switch (l.op) {
-          case 'rumor': title = `${fn}에 흉흉한 소문이 돈다`; sub = '군사들이 수군대며 기운이 꺾였다'; sfx = snd('war_drum'); break
+          case 'rumor': title = `${fn}에 흉흉한 소문이 돈다`; sub = '군사들이 수군대며 기운이 꺾였다'; sfx = snd('bad_small'); break
           case 'sow': title = `${josa(fn, '과', '와')} ${josa(on, '이', '가')} 등을 돌렸다`; sub = '두 나라 사이가 틀어졌다. 싸움이 붙을 수도 있다'; sfx = snd('tap_brush'); break
           case 'bribe': title = `${nn} 장정들을 매수했다`; sub = `${spanLabel(r, P.realm.plotBribeSeasons)} 동안 싸우러 나오지 않는다`; sfx = snd('tap_coin'); break
           case 'burn': title = `${fn}의 곳간이 불탄다`; sub = '쌓아 둔 곡식이 잿더미가 됐다'; sfx = 'realm/sfx/cmd_fire_c1.ogg'; break
@@ -5400,7 +5400,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       } else {
         title = `${PLOT_NAME[l.op]}: 어긋났다`
         sub = l.op === 'assassin' ? `${josa(hn, '은', '는')} 살아남았다` : l.op === 'rescue' ? `${josa(hn, '은', '는')} 아직 ${fn}에 갇혀 있다` : l.op === 'sow' ? '두 나라는 그대로다' : '먹히지 않았다'
-        sfx = snd('defeat')
+        sfx = snd('bad_big')
       }
       // 그 뒤 일 — 들켰나 · 누가 보냈는지 드러났나 · 자객은
       const after: string[] = []
@@ -5843,15 +5843,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const hire = el.classList.contains('hire') && !capt
       if (document.visibilityState === 'visible') {
         if (capt) {
-          ding(snd(el.classList.contains('lost') ? 'defeat' : 'capture'), 0.5)
+          ding(snd(el.classList.contains('lost') ? 'bad_big' : 'capture'), 0.5)
           // 쇠창살이 닫히는 그 때 — 쇠판 소리와 떨림
           window.setTimeout(() => { if (el.isConnected) { ding(snd('cmd_hold'), 0.75, 0.9); buzz([50, 30, 80]) } }, P.realm.captSlamMs)
         }
         else if (hire) { for (const t of P.realm.hireCutMs) window.setTimeout(() => ding(snd('cmd_duel'), 0.32), t); window.setTimeout(() => ding(snd('hire_go'), 0.55), P.realm.hirePopMs) }
         else if (el.classList.contains('custom')) {
           // 풍습이 처음 걸렸다 — 북이 울리고, 도장이 내려찍히는 때 종과 떨림
-          ding(snd('war_drum'), 0.6)
-          window.setTimeout(() => { if (el.isConnected) { ding(snd('war_bell'), 0.45); buzz([30, 40, 70]) } }, P.realm.customStampMs)
+          ding(snd('tap_drum'), 0.6) // 「후!」 기합(war_drum) · 쨍한 징(war_bell)은 걷음 (형 11-03)
+          window.setTimeout(() => { if (el.isConnected) { ding(snd('tap_bell'), 0.55); buzz([30, 40, 70]) } }, P.realm.customStampMs)
         }
         // 혼례는 배경 음악으로 — 꼭두각시 01~04 한 곡, 닫으면 지도 음악으로 잦아들며 돌아간다 (형 10-29)
         else if (el.classList.contains('wed')) music.wedding()
@@ -6149,7 +6149,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const endFx = box.querySelector<HTMLElement>('.front-end .winfx')
       if (endFx !== null && !fastNext) {
         const lose = endFx.classList.contains('lose')
-        window.setTimeout(() => ding(snd(lose ? 'defeat' : 'horn_victory'), lose ? 0.7 : 0.9), Number.parseFloat(endFx.style.getPropertyValue('--wd')) * 1000)
+        window.setTimeout(() => ding(snd(lose ? 'bad_big' : 'horn_victory'), lose ? 0.7 : 0.9), Number.parseFloat(endFx.style.getPropertyValue('--wd')) * 1000)
       }
       box.classList.toggle('fast', fastNext)
       // 새 계절의 보고는 계절 띠가 걷힌 뒤에 (형: "계절먼저 넘어가게 보이고 그다음에 천천히 다음꺼 띄워줘라")
@@ -6724,7 +6724,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         row.classList.add('shaking')
         ;(row as HTMLElement).style.setProperty('--ms', `${ms}ms`)
         t.classList.add('go')
-        for (const at of [0, 0.38, 0.7]) window.setTimeout(() => { if (seen()) ding(snd(at < 0.6 ? 'tap_drum' : 'war_drum'), 0.55) }, at * ms)
+        for (const at of [0, 0.38, 0.7]) window.setTimeout(() => { if (seen()) ding(snd('tap_drum'), at < 0.6 ? 0.5 : 0.65) }, at * ms)
         window.setTimeout(burst, ms)
         return
       }

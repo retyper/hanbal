@@ -262,3 +262,9 @@ tap_rite_g10.mp3  공유마당 · 「SE_05_09_신선놀음 힐링 효과음」 �
 woo_break_g1.mp3  공유마당 · 「LSMSE0602_마법과 벨 소리」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312724 · 잘라 냄
 woo_break_g2.mp3  공유마당 · 「절마당 풍경1」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13254527 · 잘라 냄
 woo_break_g3.mp3  공유마당 · 「국악 효과음 #277」 · 공유마당 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13380110 · 잘라 냄
+bad_small_g1.mp3  공유마당 · 「북소리1번」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253630 · 한 번만 잘라 냄
+bad_small_g2.mp3  공유마당 · 「북소리B」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253632 · 한 번만 잘라 냄
+bad_small_g3.mp3  공유마당 · 「북소리1번」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253630 · 한 번만 잘라 낮게(0.8배)
+bad_big_g1.mp3  공유마당 · 「북소리B」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253632 두 번 + 「384.애절한 시나위대금 효과음 004」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290425 · 겹침
+bad_big_g2.mp3  공유마당 · 「북소리1번」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253630 두 번 + 「399.애절한 시나위대금 효과음 019」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290440 · 겹침
+bad_big_g3.mp3  공유마당 · 「북소리1번」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253630 두 번 + 「SE_09_01_아쉬운 탈락 국악 효과음」 · 공유마당 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13355433 · 겹침
