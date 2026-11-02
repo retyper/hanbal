@@ -476,7 +476,8 @@ export function resolvePlots(r: Realm, orders: readonly Order[], lines: ReportLi
       const v = r.heroes[o.hero!]!
       if (ok && o.op === 'assassin') {
         // 먹혔다 — 낮은 확률로 죽고, 아니면 다쳐서 몇 계절 군대를 못 이끈다 (R2 에 활 저격판으로 이어진다)
-        if (hand !== undefined ? hand.result === 'dead' : roll(r.seed, r.season, `${key}:kill`) < R.plotAssassinKill) {
+        // 우리 장수는 자객에게 죽지 않는다 — 다쳐 눕는다 (형 11-03: "암살당해도 비활되지 죽진 않게")
+        if (v.faction !== r.player && (hand !== undefined ? hand.result === 'dead' : roll(r.seed, r.season, `${key}:kill`) < R.plotAssassinKill)) {
           v.status = 'dead'
           v.at = null
           v.post = null

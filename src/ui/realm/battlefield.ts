@@ -23,7 +23,7 @@ import type { GuardWhy } from '../../realm/council.ts'
 import { P } from '../../tune/params.ts'
 import { snd } from './sound.ts'
 import { artVoicePath, autoVoicePath, voiceGate, voicePath } from './voice.ts'
-import { WIN_BUZZ, winFxHtml } from './winfx.ts'
+import { WIN_BUZZ, warmWinLogos, winFxHtml } from './winfx.ts'
 import { morph, morphInto } from './morph.ts'
 import { holdBox } from './holdbox.ts'
 import { TIER_MEN, sideIdx, tierCounts, tierPrec, tierStanding, type Tier } from './troops.ts'
@@ -1777,7 +1777,8 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     if (lh !== undefined) {
       const ours = (lh.side === 'a') === weAtk
       const nm = (id: string): string => prev.heroes[id]?.name ?? after.heroes[id]?.name ?? '?'
-      const what = lh.how === 'taken' ? '사로잡혔다' : '쓰러졌다'
+      // 우리 장수는 죽지 않는다 (season.battleFates) — 겨루기에서 지면 다쳐 물러난다
+      const what = lh.how === 'taken' ? '사로잡혔다' : ours ? '다쳐 물러났다' : '쓰러졌다'
       const next = lh.chief !== undefined ? `: ${josa(nm(lh.chief), '이', '가')} 지휘를 넘겨받는다` : ''
       h += `<div class="wintel"><div class="wi ${ours ? 'warn' : 'good'}"><b>${esc(`${ours ? '우리' : '적의'} ${lh.chief !== undefined ? '총대장' : '부장'} ${josa(nm(lh.hero), '이', '가')} ${what}`)}</b><p>${esc(`싸움은 이어진다${next}`)}</p></div></div>`
     }
@@ -3463,6 +3464,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const more = l.pending === undefined && shown < (l.rounds ?? []).length
     ov.classList.toggle('slow', anim)
     ov.classList.remove('fast')
+    warmWinLogos(`${host.art}ui/win-logo.png`) // 끝에 쾅 박힐 로고를 미리 풀어 둔다 (한 번만)
     closePop()
     hideTip()
     animating = false // 앞 합의 「연출 중」이 남지 않게 — 이 합이 풀리면 아래에서 다시 건다

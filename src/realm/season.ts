@@ -1094,6 +1094,8 @@ export function battleFates(
   // 사로잡힌 장수 — 싸움이 이어졌어도 (장수가 여럿이었다)
   // 플레이어의 군주(= 플레이어)는 싸움에서 사로잡히거나 쓰러지지 않는다 — 다친 몸으로 빠져나온다 (형 10-29)
   const self = (h: Hero): boolean => h.faction === r.player && isRuler(r, h.id)
+  // 우리 장수는 죽지 않는다 — 쓰러질 자리에서 다쳐 눕는다 (형 11-03: "암살당해도 비활되지 죽진 않게")
+  const down = (h: Hero): void => { h.woundedUntil = Math.max(h.woundedUntil ?? -1, r.season + seasons(r, R.playerDownSeasons) - 1) }
   for (const t of res.taken) {
     const h = r.heroes[t.hero]
     if (h === undefined || h.status !== 'free') continue
@@ -1108,7 +1110,8 @@ export function battleFates(
   for (const f of res.fell) {
     const h = r.heroes[f.hero]
     if (h === undefined || h.status !== 'free') continue
-    if (f.kill && !self(h) && !slip(h)) {
+    if (f.kill && h.faction === r.player) down(h)
+    else if (f.kill && !slip(h)) {
       h.status = 'dead'
       fallen.push(h.id)
       out(h.id)
@@ -1127,7 +1130,9 @@ export function battleFates(
         for (const x of armies) if (x.hero === h.id) x.morale = Math.max(R.moraleFloor, x.morale - R.traitCowardMorale)
       } else {
         const p = R.tacDeathRout * Math.min(1.5, Math.max(0.3, 1 - escapeOf(h)))
-        if (roll(r.seed, r.season, `${key}:fall`) < p && !slip(h)) {
+        const falls = roll(r.seed, r.season, `${key}:fall`) < p
+        if (falls && h.faction === r.player) down(h)
+        else if (falls && !slip(h)) {
           h.status = 'dead'
           fallen.push(h.id)
           out(h.id)

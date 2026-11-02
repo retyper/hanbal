@@ -609,7 +609,8 @@ export function sweepHeroes(r: Realm, lines: ReportLine[]): void {
     }
     const wit = escapeOf(h) + R.heroFallPerRyak * (h.ryak - 5) + (hasTrait(h, 'coward') ? R.heroFallCoward : 0)
     const roll1 = roll(r.seed, r.season, `fall:${h.id}:${lost}`)
-    const pDie = hasTrait(h, 'coward') ? 0 : Math.max(0, R.heroFallDeath - escapeOf(h))
+    // 우리 장수는 죽지 않는다 (형 11-03) — 지키다 쓰러질 자리면 물러나거나 붙잡히는 갈래로 넘어간다
+    const pDie = hasTrait(h, 'coward') || h.faction === r.player ? 0 : Math.max(0, R.heroFallDeath - escapeOf(h))
     if (roll1 < pDie) {
       h.status = 'dead'
       h.at = null

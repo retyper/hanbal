@@ -26,6 +26,21 @@ const hash = (i: number, k: number): number => {
  *   패배 — 글자가 무겁게 내려앉고 화면 빛이 잿빛으로 식는다 · 재가 날린다
  *   대패 — 글자가 박히자마자 쩍 갈라지고, 붉고 어둡게 가라앉는다 · 재가 많이
  */
+/**
+ * 로고 그림을 미리 받아 풀어 둔다 — 대승 그림(1MB 가까움)은 드물게 나와 늘 처음 받는 중에 쾅이 시작돼 한 번 깜빡였다 (형 11-03: "대승 나올 때 잠깐 깜빡")
+ * 싸움 화면이 열릴 때 부른다. 한 주소에 한 번
+ */
+const warmed = new Map<string, HTMLImageElement>()
+export function warmWinLogos(logo: string): void {
+  for (const src of [logo, logo.replace('win-logo', 'great-win-logo')]) {
+    if (warmed.has(src)) continue
+    const img = new Image()
+    img.src = src
+    img.decode?.().catch(() => { /* 못 풀면 그냥 늦게 뜬다 */ })
+    warmed.set(src, img)
+  }
+}
+
 export function winFxHtml(word: string, sub: string, delay: number, lose = false, brief = false, big = false, logo = ''): string {
   let h = `<div class="winfx${lose ? ' lose' : ''}${big ? ' big' : ''}${brief ? ' brief' : ''}" style="--wd:${delay}s" aria-hidden="true"><i class="wf-flash"></i>`
   if (lose) {
@@ -105,9 +120,9 @@ export const WINFX_CSS = `
 .ap .winfx.lose .wf-word b { background: linear-gradient(#e8e2d6, #9a9080 60%, #5a5248); -webkit-background-clip: text; background-clip: text; filter: drop-shadow(0 3px 0 #111) drop-shadow(0 8px 20px #000); }
 .ap .winfx.lose .wf-word { animation: wfsink 1.4s ease-out var(--wd) both; }
 @keyframes wfsink { 0% { opacity: 0; transform: translateY(-30px); } 100% { opacity: 1; transform: none; } }
-/* 대승 — 글자가 박힐 때 화면이 쿵 */
-.ap .winfx.big { animation: wfquake .6s ease-out calc(var(--wd) + .3s) both; }
-/* 화면 가득 흔들 때는 먼저 6% 키운 채로 흔든다 — 그냥 밀면 가장자리가 안으로 들어와 뒤의 지도가 비친다 (형 10-26) */ @keyframes wfquake { 0%, 100% { transform: none; } 6%, 92% { transform: scale(1.06); } 18% { transform: scale(1.06) translate(-10px, 6px); } 32% { transform: scale(1.06) translate(9px, -7px); } 46% { transform: scale(1.06) translate(-6px, 4px); } 62% { transform: scale(1.06) translate(4px, -3px); } 80% { transform: scale(1.06) translate(-2px, 1px); } }
+/* 대승 — 글자가 박힐 때 쿵 흔들린다. 화면 가득한 칸 말고 로고만 흔든다 — 온 화면을 흔들면 불티·금박 백여 알이 한꺼번에 다시 그려져 깜빡였다 (형 11-03 · 폰 그래픽 한도) */
+.ap .winfx.big:not(.lose) .wf-word > :first-child { animation: wfquake .6s ease-out calc(var(--wd) + .3s) both; }
+@keyframes wfquake { 0%, 100% { transform: none; } 18% { transform: translate(-10px, 6px); } 32% { transform: translate(9px, -7px); } 46% { transform: translate(-6px, 4px); } 62% { transform: translate(4px, -3px); } 80% { transform: translate(-2px, 1px); } }
 .ap .winfx.big:not(.lose) .wf-word b { font-size: clamp(190px, 46vw, 440px); }
 /* 패배 — 밑의 화면 빛이 잿빛으로 식는다 */
 .ap .winfx.lose::after { content: ''; position: absolute; inset: -60px; z-index: -1; backdrop-filter: grayscale(.85) brightness(.75); -webkit-backdrop-filter: grayscale(.85) brightness(.75);
@@ -126,17 +141,15 @@ export const WINFX_CSS = `
 .ap .winfx.lose .wf-word.crack b { background: linear-gradient(#e8d6d0, #9a6a60 55%, #4a2420); -webkit-background-clip: text; background-clip: text; }
 @keyframes wfsplit1 { 0% { transform: none; } 12% { transform: translate(-3px, -2px); } 100% { transform: translate(-12px, -10px) rotate(-2.5deg); } }
 @keyframes wfsplit2 { 0% { transform: none; } 12% { transform: translate(3px, 2px); } 100% { transform: translate(10px, 14px) rotate(2deg); opacity: .85; } }
-@media (prefers-reduced-motion: reduce) { .ap .winfx.big, .ap .winfx .wf-word.crack b { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .ap .winfx.big .wf-word > :first-child, .ap .winfx .wf-word.crack b { animation: none !important; } }
 /* 싸움 하나 — 잠깐 크게 보이고 걷힌다 (밑의 결과 글을 읽게) */
 .ap .winfx.brief { animation: wfout .6s ease-in calc(var(--wd) + 2.3s) forwards; }
 @keyframes wfout { to { opacity: 0; visibility: hidden; } }
-.ap .winfx.big.brief { animation: wfquake .6s ease-out calc(var(--wd) + .3s) both, wfout .6s ease-in calc(var(--wd) + 2.6s) forwards; }
+.ap .winfx.big.brief { animation: wfout .6s ease-in calc(var(--wd) + 2.6s) forwards; }
 @media (prefers-reduced-motion: reduce) { .ap .winfx .wf-burst, .ap .winfx .wf-rain, .ap .winfx .wf-ring { display: none; } .ap .winfx .wf-word { animation-duration: .3s; } }
 /* 폰 — 화면 가득한 칸의 흔들기 · 화면 전체 backdrop-filter · 커졌다 줄어드는 글자의 drop-shadow 가 한꺼번에 돌면 깜빡인다
    (형 10-31: "핸드폰으로 할 때 승리나 패배하면 엄청 깜빡거림" · 폰 그래픽 한도) — 흔들기는 빼고, 흑백은 어두운 막으로, 그림자는 끈다 */
 @media (pointer: coarse) {
-  .ap .winfx.big { animation: none; }
-  .ap .winfx.big.brief { animation: wfout .6s ease-in calc(var(--wd) + 2.6s) forwards; }
   .ap .winfx.lose::after { backdrop-filter: none; -webkit-backdrop-filter: none; background: #0008; }
   .ap .winfx .wf-word .wf-logo, .ap .winfx .wf-word b, .ap .winfx.lose .wf-word b { filter: none; }
 }

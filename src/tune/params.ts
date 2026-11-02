@@ -2197,6 +2197,7 @@ export const SPEC = {
     plotBaseRescue: k(0.35, 0, 1, 0.01, '공작 바탕 — 구출'),
     plotRescueCapital: k(0.1, 0, 0.5, 0.01, '구출: 갇힌 곳이 도읍이면 감산 (옥이 깊다)'),
     plotWoundSeasons: k(2, 1, 8, 1, '다친 장수가 군대를 못 이끄는 계절'),
+    playerDownSeasons: k(2, 1, 8, 1, '우리 장수는 죽지 않는다: 죽을 자리(싸움·고을 잃음·자객)에서 대신 다쳐 눕는 계절 (형 11-03)'),
     plotRumorMorale: k(0.15, 0, 0.5, 0.01, '소문이 먹히면 그 나라 군대 사기가 이만큼 준다 (moraleFloor 까지)'),
     plotSowWar: k(0.35, 0, 1, 0.05, '이간: 중립인 두 나라가 전쟁이 될 확률 (화친·동맹은 한 칸 내려간다)'),
     plotBribeSeasons: k(2, 1, 8, 1, '매수가 먹히면 그 고을 장정이 안 서는 계절 수'),

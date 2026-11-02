@@ -429,7 +429,12 @@ describe('유물 — 뒤에 건 아홉 (곧 쓰인다던 것)', () => {
     assert.deepEqual(save, { kind: 'relicSave', faction: 'us', hero: 'chief', relic: 'duck' })
     assert.ok(reportText(r, r, save, 'us')!.includes('오리모양 토기'))
     assert.equal(reportText(r, r, save, 'guya'), null)
-    // 다 썼다 — 겨루기에서 쓰러지면 죽는다
+    // 다 썼다 — 그래도 우리 장수는 겨루기에서 져도 죽지 않고 다쳐 눕는다 (형 11-03)
+    assert.deepEqual(fates(r, fake([], [{ side: 'a', hero: 'chief', kill: true }]), []).fallen, [])
+    assert.equal(r.heroes['chief']!.status, 'free')
+    assert.ok((r.heroes['chief']!.woundedUntil ?? -1) >= r.season + 1, '다쳐 눕는다')
+    // 남의 장수는 쓰러지면 죽는다
+    r.heroes['chief']!.faction = 'guya'
     fates(r, fake([], [{ side: 'a', hero: 'chief', kill: true }]), [])
     assert.equal(r.heroes['chief']!.status, 'dead')
     // 겨루기에서 쓰러질 때도 처음이면 산다
