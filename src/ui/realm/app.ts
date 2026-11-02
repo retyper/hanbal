@@ -36,7 +36,7 @@ import { goalReach, goalRoute } from '../../realm/goal.ts'
 import { approachMoves, armyPower, jointWin, matchupHints, movesOf, type Move } from '../../realm/estimate.ts'
 import { kitLines } from '../../realm/kit.ts'
 import { alertRange, seenMix, visibleRange } from '../../realm/intel.ts'
-import { advance, concealOf, draftable, forceOf, newArmyId, otherEnd, planned, rationCost, rationExtra, resting, seasonOf, seenMarches } from '../../realm/season.ts'
+import { advance, concealOf, draftable, forceOf, newArmyId, otherEnd, planned, rationCost, rationExtra, seasonOf, seenMarches } from '../../realm/season.ts'
 import { ageSeasons, isSeasonEnd, isSeasonStart, monthly, seasonIdx, seasons, type ClockKind } from '../../realm/calendar.ts'
 import { draftScouts, parseScoutKeep, scoutCap, scoutTargets, watchedNodes } from '../../realm/scouts.ts'
 import { NIGHT_OPS, PLOT_OPS, exposeChance, assassinArrows, assassinBow, assassinGuard, bowUpCost, escapeChance, plotAgents, plotCap, plotChance, plotCost, plotTargets, rescueGuard } from '../../realm/plots.ts'
@@ -1614,7 +1614,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const d = Math.min(...ks.map((x) => Math.abs(x - k)))
       return `<span class="tn hard">${turnsLabel(r, d)} 어긋남</span>`
     }
-    const targets: MapTarget[] = a === undefined || a.march !== null || resting(r, a) ? [] : movesOf(r, me(), a).map((m) => ({
+    const targets: MapTarget[] = a === undefined || a.march !== null ? [] : movesOf(r, me(), a).map((m) => ({
       // 막힌 길도 갈 수는 있다 — 무엇을 잃는지 칩으로 미리 (형: "불가능하게 만들지 말고 패널티 · 사전에 안내")
       node: m.to, edge: m.edge.id, off: false, on: armySel.every((id) => pick[id]?.edge === m.edge.id),
       // 걸리는 계절은 늘 — 칠 곳에도 (형: "적을 치러갈때 그 마을까지 얼마나걸리는지 여전히 안보임")
@@ -1623,7 +1623,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         + `<span class="tn when">${turnsLabel(r, m.seasons)}</span>${pincerChip(m.to, m.seasons, m.hostile)}`,
     }))
     // 먼 곳 — 옆 고을이 아니어도 누르면 계절마다 한 걸음씩 간다 (우리·친한 나라·빈땅을 지나서) (형 10-25: "매번 옆 고을을 선택해 줘야 하는 게 귀찮어")
-    if (a !== undefined && a.march === null && !resting(r, a) && armySel.length === 1) {
+    if (a !== undefined && a.march === null && armySel.length === 1) {
       const near = new Set(targets.map((t) => t.node))
       for (const [to, x] of goalReach(r, me(), a.at)) {
         if (near.has(to) || x.hops < 2) continue
@@ -1636,7 +1636,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       }
     }
     // 머물기도 지도에서 — 제 고을을 누르면 떠나기를 거둔다 (형: "머물기는 지도에서 선택을 못하고")
-    if (a !== undefined && a.march === null) targets.push({ node: a.at, edge: '', off: false, on: armySel.every((id) => pick[id] === undefined), chip: resting(r, a) ? `<span class="tn stay rest">⏳ 추스름 · ${turnsLabel(r, a.rest! - r.season + 1)}</span>` : `<span class="tn stay">머문다</span>` })
+    if (a !== undefined && a.march === null) targets.push({ node: a.at, edge: '', off: false, on: armySel.every((id) => pick[id] === undefined), chip: `<span class="tn stay">머문다</span>` })
     if (partySel !== '' && armySel.length === 0) targets.push(...partyTargets(r, partySel))
     const fr = fresh
     if (!showReport) fresh = new Set() // 드러나는 것은 한 번만 — 계절 소식을 닫고 지도를 볼 때
@@ -1887,8 +1887,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<b>${esc(armyName(r, first))}</b><span>${esc(josa(r.nodes[first.march.to]?.name ?? '', '으로', '로'))} 가는 중 · ${esc(arriveWhen(r, first.march.left))}</span>${turnBackBtn(first)}`
     } else if (sel.length === 1) {
       const more = Object.values(r.armies).filter((x) => x.faction === me() && x.id !== first.id && x.at === first.at && x.march === null).length
-      // 싸운 뒤 추스르는 군대는 떠날 곳이 안 뜬다 — 까닭과 언제 풀리는지를 띠에 (형 11-01: "소서노 군대를 아무 데도 보낼 수가 없는 버그")
-      const why = resting(r, first) ? `⏳ 싸운 뒤 추스르는 중입니다 · ${esc(arriveWhen(r, first.rest! - r.season + 1, true))}에 다시 떠날 수 있습니다` : `군사를 보낼 곳을 선택한다${more > 0 ? ' · 옆 말도 누르면 함께' : ''}`
+      const why = `군사를 보낼 곳을 선택한다${more > 0 ? ' · 옆 말도 누르면 함께' : ''}`
       h += `<b>${esc(armyName(r, first))} · ${headcount(forceOf(r, first))}명 ${guideBtn('move')}</b><span>${why}</span>`
     } else {
       const men = sel.reduce((s, a) => s + headcount(forceOf(r, a)), 0)
@@ -2467,8 +2466,6 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         h += `</div></div>`
         continue
       }
-      // 싸운 뒤 추스르는 중 (달 시계 · battleRest) — 떠나지 못한다. 언제 다시 떠날 수 있는지
-      if (resting(r, a)) h += `<div class="mute">⏳ 싸운 뒤 추스르는 중 · ${turnsLabel(r, a.rest! - r.season + 1)} 뒤 다시 떠난다</div>`
       if (disbanding) {
         h += `<div class="mute">해산한다</div><div class="btns"><button class="btn ghost" data-act="undisband" data-army="${a.id}">해산 취소</button></div></div></div>`
         continue
@@ -2923,7 +2920,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   /** 그 고을에 가장 빨리 닿는 쉬는 우리 군대 — 옆 길이면 movesOf, 멀면 goalReach (고을 카드의 「군사 보내기」) */
   function senderFor(r: Realm, to: string): { army: string; seasons: number } | null {
     let best: { army: string; seasons: number } | null = null
-    for (const a of sorted(Object.values(r.armies)).filter((x) => x.faction === me() && x.march === null && x.at !== to && !resting(r, x))) {
+    for (const a of sorted(Object.values(r.armies)).filter((x) => x.faction === me() && x.march === null && x.at !== to)) {
       const near = movesOf(r, me(), a).find((m) => m.to === to && m.blocked === null)
       const k = near?.seasons ?? goalReach(r, me(), a.at).get(to)?.seasons
       if (k !== undefined && (best === null || k < best.seasons)) best = { army: a.id, seasons: k }
@@ -4764,7 +4761,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const s = senderFor(r, id)
         h += s !== null
           ? `<button class="btn pri wide nrbig" data-act="send-army" data-node="${id}" data-army="${s.army}">${icon('unit-spear')}${esc(r.heroes[r.armies[s.army]?.hero ?? '']?.name ?? '우리')} 군대 보내기 · ${turnsLabel(r, s.seasons)}</button><p class="nrwhy"><small>주인이 없어 군사가 닿으면 싸움 없이 우리 땅이 됩니다</small></p>`
-          : `<button class="btn wide nrbig" data-act="send-army" data-node="${id}"${noBtn('여기로 갈 수 있는 쉬는 군대가 없습니다. 징병하거나 싸운 군대가 추스르기를 기다리세요')}>${icon('unit-spear')}군사 이동 필요</button>`
+          : `<button class="btn wide nrbig" data-act="send-army" data-node="${id}"${noBtn('여기로 갈 수 있는 쉬는 군대가 없습니다. 징병하거나 가는 중인 군대가 닿기를 기다리세요')}>${icon('unit-spear')}군사 이동 필요</button>`
       }
       h += `<div class="nrbs">${more}</div>`
     }

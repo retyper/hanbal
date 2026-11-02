@@ -723,8 +723,6 @@ export interface Army {
   food?: number
   /** 이 고을에 닿은 계절 — 같은 계절에 적이 들이치면 원군으로 늦게 붙는다 (season.fight) */
   came?: number
-  /** 달 시계 — 싸운 군대가 추스르는 동안: 이 턴까지는 떠나지 못한다 (season.advance · P.realm.battleRest). 옛 판에는 없다 */
-  rest?: number
   /** 동맹에게 빌려준 군대 — `to` 나라의 `node` 고을로 가서 `until` 계절까지 머물며 지킨다 (diplomacy troops). 그동안 AI 가 마음대로 안 움직인다 */
   lent?: { readonly to: string; readonly node: string; readonly until: number; readonly arrived?: boolean }
   /** 먼 갈 곳 — 닿을 때까지 계절마다 한 걸음씩 저절로 간다 (goal.ts). 없으면 그냥 선다 */

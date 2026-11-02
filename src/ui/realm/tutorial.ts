@@ -12,7 +12,6 @@
  */
 import type { Order, Realm, Report } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
-import { resting } from '../../realm/season.ts'
 
 export interface TutCtx {
   /** 지금 판 (이번 계절 고른 것을 먼저 해 본 판) */
@@ -56,8 +55,8 @@ const fought = (c: TutCtx): boolean => haveFoe(c) || (c.report?.lines.some((l) =
 const shut = (c: TutCtx): boolean => (c.ov ?? null) === null
 /** 전략 회의 안에서 누를 곳 — 나중 것부터: 정리의 「출정」 · 결정 카드 · 장수가 아뢰는 중이면 「누르면 다음」 */
 const COUNCIL: readonly Press[] = ['.stov [data-act="sortie-go"]', '.stov [data-act="cn-pick"]', '.stov .cnstage .cnav small']
-/** 우리 군대가 떠날 수 있나 — 싸운 군대는 battleRest 달 동안 추스른다 (달 시계 · 14/14 에서 말만 가리키며 갇혔다 11-01) */
-const ready = (c: TutCtx): boolean => { const a = c.r.armies['a-us']; return a !== undefined && a.march === null && !resting(c.r, a) }
+/** 우리 군대가 떠날 수 있나 — 가는 중이 아니면 */
+const ready = (c: TutCtx): boolean => { const a = c.r.armies['a-us']; return a !== undefined && a.march === null }
 const persuading = (c: TutCtx): boolean => c.orders.some((o) => o.kind === 'persuade') || c.r.heroes[FOE_HERO]?.persuade !== undefined || c.r.heroes[FOE_HERO]?.faction === c.r.player
 
 export const TUT_STEPS: readonly TutStep[] = [
@@ -143,7 +142,7 @@ export const TUT_STEPS: readonly TutStep[] = [
     done: (c) => c.orders.some((o) => o.kind === 'plot'),
   },
   {
-    id: 'win', name: '도읍 차지', what: '적의 도읍을 쥐면 이깁니다', text: '마지막입니다. 군대를 미추홀 도읍으로 보내세요. 싸운 군대는 잠시 추스르니 그동안은 「다음 달」을 누르세요. 전략 회의에서 「출정」, 그다음 「다음 달」을 누르면 됩니다. 도읍을 쥐면 이 판을 이깁니다.',
+    id: 'win', name: '도읍 차지', what: '적의 도읍을 쥐면 이깁니다', text: '마지막입니다. 군대를 미추홀 도읍으로 보내세요. 전략 회의에서 「출정」, 그다음 「다음 달」을 누르면 됩니다. 도읍을 쥐면 이 판을 이깁니다.',
     press: [...COUNCIL, ['.next', marching], '.nd[data-node="tut-michuhol-cap"][data-act="go"]', ['.tok[data-army="a-us"]', ready], ['.next', () => true]],
     done: (c) => c.r.outcome?.kind === 'win',
   },

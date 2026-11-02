@@ -13,7 +13,7 @@ import { militiaMen } from './economy.ts'
 import { ambushTraitOf } from './heroes.ts'
 import { alertRange, seenMix, visibleRange } from './intel.ts'
 import {
-  approachConceal, approachOptions, blockedWhy, cliffChance, conceal, concealOf, forceOf, fortMul, marchCut, marchTurns, otherEnd, resting, seasonOf, seenMarches,
+  approachConceal, approachOptions, blockedWhy, cliffChance, conceal, concealOf, forceOf, fortMul, marchCut, marchTurns, otherEnd, seasonOf, seenMarches,
 } from './season.ts'
 import { concealBonus, passExtra, siegeFort } from './hooks.ts'
 import type { Approach, Army, EdgeKind, Realm, REdge } from './types.ts'
@@ -143,7 +143,6 @@ export function ambushWorth(m: Move): number | null {
 }
 
 export function movesOf(r: Realm, faction: string, a: Army): Move[] {
-  if (resting(r, a)) return [] // 싸운 뒤 추스르는 중 (달 시계 · battleRest) — 떠나지 못한다
   const R = P.realm
   const season = seasonOf(r)
   const known = r.intel[faction] ?? {}

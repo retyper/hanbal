@@ -153,7 +153,6 @@ describe('칠 채비 — 모였다가 다음 달에 친다', () => {
     assert.ok(shows(live) && strikes(live))
     // 거두는 까닭마다 — 지도·AI·봇의 경계가 같은 답을 낸다
     const cases: Array<[string, (n: Realm) => void]> = [
-      ['싸운 뒤 추스름', (n) => { n.armies['a-atk']!.rest = n.season }],
       ['연패로 쉬는 나라', (n) => { n.factions[ATK]!.beaten = { n: 3, until: n.season } }],
       ['고을 주인이 바뀜', (n) => { n.nodes[to]!.owner = ATK }],
       ['길 위에 있다', (n) => { const x = n.armies['a-atk']!; x.march = { from: x.at, to, edge: x.strike!.edge, left: 2, ambush: false } }],
@@ -175,7 +174,7 @@ describe('칠 채비 — 모였다가 다음 달에 친다', () => {
     }
     assert.ok(bot(live), '칠 채비면 봇이 경계를 올린다')
     const tired = structuredClone(live)
-    tired.armies['a-atk']!.rest = tired.season
+    tired.factions[ATK]!.beaten = { n: 3, until: tired.season }
     assert.equal(bot(tired), false, '거둘 채비면 안 올린다')
   })
   it('같은 판 같은 명령이면 같은 채비 (A1)', () => {

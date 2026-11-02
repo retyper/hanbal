@@ -24,7 +24,7 @@ import { hasCustom } from './data/customs.ts'
 import { ambushWorth, jointWin, movesOf, type Move } from './estimate.ts'
 import { hasTrait, idleHeroOrders, persuadeSeasons, wanderersFor } from './heroes.ts'
 import { limitHands } from './hands.ts'
-import { armiesAt, draftable, extendPlan, fortMul, marchTurns, neighbors, newArmyId, otherEnd, planned, resting, seasonOf, seenMarches } from './season.ts'
+import { armiesAt, draftable, extendPlan, fortMul, marchTurns, neighbors, newArmyId, otherEnd, planned, seasonOf, seenMarches } from './season.ts'
 import { memoFor, withMemo } from './memo.ts'
 import type { UnitKind } from './battle.ts'
 import { bowUpCost, plotAgents, plotCost, plotTargets } from './plots.ts'
@@ -190,7 +190,7 @@ function strikes(r: Realm, faction: string): { orders: Order[]; armies: Set<stri
  */
 export function strikeLive(r: Realm, a: Army): boolean {
   const s = a.strike
-  if (s === undefined || s.at !== r.season || a.march !== null || resting(r, a) || beatenResting(r, a.faction)) return false
+  if (s === undefined || s.at !== r.season || a.march !== null || beatenResting(r, a.faction)) return false
   const ed = r.edges[s.edge]
   if (ed === undefined || otherEnd(ed, a.at) !== s.node) return false
   if (r.nodes[s.node]?.owner !== r.player || spared(r, a.faction, s.node)) return false
