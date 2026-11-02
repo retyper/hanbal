@@ -758,6 +758,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   const deedsOpen = new Set<string>()
   /** 외교 판에서 펼친 나라 — 접으면 군주 얼굴 · 깃발 · 이름 · 군주 · 탈 · 사이만 (형 10-27: "나라마다 열고 닫을 수 있게") */
   const diploOpen = new Set<string>()
+  /** 고을 둘레 고리·고을 판에서 「외교」로 열면 그 나라 칸만 — 비면 모든 나라 (형 11-03: "그 나라 외교창만 떠야 하는 거 아님? 한참 밑으로 내려가야") */
+  let diploOnly = ''
   let diploMode: 'envoy' | 'plot' | 'scout' = 'envoy'
   /** 장수 판의 탭 — 우리 장수 · 옥에 가둔 적장 · 적장 (형 10-23: "한 페이지에 다 담지 말고 탭을 나눠야") */
   let heroTab: 'cmd' | 'mine' | 'jail' | 'foe' = 'cmd'
@@ -3088,15 +3090,17 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (diploMode === 'scout') return h + scoutSheet(r)
     h += handsHtml(r)
     if (diploMode === 'plot') return h + plotSheet(r)
-    h += asksHtml()
-    const out = Object.values(envoys)
+    const only = diploOnly !== '' && r.factions[diploOnly] !== undefined ? diploOnly : ''
+    if (only !== '') h += `<button class="btn ghost sm dall" data-act="diplo-all">‹ 모든 나라 보기</button>`
+    if (only === '') h += asksHtml()
+    const out = Object.values(envoys).filter((e) => only === '' || e.to === only)
     for (const e of out) h += sentBanner(r, e, true)
     // 맺으면 뭐가 되는지는 ? 안에 (GUIDE.envoy — 형 10-23: "탭마다 있는 설명 고봉밥들은 전부 다 물음표에")
     // 앞서가는 나라 — 모두 이기려 하니, 앞선 나라는 다른 나라들이 함께 막으려 한다 (stance.leaderOf)
     // 외교 추천 — 이번 계절 손볼 만한 이웃 (advice.ts · 형 10-31) · 누르면 그 나라 카드가 펼쳐진다
     const order = { chance: 0, strong: 1, met: 2 } as const
-    for (const t of diploTips(r, me()).sort((a, b) => order[a.kind] - order[b.kind]).slice(0, 2)) h += `<div class="banner${t.kind === 'chance' ? ' good' : t.kind === 'strong' ? ' bad' : ''} an" data-act="fopen" data-to="${t.to}">${emblem(t.to, 'fem')}<span class="txw">${tx(tipText(r, t))}</span></div>`
-    const L = leaderOf(r, me())
+    if (only === '') for (const t of diploTips(r, me()).sort((a, b) => order[a.kind] - order[b.kind]).slice(0, 2)) h += `<div class="banner${t.kind === 'chance' ? ' good' : t.kind === 'strong' ? ' bad' : ''} an" data-act="fopen" data-to="${t.to}">${emblem(t.to, 'fem')}<span class="txw">${tx(tipText(r, t))}</span></div>`
+    const L = only === '' ? leaderOf(r, me()) : null
     if (L === me()) h += `<div class="banner bad">우리가 앞서간다. 다른 나라들이 손을 잡고, 맺은 약조도 깨고 등을 돌릴 수 있다.</div>`
     else if (L !== null && met(r, me(), L)) h += `<div class="banner">앞서가는 나라: ${emblem(L, 'fem')}<b>${esc(r.factions[L]?.name ?? '')}</b> · 다른 나라들이 함께 막으려 한다. 손잡을 때다.</div>`
     // 지금 벌어진 전쟁 — 아는 나라끼리 (형: "누구랑 누가 전쟁나면 그걸 좀 잘 보여줬음")
@@ -3105,11 +3109,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (let i = 0; i < live.length; i++) for (let j = i + 1; j < live.length; j++) {
       if (relationOf(r, live[i]!.id, live[j]!.id).state === 'war') wars.push(`<div class="warbar">${emblem(live[i]!.id, 'fem')}<i>⚔</i>${emblem(live[j]!.id, 'fem')}<span>${tx(`${live[i]!.name} · ${live[j]!.name}`)}</span></div>`)
     }
-    if (wars.length > 0) h += `<h4>지금 싸우는 나라들</h4>${wars.join('')}`
+    if (wars.length > 0 && only === '') h += `<h4>지금 싸우는 나라들</h4>${wars.join('')}`
     // 땅이 하나도 없는 나라(무너진 나라)는 사신을 받을 곳이 없다 — 맨 아래에 이름만 (형: "지도에없는나라인데 상호작용까지 아직도 가능")
     const hasLand = (f: string): boolean => Object.values(r.nodes).some((n) => n.owner === f)
     const gone = sorted(Object.values(r.factions)).filter((x) => x.id !== me() && met(r, me(), x.id) && !hasLand(x.id))
-    for (const f of sorted(Object.values(r.factions)).filter((x) => x.id !== me() && met(r, me(), x.id) && hasLand(x.id))) {
+    for (const f of sorted(Object.values(r.factions)).filter((x) => x.id !== me() && met(r, me(), x.id) && hasLand(x.id) && (only === '' || x.id === only))) {
       const rel = relationOf(r, me(), f.id)
       const left = rel.until !== null ? ` ${turnsLabel(r, Math.max(0, rel.until - r.season))}` : ''
       const lead = r.heroes[f.ruler ?? rulerId(f.id)]
@@ -3148,7 +3152,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += askButtons(r, f.id, '')
       h += `</div>`
     }
-    if (gone.length > 0) h += `<h4>무너진 나라</h4><p class="mute">${gone.map((f) => `${emblem(f.id, 'fem')}${esc(f.name)}`).join(' · ')}</p>`
+    if (gone.length > 0 && only === '') h += `<h4>무너진 나라</h4><p class="mute">${gone.map((f) => `${emblem(f.id, 'fem')}${esc(f.name)}`).join(' · ')}</p>`
     return h
   }
 
@@ -6773,6 +6777,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
           if (fresh.some((k) => k.startsWith('w:'))) heroTab = 'mine'
           else if (fresh.some((k) => k.startsWith('c:'))) heroTab = 'jail'
         }
+        // 외교 탭은 늘 다 접힌 채로 연다 (형 11-03: "외교창 누르면 기본적으로 다 닫혀 있어야 · 나라들 다 열려 있어서 한참 스크롤")
+        if (d['tab'] === 'diplo') { diploOpen.clear(); diploOnly = '' }
         markSeen(d['tab']!); openSheet({ kind: d['tab'] as 'army' }); return
       }
       case 'help': openSheet({ kind: 'help' }); return
@@ -6975,7 +6981,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         root.querySelector<HTMLElement>(`.nd[data-act="go"][data-node="${to}"]`)?.click()
         return
       }
-      case 'nr-diplo': diploOpen.add(d['to']!); openSheet({ kind: 'diplo' }); return
+      case 'nr-diplo': {
+        // 그 나라 칸만 펼쳐서 — 다른 나라는 「모든 나라 보기」로
+        diploOnly = d['to']!; diploOpen.clear(); diploOpen.add(diploOnly); diploMode = 'envoy'
+        if (sheet?.kind === 'diplo') { ring = ''; $('.sheet').scrollTop = 0; paint() } else openSheet({ kind: 'diplo' })
+        return
+      }
+      case 'diplo-all': diploOnly = ''; break
       case 'foetok': {
         // 적 군대 말 — 전엔 눌러도 아무 일이 없었다 (docs/realm/ZAXIS-1031.md). 우리 군대를 골랐으면 그 고을로 보내고(치러 감), 아니면 그 고을을 연다
         const x = r?.armies[d['army'] ?? '']
@@ -7097,6 +7109,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       case 'compose-go': case 'nat-diplo': {
         // 고을 판에서 자세히 꾸며야 하는 사신 — 외교 판의 그 나라 칸을 열어 준다
         diploMode = 'envoy'
+        diploOnly = d['to']!; diploOpen.add(diploOnly)
         if (d['act'] === 'compose-go') compose = { ...NO_COMPOSE, give: noGoods(), take: noGoods(), to: d['to']!, ask: d['ask'] as Ask }
         sheet = { kind: 'diplo' }
         paint()
