@@ -49,9 +49,9 @@ const NODES: RNode[] = [
   node('jm-buyeo-camp', '동부여 진영', 'fort', ['palisade', 'pasture'], 'buyeo', 220),
   // 행인국 · 북옥저
   wild('jm-gaema', '개마 들머리', 110),
-  node('jm-haengin-cap', '행인 도읍', 'capital', ['high', 'pines'], 'haengin', 190),
+  node('jm-haengin-cap', '행인 도읍', 'capital', ['pines'], 'haengin', 140),
   node('jm-haengin-v', '태백 기슭 마을', 'village', ['pines'], 'haengin', 100),
-  node('jm-okjeo-cap', '북옥저 도읍', 'capital', ['pines'], 'bukokjeo', 210),
+  node('jm-okjeo-cap', '북옥저 도읍', 'capital', ['pines'], 'bukokjeo', 150),
   node('jm-okjeo-port', '어랑 포구', 'port', [], 'bukokjeo', 110),
 ]
 
@@ -125,8 +125,8 @@ const ARMIES: Army[] = [
   a('a-jm-biryu', 'biryuna', 'jm-songbi', 'jm-biryu-cap', { spear: 60, bow: 40 }, 'bronze'),
   // 대소의 추격대 — 처음부터 북쪽 진영에서 내려올 채비 (CAMPAIGN 규칙: 동부여의 추격)
   a('a-jm-buyeo', 'buyeo', 'jm-haedal', 'jm-buyeo-camp', { spear: 60, bow: 40, horse: 25 }, 'ironTip'),
-  a('a-jm-haengin', 'haengin', 'jm-haengin-1', 'jm-haengin-cap', { spear: 50, bow: 40 }, 'bronze'),
-  a('a-jm-okjeo', 'bukokjeo', 'jm-okjeo-1', 'jm-okjeo-cap', { spear: 50, bow: 40 }, 'bronze'),
+  a('a-jm-haengin', 'haengin', 'jm-haengin-1', 'jm-haengin-cap', { spear: 35, bow: 25 }, 'bronze'),
+  a('a-jm-okjeo', 'bukokjeo', 'jm-okjeo-1', 'jm-okjeo-cap', { spear: 35, bow: 25 }, 'bronze'),
 ]
 
 const byId = <T extends { id: string }>(xs: readonly T[]): Record<string, T> => Object.fromEntries(xs.map((x) => [x.id, structuredClone(x)]))
