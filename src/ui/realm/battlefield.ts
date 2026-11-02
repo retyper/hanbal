@@ -1559,7 +1559,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       const leftOf = (k: string, v: number, lv: number, gm: Readonly<Partial<Record<Grp, number>>> | undefined, share: number, here: boolean): number => {
         const base = here ? v : v - lv
         if (base <= 0) return 0
-        if (gm === undefined) return base * share
+        // 몫(share)은 원군까지 친 전체에서의 몫 — 원군이 아직 안 닿았으면 와 있는 사람 몫으로 바꿔 센다.
+        // 그대로 곱하면 첫 합도 붙기 전에 와 있는 병사가 원군 몫만큼 쓰러져 보였다 (형 11-02: "협공할 때 합 붙은 적도 없는데 아군이 미리 죽어 있다")
+        if (gm === undefined) return base * (here ? share : Math.min(1, share / Math.max(1e-9, here0(i))))
         const g = RG[RANK[k] ?? 0]!
         return (base * (gm[g] ?? 0)) / Math.max(1, here ? g0[g] : g0[g] - (lateG[g] ?? 0))
       }
