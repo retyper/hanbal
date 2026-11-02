@@ -18,7 +18,7 @@ export function batch(id: string, kind: 'calm' | 'shout'): { voice: string; styl
       ...(HIRE_LINE[id] !== undefined ? [['hire', HIRE_LINE[id]!] as [string, string]] : [])]
     : [['auto-1', v.auto[0]], ['auto-2', v.auto[1]], ['auto-3', v.auto[2]], ['art', v.art[1]]]
   const who = v.male === true ? v.style : `${FEM_LEAD} ${v.style} ${FEM_STYLE}`
-  const style = kind === 'calm' ? `${BASE_STYLE} ${who} ${GAP}` : `${BASE_STYLE} ${who} ${SHOUT_STYLE} ${GAP}`
+  const style = kind === 'calm' ? `${BASE_STYLE} ${who} ${GAP}` : `${BASE_STYLE} ${v.shoutStyle ?? who} ${SHOUT_STYLE} ${GAP}`
   return { voice: v.voice, style, text: rows.map((r) => r[1]).join('\n\n'), names: rows.map((r) => r[0]), lens: rows.map((r) => r[1].replace(/<[^>]+>/g, '').replace(/\s/g, '').length + (/<laugh>/.test(r[1]) ? 3 : 0)) } // 웃음 태그는 글자 셋쯤의 길이
 }
 
