@@ -86,7 +86,7 @@ async function play(e, btn) {
   const ev = [] // [ms, 파일, 크기, 이름]
   if (!solo) {
     for (let t = 0, gap = T.rollGap, k = 0; t < T.flash - T.rollMin; t += gap, gap = Math.max(T.rollMin, gap * T.rollAccel), k++)
-      ev.push([t, k % 2 === 0 ? 'tap_drum_g1.wav' : 'war_drum_c4.ogg', 0.25 + 0.5 * (t / T.flash), '북 두구두구'])
+      ev.push([t, 'tap_drum_g1.wav', 0.25 + 0.5 * (t / T.flash), '북 두구두구'])
     for (const i of [0, 1, 2]) ev.push([T.slot + i * T.slotGap, 'tap_bell_g1.wav', 0.55 + i * 0.15, `불꽃 칸 ${i + 1}`])
     ev.push([T.flash + 250, 'horn_victory_a.ogg', 0.75, '뿔나팔'])
   }

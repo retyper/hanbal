@@ -1351,9 +1351,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (lit.some((x) => !x)) el.classList.add('nogl')
     // 소리 — 두구두구(점점 빨라지는 북) · 불꽃 칸 셋 · 소용돌이에 그 기운의 소리 · 짐승이 솟을 때 함성 · 번쩍에 큰 타격 · 나팔 · 장수의 한마디
     const at = (ms: number, f: () => void): void => { timers.push(window.setTimeout(() => { if (el.isConnected && document.visibilityState === 'visible') f() }, ms)) }
-    for (let t = 0, gap = R.ascendRollGapMs, k = 0; t < R.ascendFlashMs - R.ascendRollMinMs; t += gap, gap = Math.max(R.ascendRollMinMs, gap * R.ascendRollAccel), k++) {
+    // 북만 — war_drum(c4)은 여럿의 「후!」 기합이라 번갈아 치면 빨라질수록 「후후후후」로 거슬렸다 (형 11-03)
+    for (let t = 0, gap = R.ascendRollGapMs; t < R.ascendFlashMs - R.ascendRollMinMs; t += gap, gap = Math.max(R.ascendRollMinMs, gap * R.ascendRollAccel)) {
       const v = 0.25 + 0.5 * (t / R.ascendFlashMs)
-      at(t, () => ding(snd(k % 2 === 0 ? 'tap_drum' : 'war_drum'), v))
+      at(t, () => ding(snd('tap_drum'), v))
     }
     // 각성 제 소리 (형 11-03: "각성은 사운드도 제대로 새로") — 처음부터 기운이 차올라 번쩍에 터지고 · 짐승은 제 울음으로 솟는다
     ding(snd('ax_rise'), 0.6)
