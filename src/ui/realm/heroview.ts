@@ -200,6 +200,9 @@ export const HERO_CSS = `
 .ap .cmdp button .face { width: 52px; height: 52px; } .ap .cmdp button b { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .ap .cmdp button small { display: flex; flex-direction: column; align-items: center; font-size: 11px; color: var(--mute); line-height: 1.25; }
 .ap .cmdp button small i { font-style: normal; }
+/* 이끌 장수 꼬리표 — 맡은 고을(이끌면 내려놓는다) · 멀리서 온다 (형 11-03) */
+.ap .ldgov { color: #ffd27a; font-weight: 700; } .ap .ldfar { color: #9cc3e8; }
+.ap .btn.lead small .ldgov, .ap .btn.lead small .ldfar { display: block; font-style: normal; font-size: 11px; }
 .ap .cmdp button.on { border-color: #e0bd78; box-shadow: 0 0 0 2px #e0bd78, 0 0 10px #e0bd7866; } .ap .cmdp button.on small { color: #ffe2a0; }
 .ap .cmdp button.busy { opacity: .5; filter: saturate(.35); cursor: default; } .ap .cmdp button.busy small { color: #f0d090; }
 .ap .cmdts { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; margin: 4px 0 8px; }

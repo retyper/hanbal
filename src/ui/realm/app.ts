@@ -1046,11 +1046,24 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
 
   /**
-   * 이 군대를 지금 이끌 수 있는 우리 장수 — 같은 고을에 혼자 있고 이번 계절 묶인 일이 없다(다침·길 위·원정·다른 일은 heroBusy).
+   * 이 군대를 지금 이끌 수 있는 우리 장수 — 군대를 이끌지 않고 이번 계절 묶인 일이 없다(다침·자리 비움·사신·원정·다른 일은 heroBusy).
+   * 같은 고을이 먼저, 우리 땅으로 이어진 다른 고을의 장수도 든다 — 그 계절은 길에서 와서 이끈다(heroes.ts leadArmy).
+   * 고을을 맡은 장수도 든다 — 이끌면 그 자리를 내려놓는다 (형 11-03: "도읍 맡고 있는 장수들은 선택 가능하되 표시 · 자리에 없거나 사신 보내지 않은 이상 쉽게 교체").
    * 군주도 든다(친정). 군대 판의 「이끌 장수」와 지도 띠의 장수 고르기가 같은 셈을 쓴다
    */
   function leadCands(r: Realm, a: Army): Hero[] {
-    return sorted(Object.values(r.heroes)).filter((x) => x.faction === me() && x.status === 'free' && x.at === a.at && !Object.values(r.armies).some((b) => b.hero === x.id) && heroBusy(r, x.id) === null && !handLocked(r, x.id))
+    const ours = r.nodes[a.at]?.owner === me()
+    const can = (x: Hero): boolean => x.faction === me() && x.status === 'free' && x.at !== null && !Object.values(r.armies).some((b) => b.hero === x.id) && heroBusy(r, x.id) === null && !handLocked(r, x.id)
+      && (x.at === a.at || (ours && migratePath(r, me(), x.at, a.at) !== null))
+    const all = sorted(Object.values(r.heroes)).filter(can)
+    return [...all.filter((x) => x.at === a.at), ...all.filter((x) => x.at !== a.at)]
+  }
+  /** 이끌 장수 고르기의 꼬리표 — 맡은 고을(이끌면 내려놓는다) · 멀리서 오면 어디서 */
+  function leadTags(r: Realm, a: Army, x: Hero): string {
+    const t: string[] = []
+    if (x.post !== null && !isRuler(r, x.id)) t.push(`<i class="ldgov">${esc(r.nodes[x.post]?.kind === 'capital' ? '도읍' : r.nodes[x.post]?.name ?? '')} 맡음</i>`)
+    if (x.at !== null && x.at !== a.at) t.push(`<i class="ldfar">${esc(r.nodes[x.at]?.name ?? '')}에서 온다</i>`)
+    return t.join('')
   }
 
   /**
@@ -2126,15 +2139,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const cur = a.hero !== null ? r.heroes[a.hero] : undefined
     const cands = leadCands(r, a)
     let h = `<div class="ldpk"><b>누가 이끄나</b>`
-    if (cur === undefined && cands.length === 0) return h + `<p class="mute">이 고을에 맡길 장수가 없다</p></div>`
+    if (cur === undefined && cands.length === 0) return h + `<p class="mute">맡길 장수가 없다</p></div>`
     h += `<div class="cmdp">`
     if (cur !== undefined) h += `<button class="on" data-act="ldpop" data-army="${a.id}">${bust(cur, 'face')}<b>${nameHtml(cur.name)}</b><small><i>이끄는 중</i>${st(cur)}</small></button>`
     for (const x of cands) {
       const ruler = isRuler(r, x.id)
-      h += `<button data-act="ldpick" data-army="${a.id}" data-id="${x.id}"${ruler ? ` data-tip="${RULER_LEAD_TIP}"` : ''}>${bust(x, 'face')}<b>${nameHtml(x.name)}</b><small>${ruler ? '<i>친히 이끈다</i>' : ''}${st(x)}</small></button>`
+      h += `<button data-act="ldpick" data-army="${a.id}" data-id="${x.id}"${ruler ? ` data-tip="${RULER_LEAD_TIP}"` : ''}>${bust(x, 'face')}<b>${nameHtml(x.name)}</b><small>${ruler ? '<i>친히 이끈다</i>' : ''}${leadTags(r, a, x)}${st(x)}</small></button>`
     }
     h += `</div>`
-    if (cands.length === 0) h += `<p class="mute">이 고을에 바꿀 장수가 없다</p>`
+    if (cands.length === 0) h += `<p class="mute">바꿀 장수가 없다</p>`
     if (cur !== undefined) h += `<button class="btn ghost sm" data-act="ldpick" data-army="${a.id}" data-id="">장수 없이</button>`
     return h + `</div>`
   }
@@ -2495,7 +2508,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
             // 군주도 친히 이끈다(친정) — 도읍을 비우면 다스림이 준다
             h += isRuler(r, y.id)
               ? `<button class="btn lead" data-act="lead" data-id="${y.id}" data-army="${a.id}" data-tip="${RULER_LEAD_TIP}">${bust(y, 'lf')}<span>${esc(y.name)}<small>친히 이끈다</small></span></button>`
-              : `<button class="btn lead" data-act="lead" data-id="${y.id}" data-army="${a.id}">${bust(y, 'lf')}<span>${esc(y.name)}<small>이끈다</small></span></button>`
+              : `<button class="btn lead" data-act="lead" data-id="${y.id}" data-army="${a.id}">${bust(y, 'lf')}<span>${esc(y.name)}<small>이끈다${leadTags(r, a, y)}</small></span></button>`
           }
           h += `</div>`
         }
