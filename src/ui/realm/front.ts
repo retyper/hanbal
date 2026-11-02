@@ -267,6 +267,7 @@ const ERA: Readonly<Record<RegionId, string>> = {
   tutorial: '한강 아래. 졸본에서 내려온 형제 가운데 형 비류는 바닷가 미추홀에, 아우 온조는 하남 위례성에 자리 잡았다. 형제의 두 나라에서 군장의 일을 하나씩 배운다.',
   mahan: '한강에서 차령까지. 위례에 선 백제는 아직 작고, 남쪽 목지국의 진왕은 쉰 남짓 마한 나라를 거느린다. 그러나 마한의 위아래 마음은 갈라졌다.',
   seorabeol: '경주 골짜기. 진한 땅 여섯 마을의 촌장들이 알천 언덕에 모여 임금을 찾는다. 나정 곁 숲에서 흰 말이 울었다.',
+  gujibong: '김해 골. 낙동강 어귀에 아홉 간이 저마다 백성을 거느릴 뿐, 아직 나라 이름도 임금도 없다. 구지봉에서 노래가 울렸다.',
   jumong: '혼강 골짜기. 동부여를 빠져나온 주몽이 엄리대수를 건너 졸본에 나라를 세웠다. 이웃 비류국의 송양은 제가 먼저 왕이었다고 한다.',
   'byeonhan-mini': '변한의 남쪽 바닷가. 쇠를 캐고 배를 띄우는 여섯 나라가 서로를 엿본다.',
   yeongnam: '낙동강 물길을 따라 스물한 나라. 훗날 신라가 될 사로도, 가야가 될 가락과 대가야도 아직은 이웃 읍락과 키를 잰다.',
@@ -286,6 +287,7 @@ const OLDMAP_NAME: Readonly<Record<RegionId, string>> = {
   mahan: '한강에서 차령까지. 위례 · 목지',
   jumong: '혼강 골짜기: 졸본',
   seorabeol: '경주 골짜기: 서라벌',
+  gujibong: '김해 골: 가락',
   'byeonhan-mini': '변한의 바닷가',
   yeongnam: '낙동강 물길',
   south: '삼한의 남쪽',
@@ -366,6 +368,7 @@ export function prologueHtml(k: FrontKit, r: Realm, step: number): string {
     const [when, age] = region === 'tutorial' ? ['기원전 18년.', '옛 조선이 무너진 지 아흔 해, 주몽이 졸본에 고구려를 세운 무렵.']
       : region === 'mahan' ? ['기원후 8년.', '온조가 위례에 나라를 세운 지 스물여섯 해, 마한의 진왕이 아직 쉰 나라의 우두머리이던 때.']
       : region === 'seorabeol' ? ['기원전 57년.', '옛 조선의 유민이 진한 골짜기마다 마을을 이루어 살던 때.']
+      : region === 'gujibong' ? ['기원후 42년.', '변한 땅 바닷가 마을마다 쇠를 캐어 이웃과 바꾸던 때.']
       : region === 'jumong' ? ['기원전 37년.', '옛 조선이 무너진 지 일흔 해, 동부여의 왕자들이 활 잘 쏘는 사내를 시기하던 때.']
         : ['기원후 2세기.', '옛 조선이 무너진 지 삼백 년, 왕이 하나가 아니던 때.']
     body = `<div class="pl pera">${oldMapHtml(k, r, region)}<p class="l1">${when}</p><p class="l2">${age}</p>`
@@ -419,6 +422,7 @@ const HEAD: Readonly<Record<RegionId, string>> = {
   mahan: '목지와 원산·금현이 항복했다: 마한이 백제에 아울러졌다',
   jumong: '송양이 따르고 행인·북옥저를 거느렸다. 고구려가 섰다',
   seorabeol: '여섯 마을이 모두 따른다. 서라벌이 섰다',
+  gujibong: '아홉 간이 모두 따르고 쇠가 바다를 건넌다. 가락이 섰다',
   'byeonhan-mini': '변한의 바닷가를 차지했다',
   yeongnam: '낙동강의 나라들을 거느렸다',
   south: '삼한의 남쪽에 이름을 떨쳤다',
@@ -431,6 +435,7 @@ const HEAD_ALL: Readonly<Record<RegionId, string>> = {
   mahan: '한강에서 차령까지 하나가 됐다',
   jumong: '졸본에서 두만강까지 하나가 됐다',
   seorabeol: '경주 골짜기가 한 나라가 됐다',
+  gujibong: '김해 골이 한 나라가 됐다',
   'byeonhan-mini': '변한의 바닷가가 한 나라가 됐다',
   yeongnam: '낙동강의 나라들이 하나가 됐다',
   south: '삼한의 남쪽이 하나가 됐다',

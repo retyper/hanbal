@@ -21,6 +21,8 @@ export const REGION_ART: Readonly<Record<RegionId, { dir: string; ext: string; w
   // 캠페인 2장 — 혼강에서 두만강까지 (삼한과 북녘 판의 조각을 좁게 · jumong-geo.ts). 경도 5.3° × 위도 2.25° 를 조각 눈금 그대로
   // 캠페인 3장 — 경주 골짜기 (seorabeol-geo.ts). 경도 0.8° × 위도 0.65° 를 조각 눈금의 두 배 반으로
   seorabeol: { dir: 'map-world', ext: 'webp', w: 706, h: 622, nodeScale: 0.5, labelScale: 0.8, zmax: 2.5, terrR: 80, terrBand: 48 },
+  // 캠페인 4장 — 김해 골과 낙동강 어귀 (gujibong-geo.ts). 경도 0.9° × 위도 0.75° 를 조각 눈금의 두 배로
+  gujibong: { dir: 'map-world', ext: 'webp', w: 636, h: 574, nodeScale: 0.45, labelScale: 0.8, zmax: 2.5, terrR: 80, terrBand: 48 },
   // 캠페인 1장 — 한강 아래에서 차령까지 (mahan-geo.ts). 경도 1.3° × 위도 1.35° 를 조각 눈금의 두 배로
   mahan: { dir: 'map-world', ext: 'webp', w: 918, h: 1033, nodeScale: 0.45, labelScale: 0.8, zmax: 3, terrR: 90, terrBand: 54 },
   jumong: { dir: 'map-world', ext: 'webp', w: 1871, h: 861, nodeScale: 0.32, labelScale: 0.75, zmax: 5, terrR: 60, terrBand: 34 },
@@ -87,6 +89,11 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'sr-alpyeong': 'g-78-saro-alpyeong', 'sr-sobeol': 'g-77-saro-sobeol', 'sr-jibaekho': 'g-79-saro-jibaekho', 'sr-guryema': 'g-80-saro-guryema',
   'sr-jita': 'g-81-saro-jita', 'sr-hojin': 'g-82-saro-hojin', 'sr-yangsan-1': 'w-91-saro-mulsae', 'sr-goya-1': 'w-92-saro-dallae',
   'sr-jinji-1': 'w-93-saro-beomi', 'sr-wae-ruler': 'g-87-wae-chief',
+  // 캠페인 4장 — 수로 · 허황옥(전설 명치판) · 가락의 장수 · 아홉 간 · 탈해 (gujibong.ts). 있는 명치판을 나눠 쓴다 · 새 얼굴은 ART-QUEUE 「4·5장 초상」
+  'gj-suro': 'g-18-daegaya-king', 'gj-heo': 'l-L3-heo-hwangok', 'gj-musoe': 'g-11-gaya-iron-general', 'gj-dana': 'w-04-gaya-swordswoman',
+  'gj-adogan': 'g-60-eupcha-hangyeol', 'gj-yeodogan': 'g-05-mahan-chieftain', 'gj-pidogan': 'g-61-heomcheuk-bawi', 'gj-odogan': 'g-03-sea-trader',
+  'gj-yusugan': 'g-57-bihwa-neup', 'gj-yucheongan': 'w-16-clan-matriarch', 'gj-sincheongan': 'w-25-bihwa-priestess', 'gj-ocheongan': 'g-63-heomcheuk-beogeum',
+  'gj-singwigan': 'w-17-mahan-pearl-diver', 'gj-tahae': 'g-20-samul-sea-lord', 'gj-tahae-1': 'w-10-pirate-captain',
   'tut-onjo': 'g-71-baekje-onjo', 'tut-biryu': 'g-28-goguryeo-damul', 'tut-ogan': 'g-13-baekje-general', 'tut-maryeo': 'g-89-baekje-maryeo', 'tut-haebi': 'w-95-michuhol-haebi',
   'baekje-ruler': 'g-68-baekje-onnuri', 'mokji-ruler': 'w-27-mokji-jinha', 'michuhol-ruler': 'w-28-michuhol-bira',
   'ungcheon-ruler': 'g-22-ungcheon-gomnae', 'sangdang-ruler': 'g-23-sangdang-soedal', 'geonma-ruler': 'w-46-geonma-maru',
@@ -244,6 +251,13 @@ export const FACTION_ART: Readonly<Record<string, { emblem: string; color: strin
   'sr-jinji': { emblem: 'emblem-pine', color: '#4f8a5a', color2: '#6a2a7a' }, 'sr-daesu': { emblem: 'emblem-deer', color: '#a0703a', color2: '#b8e04a' },
   'sr-gari': { emblem: 'emblem-grain', color: '#d8c060', color2: '#b0202a' }, 'sr-goya': { emblem: 'emblem-mountain', color: '#8a6ab0', color2: '#b8e04a' },
   'sr-wae': { emblem: 'emblem-wave', color: '#5a5f6a', color2: '#b8e04a' },
+  // 4장 가락 · 아홉 간 · 탈해 (gujibong.ts) — 가락은 쌍어(김해) · 맏이 아도간은 거북(구지가)
+  garak: { emblem: 'emblem-twinfish', color: '#e0b64a', color2: '#b0202a' },
+  'gj-ado': { emblem: 'emblem-tortoise', color: '#3a8a6a', color2: '#f2c230' }, 'gj-yeodo': { emblem: 'emblem-grain', color: '#d8c060', color2: '#1f3f8f' },
+  'gj-pido': { emblem: 'emblem-mountain', color: '#8a6ab0', color2: '#b8e04a' }, 'gj-odo': { emblem: 'emblem-plough', color: '#b8784a', color2: '#2f8a3a' },
+  'gj-yusu': { emblem: 'emblem-fish', color: '#5aa0b8', color2: '#e86a1a' }, 'gj-yucheon': { emblem: 'emblem-ginkgo', color: '#7a9a4a', color2: '#6a2a7a' },
+  'gj-sincheon': { emblem: 'emblem-stars', color: '#c08bb0', color2: '#2f8a3a' }, 'gj-ocheon': { emblem: 'emblem-egret', color: '#c8ccd8', color2: '#b0202a' },
+  'gj-singwi': { emblem: 'emblem-shell', color: '#c88a6a', color2: '#1f3f8f' }, tahae: { emblem: 'emblem-sailboat', color: '#5a5f6a', color2: '#e8e0c8' },
   michuhol: { emblem: 'emblem-wave', color: '#4a9fd0', color2: '#2f8a3a' },
   ungcheon: { emblem: 'emblem-bear', color: '#8d7a5a', color2: '#b8e04a' },
   sangdang: { emblem: 'emblem-dagger', color: '#6a8aa0', color2: '#e86a1a' },

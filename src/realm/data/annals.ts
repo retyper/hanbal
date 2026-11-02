@@ -116,6 +116,36 @@ const ANNALS: Readonly<Record<string, Annal>> = {
   guryema: { name: '구례마', book: '『삼국유사』 기이편 신라시조 혁거세왕', lines: ['무산 대수촌의 촌장. 처음 이산에 내려왔다고 한다. 모량부 손씨의 조상이 되었다.'] },
   jita: { name: '지타', book: '『삼국유사』 기이편 신라시조 혁거세왕', lines: ['금산 가리촌의 촌장. 처음 명활산에 내려왔다고 한다. 한기부 배씨의 조상이 되었다.'] },
   hojin: { name: '호진', book: '『삼국유사』 기이편 신라시조 혁거세왕', lines: ['명활산 고야촌의 촌장. 처음 금강산에 내려왔다고 한다. 습비부 설씨의 조상이 되었다.'] },
+  suro: {
+    name: '수로 (수로왕)', book: '『삼국유사』 가락국기',
+    lines: [
+      '42년 3월 계욕일, 북쪽 구지봉에서 부르는 소리가 나 아홉 간과 무리 이삼백이 모였다. 「거북아 거북아 머리를 내어라. 내놓지 않으면 구워 먹으리」 노래하며 춤추니, 하늘에서 자줏빛 줄이 내려와 붉은 보자기에 싼 금합이 땅에 닿았다.',
+      '금합 속 황금알 여섯이 아이가 되었고, 맨 먼저 난 이를 수로라 하였다. 그달 보름에 왕위에 오르고 나라 이름을 대가락이라 하였다.',
+      '바다에서 온 탈해와 둔갑을 겨루어 이겼고, 아유타국 공주 허황옥을 맞아 왕비로 삼았다.',
+    ],
+  },
+  heohwangok: {
+    name: '허황옥', book: '『삼국유사』 가락국기 · 탑상편 금관성 파사석탑',
+    lines: [
+      '아유타국의 공주. 열여섯 살에 부모의 꿈을 따라 붉은 돛과 붉은 깃발을 단 배를 타고 바다를 건너왔다(48년).',
+      '망산도 앞바다에 닿으니 수로왕이 나가 맞았고, 왕비가 되었다. 거센 물결을 잠재우려 돌탑을 싣고 왔다고 한다.',
+    ],
+  },
+  tahae: {
+    name: '탈해', book: '『삼국유사』 가락국기 · 『삼국사기』 신라본기 탈해 이사금',
+    lines: [
+      '완하국 왕비가 낳은 알에서 났다고 한다. 바다를 따라 가락에 와서 수로왕에게 왕위를 내놓으라 하였다.',
+      '둔갑을 겨루어 탈해가 매가 되면 왕은 독수리가 되고, 참새가 되면 새매가 되었다. 탈해는 지고 엎드려 항복한 뒤 배를 타고 달아났다.',
+      '뒤에 신라의 넷째 임금 탈해 이사금이 되었다(『삼국사기』).',
+    ],
+  },
+  ninegan: {
+    name: '아홉 간', book: '『삼국유사』 가락국기',
+    lines: [
+      '나라가 서기 전 이 땅에는 아도간·여도간·피도간·오도간·유수간·유천간·신천간·오천간·신귀간 아홉 간이 추장이 되어 백 호, 칠만 오천 사람을 거느렸다. 산과 들에 모여 살며 우물을 파 마시고 밭을 갈아 먹었다.',
+      '구지봉에 모여 노래하여 수로를 왕으로 맞았다.',
+    ],
+  },
 }
 
 /** 장수 id → 사서의 사람 */
@@ -124,6 +154,9 @@ const ANNAL_OF: Readonly<Record<string, string>> = {
   'mh-eureum': 'eureum', 'mh-soseono': 'soseono',
   'sr-hyeokgeose': 'hyeokgeose', 'sr-aryeong': 'aryeong', 'sr-hogong': 'hogong', 'sr-alpyeong': 'alpyeong', 'sr-sobeol': 'sobeol',
   'sr-jibaekho': 'jibaekho', 'sr-guryema': 'guryema', 'sr-jita': 'jita', 'sr-hojin': 'hojin',
+  'gj-suro': 'suro', 'gj-heo': 'heohwangok', 'gj-tahae': 'tahae',
+  'gj-adogan': 'ninegan', 'gj-yeodogan': 'ninegan', 'gj-pidogan': 'ninegan', 'gj-odogan': 'ninegan', 'gj-yusugan': 'ninegan',
+  'gj-yucheongan': 'ninegan', 'gj-sincheongan': 'ninegan', 'gj-ocheongan': 'ninegan', 'gj-singwigan': 'ninegan',
   'jm-jumong': 'jumong', 'jm-oi': 'oi', 'jm-mari': 'mari', 'jm-hyeopbo': 'hyeopbo', 'jm-songyang': 'songyang', 'jm-daeso': 'daeso',
 }
 

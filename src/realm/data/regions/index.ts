@@ -20,12 +20,14 @@ import { MAHAN_NATION_IDS, startMahan } from './mahan.ts'
 import { MAHAN_WORLD, mahanGeo } from './mahan-geo.ts'
 import { SEORA_NATION_IDS, startSeorabeol } from './seorabeol.ts'
 import { SEORA_WORLD, seoraGeo } from './seorabeol-geo.ts'
+import { GUJI_NATION_IDS, startGujibong } from './gujibong.ts'
+import { GUJI_WORLD, gujiGeo } from './gujibong-geo.ts'
 import { JUMONG_WORLD, jumongGeo } from './jumong-geo.ts'
 import { startCustoms } from '../../hooks.ts'
 import { fogStart } from '../../discovery.ts'
 import { watchBorders } from '../../scouts.ts'
 
-export const REGION_IDS: readonly RegionId[] = ['tutorial', 'mahan', 'jumong', 'seorabeol', 'byeonhan-mini', 'yeongnam', 'south', 'world']
+export const REGION_IDS: readonly RegionId[] = ['tutorial', 'mahan', 'jumong', 'seorabeol', 'gujibong', 'byeonhan-mini', 'yeongnam', 'south', 'world']
 
 /** 그 판의 고를 수 있는 나라 id */
 export function regionNations(region: RegionId): readonly string[] {
@@ -37,6 +39,7 @@ export function regionNations(region: RegionId): readonly string[] {
     case 'jumong': return JUMONG_NATION_IDS
     case 'mahan': return MAHAN_NATION_IDS
     case 'seorabeol': return SEORA_NATION_IDS
+    case 'gujibong': return GUJI_NATION_IDS
     default: return NATION_IDS
   }
 }
@@ -91,6 +94,7 @@ function openRegion(region: RegionId, seed: number, player: string, edit?: (r: R
     case 'jumong': return startJumong(seed)
     case 'mahan': return startMahan(seed)
     case 'seorabeol': return startSeorabeol(seed)
+    case 'gujibong': return startGujibong(seed)
     // 자유판마다 타국 수가 정해져 있다 — 판마다 무작위 나라, 나머지 나라 땅은 빈 땅 (rivals.ts · FOCUS.md J)
     default: return free(keepRivals(startRealm(seed, player), P.realm.miniRivals))
   }
@@ -103,10 +107,10 @@ export function regionOf(r: Realm): RegionId {
 
 /** 조각 지도를 이은 판(넓어지는 지도)이면 그 땅 묶음 — 아니면 null */
 export function worldGeoOf(region: RegionId | undefined): WorldGeo | null {
-  return region === 'south' ? SOUTH_WORLD : region === 'world' ? WORLD_GEO : region === 'tutorial' ? TUTORIAL_WORLD : region === 'jumong' ? JUMONG_WORLD : region === 'mahan' ? MAHAN_WORLD : region === 'seorabeol' ? SEORA_WORLD : null
+  return region === 'south' ? SOUTH_WORLD : region === 'world' ? WORLD_GEO : region === 'tutorial' ? TUTORIAL_WORLD : region === 'jumong' ? JUMONG_WORLD : region === 'mahan' ? MAHAN_WORLD : region === 'seorabeol' ? SEORA_WORLD : region === 'gujibong' ? GUJI_WORLD : null
 }
 
 /** 넓어지는 지도의 고을 자리 [경도, 위도] */
 export function placeOf(region: RegionId | undefined, id: string): readonly [number, number] | undefined {
-  return region === 'south' ? southGeo(id) : region === 'world' ? worldGeo(id) : region === 'tutorial' ? tutorialGeo(id) : region === 'jumong' ? jumongGeo(id) : region === 'mahan' ? mahanGeo(id) : region === 'seorabeol' ? seoraGeo(id) : undefined
+  return region === 'south' ? southGeo(id) : region === 'world' ? worldGeo(id) : region === 'tutorial' ? tutorialGeo(id) : region === 'jumong' ? jumongGeo(id) : region === 'mahan' ? mahanGeo(id) : region === 'seorabeol' ? seoraGeo(id) : region === 'gujibong' ? gujiGeo(id) : undefined
 }

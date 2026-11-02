@@ -182,7 +182,7 @@ export type RelationWhy = 'attack' | 'betray' | 'distrust' | 'plot' | 'sow' | 't
 
 /** 판 — 변한 6국 축소판 · 영남 판 (형: "사료대로 키우고 땅도 넓힘" — 2026-10-18) */
 /** 판 — tutorial 은 배우는 1:1 판 (변한 축소판의 지도를 빌린다) */
-export type RegionId = 'tutorial' | 'mahan' | 'jumong' | 'seorabeol' | 'byeonhan-mini' | 'yeongnam' | 'south' | 'world'
+export type RegionId = 'tutorial' | 'mahan' | 'jumong' | 'seorabeol' | 'gujibong' | 'byeonhan-mini' | 'yeongnam' | 'south' | 'world'
 
 /** 발견의 길 — 어떻게 그 나라를 알게 됐나 (discovery.ts · 형: "시간지나서 발견국가가 많아지면 확장하는거지 지도도") */
 export type DiscoverHow = 'border' | 'envoy' | 'market' | 'war' | 'spy' | 'scout' | 'ally' | 'rumor'
@@ -804,14 +804,15 @@ export interface Ask {
 /**
  * 캠페인 장의 목표 하나 (scenario.ts · CAMPAIGN.md §2)
  *   hold 이 고을들을 쥔다 · submit 이 나라들이 따른다(동맹·조공) · fell 이 장수를 쓰러뜨린다(사로잡음·죽음) ·
- *   event 그 장의 사건을 이룬다 · survive 이만큼 버틴다
+ *   event 그 장의 사건을 이룬다 · survive 이만큼 버틴다 · trade 지난 한 해 안에 철을 주고받은 나라 수 (paths.ironTrade)
  */
 export type Goal =
   | { readonly kind: 'hold'; readonly nodes: readonly string[] }
-  | { readonly kind: 'submit'; readonly factions: readonly string[]; readonly how: 'ally' | 'tribute' | 'either' }
+  | { readonly kind: 'submit'; readonly factions: readonly string[]; readonly how: 'ally' | 'tribute' | 'either'; /** 그 나라 도읍을 쥐어도 따른 것으로 친다 (4장 아홉 간 · 쳐서 아우름) */ readonly take?: boolean }
   | { readonly kind: 'fell'; readonly hero: string }
   | { readonly kind: 'event'; readonly id: string }
   | { readonly kind: 'survive'; readonly seasons: number }
+  | { readonly kind: 'trade'; readonly partners: number }
 
 /** 캠페인의 장 — 판을 열 때 얹힌다 (data/campaign.ts). `marks` 는 이룬 사건 id (id 순서) */
 export interface Scenario {

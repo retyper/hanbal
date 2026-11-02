@@ -9,17 +9,21 @@ import { goalState, seasonsLeft } from '../../realm/scenario.ts'
 import type { Goal, Realm } from '../../realm/types.ts'
 import { P } from '../../tune/params.ts'
 
+const NATIVE = ['', '한', '두', '세', '네', '다섯', '여섯', '일곱', '여덟', '아홉', '열'] as const
+
 function goalLabel(r: Realm, g: Goal): string {
   switch (g.kind) {
     case 'hold': return `${g.nodes.map((id) => r.nodes[id]?.name ?? id).join(' · ')} 쥐기`
     case 'submit': {
       // 무엇을 하라는지 또렷이 — 동맹이든 조공이든 (형 10-23: "따르게 하기는 뭐임? 조공 바치게 하란 거야 점령하란 거야")
       const names = g.factions.map((f) => r.factions[f]?.name ?? f).join(' · ')
+      if (g.take === true) return `${josa(names, '을', '를')} 동맹·속국으로 삼거나 쳐서 아우르기`
       return g.how === 'ally' ? `${josa(names, '과', '와')} 동맹 맺기` : g.how === 'tribute' ? `${josa(names, '을', '를')} 속국 삼기` : `${josa(names, '과', '와')} 동맹 맺기 또는 속국 삼기`
     }
     case 'fell': return `${josa(r.heroes[g.hero]?.name ?? g.hero, '을', '를')} 쓰러뜨리기`
     case 'event': return g.id
     case 'survive': return `${g.seasons}계절 버티기`
+    case 'trade': return `한 해 안에 ${NATIVE[g.partners] ?? g.partners} 나라와 철 주고받기`
   }
 }
 
@@ -50,12 +54,19 @@ export function goalRowsHtml(r: Realm, esc: (s: string) => string): string {
     const st = goalState({ ...r, scenario: sc }, g)
     const ok = st.done || done
     const bar = ok ? '' : `<i class="gbar"><i style="width:${Math.round((st.have / Math.max(1, st.need)) * 100)}%"></i></i>`
-    const tip = g.kind === 'submit' ? ' data-tip="외교에서 사신을 보내 화친 → 동맹을 맺거나, 싸워서 이긴 뒤 속국으로 삼는다. 그 나라를 빼앗지 않아도 된다"' : ''
+    const tip = g.kind === 'submit' && g.take === true ? ' data-tip="사신을 보내 화친 → 동맹을 맺거나, 싸워서 이긴 뒤 속국으로 삼거나, 그 마을을 쳐서 아우른다. 어느 길이든 하나로 센다"'
+      : g.kind === 'submit' ? ' data-tip="외교에서 사신을 보내 화친 → 동맹을 맺거나, 싸워서 이긴 뒤 속국으로 삼는다. 그 나라를 빼앗지 않아도 된다"'
+      : g.kind === 'trade' ? ' data-tip="사신의 선물·교역에 철을 얹으면 그 나라와 철을 주고받은 것이 된다. 지난 열두 달 안의 것만 센다"' : ''
     h += `<div class="gbr${ok ? ' ok' : ''}"${tip}><span class="gck">${ok ? '✓' : '◇'}</span><span>${esc(goalLabel(r, g))}${bar}</span></div>`
   }
   // 2장 동부여 추격군 — 처음 몇 계절 (ai.pursuing)
   // 3장 — 칼을 덜 뽑는 장. 규칙은 늘 보이게 (메모리: 규칙은 지도에 보이게)
   if (sc.id === 'seorabeol' && !done) h += `<div class="gbr gleft warn" data-tip="마을 하나를 칠 때마다 다른 다섯 마을이 우리를 덜 믿는다. 사신·선물로 모으고, 왜인을 막아 주면 마음이 기운다"><span class="gck">⚔</span><span>마을을 치면 다른 마을들의 마음이 식는다</span></div>`
+  // 4장 — 탈해는 처음 유예(aiGrace)가 끝나면 배를 타고 망산도로 건너온다 (ai.spared)
+  if (sc.id === 'gujibong' && !done && r.factions['tahae'] !== undefined && Object.values(r.nodes).some((n) => n.owner === 'tahae')) {
+    const wait = P.realm.aiGrace - seasonIdx(r)
+    h += `<div class="gbr gleft warn" data-tip="바다 건너 섬에 머무는 탈해가 왕위를 노린다. 배는 망산도 바닷가로 닿는다. 그 길목을 지키거나 도읍에 군대를 모아 둔다"><span class="gck">⚓</span><span>${wait > 0 ? `탈해의 배: ${wait}계절 뒤 건너올 수 있다` : '탈해의 배가 건너올 수 있다'}</span></div>`
+  }
   if (sc.id === 'jumong' && !done && seasonIdx(r) < P.realm.pursuitSeasons) h += `<div class="gbr gleft warn" data-tip="대소의 추격대가 북쪽 동부여 진영에서 엄리 나루로 내려올 수 있다. 나루를 지키거나 군대를 모아 둔다"><span class="gck">⚠</span><span>동부여 추격군: ${P.realm.pursuitSeasons - seasonIdx(r)}계절 동안 쫓아온다</span></div>`
   const left = seasonsLeft({ ...r, scenario: sc })
   if (left !== null && !done) h += `<div class="gbr gleft${left <= 2 ? ' warn' : ''}"><span class="gck">⏳</span><span>${left}계절 남았다</span></div>`

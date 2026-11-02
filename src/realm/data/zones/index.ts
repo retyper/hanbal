@@ -10,6 +10,7 @@ import { ZONE as BYEONHAN } from './byeonhan-mini.ts'
 import { ZONE as JUMONG } from './jumong.ts'
 import { ZONE as MAHAN } from './mahan.ts'
 import { ZONE as SEORABEOL } from './seorabeol.ts'
+import { ZONE as GUJIBONG } from './gujibong.ts'
 import { ZONE as SOUTH } from './south.ts'
 import { ZONE as TUTORIAL } from './tutorial.ts'
 import { ZONE as WORLD } from './world.ts'
@@ -30,5 +31,5 @@ export interface ZoneData {
 }
 
 export const ZONES: Readonly<Partial<Record<RegionId, ZoneData>>> = {
-  'byeonhan-mini': BYEONHAN, jumong: JUMONG, mahan: MAHAN, seorabeol: SEORABEOL, south: SOUTH, tutorial: TUTORIAL, world: WORLD, yeongnam: YEONGNAM,
+  'byeonhan-mini': BYEONHAN, jumong: JUMONG, mahan: MAHAN, seorabeol: SEORABEOL, gujibong: GUJIBONG, south: SOUTH, tutorial: TUTORIAL, world: WORLD, yeongnam: YEONGNAM,
 }

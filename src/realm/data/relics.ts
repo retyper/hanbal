@@ -89,6 +89,7 @@ export const REGION_TAGS: Readonly<Record<RegionId, readonly RelicFolk[]>> = {
   tutorial: [],
   yeongnam: ['gaya', 'silla', 'jinbyeon'],
   seorabeol: ['silla', 'jinbyeon'],
+  gujibong: ['gaya', 'jinbyeon'],
   south: ['mahan', 'baekje'],
   mahan: ['mahan', 'baekje'],
   world: ['goguryeo', 'buyeo', 'gojoseon'],

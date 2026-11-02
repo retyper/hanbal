@@ -8,6 +8,7 @@
 import { addFavor, pairKey } from './diplomacy.ts'
 import { P } from '../tune/params.ts'
 import { seasonIdx } from './calendar.ts'
+import { ironTrade } from './paths.ts'
 import type { Goal, Order, Realm, ReportLine } from './types.ts'
 
 /** 목표 하나가 어디까지 왔나 — 화면의 막대 (숫자 대신 감: have/need 는 막대 길이로만 쓴다) */
@@ -33,7 +34,9 @@ export function goalState(r: Realm, g: Goal): GoalState {
       return { done: have >= g.nodes.length, have, need: g.nodes.length }
     }
     case 'submit': {
-      const have = g.factions.filter((f) => follows(r, f, g.how)).length
+      // take — 그 나라 도읍을 우리가 쥐었으면 아우른 것으로 친다 (4장: 마을을 쳐서 없애면 목표가 막히던 것)
+      const took = (f: string): boolean => g.take === true && r.nodes[r.factions[f]?.capital ?? '']?.owner === r.player
+      const have = g.factions.filter((f) => follows(r, f, g.how) || took(f)).length
       return { done: have >= g.factions.length, have, need: g.factions.length }
     }
     case 'fell': {
@@ -49,6 +52,11 @@ export function goalState(r: Realm, g: Goal): GoalState {
       // 이번 계절을 치르고 셈한다 — 지난 계절 수는 season + 1
       const have = Math.min(g.seasons, seasonIdx(r, r.season + 1))
       return { done: have >= g.seasons, have, need: g.seasons }
+    }
+    case 'trade': {
+      // 4장 — 지난 한 해 안에 철을 주고받은 나라 (사신의 선물·교역·조공·지원에 철이 오가면 paths.noteIron 이 적는다)
+      const have = Math.min(g.partners, ironTrade(r, r.player).partners.length)
+      return { done: have >= g.partners, have, need: g.partners }
     }
   }
 }

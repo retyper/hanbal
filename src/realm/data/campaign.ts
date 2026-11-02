@@ -63,15 +63,17 @@ export const CHAPTERS: readonly Chapter[] = [
     // 기한 열두 해 — 손 놓고 있어도 끝이 온다 (점검 10-25: 기한이 없어 놀고 있어도 지지 않았다)
     scenario: { id: 'jumong', win: [{ kind: 'submit', factions: ['biryuna'], how: 'either' }, { kind: 'hold', nodes: ['jm-haengin-cap', 'jm-okjeo-cap'] }], limit: 48 },
   },
-  // 아래는 아직 판이 없는 장 — 카드는 "짓는 중"으로 보인다 (형 10-23: "캠페인 수 너무 적음"). 그림은 표지가 오기 전까지 사건 그림을 빌린다
+  // 4장 — 막 선 나라로 시작한다: 도읍과 작은 포구 하나 · 둘레는 임자 없는 들과 아홉 간의 작은 마을. 탈해는 바다 건너에서 나중에 온다 (형 11-03: "남의 게임 이어서 하는 느낌 들면 안됨")
   {
-    id: 'gujibong', n: 4, region: null, nation: 'garak', name: '구지봉의 노래', era: '기원후 42년 · 김해', hero: '김수로',
+    id: 'gujibong', n: 4, region: 'gujibong', nation: 'garak', name: '구지봉의 노래', era: '기원후 42년 · 김해', hero: '김수로',
     hook: '「거북아 거북아 머리를 내어라」, 하늘에서 내린 금빛 알. 바다 건너 탈해가 왕위를 내놓으라 한다.',
-    goal: '아홉 간이 모두 따르고, 철을 판 나라가 다섯을 넘는다',
+    goal: '아홉 간이 모두 따르게 하고(동맹·속국, 또는 쳐서 아우른다), 한 해 안에 다섯 나라와 철을 주고받는다',
     art: 'keyart/gujibong.jpg',
-    source: '『삼국유사』 가락국기: 구지봉에서 아홉 간이 노래하니 금합에 알 여섯이 내려왔다.',
-    scenario: { id: 'gujibong', win: [] },
+    source: '『삼국유사』 가락국기: 구지봉에서 아홉 간이 노래하니 금합에 알 여섯이 내려왔다. 맨 먼저 난 수로가 왕이 되었다.',
+    // 기한 열두 해 — 아홉은 많다 (서라벌 여섯은 열 해)
+    scenario: { id: 'gujibong', win: [{ kind: 'submit', factions: ['gj-ado', 'gj-yeodo', 'gj-pido', 'gj-odo', 'gj-yusu', 'gj-yucheon', 'gj-sincheon', 'gj-ocheon', 'gj-singwi'], how: 'either', take: true }, { kind: 'trade', partners: 5 }], limit: 48 },
   },
+  // 아래는 아직 판이 없는 장 — 카드는 "짓는 중"으로 보인다 (형 10-23: "캠페인 수 너무 적음"). 그림은 표지가 오기 전까지 사건 그림을 빌린다
   {
     id: 'daemusin', n: 5, region: null, nation: 'goguryeo', name: '대무신왕, 부여를 치다', era: '기원후 22년 · 동부여', hero: '대무신왕',
     hook: '할아버지 주몽을 쫓던 그 부여. 봄·여름이면 부여 도읍 앞 들은 말이 빠지는 수렁이 된다.',

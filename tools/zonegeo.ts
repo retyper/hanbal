@@ -21,6 +21,7 @@ import { NATION_IDS, startRealm } from '../src/realm/data/regions/byeonhan-mini.
 import { startJumong } from '../src/realm/data/regions/jumong.ts'
 import { startMahan } from '../src/realm/data/regions/mahan.ts'
 import { startSeorabeol } from '../src/realm/data/regions/seorabeol.ts'
+import { startGujibong } from '../src/realm/data/regions/gujibong.ts'
 import { SOUTH_NATION_IDS, startSouth } from '../src/realm/data/regions/south.ts'
 import { SOUTH_MOUNTAINS } from '../src/realm/data/regions/south-geo.ts'
 import { startTutorial } from '../src/realm/data/regions/tutorial.ts'
@@ -44,6 +45,7 @@ export function canonicalRealm(region: RegionId): Realm {
     case 'jumong': return startJumong(1)
     case 'mahan': return startMahan(1)
     case 'seorabeol': return startSeorabeol(1)
+    case 'gujibong': return startGujibong(1)
     case 'byeonhan-mini': return startRealm(1, NATION_IDS[0]!)
   }
 }
