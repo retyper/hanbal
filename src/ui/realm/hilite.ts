@@ -28,7 +28,8 @@ function kitOf(r: Realm, me: string): Kit {
   }
   // 긴 이름부터 — 「거칠산국」이 「거칠산」보다 먼저 잡히게
   const words = [...side.keys(), ...KEYS].sort((a, b) => b.length - a.length).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-  const kit: Kit = { re: new RegExp(`(${words.join('|')})|(\\d[\\d,]*)`, 'g'), side }
+  // 낱말 머리에서만 — 앞에 한글이 붙어 있으면 다른 말의 꼬리다 (형 11-03: 「말대로」의 「대로」를 길 이름으로 칠했다)
+  const kit: Kit = { re: new RegExp(`(?<![가-힣])(${words.join('|')})|(\\d[\\d,]*)`, 'g'), side }
   byMe.set(me, kit)
   return kit
 }
