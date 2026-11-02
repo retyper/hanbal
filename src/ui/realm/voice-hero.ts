@@ -755,7 +755,7 @@ export const HERO_VOICE: Readonly<Record<string, HeroVoice>> = {
     art: ['ambush', '물밑에서 솟구쳐라! 갈고리로 끌어내려라!'],
     recorded: true,
   },
-  // 아래 열넷은 주요 남자 장수 (형 11-03: "주요 남자 장수부터") · 목소리는 도감 「주요 남자 장수 열넷」에서 형이 고른다(지금은 내 추천 첫째) · 사람은 docs/realm/cast · 녹음 전
+  // 아래 열넷은 주요 남자 장수 (형 11-03: "주요 남자 장수부터") · 목소리는 형이 도감 남자 목소리 메모에 초상을 적은 것(11-03 · 오이 Bodi · 오간 Brio · 알평 Cruz · 혁거세 Koda · 비류 Schedar · 대소 Varo) · 나머지 여덟은 아직 내 추천 · 사람은 docs/realm/cast · 녹음 전
   // 주몽 · 20세 · 하늘을 믿는 젊은 명궁, 당당하되 예를 갖춘다
   'jm-jumong': {
     voice: 'Iapetus',
@@ -780,46 +780,46 @@ export const HERO_VOICE: Readonly<Record<string, HeroVoice>> = {
   },
   // 혁거세 · 18세 · 알에서 났다는 소년 왕, 맑고 너그럽고 신성하다
   'sr-hyeokgeose': {
-    voice: 'Achird',
+    voice: 'Koda',
     style: '열여덟의 맑고 고운 소년 왕. 티 없이 맑고 부드러운 소년의 목소리로, 너그럽고 따뜻하게 말한다.',
     tap: ['부르셨사옵니까.', '예, 여기 있사옵니다.', '무슨 일이옵니까.'],
     obey: ['마음을 다하겠사옵니다.', '그리하겠사옵니다.', '백성을 위한 일이라면 기꺼이 하겠사옵니다.'],
     auto: ['다치는 이 없이 끝내겠사옵니다!', '두려워 마라! 하늘이 굽어보신다!', '함께 나아가자! 이 땅을 지킨다!', '모두 무사하니 다행이옵니다.', '제 탓이옵니다. 다시 품어 보겠사옵니다.'],
     art: ['sway', '싸움을 멈추어라! 그대들도 이 땅의 사람이다!'],
-    recorded: false,
+    recorded: true,
     male: true,
   },
   // 비류 · 27세 · 형제와 다른 길을 꿈꾸는 사람, 자존심 · 패기 · 고집
   'tut-biryu': {
-    voice: 'Mako',
+    voice: 'Schedar',
     style: '스물일곱의 패기 넘치는 사내. 힘차고 시원한 젊은 장수의 목소리로, 자신만만하고 고집 있게 말한다.',
     tap: ['왔사옵니다.', '무슨 일이옵니까.', '망치는 늘 손에 있사옵니다.'],
     obey: ['제 방식대로 해내겠사옵니다.', '두고 보소서.', '맡기셨으니 끝을 보겠사옵니다.'],
     auto: ['이 싸움은 제가 끝내겠사옵니다!', '내 뒤를 따르라! 바다까지 간다!', '줄을 맞춰라! 흩어지지 마라!', '보셨사옵니까. 제 말이 옳았사옵니다.', '이번만이옵니다. 다음엔 지지 않사옵니다.'],
     art: ['order', '줄을 세워라! 방패를 붙여라! 내 북에 맞춰 나아간다!'],
-    recorded: false,
+    recorded: true,
     male: true,
   },
   // 대소 · 24세 · 부여의 맏아들, 오만하고 거들먹거린다 · 말버릇 「흥」
   'jm-daeso': {
-    voice: 'Zeno',
+    voice: 'Varo',
     style: '스물넷의 오만한 왕자. 곱상하지만 거들먹거리는 젊은 사내의 목소리로, 마지못해 하는 듯 비웃으며 말한다.',
     tap: ['흥, 또 무엇이옵니까.', '술잔을 두고 왔사옵니다.', '말씀해 보시지요.'],
     obey: ['흥, 하라시면 하지요.', '부여의 맏이가 몸소 하겠사옵니다.', '이 정도쯤이야.'],
     auto: ['흥, 이런 싸움쯤은 제게 맡기시지요!', '쓸어버려라! 부여의 칼맛을 보여라!', '머뭇거리지 마라! 내가 앞이다!', '흥, 당연한 일이옵니다.', '흥, 오늘은 운이 없었을 뿐이옵니다.'],
     art: ['vanguard', '비켜라! 부여의 맏이가 친히 나선다!'],
-    recorded: false,
+    recorded: true,
     male: true,
   },
   // 오이 · 34세 · 주몽을 따라 산을 넘은 무장, 충직하고 과감하다 · 말버릇 「제가 앞서겠사옵니다」
   'jm-oi': {
-    voice: 'Riko',
+    voice: 'Bodi',
     style: '서른넷의 굳은 무장. 단단하고 묵직한 사내의 목소리로, 짧고 힘 있게 끊어 말한다.',
     tap: ['예.', '부르셨사옵니까.', '제가 앞서겠사옵니다.'],
-    obey: ['명 받들겠사옵니다.', '제가 앞서겠사옵니다.', '산길이라면 맡겨 주소서.'],
+    obey: ['명 받들겠사옵니다.', '길은 제가 열겠사옵니다.', '산길이라면 맡겨 주소서.'],
     auto: ['제가 앞서겠사옵니다! 따라오라!', '창을 세워라! 물러서지 않는다!', '밀어붙여라! 지금이다!', '이겼사옵니다. 다친 이 없사옵니다.', '면목 없사옵니다. 다시 앞서겠사옵니다.'],
     art: ['ambush', '산등성이를 넘어라! 저들 뒤를 친다!'],
-    recorded: false,
+    recorded: true,
     male: true,
   },
   // 마리 · 36세 · 말보다 몸이 먼저 나가는 사내, 투박하고 짧게 끊는다 · 말버릇 「그뿐이옵니다」
@@ -835,7 +835,7 @@ export const HERO_VOICE: Readonly<Record<string, HeroVoice>> = {
   },
   // 협보 · 38세 · 판 위에 돌을 놓는 책사, 신중하고 침착하다 · 말버릇 「한 수만 더 보시지요」
   'jm-hyeopbo': {
-    voice: 'Schedar',
+    voice: 'Alnilam',
     style: '서른여덟의 침착한 책사. 고르고 차분한 중년 사내의 목소리로, 서두르지 않고 또박또박 말한다.',
     tap: ['부르셨사옵니까.', '판은 늘 펼쳐 두었사옵니다.', '한 수만 더 보시지요.'],
     obey: ['서두르지 않되 지지 않겠사옵니다.', '헤아려 두겠사옵니다.', '그 수, 받겠사옵니다.'],
@@ -846,13 +846,13 @@ export const HERO_VOICE: Readonly<Record<string, HeroVoice>> = {
   },
   // 오간 · 42세 · 흔들리지 않는 중년 궁장, 차분하고 단정하다
   'mh-ogan': {
-    voice: 'Alnilam',
+    voice: 'Brio',
     style: '마흔둘의 노련한 궁장. 단단하고 낮은 중년 사내의 목소리로, 흔들림 없이 차분하고 단정하게 말한다.',
     tap: ['예.', '부르셨사옵니까.', '화살은 채워 두었사옵니다.'],
     obey: ['받들겠사옵니다.', '밤이라도 과녁은 보이옵니다.', '하나씩 꿰겠사옵니다.'],
     auto: ['이 싸움은 제가 맡겠사옵니다!', '숨을 고르고 겨누어라!', '쏘아라! 한 줄로 쏟아부어라!', '모두 맞혔사옵니다.', '빗나갔사옵니다. 다시 겨누겠사옵니다.'],
     art: ['snipe', '저 장수다! 숨을 멈추고 한 살로 꿰라!'],
-    recorded: false,
+    recorded: true,
     male: true,
   },
   // 마려 · 42세 · 논물만 대 주면 곳간을 채우는 농사꾼, 순박하고 푸근하다
@@ -879,13 +879,13 @@ export const HERO_VOICE: Readonly<Record<string, HeroVoice>> = {
   },
   // 촌장 알평 · 50세 · 돌 하나 놓을 자리도 셈해 보는 사람, 신중하고 말수가 적다
   'sr-alpyeong': {
-    voice: 'Elio',
+    voice: 'Cruz',
     style: '쉰의 신중한 촌장. 차분하고 낮은 중년 사내의 목소리로, 말을 아끼며 조심스럽게 말한다.',
     tap: ['예.', '부르셨사옵니까.', '살펴보겠사옵니다.'],
     obey: ['셈해 보고 하겠사옵니다.', '틀림없이 하겠사옵니다.', '받들겠사옵니다.'],
     auto: ['이 싸움은 제가 살피겠사옵니다!', '함부로 나서지 마라! 자리를 지켜라!', '지금이다! 밀어라!', '셈한 대로이옵니다.', '셈이 틀렸사옵니다. 다시 하겠사옵니다.'],
     art: ['shout', '마을을 지킨다! 함성을 올려라!'],
-    recorded: false,
+    recorded: true,
     male: true,
   },
   // 송양 · 52세 · 비류국 왕, 북과 뿔피리를 빼앗긴 일을 가슴에 묻었다 · 품위와 체면
@@ -912,7 +912,13 @@ export const HERO_VOICE: Readonly<Record<string, HeroVoice>> = {
   },
 }
 
+/** 같은 얼굴의 다른 판 장수 — 같은 사람이라 같은 목소리를 쓴다 (튜토리얼 오간 · 주몽 판 옥저 군장) */
+const SAME_VOICE: Readonly<Record<string, string>> = { 'tut-ogan': 'mh-ogan', 'jm-okjeo-ruler': 'bukokjeo-ruler' }
+/** 목소리를 찾을 장수 id — 같은 얼굴이면 그 사람 것 */
+export const heroVoiceId = (id: string): string => SAME_VOICE[id] ?? id
+
 /** 그 장수의 전용 소리 폴더 — 녹음 전이면 null */
 export function heroVoiceDir(id: string): string | null {
-  return HERO_VOICE[id]?.recorded === true ? `realm/voice/hero/${id}/` : null
+  const v = heroVoiceId(id)
+  return HERO_VOICE[v]?.recorded === true ? `realm/voice/hero/${v}/` : null
 }

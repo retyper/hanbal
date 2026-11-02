@@ -19,7 +19,7 @@ import { HIRE_LINE } from '../../realm/data/hire-lines.ts'
 import { hasTrait } from '../../realm/heroes.ts'
 import type { Art, Hero } from '../../realm/types.ts'
 import { LINES_NEW } from './voice-new.ts'
-import { HERO_VOICE, heroVoiceDir } from './voice-hero.ts'
+import { HERO_VOICE, heroVoiceDir, heroVoiceId } from './voice-hero.ts'
 
 /** 처음 결 아홉 — 군장 말 · 성우진 B · C 는 이 아홉에만 있다 */
 export type BaseKind = 'm-young' | 'm-gruff' | 'm-sage' | 'm-elder' | 'm-charm' | 'w-bright' | 'w-cool' | 'w-sly' | 'w-shaman'
@@ -348,7 +348,7 @@ function take(key: string, n: number): number {
 /** 장수 기술 외침 — 그 장수의 결로 */
 export function artVoicePath(h: Hero, art: Art, ruler = false): string {
   const own = heroVoiceDir(h.id)
-  if (own !== null && HERO_VOICE[h.id]?.art[0] === art) return `${own}art.ogg`
+  if (own !== null && HERO_VOICE[heroVoiceId(h.id)]?.art[0] === art) return `${own}art.ogg`
   const { dir, kind } = voiceSlot(h, ruler)
   return `${dir}art-${kind}-${art}.ogg`
 }
