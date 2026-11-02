@@ -1355,10 +1355,12 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const v = 0.25 + 0.5 * (t / R.ascendFlashMs)
       at(t, () => ding(snd(k % 2 === 0 ? 'tap_drum' : 'war_drum'), v))
     }
+    // 각성 제 소리 (형 11-03: "각성은 사운드도 제대로 새로") — 처음부터 기운이 차올라 번쩍에 터지고 · 짐승은 제 울음으로 솟는다
+    ding(snd('ax_rise'), 0.6)
     for (const i of [0, 1, 2]) at(R.ascendSlotMs + i * R.ascendSlotGapMs, () => ding(snd('tap_bell'), 0.55 + i * 0.15))
     at(R.ascendVortexMs, () => ding(snd(E.sfx), 0.8))
-    at(R.ascendBeastMs, () => ding(snd('war_cry'), 0.75))
-    at(R.ascendFlashMs, () => { ding(snd('battle_crit'), 0.9); if (typeof navigator.vibrate === 'function') navigator.vibrate([40, 40, 80, 40, 120]) })
+    at(R.ascendBeastMs, () => ding(snd(E.cry), 0.9))
+    at(R.ascendFlashMs, () => { ding(snd('ax_flash'), 0.95); if (typeof navigator.vibrate === 'function') navigator.vibrate([40, 40, 80, 40, 120]) })
     at(R.ascendFlashMs + 250, () => ding(snd('horn_victory'), 0.75))
     at(R.ascendFlashMs + 1100, () => { if (h.status === 'free' && !isRuler(r, h.id)) ding(voicePath(h, 'tap', false), 0.9) })
   }

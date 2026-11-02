@@ -21,16 +21,18 @@ export interface ElemInfo {
   readonly beastName: string
   /** 짙은 · 가운데 · 밝은 · 심 (셰이더 그레이디언트와 알갱이) */
   readonly c: readonly [string, string, string, string]
-  /** 소용돌이에 드는 소리 · 짐승이 솟을 때 소리 */
+  /** 소용돌이에 드는 소리 */
   readonly sfx: Slot
+  /** 짐승이 솟을 때 그 짐승의 울음 (공유마당 · 형 11-03: "각성은 사운드도 제대로 새로") */
+  readonly cry: Slot
 }
 
 export const ELEM: Readonly<Record<Elem, ElemInfo>> = {
-  fire: { name: '불', beast: 'tiger', beastName: '범', c: ['#7a0c02', '#ff5a1a', '#ffc04a', '#fff4d8'], sfx: 'cmd_fire' },
-  water: { name: '물', beast: 'dragon', beastName: '용', c: ['#04205a', '#1a6aff', '#5ad0ff', '#eafcff'], sfx: 'cmd_ford' },
-  bolt: { name: '번개', beast: 'hawk', beastName: '매', c: ['#2a0a6a', '#7a5aff', '#a8e0ff', '#ffffff'], sfx: 'battle_crit' },
-  wind: { name: '바람', beast: 'crane', beastName: '학', c: ['#063a30', '#1aa88a', '#a8f4d8', '#f6fffa'], sfx: 'arrow_volley' },
-  earth: { name: '땅', beast: 'bear', beastName: '곰', c: ['#3a2006', '#a86a1a', '#f0c060', '#fff4d6'], sfx: 'cmd_rocks' },
+  fire: { name: '불', beast: 'tiger', beastName: '범', c: ['#7a0c02', '#ff5a1a', '#ffc04a', '#fff4d8'], sfx: 'cmd_fire', cry: 'ax_tiger' },
+  water: { name: '물', beast: 'dragon', beastName: '용', c: ['#04205a', '#1a6aff', '#5ad0ff', '#eafcff'], sfx: 'cmd_ford', cry: 'ax_dragon' },
+  bolt: { name: '번개', beast: 'hawk', beastName: '매', c: ['#2a0a6a', '#7a5aff', '#a8e0ff', '#ffffff'], sfx: 'battle_crit', cry: 'ax_hawk' },
+  wind: { name: '바람', beast: 'crane', beastName: '학', c: ['#063a30', '#1aa88a', '#a8f4d8', '#f6fffa'], sfx: 'arrow_volley', cry: 'ax_crane' },
+  earth: { name: '땅', beast: 'bear', beastName: '곰', c: ['#3a2006', '#a86a1a', '#f0c060', '#fff4d6'], sfx: 'cmd_rocks', cry: 'ax_bear' },
 }
 
 /** 장수마다 정해 두는 결 (장수 설정 docs/realm/cast 가 정하면 여기에) — 없으면 특성 · 가장 높은 능력치로 */
