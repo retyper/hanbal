@@ -635,6 +635,8 @@ export function actRows(acts: readonly Act[] | undefined, ourS: 'a' | 'd', art: 
   if (list.length === 0) return ''
   return `<div class="wacts">${list.map((x) => actRow(x, ourS, art, mixA, mixD)).join('')}</div>`
 }
+/** 굵은 화살표 — 우리 일은 오른쪽(→), 적의 일은 CSS 로 뒤집어 왼쪽(←) */
+const ACT_ARW = '<svg class="arw" viewBox="0 0 30 18" aria-hidden="true"><path d="M1 6.5h17V1l11 8-11 8v-5.5H1z"/></svg>'
 /** 누가 누구를 · 됐나 — 한 줄 */
 function actRow(x: Act, ourS: 'a' | 'd', art: string, mixA: Readonly<Partial<Record<string, number>>>, mixD: Readonly<Partial<Record<string, number>>>): string {
   const mixOfS = (s: 'a' | 'd'): Readonly<Partial<Record<string, number>>> => (s === 'a' ? mixA : mixD)
@@ -645,16 +647,24 @@ function actRow(x: Act, ourS: 'a' | 'd', art: string, mixA: Readonly<Partial<Rec
     const r = ACT_RES[x.res]
     const good = r === 'even' ? '' : (r === 'ok') === us ? ' good' : ' bad'
     const verb = x.c === 'art' && x.art !== undefined ? ART_NAME[x.art] : CMD_NAME[x.c]
-    const badge = r === 'ok' ? '✓' : r === 'no' ? '✕' : '='
-    const word = r === 'ok' ? (x.tg !== undefined ? '먹혔다' : '해냈다') : r === 'no' ? (x.res === 'wasted' ? '헛방' : x.c === 'retreat' ? '따라잡혔다' : '막혔다') : '맞섰다'
-    h += `<div class="wact${us ? ' us' : ' foe'}${good}"><span class="who">${us ? '우리' : '적'}</span><img src="${art}icon/${groupIcon(mixOfS(x.s), x.g)}.png" alt=""><b>${esc(verb)}</b>`
-    if (x.tg !== undefined) h += `<i class="arw">→</i><img class="tg" src="${art}icon/${groupIcon(mixOfS(other), x.tg)}.png" alt="">`
-    h += `<span class="res">${badge} ${word}</span>`
-    if ((x.tl ?? 0) > 0) h += `<span class="loss">${us ? '적' : '우리'} −${x.tl}</span>`
-    if ((x.sl ?? 0) > 0) h += `<span class="loss own">${us ? '우리' : '적'} −${x.sl}</span>`
+    // 표시와 말은 늘 우리 눈으로 — 우리 일: 「우리 무리 → 적 무리 · 먹혔다」 · 적의 일은 거울로: 「당했다 · 우리 무리 ← 적 무리 적」
+    // (형 11-02: "우리꺼였으면 적은 「당했다 ~병 ← 어쩌구 적」 이런 식으로 거꾸로 · 화살표도 두껍게")
+    const badge = good === ' good' ? '✓' : good === ' bad' ? '✕' : '='
+    const word = us
+      ? (r === 'ok' ? (x.tg !== undefined ? '먹혔다' : '해냈다') : r === 'no' ? (x.res === 'wasted' ? '헛방' : x.c === 'retreat' ? '따라잡혔다' : '막혔다') : '맞섰다')
+      : (r === 'ok' ? (x.tg !== undefined ? '당했다' : '해냈다') : r === 'no' ? (x.res === 'wasted' ? '헛방' : x.c === 'retreat' ? '따라잡았다' : '막았다') : '맞섰다')
+    const who = `<span class="who">${us ? '우리' : '적'}</span>`
+    const self = `<img src="${art}icon/${groupIcon(mixOfS(x.s), x.g)}.png" alt=""><b>${esc(verb)}</b>`
+    const tgt = x.tg !== undefined ? `<img class="tg" src="${art}icon/${groupIcon(mixOfS(other), x.tg)}.png" alt="">` : ''
+    const res = `<span class="res">${badge} ${word}</span>`
+    let tail = ''
+    if ((x.tl ?? 0) > 0) tail += `<span class="loss">${us ? '적' : '우리'} −${x.tl}</span>`
+    if ((x.sl ?? 0) > 0) tail += `<span class="loss own">${us ? '우리' : '적'} −${x.sl}</span>`
     // 물러나기 — 잃은 수만 있으면 「−21」을 남은 수로 읽었다 (형 10-25: "330명이 21명 됐음 · 21명이 죽은 거 아닌가?") — 빠져나간 수를 곁에
-    if (x.c === 'retreat' && x.res === 'ok' && x.n !== undefined) h += `<span class="kept">${x.n}명 빠져나갔다</span>`
-    h += '</div>'
+    if (x.c === 'retreat' && x.res === 'ok' && x.n !== undefined) tail += `<span class="kept">${x.n}명 빠져나갔다</span>`
+    h += us
+      ? `<div class="wact us${good}">${who}${self}${tgt !== '' ? `${ACT_ARW}${tgt}` : ''}${res}${tail}</div>`
+      : `<div class="wact foe${good}">${res}${tail}${tgt !== '' ? `${tgt}${ACT_ARW}` : ''}${self}${who}</div>`
   }
   return h
 }
@@ -2538,7 +2548,8 @@ export const WAR_CSS = `
 .ap .wact.us { border-left-color: #c9a45a; } .ap .wact.foe { border-left-color: #b0584a; }
 .ap .wact img { width: 26px; height: 26px; object-fit: contain; }
 .ap .wact .who { font-size: 11px; color: #a89c84; min-width: 24px; }
-.ap .wact .arw { font-style: normal; color: #a89c84; }
+.ap .wact .arw { flex: none; width: 30px; height: 18px; fill: #e8c27a; filter: none; } .ap .wact.foe .arw { fill: #ff8a74; transform: scaleX(-1); } /* 굵은 화살표 · 적의 일은 왼쪽으로 (형 11-02) */
+.ap .wact.foe { justify-content: flex-end; border-left: 0; border-right: 3px solid #b0584a; } .ap .wact.foe .res { margin-left: 0; margin-right: auto; } .ap .wact.foe .who { text-align: right; }
 .ap .wact .res { margin-left: auto; font-weight: 700; padding: 1px 7px; border-radius: 8px; background: #ffffff10; color: #d8cfbd; }
 .ap .wact.good .res { background: #2f4a26; color: #b8e09a; } .ap .wact.bad .res { background: #4a2420; color: #ffb0a0; }
 .ap .wact .loss { font-size: 12px; color: #e0a090; } .ap .wact .loss.own { color: #a89c84; }
