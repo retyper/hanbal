@@ -41,17 +41,17 @@ describe('캠페인 1장 — 온조, 마한을 아우르다', () => {
     for (const f of Object.keys(r.factions)) assert.ok(FACTION_ART[f] !== undefined, `${f} 깃발 없음`)
   })
 
-  it('장 차례 — 배우는 판이 0장, 마한이 1장, 주몽이 2장', () => {
-    assert.deepEqual(CHAPTERS.slice(0, 3).map((c) => [c.n, c.region]), [[0, 'tutorial'], [1, 'mahan'], [2, 'jumong']])
+  it('장 차례 — 배우는 판이 0장, 마한이 1장, 서라벌이 2장, 주몽이 3장 (11-03)', () => {
+    assert.deepEqual(CHAPTERS.slice(0, 4).map((c) => [c.n, c.region]), [[0, 'tutorial'], [1, 'mahan'], [2, 'seorabeol'], [3, 'jumong']])
   })
 
   it('0장을 끝내면 1장 · 1장을 이기면 2장 · 이미 깬 장은 그대로 열려 있다', () => {
     assert.ok(!unlockedFrom([], false, null).has('mahan'))
     assert.ok(unlockedFrom([], true, null).has('mahan'))
-    assert.ok(!unlockedFrom([], true, null).has('jumong'), '1장을 건너뛰고 2장이 열리면 안 된다')
-    assert.ok(unlockedFrom(['tutorial', 'mahan'], true, null).has('jumong'))
-    assert.ok(unlockedFrom(['tutorial', 'jumong'], true, null).has('jumong'), '1장이 생기기 전에 2장을 깬 사람')
-    assert.ok(unlockedFrom([], true, 'jumong').has('jumong'), '2장을 하던 사람')
+    assert.ok(!unlockedFrom([], true, null).has('seorabeol'), '1장을 건너뛰고 2장이 열리면 안 된다')
+    assert.ok(unlockedFrom(['tutorial', 'mahan'], true, null).has('seorabeol'))
+    assert.ok(unlockedFrom(['tutorial', 'jumong'], true, null).has('jumong'), '전에 주몽을 깬 사람')
+    assert.ok(unlockedFrom([], true, 'jumong').has('jumong'), '주몽을 하던 사람')
   })
 
   it('목지 도읍·원산성·금현성을 다 쥐어야 이긴다', () => {

@@ -44,8 +44,18 @@ export const CHAPTERS: readonly Chapter[] = [
     // 기한 열두 해 — 마한은 먼저 치고, 버티기만 해서는 이기지 못한다 (11-03 열 해 → 열두 해 · 형: "1장이니까 웬만하면 누가 해도 이기게")
     scenario: { id: 'mahan', win: [{ kind: 'hold', nodes: ['mh-mokji-cap', 'mh-wonsan', 'mh-geumhyeon'] }], limit: 48 },
   },
+  // 2장 서라벌 · 3장 주몽 — 서라벌이 훨씬 쉬워 앞으로 (형 11-03: "3장이 훨씬 깨기 쉬운 거 같음 · 그걸 2장으로")
   {
-    id: 'jumong', n: 2, region: 'jumong', nation: 'goguryeo', name: '주몽, 졸본에 서다', era: '기원전 37년 · 졸본', hero: '주몽',
+    id: 'seorabeol', n: 2, region: 'seorabeol', nation: 'saro', name: '서라벌 여섯 마을', era: '기원전 57년 · 경주', hero: '혁거세',
+    hook: '나정 곁 붉은 알에서 난 아이. 여섯 마을의 촌장들이 그를 임금으로 받들기로 한다. 칼 대신 마음으로.',
+    goal: '여섯 마을이 모두 따르게 한다. 동맹이든 속국이든 (마을을 치면 다른 마을의 마음이 식는다)',
+    art: 'keyart/seorabeol.jpg',
+    source: '『삼국사기』 신라본기: 여섯 마을 사람들이 혁거세를 받들어 임금으로 삼았다. 『삼국유사』 기이편.',
+    // 칼을 덜 뽑는 장 — 마을을 치면 다른 마을들의 마음이 식는다 (scenario.fewerSwords) · 기한 열 해
+    scenario: { id: 'seorabeol', win: [{ kind: 'submit', factions: ['sr-yangsan', 'sr-goheo', 'sr-jinji', 'sr-daesu', 'sr-gari', 'sr-goya'], how: 'either' }], limit: 40 },
+  },
+  {
+    id: 'jumong', n: 3, region: 'jumong', nation: 'goguryeo', name: '주몽, 졸본에 서다', era: '기원전 37년 · 졸본', hero: '주몽',
     hook: '동부여를 빠져나온 활 잘 쏘는 사내. 비류수 가에 나라를 세우자 송양왕이 활 솜씨를 겨루자 한다.',
     goal: '송양의 비류국과 동맹을 맺거나 속국으로 삼고, 행인국과 북옥저 도읍을 차지한다',
     art: 'keyart/jumong.jpg',
@@ -54,15 +64,6 @@ export const CHAPTERS: readonly Chapter[] = [
     scenario: { id: 'jumong', win: [{ kind: 'submit', factions: ['biryuna'], how: 'either' }, { kind: 'hold', nodes: ['jm-haengin-cap', 'jm-okjeo-cap'] }], limit: 48 },
   },
   // 아래는 아직 판이 없는 장 — 카드는 "짓는 중"으로 보인다 (형 10-23: "캠페인 수 너무 적음"). 그림은 표지가 오기 전까지 사건 그림을 빌린다
-  {
-    id: 'seorabeol', n: 3, region: 'seorabeol', nation: 'saro', name: '서라벌 여섯 마을', era: '기원전 57년 · 경주', hero: '혁거세',
-    hook: '나정 곁 붉은 알에서 난 아이. 여섯 마을의 촌장들이 그를 임금으로 받들기로 한다. 칼 대신 마음으로.',
-    goal: '여섯 마을이 모두 따르게 한다. 동맹이든 속국이든 (마을을 치면 다른 마을의 마음이 식는다)',
-    art: 'keyart/seorabeol.jpg',
-    source: '『삼국사기』 신라본기: 여섯 마을 사람들이 혁거세를 받들어 임금으로 삼았다. 『삼국유사』 기이편.',
-    // 칼을 덜 뽑는 장 — 마을을 치면 다른 마을들의 마음이 식는다 (scenario.fewerSwords) · 기한 열 해
-    scenario: { id: 'seorabeol', win: [{ kind: 'submit', factions: ['sr-yangsan', 'sr-goheo', 'sr-jinji', 'sr-daesu', 'sr-gari', 'sr-goya'], how: 'either' }], limit: 40 },
-  },
   {
     id: 'gujibong', n: 4, region: null, nation: 'garak', name: '구지봉의 노래', era: '기원후 42년 · 김해', hero: '김수로',
     hook: '「거북아 거북아 머리를 내어라」, 하늘에서 내린 금빛 알. 바다 건너 탈해가 왕위를 내놓으라 한다.',

@@ -1,7 +1,7 @@
 /**
  * 캠페인 3장 「서라벌 여섯 마을」 (형 2026-10-25: "3장도 얼른 하고싶다")
  *  - 고을은 틀 안 뭍 위에 · 길은 모두 이어진다 · 얼굴과 깃발이 있다
- *  - 2장을 이기면 3장이 열린다
+ *  - 1장을 이기면 2장이 열린다 (11-03 주몽과 차례를 바꿈)
  *  - 여섯 마을이 모두 따라야(동맹·조공) 이긴다
  *  - 칼을 덜 뽑는 장 — 우리가 마을을 치면 다른 다섯 마을의 호감이 깎인다 (왜인을 치는 건 괜찮다)
  *  - 고허촌은 처음부터 화친 · 왜인은 모두와 싸운다
@@ -45,9 +45,9 @@ describe('캠페인 3장 — 서라벌 여섯 마을', () => {
     for (const f of Object.keys(r.factions)) assert.ok(FACTION_ART[f] !== undefined, `${f} 깃발 없음`)
   })
 
-  it('2장을 이기면 3장이 열린다', () => {
-    assert.ok(!unlockedFrom(['tutorial', 'mahan'], true, null).has('seorabeol'))
-    assert.ok(unlockedFrom(['tutorial', 'mahan', 'jumong'], true, null).has('seorabeol'))
+  it('1장을 이기면 2장이 열린다', () => {
+    assert.ok(!unlockedFrom(['tutorial'], true, null).has('seorabeol'))
+    assert.ok(unlockedFrom(['tutorial', 'mahan'], true, null).has('seorabeol'))
   })
 
   it('여섯 마을이 모두 따라야 이긴다', () => {

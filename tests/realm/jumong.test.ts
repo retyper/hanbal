@@ -39,10 +39,11 @@ describe('캠페인 2장 — 주몽', () => {
     for (const f of Object.keys(r.factions)) assert.ok(FACTION_ART[f] !== undefined, `${f} 깃발 없음`)
   })
 
-  it('1장(마한)을 이기면 2장이 열린다', () => {
+  it('2장(서라벌)을 이기면 3장(주몽)이 열린다 (11-03 서라벌과 차례를 바꿈)', () => {
     assert.ok(!unlockedFrom([], false, null).has('jumong'))
-    assert.ok(unlockedFrom(['mahan'], true, null).has('jumong'))
-    assert.ok(unlockedFrom(['tutorial', 'mahan'], false, null).has('jumong'))
+    assert.ok(!unlockedFrom(['tutorial', 'mahan'], true, null).has('jumong'), '서라벌을 건너뛰고 열리면 안 된다')
+    assert.ok(unlockedFrom(['tutorial', 'mahan', 'seorabeol'], true, null).has('jumong'))
+    assert.ok(unlockedFrom(['tutorial', 'mahan', 'jumong'], true, null).has('jumong'), '차례가 바뀌기 전에 주몽을 깬 사람')
     assert.ok(unlockedFrom([], false, 'jumong').has('jumong'))
   })
 
