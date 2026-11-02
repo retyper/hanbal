@@ -7613,6 +7613,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       paint()
     },
     show(r, b, rep, fresh = false) {
+      // 다른 판을 열었다(새 판 · 이어 하기) — 음악은 처음부터 (앞 판의 승리 음악이 멈춘 자리에서 이어 나오던 것)
+      if (realm !== r) music.reset()
       realm = r
       before = b
       report = rep
