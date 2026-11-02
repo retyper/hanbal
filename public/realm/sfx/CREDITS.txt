@@ -249,3 +249,6 @@ ax_crane_g3.mp3  공유마당 · 「새_두루미_철원 갈말읍_두루미 두
 ax_dragon_g1.mp3  공유마당 · 「SE_11_05_ 몬스터 등장 임팩트 효과」 · 공유마당 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13355477 · 잘라 냄
 ax_dragon_g2.mp3  공유마당 · 「LSMSE0401_강력한 저음」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312693 · 잘라 냄
 ax_dragon_g3.mp3  공유마당 · 「SE_11_13_폭풍후 천둥 임팩트」 · 공유마당 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13355485 · 잘라 냄
+ax_flash_g4.mp3  공유마당 · 「LSMSE0912_Trailer Hit 2」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312782 · 잘라 세 번 이음 + 내려가는 울림·반짝임은 직접 합성
+ax_flash_g5.mp3  공유마당 · 「LSMSE0911_Trailer Hit 1」(https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312781) · 「LSMSE0913_Trailer Hit 3」(https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312783) · 한국저작권위원회 · CC BY(저작자 표시) · 잘라 이음 + 내려가는 울림·반짝임은 직접 합성
+ax_flash_g6.mp3  공유마당 · 「LSMSE0912_Trailer Hit 2」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13312782 · 한 방 + 내려가는 울림·반짝임은 직접 합성

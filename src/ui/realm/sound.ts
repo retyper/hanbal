@@ -44,7 +44,7 @@ export const PICK = {
   // 10-27 형: 엽전 14(g2) · 붓 17(g2) · 닫기는 옛 나무 딸깍 51(ui_cancel_c → tap_cancel_c) · 제사는 굿(tap_rite) · 혼인은 가야금(wed)
   tap_arms: 'g1', tap_coin: 'g2', tap_brush: 'g2', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'c', tap_rite: 'g5',
   // 각성 연출 제 소리 — 모임(차오름) · 번쩍(한 방) · 짐승 다섯의 울음 (형 11-03: "각성은 사운드도 제대로 새로") · 공유마당 후보 g1~g3, 형이 sound-picker.html 에서 고른다
-  ax_rise: 'g2', ax_flash: 'g3', ax_tiger: 'g1', ax_bear: 'g3', ax_hawk: 'g1', ax_crane: 'g1', ax_dragon: 'g1',
+  ax_rise: 'g2', ax_flash: 'g4', ax_tiger: 'g1', ax_bear: 'g3', ax_hawk: 'g1', ax_crane: 'g1', ax_dragon: 'g1',
 } as const
 /** ogg 가 아닌 후보 — 형이 받아 온 것은 받은 꼴 그대로 · 공유마당 음악은 mp3 · 누르는 소리는 브라우저로 잘라 낸 wav */
 const EXT: Readonly<Partial<Record<string, string>>> = {
@@ -62,6 +62,7 @@ const EXT: Readonly<Partial<Record<string, string>>> = {
   war_cry_g1: 'wav', war_cry_g2: 'wav', war_cry_g3: 'wav',
   cmd_hold_h1: 'mp3', // 방진 — 형이 받아 온 「탱탱」 쇠판 소리 (10-24)
   ...Object.fromEntries(['battle_clash', 'battle_crit'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'mp3']))),
+  ax_flash_g4: 'mp3', ax_flash_g5: 'mp3', ax_flash_g6: 'mp3',
   ...Object.fromEntries(['ax_rise', 'ax_flash', 'ax_tiger', 'ax_bear', 'ax_hawk', 'ax_crane', 'ax_dragon'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'mp3']))),
   ...Object.fromEntries(['tap_arms', 'tap_coin', 'tap_brush', 'tap_move', 'tap_bell', 'tap_drum', 'tap_map', 'tap_cancel'].flatMap((s) => ['g1', 'g2', 'g3'].map((g) => [`${s}_${g}`, 'wav']))),
 }
@@ -134,6 +135,12 @@ export function tapSlot(act: string): Slot | null {
  * 0.22초부터 내면 바로 −14dB 로 시작해 0.07초 뒤 봉우리 (헤드리스 크롬 decodeAudioData 로 잼)
  */
 const LEAD_IN: Readonly<Partial<Record<string, number>>> = { cmd_hold_h1: 0.22 }
+/**
+ * 큰 한 방이 파일 첫머리가 아닌 것 — 그만큼(ms) 먼저 낸다. 각성 번쩍 g4·g5 는 「파·파·밤」이라 「밤」이 0.36초에 온다 (형 11-03: "파파밤 하고 하강")
+ */
+const PRE_ROLL: Readonly<Partial<Record<string, number>>> = { ax_flash_g4: 360, ax_flash_g5: 360 }
+/** 그 자리의 고른 파일을 얼마나 먼저 내야 하나 (ms) */
+export const preRoll = (slot: Slot): number => PRE_ROLL[`${slot}_${PICK[slot]}`] ?? 0
 /** ding 에 넘기는 이름 — public 아래 길 (확장자까지 — 형이 받아 온 mp3 도 있다) */
 export const snd = (slot: Slot): string => {
   const lead = LEAD_IN[`${slot}_${PICK[slot]}`]

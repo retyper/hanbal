@@ -99,7 +99,7 @@ import { MOOD_CSS, MOOD_WORD, moodImg, moodOf } from './mood.ts'
 import { AUD_CSS, askSay, pactSay, typed, type PactKind } from './audience.ts'
 import { customDef, customsOf } from '../../realm/data/customs.ts'
 import { BOARDS, FRONT_CSS, PROLOGUE_STEPS, customsHtml, winNeed, boardHtml, detailHtml, endingHtml, nationsHtml, prologueHtml, slotsHtml, titleHtml, type FrontKit, type History, type SlotInfo } from './front.ts'
-import { SCENE_SOUND, makeMusic, playOnce, snd, sndFile, tapSlot, warmOnce } from './sound.ts'
+import { SCENE_SOUND, makeMusic, playOnce, preRoll, snd, sndFile, tapSlot, warmOnce } from './sound.ts'
 import { exileArt, exileBeats, fugitiveBeats, quarrelArt, quarrelBeats, romanceBeats, romanceFlip, sayOfBeat } from './card-lines.ts'
 import { HERO_POOL } from '../../realm/data/heroes-pool.ts'
 import { chiefCastOf, hireVoicePath, voiceGate, voiceKind, voicePath, type VoiceLine } from './voice.ts'
@@ -1361,7 +1361,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     for (const i of [0, 1, 2]) at(R.ascendSlotMs + i * R.ascendSlotGapMs, () => ding(snd('tap_bell'), 0.55 + i * 0.15))
     at(R.ascendVortexMs, () => ding(snd(E.sfx), 0.8))
     at(R.ascendBeastMs, () => ding(snd(E.cry), 0.9))
-    at(R.ascendFlashMs, () => { ding(snd('ax_flash'), 0.95); if (typeof navigator.vibrate === 'function') navigator.vibrate([40, 40, 80, 40, 120]) })
+    at(R.ascendFlashMs - preRoll('ax_flash'), () => ding(snd('ax_flash'), 0.95))
+    at(R.ascendFlashMs, () => { if (typeof navigator.vibrate === 'function') navigator.vibrate([40, 40, 80, 40, 120]) })
     at(R.ascendFlashMs + 250, () => ding(snd('horn_victory'), 0.75))
     at(R.ascendFlashMs + 1100, () => { if (h.status === 'free' && !isRuler(r, h.id)) ding(voicePath(h, 'tap', false), 0.9) })
   }
