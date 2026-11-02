@@ -9,6 +9,7 @@ import { ageSeasons } from './calendar.ts'
 import {
   ambushChance, ambushSizePenalty, counterMul, fightHead, gearMul, headcount, leadMul, roleMul, strength, winChance, type Field, type Force, type UnitKind,
 } from './battle.ts'
+import { passable } from './diplomacy.ts'
 import { militiaMen } from './economy.ts'
 import { ambushTraitOf } from './heroes.ts'
 import { alertRange, seenMix, visibleRange } from './intel.ts'
@@ -156,7 +157,8 @@ export function movesOf(r: Realm, faction: string, a: Army): Move[] {
     const node = r.nodes[to]!
     // 아무도 안 쥔 빈땅은 칠 데가 아니다 — 장정이 없다. 개척(settle)이나 깃발 꽂기로 쥔다
     // 주인 잃은 철광·포구(자유판 · regions/rivals.ts)는 사람이 남아 있다 — 들어가 차지한다
-    const hostile = node.owner !== faction && node.kind !== 'sodo' && (node.owner !== null || node.kind !== 'wild')
+    // 동맹·속국의 땅은 지나가는 길이다 — 치는 길이 아니니 전략 회의도 없다 (형 11-03 · season.allied 와 같은 셈)
+    const hostile = node.owner !== faction && node.kind !== 'sodo' && (node.owner !== null || node.kind !== 'wild') && !passable(r, faction, node.owner)
     const k = known[to]
     const v = winVs(r, faction, to, myF, { force: forceOf(r, a), edge: ed.kind })
     const al = k?.alert ? alertRange(k.alert.v, ageSeasons(r, k.alert.season)) : null

@@ -22,7 +22,7 @@ import {
 } from './battle.ts'
 import { BATTLE_STYLES, feastCost, fightRounds, groupOf, heroesOf, type BattleStyle, type FightResult, type Side, type Terrain } from './tactics.ts'
 import {
-  checkPledges, declareWar, driftFavor, expireRelations, friendly, holdMarkets, makeAsks, onHostile, relationOf, resolveAnswers, resolveEnvoys,
+  checkPledges, declareWar, driftFavor, expireRelations, friendly, holdMarkets, passable, makeAsks, onHostile, relationOf, resolveAnswers, resolveEnvoys,
   shareIntel, stationFriction, stepLent,
 } from './diplomacy.ts'
 import {
@@ -278,7 +278,7 @@ function governorLeads(r: Realm, node: string, owner: string): string | null {
 
 /** 동맹의 땅은 지나간다 (FLOW §4) — 그 고을의 주인과 머무는 군대가 전부 제 편이거나 동맹이면 싸움이 아니다 */
 function allied(r: Realm, a: string, b: string | null): boolean {
-  return b !== null && (a === b || relationOf(r, a, b).state === 'ally')
+  return passable(r, a, b) // 동맹 · 조공하는 사이(속국)
 }
 
 /** 이 나라가 그 고을에 닿으면 싸움이 나는가 — 남의 땅이거나(장정) 남의 군대가 머문다. 소도·동맹의 땅은 아니다 */

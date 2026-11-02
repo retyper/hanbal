@@ -33,6 +33,18 @@ export function relationOf(r: Realm, a: string, b: string): Relation {
   return r.relations?.[pairKey(a, b)] ?? NEUTRAL
 }
 
+/**
+ * 그 나라의 땅을 지나가도 되는 사이인가 — 같은 나라 · 동맹 · 조공하는 사이(속국·맹주, 어느 쪽이든).
+ * 이 땅에 들어가도 싸움이 아니고 전략 회의도 열리지 않는다 (형 11-03: "동맹이나 속국을 대상으로 군사가 가거나 지나갈 땐 전략회의 필요 없잖아 · 평범하게 이동되어야").
+ * 속국은 화친(truce)에 vassal 표가 붙은 꼴이라, 전엔 속국 고을로 가면 장정과 싸웠다
+ */
+export function passable(r: Realm, a: string, b: string | null): boolean {
+  if (b === null) return false
+  if (a === b) return true
+  const rel = relationOf(r, a, b)
+  return rel.state === 'ally' || (rel.vassal !== undefined && rel.vassal.until >= r.season && rel.state !== 'war')
+}
+
 /** 친한 사이인가 — 화친·동맹. AI 는 이런 나라를 치지 않는다 */
 export function friendly(r: Realm, a: string, b: string): boolean {
   const s = relationOf(r, a, b).state

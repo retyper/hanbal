@@ -16,6 +16,7 @@ import { decide } from '../../src/realm/ai.ts'
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
 import { envoyChance, envoyChanceFor, envoyClash, envoyTrueChance, pairKey, relationOf } from '../../src/realm/diplomacy.ts'
 import { advance, otherEnd, planned } from '../../src/realm/season.ts'
+import { movesOf } from '../../src/realm/estimate.ts'
 import { P } from '../../src/tune/params.ts'
 import type { EnvoyAsk, Order, Realm, ReportLine } from '../../src/realm/types.ts'
 
@@ -176,5 +177,18 @@ describe('교역 · 조공 · 동맹', () => {
     assert.equal(report.lines.filter((l) => l.kind === 'battle').length, 0)
     assert.equal(next.nodes['goja-vil']!.owner, 'goja')
     assert.equal(next.armies['a-us']!.at, 'goja-vil')
+  })
+
+  it('속국(조공하는 사이)의 땅도 지나간다 · 동맹·속국 고을로 가는 길은 치는 길이 아니다 — 전략 회의가 안 열린다 (형 11-03)', () => {
+    const r = planned(byeonhanMini(1), [])
+    r.relations[pairKey('us', 'goja')] = { state: 'truce', until: r.season + 40, vassal: { lord: 'us', until: r.season + 40 } }
+    const m = movesOf(r, 'us', r.armies['a-us']!).find((x) => x.to === 'goja-vil')!
+    assert.equal(m.hostile, false, '속국 고을로 가는 길')
+    const { next, report } = advance(r, [{ kind: 'march', army: 'a-us', edge: 'e03', ambush: false }])
+    assert.equal(report.lines.filter((l) => l.kind === 'battle').length, 0)
+    assert.equal(next.nodes['goja-vil']!.owner, 'goja')
+    const r2 = planned(byeonhanMini(1), [])
+    r2.relations[pairKey('us', 'goja')] = { state: 'ally', until: null }
+    assert.equal(movesOf(r2, 'us', r2.armies['a-us']!).find((x) => x.to === 'goja-vil')!.hostile, false, '동맹 고을로 가는 길')
   })
 })
