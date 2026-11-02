@@ -314,7 +314,7 @@ export const BATTLE_SFX = {
   /** 마지막 일격 · 장수 겨루기 이김 — 형이 싸움 소리 고르기 판에서 고른 것 (10-25) */
   final: 'realm/sfx/battle_final_c1.ogg', duelWin: 'realm/sfx/battle_duelwin_c2.ogg',
   /** 사로잡았다 · 장수 겨루기 · 마지막 일격(적이 무너졌다) · 이겼다 · 졌다 */
-  caught: 'jingleUnlock', win: snd('horn_victory'), lose: snd('bad_big'),
+  caught: snd('capt_lock'), win: snd('horn_victory'), lose: snd('bad_big'),
   /** 싸움이 열린다 — 북 두 번, 종 한 번, 함성 */
   openDrum: snd('tap_drum'), openBell: snd('war_bell'), cry: snd('war_cry'),
 } as const

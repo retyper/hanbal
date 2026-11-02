@@ -158,9 +158,9 @@ export const ASCEND_CSS = `
 @keyframes axzap { 0% { opacity: 1; } 12% { opacity: .2; } 20% { opacity: 1; } 34% { opacity: 0; } 100% { opacity: 0; } }
 /* 3 짐승 — 액자 뒤에서 솟는다 · 알파 그림 (넓은 칸에 섞기 모드를 걸지 않는다 · 폰 그래픽 한도) */
 .ap .axbeast { position: absolute; left: 50%; top: 44%; width: min(150vw, 980px, 120vh); translate: -50% -50%; z-index: 0; pointer-events: none; opacity: 0;
-  animation: axbeast 1.1s cubic-bezier(.2, 1.2, .4, 1) var(--tb) forwards, axbeastb 1.6s ease-in-out calc(var(--tf) + 700ms) infinite alternate; }
-@keyframes axbeast { 0% { opacity: 0; transform: scale(.55) translateY(12%); } 55% { opacity: 1; } 100% { opacity: .9; transform: none; } }
-@keyframes axbeastb { from { opacity: .9; } to { opacity: .55; } }
+  animation: axbeast calc(var(--tf) - var(--tb)) cubic-bezier(.3, .9, .5, 1) var(--tb) forwards; }
+/* 짐승은 절정 바로 앞에 솟았다가 번쩍과 함께 빛으로 흩어진다 — 각성 초상 뒤에 남지 않는다 (형 11-03: "동물 이미지를 남아 있게 만들지 말고 절정 직전에 연출되고 사라지게") */
+@keyframes axbeast { 0% { opacity: 0; transform: scale(.55) translateY(12%); } 35% { opacity: 1; transform: none; } 82% { opacity: .95; transform: scale(1.04); } 100% { opacity: 0; transform: scale(1.25); } }
 .ap .axbeast.gone { display: none; }
 /* 4 번쩍 — 충격파 고리 셋 */
 .ap .axrings { position: absolute; left: 50%; top: 42%; width: 0; height: 0; z-index: 4; pointer-events: none; }

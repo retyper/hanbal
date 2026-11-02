@@ -268,3 +268,12 @@ bad_small_g3.mp3  공유마당 · 「북소리1번」 · 김용배 · CC BY(저�
 bad_big_g1.mp3  공유마당 · 「북소리B」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253632 두 번 + 「384.애절한 시나위대금 효과음 004」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290425 · 겹침
 bad_big_g2.mp3  공유마당 · 「북소리1번」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253630 두 번 + 「399.애절한 시나위대금 효과음 019」 · 한국저작권위원회 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13290440 · 겹침
 bad_big_g3.mp3  공유마당 · 「북소리1번」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253630 두 번 + 「SE_09_01_아쉬운 탈락 국악 효과음」 · 공유마당 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13355433 · 겹침
+invade_g4.mp3  공유마당 · 「국악 효과음 #471」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387461 · 잘라 냄
+invade_g5.mp3  공유마당 · 「국악 효과음 #633」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387623 · 잘라 냄
+invade_g6.mp3  공유마당 · 「국악 효과음 #298」 · 공유마당 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13380131 · 잘라 냄
+tap_rite_g11.mp3  공유마당 · 「SE_10_02_신의 은총 거룩한 효과음」 · 공유마당 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13355454 · 잘라 냄
+tap_rite_g12.mp3  공유마당 · 「국악 효과음 #327」 · 주식회사 아이티앤 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13387317 · 잘라 냄
+tap_rite_g13.mp3  공유마당 · 「국악 효과음 #364」 · 공유마당 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13380197 · 잘라 냄
+capt_lock_g1.mp3  공유마당 · 「전통사물_큰자물쇠_열다」 · (재)전주정보문화산업진흥원 · 공공누리 제1유형(출처표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13287448 · 잘라 냄
+capt_lock_g2.mp3  공유마당 · 「돌 문 열리는(쇠사슬)」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13253188 · 잘라 냄
+capt_lock_g3.mp3  공유마당 · 「foleychainrattle04」 · 김용배 · CC BY(저작자 표시) · https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13252095 · 잘라 냄

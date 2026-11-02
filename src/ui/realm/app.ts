@@ -5845,7 +5845,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         if (capt) {
           ding(snd(el.classList.contains('lost') ? 'bad_big' : 'capture'), 0.5)
           // 쇠창살이 닫히는 그 때 — 쇠판 소리와 떨림
-          window.setTimeout(() => { if (el.isConnected) { ding(snd('cmd_hold'), 0.75, 0.9); buzz([50, 30, 80]) } }, P.realm.captSlamMs)
+          window.setTimeout(() => { if (el.isConnected) { ding(snd('capt_lock'), 0.8); buzz([50, 30, 80]) } }, P.realm.captSlamMs) // 쇠판 「탱탱」(방진 소리)은 「뚱둥」으로 들려 자물쇠로 (형 11-03)
         }
         else if (hire) { for (const t of P.realm.hireCutMs) window.setTimeout(() => ding(snd('cmd_duel'), 0.32), t); window.setTimeout(() => ding(snd('hire_go'), 0.55), P.realm.hirePopMs) }
         else if (el.classList.contains('custom')) {
