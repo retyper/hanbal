@@ -26,8 +26,8 @@
 
 <h1>각성 소리 듣기</h1>
 <p>각성 연출의 소리를 게임과 같은 시각표로 처음부터 끝까지 틀어 봅니다. 짐승을 누르면 바로 시작합니다.
-모든 장수에게 같은 바탕(북 두구두구 · 불꽃 칸 방울 셋 · 모임 · 번쩍 · 뿔나팔)이 깔리고, 그 장수의 기운 소리와 짐승 울음이 얹힙니다.
-아래에서 후보를 바꿔 가며 들어 보고, 마음에 드는 번호를 말해 주세요.</p>
+모든 장수에게 같은 모임 · 번쩍이 깔리고, 그 장수의 기운 소리와 짐승 울음이 얹힙니다.
+아래에서 후보를 바꿔 가며 들어 보고, 맨 아래 「고른 번호」 줄을 그대로 보내 주세요.</p>
 
 <div class="beasts" id="beasts"></div>
 
@@ -35,21 +35,21 @@
 
 <div class="ctl">
   <button id="stop">멈춤</button>
-  <label><input type="checkbox" id="solo"> 바탕 북·방울·나팔 빼고 새 소리만</label>
 </div>
 <div id="bar"><i></i></div>
 <div id="now"></div>
+<p id="sum" style="color:#e2dbcd;font-size:14px;margin-top:18px"></p>
 
 <script>
 // 시각표 — src/tune/params.ts 의 ascend* 와 src/ui/realm/app.ts 의 각성 소리 줄과 같게 둔다
-const T = { rollGap: 520, rollMin: 90, rollAccel: 0.86, slot: 1200, slotGap: 700, vortex: 3600, beast: 5400, flash: 7200, end: 11000 }
+const T = { vortex: 3600, beast: 5400, flash: 7200, end: 11000 }
 // 기운 → 소용돌이 소리 · 짐승 (src/ui/realm/ascend.ts ELEM)
 const ELEM = [
   { id: 'fire', name: '불', beast: '범', cry: 'ax_tiger', sfx: 'cmd_fire_c3.ogg' },
   { id: 'earth', name: '땅', beast: '곰', cry: 'ax_bear', sfx: 'cmd_rocks_c5.ogg' },
   { id: 'bolt', name: '번개', beast: '매', cry: 'ax_hawk', sfx: 'battle_crit_g3.mp3' },
   { id: 'wind', name: '바람', beast: '학', cry: 'ax_crane', sfx: 'arrow_volley_c3.ogg' },
-  { id: 'water', name: '물', beast: '청룡', cry: 'ax_dragon', sfx: 'cmd_ford_c5.ogg' },
+  { id: 'water', name: '물', beast: '청룡', cry: 'ax_dragon', sfx: null },
 ]
 // 후보 — 게임에 지금 붙은 것(src/ui/realm/sound.ts PICK)이 먼저 골라져 있다
 const SLOTS = [
@@ -67,7 +67,9 @@ const pick = Object.fromEntries(SLOTS.map(([s, , g]) => [s, g]))
 document.getElementById('picks').innerHTML = SLOTS.map(([s, label, g, names]) =>
   `<div class="row"><b>${label}</b>${names.map((nm, i) => `<label><input type="radio" name="${s}" value="g${i + 1}"${'g' + (i + 1) === g ? ' checked' : ''}> ${i + 1}번</label>`).join('')}`
   + `<span class="nm">${names.map((nm, i) => `${i + 1} ${nm}`).join(' · ')}</span></div>`).join('')
-document.getElementById('picks').addEventListener('change', (e) => { pick[e.target.name] = e.target.value })
+const sum = () => { document.getElementById('sum').textContent = '고른 번호: ' + SLOTS.map(([s, label]) => `${label} ${pick[s].slice(1)}`).join(' · ') }
+document.getElementById('picks').addEventListener('change', (e) => { pick[e.target.name] = e.target.value; sum() })
+sum()
 
 let ctx = null, playing = [], raf = 0
 const bufs = new Map()
@@ -84,16 +86,9 @@ function stop() {
 async function play(e, btn) {
   ctx ??= new AudioContext()
   stop(); btn.classList.add('on')
-  const solo = document.getElementById('solo').checked
   const ev = [] // [ms, 파일, 크기, 이름]
-  if (!solo) {
-    for (let t = 0, gap = T.rollGap, k = 0; t < T.flash - T.rollMin; t += gap, gap = Math.max(T.rollMin, gap * T.rollAccel), k++)
-      ev.push([t, 'tap_drum_g1.wav', 0.25 + 0.5 * (t / T.flash), '북 두구두구'])
-    for (const i of [0, 1, 2]) ev.push([T.slot + i * T.slotGap, 'tap_bell_g1.wav', 0.55 + i * 0.15, `불꽃 칸 ${i + 1}`])
-    ev.push([T.flash + 250, 'horn_victory_a.ogg', 0.75, '뿔나팔'])
-  }
   ev.push([0, `ax_rise_${pick.ax_rise}.mp3`, 0.6, '모임'])
-  ev.push([T.vortex, e.sfx, 0.8, `소용돌이 (${e.name}의 기운)`])
+  if (e.sfx) ev.push([T.vortex, e.sfx, 0.8, `소용돌이 (${e.name}의 기운)`])
   ev.push([T.beast, `${e.cry}_${pick[e.cry]}.mp3`, 0.9, `${e.beast} 솟음`])
   ev.push([T.flash - (PRE[`ax_flash_${pick.ax_flash}`] ?? 0), `ax_flash_${pick.ax_flash}.mp3`, 0.95, '번쩍'])
   document.getElementById('now').textContent = '불러오는 중…'
@@ -103,7 +98,7 @@ async function play(e, btn) {
     const src = ctx.createBufferSource(), g = ctx.createGain()
     src.buffer = loaded[i]; g.gain.value = vol; src.connect(g).connect(ctx.destination); src.start(t0 + ms / 1000); playing.push(src)
   })
-  const marks = ev.filter(([, , , n]) => n !== '북 두구두구').sort((a, b) => a[0] - b[0])
+  const marks = ev.slice().sort((a, b) => a[0] - b[0])
   const tick = () => {
     const ms = (ctx.currentTime - t0) * 1000
     document.querySelector('#bar i').style.width = `${Math.min(100, (ms / T.end) * 100)}%`

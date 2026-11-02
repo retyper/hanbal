@@ -3,7 +3,7 @@
  * "디지몬 진화처럼 길고 강렬하게 · 온 세계의 기운이 한 곳으로 모이고 · 성격별로 물·번개·바람·불 · 동물 연출도 좋음, 우리는 단군신화 있으니까").
  *
  * 흐름 (시각은 app.ts ascendShow 가 P.realm.ascend* 로 준다):
- *  1. 모임 — 화면 둘레에서 기운 알갱이가 소용돌이치며 초상으로 빨려 든다 · 북이 두구두구 빨라진다 · 불꽃 칸 셋이 차례로 붙는다
+ *  1. 모임 — 화면 둘레에서 기운 알갱이가 소용돌이치며 초상으로 빨려 든다 · 기운이 차오르는 소리 · 불꽃 칸 셋이 차례로 붙는다
  *  2. 소용돌이 — 초상이 빛으로 하얗게 바래고 그 둘레를 기운이 돈다 (번개는 내리꽂고 · 바람은 휘감고 · 물은 감돌고 · 땅은 돌이 떠오른다)
  *  3. 짐승 — 기운의 짐승이 뒤에서 솟는다 (단군신화의 곰과 범 · 물의 용 · 바람의 학 · 번개의 매)
  *  4. 번쩍 — 각성 초상 · 충격파 고리 · 「각성」 붓글씨 · 능력치
@@ -21,15 +21,15 @@ export interface ElemInfo {
   readonly beastName: string
   /** 짙은 · 가운데 · 밝은 · 심 (셰이더 그레이디언트와 알갱이) */
   readonly c: readonly [string, string, string, string]
-  /** 소용돌이에 드는 소리 */
-  readonly sfx: Slot
+  /** 소용돌이에 드는 소리 · 물은 없다 (여울 「텀벙」이 돌 던지는 소리 같다 · 형 11-03) */
+  readonly sfx: Slot | null
   /** 짐승이 솟을 때 그 짐승의 울음 (공유마당 · 형 11-03: "각성은 사운드도 제대로 새로") */
   readonly cry: Slot
 }
 
 export const ELEM: Readonly<Record<Elem, ElemInfo>> = {
   fire: { name: '불', beast: 'tiger', beastName: '범', c: ['#7a0c02', '#ff5a1a', '#ffc04a', '#fff4d8'], sfx: 'cmd_fire', cry: 'ax_tiger' },
-  water: { name: '물', beast: 'dragon', beastName: '용', c: ['#04205a', '#1a6aff', '#5ad0ff', '#eafcff'], sfx: 'cmd_ford', cry: 'ax_dragon' },
+  water: { name: '물', beast: 'dragon', beastName: '용', c: ['#04205a', '#1a6aff', '#5ad0ff', '#eafcff'], sfx: null, cry: 'ax_dragon' },
   bolt: { name: '번개', beast: 'hawk', beastName: '매', c: ['#2a0a6a', '#7a5aff', '#a8e0ff', '#ffffff'], sfx: 'battle_crit', cry: 'ax_hawk' },
   wind: { name: '바람', beast: 'crane', beastName: '학', c: ['#063a30', '#1aa88a', '#a8f4d8', '#f6fffa'], sfx: 'arrow_volley', cry: 'ax_crane' },
   earth: { name: '땅', beast: 'bear', beastName: '곰', c: ['#3a2006', '#a86a1a', '#f0c060', '#fff4d6'], sfx: 'cmd_rocks', cry: 'ax_bear' },

@@ -1349,21 +1349,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       ...[...el.querySelectorAll<HTMLCanvasElement>('.axground')].map((cv) => burn(cv, { mode: 'ground', at: R.ascendFlashMs - R.ascendFrameLeadMs, ramp: R.ascendFrameLeadMs * 1.5, seed: 2.2, colors: E.c })),
     ]
     if (lit.some((x) => !x)) el.classList.add('nogl')
-    // 소리 — 두구두구(점점 빨라지는 북) · 불꽃 칸 셋 · 소용돌이에 그 기운의 소리 · 짐승이 솟을 때 함성 · 번쩍에 큰 타격 · 나팔 · 장수의 한마디
+    // 소리 — 모임(차오름) · 소용돌이에 그 기운의 소리 · 짐승의 울음 · 번쩍(파·파·밤 하강) · 장수의 한마디
+    // 북 두구두구 · 불꽃 칸 방울 · 뿔나팔은 뺐다 (형 11-03: "북 방울 나팔 뺀 게 나은 듯")
     const at = (ms: number, f: () => void): void => { timers.push(window.setTimeout(() => { if (el.isConnected && document.visibilityState === 'visible') f() }, ms)) }
-    // 북만 — war_drum(c4)은 여럿의 「후!」 기합이라 번갈아 치면 빨라질수록 「후후후후」로 거슬렸다 (형 11-03)
-    for (let t = 0, gap = R.ascendRollGapMs; t < R.ascendFlashMs - R.ascendRollMinMs; t += gap, gap = Math.max(R.ascendRollMinMs, gap * R.ascendRollAccel)) {
-      const v = 0.25 + 0.5 * (t / R.ascendFlashMs)
-      at(t, () => ding(snd('tap_drum'), v))
-    }
-    // 각성 제 소리 (형 11-03: "각성은 사운드도 제대로 새로") — 처음부터 기운이 차올라 번쩍에 터지고 · 짐승은 제 울음으로 솟는다
     ding(snd('ax_rise'), 0.6)
-    for (const i of [0, 1, 2]) at(R.ascendSlotMs + i * R.ascendSlotGapMs, () => ding(snd('tap_bell'), 0.55 + i * 0.15))
-    at(R.ascendVortexMs, () => ding(snd(E.sfx), 0.8))
+    if (E.sfx !== null) { const s = E.sfx; at(R.ascendVortexMs, () => ding(snd(s), 0.8)) }
     at(R.ascendBeastMs, () => ding(snd(E.cry), 0.9))
     at(R.ascendFlashMs - preRoll('ax_flash'), () => ding(snd('ax_flash'), 0.95))
     at(R.ascendFlashMs, () => { if (typeof navigator.vibrate === 'function') navigator.vibrate([40, 40, 80, 40, 120]) })
-    at(R.ascendFlashMs + 250, () => ding(snd('horn_victory'), 0.75))
     at(R.ascendFlashMs + 1100, () => { if (h.status === 'free' && !isRuler(r, h.id)) ding(voicePath(h, 'tap', false), 0.9) })
   }
   /** 승리가 가깝다 — 넷 가운데 하나가 이번 계절에 문턱(pathAlertShare)을 넘으면 크게 한 번 (형 10-26: "승리 목표 달성의 80%가 되면 한번 알림") */
