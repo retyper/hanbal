@@ -176,5 +176,5 @@ export const ASCEND_CSS = `
   opacity: 0; pointer-events: none; animation: axokin .4s ease-out var(--tok) forwards; }
 .ap .axok .btn { min-width: min(70vw, 280px); font-size: 18px; padding: 12px 18px; }
 @keyframes axokin { from { opacity: 0; } to { opacity: 1; pointer-events: auto; } }
-@media (prefers-reduced-motion: reduce) { .ap .axgather, .ap .axvortex, .ap .axbolts { display: none; } }
+/* 동작 줄이기에서도 모임·소용돌이·번개는 보인다 (형 11-03 맥북 · appstyle 의 .ascfx 줄 참고) */
 `

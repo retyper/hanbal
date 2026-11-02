@@ -35,6 +35,24 @@
 <script>
 // [칸 제목, 쓰는 곳 설명, [[파일, 설명, 길이]...]]
 const GROUPS = [
+  ['⓪ 11-03 새 후보 (공유마당 · 출처 표시)', [
+    ['invade', '적 침공 알림 — 둥둥 큰북 (형: "경계 징 별로 · 침략당한 느낌")', [
+      ["invade_g1", "북소리A · 김용배 · CC BY", "3.2초 · 큰북 둥둥", "mp3"],
+      ["invade_g2", "북소리A + war horn(Freesound adharca · CC0) · 김용배 · CC BY", "4.2초 · 큰북 둥둥에 뿔나팔", "mp3"],
+      ["invade_g3", "북소리1번 세 번 겹침 · 김용배 · CC BY", "3.2초 · 둥 둥 둥", "mp3"],
+    ]],
+    ['tap_rite', '제사 지내기 — 힐 하는 소리 (형: "향피리 별로")', [
+      ["tap_rite_g7", "SE_05_10_요술봉 동작 효과음 · 공유마당 · CC BY", "4초 · 반짝이며 차오름", "mp3"],
+      ["tap_rite_g8", "LSMSE0602_마법과 벨 소리 · 한국저작권위원회 · CC BY", "4.4초 · 맑은 종", "mp3"],
+      ["tap_rite_g9", "사찰 풍경소리 · 한국저작권위원회 · CC BY", "3.5초 · 풍경", "mp3"],
+      ["tap_rite_g10", "SE_05_09_신선놀음 힐링 효과음 · 공유마당 · CC BY", "3.7초", "mp3"],
+    ]],
+    ['woo_break', '담판 · 마음의 벽이 무너질 때 (형: "개박살 소리 말고")', [
+      ["woo_break_g1", "LSMSE0602_마법과 벨 소리 · 한국저작권위원회 · CC BY", "4.4초 · 맑은 종", "mp3"],
+      ["woo_break_g2", "절마당 풍경1 · 김용배 · CC BY", "3.5초 · 풍경", "mp3"],
+      ["woo_break_g3", "국악 효과음 #277 · 공유마당 · CC BY", "3초", "mp3"],
+    ]],
+  ]],
   ['⓪ 각성 연출 (2026-11-03 새로 · 공유마당 · 출처 표시하면 상업 이용 가능)', [
     ['ax_rise', '각성 — 모임: 기운이 차오른다 (처음부터 번쩍까지 · 북 두구두구 아래에 깔린다)', [
       ["ax_rise_g1", "SE_11_18_점점 상승하는 임팩트 · 공유마당 · CC BY", "8.5초 · 서서히 커지게", "mp3"],
@@ -317,8 +335,8 @@ const GROUPS = [
 ]
 
 /** 게임에 붙인 것 — src/ui/realm/sound.ts 의 PICK 과 같게 둔다 */
-const PICK = { ax_rise: 'g2', ax_flash: 'g3', ax_tiger: 'g2', ax_bear: 'g3', ax_hawk: 'g2', ax_crane: 'g1', ax_dragon: 'g1', ui_order: 'b', ui_open: 'c', season_turn: 'a', war_drums: 'b2', arrow_volley: 'c3', horses: 'm',
-  horn_victory: 'a', defeat: 'a3', capture: 'b', dex_new: 'c3', birth: 'c', envoy: 'b', coins: 'c', hire_go: 'g3', relic_open: 'g3', wed: 'g7', tap_rite: 'g5',
+const PICK = { invade: 'g2', woo_break: 'g1', ax_rise: 'g2', ax_flash: 'g3', ax_tiger: 'g2', ax_bear: 'g3', ax_hawk: 'g2', ax_crane: 'g1', ax_dragon: 'g1', ui_order: 'b', ui_open: 'c', season_turn: 'a', war_drums: 'b2', arrow_volley: 'c3', horses: 'm',
+  horn_victory: 'a', defeat: 'a3', capture: 'b', dex_new: 'c3', birth: 'c', envoy: 'b', coins: 'c', hire_go: 'g3', relic_open: 'g3', wed: 'g7', tap_rite: 'g7',
   amb_spring: 'a', amb_summer: 'b', amb_autumn: 'b', amb_winter: 'b', bgm_map: 'k1', bgm_war: 'g1', bgm_title: 'g1', bgm_lose: 'g1', bgm_win: 'g1',
   tap_arms: 'g1', tap_coin: 'g2', tap_brush: 'g2', tap_move: 'g1', tap_bell: 'g1', tap_drum: 'g1', tap_map: 'g1', tap_cancel: 'c', war_cry: 'g1',
   battle_clash: 'g3', battle_crit: 'g3' }

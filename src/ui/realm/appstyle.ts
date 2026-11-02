@@ -1285,7 +1285,9 @@ export const UI_CSS = `
 @keyframes axstat { from { opacity: 0; transform: translateY(8px) scale(.6); } to { opacity: 1; transform: none; } }
 .ap .axflash { position: absolute; inset: 0; background: #fff6dc; opacity: 0; pointer-events: none; animation: axflash .6s ease-out var(--tf) forwards; }
 @keyframes axflash { 0% { opacity: 0; } 15% { opacity: .92; } 100% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .ap .ascfx * { animation-duration: .01s !important; animation-iteration-count: 1 !important; } }
+/* 동작 줄이기(맥 손쉬운 사용) — 각성은 판의 큰 순간이라 연출은 그대로 두고 화면 흔들림만 뺀다
+   (형 11-03 맥북: "변신 도중 이미지가 정지 · 이펙트가 너무 부족 · 불도 안 움직임" — 모든 애니메이션을 .01초로 줄이고 있었다) */
+@media (prefers-reduced-motion: reduce) { .ap .ascfx.evo .axcard { animation: axpop .55s cubic-bezier(.2, 1.4, .4, 1) .15s both, axboom .6s cubic-bezier(.2, 1.6, .4, 1) var(--tf); } }
 /* 각성 불꽃 칸 — 초상 아래 가운데 · 꺼진 칸은 잿빛 */
 .ap .hpic { position: relative; }
 .ap .flms { cursor: pointer; position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); display: flex; gap: 2px; padding: 2px 6px; border-radius: 999px; background: #140f0ad9; border: 1px solid #6a5030; }

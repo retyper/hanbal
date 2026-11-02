@@ -136,7 +136,6 @@ export function burn(cv: HTMLCanvasElement, o: BurnOpts): boolean {
   gl.uniform1f(uBot, o.bot ?? 0)
   const cs = o.colors !== undefined ? o.colors.map(rgb) : FIRE
   ;(['uC0', 'uC1', 'uC2', 'uC3'] as const).forEach((n, i) => gl.uniform3f(u(n), ...cs[i]!))
-  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const t0 = performance.now()
   const fit = (): void => {
     const k = Math.min(window.devicePixelRatio || 1, 1.5)
@@ -149,8 +148,9 @@ export function burn(cv: HTMLCanvasElement, o: BurnOpts): boolean {
     fit()
     const ms = now - t0
     const on = Math.min(1, Math.max(0, (ms - o.at) / Math.max(1, o.ramp)))
-    gl.uniform1f(uT, still ? 1 : ms / 1000)
-    gl.uniform1f(uOn, still ? (ms >= o.at ? 1 : 0) : on)
+    // 동작 줄이기여도 불은 탄다 — 멈춘 불은 그린 불만 못하다 (형 11-03 맥북: "불도 안 움직이던데")
+    gl.uniform1f(uT, ms / 1000)
+    gl.uniform1f(uOn, on)
     gl.clearColor(0, 0, 0, 0)
     gl.clear(gl.COLOR_BUFFER_BIT)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)

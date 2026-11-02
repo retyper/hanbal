@@ -4015,14 +4015,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const t = talkRun(realm, id, o.by, o.talk ?? [], false)
     if (handNow) {
       if (t.hand?.ok !== true) { ding(snd('tap_cancel'), 0.5); return }
-      ding(snd('cmd_gate'), 0.6) // 벽이 쩍 갈라진다
+      ding(snd('woo_break'), 0.6) // 벽이 무너진다 — 맑게 (성문 깨기 소리는 「개박살」 · 형 11-03)
       // 등용 첫마디는 다음 계절 등용 장면에서 (여기서 내면 두 번 듣는다)
       return
     }
     const last = t.beats[t.beats.length - 1]
     if (last === undefined) return
-    if (t.end === 'broke') ding(snd('cmd_gate'), 0.6)
-    else ding(snd(last.react === 'big' ? 'tap_bell' : last.react === 'sway' ? 'tap_brush' : last.react === 'rage' ? 'war_drum' : 'tap_cancel'), 0.55) // 말이 먹히면 방울 · 조금 먹히면 붓 소리 (칼 부딪는 소리는 싸움 것이라 뺌 · 형 10-29: "이 말로 한다 택하면 무슨 칼싸움 소리")
+    if (t.end === 'broke') ding(snd('woo_break'), 0.6)
+    else ding(snd(last.react === 'big' ? 'tap_bell' : last.react === 'sway' ? 'tap_brush' : last.react === 'rage' ? 'tap_drum' : 'tap_cancel'), 0.55) // 말이 먹히면 방울 · 조금 먹히면 붓 소리 (칼 부딪는 소리는 싸움 것이라 뺌 · 형 10-29: "이 말로 한다 택하면 무슨 칼싸움 소리")
   }
   /** 이 포로를 회유할 우리 장수 — 고른 이가 한가하면 그 사람, 아니면 추천 */
   function wooByOf(r: Realm, id: string): Hero | null {
@@ -5807,9 +5807,10 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + `<span>${caught}${men > 0 ? `적 군대 약 ${men.toLocaleString('ko-KR')}명 · ` : ''}${S.sub}</span><button class="btn pri cok">${S.btn}</button></div></div>`)
     const el = root.lastElementChild as HTMLElement
     // 소리도 저마다 — 침략은 경종과 함성 · 공성은 북과 화살비 · 조우는 말발굽과 함성 · 기습은 낮은 경종
-    const cue: ReadonlyArray<readonly [number, Parameters<typeof snd>[0], number]> = kind === 'siege' ? [[0, 'war_drum', 0.55], [550, 'arrow_volley', 0.45]]
+    // 침공은 둥둥 큰북 (형 11-03: "경계 징 소리 별로 · 더 둥둥 · 침략당한 느낌") — war_drum 은 「후!」 기합이라 뺐다
+    const cue: ReadonlyArray<readonly [number, Parameters<typeof snd>[0], number]> = kind === 'siege' ? [[0, 'invade', 0.6], [900, 'arrow_volley', 0.4]]
       : kind === 'field' ? [[0, 'horses', 0.5], [700, 'war_cry', 0.4]]
-        : kind === 'raid' ? [[0, 'war_bell', 0.5], [600, 'war_cry', 0.35]] : [[0, 'war_bell', 0.35]]
+        : kind === 'raid' ? [[0, 'invade', 0.6], [900, 'war_cry', 0.3]] : [[0, 'invade', 0.45]]
     for (const [ms, s, v] of cue) window.setTimeout(() => { if (el.isConnected) ding(snd(s), v) }, ms)
     if (kind === 'siege') buzz([40, 60, 40])
     el.querySelector('.cok')?.addEventListener('click', (e) => { e.stopPropagation(); el.remove(); go() })
