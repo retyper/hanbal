@@ -2036,10 +2036,11 @@ export const WAR_CSS = `
    테의 안쪽 선은 22px(폰 16px) — 좌우는 안쪽 여백(30·22)에서 그만큼 빼고, 아래는 여백(22·18)에서 뺀다. isolation 으로 판 속 높은 z(장수 깃발)가 테 위로 못 올라온다 */
 .ap .wtop .wfield { margin: 6px -10px -2px; border-radius: 0; isolation: isolate; }
 @media (max-width: 520px) { .ap .wtop .wfield { margin: 6px -8px -4px; } }
-/* 장수 초상 — 쇠 귀퉁이 청동 테 안에 얼굴 (테 그림이 얼굴 위에 얹힌다) */
+/* 장수 초상 — 쇠 귀퉁이 청동 테 안에 얼굴 (테 그림이 얼굴 위에 얹힌다).
+   테는 아홉 조각으로 얇게(한 변 9%) — 통째로 늘리면 테가 칸의 넉넉한 몫을 먹어 얼굴이 66% 였다 (형 11-03: "장수 이미지가 너무 작고 액자가 너무 커") */
 .ap .wpf { position: relative; display: grid; place-items: center; width: var(--pf, 172px); aspect-ratio: 1; flex: none; }
-.ap .wpf > i { position: absolute; inset: 0; background: url(__ART__ui/frame-portrait.png) center / 100% 100% no-repeat; pointer-events: none; z-index: 1; filter: drop-shadow(0 3px 6px #000c); }
-.ap .wpf .wf { width: 66%; height: 66%; border: 0; border-radius: 2px; box-shadow: none; }
+.ap .wpf > i { position: absolute; inset: 0; box-sizing: border-box; border: calc(var(--pf, 172px) * .09) solid transparent; border-image: url(__ART__ui/frame-portrait.png) 60 / calc(var(--pf, 172px) * .09) stretch; pointer-events: none; z-index: 1; filter: drop-shadow(0 3px 6px #000c); }
+.ap .wpf .wf { width: 84%; height: 84%; object-fit: cover; object-position: top; border: 0; border-radius: 2px; box-shadow: none; }
 .ap .ws.foe .wpf > i { filter: drop-shadow(0 3px 6px #000c) sepia(.35) hue-rotate(-20deg) saturate(1.3); }
 @media (max-width: 520px) { .ap .wtop .wpf { --pf: min(92px, 24vw); } } /* 폰 — 초상을 줄여 전장에 자리를 (형 10-25: 초상이 화면 반을 먹고 병사가 작았다) */
 @media (max-width: 520px) { .ap .wtop .wfield { height: clamp(170px, 46vw, 220px); } .ap .wtop .wf2s .tk { height: clamp(30px, 8.6cqw, 44px); } .ap .wtop .wf2s .tk.wsp.k-horse, .ap .wtop .wf2s .tk.wsp.k-boat { height: clamp(40px, 11.5cqw, 60px); } }
@@ -2048,7 +2049,7 @@ export const WAR_CSS = `
 .ap .ws.us .wpf > i { animation: wpfglow 2.6s ease-in-out infinite alternate; }
 @keyframes wpfglow { from { filter: drop-shadow(0 3px 6px #000c); } to { filter: drop-shadow(0 3px 6px #000c) drop-shadow(0 0 10px #9fd18b88); } }
 .ap .wpf.big { --pf: clamp(120px, 34vw, 190px); }
-.ap .wosd .wpf .wf { width: 66%; height: 66%; border: 0; border-radius: 2px; box-shadow: none; }
+.ap .wosd .wpf .wf { width: 84%; height: 84%; object-fit: cover; object-position: top; border: 0; border-radius: 2px; box-shadow: none; }
 .ap .wvs img.vs { width: clamp(52px, 13vw, 78px); height: auto; align-self: center; filter: drop-shadow(0 3px 6px #000c); }
 .ap .wom img.wox { width: clamp(70px, 20vw, 130px); height: auto; filter: drop-shadow(0 0 14px #ff6a3a88) drop-shadow(0 3px 6px #000); animation: wostamp .5s cubic-bezier(.2, 1.6, .4, 1) .8s both; }
 /* 나라 이름 — 싸움터 그림 위에서도 읽히게 어두운 띠 */
@@ -2980,8 +2981,8 @@ export const WAR_CSS = `
   transform: skewY(-4deg) scaleX(0); transform-origin: 0 50%; animation: wcband .35s cubic-bezier(.2, 1.2, .4, 1) both; box-shadow: 0 0 0 2px #c9a45a88; }
 @keyframes wcband { to { transform: skewY(-4deg) scaleX(1); } }
 .ap .wcut .wcpf { position: absolute; left: 6%; top: 50%; width: min(36vw, 200px); aspect-ratio: 1; transform: translateY(-50%); display: grid; place-items: center; animation: wcin .45s cubic-bezier(.2, 1.4, .4, 1) .05s both; }
-.ap .wcut .wcpf > i { position: absolute; inset: 0; background: url(__ART__ui/frame-portrait.png) center / 100% 100% no-repeat; filter: drop-shadow(0 6px 14px #000); }
-.ap .wcut .wcf { width: 66%; height: 66%; object-fit: cover; border-radius: 2px; } .ap .wcut .wcf.unit { object-fit: contain; }
+.ap .wcut .wcpf > i { position: absolute; inset: 0; box-sizing: border-box; border: min(3.2vw, 18px) solid transparent; border-image: url(__ART__ui/frame-portrait.png) 60 / min(3.2vw, 18px) stretch; filter: drop-shadow(0 6px 14px #000); }
+.ap .wcut .wcf { width: 84%; height: 84%; object-fit: cover; object-position: top; border-radius: 2px; } .ap .wcut .wcf.unit { object-fit: contain; }
 @keyframes wcin { from { opacity: 0; transform: translate(-70vw, -50%) scale(.9); } to { opacity: 1; transform: translate(0, -50%); } }
 .ap .wcut .wctx { position: absolute; left: calc(6% + min(36vw, 200px) + 14px); right: 4%; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 4px; animation: wrin .4s ease-out .25s both; }
 .ap .wcut .wctx b { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 8vw, 54px); color: #fff1c8; text-shadow: 0 0 14px #ffb04a, 0 3px 6px #000; letter-spacing: .04em; }
