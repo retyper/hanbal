@@ -1940,7 +1940,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     const whom = ourHero !== null ? `${josa(ourName, '에게', '에게')} 일임한다 (자동전투)` : '알아서 싸운다 (자동전투)'
     h += `<button class="btn ghost" data-war="auto">${esc(whom)}</button>`
     // 이 합을 싸운다 — 장수의 「격려」와 헷갈리지 않게 북 말은 뺐다 (형 10-23: "북을 친다가 있는데 북을 울린다라고 하면 헷갈리잖아 · 설명이 쓸데없어")
-    h += `<button class="btn pri wgo" data-war="go" data-n="${panes.length}"${picked < panes.length ? ' disabled' : ''}>${goWord(picked, panes.length)}</button></div></div>`
+    h += `<button class="btn pri wgo" data-war="go" data-n="${panes.length}"${picked < panes.length ? ' aria-disabled="true"' : ''}>${goWord(picked, panes.length)}</button></div></div>`
   } else if (ended) {
     const atkWon = l.outcome === 'rout' || l.outcome === 'win'
     const good = weAtk === atkWon && l.outcome !== 'draw'
@@ -2020,10 +2020,10 @@ export const WAR_CSS = `
 .ap .wb0g { display: flex; flex-direction: column; gap: 2px; margin: 4px 2px 10px; padding: 9px 12px; border-radius: 12px; background: #2a1f0ccc; border: 1.5px solid #e0b860; }
 .ap .wb0g b { color: #ffd27a; font-size: 16px; } .ap .wb0g span { font-size: 13px; color: #e8d4a8; }
 .ap .wr.b0 .wgrp:not([hidden]):not(:has(.wcmd.on)) .wcmd.rec { position: relative; animation: tutglow .9s ease-in-out infinite alternate; outline: 3px solid #ffd27a; outline-offset: 2px; }
-.ap .wr.b0 .wgrp:not([hidden]):not(:has(.wcmd.on)) .wcmd.rec::after, .ap .wr.b0 .wgo:not(:disabled)::after { content: '👆'; position: absolute; left: 50%; top: 100%; margin: 2px 0 0 -18px; font-size: 32px; line-height: 1;
+.ap .wr.b0 .wgrp:not([hidden]):not(:has(.wcmd.on)) .wcmd.rec::after, .ap .wr.b0 .wgo:not(:disabled):not([aria-disabled="true"])::after { content: '👆'; position: absolute; left: 50%; top: 100%; margin: 2px 0 0 -18px; font-size: 32px; line-height: 1;
   filter: drop-shadow(0 2px 3px #000); pointer-events: none; z-index: 5; animation: b0hand .7s ease-in-out infinite alternate; }
 .ap .wr.b0 .wgo { position: relative; }
-.ap .wr.b0 .wrgo { position: relative; overflow: visible; } .ap .wr.b0 .wrgo:not(:disabled)::before { content: '👉'; position: absolute; right: 100%; top: 50%; margin: -17px 6px 0 0; font-size: 30px; line-height: 1; filter: drop-shadow(0 2px 3px #000); pointer-events: none; animation: b0point .7s ease-in-out infinite alternate; }
+.ap .wr.b0 .wrgo { position: relative; overflow: visible; } .ap .wr.b0 .wrgo:not(:disabled):not([aria-disabled="true"])::before { content: '👉'; position: absolute; right: 100%; top: 50%; margin: -17px 6px 0 0; font-size: 30px; line-height: 1; filter: drop-shadow(0 2px 3px #000); pointer-events: none; animation: b0point .7s ease-in-out infinite alternate; }
 @keyframes b0point { from { transform: translateX(0); } to { transform: translateX(-10px); } }
 .ap .wr.b0 .wfpop .wcmd.mini.rec:not(.on) { outline: 2px solid #ffd27a; outline-offset: 1px; animation: tutglow .9s ease-in-out infinite alternate; }
 
@@ -2822,8 +2822,8 @@ export const WAR_CSS = `
 .ap .wcmd .wct { width: 100%; }
 /* 전투 개시 — 다 고르기 전엔 잠겨 있다 */
 .ap .wgo { font-size: 16px; } .ap .wgo small { display: block; font-size: 11px; font-weight: 500; }
-.ap .wgo:disabled { opacity: .55; filter: grayscale(.6); cursor: default; }
-.ap .wgo:not(:disabled) { animation: wgoready 1.1s ease-in-out infinite alternate; } @keyframes wgoready { from { box-shadow: 0 0 4px #ffd27a66; } to { box-shadow: 0 0 20px #ffd27a; } }
+.ap .wgo:is(:disabled, [aria-disabled="true"]) { opacity: .55; filter: grayscale(.6); cursor: default; }
+.ap .wgo:not(:disabled):not([aria-disabled="true"]) { animation: wgoready 1.1s ease-in-out infinite alternate; } @keyframes wgoready { from { box-shadow: 0 0 4px #ffd27a66; } to { box-shadow: 0 0 20px #ffd27a; } }
 @media (prefers-reduced-motion: reduce) { .ap .wgt, .ap .wgo { animation: none !important; } }
 /* 적 앞줄 위의 낌새 */
 .ap .wfield { position: relative; }
@@ -2971,7 +2971,7 @@ export const WAR_CSS = `
 .ap .wrc { cursor: pointer; font: inherit; } .ap .wrc.none { border-color: #e0b860; animation: wrcask 1s ease-in-out infinite alternate; } .ap .wrc.none i { color: #ffd27a; font-size: 15px; }
 @keyframes wrcask { from { box-shadow: 0 0 0 #ffd27a00; } to { box-shadow: 0 0 10px #ffd27a; } }
 .ap .wrrow { display: flex; gap: 8px; width: min(520px, 100%); } .ap .wrrow .wrgo { flex: 1; width: auto; } .ap .wrrow .wrauto { flex: none; flex-direction: column; line-height: 1.15; } .ap .wrrow .wrauto small { display: block; font-size: 11px; color: #ffd27a; }
-.ap .wrgo:disabled { animation: none; font-size: 15px; }
+.ap .wrgo:is(:disabled, [aria-disabled="true"]) { animation: none; font-size: 15px; }
 .ap .wfpop { z-index: 96; }
 /* 다 골랐다 — 아래 띠 (고른 깃발 한 줄 + 큰 「전투 개시」) */
 .ap .wready { position: fixed; left: 0; right: 0; bottom: 0; z-index: 95; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 26px 16px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(#0d0a0700, #0d0a07ee 34%); animation: wrdyin .22s ease-out; }
@@ -3778,7 +3778,8 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const go = sc.querySelector<HTMLButtonElement>('[data-war="go"]')
     if (go !== null) {
       const k = tabs.filter((tb) => sel[tb.dataset['g'] as Grp | 'lead'] !== undefined).length
-      go.disabled = k < tabs.length
+      go.toggleAttribute('aria-disabled', k < tabs.length) // 흐리게만 · 누르면 안 고른 무리로 (UX ⑨)
+      if (k < tabs.length) go.setAttribute('aria-disabled', 'true')
       go.innerHTML = goWord(k, tabs.length)
     }
     syncReady()
@@ -3918,7 +3919,7 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
     const hid = l0?.start !== undefined ? l0.start.heroes[l0.atkFaction === host.me ? 0 : 1] ?? null : null
     const ryak = hid !== null ? prev.heroes[hid]?.ryak : undefined
     // 바뀐 곳만 — 합이 풀린 뒤 띠가 다시 뜰 때마다 칩의 깃발·무리 그림이 새로 만들어지며 깜빡였다 (형 10-31)
-    morph(ready, `<div class="wrchips">${chips}</div><div class="wrrow"><button class="btn ghost wrauto" data-war="auto">맡긴다${ryak !== undefined ? `<small>지략 ${ryak}</small>` : ''}</button><button class="btn pri wrgo" data-war="go"${all ? '' : ' disabled'}>${all ? '⚔ 이대로 전투 개시' : `무리마다 깃발 고르기 ${n}/${tabs.length}`}</button></div>`, true)
+    morph(ready, `<div class="wrchips">${chips}</div><div class="wrrow"><button class="btn ghost wrauto" data-war="auto">맡긴다${ryak !== undefined ? `<small>지략 ${ryak}</small>` : ''}</button><button class="btn pri wrgo" data-war="go"${all ? '' : ' aria-disabled="true"'}>${all ? '⚔ 이대로 전투 개시' : `무리마다 깃발 고르기 ${n}/${tabs.length}`}</button></div>`, true)
     ready.hidden = false
   }
   let tipKey = ''
@@ -4479,7 +4480,9 @@ export function openWar(root: HTMLElement, prev: Realm, orders: readonly Order[]
         return
       }
       case 'go': {
-        if ((b as HTMLButtonElement).disabled) return
+        // 덜 고르고 누르면 — 말없이 아무 일 없던 것 대신 둔탁한 소리와 함께 안 고른 무리의 깃발 판을 연다 (위원회 11-04 UX ⑨)
+        const miss = [...sc.querySelectorAll<HTMLElement>('.wgt[data-g]')].map((x) => x.dataset['g'] as Grp | 'lead').find((g) => sel[g] === undefined)
+        if (miss !== undefined) { host.ding(snd('tap_cancel'), 0.5, 0.7); active = miss; syncCmd(); openPop(miss); return }
         fight(l.key)
         return
       }
