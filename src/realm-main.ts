@@ -37,6 +37,7 @@ import { pinPage } from './ui/realm/scroll.ts'
 import type { SlotInfo } from './ui/realm/front.ts'
 import { defaultLabel, dropSave, listSaves, makeSaveFile, parseSaveFile, readSave, saveFileName, writeSave, type KV, type Saved, type SaveFile } from './ui/realm/saves.ts'
 import { P } from './tune/params.ts'
+import { loadTip, tipHtml, tipReadMs } from './ui/realm/loadtips.ts'
 
 const KEY = 'hanbal.realm.v2'
 /** 한 계절 앞의 저장 — 지금 것이 깨졌으면 이걸로 되살린다 */
@@ -375,11 +376,19 @@ function hideSplashWhenReady(): void {
   const base = import.meta.env.BASE_URL
   const ready = Promise.all([document.fonts.ready.then(() => { tick() }), img(`${base}realm/title/title-lobby.jpg`), img(`${base}realm/logo/emblem-dagger.png`)])
   const late = new Promise<void>((ok) => setTimeout(ok, SPLASH_MAX_MS))
+  // 가운데 한 줄 — 도움말 · 옛 기록 · 읽을 만큼 머문다 (형 11-03: "스플래시 좀 더 길게 · 읽을 수 있을 정도로") · 다 받았으면 누르면 바로 걷힌다
+  const tip = loadTip()
+  const tipEl = el.querySelector<HTMLElement>('.sptip')
+  if (tipEl !== null) { tipEl.innerHTML = tipHtml(tip, (s) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`)); tipEl.classList.add('on') }
+  const minMs = Math.max(SPLASH_MIN_MS, tipReadMs(tip, P.realm.loadTipMinMs, P.realm.loadTipPerCharMs, P.realm.loadTipMaxMs))
+  const gone = (): void => {
+    if (el.classList.contains('out')) return
+    el.classList.add('out')
+    el.addEventListener('transitionend', () => el.remove(), { once: true })
+  }
   void Promise.race([ready, late]).then(() => {
-    setTimeout(() => {
-      el.classList.add('out')
-      el.addEventListener('transitionend', () => el.remove(), { once: true })
-    }, Math.max(0, SPLASH_MIN_MS - (performance.now() - t0)))
+    el.addEventListener('click', gone)
+    setTimeout(gone, Math.max(0, minMs - (performance.now() - t0)))
   })
 }
 hideSplashWhenReady()

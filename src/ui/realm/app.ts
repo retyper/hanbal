@@ -106,6 +106,7 @@ import { exileArt, exileBeats, fugitiveBeats, quarrelArt, quarrelBeats, romanceB
 import { HERO_POOL } from '../../realm/data/heroes-pool.ts'
 import { chiefCastOf, hireVoicePath, voiceGate, voiceKind, voicePath, type VoiceLine } from './voice.ts'
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
+import { loadTip, tipHtml, tipReadMs } from './loadtips.ts'
 import { QUALITY_CSS, gfxRowHtml, setGfxPref, startQuality } from './quality.ts'
 import { HOWWIN_CSS, bannerHtml, closeHowWin, howWinDue, howWinMark, lessons, lossOf, openLessons, showBanner, syncPin, type HowKit, type LessonGo, type Loss } from './howwin.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
@@ -6509,7 +6510,13 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (root.querySelector('.loadcov') !== null) return
     const cov = document.createElement('div')
     cov.className = 'loadcov'
-    cov.innerHTML = `<img src="${ART}logo/emblem.png" alt=""><div class="lbar go"><i></i></div>`
+    // 동검 (옛 청동거울+활 문장은 아이콘을 바꾼 뒤에도 여기 남아 「방패와 화살」로 보였다 · 형 11-03) · 가운데 한 줄은 읽을 시간만큼 머문다
+    const tip = loadTip()
+    cov.innerHTML = `<img src="${ART}logo/emblem-dagger.png" alt=""><p class="sptip">${tipHtml(tip, esc)}</p><div class="lbar go"><i></i></div>`
+    const readMs = tipReadMs(tip, P.realm.loadTipMinMs, P.realm.loadTipPerCharMs, P.realm.loadTipMaxMs)
+    let loaded = false
+    const gone = (): void => { if (cov.classList.contains('out')) return; cov.classList.add('out'); cov.addEventListener('transitionend', () => cov.remove(), { once: true }) }
+    cov.addEventListener('click', () => { if (loaded) gone() }) // 다 받았으면 누르면 바로
     root.appendChild(cov)
     const fill = cov.querySelector<HTMLElement>('.lbar i')!
     requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -6531,8 +6538,9 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const late = new Promise<void>((ok) => setTimeout(ok, COVER_MAX_MS))
       void Promise.race([Promise.all(load), late]).then(() => {
         fill.style.width = '100%'
-        // 너무 빨리 걷히면 번쩍이므로 잠깐은 보인다
-        setTimeout(() => { cov.classList.add('out'); cov.addEventListener('transitionend', () => cov.remove(), { once: true }) }, Math.max(250, 600 - (performance.now() - t0)))
+        loaded = true
+        // 가운데 한 줄을 읽을 만큼은 보인다 (형 11-03) · 그 전에 눌러 걷을 수 있다
+        setTimeout(gone, Math.max(250, readMs - (performance.now() - t0)))
       })
     }))
   }

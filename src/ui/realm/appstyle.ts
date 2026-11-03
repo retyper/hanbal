@@ -984,7 +984,11 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .loadcov { position: fixed; inset: 0; z-index: 9998; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
   background: radial-gradient(ellipse at 50% 42%, #2a2218 0, #14110d 55%, #0a0907 100%); transition: opacity .5s ease, visibility .5s; }
 .ap .loadcov.out { opacity: 0; visibility: hidden; }
-.ap .loadcov > img { width: min(30vw, 130px); aspect-ratio: 1; filter: drop-shadow(0 0 18px #f0c86a77); }
+.ap .loadcov > img { height: min(30vh, 200px); width: auto; filter: drop-shadow(0 0 18px #f0c86a77); } /* 세로로 긴 동검 — 높이 기준 (첫 스플래시와 같은 그림) */
+/* 가운데 한 줄 — 도움말 · 옛 기록 (loadtips.ts · 형 11-03) */
+.ap .loadcov .sptip, #splash .sptip { box-sizing: border-box; width: min(88vw, 460px); min-height: 3.2em; margin: 0; padding: 0 4px; text-align: center; font: 15.5px/1.6 'Gowun Batang', serif; color: #f3e2b8; text-shadow: 0 2px 8px #000; word-break: keep-all; }
+.ap .loadcov .sptip .tipk, #splash .sptip .tipk { display: block; margin-bottom: 4px; font: 700 11.5px/1.2 sans-serif; letter-spacing: .14em; color: #c9a45a; }
+.ap .loadcov .sptip .tips { display: block; margin-top: 4px; font: 12px/1.3 sans-serif; color: #a8987a; }
 .ap .loadcov .lbar { width: min(66vw, 340px); height: 20px; padding: 3px; box-sizing: content-box; border-radius: 3px; background: linear-gradient(#0b0806, #1a120c);
   box-shadow: inset 0 1px 3px #000, 0 0 0 1px #c9a45a, 0 0 0 3px #2a1c0e, 0 0 0 4px #8a6a3a, 0 6px 16px #000a; }
 .ap .loadcov .lbar i { display: block; height: 100%; width: 0; background: url(__ART__ui/dancheong-tile.jpg) 0 50% / auto 100% repeat-x;
