@@ -2756,6 +2756,8 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       + `<p class="mute">곡식을 내면 떠도는 백성이 길을 따라 들어와 이 고을 집이 됩니다. 집이 늘면 특산·장정·가을걷이가 함께 늡니다. 고을마다 한 계절에 한 번.</p>`
   }
 
+  /** 이 고을에서 이 병종을 못 뽑는 까닭 — 단추를 죽이지 않고 누르면 이 말과 소리 (위원회 11-04 UX ⑤ · 기병이 골라지고 「군사 0명 뽑기」가 남았다) */
+  const unitWhy = (u: UnitKind): string => u === 'horse' ? '말이 없습니다. 목장(너른벌)에서 나거나 상단에서 삽니다' : u === 'boat' ? '배 지을 나무가 없습니다. 솔숲·산·산성 땅에서 납니다' : u === 'crossbow' ? '쇠뇌 틀이 다 찼거나 쇠가 없습니다' : '이번 달엔 이 고을에서 더 뽑을 장정이 없습니다'
   function draftCard(r: Realm, id: string, big: boolean): string {
     const n = r.nodes[id]!
     const pending = musters.filter((o): o is Extract<Order, { kind: 'draft' }> => o.kind === 'draft')
@@ -2783,12 +2785,15 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         h += `<div class="dbig">`
         for (const u of draftable(n, r, me())) {
           const ul = Math.max(0, Math.min(limAll, draftLimit(r, me(), n.id, u) - done))
-          h += `<button class="${u === unit ? 'on' : ''}" data-act="dunit" data-node="${n.id}" data-unit="${u}" ${ul <= 0 ? 'disabled' : ''}><img src="${ART}icon/${UNIT_ICON[u]}.png" alt=""><b>${UNIT_NAME[u]}</b><small>${ul > 0 ? `${ul}명까지` : u === 'horse' ? '말이 없다' : u === 'boat' ? '나무가 없다' : u === 'crossbow' ? '틀이 찼다' : '못 뽑는다'}</small></button>`
+          h += `<button class="${u === unit ? 'on' : ''}" data-act="dunit" data-node="${n.id}" data-unit="${u}"${ul <= 0 ? noBtn(unitWhy(u)) : ''}><img src="${ART}icon/${UNIT_ICON[u]}.png" alt=""><b>${UNIT_NAME[u]}</b><small>${ul > 0 ? `${ul}명까지` : u === 'horse' ? '말이 없다' : u === 'boat' ? '나무가 없다' : u === 'crossbow' ? '틀이 찼다' : '못 뽑는다'}</small></button>`
         }
         h += `</div>`
       } else {
         h += `<div class="seg">`
-        for (const u of draftable(n, r, me())) h += `<button class="${u === unit ? 'on' : ''}" data-act="dunit" data-node="${n.id}" data-unit="${u}">${icon(UNIT_ICON[u])}${UNIT_NAME[u]}</button>`
+        for (const u of draftable(n, r, me())) {
+          const ul = Math.max(0, Math.min(limAll, draftLimit(r, me(), n.id, u) - done))
+          h += `<button class="${u === unit ? 'on' : ''}" data-act="dunit" data-node="${n.id}" data-unit="${u}"${ul <= 0 ? noBtn(unitWhy(u)) : ''}>${icon(UNIT_ICON[u])}${UNIT_NAME[u]}${ul <= 0 ? ' 🔒' : ''}</button>`
+        }
         h += `</div>`
       }
       // 채비 값 — 덩이쇠(변한)는 쌓인 쇠·모자란 곡식 몫을 쇠로 낸다 (economy.draftPay · 계획판 위에서) · 쇠는 값 칩에 보인다
@@ -2806,7 +2811,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       h += `<button data-act="dn" data-node="${n.id}" data-d="${step}">+</button><span class="mute">명 · 최대 ${lim}</span>${costHtml({ grain: Math.ceil(dp.grain), ...(dp.iron > 0 ? { iron: dp.iron } : {}) })}`
       h += `${hhLoss > 0 ? `<span class="cost"><b class="cg" title="집 ${hhLoss}"><i>▼</i>${icon('settle-farm-village', 'cgi')}${hhLoss}</b></span>` : ''}</div>`
       // 뽑기 단추는 숫자 줄 밑에 크게 한 줄 — 이게 뽑는 단추라고 바로 알게 (형 10-27)
-      h += `<div class="btns"><button class="btn pri men wide" data-act="draft" data-node="${n.id}" ${want <= 0 ? 'disabled' : ''}>군사 ${want}명 뽑기</button></div>`
+      h += `<div class="btns"><button class="btn pri men wide" data-act="draft" data-node="${n.id}"${want <= 0 ? noBtn(unitWhy(unit)) : ''}>군사 ${want}명 뽑기</button></div>`
       h += mine()
       h += `</div>`
     }
