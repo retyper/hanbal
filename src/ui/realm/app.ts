@@ -2604,7 +2604,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const gear = GEAR_NAME[k]?.[ac.to] ?? TIER_NAME[ac.to]
         const label = on ? `${esc(gear)} 무장` : `철제 강화 ${costHtml({ iron: ac.iron })}`
         // 올리는 중이면 이 단추는 "취소" — 골라 둔 표(금테 ✓)를 달지 않는다 (형 10-23: "올리는중 취소 버튼이 이상하게 황금색 테두리")
-        h += `<button class="btn sm ${on ? 'ghost' : ''}" data-act="arm" data-army="${a.id}" data-unit="${k}" data-tip="${esc(on ? `${ac.n}명이 ${josa(gear, '으로', '로')} 무장한다 · 누르면 거둔다` : `${ac.n}명을 ${josa(gear, '으로', '로')}`)}" ${on || (st.iron >= ac.iron && st.grain >= ac.grain) ? '' : 'disabled'}>${label}</button>`
+        h += `<button class="btn sm ${on ? 'ghost' : ''}" data-act="arm" data-army="${a.id}" data-unit="${k}" data-tip="${esc(on ? `${ac.n}명이 ${josa(gear, '으로', '로')} 무장한다 · 누르면 거둔다` : `${ac.n}명을 ${josa(gear, '으로', '로')}`)}" ${on || (st.iron >= ac.iron && st.grain >= ac.grain) ? '' : noBtn(`모자랍니다: 철 ${ac.iron} · 곡식 ${ac.grain} 이 듭니다`)}>${label}</button>`
       }
       h += `</div>`
     }
@@ -3526,7 +3526,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (!handFor(r, compose.hero)) ok = false
     const sure = ask === 'gift' || ask === 'break'
     const c = envoyChanceFor(r, me(), to, ask, compose.give, compose.take, compose.hero || undefined)
-    h += `<button class="btn pri" data-act="envoy" data-to="${to}" data-ask="${ask}" ${ok ? '' : 'disabled'}>${ask === 'break' ? '정말 깬다' : '사신을 보낸다'}${sure ? '' : ` ${envoyFeel(c[0], c[1], ask)}`}</button></div>`
+    h += `<button class="btn pri" data-act="envoy" data-to="${to}" data-ask="${ask}"${ok ? '' : noBtn(!handFor(r, compose.hero) ? '보낼 사람이 없습니다. 고을을 맡은 장수를 골라 주세요' : '먼저 위에서 고를 것을 고르세요')}>${ask === 'break' ? '정말 깬다' : '사신을 보낸다'}${sure ? '' : ` ${envoyFeel(c[0], c[1], ask)}`}</button></div>`
     return h
   }
 
@@ -3930,7 +3930,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       for (const w of wand) {
         const hired = heroOrders.some((o) => o.kind === 'hire' && o.hero === w.hero.id)
         h += `<div class="askc">${heroRow(r, w.hero, `<span class="mute">${esc(r.nodes[w.node]?.name ?? '')} · ${turnsLabel(r, Math.max(0, w.until - r.season))} 안에 떠난다</span>`)}`
-        h += `<div class="btns"><button class="btn ${hired ? 'on' : ''}" data-act="hire" data-id="${w.hero.id}" ${hired || left().grain >= w.price ? '' : 'disabled'}>${hired ? '들인다 · 취소' : `들인다 ${costHtml({ grain: w.price })}`}${pickW === w ? REC_ST : ''}</button></div></div>`
+        h += `<div class="btns"><button class="btn ${hired ? 'on' : ''}" data-act="hire" data-id="${w.hero.id}"${hired || left().grain >= w.price ? '' : noBtn(`곡식이 모자랍니다: 곡식 ${w.price} 이 듭니다`)}>${hired ? '들인다 · 취소' : `들인다 ${costHtml({ grain: w.price })}`}${pickW === w ? REC_ST : ''}</button></div></div>`
       }
     }
     return h
@@ -6378,7 +6378,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const rec = recTabs(r)
     for (const t of TABS) {
       const wait = tabWait(r, t.id)
-      if (wait > 0) { tabs += `<button class="locked" disabled data-tip="${t.name}: ${turnsLabel(r, wait)} 뒤에 열린다">🔒<span>${t.name}</span></button>`; continue }
+      if (wait > 0) { tabs += `<button class="locked" data-act="locktab"${noBtn(`${t.name}: ${turnsLabel(r, wait)} 뒤에 열립니다`)}>🔒<span>${t.name}</span></button>`; continue }
       const dot = dotKeys(r, t.id).some((k) => !seenKeys.has(k))
       tabs += `<button class="${sheet?.kind === t.id ? 'on' : ''}${newTab === t.id ? ' fresh' : ''}" data-act="tab" data-tab="${t.id}" data-tip="${t.name}" data-more="${t.more}">${icon(t.icon, 'tic')}<span>${t.name}</span>${dot ? '<i class="dot"></i>' : ''}${rec.has(t.id) ? `<i class="rec" title="${esc(rec.get(t.id)!)}">추천</i>` : ''}</button>`
     }
