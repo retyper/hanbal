@@ -4211,7 +4211,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const on = scouts.includes(id)
       const keep = scoutKeep.includes(id)
       h += `<div class="srow"><button class="row ${on ? 'prs' : ''}" data-act="scout" data-node="${id}">${emblem(n.owner)}<span class="dest">${watched.has(id) ? '👁 ' : ''}${esc(n.name)}</span>`
-      h += `<span class="sub">${v !== null ? `${span(v[0], v[1], (x) => String(Math.round(x)))} · ${age === 0 ? `이번 ${turnWord(r)}` : `${turnsLabel(r, age!)} 전`}` : '못 봤다'}</span></button>`
+      h += `<span class="sub">${v !== null ? `${span(v[0], v[1], (x) => String(Math.round(x)))}${militiaNote(r, id)} · ${age === 0 ? `이번 ${turnWord(r)}` : `${turnsLabel(r, age!)} 전`}` : '못 봤다'}</span></button>`
       // 📌 고정 — 매 계절 저절로 여기로
       h += `<button class="pin${keep ? ' prs' : ''}" data-act="scout-keep" data-node="${id}" data-tip="${keep ? `매 ${turnWord(r)} 여기로 정찰: 누르면 고정을 풉니다` : `매 ${turnWord(r)} 여기로 정찰 고정`}" aria-label="정찰 고정">📌</button></div>`
     }
@@ -4680,7 +4680,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       let force = '못 봤다'
       if (f) {
         const v = visibleRange({ f0: f.f0, src: f.src, u: f.u }, ageSeasons(r, f.season))
-        force = v === null ? '너무 오래됐다' : `${span(v[0], v[1], (x) => String(Math.round(x)))} · ${r.season === f.season ? `이번 ${turnWord(r)}` : `${turnsLabel(r, r.season - f.season)} 전`}`
+        force = v === null ? '너무 오래됐다' : `${span(v[0], v[1], (x) => String(Math.round(x)))}${militiaNote(r, id)} · ${r.season === f.season ? `이번 ${turnWord(r)}` : `${turnsLabel(r, r.season - f.season)} 전`}`
       }
       let alert = ''
       if (known?.alert) {
@@ -4782,7 +4782,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       let force = '못 봤습니다'
       if (f) {
         const v = visibleRange({ f0: f.f0, src: f.src, u: f.u }, ageSeasons(r, f.season))
-        force = v === null ? '너무 오래됐습니다' : `${span(v[0], v[1], (x) => String(Math.round(x)))}${r.season === f.season ? '' : ` · ${turnsLabel(r, r.season - f.season)} 전`}`
+        force = v === null ? '너무 오래됐습니다' : `${span(v[0], v[1], (x) => String(Math.round(x)))}${militiaNote(r, id)}${r.season === f.season ? '' : ` · ${turnsLabel(r, r.season - f.season)} 전`}`
       }
       h += `<div class="nrl">${icon('unit-spear')}<span>군세 <b>${force}</b></span>${gains !== '' ? `<span class="nrg">${gains}</span>` : ''}</div>`
       h += `<div class="nrbs">`
@@ -4881,6 +4881,19 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const one = strength({ mix: { spear: 100 }, equip: eq, mu: 1, morale: 1 })
     const mil = strength({ mix: { spear: 100 }, equip: 'stone', mu: 1, morale: P.realm.militiaMorale })
     return Math.round((n * mil) / Math.max(1e-9, one))
+  }
+  /**
+   * 남의 고을을 칠 때 나와 막는 농민군(장정) — 군세 범위 곁에 따로 (형 11-03: "정찰 땐 200~300인데 막상 쳐들어가니 창방패병 1000이면 당황").
+   * 남의 속이라 범위로(ODDS 원칙 1) · 군사 몇 명 몫인지도 함께 — "1000명인데 왜 약하지"가 안 생기게
+   */
+  function militiaNote(r: Realm, id: string): string {
+    const n = r.nodes[id]
+    if (n === undefined || n.owner === null || n.owner === me()) return ''
+    const m = militiaMen(r, id)
+    if (m <= 0) return ''
+    const lo = Math.max(10, Math.round((m * 0.85) / 10) * 10)
+    const hi = Math.round((m * 1.15) / 10) * 10
+    return ` + 농민군 ${lo}~${hi} <small class="mute">(군사 약 ${militiaWorth(r, m)}명 몫)</small>`
   }
 
   /** 생산 — 「생산품 · 곡식 · 나무」 · 이번 계절 얼마 · 가을걷이 · 고기잡이 (형: "나무 난다 이런 말 말고 생산품: 나무") */

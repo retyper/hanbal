@@ -974,7 +974,7 @@ export function warTip(prev: Realm, after: Realm, l: BattleLine, me: string, art
   const rounds = l.rounds ?? []
   const shown = p !== undefined ? p.round : rounds.length
   const last = rounds[shown - 1]
-  const mixOf = (i: 0 | 1): Readonly<Partial<Record<string, number>>> => st?.mix?.[i] ?? {}
+  const mixOf = (i: 0 | 1): Readonly<Partial<Record<string, number>>> => (i === 1 ? splitMilitia(st?.mix?.[i] ?? {}, l.militia) : st?.mix?.[i] ?? {}) // 지키는 쪽(1)의 농민군은 따로
   const pick = p !== undefined && p.round === shown
   const menOf = (i: 0 | 1, g: Grp): number => {
     if (pick && i === ourI) { const x = p!.groups.find((y) => y.g === g); if (x !== undefined) return x.men }
@@ -1050,7 +1050,7 @@ export function warTip(prev: Realm, after: Realm, l: BattleLine, me: string, art
   const icon = `<img src="${art}icon/${GROUP_ICON[g]}.png" alt="">`
   let h = head(side, icon, groupLabel(mixOf(i) as Parameters<typeof groupLabel>[0], g), `${menOf(i, g)}명`)
   const kinds = Object.entries(mixOf(i)).filter(([k, v]) => (v ?? 0) > 0 && groupOf(k as Parameters<typeof groupOf>[0]) === g)
-  if (kinds.length > 1) h += `<p class="dim">처음 ${kinds.map(([k, v]) => `${UNIT_NAME[k as keyof typeof UNIT_NAME]} ${v}`).join(' · ')}</p>`
+  if (kinds.length > 1) h += `<p class="dim">처음 ${kinds.map(([k, v]) => `${k === 'militia' ? '농민군' : UNIT_NAME[k as keyof typeof UNIT_NAME]} ${v}`).join(' · ')}</p>`
   if (side === 'us') {
     const c = pick ? sel[g] : last !== undefined ? (weAtk ? last.oa : last.od)?.[g] : undefined
     if (c !== undefined) h += flagLine(c)
@@ -1078,7 +1078,17 @@ const ANIM_SOL = SOL_ANIM_AR // 병종 → 띠 한 칸의 가로세로 비 (art.
  * (형 10-25: "수군이미지는 배태우지말고 … 오직 수상전투 할때만 배탄 수군")
  */
 function solArt(k: string, sea: boolean): string {
+  if (k === 'militia') return 'spear' // 농민군 — 전용 그림이 오기 전까지 창병 그림을 작고 흐리게 (.tkm)
   return k === 'boat' && !sea ? 'marine' : k
+}
+/**
+ * 농민군(마을 장정)을 창병에서 떼어 따로 센다 — 화면만. 판정(season.militiaOf)은 장정을 돌창 든 창병으로 지키는 쪽에 더한다.
+ * 그대로 그리면 「창병·방패병 1000」으로 보여 정찰(군사 200~300)과 어긋나고 "1000명인데 왜 약하지"가 됐다 (형 11-03)
+ */
+export function splitMilitia(mix: Readonly<Partial<Record<string, number>>>, militia: number): Readonly<Partial<Record<string, number>>> {
+  const sp = mix['spear'] ?? 0
+  const m = Math.min(sp, Math.max(0, militia))
+  return m > 0 ? { ...mix, spear: sp - m, militia: m } : mix
 }
 const FIELD_CMD: ReadonlySet<string> = new Set(['charge', 'hold', 'open', 'volley', 'counter', 'flank', 'punch', 'pursue', 'guard', 'drum', 'capture', 'duel', 'retreat'])
 /** 장면이 뜨는 장수의 명령 — 비기는 비기마다 (skillfx.ts). 격려는 흔해 장면을 띄우지 않는다 — 합마다 2초씩 전장을 가렸다 (형 10-25 · 전장의 격려 고리로 보인다) */
@@ -1384,7 +1394,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
   const foeI: 0 | 1 = weAtk ? 1 : 0
   const ourS: 'a' | 'd' = weAtk ? 'a' : 'd'
   const unitOf = (i: 0 | 1): string => (i === ourI ? UNIT_ICON.spear : UNIT_ICON.shield)
-  const mixOf = (i: 0 | 1): Readonly<Partial<Record<string, number>>> => st?.mix?.[i] ?? {}
+  const mixOf = (i: 0 | 1): Readonly<Partial<Record<string, number>>> => (i === 1 ? splitMilitia(st?.mix?.[i] ?? {}, l.militia) : st?.mix?.[i] ?? {}) // 지키는 쪽(1)의 농민군은 따로
 
   // 지난 합의 값 — 천천히 풀 때 막대·사람 수가 거기서 새 값으로 간다
   const was = anim && rounds.length >= 2 ? rounds[rounds.length - 2] : undefined
@@ -1471,7 +1481,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
     // 그림이 폰에 너무 많으면 잣대는 그대로 두고 맨 아랫자리만 버린다 — 두 쪽이 같은 자리 (원군은 따로 센다: 따로 그려지니까)
     const kindMen = (i: 0 | 1): number[] => Object.entries(st.mix?.[i] ?? {}).flatMap(([k, v]) => { const lv = Math.min(v ?? 0, st.late?.[i]?.[k as keyof NonNullable<typeof st.late>[0]] ?? 0); return [(v ?? 0) - lv, lv] })
     const prec = tierPrec([kindMen(0), kindMen(1)], P.realm.warTokCap)
-    const RANK: Readonly<Record<string, 0 | 1 | 2>> = { spear: 0, pike: 0, shield: 0, boat: 0, axe: 0, bow: 1, crossbow: 1, horse: 2 }
+    const RANK: Readonly<Record<string, 0 | 1 | 2>> = { spear: 0, pike: 0, shield: 0, boat: 0, axe: 0, militia: 0, bow: 1, crossbow: 1, horse: 2 }
     const SOL = new Set(['spear', 'shield', 'bow', 'crossbow', 'horse', 'pike', 'boat', 'axe', 'marine'])
     const sea = warGround(prev, l) === 'sea'
     const pd = l.pending
@@ -1593,6 +1603,7 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
       // 병사 하나 — 큰 병사는 크게, 깃발 병사는 등에 나라 깃발
       const tok = (tk: Tok, x: number, oy: number): string => {
         const k = solArt(tk.k, sea)
+        const mil = tk.k === 'militia' ? ' tkm' : '' // 농민군 — 작고 흐리게
         const { r, s2 } = tk
         const hl = oy < -0.5 ? ' hi' : oy > 0.5 ? ' lo' : ''
         const sc = ((0.8 + 0.4 * ((oy + 40) / 80)) * TSC[tk.t]).toFixed(2)
@@ -1603,9 +1614,9 @@ export function warHtml(prev: Realm, after: Realm, l: BattleLine, me: string, ar
         const ar = ANIM_SOL[k]
         // 새 20컷 띠가 있으면 그것 — 말의 자리·크기는 옛 비(--ar), 안의 그림만 --r 배 넓다
         const a2 = SOL_ANIM2[k]
-        if (ar !== undefined && a2 !== undefined) return `<i class="tk wsp v2 k-${k} r${r}${tb}${hl} ${s2}" style="${pos};--ar:${ar.toFixed(3)};--r:${(a2 / ar).toFixed(3)}"><b class="spf" style="background-image:url('${art}anim2/${k}.png')"></b>${ban}</i>`
-        if (ar !== undefined) return `<i class="tk wsp k-${k} r${r}${tb}${hl} ${s2}" style="${pos};--ar:${ar.toFixed(3)}"><b class="spf" style="background-image:url('${art}anim/${k}.png')"></b>${ban}</i>`
-        return `<img class="tk r${r}${tb}${hl} ${s2}" src="${art}icon/sol-${SOL.has(k) ? k : 'spear'}.png" alt="" style="${pos}">`
+        if (ar !== undefined && a2 !== undefined) return `<i class="tk wsp v2 k-${k} r${r}${tb}${hl}${mil} ${s2}" style="${pos};--ar:${ar.toFixed(3)};--r:${(a2 / ar).toFixed(3)}"><b class="spf" style="background-image:url('${art}anim2/${k}.png')"></b>${ban}</i>`
+        if (ar !== undefined) return `<i class="tk wsp k-${k} r${r}${tb}${hl}${mil} ${s2}" style="${pos};--ar:${ar.toFixed(3)}"><b class="spf" style="background-image:url('${art}anim/${k}.png')"></b>${ban}</i>`
+        return `<img class="tk r${r}${tb}${hl}${mil} ${s2}" src="${art}icon/sol-${SOL.has(k) ? k : 'spear'}.png" alt="" style="${pos}">`
       }
       /**
        * 한 무리(세로 진) — 앞 겹엔 작은 병사, 뒤 겹으로 갈수록 큰 병사 (큰 병사가 작은 병사를 가리지 않고 · 쓰러지는 것도 맞부딪는 앞 겹의 작은 병사부터).
@@ -2143,6 +2154,9 @@ export const WAR_CSS = `
 /* 병사 발밑 그림자 — 땅에 서 있게 */
 .ap .wf2s .tk.wsp::before { content: ''; position: absolute; left: 18%; right: 18%; bottom: -4%; height: 12%; border-radius: 50%; background: radial-gradient(closest-side, #000b, #0000); z-index: -1; pointer-events: none; }
 .ap .wf2s .tk.wsp.tkd::before { opacity: .4; }
+/* 농민군 — 돌창 든 마을 사람: 작고 흐리게 · 발밑 고리는 흙빛 (filter 없이 · 폰 그래픽 한도) · 전용 그림은 그림 줄 「농민군 띠」 (형 11-03: "정찰 땐 200~300인데 창방패병 1000이면 당황") */
+.ap .wf2s .tk.tkm { scale: .82; opacity: .78; }
+.ap .wf2s .tk.wsp.tkm::before, .ap .wf2s.foe .tk.wsp.tkm.tku::before, .ap .wf2s .tk.wsp.tkm.tku::before { background: radial-gradient(closest-side, #000a, #0006 50%, #b08a4ac0 74%, #b08a4a00); }
 /* 폰 — v2 말은 그림 칸이 몸의 서너 배로 넓다(창이 다 뻗어도 들어가게). 그 말에 빛(filter: drop-shadow)을 걸면 폰에서 칸이 통째로 하늘색 띠로 번졌다
    (형 10-29 갤럭시: 목책 곁 우리 창병 위에 기울어진 하늘색 막대 · 너비 128px = 창병 칸 131px · 기울기 8도 = 돌격 앞줄 9도). 폰에선 빛을 끄고 발밑 고리로 편을 가른다 */
 @media (pointer: coarse) {
@@ -3217,8 +3231,8 @@ export function openHtml(prev: Realm, after: Realm, l: BattleLine, me: string, a
   const SOLS = new Set(['spear', 'shield', 'bow', 'crossbow', 'horse', 'pike', 'boat', 'axe', 'marine'])
   const seaWar = warGround(prev, l) === 'sea'
   const mixHtml = (i: 0 | 1): string => {
-    const mx = Object.entries(st?.mix?.[i] ?? {}).filter(([, v]) => (v ?? 0) > 0).sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0))
-    return mx.length > 0 ? `<div class="womix">${mx.map(([k, v]) => `<span><img src="${art}icon/sol-${SOLS.has(solArt(k, seaWar)) ? solArt(k, seaWar) : 'spear'}.png" alt=""><b>${esc(UNIT_NAME[k as keyof typeof UNIT_NAME] ?? k)}</b>${(v ?? 0).toLocaleString('ko-KR')}</span>`).join('')}</div>` : ''
+    const mx = Object.entries(i === 1 ? splitMilitia(st?.mix?.[i] ?? {}, l.militia) : st?.mix?.[i] ?? {}).filter(([, v]) => (v ?? 0) > 0).sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0))
+    return mx.length > 0 ? `<div class="womix">${mx.map(([k, v]) => `<span><img src="${art}icon/sol-${SOLS.has(solArt(k, seaWar)) ? solArt(k, seaWar) : 'spear'}.png" alt=""><b>${esc(k === 'militia' ? '농민군' : UNIT_NAME[k as keyof typeof UNIT_NAME] ?? k)}</b>${(v ?? 0).toLocaleString('ko-KR')}</span>`).join('')}</div>` : ''
   }
   const side = (cls: string, f: string | undefined, hero: string | null, n: number, fallback: string, i: 0 | 1): string =>
     `<div class="wosd ${cls}" style="--c:${color(f)}">${emb(f)}<span class="wpf big">${face(hero, art, fallback)}<i></i></span><b>${esc(hname(hero, f))}</b><span>${esc(fname(f))} · ${n.toLocaleString('ko-KR')}명</span>${mixHtml(i)}</div>`
