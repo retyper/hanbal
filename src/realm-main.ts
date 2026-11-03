@@ -17,7 +17,7 @@ import { startGfxSafe } from './ui/gfxsafe.ts'
 startGfxSafe()
 import { startRegion } from './realm/data/regions/index.ts'
 import { headcount } from './realm/battle.ts'
-import { forceOf } from './realm/season.ts'
+import { forceOf, seasonOf } from './realm/season.ts'
 import { isOldTutorial, migrate, remapOldTutorial, remapOldTutorialJson } from './realm/migrate.ts'
 import type { Order, Realm, RegionId, ReportLine } from './realm/types.ts'
 import { mountRealmApp } from './ui/realm/app.ts'
@@ -38,6 +38,8 @@ import type { SlotInfo } from './ui/realm/front.ts'
 import { defaultLabel, dropSave, listSaves, makeSaveFile, parseSaveFile, readSave, saveFileName, writeSave, type KV, type Saved, type SaveFile } from './ui/realm/saves.ts'
 import { P } from './tune/params.ts'
 import { loadTip, tipHtml, tipReadMs } from './ui/realm/loadtips.ts'
+import { worldMapReady } from './ui/realm/worldmap.ts'
+import { GEN_ANIM, MIGRANT_ANIM, SOL_ANIM2, nodeIcon } from './realm/data/art.ts'
 
 const KEY = 'hanbal.realm.v2'
 /** 한 계절 앞의 저장 — 지금 것이 깨졌으면 이걸로 되살린다 */
@@ -357,6 +359,8 @@ const root = document.getElementById('realm')!
  */
 const SPLASH_MIN_MS = 2600 // 형 10-28: 조금 더 길게 — 고지문도 읽히게
 const SPLASH_MAX_MS = 6000
+/** 하던 판이 있으면 그 판의 지도까지 받는다 — 느린 폰에서도 이만큼은 기다린다 */
+const SPLASH_MAX_GAME_MS = 15000
 function hideSplashWhenReady(): void {
   const el = document.getElementById('splash')
   if (el === null) return
@@ -364,18 +368,34 @@ function hideSplashWhenReady(): void {
   const bar = el.querySelector<HTMLElement>('.lbar')
   const fill = bar?.querySelector<HTMLElement>('i') ?? null
   let done = 0
+  let total = 3
   const tick = (): void => {
     done++
     if (bar === null || fill === null) return
     const now = getComputedStyle(fill).width
     bar.classList.add('go')
     fill.style.width = now
-    requestAnimationFrame(() => { fill.style.width = `${Math.round(28 + (72 * done) / 3)}%` })
+    requestAnimationFrame(() => { fill.style.width = `${Math.round(28 + (72 * Math.min(done, total)) / total)}%` })
   }
   const img = (src: string): Promise<void> => new Promise((ok) => { const i = new Image(); i.onload = i.onerror = () => { tick(); ok() }; i.src = src })
   const base = import.meta.env.BASE_URL
-  const ready = Promise.all([document.fonts.ready.then(() => { tick() }), img(`${base}realm/title/title-lobby.jpg`), img(`${base}realm/logo/emblem-dagger.png`)])
-  const late = new Promise<void>((ok) => setTimeout(ok, SPLASH_MAX_MS))
+  const art = `${base}realm/`
+  // 판을 하던 사람이면 그 판의 지도 바탕(조각을 잇고 계절 빛을 입히는 데 몇 초 걸린다) · 고을 그림 · 병사·장수 그림띠까지 받고 걷는다
+  // (형 11-03: "스플래시가 게임에 필요한 소스들이 다 로드될 때까지 기다리는 용도가 되어야지 · 빨리 넘어가면 뭐해 맵이 로딩도 안 되어 있는데")
+  const r = state?.realm ?? null
+  const game: string[] = r === null ? [] : [
+    ...new Set(Object.values(r.nodes).map((n) => `${art}icon/${nodeIcon(n)}.png`)),
+    ...Object.keys(SOL_ANIM2).map((k) => `${art}anim2/${k}.png`),
+    ...Object.keys(GEN_ANIM).map((k) => `${art}anim2/gen-${k}.png`),
+    `${art}${MIGRANT_ANIM.file}`,
+  ]
+  total = 3 + game.length + (r !== null ? 1 : 0)
+  const ready = Promise.all([
+    document.fonts.ready.then(() => { tick() }), img(`${base}realm/title/title-lobby.jpg`), img(`${base}realm/logo/emblem-dagger.png`),
+    ...game.map(img),
+    ...(r !== null ? [worldMapReady(art, seasonOf(r), r.region ?? 'byeonhan-mini').then(() => { tick() })] : []),
+  ])
+  const late = new Promise<void>((ok) => setTimeout(ok, r !== null ? SPLASH_MAX_GAME_MS : SPLASH_MAX_MS))
   // 가운데 한 줄 — 도움말 · 옛 기록 · 읽을 만큼 머문다 (형 11-03: "스플래시 좀 더 길게 · 읽을 수 있을 정도로") · 다 받았으면 누르면 바로 걷힌다
   const tip = loadTip()
   const tipEl = el.querySelector<HTMLElement>('.sptip')

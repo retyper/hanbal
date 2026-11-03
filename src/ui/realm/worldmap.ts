@@ -151,19 +151,37 @@ async function build(art: string, season: SeasonOfYear, region: RegionId, geo: W
  * 다 되면 `.map[data-world]` 들의 바탕을 그 계절 것으로 바꾼다.
  */
 export function worldMapUrl(art: string, season: SeasonOfYear, region: RegionId): string {
-  const geo = worldGeoOf(region)
-  if (geo === null) return ''
   const key = `${region}:${season}`
   const hit = urls.get(key)
   if (hit !== undefined) { lastByRegion.set(region, hit); return hit }
-  if (!pending.has(key)) {
+  void worldMapReady(art, season, region)
+  return ''
+}
+
+/** 만드는 중인 바탕 — 같은 판·계절을 두 번 만들지 않게 */
+const building = new Map<string, Promise<string>>()
+
+/**
+ * 그 계절 바탕이 다 될 때까지 기다린다 — 스플래시·판 가림막이 이걸 기다려야 들어가자마자 지도가 덜 그려져 보이지 않는다
+ * (형 11-03: "스플래시 빨리 넘어가면 뭐해 맵이 로딩도 안 되어 있는데"). 넓어지는 지도가 아닌 판이면 곧바로 ''.
+ */
+export function worldMapReady(art: string, season: SeasonOfYear, region: RegionId): Promise<string> {
+  const geo = worldGeoOf(region)
+  if (geo === null) return Promise.resolve('')
+  const key = `${region}:${season}`
+  const hit = urls.get(key)
+  if (hit !== undefined) return Promise.resolve(hit)
+  let p = building.get(key)
+  if (p === undefined) {
     pending.add(key)
-    void build(art, season, region, geo).then((u) => {
+    p = build(art, season, region, geo).then((u) => {
       urls.set(key, u)
       lastByRegion.set(region, u)
       pending.delete(key)
       for (const el of document.querySelectorAll<HTMLElement>(`.map[data-region="${region}"][data-world="${season}"]`)) el.style.backgroundImage = `url('${u}')`
-    }).catch(() => pending.delete(key))
+      return u
+    }).catch(() => { pending.delete(key); building.delete(key); return '' })
+    building.set(key, p)
   }
-  return ''
+  return p
 }

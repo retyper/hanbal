@@ -107,6 +107,7 @@ import { HERO_POOL } from '../../realm/data/heroes-pool.ts'
 import { chiefCastOf, hireVoicePath, voiceGate, voiceKind, voicePath, type VoiceLine } from './voice.ts'
 import { WINFX_CSS, WIN_BUZZ, buzz } from './winfx.ts'
 import { loadTip, tipHtml, tipReadMs } from './loadtips.ts'
+import { worldMapReady } from './worldmap.ts'
 import { QUALITY_CSS, gfxRowHtml, setGfxPref, startQuality } from './quality.ts'
 import { HOWWIN_CSS, bannerHtml, closeHowWin, howWinDue, howWinMark, lessons, lossOf, openLessons, showBanner, syncPin, type HowKit, type LessonGo, type Loss } from './howwin.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
@@ -6520,7 +6521,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
    * 판에 들어갈 때 가림막 — 지도가 쓰는 그림(조각·고을·안개·한지)을 다 받을 때까지. 막대는 받은 만큼 찬다.
    * 이미 받아 둔 그림은 곧바로 끝나고(캐시), 아무리 늦어도 COVER_MAX_MS 에 걷힌다
    */
-  const COVER_MAX_MS = 8000
+  const COVER_MAX_MS = 15000 // 느린 폰에서 넓은 지도 바탕을 만드는 데까지 (11-03)
   function coverMap(): void {
     if (root.querySelector('.loadcov') !== null) return
     const cov = document.createElement('div')
@@ -6547,9 +6548,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
       const all = [...urls]
       let n = 0
       const t0 = performance.now()
-      const step = (): void => { n++; fill.style.width = `${Math.round(8 + (92 * n) / Math.max(1, all.length))}%` }
+      const step = (): void => { n++; fill.style.width = `${Math.round(8 + (92 * n) / Math.max(1, all.length + 1))}%` }
       fill.style.width = '8%'
       const load = all.map((u) => new Promise<void>((ok) => { const i = new Image(); i.onload = i.onerror = () => { step(); ok() }; i.src = u }))
+      // 넓어지는 지도의 바탕은 조각을 잇고 계절 빛을 입히느라 늦게 선다 — 그것까지 기다린다 (형 11-03: "맵이 로딩도 안 되어 있는데")
+      if (realm !== null) load.push(worldMapReady(ART, seasonOf(realm), realm.region ?? 'byeonhan-mini').then(() => { step() }))
       const late = new Promise<void>((ok) => setTimeout(ok, COVER_MAX_MS))
       void Promise.race([Promise.all(load), late]).then(() => {
         fill.style.width = '100%'
