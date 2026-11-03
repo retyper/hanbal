@@ -236,7 +236,7 @@ export const HIRE_LOW: ReadonlySet<string> = new Set<string>([
 const VOICE_OF_FACE: Readonly<Record<string, VoiceKind>> = {
   // 늙은 얼굴 — 흰 수염 · 주름 · 쉰 넘은 군장
   'g-01-master-smith': 'm-elder', 'g-05-mahan-chieftain': 'm-elder', 'g-15-shaman-man': 'm-elder', 'g-18-daegaya-king': 'm-elder', 'g-96-garak-suro': 'm-young',
-  'g-19-sabeol-veteran': 'm-elder', 'g-29-yeonna-myeongsol': 'm-elder', 'g-50-bullae-gwaha': 'm-elder', 'g-54-mokji-mahan': 'm-elder',
+  'g-19-sabeol-veteran': 'm-elder', 'g-99-goguryeo-maro': 'm-elder', 'g-29-yeonna-myeongsol': 'm-elder', 'g-50-bullae-gwaha': 'm-elder', 'g-54-mokji-mahan': 'm-elder',
   'g-69-goryong-yong': 'm-elder', 'g-77-saro-sobeol': 'm-elder', 'g-90-haengin-gomok': 'm-elder',
   // 젊은 얼굴 — 군주여도 젊은 소리
   'g-02-goguryeo-archer-prince': 'm-knight', 'g-94-golpo-maenun': 'm-knight', 'g-95-goguryeo-daemusin': 'm-knight', 'g-12-silla-youth': 'm-young', 'g-43-hwanna-amnok': 'm-young', 'g-56-haseulla-gwahama': 'm-young',
