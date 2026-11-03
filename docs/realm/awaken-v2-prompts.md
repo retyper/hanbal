@@ -40,3 +40,10 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-06-buyeo-huntress 부여 사냥꾼 — 1차 2판(edu) — 11-03
 - w-10-pirate-captain 해적 선장 — 1차 2판(edu) — 11-03
 - w-90-saro-danbi 나정 지기 단비 — 1차 2판(edu) — 11-03
+
+## 11-03 검토 에이전트로 걷은 것 (형: "손이나 몸이 막 괴물같이")
+- w-90-saro-danbi 1차 2판 — 활시위가 활 끝에 닿지 않고 끊김 → 옛 판으로
+- l-L3-heo-hwangok 1차 — 왼팔이 없음 → awaken-art 에서 뺌(다시 뽑을 것)
+- l-L2-soseono 2차 — 왼팔 없음 · 들어 올린 손가락 엉킴 → 걷음
+- w-98-byeonhan-danbi 2차 — 가슴이 어깨선 밖으로 → 걷음
+- 앞으로: 받을 때마다 검토 에이전트가 팔·손을 세고, 애매하면 넣지 않는다. 자세는 팔이 몸 앞에서 엇갈리지 않는 단순한 것으로.
