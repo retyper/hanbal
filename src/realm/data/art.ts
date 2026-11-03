@@ -62,7 +62,7 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'wander-04': 'w-11-assassin', 'wander-05': 'w-83-gyeonji-beodeul', 'wander-06': 'w-06-buyeo-huntress',
   'wander-07': 'w-19-buyeo-fur-princess', 'wander-08': 'w-22-dongye-tiger-huntress', 'wander-09': 'w-05-baekje-queen',
   'wander-10': 'w-21-baekje-court-dancer', 'wander-11': 'g-61-heomcheuk-bawi', 'wander-12': 'g-88-wander-soeul',
-  'wander-13': 'w-14-feast-spy', 'wander-14': 'g-60-eupcha-hangyeol', 'wander-15': 'w-09-byeonhan-smith',
+  'wander-13': 'w-14-feast-spy', 'wander-14': 'g-60-eupcha-hangyeol', 'wander-15': 'w-98-byeonhan-danbi',
   'wander-16': 'w-20-gaya-smith-daughter', 'wander-17': 'g-12-silla-youth', 'wander-18': 'w-01-silla-princess',
   'wander-19': 'g-15-shaman-man', 'wander-20': 'w-08-mahan-warrior',
   'wander-21': 'w-84-salhae-dallae', 'wander-22': 'w-85-sinji-neoul', 'wander-23': 'g-62-beonye-hanul', 'wander-24': 'g-63-heomcheuk-beogeum', 'wander-25': 'g-84-wander-seoneul', 'wander-26': 'g-85-wander-ure',
