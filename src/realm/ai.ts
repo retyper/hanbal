@@ -82,7 +82,12 @@ function focus(r: Realm, faction: string, to: string): number {
   const lead = owner !== null && owner !== faction && leaderFor(r, faction) === owner ? P.realm.aiLeaderFocus : 0
   // 난세 단계 — 높을수록 이웃이 우리를 노린다 (이웃만 세지면 이웃끼리 부숴 오히려 쉬워졌다 — BALANCE)
   const tier = owner !== null && owner === r.player ? ((r.tier ?? 1) > 1 ? P.realm.tierFocus * ((r.tier ?? 1) - 1) : (r.tier ?? 1) < 1 ? -P.realm.easyFocus : 0) : 0
-  return pledged + lead + tier + lure + (allyFoe(r, faction, owner) ? P.realm.aiAllyFocus : 0)
+  // 결승선 — 이기는 길에 가까운 나라의 그 길 고을(쇠: 철광·포구 · 제사: 소도 곁 고을)은 모두가 노린다 (위원회 11-04 문명 자리)
+  const near = r.pathNear ?? {}
+  const block = owner === null || owner === faction || tn === undefined ? 0
+    : (near[`iron:${owner}`] === true && (tn.kind === 'ironMine' || tn.kind === 'port') ? P.realm.aiPathBlockFocus : 0)
+      + (near[`rite:${owner}`] === true && neighbors(r, to).some((x) => r.nodes[x]?.kind === 'sodo') ? P.realm.aiPathBlockFocus : 0)
+  return pledged + lead + tier + lure + block + (allyFoe(r, faction, owner) ? P.realm.aiAllyFocus : 0)
 }
 
 /** 소도 제사 — 허락되고 군량 aiDraftReserve 계절치를 남기고도 제사 곡식이 남으면 */

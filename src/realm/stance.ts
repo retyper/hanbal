@@ -61,6 +61,11 @@ function leaderNow(r: Realm, viewer: string): string | null {
   const total = [...pw.values()].reduce((s, v) => s + v, 0)
   const capsNeed = r.region === 'yeongnam' ? R.leaderCapitalsYeongnam : r.region === 'south' ? R.leaderCapitalsSouth : r.region === 'world' ? R.leaderCapitalsWorld : R.leaderCapitals
   const shareNeed = r.region === 'yeongnam' ? R.leaderShareYeongnam : r.region === 'south' ? R.leaderShareSouth : r.region === 'world' ? R.leaderShareWorld : R.leaderShare
+  // 이기는 길(큰 제사 · 철과 뱃길)에 가까운 나라가 먼저 — 소문이 돌면 모두가 막으려 한다 (위원회 11-04 문명 자리 「결승선」 · VICTORY §1-1)
+  // 예전엔 도읍·힘으로만 앞선 나라를 보아, 조용히 제사·쇠를 쌓은 나라가 막히지 않고 이겼다 (시뮬: 소문 뒤 승자가 낀 싸움 중간값 4)
+  const near = r.pathNear ?? {}
+  const racing = fs.filter((f) => f !== viewer && (near[`rite:${f}`] === true || near[`iron:${f}`] === true)).sort((a, b) => pw.get(b)! - pw.get(a)! || (a < b ? -1 : 1))
+  if (racing.length > 0) return racing[0]!
   let best: { f: string; caps: number; p: number } | null = null
   for (const f of fs) {
     const caps = capitalsHeld(r, f)
