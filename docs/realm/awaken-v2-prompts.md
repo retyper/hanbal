@@ -61,3 +61,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-03-goguryeo-archer 매화(고구려 떠돌이 궁수) — 1차 2판(retyper · 검토 PASS) — 11-03
 - w-11-assassin 자객 — 1차 2판(retyper · 검토 PASS · 닌자 결 없음) — 11-03
 - w-19-buyeo-fur-princess 부여 털옷 공주 — 1차 2판(retyper · 검토 PASS) — 11-03
+- w-22-dongye-tiger-huntress 동예 범 사냥꾼 — 1차 2판(retyper · 검토 PASS) — 11-03
