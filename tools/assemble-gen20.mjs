@@ -35,6 +35,8 @@ const standA = med(ca.map((c) => { const m = ink(c); return m.bot - m.top }))
 const standB = med(cb.slice(0, 4).map((c) => { const m = ink(c); return m.bot - m.top }))
 // 차례: 서기 B1~4 · 걷기 A1~8 · 공격 B5~10 · 맞음 B11 · 쓰러짐 B12
 const order = [...cb.slice(0, 4).map((c) => ({ c, s: 1 / standB })), ...ca.map((c) => ({ c, s: 1 / standA })), ...cb.slice(4).map((c) => ({ c, s: 1 / standB }))]
+// FALL=1 — 쓰러짐(19번)을 따로 받아 배율이 다를 때: 누운 몸 길이를 서 있는 키의 1.1배로 맞춘다
+if (process.env['FALL'] === '1') { const m = ink(order[19].c); order[19].s = 1.1 / Math.max(1, m.right - m.left) }
 // 서 있는 키 T 를 고른다 — 가장 높은 컷(치켜든 칼)도 띠에 들어가게
 let tallest = 0
 for (const o of order) { const m = ink(o.c); tallest = Math.max(tallest, (m.bot - m.top + 1) * o.s) }
