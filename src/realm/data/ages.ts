@@ -252,6 +252,7 @@ export const FACE_AGE: Readonly<Record<string, CastAge>> = {
   'g-16-goguryeo-gaema-commander': { age: 34, grey: false },
   'g-17-saro-isageum': { age: 42, grey: false },
   'g-18-daegaya-king': { age: 66, grey: true },
+  'g-96-garak-suro': { age: 16, grey: false },
   'g-19-sabeol-veteran': { age: 55, grey: true },
   'g-20-samul-sea-lord': { age: 34, grey: false },
   'g-22-ungcheon-gomnae': { age: 35, grey: false },

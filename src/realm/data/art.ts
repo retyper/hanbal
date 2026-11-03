@@ -92,7 +92,7 @@ export const HERO_BUST: Readonly<Record<string, string>> = {
   'sr-jita': 'g-81-saro-jita', 'sr-hojin': 'g-82-saro-hojin', 'sr-yangsan-1': 'w-91-saro-mulsae', 'sr-goya-1': 'w-92-saro-dallae',
   'sr-jinji-1': 'w-93-saro-beomi', 'sr-wae-ruler': 'g-87-wae-chief',
   // 캠페인 4장 — 수로 · 허황옥(전설 명치판) · 가락의 장수 · 아홉 간 · 탈해 (gujibong.ts). 있는 명치판을 나눠 쓴다 · 새 얼굴은 ART-QUEUE 「4·5장 초상」
-  'gj-suro': 'g-18-daegaya-king', 'gj-heo': 'l-L3-heo-hwangok', 'gj-musoe': 'g-11-gaya-iron-general', 'gj-dana': 'w-04-gaya-swordswoman',
+  'gj-suro': 'g-96-garak-suro', 'gj-heo': 'l-L3-heo-hwangok', 'gj-musoe': 'g-11-gaya-iron-general', 'gj-dana': 'w-04-gaya-swordswoman',
   'gj-adogan': 'g-60-eupcha-hangyeol', 'gj-yeodogan': 'g-05-mahan-chieftain', 'gj-pidogan': 'g-61-heomcheuk-bawi', 'gj-odogan': 'g-03-sea-trader',
   'gj-yusugan': 'g-57-bihwa-neup', 'gj-yucheongan': 'w-16-clan-matriarch', 'gj-sincheongan': 'w-25-bihwa-priestess', 'gj-ocheongan': 'g-63-heomcheuk-beogeum',
   'gj-singwigan': 'w-17-mahan-pearl-diver', 'gj-tahae': 'g-20-samul-sea-lord', 'gj-tahae-1': 'w-10-pirate-captain',
