@@ -394,8 +394,14 @@ export const MAP_CSS = `
 .map .nd .tchip .tn.crowd { margin-left: 3px; background: #5a2418e8; color: #f0a08a; }
 .map .nd .tchip .tn { background: #201811e8; color: #f3e6c8; border-radius: 9px; padding: 1px 7px; font-size: clamp(10px, calc(1.8cqh / var(--z, 1) * var(--zs, 1)), 14px); font-weight: 700; }
 .map .toks { position: absolute; transform: translate(2px, -50%); display: flex; gap: 3px; z-index: 4; pointer-events: none; }
-.map .tok { pointer-events: auto; display: flex; flex-direction: column; align-items: center; padding: 0; border: 0; background: none; cursor: pointer;
+.map .tok { pointer-events: none; display: flex; flex-direction: column; align-items: center; padding: 0; border: 0; background: none; cursor: pointer;
   -webkit-tap-highlight-color: transparent; width: clamp(26px, calc(4.2cqh / var(--z, 1) * var(--zs, 1) * var(--ls, 1)), 46px); }
+/* 말은 얼굴 동그라미와 수만 누름을 받는다 — 걷는 군사 그림·깃발·줄은 누름이 밑으로 지나가 옆 고을이 눌린다
+   (형 11-04: "군사 때문에 막혀서 옆 마을을 누를 수가 없는 빡치는 상황 · 한 부대밖에 없어도 옆 마을이 가까우면 아예 터치를 못 해") */
+.map .tok > img, .map .tok > b { pointer-events: auto; }
+.map .tok .squad, .map .tok .flag, .map .tok .hp { pointer-events: none; }
+/* 고을 이름표도 누르면 그 고을 — 말이 고을 그림 위에 서 있어도 이름으로 들어간다 */
+.map .lbs .lb { pointer-events: auto; cursor: pointer; }
 .map .tok { position: relative; }
 /* 살아 있는 말 — 쉬는 군대는 들썩이고 · 군기가 펄럭이고 · 명령이 없으면 「명령?」 */
 .map .tok.idle { animation: tokidle 2.2s ease-in-out infinite alternate; } .map .toks .tok.idle:nth-child(2) { animation-delay: -.8s; } .map .toks .tok.idle:nth-child(3) { animation-delay: -1.5s; }

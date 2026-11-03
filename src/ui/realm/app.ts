@@ -6779,9 +6779,14 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     // 둘레 단추가 떠 있을 때 지도 빈 곳을 누르면 걷힌다 (고을·말을 누르면 그쪽이 받는다)
     if (ring !== '' && front === null && !zoom.dragged()) { // 첫 화면 같은 판이 덮여 있으면 그 누름은 판의 것 (리뷰 11-01: 걷기에 먹혔다)
       const e = ev.target as HTMLElement
-      if (e.closest('.map') !== null && e.closest('.nring, .nd, .tok') === null) { ring = ''; paint(); return }
+      if (e.closest('.map') !== null && e.closest('.nring, .nd, .tok, .lbs .lb') === null) { ring = ''; paint(); return }
     }
-    const t = (ev.target as HTMLElement).closest<HTMLElement>('[data-act], .nd')
+    // 고을 이름표를 누르면 그 고을을 누른 것 (말이 고을 그림을 덮고 있어도 · 형 11-04)
+    // 단 그 자리 밑에 말의 얼굴·수가 있으면 말이 먼저 (이름표가 얼굴을 살짝 덮을 때)
+    const lb0 = (ev.target as HTMLElement).closest<HTMLElement>('.lbs .lb[data-n]')
+    const face = lb0 !== null && ev instanceof MouseEvent ? document.elementsFromPoint(ev.clientX, ev.clientY).find((e) => e.matches('.tok > img, .tok > b'))?.closest<HTMLElement>('[data-act]') ?? null : null
+    const lb = face === null ? lb0 : null
+    const t = face ?? (lb !== null ? root.querySelector<HTMLElement>(`.nd[data-node="${lb.dataset['n']}"]`) : (ev.target as HTMLElement).closest<HTMLElement>('[data-act], .nd'))
     if (t === null || !root.contains(t)) return
     if (zoom.dragged() && t.closest('.mapwrap') !== null) return // 지도를 끌다 놓은 것 — 누르기가 아니다
     // 못 하는 단추 — 눌러도 아무 일 없으면 고장 같았다 (형 11-01: "목책 눌렀는데 아무 반응 없음 · 글자·소리로 알려줘야") → 까닭을 띄우고 둔탁한 소리
