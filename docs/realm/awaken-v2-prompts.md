@@ -34,8 +34,8 @@ This is an original character from my own Korean historical fantasy strategy gam
 - w-98-byeonhan-danbi 단비 — 2차(edu · 허리 아래 잘라 냄, 원본 -raw) — 11-03
 - ~~w-101-garak-singwigan 신귀간 — 2차~~ 팔·몸통이 뒤틀려 걷음(형 지적) — 다시 뽑을 것
 - w-100-garak-sincheongan 신천간 — 2차(edu) — 11-03
-- w-01-silla-princess 신라 공주 — 1차 2판(edu) — 11-03
-- w-05-baekje-queen 백제 왕비 — 1차 2판(edu) — 11-03
+- ~~w-01-silla-princess 신라 공주 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
+- ~~w-05-baekje-queen 백제 왕비 — 1차 2판~~ 손·몸이 뒤틀려 옛 판으로 되돌림(형 지적)
 - w-02-goguryeo-lady 고구려 무녀 — 1차 2판(edu · 골반 아래 잘라 냄, 원본 -raw) — 11-03
 - w-06-buyeo-huntress 부여 사냥꾼 — 1차 2판(edu) — 11-03
 - w-10-pirate-captain 해적 선장 — 1차 2판(edu) — 11-03
