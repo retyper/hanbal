@@ -3015,6 +3015,30 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return shortOf({ wood: bc.wood, grain: bc.grain }) || '지금은 지을 수 없습니다'
   }
 
+  /** 남과 맞닿은 우리 고을 가운데 지금 두를 수 있는 곳 — 「한꺼번에 두르기」 (값은 이미 고른 것 뒤에 남는 곳간으로 센다) */
+  function wallPlan(r: Realm): { list: Array<{ node: string; what: BuildWhat }>; wood: number; grain: number; ok: boolean; why: string } {
+    const front = (id: string): boolean => Object.values(r.edges).some((e) => {
+      const o = e.a === id ? e.b : e.b === id ? e.a : null
+      const ow = o === null ? null : r.nodes[o]?.owner
+      return ow !== null && ow !== undefined && ow !== me()
+    })
+    const list: Array<{ node: string; what: BuildWhat }> = []
+    let wood = 0
+    let grain = 0
+    for (const n of Object.values(r.nodes).sort((a, b) => b.hh - a.hh || (a.id < b.id ? -1 : 1))) {
+      if (n.owner !== me() || !front(n.id) || musters.some((o) => o.kind === 'build' && o.node === n.id)) continue
+      const w = nextBuild(r, n.id)
+      if (w === null || !canBuild(r, me(), n.id, w)) continue
+      const c = buildCost(w, r, me())
+      list.push({ node: n.id, what: w })
+      wood += c.wood
+      grain += c.grain
+    }
+    const st = left()
+    const ok = list.length > 0 && st.wood >= wood && st.grain >= grain
+    return { list, wood, grain, ok, why: ok ? '' : shortOf({ wood, grain }) || '두를 고을이 없습니다' }
+  }
+
   function guardOrder(node: string): Order {
     const ap = guardAp[node]
     return { kind: 'guard', faction: me(), node, ...(ap !== undefined ? { ap } : {}) }
@@ -4706,6 +4730,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const ok = queued || (canBuild(r, me(), id, nb) && left().wood >= bc.wood && left().grain >= bc.grain)
         h += `<div class="btns"><button class="btn ${queued ? 'on' : ''}" data-act="build" data-node="${id}" data-what="${nb}"${ok ? '' : noBtn(buildWhy(r, id, nb))}>${going !== undefined ? `${BUILD_NAME[going.what]} 짓는 중 · ${turnsLabel(r, Math.max(1, going.done - r.season + 1))} 남음` : queued ? `${BUILD_NAME[nb]} 짓기 시작 · ${turnsLabel(r, seasons(r, 1))} 걸린다` : `${josa(BUILD_NAME[nb], '을', '를')} 두른다 ${costHtml({ wood: bc.wood, grain: bc.grain })}`}</button></div>`
         h += `<p class="mute">${nb === 'palisade' ? '지키는 쪽이 세진다.' : '목책 앞에서 한 번 더 막는다 · 겨울엔 언다.'} ${turnsLabel(r, seasons(r, 1))} 걸려 선다.</p>`
+      // 맞닿은 고을 한꺼번에 — 고을마다 같은 목책을 하나씩 누르는 잡일을 걷는다 (형 11-03: "다 똑같은 목책만 일일이 지어 줘야 하고 귀찮은데")
+      {
+        const all = wallPlan(r)
+        if (all.list.length > 1) h += `<div class="btns"><button class="btn" data-act="wallall"${all.ok ? '' : noBtn(all.why)}>${icon('settle-palisade', 'wki')}남과 맞닿은 고을 ${all.list.length}곳을 한꺼번에 두른다 ${costHtml({ wood: all.wood, grain: all.grain })}</button></div>`
+      }
       }
       // 고을 일터 — 고을마다 하나 · 땅에 맞는 것만 · 둘째 줄은 첫째 줄이 우리 땅 어딘가에 있어야 (works.ts · 형 11-03 "마을 내정")
       h += workCardHtml(r, id)
@@ -7583,6 +7612,11 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         const node = d['node']!
         const same = (o: Order): boolean => o.kind === 'build' && o.node === node
         musters = musters.some(same) ? musters.filter((o) => !same(o)) : [...musters, { kind: 'build', faction: me(), node, what: d['what'] as 'palisade' | 'moat' }]
+        break
+      }
+      case 'wallall': {
+        const plan = wallPlan(realm!)
+        if (plan.ok) musters = [...musters, ...plan.list.map((x): Order => ({ kind: 'build', faction: me(), node: x.node, what: x.what }))]
         break
       }
       case 'work': {
