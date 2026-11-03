@@ -91,8 +91,8 @@ BACKGROUND: flat pure bright green #00FF00 everywhere, no shadows, no ground lin
 - 대왕 다물 ✔ 11-04 `gen-damul.png` (칸 162x160 · u/0 · `goguryeo-ruler`) — 쓰러짐은 B 를 다시 그리며 우하단 칸에(별표는 초록 지우기)
 - 송양 ✔ 11-04 `gen-songyang.png` (칸 149x160 · u/0 04:52 한도 풀림) — A·B 에 칸 선을 그려 key-png 지울곳 "0.246,0,0.254,1;0.496,0,0.504,1;0.746,0,0.754,1;0,0.493,1,0.507" 로 걷음 · 허리띠 옥이 초록이라 초록 지우기는 안 씀
 - 매눈 ✔ 11-04 `gen-maenun.png` (칸 146x160 · u/0 · `chief` 는 초상 표에 없어 GEN_OWN 에 손으로)
-- 남은 것: 협보(곧은 칼로 다시) · 말 탄 넷(비류·금하·거타·쇠보 — 말 띠 굽는 길이 아직 없다)
-- 협보 ✘ 11-04 미룸 — B 의 칼이 휜 칼(왜도 꼴)로 나왔고 「곧은 고리자루 칼」로 고쳐 달래도 그대로였다. 다시 할 땐 A 의 CHARACTER 에 「곧은 외날 고리자루 칼, 휘지 않음」을 처음부터 넣는다 (A 는 assets_src/.../gen-hyeopbo-a.png 에 있음)
+- 남은 것: 말 탄 넷(비류·금하·거타·쇠보 — 말 띠 굽는 길이 아직 없다)
+- 협보 ✔ 11-04 `gen-hyeopbo.png` (칸 163x160 · u/0) — 첫 판은 휜 칼(왜도 꼴)이라 버리고, 「perfectly STRAIGHT single-edged blade · round ring pommel · NOT curved, NOT a katana」를 A·B 머리말 모두에 넣어 새 대화로 다시 → 모든 컷 곧은 칼
 
 생김새는 `docs/realm/cast/part-*.md` 의 「겉모습」 줄을 영어로 옮겨 `<한 줄 생김새>` 자리에 넣는다. 초상(bust)을 올리지 않는다 — 글만. 결(무기·자세)은 아래 「결」 그대로 두어 공격 컷이 같은 박자로 돈다.
 

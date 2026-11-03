@@ -481,9 +481,10 @@ export const GEN_ANIM: Readonly<Partial<Record<string, { ar: number; body: numbe
   damul: { ar: 162 / 160, body: 0.955, bow: true }, // 11-04 제 띠 (u/0 · 깃털 쇠투구(금관 아님)·희끗한 긴 수염·범 가죽 망토·자줏빛 비단·맥궁)
   songyang: { ar: 149 / 160, body: 0.955, bow: true }, // 11-04 제 띠 (u/0 · 깃털 뾰족 고깔 관·희끗한 염소수염·무늬 남색 두루마기·금 드리개 · 모델이 칸 선을 그려 key-png 지울곳으로 걷음)
   maenun: { ar: 146 / 160, body: 0.955, bow: true }, // 11-04 제 띠 (u/0 · 꿩깃 검은 두건·붉은 두루마기·가죽 미늘·맥궁 · 골포국 살해 매눈)
+  hyeopbo: { ar: 163 / 160, body: 0.887 }, // 11-04 제 띠 (u/0 · 검은 머리띠 상투·가는 콧수염·무늬 검은 도포·가죽 갑옷 · 곧은 고리자루 칼 — 첫 판은 휜 칼이라 버림)
 }
 /** 제 그림이 있는 장수 (장수 id → gen-<이름>.png 의 이름) */
-export const GEN_OWN: Readonly<Record<string, string>> = { 'jm-jumong': 'jumong', 'mh-onjo': 'onjo', 'tut-onjo': 'onjo', 'mh-soseono': 'soseono', 'sr-aryeong': 'aryeong', 'jm-haedal': 'haedal', 'buyeo-1': 'haedal', 'jm-songbi': 'songbi', 'biryuna-ruler': 'songbi', 'sr-hyeokgeose': 'hyeokgeose', 'jm-oi': 'oi', 'jm-mari': 'mari', 'jm-daeso': 'daeso', 'mh-eureum': 'eureum', 'mh-ogan': 'ogan', 'tut-ogan': 'ogan', 'goguryeo-ruler': 'damul', 'jm-songyang': 'songyang', chief: 'maenun' }
+export const GEN_OWN: Readonly<Record<string, string>> = { 'jm-jumong': 'jumong', 'mh-onjo': 'onjo', 'tut-onjo': 'onjo', 'mh-soseono': 'soseono', 'sr-aryeong': 'aryeong', 'jm-haedal': 'haedal', 'buyeo-1': 'haedal', 'jm-songbi': 'songbi', 'biryuna-ruler': 'songbi', 'sr-hyeokgeose': 'hyeokgeose', 'jm-oi': 'oi', 'jm-mari': 'mari', 'jm-daeso': 'daeso', 'mh-eureum': 'eureum', 'mh-ogan': 'ogan', 'tut-ogan': 'ogan', 'goguryeo-ruler': 'damul', 'jm-songyang': 'songyang', chief: 'maenun', 'jm-hyeopbo': 'hyeopbo' }
 type GenLook = { readonly id?: string; readonly look: 'g' | 'w'; readonly traits: readonly string[]; readonly mu: number; readonly tong: number; readonly ryak: number; readonly chi: number; readonly deok: number }
 /**
  * 장수 → 싸움터에 설 그림 (순수). 제 그림이 있으면 그것 · 명궁이면 활 · 통솔이 가장 높고 비기가 날 만큼(tacArtMinStat) 높은 남자는 말 탄 장수 ·
