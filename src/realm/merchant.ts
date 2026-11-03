@@ -12,11 +12,13 @@
  */
 import { roll } from '../core/rng.ts'
 import { P } from '../tune/params.ts'
-import { addGood, goodOf, isCoast, stockOf, worthOf } from './economy.ts'
+import { addGood, goodOf, isCoast, nodeYield, stockOf, worthOf } from './economy.ts'
 import { bestWorkLv } from './works.ts'
 import { setHarvest } from './events.ts'
 import { addFavor } from './diplomacy.ts'
-import { knownOf } from './discovery.ts'
+import { discover, knownOf } from './discovery.ts'
+import { HERO_POOL } from './data/heroes-pool.ts'
+import { seasons } from './calendar.ts'
 import type { UnitKind } from './battle.ts'
 import type { Good, Hero, Order, Realm, ReportLine } from './types.ts'
 
@@ -113,6 +115,8 @@ export function stepMarket(r: Realm, lines: ReportLine[]): void {
   const cur = r.markets?.[f]
   if (cur !== undefined && cur.until < r.season) {
     delete r.markets![f]
+    // 떠나며 쪽지를 남긴다 — 걸린 것이 없을 때만 (위원회 11-04 림월드 ②)
+    if (r.marketWish?.[f] === undefined) { const w = makeWish(r, f); if (w !== null) (r.marketWish ??= {})[f] = w }
     lines.push({ kind: 'merchant', faction: f, node: cur.at, come: false })
   }
   const next = r.marketNext?.[f] ?? every(r, f)
@@ -219,4 +223,71 @@ export function applyScale(r: Realm, o: Extract<Order, { kind: 'scale' }>, lines
   const used = (r.scaleUsed ??= {})[o.faction]
   r.scaleUsed[o.faction] = { season: r.season, grain: (used !== undefined && used.season === r.season ? used.grain : 0) + g }
   lines.push({ kind: 'scale', faction: o.faction, good: o.good, n: o.n, grain: g, buy: o.buy })
+}
+
+// ───────── 상단의 주문 (위원회 11-04 림월드 ②) — 떠날 때 쪽지 하나: 다음에 올 때 이것을 모아 두면 돈으로 못 사는 것을 갚는다
+// 물건은 우리 땅이 낼 수 있는 것만(곡식 빼고) · 걸려 있는 것은 늘 하나 · 기한도 벌도 없다 (못 맞추면 그냥 남는다)
+
+export type WishReward = 'hero' | 'news'
+export interface Wish { readonly goods: Partial<Record<Good, number>>; readonly reward: WishReward }
+
+/** 아직 이름을 모르는 나라 — 소문으로 알려 줄 수 있는 */
+function unknownNations(r: Realm, faction: string): string[] {
+  const known = new Set(knownOf(r, faction))
+  return Object.keys(r.factions).filter((f) => f !== faction && !known.has(f)).sort()
+}
+
+/** 떠돌 장수 — 아직 판에 없는 이름 */
+function freePool(r: Realm): string[] {
+  const taken = new Set([...Object.keys(r.heroes), ...(r.wanderers ?? []).map((w) => w.hero.id), ...(r.poolUsed ?? [])])
+  return HERO_POOL.filter((h) => !taken.has(h.id)).map((h) => h.id).sort()
+}
+
+/** 쪽지를 쓴다 — 우리 고을들이 내는 특산 가운데 둘(값어치로 곡식 wishWorth 어치씩) · 갚음은 떠돌 장수 아니면 먼 나라 소문 */
+function makeWish(r: Realm, faction: string): Wish | null {
+  const can = new Set<Good>()
+  for (const n of Object.values(r.nodes)) if (n.owner === faction) for (const g of Object.keys(nodeYield(r, n.id)) as Good[]) if (g !== 'grain') can.add(g)
+  const goods = [...can].sort()
+  if (goods.length === 0) return null
+  const k = (i: number): number => roll(r.seed, r.season, `mwish:${faction}:${i}`)
+  const pick = goods.map((g, i) => ({ g, w: k(i) })).sort((a, b) => a.w - b.w).slice(0, Math.min(2, goods.length))
+  const want: Partial<Record<Good, number>> = {}
+  for (const { g } of pick) want[g] = Math.max(5, Math.round(P.realm.wishWorth / Math.max(0.01, worthOf(g)) / 5) * 5)
+  const hero = freePool(r).length > 0
+  const news = unknownNations(r, faction).length > 0
+  if (!hero && !news) return null
+  const reward: WishReward = hero && news ? (k(9) < 0.5 ? 'hero' : 'news') : hero ? 'hero' : 'news'
+  return { goods: want, reward }
+}
+
+/** 지금 맞바꿀 수 있나 — 상단이 머물고 · 쪽지가 있고 · 물건을 다 모았다 */
+export function wishReady(r: Realm, faction: string): boolean {
+  const w = r.marketWish?.[faction]
+  if (w === undefined || marketOf(r, faction) === null) return false
+  const s = stockOf(r, faction)
+  return (Object.entries(w.goods) as Array<[Good, number]>).every(([g, n]) => goodOf(s, g) >= n)
+}
+
+export function applyWish(r: Realm, o: Extract<Order, { kind: 'wish' }>, lines: ReportLine[]): void {
+  if (!wishReady(r, o.faction)) return
+  const w = r.marketWish![o.faction]!
+  const m = marketOf(r, o.faction)!
+  for (const [g, n] of Object.entries(w.goods) as Array<[Good, number]>) addGood(r, o.faction, g, -n)
+  delete r.marketWish![o.faction]
+  if (w.reward === 'hero') {
+    const pool = freePool(r)
+    const id = pool[Math.floor(roll(r.seed, r.season, `mwish-hero:${o.faction}`) * pool.length)]
+    const who = HERO_POOL.find((h) => h.id === id)
+    if (who === undefined) return
+    ;(r.poolUsed ??= []).push(who.id)
+    // 상단이 소개한 이 — 값 없이 들일 수 있다 (상단이 선 고을에 · 보통 떠돌이처럼 머물다 떠난다)
+    ;(r.wanderers ??= []).push({ hero: structuredClone(who), node: m.at, until: r.season + seasons(r, P.realm.wandererStay), price: 0 })
+    lines.push({ kind: 'wish', faction: o.faction, reward: 'hero', who: who.id })
+    return
+  }
+  const far = unknownNations(r, o.faction)
+  const b = far[Math.floor(roll(r.seed, r.season, `mwish-news:${o.faction}`) * far.length)]
+  if (b === undefined) return
+  discover(r, o.faction, b, 'market', lines)
+  lines.push({ kind: 'wish', faction: o.faction, reward: 'news', who: b })
 }

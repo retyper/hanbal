@@ -112,7 +112,7 @@ import { worldMapReady } from './worldmap.ts'
 import { loadBar } from './loadbar.ts'
 import { WORKS, lvGain, workBlocked, workCost, workLv, workOptions, type WorkWhat } from '../../realm/works.ts'
 import { postGain } from '../../realm/postgain.ts'
-import { hasScale, marketIn, marketOf, scaleBuyPrice, scaleLimit, scaleRoom, scaleSellPrice, sellLimit, sellPrice, type Offer } from '../../realm/merchant.ts'
+import { hasScale, marketIn, marketOf, scaleBuyPrice, scaleLimit, scaleRoom, scaleSellPrice, sellLimit, sellPrice, wishReady, type Offer } from '../../realm/merchant.ts'
 import { QUALITY_CSS, gfxRowHtml, setGfxPref, startQuality } from './quality.ts'
 import { HOWWIN_CSS, bannerHtml, closeHowWin, howWinDue, howWinMark, lessons, lossOf, openLessons, showBanner, syncPin, type HowKit, type LessonGo, type Loss } from './howwin.ts'
 import type { Side, SyncState } from '../../net/sync.ts'
@@ -1847,6 +1847,28 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     return { by, grain }
   }
   /**
+   * 상단의 주문 쪽지 (merchant.applyWish · 위원회 11-04 림월드 ②) — 모을 물건과 지금 가진 몫을 그림·칸으로 · 다 모았고 상단이 와 있으면 큰 금빛 단추.
+   * 갚음은 떠도는 장수(값 없이) 아니면 먼 나라 소문 · 기한도 벌도 없다
+   */
+  function wishHtml(r: Realm): string {
+    const w = r.marketWish?.[me()]
+    if (w === undefined) return ''
+    const s = r.stock[me()]
+    const rows = (Object.entries(w.goods) as Array<[Good, number]>).map(([g, n]) => {
+      const have = Math.floor(goodOf(s, g))
+      const cells = 5
+      const lit = Math.max(0, Math.min(cells, Math.floor((have / n) * cells)))
+      return `<span class="wishg${have >= n ? ' ok' : ''}">${icon(GOOD_ICON[g], 'wki')}<b>${Math.min(have, n)}/${n}</b><i>${'■'.repeat(lit)}${'□'.repeat(cells - lit)}</i></span>`
+    }).join('')
+    const prize = w.reward === 'hero' ? `${icon('unit-general', 'wki')}떠도는 장수 하나 (값 없이)` : `${icon('route-caravan', 'wki')}먼 나라의 소문`
+    const ready = wishReady(r, me())
+    const queued = musters.some((o) => o.kind === 'wish')
+    let h = `<h3>${icon('good-tribute-bell', 'wki')} 상단의 주문</h3><div class="wishc${ready ? ' ready' : ''}"><div class="wishgs">${rows}</div><div class="wishp">갚음 · ${prize}</div>`
+    if (marketOf(r, me()) !== null) h += `<div class="btns"><button class="btn pri${queued ? ' on' : ''}" data-act="wish"${ready || queued ? '' : noBtn('아직 다 모으지 못했습니다')}>${queued ? '주문을 맞바꾼다 · 누르면 거둔다' : '주문을 맞바꾼다'}</button></div>`
+    else h += `<p class="mute">다음 상단이 오기 전에 모아 두세요</p>`
+    return h + '</div>'
+  }
+  /**
    * 장터 저울 칸 (merchant.applyScale · 위원회 11-04 림월드 ③) — 장터가 있으면 상단이 없는 달에도 남는 것을 곡식으로, 곡식을 모자란 것으로.
    * 값은 상단보다 나쁘고 달마다 한도 · 10씩 · 고른 뒤 다시 누르면 하나씩 거둔다
    */
@@ -1870,7 +1892,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
   }
   function marketSheet(r: Realm): string {
     const m = marketOf(r, me())
-    if (m === null) return `<h3>떠돌이 상단</h3><p class="mute">다음 상단은 ${turnsLabel(r, Math.max(1, marketIn(r, me())))} 뒤에 옵니다.</p>` + scaleHtml(r)
+    if (m === null) return `<h3>떠돌이 상단</h3><p class="mute">다음 상단은 ${turnsLabel(r, Math.max(1, marketIn(r, me())))} 뒤에 옵니다.</p>` + wishHtml(r) + scaleHtml(r)
     const st = left()
     let h = `<h3>${icon('route-caravan', 'wki')} 떠돌이 상단 · ${esc(r.nodes[m.at]?.name ?? '')}</h3><p class="mute">${turnsLabel(r, m.until - r.season + 1)} 더 머뭅니다 · 물건마다 개수가 정해져 있습니다</p><div class="mkls">`
     for (const o of m.offers) {
@@ -1894,7 +1916,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         + `<button class="btn" data-act="sell" data-good="${g}" data-n="${ten}"${ten > 0 ? '' : noBtn('더 팔 수 없습니다')}>${ten} 팔기</button>`
         + `<button class="btn" data-act="sell" data-good="${g}" data-n="${lim}"${lim > 0 ? '' : noBtn('더 팔 수 없습니다')}>다 · ${lim}</button></div>`
     }
-    return h + '</div>' + scaleHtml(r)
+    return h + '</div>' + wishHtml(r) + scaleHtml(r)
   }
   /**
    * 고을 일터 칸 — 지었으면 그 일터와 효과 한 줄, 짓는 중이면 남은 달, 아니면 이 땅에 맞는 일터 단추들
@@ -4602,7 +4624,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     if (r.region === 'tutorial' || r.outcome || sheet !== null) return ''
     // 떠돌이 상단이 머물면 늘 — 누구에게나 (배우는 사람만이 아니라)
     const mk = marketOf(r, me())
-    if (mk !== null) return `<button class="todochip mkchip" data-act="market">${icon('route-caravan', 'wki')} 떠돌이 상단이 ${esc(r.nodes[mk.at]?.name ?? '')}에 왔다 · ${turnsLabel(r, mk.until - r.season + 1)} 머문다</button>`
+    if (mk !== null) return `<button class="todochip mkchip" data-act="market">${icon('route-caravan', 'wki')} 떠돌이 상단이 ${esc(r.nodes[mk.at]?.name ?? '')}에 왔다 · ${turnsLabel(r, mk.until - r.season + 1)} 머문다${wishReady(r, me()) ? ' · 주문 ✦' : ''}</button>`
     // 장수가 알아서 일하는 것은 알림 거리가 아니다 — 늘 그렇다 (형 10-26: "원래 자동으로 다 알아서 하지만") · 장수 판 맨 위에 누가 어디로 가는지
     if (!novice()) return ''
     const drafted = musters.some((o) => o.kind === 'draft')
@@ -7896,6 +7918,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
         break
       }
       case 'market': openSheet({ kind: 'market' }); break
+      case 'wish': musters = musters.some((o) => o.kind === 'wish') ? musters.filter((o) => o.kind !== 'wish') : [...musters, { kind: 'wish', faction: me() }]; break
       case 'scale': {
         const n = Number(d['n']); const g = d['good'] as Good
         if (n > 0) musters = [...musters, { kind: 'scale', faction: me(), good: g, n, buy: d['v'] === 'buy' }]

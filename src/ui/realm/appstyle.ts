@@ -969,6 +969,13 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #17110c; ove
 .ap .btn .cost .cg { background: #2a2016d8; border-color: #c9a45a88; color: #f3e6c8; } .ap .btn .cost .cg i { color: #e0b060; }
 .ap .btn.pri .cost .cg { background: #1f170fe0; }
 .ap .btn[aria-disabled="true"] .cost .cg { background: #3a1410d0; border-color: #c8503a99; color: #ffd0c0; } .ap .btn[aria-disabled="true"] .cost .cg i { color: #ff6a4a; }
+/* 상단의 주문 쪽지 (위원회 11-04 림월드 ②) — 모을 물건 칸 · 다 모이면 금빛 */
+.ap .wishc { margin: 4px 0 10px; padding: 8px 10px; border-radius: 12px; border: 1px dashed #c9a45a88; background: #221a12; }
+.ap .wishc.ready { border-style: solid; border-color: #e8c15a; box-shadow: 0 0 0 1px #e8c15a55 inset, 0 0 12px #e8c15a44; }
+.ap .wishgs { display: flex; flex-wrap: wrap; gap: 8px; }
+.ap .wishg { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: #f3e6c8; }
+.ap .wishg i { font-style: normal; letter-spacing: 1px; color: #8a7a5a; font-size: 11px; } .ap .wishg.ok i { color: #e8c15a; }
+.ap .wishp { margin-top: 6px; font-size: 13px; color: #ffe2a0; display: flex; align-items: center; gap: 4px; }
 .ap .limwhy[aria-disabled="true"] { opacity: 1; cursor: pointer; }
 .ap .limwhy { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; margin-left: 4px; padding: 0; border-radius: 50%; border: 1px solid #c8503a99; background: #3a1410d0; vertical-align: middle; } .ap .limwhy .cgi { width: 18px; height: 18px; object-fit: contain; }
 .ap .hback { margin: 0 0 6px; }

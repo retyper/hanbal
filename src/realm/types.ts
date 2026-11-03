@@ -962,6 +962,8 @@ export interface Realm {
   markets?: Record<string, import('./merchant.ts').Market>
   /** 장터 저울을 이번 달 쓴 곡식 몫 — 나라마다 (merchant.scaleRoom) */
   scaleUsed?: Record<string, { readonly season: number; readonly grain: number }>
+  /** 상단이 남긴 쪽지 — 다음에 올 때 모아 둘 것과 갚음 (merchant.makeWish · 나라마다 하나) */
+  marketWish?: Record<string, import('./merchant.ts').Wish>
   /** 다음 상단이 올 턴 — 나라마다 */
   marketNext?: Record<string, number>
   /**
@@ -1020,6 +1022,8 @@ export type Order =
   | { readonly kind: 'party'; readonly faction: string; readonly node: string; readonly edge?: string; readonly goal?: string }
   /** 개척단을 길 하나로 보낸다 */
   | { readonly kind: 'partyGo'; readonly party: string; readonly edge: string }
+  /** 상단의 주문을 맞바꾼다 — 모아 둔 물건을 내고 갚음을 받는다 (merchant.applyWish) */
+  | { readonly kind: 'wish'; readonly faction: string }
   /** 장터 저울 — 상단이 없어도 장터에서 바꾼다 (merchant.applyScale · buy 면 곡식으로 산다) */
   | { readonly kind: 'scale'; readonly faction: string; readonly good: Good; readonly n: number; readonly buy: boolean }
   /** 곳간 열기 · 유민 부르기 — 곡식을 내고 n 집이 걸어 들어온다 (economy.applyCall) */
@@ -1211,6 +1215,7 @@ export type ReportLine =
   | { readonly kind: 'place'; readonly faction: string; readonly n: number; readonly to: readonly string[] }
   | { readonly kind: 'call'; readonly faction: string; readonly node: string; readonly n: number; readonly grain: number }
   | { readonly kind: 'scale'; readonly faction: string; readonly good: Good; readonly n: number; readonly grain: number; readonly buy: boolean }
+  | { readonly kind: 'wish'; readonly faction: string; readonly reward: 'hero' | 'news'; readonly who: string }
   | { readonly kind: 'cohabit'; readonly faction: string; readonly hero: string; readonly with: string; readonly to: string }
   | { readonly kind: 'hunger'; readonly faction: string }
   | { readonly kind: 'envoy'; readonly from: string; readonly to: string; readonly ask: EnvoyAsk; readonly accepted: boolean; readonly why?: Why; readonly about?: string; readonly hero?: string; readonly node?: string }

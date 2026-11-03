@@ -9,7 +9,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { byeonhanMini } from '../../src/realm/data/regions/byeonhan-mini.ts'
-import { marketOf, sellLimit } from '../../src/realm/merchant.ts'
+import { marketOf, sellLimit, wishReady } from '../../src/realm/merchant.ts'
 import { goodOf } from '../../src/realm/economy.ts'
 import { knownOf } from '../../src/realm/discovery.ts'
 import { advance } from '../../src/realm/season.ts'
@@ -98,5 +98,29 @@ describe('떠돌이 상단 — 판의 다른 자리에 닿는 물건 (형 11-04:
     const b = advance(r, [{ kind: 'buy', faction: r.player, offer: 'x' }]).next
     assert.ok(knownOf(r, r.player).some((x) => x !== r.player))
     assert.notDeepEqual(a.relations, b.relations)
+  })
+})
+
+describe('상단의 주문 (위원회 11-04 림월드 ②)', () => {
+  it('상단이 떠날 때 쪽지를 남긴다 · 물건은 우리 땅이 내는 것 · 곡식은 없다', () => {
+    let r = untilMarket(byeonhanMini(1))
+    for (let i = 0; i < 6 && marketOf(r, r.player) !== null; i++) r = advance(r, []).next
+    r = advance(r, []).next // 떠난 다음 달에 쪽지가 선다
+    const w = r.marketWish?.[r.player]
+    assert.ok(w !== undefined)
+    assert.equal((w!.goods as Record<string, number>)['grain'], undefined)
+    assert.ok(Object.keys(w!.goods).length >= 1)
+  })
+  it('모아 두면 맞바꾼다 — 물건이 나가고 갚음이 온다 · 쪽지는 걷힌다', () => {
+    let r = untilMarket(byeonhanMini(1))
+    for (let i = 0; i < 6 && marketOf(r, r.player) !== null; i++) r = advance(r, []).next
+    r = advance(r, []).next // 떠난 다음 달에 쪽지가 선다
+    r = untilMarket(r)
+    const w = r.marketWish![r.player]!
+    for (const [g, n] of Object.entries(w.goods)) (r.stock[r.player] as Record<string, number>)[g] = n! + 5
+    assert.equal(wishReady(r, r.player), true)
+    const { next, report } = advance(r, [{ kind: 'wish', faction: r.player }])
+    assert.equal(report.lines.filter((l) => l.kind === 'wish').length, 1)
+    assert.equal(next.marketWish?.[r.player] === undefined || next.marketWish[r.player] !== w, true)
   })
 })
