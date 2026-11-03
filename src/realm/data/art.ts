@@ -449,7 +449,7 @@ export const UNIT_ICON = {
  */
 export const SOL_ANIM2: Readonly<Record<string, number>> = { spear: 548 / 160, bow: 629 / 160, shield: 317 / 160, pike: 475 / 160, axe: 208 / 160, marine: 372 / 160, horse: 232 / 160, boat: 336 / 160, crossbow: 768 / 160 }
 /** 지도 길 위의 이주민 — 지게 진 사람 걷기 8컷 띠 (제미나이 11-03 · assets_src/realm/gemini/migrant · tools/strip-frames.mjs 4x2) · 칸 가로/세로 */
-export const MIGRANT_ANIM = { file: 'anim2/migrant.png', nf: 8, ar: 101 / 160 } as const
+export const MIGRANT_ANIM = { file: 'anim2/migrant.png', nf: 8, ar: 102 / 160 } as const
 export const SOL_ANIM_AR: Readonly<Record<string, number>> = { spear: 167 / 160, shield: 165 / 160, bow: 139 / 160, horse: 157 / 160, boat: 164 / 160, crossbow: 152 / 160, pike: 162 / 160, axe: 144 / 160, marine: 155 / 160 }
 
 /**
