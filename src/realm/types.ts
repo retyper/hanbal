@@ -33,6 +33,8 @@ export type EdgeKind = 'field' | 'pass' | 'forest' | 'reeds' | 'ford' | 'sea' | 
 export interface RNode {
   readonly id: string
   readonly name: string
+  /** 지금 지명으로 바꾼 고을의 옛 이름 (꼬리말 뗀 것 · '' 이면 바꿨으되 따로 적을 옛 이름 없음) — data/placenames.ts */
+  readonly old?: string
   readonly kind: NodeKind
   readonly tags: readonly Tag[]
   /** 다스리는 세력 id. 무주지는 null */

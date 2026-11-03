@@ -947,7 +947,7 @@ export function mapHtml(
       : ''
     labels.push({
       // 나라 많은 판은 지금 지명 줄을 빼 이름표를 한 줄로 — 작아야 제 고을 곁에 붙는다 (형 10-26: "마을 텍스트 바가 너무 큼 · 줄여서 제대로 그 마을의 텍스트라는 게 보이게")
-      id: n.id, name: n.name, now: NODE_NOW[n.id], inl: CROWDED.has(region), x: p[0], y: p[1], s: sizeOf(n.hh), cap: n.kind === 'capital' || cap, hh: n.hh,
+      id: n.id, name: n.name, now: n.old !== undefined ? (n.old === '' ? undefined : n.old) : NODE_NOW[n.id], inl: CROWDED.has(region), x: p[0], y: p[1], s: sizeOf(n.hh), cap: n.kind === 'capital' || cap, hh: n.hh,
       // 줌 단계 (FOCUS G) — lkeep: 어느 배율에서도 보인다 (고른 고을 · 위협받는 우리 고을 · 칠 채비가 모인 고을) · lmid: 중간 배율에서도 (도읍 · 우리 고을 · 우리 땅과 맞닿은 고을)
       cls: `${kcls}${ours ? ' me' : ''}${selected === n.id ? ' sel' : ''}${dim(owner) && tg === undefined ? ' dim' : ''}${far}${fr}`
         + `${selected === n.id || threatened.has(n.id) || poisedAt.has(n.id) ? ' lkeep' : ''}${n.kind === 'capital' || cap || ours || nearMine.has(n.id) ? ' lmid' : ''}`,

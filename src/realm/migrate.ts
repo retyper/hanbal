@@ -9,6 +9,7 @@
  * 옛 저장(scale 없음 = 1)은 판을 넘기거나 먼저 해 볼 때(season.advance · planned) 한 번 키운다.
  */
 import { initialKnown } from './discovery.ts'
+import { modernizeNames } from './data/placenames.ts'
 import { scaleMen } from './kit.ts'
 import { P } from '../tune/params.ts'
 import type { Realm } from './types.ts'
@@ -40,6 +41,8 @@ function rename(r: Realm): void {
 /** 옛 판이면 사람을 키운다 (제자리에서 바꾼다). 이미 지금 눈금이면 아무 일도 없다. 옛 이름은 늘 고친다 */
 export function migrate(r: Realm): void {
   rename(r)
+  // 고을 이름은 지금 지명으로 · 옛 이름은 작게 (형 11-03 · data/placenames.ts)
+  modernizeNames(r)
   // 활 쏘는 장군의 이름이 '신궁'이던 옛 판 (형: "군장이 신궁이다는 설명 너무 짜치는디")
   const chief = r.heroes['chief']
   if (chief !== undefined && chief.name === '신궁') (chief as { name: string }).name = '살해 매눈'

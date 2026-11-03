@@ -4610,7 +4610,7 @@ export function mountRealmApp(root: HTMLElement, host: AppHost): { show(r: Realm
     const who = n.owner === null ? '주인 없음' : (r.factions[n.owner]?.name ?? '')
     const isCap = Object.values(r.factions).some((f) => f.capital === id)
     const kind = n.kind === 'wild' && n.hh > 0 ? SETTLED_NAME : isCap ? (n.kind === 'port' ? '도읍 · 항구' : '도읍') : NODE_KIND_NAME[n.kind]
-    let h = `<div class="an big">${icon(nodeIcon(n), 'nic')}<div><h3>${esc(n.name)}${NODE_NOW[id] !== undefined ? ` <small class="mute">지금의 ${esc(NODE_NOW[id]!)}</small>` : ""}</h3><span class="mute">${emblem(n.owner)}${esc(who)} · ${kind}</span></div></div>`
+    let h = `<div class="an big">${icon(nodeIcon(n), 'nic')}<div><h3>${esc(n.name)}${n.old !== undefined ? (n.old !== '' ? ` <small class="mute">옛 이름 ${esc(n.old)}</small>` : '') : NODE_NOW[id] !== undefined ? ` <small class="mute">지금의 ${esc(NODE_NOW[id]!)}</small>` : ''}</h3><span class="mute">${emblem(n.owner)}${esc(who)} · ${kind}</span></div></div>`
     // 고을지기 자리 — 맨 위에. 비었으면 실루엣과 물음표 (형 10-25: "자리가 비어 있단 걸 확실히") · 누르면 앉힐 장수
     if (ours && n.kind !== 'sodo' && n.hh > 0) h += chiefSlot(r, id) + (foldOpen.has('chief') ? `<div class="nfb">${chiefHtml(r, id)}</div>` : '')
     if (ours || known?.land) {

@@ -1416,6 +1416,10 @@ export const NODE_NOW: Readonly<Record<string, string>> = {
   'm-goryong-cap': '남원', 'n-siljik-cap': '삼척', 'n-haseulla-cap': '강릉',
   'w-byeokgol': '김제', 'w-jinan': '진안', 'w-haenam': '해남', 'w-yeonggwang': '영광', 'w-seosan': '서산', 'w-hongseong': '홍성',
   'w-wonju': '원주', 'w-pyeongchang': '평창', 'w-uljin': '울진', 'w-yeongju': '영주',
+  // 넓은 지도 북쪽 (11-03 · 이름을 지금 지명으로 바꾸며 채움 · 자리가 확실한 곳만 — 부여 네 가·요서·흥개호 쪽은 옛 이름 그대로)
+  'g-jolbon': '환인', 'g-gwanna-iron': '강계', 'b-buyeo-cap': '지린', 'o-dong-cap': '함흥', 'o-dong-port': '북청', 'o-buk-cap': '청진', 'o-buk-port': '어랑',
+  'd-goseong': '강원 고성', 't-tamna-v': '서귀포', 'w-yeseong': '개성', 'w-jaeryeong': '재령', 'w-daedong': '평양', 'w-cheongcheon': '안주', 'w-cheorwon': '철원',
+  'w-baekdu': '백두산', 'w-haeran': '용정', 'w-mudan': '목단강', 'w-amnok-mouth': '신의주', 'w-honha': '심양', 'w-tumen-mouth': '나선',
 }
 
 /** 발견의 말 — 보는 나라가 그 나라를 어떻게 알게 됐나 (discovery.ts · 형: "발견국가가 많아지면 확장") */

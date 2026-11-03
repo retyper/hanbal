@@ -129,7 +129,7 @@ describe('재상 — 계절 보고와 저장', () => {
     assert.equal(report.lines.filter((l) => l.kind === 'heroGo').length, 0, '길 떠난 줄은 재상의 줄이 함께 말한다')
     const text = reportText(before, next, ls[0]!, 'us')!
     assert.ok(text.startsWith('험측 돌개가 알아서 '), text)
-    assert.ok(text.includes('갈대울 마을 고을지기로 간다'), text)
+    assert.ok(text.includes('창원 동읍 고을지기로 간다'), text) // 고을 이름은 지금 지명 (placenames.ts · 형 11-03)
     assert.equal(reportText(before, next, ls[0]!, 'guya'), null)
   })
 
