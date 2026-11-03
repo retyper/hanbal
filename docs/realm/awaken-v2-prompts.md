@@ -30,3 +30,4 @@ This is an original character from my own Korean historical fantasy strategy gam
 - l-L7-aryeong 아령 — 2차(edu) — 11-03
 - w-97-goguryeo-mir 미르 — 2차(edu) — 11-03
 - l-L3-heo-hwangok 허황옥 — 2차(edu) — 11-03
+- w-04-gaya-swordswoman 다나(가야 여검사) — 2차(edu) — 11-03
